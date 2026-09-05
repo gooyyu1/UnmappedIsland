@@ -44,6 +44,10 @@ interface World {
   readonly mainChecks?: readonly { readonly status: string; readonly conclusion: string }[];
   /** `archive-session.sh` が渡された相手について返す行の頭。既定は畳めた。 */
   readonly archiveVerdict?: 'ARCHIVED' | 'KEPT' | 'UNARCHIVED';
+  /** `describe-conflict.sh` が返す、ぶつかったファイルと相手。 */
+  readonly conflict?: { readonly files: readonly string[]; readonly with: readonly number[] };
+  /** 周が始まる時点で帳面に載っている行。 */
+  readonly conflictLog?: string;
   /** 非0で終わらせる打ち手（スクリプトの名前）。 */
   readonly fails?: readonly string[];
   readonly ghFails?: boolean;
@@ -71,6 +75,8 @@ interface Result {
   readonly envs: readonly (Record<string, string> | undefined)[];
   /** この周が書いた一覧。 */
   readonly liveTsv: string | undefined;
+  /** ぶつかった実績の帳面（1行1件）。 */
+  readonly conflicts: readonly Record<string, unknown>[];
 }
 
 const NOW = new Date('2026-09-05T02:00:00Z');
@@ -107,6 +113,9 @@ function playRound(world: World = {}): Result {
       }
     }
     writeFileSync(join(stateDir, 'taken.json'), JSON.stringify({ ...idled, ...world.ledger }), 'utf-8');
+    if (world.conflictLog !== undefined) {
+      writeFileSync(join(stateDir, 'conflicts.jsonl'), world.conflictLog, 'utf-8');
+    }
 
     const out: string[] = [];
     const calls: string[] = [];
@@ -156,6 +165,14 @@ function playRound(world: World = {}): Result {
       if (name === 'archive-session.sh' && options?.capture === true) {
         return { status: 0, stdout: `${world.archiveVerdict ?? 'ARCHIVED'} session_a\n` };
       }
+      if (name === 'describe-conflict.sh') {
+        const found = world.conflict ?? { files: [], with: [] };
+        const lines = [
+          ...found.files.map((path) => `FILE ${path}`),
+          ...found.with.map((number) => `WITH ${number}`),
+        ];
+        return { status: 0, stdout: lines.length === 0 ? '' : `${lines.join('\n')}\n` };
+      }
       return { status: 0, stdout: '' };
     };
 
@@ -177,6 +194,7 @@ function playRound(world: World = {}): Result {
 
     const ledgerPath = join(stateDir, 'taken.json');
     const livePath = join(stateDir, 'live-sessions.tsv');
+    const conflictsPath = join(stateDir, 'conflicts.jsonl');
     return {
       ok,
       log: out.join('\n'),
@@ -186,6 +204,12 @@ function playRound(world: World = {}): Result {
       ...split(existsSync(ledgerPath) ? JSON.parse(readFileSync(ledgerPath, 'utf-8')) : {}),
       envs,
       liveTsv: existsSync(livePath) ? readFileSync(livePath, 'utf-8') : undefined,
+      conflicts: existsSync(conflictsPath)
+        ? readFileSync(conflictsPath, 'utf-8')
+            .split('\n')
+            .filter((line) => line !== '')
+            .map((line) => JSON.parse(line))
+        : [],
     };
   } finally {
     rmSync(stateDir, { recursive: true, force: true });
@@ -399,6 +423,61 @@ describe('board-round.mjs', () => {
 
     expect(result.ok).toBe(false);
     expect(result.calls).toEqual([]);
+  });
+
+  // **ぶつかった実績を控える**（3.1）。盤面は同じファイルを書く issue を並べて投入するので、
+  // 実際にぶつかった組を残しておかないと、`area:` の錠を足すべき資源が後から分からない。
+  it('コンフリクトしたPRを、ぶつかったファイルと相手とともに帳面へ書く', () => {
+    const result = playRound({
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
+      conflict: { files: ['docs/engine/GameElementDefinition.md'], with: [7] },
+    });
+
+    expect(result.conflicts).toEqual([
+      {
+        at: '2026-09-05T02:00:00Z',
+        pr: 10,
+        head: 'aaa111',
+        files: ['docs/engine/GameElementDefinition.md'],
+        with: [7],
+      },
+    ]);
+    expect(result.log).toContain('ぶつかった: PR #10 docs/engine/GameElementDefinition.md … #7');
+  });
+
+  // 押し返されるまで盤面は `CONFLICTING` を返し続ける。**同じ差分を毎周書くと、数えたときに
+  // 周の回数を数えることになる。**
+  it('同じ差分のコンフリクトは、二度書かない', () => {
+    const result = playRound({
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
+      conflictLog: `${JSON.stringify({ at: '古い', pr: 10, head: 'aaa111', files: [], with: [] })}\n`,
+      conflict: { files: ['docs/x.md'], with: [7] },
+    });
+
+    expect(result.conflicts).toHaveLength(1);
+    expect(result.calls).not.toContain('describe-conflict.sh 10');
+  });
+
+  // **調べられなかったものは書かない。** 空の記録を残すと指紋だけが埋まり、次の周に調べ直せない。
+  it('ぶつかった中身を調べられなかった周は、帳面へ書かない', () => {
+    const result = playRound({
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
+      fails: ['describe-conflict.sh'],
+    });
+
+    expect(result.conflicts).toEqual([]);
+  });
+
+  // 積まれたPRの `CONFLICTING` は、その base との衝突。`main` との衝突を調べる
+  // `describe-conflict.sh` とは別物なので数えない。
+  it('他のPRの上に積まれたPRのコンフリクトは数えない', () => {
+    const result = playRound({
+      prs: [pr(10, { mergeable: 'CONFLICTING', baseRefName: 'claude/under' })],
+      conflict: { files: ['docs/x.md'], with: [7] },
+    });
+
+    expect(result.conflicts).toEqual([]);
+    expect(result.calls).not.toContain('describe-conflict.sh 10');
   });
 
   it('DRY_RUN では、手を並べるだけで打たない', () => {

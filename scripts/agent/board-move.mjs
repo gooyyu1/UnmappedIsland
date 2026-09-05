@@ -78,6 +78,36 @@ const STALL_MINUTES = Number(process.env.STALL_MINUTES || 15);
  */
 const DISPATCH_TO = { cloud: '', bridge: '--bridge' };
 
+/**
+ * 同時に走ってよい**書くセッション**の数（3.1。**値は仮決め**）。錠を持たない issue はいくらでも
+ * 並ぶので、**手綱はここにしか無い**。
+ *
+ * **2.5.2 の「残り余力と1本あたりの消費の比較」が入っても外さない**——残量だけを見て決めると、
+ * 余力のある周に一度に何本も立つ。
+ */
+const WRITERS = 3;
+
+/** `task-<番号>` のタグから担当の issue 番号を引く。持っていなければ `undefined`。 */
+function heldIssue(session) {
+  for (const tag of session.tags) {
+    const match = /^task-(\d+)$/.exec(tag);
+    if (match !== null) return Number(match[1]);
+  }
+  return undefined;
+}
+
+/**
+ * その issue が取る**錠**（`area:` のラベル。[`parallel-work.md`](../../.claude/parallel-work.md) 2節）。
+ * **同時に1本しか動かせない資源**を指すので、同じ錠を持つ issue は並べて投入しない。
+ *
+ * **投入を止めるのはこれだけ。** 同じファイルを2本が書くことは止めない——盤面にできるのは投入を
+ * 遅らせることだけで、担当に挙がっているファイルは受け取った側がどのみち書く。ぶつかれば
+ * コンフリクトとして出て、盤面は `mend` で直させ、**[`board-round.mjs`](board-round.mjs) が
+ * 何とぶつかったかを控える**（3.1）。
+ */
+const locks = (issue) =>
+  (issue.labels ?? []).map((label) => label.name).filter((name) => name.startsWith('area:'));
+
 /** その issue が要求する環境（`env:` のラベル。無ければクラウド）。**重ねて付いていれば `undefined`。** */
 function wantedEnv(issue) {
   const marks = (issue.labels ?? []).map((label) => label.name).filter((name) => name.startsWith('env:'));
@@ -371,9 +401,21 @@ export function moves(input) {
     }
   }
 
-  // **並列度1**（3.1）。担当の交わりを計算する仕組みがまだ無いので、書くセッションは同時に1本まで。
-  // レビューは書かないので数えない。
-  const writing = input.sessions.filter((session) => session.tags.some((tag) => tag.startsWith('task-')));
+  // **並べてよいかは、錠と本数で決める**（3.1・`parallel-work.md` 2節）。レビューは書かないので
+  // 数えない。
+  //
+  // **仕事の終わったワーカーは数から外す。** 担当が閉じているなら、走行中でもう掴んでいない
+  // （2.10。畳むのは `ARCHIVE` だが、**走っている間は畳めない**ので、待つと枠が空かない）。
+  // **素性を引けなかったものは残す**——知らないことを「終わった」として読むと、走っている相手の
+  // 担当を見ないまま並べてしまう。
+  const held = input.sessions
+    .map((session) => ({ session, number: heldIssue(session) }))
+    .filter((holder) => holder.number !== undefined)
+    .map((holder) => ({
+      ...holder,
+      issue: input.issues.find((issue) => issue.number === holder.number),
+    }))
+    .filter((holder) => holder.issue !== undefined || issueStates[String(holder.number)] !== 'CLOSED');
 
   // **古いものから投入する。** 一覧は新しい順に返るので、そのまま使うと古い issue が永久に
   // 後回しになる（今 open な `task` は30件を超える）。
@@ -404,21 +446,42 @@ export function moves(input) {
     return flag;
   }
 
-  if (writing.length === 0) {
+  /** その issue を今は出せない理由（出せるなら `undefined`）。 */
+  function waitingFor(issue) {
+    const mine = locks(issue);
+    if (mine.length === 0) return undefined;
+    for (const holder of held) {
+      // **素性を引けなかった相手の後ろでは、錠を持つ issue を出さない。** 相手が同じ錠を持って
+      // いないことを確かめられないので、資源を2本で取り合う形が通ってしまう。
+      if (holder.issue === undefined) return `${holder.session.id} の担当（#${holder.number}）が読めない`;
+      const lock = mine.find((name) => locks(holder.issue).includes(name));
+      if (lock !== undefined) return `#${issue.number} と #${holder.number} が \`${lock}\` を取り合う`;
+    }
+    return undefined;
+  }
+
+  // **待たせている理由を毎周書く。** 起こしても動かないセッションが1本残ると、`stall` は指紋で
+  // 1回しか出ないので、黙ったまま TASK が永久に止まる。ログに何も出ないと「やることが無い周」と
+  // 見分けが付かない。**打つのは1周に1手**なので、書くのは先頭が待っている理由でよい。
+  const waiting = [];
+  if (held.length >= WRITERS) {
+    if (ready.length > 0) {
+      notes.push(`${ready.length}件の task が、書くセッション${WRITERS}本の空きを待っている`);
+    }
+  } else {
     for (const issue of ready) {
+      const why = waitingFor(issue);
+      if (why !== undefined) {
+        waiting.push(why);
+        continue;
+      }
       const flag = destination(issue);
       if (flag === undefined) continue;
       tasks.push(flag === '' ? `TASK ${issue.number}` : `TASK ${issue.number} ${flag}`);
     }
-  } else if (ready.length > 0) {
-    // **待たせている相手を毎周書く。** 起こしても動かないセッションが1本残ると、`stall` は指紋で
-    // 1回しか出ないので、黙ったまま TASK が永久に止まる。ログに何も出ないと「やることが無い周」と
-    // 見分けが付かない。
-    const holders = writing.map((session) => session.id).join('・');
-    notes.push(`${ready.length}件の task が、書くセッション（${holders}）の空きを待っている`);
-  }
-  if (writing.length > 1) {
-    notes.push(`書くセッションが${writing.length}本走っている（並列度1のはず）`);
+    if (tasks.length === 0 && waiting.length > 0) {
+      notes.push(`${waiting.length}件の task が待っている。先頭は ${waiting[0]}`);
+    }
   }
 
   // 畳むのをマージの次に置くのは、**書くセッションの枠が空くから**（3.1 の並列度）。後ろへ回すと、
