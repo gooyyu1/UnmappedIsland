@@ -57,13 +57,8 @@ if ! brake=$(bash "$HERE/brake.sh" resume); then
 fi
 
 # 走っている相手へ送ると、仕上げの最中に別の仕事を積むことになる。**手が動いているかを言うのは
-# `session_status`**——`status_bucket` は手が空いても `..._WORKING` のまま固まることがあり、そちらで
-# 見ると**起こす相手がちょうど起こせなくなる**（[`board-design.md`](../../.claude/board-design.md) 1.6）。
-#
-# **`..._BLOCKED` を足しているのは仮説で、実測していない。** 承認待ちのセッションが
-# `SESSION_STATUS_RUNNING` を保つのか `..._IDLE` へ落ちるのかを見ていないので、落ちる場合に備えて
-# or で残してある（許可が下りれば書き始めるので、届くのは書き終わった後になる）。
-# **実測が付いたら、要らない側を消すこと。**
+# `session_status` だけ**——`status_bucket` は手番が終わった後の要約から決まるので、どの値も
+# 「処理中」を意味しない（[`board-design.md`](../../.claude/board-design.md) 1.6）。
 if ! live=$(CCR_META="$CCR_META" bash "$HERE/live-sessions.sh"); then
   echo "セッションの一覧を引けなかった" >&2
   exit 1
@@ -74,7 +69,7 @@ case "$state" in
   echo "畳まれているか、居ないセッション: $SESSION" >&2
   exit 1
   ;;
-SESSION_STATUS_RUNNING\|* | *\|SESSION_STATUS_BUCKET_BLOCKED)
+SESSION_STATUS_RUNNING\|*)
   echo "まだ動いているので起こさない: $SESSION $state" >&2
   exit 1
   ;;

@@ -211,13 +211,21 @@ describe('board-move.mjs', () => {
     ]);
   });
 
-  // 手元のブリッジはCCRのセッションではないので `send_message` が届かない（2.11.1）。名乗って
-  // いないのとも畳まれたのとも違う——直すのはその場に居る人。
-  it('手元のセッションが書いたPRは、起こせないと書き残す', () => {
-    const board = { prs: [pr(10, label('直し待ち'))], prSessions: { 10: 'bridge-cse_012ABC' } };
-    expect(moves(board)).toEqual([
-      'NOTE PR #10 は差し戻されたが、書いたのが手元のセッションなので、起こせない',
-    ]);
+  // `..._BLOCKED` は手番を終えて人へ問いを返した状態で、手は空いている（board-design 1.6 の実測）。
+  // busy と読むと、その著者のPRのレビューが永久に出ない（#1541 が2時間止まった）。
+  it('著者が人へ問いを返して止まっていても、レビューへ出す', () => {
+    const board = {
+      prs: [pr(10)],
+      sessions: [
+        {
+          id: 'session_a',
+          status: 'SESSION_STATUS_IDLE',
+          bucket: 'SESSION_STATUS_BUCKET_BLOCKED',
+          tags: ['task-9'],
+        },
+      ],
+    };
+    expect(moves(board)).toEqual(['REVIEW 10 aaa111']);
   });
 
   it('レビューが走っているPRは、二重に出さない', () => {

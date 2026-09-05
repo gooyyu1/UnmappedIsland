@@ -66,14 +66,10 @@ fi
 while IFS=$'\t' read -r id status bucket tags; do
   [ -n "$id" ] || continue
   if [ "$MODE" = --busy ]; then
-    # **手が動いているかを言うのは `session_status`。** `status_bucket` は手が空いても
-    # `..._WORKING` のまま固まることがある（1.6 の実測）。
-    #
-    # **`..._BLOCKED` を足しているのは仮説で、実測していない。** 承認待ちのセッションが
-    # `SESSION_STATUS_RUNNING` を保つのか `..._IDLE` へ落ちるのかを見ていないので、落ちる場合に
-    # 備えて or で残してある。**実測が付いたら、要らない側を消すこと。**
+    # **手が動いているかを言うのは `session_status` だけ。** `status_bucket` は手番が終わった後の
+    # 要約から決まるので、どの値も「処理中」を意味しない（1.6 の実測）。
     case "$status|$bucket" in
-    SESSION_STATUS_RUNNING\|* | *\|SESSION_STATUS_BUCKET_BLOCKED) ;;
+    SESSION_STATUS_RUNNING\|*) ;;
     *) continue ;;
     esac
   fi

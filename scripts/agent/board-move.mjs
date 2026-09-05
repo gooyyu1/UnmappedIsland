@@ -44,15 +44,10 @@
 import { readFileSync } from 'node:fs';
 
 /**
- * 今その差分へ手が動いているか（1.6）。**言うのは `session_status`**——`status_bucket` は手が
- * 空いても `..._WORKING` のまま固まることがあり、そうなったPRのレビューが永久に出なくなる。
- *
- * **`..._BLOCKED` を足しているのは仮説で、実測していない。** 承認待ちのセッションが
- * `SESSION_STATUS_RUNNING` を保つのか `..._IDLE` へ落ちるのかを見ていないので、落ちる場合に備えて
- * or で残してある。**実測が付いたら、要らない側を消すこと。**
+ * 今その差分へ手が動いているか（1.6）。**言うのは `session_status` だけ**——`status_bucket` は
+ * 手番が終わった後の要約から決まるので、どの値も「処理中」を意味しない。
  */
-const busySession = (session) =>
-  session.status === 'SESSION_STATUS_RUNNING' || session.bucket === 'SESSION_STATUS_BUCKET_BLOCKED';
+const busySession = (session) => session.status === 'SESSION_STATUS_RUNNING';
 
 const input = JSON.parse(readFileSync(0, 'utf8'));
 const taken = input.taken ?? {};
@@ -155,16 +150,12 @@ for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
     // 「この仕事は終わった」と判断した側の明示の操作なので、機械では戻さない（1.2）。
     const holders = menders(pr);
     if (holders.length === 0) {
-      // **引けなかった理由を分ける**（手を入れるべき側が違う）。名乗っていないのは規則の破れ（2.11）
-      // で、直すのは人。手元のブリッジは `send_message` の届く先が無いので、名乗っていても起こせない。
+      // **引けなかった理由を分ける。** 名乗っていないのは規則の破れ（2.11）で、直すのは人。
       // 畳まれているだけなら、盤面の側にできることは無い。
-      const id = prSessions[String(pr.number)];
       const why =
-        id === undefined
+        prSessions[String(pr.number)] === undefined
           ? '書いたセッションが名乗っていない'
-          : id.startsWith('session_')
-            ? '直す相手が畳まれている'
-            : '書いたのが手元のセッションなので、起こせない';
+          : '直す相手が畳まれている';
       notes.push(`PR #${pr.number} は${reason}が、${why}`);
       continue;
     }

@@ -226,9 +226,8 @@ describe('may-dispatch.sh', () => {
     expect(run('review', 'review-1500', { sessions }).code).toBe(0);
   });
 
-  // 承認待ちで止まっているセッションは、許可が下りれば書き始めるので手が動いている側。
-  // **`IDLE` に落ちるかは未実測**（`occupancy.sh` の仮説の注記）。落ちても止まる形にしてある。
-  it('BLOCKED のセッションは、手が動いている側として占有している', () => {
+  // `..._BLOCKED` は手番が終わって人へ問いを返した状態（board-design 1.6 の実測）。手は空いている。
+  it('BLOCKED のセッションは、手が空いている側として数える', () => {
     const sessions = [
       {
         id: 'cse_BLOCKED',
@@ -238,7 +237,7 @@ describe('may-dispatch.sh', () => {
       },
     ];
 
-    expect(run('review', 'review-1500', { sessions }).code).toBe(1);
+    expect(run('review', 'review-1500', { sessions }).code).toBe(0);
   });
 
   it('畳まれたセッションは占有していない', () => {
