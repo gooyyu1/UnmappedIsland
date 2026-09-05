@@ -155,40 +155,26 @@ describe('dispatch-task.sh', () => {
     expect(result.stderr).toContain('判断待ち');
   });
 
-  // 盤面の道具そのものを直す仕事は、担当がここにしか無い。**止まる理由（書き込みのたびの承認）は
-  // クラウドにしか無い**ので、関門もクラウドへ投入するときだけ見る。
-  it('クラウドへは、担当にユーザーの領域が挙がっていれば投入しない', () => {
-    const result = run(1551, { body: '## 担当\n\n- `.claude/ccr-meta.sh`\n' });
+  // **触れる範囲は担当で決まり、走る場所では決まらない**（`board-design.md` 2.16）。ユーザーの
+  // 領域を担当に持つ issue は、どちらへでも投入できる。
+  it('担当にユーザーの領域が挙がっていても、どちらへも投入する', () => {
+    const body = '## 担当\n\n- `.claude/ccr-meta.sh`\n';
 
-    expect(result.code).toBe(1);
-    expect(result.stderr).toContain('.claude/ccr-meta.sh');
+    expect(run(1551, { body }).code).toBe(0);
+    expect(run(1551, { body, onBridge: true }).code).toBe(0);
   });
 
-  it('ブリッジへなら、同じ担当でも投入する', () => {
-    expect(run(1551, { body: '## 担当\n\n- `.claude/ccr-meta.sh`\n', onBridge: true }).code).toBe(0);
-  });
-
-  // **受け取る側は、自分がどちらで走っているかを知らない。** 本体へ無条件に書くと、当たらない
-  // ほうのセッションにもそのまま渡り、`.claude/**` を直すために立てたブリッジのセッションが
-  // 着手した時点で仕事をせずに返す（PR #1567 のレビュー指摘）。
-  it('クラウドへは、ユーザーの領域を触らずブリッジへ回せと渡す', () => {
-    const body = prompt(1415);
-
-    expect(body).toContain('[ブリッジ]');
-    expect(body).not.toContain('ユーザーのPCで走っています');
-  });
-
-  it('ブリッジへは、担当に挙がっていれば書き換えてよいと渡す', () => {
-    const body = prompt(1415, { onBridge: true });
-
-    expect(body).toContain('ユーザーのPCで走っています');
-    expect(body).not.toContain('[ブリッジ]');
+  // **受け取る側は、自分がどちらで走っているかを知らない。** 場所で切った制約を混ぜると、当たら
+  // ないほうのセッションにもそのまま渡る（`.claude/**` を触るなと書いた行が、そこを直すために
+  // 立てたブリッジのセッションへ届き、着手した時点で仕事をせずに返した。PR #1567 のレビュー指摘）。
+  it('渡す文面は、投入先で変わらない', () => {
+    expect(prompt(1415, { onBridge: true })).toBe(prompt(1415));
   });
 
   // 差し替えそのものが落ちたときは、目印の行が本文に残る。**渡す相手には読めない行**なので、
   // 落ちたことがここで分かるようにする。
-  it('走る場所の目印は、本文に残さない', () => {
-    expect(prompt(1415)).not.toContain('<走る場所で変わる制約');
+  it('補足の置き場の目印は、本文に残さない', () => {
+    expect(prompt(1415)).not.toContain('<このタスク固有の補足');
   });
 
   // **モードは環境が決める**（`board-design.md` 2.16.3）。渡さないと未設定のまま立ち、`.claude/**`
@@ -200,8 +186,8 @@ describe('dispatch-task.sh', () => {
     expect(built.permission_mode).toBe('auto');
   });
 
-  // **無指定が `bypassPermissions` になる**（明示すると撥ねられる）ので、`.claude/**` を書き換える
-  // 仕事はこれが要る。`auto` へ落とすと、担当の仕事ができないセッションが立つ。
+  // **無指定が `bypassPermissions` になる**（明示すると撥ねられる）。承認を出せる人が目の前に
+  // 居る側なので、訊かずに通す。
   it('ブリッジへはモードを渡さない', () => {
     const built = args(1415, { onBridge: true });
 

@@ -33,12 +33,6 @@
 #   **どちらも投入先で決まる**ので、[`ccr-env.sh`](ccr-env.sh) から取って下の分岐で選ぶ。
 #   `permission_mode` は空のことがあり、**そのときは渡さない**（それがブリッジの `bypassPermissions`）。
 # - **閉じた issue へ立てると、空待ちになる。** 題を引くのと同じ `gh issue view` で `state` も見る。
-# - **`## 担当` に、クラウドのセッションが触れない領域が挙がっていないかを見る。** ひな形・盤面の
-#   道具・運用の文書はユーザーが `main` へ直接入れる領域で、セッションからは編集ツールが拒否される。
-#   気づかずに投入すると壁に当たり、往復が1回まるごと無駄になる（2026-08-30・#1398。担当に
-#   `.claude/parallel-work.md` が載ったまま投入し、セッションは拒否された経路を回避して書き込む
-#   ところまで行った）。**同じ `gh issue view` で `body` も引く**ので、往復は増えない。
-#   **`--bridge` では見ない**（下の節）。
 
 set -euo pipefail
 
@@ -63,26 +57,23 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 # **立てる先が決まれば、渡すものは全部決まる**（`ccr-env.sh`）。ブリッジはリポジトリを既に持って
-# いるので `source_url` を渡さず、承認モードも無指定——**無指定が `bypassPermissions` になる**ので、
-# `.claude/**` を担当に持つ仕事はここでしか進まない。
+# いるので `source_url` を渡さず、承認モードも無指定——**無指定が `bypassPermissions` になる**。
+# **渡す文面は投入先で変わらない**（`.claude/dispatch-prompt.md`「走る場所で文面を変えない」）。
 if [ "$WHERE" = "--bridge" ]; then
   ENV_ID="$BRIDGE_ENV"
   MODE="$BRIDGE_MODE"
   SOURCE=""
-  PLACE=ブリッジ
 else
   ENV_ID="$CLOUD_ENV"
   MODE="$CLOUD_MODE"
   SOURCE="$REPO_URL"
-  PLACE=クラウド
 fi
 
 # ひな形は手で書き写さない。**書き写すと必ず何かが落ちる**——2026-08-27 に「PRを見張らない」の
 # 一文が3本すべてから抜け、3セッションが承認待ちで止まった。ここで `dispatch-prompt.md` の
 # ``` の中を読み、`<番号>` を埋めて、渡された補足を末尾へ足す。投入する側が書くのは補足だけ。
 INSTRUCTION="$WORK/prompt.md"
-# **読むのは最初のブロックだけ。** 後ろに走る場所ごとの節が続くので、トグルのまま最後まで読むと
-# 両方の節が本体へ混ざる。
+# **読むのは最初のブロックだけ**（`exit`）。ひな形の説明が後ろで例を挙げても、本体へ混ざらない。
 awk '/^```$/ { inside = !inside; if (!inside) exit; next } inside' "$TEMPLATE" |
   sed "s/<番号>/$ISSUE/g" >"$INSTRUCTION"
 # ひな形の最後の行は補足の置き場を説明する山括弧なので、補足そのものへ差し替える。
@@ -92,31 +83,6 @@ grep -q '^<このタスク固有の補足' "$INSTRUCTION" || {
 }
 sed -i '/^<このタスク固有の補足/,$d' "$INSTRUCTION"
 cat "$SUPPLEMENT" >>"$INSTRUCTION"
-
-# **走る場所で変わる制約は、ここで差し替える。** 受け取る側は自分がどちらで走っているかを知らない
-# ので、ひな形の本体へ無条件に書くと、当たらないほうのセッションにもそのまま渡る（`.claude/**` を
-# 触るなと書いた行が、そこを直すために立てたブリッジのセッションへ届いていた。PR #1567 の指摘）。
-awk -v want="$PLACE" '
-  $1 == "##" && $2 == want { found = 1; next }
-  found && /^```$/ { inside = !inside; if (!inside) exit; next }
-  inside
-' "$TEMPLATE" >"$WORK/place.md"
-[ -s "$WORK/place.md" ] || {
-  echo "ひな形に「## $PLACE」の節が無い: $TEMPLATE" >&2
-  exit 1
-}
-grep -q '^<走る場所で変わる制約' "$INSTRUCTION" || {
-  echo "ひな形から走る場所の目印が消えている: $TEMPLATE" >&2
-  exit 1
-}
-awk -v file="$WORK/place.md" '
-  /^<走る場所で変わる制約/ {
-    while ((getline line < file) > 0) print line
-    next
-  }
-  { print }
-' "$INSTRUCTION" >"$WORK/merged.md"
-mv "$WORK/merged.md" "$INSTRUCTION"
 
 # **日本語はシェル変数に載せない。** Windowsのnodeは argv も環境変数もANSIで受け取るので、題を
 # `$(...)` で渡すと黙って化ける。題も本文もファイル経由で node へ渡す。
@@ -156,29 +122,6 @@ existing=$(gh pr list --state open --limit 50 --json number,body |
   echo "  立て直すなら、そのPRを閉じてから叩き直す。" >&2
   exit 1
 }
-
-# `## 担当` に、セッションが書けない領域が挙がっていないか。`.claude/**` はクラウドセッションからの
-# 書き込みがユーザー承認を求められ、そこで止まる。`scripts/agent/**` と `CLAUDE.md` はユーザーが
-# `main` へ直接入れる領域。どれも投入した時点で往復が1回無駄になる。
-#
-# **見るのはクラウドへ投入するときだけ。** 止まる理由（承認）はクラウドにしか無く、盤面の道具そのものを
-# 直す仕事はブリッジで走らせる以外に置き場が無い。**ブリッジで走るなら、担当に挙がっているものは
-# 触ってよい**（`CLAUDE.md`「タスクの issue を渡されたとき」の例外）。
-#
-# **どこへ投入するかを決めるのはここではない。** 盤面が issue の `env:` から決めて引数で寄越す
-# （`.claude/board-design.md` 2.16）ので、ここは受け取った先に従うだけ。
-if [ "$WHERE" != "--bridge" ]; then
-  owned=$(jq -r '.body' "$WORK/issue.json" | tr -d '\r' |
-    awk '/^##[[:space:]]/ { inside = /^##[[:space:]]+担当[[:space:]]*$/; next } inside' |
-    grep -oE '(\.claude/[^`)[:space:]]*|scripts/agent/[^`)[:space:]]*|CLAUDE\.md)' | sort -u || true)
-  [ -z "$owned" ] || {
-    echo "issue #$ISSUE の「担当」に、クラウドのセッションが書けない領域が挙がっている。投入しない。" >&2
-    echo "$owned" | sed 's/^/  /' >&2
-    echo '  ユーザーが `main` へ直接入れる領域（.claude/parallel-work.md「司令塔の手入れは main へ直接 push する」）。' >&2
-    echo '  issue に `env:bridge` を付けるか（盤面はそれを見て投入先を決める。board-design.md 2.16）、担当から外して投入する。' >&2
-    exit 1
-  }
-fi
 
 node -e '
   const fs = require("node:fs");
