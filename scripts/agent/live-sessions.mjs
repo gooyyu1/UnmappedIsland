@@ -1,10 +1,10 @@
 // **畳まれていないセッション**を引く。「畳まれていない」の定義はここ1箇所だけが持つ。
 //
 //   import { liveSessions } from './live-sessions.mjs';
-//   liveSessions()   // → [{ id, status, bucket, tags: [] }]
+//   liveSessions()   // → [{ id, status, bucket, env, tags: [] }]
 //
 // コマンドとして呼ぶと1行1件のTSVを出す（入口は [`live-sessions.sh`](live-sessions.sh)）。
-// 1行が `<セッションID>\t<session_status>\t<status_bucket>\t<タグをカンマで繋いだもの>`。1本も
+// 1行が `<セッションID>\t<session_status>\t<status_bucket>\t<タグをカンマで繋いだもの>\t<環境>`。1本も
 // 無ければ**何も出さずに終了コード0**。**引けなかったときは終了コード1**で、呼び手は止まる側へ
 // 倒せる。
 //
@@ -42,6 +42,30 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const CCR_META = process.env.CCR_META ?? resolve(HERE, '../../.claude/ccr-meta.sh');
 
 /**
+ * どこで走っているか（`board-design.md` 2.16）。**既定のIDを持つのは
+ * [`ccr-env.sh`](ccr-env.sh) 1箇所**なので、直接叩いて読む——書き写すと、あちらを直したときに
+ * ここが黙って古いIDを見続ける。
+ *
+ * **知らない環境は `-`。** `cloud` に寄せない——盤面はこの値で「間違った場所に居るワーカー」を
+ * 畳むので、知らないものを既定へ落とすと、正しく走っているセッションを畳みうる。
+ *
+ * **引けなかったら止める。** 空の対応表を返すと全セッションが `-` へ落ち、**配り直しの仕組みが
+ * どこにも跡を残さずに死ぬ**——`-` は「食い違いを見ない」側なので、赤くも遅くもならない。
+ */
+function environments() {
+  // パスで呼ぶため PATH では差し替わらない。試験は `CCR_ENV` で差し替える。
+  const path = process.env.CCR_ENV ?? resolve(HERE, 'ccr-env.sh');
+  const call = runBash(path, [], { capture: true });
+  if (call.status !== 0) throw new Error(`ccr-env.sh を起こせなかった: ${path}`);
+  const found = {};
+  for (const line of call.stdout.split(/\r?\n/)) {
+    const at = line.indexOf('=');
+    if (at > 0) found[line.slice(at + 1)] = line.slice(0, at) === 'BRIDGE_ENV' ? 'bridge' : 'cloud';
+  }
+  return found;
+}
+
+/**
  * `list_sessions` を1ページ引いて、応答のJSONを返す。引けなければ `undefined`。**引き方を持つのは
  * ここ1箇所**——1ページで足りる呼び手（[`board.mjs`](board.mjs)）も、ここを通る。
  *
@@ -66,7 +90,8 @@ export class LiveSessionsError extends Error {
 }
 
 /** 畳まれていないセッションを、新しい順に全部返す。 */
-export function liveSessions({ page: fetch = listSessions } = {}) {
+export function liveSessions({ page: fetch = listSessions, envs = environments } = {}) {
+  const known = envs();
   const live = [];
   let after = '';
   for (;;) {
@@ -79,6 +104,7 @@ export function liveSessions({ page: fetch = listSessions } = {}) {
         id: session.id,
         status: session.session_status ?? '-',
         bucket: session.status_bucket ?? '-',
+        env: known[session.environment_id] ?? '-',
         tags: [...(session.tags ?? [])],
       });
     }
@@ -93,7 +119,8 @@ export function liveSessions({ page: fetch = listSessions } = {}) {
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const lines = liveSessions().map(
-      (session) => `${session.id}\t${session.status}\t${session.bucket}\t${session.tags.join(',')}`,
+      (session) =>
+        `${session.id}\t${session.status}\t${session.bucket}\t${session.tags.join(',')}\t${session.env}`,
     );
     if (lines.length > 0) process.stdout.write(`${lines.join('\n')}\n`);
   } catch (error) {

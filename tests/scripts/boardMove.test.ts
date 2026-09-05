@@ -22,7 +22,14 @@ interface Board {
   mainChecks?: readonly unknown[];
   prs?: readonly unknown[];
   issues?: readonly unknown[];
-  sessions?: readonly { id: string; status: string; bucket: string; tags: readonly string[] }[];
+  sessions?: readonly {
+    id: string;
+    status: string;
+    bucket: string;
+    /** どこで走っているか（`cloud` / `bridge`、引けなければ `-`）。省いた盤面は環境を見ない。 */
+    env?: string;
+    tags: readonly string[];
+  }[];
   /** 生きたワーカーの担当 issue のうち、開いている一覧に載っていなかったものの `state`。 */
   issueStates?: Record<number, string>;
   /** PRごとの、そのPRを書いたセッション（コミットの `Claude-Session:` トレーラ）。 */
@@ -462,6 +469,86 @@ describe('board-move.mjs', () => {
       sessions: [idle('session_a', 'task-8')],
     };
     expect(moves(board)).toEqual(['NOTE 1件の task が、書くセッション（session_a）の空きを待っている']);
+  });
+
+  // 走らせる先は issue のラベルにある（2.16）。盤面は投入先を引数の形で寄越し、`board-round.mjs`
+  // はそれをそのまま `dispatch-task.sh` へ渡す。
+  it('env:bridge の issue は、ブリッジへ投入する', () => {
+    const board = { issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }] };
+    expect(moves(board)).toEqual(['TASK 9 --bridge']);
+  });
+
+  // **既定へ落とさない。** 落とすと、ブリッジで走らせるはずの仕事がクラウドで承認待ちになり、
+  // 止まった理由がラベルの側に残らない（2.16.1）。
+  it('知らない env: の issue は配らず、覚え書きを出す', () => {
+    const board = { issues: [{ number: 9, ...label('task', 'env:mars'), blockedBy: { nodes: [] } }] };
+    expect(moves(board)).toEqual(['NOTE issue #9 の `env:mars` は知らない宛先']);
+  });
+
+  it('env: が重ねて付いた issue も配らない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'env:bridge', 'env:cloud'), blockedBy: { nodes: [] } }],
+    };
+    expect(moves(board)).toEqual(['NOTE issue #9 に `env:` が重ねて付いている']);
+  });
+
+  // クラウドで走り出した後に `env:bridge` が付いたら、そこはもうこの仕事の場所ではない（2.16.2）。
+  // 畳めば枠が空き、次の周が正しい先で立て直す。
+  it('走らせる先が食い違ったワーカーは畳む', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }],
+      sessions: [{ ...idle('session_a', 'task-9'), env: 'cloud' }],
+    };
+    expect(moves(board)).toEqual(['ARCHIVE session_a moved:9']);
+  });
+
+  it('走らせる先が合っているワーカーは畳まない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }],
+      sessions: [{ ...idle('session_a', 'task-9'), env: 'bridge' }],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
+  });
+
+  // **知らないことを「違う」として読まない。** 引けなかった環境を食い違いと読むと、正しく走って
+  // いるセッションが落ちる。
+  it('環境を引けなかったワーカーは畳まない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }],
+      sessions: [{ ...idle('session_a', 'task-9'), env: '-' }],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
+  });
+
+  // **畳めるのはクラウドのセッションだけ**（`archive-session.sh` はブリッジを `KEPT` にする）。
+  // 出しても畳まれず、**指紋だけが残ってそのワーカーが二度と起こされず人へも返らなくなる。**
+  // `env:` の付かない issue をブリッジで走らせる形は実在する（棚卸し役・手元からの投入）ので、
+  // 既定の `cloud` との食い違いがそのまま当たる。
+  it('ブリッジのワーカーは、走らせる先が食い違っていても畳まない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task'), blockedBy: { nodes: [] } }],
+      sessions: [{ ...idle('session_a', 'task-9'), env: 'bridge' }],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
+  });
+
+  // **PRを出した後は動かさない**（2.16.2）。畳むと、そのPRの直しを頼む相手が居なくなる。
+  it('PRを出した後のワーカーは、走らせる先が食い違っていても畳まない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }],
+      prs: [pr(10, label('収束せず'))],
+      sessions: [{ ...idle('session_a', 'task-9'), env: 'cloud' }],
+    };
+    expect(moves(board)).toEqual([]);
+  });
+
+  // 畳んでも次の周は投入で止まるので、枠を空ける意味が無い（2.16.2）。
+  it('配り直す先が無ければ、食い違っていても畳まない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'env:mars'), blockedBy: { nodes: [] } }],
+      sessions: [{ ...idle('session_a', 'task-9'), env: 'cloud' }],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
   });
 
   // 走っているセッションが持っている issue は「投入済み」なので、待ちにも数えない（1.2）。
