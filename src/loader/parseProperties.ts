@@ -15,9 +15,9 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { withYamlContext, parseNumberOrSymbol } from './parseCommon';
+import { withYamlContext, parseNumberOrSymbol, parseSubjectRoot } from './parseCommon';
 import { parseActiveEffectBody } from './parseActiveEffects';
-import { parseConditionList, parseSubjectRoot } from './parseConditions';
+import { parseConditionList } from './parseConditions';
 import { parsePassiveInto } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { ALERT_LEVELS } from '../domain/AlertLevel';
