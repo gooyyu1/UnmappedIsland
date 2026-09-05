@@ -36,5 +36,8 @@ fi
 
 [ -n "$context" ] || exit 0
 
-jq -n --arg c "$context" \
-  '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $c}}'
+# **本文を `--arg` で渡さない。** 記録は伸びる一方で、argvの単一引数の上限を越えると jq が落ちる。
+# **落ちてもセッションは普通に起動する**ので、価値観が1文字も入らないまま走り出したことに誰も
+# 気づけない。builtin の printf は exec しないため、標準入力へ流すこの形なら長さに縛られない。
+printf '%s' "$context" |
+  jq -Rs '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: .}}'
