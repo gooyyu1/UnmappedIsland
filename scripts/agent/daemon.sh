@@ -114,6 +114,23 @@ gather() {
     >"$WORK/prs.json" || return 1
   gh issue list --state open --limit 100 --json number,labels,blockedBy \
     >"$WORK/issues.json" || return 1
+
+  # 差し戻す相手は、そのPRのコミットの `Claude-Session:` トレーラで引く（2.11）。**上の一覧には
+  # 混ぜられない**——`gh pr list --json commits` はPRごとに全コミットを取りに行き、GraphQL の
+  # ノード数の上限（50万）を超えて何も返らなくなる。末尾の何本かだけを指名すれば1回で足りる。
+  #
+  # **拾うのは、トレーラを持つ最後のコミット。** 手が変われば新しいほうが今の書き手。
+  #
+  # **引けなかった周は空にして進む。** 差し戻す相手が分からないだけで、他の手は打てる
+  # （`board-move.mjs` が覚え書きを出す）。
+  gh api graphql \
+    -f query='query($owner:String!,$name:String!){repository(owner:$owner,name:$name){pullRequests(states:OPEN,first:50){nodes{number commits(last:20){nodes{commit{message}}}}}}}' \
+    -F owner='{owner}' -F name='{repo}' \
+    --jq '.data.repository.pullRequests.nodes[] | .number as $n
+      | ([.commits.nodes[].commit.message | split("\n")[]
+        | select(startswith("Claude-Session:")) | split("/") | last] | last) as $id
+      | select($id != null) | "\($n)\t\($id)"' \
+    >"$WORK/pr-sessions.tsv" 2>/dev/null || : >"$WORK/pr-sessions.tsv"
   # **列がずれていたら、その周ごと捨てる**（下の `error`）。デーモンは動き出したときの
   # [`daemon.sh`](daemon.sh) を握ったまま回るので、**走っている最中に
   # [`live-sessions.sh`](live-sessions.sh) の列を足すと、こちらだけが古いまま噛み合う。**
@@ -143,12 +160,15 @@ gather() {
   jq -n --slurpfile prs "$WORK/prs.json" --slurpfile issues "$WORK/issues.json" \
     --slurpfile taken "$LEDGER" --rawfile live "$WORK/live.tsv" \
     --rawfile states "$WORK/issue-states.tsv" \
+    --rawfile prsessions "$WORK/pr-sessions.tsv" \
     --arg settled "$(date -u -d "-$SETTLE_MINUTES minutes" +%Y-%m-%dT%H:%M:%SZ)" '{
       settledBefore: $settled,
       prs: $prs[0],
       issues: $issues[0],
       taken: $taken[0],
       issueStates: ($states | gsub("\r"; "") | split("\n") | map(select(length > 0))
+        | map(split("\t") | {key: .[0], value: .[1]}) | from_entries),
+      prSessions: ($prsessions | gsub("\r"; "") | split("\n") | map(select(length > 0))
         | map(split("\t") | {key: .[0], value: .[1]}) | from_entries),
       sessions: ($live | gsub("\r"; "") | split("\n") | map(select(length > 0))
         | map(split("\t")

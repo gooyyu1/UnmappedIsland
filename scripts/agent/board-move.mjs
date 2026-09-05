@@ -21,6 +21,7 @@
 //     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
 //                     "bucket": "SESSION_STATUS_BUCKET_…", "tags": ["task-1"] } ],
 //     "issueStates": { "<issue番号>": "OPEN | CLOSED" },
+//     "prSessions":  { "<PR番号>": "session_…" },
 //     "taken":    { "<手のキー>": "<前に打ったときの指紋>" } }
 //
 // ## 同じ手を、同じ盤面へ二度打たない
@@ -57,6 +58,8 @@ const input = JSON.parse(readFileSync(0, 'utf8'));
 const taken = input.taken ?? {};
 /** 生きているワーカーの担当 issue のうち、**開いている一覧に載っていなかったもの**の状態（2.10）。 */
 const issueStates = input.issueStates ?? {};
+/** PRごとの、そのPRを書いたセッション（コミットの `Claude-Session:` トレーラ。2.11）。 */
+const prSessions = input.prSessions ?? {};
 
 const names = (item) => (item.labels ?? []).map((label) => label.name);
 
@@ -67,6 +70,20 @@ function closes(body) {
 
 const alive = (tag) => input.sessions.filter((session) => session.tags.includes(tag));
 const busy = (tag) => alive(tag).some(busySession);
+
+/**
+ * 差し戻す相手（2.11）。引くのは**コミットの `Claude-Session:` トレーラ**——`Closes` は、そのPRで
+ * どの issue が閉じるかの印であって、誰が書いたかを指していない。畳まれたセッションはここに
+ * 居ないので、そのまま「起こせない」になる（1.2）。
+ *
+ * **`Closes` とタグで引く側はつなぎ。** トレーラの規則が入る前に出たPRと、手で立てたPRには
+ * トレーラが無い。**開いているPRが全部トレーラを持つようになったら、この分岐ごと消す。**
+ */
+function menders(pr) {
+  const id = prSessions[String(pr.number)];
+  if (id !== undefined) return input.sessions.filter((session) => session.id === id);
+  return closes(pr.body).flatMap((issue) => alive(`task-${issue}`));
+}
 
 /**
  * CIの色。**チェックが1つも登録されないPRがある**（`tests.yml` の `paths` に当たらない差分）ので、
@@ -116,10 +133,12 @@ for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
         : null;
 
   if (reason !== null) {
-    // 直す相手は、その issue へ投入されたセッション。**畳まれていれば起こせない**——畳むのは
+    // 直す相手は、そのPRを書いたセッション。**畳まれていれば起こせない**——畳むのは
     // 「この仕事は終わった」と判断した側の明示の操作なので、機械では戻さない（1.2）。
-    const holders = closes(pr.body).flatMap((issue) => alive(`task-${issue}`));
+    const holders = menders(pr);
     if (holders.length === 0) {
+      // **「名乗っていない」と「畳まれている」を、まだ書き分けていない。** 分けるには覚え書きの文面を
+      // 変えることになり、それを見張っている試験が #1538 のファイル分割の最中なので、入った後に回す。
       notes.push(`PR #${pr.number} は${reason}が、直す相手のセッションが居ない`);
       continue;
     }
