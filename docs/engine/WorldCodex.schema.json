@@ -319,7 +319,7 @@
       "additionalProperties": false
     },
     "worsening_direction": {
-      "description": "どちらへ動くと悪いか（GameElementDefinition.md 6.8節）。gaugeの両端とstagesのalertも同じ向きを述べるので、2つ以上が述べていて食い違えばロード時エラー。書かないとdownと同じに扱われる。",
+      "description": "どちらへ動くと悪いか（GameElementDefinition.md 6.8節）。gaugeの両端とstagesのalertも同じ向きを述べるので、2つ以上が述べていて食い違えばロード時エラー。書かなければ向きは他の宣言に委ね、どれも述べていなければdown。",
       "enum": [
         "up",
         "down"

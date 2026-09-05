@@ -432,8 +432,8 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(prop.isInStage(threshold - 1, 'too_heavy')).toBe(false);
     });
 
-    // travel_delayはバーにも段にもしないので、worsensで自分から名乗るしかない（6.8節）。
-    it.each(['load', 'pain', 'homesickness', 'travel_delay'])(
+    // travel_delayとchill_pointはバーにも段にもしないので、worsensで自分から名乗るしかない（6.8節）。
+    it.each(['load', 'pain', 'homesickness', 'travel_delay', 'chill_point'])(
       '%sは増えるほど悪い値として扱われる',
       (propertyName) => {
         // バーの向きと増減の記号の色が反転する（StatusArea.md）。

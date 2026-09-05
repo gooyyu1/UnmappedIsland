@@ -62,8 +62,10 @@ export class GaugeDef {
   }
 
   /**
-   * 値が増えるほど悪いか（変化の帯をどちら向きに出すか）。**両端の宣言から決まる**ので、
-   * stagesのalertから導く`alertDirection`とは別に書かせない（両者の食い違いはロード時に弾く）。
+   * 値が増えるほど悪いか（変化の帯をどちら向きに出すか）。**両端の宣言だけから決まる**——同じ事実を
+   * 述べる他の宣言（`worsens`・stagesのalert）と突き合わせるのは持ち主の側で、食い違いはロード時に
+   * 弾く（PropertyDef.worsensUpward）。**向きを持たない両端neutralでは意味を持たない**ので、
+   * 訊く前に`hasDirection`を見る。
    */
   get worsensUpward(): boolean {
     return this.atMax === 'bad';
@@ -281,21 +283,24 @@ export class PropertyDef {
   readonly hasStageArt: boolean;
 
   /**
-   * 値がどちらへ動くと悪いか。**専用の宣言は持たず、`stages`のalertから導く**——「どちらが危ないか」は
-   * 既にalertが宣言しているので、同じことを二度書かせない。段を下から上へ見て、深刻さが単調に上がるなら
+   * `stages`のalertが述べている、値がどちらへ動くと悪いか。段を下から上へ見て、深刻さが単調に上がるなら
    * `up`（負荷など）、単調に下がるなら`down`（満腹度など）。上下どちらの端も悪い山なり・谷なりの並びは
    * `mixed`で、バーの向きを決められない（rangeを持つプロパティでは、ロード時にこれを拒む）。
    *
-   * 見せ方（帯の向き・増減の記号の色、StatusArea.md）のほかに、**収支表がこれを見る**
-   * ——増える側が悪い値は1日に賄う量に数えない（下の`worsensUpward`と`analysis/balanceTables.ts`の
-   * `dailyNeedsOf`、docs/diagnostics/BalanceStats.md「何を「1日に要る量」と数えるか」）。
+   * **alertが向きを何も述べていなければundefined**——段が無い・全段が同じ域・値の並びを持たない
+   * シンボル型（6.6節）。既定へ倒すのはここではなく`worsensUpward`の仕事で、ここが「述べていない」と
+   * 「減ると悪い」を1つの値にすると、他の宣言と突き合わせる側がその2つを見分けられなくなる。
    */
-  readonly alertDirection: AlertDirection;
+  readonly alertDirection: AlertDirection | undefined;
 
   /**
-   * 値が増えるほど悪いか。**向きを述べる宣言は複数ある**（`worsens`・ゲージの両端・段のalert）が、
+   * 値が増えるほど悪いか。**向きは複数の宣言が述べうる**（`worsens`・ゲージの両端・段のalert）が、
    * どれも同じ1つの事実を言うので、2つ以上が述べていれば同じ答えでなければならない
    * （食い違いはロード時に弾く、6.8節）。どれも述べていなければ既定の「減ると悪い」。
+   *
+   * 見せ方（帯の向き・増減の記号の色、StatusArea.md）のほかに、**収支表がこれを見る**
+   * ——増える側が悪い値は1日に賄う量に数えない（`analysis/balanceTables.ts`の`dailyNeedsOf`、
+   * docs/diagnostics/BalanceStats.md「何を「1日に要る量」と数えるか」）。
    */
   readonly worsensUpward: boolean;
 
@@ -391,12 +396,7 @@ export class PropertyDef {
     this.fallbackStage = isSymbolic ? undefined : stages.find((stage) => stage.min === undefined);
     this.alertDirection = PropertyDef.deriveAlertDirection(stages, isSymbolic);
     this.hasStageArt = stages.some((stage) => stage.art !== undefined);
-    this.worsensUpward = PropertyDef.resolveWorsensUpward(
-      name,
-      worsens,
-      gauge,
-      stages.length > 0 ? this.alertDirection : undefined,
-    );
+    this.worsensUpward = PropertyDef.resolveWorsensUpward(name, worsens, gauge, this.alertDirection);
 
     // rangeを持つプロパティはバーとして描かれる（6.4節）。上下どちらの端も悪い並びでは、塗りの向きが
     // 「良い方へ伸びる」とも「悪い方へ伸びる」とも決められない。両側が悪い量（体温など）は、値そのもの
@@ -409,12 +409,15 @@ export class PropertyDef {
   }
 
   /**
-   * 数値の段を下から上へ並べ、alertの深刻さがどちらへ動くかを見る（シンボル型の段は大小関係を持たない
-   * ため除く）。単調に上がるならup、単調に下がるならdown、どちらでもなければmixed。
-   * 深刻さが動かない（段が無い・全段が同じ域）場合は、満タンが良いという既定に合わせてdown。
+   * 数値の段を下から上へ並べ、alertの深刻さがどちらへ動くかを見る（シンボル型は値の並びを持たない
+   * ため、何も述べていない）。単調に上がるならup、単調に下がるならdown、どちらでもなければmixed。
+   * **深刻さが動かない（段が無い・全段が同じ域）なら、alertは向きを何も述べていない**（undefined）。
    */
-  private static deriveAlertDirection(stages: readonly PropertyStage[], isSymbolic: boolean): AlertDirection {
-    if (isSymbolic) return 'down';
+  private static deriveAlertDirection(
+    stages: readonly PropertyStage[],
+    isSymbolic: boolean,
+  ): AlertDirection | undefined {
+    if (isSymbolic) return undefined;
 
     const severities = [...stages]
       .sort((a, b) => (a.lowerBound ?? Number.NEGATIVE_INFINITY) - (b.lowerBound ?? Number.NEGATIVE_INFINITY))
@@ -428,7 +431,8 @@ export class PropertyDef {
     }
 
     if (rises && falls) return 'mixed';
-    return rises ? 'up' : 'down';
+    if (rises) return 'up';
+    return falls ? 'down' : undefined;
   }
 
   /**
@@ -436,8 +440,7 @@ export class PropertyDef {
    * 2つ以上あって食い違えばロード時に弾く**——片方だけが正しく見えて、どちらを直すべきかが分からなく
    * なる。どれも述べていなければ、満タンが良いという既定に合わせて「減ると悪い」。
    *
-   * `stagesAlertDirection`は段を1つでも宣言しているときのその向きで、`mixed`（両端が悪い並び）は
-   * 向きを決められないので何も述べていないものとして扱う。
+   * `mixed`（両端が悪い並び）は向きを決められないので、何も述べていないものとして扱う。
    */
   private static resolveWorsensUpward(
     name: string,

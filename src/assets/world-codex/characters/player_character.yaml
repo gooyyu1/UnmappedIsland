@@ -300,7 +300,10 @@ traits:
       # 寒さの入口（docs/engine/VitalsSystem.md 8.3節）。これを下回る気温の場所に居る間だけ、
       # 上のwarmthが削られる。
       # 素は16℃で、衣服・寝床が入ればそれらがmodifyで押し下げる。
-      chill_point: {value: 16}
+      #
+      # **押し下げる側が良いので、向きを自分で名乗る**（6.8節）。歩みの遅れと同じくバーにも段にも
+      # しないので、名乗らなければ既定の「減ると悪い」になる。
+      chill_point: {value: 16, worsens: up}
       # 満腹感（docs/engine/DigestionSystem.md 2節）。**単位はmL——胃に入っているかさそのもの**で、
       # エネルギーではない。食べたかさぶん増え、tickで減る。
       #
