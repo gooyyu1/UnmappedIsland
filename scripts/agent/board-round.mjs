@@ -194,9 +194,12 @@ export function round({
   }
   const livePath = join(stateDir, 'live-sessions.tsv');
   writeFileSync(livePath, live.map((session) => `${formatLive(session)}\n`).join(''));
-  process.env.LIVE_SESSIONS_TSV = livePath;
+  // **在り処は、叩く相手にだけ渡す。** `process.env` を書き換えると、同じプロセスで動く他の呼び手
+  // にも見える（`spawn.mjs`）。
+  const runScriptHere = (name, args, options) =>
+    runScript(name, args, { ...options, env: { LIVE_SESSIONS_TSV: livePath } });
 
-  const spent = runScript('usage-record.sh', [], { capture: true });
+  const spent = runScriptHere('usage-record.sh', [], { capture: true });
   if (spent.status !== 0) log('使用量を引けなかった');
   for (const line of spent.stdout.split(/\r?\n/)) {
     if (line !== '') log(`消費 ${line}`);
@@ -228,7 +231,7 @@ export function round({
     const [kind, ...args] = line.split(' ');
     const [a = '', b = '', c = ''] = args;
     log(`打つ: ${kind} ${a} ${b} ${c}`);
-    if (play(kind, args, { runScript, gh, remember, log, echo })) {
+    if (play(kind, args, { runScript: runScriptHere, gh, remember, log, echo })) {
       log(`打てた: ${kind} ${a}`);
       return true;
     }

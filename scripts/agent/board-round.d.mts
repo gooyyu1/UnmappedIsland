@@ -9,7 +9,7 @@ export interface RoundDeps {
   runScript?: (
     name: string,
     args: readonly string[],
-    options?: { input?: string; capture?: boolean },
+    options?: { input?: string; capture?: boolean; env?: Record<string, string> },
   ) => ScriptResult;
   gh?: (args: readonly string[], options?: { allowFail?: boolean }) => string | undefined;
   sessions?: () => readonly unknown[];

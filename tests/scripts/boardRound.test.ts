@@ -21,6 +21,8 @@ interface Session {
   readonly status: string;
   readonly bucket: string;
   readonly tags: readonly string[];
+  /** どこで走っているか（`cloud` / `bridge`）。この周の一覧へそのまま載る。 */
+  readonly env?: string;
 }
 
 interface World {
@@ -60,6 +62,10 @@ interface Result {
   /** `gh issue comment` が渡したファイルの中身。**消される前に読む**（打ち手が後片付けする）。 */
   readonly comments: readonly string[];
   readonly ledger: Record<string, string>;
+  /** 叩いたスクリプトへ足された環境変数（この周の一覧の在り処）。 */
+  readonly envs: readonly (Record<string, string> | undefined)[];
+  /** この周が書いた一覧。 */
+  readonly liveTsv: string | undefined;
 }
 
 const NOW = new Date('2026-09-05T02:00:00Z');
@@ -109,7 +115,13 @@ function playRound(world: World = {}): Result {
       });
     };
 
-    const runScript = (name: string, args: readonly string[], options?: { capture?: boolean }) => {
+    const envs: (Record<string, string> | undefined)[] = [];
+    const runScript = (
+      name: string,
+      args: readonly string[],
+      options?: { capture?: boolean; env?: Record<string, string> },
+    ) => {
+      envs.push(options?.env);
       if (name === 'usage-record.sh') return { status: 0, stdout: '' };
       calls.push([name, ...args].join(' '));
       if ((world.fails ?? []).includes(name)) return { status: 1, stdout: '' };
@@ -138,6 +150,7 @@ function playRound(world: World = {}): Result {
     });
 
     const ledgerPath = join(stateDir, 'taken.json');
+    const livePath = join(stateDir, 'live-sessions.tsv');
     return {
       ok,
       log: out.join('\n'),
@@ -145,6 +158,8 @@ function playRound(world: World = {}): Result {
       gh: ghCalls,
       comments,
       ledger: existsSync(ledgerPath) ? JSON.parse(readFileSync(ledgerPath, 'utf-8')) : {},
+      envs,
+      liveTsv: existsSync(livePath) ? readFileSync(livePath, 'utf-8') : undefined,
     };
   } finally {
     rmSync(stateDir, { recursive: true, force: true });
@@ -365,5 +380,39 @@ describe('board-round.mjs', () => {
 
     expect(result.calls).toEqual([]);
     expect(result.log).toContain('打たない手: MERGE 10');
+  });
+
+  /**
+   * **一覧はこの周に1回だけ引き、叩く相手へはファイルで渡す**（`.claude/board-design.md` 1.7）。
+   * `list_sessions` は1000回/時で頭打ちになるので、要る側が別々に引くと盤面の回る速さがそこで決まる。
+   */
+  describe('この周の一覧を、叩くスクリプトへ渡す', () => {
+    it('引いた一覧をファイルへ置き、在り処を環境変数で渡す', () => {
+      const result = playRound({
+        prs: [pr(10, passed)],
+        sessions: [
+          {
+            id: 'session_a',
+            status: 'SESSION_STATUS_RUNNING',
+            bucket: 'B',
+            tags: ['task-1', 'review-2'],
+            env: 'cloud',
+          },
+        ],
+      });
+
+      expect(result.liveTsv).toBe('session_a\tSESSION_STATUS_RUNNING\tB\ttask-1,review-2\tcloud\n');
+      for (const env of result.envs) expect(env?.LIVE_SESSIONS_TSV).toMatch(/live-sessions\.tsv$/);
+    });
+
+    // **`process.env` は書き換えない。** 同じプロセスで動く他の呼び手にも見えてしまう
+    // （渡した覚えの無いところへ効き、試験は並ぶ順で落ちる）。
+    it('自分のプロセスの環境変数は書き換えない', () => {
+      expect(process.env.LIVE_SESSIONS_TSV).toBeUndefined();
+
+      playRound({ prs: [pr(10, passed)] });
+
+      expect(process.env.LIVE_SESSIONS_TSV).toBeUndefined();
+    });
   });
 });

@@ -44,11 +44,14 @@ export function gh(args, { allowFail = false } = {}) {
  * bash のスクリプトを1本叩く。`capture` を立てなければ**出力はそのまま流す**（デーモンのログは
  * 叩いたスクリプトの声を含む）。標準エラーは常に流す。
  */
-export function runBash(path, args, { input, capture = false } = {}) {
+export function runBash(path, args, { input, capture = false, env } = {}) {
   const call = spawnSync('bash', [posix(path), ...args], {
     input,
     encoding: 'utf8',
     maxBuffer: MAX_BUFFER,
+    // **足すぶんだけを受ける。** 呼び手が `process.env` を書き換えて渡す形にすると、同じプロセスで
+    // 動く他の呼び手にもそれが見え、**渡した覚えの無いところへ効く**（試験が並ぶと順序で落ちる）。
+    ...(env === undefined ? {} : { env: { ...process.env, ...env } }),
     stdio: [input === undefined ? 'ignore' : 'pipe', capture ? 'pipe' : 'inherit', 'inherit'],
   });
   announce(posix(path), call);
