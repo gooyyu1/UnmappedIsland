@@ -120,6 +120,9 @@ existing=$(gh pr list --state open --limit 50 --json number,body |
 # **見るのはクラウドへ投入するときだけ。** 止まる理由（承認）はクラウドにしか無く、盤面の道具そのものを
 # 直す仕事はブリッジで走らせる以外に置き場が無い。**ブリッジで走るなら、担当に挙がっているものは
 # 触ってよい**（`CLAUDE.md`「タスクの issue を渡されたとき」の例外）。
+#
+# **どこへ投入するかを決めるのはここではない。** 盤面が issue の `env:` から決めて引数で寄越す
+# （`.claude/board-design.md` 2.16）ので、ここは受け取った先に従うだけ。
 if [ "$WHERE" != "--bridge" ]; then
   owned=$(jq -r '.body' "$WORK/issue.json" | tr -d '\r' |
     awk '/^##[[:space:]]/ { inside = /^##[[:space:]]+担当[[:space:]]*$/; next } inside' |
@@ -128,7 +131,7 @@ if [ "$WHERE" != "--bridge" ]; then
     echo "issue #$ISSUE の「担当」に、クラウドのセッションが書けない領域が挙がっている。投入しない。" >&2
     echo "$owned" | sed 's/^/  /' >&2
     echo '  ユーザーが `main` へ直接入れる領域（.claude/parallel-work.md「司令塔の手入れは main へ直接 push する」）。' >&2
-    echo '  issue に「ブリッジで走らせる」と書いて --bridge で投入するか、担当から外して投入する。' >&2
+    echo '  issue に `env:bridge` を付けるか（盤面はそれを見て投入先を決める。board-design.md 2.16）、担当から外して投入する。' >&2
     exit 1
   }
 fi

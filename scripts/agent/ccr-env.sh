@@ -12,3 +12,10 @@
 
 CLOUD_ENV="${CLOUD_ENV:-env_01JEqw2RUbL6EFo4p8EgRLSC}"
 BRIDGE_ENV="${BRIDGE_ENV:-env_018uF5fo4jU3HVotrg51gqLe}"
+
+# **直接実行されたら値を出す。** node から読む口（[`live-sessions.mjs`](live-sessions.mjs)）で、
+# `source` したときは何も起きない。**書き写させないためにある**——既定値を向こうへ複製すると、
+# ここを直したときにあちらが黙って古いIDを見続ける。
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  printf 'CLOUD_ENV=%s\nBRIDGE_ENV=%s\n' "$CLOUD_ENV" "$BRIDGE_ENV"
+fi

@@ -203,10 +203,10 @@ describe('board-labels.yml の verdict', () => {
  * ラベルにならない**——issue は `task` が付いたままなので、盤面はそのまま次のセッションへ配り直し、
  * 返した意味が消える。
  */
-describe('board-labels.yml の returned', () => {
+describe('board-labels.yml の declared', () => {
   const ISSUE = '1376';
 
-  function runReturned(body: string): string[] {
+  function runDeclared(body: string): string[] {
     const work = mkdtempSync(join(tmpdir(), 'unmapped-island-returned-'));
     const dir = work.replace(/\\/g, '/');
     try {
@@ -230,8 +230,8 @@ esac
       const workflow = parse(readFileSync(WORKFLOW, 'utf-8')) as {
         jobs: Record<string, { steps: { run?: string }[] }>;
       };
-      const run = workflow.jobs.returned.steps.find((s) => s.run !== undefined)?.run;
-      if (run === undefined) throw new Error('returned ジョブに run: が無い');
+      const run = workflow.jobs.declared.steps.find((s) => s.run !== undefined)?.run;
+      if (run === undefined) throw new Error('declared ジョブに run: が無い');
       const step = join(work, 'step.sh');
       writeFileSync(step, run, 'utf-8');
 
@@ -257,21 +257,29 @@ esac
     }
   }
 
-  // 返す理由は選択肢が閉じていないので、1行目は前方一致で見る（2.15.2）。
+  // 名乗る理由は選択肢が閉じていないので、1行目は前方一致で見る（2.15.2）。
   it('1行目が [返却] で始まっていれば、判断待ち を付ける', () => {
-    expect(runReturned('[返却] 仕様が決まっておらず、仮決めもできない\n\n詳細')).toEqual([
+    expect(runDeclared('[返却] 仕様が決まっておらず、仮決めもできない\n\n詳細')).toEqual([
       `${ISSUE} --repo gooyyu1/UnmappedIsland --add-label 判断待ち`,
+    ]);
+  });
+
+  // **クラウドのセッションが盤面へ書ける経路はこれだけ**（2.16.2）——あちらはラベルを操作できない。
+  it('1行目が [ブリッジ] で始まっていれば、env:bridge を付ける', () => {
+    expect(runDeclared('[ブリッジ] .claude/parallel-work.md を直す必要がある\n\nここまで調べた')).toEqual([
+      `${ISSUE} --repo gooyyu1/UnmappedIsland --add-label env:bridge`,
     ]);
   });
 
   // **`task` は外さない**（2.15.2）。外すと、人が列へ戻すのに2タップ要る。
   it('task は外さない', () => {
-    expect(runReturned('[返却] 決められない').join('\n')).not.toContain('--remove-label task');
+    expect(runDeclared('[返却] 決められない').join('\n')).not.toContain('--remove-label task');
   });
 
-  it('返却の行でないコメントには何もしない', () => {
-    expect(runReturned('進捗です。あと少しで出せます。')).toEqual([]);
-    expect(runReturned('前置き\n[返却] 決められない')).toEqual([]);
+  it('名乗りの行でないコメントには何もしない', () => {
+    expect(runDeclared('進捗です。あと少しで出せます。')).toEqual([]);
+    expect(runDeclared('前置き\n[返却] 決められない')).toEqual([]);
+    expect(runDeclared('前置き\n[ブリッジ] 承認で止まる')).toEqual([]);
   });
 });
 

@@ -14,7 +14,7 @@
 //   RESUME  <セッションID> stall  <issue番号> <指紋>
 //   RETURN  <issue番号> <セッションID> <指紋>  … 起こしても動かないワーカーの仕事を人へ返す
 //   REVIEW  <PR番号> <指紋>
-//   TASK    <issue番号>
+//   TASK    <issue番号> [<投入先の引数>]     … 引数が無ければクラウド（2.16）
 //   NOTE    <人へ向けた1行>                  … 打つ手が無いことの説明。呼び手は記録するだけ
 //
 // **手を1行の文字列で返すのは、それがそのまま人の読む形だから。** `DRY_RUN` のログは この行を
@@ -27,7 +27,8 @@
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files ],
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
 //     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
-//                     "bucket": "SESSION_STATUS_BUCKET_…", "tags": ["task-1"] } ],
+//                     "bucket": "SESSION_STATUS_BUCKET_…", "env": "cloud | bridge | -",
+//                     "tags": ["task-1"] } ],
 //     "issueStates": { "<issue番号>": "OPEN | CLOSED" },
 //     "prSessions":  { "<PR番号>": "session_…" },
 //     "taken":    { "<手のキー>": "<前に打ったときの指紋>" } }
@@ -54,6 +55,20 @@
  * 手番が終わった後の要約から決まるので、どの値も「処理中」を意味しない。
  */
 const busySession = (session) => session.status === 'SESSION_STATUS_RUNNING';
+
+/**
+ * `env:<値>` が指す投入先（[`dispatch-task.sh`](dispatch-task.sh) へ渡す引数。2.16）。**盤面が
+ * 宛先を知っている値の一覧はここだけ**——GitHub のラベルが在るかとは別で、人は盤面の知らない
+ * `env:*` を作れる。ラベルの無い issue は `cloud` として引くので、既定も同じ表に載っている。
+ */
+const DISPATCH_TO = { cloud: '', bridge: '--bridge' };
+
+/** その issue が要求する環境（`env:` のラベル。無ければクラウド）。**重ねて付いていれば `undefined`。** */
+function wantedEnv(issue) {
+  const marks = (issue.labels ?? []).map((label) => label.name).filter((name) => name.startsWith('env:'));
+  if (marks.length > 1) return undefined;
+  return marks.length === 0 ? 'cloud' : marks[0].slice('env:'.length);
+}
 
 const names = (item) => (item.labels ?? []).map((label) => label.name);
 
@@ -108,6 +123,31 @@ export function moves(input) {
   function menders(pr) {
     const id = prSessions[String(pr.number)];
     return id === undefined ? [] : input.sessions.filter((session) => session.id === id);
+  }
+
+  /**
+   * その仕事がワーカーの手を離れた形（2.10.2）。まだ持っているなら `undefined`。**呼ぶのは手が
+   * 空いているワーカーに対してだけ**——走っている最中のセッションは、どの形でも畳まない。
+   */
+  function leaving(session, issue, open) {
+    if (issueStates[String(issue)] === 'CLOSED') return `closed:${issue}`;
+    if (open === undefined) return undefined;
+    if (names(open).includes('判断待ち')) return `returned:${issue}`;
+
+    // **走らせる先が食い違ったら、そこはこの仕事の場所ではない**（2.16.2）。畳めば次の周に配り直され、
+    // 正しい環境で立ち上がる。
+    //
+    // **PRを出した後のワーカーは動かさない。** 配り直しても `dispatch-task.sh` が既に開いている
+    // PRを見て止めるだけで、**畳んだぶん、そのPRの直しを頼む相手が居なくなる**（2.11）。
+    if (input.prs.some((pr) => closes(pr.body).includes(issue))) return undefined;
+    const where = wantedEnv(open);
+    // **配り直す先が無いなら動かさない。** 知らない宛先も `env:` の重なりも、畳んだところで
+    // 次の周は投入で止まる——空いた枠を無駄にするだけで、直るのは人が触ったとき。
+    if (where === undefined || DISPATCH_TO[where] === undefined) return undefined;
+    // **環境を引けなかったもの（`-`）は動かさない。** 知らないことを「違う」として読むと、
+    // 正しく走っているセッションを畳む（`live-sessions.mjs` の「知らない環境は `-`」）。
+    if (session.env === undefined || session.env === '-') return undefined;
+    return session.env === where ? undefined : `moved:${issue}`;
   }
 
   /**
@@ -253,19 +293,13 @@ export function moves(input) {
 
     for (const tag of session.tags) {
       if (!tag.startsWith('task-')) continue;
-      const held = tag.slice('task-'.length);
-      const issue = Number(held);
+      const issue = Number(tag.slice('task-'.length));
       const open = input.issues.find((item) => item.number === issue);
 
       // **その issue がまだこのワーカーの仕事かは issue の側にある**（2.10）。**PRがマージされたか
       // では決めない**——手でマージされたPRの後片付けは走らないので、条件をそちらに繋ぐとワーカーが
       // 永久に残る。**畳んだ理由が読めるように、仕事でなくなった形ごとに指紋を分ける**（2.10.2）。
-      const done =
-        issueStates[held] === 'CLOSED'
-          ? `closed:${issue}`
-          : open !== undefined && names(open).includes('判断待ち')
-            ? `returned:${issue}`
-            : undefined;
+      const done = leaving(session, issue, open);
       if (done !== undefined) {
         if (taken[`archive:${session.id}`] === done) break;
         archives.push(`ARCHIVE ${session.id} ${done}`);
@@ -304,8 +338,28 @@ export function moves(input) {
     // 既にセッションが持っている issue は配り直さない（「投入済みか」は生死で見る。1.2）。
     .filter((issue) => alive(`task-${issue.number}`).length === 0);
 
+  /**
+   * その issue をどこへ投入するか（`dispatch-task.sh` の引数）。**知らない `env:*` は配らない**
+   * ——既定のクラウドへ落とすと、ブリッジで走らせるはずの仕事が承認待ちで止まり、**止まった理由が
+   * ラベルの側に残らない**。返す `undefined` は「配れない」。
+   */
+  function destination(issue) {
+    const where = wantedEnv(issue);
+    if (where === undefined) {
+      notes.push(`issue #${issue.number} に \`env:\` が重ねて付いている`);
+      return undefined;
+    }
+    const flag = DISPATCH_TO[where];
+    if (flag === undefined) notes.push(`issue #${issue.number} の \`env:${where}\` は知らない宛先`);
+    return flag;
+  }
+
   if (writing.length === 0) {
-    for (const issue of ready) tasks.push(`TASK ${issue.number}`);
+    for (const issue of ready) {
+      const flag = destination(issue);
+      if (flag === undefined) continue;
+      tasks.push(flag === '' ? `TASK ${issue.number}` : `TASK ${issue.number} ${flag}`);
+    }
   } else if (ready.length > 0) {
     // **待たせている相手を毎周書く。** 起こしても動かないセッションが1本残ると、`stall` は指紋で
     // 1回しか出ないので、黙ったまま TASK が永久に止まる。ログに何も出ないと「やることが無い周」と
