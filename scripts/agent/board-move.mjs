@@ -144,10 +144,15 @@ export function moves(input) {
     // **配り直す先が無いなら動かさない。** 知らない宛先も `env:` の重なりも、畳んだところで
     // 次の周は投入で止まる——空いた枠を無駄にするだけで、直るのは人が触ったとき。
     if (where === undefined || DISPATCH_TO[where] === undefined) return undefined;
-    // **環境を引けなかったもの（`-`）は動かさない。** 知らないことを「違う」として読むと、
+    // **畳めるのはクラウドのセッションだけ。** [`archive-session.sh`](archive-session.sh) は
+    // ブリッジのセッションを必ず `KEPT` にするので、出しても畳まれず**指紋だけが残り、そのワーカーは
+    // 二度と起こされず人へも返らなくなる**。`env:` の付かない issue をブリッジで走らせる形は実在
+    // する（棚卸し役・手元からの投入）ので、既定の `cloud` との食い違いがそのまま当たる。
+    //
+    // **環境を引けなかったもの（`-`）もここで外れる。** 知らないことを「違う」として読むと、
     // 正しく走っているセッションを畳む（`live-sessions.mjs` の「知らない環境は `-`」）。
-    if (session.env === undefined || session.env === '-') return undefined;
-    return session.env === where ? undefined : `moved:${issue}`;
+    if (session.env !== 'cloud') return undefined;
+    return where === 'cloud' ? undefined : `moved:${issue}`;
   }
 
   /**

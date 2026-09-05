@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { liveSessions } from '../../scripts/agent/live-sessions.mjs';
@@ -92,6 +93,17 @@ describe('live-sessions.mjs', () => {
     } finally {
       delete process.env.CLOUD_ENV;
       delete process.env.BRIDGE_ENV;
+    }
+  });
+
+  // **黙って空の対応表を返させない。** 全セッションが `-`（＝食い違いを見ない側）へ落ちるだけなので、
+  // 配り直しの仕組みが赤くも遅くもならずに死ぬ。
+  it('ccr-env.sh を起こせなければ止まる', () => {
+    process.env.CCR_ENV = resolve(__dirname, 'no-such-ccr-env.sh');
+    try {
+      expect(() => liveSessions({ page: page() })).toThrow(/ccr-env\.sh/);
+    } finally {
+      delete process.env.CCR_ENV;
     }
   });
 });

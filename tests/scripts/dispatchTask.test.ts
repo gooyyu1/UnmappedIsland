@@ -107,7 +107,10 @@ function prompt(issue: number, world: World = {}): string {
 
 describe('dispatch-task.sh', () => {
   it('関門をどれも踏まなければ、渡す引数まで組み立てる', () => {
-    expect(run(1415).code).toBe(0);
+    const result = run(1415);
+
+    expect(result.code).toBe(0);
+    expect(result.stderr).toBe('');
   });
 
   it('その issue を閉じるPRが既に開いていれば、投入しない', () => {

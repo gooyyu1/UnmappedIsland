@@ -520,6 +520,18 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
   });
 
+  // **畳めるのはクラウドのセッションだけ**（`archive-session.sh` はブリッジを `KEPT` にする）。
+  // 出しても畳まれず、**指紋だけが残ってそのワーカーが二度と起こされず人へも返らなくなる。**
+  // `env:` の付かない issue をブリッジで走らせる形は実在する（棚卸し役・手元からの投入）ので、
+  // 既定の `cloud` との食い違いがそのまま当たる。
+  it('ブリッジのワーカーは、走らせる先が食い違っていても畳まない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task'), blockedBy: { nodes: [] } }],
+      sessions: [{ ...idle('session_a', 'task-9'), env: 'bridge' }],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
+  });
+
   // **PRを出した後は動かさない**（2.16.2）。畳むと、そのPRの直しを頼む相手が居なくなる。
   it('PRを出した後のワーカーは、走らせる先が食い違っていても畳まない', () => {
     const board = {
