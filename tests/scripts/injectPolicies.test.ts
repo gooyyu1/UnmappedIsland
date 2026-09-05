@@ -16,11 +16,25 @@ vi.setConfig({ testTimeout: 20000 });
 
 const HOOK = resolve(__dirname, '../../.claude/hooks/inject-policies.sh');
 
+/** 棚卸しを促し始める未処理の件数（フックの `DECISIONS_THRESHOLD`）。 */
+const THRESHOLD = 10;
+
 interface World {
   /** `.claude/policies.md` の中身。`undefined` は「ファイルが無い」。 */
   readonly policies?: string;
   /** `docs/concept/DesignPrinciples.md` の中身。`undefined` は「ファイルが無い」。 */
   readonly principles?: string;
+  /** `.claude/decisions/` に置く未処理の履歴の件数。 */
+  readonly decisions?: number;
+  /** `.claude/decisions/archive/` に置く棚卸し済みの履歴の件数。 */
+  readonly archived?: number;
+}
+
+function writeDecisions(dir: string, count: number): void {
+  mkdirSync(dir, { recursive: true });
+  for (let index = 0; index < count; index += 1) {
+    writeFileSync(join(dir, `2026-09-05-item-${index}.md`), '> 発言。\n', 'utf-8');
+  }
 }
 
 function run(world: World): string {
@@ -33,6 +47,12 @@ function run(world: World): string {
     if (world.principles !== undefined) {
       mkdirSync(join(work, 'docs', 'concept'), { recursive: true });
       writeFileSync(join(work, 'docs', 'concept', 'DesignPrinciples.md'), world.principles, 'utf-8');
+    }
+    if (world.decisions !== undefined) {
+      writeDecisions(join(work, '.claude', 'decisions'), world.decisions);
+    }
+    if (world.archived !== undefined) {
+      writeDecisions(join(work, '.claude', 'decisions', 'archive'), world.archived);
     }
 
     return execFileSync('bash', [HOOK], {
@@ -73,7 +93,28 @@ describe('inject-policies.sh', () => {
     expect(context).not.toContain('本文は入れない');
   });
 
-  it('どちらも無ければ何も出さない', () => {
+  it('どれも無ければ何も出さない', () => {
     expect(run({})).toBe('');
+  });
+
+  // 履歴そのものは入れない。入れると全セッションが、溜まった分を毎回払う。
+  it('判断の履歴は中身を入れず、しきい値に届くまでは触れもしない', () => {
+    const context = contextOf({ policies: '## 場面', decisions: THRESHOLD - 1 });
+
+    expect(context).not.toContain('発言。');
+    expect(context).not.toContain('棚卸し');
+  });
+
+  it('未処理がしきい値に達したら件数だけ入れる', () => {
+    const context = contextOf({ policies: '## 場面', decisions: THRESHOLD });
+
+    expect(context).toContain(`${THRESHOLD} 件`);
+    expect(context).not.toContain('発言。');
+  });
+
+  it('棚卸し済みの履歴は数えない', () => {
+    const context = contextOf({ policies: '## 場面', decisions: 1, archived: THRESHOLD });
+
+    expect(context).not.toContain('棚卸ししていない');
   });
 });

@@ -5,6 +5,10 @@
 # 気づきに依存しない形で入れる。進め方の価値観（.claude/policies.md）は全文、ゲーム内容の判断基準
 # （docs/concept/DesignPrinciples.md）は見出し（＝結論）だけを入れ、詳細は必要なときに読ませる。
 #
+# **入れるのは抽出済みの一般則だけで、判断の履歴（.claude/decisions/）は入れない。** 履歴は
+# 溜まる一方なので、入れると全セッションがその分を毎回払う。棚卸しの契機だけが要るので、
+# 未処理がしきい値を超えたときに件数を1行足す。
+#
 # 冪等・非対話。web/CLIどちらのセッションでも動く（依存の導入を行う session-start.sh とは別に
 # 登録してある。あちらはwebでしか動かない）。
 set -euo pipefail
@@ -12,6 +16,11 @@ set -euo pipefail
 REPO_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 POLICIES="$REPO_DIR/.claude/policies.md"
 PRINCIPLES="$REPO_DIR/docs/concept/DesignPrinciples.md"
+DECISIONS="$REPO_DIR/.claude/decisions"
+
+# 未処理の履歴がこの数に達したら棚卸しを促す。毎回件数を告げると、注入されるのは一般則だけ、
+# という分け方が崩れる。
+DECISIONS_THRESHOLD=10
 
 context=""
 
@@ -30,6 +39,17 @@ if [ -f "$PRINCIPLES" ]; then
     context+="ゲーム内容に関わる判断をするときは本文も読む）:"
     context+=$'\n'
     context+="$headings"
+    context+=$'\n'
+  fi
+fi
+
+if [ -d "$DECISIONS" ]; then
+  # 直下の .md だけを数える。archive/ に在るのは棚卸し済み。
+  pending=$(find "$DECISIONS" -maxdepth 1 -name '*.md' -type f | wc -l | tr -d '[:space:]')
+  if [ "$pending" -ge "$DECISIONS_THRESHOLD" ]; then
+    context+=$'\n'
+    context+="棚卸ししていない判断の履歴が $pending 件ある。ユーザーと会話できるセッションなら、"
+    context+="policy-review skill で一般則へ畳むことを提案する。"
     context+=$'\n'
   fi
 fi
