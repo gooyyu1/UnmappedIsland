@@ -8,14 +8,17 @@
 # 出力は1行1件。
 #   HELD     <PR番号>              … 関門に掛かった。マージしていない（理由が続けて出る）
 #   MERGED   <PR番号>
-#   RELAY    <PR番号>              … 本文かレビューの `## 司令塔へ` に中身があるので `司令塔へ` を付けた
+#   RETARGETED <PR番号>            … このPRの上に積まれていたPRの base を `main` へ張り替えた
+#   UNRETARGETED <PR番号>          … その張り替えに失敗した。ブランチは消していない
+#   UNDELETED <ブランチ>            … マージ済みのブランチを消せなかった
+#   RELAY    <PR番号>              … 本文かレビューの `## ユーザーへ` に中身があるので `ユーザーへ` を付けた
 #   UNRELAYED <PR番号>              … その印を付けようとして失敗した
 #   CLOSED   <issue番号>            … PR本文の `Closes #N` が閉じたことの確認
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
 #   ARCHIVED <セッションID>         … そのPRを出したセッションと、そのPRのレビューのセッションを畳んだ
 #   KEPT     <セッションID>         … 畳まなかった。issue を持たない（相談役など）か、ブリッジのものか、
 #                                     `get_session` を引けなくて素性が分からなかったもの（最後のものは
-#                                     **もう渡す出来事が無い**ので、司令塔が引き直して手で畳む）
+#                                     **もう渡す出来事が無い**ので、ユーザーが引き直して手で畳む）
 #   NOSESSION <PR番号>              … 本文が脚注を持たず、畳む相手が分からなかった
 #   UNARCHIVED <セッションID>       … 畳もうとして失敗した
 #   SYNCED   <コミット>             … 本体のチェックアウトを新しい `main` へ進めた
@@ -24,23 +27,41 @@
 #   終了コード 0 … すべて片付いた
 #   終了コード 1 … マージできなかった（何もしていない。関門を含む）
 #   終了コード 2 … マージはしたが、後片付けに残りがある
-#                  （上の `OPEN`・`NOSESSION`・`UNARCHIVED`・`UNRELAYED`・`DIRTY`）
+#                  （上の `UNRETARGETED`・`UNDELETED`・`OPEN`・`NOSESSION`・`UNARCHIVED`・
+#                  `UNRELAYED`・`DIRTY`）
 #
-# ## 関門（`needs-user-review.sh`）は、司令塔が越えられない
+# ## 積まれたPRは、ブランチを消す前に `main` へ下ろす
+#
+# **base のブランチが消えると GitHub は上のPRを勝手に閉じ、しかも base の無い状態では reopen も
+# base の張り替えもできない**（"Cannot change the base branch of a closed pull request"）。逃げ道は
+# 「消えた base を一時的に復元 → reopen → base を `main` へ → 復元を削除」で、全部が人の手になる。
+# #1493 → #1508 で実際に起きた。**デーモンが無人でマージするので、気づく人が居ない。**
+#
+# そこで `--delete-branch` を使わず、**マージ → 張り替え → ブランチ削除**の順で打つ。張り替えを
+# マージの後に置くのは、**マージが失敗したときに、張り替えだけが済んだ状態を残さないため**。
+# 張り替えられなかったぶんはブランチを残す（`UNRETARGETED`）——base が在るかぎり、後から手でも
+# 直せる。
+#
+# **張り替えが防ぐのは自動クローズだけ。** squash マージでは下のPRのコミットが `main` の履歴に入らず
+# merge-base が動かないので、**張り替えた後も上のPRの差分には下のぶんが混ざったまま**で、CIも古い
+# base で得た緑のまま（base の変更では再実行されない）。**解けるのは、上のPRのブランチが `main` の
+# 上へ載せ直されたとき。**
+#
+# ## 関門（`needs-user-review.sh`）は、この道具では越えられない
 #
 # 宣言文法・スキーマ・確定の宣言（節の `【確定】` と、文書単位の `**本書は全体が確定です。**`）に
-# 触るPRは、**司令塔の判断ではマージしない**。
+# 触るPRは、**ユーザー以外の判断ではマージしない**。
 # [`needs-user-review.sh`](needs-user-review.sh) が該当を出したら `判断待ち` を付けて `HELD` で止め、
 # ユーザーへ回す。越えるにはユーザーの許可を引いて `--user-ok` を付けて叩き直す——**そのとき許可を
 # 受けたことをPRへコメントとして残す**ので、後からどのPRが誰の許可で通ったのかを辿れる。
 #
-# **司令塔が自分の判断で越えられない関門にしてあるのは、越えられる関門は越えるから。** 直近25本で
+# **自動では越えられない関門にしてあるのは、越えられる関門は越えるから。** 直近25本で
 # `## 仮決め` に中身のあったPRが22本、`判断待ち` が付いたのは0本だった。
 #
 # ## 畳んだのは、毎回同じ順で叩いていた5つ
 #
 # `gh pr merge` → PRが `MERGED` か確認 → `Closes` の issue が `CLOSED` か確認 → PRを出した
-# セッションを `archive_session` → 結果の報告。**どれも判断が無いのに、司令塔の文脈を1往復ずつ
+# セッションを `archive_session` → 結果の報告。**どれも判断が無いのに、叩く側の文脈を1往復ずつ
 # 食う。** レビューは既に済んでいるので、ここから先を1回にまとめる。
 #
 # ## 畳む相手は [`session-of-pr.sh`](session-of-pr.sh) が引く
@@ -54,11 +75,6 @@
 # 無くなるので、ここがこのPRの分を畳む最後の場所。**あちらが掃くのはこのPRの分だけではない**
 # （残っている `review-*` 全部。理由はあちらの「1本のPRだけを掃くと…」）ので、`直し待ち` や
 # `判断待ち` で止まったPRのレビューも、1件マージするたびに一緒に片付く。
-#
-# ## `--delete-branch` は worktree の警告を必ず出す
-#
-# ローカルに `main` の worktree があると `fatal: 'main' is already used by worktree at ...` を吐くが、
-# **リモートのマージとブランチ削除は成功している**。毎回 `grep -v` で潰していたので、ここへ入れる。
 #
 # ## 本体を追随させるのは、ここでしかできないから
 #
@@ -87,12 +103,12 @@ NEEDS_USER_REVIEW="${NEEDS_USER_REVIEW:-$HERE/needs-user-review.sh}"
 
 body=$(gh pr view "$PR" --json body --jq '.body // ""' | tr -d '\r')
 state=$(gh pr view "$PR" --json state --jq '.state')
-# `## 司令塔へ` は、PR本文とレビューのコメントの**両方**に書かれる（`review-prompt.md`）。回す口が
+# `## ユーザーへ` は、PR本文とレビューのコメントの**両方**に書かれる（`review-prompt.md`）。回す口が
 # 2つあるのに読む口が1つだと、**レビューが回したものだけが黙って落ちる**。拾うのは `[レビュー]` で
-# 始まるコメントだけで、司令塔自身の指示やユーザーの却下は回す側ではない。
+# 始まるコメントだけで、デーモンの指示やユーザー自身の書き込みは回す側ではない。
 #
 # **1件を1行の base64 で受ける。** 節を閉じるのは `##` の見出しなので、複数の文書を1本に繋いで読むと
-# **末尾に `## 司令塔へ` を置いた文書の節が、次の文書へそのまま伸びる**（`review-prompt.md` はレビュー
+# **末尾に `## ユーザーへ` を置いた文書の節が、次の文書へそのまま伸びる**（`review-prompt.md` はレビュー
 # 側にこの節を**末尾**へ置かせるので、常に起きる）。繋ぎ目へ切れ目の印を挟んでも塞げるが、その綴りは
 # 挟む側と閉じる側で一致していないと黙って壊れる。繋がずに1件ずつ読めば、印そのものが要らない。
 review_comments=$(gh pr view "$PR" --json comments \
@@ -110,7 +126,7 @@ if [ "$state" = "OPEN" ]; then
     fi
     note="$(mktemp)"
     {
-      echo "[司令塔] **ユーザーの許可を得てマージします。**"
+      echo "[デーモン] **ユーザーの許可を得てマージします。**"
       echo
       echo '`needs-user-review.sh` はこのPRを止めていました。'
       echo
@@ -128,8 +144,8 @@ if [ "$state" = "OPEN" ]; then
     echo "マージできない（mergeable=$mergeable）。コンフリクトなら差し戻す。" >&2
     exit 1
   fi
-  # 警告だけを落とす。マージ自体の失敗は下の state で捕まえる。
-  gh pr merge "$PR" --squash --delete-branch 2>&1 | grep -v 'already used by worktree' || true
+  # ブランチは消さない——上の「積まれたPRは…」の順で、この後に消す。失敗は下の state で捕まえる。
+  gh pr merge "$PR" --squash || true
   state=$(gh pr view "$PR" --json state --jq '.state')
 fi
 
@@ -141,10 +157,38 @@ echo "MERGED $PR"
 
 leftover=0
 
-# `## 司令塔へ` に**中身がある**PRには `司令塔へ` ラベルを付ける。**下ろすのはこの後の司令塔の手番**
+# 上に積まれたPRを `main` へ下ろしてから、マージ済みのブランチを消す（上の「積まれたPRは…」）。
+# **1本でも下ろせなければ、ブランチを残す。** 引けなかったときも同じ——積まれたPRが在るかどうかが
+# 分からないまま消すと、閉じられたPRは機械では戻せない。
+head=$(gh pr view "$PR" --json headRefName --jq '.headRefName')
+retargeted=1
+if stacked=$(gh pr list --state open --base "$head" --json number --jq '.[].number'); then
+  while read -r other; do
+    [ -n "$other" ] || continue
+    if gh pr edit "$other" --base main >/dev/null; then
+      echo "RETARGETED $other"
+    else
+      echo "UNRETARGETED $other"
+      retargeted=0
+    fi
+  done <<<"$stacked"
+else
+  echo "UNRETARGETED $PR"
+  retargeted=0
+fi
+[ "$retargeted" -eq 1 ] || leftover=1
+# 既に消えているブランチは、消さない（同じPRへ二度叩いたときに `UNDELETED` が出ないように）。
+if [ "$retargeted" -eq 1 ] && gh api "repos/{owner}/{repo}/git/refs/heads/$head" >/dev/null 2>&1; then
+  gh api -X DELETE "repos/{owner}/{repo}/git/refs/heads/$head" >/dev/null 2>&1 || {
+    echo "UNDELETED $head"
+    leftover=1
+  }
+fi
+
+# `## ユーザーへ` に**中身がある**PRには `ユーザーへ` ラベルを付ける。**下ろすのはユーザーの手番**
 # なので、ここでは印を置くだけ。**下ろす側はまだ無い**（[`board-design.md`](../../.claude/board-design.md)
 # 3.2。読まれないまま残っても盤面は止まらないので、移行は止めない）。ラベルなので、
-# `gh pr list --state merged --label 司令塔へ` でいつでも滞留が見える。
+# `gh pr list --state merged --label ユーザーへ` でいつでも滞留が見える。
 #
 # **本文ではなくラベルで持つのは、引くのが安いから。** マージ済みPRは本数が多く、本文を毎周読むと
 # 窓を切ることになる——切った窓から出たものは永久に出なくなる。
@@ -160,7 +204,7 @@ leftover=0
 # 「なし」と書いても非空になる。**文書をまたぐ側は閉じるまでもない**——1件ずつ渡すので、文書が
 # 終われば節も終わる。
 relay_section() {
-  awk '/^##[[:space:]]+司令塔へ[[:space:]]*$/ { inside = 1; next }
+  awk '/^##[[:space:]]+ユーザーへ[[:space:]]*$/ { inside = 1; next }
     /^##[[:space:]]/ || /^---[[:space:]]*$/ { inside = 0 }
     inside'
 }
@@ -173,7 +217,7 @@ relay=$({
 } | sed -e 's/^[-*[:space:]]*//' -e 's/[[:space:]]*$//' |
   grep -v '^$' | grep -v '^なし' || true)
 if [ -n "$relay" ]; then
-  if gh pr edit "$PR" --add-label 司令塔へ >/dev/null; then
+  if gh pr edit "$PR" --add-label ユーザーへ >/dev/null; then
     echo "RELAY $PR"
   else
     echo "UNRELAYED $PR"

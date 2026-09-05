@@ -7,8 +7,8 @@ import { describe, expect, it, vi } from 'vitest';
 /**
  * `scripts/agent/merge-and-close.sh` が出す行の検査。
  *
- * **後戻りできない操作をする唯一の司令塔スクリプト**なので、素通しの条件だけは機械で見る。
- * コンフリクトしたPRでマージへ進むと、失敗するだけでなく、司令塔は片付いたつもりで次へ行く。
+ * **後戻りできない操作をする唯一の盤面のスクリプト**なので、素通しの条件だけは機械で見る。
+ * コンフリクトしたPRでマージへ進むと、失敗するだけでなく、デーモンは片付いたつもりで次へ行く。
  *
  * `gh`・`git`・`npm` を PATH の先頭に、`ccr-meta.sh` を `CCR_META` で差し替えて、実際にスクリプトを
  * 走らせる。本体（`git` が差す先）も作業用の一時ディレクトリに作るので、手元のリポジトリは動かない。
@@ -65,7 +65,7 @@ interface World {
    * `get_session` の応答にJSONが入らないセッション（引けない日）。タグも状態も環境も分からない。
    */
   readonly unknown?: readonly string[];
-  /** PRに付いているコメント。`## 司令塔へ` をレビューから拾えるかを見るために使う。 */
+  /** PRに付いているコメント。`## ユーザーへ` をレビューから拾えるかを見るために使う。 */
   readonly comments?: readonly string[];
   /** `archive_session` が失敗するか。 */
   readonly archiveFails?: boolean;
@@ -90,6 +90,14 @@ interface World {
   readonly openPrs?: readonly number[];
   /** `gh pr list` が失敗するか（開いているPRの一覧を引けない日）。 */
   readonly prListFails?: boolean;
+  /** このPRの head を base にしている開いたPR（＝上に積まれたPR）。 */
+  readonly stacked?: readonly number[];
+  /** `gh pr edit --base` が失敗するか。 */
+  readonly retargetFails?: boolean;
+  /** マージ済みのブランチが既に消えているか。既定は残っている。 */
+  readonly branchGone?: boolean;
+  /** そのブランチを消す `gh api -X DELETE` が失敗するか。 */
+  readonly deleteFails?: boolean;
   /** `--user-ok` を付けて叩くか。 */
   readonly userOk?: boolean;
 }
@@ -111,6 +119,8 @@ interface Run {
   readonly labels: string[];
   /** PRへ書いたコメントの本文。 */
   readonly comments: string;
+  /** `gh api -X DELETE` に渡された参照。 */
+  readonly deleted: string[];
 }
 
 /**
@@ -160,6 +170,7 @@ if [ "$1" = pr ] && [ "$2" = view ]; then
   case "$5" in
     body|comments) jq -r "\${@: -1}" '${dir}/pr.json' ;;
     mergeable) printf '%s' '${world.mergeable ?? 'MERGEABLE'}' ;;
+    headRefName) printf '%s' 'claude/issue-999' ;;
     state) ${
       world.stateFails === true
         ? 'exit 1'
@@ -170,6 +181,11 @@ if [ "$1" = pr ] && [ "$2" = view ]; then
 fi
 if [ "$1" = pr ] && [ "$2" = list ]; then
   ${world.prListFails === true ? 'exit 1' : ':'}
+  case "$*" in
+    *--base*)
+      for n in $(printf '%s' '${(world.stacked ?? []).join(' ')}'); do printf '%s\\n' "$n"; done
+      exit 0 ;;
+  esac
   for n in $(printf '%s' '${(world.openPrs ?? [1000]).join(' ')}'); do
     if [ "$n" = 1000 ] && [ -e '${dir}/merged' ]; then continue; fi
     printf '%s\\n' "$n"
@@ -178,8 +194,19 @@ if [ "$1" = pr ] && [ "$2" = list ]; then
 fi
 if [ "$1" = pr ] && [ "$2" = edit ]; then
   shift 3
+  case "$*" in
+    *--base*) exit ${world.retargetFails ? 1 : 0} ;;
+  esac
   echo "$*" >> '${dir}/labels'
   exit ${world.labelFails ? 1 : 0}
+fi
+if [ "$1" = api ]; then
+  case "$*" in
+    *DELETE*)
+      echo "\${@: -1}" >> '${dir}/deleted'
+      exit ${world.deleteFails === true ? 1 : 0} ;;
+  esac
+  exit ${world.branchGone === true ? 1 : 0}
 fi
 if [ "$1" = pr ] && [ "$2" = comment ]; then
   cat "$5" >> '${dir}/comments'
@@ -338,6 +365,7 @@ esac
       git: logged('git-calls'),
       labels: logged('labels'),
       comments: existsSync(join(work, 'comments')) ? readFileSync(join(work, 'comments'), 'utf-8') : '',
+      deleted: logged('deleted'),
     };
   } finally {
     rmSync(work, { recursive: true, force: true });
@@ -345,6 +373,46 @@ esac
 }
 
 describe('merge-and-close.sh', () => {
+  it('マージしたブランチを消す', () => {
+    const result = run({});
+
+    expect(result.deleted).toEqual(['repos/{owner}/{repo}/git/refs/heads/claude/issue-999']);
+    expect(result.lines.some((line) => line.startsWith('UNDELETED '))).toBe(false);
+  });
+
+  it('既に消えているブランチは、消しに行かない', () => {
+    const result = run({ branchGone: true });
+
+    expect(result.deleted).toEqual([]);
+    expect(result.lines.some((line) => line.startsWith('UNDELETED '))).toBe(false);
+  });
+
+  it('ブランチを消せなければ、後片付けの残りとして出す', () => {
+    const result = run({ deleteFails: true });
+
+    expect(result.lines).toContain('UNDELETED claude/issue-999');
+    expect(result.status).toBe(2);
+  });
+
+  // base のブランチが消えると GitHub は上のPRを閉じ、**閉じた後は reopen も base の張り替えも
+  // できない**（#1493 → #1508）。マージの後に下ろすのは、`main` へ入る前だと上のPRの差分に下の
+  // ぶんが混ざるから。
+  it('上に積まれたPRを、ブランチを消す前に main へ下ろす', () => {
+    const result = run({ stacked: [1001, 1002] });
+
+    expect(result.merged).toBe(true);
+    expect(result.lines.slice(0, 3)).toEqual(['MERGED 1000', 'RETARGETED 1001', 'RETARGETED 1002']);
+    expect(result.deleted).toEqual(['repos/{owner}/{repo}/git/refs/heads/claude/issue-999']);
+  });
+
+  it('積まれたPRを下ろせなければ、ブランチを残す', () => {
+    const result = run({ stacked: [1001], retargetFails: true });
+
+    expect(result.lines).toContain('UNRETARGETED 1001');
+    expect(result.deleted).toEqual([]);
+    expect(result.status).toBe(2);
+  });
+
   it('コンフリクトしているPRはマージせずに終わる', () => {
     const result = run({ mergeable: 'CONFLICTING' });
 
@@ -352,7 +420,7 @@ describe('merge-and-close.sh', () => {
     expect(result.status).toBe(1);
   });
 
-  // 司令塔の判断では越えられない関門。越えるにはユーザーの許可を引いて `--user-ok` で叩き直す。
+  // 自動では越えられない関門。越えるにはユーザーの許可を引いて `--user-ok` で叩き直す。
   it('関門に掛かったPRはマージせず、判断待ちを付けて理由ごと HELD で返す', () => {
     const result = run({ gate: ['GRAMMAR src/domain/DeclaredNumber.ts'] });
 
@@ -646,65 +714,65 @@ describe('merge-and-close.sh', () => {
   });
 
   // 印を置くだけ。下ろす側はまだ無いので、ラベルが滞留を見せ続ける（board-design 3.2）。
-  it('本文に `## 司令塔へ` があれば、司令塔へ ラベルを付けて RELAY を出す', () => {
-    const result = run({ body: `${DEFAULT_BODY}\n\n## 司令塔へ\n\n- #1353 を立てた（範囲外）\n` });
+  it('本文に `## ユーザーへ` があれば、ユーザーへ ラベルを付けて RELAY を出す', () => {
+    const result = run({ body: `${DEFAULT_BODY}\n\n## ユーザーへ\n\n- #1353 を立てた（範囲外）\n` });
 
     expect(result.lines).toContain('RELAY 1000');
-    expect(result.labels).toContain('--add-label 司令塔へ');
+    expect(result.labels).toContain('--add-label ユーザーへ');
   });
 
-  // 「回されたものが無い」と「読み落とした」を、司令塔が区別できなくなる。
+  // 「回されたものが無い」と「読み落とした」を、ユーザーが区別できなくなる。
   it('節が無ければ、ラベルも RELAY も出さない', () => {
-    const result = run({ body: `${DEFAULT_BODY}\n\n## 司令塔の案\n\n- 積ではなく加算で表す\n` });
+    const result = run({ body: `${DEFAULT_BODY}\n\n## 案\n\n- 積ではなく加算で表す\n` });
 
     expect(result.lines.some((line) => line.startsWith('RELAY '))).toBe(false);
-    expect(result.labels.some((label) => label.includes('司令塔へ'))).toBe(false);
+    expect(result.labels.some((label) => label.includes('ユーザーへ'))).toBe(false);
   });
 
   // 書く口はPR本文とレビューのコメントの2つある（`review-prompt.md`）。読む口が1つだと、
   // レビューが回したものだけが黙って落ちる。**本文には節が無い世界で見る。**
-  it('レビューのコメントの `## 司令塔へ` も拾う', () => {
+  it('レビューのコメントの `## ユーザーへ` も拾う', () => {
     const result = run({
       comments: [
-        '[レビュー] 通してよい\n\n## 司令塔へ\n\n- `parseActiveEffects.ts` の doc に同じ誤りが残っている\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_\n',
+        '[レビュー] 通してよい\n\n## ユーザーへ\n\n- `parseActiveEffects.ts` の doc に同じ誤りが残っている\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_\n',
       ],
     });
 
     expect(result.lines).toContain('RELAY 1000');
-    expect(result.labels).toContain('--add-label 司令塔へ');
+    expect(result.labels).toContain('--add-label ユーザーへ');
   });
 
-  // 回す側はレビューだけ。司令塔自身の指示やユーザーの却下を拾うと、下ろす相手の居ない印が残る。
+  // 回す側はレビューだけ。デーモンの指示やユーザー自身の書き込みを拾うと、下ろす相手の居ない印が残る。
   it('`[レビュー]` で始まらないコメントの節は拾わない', () => {
     const result = run({
-      comments: ['[司令塔] 直し待ちにします。\n\n## 司令塔へ\n\n- これは回す側ではない\n'],
+      comments: ['[デーモン] 直し待ちにします。\n\n## ユーザーへ\n\n- これは回す側ではない\n'],
     });
 
     expect(result.lines.some((line) => line.startsWith('RELAY '))).toBe(false);
-    expect(result.labels.some((label) => label.includes('司令塔へ'))).toBe(false);
+    expect(result.labels.some((label) => label.includes('ユーザーへ'))).toBe(false);
   });
 
   // `## 仮決め` は「なし」と書かせる規約なので、書く側は取り違える。中身の無い印が残ると `RELAY` が
   // 毎周出て、合図が1件でも出た見張りはそこで終わる（他の待ちに使えなくなる）。
   it('節はあっても中身が「なし」なら、ラベルも RELAY も出さない', () => {
     const result = run({
-      body: `${DEFAULT_BODY}\n\n## 司令塔へ\n\nなし（この変更自体が司令塔の道具への直し）。\n`,
+      body: `${DEFAULT_BODY}\n\n## ユーザーへ\n\nなし（この変更自体が盤面の道具への直し）。\n`,
     });
 
     expect(result.lines.some((line) => line.startsWith('RELAY '))).toBe(false);
-    expect(result.labels.some((label) => label.includes('司令塔へ'))).toBe(false);
+    expect(result.labels.some((label) => label.includes('ユーザーへ'))).toBe(false);
   });
 
   // 節を閉じるのが `##` の見出しだけだと、**本文の末尾に置かれた節がレビューのコメントへ伸びる**。
   // レビュー側はこの節をコメントの末尾に置く（`review-prompt.md`）ので、これは常に起きる。
   it('本文の末尾の節が「なし」なら、レビューのコメントが付いていてもラベルを付けない', () => {
     const result = run({
-      body: `${DEFAULT_BODY}\n\n## 司令塔へ\n\nなし（この変更自体が司令塔の道具への直し）。\n`,
+      body: `${DEFAULT_BODY}\n\n## ユーザーへ\n\nなし（この変更自体が盤面の道具への直し）。\n`,
       comments: ['[レビュー] 通してよい\n\n本文の実測は自分でも数え直して一致した。\n'],
     });
 
     expect(result.lines.some((line) => line.startsWith('RELAY '))).toBe(false);
-    expect(result.labels.some((label) => label.includes('司令塔へ'))).toBe(false);
+    expect(result.labels.some((label) => label.includes('ユーザーへ'))).toBe(false);
   });
 
   // レビューのコメントには Claude Code の署名（`---` と `_Generated by …_`）が必ず付く。節の後ろに
@@ -712,12 +780,12 @@ describe('merge-and-close.sh', () => {
   it('レビューが「なし」と書いたら、後ろに署名が続いてもラベルを付けない', () => {
     const result = run({
       comments: [
-        '[レビュー] 通してよい\n\n## 司令塔へ\n\nなし。\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_\n',
+        '[レビュー] 通してよい\n\n## ユーザーへ\n\nなし。\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_\n',
       ],
     });
 
     expect(result.lines.some((line) => line.startsWith('RELAY '))).toBe(false);
-    expect(result.labels.some((label) => label.includes('司令塔へ'))).toBe(false);
+    expect(result.labels.some((label) => label.includes('ユーザーへ'))).toBe(false);
   });
 
   // コメントどうしの境目も同じ。1本に繋いで読むと、末尾に節を置いたコメントの節が次のコメントへ
@@ -725,32 +793,32 @@ describe('merge-and-close.sh', () => {
   it('コメントの末尾の節が「なし」なら、後ろに別のコメントが続いてもラベルを付けない', () => {
     const result = run({
       comments: [
-        '[レビュー] 通してよい\n\n## 司令塔へ\n\nなし。\n',
+        '[レビュー] 通してよい\n\n## ユーザーへ\n\nなし。\n',
         '[レビュー] 通してよい\n\n差分を読み直したが、他に直すところは無い。\n',
       ],
     });
 
     expect(result.lines.some((line) => line.startsWith('RELAY '))).toBe(false);
-    expect(result.labels.some((label) => label.includes('司令塔へ'))).toBe(false);
+    expect(result.labels.some((label) => label.includes('ユーザーへ'))).toBe(false);
   });
 
   // 1件ずつ読むので、読み落とせば**後ろのコメントだけ**が黙って落ちる。
-  it('2件目以降のレビューのコメントの `## 司令塔へ` も拾う', () => {
+  it('2件目以降のレビューのコメントの `## ユーザーへ` も拾う', () => {
     const result = run({
       comments: [
-        '[レビュー] 通してよい\n\n## 司令塔へ\n\nなし。\n',
-        '[レビュー] 通してよい\n\n## 司令塔へ\n\n- #1353 を立てた（範囲外）\n',
+        '[レビュー] 通してよい\n\n## ユーザーへ\n\nなし。\n',
+        '[レビュー] 通してよい\n\n## ユーザーへ\n\n- #1353 を立てた（範囲外）\n',
       ],
     });
 
     expect(result.lines).toContain('RELAY 1000');
-    expect(result.labels).toContain('--add-label 司令塔へ');
+    expect(result.labels).toContain('--add-label ユーザーへ');
   });
 
   // マージは済んでいるので、印を置けなかっただけで後片付け（`main` の追随）ごと落としてはいけない。
   it('印を置けなくても止まらず、後片付けを済ませてから残りとして報せる', () => {
     const result = run({
-      body: `${DEFAULT_BODY}\n\n## 司令塔へ\n\n- #1353 を立てた（範囲外）\n`,
+      body: `${DEFAULT_BODY}\n\n## ユーザーへ\n\n- #1353 を立てた（範囲外）\n`,
       labelFails: true,
     });
 

@@ -16,7 +16,7 @@
 # 出るのは5つの節。
 #
 #   ## 確定待ち <番号> <項目>
-#   ## PR      <番号> <CI> <マージ可否> <ラベル> <題>
+#   ## PR      <番号> <CI> <マージ可否> <base> <ラベル> <題>
 #   ## TASK    <番号> <着手できるか> <題>
 #   ## 未整理  <番号> <ラベル> <題>
 #   ## 走行    <セッションID> <状態> <最終更新> <題>
@@ -61,7 +61,10 @@ REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CCR_META="$HERE/../../.claude/ccr-meta.sh"
 
-prs=$(gh pr list --state open --limit 50 --json number,title,labels,statusCheckRollup,mergeable,body)
+# `baseRefName` を引くのは、**`main` の上に無いPRは盤面では捌けない**から（`board-move.mjs`）。
+# CIは古い base の上で緑になるので、これが出ていないと緑のPRが放置されている理由が読めない。
+prs=$(gh pr list --state open --limit 50 \
+  --json number,title,labels,statusCheckRollup,mergeable,baseRefName,body)
 
 # issue は1回だけ引いて、`task` の付いたもの・まだどこにも分類されていないもの・`meta` の本文の
 # チェックへ分ける。**依存も同じ呼び出しで返る**ので、issue 1件ずつ `gh api` を叩かなくてよい。
@@ -81,7 +84,7 @@ jq -r '
            | length) > 0 then "赤"
      else "緑" end) as $ci
   | ([$pr.labels[].name] | join(",")) as $labels
-  | "PR \($pr.number) \($ci) \($pr.mergeable) \(if $labels == "" then "-" else $labels end) \($pr.title)"
+  | "PR \($pr.number) \($ci) \($pr.mergeable) \($pr.baseRefName // "main") \(if $labels == "" then "-" else $labels end) \($pr.title)"
 ' <<<"$prs"
 
 # 走行中（畳んでいない）セッション。ここが「もう投入したか」の主な根拠。

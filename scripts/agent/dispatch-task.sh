@@ -7,7 +7,7 @@
 #
 # **渡すのは補足だけ。** 共通のひな形（[`.claude/dispatch-prompt.md`](../../.claude/dispatch-prompt.md)）は
 # ここで読んで前へ付ける。ひな形自身が「手で書き写すと必ず何かが落ちる」と書いているものを、
-# 投入のたびに司令塔へ書き写させていた。
+# 投入のたびに投入する側へ書き写させていた。
 #
 # 補足は**先に Write でファイルへ書いておく**（ヒアドキュメントやシェル変数を通すと化ける。
 # [`.claude/ccr-meta.sh`](../../.claude/ccr-meta.sh)「指示は Write で書く」）。**重なりが無くて
@@ -31,8 +31,8 @@
 # - `environment_id` は必須（この経路には呼び元が無いので継げない）。`permission_mode` は逆に
 #   渡してはいけない（親セッションを要求されて撥ねられる）。
 # - **閉じた issue へ立てると、空待ちになる。** 題を引くのと同じ `gh issue view` で `state` も見る。
-# - **`## 担当` に、セッションが触れない領域が挙がっていないかを見る。** ひな形・司令塔の道具・運用の
-#   文書は司令塔が `main` へ直接入れる領域で、セッションからは編集ツールが拒否される。気づかずに
+# - **`## 担当` に、セッションが触れない領域が挙がっていないかを見る。** ひな形・盤面の道具・運用の
+#   文書はユーザーが `main` へ直接入れる領域で、セッションからは編集ツールが拒否される。気づかずに
 #   投入すると壁に当たり、往復が1回まるごと無駄になる（2026-08-30・#1398。担当に
 #   `.claude/parallel-work.md` が載ったまま投入し、セッションは拒否された経路を回避して書き込む
 #   ところまで行った）。**同じ `gh issue view` で `body` も引く**ので、往復は増えない。
@@ -59,9 +59,9 @@ TEMPLATE="$HERE/../../.claude/dispatch-prompt.md"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-# ひな形は司令塔が書き写さない。**書き写すと必ず何かが落ちる**——2026-08-27 に「PRを見張らない」の
+# ひな形は手で書き写さない。**書き写すと必ず何かが落ちる**——2026-08-27 に「PRを見張らない」の
 # 一文が3本すべてから抜け、3セッションが承認待ちで止まった。ここで `dispatch-prompt.md` の
-# ``` の中を読み、`<番号>` を埋めて、渡された補足を末尾へ足す。司令塔が書くのは補足だけ。
+# ``` の中を読み、`<番号>` を埋めて、渡された補足を末尾へ足す。投入する側が書くのは補足だけ。
 INSTRUCTION="$WORK/prompt.md"
 awk '/^```$/ { inside = !inside; next } inside' "$TEMPLATE" |
   sed "s/<番号>/$ISSUE/g" >"$INSTRUCTION"
@@ -85,8 +85,27 @@ state=$(jq -r '.state' "$WORK/issue.json")
   exit 1
 }
 
+# その issue を閉じるPRが既に開いていないか。**生きているセッションは下の `may-dispatch.sh` が
+# 塞ぐが、畳まれた後にPRだけ残っている場合は素通りする**——#1415 は同じ issue が2本へ渡り、
+# 両方が独立に同じ設計へ到達して、片方が push する瞬間のブランチ名の衝突で気づいた。
+#
+# **ブランチ名では見ない。** `claude/issue-1488` と `claude/homesickness-1412` のように綴りが
+# 揃っておらず、番号から引き当てられない。
+existing=$(gh pr list --state open --limit 50 --json number,body |
+  jq -r --arg issue "$ISSUE" \
+    '.[] | select(.body // "" | test("closes\\s+#" + $issue + "(\\D|$)"; "i")) | .number')
+[ -z "$existing" ] || {
+  echo "issue #$ISSUE を閉じるPRが既に開いている。投入しない。" >&2
+  echo "$existing" | sed 's/^/  PR #/' >&2
+  # **直す相手のセッションが畳まれたPR**（`board-move.mjs` が `覚え書き:` で出す）を立て直したい
+  # ときも、ここで止まる。逃げ道は付けない——**そのPRを閉じてから投入し直す**のが、2本目のPRを
+  # 増やさない唯一の形。
+  echo "  立て直すなら、そのPRを閉じてから叩き直す。" >&2
+  exit 1
+}
+
 # `## 担当` に、セッションが書けない領域が挙がっていないか。`.claude/**` はクラウドセッションからの
-# 書き込みが必ずユーザー承認を求められ、そこで止まる。`scripts/agent/**` と `CLAUDE.md` は司令塔が
+# 書き込みが必ずユーザー承認を求められ、そこで止まる。`scripts/agent/**` と `CLAUDE.md` はユーザーが
 # `main` へ直接入れる領域。どれも投入した時点で往復が1回無駄になる。
 owned=$(jq -r '.body' "$WORK/issue.json" | tr -d '\r' |
   awk '/^##[[:space:]]/ { inside = /^##[[:space:]]+担当[[:space:]]*$/; next } inside' |
@@ -94,8 +113,8 @@ owned=$(jq -r '.body' "$WORK/issue.json" | tr -d '\r' |
 [ -z "$owned" ] || {
   echo "issue #$ISSUE の「担当」に、セッションが書けない領域が挙がっている。投入しない。" >&2
   echo "$owned" | sed 's/^/  /' >&2
-  echo '  司令塔が `main` へ直接入れる領域（.claude/parallel-work.md「司令塔の手入れは main へ直接 push する」）。' >&2
-  echo '  司令塔が先に入れて担当から外すか、issue を割ってから投入する。' >&2
+  echo '  ユーザーが `main` へ直接入れる領域（.claude/parallel-work.md「司令塔の手入れは main へ直接 push する」）。' >&2
+  echo '  ユーザーが先に入れて担当から外すか、issue を割ってから投入する。' >&2
   exit 1
 }
 
