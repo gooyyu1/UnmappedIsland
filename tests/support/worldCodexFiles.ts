@@ -35,13 +35,12 @@ export function loadYamlDirectory(loader: WorldCodexYamlLoader, directory: strin
 }
 
 /**
- * 同梱ぶんだけを読んで組み上げたWorldCodex。**何度呼んでも同じものが返る。**
- *
- * WorldCodexはロードが済めば不変（src/domain/WorldCodex.ts）なので、読み手どうしは互いに影響しない。
- * 1回の組み上げに200msかかり、`npm test` はこれを80回超え払っていた（テスト全体のCPU時間の1/4）。
+ * 同梱ぶんだけを読んで組み上げたWorldCodex。**何度呼んでも同じものが返る**（1回の組み上げに
+ * 200msかかるので、テストの間で使い回す）。
  *
  * **返ったcodexを書き換えてはいけない。** 同じワーカーで走る後続のテストが同じものを受け取る。
- * 定義を足したり差し替えたりして試したいテストは、ここを通さず自分でloaderを組む。
+ * WorldCodexはロードが済めば不変（src/domain/WorldCodex.ts）なので、守っている限り読み手どうしは
+ * 互いに影響しない。定義を足したり差し替えたりして試したいテストは、ここを通さず自分でloaderを組む。
  */
 export function bundledCodex(): WorldCodex {
   bundled ??= loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();

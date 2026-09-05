@@ -484,8 +484,6 @@ describe('climate.yamlの鮮度', () => {
   const storedReport = (): Record<string, YamlRecord[]> =>
     parse(readFileSync(REPORT_PATH, 'utf8')) as Record<string, YamlRecord[]>;
 
-  const loadCodex = (): WorldCodex => bundledCodex();
-
   it('レポートの指紋が、今の入力と一致する', () => {
     const recorded = storedReport().input_fingerprint[0].sha256_prefix;
 
@@ -500,7 +498,7 @@ describe('climate.yamlの鮮度', () => {
       durationDays: season.durationDays,
       hoursByWeather: new Map(Object.entries(season.hoursByWeather)),
     }));
-    const rows = activityHoursOf(loadCodex(), seasons);
+    const rows = activityHoursOf(bundledCodex(), seasons);
     const stored = storedReport().activity_hours;
     const keyOf = (location: unknown, season: unknown): string => `${String(location)} / ${String(season)}`;
 
@@ -529,7 +527,7 @@ describe('climate.yamlの鮮度', () => {
   });
 
   it('外した土地の節が、今の定義で外れるものと過不足なく一致する', () => {
-    const excluded = islandLocationsOf(loadCodex()).excludedSea;
+    const excluded = islandLocationsOf(bundledCodex()).excludedSea;
 
     expect(
       storedReport()

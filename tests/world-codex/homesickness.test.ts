@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
@@ -19,6 +19,10 @@ import { bundledCodex } from '../support/worldCodexFiles';
  * 全キャラクタを走査するのはcharactersYaml.test.tsの受け持ち（そちらが宣言の欠落を見る）。
  */
 const codex = bundledCodex();
+
+// 1件で95日ぶんの暮らしを3本まで生きるものがあり、単独で走らせても3.5秒かかる。既定の5秒だと
+// `npm test` 全体を並行実行したときのCPU競合だけで時間切れになる（mergeAndClose.test.tsと同じ）。
+vi.setConfig({ testTimeout: 20000 });
 
 const MINUTES_PER_TICK = 15;
 
