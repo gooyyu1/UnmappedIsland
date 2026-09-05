@@ -323,7 +323,7 @@ laceration:
 **死因を名乗るのはワールドの側です。** 命を絶つ `destroy` が名前を添え（`reason`、
 [`GameElementDefinition.md`](./GameElementDefinition.md) 9.3節）、その名前が消された側に残ります
 （`WorldObject.destroyedReason`）。`Ending.causeOfDeath` はそれを読むだけで、
-`dehydrated`・`starved`・`exsanguinated` が、そのまま死に方の名前です。画面は名前から文言を引くだけで
+命を絶つ値の `on_min` が名乗る名前が、そのまま死に方の名前です。画面は名前から文言を引くだけで
 （`Localization.destroyReason`、[`Localization.md`](./Localization.md) destroy_reason_texts節）、しきい値も
 死因の言い方も知りません。死に方が増えても、名前を1つ添えるだけで画面に出ます。
 

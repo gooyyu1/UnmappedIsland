@@ -81,7 +81,7 @@ function characterDisplayHeight(bottomPadding: number): number {
 /** 縦型のキャラクター表示エリア幅。ポートレイト205 + 地図・装備・怪我の列 + ギャップ・パディング。 */
 const CHARACTER_DISPLAY_WIDTH_PORTRAIT = 460;
 
-/** 横型のオプションバー高（アイコンボタンの縦積み + 上下パディング16×2）。 */
+/** 横型のオプションバー高（アイコンボタン4個の縦積み + 上下パディング16×2）。 */
 const OPTIONS_HEIGHT_LANDSCAPE = SIZE.iconButton * 4 + SIZE.barGap * 3 + 32;
 
 /**

@@ -146,7 +146,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 #### 2.3.2 難易度は、揃うまでの歩数で作る【確定】
 
 **難易度は消費や獣の強さではなく、最初の段に要るもの（2.3節の表）が開始地点から何歩先にあるかで
-切ります——2歩以内・3歩・4歩以上の3段です**（[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の
+切ります——2歩以内・3歩・4歩以上**（[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の
 「難易度は、数値ではなく配置の散らばりで作る」節）。
 
 | 段 | すべて揃うまでの歩数 |
