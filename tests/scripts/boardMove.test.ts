@@ -37,8 +37,27 @@ interface Board {
   taken?: Record<string, string>;
 }
 
+/**
+ * 手が空いているセッションは、既定で**十分に空いたまま**として渡す（`board-move.mjs` の
+ * `STALL_MINUTES`）。停滞を入口にする手はどれもそこを通るので、**盤面ごとに書くと、書き忘れた
+ * 盤面だけが黙って手を出さなくなる。** 空いたばかりの形を見たい検査は、`taken` で上書きする。
+ */
+const LONG_IDLE = '2026-09-04T02:00:00Z';
+
 function moves(board: Board): string[] {
-  return decide({ settledBefore: SETTLED, prs: [], issues: [], sessions: [], ...board });
+  const idled: Record<string, string> = {};
+  for (const session of board.sessions ?? []) {
+    if (session.status !== 'SESSION_STATUS_RUNNING') idled[`idle:${session.id}`] = LONG_IDLE;
+  }
+  return decide({
+    now: NOW,
+    settledBefore: SETTLED,
+    prs: [],
+    issues: [],
+    sessions: [],
+    ...board,
+    taken: { ...idled, ...board.taken },
+  });
 }
 
 /** 緑のPR。チェックが1本通っている形で作る（無検査のPRとは別の道を通るため）。 */
@@ -574,10 +593,47 @@ describe('board-move.mjs', () => {
     const board = {
       issues: [{ number: 8, ...label('task'), blockedBy: { nodes: [] } }],
       sessions: [idle('session_a', 'task-8')],
-      taken: { 'resume:session_a': 'stall:8' },
+      taken: { 'idle:session_a': LONG_IDLE, 'resume:session_a': 'stall:8' },
     };
     expect(moves(board)).toEqual(['RETURN 8 session_a returned:8']);
-    expect(moves({ ...board, taken: { 'resume:session_a': 'returned:8' } })).toEqual([]);
+    expect(
+      moves({ ...board, taken: { 'idle:session_a': LONG_IDLE, 'resume:session_a': 'returned:8' } }),
+    ).toEqual([]);
+  });
+
+  /**
+   * **「手が空いている」ことそのものは停滞ではない。** ワーカーは手番の切れ目ごとに空き、下請けの
+   * レビューを待つ間も空いて見える（1.6）。1度見ただけで停滞と読んだ盤面は、押し切る寸前の作業を
+   * 人へ返して畳んだ（2026-09-06、issue #1506。`staging ready to push` のまま返却された）。
+   */
+  describe('空いていることではなく、空いたままであることを見る', () => {
+    const stalling = (over: Record<string, string>) => ({
+      issues: [{ number: 8, ...label('task'), blockedBy: { nodes: [] } }],
+      sessions: [idle('session_a', 'task-8')],
+      taken: over,
+    });
+
+    it('空いたばかりのワーカーは起こさない', () => {
+      // NOW の1分前。
+      expect(moves(stalling({ 'idle:session_a': '2026-09-05T01:59:00Z' }))).toEqual([]);
+    });
+
+    // **覚えが無いのは「ずっと空いている」ではない。** 台帳が消えた直後もここへ来るので、
+    // 動かない側へ倒す（打つ手はどちらも取り返しが付かない）。上の既定を通さずに直に渡す。
+    it('空いてからの長さが分からなければ、何もしない', () => {
+      const board = stalling({});
+      expect(decide({ now: NOW, settledBefore: SETTLED, prs: [], ...board })).toEqual([]);
+    });
+
+    // **起こした合図が効くには時間が要る。** 次の周（既定30秒）で見限ると、届く前に必ず返す。
+    it('起こした直後は、まだ人へ返さない', () => {
+      // 起こしたのは空いてから15分の時点。まだ20分しか経っていない。
+      const board = stalling({
+        'idle:session_a': '2026-09-05T01:40:00Z',
+        'resume:session_a': 'stall:8',
+      });
+      expect(moves(board)).toEqual([]);
+    });
   });
 
   // 返ってきた issue は、人が `判断待ち` を外すまで誰にも配らない（2.15.2）。**`task` は

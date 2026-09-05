@@ -22,7 +22,8 @@
 //
 // 入力は次の形。
 //
-//   { "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
+//   { "now": "<この周の時刻>",
+//     "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
 //     "mainChecks": [ { "status": "COMPLETED", "conclusion": "SUCCESS" } ],   … `main` の先頭のCI
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files ],
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
@@ -53,8 +54,22 @@
 /**
  * 今その差分へ手が動いているか（1.6）。**言うのは `session_status` だけ**——`status_bucket` は
  * 手番が終わった後の要約から決まるので、どの値も「処理中」を意味しない。
+ *
+ * 手が空いてからの長さを覚えるのも同じ判定を使うので（[`board-round.mjs`](board-round.mjs)）、
+ * ここから出す。**2箇所で書くと、片方だけが直る。**
  */
-const busySession = (session) => session.status === 'SESSION_STATUS_RUNNING';
+export const busySession = (session) => session.status === 'SESSION_STATUS_RUNNING';
+
+/**
+ * 手が空いたままこれだけ続いたら、停滞と読む（2.15.3）。**「手が空いている」ことそのものは停滞
+ * ではない**——ワーカーは手番の切れ目ごとに空き、下請けのレビューを待つ間も空いて見える（1.6）。
+ * **1度見ただけで停滞と読むと、押し切る寸前の作業を人へ返して畳む**（2026-09-06、issue #1506 の
+ * ワーカーが「staging ready to push」のまま返却された）。
+ *
+ * **起こした後にも、同じ長さの窓をもう1つ空けてから返す。** 起こされたセッションが動き出すには
+ * 時間が要るので、次の周（既定30秒）で見限ると、届いた合図が効く前に必ず返すことになる。
+ */
+const STALL_MINUTES = Number(process.env.STALL_MINUTES || 15);
 
 /**
  * `env:<値>` が指す投入先（[`dispatch-task.sh`](dispatch-task.sh) へ渡す引数。2.16）。**盤面が
@@ -114,6 +129,20 @@ export function moves(input) {
 
   const alive = (tag) => input.sessions.filter((session) => session.tags.includes(tag));
   const busy = (tag) => alive(tag).some(busySession);
+
+  /**
+   * 手が空いてから経った分（`STALL_MINUTES` の説明）。空いた時刻を覚えるのは呼び手
+   * （[`board-round.mjs`](board-round.mjs)）で、**動き出せばその記録は消える**。
+   *
+   * **覚えが無ければ0**——この周に空いたばかりか、まだ一度も見ていないかのどちらかで、どちらも
+   * 「続いている」とは言えない。**引けなかったときに動かない側へ倒す**のは、ここで打つ手が
+   * どちらも取り返しの付かないもの（人へ返す・畳む）だから。
+   */
+  function idleMinutes(session) {
+    const since = Date.parse(taken[`idle:${session.id}`] ?? '');
+    const at = Date.parse(input.now ?? '');
+    return Number.isNaN(since) || Number.isNaN(at) ? 0 : (at - since) / 60_000;
+  }
 
   /**
    * 差し戻す相手（2.11）。引くのは**コミットの `Claude-Session:` トレーラ**——`Closes` は、そのPRで
@@ -311,15 +340,20 @@ export function moves(input) {
         break;
       }
 
-      // PRを出さないまま手が空いたセッション。**まず1回起こし、それでも何も出てこなければ人へ返す**
-      // （2.15）。セッションが持つ指紋の枠は1つなので、`stall:` → `returned:` と進めば、どちらの手も
-      // 二度は出ない。
+      // PRを出さないまま**手が空いたままになった**セッション。**まず1回起こし、それでも何も
+      // 出てこなければ人へ返す**（2.15）。セッションが持つ指紋の枠は1つなので、`stall:` →
+      // `returned:` と進めば、どちらの手も二度は出ない。
       if (open === undefined) continue;
       if (input.prs.some((pr) => closes(pr.body).includes(issue))) continue;
+      // **空いていることではなく、空いたままであることが入口**（`STALL_MINUTES`）。
+      const idle = idleMinutes(session);
+      if (idle < STALL_MINUTES) continue;
       const woke = taken[`resume:${session.id}`];
       if (woke === `returned:${issue}`) continue;
       if (woke === `stall:${issue}`) {
-        returns.push(`RETURN ${issue} ${session.id} returned:${issue}`);
+        // 起こしてからも同じだけ空いたまま。**動き出していれば `stall:` は消えている**ので
+        // （`board-round.mjs`）、ここへ来るのは合図が効かなかったものだけ。
+        if (idle >= STALL_MINUTES * 2) returns.push(`RETURN ${issue} ${session.id} returned:${issue}`);
         continue;
       }
       stalls.push(`RESUME ${session.id} stall ${issue} stall:${issue}`);
