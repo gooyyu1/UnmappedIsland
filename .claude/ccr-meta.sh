@@ -91,9 +91,8 @@
 # - **`permission_mode` は `bypassPermissions` だけが撥ねられる**
 #   （`requires a CCR parent session; this caller path has none`）。`auto` などは通る。
 #   **どれを渡すかは投入先で決まる**ので、[`ccr-env.sh`](../scripts/agent/ccr-env.sh) から取る
-#   ——**手で立てるときも同じ**。省くのは「手元の `settings.json` の `defaultMode` に従え」の意味で、
-#   ブリッジでは `bypassPermissions` になるが、クラウドでは箱に設定が無いので `ask` で走り、
-#   `.claude/**` に触れた時点で降りない承認を待つ。
+#   ——**手で立てるときも同じ**。省くとブリッジでは承認なしで通るが、クラウドでは `.claude/**` に
+#   触れた時点で降りない承認を待つ（**そう分かれる理由は突き止めていない**。`ccr-env.sh`）。
 # - **`prompt` を渡さないと、手番が一度も走らない。** 立ってはいるが承認モードは手動に見え、
 #   タグも指示も無いセッションが残る。**立てるなら最初の1手を渡す。**
 

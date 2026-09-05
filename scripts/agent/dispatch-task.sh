@@ -31,7 +31,7 @@
 #   `task-<番号>` のタグからなので、タグの無いセッションは二重投入も空回りも防げない。
 # - `environment_id` と `permission_mode` は必須（この経路には呼び元が無いので継げない）。
 #   **どちらも投入先で決まる**ので、[`ccr-env.sh`](ccr-env.sh) から取って下の分岐で選ぶ。
-#   `permission_mode` は空のことがあり、**そのときは渡さない**（それがブリッジの `bypassPermissions`）。
+#   `permission_mode` は空のことがあり、**そのときは渡さない**（それがブリッジの選び方）。
 # - **閉じた issue へ立てると、空待ちになる。** 題を引くのと同じ `gh issue view` で `state` も見る。
 
 set -euo pipefail
@@ -57,7 +57,7 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 # **立てる先が決まれば、渡すものは全部決まる**（`ccr-env.sh`）。ブリッジはリポジトリを既に持って
-# いるので `source_url` を渡さず、承認モードも無指定——**無指定が `bypassPermissions` になる**。
+# いるので `source_url` を渡さず、承認モードも無指定（[`ccr-env.sh`](ccr-env.sh)）。
 # **渡す文面は投入先で変わらない**（`.claude/dispatch-prompt.md`「走る場所で文面を変えない」）。
 if [ "$WHERE" = "--bridge" ]; then
   ENV_ID="$BRIDGE_ENV"
@@ -137,7 +137,7 @@ node -e '
     args.source_url = repoUrl;
     args.source_revision = "main";
   }
-  // **空なら渡さない。** 渡さないことが `bypassPermissions` を選ぶ唯一の方法（`ccr-env.sh`）。
+  // **空なら渡さない。** 渡さないこと自体が1つの選択（`ccr-env.sh`）。
   if (mode) args.permission_mode = mode;
   process.stdout.write(JSON.stringify(args));
 ' "$WORK/issue.json" "$INSTRUCTION" "$ISSUE" "$ENV_ID" "$SOURCE" "$MODE" >"$WORK/args.json"

@@ -154,8 +154,8 @@ describe('dispatch-review.sh', () => {
     expect(built.permission_mode).toBe('auto');
   });
 
-  // **無指定が `bypassPermissions` になる**（明示すると撥ねられる）ので、`.claude/**` を書き換える
-  // 仕事はこれが要る。`auto` へ落とすと、担当の仕事ができないセッションが立つ。
+  // **ブリッジは渡さない**（`ccr-env.sh`）。渡さずに立てたセッションは `.claude/**` の読み書きを
+  // 承認なしで通すことを実測してある。どのモードが入っているかは名指しできない。
   it('ブリッジへはモードを渡さない', () => {
     const built = args(1524, { onBridge: true });
 

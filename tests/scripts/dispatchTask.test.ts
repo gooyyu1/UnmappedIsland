@@ -174,8 +174,8 @@ describe('dispatch-task.sh', () => {
     expect(built.permission_mode).toBe('auto');
   });
 
-  // **無指定が `bypassPermissions` になる**（明示すると撥ねられる）。承認を出せる人が目の前に
-  // 居る側なので、訊かずに通す。
+  // **ブリッジは渡さない**（`ccr-env.sh`）。渡さずに立てたセッションは `.claude/**` の読み書きを
+  // 承認なしで通すことを実測してある。どのモードが入っているかは名指しできない。
   it('ブリッジへはモードを渡さない', () => {
     const built = args(1415, { onBridge: true });
 

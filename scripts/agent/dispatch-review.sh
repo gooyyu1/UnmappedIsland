@@ -121,7 +121,7 @@ node -e '
     args.source_url = repoUrl;
     args.source_revision = info.headRefName;
   }
-  // **空なら渡さない。** 渡さないことが `bypassPermissions` を選ぶ唯一の方法（`ccr-env.sh`）。
+  // **空なら渡さない。** 渡さないこと自体が1つの選択（`ccr-env.sh`）。
   if (mode) args.permission_mode = mode;
   process.stdout.write(JSON.stringify(args));
 ' "$WORK/pr.json" "$RAW" "$INSTRUCTION" "$PR" "$ENV_ID" "$SOURCE" "$MODE" >"$WORK/args.json"
