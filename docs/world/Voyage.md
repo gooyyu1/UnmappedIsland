@@ -112,7 +112,7 @@
 **外洋は場所 1 つではなく、海区の連なりです。** 海区は地上の土地とまったく同じ `location` +
 `explorable` で、そこに浮かんだ筏から見張り（`explore`）を重ねると次の海区へ出る航路が現れ、その航路を
 渡ると次の海区へ移ります。**漂っているだけでは 1 海区も進みません**
-（[`GameEndings.md`](../concept/GameEndings.md) 12 節）。
+（[`GameEndings.md`](../concept/GameEndings.md) 12.8 節）。
 
 **海区は顔ぶれ**（[`ContentSkeleton.md`](./ContentSkeleton.md) 7 節）**から配ったもの**で、
 **うねりの海で二手に分かれ、流れ藻の海で合流します**。海区ごとに違うのは次だけ

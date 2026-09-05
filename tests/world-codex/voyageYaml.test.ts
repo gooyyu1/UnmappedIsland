@@ -295,7 +295,7 @@ describe('筏と航海', () => {
   });
 
   it('海区には物を置く枠が無いので、積荷を海面へ置けない', () => {
-    // **確定した仕様（GameEndings.md 12.7節）そのもの。** 置ける枠を作るかどうかは、置いてほしい物
+    // **GameEndings.md 12.7節そのもの。** 置ける枠を作るかどうかは、置いてほしい物
     // ではなく置けてしまう物で決まる——枠を作れば、漂流物だけでなく積荷の石も置ける。
     const { game, raft } = ready();
     raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
