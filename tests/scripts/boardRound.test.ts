@@ -43,6 +43,8 @@ interface World {
   /** 非0で終わらせる打ち手（スクリプトの名前）。 */
   readonly fails?: readonly string[];
   readonly ghFails?: boolean;
+  /** `gh issue comment` だけが失敗する周（返す手が打てなかった形）。 */
+  readonly commentFails?: boolean;
   readonly dryRun?: boolean;
 }
 
@@ -55,6 +57,8 @@ interface Result {
   readonly calls: readonly string[];
   /** `gh` に渡された引数。閉じた issue を引きに行った回数を見るのに使う。 */
   readonly gh: readonly string[];
+  /** `gh issue comment` が渡したファイルの中身。**消される前に読む**（打ち手が後片付けする）。 */
+  readonly comments: readonly string[];
   readonly ledger: Record<string, string>;
 }
 
@@ -75,11 +79,17 @@ function playRound(world: World = {}): Result {
     const out: string[] = [];
     const calls: string[] = [];
     const ghCalls: string[] = [];
+    const comments: string[] = [];
 
     const gh = (args: readonly string[]): string | undefined => {
       ghCalls.push(args.join(' '));
       if (world.ghFails === true) return undefined;
       const [first, second, third] = args;
+      if (first === 'issue' && second === 'comment') {
+        if (world.commentFails === true) return undefined;
+        comments.push(readFileSync(args[args.indexOf('--body-file') + 1], 'utf-8'));
+        return '';
+      }
       if (first === 'pr' && second === 'list') return JSON.stringify(world.prs ?? []);
       if (first === 'issue' && second === 'list') return JSON.stringify(world.issues ?? []);
       if (first === 'issue' && second === 'view') {
@@ -133,6 +143,7 @@ function playRound(world: World = {}): Result {
       log: out.join('\n'),
       calls,
       gh: ghCalls,
+      comments,
       ledger: existsSync(ledgerPath) ? JSON.parse(readFileSync(ledgerPath, 'utf-8')) : {},
     };
   } finally {
@@ -240,6 +251,34 @@ describe('board-round.mjs', () => {
 
     expect(result.calls).toEqual(['archive-session.sh --keep-untagged task-,review-']);
     expect(result.ledger).toEqual({});
+  });
+
+  // 返すのはコメントで、ラベルは `board-labels.yml` が付ける（2.15.3）。**盤面がラベルを直に
+  // 触ると、返る道が2つに割れる**——ワーカーが自分で返す道と食い違っても、誰も気づけない。
+  it('起こしても動かないワーカーの仕事を、コメントで人へ返す', () => {
+    const result = playRound({
+      issues: [{ number: 8, labels: [{ name: 'task' }], blockedBy: { nodes: [] } }],
+      sessions: [idle('session_a', 'task-8')],
+      ledger: { 'resume:session_a': 'stall:8' },
+    });
+
+    expect(result.gh.filter((call) => call.startsWith('issue comment'))).toHaveLength(1);
+    expect(result.comments[0]?.split('\n')[0]).toBe('[返却] 起こしても手が動かなかった');
+    expect(result.ledger).toEqual({ 'resume:session_a': 'returned:8' });
+    // ラベルを触っていない。
+    expect(result.gh.filter((call) => call.startsWith('issue edit'))).toEqual([]);
+  });
+
+  it('返せなかったら、指紋を残さない', () => {
+    const result = playRound({
+      issues: [{ number: 8, labels: [{ name: 'task' }], blockedBy: { nodes: [] } }],
+      sessions: [idle('session_a', 'task-8')],
+      ledger: { 'resume:session_a': 'stall:8' },
+      commentFails: true,
+    });
+
+    expect(result.log).toContain('打てなかった: RETURN 8');
+    expect(result.ledger).toEqual({ 'resume:session_a': 'stall:8' });
   });
 
   // 探すのはワーカーの側から（2.10）。開いている一覧に載っているぶんは既に盤面が持っているので、

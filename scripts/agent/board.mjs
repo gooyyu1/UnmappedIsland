@@ -32,9 +32,10 @@
 // のに一覧が残る。消すまで毎回ここに出続けるのが正しい——**消し忘れは、次の司令塔にも見える。**
 //
 // `TASK` の状態は次のどれか。
+//   返却       … ワーカーが人へ返した（`判断待ち`。2.15）。人が外すまで配られない
 //   投入済み   … 走行中のセッションか、開いているPRの `Closes` に載っている
 //   待ち:#N    … `blockedBy` の #N がまだ開いている
-//   着手可     … どちらでもない＝今すぐ投入してよい
+//   着手可     … どれでもない＝今すぐ投入してよい
 //
 // ## `未整理` は、人間が書いたまま投入できない issue
 //
@@ -149,11 +150,13 @@ export function board({ gh = runGh, page = listSessions, checkedItems = runCheck
   lines.push('## TASK');
   for (const issue of issues.filter((item) => names(item).includes('task'))) {
     const blocker = blockers(issue)[0];
-    const state = dispatched.has(String(issue.number))
-      ? '投入済み'
-      : blocker === undefined
-        ? '着手可'
-        : `待ち:#${blocker.number}`;
+    const state = names(issue).includes('判断待ち')
+      ? '返却'
+      : dispatched.has(String(issue.number))
+        ? '投入済み'
+        : blocker === undefined
+          ? '着手可'
+          : `待ち:#${blocker.number}`;
     lines.push(`TASK ${issue.number} ${state} ${issue.title}`);
   }
 
