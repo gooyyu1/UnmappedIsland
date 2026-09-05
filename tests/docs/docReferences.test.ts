@@ -357,16 +357,20 @@ describe('ドキュメントの参照', () => {
    * この形は節の参照にも本文の引用にも使われていて、字面では見分けられない（`Characters.md`
    * 「`max` の80%で安全域を外れる」は仕様の1文の引用）。**`.claude/**` を指すものは節の参照しかない**
    * ので、そこだけ確かめられる——そして、畳んだ節を引いたまま残るのがここ。
+   *
+   * **裏返すと、`.claude/**` の文言をそのまま引くことをこの検査が禁じる。** 引きたくなったら、
+   * 節名で指して要旨を自分の言葉で書く（本文の写しは、写した先が古くなるので元から避けたい形）。
    */
   it('`.claude/**` を指す鉤括弧が、実在の見出しに解決する', () => {
     const broken: string[] = [];
     for (const rel of REF_FILES) {
       const text = read(rel).replace(/\n[\s*/#-]*/g, ' ');
       for (const match of text.matchAll(
-        /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?[ ]*(?:の)?[ ]*「([^「」]{1,40})」/g,
+        // 「〇〇」節 と「〇〇N節」は上の2つが見る。**除外は先読みで書く**——マッチの側は必ず `」` で
+        // 終わるので、マッチ後の文字列を見ないと「節」が続くかは分からない。
+        /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?[ ]*(?:の)?[ ]*「(?!\d)([^「」]{1,40})」(?![ ]*節)/g,
       )) {
-        const [whole, base, rawName] = match;
-        if (whole.endsWith('節')) continue; // 「〇〇節」は上のテストが見る
+        const [, base, rawName] = match;
         const candidates = (docsByBasename.get(base) ?? []).filter((doc: string) =>
           doc.startsWith(`.claude${sep}`),
         );

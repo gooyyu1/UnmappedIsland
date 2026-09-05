@@ -15,7 +15,7 @@ description: >-
 | | 置き場 | いつ書くか | セッションへ注入 |
 | --- | --- | --- | --- |
 | 判断の履歴 | `.claude/decisions/*.md` | ユーザーの発言を受けたその場 | しない |
-| 一般則 | `.claude/policies.md`・`docs/concept/DesignPrinciples.md`・`.claude/parallel-work.md` | この棚卸しのときだけ | `policies.md` は全文、`DesignPrinciples.md` は見出しだけ |
+| 一般則 | `.claude/policies.md`・`docs/concept/DesignPrinciples.md`・`.claude/parallel-work.md` | この棚卸しのときだけ | `policies.md` は全文、`DesignPrinciples.md` は見出しだけ、`parallel-work.md` はしない |
 | 処理済みの履歴 | `.claude/decisions/archive/*.md` | 棚卸しが移す | しない |
 
 **1件だけを見て「これは一般則か」は判断できない。** 同じ趣旨が数件並んで初めて、何が共通で何が
