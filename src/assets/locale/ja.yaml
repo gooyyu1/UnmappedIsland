@@ -1444,8 +1444,8 @@ location_texts:
       windy: { display_name: 風の山頂 }
       flat: { display_name: 平らな山頂 }
 
-# 操作を実行できない理由（GameElementDefinition.md 14.6節のreason）。実行できないアクションのボタンを
-# 押している間、吹き出しに出る。
+# プレイヤーへ差し出した選択肢を選べない理由（GameElementDefinition.md 14.6節のreason）。
+# その選択肢を選ぼうとしたときに出る。
 reason_texts:
   trap_baited: 罠にはもう餌が仕掛けてある。これ以上は入らない。
   field_sown: この畑はもう植わっている。空くまでは撒けない。

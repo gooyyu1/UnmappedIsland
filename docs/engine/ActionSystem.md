@@ -93,26 +93,21 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
    見つけたものが自分の制作時間・探索時間ぶんの tick を浴びずに済む。
 5. 関与オブジェクトの生存確認（6節）: 経過中に失われていたら、その行動は成立しなかったものとして
    `false` を返し、効果を適用せずに終える。
-6. 効果の適用: `self.ApplyActiveEffect(effect, session, agent, instrument)`（4節）。
+6. 効果の適用: `self.applyActiveEffect(effect, context)`（4節）。役は `ReferenceContext` が1つに
+   まとめて持つ。
 7. 待たされていた手番（`trigger: tick` で `duration` を持つもの、
    [`GameElementDefinition.md`](./GameElementDefinition.md) 11.5 節）を起こす。**ここが操作の切れ目**で、
-   4 の経過中に配られた手番はその場では起きずにここまで待つ（`WorldSession.RunToSeam`）。
+   4 の経過中に配られた手番はその場では起きずにここまで待つ（`WorldSession.runToSeam`）。
    時間を進める操作は他にもある（製作の 1 工程・枠へ入れる）ので、切れ目もそれぞれが名乗る
    ——操作の外で時間だけが動いた場合は、その進行そのものが切れ目になる。
 
 ## 3. 実行可能条件（conditions）
 
-`ConditionNode` の木。葉と、複合の `all` / `any` / `not` からなり、
-actions/combinations の一度きりの判定と、passives（8節）の持続的なゲートが同じ木を共用する。
+`ConditionNode` の木。葉と、複合の `all` / `any` / `not` からなり、条件の並びを書ける場所は
+どこも同じ木を共用する（一度きりの判定も、passives（8節）の持続的なゲートも）。書ける葉と演算子キーは
+[`GameElementDefinition.md`](./GameElementDefinition.md) 14節の表が唯一の一覧で、ここには写さない。
 
-| 葉 | 形 | 判定 |
-| --- | --- | --- |
-| Property | `{object, prop, op, value}` | 参照先プロパティの**実効値**（modify・base込み）との比較 |
-| SlotPosition | `{object, in_slot}` | object が今、親のそのスロットに入っているか（外から見た位置） |
-| SlotContent | `{object, slot, tag}` | object 自身のスロットの中に、タグを持つ子が1つでもあるか（内側の中身） |
-| ObjectTag | `{object, tag}` | object 自身がタグを持つか |
-
-`value` はリテラル・配列（`in`/`not_in`）・`{subject, prop}` 参照の三択。参照先が解決できない場合
+比較の相手はリテラル・配列（`in`/`not_in`）・`{subject, prop}` 参照の三択。参照先が解決できない場合
 （親が無い等）、その葉は偽になる。
 
 ## 4. 条件・効果から参照できるオブジェクト
@@ -144,21 +139,24 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
 
 ## 5. 効果（ActiveEffect）
 
-効果はポリモーフィックな `ActiveEffect` で、3形態を再帰的に組み合わせる。
+効果はポリモーフィックな `ActiveEffect` で、自身を再帰的に組み合わせる1つの型。何を並べて書けるかは
+[`GameElementDefinition.md`](./GameElementDefinition.md) 9.7節が持つ。
 
-- **単一命令**: `set` / `add` / `destroy` / `spawn` / `transfer` / `move`（9節）。
-- **宣言順合成（`ActiveEffects`）**: パーサが set → add → transfer → destroy → spawn の順に並べる
-  （同一プロパティへの set 後の add、destroy で空いた位置への spawn という依存関係のため）。
+- **宣言順合成（`ActiveEffectSequence`）**: 並べた命令を**YAMLに書かれた順**で適用する
+  （`effectsInDeclarationOrder`）。動詞ごとの優先順位は無く、順序に意味がある組み合わせは著者が
+  その順に書く（9.7節）。
 - **`pick`（`PickEffect`、10節）**: `weight`（リテラルかプロパティ参照）による重み付き抽選で
   1候補を選んで適用する。候補の効果も `ActiveEffect` なので、pick のネストができる。
+- **`ConditionalEffect`**: rangeイベントの `conditions`（6.3節）が満たされた回だけ中身を適用する。
 
 設計上の要点:
 
-- `set`/`add` の値・`pick` の `weight` は「リテラルか `{subject, prop}` 参照か」の二択で統一されている。
+- `set`/`add` の値は**リテラルだけ**で、`{subject, prop}` 参照は書けない（9.2節）。参照を取れるのは
+  `pick` の `weight`（10.2節）・`duration`（11.3節）・`conditions` の比較の相手（14.1節）。
 - `spawn` の配置先（`into`、9.4節）は、**個体を指す形が `move` の移動先とまったく同じ**で、書ける起点は
   4節の表のとおり。個体でないものを名乗れるのは `into` だけで、`same_slot`（既定）と `child`。
   `same_slot` は、適用の入口で捕捉した
-  「self が占めていた位置」のスナップショット（`WorldObject.SameSlotSpawnSite`）を使い、destroy で self が
+  「self が占めていた位置」のスナップショット（`SameSlotSpawnSite`）を使い、destroy で self が
   消えた後でもその位置を引き継げる。配置に失敗した場合は起点の親、さらにその親…とこぼれ落ち、
   どこにも入らなければ世界から消える（9.4 節）。どの段でも枠の宣言はそのまま効く。
 - `transfer`（9.5節）は「出せる量」と（`allow_overflow: false` なら）「受け取れる量」で実移動量を決め、
@@ -168,7 +166,7 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
   （道の移動アクション）は、`object_def` 参照ではなく `self` のプロパティが保持する
   **インスタンスID**（`to_prop`）で指す。
 - プロパティの rangeイベント（`on_max`/`on_min`、6.3節）も**同じ**
-  `ActiveEffect` と適用経路（`WorldObject.ApplyActiveEffect`）を使う。書ける動詞に差は無く、
+  `ActiveEffect` と適用経路（`WorldObject.applyActiveEffect`）を使う。書ける動詞に差は無く、
   `pick` も `move` も並べて書ける（海区の `storm_drift` の `on_max` が、`among` で選んだ筏を `move` で
   隣の海区へ流す。`voyage.yaml`）。**ここは操作ではなく、値が端に着いた瞬間への反応**なので、rangeイベントで
   あることを理由に落ちる起点は操作の関係の 3 役（`agent`・`instrument`・`patient`、11.5節）だけ。ほかの起点の可否は
@@ -182,11 +180,11 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
   違うので、同じ `interactions` でも書ける役は一様ではない。**枠へ入れるのにかかる時間（`put_in` の
   `duration`、7.10節）も同じ形の宣言**で、そこでも入れる物を `instrument` として指せる
   （`SlotDef.putInMinutes`）。
-- 時間進行は `InteractionDef` 自身が `WorldSession.AdvanceWorldTime(minutes)` を呼んで完結させる。
+- 時間進行は `InteractionDef` 自身が `WorldSession.advanceWorldTime(amount)` を呼んで完結させる。
   呼び出し側（UI層）が実行後に別途時間を進める必要はない。解決した分数は実行前にも引ける
-  （`MinutesFor`。UI層が実行前に所要時間を見せるため、[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
-- `AdvanceWorldTime` は分を進めながら、tick 境界（world の `minutes_per_tick` プロパティ、
-  現状15分）を跨ぐたびに world ツリー全体の `Tick()` を1回実行する。長い `duration` の action は、
+  （`minutesFor`。UI層が実行前に所要時間を見せるため、[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
+- `advanceWorldTime` は分を進めながら、tick 境界（world の `minutes_per_tick` プロパティ、
+  現状15分）を跨ぐたびに world ツリー全体の `tick()` を1回実行する。長い `duration` の action は、
   その間の `add`・rangeイベントをすべて経験する。
 - `World` を持たないセッション（時間の概念が無い単体テスト等）では時間進行をスキップする。
 
@@ -196,7 +194,8 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
 行動の途中で壊れる）。破棄は「親スロットから切り離す」ことなので（`GameElementDefinition.md` 9.3節）
 そのまま効果を適用しても例外にはならないが、`same_slot` の `spawn` が置き場所を失うなどして**黙って
 何も起きない**結果になる。追跡できない失敗になるため、**関与オブジェクトが1つでも世界から失われて
-いたら、その行動は成立しなかったものとして `false` を返し、効果を適用しない**（`spendDuration`）。
+いたら、その行動は成立しなかったものとして `false` を返し、効果を適用しない**
+（`spendDurationAndReportParticipantsAlive`）。
 
 - 見るのは「経過前に世界に居たのに、経過後は居ない」ものだけ。もともと世界の木に繋がっていない
   オブジェクトは、失われたわけではないので対象にしない。
