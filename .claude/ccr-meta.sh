@@ -6,8 +6,8 @@
 #   bash .claude/ccr-meta.sh create_session < args.json
 #
 # **引数は標準入力で渡す**（argvではない）。中身は tools/call の arguments そのもので、**普段の
-# `mcp__ccr_meta__*` と同じ道具・同じ引数**なので覚え直すことは無い。使えるのは23個全部
-# （`tools/list` で引ける）。
+# `mcp__ccr_meta__*` と同じ道具・同じ引数**なので覚え直すことは無い。使えるのは `tools/list` で
+# 引ける全部。
 #
 # **日本語を含む引数は、必ずファイルへ書いてから流す。** シェルの `$(...)` や環境変数を経由すると
 # Windowsのnodeが化けさせる（下記）。
@@ -27,8 +27,8 @@
 # **だから、登録のトークンは生かしておく必要がある。** 起動時にヘッダが無効だと**道具は一覧に
 # 出ず**（2026-09-05 に実測。無効な値を入れて立てたセッションは `mcp__ccr_meta__*` を1つも持たなかった）、
 # フックも呼ばれないので案内ごと消える。タスクスケジューラの `ClaudeCode-CcrMetaTokenSync` が
-# `~/.claude/refresh-ccr-meta-token.ps1` を回して追従させている。**これは呼ぶためではなく、
-# 案内板を灯しておくための更新。**
+# `~/.claude/refresh-ccr-meta-token.ps1` を回して追従させている（登録のヘッダは
+# [`scripts/usage/mcp.sh`](../scripts/usage/mcp.sh) も読んで直に叩くので、そちらのためにも要る）。
 #
 # MCPサーバもただのHTTPで、しかも**ステートレスに応じる**（`initialize` で session id を持たされない）
 # ので、`tools/call` を1発投げるだけでよい。

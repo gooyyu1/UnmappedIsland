@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 /**
  * `.claude/hooks/deny-ccr-meta-mcp.sh` が、メタMCPを呼んだところで正しい入口へ案内することの検査。
@@ -11,6 +11,9 @@ import { describe, expect, it } from 'vitest';
  * 諦める」で、これは何も鳴らずに終わる（`policies.md`「正しい入口とは別に、使えない経路が
  * 見えているとき」）。
  */
+
+// 実プロセス（bash）を起こすので、既定の5秒では足りないことがある。
+vi.setConfig({ testTimeout: 20000 });
 
 const REPO = resolve(__dirname, '../..');
 const HOOK = resolve(REPO, '.claude/hooks/deny-ccr-meta-mcp.sh');
@@ -54,5 +57,16 @@ describe('deny-ccr-meta-mcp.sh', () => {
     for (const name of ['mcp__ccr_meta__create_session', 'mcp__ccr_meta__list_sessions']) {
       expect(registered.some((entry) => new RegExp(entry.matcher ?? '').test(name))).toBe(true);
     }
+  });
+
+  // `settings.json` はフックをパスで直に起動するので、POSIX側（クラウドのセッションはLinux）では
+  // 実行ビットが要る。Windowsの作業ツリーでは欠けても動くため、gitのインデックスの側を見る。
+  it('実行ビットが立っている', () => {
+    const listed = execFileSync('git', ['ls-files', '-s', '.claude/hooks/deny-ccr-meta-mcp.sh'], {
+      cwd: REPO,
+      encoding: 'utf-8',
+    });
+
+    expect(listed.startsWith('100755 ')).toBe(true);
   });
 });
