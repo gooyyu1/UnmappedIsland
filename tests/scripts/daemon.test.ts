@@ -261,7 +261,7 @@ describe('daemon.sh', () => {
       issueStates: { 8: 'CLOSED' },
     });
 
-    expect(result.calls).toEqual(['archive-session.sh --keep-untagged task-']);
+    expect(result.calls).toEqual(['archive-session.sh --keep-untagged task-,review-']);
     expect(result.log).toContain('ARCHIVED session_a');
     // 畳めたので、台帳へは残さない（相手も次の周には消える）。
     expect(result.ledger).toEqual({});
@@ -287,7 +287,7 @@ describe('daemon.sh', () => {
       archiveVerdict: 'UNARCHIVED',
     });
 
-    expect(result.calls).toEqual(['archive-session.sh --keep-untagged task-']);
+    expect(result.calls).toEqual(['archive-session.sh --keep-untagged task-,review-']);
     expect(result.ledger).toEqual({});
   });
 

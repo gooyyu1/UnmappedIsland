@@ -86,7 +86,6 @@
   brake.sh              手綱の issue のチェックを読む
   occupancy.sh          そのタグを持つセッションが居るかを見る（--live 投入済みか / --busy 手が動いているか）
   archive-session.sh    セッションを畳む。畳んでよいかの判定はここが持つ
-  archive-reviews.sh    終わったレビューのセッションをまとめて畳む
   checked-items.sh      確定待ちの issue で、チェックの付いた項目を出す
   usage.sh              使用量を出す（`usage-record.sh` が貯め、`usage-attribute.mjs` が割る）
   push-screenshot.sh    画像を置いてPR本文に貼れるURLを返す

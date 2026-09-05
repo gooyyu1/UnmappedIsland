@@ -226,6 +226,33 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
   });
 
+  // **畳む合図を、他の手が起きることに繋がない。** マージのついでに掃いていたときは、人が画面から
+  // マージしたPRのレビューが誰にも掃かれず残った（#1549）。
+  it('走り終わったレビューのセッションを畳む', () => {
+    expect(moves({ sessions: [idle('session_r', 'review-1549')] })).toEqual(['ARCHIVE session_r read:1549']);
+  });
+
+  // レビューは使い回さないので、走っていないことがそのまま「もう誰も起こさない」。**PRが開いて
+  // いるかは見ない**——見ると、閉じないPR（`収束せず`・`直し待ち` のまま）のぶんが永久に残る。
+  it('PRが開いていても、走り終わったレビューは畳む', () => {
+    const board = { prs: [pr(1549)], sessions: [idle('session_r', 'review-1549')] };
+
+    expect(moves(board)).toContain('ARCHIVE session_r read:1549');
+  });
+
+  it('走っているレビューは畳まない', () => {
+    expect(moves({ sessions: [working('session_r', 'review-1549')] })).toEqual([]);
+  });
+
+  it('一度畳もうとして残されたレビューは、二度打たない', () => {
+    const board = {
+      sessions: [idle('session_r', 'review-1549')],
+      taken: { 'archive:session_r': 'read:1549' },
+    };
+
+    expect(moves(board)).toEqual([]);
+  });
+
   it('CIが赤いPRも、書いたセッションを起こす', () => {
     const board = {
       prs: [pr(10, { statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }] })],
@@ -352,9 +379,10 @@ describe('board-move.mjs', () => {
   });
 
   // 判定を書き終えたレビューが占有し続けると、次の差分のレビューが永久に止まる（1.2）。
-  it('前のレビューが書き終えていれば、次のレビューを出す', () => {
+  // 畳む手が先に出るので、次の1本は次の周（打つのは1周に1手）。
+  it('前のレビューが書き終えていれば、畳んでから次のレビューを出す', () => {
     const board = { prs: [pr(10)], sessions: [idle('session_r', 'review-10')] };
-    expect(moves(board)).toEqual(['REVIEW 10 aaa111']);
+    expect(moves(board)).toEqual(['ARCHIVE session_r read:10', 'REVIEW 10 aaa111']);
   });
 
   it('著者が書いている最中のPRは、レビューへ出さない', () => {

@@ -6,7 +6,7 @@
 // ここは決めるだけ。決める材料が全部引数に載っているので、実物を触らずに検査できる。
 //
 //   MERGE   <PR番号>
-//   ARCHIVE <セッションID> <指紋>            … 担当の issue が閉じたワーカーを畳む
+//   ARCHIVE <セッションID> <指紋>            … 起こす先が無くなったセッションを畳む
 //   RESUME  <セッションID> mend   <PR番号>    <指紋>  … 指摘・コンフリクト・CIの赤を直させる
 //   RESUME  <セッションID> reject <PR番号>    <指紋>  … 通らなかった仮決めを取り下げさせる
 //   RESUME  <セッションID> look   <PR番号>    <指紋>  … 画面を撮って本文へ貼らせる
@@ -230,10 +230,21 @@ for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
   reviews.push(`REVIEW ${pr.number} ${pr.headRefOid}`);
 }
 
-// 手が空いたワーカーの行き先は2つ。**担当の issue が閉じていれば畳み**、開いているのにPRが出て
-// いなければ起こす。どちらも「手が空いている」ことが入口なので、1つの走査で決める。
+// 手が空いたセッションの行き先。**レビューは畳み**、ワーカーは**担当の issue が閉じていれば畳んで**、
+// 開いているのにPRが出ていなければ起こす。どれも「手が空いている」ことが入口なので、1つの走査で決める。
 for (const session of input.sessions) {
   if (busySession(session)) continue;
+
+  // **レビューは、走り終わっていれば畳む**（2.10.3）。使い回さない設計（`dispatch-review.sh`）なので、
+  // 手が止まった時点でもう誰も起こさない。**PRが開いているかは見ない**——`直し待ち` のまま戻って
+  // こないPRのレビューも、畳めない理由は無い。
+  const review = session.tags.find((tag) => tag.startsWith('review-'));
+  if (review !== undefined) {
+    const mark = `read:${review.slice('review-'.length)}`;
+    if (taken[`archive:${session.id}`] !== mark) archives.push(`ARCHIVE ${session.id} ${mark}`);
+    continue;
+  }
+
   for (const tag of session.tags) {
     if (!tag.startsWith('task-')) continue;
     const held = tag.slice('task-'.length);

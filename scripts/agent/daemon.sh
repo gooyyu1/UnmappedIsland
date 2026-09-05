@@ -333,9 +333,9 @@ play() {
     ;;
   ARCHIVE)
     # 畳んでよいかの判定は [`archive-session.sh`](archive-session.sh) が持つ。**終了コードは見ない**
-    # ——あちらは1件ずつの結果を行で返す。`--keep-untagged task-` は、ここへ来る相手が必ずワーカーで
-    # あること（盤面の側の約束）を、畳む手前でもう一度確かめるため。
-    out=$(printf '%s\n' "$a" | bash "$HERE/archive-session.sh" --keep-untagged task-) || return 1
+    # ——あちらは1件ずつの結果を行で返す。`--keep-untagged` は、ここへ来る相手が必ずワーカーか
+    # レビューであること（盤面の側の約束）を、畳む手前でもう一度確かめるため。
+    out=$(printf '%s\n' "$a" | bash "$HERE/archive-session.sh" --keep-untagged task-,review-) || return 1
     printf '%s\n' "$out"
     if grep -q "^ARCHIVED $a\$" <<<"$out"; then return 0; fi
     # `KEPT` は「畳んではいけない」という**安定した答え**（ブリッジのもの・素性を引けなかったもの）。

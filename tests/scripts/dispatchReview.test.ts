@@ -28,7 +28,7 @@ interface World {
 }
 
 /** `DRY_RUN=1` で組み立てさせて、`create_session` へ渡るはずの引数を返す。 */
-function args(pr: number, world: World = {}): { title: string; tags: string[] } {
+function args(pr: number, world: World = {}): { title: string; tags: string[]; prompt: string } {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-dispatch-review-'));
   const dir = work.replace(/\\/g, '/');
   try {
@@ -69,7 +69,7 @@ esac
         BRIDGE_ENV: 'env_TEST_BRIDGE',
       },
     });
-    return JSON.parse(stdout) as { title: string; tags: string[] };
+    return JSON.parse(stdout) as { title: string; tags: string[]; prompt: string };
   } finally {
     rmSync(work, { recursive: true, force: true });
   }
@@ -101,5 +101,36 @@ describe('dispatch-review.sh', () => {
 
   it('タグはPRの番号で付く', () => {
     expect(args(1524).tags).toEqual(['review-1524']);
+  });
+
+  // **2周目が読む範囲を、判定コメントが名乗った版から決める**（`review-prompt.md`「読んだ版」の節）。
+  // ここを渡さないとレビュアーはPR全体を読み直し、前の周が見送ったものまで新しい指摘として挙がる。
+  it('判定が無ければ、前の版は なし', () => {
+    expect(args(1524).prompt).toContain('それは `なし` です');
+  });
+
+  it('前の周が名乗った版を埋める', () => {
+    const comments = ['[レビュー] 直しが要る\n読んだ版: 0a0926de\n\n本文'];
+
+    expect(args(1524, { comments }).prompt).toContain('それは `0a0926de` です');
+  });
+
+  // **数と版は同じコメントから出す。** 判定を書かずに落ちた周のぶんだけ版が進むと、次の1本が
+  // 読んでいない範囲を「前の周が見た」ことにしてしまう。
+  it('版を引くのは最後の判定コメントから', () => {
+    const comments = [
+      '[レビュー] 直しが要る\n読んだ版: aaaaaaa',
+      '[スメル] 読んだ版: bbbbbbb',
+      '[レビュー] 直しが要る\n読んだ版: ccccccc',
+    ];
+
+    expect(args(1524, { comments }).prompt).toContain('それは `ccccccc` です');
+  });
+
+  // 名乗り忘れは、PR全体を読み直す側へ倒す。範囲を狭めた側へ倒すと、誰も読んでいない差分ができる。
+  it('前の周が名乗っていなければ なし', () => {
+    const comments = ['[レビュー] 直しが要る\n本文だけ'];
+
+    expect(args(1524, { comments }).prompt).toContain('それは `なし` です');
   });
 });

@@ -160,20 +160,11 @@ describe('archive-session.sh', () => {
     expect(result.archived).toBe(false);
   });
 
-  // 判定を書いている最中のレビューを畳むと、そのコメントは出ないまま消える。
-  it('`--keep-working` は、走っているセッションを畳まない', () => {
+  // **走っている相手を除くのは渡す側**（`board-move.mjs`）。ここで除くと `KEPT` が返り、盤面は
+  // それを安定した答えとして指紋に残すので、その相手が二度と畳まれなくなる。
+  it('走っているセッションでも、渡されたら畳む', () => {
     const state = ['SESSION_STATUS_RUNNING', 'SESSION_STATUS_BUCKET_WORKING'] as const;
-    const result = run({ args: ['--force-bridge', '--keep-working'], state });
-
-    expect(result.lines).toEqual([`KEPT ${SESSION}`]);
-    expect(result.archived).toBe(false);
-  });
-
-  // **見るのは `session_status`。** `status_bucket` は手が空いても `..._WORKING` のまま固まることが
-  // あり（board-design 1.6）、そちらで見ると畳めないセッションが溜まり続ける。
-  it('`--keep-working` でも、手が空いていれば status_bucket が WORKING でも畳む', () => {
-    const state = ['SESSION_STATUS_IDLE', 'SESSION_STATUS_BUCKET_WORKING'] as const;
-    const result = run({ args: ['--force-bridge', '--keep-working'], state });
+    const result = run({ args: ['--force-bridge'], state });
 
     expect(result.archived).toBe(true);
   });

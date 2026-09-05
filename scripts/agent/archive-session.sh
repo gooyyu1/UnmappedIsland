@@ -3,8 +3,7 @@
 # 標準入力へ1行1件で渡すだけでよい。
 #
 #   printf '%s\n' session_A session_B | bash scripts/agent/archive-session.sh
-#   printf '%s\n' session_A | bash scripts/agent/archive-session.sh --keep-working
-#   printf '%s\n' session_A | bash scripts/agent/archive-session.sh --keep-untagged task-
+#   printf '%s\n' session_A | bash scripts/agent/archive-session.sh --keep-untagged task-,review-
 #   printf '%s\n' session_A | bash scripts/agent/archive-session.sh --force-bridge
 #
 # 出力は1行1件。`ARCHIVED <ID>`、触らないと決めたものは `KEPT <ID>`、打って失敗したものは
@@ -14,35 +13,28 @@
 #
 # ## 判定を呼び手へ配らない
 #
-# 畳む経路は2つある（[`archive-reviews.sh`](archive-reviews.sh) と
-# [`merge-and-close.sh`](merge-and-close.sh)）。**どのセッションを渡すかは経路ごとに違う**——前者は
-# `review-` で始まるタグ、後者は `task-<番号>` のタグで選ぶ——が、**渡した後の判定は同じ**。
-# 分けて持つと、3つ目の経路を足す人が同じ判定をもう一度書き足さないと壊れる。
+# 渡す相手を選ぶのは呼び手（盤面の `ARCHIVE`、前任を畳む `--force-bridge`）で、**選び方は経路ごとに
+# 違う**——盤面はタグで、前任はIDを名指しで——が、**渡した後の判定は同じ**。分けて持つと、次の
+# 経路を足す人が同じ判定をもう一度書き足さないと壊れる。
 #
 # だから `get_session` はここが自分で引く。呼び手が引いたものを渡す形にすると、「どの口から引いた
 # 値のどのキーを見るか」が呼び手側の知識に戻り、規約がまた散る。
 #
-# ## 走行中を守るかは呼び手が決める（`--keep-working`）
+# ## 走っている相手を除くのは、ここではない
 #
-# 「**読み終えたか**」は状態では分からない（[`archive-reviews.sh`](archive-reviews.sh)「状態では
-# 判定できない」）が、「**今走っているか**」は別の問いで、`session_status` が答える（見方は
-# [`board-design.md`](../../.claude/board-design.md) 1.6）。`archive_session` はコンテナを解放するので、
-# 判定を書いている最中のレビューを畳むと、そのコメントは出ないまま消える。
+# `archive_session` はコンテナを解放するので、手が動いている最中に畳むと、書きかけの出力は出ない
+# まま消える。**除くのは渡す側**——盤面は走行中のセッションに手を出さない
+# （[`board-move.mjs`](board-move.mjs)）。ここで除くと `KEPT` が返るが、盤面は `KEPT` を
+# 「畳んではいけないという**安定した答え**」として指紋に残す（[`daemon.sh`](daemon.sh)）ので、
+# **走行中がたまたま重なった1回で、その相手が二度と畳まれなくなる。**
 #
-# **ただし除いたものは `KEPT` として残るだけで、誰かがもう一度渡さない限り二度と畳まれない。**
-# だから守るのは、**その出力を読む相手がまだ居るとき**だけ——開いているPRのレビューがこれで、次の
-# レビューの投入かマージのときにもう一度渡される。**マージ済みのPRのセッションは、判定を書き終えても
-# 読む相手が無く、渡す出来事も二度と起きない**ので、走行中でも畳む。どちらかは呼び手が知っている。
+# ## その仕事のために立てたものだけを畳む（`--keep-untagged <接頭辞>,<接頭辞>…`）
 #
-# ## その仕事のために立てたものだけを畳む（`--keep-untagged <接頭辞>`）
-#
-# ワーカーとして畳んでよいのは、**1つの issue のために立てたセッションだけ**（`task-<番号>` の
-# タグを持つ。[`dispatch-task.sh`](dispatch-task.sh) が必ず付ける）。相談役のように issue を持たない
-# 相手は、その issue が閉じても仕事が終わっていない——畳むと、ユーザーが話している窓口ごと閉じる。
-# 接頭辞で始まるタグを1つも持たないものを `KEPT` として出す。
-#
-# **タグで絞ってから渡す経路には要らない**（`archive-reviews.sh` は `review-` で始まるタグで引く）。
-# 渡すかどうかを呼び手が決めるのは、`--keep-working` と同じ形。
+# 畳んでよいのは、**1つの仕事のために立てたセッションだけ**——`task-<番号>`
+# （[`dispatch-task.sh`](dispatch-task.sh)）か `review-<PR番号>`
+# （[`dispatch-review.sh`](dispatch-review.sh)）のタグを持つもの。相談役のように仕事の単位を持たない
+# 相手は、何が終わっても仕事が終わっていない——畳むと、ユーザーが話している窓口ごと閉じる。
+# **どの接頭辞にも当たらないもの**を `KEPT` として出す。
 #
 # ## ブリッジで立てたものは、呼び手が畳んでよいと言ったときだけ畳む（`--force-bridge`）
 #
@@ -52,7 +44,7 @@
 # `environment_id`（[`ccr-env.sh`](ccr-env.sh) の `BRIDGE_ENV`）で除いて `KEPT` として出す。
 #
 # **`claude remote-control` が生きていることを知っているのは呼び手だけ**なので、判定ではなく引数で
-# 受ける（`--keep-working` と同じ形）。渡すのは司令塔の引き継ぎ
+# 受ける。渡すのは司令塔の引き継ぎ
 # （[`handover.sh`](handover.sh)）で、**後継が起動できている＝生きている**。
 #
 # ## 畳んだブリッジのセッションは、worktree まで片付ける
@@ -78,15 +70,13 @@
 
 set -euo pipefail
 
-KEEP_WORKING=0
 KEEP_UNTAGGED=''
 FORCE_BRIDGE=0
 while [ $# -gt 0 ]; do
   case "$1" in
-  --keep-working) KEEP_WORKING=1 ;;
   --force-bridge) FORCE_BRIDGE=1 ;;
   --keep-untagged)
-    KEEP_UNTAGGED="${2:?タグの接頭辞を渡す（例: task-）}"
+    KEEP_UNTAGGED="${2:?タグの接頭辞をカンマ区切りで渡す（例: task-,review-）}"
     shift
     ;;
   *)
@@ -132,13 +122,11 @@ while read -r session; do
     if [ "$FORCE_BRIDGE" -eq 1 ]; then remove_worktree "$session"; fi
     continue
   fi
-  # 走行中の見方は 1.6。**言うのは `session_status` だけ**——`status_bucket` は手番が終わった後の
-  # 要約から決まるので、どの値も「処理中」を意味しない。
   if [ -z "$info" ] ||
-    { [ "$KEEP_WORKING" -eq 1 ] &&
-    [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" = "SESSION_STATUS_RUNNING" ]; } ||
-    { [ -n "$KEEP_UNTAGGED" ] && ! jq -e --arg prefix "$KEEP_UNTAGGED" \
-      '[.ccr.tags[]? | select(startswith($prefix))] | length > 0' <<<"$info" >/dev/null; } ||
+    { [ -n "$KEEP_UNTAGGED" ] && ! jq -e --arg prefixes "$KEEP_UNTAGGED" \
+      '($prefixes | split(",")) as $ps
+       | any(.ccr.tags[]?; . as $t | any($ps[]; . as $p | $t | startswith($p)))' \
+      <<<"$info" >/dev/null; } ||
     { [ "$FORCE_BRIDGE" -eq 0 ] &&
     [ "$(jq -r '.ccr.environment_id // ""' <<<"$info")" = "$BRIDGE_ENV" ]; }; then
     echo "KEPT $session"

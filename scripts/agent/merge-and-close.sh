@@ -15,18 +15,13 @@
 #   UNRELAYED <PR番号>              … その印を付けようとして失敗した
 #   CLOSED   <issue番号>            … PR本文の `Closes #N` が閉じたことの確認
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
-#   ARCHIVED <セッションID>         … 残っていたレビューのセッションを畳んだ（下の「ワーカーを畳むのは…」）
-#   KEPT     <セッションID>         … 畳まなかった。まだ読んでいる最中か、ブリッジのものか、
-#                                     `get_session` を引けなくて素性が分からなかったもの（最後のものは
-#                                     **もう渡す出来事が無い**ので、ユーザーが引き直して手で畳む）
-#   UNARCHIVED <セッションID>       … 畳もうとして失敗した
 #   SYNCED   <コミット>             … 本体のチェックアウトを新しい `main` へ進めた
 #   INSTALLED                       … 依存が変わったので本体で `npm install` した
 #   DIRTY    <本体のパス>           … 本体に未コミットの変更があるので触らなかった
 #   終了コード 0 … すべて片付いた
 #   終了コード 1 … マージできなかった（何もしていない。関門を含む）
 #   終了コード 2 … マージはしたが、後片付けに残りがある
-#                  （上の `UNRETARGETED`・`UNDELETED`・`OPEN`・`UNARCHIVED`・`UNRELAYED`・`DIRTY`）
+#                  （上の `UNRETARGETED`・`UNDELETED`・`OPEN`・`UNRELAYED`・`DIRTY`）
 #
 # ## 積まれたPRは、ブランチを消す前に `main` へ下ろす
 #
@@ -62,18 +57,12 @@
 # **どれも判断が無いのに、叩く側の文脈を1往復ずつ食う。** レビューは既に済んでいるので、ここから
 # 先を1回にまとめる。
 #
-# ## ワーカーを畳むのは、ここではない
+# ## セッションを畳むのは、ここではない
 #
-# **PRをマージしたかと、書いたワーカーを畳んでよいかは別の問い**（出どころ: ユーザーの指示・
-# 2026-09-05。[`board-design.md`](../../.claude/board-design.md) 2.10）。畳む条件は**担当の issue が
-# 閉じたこと**で、盤面が毎周見る。ここに繋いでいたときは、**人が画面からマージすると後片付けが
-# 一度も走らず**、ワーカーが枠を握ったまま残った（PR #1524）。
-#
-# **レビューのセッションはここで畳む**（[`archive-reviews.sh`](archive-reviews.sh)）。あちらは issue を
-# 持たないので issue では引けず、`review-<PR番号>` のタグで引く。PRが閉じれば読む相手が
-# 無くなるので、ここがこのPRの分を畳む最後の場所。**あちらが掃くのはこのPRの分だけではない**
-# （残っている `review-*` 全部。理由はあちらの「1本のPRだけを掃くと…」）ので、`直し待ち` や
-# `判断待ち` で止まったPRのレビューも、1件マージするたびに一緒に片付く。
+# **PRをマージしたかと、そのために立てたセッションを畳んでよいかは別の問い**（出どころ: ユーザーの
+# 指示・2026-09-05。[`board-design.md`](../../.claude/board-design.md) 2.10）。畳むのは盤面が毎周
+# 見て打つ。ここに繋いでいたときは、**人が画面からマージすると後片付けが一度も走らず**、
+# ワーカーが枠を握ったまま残った（PR #1524）。レビューのセッションも同じ形で残った（#1549）。
 #
 # ## 本体を追随させるのは、ここでしかできないから
 #
@@ -97,7 +86,6 @@ USER_OK=0
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 試験は差し替える（`gh` は PATH で差し替わるが、これはパスで呼ぶため）。
-CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 NEEDS_USER_REVIEW="${NEEDS_USER_REVIEW:-$HERE/needs-user-review.sh}"
 
 # **PRは1回だけ引く。** 項目ごとに `gh pr view` を打つと、その数だけ往復が増えるうえ、**項目ごとに
@@ -119,7 +107,7 @@ head=$(jq -r '.headRefName' <<<"$pr")
 # 挟む側と閉じる側で一致していないと黙って壊れる。繋がずに1件ずつ読めば、印そのものが要らない。
 #
 # **`tr -d '\r'` が要るのは、複数行を出して、その行をシェルが受け取るから**（理由は
-# [`archive-reviews.sh`](archive-reviews.sh) の同じ注記）。下の `read` が拾うので、残ると
+# [`live-sessions.sh`](live-sessions.sh) の同じ注記）。下の `read` が拾うので、残ると
 # `base64 -d` が壊れる。
 review_comments=$(jq -r '.comments[] | select(.body | startswith("[レビュー]")) | .body | @base64' \
   <<<"$pr" | tr -d '\r')
@@ -245,13 +233,6 @@ while read -r issue; do
     leftover=1
   fi
 done <<<"$closes"
-
-# レビューのセッション（上の「ワーカーを畳むのは…」）。畳めなければ `UNARCHIVED` が出るので残りに数える。
-reviews=$(CCR_META="$CCR_META" bash "$HERE/archive-reviews.sh")
-[ -z "$reviews" ] || printf '%s\n' "$reviews"
-if grep -q '^UNARCHIVED ' <<<"$reviews"; then
-  leftover=1
-fi
 
 # 本体は作業ツリーの共有先なので、進める前に汚れていないことを見る。未追跡は見ない——本体には
 # `claude_rc.bat` のような、追跡していない持ち物が置いてある。
