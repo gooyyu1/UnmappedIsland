@@ -204,7 +204,7 @@ describe('全身の菌と免疫', () => {
   });
 
   it('獣も同じ物差しで菌を持つが、免疫は動かない', () => {
-    // 深手を負った獣が敗血症で死ぬ経路（傷から繋ぐのは次のissue）の受け皿。生活で上下しないので
+    // 深手を負った獣が敗血症で死ぬ経路（下の「傷から」）の受け皿。生活で上下しないので
     // 段は1つで、人の健康時と同じ高さに置いてある。
     const boar = spawn('wild_boar');
     const pathogen = boar.getProperty(codex.propertyNames.getId('pathogen'));
@@ -218,5 +218,33 @@ describe('全身の菌と免疫', () => {
 
     expect(pathogen.number, '人と同じ速さで引く').toBeCloseTo(ONE_RAW_MEAL - 0.05, 5);
     expect(immunity.number, '感染しても上がらない').toBe(60);
+  });
+
+  it('深手を負った獣も、傷から全身へ回られる', () => {
+    // 流し込みの宣言は傷の側が親を見て書いてある（injuries.yaml）ので、人と獣に同じ1つが刺さる。
+    // **獣は自分で洗えない**ので、負ったまま放っておかれた個体は必ずこの道を通る。
+    const boar = spawn('wild_boar');
+    const injury = spawn('gore_wound');
+    expect(injury.moveToSlotOrRejection(boar.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
+    const infection = injury.getProperty(codex.propertyNames.getId('infection'));
+    const pathogen = boar.getProperty(codex.propertyNames.getId('pathogen'));
+    const blood = boar.getProperty(codex.propertyNames.getId('blood'));
+    const passTicks = (count: number): void => {
+      for (let i = 0; i < count; i++) boar.tick();
+    };
+
+    // 人と同じ320 tickで腐り切る——獣の免疫は固定で、健康な人と同じ高さ（robust）にある。
+    passTicks(320);
+    expect(infection.stage?.name).toBe('septic');
+    expect(pathogen.number, '膿んだだけの段では全身へ届かない').toBe(0);
+
+    passTicks(24);
+    expect(pathogen.stage?.name, '腐り切れば全身へ回る').toBe('septicemic');
+
+    // 削る量は人と同じ40/tick。見えるのはそこから血の戻り（イノシシは1.84/tick、animals.yaml）を
+    // 差し引いた分で、**戻りの桁が違うので追いつかない**——傷を負った獣は倒れる。
+    const before = blood.number;
+    boar.tick();
+    expect(before - blood.number, '獣の血も同じだけ削られる').toBeCloseTo(40 - 1.84, 5);
   });
 });

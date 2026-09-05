@@ -30,8 +30,8 @@ export interface ExternalTickDelta {
   readonly maxTotal: number | undefined;
 
   /**
-   * その増減が効き始めるまでのtick数。**段に入って初めて効く増減**——膿んだ傷が血を奪うのは
-   * `infection` が `septic` へ届いてから——では、そこまでの時間が周期の前に丸ごと要る。最初のtickから
+   * その増減が効き始めるまでのtick数。**段に入って初めて効く増減**——傷が宿主の菌を押し上げるのは
+   * `infection` が `festering` へ届いてから——では、そこまでの時間が周期の前に丸ごと要る。最初のtickから
    * 効くなら0。
    */
   readonly ticksUntilStart: number;
@@ -84,8 +84,7 @@ export interface RangeCycle {
  * 段で切り替わる増減（8.2節）は数えない——段ごとに周期が変わるものは、1つの周期で言い表せない。
  *
  * externalは、隣の物が与えるtick毎の増減（ExternalTickDelta参照）。同じプロパティを動かすものが
- * 複数あれば、**押し手ごとに別の周期**を返す——炉で焼くのと傷で失血するのは、要る物も速さも違うし、
- * 同じ傷でも止まる出血と止まらない敗血症は別の仕掛けになる。
+ * 複数あれば、**押し手ごとに別の周期**を返す——炉で焼くのと傷で失血するのは、要る物も速さも違う。
  */
 export function rangeCyclesOf(
   def: ObjectDef,
@@ -129,7 +128,7 @@ export function rangeCyclesOf(
         if (driver?.maxTotal !== undefined && ticks * Math.abs(driver.slowest) > driver.maxTotal) continue;
 
         // 押し手が段に入って初めて効き始めるなら、そこへ届くまでの時間が端まで数えたtickの前に
-        // 丸ごと要る（膿んでから血が減り始める）。**繰り返す周期には乗せない**——立ち上がりが
+        // 丸ごと要る（膿んでから菌を押し上げ始める）。**繰り返す周期には乗せない**——立ち上がりが
         // 効くのは初回だけで、次の発火までの間隔は変わらない。
         const untilStart = driver?.ticksUntilStart ?? 0;
 
@@ -206,16 +205,16 @@ function sortedTicksToRangeEnd(
  * **誰の隣に立てるかは答えない**（枠の受け入れを見る側の仕事）。答えるのは、隣に立てたとして
  * どれだけ速く、いつまで動かせるか。
  *
- * 1つの型が同じプロパティへ**複数の押し手**を並べることがある——裂傷は止まる出血と止まらない
- * 敗血症の2つで血を奪う。束ねる単位は限度と立ち上がりで、速さだけが幅になる。
+ * 1つの型が同じプロパティへ**複数の押し手**を並べることがある——膿んだ傷は、膿み始めてからと
+ * 腐り切ってからの2つで宿主の菌を押し上げる。束ねる単位は限度と立ち上がりで、速さだけが幅になる。
  */
 export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): readonly ExternalTickDelta[] {
   // **束ねてよいのは限度も立ち上がりも同じものどうしだけ。** 違うものを束ねると、どの仕掛けも
-  // 持っていない（速さ, 限度, 立ち上がり）の組ができる——止まる出血（-15/tickで合計60mL）と
-  // 止まらない敗血症（-40/tick）を1つにすれば「-15/tickで永久に流れ続ける傷」になり、膿んだ傷が
-  // 奪う水（festeringから-1、septicから-2）を1つにすれば「膿み始めた時点で-2」になる。炉の火力
-  // （heatの段で1/3/5）はどれも止まらず、立ち上がりも読めない（ticksUntilGateRises）ので、今まで
-  // どおり1つの幅に収まる。
+  // 持っていない（速さ, 限度, 立ち上がり）の組ができる——止まって合計の決まる増減（傷の出血は
+  // -15/tickで合計60mL）と止まらない増減を1つにすれば「その速さで永久に流れ続ける傷」になり、
+  // 膿んだ傷が押し上げる菌（festeringから0.12、septicから0.35）を1つにすれば「膿み始めた時点で
+  // 0.35」になる。炉の火力（heatの段で1/3/5）はどれも止まらず、立ち上がりも読めない
+  // （ticksUntilGateRises）ので、今までどおり1つの幅に収まる。
   const byPropertyLimitAndStart = new Map<string, ExternalTickDelta>();
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== root || delta.amount === 0) continue;

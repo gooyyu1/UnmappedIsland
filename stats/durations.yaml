@@ -54,6 +54,11 @@ durations:
   - {object: sprained_ankle, property: severity, unit: days, days: 10.00, shortest_days: 10.00, longest_days: 10.00, repeats: false, destroys: true}
   - {object: gore_wound, property: severity, unit: days, days: 7.50, shortest_days: 7.50, longest_days: 7.50, repeats: false, destroys: true}
   - {object: puncture_wound, property: severity, unit: days, days: 7.50, shortest_days: 7.50, longest_days: 7.50, repeats: false, destroys: true}
+  - {object: bite_wound, property: infection, unit: days, days: 5.21, shortest_days: 3.47, longest_days: 5.21, repeats: false, destroys: false}
+  - {object: gore_wound, property: infection, unit: days, days: 5.21, shortest_days: 3.47, longest_days: 5.21, repeats: false, destroys: false}
+  - {object: laceration, property: infection, unit: days, days: 5.21, shortest_days: 3.47, longest_days: 5.21, repeats: false, destroys: false}
+  - {object: puncture_wound, property: infection, unit: days, days: 5.21, shortest_days: 3.47, longest_days: 5.21, repeats: false, destroys: false}
+  - {object: snare_laceration, property: infection, unit: days, days: 5.21, shortest_days: 3.47, longest_days: 5.21, repeats: false, destroys: false}
   - {object: banana, property: durability, unit: days, days: 5.00, shortest_days: 3.33, longest_days: 5.00, repeats: false, destroys: true}
   - {object: coconut_half, property: durability, unit: days, days: 5.00, shortest_days: 3.33, longest_days: 5.00, repeats: false, destroys: true}
   - {object: coconut_jelly, property: durability, unit: days, days: 5.00, shortest_days: 3.33, longest_days: 5.00, repeats: false, destroys: true}
@@ -62,11 +67,6 @@ durations:
   - {object: junglefowl, property: breeding_remaining, unit: days, days: 5.00, shortest_days: 5.00, longest_days: 5.00, repeats: true, destroys: false}
   - {object: laceration, property: severity, unit: days, days: 5.00, shortest_days: 5.00, longest_days: 5.00, repeats: false, destroys: true}
   - {object: water_spinach, property: durability, unit: days, days: 5.00, shortest_days: 3.33, longest_days: 5.00, repeats: false, destroys: true}
-  - {object: bite_wound, property: infection, unit: days, days: 4.17, shortest_days: 4.17, longest_days: 4.17, repeats: false, destroys: false}
-  - {object: gore_wound, property: infection, unit: days, days: 4.17, shortest_days: 4.17, longest_days: 4.17, repeats: false, destroys: false}
-  - {object: laceration, property: infection, unit: days, days: 4.17, shortest_days: 4.17, longest_days: 4.17, repeats: false, destroys: false}
-  - {object: puncture_wound, property: infection, unit: days, days: 4.17, shortest_days: 4.17, longest_days: 4.17, repeats: false, destroys: false}
-  - {object: snare_laceration, property: infection, unit: days, days: 4.17, shortest_days: 4.17, longest_days: 4.17, repeats: false, destroys: false}
   - {object: bite_wound, property: severity, unit: days, days: 3.75, shortest_days: 3.75, longest_days: 3.75, repeats: false, destroys: true}
   - {object: captain, property: warmth, unit: days, days: 3.65, shortest_days: 1.22, longest_days: 3.65, repeats: false, destroys: true}
   - {object: engineer, property: warmth, unit: days, days: 3.65, shortest_days: 1.22, longest_days: 3.65, repeats: false, destroys: true}
