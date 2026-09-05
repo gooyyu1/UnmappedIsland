@@ -7,6 +7,9 @@ import { githubSlugs } from '../../scripts/githubSlugs.mjs';
 /**
  * ドキュメントの参照が実在の対象へ解決するかの検査（docs/DocumentStyle.md 5節）。
  *
+ * **見るのは `docs/` だけではない。** `.claude/**` は互いを節名で引き合っており、そちらの節を畳んだ
+ * ときに嘘になる。指し先も `docs/` の外（`CLAUDE.md`・`.claude/**`）まで広げてある。
+ *
  * - Markdownリンク（ファイル・アンカー）が実在すること
  * - コード・YAML・ドキュメント中の「Foo.md N節」「Foo.md 〇〇節」が実在の節を指すこと
  * - 見出しの【未実装: 識別子】ラベルが、実装後に剥がし忘れられていないこと
@@ -19,11 +22,16 @@ import { githubSlugs } from '../../scripts/githubSlugs.mjs';
 
 const ROOT = resolve(__dirname, '../..');
 
+/**
+ * 降りない場所。`worktrees` には各セッションのリポジトリが丸ごと入っていて、追跡もされていない。
+ */
+const SKIP_DIRS = new Set(['node_modules', 'worktrees']);
+
 function listFiles(dir: string, exts: readonly string[]): string[] {
   const result: string[] = [];
   for (const entry of readdirSync(join(ROOT, dir))) {
     const rel = join(dir, entry);
-    if (entry === 'node_modules' || entry.startsWith('.')) continue;
+    if (SKIP_DIRS.has(entry) || entry.startsWith('.')) continue;
     if (statSync(join(ROOT, rel)).isDirectory()) {
       result.push(...listFiles(rel, exts));
     } else if (exts.some((ext) => entry.endsWith(ext))) {
@@ -59,10 +67,17 @@ const SOMEDAY_DOC = join('docs', 'Someday.md');
 const REF_FILES = [
   ...DOC_FILES,
   'CLAUDE.md',
+  ...listFiles('.claude', ['.md', '.sh']),
+  ...listFiles('scripts', ['.sh', '.mjs']),
   ...listFiles('src', ['.ts', '.yaml']),
   ...listFiles('tests', ['.ts']),
   ...listFiles('tools', ['.md', '.json']),
-].filter((rel) => !rel.startsWith(join('tests', 'docs'))); // 本テスト自身の例・正規表現は対象外
+].filter(
+  (rel) =>
+    !rel.startsWith(join('tests', 'docs')) && // 本テスト自身の例・正規表現は対象外
+    // 判断の履歴は、当時の発言と当時の文脈を原文のまま残す場所。後から直すものではない。
+    !rel.startsWith(join('.claude', 'decisions')),
+);
 
 /**
  * コードフェンスの外の各行と、原文での行番号。`text` はインラインコードも除いた本文
@@ -142,7 +157,14 @@ function slugsOf(headings: readonly string[]): Set<string> {
 }
 
 const docByPath = new Map(DOC_FILES.map((rel) => [rel, read(rel)]));
-const headingsByPath = new Map([...docByPath].map(([rel, text]) => [rel, headingsOf(text)]));
+
+/**
+ * 参照の指し先になりうる文書。**`docs/` の外にも在る**（`CLAUDE.md`・`.claude/**`）ので、
+ * `DocumentStyle.md` の規約を課す対象（`docByPath`）とは別に持つ。
+ */
+const REF_TARGETS = [...DOC_FILES, 'CLAUDE.md', ...listFiles('.claude', ['.md'])];
+
+const headingsByPath = new Map(REF_TARGETS.map((rel) => [rel, headingsOf(read(rel))]));
 
 /** `【確定】` の付いた節（DocumentStyle.md 6.1節の4条件を課される対象）。 */
 const confirmedSections = [...docByPath].flatMap(([doc, text]) =>
@@ -159,9 +181,9 @@ const confirmedSections = [...docByPath].flatMap(([doc, text]) =>
  */
 const wholeDocumentConfirmed = [...docByPath].filter(([, text]) => declaresWholeDocument(text));
 
-/** ファイル名（basename）→ docs内の候補パス。 */
+/** ファイル名（basename）→ 指し先の候補パス。 */
 const docsByBasename = new Map<string, string[]>();
-for (const rel of DOC_FILES) {
+for (const rel of REF_TARGETS) {
   const base = rel.split(sep).pop() as string;
   docsByBasename.set(base, [...(docsByBasename.get(base) ?? []), rel]);
 }
@@ -174,9 +196,17 @@ function hasNumberedSection(docRel: string, num: string): boolean {
   });
 }
 
-/** その文書が、名前 `name`（空白除去済み）を含む見出しを持つか。 */
+/**
+ * 見出しと参照を突き合わせる形へ揃える。**引用の記号と強調は、引く側と引かれる側で揃わない**
+ * ——見出しの `` `main` `` を、引く側は素の `main` と書く。
+ */
+function normalizeName(name: string): string {
+  return name.replace(/[\s「」`*]/g, '');
+}
+
+/** その文書が、名前 `name`（`normalizeName` 済み）を含む見出しを持つか。 */
 function hasNamedSection(docRel: string, name: string): boolean {
-  return (headingsByPath.get(docRel) ?? []).some((h) => h.replace(/[\s「」]/g, '').includes(name));
+  return (headingsByPath.get(docRel) ?? []).some((h) => normalizeName(h).includes(name));
 }
 
 /**
@@ -251,7 +281,7 @@ describe('ドキュメントの参照', () => {
     // - 「・」「、」で続く番号の列挙は、直前の参照と同じ文書
     const broken: string[] = [];
     const tokenPattern =
-      /([A-Za-z][\w.]*\.md)`?(?:\]\([^)]*\))?|(同\s*)?(\d+(?:\.\d+)*)(?:\s*[〜～]\s*(\d+(?:\.\d+)*))?\s*節/g;
+      /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?|(同\s*)?(\d+(?:\.\d+)*)(?:\s*[〜～]\s*(\d+(?:\.\d+)*))?\s*節/g;
     const resolves = (base: string, nums: readonly string[]): boolean => {
       const candidates = docsByBasename.get(base);
       return (
@@ -305,16 +335,48 @@ describe('ドキュメントの参照', () => {
     for (const rel of REF_FILES) {
       const text = read(rel).replace(/\n[\s*/#-]*/g, ' ');
       for (const match of text.matchAll(
-        /([A-Za-z][\w.]*\.md)`?(?:\]\([^)]*\))?[ ]*(?:の)?[ ]*「?([^\s\d「」、。：:（）()*`・—〜～-][^「」、。：:（）()*`・—〜～]{0,30}?)」?[ ]*節/g,
+        /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?[ ]*(?:の)?[ ]*「?([^\s\d「」、。：:（）()*`・—〜～-][^「」、。：:（）()*`・—〜～]{0,30}?)」?[ ]*節/g,
       )) {
         const [, base, rawName] = match;
         if (/^の?\d/.test(rawName.trim())) continue; // 番号・範囲指しは前のテストが見る
-        const name = rawName.replace(/[\s「」]/g, '');
+        const name = normalizeName(rawName);
         const candidates = docsByBasename.get(base);
         if (candidates === undefined) {
-          broken.push(`${rel}: ${base}（docsに無い）`);
+          broken.push(`${rel}: ${base}（そのファイルが無い）`);
         } else if (!candidates.some((doc) => hasNamedSection(doc, name))) {
           broken.push(`${rel}: ${base} ${rawName}節`);
+        }
+      }
+    }
+    expect(broken, `節名の参照切れ:\n${broken.join('\n')}`).toEqual([]);
+  });
+
+  /**
+   * `Foo.md`「〇〇」の形（末尾に「節」を伴わない）。**指し先が `.claude/**` のときだけ見る。**
+   *
+   * この形は節の参照にも本文の引用にも使われていて、字面では見分けられない（`Characters.md`
+   * 「`max` の80%で安全域を外れる」は仕様の1文の引用）。**`.claude/**` を指すものは節の参照しかない**
+   * ので、そこだけ確かめられる——そして、畳んだ節を引いたまま残るのがここ。
+   *
+   * **裏返すと、`.claude/**` の文言をそのまま引くことをこの検査が禁じる。** 引きたくなったら、
+   * 節名で指して要旨を自分の言葉で書く（本文の写しは、写した先が古くなるので元から避けたい形）。
+   */
+  it('`.claude/**` を指す鉤括弧が、実在の見出しに解決する', () => {
+    const broken: string[] = [];
+    for (const rel of REF_FILES) {
+      const text = read(rel).replace(/\n[\s*/#-]*/g, ' ');
+      for (const match of text.matchAll(
+        // 「〇〇」節 と「〇〇N節」は上の2つが見る。**除外は先読みで書く**——マッチの側は必ず `」` で
+        // 終わるので、マッチ後の文字列を見ないと「節」が続くかは分からない。
+        /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?[ ]*(?:の)?[ ]*「(?!\d)([^「」]{1,40})」(?![ ]*節)/g,
+      )) {
+        const [, base, rawName] = match;
+        const candidates = (docsByBasename.get(base) ?? []).filter((doc: string) =>
+          doc.startsWith(`.claude${sep}`),
+        );
+        if (candidates.length === 0) continue;
+        if (!candidates.some((doc) => hasNamedSection(doc, normalizeName(rawName)))) {
+          broken.push(`${rel}: ${base}「${rawName}」`);
         }
       }
     }

@@ -942,7 +942,7 @@ private にした。
 | `MapWindow.unplacedCount` | `nextTrayCellIndex` | 呼び手が要るのは件数ではなく次の枠番号 |
 
 **`private` かどうかは基準にしていない。** 外から呼ばれないぶん壊れる範囲は狭いが、読む人を
-誤解させる量は変わらない（`.claude/policies.md`「名前の付け方」）。
+誤解させる量は変わらない。
 
 **名前に書くのは呼び手への契約だけ**にした。`setNumberWithoutEvents` の「イベントが起きない」は
 知らないと誤用する約束なので名前に出すが、内部で何を使っているか（`scatter` の mulberry32 など）は

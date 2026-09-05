@@ -34,7 +34,8 @@
 # 走行中かどうかは分かる（`status_bucket` の `SESSION_STATUS_BUCKET_WORKING`）が、**知りたいのは
 # 「読み終えたか」で、それは待機中の中身にある**——「判定を書き終えた」も「こちらの追加指示を
 # 待っている」も待機中に落ちる。
-# だから**どれを渡すか**を選ぶのはタグだけ（`.claude/parallel-work.md`「状態で判定しない」）。
+# だから**どれを渡すか**を選ぶのはタグだけ
+# （`.claude/parallel-work.md`「終わったセッションは、issue を鍵にして畳む」の、状態で判定しない）。
 # 渡した後に走行中を除くのは別の問いで、`archive-session.sh` が見る。
 
 set -euo pipefail

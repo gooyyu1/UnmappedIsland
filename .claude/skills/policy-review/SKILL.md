@@ -1,10 +1,11 @@
 ---
 name: policy-review
 description: >-
-  `.claude/decisions/` に溜まった判断の履歴を棚卸しし、束ねられるものを `.claude/policies.md`
-  （進め方の価値観）と `docs/concept/DesignPrinciples.md`（ゲーム内容の判断基準）の一般則へ畳む。
-  「棚卸しして」「価値観を整理して」と言われたときと、セッション開始時に未処理の件数を告げられた
-  ときに使う。抽出の諾否はユーザーにしか出せないので、ユーザーと会話できるセッションでだけ動かす。
+  `.claude/decisions/` に溜まった判断の履歴を棚卸しし、束ねられるものを一般則へ畳む。行き先は
+  `.claude/policies.md`（どのセッションも要る判断）・`docs/concept/DesignPrinciples.md`（ゲーム固有の
+  設計判断）・`.claude/parallel-work.md`（盤面を回す側だけが要る運用）の3つ。「棚卸しして」「価値観を
+  整理して」と言われたときと、セッション開始時に未処理の件数を告げられたときに使う。抽出の諾否は
+  ユーザーにしか出せないので、ユーザーと会話できるセッションでだけ動かす。
 ---
 
 # 価値観の棚卸し
@@ -14,7 +15,7 @@ description: >-
 | | 置き場 | いつ書くか | セッションへ注入 |
 | --- | --- | --- | --- |
 | 判断の履歴 | `.claude/decisions/*.md` | ユーザーの発言を受けたその場 | しない |
-| 一般則 | `.claude/policies.md`・`docs/concept/DesignPrinciples.md` | この棚卸しのときだけ | する |
+| 一般則 | `.claude/policies.md`・`docs/concept/DesignPrinciples.md`・`.claude/parallel-work.md` | この棚卸しのときだけ | `policies.md` は全文、`DesignPrinciples.md` は見出しだけ、`parallel-work.md` はしない |
 | 処理済みの履歴 | `.claude/decisions/archive/*.md` | 棚卸しが移す | しない |
 
 **1件だけを見て「これは一般則か」は判断できない。** 同じ趣旨が数件並んで初めて、何が共通で何が
@@ -48,15 +49,21 @@ context: policies.md の書き方の見直し（会話のみ）
 1. `.claude/decisions/` の未処理を全部読み、**同じ趣旨で束ねる**。束にならない孤立した1件は
    抽出せず、履歴に残す。
 2. 束ごとに、下の書式で一般則の候補を作る。既存の項目と矛盾するものがあれば、追記ではなく
-   **書き換え**の案として出す（最新が正）。ゲーム内容の判断は
-   [`DesignPrinciples.md`](../../../docs/concept/DesignPrinciples.md) へ、それ以外は
-   [`policies.md`](../../policies.md) へ。
+   **書き換え**の案として出す（最新が正）。行き先は3つ——どのセッションも要る判断は
+   [`policies.md`](../../policies.md)、ゲーム固有の設計判断は
+   [`DesignPrinciples.md`](../../../docs/concept/DesignPrinciples.md)、盤面を回す側だけが要る
+   運用の取り決めは [`parallel-work.md`](../../parallel-work.md) へ。
 3. **ユーザーへ普通の文章で諾否を訊く。** 選択肢を出すツール（`AskUserQuestion`）は使わない。
    ここだけが人間の仕事なので、リポジトリを開かずに答えられるだけの文脈を添える。
-4. 承認されたぶんを反映し、元になった履歴を `archive/` へ `git mv` する。
-5. 節を畳んだ・改名したなら、**`policies.md` の節名を引いている参照を直す。**
-   `grep -rn 'policies\.md' --include='*.md' --include='*.sh' . | grep -v node_modules` で洗う。
-6. 総量が上限（200行）を超えているなら、畳むか捨てるかしてから終える。
+4. 承認されたぶんを反映し、元になった履歴を `archive/` へ `git mv` する。**一般則にならずとも、
+   既にどこかの文書へ反映されている履歴も同じく `archive/` へ**——残すと、まだ手が要るものと
+   区別が付かない。
+5. 節を畳んだ・改名したなら、**その節名を引いている参照を直す。** どこが切れたかは
+   `npm test`（`tests/docs/docReferences.test.ts`）が挙げる。
+6. `policies.md` の総量が上限（220行）を超えているなら、畳むか捨てるかしてから終える。
+
+**書式・総量・履歴の必須項目は `tests/docs/policies.test.ts` が見ている。** 質の判定——出どころが
+ユーザー本人か、一般論から再現できないか——は機械では決まらないので、そこがこの棚卸しの仕事。
 
 ## 一般則の書式
 
