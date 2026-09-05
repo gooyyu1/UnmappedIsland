@@ -16,8 +16,15 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { withYamlContext, parseNumberLiteral, parseNumberOrSymbol, parseTypeMatchRule } from './parseCommon';
-import { parseSubjectRoot, requireResolvable } from './parseConditions';
+import {
+  parseDeclaredNumber,
+  parseNumberLiteral,
+  parseNumberOrSymbol,
+  parseSubjectRoot,
+  parseTypeMatchRule,
+  requireResolvable,
+  withYamlContext,
+} from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import type { ReferenceScope } from '../domain/ReferenceRoot';
@@ -36,7 +43,6 @@ import { MoveEffect } from '../domain/MoveEffect';
 import { ObjectRef } from '../domain/ObjectRef';
 import { AmongSpec } from '../domain/AmongSpec';
 import { PickCandidateDef, PickEffect } from '../domain/PickEffect';
-import { DeclaredNumber } from '../domain/DeclaredNumber';
 import { SignalEffect } from '../domain/SignalEffect';
 
 /**
@@ -181,51 +187,6 @@ function parseAmong(
       : parseDeclaredNumber(loader, amongContext, weightNode, scope.withPicked, 'weight');
 
   return new AmongSpec(root, loader.slotNames.intern(slotName), match, weight);
-}
-
-/**
- * リテラル数値か`{subject, prop}`参照（GameElementDefinition.md 10.2節）を読む。
- * pickのweightもdurationもこの形で、「今の状態から見ていくらか」を書けるようにするため（切れ味の
- * 悪い刃物ほど時間がかかる、荷が重いほど道は遠い）。何を表す数値かは持ち主が決める（DeclaredNumber）。
- *
- * `fieldName`はエラー文が名乗るYAMLのキー名。**常に呼び出し側が言う**——既定を持たせると、
- * この読み手が最初に読んだキーの名前が、他のキーを読むときにも既定として残る。
- */
-export function parseDeclaredNumber(
-  loader: WorldCodexYamlLoader,
-  context: string,
-  node: YamlNode,
-  scope: ReferenceScope,
-  fieldName: string,
-): DeclaredNumber {
-  if (isScalar(node)) {
-    const raw = asScalarText(node, context);
-    const literal = Number(raw);
-    if (raw.trim() === '' || Number.isNaN(literal))
-      throw new YamlLoadError(`${context}: ${fieldName}は数値である必要があります（値: '${raw}'）。`);
-    return DeclaredNumber.ofLiteral(literal);
-  }
-
-  if (isMap(node)) {
-    requireKnownKeys(node, ['subject', 'prop'], context);
-    return DeclaredNumber.ofPath(parsePropertyRef(loader, context, node, scope));
-  }
-
-  throw new YamlLoadError(
-    `${context}: ${fieldName}はリテラル数値か{subject, prop}のいずれかである必要があります。`,
-  );
-}
-
-/** `{subject, prop}`（10.2節）の1つ分。`subject`を省けば`self`。 */
-function parsePropertyRef(
-  loader: WorldCodexYamlLoader,
-  context: string,
-  node: YAMLMap,
-  scope: ReferenceScope,
-): PropertyPath {
-  const subjectName = tryGetScalar(node, 'subject', context);
-  const root = subjectName !== undefined ? parseSubjectRoot(context, subjectName, scope) : 'self';
-  return new PropertyPath(root, loader.propertyNames.intern(requireScalar(node, 'prop', context)));
 }
 
 /**
