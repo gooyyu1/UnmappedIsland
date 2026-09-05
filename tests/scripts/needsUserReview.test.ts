@@ -3,6 +3,7 @@ import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
  * `scripts/agent/needs-user-review.sh` の `GRAMMAR` の線。
@@ -49,7 +50,7 @@ function judge(files: readonly string[], diff: string, docs: Readonly<Record<str
     const gh = join(work, 'gh');
     writeFileSync(
       gh,
-      `#!/bin/bash\n` +
+      `${STUB_SHEBANG}\n` +
         `if [ "$2" = diff ]; then\n  cat '${dir}/diff'\n  exit 0\nfi\n` +
         `if [[ "$*" == *headRefOid* ]]; then\n  echo head0000\n  exit 0\nfi\n` +
         `if [[ "$*" == *baseRefOid* ]]; then\n  echo base0000\n  exit 0\nfi\n` +
@@ -62,7 +63,7 @@ function judge(files: readonly string[], diff: string, docs: Readonly<Record<str
     const git = join(work, 'git');
     writeFileSync(
       git,
-      `#!/bin/bash\n` +
+      `${STUB_SHEBANG}\n` +
         `[ "$1" = fetch ] && exit 0\n` +
         `if [ "$1" = show ]; then\n` +
         `  f="${dir}/show/$(printf '%s' "$2" | tr '/:' '__')"\n` +

@@ -12,6 +12,8 @@ import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
+import { STUB_SHEBANG } from '../support/stubShebang';
+
 /**
  * `scripts/agent/daemon.sh` の検査。
  *
@@ -65,7 +67,7 @@ function daemon(world: World = {}): Result {
 
     const stub = (name: string, body: string) => {
       const path = join(here, name);
-      writeFileSync(path, `#!/bin/bash\n${body}\n`, 'utf-8');
+      writeFileSync(path, `${STUB_SHEBANG}\n${body}\n`, 'utf-8');
       chmodSync(path, 0o755);
     };
 
@@ -83,7 +85,7 @@ function daemon(world: World = {}): Result {
     const gh = join(work, 'gh');
     writeFileSync(
       gh,
-      `#!/bin/bash
+      `${STUB_SHEBANG}
 ${world.ghFails === true ? 'exit 1' : ''}
 case "$1" in
 pr) cat '${posix(join(work, 'prs.json'))}' ;;

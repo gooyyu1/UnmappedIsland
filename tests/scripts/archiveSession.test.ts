@@ -3,6 +3,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
  * `scripts/agent/archive-session.sh` の、**戻せない操作**だけを見る検査。
@@ -77,7 +78,7 @@ function run(world: World = {}): Run {
     const meta = join(work, 'ccr-meta.sh');
     writeFileSync(
       meta,
-      `#!/bin/bash
+      `${STUB_SHEBANG}
 payload=$(cat)
 if [ "$1" = archive_session ]; then
   printf '%s' "$payload" | jq -r '.session_id' >> '${dir}/archived'

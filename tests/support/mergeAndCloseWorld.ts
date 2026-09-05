@@ -3,6 +3,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { vi } from 'vitest';
+import { STUB_SHEBANG } from './stubShebang';
 
 /**
  * `scripts/agent/merge-and-close.sh` を実際に走らせるための世界。
@@ -16,8 +17,7 @@ import { vi } from 'vitest';
  * イベントループを止めるので、本体からの返事を受け取る前にタイマーが鳴る。だから叩く側は責務ごとに
  * ファイルを分けてある。
  *
- * スタブのシェバングが `#!/bin/bash` なのも同じ理由。`#!/usr/bin/env bash` だと1回ごとに `env` の
- * プロセスが1つ増える。
+ * 身代わりの先頭の1行を直に書かず [`STUB_SHEBANG`](stubShebang.ts) から取るのも同じ理由。
  */
 
 // 全件が実プロセス（bash + git + gh のスタブ）を起こすため、既定の5秒だと `npm test` 全体を並行実行
@@ -168,7 +168,7 @@ export function run(world: World, entry: readonly string[] = [SCRIPT, '1000']): 
     const stub = join(work, 'gh');
     writeFileSync(
       stub,
-      `#!/bin/bash
+      `${STUB_SHEBANG}
 if [ "$1" = pr ] && [ "$2" = merge ]; then
   touch '${dir}/merged'
   exit 0
@@ -235,7 +235,7 @@ exit 1
     const git = join(work, 'git');
     writeFileSync(
       git,
-      `#!/bin/bash
+      `${STUB_SHEBANG}
 echo "$*" >> '${dir}/git-calls'
 case "$*" in
   *'rev-parse --git-common-dir'*) printf '%s' '${dir}/main/.git' ;;
@@ -253,14 +253,14 @@ exit 0
     chmodSync(git, 0o755);
 
     const npm = join(work, 'npm');
-    writeFileSync(npm, `#!/bin/bash\necho "$*" >> '${dir}/npm-calls'\n`, 'utf-8');
+    writeFileSync(npm, `${STUB_SHEBANG}\necho "$*" >> '${dir}/npm-calls'\n`, 'utf-8');
     chmodSync(npm, 0o755);
 
     // 関門。理由が1件でもあれば 0（＝該当あり）を返す。`needs-user-review.sh` と同じ約束。
     const gate = join(work, 'needs-user-review.sh');
     writeFileSync(
       gate,
-      `#!/bin/bash\n${(world.gate ?? []).map((line) => `echo '${line}'`).join('\n')}\nexit ${
+      `${STUB_SHEBANG}\n${(world.gate ?? []).map((line) => `echo '${line}'`).join('\n')}\nexit ${
         world.gateStatus ?? ((world.gate ?? []).length > 0 ? 0 : 1)
       }\n`,
       'utf-8',
@@ -279,7 +279,7 @@ exit 0
     const meta = join(work, 'ccr-meta.sh');
     writeFileSync(
       meta,
-      `#!/bin/bash
+      `${STUB_SHEBANG}
 payload=$(cat)
 id=$(printf '%s' "$payload" | jq -r '.session_id // ""')
 after=$(printf '%s' "$payload" | jq -r '.after_id // ""')
