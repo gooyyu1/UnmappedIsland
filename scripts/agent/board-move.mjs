@@ -16,11 +16,12 @@
 // 入力は次の形。
 //
 //   { "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
-//     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body ],
+//     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files ],
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
 //     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
 //                     "bucket": "SESSION_STATUS_BUCKET_…", "tags": ["task-1"] } ],
 //     "issueStates": { "<issue番号>": "OPEN | CLOSED" },
+//     "prSessions":  { "<PR番号>": "session_…" },
 //     "taken":    { "<手のキー>": "<前に打ったときの指紋>" } }
 //
 // ## 同じ手を、同じ盤面へ二度打たない
@@ -43,20 +44,17 @@
 import { readFileSync } from 'node:fs';
 
 /**
- * 今その差分へ手が動いているか（1.6）。**言うのは `session_status`**——`status_bucket` は手が
- * 空いても `..._WORKING` のまま固まることがあり、そうなったPRのレビューが永久に出なくなる。
- *
- * **`..._BLOCKED` を足しているのは仮説で、実測していない。** 承認待ちのセッションが
- * `SESSION_STATUS_RUNNING` を保つのか `..._IDLE` へ落ちるのかを見ていないので、落ちる場合に備えて
- * or で残してある。**実測が付いたら、要らない側を消すこと。**
+ * 今その差分へ手が動いているか（1.6）。**言うのは `session_status` だけ**——`status_bucket` は
+ * 手番が終わった後の要約から決まるので、どの値も「処理中」を意味しない。
  */
-const busySession = (session) =>
-  session.status === 'SESSION_STATUS_RUNNING' || session.bucket === 'SESSION_STATUS_BUCKET_BLOCKED';
+const busySession = (session) => session.status === 'SESSION_STATUS_RUNNING';
 
 const input = JSON.parse(readFileSync(0, 'utf8'));
 const taken = input.taken ?? {};
 /** 生きているワーカーの担当 issue のうち、**開いている一覧に載っていなかったもの**の状態（2.10）。 */
 const issueStates = input.issueStates ?? {};
+/** PRごとの、そのPRを書いたセッション（コミットの `Claude-Session:` トレーラ。2.11）。 */
+const prSessions = input.prSessions ?? {};
 
 const names = (item) => (item.labels ?? []).map((label) => label.name);
 
@@ -67,6 +65,36 @@ function closes(body) {
 
 const alive = (tag) => input.sessions.filter((session) => session.tags.includes(tag));
 const busy = (tag) => alive(tag).some(busySession);
+
+/**
+ * 差し戻す相手（2.11）。引くのは**コミットの `Claude-Session:` トレーラ**——`Closes` は、そのPRで
+ * どの issue が閉じるかの印であって、誰が書いたかを指していない。畳まれたセッションはここに
+ * 居ないので、そのまま「起こせない」になる（1.2）。
+ */
+function menders(pr) {
+  const id = prSessions[String(pr.number)];
+  return id === undefined ? [] : input.sessions.filter((session) => session.id === id);
+}
+
+/**
+ * 画面が変わるのに `## 見た目` が無いか（`CLAUDE.md`「PR本文に置く節」）。**見るのはレビュアーでは
+ * なく盤面**——差分の置き場も本文も機械で読めるので、レビュアーのセッションを1本使う手前で弾ける。
+ *
+ * 節はあるが中身が空のものも同じ扱い。画像も「不要」＋理由も無ければ、**後から補えるものが差分に
+ * 残らない**（これが、本文の節のうちここだけを見る理由）。
+ */
+function missingLook(pr) {
+  const shown = (pr.files ?? []).some(
+    (file) => file.path.startsWith('src/game/') || file.path.startsWith('src/assets/'),
+  );
+  if (!shown) return false;
+  const lines = (pr.body ?? '').split(/\r?\n/);
+  const at = lines.findIndex((line) => /^##\s+見た目\s*$/.test(line));
+  if (at < 0) return true;
+  const rest = lines.slice(at + 1);
+  const end = rest.findIndex((line) => /^##\s/.test(line));
+  return (end < 0 ? rest : rest.slice(0, end)).join('\n').trim() === '';
+}
 
 /**
  * CIの色。**チェックが1つも登録されないPRがある**（`tests.yml` の `paths` に当たらない差分）ので、
@@ -113,14 +141,22 @@ for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
       ? 'コンフリクトしている'
       : check === 'red'
         ? 'CIが赤い'
-        : null;
+        : missingLook(pr)
+          ? '画面が変わるのに `## 見た目` が無い'
+          : null;
 
   if (reason !== null) {
-    // 直す相手は、その issue へ投入されたセッション。**畳まれていれば起こせない**——畳むのは
+    // 直す相手は、そのPRを書いたセッション。**畳まれていれば起こせない**——畳むのは
     // 「この仕事は終わった」と判断した側の明示の操作なので、機械では戻さない（1.2）。
-    const holders = closes(pr.body).flatMap((issue) => alive(`task-${issue}`));
+    const holders = menders(pr);
     if (holders.length === 0) {
-      notes.push(`PR #${pr.number} は${reason}が、直す相手のセッションが居ない`);
+      // **引けなかった理由を分ける。** 名乗っていないのは規則の破れ（2.11）で、直すのは人。
+      // 畳まれているだけなら、盤面の側にできることは無い。
+      const why =
+        prSessions[String(pr.number)] === undefined
+          ? '書いたセッションが名乗っていない'
+          : '直す相手が畳まれている';
+      notes.push(`PR #${pr.number} は${reason}が、${why}`);
       continue;
     }
     for (const holder of holders) {
@@ -139,6 +175,11 @@ for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
 
   // 結論のラベルが無い＝この差分はまだ読まれていない（push で外れる。`board-labels.yml`）。
   if (check !== 'green') continue;
+  // **マージできると分かるまで出さない。** `mergeable` は3値で、`main` が動くたびに開いているPRが
+  // 全部 `UNKNOWN` へ落ち、GitHub が計算し直すまでそのまま。上の `CONFLICTING` だけで弾くと、
+  // **その隙間に当たった周がコンフリクトしたままレビューへ出す**（#1538 が実際にそうなった。
+  // 枝は動いていないのに、覚え書きが1周だけ消えた周でレビューへ出ている）。
+  if (pr.mergeable !== 'MERGEABLE') continue;
   // 前のレビューが走っている間は出さない。**書き終えたレビューは止めない**——次の差分のレビューは
   // 別の仕事で、それを占有と読むと再レビューが永久に止まる（1.2）。
   if (busy(`review-${pr.number}`)) continue;

@@ -328,7 +328,7 @@
   ありません。
 
 **1基で段に届きます**——縄が1本要るためで、囲いが丸太4本と縄2本で1つでも段になるのと同じ理由です
-（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の1.14日<!-- stats: terrain.yaml work_piles pile=干し場 days -->は、この1基ぶんです。**
+（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の1.16日<!-- stats: terrain.yaml work_piles pile=干し場 days -->は、この1基ぶんです。**
 
 **素手の天日干しは、干し場が建っても残ります**（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md)
 の「後から足す手段は、既存の手段を残す強さに抑える」節）。空心菜・バナナ・ヤシの果肉とゼリーは

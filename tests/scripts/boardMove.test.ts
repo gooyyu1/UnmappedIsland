@@ -23,6 +23,8 @@ interface Board {
   sessions?: readonly { id: string; status: string; bucket: string; tags: readonly string[] }[];
   /** 生きたワーカーの担当 issue のうち、開いている一覧に載っていなかったものの `state`。 */
   issueStates?: Record<number, string>;
+  /** PRごとの、そのPRを書いたセッション（コミットの `Claude-Session:` トレーラ）。 */
+  prSessions?: Record<number, string>;
   taken?: Record<string, string>;
 }
 
@@ -82,7 +84,8 @@ describe('board-move.mjs', () => {
   it('コンフリクトしていれば、通してよいが付いていてもマージしない', () => {
     const board = {
       prs: [pr(10, { ...label('通してよい'), mergeable: 'CONFLICTING' })],
-      sessions: [idle('session_a', 'task-9')],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
     };
     expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
   });
@@ -92,19 +95,75 @@ describe('board-move.mjs', () => {
     expect(moves({ prs: [pr(10, { ...label('通してよい'), mergeable: 'UNKNOWN' })] })).toEqual([]);
   });
 
+  // `main` が動くたびに全部のPRがここへ落ちる。`CONFLICTING` だけを弾く形にすると、その隙間の周が
+  // コンフリクトしたままレビューへ出す（#1538 で実際に出た。board-design 2.12.2）。
+  it('mergeable が引けていない周は、レビューへも出さない', () => {
+    expect(moves({ prs: [pr(10, { mergeable: 'UNKNOWN' })] })).toEqual([]);
+  });
+
+  it('画面が変わるのに 見た目 が無ければ、レビューへ出さずに書いた本人へ差し戻す', () => {
+    const board = {
+      prs: [pr(10, { files: [{ path: 'src/game/ui/Card.ts' }] })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
+  });
+
+  it('画面が変わらないPRには、見た目 を求めない', () => {
+    expect(moves({ prs: [pr(10, { files: [{ path: 'src/domain/Slot.ts' }] })] })).toEqual([
+      'REVIEW 10 aaa111',
+    ]);
+  });
+
+  it('見た目 が書いてあればレビューへ出す', () => {
+    const board = {
+      prs: [
+        pr(10, {
+          files: [{ path: 'src/assets/cards/axe.webp' }],
+          body: 'Closes #9\n\n## 見た目\n\n不要（絵の差し替えだけ）\n',
+        }),
+      ],
+    };
+    expect(moves(board)).toEqual(['REVIEW 10 aaa111']);
+  });
+
+  // 節だけ置いて中身を書かない形。画像も「不要」＋理由も無いので、後から補えるものが差分に残らない。
+  it('見た目 の節が空なら、無いのと同じに扱う', () => {
+    const board = {
+      prs: [
+        pr(10, {
+          files: [{ path: 'src/game/ui/Card.ts' }],
+          body: 'Closes #9\n\n## 見た目\n\n## 自己点検\n\n0件。\n',
+        }),
+      ],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
+  });
+
   it('判断待ちのPRには手を出さない', () => {
     expect(moves({ prs: [pr(10, label('判断待ち'))] })).toEqual([]);
   });
 
-  it('直し待ちのPRは、著者のセッションを起こす', () => {
-    const board = { prs: [pr(10, label('直し待ち'))], sessions: [idle('session_a', 'task-9')] };
+  // 差し戻す相手は、そのPRを書いたセッション（2.11）。**`Closes` では引かない**——あれは
+  // どの issue が閉じるかの印であって、誰が書いたかを指していない。
+  it('直し待ちのPRは、トレーラが指すセッションを起こす', () => {
+    const board = {
+      prs: [pr(10, label('直し待ち'))],
+      prSessions: { 10: 'session_a' },
+      // `task-9` を持つほうは `Closes #9` の相手。書いたのが誰かとは別なので、選ばれない。
+      sessions: [idle('session_a'), idle('session_holder', 'task-9')],
+    };
     expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
   });
 
-  it('CIが赤いPRも、著者のセッションを起こす', () => {
+  it('CIが赤いPRも、書いたセッションを起こす', () => {
     const board = {
       prs: [pr(10, { statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }] })],
-      sessions: [idle('session_a', 'task-9')],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
     };
     expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
   });
@@ -113,7 +172,8 @@ describe('board-move.mjs', () => {
   it('同じ差分で一度起こした相手は、二度起こさない', () => {
     const board = {
       prs: [pr(10, label('直し待ち'))],
-      sessions: [idle('session_a', 'task-9')],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
       taken: { 'resume:session_a': 'mend:10:aaa111' },
     };
     expect(moves(board)).toEqual([]);
@@ -122,21 +182,50 @@ describe('board-move.mjs', () => {
   it('直しが push されたら、また起こす', () => {
     const board = {
       prs: [pr(10, { ...label('直し待ち'), headRefOid: 'bbb222' })],
-      sessions: [idle('session_a', 'task-9')],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
       taken: { 'resume:session_a': 'mend:10:aaa111' },
     };
     expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:bbb222']);
   });
 
   it('直している最中のセッションは起こさない', () => {
-    const board = { prs: [pr(10, label('直し待ち'))], sessions: [working('session_a', 'task-9')] };
+    const board = {
+      prs: [pr(10, label('直し待ち'))],
+      prSessions: { 10: 'session_a' },
+      sessions: [working('session_a')],
+    };
     expect(moves(board)).toEqual([]);
   });
 
-  it('直す相手が畳まれていたら、打つ手が無いことを書き残す', () => {
+  it('トレーラの指すセッションが畳まれていたら、打つ手が無いことを書き残す', () => {
+    const board = { prs: [pr(10, label('直し待ち'))], prSessions: { 10: 'session_writer' } };
+    expect(moves(board)).toEqual(['NOTE PR #10 は差し戻されたが、直す相手が畳まれている']);
+  });
+
+  // **名乗っていないPRは差し戻せない。** 規則の破れなので、直すのは人（2.11.2）。畳まれていた
+  // ときと同じ文面にすると、人が手を入れるべき側が読めない。
+  it('名乗っていないPRは、そうと分かる形で書き残す', () => {
     expect(moves({ prs: [pr(10, label('直し待ち'))] })).toEqual([
-      'NOTE PR #10 は差し戻されたが、直す相手のセッションが居ない',
+      'NOTE PR #10 は差し戻されたが、書いたセッションが名乗っていない',
     ]);
+  });
+
+  // `..._BLOCKED` は手番を終えて人へ問いを返した状態で、手は空いている（board-design 1.6 の実測）。
+  // busy と読むと、その著者のPRのレビューが永久に出ない（#1541 が2時間止まった）。
+  it('著者が人へ問いを返して止まっていても、レビューへ出す', () => {
+    const board = {
+      prs: [pr(10)],
+      sessions: [
+        {
+          id: 'session_a',
+          status: 'SESSION_STATUS_IDLE',
+          bucket: 'SESSION_STATUS_BUCKET_BLOCKED',
+          tags: ['task-9'],
+        },
+      ],
+    };
+    expect(moves(board)).toEqual(['REVIEW 10 aaa111']);
   });
 
   it('レビューが走っているPRは、二重に出さない', () => {

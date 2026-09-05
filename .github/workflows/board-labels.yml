@@ -52,7 +52,12 @@ jobs:
           BODY: ${{ github.event.comment.body }}
         run: |
           set -euo pipefail
-          verdict=$(printf '%s' "$BODY" | head -1 | tr -d '\r' | sed 's/[[:space:]]*$//')
+          # **1行目を取るのに `head` へ流さない。** `printf` の書き出しは4KiBずつなので、それを超える
+          # 本文では、1行目を読んだ `head` が先に終わり、**書き切れなかった `printf` が
+          # `Broken pipe` で落ちる**（`pipefail` があるのでステップごと落ち、ラベルが付かない）。
+          # 長いレビューのコメントで実際に起きた（#1538、2026-09-05）。展開で取れば流れが無い。
+          verdict=${BODY%%$'\n'*}
+          verdict=$(printf '%s' "$verdict" | tr -d '\r' | sed 's/[[:space:]]*$//')
           case "$verdict" in
           '[レビュー] 通してよい')
             add=通してよい

@@ -3,6 +3,7 @@ import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
  * `scripts/agent/dispatch-task.sh` の**投入する前の関門**の検査。
@@ -54,7 +55,7 @@ function run(issue: number, world: World = {}): Run {
     const gh = join(work, 'gh');
     writeFileSync(
       gh,
-      `#!/usr/bin/env bash
+      `${STUB_SHEBANG}
 case "$1 $2" in
   "repo view") printf '%s' 'gooyyu1/UnmappedIsland' ;;
   "issue view") cat '${dir}/issue.json' ;;

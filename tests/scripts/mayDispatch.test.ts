@@ -3,6 +3,7 @@ import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
  * `scripts/agent/may-dispatch.sh`（と、その下の `brake.sh` / `occupancy.sh`）の検査。
@@ -71,7 +72,7 @@ function run(kind: string, tag: string | readonly string[], world: World = {}): 
     const gh = join(work, 'gh');
     writeFileSync(
       gh,
-      `#!/usr/bin/env bash
+      `${STUB_SHEBANG}
 ${world.ghFails === true ? 'exit 1' : ''}
 cat <<'BODY'
 ${world.brake ?? ALL_ON}
@@ -95,7 +96,7 @@ BODY
     const meta = join(work, 'ccr-meta.sh');
     writeFileSync(
       meta,
-      `#!/usr/bin/env bash
+      `${STUB_SHEBANG}
 cat > /dev/null
 ${world.ccrFails === true ? 'exit 1' : ''}
 echo '<other-session>'
@@ -225,9 +226,8 @@ describe('may-dispatch.sh', () => {
     expect(run('review', 'review-1500', { sessions }).code).toBe(0);
   });
 
-  // 承認待ちで止まっているセッションは、許可が下りれば書き始めるので手が動いている側。
-  // **`IDLE` に落ちるかは未実測**（`occupancy.sh` の仮説の注記）。落ちても止まる形にしてある。
-  it('BLOCKED のセッションは、手が動いている側として占有している', () => {
+  // `..._BLOCKED` は手番が終わって人へ問いを返した状態（board-design 1.6 の実測）。手は空いている。
+  it('BLOCKED のセッションは、手が空いている側として数える', () => {
     const sessions = [
       {
         id: 'cse_BLOCKED',
@@ -237,7 +237,7 @@ describe('may-dispatch.sh', () => {
       },
     ];
 
-    expect(run('review', 'review-1500', { sessions }).code).toBe(1);
+    expect(run('review', 'review-1500', { sessions }).code).toBe(0);
   });
 
   it('畳まれたセッションは占有していない', () => {

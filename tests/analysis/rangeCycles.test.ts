@@ -144,9 +144,9 @@ object_defs:
         passives:
           - add: {self: {minute: 15}}
 
-  # 血を奪う傷（injuries.yamlのlaceration）。**奪う経路が2つあり、止まるまでも効き始めも違う**
-  # ——出血は負った瞬間から効いて自分のbleedingが尽きる4 tickで止まり、膿が全身へ回る敗血症は
-  # infectionがsepticへ届く320 tick後から効いて止まらない。膿は水も奪い、その速さは段で変わる。
+  # 血と水を奪う傷。**奪う経路が2つあり、止まるまでも効き始めも違う**——出血は負った瞬間から効いて
+  # 自分のbleedingが尽きる4 tickで止まり、膿み続ける傷が奪う分はinfectionがsepticへ届く320 tick後から
+  # 効いて止まらない。膿が奪う水の速さは段で変わる。
   gash:
     tags: [injury]
     props:

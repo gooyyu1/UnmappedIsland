@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -25,5 +25,35 @@ describe('scripts/ のモジュール', () => {
   it.each(MODULES)('%s がシェバングで始まっていない', (name) => {
     const head = readFileSync(join(SCRIPTS, name), 'utf-8').slice(0, 2);
     expect(head, `${name} の先頭にシェバングが在る`).not.toBe('#!');
+  });
+});
+
+/**
+ * 試験がPATHへ置く身代わりのシェバングを、直に書かないことの検査。理由と正しい書き方は
+ * [`STUB_SHEBANG`](../support/stubShebang.ts)。
+ *
+ * **綴りを1つだけ禁じても、次は別の綴りで書かれる。** `#!` の直書きそのものを止めて、
+ * 在り処を決める場所を1つに寄せる。
+ */
+describe('試験が書く身代わりのスクリプト', () => {
+  const TESTS = resolve(__dirname, '..');
+  /** 在り処を決める側と、禁じている綴りを説明のために持つ本テスト自身は対象外。 */
+  const EXEMPT = new Set([__filename, resolve(TESTS, 'support', 'stubShebang.ts')]);
+  const files = (dir: string): string[] =>
+    readdirSync(dir).flatMap((name) => {
+      const path = join(dir, name);
+      if (statSync(path).isDirectory()) return files(path);
+      return name.endsWith('.ts') && !EXEMPT.has(path) ? [path] : [];
+    });
+
+  // 集める側が黙って0件になると、**1つも見ていない状態と、全部が正しい状態が同じ緑**になる。
+  it('検査する対象が在る', () => {
+    expect(files(TESTS).length).toBeGreaterThan(0);
+  });
+
+  it('シェバングを直に書かず、`STUB_SHEBANG` から取る', () => {
+    const found = files(TESTS).filter((path) => readFileSync(path, 'utf-8').includes('#!'));
+
+    expect(found.map((path) => path.slice(TESTS.length + 1))).toEqual([]);
   });
 });

@@ -132,13 +132,11 @@ while read -r session; do
     if [ "$FORCE_BRIDGE" -eq 1 ]; then remove_worktree "$session"; fi
     continue
   fi
-  # 走行中の見方は 1.6。**`..._BLOCKED` を足しているのは仮説で、実測していない**（承認待ちが
-  # `RUNNING` を保つのか `IDLE` へ落ちるのかを見ていない）。落ちる場合に備えて or で残してある
-  # ——外れていても `KEPT` が1本増えるだけで、書きかけのコメントは消えない。
+  # 走行中の見方は 1.6。**言うのは `session_status` だけ**——`status_bucket` は手番が終わった後の
+  # 要約から決まるので、どの値も「処理中」を意味しない。
   if [ -z "$info" ] ||
     { [ "$KEEP_WORKING" -eq 1 ] &&
-    { [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" = "SESSION_STATUS_RUNNING" ] ||
-    [ "$(jq -r '.ccr.status_bucket // ""' <<<"$info")" = "SESSION_STATUS_BUCKET_BLOCKED" ]; }; } ||
+    [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" = "SESSION_STATUS_RUNNING" ]; } ||
     { [ -n "$KEEP_UNTAGGED" ] && ! jq -e --arg prefix "$KEEP_UNTAGGED" \
       '[.ccr.tags[]? | select(startswith($prefix))] | length > 0' <<<"$info" >/dev/null; } ||
     { [ "$FORCE_BRIDGE" -eq 0 ] &&

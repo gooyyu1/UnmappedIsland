@@ -549,9 +549,10 @@ traits:
       # **対数上の足し算は線形では掛け算**なので、続けて食べた分は過大に見える。向き（続けて食べるほど
       # 危ない）は正しいので、罰としてそのまま許容する（docs/concept/DesignPrinciples.md）。
       #
-      # **死に方は増えない**（VitalsSystem.md 8節）。上の2段が水と血を削り、既存の脱水・失血へ流す
-      # ——傷のfestering・septic段（injuries.yaml）とまったく同じ形。潜伏期のうちは下2段がalertを
-      # 持たないので、ステータスエリアには行が出ない（StatusArea.md 3節）。
+      # **死に方は増えない**（VitalsSystem.md 8節）。上の2段が水と血を削り、既存の脱水・失血へ流す。
+      # **削るのはここだけ**で、押し上げる側——口から入る生肉（animals.yamlのraw_meat）も、膿んだ傷
+      # （injuries.yamlのopen_wound）も——はこの値を押すところまでしかしない。潜伏期のうちは下2段が
+      # alertを持たないので、ステータスエリアには行が出ない（StatusArea.md 3節）。
       pathogen:
         tags: [status, health]
         value: 0
@@ -570,7 +571,7 @@ traits:
             alert: danger
             passives:
               # 菌が血へ回れば血漿が循環の外へ漏れ出す。**飲んでも循環へは戻らない**ので、免疫が
-              # 追いつく以外に止まらない。量は傷のseptic段と揃える。
+              # 追いつくか、菌を送り込んでいる側を断つ以外に止まらない。
               - add: {self: {hydration: -2, blood: -40}}
         passives:
           # 菌が居る間だけ増え、同じ間だけ免疫が上がる（獲得免疫）。**潜伏期は、免疫が段を1つ上げるのに

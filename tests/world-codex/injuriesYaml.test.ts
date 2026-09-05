@@ -114,10 +114,13 @@ describe('injuries.yamlの怪我', () => {
    *
    * **眠気と幸福度も同じ理由で戻す。** 尽きると次の操作の切れ目で強制的に時間が進む
    * （docs/world/Characters.md 限界節）ので、そのままでは洗った1杯ぶんの効き目が測れない。
+   *
+   * **免疫を押し下げる値（空腹・ビタミン不足）も戻す。** 傷の膿む速さは宿主の免疫の段で変わる
+   * （injuries.yamlのopen_wound）ので、留めないと「何日目にどの押し下げが加わったか」で結果が動く。
    */
   function tick(count: number): void {
-    const vital = ['hydration', 'body_fat', 'lipid', 'wakefulness', 'happiness'].map((name) =>
-      codex.propertyNames.getId(name),
+    const vital = ['hydration', 'body_fat', 'lipid', 'wakefulness', 'happiness', 'satiety', 'vitamin'].map(
+      (name) => codex.propertyNames.getId(name),
     );
     const held = vital.map((id) => player.tryGetProperty(id)?.number ?? 0);
     for (let i = 0; i < count; i++) {
@@ -393,10 +396,12 @@ describe('injuries.yamlの怪我', () => {
    * ——下げる手立てだけがあっても、上がる道が無ければ数字は動かない。
    */
   describe('傷を洗う', () => {
-    /** infectionが1段上がるのにかかるtick数（0.25/tick で 40）。 */
+    /** 健康な体でinfectionが1段上がるのにかかるtick数（0.25/tick で 40）。 */
     const TO_FESTERING = 160;
     /** cleanからsepticへ届くまでのtick数。 */
     const TO_SEPTIC = 320;
+    /** 1日 = 96 tick（1 tick = 15分）。 */
+    const DAY = 96;
 
     const infectionId = () => codex.propertyNames.getId('infection');
 
@@ -422,6 +427,11 @@ describe('injuries.yamlの怪我', () => {
 
     function infectionOf(injury: WorldObject): number {
       return injury.tryGetProperty(infectionId())?.number ?? 0;
+    }
+
+    /** 全身に回った菌（docs/engine/DigestionSystem.md 6節）。傷が押し上げる先。 */
+    function pathogenOf(host: WorldObject) {
+      return host.getProperty(codex.propertyNames.getId('pathogen'));
     }
 
     it('膿むのは皮膚が破れた傷だけで、洗えるのもその傷だけ', () => {
@@ -547,39 +557,93 @@ describe('injuries.yamlの怪我', () => {
       expect(treatmentOn(injury), '当てたまま').toEqual(['bandage']);
     });
 
-    it('膿めば水が余計に要り、回れば血が漏れ出す', () => {
-      // 対症療法の効く道と効かない道を同時に持つ（VitalsSystem.md 8.1節）。
+    it('膿んだだけの傷は、健康な体なら全身へ回らない', () => {
+      // 押し上げる量（0.12/tick）は、健康な体の除去（immunityのrobustが0.20）に届かない。菌の居ない
+      // あいだ増殖は止まっている（DigestionSystem.md 6.1節）ので、流し込んだ端から打ち消される。
       const injury = openWound();
-      const hydrationId = codex.propertyNames.getId('hydration');
-      const bloodId = codex.propertyNames.getId('blood');
+      tick(TO_FESTERING);
+      expect(injury.tryGetProperty(infectionId())?.stage?.name).toBe('festering');
 
-      const lostOver = (count: number): { water: number; blood: number } => {
-        const before = {
-          water: player.tryGetProperty(hydrationId)!.number,
-          blood: player.tryGetProperty(bloodId)!.number,
-        };
-        for (let i = 0; i < count; i++) player.tick();
-        return {
-          water: before.water - player.tryGetProperty(hydrationId)!.number,
-          blood: before.blood - player.tryGetProperty(bloodId)!.number,
-        };
+      tick(DAY);
+
+      expect(pathogenOf(player).number, '全身は無菌のまま').toBe(0);
+      expect(infectionOf(injury), '傷の側は膿み続ける').toBeGreaterThan(40);
+    });
+
+    it('洗わずに放置した傷は、全身の菌を押し上げて既存の死に方へ届く', () => {
+      // 傷が持つのは局所の膿み具合だけで、水と血を削るのは全身の菌の側（VitalsSystem.md 8.1節）。
+      // **移し替えで経路が切れていないこと**を、傷を負ってから死ぬまで1本で通す。
+      // 刺し傷なのは720 tick残るからで、届く前に治りきってしまう傷では経路を見届けられない。
+      const injury = openWound('puncture_wound');
+      const bloodId = codex.propertyNames.getId('blood');
+      const bloodOf = () => player.tryGetProperty(bloodId)!.number;
+      /** その段（あるいは死）へ届くまでのtick数を数えながら進める。 */
+      const ticksUntil = (reached: () => boolean): number => {
+        for (let count = 1; count <= 10 * DAY; count++) {
+          tick(1);
+          if (reached()) return count;
+        }
+        throw new Error('届かないまま10日が過ぎた');
       };
 
-      // 血が固まるまで（4 tick）は傷そのものが血を奪うので、そこを過ぎてから数える。
-      lostOver(4);
-      expect(lostOver(1), '清潔なうちは素の-1/tickだけ').toEqual({ water: 1, blood: 0 });
+      tick(TO_SEPTIC);
+      expect(injury.tryGetProperty(infectionId())?.stage?.name).toBe('septic');
+      expect(pathogenOf(player).number, 'ここまでは全身へ届かない').toBe(0);
 
-      lostOver(TO_FESTERING);
-      expect(lostOver(1), '熱で水の保ちが半分になる').toEqual({ water: 2, blood: 0 });
+      // **InjurySystem.md 6.3節が書いている長さそのもの。** 腐り切ってから6時間で危険域、負ってから
+      // 4.6日で死ぬ——気づいてから原因を断つ時間がある（同6.2節）ことの裏付け。
+      expect(
+        ticksUntil(() => pathogenOf(player).stage?.name === 'septicemic'),
+        '腐り切った傷なら6時間で危険域へ届く',
+      ).toBe(24);
 
-      lostOver(TO_SEPTIC - TO_FESTERING);
-      expect(lostOver(1), '3分の1になり、血が漏れ出す').toEqual({ water: 3, blood: 40 });
+      // 削るのは全身の菌の側で、傷ではない（血が固まった後の傷は血を1滴も奪わない）。
+      const before = bloodOf();
+      tick(1);
+      expect(before - bloodOf(), '敗血の段が血を削る').toBe(40);
 
-      // 洗って原因を断てば、どちらも止まる（対症療法では買えないものが、そこで戻る）。
+      // 血を測った1 tickぶんもここへ足す。
+      expect(
+        TO_SEPTIC + 24 + 1 + ticksUntil(() => player.parent === undefined),
+        '負ってから4.6日（444 tick）で死ぬ',
+      ).toBe(444);
+      expect(player.destroyedReason, '死に方は増えず、失血のまま').toBe('exsanguinated');
+    });
+
+    it('洗って原因を断てば、全身の菌も引いていく', () => {
+      // 対症療法では買えないものが、傷を洗うことで戻る（VitalsSystem.md 8.1節）。流入が止まれば
+      // 除去が増殖を上回るので、全身の菌は自分で引く。
+      const injury = openWound('puncture_wound');
+      tick(TO_SEPTIC + 24);
+      const peak = pathogenOf(player).number;
+      expect(peak, '危険域まで押し上がっている').toBeGreaterThan(7);
+
+      // 2杯で安全域（clean）まで戻る——septicの下端80から25×2を落とす。
       expect(washing(injury, filledJar())?.tryExecute()).toBe(true);
       expect(washing(injury, filledJar())?.tryExecute()).toBe(true);
+      expect(injury.tryGetProperty(infectionId())?.stage?.name).toBe('clean');
 
-      expect(lostOver(1), '2杯で安全域へ戻る').toEqual({ water: 1, blood: 0 });
+      tick(DAY);
+
+      expect(pathogenOf(player).number, '流入が止まれば引いていく').toBeLessThan(peak);
+    });
+
+    it('免疫が落ちている体では、傷も速く膿む', () => {
+      // 免疫は傷のinfectionを下げず、上がる速さを鈍らせるだけ（InjurySystem.md 6.2節）。鈍りが
+      // 掛かるのは全身で増殖を抑え込めている段から上で、そこから落ちれば素の速さに戻る。
+      const injury = openWound();
+      const rateOverOneTick = (): number => {
+        const before = infectionOf(injury);
+        player.tick();
+        return infectionOf(injury) - before;
+      };
+      expect(rateOverOneTick(), '健康な体（robust）では1時間で1').toBeCloseTo(0.25, 10);
+
+      // 空腹（-20）と寝不足（-15）が重なるとweakenedへ落ちる（DigestionSystem.md 6.2節）。
+      player.getProperty(codex.propertyNames.getId('satiety')).setNumberWithoutEvents(0);
+      player.getProperty(codex.propertyNames.getId('wakefulness')).setNumberWithoutEvents(0);
+
+      expect(rateOverOneTick(), '抑え込めない体では鈍らない').toBeCloseTo(0.3, 10);
     });
   });
 

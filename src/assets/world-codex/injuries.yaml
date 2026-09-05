@@ -38,12 +38,13 @@ traits:
   # 打ち身は皮膚の下で起きるので、汚れの入る傷口も、洗う水の届く傷口も無い。
   open_wound:
     props:
-      # 膿み具合。増えるほど悪いのでseverityと同じ向き（CardView.md 8.1節）。
+      # 膿み具合。**局所の値**で、全身へ回った菌はキャラクタ・獣の側が持つ（pathogen、
+      # DigestionSystem.md 6節）。増えるほど悪いのでseverityと同じ向き（CardView.md 8.1節）。
       #
       # **負った瞬間は清潔で、開いたままの時間が汚す**（InjurySystem.md 6節の未決事項に対する仮決め）。
-      # 1時間で1（0.25/tick）なので、放っておけば1.7日でfestering、3.3日でsepticへ届く——**最も短く
-      # 残る傷（bite_wound、360 tick）でも、治りきる前に敗血症へ入る**位置。洗う1杯（-25）はちょうど
-      # 1日ぶんの汚れを落とすので、**開いた傷1つにつき1日1杯**が保つための代償になる（同 6.2節）。
+      # 健康な体では1時間で1（0.25/tick）なので、放っておけば1.7日でfestering、3.3日でsepticへ届く
+      # ——**最も短く残る傷（bite_wound、360 tick）でも、治りきる前に敗血症へ入る**位置。洗う1杯（-25）は
+      # ちょうど1日ぶんの汚れを落とすので、**開いた傷1つにつき1日1杯**が保つための代償になる（同 6.2節）。
       infection:
         gauge: {min: good, max: bad}
         value: 0
@@ -53,9 +54,28 @@ traits:
           - {name: festering, min: 40, alert: caution}
           - {name: septic, min: 80, alert: danger}
         passives:
+          # 素の速さは、免疫が菌の増殖に負けている体のもの。
           - add:
               self:
-                infection: 0.25
+                infection: 0.30
+          # **免疫は傷を下げず、汚れる速さを鈍らせるだけ**（InjurySystem.md 6.2節）。下げる手立てを
+          # 洗うことだけに保つためで、免疫が傷そのものを引くと水の乏しさが効かなくなる。局所の免疫応答
+          # としても、傷口の汚れが免疫で消えるわけではない。
+          #
+          # **鈍るのは、全身で増殖を抑え込めている段から上**（DigestionSystem.md 6.2節の除去 > 増殖）。
+          # 段が1つ上がるごとに0.05で、健康な体（robust）がちょうど上の1時間で1、罹って高まった体
+          # （primed）はその8割。**増殖に負けている段では素の速さのまま**——弱った体では傷も速く膿む、
+          # が段の並びからそのまま出る。
+          #
+          # 宛先を持たない相手（immunityを宣言していない物）では鈍らないだけで、素の速さは残る。
+          - conditions: [{subject: parent, prop: immunity, in_stage_or_above: robust}]
+            add:
+              self:
+                infection: -0.05
+          - conditions: [{subject: parent, prop: immunity, in_stage_or_above: primed}]
+            add:
+              self:
+                infection: -0.05
     interactions:
       # 水を掛けて洗う（docs/engine/InjurySystem.md 6.2節）。**下げる手立てはこれだけ**で、治療具が
       # 効くのは上がり方の側。
@@ -79,22 +99,33 @@ traits:
           instrument: {fill: -250}
           self: {infection: -25}
     passives:
-      # 膿が全身へ回る2つの経路（docs/engine/VitalsSystem.md 8.1節）。**対症療法の効く道と効かない道を
-      # 同時に持つ**——熱で余計に要る水は飲めば追いつくが、漏れ出た血は飲んでも循環へ戻らない。
+      # 膿んだ傷は、宿主の全身へ菌を押し出す（docs/engine/InjurySystem.md 6.3節）。**傷が削るのは
+      # ここまで**で、水と血を削るのは全身の菌の側（characters/player_character.yaml・animals.yamlの
+      # pathogen）。傷は局所の膿み具合だけを持ち、そこから先の症状も死に方も知らない。
       #
-      # 宛先を持たない相手（水分を宣言していない動物）では、その寄与だけが効かない。
+      # 押し上げる量は、全身の除去（免疫の段ごとの定数）と増殖（+0.15/tick）に対して読む。膿んだだけの
+      # 傷が向かう先は、**体の状態と傷の数で分かれる**。
+      #
+      # - **健康な体（robust、除去0.20）に傷1つでは届かない。** 菌ゼロのあいだ増殖は止まっている
+      #   （DigestionSystem.md 6.1節）ので、除去だけで打ち消されて0に留まる。
+      # - **弱った体（増殖を抑え込めていない段、除去は最も高くて0.10）では1つでも入り込む。** 入れば
+      #   増殖（+0.15）が加わって除去を大きく上回るので、免疫を戻すのでは追いつかない——止めるのは
+      #   洗うことだけ。
+      # - **2つ負えば流入も2倍で、健康な体でも越える**（0.24 > 0.20）。しかも最も高い免疫でも
+      #   抑え込めない（0.24 + 0.15 > 0.30）ので、洗う以外に止まらない——多発外傷が危険なのは、
+      #   傷ごとの特別扱いではなくこの足し合わせから出る。
       - conditions: [{prop: infection, in_stage: festering}]
         add:
           parent:
-            hydration: -1
-      # -40/tickは、5,000mLを助からない域（2,000を割る）まで75 tick＝18.75時間で削る速さ。
-      # **気づいてから原因を断つ時間はある**（2杯・30分で安全域へ戻る、InjurySystem.md 6.2節）が、
-      # そのあいだ水も余計に減るので、断つために飲み水を捨てることになる。
+            pathogen: 0.12
+      # 腐り切った傷は、いちばん高い免疫（primed、-0.3）でも抑え込めない量を送り込む——健康な体では
+      # 正味+0.3/tick（免疫が高まっても+0.2/tick）で押し上がり、危険域（septicemic、7）まで6時間。
+      # そこから先は全身の菌が血を削る。
+      # **気づいてから原因を断つ時間はある**（2杯・30分で安全域へ戻る、InjurySystem.md 6.2節）。
       - conditions: [{prop: infection, in_stage: septic}]
         add:
           parent:
-            hydration: -2
-            blood: -40
+            pathogen: 0.35
 
 object_defs:
   # 足首の捻挫。ヤシの木から降りそこねたときに負う（coconut.yamlのpick_green_coconut）。
