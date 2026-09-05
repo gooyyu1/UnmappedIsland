@@ -22,7 +22,7 @@
 // 外を触る手（`runScript`・`gh`・一覧）と、出す先（`log`・`echo`）を引数で受けるのは、**実物を
 // 起こさずに検査するため**。既定は本物なので、コマンドとして呼ぶ側は何も渡さなくてよい。
 
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, writeSync } from 'node:fs';
+import { appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync, writeSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,6 +36,13 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 
 /** 打った手を、そのとき盤面がどう見えていたか（指紋）とともに残す台帳。 */
 const ledgerPath = (stateDir) => join(stateDir, 'taken.json');
+
+/**
+ * ぶつかった実績の帳面（1行1件のJSON。`.claude/board-design.md` 3.1）。**盤面は同じファイルを書く
+ * issue を並べて投入する**ので、実際にぶつかった組を控えておかないと、`area:` の錠を足すべき資源が
+ * 後から分からない。**手ではない**——打つ手が何であっても、見えたものをその周のうちに書く。
+ */
+const conflictsPath = (stateDir) => join(stateDir, 'conflicts.jsonl');
 
 const stamp = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
 
@@ -61,6 +68,72 @@ function readLedger(stateDir) {
 
 function writeLedger(stateDir, taken) {
   writeFileSync(ledgerPath(stateDir), `${JSON.stringify(taken, undefined, 2)}\n`);
+}
+
+/** 帳面に既に載っている `<PR>:<先頭コミット>`。読めない周は空（帳面がまだ無い周と同じ）。 */
+function writtenConflicts(stateDir) {
+  let text;
+  try {
+    text = readFileSync(conflictsPath(stateDir), 'utf8');
+  } catch {
+    return new Set();
+  }
+  const keys = new Set();
+  for (const line of text.split('\n')) {
+    if (line === '') continue;
+    // 壊れた行は無かったことにする。**取りこぼす害は同じ組を二度書くことだけ**なので、
+    // 帳面ごと諦めるより軽い。
+    try {
+      const record = JSON.parse(line);
+      keys.add(`${record.pr}:${record.head}`);
+    } catch {
+      continue;
+    }
+  }
+  return keys;
+}
+
+/** [`describe-conflict.sh`](describe-conflict.sh) の出力。調べられなければ `undefined`。 */
+function describeConflict(runScript, number) {
+  const out = runScript('describe-conflict.sh', [String(number)], { capture: true });
+  if (out.status !== 0) return undefined;
+  const files = [];
+  const rivals = [];
+  for (const line of out.stdout.split(/\r?\n/)) {
+    if (line.startsWith('FILE ')) files.push(line.slice('FILE '.length));
+    else if (line.startsWith('WITH ')) rivals.push(Number(line.slice('WITH '.length)));
+  }
+  return { files, with: rivals };
+}
+
+/**
+ * この周で新しく見えたコンフリクトの記録。**同じ差分は一度だけ**——押し返されるまで盤面は
+ * `CONFLICTING` を返し続けるので、`<PR>:<先頭コミット>` を控えて突き合わせる（打つ手の指紋と同じ形）。
+ *
+ * `describe` は「そのPRが何のファイルで・どのPRとぶつかったか」を返す
+ * （[`describe-conflict.sh`](describe-conflict.sh)）。**調べられなかったものは書かない**——次の周に
+ * 調べ直せるよう、指紋を埋めずに残す。**恒久的に調べられないPRは、開いている限り毎周 `git fetch` を
+ * 払い続ける**（枝の消えた fork など）。失敗の大半は一時的（認証・通信）なので、回数を数える台帳を
+ * 増やすより安いと見た。
+ *
+ * **併合し直せてしまったものは、空のまま書く。** GitHub の `mergeable` は `main` が動くたびに
+ * 古くなるので、`CONFLICTING` と言われた差分が手元では綺麗に併合できることがある。**これは調べた
+ * 結果であって失敗ではない**ので、指紋を埋めて次の周から見ない（`ARCHIVE` の `KEPT` と同じ形）。
+ */
+export function newConflicts(prs, written, describe, at) {
+  const records = [];
+  for (const pr of prs) {
+    if (pr.mergeable !== 'CONFLICTING') continue;
+    // **他のPRの上に積まれたPRは数えない。** GitHub が見ているのはその base との衝突で、
+    // `describe-conflict.sh` が調べる `main` との衝突とは別物。
+    if ((pr.baseRefName ?? 'main') !== 'main') continue;
+    const head = pr.headRefOid;
+    if (written.has(`${pr.number}:${head}`)) continue;
+    const found = describe(pr.number);
+    if (found === undefined) continue;
+    records.push({ at, pr: pr.number, head, files: found.files, with: found.with });
+  }
+  return records;
 }
 
 /** 消えたPR・畳まれたセッションの記録は捨てる。残すと、番号が回り込んだときに古い指紋が効く。 */
@@ -170,7 +243,7 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
     }
     case 'TASK': {
       // **補足は無い。** 書けるのはモデルだけで、デーモンには書くものが無い——issue 本文が全部を持つ
-      // （`dispatch-task.sh`「重なりが無くて書くことが無いなら、空のファイルでよい」）。
+      // （`dispatch-task.sh`「書くことが無いなら、空のファイルでよい」）。
       //
       // 投入先は盤面が決めて引数の形で寄越す（2.16）。**どの `env:` がどこを指すかはここには無い**
       // ——知っているのは盤面だけで、こちらはそれをそのまま渡す。
@@ -251,6 +324,24 @@ export function round({
   if (dryRun) {
     for (const line of played) log(`打たない手: ${line}`);
     return true;
+  }
+
+  // **ぶつかった実績を控える**（3.1）。**記録は手ではない**ので、下で打つ手が何であっても、その手前で
+  // 書き終わる。**`DRY_RUN` の周では書かない**——指紋を埋めると、その組は本番の周でも二度と記録
+  // されない（見るだけのつもりで測定を消すことになる）。
+  for (const record of newConflicts(
+    board.prs,
+    writtenConflicts(stateDir),
+    (number) => describeConflict(runScriptHere, number),
+    board.now,
+  )) {
+    appendFileSync(conflictsPath(stateDir), `${JSON.stringify(record)}\n`);
+    if (record.files.length === 0) {
+      log(`PR #${record.pr} は手元では併合できた（GitHub の \`mergeable\` が古い）`);
+      continue;
+    }
+    const rivals = record.with.map((number) => `#${number}`).join(' ');
+    log(`ぶつかった: PR #${record.pr} ${record.files.join(' ')}${rivals === '' ? '' : ` … ${rivals}`}`);
   }
 
   for (const line of played) {
