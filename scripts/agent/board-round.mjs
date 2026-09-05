@@ -111,8 +111,12 @@ function describeConflict(runScript, number) {
  * `CONFLICTING` を返し続けるので、`<PR>:<先頭コミット>` を控えて突き合わせる（打つ手の指紋と同じ形）。
  *
  * `describe` は「そのPRが何のファイルで・どのPRとぶつかったか」を返す
- * （[`describe-conflict.sh`](describe-conflict.sh)）。**調べられなかったものは書かない**
- * ——空の記録を残すと指紋だけ埋まり、次の周に調べ直せなくなる。
+ * （[`describe-conflict.sh`](describe-conflict.sh)）。**調べられなかったものは書かない**——次の周に
+ * 調べ直せるよう、指紋を埋めずに残す。
+ *
+ * **併合し直せてしまったものは、空のまま書く。** GitHub の `mergeable` は `main` が動くたびに
+ * 古くなるので、`CONFLICTING` と言われた差分が手元では綺麗に併合できることがある。**これは調べた
+ * 結果であって失敗ではない**ので、指紋を埋めて次の周から見ない（`ARCHIVE` の `KEPT` と同じ形）。
  */
 export function newConflicts(prs, written, describe, at) {
   const records = [];
@@ -237,7 +241,7 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
     }
     case 'TASK': {
       // **補足は無い。** 書けるのはモデルだけで、デーモンには書くものが無い——issue 本文が全部を持つ
-      // （`dispatch-task.sh`「重なりが無くて書くことが無いなら、空のファイルでよい」）。
+      // （`dispatch-task.sh`「書くことが無いなら、空のファイルでよい」）。
       //
       // 投入先は盤面が決めて引数の形で寄越す（2.16）。**どの `env:` がどこを指すかはここには無い**
       // ——知っているのは盤面だけで、こちらはそれをそのまま渡す。
@@ -318,6 +322,10 @@ export function round({
     stamp(now()),
   )) {
     appendFileSync(conflictsPath(stateDir), `${JSON.stringify(record)}\n`);
+    if (record.files.length === 0) {
+      log(`PR #${record.pr} は手元では併合できた（GitHub の \`mergeable\` が古い）`);
+      continue;
+    }
     const rivals = record.with.map((number) => `#${number}`).join(' ');
     log(`ぶつかった: PR #${record.pr} ${record.files.join(' ')}${rivals === '' ? '' : ` … ${rivals}`}`);
   }

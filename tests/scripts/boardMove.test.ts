@@ -546,12 +546,23 @@ describe('board-move.mjs', () => {
   });
 
   // 掴んでいる issue が開いている一覧に無ければ、錠が読めない。**知らないことを「取り合わない」
-  // として読まない**——閉じた issue のワーカーは、この周の `ARCHIVE` が先に畳む。
+  // として読まない。**
   it('走っているセッションの担当が読めなければ、錠を持つ issue は投入しない', () => {
     const board = {
       issues: [{ number: 9, ...label('task', 'area:art'), blockedBy: { nodes: [] } }],
       sessions: [working('session_a', 'task-8')],
       issueStates: { 8: 'OPEN' },
+    };
+    expect(moves(board)).toEqual(['NOTE 1件の task が待っている。先頭は session_a の担当（#8）が読めない']);
+  });
+
+  // **担当が閉じていても、走っている限り資源は掴んだまま。** 本数の勘定からは外すが（走行中は
+  // 畳めないので、待つと枠が空かない）、錠の側で外すと**同じ資源を2本が取り合う**。
+  it('担当の閉じたセッションが走っている間も、錠を持つ issue は投入しない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'area:art'), blockedBy: { nodes: [] } }],
+      sessions: [working('session_a', 'task-8')],
+      issueStates: { 8: 'CLOSED' },
     };
     expect(moves(board)).toEqual(['NOTE 1件の task が待っている。先頭は session_a の担当（#8）が読めない']);
   });

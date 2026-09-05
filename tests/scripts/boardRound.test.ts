@@ -458,7 +458,22 @@ describe('board-round.mjs', () => {
     expect(result.calls).not.toContain('describe-conflict.sh 10');
   });
 
-  // **調べられなかったものは書かない。** 空の記録を残すと指紋だけが埋まり、次の周に調べ直せない。
+  // **併合し直せてしまったものは、空のまま書く。** `mergeable` は `main` が動くたびに古くなるので、
+  // `CONFLICTING` と言われた差分が手元では綺麗に併合できることがある。**調べた結果であって失敗では
+  // ない**ので、指紋を埋めて次の周から見ない。
+  it('手元では併合できたPRは、空のまま帳面へ書いて、そう言う', () => {
+    const result = playRound({
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
+      conflict: { files: [], with: [] },
+    });
+
+    expect(result.conflicts).toEqual([
+      { at: '2026-09-05T02:00:00Z', pr: 10, head: 'aaa111', files: [], with: [] },
+    ]);
+    expect(result.log).toContain('PR #10 は手元では併合できた');
+  });
+
+  // **調べられなかったものは書かない。** 指紋を埋めずに残して、次の周に調べ直す。
   it('ぶつかった中身を調べられなかった周は、帳面へ書かない', () => {
     const result = playRound({
       prs: [pr(10, { mergeable: 'CONFLICTING' })],
