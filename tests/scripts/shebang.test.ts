@@ -3,19 +3,27 @@ import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * `scripts/*.mjs` の先頭にシェバングを置かないことの検査。
+ * `scripts/**\/*.mjs` の先頭にシェバングを置かないことの検査。
  *
  * **CRLFの作業ツリーでは、シェバング付きの `.mjs` を Vitest から `import` できない。** Vite の
  * 前処理がシェバングを剥がすときに `\r` を残し、構文誤り（`Invalid or unexpected token`）になる。
  * CIはLFでチェックアウトするので緑のままで、**Windowsで `npm test` を走らせた者にしか見えない。**
  *
- * どのスクリプトも `package.json` から `node scripts/....mjs` として呼ばれ、実行ビットも立って
- * いないので、シェバングは1度も使われていない。
+ * どのスクリプトも `node scripts/….mjs` として呼ばれ（`package.json` か、隣のシェルの入口から）、
+ * 実行ビットも立っていないので、シェバングは1度も使われていない。
  */
 
 const SCRIPTS = resolve(__dirname, '../../scripts');
 
-const MODULES = readdirSync(SCRIPTS).filter((name) => name.endsWith('.mjs'));
+/** 下の階層まで見る。**`import` される側は増える**ので、視野を直下に留めると番人だけが古くなる。 */
+const modules = (dir: string): string[] =>
+  readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return modules(path);
+    return name.endsWith('.mjs') ? [path.slice(SCRIPTS.length + 1)] : [];
+  });
+
+const MODULES = modules(SCRIPTS);
 
 describe('scripts/ のモジュール', () => {
   it('検査する対象が在る', () => {

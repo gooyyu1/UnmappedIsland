@@ -1,7 +1,8 @@
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+
+import { moves as decide } from '../../scripts/agent/board-move.mjs';
 
 /**
  * `scripts/agent/board-move.mjs` の検査。
@@ -10,8 +11,6 @@ import { describe, expect, it } from 'vitest';
  * （`.claude/board-design.md` 2.3）、判定を間違えると走っているセッションへ二重に投げるか、
  * 直しを待つPRが誰にも渡らないまま止まる。同じ盤面へ同じ手を二度出さないことも見る。
  */
-
-const SCRIPT = resolve(__dirname, '../../scripts/agent/board-move.mjs');
 
 const NOW = '2026-09-05T02:00:00Z';
 /** これより前に更新が止まっているPRは、チェックが0本でも緑と読む。 */
@@ -32,11 +31,7 @@ interface Board {
 }
 
 function moves(board: Board): string[] {
-  const out = execFileSync('node', [SCRIPT], {
-    input: JSON.stringify({ settledBefore: SETTLED, prs: [], issues: [], sessions: [], ...board }),
-    encoding: 'utf-8',
-  });
-  return out.split('\n').filter((line) => line.length > 0);
+  return decide({ settledBefore: SETTLED, prs: [], issues: [], sessions: [], ...board });
 }
 
 /** 緑のPR。チェックが1本通っている形で作る（無検査のPRとは別の道を通るため）。 */

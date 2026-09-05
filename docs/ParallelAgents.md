@@ -301,7 +301,7 @@ flowchart LR
 
 ## 8. 盤面を回すのはデーモンで、モデルではない
 
-**[`daemon.sh`](../scripts/agent/daemon.sh) が一定の間隔で GitHub から盤面を引き、1周に1手だけ打ちます。** 打つ手を決めるのは [`board-move.mjs`](../scripts/agent/board-move.mjs) で、**盤面のJSONを標準入力から受けて手の並びを返すだけの純粋な計算**です（GitHubも CCR も触らないので、単体で試せます）。
+**[`daemon.sh`](../scripts/agent/daemon.sh) が一定の間隔で GitHub から盤面を引き、1周に1手だけ打ちます。** 1周の中身（引く・決める・打つ）は [`board-round.mjs`](../scripts/agent/board-round.mjs) が持ち、そのうち打つ手を決めるのは [`board-move.mjs`](../scripts/agent/board-move.mjs) で、**盤面を受けて手の並びを返すだけの純粋な関数**です（GitHubも CCR も触らないので、単体で試せます）。
 
 | 手 | いつ打つか | 何をするか |
 | --- | --- | --- |
