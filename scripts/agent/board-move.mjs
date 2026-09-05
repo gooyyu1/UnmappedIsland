@@ -318,8 +318,14 @@ export function moves(input) {
     // **レビューは、走り終わっていれば畳む**（2.10.3）。使い回さない設計（`dispatch-review.sh`）なので、
     // 手が止まった時点でもう誰も起こさない。**PRが開いているかは見ない**——`直し待ち` のまま戻って
     // こないPRのレビューも、畳めない理由は無い。
+    //
+    // **ただし「走り終わった」と「道具の承認を待っている」は同じ形に見える**（1.6）。ワーカーと
+    // 同じく、空いたままが `STALL_MINUTES` 続いてから畳む——30秒で畳んだ盤面は、承認を求めて
+    // 止まったレビューを判定を書く前に消し、そのPRを永久に止めた（2026-09-06、PR #1573。
+    // 要約は `Waiting on permission: Bash`。issue #1569）。
     const review = session.tags.find((tag) => tag.startsWith('review-'));
     if (review !== undefined) {
+      if (idleMinutes(session) < STALL_MINUTES) continue;
       const mark = `read:${review.slice('review-'.length)}`;
       if (taken[`archive:${session.id}`] !== mark) archives.push(`ARCHIVE ${session.id} ${mark}`);
       continue;

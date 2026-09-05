@@ -261,6 +261,16 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toContain('ARCHIVE session_r read:1549');
   });
 
+  // **「走り終わった」と「道具の承認を待っている」は同じ形に見える**（1.6）。30秒で畳んだ盤面は、
+  // 承認を求めて止まったレビューを判定を書く前に消し、そのPRを永久に止めた（PR #1573・issue #1569）。
+  it('手が止まったばかりのレビューは、まだ畳まない', () => {
+    const board = {
+      sessions: [idle('session_a', 'review-10')],
+      taken: { 'idle:session_a': '2026-09-05T01:59:00Z' },
+    };
+    expect(moves(board)).toEqual([]);
+  });
+
   it('走っているレビューは畳まない', () => {
     expect(moves({ sessions: [working('session_r', 'review-1549')] })).toEqual([]);
   });
