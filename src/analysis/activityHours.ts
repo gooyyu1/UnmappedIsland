@@ -46,7 +46,7 @@ interface ActivityColumn {
   readonly stoppedByWind: boolean;
 }
 
-/** 土地の間を移動する: 視界が `pitch_dark` でないこと（同 5節）＝ その次の段 `dim` 以上。 */
+/** 土地の間を移動する: 視界が `dim` 以上であること（同 5節）。 */
 const TRAVEL_COLUMN: ActivityColumn = {
   propertyName: 'looking_brightness',
   stageName: 'dim',
