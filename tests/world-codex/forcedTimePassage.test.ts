@@ -26,7 +26,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
    */
   const LIMITS = [
     { prop: 'stamina', turn: 'collapse', minutes: 120, after: 20 },
-    { prop: 'wakefulness', turn: 'fall_asleep', minutes: 360, after: 72 },
+    { prop: 'wakefulness', turn: 'fall_asleep', minutes: 360, after: 48 },
     { prop: 'happiness', turn: 'despair', minutes: 120, after: 20 },
   ] as const;
 

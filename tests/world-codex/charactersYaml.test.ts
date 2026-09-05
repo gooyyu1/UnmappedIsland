@@ -720,22 +720,27 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(blocker('sleep'), '寝床を敷いた').toBeUndefined();
     });
 
-    it('眠り込みは寝床を要らず、自分で選んだ睡眠より多くは戻さない', () => {
+    it('眠り込みは寝床を要らず、まとめて休んだ割増しも付かない', () => {
       // 寝床を要らないのは、限界が逃げ場であって線ではないため（Characters.md 限界節）。睡眠と同じ
       // 要件を写すと、寝床の無い場所で眠気が尽きた時点で、覚醒度を戻す手が世界から消える。
       //
-      // **戻る量を上回らせないほうが要**——下限のクランプが経過ぶんを吸うので、宣言を sleep と同じ
-      // +96 にすると、倒れるまで起きているほうが効率よく眠気を戻すことになる（起きている割合が
-      // 75%から80%へ上がる）。逃げ場を褒美にすると、寝床を敷く理由が消える。
+      // **割増しを付けないほうが要。** 下限のクランプが経過ぶんを吸うので、眠り込みは宣言した量が
+      // そのまま残る。割増しの付いた sleep の割で戻すと、倒れるまで起きているほうが寝床の上と同じか
+      // それ以上に眠気を戻せてしまい、寝床を敷く理由が消える。倒れ込み・打ちひしがれが rest の割に
+      // 揃えているのと同じ線で、眠気はいちばん短い nap の割に揃える。
       const wakefulnessId = codex.propertyNames.getId('wakefulness');
       const { player } = stand(character);
       player.instance.getProperty(wakefulnessId).setNumber(0);
 
       expect(player.instance.tryGetAction('fall_asleep', player.instance)?.tryExecute()).toBe(true);
-      expect(
-        player.instance.tryGetProperty(wakefulnessId)?.number ?? 0,
-        '眠り込みで戻った量',
-      ).toBeLessThanOrEqual(takeRest(character, 'sleep').wakefulness);
+
+      const forced = player.instance.tryGetProperty(wakefulnessId)?.number ?? 0;
+      const nap = takeRest(character, 'nap');
+      const minutes = player.instance.tryGetAction('fall_asleep', player.instance)?.executionMinutes() ?? 0;
+
+      expect(forced / (minutes / 60), '眠り込みの1時間あたり').toBeLessThanOrEqual(
+        nap.wakefulness / (nap.minutes / 60),
+      );
     });
 
     it('睡眠1回では、覚醒度は満タンに届かない', () => {
