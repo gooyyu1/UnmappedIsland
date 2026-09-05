@@ -17,7 +17,6 @@ import {
 } from '../../src/analysis/balanceTables';
 import { islandLocationsOf } from '../../src/analysis/islandLocations';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
 import {
   describeDocumentedSections,
@@ -26,7 +25,7 @@ import {
   formatYamlReport,
   rounded,
 } from '../support/generatedReport';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
  * 定義から計算した収支表（`src/analysis/balanceTables.ts`）を`stats/balance.yaml`へ書き出す。
@@ -268,11 +267,17 @@ function dailyNeedRecords(properties: readonly PropertyChains[]): YamlRecord[] {
 const REPORT_PATH = join('stats', 'balance.yaml');
 const DOC_PATH = join('docs', 'diagnostics', 'BalanceStats.md');
 
-/** 定義を読んで収支を計算する。再生成と鮮度の確認が同じものを見るための1箇所。 */
+/**
+ * 定義を読んで収支を計算する。再生成と鮮度の確認が同じものを見るための1箇所。
+ *
+ * **一度きり。** 入力は不変のcodexだけなので、呼ぶたびに計算しても同じ表になる。
+ */
 function balanceFromDefinitions(): { readonly codex: WorldCodex; readonly tables: BalanceTables } {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
-  return { codex, tables: buildBalanceTables(codex, SAMPLE_CHARACTER) };
+  const codex = bundledCodex();
+  return (balance ??= { codex, tables: buildBalanceTables(codex, SAMPLE_CHARACTER) });
 }
+
+let balance: { readonly codex: WorldCodex; readonly tables: BalanceTables } | undefined;
 
 function buildReportFromDefinitions(): string {
   const { codex, tables } = balanceFromDefinitions();
