@@ -61,7 +61,7 @@ function run(world: World): string {
     }
 
     const git = join(work, 'git');
-    writeFileSync(git, `#!/usr/bin/env bash\nprintf '%s' '${dir}/main/.git'\n`, 'utf-8');
+    writeFileSync(git, `#!/bin/bash\nprintf '%s' '${dir}/main/.git'\n`, 'utf-8');
     chmodSync(git, 0o755);
 
     return execFileSync('bash', [HOOK], {

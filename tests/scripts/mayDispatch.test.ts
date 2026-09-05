@@ -71,7 +71,7 @@ function run(kind: string, tag: string | readonly string[], world: World = {}): 
     const gh = join(work, 'gh');
     writeFileSync(
       gh,
-      `#!/usr/bin/env bash
+      `#!/bin/bash
 ${world.ghFails === true ? 'exit 1' : ''}
 cat <<'BODY'
 ${world.brake ?? ALL_ON}
@@ -95,7 +95,7 @@ BODY
     const meta = join(work, 'ccr-meta.sh');
     writeFileSync(
       meta,
-      `#!/usr/bin/env bash
+      `#!/bin/bash
 cat > /dev/null
 ${world.ccrFails === true ? 'exit 1' : ''}
 echo '<other-session>'

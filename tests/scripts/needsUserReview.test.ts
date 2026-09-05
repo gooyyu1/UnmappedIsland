@@ -49,7 +49,7 @@ function judge(files: readonly string[], diff: string, docs: Readonly<Record<str
     const gh = join(work, 'gh');
     writeFileSync(
       gh,
-      `#!/usr/bin/env bash\n` +
+      `#!/bin/bash\n` +
         `if [ "$2" = diff ]; then\n  cat '${dir}/diff'\n  exit 0\nfi\n` +
         `if [[ "$*" == *headRefOid* ]]; then\n  echo head0000\n  exit 0\nfi\n` +
         `if [[ "$*" == *baseRefOid* ]]; then\n  echo base0000\n  exit 0\nfi\n` +
@@ -62,7 +62,7 @@ function judge(files: readonly string[], diff: string, docs: Readonly<Record<str
     const git = join(work, 'git');
     writeFileSync(
       git,
-      `#!/usr/bin/env bash\n` +
+      `#!/bin/bash\n` +
         `[ "$1" = fetch ] && exit 0\n` +
         `if [ "$1" = show ]; then\n` +
         `  f="${dir}/show/$(printf '%s' "$2" | tr '/:' '__')"\n` +

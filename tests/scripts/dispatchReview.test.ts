@@ -46,7 +46,7 @@ function args(pr: number, world: World = {}): { title: string; tags: string[] } 
     const gh = join(work, 'gh');
     writeFileSync(
       gh,
-      `#!/usr/bin/env bash
+      `#!/bin/bash
 case "$1 $2" in
   "repo view") printf '%s' 'gooyyu1/UnmappedIsland' ;;
   "pr view") cat '${dir}/pr.json' ;;

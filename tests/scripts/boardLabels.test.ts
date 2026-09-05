@@ -63,7 +63,7 @@ function run(body: string, comments: readonly Comment[] = []): Run {
     const gh = join(work, 'gh');
     writeFileSync(
       gh,
-      `#!/usr/bin/env bash
+      `#!/bin/bash
 case "$1 $2" in
 "pr view")
   filter=''

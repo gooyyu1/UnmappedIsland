@@ -77,7 +77,7 @@ function run(world: World = {}): Run {
     const meta = join(work, 'ccr-meta.sh');
     writeFileSync(
       meta,
-      `#!/usr/bin/env bash
+      `#!/bin/bash
 payload=$(cat)
 if [ "$1" = archive_session ]; then
   printf '%s' "$payload" | jq -r '.session_id' >> '${dir}/archived'
