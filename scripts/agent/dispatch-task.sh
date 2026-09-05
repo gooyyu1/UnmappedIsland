@@ -29,8 +29,9 @@
 #   `get_session` で確かめるところまでを、ここに含める。
 # - **`tags` を渡し忘れると、盤面から見えないセッションになる。** デーモンが占有も止まりも読むのは
 #   `task-<番号>` のタグからなので、タグの無いセッションは二重投入も空回りも防げない。
-# - `environment_id` は必須（この経路には呼び元が無いので継げない）。`permission_mode` は逆に
-#   渡してはいけない（親セッションを要求されて撥ねられる）。
+# - `environment_id` と `permission_mode` は必須（この経路には呼び元が無いので継げない）。
+#   **どちらも投入先で決まる**ので、[`ccr-env.sh`](ccr-env.sh) から取って下の分岐で選ぶ。
+#   `permission_mode` は空のことがあり、**そのときは渡さない**（それがブリッジの `bypassPermissions`）。
 # - **閉じた issue へ立てると、空待ちになる。** 題を引くのと同じ `gh issue view` で `state` も見る。
 # - **`## 担当` に、クラウドのセッションが触れない領域が挙がっていないかを見る。** ひな形・盤面の
 #   道具・運用の文書はユーザーが `main` へ直接入れる領域で、セッションからは編集ツールが拒否される。
@@ -68,10 +69,12 @@ if [ "$WHERE" = "--bridge" ]; then
   ENV_ID="$BRIDGE_ENV"
   MODE="$BRIDGE_MODE"
   SOURCE=""
+  PLACE=ブリッジ
 else
   ENV_ID="$CLOUD_ENV"
   MODE="$CLOUD_MODE"
   SOURCE="$REPO_URL"
+  PLACE=クラウド
 fi
 
 # ひな形は手で書き写さない。**書き写すと必ず何かが落ちる**——2026-08-27 に「PRを見張らない」の
@@ -93,7 +96,6 @@ cat "$SUPPLEMENT" >>"$INSTRUCTION"
 # **走る場所で変わる制約は、ここで差し替える。** 受け取る側は自分がどちらで走っているかを知らない
 # ので、ひな形の本体へ無条件に書くと、当たらないほうのセッションにもそのまま渡る（`.claude/**` を
 # 触るなと書いた行が、そこを直すために立てたブリッジのセッションへ届いていた。PR #1567 の指摘）。
-PLACE=$([ "$WHERE" = "--bridge" ] && echo ブリッジ || echo クラウド)
 awk -v want="$PLACE" '
   $1 == "##" && $2 == want { found = 1; next }
   found && /^```$/ { inside = !inside; if (!inside) exit; next }
@@ -156,7 +158,7 @@ existing=$(gh pr list --state open --limit 50 --json number,body |
 }
 
 # `## 担当` に、セッションが書けない領域が挙がっていないか。`.claude/**` はクラウドセッションからの
-# 書き込みが必ずユーザー承認を求められ、そこで止まる。`scripts/agent/**` と `CLAUDE.md` はユーザーが
+# 書き込みがユーザー承認を求められ、そこで止まる。`scripts/agent/**` と `CLAUDE.md` はユーザーが
 # `main` へ直接入れる領域。どれも投入した時点で往復が1回無駄になる。
 #
 # **見るのはクラウドへ投入するときだけ。** 止まる理由（承認）はクラウドにしか無く、盤面の道具そのものを
