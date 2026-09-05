@@ -610,3 +610,125 @@ object_defs:
     });
   });
 });
+
+/**
+ * 待ち生産表の周期と「いつ働くか」が、**同じ組み合わせ**から出ること（issue #1433）。
+ *
+ * 周期は「同時に成立しうる組み合わせのうち最も遅いもの」から決まる。条件のほうを別の基準で
+ * 選ぶと、周期は増減Bから・条件は増減Aから来て、**どの宣言も持っていない（周期, 条件）の対**が
+ * できる。読み手はこの対を1つの事実として読むので、置いても1 tickも進まない条件に、進む前提の
+ * 数字が付く。
+ *
+ * 形は塩田（salt.yaml）から採る——干し上がる分と雨で戻る分の2つが、どちらも条件つきで、常時効く
+ * 分を持たない。
+ */
+describe('待ち生産の周期と条件', () => {
+  const YAML = `
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      hydration:
+        value: 96
+        range: {min: 0, max: 96}
+        passives:
+          - add: {self: {hydration: -1}}
+
+  sandy_beach:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+      ambient_brightness: {value: 16, range: {min: -6, max: 17}}
+      wetness: {value: 0, range: {min: 0, max: 1}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 60
+        spawn: {object: gourd, into: self}
+
+  gourd:
+    tags: [item]
+    interactions:
+      drink:
+        trigger: menu
+        duration: 5
+        destroy: self
+        add: {agent: {hydration: 96}}
+
+  # 干し上がる分（-1）と雨で戻る分（+2）。**戻る側を先に宣言する**——宣言順で条件を採ると、
+  # 周期を決めていない側が「いつ働くか」として出る。
+  salt_pan:
+    tags: [fixture]
+    slots:
+      salt:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - conditions: [{subject: ancestor, prop: wetness, gte: 1}]
+            add: {self: {drying_remaining: 2}}
+          - conditions: [{subject: ancestor, prop: ambient_brightness, gte: 14}]
+            add: {self: {drying_remaining: -1}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+
+  # 日差しの強い塩田（-3）。小雨（+2）では止まりきらないので、**最も遅いのは両方が重なった場合**
+  # ——そこでは条件を1つだけ挙げても、周期を決めた組み合わせにならない。
+  open_salt_pan:
+    tags: [fixture]
+    slots:
+      salt:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - conditions: [{subject: ancestor, prop: ambient_brightness, gte: 14}]
+            add: {self: {drying_remaining: -3}}
+          - conditions: [{subject: ancestor, prop: wetness, gte: 1}]
+            add: {self: {drying_remaining: 2}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+
+  salt:
+    tags: [item]
+`;
+
+  const tables = buildBalanceTables(
+    new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset(),
+    'medic',
+  );
+
+  const deviceOf = (deviceName: string) =>
+    tables.places
+      .find((place) => place.name === WHOLE_ISLAND)!
+      .devices.find((device) => device.deviceName === deviceName)!;
+
+  it('条件は、周期を決めた増減のものになる', () => {
+    // 24を-1で削るので周期は24 tick＝360分。その-1を縛るのは日差しのほうで、雨は周期を決めて
+    // いない——ここに雨が出ると、「雨の間だけ360分ごとに塩が採れる」という誰も宣言していない
+    // 対になる。
+    expect(deviceOf('salt_pan')).toMatchObject({
+      periodMinutes: 360,
+      condition: '祖先のambient_brightness ≥ 14',
+    });
+  });
+
+  it('重なって初めて最も遅くなるなら、条件も重なったまま出る', () => {
+    // -3と+2が重なった-1が最も遅いので周期は24 tick＝360分。日差しだけを挙げると8 tick＝120分の
+    // 側の条件になり、雨だけを挙げると干し上がらない側の条件になる。
+    expect(deviceOf('open_salt_pan')).toMatchObject({
+      periodMinutes: 360,
+      condition: '祖先のambient_brightness ≥ 14 かつ 祖先のwetness ≥ 1',
+    });
+  });
+});

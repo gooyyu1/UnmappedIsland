@@ -80,6 +80,16 @@ const NEGATED_OPS: Readonly<Record<ConditionOp, ConditionOp>> = {
   not_in: 'in',
 };
 
+/**
+ * 並べた条件を「どれも成立している」としてつなぐ語。**条件を並べる側はここから採る**——文の形を
+ * 決めるのはこのファイル1箇所（ConditionWordMaker参照）で、同じ意味の並びが置き場所ごとに違う語で
+ * つながれると、同じ宣言が別の文に見える。
+ */
+export const ALL_CONJUNCTION = 'かつ';
+
+/** その否定。条件の否定は葉まで押し下げるので、並びのほうは接続詞が入れ替わる。 */
+const ANY_CONJUNCTION = 'または';
+
 /** 条件の主語を指す語。**selfには語を当てない**——その文はもともとselfの話だから。 */
 const SUBJECT_WORDS: Readonly<Record<ReferenceRoot, string>> = {
   self: '',
@@ -170,11 +180,11 @@ class ConditionWordWriter<T> implements ConditionReader, ConditionPhrase<T> {
   }
 
   all(children: readonly ConditionDeclaration[]): void {
-    this.join(children, this.negated ? 'または' : 'かつ');
+    this.join(children, this.negated ? ANY_CONJUNCTION : ALL_CONJUNCTION);
   }
 
   any(children: readonly ConditionDeclaration[]): void {
-    this.join(children, this.negated ? 'かつ' : 'または');
+    this.join(children, this.negated ? ALL_CONJUNCTION : ANY_CONJUNCTION);
   }
 
   not(child: ConditionDeclaration): void {
