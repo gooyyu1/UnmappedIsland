@@ -3,7 +3,8 @@
 #
 #   bash scripts/agent/dispatch-task.sh 1029 "$LOCALAPPDATA/Temp/ui-1029.md"
 #   bash scripts/agent/dispatch-task.sh 1029 <補足ファイル> --bridge   # このPCで走らせる
-#   DRY_RUN=1 bash scripts/agent/dispatch-task.sh 1029 <補足ファイル>  # 渡す引数を見るだけ
+#   DRY_RUN=1 bash scripts/agent/dispatch-task.sh 1029 <補足ファイル>     # 渡す引数を見るだけ
+#   DRY_RUN=full bash scripts/agent/dispatch-task.sh 1029 <補足ファイル>  # 指示の本文も切らずに出す
 #
 # **渡すのは補足だけ。** 共通のひな形（[`.claude/dispatch-prompt.md`](../../.claude/dispatch-prompt.md)）は
 # ここで読んで前へ付ける。ひな形自身が「手で書き写すと必ず何かが落ちる」と書いているものを、
@@ -64,7 +65,9 @@ trap 'rm -rf "$WORK"' EXIT
 # 一文が3本すべてから抜け、3セッションが承認待ちで止まった。ここで `dispatch-prompt.md` の
 # ``` の中を読み、`<番号>` を埋めて、渡された補足を末尾へ足す。投入する側が書くのは補足だけ。
 INSTRUCTION="$WORK/prompt.md"
-awk '/^```$/ { inside = !inside; next } inside' "$TEMPLATE" |
+# **読むのは最初のブロックだけ。** 後ろに走る場所ごとの節が続くので、トグルのまま最後まで読むと
+# 両方の節が本体へ混ざる。
+awk '/^```$/ { inside = !inside; if (!inside) exit; next } inside' "$TEMPLATE" |
   sed "s/<番号>/$ISSUE/g" >"$INSTRUCTION"
 # ひな形の最後の行は補足の置き場を説明する山括弧なので、補足そのものへ差し替える。
 grep -q '^<このタスク固有の補足' "$INSTRUCTION" || {
@@ -73,6 +76,32 @@ grep -q '^<このタスク固有の補足' "$INSTRUCTION" || {
 }
 sed -i '/^<このタスク固有の補足/,$d' "$INSTRUCTION"
 cat "$SUPPLEMENT" >>"$INSTRUCTION"
+
+# **走る場所で変わる制約は、ここで差し替える。** 受け取る側は自分がどちらで走っているかを知らない
+# ので、ひな形の本体へ無条件に書くと、当たらないほうのセッションにもそのまま渡る（`.claude/**` を
+# 触るなと書いた行が、そこを直すために立てたブリッジのセッションへ届いていた。PR #1567 の指摘）。
+PLACE=$([ "$WHERE" = "--bridge" ] && echo ブリッジ || echo クラウド)
+awk -v want="$PLACE" '
+  $1 == "##" && $2 == want { found = 1; next }
+  found && /^```$/ { inside = !inside; if (!inside) exit; next }
+  inside
+' "$TEMPLATE" >"$WORK/place.md"
+[ -s "$WORK/place.md" ] || {
+  echo "ひな形に「## $PLACE」の節が無い: $TEMPLATE" >&2
+  exit 1
+}
+grep -q '^<走る場所で変わる制約' "$INSTRUCTION" || {
+  echo "ひな形から走る場所の目印が消えている: $TEMPLATE" >&2
+  exit 1
+}
+awk -v file="$WORK/place.md" '
+  /^<走る場所で変わる制約/ {
+    while ((getline line < file) > 0) print line
+    next
+  }
+  { print }
+' "$INSTRUCTION" >"$WORK/merged.md"
+mv "$WORK/merged.md" "$INSTRUCTION"
 
 # **日本語はシェル変数に載せない。** Windowsのnodeは argv も環境変数もANSIで受け取るので、題を
 # `$(...)` で渡すと黙って化ける。題も本文もファイル経由で node へ渡す。
@@ -156,8 +185,14 @@ node -e '
   "$([ "$WHERE" = "--bridge" ] || echo "$REPO_URL")" >"$WORK/args.json"
 
 # 立てずに、渡す引数だけを見る（`DRY_RUN=1 bash …`）。指示ファイルを差し替えたときの確認用。
+# **本文は頭だけに切る**——目で見たいのは引数の形（環境ID・タグ・`source_url`）で、指示の全文は
+# 邪魔になる。**`DRY_RUN=full` なら切らない**（渡す本文そのものを確かめる側が使う）。
 if [ -n "${DRY_RUN:-}" ]; then
-  jq '.prompt |= (split("\n") | .[0:3] | join("\n") + "\n…")' "$WORK/args.json"
+  if [ "$DRY_RUN" = full ]; then
+    cat "$WORK/args.json"
+  else
+    jq '.prompt |= (split("\n") | .[0:3] | join("\n") + "\n…")' "$WORK/args.json"
+  fi
   exit 0
 fi
 

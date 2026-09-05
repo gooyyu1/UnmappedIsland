@@ -38,6 +38,8 @@ interface World {
 interface Run {
   readonly code: number;
   readonly stderr: string;
+  /** `DRY_RUN` が出した `create_session` の引数。関門で止まった回は空。 */
+  readonly stdout: string;
 }
 
 function run(issue: number, world: World = {}): Run {
@@ -74,30 +76,38 @@ esac
 
     try {
       const where = world.onBridge === true ? ['--bridge'] : [];
-      execFileSync('bash', [SCRIPT, String(issue), join(work, 'supplement.md'), ...where], {
+      const stdout = execFileSync('bash', [SCRIPT, String(issue), join(work, 'supplement.md'), ...where], {
         encoding: 'utf-8',
         stdio: 'pipe',
         env: {
           ...process.env,
           PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
-          DRY_RUN: '1',
+          // 本文まで見るので切らせない（`dispatch-task.sh` の `DRY_RUN=full`）。
+          DRY_RUN: 'full',
           CLOUD_ENV: 'env_TEST_CLOUD',
           BRIDGE_ENV: 'env_TEST_BRIDGE',
         },
       });
-      return { code: 0, stderr: '' };
+      return { code: 0, stderr: '', stdout };
     } catch (error) {
       const failure = error as { status?: number; stderr?: string };
-      return { code: failure.status ?? -1, stderr: failure.stderr ?? '' };
+      return { code: failure.status ?? -1, stderr: failure.stderr ?? '', stdout: '' };
     }
   } finally {
     rmSync(work, { recursive: true, force: true });
   }
 }
 
+/** 組み立てて渡す指示の本文。 */
+function prompt(issue: number, world: World = {}): string {
+  const result = run(issue, world);
+  expect(result.code).toBe(0);
+  return (JSON.parse(result.stdout) as { prompt: string }).prompt;
+}
+
 describe('dispatch-task.sh', () => {
   it('関門をどれも踏まなければ、渡す引数まで組み立てる', () => {
-    expect(run(1415)).toEqual({ code: 0, stderr: '' });
+    expect(run(1415).code).toBe(0);
   });
 
   it('その issue を閉じるPRが既に開いていれば、投入しない', () => {
@@ -141,5 +151,28 @@ describe('dispatch-task.sh', () => {
 
   it('ブリッジへなら、同じ担当でも投入する', () => {
     expect(run(1551, { body: '## 担当\n\n- `.claude/ccr-meta.sh`\n', onBridge: true }).code).toBe(0);
+  });
+
+  // **受け取る側は、自分がどちらで走っているかを知らない。** 本体へ無条件に書くと、当たらない
+  // ほうのセッションにもそのまま渡り、`.claude/**` を直すために立てたブリッジのセッションが
+  // 着手した時点で仕事をせずに返す（PR #1567 のレビュー指摘）。
+  it('クラウドへは、ユーザーの領域を触らずブリッジへ回せと渡す', () => {
+    const body = prompt(1415);
+
+    expect(body).toContain('[ブリッジ]');
+    expect(body).not.toContain('ユーザーのPCで走っています');
+  });
+
+  it('ブリッジへは、担当に挙がっていれば書き換えてよいと渡す', () => {
+    const body = prompt(1415, { onBridge: true });
+
+    expect(body).toContain('ユーザーのPCで走っています');
+    expect(body).not.toContain('[ブリッジ]');
+  });
+
+  // 差し替えそのものが落ちたときは、目印の行が本文に残る。**渡す相手には読めない行**なので、
+  // 落ちたことがここで分かるようにする。
+  it('走る場所の目印は、本文に残さない', () => {
+    expect(prompt(1415)).not.toContain('<走る場所で変わる制約');
   });
 });
