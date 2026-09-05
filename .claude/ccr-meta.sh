@@ -82,7 +82,7 @@
 #
 # ## この経路から立てるときに要る引数・渡してはいけない引数
 #
-# `mcp__ccr_meta__create_session` は呼び元のセッションから環境と権限を継ぐが、**curlで直に叩くこの
+# `mcp__ccr_meta__create_session` は呼び元のセッションから環境と権限を継ぐが、**HTTPを直に叩くこの
 # 経路には呼び元が無い**ので、継ぐはずのものが継げない（2026-08-25 に2回撥ねられた）。
 #
 # - **`environment_id` は必須。** 省くと候補を並べたエラーが返る。クラウドは「デフォルト」のほう
@@ -94,45 +94,19 @@ set -euo pipefail
 
 TOOL="${1:?ツール名を渡す（例: list_sessions）}"
 
-TOKEN=$(node -e "
-  const fs = require('node:fs');
-  const path = (process.env.USERPROFILE || process.env.HOME) + '/.claude/.credentials.json';
-  process.stdout.write(JSON.parse(fs.readFileSync(path, 'utf8')).claudeAiOauth.accessToken);
-")
+# **中身は隣の [`ccr-meta.mjs`](./ccr-meta.mjs)。ここは入口だけ。** トークンの読み出し・JSONの
+# 組み立て・通信・応答の取り出しは、**プロセスを跨がずに1つの node の中で済ませる**——Windowsでは
+# `node` の起動だけで1回44.5msかかり（2026-09-05 の実測）、デーモンはここを繰り返し叩くので、
+# 境界の数がそのまま常時の固定費になる。node には `fetch` が入っているので、通信のためにもう1つ
+# 起こす必要は無い。
+#
+# **標準入力はそのまま渡す。** シェル変数にも環境変数にも載せない——Windowsのnodeは環境変数を
+# ANSIコードページで受け取るので、**日本語を env や `$(...)` で渡すと静かに化ける**（2026-08-25 に、
+# セッションのタイトルが化けて実際に見つかった）。argv で渡すのは道具名だけで、そちらはASCII。
 
-# **引数は標準入力から受けて、そのまま curl へ流す。** シェル変数にも環境変数にも載せない——
-# Windowsのnodeは環境変数をANSIコードページで受け取るので、**日本語を env や `$(...)` で渡すと
-# 静かに化ける**（2026-08-25 に、セッションのタイトルが化けて実際に見つかった）。
-node -e "
-  let stdin = '';
-  process.stdin.on('data', (d) => (stdin += d)).on('end', () => {
-    process.stdout.write(
-      JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/call',
-        params: { name: process.argv[1], arguments: JSON.parse(stdin || '{}') },
-      }),
-    );
-  });
-" "$TOOL" |
-  curl -sS -X POST \
-    -H "Authorization: Bearer $TOKEN" \
-    -H "content-type: application/json; charset=utf-8" \
-    -H "accept: application/json, text/event-stream" \
-    --data-binary @- \
-    "https://api.anthropic.com/v1/code/mcp/meta" |
-  node -e "
-    let s = '';
-    process.stdin.on('data', (d) => (s += d)).on('end', () => {
-      const parsed = JSON.parse(s);
-      if (parsed.error) {
-        console.error('失敗:', JSON.stringify(parsed.error));
-        process.exit(1);
-      }
-      // 中身は普段のMCPと同じ text コンテンツ。そのまま出す。
-      for (const part of parsed.result?.content ?? []) {
-        console.log(part.text ?? JSON.stringify(part));
-      }
-    });
-  "
+# `%/*` は区切りが無いと文字列をそのまま返す。**この入口は手で打たれる**ので、`.claude/` の中から
+# `bash ccr-meta.sh …` と呼ばれる形も通す。
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+
+exec node "$HERE/ccr-meta.mjs" "$TOOL"
