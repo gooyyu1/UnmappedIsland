@@ -7,8 +7,10 @@
 //
 //   MERGE   <PR番号>
 //   ARCHIVE <セッションID> <指紋>            … 担当の issue が閉じたワーカーを畳む
-//   RESUME  <セッションID> mend  <PR番号>    <指紋>
-//   RESUME  <セッションID> stall <issue番号> <指紋>
+//   RESUME  <セッションID> mend   <PR番号>    <指紋>  … 指摘・コンフリクト・CIの赤を直させる
+//   RESUME  <セッションID> reject <PR番号>    <指紋>  … 通らなかった仮決めを取り下げさせる
+//   RESUME  <セッションID> look   <PR番号>    <指紋>  … 画面を撮って本文へ貼らせる
+//   RESUME  <セッションID> stall  <issue番号> <指紋>
 //   REVIEW  <PR番号> <指紋>
 //   TASK    <issue番号>
 //   NOTE    <人へ向けた1行>                  … 打つ手が無いことの説明。呼び手は記録するだけ
@@ -121,8 +123,6 @@ const notes = [];
 for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
   if (pr.isDraft === true) continue;
   const labels = names(pr);
-  // 人間の手元。仮決めへの返事を待っているので、機械は触らない（1.3）。
-  if (labels.includes('判断待ち')) continue;
 
   // **他のPRの上に積まれたPRは、盤面では捌けない。** CIは古い base の上で緑になり、レビューが読む
   // 差分にも下のPRの変更が混ざる（#1508 はこれで2周ぶん無駄にしている）。触らずに書き残すだけに
@@ -134,18 +134,28 @@ for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
   }
 
   const check = checks(pr);
-  // **コンフリクトはラベルより先に見る。** 誰の手元にあろうと、解消するまで前へ進めない。
-  const reason = labels.includes('直し待ち')
-    ? '差し戻された'
-    : pr.mergeable === 'CONFLICTING'
-      ? 'コンフリクトしている'
-      : check === 'red'
-        ? 'CIが赤い'
-        : missingLook(pr)
-          ? '画面が変わるのに `## 見た目` が無い'
-          : null;
+  // **差し戻す種類は、起こされた側がやることで分ける**（1.3）。盤面から見た効き目（どれも
+  // 「書いた本人を起こす」）で束ねると、渡す文面が1つになって作業が読めない。
+  //
+  // - `reject` … 通らなかった仮決めを取り下げて、別の決め方でやり直す
+  // - `look`   … 画面を撮って本文へ貼る
+  // - `mend`   … PRを見て直す（指摘・コンフリクト・CIの赤。**この3つは作業が同じ**なので束ねる）
+  //
+  // **どのラベルが付いていても差し戻す。** `判断待ち` はマージを、`収束せず` はレビューを止める
+  // だけで、直しを止める理由にはならない——コンフリクトの解消を人の返事まで待たせない（2.13）。
+  const [kind, reason] = labels.includes('却下')
+    ? ['reject', '仮決めが却下された']
+    : missingLook(pr)
+      ? ['look', '画面が変わるのに `## 見た目` が無い']
+      : labels.includes('直し待ち')
+        ? ['mend', '差し戻された']
+        : pr.mergeable === 'CONFLICTING'
+          ? ['mend', 'コンフリクトしている']
+          : check === 'red'
+            ? ['mend', 'CIが赤い']
+            : [null, null];
 
-  if (reason !== null) {
+  if (kind !== null) {
     // 直す相手は、そのPRを書いたセッション。**畳まれていれば起こせない**——畳むのは
     // 「この仕事は終わった」と判断した側の明示の操作なので、機械では戻さない（1.2）。
     const holders = menders(pr);
@@ -161,17 +171,25 @@ for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
     }
     for (const holder of holders) {
       if (busySession(holder)) continue;
-      const mark = `mend:${pr.number}:${pr.headRefOid}`;
+      // **指紋に種類を入れる。** セッションごとに1枠しか持たないので、同じ差分で別の種類を打つとき
+      // （直しの後に却下が来る、など）に前の指紋と一致してしまい、後から来たほうが黙って落ちる。
+      const mark = `${kind}:${pr.number}:${pr.headRefOid}`;
       if (taken[`resume:${holder.id}`] === mark) continue;
-      mends.push(`RESUME ${holder.id} mend ${pr.number} ${mark}`);
+      mends.push(`RESUME ${holder.id} ${kind} ${pr.number} ${mark}`);
     }
     continue;
   }
 
   if (labels.includes('通してよい')) {
+    // `判断待ち` が止めるのはマージだけ（2.13）。越えるのは `merge-and-close.sh <PR> --user-ok`。
+    if (labels.includes('判断待ち')) continue;
     if (check === 'green' && pr.mergeable === 'MERGEABLE') merges.push(`MERGE ${pr.number}`);
     continue;
   }
+
+  // `収束せず` が止めるのはレビューだけ（2.13）。往復では決まらないと分かった差分へ、次の周を
+  // 出さない——人が `通してよい` か `直し待ち` で答えるまで、この先へは進まない。
+  if (labels.includes('収束せず')) continue;
 
   // 結論のラベルが無い＝この差分はまだ読まれていない（push で外れる。`board-labels.yml`）。
   if (check !== 'green') continue;

@@ -142,16 +142,19 @@ describe('board-labels.yml の verdict', () => {
   });
 
   // 上限（4.6）。3周目の判定が「直しが要る」なら、そこで人の手番へ移す。
-  it('3周目の「直しが要る」で 判断待ち を付ける', () => {
+  // **`直し待ち` を一緒に外す。** 残すと盤面が差し戻しを打ち、人が答える前に次の周が走る。
+  it('3周目の「直しが要る」で 収束せず を付け、直し待ち を外す', () => {
     const result = run(BLOCK, past(BLOCK, BLOCK, BLOCK));
 
-    expect(result.edits.at(-1)).toBe(`${PR} --repo gooyyu1/UnmappedIsland --add-label 判断待ち`);
+    expect(result.edits.at(-1)).toBe(
+      `${PR} --repo gooyyu1/UnmappedIsland --add-label 収束せず --remove-label 直し待ち`,
+    );
   });
 
-  it('2周目までは 判断待ち を付けない', () => {
+  it('2周目までは 収束せず を付けない', () => {
     const result = run(BLOCK, past(BLOCK, BLOCK));
 
-    expect(result.edits.join('\n')).not.toContain('判断待ち');
+    expect(result.edits.join('\n')).not.toContain('収束せず');
   });
 
   // 数えるのは**判定として数えたもの**だけ。緩めると、ラベルが付かなかったコメントで数が進み、
@@ -159,21 +162,21 @@ describe('board-labels.yml の verdict', () => {
   it('結論の行でないコメントは、周回数に数えない', () => {
     const noise = past(BLOCK, BLOCK, '[スメル] 気づき', 'ここは意図的です');
 
-    expect(run(BLOCK, noise).edits.join('\n')).not.toContain('判断待ち');
+    expect(run(BLOCK, noise).edits.join('\n')).not.toContain('収束せず');
   });
 
   // 誰でもコメントできる場所なので、周回数もラベルと同じ範囲の投稿者だけで数える。
   it('書き込み権の無い投稿者のコメントは、周回数に数えない', () => {
     const outsider = [...past(BLOCK, BLOCK), { body: BLOCK, association: 'NONE' }];
 
-    expect(run(BLOCK, outsider).edits.join('\n')).not.toContain('判断待ち');
+    expect(run(BLOCK, outsider).edits.join('\n')).not.toContain('収束せず');
   });
 
   // 「通してよい」で終わった周も1周。3周目に入っていることは変わらない。
-  it('通してよい を挟んでいても、3周目なら 判断待ち を付ける', () => {
+  it('通してよい を挟んでいても、3周目なら 収束せず を付ける', () => {
     const mixed = past(BLOCK, PASS, BLOCK);
 
-    expect(run(BLOCK, mixed).edits.join('\n')).toContain('判断待ち');
+    expect(run(BLOCK, mixed).edits.join('\n')).toContain('収束せず');
   });
 
   // 1行目を `head` へ流していたとき、**4KiBを超える本文でステップごと落ちていた**——書き切る前に
@@ -186,5 +189,22 @@ describe('board-labels.yml の verdict', () => {
     expect(run(long, past(long)).edits).toEqual([
       `${PR} --repo gooyyu1/UnmappedIsland --add-label 通してよい --remove-label 直し待ち`,
     ]);
+  });
+});
+
+/**
+ * push で前の差分の印を落とす段。**人が外す作業を作らないための要**（`board-design.md` 2.13.1）
+ * なので、落とす対象が欠けると、人の手番の印が付いたまま残って盤面が止まる。
+ */
+describe('board-labels.yml の synchronized', () => {
+  it('前の差分に付いていた印を、人の手番のぶんまで落とす', () => {
+    const workflow = parse(readFileSync(WORKFLOW, 'utf-8')) as {
+      jobs: Record<string, { steps: { run?: string }[] }>;
+    };
+    const step = workflow.jobs.synchronized.steps.find((s) => s.run !== undefined)?.run;
+
+    for (const name of ['直し待ち', '通してよい', '判断待ち', '収束せず', '却下']) {
+      expect(step).toContain(`--remove-label ${name}`);
+    }
   });
 });
