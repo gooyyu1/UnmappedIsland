@@ -30,8 +30,8 @@ export interface ExternalTickDelta {
   readonly maxTotal: number | undefined;
 
   /**
-   * その増減が効き始めるまでのtick数。**段に入って初めて効く増減**——膿んだ傷が血を奪うのは
-   * `infection` が `septic` へ届いてから——では、そこまでの時間が周期の前に丸ごと要る。最初のtickから
+   * その増減が効き始めるまでのtick数。**段に入って初めて効く増減**——傷が宿主の菌を押し上げるのは
+   * `infection` が `festering` へ届いてから——では、そこまでの時間が周期の前に丸ごと要る。最初のtickから
    * 効くなら0。
    */
   readonly ticksUntilStart: number;
@@ -128,7 +128,7 @@ export function rangeCyclesOf(
         if (driver?.maxTotal !== undefined && ticks * Math.abs(driver.slowest) > driver.maxTotal) continue;
 
         // 押し手が段に入って初めて効き始めるなら、そこへ届くまでの時間が端まで数えたtickの前に
-        // 丸ごと要る（膿んでから血が減り始める）。**繰り返す周期には乗せない**——立ち上がりが
+        // 丸ごと要る（膿んでから菌を押し上げ始める）。**繰り返す周期には乗せない**——立ち上がりが
         // 効くのは初回だけで、次の発火までの間隔は変わらない。
         const untilStart = driver?.ticksUntilStart ?? 0;
 
