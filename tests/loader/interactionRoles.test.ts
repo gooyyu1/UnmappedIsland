@@ -5,7 +5,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  * 操作の3役（`agent`・`instrument`・`patient`）を書ける場所（GameElementDefinition.md 11.5節
  * 「役を書ける場所」）に対する自動テスト。
  *
- * **表の6行×3役をそのまま並べる。** 表は「唯一の一覧」なので、可否がずれたらどの行のどの役かが
+ * **表の行×3役をそのまま並べる。** 表は「唯一の一覧」なので、可否がずれたらどの行のどの役かが
  * ここで分かる。`✕`（居るが書けない）と`—`（そもそも居ない）はどちらもロード時エラーだが、理由が
  * 違うので文面まで見る——`patient`の`✕`は「居ないから」ではない。
  */
@@ -141,6 +141,15 @@ object_defs:
         on_min:
           conditions: [{subject: ${role}, prop: stamina, gt: 0}]
           destroy: self
+`,
+      verdicts: { agent: ABSENT.agent, instrument: ABSENT.instrument, patient: ABSENT.patient },
+    },
+    {
+      name: 'resists',
+      yaml: (role) => `
+object_defs:
+  wild_boar:
+    resists: [{subject: ${role}, prop: stamina, gt: 0}]
 `,
       verdicts: { agent: ABSENT.agent, instrument: ABSENT.instrument, patient: ABSENT.patient },
     },
