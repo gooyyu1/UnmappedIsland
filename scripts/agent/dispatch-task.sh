@@ -123,7 +123,8 @@ node -e '
   const [issuePath, promptPath, issue, envId, repoUrl] = process.argv.slice(1);
   const args = {
     environment_id: envId,
-    title: `${JSON.parse(fs.readFileSync(issuePath, "utf8")).title.trim()} (#${issue})`,
+    // 頭の語で種類が分かる形（`board-design.md` 2.9）。
+    title: `作業 #${issue} ${JSON.parse(fs.readFileSync(issuePath, "utf8")).title.trim()}`,
     prompt: fs.readFileSync(promptPath, "utf8"),
     tags: [`task-${issue}`],
   };

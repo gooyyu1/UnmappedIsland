@@ -77,7 +77,7 @@ awk '/^```$/ { inside = !inside; next } inside' "$TEMPLATE" |
 
 # **日本語はシェル変数に載せない。** Windowsのnodeは argv も環境変数もANSIで受け取るので、題を
 # `$(...)` で渡すと黙って化ける。題も本文もファイル経由で node へ渡す。
-gh pr view "$PR" --json title,state,headRefName,body >"$WORK/pr.json"
+gh pr view "$PR" --json title,state,headRefName,body,comments >"$WORK/pr.json"
 
 # 閉じた・マージ済みのPRへ立てると、読むものが在るだけに**それらしいコメントが付いて**しまう。
 state=$(jq -r '.state' "$WORK/pr.json")
@@ -90,9 +90,19 @@ node -e '
   const fs = require("node:fs");
   const [prPath, promptPath, pr, envId, repoUrl] = process.argv.slice(1);
   const info = JSON.parse(fs.readFileSync(prPath, "utf8"));
+  // 何回目の判定になるはずか（`board-design.md` 2.9）。**数えて出すので状態を持たない。**
+  // 判定を書かずに落ちたレビューは数に入らず、次の1本が同じ番号を名乗る。
+  //
+  // **見分け方は `board-labels.yml` の `verdict` と同じ**——1行目が結論の文そのもの。緩めると、
+  // ラベルが付かなかったコメントで番号だけが進む。
+  const verdict = /^\[レビュー\] (通してよい|直しが要る)[ \t]*$/;
+  const round =
+    (info.comments ?? []).filter((c) =>
+      verdict.test((c.body ?? "").split("\n")[0].replace(/\r$/, "")),
+    ).length + 1;
   const args = {
     environment_id: envId,
-    title: `レビュー: ${info.title.trim()} (PR #${pr})`,
+    title: `レビュー #${pr}:${round} ${info.title.trim()}`,
     prompt: fs.readFileSync(promptPath, "utf8"),
     tags: [`review-${pr}`],
   };

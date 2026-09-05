@@ -76,6 +76,10 @@ bash .claude/ccr-meta.sh create_session < args.json
 セッションはエージェントが立てられるので、ユーザーの手数は「issue に答える」だけ。ローカルから
 呼ぶときは `permission_mode` を渡せないため、既定のまま作る。
 
+**`title` は定型に従う**（[`board-design.md`](board-design.md) 2.9 の表）。一覧を読むのは人間で、
+タグは機械の見分けなので読めない。手で立てる1本——ユーザーに頼まれて立てる盤面の外のもの——は
+`相談 <相談内容>`。
+
 #### 立てる・確かめる・畳むは [`ccr-meta.sh`](./ccr-meta.sh)
 
 **入口はこれ1つ。** `mcp__ccr_meta__*` は**起動時のヘッダを掴んだまま**で、走っている最中に
