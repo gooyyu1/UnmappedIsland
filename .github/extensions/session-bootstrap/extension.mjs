@@ -5,11 +5,12 @@
 // 元のフックの設計意図）。
 //
 // - onSessionStart: .claude/policies.md（全文）と docs/concept/DesignPrinciples.md（見出しのみ）を
-//   セッション開始時に無条件でコンテキストへ注入する。
+//   セッション開始時に無条件でコンテキストへ注入する。判断の履歴（.claude/decisions/）は入れず、
+//   未処理がしきい値を超えたときに件数だけ足す（理由は .claude/hooks/inject-policies.sh）。
 // - onPreToolUse: シェルの呼び出しを bash に限り、シェルからのファイル書き換えを拒否する。
 // - onPostToolUse: create/edit で書き込んだファイルへ prettier --write を掛ける。
 
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -22,6 +23,19 @@ async function readIfExists(filePath) {
     return await readFile(filePath, 'utf8');
   } catch {
     return null;
+  }
+}
+
+/** 未処理の履歴がこの数に達したら棚卸しを促す（.claude/hooks/inject-policies.sh と同じ）。 */
+const DECISIONS_THRESHOLD = 10;
+
+async function countPendingDecisions(repoDir) {
+  try {
+    // 直下の .md だけを数える。archive/ に在るのは棚卸し済み。
+    const entries = await readdir(path.join(repoDir, '.claude', 'decisions'), { withFileTypes: true });
+    return entries.filter((entry) => entry.isFile() && entry.name.endsWith('.md')).length;
+  } catch {
+    return 0;
   }
 }
 
@@ -49,6 +63,13 @@ async function buildPoliciesContext(repoDir) {
       context += headings.join('\n');
       context += '\n';
     }
+  }
+
+  const pending = await countPendingDecisions(repoDir);
+  if (pending >= DECISIONS_THRESHOLD) {
+    context +=
+      `\n棚卸ししていない判断の履歴が ${pending} 件ある。ユーザーと会話できるセッションなら、` +
+      '.claude/skills/policy-review/SKILL.md の手順で一般則へ畳むことを提案する。\n';
   }
 
   return context.length > 0 ? context : undefined;
