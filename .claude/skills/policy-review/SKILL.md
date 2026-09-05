@@ -55,7 +55,9 @@ context: policies.md の書き方の見直し（会話のみ）
    運用の取り決めは [`parallel-work.md`](../../parallel-work.md) へ。
 3. **ユーザーへ普通の文章で諾否を訊く。** 選択肢を出すツール（`AskUserQuestion`）は使わない。
    ここだけが人間の仕事なので、リポジトリを開かずに答えられるだけの文脈を添える。
-4. 承認されたぶんを反映し、元になった履歴を `archive/` へ `git mv` する。
+4. 承認されたぶんを反映し、元になった履歴を `archive/` へ `git mv` する。**一般則にならずとも、
+   既にどこかの文書へ反映されている履歴も同じく `archive/` へ**——残すと、まだ手が要るものと
+   区別が付かない。
 5. 節を畳んだ・改名したなら、**`policies.md` の節名を引いている参照を直す。**
    `grep -rn 'policies\.md' --include='*.md' --include='*.sh' . | grep -v node_modules` で洗う。
 6. `policies.md` の総量が上限（240行）を超えているなら、畳むか捨てるかしてから終える。
