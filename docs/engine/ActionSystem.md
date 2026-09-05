@@ -107,8 +107,7 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 どこも同じ木を共用する（一度きりの判定も、passives（8節）の持続的なゲートも）。書ける葉と演算子キーは
 [`GameElementDefinition.md`](./GameElementDefinition.md) 14節の表が唯一の一覧で、ここには写さない。
 
-比較の相手はリテラル・配列（`in`/`not_in`）・`{subject, prop}` 参照の三択。参照先が解決できない場合
-（親が無い等）、その葉は偽になる。
+参照先が解決できない場合（親が無い等）、その葉は偽になる。
 
 ## 4. 条件・効果から参照できるオブジェクト
 
@@ -147,12 +146,14 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
   その順に書く（9.7節）。
 - **`pick`（`PickEffect`、10節）**: `weight`（リテラルかプロパティ参照）による重み付き抽選で
   1候補を選んで適用する。候補の効果も `ActiveEffect` なので、pick のネストができる。
-- **`ConditionalEffect`**: rangeイベントの `conditions`（6.3節）が満たされた回だけ中身を適用する。
+- **`ConditionalEffect`**: rangeイベントの `conditions`（6.3節）を満たす回だけ中身を適用し、
+  満たさない回は既定のクランプへ倒れる。
 
 設計上の要点:
 
-- `set`/`add` の値は**リテラルだけ**で、`{subject, prop}` 参照は書けない（9.2節）。参照を取れるのは
-  `pick` の `weight`（10.2節）・`duration`（11.3節）・`conditions` の比較の相手（14.1節）。
+- `set`/`add` の値に `{subject, prop}` 参照は書けない（9.2節）。値の算出をYAMLへ持ち込まないためで、
+  在庫に応じて動く量は `transfer`（9.5節）が担う。`set` だけは値の位置に対象キーを書いて**個体**を
+  指せる——実行時に決まった相手を覚える唯一の手段（9.2節）。
 - `spawn` の配置先（`into`、9.4節）は、**個体を指す形が `move` の移動先とまったく同じ**で、書ける起点は
   4節の表のとおり。個体でないものを名乗れるのは `into` だけで、`same_slot`（既定）と `child`。
   `same_slot` は、適用の入口で捕捉した
