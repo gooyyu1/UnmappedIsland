@@ -142,8 +142,8 @@ object_defs:
         passives:
           - add: {self: {minute: 15}}
 
-  # 血を奪う傷（injuries.yamlのlaceration）。**奪う経路が2つあり、止まるまでが違う**——出血は
-  # 自分のbleedingが尽きる4 tickで止まり、膿が全身へ回る敗血症は止まらない。
+  # 血を奪う傷。**奪う経路が2つあり、止まるまでが違う**——出血は自分のbleedingが尽きる4 tickで
+  # 止まり、膿み続ける傷が奪う分は止まらない。
   gash:
     tags: [injury]
     props:
@@ -252,7 +252,7 @@ object_defs:
   });
 
   it('止まる押し手で端へ届かないなら、止まらない押し手だけが周期として残る', () => {
-    // 固まるまでの60mLでは4,600mLは尽きないので、失血死は敗血症の-40/tickだけが起こす。束ねて
+    // 固まるまでの60mLでは4,600mLは尽きないので、失血死は止まらない-40/tickだけが起こす。束ねて
     // いたときは「-15/tickで永久に流れ続ける傷」として306.67 tickの周期が立っていた。
     const external = externalTickDeltasOn(defOf('boar'), [...codex.objects]);
 

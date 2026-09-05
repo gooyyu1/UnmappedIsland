@@ -77,8 +77,7 @@ export interface RangeCycle {
  * 段で切り替わる増減（8.2節）は数えない——段ごとに周期が変わるものは、1つの周期で言い表せない。
  *
  * externalは、隣の物が与えるtick毎の増減（ExternalTickDelta参照）。同じプロパティを動かすものが
- * 複数あれば、**押し手ごとに別の周期**を返す——炉で焼くのと傷で失血するのは、要る物も速さも違うし、
- * 同じ傷でも止まる出血と止まらない敗血症は別の仕掛けになる。
+ * 複数あれば、**押し手ごとに別の周期**を返す——炉で焼くのと傷で失血するのは、要る物も速さも違う。
  */
 export function rangeCyclesOf(
   def: ObjectDef,
@@ -193,14 +192,14 @@ function sortedTicksToRangeEnd(
  * **誰の隣に立てるかは答えない**（枠の受け入れを見る側の仕事）。答えるのは、隣に立てたとして
  * どれだけ速く、いつまで動かせるか。
  *
- * 1つの型が同じプロパティへ**複数の押し手**を並べることがある——裂傷は止まる出血と止まらない
- * 敗血症の2つで血を奪う。束ねる単位は限度で、速さだけが幅になる。
+ * 1つの型が同じプロパティへ**複数の押し手**を並べることがある。束ねる単位は限度で、速さだけが
+ * 幅になる。
  */
 export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): readonly ExternalTickDelta[] {
   // **束ねてよいのは限度の同じものどうしだけ。** 限度の違うものを束ねると、どの仕掛けも持って
-  // いない（速さ, 限度）の対ができる——止まる出血（-15/tickで合計60mL）と止まらない敗血症
-  // （-40/tick）を1つにすると、「-15/tickで永久に流れ続ける傷」になる。炉の火力（heatの段で
-  // 1/3/5）はどれも止まらないので、今までどおり1つの幅に収まる。
+  // いない（速さ, 限度）の対ができる——止まって合計の決まる増減（傷の出血は-15/tickで合計60mL）と
+  // 止まらない増減を1つにすると、「その速さで永久に流れ続ける」という在りもしない仕掛けになる。
+  // 炉の火力（heatの段で1/3/5）はどれも止まらないので、1つの幅に収まる。
   const byPropertyAndLimit = new Map<string, ExternalTickDelta>();
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== root || delta.amount === 0) continue;
