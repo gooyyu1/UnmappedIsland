@@ -26,12 +26,23 @@
 //
 // 判定に **`updated_at` は使わない**（1.6）——走行中でも動かないことを 2026-09-05 に実測している。
 //
-// ## 一覧は最後まで繰る
+// ## 繰るのは、生きたセッションが尽きるまで
 //
 // `list_sessions` の `tags` での絞り込みは、この呼び出し元からは使えない（指定すると異常終了する。
 // 使えるのはOAuthの呼び出し元だけ）ので、取ってから手元で絞る。**1ページで済ませない**——固まった
 // 走行中のセッションは占有したままなので、直近100件の外に居ることがある。
+//
+// **ただし履歴の末尾までは繰らない。** `list_sessions` には**1000回/時**の上限があり、末尾まで繰ると
+// 1回の走査に要る回数が**これまでに作ったセッションの総数に比例して増え続ける**。上限に当たると
+// 一覧が引けず、盤面はその周を捨てる——**進みが止まったまま、日が経つほど戻りにくくなる**
+// （`board-design.md` 1.7）。生きたセッションが1件も無いページが `DRY_PAGES` 枚続いたら、そこで
+// 止める。
+//
+// **`DRY_PAGES` は「間に何件の畳まれたセッションが挟まっても見つけるか」**（1枚 = 100件）。
+// 深いところに居る生きたセッションを取りこぼすと、盤面はそのタグを空きと読んで**二重に立てる**ので、
+// 減らす向きには倒さない。
 
+import { readFileSync, writeSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -40,6 +51,9 @@ import { runBash } from './spawn.mjs';
 const HERE = dirname(fileURLToPath(import.meta.url));
 /** 試験は差し替える（パスで呼ぶため PATH では差し替わらない）。 */
 const CCR_META = process.env.CCR_META ?? resolve(HERE, '../../.claude/ccr-meta.sh');
+
+/** 生きたセッションが1件も無いページが、これだけ続いたら繰るのをやめる。 */
+const DRY_PAGES = Number(process.env.LIVE_SESSIONS_DRY_PAGES || 2);
 
 /**
  * どこで走っているか（`board-design.md` 2.16）。**既定のIDを持つのは
@@ -74,11 +88,12 @@ function environments() {
  */
 export function listSessions(request) {
   const call = runBash(CCR_META, ['list_sessions'], { input: JSON.stringify(request), capture: true });
-  if (call.status !== 0) return undefined;
-  for (const line of call.stdout.split(/\r?\n/)) {
-    const at = line.indexOf('{"ccr"');
-    if (at >= 0) return JSON.parse(line.slice(at));
-  }
+  const found = call.stdout.split(/\r?\n/).find((line) => line.includes('{"ccr"'));
+  if (call.status === 0 && found !== undefined) return JSON.parse(found.slice(found.indexOf('{"ccr"')));
+  // **道具が言った理由を捨てない。** 上限（`1000 calls per account per hour`）も認証切れも、
+  // ここが黙ると呼び手には「引けなかった」しか残らず、**ログだけでは直しようが無い**。
+  const reason = call.stdout.split(/\r?\n/).find((line) => line.trim() !== '');
+  if (reason !== undefined) writeSync(2, `list_sessions: ${reason.trim()}\n`);
   return undefined;
 }
 
@@ -89,15 +104,56 @@ export class LiveSessionsError extends Error {
   }
 }
 
-/** 畳まれていないセッションを、新しい順に全部返す。 */
-export function liveSessions({ page: fetch = listSessions, envs = environments } = {}) {
+/** 1件をTSVの1行へ。**列の並びを持つのはここ**（読む側は `occupancy.sh`・`usage-record.sh`）。 */
+export const formatLive = (session) =>
+  `${session.id}\t${session.status}\t${session.bucket}\t${session.tags.join(',')}\t${session.env}`;
+
+/** TSVを読み戻す。`formatLive` の逆。 */
+export function parseLive(text) {
+  return text
+    .split(/\r?\n/)
+    .filter((line) => line.trim() !== '')
+    .map((line) => {
+      const [id = '', status = '-', bucket = '-', tags = '', env = '-'] = line.split('\t');
+      return { id, status, bucket, env, tags: tags.split(',').filter((tag) => tag !== '') };
+    });
+}
+
+/**
+ * この周のぶんを既に引いてあるなら、そのファイルを読む（[`board-round.mjs`](board-round.mjs)）。
+ *
+ * **1周に何度も引かないため。** 一覧を要るのは1周に4箇所まであり（盤面・使用量の割り当て・占有の
+ * 判定・起こす相手の確認）、それぞれが別のプロセスから引くと**同じ答えを4回買う**ことになる。
+ * 上限は1時間あたりで数えるので、ここがそのまま盤面の回る速さの上限になる。
+ *
+ * **読めなかったら止まる側へ倒す**——投入する側に渡す答えなので、黙って引き直すと「同じ周の答え」で
+ * なくなる。
+ */
+function snapshot(path) {
+  try {
+    return parseLive(readFileSync(path, 'utf8'));
+  } catch {
+    throw new LiveSessionsError();
+  }
+}
+
+/** 畳まれていないセッションを、新しい順に返す。 */
+export function liveSessions({
+  page: fetch = listSessions,
+  envs = environments,
+  taken = process.env.LIVE_SESSIONS_TSV ?? '',
+} = {}) {
+  if (taken !== '') return snapshot(taken);
+
   const known = envs();
   const live = [];
   let after = '';
-  for (;;) {
+  let dry = 0;
+  while (dry < DRY_PAGES) {
     const page = fetch({ mine: true, limit: 100, ...(after === '' ? {} : { after_id: after }) });
     if (page === undefined) throw new LiveSessionsError();
 
+    const before = live.length;
     for (const session of page.ccr?.data ?? []) {
       if (session.session_status === 'SESSION_STATUS_ARCHIVED') continue;
       live.push({
@@ -108,6 +164,7 @@ export function liveSessions({ page: fetch = listSessions, envs = environments }
         tags: [...(session.tags ?? [])],
       });
     }
+    dry = live.length === before ? dry + 1 : 0;
 
     if (page.ccr?.has_more !== true) break;
     after = page.ccr?.last_id ?? '';
@@ -118,10 +175,7 @@ export function liveSessions({ page: fetch = listSessions, envs = environments }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    const lines = liveSessions().map(
-      (session) =>
-        `${session.id}\t${session.status}\t${session.bucket}\t${session.tags.join(',')}\t${session.env}`,
-    );
+    const lines = liveSessions().map(formatLive);
     if (lines.length > 0) process.stdout.write(`${lines.join('\n')}\n`);
   } catch (error) {
     console.error(error instanceof LiveSessionsError ? error.message : error);

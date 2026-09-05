@@ -12,6 +12,14 @@ export interface LiveSession {
 export interface LiveSessionsDeps {
   page?: (request: unknown) => { ccr?: Record<string, unknown> } | undefined;
   envs?: () => Record<string, string>;
+  /** この周のぶんを既に引いてあるファイル。空なら自分で引く。 */
+  taken?: string;
 }
 
 export function liveSessions(deps?: LiveSessionsDeps): LiveSession[];
+
+/** TSVの1行へ。列の並びを持つのは [`live-sessions.mjs`](live-sessions.mjs)。 */
+export function formatLive(session: LiveSession): string;
+
+/** `formatLive` の逆。 */
+export function parseLive(text: string): LiveSession[];

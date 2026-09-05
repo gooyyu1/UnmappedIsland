@@ -29,6 +29,7 @@ import { fileURLToPath } from 'node:url';
 
 import { moves } from './board-move.mjs';
 import { readBoard } from './board-read.mjs';
+import { formatLive, liveSessions } from './live-sessions.mjs';
 import { gh as runGh, posix, runBash } from './spawn.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -169,7 +170,7 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
 export function round({
   runScript = defaultRunScript,
   gh = runGh,
-  sessions,
+  sessions = liveSessions,
   log = defaultLog,
   echo = defaultEcho,
   warn = defaultWarn,
@@ -179,6 +180,22 @@ export function round({
   settleMinutes = Number(process.env.SETTLE_MINUTES || 10),
   dryRun = (process.env.DRY_RUN ?? '') !== '',
 } = {}) {
+  // **一覧はこの周に1回だけ引く**（`board-design.md` 1.7）。要る側は4つあり、それぞれが自分で
+  // 引くと同じ答えを4回買うことになる——`list_sessions` の上限は1時間あたりで数えるので、その
+  // 回数がそのまま盤面の回る速さの天井になる。引いたものはファイルへ置き、叩くスクリプトへは
+  // 環境変数で在り処だけを渡す。**この周のうちに立ったセッションは、次の周の一覧に載る。**
+  let live;
+  try {
+    live = sessions();
+  } catch (error) {
+    // **理由を言えるのは投げた側だけ**なので、その言葉をそのまま出す。
+    warn(error instanceof Error ? error.message : String(error));
+    return false;
+  }
+  const livePath = join(stateDir, 'live-sessions.tsv');
+  writeFileSync(livePath, live.map((session) => `${formatLive(session)}\n`).join(''));
+  process.env.LIVE_SESSIONS_TSV = livePath;
+
   const spent = runScript('usage-record.sh', [], { capture: true });
   if (spent.status !== 0) log('使用量を引けなかった');
   for (const line of spent.stdout.split(/\r?\n/)) {
@@ -186,15 +203,7 @@ export function round({
   }
 
   const taken = readLedger(stateDir);
-  let board;
-  try {
-    board = readBoard({ gh, sessions, log, now: now(), settleMinutes, taken });
-  } catch (error) {
-    // 一覧を引けなかった周（`live-sessions.mjs`）。**理由を言えるのは投げた側だけ**なので、
-    // その言葉をそのまま出す。
-    warn(error instanceof Error ? error.message : String(error));
-    return false;
-  }
+  const board = readBoard({ gh, sessions: () => live, log, now: now(), settleMinutes, taken });
   if (board === undefined) return false;
 
   const remaining = pruneTaken(taken, board);
