@@ -34,9 +34,8 @@
 | 杭を打つと刺す傷が変わる（1.2 節） | `variation_axes` の変種と `become`（3.5.1・9.9 節。塩漬けと同じ形） |
 | 掛かり方のばらつき（5.1 節） | 生成時に 1 回ロールする初期値（6.2 節） |
 
-定義は `src/assets/world-codex/traps.yaml`（くくり罠・落とし穴）・`farming.yaml`（檻＝家畜の囲い、1.2 節）・
-`injuries.yaml`（`snare_laceration`・`bruise`・`puncture_wound`）・
-`animals.yaml`（ヤケイ・ネズミ・イノシシ）・
+定義は `src/assets/world-codex/traps.yaml`（罠そのもの）・`farming.yaml`（檻＝家畜の囲い、1.2 節）・
+`injuries.yaml`（罠が作る怪我）・`animals.yaml`（掛かる獣）・
 `locations.yaml`（土地ごとのつまみ）、検証は `tests/world-codex/trapsYaml.test.ts` と
 `farmingYaml.test.ts` です。
 

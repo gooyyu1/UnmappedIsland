@@ -133,7 +133,7 @@ object_defs:
 **生きた獣（`animals.yaml`）も `pick` の候補です。** 島に獣を放つ専用の仕組みは持たず、獣が世界に現れる
 経路は探索と罠（[`TrapSystem.md`](./TrapSystem.md)）だけです。どの土地にどの獣が出るかは
 [`Animals.md`](../world/Animals.md) 3〜5 節の分布に従い、その素の重みは他の発見物と同じ**つまみ**
-（`rat_find`・`junglefowl_find`・`monkey_find`・`wild_boar_find`）として土地の `props` が持ちます。
+として土地の `props` が持ちます（`locations.yaml`）。
 
 **探索と罠は、同じ獣を別の形で渡します。** 探索が渡すのは**出くわした獣**で、警戒したまま自由に動き、
 逃げも襲いもします。罠が渡すのは**掛かった獣**で、留守のあいだに働き、獲物は枠の中で拘束されています

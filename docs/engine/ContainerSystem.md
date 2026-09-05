@@ -67,8 +67,8 @@ weight の実効値 = weight.value + 通常の modify + Σ( 子の weight実効�
 ければ、荷物を手に持って乗るだけで積載が 0 になります。
 
 そこで、**この世界に実体として在る物は目方を名乗る**という約束を `required_props`
-（[`GameElementDefinition.md`](./GameElementDefinition.md) 4.2 節、`core.yaml`）に置いています——
-`item`・`fixture`・`character`・`injury` です。**「持ち運べるか」ではありません**——`fixture` も
+（[`GameElementDefinition.md`](./GameElementDefinition.md) 4.2 節、`core.yaml`）に置いています。
+**「持ち運べるか」ではありません**——`fixture` も
 `not(item)` も「動かせない物」の印にはならず（編み籠は両方を名乗り、椅子もそうなります）、動くかどうかと
 目方があるかどうかは別の話だからです。
 

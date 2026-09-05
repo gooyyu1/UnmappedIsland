@@ -603,7 +603,7 @@ traits:
       # 腕前（docs/engine/SkillSystem.md、粒度と一覧は docs/world/Skills.md 2節）。レシピの解放条件は
       # 段の名前で読む（同4節）ので、境目を条件の側へ書き写さない。
       #
-      # **段は11本で共通**（0/20/60/180。4段・比3で、SkillSystem.md 6節の目安そのまま）。本ごとに
+      # **段はどの本でも共通**（0/20/60/180。比3で、SkillSystem.md 6節の目安そのまま）。本ごとに
       # 境目を変えると、同じ`basic`が本ごとに違う遠さになり、連言で並べた条件（Skills.md 3節）を
       # 読み比べられなくなる。
       #
@@ -625,7 +625,7 @@ traits:
       # **配るのは、Skills.md 2節がその腕の技術として挙げている作業だけ。** 打ち欠く（knap）、繊維を
       # 採って撚って編む（strip・ret・spin・ply・weave）、刃で木を断って削り出す（fell・buck・whittle）、
       # 皮を剥ぐ（butcher）、獲物を獲る（strike・spear_*・catch_seabird）、火を起こす（light）、
-      # 保たせる加工（cure）の7組で全部。
+      # 保たせる加工（cure）で全部。
       #
       # **出す物がそっくり同じ操作は、同じ腕を同じだけ配る。** 同じ仕事に入口が2つあるということなので
       # （植物繊維はfiber.yamlのstripとcoconut.yamlのret、編んだ葉はweaveとsplit_and_weave）、片方だけに

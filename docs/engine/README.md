@@ -15,9 +15,8 @@
 
 ### YAML文法（WorldCodexの書き方そのもの）
 
-- [WorldCodex YAML 文法リファレンス](./GameElementDefinition.md) — `traits`/`object_defs`/`props`/`stages`/`slots`/
-  `passive`/`active`/`modify`/`add`/`destroy`/`spawn`/`move`/`pick`/`interactions`/`trigger`/
-  `duration`/`recipes` 等、文法をここに集約
+- [WorldCodex YAML 文法リファレンス](./GameElementDefinition.md) — 型・プロパティ・スロット・操作・効果・
+  レシピの文法をここに集約
 - [WorldCodex YAMLスキーマ定義](./WorldCodexSchema.md)（[JSON Schema本体](./WorldCodex.schema.json)） — 上記文法の
   機械的な検証
 

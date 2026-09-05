@@ -163,7 +163,7 @@ object_defs:
   # docs/Someday.md）。雨をしのげて物を置ける、見つければ無料で手に入る拠点（Dwellings.md 5節）。
   #
   # **設置物（fixture）でありながら場所（location）でもある**——筏（voyage.yaml）と同じ形で、
-  # 中へ入れば location traitのitems/fixtures/charactersがそのまま拠点の枠になる。
+  # 中へ入れば location traitのスロットがそのまま拠点の枠になる。
   # 土地と同じく枠数もかさの上限も置かない（storageを名乗らない）ので、置ける量で洞窟を絞らない。
   # shelterは「雨風をしのげる住まいである」ことを言うタグ（ContentSkeleton.md 3節の系統10）。
   # 岩屋根が雨を防ぐという事実（下のsheltered）を、物の側の名乗りとして持つ。
