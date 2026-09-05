@@ -1,18 +1,12 @@
 import type { ObjectDef } from './ObjectDef';
 
-/** マッチングの基準（TypeMatchRule参照）。 */
-type TypeMatchTargetKind =
-  /** targetはタグのグローバルID（4.1節）。候補がそのタグを持っていれば真。 */
-  | 'tag'
-  /** targetはobject_defのグローバルID。候補がまさにその型そのものであれば真。 */
-  | 'object'
-  /** innerが当てはまらない型（4.1節）。targetは使わない。 */
-  | 'not';
-
 /** 「どの型を指しているか」の読み上げ（TypeMatchRule.reading参照）。 */
 export type TypeMatchReading =
+  /** 候補がそのタグ（4.1節）を持っていれば真。 */
   | { readonly kind: 'tag'; readonly tagGlobalId: number }
+  /** 候補がまさにその型そのものであれば真。 */
   | { readonly kind: 'object'; readonly objectGlobalId: number }
+  /** innerが当てはまらない型（4.1節）。 */
   | { readonly kind: 'not'; readonly inner: TypeMatchReading };
 
 /** 枠の`accept`（7.2節）として書き出した形（TypeMatchRule.toAcceptSpec参照）。 */
@@ -31,29 +25,23 @@ export type AcceptSpec =
  * `not: {slot: items, matches: {tag: quarry}}`は「quarryが1つも無い」になる。
  */
 export class TypeMatchRule {
-  private readonly kind: TypeMatchTargetKind;
+  /** この指定の宣言そのもの（TypeMatchReading参照）。**この規則が持つのはこれだけ。** */
+  readonly reading: TypeMatchReading;
 
-  private readonly target: number;
-
-  /** 否定のみ有効。 */
-  private readonly inner: TypeMatchRule | undefined;
-
-  private constructor(kind: TypeMatchTargetKind, target: number, inner?: TypeMatchRule) {
-    this.kind = kind;
-    this.target = target;
-    this.inner = inner;
+  private constructor(reading: TypeMatchReading) {
+    this.reading = reading;
   }
 
   static ofTag(tagGlobalId: number): TypeMatchRule {
-    return new TypeMatchRule('tag', tagGlobalId);
+    return new TypeMatchRule({ kind: 'tag', tagGlobalId });
   }
 
   static ofObjectDef(objectGlobalId: number): TypeMatchRule {
-    return new TypeMatchRule('object', objectGlobalId);
+    return new TypeMatchRule({ kind: 'object', objectGlobalId });
   }
 
   static not(inner: TypeMatchRule): TypeMatchRule {
-    return new TypeMatchRule('not', 0, inner);
+    return new TypeMatchRule({ kind: 'not', inner: inner.reading });
   }
 
   /** タグならcandidateがそのタグを持てば真、object_defならまさにその型であれば真。 */
@@ -82,7 +70,7 @@ export class TypeMatchRule {
    * ようにここで前置きを付ける（レシピの要求を型ごとに畳むのに使う、crafting.remainingRequirements）。
    */
   get key(): string {
-    return this.kind === 'not' ? `not:${this.inner!.key}` : `${this.kind}:${this.target}`;
+    return keyOf(this.reading);
   }
 
   /**
@@ -103,17 +91,21 @@ export class TypeMatchRule {
     objectName(globalId: number): string;
     tagName(globalId: number): string;
   }): AcceptSpec {
-    if (this.kind === 'not') return { not: this.inner!.toAcceptSpec(names) };
-    return this.kind === 'tag'
-      ? { tag: names.tagName(this.target) }
-      : { object: names.objectName(this.target) };
+    return acceptSpecOf(this.reading, names);
   }
+}
 
-  /** この指定の宣言そのもの（TypeMatchReading参照）。 */
-  get reading(): TypeMatchReading {
-    if (this.kind === 'not') return { kind: 'not', inner: this.inner!.reading };
-    return this.kind === 'tag'
-      ? { kind: 'tag', tagGlobalId: this.target }
-      : { kind: 'object', objectGlobalId: this.target };
-  }
+function keyOf(reading: TypeMatchReading): string {
+  if (reading.kind === 'not') return `not:${keyOf(reading.inner)}`;
+  return reading.kind === 'tag' ? `tag:${reading.tagGlobalId}` : `object:${reading.objectGlobalId}`;
+}
+
+function acceptSpecOf(
+  reading: TypeMatchReading,
+  names: { objectName(globalId: number): string; tagName(globalId: number): string },
+): AcceptSpec {
+  if (reading.kind === 'not') return { not: acceptSpecOf(reading.inner, names) };
+  return reading.kind === 'tag'
+    ? { tag: names.tagName(reading.tagGlobalId) }
+    : { object: names.objectName(reading.objectGlobalId) };
 }
