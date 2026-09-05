@@ -441,6 +441,18 @@ describe('腕前とレシピの解放条件', () => {
     return character;
   }
 
+  /**
+   * そのレシピの解放条件が名指ししている腕。**条件木は畳まれていて読めない**ので、全部を熟達させた
+   * 状態から1本ずつ素人へ落として、条件が落ちるかで割り出す。
+   */
+  function requiredSkillsOf(recipe: RecipeDef): readonly string[] {
+    return SKILLS.filter((_, index) => {
+      const character = characterWithSkills(STAGES.at(-1)!.min);
+      character.getProperty(skillIds[index]).setNumberWithoutEvents(0);
+      return recipe.unmetUnlockRequirement(character) !== undefined;
+    });
+  }
+
   /** 解放条件を持つレシピすべて（完成品の名前を添える）。 */
   function gatedRecipes(): readonly { product: string; recipe: RecipeDef }[] {
     const found: { product: string; recipe: RecipeDef }[] = [];
@@ -620,8 +632,7 @@ describe('腕前とレシピの解放条件', () => {
   });
 
   it('解放条件が名指しする腕には、それを伸ばす操作がある（永久に開かないレシピを作らない）', () => {
-    // SkillSystem.md 3.2節のブートストラップ。要求している腕は、全部を熟達させた状態から1本ずつ
-    // 素人へ落として、条件が落ちるかで割り出す（条件木は畳まれていて読めない）。
+    // SkillSystem.md 3.2節のブートストラップ。
     const gains = declaredSkillGains();
 
     for (const { product, recipe } of gatedRecipes()) {
@@ -632,15 +643,10 @@ describe('腕前とレシピの解放条件', () => {
         `'${product}': 熟達しても開かない`,
       ).toBeUndefined();
 
-      for (const [index, skillName] of SKILLS.entries()) {
-        const character = characterWithSkills(STAGES.at(-1)!.min);
-        character.getProperty(skillIds[index]).setNumberWithoutEvents(0);
-        if (recipe.unmetUnlockRequirement(character) === undefined) continue;
-
+      for (const skillName of requiredSkillsOf(recipe))
         expect(gains.has(skillName), `'${product}' が要求する ${skillName} を伸ばす操作が世界に無い`).toBe(
           true,
         );
-      }
     }
   });
 
@@ -687,6 +693,25 @@ describe('腕前とレシピの解放条件', () => {
       'skill_building',
       'skill_cooking',
       'skill_smelting',
+    ]);
+  });
+
+  it('伸ばす操作を持つのに効き先が無い腕は、木材加工と保存だけ', () => {
+    // 一つ上の数え上げと逆向き。**伸ばす操作を持つ腕は、画面で段の動くバーになる**
+    // （docs/ui/StatusArea.md 9節）ので、効き先が無ければ動いても何も起きないバーが並ぶ。
+    // 効き先が入った本はここから外れ、まだ無い本は名前で残る。
+    //
+    // 効き先は系統で分かれる（Skills.md 2節）。**製作系はレシピの解放条件、アクセス系は重みへの
+    // 上乗せ**で、アクセス系はレシピを開けないので解放条件の側には現れない。
+    const gains = declaredSkillGains();
+    const effective = new Set<string>([
+      ...gatedRecipes().flatMap(({ recipe }) => requiredSkillsOf(recipe)),
+      ...ACCESS_BONUSES.map((entry) => entry.skill),
+    ]);
+
+    expect(SKILLS.filter((name) => gains.has(name) && !effective.has(name))).toEqual([
+      'skill_woodwork',
+      'skill_preserving',
     ]);
   });
 });
