@@ -29,6 +29,8 @@ interface World {
   readonly body?: string;
   /** 開いているPR。 */
   readonly prs?: readonly { number: number; body: string }[];
+  /** `--bridge` を付けて叩くか。 */
+  readonly onBridge?: boolean;
 }
 
 interface Run {
@@ -68,7 +70,8 @@ esac
     chmodSync(gh, 0o755);
 
     try {
-      execFileSync('bash', [SCRIPT, String(issue), join(work, 'supplement.md')], {
+      const where = world.onBridge === true ? ['--bridge'] : [];
+      execFileSync('bash', [SCRIPT, String(issue), join(work, 'supplement.md'), ...where], {
         encoding: 'utf-8',
         stdio: 'pipe',
         env: {
@@ -113,5 +116,18 @@ describe('dispatch-task.sh', () => {
 
   it('閉じた issue へは投入しない', () => {
     expect(run(1415, { state: 'CLOSED' }).code).toBe(1);
+  });
+
+  // 盤面の道具そのものを直す仕事は、担当がここにしか無い。**止まる理由（書き込みのたびの承認）は
+  // クラウドにしか無い**ので、関門もクラウドへ投入するときだけ見る。
+  it('クラウドへは、担当にユーザーの領域が挙がっていれば投入しない', () => {
+    const result = run(1551, { body: '## 担当\n\n- `.claude/ccr-meta.sh`\n' });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('.claude/ccr-meta.sh');
+  });
+
+  it('ブリッジへなら、同じ担当でも投入する', () => {
+    expect(run(1551, { body: '## 担当\n\n- `.claude/ccr-meta.sh`\n', onBridge: true }).code).toBe(0);
   });
 });

@@ -31,11 +31,12 @@
 # - `environment_id` は必須（この経路には呼び元が無いので継げない）。`permission_mode` は逆に
 #   渡してはいけない（親セッションを要求されて撥ねられる）。
 # - **閉じた issue へ立てると、空待ちになる。** 題を引くのと同じ `gh issue view` で `state` も見る。
-# - **`## 担当` に、セッションが触れない領域が挙がっていないかを見る。** ひな形・盤面の道具・運用の
-#   文書はユーザーが `main` へ直接入れる領域で、セッションからは編集ツールが拒否される。気づかずに
-#   投入すると壁に当たり、往復が1回まるごと無駄になる（2026-08-30・#1398。担当に
+# - **`## 担当` に、クラウドのセッションが触れない領域が挙がっていないかを見る。** ひな形・盤面の
+#   道具・運用の文書はユーザーが `main` へ直接入れる領域で、セッションからは編集ツールが拒否される。
+#   気づかずに投入すると壁に当たり、往復が1回まるごと無駄になる（2026-08-30・#1398。担当に
 #   `.claude/parallel-work.md` が載ったまま投入し、セッションは拒否された経路を回避して書き込む
 #   ところまで行った）。**同じ `gh issue view` で `body` も引く**ので、往復は増えない。
+#   **`--bridge` では見ない**（下の節）。
 
 set -euo pipefail
 
@@ -107,16 +108,22 @@ existing=$(gh pr list --state open --limit 50 --json number,body |
 # `## 担当` に、セッションが書けない領域が挙がっていないか。`.claude/**` はクラウドセッションからの
 # 書き込みが必ずユーザー承認を求められ、そこで止まる。`scripts/agent/**` と `CLAUDE.md` はユーザーが
 # `main` へ直接入れる領域。どれも投入した時点で往復が1回無駄になる。
-owned=$(jq -r '.body' "$WORK/issue.json" | tr -d '\r' |
-  awk '/^##[[:space:]]/ { inside = /^##[[:space:]]+担当[[:space:]]*$/; next } inside' |
-  grep -oE '(\.claude/[^`)[:space:]]*|scripts/agent/[^`)[:space:]]*|CLAUDE\.md)' | sort -u || true)
-[ -z "$owned" ] || {
-  echo "issue #$ISSUE の「担当」に、セッションが書けない領域が挙がっている。投入しない。" >&2
-  echo "$owned" | sed 's/^/  /' >&2
-  echo '  ユーザーが `main` へ直接入れる領域（.claude/parallel-work.md「司令塔の手入れは main へ直接 push する」）。' >&2
-  echo '  ユーザーが先に入れて担当から外すか、issue を割ってから投入する。' >&2
-  exit 1
-}
+#
+# **見るのはクラウドへ投入するときだけ。** 止まる理由（承認）はクラウドにしか無く、盤面の道具そのものを
+# 直す仕事はブリッジで走らせる以外に置き場が無い。**ブリッジで走るなら、担当に挙がっているものは
+# 触ってよい**（`CLAUDE.md`「タスクの issue を渡されたとき」の例外）。
+if [ "$WHERE" != "--bridge" ]; then
+  owned=$(jq -r '.body' "$WORK/issue.json" | tr -d '\r' |
+    awk '/^##[[:space:]]/ { inside = /^##[[:space:]]+担当[[:space:]]*$/; next } inside' |
+    grep -oE '(\.claude/[^`)[:space:]]*|scripts/agent/[^`)[:space:]]*|CLAUDE\.md)' | sort -u || true)
+  [ -z "$owned" ] || {
+    echo "issue #$ISSUE の「担当」に、クラウドのセッションが書けない領域が挙がっている。投入しない。" >&2
+    echo "$owned" | sed 's/^/  /' >&2
+    echo '  ユーザーが `main` へ直接入れる領域（.claude/parallel-work.md「司令塔の手入れは main へ直接 push する」）。' >&2
+    echo '  issue に「ブリッジで走らせる」と書いて --bridge で投入するか、担当から外して投入する。' >&2
+    exit 1
+  }
+fi
 
 node -e '
   const fs = require("node:fs");
