@@ -49,3 +49,37 @@ jobs:
 
       - name: Run tests
         run: npx vitest run --reporter=default --reporter=github-actions
+
+  # PRを出したセッションが名乗っているか（[`.claude/board-design.md`](../../.claude/board-design.md)
+  # 2.11）。**盤面は差し戻す相手をコミットの `Claude-Session:` トレーラで引く**ので、名乗っていない
+  # PRは、CIが赤くてもコンフリクトしても誰にも回らない。**促すだけにしないのは、書き忘れが既に
+  # 実害を出しているから**（#1083・#1177 で本文の脚注が落ち、#1538 は差し戻す相手が引けなかった。
+  # [`.claude/policies.md`](../../.claude/policies.md)「仕組みの作り方」）。
+  #
+  # 上の `test` と分けるのは、**止まる理由を混ぜないため**。名乗り忘れは中身の誤りではないので、
+  # 直し方も直す人も別。
+  claimed:
+    name: 名乗り
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: コミットが Claude-Session で名乗っているか
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          claims=$(gh pr view "$PR" --repo "$REPO" --json commits --jq '
+            [ .commits[].messageBody | split("\n")[]
+              | select(startswith("Claude-Session:")) ] | length')
+          if [ "$claims" -gt 0 ]; then
+            echo "名乗っているコミット: $claims"
+            exit 0
+          fi
+          # **1行で出す。** `::error::` は行ごとに別の注記になるので、分けると読む側で散らばる。
+          echo "::error::このPRのコミットに Claude-Session: のトレーラがありません。コミットメッセージの末尾（Co-Authored-By: と同じ段）へ 'Claude-Session: https://claude.ai/code/<セッションID>' を入れて push し直してください（自分のIDは作業ツリーの名前 .claude/worktrees/bridge-cse_<ID> から分かります）。盤面はこの行で差し戻す相手を引くので、無いPRは直しが要るときに誰にも回りません。"
+          exit 1

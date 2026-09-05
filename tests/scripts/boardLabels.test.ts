@@ -175,4 +175,16 @@ describe('board-labels.yml の verdict', () => {
 
     expect(run(BLOCK, mixed).edits.join('\n')).toContain('判断待ち');
   });
+
+  // 1行目を `head` へ流していたとき、**4KiBを超える本文でステップごと落ちていた**——書き切る前に
+  // `head` が終わるので `printf` が SIGPIPE を受け、`pipefail` で失敗になる。**判定は投稿されて
+  // いるのにラベルだけが付かない**ので、盤面からは「まだ読まれていないPR」と区別が付かず、
+  // PR #1538 がマージへ進めないまま止まった。長さは競走の分かれ目（4KiB前後）から充分に離す。
+  it('本文が長くても、ラベルを付ける', () => {
+    const long = `${PASS}\n${'あ'.repeat(400_000)}`;
+
+    expect(run(long, past(long)).edits).toEqual([
+      `${PR} --repo gooyyu1/UnmappedIsland --add-label 通してよい --remove-label 直し待ち`,
+    ]);
+  });
 });

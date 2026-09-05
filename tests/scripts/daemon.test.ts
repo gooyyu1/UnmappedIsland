@@ -42,6 +42,10 @@ interface World {
   readonly ledger?: Record<string, string>;
   /** `gh issue view <番号> --json state` が返す `state`。挙がっていない番号は引けない。 */
   readonly issueStates?: Record<number, string>;
+  /** PRごとの、コミットの `Claude-Session:` トレーラが指すセッション。 */
+  readonly prSessions?: Record<number, string>;
+  /** そのトレーラを引く `gh api graphql` が失敗するか。 */
+  readonly prSessionsFail?: boolean;
   /** `archive-session.sh` が渡された相手について返す行の頭。既定は畳めた。 */
   readonly archiveVerdict?: 'ARCHIVED' | 'KEPT' | 'UNARCHIVED';
   /** 非0で終わらせる打ち手（`PLAYS` の名前）。 */
@@ -110,6 +114,12 @@ ${Object.entries(world.issueStates ?? {})
   .join('\n')}
     *) exit 1 ;;
   esac
+  ;;
+'api graphql')
+${world.prSessionsFail === true ? '  exit 1' : ''}
+${Object.entries(world.prSessions ?? {})
+  .map(([number, session]) => `  printf '%s\\t%s\\n' '${number}' '${session}'`)
+  .join('\n')}
   ;;
 'pr list') cat '${posix(join(work, 'prs.json'))}' ;;
 'issue list') cat '${posix(join(work, 'issues.json'))}' ;;
@@ -268,6 +278,29 @@ describe('daemon.sh', () => {
     });
 
     expect(result.gh.filter((call) => call.startsWith('issue view'))).toEqual([]);
+  });
+
+  // 差し戻す相手はコミットのトレーラで引く（2.11）。`task-` のタグではない——`Closes` は
+  // どの issue が閉じるかの印であって、誰が書いたかを指していない。
+  it('差し戻す相手を、コミットのトレーラが指すセッションから引く', () => {
+    const result = daemon({
+      prs: [pr(10, { statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }] })],
+      prSessions: { 10: 'session_writer' },
+      sessions: [
+        'session_writer\tSESSION_STATUS_IDLE\tSESSION_STATUS_BUCKET_WORKING\t',
+        'session_holder\tSESSION_STATUS_IDLE\tSESSION_STATUS_BUCKET_WORKING\ttask-9',
+      ],
+    });
+
+    expect(result.calls).toEqual(['resume-session.sh session_writer mend 10']);
+  });
+
+  // 引けない日に盤面ごと落とすと、差し戻し以外の手まで止まる。
+  it('トレーラを引けなかった周も、他の手は打つ', () => {
+    const result = daemon({ prs: [pr(10, passed)], prSessionsFail: true });
+
+    expect(result.log).not.toContain('盤面を引けなかった');
+    expect(result.calls).toEqual(['merge-and-close.sh 10']);
   });
 
   // デーモンは起動時の `daemon.sh` を握ったまま回るので、走っている最中に `live-sessions.sh` の

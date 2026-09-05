@@ -130,7 +130,12 @@ gather() {
       | ([.commits.nodes[].commit.message | split("\n")[]
         | select(startswith("Claude-Session:")) | split("/") | last] | last) as $id
       | select($id != null) | "\($n)\t\($id)"' \
-    >"$WORK/pr-sessions.tsv" 2>/dev/null || : >"$WORK/pr-sessions.tsv"
+    >"$WORK/pr-sessions.tsv" 2>/dev/null || {
+    : >"$WORK/pr-sessions.tsv"
+    # **黙って空にしない。** 空は「名乗っていない」と同じ形なので、この周の覚え書きは名乗り忘れと
+    # 見分けが付かない。ログに並べておけば、人が読むときに取り違えない。
+    log "差し戻す相手を引けなかった（この周の「名乗っていない」は当てにならない）"
+  }
   # **列がずれていたら、その周ごと捨てる**（下の `error`）。デーモンは動き出したときの
   # [`daemon.sh`](daemon.sh) を握ったまま回るので、**走っている最中に
   # [`live-sessions.sh`](live-sessions.sh) の列を足すと、こちらだけが古いまま噛み合う。**

@@ -75,14 +75,10 @@ const busy = (tag) => alive(tag).some(busySession);
  * 差し戻す相手（2.11）。引くのは**コミットの `Claude-Session:` トレーラ**——`Closes` は、そのPRで
  * どの issue が閉じるかの印であって、誰が書いたかを指していない。畳まれたセッションはここに
  * 居ないので、そのまま「起こせない」になる（1.2）。
- *
- * **`Closes` とタグで引く側はつなぎ。** トレーラの規則が入る前に出たPRと、手で立てたPRには
- * トレーラが無い。**開いているPRが全部トレーラを持つようになったら、この分岐ごと消す。**
  */
 function menders(pr) {
   const id = prSessions[String(pr.number)];
-  if (id !== undefined) return input.sessions.filter((session) => session.id === id);
-  return closes(pr.body).flatMap((issue) => alive(`task-${issue}`));
+  return id === undefined ? [] : input.sessions.filter((session) => session.id === id);
 }
 
 /**
@@ -137,9 +133,13 @@ for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
     // 「この仕事は終わった」と判断した側の明示の操作なので、機械では戻さない（1.2）。
     const holders = menders(pr);
     if (holders.length === 0) {
-      // **「名乗っていない」と「畳まれている」を、まだ書き分けていない。** 分けるには覚え書きの文面を
-      // 変えることになり、それを見張っている試験が #1538 のファイル分割の最中なので、入った後に回す。
-      notes.push(`PR #${pr.number} は${reason}が、直す相手のセッションが居ない`);
+      // **引けなかった理由を分ける。** 名乗っていないのは規則の破れ（2.11）で、直すのは人。
+      // 畳まれているだけなら、盤面の側にできることは無い。
+      const why =
+        prSessions[String(pr.number)] === undefined
+          ? '書いたセッションが名乗っていない'
+          : '直す相手が畳まれている';
+      notes.push(`PR #${pr.number} は${reason}が、${why}`);
       continue;
     }
     for (const holder of holders) {
