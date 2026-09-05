@@ -318,7 +318,8 @@ Claude-Session: https://claude.ai/code/session_<自分のID>
 - 決まっていない箇所に当たったら仮決めして進み、[issue #656](https://github.com/gooyyu1/UnmappedIsland/issues/656)
   へ積む（止まらない）。**確定の宣言に反する変更が要るときだけ**、進めずに issue へ書く。
 
-タスクの割り方・所有権の地図・段の分け方は [`.claude/parallel-work.md`](.claude/parallel-work.md)。
+タスクの割り方・同時に走らせてよいかの見方・段の分け方は
+[`.claude/parallel-work.md`](.claude/parallel-work.md)。
 
 ## 「検討して」と言われたら、実装ではなく設計案を返す
 

@@ -271,7 +271,7 @@ export function moves(input) {
     }
   }
 
-  // **並列度1**（3.1）。作業領域の多次元ラベルがまだ無いので、書くセッションは同時に1本まで。
+  // **並列度1**（3.1）。担当の交わりを計算する仕組みがまだ無いので、書くセッションは同時に1本まで。
   // レビューは書かないので数えない。
   const writing = input.sessions.filter((session) => session.tags.some((tag) => tag.startsWith('task-')));
 
