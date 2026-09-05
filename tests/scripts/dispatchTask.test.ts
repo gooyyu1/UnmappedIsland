@@ -25,8 +25,6 @@ const SCRIPT = resolve(__dirname, '../../scripts/agent/dispatch-task.sh');
 interface World {
   /** issue の `state`。既定は開いている。 */
   readonly state?: string;
-  /** issue の本文。 */
-  readonly body?: string;
   /** issue に付いているラベル。 */
   readonly labels?: readonly string[];
   /** 開いているPR。 */
@@ -51,7 +49,6 @@ function run(issue: number, world: World = {}): Run {
       JSON.stringify({
         title: '題',
         state: world.state ?? 'OPEN',
-        body: world.body ?? '## 担当\n\nsrc/x.ts\n',
         labels: (world.labels ?? ['task']).map((name) => ({ name })),
       }),
       'utf-8',
@@ -153,15 +150,6 @@ describe('dispatch-task.sh', () => {
 
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('判断待ち');
-  });
-
-  // **触れる範囲は担当で決まり、走る場所では決まらない**（`board-design.md` 2.16）。ユーザーの
-  // 領域を担当に持つ issue は、どちらへでも投入できる。
-  it('担当にユーザーの領域が挙がっていても、どちらへも投入する', () => {
-    const body = '## 担当\n\n- `.claude/ccr-meta.sh`\n';
-
-    expect(run(1551, { body }).code).toBe(0);
-    expect(run(1551, { body, onBridge: true }).code).toBe(0);
   });
 
   // **受け取る側は、自分がどちらで走っているかを知らない。** 場所で切った制約を混ぜると、当たら

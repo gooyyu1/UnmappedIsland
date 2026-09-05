@@ -86,7 +86,7 @@ cat "$SUPPLEMENT" >>"$INSTRUCTION"
 
 # **日本語はシェル変数に載せない。** Windowsのnodeは argv も環境変数もANSIで受け取るので、題を
 # `$(...)` で渡すと黙って化ける。題も本文もファイル経由で node へ渡す。
-gh issue view "$ISSUE" --json title,state,body,labels >"$WORK/issue.json"
+gh issue view "$ISSUE" --json title,state,labels >"$WORK/issue.json"
 
 # 閉じた issue へ立てると、セッションは「仕事は無い」と正しく判断して即終了する。PRが出ないまま
 # 生き続けるので、盤面からは「投入済みで、まだ書いている」と見える。

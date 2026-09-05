@@ -73,9 +73,9 @@ bash .claude/ccr-meta.sh list_environments <<<'{}'   # kind が bridge のIDを�
 bash .claude/ccr-meta.sh create_session < args.json
 ```
 
-セッションはエージェントが立てられるので、ユーザーの手数は「issue に答える」だけ。**ブリッジへ
-立てるときは `permission_mode` を渡さない**——無指定が `bypassPermissions` になるので、
-`.claude/**` を書き換える仕事はそれが要る（[`ccr-env.sh`](../scripts/agent/ccr-env.sh)）。
+セッションはエージェントが立てられるので、ユーザーの手数は「issue に答える」だけ。**`permission_mode`
+は立てる先から決まる**ので、[`ccr-env.sh`](../scripts/agent/ccr-env.sh) から取る——ブリッジへは渡さず、
+クラウドへは `auto`。**省いてクラウドへ立てると未設定のまま走り、`.claude/**` を読むだけで止まる。**
 
 **`title` は定型に従う**（[`board-design.md`](board-design.md) 2.9 の表）。一覧を読むのは人間で、
 タグは機械の見分けなので読めない。手で立てる1本——ユーザーに頼まれて立てる盤面の外のもの——は

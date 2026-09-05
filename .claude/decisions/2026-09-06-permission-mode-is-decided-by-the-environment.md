@@ -11,6 +11,9 @@ context: create_session がセッションの承認モードを渡していな�
 
 選んだこと:
 
-- **クラウドだけ `auto` を明示し、ブリッジは無指定のまま。** ブリッジのセッションには `.claude/**` を
-  書き換えさせるので、無指定で `bypassPermissions` になる今の形を保つ。
+- **クラウドだけ `auto` を明示し、ブリッジは無指定のまま。** 無指定が `bypassPermissions` になるのは、
+  手元の `settings.json` が `defaultMode` にそれを持つから（2026-09-06 に実測）。
+  なお `auto` のクラウドでも `.claude/**` は書き換えられる
+  （[[2026-09-06-let-the-cloud-edit-dot-claude-and-keep-the-fallback]]）ので、無指定はその条件では
+  なくなっている。
 - **モードは環境で一意に決まるので、投入する側の引数にしない。** 環境IDを選んでいる場所の中で分ける。
