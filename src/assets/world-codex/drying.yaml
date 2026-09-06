@@ -123,8 +123,10 @@ object_defs:
     props:
       # 太い枝6本（1,000×6）＋縄1本（600）。**据えた物も目方を名乗る**（core.yaml）。
       weight: {value: 6600}
-    # **解放条件を持たない。** 保存の腕を求めると循環する（docs/engine/SkillSystem.md 3.2節）——
-    # 天日に干す最初の一歩は素手で足りる（docs/world/Skills.md 2節）ので、腕はそこから始まる。
+    # **解放条件を持たない。** 掛けても腕は伸びない（この型は操作を1つも持たない）ので、保存の腕を
+    # 求めると、干し場は腕の入口である塩漬け（salt.yamlのcure）より後ろでしか開かない——保存の段2が
+    # 段4の後ろへ回る（docs/world/ContentSkeleton.md 4節）。入口が塩漬けの側に在る理由は
+    # docs/world/Skills.md 2.4節。
     recipes:
       # 枝を立てて縄を張るだけ。**掘削具も刃物も要らない**——太い枝は拾える物なので、保存の系統の
       # 最初の山が前半に届く（docs/world/Skills.md 4節）。
