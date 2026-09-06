@@ -7,8 +7,8 @@
 #
 # 出力は1行1件。`ARCHIVED <ID>`、触らないと決めたものは `KEPT <ID>`、打って失敗したものは
 # `UNARCHIVED <ID>`。このPCに worktree を持つ相手には後始末の行が続く（`REMOVED <パス>` /
-# `DIRTY <パス>`。既に畳まれているものからも出る）。worktree の無いものが既に畳まれていたときは
-# 何も出さない。
+# `DIRTY <パス>: <理由>`。既に畳まれているものからも出る）。worktree の無いものが既に畳まれて
+# いたときは何も出さない。
 # **終了コードは常に0**——呼び手（投入・マージ）の本題は別にあるので、後片付けで落とさない。
 #
 # ## 判定を呼び手へ配らない
@@ -54,13 +54,25 @@
 # 相手の worktree を外す者が居ないので、`git worktree list` に残骸が溜まる（2026-08-30 の時点で
 # 10本のうち8本）。畳んだ本人がここで外す。
 #
-# 引くのは**カレントディレクトリのリポジトリ**（呼び手はリポジトリの中から打つ）。名前は
-# `bridge-cse_<IDから接頭辞を落としたもの>`。クラウドのセッションには無いので、見つからなければ
-# 何もしない。**自分が走っている worktree も外さない**——外すと足元が消える。
+# 場所は規約で決まる——**本体のリポジトリ**（`--git-common-dir` は作業ツリーの中から打たれても本体を
+# 指す）の `.claude/worktrees/bridge-cse_<IDから接頭辞を落としたもの>`。**`git worktree list` から
+# 引かない**——登録だけが消えてディレクトリが残る形があり、一覧から引くとその形を永久に拾えない。
+# クラウドのセッションには無いので、登録もディレクトリも無ければ何もしない。**自分が走っている
+# worktree も外さない**——外すと足元が消える。
 #
-# 出すのは `REMOVED <パス>`。**消えなかったものは `DIRTY <パス>` として残す**——`git worktree
+# 登録が在れば、`git worktree unlock` してから `git worktree remove`。ロックを掛けるのは
+# `claude rc --spawn worktree` で、名乗るPIDは**その親のもの**（登録されているどの作業ツリーも同じ
+# PIDを指す）——**そのセッションが生きていることは意味しない**ので、無条件に外す。`unlock` は中身に
+# 触らないので、下の「守る」はそのまま効く。
+#
+# 登録が外れた後もディレクトリだけが残ることがある。そこは `rmdir` で外す——**中に何か在れば断る**
+# ので、`--force` を渡さないのと同じ守りになる。
+#
+# 出すのは `REMOVED <パス>`。**消えなかったものは `DIRTY <パス>: <理由>` として残す**——`git worktree
 # remove` は未コミットの変更や未追跡のファイルがあると断るので、`--force` は渡さない。**戻せない
-# ものを黙って消すより、残骸が1つ残るほうがよい。**
+# ものを黙って消すより、残骸が1つ残るほうがよい。** 理由（打った git・`rmdir` の標準エラー）を同じ
+# 行へ載せるのは、パスだけでは**失敗した事実しか運ばない**から——読んだ側は打ったコマンドへ辿り着け
+# ないまま「未コミットの変更が残っている」と読む（実際に誤読した。issue #1557）。
 #
 # ## 引けなかったものは畳まない
 #
@@ -93,21 +105,38 @@ HERE="$(cd "$HERE" && pwd)"
 # 試験は差し替える（パスで呼ぶため PATH では差し替わらない）。
 CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 
+# 消せなかったことを、打った側の言葉で出す（上の「理由を同じ行へ載せる」）。**出力は1行1件**なので
+# 改行は空白へ畳む。
+dirty() {
+  echo "DIRTY $1: ${2//$'\n'/ }"
+}
+
 # 畳んだ相手の worktree を外す（上の「worktree は、ここで片付ける」）。
 remove_worktree() {
-  local session="$1" name path here
+  local session="$1" name common path here registered err
   name="bridge-cse_${session#session_}"
-  path=$(git worktree list --porcelain 2>/dev/null |
-    sed -n 's|^worktree ||p' | grep -E "/${name}\$" | head -1) || true
-  [ -n "$path" ] || return 0
+  common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || return 0
+  path="$(dirname "$common")/.claude/worktrees/$name"
+  if git worktree list --porcelain 2>/dev/null | grep -Fxq "worktree $path"; then
+    registered=true
+  else
+    registered=false
+  fi
+  [ "$registered" = true ] || [ -d "$path" ] || return 0
   here=$(git rev-parse --show-toplevel 2>/dev/null) || true
   [ "$path" != "${here:-}" ] || return 0
-  git worktree unlock "$path" >/dev/null 2>&1 || true
-  if git worktree remove "$path" >/dev/null 2>&1; then
-    echo "REMOVED $path"
-  else
-    echo "DIRTY $path"
+  if [ "$registered" = true ]; then
+    git worktree unlock "$path" >/dev/null 2>&1 || true
+    if ! err=$(git worktree remove "$path" 2>&1 >/dev/null); then
+      dirty "$path" "$err"
+      return 0
+    fi
   fi
+  if [ -d "$path" ] && ! err=$(rmdir "$path" 2>&1); then
+    dirty "$path" "$err"
+    return 0
+  fi
+  echo "REMOVED $path"
 }
 
 while read -r session; do
