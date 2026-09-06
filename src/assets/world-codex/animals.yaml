@@ -265,7 +265,7 @@ traits:
               - add: {self: {blood: -40}}
         passives:
           # **免疫は上げない**——下のimmunityが動かないので、獣には獲得免疫が無い。
-          - conditions: [{not: {prop: pathogen, in_stage: sterile}}]
+          - conditions: [{prop: pathogen, in_stage_or_above: latent}]
             add: {self: {pathogen: 0.15}}
       # 免疫（同6節）。**獣では固定値**で、生活では上下しない——ビタミンも睡眠も幸福度も獣は持たず、
       # 持たせる当てもないため。動かないので段は1つで足り、人の健康時と同じ高さ（robust、除去0.2が
