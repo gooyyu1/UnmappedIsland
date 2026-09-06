@@ -19,6 +19,20 @@ describe('ステータスエリアに出ている行', () => {
     alert,
   });
 
+  /**
+   * その画面のプロパティ全部（重複は先勝ち）。実物ではワールドが直接答えるが、この試験は並びを
+   * statusesとtabsで組み立てるので、同じ集合をここで作る。
+   */
+  function everyProperty(world: {
+    statuses: readonly StatusContent[];
+    tabs?: readonly PropertyTab[];
+  }): readonly StatusContent[] {
+    const all = new Map<string, StatusContent>();
+    for (const status of [...world.statuses, ...(world.tabs ?? []).flatMap((tab) => tab.entries)])
+      if (!all.has(status.key)) all.set(status.key, status);
+    return [...all.values()];
+  }
+
   /** その並びを持つ画面。statusesとcategoriesは呼ぶたびに今の値を返す（行動で作り直されるため）。 */
   function screen(
     world: { statuses: readonly StatusContent[]; tabs?: readonly PropertyTab[]; midAction?: boolean },
@@ -29,6 +43,7 @@ describe('ステータスエリアに出ている行', () => {
     const shown = new ShownStatuses({
       statuses: () => world.statuses,
       categories: () => world.tabs ?? [],
+      properties: () => everyProperty(world),
       midAction: () => world.midAction === true,
       onPinned: () => {
         counted.pinnedCalls += 1;

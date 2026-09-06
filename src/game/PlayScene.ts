@@ -406,6 +406,7 @@ export class PlayScene extends ResponsiveScene {
   private readonly status = new ShownStatuses({
     statuses: () => this.view.statuses,
     categories: () => this.view.propertyCategories,
+    properties: () => this.view.properties,
     midAction: () => this.midAction,
     onPinned: () => {
       this.savePinnedStatuses();
