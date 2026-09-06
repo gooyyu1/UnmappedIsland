@@ -4,6 +4,8 @@ context: GitHub の既定ラベル（`bug`・`enhancement` ほか）を機械が
   訊いたときの返事
 ---
 
+## ユーザーの発言
+
 > bugとenforcementは私が集計に使っています。
 > 本当はAIが自動起票したissueにもつけてほしいいっぽうで、人間が見つけたものと、AIが自分で気づいて勝手に直したものは区別したい気持ちもあります。
 >
@@ -11,7 +13,7 @@ context: GitHub の既定ラベル（`bug`・`enhancement` ほか）を機械が
 
 （`enforcement` は `enhancement` の言い間違い。）
 
-選んだこと:
+## エージェントの解釈
 
 - **`bug` と `enhancement` は消さない。ユーザーが集計に使っている。**
 - **AIが自動で起票した issue にも、これらを付けてほしい。** ただし**人間が見つけたものと、AIが自分で
