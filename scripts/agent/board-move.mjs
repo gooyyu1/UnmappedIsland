@@ -15,6 +15,7 @@
 //   RETURN  <issue番号> <セッションID> <指紋>  … 起こしても動かないワーカーの仕事を人へ返す
 //   REVIEW  <PR番号> <指紋>
 //   TASK    <issue番号> [<投入先の引数>]     … 引数が無ければクラウド（2.16）
+//   CHORE   <名> <プロンプト> <指紋> [<投入先の引数>]  … 周期で起きる係を立てる（2.17）
 //   NOTE    <人へ向けた1行>                  … 打つ手が無いことの説明。呼び手は記録するだけ
 //
 // **手を1行の文字列で返すのは、それがそのまま人の読む形だから。** `DRY_RUN` のログは この行を
@@ -86,6 +87,40 @@ const DISPATCH_TO = { cloud: '', bridge: '--bridge' };
  * 余力のある周に一度に何本も立つ。
  */
 const WRITERS = 3;
+
+/**
+ * 棚卸しが付ける**分類**の接頭辞（2.17.1）。**未整理は「これを1つも持たないこと」で表す**——
+ * `task` でも `meta` でも無い、という否定の列挙にすると、出口が増えるたびに条件を書き換えることに
+ * なり、書き忘れた出口の issue が毎周また拾われる。
+ */
+const KIND = 'kind:';
+
+/**
+ * **周期で起きる係**（2.17）。人が投入しなくても、仕事があれば間隔を空けて自分で立つ。
+ *
+ * - `due` … 今この係に仕事があるか。**無ければ間隔が満ちても立てない。**
+ * - `hours` … 前に立ててから空ける間隔。**溜めてからまとめて捌く係と、来たそばから捌く係が
+ *   同じ表に載る**ので、係ごとに持つ。件数のしきい値は置かない——「そこまでは残ってよい」を
+ *   宣言することになり、滞留を仕様にする（`.claude/policies.md`）。
+ * - `env` … 投入先（`DISPATCH_TO` の値）。
+ * - `locks` … 掴む資源（`area:` と同じ綴り）。書くセッションと取り合う。
+ * - `prompt` … 渡す本文の在り処（リポジトリからの相対）。
+ *
+ * **どれも PR を出さない**ので、書くセッションの枠（`WRITERS`）には数えない。マージの列に並ばない
+ * ものを数えると、書く側の並列度がその分だけ黙って下がる。
+ */
+const CYCLES = [
+  {
+    name: 'triage',
+    hours: 24,
+    // **ブリッジでしか走れない**（2.16）。クラウドは GitHub の REST が塞がっていて、**既存 issue の
+    // 本文を書き換えられない**——番号を保ったまま書き換えるのが棚卸しの中心。
+    env: 'bridge',
+    locks: [],
+    prompt: '.claude/triage-prompt.md',
+    due: (issues) => issues.some((issue) => !names(issue).some((name) => name.startsWith(KIND))),
+  },
+];
 
 /** `task-<番号>` のタグから担当の issue 番号を引く。持っていなければ `undefined`。 */
 function heldIssue(session) {
@@ -238,6 +273,7 @@ export function moves(input) {
   const returns = [];
   const reviews = [];
   const tasks = [];
+  const chores = [];
   const notes = [];
 
   // **古いものから捌く。** 一覧は新しい順に返るので、そのまま回すと**打つのは1周に1手**（`daemon.sh`）
@@ -350,18 +386,18 @@ export function moves(input) {
   for (const session of input.sessions) {
     if (busySession(session)) continue;
 
-    // **レビューは、走り終わっていれば畳む**（2.10.3）。使い回さない設計（`dispatch-review.sh`）なので、
-    // 手が止まった時点でもう誰も起こさない。**PRが開いているかは見ない**——`直し待ち` のまま戻って
-    // こないPRのレビューも、畳めない理由は無い。
+    // **PRを出さない仕事は、走り終わっていれば畳む**（2.10.3・2.17）。レビューも周期の係も使い回さ
+    // ない設計（`dispatch-review.sh`・`dispatch-chore.sh`）なので、手が止まった時点でもう誰も起こさない。
+    // **PRが開いているかは見ない**——`直し待ち` のまま戻ってこないPRのレビューも、畳めない理由は無い。
     //
     // **ただし「走り終わった」と「道具の承認を待っている」は同じ形に見える**（1.6）。ワーカーと
     // 同じく、空いたままが `STALL_MINUTES` 続いてから畳む——30秒で畳んだ盤面は、承認を求めて
     // 止まったレビューを判定を書く前に消し、そのPRを永久に止めた（2026-09-06、PR #1573。
     // 要約は `Waiting on permission: Bash`。issue #1569）。
-    const review = session.tags.find((tag) => tag.startsWith('review-'));
-    if (review !== undefined) {
+    const spent = session.tags.find((tag) => tag.startsWith('review-') || tag.startsWith('chore-'));
+    if (spent !== undefined) {
       if (idleMinutes(session) < STALL_MINUTES) continue;
-      const mark = `read:${review.slice('review-'.length)}`;
+      const mark = `done:${spent}`;
       if (taken[`archive:${session.id}`] !== mark) archives.push(`ARCHIVE ${session.id} ${mark}`);
       continue;
     }
@@ -421,11 +457,12 @@ export function moves(input) {
   );
 
   // **古いものから投入する。** 一覧は新しい順に返るので、そのまま使うと古い issue が永久に
-  // 後回しになる（今 open な `task` は30件を超える）。
+  // 後回しになる。
   const ready = [...input.issues]
     .sort((a, b) => a.number - b.number)
-    .filter((issue) => names(issue).includes('task'))
-    // 返ってきたものは、人が `判断待ち` を外すまで配らない（2.15）。**`task` は付いたまま**なので、
+    .filter((issue) => names(issue).includes(`${KIND}task`))
+    // 返ってきたものは、人が `判断待ち` を外すまで配らない（2.15）。**分類は `kind:task` のまま**
+    // ——「もうやる必要がない」は分類ではなく人の手番の印なので、`kind:` の側は動かさない（2.17.1）。
     // 人の手番は1タップで済む。**不変条件を持つのは投入する側**（1.4）で、ここはその写し。
     .filter((issue) => !names(issue).includes('判断待ち'))
     .filter((issue) => !(issue.blockedBy?.nodes ?? []).some((node) => node.state === 'OPEN'))
@@ -460,6 +497,12 @@ export function moves(input) {
       const lock = mine.find((name) => locks(holder.issue).includes(name));
       if (lock !== undefined) return `#${issue.number} と #${holder.number} が \`${lock}\` を取り合う`;
     }
+    // **周期の係も資源を掴む**（2.17）。担当の issue を持たないので `workers` には居ない。
+    for (const cycle of CYCLES) {
+      if (alive(`chore-${cycle.name}`).length === 0) continue;
+      const lock = mine.find((name) => cycle.locks.includes(name));
+      if (lock !== undefined) return `#${issue.number} と \`${cycle.name}\` が \`${lock}\` を取り合う`;
+    }
     return undefined;
   }
 
@@ -490,6 +533,40 @@ export function moves(input) {
     }
   }
 
+  // **周期の係**（2.17）。書くセッションの枠は見ない——PRを出さないので、マージの列を詰まらせない。
+  for (const cycle of CYCLES) {
+    // **前の1本が終わっていなければ立てない。** 終わったかの見方は、畳む側と同じ——走っているか、
+    // 空いたままが `STALL_MINUTES` に届いていないか（1.6。「終わった」と「承認を待っている」は
+    // 同じ形に見える）。
+    //
+    // **「生きているか」では見ない。** ブリッジのセッションは盤面から畳めない
+    // （[`archive-session.sh`](archive-session.sh) の `--force-bridge`。issue #1558）ので、
+    // ブリッジ固定の係は**終わった1本が次の周期を永久に塞ぐ。**
+    const running = alive(`chore-${cycle.name}`).some(
+      (session) => busySession(session) || idleMinutes(session) < STALL_MINUTES,
+    );
+    if (running) continue;
+    if (!cycle.due(input.issues)) continue;
+    // **前に立ててからの間隔**。覚えが無ければ「まだ一度も立てていない」なので、そのまま立てる。
+    // **デーモンを別のPCへ移すと覚えごと消える**ので、移した直後は係が一斉に立つ。
+    const since = Date.parse(taken[`cycle:${cycle.name}`] ?? '');
+    const at = Date.parse(input.now ?? '');
+    if (!Number.isNaN(since) && at - since < cycle.hours * 3_600_000) {
+      continue;
+    }
+    const taker = cycle.locks
+      .map((lock) =>
+        workers.find((holder) => holder.issue !== undefined && locks(holder.issue).includes(lock)),
+      )
+      .find((holder) => holder !== undefined);
+    if (taker !== undefined) {
+      notes.push(`\`${cycle.name}\` は #${taker.number} と資源を取り合うので立てない`);
+      continue;
+    }
+    const flag = DISPATCH_TO[cycle.env];
+    chores.push(`CHORE ${cycle.name} ${cycle.prompt} ${input.now}${flag === '' ? '' : ` ${flag}`}`);
+  }
+
   // 畳むのをマージの次に置くのは、**書くセッションの枠が空くから**（3.1 の並列度）。後ろへ回すと、
   // 終わったワーカーが枠を握ったまま、待っている task が投入されない周が続く。
   return [
@@ -500,6 +577,9 @@ export function moves(input) {
     ...returns,
     ...reviews,
     ...tasks,
+    // **周期の係は最後尾。** 急ぐ仕事ではないうえ、間隔が満ちている限り次の周でも同じ手が出るので、
+    // 先に置くと待っている直しやレビューを1周ぶん押しのけるだけになる。
+    ...chores,
     ...notes.map((note) => `NOTE ${note}`),
   ];
 }

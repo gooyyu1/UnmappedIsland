@@ -144,7 +144,7 @@ fi
 # 脚注のセッションIDではなくタグで引くのは、**同じ issue へ2回投入されていても両方が同じタグを
 # 持つ**ため。生きているほうを取り逃がさない。
 #
-# **同じ `Closes` から、手綱に訊く種類も決まる。** `task` ラベルの issue を閉じるPRはデーモンが
+# **同じ `Closes` から、手綱に訊く種類も決まる。** `kind:task` の issue を閉じるPRはデーモンが
 # 配った仕事で、そうでないPR（人と直接話した結果のもの）は別の系統。**読ませるかを別々に
 # 切り替えられるようにする**ため、種類を分けて渡す（`board-design.md` 2.4）。
 # `Closes` を書き忘れたPRも「task を持たない」側に入る——**盤面には出るが誰も読まない**ので、
@@ -157,7 +157,7 @@ kind=review-untasked
 while read -r issue; do
   [ -n "$issue" ] || continue
   review_tags+=("task-$issue")
-  if gh issue view "$issue" --json labels -q '.labels[].name' 2>/dev/null | grep -qx task; then
+  if gh issue view "$issue" --json labels -q '.labels[].name' 2>/dev/null | grep -qx kind:task; then
     kind=review
   fi
 done < <(jq -r '.body // ""' "$WORK/pr.json" |
