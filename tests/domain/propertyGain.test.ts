@@ -11,9 +11,10 @@ import { fixedRng } from '../support/rng';
  * 操作そのものが増やした値の観測（`WorldSession.observeGains`、docs/ui/CardInteraction.md 10.1節）の
  * 自動テスト。回復の粒を出す範囲がここで決まる。
  *
- * 流れるのは**効果が直に書いた分だけ**。同じ操作の経過中にtickが動かした分は、増加ではあっても
- * 「その操作が与えたもの」ではないので出ない——それが見えるように、時間のかかる操作と、経過中に
- * 動く値の両方を宣言してある。
+ * 流れるのは**その操作が動かした分だけ**——効果が直に書いた分と、その操作自身が宣言した持続効果
+ * （11.7節）が毎tick足した分。物が自分で宣言した増減は、同じ経過の中で動いていても「その操作が
+ * 与えたもの」ではないので出ない——それが見えるように、時間のかかる操作と、経過中に動く値の両方を
+ * 宣言してある。
  */
 describe('操作が増やした値の観測', () => {
   const yaml = `
@@ -73,6 +74,12 @@ object_defs:
         trigger: menu
         duration: 60
         add: {self: {stamina: 10}}
+      # 経過の間ずっと戻す休息（11.7節）。tick毎に足すので、同じ60分でも足す時点が4回に分かれる。
+      doze:
+        trigger: menu
+        duration: 60
+        passives:
+          - add: {self: {stamina: 2.5}}
       wait:
         trigger: menu
         duration: 15
@@ -196,6 +203,30 @@ object_defs:
     // 満タンの体力へ休憩を足すと、上限のクランプが同じ値へ書き戻す。正味は0なので流れない。
     const { amounts } = gainsDuring(() => {
       expect(player.tryGetAction('rest', player)?.tryExecute() === true).toBe(true);
+    });
+
+    expect(amounts.has('stamina')).toBe(false);
+  });
+
+  it('経過の間ずっと効く宣言が足した分は、その操作のものとして出る', () => {
+    drain('stamina', 50);
+
+    // 60分＝4 tickぶん、tick毎に+2.5。**同じ経過の中で他の値も動く**（覚醒度は減り、炭水化物が
+    // 体脂肪へ回る）が、それはこの操作が足したものではない。
+    const { source, amounts } = gainsDuring(() => {
+      expect(player.tryGetAction('doze', player)?.tryExecute() === true).toBe(true);
+    });
+
+    expect(source, '発生源は操作を宣言していた札').toBe('survivor');
+    expect(amounts.get('stamina'), 'tick毎に足した4 tickぶん').toBe(10);
+    expect(amounts.has('wakefulness'), '経過中に減った分は増加ではない').toBe(false);
+    expect(amounts.has('body_fat'), '物が自分で宣言した増減は、操作が増やしたものではない').toBe(false);
+  });
+
+  it('経過の間ずっと効く宣言も、上限で押し戻された分は数えない', () => {
+    // 満タンの体力へtick毎に足しても、上限のクランプが押し戻すので正味は0。
+    const { amounts } = gainsDuring(() => {
+      expect(player.tryGetAction('doze', player)?.tryExecute() === true).toBe(true);
     });
 
     expect(amounts.has('stamina')).toBe(false);

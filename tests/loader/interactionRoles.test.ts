@@ -83,6 +83,21 @@ object_defs:
       verdicts: { agent: 'ok', instrument: ABSENT.instrument, patient: SAME_AS_SELF },
     },
     {
+      name: 'interactions（menu）のpassives',
+      yaml: (role) => `
+object_defs:
+  path:
+    interactions:
+      travel:
+        trigger: menu
+        duration: 60
+        passives:
+          - conditions: [{subject: ${role}, prop: stamina, gt: 0}]
+            add: {${role}: {stamina: -1}}
+`,
+      verdicts: { agent: 'ok', instrument: ABSENT.instrument, patient: SAME_AS_SELF },
+    },
+    {
       name: 'interactions（drag）',
       yaml: (role) => `
 object_defs:
@@ -93,6 +108,23 @@ object_defs:
       crack:
         trigger: {drag: {tag: hammer}}
         conditions: [{subject: ${role}, prop: stamina, gt: 0}]
+`,
+      verdicts: { agent: 'ok', instrument: 'ok', patient: SAME_AS_SELF },
+    },
+    {
+      name: 'interactions（drag）のpassives',
+      yaml: (role) => `
+object_defs:
+  hammer:
+    tags: [hammer]
+  nut:
+    interactions:
+      crack:
+        trigger: {drag: {tag: hammer}}
+        duration: 60
+        passives:
+          - conditions: [{subject: ${role}, prop: stamina, gt: 0}]
+            add: {${role}: {stamina: -1}}
 `,
       verdicts: { agent: 'ok', instrument: 'ok', patient: SAME_AS_SELF },
     },

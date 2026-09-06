@@ -256,8 +256,8 @@ function amountObjectNamesOf(
  * 段へ届かせる、いちばん安い積み方。同じ型を何個並べてもよいので、点あたりの手間がいちばん安い型を
  * 並べて、端数を最も安く埋める組み合わせを解く（無制限ナップサック）。
  *
- * **どれか1つでも欠けていれば投げる**——タグを誰も名乗っていない・段が無い・押し上げる型が1つも無い。
- * 0分の山として黙って通すと、1周回の日数だけが静かに縮む。
+ * **積む型が1つも出ない形は全部投げる**——タグを誰も名乗っていない・段が無い・下限が0以下・押し上げる
+ * 型が1つも無い・押し上げが整数でない。0分の山として黙って通すと、1周回の日数だけが静かに縮む。
  */
 function cheapestStackOf(
   codex: WorldCodex,
@@ -277,45 +277,43 @@ function cheapestStackOf(
     .tryGetPropertyDef(propertyGlobalId)
     ?.stages.find((stage) => stage.name === stack.stageName)?.min;
   if (threshold === undefined) throw new Error(`${where}が名乗る段の下限が、その人物にありません。`);
+  if (threshold <= 0) throw new Error(`${where}が名乗る段の下限が0以下で、何も積まずに届きます。`);
 
+  // **値段を引くのは押し上げる型だけ**——押さない型まで引くと、山が積みもしない型の値段で落ちる。
   const tagGlobalId = codex.tagNames.tryGetId(stack.tag);
   const stackable = (
     tagGlobalId === undefined ? [] : [...codex.objects].filter((def) => def.hasTag(tagGlobalId))
   )
-    .map((def) => ({
-      name: def.name,
-      lift: ancestorLiftOf(def, propertyGlobalId),
-      minutes: objectCostMinutesOf(balance, def.name),
-    }))
-    .filter((candidate) => candidate.lift > 0);
+    .map((def) => ({ name: def.name, lift: ancestorLiftOf(def, propertyGlobalId) }))
+    .filter((candidate) => candidate.lift > 0)
+    .map((candidate) => ({ ...candidate, minutes: objectCostMinutesOf(balance, candidate.name) }));
   if (stackable.length === 0) throw new Error(`${where}で積める型が、世界に1つもありません。`);
 
   // 点は刻みなので、整数で持つ前提（居心地の押し上げも段の下限も整数、core.yaml）。
   if (![threshold, ...stackable.map((candidate) => candidate.lift)].every(Number.isInteger))
     throw new Error(`${where}の押し上げか段の下限が整数ではないので、積み方を解けません。`);
 
-  const span = threshold + Math.max(...stackable.map((candidate) => candidate.lift));
-  const minutesTo = [0, ...Array<number>(span).fill(Infinity)];
-  const lastPlaced: (number | undefined)[] = [];
-  for (let lifted = 1; lifted <= span; lifted += 1)
+  // **点数ちょうどではなく「その点数以上」で解く**——足りない側をクランプして引くので、行き過ぎるぶんは
+  // そのまま手間に入る。下限を越えた先まで見る必要は無い（越えるほど手間は増えるだけ）。
+  const cheapest: { readonly minutes: number; readonly counts: readonly number[] }[] = [
+    { minutes: 0, counts: stackable.map(() => 0) },
+  ];
+  for (let lifted = 1; lifted <= threshold; lifted += 1) {
+    let best: { readonly minutes: number; readonly counts: readonly number[] } = {
+      minutes: Infinity,
+      counts: [],
+    };
     for (const [index, candidate] of stackable.entries()) {
-      const withThis = minutesTo[Math.max(0, lifted - candidate.lift)] + candidate.minutes;
-      if (withThis >= minutesTo[lifted]) continue;
-      minutesTo[lifted] = withThis;
-      lastPlaced[lifted] = index;
+      const from = cheapest[Math.max(0, lifted - candidate.lift)];
+      const minutes = from.minutes + candidate.minutes;
+      if (minutes >= best.minutes) continue;
+      best = { minutes, counts: from.counts.map((count, at) => (at === index ? count + 1 : count)) };
     }
-
-  let lifted = threshold;
-  for (let candidate = threshold; candidate <= span; candidate += 1)
-    if (minutesTo[candidate] < minutesTo[lifted]) lifted = candidate;
-
-  const placedCounts = stackable.map(() => 0);
-  while (lifted > 0) {
-    const index = lastPlaced[lifted]!;
-    placedCounts[index] += 1;
-    lifted = Math.max(0, lifted - stackable[index].lift);
+    cheapest.push(best);
   }
-  return stackable.flatMap((candidate, index) => Array<string>(placedCounts[index]).fill(candidate.name));
+
+  const placed = cheapest[threshold].counts;
+  return stackable.flatMap((candidate, index) => Array<string>(placed[index]).fill(candidate.name));
 }
 
 /** その型が、据えた先（祖先）のプロパティを常時いくつ押し上げるか。段や条件で縛られた寄与は数えない。 */

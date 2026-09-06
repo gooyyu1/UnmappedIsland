@@ -2,6 +2,7 @@ import type { InteractionTrigger } from '../../domain/InteractionTrigger';
 import type { DefNames, DescriptionWriter } from './Description';
 import { text } from './Description';
 import { describeEffect, declaredNumberTokens } from './describeEffect';
+import { describePassive } from './describePassive';
 import { describeRequirements } from './describeRequirement';
 import { typeMatchTokens } from './typeMatchTokens';
 
@@ -42,6 +43,15 @@ export function describeInteraction(
   const duration = interaction.durationReading;
   if (duration !== undefined)
     out.write(text('所要時間: '), ...declaredNumberTokens(duration, names), text('分'));
+
+  const passives = interaction.passiveDeclarations;
+  if (passives.length > 0) {
+    // 物のpassivesと同じ行になるので、経過している間だけのものだと見出しで断る（11.7節）。
+    out.write(text('passives（経過の間、tick毎）:'));
+    out.indented(() => {
+      for (const passive of passives) describePassive(passive, names, out);
+    });
+  }
 
   describeEffect(interaction, names, out);
 }

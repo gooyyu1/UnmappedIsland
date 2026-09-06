@@ -143,6 +143,47 @@ object_defs:
     ).toEqual([]);
   });
 
+  it('経過の間ずっと効く戻しは、tickごとの控えに刻んで現れる', () => {
+    // 控えは実時間で再生される（PlayScene.passTime）ので、**戻しがtick毎かどうかは、そのまま
+    // バーの動き方になる。** 経過し終えてから足す形では、見せ終わる瞬間まで1目盛りも動かない。
+    const mini = miniGame(
+      `
+property_tags:
+  status:
+
+object_defs:
+  faint_player:
+    traits: [carrier]
+    props:
+      stamina: {tags: [status], value: 0, range: {min: 0, max: 100}}
+    interactions:
+      collapse:
+        trigger: tick
+        conditions:
+          - {prop: stamina, lte: 0}
+        announce: exhausted
+        duration: 120
+        passives:
+          - add: {self: {stamina: 2.5}}
+`,
+      { player: 'faint_player' },
+    );
+
+    const startedAt = mini.game.world.totalMinutes;
+    const recording = runAndRecordChange(mini.game, mini.codex, locale, undefined, () => {
+      mini.game.session.advanceWorldTime(60);
+    });
+
+    // 倒れ込みが始まってからの控えは、どれも「体力が増えた」を映している。
+    const duringCollapse = recording.ticks.filter((tick) => tick.minutes - startedAt > 60);
+    // 120分は8 tickだが、経過し切った時刻の控えは持たない（上の「tick境界ごとに控える」）。
+    expect(duringCollapse.length, '倒れ込んでいる間の控え').toBe(7);
+    expect(
+      duringCollapse.map((tick) => tick.statusChanges.get('stamina')?.change),
+      '控えるたびに増えている',
+    ).toEqual(duringCollapse.map(() => 'increased'));
+  });
+
   it('時間を消費しない変更は、控えを持たずに出入りだけを返す', () => {
     const mini = setUp();
 

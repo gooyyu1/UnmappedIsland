@@ -366,7 +366,8 @@ function buildSections(
       records: amounts.map(({ pile, objectNames, minutes, days }) => ({
         system: pile.system,
         pile: pile.label,
-        // 量をその値段から採った型（タグで立つ山では、そのタグを名乗る型が全部並ぶ）。置いた日数の
+        // 量をその値段から採った型。**積んで段へ届かせる山では、いちばん安い積み方がそのまま並ぶ**
+        // ので、同じ型が2回以上出ることも、名乗るタグを持つのに1度も出ない型もある。置いた日数の
         // 山ではnull——並びの中に「型が無い」を表す形が無い。
         objects: objectNames.length === 0 ? null : objectNames,
         days: rounded(days, 2),

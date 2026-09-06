@@ -93,7 +93,8 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 4. `duration` の解決: 「今の `self`（combinations では `instrument` も）の状態から見て、どれだけかかるか」
    なので、時間を進める前に分数だけ確定させる（切れ味の悪い刃物ほど時間がかかる、が書けるように）。
 5. 時間進行（6節）: **効果の適用より先**に進める。行動してから結果が出る順序であり、作ったもの・
-   見つけたものが自分の制作時間・探索時間ぶんの tick を浴びずに済む。
+   見つけたものが自分の制作時間・探索時間ぶんの tick を浴びずに済む。この間だけ、その操作が宣言した
+   持続効果（`passives`、[`GameElementDefinition.md`](./GameElementDefinition.md) 11.7 節）を登録する。
 6. 関与オブジェクトの生存確認（6節）: 経過中に失われていたら、その行動は成立しなかったものとして
    `false` を返し、効果を適用せずに終える。
 7. 効果の適用: `self.applyActiveEffect(effect, context)`（4節）。役は `ReferenceContext` が1つに
@@ -144,6 +145,10 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
 効果はポリモーフィックな `ActiveEffect` で、自身を再帰的に組み合わせる1つの型。何を並べて書けるかは
 [`GameElementDefinition.md`](./GameElementDefinition.md) 9.7節が持つ。
 
+**経過の間ずっと効くものは、ここには入らない。** 操作が持つ `passives`（同 11.7節）は
+`InteractionDef` が効果と別に持つ——効くのが経過の各tickで、効果が効くのは経過し終えてからなので、
+1つにまとめると起きる時点を言えなくなる（`announce` と同じ理由）。
+
 - **宣言順合成（`ActiveEffectSequence`）**: 並べた命令を**YAMLに書かれた順**で適用する
   （`effectsInDeclarationOrder`）。動詞ごとの優先順位は無く、順序に意味がある組み合わせは著者が
   その順に書く（9.7節）。
@@ -190,6 +195,11 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
 - `advanceWorldTime` は分を進めながら、tick 境界（world の `minutes_per_tick` プロパティ、
   現状15分）を跨ぐたびに world ツリー全体の `tick()` を1回実行する。長い `duration` の action は、
   その間の `add`・rangeイベントをすべて経験する。
+- **経過している間だけ、その操作の `passives`（[`GameElementDefinition.md`](./GameElementDefinition.md)
+  11.7節）を登録する。** 対象の値がその tick に
+  受け取るほかの増減と同じ足し算に入るので、値が下限に居ても正味で釣り合う——経過し終えてから足すと、
+  下限に張り付いた値では経過中の減りを既定のクランプが吸ってしまう
+  （[`../world/Characters.md`](../world/Characters.md) 限界節）。
 - `World` を持たないセッション（時間の概念が無い単体テスト等）では時間進行をスキップする。
 
 ### 6.1 経過中に関与オブジェクトが失われた場合
