@@ -240,7 +240,9 @@ Claude Code 本体が入れているもので、リポジトリの設定では�
 2. 渡すのは、**外のレビュアーが見るのと同じ3つだけ**——差分（`git diff main...HEAD`）・issue の番号
    （閉じる issue が無いならPRの主題）・本文の原稿のパス。指示は「`.claude/review-criteria.md` の
    観点で読み、問題のあった箇所だけを返せ」。**観点の一覧は `main` の版を読ませる**
-   （`git show origin/main:.claude/review-criteria.md`）——作業ツリーに在るのはブランチを切った時点の
+   （`MSYS2_ARG_CONV_EXCL='*' git show origin/main:.claude/review-criteria.md`。**手元の bash では
+   この前置きを落とすと引数が `origin\main;.claude\review-criteria.md` に化けて読めない**）
+   ——作業ツリーに在るのはブランチを切った時点の
    版で、**観点は絞られる方向へ動くので、古い版だともう止めないもので止まる**。
    **自分がなぜそう直したかは渡さない。** 渡すと、書いた
    本人の仮説をなぞるだけの読み手になり、**外のレビュアーが見つけるものが手前で見つからない**。
