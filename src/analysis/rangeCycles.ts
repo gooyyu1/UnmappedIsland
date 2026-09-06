@@ -82,17 +82,17 @@ export interface RangeCycle {
   readonly destroysSelf: boolean;
 
   /**
-   * **端へ向かうどの場合（TickAmounts.possible）にも入っている条件つきの増減**（8.2節）。どれか1つ
-   * でも成立していなければ端へ向かわない、ということ。
+   * **端へ向かわせる、条件つきの増減（8.2節）の組み合わせ。** どれか1つの組み合わせが丸ごと成立して
+   * いれば向かい、どれも成立していなければ向かわない。
    *
-   * 空になるのは、条件つきが1つも成立しなくても向かう場合（常時効く分だけで届く）と、成立の仕方が
-   * 複数あってどれも欠かせるとは言えない場合。**遅くするだけの条件つきは入らない**——最も遅い場合を
-   * 作っていても、向かうこと自体はそれに依らない（issue #1433のレビュー）。
+   * **それだけで向かえる最小のものしか入らない**（leastCombinationsOf）ので、遅くするだけの増減も、
+   * 片方だけで足りるときの相方も残らない——周期を決めた組み合わせとは別物（issue #1433）。
    *
-   * **押し手のある周期（drivenBy）では常に空**。totalsWithDriverが自分の条件つきを数から落とすので、
-   * 押し手が傍に在ることのほうが条件で、それはdrivenByが持つ。
+   * 空の組み合わせ1つだけ（`[[]]`）なら、条件が1つも成立しなくても向かう。**押し手のある周期
+   * （drivenBy）は必ずこの形**——totalsWithDriverが自分の条件つきを数から落とすので、条件は押し手が
+   * 傍に在ることのほうで、それはdrivenByが持つ。
    */
-  readonly gatedBy: readonly TickDelta[];
+  readonly gatedBy: readonly (readonly TickDelta[])[];
 
   /** 外から与えられた増減で動いた周期なら、それを与える型（炉が焼く・傷が血を奪う）。 */
   readonly drivenBy: number | undefined;
@@ -345,7 +345,7 @@ interface TickAmounts {
   /** 常時効く分だけの合計。条件つきの増減（8.2節）を含まない。 */
   readonly unconditional: number;
 
-  /** 同時に成立しうる組み合わせごとの合計。常時効く分を含み、同じ量は畳んである。 */
+  /** 同時に成立しうる組み合わせごとの合計。常時効く分を含み、量が同じでも組み合わせごとに並ぶ。 */
   readonly possible: readonly TickTotal[];
 }
 
@@ -399,15 +399,12 @@ function possibleTotalsOf(unconditional: number, conditional: readonly TickDelta
     combinations = [...combinations, ...grown];
   }
 
-  // 同じ量になる組み合わせは先に現れたほうだけを残す。どれも同じ速さで端へ届くので、周期の
-  // 選び方は変わらない——残すのは、その速さを説明できる組み合わせを1つ持っておくため。
-  // **1つも重ねない場合が先頭に居るので、畳んでも落ちない**（Pace.gatedByが空になる場合を作る）。
-  const byAmount = new Map<number, TickTotal>();
-  for (const combination of combinations) {
-    const amount = combination.reduce((total, delta) => total + delta.amount, unconditional);
-    if (!byAmount.has(amount)) byAmount.set(amount, { amount, conditional: combination });
-  }
-  return [...byAmount.values()];
+  // **同じ量になる組み合わせも畳まない。** 畳むと、落ちた側でしか成立しない条件が「無い」ことに
+  // なる——日差しでも風でも同じ速さで乾くなら、どちらでも乾くと言えなければならない（RangeCycle.gatedBy）。
+  return combinations.map((combination) => ({
+    amount: combination.reduce((total, delta) => total + delta.amount, unconditional),
+    conditional: combination,
+  }));
 }
 
 /** その端へ向かって動く速さの幅（paceTowards）。 */
@@ -415,8 +412,8 @@ interface Pace {
   readonly slowest: TickTotal;
   readonly fastest: TickTotal;
 
-  /** その端へ向かうどの場合にも入っている条件つきの増減（RangeCycle.gatedBy）。 */
-  readonly gatedBy: readonly TickDelta[];
+  /** その端へ向かわせる、条件つきの増減の組み合わせ（RangeCycle.gatedBy）。 */
+  readonly gatedBy: readonly (readonly TickDelta[])[];
 }
 
 /**
@@ -430,11 +427,26 @@ function paceTowards(totals: readonly TickTotal[], label: RangeEventLabel): Pace
   return {
     slowest: towards.reduce((best, total) => (Math.abs(total.amount) < Math.abs(best.amount) ? total : best)),
     fastest: towards.reduce((best, total) => (Math.abs(total.amount) > Math.abs(best.amount) ? total : best)),
-    gatedBy: towards.reduce<readonly TickDelta[]>(
-      (common, total) => common.filter((delta) => total.conditional.includes(delta)),
-      towards[0].conditional,
-    ),
+    gatedBy: leastCombinationsOf(towards.map((total) => total.conditional)),
   };
+}
+
+/**
+ * 端へ向かわせる組み合わせのうち、**他を丸ごと含むものを落とした**もの。含む側は、含まれる側だけで
+ * 足りることの言い換えでしかない——残すと、足さなくても向かう条件が「要る」として並ぶ。
+ *
+ * 落とし切ると、残るのは**それだけで向かえる最小の組み合わせ**だけになる。1つも条件を要らない場合が
+ * 在れば、それが他のすべてを落とすので、残るのは空の組み合わせ1つ。
+ */
+function leastCombinationsOf(
+  combinations: readonly (readonly TickDelta[])[],
+): readonly (readonly TickDelta[])[] {
+  return combinations.filter(
+    (combination) =>
+      !combinations.some(
+        (other) => other.length < combination.length && other.every((delta) => combination.includes(delta)),
+      ),
+  );
 }
 
 /**

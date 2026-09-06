@@ -56,6 +56,18 @@ export function conditionText(codex: WorldCodex, condition: ConditionDeclaration
   return conditionWords(condition, plainWordMaker(codex)).join('');
 }
 
+/**
+ * 別々に宣言された条件を並べて置くときの平文。**複合な条件は括弧で包む**——包まないと、
+ * `A または B かつ C` と切れ目の無い文になり、どこで切れるか読めなくなる。
+ *
+ * 包むかどうかの規約は、1つの宣言の中で条件を並べるとき（ConditionWordWriter.join）と同じ。
+ */
+export function conditionTextInList(codex: WorldCodex, condition: ConditionDeclaration): string {
+  const phrase = phraseOf(condition, plainWordMaker(codex), false);
+  const text = phrase.words.join('');
+  return phrase.composite ? `（${text}）` : text;
+}
+
 /** 比較演算子の書き表し方。YAMLのフロー形式でそのまま書ける記号を選ぶ（引用符が増えない）。 */
 const OP_SYMBOLS: Readonly<Record<ConditionOp, string>> = {
   lt: '<',
@@ -87,8 +99,8 @@ const NEGATED_OPS: Readonly<Record<ConditionOp, ConditionOp>> = {
  */
 export const ALL_CONJUNCTION = 'かつ';
 
-/** その否定。条件の否定は葉まで押し下げるので、並びのほうは接続詞が入れ替わる。 */
-const ANY_CONJUNCTION = 'または';
+/** 「どれか1つが成立している」としてつなぐ語。条件の否定は葉まで押し下げるので、上の語と入れ替わる。 */
+export const ANY_CONJUNCTION = 'または';
 
 /** 条件の主語を指す語。**selfには語を当てない**——その文はもともとselfの話だから。 */
 const SUBJECT_WORDS: Readonly<Record<ReferenceRoot, string>> = {

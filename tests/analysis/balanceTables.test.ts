@@ -619,8 +619,8 @@ object_defs:
  * できる。読み手はこの対を1つの事実として読むので、置いても1 tickも進まない条件に、進む前提の
  * 数字が付く。
  *
- * 形は塩田（salt.yaml）から採る——干し上がる分と雨で戻る分の2つが、どちらも条件つきで、常時効く
- * 分を持たない。
+ * 形は塩田（salt.yaml）から採る——干し上がる分と、それを戻す分や別の乾き方が、どれも条件つきで
+ * 並ぶ。**周期と条件は別の問いに答える**——周期は最も遅い場合、条件は進むこと自体が依っているもの。
  */
 describe('待ち生産の周期と条件', () => {
   const YAML = `
@@ -727,6 +727,31 @@ object_defs:
           add: {self: {drying_remaining: 24}}
           spawn: {object: salt, into: self}
 
+  # 日差しでも風でも乾く塩田。**どちらか片方だけで足りる**ので、相方は要る条件ではない。
+  # **速さも同じ(-1)**にしてある——同じ量の場合を1つに畳むと、畳まれた側の乾き方が消える。
+  # 風の側はゲートが2つなので、並べるときに括弧が要る。
+  either_salt_pan:
+    tags: [fixture]
+    slots:
+      salt:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - conditions: [{subject: ancestor, prop: ambient_brightness, gte: 14}]
+            add: {self: {drying_remaining: -1}}
+          - conditions:
+              - {subject: ancestor, prop: wind_speed, gte: 3}
+              - {subject: ancestor, prop: wetness, lt: 1}
+            add: {self: {drying_remaining: -1}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+
   # 常時乾く塩田（-3）。雨（+2）は遅くするだけで、止めはしない——**最も遅いのは雨の場合**だが、
   # 塩が採れるのに雨は要らない。
   covered_salt_pan:
@@ -786,6 +811,16 @@ object_defs:
     // 「雨の間だけ働く」と読める行になる——`常時` 以外は置くだけでは進まない、が表の約束
     // （docs/diagnostics/BalanceStats.md「待ち生産表」）。
     expect(deviceOf('covered_salt_pan')).toMatchObject({ periodMinutes: 360, condition: '常時' });
+  });
+
+  it('片方だけで足りるなら、相方は条件にならず「または」で並ぶ', () => {
+    // どちらか片方なら-1で24 tick＝360分（両方揃えば-2で半分）。**どちらも欠かせないわけでは
+    // ない**ので、両方に共通するものを採ると条件が消えて `常時` になり、暗くて無風でも乾く行に
+    // なってしまう。同じ量の場合を畳むと、今度は片方だけが要る条件として残る。
+    expect(deviceOf('either_salt_pan')).toMatchObject({
+      periodMinutes: 360,
+      condition: '祖先のambient_brightness ≥ 14 または （祖先のwind_speed ≥ 3 かつ 祖先のwetness < 1）',
+    });
   });
 
   it('どれも欠かせないなら全部が並び、またはを含む条件は括弧のまま並ぶ', () => {
