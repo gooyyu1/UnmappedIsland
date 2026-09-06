@@ -73,8 +73,38 @@ function listMarkdown(dir: string): string[] {
   return found;
 }
 
+/**
+ * 印を空白で切る。**二重引用符で囲んだ中の空白では切らない**——選ぶ値には空白を含むものがある
+ * （`condition="段 immunity=robust"`）。閉じない引用符は、印ごと読めないものとして null。
+ */
+function tokenize(body: string): string[] | null {
+  const tokens: string[] = [];
+  let token: string | null = null;
+  let quoted = false;
+  for (const char of body) {
+    if (char === '"') {
+      quoted = !quoted;
+      token ??= '';
+    } else if (!quoted && /\s/.test(char)) {
+      if (token !== null) tokens.push(token);
+      token = null;
+    } else token = (token ?? '') + char;
+  }
+  if (quoted) return null;
+  if (token !== null) tokens.push(token);
+  return tokens;
+}
+
+/** `<列>=<値>`。**値の側に `=` が入りうる**（`段 immunity=robust`）ので、最初の1つでだけ切る。 */
+function splitSelector(token: string): readonly [string, string] | null {
+  const index = token.indexOf('=');
+  if (index <= 0 || index === token.length - 1) return null;
+  return [token.slice(0, index), token.slice(index + 1)];
+}
+
 function parseMark(body: string): Mark | null {
-  const tokens = body.split(/\s+/).filter((token) => token !== '');
+  const tokens = tokenize(body);
+  if (tokens === null) return null;
 
   let coarseness: Coarseness | null = null;
   const last = tokens.at(-1);
@@ -89,10 +119,13 @@ function parseMark(body: string): Mark | null {
 
   const [file, section, ...rest] = tokens;
   const column = rest.pop() as string;
-  const selectors = rest.map((token) => token.split('='));
-  if (selectors.some((pair) => pair.length !== 2 || pair[0] === '' || pair[1] === '')) return null;
+  const selectors = rest.map(splitSelector);
+  if (selectors.some((selector) => selector === null)) return null;
 
-  return { source: { file, section, selectors: selectors as [string, string][], column }, coarseness };
+  return {
+    source: { file, section, selectors: selectors as (readonly [string, string])[], column },
+    coarseness,
+  };
 }
 
 /**
@@ -212,6 +245,41 @@ describe('文書が stats/*.yaml から書き写した数値', () => {
       }
     }
     expect(stale, `出どころとずれた数値。文書を書き直す:\n${stale.join('\n')}`).toEqual([]);
+  });
+});
+
+/** 印を読んでセルまで解決する。解決できなければ、なぜできないかを文で返す（`cellOf` と同じ形）。 */
+function cellOfMark(body: string): number | string {
+  const mark = parseMark(body);
+  return mark === null ? '印の形が読めない' : cellOf(mark.source);
+}
+
+describe('レコードを選ぶ条件', () => {
+  /** 免疫の段ごとに菌が引かれる量。`condition` に空白が入る（`balanceTables` の `conditionLabel`）。 */
+  const MARK =
+    'balance.yaml consumption property=pathogen condition="段 immunity=robust" character=medic per_tick';
+
+  it('二重引用符で囲めば、空白を含む値でレコードを1件に絞れる', () => {
+    expect(parseMark(MARK)?.source.selectors).toEqual([
+      ['property', 'pathogen'],
+      ['condition', '段 immunity=robust'],
+      ['character', 'medic'],
+    ]);
+    expect(cellOfMark(MARK)).toBeTypeOf('number');
+  });
+
+  it('囲まなければ、値の中の空白がトークンの切れ目になる', () => {
+    expect(cellOfMark(MARK.replaceAll('"', ''))).toBe('条件に当てはまるレコードが0件（1件に絞る）');
+  });
+
+  it('閉じない引用符は、印ごと読めないものとして赤くする', () => {
+    expect(parseMark(MARK.replace('robust"', 'robust'))).toBeNull();
+  });
+
+  it('`=` で列と値に切れないトークンは、印ごと読めないものとして赤くする', () => {
+    for (const selector of ['condition', '=robust', 'condition=']) {
+      expect(parseMark(`balance.yaml consumption ${selector} per_tick`)).toBeNull();
+    }
   });
 });
 
