@@ -20,9 +20,8 @@ import {
   parseDeclaredNumber,
   parseNumberLiteral,
   parseNumberOrSymbol,
-  parseSubjectRoot,
+  parseReferenceRoot,
   parseTypeMatchRule,
-  requireResolvable,
   withYamlContext,
 } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
@@ -48,7 +47,7 @@ import { SignalEffect } from '../domain/SignalEffect';
 /**
  * 効果の中身（9節の命令と、10節の`pick`）を読む。文法は「操作が上位、対象が下位」（9.1節。例:
  * `add: {self: {hour: 1}}`）で、**対象に何を書けるかはその宣言が置かれた場所が決める**
- * （parseActiveTargetRoot。書ける対象の一覧はGameElementDefinition.md 14.1節の表、操作の関係の役は
+ * （parseReferenceRoot。書ける対象の一覧はGameElementDefinition.md 14.1節の表、操作の関係の役は
  * 11.5節「役を書ける場所」）。spawnは常にselfが実行するものとみなすため対象キーを持たない。
  * signalは対象を省ける（`signal: missed`＝selfへ告げる、9.8節）。
  *
@@ -171,7 +170,7 @@ function parseAmong(
   const root =
     subjectName === undefined
       ? 'self'
-      : parseSubjectRoot(amongContext, subjectName, scope.withoutPropertyName);
+      : parseReferenceRoot(amongContext, subjectName, scope.withoutPropertyName);
 
   const slotName = tryGetScalar(node, 'slot', amongContext);
   if (slotName === undefined) throw new YamlLoadError(`${amongContext}: 'slot'は必須です。`);
@@ -221,7 +220,7 @@ function parseSetEffect(
 /**
  * transfer（9.5節）。from/toの参照はフラットな2フィールド（from/from_prop, to/to_prop）で表し、
  * from/toは省略時self。対象ルートに何を書けるかは、受け取ったscopeが決める
- * （parseActiveTargetRoot）。linked_add（省略可）はaddと同じ構造で、
+ * （parseReferenceRoot）。linked_add（省略可）はaddと同じ構造で、
  * 実際の移動量に比例してスケールされる副効果。to_amount（省略可）は、移送元と移送先で単位が違うときに
  * 「amount分を出すと移送先がどれだけ増えるか」を持つ。
  */
@@ -232,11 +231,11 @@ function parseTransfer(
   scope: ReferenceScope,
 ): TransferEffect {
   const fromRaw = tryGetScalar(map, 'from', context);
-  const fromObject = fromRaw !== undefined ? parseActiveTargetRoot(context, fromRaw, scope) : 'self';
+  const fromObject = fromRaw !== undefined ? parseReferenceRoot(context, fromRaw, scope) : 'self';
   const fromProp = loader.propertyNames.intern(requireScalar(map, 'from_prop', context));
 
   const toRaw = tryGetScalar(map, 'to', context);
-  const toObject = toRaw !== undefined ? parseActiveTargetRoot(context, toRaw, scope) : 'self';
+  const toObject = toRaw !== undefined ? parseReferenceRoot(context, toRaw, scope) : 'self';
   const toProp = loader.propertyNames.intern(requireScalar(map, 'to_prop', context));
 
   const amount = requireNumber(map, 'amount', context);
@@ -277,7 +276,7 @@ function parseSets(
 ): SetEffect[] {
   const sets: SetEffect[] = [];
   for (const [targetName, targetBody] of entriesInOrder(map)) {
-    const target = parseActiveTargetRoot(context, targetName, scope);
+    const target = parseReferenceRoot(context, targetName, scope);
     for (const [propName, valueNode] of entriesInOrder(asMap(targetBody, `${context}.'${targetName}'`)))
       sets.push(
         parseSetEffect(
@@ -303,7 +302,7 @@ function parseAdds(
 ): AddEffect[] {
   const adds: AddEffect[] = [];
   for (const [targetName, targetBody] of entriesInOrder(map)) {
-    const target = parseActiveTargetRoot(context, targetName, scope);
+    const target = parseReferenceRoot(context, targetName, scope);
     for (const [propName, amountNode] of entriesInOrder(asMap(targetBody, `${context}.'${targetName}'`)))
       adds.push(
         new AddEffect(
@@ -483,23 +482,6 @@ function parseMoveDestination(
   return destination;
 }
 
-/** activeの対象キー。解決先を持つrootかどうかは、その宣言が置かれた場所が決める（ReferenceScope）。 */
-function parseActiveTargetRoot(context: string, key: string, scope: ReferenceScope): ReferenceRoot {
-  switch (key) {
-    case 'self':
-    case 'parent':
-    case 'ancestor':
-    case 'agent':
-    case 'instrument':
-    case 'patient':
-    case 'picked':
-    case 'child':
-      return requireResolvable(context, key, scope);
-    default:
-      throw new YamlLoadError(`${context}: 未知の対象キー '${key}' です。`);
-  }
-}
-
 /**
  * signal（9.8節）を読む。対象を省いた `signal: missed`（selfへ告げる）と、他の命令と同じ
  * 「操作が上位、対象が下位」の `signal: {instrument: missed}` の2つの形を許容する。
@@ -584,7 +566,7 @@ function parseObjectRef(
   if (propName === undefined)
     return ObjectRef.ofRoot(parseObjectTargetRoot(context, subjectName ?? 'self', scope));
 
-  const root = subjectName === undefined ? 'self' : parseSubjectRoot(context, subjectName, scope);
+  const root = subjectName === undefined ? 'self' : parseReferenceRoot(context, subjectName, scope);
   return ObjectRef.ofProperty(new PropertyPath(root, loader.propertyNames.intern(propName)));
 }
 
@@ -674,5 +656,5 @@ function parseBecome(
 
 /** プロパティ名を伴わず、オブジェクトそのものを指す対象。何を書けるかはその場所が決める（ReferenceScope）。 */
 function parseObjectTargetRoot(context: string, key: string, scope: ReferenceScope): ReferenceRoot {
-  return parseActiveTargetRoot(context, key, scope.withoutPropertyName);
+  return parseReferenceRoot(context, key, scope.withoutPropertyName);
 }

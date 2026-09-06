@@ -121,11 +121,15 @@ export function parseNumberOrSymbol(
 }
 
 /**
- * `subject`（主語）の参照キー。**どのrootを書けるかは、受け取ったscopeが答える**（ReferenceScope。
- * 書ける場所の一覧はGameElementDefinition.md 14.1節の表、操作の関係の役は11.5節「役を書ける場所」）。
+ * 参照ルート（GameElementDefinition.md 14.1節）の綴り1つ。**書かれる場所は`subject`の値だけではない**
+ * ——「操作が上位、対象が下位」の対象キー（9.1節）も、`transfer`の`from`/`to`（9.5節）も同じ語彙を使う
+ * ので、エラー文はキーの綴りではなく語彙そのものを名乗る。どこに書いてあったかはcontextが答える。
+ *
+ * **どのrootを書けるかは、受け取ったscopeが答える**（ReferenceScope。書ける場所の一覧は14.1節の表、
+ * 操作の関係の役は11.5節「役を書ける場所」）。
  * worldはシングルトンインスタンスの実行時追跡が無いため未対応（ancestorで代替できる）。
  */
-export function parseSubjectRoot(context: string, raw: string, scope: ReferenceScope): ReferenceRoot {
+export function parseReferenceRoot(context: string, raw: string, scope: ReferenceScope): ReferenceRoot {
   let root: ReferenceRoot;
   switch (raw) {
     case 'self':
@@ -154,24 +158,20 @@ export function parseSubjectRoot(context: string, raw: string, scope: ReferenceS
       break;
     case 'world':
       throw new YamlLoadError(
-        `${context}: subject 'world' は未対応です（worldシングルトンインスタンスの実行時追跡が未実装のため）。`,
+        `${context}: 参照ルート 'world' は未対応です（worldシングルトンインスタンスの実行時追跡が未実装のため）。`,
       );
     default:
-      throw new YamlLoadError(`${context}: 未知のsubject '${raw}' です。`);
+      throw new YamlLoadError(`${context}: 未知の参照ルート '${raw}' です。`);
   }
 
   return requireResolvable(context, root, scope);
 }
 
 /** その場所で解決先を持たないrootを弾く。理由（何が無いか）は場所が答える。 */
-export function requireResolvable(
-  context: string,
-  root: ReferenceRoot,
-  scope: ReferenceScope,
-): ReferenceRoot {
+function requireResolvable(context: string, root: ReferenceRoot, scope: ReferenceScope): ReferenceRoot {
   const reason = scope.unresolvableReason(root);
   if (reason !== undefined)
-    throw new YamlLoadError(`${context}: subject '${root}' は使えません（${reason}）。`);
+    throw new YamlLoadError(`${context}: 参照ルート '${root}' は使えません（${reason}）。`);
   return root;
 }
 
@@ -216,6 +216,6 @@ function parsePropertyRef(
   scope: ReferenceScope,
 ): PropertyPath {
   const subjectName = tryGetScalar(node, 'subject', context);
-  const root = subjectName !== undefined ? parseSubjectRoot(context, subjectName, scope) : 'self';
+  const root = subjectName !== undefined ? parseReferenceRoot(context, subjectName, scope) : 'self';
   return new PropertyPath(root, loader.propertyNames.intern(requireScalar(node, 'prop', context)));
 }
