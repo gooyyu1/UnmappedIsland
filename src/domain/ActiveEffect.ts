@@ -144,10 +144,12 @@ export class ConditionalEffect extends ActiveEffect {
     chosen?.apply(context, session, sameSlotSpawnSite);
   }
 
-  /** 読み手には両方を渡す。**起こりうることの一覧**が要るので、今どちらへ倒れるかは関係ない。 */
+  /**
+   * 読み手には**排他な二択のまま**渡す（EffectReader.conditional参照）。今どちらへ倒れるかは渡さない
+   * ——満たすかは実行時の世界で決まる。
+   */
   read(reader: EffectReader): void {
-    this.whenMet.read(reader);
-    this.otherwise?.read(reader);
+    reader.conditional({ condition: this.condition, whenMet: this.whenMet, otherwise: this.otherwise });
   }
 }
 
