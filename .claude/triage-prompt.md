@@ -97,7 +97,8 @@ gh issue list --state open --limit 100 --json number,title,labels |
 - **`area:daemon`** — 走らせながらは書き換えられないデーモンの仕組み
   （`scripts/agent/**`・`.github/workflows/board-labels.yml`）。
 
-分類している issue（人が立てたもの）に付けるのは `kind:` から下だけです。
+分類している issue に付けるのは `kind:` から下だけです。**出どころの印は動かしません**——立てた側が
+起票のときに名乗るもので、後から見分けられる者は居ません。
 
 ```
 gh issue edit <番号> --add-label kind:task --add-label env:bridge
@@ -109,9 +110,10 @@ gh issue edit <番号> --add-label kind:task --add-label env:bridge
 gh issue create --title <題> --body-file <本文> --label kind:task --label origin:agent
 ```
 
-**ラベルの綴りに `:` が入っていても、Windows で化けることはありません**（実測 2026-09-06）。MSYS の
-変換が掛かるのは `:` と `/` の両方を含む引数（`origin/main:.claude/x.md`・`/c/tmp:/c/x` など）だけで、
-`kind:task` も `origin:agent` もそのまま通ります。
+**ラベルの綴りに `:` が入っていても、Windows で化けることはありません**——`kind:task` も
+`origin:agent` もそのまま通ります（実測 2026-09-06）。`MSYS2_ARG_CONV_EXCL='*'` を前に置くのは
+`git show origin/main:.claude/x.md` のような綴りのほうで、あれは `origin\main;.claude\x.md` に
+化けます。`/tmp/...` のような絶対パスも書き換わりますが、行き先は同じなので害はありません。
 
 ## 守ること
 

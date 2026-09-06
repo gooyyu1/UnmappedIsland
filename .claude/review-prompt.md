@@ -90,9 +90,9 @@
 
     git fetch origin main && MSYS2_ARG_CONV_EXCL='*' git show origin/main:.claude/review-criteria.md
 
-**`MSYS2_ARG_CONV_EXCL='*'` を落とさないこと。** ブリッジ（Windows）の bash では、`:` と `/` の
-両方を含む引数がパスの並びと読まれて `origin\main;.claude\review-criteria.md` に化け、**観点を1つも
-読めないまま**レビューが始まります（実測 2026-09-06）。クラウドでは付いていても害がありません。
+**`MSYS2_ARG_CONV_EXCL='*'` を落とさないこと。** ブリッジ（Windows）の bash では、この引数が
+パスの並びと読まれて `origin\main;.claude\review-criteria.md` に化け、**観点を1つも読めないまま**
+レビューが始まります（実測 2026-09-06）。クラウドでは付いていても害がありません。
 
 **作業ディレクトリの `.claude/review-criteria.md` を読まないこと。** このセッションはPRのブランチで
 起動するので、そこに在るのは**そのPRが切られた時点の版**です。観点は絞られる方向へ動くので、古い版を
