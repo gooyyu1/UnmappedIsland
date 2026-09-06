@@ -169,7 +169,7 @@ torch:
 
 | 行動のクラス | 見る値 | しきい値 | 段で書くと | 書く場所 |
 | --- | --- | --: | --- | --- |
-| 土地の間を移動する | `looking_brightness` | −5 | `pitch_dark` でないこと | `path` の `travel`（`ExplorationSystem.md` 3節） |
+| 土地の間を移動する | `looking_brightness` | −5 | `dim` | `path` の `travel`（`ExplorationSystem.md` 3節） |
 | 屋外で採る・探索する | `looking_brightness` | +3 | `bright` | 土地の `explore` と、各採取の操作 |
 | 手元の細かい作業 | `hand_brightness` | +5 | `bright` | 全レシピ共通の `crafting_conditions` と、その作業を宣言している `interactions` |
 
@@ -190,7 +190,9 @@ path:
       conditions:
         - {in_slot: fixtures}
         - reason: too_dark
-          not: {subject: agent, prop: looking_brightness, in_stage: pitch_dark}
+          subject: agent
+          prop: looking_brightness
+          in_stage_or_above: dim
 ```
 
 - **主語は `agent` です。** 行動が見るのはキャラクタ側の2つで、キャラクタは操作を実行している本人だから

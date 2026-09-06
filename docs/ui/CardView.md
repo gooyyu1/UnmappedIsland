@@ -379,9 +379,9 @@ finished_steps: {gauge: {min: neutral, max: neutral}}  # 工程の進捗: 良し
   寄っているか」で、その向きは宣言が言い切っているためです。域はカードの外——ステータスエリアの
   並び順・画面の枠の明滅（[`StatusArea.md`](./StatusArea.md)）——が引き続き使います。
 - **増えた分の帯の向き（`worsensUpward`）も同じ宣言から決まります。** 傷は増えるほど赤い帯が伸び、
-  耐久度は減るほど赤い帯が残ります。`stages` の `alert` から導く向きと食い違うとロード時エラーです
-  （[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.8 節）——「どちらが危ないか」を
-  2 か所に書かせないためです。
+  耐久度は減るほど赤い帯が残ります。**同じ向きは他の宣言も述べます**（`worsens`・`stages` の `alert`）
+  が、どれも同じ 1 つの事実なので、食い違うとロード時エラーです
+  （[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.8 節）。
 - **後から足された物**——アセットパックの道具に独自の耐久度を持たせる、別の消耗品に残量を持たせる——も、
   そのプロパティへ `gauge` を書くだけで同じバーに出ます。
 

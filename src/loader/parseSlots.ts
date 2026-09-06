@@ -11,8 +11,7 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseTypeMatchRule } from './parseCommon';
-import { parseDeclaredNumber } from './parseActiveEffects';
+import { parseDeclaredNumber, parseTypeMatchRule } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { CellDef, SlotDef } from '../domain/SlotDef';
 import type { DeclaredNumber } from '../domain/DeclaredNumber';

@@ -103,6 +103,27 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
     );
   });
 
+  it('荷を担ぐと、押し上げられた歩みの遅れは悪化として描かれる', () => {
+    // 歩みの遅れ（travel_delay）はバーにも段にもしないので、向きを自分で名乗る（6.8節のworsens）。
+    // 名乗らないと既定の「減ると悪い」になり、遅くなっているのに改善の色で出る。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
+    const handId = codex.slotNames.getId('hand');
+    // 石1個で1kg。歩けなくなる手前の段（laden・heavy）だけが歩みの遅れを押し上げる。
+    for (let i = 0; i < 10; i++)
+      game.session
+        .createObject(codex.objectNames.getId('stone'))
+        .moveToSlotOrRejection(game.player.instance.getSlot(handId));
+
+    const load = fromGameSession(game, codex, locale)
+      .propertyCategories.flatMap((tab) => tab.entries)
+      .find((entry) => entry.key === 'load')?.detail;
+    const delay = load?.given.find((influence) => influence.key === 'travel_delay');
+
+    expect(delay?.active, '担いでいる間は効いている').toBe(true);
+    expect(delay?.increases).toBe(true);
+    expect(delay?.worsens, '遅れが増えるのは悪化').toBe(true);
+  });
+
   it('同じに描かれる影響は1つの枠へ畳まれ、件数が付く', () => {
     // Windows.md 8節: 中身の子N個は同じ絵・同じ記号になるので、並べても数えるしかない。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));

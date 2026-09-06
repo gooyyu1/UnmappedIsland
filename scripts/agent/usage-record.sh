@@ -5,6 +5,8 @@
 #   BOARD_STATE=/tmp/board bash scripts/agent/usage-record.sh   # 置き場を変える
 #
 # 畳まれたセッションが在った周だけ、その消費を1行1件で出す。**引けなければ何もせず終了コード1。**
+# **叩ける間隔（[`usage.sh`](usage.sh)）が空いていない周は、何も言わずに0で終わる**——待つだけの周は
+# 失敗ではない。
 #
 # 割り当ての中身は [`usage-attribute.mjs`](usage-attribute.mjs)、一覧は
 # [`live-sessions.sh`](live-sessions.sh)。ここは2つを繋ぐだけ。
@@ -30,7 +32,16 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATE_DIR="${BOARD_STATE:-$HOME/.claude/board-state}"
 
-usage=$(bash "$HERE/usage.sh" | grep '^five_hour ' | tr -d '\r') || {
+# **叩ける間隔を決めるのは [`usage.sh`](usage.sh)。** 2（今は読む番ではない）は失敗ではないので、
+# 何も言わずに見送る——報せると、待つだけの周が異常として並び、本物の失敗が埋もれる。
+raw=$(bash "$HERE/usage.sh") || case "$?" in
+2) exit 0 ;;
+*)
+  echo "使用量を引けなかった" >&2
+  exit 1
+  ;;
+esac
+usage=$(printf '%s\n' "$raw" | grep '^five_hour ' | tr -d '\r') || {
   echo "使用量を引けなかった" >&2
   exit 1
 }

@@ -25,8 +25,6 @@ const SCRIPT = resolve(__dirname, '../../scripts/agent/dispatch-task.sh');
 interface World {
   /** issue の `state`。既定は開いている。 */
   readonly state?: string;
-  /** issue の本文。 */
-  readonly body?: string;
   /** issue に付いているラベル。 */
   readonly labels?: readonly string[];
   /** 開いているPR。 */
@@ -38,6 +36,8 @@ interface World {
 interface Run {
   readonly code: number;
   readonly stderr: string;
+  /** `DRY_RUN` が出した `create_session` の引数。関門で止まった回は空。 */
+  readonly stdout: string;
 }
 
 function run(issue: number, world: World = {}): Run {
@@ -49,7 +49,6 @@ function run(issue: number, world: World = {}): Run {
       JSON.stringify({
         title: '題',
         state: world.state ?? 'OPEN',
-        body: world.body ?? '## 担当\n\nsrc/x.ts\n',
         labels: (world.labels ?? ['task']).map((name) => ({ name })),
       }),
       'utf-8',
@@ -74,30 +73,53 @@ esac
 
     try {
       const where = world.onBridge === true ? ['--bridge'] : [];
-      execFileSync('bash', [SCRIPT, String(issue), join(work, 'supplement.md'), ...where], {
+      const stdout = execFileSync('bash', [SCRIPT, String(issue), join(work, 'supplement.md'), ...where], {
         encoding: 'utf-8',
         stdio: 'pipe',
         env: {
           ...process.env,
           PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
-          DRY_RUN: '1',
+          // 本文まで見るので切らせない（`dispatch-task.sh` の `DRY_RUN=full`）。
+          DRY_RUN: 'full',
           CLOUD_ENV: 'env_TEST_CLOUD',
           BRIDGE_ENV: 'env_TEST_BRIDGE',
         },
       });
-      return { code: 0, stderr: '' };
+      return { code: 0, stderr: '', stdout };
     } catch (error) {
       const failure = error as { status?: number; stderr?: string };
-      return { code: failure.status ?? -1, stderr: failure.stderr ?? '' };
+      return { code: failure.status ?? -1, stderr: failure.stderr ?? '', stdout: '' };
     }
   } finally {
     rmSync(work, { recursive: true, force: true });
   }
 }
 
+/** 組み立てて渡す指示の本文。 */
+function prompt(issue: number, world: World = {}): string {
+  return args(issue, world).prompt;
+}
+
+/** `create_session` へ渡るはずの引数。 */
+function args(
+  issue: number,
+  world: World = {},
+): { prompt: string; environment_id: string; permission_mode?: string } {
+  const result = run(issue, world);
+  expect(result.code).toBe(0);
+  return JSON.parse(result.stdout) as {
+    prompt: string;
+    environment_id: string;
+    permission_mode?: string;
+  };
+}
+
 describe('dispatch-task.sh', () => {
   it('関門をどれも踏まなければ、渡す引数まで組み立てる', () => {
-    expect(run(1415)).toEqual({ code: 0, stderr: '' });
+    const result = run(1415);
+
+    expect(result.code).toBe(0);
+    expect(result.stderr).toBe('');
   });
 
   it('その issue を閉じるPRが既に開いていれば、投入しない', () => {
@@ -130,16 +152,34 @@ describe('dispatch-task.sh', () => {
     expect(result.stderr).toContain('判断待ち');
   });
 
-  // 盤面の道具そのものを直す仕事は、担当がここにしか無い。**止まる理由（書き込みのたびの承認）は
-  // クラウドにしか無い**ので、関門もクラウドへ投入するときだけ見る。
-  it('クラウドへは、担当にユーザーの領域が挙がっていれば投入しない', () => {
-    const result = run(1551, { body: '## 担当\n\n- `.claude/ccr-meta.sh`\n' });
-
-    expect(result.code).toBe(1);
-    expect(result.stderr).toContain('.claude/ccr-meta.sh');
+  // **受け取る側は、自分がどちらで走っているかを知らない。** 場所で切った制約を混ぜると、当たら
+  // ないほうのセッションにもそのまま渡る（`.claude/**` を触るなと書いた行が、そこを直すために
+  // 立てたブリッジのセッションへ届き、着手した時点で仕事をせずに返した。PR #1567 のレビュー指摘）。
+  it('渡す文面は、投入先で変わらない', () => {
+    expect(prompt(1415, { onBridge: true })).toBe(prompt(1415));
   });
 
-  it('ブリッジへなら、同じ担当でも投入する', () => {
-    expect(run(1551, { body: '## 担当\n\n- `.claude/ccr-meta.sh`\n', onBridge: true }).code).toBe(0);
+  // 差し替えそのものが落ちたときは、目印の行が本文に残る。**渡す相手には読めない行**なので、
+  // 落ちたことがここで分かるようにする。
+  it('補足の置き場の目印は、本文に残さない', () => {
+    expect(prompt(1415)).not.toContain('<このタスク固有の補足');
+  });
+
+  // **モードは環境が決める**（`board-design.md` 2.16.3）。渡さないと未設定のまま立ち、`.claude/**`
+  // を読むだけの `bash` が「機微なファイルの編集」と判定されて承認を待つ。その承認は降りない。
+  it('クラウドへは auto を渡す', () => {
+    const built = args(1415);
+
+    expect(built.environment_id).toBe('env_TEST_CLOUD');
+    expect(built.permission_mode).toBe('auto');
+  });
+
+  // **ブリッジは渡さない**（`ccr-env.sh`）。渡さずに立てたセッションは `.claude/**` の読み書きを
+  // 承認なしで通すことを実測してある。どのモードが入っているかは名指しできない。
+  it('ブリッジへはモードを渡さない', () => {
+    const built = args(1415, { onBridge: true });
+
+    expect(built.environment_id).toBe('env_TEST_BRIDGE');
+    expect(built).not.toHaveProperty('permission_mode');
   });
 });

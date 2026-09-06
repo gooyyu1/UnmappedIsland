@@ -33,11 +33,30 @@ export class PropertyValue {
   private readonly accumulateEffects: RegisteredPassiveEffect[] = [];
 
   /**
-   * getEffectiveValueの再入検出用。modifyのconditions（14節）が実効値を読むため、自分自身の実効値へ
+   * computeEffectiveValueの再入検出用。modifyのconditions（14節）が実効値を読むため、自分自身の実効値へ
    * （直接・間接に）依存する循環参照が起こりうる。放置すると制御不能なスタックオーバーフローになるため、
    * 再入検出時点で分かりやすいエラーを投げる。
    */
   private isComputingEffectiveValue = false;
+
+  /**
+   * 直前に出した実効値と、それを出した読み取りの番号（EffectiveValueReading）。番号が今の読み取りと
+   * 一致する間だけ答えとして使える。**読み取りを跨いだ番号は二度と一致しない**ので、tickで実体値が
+   * 動いた後に古い答えが出ることはない。
+   */
+  private lastEffectiveValue = 0;
+  private lastEffectiveValueReading = -1;
+
+  /**
+   * 実効値を出して控えるところ（getEffectiveValue）。**読み取りごとに作らず、1つを持ち回る**
+   * ——実効値は1 tickに何度も引かれるので、そのたびに関数を作ると控えで浮いたぶんを食い潰す。
+   */
+  private readonly computeAndRemember = (): number => {
+    const computed = this.computeEffectiveValue();
+    this.lastEffectiveValue = computed;
+    this.lastEffectiveValueReading = this.owner.session.effectiveValueReading.current;
+    return computed;
+  };
 
   /**
    * 最後にrangeイベント（6.3節）を判定した実体値。まだ一度も判定していなければundefined。
@@ -141,10 +160,22 @@ export class PropertyValue {
 
   /**
    * modifyとbase（土台にした値、6.5節）を加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
-   * conditions（14節）がこの実効値を読むため再入（循環参照）が起こりうる。isComputingEffectiveValueで検出し、
-   * スタックオーバーフローになる前にエラーを投げる。
+   *
+   * **同じ読み取りの中でなら、前に出した答えをそのまま返す**（EffectiveValueReading）——寄与のゲートが
+   * 揃って同じプロパティの段を見るので、1本の読み取りに同じプロパティが何度も現れる。
    */
   getEffectiveValue(): number {
+    const reading = this.owner.session.effectiveValueReading;
+    if (this.lastEffectiveValueReading === reading.current) return this.lastEffectiveValue;
+
+    return reading.during(this.computeAndRemember);
+  }
+
+  /**
+   * getEffectiveValueの中身。conditions（14節）がこの実効値を読むため再入（循環参照）が起こりうる。
+   * isComputingEffectiveValueで検出し、スタックオーバーフローになる前にエラーを投げる。
+   */
+  private computeEffectiveValue(): number {
     if (this.isComputingEffectiveValue) {
       throw new Error(
         `プロパティ'${this.def.name}'の実効値計算中に循環参照を検出しました` +

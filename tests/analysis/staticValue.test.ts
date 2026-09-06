@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { StaticValueLayer, StaticValueResolver } from '../../src/analysis/staticValue';
-import { layeredResolver, staticValueOf } from '../../src/analysis/staticValue';
-import type { ReferenceRoot } from '../../src/domain/ReferenceRoot';
+import type { StaticValueResolver } from '../../src/analysis/staticValue';
+import { highestDeclaredLayer, layeredResolver, staticValueOf } from '../../src/analysis/staticValue';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -86,9 +85,10 @@ object_defs:
     return codex.objects.get(codex.objectNames.getId(name));
   }
 
-  /** 祖先の宣言値を答える手立て（balanceTablesのancestorValueResolverと同じ形）。 */
-  const ancestor: StaticValueResolver = (root, propertyGlobalId, end) =>
-    root === 'ancestor' ? staticValueOf(defOf('meadow'), propertyGlobalId, end) : undefined;
+  /** 祖先の宣言値を答える手立て（balanceTablesが土地1つを渡すときと同じ形）。 */
+  const ancestor: StaticValueResolver = layeredResolver([
+    highestDeclaredLayer('ancestor', [defOf('meadow')], 'zero'),
+  ]);
 
   it('祖先の土台のロールも、訊かれた端で読む', () => {
     const lift = codex.propertyNames.getId('lift');
@@ -129,23 +129,19 @@ object_defs:
     return codex.objects.get(codex.objectNames.getId(name));
   }
 
-  /** 起点1つを、その型の宣言から答える層（balanceTablesの3層と同じ形）。 */
-  function layerOf(root: ReferenceRoot, def: ObjectDef): StaticValueLayer {
-    return (context) => (asked, propertyGlobalId, end) =>
-      asked === root ? staticValueOf(def, propertyGlobalId, end, context) : undefined;
-  }
-
   it('使う物の土台が、行っている人の層へ届く', () => {
     const context = layeredResolver([
-      layerOf('agent', defOf('hunter')),
-      layerOf('instrument', defOf('club')),
+      highestDeclaredLayer('agent', [defOf('hunter')], 'unresolved'),
+      highestDeclaredLayer('instrument', [defOf('club')], 'unresolved'),
     ]);
 
     expect(context('instrument', codex.propertyNames.getId('hit'), 'lowest')).toBe(67);
   });
 
+  // 読み方に`unresolved`を採るのは、辿り直さずに返ったことを見るため——`zero`だと、宣言が無いときの
+  // 0と見分けが付かない（UndeclaredReading）。
   it('自分を土台にする土台は、解けないものとして返る（辿り直さない）', () => {
-    const context = layeredResolver([layerOf('ancestor', defOf('meadow'))]);
+    const context = layeredResolver([highestDeclaredLayer('ancestor', [defOf('meadow')], 'unresolved')]);
 
     expect(context('ancestor', codex.propertyNames.getId('warmth'), 'lowest')).toBeUndefined();
   });

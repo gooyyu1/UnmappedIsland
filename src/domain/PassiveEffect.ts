@@ -69,6 +69,16 @@ export class PassiveEffectGate {
 }
 
 /**
+ * 寄与として登録される効果1つと、その登録の契機になる関係（8.1節の `target` の起点）。**仕分ける側は
+ * この2つを効果自身から同時に受け取る**——関係だけを名乗らせると、仕分けた先で誰を呼べるかが
+ * また種別の判別に戻る。
+ */
+export interface RelationRegistration {
+  readonly relation: ReferenceRoot;
+  readonly effect: PropertyPassiveEffect;
+}
+
+/**
  * 1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.passives の要素。
  *
  * **動詞が名乗るのは可逆性だけで、一度きりかtick毎かは置き場所（active／passives）が決める**（8.4節）。
@@ -92,11 +102,14 @@ export abstract class PassiveEffect {
    */
   abstract collectInfluences(declarer: WorldObject, out: InfluenceWriter): void;
 
-  /** 相手がownerから一意に辿れる関係が変わった契機。登録を持たない効果は何もしない。 */
-  setRelationRegistered(_owner: WorldObject, _relation: ReferenceRoot, _register: boolean): void {}
-
-  /** 子が付く/離れる契機。登録を持たない効果は何もしない。 */
-  setChildRegistered(_owner: WorldObject, _child: WorldObject, _register: boolean): void {}
+  /**
+   * 登録の契機を受け取る関係（8.1節の `target` の起点）と、それを受け取る自分自身。寄与として
+   * 登録されない効果（transfer）ではundefined。仕分ける側（PassiveEffects）が種別で振り分けずに
+   * 済むよう、効果自身が名乗る。
+   */
+  get relationRegistration(): RelationRegistration | undefined {
+    return undefined;
+  }
 
   /**
    * tick毎に走る輸送（8.4節）ならそれ自身。寄与として登録される効果（modify/add）ではundefined。
@@ -174,9 +187,14 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
     return this.gate.isSatisfied(declarer, slotBearer) ? this.amount.amountFor(declarer) : 0;
   }
 
+  override get relationRegistration(): RelationRegistration {
+    return { relation: this.target.root, effect: this };
+  }
+
   /**
-   * 相手（related）がownerから直接辿れる関係の登録/解除。相手はowner自身から解決するため、
-   * 呼び出し側がrelationとrelatedに矛盾した組を渡す余地が無い。
+   * 対象（relationRegistrationで名乗った関係）の相手へ、この効果を登録/解除する。相手はowner自身から
+   * 解決するので、呼び出し側は相手を知らなくてよい。**呼ばれるのは名乗った関係の契機だけ**
+   * （仕分けはPassiveEffectsが持つ）。
    *
    * ancestorは、ツリー構造が変わる前に解除・変わった後に登録という順序を呼び出し側
    * （WorldObject.setAncestorTargetsRegistered）が守る前提で、「今この瞬間の祖先」を毎回辿るだけで
@@ -187,8 +205,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    *
    * childは相手（どの子か）がownerから一意に辿れないため、ここでは扱わずsetChildRegisteredを使う。
    */
-  override setRelationRegistered(owner: WorldObject, relation: ReferenceRoot, register: boolean): void {
-    if (this.target.root !== relation) return;
+  setRelationRegistered(owner: WorldObject, register: boolean): void {
     this.setResolvedRelationRegistered(
       owner,
       this.target.owner(ReferenceContext.forParticipant(owner)),
@@ -200,15 +217,14 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * childがparentに付く/離れる際に、parent（owner）側のtarget=child効果を、その付いた/離れた子(child)へ
    * 登録/解除する。childは相手がownerから一意に辿れない唯一の関係のため、childを明示的に受け取る。
    */
-  override setChildRegistered(owner: WorldObject, child: WorldObject, register: boolean): void {
-    if (this.target.root !== 'child') return;
+  setChildRegistered(owner: WorldObject, child: WorldObject, register: boolean): void {
     this.setResolvedRelationRegistered(owner, child, register);
   }
 
   /**
-   * 内部共通処理: この効果の対象がrelationと一致するときだけrelatedの対象プロパティへ登録/解除する。
+   * 内部共通処理: relatedの対象プロパティへこの効果を登録/解除する。
    * gateのself（＝slotBearer）はエッジの子側（child対象なら子=related、それ以外はowner）。
-   * relationとrelatedに矛盾した組を外部から渡せないよう非公開。
+   * 対象と食い違うrelatedを外部から渡せないよう非公開。
    */
   private setResolvedRelationRegistered(
     owner: WorldObject,
