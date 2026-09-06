@@ -101,9 +101,11 @@ if [ -n "${DRY_RUN:-}" ]; then
   exit 0
 fi
 
-# 手綱と占有。種類は `other`（[`brake.sh`](brake.sh) の「その他のエージェント」）。タグは下の
-# `create_session` へ渡すものと同じ文字列であること——**別の文字列を見に行くと、判定は通るのに
-# 二重に立つ。**
+# 手綱と占有。種類は `other`（[`brake.sh`](brake.sh) の「その他のエージェント」）。
+#
+# **二重に立つことを実際に止めているのは盤面**（[`board-move.mjs`](board-move.mjs) の `CYCLES`）で、
+# ここが訊く占有は `--busy`——手が空いたまま残っている前の1本は塞がない。**手で叩いたときに、
+# 走っている最中の1本へ重ねないため**に通す。
 CCR_META="$CCR_META" bash "$HERE/may-dispatch.sh" other "chore-$NAME"
 
 session=$(bash "$CCR_META" create_session <"$WORK/args.json" | grep -o '{"ccr".*' | jq -r '.ccr.id')

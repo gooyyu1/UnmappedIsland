@@ -21,7 +21,7 @@
 //
 // ## `確定待ち` を盤面に出すのは、引き継いだ司令塔が最初に読む場所だから
 //
-// ユーザーの答えは `meta` の issue の本文にチェックとして付き、**拾われるまでそこに残る。**
+// ユーザーの答えは `kind:meta` の issue の本文にチェックとして付き、**拾われるまでそこに残る。**
 // 判定は [`checked-items.sh`](checked-items.sh) が持つ。
 //
 // **[`daemon.sh`](daemon.sh) はここを読まない**（判断が要るので、届ける口はまだ無い）。だから
@@ -91,7 +91,7 @@ function checks(pr) {
  */
 export function board({ gh = runGh, page = listSessions, checkedItems = runCheckedItems, warn }) {
   const prsRaw = gh(['pr', 'list', '--state', 'open', '--limit', '50', '--json', PR_FIELDS]);
-  // issue は1回だけ引いて、`task` の付いたもの・まだどこにも分類されていないもの・`meta` の本文の
+  // issue は1回だけ引いて、`kind:task` の付いたもの・まだ分類されていないもの・`kind:meta` の本文の
   // チェックへ分ける。**依存も同じ呼び出しで返る**ので、issue 1件ずつ `gh api` を叩かなくてよい。
   const issuesRaw = gh([
     'issue',

@@ -102,7 +102,9 @@ const KIND = 'kind:';
  * - `hours` … 前に立ててから空ける間隔。**溜めてからまとめて捌く係と、来たそばから捌く係が
  *   同じ表に載る**ので、係ごとに持つ。件数のしきい値は置かない——「そこまでは残ってよい」を
  *   宣言することになり、滞留を仕様にする（`.claude/policies.md`）。
+ * - `env` … 投入先（`DISPATCH_TO` の値）。
  * - `locks` … 掴む資源（`area:` と同じ綴り）。書くセッションと取り合う。
+ * - `prompt` … 渡す本文の在り処（リポジトリからの相対）。
  *
  * **どれも PR を出さない**ので、書くセッションの枠（`WRITERS`）には数えない。マージの列に並ばない
  * ものを数えると、書く側の並列度がその分だけ黙って下がる。
@@ -533,8 +535,17 @@ export function moves(input) {
 
   // **周期の係**（2.17）。書くセッションの枠は見ない——PRを出さないので、マージの列を詰まらせない。
   for (const cycle of CYCLES) {
-    // 同じ係が2本走ることはない。**走っている限り、間隔が満ちても立てない。**
-    if (alive(`chore-${cycle.name}`).length > 0) continue;
+    // **前の1本が終わっていなければ立てない。** 終わったかの見方は、畳む側と同じ——走っているか、
+    // 空いたままが `STALL_MINUTES` に届いていないか（1.6。「終わった」と「承認を待っている」は
+    // 同じ形に見える）。
+    //
+    // **「生きているか」では見ない。** ブリッジのセッションは盤面から畳めない
+    // （[`archive-session.sh`](archive-session.sh) の `--force-bridge`。issue #1558）ので、
+    // ブリッジ固定の係は**終わった1本が次の周期を永久に塞ぐ。**
+    const running = alive(`chore-${cycle.name}`).some(
+      (session) => busySession(session) || idleMinutes(session) < STALL_MINUTES,
+    );
+    if (running) continue;
     if (!cycle.due(input.issues)) continue;
     // **前に立ててからの間隔**。覚えが無ければ「まだ一度も立てていない」なので、そのまま立てる。
     // **デーモンを別のPCへ移すと覚えごと消える**ので、移した直後は係が一斉に立つ。

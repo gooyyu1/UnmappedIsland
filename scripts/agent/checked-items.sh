@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 確定待ちの盤（`meta` の issue）の本文で、チェックの付いている項目を `<番号> <項目>` の行にする。
+# 確定待ちの盤（`kind:meta` の issue）の本文で、チェックの付いている項目を `<番号> <項目>` の行にする。
 # 標準入力は `gh issue list --json number,labels,body ...` が返す配列。
 #
 #   gh issue list --state open --limit 100 --json number,labels,body |
@@ -15,9 +15,9 @@
 # **デーモンはこれを読まない。** 拾うのは判断の要る仕事で、届ける口はまだ無い
 # （[`board-design.md`](../../.claude/board-design.md) の未決「人間への入力の口」）。
 #
-# ## 見るのは `meta` の issue だけ
+# ## 見るのは `kind:meta` の issue だけ
 #
-# **チェックが答えになるのは確定待ちの盤の上だけ**で、`task` issue が本文に持つ手順の一覧は
+# **チェックが答えになるのは確定待ちの盤の上だけ**で、`kind:task` の issue が本文に持つ手順の一覧は
 # ただの覚え書き。区別せずに拾うと、司令塔には下ろす手立てが無いまま毎周それで起こされる。
 #
 # ## 黙るのは、項目が一覧から下りたとき

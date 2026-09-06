@@ -836,6 +836,23 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual([]);
   });
 
+  // 手が止まったばかりは「終わった」ではない（1.6）。畳む側と同じ窓を使う。
+  it('手が止まったばかりの棚卸しも、終わったとは読まない', () => {
+    const board = {
+      issues: [unsorted(9)],
+      sessions: [idle('session_c', 'chore-triage')],
+      taken: { 'idle:session_c': '2026-09-05T01:59:00Z' },
+    };
+    expect(moves(board)).toEqual([]);
+  });
+
+  // **ブリッジのセッションは盤面から畳めない**（`archive-session.sh` の `--force-bridge`。#1558）。
+  // 「生きているか」で見ていると、終わった1本が次の周期を永久に塞ぐ。
+  it('走り終わった棚卸しが畳まれずに残っていても、次の周期は立つ', () => {
+    const board = { issues: [unsorted(9)], sessions: [idle('session_c', 'chore-triage')] };
+    expect(moves(board)).toContain(TRIAGE);
+  });
+
   // 引き金は件数ではなく時間（2.17）。**件数のしきい値は「そこまでは残ってよい」の宣言になる。**
   it('前に立ててから間隔が空くまで、棚卸しは立てない', () => {
     const board = { issues: [unsorted(9)], taken: { 'cycle:triage': '2026-09-04T03:00:00Z' } };
