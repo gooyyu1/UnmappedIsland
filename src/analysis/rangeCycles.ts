@@ -82,8 +82,9 @@ export interface RangeCycle {
   readonly destroysSelf: boolean;
 
   /**
-   * **端へ向かわせる、条件つきの増減（8.2節）の組み合わせ。** どれか1つの組み合わせが丸ごと成立して
-   * いれば向かい、どれも成立していなければ向かわない。
+   * **端へ向かうのに要る、条件つきの増減（8.2節）の組み合わせ。** どれも成立していなければ向かわない。
+   * **逆は言わない**——どれかが成立していても、遅くする増減が同時に成立していれば向かわないことは
+   * ある（その場合を見るのはminutesのほう）。
    *
    * **それだけで向かえる最小のものしか入らない**（leastCombinationsOf）ので、遅くするだけの増減も、
    * 片方だけで足りるときの相方も残らない——周期を決めた組み合わせとは別物（issue #1433）。
@@ -432,19 +433,25 @@ function paceTowards(totals: readonly TickTotal[], label: RangeEventLabel): Pace
 }
 
 /**
- * 端へ向かわせる組み合わせのうち、**他を丸ごと含むものを落とした**もの。含む側は、含まれる側だけで
- * 足りることの言い換えでしかない——残すと、足さなくても向かう条件が「要る」として並ぶ。
+ * 端へ向かわせる組み合わせのうち、**それだけで向かえる最小のもの**だけ。
  *
- * 落とし切ると、残るのは**それだけで向かえる最小の組み合わせ**だけになる。1つも条件を要らない場合が
- * 在れば、それが他のすべてを落とすので、残るのは空の組み合わせ1つ。
+ * 他を丸ごと含むものは落とす——含む側は、含まれる側だけで足りることの言い換えでしかないので、残すと
+ * 足さなくても向かう条件が「要る」として並ぶ。**同じ中身どうしも1つに畳む**——押し手は取りうる量の
+ * ぶんだけ場合を作り、そのどれもが条件つきを持たない（totalsWithDriver）ので、畳まないと空の
+ * 組み合わせが量の数だけ残る。
+ *
+ * 1つも条件を要らない場合が在れば、それが他のすべてを落とすので、残るのは空の組み合わせ1つ。
  */
 function leastCombinationsOf(
   combinations: readonly (readonly TickDelta[])[],
 ): readonly (readonly TickDelta[])[] {
   return combinations.filter(
-    (combination) =>
+    (combination, index) =>
       !combinations.some(
-        (other) => other.length < combination.length && other.every((delta) => combination.includes(delta)),
+        (other, otherIndex) =>
+          // 同じ中身なら先に現れたほうを残す。長さが同じで丸ごと含むのは、中身が同じということ。
+          (other.length < combination.length || otherIndex < index) &&
+          other.every((delta) => combination.includes(delta)),
       ),
   );
 }
