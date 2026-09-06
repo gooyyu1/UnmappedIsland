@@ -27,21 +27,36 @@ export const WORLD_CODEX_TEXTS: ReadonlyMap<string, string> = new Map(
 );
 
 /**
- * 同梱ぶんのパース結果。**同梱YAMLは実行中に変わらないので、パースは最初の1回だけ**——読み込みは
- * ゲームの起動と試験の1件ごとに何度も走り、そのたびに同じ文字列をパースし直していた（組み上げ
- * 全体200msのうち190msがパース。2026-09-06計測）。
+ * 同梱ぶんを既に読んだか。**控えを作るのは2回目から**——1度きりで終わる読み込み（ゲームの起動）に、
+ * 控えを守るための複製の代金を払わせない。
  */
+let bundledWasRead = false;
+
+/** 同梱ぶんのパース結果の控え。同梱YAMLは実行中に変わらないので、読み込みをまたいで残せる。 */
 let bundledDocuments: ReadonlyMap<string, Document> | undefined;
 
-/**
- * 同梱ぶんのパース結果の複製（ファイル名順）。**複製を渡す**——読み込んだDocumentはpatch（
- * GameElementDefinition.md 3.4節）が書き換えるので、控えをそのまま渡すと2回目以降の読み込みが
- * 1回目の書き換えを見る。複製はパースより速い（約90ms対190ms。同計測）。
- */
-function bundledDocumentCopies(): Iterable<readonly [string, Document]> {
-  bundledDocuments ??= new Map(
+/** 同梱ぶんをパースしたDocument（ファイル名順）。 */
+function parseBundled(): ReadonlyMap<string, Document> {
+  return new Map(
     [...WORLD_CODEX_TEXTS].map(([file, text]): [string, Document] => [file, parseDocument(text)]),
   );
+}
+
+/**
+ * 同梱ぶんを読むためのDocument（ファイル名順）。**2回目からは控えの複製を渡す**——同じ文字列を
+ * 読み込みのたびにパースし直すのは高い（パース約180ms対複製約90ms。2026-09-06計測）。
+ *
+ * 渡すのが控えそのものではなく複製なのは、読み込んだDocumentをpatch（GameElementDefinition.md
+ * 3.4節）が書き換えるため。控えをそのまま渡すと、次の読み込みが前回の書き換えを見る。初回に渡す
+ * ぶんを控えないのも同じ理由で、こちらは書き換えられた先が誰にも渡らない。
+ */
+function bundledDocumentsToRead(): Iterable<readonly [string, Document]> {
+  if (!bundledWasRead) {
+    bundledWasRead = true;
+    return parseBundled();
+  }
+
+  bundledDocuments ??= parseBundled();
   return [...bundledDocuments].map(([file, doc]): [string, Document] => [file, doc.clone()]);
 }
 
@@ -52,7 +67,7 @@ function bundledDocumentCopies(): Iterable<readonly [string, Document]> {
 export function loadWorldCodex(packs: readonly AssetPack[], report: LoadReport): WorldCodex {
   const loader = new WorldCodexYamlLoader();
   // 同梱ぶんは報告先を渡さない＝patchの誤りも投げる（AssetPack.md 6.1節）。
-  for (const [file, doc] of bundledDocumentCopies()) loader.loadDocument(file, doc);
+  for (const [file, doc] of bundledDocumentsToRead()) loader.loadDocument(file, doc);
   for (const pack of packs)
     for (const [file, text] of pack.worldCodexTexts()) loader.load(file, text, { name: pack.name, report });
   return loader.buildAndReset();

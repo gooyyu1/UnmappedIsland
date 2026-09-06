@@ -7,7 +7,9 @@ import { zipArchive } from '../support/zipArchive';
 /**
  * 同梱ぶんのパース結果は読み込みをまたいで控えられる（loadWorldCodex）。控えを配るからには、
  * **前の読み込みでの書き換えが次へ残らない**ことが要る——patch（GameElementDefinition.md 3.4節）は
- * 宣言のノードそのものを書き換えるので、控えをそのまま配ると2回目以降がそれを見る。
+ * 宣言のノードそのものを書き換えるので、控えをそのまま配ると次の読み込みがそれを見る。
+ *
+ * 控えができるのは2回目の読み込みからなので、書き換える読み込みの前に1回読んでおく。
  */
 async function packPatchingPalmTree(): Promise<AssetPack> {
   return AssetPack.read(
@@ -29,6 +31,8 @@ async function packPatchingPalmTree(): Promise<AssetPack> {
 describe('同梱ぶんのパース結果の控え', () => {
   it('パックが同梱の宣言を書き換えても、次の読み込みには残らない', async () => {
     const patching = await packPatchingPalmTree();
+
+    loadWorldCodex([], new LoadReport());
 
     const patched = loadWorldCodex([patching], new LoadReport());
     expect(patched.propertyNames.tryGetId('patch_marker'), 'patchが当たっている').toBeDefined();
