@@ -27,6 +27,19 @@ const PR_FIELDS =
   'number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments';
 
 /**
+ * マージ済みPRから引く項目。**読むのはスメルを拾う係の `due`**（[`board-move.mjs`](board-move.mjs)
+ * の `CYCLES`）で、要るのは本文とリアクションだけ——上の一覧には混ぜられない（あちらは開いている
+ * PRで、スメルを拾うのはマージ後だから）。
+ */
+const MERGED_PR_FIELDS = 'number,comments';
+
+/**
+ * さかのぼるマージ済みPRの本数。**1日に入る本数より多く取る**——係は1日1回なので、この幅が
+ * 1日ぶんを下回ると、拾われないまま窓から出るスメルが出る。
+ */
+const MERGED_LIMIT = 30;
+
+/**
  * 差し戻す相手は、そのPRのコミットの `Claude-Session:` トレーラで引く（2.11）。**上の一覧には
  * 混ぜられない**——`gh pr list --json commits` はPRごとに全コミットを取りに行き、GraphQL の
  * ノード数の上限（50万）を超えて何も返らなくなる。末尾の何本かだけを指名すれば1回で足りる。
@@ -110,6 +123,17 @@ export function readBoard({ gh = runGh, sessions = liveSessions, log, now, settl
     'number,labels,blockedBy',
   ]);
   if (issues === undefined) return undefined;
+  const mergedPrs = gh([
+    'pr',
+    'list',
+    '--state',
+    'merged',
+    '--limit',
+    String(MERGED_LIMIT),
+    '--json',
+    MERGED_PR_FIELDS,
+  ]);
+  if (mergedPrs === undefined) return undefined;
   const checks = gh(['api', 'repos/{owner}/{repo}/commits/main/check-runs']);
   if (checks === undefined) return undefined;
 
@@ -134,6 +158,7 @@ export function readBoard({ gh = runGh, sessions = liveSessions, log, now, settl
     settledBefore: settledBefore(now, settleMinutes),
     mainChecks: mainChecks(checks),
     prs: JSON.parse(prs),
+    mergedPrs: JSON.parse(mergedPrs),
     issues: openIssues,
     taken,
     issueStates: issueStates(gh, live, openIssues),

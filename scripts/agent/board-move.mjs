@@ -27,6 +27,7 @@
 //     "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
 //     "mainChecks": [ { "status": "COMPLETED", "conclusion": "SUCCESS" } ],   … `main` の先頭のCI
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments ],
+//     "mergedPrs":[ gh pr list --state merged --json number,comments ],   … スメルを拾う係が読む範囲
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
 //     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
 //                     "bucket": "SESSION_STATUS_BUCKET_…", "env": "cloud | bridge | -",
@@ -107,9 +108,34 @@ const KIND = 'kind:';
 const URGENT = '急ぎ';
 
 /**
+ * レビュアーが残したスメルを、拾う側が読んだ印（4.4）。**印を自前の台帳で持たない**——コメントに
+ * 付いたリアクションなら、盤面と拾う側が同じものを見る（`.claude/policies.md`「仕組みの作り方」）。
+ * 綴りは `gh` の `reactionGroups` の値。
+ */
+const READ_MARK = 'EYES';
+
+/**
+ * まだ誰も読んでいないスメル（4.4）が1件でもあるか。**見るのはマージ済みのPRだけ**——開いている
+ * PRのコメントは次の周のレビューや直しで消えることがあり、拾うと二重になる。
+ *
+ * **粒度はコメント**。1つのコメントに `[スメル] ` の行が複数入るが、**マージ後のコメントは増えない**
+ * ので、コメント1つに印1つで足りる。
+ */
+function hasUnreadSmell(mergedPrs) {
+  return mergedPrs.some((pr) =>
+    (pr.comments ?? []).some(
+      (comment) =>
+        /^\[スメル\] /m.test(comment.body ?? '') &&
+        !(comment.reactionGroups ?? []).some((group) => group.content === READ_MARK),
+    ),
+  );
+}
+
+/**
  * **周期で起きる係**（2.17）。人が投入しなくても、仕事があれば間隔を空けて自分で立つ。
  *
- * - `due` … 今この係に仕事があるか。**無ければ間隔が満ちても立てない。**
+ * - `due` … 今この係に仕事があるか。**無ければ間隔が満ちても立てない。** 渡すのは盤面ごと
+ *   ——仕事の在り処は係ごとに違う（issue の側に在る係と、マージ済みPRの側に在る係が同じ表に載る）。
  * - `hours` … 前に立ててから空ける間隔。**溜めてからまとめて捌く係と、来たそばから捌く係が
  *   同じ表に載る**ので、係ごとに持つ。件数のしきい値は置かない——「そこまでは残ってよい」を
  *   宣言することになり、滞留を仕様にする（`.claude/policies.md`）。
@@ -117,8 +143,8 @@ const URGENT = '急ぎ';
  * - `locks` … 掴む資源（`area:` と同じ綴り）。書くセッションと取り合う。
  * - `prompt` … 渡す本文の在り処（リポジトリからの相対）。
  *
- * **どれも PR を出さない**ので、書くセッションの枠（`WRITERS`）には数えない。マージの列に並ばない
- * ものを数えると、書く側の並列度がその分だけ黙って下がる。
+ * **PRを出す係が居ても、書くセッションの枠（`WRITERS`）には数えない。** 1日1回・記録だけの差分で、
+ * マージの列を詰まらせないため。数えると、書く側の並列度がその分だけ黙って下がる。
  */
 const CYCLES = [
   {
@@ -129,7 +155,17 @@ const CYCLES = [
     env: 'bridge',
     locks: [],
     prompt: '.claude/triage-prompt.md',
-    due: (issues) => issues.some((issue) => !names(issue).some((name) => name.startsWith(KIND))),
+    due: (board) => board.issues.some((issue) => !names(issue).some((name) => name.startsWith(KIND))),
+  },
+  {
+    name: 'analysis',
+    hours: 24,
+    // クラウドで足りる。**既存 issue の本文は書き換えない**——切るのは新しい issue で、記録は
+    // 自分のPRに載せる（2.17・4.4）。
+    env: 'cloud',
+    locks: [],
+    prompt: '.claude/analysis-prompt.md',
+    due: (board) => hasUnreadSmell(board.mergedPrs ?? []),
   },
 ];
 
@@ -432,9 +468,10 @@ export function moves(input) {
   for (const session of input.sessions) {
     if (busySession(session)) continue;
 
-    // **PRを出さない仕事は、走り終わっていれば畳む**（2.10.3・2.17）。レビューも周期の係も使い回さ
-    // ない設計（`dispatch-review.sh`・`dispatch-chore.sh`）なので、手が止まった時点でもう誰も起こさない。
-    // **PRが開いているかは見ない**——`直し待ち` のまま戻ってこないPRのレビューも、畳めない理由は無い。
+    // **走り終わっていれば畳む**（2.10.3・2.17）。レビューも周期の係も使い回さない設計
+    // （`dispatch-review.sh`・`dispatch-chore.sh`）なので、手が止まった時点でもう誰も起こさない。
+    // **読んでいたPRが開いているかは見ない**——`直し待ち` のまま戻ってこないPRのレビューも、
+    // 畳めない理由は無い。
     //
     // **ただし「走り終わった」と「道具の承認を待っている」は同じ形に見える**（1.6）。ワーカーと
     // 同じく、空いたままが `STALL_MINUTES` 続いてから畳む——30秒で畳んだ盤面は、承認を求めて
@@ -445,6 +482,10 @@ export function moves(input) {
     // 書いたかはPRの結論のラベルに出る（2.6）ので、付いていれば待たずに畳む。
     const spent = session.tags.find((tag) => tag.startsWith('review-') || tag.startsWith('chore-'));
     if (spent !== undefined) {
+      // **自分のPRが開いているうちは畳まない**（2.17）。周期の係にもPRを出すものが居る
+      // （`CYCLES` の `analysis`）ので、畳むと**指摘とコンフリクトを直す相手が消える**
+      // ——差し戻す先はコミットのトレーラで引く1本だけ（2.11）。
+      if (Object.values(prSessions).includes(session.id)) continue;
       if (!judged(spent) && idleMinutes(session) < STALL_MINUTES) continue;
       const mark = `done:${spent}`;
       if (taken[`archive:${session.id}`] !== mark) archives.push(`ARCHIVE ${session.id} ${mark}`);
@@ -584,7 +625,8 @@ export function moves(input) {
     }
   }
 
-  // **周期の係**（2.17）。書くセッションの枠は見ない——PRを出さないので、マージの列を詰まらせない。
+  // **周期の係**（2.17）。書くセッションの枠は見ない——PRを出す係も1日1回・記録だけの差分で、
+  // マージの列を詰まらせない。
   for (const cycle of CYCLES) {
     // **前の1本が終わっていなければ立てない。** 終わったかの見方は、畳む側と同じ——走っているか、
     // 空いたままが `STALL_MINUTES` に届いていないか（1.6。「終わった」と「承認を待っている」は
@@ -597,7 +639,7 @@ export function moves(input) {
       (session) => busySession(session) || idleMinutes(session) < STALL_MINUTES,
     );
     if (running) continue;
-    if (!cycle.due(input.issues)) continue;
+    if (!cycle.due(input)) continue;
     // **前に立ててからの間隔**。覚えが無ければ「まだ一度も立てていない」なので、そのまま立てる。
     // **デーモンを別のPCへ移すと覚えごと消える**ので、移した直後は係が一斉に立つ。
     const since = Date.parse(taken[`cycle:${cycle.name}`] ?? '');

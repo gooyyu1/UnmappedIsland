@@ -21,6 +21,8 @@ interface Board {
   /** `main` の先頭のCI。省くと緑（既存の盤面はどれも `main` が緑のときの話）。 */
   mainChecks?: readonly unknown[];
   prs?: readonly unknown[];
+  /** マージ済みPRとそのコメント。スメルを拾う係の `due` が読む（`board-move.mjs` の `CYCLES`）。 */
+  mergedPrs?: readonly unknown[];
   issues?: readonly unknown[];
   sessions?: readonly {
     id: string;
@@ -894,6 +896,18 @@ describe('board-move.mjs', () => {
   // 条件を足す必要があった。
   const unsorted = (number: number) => ({ number, labels: [], blockedBy: { nodes: [] } });
   const TRIAGE = `CHORE triage .claude/triage-prompt.md ${NOW} --bridge`;
+  const ANALYSIS = `CHORE analysis .claude/analysis-prompt.md ${NOW}`;
+
+  /** レビュアーがスメルを残した判定コメント（`review-criteria.md`「挙げ方」）。読んだ印を変えられる形で持つ。 */
+  const smell = (number: number, read = false) => ({
+    number,
+    comments: [
+      {
+        body: `[レビュー] 通してよい\n読んだ版: aaa1111\n\n[スメル] 名前が中身とずれている。\n`,
+        reactionGroups: read ? [{ content: 'EYES', users: { totalCount: 1 } }] : [],
+      },
+    ],
+  });
 
   it('未整理の issue があれば、棚卸しを立てる', () => {
     expect(moves({ issues: [unsorted(9)] })).toEqual([TRIAGE]);
@@ -970,9 +984,51 @@ describe('board-move.mjs', () => {
   // `dispatch-chore.sh` が要る2つを持っていること**。片方でも欠けると、係は毎周立とうとして
   // 毎周失敗する（時刻を残さないので、間隔で黙りもしない）。
   it('周期の係のプロンプトは、題と囲みを持つ', () => {
-    const path = TRIAGE.split(' ')[2];
-    const text = readFileSync(resolve(__dirname, '../..', path), 'utf-8');
-    expect(text).toMatch(/^題: \S/m);
-    expect(text).toMatch(/^````$/m);
+    for (const move of [TRIAGE, ANALYSIS]) {
+      const text = readFileSync(resolve(__dirname, '../..', move.split(' ')[2]), 'utf-8');
+      expect(text).toMatch(/^題: \S/m);
+      expect(text).toMatch(/^````$/m);
+    }
+  });
+
+  // ## スメルを拾う係（4.4）
+  //
+  // 仕事の在り処が issue ではなく**マージ済みPRのコメント**にある係。読んだ印はコメントに付いた
+  // リアクションで、自前の台帳は持たない。
+  it('読まれていないスメルがあれば、分析係を立てる', () => {
+    expect(moves({ mergedPrs: [smell(9)] })).toEqual([ANALYSIS]);
+  });
+
+  it('印の付いたコメントのスメルでは、分析係を立てない', () => {
+    expect(moves({ mergedPrs: [smell(9, true)] })).toEqual([]);
+  });
+
+  // 判定だけのコメントは拾う対象ではない。**`[スメル] ` の行を持つものだけ**が仕事になる。
+  it('スメルの行が無いコメントでは、分析係を立てない', () => {
+    const merged = [{ number: 9, comments: [{ body: '[レビュー] 通してよい\n読んだ版: aaa1111\n' }] }];
+    expect(moves({ mergedPrs: merged })).toEqual([]);
+  });
+
+  // 開いているPRのスメルは、次の周のレビューや直しで消えることがある。拾うと二重になる。
+  it('開いているPRにスメルがあっても、分析係は立てない', () => {
+    const board = { prs: [pr(9, { ...label('直し待ち'), ...smell(9) })], prSessions: { 9: 'session_a' } };
+    expect(moves(board)).not.toContain(ANALYSIS);
+  });
+
+  // PRを出す係が居る（記録を残すのがこの係の成果）。畳むと、指摘やコンフリクトを直す相手が消える
+  // ——差し戻す先はコミットのトレーラで引く1本だけ（2.11）。
+  it('自分のPRが開いている間は、周期の係を畳まない', () => {
+    const board = {
+      prs: [pr(10)],
+      prSessions: { 10: 'session_c' },
+      sessions: [idle('session_c', 'chore-analysis')],
+    };
+    expect(moves(board)).not.toContain('ARCHIVE session_c done:chore-analysis');
+  });
+
+  it('PRがマージされたら、周期の係も畳む', () => {
+    expect(moves({ sessions: [idle('session_c', 'chore-analysis')] })).toEqual([
+      'ARCHIVE session_c done:chore-analysis',
+    ]);
   });
 });
