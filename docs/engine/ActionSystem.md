@@ -66,7 +66,7 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 居ない、9.9節）で先に絞る。**ここで落ちたものは `reason` を宣言していてもどちらにも入らない**＝理由が
 出ない。「なぜ理由が出ないのか」を追うときは、まずここを見る。
 
-**容量**（`AcceptedCount` が0の相手。満杯の炉）はこの門ではなく、`CombinationsWith` の側の条件
+**容量**（`AcceptedCount` が0の相手）はこの門ではなく、`CombinationsWith` の側の条件
 （`Combination.CanExecute`）。0は「何個受け取れるか」の答え＝**断る理由**であって、候補になるかどうかの
 判定ではない。両方の門にすると、満杯を `conditions` にも書いた宣言（満杯の罠の `trap_baited`）は条件と
 容量が同時に落ちるので、**宣言した理由が決して届かなくなる。**

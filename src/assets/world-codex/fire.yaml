@@ -207,8 +207,12 @@ traits:
       # 薪をくべる。燃料が持つfuelを炉のfuelへ移し、燃料そのものは消す（同2節）。
       # transferの後にdestroyが走るので、移した分が失われることはない。
       #
-      # 束ねた薪はまとめてくべられる（allow_multiple、GameElementDefinition.md 12.4節）。何本入るかも、
-      # 満杯の炉を拒むことも、fuelのrangeの残りからエンジンが決めるので、ここには書かない。
+      # 束ねた薪はまとめてくべられる（allow_multiple、GameElementDefinition.md 12.4節）。何本入るかは
+      # fuelのrangeの残りからエンジンが決めるので、ここには書かない。
+      #
+      # **満杯を拒む条件は炉ごとが足す**（同5節、conditionsだけを重ねると残りはこちらを継ぐ）。
+      # 容量だけでも拒めるが、それだと断る理由が届かず「重ねても何も起きない」になる
+      # （docs/ui/CardInteraction.md 2.1節）。薪の上限は炉ごとに違うので、ここには書けない。
       add_fuel:
         trigger: {drag: {tag: fuel}, allow_multiple: true}
         duration: 1
@@ -389,6 +393,10 @@ object_defs:
           - {prop: fuel, in_stage: none}
         add: {self: {heat: -2}}
     interactions:
+      # 満杯なら断る理由を出す（hearthのadd_fuel）。値は上のfuelのrange.max。
+      add_fuel:
+        conditions:
+          - {reason: hearth_full, prop: fuel, lt: 30}
       add_stone:
         trigger: {drag: {object: stone}}
         duration: 5
@@ -426,6 +434,10 @@ object_defs:
           - {prop: fuel, in_stage: none}
         add: {self: {heat: -1}}
     interactions:
+      # 満杯なら断る理由を出す（hearthのadd_fuel）。値は上のfuelのrange.max。
+      add_fuel:
+        conditions:
+          - {reason: hearth_full, prop: fuel, lt: 30}
       add_stone:
         trigger: {drag: {object: stone}}
         duration: 5
@@ -460,3 +472,8 @@ object_defs:
           - {prop: heat, in_stage: ember}
           - {prop: fuel, in_stage: none}
         add: {self: {heat: -0.125}}
+    interactions:
+      # 満杯なら断る理由を出す（hearthのadd_fuel）。値は上のfuelのrange.max。
+      add_fuel:
+        conditions:
+          - {reason: hearth_full, prop: fuel, lt: 120}

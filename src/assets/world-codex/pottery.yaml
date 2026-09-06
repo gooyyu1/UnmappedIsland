@@ -142,6 +142,10 @@ object_defs:
           - {prop: fuel, in_stage: none}
         add: {self: {heat: -0.5}}
     interactions:
+      # 満杯なら断る理由を出す（fire.yamlのhearthのadd_fuel）。値は上のfuelのrange.max。
+      add_fuel:
+        conditions:
+          - {reason: hearth_full, prop: fuel, lt: 200}
       # 覆いを壊して取り出す。中身は消える自分ではなく自分の親——炉が置かれた土地——へこぼれる
       # （9.3節）ので、焼き上がった壺は残る。
       break_open:
