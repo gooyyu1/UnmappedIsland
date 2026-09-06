@@ -125,7 +125,8 @@ object_defs:
   # **解体には使えない**（cutting_toolを持たない）。穂先は柄の先に固定されていて、皮を剥ぐ手つきには
   # ならない——狩れても捌けないので、刃物を別に持つ理由が残る。
   #
-  # 2mの棒なので、重さのわりにかさばる（同0節 長さの違いはかさで効かせる）。
+  # 2mの棒なので、重さのわりにかさばる（同0節 長さの違いはかさで効かせる）。穂先400＋軸300＋紐200＝
+  # 900gで、丸太20,000gのうち軸に残るのは300g——石斧と同じく、削る工程では重さが減る。
   spear:
     traits: [weapon]
     tags: [item, tool]
@@ -136,6 +137,32 @@ object_defs:
       light_blow: {value: 0}
       thrust: {value: 55, base: {subject: agent, prop: hunting_aim}}
       whiff: {value: 45}
+    recipes:
+      hafted:
+        # **軸を拾ってこられない唯一の柄付け。** 石斧・突き銛は拾った太い枝（70cm）をそのまま柄に
+        # するが、2mの軸は落ちていない（docs/world/SurvivalItems.md 0節）ので丸太を割って削り出す
+        # ——製材そのもの（docs/world/Skills.md 2節の「柄材・板」）なので、柄付けの入力のうち軸だけが
+        # 腕を要求する。**木材加工の腕を読む唯一の場所**（docs/engine/SkillSystem.md 3.2節の循環は
+        # 無い——木材加工は刃物1本で回る削り出しから伸び始める、animals.yamlのwhittle）。
+        #
+        # **軸を丸太から採るのは、若木が世界に在るまでの割り切り。** 本来の材料は若木を切って採る
+        # 長い棒（docs/world/SurvivalItems.md 0節）で、それが入れば材料だけがそちらへ移る
+        # （腕の要求は変わらない）。
+        conditions:
+          - {reason: needs_woodwork, subject: agent, prop: skill_woodwork, in_stage_or_above: basic}
+          - {reason: needs_knapping, subject: agent, prop: skill_knapping, in_stage_or_above: basic}
+          - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
+        steps:
+          # 丸太を割り、2mの軸を削り出す。割るのは斧（furnishings.yamlのlog_stoolと同じ手）。
+          - requires:
+              - {object: log, count: 1, consume: true}
+              - {tag: chopping_tool, count: 1, consume: false}
+            duration: 180
+          # 穂先を軸の先の溝へ据え、紐で締め上げる（柄付け、docs/world/Skills.md 3節）。
+          - requires:
+              - {object: sharp_stone, count: 1, consume: true}
+              - {object: cord, count: 1, consume: true}
+            duration: 120
 
   # 突き銛。太い枝の先へ石の穂先を紐で締めた漁具（docs/world/Voyage.md 3.9.4節）。
   #
