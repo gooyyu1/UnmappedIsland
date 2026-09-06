@@ -6,8 +6,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
-// アイテムのスタック表示（Slot.contentsの並び順・SlotDefのcellCount・ObjectDefのstackable・
-// ObjectDef.stackOrder・same_slotとの相互作用）に対する自動テスト。
+// アイテムのスタック表示——スロットが中身をどう束ね、どう並べ、どう渡すか——に対する自動テスト。
 describe('StackingTests', () => {
   let sessions: Map<WorldCodex, WorldSession>;
 

@@ -880,7 +880,7 @@ export class WorldObject {
    * ツリー全体が処理される。
    *
    * rangeイベントが走らせる命令は、処理中に自分自身や兄弟をツリーから切り離しうる。辿っている最中の
-   * 出入りを気にしなくてよいのは、スロットが読んだ時点の写しを返すため（Slot.contents）。
+   * 出入りを気にしなくてよい根拠はSlot.contents。
    */
   tick(): void {
     for (const property of this.properties) property.tick();

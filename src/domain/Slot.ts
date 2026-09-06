@@ -35,10 +35,7 @@ export class Slot {
     return this.layout.cells;
   }
 
-  /**
-   * スタックの区別を畳み込んだ、このスロットの中身全部の写し（CellLayout.contents）。**辿っている
-   * 途中で中身が出入りしても構わない**ので、受け取った側で写し直さない。
-   */
+  /** スタックの区別を畳み込んだ、このスロットの中身全部の写し（CellLayout.contents）。 */
   get contents(): readonly WorldObject[] {
     return this.layout.contents;
   }
