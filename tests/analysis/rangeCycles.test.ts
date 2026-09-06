@@ -244,6 +244,33 @@ object_defs:
           - {prop: lodging, in_stage: deep}
         add: {parent: {blood: -9}}
 
+  # 燃える松明。**同じ排他の対を、自分の値と相手の値の両方へ書いてある**——火勢の段は同時に2つを
+  # 取れないので、燃料の減りも持ち主の渇きも-1か-4のどちらかになる。同じ問いに答える数え上げが
+  # 2箇所に分かれていると、片方にだけ直しが入って、自分の増減の側と押し手の側で違う答えが出る。
+  torch:
+    tags: [item]
+    props:
+      flame:
+        value: 0
+        range: {min: 0, max: 1}
+        stages:
+          - {name: smoldering}
+          - {name: blazing, min: 1}
+      fuel:
+        value: 100
+        range: {min: 0, max: 100}
+        on_min: {destroy: self}
+        passives:
+          - conditions: [{prop: flame, in_stage: smoldering}]
+            add: {self: {fuel: -1}}
+          - conditions: [{prop: flame, in_stage: blazing}]
+            add: {self: {fuel: -4}}
+    passives:
+      - conditions: [{prop: flame, in_stage: smoldering}]
+        add: {parent: {hydration: -1}}
+      - conditions: [{prop: flame, in_stage: blazing}]
+        add: {parent: {hydration: -4}}
+
   # 棘の刺さる小獣。**押し手が2つの量を取る**（雨で裂ける棘）ので、押される周期はその数だけ
   # 場合を持つ——どの場合も自分の条件つきは数えないので、進む条件は押し手が傍に在ることだけ。
   hare:
@@ -475,6 +502,17 @@ object_defs:
     // 60mLと180mLの別々の押し手に見え、同時に起こりえない段の代替が2本の仕掛けとして数えられる。
     expect(externalDeltasOf('sting', 'blood')).toEqual([
       { amounts: [-3, -9], ticksUntilStart: 0, ticksUntilStop: 20 },
+    ]);
+  });
+
+  it('同じ排他の対は、自分の増減の側でも押し手の側でも同じ組み合わせになる', () => {
+    // 火勢の段は同時に2つを取れないので、燃料が尽きるまでは-1で100 tick・-4で25 tick、持ち主から
+    // 水を奪うのも-1と-4。両側が同じ数え上げを呼ばないと、片方だけが2つを足した-5を持つ。
+    expect(cycleOf('torch', 'fuel')).toMatchObject([
+      { minutes: 100 * 15, shortestMinutes: 25 * 15, destroysSelf: true },
+    ]);
+    expect(externalDeltasOf('torch', 'hydration')).toEqual([
+      { amounts: [-1, -4], ticksUntilStart: 0, ticksUntilStop: undefined },
     ]);
   });
 
