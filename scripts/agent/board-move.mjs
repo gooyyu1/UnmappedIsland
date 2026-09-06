@@ -73,6 +73,12 @@ export const busySession = (session) => session.status === 'SESSION_STATUS_RUNNI
 const STALL_MINUTES = Number(process.env.STALL_MINUTES || 15);
 
 /**
+ * レビューが判定を書いたことを指すラベル（`board-labels.yml`）。**この2つだけ**——`収束せず` や
+ * `却下` は人が付けるもので、レビュアーが書き終えたことを言っていない。
+ */
+const VERDICTS = new Set(['通してよい', '直し待ち']);
+
+/**
  * `env:<値>` が指す投入先（[`dispatch-task.sh`](dispatch-task.sh) へ渡す引数。2.16）。**盤面が
  * 宛先を知っている値の一覧はここだけ**——GitHub のラベルが在るかとは別で、人は盤面の知らない
  * `env:*` を作れる。ラベルの無い issue は `cloud` として引くので、既定も同じ表に載っている。
@@ -207,6 +213,21 @@ export function moves(input) {
     const since = Date.parse(taken[`idle:${session.id}`] ?? '');
     const at = Date.parse(input.now ?? '');
     return Number.isNaN(since) || Number.isNaN(at) ? 0 : (at - since) / 60_000;
+  }
+
+  /**
+   * そのレビューの仕事が終わっているか（2.6）。**訊く先はPRの側**——レビュアーが判定を書くと
+   * [`board-labels.yml`](../../.github/workflows/board-labels.yml) が結論のラベルへ変えるので、
+   * 付いていることがそのまま「書き終えた」を指す。**開いていないPRのレビューも終わり**——読む
+   * 相手がもう無い。
+   *
+   * **レビュー以外の係には訊けない**ので `false`。あちらが終わったかを言えるのは、空いたままの
+   * 長さだけ（`STALL_MINUTES`）。
+   */
+  function judged(tag) {
+    if (!tag.startsWith('review-')) return false;
+    const pr = input.prs.find((item) => item.number === Number(tag.slice('review-'.length)));
+    return pr === undefined || names(pr).some((name) => VERDICTS.has(name));
   }
 
   /**
@@ -394,9 +415,12 @@ export function moves(input) {
     // 同じく、空いたままが `STALL_MINUTES` 続いてから畳む——30秒で畳んだ盤面は、承認を求めて
     // 止まったレビューを判定を書く前に消し、そのPRを永久に止めた（2026-09-06、PR #1573。
     // 要約は `Waiting on permission: Bash`。issue #1569）。
+    //
+    // **窓が要るのは、終わったかを他に訊けないときだけ。** レビューには訊ける相手が居る——判定を
+    // 書いたかはPRの結論のラベルに出る（2.6）ので、付いていれば待たずに畳む。
     const spent = session.tags.find((tag) => tag.startsWith('review-') || tag.startsWith('chore-'));
     if (spent !== undefined) {
-      if (idleMinutes(session) < STALL_MINUTES) continue;
+      if (!judged(spent) && idleMinutes(session) < STALL_MINUTES) continue;
       const mark = `done:${spent}`;
       if (taken[`archive:${session.id}`] !== mark) archives.push(`ARCHIVE ${session.id} ${mark}`);
       continue;

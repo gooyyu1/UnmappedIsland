@@ -98,6 +98,9 @@ const WATCHES = 120;
 /** 海区の網（航路の宣言から組み立てたもの）。行き先の型から海区を引くのに使う。 */
 const SEA_CHART = readSeaChart();
 
+/** 真夜中。海区は樹冠も反射も持たないので、明るさは暗さの底（−6）そのものになる。 */
+const MIDNIGHT = 0;
+
 /** 航路が二手に分かれる海区（voyage.yaml のうねりの海）と、そこから出る近道・遠回りの航路。 */
 const FORK = 'long_swell';
 const SHORTCUT_ONWARD = 'route_to_drifting_kelp';
@@ -117,13 +120,20 @@ describe('筏と航海', () => {
     codex = bundledCodex();
   });
 
-  /** 出航のしたくシナリオの状態から始める（砂浜に積荷入りの筏があり、聖杯も積んである）。 */
+  /**
+   * 出航のしたくシナリオの状態から始める（砂浜に積荷入りの筏があり、聖杯も積んである）。
+   *
+   * **乗り手は明るさの条件に引っかからない**（tests/support/illumination.ts）。見張りも漁も明るい
+   * うちだけ（docs/world/Voyage.md 3.10節）なので、そうしないと何日もかかる航海の検査が、途中の夜で
+   * 止まる。**暗さそのものを見る検査だけが、これを戻す**（下の「真夜中の海では」）。
+   */
   function ready(): { game: StartedGame; raft: WorldObject } {
     const scenario = bundledScenario('voyage_ready');
     if (scenario === undefined) throw new Error('同梱シナリオ voyage_ready がありません。');
 
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
     applyScenario(game, scenario, codex);
+    makeBrightEnoughForAnyAction(game.player.instance, codex);
 
     const raft = game.startLocation.fixtures.find((fixture) => fixture.def.name === 'raft');
     if (raft === undefined) throw new Error('シナリオが筏を置いていません。');
@@ -156,6 +166,14 @@ describe('筏と航海', () => {
     setWind(game, wind);
     for (const name of ['weather_remaining', 'wind_remaining'])
       world.getProperty(codex.propertyNames.getId(name)).setNumberWithoutEvents(9999);
+  }
+
+  /**
+   * 世界の時刻を据える（core.yamlのhour）。**手を出す直前に置く**——時計は分の繰り上げで進む
+   * （core.yamlのminuteのon_max）ので、置いた時刻が保たれるのは次の繰り上げまで。
+   */
+  function setHour(game: StartedGame, hour: number): void {
+    game.world.instance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);
   }
 
   function propertyOf(object: WorldObject, name: string): number {
@@ -972,11 +990,11 @@ describe('筏と航海', () => {
     return harpoon;
   }
 
-  /** その海区に魚の群れを1つ立てる（見張りの卓を引き当てるのを待たずに、突く相手だけを置く）。 */
-  function raiseShoal(game: StartedGame, zone: WorldObject): WorldObject {
-    const shoal = game.session.createObject(codex.objectNames.getId('fish_shoal'));
-    expect(shoal.moveToSlotOrRejection(zone.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
-    return shoal;
+  /** その海区に湧くものを1つ立てる（見張りの卓を引き当てるのを待たずに、獲る相手だけを置く）。 */
+  function raiseQuarry(game: StartedGame, zone: WorldObject, objectName: string): WorldObject {
+    const quarry = game.session.createObject(codex.objectNames.getId(objectName));
+    expect(quarry.moveToSlotOrRejection(zone.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+    return quarry;
   }
 
   /**
@@ -1013,7 +1031,7 @@ describe('筏と航海', () => {
       game.player.instance.getProperty(codex.propertyNames.getId('skill_hunting')).setNumber(hunting);
       if (harpoon.parent === undefined) harpoon = giveHarpoon(game);
       if (target === 'shoal') {
-        shoal ??= raiseShoal(game, raft.parent!);
+        shoal ??= raiseQuarry(game, raft.parent!, 'fish_shoal');
         // 突いている最中に群れが去ると、そのぶんが空振りとして数に混ざる（立ち去りは6時間、
         // 突くのは1回30分）。残りを毎回満たして、数えるのを卓だけにする。
         const staying = shoal.getProperty(codex.propertyNames.getId('stay_remaining'));
@@ -1042,7 +1060,7 @@ describe('筏と航海', () => {
   it('魚を突くには銛が要る（手では獲れない）', () => {
     const { game, raft } = ready();
     expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute()).toBe(true);
-    const shoal = raiseShoal(game, raft.parent!);
+    const shoal = raiseQuarry(game, raft.parent!, 'fish_shoal');
     const branch = game.session.createObject(codex.objectNames.getId('thick_branch'));
     expect(
       branch.moveToSlotOrRejection(game.player.instance.getSlot(codex.slotNames.getId('hand'))),
@@ -1103,6 +1121,53 @@ describe('筏と航海', () => {
     tick(game);
 
     expect(spears(), '海の上でだけ突ける').toContain('spear_sea');
+  });
+
+  /**
+   * 海の上で見て探す仕事が、明るいうちだけであることの検査（docs/world/Voyage.md 3.10節）。
+   *
+   * 海区は樹冠も反射も持たないので、真夜中は暗さの底（−6）そのもの——屋外で採るしきい値（+3）を
+   * 大きく割る。**筏に明かりを持ち込めば同じ手が通る**ので、止めているのが夜そのものではなく
+   * 明るさであることも、ここで一緒に見る。
+   */
+  it('真夜中の海では、見張りも漁もできない（明かりを持てばできる）', () => {
+    const { game, raft } = ready();
+    holdWeather(game, 'clear', 'crosswind');
+    expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute()).toBe(true);
+    const zone = raft.parent!;
+    const harpoon = giveHarpoon(game);
+    const shoal = raiseQuarry(game, zone, 'fish_shoal');
+    const flock = raiseQuarry(game, zone, 'seabird_flock');
+    const player = game.player.instance;
+
+    const spears = (target: WorldObject): string[] =>
+      target.combinationsWith(harpoon, player).map((candidate) => candidate.name);
+    const tooDark = (target: WorldObject, action: string): string | undefined =>
+      target.tryGetAction(action, player)?.unmetRequirement()?.reasonName;
+
+    // ready() が積んだ上積みを戻し、海そのものの明るさで見る。
+    for (const name of ['hand_brightness', 'looking_brightness'])
+      player.getProperty(codex.propertyNames.getId(name)).setNumberWithoutEvents(0);
+
+    setHour(game, MIDNIGHT);
+    expect(propertyOf(player, 'looking_brightness'), '真夜中の海は暗さの底').toBeLessThan(3);
+    expect(tooDark(zone, 'explore'), '見張りが止まる理由は暗さ').toBe('too_dark');
+    expect(tooDark(flock, 'catch_seabird'), '海鳥も同じ').toBe('too_dark');
+    expect(spears(raft), '海面へは突けない').not.toContain('spear_sea');
+    expect(spears(shoal), '群れへも突けない').not.toContain('spear_shoal');
+
+    // 灯した松明を手に持つと、底（−6）から+5まで持ち上がる（docs/engine/IlluminationSystem.md 3節）。
+    // 銛は筏の積荷へ移す——**突く手は銛を手に持っていなくても成立する**ので、明かりで塞がった手は
+    // 漁を止めない。
+    expect(harpoon.moveToSlotOrRejection(raft.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
+    const torch = game.session.createObject(codex.objectNames.getId('torch'));
+    torch.getProperty(codex.propertyNames.getId('lit')).setNumber(1);
+    expect(torch.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+
+    setHour(game, MIDNIGHT);
+    expect(keepWatch(game, zone), '明かりがあれば見張れる').toBe(true);
+    setHour(game, MIDNIGHT);
+    expect(spears(raft), '明かりがあれば突ける').toContain('spear_sea');
   });
 
   /**
@@ -1292,7 +1357,6 @@ describe('筏と航海', () => {
     const islet = new Location(zone, codex).fixtures.find((fixture) => fixture.def.name === 'offshore_islet');
     expect(islet, '見張りを終えると、航路と一緒に小島が見つかる').toBeDefined();
 
-    makeBrightEnoughForAnyAction(game.player.instance, codex);
     expect(
       islet!.tryGetAction('explore', game.player.instance)?.tryExecute(),
       '筏に乗ったままでは調べられない',
@@ -1304,7 +1368,6 @@ describe('筏と航海', () => {
       true,
     );
 
-    makeBrightEnoughForAnyAction(game.player.instance, codex);
     expect(new Location(islet!, codex).explore(game.player.instance), '降りれば探索できる').toBe(true);
 
     expect(islet!.tryGetAction('launch', game.player.instance)?.tryExecute(), '漕ぎ出せる').toBe(true);
@@ -1344,7 +1407,6 @@ describe('筏と航海', () => {
     const ashore = new Location(islet, codex);
     for (let i = 0; i < 80; i++) {
       keepAlive(game);
-      makeBrightEnoughForAnyAction(game.player.instance, codex);
       expect(ashore.explore(game.player.instance), '小島を歩ける').toBe(true);
 
       const found = ashore.items.find((item) => item.def.name === objectName);
@@ -1432,7 +1494,6 @@ describe('筏と航海', () => {
       game.map.siteInstanceIds[peak!.index],
     )!;
 
-    makeBrightEnoughForAnyAction(game.player.instance, codex);
     for (let i = 0; i < times; i++) {
       keepAlive(game);
       expect(new Location(summit, codex).explore(game.player.instance), '山頂を見渡せる').toBe(true);

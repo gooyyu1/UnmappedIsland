@@ -233,11 +233,20 @@ traits:
       # 現れるのは**辺1本の両端**——この海区に立つ「次の海区への航路」と、次の海区に立つ
       # 「この海区への航路」（GameEndings.md 12.5節）。どちらも同じ sea_route で、違うのは行き先だけ。
       #
-      # **航路が現れても見張りは終わらない**（同12.1節・12.3節）。渡らずに待つことは、その海区を
-      # 探索し続けること——拾い物も魚の群れも、航路が見えた後の見張りが返す。二重に湧かせないのは
+      # **航路が現れても見張りは終わらない**（同12.1節・12.3節）。渡らずに待つことは、明るいうちは
+      # その海区を探索し続けること——拾い物も魚の群れも、航路が見えた後の見張りが返す。二重に湧かせないのは
       # 湧かせる側の仕事で、ここには条件を置かない（各海区の on_max 参照）。
+      #
+      # **見えている海面しか見張れない**（docs/engine/IlluminationSystem.md 5節。地上の探索・小島の
+      # 探索と同じ条件）。**風雨は要らない**——嵐が止めるのは採取だけで、探索は止まらない
+      # （docs/world/ContentSkeleton.md 8.1.4節）。
       explore:
         trigger: menu
+        conditions:
+          - reason: too_dark
+            subject: agent
+            prop: looking_brightness
+            in_stage_or_above: bright
         duration: 15
         add: {self: {exploration_progress: 1}}
         # 見張りが返すもの（GameEndings.md 12.1節）。次の行き先は航路（進捗の on_max）が受け持つので、
@@ -548,12 +557,20 @@ object_defs:
       # **浮いている間だけ**（afloat）。帆の寄与と同じ形で、条件を落とすと浜に繋いだままの筏の下から
       # 魚が獲れる。**群れへ突く手（fish_shoalのspear_shoal）はこの条件を持たない**——群れは海区に
       # しか立たないので、群れが在ること自体が海の上に居ることの証になる。
+      #
+      # **屋外の採取なので、明るさと風雨の両方が要る**（docs/world/Voyage.md 3.10節）。
       spear_sea:
         trigger: {drag: {tag: fishing_tool}}
         conditions:
           - reason: not_afloat
             prop: afloat
             gt: 0
+          - reason: too_dark
+            subject: agent
+            prop: looking_brightness
+            in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 60
         # 狩猟の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。**獲物を獲る手は海でも同じ1本**——狩猟が広げるのは
@@ -718,8 +735,17 @@ object_defs:
       # 群れへ突く。**当たりが違うのは突く相手**（Voyage.md 3.9.2節）——水面に立った群れは密なので、
       # 30分に0.78切れが返る。群れの居ない海面（raftのspear_sea）との落差が、積むか釣るかの判断を
       # 作っているので、どちらか一方だけを動かさない。
+      #
+      # **屋外の採取なので、明るさと風雨の両方が要る**（docs/world/Voyage.md 3.10節）。
       spear_shoal:
         trigger: {drag: {tag: fishing_tool}}
+        conditions:
+          - reason: too_dark
+            subject: agent
+            prop: looking_brightness
+            in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 30
         add: {agent: {skill_hunting: 2}}
         pick:
@@ -750,8 +776,16 @@ object_defs:
         on_min:
           destroy: self
     interactions:
+      # **屋外の採取なので、明るさと風雨の両方が要る**（docs/world/Voyage.md 3.10節）。
       catch_seabird:
         trigger: menu
+        conditions:
+          - reason: too_dark
+            subject: agent
+            prop: looking_brightness
+            in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 60
         add: {agent: {skill_hunting: 2}}
         spawn:
