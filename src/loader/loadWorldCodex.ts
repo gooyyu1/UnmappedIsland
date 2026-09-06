@@ -26,38 +26,22 @@ export const WORLD_CODEX_TEXTS: ReadonlyMap<string, string> = new Map(
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
 );
 
-/**
- * 同梱ぶんを既に読んだか。**控えを作るのは2回目から**——1度きりで終わる読み込み（ゲームの起動）に、
- * 控えを守るための複製の代金を払わせない。
- */
-let bundledWasRead = false;
-
 /** 同梱ぶんのパース結果の控え。同梱YAMLは実行中に変わらないので、読み込みをまたいで残せる。 */
 let bundledDocuments: ReadonlyMap<string, Document> | undefined;
 
-/** 同梱ぶんをパースしたDocument（ファイル名順）。 */
-function parseBundled(): ReadonlyMap<string, Document> {
-  return new Map(
+/**
+ * 同梱ぶんを読むためのDocument（ファイル名順）。**控えをそのまま配る**——同じ文字列を読み込みの
+ * たびにパースし直すのは高い（同梱ぶん全体で約180ms。2026-09-06計測）。
+ *
+ * 複製を挟まずに配れるのは、**読み込みが渡されたDocumentを書き換えないため**——patch
+ * （GameElementDefinition.md 3.4節）が書き換える宣言のノードも、そこへ接ぎ木する値も、読み込み元
+ * から切り離した複製の側にある（RawObjectDef.modifyDeclaration・RawPatch.value）。
+ */
+function bundledDocumentsToRead(): ReadonlyMap<string, Document> {
+  bundledDocuments ??= new Map(
     [...WORLD_CODEX_TEXTS].map(([file, text]): [string, Document] => [file, parseDocument(text)]),
   );
-}
-
-/**
- * 同梱ぶんを読むためのDocument（ファイル名順）。**2回目からは控えの複製を渡す**——同じ文字列を
- * 読み込みのたびにパースし直すのは高い（パース約180ms対複製約90ms。2026-09-06計測）。
- *
- * 渡すのが控えそのものではなく複製なのは、読み込んだDocumentをpatch（GameElementDefinition.md
- * 3.4節）が書き換えるため。控えをそのまま渡すと、次の読み込みが前回の書き換えを見る。初回に渡す
- * ぶんを控えないのも同じ理由で、こちらは書き換えられた先が誰にも渡らない。
- */
-function bundledDocumentsToRead(): Iterable<readonly [string, Document]> {
-  if (!bundledWasRead) {
-    bundledWasRead = true;
-    return parseBundled();
-  }
-
-  bundledDocuments ??= parseBundled();
-  return [...bundledDocuments].map(([file, doc]): [string, Document] => [file, doc.clone()]);
+  return bundledDocuments;
 }
 
 /**
