@@ -3,6 +3,9 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { moves as decide } from '../../scripts/agent/board-move.mjs';
+// 打った手の覚えを消す側（`trackIdle`）。**盤面が選ぶ指紋が、あちらの消去に当たらないこと**を
+// 下で留める。
+import { trackIdle } from '../../scripts/agent/board-round.mjs';
 
 /**
  * `scripts/agent/board-move.mjs` の検査。
@@ -366,6 +369,21 @@ describe('board-move.mjs', () => {
     it('読んだ差分がもう頭でなければ、起こさずに畳む', () => {
       const board = stalling({ 'review:10': '9990000' });
       expect(moves(board)).toEqual(['ARCHIVE session_r done:review-10', 'REVIEW 10 aaa1111']);
+    });
+
+    /**
+     * **指紋を `stall:` で始めない。** `trackIdle` は `stall:` で始まる覚えを動き出した時点で
+     * 捨てる（ワーカーは再び空けばもう一度起こす側）ので、始めるとレビューも起こし直しになり、
+     * 書けないレビューを毎周叩き続ける。2箇所が暗黙に一致すべき規約なので、ここで留める。
+     */
+    it('起こしたレビューの覚えは、動き出しても消えない', () => {
+      const woke = 'review-stall:10';
+      expect(moves(stalling({}))).toContain(`RESUME session_r review-stall 10 ${woke}`);
+
+      const sessions = [working('session_r', 'review-10')];
+      const kept = trackIdle({ 'resume:session_r': woke }, { sessions }, NOW);
+
+      expect(kept['resume:session_r']).toBe(woke);
     });
   });
 
