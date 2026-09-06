@@ -136,7 +136,7 @@ PCが落ちたときだけ。**
 **それでも止まったら、監視係が起こす**（[`board-design.md`](board-design.md) 2.19）。CCRの Routine が
 1時間ごとにブリッジへ立てるセッションが、心拍を見て `start` を打つ。**人が気づく必要があるのは1つ
 だけ**——`claude remote-control` が上がっていないと Routine も発火せず、**上がっていないことを
-知らせる者は原理的に居ない**（同 2.19.3）。
+知らせる者は原理的に居ない**（同 2.19.4）。
 
 ```
 bash scripts/agent/daemon.sh start     # 背景で立てる。ログは ~/daemon.log へ追記
