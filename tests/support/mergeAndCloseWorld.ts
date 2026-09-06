@@ -30,8 +30,8 @@ vi.setConfig({ testTimeout: 20000 });
 const SCRIPT = resolve(__dirname, '../../scripts/agent/merge-and-close.sh');
 
 /**
- * 実物のPR本文の末尾に Claude Code が付ける脚注。**この道具はセッションを引かない**
- * （`board-design.md` 2.10）ので、本文に混ざっていても何も起こさないことを見るためだけに要る。
+ * 実物のPR本文の末尾に Claude Code が付ける脚注。**この道具が本文から読むのは `Closes #N` だけ**
+ * なので、既定の本文はこれで足りる。`Closes` を持つ世界でも末尾に置いて、実物の並びに寄せる。
  */
 export const DEFAULT_BODY = '_[Claude Code](https://claude.ai/code/session_01ZZZZZZZZZZZZZZZZZZZZZZ)_';
 
