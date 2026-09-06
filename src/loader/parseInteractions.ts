@@ -62,7 +62,6 @@ function parseInteraction(
   );
   const effect = parseActiveEffectBody(loader, context, map, scope, RESERVED_KEYS);
 
-  // announce: 時間を進める前に告げる出来事（11.6節）。省略時は何も告げない。
   const announceNode = tryGetNode(map, 'announce');
   const announcements =
     announceNode !== undefined ? parseSignals(`${context}.announce`, announceNode, scope) : [];

@@ -1,6 +1,5 @@
 import type { WorldSession } from './WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
-import { ActiveEffectSequence } from './ActiveEffect';
 import type { EffectReader, DeclaredNumberReading } from './EffectReader';
 import type { DeclaredNumber } from './DeclaredNumber';
 import type { ReferenceContext } from './ReferenceRoot';
@@ -23,13 +22,12 @@ export class InteractionDef {
   private readonly requirements: Requirements | undefined;
 
   /**
-   * 時間を進める前に告げる出来事（`announce`、11.6節）。何も告げなければundefined。
+   * 時間を進める前に告げる出来事（`announce`、11.6節）。何も告げなければ空。
    *
-   * **告げるだけで世界の形は変えない**ので、受け取るのはsignalだけ（コンストラクタの引数の型）。
-   * 効果（effect）と別の口にするのは、起きる時点が違うため——同じ口から読み上げると、書き出した側が
-   * 「時間の前か後か」を言えなくなる。
+   * **告げるだけで世界の形は変えない**ので、型がsignalに限る。効果（effect）と別に持つのは起きる時点が
+   * 違うため——1つにまとめると、読み上げた側が「時間の前か後か」を言えなくなる。
    */
-  readonly announcement: ActiveEffectSequence | undefined;
+  readonly announcements: readonly SignalEffect[];
 
   /** 条件成立時に適用する効果。何も書かれていなければ空の合成（ActiveEffectSequence）で、適用しても何も起きない。 */
   private readonly effect: ActiveEffect;
@@ -50,7 +48,7 @@ export class InteractionDef {
   ) {
     this.name = name;
     this.requirements = requirements;
-    this.announcement = announcements.length === 0 ? undefined : new ActiveEffectSequence(announcements);
+    this.announcements = announcements;
     this.effect = effect;
     this.duration = duration;
   }
@@ -124,7 +122,7 @@ export class InteractionDef {
     const self = context.self!;
     if (this.unmetRequirement(context) !== undefined) return false;
 
-    this.announcement?.apply(context, session, undefined);
+    for (const announcement of this.announcements) announcement.apply(context, session);
 
     const involved = [self, context.agent, context.instrument];
     if (!spendDurationAndReportParticipantsAlive(this.minutesFor(context), session, involved)) return false;

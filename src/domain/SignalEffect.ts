@@ -11,6 +11,9 @@ import type { ReferenceContext, ReferenceRoot } from './ReferenceRoot';
  * 「外したことが起きた」なので、それを告げるのがこの命令。
  *
  * 名前は表示のためだけの識別子で、要件のreason（14.6節）と同じくグローバルIDへは畳まない。
+ *
+ * **`announce`（11.6節）もこの命令で表す。** 告げることは同じで違うのは適用される時点だけなので、
+ * 何をどう告げるかを知っているのはこの1つでよく、いつ告げるかは適用する側（InteractionDef）が決める。
  */
 export class SignalEffect extends ActiveEffect {
   /** 何が起きたかの識別子。localeのsignal_textsを引く。 */

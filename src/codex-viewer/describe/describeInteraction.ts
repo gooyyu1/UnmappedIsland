@@ -30,11 +30,13 @@ export function describeInteraction(
     out.indented(() => describeRequirements(requirements, names, out));
   }
 
-  const announcement = interaction.announcement;
-  if (announcement !== undefined) {
+  const announcements = interaction.announcements;
+  if (announcements.length > 0) {
     // 効果と同じ`signal ...`の行になるので、時間を進める前に告げるものだと見出しで断る（11.6節）。
     out.write(text('announce:'));
-    out.indented(() => describeEffect(announcement, names, out));
+    out.indented(() => {
+      for (const announcement of announcements) describeEffect(announcement, names, out);
+    });
   }
 
   const duration = interaction.durationReading;
