@@ -48,11 +48,18 @@ export class RawObjectDef {
   readonly globalId: number;
 
   /**
-   * 宣言そのもの。patch（3.4節）はこのノードを書き換え、書き換えたら readFields を呼び直して
-   * 下の各フィールドを取り直す。フィールドはこのノードの一部を指しているだけなので、両者が
-   * 食い違ったまま resolve へ進まないよう、取り直しはこのクラス自身が引き受ける。
+   * 宣言そのもの。**読むだけ**——渡された時点では読み込み元のもので、そちらは同じノードを次の
+   * 読み込みへも配る（loadWorldCodex）。書き換えるならmodifyDeclarationを通す。
    */
-  readonly node: YAMLMap;
+  get node(): YAMLMap {
+    return this.declaredNode;
+  }
+
+  /** nodeの実体。modifyDeclarationが初めて書き換えるとき、自分の複製に差し替わる。 */
+  private declaredNode: YAMLMap;
+
+  /** declaredNodeが自分の複製か（＝そのまま書き換えてよいか）。 */
+  private ownsDeclaredNode = false;
 
   /** 混ぜ込める宣言一式（traitと共有する部分）。 */
   readonly body = new RawDeclarationBody();
@@ -74,8 +81,27 @@ export class RawObjectDef {
     this.source = source;
     this.packName = packName;
     this.globalId = globalId;
-    this.node = node;
+    this.declaredNode = node;
     this.readFields();
+  }
+
+  /**
+   * 宣言を書き換える（patch、3.4節）。**書き換えは読み込み元へ残らない**——受け取った宣言は
+   * 他人のものなので、初めて書き換えるときに自分の複製へ移ってから渡す。
+   *
+   * 書き換えが済んだら下の各フィールドを取り直す。フィールドはこのノードの一部を指しているだけ
+   * なので、両者が食い違ったままresolveへ進まないよう、取り直しはこのクラス自身が引き受ける。
+   */
+  modifyDeclaration(modify: (node: YAMLMap) => void): void {
+    if (!this.ownsDeclaredNode) {
+      this.declaredNode = this.declaredNode.clone() as YAMLMap;
+      this.ownsDeclaredNode = true;
+    }
+    try {
+      modify(this.declaredNode);
+    } finally {
+      this.readFields();
+    }
   }
 
   /**
@@ -89,14 +115,14 @@ export class RawObjectDef {
   }
 
   /** 宣言から各フィールドを取り直す。trait合成がまだ起こりうるものは生YAMLノードのまま持つ。 */
-  readFields(): void {
+  private readFields(): void {
     const context = `object_defs.'${this.name}'`;
 
-    this.body.readFields(this.node, context, OBJECT_DEF_OWN_KEYS);
-    this.isSingleton = tryGetBool(this.node, 'singleton', context) ?? false;
-    this.recipes = tryGetMap(this.node, 'recipes', context);
-    this.variationAxes = tryGetMap(this.node, 'variation_axes', context);
-    this.traitNames = namesIn(tryGetSeq(this.node, 'traits', context), context);
+    this.body.readFields(this.declaredNode, context, OBJECT_DEF_OWN_KEYS);
+    this.isSingleton = tryGetBool(this.declaredNode, 'singleton', context) ?? false;
+    this.recipes = tryGetMap(this.declaredNode, 'recipes', context);
+    this.variationAxes = tryGetMap(this.declaredNode, 'variation_axes', context);
+    this.traitNames = namesIn(tryGetSeq(this.declaredNode, 'traits', context), context);
   }
 
   /**

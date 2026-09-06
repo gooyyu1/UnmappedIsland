@@ -167,9 +167,9 @@ export class WorldCodexYamlLoader {
   }
 
   /**
-   * パース済みの1つのYAMLを読み込む。**渡したDocumentはこのローダーのものになる**——patch（3.4節）が
-   * 宣言のノードを書き換えるので、同じDocumentを2度渡すと2度目が1度目の書き換えを見る。
-   * 同じ内容を何度も読むなら、パース結果を控えて複製を渡す（loadWorldCodex）。
+   * パース済みの1つのYAMLを読み込む。**渡したDocumentは書き換えない**ので、同じものを何度でも
+   * 渡してよい（loadWorldCodex）。patch（3.4節）が書き換える宣言のノードは、書き換える前に
+   * RawObjectDefが自分の複製へ移す（RawObjectDef.modifyDeclaration）。
    */
   loadDocument(label: string, doc: Document, from?: PackSource): this {
     const report = from?.report;
