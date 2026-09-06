@@ -83,6 +83,13 @@ function pr(number: number, over: Record<string, unknown> = {}) {
 }
 
 const label = (...names: string[]) => ({ labels: names.map((name) => ({ name })) });
+/**
+ * 同じ番号の issue を閉じる、人のマージ待ちのPR（`通してよい` と `判断待ち` が並んだ形）。**盤面に
+ * 打つ手は残っていない**——マージは `判断待ち` が止め（2.13）、書いた本人を起こす理由も無い。
+ * 書いたセッションが枠を握ったまま止まる形は、これで作る。
+ */
+const pending = (number: number) =>
+  pr(number, { body: `Closes #${number}\n`, ...label('通してよい', '判断待ち') });
 /** レビューが書いた判定のコメント（`review-prompt.md` の書き方）。名乗る版を変えられる形で持つ。 */
 const verdict = (version: string) => ({
   comments: [{ body: `[レビュー] 通してよい\n読んだ版: ${version}\n\n直しは要らない。\n` }],
@@ -723,7 +730,7 @@ describe('board-move.mjs', () => {
   });
 
   // **上限は錠とは別の手綱**（3.1）。錠を持たない issue はいくらでも並ぶので、ここでしか止まらない。
-  it('書くセッションが上限まで走っていれば、錠が無くても投入しない', () => {
+  it('手の動いている作業者が上限まで居れば、錠が無くても投入しない', () => {
     const board = {
       issues: [6, 7, 8, 9].map((number) => ({
         number,
@@ -737,8 +744,61 @@ describe('board-move.mjs', () => {
       ],
     };
     expect(moves(board)).toEqual([
-      'NOTE 1件の task が、書くセッション（session_a session_b session_c）の空きを待っている',
+      'NOTE 1件の task が、手の動いている作業者の枠（session_a session_b session_c）の空きを待っている',
     ]);
+  });
+
+  // **立てた直後のセッションも、手が動いている側で数える**（`stillWorking`）。走り出すまでは
+  // `SESSION_STATUS_RUNNING` にならないので、走っているかだけで数えると**枠が空いて見えた周に
+  // もう1本立ち、動く数が上限を越える。**
+  it('立てた直後でまだ走り出していないセッションも、動いている側に数える', () => {
+    const board = {
+      issues: [6, 7, 8, 9].map((number) => ({
+        number,
+        ...label('kind:task'),
+        blockedBy: { nodes: [] },
+      })),
+      sessions: [working('session_a', 'task-6'), working('session_b', 'task-7'), idle('session_c', 'task-8')],
+      // この周に空いたばかり（`board-round.mjs` の `trackIdle` が、初めて見た周の時刻を書く）。
+      taken: { 'idle:session_c': NOW },
+    };
+    expect(moves(board)).toEqual([
+      'NOTE 1件の task が、手の動いている作業者の枠（session_a session_b session_c）の空きを待っている',
+    ]);
+  });
+
+  // **抱えている数と、手が動いている数は別の量**（3.1）。人の判断を待って止まっているセッションは
+  // 前者だけを埋めるので、**1つの数で兼ねると、待っているPRが溜まった時点で手が1本も動いていなくても
+  // 投入が止まる**（issue #1750）。
+  it('判断待ちのPRを抱えたセッションが動く数の上限を越えて居ても、手が空いていれば投入する', () => {
+    const holders = [5, 6, 7, 8];
+    const board = {
+      issues: [...holders, 9].map((number) => ({
+        number,
+        ...label('kind:task'),
+        blockedBy: { nodes: [] },
+      })),
+      prs: holders.map((number) => pending(number)),
+      sessions: holders.map((number) => idle(`session_${number}`, `task-${number}`)),
+    };
+    expect(moves(board)).toEqual(['TASK 9']);
+  });
+
+  // 抱えている側の上限。**手が動いていなくても、ここに達したら投入は止まる**——起こす相手も畳む
+  // 相手も居ないまま、担当だけが際限なく増えるのを止める。
+  it('抱えているタスクが上限まで溜まったら、手が空いていても投入しない', () => {
+    const holders = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+    const board = {
+      issues: [...holders, 9].map((number) => ({
+        number,
+        ...label('kind:task'),
+        blockedBy: { nodes: [] },
+      })),
+      prs: holders.map((number) => pending(number)),
+      sessions: holders.map((number) => idle(`session_${number}`, `task-${number}`)),
+    };
+    const who = holders.map((number) => `session_${number}`).join(' ');
+    expect(moves(board)).toEqual([`NOTE 1件の task が、抱えているタスクの枠（${who}）の空きを待っている`]);
   });
 
   // 走らせる先は issue のラベルにある（2.16）。盤面は投入先を引数の形で寄越し、`board-round.mjs`

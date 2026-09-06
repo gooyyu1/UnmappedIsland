@@ -85,13 +85,25 @@ const STALL_MINUTES = Number(process.env.STALL_MINUTES || 15);
 const DISPATCH_TO = { cloud: '', bridge: '--bridge' };
 
 /**
- * 同時に走ってよい**書くセッション**の数（3.1。**値は仮決め**）。錠を持たない issue はいくらでも
- * 並ぶので、**手綱はここにしか無い**。
+ * 同時に**抱えてよいタスク**の数（3.1。値の出どころ: ユーザーの指示・2026-09-07）。数えるのは担当
+ * issue を持ったまま生きているセッションで、**PRを出して人の判断を待っているだけのものも入る**
+ * ——担当はマージまで閉じない。
+ *
+ * 錠を持たない issue はいくらでも並ぶので、**手綱はこれと `ACTIVE_WORKERS` にしか無い**。
  *
  * **2.5.2 の「残り余力と1本あたりの消費の比較」が入っても外さない**——残量だけを見て決めると、
  * 余力のある周に一度に何本も立つ。
  */
-const WRITERS = 3;
+const HELD_TASKS = 10;
+
+/**
+ * 同時に**手が動いてよい作業者**の数（3.1。値の出どころ: ユーザーの指示・2026-09-07）。
+ * `HELD_TASKS` と別に置くのは、
+ * **抱えている数と手が動いている数が別の量だから**——人の判断を待って止まっているセッションは
+ * 前者だけを埋める。1つの数で兼ねると、待っているPRが上限まで溜まった時点で、手が1本も動いて
+ * いなくても投入が止まる。
+ */
+const ACTIVE_WORKERS = 3;
 
 /**
  * 棚卸しが付ける**分類**の接頭辞（2.17.1）。**未整理は「これを1つも持たないこと」で表す**——
@@ -101,8 +113,8 @@ const WRITERS = 3;
 const KIND = 'kind:';
 
 /**
- * 先に配ってほしい issue の印（2.18）。**効き目は配る順だけ**——枠（`WRITERS`）は増えず、錠も
- * 手綱も越えない（1.3）。
+ * 先に配ってほしい issue の印（2.18）。**効き目は配る順だけ**——枠（`HELD_TASKS`・
+ * `ACTIVE_WORKERS`）は増えず、錠も手綱も越えない（1.3）。
  *
  * **付けすぎても壊れない。** 全部に付けば「古いものから」に戻るだけなので、**壊れる先が安全側に
  * 限られる**。これが、順位を数で持たずに印1つで表す理由。
@@ -149,8 +161,8 @@ function hasUnreadSmell(mergedPrs) {
  * - `locks` … 掴む資源（`area:` と同じ綴り）。書くセッションと取り合う。
  * - `prompt` … 渡す本文の在り処（リポジトリからの相対）。
  *
- * **PRを出す係が居ても、書くセッションの枠（`WRITERS`）には数えない。** 1日1回・記録だけの差分で、
- * マージの列を詰まらせないため。数えると、書く側の並列度がその分だけ黙って下がる。
+ * **PRを出す係が居ても、作業者の枠（`HELD_TASKS`・`ACTIVE_WORKERS`）には数えない。** 1日1回・
+ * 記録だけの差分で、マージの列を詰まらせないため。数えると、書く側の並列度がその分だけ黙って下がる。
  */
 const CYCLES = [
   {
@@ -273,6 +285,15 @@ export function moves(input) {
     const at = Date.parse(input.now ?? '');
     return Number.isNaN(since) || Number.isNaN(at) ? 0 : (at - since) / 60_000;
   }
+
+  /**
+   * まだ手が動いていると読む範囲。**`busySession` だけでは足りない**——あれは手番の切れ目ごとに
+   * 落ちるので（1.6）、立てた直後のまだ走り出していないセッションも、下請けのレビューを待って
+   * いる間も「動いていない」に見える。**空いたままが `STALL_MINUTES` に届くまでは動いている側**
+   * で数える。停滞と読む境目（`STALL_MINUTES`）と同じ線を使うのは、そこを越えたセッションには
+   * 起こす手か返す手が出るから——**動いていないと読む側と、止まったとして打つ側を1本の線で揃える。**
+   */
+  const stillWorking = (session) => busySession(session) || idleMinutes(session) < STALL_MINUTES;
 
   /**
    * そのレビューが判定を書き終えたか（2.10.3）。**訊くのはコメントそのもの**——投入したときの版
@@ -649,12 +670,22 @@ export function moves(input) {
   // 1回しか出ないので、黙ったまま TASK が永久に止まる。ログに何も出ないと「やることが無い周」と
   // 見分けが付かない。**打つのは1周に1手**なので、書くのは先頭が待っている理由でよい。
   const waiting = [];
-  if (held.length >= WRITERS) {
+  /** 抱えているうち、まだ手が動いているもの（`ACTIVE_WORKERS` が数える側）。 */
+  const moving = held.filter((holder) => stillWorking(holder.session));
+  /** 投入を止めている枠（どちらも空いていれば `undefined`）。 */
+  const full =
+    held.length >= HELD_TASKS
+      ? { what: '抱えているタスク', holders: held }
+      : moving.length >= ACTIVE_WORKERS
+        ? { what: '手の動いている作業者', holders: moving }
+        : undefined;
+  if (full !== undefined) {
     if (ready.length > 0) {
-      // **枠を握っている相手を並べる。** この覚え書きを毎周書く理由は、起こしても動かないセッションが
-      // 1本残ったときに人が見つけられること——名前が出ていないと、詰まっている1本を特定できない。
-      const who = held.map((holder) => holder.session.id).join(' ');
-      notes.push(`${ready.length}件の task が、書くセッション（${who}）の空きを待っている`);
+      // **どちらの枠で止まったかと、その枠を握っている相手を並べる。** この覚え書きを毎周書く理由は、
+      // 詰まりを人が見つけられること——枠の名前が出ていないとどちらが満ちたのか読めず、セッションの
+      // 名前が出ていないと、起こしても動かない1本を特定できない。
+      const who = full.holders.map((holder) => holder.session.id).join(' ');
+      notes.push(`${ready.length}件の task が、${full.what}の枠（${who}）の空きを待っている`);
     }
   } else {
     for (const issue of ready) {
@@ -672,19 +703,15 @@ export function moves(input) {
     }
   }
 
-  // **周期の係**（2.17）。書くセッションの枠は見ない——PRを出す係も1日1回・記録だけの差分で、
+  // **周期の係**（2.17）。作業者の枠はどちらも見ない——PRを出す係も1日1回・記録だけの差分で、
   // マージの列を詰まらせない。
   for (const cycle of CYCLES) {
-    // **前の1本が終わっていなければ立てない。** 終わったかの見方は、畳む側と同じ——走っているか、
-    // 空いたままが `STALL_MINUTES` に届いていないか（1.6。「終わった」と「承認を待っている」は
-    // 同じ形に見える）。
+    // **前の1本が終わっていなければ立てない**（見方は `stillWorking`。「終わった」と「承認を
+    // 待っている」は同じ形に見える）。
     //
     // **「生きているか」では見ない。** 畳む手は次の周まで出ないので、生きているかで見ると
     // **終わった1本が、畳まれるまでのあいだ次の周期を塞ぐ。**
-    const running = alive(`chore-${cycle.name}`).some(
-      (session) => busySession(session) || idleMinutes(session) < STALL_MINUTES,
-    );
-    if (running) continue;
+    if (alive(`chore-${cycle.name}`).some(stillWorking)) continue;
     if (!cycle.due(input)) continue;
     // **前に立ててからの間隔**。覚えが無ければ「まだ一度も立てていない」なので、そのまま立てる。
     // **デーモンを別のPCへ移すと覚えごと消える**ので、移した直後は係が一斉に立つ。
@@ -706,7 +733,7 @@ export function moves(input) {
     chores.push(`CHORE ${cycle.name} ${cycle.prompt} ${input.now}${flag === '' ? '' : ` ${flag}`}`);
   }
 
-  // 畳むのをマージの次に置くのは、**書くセッションの枠が空くから**（3.1 の並列度）。後ろへ回すと、
+  // 畳むのをマージの次に置くのは、**抱えているタスクの枠が空くから**（3.1 の並列度）。後ろへ回すと、
   // 終わったワーカーが枠を握ったまま、待っている task が投入されない周が続く。
   return [
     ...merges,
