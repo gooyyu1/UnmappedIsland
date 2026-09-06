@@ -363,11 +363,12 @@ function buildSections(
     },
     {
       key: 'work_piles',
-      records: amounts.map(({ pile, minutes, days }) => ({
+      records: amounts.map(({ pile, objectNames, minutes, days }) => ({
         system: pile.system,
         pile: pile.label,
-        // 量をその値段から採った型。置いた日数の山ではnull（型の名前と取り違えようが無い）。
-        object: typeof pile.amount === 'number' ? null : pile.amount,
+        // 量をその値段から採った型（タグで立つ山では、そのタグを名乗る型が全部並ぶ）。置いた日数の
+        // 山ではnull——並びの中に「型が無い」を表す形が無い。
+        objects: objectNames.length === 0 ? null : objectNames,
         days: rounded(days, 2),
         minutes: rounded(minutes, 1),
       })),
@@ -475,7 +476,7 @@ function buildReportFromDefinitions(): string {
   // 1日の枠も山の量も収支表から出る（ContentSkeleton.md 8.3節）ので、先に1度だけ解く。
   const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
   const budget = dailyBudgetOf(balance);
-  const amounts = workPileAmountsOf(balance, budget);
+  const amounts = workPileAmountsOf(codex, SAMPLE_CHARACTER, balance, budget);
   const work = workTotalOf(amounts, budget);
 
   const scope = codex.generation!.scopes.get('island')!;

@@ -52,32 +52,33 @@ daily_budget:
   - {unit: minutes, outdoor_window: 720, night_craft: 360, sleep: 360, survival_gathering: 247, surplus: 833}
 
 work_piles:
-  - {system: 1, pile: 雨受けと貯水を据える, object: null, days: 2.00, minutes: 1666.0}
-  - {system: 1, pile: 甕を10個焼く, object: null, days: 3.20, minutes: 2665.6}
-  - {system: 1, pile: 航海ぶんの水を積む, object: null, days: 1.00, minutes: 833.0}
-  - {system: 2, pile: 畑を拓いて回す, object: null, days: 4.00, minutes: 3332.0}
-  - {system: 2, pile: 家畜の囲い, object: pen, days: 3.06, minutes: 2551.5}
-  - {system: 2, pile: 大型の狩り, object: null, days: 2.00, minutes: 1666.0}
-  - {system: 3, pile: 干し場, object: drying_rack, days: 1.14, minutes: 949.9}
-  - {system: 3, pile: 燻し小屋, object: null, days: 2.00, minutes: 1666.0}
-  - {system: 3, pile: 製塩, object: null, days: 3.00, minutes: 2499.0}
-  - {system: 3, pile: 航海ぶんを塩漬けにする, object: null, days: 1.00, minutes: 833.0}
-  - {system: 4, pile: 鉱石を掘って製錬, object: null, days: 5.00, minutes: 4165.0}
-  - {system: 6, pile: 石鏃の槍, object: null, days: 1.00, minutes: 833.0}
-  - {system: 6, pile: 青銅の穂先, object: null, days: 2.00, minutes: 1666.0}
-  - {system: 7, pile: なめし革の背負い袋, object: null, days: 1.00, minutes: 833.0}
-  - {system: 7, pile: そり, object: null, days: 2.00, minutes: 1666.0}
-  - {system: 8, pile: なめし革の一式, object: tanned_leather_clothing, days: 1.97, minutes: 1643.1}
-  - {system: 9, pile: 高床の寝台, object: null, days: 1.50, minutes: 1249.5}
-  - {system: 9, pile: 詰め物, object: null, days: 1.00, minutes: 833.0}
-  - {system: 10, pile: 葉の小屋, object: null, days: 3.00, minutes: 2499.0}
-  - {system: 10, pile: 高床, object: null, days: 4.00, minutes: 3332.0}
-  - {system: 10, pile: 板の壁・床, object: null, days: 5.00, minutes: 4165.0}
-  - {system: 11, pile: 筏, object: raft, days: 5.05, minutes: 4206.8}
-  - {system: 11, pile: 帆, object: rawhide_sail, days: 3.69, minutes: 3071.8}
-  - {system: 11, pile: 櫂と舵, object: null, days: 2.00, minutes: 1666.0}
-  - {system: 11, pile: 沿岸航海, object: null, days: 3.00, minutes: 2499.0}
-  - {system: 11, pile: 海図を仕上げる, object: null, days: 5.00, minutes: 4165.0}
+  - {system: 1, pile: 雨受けと貯水を据える, objects: null, days: 2.00, minutes: 1666.0}
+  - {system: 1, pile: 甕を10個焼く, objects: null, days: 3.20, minutes: 2665.6}
+  - {system: 1, pile: 航海ぶんの水を積む, objects: null, days: 1.00, minutes: 833.0}
+  - {system: 2, pile: 畑を拓いて回す, objects: null, days: 4.00, minutes: 3332.0}
+  - {system: 2, pile: 家畜の囲い, objects: [pen], days: 3.06, minutes: 2551.5}
+  - {system: 2, pile: 大型の狩り, objects: null, days: 2.00, minutes: 1666.0}
+  - {system: 3, pile: 干し場, objects: [drying_rack], days: 1.14, minutes: 949.9}
+  - {system: 3, pile: 燻し小屋, objects: null, days: 2.00, minutes: 1666.0}
+  - {system: 3, pile: 製塩, objects: null, days: 3.00, minutes: 2499.0}
+  - {system: 3, pile: 航海ぶんを塩漬けにする, objects: null, days: 1.00, minutes: 833.0}
+  - {system: 4, pile: 鉱石を掘って製錬, objects: null, days: 5.00, minutes: 4165.0}
+  - {system: 6, pile: 石鏃の槍, objects: null, days: 1.00, minutes: 833.0}
+  - {system: 6, pile: 青銅の穂先, objects: null, days: 2.00, minutes: 1666.0}
+  - {system: 7, pile: なめし革の背負い袋, objects: null, days: 1.00, minutes: 833.0}
+  - {system: 7, pile: そり, objects: null, days: 2.00, minutes: 1666.0}
+  - {system: 8, pile: なめし革の一式, objects: [tanned_leather_clothing], days: 1.97, minutes: 1643.1}
+  - {system: 9, pile: 高床の寝台, objects: null, days: 1.50, minutes: 1249.5}
+  - {system: 9, pile: 詰め物, objects: null, days: 1.00, minutes: 833.0}
+  - {system: 10, pile: 葉の小屋, objects: null, days: 3.00, minutes: 2499.0}
+  - {system: 10, pile: 高床, objects: null, days: 4.00, minutes: 3332.0}
+  - {system: 10, pile: 板の壁・床, objects: null, days: 5.00, minutes: 4165.0}
+  - {system: 11, pile: 筏, objects: [raft], days: 5.05, minutes: 4206.8}
+  - {system: 11, pile: 帆, objects: [rawhide_sail], days: 3.69, minutes: 3071.8}
+  - {system: 11, pile: 櫂と舵, objects: null, days: 2.00, minutes: 1666.0}
+  - {system: 11, pile: 沿岸航海, objects: null, days: 3.00, minutes: 2499.0}
+  - {system: 11, pile: 海図を仕上げる, objects: null, days: 5.00, minutes: 4165.0}
+  - {system: 12, pile: 設えを積んで里心を止める, objects: [wood_carving, log_drum, log_drum], days: 1.76, minutes: 1467.7}
 
 work_piles_by_system:
   - {system: 1, piles: 3, days: 6.20, minutes: 5164.6}
@@ -90,9 +91,10 @@ work_piles_by_system:
   - {system: 9, piles: 2, days: 2.50, minutes: 2082.5}
   - {system: 10, piles: 3, days: 12.00, minutes: 9996.0}
   - {system: 11, piles: 5, days: 18.74, minutes: 15608.5}
+  - {system: 12, piles: 1, days: 1.76, minutes: 1467.7}
 
 work_piles_total:
-  - {piles: 26, days: 68.61, minutes: 57155.2, outdoor_minutes: 38103.5, base_minutes: 19051.7, base_days: 52.92}
+  - {piles: 27, days: 70.38, minutes: 58622.9, outdoor_minutes: 39082.0, base_minutes: 19541.0, base_days: 54.28}
 
 exploration_phase:
   - {base: shortest_mean, metric: exploration_minutes, unit: minutes, mean: 2795.40, min: 1695.00, p5: 1800.00, p95: 3660.00, max: 3855.00, sd: 572.20, n: 500}
@@ -121,5 +123,5 @@ steady_phase_by_work_share:
   - {base: shortest_mean, share: 密林, work_percent: 25, round_trip_minutes: 135.86, work_minutes_per_day: 270.33, day_percent: 34.7, islands_percent: 52.2}
 
 cycle:
-  - {base: shortest_mean, metric: steady_days, unit: days, mean: 96.41, min: 80.56, p5: 84.46, p95: 114.83, max: 151.56, sd: 9.91, n: 500}
-  - {base: shortest_mean, metric: total_days, unit: days, mean: 112.83, min: 90.56, p5: 97.46, p95: 130.38, max: 166.56, sd: 10.70, n: 500}
+  - {base: shortest_mean, metric: steady_days, unit: days, mean: 98.88, min: 82.63, p5: 86.63, p95: 117.78, max: 155.46, sd: 10.16, n: 500}
+  - {base: shortest_mean, metric: total_days, unit: days, mean: 115.31, min: 92.63, p5: 99.63, p95: 133.40, max: 170.46, sd: 10.94, n: 500}

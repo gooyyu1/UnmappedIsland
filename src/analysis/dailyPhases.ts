@@ -1,5 +1,6 @@
 import type { IslandMap } from '../domain/generation/IslandMap';
 import type { ObjectDef } from '../domain/ObjectDef';
+import type { PassiveDeclaration, PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { ActivityHoursRow } from './activityHours';
 import type { BalanceTables } from './balanceTables';
@@ -117,6 +118,33 @@ export const WORK_SHARES: readonly WorkShare[] = [
 ];
 
 /**
+ * 山1つの量の出どころ。**数**なら置いた日数（仮置き）、**型**なら収支表に出るその型の総労働、
+ * **積み上げ**なら{@link StackUntilStage}。
+ *
+ * 置いた値になるのは、まだ宣言が無い山と、量が個数や往復の回数で決まっていて型1つでは立たない山
+ * （畑・塩田・甕。ContentSkeleton.md 4節）。
+ */
+export type WorkPileAmountSource = number | { readonly object: string } | { readonly stack: StackUntilStage };
+
+/**
+ * 段へ届くまで積む山。タグを名乗る型を並べて、その人物のプロパティがその段へ入るまでの、**いちばん
+ * 安い積み方**の総労働を量に採る（同じ型を何個並べてもよい）。
+ *
+ * **足止めしているのはその線までの手間であって、タグを名乗る型を全部そろえることではない**
+ * （DesignPrinciples.md「段は、実際に足止めしたものだけを数える」）。全部そろえる量で測ると、
+ * **型が1つ増えるたびに1周回の日数が伸びる**——プレイヤーが払う手間は線までで変わらないのに。
+ * いちばん安い積み方なら、増えた型はそれが安いときにだけ量を動かす。
+ */
+export interface StackUntilStage {
+  /** 積める型を選ぶタグ。 */
+  readonly tag: string;
+
+  /** 積むのをやめる線。人物のこのプロパティが、この段へ入るまで。 */
+  readonly propertyName: string;
+  readonly stageName: string;
+}
+
+/**
  * 1周回に積む山1つ（ContentSkeleton.md 4節）。
  *
  * **何を山と数えるかは宣言する。** 量の大小からは決められない——磨いた石器も恒久窯も労働は要るのに
@@ -128,12 +156,7 @@ export interface WorkPile {
 
   readonly label: string;
 
-  /**
-   * その山の量。**型の名前**なら収支表に出るその型の総労働、**数**なら置いた日数（仮置き）。
-   * 置いた値になるのは、まだ宣言が無い山と、量が個数や往復の回数で決まっていて型1つでは立たない山
-   * （畑・塩田・甕。同節）。
-   */
-  readonly amount: string | number;
+  readonly amount: WorkPileAmountSource;
 }
 
 /**
@@ -145,9 +168,9 @@ export const WORK_PILES: readonly WorkPile[] = [
   { system: 1, label: '甕を10個焼く', amount: 3.2 },
   { system: 1, label: '航海ぶんの水を積む', amount: 1 },
   { system: 2, label: '畑を拓いて回す', amount: 4 },
-  { system: 2, label: '家畜の囲い', amount: 'pen' },
+  { system: 2, label: '家畜の囲い', amount: { object: 'pen' } },
   { system: 2, label: '大型の狩り', amount: 2 },
-  { system: 3, label: '干し場', amount: 'drying_rack' },
+  { system: 3, label: '干し場', amount: { object: 'drying_rack' } },
   { system: 3, label: '燻し小屋', amount: 2 },
   { system: 3, label: '製塩', amount: 3 },
   { system: 3, label: '航海ぶんを塩漬けにする', amount: 1 },
@@ -156,17 +179,24 @@ export const WORK_PILES: readonly WorkPile[] = [
   { system: 6, label: '青銅の穂先', amount: 2 },
   { system: 7, label: 'なめし革の背負い袋', amount: 1 },
   { system: 7, label: 'そり', amount: 2 },
-  { system: 8, label: 'なめし革の一式', amount: 'tanned_leather_clothing' },
+  { system: 8, label: 'なめし革の一式', amount: { object: 'tanned_leather_clothing' } },
   { system: 9, label: '高床の寝台', amount: 1.5 },
   { system: 9, label: '詰め物', amount: 1 },
   { system: 10, label: '葉の小屋', amount: 3 },
   { system: 10, label: '高床', amount: 4 },
   { system: 10, label: '板の壁・床', amount: 5 },
-  { system: 11, label: '筏', amount: 'raft' },
-  { system: 11, label: '帆', amount: 'rawhide_sail' },
+  { system: 11, label: '筏', amount: { object: 'raft' } },
+  { system: 11, label: '帆', amount: { object: 'rawhide_sail' } },
   { system: 11, label: '櫂と舵', amount: 2 },
   { system: 11, label: '沿岸航海', amount: 3 },
   { system: 11, label: '海図を仕上げる', amount: 5 },
+  // 里心が止まるのは`snug`（docs/world/Characters.md ホームシック節）。**何をいくつ並べるかは自由**
+  // なので、量はいちばん安い積み方で測る。
+  {
+    system: 12,
+    label: '設えを積んで里心を止める',
+    amount: { stack: { tag: 'furnishing', propertyName: 'comfort', stageName: 'snug' } },
+  },
 ];
 
 /**
@@ -178,22 +208,138 @@ const OUTDOOR_WORK_SHARE = 2 / 3;
 /** 山1つの量。 */
 export interface WorkPileAmount {
   readonly pile: WorkPile;
+
+  /** 量を採った型（宣言順。同じ型を2つ積むなら2回並ぶ）。置いた日数の山では空。 */
+  readonly objectNames: readonly string[];
+
   readonly minutes: number;
   readonly days: number;
 }
 
 /**
- * 山の一覧を量へ直す。置いた日数の山は自由時間を掛けて分へ、型で立つ山は収支表の総労働をそのまま採る。
- * **型が収支表に出ていなければ投げる**——0分の山として黙って通すと、1周回の日数だけが静かに縮む。
+ * 山の一覧を量へ直す。置いた日数の山は自由時間を掛けて分へ、型で立つ山は積む型ぶんの総労働を
+ * 収支表から足す。**型が収支表に出ていなければ投げる**——0分の山として黙って通すと、1周回の日数
+ * だけが静かに縮む。
+ *
+ * `characterName` は、段へ届くまで積む山（{@link StackUntilStage}）が見る人物。段の線はその人物の
+ * プロパティが持つ。
  */
-export function workPileAmountsOf(balance: BalanceTables, budget: DailyBudget): readonly WorkPileAmount[] {
+export function workPileAmountsOf(
+  codex: WorldCodex,
+  characterName: string,
+  balance: BalanceTables,
+  budget: DailyBudget,
+): readonly WorkPileAmount[] {
   return WORK_PILES.map((pile) => {
+    const objectNames = amountObjectNamesOf(codex, characterName, balance, pile.amount);
     const minutes =
       typeof pile.amount === 'number'
         ? pile.amount * budget.surplusMinutes
-        : objectCostMinutesOf(balance, pile.amount);
-    return { pile, minutes, days: minutes / budget.surplusMinutes };
+        : objectNames.reduce((sum, name) => sum + objectCostMinutesOf(balance, name), 0);
+    return { pile, objectNames, minutes, days: minutes / budget.surplusMinutes };
   });
+}
+
+/** 量を採る型を、積む順に挙げる。 */
+function amountObjectNamesOf(
+  codex: WorldCodex,
+  characterName: string,
+  balance: BalanceTables,
+  amount: WorkPileAmountSource,
+): readonly string[] {
+  if (typeof amount === 'number') return [];
+  if ('object' in amount) return [amount.object];
+  return cheapestStackOf(codex, characterName, balance, amount.stack);
+}
+
+/**
+ * 段へ届かせる、いちばん安い積み方。同じ型を何個並べてもよいので、点あたりの手間がいちばん安い型を
+ * 並べて、端数を最も安く埋める組み合わせを解く（無制限ナップサック）。
+ *
+ * **どれか1つでも欠けていれば投げる**——タグを誰も名乗っていない・段が無い・押し上げる型が1つも無い。
+ * 0分の山として黙って通すと、1周回の日数だけが静かに縮む。
+ */
+function cheapestStackOf(
+  codex: WorldCodex,
+  characterName: string,
+  balance: BalanceTables,
+  stack: StackUntilStage,
+): readonly string[] {
+  const where = `${stack.tag}を積んで${characterName}の${stack.propertyName}を${stack.stageName}へ届かせる山`;
+
+  const propertyGlobalId = codex.propertyNames.tryGetId(stack.propertyName);
+  const characterGlobalId = codex.objectNames.tryGetId(characterName);
+  if (propertyGlobalId === undefined || characterGlobalId === undefined)
+    throw new Error(`${where}が名乗る、プロパティか人物が世界にありません。`);
+
+  const threshold = codex.objects
+    .get(characterGlobalId)
+    .tryGetPropertyDef(propertyGlobalId)
+    ?.stages.find((stage) => stage.name === stack.stageName)?.min;
+  if (threshold === undefined) throw new Error(`${where}が名乗る段の下限が、その人物にありません。`);
+
+  const tagGlobalId = codex.tagNames.tryGetId(stack.tag);
+  const stackable = (
+    tagGlobalId === undefined ? [] : [...codex.objects].filter((def) => def.hasTag(tagGlobalId))
+  )
+    .map((def) => ({
+      name: def.name,
+      lift: ancestorLiftOf(def, propertyGlobalId),
+      minutes: objectCostMinutesOf(balance, def.name),
+    }))
+    .filter((candidate) => candidate.lift > 0);
+  if (stackable.length === 0) throw new Error(`${where}で積める型が、世界に1つもありません。`);
+
+  // 点は刻みなので、整数で持つ前提（居心地の押し上げも段の下限も整数、core.yaml）。
+  if (![threshold, ...stackable.map((candidate) => candidate.lift)].every(Number.isInteger))
+    throw new Error(`${where}の押し上げか段の下限が整数ではないので、積み方を解けません。`);
+
+  const span = threshold + Math.max(...stackable.map((candidate) => candidate.lift));
+  const minutesTo = [0, ...Array<number>(span).fill(Infinity)];
+  const lastPlaced: (number | undefined)[] = [];
+  for (let lifted = 1; lifted <= span; lifted += 1)
+    for (const [index, candidate] of stackable.entries()) {
+      const withThis = minutesTo[Math.max(0, lifted - candidate.lift)] + candidate.minutes;
+      if (withThis >= minutesTo[lifted]) continue;
+      minutesTo[lifted] = withThis;
+      lastPlaced[lifted] = index;
+    }
+
+  let lifted = threshold;
+  for (let candidate = threshold; candidate <= span; candidate += 1)
+    if (minutesTo[candidate] < minutesTo[lifted]) lifted = candidate;
+
+  const placedCounts = stackable.map(() => 0);
+  while (lifted > 0) {
+    const index = lastPlaced[lifted]!;
+    placedCounts[index] += 1;
+    lifted = Math.max(0, lifted - stackable[index].lift);
+  }
+  return stackable.flatMap((candidate, index) => Array<string>(placedCounts[index]).fill(candidate.name));
+}
+
+/** その型が、据えた先（祖先）のプロパティを常時いくつ押し上げるか。段や条件で縛られた寄与は数えない。 */
+function ancestorLiftOf(def: ObjectDef, propertyGlobalId: number): number {
+  const collector = new AncestorLiftCollector(propertyGlobalId);
+  for (const declaration of def.passives.declarations) (declaration as PassiveDeclaration).read(collector);
+  return collector.lift;
+}
+
+class AncestorLiftCollector implements PassiveReader {
+  lift = 0;
+
+  constructor(private readonly propertyGlobalId: number) {}
+
+  modify(reading: PassivePropertyReading): void {
+    if (reading.target !== 'ancestor' || reading.propertyGlobalId !== this.propertyGlobalId) return;
+    if (reading.amount.kind !== 'fixed') return;
+    if (reading.gate.stage !== undefined || reading.gate.conditions !== undefined) return;
+    this.lift += reading.amount.value;
+  }
+
+  accumulate(): void {}
+
+  transfer(): void {}
 }
 
 function objectCostMinutesOf(balance: BalanceTables, objectName: string): number {
