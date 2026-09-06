@@ -265,12 +265,24 @@ describe('board-move.mjs', () => {
 
   // **「走り終わった」と「道具の承認を待っている」は同じ形に見える**（1.6）。30秒で畳んだ盤面は、
   // 承認を求めて止まったレビューを判定を書く前に消し、そのPRを永久に止めた（PR #1573・issue #1569）。
-  it('手が止まったばかりのレビューは、まだ畳まない', () => {
+  it('判定がまだ無いレビューは、手が止まったばかりなら畳まない', () => {
     const board = {
+      prs: [pr(10)],
       sessions: [idle('session_a', 'review-10')],
       taken: { 'idle:session_a': '2026-09-05T01:59:00Z' },
     };
-    expect(moves(board)).toEqual([]);
+    expect(moves(board)).toEqual(['REVIEW 10 aaa111']);
+  });
+
+  // **窓が要るのは、終わったかを他に訊けないときだけ。** 判定を書いたかはPRのラベルに出る（2.6）
+  // ので、付いていれば空いた直後でも畳んでよい——待たせるぶん、次の仕事の枠が空かない。
+  it('判定を書き終えたレビューは、空いたばかりでも畳む', () => {
+    const board = {
+      prs: [pr(10, label('通してよい'))],
+      sessions: [idle('session_r', 'review-10')],
+      taken: { 'idle:session_r': '2026-09-05T01:59:00Z' },
+    };
+    expect(moves(board)).toEqual(['MERGE 10', 'ARCHIVE session_r done:review-10']);
   });
 
   it('走っているレビューは畳まない', () => {
