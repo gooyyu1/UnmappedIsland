@@ -1,8 +1,8 @@
-import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { runScript } from '../support/runScript';
 
 /**
  * `.claude/hooks/inject-policies.sh` が、記録済みの価値観をセッションへ流し込めることの検査。
@@ -55,8 +55,7 @@ function run(world: World): string {
       writeDecisions(join(work, '.claude', 'decisions', 'archive'), world.archived);
     }
 
-    return execFileSync('bash', [HOOK], {
-      encoding: 'utf-8',
+    return runScript(HOOK, [], {
       env: { ...process.env, CLAUDE_PROJECT_DIR: work },
     });
   } finally {

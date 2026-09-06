@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { runScript } from '../support/runScript';
 
 /**
  * `.claude/hooks/deny-ccr-meta-mcp.sh` が、メタMCPを呼んだところで正しい入口へ案内することの検査。
@@ -29,7 +30,7 @@ function preToolUse(): readonly Matcher[] {
 
 describe('deny-ccr-meta-mcp.sh', () => {
   it('拒否して、正しい入口の呼び方を理由に書く', () => {
-    const parsed: unknown = JSON.parse(execFileSync('bash', [HOOK], { encoding: 'utf-8' }));
+    const parsed: unknown = JSON.parse(runScript(HOOK, [], {}));
     const output = (
       parsed as {
         hookSpecificOutput?: {

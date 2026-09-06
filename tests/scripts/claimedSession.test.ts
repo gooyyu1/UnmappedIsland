@@ -1,9 +1,9 @@
-import { execFileSync } from 'node:child_process';
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { parse } from 'yaml';
+import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
@@ -36,7 +36,7 @@ function script(): string {
 /** そのPRのコミットの本文を渡して走らせ、通ったかを返す。 */
 function passes(bodies: readonly string[]): boolean {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-claimed-'));
-  const dir = work.replace(/\\/g, '/');
+  const dir = pathForBash(work);
   try {
     writeFileSync(
       join(work, 'pr.json'),
@@ -63,8 +63,7 @@ jq -r "$filter" '${dir}/pr.json'
     writeFileSync(step, script(), 'utf-8');
 
     try {
-      execFileSync('bash', [step], {
-        encoding: 'utf-8',
+      runScript(step, [], {
         stdio: 'pipe',
         env: {
           ...process.env,
