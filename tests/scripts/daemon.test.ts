@@ -1,8 +1,8 @@
-import { execFileSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { runScript } from '../support/runScript';
 
 /**
  * `scripts/agent/daemon.sh` の検査。
@@ -76,8 +76,7 @@ function daemon(world: World = {}): Result {
       code = 0;
       try {
         logs.push(
-          execFileSync('bash', [join(here, 'daemon.sh'), ...args], {
-            encoding: 'utf-8',
+          runScript(join(here, 'daemon.sh'), args, {
             stdio: 'pipe',
             env: {
               ...process.env,

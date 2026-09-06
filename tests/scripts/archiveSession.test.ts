@@ -3,6 +3,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
@@ -53,7 +54,7 @@ interface Run {
 function run(world: World = {}): Run {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-archive-session-'));
   try {
-    const dir = work.replace(/\\/g, '/');
+    const dir = pathForBash(work);
     const repo = join(work, 'repo');
     const tree = join(repo, '.claude', 'worktrees', WORKTREE);
     const git = (...args: string[]): void => {
@@ -99,10 +100,9 @@ echo '${JSON.stringify({
     );
     chmodSync(meta, 0o755);
 
-    const out = execFileSync('bash', [SCRIPT, ...(world.args ?? [])], {
+    const out = runScript(SCRIPT, world.args ?? [], {
       cwd: repo,
       input: `${SESSION}\n`,
-      encoding: 'utf-8',
       env: {
         ...process.env,
         PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
