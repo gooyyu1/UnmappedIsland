@@ -7,3 +7,6 @@ export interface BoardDeps {
 }
 
 export function board(deps: BoardDeps): string[] | undefined;
+
+/** 常設の issue の本文（`.claude/board-design.md` 2.20）。`now` は最終更新として本文に出る。 */
+export function issueBody(deps: BoardDeps & { now?: Date }): string | undefined;
