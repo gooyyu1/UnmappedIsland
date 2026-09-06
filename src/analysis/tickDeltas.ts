@@ -96,7 +96,10 @@ export class TickGate {
             },
           ]),
       ...collector.requiredSelfStages,
-    ].map((required) => ({ ...required, lowerBound: lowerBoundOf(def, required) }));
+    ].map((required) => ({
+      ...required,
+      lowerBound: def.tryGetPropertyDef(required.propertyGlobalId)?.lowerBoundOfStage(required.stageName),
+    }));
     this.ancestorConditions = collector.ancestorConditions;
     this.selfTypeMatches = collector.selfTypeMatches;
     this.hasRuntimeConditions = collector.hasRuntimeConditions;
@@ -164,23 +167,10 @@ export interface SelfStageRequirement {
   readonly bound: StageBound;
 
   /**
-   * その段が値の並びの上で始まる位置。**受け皿（6.4節）はそれより下の全部を拾うので負の無限大**
-   * ——下端を書いていないことと、並びの上に位置を持たないことは別。undefinedになるのは位置を
-   * 持たない段のほうで、完全一致で決まる段（シンボル型、6.6節）と、綴り違いで宣言に無い名前。
+   * その段が値の並びの上で始まる位置（PropertyDef.lowerBoundOfStage）。undefinedになるのは位置を
+   * 持たない段——完全一致で決まる段（シンボル型、6.6節）と、綴り違いで宣言に無い名前。
    */
   readonly lowerBound: number | undefined;
-}
-
-/** 名指された段が値の並びの上で始まる位置（SelfStageRequirement.lowerBound）。 */
-function lowerBoundOf(
-  def: ObjectDef,
-  required: { readonly propertyGlobalId: number; readonly stageName: string },
-): number | undefined {
-  const stage = def
-    .tryGetPropertyDef(required.propertyGlobalId)
-    ?.stages.find((named) => named.name === required.stageName);
-  if (stage === undefined || stage.eq !== undefined) return undefined;
-  return stage.lowerBound ?? Number.NEGATIVE_INFINITY;
 }
 
 /**
