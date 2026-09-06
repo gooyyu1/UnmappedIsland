@@ -50,7 +50,10 @@ if ! body=$(gh issue view "$ISSUE" --json body -q .body 2>/dev/null); then
 fi
 
 # `## 手綱` から次の `## ` の手前まで。節の外に書かれたチェックボックスは見ない。
-section=$(printf '%s\n' "$body" | tr -d '\r' |
+# **`$` で留めるので、行末の `\r` は先に落とす**（[`merge-and-close.sh`](merge-and-close.sh) の
+# 「中身そのものが CRLF を持つ場合は、上の線引きの外」）。
+body="${body//$'\r'/}"
+section=$(printf '%s\n' "$body" |
   awk '/^## 手綱$/ { inside = 1; next } /^## / { inside = 0 } inside')
 
 # 親と子で、`- [x]` の前の字下げが違う。**字下げでは見分けない**（人が編集する場所なので崩れる）
