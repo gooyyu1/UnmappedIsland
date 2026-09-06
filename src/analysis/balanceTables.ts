@@ -12,8 +12,8 @@ import { externalTickDeltasOn, rangeCyclesOf } from './rangeCycles';
 import { rangeEventReadouts } from './rangeEvents';
 import type { RainWaterRow } from './seasonalRain';
 import { rainWaterRows } from './seasonalRain';
-import type { StaticValueLayer, StaticValueResolver } from './staticValue';
-import { staticValueOf } from './staticValue';
+import type { StaticValueResolver } from './staticValue';
+import { highestDeclaredLayer, staticValueOf } from './staticValue';
 
 /**
  * 定義（`src/assets/world-codex/*.yaml`）だけから「時間あたりの収支」を計算する。
@@ -395,11 +395,7 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
     // 供給表は島全体の文脈で出す。罠の重みは土地が入れるので、土地を決めないと候補が全部0になる。
     supply: supplyRows(
       codex,
-      allSteps(
-        codex,
-        islandLocations.seaOnly,
-        analysisContext(codex, [...codex.objects], highestDeclaredAncestorLayer(islandLocations.island)),
-      ),
+      allSteps(codex, islandLocations.seaOnly, analysisContext(codex, islandLocations.island)),
     ),
     places,
     rainWater: rainWaterRows(codex),
@@ -572,17 +568,14 @@ function placeBalances(
   readonly gaps: readonly Gap[];
   readonly islandWide: Acquisition;
 } {
-  const defs = [...codex.objects];
-
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
-  const islandContext = analysisContext(codex, defs, highestDeclaredAncestorLayer(locations));
+  const islandContext = analysisContext(codex, locations);
   const islandWide = new Acquisition(codex, reachableSteps(allSteps(codex, seaOnly, islandContext)));
 
   let islandRoutes: readonly ChainRoute[] = [];
   const places = [undefined, ...locations].map((location) => {
     // 罠が掛ける動物の重みは土地が宣言する（base）ので、土地を決めてから工程を組み立てる。
-    const context =
-      location === undefined ? islandContext : analysisContext(codex, defs, ancestorValueLayer(location));
+    const context = location === undefined ? islandContext : analysisContext(codex, [location]);
     const steps = reachableSteps(
       location === undefined
         ? allSteps(codex, seaOnly, context)
@@ -1251,48 +1244,19 @@ function decayLifetimeOf(cycles: readonly RangeCycle[]): DecayLifetime | undefin
 /**
  * この表が使う文脈。**使う物と祖先の層**（11.5節）を足す——行っている人の層はanalysisContextOfが
  * 必ず入れる。`base` が層をまたいで別の起点を指すので、層どうしを直に繋がない（layeredResolver）。
- */
-function analysisContext(
-  codex: WorldCodex,
-  defs: readonly ObjectDef[],
-  ancestor: StaticValueLayer,
-): StaticValueResolver {
-  return analysisContextOf(codex, [bestInstrumentLayer(defs), ancestor]);
-}
-
-/** 祖先（置かれている土地）の宣言値を答える層。宣言していないプロパティは寄与0。 */
-function ancestorValueLayer(location: ObjectDef): StaticValueLayer {
-  return (context) => (root, propertyGlobalId, end) =>
-    root === 'ancestor' ? (staticValueOf(location, propertyGlobalId, end, context) ?? 0) : undefined;
-}
-
-/** どの土地に置いてもよい前提での祖先の値。最も高く宣言している土地に置いたものとして扱う。 */
-function highestDeclaredAncestorLayer(locations: readonly ObjectDef[]): StaticValueLayer {
-  return (context) => (root, propertyGlobalId, end) => {
-    if (root !== 'ancestor') return undefined;
-    const declared = locations
-      .map((location) => staticValueOf(location, propertyGlobalId, end, context))
-      .filter((value): value is number => value !== undefined);
-    return declared.length === 0 ? 0 : Math.max(...declared);
-  };
-}
-
-/**
- * 使う物（instrument、11.5節）の値を答える層。**最も高く宣言している型を使ったものとして扱う**
- * （highestDeclaredAncestorLayerと同じ見方）。
  *
- * これが無いと、相手の値を見る重み——一撃がどう入るかは武器が決める（HuntingSystem.md 1.2節）——が
- * 全て解けず、宣言順で最初の候補だけが起こることになる（PickEffect.selectWeighted）。
- * 分岐ごとに最も良い武器を選べる前提の配分なので、**どれか1つの武器で出る配分ではない**。
+ * 祖先の候補（ancestorLocations）は、置く先が決まっているならその土地1つ、どの土地に置いてもよい
+ * 前提なら島の土地すべて。**宣言していない土地では寄与0**（highestDeclaredLayerの`zero`）。
+ *
+ * 使う物の候補は全型。これが無いと、相手の値を見る重み——一撃がどう入るかは武器が決める
+ * （HuntingSystem.md 1.2節）——が全て解けず、宣言順で最初の候補だけが起こることになる
+ * （PickEffect.selectWeighted）。
  */
-function bestInstrumentLayer(defs: readonly ObjectDef[]): StaticValueLayer {
-  return (context) => (root, propertyGlobalId, end) => {
-    if (root !== 'instrument') return undefined;
-    const declared = defs
-      .map((def) => staticValueOf(def, propertyGlobalId, end, context))
-      .filter((value): value is number => value !== undefined);
-    return declared.length === 0 ? undefined : Math.max(...declared);
-  };
+function analysisContext(codex: WorldCodex, ancestorLocations: readonly ObjectDef[]): StaticValueResolver {
+  return analysisContextOf(codex, [
+    highestDeclaredLayer('instrument', [...codex.objects], 'unresolved'),
+    highestDeclaredLayer('ancestor', ancestorLocations, 'zero'),
+  ]);
 }
 
 /** その土地に立っているときに実行できる工程（他の土地が宣言する工程は届かない）。 */

@@ -9,6 +9,7 @@ import type { WorldChange } from './WorldChange';
 import type { WorldSignal } from './WorldSignal';
 import type { Action } from './Interaction';
 import { WorldObject } from './WorldObject';
+import { EffectiveValueReading } from './EffectiveValueReading';
 import { Scoped } from '../util/scoped';
 
 /**
@@ -36,6 +37,12 @@ export class WorldSession {
   readonly rng: Rng;
 
   private nextInstanceId = 1;
+
+  /**
+   * 実効値（8.3節）の読み取りの区切り。世界の状態ではなく計算の途中を区切るものなので、使うのも
+   * いつ区切るかを決めるのもPropertyValueだけ。
+   */
+  readonly effectiveValueReading = new EffectiveValueReading();
 
   /**
    * 観測口と、今の適用の文脈。**どれも「bodyの実行中だけ差し替わる値」**（Scoped）なので、
