@@ -81,6 +81,20 @@ export interface RangeCycle {
   readonly repeats: boolean;
   readonly destroysSelf: boolean;
 
+  /**
+   * **端へ向かうのに要る、条件つきの増減（8.2節）の組み合わせ。** どれも成立していなければ向かわない。
+   * **逆は言わない**——どれかが成立していても、遅くする増減が同時に成立していれば向かわないことは
+   * ある（その場合を見るのはminutesのほう）。
+   *
+   * **それだけで向かえる最小のものしか入らない**（leastCombinationsOf）ので、遅くするだけの増減も、
+   * 片方だけで足りるときの相方も残らない——周期を決めた組み合わせとは別物（issue #1433）。
+   *
+   * 空の組み合わせ1つだけ（`[[]]`）なら、条件が1つも成立しなくても向かう。**押し手のある周期
+   * （drivenBy）は必ずこの形**——totalsWithDriverが自分の条件つきを数から落とすので、条件は押し手が
+   * 傍に在ることのほうで、それはdrivenByが持つ。
+   */
+  readonly gatedBy: readonly (readonly TickDelta[])[];
+
   /** 外から与えられた増減で動いた周期なら、それを与える型（炉が焼く・傷が血を奪う）。 */
   readonly drivenBy: number | undefined;
 
@@ -129,10 +143,10 @@ export function rangeCyclesOf(
         // 向かうなら軽く出たほうが遠い。端まで測ってから短い順に並べれば、向きに関わらず先頭が
         // 近い側・末尾が遠い側になる。
         const { slowest, fastest } = pace;
-        const slowRoll = sortedTicksToRangeEnd(propertyDef, initialValues, slowest);
+        const slowRoll = sortedTicksToRangeEnd(propertyDef, initialValues, slowest.amount);
         const ticks = slowRoll.at(0);
         const longestTicks = slowRoll.at(-1);
-        const shortestTicks = sortedTicksToRangeEnd(propertyDef, initialValues, fastest).at(0);
+        const shortestTicks = sortedTicksToRangeEnd(propertyDef, initialValues, fastest.amount).at(0);
         if (ticks === undefined || longestTicks === undefined || shortestTicks === undefined) continue;
 
         // 押し手が段に入って初めて効き始めるなら、そこへ届くまでの時間が端まで数えたtickの前に
@@ -147,16 +161,17 @@ export function rangeCyclesOf(
 
         // 値が戻るなら、次の発火までは戻った量ぶん——初回だけが初期値からの距離になる。
         const repeats = readout.expectedReturnToSelf > 0;
-        const period = repeats ? readout.expectedReturnToSelf / Math.abs(slowest) : ticks + untilStart;
+        const period = repeats ? readout.expectedReturnToSelf / Math.abs(slowest.amount) : ticks + untilStart;
         cycles.push({
           propertyGlobalId: propertyDef.globalId,
           minutes: period * MINUTES_PER_TICK,
           shortestMinutes:
-            (repeats ? readout.expectedReturnToSelf / Math.abs(fastest) : shortestTicks + untilStart) *
+            (repeats ? readout.expectedReturnToSelf / Math.abs(fastest.amount) : shortestTicks + untilStart) *
             MINUTES_PER_TICK,
           longestMinutes: (repeats ? period : longestTicks + untilStart) * MINUTES_PER_TICK,
           repeats,
           destroysSelf: readout.destroysSelf,
+          gatedBy: pace.gatedBy,
           drivenBy: driver?.sourceGlobalId,
           step: {
             kind: 'periodic',
@@ -331,8 +346,22 @@ interface TickAmounts {
   /** 常時効く分だけの合計。条件つきの増減（8.2節）を含まない。 */
   readonly unconditional: number;
 
-  /** 同時に成立しうる組み合わせごとの合計。常時効く分を含み、同じ値は畳んである。 */
-  readonly possible: readonly number[];
+  /** 同時に成立しうる組み合わせごとの合計。常時効く分を含み、量が同じでも組み合わせごとに並ぶ。 */
+  readonly possible: readonly TickTotal[];
+}
+
+/**
+ * 同時に成立しうる組み合わせ1つぶんの、tick毎の合計。
+ *
+ * **合計と一緒に組み合わせそのものを持つ**のは、その量を選んだ側が「どういうときにその量か」を
+ * 答えられるようにするため（RangeCycle.gatedBy）。
+ */
+interface TickTotal {
+  /** その組み合わせでのtick毎の合計。常時効く分を含む。 */
+  readonly amount: number;
+
+  /** その組み合わせに入っている条件つきの増減（8.2節）。常時効く分だけなら空。 */
+  readonly conditional: readonly TickDelta[];
 }
 
 /**
@@ -362,7 +391,7 @@ function tickAmountsOf(def: ObjectDef, propertyGlobalId: number): TickAmounts {
  * 常時効く分に、**同時に成立しうる条件つきの増減**を重ねた合計を並べる。1つも重ねない場合
  * （常時効く分だけ）も含む——条件つきは、成立しない場面があるからこそ条件つきになっている。
  */
-function possibleTotalsOf(unconditional: number, conditional: readonly TickDelta[]): readonly number[] {
+function possibleTotalsOf(unconditional: number, conditional: readonly TickDelta[]): readonly TickTotal[] {
   let combinations: (readonly TickDelta[])[] = [[]];
   for (const delta of conditional) {
     const grown = combinations
@@ -371,30 +400,60 @@ function possibleTotalsOf(unconditional: number, conditional: readonly TickDelta
     combinations = [...combinations, ...grown];
   }
 
-  return [
-    ...new Set(
-      combinations.map((combination) =>
-        combination.reduce((total, delta) => total + delta.amount, unconditional),
-      ),
-    ),
-  ];
+  // **同じ量になる組み合わせも畳まない。** 畳むと、落ちた側でしか成立しない条件が「無い」ことに
+  // なる——日差しでも風でも同じ速さで乾くなら、どちらでも乾くと言えなければならない（RangeCycle.gatedBy）。
+  return combinations.map((combination) => ({
+    amount: combination.reduce((total, delta) => total + delta.amount, unconditional),
+    conditional: combination,
+  }));
+}
+
+/** その端へ向かって動く速さの幅（paceTowards）。 */
+interface Pace {
+  readonly slowest: TickTotal;
+  readonly fastest: TickTotal;
+
+  /** その端へ向かわせる、条件つきの増減の組み合わせ（RangeCycle.gatedBy）。 */
+  readonly gatedBy: readonly (readonly TickDelta[])[];
 }
 
 /**
- * その端へ向かって動く場合のうち、最も遅い量と最も速い量。その端へ向かう場合が1つも無ければ
- * undefined＝その端のイベントは起こらない。
+ * その端へ向かって動く場合のうち、最も遅い量と最も速い量（Pace）。その端へ向かう場合が1つも
+ * 無ければundefined＝その端のイベントは起こらない。
  */
-function paceTowards(
-  totals: readonly number[],
-  label: RangeEventLabel,
-): { readonly slowest: number; readonly fastest: number } | undefined {
-  const towards = totals.filter((amount) => (label === 'on_min' ? amount < 0 : amount > 0));
+function paceTowards(totals: readonly TickTotal[], label: RangeEventLabel): Pace | undefined {
+  const towards = totals.filter(({ amount }) => (label === 'on_min' ? amount < 0 : amount > 0));
   if (towards.length === 0) return undefined;
 
   return {
-    slowest: towards.reduce((best, amount) => (Math.abs(amount) < Math.abs(best) ? amount : best)),
-    fastest: towards.reduce((best, amount) => (Math.abs(amount) > Math.abs(best) ? amount : best)),
+    slowest: towards.reduce((best, total) => (Math.abs(total.amount) < Math.abs(best.amount) ? total : best)),
+    fastest: towards.reduce((best, total) => (Math.abs(total.amount) > Math.abs(best.amount) ? total : best)),
+    gatedBy: leastCombinationsOf(towards.map((total) => total.conditional)),
   };
+}
+
+/**
+ * 端へ向かわせる組み合わせのうち、**それだけで向かえる最小のもの**だけ。
+ *
+ * 他を丸ごと含むものは落とす——含む側は、含まれる側だけで足りることの言い換えでしかないので、残すと
+ * 足さなくても向かう条件が「要る」として並ぶ。**同じ中身どうしも1つに畳む**——押し手は取りうる量の
+ * ぶんだけ場合を作り、そのどれもが条件つきを持たない（totalsWithDriver）ので、畳まないと空の
+ * 組み合わせが量の数だけ残る。
+ *
+ * 1つも条件を要らない場合が在れば、それが他のすべてを落とすので、残るのは空の組み合わせ1つ。
+ */
+function leastCombinationsOf(
+  combinations: readonly (readonly TickDelta[])[],
+): readonly (readonly TickDelta[])[] {
+  return combinations.filter(
+    (combination, index) =>
+      !combinations.some(
+        (other, otherIndex) =>
+          // 同じ中身なら先に現れたほうを残す。長さが同じで丸ごと含むのは、中身が同じということ。
+          (other.length < combination.length || otherIndex < index) &&
+          other.every((delta) => combination.includes(delta)),
+      ),
+  );
 }
 
 /**
@@ -404,9 +463,9 @@ function paceTowards(
  * いる場面が同時に来るかは定義からは決まらず、石が冷めるのは炉の外に居る間の宣言（祖先の火力を
  * `not` で見る）なので、足し合わせると押し手の向き——熱を溜める——を打ち消して周期そのものが消える。
  */
-function totalsWithDriver(own: TickAmounts, driver: ExternalTickDelta | undefined): readonly number[] {
+function totalsWithDriver(own: TickAmounts, driver: ExternalTickDelta | undefined): readonly TickTotal[] {
   if (driver === undefined) return own.possible;
-  return driver.amounts.map((amount) => own.unconditional + amount);
+  return driver.amounts.map((amount) => ({ amount: own.unconditional + amount, conditional: [] }));
 }
 
 /**
@@ -422,7 +481,7 @@ function ticksUntilGateFalls(def: ObjectDef, gate: TickGate): number | undefined
     const pace = paceTowards(tickAmountsOf(def, propertyGlobalId).possible, 'on_min');
     if (value === undefined || pace === undefined) continue;
 
-    const ticks = Math.ceil(value / -pace.fastest);
+    const ticks = Math.ceil(value / -pace.fastest.amount);
     if (fewest === undefined || ticks < fewest) fewest = ticks;
   }
   return fewest;
@@ -447,7 +506,7 @@ function ticksUntilGateRises(def: ObjectDef, gate: TickGate): number {
 
     // 生まれた時点でその段に居るなら待ちは無い（届くまでが0以下になる）。**「その段以上」も同じ
     // 下端で成立する**ので、ちょうどその段かどうかでここは変わらない。
-    const ticks = Math.ceil((lowerBound - value) / pace.slowest);
+    const ticks = Math.ceil((lowerBound - value) / pace.slowest.amount);
     if (ticks > longest) longest = ticks;
   }
   return longest;

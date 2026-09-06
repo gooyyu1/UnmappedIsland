@@ -209,6 +209,20 @@ object_defs:
           - {prop: lodging, in_stage: deep}
         add: {parent: {blood: -9}}
 
+  # 棘の刺さる小獣。**押し手が2つの量を取る**（雨で裂ける棘）ので、押される周期はその数だけ
+  # 場合を持つ——どの場合も自分の条件つきは数えないので、進む条件は押し手が傍に在ることだけ。
+  hare:
+    tags: [item]
+    props:
+      blood:
+        value: 100
+        range: {min: 0, max: 100}
+        on_min: {destroy: self}
+    slots:
+      barbs:
+        cell_count: 2
+        cell: {accept: {tag: barb}}
+
   # 血の多い獣（animals.yamlのwild_boar）。上の傷を負い、血が尽きれば倒れる。
   boar:
     tags: [item]
@@ -326,6 +340,18 @@ object_defs:
     expect(externalDeltasOf('sting', 'blood')).toEqual([
       { amounts: [-3, -9], ticksUntilStart: 0, ticksUntilStop: 20 },
     ]);
+  });
+
+  it('押し手に押される周期が要るのは、押し手が傍に在ることだけ', () => {
+    // 押し手は取りうる量のぶんだけ場合を作り、そのどれもが自分の条件つきを数えない。畳まないと
+    // 「条件を1つも要らない」が量の数だけ並ぶので、棘（-1と-5）では2本になっていた。
+    const external = externalTickDeltasOn(defOf('hare'), [...codex.objects]);
+
+    expect(
+      rangeCyclesOf(defOf('hare'), undefined, external)
+        .filter((cycle) => cycle.drivenBy === defOf('thorn').globalId)
+        .map((cycle) => cycle.gatedBy),
+    ).toEqual([[[]]]);
   });
 
   it('段に入って初めて効く押し手では、その段へ届くまでの時間も周期に入る', () => {

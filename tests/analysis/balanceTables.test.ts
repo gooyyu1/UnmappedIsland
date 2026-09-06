@@ -610,3 +610,227 @@ object_defs:
     });
   });
 });
+
+/**
+ * 待ち生産表の周期と「いつ働くか」が、**同じ組み合わせ**から出ること（issue #1433）。
+ *
+ * 周期は「同時に成立しうる組み合わせのうち最も遅いもの」から決まる。条件のほうを別の基準で
+ * 選ぶと、周期は増減Bから・条件は増減Aから来て、**どの宣言も持っていない（周期, 条件）の対**が
+ * できる。読み手はこの対を1つの事実として読むので、置いても1 tickも進まない条件に、進む前提の
+ * 数字が付く。
+ *
+ * 形は塩田（salt.yaml）から採る——干し上がる分と、それを戻す分や別の乾き方が、どれも条件つきで
+ * 並ぶ。**周期と条件は別の問いに答える**——周期は最も遅い場合、条件は進むこと自体が依っているもの。
+ */
+describe('待ち生産の周期と条件', () => {
+  const YAML = `
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      hydration:
+        value: 96
+        range: {min: 0, max: 96}
+        passives:
+          - add: {self: {hydration: -1}}
+
+  sandy_beach:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+      ambient_brightness: {value: 16, range: {min: -6, max: 17}}
+      ambient_temperature: {value: 26, range: {min: -10, max: 45}}
+      wind_speed: {value: 0, range: {min: 0, max: 20}}
+      wetness: {value: 0, range: {min: 0, max: 1}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 60
+        spawn: {object: gourd, into: self}
+
+  gourd:
+    tags: [item]
+    interactions:
+      drink:
+        trigger: menu
+        duration: 5
+        destroy: self
+        add: {agent: {hydration: 96}}
+
+  # 干し上がる分（-1）と雨で戻る分（+2）。**戻る側を先に宣言する**——宣言順で条件を採ると、
+  # 周期を決めていない側が「いつ働くか」として出る。
+  salt_pan:
+    tags: [fixture]
+    slots:
+      salt:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - conditions: [{subject: ancestor, prop: wetness, gte: 1}]
+            add: {self: {drying_remaining: 2}}
+          - conditions: [{subject: ancestor, prop: ambient_brightness, gte: 14}]
+            add: {self: {drying_remaining: -1}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+
+  # 日差しの強い塩田（-3）。小雨（+2）では止まりきらないので、**最も遅いのは両方が重なった場合**
+  # だが、雨が降らなくても乾く——雨は欠かせない条件ではない。
+  open_salt_pan:
+    tags: [fixture]
+    slots:
+      salt:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - conditions: [{subject: ancestor, prop: ambient_brightness, gte: 14}]
+            add: {self: {drying_remaining: -3}}
+          - conditions: [{subject: ancestor, prop: wetness, gte: 1}]
+            add: {self: {drying_remaining: 2}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+
+  # 戻る分を常時持つ塩田（+1）。日差し（-1）だけでも風（-1）だけでも釣り合ってしまい、**両方が
+  # 揃って初めて**乾く。風の条件は or で書いてあるので、並べたときに括弧が要る。
+  windy_salt_pan:
+    tags: [fixture]
+    slots:
+      salt:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - add: {self: {drying_remaining: 1}}
+          - conditions: [{subject: ancestor, prop: ambient_brightness, gte: 14}]
+            add: {self: {drying_remaining: -1}}
+          - conditions:
+              - any:
+                  - {subject: ancestor, prop: wind_speed, gte: 3}
+                  - {subject: ancestor, prop: ambient_temperature, gte: 30}
+            add: {self: {drying_remaining: -1}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+
+  # 日差しでも風でも乾く塩田。**どちらか片方だけで足りる**ので、相方は要る条件ではない。
+  # **速さも同じ(-1)**にしてある——同じ量の場合を1つに畳むと、畳まれた側の乾き方が消える。
+  # 風の側はゲートが2つなので、並べるときに括弧が要る。
+  either_salt_pan:
+    tags: [fixture]
+    slots:
+      salt:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - conditions: [{subject: ancestor, prop: ambient_brightness, gte: 14}]
+            add: {self: {drying_remaining: -1}}
+          - conditions:
+              - {subject: ancestor, prop: wind_speed, gte: 3}
+              - {subject: ancestor, prop: wetness, lt: 1}
+            add: {self: {drying_remaining: -1}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+
+  # 常時乾く塩田（-3）。雨（+2）は遅くするだけで、止めはしない——**最も遅いのは雨の場合**だが、
+  # 塩が採れるのに雨は要らない。
+  covered_salt_pan:
+    tags: [fixture]
+    slots:
+      salt:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - add: {self: {drying_remaining: -3}}
+          - conditions: [{subject: ancestor, prop: wetness, gte: 1}]
+            add: {self: {drying_remaining: 2}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+
+  salt:
+    tags: [item]
+`;
+
+  const tables = buildBalanceTables(
+    new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset(),
+    'medic',
+  );
+
+  const deviceOf = (deviceName: string) =>
+    tables.places
+      .find((place) => place.name === WHOLE_ISLAND)!
+      .devices.find((device) => device.deviceName === deviceName)!;
+
+  it('条件は、周期を決めた増減のものになる', () => {
+    // 24を-1で削るので周期は24 tick＝360分。その-1を縛るのは日差しのほうで、雨は周期を決めて
+    // いない——ここに雨が出ると、「雨の間だけ360分ごとに塩が採れる」という誰も宣言していない
+    // 対になる。
+    expect(deviceOf('salt_pan')).toMatchObject({
+      periodMinutes: 360,
+      condition: '祖先のambient_brightness ≥ 14',
+    });
+  });
+
+  it('遅くするだけの条件は、周期を決めていても「いつ働くか」にならない', () => {
+    // 最も遅いのは-3と+2が重なった-1なので周期は24 tick＝360分。雨はその周期を決めているが、
+    // 雨が降らなくても（-3で、より速く）乾くので欠かせない条件ではない。
+    expect(deviceOf('open_salt_pan')).toMatchObject({
+      periodMinutes: 360,
+      condition: '祖先のambient_brightness ≥ 14',
+    });
+  });
+
+  it('常時効く分が正味0でなくても、遅くするだけの条件は出ない', () => {
+    // 最も遅いのは雨の-1（24 tick＝360分）だが、雨が降らなくても-3で進む。ここに雨を出すと
+    // 「雨の間だけ働く」と読める行になる——`常時` 以外は置くだけでは進まない、が表の約束
+    // （docs/diagnostics/BalanceStats.md「待ち生産表」）。
+    expect(deviceOf('covered_salt_pan')).toMatchObject({ periodMinutes: 360, condition: '常時' });
+  });
+
+  it('片方だけで足りるなら、相方は条件にならず「または」で並ぶ', () => {
+    // どちらか片方なら-1で24 tick＝360分（両方揃えば-2で半分）。**どちらも欠かせないわけでは
+    // ない**ので、両方に共通するものを採ると条件が消えて `常時` になり、暗くて無風でも乾く行に
+    // なってしまう。同じ量の場合を畳むと、今度は片方だけが要る条件として残る。
+    expect(deviceOf('either_salt_pan')).toMatchObject({
+      periodMinutes: 360,
+      condition: '祖先のambient_brightness ≥ 14 または （祖先のwind_speed ≥ 3 かつ 祖先のwetness < 1）',
+    });
+  });
+
+  it('どれも欠かせないなら全部が並び、またはを含む条件は括弧のまま並ぶ', () => {
+    // +1に対して-1が2つ。片方だけでは釣り合って進まないので、日差しも風も欠かせない。
+    // 括弧を付けるのは条件の文を組み立てる側（conditionWords）で、並べる側は何もしない——
+    // 括弧が無いと `… ≥ 14 かつ … ≥ 3 または … ≥ 30` と切れ目が読めなくなる。
+    expect(deviceOf('windy_salt_pan')).toMatchObject({
+      periodMinutes: 360,
+      condition:
+        '祖先のambient_brightness ≥ 14 かつ （祖先のwind_speed ≥ 3 または 祖先のambient_temperature ≥ 30）',
+    });
+  });
+});

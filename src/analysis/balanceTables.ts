@@ -1,4 +1,9 @@
-import { conditionText } from '../domain/conditionWords';
+import {
+  ALL_CONJUNCTION,
+  ANY_CONJUNCTION,
+  conditionText,
+  conditionTextInList,
+} from '../domain/conditionWords';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { TickDelta } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
@@ -517,13 +522,17 @@ function tickAmountsByName(codex: WorldCodex, def: ObjectDef): ReadonlyMap<strin
 /** ゲート（8.2節）で縛られていない増減。 */
 const ALWAYS = '常時';
 
-/** そのゲート（8.2節）と輸送かどうかを言い表す。 */
-function conditionLabel(codex: WorldCodex, delta: TickDelta): string {
+/**
+ * そのゲート（8.2節）と輸送かどうかを言い表す。**他のゲートと並べて置くならinList**——複合な条件が
+ * 括弧で包まれ、`A または B かつ C` と切れ目なく続くのを防ぐ。
+ */
+function conditionLabel(codex: WorldCodex, delta: TickDelta, inList = false): string {
   const capped = delta.capped ? '（輸送・在庫がある間）' : '';
   const { stage, conditions } = delta.gate;
   if (stage !== undefined)
     return `段 ${codex.propertyNames.getName(stage.propertyGlobalId)}=${stage.name}${capped}`;
-  return `${conditions === undefined ? ALWAYS : conditionText(codex, conditions)}${capped}`;
+  if (conditions === undefined) return `${ALWAYS}${capped}`;
+  return `${inList ? conditionTextInList(codex, conditions) : conditionText(codex, conditions)}${capped}`;
 }
 
 function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly SupplyRow[] {
@@ -955,7 +964,7 @@ function deviceOf(codex: WorldCodex, ref: StepRef, cycle: DeviceCycle): Device {
   return {
     deviceName: ref.def.name,
     stepName: ref.step.name,
-    condition: cycleCondition(codex, ref.def, cycle),
+    condition: cycleCondition(codex, cycle),
     periodMinutes: cycle.periodMinutes,
   };
 }
@@ -1007,22 +1016,31 @@ function deviceRows(
  * それを縛るゲートがそのまま「いつ働くか」になる——罠の`catch_remaining`は地面に置いてある間だけ、
  * ヤケイの`breeding_remaining`は囲いの中で飼葉がある間だけ減る。
  *
- * 常時効く分が正味で残るなら、条件が1つも成立しなくても進む（rangeCyclesのtickAmountsOfと同じ
- * 見方）。段で切り替わる増減は周期そのものが立たないので数えない。
+ * **見るのは、周期を進める増減の組み合わせ**（RangeCycle.gatedBy）。丸ごと成立して初めて進む
+ * 組み合わせは`かつ`で、どれが成立しても進む組み合わせどうしは`または`でつなぐ。
  */
-function cycleCondition(codex: WorldCodex, def: ObjectDef, cycle: DeviceCycle): string {
+function cycleCondition(codex: WorldCodex, cycle: DeviceCycle): string {
   // 隣の物に押されて進む周期（炉が焼く・傷が血を奪う）は、押し手が傍に在ること自体が条件。
   if (cycle.drivenBy !== undefined) return `${codex.objectNames.getName(cycle.drivenBy)}が傍にある`;
+  // 条件を1つも要らない進み方が在るなら、置くだけで進む。
+  if (cycle.gatedBy.some((combination) => combination.length === 0)) return ALWAYS;
 
-  let unconditional = 0;
-  let gated: TickDelta | undefined;
-  for (const delta of tickDeltasOf(def)) {
-    if (delta.target !== 'self' || delta.propertyGlobalId !== cycle.propertyGlobalId) continue;
-    if (delta.gate.stage !== undefined) continue;
-    if (delta.gate.conditional) gated ??= delta;
-    else unconditional += delta.amount;
-  }
-  return unconditional !== 0 || gated === undefined ? ALWAYS : conditionLabel(codex, gated);
+  const alternatives = cycle.gatedBy.length > 1;
+  return cycle.gatedBy
+    .map((combination) => combinationLabel(codex, combination, alternatives))
+    .join(` ${ANY_CONJUNCTION} `);
+}
+
+/**
+ * その組み合わせが丸ごと成立している、と言い表す。**他の組み合わせと並べるならinList**——括弧で
+ * 包んで、`A かつ B または C` と切れ目が読めなくなるのを防ぐ。
+ */
+function combinationLabel(codex: WorldCodex, combination: readonly TickDelta[], inList: boolean): string {
+  // 1つだけなら包むかどうかはゲートの中身が決める（複合なら包む、というconditionWordsの規約）。
+  if (combination.length === 1) return conditionLabel(codex, combination[0], inList);
+
+  const text = combination.map((delta) => conditionLabel(codex, delta)).join(` ${ALL_CONJUNCTION} `);
+  return inList ? `（${text}）` : text;
 }
 
 /** 1回の実行で、その型が生まれる期待個数（分岐の確率で重み付けした和）。 */
@@ -1063,8 +1081,11 @@ interface StepRef {
 interface DeviceCycle {
   readonly periodMinutes: number;
 
-  /** この周期を進めているプロパティ。**それを動かす増減のゲートが、周期が進む条件そのもの。** */
-  readonly propertyGlobalId: number;
+  /**
+   * 周期を進める、条件つきの増減の組み合わせ（RangeCycle.gatedBy）。**それを縛るゲートが、周期が
+   * 進む条件そのもの**で、条件を1つも要らない組み合わせが在れば置くだけで進む。
+   */
+  readonly gatedBy: readonly (readonly TickDelta[])[];
 
   /** 外から押されて進む周期（炉が焼く・傷が血を奪う）なら、押し手の型（RangeCycle.drivenBy）。 */
   readonly drivenBy: number | undefined;
@@ -1215,7 +1236,7 @@ function allSteps(
           step: cycle.step,
           cycle: {
             periodMinutes: cycle.minutes,
-            propertyGlobalId: cycle.propertyGlobalId,
+            gatedBy: cycle.gatedBy,
             drivenBy: cycle.drivenBy,
             repeats: cycle.repeats,
             lifetime,
