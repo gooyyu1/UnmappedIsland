@@ -120,6 +120,23 @@ object_defs:
         passives:
           - add: {self: {storm_drift: 1}}
 
+  # 見張り台。上端へ届くたびに、まだ印が立っていなければ書き戻して数え直す（voyage.yamlの
+  # exploration_progressと同じ条件つきのon_max）。**満たさない回は既定のクランプへ倒れる**ので、
+  # 著者の書き戻しと「上端へ置き直す」が1つの宣言に同居している。
+  lookout:
+    tags: [fixture]
+    props:
+      marked: {value: 0}
+      watch_progress:
+        value: 0
+        range: {min: 0, max: 8}
+        on_max:
+          conditions:
+            - {prop: marked, eq: 0}
+          set: {self: {watch_progress: 3}}
+        passives:
+          - add: {self: {watch_progress: 1}}
+
   # 山頂（locations.yaml）。on_maxを書くと補われるはずの既定のクランプ（自分を上端へset、6.3節）が
   # 消えるので、著者がそれを自分で書き写している。端に置き直すだけで、戻ってはいない。
   peak:
@@ -280,6 +297,15 @@ object_defs:
     // 増減しか数えないと戻り0と読まれ、押し流しが「一度きり」になる。戻り量は上端16から書き戻し先の
     // 0までの16で、+1/tickなので16 tickごとに回る。
     expect(cycleOf('sea_zone', 'storm_drift')).toMatchObject([{ minutes: 16 * 15, repeats: true }]);
+  });
+
+  it('条件つきのon_maxは、満たさない回へ倒れる既定のクランプではなく著者の効果で読む', () => {
+    // 排他な2つを両方渡すと、読み下す側は宣言順に直積で畳む＝順に起こるものとして扱うので、後に来る
+    // クランプ（上端へ置き直す）が著者の書き戻しに勝ち、戻り0＝一度きりと読まれる。戻り量は上端8から
+    // 書き戻し先の3までの5で、+1/tickなので5 tickごとに回る。
+    expect(cycleOf('lookout', 'watch_progress')).toMatchObject([
+      { minutes: 5 * 15, shortestMinutes: 5 * 15, repeats: true },
+    ]);
   });
 
   it('端へ置き直すだけのsetは、戻っていない', () => {

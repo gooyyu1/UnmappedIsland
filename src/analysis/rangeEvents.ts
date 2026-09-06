@@ -75,11 +75,6 @@ function inwardFromEnd(range: PropertyRange, label: RangeEventLabel, value: numb
  * **分岐に残る増減は、最後の代入より後のものだけ**（StepOutcome）なので、代入を土台にしてそれを
  * 重ねればよい。代入が複数あれば後のものを採る（SetEffect.applyと同じ後勝ち）。**静的に解けない代入は
  * 行き先を持たない**（PropertyAssignment）ので、端に留まったものとして数える。
- *
- * **条件つきのrangeイベント（6.3節）では、著者の効果と、条件を満たさない回へ倒れる既定のクランプが
- * 1つの分岐に並ぶ**——ConditionalEffect.readが排他な2つを両方渡し、効果の読み下しがそれを順に
- * 起こるものとして畳むため。クランプが後に来るので、条件つきで戻す宣言は`set`でも`add`でも戻り0と
- * 読まれる。排他だという事実は畳んだ時点で失われているので、ここでは分けられない。
  */
 function selfValueAfter(propertyDef: PropertyDef, outcome: StepOutcome, end: number): number {
   let value = end;
