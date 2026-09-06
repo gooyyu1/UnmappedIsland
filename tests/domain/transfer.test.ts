@@ -3,6 +3,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { AGENT_YAML } from '../support/agent';
 
 describe('transfer効果（WorldObject.applyActiveEffect）の実行', () => {
   let sessions: Map<WorldCodex, WorldSession>;
@@ -12,7 +13,7 @@ describe('transfer効果（WorldObject.applyActiveEffect）の実行', () => {
   });
 
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).load('agent.yaml', AGENT_YAML).buildAndReset();
   }
 
   /** 1つのcodexから作る物は同じセッションに属する（WorldObject.session）。 */
@@ -250,7 +251,7 @@ object_defs:
 
     const cauldron = spawn(codex, 'cauldron');
 
-    const executed = cauldron.tryGetAction('pour_in', undefined)?.tryExecute() === true;
+    const executed = cauldron.tryGetAction('pour_in', spawn(codex, 'agent'))?.tryExecute() === true;
 
     expect(executed, 'from_object/to_objectを省略してもself同士で成立する').toBe(true);
     expect(cauldron.tryGetProperty(waterId)?.number ?? 0).toBe(2000);

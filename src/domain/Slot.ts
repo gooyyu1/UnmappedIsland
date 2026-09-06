@@ -81,7 +81,7 @@ export class Slot {
    * ——どの物がどの役に就くかを決めるのはここだけで、分数の問い合わせも、時間の経過と入れること
    * そのものも、この関係を張った状態で行う（slotEntry.putIntoSlot）。
    */
-  putInRelation(agent: WorldObject | undefined, item: WorldObject): InteractionRelation {
+  putInRelation(agent: WorldObject, item: WorldObject): InteractionRelation {
     return new InteractionRelation(this.owner, agent, item);
   }
 
@@ -91,7 +91,7 @@ export class Slot {
    *
    * **押す前に見せるための問い合わせ**なので、関係は張るだけで動作主は主張しない（during）。
    */
-  putInMinutes(agent: WorldObject | undefined, item: WorldObject): number {
+  putInMinutes(agent: WorldObject, item: WorldObject): number {
     return this.putInRelation(agent, item).during((context) => this.def.putInMinutes(context));
   }
 

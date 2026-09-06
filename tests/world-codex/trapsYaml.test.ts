@@ -5,7 +5,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
-import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import { createBrightEnoughAgent, makeBrightEnoughForAnyAction } from '../support/illumination';
 
 /**
  * traps.yamlのくくり罠を、実ファイルの定義だけで検証する（docs/engine/TrapSystem.md）。
@@ -224,7 +224,7 @@ describe('traps.yamlのくくり罠', () => {
     const spinach = spawnInto('water_spinach', player, 'hand');
     expect(
       snare
-        .combinationsWith(spinach, undefined)
+        .combinationsWith(spinach, player)
         .find((c) => c.name === 'add_plant_bait')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -432,7 +432,7 @@ describe('traps.yamlの落とし穴', () => {
     const branch = spawnInto('thick_branch', forest, 'items');
     return (
       pitfall
-        .combinationsWith(branch, undefined)
+        .combinationsWith(branch, createBrightEnoughAgent(session, codex))
         .find((combination) => combination.name === 'drive_stake')
         ?.tryExecute() === true
     );
@@ -510,7 +510,7 @@ describe('traps.yamlの落とし穴', () => {
       const taro = spawnInto('taro', forest, 'items');
       expect(
         pitfall
-          .combinationsWith(taro, undefined)
+          .combinationsWith(taro, createBrightEnoughAgent(session, codex))
           .find((combination) => combination.name === 'add_plant_bait')
           ?.tryExecute() === true,
         '満ちるまでは仕掛けられる',
@@ -519,10 +519,13 @@ describe('traps.yamlの落とし穴', () => {
     expect(pitfall.tryGetProperty(plantBaitId)!.number, '上限まで仕掛けてある').toBe(24);
 
     const more = spawnInto('taro', forest, 'items');
-    expect(pitfall.combinationsWith(more, undefined), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      pitfall.combinationsWith(more, createBrightEnoughAgent(session, codex)),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
     expect(
       pitfall
-        .refusedCombinationsWith(more, undefined)
+        .refusedCombinationsWith(more, createBrightEnoughAgent(session, codex))
         .map((combination) => combination.unmetRequirement()?.reasonName),
       '断る理由まで辿り着ける',
     ).toEqual(['trap_baited']);

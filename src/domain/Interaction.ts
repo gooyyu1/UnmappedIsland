@@ -27,7 +27,7 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
   /** この操作で働きかけに使われる物（11.5節）。伴わない操作には居ない（型引数がundefinedになる）。 */
   protected readonly instrument: T;
 
-  protected constructor(trigger: G, self: WorldObject, agent: WorldObject | undefined, instrument: T) {
+  protected constructor(trigger: G, self: WorldObject, agent: WorldObject, instrument: T) {
     this.trigger = trigger;
     // 宣言が乗っている側がpatient（11.5節）。引いた時点で相手が決まっているので、以降は誰も渡さない。
     this.relation = new InteractionRelation(self, agent, instrument);
@@ -38,9 +38,9 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
     return this.trigger.interaction;
   }
 
-  /** この操作を宣言している側の個体（self＝patient）。**引いた時点で必ず居る**ので空にならない。 */
+  /** この操作を宣言している側の個体（self＝patient）。 */
   protected get self(): WorldObject {
-    return this.relation.patient!;
+    return this.relation.patient;
   }
 
   get name(): string {
@@ -69,7 +69,7 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
 
 /** 相手を伴わない操作（GameElementDefinition.md 11節）。1枚のカードだけで完結するので、相手は居ない。 */
 export class Action extends Interaction<ActionTrigger, undefined> {
-  constructor(trigger: ActionTrigger, self: WorldObject, agent: WorldObject | undefined) {
+  constructor(trigger: ActionTrigger, self: WorldObject, agent: WorldObject) {
     super(trigger, self, agent, undefined);
   }
 
@@ -114,12 +114,7 @@ export class Action extends Interaction<ActionTrigger, undefined> {
  * `refusedCombinationsWith` は理由を告げて断るもの（14.6節）。どちらなのかは `unmetRequirement` が答える。
  */
 export class Combination extends Interaction<DragTrigger, WorldObject> {
-  constructor(
-    trigger: DragTrigger,
-    self: WorldObject,
-    instrument: WorldObject,
-    agent: WorldObject | undefined,
-  ) {
+  constructor(trigger: DragTrigger, self: WorldObject, instrument: WorldObject, agent: WorldObject) {
     super(trigger, self, agent, instrument);
   }
 

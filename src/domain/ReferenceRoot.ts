@@ -58,19 +58,18 @@ export type InteractionRole = (typeof INTERACTION_ROLES)[number];
  */
 export class InteractionRelation {
   /** 働きかけられる物（11.5節）。操作の宣言が乗っている側で、宣言の中では`self`と同じ物を指す。 */
-  readonly patient: WorldObject | undefined;
+  readonly patient: WorldObject;
 
-  /** この操作で動いている個体。誰かが動いているとは限らない場面（レシピの解放条件）では居ない。 */
-  readonly agent: WorldObject | undefined;
+  /**
+   * この操作で動いている個体（11.5節）。**関係を張るのは誰かが動いているときだけ**なので必ず居る
+   * ——誰も動いていない場面（レシピの解放条件、13.3節）は関係を張らず`ReferenceContext.asking`で問う。
+   */
+  readonly agent: WorldObject;
 
   /** 運ばれてきて働きかけに使われる物。それを伴わない操作では居ない（11.5節）。 */
   readonly instrument: WorldObject | undefined;
 
-  constructor(
-    patient: WorldObject | undefined,
-    agent: WorldObject | undefined,
-    instrument: WorldObject | undefined,
-  ) {
+  constructor(patient: WorldObject, agent: WorldObject, instrument: WorldObject | undefined) {
     this.patient = patient;
     this.agent = agent;
     this.instrument = instrument;

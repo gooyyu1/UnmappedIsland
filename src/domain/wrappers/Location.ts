@@ -78,7 +78,7 @@ export class Location extends ObjectWrapper {
    * 持たない・条件を満たさない）ならfalse。探索率100%に達した後も探索は続けられる
    * （ExplorationSystem.md 2節）。
    */
-  explore(agent: WorldObject | undefined): boolean {
+  explore(agent: WorldObject): boolean {
     if (this.instance.tryGetAction(this.words.exploreAction, agent)?.tryExecute() !== true) return false;
     this.revealDueFixtures();
     return true;

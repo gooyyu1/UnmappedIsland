@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { AGENT_YAML, createAgent } from '../support/agent';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -1060,7 +1061,10 @@ object_defs:
       durability:
         value: 10
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const durabilityId = codex.propertyNames.getId('durability');
 
     const wood = codex.objects.get(codex.objectNames.getId('wood'));
@@ -1071,14 +1075,14 @@ object_defs:
     axe.tryGetProperty(durabilityId)?.setNumber(0);
     expect(
       woodInstance
-        .combinationsWith(axe, undefined)
+        .combinationsWith(axe, createAgent(session))
         .find((c) => c.name === 'chop')
         ?.tryExecute() === true,
     ).toBe(false); // instrument.durability=0 のとき条件 gt 0 を満たさない
     axe.tryGetProperty(durabilityId)?.setNumber(10);
     expect(
       woodInstance
-        .combinationsWith(axe, undefined)
+        .combinationsWith(axe, createAgent(session))
         .find((c) => c.name === 'chop')
         ?.tryExecute() === true,
     ).toBe(true); // instrument.durability=10 のとき条件 gt 0 を満たす
@@ -1239,16 +1243,19 @@ object_defs:
           - {prop: mode, eq: 1}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
 
     const thing = codex.objects.get(codex.objectNames.getId('thing'));
     const modeId = codex.propertyNames.getId('mode');
     const session = new WorldSession(codex);
     const thingInstance = new WorldObject(1, thing, session);
 
-    expect(thingInstance.tryGetAction('use', undefined)?.tryExecute() === true).toBe(true); // object/op省略時は self.mode == 1 の等価比較として成立する
+    expect(thingInstance.tryGetAction('use', createAgent(session))?.tryExecute() === true).toBe(true); // object/op省略時は self.mode == 1 の等価比較として成立する
     thingInstance.tryGetProperty(modeId)?.setNumber(2);
-    expect(thingInstance.tryGetAction('use', undefined)?.tryExecute() === true).toBe(false); // self.mode != 1 では不成立
+    expect(thingInstance.tryGetAction('use', createAgent(session))?.tryExecute() === true).toBe(false); // self.mode != 1 では不成立
   });
 
   it('conditionでin_slotとpropを同時に指定するとエラーになる', () => {
@@ -1312,21 +1319,28 @@ object_defs:
           - {prop: temperature, gte: 20, lt: 30}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const session = new WorldSession(codex);
     const thingDef = codex.objects.get(codex.objectNames.getId('thing'));
     const temperature = codex.propertyNames.getId('temperature');
 
     const inRange = new WorldObject(1, thingDef, session);
-    expect(inRange.tryGetAction('use', undefined)?.tryExecute() === true, '20以上30未満').toBe(true);
+    expect(inRange.tryGetAction('use', createAgent(session))?.tryExecute() === true, '20以上30未満').toBe(
+      true,
+    );
 
     const tooHot = new WorldObject(2, thingDef, session);
     tooHot.tryGetProperty(temperature)?.setNumber(30);
-    expect(tooHot.tryGetAction('use', undefined)?.tryExecute() === true, '上限は含まない').toBe(false);
+    expect(tooHot.tryGetAction('use', createAgent(session))?.tryExecute() === true, '上限は含まない').toBe(
+      false,
+    );
 
     const tooCold = new WorldObject(3, thingDef, session);
     tooCold.tryGetProperty(temperature)?.setNumber(19);
-    expect(tooCold.tryGetAction('use', undefined)?.tryExecute() === true).toBe(false);
+    expect(tooCold.tryGetAction('use', createAgent(session))?.tryExecute() === true).toBe(false);
   });
 
   it('in_stageは、値が今その段にいるときだけ真になる', () => {
@@ -1346,17 +1360,23 @@ object_defs:
           - not: {prop: load, in_stage: too_heavy}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const session = new WorldSession(codex);
     const thingDef = codex.objects.get(codex.objectNames.getId('thing'));
     const load = codex.propertyNames.getId('load');
 
     const light = new WorldObject(1, thingDef, session);
-    expect(light.tryGetAction('use', undefined)?.tryExecute() === true).toBe(true);
+    expect(light.tryGetAction('use', createAgent(session))?.tryExecute() === true).toBe(true);
 
     const heavy = new WorldObject(2, thingDef, session);
     heavy.tryGetProperty(load)?.setNumber(100);
-    expect(heavy.tryGetAction('use', undefined)?.tryExecute() === true, '段に入ると実行できない').toBe(false);
+    expect(
+      heavy.tryGetAction('use', createAgent(session))?.tryExecute() === true,
+      '段に入ると実行できない',
+    ).toBe(false);
   });
 
   it('in_stage_or_aboveは、その段へ届いた後は上の段へ移っても真のままになる', () => {
@@ -1384,7 +1404,10 @@ object_defs:
           - {prop: skill, in_stage_or_above: bacis}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const session = new WorldSession(codex);
     const thingDef = codex.objects.get(codex.objectNames.getId('thing'));
     const skill = codex.propertyNames.getId('skill');
@@ -1392,7 +1415,7 @@ object_defs:
     const canAt = (name: string, value: number): boolean => {
       const thing = new WorldObject(value + 1, thingDef, session);
       thing.tryGetProperty(skill)?.setNumber(value);
-      return thing.tryGetAction(name, undefined)?.tryExecute() === true;
+      return thing.tryGetAction(name, createAgent(session))?.tryExecute() === true;
     };
 
     expect(canAt('use', 19), '下の段では偽').toBe(false);
@@ -1438,11 +1461,14 @@ object_defs:
           - {prop: weather, in_stage: clear}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const session = new WorldSession(codex);
     const thingDef = codex.objects.get(codex.objectNames.getId('thing'));
     const can = (id: number, name: string): boolean =>
-      new WorldObject(id, thingDef, session).tryGetAction(name, undefined)?.tryExecute() === true;
+      new WorldObject(id, thingDef, session).tryGetAction(name, createAgent(session))?.tryExecute() === true;
 
     expect(can(1, 'fallback'), '受け皿より上の段に居ても真').toBe(true);
     expect(can(2, 'symbolic_exact'), 'in_stageなら真になる値').toBe(true);
@@ -1464,12 +1490,15 @@ object_defs:
             not: {prop: durability, lte: 0}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const session = new WorldSession(codex);
     const thing = new WorldObject(1, codex.objects.get(codex.objectNames.getId('thing')), session);
 
     // 宣言順で最初に落ちるのはreasonを持たないin_slot判定なので、理由は出さない。
-    expect(thing.tryGetAction('use', undefined)?.unmetRequirement()?.reasonName).toBeUndefined();
+    expect(thing.tryGetAction('use', createAgent(session))?.unmetRequirement()?.reasonName).toBeUndefined();
   });
 
   it('スロット中身判定はタグ付きの子がスロットに居るときだけ真になる', () => {
@@ -1490,7 +1519,10 @@ object_defs:
   blue_marker:
     tags: [marker, blue]
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const contentSlotId = codex.slotNames.getId('content');
 
     const session = new WorldSession(codex);
@@ -1498,7 +1530,7 @@ object_defs:
     const redMarker = new WorldObject(2, codex.objects.get(codex.objectNames.getId('red_marker')), session);
     redMarker.moveToSlotOrRejection(box.getSlot(contentSlotId));
 
-    expect(box.tryGetAction('use', undefined)?.tryExecute() === true).toBe(true); // contentスロットにredタグのマーカーがあるので実行される
+    expect(box.tryGetAction('use', createAgent(session))?.tryExecute() === true).toBe(true); // contentスロットにredタグのマーカーがあるので実行される
   });
 
   it('スロット中身判定はタグが異なる、または空のときは偽になる', () => {
@@ -1517,12 +1549,15 @@ object_defs:
   blue_marker2:
     tags: [marker, blue]
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const contentSlotId = codex.slotNames.getId('content');
 
     const session = new WorldSession(codex);
     const box = new WorldObject(1, codex.objects.get(codex.objectNames.getId('box2')), session);
-    expect(box.tryGetAction('use', undefined)?.tryExecute() === true).toBe(false); // contentスロットが空なので実行されない
+    expect(box.tryGetAction('use', createAgent(session))?.tryExecute() === true).toBe(false); // contentスロットが空なので実行されない
 
     const blueMarker = new WorldObject(
       2,
@@ -1530,7 +1565,7 @@ object_defs:
       session,
     );
     blueMarker.moveToSlotOrRejection(box.getSlot(contentSlotId));
-    expect(box.tryGetAction('use', undefined)?.tryExecute() === true).toBe(false); // contentスロットの中身がredタグを持たない(blueタグ)ので実行されない
+    expect(box.tryGetAction('use', createAgent(session))?.tryExecute() === true).toBe(false); // contentスロットの中身がredタグを持たない(blueタグ)ので実行されない
   });
 
   it('conditionのslotにmatchesを指定しないとエラーになる', () => {
@@ -1559,11 +1594,14 @@ object_defs:
           - {matches: {tag: red}}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const session = new WorldSession(codex);
     const thing = new WorldObject(1, codex.objects.get(codex.objectNames.getId('thing')), session);
 
-    expect(thing.tryGetAction('use', undefined)?.tryExecute() === true).toBe(true);
+    expect(thing.tryGetAction('use', createAgent(session))?.tryExecute() === true).toBe(true);
   });
 
   it('matchesはobject指定でも書ける（枠のacceptと同じ二択）', () => {
@@ -1584,7 +1622,10 @@ object_defs:
   sapphire:
     tags: [gem]
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const offeringSlotId = codex.slotNames.getId('offering');
     const session = new WorldSession(codex);
     const spawn = (name: string, id: number): WorldObject =>
@@ -1593,12 +1634,15 @@ object_defs:
     const altar = spawn('altar', 1);
     const sapphire = spawn('sapphire', 2);
     expect(sapphire.moveToSlotOrRejection(altar.getSlot(offeringSlotId))).toBeUndefined();
-    expect(altar.tryGetAction('use', undefined)?.tryExecute() === true, '同じタグの別の型では偽').toBe(false);
+    expect(
+      altar.tryGetAction('use', createAgent(session))?.tryExecute() === true,
+      '同じタグの別の型では偽',
+    ).toBe(false);
 
     sapphire.destroy();
     const ruby = spawn('ruby', 3);
     expect(ruby.moveToSlotOrRejection(altar.getSlot(offeringSlotId))).toBeUndefined();
-    expect(altar.tryGetAction('use', undefined)?.tryExecute() === true).toBe(true);
+    expect(altar.tryGetAction('use', createAgent(session))?.tryExecute() === true).toBe(true);
   });
 
   it('slot・in_slot判定はsubjectが指すオブジェクトを見る（selfとは限らない）', () => {
@@ -1622,7 +1666,10 @@ object_defs:
     slots:
       items: {}
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const session = new WorldSession(codex);
     const spawn = (name: string, id: number): WorldObject =>
       new WorldObject(id, codex.objects.get(codex.objectNames.getId(name)), session);
@@ -1635,7 +1682,7 @@ object_defs:
 
     expect(
       altar
-        .combinationsWith(box, undefined)
+        .combinationsWith(box, createAgent(session))
         .find((c) => c.name === 'offer')
         ?.tryExecute() === true,
       'instrumentの中身が空なら偽',
@@ -1644,7 +1691,7 @@ object_defs:
     expect(gem.moveToSlotOrRejection(box.getSlot(codex.slotNames.getId('content')))).toBeUndefined();
     expect(
       altar
-        .combinationsWith(box, undefined)
+        .combinationsWith(box, createAgent(session))
         .find((c) => c.name === 'offer')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -1669,7 +1716,10 @@ object_defs:
       content:
         value: water
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
 
     const session = new WorldSession(codex);
     const bottle = new WorldObject(1, codex.objects.get(codex.objectNames.getId('bottle')), session);
@@ -1681,7 +1731,7 @@ object_defs:
 
     expect(
       bottle
-        .combinationsWith(sameContent, undefined)
+        .combinationsWith(sameContent, createAgent(session))
         .find((c) => c.name === 'pour_in')
         ?.tryExecute() === true,
     ).toBe(false); // self(empty)とinstrument(water)のcontentが異なるので不成立
@@ -1690,7 +1740,7 @@ object_defs:
     bottle.getProperty(contentId).setNumberWithoutEvents(codex.symbolNames.getId('water'));
     expect(
       bottle
-        .combinationsWith(sameContent, undefined)
+        .combinationsWith(sameContent, createAgent(session))
         .find((c) => c.name === 'pour_in')
         ?.tryExecute() === true,
     ).toBe(true); // selfとinstrumentのcontentが同じ(water)なので成立
@@ -1755,7 +1805,10 @@ object_defs:
               - {prop: mp, gte: 5}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
 
     const thing = codex.objects.get(codex.objectNames.getId('thing'));
     const session = new WorldSession(codex);
@@ -1766,9 +1819,9 @@ object_defs:
 
     falseCase.tryGetProperty(hpId)?.setNumber(99);
     falseCase.tryGetProperty(mpId)?.setNumber(4);
-    expect(falseCase.tryGetAction('use', undefined)?.tryExecute() === true).toBe(false); // hp(99)もmp(4)も条件を満たさないため不成立
+    expect(falseCase.tryGetAction('use', createAgent(session))?.tryExecute() === true).toBe(false); // hp(99)もmp(4)も条件を満たさないため不成立
 
-    expect(trueCase.tryGetAction('use', undefined)?.tryExecute() === true).toBe(true); // hp(5)はgte 100を満たさないが、mp(5)がgte 5を満たすのでanyとして成立する
+    expect(trueCase.tryGetAction('use', createAgent(session))?.tryExecute() === true).toBe(true); // hp(5)はgte 100を満たさないが、mp(5)がgte 5を満たすのでanyとして成立する
   });
 
   it('notコンビネータは内側の葉を反転する', () => {
@@ -1785,12 +1838,15 @@ object_defs:
           - not: {prop: locked, eq: 1}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
 
     const session = new WorldSession(codex);
     const thingInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('thing')), session);
 
-    expect(thingInstance.tryGetAction('use', undefined)?.tryExecute() === true).toBe(false); // locked(1)がprop:1と一致するため、not: {...}は偽になる
+    expect(thingInstance.tryGetAction('use', createAgent(session))?.tryExecute() === true).toBe(false); // locked(1)がprop:1と一致するため、not: {...}は偽になる
   });
 
   it('stageによる強制ゲートとconditionsは併用でき、両方を満たす間だけ有効になる', () => {
@@ -1861,17 +1917,20 @@ object_defs:
         set: {self: {n: 5}}
         add: {self: {n: 1}}
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const session = new WorldSession(codex);
     const nId = codex.propertyNames.getId('n');
     const tallyDef = codex.objects.get(codex.objectNames.getId('tally'));
 
     const addThenSet = new WorldObject(1, tallyDef, session);
-    expect(addThenSet.tryGetAction('add_then_set', undefined)?.tryExecute() === true).toBe(true);
+    expect(addThenSet.tryGetAction('add_then_set', createAgent(session))?.tryExecute() === true).toBe(true);
     expect(addThenSet.tryGetProperty(nId)?.number ?? 0).toBe(5);
 
     const setThenAdd = new WorldObject(2, tallyDef, session);
-    expect(setThenAdd.tryGetAction('set_then_add', undefined)?.tryExecute() === true).toBe(true);
+    expect(setThenAdd.tryGetAction('set_then_add', createAgent(session))?.tryExecute() === true).toBe(true);
     expect(setThenAdd.tryGetProperty(nId)?.number ?? 0).toBe(6);
   });
 
@@ -1891,11 +1950,14 @@ object_defs:
           - weight: 1
             set: {self: {mark: 7}}
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const session = new WorldSession(codex);
     const worker = new WorldObject(1, codex.objects.get(codex.objectNames.getId('worker')), session);
 
-    expect(worker.tryGetAction('turn', undefined)?.tryExecute() === true).toBe(true);
+    expect(worker.tryGetAction('turn', createAgent(session))?.tryExecute() === true).toBe(true);
     expect(worker.tryGetProperty(codex.propertyNames.getId('fatigue'))?.number ?? 0).toBe(1);
     expect(worker.tryGetProperty(codex.propertyNames.getId('mark'))?.number ?? 0).toBe(7);
   });
@@ -2195,7 +2257,10 @@ object_defs:
           - {subject: ancestor, prop: weather, eq: 1}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const contentsSlotId = codex.slotNames.getId('contents');
     const pocketSlotId = codex.slotNames.getId('pocket');
 
@@ -2211,7 +2276,7 @@ object_defs:
     expect(characterInstance.moveToSlotOrRejection(roomInstance.getSlot(contentsSlotId))).toBeUndefined();
     expect(foodInstance.moveToSlotOrRejection(characterInstance.getSlot(pocketSlotId))).toBeUndefined();
 
-    expect(foodInstance.tryGetAction('check', undefined)?.tryExecute() === true).toBe(true); // characterはweatherを持たないため素通りし、roomのweather(1)と比較して真になる
+    expect(foodInstance.tryGetAction('check', createAgent(session))?.tryExecute() === true).toBe(true); // characterはweatherを持たないため素通りし、roomのweather(1)と比較して真になる
   });
 
   it('propを伴わないdestroyの対象にancestorを指定するとエラーになる', () => {

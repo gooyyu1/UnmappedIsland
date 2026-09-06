@@ -5,6 +5,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { AGENT_YAML } from '../support/agent';
 import { fixedRng } from '../support/rng';
 
 /**
@@ -66,7 +67,10 @@ object_defs:
   let changes: WorldChange[];
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('changes.yaml', YAML).buildAndReset();
+    codex = new WorldCodexYamlLoader()
+      .load('changes.yaml', YAML)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     open(SMASHES);
   });
 
@@ -135,7 +139,7 @@ object_defs:
     const seen = observe(() => {
       expect(
         beast
-          .combinationsWith(stone, undefined)
+          .combinationsWith(stone, spawn('agent'))
           .find((c) => c.name === 'rampage')
           ?.tryExecute() === true,
       ).toBe(true);
@@ -153,7 +157,7 @@ object_defs:
     const seen = observe(() => {
       expect(
         beast
-          .combinationsWith(stone, undefined)
+          .combinationsWith(stone, spawn('agent'))
           .find((c) => c.name === 'rampage')
           ?.tryExecute() === true,
       ).toBe(true);
@@ -172,13 +176,13 @@ object_defs:
     observe(() => {
       expect(
         first
-          .combinationsWith(stones[0], undefined)
+          .combinationsWith(stones[0], spawn('agent'))
           .find((c) => c.name === 'rampage')
           ?.tryExecute() === true,
       ).toBe(true);
       expect(
         second
-          .combinationsWith(stones[1], undefined)
+          .combinationsWith(stones[1], spawn('agent'))
           .find((c) => c.name === 'rampage')
           ?.tryExecute() === true,
       ).toBe(true);
@@ -198,7 +202,7 @@ object_defs:
     const seen = observe(() => {
       expect(
         beast
-          .combinationsWith(basket, undefined)
+          .combinationsWith(basket, spawn('agent'))
           .find((c) => c.name === 'rampage')
           ?.tryExecute() === true,
       ).toBe(true);

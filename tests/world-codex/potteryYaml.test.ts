@@ -104,7 +104,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     const log = spawnInto('log', land, 'items');
     expect(
       kiln
-        .combinationsWith(log, undefined)
+        .combinationsWith(log, createBrightEnoughAgent(session, codex))
         .find((c) => c.name === 'add_fuel')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -263,7 +263,9 @@ describe('pottery.yamlの土器の連鎖', () => {
     // 消える物の中身は、消える自分ではなく自分の親へこぼれる（9.3節）。焼いた物まで道連れにしない。
     const kiln = fireDriedGreenware(24);
 
-    expect(kiln.tryGetAction('break_open', undefined)?.tryExecute() === true).toBe(true);
+    expect(
+      kiln.tryGetAction('break_open', createBrightEnoughAgent(session, codex))?.tryExecute() === true,
+    ).toBe(true);
 
     expect(fixturesOn(land), '炉は一度きり').toEqual([]);
     expect(itemsOn(land), '甕は土地へこぼれる').toEqual(['jar']);
