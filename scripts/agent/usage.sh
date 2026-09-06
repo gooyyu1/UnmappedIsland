@@ -6,8 +6,9 @@
 #   seven_day 14 2026-09-10T15:59:59.441827+00:00 -
 #
 # 1行が `<枠> <utilization> <resets_at> <locked_reason>`。`locked_reason` が無いときは `-`。
-# **引けなかったときは何も出さずに1で終わる**ので、呼び手は終了コードだけで止まる側へ倒せる
-# （[`occupancy.sh`](occupancy.sh) と同じ向き）。
+# **引けなかったときは標準出力へ何も出さずに1で終わる**ので、呼び手は終了コードだけで止まる側へ
+# 倒せる（[`occupancy.sh`](occupancy.sh) と同じ向き）。**落ちた理由は標準エラーへ出す**——読むのは
+# 呼び手ではなく、後からログを見る人間。
 #
 # ## 叩ける間隔には上限がある。それを持つのはこの口
 #
@@ -44,37 +45,24 @@ POLLED="$STATE_DIR/usage-polled"
 # 粗く測っても総和は変わらない（`board-design.md` 2.5.3「間隔は粗くてよい」）。
 USAGE_MIN_SECONDS="${USAGE_MIN_SECONDS:-180}"
 
-if [ -f "$POLLED" ]; then
-  last=$(cat "$POLLED")
-  if [ $(($(date -u +%s) - last)) -lt "$USAGE_MIN_SECONDS" ]; then exit 2; fi
-fi
+# 時刻を取るのも、前に叩いた時刻を読むのも、bash の中で閉じる（`%(…)T` と `$(<…)`）。
+# **見送る周のほうが多い**ので、そこは外部プロセス0個で返る。
+printf -v now '%(%s)T' -1
+if [ -f "$POLLED" ] && ((now - $(<"$POLLED") < USAGE_MIN_SECONDS)); then exit 2; fi
 
-TOKEN=$(node -e "
-  const fs = require('node:fs');
-  const path = (process.env.USERPROFILE || process.env.HOME) + '/.claude/.credentials.json';
-  process.stdout.write(JSON.parse(fs.readFileSync(path, 'utf8')).claudeAiOauth.accessToken);
-")
+[ -d "$STATE_DIR" ] || mkdir -p "$STATE_DIR"
+printf '%s\n' "$now" >"$POLLED"
 
-mkdir -p "$STATE_DIR"
-date -u +%s >"$POLLED"
+# **中身は隣の [`usage.mjs`](usage.mjs)。ここは間隔の番と入口だけ。** トークンの読み出し・通信・
+# 取り出しを**プロセスを跨がずに1つの node の中で済ませる**理由は
+# [`ccr-meta.sh`](../../.claude/ccr-meta.sh) と同じ——Windowsでは `node` の起動だけで1回44.5ms
+# かかり（2026-09-05 の実測）、手綱がここを毎周叩くので、境界の数がそのまま常時の固定費になる。
+#
+# **トークンを引数にも環境変数にも載せない。** `SHELLOPTS=xtrace` を伝播させて数えると、シェルに
+# 渡した値はそのままトレースへ写る。
 
-curl -sS -H "Authorization: Bearer $TOKEN" -H 'accept: application/json' \
-  'https://api.anthropic.com/api/oauth/usage' |
-  node -e "
-    let s = '';
-    process.stdin.on('data', (d) => (s += d)).on('end', () => {
-      let json;
-      try {
-        json = JSON.parse(s);
-      } catch {
-        process.exit(1);
-      }
-      const lines = [];
-      for (const key of ['five_hour', 'seven_day']) {
-        const w = json[key];
-        if (!w || typeof w.utilization !== 'number') process.exit(1);
-        lines.push([key, w.utilization, w.resets_at ?? '-', w.locked_reason ?? '-'].join(' '));
-      }
-      process.stdout.write(lines.join('\n') + '\n');
-    });
-  "
+# `%/*` は区切りが無いと文字列をそのまま返す。
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+
+exec node "$HERE/usage.mjs"
