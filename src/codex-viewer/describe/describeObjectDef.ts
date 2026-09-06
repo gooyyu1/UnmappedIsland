@@ -1,6 +1,7 @@
 import type { EffectDeclaration } from '../../domain/EffectReader';
 import type { InteractionTrigger } from '../../domain/InteractionTrigger';
 import type { ObjectDef } from '../../domain/ObjectDef';
+import type { PassiveDeclaration } from '../../domain/PassiveReader';
 import type { PropertyDef } from '../../domain/PropertyDef';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { actionRef, combinationRef, propertyRef, text } from './Description';
@@ -67,6 +68,8 @@ export function describeInfluencesOn(
 
   const matches = (declaration: EffectDeclaration): boolean =>
     writesToProperty(declaration, propertyGlobalId, ownedByThisDef);
+  const matchesPassive = (declaration: PassiveDeclaration): boolean =>
+    passiveWritesToProperty(declaration, propertyGlobalId, ownedByThisDef);
 
   for (const propertyDef of def.enumeratePropertyDefs()) {
     // 自分自身を値域へ丸めるon_max/on_minは、そのプロパティの定義を見れば分かる
@@ -75,7 +78,7 @@ export function describeInfluencesOn(
     describeMatchingRangeEvents(propertyDef, matches, names, out);
   }
 
-  for (const [token, interaction] of matchingInteractions(def, matches)) {
+  for (const [token, interaction] of matchingInteractions(def, matches, matchesPassive)) {
     out.write(token, text(':'));
     out.indented(() => describeInteraction(interaction, names, out));
   }
@@ -92,7 +95,8 @@ export function createsObject(def: ObjectDef, objectGlobalId: number): boolean {
   const matches = (declaration: EffectDeclaration): boolean => spawnsObject(declaration, objectGlobalId);
   return (
     def.enumeratePropertyDefs().some((propertyDef) => propertyDef.hasRangeEventMatching(matches)) ||
-    matchingInteractions(def, matches).length > 0
+    // 物を生むのは`spawn`だけで、持続効果には書けない（8.4節）。
+    matchingInteractions(def, matches, () => false).length > 0
   );
 }
 
@@ -119,15 +123,21 @@ function describeMatchingRangeEvents(
   });
 }
 
-/** matchesが真になる操作を、その名前を指す断片（きっかけの区別つき）とともに集める。 */
+/**
+ * matches・matchesPassiveのどちらかが真になる操作を、その名前を指す断片（きっかけの区別つき）と
+ * ともに集める。**操作は経過の間ずっと効く宣言でも値を動かす**（11.7節）ので、探し物が値なら
+ * 両方を渡す。物を探すとき（`spawn`）は持続効果に書けないので、そちら側は常に偽。
+ */
 function matchingInteractions(
   def: ObjectDef,
   matches: (declaration: EffectDeclaration) => boolean,
+  matchesPassive: (declaration: PassiveDeclaration) => boolean,
 ): readonly (readonly [DescriptionToken, InteractionTrigger])[] {
   const found: (readonly [DescriptionToken, InteractionTrigger])[] = [];
   for (const trigger of def.triggers) {
     const name = trigger.interaction.name;
-    if (!matches(trigger.interaction)) continue;
+    const inPassives = trigger.interaction.passiveDeclarations.some(matchesPassive);
+    if (!inPassives && !matches(trigger.interaction)) continue;
     found.push([trigger.reading.kind === 'drag' ? combinationRef(name) : actionRef(name), trigger]);
   }
   return found;

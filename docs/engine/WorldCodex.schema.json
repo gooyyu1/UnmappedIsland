@@ -970,6 +970,10 @@
           "$ref": "#/$defs/weight_spec",
           "description": "実行にかかるゲーム内時間（分）。weightと同じ「リテラルか{subject, prop}参照か」の二択（11.3節）。参照のsubjectに何を書けるかは数え上げず、この宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表。この操作の他のキーと同じ場所なので、durationにだけ効く制限は無い）。省略時は時間を消費しない。"
         },
+        "passives": {
+          "$ref": "#/$defs/passives_list",
+          "description": "durationを進めている間だけ効く持続効果（11.7節）。文法は物のpassives（8節）と同じで、違うのは効いている間だけ——tick毎の増減が経過中の減りと同じ足し算に入るので、受け取る量は「宣言 − その間の減り」になる。tick毎の輸送（transfer）は宣言した物のtickで走るので、ここには書けず、durationを持たない操作にも書けない（どちらもロード時エラー。本スキーマでは場所ごとの制限までは表現しない）。"
+        },
         "set": {
           "description": "対象プロパティへ、その場で一度だけ絶対値を代入する。",
           "$ref": "#/$defs/set_operation_map"

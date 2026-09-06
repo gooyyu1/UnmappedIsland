@@ -4,6 +4,7 @@ import type { Rng } from './Rng';
 import type { World } from './wrappers/World';
 import type { PropertyDef } from './PropertyDef';
 import type { InteractionGains, PropertyGain } from './PropertyGain';
+import type { PassiveEffects } from './PassiveEffects';
 import type { Slot } from './Slot';
 import type { WorldChange } from './WorldChange';
 import type { WorldSignal } from './WorldSignal';
@@ -54,10 +55,26 @@ export class WorldSession {
   private readonly gainObserver = new Scoped<(gains: InteractionGains) => void>();
 
   /**
-   * 今、操作の効果を適用している最中か（withInteractionEffect）。ここに居る間の書き込みだけを
-   * 溜める。undefinedなら溜めない＝経過中のtickや、rangeイベントから走る効果は入らない。
+   * 今、1つの操作を実行している最中か（withInteractionGains）。ここに居る間の書き込みだけを
+   * 溜める。undefinedなら溜めない＝操作の外で回ったtickや、rangeイベントから走る効果は入らない。
    */
   private readonly gainsBeingGathered = new Scoped<Map<string, PropertyGain>>();
+
+  /**
+   * 今、時間の経過（runTick）の中か。**ここでの実体値への書き込みは、操作が直に増やしたものでは
+   * ない**（PropertyGain）——値を動かしているのは経過そのもので、輸送も端のクランプも同じ。
+   * その中で始まった別の操作は自分の稼ぎを持つので、withInteractionGainsが降ろす。
+   */
+  private readonly insideTick = new Scoped<boolean>();
+
+  /**
+   * 今の操作が宣言した持続効果（11.7節）と、その宣言元。`duration`を進めている間だけ立つ。
+   * **経過中のtickで、そのぶんだけを操作の稼ぎとして拾う**ための控え（recordPassiveGain）。
+   */
+  private readonly interactionPassives = new Scoped<{
+    readonly owner: WorldObject;
+    readonly passives: PassiveEffects;
+  }>();
 
   /** 今どのオブジェクトの効果を適用しているか（withSubject）。記録する変化の主体になる。 */
   private readonly subject = new Scoped<WorldObject>();
@@ -139,13 +156,14 @@ export class WorldSession {
   }
 
   /**
-   * bodyを「sourceが宣言した操作の効果の適用」として囲う（InteractionDefが、時間を進め終えてから
-   * 囲う）。ここに居る間の書き込みだけがobserveGainsへ流れるので、時間経過で回ったtickの分は入らない。
+   * bodyを「sourceが宣言した操作1回」として囲う（InteractionDefが、実行のはじめから終わりまでを
+   * 囲う）。ここに居る間に操作が増やした値だけがobserveGainsへ流れる——経過中のtickが動かした値は
+   * 入らず（insideTick）、その操作が宣言した持続効果が足したぶんだけが入る（recordPassiveGain）。
    *
-   * 溜めたぶんは抜けるときに流す。入れ子にはならない（効果の適用は操作1回につき1度）が、外側で
-   * 溜めていた分を捨てないよう、差し替えて戻す形は他の観測口と揃える（Scoped）。
+   * 溜めたぶんは抜けるときに流す。**入れ子になる**——経過中のtickが配った手番（動物の1手）は
+   * その中で実行され、自分の稼ぎを自分の溜め場へ持つ。
    */
-  withInteractionEffect(source: WorldObject, body: () => void): void {
+  withInteractionGains<T>(source: WorldObject, body: () => T): T {
     // 出どころは適用前に控える（InteractionGains.sourceAndAncestors）。飲み干した水は適用し終えた時点で
     // 世界から出ていて、そこからでは親を辿れない。
     const chain: WorldObject[] = [];
@@ -155,19 +173,55 @@ export class WorldSession {
     // **溜めるのは差し替えの中、流すのは戻った後。** 溜め場が外側のものへ戻ってから流さないと、
     // 受け取った側がこの中で世界を読むときに、まだ内側の溜め場を指したままになる。
     const gathered = new Map<string, PropertyGain>();
+    let result!: T;
     try {
-      this.gainsBeingGathered.during(gathered, body);
+      this.gainsBeingGathered.during(gathered, () =>
+        this.insideTick.during(false, () => {
+          result = body();
+        }),
+      );
     } finally {
       const gains = [...gathered.values()].filter((gain) => gain.amount > 0);
       if (gains.length > 0) this.gainObserver.current?.({ sourceAndAncestors: chain, gains });
     }
+    return result;
   }
 
   /**
-   * 実体値への書き込み1件を溜める（PropertyValue.addからのみ呼ぶ）。操作の効果を適用している間
-   * （withInteractionEffect）でなければ何もしない。
+   * 操作が宣言した持続効果（11.7節）が効いている間としてbodyを実行する。登録はその一式が持ち
+   * （PassiveEffects.setAllRegistered）、こちらは経過中のtickで足したぶんを控える先を差し替える。
+   */
+  whileInteractionPassives<T>(owner: WorldObject, passives: PassiveEffects, body: () => T): T {
+    let result!: T;
+    this.interactionPassives.during({ owner, passives }, () => {
+      passives.setAllRegistered(owner, true);
+      try {
+        result = body();
+      } finally {
+        passives.setAllRegistered(owner, false);
+      }
+    });
+    return result;
+  }
+
+  /**
+   * 実体値への書き込み1件を溜める（PropertyValue.addからのみ呼ぶ）。操作を実行している間
+   * （withInteractionGains）の、**時間の経過の外**での書き込みだけを数える。
    */
   recordGain(object: WorldObject, property: PropertyDef, delta: number): void {
+    if (this.insideTick.current === true) return;
+    this.gather(object, property, delta);
+  }
+
+  /**
+   * 今の操作が宣言した持続効果（11.7節）が、この1 tickで足すぶんを溜める。**時間の経過の中で
+   * 起きるのに操作の稼ぎになる唯一のもの**なので、recordGainとは別の口で受ける。
+   */
+  recordPassiveGain(object: WorldObject, property: PropertyDef, delta: number): void {
+    this.gather(object, property, delta);
+  }
+
+  private gather(object: WorldObject, property: PropertyDef, delta: number): void {
     const gathered = this.gainsBeingGathered.current;
     if (gathered === undefined) return;
 
@@ -309,8 +363,15 @@ export class WorldSession {
    * 動物がしたことも含まれている。
    */
   private runTick(world: World): void {
-    world.instance.tick();
-    world.instance.runTickActions();
+    this.insideTick.during(true, () => {
+      // 積分の前に読む——足す前の量が「このtickに入るぶん」で、足した後は端で丸められた結果しか
+      // 残らない（PropertyValue.changePerTick）。
+      const running = this.interactionPassives.current;
+      running?.passives.recordTickGains(running.owner, this);
+
+      world.instance.tick();
+      world.instance.runTickActions();
+    });
     this.tickObserver.current?.();
   }
 }

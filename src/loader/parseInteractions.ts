@@ -5,14 +5,17 @@ import { YamlLoadError } from './YamlLoadError';
 import { parseDeclaredNumber, parseTypeMatchRule } from './parseCommon';
 import { parseActiveEffectBody, parseSignals } from './parseActiveEffects';
 import { parseRequirementList } from './parseConditions';
+import { parseInteractionPassiveInto } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
+import type { PassiveEffect } from '../domain/PassiveEffect';
+import { PassiveEffects } from '../domain/PassiveEffects';
 import { InteractionDef } from '../domain/InteractionDef';
 import type { InteractionTrigger } from '../domain/InteractionTrigger';
 import { DragTrigger, MenuTrigger, TickTrigger } from '../domain/InteractionTrigger';
 import { ReferenceScope } from '../domain/ReferenceRoot';
 
 /** 操作のエントリが持つ、効果以外の兄弟キー。 */
-const RESERVED_KEYS = ['trigger', 'conditions', 'announce', 'duration'] as const;
+const RESERVED_KEYS = ['trigger', 'conditions', 'announce', 'duration', 'passives'] as const;
 
 /** `trigger`のマップ形（ドラッグ）が持てるキー。 */
 const DRAG_KEYS = ['drag', 'allow_multiple'] as const;
@@ -73,7 +76,36 @@ function parseInteraction(
       ? parseDeclaredNumber(loader, `${context}.duration`, durationNode, scope, 'duration')
       : undefined;
 
-  const interaction = new InteractionDef(name, requirements, announcements, effect, duration);
+  // 経過の間ずっと効くもの（11.7節）。**同じ場所に書ける役だけを対象にできる**ので、きっかけが決めた
+  // scopeをそのまま渡す。
+  const passiveDeclarations: PassiveEffect[] = [];
+  const passivesNode = tryGetSeq(map, 'passives', context);
+  if (passivesNode !== undefined) {
+    // 時間を消費しない操作の中では1 tickも回らないので、書いても一度も効かない。
+    if (duration === undefined)
+      throw new YamlLoadError(
+        `${context}: 'passives'を書けるのは'duration'を持つ操作だけです` +
+          '（時間を進めている間だけ効くので、時間を消費しない操作では一度も効きません。11.7節）。',
+      );
+
+    for (const passiveNode of passivesNode.items)
+      parseInteractionPassiveInto(
+        loader,
+        passiveDeclarations,
+        `${context}.passives`,
+        asMap(passiveNode, `${context}.passives`),
+        scope,
+      );
+  }
+
+  const interaction = new InteractionDef(
+    name,
+    requirements,
+    announcements,
+    effect,
+    duration,
+    new PassiveEffects(passiveDeclarations),
+  );
 
   if (drag !== undefined) {
     // 何個受け取れるかを答えられる形かは、宣言だけで決まる。許可したのに答えられない宣言は、

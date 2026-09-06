@@ -7,8 +7,10 @@ import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import type { TypeMatchReading } from '../domain/TypeMatchRule';
 import { TypeMatchRule } from '../domain/TypeMatchRule';
 import type { WorldCodex } from '../domain/WorldCodex';
-import type { CraftingInput, CraftingStep, StepOutcome } from './CraftingStep';
-import { collectOutputs, combineOutcomes } from './CraftingStep';
+import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
+import type { CraftingInput, CraftingStep, PropertyDelta, StepOutcome } from './CraftingStep';
+import { UNCHANGED_OUTCOMES, collectOutputs, combineOutcomes } from './CraftingStep';
+import { MINUTES_PER_TICK } from './balanceTables';
 import type { BecomeDestinationResolver, EffectReading } from './effectOutcomes';
 import { consumesRoot, destroysRoot, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
@@ -237,6 +239,8 @@ function interactionStep(
     becomeDestinationResolverOf(codex, def, instrument),
   );
   const minutes = minutesOf(interaction, tracking.resolve);
+  // 経過の間ずっと効くもの（11.7節）は、経過し終えてから効くもの（effect）より先に起きる。
+  const outcomes = combineOutcomes(passiveOutcomes(interaction, minutes), reading.outcomes, 'declared');
   return {
     kind: 'interaction',
     startedByPlayer: trigger.startedByPlayer,
@@ -255,9 +259,50 @@ function interactionStep(
     // プレイヤーが手を止めている間に時間が進むので、払う時間と経過する時間は等しい。
     laborMinutes: minutes,
     elapsedMinutes: minutes,
-    outcomes: reading.outcomes,
+    outcomes,
     hasUnresolvedReferences: tracking.hitUnresolvedReference,
   };
+}
+
+/**
+ * 経過の間ずっと効く宣言（11.7節）が、1回の実行で動かす量。tick毎の宣言に、経過するtick数を掛ける。
+ *
+ * **可逆な寄与（`modify`）は数えない**——実体値を動かさないので、工程が返した量にはならない。
+ * ゲート（8.2節）は開いているものとして数える——満たさない回まで数えないと、条件つきの効果を
+ * 著者が書いた側で代表するのと同じ扱いになる（effectOutcomes参照）。
+ */
+function passiveOutcomes(interaction: InteractionDef, minutes: number): readonly StepOutcome[] {
+  const collector = new PassiveDeltaCollector(minutes / MINUTES_PER_TICK);
+  for (const declaration of interaction.passiveDeclarations) declaration.read(collector);
+
+  if (collector.deltas.length === 0) return UNCHANGED_OUTCOMES;
+  return [{ probability: 1, spawns: [], deltas: collector.deltas, assignments: [] }];
+}
+
+class PassiveDeltaCollector implements PassiveReader {
+  readonly deltas: PropertyDelta[] = [];
+
+  private readonly ticks: number;
+
+  constructor(ticks: number) {
+    this.ticks = ticks;
+  }
+
+  modify(): void {}
+
+  accumulate(reading: PassivePropertyReading): void {
+    // 導出される量（PassiveAmount）を持つのは中身の重さの伝播だけで、それは可逆な寄与なので来ない。
+    if (reading.amount.kind !== 'fixed') return;
+
+    this.deltas.push({
+      target: reading.target,
+      propertyGlobalId: reading.propertyGlobalId,
+      amount: reading.amount.value * this.ticks,
+    });
+  }
+
+  /** 操作の持続効果には書けない（8.4.1節。ロード時に弾く）ので、読み上げられることが無い。 */
+  transfer(): void {}
 }
 
 /**
