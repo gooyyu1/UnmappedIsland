@@ -118,20 +118,20 @@ export interface CardOperationsFactory {
   readonly actionsOf: (instance: WorldObject) => readonly CardAction[];
 
   /**
-   * selfが宣言しているcombinationsのうち、candidatesの先頭にマッチする先頭（無ければundefined）。
-   * candidatesは`instrument`の役になる個体を運んできた順に並べたもの、movedは指が運んできた個体
-   * （演出で追う札）で、countはまとめて実行する個数。
+   * 2枚の札を重ねたときに画面へ出す組み合わせ1つ（引けるものが無ければundefined）。droppedは
+   * 落とされた側の代表、carriedは掴んで運んできた個体を運んできた順に並べたもの（先頭が指の掴んだ
+   * 札）で、countはまとめて実行する個数。
    *
-   * **実行する手段とは限らない**——成立するものが無く、宣言が断る理由を持っていればそれを
-   * `enabled: false` で返す（CardInteraction.md 2.1節）。
+   * **両向きを見る**——落とされた側が宣言している組み合わせも、掴んだ側が宣言しているものも引く
+   * （CardInteraction.md 2節）。素材側に1つ書けば、道具を素材へ運んでも素材を道具へ運んでも同じ
+   * 組み合わせが成立する。
    *
-   * **candidatesとmovedは別物**——逆向きに成立した組み合わせでは、指が運んできた札のほうが`self`に
-   * なるため、相手として渡す個体と画面上で動く個体が入れ替わる。
+   * **実行する手段とは限らない**——どちらの向きにも成立するものが無く、宣言が断る理由を持って
+   * いればそれを `enabled: false` で返す（同2.1節）。
    */
-  readonly combinationWith: (
-    self: WorldObject,
-    candidates: readonly WorldObject[],
-    moved: readonly WorldObject[],
+  readonly combinationBetween: (
+    dropped: WorldObject,
+    carried: readonly WorldObject[],
     count?: number,
   ) => CardCombination | undefined;
 }
@@ -236,49 +236,78 @@ export function cardOperationsOf(
     };
 
   /**
-   * selfが宣言しているcombinationsのうち、candidatesの先頭にマッチする先頭（無ければundefined）。
-   * **実行する手段とは限らない**——下のとおり、断る組み合わせも同じ形で返る。
+   * selfが宣言しているcombinationsのうち、candidatesの先頭を相手として引けるもの（宣言順）。
    * candidatesは`instrument`の役になる個体、movedは指が運んできた個体。
    *
-   * 複数の組み合わせがマッチしたときにどれを実行するかの解決はUI層に委ねられている
-   * （ActionSystem.md 1節）ため、宣言順の先頭を採る。
+   * **実行する手段とは限らない**——成立するものも、理由を告げて断るもの（14.6節のreason）も同じ形で
+   * 並ぶ。どちらなのかはenabledが言い、離しても何も起きないのは呼び出し側が守る
+   * （CardDragController）。断るものを候補から消さないのは、消すとプレイヤーには「重ねても何も
+   * 起きない」としか見えないため（CardInteraction.md 2.1節）。
    *
-   * **成立するものが1つも無いときだけ、理由を告げて断る組み合わせを返す**（14.6節のreason）。
-   * 候補から消すと、プレイヤーには「重ねても何も起きない」としか見えない。実行できないことは
-   * enabledが言い、離しても何も起きないのは呼び出し側が守る（CardDragController）。
+   * **並びに順位の意味は無い。** どれを見せるかを決めるのはcombinationBetweenだけで、ここは引ける
+   * ものを列挙する。
    *
    * **まとめて実行するのは、宣言が数を約束できる場合だけ**（`allow_multiple`、
    * GameElementDefinition.md 12.4節）。時間も個数ぶんかかる。
    */
-  const combinationWith = (
+  const offeredCombinations = (
     self: WorldObject,
     candidates: readonly WorldObject[],
     moved: readonly WorldObject[],
-    count = 1,
-  ): CardCombination | undefined => {
+    count: number,
+  ): readonly CardCombination[] => {
     const instrument = candidates.at(0);
-    if (instrument === undefined) return undefined;
+    if (instrument === undefined) return [];
 
     const agent = game.player.instance;
-    const combination =
-      self.combinationsWith(instrument, agent).at(0) ?? self.refusedCombinationsWith(instrument, agent).at(0);
-    if (combination === undefined) return undefined;
-
-    const permission = permissionOf(combination.unmetRequirement());
-    const texts = locale.object(self.def.name).interaction(combination.name);
+    const texts = locale.object(self.def.name);
     const carried = carriedOf(candidates, count);
-    return {
-      name: texts.displayName,
-      description: texts.description,
-      minutes: carried.length * combination.executionMinutes(),
-      // 断る組み合わせは何も起こさないので、2枚目を連れてこない。
-      maxCount: permission.enabled ? combination.acceptedCountIncludingSelf(candidates.slice(1)) : 1,
-      movedIds: carriedOf(moved, count).map((instance) => instance.instanceId),
-      execute: () => {
-        combination.executeWithFollowers(carried.slice(1));
-      },
-      ...permission,
-    };
+    return [
+      ...self.combinationsWith(instrument, agent),
+      ...self.refusedCombinationsWith(instrument, agent),
+    ].map((combination) => {
+      const permission = permissionOf(combination.unmetRequirement());
+      const declared = texts.interaction(combination.name);
+      return {
+        name: declared.displayName,
+        description: declared.description,
+        minutes: carried.length * combination.executionMinutes(),
+        // 断る組み合わせは何も起こさないので、2枚目を連れてこない。
+        maxCount: permission.enabled ? combination.acceptedCountIncludingSelf(candidates.slice(1)) : 1,
+        movedIds: carriedOf(moved, count).map((instance) => instance.instanceId),
+        execute: () => {
+          combination.executeWithFollowers(carried.slice(1));
+        },
+        ...permission,
+      };
+    });
+  };
+
+  /**
+   * 2枚の札を重ねたときに画面へ出す組み合わせ1つ（CardOperationsFactory.combinationBetween）。
+   *
+   * **成立するかどうかだけが順位を決め、向きは同点のときの並べ方でしかない。** ここが、両向きを
+   * 見終わるまで決まらないこの順位を持つ唯一の場所——`WorldObject`は片側しか知らないので、
+   * 「成立するものが1つも無い」を答えられない（`refusedCombinationsWith`）。
+   */
+  const combinationBetween = (
+    dropped: WorldObject,
+    carried: readonly WorldObject[],
+    count = 1,
+  ): CardCombination | undefined => {
+    const held = carried.at(0);
+    if (held === undefined) return undefined;
+
+    // 落とされた側を先に、次に掴んだ側を並べる（CardInteraction.md 2節）。
+    //
+    // **まとめられるのは、落とされた側が宣言している向きだけ。** 逆向きでは運んできた札の1枚ずつが
+    // 別々のselfになるので、1つの器で数を決められない。
+    const offered = [
+      ...offeredCombinations(dropped, carried, carried, count),
+      ...offeredCombinations(held, [dropped], [held], 1),
+    ];
+    // **理由を告げて断るのは、どちらの向きにも成立するものが1つも無いときだけ**（同2.1節）。
+    return offered.find((combination) => combination.enabled) ?? offered.at(0);
   };
 
   /** itemを同じ場所の中で動かす操作（動かせない位置ならundefined）。今いるスロットの中だけで完結する。 */
@@ -299,6 +328,6 @@ export function cardOperationsOf(
       reorderActionAt: reorderIn(stack[0]),
     }),
     actionsOf,
-    combinationWith,
+    combinationBetween,
   };
 }

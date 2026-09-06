@@ -77,7 +77,20 @@ object_defs:
       fuel: {value: 20}
 
   ember:
-    tags: [item]
+    tags: [item, fire_source]
+
+  # 炉へ重ねると、炉の側は断っても松明の側は成立する。**両向きに宣言を持ち、片方だけが成立する対。**
+  torch:
+    tags: [item, fire_source]
+    props:
+      lit: {value: 1}
+    interactions:
+      # 薪の無い炉でも、火の点いた松明を押し当てれば焦がせる（そのぶん松明は燃え尽きる）。
+      char:
+        trigger: {drag: {object: hearth}}
+        duration: 3
+        conditions: [{reason: not_lit, prop: lit, gt: 0}]
+        destroy: self
 
   # 束ねた薪はまとめてくべられる（allow_multiple）。何本入るかはfuelのrangeの残りが決める。
   hearth:
@@ -92,7 +105,7 @@ object_defs:
         destroy: instrument
       # 薪が無ければ着火しない。断る理由を宣言している（fire.yamlのigniteと同じ形）。
       ignite:
-        trigger: {drag: {object: ember}}
+        trigger: {drag: {tag: fire_source}}
         duration: 2
         conditions: [{reason: no_fuel, prop: fuel, gt: 0}]
         destroy: instrument
@@ -331,6 +344,57 @@ reason_texts:
     const poured = view.combinationOf(bowls, bowls);
 
     expect(poured?.enabled, '実行できる側が選ばれる').toBe(true);
+  });
+
+  it('落とされた側が理由付きで断っても、掴んだ側で成立するならそちらを選ぶ', () => {
+    // 薪の無い炉は着火を断る（no_fuel）が、松明の側は焦がせる。落とされた側から順に引いて最初に
+    // 見つかったもので止めると、断るほうが成立するほうを隠す。
+    const mini = setUp();
+    const hearth = mini.createObject('hearth', mini.slot('fixtures', mini.land));
+    const torch = mini.createObject('torch', mini.slot('hand'));
+
+    const view = viewOf(mini);
+    const dropped = view.combinationOf(cardOf(view, torch), cardOf(view, hearth));
+    const reversed = view.combinationOf(cardOf(view, hearth), cardOf(view, torch));
+
+    expect(dropped?.enabled, '松明を炉へ重ねると、成立する側が選ばれる').toBe(true);
+    expect(reversed?.name, '炉を松明へ運んでも同じ組み合わせ').toBe(dropped?.name);
+    // 掴んでいたのは松明のほうなので、動き出すのも松明（CardDrop.movedIds）。
+    expect(dropped?.movedIds).toEqual([torch.instanceId]);
+
+    dropped?.execute();
+    expect(torch.parent, '松明が燃え尽きる').toBeUndefined();
+    expect(hearth.parent, '炉は残る').toBeDefined();
+  });
+
+  it('どちらの向きも断るなら、落とされた側の理由を出す', () => {
+    const texts = parseLocale(
+      'ja.yaml',
+      `object_texts:
+  hearth:
+    display_name: 炉
+    interactions:
+      ignite:
+        display_name: 着火する
+reason_texts:
+  no_fuel: 薪が組まれていない。
+  not_lit: 火が点いていない。
+`,
+    );
+    const mini = setUp();
+    const hearth = mini.createObject('hearth', mini.slot('fixtures', mini.land));
+    const torch = mini.createObject('torch', mini.slot('hand'));
+    // 火の消えた松明は焦がせないので、両向きとも理由付きで断る。
+    torch.tryGetProperty(mini.codex.propertyNames.getId('lit'))?.setNumber(0);
+
+    const view = viewOf(mini, texts);
+    const refused = view.combinationOf(cardOf(view, torch), cardOf(view, hearth));
+
+    expect(refused, '探す順のまま、落とされた炉の理由が出る').toMatchObject({
+      name: '着火する',
+      enabled: false,
+      reason: '薪が組まれていない。',
+    });
   });
 
   it('combinationもかかる時間を持つ', () => {

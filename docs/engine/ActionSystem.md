@@ -58,8 +58,8 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
   宣言順に列挙する。相手のマッチング（1）だけでなく `conditions`（2）まで見る——**実行できないものを
   黙って落とし先にすると、落とせるのに何も起きない**という形になるため。
 - `RefusedCombinationsWith(instrument, agent)` — 逆に、`conditions` で成立せず、**断る理由**
-  （`reason`、14.6節）を宣言しているものだけを列挙する。画面は成立するものが1つも無いときだけこちらを
-  引き、**理由を言うためだけの落とし先**として出す（[`../ui/CardInteraction.md`](../ui/CardInteraction.md)
+  （`reason`、14.6節）を宣言しているものだけを列挙する。画面がこちらを**理由を言うためだけの落とし先**
+  として出すのは、成立するものが1つも無いときだけ（[`../ui/CardInteraction.md`](../ui/CardInteraction.md)
   2.1 節）。上の「黙って」がここに掛かる——**理由が出るなら、実行できない落とし先を出してよい。**
 
 どちらの列挙も、相手のマッチングのほかに**行き先の型**（`BlocksOperation`。`become` の行き先に型が
@@ -71,9 +71,9 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 判定ではない。両方の門にすると、満杯を `conditions` にも書いた宣言（満杯の罠の `trap_baited`）は条件と
 容量が同時に落ちるので、**宣言した理由が決して届かなくなる。**
 
-**どちらの札を `self` として引くか**（落とされた側が先、次に掴んだ側）と、複数マッチした場合に
-どれを実行するかの解決はUI層に委ねる（[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節、
-`PlayScreenView.combinationOf`）。
+**どちらの札を `self` として引くか**（両向きとも引いたうえで、成立するほうを先に採る。どちらの向きも
+成立しないなら落とされた側）と、複数マッチした場合にどれを実行するかの解決はUI層に委ねる
+（[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節、`cardOperations.combinationBetween`）。
 
 まとめて重ねる操作（`allow_multiple`、12.4節）も `Combination` が持つ。`AcceptedCount(followers)` が
 落とす前に何枚ついてくるかを答え、`ExecuteWithFollowers(followers)` がその繰り返しを行う——**1つ
