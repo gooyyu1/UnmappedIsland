@@ -3,6 +3,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { AGENT_YAML } from '../support/agent';
 
 describe('WorldObjectのactions/combinations実行', () => {
   let sessions: Map<WorldCodex, WorldSession>;
@@ -12,7 +13,7 @@ describe('WorldObjectのactions/combinations実行', () => {
   });
 
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).load('agent.yaml', AGENT_YAML).buildAndReset();
   }
 
   /** 1つのcodexから作る物は同じセッションに属する（WorldObject.session）。 */
@@ -107,7 +108,7 @@ object_defs:
 
     const crate = spawn(codex, 'crate');
 
-    const executed = crate.tryGetAction('open', undefined)?.tryExecute() === true;
+    const executed = crate.tryGetAction('open', spawn(codex, 'agent'))?.tryExecute() === true;
 
     const inside = crate.tryGetSlot(insideSlotId);
     expect(executed).toBe(true);
@@ -124,7 +125,9 @@ object_defs:
 
     const appleInstance = spawn(codex, 'apple3');
 
-    expect(appleInstance.tryGetAction('does_not_exist', undefined)?.tryExecute() === true).toBe(false);
+    expect(appleInstance.tryGetAction('does_not_exist', spawn(codex, 'agent'))?.tryExecute() === true).toBe(
+      false,
+    );
   });
 
   it('parent対象は現在の親に適用される', () => {
@@ -152,7 +155,7 @@ object_defs:
     const rockInstance = spawn(codex, 'rock_item');
     expect(rockInstance.moveToSlotOrRejection(basketInstance.getSlot(itemsSlotId))).toBeUndefined();
 
-    const executed = rockInstance.tryGetAction('use', undefined)?.tryExecute() === true;
+    const executed = rockInstance.tryGetAction('use', spawn(codex, 'agent'))?.tryExecute() === true;
 
     expect(executed).toBe(true);
     expect(basketInstance.tryGetProperty(budgetId)?.number ?? 0).toBe(9);
@@ -170,7 +173,7 @@ object_defs:
     const codex = load(yaml);
     const rockInstance = spawn(codex, 'rock_item2'); // 親を持たない
 
-    const executed = rockInstance.tryGetAction('use', undefined)?.tryExecute() === true;
+    const executed = rockInstance.tryGetAction('use', spawn(codex, 'agent'))?.tryExecute() === true;
 
     expect(executed, 'アクション自体は実行される(親が無いのでparent対象の適用だけが無視される)').toBe(true);
   });
@@ -204,11 +207,11 @@ object_defs:
     expect(basket.moveToSlotOrRejection(ground.getSlot(itemsSlotId))).toBeUndefined();
 
     boar.getProperty(smashTargetId).setNumberWithoutEvents(9999);
-    expect(boar.tryGetAction('trample', undefined)?.tryExecute() === true).toBe(true);
+    expect(boar.tryGetAction('trample', spawn(codex, 'agent'))?.tryExecute() === true).toBe(true);
     expect(basket.parent, '指す先が居なければ何も起きない').toBe(ground);
 
     boar.getProperty(smashTargetId).setNumberWithoutEvents(basket.instanceId);
-    expect(boar.tryGetAction('trample', undefined)?.tryExecute() === true).toBe(true);
+    expect(boar.tryGetAction('trample', spawn(codex, 'agent'))?.tryExecute() === true).toBe(true);
     expect(basket.parent, 'プロパティが指す個体が消える').toBeUndefined();
   });
 
@@ -323,7 +326,7 @@ object_defs:
 
     const executed =
       woodInstance
-        .combinationsWith(axeInstance, undefined)
+        .combinationsWith(axeInstance, spawn(codex, 'agent'))
         .find((c) => c.name === 'chop')
         ?.tryExecute() === true;
 
@@ -364,7 +367,7 @@ object_defs:
 
     const executed =
       woodInstance
-        .combinationsWith(pebbleInstance, undefined)
+        .combinationsWith(pebbleInstance, spawn(codex, 'agent'))
         .find((c) => c.name === 'chop')
         ?.tryExecute() === true;
 
@@ -390,7 +393,7 @@ object_defs:
 
     const executed =
       woodInstance
-        .combinationsWith(axeInstance, undefined)
+        .combinationsWith(axeInstance, spawn(codex, 'agent'))
         .find((c) => c.name === 'chop')
         ?.tryExecute() === true;
 
@@ -419,14 +422,14 @@ object_defs:
 
     expect(
       hearthInstance
-        .combinationsWith(grassInstance, undefined)
+        .combinationsWith(grassInstance, spawn(codex, 'agent'))
         .find((c) => c.name === 'ignite')
         ?.tryExecute() === true,
       '同じタグを持っていても、別の型はマッチしない',
     ).toBe(false);
     expect(
       hearthInstance
-        .combinationsWith(tinderInstance, undefined)
+        .combinationsWith(tinderInstance, spawn(codex, 'agent'))
         .find((c) => c.name === 'ignite')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -449,7 +452,7 @@ object_defs:
     const woodInstance = spawn(codex, 'wood4');
     const axeInstance = spawn(codex, 'axe_tool4');
 
-    const matches = woodInstance.combinationsWith(axeInstance, undefined);
+    const matches = woodInstance.combinationsWith(axeInstance, spawn(codex, 'agent'));
 
     expect(matches.map((c) => c.name)).toEqual(['chop']);
   });
@@ -478,7 +481,7 @@ object_defs:
 
     expect(
       woodInstance
-        .combinationsWith(axeInstance, undefined)
+        .combinationsWith(axeInstance, spawn(codex, 'agent'))
         .find((c) => c.name === 'chop')
         ?.tryExecute() === true,
       'durabilityが0(gt 0を満たさない)なので実行されない',
@@ -487,7 +490,7 @@ object_defs:
     axeInstance.getProperty(durabilityId).setNumberWithoutEvents(1);
     expect(
       woodInstance
-        .combinationsWith(axeInstance, undefined)
+        .combinationsWith(axeInstance, spawn(codex, 'agent'))
         .find((c) => c.name === 'chop')
         ?.tryExecute() === true,
     ).toBe(true);

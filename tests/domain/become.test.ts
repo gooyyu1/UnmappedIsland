@@ -4,6 +4,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
+import { AGENT_YAML, createAgent } from '../support/agent';
 
 /**
  * 同じ個体のまま型を差し替える（GameElementDefinition.md 9.9節）。行き先は座標で指す（3.5節）ので、
@@ -84,7 +85,10 @@ object_defs:
   };
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('become.test', YAML).buildAndReset();
+    codex = new WorldCodexYamlLoader()
+      .load('become.test', YAML)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     session = new WorldSession(codex);
     ground = session.createObject(idOf('ground'));
   });
@@ -188,7 +192,7 @@ object_defs:
     const other = session.createObject(idOf('stick'));
     other.moveToSlotOrRejection(ground.getSlot(itemsId()));
 
-    expect(stick.combinationsWith(other, undefined)).toEqual([]);
+    expect(stick.combinationsWith(other, createAgent(session))).toEqual([]);
   });
 
   it('型が変われば、同種のまとまりも判定し直される', () => {

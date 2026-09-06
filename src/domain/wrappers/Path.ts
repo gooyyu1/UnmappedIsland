@@ -40,7 +40,7 @@ export class Path extends ObjectWrapper {
    * この道を通って移動する（YAML側のtravelアクション: 未発見なら不成立、成功ならagentが移動先へ移り、
    * 担ぎ手の遅れ（travel_delay）を継いだtravel_minutesの時間が進む）。
    */
-  travel(agent: WorldObject | undefined): boolean {
+  travel(agent: WorldObject): boolean {
     return this.instance.tryGetAction(this.words.travelAction, agent)?.tryExecute() === true;
   }
 }
