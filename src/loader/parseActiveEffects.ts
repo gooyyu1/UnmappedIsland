@@ -167,10 +167,7 @@ function parseAmong(
   requireKnownKeys(node, AMONG_KEYS, amongContext);
 
   const subjectName = tryGetScalar(node, 'subject', amongContext);
-  const root =
-    subjectName === undefined
-      ? 'self'
-      : parseReferenceRoot(amongContext, subjectName, scope.withoutPropertyName);
+  const root = subjectName === undefined ? 'self' : parseObjectRoot(amongContext, subjectName, scope);
 
   const slotName = tryGetScalar(node, 'slot', amongContext);
   if (slotName === undefined) throw new YamlLoadError(`${amongContext}: 'slot'は必須です。`);
@@ -210,7 +207,7 @@ function parseSetEffect(
   if (isMap(valueNode)) {
     requireKnownKeys(valueNode, ['subject'], context);
     const subjectName = requireScalar(valueNode, 'subject', context);
-    return new SetEffect(path, ObjectRef.ofRoot(parseObjectTargetRoot(context, subjectName, scope)));
+    return new SetEffect(path, ObjectRef.ofRoot(parseObjectRoot(context, subjectName, scope)));
   }
 
   const [value] = parseNumberOrSymbol(loader, context, asScalarText(valueNode, context));
@@ -499,7 +496,7 @@ export function parseSignals(context: string, node: YamlNode, scope: ReferenceSc
   if (!isMap(node)) return [new SignalEffect(asScalarText(node, context), 'self')];
 
   return entriesInOrder(node).map(([targetName, nameNode]) => {
-    const target = parseObjectTargetRoot(context, targetName, scope);
+    const target = parseObjectRoot(context, targetName, scope);
     return new SignalEffect(asScalarText(nameNode, `${context}.'${targetName}'`), target);
   });
 }
@@ -533,7 +530,7 @@ function parseDestroy(
 
 /**
  * オブジェクトそのものを1つ指す参照（ObjectRef）を読む。**ここを通るのは`{subject, prop}`の形まで
- * 許す口**で、対象キーしか取らない口はparseObjectTargetRootを直に呼ぶ。
+ * 許す口**で、対象キーしか取らない口はparseObjectRootを直に呼ぶ。
  *
  * 対象キー（`self`）か、`{subject, prop}`のマップ——`prop`を書けばその実効値がインスタンスIDとして
  * 指す相手、書かなければ`subject`（省略時はself）そのもの。reservedKeysは、呼び出し側が別に読む
@@ -551,8 +548,7 @@ function parseObjectRef(
   scope: ReferenceScope,
   reservedKeys: readonly string[] = [],
 ): ObjectRef {
-  if (!isMap(node))
-    return ObjectRef.ofRoot(parseObjectTargetRoot(context, asScalarText(node, context), scope));
+  if (!isMap(node)) return ObjectRef.ofRoot(parseObjectRoot(context, asScalarText(node, context), scope));
 
   if (node.items.length === 0)
     throw new YamlLoadError(
@@ -563,8 +559,7 @@ function parseObjectRef(
   const subjectName = tryGetScalar(node, 'subject', context);
   const propName = tryGetScalar(node, 'prop', context);
 
-  if (propName === undefined)
-    return ObjectRef.ofRoot(parseObjectTargetRoot(context, subjectName ?? 'self', scope));
+  if (propName === undefined) return ObjectRef.ofRoot(parseObjectRoot(context, subjectName ?? 'self', scope));
 
   const root = subjectName === undefined ? 'self' : parseReferenceRoot(context, subjectName, scope);
   return ObjectRef.ofProperty(new PropertyPath(root, loader.propertyNames.intern(propName)));
@@ -654,7 +649,10 @@ function parseBecome(
   return new BecomeEffect(subject ?? ObjectRef.ofRoot('self'), axisValues);
 }
 
-/** プロパティ名を伴わず、オブジェクトそのものを指す対象。何を書けるかはその場所が決める（ReferenceScope）。 */
-function parseObjectTargetRoot(context: string, key: string, scope: ReferenceScope): ReferenceRoot {
-  return parseReferenceRoot(context, key, scope.withoutPropertyName);
+/**
+ * プロパティ名を伴わず、オブジェクトそのものを指す参照ルート。何を書けるかはその場所が決める
+ * （ReferenceScope）。プロパティ名で祖先を探すancestorは、ここでは解決先を持たない。
+ */
+function parseObjectRoot(context: string, raw: string, scope: ReferenceScope): ReferenceRoot {
+  return parseReferenceRoot(context, raw, scope.withoutPropertyName);
 }
