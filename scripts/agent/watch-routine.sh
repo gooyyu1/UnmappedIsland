@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 監視係の1回ぶん（`.claude/board-design.md` 2.19）。名乗り・前の周の畳み・デーモンの起こし・自分の
+# 監視係の1回ぶん（`.claude/board-design.md` 2.19）。名乗り・デーモンの起こし・前の周の畳み・自分の
 # Routine の直しを、この順で打つ。
 #
 #   bash scripts/agent/watch-routine.sh
@@ -7,8 +7,12 @@
 #
 # 出力は1行1件。`SELF <ID>`・`TAGGED <ID>`・`DAEMON <生死>`・畳んだ相手（`archive-session.sh` の行）・
 # `CREATED <ID>` / `UPDATED <ID> <直した項目>` / `OK <ID>`。打てなかった段があれば理由を stderr へ
-# 出し、最後に1で終わる——**途中で降りない**。デーモンを起こすことと Routine を直すことは互いに
-# 要らないので、片方が転んだからといってもう片方を落とす理由が無い。
+# 出し、最後に1で終わる——**途中で降りない**。段どうしは互いに要らないので、片方が転んだからと
+# いってもう片方を落とす理由が無い。
+#
+# **順は、落ちてはいけない段から。** デーモンを起こすのがこの係の存在理由なので、畳みや Routine の
+# 直しより前に置く——後ろに置くと、前の段が転んだ周にデーモンが1時間放置される。名乗りだけが先に
+# 来るのは、そこで転んだ周も**次の周が畳めるようにしておく**ため。
 #
 # ## 打つのを1行にしてあるのは、分類器が中身を見ないから
 #
@@ -74,7 +78,12 @@ bridge-cse_*) SELF="session_${PWD##*/bridge-cse_}" ;;
 esac
 echo "SELF ${SELF:-なし}"
 
-MAIN="$(cd "$(git rev-parse --git-common-dir 2>/dev/null || echo .)/.." 2>/dev/null && pwd)" || MAIN=''
+# 本体のチェックアウト。**`--path-format=absolute` を明示する**（`archive-session.sh` と同じ）
+# ——既定は場合によって相対で返り、引けなかったときの逃げと見分けが付かなくなる。**引けなければ
+# 空にする**。ここへ既定値を置くと、当てずっぽうの場所を本体として打ちにいく。
+MAIN=''
+common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || common=''
+[ -z "$common" ] || MAIN=$(dirname "$common")
 
 if [ -z "${DRY_RUN:-}" ] && [ -n "$SELF" ]; then
   # **`chore-watch` を名乗る。** 次の周がこのタグで畳む相手を選ぶ。
@@ -92,28 +101,6 @@ if [ -z "${DRY_RUN:-}" ] && [ -n "$SELF" ]; then
     echo "名乗れなかった。次の周がこのセッションを畳めない: $(cat "$WORK/tagged.json")" >&2
     failed=1
   fi
-fi
-
-# --- 前の周を畳む -------------------------------------------------------------
-
-# **畳んでよいかを決めるのは [`archive-session.sh`](archive-session.sh)。** ここが渡すのは、この
-# PCに作業ツリーを持つ相手から自分を除いたものだけで、`chore-watch` を持たない相手は向こうが
-# `KEPT` として素通りさせる。**盤面はこの係を畳めない**（2.19.3）ので、ここで打つ。
-if [ -z "${DRY_RUN:-}" ] && [ -n "$SELF" ] && [ -n "$MAIN" ]; then
-  # **場所は規約で決まる**（本体の `.claude/worktrees/bridge-cse_<ID>`。`archive-session.sh`
-  # 「worktree は、ここで片付ける」）。**`git worktree list` からは引かない**——登録だけが消えて
-  # ディレクトリが残る形を拾えない。
-  : >"$WORK/worktrees.txt"
-  for dir in "$MAIN"/.claude/worktrees/bridge-cse_*; do
-    [ -d "$dir" ] || continue
-    base="${dir##*/}"
-    echo "session_${base#bridge-cse_}" >>"$WORK/worktrees.txt"
-  done
-  # `grep -v` は1行も残らないと1を返す。**残らない周がある**（作業ツリーが自分だけ）ので、そこで
-  # 落とさない。
-  grep -v "^$SELF\$" "$WORK/worktrees.txt" >"$WORK/sweep.txt" || true
-  (cd "$MAIN" && CCR_META="$CCR_META" bash "$MAIN/scripts/agent/archive-session.sh" \
-    --keep-untagged chore-watch) <"$WORK/sweep.txt"
 fi
 
 # --- デーモンを起こす ---------------------------------------------------------
@@ -137,6 +124,33 @@ if [ -z "${DRY_RUN:-}" ]; then
   fi
 fi
 
+# --- 前の周を畳む -------------------------------------------------------------
+
+# **畳んでよいかを決めるのは [`archive-session.sh`](archive-session.sh)。** ここが渡すのは、この
+# PCに作業ツリーを持つ相手から自分を除いたものだけで、`chore-watch` を持たない相手は向こうが
+# `KEPT` として素通りさせる。**盤面はこの係を畳めない**（2.19.3）ので、ここで打つ。
+if [ -z "${DRY_RUN:-}" ] && [ -n "$SELF" ] && [ -n "$MAIN" ]; then
+  # **場所は規約で決まる**（本体の `.claude/worktrees/bridge-cse_<ID>`。`archive-session.sh`
+  # 「worktree は、ここで片付ける」）。**`git worktree list` からは引かない**——登録だけが消えて
+  # ディレクトリが残る形を拾えない。
+  : >"$WORK/worktrees.txt"
+  for dir in "$MAIN"/.claude/worktrees/bridge-cse_*; do
+    [ -d "$dir" ] || continue
+    base="${dir##*/}"
+    echo "session_${base#bridge-cse_}" >>"$WORK/worktrees.txt"
+  done
+  # `grep -v` は1行も残らないと1を返す。**残らない周がある**（作業ツリーが自分だけ）ので、そこで
+  # 落とさない。
+  grep -v "^$SELF\$" "$WORK/worktrees.txt" >"$WORK/sweep.txt" || true
+  # **転んでも次の段へ進む**（上の「途中で降りない」）。`archive-session.sh` は常に0で返すので、
+  # ここが非0になるのは向こうへ辿り着けなかったときだけ。
+  (cd "$MAIN" && CCR_META="$CCR_META" bash "$MAIN/scripts/agent/archive-session.sh" \
+    --keep-untagged chore-watch) <"$WORK/sweep.txt" || {
+    echo "前の周を畳めなかった" >&2
+    failed=1
+  }
+fi
+
 # --- 自分の Routine を直す ----------------------------------------------------
 
 # 渡すのは囲みの中だけ（[`dispatch-chore.sh`](dispatch-chore.sh) と同じ形）。
@@ -156,13 +170,15 @@ sed -n 's/^題: *//p' "$PROMPT" | head -1 >"$NAME"
 }
 
 # 登録済みの Routine を引く。**繰れない**——`list_triggers` は `cursor` を受けるが、応答に返して
-# よこすのは `has_more` だけで、次を指す印が無い（2026-09-06 に実測）。**1回で引ける範囲に収まって
-# いることを見て、収まっていなければ言う**——溢れた向こうに当たりが居ると、探して見つからなかった
-# ことと区別が付かないまま2本目を作る。
+# よこすのは `has_more` だけで、次を指す印が無い（2026-09-06 に実測）。**1回で引ききれたことを見て、
+# 引ききれていなければ言う**——溢れた向こうに当たりが居ると、探して見つからなかったことと区別が
+# 付かないまま2本目を作る。
 #
-# `recurring` で絞るのは、一度きりの Routine（`send_later` の跡）がそちらに溜まるから。
+# **周期のものだけに絞らない。** 絞ると、同じ名前の Routine が一度きり（`run_once_at`）へ変えられて
+# いたときに見つからず、2本目を作る。既定の一覧は**発火済みの一度きりを隠す**ので、絞らなくても
+# 溜まる側は入ってこない。
 LIST="$WORK/triggers.json"
-printf '{"limit":100,"recurring":true}' >"$WORK/query.json"
+printf '{"limit":100}' >"$WORK/query.json"
 bash "$CCR_META" list_triggers <"$WORK/query.json" >"$LIST"
 # **引けなかったら、道具が言った理由をそのまま出す**（`.claude/board-design.md` 1.7）。認証切れは
 # JSONではなく1行の文で返るので、そのまま `jq` へ流すと解釈の失敗だけが残って理由が消える。
@@ -171,7 +187,7 @@ grep -q '^{"data"' "$LIST" || {
   exit 1
 }
 [ "$(jq -r '.has_more' <"$LIST")" = false ] || {
-  echo "周期の Routine が1回で引ける数を超えている。名前で探せないので、手で減らす。" >&2
+  echo "Routine の一覧を1回で引ききれなかった（has_more が false でない）。名前で探せない。" >&2
   exit 1
 }
 
