@@ -6,8 +6,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
-// アイテムのスタック表示（Slot.contentsの並び順・SlotDefのcellCount・ObjectDefのstackable・
-// ObjectDef.stackOrder・same_slotとの相互作用）に対する自動テスト。
+// アイテムのスタック表示——スロットが中身をどう束ね、どう並べ、どう渡すか——に対する自動テスト。
 describe('StackingTests', () => {
   let sessions: Map<WorldCodex, WorldSession>;
 
@@ -39,6 +38,42 @@ describe('StackingTests', () => {
     const stack = stackOfType(slot, objectDefGlobalId);
     return stack !== undefined ? slot.indexOfStack(stack) : undefined;
   }
+
+  // ------------------------------------------------------------------
+  // Slot.contents: 読んだ時点の写しであること
+  // ------------------------------------------------------------------
+
+  it('contentsは読んだ時点の写しで、辿っている最中に中身が抜けても顔ぶれが変わらない', () => {
+    const yaml = `
+object_defs:
+  ground_snapshot:
+    slots:
+      pile: {}
+  pebble: {}
+`;
+    const codex = load(yaml);
+    const pileSlotId = codex.slotNames.getId('pile');
+
+    const ground = spawn(codex, 'ground_snapshot');
+    const pile = ground.getSlot(pileSlotId);
+    // 束ねられる型なので3つとも1つのスタックへ入る。**スタックの中身の並びは出入りで書き換わる実体**
+    // （ObjectStack.members）なので、写しを返さなければ辿っている最中に飛ばす。
+    const pebbles = [spawn(codex, 'pebble'), spawn(codex, 'pebble'), spawn(codex, 'pebble')];
+    for (const pebble of pebbles) pebble.moveToSlotOrRejection(pile);
+    expect(pile.stacks.length, '3つとも同じスタックに入っている').toBe(1);
+
+    // 辿りながら中身を消す（時間経過が子を消すのと同じ形。WorldObject.tick）。
+    const visited: number[] = [];
+    for (const pebble of pile.contents) {
+      visited.push(pebble.instanceId);
+      pebble.destroy();
+    }
+
+    expect(visited, '写しなので、消したぶんも含めて全部を1回ずつ辿る').toEqual(
+      pebbles.map((p) => p.instanceId),
+    );
+    expect(pile.contents, '辿り終えた時点のスロットは空').toEqual([]);
+  });
 
   // ------------------------------------------------------------------
   // ObjectDef.stackOrder: 同種のrun内で「手前に重ねたいものほど末尾」に並ぶこと

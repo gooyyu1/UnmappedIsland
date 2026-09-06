@@ -579,7 +579,7 @@ export class WorldObject {
     this.def.passives.setRelationRegistered(this, 'ancestor', register);
 
     for (const slot of this.slots) {
-      for (const child of [...slot.contents]) child.setAncestorTargetsRegistered(register);
+      for (const child of slot.contents) child.setAncestorTargetsRegistered(register);
     }
   }
 
@@ -665,7 +665,7 @@ export class WorldObject {
    */
   private spillContentsTo(destination: WorldObject | undefined): void {
     for (const slot of this.slots) {
-      for (const child of [...slot.contents]) {
+      for (const child of slot.contents) {
         if (child.def.boundToOwner) child.spillContentsTo(destination);
         else child.spillTo(destination);
       }
@@ -706,7 +706,7 @@ export class WorldObject {
     const rehomed: Array<{ child: WorldObject; slot: Slot }> = [];
     for (const slot of this.slots) {
       const slotLocalId = newDef.slotIndexByGlobalId.toLocal(slot.def.globalId);
-      for (const child of [...slot.contents]) {
+      for (const child of slot.contents) {
         const destination = slotLocalId === LocalIndexByGlobalId.missing ? undefined : newSlots[slotLocalId];
         if (destination === undefined || destination.rejectionFor(child) !== undefined) {
           this.evict(child);
@@ -876,8 +876,8 @@ export class WorldObject {
    * （すべてのスロットの中身）へ再帰する。すべてのオブジェクトはworldの下にぶら下がるため、worldへ1回呼ぶだけで
    * ツリー全体が処理される。
    *
-   * rangeイベントが走らせる命令は、処理中に自分自身や兄弟をツリーから切り離しうるため、各スロットの中身は
-   * 列挙前にスナップショットを取る。
+   * rangeイベントが走らせる命令は、処理中に自分自身や兄弟をツリーから切り離しうる。辿っている最中の
+   * 出入りを気にしなくてよい根拠はSlot.contents。
    */
   tick(): void {
     for (const property of this.properties) property.tick();
@@ -888,7 +888,7 @@ export class WorldObject {
     this.spillOutIfResisting();
 
     for (const slot of this.slots) {
-      for (const child of [...slot.contents]) child.tick();
+      for (const child of slot.contents) child.tick();
     }
   }
 
@@ -918,7 +918,7 @@ export class WorldObject {
   private collectTickAgents(into: WorldObject[]): void {
     if (this.def.tickTriggers.length > 0) into.push(this);
     for (const slot of this.slots) {
-      for (const child of [...slot.contents]) child.collectTickAgents(into);
+      for (const child of slot.contents) child.collectTickAgents(into);
     }
   }
 
