@@ -100,8 +100,15 @@ fi
 # PCに作業ツリーを持つ相手から自分を除いたものだけで、`chore-watch` を持たない相手は向こうが
 # `KEPT` として素通りさせる。**盤面はこの係を畳めない**（2.19.3）ので、ここで打つ。
 if [ -z "${DRY_RUN:-}" ] && [ -n "$SELF" ] && [ -n "$MAIN" ]; then
-  { (cd "$MAIN" && git worktree list --porcelain) |
-    sed -n 's|^worktree .*/bridge-cse_|session_|p' >"$WORK/worktrees.txt"; } || true
+  # **場所は規約で決まる**（本体の `.claude/worktrees/bridge-cse_<ID>`。`archive-session.sh`
+  # 「worktree は、ここで片付ける」）。**`git worktree list` からは引かない**——登録だけが消えて
+  # ディレクトリが残る形を拾えない。
+  : >"$WORK/worktrees.txt"
+  for dir in "$MAIN"/.claude/worktrees/bridge-cse_*; do
+    [ -d "$dir" ] || continue
+    base="${dir##*/}"
+    echo "session_${base#bridge-cse_}" >>"$WORK/worktrees.txt"
+  done
   # `grep -v` は1行も残らないと1を返す。**残らない周がある**（作業ツリーが自分だけ）ので、そこで
   # 落とさない。
   grep -v "^$SELF\$" "$WORK/worktrees.txt" >"$WORK/sweep.txt" || true

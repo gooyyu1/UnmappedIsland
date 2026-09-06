@@ -41,6 +41,16 @@ bash scripts/agent/watch-routine.sh
 `DAEMON` の行が出ていないか「起こせなかった」だったときだけ、`tail -40 ~/daemon.log` を読んで、
 末尾の数行を報告に載せてください。**直せなくても構いません**——次の発火でもう一度立ちます。
 
+## `TAGGED` の行が出なかったときだけ、自分で名乗る
+
+スクリプトが見つからなかった・名乗る前に落ちた、のどちらでも、**あなたには `chore-watch` が付いて
+いません**。付いていないと次の周があなたを畳めず、このPCに作業ツリーが残り続けます。`pwd` の末尾が
+`bridge-cse_<ID>` なので、その `<ID>` で次の1行だけ打ってから報告してください。
+
+```bash
+printf '{"session_ids":["session_<ID>"],"add":["chore-watch"]}' | bash .claude/ccr-meta.sh set_session_tags
+```
+
 ## 守ること
 
 - **これ以外は何もしない。** 盤面の様子・PRの滞留は見ません。上のスクリプトが打たなかったことは、
