@@ -57,7 +57,8 @@ card_filters:
   - id: filter_shelter
     icon: 🏠
     tags: [bed, shelter]
-  # 遠出（系統11）と船と海図（系統12）。道も他の設置物と同じにここでだけ残る。
+  # 船と海図（系統11）と、系統に数えない移動の距離（ContentSkeleton.md 3.1節）。道も他の設置物と
+  # 同じにここでだけ残る。
   - id: filter_travel
     icon: 🧭
     tags: [path, sea_route, boat, sail]
