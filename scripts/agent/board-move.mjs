@@ -98,6 +98,15 @@ const WRITERS = 3;
 const KIND = 'kind:';
 
 /**
+ * 先に配ってほしい issue の印（2.18）。**効き目は配る順だけ**——枠（`WRITERS`）は増えず、錠も
+ * 手綱も越えない（1.3）。
+ *
+ * **付けすぎても壊れない。** 全部に付けば「古いものから」に戻るだけなので、**壊れる先が安全側に
+ * 限られる**。これが、順位を数で持たずに印1つで表す理由。
+ */
+const URGENT = '急ぎ';
+
+/**
  * **周期で起きる係**（2.17）。人が投入しなくても、仕事があれば間隔を空けて自分で立つ。
  *
  * - `due` … 今この係に仕事があるか。**無ければ間隔が満ちても立てない。**
@@ -494,10 +503,12 @@ export function moves(input) {
     (holder) => holder.issue !== undefined || issueStates[String(holder.number)] !== 'CLOSED',
   );
 
-  // **古いものから投入する。** 一覧は新しい順に返るので、そのまま使うと古い issue が永久に
-  // 後回しになる。
+  // **`急ぎ` が先、その中では古いものから投入する。** 一覧は新しい順に返るので、番号で並べ直さないと
+  // 古い issue が永久に後回しになる。
   const ready = [...input.issues]
-    .sort((a, b) => a.number - b.number)
+    .sort(
+      (a, b) => Number(names(b).includes(URGENT)) - Number(names(a).includes(URGENT)) || a.number - b.number,
+    )
     .filter((issue) => names(issue).includes(`${KIND}task`))
     // 返ってきたものは、人が `判断待ち` を外すまで配らない（2.15）。**分類は `kind:task` のまま**
     // ——「もうやる必要がない」は分類ではなく人の手番の印なので、`kind:` の側は動かさない（2.17.1）。
