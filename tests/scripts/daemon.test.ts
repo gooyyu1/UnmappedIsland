@@ -47,6 +47,10 @@ interface World {
   readonly mainDirty?: boolean;
   /** `git` が答えないか（＝リポジトリの外・`git` が無い）。 */
   readonly gitFails?: boolean;
+  /** 立てた側が本体の中に居るか。既定は本体そのもの。 */
+  readonly fromWorktree?: boolean;
+  /** 寄せたことで `package-lock.json` が動いたか。 */
+  readonly lockChanged?: boolean;
   /** 本体を寄せる `checkout` が `daemon.sh` に置く中身。**走っている `start` の足元が入れ替わる。** */
   readonly checkoutSwap?: string;
   readonly env?: Record<string, string>;
@@ -71,6 +75,8 @@ interface Result {
   readonly copy: string | undefined;
   /** `git` に渡された引数。 */
   readonly git: readonly string[];
+  /** 本体で `npm install` が走ったか。 */
+  readonly installed: boolean;
   /** `start` が立てた側の出力（`$DAEMON_LOG`）。 */
   readonly daemonLog: string;
 }
@@ -115,6 +121,7 @@ function daemon(world: World = {}): Result {
     if (world.checkoutSwap !== undefined) {
       writeFileSync(join(work, 'swap.sh'), world.checkoutSwap, 'utf-8');
     }
+    // `HEAD:package-lock.json` の中身は、`checkout` を境に変わる（寄せた先で依存が動いた場合）。
     const git = join(work, 'git');
     writeFileSync(
       git,
@@ -122,8 +129,14 @@ function daemon(world: World = {}): Result {
 echo "$*" >> '${dir}/git-calls'
 case "$*" in
   *--git-common-dir*) printf '%s' '${dir}/main/.git' ;;
+  *--show-toplevel*) printf '%s' '${dir}/${world.fromWorktree === true ? 'worktree' : 'main'}' ;;
   *'status --porcelain'*) printf '%s' '${world.mainDirty === true ? ' M docs/x.md' : ''}' ;;
-  *checkout*) ${world.checkoutSwap === undefined ? ':' : `cp '${dir}/swap.sh' '${pathForBash(here)}/daemon.sh'`} ;;
+  *'HEAD:package-lock.json'*)
+    if [ -e '${dir}/checked-out' ]; then printf '%s' '${world.lockChanged === true ? 'bbb222' : 'aaa111'}'
+    else printf '%s' 'aaa111'; fi ;;
+  *checkout*)
+    touch '${dir}/checked-out'
+    ${world.checkoutSwap === undefined ? ':' : `cp '${dir}/swap.sh' '${pathForBash(here)}/daemon.sh'`} ;;
   *'rev-parse --short HEAD'*) printf '%s' 'deadbee' ;;
 esac
 exit ${world.gitFails === true ? 1 : 0}
@@ -131,6 +144,10 @@ exit ${world.gitFails === true ? 1 : 0}
       'utf-8',
     );
     chmodSync(git, 0o755);
+
+    const npm = join(work, 'npm');
+    writeFileSync(npm, `${STUB_SHEBANG}\necho "$*" >> '${dir}/npm-calls'\n`, 'utf-8');
+    chmodSync(npm, 0o755);
 
     const state = join(work, 'state');
     mkdirSync(state);
@@ -182,6 +199,7 @@ exit ${world.gitFails === true ? 1 : 0}
       publishes: readFileSync(publishes, 'utf-8').split('\n').filter(Boolean).length,
       copy: existsSync(copy) ? readFileSync(copy, 'utf-8') : undefined,
       git: existsSync(calls) ? readFileSync(calls, 'utf-8').split('\n').filter(Boolean) : [],
+      installed: existsSync(join(work, 'npm-calls')),
       daemonLog: existsSync(daemonLog) ? readFileSync(daemonLog, 'utf-8') : '',
     };
   } finally {
@@ -315,10 +333,26 @@ describe('daemon.sh', () => {
 
     expect(result.git.some((call) => call.includes('fetch --quiet origin main'))).toBe(true);
     expect(result.git.some((call) => call.includes('checkout --quiet --detach origin/main'))).toBe(true);
-    expect(result.logs[0]).toContain('本体を寄せた（deadbee）');
-    expect(result.logs[0]).toContain('立てた');
-    // **寄せてから立てる。** 逆だと、立った側が読むのは寄せる前の版。
-    expect(result.logs[0].indexOf('本体を寄せた')).toBeLessThan(result.logs[0].indexOf('立てた'));
+    // **`start` が出すのは1行。** 監視係が丸ごと自分の `DAEMON` の1行へ載せる（`watch-routine.sh`）
+    // ので、行を増やすと読む側の約束が崩れる。
+    expect(result.logs[0].split('\n').filter(Boolean)).toHaveLength(1);
+    expect(result.logs[0]).toContain('立てた（本体は deadbee。');
+    // 跨いだ差に依存の更新が無ければ、共有先は揺らさない。
+    expect(result.installed).toBe(false);
+  });
+
+  // 作業ツリーは本体の `node_modules` を遡って共有するので、**進めた側が入れ直す**——さもないと
+  // 共有しているのに版が食い違い、古い版が解決されて一部だけ壊れる。
+  it('寄せたことで依存が動いていれば、入れ直してから立てる', () => {
+    const result = daemon({
+      lockChanged: true,
+      args: ['start'],
+      then: [['stop']],
+      env: { ONCE: '', INTERVAL: '120', START_WAIT: '30', STOP_WAIT: '10' },
+    });
+
+    expect(result.installed).toBe(true);
+    expect(result.logs[0]).toContain('依存も入れ直した');
   });
 
   // 本体は作業ツリーの共有先なので、手が入っているところへ `checkout` を打たない
@@ -332,8 +366,22 @@ describe('daemon.sh', () => {
     });
 
     expect(result.git.some((call) => call.includes('checkout'))).toBe(false);
-    expect(result.logs[0]).toContain('未コミットの変更があるので');
-    expect(result.logs[0]).toContain('立てた');
+    expect(result.logs[0]).toContain('立てた（本体に未コミットの変更がある。');
+  });
+
+  // **寄せる先と立てる先が同じでなければ、何も進めない。** 立てるのは複製元の1本なので、作業ツリー
+  // から打つと、進めた本体は走らず、走る1本は古いまま残る。
+  it('本体の外から立てたときは、本体を触らない', () => {
+    const result = daemon({
+      fromWorktree: true,
+      args: ['start'],
+      then: [['stop']],
+      env: { ONCE: '', INTERVAL: '120', START_WAIT: '30', STOP_WAIT: '10' },
+    });
+
+    expect(result.git.some((call) => call.includes('fetch'))).toBe(false);
+    expect(result.git.some((call) => call.includes('checkout'))).toBe(false);
+    expect(result.logs[0]).toContain('立てた（本体の外から立てている。');
   });
 
   // **寄せられなくても立てる。** 古い版で回ることより、盤面が1ミリも動かないことのほうが重い。
@@ -345,8 +393,7 @@ describe('daemon.sh', () => {
       env: { ONCE: '', INTERVAL: '120', START_WAIT: '30', STOP_WAIT: '10' },
     });
 
-    expect(result.logs[0]).toContain('本体が見つからないので');
-    expect(result.logs[0]).toContain('立てた');
+    expect(result.logs[0]).toContain('立てた（本体が見つからない。');
   });
 
   // **寄せると、走っている `start` 自身の中身が入れ替わる**（bash はスクリプトを読み進めながら
@@ -359,7 +406,7 @@ describe('daemon.sh', () => {
       env: { ONCE: '', START_WAIT: '2' },
     });
 
-    expect(result.log).toContain('本体を寄せた');
+    expect(result.log).toContain('本体は deadbee');
     expect(result.daemonLog).toContain('寄せた先が立った');
   });
 
