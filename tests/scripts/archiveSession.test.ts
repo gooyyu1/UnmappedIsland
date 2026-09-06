@@ -175,7 +175,8 @@ describe('archive-session.sh', () => {
 
     expect(result.lines).toEqual([`ARCHIVED ${SESSION}`, `DIRTY ${WORKTREE}`]);
     expect(result.kept).toBe(true);
-    expect(reason(result.text)).toContain(WORKTREE);
+    // 断ったのが `rmdir` であることまで読めること。パスだけを見ると、理由が何であっても通る。
+    expect(reason(result.text)).toContain('rmdir');
   });
 
   // 畳む口と外す口が別だった間の残骸。畳み直しはしないが、後始末だけはやる。
