@@ -19,7 +19,7 @@ const TAP_CANCEL_EVENT = 'tapcancel';
 /**
  * その表示物で始まっている押下を取り消す。指を離してもonReleaseは呼ばれない。
  *
- * 押下が別の操作に変わったことを知っているのは、その操作を始めた側（ScrollArea）だけ。押した側は
+ * 押下が別の操作に変わったことを知っているのは、その操作を始めた側だけ。押した側は
  * 「もう押されたことにならない」とだけ分かればよいので、合図は取り消しの一言に留める。
  */
 export function cancelTap(target: Phaser.GameObjects.GameObject): void {
