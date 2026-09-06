@@ -9,7 +9,7 @@ export interface RoundDeps {
   runScript?: (
     name: string,
     args: readonly string[],
-    options?: { input?: string; capture?: boolean },
+    options?: { input?: string; capture?: boolean; env?: Record<string, string> },
   ) => ScriptResult;
   gh?: (args: readonly string[], options?: { allowFail?: boolean }) => string | undefined;
   sessions?: () => readonly unknown[];
@@ -38,4 +38,10 @@ export function play(
 export function pruneTaken(
   taken: Readonly<Record<string, string>>,
   board: { sessions: readonly { id: string }[]; prs: readonly { number: number }[] },
+): Record<string, string>;
+
+export function trackIdle(
+  taken: Readonly<Record<string, string>>,
+  board: { sessions: readonly { id: string; status: string }[] },
+  now: string,
 ): Record<string, string>;

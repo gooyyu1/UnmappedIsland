@@ -22,7 +22,14 @@ interface Board {
   mainChecks?: readonly unknown[];
   prs?: readonly unknown[];
   issues?: readonly unknown[];
-  sessions?: readonly { id: string; status: string; bucket: string; tags: readonly string[] }[];
+  sessions?: readonly {
+    id: string;
+    status: string;
+    bucket: string;
+    /** どこで走っているか（`cloud` / `bridge`、引けなければ `-`）。省いた盤面は環境を見ない。 */
+    env?: string;
+    tags: readonly string[];
+  }[];
   /** 生きたワーカーの担当 issue のうち、開いている一覧に載っていなかったものの `state`。 */
   issueStates?: Record<number, string>;
   /** PRごとの、そのPRを書いたセッション（コミットの `Claude-Session:` トレーラ）。 */
@@ -30,8 +37,27 @@ interface Board {
   taken?: Record<string, string>;
 }
 
+/**
+ * 手が空いているセッションは、既定で**十分に空いたまま**として渡す（`board-move.mjs` の
+ * `STALL_MINUTES`）。停滞を入口にする手はどれもそこを通るので、**盤面ごとに書くと、書き忘れた
+ * 盤面だけが黙って手を出さなくなる。** 空いたばかりの形を見たい検査は、`taken` で上書きする。
+ */
+const LONG_IDLE = '2026-09-04T02:00:00Z';
+
 function moves(board: Board): string[] {
-  return decide({ settledBefore: SETTLED, prs: [], issues: [], sessions: [], ...board });
+  const idled: Record<string, string> = {};
+  for (const session of board.sessions ?? []) {
+    if (session.status !== 'SESSION_STATUS_RUNNING') idled[`idle:${session.id}`] = LONG_IDLE;
+  }
+  return decide({
+    now: NOW,
+    settledBefore: SETTLED,
+    prs: [],
+    issues: [],
+    sessions: [],
+    ...board,
+    taken: { ...idled, ...board.taken },
+  });
 }
 
 /** 緑のPR。チェックが1本通っている形で作る（無検査のPRとは別の道を通るため）。 */
@@ -235,6 +261,16 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toContain('ARCHIVE session_r read:1549');
   });
 
+  // **「走り終わった」と「道具の承認を待っている」は同じ形に見える**（1.6）。30秒で畳んだ盤面は、
+  // 承認を求めて止まったレビューを判定を書く前に消し、そのPRを永久に止めた（PR #1573・issue #1569）。
+  it('手が止まったばかりのレビューは、まだ畳まない', () => {
+    const board = {
+      sessions: [idle('session_a', 'review-10')],
+      taken: { 'idle:session_a': '2026-09-05T01:59:00Z' },
+    };
+    expect(moves(board)).toEqual([]);
+  });
+
   it('走っているレビューは畳まない', () => {
     expect(moves({ sessions: [working('session_r', 'review-1549')] })).toEqual([]);
   });
@@ -385,9 +421,24 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual([]);
   });
 
-  it('同じ差分をレビューへ出したのに結論が付いていなければ、書き残すだけにする', () => {
+  // 読み手が手を止めているだけの間（道具の承認待ちなど）は、まだ読んでいる最中。
+  it('出した差分を読み手がまだ持っているなら、二度出さない', () => {
+    const board = {
+      prs: [pr(10)],
+      sessions: [idle('session_r', 'review-10')],
+      taken: { 'review:10': 'aaa111', 'idle:session_r': '2026-09-05T01:59:00Z' },
+    };
+    expect(moves(board)).toEqual(['NOTE PR #10 はレビューが読んでいる最中で、結論のラベルはまだ無い']);
+  });
+
+  // 指紋だけを見て「出した＝読まれた」と読むと、判定を書かずに終わったレビューがそのPRを永久に
+  // 止める（issue #1569）。読み手が居なくなっていることが、その読みが終わった印。
+  it('出した差分の読み手が居なくなっていれば、もう一度出す', () => {
     const board = { prs: [pr(10)], taken: { 'review:10': 'aaa111' } };
-    expect(moves(board)).toEqual(['NOTE PR #10 はレビューへ出したが、結論のラベルが付いていない']);
+    expect(moves(board)).toEqual([
+      'REVIEW 10 aaa111',
+      'NOTE PR #10 のレビューは判定を書かずに終わったので、もう一度出す',
+    ]);
   });
 
   it('チェックが1つも登録されていないPRは、落ち着くまで緑と読まない', () => {
@@ -452,16 +503,167 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual([]);
   });
 
-  // 並列度1（3.1）。作業領域の多次元ラベルが入るまでは、書くセッションは同時に1本まで。
+  // **並べてよいかは、錠と本数で決める**（3.1・`parallel-work.md` 2節）。**同じファイルを書くことは
+  // 止めない**——ぶつかったら `mend` で直させ、実績は `board-round.mjs` が控える。
+  it('錠を持たない issue は、隣が走っていても並べて投入する', () => {
+    const board = {
+      issues: [
+        { number: 9, ...label('task'), blockedBy: { nodes: [] } },
+        { number: 8, ...label('task'), blockedBy: { nodes: [] } },
+      ],
+      sessions: [working('session_a', 'task-8')],
+    };
+    expect(moves(board)).toEqual(['TASK 9']);
+  });
+
+  // **錠が指すのは、同時に1本しか動かせない資源**（`parallel-work.md` 2節）。触るファイルが
+  // 分かれていても、GPUやデーモンの実体は1本しか使えない。
   //
   // **黙って止めない。** `stall` は指紋で1回しか出ないので、起こしても動かないセッションが1本
   // 残ると TASK が永久に出ない。ログに何も出ないと「やることが無い周」と見分けが付かない。
-  it('書くセッションが走っている間は投入せず、待っていることを書く', () => {
+  it('同じ area: の錠を取り合う issue は投入せず、何を取り合うかを書く', () => {
+    const board = {
+      issues: [
+        { number: 9, ...label('task', 'area:daemon'), blockedBy: { nodes: [] } },
+        { number: 8, ...label('task', 'area:daemon'), blockedBy: { nodes: [] } },
+      ],
+      sessions: [working('session_a', 'task-8')],
+    };
+    expect(moves(board)).toEqual([
+      'NOTE 1件の task が待っている。先頭は #9 と #8 が `area:daemon` を取り合う',
+    ]);
+  });
+
+  it('錠が違えば、走っている隣へ並べて投入する', () => {
+    const board = {
+      issues: [
+        { number: 9, ...label('task', 'area:art'), blockedBy: { nodes: [] } },
+        { number: 8, ...label('task', 'area:daemon'), blockedBy: { nodes: [] } },
+      ],
+      sessions: [working('session_a', 'task-8')],
+    };
+    expect(moves(board)).toEqual(['TASK 9']);
+  });
+
+  // 掴んでいる issue が開いている一覧に無ければ、錠が読めない。**知らないことを「取り合わない」
+  // として読まない。**
+  it('走っているセッションの担当が読めなければ、錠を持つ issue は投入しない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'area:art'), blockedBy: { nodes: [] } }],
+      sessions: [working('session_a', 'task-8')],
+      issueStates: { 8: 'OPEN' },
+    };
+    expect(moves(board)).toEqual(['NOTE 1件の task が待っている。先頭は session_a の担当（#8）が読めない']);
+  });
+
+  // **担当が閉じていても、走っている限り資源は掴んだまま。** 本数の勘定からは外すが（走行中は
+  // 畳めないので、待つと枠が空かない）、錠の側で外すと**同じ資源を2本が取り合う**。
+  it('担当の閉じたセッションが走っている間も、錠を持つ issue は投入しない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'area:art'), blockedBy: { nodes: [] } }],
+      sessions: [working('session_a', 'task-8')],
+      issueStates: { 8: 'CLOSED' },
+    };
+    expect(moves(board)).toEqual(['NOTE 1件の task が待っている。先頭は session_a の担当（#8）が読めない']);
+  });
+
+  // **上限は錠とは別の手綱**（3.1）。錠を持たない issue はいくらでも並ぶので、ここでしか止まらない。
+  it('書くセッションが上限まで走っていれば、錠が無くても投入しない', () => {
+    const board = {
+      issues: [6, 7, 8, 9].map((number) => ({
+        number,
+        ...label('task'),
+        blockedBy: { nodes: [] },
+      })),
+      sessions: [
+        working('session_a', 'task-6'),
+        working('session_b', 'task-7'),
+        working('session_c', 'task-8'),
+      ],
+    };
+    expect(moves(board)).toEqual([
+      'NOTE 1件の task が、書くセッション（session_a session_b session_c）の空きを待っている',
+    ]);
+  });
+
+  // 走らせる先は issue のラベルにある（2.16）。盤面は投入先を引数の形で寄越し、`board-round.mjs`
+  // はそれをそのまま `dispatch-task.sh` へ渡す。
+  it('env:bridge の issue は、ブリッジへ投入する', () => {
+    const board = { issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }] };
+    expect(moves(board)).toEqual(['TASK 9 --bridge']);
+  });
+
+  // **既定へ落とさない。** 落とすと、そこでしかできないから宛先を書いた仕事が黙って別の場所で
+  // 走り、指定が無視されたことが誰にも残らない（2.16.1）。
+  it('知らない env: の issue は配らず、覚え書きを出す', () => {
+    const board = { issues: [{ number: 9, ...label('task', 'env:mars'), blockedBy: { nodes: [] } }] };
+    expect(moves(board)).toEqual(['NOTE issue #9 の `env:mars` は知らない宛先']);
+  });
+
+  it('env: が重ねて付いた issue も配らない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'env:bridge', 'env:cloud'), blockedBy: { nodes: [] } }],
+    };
+    expect(moves(board)).toEqual(['NOTE issue #9 に `env:` が重ねて付いている']);
+  });
+
+  // クラウドで走り出した後に `env:bridge` が付いたら、そこはもうこの仕事の場所ではない（2.16.2）。
+  // 畳めば枠が空き、次の周が正しい先で立て直す。
+  it('走らせる先が食い違ったワーカーは畳む', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }],
+      sessions: [{ ...idle('session_a', 'task-9'), env: 'cloud' }],
+    };
+    expect(moves(board)).toEqual(['ARCHIVE session_a moved:9']);
+  });
+
+  it('走らせる先が合っているワーカーは畳まない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }],
+      sessions: [{ ...idle('session_a', 'task-9'), env: 'bridge' }],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
+  });
+
+  // **知らないことを「違う」として読まない。** 引けなかった環境を食い違いと読むと、正しく走って
+  // いるセッションが落ちる。
+  it('環境を引けなかったワーカーは畳まない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }],
+      sessions: [{ ...idle('session_a', 'task-9'), env: '-' }],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
+  });
+
+  // **畳めるのはクラウドのセッションだけ**（`archive-session.sh` はブリッジを `KEPT` にする）。
+  // 出しても畳まれず、**指紋だけが残ってそのワーカーが二度と起こされず人へも返らなくなる。**
+  // `env:` の付かない issue をブリッジで走らせる形は実在する（棚卸し役・手元からの投入）ので、
+  // 既定の `cloud` との食い違いがそのまま当たる。
+  it('ブリッジのワーカーは、走らせる先が食い違っていても畳まない', () => {
     const board = {
       issues: [{ number: 9, ...label('task'), blockedBy: { nodes: [] } }],
-      sessions: [idle('session_a', 'task-8')],
+      sessions: [{ ...idle('session_a', 'task-9'), env: 'bridge' }],
     };
-    expect(moves(board)).toEqual(['NOTE 1件の task が、書くセッション（session_a）の空きを待っている']);
+    expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
+  });
+
+  // **PRを出した後は動かさない**（2.16.2）。畳むと、そのPRの直しを頼む相手が居なくなる。
+  it('PRを出した後のワーカーは、走らせる先が食い違っていても畳まない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }],
+      prs: [pr(10, label('収束せず'))],
+      sessions: [{ ...idle('session_a', 'task-9'), env: 'cloud' }],
+    };
+    expect(moves(board)).toEqual([]);
+  });
+
+  // 畳んでも次の周は投入で止まるので、枠を空ける意味が無い（2.16.2）。
+  it('配り直す先が無ければ、食い違っていても畳まない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('task', 'env:mars'), blockedBy: { nodes: [] } }],
+      sessions: [{ ...idle('session_a', 'task-9'), env: 'cloud' }],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
   });
 
   // 走っているセッションが持っている issue は「投入済み」なので、待ちにも数えない（1.2）。
@@ -487,10 +689,47 @@ describe('board-move.mjs', () => {
     const board = {
       issues: [{ number: 8, ...label('task'), blockedBy: { nodes: [] } }],
       sessions: [idle('session_a', 'task-8')],
-      taken: { 'resume:session_a': 'stall:8' },
+      taken: { 'idle:session_a': LONG_IDLE, 'resume:session_a': 'stall:8' },
     };
     expect(moves(board)).toEqual(['RETURN 8 session_a returned:8']);
-    expect(moves({ ...board, taken: { 'resume:session_a': 'returned:8' } })).toEqual([]);
+    expect(
+      moves({ ...board, taken: { 'idle:session_a': LONG_IDLE, 'resume:session_a': 'returned:8' } }),
+    ).toEqual([]);
+  });
+
+  /**
+   * **「手が空いている」ことそのものは停滞ではない。** ワーカーは手番の切れ目ごとに空き、下請けの
+   * レビューを待つ間も空いて見える（1.6）。1度見ただけで停滞と読んだ盤面は、押し切る寸前の作業を
+   * 人へ返して畳んだ（2026-09-06、issue #1506。`staging ready to push` のまま返却された）。
+   */
+  describe('空いていることではなく、空いたままであることを見る', () => {
+    const stalling = (over: Record<string, string>) => ({
+      issues: [{ number: 8, ...label('task'), blockedBy: { nodes: [] } }],
+      sessions: [idle('session_a', 'task-8')],
+      taken: over,
+    });
+
+    it('空いたばかりのワーカーは起こさない', () => {
+      // NOW の1分前。
+      expect(moves(stalling({ 'idle:session_a': '2026-09-05T01:59:00Z' }))).toEqual([]);
+    });
+
+    // **覚えが無いのは「ずっと空いている」ではない。** 台帳が消えた直後もここへ来るので、
+    // 動かない側へ倒す（打つ手はどちらも取り返しが付かない）。上の既定を通さずに直に渡す。
+    it('空いてからの長さが分からなければ、何もしない', () => {
+      const board = stalling({});
+      expect(decide({ now: NOW, settledBefore: SETTLED, prs: [], ...board })).toEqual([]);
+    });
+
+    // **起こした合図が効くには時間が要る。** 次の周（既定30秒）で見限ると、届く前に必ず返す。
+    it('起こした直後は、まだ人へ返さない', () => {
+      // 起こしたのは空いてから15分の時点。まだ20分しか経っていない。
+      const board = stalling({
+        'idle:session_a': '2026-09-05T01:40:00Z',
+        'resume:session_a': 'stall:8',
+      });
+      expect(moves(board)).toEqual([]);
+    });
   });
 
   // 返ってきた issue は、人が `判断待ち` を外すまで誰にも配らない（2.15.2）。**`task` は
@@ -543,11 +782,7 @@ describe('board-move.mjs', () => {
       sessions: [idle('session_a', 'task-8')],
       issueStates: { 8: 'CLOSED' },
     };
-    expect(moves(board)).toEqual([
-      'MERGE 10',
-      'ARCHIVE session_a closed:8',
-      'NOTE 1件の task が、書くセッション（session_a）の空きを待っている',
-    ]);
+    expect(moves(board)).toEqual(['MERGE 10', 'ARCHIVE session_a closed:8', 'TASK 20']);
   });
 
   // **盤面が出す語が、そのまま起こす文面の節名になる**（`resume-session.sh`）。2箇所が暗黙に

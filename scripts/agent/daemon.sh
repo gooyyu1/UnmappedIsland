@@ -41,14 +41,24 @@
 #
 # ## 引けなかったら、その周は何もしない
 #
-# 盤面が欠けた周は手を決めない（`board-round.mjs`）。続けて `FAILURE_LIMIT` 回失敗したら止まる
-# ——認証切れや通信断で回り続けても、ログが埋まるだけ。
+# 盤面が欠けた周は手を決めない（`board-round.mjs`）。続けて `FAILURE_LIMIT` 回失敗したら、待つ間隔を
+# `RETRY_INTERVAL` へ落として回り続ける——同じ速さで叩き続けるとログが埋まるが、**止まってしまうと、
+# 直っても誰かが立て直すまで盤面が動かない。**
+#
+# **止めないのは、いちばん多い理由が自分では直せず、放っておくと直るものだから。** アクセストークンは
+# 数時間で切れ、切れている間は `list_sessions` が 401 を返す。**貼り直すのは Claude Code 本体**（この
+# デーモンでも `ccr-meta.sh` でもない）なので、こちらにできるのは直るまで待つことだけ
+# （2026-09-06 00:27Z、`OAuth access token has expired` で5回続けて落ちて止まった）。
+# 意図して止めるための手綱は `stop` の側にある。
 
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INTERVAL="${INTERVAL:-30}"
 FAILURE_LIMIT="${FAILURE_LIMIT:-5}"
+# 続けて引けなくなった後の、待つ間隔。**`ROUND_LIMIT` より短くしておく**——心拍の間隔がそのまま
+# 延びるので、越えると `status` が生きているものを「止まっている」と答える。
+RETRY_INTERVAL="${RETRY_INTERVAL:-300}"
 STATE_DIR="${BOARD_STATE:-$HOME/.claude/board-state}"
 
 DAEMON_LOG="${DAEMON_LOG:-$HOME/daemon.log}"
@@ -68,7 +78,9 @@ PIDFILE="$LOCK/pid"
 # 許す時間まで一緒に縮んでしまう。この2つは別のことを測っている。
 ROUND_LIMIT="${ROUND_LIMIT:-600}"
 # 心拍が途切れてから、落ちたと見なすまで。寝ている間は書かないので、1周ぶんの寝と足す。
-STALE_SECONDS=$((INTERVAL + ROUND_LIMIT))
+# **足すのは長いほうの寝**——引けない間は `RETRY_INTERVAL` で寝るので、そちらで測らないと、
+# 生きて待っているデーモンを落ちたと読む。
+STALE_SECONDS=$(((RETRY_INTERVAL > INTERVAL ? RETRY_INTERVAL : INTERVAL) + ROUND_LIMIT))
 
 mkdir -p "$STATE_DIR"
 
@@ -201,20 +213,21 @@ failures=0
 while true; do
   date -u +%Y-%m-%dT%H:%M:%SZ >"$HEARTBEAT"
   if BOARD_STATE="$STATE_DIR" node "$HERE/board-round.mjs"; then
+    [ "$failures" -lt "$FAILURE_LIMIT" ] || log "引けるようになったので、${INTERVAL}秒おきへ戻る"
     failures=0
   else
     failures=$((failures + 1))
     log "盤面を引けなかった（${failures}回目）"
-    [ "$failures" -lt "$FAILURE_LIMIT" ] || {
-      log "${FAILURE_LIMIT}回続けて失敗したので止まる（認証切れか通信断）"
-      exit 1
-    }
+    [ "$failures" -ne "$FAILURE_LIMIT" ] ||
+      log "${FAILURE_LIMIT}回続けて失敗したので、${RETRY_INTERVAL}秒おきへ落とす（認証切れか通信断。直れば自分で戻る）"
   fi
   [ -z "${ONCE:-}" ] || break
   [ -z "$stopping" ] || break
   # **背景で寝る。** 前に置くと、bash は前の子が終わるまで signal を握るので、撃たれても
   # `INTERVAL` ぶん止まらない。
-  sleep "$INTERVAL" &
+  nap="$INTERVAL"
+  [ "$failures" -lt "$FAILURE_LIMIT" ] || nap="$RETRY_INTERVAL"
+  sleep "$nap" &
   napping=$!
   wait "$napping" || true
   napping=''

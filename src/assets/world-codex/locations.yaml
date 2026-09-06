@@ -78,7 +78,9 @@ object_defs:
           # 持ち歩ける光源だけが効く（据えた焚き火のそばから夜の道へは出られない、同3節）。
           # 荷と同じく段の名前で見るので、境目はキャラクタのlooking_brightnessのstagesだけが持つ。
           - reason: too_dark
-            not: {subject: agent, prop: looking_brightness, in_stage: pitch_dark}
+            subject: agent
+            prop: looking_brightness
+            in_stage_or_above: dim
         # 担ぎ手の遅れはtravel_minutesのbaseが継いでいるので、ここはその1つを読むだけ。
         duration: {prop: travel_minutes}
         move:

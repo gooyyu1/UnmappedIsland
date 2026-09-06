@@ -37,6 +37,9 @@
 //   待ち:#N    … `blockedBy` の #N がまだ開いている
 //   着手可     … どれでもない＝今すぐ投入してよい
 //
+// 状態の後ろに `env:<値>` が出るものは、**そこで走らせる指定が付いている**（2.16）。無いものは
+// クラウド。
+//
 // ## `未整理` は、人間が書いたまま投入できない issue
 //
 // ユーザーが立てる issue は自分の言葉で書かれていて、担当も完了条件も無い。**そのまま `task` を
@@ -157,7 +160,10 @@ export function board({ gh = runGh, page = listSessions, checkedItems = runCheck
         : blocker === undefined
           ? '着手可'
           : `待ち:#${blocker.number}`;
-    lines.push(`TASK ${issue.number} ${state} ${issue.title}`);
+    // 走らせる先の指定（2.16）。**知らない値もそのまま出す**——盤面が配れないことは
+    // `board-move.mjs` が覚え書きで言うので、ここは付いているものを見せるだけでよい。
+    const where = names(issue).find((name) => name.startsWith('env:'));
+    lines.push(`TASK ${issue.number} ${state}${where === undefined ? '' : ` ${where}`} ${issue.title}`);
   }
 
   lines.push('## 未整理');

@@ -21,6 +21,8 @@ interface Session {
   readonly status: string;
   readonly bucket: string;
   readonly tags: readonly string[];
+  /** どこで走っているか（`cloud` / `bridge`）。この周の一覧へそのまま載る。 */
+  readonly env?: string;
 }
 
 interface World {
@@ -30,6 +32,8 @@ interface World {
   /** 一覧そのものを引けない周。 */
   readonly sessionsFail?: boolean;
   readonly ledger?: Record<string, string>;
+  /** 手が空いたばかり（覚えがまだ無い）の形。既定は十分に空いたまま。 */
+  readonly justIdle?: boolean;
   /** `gh issue view <番号> --json state` が返す `state`。挙がっていない番号は引けない。 */
   readonly issueStates?: Readonly<Record<number, string | undefined>>;
   /** PRごとの、コミットの `Claude-Session:` トレーラが指すセッション。 */
@@ -40,6 +44,10 @@ interface World {
   readonly mainChecks?: readonly { readonly status: string; readonly conclusion: string }[];
   /** `archive-session.sh` が渡された相手について返す行の頭。既定は畳めた。 */
   readonly archiveVerdict?: 'ARCHIVED' | 'KEPT' | 'UNARCHIVED';
+  /** `describe-conflict.sh` が返す、ぶつかったファイルと相手。 */
+  readonly conflict?: { readonly files: readonly string[]; readonly with: readonly number[] };
+  /** 周が始まる時点で帳面に載っている行。 */
+  readonly conflictLog?: string;
   /** 非0で終わらせる打ち手（スクリプトの名前）。 */
   readonly fails?: readonly string[];
   readonly ghFails?: boolean;
@@ -59,7 +67,16 @@ interface Result {
   readonly gh: readonly string[];
   /** `gh issue comment` が渡したファイルの中身。**消される前に読む**（打ち手が後片付けする）。 */
   readonly comments: readonly string[];
+  /** 打った手の指紋。**手が空いた時刻の覚え（`idle:`）は含めない**——見るのは別の検査。 */
   readonly ledger: Record<string, string>;
+  /** 手が空いた時刻の覚え。 */
+  readonly idleMarks: Record<string, string>;
+  /** 叩いたスクリプトへ足された環境変数（この周の一覧の在り処）。 */
+  readonly envs: readonly (Record<string, string> | undefined)[];
+  /** この周が書いた一覧。 */
+  readonly liveTsv: string | undefined;
+  /** ぶつかった実績の帳面（1行1件）。 */
+  readonly conflicts: readonly Record<string, unknown>[];
 }
 
 const NOW = new Date('2026-09-05T02:00:00Z');
@@ -69,11 +86,35 @@ function commits(session: string) {
   return { nodes: [{ commit: { message: `題\n\nClaude-Session: https://claude.ai/code/${session}` } }] };
 }
 
+/**
+ * 手が空いているセッションは、既定で**十分に空いたまま**として台帳へ置く（`board-move.mjs` の
+ * `STALL_MINUTES`）。停滞を入口にする手はどれもそこを通るので、世界ごとに書くと書き忘れた世界
+ * だけが黙って手を出さなくなる。空いたばかりの形を見たい検査は `justIdle` を立てる。
+ */
+const LONG_IDLE = '2026-09-04T02:00:00Z';
+
+/** 台帳を、打った手の指紋と、手が空いた時刻の覚えに分ける。 */
+function split(ledger: Record<string, string>) {
+  const marks: Record<string, string> = {};
+  const idleMarks: Record<string, string> = {};
+  for (const [key, value] of Object.entries(ledger)) {
+    (key.startsWith('idle:') ? idleMarks : marks)[key] = value;
+  }
+  return { ledger: marks, idleMarks };
+}
+
 function playRound(world: World = {}): Result {
   const stateDir = mkdtempSync(join(tmpdir(), 'unmapped-island-round-'));
   try {
-    if (world.ledger !== undefined) {
-      writeFileSync(join(stateDir, 'taken.json'), JSON.stringify(world.ledger), 'utf-8');
+    const idled: Record<string, string> = {};
+    for (const session of world.sessions ?? []) {
+      if (world.justIdle !== true && session.status !== 'SESSION_STATUS_RUNNING') {
+        idled[`idle:${session.id}`] = LONG_IDLE;
+      }
+    }
+    writeFileSync(join(stateDir, 'taken.json'), JSON.stringify({ ...idled, ...world.ledger }), 'utf-8');
+    if (world.conflictLog !== undefined) {
+      writeFileSync(join(stateDir, 'conflicts.jsonl'), world.conflictLog, 'utf-8');
     }
 
     const out: string[] = [];
@@ -109,7 +150,13 @@ function playRound(world: World = {}): Result {
       });
     };
 
-    const runScript = (name: string, args: readonly string[], options?: { capture?: boolean }) => {
+    const envs: (Record<string, string> | undefined)[] = [];
+    const runScript = (
+      name: string,
+      args: readonly string[],
+      options?: { capture?: boolean; env?: Record<string, string> },
+    ) => {
+      envs.push(options?.env);
       if (name === 'usage-record.sh') return { status: 0, stdout: '' };
       calls.push([name, ...args].join(' '));
       if ((world.fails ?? []).includes(name)) return { status: 1, stdout: '' };
@@ -117,6 +164,14 @@ function playRound(world: World = {}): Result {
       // 決めた行を1本返すだけ。
       if (name === 'archive-session.sh' && options?.capture === true) {
         return { status: 0, stdout: `${world.archiveVerdict ?? 'ARCHIVED'} session_a\n` };
+      }
+      if (name === 'describe-conflict.sh') {
+        const found = world.conflict ?? { files: [], with: [] };
+        const lines = [
+          ...found.files.map((path) => `FILE ${path}`),
+          ...found.with.map((number) => `WITH ${number}`),
+        ];
+        return { status: 0, stdout: lines.length === 0 ? '' : `${lines.join('\n')}\n` };
       }
       return { status: 0, stdout: '' };
     };
@@ -138,13 +193,23 @@ function playRound(world: World = {}): Result {
     });
 
     const ledgerPath = join(stateDir, 'taken.json');
+    const livePath = join(stateDir, 'live-sessions.tsv');
+    const conflictsPath = join(stateDir, 'conflicts.jsonl');
     return {
       ok,
       log: out.join('\n'),
       calls,
       gh: ghCalls,
       comments,
-      ledger: existsSync(ledgerPath) ? JSON.parse(readFileSync(ledgerPath, 'utf-8')) : {},
+      ...split(existsSync(ledgerPath) ? JSON.parse(readFileSync(ledgerPath, 'utf-8')) : {}),
+      envs,
+      liveTsv: existsSync(livePath) ? readFileSync(livePath, 'utf-8') : undefined,
+      conflicts: existsSync(conflictsPath)
+        ? readFileSync(conflictsPath, 'utf-8')
+            .split('\n')
+            .filter((line) => line !== '')
+            .map((line) => JSON.parse(line))
+        : [],
     };
   } finally {
     rmSync(stateDir, { recursive: true, force: true });
@@ -255,6 +320,24 @@ describe('board-round.mjs', () => {
 
   // 返すのはコメントで、ラベルは `board-labels.yml` が付ける（2.15.3）。**盤面がラベルを直に
   // 触ると、返る道が2つに割れる**——ワーカーが自分で返す道と食い違っても、誰も気づけない。
+  // **どの `env:` がどこを指すかは盤面が持つ**（2.16.1）ので、こちらは受け取った引数をそのまま
+  // `dispatch-task.sh` の後ろへ足す。補足のファイルは一時的なもので、名前は毎回変わる。
+  it('投入先を寄越された手は、その引数を付けて投入する', () => {
+    const result = playRound({
+      issues: [{ number: 9, labels: [{ name: 'task' }, { name: 'env:bridge' }], blockedBy: { nodes: [] } }],
+    });
+
+    expect(result.calls[0]).toMatch(/^dispatch-task\.sh 9 \S+ --bridge$/);
+  });
+
+  it('投入先が無ければ、引数を足さない', () => {
+    const result = playRound({
+      issues: [{ number: 9, labels: [{ name: 'task' }], blockedBy: { nodes: [] } }],
+    });
+
+    expect(result.calls[0]).toMatch(/^dispatch-task\.sh 9 \S+$/);
+  });
+
   it('起こしても動かないワーカーの仕事を、コメントで人へ返す', () => {
     const result = playRound({
       issues: [{ number: 8, labels: [{ name: 'task' }], blockedBy: { nodes: [] } }],
@@ -342,10 +425,177 @@ describe('board-round.mjs', () => {
     expect(result.calls).toEqual([]);
   });
 
+  // **ぶつかった実績を控える**（3.1）。盤面は同じファイルを書く issue を並べて投入するので、
+  // 実際にぶつかった組を残しておかないと、`area:` の錠を足すべき資源が後から分からない。
+  it('コンフリクトしたPRを、ぶつかったファイルと相手とともに帳面へ書く', () => {
+    const result = playRound({
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
+      conflict: { files: ['docs/engine/GameElementDefinition.md'], with: [7] },
+    });
+
+    // 時刻は**この周のもの**（`board.now`）。台帳の `idle:` と同じ値なので、後から並べて読める。
+    expect(result.conflicts).toEqual([
+      {
+        at: NOW.toISOString(),
+        pr: 10,
+        head: 'aaa111',
+        files: ['docs/engine/GameElementDefinition.md'],
+        with: [7],
+      },
+    ]);
+    expect(result.log).toContain('ぶつかった: PR #10 docs/engine/GameElementDefinition.md … #7');
+  });
+
+  // 押し返されるまで盤面は `CONFLICTING` を返し続ける。**同じ差分を毎周書くと、数えたときに
+  // 周の回数を数えることになる。**
+  it('同じ差分のコンフリクトは、二度書かない', () => {
+    const result = playRound({
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
+      conflictLog: `${JSON.stringify({ at: '古い', pr: 10, head: 'aaa111', files: [], with: [] })}\n`,
+      conflict: { files: ['docs/x.md'], with: [7] },
+    });
+
+    expect(result.conflicts).toHaveLength(1);
+    expect(result.calls).not.toContain('describe-conflict.sh 10');
+  });
+
+  // **併合し直せてしまったものは、空のまま書く。** `mergeable` は `main` が動くたびに古くなるので、
+  // `CONFLICTING` と言われた差分が手元では綺麗に併合できることがある。**調べた結果であって失敗では
+  // ない**ので、指紋を埋めて次の周から見ない。
+  it('手元では併合できたPRは、空のまま帳面へ書いて、そう言う', () => {
+    const result = playRound({
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
+      conflict: { files: [], with: [] },
+    });
+
+    expect(result.conflicts).toEqual([
+      { at: NOW.toISOString(), pr: 10, head: 'aaa111', files: [], with: [] },
+    ]);
+    expect(result.log).toContain('PR #10 は手元では併合できた');
+  });
+
+  // **見るだけのつもりで測定を消さない。** 指紋を埋めると、その組は本番の周でも二度と記録されない。
+  it('DRY_RUN の周は、ぶつかった実績を控えない', () => {
+    const result = playRound({
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
+      conflict: { files: ['docs/x.md'], with: [7] },
+      dryRun: true,
+    });
+
+    expect(result.conflicts).toEqual([]);
+    expect(result.calls).toEqual([]);
+  });
+
+  // **調べられなかったものは書かない。** 指紋を埋めずに残して、次の周に調べ直す。
+  it('ぶつかった中身を調べられなかった周は、帳面へ書かない', () => {
+    const result = playRound({
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
+      fails: ['describe-conflict.sh'],
+    });
+
+    expect(result.conflicts).toEqual([]);
+  });
+
+  // 積まれたPRの `CONFLICTING` は、その base との衝突。`main` との衝突を調べる
+  // `describe-conflict.sh` とは別物なので数えない。
+  it('他のPRの上に積まれたPRのコンフリクトは数えない', () => {
+    const result = playRound({
+      prs: [pr(10, { mergeable: 'CONFLICTING', baseRefName: 'claude/under' })],
+      conflict: { files: ['docs/x.md'], with: [7] },
+    });
+
+    expect(result.conflicts).toEqual([]);
+    expect(result.calls).not.toContain('describe-conflict.sh 10');
+  });
+
   it('DRY_RUN では、手を並べるだけで打たない', () => {
     const result = playRound({ prs: [pr(10, passed)], dryRun: true });
 
     expect(result.calls).toEqual([]);
     expect(result.log).toContain('打たない手: MERGE 10');
+  });
+
+  /**
+   * **一覧はこの周に1回だけ引き、叩く相手へはファイルで渡す**（`.claude/board-design.md` 1.7）。
+   * `list_sessions` は1000回/時で頭打ちになるので、要る側が別々に引くと盤面の回る速さがそこで決まる。
+   */
+  describe('この周の一覧を、叩くスクリプトへ渡す', () => {
+    it('引いた一覧をファイルへ置き、在り処を環境変数で渡す', () => {
+      const result = playRound({
+        prs: [pr(10, passed)],
+        sessions: [
+          {
+            id: 'session_a',
+            status: 'SESSION_STATUS_RUNNING',
+            bucket: 'B',
+            tags: ['task-1', 'review-2'],
+            env: 'cloud',
+          },
+        ],
+      });
+
+      expect(result.liveTsv).toBe('session_a\tSESSION_STATUS_RUNNING\tB\ttask-1,review-2\tcloud\n');
+      for (const env of result.envs) expect(env?.LIVE_SESSIONS_TSV).toMatch(/live-sessions\.tsv$/);
+    });
+
+    // **`process.env` は書き換えない。** 同じプロセスで動く他の呼び手にも見えてしまう
+    // （渡した覚えの無いところへ効き、試験は並ぶ順で落ちる）。
+    it('自分のプロセスの環境変数は書き換えない', () => {
+      expect(process.env.LIVE_SESSIONS_TSV).toBeUndefined();
+
+      playRound({ prs: [pr(10, passed)] });
+
+      expect(process.env.LIVE_SESSIONS_TSV).toBeUndefined();
+    });
+  });
+
+  /**
+   * **手が空いたのはいつからか**を覚える（`board-move.mjs` の `STALL_MINUTES`）。停滞を「空いて
+   * いること」だけで読むと、手番の切れ目ごとに空くワーカーを毎回停滞と読む。
+   */
+  describe('手が空いた時刻を覚える', () => {
+    const worker = (status: string) => ({
+      id: 'session_a',
+      status,
+      bucket: 'SESSION_STATUS_BUCKET_WORKING',
+      tags: ['task-8'],
+    });
+    const openTask = [{ number: 8, labels: [{ name: 'task' }], blockedBy: { nodes: [] } }];
+
+    it('空いているセッションの、空いた時刻を残す', () => {
+      const result = playRound({
+        issues: openTask,
+        sessions: [worker('SESSION_STATUS_IDLE')],
+        justIdle: true,
+      });
+
+      expect(result.idleMarks['idle:session_a']).toBe(NOW.toISOString());
+      // 覚えたばかりなので、まだ起こさない。
+      expect(result.calls).toEqual([]);
+    });
+
+    // **動き出したら、覚えも「起こしたが動かなかった」の記録も嘘になる。** 残すと、次に空いた
+    // 瞬間に起こす手順を飛ばして人へ返す。
+    it('動き出したら、覚えと起こした記録を捨てる', () => {
+      const result = playRound({
+        issues: openTask,
+        sessions: [worker('SESSION_STATUS_RUNNING')],
+        ledger: { 'idle:session_a': LONG_IDLE, 'resume:session_a': 'stall:8' },
+      });
+
+      expect(result.idleMarks).toEqual({});
+      expect(result.ledger['resume:session_a']).toBeUndefined();
+    });
+
+    // 人へ返した記録は、動き出しても消さない——返した issue は人が `判断待ち` を外すまで戻らない。
+    it('人へ返した記録は、動き出しても残す', () => {
+      const result = playRound({
+        issues: openTask,
+        sessions: [worker('SESSION_STATUS_RUNNING')],
+        ledger: { 'resume:session_a': 'returned:8' },
+      });
+
+      expect(result.ledger['resume:session_a']).toBe('returned:8');
+    });
   });
 });

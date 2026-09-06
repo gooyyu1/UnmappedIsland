@@ -8,6 +8,7 @@ import type { DeclaredNumberReading } from '../domain/EffectReader';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { RollEnd } from '../domain/PropertyDef';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
+import type { TypeMatchReading } from '../domain/TypeMatchRule';
 
 /**
  * 定義だけから値を解く手立てと、その周りの近似。
@@ -70,6 +71,42 @@ export function layeredResolver(layers: readonly StaticValueLayer[]): StaticValu
   };
   for (const layer of layers) resolvers.push(layer(context));
   return context;
+}
+
+/**
+ * 候補の型が1つもそのプロパティを宣言していないときの読み方（highestDeclaredLayer）。**実行時の値は
+ * どちらでも0**——解けない参照は0として読まれる（DeclaredNumber.resolveOrZero）——ので、差は読み手へ
+ * 何を渡すか。
+ *
+ * - `zero`: 宣言が無いこと自体が答え。**宣言していない土地ではその候補が抽選から外れる**
+ *   （[`TrapSystem.md`](../../docs/engine/TrapSystem.md) 3節）ので、確定した値として読む。
+ * - `unresolved`: 定義が答えを持っていない。その値を宣言している型が世界に1つも無いのは書き手の
+ *   取りこぼしでありうるので、確定しない参照として印を立てる（CraftingStep.hasUnresolvedReferences）。
+ */
+export type UndeclaredReading = 'zero' | 'unresolved';
+
+/**
+ * 実行時にしか就く相手が決まらない起点を、候補の型が宣言している値で埋める層。**最も高く宣言して
+ * いる型に合わせる**ので、どれが就いても届く上限が出る——分岐ごとに最も良い相手を選べる前提の値で、
+ * **どれか1つの相手で出る値ではない。**
+ *
+ * 答えるのは宣言値なので、**段が押し上げる分は入らない**（段は実行時にしか決まらない）。
+ *
+ * 起点ごとに違うのは、候補の集まりと、誰も宣言していないときの読み方（UndeclaredReading）だけ。
+ */
+export function highestDeclaredLayer(
+  root: ReferenceRoot,
+  candidates: readonly ObjectDef[],
+  undeclared: UndeclaredReading,
+): StaticValueLayer {
+  return (context) => (asked, propertyGlobalId, end) => {
+    if (asked !== root) return undefined;
+    const declared = candidates
+      .map((candidate) => staticValueOf(candidate, propertyGlobalId, end, context))
+      .filter((value): value is number => value !== undefined);
+    if (declared.length > 0) return Math.max(...declared);
+    return undeclared === 'zero' ? 0 : undefined;
+  };
 }
 
 /**
@@ -175,26 +212,30 @@ export interface StaticValueRange {
 }
 
 /**
- * ReferenceRootが指すプロパティの、取りうる値の範囲（StaticValueRange）。**型が定まらない起点では
- * undefined**——祖先も、実行時にしか決まらない相手も、どの型が来るかを定義の側は知らない。
+ * 条件（14節）の葉が名指した起点について、**定義だけから答えられること**。型が定まらない起点
+ * ——祖先も、実行時にしか決まらない相手も、どの型が来るかを定義の側は知らない——では
+ * どちらもundefinedを返す。
  */
-export type StaticValueRangeResolver = (
-  root: ReferenceRoot,
-  propertyGlobalId: number,
-) => StaticValueRange | undefined;
+export interface StaticSubjectReader {
+  /** その起点が指す型が、そのプロパティに取りうる値の範囲（StaticValueRange）。 */
+  rangeOf(root: ReferenceRoot, propertyGlobalId: number): StaticValueRange | undefined;
+
+  /** その起点が指す型そのものが、その指定（4.1節）に当てはまるか。 */
+  matchesType(root: ReferenceRoot, match: TypeMatchReading): boolean | undefined;
+}
 
 /**
  * 条件（14節）が、定義だけから真と分かるか・偽と分かるか。**どちらとも言えなければundefined。**
  *
- * 読めるのは**型が定まっている起点**のプロパティ比較だけで、他の葉——祖先の天候・相手の持ち物・
- * スロットの中身・段の刻み——は判定せずに素通しにする。解析の側にゲームの実行を作り込むと、同じ
- * 規則の実装が2つになって食い違い始めるため。どの起点の型が定まるかはrangeOfが答える。
+ * 読めるのは**型が定まっている起点**のプロパティ比較と型の合致だけで、他の葉——祖先の天候・相手の
+ * 持ち物・スロットの中身・段の刻み——は判定せずに素通しにする。解析の側にゲームの実行を作り込むと、
+ * 同じ規則の実装が2つになって食い違い始めるため。どの起点の型が定まるかはsubjectが答える。
  */
 export function staticConditionTruth(
   condition: ConditionDeclaration,
-  rangeOf: StaticValueRangeResolver,
+  subject: StaticSubjectReader,
 ): boolean | undefined {
-  const reader = new ConditionTruthReader(rangeOf);
+  const reader = new ConditionTruthReader(subject);
   condition.read(reader);
   return reader.truth;
 }
@@ -204,29 +245,32 @@ class ConditionTruthReader implements ConditionReader {
   /** 定義だけから決まった真偽。決まらなければundefined。 */
   truth: boolean | undefined;
 
-  private readonly rangeOf: StaticValueRangeResolver;
+  private readonly subject: StaticSubjectReader;
 
-  constructor(rangeOf: StaticValueRangeResolver) {
-    this.rangeOf = rangeOf;
+  constructor(subject: StaticSubjectReader) {
+    this.subject = subject;
   }
 
   property(reading: PropertyConditionReading): void {
     if (reading.values === undefined || reading.valueRef !== undefined) return;
-    const range = this.rangeOf(reading.root, reading.propertyGlobalId);
+    const range = this.subject.rangeOf(reading.root, reading.propertyGlobalId);
     if (range !== undefined) this.truth = comparisonTruth(range, reading.op, reading.values);
   }
 
+  /** 型そのものへの指定は、起点の型が定まっていれば定義だけで決まる。 */
+  objectMatches(root: ReferenceRoot, match: TypeMatchReading): void {
+    this.truth = this.subject.matchesType(root, match);
+  }
+
   /**
-   * ここから下の葉は判定しない——段の刻み・木の中の位置・スロットの中身・型の合致は、いずれも
-   * 「どの値を取りうるか」では表せない。判定しない葉は決まらないまま（undefined）残る。
+   * ここから下の葉は判定しない——段の刻み・木の中の位置・スロットの中身は、いずれも「どの値を
+   * 取りうるか」でも「どの型か」でも表せない。判定しない葉は決まらないまま（undefined）残る。
    */
   propertyStage(): void {}
 
   slotPosition(): void {}
 
   slotContent(): void {}
-
-  objectMatches(): void {}
 
   all(children: readonly ConditionDeclaration[]): void {
     this.truth = combinedTruth(this.truthsOf(children), false);
@@ -237,12 +281,12 @@ class ConditionTruthReader implements ConditionReader {
   }
 
   not(child: ConditionDeclaration): void {
-    const inner = staticConditionTruth(child, this.rangeOf);
+    const inner = staticConditionTruth(child, this.subject);
     this.truth = inner === undefined ? undefined : !inner;
   }
 
   private truthsOf(children: readonly ConditionDeclaration[]): readonly (boolean | undefined)[] {
-    return children.map((child) => staticConditionTruth(child, this.rangeOf));
+    return children.map((child) => staticConditionTruth(child, this.subject));
   }
 }
 

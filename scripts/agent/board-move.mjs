@@ -14,7 +14,7 @@
 //   RESUME  <セッションID> stall  <issue番号> <指紋>
 //   RETURN  <issue番号> <セッションID> <指紋>  … 起こしても動かないワーカーの仕事を人へ返す
 //   REVIEW  <PR番号> <指紋>
-//   TASK    <issue番号>
+//   TASK    <issue番号> [<投入先の引数>]     … 引数が無ければクラウド（2.16）
 //   NOTE    <人へ向けた1行>                  … 打つ手が無いことの説明。呼び手は記録するだけ
 //
 // **手を1行の文字列で返すのは、それがそのまま人の読む形だから。** `DRY_RUN` のログは この行を
@@ -22,12 +22,14 @@
 //
 // 入力は次の形。
 //
-//   { "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
+//   { "now": "<この周の時刻>",
+//     "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
 //     "mainChecks": [ { "status": "COMPLETED", "conclusion": "SUCCESS" } ],   … `main` の先頭のCI
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files ],
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
 //     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
-//                     "bucket": "SESSION_STATUS_BUCKET_…", "tags": ["task-1"] } ],
+//                     "bucket": "SESSION_STATUS_BUCKET_…", "env": "cloud | bridge | -",
+//                     "tags": ["task-1"] } ],
 //     "issueStates": { "<issue番号>": "OPEN | CLOSED" },
 //     "prSessions":  { "<PR番号>": "session_…" },
 //     "taken":    { "<手のキー>": "<前に打ったときの指紋>" } }
@@ -52,8 +54,66 @@
 /**
  * 今その差分へ手が動いているか（1.6）。**言うのは `session_status` だけ**——`status_bucket` は
  * 手番が終わった後の要約から決まるので、どの値も「処理中」を意味しない。
+ *
+ * 手が空いてからの長さを覚えるのも同じ判定を使うので（[`board-round.mjs`](board-round.mjs)）、
+ * ここから出す。**2箇所で書くと、片方だけが直る。**
  */
-const busySession = (session) => session.status === 'SESSION_STATUS_RUNNING';
+export const busySession = (session) => session.status === 'SESSION_STATUS_RUNNING';
+
+/**
+ * 手が空いたままこれだけ続いたら、停滞と読む（2.15.3）。**「手が空いている」ことそのものは停滞
+ * ではない**——ワーカーは手番の切れ目ごとに空き、下請けのレビューを待つ間も空いて見える（1.6）。
+ * **1度見ただけで停滞と読むと、押し切る寸前の作業を人へ返して畳む**（2026-09-06、issue #1506 の
+ * ワーカーが「staging ready to push」のまま返却された）。
+ *
+ * **起こした後にも、同じ長さの窓をもう1つ空けてから返す。** 起こされたセッションが動き出すには
+ * 時間が要るので、次の周（既定30秒）で見限ると、届いた合図が効く前に必ず返すことになる。
+ */
+const STALL_MINUTES = Number(process.env.STALL_MINUTES || 15);
+
+/**
+ * `env:<値>` が指す投入先（[`dispatch-task.sh`](dispatch-task.sh) へ渡す引数。2.16）。**盤面が
+ * 宛先を知っている値の一覧はここだけ**——GitHub のラベルが在るかとは別で、人は盤面の知らない
+ * `env:*` を作れる。ラベルの無い issue は `cloud` として引くので、既定も同じ表に載っている。
+ */
+const DISPATCH_TO = { cloud: '', bridge: '--bridge' };
+
+/**
+ * 同時に走ってよい**書くセッション**の数（3.1。**値は仮決め**）。錠を持たない issue はいくらでも
+ * 並ぶので、**手綱はここにしか無い**。
+ *
+ * **2.5.2 の「残り余力と1本あたりの消費の比較」が入っても外さない**——残量だけを見て決めると、
+ * 余力のある周に一度に何本も立つ。
+ */
+const WRITERS = 3;
+
+/** `task-<番号>` のタグから担当の issue 番号を引く。持っていなければ `undefined`。 */
+function heldIssue(session) {
+  for (const tag of session.tags) {
+    const match = /^task-(\d+)$/.exec(tag);
+    if (match !== null) return Number(match[1]);
+  }
+  return undefined;
+}
+
+/**
+ * その issue が取る**錠**（`area:` のラベル。[`parallel-work.md`](../../.claude/parallel-work.md) 2節）。
+ * **同時に1本しか動かせない資源**を指すので、同じ錠を持つ issue は並べて投入しない。
+ *
+ * **投入を止めるのはこれだけ。** 同じファイルを2本が書くことは止めない——盤面にできるのは投入を
+ * 遅らせることだけで、担当に挙がっているファイルは受け取った側がどのみち書く。ぶつかれば
+ * コンフリクトとして出て、盤面は `mend` で直させ、**[`board-round.mjs`](board-round.mjs) が
+ * 何とぶつかったかを控える**（3.1）。
+ */
+const locks = (issue) =>
+  (issue.labels ?? []).map((label) => label.name).filter((name) => name.startsWith('area:'));
+
+/** その issue が要求する環境（`env:` のラベル。無ければクラウド）。**重ねて付いていれば `undefined`。** */
+function wantedEnv(issue) {
+  const marks = (issue.labels ?? []).map((label) => label.name).filter((name) => name.startsWith('env:'));
+  if (marks.length > 1) return undefined;
+  return marks.length === 0 ? 'cloud' : marks[0].slice('env:'.length);
+}
 
 const names = (item) => (item.labels ?? []).map((label) => label.name);
 
@@ -101,6 +161,20 @@ export function moves(input) {
   const busy = (tag) => alive(tag).some(busySession);
 
   /**
+   * 手が空いてから経った分（`STALL_MINUTES` の説明）。空いた時刻を覚えるのは呼び手
+   * （[`board-round.mjs`](board-round.mjs)）で、**動き出せばその記録は消える**。
+   *
+   * **覚えが無ければ0**——この周に空いたばかりか、まだ一度も見ていないかのどちらかで、どちらも
+   * 「続いている」とは言えない。**引けなかったときに動かない側へ倒す**のは、ここで打つ手が
+   * どちらも取り返しの付かないもの（人へ返す・畳む）だから。
+   */
+  function idleMinutes(session) {
+    const since = Date.parse(taken[`idle:${session.id}`] ?? '');
+    const at = Date.parse(input.now ?? '');
+    return Number.isNaN(since) || Number.isNaN(at) ? 0 : (at - since) / 60_000;
+  }
+
+  /**
    * 差し戻す相手（2.11）。引くのは**コミットの `Claude-Session:` トレーラ**——`Closes` は、そのPRで
    * どの issue が閉じるかの印であって、誰が書いたかを指していない。畳まれたセッションはここに
    * 居ないので、そのまま「起こせない」になる（1.2）。
@@ -108,6 +182,36 @@ export function moves(input) {
   function menders(pr) {
     const id = prSessions[String(pr.number)];
     return id === undefined ? [] : input.sessions.filter((session) => session.id === id);
+  }
+
+  /**
+   * その仕事がワーカーの手を離れた形（2.10.2）。まだ持っているなら `undefined`。**呼ぶのは手が
+   * 空いているワーカーに対してだけ**——走っている最中のセッションは、どの形でも畳まない。
+   */
+  function leaving(session, issue, open) {
+    if (issueStates[String(issue)] === 'CLOSED') return `closed:${issue}`;
+    if (open === undefined) return undefined;
+    if (names(open).includes('判断待ち')) return `returned:${issue}`;
+
+    // **走らせる先が食い違ったら、そこはこの仕事の場所ではない**（2.16.2）。畳めば次の周に配り直され、
+    // 正しい環境で立ち上がる。
+    //
+    // **PRを出した後のワーカーは動かさない。** 配り直しても `dispatch-task.sh` が既に開いている
+    // PRを見て止めるだけで、**畳んだぶん、そのPRの直しを頼む相手が居なくなる**（2.11）。
+    if (input.prs.some((pr) => closes(pr.body).includes(issue))) return undefined;
+    const where = wantedEnv(open);
+    // **配り直す先が無いなら動かさない。** 知らない宛先も `env:` の重なりも、畳んだところで
+    // 次の周は投入で止まる——空いた枠を無駄にするだけで、直るのは人が触ったとき。
+    if (where === undefined || DISPATCH_TO[where] === undefined) return undefined;
+    // **畳めるのはクラウドのセッションだけ。** [`archive-session.sh`](archive-session.sh) は
+    // ブリッジのセッションを必ず `KEPT` にするので、出しても畳まれず**指紋だけが残り、そのワーカーは
+    // 二度と起こされず人へも返らなくなる**。`env:` の付かない issue をブリッジで走らせる形は実在
+    // する（棚卸し役・手元からの投入）ので、既定の `cloud` との食い違いがそのまま当たる。
+    //
+    // **環境を引けなかったもの（`-`）もここで外れる。** 知らないことを「違う」として読むと、
+    // 正しく走っているセッションを畳む（`live-sessions.mjs` の「知らない環境は `-`」）。
+    if (session.env !== 'cloud') return undefined;
+    return where === 'cloud' ? undefined : `moved:${issue}`;
   }
 
   /**
@@ -228,10 +332,15 @@ export function moves(input) {
     if (busy(`review-${pr.number}`)) continue;
     // 著者が書いている最中に読ませない（動く的を読むことになる）。
     if (closes(pr.body).some((issue) => busy(`task-${issue}`))) continue;
-    if (taken[`review:${pr.number}`] === pr.headRefOid) {
-      notes.push(`PR #${pr.number} はレビューへ出したが、結論のラベルが付いていない`);
+    // **指紋が言えるのは「この差分を出した」までで、「読まれた」ではない。** 読み手がもう居ない
+    // のに出したことを読まれたことと読むと、判定を書かずに終わったレビューがそのPRを永久に止める
+    // （issue #1569。畳まれた理由が何であれ同じ）。**居るなら読んでいる最中**——畳むのは 2.10.3 の側。
+    const sent = taken[`review:${pr.number}`] === pr.headRefOid;
+    if (sent && alive(`review-${pr.number}`).length > 0) {
+      notes.push(`PR #${pr.number} はレビューが読んでいる最中で、結論のラベルはまだ無い`);
       continue;
     }
+    if (sent) notes.push(`PR #${pr.number} のレビューは判定を書かずに終わったので、もう一度出す`);
     reviews.push(`REVIEW ${pr.number} ${pr.headRefOid}`);
   }
 
@@ -244,8 +353,14 @@ export function moves(input) {
     // **レビューは、走り終わっていれば畳む**（2.10.3）。使い回さない設計（`dispatch-review.sh`）なので、
     // 手が止まった時点でもう誰も起こさない。**PRが開いているかは見ない**——`直し待ち` のまま戻って
     // こないPRのレビューも、畳めない理由は無い。
+    //
+    // **ただし「走り終わった」と「道具の承認を待っている」は同じ形に見える**（1.6）。ワーカーと
+    // 同じく、空いたままが `STALL_MINUTES` 続いてから畳む——30秒で畳んだ盤面は、承認を求めて
+    // 止まったレビューを判定を書く前に消し、そのPRを永久に止めた（2026-09-06、PR #1573。
+    // 要約は `Waiting on permission: Bash`。issue #1569）。
     const review = session.tags.find((tag) => tag.startsWith('review-'));
     if (review !== undefined) {
+      if (idleMinutes(session) < STALL_MINUTES) continue;
       const mark = `read:${review.slice('review-'.length)}`;
       if (taken[`archive:${session.id}`] !== mark) archives.push(`ARCHIVE ${session.id} ${mark}`);
       continue;
@@ -253,43 +368,57 @@ export function moves(input) {
 
     for (const tag of session.tags) {
       if (!tag.startsWith('task-')) continue;
-      const held = tag.slice('task-'.length);
-      const issue = Number(held);
+      const issue = Number(tag.slice('task-'.length));
       const open = input.issues.find((item) => item.number === issue);
 
       // **その issue がまだこのワーカーの仕事かは issue の側にある**（2.10）。**PRがマージされたか
       // では決めない**——手でマージされたPRの後片付けは走らないので、条件をそちらに繋ぐとワーカーが
       // 永久に残る。**畳んだ理由が読めるように、仕事でなくなった形ごとに指紋を分ける**（2.10.2）。
-      const done =
-        issueStates[held] === 'CLOSED'
-          ? `closed:${issue}`
-          : open !== undefined && names(open).includes('判断待ち')
-            ? `returned:${issue}`
-            : undefined;
+      const done = leaving(session, issue, open);
       if (done !== undefined) {
         if (taken[`archive:${session.id}`] === done) break;
         archives.push(`ARCHIVE ${session.id} ${done}`);
         break;
       }
 
-      // PRを出さないまま手が空いたセッション。**まず1回起こし、それでも何も出てこなければ人へ返す**
-      // （2.15）。セッションが持つ指紋の枠は1つなので、`stall:` → `returned:` と進めば、どちらの手も
-      // 二度は出ない。
+      // PRを出さないまま**手が空いたままになった**セッション。**まず1回起こし、それでも何も
+      // 出てこなければ人へ返す**（2.15）。セッションが持つ指紋の枠は1つなので、`stall:` →
+      // `returned:` と進めば、どちらの手も二度は出ない。
       if (open === undefined) continue;
       if (input.prs.some((pr) => closes(pr.body).includes(issue))) continue;
+      // **空いていることではなく、空いたままであることが入口**（`STALL_MINUTES`）。
+      const idle = idleMinutes(session);
+      if (idle < STALL_MINUTES) continue;
       const woke = taken[`resume:${session.id}`];
       if (woke === `returned:${issue}`) continue;
       if (woke === `stall:${issue}`) {
-        returns.push(`RETURN ${issue} ${session.id} returned:${issue}`);
+        // 起こしてからも同じだけ空いたまま。**動き出していれば `stall:` は消えている**ので
+        // （`board-round.mjs`）、ここへ来るのは合図が効かなかったものだけ。
+        if (idle >= STALL_MINUTES * 2) returns.push(`RETURN ${issue} ${session.id} returned:${issue}`);
         continue;
       }
       stalls.push(`RESUME ${session.id} stall ${issue} stall:${issue}`);
     }
   }
 
-  // **並列度1**（3.1）。作業領域の多次元ラベルがまだ無いので、書くセッションは同時に1本まで。
-  // レビューは書かないので数えない。
-  const writing = input.sessions.filter((session) => session.tags.some((tag) => tag.startsWith('task-')));
+  // **並べてよいかは、錠と本数で決める**（3.1・`parallel-work.md` 2節）。レビューは書かないので
+  // 数えない。
+  const workers = input.sessions
+    .map((session) => ({ session, number: heldIssue(session) }))
+    .filter((holder) => holder.number !== undefined)
+    .map((holder) => ({
+      ...holder,
+      issue: input.issues.find((issue) => issue.number === holder.number),
+    }));
+
+  // **本数を数える側からだけ、仕事の終わったワーカーを外す。** 担当が閉じているなら次の仕事は
+  // 持たない（2.10。畳むのは `ARCHIVE` だが、**走っている間は畳めない**ので、待つと枠が空かない）。
+  //
+  // **錠の側では外さない**——閉じていても、走っている限り資源は掴んだまま。担当が読めないので
+  // 錠も引けず、下の `waitingFor` が「読めない」として止める。
+  const held = workers.filter(
+    (holder) => holder.issue !== undefined || issueStates[String(holder.number)] !== 'CLOSED',
+  );
 
   // **古いものから投入する。** 一覧は新しい順に返るので、そのまま使うと古い issue が永久に
   // 後回しになる（今 open な `task` は30件を超える）。
@@ -304,17 +433,61 @@ export function moves(input) {
     // 既にセッションが持っている issue は配り直さない（「投入済みか」は生死で見る。1.2）。
     .filter((issue) => alive(`task-${issue.number}`).length === 0);
 
-  if (writing.length === 0) {
-    for (const issue of ready) tasks.push(`TASK ${issue.number}`);
-  } else if (ready.length > 0) {
-    // **待たせている相手を毎周書く。** 起こしても動かないセッションが1本残ると、`stall` は指紋で
-    // 1回しか出ないので、黙ったまま TASK が永久に止まる。ログに何も出ないと「やることが無い周」と
-    // 見分けが付かない。
-    const holders = writing.map((session) => session.id).join('・');
-    notes.push(`${ready.length}件の task が、書くセッション（${holders}）の空きを待っている`);
+  /**
+   * その issue をどこへ投入するか（`dispatch-task.sh` の引数）。**知らない `env:*` は配らない**
+   * ——既定のクラウドへ落とすと、**そこでしかできないから宛先を書いた仕事が黙って別の場所で走り、
+   * 指定が無視されたことが誰にも残らない**。返す `undefined` は「配れない」。
+   */
+  function destination(issue) {
+    const where = wantedEnv(issue);
+    if (where === undefined) {
+      notes.push(`issue #${issue.number} に \`env:\` が重ねて付いている`);
+      return undefined;
+    }
+    const flag = DISPATCH_TO[where];
+    if (flag === undefined) notes.push(`issue #${issue.number} の \`env:${where}\` は知らない宛先`);
+    return flag;
   }
-  if (writing.length > 1) {
-    notes.push(`書くセッションが${writing.length}本走っている（並列度1のはず）`);
+
+  /** その issue を今は出せない理由（出せるなら `undefined`）。 */
+  function waitingFor(issue) {
+    const mine = locks(issue);
+    if (mine.length === 0) return undefined;
+    for (const holder of workers) {
+      // **素性を引けなかった相手の後ろでは、錠を持つ issue を出さない。** 相手が同じ錠を持って
+      // いないことを確かめられないので、資源を2本で取り合う形が通ってしまう。
+      if (holder.issue === undefined) return `${holder.session.id} の担当（#${holder.number}）が読めない`;
+      const lock = mine.find((name) => locks(holder.issue).includes(name));
+      if (lock !== undefined) return `#${issue.number} と #${holder.number} が \`${lock}\` を取り合う`;
+    }
+    return undefined;
+  }
+
+  // **待たせている理由を毎周書く。** 起こしても動かないセッションが1本残ると、`stall` は指紋で
+  // 1回しか出ないので、黙ったまま TASK が永久に止まる。ログに何も出ないと「やることが無い周」と
+  // 見分けが付かない。**打つのは1周に1手**なので、書くのは先頭が待っている理由でよい。
+  const waiting = [];
+  if (held.length >= WRITERS) {
+    if (ready.length > 0) {
+      // **枠を握っている相手を並べる。** この覚え書きを毎周書く理由は、起こしても動かないセッションが
+      // 1本残ったときに人が見つけられること——名前が出ていないと、詰まっている1本を特定できない。
+      const who = held.map((holder) => holder.session.id).join(' ');
+      notes.push(`${ready.length}件の task が、書くセッション（${who}）の空きを待っている`);
+    }
+  } else {
+    for (const issue of ready) {
+      const why = waitingFor(issue);
+      if (why !== undefined) {
+        waiting.push(why);
+        continue;
+      }
+      const flag = destination(issue);
+      if (flag === undefined) continue;
+      tasks.push(flag === '' ? `TASK ${issue.number}` : `TASK ${issue.number} ${flag}`);
+    }
+    if (tasks.length === 0 && waiting.length > 0) {
+      notes.push(`${waiting.length}件の task が待っている。先頭は ${waiting[0]}`);
+    }
   }
 
   // 畳むのをマージの次に置くのは、**書くセッションの枠が空くから**（3.1 の並列度）。後ろへ回すと、

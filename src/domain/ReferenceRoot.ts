@@ -236,7 +236,7 @@ export class ReferenceContext {
 
   /**
    * rootが指すオブジェクト。解決先を持たないrootはundefined——childは相手が1つに定まらず
-   * （PassiveEffect.setChildRegistered）、ancestorは探すプロパティが要る（ownerOfProperty）。
+   * （PropertyPassiveEffect.setChildRegistered）、ancestorは探すプロパティが要る（ownerOfProperty）。
    */
   objectAt(root: ReferenceRoot): WorldObject | undefined {
     switch (root) {

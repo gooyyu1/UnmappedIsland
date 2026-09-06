@@ -88,8 +88,13 @@
 #
 # - **`environment_id` は必須。** 省くと候補を並べたエラーが返る。クラウドは「デフォルト」のほう
 #   （もう一方はこのPCのブリッジ環境で、`source_url` を渡す使い方と噛み合わない）。
-# - **`permission_mode` は渡さない。** `bypassPermissions` は親セッションを要求して撥ねられる。
-#   省けば既定で走る。
+# - **`permission_mode` は `bypassPermissions` だけが撥ねられる**
+#   （`requires a CCR parent session; this caller path has none`）。`auto` などは通る。
+#   **どれを渡すかは投入先で決まる**ので、[`ccr-env.sh`](../scripts/agent/ccr-env.sh) から取る
+#   ——**手で立てるときも同じ**。省くとブリッジでは承認なしで通るが、クラウドでは `.claude/**` に
+#   触れた時点で降りない承認を待つ（**そう分かれる理由は突き止めていない**。`ccr-env.sh`）。
+# - **`prompt` を渡さないと、手番が一度も走らない。** 立ってはいるが承認モードは手動に見え、
+#   タグも指示も無いセッションが残る。**立てるなら最初の1手を渡す。**
 
 set -euo pipefail
 
