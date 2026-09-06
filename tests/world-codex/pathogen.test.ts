@@ -17,6 +17,11 @@ describe('全身の菌と免疫', () => {
   const DAY = 96;
   /** 生肉1切れが運ぶ菌（animals.yamlのraw_meatのeat）。 */
   const ONE_RAW_MEAL = 3;
+  /**
+   * 航海の献立（下の`liveEatingOnlyRawMeat`）で留め置く値。**満腹は入れない**——「減ったら食べる」が
+   * 献立そのものなので、留めると食べる間隔が消える。ビタミンは筋書きごとに扱いが違うので、要る側で足す。
+   */
+  const HELD_AT_SEA = ['hydration', 'body_fat', 'wakefulness'];
 
   let codex: WorldCodex;
   let session: WorldSession;
@@ -72,6 +77,35 @@ describe('全身の菌と免疫', () => {
     expect(meat.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     expect(meat.tryGetAction('eat', player)?.tryExecute() === true).toBe(true);
+  }
+
+  /**
+   * 航海の献立（docs/world/Voyage.md 3.9.3節）でcount tickぶん進める。**満腹が`fed`を割るたびに生肉を
+   * 1切れ**食べるので、食べる間隔は満腹の減りだけで決まる。**途中で死んだらそこで止まる。**
+   *
+   * 返すのは食べた切れ数と、その間に菌が最も高くなったときの値と段。**段は最大値の側で見る**
+   * ——症状へ届いたかは通り過ぎた高さの話で、区間の終わりに残っている値ではない。
+   */
+  function liveEatingOnlyRawMeat(
+    count: number,
+    held: readonly string[],
+  ): { readonly meals: number; readonly peak: number; readonly peakStage: string | undefined } {
+    let meals = 0;
+    let peak = 0;
+    let peakStage = prop('pathogen').stage?.name;
+    for (let i = 0; i < count; i++) {
+      if (!prop('satiety').isInStage('fed', 'or_above')) {
+        eatRawMeat();
+        meals++;
+      }
+      live(1, held);
+      if (player.parent === undefined) break;
+      if (prop('pathogen').number > peak) {
+        peak = prop('pathogen').number;
+        peakStage = prop('pathogen').stage?.name;
+      }
+    }
+    return { meals, peak, peakStage };
   }
 
   it('採れたての生肉でも、口にすれば菌が入る', () => {
@@ -200,6 +234,50 @@ describe('全身の菌と免疫', () => {
     live(3 * DAY);
 
     expect(player.parent, '3日のうちに死ぬ').toBeUndefined();
+    expect(player.destroyedReason, '終わり方は失血のまま').toBe('exsanguinated');
+  });
+
+  it('生肉だけで漕ぎ続けても、健康な体なら症状の段へ届かない', () => {
+    // docs/world/Voyage.md 3.9.3節の前提そのもの。**積荷の勘定がこの結論に乗っている**ので、
+    // 1切れの菌（+3）や免疫の段の刻みが動けばここが赤くなる。**間隔が支えている**——1切れ+3が
+    // 続けて2回入れば発熱の段（5）に乗るが、満腹の減り（-16/tick）が空ける間隔では乗らない。
+    const voyage = liveEatingOnlyRawMeat(6 * DAY, HELD_AT_SEA);
+
+    expect(voyage.meals, '6日で19切れ＝1日3.17切れ').toBe(19);
+    expect(voyage.peakStage, '症状の段へは一度も上がらない').toBe('latent');
+    expect(voyage.peak, 'いちばん高くなったところでこの値').toBeCloseTo(4.65, 5);
+    expect(prop('vitamin').stage?.name, 'ビタミンは削れるが、免疫を押す段までは落ちない').toBe('waning');
+  });
+
+  it('ビタミン不足を抱えて出れば、同じ献立で初日のうちに発熱する', () => {
+    // 押し下げ（-15）のぶん最上段へ届くのが遅れ、遅れている間の正味（-0.05/tick）では1切れ+3を
+    // 引き切れない。**献立は上のテストと同じ**なので、崩すのは食べ方ではなく出航時の体のほう。
+    prop('vitamin').setNumberWithoutEvents(300);
+    expect(prop('vitamin').stage?.name).toBe('deficient');
+    expect(prop('immunity').getEffectiveValue(), '押し下げ1つぶん').toBe(45);
+    const held = [...HELD_AT_SEA, 'vitamin'];
+
+    expect(liveEatingOnlyRawMeat(57, held).peakStage, '57 tick目まではまだ潜伏').toBe('latent');
+    expect(liveEatingOnlyRawMeat(1, held).peakStage, '3切れ目が入ったところで乗る').toBe('feverish');
+
+    const rest = liveEatingOnlyRawMeat(6 * DAY - 58, held);
+    expect(rest.peakStage, '止まらずに血まで回る').toBe('septicemic');
+    expect(rest.peak).toBeCloseTo(7.55, 5);
+  });
+
+  it('壊血病を抱えて出れば、食べ続けても2日ともたない', () => {
+    // 押し下げが-40だと最上段どころかfailingまで落ちるので、除去（0.05）が増殖（0.15）を下回り、
+    // 菌は上限へ暴走する。**食べることでは止まらない**——菌を運んでいるのが食事そのものだから。
+    prop('vitamin').setNumberWithoutEvents(0);
+    expect(prop('immunity').stage?.name).toBe('failing');
+    const held = [...HELD_AT_SEA, 'vitamin'];
+
+    const firstDay = liveEatingOnlyRawMeat(DAY, held);
+    expect(firstDay.peak, '初日のうちに上限へ張り付く').toBe(prop('pathogen').def.range?.max);
+    expect(player.parent, 'それでも初日は保つ').toBeDefined();
+
+    liveEatingOnlyRawMeat(DAY, held);
+    expect(player.parent, '2日目のうちに死ぬ').toBeUndefined();
     expect(player.destroyedReason, '終わり方は失血のまま').toBe('exsanguinated');
   });
 
