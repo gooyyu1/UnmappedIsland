@@ -37,10 +37,12 @@
 | やること | `gh` があるとき | 無いとき |
 | --- | --- | --- |
 | 前の周の issue を探す | `gh issue list --state open --limit 100 --json number,title --search '"価値観の棚卸し: 畳む候補の諾否" in:title'` | `search_issues`（`query: "repo:gooyyu1/UnmappedIsland is:issue is:open \"価値観の棚卸し: 畳む候補の諾否\" in:title"`） |
-| issue を立てる | `gh issue create --title <題> --body-file <本文> --label 判断待ち` | `issue_write`（`method: "create"`・`title`・`body`・`labels: ["判断待ち"]`） |
+| issue を立てる | `gh issue create --title <題> --body-file <本文> --label 判断待ち --label origin:agent` | `issue_write`（`method: "create"`・`title`・`body`・`labels: ["判断待ち", "origin:agent"]`） |
 
-ラベルの綴りに `:` は入らないので、引数が化ける心配はありません。**`--body-file` で渡してください**
-——本文はチェックボックスの一覧で長く、シェルの引数に載せると引用符で壊れます。
+`origin:agent` は、人が立てた issue と見分けるための印です（`.claude/parallel-work.md`「自分で立てた
+issue には `origin:agent` を付ける」）。**`--body-file` で渡してください**——本文はチェックボックスの
+一覧で長く、シェルの引数に載せると引用符で壊れます。Windows では `origin:agent` の `:` で `gh` の
+引数が化けるので、`MSYS2_ARG_CONV_EXCL='*'` を前に置いてください。
 
 ## 先に、前の周の issue が残っていないか見る
 
