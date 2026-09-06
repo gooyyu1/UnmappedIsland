@@ -136,13 +136,19 @@ export function newConflicts(prs, written, describe, at) {
   return records;
 }
 
-/** 消えたPR・畳まれたセッションの記録は捨てる。残すと、番号が回り込んだときに古い指紋が効く。 */
+/**
+ * 消えたPR・畳まれたセッションの記録は捨てる。残すと、番号が回り込んだときに古い指紋が効く。
+ *
+ * **`cycle:` だけは残す。** あれは盤面の何かに紐づく指紋ではなく、**周期の係を前に立てた時刻**
+ * （`board-move.mjs` の `CYCLES`）。捨てると、次の周に間隔が満ちていないものまで立つ。
+ */
 export function pruneTaken(taken, board) {
   const ids = new Set(board.sessions.map((session) => session.id));
   const numbers = new Set(board.prs.map((pr) => String(pr.number)));
   const kept = {};
   for (const [key, mark] of Object.entries(taken)) {
     const lives =
+      key.startsWith('cycle:') ||
       (key.startsWith('resume:') && ids.has(key.slice('resume:'.length))) ||
       (key.startsWith('review:') && numbers.has(key.slice('review:'.length))) ||
       (key.startsWith('archive:') && ids.has(key.slice('archive:'.length))) ||
@@ -225,8 +231,8 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
     case 'ARCHIVE': {
       // 畳んでよいかの判定は [`archive-session.sh`](archive-session.sh) が持つ。**終了コードは見ない**
       // ——あちらは1件ずつの結果を行で返す。`--keep-untagged` は、ここへ来る相手が必ずワーカーか
-      // レビューであること（盤面の側の約束）を、畳む手前でもう一度確かめるため。
-      const out = runScript('archive-session.sh', ['--keep-untagged', 'task-,review-'], {
+      // レビューか周期の係であること（盤面の側の約束）を、畳む手前でもう一度確かめるため。
+      const out = runScript('archive-session.sh', ['--keep-untagged', 'task-,review-,chore-'], {
         input: `${a}\n`,
         capture: true,
       });
@@ -256,6 +262,14 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
       } finally {
         rmSync(work, { recursive: true, force: true });
       }
+    }
+    case 'CHORE': {
+      // 周期の係（`board-move.mjs` の `CYCLES`）。**指紋は立てた時刻**で、次に立ててよいかを決める
+      // のは盤面。**立てられなかった周は覚えない**——覚えると、失敗したまま間隔ぶん黙る。
+      const where = d === '' ? [] : [d];
+      if (runScript('dispatch-chore.sh', [a, b, ...where]).status !== 0) return false;
+      remember(`cycle:${a}`, c);
+      return true;
     }
     default:
       log(`知らない手なので打たない: ${kind} ${a} ${b} ${c}`);

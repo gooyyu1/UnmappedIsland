@@ -250,7 +250,9 @@ describe('board-move.mjs', () => {
   // **畳む合図を、他の手が起きることに繋がない。** マージのついでに掃いていたときは、人が画面から
   // マージしたPRのレビューが誰にも掃かれず残った（#1549）。
   it('走り終わったレビューのセッションを畳む', () => {
-    expect(moves({ sessions: [idle('session_r', 'review-1549')] })).toEqual(['ARCHIVE session_r read:1549']);
+    expect(moves({ sessions: [idle('session_r', 'review-1549')] })).toEqual([
+      'ARCHIVE session_r done:review-1549',
+    ]);
   });
 
   // レビューは使い回さないので、走っていないことがそのまま「もう誰も起こさない」。**PRが開いて
@@ -258,7 +260,7 @@ describe('board-move.mjs', () => {
   it('PRが開いていても、走り終わったレビューは畳む', () => {
     const board = { prs: [pr(1549)], sessions: [idle('session_r', 'review-1549')] };
 
-    expect(moves(board)).toContain('ARCHIVE session_r read:1549');
+    expect(moves(board)).toContain('ARCHIVE session_r done:review-1549');
   });
 
   // **「走り終わった」と「道具の承認を待っている」は同じ形に見える**（1.6）。30秒で畳んだ盤面は、
@@ -278,7 +280,7 @@ describe('board-move.mjs', () => {
   it('一度畳もうとして残されたレビューは、二度打たない', () => {
     const board = {
       sessions: [idle('session_r', 'review-1549')],
-      taken: { 'archive:session_r': 'read:1549' },
+      taken: { 'archive:session_r': 'done:review-1549' },
     };
 
     expect(moves(board)).toEqual([]);
@@ -413,7 +415,7 @@ describe('board-move.mjs', () => {
   // 畳む手が先に出るので、次の1本は次の周（打つのは1周に1手）。
   it('前のレビューが書き終えていれば、畳んでから次のレビューを出す', () => {
     const board = { prs: [pr(10)], sessions: [idle('session_r', 'review-10')] };
-    expect(moves(board)).toEqual(['ARCHIVE session_r read:10', 'REVIEW 10 aaa111']);
+    expect(moves(board)).toEqual(['ARCHIVE session_r done:review-10', 'REVIEW 10 aaa111']);
   });
 
   it('著者が書いている最中のPRは、レビューへ出さない', () => {
@@ -468,7 +470,7 @@ describe('board-move.mjs', () => {
   });
 
   it('準備のできた issue を投入する', () => {
-    const board = { issues: [{ number: 9, ...label('task'), blockedBy: { nodes: [] } }] };
+    const board = { issues: [{ number: 9, ...label('kind:task'), blockedBy: { nodes: [] } }] };
     expect(moves(board)).toEqual(['TASK 9']);
   });
 
@@ -483,20 +485,20 @@ describe('board-move.mjs', () => {
 
   // 一覧は新しい順に返る。そのまま使うと、古い issue が永久に後回しになる。
   it('投入する順は、古い issue から', () => {
-    const ready = (number: number) => ({ number, ...label('task'), blockedBy: { nodes: [] } });
+    const ready = (number: number) => ({ number, ...label('kind:task'), blockedBy: { nodes: [] } });
     expect(moves({ issues: [ready(30), ready(9), ready(20)] })).toEqual(['TASK 9', 'TASK 20', 'TASK 30']);
   });
 
   it('開いている issue に塞がれている間は投入しない', () => {
     const board = {
-      issues: [{ number: 9, ...label('task'), blockedBy: { nodes: [{ state: 'OPEN' }] } }],
+      issues: [{ number: 9, ...label('kind:task'), blockedBy: { nodes: [{ state: 'OPEN' }] } }],
     };
     expect(moves(board)).toEqual([]);
   });
 
   it('PRの出ている issue は投入しない', () => {
     const board = {
-      issues: [{ number: 9, ...label('task'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 9, ...label('kind:task'), blockedBy: { nodes: [] } }],
       // レビューへ出る側の手は別の試験で見ているので、ここでは投入が出ないことだけを見る。
       prs: [pr(10, label('収束せず'))],
     };
@@ -508,8 +510,8 @@ describe('board-move.mjs', () => {
   it('錠を持たない issue は、隣が走っていても並べて投入する', () => {
     const board = {
       issues: [
-        { number: 9, ...label('task'), blockedBy: { nodes: [] } },
-        { number: 8, ...label('task'), blockedBy: { nodes: [] } },
+        { number: 9, ...label('kind:task'), blockedBy: { nodes: [] } },
+        { number: 8, ...label('kind:task'), blockedBy: { nodes: [] } },
       ],
       sessions: [working('session_a', 'task-8')],
     };
@@ -524,8 +526,8 @@ describe('board-move.mjs', () => {
   it('同じ area: の錠を取り合う issue は投入せず、何を取り合うかを書く', () => {
     const board = {
       issues: [
-        { number: 9, ...label('task', 'area:daemon'), blockedBy: { nodes: [] } },
-        { number: 8, ...label('task', 'area:daemon'), blockedBy: { nodes: [] } },
+        { number: 9, ...label('kind:task', 'area:daemon'), blockedBy: { nodes: [] } },
+        { number: 8, ...label('kind:task', 'area:daemon'), blockedBy: { nodes: [] } },
       ],
       sessions: [working('session_a', 'task-8')],
     };
@@ -537,8 +539,8 @@ describe('board-move.mjs', () => {
   it('錠が違えば、走っている隣へ並べて投入する', () => {
     const board = {
       issues: [
-        { number: 9, ...label('task', 'area:art'), blockedBy: { nodes: [] } },
-        { number: 8, ...label('task', 'area:daemon'), blockedBy: { nodes: [] } },
+        { number: 9, ...label('kind:task', 'area:art'), blockedBy: { nodes: [] } },
+        { number: 8, ...label('kind:task', 'area:daemon'), blockedBy: { nodes: [] } },
       ],
       sessions: [working('session_a', 'task-8')],
     };
@@ -549,7 +551,7 @@ describe('board-move.mjs', () => {
   // として読まない。**
   it('走っているセッションの担当が読めなければ、錠を持つ issue は投入しない', () => {
     const board = {
-      issues: [{ number: 9, ...label('task', 'area:art'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 9, ...label('kind:task', 'area:art'), blockedBy: { nodes: [] } }],
       sessions: [working('session_a', 'task-8')],
       issueStates: { 8: 'OPEN' },
     };
@@ -560,7 +562,7 @@ describe('board-move.mjs', () => {
   // 畳めないので、待つと枠が空かない）、錠の側で外すと**同じ資源を2本が取り合う**。
   it('担当の閉じたセッションが走っている間も、錠を持つ issue は投入しない', () => {
     const board = {
-      issues: [{ number: 9, ...label('task', 'area:art'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 9, ...label('kind:task', 'area:art'), blockedBy: { nodes: [] } }],
       sessions: [working('session_a', 'task-8')],
       issueStates: { 8: 'CLOSED' },
     };
@@ -572,7 +574,7 @@ describe('board-move.mjs', () => {
     const board = {
       issues: [6, 7, 8, 9].map((number) => ({
         number,
-        ...label('task'),
+        ...label('kind:task'),
         blockedBy: { nodes: [] },
       })),
       sessions: [
@@ -589,20 +591,20 @@ describe('board-move.mjs', () => {
   // 走らせる先は issue のラベルにある（2.16）。盤面は投入先を引数の形で寄越し、`board-round.mjs`
   // はそれをそのまま `dispatch-task.sh` へ渡す。
   it('env:bridge の issue は、ブリッジへ投入する', () => {
-    const board = { issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }] };
+    const board = { issues: [{ number: 9, ...label('kind:task', 'env:bridge'), blockedBy: { nodes: [] } }] };
     expect(moves(board)).toEqual(['TASK 9 --bridge']);
   });
 
   // **既定へ落とさない。** 落とすと、そこでしかできないから宛先を書いた仕事が黙って別の場所で
   // 走り、指定が無視されたことが誰にも残らない（2.16.1）。
   it('知らない env: の issue は配らず、覚え書きを出す', () => {
-    const board = { issues: [{ number: 9, ...label('task', 'env:mars'), blockedBy: { nodes: [] } }] };
+    const board = { issues: [{ number: 9, ...label('kind:task', 'env:mars'), blockedBy: { nodes: [] } }] };
     expect(moves(board)).toEqual(['NOTE issue #9 の `env:mars` は知らない宛先']);
   });
 
   it('env: が重ねて付いた issue も配らない', () => {
     const board = {
-      issues: [{ number: 9, ...label('task', 'env:bridge', 'env:cloud'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 9, ...label('kind:task', 'env:bridge', 'env:cloud'), blockedBy: { nodes: [] } }],
     };
     expect(moves(board)).toEqual(['NOTE issue #9 に `env:` が重ねて付いている']);
   });
@@ -611,7 +613,7 @@ describe('board-move.mjs', () => {
   // 畳めば枠が空き、次の周が正しい先で立て直す。
   it('走らせる先が食い違ったワーカーは畳む', () => {
     const board = {
-      issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 9, ...label('kind:task', 'env:bridge'), blockedBy: { nodes: [] } }],
       sessions: [{ ...idle('session_a', 'task-9'), env: 'cloud' }],
     };
     expect(moves(board)).toEqual(['ARCHIVE session_a moved:9']);
@@ -619,7 +621,7 @@ describe('board-move.mjs', () => {
 
   it('走らせる先が合っているワーカーは畳まない', () => {
     const board = {
-      issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 9, ...label('kind:task', 'env:bridge'), blockedBy: { nodes: [] } }],
       sessions: [{ ...idle('session_a', 'task-9'), env: 'bridge' }],
     };
     expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
@@ -629,7 +631,7 @@ describe('board-move.mjs', () => {
   // いるセッションが落ちる。
   it('環境を引けなかったワーカーは畳まない', () => {
     const board = {
-      issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 9, ...label('kind:task', 'env:bridge'), blockedBy: { nodes: [] } }],
       sessions: [{ ...idle('session_a', 'task-9'), env: '-' }],
     };
     expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
@@ -641,7 +643,7 @@ describe('board-move.mjs', () => {
   // 既定の `cloud` との食い違いがそのまま当たる。
   it('ブリッジのワーカーは、走らせる先が食い違っていても畳まない', () => {
     const board = {
-      issues: [{ number: 9, ...label('task'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 9, ...label('kind:task'), blockedBy: { nodes: [] } }],
       sessions: [{ ...idle('session_a', 'task-9'), env: 'bridge' }],
     };
     expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
@@ -650,7 +652,7 @@ describe('board-move.mjs', () => {
   // **PRを出した後は動かさない**（2.16.2）。畳むと、そのPRの直しを頼む相手が居なくなる。
   it('PRを出した後のワーカーは、走らせる先が食い違っていても畳まない', () => {
     const board = {
-      issues: [{ number: 9, ...label('task', 'env:bridge'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 9, ...label('kind:task', 'env:bridge'), blockedBy: { nodes: [] } }],
       prs: [pr(10, label('収束せず'))],
       sessions: [{ ...idle('session_a', 'task-9'), env: 'cloud' }],
     };
@@ -660,7 +662,7 @@ describe('board-move.mjs', () => {
   // 畳んでも次の周は投入で止まるので、枠を空ける意味が無い（2.16.2）。
   it('配り直す先が無ければ、食い違っていても畳まない', () => {
     const board = {
-      issues: [{ number: 9, ...label('task', 'env:mars'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 9, ...label('kind:task', 'env:mars'), blockedBy: { nodes: [] } }],
       sessions: [{ ...idle('session_a', 'task-9'), env: 'cloud' }],
     };
     expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
@@ -669,7 +671,7 @@ describe('board-move.mjs', () => {
   // 走っているセッションが持っている issue は「投入済み」なので、待ちにも数えない（1.2）。
   it('走っているセッションが持つ issue しか無ければ、黙る', () => {
     const board = {
-      issues: [{ number: 8, ...label('task'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 8, ...label('kind:task'), blockedBy: { nodes: [] } }],
       sessions: [working('session_a', 'task-8')],
     };
     expect(moves(board)).toEqual([]);
@@ -677,7 +679,7 @@ describe('board-move.mjs', () => {
 
   it('PRを出さないまま手が空いたセッションを、1回だけ起こす', () => {
     const board = {
-      issues: [{ number: 8, ...label('task'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 8, ...label('kind:task'), blockedBy: { nodes: [] } }],
       sessions: [idle('session_a', 'task-8')],
     };
     expect(moves(board)).toEqual(['RESUME session_a stall 8 stall:8']);
@@ -687,7 +689,7 @@ describe('board-move.mjs', () => {
   // その issue へも手を出さない——指紋の枠は1つなので、`stall:` を `returned:` が上書きする。
   it('起こしても動かないセッションの仕事を、人へ返す', () => {
     const board = {
-      issues: [{ number: 8, ...label('task'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 8, ...label('kind:task'), blockedBy: { nodes: [] } }],
       sessions: [idle('session_a', 'task-8')],
       taken: { 'idle:session_a': LONG_IDLE, 'resume:session_a': 'stall:8' },
     };
@@ -704,7 +706,7 @@ describe('board-move.mjs', () => {
    */
   describe('空いていることではなく、空いたままであることを見る', () => {
     const stalling = (over: Record<string, string>) => ({
-      issues: [{ number: 8, ...label('task'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 8, ...label('kind:task'), blockedBy: { nodes: [] } }],
       sessions: [idle('session_a', 'task-8')],
       taken: over,
     });
@@ -736,7 +738,7 @@ describe('board-move.mjs', () => {
   // 付いたまま**なので、この判定が抜けると次の周にそのまま投入し直される。
   it('`判断待ち` の付いた task issue は配らない', () => {
     expect(
-      moves({ issues: [{ number: 8, ...label('task', '判断待ち'), blockedBy: { nodes: [] } }] }),
+      moves({ issues: [{ number: 8, ...label('kind:task', '判断待ち'), blockedBy: { nodes: [] } }] }),
     ).toEqual([]);
   });
 
@@ -744,7 +746,7 @@ describe('board-move.mjs', () => {
   // ログから畳んだ理由が読めるようにするため。
   it('返された issue を担当していたワーカーを畳む', () => {
     const board = {
-      issues: [{ number: 8, ...label('task', '判断待ち'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 8, ...label('kind:task', '判断待ち'), blockedBy: { nodes: [] } }],
       sessions: [idle('session_a', 'task-8')],
     };
     expect(moves(board)).toEqual(['ARCHIVE session_a returned:8']);
@@ -778,7 +780,7 @@ describe('board-move.mjs', () => {
   it('畳む手は、マージの次・投入の前に打つ', () => {
     const board = {
       prs: [pr(10, label('通してよい'))],
-      issues: [{ number: 20, ...label('task'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 20, ...label('kind:task'), blockedBy: { nodes: [] } }],
       sessions: [idle('session_a', 'task-8')],
       issueStates: { 8: 'CLOSED' },
     };
@@ -798,7 +800,7 @@ describe('board-move.mjs', () => {
         sessions: [idle('a')],
       },
       {
-        issues: [{ number: 9, ...label('task'), blockedBy: { nodes: [] } }],
+        issues: [{ number: 9, ...label('kind:task'), blockedBy: { nodes: [] } }],
         sessions: [idle('a', 'task-9')],
       },
     ];
@@ -810,5 +812,77 @@ describe('board-move.mjs', () => {
 
     const template = readFileSync(resolve(__dirname, '../../.claude/resume-prompt.md'), 'utf-8');
     for (const kind of kinds) expect(template).toContain(`\n## ${kind} `);
+  });
+
+  // ## 周期で起きる係（2.17）
+  //
+  // 未整理は `kind:` を1つも持たないことで表す（2.17.1）。**分類の綴りを増やしても、ここは
+  // 書き換わらない**——「`task` でも `meta` でも無い」で書いていたときは、出口が増えるたびに
+  // 条件を足す必要があった。
+  const unsorted = (number: number) => ({ number, labels: [], blockedBy: { nodes: [] } });
+  const TRIAGE = `CHORE triage .claude/triage-prompt.md ${NOW} --bridge`;
+
+  it('未整理の issue があれば、棚卸しを立てる', () => {
+    expect(moves({ issues: [unsorted(9)] })).toEqual([TRIAGE]);
+  });
+
+  it('分類の付いた issue しかなければ、棚卸しは立てない', () => {
+    const board = { issues: [{ number: 9, ...label('kind:meta'), blockedBy: { nodes: [] } }] };
+    expect(moves(board)).toEqual([]);
+  });
+
+  it('棚卸しが走っている間は、もう1本立てない', () => {
+    const board = { issues: [unsorted(9)], sessions: [working('session_c', 'chore-triage')] };
+    expect(moves(board)).toEqual([]);
+  });
+
+  // 引き金は件数ではなく時間（2.17）。**件数のしきい値は「そこまでは残ってよい」の宣言になる。**
+  it('前に立ててから間隔が空くまで、棚卸しは立てない', () => {
+    const board = { issues: [unsorted(9)], taken: { 'cycle:triage': '2026-09-04T03:00:00Z' } };
+    expect(moves(board)).toEqual([]);
+  });
+
+  it('間隔が空いたら、棚卸しをもう一度立てる', () => {
+    const board = { issues: [unsorted(9)], taken: { 'cycle:triage': '2026-09-04T01:00:00Z' } };
+    expect(moves(board)).toEqual([TRIAGE]);
+  });
+
+  // 急ぐ仕事ではないうえ、間隔が満ちている限り次の周でも同じ手が出る。先に置くと、待っている
+  // 直しやレビューを1周ぶん押しのけるだけになる。
+  it('周期の係は、投入より後に打つ', () => {
+    const board = {
+      issues: [unsorted(9), { number: 10, ...label('kind:task'), blockedBy: { nodes: [] } }],
+    };
+    expect(moves(board)).toEqual(['TASK 10', TRIAGE]);
+  });
+
+  // PRを出さないので、マージの列には並ばない。数えると書く側の並列度が黙って下がる。
+  it('周期の係は、書くセッションの枠を待たない', () => {
+    const held = (number: number) => ({ number, ...label('kind:task'), blockedBy: { nodes: [] } });
+    const board = {
+      issues: [unsorted(9), held(1), held(2), held(3)],
+      sessions: [working('a', 'task-1'), working('b', 'task-2'), working('c', 'task-3')],
+    };
+    expect(moves(board)).toContain(TRIAGE);
+  });
+
+  it('手が空いたままの周期の係は、レビューと同じく畳む', () => {
+    expect(moves({ sessions: [idle('session_c', 'chore-triage')] })).toEqual([
+      'ARCHIVE session_c done:chore-triage',
+    ]);
+  });
+
+  it('走っている周期の係は畳まない', () => {
+    expect(moves({ sessions: [working('session_c', 'chore-triage')] })).toEqual([]);
+  });
+
+  // 手に載る綴りは上の試験が押さえるので、ここが見るのは**その先にファイルがあり、
+  // `dispatch-chore.sh` が要る2つを持っていること**。片方でも欠けると、係は毎周立とうとして
+  // 毎周失敗する（時刻を残さないので、間隔で黙りもしない）。
+  it('周期の係のプロンプトは、題と囲みを持つ', () => {
+    const path = TRIAGE.split(' ')[2];
+    const text = readFileSync(resolve(__dirname, '../..', path), 'utf-8');
+    expect(text).toMatch(/^題: \S/m);
+    expect(text).toMatch(/^````$/m);
   });
 });

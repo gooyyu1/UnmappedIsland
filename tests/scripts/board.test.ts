@@ -34,7 +34,7 @@ function show(world: World = {}): { lines: string[]; warnings: string[] } {
 const issue = (number: number, title: string, over: Record<string, unknown> = {}) => ({
   number,
   title,
-  labels: [{ name: 'task' }],
+  labels: [{ name: 'kind:task' }],
   blockedBy: { nodes: [] },
   ...over,
 });
@@ -139,7 +139,7 @@ describe('board.mjs', () => {
   // 見分けが付かないと、人は列に並んでいるものと区別できない。
   it('人へ返された issue は、返却として出す', () => {
     const { lines } = show({
-      issues: [issue(8, '決められない', { labels: [{ name: 'task' }, { name: '判断待ち' }] })],
+      issues: [issue(8, '決められない', { labels: [{ name: 'kind:task' }, { name: '判断待ち' }] })],
     });
 
     expect(lines).toContain('TASK 8 返却 決められない');
@@ -148,7 +148,7 @@ describe('board.mjs', () => {
   // 走らせる先の指定は状態と別の軸（2.16）なので、状態を潰さずに後ろへ並べる。
   it('走らせる先の指定があれば、状態の後ろに出す', () => {
     const { lines } = show({
-      issues: [issue(8, '盤面を直す', { labels: [{ name: 'task' }, { name: 'env:bridge' }] })],
+      issues: [issue(8, '盤面を直す', { labels: [{ name: 'kind:task' }, { name: 'env:bridge' }] })],
     });
 
     expect(lines).toContain('TASK 8 着手可 env:bridge 盤面を直す');
@@ -162,18 +162,26 @@ describe('board.mjs', () => {
     expect(lines).toContain('TASK 8 着手可 後');
   });
 
-  // 依存が張ってあるものを外すのは、それが棚卸しの結論そのものだから。
-  it('未整理に出るのは、task も meta も無く、依存も張られていない issue', () => {
+  // 未整理は `kind:` を1つも持たないことで表す（否定の列挙では表さない）。依存が張ってあっても、
+  // 棚卸しが分類を付けて出るので外す必要は無い。
+  it('未整理に出るのは、kind: を1つも持たない issue', () => {
     const { lines } = show({
       issues: [
-        issue(1, 'task が付いている'),
-        issue(2, 'meta の盤', { labels: [{ name: 'meta' }] }),
-        issue(3, '束ねた側', { labels: [], blockedBy: { nodes: [{ number: 9, state: 'OPEN' }] } }),
+        issue(1, 'kind:task が付いている'),
+        issue(2, 'meta の盤', { labels: [{ name: 'kind:meta' }] }),
+        issue(3, '束ねた側', {
+          labels: [{ name: 'kind:task' }],
+          blockedBy: { nodes: [{ number: 9, state: 'OPEN' }] },
+        }),
         issue(4, '人の言葉のまま', { labels: [] }),
+        issue(5, '分類の無い bug', { labels: [{ name: 'bug' }] }),
       ],
     });
 
-    expect(lines.filter((line) => line.startsWith('未整理 '))).toEqual(['未整理 4 - 人の言葉のまま']);
+    expect(lines.filter((line) => line.startsWith('未整理 '))).toEqual([
+      '未整理 4 - 人の言葉のまま',
+      '未整理 5 bug 分類の無い bug',
+    ]);
   });
 
   it('畳まれたセッションは、走行に出さない', () => {

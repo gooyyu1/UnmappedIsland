@@ -33,7 +33,7 @@ set -euo pipefail
 # jq は Windows では改行を CRLF で書く（msys の text mode）。番号の突き合わせに使う側があるので、
 # ここで `\r` を落としておく。
 jq -r '.[]
-       | select([.labels[].name] | index("meta"))
+       | select([.labels[].name] | index("kind:meta"))
        | .number as $number
        | (.body // "")
        | split("\n")[]

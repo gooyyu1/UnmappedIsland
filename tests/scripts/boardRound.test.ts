@@ -280,6 +280,34 @@ describe('board-round.mjs', () => {
     expect(result.ledger).toEqual({ 'review:10': 'aaa111' });
   });
 
+  // **`cycle:` は盤面の何かに紐づく指紋ではない**（周期の係を前に立てた時刻。2.17）。掃除に
+  // 巻き込むと、次の周に間隔が満ちていない係まで立つ。
+  it('周期の係を立てた時刻は、台帳から捨てない', () => {
+    const result = playRound({
+      prs: [pr(10)],
+      ledger: { 'cycle:triage': '2026-09-05T01:00:00Z' },
+    });
+
+    expect(result.ledger['cycle:triage']).toBe('2026-09-05T01:00:00Z');
+  });
+
+  it('未整理があれば棚卸しを立て、立てた時刻を台帳へ残す', () => {
+    const result = playRound({ issues: [{ number: 9, labels: [], blockedBy: { nodes: [] } }] });
+
+    expect(result.calls).toEqual(['dispatch-chore.sh triage .claude/triage-prompt.md --bridge']);
+    expect(result.ledger).toEqual({ 'cycle:triage': NOW.toISOString() });
+  });
+
+  // 覚えると、失敗したまま間隔ぶん黙る。
+  it('棚卸しを立てられなかったら、時刻を残さない', () => {
+    const result = playRound({
+      issues: [{ number: 9, labels: [], blockedBy: { nodes: [] } }],
+      fails: ['dispatch-chore.sh'],
+    });
+
+    expect(result.ledger).toEqual({});
+  });
+
   // 畳む条件は担当の issue が閉じたこと（2.10）。**PRがマージされたかでは決めない**ので、PRが
   // 1本も無くても畳む。
   it('担当の issue が閉じたワーカーを畳む', () => {
@@ -288,7 +316,7 @@ describe('board-round.mjs', () => {
       issueStates: { 8: 'CLOSED' },
     });
 
-    expect(result.calls).toEqual(['archive-session.sh --keep-untagged task-,review-']);
+    expect(result.calls).toEqual(['archive-session.sh --keep-untagged task-,review-,chore-']);
     expect(result.log).toContain('ARCHIVED session_a');
     // 畳めたので、台帳へは残さない（相手も次の周には消える）。
     expect(result.ledger).toEqual({});
@@ -314,7 +342,7 @@ describe('board-round.mjs', () => {
       archiveVerdict: 'UNARCHIVED',
     });
 
-    expect(result.calls).toEqual(['archive-session.sh --keep-untagged task-,review-']);
+    expect(result.calls).toEqual(['archive-session.sh --keep-untagged task-,review-,chore-']);
     expect(result.ledger).toEqual({});
   });
 
@@ -324,7 +352,9 @@ describe('board-round.mjs', () => {
   // `dispatch-task.sh` の後ろへ足す。補足のファイルは一時的なもので、名前は毎回変わる。
   it('投入先を寄越された手は、その引数を付けて投入する', () => {
     const result = playRound({
-      issues: [{ number: 9, labels: [{ name: 'task' }, { name: 'env:bridge' }], blockedBy: { nodes: [] } }],
+      issues: [
+        { number: 9, labels: [{ name: 'kind:task' }, { name: 'env:bridge' }], blockedBy: { nodes: [] } },
+      ],
     });
 
     expect(result.calls[0]).toMatch(/^dispatch-task\.sh 9 \S+ --bridge$/);
@@ -332,7 +362,7 @@ describe('board-round.mjs', () => {
 
   it('投入先が無ければ、引数を足さない', () => {
     const result = playRound({
-      issues: [{ number: 9, labels: [{ name: 'task' }], blockedBy: { nodes: [] } }],
+      issues: [{ number: 9, labels: [{ name: 'kind:task' }], blockedBy: { nodes: [] } }],
     });
 
     expect(result.calls[0]).toMatch(/^dispatch-task\.sh 9 \S+$/);
@@ -340,7 +370,7 @@ describe('board-round.mjs', () => {
 
   it('起こしても動かないワーカーの仕事を、コメントで人へ返す', () => {
     const result = playRound({
-      issues: [{ number: 8, labels: [{ name: 'task' }], blockedBy: { nodes: [] } }],
+      issues: [{ number: 8, labels: [{ name: 'kind:task' }], blockedBy: { nodes: [] } }],
       sessions: [idle('session_a', 'task-8')],
       ledger: { 'resume:session_a': 'stall:8' },
     });
@@ -354,7 +384,7 @@ describe('board-round.mjs', () => {
 
   it('返せなかったら、指紋を残さない', () => {
     const result = playRound({
-      issues: [{ number: 8, labels: [{ name: 'task' }], blockedBy: { nodes: [] } }],
+      issues: [{ number: 8, labels: [{ name: 'kind:task' }], blockedBy: { nodes: [] } }],
       sessions: [idle('session_a', 'task-8')],
       ledger: { 'resume:session_a': 'stall:8' },
       commentFails: true,
@@ -368,7 +398,7 @@ describe('board-round.mjs', () => {
   // 引き直さない。
   it('開いている issue を担当しているワーカーのぶんは、issue を引き直さない', () => {
     const result = playRound({
-      issues: [{ number: 8, labels: [{ name: 'task' }], blockedBy: { nodes: [] } }],
+      issues: [{ number: 8, labels: [{ name: 'kind:task' }], blockedBy: { nodes: [] } }],
       sessions: [working('session_a', 'task-8')],
     });
 
@@ -560,7 +590,7 @@ describe('board-round.mjs', () => {
       bucket: 'SESSION_STATUS_BUCKET_WORKING',
       tags: ['task-8'],
     });
-    const openTask = [{ number: 8, labels: [{ name: 'task' }], blockedBy: { nodes: [] } }];
+    const openTask = [{ number: 8, labels: [{ name: 'kind:task' }], blockedBy: { nodes: [] } }];
 
     it('空いているセッションの、空いた時刻を残す', () => {
       const result = playRound({

@@ -40,22 +40,17 @@
 // 状態の後ろに `env:<値>` が出るものは、**そこで走らせる指定が付いている**（2.16）。無いものは
 // クラウド。
 //
-// ## `未整理` は、人間が書いたまま投入できない issue
+// ## `未整理` は、棚卸しがまだ見ていない issue
 //
-// ユーザーが立てる issue は自分の言葉で書かれていて、担当も完了条件も無い。**そのまま `task` を
-// 付けて投入すると、PRの範囲が宣言されていない**ので、司令塔は範囲外へ伸びたかを機械的に判定できず、
-// 全部が判断待ちに落ちる。**投入の前に棚卸しで翻訳する**
-// （[`parallel-work.md`](../../.claude/parallel-work.md)「人間が立てた issue は、投入する前に
-// 棚卸しで task へ翻訳する」）。
+// **`kind:` のラベルを1つも持たない open な issue**（`.claude/board-design.md` 2.17.1）。分類は
+// 棚卸しが付けるので、持っていないことがそのまま「まだ見ていない」を指す。
 //
-// ここに出るのは `task` も `meta` も付いておらず、**依存も張られていない** open な issue。
-// `meta` は常設の盤（#656 の確定待ち・手綱）で、投入する先が無いので棚卸しの対象でもない。
+// **`task` も `meta` も付いていない、という否定の列挙では表さない。** 出口が増えるたびに条件を
+// 書き換えることになり、書き忘れた出口の issue が毎周また並ぶ。分解した親も、別の issue へ束ねた
+// 側も、棚卸しは `kind:` を付けて出るので、**依存が張ってあるかを見る必要も無い。**
+//
 // **どれが翻訳の要る issue かは判定しない**——並べるところまでが機械の仕事で、まとめ方も分け方も
 // モデルが決める。
-//
-// **依存が張ってあるものを外すのは、それが棚卸しの結論そのものだから。** 分解した親（子が全部
-// 片付いたら閉じる入口）と、別の issue へ束ねた側は、どちらも `task` にはならないが翻訳は済んで
-// いる。外さないと毎回ここへ並び、**次の司令塔が「まだ棚卸ししていない」と読んで投入し直す。**
 
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -151,7 +146,7 @@ export function board({ gh = runGh, page = listSessions, checkedItems = runCheck
   }
 
   lines.push('## TASK');
-  for (const issue of issues.filter((item) => names(item).includes('task'))) {
+  for (const issue of issues.filter((item) => names(item).includes('kind:task'))) {
     const blocker = blockers(issue)[0];
     const state = names(issue).includes('判断待ち')
       ? '返却'
@@ -168,8 +163,7 @@ export function board({ gh = runGh, page = listSessions, checkedItems = runCheck
 
   lines.push('## 未整理');
   const unsorted = issues
-    .filter((issue) => !names(issue).includes('task') && !names(issue).includes('meta'))
-    .filter((issue) => blockers(issue).length === 0)
+    .filter((issue) => !names(issue).some((name) => name.startsWith('kind:')))
     .map((issue) => `未整理 ${issue.number} ${labelColumn(issue)} ${issue.title}`);
   lines.push(...(unsorted.length === 0 ? ['（無し）'] : unsorted));
 
