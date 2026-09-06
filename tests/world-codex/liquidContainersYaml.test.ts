@@ -553,6 +553,100 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(amountIn(jar), '残りは注ぎ元に留まる').toBe(750);
   });
 
+  it('満水の器同士を重ねると注げず、理由container_fullを返す', () => {
+    // **注ぎ移しは両向きに宣言される**（宣言を持つのは中身入りの側だけ、12.3節）ので、片方に余地が
+    // あれば逆向きが成立して水は動く。何も起きないのは両方が満ちきったときで、そこでだけ理由が要る
+    // （画面が断るのは両向きに成立するものが1つも無いときだけ、cardOperations.combinationBetween）。
+    const agent = spawn(SAMPLE_CHARACTER);
+    const dropped = spawnContainer('jar', 'water', capacityOf('jar')!);
+    const held = spawnContainer('jar', 'water', capacityOf('jar')!);
+
+    expect(dropped.combinationsWith(held, agent), 'どちらの向きにも成立しない').toEqual([]);
+    expect(held.combinationsWith(dropped, agent)).toEqual([]);
+
+    // **名指しで引かない。** 断る組み合わせは複数あり（空の器へ注ぐ側もinstrumentが空でないことを
+    // 理由付きで断る）、画面が出すのは宣言順の先頭（CardInteraction.md 2節）。名指しで引くと、
+    // 出ない理由を出たことにしてしまう。
+    const refused = dropped.refusedCombinationsWith(held, agent).at(0);
+
+    expect(refused, '断る理由を宣言しているので落とし先としては残る').toBeDefined();
+    expect(refused?.unmetRequirement()?.reasonName, '断る理由が画面へ届く').toBe('container_full');
+    expect(refused?.tryExecute() === true).toBe(false);
+    expect(amountIn(held), '注ぎ元は1mLも減らない').toBe(capacityOf('jar'));
+  });
+
+  it('片方に余地があれば、満水の器を重ねても逆向きに注げる', () => {
+    const agent = spawn(SAMPLE_CHARACTER);
+    const roomy = spawnContainer('jar', 'water', 400);
+    const full = spawnContainer('jar', 'water', capacityOf('jar')!);
+
+    expect(
+      roomy
+        .combinationsWith(full, agent)
+        .find((c) => c.name === 'pour_into_filled')
+        ?.tryExecute() === true,
+      '余地のある側がselfになる向きは成立したまま',
+    ).toBe(true);
+
+    expect(amountIn(roomy), '入る分だけ入る').toBe(capacityOf('jar'));
+    expect(amountIn(full), '入りきらない分は注ぎ元に残る').toBe(400);
+  });
+
+  it('満水の一歩手前なら注げる', () => {
+    const agent = spawn(SAMPLE_CHARACTER);
+    const from = spawnContainer('jar', 'water', 400);
+    const to = spawnContainer('jar', 'water', capacityOf('jar')! - 1);
+
+    expect(
+      to
+        .combinationsWith(from, agent)
+        .find((c) => c.name === 'pour_into_filled')
+        ?.tryExecute() === true,
+    ).toBe(true);
+
+    expect(amountIn(to), '入る分だけ入る').toBe(capacityOf('jar'));
+    expect(amountIn(from), '入りきらない分は注ぎ元に残る').toBe(399);
+  });
+
+  it('満ちる境目はその器のcapacityが決める', () => {
+    // 段を宣言するのは器の側なので、同じ250mLでも殻は満ちきっていて甕にはまだ余地がある。
+    const agent = spawn(SAMPLE_CHARACTER);
+    const bowlCapacity = capacityOf('coconut_bowl')!;
+
+    expect(
+      spawnContainer('coconut_bowl', 'water', bowlCapacity)
+        .refusedCombinationsWith(spawnContainer('coconut_bowl', 'water', bowlCapacity), agent)
+        .find((c) => c.name === 'pour_into_filled')
+        ?.unmetRequirement()?.reasonName,
+      '殻は250mLで満ちきる',
+    ).toBe('container_full');
+
+    expect(
+      spawnContainer('jar', 'water', bowlCapacity)
+        .combinationsWith(spawnContainer('jar', 'water', bowlCapacity), agent)
+        .find((c) => c.name === 'pour_into_filled')
+        ?.unmetRequirement(),
+      '同じ量でも甕はまだ満ちていない',
+    ).toBeUndefined();
+  });
+
+  it('液体を抱える器は、fillの上限を満ちきった段として名乗る', () => {
+    // 段のminはfillのrange.maxの写しなので、器を足したときに書き忘れると条件が黙って真に倒れ、
+    // 満水の器がまた何も言わなくなる（in_stageは該当段が無ければ偽）。
+    const containers = codex.objectDefNamesWithTag(codex.tagNames.getId('liquid_container'));
+    expect(containers.length, '検査対象が無い（liquid_containerタグが変わっていないか）').toBeGreaterThan(0);
+
+    for (const name of containers) {
+      const def = codex.objects.get(codex.objectNames.getId(name));
+      const fill = def.enumeratePropertyDefs().find((p) => p.globalId === fillId);
+
+      expect(fill?.range, `'${name}'が抱えられる量`).toBeDefined();
+      expect(fill?.stages.find((stage) => stage.name === 'full')?.lowerBound, `'${name}'の満ちきった段`).toBe(
+        fill?.range?.max,
+      );
+    }
+  });
+
   it('異なる種類の中身が入った容器へは注げない', () => {
     const tea = spawnContainer('jar', 'tea', 400);
     const water = spawnContainer('jar', 'water', 500);
@@ -568,5 +662,18 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     expect(amountIn(tea), '混ざらない（種類ごとのタグに合致しない）').toBe(400);
     expect(amountIn(water)).toBe(500);
+  });
+
+  it('別の液体が入った容器へ重ねると、空にせよと言う', () => {
+    // 満水を断る宣言を先へ動かしても、こちらの理由は先頭のまま——別の液体は種類ごとのタグに
+    // 合致せず、断る組み合わせがpour_into_emptyの1つしか残らない。
+    const agent = spawn(SAMPLE_CHARACTER);
+    const tea = spawnContainer('jar', 'tea', 400);
+    const water = spawnContainer('jar', 'water', 500);
+
+    expect(
+      water.refusedCombinationsWith(tea, agent).at(0)?.unmetRequirement()?.reasonName,
+      '画面が出すのは宣言順の先頭',
+    ).toBe('not_empty');
   });
 });
