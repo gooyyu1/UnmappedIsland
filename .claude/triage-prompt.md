@@ -119,8 +119,8 @@ gh issue create --title <題> --body-file <本文> --label kind:task --label ori
 
 **issue の本文に `## 順序` 節があったら、`blockedBy` を張ってください。** そこは立てたセッションが
 「先に片付いていないと着手できない issue」を申告した場所です（`.claude/parallel-work.md`「順序は
-issue の本文で申告し、棚卸しが張る」）。**張れるのはあなただけです**——クラウドのセッションは
-GitHub の REST が塞がっていて、依存の API を呼べません。
+issue の本文で申告し、棚卸しが張る」）。**張るのはあなたです**——セッションの側は申告までで、
+**張るかどうかの判断はここに集めてあります。**
 
 ```
 gh api --method POST repos/gooyyu1/UnmappedIsland/issues/<この issue>/dependencies/blocked_by \
