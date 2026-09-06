@@ -77,10 +77,9 @@ gh issue list --state open --limit 100 --json number,title,labels |
 ## 付けるラベル
 
 **`kind:` は必ず1つ付ける**（`kind:task` か `kind:meta`）。付け忘れた issue は未整理のまま残り、
-毎日ここへ戻ってきます。加えて、当てはまるものだけ:
+毎日ここへ戻ってきます。**`kind:task` を付けた issue は、そのまま配られます**——配らせたくないものは、
+ラベルではなく (e) の返却で止めてください。加えて、当てはまるものだけ:
 
-- **`判断待ち`** — `kind:task` を付けた**すべて**に付けてください。ユーザーが順序（`blockedBy`）を
-  張ってから外します。**あなたは順序を張りません**（下の「守ること」）。
 - **`env:bridge`** — **クラウドではできない仕事**のとき。手元の画面やローカルにしか無いものを使う、
   既存 issue の本文を書き換える、など（`.claude/board-design.md` 2.16）。**`.claude/**` を触ることは
   理由になりません**——クラウドのセッションもそこは書き換えられます。
@@ -94,7 +93,7 @@ gh issue list --state open --limit 100 --json number,title,labels |
 ラベルの綴りには `:` が入るので、Windows では `gh` の引数が化けます。
 
 ```
-MSYS2_ARG_CONV_EXCL='*' gh issue edit <番号> --add-label kind:task --add-label 判断待ち
+MSYS2_ARG_CONV_EXCL='*' gh issue edit <番号> --add-label kind:task
 ```
 
 ## 守ること

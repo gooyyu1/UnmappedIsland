@@ -88,6 +88,22 @@ describe('里心を抑える設え(src/assets/world-codex/furnishings.yaml)', ()
     }
   });
 
+  it('どれか1種だけを並べても届く——里心の対策は、ほかの系統の進み具合に縛られない', () => {
+    // **ひと通り揃えることはsnugの条件ではない**（同節）。斧の要る物も狩りの要る物も飛ばして、
+    // 刃物1本で作れる物だけを並べる道が残っている——**残っていなければ、里心の対策が狩りや
+    // 木の伐り出しの後ろへ回る**。並べたときの手間がひと通りとほとんど変わらないのは、点数を
+    // 手間に比例させてあるから（furnishings.yaml）。
+    for (const name of FURNISHINGS) {
+      const site = camp();
+      const one = camp();
+      furnish(one, name);
+      const needed = Math.ceil(50 / comfortOf(one));
+      for (let placed = 0; placed < needed; placed += 1) furnish(site, name);
+
+      expect(site.player.getProperty(propertyId('comfort')).isInStage('snug'), name).toBe(true);
+    }
+  });
+
   it('同じ物を並べても効く（連れと違って積み上がる）', () => {
     // 設えは積むほど効いてよく、効き目は掛けた手間に比例させてある（furnishings.yaml）ので、
     // 並べることは近道ではなく払い方の1つ。**囲いの連れはここが逆**（段が1つだけ、farming.yaml）。
