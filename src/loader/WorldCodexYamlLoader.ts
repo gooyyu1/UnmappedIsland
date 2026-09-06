@@ -1,4 +1,5 @@
 import { parseDocument } from 'yaml';
+import type { Document } from 'yaml';
 import type { YamlNode } from './yamlMapping';
 import {
   asMap,
@@ -162,8 +163,16 @@ export class WorldCodexYamlLoader {
    * アセットパックのぶんは、どのパックのものかを`from`で渡す（PackSource）。
    */
   load(label: string, yamlText: string, from?: PackSource): this {
+    return this.loadDocument(label, parseDocument(yamlText), from);
+  }
+
+  /**
+   * パース済みの1つのYAMLを読み込む。**渡したDocumentはこのローダーのものになる**——patch（3.4節）が
+   * 宣言のノードを書き換えるので、同じDocumentを2度渡すと2度目が1度目の書き換えを見る。
+   * 同じ内容を何度も読むなら、パース結果を控えて複製を渡す（loadWorldCodex）。
+   */
+  loadDocument(label: string, doc: Document, from?: PackSource): this {
     const report = from?.report;
-    const doc = parseDocument(yamlText);
     if (doc.errors.length > 0) throw new YamlLoadError(`${label}: YAML構文エラー: ${doc.errors[0].message}`);
     if (doc.contents === null) return this;
 
