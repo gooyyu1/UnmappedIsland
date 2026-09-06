@@ -68,7 +68,6 @@ export function describeInfluencesOn(
 
   const matches = (declaration: EffectDeclaration): boolean =>
     writesToProperty(declaration, propertyGlobalId, ownedByThisDef);
-  // 操作は経過の間ずっと効く宣言でも値を動かす（11.7節）ので、そちらも逆引きに入れる。
   const matchesPassive = (declaration: PassiveDeclaration): boolean =>
     passiveWritesToProperty(declaration, propertyGlobalId, ownedByThisDef);
 
@@ -96,7 +95,8 @@ export function createsObject(def: ObjectDef, objectGlobalId: number): boolean {
   const matches = (declaration: EffectDeclaration): boolean => spawnsObject(declaration, objectGlobalId);
   return (
     def.enumeratePropertyDefs().some((propertyDef) => propertyDef.hasRangeEventMatching(matches)) ||
-    matchingInteractions(def, matches).length > 0
+    // 物を生むのは`spawn`だけで、持続効果には書けない（8.4節）。
+    matchingInteractions(def, matches, () => false).length > 0
   );
 }
 
@@ -124,20 +124,19 @@ function describeMatchingRangeEvents(
 }
 
 /**
- * matchesが真になる操作を、その名前を指す断片（きっかけの区別つき）とともに集める。
- * matchesPassiveを渡すと、経過の間ずっと効く宣言（11.7節）が真になる操作も拾う。
+ * matches・matchesPassiveのどちらかが真になる操作を、その名前を指す断片（きっかけの区別つき）と
+ * ともに集める。**操作は経過の間ずっと効く宣言でも値を動かす**（11.7節）ので、探し物が値なら
+ * 両方を渡す。物を探すとき（`spawn`）は持続効果に書けないので、そちら側は常に偽。
  */
 function matchingInteractions(
   def: ObjectDef,
   matches: (declaration: EffectDeclaration) => boolean,
-  matchesPassive?: (declaration: PassiveDeclaration) => boolean,
+  matchesPassive: (declaration: PassiveDeclaration) => boolean,
 ): readonly (readonly [DescriptionToken, InteractionTrigger])[] {
   const found: (readonly [DescriptionToken, InteractionTrigger])[] = [];
   for (const trigger of def.triggers) {
     const name = trigger.interaction.name;
-    const inPassives = trigger.interaction.passiveDeclarations.some(
-      (declaration) => matchesPassive?.(declaration) ?? false,
-    );
+    const inPassives = trigger.interaction.passiveDeclarations.some(matchesPassive);
     if (!inPassives && !matches(trigger.interaction)) continue;
     found.push([trigger.reading.kind === 'drag' ? combinationRef(name) : actionRef(name), trigger]);
   }

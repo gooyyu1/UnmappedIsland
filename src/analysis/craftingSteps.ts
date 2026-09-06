@@ -7,7 +7,7 @@ import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import type { TypeMatchReading } from '../domain/TypeMatchRule';
 import { TypeMatchRule } from '../domain/TypeMatchRule';
 import type { WorldCodex } from '../domain/WorldCodex';
-import type { PassiveDeclaration, PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
+import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
 import type { CraftingInput, CraftingStep, PropertyDelta, StepOutcome } from './CraftingStep';
 import { UNCHANGED_OUTCOMES, collectOutputs, combineOutcomes } from './CraftingStep';
 import { MINUTES_PER_TICK } from './balanceTables';
@@ -273,8 +273,7 @@ function interactionStep(
  */
 function passiveOutcomes(interaction: InteractionDef, minutes: number): readonly StepOutcome[] {
   const collector = new PassiveDeltaCollector(minutes / MINUTES_PER_TICK);
-  for (const declaration of interaction.passiveDeclarations)
-    (declaration as PassiveDeclaration).read(collector);
+  for (const declaration of interaction.passiveDeclarations) declaration.read(collector);
 
   if (collector.deltas.length === 0) return UNCHANGED_OUTCOMES;
   return [{ probability: 1, spawns: [], deltas: collector.deltas, assignments: [] }];
