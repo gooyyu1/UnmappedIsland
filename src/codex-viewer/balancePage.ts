@@ -591,6 +591,7 @@ function supplyHtml(view: CodexView, tables: BalanceTables): string {
     objectLinkHtml(view, row.ownerName, true),
     `<code>${escapeHtml(row.stepName)}</code>` +
       (row.kind === 'periodic' ? ' <span class="muted">periodic</span>' : ''),
+    row.driverName === undefined ? '—' : objectLinkHtml(view, row.driverName, true),
     `${formatNumber(row.laborMinutes, 0)}${row.hasUnresolvedReferences ? ' <span class="warn" title="定義だけでは決まらない">?</span>' : ''}`,
     row.elapsedMinutes === row.laborMinutes ? '—' : formatNumber(row.elapsedMinutes, 0),
     row.spawns.length === 0
@@ -609,8 +610,9 @@ function supplyHtml(view: CodexView, tables: BalanceTables): string {
   return (
     `<h2 id="${balanceSectionId(SUPPLY_SECTION)}">供給</h2>` +
     `<p class="muted">何かを生むか、値を動かす工程すべて。産出は1回あたりの期待個数。` +
+    `<b>押し手が違えば別の行</b>で、周期もその押し手のもの。` +
     `同じ宣言は各オブジェクトのページにもあるので、ここは横断して見比べるための一覧。</p>` +
-    tableHtml(['宣言元', '工程', '労働', '周期', '期待産出', '値の増減'], rows)
+    tableHtml(['宣言元', '工程', '押し手', '労働', '周期', '期待産出', '値の増減'], rows)
   );
 }
 

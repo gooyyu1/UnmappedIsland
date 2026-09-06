@@ -65,6 +65,16 @@ export interface SupplyRow {
   readonly ownerName: string;
   readonly stepName: string;
   readonly kind: CraftingStep['kind'];
+
+  /**
+   * 外から押されて回る周期（炉が焼く・傷が血を奪う）なら、その押し手の型
+   * （{@link RangeCycle.drivenBy}）。押し手を持たない工程ではundefined。
+   *
+   * **同じ工程でも押し手が違えば別の行**——火にかけた肉を焼くのは焚き火でも炉でもよく、獲物の血を
+   * 奪うのは刺し傷でも噛み傷でもよいが、どれで押したかによって周期が変わる（issue #1579）。
+   */
+  readonly driverName: string | undefined;
+
   readonly laborMinutes: number;
   readonly elapsedMinutes: number;
 
@@ -547,6 +557,8 @@ function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly Supp
       ownerName: ref.def.name,
       stepName: ref.step.name,
       kind: ref.step.kind,
+      driverName:
+        ref.cycle?.drivenBy === undefined ? undefined : codex.objectNames.getName(ref.cycle.drivenBy),
       laborMinutes: ref.step.laborMinutes,
       elapsedMinutes: ref.step.elapsedMinutes,
       hasUnresolvedReferences: ref.step.hasUnresolvedReferences,
