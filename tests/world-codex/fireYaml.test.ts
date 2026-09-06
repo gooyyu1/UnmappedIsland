@@ -415,10 +415,7 @@ describe('fire.yamlの火の連鎖', () => {
     expect(effectiveNumberOf(hearth, 'fuel')).toBe(30);
 
     const extra = spawnInto('thick_branch', land, 'items');
-    expect(
-      hearth.combinationsWith(extra, player),
-      '候補にも挙がらない（落とせるのに何も起きない、にしない）',
-    ).toEqual([]);
+    expect(hearth.combinationsWith(extra, player), '成立する組み合わせは無い').toEqual([]);
     expect(
       hearth
         .combinationsWith(extra, player)
@@ -426,6 +423,39 @@ describe('fire.yamlの火の連鎖', () => {
         ?.tryExecute() === true,
     ).toBe(false);
     expect(extra.parent, 'くべられなかった薪は手元に残る').toBe(land);
+    expect(
+      hearth.refusedCombinationsWith(extra, player).map((c) => c.unmetRequirement()?.reasonName),
+      '断る理由まで辿り着ける（落とせるのに何も起きない、にしない）',
+    ).toEqual(['hearth_full']);
+  });
+
+  it('どの炉も、自分の上限で満杯を告げる', () => {
+    // 満杯を拒む条件は炉ごとに書いてあり、閾値はその炉のfuelのrange.maxと一致していなければ
+    // ならない。1本手前で成立し、ちょうど上限で理由に変わるところまで見て、写し違いを捕まえる。
+    const fuelId = codex.propertyNames.getId('fuel');
+    const hearthTag = codex.tagNames.getId('hearth');
+    const hearths = [...codex.objects].filter((def) => def.tags.includes(hearthTag));
+    expect(hearths.length, '炉が拾えていないなら何も見張っていない').toBeGreaterThan(0);
+
+    for (const def of hearths) {
+      open(LIGHTS);
+      const hearth = spawnInto(def.name, land, 'fixtures');
+      const branch = spawnInto('thick_branch', land, 'items');
+      const capacity = def.tryGetPropertyDef(fuelId)!.range!.max;
+
+      hearth.getProperty(fuelId).setNumberWithoutEvents(capacity - 1);
+      expect(
+        hearth.combinationsWith(branch, player).map((c) => c.name),
+        `${def.name}: 空きが残っていればくべられる`,
+      ).toEqual(['add_fuel']);
+
+      hearth.getProperty(fuelId).setNumberWithoutEvents(capacity);
+      expect(hearth.combinationsWith(branch, player), `${def.name}: 満杯では成立しない`).toEqual([]);
+      expect(
+        hearth.refusedCombinationsWith(branch, player).map((c) => c.unmetRequirement()?.reasonName),
+        `${def.name}: 満杯を告げる`,
+      ).toEqual(['hearth_full']);
+    }
   });
 
   it('火にかけた生肉は焼けた肉になり、放っておくと焦げる', () => {
