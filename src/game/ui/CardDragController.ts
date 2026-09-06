@@ -7,6 +7,7 @@ import type { CarriedCard } from './CardTable';
 import { noteOperation } from '../errorReport';
 import { uiText } from '../../locale/uiTexts';
 import { HoldRepeat } from '../../ui/holdRepeat';
+import { cancelTap } from '../../ui/tap';
 import type { TooltipContent } from './Tooltip';
 import { Tooltip } from './Tooltip';
 import { drawBox } from '../../ui/shapes';
@@ -226,20 +227,22 @@ export class CardDragController {
     const dy = pointer.y - gesture.startY;
     if (Math.hypot(dx, dy) < this.metrics().px(MOVE_THRESHOLD)) return;
 
+    // 押し始めたカードの上で指を離すと、動かしていてもタップとして成立してしまう（tap.ts）ので、
+    // どちらの操作になるかを問わずここで取り消す。そのままでは、スタックの上の1枚を自分の位置へ
+    // 重ねる操作も、カードを掴んだままの横スクロールも、操作のたびに子ウィンドウを開いてしまう。
+    cancelTap(gesture.card);
+
     if (gesture.lane.isCardBody(gesture.startX, gesture.startY, gesture.index)) {
       this.startDragging(gesture, pointer);
       return;
     }
 
     gesture.kind = 'scrolling';
-    gesture.card.cancelTap();
   }
 
   private startDragging(gesture: Gesture, pointer: Phaser.Input.Pointer): void {
     gesture.kind = 'dragging';
     noteOperation(uiText('log_card_grabbed', { name: gesture.card.content.name }));
-    // 掴んで動かす操作になったので、掴んだカードの上で指を離してもタップにはしない（Card.cancelTap）。
-    gesture.card.cancelTap();
 
     // 作る順がそのまま重なりの順になる。ふちの光もどこへ落ちるかの枠もレーンのカードの装飾なので
     // 運んでいる札より奥（指が運んでいるカードは常に見えている必要がある）。説明が手前に出ることは
