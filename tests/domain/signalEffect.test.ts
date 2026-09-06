@@ -36,6 +36,23 @@ object_defs:
     tags: [item]
     props:
       volume: {value: 100}
+  # 告げてから、その時間の中で自分が消える獣。成立しなかった操作でも告げが残ることを見る。
+  dying_beast:
+    tags: [beast]
+    props:
+      life:
+        value: 1
+        range: {min: 0, max: 10}
+        on_min:
+          destroy: {subject: self, reason: expired}
+        passives:
+          - add: {self: {life: -1}}
+    interactions:
+      charge:
+        trigger: menu
+        announce: braced
+        duration: 60
+        signal: gored
   # 重ねた物で殴られる獣。当たれば物が消え、外れれば世界は何も変わらない。
   beast:
     tags: [beast]
@@ -274,6 +291,19 @@ object_defs:
       { name: 'braced', after: 0 },
       { name: 'gored', after: 60 },
     ]);
+  });
+
+  it('経過中に成立しなくなっても、告げたことは取り消さない', () => {
+    // 告げるのは「始まったこと」（ActionSystem.md 2節の3）。効果は適用されないが、始まったこと
+    // 自体は起きている——倒れ込んだ後に渇きで死んだのなら、倒れ込んではいる。
+    const dying = placeOnGround('dying_beast', 'beasts');
+
+    const seen = observe(() => {
+      expect(dying.tryGetAction('charge', undefined)?.tryExecute() === true, '成立しない').toBe(false);
+    });
+
+    expect(dying.parent, '経過中に自分が消えている').toBeUndefined();
+    expect(seen, '始まったことだけが残り、結果（gored）は告げない').toEqual(['dying_beast: braced']);
   });
 
   it('要件を満たしていなければ、告げもしない', () => {

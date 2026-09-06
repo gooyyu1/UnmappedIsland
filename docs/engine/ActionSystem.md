@@ -81,23 +81,26 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 
 ## 2. 実行パイプライン
 
-実行は次の順に進み、途中で失敗すると `false` を返して何も適用しない。順序に意味があるため、
-実装は `InteractionDef` に1つだけ置く（相手のマッチングだけは `Combination` が先に見る）。
+実行は次の順に進み、途中で失敗すると `false` を返して**世界の形は何も変えずに**終える。順序に意味が
+あるため、実装は `InteractionDef` に1つだけ置く（相手のマッチングだけは `Combination` が先に見る）。
 
 1. `with` マッチング（combinations のみ）: `instrument` の型が `with` の指定に当てはまるか
    （`TypeMatchRule`。タグならそのタグを持つか、object_defならその型そのものか）。
 2. `conditions` 評価（3節）: 省略時は常に真。
-3. `duration` の解決: 「今の `self`（combinations では `instrument` も）の状態から見て、どれだけかかるか」
+3. `announce`（[`GameElementDefinition.md`](./GameElementDefinition.md) 11.6 節）: この操作が始まった
+   ことを告げる。**世界の形を変えないので、後の段が落ちても取り消さない**——5 で成立しなくなった
+   操作も、始まったこと自体は起きている。
+4. `duration` の解決: 「今の `self`（combinations では `instrument` も）の状態から見て、どれだけかかるか」
    なので、時間を進める前に分数だけ確定させる（切れ味の悪い刃物ほど時間がかかる、が書けるように）。
-4. 時間進行（6節）: **効果の適用より先**に進める。行動してから結果が出る順序であり、作ったもの・
+5. 時間進行（6節）: **効果の適用より先**に進める。行動してから結果が出る順序であり、作ったもの・
    見つけたものが自分の制作時間・探索時間ぶんの tick を浴びずに済む。
-5. 関与オブジェクトの生存確認（6節）: 経過中に失われていたら、その行動は成立しなかったものとして
+6. 関与オブジェクトの生存確認（6節）: 経過中に失われていたら、その行動は成立しなかったものとして
    `false` を返し、効果を適用せずに終える。
-6. 効果の適用: `self.applyActiveEffect(effect, context)`（4節）。役は `ReferenceContext` が1つに
+7. 効果の適用: `self.applyActiveEffect(effect, context)`（4節）。役は `ReferenceContext` が1つに
    まとめて持つ。
-7. 待たされていた手番（`trigger: tick` で `duration` を持つもの、
+8. 待たされていた手番（`trigger: tick` で `duration` を持つもの、
    [`GameElementDefinition.md`](./GameElementDefinition.md) 11.5 節）を起こす。**ここが操作の切れ目**で、
-   4 の経過中に配られた手番はその場では起きずにここまで待つ（`WorldSession.runToSeam`）。
+   5 の経過中に配られた手番はその場では起きずにここまで待つ（`WorldSession.runToSeam`）。
    時間を進める操作は他にもある（製作の 1 工程・枠へ入れる）ので、切れ目もそれぞれが名乗る
    ——操作の外で時間だけが動いた場合は、その進行そのものが切れ目になる。
 

@@ -1,7 +1,7 @@
 import type { WorldSession } from './WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
 import { ActiveEffectSequence } from './ActiveEffect';
-import type { EffectDeclaration, EffectReader, DeclaredNumberReading } from './EffectReader';
+import type { EffectReader, DeclaredNumberReading } from './EffectReader';
 import type { DeclaredNumber } from './DeclaredNumber';
 import type { ReferenceContext } from './ReferenceRoot';
 import type { WorldObject } from './WorldObject';
@@ -23,10 +23,13 @@ export class InteractionDef {
   private readonly requirements: Requirements | undefined;
 
   /**
-   * 時間を進める前に告げる出来事（`announce`、11.6節）。**告げるだけで世界の形は変えない**ので、
-   * 効果（effect）と違ってsignalしか持てない。何も書かれていなければ空。
+   * 時間を進める前に告げる出来事（`announce`、11.6節）。何も告げなければundefined。
+   *
+   * **告げるだけで世界の形は変えない**ので、受け取るのはsignalだけ（コンストラクタの引数の型）。
+   * 効果（effect）と別の口にするのは、起きる時点が違うため——同じ口から読み上げると、書き出した側が
+   * 「時間の前か後か」を言えなくなる。
    */
-  private readonly announcements: readonly SignalEffect[];
+  readonly announcement: ActiveEffectSequence | undefined;
 
   /** 条件成立時に適用する効果。何も書かれていなければ空の合成（ActiveEffectSequence）で、適用しても何も起きない。 */
   private readonly effect: ActiveEffect;
@@ -47,7 +50,7 @@ export class InteractionDef {
   ) {
     this.name = name;
     this.requirements = requirements;
-    this.announcements = announcements;
+    this.announcement = announcements.length === 0 ? undefined : new ActiveEffectSequence(announcements);
     this.effect = effect;
     this.duration = duration;
   }
@@ -70,16 +73,6 @@ export class InteractionDef {
   /** この操作が何を起こすと宣言しているかを読み上げる（EffectReader参照）。 */
   read(reader: EffectReader): void {
     this.effect.read(reader);
-  }
-
-  /**
-   * 始まったときに告げる出来事の宣言（`announce`、11.6節）。何も告げなければundefined。
-   *
-   * 効果（read）とは別の口にする——起きる時点が違うので、同じ口から読み上げると、書き出した側が
-   * 「時間の前か後か」を言えなくなる。
-   */
-  get announcement(): EffectDeclaration | undefined {
-    return this.announcements.length === 0 ? undefined : new ActiveEffectSequence(this.announcements);
   }
 
   /**
@@ -119,7 +112,7 @@ export class InteractionDef {
    *
    * **`announce`（11.6節）だけは時間を進める前に告げる。** 効果として告げると、過ぎ切ってからしか
    * 出せない——強制的な時間経過（docs/world/Characters.md 限界節）では、飛んだ理由をその6時間の
-   * 後に言うことになる。
+   * 後に言うことになる。告げるのは「始まったこと」なので、**この後の段が落ちても取り消さない**。
    *
    * **要件は選んだ時点ではなく実行の時点で引き直す**（候補を作ってから落とすまでに世界は変わる）。
    * 相手の型も変わりうるので、そちらの引き直しは`Combination`が足す。
@@ -131,7 +124,7 @@ export class InteractionDef {
     const self = context.self!;
     if (this.unmetRequirement(context) !== undefined) return false;
 
-    for (const announcement of this.announcements) announcement.apply(context, session);
+    this.announcement?.apply(context, session, undefined);
 
     const involved = [self, context.agent, context.instrument];
     if (!spendDurationAndReportParticipantsAlive(this.minutesFor(context), session, involved)) return false;
