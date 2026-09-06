@@ -30,8 +30,8 @@ vi.setConfig({ testTimeout: 20000 });
 const SCRIPT = resolve(__dirname, '../../scripts/agent/merge-and-close.sh');
 
 /**
- * 実物のPR本文の末尾に Claude Code が付ける脚注。**この道具はセッションを引かない**
- * （`board-design.md` 2.10）ので、`## ユーザーへ` の節より前に置く中身としてだけ要る。
+ * 実物のPR本文の末尾に Claude Code が付ける脚注。**この道具が本文から読むのは `Closes #N` だけ**
+ * なので、既定の本文はこれで足りる。`Closes` を持つ世界でも末尾に置いて、実物の並びに寄せる。
  */
 export const DEFAULT_BODY = '_[Claude Code](https://claude.ai/code/session_01ZZZZZZZZZZZZZZZZZZZZZZ)_';
 
@@ -40,10 +40,6 @@ export interface World {
   readonly body?: string;
   /** issue番号ごとの `state`。 */
   readonly issues?: Record<number, string>;
-  /** PRに付いているコメント。`## ユーザーへ` をレビューから拾えるかを見るために使う。 */
-  readonly comments?: readonly string[];
-  /** `gh pr edit` が失敗するか。 */
-  readonly labelFails?: boolean;
   /** 本体に未コミットの変更（追跡済み）があるか。 */
   readonly mainDirty?: boolean;
   /** マージで `package-lock.json` が変わったか。 */
@@ -91,14 +87,7 @@ export function run(world: World): Run {
     // `gh pr view --json` が返すものを、そのままの形で持たせる（改行もバッククォートも含むので、
     // シェルへ埋め込まずファイルで渡す）。**絞り込みも符号化もここでは真似ない**——`--jq` の式は下の
     // スタブが本物の `jq` へ渡す。スタブが真似ると、式だけを変えても試験は緑のまま通る。
-    writeFileSync(
-      join(work, 'pr.json'),
-      JSON.stringify({
-        body: world.body ?? DEFAULT_BODY,
-        comments: (world.comments ?? []).map((body) => ({ body })),
-      }),
-      'utf-8',
-    );
+    writeFileSync(join(work, 'pr.json'), JSON.stringify({ body: world.body ?? DEFAULT_BODY }), 'utf-8');
 
     // 本体の身代わり。`.git` があることでスクリプトの `--git-common-dir` からの辿りが成り立つ。
     mkdirSync(join(work, 'main', '.git'), { recursive: true });
@@ -142,7 +131,7 @@ if [ "$1" = pr ] && [ "$2" = edit ]; then
     *--base*) exit ${world.retargetFails ? 1 : 0} ;;
   esac
   echo "$*" >> '${dir}/labels'
-  exit ${world.labelFails ? 1 : 0}
+  exit 0
 fi
 if [ "$1" = api ]; then
   case "$*" in

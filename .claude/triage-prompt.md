@@ -54,7 +54,8 @@ gh issue list --state open --limit 100 --json number,title,labels |
 **(c) 分解** — 2つ以上のセッションに分かれる、または仕様を決める段と実装する段に分かれる。
 **子の issue を新しく立て、元の issue はそのまま残す**（元がゲートになる。
 `.claude/parallel-work.md`「束ねる関門は、ゲートの issue を1件立てる」）。子にも元にも `kind:` を
-付けること——**付け忘れた issue は、次の周でまた棚卸しへ回ってきます。**
+付けること——**付け忘れた issue は、次の周でまた棚卸しへ回ってきます。** **新しく立てた子には
+`origin:agent` も付けます**（下の「付けるラベル」）。
 
 **(d) 束ねる** — 複数の issue が同じ原因。**1件を代表にして本文へまとめ、残りは代表を指す1行だけに
 書き換える**（閉じない。閉じるのはマージのときです）。代表は `kind:task`、残りは (e)。
@@ -78,7 +79,13 @@ gh issue list --state open --limit 100 --json number,title,labels |
 
 **`kind:` は必ず1つ付ける**（`kind:task` か `kind:meta`）。付け忘れた issue は未整理のまま残り、
 毎日ここへ戻ってきます。**`kind:task` を付けた issue は、そのまま配られます**——配らせたくないものは、
-ラベルではなく (e) の返却で止めてください。加えて、当てはまるものだけ:
+ラベルではなく (e) の返却で止めてください。
+
+**自分で立てた issue には `origin:agent` を付ける**（(c) の分解で作った子）。人が立てた issue には
+何も付けません——**印が無いことが「人が立てた」を表します**（`.claude/parallel-work.md`「自分で
+立てた issue には `origin:agent` を付ける」）。数えるためだけの軸なので、配る順には効きません。
+
+加えて、当てはまるものだけ:
 
 - **`env:bridge`** — **クラウドではできない仕事**のとき。手元の画面やローカルにしか無いものを使う、
   既存 issue の本文を書き換える、など（`.claude/board-design.md` 2.16）。**`.claude/**` を触ることは
@@ -90,11 +97,23 @@ gh issue list --state open --limit 100 --json number,title,labels |
 - **`area:daemon`** — 走らせながらは書き換えられないデーモンの仕組み
   （`scripts/agent/**`・`.github/workflows/board-labels.yml`）。
 
-ラベルの綴りには `:` が入るので、Windows では `gh` の引数が化けます。
+分類している issue に付けるのは `kind:` から下だけです。**出どころの印は動かしません**——立てた側が
+起票のときに名乗るもので、後から見分けられる者は居ません。
 
 ```
-MSYS2_ARG_CONV_EXCL='*' gh issue edit <番号> --add-label kind:task
+gh issue edit <番号> --add-label kind:task --add-label env:bridge
 ```
+
+`origin:agent` を渡すのは (c) で新しく立てる子だけで、**起票のときに一緒に**渡します。
+
+```
+gh issue create --title <題> --body-file <本文> --label kind:task --label origin:agent
+```
+
+**ラベルの綴りに `:` が入っていても、Windows で化けることはありません**——`kind:task` も
+`origin:agent` もそのまま通ります（実測 2026-09-06）。`MSYS2_ARG_CONV_EXCL='*'` を前に置くのは
+`git show origin/main:.claude/x.md` のような綴りのほうで、あれは `origin\main;.claude\x.md` に
+化けます。`/tmp/...` のような絶対パスも書き換わりますが、行き先は同じなので害はありません。
 
 ## 守ること
 
