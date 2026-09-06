@@ -4,6 +4,7 @@ import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
+import { AGENT_YAML, createAgent } from '../support/agent';
 
 /**
  * move効果動詞（対象オブジェクトを、selfのプロパティが指すインスタンスIDのオブジェクトの中へ移動する）に
@@ -203,14 +204,6 @@ object_defs:
     expect(character.parent, '移動先が解決できなければ何も起きない').toBe(meadow);
   });
 
-  it('agentがいない場合は何もしない', () => {
-    const { codex, meadow, hilltop, character, path } = build();
-    path.getProperty(codex.propertyNames.getId('destination_id')).setNumberWithoutEvents(hilltop.instanceId);
-
-    expect(path.tryGetAction('travel', undefined)?.tryExecute() === true).toBe(true);
-    expect(character.parent, 'agentがいない文脈では何も起きない').toBe(meadow);
-  });
-
   it('instrumentをselfの中へ移す（かごへ入れるcombination）', () => {
     const codex = new WorldCodexYamlLoader()
       .load(
@@ -237,6 +230,7 @@ object_defs:
         cell: {accept: {tag: item}}
 `,
       )
+      .load('agent.yaml', AGENT_YAML)
       .buildAndReset();
 
     const session = new WorldSession(codex);
@@ -250,7 +244,7 @@ object_defs:
 
     expect(
       basket
-        .combinationsWith(stone, undefined)
+        .combinationsWith(stone, createAgent(session))
         .find((c) => c.name === 'put_in')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -284,6 +278,7 @@ object_defs:
         cell: {accept: {tag: item}}
 `,
       )
+      .load('agent.yaml', AGENT_YAML)
       .buildAndReset();
 
     const session = new WorldSession(codex);
@@ -297,7 +292,7 @@ object_defs:
     // かご同士も入れ子にできる。
     expect(
       outer
-        .combinationsWith(inner, undefined)
+        .combinationsWith(inner, createAgent(session))
         .find((c) => c.name === 'put_in')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -306,7 +301,7 @@ object_defs:
     // 逆向き（外側を、その中に入っている内側へ）は輪ができるので弾く。
     expect(
       inner
-        .combinationsWith(outer, undefined)
+        .combinationsWith(outer, createAgent(session))
         .find((c) => c.name === 'put_in')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -316,7 +311,7 @@ object_defs:
     // 自分自身の中へも入らない。
     expect(
       outer
-        .combinationsWith(outer, undefined)
+        .combinationsWith(outer, createAgent(session))
         .find((c) => c.name === 'put_in')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -325,10 +320,10 @@ object_defs:
 
   it('selfを移動先へ移す（動物が隣の土地へ逃げる1手）', () => {
     // 動かす物が「この効果を宣言したオブジェクト自身」になる形（HuntingSystem.md 5節）。
-    const { codex, meadow, hilltop, path } = build();
+    const { codex, meadow, hilltop, character, path } = build();
     path.getProperty(codex.propertyNames.getId('destination_id')).setNumberWithoutEvents(hilltop.instanceId);
 
-    expect(path.tryGetAction('walk_away', undefined)?.tryExecute() === true).toBe(true);
+    expect(path.tryGetAction('walk_away', character)?.tryExecute() === true).toBe(true);
 
     expect(path.parent, 'self自身が移動先へ移る').toBe(hilltop);
     expect(
@@ -342,7 +337,7 @@ object_defs:
     const { codex, meadow, character, path } = build();
     path.getProperty(codex.propertyNames.getId('loot_target')).setNumberWithoutEvents(character.instanceId);
 
-    expect(path.tryGetAction('snatch', undefined)?.tryExecute() === true).toBe(true);
+    expect(path.tryGetAction('snatch', character)?.tryExecute() === true).toBe(true);
 
     expect(character.parent, 'プロパティが指す個体がselfの中へ入る').toBe(path);
     expect(
@@ -355,7 +350,7 @@ object_defs:
     const { codex, meadow, character, path } = build();
     path.getProperty(codex.propertyNames.getId('loot_target')).setNumberWithoutEvents(9999);
 
-    expect(path.tryGetAction('snatch', undefined)?.tryExecute() === true, 'アクション自体は成立する').toBe(
+    expect(path.tryGetAction('snatch', character)?.tryExecute() === true, 'アクション自体は成立する').toBe(
       true,
     );
     expect(character.parent, '指す先が居なければ何も起きない').toBe(meadow);
@@ -478,6 +473,7 @@ object_defs:
         move: {subject: instrument, to: parent}
 `,
       )
+      .load('agent.yaml', AGENT_YAML)
       .buildAndReset();
     const session = new WorldSession(codex);
 
@@ -489,7 +485,7 @@ object_defs:
 
     expect(
       receiver
-        .combinationsWith(poured, undefined)
+        .combinationsWith(poured, createAgent(session))
         .find((c) => c.name === 'pour_in')
         ?.tryExecute() === true,
     ).toBe(true);

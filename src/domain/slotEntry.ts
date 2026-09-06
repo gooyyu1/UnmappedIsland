@@ -18,7 +18,7 @@ import type { WorldSession } from './WorldSession';
 export function putIntoSlot(
   item: WorldObject,
   slot: Slot,
-  agent: WorldObject | undefined,
+  agent: WorldObject,
   session: WorldSession,
   place: () => void,
 ): void {

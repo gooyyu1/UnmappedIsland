@@ -3,6 +3,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
+import { AGENT_YAML, createAgent } from '../support/agent';
 
 /**
  * spawnのcount（GameElementDefinition.md 9.4節）の検証。同じ宣言を並べるのと同じ意味なので、
@@ -28,13 +29,16 @@ object_defs:
 `;
 
   function itemsOnGround(yaml: string): readonly string[] {
-    const codex = new WorldCodexYamlLoader().load('test.yaml', yaml).buildAndReset();
+    const codex = new WorldCodexYamlLoader()
+      .load('test.yaml', yaml)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     const session = new WorldSession(codex);
     const ground = new WorldObject(1, codex.objects.get(codex.objectNames.getId('ground')), session);
     const pile = new WorldObject(2, codex.objects.get(codex.objectNames.getId('pile')), session);
     pile.moveIntoFirstAcceptingSlot(ground);
 
-    pile.tryGetAction('scatter', undefined)?.tryExecute();
+    pile.tryGetAction('scatter', createAgent(session))?.tryExecute();
 
     const slot = ground.tryGetSlot(codex.slotNames.getId('items'));
     return (slot?.contents ?? []).map((object) => object.def.name);

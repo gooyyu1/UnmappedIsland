@@ -7,6 +7,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
+import { AGENT_YAML } from '../support/agent';
 import { fixedRng } from '../support/rng';
 
 /**
@@ -80,10 +81,13 @@ object_defs:
         trigger: menu
         add:
           self: {stamina: -1}
-      # agentを渡さずに実行すると、この対象は解決できない。
       roar:
         trigger: menu
         signal: {agent: startled}
+      # どこにも置いていない物で実行すると、この対象は解決できない。
+      echo:
+        trigger: menu
+        signal: {parent: echoed}
       # 始まったことを告げる操作（announce、11.6節）。告げ方はsignalと同じで、違うのは告げる時点だけ。
       charge:
         trigger: menu
@@ -104,7 +108,10 @@ object_defs:
   let beast: WorldObject;
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('signals.yaml', YAML).buildAndReset();
+    codex = new WorldCodexYamlLoader()
+      .load('signals.yaml', YAML)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     open(HITS);
   });
 
@@ -146,7 +153,7 @@ object_defs:
         () => {
           expect(
             beast
-              .combinationsWith(stick, undefined)
+              .combinationsWith(stick, spawn('agent'))
               .find((c) => c.name === 'hit_me')
               ?.tryExecute() === true,
           ).toBe(true);
@@ -165,7 +172,7 @@ object_defs:
     const seen = observe(() => {
       expect(
         beast
-          .combinationsWith(stick, undefined)
+          .combinationsWith(stick, spawn('agent'))
           .find((c) => c.name === 'hit_me')
           ?.tryExecute() === true,
       ).toBe(true);
@@ -181,7 +188,7 @@ object_defs:
     const seen = observe(() => {
       expect(
         beast
-          .combinationsWith(stick, undefined)
+          .combinationsWith(stick, spawn('agent'))
           .find((c) => c.name === 'shrug_off')
           ?.tryExecute() === true,
       ).toBe(true);
@@ -190,10 +197,20 @@ object_defs:
     expect(seen).toEqual(['stick: bounced']);
   });
 
-  it('解決できない対象へは何も告げない', () => {
-    // 他の命令が対象を解決できないときと同じ扱い（agentを渡さずに実行している）。
+  it('動作主を対象に書けば、その動作主に起きたこととして告げる', () => {
     const seen = observe(() => {
-      expect(beast.tryGetAction('roar', undefined)?.tryExecute() === true).toBe(true);
+      expect(beast.tryGetAction('roar', spawn('agent'))?.tryExecute() === true).toBe(true);
+    });
+
+    expect(seen).toEqual(['agent: startled']);
+  });
+
+  it('解決できない対象へは何も告げない', () => {
+    // 他の命令が対象を解決できないときと同じ扱い（どこにも置いていないので親が居ない）。
+    const homeless = spawn('beast');
+
+    const seen = observe(() => {
+      expect(homeless.tryGetAction('echo', spawn('agent'))?.tryExecute() === true).toBe(true);
     });
 
     expect(seen).toEqual([]);
@@ -203,7 +220,7 @@ object_defs:
     const first = observe(() => {
       expect(
         beast
-          .combinationsWith(placeOnGround('stick'), undefined)
+          .combinationsWith(placeOnGround('stick'), spawn('agent'))
           .find((c) => c.name === 'hit_me')
           ?.tryExecute() === true,
       ).toBe(true);
@@ -212,7 +229,7 @@ object_defs:
     const second = observe(() => {
       expect(
         beast
-          .combinationsWith(placeOnGround('stick'), undefined)
+          .combinationsWith(placeOnGround('stick'), spawn('agent'))
           .find((c) => c.name === 'hit_me')
           ?.tryExecute() === true,
       ).toBe(true);
@@ -226,7 +243,7 @@ object_defs:
     // rangeイベントの効果は対象がselfに限られるが、省略形（`signal: weakened`）がそのまま
     // selfを指すので、書ける形が減るだけで使えなくはならない。
     const seen = observe(() => {
-      expect(beast.tryGetAction('exhaust', undefined)?.tryExecute() === true).toBe(true);
+      expect(beast.tryGetAction('exhaust', spawn('agent'))?.tryExecute() === true).toBe(true);
     });
 
     expect(seen).toEqual(['beast: weakened']);
@@ -236,7 +253,7 @@ object_defs:
     const stick = placeOnGround('stick');
     expect(
       beast
-        .combinationsWith(stick, undefined)
+        .combinationsWith(stick, spawn('agent'))
         .find((c) => c.name === 'hit_me')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -255,7 +272,7 @@ object_defs:
     const strike = (): void => {
       expect(
         beast
-          .combinationsWith(placeOnGround('stick'), undefined)
+          .combinationsWith(placeOnGround('stick'), spawn('agent'))
           .find((c) => c.name === 'hit_me')
           ?.tryExecute() === true,
       ).toBe(true);
@@ -283,7 +300,7 @@ object_defs:
     session.observeSignals(
       (signal) => at.push({ name: signal.name, after: session.world!.totalMinutes - startedAt }),
       () => {
-        expect(beast.tryGetAction('charge', undefined)?.tryExecute() === true).toBe(true);
+        expect(beast.tryGetAction('charge', spawn('agent'))?.tryExecute() === true).toBe(true);
       },
     );
 
@@ -299,7 +316,7 @@ object_defs:
     const dying = placeOnGround('dying_beast', 'beasts');
 
     const seen = observe(() => {
-      expect(dying.tryGetAction('charge', undefined)?.tryExecute() === true, '成立しない').toBe(false);
+      expect(dying.tryGetAction('charge', spawn('agent'))?.tryExecute() === true, '成立しない').toBe(false);
     });
 
     expect(dying.parent, '経過中に自分が消えている').toBeUndefined();
@@ -308,10 +325,10 @@ object_defs:
 
   it('要件を満たしていなければ、告げもしない', () => {
     // 告げるのは要件を見た後。実行されなかった操作が「始まった」と言うことはない。
-    expect(beast.tryGetAction('exhaust', undefined)?.tryExecute() === true).toBe(true);
+    expect(beast.tryGetAction('exhaust', spawn('agent'))?.tryExecute() === true).toBe(true);
 
     const seen = observe(() => {
-      expect(beast.tryGetAction('charge', undefined)?.tryExecute() === true).toBe(false);
+      expect(beast.tryGetAction('charge', spawn('agent'))?.tryExecute() === true).toBe(false);
     });
 
     expect(seen).toEqual([]);

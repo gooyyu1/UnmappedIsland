@@ -10,6 +10,7 @@ import {
   vanishedInstances,
 } from '../../src/game/view/changedInstances';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { AGENT_YAML } from '../support/agent';
 import { fixedRng } from '../support/rng';
 
 /**
@@ -58,7 +59,10 @@ object_defs:
   let ground: WorldObject;
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('origins.yaml', YAML).buildAndReset();
+    codex = new WorldCodexYamlLoader()
+      .load('origins.yaml', YAML)
+      .load('agent.yaml', AGENT_YAML)
+      .buildAndReset();
     session = new WorldSession(codex, undefined, fixedRng(0.5));
     const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
     session.adoptWorld(new World(worldInstance, codex));
@@ -91,7 +95,7 @@ object_defs:
     const origins = originsOf(() => {
       expect(
         beast
-          .combinationsWith(stone, undefined)
+          .combinationsWith(stone, spawn('agent'))
           .find((c) => c.name === 'grab')
           ?.tryExecute() === true,
       ).toBe(true);
@@ -109,7 +113,7 @@ object_defs:
       for (const [index, beast] of beasts.entries()) {
         expect(
           beast
-            .combinationsWith(stones[index], undefined)
+            .combinationsWith(stones[index], spawn('agent'))
             .find((c) => c.name === 'grab')
             ?.tryExecute() === true,
         ).toBe(true);

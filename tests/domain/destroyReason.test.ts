@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { AGENT_YAML, createAgent } from '../support/agent';
 
 /**
  * 消滅が名乗る名前（GameElementDefinition.md 9.3節の`reason`）に対する自動テスト。
@@ -65,6 +66,7 @@ object_defs:
   function release(objectName: string): WorldObject {
     const loader = new WorldCodexYamlLoader();
     loader.load('destroyReason.yaml', yaml);
+    loader.load('agent.yaml', AGENT_YAML);
     const codex = loader.buildAndReset();
     const session = new WorldSession(codex);
 
@@ -96,7 +98,7 @@ object_defs:
   it('段を通らずに消す即死も名乗れる', () => {
     const beast = release('doomed_beast');
 
-    expect(beast.tryGetAction('smite', undefined)?.tryExecute()).toBe(true);
+    expect(beast.tryGetAction('smite', createAgent(beast.session))?.tryExecute()).toBe(true);
 
     expect(beast.parent).toBeUndefined();
     expect(beast.destroyedReason).toBe('smitten');
