@@ -79,8 +79,9 @@ awk '/^```$/ { inside = !inside; next } inside' "$TEMPLATE" >"$RAW"
 }
 INSTRUCTION="$WORK/prompt.md"
 
-# **日本語はシェル変数に載せない。** Windowsのnodeは argv も環境変数もANSIで受け取るので、題を
-# `$(...)` で渡すと黙って化ける。題も本文もファイル経由で node へ渡す。
+# **題も本文もシェルの文字列にしない。** gh の出力はファイルへ落とし、JSONの組み立ては node に
+# やらせる。危ないのは文字の符号ではなく**シェルの展開**なので、構文ごとに載せてよいかを判断せず、
+# 載せないほうを決めておく（[`.claude/ccr-meta.sh`](../../.claude/ccr-meta.sh)「指示は Write で書く」）。
 gh pr view "$PR" --json title,state,headRefName,body,comments >"$WORK/pr.json"
 
 # 閉じた・マージ済みのPRへ立てると、読むものが在るだけに**それらしいコメントが付いて**しまう。

@@ -25,9 +25,17 @@ export class RawPatch {
   /** ドット区切りのパス。先頭がobject_defの識別子（識別子に`.`は入らない、3.2節）。 */
   readonly path: string;
 
+  /**
+   * 宣言へ接ぎ木する値。**読み込み元から切り離した複製で持つ**——読んだノードをそのまま挿すと、
+   * その先へ降りた後続のpatchが読み込み元のDocumentを書き換える（宣言のノードと同じ理由。
+   * RawObjectDef.modifyDeclaration）。
+   */
   readonly value: YamlNode | undefined;
 
-  /** 配列の要素を指すときの目印（部分一致）。位置ではなく中身で指す。 */
+  /**
+   * 配列の要素を指すときの目印（部分一致）。位置ではなく中身で指す。**突き合わせるだけで宣言へは
+   * 入らない**ので、valueと違って複製しない。
+   */
   readonly where: YamlNode | undefined;
 
   /** 読み込み元。報告の出所表示に使う。 */
@@ -49,7 +57,7 @@ export class RawPatch {
   ) {
     this.verb = verb;
     this.path = path;
-    this.value = value;
+    this.value = value?.clone() as YamlNode | undefined;
     this.where = where;
     this.source = source;
     this.report = report;
@@ -131,28 +139,28 @@ function applyPatch(patch: RawPatch, defs: ReadonlyMap<string, RawObjectDef>, re
     if (patch.where === undefined) replaced.add(patch.path);
   }
 
-  switch (patch.verb) {
-    case 'add':
-      addValue(def, defName, rest, patch);
-      break;
-    case 'append':
-      descendToSeq(def.node, defName, rest).items.push(patch.value);
-      break;
-    case 'set':
-      setValue(def, defName, rest, patch);
-      break;
-    case 'remove':
-      removeValue(def, defName, rest, patch);
-      break;
-  }
-
-  // 書き換えたので、フィールドを宣言から取り直す（RawObjectDef.readFields）。
-  def.readFields();
+  // 書き換えてよいノードは宣言の持ち主から受け取る（RawObjectDef.modifyDeclaration）。
+  def.modifyDeclaration((node) => {
+    switch (patch.verb) {
+      case 'add':
+        addValue(node, defName, rest, patch);
+        break;
+      case 'append':
+        descendToSeq(node, defName, rest).items.push(patch.value);
+        break;
+      case 'set':
+        setValue(node, defName, rest, patch);
+        break;
+      case 'remove':
+        removeValue(node, defName, rest, patch);
+        break;
+    }
+  });
 }
 
 /** `add`: パスの末尾は、まだ無いキー。 */
-function addValue(def: RawObjectDef, defName: string, rest: readonly string[], patch: RawPatch): void {
-  const { parent, key } = descendToKey(def, defName, rest);
+function addValue(node: YAMLMap, defName: string, rest: readonly string[], patch: RawPatch): void {
+  const { parent, key } = descendToKey(node, defName, rest);
   if (tryGetNode(parent, key) !== undefined)
     throw new YamlLoadError(`'${patch.path}' は既にあります（差し替えるなら'set'です）。`);
   // キーはScalarノードとして入れる（生の文字列のままだと、読む側の走査が拾えない）。
@@ -160,40 +168,40 @@ function addValue(def: RawObjectDef, defName: string, rest: readonly string[], p
 }
 
 /** `set`: 配列の要素（where付き）か、既にあるキーの値。 */
-function setValue(def: RawObjectDef, defName: string, rest: readonly string[], patch: RawPatch): void {
+function setValue(node: YAMLMap, defName: string, rest: readonly string[], patch: RawPatch): void {
   if (patch.where !== undefined) {
-    const seq = descendToSeq(def.node, defName, rest);
+    const seq = descendToSeq(node, defName, rest);
     seq.items[indexOfMatch(seq, patch)] = patch.value;
     return;
   }
 
-  const { parent, key } = descendToKey(def, defName, rest);
+  const { parent, key } = descendToKey(node, defName, rest);
   if (tryGetNode(parent, key) === undefined)
     throw new YamlLoadError(`'${patch.path}' がありません（新しく作るなら'add'です）。`);
   parent.set(new Scalar(key), patch.value);
 }
 
 /** `remove`: 配列の要素（where付き）か、既にあるキー。 */
-function removeValue(def: RawObjectDef, defName: string, rest: readonly string[], patch: RawPatch): void {
+function removeValue(node: YAMLMap, defName: string, rest: readonly string[], patch: RawPatch): void {
   if (patch.where !== undefined) {
-    const seq = descendToSeq(def.node, defName, rest);
+    const seq = descendToSeq(node, defName, rest);
     seq.items.splice(indexOfMatch(seq, patch), 1);
     return;
   }
 
-  const { parent, key } = descendToKey(def, defName, rest);
+  const { parent, key } = descendToKey(node, defName, rest);
   if (tryGetNode(parent, key) === undefined) throw new YamlLoadError(`'${patch.path}' がありません。`);
   parent.delete(key);
 }
 
 /** パスの手前まで降り、末尾のキーを添えて返す（add/set/removeが書き換える場所）。 */
 function descendToKey(
-  def: RawObjectDef,
+  node: YAMLMap,
   defName: string,
   rest: readonly string[],
 ): { readonly parent: YAMLMap; readonly key: string } {
   return {
-    parent: descendToMap(def.node, defName, rest.slice(0, -1)),
+    parent: descendToMap(node, defName, rest.slice(0, -1)),
     key: rest[rest.length - 1],
   };
 }

@@ -15,7 +15,7 @@ cat <<'JSON'
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "deny",
-    "permissionDecisionReason": "メタMCPの入口は `.claude/ccr-meta.sh` ひとつ。**同じ道具・同じ引数がそのまま通る**ので覚え直すことは無い（使えるのは `tools/list` で引ける全部）。引数はargvではなく標準入力のJSONで渡す:\n\n  bash .claude/ccr-meta.sh list_sessions <<<'{\"limit\": 5}'\n  bash .claude/ccr-meta.sh create_session < args.json\n\n**日本語を含む引数は、必ずファイルへ書いてから流すこと**（環境変数や `$(...)` を経由するとWindowsのnodeが黙って化けさせる）。落とし穴と確かめ方は `.claude/ccr-meta.sh` の冒頭に全部書いてある。"
+    "permissionDecisionReason": "メタMCPの入口は `.claude/ccr-meta.sh` ひとつ。**同じ道具・同じ引数がそのまま通る**ので覚え直すことは無い（使えるのは `tools/list` で引ける全部）。引数はargvではなく標準入力のJSONで渡す:\n\n  bash .claude/ccr-meta.sh list_sessions <<<'{\"limit\": 5}'\n  bash .claude/ccr-meta.sh create_session < args.json\n\n**バッククォートを含む引数は、必ずファイルへ書いてから流すこと**（危ないのは文字の符号ではなく**シェルの展開**で、区切りを引用しないヒアドキュメントは中身の `...` をコマンドとして実行する）。落とし穴と確かめ方は `.claude/ccr-meta.sh` の冒頭に全部書いてある。"
   }
 }
 JSON
