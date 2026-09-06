@@ -60,6 +60,18 @@ function comfortOf(site: Camp): number {
   return site.player.getProperty(propertyId('comfort')).getEffectiveValue();
 }
 
+/**
+ * `snug` の下限（characters/player_character.yaml の comfort の段）。**書き写さずに段から読む**
+ * ——境目が動いたら、下の「何個並べれば届くか」もその場で動くべきなので。
+ */
+function snugFrom(site: Camp): number {
+  const snug = site.player
+    .getProperty(propertyId('comfort'))
+    .def.stages.find((stage) => stage.name === 'snug');
+  expect(snug?.min, 'snugの下限').toBeDefined();
+  return snug!.min!;
+}
+
 describe('里心を抑える設え(src/assets/world-codex/furnishings.yaml)', () => {
   it('据えれば、そこに立つ人の居心地になる', () => {
     // 押しているのは場所のほうで、キャラクタは base で継ぐだけ（core.yaml の comfort）。
@@ -97,7 +109,7 @@ describe('里心を抑える設え(src/assets/world-codex/furnishings.yaml)', ()
       const site = camp();
       const one = camp();
       furnish(one, name);
-      const needed = Math.ceil(50 / comfortOf(one));
+      const needed = Math.ceil(snugFrom(one) / comfortOf(one));
       for (let placed = 0; placed < needed; placed += 1) furnish(site, name);
 
       expect(site.player.getProperty(propertyId('comfort')).isInStage('snug'), name).toBe(true);
