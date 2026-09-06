@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = resolve(__dirname, '../..');
 
-/** 約束を持つ入口。`bash` をコマンド名として呼び、区切りを直してよいのはここだけ。 */
+/** 約束を持つ入口。`bash` へスクリプトの在り処を渡し、区切りを直してよいのはここだけ。 */
 const DOOR = 'tests/support/runScript.ts';
 
 /** この検査そのもの（見張る字面を自分で持つので、自分自身は数えない）。 */
@@ -26,8 +26,10 @@ const SELF = 'tests/architecture/bashFromTests.test.ts';
 /**
  * `bash` へ**在り処を渡して**起こしている呼び出し。`bash -c` はパスを渡さないので当たらない
  * （`tests/support/stubShebang.ts` が bash 自身の在り処を引くのに使う）。
+ *
+ * 引数が行をまたいで折れても当たるよう、字間は `\s*` で受ける。
  */
-const SPAWNS_PATH = /(?:execFileSync|spawnSync)\('bash', \[(?!'-c')/;
+const SPAWNS_PATH = /\b(?:execFile|spawn)(?:Sync)?\(\s*'bash',\s*\[\s*(?!'-c')/;
 
 /** 区切りを手で直している式。`pathForBash` を通さずに書くと、直す理由が読める場所から離れる。 */
 const CONVERTS = String.raw`replace(/\\/g, '/')`;
