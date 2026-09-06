@@ -1,4 +1,5 @@
 import type { AmongReading } from './AmongSpec';
+import type { ConditionDeclaration } from './ConditionReader';
 import type { ObjectRefReading } from './ObjectRef';
 import type { ReferenceRoot } from './ReferenceRoot';
 
@@ -64,6 +65,31 @@ export interface EffectReader {
    * 全部0のときに先頭を選ぶ規約（PickEffect.selectWeighted）を当てはめるのも読み手の側。
    */
   pick(candidates: readonly PickCandidateReading[]): void;
+
+  /**
+   * 条件つきの効果（rangeイベントの`conditions`、6.3節）。**排他な二択を、排他なまま渡す**——
+   * 満たした回の効果と満たさない回の効果を並べて渡すと、宣言順を「順に起こる」と読む読み手
+   * （`src/analysis/effectOutcomes.ts`）が、起こりえない組み合わせを1つの場合として畳む。
+   *
+   * `pick`と違い**重みが無い**ので、どちらへ倒れるかは確率としては言えない。両方を起こりうる場合と
+   * して数えるか、片方を代表に採るかは読み手の裁量。
+   */
+  conditional(reading: ConditionalReading): void;
+}
+
+/** 条件つきの効果1つの読み上げ（EffectReader.conditional参照）。 */
+export interface ConditionalReading {
+  /** 分かれ目の条件（14節）。満たすかは実行時の世界が決めるので、答えではなく式を渡す。 */
+  readonly condition: ConditionDeclaration;
+
+  /** 条件を満たした回に起こること——**著者が書いた効果そのもの**。 */
+  readonly whenMet: EffectDeclaration;
+
+  /**
+   * 満たさなかった回に代わりに起こること。rangeイベントでは既定のクランプ（ConditionalEffect参照）で、
+   * 倒れる先が無ければundefined。
+   */
+  readonly otherwise: EffectDeclaration | undefined;
 }
 
 /**

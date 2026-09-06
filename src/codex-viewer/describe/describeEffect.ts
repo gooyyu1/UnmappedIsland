@@ -9,6 +9,7 @@ import {
   text,
 } from './Description';
 import type {
+  ConditionalReading,
   EffectDeclaration,
   EffectReader,
   AddReading,
@@ -19,12 +20,13 @@ import type {
 } from '../../domain/EffectReader';
 import type { AmongReading } from '../../domain/AmongSpec';
 import type { ObjectRefReading } from '../../domain/ObjectRef';
+import { conditionTokens } from './conditionTokens';
 import { typeMatchTokens } from './typeMatchTokens';
 import type { ReferenceRoot } from '../../domain/ReferenceRoot';
 
 /**
  * 効果の宣言（EffectReader）を、読める形へ書き出す（Description参照）。命令1つにつき1行で、
- * 入れ子（pickの候補・linked_add）は字下げする。
+ * **さらに読み下すものは字下げして**その下へ並べる。
  *
  * **書き出しも読み手の1つ**にしてある。効果クラスごとに`describe`を持たせると、動詞を1つ足すたびに
  * 「書き出す」「どのプロパティを動かすか」「何を生むか」のそれぞれへ同じ木を辿るコードが増える。
@@ -200,5 +202,19 @@ class EffectDescriber implements EffectReader {
         });
       }
     });
+  }
+
+  /**
+   * 二択は見出しで分けて書く（6.3節）。**並べて書くと「両方が順に起こる」と読める**——rangeイベントの
+   * `otherwise`は既定のクランプなので、著者の効果のすぐ下に「端へ戻す」が並ぶことになる。
+   */
+  conditional(reading: ConditionalReading): void {
+    this.out.write(...conditionTokens(reading.condition, this.names), text(' なら:'));
+    this.out.indented(() => describeEffect(reading.whenMet, this.names, this.out));
+
+    const otherwise = reading.otherwise;
+    if (otherwise === undefined) return;
+    this.out.write(text('そうでなければ:'));
+    this.out.indented(() => describeEffect(otherwise, this.names, this.out));
   }
 }

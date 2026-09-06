@@ -317,7 +317,7 @@ export class CodexView {
     return this.defNames;
   }
 
-  /** 説明の行をリストへ。入れ子（pick候補・レシピの工程）は字下げで表す。 */
+  /** 説明の行をリストへ。入れ子は字下げで表す。 */
   linesHtml(lines: readonly DescriptionLine[], selfObjectName: string | undefined): string {
     if (lines.length === 0) return EMPTY_HTML;
     const items = lines

@@ -1,4 +1,9 @@
-import type { EffectReader, PickCandidateReading, DeclaredNumberReading } from '../../domain/EffectReader';
+import type {
+  ConditionalReading,
+  EffectReader,
+  PickCandidateReading,
+  DeclaredNumberReading,
+} from '../../domain/EffectReader';
 import type { ObjectRefReading } from '../../domain/ObjectRef';
 import type { ObjectDef } from '../../domain/ObjectDef';
 import type { GateReading, PassivePropertyReading, PassiveReader } from '../../domain/PassiveReader';
@@ -87,6 +92,12 @@ class SelfMoveDestinations implements EffectReader {
     for (const candidate of candidates) candidate.effect.read(this);
   }
 
+  /** 二択の奥も両方見る。**問うているのは行き先になりうるか**なので、どちらへ倒れるかは関わらない。 */
+  conditional(reading: ConditionalReading): void {
+    reading.whenMet.read(this);
+    reading.otherwise?.read(this);
+  }
+
   set(): void {}
 
   add(): void {}
@@ -122,6 +133,12 @@ class DepartureCandidates implements EffectReader {
       for (const destinationGlobalId of moves.destinations)
         this.candidates.push({ weight: candidate.weight, destinationGlobalId });
     }
+  }
+
+  /** 条件の下に置かれた卓も見る——条件は卓を隠さない。 */
+  conditional(reading: ConditionalReading): void {
+    reading.whenMet.read(this);
+    reading.otherwise?.read(this);
   }
 
   set(): void {}

@@ -26,7 +26,7 @@
 //   { "now": "<この周の時刻>",
 //     "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
 //     "mainChecks": [ { "status": "COMPLETED", "conclusion": "SUCCESS" } ],   … `main` の先頭のCI
-//     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files ],
+//     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments ],
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
 //     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
 //                     "bucket": "SESSION_STATUS_BUCKET_…", "env": "cloud | bridge | -",
@@ -52,6 +52,8 @@
 // **片方だけで書くと、再レビューが永久に止まるか、手が空いた上へ2本目が立つ。**
 // どの値がどちらに答えるかは 1.6。
 
+import { readVersion, verdicts } from './review-verdicts.mjs';
+
 /**
  * 今その差分へ手が動いているか（1.6）。**言うのは `session_status` だけ**——`status_bucket` は
  * 手番が終わった後の要約から決まるので、どの値も「処理中」を意味しない。
@@ -71,12 +73,6 @@ export const busySession = (session) => session.status === 'SESSION_STATUS_RUNNI
  * 時間が要るので、次の周（既定30秒）で見限ると、届いた合図が効く前に必ず返すことになる。
  */
 const STALL_MINUTES = Number(process.env.STALL_MINUTES || 15);
-
-/**
- * レビューが判定を書いたことを指すラベル（`board-labels.yml`）。**この2つだけ**——`収束せず` や
- * `却下` は人が付けるもので、レビュアーが書き終えたことを言っていない。
- */
-const VERDICTS = new Set(['通してよい', '直し待ち']);
 
 /**
  * `env:<値>` が指す投入先（[`dispatch-task.sh`](dispatch-task.sh) へ渡す引数。2.16）。**盤面が
@@ -216,18 +212,28 @@ export function moves(input) {
   }
 
   /**
-   * そのレビューの仕事が終わっているか（2.6）。**訊く先はPRの側**——レビュアーが判定を書くと
-   * [`board-labels.yml`](../../.github/workflows/board-labels.yml) が結論のラベルへ変えるので、
-   * 付いていることがそのまま「書き終えた」を指す。**開いていないPRのレビューも終わり**——読む
-   * 相手がもう無い。
+   * そのレビューが判定を書き終えたか（2.10.3）。**訊くのはコメントそのもの**——投入したときの版
+   * （台帳の指紋）を名乗った判定のコメントが在れば、この1本の仕事は終わっている。
    *
-   * **レビュー以外の係には訊けない**ので `false`。あちらが終わったかを言えるのは、空いたままの
-   * 長さだけ（`STALL_MINUTES`）。
+   * **結論のラベルでは見ない。** ラベルは `board-labels.yml` が後から付けるので、付く前は書き終えた
+   * ことを言えず、**著者が push すると外れる**ので書き終えた後にも言えなくなる。どちらの側でも、
+   * この1本が書いたかどうかとは無関係に動く。
+   *
+   * **開いている一覧から消えたPRのレビューも終わり。** マージされたからではなく、**判定を書いても
+   * 置く先が無い**から——読む相手が消えた時点で、この1本にできることは残っていない。書いている
+   * 最中のものはそもそもここへ来ない（入口が「手が空いていること」）。
+   *
+   * **名乗りが無ければ `false`。** 版を書き忘れたコメントは、どの周のものか言えない
+   * （`review-prompt.md`「読んだ版」）。台帳が消えた直後も同じで、どちらも空いたままの長さ
+   * （`STALL_MINUTES`）へ倒れる。**レビュー以外の係には訊く先が無い**ので、あちらも同じ。
    */
   function judged(tag) {
     if (!tag.startsWith('review-')) return false;
-    const pr = input.prs.find((item) => item.number === Number(tag.slice('review-'.length)));
-    return pr === undefined || names(pr).some((name) => VERDICTS.has(name));
+    const number = tag.slice('review-'.length);
+    const pr = input.prs.find((item) => item.number === Number(number));
+    if (pr === undefined) return true;
+    const sent = taken[`review:${number}`];
+    return sent !== undefined && verdicts(pr.comments).some((c) => readVersion(c) === sent);
   }
 
   /**
@@ -392,7 +398,15 @@ export function moves(input) {
     // **指紋が言えるのは「この差分を出した」までで、「読まれた」ではない。** 読み手がもう居ない
     // のに出したことを読まれたことと読むと、判定を書かずに終わったレビューがそのPRを永久に止める
     // （issue #1569。畳まれた理由が何であれ同じ）。**居るなら読んでいる最中**——畳むのは 2.10.3 の側。
+    //
+    // **読み手が居ないことより先に、判定が書かれたかを訊く。** 書き終えたレビューは畳まれてから
+    // 結論のラベルが付くまでの間だけ「居ないのにラベルも無い」形になり、そこを読み違えると、
+    // 判定の付いた差分へもう1本立つ。
     const sent = taken[`review:${pr.number}`] === pr.headRefOid;
+    if (sent && judged(`review-${pr.number}`)) {
+      notes.push(`PR #${pr.number} のレビューは判定を書き終えていて、結論のラベルが付くのを待っている`);
+      continue;
+    }
     if (sent && alive(`review-${pr.number}`).length > 0) {
       notes.push(`PR #${pr.number} はレビューが読んでいる最中で、結論のラベルはまだ無い`);
       continue;

@@ -69,13 +69,17 @@ function pr(number: number, over: Record<string, unknown> = {}) {
     mergeable: 'MERGEABLE',
     statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'SUCCESS' }],
     updatedAt: NOW,
-    headRefOid: 'aaa111',
+    headRefOid: 'aaa1111',
     body: `Closes #${number - 1}\n`,
     ...over,
   };
 }
 
 const label = (...names: string[]) => ({ labels: names.map((name) => ({ name })) });
+/** レビューが書いた判定のコメント（`review-prompt.md` の書き方）。名乗る版を変えられる形で持つ。 */
+const verdict = (version: string) => ({
+  comments: [{ body: `[レビュー] 通してよい\n読んだ版: ${version}\n\n直しは要らない。\n` }],
+});
 const working = (id: string, ...tags: string[]) => ({
   id,
   status: 'SESSION_STATUS_RUNNING',
@@ -94,7 +98,7 @@ const idle = (id: string, ...tags: string[]) => ({
 
 describe('board-move.mjs', () => {
   it('結論のラベルが無い緑のPRは、レビューへ出す', () => {
-    expect(moves({ prs: [pr(10)] })).toEqual(['REVIEW 10 aaa111']);
+    expect(moves({ prs: [pr(10)] })).toEqual(['REVIEW 10 aaa1111']);
   });
 
   it('通してよいが付いた緑のPRは、マージする', () => {
@@ -102,7 +106,7 @@ describe('board-move.mjs', () => {
   });
 
   it('マージはレビューより先に打つ', () => {
-    expect(moves({ prs: [pr(10), pr(20, label('通してよい'))] })).toEqual(['MERGE 20', 'REVIEW 10 aaa111']);
+    expect(moves({ prs: [pr(10), pr(20, label('通してよい'))] })).toEqual(['MERGE 20', 'REVIEW 10 aaa1111']);
   });
 
   it('コンフリクトしていれば、通してよいが付いていてもマージしない', () => {
@@ -111,7 +115,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
   });
 
   // まだ計算中。次の周には決まるので、何も打たずに待つ。
@@ -132,12 +136,12 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a look 10 look:10:aaa111']);
+    expect(moves(board)).toEqual(['RESUME session_a look 10 look:10:aaa1111']);
   });
 
   it('画面が変わらないPRには、見た目 を求めない', () => {
     expect(moves({ prs: [pr(10, { files: [{ path: 'src/domain/Slot.ts' }] })] })).toEqual([
-      'REVIEW 10 aaa111',
+      'REVIEW 10 aaa1111',
     ]);
   });
 
@@ -150,7 +154,7 @@ describe('board-move.mjs', () => {
         }),
       ],
     };
-    expect(moves(board)).toEqual(['REVIEW 10 aaa111']);
+    expect(moves(board)).toEqual(['REVIEW 10 aaa1111']);
   });
 
   // 節だけ置いて中身を書かない形。画像も「不要」＋理由も無いので、後から補えるものが差分に残らない。
@@ -165,7 +169,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a look 10 look:10:aaa111']);
+    expect(moves(board)).toEqual(['RESUME session_a look 10 look:10:aaa1111']);
   });
 
   // 人の手番の印は、効き目を1つずつ持つ（2.13.2）。**どちらの下でも差し戻しは出る。**
@@ -179,7 +183,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
   });
 
   it('収束せずのPRは、レビューへ出さない', () => {
@@ -197,7 +201,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
   });
 
   it('収束せずのPRに人が通してよいを付けたら、マージする', () => {
@@ -211,7 +215,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa111']);
+    expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa1111']);
   });
 
   // **却下は判断待ちの出口。** 外す手間を人に負わせないので、両方付いたまま届く（2.13.1）。
@@ -221,7 +225,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa111']);
+    expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa1111']);
   });
 
   // 枠は1つしか無いので、種類を指紋に入れないと後から来たほうが黙って落ちる。
@@ -230,9 +234,9 @@ describe('board-move.mjs', () => {
       prs: [pr(10, label('却下'))],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
-      taken: { 'resume:session_a': 'mend:10:aaa111' },
+      taken: { 'resume:session_a': 'mend:10:aaa1111' },
     };
-    expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa111']);
+    expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa1111']);
   });
 
   // 差し戻す相手は、そのPRを書いたセッション（2.11）。**`Closes` では引かない**——あれは
@@ -244,7 +248,7 @@ describe('board-move.mjs', () => {
       // `task-9` を持つほうは `Closes #9` の相手。書いたのが誰かとは別なので、選ばれない。
       sessions: [idle('session_a'), idle('session_holder', 'task-9')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
   });
 
   // **畳む合図を、他の手が起きることに繋がない。** マージのついでに掃いていたときは、人が画面から
@@ -271,18 +275,47 @@ describe('board-move.mjs', () => {
       sessions: [idle('session_a', 'review-10')],
       taken: { 'idle:session_a': '2026-09-05T01:59:00Z' },
     };
-    expect(moves(board)).toEqual(['REVIEW 10 aaa111']);
+    expect(moves(board)).toEqual(['REVIEW 10 aaa1111']);
   });
 
-  // **窓が要るのは、終わったかを他に訊けないときだけ。** 判定を書いたかはPRのラベルに出る（2.6）
-  // ので、付いていれば空いた直後でも畳んでよい——待たせるぶん、次の仕事の枠が空かない。
+  // **窓が要るのは、終わったかを他に訊けないときだけ。** 判定を書いたかはPRのコメントに出る
+  // （2.10.3）ので、在れば空いた直後でも畳んでよい——待たせるぶん、次の仕事の枠が空かない。
   it('判定を書き終えたレビューは、空いたばかりでも畳む', () => {
     const board = {
-      prs: [pr(10, label('通してよい'))],
+      prs: [pr(10, verdict('aaa1111'))],
+      sessions: [idle('session_r', 'review-10')],
+      taken: { 'review:10': 'aaa1111', 'idle:session_r': '2026-09-05T01:59:00Z' },
+    };
+    expect(moves(board)).toContain('ARCHIVE session_r done:review-10');
+  });
+
+  // 開いている一覧から消えたPRのレビューは、判定を書いても置く先が無い。
+  it('PRが閉じたレビューは、空いたばかりでも畳む', () => {
+    const board = {
       sessions: [idle('session_r', 'review-10')],
       taken: { 'idle:session_r': '2026-09-05T01:59:00Z' },
     };
-    expect(moves(board)).toEqual(['MERGE 10', 'ARCHIVE session_r done:review-10']);
+    expect(moves(board)).toEqual(['ARCHIVE session_r done:review-10']);
+  });
+
+  // **判定は在るが、この周に投入したものではない。** 前の差分へ書かれた判定を今の差分の判定と
+  // 読むと、押した直後のレビューを読み終わったことにして畳む。
+  it('前の差分へ書かれた判定では、今のレビューを畳まない', () => {
+    const board = {
+      prs: [pr(10, verdict('9990000'))],
+      sessions: [idle('session_r', 'review-10')],
+      taken: { 'review:10': 'aaa1111', 'idle:session_r': '2026-09-05T01:59:00Z' },
+    };
+    expect(moves(board)).not.toContain('ARCHIVE session_r done:review-10');
+  });
+
+  // 結論のラベルを付けるのは `board-labels.yml` で、判定が書かれてから遅れて付く。その隙間で
+  // 読み手だけが先に畳まれると、盤面には「読み手が居ないのにラベルも無い」と見える。
+  it('判定を書き終えたPRへは、読み手がもう居なくてもレビューを立て直さない', () => {
+    const board = { prs: [pr(10, verdict('aaa1111'))], taken: { 'review:10': 'aaa1111' } };
+    expect(moves(board)).toEqual([
+      'NOTE PR #10 のレビューは判定を書き終えていて、結論のラベルが付くのを待っている',
+    ]);
   });
 
   it('走っているレビューは畳まない', () => {
@@ -304,7 +337,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
   });
 
   const RED_MAIN = [{ status: 'COMPLETED', conclusion: 'FAILURE' }];
@@ -333,7 +366,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa111']);
+    expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa1111']);
   });
 
   it('main が赤くても、見た目 の欠けは差し戻す', () => {
@@ -343,7 +376,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a look 10 look:10:aaa111']);
+    expect(moves(board)).toEqual(['RESUME session_a look 10 look:10:aaa1111']);
   });
 
   // **止めるのは赤と分かったときだけ。** 走っている最中を赤に含めると、`main` へ push が入るたびに
@@ -355,7 +388,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
   });
 
   // 起こしたセッションが何もせずに止まると、盤面は前の周と同じまま残る。
@@ -364,19 +397,19 @@ describe('board-move.mjs', () => {
       prs: [pr(10, label('直し待ち'))],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
-      taken: { 'resume:session_a': 'mend:10:aaa111' },
+      taken: { 'resume:session_a': 'mend:10:aaa1111' },
     };
     expect(moves(board)).toEqual([]);
   });
 
   it('直しが push されたら、また起こす', () => {
     const board = {
-      prs: [pr(10, { ...label('直し待ち'), headRefOid: 'bbb222' })],
+      prs: [pr(10, { ...label('直し待ち'), headRefOid: 'bbb2222' })],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
-      taken: { 'resume:session_a': 'mend:10:aaa111' },
+      taken: { 'resume:session_a': 'mend:10:aaa1111' },
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:bbb222']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:bbb2222']);
   });
 
   it('直している最中のセッションは起こさない', () => {
@@ -415,7 +448,7 @@ describe('board-move.mjs', () => {
         },
       ],
     };
-    expect(moves(board)).toEqual(['REVIEW 10 aaa111']);
+    expect(moves(board)).toEqual(['REVIEW 10 aaa1111']);
   });
 
   it('レビューが走っているPRは、二重に出さない', () => {
@@ -427,7 +460,7 @@ describe('board-move.mjs', () => {
   // 畳む手が先に出るので、次の1本は次の周（打つのは1周に1手）。
   it('前のレビューが書き終えていれば、畳んでから次のレビューを出す', () => {
     const board = { prs: [pr(10)], sessions: [idle('session_r', 'review-10')] };
-    expect(moves(board)).toEqual(['ARCHIVE session_r done:review-10', 'REVIEW 10 aaa111']);
+    expect(moves(board)).toEqual(['ARCHIVE session_r done:review-10', 'REVIEW 10 aaa1111']);
   });
 
   it('著者が書いている最中のPRは、レビューへ出さない', () => {
@@ -440,7 +473,7 @@ describe('board-move.mjs', () => {
     const board = {
       prs: [pr(10)],
       sessions: [idle('session_r', 'review-10')],
-      taken: { 'review:10': 'aaa111', 'idle:session_r': '2026-09-05T01:59:00Z' },
+      taken: { 'review:10': 'aaa1111', 'idle:session_r': '2026-09-05T01:59:00Z' },
     };
     expect(moves(board)).toEqual(['NOTE PR #10 はレビューが読んでいる最中で、結論のラベルはまだ無い']);
   });
@@ -448,9 +481,9 @@ describe('board-move.mjs', () => {
   // 指紋だけを見て「出した＝読まれた」と読むと、判定を書かずに終わったレビューがそのPRを永久に
   // 止める（issue #1569）。読み手が居なくなっていることが、その読みが終わった印。
   it('出した差分の読み手が居なくなっていれば、もう一度出す', () => {
-    const board = { prs: [pr(10)], taken: { 'review:10': 'aaa111' } };
+    const board = { prs: [pr(10)], taken: { 'review:10': 'aaa1111' } };
     expect(moves(board)).toEqual([
-      'REVIEW 10 aaa111',
+      'REVIEW 10 aaa1111',
       'NOTE PR #10 のレビューは判定を書かずに終わったので、もう一度出す',
     ]);
   });
@@ -459,7 +492,7 @@ describe('board-move.mjs', () => {
     expect(moves({ prs: [pr(10, { statusCheckRollup: [], updatedAt: NOW })] })).toEqual([]);
     const still = '2026-09-05T00:30:00Z';
     expect(moves({ prs: [pr(10, { statusCheckRollup: [], updatedAt: still })] })).toEqual([
-      'REVIEW 10 aaa111',
+      'REVIEW 10 aaa1111',
     ]);
   });
 
@@ -489,9 +522,9 @@ describe('board-move.mjs', () => {
   // 打つのは1周に1手なので、新しい順のまま回すと後から出たPRが毎周先に拾われる。
   it('捌く順は、古いPRから', () => {
     expect(moves({ prs: [pr(30), pr(9), pr(20)] })).toEqual([
-      'REVIEW 9 aaa111',
-      'REVIEW 20 aaa111',
-      'REVIEW 30 aaa111',
+      'REVIEW 9 aaa1111',
+      'REVIEW 20 aaa1111',
+      'REVIEW 30 aaa1111',
     ]);
   });
 

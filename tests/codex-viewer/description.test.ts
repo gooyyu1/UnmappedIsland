@@ -39,6 +39,14 @@ object_defs:
         on_max:
           add: {self: {hour: -24, day: 1}}
       day: {value: 1}
+      # 条件つきのrangeイベント（6.3節）。満たさない回は既定のクランプ（自分を上端へset）へ倒れる。
+      tide:
+        value: 0
+        range: {min: 0, max: 6}
+        on_max:
+          conditions:
+            - {prop: day, gte: 2}
+          add: {self: {tide: -6}}
       weather:
         value: clear
         stages:
@@ -174,6 +182,19 @@ describe('定義の自己記述（describe）', () => {
     // 繰り上げ先（day）への加算は、入れ子（字下げ）としてon_maxの下に置かれる。
     expect(text).toContain('\n  add hour -24');
     expect(text).toContain('\n  add day +1');
+  });
+
+  it('条件つきのrangeイベントは、二択と分かる形で書き出す', () => {
+    // 満たす回の効果と、満たさない回へ倒れる既定のクランプを並べて書くと「両方が順に起こる」と
+    // 読める——折り返してから端へ置き直す、という起こりえないことが図鑑に載る。
+    const world = objectDef('world');
+    const tide = world.tryGetPropertyDef(codex.propertyNames.getId('tide'))!;
+    const lines = describeToText(codex, (out) => describeProperty(tide, names, out)).split('\n');
+
+    expect(lines).toContain('  day ≥ 2 なら:');
+    expect(lines).toContain('    add tide -6');
+    expect(lines).toContain('  そうでなければ:');
+    expect(lines).toContain('    set tide = 6');
   });
 
   it('シンボル型プロパティの値はシンボル名に戻す', () => {
