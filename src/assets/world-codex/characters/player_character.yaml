@@ -487,8 +487,8 @@ traits:
             passives:
               - add: {self: {happiness: -0.5}}
       # 今いる場所の居心地（docs/world/Characters.md ホームシック節）。**場所が持つ事実を映す**ので、
-      # 値は祖先から継ぐだけで自分では動かさない（明るさ・shelteredと同じ形）。押し上げるのは住居の部品
-      # （docs/world/Dwellings.md 2節）。
+      # 値は祖先から継ぐだけで自分では動かさない（明るさ・shelteredと同じ形）。押し上げるのは里心を
+      # 抑える設え（furnishings.yaml）と、住居の部品（docs/world/Dwellings.md 2節。まだ実装が無い）。
       #
       # **段が持つのはホームシックの引き**で、1日あたり-1.92・-3.84。60日目からの増えを止めるには
       # homely（20）、90日目からの増えを止めるにはsnug（50）が要る。
@@ -714,7 +714,8 @@ traits:
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
-      # 削り合わせて組む。伸ばす行動も開ける物もまだ無い（スツール・テーブル・車輪が世界に無い）。
+      # 削り合わせて組む。伸ばす行動も開けるレシピもまだ無い——里心を抑える設え（furnishings.yaml）は
+      # 縛りと削り出しで、ほぞで組む物ではない（docs/world/Skills.md 2.1節）。
       skill_joinery:
         tags: [skill]
         value: 0

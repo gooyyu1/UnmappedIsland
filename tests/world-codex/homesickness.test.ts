@@ -138,6 +138,9 @@ interface Plan {
   /**
    * 土地の居心地を直に置く。**住居の部品はまだ世界に1つも無い**（docs/world/Dwellings.md）ので、
    * 建て終えた住居の代わりに置く。押し上げ方（部品のmodify）ではなく、受け取る側の段を見る。
+   *
+   * **据える側は furnishingsYaml.test.ts が見る**（設えを実際に据えて段へ届くか）。ここで直に置くのは、
+   * 段ごとの引きだけを取り出すため——押し上げ方が変わっても、この試験の見ている物は変わらない。
    */
   readonly landComfort?: number;
 }
@@ -367,7 +370,7 @@ describe('ホームシック(docs/world/Characters.md ホームシック節)', (
     expect(many.homesickness[94], '90日目からは止まらない').toBeGreaterThan(many.homesickness[88]);
   });
 
-  it('90日目からを止められるのは、snugまで設えた住居か、家と家畜の両方', () => {
+  it('90日目からを止められるのは、snugまで積んだ設えか、家と家畜の両方', () => {
     // 引きは足し合わさるので、homely（-1.92/日）と連れ（-1.92/日）でforsaken（+3.84/日）に届く。
     const bare = live(95, { landComfort: 20 });
     const both = live(95, { landComfort: 20, penFromDay: 1 });
@@ -375,7 +378,7 @@ describe('ホームシック(docs/world/Characters.md ホームシック節)', (
 
     expect(bare.homesickness[94], '家だけでは90日目から募る').toBeGreaterThan(bare.homesickness[88]);
     expect(both.homesickness[94], '家と家畜なら止まる').toBe(0);
-    expect(snug.homesickness[94], 'snugの住居だけでも止まる').toBe(0);
+    expect(snug.homesickness[94], 'snugまで積んだ設えだけでも止まる').toBe(0);
   });
 
   it('場所の中の場所へ入っても、外の設えは届く', () => {
