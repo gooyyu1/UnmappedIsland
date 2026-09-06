@@ -11,8 +11,6 @@
 #   RETARGETED <PR番号>            … このPRの上に積まれていたPRの base を `main` へ張り替えた
 #   UNRETARGETED <PR番号>          … その張り替えに失敗した。ブランチは消していない
 #   UNDELETED <ブランチ>            … マージ済みのブランチを消せなかった
-#   RELAY    <PR番号>              … 本文かレビューの `## ユーザーへ` に中身があるので `ユーザーへ` を付けた
-#   UNRELAYED <PR番号>              … その印を付けようとして失敗した
 #   CLOSED   <issue番号>            … PR本文の `Closes #N` が閉じたことの確認
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
 #   SYNCED   <コミット>             … 本体のチェックアウトを新しい `main` へ進めた
@@ -21,7 +19,7 @@
 #   終了コード 0 … すべて片付いた
 #   終了コード 1 … マージできなかった（何もしていない。関門を含む）
 #   終了コード 2 … マージはしたが、後片付けに残りがある
-#                  （上の `UNRETARGETED`・`UNDELETED`・`OPEN`・`UNRELAYED`・`DIRTY`）
+#                  （上の `UNRETARGETED`・`UNDELETED`・`OPEN`・`DIRTY`）
 #
 # ## 積まれたPRは、ブランチを消す前に `main` へ下ろす
 #
@@ -100,22 +98,12 @@ NEEDS_USER_REVIEW="${NEEDS_USER_REVIEW:-$HERE/needs-user-review.sh}"
 # **PRは1回だけ引く。** 項目ごとに `gh pr view` を打つと、その数だけ往復が増えるうえ、**項目ごとに
 # 見ている時点がずれる**。引き直すのは、**この後の操作で変わるもの**だけ——マージ後の `state` と、
 # 打つ直前に見たい `mergeable`。
-pr=$(gh pr view "$PR" --json body,state,comments,headRefName)
+pr=$(gh pr view "$PR" --json body,state,headRefName)
 body=$(jq -r '.body // ""' <<<"$pr")
-body="${body//$'\r'/}"
 state=$(jq -r '.state' <<<"$pr")
 # ブランチ名はマージでは変わらないので、ここで一緒に受けておく（使うのは後片付けの段）。
 head=$(jq -r '.headRefName' <<<"$pr")
-# `## ユーザーへ` は、PR本文とレビューのコメントの**両方**に書かれる（`review-prompt.md`）。回す口が
-# 2つあるのに読む口が1つだと、**レビューが回したものだけが黙って落ちる**。拾うのは `[レビュー]` で
-# 始まるコメントだけで、デーモンの指示やユーザー自身の書き込みは回す側ではない。
-#
-# **1件を1行の base64 で受ける。** 節を閉じるのは `##` の見出しなので、複数の文書を1本に繋いで読むと
-# **末尾に `## ユーザーへ` を置いた文書の節が、次の文書へそのまま伸びる**（レビューの側はこの節を
-# **末尾**へ置く。`review-prompt.md` がそう指示しているので、常に起きる）。繋ぎ目へ切れ目の印を
-# 挟んでも塞げるが、その綴りは
-# 挟む側と閉じる側で一致していないと黙って壊れる。繋がずに1件ずつ読めば、印そのものが要らない。
-#
+
 # ## `\r` を落とす側と落とさない側
 #
 # **`\r` が乗る経路は2つ。どちらも行末にだけ乗る。**
@@ -137,18 +125,15 @@ head=$(jq -r '.headRefName' <<<"$pr")
 # **落とすかどうかは、乗る経路ではなく受け手で決まる。** 判定はLinuxの側で置く——`\r` を行の
 # 終わりとして扱う道具がMSYS2には在るが、両方で動かすので緩いほうへは寄せられない。
 #
-# - **落とす。** シェルが `$(…)`・`read` で行を受けるとき（残ると下の `base64 -d` が壊れる）。
+# - **落とす。** シェルが `$(…)`・`read` で受けた行を、そのまま次の道具へ食わせるとき。
 #   `sort` で突き合わせるとき（`\r` 込みで重複を見る）。`awk` で `$` に留めるとき——**Linuxの `awk` は
 #   `\r` を行の中身として残す**ので、見出しに当たらない（[`brake.sh`](brake.sh) が `## 手綱` の節を
 #   引く形）。同じ理由で `grep -x` も当たらない。
 # - **落とさない。** `grep -o` で数字や識別子を抜き出すとき。`\r` は抜き出す側に入らない
-#   （[`dispatch-review.sh`](dispatch-review.sh) が `Closes` の番号を拾う形）。
+#   （下の `Closes` の番号を拾う形と、[`dispatch-review.sh`](dispatch-review.sh) の同じ形）。
 #
 # **落とし方は、値が変数へ入っているなら `${var//$'\r'/}`。** 外部の `tr` を起こす必要は無い。
-# パイプを流れているものだけが `| tr -d '\r' |` を要る（下の `base64 -d` の後）。
-review_comments=$(jq -r '.comments[] | select(.body | startswith("[レビュー]")) | .body | @base64' \
-  <<<"$pr")
-review_comments="${review_comments//$'\r'/}"
+# パイプを流れているものだけが `| tr -d '\r' |` を要る（[`checked-items.sh`](checked-items.sh)）。
 
 if [ "$state" = "OPEN" ]; then
   # 関門。**マージの前に見る**——通した後では、印が付いた状態が `main` に入ってしまう。
@@ -218,46 +203,6 @@ if [ "$retargeted" -eq 1 ] && gh api "repos/{owner}/{repo}/git/refs/heads/$head"
     echo "UNDELETED $head"
     leftover=1
   }
-fi
-
-# `## ユーザーへ` に**中身がある**PRには `ユーザーへ` ラベルを付ける。**下ろすのはユーザーの手番**
-# なので、ここでは印を置くだけ。**下ろす側はまだ無い**（[`board-design.md`](../../.claude/board-design.md)
-# 3.2。読まれないまま残っても盤面は止まらないので、移行は止めない）。ラベルなので、
-# `gh pr list --state merged --label ユーザーへ` でいつでも滞留が見える。
-#
-# **本文ではなくラベルで持つのは、引くのが安いから。** マージ済みPRは本数が多く、本文を毎周読むと
-# 窓を切ることになる——切った窓から出たものは永久に出なくなる。
-#
-# **見出しの有無では決めない。** `## 仮決め` は「なし」と書かせる規約、こちらは「無ければ節ごと省く」
-# 規約なので、書く側は取り違える。中身の無い印が1つ残るだけで `RELAY` が毎周出て、**見張りは合図が
-# 1件でも出た時点で終わる**ので、手でラベルを外すまで他の待ちに使えなくなる。
-#
-# **失敗しても止めない。** マージは済んでいるので、ここで落ちると後片付け（`main` の追随）ごと落ちる。
-#
-# **節を閉じるのは `##` の見出しと、水平線（`---`）。** 水平線は、レビューのコメントに必ず付く
-# Claude Code の署名の頭。閉じないと、レビューが節を末尾へ置いたとき署名の行が中身として残り、
-# 「なし」と書いても非空になる。**文書をまたぐ側は閉じるまでもない**——1件ずつ渡すので、文書が
-# 終われば節も終わる。
-relay_section() {
-  awk '/^##[[:space:]]+ユーザーへ[[:space:]]*$/ { inside = 1; next }
-    /^##[[:space:]]/ || /^---[[:space:]]*$/ { inside = 0 }
-    inside'
-}
-relay=$({
-  relay_section <<<"$body"
-  while read -r encoded; do
-    [ -n "$encoded" ] || continue
-    base64 -d <<<"$encoded" | tr -d '\r' | relay_section
-  done <<<"$review_comments"
-} | sed -e 's/^[-*[:space:]]*//' -e 's/[[:space:]]*$//' |
-  grep -v '^$' | grep -v '^なし' || true)
-if [ -n "$relay" ]; then
-  if gh pr edit "$PR" --add-label ユーザーへ >/dev/null; then
-    echo "RELAY $PR"
-  else
-    echo "UNRELAYED $PR"
-    leftover=1
-  fi
 fi
 
 # `Closes #123` だけを拾う。番号だけの参照（`#123`）では閉じないので、ここでも見ない。
