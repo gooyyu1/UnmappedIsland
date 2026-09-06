@@ -25,8 +25,10 @@ const MARK_PATTERN = /<!--\s*stats:\s*([^>]*?)\s*-->/g;
 /**
  * 印の直前に書かれている数と、そこから印までの隙間。隙間に数字と表の区切り（`|`）を許さないので、
  * 印は数値と同じセルの、単位や強調をまたぐ程度の近さに置くことになる。
+ *
+ * 数に**接している**負号は数の一部（`-0.20`）。離れていれば符号ではない（箇条書きの `- `）。
  */
-const WRITTEN_NUMBER_PATTERN = /(\d[\d,]*(?:\.\d+)?)[^\d|]{0,8}$/;
+const WRITTEN_NUMBER_PATTERN = /([-−]?\d[\d,]*(?:\.\d+)?)[^\d|]{0,8}$/;
 
 /** 印の末尾に置く粗さ。`±100` は出どころと同じ単位、`±5%` は書いた数に対する割合。 */
 const COARSENESS_PATTERN = /^±(\d+(?:\.\d+)?)(%?)$/;
@@ -59,7 +61,10 @@ interface Citation {
   readonly line: number;
   readonly body: string;
   readonly mark: Mark | null;
-  /** 印の直前に書かれている数（桁区切りのカンマを除いたもの）。無ければ null。 */
+  /**
+   * 印の直前に書かれている数。桁区切りのカンマを除き、負号を `-`（U+002D）へ揃えたもの。
+   * 無ければ null。
+   */
   readonly written: string | null;
 }
 
@@ -146,30 +151,32 @@ function disagreement(written: string, cell: number, coarseness: Coarseness | nu
   return `許す幅は ${value - width}〜${value + width}`;
 }
 
-function citationsIn(rel: string): Citation[] {
+/**
+ * 文書の本文から印を拾う。コードとして書いた印は書式の例なので、出どころを持たない——フェンスで
+ * 囲んだブロックは行ごと、バッククォートで囲んだ中は**印だけ**を落とす。囲みの中に書いた数は
+ * 落とさない（`約`4,200`分<!-- … -->` の `4,200` は印の直前の数）。
+ */
+function citationsIn(doc: string, text: string): Citation[] {
   const found: Citation[] = [];
   let inFence = false;
-  readFileSync(join(ROOT, rel), 'utf-8')
-    .split('\n')
-    .forEach((raw, index) => {
-      // 印は本文の数値に付く。コードの中にあるのは書式の例なので、出どころを持たない。
-      if (raw.trimStart().startsWith('```')) inFence = !inFence;
-      if (inFence) return;
-      const line = raw.replace(/`[^`]*`/g, '');
+  text.split('\n').forEach((raw, index) => {
+    if (raw.trimStart().startsWith('```')) inFence = !inFence;
+    if (inFence) return;
+    const line = raw.replace(/`[^`]*`/g, (code) => code.slice(1, -1).replace(MARK_PATTERN, ''));
 
-      for (const match of line.matchAll(MARK_PATTERN)) {
-        // 先に置かれた印の中身は数として読まない（印の本文に数字が入りうる）。
-        const before = line.slice(0, match.index).replace(/<!--[\s\S]*?-->/g, '');
-        const written = WRITTEN_NUMBER_PATTERN.exec(before);
-        found.push({
-          doc: rel,
-          line: index + 1,
-          body: match[1],
-          mark: parseMark(match[1]),
-          written: written === null ? null : written[1].replace(/,/g, ''),
-        });
-      }
-    });
+    for (const match of line.matchAll(MARK_PATTERN)) {
+      // 先に置かれた印の中身は数として読まない（印の本文に数字が入りうる）。
+      const before = line.slice(0, match.index).replace(/<!--[\s\S]*?-->/g, '');
+      const written = WRITTEN_NUMBER_PATTERN.exec(before);
+      found.push({
+        doc,
+        line: index + 1,
+        body: match[1],
+        mark: parseMark(match[1]),
+        written: written === null ? null : written[1].replace(/,/g, '').replace(/^−/, '-'),
+      });
+    }
+  });
   return found;
 }
 
@@ -206,7 +213,9 @@ function cellOf(source: Source): number | string {
   return cell;
 }
 
-const CITATIONS = listMarkdown('docs').flatMap(citationsIn);
+const CITATIONS = listMarkdown('docs').flatMap((rel) =>
+  citationsIn(rel, readFileSync(join(ROOT, rel), 'utf-8')),
+);
 
 describe('文書が stats/*.yaml から書き写した数値', () => {
   it('印が、レポートの1つのセルに解決する', () => {
@@ -325,5 +334,44 @@ describe('印の粗さ', () => {
     for (const token of ['±', '±5％', '±5%%', '±-5', '±5分']) {
       expect(parseMark(`balance.yaml object_costs object=raft total_minutes ${token}`)).toBeNull();
     }
+  });
+});
+
+/** 本文に置く印。中身は `印の粗さ` と同じセルを指すもので、ここで見るのは印の外側だけ。 */
+const RAFT_MARK = '<!-- stats: balance.yaml object_costs object=raft total_minutes -->';
+
+/** 1行の本文から拾った、印の直前の数。印が拾えなければ undefined。 */
+function writtenIn(text: string): string | null | undefined {
+  return citationsIn('doc.md', text)[0]?.written;
+}
+
+describe('印の直前に書かれている数', () => {
+  it('数に接している負号は、数の一部として読む', () => {
+    expect(writtenIn(`免疫が立てば1tickに−0.20${RAFT_MARK}`)).toBe('-0.20');
+    expect(writtenIn(`免疫が立てば1tickに-0.20${RAFT_MARK}`)).toBe('-0.20');
+  });
+
+  it('数から離れた `-` は符号ではない', () => {
+    expect(writtenIn(`- 0.20${RAFT_MARK}`)).toBe('0.20');
+  });
+
+  it('負の数も、書いた桁へ丸めた値と比べる', () => {
+    expect(disagreement('-0.20', -0.2, null)).toBeNull();
+    expect(disagreement('-0.20', 0.2, null)).toBe('同じ桁で 0.20');
+    expect(disagreement('-0.20', -0.25, coarsenessOf('±50%'))).toBeNull();
+  });
+});
+
+describe('コードとして書いた印', () => {
+  it('フェンスで囲んだブロックの中は、行ごと読み飛ばす', () => {
+    expect(citationsIn('doc.md', `\`\`\`text\n約4,200分${RAFT_MARK}\n\`\`\``)).toEqual([]);
+  });
+
+  it('バッククォートで囲んだ印は読み飛ばす', () => {
+    expect(citationsIn('doc.md', `形は \`${RAFT_MARK}\` です`)).toEqual([]);
+  });
+
+  it('バッククォートで囲んだ数は、印の直前の数として読む', () => {
+    expect(writtenIn(`入力 約\`4,200\`分${RAFT_MARK}`)).toBe('4200');
   });
 });
