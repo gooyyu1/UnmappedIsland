@@ -20,21 +20,17 @@ vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/agent/archive-session.sh');
 
-/** `ccr-env.sh` へ環境変数で渡す身代わり。実物のIDは試験に書き写さない。 */
-const CLOUD = 'env_TEST_CLOUD';
-const BRIDGE = 'env_TEST_BRIDGE';
-
 const SESSION = 'session_01TESTTESTTESTTESTTEST';
 /** worktree の名前は、IDから接頭辞を落として作る（スクリプトと同じ規約）。 */
 const WORKTREE = 'bridge-cse_01TESTTESTTESTTESTTEST';
 
 interface World {
-  /** 畳む相手がブリッジ（このPC）で立ったものか。既定はブリッジ。 */
-  readonly onBridge?: boolean;
   /** 既に畳まれているか。 */
   readonly archived?: boolean;
   /** `session_status` と `status_bucket`。既定は手が空いている。 */
   readonly state?: readonly [string, string];
+  /** 畳む相手が名乗るタグ。既定は盤面が立てたワーカー。 */
+  readonly tags?: readonly string[];
   /** worktree を作るか。既定は作る。 */
   readonly worktree?: boolean;
   /** worktree に未追跡のファイルを置くか。 */
@@ -91,8 +87,7 @@ echo '${JSON.stringify({
           session_status:
             world.archived === true ? 'SESSION_STATUS_ARCHIVED' : (world.state?.[0] ?? 'SESSION_STATUS_IDLE'),
           status_bucket: world.state?.[1] ?? 'SESSION_STATUS_BUCKET_READY',
-          tags: ['commander'],
-          environment_id: (world.onBridge ?? true) ? BRIDGE : CLOUD,
+          tags: world.tags ?? ['task-1558'],
         },
       })}'
 `,
@@ -107,8 +102,6 @@ echo '${JSON.stringify({
         ...process.env,
         PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
         CCR_META: meta,
-        CLOUD_ENV: CLOUD,
-        BRIDGE_ENV: BRIDGE,
       },
     });
     return {
@@ -127,34 +120,32 @@ echo '${JSON.stringify({
 }
 
 describe('archive-session.sh', () => {
-  it('ブリッジのセッションは、既定では畳まず worktree も触らない', () => {
+  // **ブリッジで立てたものも同じ条件で畳む。** 環境で除いていた間は、例外を解く `--force-bridge` を
+  // 渡す呼び手が居なくなっても `KEPT` が出るだけで、枠を握ったまま残ったことに誰も気づけなかった。
+  it('このPCの worktree を持つセッションを、畳んでロックを外して消す', () => {
     const result = run();
-
-    expect(result.lines).toEqual([`KEPT ${SESSION}`]);
-    expect(result.archived).toBe(false);
-    expect(result.kept).toBe(true);
-  });
-
-  // `claude remote-control` が生きていることを知っているのは呼び手だけなので、引数で受ける。
-  it('`--force-bridge` を渡すと、畳んで worktree のロックを外して消す', () => {
-    const result = run({ args: ['--force-bridge'] });
 
     expect(result.lines).toEqual([`ARCHIVED ${SESSION}`, `REMOVED ${WORKTREE}`]);
     expect(result.archived).toBe(true);
     expect(result.kept).toBe(false);
   });
 
+  // 呼び手の申告で例外を解く形へ戻すと、渡す者が居なくなったことに気づけない。
+  it('`--force-bridge` は受け取らない', () => {
+    expect(() => run({ args: ['--force-bridge'] })).toThrow();
+  });
+
   // **戻せないものを黙って消さない。** `--force` を渡していないことが、ここで守られる。
   it('未追跡のファイルがある worktree は消さずに `DIRTY` として残す', () => {
-    const result = run({ args: ['--force-bridge'], dirty: true });
+    const result = run({ dirty: true });
 
     expect(result.lines).toEqual([`ARCHIVED ${SESSION}`, `DIRTY ${WORKTREE}`]);
     expect(result.kept).toBe(true);
   });
 
-  // 畳む口と外す口が別だった間の残骸。畳み直しはしないが、後始末だけは同じ引数でやる。
+  // 畳む口と外す口が別だった間の残骸。畳み直しはしないが、後始末だけはやる。
   it('既に畳まれていても、残っている worktree は消す', () => {
-    const result = run({ args: ['--force-bridge'], archived: true });
+    const result = run({ archived: true });
 
     expect(result.lines).toEqual([`REMOVED ${WORKTREE}`]);
     expect(result.archived).toBe(false);
@@ -164,15 +155,31 @@ describe('archive-session.sh', () => {
   // それを安定した答えとして指紋に残すので、その相手が二度と畳まれなくなる。
   it('走っているセッションでも、渡されたら畳む', () => {
     const state = ['SESSION_STATUS_RUNNING', 'SESSION_STATUS_BUCKET_WORKING'] as const;
-    const result = run({ args: ['--force-bridge'], state });
+    const result = run({ state });
 
     expect(result.archived).toBe(true);
   });
 
-  it('クラウドのセッションには worktree が無いので、畳むだけで終わる', () => {
-    const result = run({ onBridge: false, worktree: false });
+  it('worktree の無いセッションは、畳むだけで終わる', () => {
+    const result = run({ worktree: false });
 
     expect(result.lines).toEqual([`ARCHIVED ${SESSION}`]);
+    expect(result.archived).toBe(true);
+  });
+
+  // 仕事の単位を持たない相手（相談役など）を畳むと、ユーザーが話している窓口ごと閉じる。
+  it('接頭辞のどれにも当たらないタグの相手は、worktree ごと残す', () => {
+    const result = run({ args: ['--keep-untagged', 'task-,review-'], tags: ['soudanyaku'] });
+
+    expect(result.lines).toEqual([`KEPT ${SESSION}`]);
+    expect(result.archived).toBe(false);
+    expect(result.kept).toBe(true);
+  });
+
+  it('接頭辞に当たるタグの相手は、`--keep-untagged` を渡されても畳む', () => {
+    const result = run({ args: ['--keep-untagged', 'task-,review-'] });
+
+    expect(result.lines).toEqual([`ARCHIVED ${SESSION}`, `REMOVED ${WORKTREE}`]);
     expect(result.archived).toBe(true);
   });
 });
