@@ -1,6 +1,6 @@
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { PropertyDef, RangeEventLabel } from '../domain/PropertyDef';
-import { ROLL_ENDS } from '../domain/PropertyDef';
+import { movesTowardEnd, ROLL_ENDS } from '../domain/PropertyDef';
 import type { SelfStageRequirement, TickDelta, TickGate } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 import type { CraftingStep } from './CraftingStep';
@@ -492,7 +492,7 @@ interface Pace {
  * 無ければundefined＝その端のイベントは起こらない。
  */
 function paceTowards(totals: readonly TickTotal[], label: RangeEventLabel): Pace | undefined {
-  const towards = totals.filter(({ amount }) => (label === 'on_min' ? amount < 0 : amount > 0));
+  const towards = totals.filter(({ amount }) => movesTowardEnd(label, amount));
   if (towards.length === 0) return undefined;
 
   return {
@@ -583,25 +583,9 @@ function ticksUntilStageLeftUpward(def: ObjectDef, required: SelfStageRequiremen
   );
 }
 
-/**
- * 名指された段の上端＝値の並びの上でその段のすぐ上に来る段の下端。上に段が無ければundefined。
- * **段の宣言順ではなく下端の大小だけで決まる**（PropertyDef.stageAboveと同じ見方）。
- *
- * **rangeの上限より上に下端を置いた段は、上に無いものとして数える**——そこは値の取れない位置なので、
- * 抜けて行き着く先にならない。
- */
+/** 名指された段の上端＝押し抜けて行き着く先（PropertyDef.upperBoundOfStage）。上に段が無ければundefined。 */
 function stageUpperBoundOf(def: ObjectDef, required: SelfStageRequirement): number | undefined {
-  const propertyDef = def.tryGetPropertyDef(required.propertyGlobalId);
-  if (propertyDef === undefined || required.lowerBound === undefined) return undefined;
-
-  let above: number | undefined;
-  for (const stage of propertyDef.stages) {
-    const bound = stage.lowerBound;
-    if (bound === undefined || bound <= required.lowerBound) continue;
-    if (propertyDef.range !== undefined && bound > propertyDef.range.max) continue;
-    if (above === undefined || bound < above) above = bound;
-  }
-  return above;
+  return def.tryGetPropertyDef(required.propertyGlobalId)?.upperBoundOfStage(required.stageName);
 }
 
 /**

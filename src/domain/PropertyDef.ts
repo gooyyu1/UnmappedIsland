@@ -115,13 +115,12 @@ export class PropertyRange {
   }
 
   /**
-   * その端の値と、そこから範囲の内側へ向かう向き（上へなら`1`、下へなら`-1`）。
-   *
-   * **`on_min`／`on_max`が範囲のどちらの端かを持つのはここだけ。** 端の値も、端へ達したかも、
-   * 端からの距離も、すべてこの1つから出る。
+   * その端の値と、そこから範囲の内側へ向かう向き（{@link inwardOf}）。**どちらの端かは向きが決める**
+   * ——内側が上を向いているなら下端。端の値も、端へ達したかも、端からの距離も、この1つから出る。
    */
   private endOf(label: RangeEventLabel): { readonly value: number; readonly inward: 1 | -1 } {
-    return label === 'on_min' ? { value: this.min, inward: 1 } : { value: this.max, inward: -1 };
+    const inward = inwardOf(label);
+    return { value: inward > 0 ? this.min : this.max, inward };
   }
 }
 
@@ -185,11 +184,15 @@ export class PropertyStage {
   }
 
   /**
-   * 値の並びの上でのこの段の下端。**持たない段がある**——完全一致で決まる段（シンボル型、6.6節）は
-   * 値の並びの上に位置を持たず、受け皿は下端が range の下限そのものなので段の側では決まらない。
+   * 値の並びの上でのこの段の下端。**下端を宣言していない受け皿（6.4節）は、それより下の値をすべて
+   * 拾うので負の無限大**——下端を書いていないことと、値の並びの上に位置を持たないことは別。
+   *
+   * undefinedになるのは位置を持たない段だけ——完全一致で決まる段（シンボル型、6.6節）は、値の並びの
+   * 上に居ない。**「下端が無ければ負の無限大」を持つのはここだけ**で、段を値の並びの上で見る側
+   * （並べ替え・すぐ上の段・段に入っているか）はどれもここを通す。
    */
-  get lowerBound(): number | undefined {
-    return this.eq !== undefined ? undefined : this.min;
+  get lowerBoundOnValueLine(): number | undefined {
+    return this.eq !== undefined ? undefined : (this.min ?? Number.NEGATIVE_INFINITY);
   }
 }
 
@@ -215,6 +218,25 @@ export const ROLL_ENDS: readonly RollEnd[] = ['lowest', 'highest'];
 
 /** range系イベント（6.3節）の名前。 */
 export type RangeEventLabel = 'on_max' | 'on_min';
+
+/**
+ * その端から範囲の内側へ向かう向き（上へなら`1`、下へなら`-1`）。
+ *
+ * **`on_min`／`on_max`が範囲のどちらの端かを持つのはここだけ。** 端の値も、端へ達したかも、端からの
+ * 距離も（PropertyRange）、その端へ向かっているかも（{@link movesTowardEnd}）、すべてこの1つから出る。
+ */
+function inwardOf(label: RangeEventLabel): 1 | -1 {
+  return label === 'on_min' ? 1 : -1;
+}
+
+/**
+ * その増減が、値をその端へ向かって動かすか。**端へ向かうのは、端から内側への距離
+ * （PropertyRange.inwardFrom）が縮む向き**なので、rangeの上下限を知らなくても増減量だけで決まる
+ * ——定義から周期を読む側（src/analysis）が持っているのは位置ではなくtick毎の増減量。
+ */
+export function movesTowardEnd(label: RangeEventLabel, amount: number): boolean {
+  return amount * inwardOf(label) < 0;
+}
 
 /** 段（6.4節）がrangeの中で占める区間。両端とも0〜1で、startがminの側。 */
 export interface StageSpan {
@@ -450,7 +472,7 @@ export class PropertyDef {
     // 受け皿（どの段にも該当しない値の行き先、6.4節）。**シンボル型は持ちえない**——段名がそのまま
     // 比較対象なので、どの段も必ず特定の値を名乗る。
     this.fallbackStage = isSymbolic ? undefined : stages.find((stage) => stage.min === undefined);
-    this.alertDirection = PropertyDef.deriveAlertDirection(stages, isSymbolic);
+    this.alertDirection = PropertyDef.deriveAlertDirection(stages);
     this.hasStageArt = stages.some((stage) => stage.art !== undefined);
     this.worsensUpward = PropertyDef.resolveWorsensUpward(name, worsens, gauge, this.alertDirection);
 
@@ -465,19 +487,18 @@ export class PropertyDef {
   }
 
   /**
-   * 数値の段を下から上へ並べ、alertの深刻さがどちらへ動くかを見る（シンボル型は値の並びを持たない
-   * ため、何も述べていない）。単調に上がるならup、単調に下がるならdown、どちらでもなければmixed。
-   * **深刻さが動かない（段が無い・全段が同じ域）なら、alertは向きを何も述べていない**（undefined）。
+   * 値の並びの上に位置を持つ段を下から上へ並べ、alertの深刻さがどちらへ動くかを見る。単調に上がるなら
+   * up、単調に下がるならdown、どちらでもなければmixed。**深刻さが動かない（段が無い・全段が同じ域・
+   * 値の並びの上に位置を持たないシンボル型（6.6節））なら、alertは向きを何も述べていない**（undefined）。
    */
-  private static deriveAlertDirection(
-    stages: readonly PropertyStage[],
-    isSymbolic: boolean,
-  ): AlertDirection | undefined {
-    if (isSymbolic) return undefined;
-
-    const severities = [...stages]
-      .sort((a, b) => (a.lowerBound ?? Number.NEGATIVE_INFINITY) - (b.lowerBound ?? Number.NEGATIVE_INFINITY))
-      .map((stage) => ALERT_LEVELS.indexOf(stage.alert));
+  private static deriveAlertDirection(stages: readonly PropertyStage[]): AlertDirection | undefined {
+    const severities = stages
+      .flatMap((stage) => {
+        const bound = stage.lowerBoundOnValueLine;
+        return bound === undefined ? [] : [{ bound, alert: stage.alert }];
+      })
+      .sort((a, b) => a.bound - b.bound)
+      .map(({ alert }) => ALERT_LEVELS.indexOf(alert));
 
     let rises = false;
     let falls = false;
@@ -653,12 +674,17 @@ export class PropertyDef {
     if (currentValue === this.lastStageValue) return this.lastStage;
 
     let best: PropertyStage | undefined;
-    let bestBound = Number.NEGATIVE_INFINITY;
+    let bestBound: number | undefined;
 
     for (const stage of this.stages) {
       if (!stage.matches(currentValue)) continue;
-      const bound = stage.lowerBound ?? Number.NEGATIVE_INFINITY;
-      if (best !== undefined && bound <= bestBound) continue;
+      const bound = stage.lowerBoundOnValueLine;
+      if (bound === undefined) {
+        // 値の並びの上に位置を持たない段（完全一致、6.6節）は重ならないので、比較する相手が居ない。
+        best ??= stage;
+        continue;
+      }
+      if (bestBound !== undefined && bound <= bestBound) continue;
       best = stage;
       bestBound = bound;
     }
@@ -691,9 +717,33 @@ export class PropertyDef {
   isInStage(effectiveValue: number, stageName: string, bound: StageBound = 'exact'): boolean {
     if (bound === 'exact') return this.stageAt(effectiveValue)?.name === stageName;
 
-    const named = this.stages.find((stage) => stage.name === stageName);
-    if (named === undefined || named.eq !== undefined) return false;
-    return effectiveValue >= (named.lowerBound ?? Number.NEGATIVE_INFINITY);
+    const lowerBound = this.lowerBoundOfStage(stageName);
+    return lowerBound !== undefined && effectiveValue >= lowerBound;
+  }
+
+  /**
+   * 名指した段が値の並びの上で始まる位置（PropertyStage.lowerBoundOnValueLine）。undefinedになるのは、
+   * 値の並びの上に位置を持たない段（完全一致、6.6節）と、宣言に無い名前。
+   */
+  lowerBoundOfStage(stageName: string): number | undefined {
+    return this.stageNamed(stageName)?.lowerBoundOnValueLine;
+  }
+
+  /**
+   * 名指した段の上端＝値の並びの上でその段のすぐ上に来る段の下端（stageAbove）。上に段が無ければ
+   * undefinedで、位置を持たない段・宣言に無い名前も同じ。
+   *
+   * **段の並びを知っているのはここだけ**なので、段の上端を要る側（バーの区間・段の中の進み・押し手が
+   * 段を上へ抜けるまで）はどれもここから引く。
+   */
+  upperBoundOfStage(stageName: string): number | undefined {
+    const lowerBound = this.lowerBoundOfStage(stageName);
+    return lowerBound === undefined ? undefined : this.stageAbove(lowerBound)?.bound;
+  }
+
+  /** 名指した段（6.4節）。段を外から指す術は名前しか無いので、探すのも名前で。 */
+  private stageNamed(stageName: string): PropertyStage | undefined {
+    return this.stages.find((stage) => stage.name === stageName);
   }
 
   /**
@@ -718,22 +768,25 @@ export class PropertyDef {
    * 上に位置を持たないシンボル型（6.6節）。
    */
   private progressAt(stage: PropertyStage, effectiveValue: number): StageProgress | undefined {
-    if (this.isSymbolic) return undefined;
+    const lowerBound = stage.lowerBoundOnValueLine;
+    if (lowerBound === undefined) return undefined;
 
-    const start = stage.lowerBound ?? this.range?.min;
-    if (start === undefined) return undefined;
+    const next = this.stageAbove(lowerBound);
+    if (next === undefined) return undefined;
 
-    const next = this.stageAbove(start);
-    return next === undefined
+    // 受け皿（6.4節）は下がどこまでも続くので、進みはrangeの下限から測る——rangeも無ければ、測り
+    // 始める位置が無い。
+    const start = Number.isFinite(lowerBound) ? lowerBound : this.range?.min;
+    return start === undefined
       ? undefined
       : { nextName: next.stage.name, ratio: (effectiveValue - start) / (next.bound - start) };
   }
 
   /**
-   * 値の並びの上で、startのすぐ上に来る段とその下端。**段の宣言順ではなくminの大小だけで決まる**
+   * 値の並びの上で、startのすぐ上に来る段とその下端。**段の宣言順ではなく下端の大小だけで決まる**
    * （stageAtと同じ見方）。上に段が無ければundefined。
    *
-   * 下端を段と一緒に返すのは、**「今いる段の上端」と「次の段のmin」が同じ1つの値**だから——
+   * 下端を段と一緒に返すのは、**「今いる段の上端」と「次の段の下端」が同じ1つの値**だから——
    * 区間（spanOf）と進み（progressAt）で別々に探すと、片方だけが段の選び方を変えたときに食い違う。
    *
    * **rangeの上限より上に下端を置いた段は、上に無いものとして数える。** そこは値が取れない位置なので
@@ -743,7 +796,7 @@ export class PropertyDef {
     let above: { stage: PropertyStage; bound: number } | undefined;
 
     for (const stage of this.stages) {
-      const bound = stage.lowerBound;
+      const bound = stage.lowerBoundOnValueLine;
       if (bound === undefined || bound <= start) continue;
       if (this.range !== undefined && bound > this.range.max) continue;
       if (above !== undefined && bound >= above.bound) continue;
@@ -755,31 +808,36 @@ export class PropertyDef {
 
   /**
    * 段の境目（rangeの中での位置、昇順）。**両端は含まない**——rangeの上下限はバーの端そのもので、
-   * 刻む線を引く場所ではない。完全一致（eq）で決まる段は値の並びの上に境目を持たない。
+   * 刻む線を引く場所ではない。下がどこまでも続く受け皿（6.4節）の下端も、完全一致（eq）で決まる段も、
+   * rangeの中に境目を持たない。
    */
   private stageBoundaries(): readonly number[] {
     const boundaries: number[] = [];
     for (const stage of this.stages) {
-      if (stage.lowerBound === undefined) continue;
-      const ratio = this.ratioOf(stage.lowerBound);
+      const lowerBound = stage.lowerBoundOnValueLine;
+      if (lowerBound === undefined) continue;
+      const ratio = this.ratioOf(lowerBound);
       if (ratio !== undefined && ratio > 0 && ratio < 1) boundaries.push(ratio);
     }
     return boundaries.sort((a, b) => a - b);
   }
 
   /**
-   * 段がrangeの中で占める区間（0〜1）。**下端はその段のmin**（最下段はrangeの下限）、**上端は
-   * それより上で最も近い段のmin**（無ければrangeの上限）で、段の宣言順ではなくminの大小だけで決まる
-   * （stageAtと同じ見方）。
+   * 段がrangeの中で占める区間（0〜1）。**下端はその段の下端**（下がどこまでも続く受け皿はrangeの
+   * 下限へ丸まる）、**上端はそれより上で最も近い段の下端**（無ければrangeの上限）で、段の宣言順では
+   * なく下端の大小だけで決まる（stageAtと同じ見方）。
    *
    * 完全一致（eq）で決まる段はシンボル型（6.6節）のもので、値の並びの上に幅を持たないためundefined。
    */
   private spanOf(stage: PropertyStage): StageSpan | undefined {
-    if (this.range === undefined || this.isSymbolic) return undefined;
+    if (this.range === undefined) return undefined;
 
-    const start = stage.lowerBound ?? this.range.min;
+    const start = stage.lowerBoundOnValueLine;
+    if (start === undefined) return undefined;
+
     const end = this.stageAbove(start)?.bound ?? this.range.max;
 
+    // 受け皿の下端（負の無限大）はrangeの下限へ丸まる（ratioOfがrangeの中へ収めて測る）。
     const startRatio = this.ratioOf(start);
     const endRatio = this.ratioOf(end);
     return startRatio === undefined || endRatio === undefined
