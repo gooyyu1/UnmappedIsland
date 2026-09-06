@@ -20,8 +20,8 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * （検査は `boardRound.test.ts`）なので、ここが守るのは**回し続けること**——二本目を立てないこと・
  * 落ちた跡の錠を取り上げること・立てて確かめて止められること・引けない周を数えて諦めること。
  *
- * デーモンを一時ディレクトリへ写し、隣の `board-round.mjs` を**走ったことだけを記録する身代わり**へ
- * 差し替える（`$HERE` は `BASH_SOURCE` から決まるので、写した先の隣が呼ばれる）。
+ * デーモンを一時ディレクトリへ写し、隣の `board-round.mjs` と `board-publish.mjs` を**走ったことだけを
+ * 記録する身代わり**へ差し替える（`$HERE` は `BASH_SOURCE` から決まるので、写した先の隣が呼ばれる）。
  */
 
 // 実プロセス（bash + node）を起こすため、`npm test` 全体を並行実行したときのCPU競合だけで
@@ -33,6 +33,8 @@ const AGENT = resolve(__dirname, '../../scripts/agent');
 interface World {
   /** 1周が非0で終わるか（＝盤面を引けない周）。 */
   readonly roundFails?: boolean;
+  /** 盤面の書き出しが非0で終わるか（＝issue へ書けない周）。 */
+  readonly publishFails?: boolean;
   /** 錠の中に置いておく心拍。 */
   readonly heartbeat?: string;
   /** 周ごとに、`daemon.sh` を書き換える中身（`null` を置いた周は書き換えない）。 */
@@ -53,6 +55,8 @@ interface Result {
   readonly log: string;
   /** 回った周の数。 */
   readonly rounds: number;
+  /** 盤面を書き出した回数。 */
+  readonly publishes: number;
   /** 走る実体として置かれた複製の中身（置かれていなければ `undefined`）。 */
   readonly copy: string | undefined;
 }
@@ -77,6 +81,17 @@ function daemon(world: World = {}): Result {
         `const swap = ${JSON.stringify(world.swap ?? [])}[round - 1];\n` +
         `if (typeof swap === 'string') writeFileSync(${JSON.stringify(join(here, 'daemon.sh'))}, swap, 'utf-8');\n` +
         `process.exit(${world.roundFails === true ? 1 : 0});\n`,
+      'utf-8',
+    );
+
+    // 書き出しの身代わり。**周の数とは別に数える**——書くのは周ごとではなく、間隔が満ちたときだけ。
+    const publishes = join(work, 'publishes.txt');
+    writeFileSync(publishes, '', 'utf-8');
+    writeFileSync(
+      join(here, 'board-publish.mjs'),
+      `import { appendFileSync } from 'node:fs';\n` +
+        `appendFileSync(${JSON.stringify(publishes)}, '1\\n');\n` +
+        `process.exit(${world.publishFails === true ? 1 : 0});\n`,
       'utf-8',
     );
 
@@ -124,6 +139,7 @@ function daemon(world: World = {}): Result {
       logs,
       log: logs.join(''),
       rounds: readFileSync(rounds, 'utf-8').split('\n').filter(Boolean).length,
+      publishes: readFileSync(publishes, 'utf-8').split('\n').filter(Boolean).length,
       copy: existsSync(copy) ? readFileSync(copy, 'utf-8') : undefined,
     };
   } finally {
@@ -270,6 +286,47 @@ describe('daemon.sh', () => {
     // （＝3周目が回らない）。
     expect(result.log).not.toContain('既に走っている');
     expect(result.log).toContain('入れ替わった先が立った');
+  });
+
+  // 盤面を読む先はスマホなので、周（既定30秒）と同じ速さで書き換えても読み切れない
+  // （`.claude/board-design.md` 2.20）。**間隔が満ちるまでは叩かない。**
+  it('盤面の書き出しは、間隔が満ちたときだけ', () => {
+    const result = daemon({ args: ['run'], then: [['run']], env: { PUBLISH_INTERVAL: '3600' } });
+
+    expect(result.rounds).toBe(2);
+    expect(result.publishes).toBe(1);
+  });
+
+  // **書けなくても周は止めない**（2.20.2）。古くなるのは読む先だけで、打つ手には関わらない。
+  it('盤面を書き出せなくても、周は続く', () => {
+    const result = daemon({ publishFails: true });
+
+    expect(result.code).toBe(0);
+    expect(result.rounds).toBe(1);
+    expect(result.log).toContain('盤面を書き出せなかった');
+  });
+
+  // **叩いた時刻は成否によらず控える**（2.20.2）。失敗のたびに次の周で叩き直すと、GitHubが沈んで
+  // いる間じゅう周と同じ速さで打ち続けることになる。
+  it('書き出せなかった周も、次の周期までは叩き直さない', () => {
+    const result = daemon({
+      publishFails: true,
+      args: ['run'],
+      then: [['run']],
+      env: { PUBLISH_INTERVAL: '3600' },
+    });
+
+    expect(result.rounds).toBe(2);
+    expect(result.publishes).toBe(1);
+  });
+
+  // 引けなかった周は一覧そのものが無い（`board-round.mjs` が置く前に落ちる）。**前の周の写しへ
+  // 新しい時刻を貼らない**——読む人は、動いていないことを最終更新の時刻で読む。
+  it('盤面を引けなかった周は、書き出さない', () => {
+    const result = daemon({ roundFails: true });
+
+    expect(result.rounds).toBe(1);
+    expect(result.publishes).toBe(0);
   });
 
   it('restart は、走っているものを入れ替える', () => {
