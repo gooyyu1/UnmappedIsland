@@ -43,7 +43,7 @@
 生成物の側に空白を含む値があります）。囲んだ中の `=` は値の一部で、列と値の切れ目は最初の1つだけです。
 
 ```text
-**冷えの下限を上回っていれば1tickに8.00戻ります**<!-- stats: balance.yaml consumption property=warmth condition="祖先のambient_temperature ≥ chill_point" character=medic per_tick -->
+**気温が寒さの入口以上なら1tickに8.00戻ります**<!-- stats: balance.yaml consumption property=warmth condition="祖先のambient_temperature ≥ chill_point" character=medic per_tick -->
 ```
 
 ### 印を付けるのは、1つのセルの書き写しだけ
