@@ -382,7 +382,9 @@ export function moves(input) {
     }
 
     if (labels.includes('通してよい')) {
-      // PRの `判断待ち` が止めるのはマージだけ（2.13）。越えるのは `merge-and-close.sh <PR> --user-ok`。
+      // PRの `判断待ち` が止めるのはマージだけ（2.13）。越え方は出どころで違う——機械が付けたものは
+      // `merge-and-close.sh <PR> --user-ok`（2.13.3）、レビュアーが付けたものはラベルを外す（2.13.4）。
+      // **どちらもここでは見分けない。** 止める効き目は同じで、外れていれば下のマージが出る。
       if (labels.includes('判断待ち')) continue;
       if (check === 'green' && pr.mergeable === 'MERGEABLE') merges.push(`MERGE ${pr.number}`);
       continue;

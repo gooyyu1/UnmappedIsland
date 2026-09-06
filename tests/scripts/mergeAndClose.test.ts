@@ -62,10 +62,10 @@ describe('merge-and-close.sh', () => {
 
   // 自動では越えられない関門。越えるにはユーザーの許可を引いて `--user-ok` で叩き直す。
   it('関門に掛かったPRはマージせず、判断待ちを付けて理由ごと HELD で返す', () => {
-    const result = run({ gate: ['GRAMMAR src/domain/DeclaredNumber.ts'] });
+    const result = run({ gate: ['MARK docs/ui/Windows.md 9.3 未解放レシピの理由【確定】'] });
 
     expect(result.merged).toBe(false);
-    expect(result.lines).toEqual(['HELD 1000', '    GRAMMAR src/domain/DeclaredNumber.ts']);
+    expect(result.lines).toEqual(['HELD 1000', '    MARK docs/ui/Windows.md 9.3 未解放レシピの理由【確定】']);
     expect(result.labels).toEqual(['--add-label 判断待ち']);
     expect(result.status).toBe(1);
   });
@@ -80,10 +80,10 @@ describe('merge-and-close.sh', () => {
   });
 
   it('--user-ok なら、許可を受けたことをPRへ残してからマージする', () => {
-    const result = run({ gate: ['GRAMMAR src/domain/DeclaredNumber.ts'], userOk: true });
+    const result = run({ gate: ['MARK docs/ui/Windows.md 9.3 未解放レシピの理由【確定】'], userOk: true });
 
     expect(result.merged).toBe(true);
-    expect(result.comments).toContain('GRAMMAR src/domain/DeclaredNumber.ts');
+    expect(result.comments).toContain('MARK docs/ui/Windows.md 9.3 未解放レシピの理由【確定】');
     expect(result.labels).toEqual(['--remove-label 判断待ち']);
     expect(result.status).toBe(0);
   });
