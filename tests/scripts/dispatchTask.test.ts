@@ -49,7 +49,7 @@ function run(issue: number, world: World = {}): Run {
       JSON.stringify({
         title: '題',
         state: world.state ?? 'OPEN',
-        labels: (world.labels ?? ['task']).map((name) => ({ name })),
+        labels: (world.labels ?? ['kind:task']).map((name) => ({ name })),
       }),
       'utf-8',
     );
@@ -146,7 +146,7 @@ describe('dispatch-task.sh', () => {
   // 返された issue は `task` が付いたまま残る（`.claude/board-design.md` 2.15.2）ので、**ここで
   // 見なければ次の周にそのまま投入し直される。** 不変条件を持つのは投入する側（1.4）。
   it('人へ返された issue へは投入しない', () => {
-    const result = run(1376, { labels: ['task', '判断待ち'] });
+    const result = run(1376, { labels: ['kind:task', '判断待ち'] });
 
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('判断待ち');
