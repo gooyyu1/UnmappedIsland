@@ -23,6 +23,8 @@ interface Board {
   prs?: readonly unknown[];
   /** マージ済みPRとそのコメント。スメルを拾う係の `due` が読む（`board-move.mjs` の `CYCLES`）。 */
   mergedPrs?: readonly unknown[];
+  /** `archive/` に入っていない判断の履歴の数。価値観を畳む係の `due` が読む。 */
+  pendingDecisions?: number;
   issues?: readonly unknown[];
   sessions?: readonly {
     id: string;
@@ -897,6 +899,7 @@ describe('board-move.mjs', () => {
   const unsorted = (number: number) => ({ number, labels: [], blockedBy: { nodes: [] } });
   const TRIAGE = `CHORE triage .claude/triage-prompt.md ${NOW} --bridge`;
   const ANALYSIS = `CHORE analysis .claude/analysis-prompt.md ${NOW}`;
+  const POLICY = `CHORE policy .claude/policy-cycle-prompt.md ${NOW}`;
 
   /** レビュアーがスメルを残した判定コメント（`review-criteria.md`「挙げ方」）。読んだ印を変えられる形で持つ。 */
   const smell = (number: number, read = false) => ({
@@ -984,7 +987,7 @@ describe('board-move.mjs', () => {
   // `dispatch-chore.sh` が要る2つを持っていること**。片方でも欠けると、係は毎周立とうとして
   // 毎周失敗する（時刻を残さないので、間隔で黙りもしない）。
   it('周期の係のプロンプトは、題と囲みを持つ', () => {
-    for (const move of [TRIAGE, ANALYSIS]) {
+    for (const move of [TRIAGE, ANALYSIS, POLICY]) {
       const text = readFileSync(resolve(__dirname, '../..', move.split(' ')[2]), 'utf-8');
       expect(text).toMatch(/^題: \S/m);
       expect(text).toMatch(/^````$/m);
@@ -1055,5 +1058,30 @@ describe('board-move.mjs', () => {
       sessions: [idle('session_c', 'chore-analysis'), working('session_a')],
     };
     expect(moves(board)).toContain('ARCHIVE session_c done:chore-analysis');
+  });
+
+  // ## 価値観を畳む係（2.17.2）
+  //
+  // 仕事の在り処が issue でもPRでもなく**リポジトリの中**（`.claude/decisions/`）にある係。盤面が
+  // GitHub と CCR の外を見るのはここだけで、数えるのは `board-read.mjs`。
+  it('棚卸しを通っていない履歴があれば、価値観を畳む係を立てる', () => {
+    expect(moves({ pendingDecisions: 1 })).toEqual([POLICY]);
+  });
+
+  it('履歴が全部 archive へ入っていれば、価値観を畳む係は立てない', () => {
+    expect(moves({ pendingDecisions: 0 })).toEqual([]);
+  });
+
+  // **間隔は週1回**（2.17。履歴が増えるのはユーザーと直接話したときだけで、束ねるには溜まって
+  // いる必要がある）。**他の係と同じ一日では立たない**ことまで見る——2日空いた盤面を渡すので、
+  // 間隔を一日に縮めるとここが赤くなる。
+  it('前に立ててから週が明けるまで、価値観を畳む係は立てない', () => {
+    const board = { pendingDecisions: 3, taken: { 'cycle:policy': '2026-09-03T02:00:00Z' } };
+    expect(moves(board)).toEqual([]);
+  });
+
+  it('週が明けたら、価値観を畳む係をもう一度立てる', () => {
+    const board = { pendingDecisions: 3, taken: { 'cycle:policy': '2026-08-29T01:00:00Z' } };
+    expect(moves(board)).toEqual([POLICY]);
   });
 });

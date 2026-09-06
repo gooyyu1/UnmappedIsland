@@ -28,6 +28,7 @@
 //     "mainChecks": [ { "status": "COMPLETED", "conclusion": "SUCCESS" } ],   … `main` の先頭のCI
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments ],
 //     "mergedPrs":[ gh pr list --state merged --json number,comments ],   … スメルを拾う係が読む範囲
+//     "pendingDecisions": 12,   … `.claude/decisions/` のうち `archive/` に入っていない件数
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
 //     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
 //                     "bucket": "SESSION_STATUS_BUCKET_…", "env": "cloud | bridge | -",
@@ -170,6 +171,18 @@ const CYCLES = [
     locks: [],
     prompt: '.claude/analysis-prompt.md',
     due: (board) => hasUnreadSmell(board.mergedPrs ?? []),
+  },
+  {
+    name: 'policy',
+    // **週1回。** 履歴が増えるのはユーザーと直接話したときだけで、**束ねるには溜まっている必要が
+    // ある**（`.claude/skills/policy-review/SKILL.md`「棚卸しの手順」——孤立した1件は抽出しない）。
+    hours: 168,
+    // クラウドで足りる。**既存 issue の本文は書き換えない**——出すのは新しい issue 1本だけで、
+    // リポジトリへは1行も書かない（`.claude/policy-cycle-prompt.md`）。
+    env: 'cloud',
+    locks: [],
+    prompt: '.claude/policy-cycle-prompt.md',
+    due: (board) => (board.pendingDecisions ?? 0) > 0,
   },
 ];
 

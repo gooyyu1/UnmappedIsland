@@ -282,6 +282,9 @@ export function round({
   runScript = defaultRunScript,
   gh = runGh,
   sessions = liveSessions,
+  // 棚卸しを通っていない判断の履歴の数え方（`board-read.mjs`）。**外を触る手は全部渡す**ので、
+  // これも渡せる形にしてある——渡さなければ本物のリポジトリを数える。
+  pendingDecisions,
   log = defaultLog,
   echo = defaultEcho,
   warn = defaultWarn,
@@ -318,7 +321,15 @@ export function round({
 
   const taken = readLedger(stateDir);
   const at = now();
-  const board = readBoard({ gh, sessions: () => live, log, now: at, settleMinutes, taken });
+  const board = readBoard({
+    gh,
+    sessions: () => live,
+    pendingDecisions,
+    log,
+    now: at,
+    settleMinutes,
+    taken,
+  });
   if (board === undefined) return false;
 
   const remaining = trackIdle(pruneTaken(taken, board), board, at.toISOString());

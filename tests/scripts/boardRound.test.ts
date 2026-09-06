@@ -40,6 +40,11 @@ interface World {
   readonly prSessions?: Record<number, string>;
   /** そのトレーラを引く `gh api graphql` が失敗するか。 */
   readonly prSessionsFail?: boolean;
+  /**
+   * `archive/` に入っていない判断の履歴の数（価値観を畳む係の `due`）。**既定は0**——本物の
+   * リポジトリを数えさせると、履歴が溜まっている間だけこの係が全部の周に混ざる。
+   */
+  readonly pendingDecisions?: number;
   /** `main` の先頭のCI。既定は緑。 */
   readonly mainChecks?: readonly { readonly status: string; readonly conclusion: string }[];
   /** `archive-session.sh` が渡された相手について返す行の頭。既定は畳めた。 */
@@ -189,6 +194,7 @@ function playRound(world: World = {}): Result {
         if (world.sessionsFail === true) throw new Error('セッションの一覧を引けなかった');
         return world.sessions ?? [];
       },
+      pendingDecisions: () => world.pendingDecisions ?? 0,
       runScript,
     });
 
