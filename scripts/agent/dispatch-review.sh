@@ -90,26 +90,22 @@ state=$(jq -r '.state' "$WORK/pr.json")
   exit 1
 }
 
+# 判定のコメントの見分け方は [`review-verdicts.mjs`](review-verdicts.mjs) が持つ。**盤面の側も同じ
+# コメントを読む**（そのレビューが書き終えたか。`board-move.mjs`）ので、緩め方がずれないように
+# 1箇所へ寄せてある。**`require` からは `import()` でしか入らない**ので、続きはその中で書く。
 node -e '
   const fs = require("node:fs");
-  const [prPath, rawPath, promptPath, pr, envId, repoUrl, mode] = process.argv.slice(1);
+  const [modulePath, prPath, rawPath, promptPath, pr, envId, repoUrl, mode] = process.argv.slice(1);
+  import(require("node:url").pathToFileURL(modulePath)).then(({ verdicts, readVersion }) => {
   const info = JSON.parse(fs.readFileSync(prPath, "utf8"));
-  // 判定のコメント（`board-design.md` 2.9）。**見分け方は `board-labels.yml` の `verdict` と同じ**
-  // ——1行目が結論の文そのもの。緩めると、ラベルが付かなかったコメントで番号だけが進む。
-  const verdict = /^\[レビュー\] (通してよい|直しが要る)[ \t]*$/;
-  const verdicts = (info.comments ?? []).filter((c) =>
-    verdict.test((c.body ?? "").split("\n")[0].replace(/\r$/, "")),
-  );
+  const written = verdicts(info.comments);
   // 何回目の判定になるはずか。**数えて出すので状態を持たない。** 判定を書かずに落ちたレビューは
   // 数に入らず、次の1本が同じ番号を名乗る。
-  const round = verdicts.length + 1;
+  const round = written.length + 1;
   // 前の周が読んだ版（`review-prompt.md`「読んだ版」の節）。**盤面の指紋では引かない**——あちらは
   // 投入するたびに動くので、判定を書かずに落ちた周のぶんだけ進み、次の1本が読んでいない範囲を
   // 「前の周が見た」ことにしてしまう。数と版が同じコメントから出れば、その食い違いが起きない。
-  const previous =
-    /^読んだ版:[ \t]*([0-9a-fA-F]{7,40})[ \t]*$/m.exec(
-      (verdicts.at(-1)?.body ?? "").replace(/\r/g, ""),
-    )?.[1] ?? "なし";
+  const previous = readVersion(written.at(-1)) ?? "なし";
   fs.writeFileSync(
     promptPath,
     fs.readFileSync(rawPath, "utf8").replaceAll("<番号>", pr).replaceAll("<前の版>", previous),
@@ -127,7 +123,8 @@ node -e '
   // **空なら渡さない。** 渡さないこと自体が1つの選択（`ccr-env.sh`）。
   if (mode) args.permission_mode = mode;
   process.stdout.write(JSON.stringify(args));
-' "$WORK/pr.json" "$RAW" "$INSTRUCTION" "$PR" "$ENV_ID" "$SOURCE" "$MODE" >"$WORK/args.json"
+  });
+' "$HERE/review-verdicts.mjs" "$WORK/pr.json" "$RAW" "$INSTRUCTION" "$PR" "$ENV_ID" "$SOURCE" "$MODE" >"$WORK/args.json"
 
 # 立てずに、渡す引数だけを見る（`DRY_RUN=1 bash …`）。指示ファイルを差し替えたときの確認用なので、
 # **指示は切らずに出す**——埋めた値（`<番号>`・`<前の版>`）は本文の途中に出るので、頭だけ見せると
