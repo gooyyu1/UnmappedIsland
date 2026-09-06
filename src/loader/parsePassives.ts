@@ -8,8 +8,8 @@ import {
   tryGetNode,
   tryGetSeq,
 } from './yamlMapping';
-import { parseNumberLiteral } from './parseCommon';
-import { parseConditionList, parseSubjectRoot } from './parseConditions';
+import { parseNumberLiteral, parseSubjectRoot } from './parseCommon';
+import { parseConditionList } from './parseConditions';
 import { parseTransfers } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { PropertyPath, ReferenceScope } from '../domain/ReferenceRoot';

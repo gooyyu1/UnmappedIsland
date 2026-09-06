@@ -22,19 +22,27 @@
 // 外を触る手（`runScript`・`gh`・一覧）と、出す先（`log`・`echo`）を引数で受けるのは、**実物を
 // 起こさずに検査するため**。既定は本物なので、コマンドとして呼ぶ側は何も渡さなくてよい。
 
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, writeSync } from 'node:fs';
+import { appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync, writeSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { moves } from './board-move.mjs';
+import { busySession, moves } from './board-move.mjs';
 import { readBoard } from './board-read.mjs';
+import { formatLive, liveSessions } from './live-sessions.mjs';
 import { gh as runGh, posix, runBash } from './spawn.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /** 打った手を、そのとき盤面がどう見えていたか（指紋）とともに残す台帳。 */
 const ledgerPath = (stateDir) => join(stateDir, 'taken.json');
+
+/**
+ * ぶつかった実績の帳面（1行1件のJSON。`.claude/board-design.md` 3.1）。**盤面は同じファイルを書く
+ * issue を並べて投入する**ので、実際にぶつかった組を控えておかないと、`area:` の錠を足すべき資源が
+ * 後から分からない。**手ではない**——打つ手が何であっても、見えたものをその周のうちに書く。
+ */
+const conflictsPath = (stateDir) => join(stateDir, 'conflicts.jsonl');
 
 const stamp = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
 
@@ -62,6 +70,72 @@ function writeLedger(stateDir, taken) {
   writeFileSync(ledgerPath(stateDir), `${JSON.stringify(taken, undefined, 2)}\n`);
 }
 
+/** 帳面に既に載っている `<PR>:<先頭コミット>`。読めない周は空（帳面がまだ無い周と同じ）。 */
+function writtenConflicts(stateDir) {
+  let text;
+  try {
+    text = readFileSync(conflictsPath(stateDir), 'utf8');
+  } catch {
+    return new Set();
+  }
+  const keys = new Set();
+  for (const line of text.split('\n')) {
+    if (line === '') continue;
+    // 壊れた行は無かったことにする。**取りこぼす害は同じ組を二度書くことだけ**なので、
+    // 帳面ごと諦めるより軽い。
+    try {
+      const record = JSON.parse(line);
+      keys.add(`${record.pr}:${record.head}`);
+    } catch {
+      continue;
+    }
+  }
+  return keys;
+}
+
+/** [`describe-conflict.sh`](describe-conflict.sh) の出力。調べられなければ `undefined`。 */
+function describeConflict(runScript, number) {
+  const out = runScript('describe-conflict.sh', [String(number)], { capture: true });
+  if (out.status !== 0) return undefined;
+  const files = [];
+  const rivals = [];
+  for (const line of out.stdout.split(/\r?\n/)) {
+    if (line.startsWith('FILE ')) files.push(line.slice('FILE '.length));
+    else if (line.startsWith('WITH ')) rivals.push(Number(line.slice('WITH '.length)));
+  }
+  return { files, with: rivals };
+}
+
+/**
+ * この周で新しく見えたコンフリクトの記録。**同じ差分は一度だけ**——押し返されるまで盤面は
+ * `CONFLICTING` を返し続けるので、`<PR>:<先頭コミット>` を控えて突き合わせる（打つ手の指紋と同じ形）。
+ *
+ * `describe` は「そのPRが何のファイルで・どのPRとぶつかったか」を返す
+ * （[`describe-conflict.sh`](describe-conflict.sh)）。**調べられなかったものは書かない**——次の周に
+ * 調べ直せるよう、指紋を埋めずに残す。**恒久的に調べられないPRは、開いている限り毎周 `git fetch` を
+ * 払い続ける**（枝の消えた fork など）。失敗の大半は一時的（認証・通信）なので、回数を数える台帳を
+ * 増やすより安いと見た。
+ *
+ * **併合し直せてしまったものは、空のまま書く。** GitHub の `mergeable` は `main` が動くたびに
+ * 古くなるので、`CONFLICTING` と言われた差分が手元では綺麗に併合できることがある。**これは調べた
+ * 結果であって失敗ではない**ので、指紋を埋めて次の周から見ない（`ARCHIVE` の `KEPT` と同じ形）。
+ */
+export function newConflicts(prs, written, describe, at) {
+  const records = [];
+  for (const pr of prs) {
+    if (pr.mergeable !== 'CONFLICTING') continue;
+    // **他のPRの上に積まれたPRは数えない。** GitHub が見ているのはその base との衝突で、
+    // `describe-conflict.sh` が調べる `main` との衝突とは別物。
+    if ((pr.baseRefName ?? 'main') !== 'main') continue;
+    const head = pr.headRefOid;
+    if (written.has(`${pr.number}:${head}`)) continue;
+    const found = describe(pr.number);
+    if (found === undefined) continue;
+    records.push({ at, pr: pr.number, head, files: found.files, with: found.with });
+  }
+  return records;
+}
+
 /** 消えたPR・畳まれたセッションの記録は捨てる。残すと、番号が回り込んだときに古い指紋が効く。 */
 export function pruneTaken(taken, board) {
   const ids = new Set(board.sessions.map((session) => session.id));
@@ -71,10 +145,34 @@ export function pruneTaken(taken, board) {
     const lives =
       (key.startsWith('resume:') && ids.has(key.slice('resume:'.length))) ||
       (key.startsWith('review:') && numbers.has(key.slice('review:'.length))) ||
-      (key.startsWith('archive:') && ids.has(key.slice('archive:'.length)));
+      (key.startsWith('archive:') && ids.has(key.slice('archive:'.length))) ||
+      (key.startsWith('idle:') && ids.has(key.slice('idle:'.length)));
     if (lives) kept[key] = mark;
   }
   return kept;
+}
+
+/**
+ * **手が空いたのはいつからか**を覚える（`board-move.mjs` の `STALL_MINUTES`）。停滞を「空いて
+ * いること」で読むと、手番の切れ目ごとに空くワーカーを毎回停滞と読む——盤面はそれで、押し切る
+ * 寸前の作業を人へ返して畳んだ（2026-09-06、issue #1506）。
+ *
+ * **動き出したら、覚えも「起こしたが動かなかった」の記録も消す。** 動いた時点でどちらも嘘に
+ * なるので、残すと**次に空いた瞬間に、起こす手順を飛ばして人へ返す**ことになる。
+ */
+export function trackIdle(taken, board, now) {
+  const marked = { ...taken };
+  for (const session of board.sessions) {
+    const idle = `idle:${session.id}`;
+    const resume = `resume:${session.id}`;
+    if (busySession(session)) {
+      delete marked[idle];
+      if ((marked[resume] ?? '').startsWith('stall:')) delete marked[resume];
+      continue;
+    }
+    marked[idle] ??= now;
+  }
+  return marked;
 }
 
 /**
@@ -145,12 +243,16 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
     }
     case 'TASK': {
       // **補足は無い。** 書けるのはモデルだけで、デーモンには書くものが無い——issue 本文が全部を持つ
-      // （`dispatch-task.sh`「重なりが無くて書くことが無いなら、空のファイルでよい」）。
+      // （`dispatch-task.sh`「書くことが無いなら、空のファイルでよい」）。
+      //
+      // 投入先は盤面が決めて引数の形で寄越す（2.16）。**どの `env:` がどこを指すかはここには無い**
+      // ——知っているのは盤面だけで、こちらはそれをそのまま渡す。
       const work = mkdtempSync(join(tmpdir(), 'board-round-'));
       try {
         const supplement = join(work, 'supplement.md');
         writeFileSync(supplement, '');
-        return runScript('dispatch-task.sh', [a, posix(supplement)]).status === 0;
+        const where = b === '' ? [] : [b];
+        return runScript('dispatch-task.sh', [a, posix(supplement), ...where]).status === 0;
       } finally {
         rmSync(work, { recursive: true, force: true });
       }
@@ -165,7 +267,7 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
 export function round({
   runScript = defaultRunScript,
   gh = runGh,
-  sessions,
+  sessions = liveSessions,
   log = defaultLog,
   echo = defaultEcho,
   warn = defaultWarn,
@@ -175,26 +277,39 @@ export function round({
   settleMinutes = Number(process.env.SETTLE_MINUTES || 10),
   dryRun = (process.env.DRY_RUN ?? '') !== '',
 } = {}) {
-  const spent = runScript('usage-record.sh', [], { capture: true });
+  // **一覧はこの周に1回だけ引く**（`board-design.md` 1.7）。要る側は4つあり、それぞれが自分で
+  // 引くと同じ答えを4回買うことになる——`list_sessions` の上限は1時間あたりで数えるので、その
+  // 回数がそのまま盤面の回る速さの天井になる。引いたものはファイルへ置き、叩くスクリプトへは
+  // 環境変数で在り処だけを渡す。**この周のうちに立ったセッションは、次の周の一覧に載る。**
+  let live;
+  try {
+    live = sessions();
+  } catch (error) {
+    // **理由を言えるのは投げた側だけ**なので、その言葉をそのまま出す。
+    warn(error instanceof Error ? error.message : String(error));
+    return false;
+  }
+  const livePath = join(stateDir, 'live-sessions.tsv');
+  writeFileSync(livePath, live.map((session) => `${formatLive(session)}\n`).join(''));
+  // **在り処は、叩く相手にだけ渡す。** `process.env` を書き換えると、同じプロセスで動く他の呼び手
+  // にも見える（`spawn.mjs`）。
+  const runScriptHere = (name, args, options) =>
+    runScript(name, args, { ...options, env: { LIVE_SESSIONS_TSV: livePath } });
+
+  const spent = runScriptHere('usage-record.sh', [], { capture: true });
   if (spent.status !== 0) log('使用量を引けなかった');
   for (const line of spent.stdout.split(/\r?\n/)) {
     if (line !== '') log(`消費 ${line}`);
   }
 
   const taken = readLedger(stateDir);
-  let board;
-  try {
-    board = readBoard({ gh, sessions, log, now: now(), settleMinutes, taken });
-  } catch (error) {
-    // 一覧を引けなかった周（`live-sessions.mjs`）。**理由を言えるのは投げた側だけ**なので、
-    // その言葉をそのまま出す。
-    warn(error instanceof Error ? error.message : String(error));
-    return false;
-  }
+  const at = now();
+  const board = readBoard({ gh, sessions: () => live, log, now: at, settleMinutes, taken });
   if (board === undefined) return false;
 
-  const remaining = pruneTaken(taken, board);
+  const remaining = trackIdle(pruneTaken(taken, board), board, at.toISOString());
   writeLedger(stateDir, remaining);
+  board.taken = remaining;
   const remember = (key, mark) => {
     remaining[key] = mark;
     writeLedger(stateDir, remaining);
@@ -211,11 +326,29 @@ export function round({
     return true;
   }
 
+  // **ぶつかった実績を控える**（3.1）。**記録は手ではない**ので、下で打つ手が何であっても、その手前で
+  // 書き終わる。**`DRY_RUN` の周では書かない**——指紋を埋めると、その組は本番の周でも二度と記録
+  // されない（見るだけのつもりで測定を消すことになる）。
+  for (const record of newConflicts(
+    board.prs,
+    writtenConflicts(stateDir),
+    (number) => describeConflict(runScriptHere, number),
+    board.now,
+  )) {
+    appendFileSync(conflictsPath(stateDir), `${JSON.stringify(record)}\n`);
+    if (record.files.length === 0) {
+      log(`PR #${record.pr} は手元では併合できた（GitHub の \`mergeable\` が古い）`);
+      continue;
+    }
+    const rivals = record.with.map((number) => `#${number}`).join(' ');
+    log(`ぶつかった: PR #${record.pr} ${record.files.join(' ')}${rivals === '' ? '' : ` … ${rivals}`}`);
+  }
+
   for (const line of played) {
     const [kind, ...args] = line.split(' ');
     const [a = '', b = '', c = ''] = args;
     log(`打つ: ${kind} ${a} ${b} ${c}`);
-    if (play(kind, args, { runScript, gh, remember, log, echo })) {
+    if (play(kind, args, { runScript: runScriptHere, gh, remember, log, echo })) {
       log(`打てた: ${kind} ${a}`);
       return true;
     }

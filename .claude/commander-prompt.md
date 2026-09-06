@@ -81,7 +81,7 @@
   resume-session.sh     止まっているセッションを起こして直させる
   merge-and-close.sh    マージして後片付けまでやる
   needs-user-review.sh  ユーザーの判断なしにマージしてよいかを差分から判定する
-  live-sessions.sh      畳まれていないセッションを `ID<TAB>session_status<TAB>bucket<TAB>tags` で出す
+  live-sessions.sh      畳まれていないセッションを `ID<TAB>session_status<TAB>bucket<TAB>tags<TAB>環境` で出す
   may-dispatch.sh       投入してよいかを1回で判定する（下の2本を呼ぶ）
   brake.sh              手綱の issue のチェックを読む
   occupancy.sh          そのタグを持つセッションが居るかを見る（--live 投入済みか / --busy 手が動いているか）
@@ -96,9 +96,9 @@
 
 ## 司令塔だけがやること
 
-- **`.claude/**`・`CLAUDE.md`・`scripts/agent/**` は司令塔の領域です。** クラウドのセッションから
-  ここへ書くと必ずユーザーの承認を求められ、そこでセッションが止まります。**セッションには
-  書かせず、`## ユーザーへ` で受け取って自分で `main` へ直接 push します。**
+- **`.claude/**`・`CLAUDE.md`・`scripts/agent/**` のうち、どのセッションの担当にも挙がっていない
+  ものは司令塔の領域です。** `## ユーザーへ` で受け取って自分で `main` へ直接 push します
+  （担当に挙がっているものは、そのセッションが直します。`board-design.md` 2.16）。
   **push する前に、他のセッションと同じ一次レビューを通してください**（`CLAUDE.md`「PRを出す前に、
   サブエージェントへ一次レビューさせる」）。**この経路にはレビュアーが付かない**ので、素通しすると
   誰の目にも触れないまま `main` へ入ります。指摘とその扱いはコミットメッセージへ1〜2行で残します。

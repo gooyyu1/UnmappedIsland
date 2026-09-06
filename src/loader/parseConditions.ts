@@ -13,7 +13,7 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseNumberOrSymbol, parseTypeMatchRule } from './parseCommon';
+import { parseNumberOrSymbol, parseSubjectRoot, parseTypeMatchRule } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot, ReferenceScope } from '../domain/ReferenceRoot';
 import { PropertyPath } from '../domain/ReferenceRoot';
@@ -21,61 +21,6 @@ import { ConditionNode } from '../domain/ConditionNode';
 import type { ConditionOp } from '../domain/ConditionReader';
 import type { StageBound } from '../domain/PropertyDef';
 import { Requirement, Requirements } from '../domain/Requirement';
-
-/**
- * `subject`（主語）の参照キー。**どのrootを書けるかは、受け取ったscopeが答える**（ReferenceScope。
- * 書ける場所の一覧はGameElementDefinition.md 14.1節の表、操作の関係の役は11.5節「役を書ける場所」）。
- * worldはシングルトンインスタンスの実行時追跡が無いため未対応（ancestorで代替できる）。
- */
-export function parseSubjectRoot(context: string, raw: string, scope: ReferenceScope): ReferenceRoot {
-  let root: ReferenceRoot;
-  switch (raw) {
-    case 'self':
-      root = 'self';
-      break;
-    case 'parent':
-      root = 'parent';
-      break;
-    case 'ancestor':
-      root = 'ancestor';
-      break;
-    case 'agent':
-      root = 'agent';
-      break;
-    case 'instrument':
-      root = 'instrument';
-      break;
-    case 'patient':
-      root = 'patient';
-      break;
-    case 'picked':
-      root = 'picked';
-      break;
-    case 'child':
-      root = 'child';
-      break;
-    case 'world':
-      throw new YamlLoadError(
-        `${context}: subject 'world' は未対応です（worldシングルトンインスタンスの実行時追跡が未実装のため）。`,
-      );
-    default:
-      throw new YamlLoadError(`${context}: 未知のsubject '${raw}' です。`);
-  }
-
-  return requireResolvable(context, root, scope);
-}
-
-/** その場所で解決先を持たないrootを弾く。理由（何が無いか）は場所が答える。 */
-export function requireResolvable(
-  context: string,
-  root: ReferenceRoot,
-  scope: ReferenceScope,
-): ReferenceRoot {
-  const reason = scope.unresolvableReason(root);
-  if (reason !== undefined)
-    throw new YamlLoadError(`${context}: subject '${root}' は使えません（${reason}）。`);
-  return root;
-}
 
 /** 要件の並びの要素にだけ書ける、満たさなかったときの理由の識別子（14.6節、Requirement参照）。 */
 const REASON_KEY = 'reason';

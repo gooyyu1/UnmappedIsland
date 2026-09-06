@@ -145,6 +145,15 @@ describe('board.mjs', () => {
     expect(lines).toContain('TASK 8 返却 決められない');
   });
 
+  // 走らせる先の指定は状態と別の軸（2.16）なので、状態を潰さずに後ろへ並べる。
+  it('走らせる先の指定があれば、状態の後ろに出す', () => {
+    const { lines } = show({
+      issues: [issue(8, '盤面を直す', { labels: [{ name: 'task' }, { name: 'env:bridge' }] })],
+    });
+
+    expect(lines).toContain('TASK 8 着手可 env:bridge 盤面を直す');
+  });
+
   it('依存が閉じていれば、着手可として出す', () => {
     const { lines } = show({
       issues: [issue(8, '後', { blockedBy: { nodes: [{ number: 7, state: 'CLOSED' }] } })],

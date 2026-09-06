@@ -142,12 +142,13 @@ describe('daemon.sh', () => {
     expect(result.log).toContain('盤面を引けなかった（1回目）');
   });
 
-  // 認証切れや通信断で回り続けても、ログが埋まるだけ。
-  it('続けて引けなければ、諦めて止まる', () => {
-    const result = daemon({ roundFails: true, env: { ONCE: '', FAILURE_LIMIT: '1' } });
+  // **止まらない。** いちばん多い理由（アクセストークンの期限切れ）を直すのは Claude Code 本体で、
+  // こちらにできるのは直るまで待つことだけ。止めると、直っても誰かが立て直すまで盤面が動かない。
+  it('続けて引けなければ、間隔を落として回り続ける', () => {
+    const result = daemon({ roundFails: true, env: { FAILURE_LIMIT: '1', RETRY_INTERVAL: '300' } });
 
-    expect(result.code).toBe(1);
-    expect(result.log).toContain('1回続けて失敗したので止まる');
+    expect(result.code).toBe(0);
+    expect(result.log).toContain('1回続けて失敗したので、300秒おきへ落とす');
   });
 
   it('status は、一度も起きていなければ非0', () => {
