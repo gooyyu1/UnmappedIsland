@@ -1,8 +1,8 @@
-import { execFileSync } from 'node:child_process';
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
@@ -47,7 +47,7 @@ function lock(tree: Tree, optional: readonly string[] = []): string {
 function run(world: World): string {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-session-start-'));
   try {
-    const dir = work.replace(/\\/g, '/');
+    const dir = pathForBash(work);
     const tree = join(work, 'tree');
     // 本体の身代わり。`.git` の実体が要る——フックは `--git-common-dir` から `..` を辿って本体へ
     // 出るので、`cd` が実際に通らないといけない（Git Bash は `..` を字句で畳むが、Linux は畳まない）。
@@ -65,8 +65,7 @@ function run(world: World): string {
     writeFileSync(git, `${STUB_SHEBANG}\nprintf '%s' '${dir}/main/.git'\n`, 'utf-8');
     chmodSync(git, 0o755);
 
-    return execFileSync('bash', [HOOK], {
-      encoding: 'utf-8',
+    return runScript(HOOK, [], {
       env: {
         ...process.env,
         CLAUDE_CODE_REMOTE: '',
