@@ -514,9 +514,6 @@ export class Card extends Phaser.GameObjects.Container {
   private readonly edgeRepeat: HoldRepeat;
   private edgeRepeated = false;
 
-  /** 今の押下がタップでなくなったか（cancelTap参照）。押し始めるたびに戻す。 */
-  private tapCancelled = false;
-
   /**
    * この枠に今在るインスタンス（setPresence）。言われるまでは、映しているもの全部が在るとして扱う
    * （undefined）。**枚数はここからの導出値**——数を別に持つと、宙に在る札との引き算がずれる。
@@ -525,9 +522,6 @@ export class Card extends Phaser.GameObjects.Container {
 
   /** 0枚になったとき、帰ってくる場所の印を残す枠か（setPresence）。 */
   private emptied = false;
-
-  /** 押下中だけ出す黒枠（makeTappable参照）。押しても離しても何も起きないカードは持たない。 */
-  private pressHighlight: Phaser.GameObjects.Graphics | undefined;
 
   /** 押している間だけ出すもの（CardContent.hold）の計時。ボタンの長押しと同じ仕組み（Hold）。 */
   private readonly hold: Hold;
@@ -1301,12 +1295,10 @@ export class Card extends Phaser.GameObjects.Container {
       borderWidth: lineWidth,
       radius,
     });
-    this.pressHighlight = highlight;
     this.add(highlight);
 
     onPressRelease(this, {
       onPress: () => {
-        this.tapCancelled = false;
         highlight.setVisible(true);
         // 何を出すかは押した時点の内容から読む（onTapと同じ）。
         this.hold.begin(this._content.hold);
@@ -1317,27 +1309,12 @@ export class Card extends Phaser.GameObjects.Container {
       },
       onRelease: () => {
         highlight.setVisible(false);
-        if (this.hold.end() || this.tapCancelled || !this.holdsCard) return;
+        if (this.hold.end() || !this.holdsCard) return;
 
         noteOperation(uiText('log_card_tapped', { name: this._content.name }));
         this._content.onTap?.();
       },
     });
-  }
-
-  /**
-   * 今の押下をタップとして扱わない。掴んで動かす操作（カードのドラッグ・レーンの横スクロール）に
-   * なったと分かった時点でCardDragControllerが呼ぶ。押下中の黒枠と、押している間だけ出していたもの
-   * （hold）もここで引っ込める——押されていることを示す表示は、掴んだ時点で指が運ぶ札に役目を譲る。
-   *
-   * 押し始めたカードの上で指を離すと、動かしていてもタップとして成立してしまう（tap.ts）。
-   * スタックの上の1枚を自分の位置へ重ねる操作（石と石の組み合わせ）や、カードを掴んだままの
-   * レーンの横スクロールがこれに当たり、そのままでは操作のたびに子ウィンドウが開いてしまう。
-   */
-  cancelTap(): void {
-    this.tapCancelled = true;
-    this.pressHighlight?.setVisible(false);
-    this.hold.end();
   }
 
   /**
