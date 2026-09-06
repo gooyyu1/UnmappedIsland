@@ -1,7 +1,7 @@
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { PropertyDef, RangeEventLabel } from '../domain/PropertyDef';
 import { ROLL_ENDS } from '../domain/PropertyDef';
-import type { TickDelta, TickGate } from './tickDeltas';
+import type { SelfStageRequirement, TickDelta, TickGate } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 import type { CraftingStep } from './CraftingStep';
 import { collectOutputs } from './CraftingStep';
@@ -469,22 +469,70 @@ function totalsWithDriver(own: TickAmounts, driver: ExternalTickDelta | undefine
 }
 
 /**
- * ゲートが自分の値を見ているなら、その値が尽きて条件が落ちるまでのtick数（TickGate参照）。
- * 見ていない、または尽きない値なら undefined＝止まらない。**生まれた時点から数える**ので、
- * 効き始めまでの時間（ticksUntilGateRises）と同じ物差しの上に乗る。
+ * ゲートが落ちて、その増減が効かなくなるまでのtick数（TickGate参照）。**落ち方は2つある**——
+ * 見ている自分の値が尽きるか、居ることを要求された段を上へ抜けるか。どちらも来なければundefined＝
+ * 止まらない。**生まれた時点から数える**ので、効き始めまでの時間（ticksUntilGateRises）と同じ
+ * 物差しの上に乗る。
+ *
+ * 落ちるのは**要るもののどれか1つが外れた時点**なので、最も早いものを採る。
  */
 function ticksUntilGateFalls(def: ObjectDef, gate: TickGate): number | undefined {
-  let fewest: number | undefined;
-  for (const propertyGlobalId of gate.watchedSelfProperties) {
-    // 尽きるまでを**最も短く**見る側（fastest・fewest）に合わせて、ロールも軽く出たほうを採る。
-    const value = staticValueOf(def, propertyGlobalId, 'lowest');
-    const pace = paceTowards(tickAmountsOf(def, propertyGlobalId).possible, 'on_min');
-    if (value === undefined || pace === undefined) continue;
+  const falls = [
+    ...gate.watchedSelfProperties.map((propertyGlobalId) => ticksUntilValueRunsOut(def, propertyGlobalId)),
+    ...gate.requiredSelfStages.map((required) => ticksUntilStageLeftUpward(def, required)),
+  ].filter((ticks): ticks is number => ticks !== undefined);
+  return falls.length === 0 ? undefined : Math.min(...falls);
+}
 
-    const ticks = Math.ceil(value / -pace.fastest.amount);
-    if (fewest === undefined || ticks < fewest) fewest = ticks;
+/** その値が尽きて、それを見ている条件が外れるまでのtick数。尽きない値ならundefined。 */
+function ticksUntilValueRunsOut(def: ObjectDef, propertyGlobalId: number): number | undefined {
+  // 尽きるまでを**最も短く**見る側（fastest）に合わせて、ロールも軽く出たほうを採る。
+  const value = staticValueOf(def, propertyGlobalId, 'lowest');
+  const pace = paceTowards(tickAmountsOf(def, propertyGlobalId).possible, 'on_min');
+  if (value === undefined || pace === undefined) return undefined;
+
+  return Math.ceil(value / -pace.fastest.amount);
+}
+
+/**
+ * 要求された段を上へ抜けて、条件が外れるまでのtick数。抜ける先が無い、上がっていかない値、
+ * 値の並びの上に位置を持たない段（シンボル型、6.6節）ならundefined。
+ *
+ * **抜けて落ちるのはちょうどその段（`in_stage`）だけ**——「その段以上」（`in_stage_or_above`、
+ * 14.1節）は上の段へ移っても成立したままなので、上へ抜けることでは落ちない。
+ */
+function ticksUntilStageLeftUpward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
+  if (required.bound !== 'exact') return undefined;
+
+  // 抜けるまでを**最も短く**見る側（fastest）に合わせる。ロールは効き始め（ticksUntilGateRises）と
+  // 同じ段から遠いほうで、どちらも押し手を控えめに数える側。
+  const upperBound = stageUpperBoundOf(def, required);
+  const value = staticValueOf(def, required.propertyGlobalId, 'lowest');
+  const pace = paceTowards(tickAmountsOf(def, required.propertyGlobalId).possible, 'on_max');
+  if (upperBound === undefined || value === undefined || pace === undefined) return undefined;
+
+  return Math.ceil((upperBound - value) / pace.fastest.amount);
+}
+
+/**
+ * 名指された段の上端＝値の並びの上でその段のすぐ上に来る段の下端。上に段が無ければundefined。
+ * **段の宣言順ではなく下端の大小だけで決まる**（PropertyDef.stageAboveと同じ見方）。
+ *
+ * **rangeの上限より上に下端を置いた段は、上に無いものとして数える**——そこは値の取れない位置なので、
+ * 抜けて行き着く先にならない。
+ */
+function stageUpperBoundOf(def: ObjectDef, required: SelfStageRequirement): number | undefined {
+  const propertyDef = def.tryGetPropertyDef(required.propertyGlobalId);
+  if (propertyDef === undefined || required.lowerBound === undefined) return undefined;
+
+  let above: number | undefined;
+  for (const stage of propertyDef.stages) {
+    const bound = stage.lowerBound;
+    if (bound === undefined || bound <= required.lowerBound) continue;
+    if (propertyDef.range !== undefined && bound > propertyDef.range.max) continue;
+    if (above === undefined || bound < above) above = bound;
   }
-  return fewest;
+  return above;
 }
 
 /**
@@ -493,7 +541,7 @@ function ticksUntilGateFalls(def: ObjectDef, gate: TickGate): number | undefined
  * 下に置かれた増減（8.2節）で育つが、そこはtickAmountsOfが数から外している。
  *
  * **要る段が複数あれば最も遅いものに合わせる**——どれか1つでも跨いでいなければ増減は効かない。
- * ゲートが落ちるのは見ている値のどれかが尽きた時点なので、ticksUntilGateFallsとは向きが逆になる。
+ * ゲートが落ちるのは要るもののどれか1つが外れた時点なので、ticksUntilGateFallsとは向きが逆になる。
  */
 function ticksUntilGateRises(def: ObjectDef, gate: TickGate): number {
   let longest = 0;
