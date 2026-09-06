@@ -97,11 +97,14 @@ gh issue list --state open --limit 100 --json number,title,labels |
 - **`area:daemon`** — 走らせながらは書き換えられないデーモンの仕組み
   （`scripts/agent/**`・`.github/workflows/board-labels.yml`）。
 
-ラベルの綴りには `:` が入るので、Windows では `gh` の引数が化けます。
+```
+gh issue edit <番号> --add-label kind:task --add-label origin:agent
+```
 
-```
-MSYS2_ARG_CONV_EXCL='*' gh issue edit <番号> --add-label kind:task
-```
+**ラベルの綴りに `:` が入っていても、Windows で化けることはありません。** MSYS の変換が掛かるのは
+**パスに見える引数**（`/` を含み `:` で区切られたもの。`origin/main:.claude/x.md` など）だけで、
+`kind:task` はそのまま通ります（実測 2026-09-06）。`MSYS2_ARG_CONV_EXCL='*'` が要るのは
+`git diff main...HEAD` のような綴りのほうです。
 
 ## 守ること
 
