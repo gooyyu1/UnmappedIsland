@@ -63,7 +63,9 @@ if ! live=$(CCR_META="$CCR_META" bash "$HERE/live-sessions.sh" 2>/dev/null); the
   exit 1
 fi
 
-while IFS=$'\t' read -r id status bucket tags; do
+# **最後の変数は残りの列を全部飲む**ので、一覧に列が増えたらここも増やす——足りないと、増えた分が
+# タグに混ざって**どのタグにも一致しなくなり、占有が黙って外れる。**
+while IFS=$'\t' read -r id status bucket tags _; do
   [ -n "$id" ] || continue
   if [ "$MODE" = --busy ]; then
     # **手が動いているかを言うのは `session_status` だけ。** `status_bucket` は手番が終わった後の

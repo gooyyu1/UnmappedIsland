@@ -128,6 +128,9 @@ export function readBoard({ gh = runGh, sessions = liveSessions, log, now, settl
 
   const openIssues = JSON.parse(issues);
   return {
+    // **手が空いてからの長さを測るのに要る**（`board-move.mjs` の `STALL_MINUTES`）。この周の
+    // 時刻は1つで、比べる相手（台帳の `idle:`）も同じ形で書く。
+    now: now.toISOString(),
     settledBefore: settledBefore(now, settleMinutes),
     mainChecks: mainChecks(checks),
     prs: JSON.parse(prs),
