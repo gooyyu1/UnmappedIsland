@@ -772,18 +772,9 @@ export class WorldObject {
     this.collectInfluencesRecursively(influences);
     for (let ancestor = this._parent; ancestor !== undefined; ancestor = ancestor._parent)
       ancestor.def.passives.collectInfluences(ancestor, influences);
-    for (const participant of this.fellowParticipants())
+    for (const participant of this._participation?.participantsOtherThan(this) ?? [])
       participant.def.passives.collectInfluences(participant, influences);
     return influences;
-  }
-
-  /**
-   * 今この物と同じ操作に加わっている、自分以外の参加者（11.5節）。**役を対象にした持続効果の宣言元は
-   * 必ずここに居る**——役を指せるのは参加者からだけなので、宣言元も相手も同じ1つの関係に加わっている。
-   * 関係が張られていなければ誰も居ない。
-   */
-  private fellowParticipants(): readonly WorldObject[] {
-    return (this._participation?.participants ?? []).filter((participant) => participant !== this);
   }
 
   /** 自分と、自分の中に入っている物すべてが宣言する持続効果の辺を書き出す。 */

@@ -124,10 +124,19 @@ export class InteractionRelation {
   }
 
   /**
+   * この関係に加わっている物のうち、selfでないもの。**役を対象にした持続効果（8節）の宣言元は、
+   * 相手から見れば必ずここに居る**——役を指せるのは参加者からだけなので、宣言元も相手も同じ1つの
+   * 関係に加わっている（WorldObject.readInfluences）。
+   */
+  participantsOtherThan(self: WorldObject): readonly WorldObject[] {
+    return this.participants.filter((participant) => participant !== self);
+  }
+
+  /**
    * この関係に加わっている物を1つずつ（同じ物が2つの役に就く再帰的な操作、11.5節では1回だけ）。
    * **agentを先頭に置く**ので、一意性が破れているときは他の誰も加わらないうちに止まる（bound）。
    */
-  get participants(): readonly WorldObject[] {
+  private get participants(): readonly WorldObject[] {
     const joined: WorldObject[] = [];
     for (const role of INTERACTION_ROLES) {
       const participant = this.objectAt(role);
