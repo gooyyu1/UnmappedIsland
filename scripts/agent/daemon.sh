@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 司令塔の機械の部分を回し続ける。**1周を回し、待つ。**
+# 盤面を回し続ける。**1周を回し、待つ。**
 #
 #   bash scripts/agent/daemon.sh start        # 背景で立てる（ログは $DAEMON_LOG へ追記）
 #   bash scripts/agent/daemon.sh stop         # 止める（錠が外れるまで待つ）

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 司令塔の盤面を1回で出す。
+# 盤面を1回で出す。
 #
 #   bash scripts/agent/board.sh
 #
