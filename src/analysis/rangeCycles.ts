@@ -354,29 +354,22 @@ function pushingCasesOf(def: ObjectDef, deltas: readonly TickDelta[]): readonly 
   const heldBack = (delta: TickDelta) => delta.gate.stage !== undefined || delta.gate.conditional;
   const always = deltas.filter((delta) => !heldBack(delta));
 
-  return coincidingCombinationsOf(always, deltas.filter(heldBack))
+  return coincidingCombinationsOf(deltas.filter(heldBack))
     .map((combination) => pushingCaseOf(def, [...always, ...combination]))
     .filter((pushing): pushing is PushingCase => pushing !== undefined);
 }
 
 /**
- * 縛られた増減（heldBack）のうち、**同時に成立しうる組み合わせ**をすべて挙げる。1つも重ねない場合も
- * 含む——縛られた増減は、成立しない場面があるからこそ縛られている。
- *
- * 挙げるのは縛られた側だけで、常時効く分（always）は組み合わせに入らない——どの場合でも効いて
- * いるので、重ねるのは呼ぶ側の仕事。ここで要るのは重なりの判定にだけで、常時効く分と重ならない
- * 縛りは、どの場合でも成立しない。
+ * 縛られた増減（段・条件つき）のうち、**同時に成立しうる組み合わせ**をすべて挙げる。1つも重ねない
+ * 場合も含む——縛られた増減は、成立しない場面があるからこそ縛られている。
  *
  * 落とすのは**排他だと言い切れる対**（TickGate.neverHoldsWith）だけで、落とせない対は重なりうる
- * ものとして数える。
+ * ものとして数える。**常時効く増減は渡さない**——どの場面でも効いているのだから、どれとも重なる。
+ * どの組み合わせにも同じものが並ぶだけなので、重ねるのは呼ぶ側の仕事。
  */
-function coincidingCombinationsOf(
-  always: readonly TickDelta[],
-  heldBack: readonly TickDelta[],
-): readonly (readonly TickDelta[])[] {
+function coincidingCombinationsOf(gated: readonly TickDelta[]): readonly (readonly TickDelta[])[] {
   let combinations: (readonly TickDelta[])[] = [[]];
-  for (const delta of heldBack) {
-    if (always.some((member) => member.gate.neverHoldsWith(delta.gate))) continue;
+  for (const delta of gated) {
     const grown = combinations
       .filter((combination) => combination.every((member) => !member.gate.neverHoldsWith(delta.gate)))
       .map((combination) => [...combination, delta]);
@@ -479,7 +472,7 @@ function possibleTotalsOf(
 ): readonly TickTotal[] {
   // **同じ量になる組み合わせも畳まない。** 畳むと、落ちた側でしか成立しない条件が「無い」ことに
   // なる——日差しでも風でも同じ速さで乾くなら、どちらでも乾くと言えなければならない（RangeCycle.gatedBy）。
-  return coincidingCombinationsOf(always, conditional).map((combination) => ({
+  return coincidingCombinationsOf(conditional).map((combination) => ({
     amount: totalAmountOf([...always, ...combination]),
     conditional: combination,
   }));
