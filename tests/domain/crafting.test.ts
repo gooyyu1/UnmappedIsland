@@ -6,6 +6,7 @@ import {
   stepIsSupplied,
   stepSupplyRatio,
 } from '../../src/domain/crafting';
+import { InteractionRelation } from '../../src/domain/ReferenceRoot';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -66,6 +67,23 @@ object_defs:
           - requires:
               - {object: rope, count: 1, consume: true}
             duration: 10
+  # 工程の最中の役を覗く側。propsから解けるのは、この者が工程に参加しているあいだだけ（11.5節）。
+  crafter:
+    tags: [item]
+    props:
+      seen_progress: {value: 0, base: {subject: patient, prop: progress}}
+  # 2工程ともtick境界を跨ぐ長さ。1工程目を終えた状態で2工程目の最中を覗くために使う。
+  bench:
+    tags: [item]
+    recipes:
+      basic:
+        steps:
+          - requires:
+              - {object: wood, count: 1, consume: true}
+            duration: 30
+          - requires:
+              - {object: wood, count: 1, consume: true}
+            duration: 30
   # 2つの工程が同じ型を要求する。枠の上限は合計（3）なので、1工程目の要求（1）より多く入りうる。
   raft:
     tags: [item]
@@ -105,6 +123,12 @@ object_defs:
     wip.moveToSlotOrRejection(ground.getSlot(codex.slotNames.getId('items')));
     recipe = codex.objects.get(idOf('axe')).recipesProducingThis[0];
   });
+
+  function putOnGround(objectName: string): WorldObject {
+    const object = session.createObject(idOf(objectName));
+    object.moveToSlotOrRejection(ground.getSlot(codex.slotNames.getId('items')));
+    return object;
+  }
 
   function put(objectName: string, count: number): void {
     for (let i = 0; i < count; i += 1)
@@ -215,6 +239,54 @@ object_defs:
     expect(duringTicks.length, '30分＝2tick').toBe(2);
     for (const contents of duringTicks) expect(contents).toEqual(['knife', 'wood', 'wood']);
     expect(boxContents(), '経過し切った時点で消える').toEqual([]);
+  });
+
+  it('工程の最中は、参加者のpropsから役が解ける', () => {
+    // 工程は操作なので関係が張られ、参加者はそこから相手を指せる（11.5節）。関係の外では土台が
+    // 辿り着かず、寄与は0になる（6.5節）。
+    const crafter = putOnGround('crafter');
+    // 土台の寄与は実効値に出る（6.5節）。宣言そのものの値は0のまま動かない。
+    const seenProgress = () =>
+      crafter.tryGetProperty(codex.propertyNames.getId('seen_progress'))?.getEffectiveValue();
+
+    const bench = codex.objects.get(idOf('bench')).recipesProducingThis[0];
+    const benchWip = putOnGround(inProgressObjectName('bench', 'basic'));
+    for (let i = 0; i < 2; i += 1)
+      session.createObject(idOf('wood')).moveToSlotOrRejection(benchWip.getSlot(materialsId()));
+
+    expect(seenProgress(), '工程の外ではpatientが居ない').toBe(0);
+    expect(tryAdvanceCrafting(benchWip, materialsId(), bench, codex, session, crafter)).toBe(true);
+
+    const during: (number | undefined)[] = [];
+    session.observeTicks(
+      () => during.push(seenProgress()),
+      () => tryAdvanceCrafting(benchWip, materialsId(), bench, codex, session, crafter),
+    );
+
+    expect(during, '2工程目の最中は、どのtickでも1工程目ぶんの進捗が見える').toEqual([30, 30]);
+    expect(seenProgress(), '工程を抜ければ、また辿り着かない').toBe(0);
+  });
+
+  it('工程の最中の者は、別の操作のagentになれない', () => {
+    // 11.5節の不変条件（動作主は一度に1つの動作しかできない）。工程も操作なので、作業しているあいだ
+    // 動作主は主張されたままになる。
+    const crafter = putOnGround('crafter');
+    put('wood', 2);
+    put('knife', 1);
+    const startAnotherAction = () =>
+      new InteractionRelation(ground, crafter, undefined).whileActing(() => undefined);
+
+    let checked = 0;
+    session.observeTicks(
+      () => {
+        checked += 1;
+        expect(startAnotherAction).toThrowError(/agent/);
+      },
+      () => tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, crafter),
+    );
+
+    expect(checked, '30分＝2tick、どちらの最中も主張されている').toBe(2);
+    expect(startAnotherAction, '工程を抜ければ主張は外れる').not.toThrow();
   });
 
   // 在庫確認は開始時に一度だけで、経過中の再判定はしない（ActionSystem.md 6.1節）。

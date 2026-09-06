@@ -2,6 +2,7 @@ import type { WorldCodex } from './WorldCodex';
 import { RecipeRequirementDef } from './RecipeDef';
 import type { RecipeDef, RecipeStepDef } from './RecipeDef';
 import { spendDurationAndReportParticipantsAlive } from './actionTime';
+import { InteractionRelation } from './ReferenceRoot';
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 
@@ -148,44 +149,54 @@ export function tryAdvanceCrafting(
   agent: WorldObject | undefined,
 ): boolean {
   // これも操作1つなので、まるごと囲う（WorldSession.runToSeam）。経過中に配られて待たされた
-  // 手番は、工程を進め終えたこの切れ目で起きる。
+  // 手番は、工程を進め終えたこの切れ目で起きる。クレーム（whileActing）の外側で閉じるのは
+  // Interaction.tryExecuteと同じ理由。
   return session.runToSeam(() => {
     // 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.4節）。画面も同じ問いで
     // ボタンの可否と理由を出すが、**止めるのはここ**——画面を通らない経路から進められては困る。
+    //
+    // 問うのは関係を張る前。crafting_conditionsは操作ではなく（11.5節）、画面も関係を張らずに同じ
+    // 問いを出すので、内側で問うと押す前に見せた可否と実際の可否がずれる。
     if (codex.unmetCraftingRequirement(agent) !== undefined) return false;
 
-    const progressGlobalId = codex.vocabulary.engine.progressId;
-    const step = currentStep(recipe, inProgress.tryGetProperty(progressGlobalId)?.number ?? 0);
-    if (step === undefined) return false;
-    if (!stepIsSupplied(inProgress, materialsSlotGlobalId, step)) return false;
+    // 工程は操作なので、関係を張った状態で走らせる（11.5節）。patientは製作中オブジェクト——工程の
+    // 宣言が乗っている側（RecipeSystem.md 4節の`interactions.work`相当）。instrumentは居ない——
+    // 素材も道具も運ばれてきた側ではなく、既に材料スロットの中身だから（運び入れる操作は7.10節で、
+    // そちらでは入れる物がinstrument）。実行なので動作主も主張する（whileActing）。
+    return new InteractionRelation(inProgress, agent, undefined).whileActing(() => {
+      const progressGlobalId = codex.vocabulary.engine.progressId;
+      const step = currentStep(recipe, inProgress.tryGetProperty(progressGlobalId)?.number ?? 0);
+      if (step === undefined) return false;
+      if (!stepIsSupplied(inProgress, materialsSlotGlobalId, step)) return false;
 
-    // actions/combinationsと同じ順序で、時間を進めてから効果（消費と進捗）を適用する
-    // （ActionSystem.md 2節）。素材は作業のあいだ材料スロットに在り、無くなるのは作業を終えた
-    // 時点で、完成品もその時刻に生まれる。
-    //
-    // 生存を見るのは製作中オブジェクトだけ（actionsのselfにあたる）。これを失うと進捗の行き先も
-    // 完成品の生まれる場所も無くなり、黙って何も起きない結果になる。素材は違う——経過中に失われても
-    // 打ち切らない。それは開始時に済ませた在庫確認（stepIsSupplied）の再判定にあたる（同6.1節）。
-    if (!spendDurationAndReportParticipantsAlive(step.durationMinutes, session, [inProgress])) return false;
+      // actions/combinationsと同じ順序で、時間を進めてから効果（消費と進捗）を適用する
+      // （ActionSystem.md 2節）。素材は作業のあいだ材料スロットに在り、無くなるのは作業を終えた
+      // 時点で、完成品もその時刻に生まれる。
+      //
+      // 生存を見るのは製作中オブジェクトだけ（actionsのselfにあたる）。これを失うと進捗の行き先も
+      // 完成品の生まれる場所も無くなり、黙って何も起きない結果になる。素材は違う——経過中に失われても
+      // 打ち切らない。それは開始時に済ませた在庫確認（stepIsSupplied）の再判定にあたる（同6.1節）。
+      if (!spendDurationAndReportParticipantsAlive(step.durationMinutes, session, [inProgress])) return false;
 
-    // 消費が進捗より先なのは、進捗が上限を超えた瞬間に完成し、残っている物は親へこぼれてしまうため。
-    const allocated = allocateContentsToRequirements(
-      inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [],
-      step,
-    );
-    for (const requirement of step.requirements) {
-      if (!requirement.consume) continue;
-      for (const object of allocated.get(requirement) ?? []) object.destroy();
-    }
+      // 消費が進捗より先なのは、進捗が上限を超えた瞬間に完成し、残っている物は親へこぼれてしまうため。
+      const allocated = allocateContentsToRequirements(
+        inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [],
+        step,
+      );
+      for (const requirement of step.requirements) {
+        if (!requirement.consume) continue;
+        for (const object of allocated.get(requirement) ?? []) object.destroy();
+      }
 
-    inProgress.tryGetProperty(progressGlobalId)?.add(step.durationMinutes);
+      inProgress.tryGetProperty(progressGlobalId)?.add(step.durationMinutes);
 
-    // 工程の進捗バー（CardView.md 10.1節、inProgressObjects.FINISHED_STEPS_PROPERTY）が読む純粋な
-    // 回数。工程が1つのレシピにはそもそも宣言が無いので、持っていなければ何も起きない。
-    inProgress.tryGetProperty(codex.vocabulary.engine.finishedStepsId)?.add(1);
+      // 工程の進捗バー（CardView.md 10.1節、inProgressObjects.FINISHED_STEPS_PROPERTY）が読む純粋な
+      // 回数。工程が1つのレシピにはそもそも宣言が無いので、持っていなければ何も起きない。
+      inProgress.tryGetProperty(codex.vocabulary.engine.finishedStepsId)?.add(1);
 
-    spillUnneeded(inProgress, materialsSlotGlobalId, recipe, codex);
-    return true;
+      spillUnneeded(inProgress, materialsSlotGlobalId, recipe, codex);
+      return true;
+    });
   });
 }
 
