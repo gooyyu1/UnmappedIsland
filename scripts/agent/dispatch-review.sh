@@ -12,7 +12,7 @@
 # （[`board-move.mjs`](board-move.mjs)、`board-design.md` 2.10.3）。
 #   SESSION <セッションID>
 #   SOURCES <リポジトリのURL>@<リビジョン>   … PRのブランチで起動していることの確認
-#   一致 / 不一致                            … 送った指示が化けずに届いたか
+#   一致 / 不一致                            … 送った指示が欠けずに届いたか
 #   終了コード 0 … 投入できて、指示も一致した
 #   終了コード 1 … どこかで失敗した（上の行がどこまで出たかで分かる）
 #
@@ -79,8 +79,10 @@ awk '/^```$/ { inside = !inside; next } inside' "$TEMPLATE" >"$RAW"
 }
 INSTRUCTION="$WORK/prompt.md"
 
-# **日本語はシェル変数に載せない。** Windowsのnodeは argv も環境変数もANSIで受け取るので、題を
-# `$(...)` で渡すと黙って化ける。題も本文もファイル経由で node へ渡す。
+# **題をシェルの文字列にしない。** 危ないのは文字の符号ではなく**シェルの展開**で、区切りを引用しない
+# ヒアドキュメントへ載せると、バッククォートで囲んだ識別子がコマンドとして実行されて消える
+# （[`.claude/ccr-meta.sh`](../../.claude/ccr-meta.sh)「指示は Write で書く」）。題も本文もファイル
+# 経由で node へ渡す。
 gh pr view "$PR" --json title,state,headRefName,body,comments >"$WORK/pr.json"
 
 # 閉じた・マージ済みのPRへ立てると、読むものが在るだけに**それらしいコメントが付いて**しまう。

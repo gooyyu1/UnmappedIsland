@@ -82,8 +82,10 @@ SESSION_STATUS_RUNNING\|*)
   ;;
 esac
 
-# **日本語はシェル変数に載せない**（Windowsのnodeは argv も環境変数もANSIで受け取る）。本文は
-# ファイル経由でJSONへ入れる。
+# **本文をシェルの文字列にしない**（危ないのは文字の符号ではなく**シェルの展開**で、バッククォートで
+# 囲んだ識別子がコマンドとして実行されて消える。
+# [`.claude/ccr-meta.sh`](../../.claude/ccr-meta.sh)「指示は Write で書く」）。本文はファイル経由で
+# JSONへ入れる。
 node -e '
   const fs = require("node:fs");
   const [session, bodyPath] = process.argv.slice(1);
