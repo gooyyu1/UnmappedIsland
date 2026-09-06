@@ -553,6 +553,50 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(amountIn(jar), '残りは注ぎ元に留まる').toBe(750);
   });
 
+  it('満水の容器へは注げず、理由container_fullを返す', () => {
+    const agent = spawn(SAMPLE_CHARACTER);
+    const from = spawnContainer('jar', 'water', 400);
+    const to = spawnContainer('jar', 'water', capacityOf('jar')!);
+
+    expect(to.combinationsWith(from, agent), '成立する組み合わせは無い').toEqual([]);
+    const refused = to.refusedCombinationsWith(from, agent).find((c) => c.name === 'pour_into_filled');
+
+    expect(refused, '断る理由を宣言しているので落とし先としては残る').toBeDefined();
+    expect(refused?.unmetRequirement()?.reasonName, '断る理由が画面へ届く').toBe('container_full');
+    expect(refused?.tryExecute() === true).toBe(false);
+    expect(amountIn(from), '注ぎ元は1mLも減らない').toBe(400);
+  });
+
+  it('満水の一歩手前なら注げる', () => {
+    const agent = spawn(SAMPLE_CHARACTER);
+    const from = spawnContainer('jar', 'water', 400);
+    const to = spawnContainer('jar', 'water', capacityOf('jar')! - 1);
+
+    expect(
+      to
+        .combinationsWith(from, agent)
+        .find((c) => c.name === 'pour_into_filled')
+        ?.tryExecute() === true,
+    ).toBe(true);
+
+    expect(amountIn(to), '入る分だけ入る').toBe(capacityOf('jar'));
+    expect(amountIn(from), '入りきらない分は注ぎ元に残る').toBe(399);
+  });
+
+  it('容量の違う器でも、満ちる境目はその器のcapacityが決める', () => {
+    // 段を宣言するのは器の側なので、殻（250mL）は殻のcapacityで断る（liquid_containers.yaml）。
+    const agent = spawn(SAMPLE_CHARACTER);
+    const from = spawnContainer('jar', 'water', 400);
+    const bowl = spawnContainer('coconut_bowl', 'water', capacityOf('coconut_bowl')!);
+
+    expect(
+      bowl
+        .refusedCombinationsWith(from, agent)
+        .find((c) => c.name === 'pour_into_filled')
+        ?.unmetRequirement()?.reasonName,
+    ).toBe('container_full');
+  });
+
   it('異なる種類の中身が入った容器へは注げない', () => {
     const tea = spawnContainer('jar', 'tea', 400);
     const water = spawnContainer('jar', 'water', 500);

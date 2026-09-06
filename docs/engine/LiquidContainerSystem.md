@@ -49,7 +49,9 @@ jar:
 ## 2. 役割分担: 上限は容器、量も種類も振る舞いも中身
 
 - **容器**（`jar`・`coconut_bowl`）: 抱えられる量（`fill`）と、何を抱えられるか
-  （`variation_axes` の `content`）を宣言する。絵と名前の骨格も容器のもの。
+  （`variation_axes` の `content`）を宣言する。**満ちきった一点は `fill` の `full` 段**——中身は
+  この名前で「もう入らない」を訊く（4 節）ので、器ごとに違う容量が中身の宣言へ漏れない。
+  絵と名前の骨格も容器のもの。
 - **中身の trait**（`liquid`・`water_liquid`・`evaporating_liquid`・`rain_filled_liquid` 等）:
   密度（`density`）・色（`color`）・種類タグ・飲用と注ぎの `interactions`・蒸発 `passives` を持つ。
 
@@ -87,9 +89,11 @@ water_liquid:
         - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
       become: {subject: instrument, content: water_liquid}
       transfer: {amount: 999999, from: self, from_prop: fill, to: instrument, to_prop: fill}
-    # 相手も水入りのとき。
+    # 相手も水入りのとき。注ぎ先が満ちていれば断る。
     pour_into_filled:
       trigger: {drag: {tag: water}}
+      conditions:
+        - {reason: container_full, not: {prop: fill, in_stage: full}}
       transfer: {amount: 999999, from: instrument, from_prop: fill, to: self, to_prop: fill}
 ```
 
@@ -101,6 +105,12 @@ water_liquid:
 
 **入りきらない分は注ぎ側に残ります。** `transfer` が出せる量と受け取れる量の両方でクランプするので、
 「あるだけ注ぎ、入るだけ受け、残りは残る」に特別な記述は要りません。
+
+**満ちきった器へは注げません**（理由は `container_full`）。1mL も入らない移送は受け取れる個数が 0 に
+なり、理由を宣言していなければ落とし先そのものが消えて「重ねても何も起きない」に見えます
+（[`CardInteraction.md`](../ui/CardInteraction.md) 2.1 節）。**満ちる境目は器の側が `fill` の `full` 段
+として名乗り**（2 節）、中身はその名前で訊くだけなので、器ごとに違う容量が中身の宣言へ漏れません
+——飲用が `hydration` の `full` 段を見るのと同じ形です（5 節）。
 
 **注ぎ切った側は空の容器へ戻ります。** `fill` が 0 になった変種は素の型へ戻り（1 節）、名前の「〜入り」も
 中身のバーも同時に消えます。飲み切った容器（5 節）も同じです。

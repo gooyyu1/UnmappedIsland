@@ -81,8 +81,14 @@ traits:
           to_prop: fill
       # 水入りの容器同士。入るだけ入り、入りきらない分は注ぎ元に残る（transferの両側のクランプ）。
       # 異種の液体はこのタグに合致しないので、混ぜる組み合わせがそもそも現れない。
+      #
+      # 注ぎ先が満ちていれば断る。**上限そのものは器の側が段として名乗る**（fillのfull段）ので、
+      # 器ごとに違う容量をここへ書かずに済む。飲用がhydrationのfull段を見るのと同じ形。
       pour_into_filled:
         trigger: {drag: {tag: water}}
+        conditions:
+          - reason: container_full
+            not: {prop: fill, in_stage: full}
         transfer:
           amount: 999999
           from: instrument
@@ -161,6 +167,9 @@ traits:
           to_prop: fill
       pour_into_filled:
         trigger: {drag: {tag: tea}}
+        conditions:
+          - reason: container_full
+            not: {prop: fill, in_stage: full}
         transfer:
           amount: 999999
           from: instrument
@@ -202,6 +211,9 @@ traits:
           to_prop: fill
       pour_into_filled:
         trigger: {drag: {tag: oil}}
+        conditions:
+          - reason: container_full
+            not: {prop: fill, in_stage: full}
         transfer:
           amount: 999999
           from: instrument
@@ -332,6 +344,11 @@ object_defs:
       fill:
         value: 0
         range: {min: 0, max: 4000}
+        # 満ちきった一点。**器ごとに違う容量を、注ぎ移しへ段の名前1つで渡すための宣言**
+        # （中身のpour_into_filledがこの名前で「もう入らない」を見る）。名前はhydrationの
+        # full段（Characters.md）と同じで、どちらも「もう入らない」を指す。
+        stages:
+          - {name: full, min: 4000}
         on_min:
           become: {content: none}
       weight: {value: 1200}
@@ -352,6 +369,9 @@ object_defs:
       fill:
         value: 0
         range: {min: 0, max: 250}
+        # 満ちきった一点（甕のfillと同じ役目）。
+        stages:
+          - {name: full, min: 250}
         on_min:
           become: {content: none}
       weight: {value: 100}
