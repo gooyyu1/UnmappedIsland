@@ -303,6 +303,12 @@ object_defs:
               # 菌の居ない体は活力が戻る。**生まれた時点で入っている段**なので、開けたのは押し手では
               # ない——辿ると、傷が傍に在って初めて活力が戻ることになる。
               - add: {self: {vitality: 1}}
+          - name: feverish
+            min: 5
+            passives:
+              # 熱で余計に渇く（characters/player_character.yamlのpathogen）。**押し手はこの段を
+              # 開けたそばから上へ押し抜けさせる**ので、効くのは下のsepticemicへ入るまでの間だけ。
+              - add: {self: {thirst: -10}}
           - name: septicemic
             min: 7
             passives:
@@ -312,6 +318,10 @@ object_defs:
               - conditions: [{in_slot: catch}]
                 add: {self: {hydration: -2}}
       vitality: {value: 0, range: {min: 0, max: 100}}
+      thirst:
+        value: 100
+        range: {min: 0, max: 100}
+        on_min: {destroy: self}
       hydration:
         value: 336
         range: {min: 0, max: 336}
@@ -520,6 +530,13 @@ object_defs:
     // 体力の尽きる周期が立つ——その段が開き続けているかを決めるのは押し手ではなく相手自身の値で、
     // その動きは段で切り替わる増減を含む（tickAmountsOfが数えていない）。
     expect(drivenCyclesOf('sow', 'stamina')).toEqual([]);
+  });
+
+  it('押し手が開けた段は、同じ押し手がそのまま上へ抜けさせる', () => {
+    // 熱で渇く分はfeverish（5〜7）に居る間だけ効くが、押し上げているのは止まらない押し手なので、
+    // 開いた5 tick後にはsepticemicへ抜けて止まる。押し手が止まるまでだけを引き継ぐと、この-10が
+    // 永久に効くものとして数えられ、渇きで死ぬ周期が立つ。
+    expect(drivenCyclesOf('sow', 'thirst')).toEqual([]);
   });
 
   it('段のほかにも縛りのある増減は、押し手が開けたものとして数えない', () => {
