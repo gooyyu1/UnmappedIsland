@@ -73,11 +73,11 @@ work_piles:
   - {system: 10, pile: 葉の小屋, object: null, days: 3.00, minutes: 2448.0}
   - {system: 10, pile: 高床, object: null, days: 4.00, minutes: 3264.0}
   - {system: 10, pile: 板の壁・床, object: null, days: 5.00, minutes: 4080.0}
-  - {system: 12, pile: 筏, object: raft, days: 5.16, minutes: 4206.8}
-  - {system: 12, pile: 帆, object: rawhide_sail, days: 4.63, minutes: 3776.8}
-  - {system: 12, pile: 櫂と舵, object: null, days: 2.00, minutes: 1632.0}
-  - {system: 12, pile: 沿岸航海, object: null, days: 3.00, minutes: 2448.0}
-  - {system: 12, pile: 海図を仕上げる, object: null, days: 5.00, minutes: 4080.0}
+  - {system: 11, pile: 筏, object: raft, days: 5.16, minutes: 4206.8}
+  - {system: 11, pile: 帆, object: rawhide_sail, days: 4.63, minutes: 3776.8}
+  - {system: 11, pile: 櫂と舵, object: null, days: 2.00, minutes: 1632.0}
+  - {system: 11, pile: 沿岸航海, object: null, days: 3.00, minutes: 2448.0}
+  - {system: 11, pile: 海図を仕上げる, object: null, days: 5.00, minutes: 4080.0}
 
 work_piles_by_system:
   - {system: 1, piles: 3, days: 6.20, minutes: 5059.2}
@@ -89,7 +89,7 @@ work_piles_by_system:
   - {system: 8, piles: 1, days: 2.30, minutes: 1878.1}
   - {system: 9, piles: 2, days: 2.50, minutes: 2040.0}
   - {system: 10, piles: 3, days: 12.00, minutes: 9792.0}
-  - {system: 12, piles: 5, days: 19.78, minutes: 16143.5}
+  - {system: 11, piles: 5, days: 19.78, minutes: 16143.5}
 
 work_piles_total:
   - {piles: 26, days: 70.08, minutes: 57182.3, outdoor_minutes: 38121.6, base_minutes: 19060.8, base_days: 52.95}

@@ -39,7 +39,7 @@ import { externalTickDeltasOn, rangeCyclesOf } from './rangeCycles';
  */
 
 /**
- * 島を出るのに要るものを名乗るタグ（ContentSkeleton.md 3節の系統12）。**識別子（`raft`・
+ * 島を出るのに要るものを名乗るタグ（ContentSkeleton.md 3節の系統11）。**識別子（`raft`・
  * `rawhide_sail`）を直接書かない**——船や帆が増えたときに、この道具が古い世界を測ったまま緑になる。
  *
  * 釣りの道具（`fishing_tool`）も船・帆と同じ「島を出るのに要るもの」。航海の食料は積まずに釣って

@@ -33,10 +33,11 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 [`tests/docs/docStatsCitations.test.ts`](../../tests/docs/docStatsCitations.test.ts) が印の指す先と
 突き合わせます。**印が付くのは書き写した数値だけ**で、複数のセルから導いた数値は対象外です。
 
-**確定しているのは 2.3.2 節（難易度は歩数で切る）・5.1 節（望遠鏡を置かず山頂が担う）・6 節
-（アーティファクトの数）・8.1.1.1 節（夜の空は月あかりを項として持たない）・8.1.4 節（嵐の日は屋外の
-採取ができない）・8.3.1 節（泊まりがけは入れない）だけで、他の節は暫定です。** とりわけ8節の日数は、
-仮置き（屋外の割合・土地の配分）に支配されているので、桁の話として読んでください。
+**確定しているのは 2.3.2 節（難易度は歩数で切る）・3.1 節（移動の距離は系統に数えない）・5.1 節
+（望遠鏡を置かず山頂が担う）・6 節（アーティファクトの数）・8.1.1.1 節（夜の空は月あかりを項として
+持たない）・8.1.4 節（嵐の日は屋外の採取ができない）・8.3.1 節（泊まりがけは入れない）だけで、他の節は
+暫定です。** とりわけ8節の日数は、仮置き（屋外の割合・土地の配分）に支配されているので、桁の話として
+読んでください。
 
 ## 1. 系統は「繰り返し払う支出」で割る
 
@@ -218,12 +219,31 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 8 | **衣類** | 寒さ・濡れ |
 | 9 | **寝床** | 眠気 |
 | 10 | **住居** | 雨風・虫・湿気 |
-| 11 | **遠出** | 移動の距離 |
-| 12 | **船と海図** | 海を渡ること |
+| 11 | **船と海図** | 海を渡ること |
 
 手当て（怪我・病気）は系統に数えていません。支出ではありますが、繰り返し払うのは**失敗したときだけ**で、
 安くしていく段の連なりを持ちません（[`InjurySystem.md`](../engine/InjurySystem.md) の治療は、段ではなく
-症状ごとの対処です）。
+症状ごとの対処です）。**移動の距離も同じ物差しで落ちます**（3.1節）。
+
+**移動の重さそのものは下げません。** 今の島は端から端まで日帰りで届き、往復は屋外の枠を使い切って
+いません（8.3.1節）。畳む手段を持たない支出はただの待ち時間になりますが
+（[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「コストは、それを軽くする道具の値打ちその
+もの」節）、**枠が余っているうちは待たされていません**。縮尺（`terrain_generation.yaml` の
+`diameter_meters`）を下げても浮くものがないので、今のままにします。
+
+**次に系統が増えるとすれば、浅い洞窟の奥です。** 潜るには昼でも光源が要るので
+（[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 7節）、明かりと燃料を安くしていく段が
+連なります。**奥そのものがまだ無い**ので、上の表には入れていません（【いつか: 洞窟内部】、
+[`Someday.md`](../Someday.md)）。
+
+### 3.1 移動の距離は系統に数えない【確定】
+
+**移動の距離は繰り返し払う支出ですが、系統には数えません。** 安くしていく段が、泊まりの行程も遠い
+場所へ置く前線も入れないと決めた時点で無くなったためです（8.3.1節）。残るのはそりと、拠点をどこに置くか
+の判断で、どちらも移動の中の段ではありません——そりは運ぶ入れ物の段であり、拠点の位置は段ではなく
+1度きりの選択です。
+
+**出どころ**: [#1161](https://github.com/gooyyu1/UnmappedIsland/issues/1161)（遠出は系統から落とす）
 
 ## 4. 各系統の段
 
@@ -252,8 +272,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 8 | 衣類 | 束ねた葉・編んだ葉 | **なめし革の一式（2.3<!-- stats: terrain.yaml work_piles pile=なめし革の一式 days -->・実測）** | 1<!-- stats: terrain.yaml work_piles_by_system system=8 piles --> | 2.3<!-- stats: terrain.yaml work_piles_by_system system=8 days --> |
 | 9 | 寝床 | 敷物 | 高床の寝台（1.5<!-- stats: terrain.yaml work_piles pile=高床の寝台 days -->）／詰め物（1<!-- stats: terrain.yaml work_piles pile=詰め物 days -->） | 2<!-- stats: terrain.yaml work_piles_by_system system=9 piles --> | 2.5<!-- stats: terrain.yaml work_piles_by_system system=9 days --> |
 | 10 | 住居 | 洞窟・雨よけ | 葉の小屋（3<!-- stats: terrain.yaml work_piles pile=葉の小屋 days -->）／高床（4<!-- stats: terrain.yaml work_piles pile=高床 days -->）／板の壁・床（5<!-- stats: terrain.yaml work_piles pile=板の壁・床 days -->） | 3<!-- stats: terrain.yaml work_piles_by_system system=10 piles --> | 12<!-- stats: terrain.yaml work_piles_by_system system=10 days --> |
-| 11 | 遠出 | 日帰りの探索 | —（8.3.1節） | 0 | 0 |
-| 12 | 船と海図 | — | **筏（5.2<!-- stats: terrain.yaml work_piles pile=筏 days -->・実測）**／**帆（4.6<!-- stats: terrain.yaml work_piles pile=帆 days -->・実測）**／櫂と舵（2<!-- stats: terrain.yaml work_piles pile=櫂と舵 days -->）／沿岸航海（3<!-- stats: terrain.yaml work_piles pile=沿岸航海 days -->）／海図を仕上げる（5<!-- stats: terrain.yaml work_piles pile=海図を仕上げる days -->） | 5<!-- stats: terrain.yaml work_piles_by_system system=12 piles --> | 19.8<!-- stats: terrain.yaml work_piles_by_system system=12 days --> |
+| 11 | 船と海図 | — | **筏（5.2<!-- stats: terrain.yaml work_piles pile=筏 days -->・実測）**／**帆（4.6<!-- stats: terrain.yaml work_piles pile=帆 days -->・実測）**／櫂と舵（2<!-- stats: terrain.yaml work_piles pile=櫂と舵 days -->）／沿岸航海（3<!-- stats: terrain.yaml work_piles pile=沿岸航海 days -->）／海図を仕上げる（5<!-- stats: terrain.yaml work_piles pile=海図を仕上げる days -->） | 5<!-- stats: terrain.yaml work_piles_by_system system=11 piles --> | 19.8<!-- stats: terrain.yaml work_piles_by_system system=11 days --> |
 | | | | **合計** | **26**<!-- stats: terrain.yaml work_piles_total piles --> | **70.08**<!-- stats: terrain.yaml work_piles_total days --> |
 
 **山が「量」で立っていることに注意してください**（2.4節）。石の斧も甕も1つでは段になりません
@@ -266,8 +285,8 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 **表の中身は既存のカタログのままです。** 9は [`Bedding.md`](./Bedding.md) 2節、10は
 [`Dwellings.md`](./Dwellings.md) 3節、7は [`Containers.md`](./Containers.md) 2節、4・5・6は
-[`SurvivalItems.md`](./SurvivalItems.md) 1〜3節、12は [`Voyage.md`](./Voyage.md) 1〜3節に既にあります。
-**新しく足したのは1・2・3・11**で、このうち2の飼育は [`Animals.md`](./Animals.md) 3.1節、3の製塩と
+[`SurvivalItems.md`](./SurvivalItems.md) 1〜3節、11は [`Voyage.md`](./Voyage.md) 1〜3節に既にあります。
+**新しく足したのは1・2・3**で、このうち2の飼育は [`Animals.md`](./Animals.md) 3.1節、3の製塩と
 塩蔵は [`SurvivalItems.md`](./SurvivalItems.md) 9節、3の干し場は同10節が持ちます。残りはまだどの文書も
 担当していません。
 
@@ -285,11 +304,10 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 （同4節）。**山はその系統の支出を安くする手段です**（1節）——安くするものが無ければ、労働の量が
 いくらあっても段にはなりません。
 
-**山を1つも持たない系統があります**——火（5番）と遠出（11番）です。火を安くする手段は炉の段
+**山を1つも持たない系統があります**——火（5番）です。火を安くする手段は炉の段
 （[`FireSystem.md`](../engine/FireSystem.md) 6節）にありますが、いずれも石を数個積むだけで1日に
-届かないので、段ではなく幅です（2節）。遠出は、今の島が端から端まで日帰りで届くので、泊まりの行程も
-遠い場所へ置く前線も成立しません（8.3.1節）。**どちらも支出（熱が要ること・移動の距離）は残るのに、
-それを安くする段が1つも無い系統です。**
+届かないので、段ではなく幅です（2節）。**支出（熱が要ること）は残るのに、それを安くする段が1つも
+無い系統です。** 同じ形だった移動の距離は、系統から落としました（3.1節）。
 
 【いつか: 泊まりがけ】 補給を持ち込んで泊まる行程は、島の広さが変わるまで入れません
 （[`Someday.md`](../Someday.md)）。
@@ -855,9 +873,9 @@ ambient_brightnessをそのまま土台にするためです
 **退けたのは「島を広くして成立させる」ほうです。** 泊まりを選ぶ理由を作るには島の広さから変える
 ことになり、そのために動く量に対して、返ってくる短縮はごくわずかです。
 
-**これで遠出（11番）の段が2つ落ちます**——泊まりの行程（2日）と、遠い場所へ置く前線（4日）です。
-そりは落ちません。積む量が4〜6日ぶんへ縮んでも、浜までの陸の運搬は1度で担げる重さを超えます
-（5節の4番）。
+**これで移動の距離を安くする段が2つ落ちます**——泊まりの行程（2日）と、遠い場所へ置く前線（4日）です。
+残る段が無くなったので、移動の距離は系統から外れました（3.1節）。そりは落ちません。積む量が4〜6日ぶんへ
+縮んでも、浜までの陸の運搬は1度で担げる重さを超えます（5節の4番）。
 
 【いつか: 泊まりがけ】 島の広さが変わったら入れます（[`Someday.md`](../Someday.md)）。
 
@@ -903,9 +921,9 @@ ambient_brightnessをそのまま土台にするためです
   **4〜6日の航海でも3〜4割が蒸発します**——甕で運ぶなら、積む量はそのぶん増えます。
 - 海区の顔ぶれ（7節）の実り差を、地上のつまみでどこまで表せるか
   （[`GameEndings.md`](../concept/GameEndings.md) の未決事項と共通）。
-- 火（5番）と遠出（11番）を系統に数えたまま、1日以上の山を1つも持たないこと（4節）。支出（熱が
-  要ること・移動の距離）は残りますが、それを安くする段が無いので、1節の「支出と、それを安くして
-  いく手段の連なり」に届いていません。遠出については、移動の重さそのものを見直すかどうかと同じ
-  問いです（#1161）。
+- 火（5番）を系統に数えたまま、1日以上の山を1つも持たないこと（4節）。支出（熱が要ること）は
+  残りますが、それを安くする段が無いので、1節の「支出と、それを安くしていく手段の連なり」に
+  届いていません。**移動の距離は同じ理由で落としましたが**（3.1節）、火は炉の段という手段そのものは
+  持っていて、1日に届かないだけです。
 - 手当てを系統に数えなかったこと（3節）。段の連なりを持たないという理由ですが、治療の道具・薬草に段が
-  できるなら13本目になります。
+  できるなら3節の表に入ります。
