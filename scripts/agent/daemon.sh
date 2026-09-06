@@ -68,6 +68,21 @@
 # 入れ替えた先が壊れていればそこで終わる。**古い版で黙って回り続けるよりは、止まったほうが後から
 # 追える**——心拍が腐れば `status` が「止まっている」と答える。
 #
+# ## 立てるときは、本体を `origin/main` へ寄せてから
+#
+# **立て直しは、古い版で回り出す機会でもある。** 落ちた跡から起こすのは監視係（2.19）で、打つのは
+# `start` だけ——寄せる者がここに居ないと、落ちた時点の版が次のマージまで回り続ける。**寄せるのは
+# `start` が持ち、監視係には持たせない**（出どころ: ユーザーの指示・2026-09-06）。同じ更新をする
+# 仕組みを2つ置くと、どちらが進めたのかが読めなくなる。
+#
+# 寄せる先は `merge-and-close.sh` が `MERGE` のたびに進めるのと同じ本体で、未コミットの変更が
+# あるときは触らない（あちらの `DIRTY` と同じ判定）。**寄せられなくても立てる**——古い版で回ることより、
+# 盤面が1ミリも動かないことのほうが重い。
+#
+# **`start` の枝の `exit` を `case` の外へ出さない。** 寄せると走っている自分の中身が入れ替わるので、
+# `case` を抜けてから読む行が残っていると、そこで別の中身を読む（`case` は `esac` まで読んでから
+# 実行に入るので、枝の中で終わるかぎりこの窓は開かない）。
+#
 # ## 引けなかったら、その周は何もしない
 #
 # 盤面が欠けた周は手を決めない（`board-round.mjs`）。続けて `FAILURE_LIMIT` 回失敗したら、待つ間隔を
@@ -206,12 +221,42 @@ stop_daemon() {
   echo "止めた（$pid）"
 }
 
+# 本体のチェックアウトを `origin/main` へ寄せる（上の「立てるときは」）。**寄せられなくても
+# 立てられるように、失敗はすべて0で返す。**
+#
+# 依存は入れ直さない——回す道具（`board-round.mjs` の系列）は node の標準だけで動くので、`main` が
+# 進んでも入れ直しは要らない。`package-lock.json` が動いたぶんは `merge-and-close.sh` が打つ。
+sync_origin() {
+  local common='' main_dir=''
+  # **引けなければ空のまま**（`watch-routine.sh` と同じ）。既定値を置くと、当てずっぽうの場所を
+  # 本体として進めにいく。`--path-format=absolute` を明示するのは、既定が相対で返りうるため。
+  common=$(git -C "$ORIGIN" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || common=''
+  [ -z "$common" ] || main_dir=$(dirname "$common")
+  if [ -z "$main_dir" ]; then
+    echo "本体が見つからないので、今の版のまま立てる"
+    return 0
+  fi
+  # 未追跡は見ない（`merge-and-close.sh` と同じ）。本体を進める妨げになるなら、`checkout` が失敗して分かる。
+  if [ -n "$(git -C "$main_dir" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+    echo "本体に未コミットの変更があるので、触らずに立てる（$main_dir）"
+    return 0
+  fi
+  if ! git -C "$main_dir" fetch --quiet origin main ||
+    ! git -C "$main_dir" checkout --quiet --detach origin/main; then
+    echo "本体を寄せられなかったので、今の版のまま立てる（$main_dir）"
+    return 0
+  fi
+  echo "本体を寄せた（$(git -C "$main_dir" rev-parse --short HEAD)）"
+}
+
 # 背景で立てて、心拍が出るまで待つ。**立ったことを確かめてから返す**ので、呼び手は待たない。
 start_daemon() {
   if running; then
     echo "既に走っている（最終 $(cat "$HEARTBEAT")）"
     return 0
   fi
+  # **寄せてから読ませる。** `nohup` が `$SOURCE` を開くのは寄せ終わった後なので、立つのは新しい版。
+  sync_origin
   local waited=0
   nohup bash "$SOURCE" run >>"$DAEMON_LOG" 2>&1 &
   while [ "$waited" -lt "$START_WAIT" ]; do
