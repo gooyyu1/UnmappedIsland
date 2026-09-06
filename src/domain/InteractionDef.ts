@@ -5,6 +5,7 @@ import type { DeclaredNumber } from './DeclaredNumber';
 import type { ReferenceContext } from './ReferenceRoot';
 import type { WorldObject } from './WorldObject';
 import type { Requirement, Requirements } from './Requirement';
+import type { SignalEffect } from './SignalEffect';
 import { spendDurationAndReportParticipantsAlive } from './actionTime';
 
 /**
@@ -20,6 +21,14 @@ export class InteractionDef {
   /** 実行するために満たすべき要件（14節）。undefinedなら常に真（conditions省略）。 */
   private readonly requirements: Requirements | undefined;
 
+  /**
+   * 時間を進める前に告げる出来事（`announce`、11.6節）。何も告げなければ空。
+   *
+   * **告げるだけで世界の形は変えない**ので、型がsignalに限る。効果（effect）と別に持つのは起きる時点が
+   * 違うため——1つにまとめると、読み上げた側が「時間の前か後か」を言えなくなる。
+   */
+  readonly announcements: readonly SignalEffect[];
+
   /** 条件成立時に適用する効果。何も書かれていなければ空の合成（ActiveEffectSequence）で、適用しても何も起きない。 */
   private readonly effect: ActiveEffect;
 
@@ -33,11 +42,13 @@ export class InteractionDef {
   constructor(
     name: string,
     requirements: Requirements | undefined,
+    announcements: readonly SignalEffect[],
     effect: ActiveEffect,
     duration: DeclaredNumber | undefined,
   ) {
     this.name = name;
     this.requirements = requirements;
+    this.announcements = announcements;
     this.effect = effect;
     this.duration = duration;
   }
@@ -93,9 +104,13 @@ export class InteractionDef {
   }
 
   /**
-   * conditionsを見て、時間を進め、効果を適用する（ActionSystem.md 2節）。順序に意味がある:
+   * conditionsを見て、告げ、時間を進め、効果を適用する（ActionSystem.md 2節）。順序に意味がある:
    * 所要時間は時間を進める前に解決し、時間は効果の適用より先に進める。経過中に関与オブジェクトが
    * 失われたら、その行動は成立しなかったものとして効果を適用しない（actionTime参照）。
+   *
+   * **`announce`（11.6節）だけは時間を進める前に告げる。** 効果として告げると、過ぎ切ってからしか
+   * 出せない——強制的な時間経過（docs/world/Characters.md 限界節）では、飛んだ理由をその6時間の
+   * 後に言うことになる。告げるのは「始まったこと」なので、**この後の段が落ちても取り消さない**。
    *
    * **要件は選んだ時点ではなく実行の時点で引き直す**（候補を作ってから落とすまでに世界は変わる）。
    * 相手の型も変わりうるので、そちらの引き直しは`Combination`が足す。
@@ -106,6 +121,8 @@ export class InteractionDef {
   tryExecute(context: ReferenceContext, session: WorldSession): boolean {
     const self = context.self!;
     if (this.unmetRequirement(context) !== undefined) return false;
+
+    for (const announcement of this.announcements) announcement.apply(context, session);
 
     const involved = [self, context.agent, context.instrument];
     if (!spendDurationAndReportParticipantsAlive(this.minutesFor(context), session, involved)) return false;

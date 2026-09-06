@@ -25,9 +25,9 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
    * （眠気の-1/tick）は下限のクランプが吸う**ので、自発の睡眠と違って経過ぶんは引かれない。
    */
   const LIMITS = [
-    { prop: 'stamina', turn: 'collapse', minutes: 120, after: 20 },
-    { prop: 'wakefulness', turn: 'fall_asleep', minutes: 360, after: 48 },
-    { prop: 'happiness', turn: 'despair', minutes: 120, after: 20 },
+    { prop: 'stamina', turn: 'collapse', minutes: 120, after: 20, announces: 'exhausted' },
+    { prop: 'wakefulness', turn: 'fall_asleep', minutes: 360, after: 48, announces: 'dozed_off' },
+    { prop: 'happiness', turn: 'despair', minutes: 120, after: 20, announces: 'disheartened' },
   ] as const;
 
   let codex: WorldCodex;
@@ -94,6 +94,36 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
       expect(valueOf(prop)).toBe(after);
     },
   );
+
+  /** bodyの実行中に告げられた出来事を、bodyを始めてから何分の時点で告げられたかと一緒に集める。 */
+  function announcementsDuring(body: () => void): ReadonlyArray<{ name: string; after: number }> {
+    const startedAt = session.world!.totalMinutes;
+    const heard: { name: string; after: number }[] = [];
+    session.observeSignals((signal) => {
+      expect(signal.object, '告げる先はプレイヤーの札').toBe(player);
+      heard.push({ name: signal.name, after: session.world!.totalMinutes - startedAt });
+    }, body);
+    return heard;
+  }
+
+  it.each(LIMITS)('$turn は、強制の $minutes 分が過ぎる前に $announces を告げる', ({ prop, announces }) => {
+    // 過ぎ切ってから告げる効果（signal）では、飛んだ理由を最大6時間あとに言うことになる。
+    drain(prop);
+
+    // 歩き終わった時点＝強制の時間がまだ1分も過ぎていない時点で告げる。
+    expect(announcementsDuring(travel)).toEqual([{ name: announces, after: TRAVEL_MINUTES }]);
+  });
+
+  it('限界に居ない間は、何も告げない', () => {
+    expect(announcementsDuring(travel)).toEqual([]);
+  });
+
+  it('切れ目までに限界を抜けていれば、告げもしない', () => {
+    // 待たせた手番は要件を引き直して落ちる。告げるのはその後なので、落ちた手番は何も言わない。
+    drain('stamina');
+
+    expect(announcementsDuring(() => player.tryGetAction('wait', player)?.tryExecute())).toEqual([]);
+  });
 
   it('進行中の操作は中断しない——歩き終わってから倒れる', () => {
     // 中断しないという答え（GameElementDefinition.md 11.5節）が、行き先に着いていることに出る。
