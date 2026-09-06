@@ -9,6 +9,7 @@ import type { ReferenceRoot } from './ReferenceRoot';
 import { ReferenceContext } from './ReferenceRoot';
 import type { PropertyPath } from './ReferenceRoot';
 import type { PassiveAmount } from './PassiveAmount';
+import type { WorldSession } from './WorldSession';
 
 /**
  * 効果の発動条件。判別子は持たず、各フィールドの有無が「何をチェックすべきか」を表す
@@ -118,6 +119,14 @@ export abstract class PassiveEffect {
   get tickTransfer(): TransferPassiveEffect | undefined {
     return undefined;
   }
+
+  /**
+   * この1 tickで実体値へ足すぶんを、操作の稼ぎとして控える（PassiveEffects.recordTickGains）。
+   *
+   * **既定は何もしない。** 呼ばれるのは操作が宣言した一式だけで（11.7節）、そこに書けるのは
+   * 実体値へ積む`add`と、実体値を動かさない`modify`しかない——輸送は書けない（8.4.1節）。
+   */
+  recordTickGain(_owner: WorldObject, _session: WorldSession): void {}
 }
 
 /**
@@ -189,6 +198,29 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
 
   override get relationRegistration(): RelationRegistration {
     return { relation: this.target.root, effect: this };
+  }
+
+  /**
+   * 実体値へ積む寄与（`add`）なら、この1 tickで足すぶんを控える。可逆な寄与（`modify`）は実体値を
+   * 動かさないので控えない。
+   *
+   * **相手はownerが今参加している関係から辿る**（setRelationRegisteredと同じ経路）。呼ばれるのは
+   * 操作の宣言だけで、そこにchildは書けない（8.1節）ので、ゲートのselfはownerでよい。
+   *
+   * **端を越えて積めるぶんは数えない**（6.3節の既定のクランプが押し戻す）。一度きりの`add`が
+   * クランプの書き戻しを含めた正味で数えられるのと揃える。
+   */
+  override recordTickGain(owner: WorldObject, session: WorldSession): void {
+    if (this.reversible) return;
+
+    const target = this.target.owner(ReferenceContext.forParticipant(owner));
+    const property = target?.tryGetProperty(this.target.propertyGlobalId);
+    if (target === undefined || property === undefined) return;
+
+    const amount = this.activeAmount(owner, owner);
+    const range = property.def.range;
+    const accepted = range === undefined ? amount : range.clamp(property.number + amount) - property.number;
+    session.recordPassiveGain(target, property.def, accepted);
   }
 
   /**

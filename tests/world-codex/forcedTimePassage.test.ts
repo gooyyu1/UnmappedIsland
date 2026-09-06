@@ -21,8 +21,9 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
   /**
    * 3つの限界。**違うのは見る値・長さ・戻る量だけ**なので、同じ表に並ぶ（player_character.yaml）。
    *
-   * `after` は強制の時間が過ぎ切った時点の値で、宣言した戻る量そのままになる。**強制の間の減り
-   * （眠気の-1/tick）は下限のクランプが吸う**ので、自発の睡眠と違って経過ぶんは引かれない。
+   * `after` は強制の時間が過ぎ切った時点の値。戻しはtick毎なので、**強制の間の減りを引いた正味**に
+   * なる——空身で痛みも無いこの状態で減るのは眠気だけ（-1/tick）で、眠り込みの +3/tick は差し引き
+   * +2/tick、6時間で +48 になる。
    */
   const LIMITS = [
     { prop: 'stamina', turn: 'collapse', minutes: 120, after: 20, announces: 'exhausted' },
@@ -180,5 +181,55 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
   it('限界に居ない間は、何も起きない', () => {
     // 見張りが常に強制していないことの裏取り。満タンのまま歩けば、歩いた分しか過ぎない。
     expect(travel()).toBe(TRAVEL_MINUTES);
+  });
+
+  /**
+   * 限界の戻りは、**強制の間の減りを引いた正味**になる（issue #1548）。戻しを経過し終えてから
+   * 足していたころは、下限に張り付いた値の減りを既定のクランプが吸い、宣言した量がまるごと残って
+   * いた——荷を担いだまま倒れ込むほうが、同じ時間を休むより得だった。
+   */
+  describe('強制の間の減りは、戻しから引かれる', () => {
+    /** 丸太2本（20,000g×2）。医師の too_heavy（27,500g）を越えるので、体力が-2/tickで削られる。 */
+    function carryTooMuch(): void {
+      spawnInto('log', player, 'hand');
+      spawnInto('log', player, 'hand');
+      expect(player.getProperty(codex.propertyNames.getId('load')).isInStage('too_heavy')).toBe(true);
+    }
+
+    /** 押して休む（自発の休息）。 */
+    function rest(): void {
+      expect(player.tryGetAction('rest', player)?.tryExecute()).toBe(true);
+    }
+
+    it('too_heavy を担いだまま倒れ込んでも、同じ2時間を rest で休むより得にならない', () => {
+      carryTooMuch();
+
+      // 自発の休息は、休んでいる間も荷が削るので、2時間で戻るのは宣言（+2.5/tick）から荷の削り
+      // （-2/tick）を引いたぶん。
+      player.getProperty(codex.propertyNames.getId('stamina')).setNumber(50);
+      const beforeResting = valueOf('stamina');
+      rest();
+      rest();
+      const byResting = valueOf('stamina') - beforeResting;
+      expect(byResting, '2時間の休憩で戻る量').toBe(4);
+
+      // 倒れ込みも同じ形。時間だけを進めれば、その切れ目で手番が起きる。
+      drain('stamina');
+      session.advanceWorldTime(15);
+
+      expect(valueOf('stamina'), '倒れ込みで戻る量').toBe(byResting);
+    });
+
+    it('痛みが深いほど、打ちひしがれても戻らない', () => {
+      // 骨折は1枚で痛みを危険域（unbearable）へ届かせ、幸福度を-0.5/tickで削る（injuries.yaml）。
+      spawnInto('fracture', player, 'injuries');
+      expect(player.getProperty(codex.propertyNames.getId('pain')).isInStage('unbearable')).toBe(true);
+
+      drain('happiness');
+      session.advanceWorldTime(15);
+
+      // 宣言（+2.5/tick）から痛みの削り（-0.5/tick）を引いた +2/tick が、2時間ぶん。
+      expect(valueOf('happiness'), '痛みの無いときの +20 より薄い').toBe(16);
+    });
   });
 });

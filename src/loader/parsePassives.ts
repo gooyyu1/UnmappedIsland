@@ -11,6 +11,7 @@ import {
 import { parseNumberLiteral, parseReferenceRoot } from './parseCommon';
 import { parseConditionList } from './parseConditions';
 import { parseTransfers } from './parseActiveEffects';
+import { YamlLoadError } from './YamlLoadError';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { PropertyPath, ReferenceScope } from '../domain/ReferenceRoot';
 import type { PassiveAmount } from '../domain/PassiveAmount';
@@ -40,19 +41,68 @@ export function parsePassiveInto(
   forcedStageName: string | undefined,
 ): void {
   const context = `'${objectDefName}'.passives`;
+  const scope = ReferenceScope.participantProps;
+  const gate = buildGate(
+    loader,
+    parseConditions(loader, context, passiveMap, scope),
+    forcedStageProperty,
+    forcedStageName,
+  );
 
-  const conditionsNode = tryGetSeq(passiveMap, 'conditions', context);
-  const conditions = parseConditionList(
+  parsePassiveBlockInto(loader, passives, context, passiveMap, scope, gate, true);
+}
+
+/**
+ * 操作が宣言する持続効果（11.7節）の1ブロックを読む。**効くのは`duration`を進めている間だけ**で、
+ * 対象に書けるのはその操作の関係が持つ役（11.5節「役を書ける場所」）。
+ *
+ * **tick毎の輸送（8.4.1節）は書けない。** 輸送は寄与として登録できず、宣言した物のtickで走るので
+ * （PassiveEffects.applyTickTransfers）、物ではない操作には走らせる時点が無い。
+ */
+export function parseInteractionPassiveInto(
+  loader: WorldCodexYamlLoader,
+  passives: PassiveEffect[],
+  context: string,
+  passiveMap: YAMLMap,
+  scope: ReferenceScope,
+): void {
+  const gate = buildGate(loader, parseConditions(loader, context, passiveMap, scope), undefined, undefined);
+
+  parsePassiveBlockInto(loader, passives, context, passiveMap, scope, gate, false);
+}
+
+function parseConditions(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  passiveMap: YAMLMap,
+  scope: ReferenceScope,
+): ConditionNode | undefined {
+  return parseConditionList(
     loader,
     `${context}.conditions`,
-    conditionsNode,
-    ReferenceScope.participantProps,
+    tryGetSeq(passiveMap, 'conditions', context),
+    scope,
   );
-  const gate = buildGate(loader, conditions, forcedStageProperty, forcedStageName);
+}
 
-  // 対象は付いている子ごとに登録を配れるので、childを指せる唯一の場所（8.1節）。可逆な寄与（modify）だけは
-  // さらに狭く、複数の操作へ同時に就きうる役へは押せない（8.3節。scopeがその理由を答える）。
-  const targets = ReferenceScope.participantProps.withBroadcast;
+/**
+ * 1ブロックの動詞を読んでpassivesへ積む。**書ける動詞と対象の差は、宣言しているのが物か操作か
+ * （declaredByObject）の1点から出る**——物は子を持ちtickが回るが、操作はどちらも持たない。
+ *
+ * 可逆な寄与（modify）の対象はさらに狭く、複数の操作へ同時に就きうる役へは押せない
+ * （8.3節。scopeがその理由を答える）。
+ */
+function parsePassiveBlockInto(
+  loader: WorldCodexYamlLoader,
+  passives: PassiveEffect[],
+  context: string,
+  passiveMap: YAMLMap,
+  scope: ReferenceScope,
+  gate: PassiveEffectGate,
+  declaredByObject: boolean,
+): void {
+  // 付いている子ごとに登録を配れるのは、子を持つ物の宣言だけ（8.1節。childを指せる唯一の場所）。
+  const targets = declaredByObject ? scope.withBroadcast : scope;
 
   parsePassiveOperationInto(
     loader,
@@ -78,14 +128,16 @@ export function parsePassiveInto(
   // 輸送は寄与として登録できない（2つのプロパティを同時に動かすため）ので、宣言元のtickで走る
   // TransferPassiveEffectとして持つ。文法はactiveのtransferと同一（8.4節）。
   const transferNode = tryGetNode(passiveMap, 'transfer');
-  if (transferNode !== undefined)
-    for (const transfer of parseTransfers(
-      loader,
-      `${context}.transfer`,
-      transferNode,
-      ReferenceScope.participantProps,
-    ))
+  if (transferNode !== undefined) {
+    if (!declaredByObject)
+      throw new YamlLoadError(
+        `${context}: tick毎の輸送（transfer）は物のpassivesにしか書けません` +
+          '（輸送は宣言した物のtickで走るので、操作には走らせる時点がありません。8.4.1節）。',
+      );
+
+    for (const transfer of parseTransfers(loader, `${context}.transfer`, transferNode, scope))
       passives.push(new TransferPassiveEffect(transfer, gate));
+  }
 
   const knownKeys = new Set<string>(['conditions', 'modify', 'add', 'transfer']);
 

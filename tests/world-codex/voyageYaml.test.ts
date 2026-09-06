@@ -79,14 +79,16 @@ const KNOBS = [
  * 配り方であることは別の検査が受け持つ）。
  *
  * 濃さの許容幅は、試行回数ぶんの揺れ（標準誤差は0.04ほど）より広く、顔ぶれの差（0.8/0.55/0.2/0）
- * より狭く取る。
+ * より狭く取る。**卓の当たりの割合そのものよりは低く出る**——数えるのは新しい個体が現れた回で、
+ * 筏の積荷が埋まった後に拾った物はこぼれ落ちて数に入らない（watchRepeatedly）。埋まり具合は
+ * 試行のあいだの成り行きで決まるので、下端は素の当たりから遠めに取る。
  */
 const YIELDS: readonly (readonly [string, readonly string[], readonly string[], number, number])[] = [
   ['coastal_waters', ['thick_branch', 'seaweed'], ['fish_shoal'], 0.7, 0.9],
   ['tide_rip', [], ['fish_shoal'], 0.7, 0.9],
-  ['kelp_belt', ['seaweed'], [], 0.45, 0.65],
-  ['reef_shallows', ['thick_branch', 'rope'], ['fish_shoal'], 0.45, 0.65],
-  ['gull_rock', ['bird_egg', 'feather'], ['seabird_flock'], 0.45, 0.65],
+  ['kelp_belt', ['seaweed'], [], 0.4, 0.65],
+  ['reef_shallows', ['thick_branch', 'rope'], ['fish_shoal'], 0.4, 0.65],
+  ['gull_rock', ['bird_egg', 'feather'], ['seabird_flock'], 0.4, 0.65],
   ['wreck_waters', ['thick_branch', 'rope', 'golden_chalice'], [], 0.1, 0.3],
   ['islet_waters', [], [], 0, 0],
   ['open_water', [], [], 0, 0],

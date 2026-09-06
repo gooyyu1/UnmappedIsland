@@ -6,6 +6,8 @@ import type { ReferenceContext } from './ReferenceRoot';
 import type { WorldObject } from './WorldObject';
 import type { Requirement, Requirements } from './Requirement';
 import type { SignalEffect } from './SignalEffect';
+import type { PassiveEffect } from './PassiveEffect';
+import type { PassiveEffects } from './PassiveEffects';
 import { spendDurationAndReportParticipantsAlive } from './actionTime';
 
 /**
@@ -39,18 +41,31 @@ export class InteractionDef {
    */
   private readonly duration: DeclaredNumber | undefined;
 
+  /**
+   * `duration`を進めている間だけ効く持続効果（11.7節）。**効果（effect）と別に持つのは効く時点が
+   * 違うため**——こちらは経過の各tickに1回ずつ、あちらは経過し終えてから1回。
+   */
+  private readonly passives: PassiveEffects;
+
   constructor(
     name: string,
     requirements: Requirements | undefined,
     announcements: readonly SignalEffect[],
     effect: ActiveEffect,
     duration: DeclaredNumber | undefined,
+    passives: PassiveEffects,
   ) {
     this.name = name;
     this.requirements = requirements;
     this.announcements = announcements;
     this.effect = effect;
     this.duration = duration;
+    this.passives = passives;
+  }
+
+  /** 経過の間だけ効く持続効果（11.7節）の宣言。1つも宣言していなければ空。 */
+  get passiveDeclarations(): readonly PassiveEffect[] {
+    return this.passives.declarations;
   }
 
   /**
@@ -112,6 +127,10 @@ export class InteractionDef {
    * 出せない——強制的な時間経過（docs/world/Characters.md 限界節）では、飛んだ理由をその6時間の
    * 後に言うことになる。告げるのは「始まったこと」なので、**この後の段が落ちても取り消さない**。
    *
+   * **持続効果（11.7節）は、時間を進める間だけ登録する。** 各tickの増減と一緒に足されるので、
+   * 端に居ても正味で釣り合う——下限に張り付いた値の減りをクランプが吸って、宣言した量がまるごと
+   * 残ることがない（docs/world/Characters.md 限界節）。
+   *
    * **要件は選んだ時点ではなく実行の時点で引き直す**（候補を作ってから落とすまでに世界は変わる）。
    * 相手の型も変わりうるので、そちらの引き直しは`Combination`が足す。
    *
@@ -122,14 +141,20 @@ export class InteractionDef {
     const self = context.self!;
     if (this.unmetRequirement(context) !== undefined) return false;
 
-    for (const announcement of this.announcements) announcement.apply(context, session);
+    // 実行のはじめから囲う。経過中のtickが動かした値は「操作が増やしたもの」に入らないが、この操作
+    // 自身が宣言した持続効果が足したぶんは入る（PropertyGain参照）。
+    return session.withInteractionGains(self, () => {
+      for (const announcement of this.announcements) announcement.apply(context, session);
 
-    const involved = [self, context.agent, context.instrument];
-    if (!spendDurationAndReportParticipantsAlive(this.minutesFor(context), session, involved)) return false;
+      const involved = [self, context.agent, context.instrument];
+      const minutes = this.minutesFor(context);
+      const alive = session.whileInteractionPassives(self, this.passives, () =>
+        spendDurationAndReportParticipantsAlive(minutes, session, involved),
+      );
+      if (!alive) return false;
 
-    // 時間を進め終えてから囲うので、経過中のtickが動かした値は「操作が増やしたもの」に入らない
-    // （PropertyGain参照）。
-    session.withInteractionEffect(self, () => self.applyActiveEffect(this.effect, context));
-    return true;
+      self.applyActiveEffect(this.effect, context);
+      return true;
+    });
   }
 }
