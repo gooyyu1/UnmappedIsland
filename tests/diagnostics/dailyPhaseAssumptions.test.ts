@@ -26,12 +26,12 @@ describe('局面ごとの1日の前提', () => {
     expect(total, '山の配分の合計').toBe(1);
   });
 
-  it('山が名乗る型が、すべて収支表に値段を持つ', () => {
+  it('山が名乗る型とタグが、すべて収支表に値段を持つ', () => {
     const codex = bundledCodex();
     const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
 
-    // 値段が出ない型を名乗っていれば workPileAmountsOf が投げる。
-    const amounts = workPileAmountsOf(balance, dailyBudgetOf(balance));
+    // 値段が出ない型やどの型も名乗らないタグを名乗っていれば workPileAmountsOf が投げる。
+    const amounts = workPileAmountsOf(codex, SAMPLE_CHARACTER, balance, dailyBudgetOf(balance));
 
     expect(
       amounts.filter((amount) => amount.minutes <= 0).map((amount) => amount.pile.label),

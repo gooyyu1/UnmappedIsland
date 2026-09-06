@@ -340,7 +340,9 @@ export class WorldCodex {
    * いずれもこれで引く。
    *
    * **受け取るのは名前ではなくID**——コードが名指しするタグはWorldVocabularyに並んでいるので、
-   * ここで文字列から引き直すと同じ語が2箇所に書かれる。
+   * ここで文字列から引き直すと同じ語が2箇所に書かれる。**世界の中身を名前で挙げる宣言はその外**
+   * ——山の一覧（analysis/dailyPhases.tsの`WORK_PILES`）は型もタグも名前で名乗り、`tagNames`を
+   * 引いてIDへ直してから型を選ぶ。
    */
   objectDefNamesWithTag(tagGlobalId: number): readonly string[] {
     const names: string[] = [];
