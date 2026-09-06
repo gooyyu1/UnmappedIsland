@@ -337,8 +337,9 @@ export interface PlayScreenView {
    * **実行できるとは限らない**——成立するものが無く、宣言が断る理由を持っていれば、それを
    * `enabled: false` で返す（CardInteraction.md 2.1節）。どちらなのかは受け取った側がenabledで見分ける。
    *
-   * **落とされた側が受け入れる組み合わせを先に、無ければ掴んだ側が受け入れる組み合わせを探す**
-   * （同2節）。どちらも宣言順の先頭を採る。
+   * **落とされた側が受け入れる組み合わせも、掴んだ側が受け入れる組み合わせも引く**（同2節）。どちらも
+   * 宣言順の先頭を採る。**選ぶのは成立するほうで、向きが効くのはどちらも成立するとき**——両向きとも
+   * 成立しないときだけ、落とされた側の断る理由を返す（同2.1節）。
    */
   readonly combinationOf: (
     dragged: ObjectCardStack,
@@ -892,18 +893,7 @@ export function fromGameSession(
       // 組み合わせる（石と石のように、自分自身とcombinationできる場合）。
       const [first] = target.objects;
       const carried = dragged === target ? target.objects.slice(1) : dragged.objects;
-      const held = carried.at(0);
-      if (held === undefined) return undefined;
-
-      // 落とされた側を先に、次に掴んだ側を見る（CardInteraction.md 2節）。素材側に1つ書けば、
-      // 道具を素材へ運んでも素材を道具へ運んでも同じ組み合わせが成立する。
-      //
-      // **まとめられるのは、落とされた側が宣言している向きだけ。** 逆向きでは運んできた札の1枚ずつが
-      // 別々のselfになるので、1つの器で数を決められない。
-      return (
-        operations.combinationWith(first, carried, carried, count) ??
-        operations.combinationWith(held, [first], [held])
-      );
+      return operations.combinationBetween(first, carried, count);
     },
   };
 }

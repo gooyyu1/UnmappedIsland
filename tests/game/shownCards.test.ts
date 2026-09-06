@@ -129,7 +129,7 @@ function screen(
             description: undefined,
             minutes: 0,
             maxCount: carried.length,
-            // 本物と同じく、運んできた枚数ぶんが動く（cardOperations.combinationWith）。
+            // 本物と同じく、運んできた枚数ぶんが動く（cardOperations.combinationBetween）。
             movedIds: carried.slice(0, count).map((entry) => entry.instanceId),
             execute: () => {},
             enabled: true,
