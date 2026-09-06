@@ -115,6 +115,7 @@ esac
 
 const BLOCK = '[レビュー] 直しが要る';
 const PASS = '[レビュー] 通してよい';
+const PASS_ASK = '[レビュー] 通してよい（人の判断が要る）';
 
 /** そのPRに既に付いている、結論のコメント。今回の判定もここに載る（Actions が動くのは投稿の後）。 */
 const past = (...bodies: string[]): Comment[] => bodies.map((body) => ({ body }));
@@ -136,9 +137,20 @@ describe('board-labels.yml の verdict', () => {
     ]);
   });
 
+  // 差分を読まないと判定できないものはレビュアーが引き取った（`board-design.md` 2.13.4）。
+  // **通したうえで人へ回す**ので、`通してよい` と `判断待ち` の両方が付く。
+  it('「通してよい（人の判断が要る）」で 通してよい と 判断待ち を付ける', () => {
+    const result = run(PASS_ASK, past(PASS_ASK));
+
+    expect(result.edits).toEqual([
+      `${PR} --repo gooyyu1/UnmappedIsland --add-label 通してよい --add-label 判断待ち --remove-label 直し待ち`,
+    ]);
+  });
+
   it('結論の行でないコメントには何もしない', () => {
     expect(run('[スメル] 名前が中身と合っていない').edits).toEqual([]);
     expect(run('前置き\n[レビュー] 通してよい').edits).toEqual([]);
+    expect(run('[レビュー] 通してよい（人の判断が要る）だと思います').edits).toEqual([]);
   });
 
   // 上限（4.6）。3周目の判定が「直しが要る」なら、そこで人の手番へ移す。
@@ -175,6 +187,13 @@ describe('board-labels.yml の verdict', () => {
   // 「通してよい」で終わった周も1周。3周目に入っていることは変わらない。
   it('通してよい を挟んでいても、3周目なら 収束せず を付ける', () => {
     const mixed = past(BLOCK, PASS, BLOCK);
+
+    expect(run(BLOCK, mixed).edits.join('\n')).toContain('収束せず');
+  });
+
+  // **新しい判定の形も1周**。数え方から漏らすと、3周で人へ上げる勘定（4.6）が狂う。
+  it('通してよい（人の判断が要る）の周も、周回数に数える', () => {
+    const mixed = past(BLOCK, PASS_ASK, BLOCK);
 
     expect(run(BLOCK, mixed).edits.join('\n')).toContain('収束せず');
   });
