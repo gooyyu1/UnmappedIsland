@@ -94,7 +94,8 @@ describe('tools.yamlの道具定義', () => {
 
   it('突き銛の材料と工程は石斧と同じ（新しい素材を足していない）', () => {
     // **島の産物から筏・帆へ届く鎖の上に、素材を足さずに載る**（docs/world/Voyage.md 3.9.4節）。
-    // 繊維で直に締める形にすれば柄付けの標準が2つ並び、長い棒を使えば槍と一緒に止まる。
+    // 繊維で直に締める形にすれば柄付けの標準が2つ並び、丸太から軸を削り出す形にすれば、槍と同じく
+    // 斧と木材加工の腕の後ろへ回る。
     const recipeOf = (name: string): RecipeDef => {
       const recipes = codex.objects.get(codex.objectNames.getId(name)).recipesProducingThis;
       expect(recipes, `'${name}' のレシピは1つ`).toHaveLength(1);

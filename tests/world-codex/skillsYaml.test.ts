@@ -721,7 +721,7 @@ describe('腕前とレシピの解放条件', () => {
     ]);
   });
 
-  it('伸ばす操作を持つのに効き先が無い腕は、木材加工と保存だけ', () => {
+  it('伸ばす操作を持つのに効き先が無い腕は、保存だけ', () => {
     // 一つ上の数え上げと逆向き。**伸ばす操作を持つ腕は段が動く**が、効き先が無ければ、動いても
     // 何も起きないバーが画面に並ぶ（docs/ui/StatusArea.md 9節）。効き先が入った本はここから
     // 外れ、まだ無い本は名前で残る。
@@ -735,9 +735,6 @@ describe('腕前とレシピの解放条件', () => {
       ...ACCESS_BONUSES.map((entry) => entry.skill),
     ]);
 
-    expect(SKILLS.filter((name) => gains.has(name) && !effective.has(name))).toEqual([
-      'skill_woodwork',
-      'skill_preserving',
-    ]);
+    expect(SKILLS.filter((name) => gains.has(name) && !effective.has(name))).toEqual(['skill_preserving']);
   });
 });
