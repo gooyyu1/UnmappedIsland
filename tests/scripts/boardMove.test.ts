@@ -734,9 +734,9 @@ describe('board-move.mjs', () => {
     });
   });
 
-  // 返ってきた issue は、人が `判断待ち` を外すまで誰にも配らない（2.15.2）。**`task` は
+  // 返ってきた issue は、人が `判断待ち` を外すまで誰にも配らない（2.15.2）。**`kind:task` は
   // 付いたまま**なので、この判定が抜けると次の周にそのまま投入し直される。
-  it('`判断待ち` の付いた task issue は配らない', () => {
+  it('`判断待ち` の付いた `kind:task` の issue は配らない', () => {
     expect(
       moves({ issues: [{ number: 8, ...label('kind:task', '判断待ち'), blockedBy: { nodes: [] } }] }),
     ).toEqual([]);

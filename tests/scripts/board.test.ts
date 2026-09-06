@@ -5,7 +5,7 @@ import { board } from '../../scripts/agent/board.mjs';
 /**
  * `scripts/agent/board.mjs` の検査。
  *
- * ここが守るのは**突き合わせ**——`task` の issue に「もう投入したか」「何に塞がれているか」が
+ * ここが守るのは**突き合わせ**——`kind:task` の issue に「もう投入したか」「何に塞がれているか」が
  * 正しく付くこと、棚卸しの済んでいない issue だけが `未整理` に出ること。並べ方を間違えると、
  * 司令塔は同じ issue を二重に投入するか、着手できる仕事を待ちだと読んで止める。
  */
@@ -135,7 +135,7 @@ describe('board.mjs', () => {
     expect(lines).toContain('TASK 8 待ち:#9 後');
   });
 
-  // 返された issue は `task` が付いたまま残る（`.claude/board-design.md` 2.15.2）ので、状態で
+  // 返された issue は `kind:task` が付いたまま残る（`.claude/board-design.md` 2.15.2）ので、状態で
   // 見分けが付かないと、人は列に並んでいるものと区別できない。
   it('人へ返された issue は、返却として出す', () => {
     const { lines } = show({

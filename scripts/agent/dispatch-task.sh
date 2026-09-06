@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# task の issue を1件、CCRのセッションへ投入して、届いたことの確認まで済ませる。
+# `kind:task` の issue を1件、CCRのセッションへ投入して、届いたことの確認まで済ませる。
 #
 #   bash scripts/agent/dispatch-task.sh 1029 "$LOCALAPPDATA/Temp/ui-1029.md"
 #   bash scripts/agent/dispatch-task.sh 1029 <補足ファイル> --bridge   # このPCで走らせる
@@ -99,7 +99,7 @@ state=$(jq -r '.state' "$WORK/issue.json")
   exit 1
 }
 
-# 人へ返された issue は、人が答えるまで配らない（2.15）。**`task` は付いたままなので、この判定が
+# 人へ返された issue は、人が答えるまで配らない（2.15）。**`kind:task` は付いたままなので、この判定が
 # 無ければ次の周にそのまま投入し直される**——返した意味が消えて、同じところで止まる相手が増える。
 # 不変条件は投入する側が持つ（1.4）ので、盤面だけでなくここでも見る。
 if jq -r '[.labels[].name] | join("\n")' "$WORK/issue.json" | grep -qxF 判断待ち; then
