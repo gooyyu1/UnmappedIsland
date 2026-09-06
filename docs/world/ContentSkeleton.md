@@ -220,6 +220,21 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 9 | **寝床** | 眠気 |
 | 10 | **住居** | 雨風・虫・湿気 |
 | 11 | **船と海図** | 海を渡ること |
+| 12 | **家具・娯楽** | 里心。居る場所が我が家になっていないこと |
+
+**家具・娯楽が系統なのは、里心が繰り返し払う支出だからです。** 溜まるのは日数そのもので
+（[`Characters.md`](./Characters.md) ホームシック節）、払いは毎日続き、設えを据えるほど安くなります
+——1節の割り方にそのまま乗ります。**埋める支出はほかのどれとも別物です**——寒さと雨は熱が受け持って
+いるので、火を焚いても里心は1点も減りません。
+
+**手段の側は、ほかの系統とも重なります。** 雨風のために建てた家は居心地を押し
+（[`Dwellings.md`](./Dwellings.md) 2.1節）、家畜のための囲いは連れとして押します（系統2、
+`farming.yaml`）。どちらも別の目的で作る物なので、**単体で止められるのは60日目からの募りまで**に
+抑えてあります（同節）——その先は、2つを重ねるか、`snug` まで積むかです。
+
+**この系統の物は、据えること以外に何の役にも立ちません。** 生きるのに要る物が居心地を兼ねると、
+対策がどうせ作る物になって圧が素通りするためです（同節）——だから **`snug` へ届くには、この系統の物を
+積むことになります**。
 
 手当て（怪我・病気）は系統に数えていません。支出ではありますが、繰り返し払うのは**失敗したときだけ**で、
 安くしていく段の連なりを持ちません（[`InjurySystem.md`](../engine/InjurySystem.md) の治療は、段ではなく
@@ -231,7 +246,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 もの」節）、**枠が余っているうちは待たされていません**。縮尺（`terrain_generation.yaml` の
 `diameter_meters`）を下げても浮くものがないので、今のままにします。
 
-**次に系統が増えるとすれば、浅い洞窟の奥です。** 潜るには昼でも光源が要るので
+**さらに系統が増えるとすれば、浅い洞窟の奥です。** 潜るには昼でも光源が要るので
 （[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 7節）、明かりと燃料を安くしていく段が
 連なります。**奥そのものがまだ無い**ので、上の表には入れていません（【いつか: 洞窟内部】、
 [`Someday.md`](../Someday.md)）。
@@ -273,6 +288,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 9 | 寝床 | 敷物 | 高床の寝台（1.5<!-- stats: terrain.yaml work_piles pile=高床の寝台 days -->）／詰め物（1<!-- stats: terrain.yaml work_piles pile=詰め物 days -->） | 2<!-- stats: terrain.yaml work_piles_by_system system=9 piles --> | 2.5<!-- stats: terrain.yaml work_piles_by_system system=9 days --> |
 | 10 | 住居 | 洞窟・雨よけ | 葉の小屋（3<!-- stats: terrain.yaml work_piles pile=葉の小屋 days -->）／高床（4<!-- stats: terrain.yaml work_piles pile=高床 days -->）／板の壁・床（5<!-- stats: terrain.yaml work_piles pile=板の壁・床 days -->） | 3<!-- stats: terrain.yaml work_piles_by_system system=10 piles --> | 12<!-- stats: terrain.yaml work_piles_by_system system=10 days --> |
 | 11 | 船と海図 | — | **筏（5.0<!-- stats: terrain.yaml work_piles pile=筏 days -->・実測）**／**帆（3.7<!-- stats: terrain.yaml work_piles pile=帆 days -->・実測）**／櫂と舵（2<!-- stats: terrain.yaml work_piles pile=櫂と舵 days -->）／沿岸航海（3<!-- stats: terrain.yaml work_piles pile=沿岸航海 days -->）／海図を仕上げる（5<!-- stats: terrain.yaml work_piles pile=海図を仕上げる days -->） | 5<!-- stats: terrain.yaml work_piles_by_system system=11 piles --> | 18.7<!-- stats: terrain.yaml work_piles_by_system system=11 days --> |
+| 12 | 家具・娯楽 | — | 設えを積んで `snug` へ届かせる | — | — |
 | | | | **合計** | **26**<!-- stats: terrain.yaml work_piles_total piles --> | **68.61**<!-- stats: terrain.yaml work_piles_total days --> |
 
 **山が「量」で立っていることに注意してください**（2.4節）。石の斧も甕も1つでは段になりません
@@ -283,12 +299,19 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 腐敗の最も速い段の食べ物（生肉・獣の死体・ヤシガニ・海藻）を干物にできることです
 （[`SurvivalItems.md`](./SurvivalItems.md) 10節）。
 
+**12の山だけ、合計に入っていません。** 設えは `src/assets/world-codex/furnishings.yaml` に在って
+`snug` へ届く量も測れますが、山として数えるには `src/analysis/dailyPhases.ts` の `WORK_PILES` へ
+1行足して [`stats/terrain.yaml`](../../stats/terrain.yaml) を作り直すことになり、上の合計とその先の
+日数（8節）が一斉に動きます。**この表で「—」が意味するのは0ではなく「まだ数えていない」です**
+（[#1641](https://github.com/gooyyu1/UnmappedIsland/issues/1641)）。
+
 **表の中身は既存のカタログのままです。** 9は [`Bedding.md`](./Bedding.md) 2節、10は
 [`Dwellings.md`](./Dwellings.md) 3節、7は [`Containers.md`](./Containers.md) 2節、4・5・6は
 [`SurvivalItems.md`](./SurvivalItems.md) 1〜3節、11は [`Voyage.md`](./Voyage.md) 1〜3節に既にあります。
 **新しく足したのは1・2・3**で、このうち2の飼育は [`Animals.md`](./Animals.md) 3.1節、3の製塩と
 塩蔵は [`SurvivalItems.md`](./SurvivalItems.md) 9節、3の干し場は同10節が持ちます。残りはまだどの文書も
-担当していません。
+担当していません。**12のカタログは文書を持たず、`src/assets/world-codex/furnishings.yaml` が中身
+そのものです**——設えは点数と手間の対応が全部で、文書へ書き写すと定義と二重に持つことになります。
 
 **新しく足した系統の多くは、仕掛けて待つ形です。** 水を溜める・畑と家畜・保存の設備（干す・燻す・天日で
 塩を採る）はいずれも、留守の間に設備が働きます。罠が既にこの形なので

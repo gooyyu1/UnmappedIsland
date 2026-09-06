@@ -53,10 +53,11 @@ card_filters:
   - id: filter_wear
     icon: 👕
     tags: [equippable]
-  # 寝床（系統9）と住居（系統10）。
+  # 寝床（系統9）・住居（系統10）と、里心を抑える設え（系統12、furnishings.yaml）。どれも「そこを
+  # 我が家にする物」なので、同じ札の集まりを指す系統として1つへ畳む。
   - id: filter_shelter
     icon: 🏠
-    tags: [bed, shelter]
+    tags: [bed, shelter, furnishing]
   # 船と海図（系統11）と、系統に数えない移動の距離（ContentSkeleton.md 3.1節）。道も他の設置物と
   # 同じにここでだけ残る。
   - id: filter_travel
@@ -156,8 +157,8 @@ traits:
         value: 0
         base: {subject: ancestor}
       # その場の居心地（docs/world/Characters.md ホームシック節）。**持つのは場所で、キャラクタは
-      # baseで継ぐだけ**——住居の部品（docs/world/Dwellings.md 2節）が、据えられた住居のここを
-      # modifyで押し上げる。素は0（何も無い土地）。
+      # baseで継ぐだけ**——据えた設え（furnishings.yaml）と住居の部品（docs/world/Dwellings.md 2.1節。
+      # まだ実装が無い）が、ここをmodifyで押し上げる。素は0（何も無い土地）。
       #
       # **気温と同じく、囲っている場所から継ぐ**（場所は入れ子になるので、継がないと内側に入った
       # 瞬間に外の設えが消える。同節）。下のcompanyも同じ。
