@@ -5,7 +5,6 @@ import type { TickDelta, TickGate } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 import type { CraftingStep } from './CraftingStep';
 import { collectOutputs } from './CraftingStep';
-import { mutuallyExclusive } from './conditionCases';
 import { rangeEventReadouts, ticksToRangeEnd } from './rangeEvents';
 import type { StaticValueResolver } from './staticValue';
 import { MINUTES_PER_TICK } from './balanceTables';
@@ -22,12 +21,15 @@ export interface ExternalTickDelta {
 
   readonly propertyGlobalId: number;
 
-  /** 最も遅い場合と最も速い場合の量（tickAmountsOfと同じ見方。炉は火力の段で3段階に変わる）。 */
-  readonly slowest: number;
-  readonly fastest: number;
-
-  /** その増減が止まるまでに動かせる総量。止まらない増減（薪をくべ続ける炉）ではundefined。 */
-  readonly maxTotal: number | undefined;
+  /**
+   * その押し手がtick毎に取りうる量。**同時に成立しうる組み合わせごとに1つ**（tickAmountsOfの
+   * `possible` と同じ見方）で、同じ値は畳んである。炉は火力の段で1・3・5を取る。
+   *
+   * **幅（最も遅い・最も速い）へ畳まずに並びのまま持つ。** 足し合わせた押し方は向きが揃うとは
+   * 限らず（常時引く分と条件つきで足す分）、畳むと押される向きのどちらかが落ちる。どちらの端の
+   * イベントへ向かうかで選び直すのは、受け取る側（paceTowards）の仕事。
+   */
+  readonly amounts: readonly number[];
 
   /**
    * その増減が効き始めるまでのtick数。**段に入って初めて効く増減**——傷が宿主の菌を押し上げるのは
@@ -35,6 +37,16 @@ export interface ExternalTickDelta {
    * 効くなら0。
    */
   readonly ticksUntilStart: number;
+
+  /**
+   * その増減が止まるまでのtick数（{@link ticksUntilStart} と同じく、生まれた時点から数える）。
+   * 止まらない増減（薪をくべ続ける炉）ではundefined。
+   *
+   * **動かせる総量ではなく長さで持つ。** 総量は「長さ×その速さ」でしかないので、速さが幅を持った
+   * 途端に、どの速さで割り戻すのかが決まらなくなる——段で入れ替わる押し手は速さが段ごとに違っても、
+   * 止まるのは同じ値が尽きたときで、長さのほうは1つに決まる。
+   */
+  readonly ticksUntilStop: number | undefined;
 }
 
 /**
@@ -123,14 +135,15 @@ export function rangeCyclesOf(
         const shortestTicks = sortedTicksToRangeEnd(propertyDef, initialValues, fastest).at(0);
         if (ticks === undefined || longestTicks === undefined || shortestTicks === undefined) continue;
 
-        // 外からの増減が止まる前に端へ届かないなら、その仕掛けは成立しない——小さな獲物は罠の傷でも
-        // 失血で死ぬが、血の多い獲物は傷が固まるほうが先になる。
-        if (driver?.maxTotal !== undefined && ticks * Math.abs(driver.slowest) > driver.maxTotal) continue;
-
         // 押し手が段に入って初めて効き始めるなら、そこへ届くまでの時間が端まで数えたtickの前に
         // 丸ごと要る（膿んでから菌を押し上げ始める）。**繰り返す周期には乗せない**——立ち上がりが
         // 効くのは初回だけで、次の発火までの間隔は変わらない。
         const untilStart = driver?.ticksUntilStart ?? 0;
+
+        // 外からの増減が止まる前に端へ届かないなら、その仕掛けは成立しない——小さな獲物は罠の傷でも
+        // 失血で死ぬが、血の多い獲物は傷が固まるほうが先になる。押せるのは効き始めてから止まるまでの
+        // 間だけなので、立ち上がりのぶんは持ち時間から引く。
+        if (driver?.ticksUntilStop !== undefined && ticks > driver.ticksUntilStop - untilStart) continue;
 
         // 値が戻るなら、次の発火までは戻った量ぶん——初回だけが初期値からの距離になる。
         const repeats = readout.expectedReturnToSelf > 0;
@@ -206,41 +219,91 @@ function sortedTicksToRangeEnd(
  * どれだけ速く、いつまで動かせるか。
  *
  * 1つの型が同じプロパティへ**複数の押し手**を並べることがある——膿んだ傷は、膿み始めてからと
- * 腐り切ってからの2つで宿主の菌を押し上げる。束ねる単位は限度と立ち上がりで、速さだけが幅になる。
+ * 腐り切ってからの2つで宿主の菌を押し上げる。
+ *
+ * **問いは自分のプロパティの側（tickAmountsOf）と同じで、「どの組み合わせが同時に成立しうるか」。**
+ * 常時効く宣言と条件つきの宣言が並べば、起こるのは「常時分」と「常時分＋条件つき分」で、
+ * 「条件つき分だけ」は起こらない。同時には効かない押し方どうし（炉の火力はheatの段で1/3/5）は、
+ * 1つの押し手が取りうる量として並べる。
  */
 export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): readonly ExternalTickDelta[] {
-  // **束ねてよいのは限度も立ち上がりも同じものどうしだけ。** 違うものを束ねると、どの仕掛けも
-  // 持っていない（速さ, 限度, 立ち上がり）の組ができる——止まって合計の決まる増減（傷の出血は
-  // -15/tickで合計60mL）と止まらない増減を1つにすれば「その速さで永久に流れ続ける傷」になり、
-  // 膿んだ傷が押し上げる菌（festeringから0.12、septicから0.35）を1つにすれば「膿み始めた時点で
-  // 0.35」になる。炉の火力（heatの段で1/3/5）はどれも止まらず、立ち上がりも読めない
-  // （ticksUntilGateRises）ので、今までどおり1つの幅に収まる。
-  const byPropertyLimitAndStart = new Map<string, ExternalTickDelta>();
+  const byProperty = new Map<number, TickDelta[]>();
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== root || delta.amount === 0) continue;
-
-    const ticks = ticksWhileGateHolds(def, delta.gate);
-    const maxTotal = ticks === undefined ? undefined : ticks * Math.abs(delta.amount);
-    const ticksUntilStart = ticksUntilGateRises(def, delta.gate);
-    const key = `${delta.propertyGlobalId}:${maxTotal}:${ticksUntilStart}`;
-    const known = byPropertyLimitAndStart.get(key);
-    byPropertyLimitAndStart.set(key, {
-      sourceGlobalId: def.globalId,
-      propertyGlobalId: delta.propertyGlobalId,
-      // 段で切り替わる増減（炉の火力）は同時には効かないので、束ねずに幅として持つ。
-      slowest:
-        known === undefined || Math.abs(delta.amount) < Math.abs(known.slowest)
-          ? delta.amount
-          : known.slowest,
-      fastest:
-        known === undefined || Math.abs(delta.amount) > Math.abs(known.fastest)
-          ? delta.amount
-          : known.fastest,
-      maxTotal,
-      ticksUntilStart,
-    });
+    const known = byProperty.get(delta.propertyGlobalId);
+    if (known === undefined) byProperty.set(delta.propertyGlobalId, [delta]);
+    else known.push(delta);
   }
-  return [...byPropertyLimitAndStart.values()];
+
+  const found: ExternalTickDelta[] = [];
+  for (const [propertyGlobalId, deltas] of byProperty) {
+    // **幅に束ねられるのは、効いている間が同じ押し方どうしだけ。** 同時に効かないことは幅にしてよい
+    // 理由でしかなく、いつからいつまでかは押し手が1つの答えを持たなければならない——膿んだ傷が
+    // 押し上げる菌（festeringから0.12、septicから0.35）を1つにすると「膿み始めた時点で0.35」に、
+    // 止まる出血（4 tick）と止まらない敗血症を1つにすると「その速さで永久に流れ続ける傷」になる。
+    const byWindow = new Map<string, ExternalTickDelta>();
+    for (const pushing of pushingCasesOf(def, deltas)) {
+      const key = `${pushing.ticksUntilStart}:${pushing.ticksUntilStop}`;
+      const known = byWindow.get(key);
+      byWindow.set(key, {
+        sourceGlobalId: def.globalId,
+        propertyGlobalId,
+        amounts: [...new Set([...(known?.amounts ?? []), pushing.amount])],
+        ticksUntilStart: pushing.ticksUntilStart,
+        ticksUntilStop: pushing.ticksUntilStop,
+      });
+    }
+    found.push(...byWindow.values());
+  }
+  return found;
+}
+
+/** 同時に成立しうる外向きの増減をひと組にした、1通りの押し方（pushingCasesOf）。 */
+interface PushingCase {
+  readonly amount: number;
+  readonly ticksUntilStart: number;
+  readonly ticksUntilStop: number | undefined;
+}
+
+/**
+ * 同じ相手プロパティを動かす外向きの増減から、**同時に成立しうる組み合わせ**をすべて挙げる
+ * （possibleTotalsOfと同じ数え上げ）。常時効く分はどの組み合わせにも入り、条件や段で縛られた分は
+ * 排他だと言い切れない対だけが重なる。
+ *
+ * 組み合わせが効いているのは、**どの宣言も効き始めた後で、どれかが止まるまでの間**。そこが空に
+ * なる組み合わせは起こらないので落とす——固まるまで4 tickの出血と、320 tick後に始まる敗血症は、
+ * 重なる時が無い。
+ */
+function pushingCasesOf(def: ObjectDef, deltas: readonly TickDelta[]): readonly PushingCase[] {
+  // 段でも条件でも縛られていない増減は、どの場面でも効いているので必ず数に入る。
+  const heldBack = (delta: TickDelta) => delta.gate.stage !== undefined || delta.gate.conditional;
+
+  let combinations: (readonly TickDelta[])[] = [deltas.filter((delta) => !heldBack(delta))];
+  for (const delta of deltas.filter(heldBack)) {
+    const grown = combinations
+      .filter((combination) => combination.every((member) => !member.gate.neverHoldsWith(delta.gate)))
+      .map((combination) => [...combination, delta]);
+    combinations = [...combinations, ...grown];
+  }
+
+  return combinations
+    .map((combination) => pushingCaseOf(def, combination))
+    .filter((pushing): pushing is PushingCase => pushing !== undefined);
+}
+
+/** その組み合わせが起こす押し方。押していない（合計0）か、効いている間が空ならundefined。 */
+function pushingCaseOf(def: ObjectDef, combination: readonly TickDelta[]): PushingCase | undefined {
+  const amount = combination.reduce((total, delta) => total + delta.amount, 0);
+  if (amount === 0) return undefined;
+
+  const ticksUntilStart = Math.max(...combination.map((delta) => ticksUntilGateRises(def, delta.gate)));
+  const stops = combination
+    .map((delta) => ticksUntilGateFalls(def, delta.gate))
+    .filter((ticks): ticks is number => ticks !== undefined);
+  const ticksUntilStop = stops.length === 0 ? undefined : Math.min(...stops);
+  if (ticksUntilStop !== undefined && ticksUntilStop <= ticksUntilStart) return undefined;
+
+  return { amount, ticksUntilStart, ticksUntilStop };
 }
 
 /**
@@ -277,7 +340,7 @@ interface TickAmounts {
  *
  * **問いは「条件つきの増減（8.2節）を合算するか」ではなく「どの組み合わせが同時に成立しうるか」。**
  * 全部を1つの場合として足すと、成立しえない組み合わせ——同じ気温を`lt`と`gte`で見ている寒さと
- * 暖かさ——が打ち消し合って、その周期が丸ごと消える。排他だと言い切れる対（mutuallyExclusive）
+ * 暖かさ——が打ち消し合って、その周期が丸ごと消える。排他だと言い切れる対（TickGate.neverHoldsWith）
  * だけを落とし、残る組み合わせをすべて場合として並べる。
  *
  * 落とせない対は重なりうるものとして数える。罠の耐久がこれで、地面にある間の-1と獲物を抱えて
@@ -303,9 +366,7 @@ function possibleTotalsOf(unconditional: number, conditional: readonly TickDelta
   let combinations: (readonly TickDelta[])[] = [[]];
   for (const delta of conditional) {
     const grown = combinations
-      .filter((combination) =>
-        combination.every((member) => !mutuallyExclusive(member.gate.conditions, delta.gate.conditions)),
-      )
+      .filter((combination) => combination.every((member) => !member.gate.neverHoldsWith(delta.gate)))
       .map((combination) => [...combination, delta]);
     combinations = [...combinations, ...grown];
   }
@@ -345,14 +406,15 @@ function paceTowards(
  */
 function totalsWithDriver(own: TickAmounts, driver: ExternalTickDelta | undefined): readonly number[] {
   if (driver === undefined) return own.possible;
-  return [own.unconditional + driver.slowest, own.unconditional + driver.fastest];
+  return driver.amounts.map((amount) => own.unconditional + amount);
 }
 
 /**
  * ゲートが自分の値を見ているなら、その値が尽きて条件が落ちるまでのtick数（TickGate参照）。
- * 見ていない、または尽きない値なら undefined＝止まらない。
+ * 見ていない、または尽きない値なら undefined＝止まらない。**生まれた時点から数える**ので、
+ * 効き始めまでの時間（ticksUntilGateRises）と同じ物差しの上に乗る。
  */
-function ticksWhileGateHolds(def: ObjectDef, gate: TickGate): number | undefined {
+function ticksUntilGateFalls(def: ObjectDef, gate: TickGate): number | undefined {
   let fewest: number | undefined;
   for (const propertyGlobalId of gate.watchedSelfProperties) {
     // 尽きるまでを**最も短く**見る側（fastest・fewest）に合わせて、ロールも軽く出たほうを採る。
@@ -372,22 +434,20 @@ function ticksWhileGateHolds(def: ObjectDef, gate: TickGate): number | undefined
  * 下に置かれた増減（8.2節）で育つが、そこはtickAmountsOfが数から外している。
  *
  * **要る段が複数あれば最も遅いものに合わせる**——どれか1つでも跨いでいなければ増減は効かない。
- * ゲートが落ちるのは見ている値のどれかが尽きた時点なので、ticksWhileGateHoldsとは向きが逆になる。
+ * ゲートが落ちるのは見ている値のどれかが尽きた時点なので、ticksUntilGateFallsとは向きが逆になる。
  */
 function ticksUntilGateRises(def: ObjectDef, gate: TickGate): number {
   let longest = 0;
-  for (const { propertyGlobalId, stageName } of gate.requiredSelfStages) {
+  for (const { propertyGlobalId, lowerBound } of gate.requiredSelfStages) {
     // 届くまでを**最も長く**見る側（slowest）に合わせて、ロールも段から遠いほうを採る。止まるまでを
     // 最も短く見るのと同じで、押し手を控えめに数える側へ揃える。
-    const bound = def
-      .tryGetPropertyDef(propertyGlobalId)
-      ?.stages.find((stage) => stage.name === stageName)?.lowerBound;
     const value = staticValueOf(def, propertyGlobalId, 'lowest');
     const pace = paceTowards(tickAmountsOf(def, propertyGlobalId).possible, 'on_max');
-    if (bound === undefined || value === undefined || pace === undefined) continue;
+    if (lowerBound === undefined || value === undefined || pace === undefined) continue;
 
-    // 生まれた時点でその段に居るなら待ちは無い（届くまでが0以下になる）。
-    const ticks = Math.ceil((bound - value) / pace.slowest);
+    // 生まれた時点でその段に居るなら待ちは無い（届くまでが0以下になる）。**「その段以上」も同じ
+    // 下端で成立する**ので、ちょうどその段かどうかでここは変わらない。
+    const ticks = Math.ceil((lowerBound - value) / pace.slowest);
     if (ticks > longest) longest = ticks;
   }
   return longest;

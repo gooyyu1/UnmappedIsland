@@ -10,8 +10,10 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  * 1つの場合として数えると、増減が打ち消し合って周期そのものが消える。**端から戻る量をどう測るか**
  * （`RangeEventReadout`）——`add`で足して戻すのも`set`で書き戻すのも、上端から戻るのも下端から
  * 戻るのも、同じ1つの向き（端からrangeの内側へ）で測らないと、周期が端によって別の意味になる。
- * そして**外からの押し手をどう束ねるか**——速さは幅にできるが、止まるまでと効き始めはできない。
- * 限度や立ち上がりの違うものを束ねると、どの仕掛けも持っていない押し手ができる。
+ * そして**外からの押し手をどう束ねるか**——問いは自分のプロパティの側と同じで、同時に効く分は
+ * 足し合わせ、同時には効かない分が1つの押し手の取りうる量として並ぶ。束ねられるのは効いている間が
+ * 同じものどうしだけで、立ち上がりや止まるまでの違うものを1つにすると、どの仕掛けも持っていない
+ * 押し手ができる。
  *
  * 形はどれも同梱の定義から採っているが、宣言はここに置く（tests/architecture/testKinds.test.ts）。
  */
@@ -172,6 +174,41 @@ object_defs:
       - conditions: [{prop: infection, in_stage: septic}]
         add: {parent: {blood: -40, hydration: -2}}
 
+  # 刺さったままの棘。抜けない痛みで常に血がにじみ、雨に打たれている間はさらに裂ける。どちらも
+  # 止まらず負った瞬間から効くので、起こるのは-1と-5——**-4だけになる場面は無い**。
+  thorn:
+    tags: [barb]
+    passives:
+      - add: {parent: {blood: -1}}
+      - conditions: [{subject: ancestor, prop: wetness, gte: 1}]
+        add: {parent: {blood: -4}}
+
+  # 毒針。**毒の残る間だけ効き、深く刺さっているほど速く注ぎ込む**。段は同時に2つを取れないので
+  # 起こるのは-3か-9のどちらかで、どちらも毒が尽きる20 tickで止まる。
+  sting:
+    tags: [barb]
+    props:
+      venom:
+        value: 40
+        range: {min: 0, max: 40}
+        passives:
+          - add: {self: {venom: -2}}
+      lodging:
+        value: 0
+        range: {min: 0, max: 1}
+        stages:
+          - {name: shallow}
+          - {name: deep, min: 1}
+    passives:
+      - conditions:
+          - {prop: venom, gte: 1}
+          - {prop: lodging, in_stage: shallow}
+        add: {parent: {blood: -3}}
+      - conditions:
+          - {prop: venom, gte: 1}
+          - {prop: lodging, in_stage: deep}
+        add: {parent: {blood: -9}}
+
   # 血の多い獣（animals.yamlのwild_boar）。上の傷を負い、血が尽きれば倒れる。
   boar:
     tags: [item]
@@ -248,20 +285,20 @@ object_defs:
     const propertyGlobalId = codex.propertyNames.getId(propertyName);
     return externalTickDeltasOf(defOf(objectName), 'parent')
       .filter((delta) => delta.propertyGlobalId === propertyGlobalId)
-      .map(({ slowest, fastest, maxTotal, ticksUntilStart }) => ({
-        slowest,
-        fastest,
-        maxTotal,
+      .map(({ amounts, ticksUntilStart, ticksUntilStop }) => ({
+        amounts,
         ticksUntilStart,
+        ticksUntilStop,
       }));
   }
 
-  it('止まるまでの違う押し手は、束ねずに別々に並べる', () => {
-    // 速さは幅として持てるが、止まるまでは幅を持てない。1つに束ねると最も遅い-15と「止まらない」が
-    // ひと組になり、どちらの経路も持っていない押し手ができる。
+  it('効いている間の重ならない押し手は、束ねずに別々に並べる', () => {
+    // 出血は負った瞬間から4 tickだけ、膿んだ傷が奪う分は320 tick後から止まらずに効く。重なる時が
+    // 無いので足し合わせた-55は起こらず、1つの幅に束ねると最も遅い-15と「止まらない」がひと組に
+    // なって、どちらの経路も持っていない押し手ができる。
     expect(externalDeltasOf('gash', 'blood')).toEqual([
-      { slowest: -15, fastest: -15, maxTotal: 60, ticksUntilStart: 0 },
-      { slowest: -40, fastest: -40, maxTotal: undefined, ticksUntilStart: 320 },
+      { amounts: [-15], ticksUntilStart: 0, ticksUntilStop: 4 },
+      { amounts: [-40], ticksUntilStart: 320, ticksUntilStop: undefined },
     ]);
   });
 
@@ -270,8 +307,24 @@ object_defs:
     // 「膿み始めた時点で-2」という、どちらの段も持っていない押し手ができる。
     // 0から+0.25/tickなので、festering（40）へは160 tick、septic（80）へは320 tick。
     expect(externalDeltasOf('gash', 'hydration')).toEqual([
-      { slowest: -1, fastest: -1, maxTotal: undefined, ticksUntilStart: 160 },
-      { slowest: -2, fastest: -2, maxTotal: undefined, ticksUntilStart: 320 },
+      { amounts: [-1], ticksUntilStart: 160, ticksUntilStop: undefined },
+      { amounts: [-2], ticksUntilStart: 320, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('同時に効く押し手は足し合わせる', () => {
+    // 常時にじむ-1と、雨の間だけ裂ける-4は同時に起こる。別々の押し手として並べると、雨だけが
+    // 効いている-4という起こらない速さが数に入る。実際に起こるのは-1と-5。
+    expect(externalDeltasOf('thorn', 'blood')).toEqual([
+      { amounts: [-1, -5], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('段で入れ替わる押し手は、止まるまでが速さで変わっても1つに収まる', () => {
+    // どちらも毒が尽きる20 tickで止まり、同時には効かない。止まるまでを動かせる総量で持つと
+    // 60mLと180mLの別々の押し手に見え、同時に起こりえない段の代替が2本の仕掛けとして数えられる。
+    expect(externalDeltasOf('sting', 'blood')).toEqual([
+      { amounts: [-3, -9], ticksUntilStart: 0, ticksUntilStop: 20 },
     ]);
   });
 
