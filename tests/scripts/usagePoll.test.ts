@@ -1,8 +1,8 @@
-import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { spawnScript } from '../support/runScript';
 
 /**
  * 使用量の口を叩く間隔の検査（`.claude/board-design.md` 2.5.2）。
@@ -33,8 +33,7 @@ function polledJustNow() {
 }
 
 function run(script: string) {
-  const call = spawnSync('bash', [join(AGENT, script).replace(/\\/g, '/')], {
-    encoding: 'utf8',
+  const call = spawnScript(join(AGENT, script), [], {
     env: { ...process.env, BOARD_STATE: stateDir },
   });
   return { code: call.status ?? -1, stdout: call.stdout, stderr: call.stderr };

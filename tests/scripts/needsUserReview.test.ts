@@ -1,8 +1,8 @@
-import { spawnSync } from 'node:child_process';
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { pathForBash, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
@@ -33,7 +33,7 @@ interface Doc {
 function judge(files: readonly string[], diff: string, docs: Readonly<Record<string, Doc>> = {}): Result {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-needs-user-review-'));
   try {
-    const dir = work.replace(/\\/g, '/');
+    const dir = pathForBash(work);
     writeFileSync(join(work, 'files'), `${files.join('\n')}\n`, 'utf-8');
     writeFileSync(join(work, 'diff'), diff, 'utf-8');
 
@@ -80,8 +80,7 @@ function judge(files: readonly string[], diff: string, docs: Readonly<Record<str
     );
     chmodSync(git, 0o755);
 
-    const out = spawnSync('bash', [SCRIPT, '900'], {
-      encoding: 'utf-8',
+    const out = spawnScript(SCRIPT, ['900'], {
       env: { ...process.env, PATH: `${work}${delimiter}${process.env.PATH ?? ''}` },
     });
     return {
