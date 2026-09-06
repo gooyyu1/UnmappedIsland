@@ -564,7 +564,10 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(dropped.combinationsWith(held, agent), 'どちらの向きにも成立しない').toEqual([]);
     expect(held.combinationsWith(dropped, agent)).toEqual([]);
 
-    const refused = dropped.refusedCombinationsWith(held, agent).find((c) => c.name === 'pour_into_filled');
+    // **名指しで引かない。** 断る組み合わせは複数あり（空の器へ注ぐ側もinstrumentが空でないことを
+    // 理由付きで断る）、画面が出すのは宣言順の先頭（CardInteraction.md 2節）。名指しで引くと、
+    // 出ない理由を出たことにしてしまう。
+    const refused = dropped.refusedCombinationsWith(held, agent).at(0);
 
     expect(refused, '断る理由を宣言しているので落とし先としては残る').toBeDefined();
     expect(refused?.unmetRequirement()?.reasonName, '断る理由が画面へ届く').toBe('container_full');
@@ -659,5 +662,18 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     expect(amountIn(tea), '混ざらない（種類ごとのタグに合致しない）').toBe(400);
     expect(amountIn(water)).toBe(500);
+  });
+
+  it('別の液体が入った容器へ重ねると、空にせよと言う', () => {
+    // 満水を断る宣言を先へ動かしても、こちらの理由は先頭のまま——別の液体は種類ごとのタグに
+    // 合致せず、断る組み合わせがpour_into_emptyの1つしか残らない。
+    const agent = spawn(SAMPLE_CHARACTER);
+    const tea = spawnContainer('jar', 'tea', 400);
+    const water = spawnContainer('jar', 'water', 500);
+
+    expect(
+      water.refusedCombinationsWith(tea, agent).at(0)?.unmetRequirement()?.reasonName,
+      '画面が出すのは宣言順の先頭',
+    ).toBe('not_empty');
   });
 });

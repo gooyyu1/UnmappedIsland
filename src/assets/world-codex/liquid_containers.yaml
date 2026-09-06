@@ -65,25 +65,16 @@ traits:
     props:
       color: {value: 0x2f86d8}
     interactions:
-      # 空の容器へ注ぐ。**宣言はこちら側（中身入り）にしか無いので、どちらの札をどちらへ重ねても
-      # selfは中身入り・instrumentは空になる**（12.3節）。相手を水入りの変種にしてから移すので、
-      # becomeをtransferより先に書く（transferは相手がfillを持たないと何もしない）。
-      pour_into_empty:
-        trigger: {drag: {tag: liquid_container}}
-        conditions:
-          - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
-        become: {subject: instrument, content: water_liquid}
-        transfer:
-          amount: 999999
-          from: self
-          from_prop: fill
-          to: instrument
-          to_prop: fill
       # 水入りの容器同士。入るだけ入り、入りきらない分は注ぎ元に残る（transferの両側のクランプ）。
       # 異種の液体はこのタグに合致しないので、混ぜる組み合わせがそもそも現れない。
       #
       # 注ぎ先が満ちていれば断る。**上限そのものは器の側が段として名乗る**（fillのfull段）ので、
       # 器ごとに違う容量をここへ書かずに済む。飲用がhydrationのfull段を見るのと同じ形。
+      #
+      # **下のpour_into_emptyより先に書く。** 相手のタグ（water）はあちらのタグ（liquid_container）に
+      # 必ず含まれるので、どちらも断る場面——満水の器同士——では両方が理由付きで残る。画面が出すのは
+      # 宣言順の先頭（docs/ui/CardInteraction.md 2節）なので、狭いほうを後ろに置くと、こちらの理由は
+      # 一度も出ないまま「中身が入っている」だけが出る。
       pour_into_filled:
         trigger: {drag: {tag: water}}
         conditions:
@@ -94,6 +85,23 @@ traits:
           from: instrument
           from_prop: fill
           to: self
+          to_prop: fill
+      # 空の容器へ注ぐ。**宣言はこちら側（中身入り）にしか無いので、どちらの札をどちらへ重ねても
+      # selfは中身入り・instrumentは空になる**（12.3節）。相手を水入りの変種にしてから移すので、
+      # becomeをtransferより先に書く（transferは相手がfillを持たないと何もしない）。
+      #
+      # 断る理由が出るのは、相手が**別の液体**を抱えているとき（上のpour_into_filledのタグに
+      # 合致しないので、こちらだけが残る）。
+      pour_into_empty:
+        trigger: {drag: {tag: liquid_container}}
+        conditions:
+          - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
+        become: {subject: instrument, content: water_liquid}
+        transfer:
+          amount: 999999
+          from: self
+          from_prop: fill
+          to: instrument
           to_prop: fill
       # 1回の飲用 = 250mL。残量が足りなければ残っている分だけ飲む（transferの在庫クランプ）。
       # 満水では何も移らない操作になるため、実行自体をさせない。境目はキャラクターのhydrationの
@@ -154,17 +162,7 @@ traits:
     props:
       color: {value: 0x6f8f3c}
     interactions:
-      pour_into_empty:
-        trigger: {drag: {tag: liquid_container}}
-        conditions:
-          - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
-        become: {subject: instrument, content: tea_liquid}
-        transfer:
-          amount: 999999
-          from: self
-          from_prop: fill
-          to: instrument
-          to_prop: fill
+      # 狭いほうのタグを先に書く（水のpour_into_filled）。
       pour_into_filled:
         trigger: {drag: {tag: tea}}
         conditions:
@@ -175,6 +173,17 @@ traits:
           from: instrument
           from_prop: fill
           to: self
+          to_prop: fill
+      pour_into_empty:
+        trigger: {drag: {tag: liquid_container}}
+        conditions:
+          - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
+        become: {subject: instrument, content: tea_liquid}
+        transfer:
+          amount: 999999
+          from: self
+          from_prop: fill
+          to: instrument
           to_prop: fill
       drink:
         trigger: menu
@@ -198,17 +207,7 @@ traits:
     props:
       color: {value: 0xe0b422}
     interactions:
-      pour_into_empty:
-        trigger: {drag: {tag: liquid_container}}
-        conditions:
-          - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
-        become: {subject: instrument, content: oil_liquid}
-        transfer:
-          amount: 999999
-          from: self
-          from_prop: fill
-          to: instrument
-          to_prop: fill
+      # 狭いほうのタグを先に書く（水のpour_into_filled）。
       pour_into_filled:
         trigger: {drag: {tag: oil}}
         conditions:
@@ -219,6 +218,17 @@ traits:
           from: instrument
           from_prop: fill
           to: self
+          to_prop: fill
+      pour_into_empty:
+        trigger: {drag: {tag: liquid_container}}
+        conditions:
+          - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
+        become: {subject: instrument, content: oil_liquid}
+        transfer:
+          amount: 999999
+          from: self
+          from_prop: fill
+          to: instrument
           to_prop: fill
 
   # 開いた容器から蒸発する。日射に依らない基礎の蒸発と、ambient_brightnessのしきい値で決まる上乗せの和

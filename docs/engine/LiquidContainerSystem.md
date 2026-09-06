@@ -81,6 +81,12 @@ jar:
 water_liquid:
   tags: [water]
   interactions:
+    # 相手も水入りのとき。注ぎ先が満ちていれば断る。**狭いタグを持つこちらを先に書く**（下記）。
+    pour_into_filled:
+      trigger: {drag: {tag: water}}
+      conditions:
+        - {reason: container_full, not: {prop: fill, in_stage: full}}
+      transfer: {amount: 999999, from: instrument, from_prop: fill, to: self, to_prop: fill}
     # 相手が空の容器のとき。相手を水入りの変種にしてから移す（becomeが先、transferは相手が
     # fillを持たないと何もしない）。
     pour_into_empty:
@@ -89,12 +95,6 @@ water_liquid:
         - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
       become: {subject: instrument, content: water_liquid}
       transfer: {amount: 999999, from: self, from_prop: fill, to: instrument, to_prop: fill}
-    # 相手も水入りのとき。注ぎ先が満ちていれば断る。
-    pour_into_filled:
-      trigger: {drag: {tag: water}}
-      conditions:
-        - {reason: container_full, not: {prop: fill, in_stage: full}}
-      transfer: {amount: 999999, from: instrument, from_prop: fill, to: self, to_prop: fill}
 ```
 
 **宣言を持つのは中身入りの側だけなので、どちらの札をどちらへ重ねても `self` は中身入り・`instrument` は
@@ -107,10 +107,17 @@ water_liquid:
 「あるだけ注ぎ、入るだけ受け、残りは残る」に特別な記述は要りません。
 
 **満ちきった器へは注げません**（理由は `container_full`）。1mL も入らない移送は受け取れる個数が 0 に
-なり、理由を宣言していなければ落とし先そのものが消えて「重ねても何も起きない」に見えます
+なるので、断る理由を宣言していなければ落とし先から消えて「重ねても何も起きない」に見えます
 （[`CardInteraction.md`](../ui/CardInteraction.md) 2.1 節）。**満ちる境目は器の側が `fill` の `full` 段
 として名乗り**（2 節）、中身はその名前で訊くだけなので、器ごとに違う容量が中身の宣言へ漏れません
 ——飲用が `hydration` の `full` 段を見るのと同じ形です（5 節）。
+
+**この理由が画面へ届くために、`pour_into_filled` を `pour_into_empty` より先に書きます。** 相手が
+名乗るタグ（`water`）は `liquid_container` に必ず含まれるので、満水の器同士では**どちらの宣言も
+理由付きで断る側に残ります**。画面が出すのは宣言順の先頭（[`CardInteraction.md`](../ui/CardInteraction.md)
+2 節）なので、順を逆にすると `container_full` は一度も出ず、注ぎ足せるはずの相手へ「中身が入っている。
+まず空にする必要がある」（`not_empty`）だけが出ます。**`not_empty` が正しいのは相手が別の液体を
+抱えているとき**——そこでは種類ごとのタグに合致せず、`pour_into_empty` だけが残ります。
 
 **注ぎ切った側は空の容器へ戻ります。** `fill` が 0 になった変種は素の型へ戻り（1 節）、名前の「〜入り」も
 中身のバーも同時に消えます。飲み切った容器（5 節）も同じです。
