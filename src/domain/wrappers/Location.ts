@@ -93,7 +93,7 @@ export class Location extends ObjectWrapper {
     if (hidden === undefined) return;
 
     const progress = this.explorationProgress;
-    for (const fixture of [...hidden.contents]) {
+    for (const fixture of hidden.contents) {
       if ((fixture.tryGetProperty(this.words.requiredProgressId)?.getEffectiveValue() ?? 0) <= progress)
         this.reveal(fixture);
     }

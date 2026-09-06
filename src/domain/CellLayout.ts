@@ -103,23 +103,30 @@ export class CellLayout {
     return this.def.cellCountPolicy !== 'grows';
   }
 
-  private get stacksInFilledCells(): readonly ObjectStack[] {
-    return this._cells.map((cell) => cell.stack).filter((s): s is ObjectStack => s !== undefined);
-  }
-
   /** セルの並びそのもの。位置＝添字。 */
   get cells(): readonly SlotCell[] {
     return [...this._cells];
   }
 
-  /** スタックの区別を畳み込んだ、中身全部のビュー。 */
+  /**
+   * スタックの区別を畳み込んだ、中身全部の写し。**読んだ時点の顔ぶれを写して返す**ので、受け取った側は
+   * 辿っている途中で中身が出入りしても構わない（時間経過は辿りながら子を消す。WorldObject.tick）。
+   */
   get contents(): readonly WorldObject[] {
-    return this.stacksInFilledCells.flatMap((s) => s.members);
+    const contents: WorldObject[] = [];
+    for (const cell of this._cells) {
+      const stack = cell.stack;
+      if (stack === undefined) continue;
+      for (const member of stack.members) contents.push(member);
+    }
+    return contents;
   }
 
   /** 中身を、積み重なっているまとまりごとに分けたもの（空セルは含まない。先頭が代表）。 */
   get stacks(): readonly (readonly WorldObject[])[] {
-    return this.stacksInFilledCells.map((stack) => stack.members);
+    const stacks: (readonly WorldObject[])[] = [];
+    for (const cell of this._cells) if (cell.stack !== undefined) stacks.push(cell.stack.members);
+    return stacks;
   }
 
   /**

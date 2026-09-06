@@ -714,10 +714,9 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['RESUME session_a stall 9 stall:9']);
   });
 
-  // **畳めるのはクラウドのセッションだけ**（`archive-session.sh` はブリッジを `KEPT` にする）。
-  // 出しても畳まれず、**指紋だけが残ってそのワーカーが二度と起こされず人へも返らなくなる。**
-  // `env:` の付かない issue をブリッジで走らせる形は実在する（棚卸し役・手元からの投入）ので、
-  // 既定の `cloud` との食い違いがそのまま当たる。
+  // **回すのはクラウドのセッションだけ。** `env:` の付かない issue をブリッジで走らせる形は実在
+  // する（棚卸し役・手元からの投入）ので、既定の `cloud` との食い違いがそのまま当たり、手元で
+  // 走っているワーカーが片端から畳まれてクラウドへ立て直される。
   it('ブリッジのワーカーは、走らせる先が食い違っていても畳まない', () => {
     const board = {
       issues: [{ number: 9, ...label('kind:task'), blockedBy: { nodes: [] } }],
@@ -936,8 +935,8 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual([]);
   });
 
-  // **ブリッジのセッションは盤面から畳めない**（`archive-session.sh` の `--force-bridge`。#1558）。
-  // 「生きているか」で見ていると、終わった1本が次の周期を永久に塞ぐ。
+  // 畳む手は次の周まで出ないので、「生きているか」で見ていると、終わった1本が畳まれるまでの
+  // あいだ次の周期を塞ぐ。
   it('走り終わった棚卸しが畳まれずに残っていても、次の周期は立つ', () => {
     const board = { issues: [unsorted(9)], sessions: [idle('session_c', 'chore-triage')] };
     expect(moves(board)).toContain(TRIAGE);
