@@ -39,7 +39,8 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 並びになる、[`StatusArea.md`](../ui/StatusArea.md)）。trait 由来のものが先頭に並ぶのは、trait の props が
 キャラクタ自身の props より前に並ぶため（`RawObjectDef.resolve`）。**`chill_point` は `status` を持たない**
 ——見せるのは残っている熱だけで、境目そのものは衣服・寝床が押し下げる裏の値。**`loneliness` と `comfort` と
-`company` も同じく裏の値**——読ませるのは間の `homesickness` だけ（下の[ホームシック](#ホームシック)節）。**栄養素の在庫（`carbohydrate` ほか）は
+`company` も持たない**——常時見せるのは間の `homesickness` だけで、この3つはその詳細から辿って読む
+（下の[ホームシック](#ホームシック)節）。**栄養素の在庫（`carbohydrate` ほか）は
 `status` を持たない**——常に見せるのは腹が満ちているかどうかだけで、在庫は開いて見るもの
 （[`DigestionSystem.md`](../engine/DigestionSystem.md) 3 節）。**ビタミンだけが在庫と別扱いなのは、
 尽きた先の弊害を段が持つ**ため（同 4 節）。**`immunity` も `status` を持たない**——常時見せるのは症状

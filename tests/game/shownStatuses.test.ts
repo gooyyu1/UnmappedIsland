@@ -19,23 +19,32 @@ describe('ステータスエリアに出ている行', () => {
     alert,
   });
 
+  /** 画面が答えるもの。untaggedはタグを1つも持たない行で、statusesにもtabsにも現れない。 */
+  interface World {
+    readonly statuses: readonly StatusContent[];
+    readonly tabs?: readonly PropertyTab[];
+    readonly untagged?: readonly StatusContent[];
+    readonly midAction?: boolean;
+  }
+
   /**
    * その画面のプロパティ全部（重複は先勝ち）。実物ではワールドが直接答えるが、この試験は並びを
-   * statusesとtabsで組み立てるので、同じ集合をここで作る。
+   * statuses・tabs・untaggedで組み立てるので、同じ集合をここで作る。
    */
-  function everyProperty(world: {
-    statuses: readonly StatusContent[];
-    tabs?: readonly PropertyTab[];
-  }): readonly StatusContent[] {
+  function everyProperty(world: World): readonly StatusContent[] {
     const all = new Map<string, StatusContent>();
-    for (const status of [...world.statuses, ...(world.tabs ?? []).flatMap((tab) => tab.entries)])
-      if (!all.has(status.key)) all.set(status.key, status);
+    const rows = [
+      ...world.statuses,
+      ...(world.tabs ?? []).flatMap((tab) => tab.entries),
+      ...(world.untagged ?? []),
+    ];
+    for (const status of rows) if (!all.has(status.key)) all.set(status.key, status);
     return [...all.values()];
   }
 
   /** その並びを持つ画面。statusesとcategoriesは呼ぶたびに今の値を返す（行動で作り直されるため）。 */
   function screen(
-    world: { statuses: readonly StatusContent[]; tabs?: readonly PropertyTab[]; midAction?: boolean },
+    world: World,
     pinned: readonly string[] = [],
   ): { shown: ShownStatuses; opened: string[]; pinnedCalls: number } {
     const opened: string[] = [];
@@ -102,6 +111,23 @@ describe('ステータスエリアに出ている行', () => {
 
     expect(shown.rows(settled).map((row) => row.key)).toEqual(['weight', 'hunger']);
     expect(shown.tabs()[0].entries[0].pinned, 'タブの行にも印が付く').toBe(true);
+  });
+
+  it('タブにも並ばない行も、詳細を開けて固定表示にすればステータスエリアに出る', () => {
+    // 居心地のようにタグを1つも持たない行（Characters.md ホームシック節）。読む入口は、それが効いて
+    // いる相手の詳細に並ぶ影響の枠だけ（Windows.md 8.2節）だが、出せる先はタブの行と変わらない。
+    const world = {
+      statuses: [status('hunger', 90, 'danger')],
+      untagged: [status('comfort', 0)],
+    };
+    const { shown } = screen(world);
+
+    expect(shown.contentOf('comfort'), 'どこにも並んでいなくても詳細は引ける').toBeDefined();
+    expect(shown.tabs(), 'タブは増えない').toEqual([]);
+
+    shown.togglePin('comfort');
+
+    expect(shown.rows(settled).map((row) => row.key)).toEqual(['comfort', 'hunger']);
   });
 
   it('直前の行動での増減が、行にも詳細にも載る', () => {

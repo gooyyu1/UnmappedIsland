@@ -18,7 +18,8 @@ export function statusRows(
   others: readonly StatusContent[],
   wouldShowChangeFor: (status: StatusContent) => boolean,
 ): readonly StatusContent[] {
-  // 同じプロパティが複数のタブに現れるため（満腹度はstatusでありnutritionでもある）、識別子で束ねる。
+  // taggedはothersの部分集合（statusタグの付いた行も、キャラクタのプロパティには違いない）なので、
+  // 同じ行が両方から来る。識別子で束ね、常に候補のtaggedを先に置く。
   const candidates = new Map<string, StatusContent>();
   for (const status of tagged) candidates.set(status.key, status);
   for (const status of others)

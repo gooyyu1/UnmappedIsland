@@ -92,12 +92,14 @@ describe('statusRows(ステータスエリアに並べる行)', () => {
     expect(rows.map((row) => row.key)).toEqual(['stamina', 'satiety', 'hydration']);
   });
 
-  it('複数のタブに現れる同じプロパティを重複して出さない', () => {
+  it('taggedとothersの両方から来る行を重複して出さず、どこにも並ばない行も固定表示なら出す', () => {
+    // othersはキャラクタのプロパティ全部なので、statusタグの付いた行は両方に居る。居心地のように
+    // タグを1つも持たない行はothersにしか居ないが、固定表示なら同じように候補へ入る。
     const rows = settledRows(
       [status('satiety', 'caution', true)],
-      [status('satiety', 'caution', true), status('satiety', 'caution', true)],
+      [status('satiety', 'caution', true), status('comfort', 'safe', true)],
     );
 
-    expect(rows.map((row) => row.key)).toEqual(['satiety']);
+    expect(rows.map((row) => row.key)).toEqual(['satiety', 'comfort']);
   });
 });
