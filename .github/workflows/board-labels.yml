@@ -5,7 +5,7 @@ name: Board labels
 #
 # ラベルは**事実**しか持たない（1.3）。ここが動かすのは次。
 #
-# - レビューの結論 … `直し待ち` / `通してよい`
+# - レビューの結論 … `直し待ち` / `通してよい`（人の判断が要るなら `判断待ち` も。2.13.4）
 # - 新しいコミットが載ったこと … 前の差分に付いていた印を全部外す
 # - 3周目の判定が「直しが要る」だったこと … `収束せず`（4.6）
 # - ワーカーが自分の行き先を名乗ったこと … `判断待ち`（2.15）・`env:bridge`（2.16）
@@ -63,13 +63,21 @@ jobs:
           # **同じ1行を、盤面の側も読む**（`scripts/agent/review-verdicts.mjs`。そのレビューが
           # 書き終えたかの判定に使う）。ここに node は持ち込めないので実装は別だが、**緩めた
           # ほうだけが余計なコメントを判定と読む**ので、下の文字列は向こうと揃っていること。
+          #
+          # **`通してよい（人の判断が要る）` は、通したうえで人へ回す形**（`board-design.md` 2.13.4）。
+          # 差分を読まないと判定できないもの——宣言文法・スキーマ・ゲームコンセプト・確定節に抵触するか
+          # ——をレビュアーが引き取ったので、`判断待ち` を付ける口がここに要る。
           case "$verdict" in
           '[レビュー] 通してよい')
-            add=通してよい
+            add=(通してよい)
+            remove=直し待ち
+            ;;
+          '[レビュー] 通してよい（人の判断が要る）')
+            add=(通してよい 判断待ち)
             remove=直し待ち
             ;;
           '[レビュー] 直しが要る')
-            add=直し待ち
+            add=(直し待ち)
             remove=通してよい
             ;;
           *)
@@ -77,7 +85,9 @@ jobs:
             exit 0
             ;;
           esac
-          gh pr edit "$PR" --repo "$REPO" --add-label "$add" --remove-label "$remove"
+          adds=()
+          for label in "${add[@]}"; do adds+=(--add-label "$label"); done
+          gh pr edit "$PR" --repo "$REPO" "${adds[@]}" --remove-label "$remove"
 
           # **3周目の判定が「直しが要る」なら、そこで人へ上げる**（`.claude/board-design.md` 4.6）。
           # **上限を持つのはここ。** レビュアーへの指示にしか書いていなかったので、書き忘れれば
@@ -89,13 +99,13 @@ jobs:
           # **`直し待ち` を一緒に外す。** 残すと盤面が差し戻しを打ち、人が答える前に次の周が走る
           # ——`収束せず` の効き目は「レビューを出さない」の1つだけにしてある（2.13）。人が
           # 書き直させたいときは `直し待ち` を付け直す。
-          [ "$add" = 直し待ち ] || exit 0
+          [ "${add[0]}" = 直し待ち ] || exit 0
           rounds=$(gh pr view "$PR" --repo "$REPO" --json comments --jq '
             [ .comments[]
               | select(.authorAssociation == "OWNER" or .authorAssociation == "MEMBER"
                        or .authorAssociation == "COLLABORATOR")
               | .body | split("\n")[0] | sub("[ \t\r]+$"; "")
-              | select(test("^\\[レビュー\\] (通してよい|直しが要る)$")) ] | length')
+              | select(test("^\\[レビュー\\] (通してよい(（人の判断が要る）)?|直しが要る)$")) ] | length')
           echo "結論のコメント: $rounds 件"
           if [ "$rounds" -ge 3 ]; then
             gh pr edit "$PR" --repo "$REPO" --add-label 収束せず --remove-label 直し待ち

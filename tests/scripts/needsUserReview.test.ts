@@ -6,11 +6,12 @@ import { describe, expect, it } from 'vitest';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
- * `scripts/agent/needs-user-review.sh` の `GRAMMAR` の線。
+ * `scripts/agent/needs-user-review.sh` が引く線。
  *
  * この判定は**ユーザーへ回すかどうか**を決める関門で、誤りはどちらへ転んでも見えない。緩すぎれば
- * 文法の変更が司令塔の判断だけで `main` へ入り、厳しすぎれば判断の中身が無いPRがユーザーのタップを
- * 1回増やすだけになる。GitHub の側には何も現れないので、ここで見ていないと誰も気づけない。
+ * 誰が決めたのか分からない確定が司令塔の判断だけで `main` へ入り、厳しすぎれば判断の中身が無いPRが
+ * ユーザーのタップを1回増やすだけになる。GitHub の側には何も現れないので、ここで見ていないと誰も
+ * 気づけない。
  *
  * `gh` と `git` を PATH の先頭に置いて差し替え、実際にスクリプトを走らせる。
  */
@@ -104,84 +105,43 @@ function hunk(path: string, lines: readonly string[]): string {
   );
 }
 
-describe('needs-user-review.sh の GRAMMAR', () => {
-  it('文法のファイルでも、注釈しか変わっていないなら止めない', () => {
+/**
+ * 宣言文法・スキーマへの変更は、**ここでは引かない**（判定するのは差分を読むレビュアー。
+ * `.claude/review-criteria.md`「人の判断へ回す」）。ファイルの線で引いていた頃は、スキーマの
+ * `description` を変えただけの差分も文法を足した差分も同じに見えていた。
+ */
+describe('needs-user-review.sh は文法・スキーマのファイルでは止めない', () => {
+  it('yaml に書ける形を決めているファイルの、実体の変更でも止めない', () => {
     const result = judge(
-      ['src/loader/parsePassives.ts'],
+      ['src/loader/parsePassives.ts', 'src/domain/DeclaredNumber.ts'],
       hunk('src/loader/parsePassives.ts', [
-        ' /**',
-        '- * 対象は self/parent/child/ancestor のいずれか。',
-        '+ * 対象に何を書けるかは、宣言が置かれた場所が決める（14.1節の表）。',
-        ' */',
-      ]),
-    );
-
-    expect(result.lines).toEqual([]);
-    expect(result.code).toBe(1);
-  });
-
-  it('同じファイルでも、実行される行が変わったら止める', () => {
-    const result = judge(
-      ['src/loader/parsePassives.ts'],
-      hunk('src/loader/parsePassives.ts', [
-        ' /** 対象を読む。 */',
         "-  const keys = ['self', 'parent'];",
         "+  const keys = ['self', 'parent', 'child'];",
-      ]),
-    );
-
-    expect(result.lines).toEqual(['GRAMMAR src/loader/parsePassives.ts']);
-    expect(result.code).toBe(0);
-  });
-
-  // 行の頭がコードなら注釈ではない。**取りこぼす側ではなく止める側へ倒す。**
-  it('コードの後ろに付いた注釈だけの直しは、止める側へ倒す', () => {
-    const result = judge(
-      ['src/domain/DeclaredNumber.ts'],
-      hunk('src/domain/DeclaredNumber.ts', [
-        '-  return value; // 実効値',
-        '+  return value; // 宣言された数の実効値',
-      ]),
-    );
-
-    expect(result.lines).toEqual(['GRAMMAR src/domain/DeclaredNumber.ts']);
-    expect(result.code).toBe(0);
-  });
-
-  // 仕様書とスキーマは全体が宣言そのもので、注釈とコードの区別が無い。
-  it('仕様書は、文面の書き換えだけでも止める', () => {
-    const result = judge(
-      ['docs/engine/GameElementDefinition.md'],
-      hunk('docs/engine/GameElementDefinition.md', [
-        '-`ancestor` は set/add に書ける。',
-        '+`ancestor` は、プロパティ名を伴う場所に書ける。',
-      ]),
-    );
-
-    expect(result.lines).toEqual(['GRAMMAR docs/engine/GameElementDefinition.md']);
-    expect(result.code).toBe(0);
-  });
-
-  it('注釈だけかは、そのファイルの差分だけで見る', () => {
-    const result = judge(
-      ['src/loader/parsePassives.ts', 'src/domain/WorldObject.ts'],
-      hunk('src/loader/parsePassives.ts', ['- * 古い説明', '+ * 新しい説明']) +
-        hunk('src/domain/WorldObject.ts', ['-  const a = 1;', '+  const a = 2;']),
+      ]) + hunk('src/domain/DeclaredNumber.ts', ['-  return value;', '+  return value * 2;']),
     );
 
     expect(result.lines).toEqual([]);
     expect(result.code).toBe(1);
   });
 
-  it('複数の文法ファイルのうち、実体が変わったものだけを挙げる', () => {
+  it('スキーマと文法の仕様書を書き換えても止めない', () => {
     const result = judge(
-      ['src/loader/parsePassives.ts', 'src/loader/parseSlots.ts'],
-      hunk('src/loader/parsePassives.ts', ['- * 古い説明', '+ * 新しい説明']) +
-        hunk('src/loader/parseSlots.ts', ['-  const a = 1;', '+  const a = 2;']),
+      ['docs/engine/WorldCodex.schema.json', 'docs/engine/GameElementDefinition.md'],
+      hunk('docs/engine/WorldCodex.schema.json', ['-      "type": "string"', '+      "type": "number"']) +
+        hunk('docs/engine/GameElementDefinition.md', [
+          '-`ancestor` は set/add に書ける。',
+          '+`ancestor` は、プロパティ名を伴う場所に書ける。',
+        ]),
+      {
+        'docs/engine/GameElementDefinition.md': {
+          base: '# 要素の定義\n\n`ancestor` は set/add に書ける。\n',
+          head: '# 要素の定義\n\n`ancestor` は、プロパティ名を伴う場所に書ける。\n',
+        },
+      },
     );
 
-    expect(result.lines).toEqual(['GRAMMAR src/loader/parseSlots.ts']);
-    expect(result.code).toBe(0);
+    expect(result.lines).toEqual([]);
+    expect(result.code).toBe(1);
   });
 });
 
