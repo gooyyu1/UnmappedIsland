@@ -15,7 +15,7 @@ cat <<'JSON'
 {
   "hookSpecificOutput": {
     "hookEventName": "UserPromptSubmit",
-    "additionalContext": "記録の確認: 直前の発言が (1) ユーザー本人のものであり（`[デーモン]` で始まる発言はエージェント由来なので対象外）、(2) 判断・好み・方針の選択を含むなら、作業へ着手する前に `.claude/decisions/` へ1件1ファイルで記録する（書式は `.claude/skills/policy-review/SKILL.md`「履歴の書式」）。**発言は原文のまま引き、ここでは一般化しない**——一般則へ畳むのは棚卸しの仕事なので、`.claude/policies.md` と `docs/concept/DesignPrinciples.md` へは書かない。迷ったら書く（履歴は注入されないので、溜めてもコストにならない）。判断を含まない作業依頼・事実の誤りの訂正だけなら何もしない。"
+    "additionalContext": "記録の確認: 直前の発言が (1) ユーザー本人のものであり（`[デーモン]` で始まる発言はエージェント由来なので対象外）、(2) 判断・好み・方針の選択を含むなら、作業へ着手する前に `.claude/decisions/` へ1件1ファイルで記録する（書式は `.claude/skills/policy-review/SKILL.md`「履歴の書式」）。**`## ユーザーの発言` へ原文を引き、`## エージェントの解釈` へ読み取ったことを置く**（混ぜると、こちらの読みがユーザーの判断そのものとして読まれる）。他の判断と束ねて一般則にするのは棚卸しの仕事なので、`.claude/policies.md` と `docs/concept/DesignPrinciples.md` へは書かない。迷ったら書く（履歴は注入されないので、溜めてもコストにならない）。判断を含まない作業依頼・事実の誤りの訂正だけなら何もしない。"
   }
 }
 JSON

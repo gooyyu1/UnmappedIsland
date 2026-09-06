@@ -22,6 +22,12 @@ const MAX_LINES = 220;
 /** 1項目に置くフィールドと、その順序。 */
 const FIELDS = ['場面', '選ぶ方', '重視'] as const;
 
+/**
+ * 履歴が持つ節と、その順序。**混ぜて書くと、エージェントの読みがユーザーの判断そのものとして
+ * 読まれる**（SKILL.md「履歴の書式」）。
+ */
+const SECTIONS = ['ユーザーの発言', 'エージェントの解釈'] as const;
+
 /** 1項目の行数の上限。3行に収まらないものは、束ね方が粗いか、まだ一般則になっていない。 */
 const MAX_ITEM_LINES = 3;
 
@@ -139,9 +145,26 @@ describe('判断の履歴', () => {
     expect(broken).toEqual([]);
   });
 
+  it('発言と解釈を、この順に節で分けている', () => {
+    const broken = files
+      .filter(({ text }) => {
+        const found = text
+          .split(/\r?\n/)
+          .filter((line) => line.startsWith('## '))
+          .map((line) => line.slice(3).trim());
+        return found.join('/') !== SECTIONS.join('/');
+      })
+      .map(({ rel }) => rel);
+
+    expect(broken).toEqual([]);
+  });
+
   // 原文が残っていることが、抽出が正しかったかを後から確かめられる唯一の手立て。
-  it('ユーザーの発言を引用している', () => {
-    const broken = files.filter(({ text }) => !/^> \S/m.test(text)).map(({ rel }) => rel);
+  // **引用は発言の節の中に置く**——解釈の側へ回ると、どちらが誰のものかが見分けられなくなる。
+  it('ユーザーの発言を、発言の節の中で引用している', () => {
+    const broken = files
+      .filter(({ text }) => !/^> \S/m.test(text.split(`## ${SECTIONS[1]}`)[0]))
+      .map(({ rel }) => rel);
 
     expect(broken).toEqual([]);
   });
