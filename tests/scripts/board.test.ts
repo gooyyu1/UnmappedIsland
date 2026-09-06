@@ -13,11 +13,19 @@ import { board, issueBody } from '../../scripts/agent/board.mjs';
  * **突き合わせは1箇所**。どちらの検査も同じ世界を渡して、同じ事実が両方に出ることを見る。
  */
 
+interface LiveSession {
+  readonly id: string;
+  readonly status: string;
+  readonly bucket: string;
+  readonly env: string;
+  readonly tags: readonly string[];
+}
+
 interface World {
   readonly prs?: readonly Record<string, unknown>[];
   readonly issues?: readonly Record<string, unknown>[];
-  readonly sessions?: readonly Record<string, unknown>[];
-  /** 一覧を引けない。 */
+  readonly sessions?: readonly LiveSession[];
+  /** 一覧を引けない（[`live-sessions.mjs`](../../scripts/agent/live-sessions.mjs) は投げる）。 */
   readonly sessionsFail?: boolean;
   readonly checked?: string;
 }
@@ -25,14 +33,19 @@ interface World {
 const deps = (world: World, warn: (line: string) => void) => ({
   gh: (args: readonly string[]) =>
     args[0] === 'pr' ? JSON.stringify(world.prs ?? []) : JSON.stringify(world.issues ?? []),
-  page: () => (world.sessionsFail === true ? undefined : { ccr: { data: world.sessions ?? [] } }),
-  checkedItems: () => world.checked ?? '',
+  sessions: () => {
+    if (world.sessionsFail === true) throw new Error('セッションの一覧を引けなかった');
+    return world.sessions ?? [];
+  },
   warn,
 });
 
 function show(world: World = {}): { lines: string[]; warnings: string[] } {
   const warnings: string[] = [];
-  const lines = board(deps(world, (line: string) => warnings.push(line)));
+  const lines = board({
+    ...deps(world, (line: string) => warnings.push(line)),
+    checkedItems: () => world.checked ?? '',
+  });
   return { lines: lines ?? [], warnings };
 }
 
@@ -55,20 +68,20 @@ const issue = (number: number, title: string, over: Record<string, unknown> = {}
 });
 
 /**
- * 畳まれていないセッション1件。**投入済みかを引くのはタグ**（`.claude/board-design.md` 2.9）なので、
- * 題は人が読むためだけのもの。
+ * 畳まれていないセッション1件（`live-sessions.mjs` が返す形）。**何をしているかはタグで引く**
+ * （`.claude/board-design.md` 1.2）——題は一覧に含まれない。
  */
-const session = (id: string, title: string, tags: readonly string[] = []) => ({
+const session = (id: string, tags: readonly string[] = []): LiveSession => ({
   id,
-  session_status: 'SESSION_STATUS_RUNNING',
-  updated_at: '2026-09-05T00:00:00Z',
-  title,
+  status: 'SESSION_STATUS_RUNNING',
+  bucket: 'SESSION_STATUS_BUCKET_WORKING',
+  env: 'cloud',
   tags,
 });
 
 describe('board.mjs', () => {
   it('引けなければ、何も並べない', () => {
-    expect(board({ gh: () => undefined, page: () => undefined, warn: () => {} })).toBeUndefined();
+    expect(board({ gh: () => undefined, sessions: () => [], warn: () => {} })).toBeUndefined();
   });
 
   it('節は、中身が無くても出る', () => {
@@ -121,17 +134,18 @@ describe('board.mjs', () => {
   it('`task-<番号>` のタグを持つセッションが在れば、投入済みと出す', () => {
     const { lines } = show({
       issues: [issue(8, '直す')],
-      sessions: [session('session_a', '作業 #8 直す', ['task-8'])],
+      sessions: [session('session_a', ['task-8'])],
     });
 
     expect(lines).toContain('TASK 8 投入済み 直す');
   });
 
-  // **題では見ない**（2.9）。題の形は人が読むためのもので、変わっても投入済みの判定は外れない。
-  it('題に番号が在るだけのセッションでは、投入済みにしない', () => {
+  // 引くのは**その issue のタグ**だけ（1.2）。他の仕事で走っている1本を投入済みと読むと、着手できる
+  // 仕事が誰にも配られないまま止まる。
+  it('別の仕事のセッションが走っていても、投入済みにしない', () => {
     const { lines } = show({
       issues: [issue(8, '直す')],
-      sessions: [session('session_a', '相談 #8 について', [])],
+      sessions: [session('session_a', ['task-9']), session('session_b', ['review-10'])],
     });
 
     expect(lines).toContain('TASK 8 着手可 直す');
@@ -214,26 +228,19 @@ describe('board.mjs', () => {
     ]);
   });
 
-  it('畳まれたセッションは、走行に出さない', () => {
+  // 何をしているかはタグで読む。**畳まれたものを外すのも、繰るのも `live-sessions.mjs`**（検査は
+  // `liveSessions.test.ts`）なので、ここが見るのは並べ方だけ。
+  it('走行は、走っている場所とタグを添えて並べる', () => {
     const { lines } = show({
       sessions: [
-        session('session_a', '生きている'),
-        { id: 'session_b', session_status: 'SESSION_STATUS_ARCHIVED', updated_at: '-', title: '畳んだ' },
+        session('session_a', ['task-8']),
+        { ...session('session_b', []), env: 'bridge', status: 'SESSION_STATUS_IDLE' },
       ],
     });
 
     expect(lines.filter((line) => line.startsWith('走行 '))).toEqual([
-      '走行 session_a RUNNING 2026-09-05T00:00:00Z 生きている',
-    ]);
-  });
-
-  // **上限に当たったら黙らない。** 一覧は新しい順なので、切れるのは古い側——畳み忘れて残っている
-  // セッションはまさにそこに居る。
-  it('一覧が上限に当たったら、断りを出す', () => {
-    const sessions = Array.from({ length: 100 }, (_, at) => session(`session_${at}`, '題'));
-
-    expect(show({ sessions }).warnings).toEqual([
-      '（一覧が上限 100 に当たった。これより古いセッションは見えていない）',
+      '走行 session_a RUNNING cloud task-8',
+      '走行 session_b IDLE bridge -',
     ]);
   });
 
@@ -252,7 +259,7 @@ describe('board.mjs', () => {
  */
 describe('issueBody', () => {
   it('引けなければ、本文を作らない', () => {
-    expect(issueBody({ gh: () => undefined, page: () => undefined, warn: () => {} })).toBeUndefined();
+    expect(issueBody({ gh: () => undefined, sessions: () => [], warn: () => {} })).toBeUndefined();
   });
 
   // **写しを持ってよいのは、いつ時点かを一緒に書くから**（2.20.1）。時刻が伸びないことが、
@@ -270,7 +277,7 @@ describe('issueBody', () => {
         issue(4, '返された', { labels: [{ name: 'kind:task' }, { name: '判断待ち' }] }),
         issue(5, '未整理', { labels: [] }),
       ],
-      sessions: [session('session_a', '作業 #2', ['task-2'])],
+      sessions: [session('session_a', ['task-2'])],
       prs: [{ number: 10, title: '題', labels: [], statusCheckRollup: [], body: '' }],
     });
 
@@ -288,7 +295,7 @@ describe('issueBody', () => {
   it('投入済みの1件ごとに、番号・題・状態・PRを並べる', () => {
     const { lines } = body({
       issues: [issue(8, '直す')],
-      sessions: [session('session_a', '作業 #8 直す', ['task-8'])],
+      sessions: [session('session_a', ['task-8'])],
       prs: [
         {
           number: 10,
@@ -308,8 +315,8 @@ describe('issueBody', () => {
     const { lines } = body({
       issues: [issue(8, '直す')],
       sessions: [
-        { ...session('session_a', '作業 #8 直す', ['task-8']), session_status: 'SESSION_STATUS_IDLE' },
-        session('session_b', 'レビュー #10:1 題', ['review-10']),
+        { ...session('session_a', ['task-8']), status: 'SESSION_STATUS_IDLE' },
+        session('session_b', ['review-10']),
       ],
       prs: [
         {
@@ -330,10 +337,7 @@ describe('issueBody', () => {
   it('両方走っていれば、両方出す', () => {
     const { lines } = body({
       issues: [issue(8, '直す')],
-      sessions: [
-        session('session_a', '作業 #8 直す', ['task-8']),
-        session('session_b', 'レビュー #10:1 題', ['review-10']),
-      ],
+      sessions: [session('session_a', ['task-8']), session('session_b', ['review-10'])],
       prs: [{ number: 10, title: '題', labels: [], statusCheckRollup: [], body: 'Closes #8\n' }],
     });
 
@@ -343,9 +347,7 @@ describe('issueBody', () => {
   it('セッションが手を止めていれば、手空きと出す', () => {
     const { lines } = body({
       issues: [issue(8, '直す')],
-      sessions: [
-        { ...session('session_a', '作業 #8 直す', ['task-8']), session_status: 'SESSION_STATUS_IDLE' },
-      ],
+      sessions: [{ ...session('session_a', ['task-8']), status: 'SESSION_STATUS_IDLE' }],
     });
 
     expect(lines).toContain('| #8 | 直す | 手空き | - |');
@@ -381,7 +383,7 @@ describe('issueBody', () => {
   it('題の `|` を逃がす', () => {
     const { lines } = body({
       issues: [issue(8, 'a | b')],
-      sessions: [session('session_a', '作業 #8', ['task-8'])],
+      sessions: [session('session_a', ['task-8'])],
     });
 
     expect(lines).toContain('| #8 | a \\| b | 作業中 | - |');

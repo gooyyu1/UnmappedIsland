@@ -23,7 +23,13 @@
 //   ## PR      <番号> <CI> <マージ可否> <base> <ラベル> <題>
 //   ## TASK    <番号> <着手できるか> <題>
 //   ## 未整理  <番号> <ラベル> <題>
-//   ## 走行    <セッションID> <状態> <最終更新> <題>
+//   ## 走行    <セッションID> <状態> <走っている場所> <タグ>
+//
+// ## セッションの一覧は、デーモンと同じ引き方で引く
+//
+// [`live-sessions.mjs`](live-sessions.mjs) を通す——**生きたものが尽きるまで繰る**ので、固まった
+// まま直近のページから外れたセッションも見える。**ここだけ1ページで済ませると、盤面が「居ない」と
+// 言う相手をデーモンは掴んでいる**ことになり、読んだ人は投入してよいと読む。
 //
 // ## `確定待ち` を盤面に出すのは、引き継いだ司令塔が最初に読む場所だから
 //
@@ -76,19 +82,10 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { busySession } from './board-move.mjs';
-import { listSessions } from './live-sessions.mjs';
+import { liveSessions } from './live-sessions.mjs';
 import { gh as runGh, runBash } from './spawn.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-
-/**
- * 一覧を1ページだけ引く。**上限に当たったら黙らない**——一覧は新しい順なので、切れるのは古い側で、
- * 畳み忘れて残っているセッションはまさにそこに居る。出ないことを「無い」と読むと、永久に畳まれない。
- *
- * **繰らないのは、ここが1回動くたびに1つの盤面を出す道具だから。** 1ページで足りない日は稀で、
- * その日は上の断りが出る。毎回全部繰ると、そのぶんプロセスが増える（[`spawn.mjs`](spawn.mjs)）。
- */
-const SESSION_LIMIT = 100;
 
 /** `baseRefName` を引くのは、**`main` の上に無いPRは盤面では捌けない**から（`board-move.mjs`）。 */
 const PR_FIELDS = 'number,title,labels,statusCheckRollup,mergeable,baseRefName,body';
@@ -122,7 +119,7 @@ const closes = (body) => [...(body ?? '').matchAll(/closes\s+#(\d+)/gi)].map((ma
  * `undefined`**——欠けたまま並べると、消えたPRが「無い」ものとして読まれる（理由は `gh` が自分で
  * 言っている）。
  */
-function survey({ gh, page, checkedItems, warn }) {
+function survey({ gh, sessions, warn }) {
   const prsRaw = gh(['pr', 'list', '--state', 'open', '--limit', '50', '--json', PR_FIELDS]);
   // issue は1回だけ引いて、`kind:task` の付いたもの・まだ分類されていないもの・`kind:meta` の本文の
   // チェックへ分ける。**依存も同じ呼び出しで返る**ので、issue 1件ずつ `gh api` を叩かなくてよい。
@@ -140,28 +137,14 @@ function survey({ gh, page, checkedItems, warn }) {
   const prs = JSON.parse(prsRaw);
   const issues = JSON.parse(issuesRaw);
 
-  const checked = checkedItems(issuesRaw)
-    .split(/\r?\n/)
-    .filter((line) => line !== '');
-
-  // 走行中（畳んでいない）セッション。ここが「もう投入したか」の主な根拠。
-  const answer = page({ mine: true, limit: SESSION_LIMIT });
-  if (answer === undefined) warn('（セッションの一覧を引けなかった。投入済みの判定はPRだけで行う）');
-  const all = answer?.ccr?.data ?? [];
-  if (all.length === SESSION_LIMIT) {
-    warn(`（一覧が上限 ${SESSION_LIMIT} に当たった。これより古いセッションは見えていない）`);
+  // 畳んでいないセッション。ここが「もう投入したか」の主な根拠。**引けなければ空のまま進む**
+  // ——投入済みの判定はPRだけになるが、PRと issue は並べられる。
+  let live = [];
+  try {
+    live = sessions();
+  } catch {
+    warn('（セッションの一覧を引けなかった。投入済みの判定はPRだけで行う）');
   }
-  const live = all
-    .filter((session) => session.session_status !== 'SESSION_STATUS_ARCHIVED')
-    .map((session) => ({
-      id: session.id,
-      // **素の値のまま持つ。** 走っているかの判定は `board-move.mjs` が1箇所で持っており、
-      // そちらはこの綴りで見る。人へ見せるときだけ頭を落とす。
-      status: session.session_status ?? '-',
-      updated: session.updated_at,
-      title: session.title ?? '',
-      tags: [...(session.tags ?? [])],
-    }));
 
   const tagged = (tag) => live.filter((session) => session.tags.includes(tag));
   const running = (tag) => tagged(tag).some(busySession);
@@ -197,16 +180,22 @@ function survey({ gh, page, checkedItems, warn }) {
 
   const unsorted = issues.filter((issue) => !names(issue).some((name) => name.startsWith('kind:')));
 
-  return { checked, prs, tasks, unsorted, live };
+  // `issuesRaw` を返すのは、**`確定待ち` を引くのが端末の側だけ**だから（下の `board`）。
+  return { issuesRaw, prs, tasks, unsorted, live };
 }
 
 /** 端末へ1行1件で出す形（[`board.sh`](board.sh)）。引けなければ `undefined`。 */
-export function board({ gh = runGh, page = listSessions, checkedItems = runCheckedItems, warn }) {
-  const found = survey({ gh, page, checkedItems, warn });
+export function board({ gh = runGh, sessions = liveSessions, checkedItems = runCheckedItems, warn }) {
+  const found = survey({ gh, sessions, warn });
   if (found === undefined) return undefined;
 
   const lines = ['## 確定待ち'];
-  const checked = found.checked.map((line) => `確定待ち ${line}`);
+  // **引くのはここだけ。** `checked-items.sh` はプロセスを1つ起こす（[`spawn.mjs`](spawn.mjs)）ので、
+  // 出さない側（`issueBody`）のために毎回起こさない。
+  const checked = checkedItems(found.issuesRaw)
+    .split(/\r?\n/)
+    .filter((line) => line !== '')
+    .map((line) => `確定待ち ${line}`);
   lines.push(...(checked.length === 0 ? ['（無し）'] : checked));
 
   lines.push('## PR');
@@ -229,9 +218,14 @@ export function board({ gh = runGh, page = listSessions, checkedItems = runCheck
   lines.push(...(unsorted.length === 0 ? ['（無し）'] : unsorted));
 
   lines.push('## 走行');
+  // **何をしているセッションかはタグで読む**（`task-<番号>` / `review-<PR番号>` / `chore-<名>`）。
+  // 題を出さないのは、一覧が [`live-sessions.mjs`](live-sessions.mjs) から来るため——**デーモンが
+  // 見ているものと同じ一覧**であることのほうが、読みやすさより先に来る。
   const running = found.live.map(
     (session) =>
-      `走行 ${session.id} ${session.status.replace('SESSION_STATUS_', '')} ${session.updated} ${session.title}`,
+      `走行 ${session.id} ${session.status.replace('SESSION_STATUS_', '')} ${session.env} ${
+        session.tags.length === 0 ? '-' : session.tags.join(',')
+      }`,
   );
   lines.push(...(running.length === 0 ? ['（無し）'] : running));
 
@@ -256,18 +250,11 @@ const cell = (text) => String(text).replace(/\|/g, '\\|');
  *
  * 引けなければ `undefined`（呼び手は書き込まない——**古い本文が残るほうが、欠けた盤面より正しい**）。
  */
-export function issueBody({
-  gh = runGh,
-  page = listSessions,
-  checkedItems = runCheckedItems,
-  warn,
-  now = new Date(),
-} = {}) {
+export function issueBody({ gh = runGh, sessions = liveSessions, warn, now = new Date() } = {}) {
   const notes = [];
   const found = survey({
     gh,
-    page,
-    checkedItems,
+    sessions,
     warn: (line) => {
       notes.push(line);
       warn(line);
