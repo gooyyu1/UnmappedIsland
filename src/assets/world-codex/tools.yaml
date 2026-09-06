@@ -147,7 +147,12 @@ object_defs:
         #
         # **軸を丸太から採るのは、若木が世界に在るまでの割り切り。** 本来の材料は若木を切って採る
         # 長い棒（docs/world/SurvivalItems.md 0節）で、それが入れば材料だけがそちらへ移る
-        # （腕の要求は変わらない）。
+        # （腕の要求は変わらない）。**杭・掘り棒（traps.yaml・farming.yaml）が同じ長い棒を太い枝で
+        # 代用しているのに、ここだけ丸太なのは、代用が軸の長さを担えないため**——70cmの枝で足りるなら
+        # 削り出す工程ごと要らなくなり、突き銛と同じ物になる。
+        #
+        # **石器・繊維は、今は斧の要求と重なる**（丸太は斧でしか採れない）が、軸が長い棒へ移れば
+        # 重ならなくなる。柄付けの入力は3つのままなので、条件も3つのまま置く。
         conditions:
           - {reason: needs_woodwork, subject: agent, prop: skill_woodwork, in_stage_or_above: basic}
           - {reason: needs_knapping, subject: agent, prop: skill_knapping, in_stage_or_above: basic}
