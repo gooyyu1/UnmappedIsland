@@ -43,8 +43,8 @@ export interface ExternalTickDelta {
    * 止まらない増減（薪をくべ続ける炉）ではundefined。
    *
    * **動かせる総量ではなく長さで持つ。** 総量は「長さ×その速さ」でしかないので、速さが幅を持った
-   * 途端に、どの速さで割り戻すのかが決まらなくなる——段で入れ替わる押し手は速さが段ごとに違っても、
-   * 止まるのは同じ値が尽きたときで、長さのほうは1つに決まる。
+   * 途端に、どの速さで割り戻すのかが決まらなくなる——毒の残る間だけ効く棘は刺さりの深さで速さが
+   * 変わっても、止まるのは同じ毒が尽きたときで、長さのほうは1つに決まる。
    */
   readonly ticksUntilStop: number | undefined;
 }
@@ -469,8 +469,8 @@ function totalsWithDriver(own: TickAmounts, driver: ExternalTickDelta | undefine
 }
 
 /**
- * ゲートが落ちて、その増減が効かなくなるまでのtick数（TickGate参照）。**落ち方は2つある**——
- * 見ている自分の値が尽きるか、居ることを要求された段を上へ抜けるか。どちらも来なければundefined＝
+ * ゲートが落ちて、その増減が効かなくなるまでのtick数（TickGate参照）。**見ている自分の値が
+ * 尽きるか、居ることを要求された段を上へ抜けるか**で落ちる。どちらも来なければundefined＝
  * 止まらない。**生まれた時点から数える**ので、効き始めまでの時間（ticksUntilGateRises）と同じ
  * 物差しの上に乗る。
  *
@@ -504,8 +504,8 @@ function ticksUntilValueRunsOut(def: ObjectDef, propertyGlobalId: number): numbe
 function ticksUntilStageLeftUpward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
   if (required.bound !== 'exact') return undefined;
 
-  // 抜けるまでを**最も短く**見る側（fastest）に合わせる。ロールは効き始め（ticksUntilGateRises）と
-  // 同じ段から遠いほうで、どちらも押し手を控えめに数える側。
+  // 速さは**最も速い増減**（fastest）で、ロールは効き始め（ticksUntilGateRises）と同じ段から
+  // 遠いほうを採る。**効き始めから抜けるまでが最も狭くなる組**で、押し手を控えめに数える側。
   const upperBound = stageUpperBoundOf(def, required);
   const value = staticValueOf(def, required.propertyGlobalId, 'lowest');
   const pace = paceTowards(tickAmountsOf(def, required.propertyGlobalId).possible, 'on_max');
