@@ -8,10 +8,10 @@
 # 出力は1行1件。
 #   HELD     <PR番号>              … 関門に掛かった。マージしていない（理由が続けて出る）
 #   MERGED   <PR番号>
-#   RETARGETED <PR番号>            … このPRの上に積まれていたPRの base を `main` へ張り替え、
-#                                    書いた本人へ差し戻した
+#   RETARGETED <PR番号>            … このPRの上に積まれていたPRの base を `main` へ張り替えた
 #   UNRETARGETED <PR番号>          … その張り替えに失敗した。ブランチは消していない
-#   UNMENDED <PR番号>              … 張り替えたのに差し戻せなかった（`直し待ち` が付いていない）
+#   UNMENDED <PR番号>              … 張り替えたが、書いた本人へ差し戻せなかった（`直し待ち` が
+#                                    付いていない）
 #   UNDELETED <ブランチ>            … マージ済みのブランチを消せなかった
 #   CLOSED   <issue番号>            … PR本文の `Closes #N` が閉じたことの確認
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
@@ -220,8 +220,9 @@ if stacked=$(gh pr list --state open --base "$head" --json number --jq '.[].numb
       gh pr edit "$other" --add-label 直し待ち >/dev/null; then
       continue
     fi
-    # 張り替えは済んでいるので、盤面はこのPRを普通に捌きにかかる。**差し戻せなかったことは残りとして
-    # 出す**——黙って落とすと、混ざった差分がそのままレビューへ出る。
+    # 理由を残せなければラベルも付けない（`UNMENDED` は「`直し待ち` が付いていない」と同じ意味に
+    # しておく）。**張り替えは済んでいるので、盤面はこのPRを普通に捌きにかかる**——ここで出せるのは
+    # 「差し戻せなかった」までで、混ざった差分がレビューへ出るのは止められない。
     echo "UNMENDED $other"
     leftover=1
   done <<<"$stacked"
