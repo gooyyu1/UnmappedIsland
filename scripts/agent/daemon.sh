@@ -3,7 +3,7 @@
 #
 #   bash scripts/agent/daemon.sh start        # 背景で立てる（ログは $DAEMON_LOG へ追記）
 #   bash scripts/agent/daemon.sh stop         # 止める（錠が外れるまで待つ）
-#   bash scripts/agent/daemon.sh restart      # 版を入れ替えたとき
+#   bash scripts/agent/daemon.sh restart      # 直接 push した版や環境変数を、すぐ効かせるとき
 #   bash scripts/agent/daemon.sh status       # 生きているかだけを見る（生きていれば0）
 #   bash scripts/agent/daemon.sh run          # 前に出たまま回す
 #   INTERVAL=300 bash scripts/agent/daemon.sh run
@@ -39,6 +39,24 @@
 # （あちらの「1周をプロセス1つに収める」）、ここが知っているのは**引けたかどうか**（終了コード）
 # だけ。
 #
+# ## 走るのは複製。入れ替わったら、新しい版で回り直す
+#
+# **回っている bash は、最初に読んだ版のまま。** `MERGE` を打つと本体が `main` へ進む（`SYNCED`）ので、
+# 隣の道具は次の周から新しい版で動くのに、この1本だけが古いまま残る。**古い呼び手が新しい道具を叩くと、
+# 噛み合わないまま黙って何もしない周が続く**——単体では走らなくなった `board-move.mjs` を旧 `daemon.sh`
+# が叩き、手を1つも出さないまま8分止まった（2026-09-05）。周の終わりに複製元と見比べて、変わって
+# いたら `exec` で入れ替わる。**錠は外さずに渡す**——`exec` はPIDを持ち越すので、錠の中のPIDが自分
+# なら、それは自分が置いていったもの。
+#
+# **走るのはリポジトリの1本ではなく、`$STATE_DIR` への複製。** bash はスクリプトを読み進めながら
+# 実行するので、**走っている最中に中身が変わると、次に読む位置が別の中身を指す**（ループの中は先に
+# 読み終えているので起きないが、抜けた後の行で起きる）。**回り続けるあいだ読んでいるのが複製なら、
+# この窓は開いたままにならない**——走り出しの前半だけは複製元から読むが、錠を取ってすぐ移る。隣の
+# 道具の在り処は複製が知らないので、複製元が `DAEMON_ORIGIN` で渡す。
+#
+# 入れ替えた先が壊れていればそこで終わる。**古い版で黙って回り続けるよりは、止まったほうが後から
+# 追える**——心拍が腐れば `status` が「止まっている」と答える。
+#
 # ## 引けなかったら、その周は何もしない
 #
 # 盤面が欠けた周は手を決めない（`board-round.mjs`）。続けて `FAILURE_LIMIT` 回失敗したら、待つ間隔を
@@ -57,6 +75,10 @@ set -euo pipefail
 HERE="${BASH_SOURCE[0]%/*}"
 if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
 HERE="$(cd "$HERE" && pwd)"
+# **隣の道具の在り処は、複製元だけが知っている**（上の「走るのは複製」）。複製から走っているとき、
+# `$HERE` が指すのは複製の置き場なので、道具も版の出どころもこちらで引く。
+ORIGIN="${DAEMON_ORIGIN:-$HERE}"
+SOURCE="$ORIGIN/daemon.sh"
 INTERVAL="${INTERVAL:-30}"
 FAILURE_LIMIT="${FAILURE_LIMIT:-5}"
 # 続けて引けなくなった後の、待つ間隔。**`ROUND_LIMIT` より短くしておく**——心拍の間隔がそのまま
@@ -69,6 +91,9 @@ DAEMON_LOG="${DAEMON_LOG:-$HOME/daemon.log}"
 STOP_WAIT="${STOP_WAIT:-90}"
 # `start` が、立てた相手の心拍を待つ上限。
 START_WAIT="${START_WAIT:-30}"
+
+# 走る実体。**錠の外に置く**——錠より長生きで、`stop` して `start` し直しても同じ場所を使う。
+COPY="$STATE_DIR/daemon-running.sh"
 
 LOCK="$STATE_DIR/lock"
 # **心拍は錠の外。** 中に置くと `stop` が錠ごと消してしまい、止めた後の `status` が「一度も起きて
@@ -149,7 +174,7 @@ start_daemon() {
     return 0
   fi
   local waited=0
-  nohup bash "$HERE/daemon.sh" run >>"$DAEMON_LOG" 2>&1 &
+  nohup bash "$SOURCE" run >>"$DAEMON_LOG" 2>&1 &
   while [ "$waited" -lt "$START_WAIT" ]; do
     if running; then
       echo "立てた（ログは $DAEMON_LOG）"
@@ -188,16 +213,22 @@ restart)
 esac
 
 if ! mkdir "$LOCK" 2>/dev/null; then
-  if beating; then
+  # **錠の中のPIDが自分なら、置いていったのは自分**（`exec` はPIDを持ち越す）。複製へ移った直後と、
+  # 新しい版へ入れ替わった直後がこれで、錠は外さずにそのまま使う——外して取り直すと、その隙に
+  # `start` が二本目を立てられる。
+  if [ -f "$PIDFILE" ] && [ "$(<"$PIDFILE")" = "$$" ]; then
+    :
+  elif beating; then
     log "既に走っているので、二本目は立てない（最終 $(cat "$HEARTBEAT")）"
     exit 0
+  else
+    log "落ちた跡の錠を取り上げる（最終 $(cat "$HEARTBEAT" 2>/dev/null || echo 不明)）"
+    rm -rf "$LOCK"
+    mkdir "$LOCK" || {
+      log "錠を取れなかった"
+      exit 1
+    }
   fi
-  log "落ちた跡の錠を取り上げる（最終 $(cat "$HEARTBEAT" 2>/dev/null || echo 不明)）"
-  rm -rf "$LOCK"
-  mkdir "$LOCK" || {
-    log "錠を取れなかった"
-    exit 1
-  }
 fi
 
 # **撃つ相手を、錠の中に置いていく**（上の「止めるのも自分の仕事」）。錠と同じ寿命にしてあるので、
@@ -206,16 +237,26 @@ echo $$ >"$PIDFILE"
 
 trap 'rm -rf "$LOCK"' EXIT
 
+# **リポジトリの1本を直に読ませない**（上の「走るのは複製」）。**錠を取ってから複製する**——先に
+# 複製すると、既に走っている相手の実体を二本目が上書きしうる。錠は置いたPIDのまま引き継がれる。
+if [ -z "${DAEMON_ORIGIN:-}" ]; then
+  cp "$SOURCE" "$COPY"
+  DAEMON_ORIGIN="$HERE" exec bash "$COPY" run
+fi
+
 # `stop` に撃たれたら、寝ていても待たずに畳む。**周の途中で受けたぶんは、その周を終えてから**
 # ——1手の途中で消えると、打った跡と台帳が食い違う。
 stopping=''
 napping=''
 trap 'stopping=1; [ -z "$napping" ] || kill "$napping" 2>/dev/null || true' TERM INT
 
+# **回っている版そのもの**（＝走っている複製の中身）。周の終わりに、複製元をここと見比べる。
+loaded=$(<"$COPY")
+
 failures=0
 while true; do
   date -u +%Y-%m-%dT%H:%M:%SZ >"$HEARTBEAT"
-  if BOARD_STATE="$STATE_DIR" node "$HERE/board-round.mjs"; then
+  if BOARD_STATE="$STATE_DIR" node "$ORIGIN/board-round.mjs"; then
     [ "$failures" -lt "$FAILURE_LIMIT" ] || log "引けるようになったので、${INTERVAL}秒おきへ戻る"
     failures=0
   else
@@ -226,6 +267,12 @@ while true; do
   fi
   [ -z "${ONCE:-}" ] || break
   [ -z "$stopping" ] || break
+  # 寝る前に見るのは、**古い版のまま `INTERVAL` ぶん待たせない**ため（上の「走るのは複製」）。複製元へ
+  # 戻ってから複製を取り直させるので、走っている自分を上書きすることにはならない。
+  if [ "$(<"$SOURCE")" != "$loaded" ]; then
+    log "自分の版が入れ替わったので、新しい版で回り直す"
+    DAEMON_ORIGIN='' exec bash "$SOURCE" run
+  fi
   # **背景で寝る。** 前に置くと、bash は前の子が終わるまで signal を握るので、撃たれても
   # `INTERVAL` ぶん止まらない。
   nap="$INTERVAL"

@@ -1,8 +1,17 @@
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { runScript } from '../support/runScript';
+import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
  * `scripts/agent/daemon.sh` の検査。
@@ -26,6 +35,8 @@ interface World {
   readonly roundFails?: boolean;
   /** 錠の中に置いておく心拍。 */
   readonly heartbeat?: string;
+  /** 周ごとに、`daemon.sh` を書き換える中身（`null` を置いた周は書き換えない）。 */
+  readonly swap?: readonly (string | null)[];
   readonly env?: Record<string, string>;
   /** 最初に渡す引数。既定は `run`（前に出たまま回す）。 */
   readonly args?: readonly string[];
@@ -42,6 +53,8 @@ interface Result {
   readonly log: string;
   /** 回った周の数。 */
   readonly rounds: number;
+  /** 走る実体として置かれた複製の中身（置かれていなければ `undefined`）。 */
+  readonly copy: string | undefined;
 }
 
 function daemon(world: World = {}): Result {
@@ -53,10 +66,16 @@ function daemon(world: World = {}): Result {
 
     const rounds = join(work, 'rounds.txt');
     writeFileSync(rounds, '', 'utf-8');
+    // 身代わりは、走ったことを記録するついでに**自分の呼び手を書き換えられる**——`SYNCED` で
+    // `daemon.sh` が新しい版へ差し替わる瞬間は、走っている周の中から起きる。
     writeFileSync(
       join(here, 'board-round.mjs'),
-      `import { appendFileSync } from 'node:fs';\n` +
-        `appendFileSync(${JSON.stringify(rounds)}, '1\\n');\n` +
+      `import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';\n` +
+        `const rounds = ${JSON.stringify(rounds)};\n` +
+        `appendFileSync(rounds, '1\\n');\n` +
+        `const round = readFileSync(rounds, 'utf-8').split('\\n').filter(Boolean).length;\n` +
+        `const swap = ${JSON.stringify(world.swap ?? [])}[round - 1];\n` +
+        `if (typeof swap === 'string') writeFileSync(${JSON.stringify(join(here, 'daemon.sh'))}, swap, 'utf-8');\n` +
         `process.exit(${world.roundFails === true ? 1 : 0});\n`,
       'utf-8',
     );
@@ -78,6 +97,9 @@ function daemon(world: World = {}): Result {
         logs.push(
           runScript(join(here, 'daemon.sh'), args, {
             stdio: 'pipe',
+            // **回り続ける相手は、待たずに撃つ。** 起こし方が同期なので、止まらない版に当たると
+            // `vitest` の制限時間では止められず、試験が赤くならずに固まる。
+            timeout: 15000,
             env: {
               ...process.env,
               BOARD_STATE: state,
@@ -95,11 +117,14 @@ function daemon(world: World = {}): Result {
       }
     }
 
+    const copy = join(state, 'daemon-running.sh');
+
     return {
       code,
       logs,
       log: logs.join(''),
       rounds: readFileSync(rounds, 'utf-8').split('\n').filter(Boolean).length,
+      copy: existsSync(copy) ? readFileSync(copy, 'utf-8') : undefined,
     };
   } finally {
     rmSync(work, { recursive: true, force: true });
@@ -114,6 +139,14 @@ describe('daemon.sh', () => {
 
     expect(result.code).toBe(0);
     expect(result.rounds).toBe(1);
+  });
+
+  // **走行中のファイルが書き換わると、bash が次に読む位置は別の中身を指す。** リポジトリの1本を
+  // 直に読ませず、複製から走る。
+  it('走るのは複製で、リポジトリの1本ではない', () => {
+    const result = daemon();
+
+    expect(result.copy).toBe(readFileSync(join(AGENT, 'daemon.sh'), 'utf-8'));
   });
 
   // 起こす側に「もう走っているか」を確かめさせない（`pgrep` はブリッジの bash に無い）。
@@ -211,6 +244,32 @@ describe('daemon.sh', () => {
     expect(result.logs[2]).toContain('止めた');
     expect(result.logs[3]).toContain('止まっている');
     expect(result.code).toBe(1);
+  });
+
+  // **回っている bash は、最初に読んだ版のまま。** 隣の道具は毎周読み直されるので、`SYNCED` で版が
+  // 食い違うのはこの1本だけ——古い呼び手が新しい道具を叩き、手を1つも出さない周が続いた
+  // （2026-09-05）。
+  it('自分の版が入れ替わったら、新しい版で回り直す', () => {
+    const real = readFileSync(join(AGENT, 'daemon.sh'), 'utf-8');
+    const result = daemon({
+      // `ONCE` を空にして周をまたがせる。入れ替わってなお回り続けることが見たいので、1周では足りない。
+      env: { ONCE: '', INTERVAL: '1' },
+      swap: [
+        // 1周目は書き換えない。**変わっていない周で入れ替わらないこと**も、ここで見る。
+        null,
+        `${real}\n# 入れ替えた版\n`,
+        // 立ったことを1行残して終わる版。これで回るのが止まるので、撃たずに済む。
+        `${STUB_SHEBANG}\necho "入れ替わった先が立った"\n`,
+      ],
+    });
+
+    expect(result.code).toBe(0);
+    expect(result.rounds).toBe(3);
+    expect(result.log.match(/新しい版で回り直す/g)).toHaveLength(2);
+    // **錠は外さずに渡す。** 引き継げなければ、入れ替わった先は二本目として引き返してしまう
+    // （＝3周目が回らない）。
+    expect(result.log).not.toContain('既に走っている');
+    expect(result.log).toContain('入れ替わった先が立った');
   });
 
   it('restart は、走っているものを入れ替える', () => {
