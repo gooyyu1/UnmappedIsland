@@ -74,14 +74,38 @@ function declaredReasonNames(): ReadonlyMap<ReasonNamespace, ReadonlySet<string>
 }
 
 /**
- * WorldCodexのYAMLが告げる出来事（signal、9.8節）の識別子。ロード後の効果は木に畳まれていて
- * 列挙できないため、理由（reason）と同じく定義ファイルの字面から拾う。
+ * WorldCodexのYAMLが告げる出来事の識別子。効果として告げる`signal`（9.8節）も、時間を進める前に
+ * 告げる`announce`（11.6節）も、引く先は同じ`signal_texts`なのでまとめて集める。ロード後の効果は
+ * 木に畳まれていて列挙できないため、理由（reason）と同じく定義ファイルの構文木から拾う。
+ *
+ * **字面ではなく構文木を辿る**（declaredReasonNamesと同じ理由）。対象を書く形（`signal: {picked: x}`）は
+ * 値がマップになるので、行の形で拾うと書き方を変えただけで検査をすり抜ける。
  */
 function declaredSignalNames(): readonly string[] {
   const found = new Set<string>();
-  for (const path of worldCodexYamlPaths())
-    for (const match of readFileSync(path, 'utf8').matchAll(/^\s*-?\s*signal:\s*([a-z][a-z0-9_]*)\s*$/gm))
-      found.add(match[1]);
+
+  const walk = (node: unknown): void => {
+    if (isSeq(node)) {
+      for (const item of node.items) walk(item);
+      return;
+    }
+    if (!isMap(node)) return;
+
+    for (const pair of node.items) {
+      const key = isScalar(pair.key) ? String(pair.key.value) : '';
+      if (key === 'signal' || key === 'announce') {
+        // 対象を省いた`signal: missed`と、対象ごとに書く`signal: {instrument: missed}`の2つの形。
+        if (isScalar(pair.value)) found.add(String(pair.value.value));
+        else if (isMap(pair.value))
+          for (const perTarget of pair.value.items)
+            if (isScalar(perTarget.value)) found.add(String(perTarget.value.value));
+        continue;
+      }
+      walk(pair.value);
+    }
+  };
+
+  for (const path of worldCodexYamlPaths()) walk(parseDocument(readFileSync(path, 'utf8')).contents);
   return [...found];
 }
 

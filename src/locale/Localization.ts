@@ -401,7 +401,8 @@ export class Localization {
   }
 
   /**
-   * 告げられた出来事（GameElementDefinition.md 9.8節のsignal）の文言。未登録なら識別子そのもの。
+   * 告げられた出来事の文言。未登録なら識別子そのもの。**告げ方によらず引き先はここ1つ**
+   * （GameElementDefinition.md 9.8節のsignalも、11.6節のannounceも）。
    *
    * 理由（reason）と違って「出さない」選択が無い——出来事が起きたことは既に世界の側で決まっていて、
    * 文言の欠けを黙って握り潰すと、空振りが再び「何も起きない」に戻る。

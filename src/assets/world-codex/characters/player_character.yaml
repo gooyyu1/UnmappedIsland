@@ -54,6 +54,10 @@ traits:
       #
       # 起きるのは操作の切れ目で、進行中の操作は中断しない（11.5節）——歩き終わってから倒れる。
       #
+      # **どれも、時間を進める前に告げる**（`announce`、11.6節）。押したボタンは60分と言っているのに
+      # 何時間も過ぎるので、告げないと時計が飛んだ理由が画面のどこにも出ない。効果として告げる
+      # `signal` では過ぎ切ってからになり、眠り込みでは6時間後に理由を聞くことになる。
+      #
       # **戻る割に、まとめて休んだ割増しは付けない。どの値についても。** どれも休み方を選んだことに
       # ならないためで、体力と幸福度は rest の割（10/時間）。眠気を戻せるのは眠る休息だけで、どれも
       # 割増しを持っているので、そのうちいちばん薄い nap の実質の割（8/時間）を使う。量はその割に
@@ -75,18 +79,21 @@ traits:
         trigger: tick
         conditions:
           - {prop: stamina, lte: 0}
+        announce: exhausted
         duration: 120
         add: {self: {stamina: 20}}
       fall_asleep:
         trigger: tick
         conditions:
           - {prop: wakefulness, lte: 0}
+        announce: dozed_off
         duration: 360
         add: {self: {stamina: 60, wakefulness: 48}}
       despair:
         trigger: tick
         conditions:
           - {prop: happiness, lte: 0}
+        announce: disheartened
         duration: 120
         add: {self: {happiness: 20}}
     # 外から見えるもの（7.11節）。**手持ちは入れない**——レーンに出ているので、タブにも出すと

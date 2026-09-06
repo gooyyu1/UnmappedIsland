@@ -36,6 +36,23 @@ object_defs:
     tags: [item]
     props:
       volume: {value: 100}
+  # 告げてから、その時間の中で自分が消える獣。成立しなかった操作でも告げが残ることを見る。
+  dying_beast:
+    tags: [beast]
+    props:
+      life:
+        value: 1
+        range: {min: 0, max: 10}
+        on_min:
+          destroy: {subject: self, reason: expired}
+        passives:
+          - add: {self: {life: -1}}
+    interactions:
+      charge:
+        trigger: menu
+        announce: braced
+        duration: 60
+        signal: gored
   # 重ねた物で殴られる獣。当たれば物が消え、外れれば世界は何も変わらない。
   beast:
     tags: [beast]
@@ -67,6 +84,14 @@ object_defs:
       roar:
         trigger: menu
         signal: {agent: startled}
+      # 始まったことを告げる操作（announce、11.6節）。告げ方はsignalと同じで、違うのは告げる時点だけ。
+      charge:
+        trigger: menu
+        conditions:
+          - {prop: stamina, gte: 1}
+        announce: braced
+        duration: 60
+        signal: gored
 `;
 
   /** 当たる側（重み70）を引くrollと、外す側（重み30）を引くroll。 */
@@ -249,6 +274,49 @@ object_defs:
     expect(outer, '抜けた後は外側へ戻る').toEqual(['hit', 'hit']);
   });
 
+  it('announceは時間を進める前、signalは進めた後に告げる', () => {
+    // これがannounceを持つ理由そのもの。効果として告げる限り、強制的な時間経過（限界節）では
+    // 飛んだ理由をその時間の後にしか言えない。
+    const at: { name: string; after: number }[] = [];
+    const startedAt = session.world!.totalMinutes;
+
+    session.observeSignals(
+      (signal) => at.push({ name: signal.name, after: session.world!.totalMinutes - startedAt }),
+      () => {
+        expect(beast.tryGetAction('charge', undefined)?.tryExecute() === true).toBe(true);
+      },
+    );
+
+    expect(at).toEqual([
+      { name: 'braced', after: 0 },
+      { name: 'gored', after: 60 },
+    ]);
+  });
+
+  it('経過中に成立しなくなっても、告げたことは取り消さない', () => {
+    // 告げるのは「始まったこと」（ActionSystem.md 2節の3）。効果は適用されないが、始まったこと
+    // 自体は起きている——倒れ込んだ後に渇きで死んだのなら、倒れ込んではいる。
+    const dying = placeOnGround('dying_beast', 'beasts');
+
+    const seen = observe(() => {
+      expect(dying.tryGetAction('charge', undefined)?.tryExecute() === true, '成立しない').toBe(false);
+    });
+
+    expect(dying.parent, '経過中に自分が消えている').toBeUndefined();
+    expect(seen, '始まったことだけが残り、結果（gored）は告げない').toEqual(['dying_beast: braced']);
+  });
+
+  it('要件を満たしていなければ、告げもしない', () => {
+    // 告げるのは要件を見た後。実行されなかった操作が「始まった」と言うことはない。
+    expect(beast.tryGetAction('exhaust', undefined)?.tryExecute() === true).toBe(true);
+
+    const seen = observe(() => {
+      expect(beast.tryGetAction('charge', undefined)?.tryExecute() === true).toBe(false);
+    });
+
+    expect(seen).toEqual([]);
+  });
+
   it('対象キーでない名前を書くとロードエラーになる', () => {
     // mappingの形で書けるのは対象キー（self/parent/agent/instrument）だけ。他の命令と同じ綴りの
     // 間違いを、その場で捕まえる。
@@ -267,5 +335,25 @@ object_defs:
     expect(load('{name: missed}'), '対象キーではない').toThrow(YamlLoadError);
     expect(load('{instrument: missed}'), 'instrumentはcombinationsの中だけ').toThrow(YamlLoadError);
     expect(load('{ancestor: missed}'), 'オブジェクトそのものを指せない').toThrow(YamlLoadError);
+  });
+
+  it('announceも同じ形しか受け取らない', () => {
+    // 読む側はsignalと同じ1箇所なので、書き手が2つの書式を覚えることにならない。
+    const load = (announce: string): (() => unknown) => {
+      const yaml = `
+object_defs:
+  beast:
+    interactions:
+      roar:
+        trigger: menu
+        announce: ${announce}
+`;
+      return () => new WorldCodexYamlLoader().load('bad.yaml', yaml).buildAndReset();
+    };
+
+    expect(load('braced'), '対象を省いた形').not.toThrow();
+    expect(load('{self: braced}'), '対象を書く形').not.toThrow();
+    expect(load('{name: braced}'), '対象キーではない').toThrow(YamlLoadError);
+    expect(load('[braced]'), 'リストでは書けない').toThrow(YamlLoadError);
   });
 });

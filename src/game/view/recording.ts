@@ -45,7 +45,11 @@ export interface Recording {
   readonly changesAtEnd: readonly WorldChange[];
   /**
    * 同じく、経過し切った時点で見せる分の出来事。アクションの効果は時間が経ち切ってから適用される
-   * （ActionSystem.md 2節）ので、**操作が告げる出来事は通常こちらに入る**。
+   * （ActionSystem.md 2節）ので、**操作が結果として告げる出来事（signal）はこちらに入る**。
+   *
+   * **始まったことを告げる分（announce、GameElementDefinition.md 11.6節）は入らない。** 告げるのは
+   * 時間を進める前なので、その時間の最初のtickの控え（ticks）に乗る——押した覚えの無い時間が
+   * 過ぎるとき、理由が先に出るのはこの違いによる。
    */
   readonly signalsAtEnd: readonly WorldSignal[];
   /** 操作そのものが増やしたキャラクタの値（PropertyGain）。粒にして飛ばす（showGains）。 */
