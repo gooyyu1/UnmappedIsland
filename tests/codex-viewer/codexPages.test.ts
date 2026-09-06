@@ -569,6 +569,8 @@ const SUPPLY_LABELS: ShownFields<SupplyRow> = {
   // 時間で回る工程だけが、工程名の後ろにその旨を添える。
   kind: shows('工程', (kind) => (kind === 'periodic' ? [kind] : [])),
 
+  driverName: asIs('押し手'),
+
   laborMinutes: asIs('労働'),
 
   // 定義だけでは決まらない工程は、労働の後ろに「?」が付く。
@@ -651,6 +653,25 @@ object_defs:
           destroy: self
 
   fiber: {tags: [item]}
+
+  # 載せた物を外から乾かす設備。乾きが進むのは載っている間だけなので、**その周期は載せた側ではなく
+  # 押し手が決める**（SupplyRow.driverName）。
+  drying_rack:
+    tags: [item]
+    slots:
+      rack: {cell_count: 1, cell: {accept: {tag: dryable}}}
+    passives:
+      - add: {child: {dryness: 1}}
+
+  wet_fiber:
+    tags: [item, dryable]
+    props:
+      dryness:
+        value: 0
+        range: {min: 0, max: 12}
+        on_max:
+          destroy: self
+          spawn: {object: fiber}
 
   gourd:
     tags: [item]
