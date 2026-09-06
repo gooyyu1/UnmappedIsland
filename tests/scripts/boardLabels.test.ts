@@ -200,8 +200,8 @@ describe('board-labels.yml の verdict', () => {
 
 /**
  * ワーカーが仕事を人へ返す段（`.claude/board-design.md` 2.15.2）。**ここが動かないと、返したことが
- * ラベルにならない**——issue は `task` が付いたままなので、盤面はそのまま次のセッションへ配り直し、
- * 返した意味が消える。
+ * ラベルにならない**——issue は `kind:task` が付いたままなので、盤面はそのまま次のセッションへ
+ * 配り直し、返した意味が消える。
  */
 describe('board-labels.yml の declared', () => {
   const ISSUE = '1376';

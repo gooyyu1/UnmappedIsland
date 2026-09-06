@@ -3,7 +3,7 @@
 #
 #   bash scripts/agent/brake.sh new-task
 #   bash scripts/agent/brake.sh review
-#   bash scripts/agent/brake.sh review-untasked   # `Closes` 先に task ラベルが無いPRのレビュー
+#   bash scripts/agent/brake.sh review-untasked   # `Closes` 先に `kind:task` が無いPRのレビュー
 #   bash scripts/agent/brake.sh resume
 #   bash scripts/agent/brake.sh other
 #
