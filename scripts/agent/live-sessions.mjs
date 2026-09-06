@@ -81,12 +81,12 @@ function environments() {
 
 /**
  * `list_sessions` を1ページ引いて、応答のJSONを返す。引けなければ `undefined`。**引き方を持つのは
- * ここ1箇所**——1ページで足りる呼び手（[`board.mjs`](board.mjs)）も、ここを通る。
+ * ここ1箇所**で、繰るのは下の `liveSessions` だけ——1ページで足りる呼び手は1つも無い。
  *
  * 応答は `<other-session>` の包みに入って返る（他のセッションの記録なので）ため、**中の JSON だけを
  * 取り出す**——そのまま `JSON.parse` すると包みの `<` で落ちる（`.claude/ccr-meta.sh` の冒頭）。
  */
-export function listSessions(request) {
+function listSessions(request) {
   const call = runBash(CCR_META, ['list_sessions'], { input: JSON.stringify(request), capture: true });
   const found = call.stdout.split(/\r?\n/).find((line) => line.includes('{"ccr"'));
   if (call.status === 0 && found !== undefined) return JSON.parse(found.slice(found.indexOf('{"ccr"')));

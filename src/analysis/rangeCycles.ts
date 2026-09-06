@@ -342,9 +342,8 @@ interface PushingCase {
 }
 
 /**
- * 同じ相手プロパティを動かす外向きの増減から、**同時に成立しうる組み合わせ**をすべて挙げる
- * （possibleTotalsOfと同じ数え上げ）。常時効く分はどの組み合わせにも入り、条件や段で縛られた分は
- * 排他だと言い切れない対だけが重なる。
+ * 同じ相手プロパティを動かす外向きの増減から、**同時に成立しうる組み合わせ**
+ * （coincidingCombinationsOf）が起こす押し方をすべて挙げる。
  *
  * 組み合わせが効いているのは、**どの宣言も効き始めた後で、どれかが止まるまでの間**。そこが空に
  * なる組み合わせは起こらないので落とす——固まるまで4 tickの出血と、320 tick後に始まる敗血症は、
@@ -353,23 +352,40 @@ interface PushingCase {
 function pushingCasesOf(def: ObjectDef, deltas: readonly TickDelta[]): readonly PushingCase[] {
   // 段でも条件でも縛られていない増減は、どの場面でも効いているので必ず数に入る。
   const heldBack = (delta: TickDelta) => delta.gate.stage !== undefined || delta.gate.conditional;
+  const always = deltas.filter((delta) => !heldBack(delta));
 
-  let combinations: (readonly TickDelta[])[] = [deltas.filter((delta) => !heldBack(delta))];
-  for (const delta of deltas.filter(heldBack)) {
+  return coincidingCombinationsOf(deltas.filter(heldBack))
+    .map((combination) => pushingCaseOf(def, [...always, ...combination]))
+    .filter((pushing): pushing is PushingCase => pushing !== undefined);
+}
+
+/**
+ * 縛られた増減（段・条件つき）のうち、**同時に成立しうる組み合わせ**をすべて挙げる。1つも重ねない
+ * 場合も含む——縛られた増減は、成立しない場面があるからこそ縛られている。
+ *
+ * 落とすのは**排他だと言い切れる対**（TickGate.neverHoldsWith）だけで、落とせない対は重なりうる
+ * ものとして数える。**常時効く増減は渡さない**——どの場面でも効いているのだから、どれとも重なる。
+ * どの組み合わせにも同じものが並ぶだけなので、重ねるのは呼ぶ側の仕事。
+ */
+function coincidingCombinationsOf(gated: readonly TickDelta[]): readonly (readonly TickDelta[])[] {
+  let combinations: (readonly TickDelta[])[] = [[]];
+  for (const delta of gated) {
     const grown = combinations
       .filter((combination) => combination.every((member) => !member.gate.neverHoldsWith(delta.gate)))
       .map((combination) => [...combination, delta]);
     combinations = [...combinations, ...grown];
   }
+  return combinations;
+}
 
-  return combinations
-    .map((combination) => pushingCaseOf(def, combination))
-    .filter((pushing): pushing is PushingCase => pushing !== undefined);
+/** その増減たちがtick毎に動かす合計。 */
+function totalAmountOf(deltas: readonly TickDelta[]): number {
+  return deltas.reduce((total, delta) => total + delta.amount, 0);
 }
 
 /** その組み合わせが起こす押し方。押していない（合計0）か、効いている間が空ならundefined。 */
 function pushingCaseOf(def: ObjectDef, combination: readonly TickDelta[]): PushingCase | undefined {
-  const amount = combination.reduce((total, delta) => total + delta.amount, 0);
+  const amount = totalAmountOf(combination);
   if (amount === 0) return undefined;
 
   const ticksUntilStart = Math.max(...combination.map((delta) => ticksUntilGateRises(def, delta.gate)));
@@ -428,43 +444,36 @@ interface TickTotal {
 /**
  * そのプロパティが、自分のtick毎の持続効果でどれだけ動くか（段で切り替わるものは除く）。
  *
- * **問いは「条件つきの増減（8.2節）を合算するか」ではなく「どの組み合わせが同時に成立しうるか」。**
- * 全部を1つの場合として足すと、成立しえない組み合わせ——同じ気温を`lt`と`gte`で見ている寒さと
- * 暖かさ——が打ち消し合って、その周期が丸ごと消える。排他だと言い切れる対（TickGate.neverHoldsWith）
- * だけを落とし、残る組み合わせをすべて場合として並べる。
+ * **問いは「条件つきの増減（8.2節）を合算するか」ではなく「どの組み合わせが同時に成立しうるか」**
+ * （coincidingCombinationsOf）。全部を1つの場合として足すと、成立しえない組み合わせ——同じ気温を
+ * `lt`と`gte`で見ている寒さと暖かさ——が打ち消し合って、その周期が丸ごと消える。
  *
- * 落とせない対は重なりうるものとして数える。罠の耐久がこれで、地面にある間の-1と獲物を抱えて
- * いる間の-10は、同時にも起こるので-11の場合を持つ。
+ * 落とせない対を持つのが罠の耐久で、地面にある間の-1と獲物を抱えている間の-10は、同時にも起こる
+ * ので-11の場合を持つ。
  */
 function tickAmountsOf(def: ObjectDef, propertyGlobalId: number): TickAmounts {
-  let unconditional = 0;
+  const always: TickDelta[] = [];
   const conditional: TickDelta[] = [];
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== 'self' || delta.propertyGlobalId !== propertyGlobalId) continue;
     if (delta.gate.stage !== undefined) continue;
-    if (delta.gate.conditional) conditional.push(delta);
-    else unconditional += delta.amount;
+    (delta.gate.conditional ? conditional : always).push(delta);
   }
-  return { unconditional, possible: possibleTotalsOf(unconditional, conditional) };
+  return { unconditional: totalAmountOf(always), possible: possibleTotalsOf(always, conditional) };
 }
 
 /**
- * 常時効く分に、**同時に成立しうる条件つきの増減**を重ねた合計を並べる。1つも重ねない場合
- * （常時効く分だけ）も含む——条件つきは、成立しない場面があるからこそ条件つきになっている。
+ * 常時効く分（always）に、**同時に成立しうる条件つきの増減**（coincidingCombinationsOf）を重ねた
+ * 合計を並べる。
  */
-function possibleTotalsOf(unconditional: number, conditional: readonly TickDelta[]): readonly TickTotal[] {
-  let combinations: (readonly TickDelta[])[] = [[]];
-  for (const delta of conditional) {
-    const grown = combinations
-      .filter((combination) => combination.every((member) => !member.gate.neverHoldsWith(delta.gate)))
-      .map((combination) => [...combination, delta]);
-    combinations = [...combinations, ...grown];
-  }
-
+function possibleTotalsOf(
+  always: readonly TickDelta[],
+  conditional: readonly TickDelta[],
+): readonly TickTotal[] {
   // **同じ量になる組み合わせも畳まない。** 畳むと、落ちた側でしか成立しない条件が「無い」ことに
   // なる——日差しでも風でも同じ速さで乾くなら、どちらでも乾くと言えなければならない（RangeCycle.gatedBy）。
-  return combinations.map((combination) => ({
-    amount: combination.reduce((total, delta) => total + delta.amount, unconditional),
+  return coincidingCombinationsOf(conditional).map((combination) => ({
+    amount: totalAmountOf([...always, ...combination]),
     conditional: combination,
   }));
 }
