@@ -162,11 +162,11 @@ export const WORK_PILES: readonly WorkPile[] = [
   { system: 10, label: '葉の小屋', amount: 3 },
   { system: 10, label: '高床', amount: 4 },
   { system: 10, label: '板の壁・床', amount: 5 },
-  { system: 12, label: '筏', amount: 'raft' },
-  { system: 12, label: '帆', amount: 'rawhide_sail' },
-  { system: 12, label: '櫂と舵', amount: 2 },
-  { system: 12, label: '沿岸航海', amount: 3 },
-  { system: 12, label: '海図を仕上げる', amount: 5 },
+  { system: 11, label: '筏', amount: 'raft' },
+  { system: 11, label: '帆', amount: 'rawhide_sail' },
+  { system: 11, label: '櫂と舵', amount: 2 },
+  { system: 11, label: '沿岸航海', amount: 3 },
+  { system: 11, label: '海図を仕上げる', amount: 5 },
 ];
 
 /**
