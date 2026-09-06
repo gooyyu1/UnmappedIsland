@@ -31,8 +31,11 @@ interface World {
   readonly state?: readonly [string, string];
   /** 畳む相手が名乗るタグ。既定は盤面が立てたワーカー。 */
   readonly tags?: readonly string[];
-  /** worktree を作るか。既定は作る。 */
-  readonly worktree?: boolean;
+  /**
+   * worktree の形。既定は git に登録された作業ツリー。`orphan` は**登録だけが消えて残った
+   * ディレクトリ**（実物のディスクに在る形）、`none` は worktree を持たないセッション。
+   */
+  readonly worktree?: 'registered' | 'orphan' | 'none';
   /** worktree に未追跡のファイルを置くか。 */
   readonly dirty?: boolean;
   /** 渡す引数。 */
@@ -40,7 +43,10 @@ interface World {
 }
 
 interface Run {
+  /** 一時ディレクトリの分を落とした出力。`DIRTY` の理由も落とす（それは `text` で見る）。 */
   readonly lines: string[];
+  /** 出力そのまま。理由まで見たい検査が読む。 */
+  readonly text: string;
   /** `archive_session` を打たれたか。 */
   readonly archived: boolean;
   /** worktree のディレクトリが残っているか。 */
@@ -64,12 +70,15 @@ function run(world: World = {}): Run {
     writeFileSync(join(repo, 'README.md'), 'x\n', 'utf-8');
     git('add', 'README.md');
     git('commit', '-m', 'x');
-    if (world.worktree ?? true) {
+    const shape = world.worktree ?? 'registered';
+    if (shape === 'registered') {
       git('worktree', 'add', '--detach', tree);
       // 実物と同じく、`claude remote-control` がロックした状態から始める。
       git('worktree', 'lock', tree);
-      if (world.dirty === true) writeFileSync(join(tree, 'scratch.txt'), 'y\n', 'utf-8');
+    } else if (shape === 'orphan') {
+      mkdirSync(tree, { recursive: true });
     }
+    if (shape !== 'none' && world.dirty === true) writeFileSync(join(tree, 'scratch.txt'), 'y\n', 'utf-8');
 
     // 引数は標準入力のJSON。`ccr-meta.sh` と同じ包み（`<other-session>`）を付けて返す。
     const meta = join(work, 'ccr-meta.sh');
@@ -105,11 +114,14 @@ echo '${JSON.stringify({
       },
     });
     return {
+      text: out,
       lines: out
         .split('\n')
         .filter((line) => line.trim() !== '')
-        // パスは一時ディレクトリごとに変わるので、名前だけを見る。
-        .map((line) => line.replace(/^(REMOVED|DIRTY) .*\//, '$1 ')),
+        // パスは一時ディレクトリごとに変わるので、名前だけを見る。理由は `text` の側で見る。
+        .map((line) =>
+          line.replace(new RegExp(`^(REMOVED|DIRTY) .*?/${WORKTREE}(?::.*)?$`), `$1 ${WORKTREE}`),
+        ),
       archived:
         existsSync(join(work, 'archived')) && readFileSync(join(work, 'archived'), 'utf-8').includes(SESSION),
       kept: existsSync(tree),
@@ -117,6 +129,13 @@ echo '${JSON.stringify({
   } finally {
     rmSync(work, { recursive: true, force: true });
   }
+}
+
+/** `DIRTY` の行に載った理由（パスの後ろ）。載っていなければ `undefined`。 */
+function reason(text: string): string | undefined {
+  const line = text.split(/\r?\n/).find((candidate) => candidate.startsWith('DIRTY '));
+  const at = line?.indexOf(': ') ?? -1;
+  return at >= 0 ? line?.slice(at + 2) : undefined;
 }
 
 describe('archive-session.sh', () => {
@@ -136,6 +155,27 @@ describe('archive-session.sh', () => {
 
     expect(result.lines).toEqual([`ARCHIVED ${SESSION}`, `DIRTY ${WORKTREE}`]);
     expect(result.kept).toBe(true);
+    // パスだけでは失敗した事実しか運ばない。断ったのが git であることが読めるように、その標準
+    // エラーを同じ行へ載せる（issue #1557）。
+    expect(reason(result.text)).toContain('--force');
+  });
+
+  // `git worktree remove` が登録を外した後、ディレクトリだけが残ることがある（ディスクに実際に
+  // 在った形）。一覧から引いていた間は、この形が永久に拾われなかった。
+  it('登録が消えてディレクトリだけ残った残骸も片付ける', () => {
+    const result = run({ worktree: 'orphan' });
+
+    expect(result.lines).toEqual([`ARCHIVED ${SESSION}`, `REMOVED ${WORKTREE}`]);
+    expect(result.kept).toBe(false);
+  });
+
+  // 残骸を外すのは `rmdir`。**中に何か在れば断る**ので、`--force` を渡さないのと同じ守りになる。
+  it('登録の消えた残骸に中身が在れば、消さずに `DIRTY` として残す', () => {
+    const result = run({ worktree: 'orphan', dirty: true });
+
+    expect(result.lines).toEqual([`ARCHIVED ${SESSION}`, `DIRTY ${WORKTREE}`]);
+    expect(result.kept).toBe(true);
+    expect(reason(result.text)).toContain(WORKTREE);
   });
 
   // 畳む口と外す口が別だった間の残骸。畳み直しはしないが、後始末だけはやる。
@@ -156,7 +196,7 @@ describe('archive-session.sh', () => {
   });
 
   it('worktree の無いセッションは、畳むだけで終わる', () => {
-    const result = run({ worktree: false });
+    const result = run({ worktree: 'none' });
 
     expect(result.lines).toEqual([`ARCHIVED ${SESSION}`]);
     expect(result.archived).toBe(true);
