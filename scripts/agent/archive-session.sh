@@ -4,18 +4,17 @@
 #
 #   printf '%s\n' session_A session_B | bash scripts/agent/archive-session.sh
 #   printf '%s\n' session_A | bash scripts/agent/archive-session.sh --keep-untagged task-,review-
-#   printf '%s\n' session_A | bash scripts/agent/archive-session.sh --force-bridge
 #
 # 出力は1行1件。`ARCHIVED <ID>`、触らないと決めたものは `KEPT <ID>`、打って失敗したものは
-# `UNARCHIVED <ID>`。`--force-bridge` のときは worktree の後始末も出す（`REMOVED <パス>` /
-# `DIRTY <パス>`。既に畳まれているものからも出る）。それ以外に既に畳まれているものは何も出さない。
+# `UNARCHIVED <ID>`。このPCに worktree を持つ相手には後始末の行が続く（`REMOVED <パス>` /
+# `DIRTY <パス>`。既に畳まれているものからも出る）。worktree の無いものが既に畳まれていたときは
+# 何も出さない。
 # **終了コードは常に0**——呼び手（投入・マージ）の本題は別にあるので、後片付けで落とさない。
 #
 # ## 判定を呼び手へ配らない
 #
-# 渡す相手を選ぶのは呼び手（盤面の `ARCHIVE`、前任を畳む `--force-bridge`）で、**選び方は経路ごとに
-# 違う**——盤面はタグで、前任はIDを名指しで——が、**渡した後の判定は同じ**。分けて持つと、次の
-# 経路を足す人が同じ判定をもう一度書き足さないと壊れる。
+# 渡す相手を選ぶのは呼び手（盤面の `ARCHIVE`）だが、**渡した後の判定はここが持つ**。呼び手を増やす
+# たびに同じ判定を書き足す形にすると、書き足し忘れた経路が黙って別の答えを出す。
 #
 # だから `get_session` はここが自分で引く。呼び手が引いたものを渡す形にすると、「どの口から引いた
 # 値のどのキーを見るか」が呼び手側の知識に戻り、規約がまた散る。
@@ -36,24 +35,26 @@
 # 相手は、何が終わっても仕事が終わっていない——畳むと、ユーザーが話している窓口ごと閉じる。
 # **どの接頭辞にも当たらないもの**を `KEPT` として出す。
 #
-# ## ブリッジで立てたものは、呼び手が畳んでよいと言ったときだけ畳む（`--force-bridge`）
+# ## ブリッジで立てたものも、同じ条件で畳む
 #
-# `--bridge` で立てたセッションはこのPCの環境を使うので、タグはクラウドのものと区別が付かない。
-# `claude remote-control` が落ちている間にブリッジのセッションを畳むと、worktree がロックされた
-# まま残る（`.claude/parallel-work.md`「終わったセッションは、issue を鍵にして畳む」）。既定では
-# `environment_id`（[`ccr-env.sh`](ccr-env.sh) の `BRIDGE_ENV`）で除いて `KEPT` として出す。
+# `--bridge` で立てたセッションがクラウドのものと違うのは、**このPCに worktree を持つ**という一点
+# だけ。それは畳んでよいかの条件ではなく、畳んだ後に何を片付けるかの話なので、畳む条件からは外す。
 #
-# **`claude remote-control` が生きていることを知っているのは呼び手だけ**なので、判定ではなく引数で
-# 受ける。渡すのは司令塔の引き継ぎ
-# （[`handover.sh`](handover.sh)）で、**後継が起動できている＝生きている**。
+# **`claude remote-control` が生きているかは見ない。** 見に行く手が無いからではなく、**どちらでも
+# 答えが変わらない**から——生きていれば畳んだ相手の worktree は下の後始末で外れ、外せない形で掴んで
+# いるプロセスが残っていれば `git worktree remove` が断って `DIRTY` として残る。**残る／消えるは
+# 打った結果で決まるので、事前に誰かが申告する必要が無い。**
 #
-# ## 畳んだブリッジのセッションは、worktree まで片付ける
+# **例外を、呼び手の申告で解かせない。** 渡す者が居なくなっても出るのは `KEPT` だけなので、
+# **例外が外れないまま回り続けていることに誰も気づけない**（issue #1558）。
+#
+# ## 畳んだ相手の worktree は、ここで片付ける
 #
 # `archive_session` はコンテナを解放するが、**このPCの worktree はロックされたまま残る**。畳んだ
 # 相手の worktree を外す者が居ないので、`git worktree list` に残骸が溜まる（2026-08-30 の時点で
 # 10本のうち8本）。畳んだ本人がここで外す。
 #
-# 引くのは**カレントディレクトリのリポジトリ**（司令塔はリポジトリの中から打つ）。名前は
+# 引くのは**カレントディレクトリのリポジトリ**（呼び手はリポジトリの中から打つ）。名前は
 # `bridge-cse_<IDから接頭辞を落としたもの>`。クラウドのセッションには無いので、見つからなければ
 # 何もしない。**自分が走っている worktree も外さない**——外すと足元が消える。
 #
@@ -63,18 +64,16 @@
 #
 # ## 引けなかったものは畳まない
 #
-# 上の3つの「守る」条件は、どれも**引けた値**で判定する。`get_session` が引けないと全部のキーが
-# 空に落ち、走行中でもブリッジでもないものとして畳む側へ倒れる——**知らないことを、否定として
-# 読んでいる。** 畳んで消えたコメントも、ロックされたまま残る worktree も戻せないので、引けなかった
-# ものは `KEPT` として出す。守って残ったものは手で畳める。
+# 上の「守る」条件は、どれも**引けた値**で判定する。`get_session` が引けないと全部のキーが空に
+# 落ち、**何も持たないもの**として扱われる——`--keep-untagged` を渡さない呼び手には、それがその
+# まま畳む側へ倒れる。**知らないことを、否定として読んでいる。** 畳んで消えたコメントも、消した
+# worktree も戻せないので、引けなかったものは `KEPT` として出す。守って残ったものは手で畳める。
 
 set -euo pipefail
 
 KEEP_UNTAGGED=''
-FORCE_BRIDGE=0
 while [ $# -gt 0 ]; do
   case "$1" in
-  --force-bridge) FORCE_BRIDGE=1 ;;
   --keep-untagged)
     KEEP_UNTAGGED="${2:?タグの接頭辞をカンマ区切りで渡す（例: task-,review-）}"
     shift
@@ -91,12 +90,10 @@ done
 HERE="${BASH_SOURCE[0]%/*}"
 if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
 HERE="$(cd "$HERE" && pwd)"
-# shellcheck source=scripts/agent/ccr-env.sh
-source "$HERE/ccr-env.sh"
 # 試験は差し替える（パスで呼ぶため PATH では差し替わらない）。
 CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 
-# 畳んだ相手の worktree を外す（上の「worktree まで片付ける」）。
+# 畳んだ相手の worktree を外す（上の「worktree は、ここで片付ける」）。
 remove_worktree() {
   local session="$1" name path here
   name="bridge-cse_${session#session_}"
@@ -119,19 +116,17 @@ while read -r session; do
   # 1 を返す。`pipefail` があるので、ここで止めずに空として受ける。
   info=$(printf '{"session_id":"%s"}' "$session" |
     bash "$CCR_META" get_session | grep -o '{"ccr".*' || true)
-  # 既に畳まれているものでも、worktree は残っていることがある（畳む口と外す口が別だった間の
-  # 残骸）。畳み直すことは無いが、後始末だけは同じ引数でやる。
+  # 既に畳まれているものでも、worktree は残っていることがある。畳み直すことは無いが、後始末だけは
+  # やる——**畳んだ相手を渡し直せる口はここしか無い。**
   if [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" = "SESSION_STATUS_ARCHIVED" ]; then
-    if [ "$FORCE_BRIDGE" -eq 1 ]; then remove_worktree "$session"; fi
+    remove_worktree "$session"
     continue
   fi
   if [ -z "$info" ] ||
     { [ -n "$KEEP_UNTAGGED" ] && ! jq -e --arg prefixes "$KEEP_UNTAGGED" \
       '($prefixes | split(",")) as $ps
        | any(.ccr.tags[]?; . as $t | any($ps[]; . as $p | $t | startswith($p)))' \
-      <<<"$info" >/dev/null; } ||
-    { [ "$FORCE_BRIDGE" -eq 0 ] &&
-    [ "$(jq -r '.ccr.environment_id // ""' <<<"$info")" = "$BRIDGE_ENV" ]; }; then
+      <<<"$info" >/dev/null; }; then
     echo "KEPT $session"
   elif printf '{"session_id":"%s"}' "$session" | bash "$CCR_META" archive_session >/dev/null; then
     echo "ARCHIVED $session"
