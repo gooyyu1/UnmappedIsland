@@ -123,17 +123,14 @@ export function readBoard({ gh = runGh, sessions = liveSessions, log, now, settl
     'number,labels,blockedBy',
   ]);
   if (issues === undefined) return undefined;
-  const mergedPrs = gh([
-    'pr',
-    'list',
-    '--state',
-    'merged',
-    '--limit',
-    String(MERGED_LIMIT),
-    '--json',
-    MERGED_PR_FIELDS,
-  ]);
-  if (mergedPrs === undefined) return undefined;
+  // **引けなくても盤面は捨てない。** これを読むのは1日1回の係の `due` だけなので、欠けた周は
+  // その係が立たないだけで済む——必須にすると、**マージもレビューも投入も1周まるごと止まる。**
+  // **黙って空にしない**（下の差し戻す相手と同じ理由。空は「1件も無い」と同じ形になる）。
+  const mergedPrs = gh(
+    ['pr', 'list', '--state', 'merged', '--limit', String(MERGED_LIMIT), '--json', MERGED_PR_FIELDS],
+    { allowFail: true },
+  );
+  if (mergedPrs === undefined) log('マージ済みPRを引けなかった（この周は、スメルを拾う係を立てない）');
   const checks = gh(['api', 'repos/{owner}/{repo}/commits/main/check-runs']);
   if (checks === undefined) return undefined;
 
@@ -158,7 +155,7 @@ export function readBoard({ gh = runGh, sessions = liveSessions, log, now, settl
     settledBefore: settledBefore(now, settleMinutes),
     mainChecks: mainChecks(checks),
     prs: JSON.parse(prs),
-    mergedPrs: JSON.parse(mergedPrs),
+    mergedPrs: mergedPrs === undefined ? [] : JSON.parse(mergedPrs),
     issues: openIssues,
     taken,
     issueStates: issueStates(gh, live, openIssues),

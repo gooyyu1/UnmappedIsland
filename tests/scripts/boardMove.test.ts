@@ -1003,6 +1003,23 @@ describe('board-move.mjs', () => {
     expect(moves({ mergedPrs: [smell(9, true)] })).toEqual([]);
   });
 
+  // GraphQL は**誰も押していない種類も組として返す**。種類の一致だけで読むと、どのコメントも
+  // 「読んだ」になり、この係は一度も立たない（失敗の出方が「何も起きない」なので気づけない）。
+  it('印の組はあっても、押した人が居なければ読まれていない', () => {
+    const merged = [
+      {
+        number: 9,
+        comments: [
+          {
+            body: '[スメル] 名前が中身とずれている。\n',
+            reactionGroups: [{ content: 'EYES', users: { totalCount: 0 } }],
+          },
+        ],
+      },
+    ];
+    expect(moves({ mergedPrs: merged })).toEqual([ANALYSIS]);
+  });
+
   // 判定だけのコメントは拾う対象ではない。**`[スメル] ` の行を持つものだけ**が仕事になる。
   it('スメルの行が無いコメントでは、分析係を立てない', () => {
     const merged = [{ number: 9, comments: [{ body: '[レビュー] 通してよい\n読んだ版: aaa1111\n' }] }];
@@ -1026,9 +1043,13 @@ describe('board-move.mjs', () => {
     expect(moves(board)).not.toContain('ARCHIVE session_c done:chore-analysis');
   });
 
-  it('PRがマージされたら、周期の係も畳む', () => {
-    expect(moves({ sessions: [idle('session_c', 'chore-analysis')] })).toEqual([
-      'ARCHIVE session_c done:chore-analysis',
-    ]);
+  // 引くのは**自分が書いたPR**（トレーラ。2.11）で、開いているPRがあることではない。
+  it('開いているPRが他人のものなら、周期の係は畳む', () => {
+    const board = {
+      prs: [pr(10, label('直し待ち'))],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_c', 'chore-analysis'), working('session_a')],
+    };
+    expect(moves(board)).toContain('ARCHIVE session_c done:chore-analysis');
   });
 });

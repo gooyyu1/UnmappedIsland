@@ -39,12 +39,20 @@
 **読んだコメントには 👀 が付いています。** これが処理済みの印なので、**付いていないコメントだけ**が
 今回の対象です。
 
+**さかのぼる本数は、盤面と揃えてください**——`scripts/agent/board-read.mjs` の `MERGED_LIMIT` が
+その値です。**立てるかを決める窓と、実際に読む窓がずれる**と、立ったのに拾えないスメルが出ます。
+
 **道具は `gh` があるかで分かれます。** まず `command -v gh` を打ってください。**クラウドの
 セッションには入っていません**——無いほうが普通です。無いときは GitHub の MCP で同じことをします。
 
-- `gh` があるとき: `gh pr list --state merged --limit 30 --json number,comments`
+- `gh` があるとき: `gh pr list --state merged --limit <MERGED_LIMIT> --json number` でPRの番号を
+  引き、そのそれぞれへ
+  `gh api repos/{owner}/{repo}/issues/<PR番号>/comments --jq '.[] | {id, body, reactions}'`。
 - 無いとき: `list_pull_requests`（`state: closed`）でマージ済みのPRを引き、そのそれぞれへ
-  `pull_request_read`（`method: get_comments`）。コメントの `reactions` に 👀 の数が載っています。
+  `pull_request_read`（`method: get_comments`）。
+
+**どちらの経路でも、コメントの `id`（数値）と `reactions` を控えてください。** `id` は次の周へ印を
+付けるのに要ります。`reactions.eyes` が1以上なら 👀 が付いています。
 
 `[スメル] ` を含むコメントでも、**👀 が付いていれば前の周が読み終えたもの**です。飛ばしてください。
 
@@ -61,8 +69,9 @@
 5. **最後に、読んだコメントへ 👀 を付ける。** 対象にしたコメントは、issue を切ったかどうかに
    関わらず**全部**に付けます。**付け忘れたコメントは次の周でまた拾われます。**
    - `gh` があるとき:
-     `gh api -X POST repos/{owner}/{repo}/issues/comments/<コメントID>/reactions -f content=eyes`
-   - 無いとき: `add_issue_comment`（`comment_id` と `reaction: "eyes"`）
+     `gh api -X POST repos/{owner}/{repo}/issues/comments/<コメントの id>/reactions -f content=eyes`
+   - 無いとき: `add_issue_comment` に `issue_number`（そのPRの番号）・`comment_id`（コメントの
+     `id`）・`reaction: "eyes"` を渡す。**`body` は渡さないでください**——返信ではなく印です。
    **順番を入れ替えないでください。** 先に印を付けて途中で落ちると、拾われないままのスメルが黙って
    消えます。この順なら、落ちても次の周がもう一度拾うだけで済みます。
 

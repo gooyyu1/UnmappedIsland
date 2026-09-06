@@ -126,7 +126,11 @@ function hasUnreadSmell(mergedPrs) {
     (pr.comments ?? []).some(
       (comment) =>
         /^\[スメル\] /m.test(comment.body ?? '') &&
-        !(comment.reactionGroups ?? []).some((group) => group.content === READ_MARK),
+        !(comment.reactionGroups ?? []).some(
+          // **数まで見る。** GraphQL は誰も押していない種類も `totalCount: 0` の組として返すので、
+          // 種類の一致だけで読むと**どのコメントも「読んだ」**になり、この係は一度も立たない。
+          (group) => group.content === READ_MARK && (group.users?.totalCount ?? 0) > 0,
+        ),
     ),
   );
 }
