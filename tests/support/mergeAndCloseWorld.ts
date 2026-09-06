@@ -1,9 +1,9 @@
-import { execFileSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { vi } from 'vitest';
 
+import { pathForBash, runScript } from './runScript';
 import { STUB_SHEBANG } from './stubShebang';
 
 /**
@@ -87,7 +87,7 @@ export interface Run {
 export function run(world: World): Run {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-merge-and-close-'));
   try {
-    const dir = work.replace(/\\/g, '/');
+    const dir = pathForBash(work);
     // `gh pr view --json` が返すものを、そのままの形で持たせる（改行もバッククォートも含むので、
     // シェルへ埋め込まずファイルで渡す）。**絞り込みも符号化もここでは真似ない**——`--jq` の式は下の
     // スタブが本物の `jq` へ渡す。スタブが真似ると、式だけを変えても試験は緑のまま通る。
@@ -206,8 +206,7 @@ exit 0
     let status = 0;
     let out = '';
     try {
-      out = execFileSync('bash', [SCRIPT, '1000', ...(world.userOk === true ? ['--user-ok'] : [])], {
-        encoding: 'utf-8',
+      out = runScript(SCRIPT, ['1000', ...(world.userOk === true ? ['--user-ok'] : [])], {
         env: {
           ...process.env,
           PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
