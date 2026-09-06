@@ -1027,9 +1027,13 @@ describe('board-move.mjs', () => {
   });
 
   // 開いているPRのスメルは、次の周のレビューや直しで消えることがある。拾うと二重になる。
+  // **同じコメントをマージ済みの側へ置けば立つ**ことを並べて見る——並べないと、`mergedPrs` を
+  // 渡していないだけの盤面になり、`prs` に何を入れても通ってしまう。
   it('開いているPRにスメルがあっても、分析係は立てない', () => {
-    const board = { prs: [pr(9, { ...label('直し待ち'), ...smell(9) })], prSessions: { 9: 'session_a' } };
-    expect(moves(board)).not.toContain(ANALYSIS);
+    expect(moves({ mergedPrs: [smell(9)] })).toContain(ANALYSIS);
+
+    const open = { prs: [pr(9, { ...label('直し待ち'), ...smell(9) })], prSessions: { 9: 'session_a' } };
+    expect(moves(open)).not.toContain(ANALYSIS);
   });
 
   // PRを出す係が居る（記録を残すのがこの係の成果）。畳むと、指摘やコンフリクトを直す相手が消える

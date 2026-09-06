@@ -39,8 +39,10 @@
 **読んだコメントには 👀 が付いています。** これが処理済みの印なので、**付いていないコメントだけ**が
 今回の対象です。
 
-**さかのぼる本数は、盤面と揃えてください**——`scripts/agent/board-read.mjs` の `MERGED_LIMIT` が
-その値です。**立てるかを決める窓と、実際に読む窓がずれる**と、立ったのに拾えないスメルが出ます。
+**さかのぼる本数は、盤面の窓を覆ってください**——`scripts/agent/board-read.mjs` の `MERGED_LIMIT`
+が、盤面が「立てろ」を決めるときに見ているマージ済みPRの本数です。**下回ると、盤面が見つけた未読の
+スメルが係の窓の外に落ち**、印が付かないので**毎日立って毎日同じ空振りを繰り返します。** 多く読む
+ぶんには構いません。
 
 **道具は `gh` があるかで分かれます。** まず `command -v gh` を打ってください。**クラウドの
 セッションには入っていません**——無いほうが普通です。無いときは GitHub の MCP で同じことをします。
@@ -48,8 +50,11 @@
 - `gh` があるとき: `gh pr list --state merged --limit <MERGED_LIMIT> --json number` でPRの番号を
   引き、そのそれぞれへ
   `gh api repos/{owner}/{repo}/issues/<PR番号>/comments --jq '.[] | {id, body, reactions}'`。
-- 無いとき: `list_pull_requests`（`state: closed`）でマージ済みのPRを引き、そのそれぞれへ
-  `pull_request_read`（`method: get_comments`）。
+- 無いとき: `search_pull_requests`（`query: "repo:gooyyu1/UnmappedIsland is:pr is:merged"`・
+  `sort: created`・`order: desc`・`perPage: <MERGED_LIMIT>`）でマージ済みのPRを引き、そのそれぞれへ
+  `pull_request_read`（`method: get_comments`）。**`list_pull_requests` では取れません**——
+  `state: closed` は**マージされずに閉じたPRも返し**、応答の `merged` は常に偽なので、マージ済み
+  だけを取る手がありません。
 
 **どちらの経路でも、コメントの `id`（数値）と `reactions` を控えてください。** `id` は次の周へ印を
 付けるのに要ります。`reactions.eyes` が1以上なら 👀 が付いています。
