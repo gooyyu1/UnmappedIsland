@@ -639,6 +639,8 @@ object_defs:
     props:
       exploration_progress: {value: 0, range: {min: 0, max: 100}}
       ambient_brightness: {value: 16, range: {min: -6, max: 17}}
+      ambient_temperature: {value: 26, range: {min: -10, max: 45}}
+      wind_speed: {value: 0, range: {min: 0, max: 20}}
       wetness: {value: 0, range: {min: 0, max: 1}}
     interactions:
       explore:
@@ -678,7 +680,7 @@ object_defs:
           spawn: {object: salt, into: self}
 
   # 日差しの強い塩田（-3）。小雨（+2）では止まりきらないので、**最も遅いのは両方が重なった場合**
-  # ——そこでは条件を1つだけ挙げても、周期を決めた組み合わせにならない。
+  # だが、雨が降らなくても乾く——雨は欠かせない条件ではない。
   open_salt_pan:
     tags: [fixture]
     slots:
@@ -695,6 +697,32 @@ object_defs:
             add: {self: {drying_remaining: -3}}
           - conditions: [{subject: ancestor, prop: wetness, gte: 1}]
             add: {self: {drying_remaining: 2}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+
+  # 戻る分を常時持つ塩田（+1）。日差し（-1）だけでも風（-1）だけでも釣り合ってしまい、**両方が
+  # 揃って初めて**乾く。風の条件は or で書いてあるので、並べたときに括弧が要る。
+  windy_salt_pan:
+    tags: [fixture]
+    slots:
+      salt:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - add: {self: {drying_remaining: 1}}
+          - conditions: [{subject: ancestor, prop: ambient_brightness, gte: 14}]
+            add: {self: {drying_remaining: -1}}
+          - conditions:
+              - any:
+                  - {subject: ancestor, prop: wind_speed, gte: 3}
+                  - {subject: ancestor, prop: ambient_temperature, gte: 30}
+            add: {self: {drying_remaining: -1}}
         on_min:
           add: {self: {drying_remaining: 24}}
           spawn: {object: salt, into: self}
@@ -744,19 +772,30 @@ object_defs:
     });
   });
 
-  it('重なって初めて最も遅くなるなら、条件も重なったまま出る', () => {
-    // -3と+2が重なった-1が最も遅いので周期は24 tick＝360分。日差しだけを挙げると8 tick＝120分の
-    // 側の条件になり、雨だけを挙げると干し上がらない側の条件になる。
+  it('遅くするだけの条件は、周期を決めていても「いつ働くか」にならない', () => {
+    // 最も遅いのは-3と+2が重なった-1なので周期は24 tick＝360分。雨はその周期を決めているが、
+    // 雨が降らなくても（-3で、より速く）乾くので欠かせない条件ではない。
     expect(deviceOf('open_salt_pan')).toMatchObject({
       periodMinutes: 360,
-      condition: '祖先のambient_brightness ≥ 14 かつ 祖先のwetness ≥ 1',
+      condition: '祖先のambient_brightness ≥ 14',
     });
   });
 
-  it('遅くするだけの条件は、「いつ働くか」にならない', () => {
+  it('常時効く分が正味0でなくても、遅くするだけの条件は出ない', () => {
     // 最も遅いのは雨の-1（24 tick＝360分）だが、雨が降らなくても-3で進む。ここに雨を出すと
     // 「雨の間だけ働く」と読める行になる——`常時` 以外は置くだけでは進まない、が表の約束
     // （docs/diagnostics/BalanceStats.md「待ち生産表」）。
     expect(deviceOf('covered_salt_pan')).toMatchObject({ periodMinutes: 360, condition: '常時' });
+  });
+
+  it('どれも欠かせないなら全部が並び、またはを含む条件は括弧のまま並ぶ', () => {
+    // +1に対して-1が2つ。片方だけでは釣り合って進まないので、日差しも風も欠かせない。
+    // 括弧を付けるのは条件の文を組み立てる側（conditionWords）で、並べる側は何もしない——
+    // 括弧が無いと `… ≥ 14 かつ … ≥ 3 または … ≥ 30` と切れ目が読めなくなる。
+    expect(deviceOf('windy_salt_pan')).toMatchObject({
+      periodMinutes: 360,
+      condition:
+        '祖先のambient_brightness ≥ 14 かつ （祖先のwind_speed ≥ 3 または 祖先のambient_temperature ≥ 30）',
+    });
   });
 });

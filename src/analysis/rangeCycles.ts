@@ -70,11 +70,15 @@ export interface RangeCycle {
   readonly destroysSelf: boolean;
 
   /**
-   * 端へ向かうことが依っている条件つきの増減（8.2節）。**1つも成立していなくても端へ向かうなら
-   * 空**——遅くする条件つきが重なって最も遅い場合を作っていても、向かうこと自体は条件に依らない。
+   * **端へ向かうどの場合（TickAmounts.possible）にも入っている条件つきの増減**（8.2節）。どれか1つ
+   * でも成立していなければ端へ向かわない、ということ。
    *
-   * 空でなければ、**minutesを決めた組み合わせのもの**。周期と条件を別々に選ぶと、周期は増減Bから・
-   * 条件は増減Aから来て、どの宣言も持っていない（周期, 条件）の対ができる（issue #1433）。
+   * 空になるのは、条件つきが1つも成立しなくても向かう場合（常時効く分だけで届く）と、成立の仕方が
+   * 複数あってどれも欠かせるとは言えない場合。**遅くするだけの条件つきは入らない**——最も遅い場合を
+   * 作っていても、向かうこと自体はそれに依らない（issue #1433のレビュー）。
+   *
+   * **押し手のある周期（drivenBy）では常に空**。totalsWithDriverが自分の条件つきを数から落とすので、
+   * 押し手が傍に在ることのほうが条件で、それはdrivenByが持つ。
    */
   readonly gatedBy: readonly TickDelta[];
 
@@ -153,7 +157,7 @@ export function rangeCyclesOf(
           longestMinutes: (repeats ? period : longestTicks + untilStart) * MINUTES_PER_TICK,
           repeats,
           destroysSelf: readout.destroysSelf,
-          gatedBy: pace.movesWithoutConditions ? [] : slowest.conditional,
+          gatedBy: pace.gatedBy,
           drivenBy: driver?.sourceGlobalId,
           step: {
             kind: 'periodic',
@@ -336,7 +340,7 @@ function possibleTotalsOf(unconditional: number, conditional: readonly TickDelta
 
   // 同じ量になる組み合わせは先に現れたほうだけを残す。どれも同じ速さで端へ届くので、周期の
   // 選び方は変わらない——残すのは、その速さを説明できる組み合わせを1つ持っておくため。
-  // **1つも重ねない場合が先頭に居るので、畳んでも落ちない**（Pace.movesWithoutConditionsが見る）。
+  // **1つも重ねない場合が先頭に居るので、畳んでも落ちない**（Pace.gatedByが空になる場合を作る）。
   const byAmount = new Map<number, TickTotal>();
   for (const combination of combinations) {
     const amount = combination.reduce((total, delta) => total + delta.amount, unconditional);
@@ -350,11 +354,8 @@ interface Pace {
   readonly slowest: TickTotal;
   readonly fastest: TickTotal;
 
-  /**
-   * 条件つきの増減（8.2節）が1つも成立していない場合も、その端へ向かうか。**最も遅い場合が
-   * 条件つきの重なりから出ていても、向かうこと自体は条件に依らない**ので、slowestとは別の事実。
-   */
-  readonly movesWithoutConditions: boolean;
+  /** その端へ向かうどの場合にも入っている条件つきの増減（RangeCycle.gatedBy）。 */
+  readonly gatedBy: readonly TickDelta[];
 }
 
 /**
@@ -368,7 +369,10 @@ function paceTowards(totals: readonly TickTotal[], label: RangeEventLabel): Pace
   return {
     slowest: towards.reduce((best, total) => (Math.abs(total.amount) < Math.abs(best.amount) ? total : best)),
     fastest: towards.reduce((best, total) => (Math.abs(total.amount) > Math.abs(best.amount) ? total : best)),
-    movesWithoutConditions: towards.some((total) => total.conditional.length === 0),
+    gatedBy: towards.reduce<readonly TickDelta[]>(
+      (common, total) => common.filter((delta) => total.conditional.includes(delta)),
+      towards[0].conditional,
+    ),
   };
 }
 

@@ -1007,15 +1007,15 @@ function deviceRows(
  * それを縛るゲートがそのまま「いつ働くか」になる——罠の`catch_remaining`は地面に置いてある間だけ、
  * ヤケイの`breeding_remaining`は囲いの中で飼葉がある間だけ減る。
  *
- * **見るのは周期が依っているゲート**（RangeCycle.gatedBy）。空なら、条件が1つも成立しなくても
- * 進むということなので`常時`。
+ * **見るのは、周期が進むどの場合にも欠かせないゲート**（RangeCycle.gatedBy）。空なら、条件が1つも
+ * 成立しなくても進むということなので`常時`。
  */
 function cycleCondition(codex: WorldCodex, cycle: DeviceCycle): string {
   // 隣の物に押されて進む周期（炉が焼く・傷が血を奪う）は、押し手が傍に在ること自体が条件。
   if (cycle.drivenBy !== undefined) return `${codex.objectNames.getName(cycle.drivenBy)}が傍にある`;
   if (cycle.gatedBy.length === 0) return ALWAYS;
 
-  // 並ぶのは「どれも同時に成立している」増減なので、条件どうしを並べるのと同じ語でつなぐ。
+  // 並ぶのは「どれも欠かせない」ゲートなので、条件どうしを並べるのと同じ語でつなぐ。
   return cycle.gatedBy.map((delta) => conditionLabel(codex, delta)).join(` ${ALL_CONJUNCTION} `);
 }
 
@@ -1058,7 +1058,7 @@ interface DeviceCycle {
   readonly periodMinutes: number;
 
   /**
-   * 周期が進むことが依っている条件つきの増減（RangeCycle.gatedBy）。**それを縛るゲートが、
+   * 周期が進むどの場合にも欠かせない条件つきの増減（RangeCycle.gatedBy）。**それを縛るゲートが、
    * 周期が進む条件そのもの**で、空なら置くだけで進む。
    */
   readonly gatedBy: readonly TickDelta[];
