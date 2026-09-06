@@ -54,6 +54,8 @@ export interface World {
   readonly stacked?: readonly number[];
   /** `gh pr edit --base` が失敗するか。 */
   readonly retargetFails?: boolean;
+  /** 張り替えたPRへ `直し待ち` を付ける `gh pr edit` が失敗するか。 */
+  readonly sendBackFails?: boolean;
   /** マージ済みのブランチが既に消えているか。既定は残っている。 */
   readonly branchGone?: boolean;
   /** そのブランチを消す `gh api -X DELETE` が失敗するか。 */
@@ -131,6 +133,9 @@ if [ "$1" = pr ] && [ "$2" = edit ]; then
     *--base*) exit ${world.retargetFails ? 1 : 0} ;;
   esac
   echo "$*" >> '${dir}/labels'
+  case "$*" in
+    *直し待ち*) exit ${world.sendBackFails ? 1 : 0} ;;
+  esac
   exit 0
 fi
 if [ "$1" = api ]; then

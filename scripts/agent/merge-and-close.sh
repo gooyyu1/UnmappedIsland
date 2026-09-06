@@ -8,8 +8,10 @@
 # 出力は1行1件。
 #   HELD     <PR番号>              … 関門に掛かった。マージしていない（理由が続けて出る）
 #   MERGED   <PR番号>
-#   RETARGETED <PR番号>            … このPRの上に積まれていたPRの base を `main` へ張り替えた
+#   RETARGETED <PR番号>            … このPRの上に積まれていたPRの base を `main` へ張り替え、
+#                                    書いた本人へ差し戻した
 #   UNRETARGETED <PR番号>          … その張り替えに失敗した。ブランチは消していない
+#   UNMENDED <PR番号>              … 張り替えたのに差し戻せなかった（`直し待ち` が付いていない）
 #   UNDELETED <ブランチ>            … マージ済みのブランチを消せなかった
 #   CLOSED   <issue番号>            … PR本文の `Closes #N` が閉じたことの確認
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
@@ -19,7 +21,7 @@
 #   終了コード 0 … すべて片付いた
 #   終了コード 1 … マージできなかった（何もしていない。関門を含む）
 #   終了コード 2 … マージはしたが、後片付けに残りがある
-#                  （上の `UNRETARGETED`・`UNDELETED`・`OPEN`・`DIRTY`）
+#                  （上の `UNRETARGETED`・`UNMENDED`・`UNDELETED`・`OPEN`・`DIRTY`）
 #
 # ## 積まれたPRは、ブランチを消す前に `main` へ下ろす
 #
@@ -37,6 +39,17 @@
 # merge-base が動かないので、**張り替えた後も上のPRの差分には下のぶんが混ざったまま**で、CIも古い
 # base で得た緑のまま（base の変更では再実行されない）。**解けるのは、上のPRのブランチが `main` の
 # 上へ載せ直されたとき。**
+#
+# **だから張り替えたPRは、その場で書いた本人へ差し戻す**——`直し待ち` を付け、なぜ差し戻したかを
+# コメントで残す。盤面は既存の `mend` でそのセッションを起こす
+# （[`board-move.mjs`](board-move.mjs)）。載せ直して push すれば
+# [`board-labels.yml`](../../.github/workflows/board-labels.yml) の `synchronized` が判定のラベルを
+# 外し、CIも走り直すので、そこから先は普通のPRと同じ道を通る。**差し戻さずに張り替えるだけだと、
+# base が `main` になったぶん盤面は普通に捌きにかかり、混ざった差分が古い緑のままマージ候補になる。**
+#
+# **デーモンは載せ直さない。** 他人のブランチへの force push になるので、履歴を書き換えるのは書いた
+# 本人だけ。**張り替えに失敗したPR（`UNRETARGETED`）には付けない**——base が消えていないので、
+# まだ積まれたままで、書いた本人にできることが無い。
 #
 # ## 関門（`needs-user-review.sh`）は、この道具では越えられない
 #
@@ -183,15 +196,36 @@ leftover=0
 # 分からないまま消すと、閉じられたPRは機械では戻せない。
 retargeted=1
 if stacked=$(gh pr list --state open --base "$head" --json number --jq '.[].number'); then
+  # 差し戻す理由は、起こされた本人がPRを見て分かるものではない（コンフリクトもCIの赤もレビューの
+  # 指摘も無い）ので、ここで書き残す。**張り替えたPR全部に同じ文面**なので、1回だけ組む。
+  note="$(mktemp)"
+  {
+    echo "[デーモン] **下の PR #$PR がマージされたので、base を \`main\` へ張り替えました。**"
+    echo
+    echo 'squash マージでは下のコミットが `main` の履歴に入らないので、**張り替えただけでは差分に'
+    echo '下のぶんが混ざったまま**で、CIも古い base で得た緑のままです。'
+    echo
+    echo '`origin/main` の上へ載せ直して push してください。push すれば判定のラベルが外れ、CIも'
+    echo '走り直します。'
+  } >"$note"
   while read -r other; do
     [ -n "$other" ] || continue
-    if gh pr edit "$other" --base main >/dev/null; then
-      echo "RETARGETED $other"
-    else
+    if ! gh pr edit "$other" --base main >/dev/null; then
       echo "UNRETARGETED $other"
       retargeted=0
+      continue
     fi
+    echo "RETARGETED $other"
+    if gh pr comment "$other" --body-file "$note" >/dev/null &&
+      gh pr edit "$other" --add-label 直し待ち >/dev/null; then
+      continue
+    fi
+    # 張り替えは済んでいるので、盤面はこのPRを普通に捌きにかかる。**差し戻せなかったことは残りとして
+    # 出す**——黙って落とすと、混ざった差分がそのままレビューへ出る。
+    echo "UNMENDED $other"
+    leftover=1
   done <<<"$stacked"
+  rm -f "$note"
 else
   echo "UNRETARGETED $PR"
   retargeted=0

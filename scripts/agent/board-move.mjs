@@ -373,8 +373,8 @@ export function moves(input) {
 
     // **他のPRの上に積まれたPRは、盤面では捌けない。** CIは古い base の上で緑になり、レビューが読む
     // 差分にも下のPRの変更が混ざる（#1508 はこれで2周ぶん無駄にしている）。触らずに書き残すだけに
-    // する。下が入ると `merge-and-close.sh` が `main` へ張り替えるが、**それで直るのは自動クローズ
-    // だけ**で、差分もCIも載せ直すまで古いまま（あちらの「積まれたPRは…」）。
+    // する。下が入ると `merge-and-close.sh` が `main` へ張り替え、**そのまま書いた本人へ差し戻す**
+    // ——張り替えても差分とCIは載せ直すまで古いまま（あちらの「積まれたPRは…」）。
     if ((pr.baseRefName ?? 'main') !== 'main') {
       notes.push(`PR #${pr.number} は ${pr.baseRefName} の上に積まれている（下が入るまで触らない）`);
       continue;
