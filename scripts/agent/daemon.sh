@@ -3,7 +3,7 @@
 #
 #   bash scripts/agent/daemon.sh start        # 背景で立てる（ログは $DAEMON_LOG へ追記）
 #   bash scripts/agent/daemon.sh stop         # 止める（錠が外れるまで待つ）
-#   bash scripts/agent/daemon.sh restart      # 版を入れ替えたとき
+#   bash scripts/agent/daemon.sh restart      # 環境変数を変えたとき（版の入れ替えは自分で気づく）
 #   bash scripts/agent/daemon.sh status       # 生きているかだけを見る（生きていれば0）
 #   bash scripts/agent/daemon.sh run          # 前に出たまま回す
 #   INTERVAL=300 bash scripts/agent/daemon.sh run
@@ -39,6 +39,18 @@
 # （あちらの「1周をプロセス1つに収める」）、ここが知っているのは**引けたかどうか**（終了コード）
 # だけ。
 #
+# ## 自分の版が入れ替わったら、新しい版で回り直す
+#
+# **回っている bash は、最初に読んだ版のまま。** `MERGE` を打つと本体が `main` へ進む（`SYNCED`）ので、
+# 隣の道具は次の周から新しい版で動くのに、この1本だけが古いまま残る。**古い呼び手が新しい道具を叩くと、
+# 噛み合わないまま黙って何もしない周が続く**——単体では走らなくなった `board-move.mjs` を旧 `daemon.sh`
+# が叩き、手を1つも出さないまま8分止まった（2026-09-05）。周の終わりに自分の中身を見て、変わって
+# いたら `exec` で入れ替わる。**錠は外さずに渡す**——`exec` はPIDを持ち越すので、錠の中のPIDが自分
+# なら、それは自分が置いていったもの。
+#
+# 入れ替えた先が壊れていればそこで終わるが、**古い版で黙って回り続けるより、止まったことが見える**
+# ——心拍が途切れれば `status` が「止まっている」と答える。
+#
 # ## 引けなかったら、その周は何もしない
 #
 # 盤面が欠けた周は手を決めない（`board-round.mjs`）。続けて `FAILURE_LIMIT` 回失敗したら、待つ間隔を
@@ -57,6 +69,8 @@ set -euo pipefail
 HERE="${BASH_SOURCE[0]%/*}"
 if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
 HERE="$(cd "$HERE" && pwd)"
+# **自分の在り処は1箇所で持つ。** 背景へ立てるのも、新しい版へ入れ替わるのも、同じこの1本を指す。
+SELF="$HERE/daemon.sh"
 INTERVAL="${INTERVAL:-30}"
 FAILURE_LIMIT="${FAILURE_LIMIT:-5}"
 # 続けて引けなくなった後の、待つ間隔。**`ROUND_LIMIT` より短くしておく**——心拍の間隔がそのまま
@@ -149,7 +163,7 @@ start_daemon() {
     return 0
   fi
   local waited=0
-  nohup bash "$HERE/daemon.sh" run >>"$DAEMON_LOG" 2>&1 &
+  nohup bash "$SELF" run >>"$DAEMON_LOG" 2>&1 &
   while [ "$waited" -lt "$START_WAIT" ]; do
     if running; then
       echo "立てた（ログは $DAEMON_LOG）"
@@ -188,16 +202,22 @@ restart)
 esac
 
 if ! mkdir "$LOCK" 2>/dev/null; then
-  if beating; then
+  # **錠の中のPIDが自分なら、置いていったのは自分**（`exec` はPIDを持ち越す）。新しい版へ入れ替わった
+  # 直後がこれで、錠は渡されたものとして引き継ぐ——外して取り直すと、その隙に `start` が二本目を
+  # 立てられる。
+  if [ -f "$PIDFILE" ] && [ "$(<"$PIDFILE")" = "$$" ]; then
+    log "新しい版で立った（錠は引き継ぐ）"
+  elif beating; then
     log "既に走っているので、二本目は立てない（最終 $(cat "$HEARTBEAT")）"
     exit 0
+  else
+    log "落ちた跡の錠を取り上げる（最終 $(cat "$HEARTBEAT" 2>/dev/null || echo 不明)）"
+    rm -rf "$LOCK"
+    mkdir "$LOCK" || {
+      log "錠を取れなかった"
+      exit 1
+    }
   fi
-  log "落ちた跡の錠を取り上げる（最終 $(cat "$HEARTBEAT" 2>/dev/null || echo 不明)）"
-  rm -rf "$LOCK"
-  mkdir "$LOCK" || {
-    log "錠を取れなかった"
-    exit 1
-  }
 fi
 
 # **撃つ相手を、錠の中に置いていく**（上の「止めるのも自分の仕事」）。錠と同じ寿命にしてあるので、
@@ -211,6 +231,9 @@ trap 'rm -rf "$LOCK"' EXIT
 stopping=''
 napping=''
 trap 'stopping=1; [ -z "$napping" ] || kill "$napping" 2>/dev/null || true' TERM INT
+
+# **今この場で読んだ中身が、回っている版そのもの。** 周の終わりにここと見比べる。
+loaded=$(<"$SELF")
 
 failures=0
 while true; do
@@ -226,6 +249,11 @@ while true; do
   fi
   [ -z "${ONCE:-}" ] || break
   [ -z "$stopping" ] || break
+  # 寝る前に見るのは、**古い版のまま `INTERVAL` ぶん待たせない**ため（上の「自分の版が入れ替わったら」）。
+  if [ "$(<"$SELF")" != "$loaded" ]; then
+    log "自分の版が入れ替わったので、新しい版で回り直す"
+    exec bash "$SELF" run
+  fi
   # **背景で寝る。** 前に置くと、bash は前の子が終わるまで signal を握るので、撃たれても
   # `INTERVAL` ぶん止まらない。
   nap="$INTERVAL"

@@ -131,21 +131,21 @@ DRY_RUN=1 bash scripts/agent/dispatch-task.sh 1029 <指示ファイル>  # 渡�
 
 **デーモンは自分では終わらない。** `gh` が続けて `FAILURE_LIMIT` 回失敗したときだけ止まる
 （認証切れ・通信断で回り続けてもログが埋まるだけなので）。**止まる理由はそれと、走らせている
-PCが落ちたときだけ。**
+PCが落ちたときと、入れ替わった先が壊れていたときだけ。**
 
 ```
 bash scripts/agent/daemon.sh start     # 背景で立てる。ログは ~/daemon.log へ追記
 bash scripts/agent/daemon.sh status    # 生死だけを見る（生きていれば0）
 bash scripts/agent/daemon.sh stop
-bash scripts/agent/daemon.sh restart   # 版を入れ替えたとき
+bash scripts/agent/daemon.sh restart   # 環境変数を変えたとき（版の入れ替えは自分で気づく）
 ```
 
 **走っているかを確かめてから `start` を打ってよい。** 二本目は自分で引き返す（`daemon.sh`「二重に
 起こさない」）。**プロセスを探して撃たない**——`stop` が錠に置かれたPIDを撃つ（同「止めるのも
 自分の仕事」）。
 
-**`main` へ入れた変更は `restart` するまで効かない。** デーモンは起動時の `daemon.sh` を握ったまま
-回る。
+**`main` へ入れた変更は、次の周から効く。** `daemon.sh` が入れ替わったらデーモンが自分で気づいて、
+新しい版で回り直す（同「自分の版が入れ替わったら」）。
 
 **ユーザーからの依頼が来ても、これより先に着手しない。** 依頼が数分遅れることは目に見えるが、
 **盤面が止まっていることは誰にも見えない**。2026-08-30 に前身の見張りを止めたまま `CLAUDE.md` の
