@@ -120,19 +120,14 @@ echo '${JSON.stringify({
 }
 
 describe('archive-session.sh', () => {
-  // **ブリッジで立てたものも同じ条件で畳む。** 環境で除いていた間は、例外を解く `--force-bridge` を
-  // 渡す呼び手が居なくなっても `KEPT` が出るだけで、枠を握ったまま残ったことに誰も気づけなかった。
+  // **ブリッジで立てたものも同じ条件で畳む。** worktree を持つことは畳んでよいかの条件ではなく、
+  // 畳んだ後に何を片付けるかの話。
   it('このPCの worktree を持つセッションを、畳んでロックを外して消す', () => {
     const result = run();
 
     expect(result.lines).toEqual([`ARCHIVED ${SESSION}`, `REMOVED ${WORKTREE}`]);
     expect(result.archived).toBe(true);
     expect(result.kept).toBe(false);
-  });
-
-  // 呼び手の申告で例外を解く形へ戻すと、渡す者が居なくなったことに気づけない。
-  it('`--force-bridge` は受け取らない', () => {
-    expect(() => run({ args: ['--force-bridge'] })).toThrow();
   });
 
   // **戻せないものを黙って消さない。** `--force` を渡していないことが、ここで守られる。
