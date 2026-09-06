@@ -762,21 +762,18 @@ export class WorldObject {
   /**
    * 名指しした1つのプロパティが、他と交わしている影響（docs/ui/Windows.md 8節）。
    *
-   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果。木を辿る対象（self・parent・child・
-   * ancestor）だけなら、自分へ届く効果も自分が届かせる効果も宣言元は必ずこの3方向のどれかに居る
-   * ——横に並んだ物どうしは互いに届かない。
-   *
-   * **操作の役（11.5節）を対象に書いた効果は、この3方向から漏れる。** 道が`modify: {agent: ...}`を
-   * 持つ形では、宣言元（道）は歩いている人から見て木の上に居ないので、その人の一覧には現れない
-   * ——**集める範囲が木だから**であって、相手が決まっていないからではない（関係が張られている間は
-   * `resolveInfluenceTargets`が相手を返す）。実データにまだ役を対象にした`passives`が無いので今は
-   * 誰も踏まないが、書いたときは集める範囲のほうを直す。
+   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果に加えて、**今この物と同じ操作に
+   * 加わっている相手**（11.5節）が宣言するもの。木を辿る対象（self・parent・child・ancestor）なら
+   * 宣言元は必ず前者に居り、操作の役（agent・instrument・patient）を対象に書いた効果なら必ず後者に
+   * 居る——横に並んだ物どうしは、木でも操作でも結ばれていない限り互いに届かない。
    */
   readInfluences(propertyGlobalId: number): PropertyInfluenceReading {
     const influences = new PropertyInfluences(this, propertyGlobalId);
     this.collectInfluencesRecursively(influences);
     for (let ancestor = this._parent; ancestor !== undefined; ancestor = ancestor._parent)
       ancestor.def.passives.collectInfluences(ancestor, influences);
+    for (const participant of this._participation?.participantsOtherThan(this) ?? [])
+      participant.def.passives.collectInfluences(participant, influences);
     return influences;
   }
 
