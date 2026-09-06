@@ -1,5 +1,5 @@
-// GitHub と CCR から盤面を1つ組み立てる。**判断は1つも持たない**——ここが集めた形を読んで手を
-// 決めるのは [`board-move.mjs`](board-move.mjs)（`.claude/board-design.md` 2.3）。
+// GitHub と CCR、それにリポジトリ自身から盤面を1つ組み立てる。**判断は1つも持たない**——ここが
+// 集めた形を読んで手を決めるのは [`board-move.mjs`](board-move.mjs)（`.claude/board-design.md` 2.3）。
 //
 //   import { readBoard } from './board-read.mjs';
 //   readBoard({ log })   // → 盤面（`gh` が引けなければ undefined）
@@ -19,8 +19,17 @@
 // `gh` と一覧の引き方を引数で受けるのは、**実物を起こさずに検査するため**。既定は本物を呼ぶので、
 // 呼び手（[`board-round.mjs`](board-round.mjs)）は何も渡さなくてよい。
 
+import { readdirSync } from 'node:fs';
+
 import { liveSessions } from './live-sessions.mjs';
 import { gh as runGh } from './spawn.mjs';
+
+/**
+ * 判断の履歴の置き場（`CLAUDE.md`「価値観の記録」）。**盤面が唯一、GitHub と CCR の外を見る場所。**
+ * 価値観を畳む係の仕事は issue にもPRにも現れず、**リポジトリの中にしか無い**ので、ここで数える
+ * 以外に「仕事があるか」を知る手立てが無い。
+ */
+const DECISIONS = new URL('../../.claude/decisions/', import.meta.url);
 
 /** PRの一覧に要る項目。**1回で引く**——項目ごとに引くと、項目ごとに見ている時点がずれる。 */
 const PR_FIELDS =
@@ -47,6 +56,21 @@ const MERGED_LIMIT = 30;
 const PR_SESSIONS_QUERY =
   'query($owner:String!,$name:String!){repository(owner:$owner,name:$name)' +
   '{pullRequests(states:OPEN,first:50){nodes{number commits(last:20){nodes{commit{message}}}}}}}';
+
+/**
+ * まだ棚卸しを通っていない判断の履歴の件数（`archive/` に入っていないもの）。**読むのは価値観を
+ * 畳む係の `due`**（[`board-move.mjs`](board-move.mjs) の `CYCLES`）。
+ *
+ * **読めなかった周は0にして進む。** その周に係が立たないだけで、他の手は打てる。
+ */
+function countDecisions(log) {
+  try {
+    return readdirSync(DECISIONS).filter((name) => name.endsWith('.md')).length;
+  } catch {
+    log('判断の履歴を数えられなかった（この周は、価値観を畳む係を立てない）');
+    return 0;
+  }
+}
 
 /** この時刻より前に止まっているPRは、チェックが0本でも緑と読む。 */
 function settledBefore(now, settleMinutes) {
@@ -109,7 +133,15 @@ function issueStates(gh, sessions, issues) {
 }
 
 /** 盤面を1つ組み立てる。`gh` が引けなければ `undefined`、一覧が引けなければ投げる。 */
-export function readBoard({ gh = runGh, sessions = liveSessions, log, now, settleMinutes, taken }) {
+export function readBoard({
+  gh = runGh,
+  sessions = liveSessions,
+  log,
+  pendingDecisions = () => countDecisions(log),
+  now,
+  settleMinutes,
+  taken,
+}) {
   const prs = gh(['pr', 'list', '--state', 'open', '--limit', '50', '--json', PR_FIELDS]);
   if (prs === undefined) return undefined;
   const issues = gh([
@@ -156,6 +188,7 @@ export function readBoard({ gh = runGh, sessions = liveSessions, log, now, settl
     mainChecks: mainChecks(checks),
     prs: JSON.parse(prs),
     mergedPrs: mergedPrs === undefined ? [] : JSON.parse(mergedPrs),
+    pendingDecisions: pendingDecisions(),
     issues: openIssues,
     taken,
     issueStates: issueStates(gh, live, openIssues),

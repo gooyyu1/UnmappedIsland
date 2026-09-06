@@ -13,6 +13,8 @@ export interface RoundDeps {
   ) => ScriptResult;
   gh?: (args: readonly string[], options?: { allowFail?: boolean }) => string | undefined;
   sessions?: () => readonly unknown[];
+  /** `archive/` に入っていない判断の履歴の数（`board-read.mjs`）。省くと本物のリポジトリを数える。 */
+  pendingDecisions?: () => number;
   log?: (line: string) => void;
   echo?: (text: string) => void;
   warn?: (line: string) => void;
