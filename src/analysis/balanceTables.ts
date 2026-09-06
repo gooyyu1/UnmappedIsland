@@ -1014,16 +1014,16 @@ function deviceRows(
  * それを縛るゲートがそのまま「いつ働くか」になる——罠の`catch_remaining`は地面に置いてある間だけ、
  * ヤケイの`breeding_remaining`は囲いの中で飼葉がある間だけ減る。
  *
- * **見るのは周期を決めた組み合わせ**（RangeCycle.pacedBy）。条件つきが1つも入っていなければ、
- * 常時効く分だけで端へ届くということなので`常時`。
+ * **見るのは周期が依っているゲート**（RangeCycle.gatedBy）。空なら、条件が1つも成立しなくても
+ * 進むということなので`常時`。
  */
 function cycleCondition(codex: WorldCodex, cycle: DeviceCycle): string {
   // 隣の物に押されて進む周期（炉が焼く・傷が血を奪う）は、押し手が傍に在ること自体が条件。
   if (cycle.drivenBy !== undefined) return `${codex.objectNames.getName(cycle.drivenBy)}が傍にある`;
-  if (cycle.pacedBy.length === 0) return ALWAYS;
+  if (cycle.gatedBy.length === 0) return ALWAYS;
 
-  // 組み合わせは「どれも同時に成立している」ものなので、条件どうしを並べるのと同じ語でつなぐ。
-  return cycle.pacedBy.map((delta) => conditionLabel(codex, delta)).join(` ${ALL_CONJUNCTION} `);
+  // 並ぶのは「どれも同時に成立している」増減なので、条件どうしを並べるのと同じ語でつなぐ。
+  return cycle.gatedBy.map((delta) => conditionLabel(codex, delta)).join(` ${ALL_CONJUNCTION} `);
 }
 
 /** 1回の実行で、その型が生まれる期待個数（分岐の確率で重み付けした和）。 */
@@ -1065,10 +1065,10 @@ interface DeviceCycle {
   readonly periodMinutes: number;
 
   /**
-   * periodMinutesを決めた組み合わせに入っている、条件つきの増減（RangeCycle.pacedBy）。
-   * **それを縛るゲートが、周期が進む条件そのもの。**
+   * 周期が進むことが依っている条件つきの増減（RangeCycle.gatedBy）。**それを縛るゲートが、
+   * 周期が進む条件そのもの**で、空なら置くだけで進む。
    */
-  readonly pacedBy: readonly TickDelta[];
+  readonly gatedBy: readonly TickDelta[];
 
   /** 外から押されて進む周期（炉が焼く・傷が血を奪う）なら、押し手の型（RangeCycle.drivenBy）。 */
   readonly drivenBy: number | undefined;
@@ -1219,7 +1219,7 @@ function allSteps(
           step: cycle.step,
           cycle: {
             periodMinutes: cycle.minutes,
-            pacedBy: cycle.pacedBy,
+            gatedBy: cycle.gatedBy,
             drivenBy: cycle.drivenBy,
             repeats: cycle.repeats,
             lifetime,

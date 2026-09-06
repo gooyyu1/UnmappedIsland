@@ -699,6 +699,27 @@ object_defs:
           add: {self: {drying_remaining: 24}}
           spawn: {object: salt, into: self}
 
+  # 常時乾く塩田（-3）。雨（+2）は遅くするだけで、止めはしない——**最も遅いのは雨の場合**だが、
+  # 塩が採れるのに雨は要らない。
+  covered_salt_pan:
+    tags: [fixture]
+    slots:
+      salt:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - add: {self: {drying_remaining: -3}}
+          - conditions: [{subject: ancestor, prop: wetness, gte: 1}]
+            add: {self: {drying_remaining: 2}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+
   salt:
     tags: [item]
 `;
@@ -730,5 +751,12 @@ object_defs:
       periodMinutes: 360,
       condition: '祖先のambient_brightness ≥ 14 かつ 祖先のwetness ≥ 1',
     });
+  });
+
+  it('遅くするだけの条件は、「いつ働くか」にならない', () => {
+    // 最も遅いのは雨の-1（24 tick＝360分）だが、雨が降らなくても-3で進む。ここに雨を出すと
+    // 「雨の間だけ働く」と読める行になる——`常時` 以外は置くだけでは進まない、が表の約束
+    // （docs/diagnostics/BalanceStats.md「待ち生産表」）。
+    expect(deviceOf('covered_salt_pan')).toMatchObject({ periodMinutes: 360, condition: '常時' });
   });
 });

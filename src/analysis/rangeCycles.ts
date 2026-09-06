@@ -70,12 +70,13 @@ export interface RangeCycle {
   readonly destroysSelf: boolean;
 
   /**
-   * minutesを決めた組み合わせに入っている、条件つきの増減（8.2節）。常時効く分だけで端へ届くなら空。
+   * 端へ向かうことが依っている条件つきの増減（8.2節）。**1つも成立していなくても端へ向かうなら
+   * 空**——遅くする条件つきが重なって最も遅い場合を作っていても、向かうこと自体は条件に依らない。
    *
-   * **周期と「いつ進むか」は同じ組み合わせから採る。** 別々に選ぶと、周期は増減Bから・条件は
-   * 増減Aから来て、どの宣言も持っていない（周期, 条件）の対ができる（issue #1433）。
+   * 空でなければ、**minutesを決めた組み合わせのもの**。周期と条件を別々に選ぶと、周期は増減Bから・
+   * 条件は増減Aから来て、どの宣言も持っていない（周期, 条件）の対ができる（issue #1433）。
    */
-  readonly pacedBy: readonly TickDelta[];
+  readonly gatedBy: readonly TickDelta[];
 
   /** 外から与えられた増減で動いた周期なら、それを与える型（炉が焼く・傷が血を奪う）。 */
   readonly drivenBy: number | undefined;
@@ -152,7 +153,7 @@ export function rangeCyclesOf(
           longestMinutes: (repeats ? period : longestTicks + untilStart) * MINUTES_PER_TICK,
           repeats,
           destroysSelf: readout.destroysSelf,
-          pacedBy: slowest.conditional,
+          gatedBy: pace.movesWithoutConditions ? [] : slowest.conditional,
           drivenBy: driver?.sourceGlobalId,
           step: {
             kind: 'periodic',
@@ -285,7 +286,7 @@ interface TickAmounts {
  * 同時に成立しうる組み合わせ1つぶんの、tick毎の合計。
  *
  * **合計と一緒に組み合わせそのものを持つ**のは、その量を選んだ側が「どういうときにその量か」を
- * 答えられるようにするため（RangeCycle.pacedBy）。
+ * 答えられるようにするため（RangeCycle.gatedBy）。
  */
 interface TickTotal {
   /** その組み合わせでのtick毎の合計。常時効く分を含む。 */
@@ -335,6 +336,7 @@ function possibleTotalsOf(unconditional: number, conditional: readonly TickDelta
 
   // 同じ量になる組み合わせは先に現れたほうだけを残す。どれも同じ速さで端へ届くので、周期の
   // 選び方は変わらない——残すのは、その速さを説明できる組み合わせを1つ持っておくため。
+  // **1つも重ねない場合が先頭に居るので、畳んでも落ちない**（Pace.movesWithoutConditionsが見る）。
   const byAmount = new Map<number, TickTotal>();
   for (const combination of combinations) {
     const amount = combination.reduce((total, delta) => total + delta.amount, unconditional);
@@ -343,20 +345,30 @@ function possibleTotalsOf(unconditional: number, conditional: readonly TickDelta
   return [...byAmount.values()];
 }
 
+/** その端へ向かって動く速さの幅（paceTowards）。 */
+interface Pace {
+  readonly slowest: TickTotal;
+  readonly fastest: TickTotal;
+
+  /**
+   * 条件つきの増減（8.2節）が1つも成立していない場合も、その端へ向かうか。**最も遅い場合が
+   * 条件つきの重なりから出ていても、向かうこと自体は条件に依らない**ので、slowestとは別の事実。
+   */
+  readonly movesWithoutConditions: boolean;
+}
+
 /**
- * その端へ向かって動く場合のうち、最も遅い量と最も速い量。その端へ向かう場合が1つも無ければ
- * undefined＝その端のイベントは起こらない。
+ * その端へ向かって動く場合のうち、最も遅い量と最も速い量（Pace）。その端へ向かう場合が1つも
+ * 無ければundefined＝その端のイベントは起こらない。
  */
-function paceTowards(
-  totals: readonly TickTotal[],
-  label: RangeEventLabel,
-): { readonly slowest: TickTotal; readonly fastest: TickTotal } | undefined {
+function paceTowards(totals: readonly TickTotal[], label: RangeEventLabel): Pace | undefined {
   const towards = totals.filter(({ amount }) => (label === 'on_min' ? amount < 0 : amount > 0));
   if (towards.length === 0) return undefined;
 
   return {
     slowest: towards.reduce((best, total) => (Math.abs(total.amount) < Math.abs(best.amount) ? total : best)),
     fastest: towards.reduce((best, total) => (Math.abs(total.amount) > Math.abs(best.amount) ? total : best)),
+    movesWithoutConditions: towards.some((total) => total.conditional.length === 0),
   };
 }
 
