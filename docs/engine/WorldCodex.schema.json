@@ -926,8 +926,8 @@
       },
       "minItems": 1
     },
-    "interaction_def": {
-      "description": "宣言的操作（11節・12節）。きっかけ（trigger）と条件と実行結果を1つの定義としてまとめて持つ。実行結果は専用の`active:`ラップを挟まず、trigger/conditions/durationと対等な兄弟キーとして直接持つ（9.7節）。",
+    "interaction_fields": {
+      "description": "宣言的操作（11節・12節）が書けるキー。きっかけ（trigger）と条件と実行結果を1つの定義としてまとめて持つ。実行結果は専用の`active:`ラップを挟まず、trigger/conditions/durationと対等な兄弟キーとして直接持つ（9.7節）。triggerを要求するかは書かれた場所で違うので、ここでは要求しない（interaction_def・object_interactions_map参照）。",
       "type": "object",
       "properties": {
         "trigger": {
@@ -1001,10 +1001,21 @@
           "$ref": "#/$defs/pick_list"
         }
       },
-      "required": [
-        "trigger"
-      ],
       "additionalProperties": false
+    },
+    "interaction_def": {
+      "description": "単独で立つ操作の定義。triggerが無いと何がこれを起こすのか決まらないので必須。",
+      "allOf": [
+        {
+          "$ref": "#/$defs/interaction_fields"
+        },
+        {
+          "type": "object",
+          "required": [
+            "trigger"
+          ]
+        }
+      ]
     },
     "recipe_step_requirement": {
       "description": "工程ごとの素材・道具の要求（GameElementDefinition.md 13.1節）。何が当てはまるかは、object（その型だけ）かtag（そのタグを持つ任意の型）のどちらか一方を書く（4.1節。ここだけはnotを書けない——型の指定がcount/consumeと同じマップに同居するため）。",
@@ -1252,6 +1263,16 @@
       },
       "additionalProperties": false
     },
+    "object_interactions_map": {
+      "description": "object_defが書くinteractions。traitが配った同名の操作へフィールド単位で重ねられる（5節）ので、traitが持つtriggerを省いてconditionsだけを書ける。単独で立つ操作にtriggerが要ることはスキーマでは見ない——trait合成の後でしか決まらないため（WorldCodexSchema.md 2.2節）。",
+      "type": "object",
+      "patternProperties": {
+        "^[a-z][a-z0-9_]*$": {
+          "$ref": "#/$defs/interaction_fields"
+        }
+      },
+      "additionalProperties": false
+    },
     "recipes_map": {
       "type": "object",
       "patternProperties": {
@@ -1381,7 +1402,7 @@
           "$ref": "#/$defs/object_defs_map"
         },
         "interactions": {
-          "$ref": "#/$defs/interactions_map"
+          "$ref": "#/$defs/object_interactions_map"
         },
         "recipes": {
           "$ref": "#/$defs/recipes_map",

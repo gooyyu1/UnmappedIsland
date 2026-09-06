@@ -26,7 +26,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 - **不正な記述の拒否**: identifier の命名規則に反するキーを使う、未定義の比較演算子を使う、
   `set`/`add` に未対応の対象キー（`child`）を使う、指す先のプロパティ名を決めない形で `ancestor` を使う
   （`destroy: ancestor`）、枠の `accept` に `tag` と `object` を同時指定する（またはどちらも省略する）、
-  操作に `trigger` を書き忘れる、廃止済みの `auto_placement` を使う、`passives` を配列でなく単一マッピング
+  trait の操作に `trigger` を書き忘れる、廃止済みの `auto_placement` を使う、`passives` を配列でなく単一マッピング
   で書く、`conditions` の葉に `slot` と `prop` を同時指定する、`conditions` の `value` に未対応の
   `max`/`min` を使う、`in`/`not_in` に配列でない `value` を渡す、といった記述が拒否されること。
   赤＝**スキーマが緩んで何も見なくなった**。
@@ -65,7 +65,10 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
   ない）ため、必須項目としました。`count` の省略時
   デフォルト（`RecipeSystem.md` 5節で未決定）はスキーマ上も任意項目のままにしています。
 - 枠（`slots.*.cells[]` / `slots.*.cell`）の `max` は省略可で、省略すると無制限です。
-- `interactions.*.trigger` は必須で、`menu`・`tick`・`{drag: ...}` の3つです（ローダーも他の値をエラーにします）。
+- `interactions.*.trigger` に書けるのは `menu`・`tick`・`{drag: ...}` の3つです（ローダーも他の値をエラーにします）。
+  必須にしているのは `traits` 側だけで、`object_defs` 側では省略できます——trait が配った同名の操作へ
+  フィールド単位で重ねられる（`GameElementDefinition.md` 5節）ので、`conditions` だけを書いた形が正しく、
+  単独で立つ操作に `trigger` が要ることは trait 合成の後でしか分かりません（2.2節）。
 - シンボル型プロパティかどうかは `value` の形（識別子形の文字列）でしか判別できないため、「シンボル型の `stages` に
   `min` を書いたらエラー」「数値型の `value` にシンボルは書けない」といったプロパティ単位の整合はスキーマでは
   検証できず、ロード時チェックに委ねています（2.2節の文脈依存制約と同じ扱い）。
