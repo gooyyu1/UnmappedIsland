@@ -29,14 +29,20 @@
 **束ね方・一般則の書式・行き先・総量の上限は、すべてその skill が持ちます。** ここへ書き写して
 いないので、開いて読んでから始めてください。
 
+## GitHub を触る道具
+
+**まず `command -v gh` を打ってください。** この係はクラウドで立つので、**入っていないほうが普通
+です。** 無いときは GitHub の MCP で同じことをします。
+
+| やること | `gh` があるとき | 無いとき |
+| --- | --- | --- |
+| 前の周の issue を探す | `gh issue list --state open --limit 100 --json number,title --search '価値観の棚卸し in:title'` | `search_issues`（`query: "repo:gooyyu1/UnmappedIsland is:issue is:open 価値観の棚卸し in:title"`） |
+| issue を立てる | `gh issue create --title <題> --body-file <本文> --label 判断待ち` | `issue_write`（`method: "create"`・`title`・`body`・`labels: ["判断待ち"]`） |
+
+ラベルの綴りに `:` は入らないので、引数が化ける心配はありません。**`--body-file` で渡してください**
+——本文はチェックボックスの一覧で長く、シェルの引数に載せると引用符で壊れます。
+
 ## 先に、前の周の issue が残っていないか見る
-
-```
-gh issue list --state open --limit 100 --json number,title --search '価値観の棚卸し in:title'
-```
-
-`gh` が無ければ GitHub の MCP の `search_issues`（`query: "repo:gooyyu1/UnmappedIsland is:issue
-is:open 価値観の棚卸し in:title"`）。
 
 **題が「価値観の棚卸し」で始まる open の issue が1本でもあれば、何もせずに終わってください。**
 まだユーザーが答えていないか、答えを反映するセッションが走っている最中です。そこへ2本目を出すと、
@@ -71,8 +77,8 @@ is:open 価値観の棚卸し in:title"`）。
 **題は「価値観の棚卸し」で始めてください**（上の重複の検出がこれを見ます）。後ろに日付を添える:
 `価値観の棚卸し（2026-09-13）`。
 
-**ラベルは `判断待ち` の1つだけ。** `kind:` は付けないでください（分類するのは棚卸しの係です。
-`.claude/board-design.md` 2.17.1）。
+**ラベルは `判断待ち` の1つだけ**（上の表の道具で、立てるときに付けます）。`kind:` は付けないで
+ください（分類するのは棚卸しの係です。`.claude/board-design.md` 2.17.1）。
 
 本文は `.claude/parallel-work.md` 3節の**タスク issue の型**に従います（`## 担当`・`## 完了の条件`
 は必ず置く）。**この型で書くのは、チェックが埋まった後そのまま配られるから**です——型を外すと、
