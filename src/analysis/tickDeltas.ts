@@ -52,9 +52,9 @@ export class TickGate {
   readonly watchedSelfProperties: readonly number[];
 
   /**
-   * 増減が効くために、宣言元自身が入っていなければならない段（6.4節）。**その増減がいつから効き
-   * 始めるか**の手掛かりで、膿んだ傷が宿主の菌を押し上げる増減なら `infection` の `festering`
-   * ——そこへ届くまでは効かない。{@link watchedSelfProperties} の裏側。
+   * 増減が効くために、宣言元自身が入っていなければならない段（6.4節）。**その増減がいつから
+   * いつまで効くか**の手掛かりで、膿んだ傷が宿主の菌を押し上げる増減なら `infection` の
+   * `festering`——そこへ届くまでは効かず、上の段へ抜ければまた効かなくなる。
    *
    * 段の宣言の下に置かれた増減（8.2節）と、条件が名指した段（`in_stage`・`in_stage_or_above`、
    * 14.1節）のどちらもここへ来る。
