@@ -641,9 +641,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
       const fill = def.enumeratePropertyDefs().find((p) => p.globalId === fillId);
 
       expect(fill?.range, `'${name}'が抱えられる量`).toBeDefined();
-      expect(fill?.stages.find((stage) => stage.name === 'full')?.lowerBound, `'${name}'の満ちきった段`).toBe(
-        fill?.range?.max,
-      );
+      expect(fill?.lowerBoundOfStage('full'), `'${name}'の満ちきった段`).toBe(fill?.range?.max);
     }
   });
 
