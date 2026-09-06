@@ -1,4 +1,5 @@
 import {
+  chmodSync,
   copyFileSync,
   existsSync,
   mkdirSync,
@@ -8,9 +9,9 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { runScript } from '../support/runScript';
+import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
@@ -22,6 +23,9 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  *
  * デーモンを一時ディレクトリへ写し、隣の `board-round.mjs` と `board-publish.mjs` を**走ったことだけを
  * 記録する身代わり**へ差し替える（`$HERE` は `BASH_SOURCE` から決まるので、写した先の隣が呼ばれる）。
+ *
+ * `git` もPATHの先頭で身代わりへ差し替える。**手元のリポジトリを触らせないため**——`start` は本体の
+ * チェックアウトを `origin/main` へ寄せてから立てる。
  */
 
 // 実プロセス（bash + node）を起こすため、`npm test` 全体を並行実行したときのCPU競合だけで
@@ -39,6 +43,16 @@ interface World {
   readonly heartbeat?: string;
   /** 周ごとに、`daemon.sh` を書き換える中身（`null` を置いた周は書き換えない）。 */
   readonly swap?: readonly (string | null)[];
+  /** 本体に未コミットの変更（追跡済み）があるか。 */
+  readonly mainDirty?: boolean;
+  /** `git` が答えないか（＝リポジトリの外・`git` が無い）。 */
+  readonly gitFails?: boolean;
+  /** 立てた側が本体の中に居るか。既定は本体そのもの。 */
+  readonly fromWorktree?: boolean;
+  /** 寄せたことで `package-lock.json` が動いたか。 */
+  readonly lockChanged?: boolean;
+  /** 本体を寄せる `checkout` が `daemon.sh` に置く中身。**走っている `start` の足元が入れ替わる。** */
+  readonly checkoutSwap?: string;
   readonly env?: Record<string, string>;
   /** 最初に渡す引数。既定は `run`（前に出たまま回す）。 */
   readonly args?: readonly string[];
@@ -59,6 +73,12 @@ interface Result {
   readonly publishes: number;
   /** 走る実体として置かれた複製の中身（置かれていなければ `undefined`）。 */
   readonly copy: string | undefined;
+  /** `git` に渡された引数。 */
+  readonly git: readonly string[];
+  /** 本体で `npm install` が走ったか。 */
+  readonly installed: boolean;
+  /** `start` が立てた側の出力（`$DAEMON_LOG`）。 */
+  readonly daemonLog: string;
 }
 
 function daemon(world: World = {}): Result {
@@ -95,6 +115,40 @@ function daemon(world: World = {}): Result {
       'utf-8',
     );
 
+    // 本体の身代わり。`.git` があることで、`--git-common-dir` から辿った先が実在する。
+    const dir = pathForBash(work);
+    mkdirSync(join(work, 'main', '.git'), { recursive: true });
+    if (world.checkoutSwap !== undefined) {
+      writeFileSync(join(work, 'swap.sh'), world.checkoutSwap, 'utf-8');
+    }
+    // `HEAD:package-lock.json` の中身は、`checkout` を境に変わる（寄せた先で依存が動いた場合）。
+    const git = join(work, 'git');
+    writeFileSync(
+      git,
+      `${STUB_SHEBANG}
+echo "$*" >> '${dir}/git-calls'
+case "$*" in
+  *--git-common-dir*) printf '%s' '${dir}/main/.git' ;;
+  *--show-toplevel*) printf '%s' '${dir}/${world.fromWorktree === true ? 'worktree' : 'main'}' ;;
+  *'status --porcelain'*) printf '%s' '${world.mainDirty === true ? ' M docs/x.md' : ''}' ;;
+  *'HEAD:package-lock.json'*)
+    if [ -e '${dir}/checked-out' ]; then printf '%s' '${world.lockChanged === true ? 'bbb222' : 'aaa111'}'
+    else printf '%s' 'aaa111'; fi ;;
+  *checkout*)
+    touch '${dir}/checked-out'
+    ${world.checkoutSwap === undefined ? ':' : `cp '${dir}/swap.sh' '${pathForBash(here)}/daemon.sh'`} ;;
+  *'rev-parse --short HEAD'*) printf '%s' 'deadbee' ;;
+esac
+exit ${world.gitFails === true ? 1 : 0}
+`,
+      'utf-8',
+    );
+    chmodSync(git, 0o755);
+
+    const npm = join(work, 'npm');
+    writeFileSync(npm, `${STUB_SHEBANG}\necho "$*" >> '${dir}/npm-calls'\n`, 'utf-8');
+    chmodSync(npm, 0o755);
+
     const state = join(work, 'state');
     mkdirSync(state);
     // 心拍を渡す＝**誰かが握ったまま**の状態を作る。錠は錠で要る（心拍は錠の外にあるので、
@@ -104,6 +158,7 @@ function daemon(world: World = {}): Result {
       writeFileSync(join(state, 'heartbeat'), world.heartbeat, 'utf-8');
     }
 
+    const daemonLog = join(work, 'daemon.log');
     let code = 0;
     const logs: string[] = [];
     for (const args of [world.args ?? ['run'], ...(world.then ?? [])]) {
@@ -117,9 +172,10 @@ function daemon(world: World = {}): Result {
             timeout: 15000,
             env: {
               ...process.env,
+              PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
               BOARD_STATE: state,
               // **既定は `~/daemon.log`。** 指さないと、`start` の試験が本物のログへ書き足す。
-              DAEMON_LOG: join(work, 'daemon.log'),
+              DAEMON_LOG: daemonLog,
               ONCE: '1',
               ...world.env,
             },
@@ -133,6 +189,7 @@ function daemon(world: World = {}): Result {
     }
 
     const copy = join(state, 'daemon-running.sh');
+    const calls = join(work, 'git-calls');
 
     return {
       code,
@@ -141,6 +198,9 @@ function daemon(world: World = {}): Result {
       rounds: readFileSync(rounds, 'utf-8').split('\n').filter(Boolean).length,
       publishes: readFileSync(publishes, 'utf-8').split('\n').filter(Boolean).length,
       copy: existsSync(copy) ? readFileSync(copy, 'utf-8') : undefined,
+      git: existsSync(calls) ? readFileSync(calls, 'utf-8').split('\n').filter(Boolean) : [],
+      installed: existsSync(join(work, 'npm-calls')),
+      daemonLog: existsSync(daemonLog) ? readFileSync(daemonLog, 'utf-8') : '',
     };
   } finally {
     rmSync(work, { recursive: true, force: true });
@@ -260,6 +320,94 @@ describe('daemon.sh', () => {
     expect(result.logs[2]).toContain('止めた');
     expect(result.logs[3]).toContain('止まっている');
     expect(result.code).toBe(1);
+  });
+
+  // **立て直しは、古い版で回り出す機会でもある。** 落ちた跡から起こすのは監視係で、打つのは `start`
+  // だけなので、ここが寄せないと落ちた時点の版が次のマージまで回り続ける。
+  it('start は、本体を `origin/main` へ寄せてから立てる', () => {
+    const result = daemon({
+      args: ['start'],
+      then: [['stop']],
+      env: { ONCE: '', INTERVAL: '120', START_WAIT: '30', STOP_WAIT: '10' },
+    });
+
+    expect(result.git.some((call) => call.includes('fetch --quiet origin main'))).toBe(true);
+    expect(result.git.some((call) => call.includes('checkout --quiet --detach origin/main'))).toBe(true);
+    // **`start` が出すのは1行。** 監視係が丸ごと自分の `DAEMON` の1行へ載せる（`watch-routine.sh`）
+    // ので、行を増やすと読む側の約束が崩れる。
+    expect(result.logs[0].split('\n').filter(Boolean)).toHaveLength(1);
+    expect(result.logs[0]).toContain('立てた（本体は deadbee。');
+    // 跨いだ差に依存の更新が無ければ、共有先は揺らさない。
+    expect(result.installed).toBe(false);
+  });
+
+  // 作業ツリーは本体の `node_modules` を遡って共有するので、**進めた側が入れ直す**——さもないと
+  // 共有しているのに版が食い違い、古い版が解決されて一部だけ壊れる。
+  it('寄せたことで依存が動いていれば、入れ直してから立てる', () => {
+    const result = daemon({
+      lockChanged: true,
+      args: ['start'],
+      then: [['stop']],
+      env: { ONCE: '', INTERVAL: '120', START_WAIT: '30', STOP_WAIT: '10' },
+    });
+
+    expect(result.installed).toBe(true);
+    expect(result.logs[0]).toContain('依存も入れ直した');
+  });
+
+  // 本体は作業ツリーの共有先なので、手が入っているところへ `checkout` を打たない
+  // （`merge-and-close.sh` の `DIRTY` と同じ判定）。
+  it('本体に未コミットの変更があれば、触らずに立てる', () => {
+    const result = daemon({
+      mainDirty: true,
+      args: ['start'],
+      then: [['stop']],
+      env: { ONCE: '', INTERVAL: '120', START_WAIT: '30', STOP_WAIT: '10' },
+    });
+
+    expect(result.git.some((call) => call.includes('checkout'))).toBe(false);
+    expect(result.logs[0]).toContain('立てた（本体に未コミットの変更がある。');
+  });
+
+  // **寄せる先と立てる先が同じでなければ、何も進めない。** 立てるのは複製元の1本なので、作業ツリー
+  // から打つと、進めた本体は走らず、走る1本は古いまま残る。
+  it('本体の外から立てたときは、本体を触らない', () => {
+    const result = daemon({
+      fromWorktree: true,
+      args: ['start'],
+      then: [['stop']],
+      env: { ONCE: '', INTERVAL: '120', START_WAIT: '30', STOP_WAIT: '10' },
+    });
+
+    expect(result.git.some((call) => call.includes('fetch'))).toBe(false);
+    expect(result.git.some((call) => call.includes('checkout'))).toBe(false);
+    expect(result.logs[0]).toContain('立てた（本体の外から立てている。');
+  });
+
+  // **寄せられなくても立てる。** 古い版で回ることより、盤面が1ミリも動かないことのほうが重い。
+  it('本体が見つからなくても立てる', () => {
+    const result = daemon({
+      gitFails: true,
+      args: ['start'],
+      then: [['stop']],
+      env: { ONCE: '', INTERVAL: '120', START_WAIT: '30', STOP_WAIT: '10' },
+    });
+
+    expect(result.logs[0]).toContain('立てた（本体が見つからない。');
+  });
+
+  // **寄せると、走っている `start` 自身の中身が入れ替わる**（bash はスクリプトを読み進めながら
+  // 実行する）。`case` の枝の中で終わるかぎり、抜けた後に読む行が無いので、この窓は開かない。
+  it('寄せた先の版で立つ', () => {
+    const result = daemon({
+      checkoutSwap: `${STUB_SHEBANG}\necho "寄せた先が立った"\n`,
+      args: ['start'],
+      // 寄せた先は心拍を書かないので、`start` は待ちきって非0で終わる。**短く待たせる。**
+      env: { ONCE: '', START_WAIT: '2' },
+    });
+
+    expect(result.log).toContain('本体は deadbee');
+    expect(result.daemonLog).toContain('寄せた先が立った');
   });
 
   // **回っている bash は、最初に読んだ版のまま。** 隣の道具は毎周読み直されるので、`SYNCED` で版が

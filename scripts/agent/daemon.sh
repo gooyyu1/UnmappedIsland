@@ -68,6 +68,29 @@
 # 入れ替えた先が壊れていればそこで終わる。**古い版で黙って回り続けるよりは、止まったほうが後から
 # 追える**——心拍が腐れば `status` が「止まっている」と答える。
 #
+# ## 立てるときは、本体を `origin/main` へ寄せてから
+#
+# **立て直しは、古い版で回り出す機会でもある。** 落ちた跡から起こすのは監視係（2.19）で、打つのは
+# `start` だけ——寄せる者がここに居ないと、落ちた時点の版が次のマージまで回り続ける。**寄せるのは
+# `start` が持ち、監視係には持たせない**（出どころ: ユーザーの指示・2026-09-06）。同じ更新をする
+# 仕組みを2つ置くと、どちらが進めたのかが読めなくなる。
+#
+# 寄せる先は `merge-and-close.sh` が `MERGE` のたびに進めるのと同じ本体で、未コミットの変更が
+# あるときは触らない（あちらの `DIRTY` と同じ判定）。**進めたら依存も入れ直す**——作業ツリーが共有して
+# いるので、本体だけ進めると古い版が解決されて一部だけ壊れる（あちらの「本体を追随させるのは」）。
+# **寄せられなくても立てる**——古い版で回ることより、盤面が1ミリも動かないことのほうが重い。
+#
+# **寄せる先と立てる先が同じでなければ、何も進めない。** 立てるのは複製元（`$ORIGIN`）の1本なので、
+# 作業ツリーから打つと、進めた本体は走らず、走る1本は古いまま残る。
+#
+# **`start` が出すのは1行。** 監視係は `start` の出力を丸ごと自分の `DAEMON` の1行へ載せる
+# （[`watch-routine.sh`](watch-routine.sh)）ので、行を増やすと読む側の約束が崩れる。寄せた結果は
+# 「立てた」の行へ畳み、道具の言い分は `$DAEMON_LOG` へ流す。
+#
+# **`start` の枝の `exit` を `case` の外へ出さない。** 寄せると走っている自分の中身が入れ替わるので、
+# `case` を抜けてから読む行が残っていると、そこで別の中身を読む（`case` は `esac` まで読んでから
+# 実行に入るので、枝の中で終わるかぎりこの窓は開かない）。
+#
 # ## 引けなかったら、その周は何もしない
 #
 # 盤面が欠けた周は手を決めない（`board-round.mjs`）。続けて `FAILURE_LIMIT` 回失敗したら、待つ間隔を
@@ -206,23 +229,74 @@ stop_daemon() {
   echo "止めた（$pid）"
 }
 
+# 本体のチェックアウトを `origin/main` へ寄せる（上の「立てるときは」）。**返すのは結果を表す短い
+# 1語句だけ**で、呼び手が自分の1行へ畳んで載せる。**寄せられなくても立てられるように、失敗はすべて
+# 0で返す。** 道具の言い分（`git`・`npm` が出すもの）は `$DAEMON_LOG` へ流す。
+sync_origin() {
+  local common='' main_dir='' before='' head=''
+  # **引けなければ空のまま**（`watch-routine.sh` と同じ）。既定値を置くと、当てずっぽうの場所を
+  # 本体として進めにいく。`--path-format=absolute` を明示するのは、既定が相対で返りうるため。
+  common=$(git -C "$ORIGIN" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || common=''
+  [ -z "$common" ] || main_dir=$(dirname "$common")
+  if [ -z "$main_dir" ]; then
+    echo "本体が見つからない"
+    return 0
+  fi
+  # **寄せる先と立てる先が同じでなければ、何も進めない。** 立てるのは `$SOURCE`（＝`$ORIGIN` の側）
+  # なので、作業ツリーから打つと、進めた本体は走らず、走る1本は古いまま残る。
+  if [ "$(git -C "$ORIGIN" rev-parse --path-format=absolute --show-toplevel 2>/dev/null)" != "$main_dir" ]; then
+    echo "本体の外から立てている"
+    return 0
+  fi
+  # 未追跡は見ない（`merge-and-close.sh` と同じ）。本体を進める妨げになるなら、`checkout` が失敗して分かる。
+  if [ -n "$(git -C "$main_dir" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+    echo "本体に未コミットの変更がある"
+    return 0
+  fi
+  before=$(git -C "$main_dir" rev-parse HEAD:package-lock.json 2>/dev/null) || before=''
+  if ! git -C "$main_dir" fetch --quiet origin main >>"$DAEMON_LOG" 2>&1 ||
+    ! git -C "$main_dir" checkout --quiet --detach origin/main >>"$DAEMON_LOG" 2>&1; then
+    echo "本体を寄せられなかった"
+    return 0
+  fi
+  head=$(git -C "$main_dir" rev-parse --short HEAD 2>/dev/null)
+  # **進めた側が依存も入れ直す**（`merge-and-close.sh`「本体を追随させるのは」）。作業ツリーは本体の
+  # `node_modules` を遡って共有するので、古いままだと**古い版が解決されて一部だけ壊れる**。ここが
+  # 跨ぐのはマージ以外で `main` が動いたぶん（画面からのマージ・直接 push・`DIRTY` で寄せられなかった
+  # 周）なので、`merge-and-close.sh` が打った後とは限らない。**入れ直しの最中は共有先が揺れる**ので、
+  # 自分が跨いだ差に依存の更新が混じっていたときだけ打つ。**元から入っていないぶんは見ない**
+  # ——寄せたことで嘘になった木を直すのがここの役目で、一度も入れていない本体はここの落ち度ではない。
+  if [ "$before" = "$(git -C "$main_dir" rev-parse HEAD:package-lock.json 2>/dev/null)" ]; then
+    echo "本体は $head"
+    return 0
+  fi
+  if (cd "$main_dir" && npm install --no-fund --no-audit) >>"$DAEMON_LOG" 2>&1; then
+    echo "本体は $head・依存も入れ直した"
+  else
+    echo "本体は $head・依存を入れ直せなかった"
+  fi
+}
+
 # 背景で立てて、心拍が出るまで待つ。**立ったことを確かめてから返す**ので、呼び手は待たない。
 start_daemon() {
   if running; then
     echo "既に走っている（最終 $(cat "$HEARTBEAT")）"
     return 0
   fi
-  local waited=0
+  # **寄せてから読ませる。** `nohup` が `$SOURCE` を開くのは寄せ終わった後なので、寄せられたなら
+  # 立つのは新しい版。
+  local synced waited=0
+  synced=$(sync_origin)
   nohup bash "$SOURCE" run >>"$DAEMON_LOG" 2>&1 &
   while [ "$waited" -lt "$START_WAIT" ]; do
     if running; then
-      echo "立てた（ログは $DAEMON_LOG）"
+      echo "立てた（$synced。ログは $DAEMON_LOG）"
       return 0
     fi
     sleep 1
     waited=$((waited + 1))
   done
-  echo "${START_WAIT}秒待っても心拍が出なかった（$DAEMON_LOG を見る）" >&2
+  echo "${START_WAIT}秒待っても心拍が出なかった（$synced。$DAEMON_LOG を見る）" >&2
   return 1
 }
 
