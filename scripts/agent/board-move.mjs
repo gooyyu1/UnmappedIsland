@@ -12,6 +12,7 @@
 //   RESUME  <セッションID> reject <PR番号>    <指紋>  … 通らなかった仮決めを取り下げさせる
 //   RESUME  <セッションID> look   <PR番号>    <指紋>  … 画面を撮って本文へ貼らせる
 //   RESUME  <セッションID> stall  <issue番号> <指紋>
+//   RESUME  <セッションID> review-stall <PR番号> <指紋>  … 判定を書かずに止まったレビューに続きを書かせる
 //   RETURN  <issue番号> <セッションID> <指紋>  … 起こしても動かないワーカーの仕事を人へ返す
 //   REVIEW  <PR番号> <指紋>
 //   TASK    <issue番号> [<投入先の引数>]     … 引数が無ければクラウド（2.16）
@@ -485,8 +486,8 @@ export function moves(input) {
     if (busySession(session)) continue;
 
     // **走り終わっていれば畳む**（2.10.3・2.17）。レビューも周期の係も使い回さない設計
-    // （`dispatch-review.sh`・`dispatch-chore.sh`）なので、手が止まった時点でもう誰も起こさない。
-    // **読んでいたPRが開いているかは見ない**——`直し待ち` のまま戻ってこないPRのレビューも、
+    // （`dispatch-review.sh`・`dispatch-chore.sh`）なので、書き終えた時点でもう誰も起こさない。
+    // **読んでいたPRがこの後どう流れるかは見ない**——`直し待ち` のまま戻ってこないPRのレビューも、
     // 畳めない理由は無い。
     //
     // **ただし「走り終わった」と「道具の承認を待っている」は同じ形に見える**（1.6）。ワーカーと
@@ -495,14 +496,37 @@ export function moves(input) {
     // 要約は `Waiting on permission: Bash`。issue #1569）。
     //
     // **窓が要るのは、終わったかを他に訊けないときだけ。** レビューには訊ける相手が居る——判定を
-    // 書いたかはPRの結論のラベルに出る（2.6）ので、付いていれば待たずに畳む。
+    // 書いたかはPRのコメントに出る（上の `judged`）ので、在れば待たずに畳む。
+    //
+    // **畳む前に1回だけ起こす。** 畳めば次の周に新しい1本が立つが（2.12.4）、読んだところは畳んだ
+    // 時点で消えるので、その1本は差分を読み直すところから始まる。続きを書かせるほうが安い。
     const spent = session.tags.find((tag) => tag.startsWith('review-') || tag.startsWith('chore-'));
     if (spent !== undefined) {
       // **自分のPRが開いているうちは畳まない**（2.17）。周期の係にもPRを出すものが居る
       // （`CYCLES` の `analysis`）ので、畳むと**指摘とコンフリクトを直す相手が消える**
       // ——差し戻す先はコミットのトレーラで引く1本だけ（2.11）。
       if (Object.values(prSessions).includes(session.id)) continue;
-      if (!judged(spent) && idleMinutes(session) < STALL_MINUTES) continue;
+      const idle = idleMinutes(session);
+      const wrote = judged(spent);
+      if (!wrote && idle < STALL_MINUTES) continue;
+      // **起こせるのはレビューだけ**——周期の係には渡す文面が無い（`resume-prompt.md`）。
+      if (!wrote && spent.startsWith('review-')) {
+        const number = spent.slice('review-'.length);
+        const head = input.prs.find((item) => item.number === Number(number))?.headRefOid;
+        // **読んだ差分が動いていたら起こさない。** 書かせても前の差分への判定で、それが今の頭へ
+        // `通してよい` として付く（`board-labels.yml` は判定の1行目しか読まない）ので、押された後の
+        // コミットを誰も読まないままマージされうる。畳めば次の周に新しい1本が立つ（2.12.4）。
+        if (taken[`review:${number}`] === head) {
+          const woke = `review-stall:${number}`;
+          if (taken[`resume:${session.id}`] !== woke) {
+            stalls.push(`RESUME ${session.id} review-stall ${number} ${woke}`);
+            continue;
+          }
+          // 起こした後は、**同じ長さの窓をもう1つ空けてから畳む**（2.15.3 と同じ理由）。次の周
+          // （既定30秒）で畳むと、合図が届く前に必ず消すことになる。
+          if (idle < STALL_MINUTES * 2) continue;
+        }
+      }
       const mark = `done:${spent}`;
       if (taken[`archive:${session.id}`] !== mark) archives.push(`ARCHIVE ${session.id} ${mark}`);
       continue;

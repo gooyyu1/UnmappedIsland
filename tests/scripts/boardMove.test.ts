@@ -263,10 +263,14 @@ describe('board-move.mjs', () => {
     ]);
   });
 
-  // レビューは使い回さないので、走っていないことがそのまま「もう誰も起こさない」。**PRが開いて
-  // いるかは見ない**——見ると、閉じないPR（`収束せず`・`直し待ち` のまま）のぶんが永久に残る。
-  it('PRが開いていても、走り終わったレビューは畳む', () => {
-    const board = { prs: [pr(1549)], sessions: [idle('session_r', 'review-1549')] };
+  // レビューは使い回さないので、判定を書いた時点で「もう誰も起こさない」。**そのPRがこの後どう
+  // 流れるかは見ない**——見ると、閉じないPR（`収束せず`・`直し待ち` のまま）のぶんが永久に残る。
+  it('PRが開いていても、判定を書き終えたレビューは畳む', () => {
+    const board = {
+      prs: [pr(1549, verdict('aaa1111'))],
+      sessions: [idle('session_r', 'review-1549')],
+      taken: { 'review:1549': 'aaa1111' },
+    };
 
     expect(moves(board)).toContain('ARCHIVE session_r done:review-1549');
   });
@@ -319,6 +323,56 @@ describe('board-move.mjs', () => {
     const board = { prs: [pr(10, verdict('aaa1111'))], taken: { 'review:10': 'aaa1111' } };
     expect(moves(board)).toEqual([
       'NOTE PR #10 のレビューは判定を書き終えていて、結論のラベルが付くのを待っている',
+    ]);
+  });
+
+  /**
+   * **畳む前に1回だけ起こす**（2.10.3）。畳めば次の周に新しい1本が立つ（2.12.4）が、読んだ
+   * ところは畳んだ時点で消えるので、その1本は差分を読み直すところから始まる。
+   */
+  describe('判定を書かずに止まったレビューは、畳む前に起こす', () => {
+    const stalling = (over: Record<string, string>) => ({
+      prs: [pr(10)],
+      sessions: [idle('session_r', 'review-10')],
+      taken: { 'review:10': 'aaa1111', ...over },
+    });
+    const READING = 'NOTE PR #10 はレビューが読んでいる最中で、結論のラベルはまだ無い';
+
+    it('空いたままが続いたレビューを、1回だけ起こす', () => {
+      expect(moves(stalling({}))).toEqual(['RESUME session_r review-stall 10 review-stall:10', READING]);
+    });
+
+    // **起こした合図が効くには時間が要る**（2.15.3 と同じ）。次の周（既定30秒）で畳むと、届く前に
+    // 必ず消すことになり、起こした意味が無くなる。
+    it('起こした直後は、まだ畳まない', () => {
+      // 起こしたのは空いてから15分の時点。まだ20分しか経っていない。
+      const board = stalling({
+        'idle:session_r': '2026-09-05T01:40:00Z',
+        'resume:session_r': 'review-stall:10',
+      });
+      expect(moves(board)).toEqual([READING]);
+    });
+
+    // 起こしても判定が出てこなければ、そこで畳む。**返す先は無い**ので（2.13.2）、次の周に
+    // 新しい1本が立つ（2.12.4）。
+    it('起こしても判定が出てこなければ、畳む', () => {
+      const board = stalling({ 'resume:session_r': 'review-stall:10' });
+      expect(moves(board)).toEqual(['ARCHIVE session_r done:review-10', READING]);
+    });
+
+    // **読んだ差分が動いていたら起こさない。** 書けるのは前の差分への判定で、`board-labels.yml` は
+    // 判定の1行目しか読まないので、それが今の頭へ `通してよい` として付く——押された後のコミットを
+    // 誰も読まないままマージされうる。畳めば、次の周に今の差分の1本が立つ。
+    it('読んだ差分がもう頭でなければ、起こさずに畳む', () => {
+      const board = stalling({ 'review:10': '9990000' });
+      expect(moves(board)).toEqual(['ARCHIVE session_r done:review-10', 'REVIEW 10 aaa1111']);
+    });
+  });
+
+  // 周期の係には渡す文面が無い（`resume-prompt.md`）ので、起こさずに畳む。
+  it('判定の書きようが無い周期の係は、起こさずに畳む', () => {
+    expect(moves({ sessions: [idle('session_c', 'chore-triage')] })).toEqual([
+      'ARCHIVE session_c done:chore-triage',
     ]);
   });
 
@@ -463,7 +517,11 @@ describe('board-move.mjs', () => {
   // 判定を書き終えたレビューが占有し続けると、次の差分のレビューが永久に止まる（1.2）。
   // 畳む手が先に出るので、次の1本は次の周（打つのは1周に1手）。
   it('前のレビューが書き終えていれば、畳んでから次のレビューを出す', () => {
-    const board = { prs: [pr(10)], sessions: [idle('session_r', 'review-10')] };
+    const board = {
+      prs: [pr(10, verdict('9990000'))],
+      sessions: [idle('session_r', 'review-10')],
+      taken: { 'review:10': '9990000' },
+    };
     expect(moves(board)).toEqual(['ARCHIVE session_r done:review-10', 'REVIEW 10 aaa1111']);
   });
 
@@ -879,12 +937,13 @@ describe('board-move.mjs', () => {
         issues: [{ number: 9, ...label('kind:task'), blockedBy: { nodes: [] } }],
         sessions: [idle('a', 'task-9')],
       },
+      { prs: [pr(10)], sessions: [idle('a', 'review-10')], taken: { 'review:10': 'aaa1111' } },
     ];
     const kinds = boards
       .flatMap(moves)
       .filter((move) => move.startsWith('RESUME '))
       .map((move) => move.split(' ')[2]);
-    expect(kinds).toEqual(['mend', 'reject', 'look', 'stall']);
+    expect(kinds).toEqual(['mend', 'reject', 'look', 'stall', 'review-stall']);
 
     const template = readFileSync(resolve(__dirname, '../../.claude/resume-prompt.md'), 'utf-8');
     for (const kind of kinds) expect(template).toContain(`\n## ${kind} `);
