@@ -1,4 +1,12 @@
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
@@ -45,6 +53,8 @@ interface Result {
   readonly log: string;
   /** 回った周の数。 */
   readonly rounds: number;
+  /** 走る実体として置かれた複製の中身（置かれていなければ `undefined`）。 */
+  readonly copy: string | undefined;
 }
 
 function daemon(world: World = {}): Result {
@@ -107,11 +117,14 @@ function daemon(world: World = {}): Result {
       }
     }
 
+    const copy = join(state, 'daemon-running.sh');
+
     return {
       code,
       logs,
       log: logs.join(''),
       rounds: readFileSync(rounds, 'utf-8').split('\n').filter(Boolean).length,
+      copy: existsSync(copy) ? readFileSync(copy, 'utf-8') : undefined,
     };
   } finally {
     rmSync(work, { recursive: true, force: true });
@@ -126,6 +139,14 @@ describe('daemon.sh', () => {
 
     expect(result.code).toBe(0);
     expect(result.rounds).toBe(1);
+  });
+
+  // **走行中のファイルが書き換わると、bash が次に読む位置は別の中身を指す。** リポジトリの1本を
+  // 直に読ませず、複製から走る。
+  it('走るのは複製で、リポジトリの1本ではない', () => {
+    const result = daemon();
+
+    expect(result.copy).toBe(readFileSync(join(AGENT, 'daemon.sh'), 'utf-8'));
   });
 
   // 起こす側に「もう走っているか」を確かめさせない（`pgrep` はブリッジの bash に無い）。
@@ -245,8 +266,8 @@ describe('daemon.sh', () => {
     expect(result.code).toBe(0);
     expect(result.rounds).toBe(3);
     expect(result.log.match(/新しい版で回り直す/g)).toHaveLength(2);
-    // **錠は外さずに渡す。** 外して取り直すと、その隙に `start` が二本目を立てられる。
-    expect(result.log).toContain('新しい版で立った（錠は引き継ぐ）');
+    // **錠は外さずに渡す。** 引き継げなければ、入れ替わった先は二本目として引き返してしまう
+    // （＝3周目が回らない）。
     expect(result.log).not.toContain('既に走っている');
     expect(result.log).toContain('入れ替わった先が立った');
   });
