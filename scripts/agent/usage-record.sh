@@ -29,7 +29,10 @@
 
 set -euo pipefail
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# `%/*` は区切りが無いと文字列をそのまま返す。
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+HERE="$(cd "$HERE" && pwd)"
 STATE_DIR="${BOARD_STATE:-$HOME/.claude/board-state}"
 
 # **叩ける間隔を決めるのは [`usage.sh`](usage.sh)。** 2（今は読む番ではない）は失敗ではないので、

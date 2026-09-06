@@ -84,7 +84,10 @@ PR="${1:?PRの番号を渡す（例: 1036）}"
 USER_OK=0
 [ "${2:-}" != "--user-ok" ] || USER_OK=1
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# `%/*` は区切りが無いと文字列をそのまま返す。
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+HERE="$(cd "$HERE" && pwd)"
 # 試験は差し替える（`gh` は PATH で差し替わるが、これはパスで呼ぶため）。
 NEEDS_USER_REVIEW="${NEEDS_USER_REVIEW:-$HERE/needs-user-review.sh}"
 

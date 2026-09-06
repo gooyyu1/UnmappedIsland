@@ -46,7 +46,10 @@ WHERE="${2:-}"
 
 REPO_URL="https://github.com/$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# `%/*` は区切りが無いと文字列をそのまま返す。
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+HERE="$(cd "$HERE" && pwd)"
 # shellcheck source=scripts/agent/ccr-env.sh
 source "$HERE/ccr-env.sh"
 CCR_META="$HERE/../../.claude/ccr-meta.sh"
