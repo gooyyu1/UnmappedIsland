@@ -546,8 +546,8 @@ function stageUpperBoundOf(def: ObjectDef, required: SelfStageRequirement): numb
 function ticksUntilGateRises(def: ObjectDef, gate: TickGate): number {
   let longest = 0;
   for (const { propertyGlobalId, lowerBound } of gate.requiredSelfStages) {
-    // 届くまでを**最も長く**見る側（slowest）に合わせて、ロールも段から遠いほうを採る。止まるまでを
-    // 最も短く見るのと同じで、押し手を控えめに数える側へ揃える。
+    // 届くまでを**最も長く**見る側（slowest）に合わせて、ロールも段から遠いほうを採る。押し手が
+    // 押せる間を最も短く見る側へ揃える。
     const value = staticValueOf(def, propertyGlobalId, 'lowest');
     const pace = paceTowards(tickAmountsOf(def, propertyGlobalId).possible, 'on_max');
     if (lowerBound === undefined || value === undefined || pace === undefined) continue;
