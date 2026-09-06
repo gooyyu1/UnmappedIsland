@@ -1,4 +1,4 @@
-import type { PropertyDef, PropertyRange, RangeEventLabel } from '../domain/PropertyDef';
+import type { PropertyDef, RangeEventLabel } from '../domain/PropertyDef';
 import type { StepOutcome } from './CraftingStep';
 import { destroysRoot, readEffect } from './effectOutcomes';
 import type { EndBoundValueResolver } from './staticValue';
@@ -10,8 +10,8 @@ import type { EndBoundValueResolver } from './staticValue';
  * TrapSystem.md 2節）。destroysSelfなら、そこで自分が消える＝**寿命**（罠の朽ち、
  * DurabilitySystem.md 2節）。
  *
- * **戻り量は、発火した端からrangeの内側へ動いた距離**——`on_min`なら上へ、`on_max`なら下へ動いた
- * ぶんを、どちらの端でも正で測る。**両端を同じ向きで測るのは、周期（rangeCycles）が端によって
+ * **戻り量は、発火した端からrangeの内側へ動いた距離**（PropertyRange.inwardFrom）で、どちらの端でも
+ * 正で測る。**両端を同じ向きで測るのは、周期（rangeCycles）が端によって
  * 別の意味にならないため**で、片端だけを特別扱いすると「戻る」が上端では負を意味することになる。
  * 端に置いたままにする宣言——既定のクランプと、それを自分で書き写した`on_max`——は0になる。
  */
@@ -35,11 +35,11 @@ export function rangeEventReadouts(
   const readouts: RangeEventReadout[] = [];
   for (const [label, effect] of propertyDef.rangeEvents()) {
     const reading = readEffect(effect, resolve);
-    const end = endValueOf(range, label);
+    const end = range.endValue(label);
     let expectedReturnToSelf = 0;
     for (const outcome of reading.outcomes)
       expectedReturnToSelf +=
-        outcome.probability * inwardFromEnd(range, label, selfValueAfter(propertyDef, outcome, end));
+        outcome.probability * range.inwardFrom(label, selfValueAfter(propertyDef, outcome, end));
 
     readouts.push({
       label,
@@ -49,22 +49,6 @@ export function rangeEventReadouts(
     });
   }
   return readouts;
-}
-
-/** そのイベントが発火する端の値。**`on_min`／`on_max`がrangeのどちらの端かを持つのはここだけ。** */
-function endValueOf(range: PropertyRange, label: RangeEventLabel): number {
-  return label === 'on_min' ? range.min : range.max;
-}
-
-/**
- * その値が、labelの端からrangeの**内側**へどれだけ離れているか。端そのものなら0、端を越えていれば負。
- *
- * **端から戻った量も、端へ届くまでの距離も、この同じ1つの量。** 別々に測ると、どちらへ向かうのが
- * 内側かが2箇所に分かれ、片方だけ向きが裏返っても気付けない。
- */
-function inwardFromEnd(range: PropertyRange, label: RangeEventLabel, value: number): number {
-  const end = endValueOf(range, label);
-  return label === 'on_min' ? value - end : end - value;
 }
 
 /**
@@ -124,6 +108,6 @@ export function ticksToRangeEnd(
   if (range === undefined || perTick === 0 || value === undefined) return undefined;
 
   // 向かう先は、動く向きが決める——下がるなら下端、上がるなら上端。
-  const distance = inwardFromEnd(range, perTick < 0 ? 'on_min' : 'on_max', value);
+  const distance = range.inwardFrom(perTick < 0 ? 'on_min' : 'on_max', value);
   return distance <= 0 ? undefined : distance / Math.abs(perTick);
 }

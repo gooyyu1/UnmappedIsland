@@ -91,6 +91,38 @@ export class PropertyRange {
   clamp(value: number): number {
     return value < this.min ? this.min : value > this.max ? this.max : value;
   }
+
+  /** そのrange系イベント（6.3節）が見ている端の値。 */
+  endValue(label: RangeEventLabel): number {
+    return this.endOf(label).value;
+  }
+
+  /**
+   * その値が、labelの端からこの範囲の**内側**へどれだけ離れているか。端そのものなら0、端を越えて
+   * いれば負。
+   *
+   * **端から戻った量も、端へ届くまでの距離も、この同じ1つの量。** 別々に測ると、どちらへ向かうのが
+   * 内側かが2箇所に分かれ、片方だけ向きが裏返っても気付けない。
+   */
+  inwardFrom(label: RangeEventLabel, value: number): number {
+    const { value: end, inward } = this.endOf(label);
+    return (value - end) * inward;
+  }
+
+  /** その値が、そのイベントの見ている端へ達しているか（超えている場合を含む、6.3節）。 */
+  hasReached(label: RangeEventLabel, value: number): boolean {
+    return this.inwardFrom(label, value) <= 0;
+  }
+
+  /**
+   * その端の値と、そこから範囲の内側へ向かう向き（上へなら`1`、下へなら`-1`）。
+   *
+   * **`on_min`／`on_max`が範囲のどちらの端かを持つのはここだけ。** 端の値も、端へ達したかも、
+   * 端からの距離も、すべてこの1つから出る。
+   */
+  private endOf(label: RangeEventLabel): { readonly value: number; readonly inward: 1 | -1 } {
+    return label === 'on_min' ? { value: this.min, inward: 1 } : { value: this.max, inward: -1 };
+  }
 }
 
 /**
@@ -402,9 +434,9 @@ export class PropertyDef {
     this.range = range;
     this.declaredOnMax = onMax?.effect;
     this.declaredOnMin = onMin?.effect;
-    this.onMax = rangeEventEffect(onMax, defaultClampEffect(range, globalId, true));
+    this.onMax = rangeEventEffect(onMax, defaultClampEffect(range, globalId, 'on_max'));
     this.stages = stages;
-    this.onMin = rangeEventEffect(onMin, defaultClampEffect(range, globalId, false));
+    this.onMin = rangeEventEffect(onMin, defaultClampEffect(range, globalId, 'on_min'));
     const rangeEventEffects: (readonly [RangeEventLabel, ActiveEffect])[] = [];
     if (this.onMax !== undefined) rangeEventEffects.push(['on_max', this.onMax]);
     if (this.onMin !== undefined) rangeEventEffects.push(['on_min', this.onMin]);
@@ -586,14 +618,12 @@ export class PropertyDef {
   }
 
   /**
-   * その値が、そのイベントの見ている端へ達しているか。**どちらの端を見るかを決めるのはここだけ**
-   * （rangeEventLabelsAtとapplyRangeEventsAtが同じ判定をここから引く）。rangeを持たないプロパティは
-   * 端を持たないので、どのイベントも起きない。
+   * その値が、そのイベントの見ている端へ達しているか（rangeEventLabelsAtとapplyRangeEventsAtが同じ
+   * 判定をここから引く）。どちらの端を見るかに答えるのはrange自身（PropertyRange.hasReached）で、
+   * ここが持つのは**rangeを持たないプロパティは端を持たないので、どのイベントも起きない**ことだけ。
    */
   private hasReachedEnd(label: RangeEventLabel, value: number): boolean {
-    const range = this.range;
-    if (range === undefined) return false;
-    return label === 'on_max' ? value >= range.max : value <= range.min;
+    return this.range?.hasReached(label, value) ?? false;
   }
 
   /**
@@ -766,17 +796,17 @@ export class PropertyDef {
 }
 
 /**
- * on_max/on_min未指定時の既定動作、「自分自身をrangeの境界（isMax指定側）へsetする」効果。
+ * on_max/on_min未指定時の既定動作、「自分自身をrangeのその端へsetする」効果。
  * rangeを持たないプロパティには境界が無いのでundefined。
  */
 function defaultClampEffect(
   range: PropertyRange | undefined,
   propertyGlobalId: number,
-  isMax: boolean,
+  label: RangeEventLabel,
 ): ActiveEffect | undefined {
   if (range === undefined) return undefined;
   return new ActiveEffectSequence([
-    new SetEffect(new PropertyPath('self', propertyGlobalId), isMax ? range.max : range.min),
+    new SetEffect(new PropertyPath('self', propertyGlobalId), range.endValue(label)),
   ]);
 }
 

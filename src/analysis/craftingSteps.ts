@@ -190,8 +190,7 @@ function staticValueRangeOf(
 
   const endsLeavingThisType: number[] = [];
   for (const [label, effect] of propertyDef.rangeEvents())
-    if (leavesThisType(codex, def, effect, resolve))
-      endsLeavingThisType.push(label === 'on_min' ? range.min : range.max);
+    if (leavesThisType(codex, def, effect, resolve)) endsLeavingThisType.push(range.endValue(label));
 
   return { min: range.min, max: range.max, endsLeavingThisType };
 }
