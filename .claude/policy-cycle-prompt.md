@@ -36,7 +36,7 @@
 
 | やること | `gh` があるとき | 無いとき |
 | --- | --- | --- |
-| 前の周の issue を探す | `gh issue list --state open --limit 100 --json number,title --search '価値観の棚卸し in:title'` | `search_issues`（`query: "repo:gooyyu1/UnmappedIsland is:issue is:open 価値観の棚卸し in:title"`） |
+| 前の周の issue を探す | `gh issue list --state open --limit 100 --json number,title --search '"価値観の棚卸し: 畳む候補の諾否" in:title'` | `search_issues`（`query: "repo:gooyyu1/UnmappedIsland is:issue is:open \"価値観の棚卸し: 畳む候補の諾否\" in:title"`） |
 | issue を立てる | `gh issue create --title <題> --body-file <本文> --label 判断待ち` | `issue_write`（`method: "create"`・`title`・`body`・`labels: ["判断待ち"]`） |
 
 ラベルの綴りに `:` は入らないので、引数が化ける心配はありません。**`--body-file` で渡してください**
@@ -44,7 +44,8 @@
 
 ## 先に、前の周の issue が残っていないか見る
 
-**題が「価値観の棚卸し」で始まる open の issue が1本でもあれば、何もせずに終わってください。**
+**題が「価値観の棚卸し: 畳む候補の諾否」で始まる open の issue が1本でもあれば、何もせずに終わって
+ください。**
 まだユーザーが答えていないか、答えを反映するセッションが走っている最中です。そこへ2本目を出すと、
 同じ履歴に対する候補が2つ並び、**どちらを反映しても残りが嘘になります。**
 
@@ -74,8 +75,10 @@
 
 ## 起票する issue
 
-**題は「価値観の棚卸し」で始めてください**（上の重複の検出がこれを見ます）。後ろに日付を添える:
-`価値観の棚卸し（2026-09-13）`。
+**題は `価値観の棚卸し: 畳む候補の諾否（<日付>）` の形で**——例: `価値観の棚卸し: 畳む候補の諾否
+（2026-09-13）`。**上の重複の検出が、日付より前をそのまま照合します。** 縮めたり言い換えたりすると、
+**次の周が前の周の issue を見つけられず、2本目を立てます。** 逆に、人が偶然この綴りで始まる issue を
+立てて係が黙ることも、この長さなら起きません。
 
 **ラベルは `判断待ち` の1つだけ**（上の表の道具で、立てるときに付けます）。`kind:` は付けないで
 ください（分類するのは棚卸しの係です。`.claude/board-design.md` 2.17.1）。
