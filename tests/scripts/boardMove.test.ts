@@ -534,6 +534,34 @@ describe('board-move.mjs', () => {
     expect(moves({ issues: [ready(30), ready(9), ready(20)] })).toEqual(['TASK 9', 'TASK 20', 'TASK 30']);
   });
 
+  // **`急ぎ` の効き目は順だけ**（2.18）。新しくても先に出る。
+  it('急ぎ の付いた issue は、古いものより先に投入する', () => {
+    const ready = (number: number) => ({ number, ...label('kind:task'), blockedBy: { nodes: [] } });
+    const board = {
+      issues: [ready(9), { number: 30, ...label('kind:task', '急ぎ'), blockedBy: { nodes: [] } }],
+    };
+    expect(moves(board)).toEqual(['TASK 30', 'TASK 9']);
+  });
+
+  // 全部に付けば「古いものから」に戻るだけ。**壊れる先が安全側に限られる**のが、順位を数で
+  // 持たずに印1つで表す理由。
+  it('急ぎ が全部に付いていれば、古い issue から', () => {
+    const rush = (number: number) => ({
+      number,
+      ...label('kind:task', '急ぎ'),
+      blockedBy: { nodes: [] },
+    });
+    expect(moves({ issues: [rush(30), rush(9), rush(20)] })).toEqual(['TASK 9', 'TASK 20', 'TASK 30']);
+  });
+
+  // 順を変えるだけで、配ってよいかは変えない（1.3）。
+  it('急ぎ でも、判断待ちなら配らない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('kind:task', '急ぎ', '判断待ち'), blockedBy: { nodes: [] } }],
+    };
+    expect(moves(board)).toEqual([]);
+  });
+
   it('開いている issue に塞がれている間は投入しない', () => {
     const board = {
       issues: [{ number: 9, ...label('kind:task'), blockedBy: { nodes: [{ state: 'OPEN' }] } }],

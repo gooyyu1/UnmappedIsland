@@ -84,6 +84,9 @@ gh issue list --state open --limit 100 --json number,title,labels |
 - **`env:bridge`** — **クラウドではできない仕事**のとき。手元の画面やローカルにしか無いものを使う、
   既存 issue の本文を書き換える、など（`.claude/board-design.md` 2.16）。**`.claude/**` を触ることは
   理由になりません**——クラウドのセッションもそこは書き換えられます。
+- **`急ぎ`** — **それが片付くまで他の仕事が止まる**とき（盤面が回らない・`main` のCIが赤い、など）。
+  効くのは投入の順だけです（`.claude/board-design.md` 2.18）。**迷ったら付けないこと**——
+  全部に付けば、無いのと同じ「古いものから」に戻ります。
 - **`area:art`** — 画像を生成する。GPUを専有するので同時に1本しか走れません。
 - **`area:daemon`** — 走らせながらは書き換えられないデーモンの仕組み
   （`scripts/agent/**`・`.github/workflows/board-labels.yml`）。
