@@ -1,8 +1,8 @@
-import { execFileSync } from 'node:child_process';
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
@@ -107,8 +107,7 @@ echo '${JSON.stringify(page)}'
     chmodSync(meta, 0o755);
 
     try {
-      execFileSync('bash', [SCRIPT, kind, ...tags], {
-        encoding: 'utf-8',
+      runScript(SCRIPT, [kind, ...tags], {
         stdio: 'pipe',
         env: {
           ...process.env,
