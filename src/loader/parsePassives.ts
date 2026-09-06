@@ -8,7 +8,7 @@ import {
   tryGetNode,
   tryGetSeq,
 } from './yamlMapping';
-import { parseNumberLiteral, parseSubjectRoot } from './parseCommon';
+import { parseNumberLiteral, parseReferenceRoot } from './parseCommon';
 import { parseConditionList } from './parseConditions';
 import { parseTransfers } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
@@ -114,7 +114,7 @@ function buildGate(
 
 /**
  * passiveの1操作(modify/add)を読み、対象ごとにPassiveEffectへ変換してpassivesへ追加する。**何を対象に
- * 書けるかを答えるのはscope**で、答えられないものはparseSubjectRootが`YamlLoadError`にする——読み飛ばさない。
+ * 書けるかを答えるのはscope**で、答えられないものはparseReferenceRootが`YamlLoadError`にする——読み飛ばさない。
  * `modify`だけscopeが狭いのは、可逆な寄与を押せる役が限られるため（8.3節、呼び出し元）。具象型は
  * makeEffectファクトリで受け取り、同じpassiveブロック内のgateを全効果で共有する。
  */
@@ -132,7 +132,7 @@ function parsePassiveOperationInto(
   if (operationMap === undefined) return;
 
   for (const [targetName, bodyNode] of entriesInOrder(operationMap)) {
-    const target = parseSubjectRoot(`${context}.${operationKey}`, targetName, scope);
+    const target = parseReferenceRoot(`${context}.${operationKey}`, targetName, scope);
 
     const body = asMap(bodyNode, context);
     for (const [propName, amountNode] of entriesInOrder(body))

@@ -15,7 +15,7 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { withYamlContext, parseNumberOrSymbol, parseSubjectRoot } from './parseCommon';
+import { withYamlContext, parseNumberOrSymbol, parseReferenceRoot } from './parseCommon';
 import { parseActiveEffectBody } from './parseActiveEffects';
 import { parseConditionList } from './parseConditions';
 import { parsePassiveInto } from './parsePassives';
@@ -191,7 +191,7 @@ function parseBase(
   const root =
     subjectName === undefined
       ? 'self'
-      : parseSubjectRoot(baseContext, subjectName, ReferenceScope.participantProps);
+      : parseReferenceRoot(baseContext, subjectName, ReferenceScope.participantProps);
 
   const basePropName = tryGetScalar(baseNode, 'prop', baseContext);
   if (basePropName === undefined) {

@@ -13,7 +13,7 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseNumberOrSymbol, parseSubjectRoot, parseTypeMatchRule } from './parseCommon';
+import { parseNumberOrSymbol, parseReferenceRoot, parseTypeMatchRule } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot, ReferenceScope } from '../domain/ReferenceRoot';
 import { PropertyPath } from '../domain/ReferenceRoot';
@@ -175,7 +175,7 @@ function parseConditionLeaf(
   // プロパティ名で祖先を探すancestorはそこでは解決先を持たない。
   const subjectName = tryGetScalar(map, 'subject', context);
   const leafScope = propName !== undefined ? scope : scope.withoutPropertyName;
-  const root = subjectName !== undefined ? parseSubjectRoot(context, subjectName, leafScope) : 'self';
+  const root = subjectName !== undefined ? parseReferenceRoot(context, subjectName, leafScope) : 'self';
 
   /** 主語を絞るキーと、読み取った演算子キー。残ったキーは綴り間違いか、この主語では使えない演算子。 */
   const used = new Set<string>(['subject', 'prop', 'slot']);
@@ -251,7 +251,8 @@ function parsePropertyComparison(
       );
 
     const refSubjectName = tryGetScalar(valueNode, 'subject', context);
-    const refRoot = refSubjectName !== undefined ? parseSubjectRoot(context, refSubjectName, scope) : 'self';
+    const refRoot =
+      refSubjectName !== undefined ? parseReferenceRoot(context, refSubjectName, scope) : 'self';
     const refPropName = requireScalar(valueNode, 'prop', context);
 
     requireKnownKeys(valueNode, ['subject', 'prop'], `${context}.${op}`);

@@ -345,7 +345,7 @@ object_defs:
   marker:
     tags: [marker_tag]
 `;
-    expect(() => load(yaml)).toThrowError(/未知の対象キー/);
+    expect(() => load(yaml)).toThrowError(/未知の参照ルート/);
   });
 
   it('タグが一致しないinstrumentに対してはfalseを返す', () => {
