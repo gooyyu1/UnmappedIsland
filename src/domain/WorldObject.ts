@@ -797,7 +797,7 @@ export class WorldObject {
   // ---- プレイヤーが起こせる操作（11節・12節） ----
 
   /** agentがこのカードへ起こせる、**画面のボタンに出る**操作（11.1節、宣言順）。 */
-  menuActionsFor(agent: WorldObject | undefined): readonly Action[] {
+  menuActionsFor(agent: WorldObject): readonly Action[] {
     return this.def.menuTriggers.map((trigger) => new Action(trigger, this, agent));
   }
 
@@ -806,7 +806,7 @@ export class WorldObject {
    *
    * 探すのは相手を伴わないきっかけ（menu・tick）だけ——重ねる操作は相手が決まらないと引けない。
    */
-  tryGetAction(actionName: string, agent: WorldObject | undefined): Action | undefined {
+  tryGetAction(actionName: string, agent: WorldObject): Action | undefined {
     const trigger = [...this.def.menuTriggers, ...this.def.tickTriggers].find(
       (candidate) => candidate.interaction.name === actionName,
     );
@@ -825,7 +825,7 @@ export class WorldObject {
    * **掛かるのは「黙って」のほう。** 断る理由を宣言していれば、実行できない落とし先として出してよい
    * ——それを引くのが下のrefusedCombinationsWith（ActionSystem.md 1.1節）。
    */
-  combinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
+  combinationsWith(instrument: WorldObject, agent: WorldObject): readonly Combination[] {
     return this.candidateCombinationsWith(instrument, agent).filter((combination) =>
       combination.canExecute(),
     );
@@ -848,7 +848,7 @@ export class WorldObject {
    * 知るこの物には答えられない。順位を決めるのは両向きを引く画面側
    * （`cardOperations.combinationBetween`）で、ここは引けるものを宣言順に返すだけ。
    */
-  refusedCombinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
+  refusedCombinationsWith(instrument: WorldObject, agent: WorldObject): readonly Combination[] {
     return this.candidateCombinationsWith(instrument, agent).filter(
       (combination) => combination.unmetRequirement()?.reasonName !== undefined,
     );
@@ -862,13 +862,10 @@ export class WorldObject {
    * **問うのは組み合わせ自身。** 候補ごとに関係を1つずつ張って外すので（11.5節）、呼び手が
    * 「self・agent・instrumentがこの3つでないと壊れる」という一致の規約を覚える余地が無い。
    */
-  private candidateCombinationsWith(
-    instrument: WorldObject,
-    agent: WorldObject | undefined,
-  ): readonly Combination[] {
+  private candidateCombinationsWith(instrument: WorldObject, agent: WorldObject): readonly Combination[] {
     return this.def.dragTriggers
       .filter((trigger) => trigger.acceptsInstrument(instrument.def))
-      .map((trigger) => new Combination(trigger, this, instrument, agent))
+      .map((trigger) => new Combination(trigger, this, agent, instrument))
       .filter((combination) => combination.hasSomethingToHappen());
   }
 

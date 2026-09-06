@@ -88,7 +88,7 @@ describe('locations.yamlの土地・道定義', () => {
     // 検証する。上限を超えた分はrangeの既定のクランプで吸収され、進捗はmaxに張り付く。
     const progressId = codex.propertyNames.getId('exploration_progress');
     const session = new WorldSession(codex, undefined, seededRng(1));
-    const agent = createBrightEnoughAgent(session, codex);
+    const agent = createBrightEnoughAgent(session);
 
     for (const name of LAND_NAMES) {
       const land = session.createObject(codex.objectNames.getId(name));
@@ -117,7 +117,7 @@ describe('locations.yamlの土地・道定義', () => {
     const session = new WorldSession(codex, undefined, seededRng(7));
     const land = session.createObject(codex.objectNames.getId('grassland'));
     const view = new Location(land, codex);
-    const agent = createBrightEnoughAgent(session, codex);
+    const agent = createBrightEnoughAgent(session);
 
     // 100%到達後も探索は続けられるため、回数を数えて探索率100%で止める。
     for (let i = 0; i < view.explorationProgressMax; i++) view.explore(agent);
@@ -142,7 +142,7 @@ describe('locations.yamlの土地・道定義', () => {
     const land = session.createObject(codex.objectNames.getId('cliff_coast'));
     land.getProperty(codex.propertyNames.getId('chalice_find')).setNumberWithoutEvents(10000);
     const view = new Location(land, codex);
-    const agent = createBrightEnoughAgent(session, codex);
+    const agent = createBrightEnoughAgent(session);
 
     for (let i = 0; i < 30; i++) view.explore(agent);
 

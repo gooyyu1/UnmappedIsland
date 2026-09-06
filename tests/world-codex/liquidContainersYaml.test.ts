@@ -514,7 +514,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     // 宣言を持つのは中身入りの側だけなので、selfは注ぎ元・instrumentは空の容器（12.3節）。
     expect(
       jar
-        .combinationsWith(empty, undefined)
+        .combinationsWith(empty, spawn(SAMPLE_CHARACTER))
         .find((c) => c.name === 'pour_into_empty')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -529,7 +529,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     expect(
       to
-        .combinationsWith(from, undefined)
+        .combinationsWith(from, spawn(SAMPLE_CHARACTER))
         .find((c) => c.name === 'pour_into_filled')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -544,7 +544,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     expect(
       jar
-        .combinationsWith(bowl, undefined)
+        .combinationsWith(bowl, spawn(SAMPLE_CHARACTER))
         .find((c) => c.name === 'pour_into_empty')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -557,9 +557,12 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const tea = spawnContainer('jar', 'tea', 400);
     const water = spawnContainer('jar', 'water', 500);
 
-    expect(water.combinationsWith(tea, undefined), '混ぜる組み合わせがそもそも現れない').toEqual([]);
+    expect(
+      water.combinationsWith(tea, spawn(SAMPLE_CHARACTER)),
+      '混ぜる組み合わせがそもそも現れない',
+    ).toEqual([]);
     water
-      .combinationsWith(tea, undefined)
+      .combinationsWith(tea, spawn(SAMPLE_CHARACTER))
       .find((c) => c.name === 'pour_into_filled')
       ?.tryExecute();
 

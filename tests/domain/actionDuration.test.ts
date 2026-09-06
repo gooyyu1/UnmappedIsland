@@ -4,6 +4,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { AGENT_YAML, createAgent } from '../support/agent';
 
 /**
  * actions/combinationsのduration（実行にかかるゲーム内時間・分）に対する自動テスト。durationを持つ操作を
@@ -52,6 +53,7 @@ object_defs:
     const codex = new WorldCodexYamlLoader()
       .load('world.yaml', worldYaml)
       .load('extra.yaml', extraYaml)
+      .load('agent.yaml', AGENT_YAML)
       .buildAndReset();
     const bootstrap = new WorldSession(codex);
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), bootstrap);
@@ -78,7 +80,7 @@ object_defs:
     const campfire = session.createObject(codex.objectNames.getId('campfire'));
     campfire.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
-    const executed = campfire.tryGetAction('rest', undefined)?.tryExecute() === true;
+    const executed = campfire.tryGetAction('rest', createAgent(session))?.tryExecute() === true;
 
     expect(executed).toBe(true);
     expect(
@@ -107,7 +109,7 @@ object_defs:
     const trail = session.createObject(codex.objectNames.getId('trail'));
     trail.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
-    expect(trail.tryGetAction('travel', undefined)?.tryExecute() === true).toBe(true);
+    expect(trail.tryGetAction('travel', createAgent(session))?.tryExecute() === true).toBe(true);
     expect(world.minute, 'self.travel_minutesの値だけ時間が進む').toBe(45);
   });
 
@@ -219,7 +221,7 @@ object_defs:
     const campfire = session.createObject(codex.objectNames.getId('campfire'));
     campfire.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
-    expect(campfire.tryGetAction('rest', undefined)?.tryExecute() === true).toBe(false);
+    expect(campfire.tryGetAction('rest', createAgent(session))?.tryExecute() === true).toBe(false);
     expect(world.minute, '条件不成立なら時間は進まない').toBe(0);
   });
 
@@ -246,7 +248,7 @@ object_defs:
 
     expect(
       nut
-        .combinationsWith(hammer, undefined)
+        .combinationsWith(hammer, createAgent(session))
         .find((c) => c.name === 'crack')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -275,7 +277,7 @@ object_defs:
 
     expect(
       nut
-        .combinationsWith(hammer, undefined)
+        .combinationsWith(hammer, createAgent(session))
         .find((c) => c.name === 'crack')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -306,7 +308,7 @@ object_defs:
     const oven = session.createObject(codex.objectNames.getId('oven'));
     oven.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
-    expect(oven.tryGetAction('bake', undefined)?.tryExecute() === true).toBe(true);
+    expect(oven.tryGetAction('bake', createAgent(session))?.tryExecute() === true).toBe(true);
 
     expect(
       world.instance.tryGetProperty(codex.propertyNames.getId('tick'))?.number ?? 0,
@@ -346,7 +348,9 @@ object_defs:
     const stuffSlotId = codex.slotNames.getId('stuff');
     stone.moveToSlotOrRejection(world.instance.getSlot(stuffSlotId));
 
-    expect(stone.tryGetAction('carve', undefined)?.tryExecute() === true, '行動は成立しない').toBe(false);
+    expect(stone.tryGetAction('carve', createAgent(session))?.tryExecute() === true, '行動は成立しない').toBe(
+      false,
+    );
 
     expect(world.minute, '時間は経過している（1時間かけて道具が壊れた）').toBe(30);
     expect(stone.parent, '石は経過中に壊れて世界から外れている').toBeUndefined();
@@ -393,7 +397,7 @@ object_defs:
 
     expect(
       block
-        .combinationsWith(chisel, undefined)
+        .combinationsWith(chisel, createAgent(session))
         .find((c) => c.name === 'carve')
         ?.tryExecute() === true,
     ).toBe(false);
@@ -424,11 +428,12 @@ object_defs:
             warmth: 1
 `,
       )
+      .load('agent.yaml', AGENT_YAML)
       .buildAndReset();
     const session = new WorldSession(codex);
     const campfire = session.createObject(codex.objectNames.getId('campfire'));
 
-    expect(campfire.tryGetAction('rest', undefined)?.tryExecute() === true).toBe(true);
+    expect(campfire.tryGetAction('rest', createAgent(session))?.tryExecute() === true).toBe(true);
     expect(campfire.tryGetProperty(codex.propertyNames.getId('warmth'))?.number ?? 0).toBe(1);
   });
 });

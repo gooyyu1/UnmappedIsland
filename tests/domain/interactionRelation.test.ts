@@ -5,6 +5,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { putIntoSlot } from '../../src/domain/slotEntry';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { AGENT_YAML, createAgent } from '../support/agent';
 
 /**
  * 操作の関係（GameElementDefinition.md 11.5節）の実行時の振る舞い。
@@ -42,6 +43,7 @@ object_defs:
     const codex = new WorldCodexYamlLoader()
       .load('world.yaml', worldYaml)
       .load('extra.yaml', extraYaml)
+      .load('agent.yaml', AGENT_YAML)
       .buildAndReset();
     const bootstrap = new WorldSession(codex);
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), bootstrap);
@@ -65,7 +67,7 @@ object_defs:
       travel_delay: {value: 20}
   path:
     props:
-      # 道の長さに、今歩いている人の遅れを継ぐ。誰も歩いていなければ60のまま。
+      # 道の長さに、今歩いている人の遅れを継ぐ。遅れを持たない者が歩けば60のまま。
       travel_minutes:
         value: 60
         base: {subject: agent, prop: travel_delay}
@@ -77,7 +79,10 @@ object_defs:
     const path = placeInWorld(codex, world, session.createObject(codex.objectNames.getId('path')));
     const walker = session.createObject(codex.objectNames.getId('character'));
 
-    expect(path.tryGetAction('travel', undefined)?.executionMinutes(), '誰も歩いていなければ60分').toBe(60);
+    expect(
+      path.tryGetAction('travel', createAgent(session))?.executionMinutes(),
+      '遅れを持たない者が歩けば60分',
+    ).toBe(60);
     expect(path.tryGetAction('travel', walker)?.executionMinutes(), '歩く人の遅れを継いで80分').toBe(80);
 
     expect(path.tryGetAction('travel', walker)?.tryExecute()).toBe(true);
@@ -133,7 +138,7 @@ object_defs:
 
     expect(
       block
-        .combinationsWith(chisel, undefined)
+        .combinationsWith(chisel, createAgent(session))
         .find((c) => c.name === 'carve')
         ?.executionMinutes(),
       'ノミの食い込みが、彫る相手の硬さを土台にする',

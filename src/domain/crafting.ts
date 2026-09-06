@@ -146,7 +146,7 @@ export function tryAdvanceCrafting(
   recipe: RecipeDef,
   codex: WorldCodex,
   session: WorldSession,
-  agent: WorldObject | undefined,
+  agent: WorldObject,
 ): boolean {
   // これも操作1つなので、まるごと囲う（WorldSession.runToSeam）。経過中に配られて待たされた
   // 手番は、工程を進め終えたこの切れ目で起きる。クレーム（whileActing）の外側で閉じるのは
