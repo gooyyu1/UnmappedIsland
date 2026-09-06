@@ -1,8 +1,8 @@
-import { execFileSync } from 'node:child_process';
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
@@ -42,7 +42,7 @@ interface Run {
 
 function run(issue: number, world: World = {}): Run {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-dispatch-task-'));
-  const dir = work.replace(/\\/g, '/');
+  const dir = pathForBash(work);
   try {
     writeFileSync(
       join(work, 'issue.json'),
@@ -73,8 +73,9 @@ esac
 
     try {
       const where = world.onBridge === true ? ['--bridge'] : [];
-      const stdout = execFileSync('bash', [SCRIPT, String(issue), join(work, 'supplement.md'), ...where], {
-        encoding: 'utf-8',
+      // 補足のパスも `/` へ直して渡す——本番の呼び手（`board-round.mjs` の `posix(supplement)`）と
+      // 同じ形。
+      const stdout = runScript(SCRIPT, [String(issue), `${dir}/supplement.md`, ...where], {
         stdio: 'pipe',
         env: {
           ...process.env,

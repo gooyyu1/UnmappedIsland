@@ -1,8 +1,8 @@
-import { execFileSync } from 'node:child_process';
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
@@ -40,7 +40,7 @@ interface Args {
 /** `DRY_RUN=1` で組み立てさせて、`create_session` へ渡るはずの引数を返す。 */
 function args(pr: number, world: World = {}): Args {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-dispatch-review-'));
-  const dir = work.replace(/\\/g, '/');
+  const dir = pathForBash(work);
   try {
     writeFileSync(
       join(work, 'pr.json'),
@@ -69,8 +69,7 @@ esac
     chmodSync(gh, 0o755);
 
     const where = world.onBridge === true ? ['--bridge'] : [];
-    const stdout = execFileSync('bash', [SCRIPT, String(pr), ...where], {
-      encoding: 'utf-8',
+    const stdout = runScript(SCRIPT, [String(pr), ...where], {
       stdio: 'pipe',
       env: {
         ...process.env,
