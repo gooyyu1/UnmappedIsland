@@ -65,6 +65,17 @@ export interface SupplyRow {
   readonly ownerName: string;
   readonly stepName: string;
   readonly kind: CraftingStep['kind'];
+
+  /**
+   * 外から押されて回る周期（炉が焼く・傷が血を奪う）なら、その押し手の型
+   * （{@link RangeCycle.drivenBy}）。押し手を持たない工程ではundefined。
+   *
+   * **周期は押し手ごとに決まる**ので、同じ工程でも押し手が違えば別の行になる——獲物が失血で死体に
+   * なるまでの時間は、負った傷の種類で変わる（issue #1579）。**行と押し手は1対1ではない**——同じ
+   * 押し手が直に押す分と、押した先で開く段が動かす分（relayedTickDeltasOf）は別の周期になる。
+   */
+  readonly driverName: string | undefined;
+
   readonly laborMinutes: number;
   readonly elapsedMinutes: number;
 
@@ -547,6 +558,8 @@ function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly Supp
       ownerName: ref.def.name,
       stepName: ref.step.name,
       kind: ref.step.kind,
+      driverName:
+        ref.cycle?.drivenBy === undefined ? undefined : codex.objectNames.getName(ref.cycle.drivenBy),
       laborMinutes: ref.step.laborMinutes,
       elapsedMinutes: ref.step.elapsedMinutes,
       hasUnresolvedReferences: ref.step.hasUnresolvedReferences,

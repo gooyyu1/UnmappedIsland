@@ -237,6 +237,7 @@ function buildSections(codex: WorldCodex, tables: BalanceTables): readonly YamlR
         owner: row.ownerName,
         step: row.stepName,
         kind: row.kind,
+        driver: row.driverName ?? null,
         labor_minutes: rounded(row.laborMinutes, 0),
         unresolved_references: row.hasUnresolvedReferences,
         elapsed_minutes: rounded(row.elapsedMinutes, 0),
@@ -301,6 +302,44 @@ describeYamlReportRegeneration(
 );
 
 describeReportFreshness(REPORT_PATH, 'npm run stats:balance', buildReportFromDefinitions);
+
+/**
+ * 供給表は工程の目録なので、**行は1つの工程を名指していなければならない**（issue #1579）。同じ文字の
+ * 行が並ぶのは、行を分けている何かを書き落としている印で、読み手には1行から得られる以上のものが無い。
+ *
+ * **見るのは字面**。`supply` の行が字面で一致しないことがそのまま完了の条件なので、表の側の値では
+ * なく書き出したテキストを比べる。
+ *
+ * **押し手（`driver`）は行を分ける唯一の軸ではない**——同じ押し手が直に押す分と、押した先で開く段が
+ * 動かす分（`relayedTickDeltasOf`）は別の行になる。ここが赤くなったら、丸めた`elapsed_minutes`まで
+ * 一致する組が出たということで、**まだ名乗っていない軸を行へ足す合図**。
+ */
+describe('供給表の行', () => {
+  it('文字まで同一の行が並ばない', () => {
+    const lines = supplyLinesOf(buildReportFromDefinitions());
+    const duplicated = lines.filter((line, index) => lines.indexOf(line) !== index);
+
+    expect([...new Set(duplicated)]).toEqual([]);
+  }, 600_000);
+});
+
+/**
+ * 書き出したレポートから `supply` 節の行だけを、字下げを除いて取り出す。**見つからなければ落とす**
+ * ——節の名前が変わっても空の一覧が返るなら、重複の見張りは何も見ないまま緑になる。
+ */
+function supplyLinesOf(report: string): readonly string[] {
+  const lines = report.split('\n');
+  const start = lines.indexOf('supply:');
+  if (start === -1) throw new Error('レポートに supply 節が無い');
+
+  const rows: string[] = [];
+  for (const line of lines.slice(start + 1)) {
+    if (!line.startsWith(' ')) break;
+    rows.push(line.trim());
+  }
+  if (rows.length === 0) throw new Error('supply 節に行が1つも無い');
+  return rows;
+}
 
 /**
  * 雨で溜まる水は、**時間を数えられていないだけで内容の穴ではない**（issue #660）。穴として数えられると
