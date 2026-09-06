@@ -46,7 +46,10 @@ WHERE="${2:-}"
 
 REPO_URL="https://github.com/$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# `%/*` は区切りが無いと文字列をそのまま返す。
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+HERE="$(cd "$HERE" && pwd)"
 # shellcheck source=scripts/agent/ccr-env.sh
 source "$HERE/ccr-env.sh"
 CCR_META="$HERE/../../.claude/ccr-meta.sh"
@@ -146,6 +149,9 @@ fi
 # 切り替えられるようにする**ため、種類を分けて渡す（`board-design.md` 2.4）。
 # `Closes` を書き忘れたPRも「task を持たない」側に入る——**盤面には出るが誰も読まない**ので、
 # 子の手綱を外すなら本文の `Closes` が要る。
+#
+# **本文の `\r` は落とさない**——受けるのが `grep -o` だけで、抜き出すのは数字なので入らない
+# （[`merge-and-close.sh`](merge-and-close.sh) の「`\r` を落とす側と落とさない側」）。
 review_tags=("review-$PR")
 kind=review-untasked
 while read -r issue; do
@@ -154,7 +160,7 @@ while read -r issue; do
   if gh issue view "$issue" --json labels -q '.labels[].name' 2>/dev/null | grep -qx task; then
     kind=review
   fi
-done < <(jq -r '.body // ""' "$WORK/pr.json" | tr -d '\r' |
+done < <(jq -r '.body // ""' "$WORK/pr.json" |
   grep -oiE 'closes[[:space:]]+#[0-9]+' | grep -oE '[0-9]+' | sort -u || true)
 
 # 手綱と占有。**再レビューは止まらない**——判定に使うのは走行中かどうかで、判定を書き終えた

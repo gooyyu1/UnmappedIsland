@@ -36,7 +36,10 @@ shift
   exit 1
 }
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# `%/*` は区切りが無いと文字列をそのまま返す。
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+HERE="$(cd "$HERE" && pwd)"
 
 if ! brake=$(bash "$HERE/brake.sh" "$KIND"); then
   echo "投入の手綱で止まっている: $brake" >&2

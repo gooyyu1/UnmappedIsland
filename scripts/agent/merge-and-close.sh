@@ -84,7 +84,10 @@ PR="${1:?PRの番号を渡す（例: 1036）}"
 USER_OK=0
 [ "${2:-}" != "--user-ok" ] || USER_OK=1
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# `%/*` は区切りが無いと文字列をそのまま返す。
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+HERE="$(cd "$HERE" && pwd)"
 # 試験は差し替える（`gh` は PATH で差し替わるが、これはパスで呼ぶため）。
 NEEDS_USER_REVIEW="${NEEDS_USER_REVIEW:-$HERE/needs-user-review.sh}"
 
@@ -92,7 +95,8 @@ NEEDS_USER_REVIEW="${NEEDS_USER_REVIEW:-$HERE/needs-user-review.sh}"
 # 見ている時点がずれる**。引き直すのは、**この後の操作で変わるもの**だけ——マージ後の `state` と、
 # 打つ直前に見たい `mergeable`。
 pr=$(gh pr view "$PR" --json body,state,comments,headRefName)
-body=$(jq -r '.body // ""' <<<"$pr" | tr -d '\r')
+body=$(jq -r '.body // ""' <<<"$pr")
+body="${body//$'\r'/}"
 state=$(jq -r '.state' <<<"$pr")
 # ブランチ名はマージでは変わらないので、ここで一緒に受けておく（使うのは後片付けの段）。
 head=$(jq -r '.headRefName' <<<"$pr")
@@ -106,32 +110,39 @@ head=$(jq -r '.headRefName' <<<"$pr")
 # 挟んでも塞げるが、その綴りは
 # 挟む側と閉じる側で一致していないと黙って壊れる。繋がずに1件ずつ読めば、印そのものが要らない。
 #
-# ## `tr -d '\r'` が要る側と要らない側
+# ## `\r` を落とす側と落とさない側
 #
-# **要るのは、複数行を出して、その行を「シェルが」受け取るとき。** Windowsの外部 jq は標準出力を
-# テキストモードで開くので、行の区切りが CRLF になる。**`\r` が残るのは各行の末尾**で、`$(…)` が
-# 落とすのはそのうち**最後の1行ぶんだけ**。
+# **`\r` が乗る経路は2つ。どちらも行末にだけ乗る。**
 #
-#   $ y=$(jq -rn '"A","B"'); printf '%s' "$y" | od -c   →   A  \r  \n   B
+# - **Windowsの外部 jq が複数行を出すとき。** 標準出力をテキストモードで開くので、行の区切りが
+#   CRLF になる。`$(…)` が落とすのは**最後の1行ぶんだけ**なので、綺麗なのは末尾で、汚れているのは
+#   その手前まで——先頭行だけを取る経路も安全ではない。
 #
-# 綺麗なのは最後の1行で、汚れているのはその手前まで——先頭行だけを取る経路も安全ではない。
-# 下の `read` が拾うので、残ると `base64 -d` が壊れる。
+#       $ y=$(jq -rn '"A","B"'); printf '%s' "$y" | od -c   →   A  \r  \n   B
+#       $ x=$(jq -rn '"OPEN"');  printf '%s' "$x" | od -c   →   O  P  E  N
 #
-# **要らない側が2つある。**
+#   1つの値しか出さない `$(jq …)` に乗らないのは、Windowsの bash（MSYS2）が末尾の `\r\n` を丸ごと
+#   落とすため。Linuxの jq は `\r` を出さないので、この経路が効くのはWindowsだけ。`gh` の `--jq` は
+#   gh 内蔵なので、Windowsでも LF。
 #
-# - **1つの値しか出さない `$(jq …)`。** Windowsの bash（MSYS2）は、末尾の `\r\n` を丸ごと落とす。
+# - **中身そのものが CRLF のとき。** GitHubの画面で編集された issue・PRの本文がこれで、
+#   **どのOSで動かしても乗る。**
 #
-#       $ x=$(jq -rn '"OPEN"'); printf '%s' "$x" | od -c   →   O   P   E   N
+# **落とすかどうかは、乗る経路ではなく受け手で決まる。** 判定はLinuxの側で置く——`\r` を行の
+# 終わりとして扱う道具がMSYS2には在るが、両方で動かすので緩いほうへは寄せられない。
 #
-# - **複数行でも、受け取るのが `grep`・`awk` だけのとき。** MSYS2 のこの2つは `\r\n` を行の終わりとして
-#   扱う（`printf 'A\r\nB' | grep -qx A` は当たる）。`grep -o` で数字や識別子だけを抜き出す使い方も、
-#   `\r` は抜き出す側に入らない。
+# - **落とす。** シェルが `$(…)`・`read` で行を受けるとき（残ると下の `base64 -d` が壊れる）。
+#   `sort` で突き合わせるとき（`\r` 込みで重複を見る）。`awk` で `$` に留めるとき——**Linuxの `awk` は
+#   `\r` を行の中身として残す**ので、見出しに当たらない（[`brake.sh`](brake.sh) が `## 手綱` の節を
+#   引く形）。同じ理由で `grep -x` も当たらない。
+# - **落とさない。** `grep -o` で数字や識別子を抜き出すとき。`\r` は抜き出す側に入らない
+#   （[`dispatch-review.sh`](dispatch-review.sh) が `Closes` の番号を拾う形）。
 #
-# **この「丸ごと落とす」はWindowsの bash だけ**で、Linuxでは末尾の `\r` が残る。ただしLinuxの jq は
-# `\r` を出さないので、どちらでも同じ結果になる。`gh` の `--jq` は gh 内蔵なので、Windowsでも LF。
-# 無条件に掛けると、要る理由が読めなくなる。
+# **落とし方は、値が変数へ入っているなら `${var//$'\r'/}`。** 外部の `tr` を起こす必要は無い。
+# パイプを流れているものだけが `| tr -d '\r' |` を要る（下の `base64 -d` の後）。
 review_comments=$(jq -r '.comments[] | select(.body | startswith("[レビュー]")) | .body | @base64' \
-  <<<"$pr" | tr -d '\r')
+  <<<"$pr")
+review_comments="${review_comments//$'\r'/}"
 
 if [ "$state" = "OPEN" ]; then
   # 関門。**マージの前に見る**——通した後では、印が付いた状態が `main` に入ってしまう。

@@ -55,7 +55,10 @@ esac
   exit 1
 }
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# `%/*` は区切りが無いと文字列をそのまま返す。
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+HERE="$(cd "$HERE" && pwd)"
 CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 
 if ! live=$(CCR_META="$CCR_META" bash "$HERE/live-sessions.sh" 2>/dev/null); then
