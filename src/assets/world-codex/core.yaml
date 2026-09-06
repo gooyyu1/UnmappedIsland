@@ -53,10 +53,11 @@ card_filters:
   - id: filter_wear
     icon: 👕
     tags: [equippable]
-  # 寝床（系統9）と住居（系統10）。
+  # 寝床（系統9）・住居（系統10）と、里心を抑える設え（系統13、furnishings.yaml）。どれも「そこを
+  # 我が家にする物」なので、同じ札の集まりを指す系統として1つへ畳む。
   - id: filter_shelter
     icon: 🏠
-    tags: [bed, shelter]
+    tags: [bed, shelter, furnishing]
   # 遠出（系統11）と船と海図（系統12）。道も他の設置物と同じにここでだけ残る。
   - id: filter_travel
     icon: 🧭

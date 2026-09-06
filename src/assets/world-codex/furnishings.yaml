@@ -1,0 +1,112 @@
+# 里心を抑える設え（docs/world/ContentSkeleton.md 3節の系統13、docs/world/Characters.md ホームシック節）。
+#
+# **どれも据えるためだけの物で、他に使い道を持たない。** 生きるのに要る物が居心地を兼ねると、
+# 対策がどうせ作る物になって圧が素通りする（同節）——寝床（bedding.yaml）が comfort を押し上げないのも
+# 同じ理由で、あれは眠るために作る物。
+#
+# **押し上げるのは据えた場所のほうで、キャラクタは base で継ぐだけ**（core.yaml の comfort）。
+# **持ち歩ける慰めは書こうとしても書けない**——fixture は手持ちの枠に入らない（受けるのは item タグ
+# だけ、characters/player_character.yaml）ので、遠征に出ればどれも効かない（同節）。
+#
+# **点数は、その物に掛かる手間に比例させる**（stats/balance.yaml の object_costs）。設えは積むほど
+# 効いてよい（同節）ので同じ物を並べても効くが、比例させてある限り並べるのは近道にならない。
+# **ひと通り据えれば snug（50）に届き、1つでは届かない**——tests/world-codex/furnishingsYaml.test.ts。
+#
+# **解放条件を持たない。** 丸太は斧でしか採れず、その斧と縄が既に石器・繊維・編みの腕を要求している
+# （囲いと同じ、farming.yaml）。**指物の腕は要求しない**——伸ばす行動が世界に1つも無いので、要求すれば
+# 永久に開かないレシピになる（docs/engine/SkillSystem.md 3.2節）。ここに在るのは縛りと削り出しで、
+# ほぞで組む物ではない（docs/world/Skills.md 2.1節）。
+
+object_defs:
+  # 丸太の腰掛け。丸太を割り、座面を平らに削っただけの物。
+  #
+  # **furnishing は「里心を抑えるために据える物である」ことを言うタグ**（docs/ui/ScreenLayout.md
+  # 8.1.2節）。フィルターのボタンは住まい（core.yaml の filter_shelter）と分け合う。
+  log_stool:
+    tags: [fixture, furnishing]
+    props:
+      # 丸太20,000gのうち、割って削り落としたぶんだけ軽い（timber.yaml）。
+      weight: {value: 12000}
+    passives:
+      # 据えた場所の居心地（core.yaml）。押すのは ancestor で、キャラクタはそこから継ぐ（8.6節。
+      # 囲いの company と同じ形、farming.yaml）。
+      - modify:
+          ancestor:
+            comfort: 8
+    recipes:
+      # 斧で割り、座面を削る。
+      hewn:
+        steps:
+          - requires:
+              - {object: log, count: 1, consume: true}
+              - {tag: chopping_tool, count: 1, consume: false}
+            duration: 60
+
+  # 枝の卓。太い枝を組んで縄で締めた低い卓。
+  #
+  # **荷重を受けるほぞ組みの卓ではない**（docs/world/Skills.md 2.1節）——縛って組む物なので、指物の
+  # 腕を待たずに据えられる。
+  branch_table:
+    tags: [fixture, furnishing]
+    props:
+      # 太い枝6本（1,000×6）＋縄1本（200）。
+      weight: {value: 6200}
+    passives:
+      - modify:
+          ancestor:
+            comfort: 16
+    recipes:
+      lashed:
+        steps:
+          - requires:
+              - {object: thick_branch, count: 6, consume: true}
+              - {object: cord, count: 1, consume: true}
+            duration: 120
+
+  # 木彫りの像。太い枝1本から削り出した彫り物。
+  #
+  # **材料はほとんど要らず、掛けた時間だけが値打ちになる。** 娯楽の側はこの形で入る——手を動かして
+  # いること自体が慰めなので、点数の出どころが材料ではなく手間だけになる。
+  wood_carving:
+    tags: [fixture, furnishing]
+    props:
+      # 太い枝1,000gから彫り落とした残り。
+      weight: {value: 300}
+    passives:
+      - modify:
+          ancestor:
+            comfort: 8
+    recipes:
+      whittled:
+        steps:
+          - requires:
+              - {object: thick_branch, count: 1, consume: true}
+              - {tag: cutting_tool, count: 1, consume: false}
+            duration: 210
+
+  # 木の太鼓。丸太をくり抜き、生皮を張って縄で締めた物。
+  #
+  # **獣を仕留めていないと張れない**（生皮、animals.yaml）ので、設えの最後の1つは狩りの向こう側に
+  # ある。ひと通り揃えて snug へ届くのが終盤になるのはこのため。
+  log_drum:
+    tags: [fixture, furnishing]
+    props:
+      # くり抜いた丸太（20,000gの残り）＋生皮（600）＋縄（200）。
+      weight: {value: 8800}
+    passives:
+      - modify:
+          ancestor:
+            comfort: 24
+    recipes:
+      hollowed:
+        steps:
+          # 丸太の芯をくり抜く。
+          - requires:
+              - {object: log, count: 1, consume: true}
+              - {tag: cutting_tool, count: 1, consume: false}
+            duration: 120
+          # 生皮を張り、縄で締め上げる。
+          - requires:
+              - {object: rawhide, count: 1, consume: true}
+              - {object: cord, count: 1, consume: true}
+            duration: 60

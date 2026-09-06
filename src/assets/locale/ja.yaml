@@ -781,6 +781,36 @@ object_texts:
         display_name: 敷く
         description: 編んだ葉を3枚、端を重ねて広げる。道具も紐も要らない。
 
+  # 里心を抑える設え（furnishings.yaml）。
+  log_stool:
+    display_name: 丸太の腰掛け
+    description: 丸太を割って座面を削った腰掛け。腰を下ろす場所があるだけで、そこは寝起きする所になる。
+    recipes:
+      hewn:
+        display_name: 割って削る
+        description: 斧で丸太を割り、座面を平らに均す。
+  branch_table:
+    display_name: 枝の卓
+    description: 太い枝を組んで縄で締めた低い卓。物を地面に置かずに済む暮らしは、それだけで人の暮らしになる。
+    recipes:
+      lashed:
+        display_name: 組んで縛る
+        description: 太い枝を組み、縄で締め上げる。
+  wood_carving:
+    display_name: 木彫りの像
+    description: 枝から彫り出した小さな像。何の役にも立たないが、彫っている間だけは島のことを忘れられる。
+    recipes:
+      whittled:
+        display_name: 彫る
+        description: 枝を削り出す。材料はほとんど要らず、掛かるのは時間だけ。
+  log_drum:
+    display_name: 木の太鼓
+    description: 丸太をくり抜いて生皮を張った太鼓。誰も聞いていなくても、音のある場所は静かな場所とは違う。
+    recipes:
+      hollowed:
+        display_name: くり抜いて張る
+        description: 丸太の芯をくり抜き、生皮を張って縄で締める。
+
   # 繊維を撚る連鎖（fiber.yaml）。
   abaca:
     display_name: アバカ
