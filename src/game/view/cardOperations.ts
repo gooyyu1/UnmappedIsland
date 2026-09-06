@@ -237,7 +237,9 @@ export function cardOperationsOf(
 
   /**
    * selfが宣言しているcombinationsのうち、candidatesの先頭を相手として引けるもの（宣言順）。
-   * candidatesは`instrument`の役になる個体、movedは指が運んできた個体。
+   *
+   * **candidatesとmovedは別物**——逆向きに成立した組み合わせでは、指が運んできた札のほうが`self`に
+   * なるため、`instrument`の役になる個体（candidates）と画面上で動く個体（moved）が入れ替わる。
    *
    * **実行する手段とは限らない**——成立するものも、理由を告げて断るもの（14.6節のreason）も同じ形で
    * 並ぶ。どちらなのかはenabledが言い、離しても何も起きないのは呼び出し側が守る
