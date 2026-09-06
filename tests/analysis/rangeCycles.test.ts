@@ -252,6 +252,79 @@ object_defs:
       injuries:
         cell_count: 4
         cell: {accept: {tag: injury}}
+
+  # 膿むだけの傷（injuries.yamlのopen_wound）。**血には触れない**——押し上げるのは宿主の全身の菌
+  # だけで、そこから先の症状も死に方も知らない。上のgashと別の枠へ入れるのは、直に血を奪う道が
+  # 混ざると、押した先の段を辿った道だけを見られないから。
+  suppurating_cut:
+    tags: [injury, suppurating]
+    props:
+      infection:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: clean}
+          - {name: septic, min: 80}
+        passives:
+          - add: {self: {infection: 0.25}}
+    passives:
+      - conditions: [{prop: infection, in_stage: septic}]
+        add: {parent: {pathogen: 0.35}}
+
+  # 傷から全身へ回られる獣（animals.yamlのbeast）。**傷が動かすのは菌だけ**で、血を削るのは菌が
+  # septicemicへ届いて初めて開く、獣自身の増減（8.2節）になる。
+  sow:
+    tags: [item]
+    props:
+      pathogen:
+        value: 0
+        range: {min: 0, max: 9}
+        stages:
+          - name: sterile
+            passives:
+              # 菌の居ない体は活力が戻る。**生まれた時点で入っている段**なので、開けたのは押し手では
+              # ない——辿ると、傷が傍に在って初めて活力が戻ることになる。
+              - add: {self: {vitality: 1}}
+          - name: septicemic
+            min: 7
+            passives:
+              - add: {self: {blood: -40, fever: 1}}
+              # 囲いに閉じ込められている間だけ余計に渇く（animals.yamlのpathogen）。段のほかにも
+              # 縛りがあるので、押されている間に成立するかは定義からは決まらない。
+              - conditions: [{in_slot: catch}]
+                add: {self: {hydration: -2}}
+      vitality: {value: 0, range: {min: 0, max: 100}}
+      hydration:
+        value: 336
+        range: {min: 0, max: 336}
+        on_min: {destroy: self}
+      # 菌が開けた段が、さらに開ける段。
+      fever:
+        value: 0
+        range: {min: 0, max: 40}
+        stages:
+          - {name: none}
+          - name: raging
+            min: 20
+            passives:
+              - add: {self: {stamina: -10}}
+      stamina:
+        value: 100
+        range: {min: 0, max: 100}
+        on_min: {destroy: self}
+      blood:
+        value: 4600
+        range: {min: 0, max: 4600}
+        on_min:
+          destroy: self
+          spawn: {object: sow_carcass}
+    slots:
+      injuries:
+        cell_count: 4
+        cell: {accept: {tag: suppurating}}
+
+  sow_carcass:
+    tags: [item]
 `;
 
   const codex = new WorldCodexYamlLoader().load('rangeCycles.yaml', YAML).buildAndReset();
@@ -391,5 +464,46 @@ object_defs:
         (cycle) => codex.propertyNames.getName(cycle.propertyGlobalId) === 'blood',
       ),
     ).toMatchObject([{ minutes: (320 + 115) * 15, destroysSelf: true, drivenBy: defOf('gash').globalId }]);
+  });
+
+  /** その型の、そのプロパティが持つ周期のうち、外から押されて回るもの。 */
+  function drivenCyclesOf(objectName: string, propertyName: string) {
+    const def = defOf(objectName);
+    return rangeCyclesOf(def, undefined, externalTickDeltasOn(def, [...codex.objects])).filter(
+      (cycle) =>
+        cycle.drivenBy !== undefined && codex.propertyNames.getName(cycle.propertyGlobalId) === propertyName,
+    );
+  }
+
+  it('押した先で開く段が動かす、相手自身の別のプロパティも押し手が動かす', () => {
+    // 傷が動かすのは菌だけで、血には一切触れない。押し手が直に動かす分しか辿らないと、罠に掛けて
+    // 傷を負わせ、放っておけば死体になる道が丸ごと消える。傷がsepticへ届くまで320 tick、そこから
+    // 菌が0.35でsepticemic（7）へ20 tick、開いた-40で4,600mLが尽きるまで115 tick。
+    expect(drivenCyclesOf('sow', 'blood')).toMatchObject([
+      {
+        minutes: (320 + 20 + 115) * 15,
+        destroysSelf: true,
+        drivenBy: defOf('suppurating_cut').globalId,
+      },
+    ]);
+  });
+
+  it('辿るのは1段だけで、開いた段が開ける次の段までは辿らない', () => {
+    // 菌はsepticemicで熱も押し上げ、熱はragingで体力を削る。2段目まで辿ると、傷が傍に在るだけで
+    // 体力の尽きる周期が立つ——その段が開き続けているかを決めるのは押し手ではなく相手自身の値で、
+    // その動きは段で切り替わる増減を含む（tickAmountsOfが数えていない）。
+    expect(drivenCyclesOf('sow', 'stamina')).toEqual([]);
+  });
+
+  it('段のほかにも縛りのある増減は、押し手が開けたものとして数えない', () => {
+    // 囲いに居る間だけ効く渇きは、押されている間に成立するとは限らない（押されている間は自分の
+    // 条件つきを数えない、totalsWithDriverと同じ理由）。
+    expect(drivenCyclesOf('sow', 'hydration')).toEqual([]);
+  });
+
+  it('生まれた時点で入っている段が動かす分は、押し手が開けたものではない', () => {
+    // 菌の居ない体が活力を戻すのは、傷が在ろうと無かろうと起こる。押し手に付けると、傷が傍に
+    // 在って初めて活力が戻る周期になる。
+    expect(drivenCyclesOf('sow', 'vitality')).toEqual([]);
   });
 });

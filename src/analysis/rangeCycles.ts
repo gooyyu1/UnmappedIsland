@@ -108,6 +108,8 @@ export interface RangeCycle {
  * 寿命（罠の朽ち、DurabilitySystem.md 2節）。
  *
  * 段で切り替わる増減（8.2節）は数えない——段ごとに周期が変わるものは、1つの周期で言い表せない。
+ * **押し手がその段を開けた場合だけは別**で、そこは押し手ごとに1つの速さに決まる
+ * （relayedTickDeltasOf）。
  *
  * externalは、隣の物が与えるtick毎の増減（ExternalTickDelta参照）。同じプロパティを動かすものが
  * 複数あれば、**押し手ごとに別の周期**を返す——炉で焼くのと傷で失血するのは、要る物も速さも違う。
@@ -117,6 +119,8 @@ export function rangeCyclesOf(
   outer?: StaticValueResolver,
   external: readonly ExternalTickDelta[] = [],
 ): readonly RangeCycle[] {
+  const pushed = [...external, ...external.flatMap((driver) => relayedTickDeltasOf(def, driver))];
+
   const cycles: RangeCycle[] = [];
   for (const propertyDef of def.enumeratePropertyDefs()) {
     const own = tickAmountsOf(def, propertyDef.globalId);
@@ -124,7 +128,7 @@ export function rangeCyclesOf(
     const initialValues = ROLL_ENDS.map((end) => staticValueOf(def, propertyDef.globalId, end, outer));
     const drivers: readonly (ExternalTickDelta | undefined)[] = [
       undefined,
-      ...external.filter((delta) => delta.propertyGlobalId === propertyDef.globalId),
+      ...pushed.filter((delta) => delta.propertyGlobalId === propertyDef.globalId),
     ];
 
     for (const driver of drivers) {
@@ -207,6 +211,53 @@ export function rangeCyclesOf(
     }
   }
   return cycles;
+}
+
+/**
+ * 押し手に押された値が段へ届いて初めて動き出す、**相手自身の別のプロパティ**の増減。罠に掛かった
+ * 獣が倒れるのはこれ——傷は宿主の菌（`pathogen`）を押し上げるだけで血には触れず、血を削るのは菌が
+ * `septicemic`へ届いて開く、宿主自身の段の下の増減（8.2節）になる。押し手が直接動かす分だけを見て
+ * いると、この道が丸ごと消える。
+ *
+ * **辿るのは1段だけ**で、ここで返した増減からさらに段を辿ることはしない。開いた段が開き続けている
+ * ことは、1段目なら押し手が傍に在り続けること（ticksUntilStop）で言えるが、2段目から先は相手自身の
+ * 値が決めることで、その値の動きは段で切り替わる増減を含む——そこはtickAmountsOfが数から外して
+ * いるので、辿るほど成立しない経路が立つ。
+ *
+ * 返す増減の与え手（sourceGlobalId）は押し手のまま。段を開けたのは押し手なので、その周期に要る物は
+ * 押し手が傍に在ることで変わらない。
+ */
+function relayedTickDeltasOf(def: ObjectDef, driver: ExternalTickDelta): readonly ExternalTickDelta[] {
+  const byWindow = new Map<string, ExternalTickDelta>();
+  for (const delta of tickDeltasOf(def)) {
+    // 押している値そのものへ戻る分は辿らない——開くのは相手自身の**別の**プロパティの段。
+    if (delta.target !== 'self' || delta.amount === 0) continue;
+    if (delta.propertyGlobalId === driver.propertyGlobalId) continue;
+    // 段のほかにも縛りがあるなら、それが押されている間に成立するかは定義からは決まらない
+    // （totalsWithDriverが自分の条件つきを数えないのと同じ理由）。
+    if (!delta.gate.gatedOnlyBySelfStages) continue;
+
+    const untilStage = ticksUntilDrivenStage(def, driver, delta.gate);
+    if (untilStage === undefined) continue;
+
+    // 押し手が効き始めてから段が開くまでが、そのぶんだけ後ろへずれる。押し手が止まるほうが先なら
+    // 段は開かない（pushingCaseOfと同じ見方）。
+    const ticksUntilStart = driver.ticksUntilStart + untilStage;
+    if (driver.ticksUntilStop !== undefined && driver.ticksUntilStop <= ticksUntilStart) continue;
+
+    // 同じ段の下に並ぶ増減は同時に効くので足し合わせる。段が違えば開く時刻も違うので、束ねない
+    // （externalTickDeltasOfのbyWindowと同じ約束）。
+    const key = `${delta.propertyGlobalId}:${ticksUntilStart}`;
+    const known = byWindow.get(key);
+    byWindow.set(key, {
+      sourceGlobalId: driver.sourceGlobalId,
+      propertyGlobalId: delta.propertyGlobalId,
+      amounts: [(known?.amounts[0] ?? 0) + delta.amount],
+      ticksUntilStart,
+      ticksUntilStop: driver.ticksUntilStop,
+    });
+  }
+  return [...byWindow.values()];
 }
 
 /**
@@ -500,14 +551,55 @@ function ticksUntilGateRises(def: ObjectDef, gate: TickGate): number {
   for (const { propertyGlobalId, lowerBound } of gate.requiredSelfStages) {
     // 届くまでを**最も長く**見る側（slowest）に合わせて、ロールも段から遠いほうを採る。止まるまでを
     // 最も短く見るのと同じで、押し手を控えめに数える側へ揃える。
-    const value = staticValueOf(def, propertyGlobalId, 'lowest');
-    const pace = paceTowards(tickAmountsOf(def, propertyGlobalId).possible, 'on_max');
-    if (lowerBound === undefined || value === undefined || pace === undefined) continue;
-
-    // 生まれた時点でその段に居るなら待ちは無い（届くまでが0以下になる）。**「その段以上」も同じ
-    // 下端で成立する**ので、ちょうどその段かどうかでここは変わらない。
-    const ticks = Math.ceil((lowerBound - value) / pace.slowest.amount);
-    if (ticks > longest) longest = ticks;
+    const ticks = ticksToReach(
+      staticValueOf(def, propertyGlobalId, 'lowest'),
+      lowerBound,
+      paceTowards(tickAmountsOf(def, propertyGlobalId).possible, 'on_max'),
+    );
+    if (ticks !== undefined && ticks > longest) longest = ticks;
   }
   return longest;
+}
+
+/**
+ * 押し手が押している値が、そのゲートの要る段へ**押し上げられて**届くまでのtick数（押し手が効き
+ * 始めた時点から数える）。次のどれかならundefined＝その段は押し手が開けたものではない。
+ *
+ * - 押されている値の段を1つも要らない（押し手と関わりなく開いている）
+ * - 押しても届かない段が混じっている（向きが逆・段が並びの上に位置を持たない）
+ * - 生まれた時点で既にその段に居る（開けたのは押し手ではない）
+ */
+function ticksUntilDrivenStage(
+  def: ObjectDef,
+  driver: ExternalTickDelta,
+  gate: TickGate,
+): number | undefined {
+  const own = tickAmountsOf(def, driver.propertyGlobalId);
+  const pace = paceTowards(totalsWithDriver(own, driver), 'on_max');
+  const value = staticValueOf(def, driver.propertyGlobalId, 'lowest');
+
+  let longest: number | undefined;
+  for (const required of gate.requiredSelfStages) {
+    if (required.propertyGlobalId !== driver.propertyGlobalId) continue;
+    const ticks = ticksToReach(value, required.lowerBound, pace);
+    if (ticks === undefined) return undefined;
+    if (longest === undefined || ticks > longest) longest = ticks;
+  }
+  return longest === 0 ? undefined : longest;
+}
+
+/**
+ * その値が、渡した速さの幅の**遅いほう**でその位置まで届くまでのtick数。既に届いているなら0。
+ * 値・位置・速さのどれかが読めないならundefined。
+ *
+ * 段の下端を位置に採るなら、**「その段以上」もちょうどその段も同じ下端で成立する**ので、どちらの
+ * 指定かでここは変わらない。
+ */
+function ticksToReach(
+  value: number | undefined,
+  lowerBound: number | undefined,
+  pace: Pace | undefined,
+): number | undefined {
+  if (value === undefined || lowerBound === undefined || pace === undefined) return undefined;
+  return Math.max(0, Math.ceil((lowerBound - value) / pace.slowest.amount));
 }

@@ -74,6 +74,9 @@ export class TickGate {
   /** 型だけでは真偽の決まらない条件が残っているか（{@link conditional}）。 */
   private readonly hasRuntimeConditions: boolean;
 
+  /** 自身の段の名指し以外の条件が残っているか（{@link gatedOnlyBySelfStages}）。 */
+  private readonly hasNonStageConditions: boolean;
+
   constructor(gate: GateReading, def: ObjectDef) {
     const collector = new GateConditionCollector();
     gate.conditions?.read(collector);
@@ -97,6 +100,7 @@ export class TickGate {
     this.ancestorConditions = collector.ancestorConditions;
     this.selfTypeMatches = collector.selfTypeMatches;
     this.hasRuntimeConditions = collector.hasRuntimeConditions;
+    this.hasNonStageConditions = collector.hasNonStageConditions;
   }
 
   /**
@@ -127,6 +131,18 @@ export class TickGate {
    */
   get conditional(): boolean {
     return this.hasRuntimeConditions;
+  }
+
+  /**
+   * 縛りが{@link requiredSelfStages}だけか。真なら、宣言元がその段に入ってさえいれば必ず効く。
+   *
+   * **{@link conditional}の否定ではない。** 段の名指し（`in_stage`、14.1節）は成立する場面としない
+   * 場面のある条件なので`conditional`は真になるが、その段へ届いたかは値から読める——読めないものが
+   * 残っているかを問う`conditional`とは、別の問いへの答え。段の宣言（8.2節）の下に置いて書いても
+   * 条件として書いても同じことなので、書き方で答えが変わってはならない。
+   */
+  get gatedOnlyBySelfStages(): boolean {
+    return !this.hasNonStageConditions;
   }
 
   /**
@@ -299,6 +315,13 @@ class GateConditionCollector implements ConditionReader {
   /** 型の指定以外の葉を1つでも読んだか（TickGate.conditional）。 */
   hasRuntimeConditions = false;
 
+  /**
+   * requiredSelfStagesへ入らない葉を1つでも読んだか（TickGate.gatedOnlyBySelfStages）。論理和・否定の
+   * 下で読んだ自身の段もここへ来る——「どれかの段に居る」「その段に居ない」は、その段に居ることでは
+   * ないので、届いたかを値から読めない。
+   */
+  hasNonStageConditions = false;
+
   /** 今読んでいる枝の比較が、成立していなければ増減が効かないものか。 */
   private required = true;
 
@@ -307,6 +330,7 @@ class GateConditionCollector implements ConditionReader {
 
   property(reading: PropertyConditionReading): void {
     this.hasRuntimeConditions = true;
+    this.hasNonStageConditions = true;
     if (reading.root === 'self') this.selfProperties.push(reading.propertyGlobalId);
     if (reading.root !== 'ancestor' || !this.required || this.negated || reading.values === undefined) return;
     this.ancestorConditions.push({
@@ -318,22 +342,29 @@ class GateConditionCollector implements ConditionReader {
 
   propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string, bound: StageBound): void {
     this.hasRuntimeConditions = true;
-    if (root !== 'self') return;
+    if (root !== 'self') {
+      this.hasNonStageConditions = true;
+      return;
+    }
     this.selfProperties.push(propertyGlobalId);
     if (this.required && !this.negated) this.requiredSelfStages.push({ propertyGlobalId, stageName, bound });
+    else this.hasNonStageConditions = true;
   }
 
   slotPosition(): void {
     this.hasRuntimeConditions = true;
+    this.hasNonStageConditions = true;
   }
 
   slotContent(): void {
     this.hasRuntimeConditions = true;
+    this.hasNonStageConditions = true;
   }
 
   objectMatches(root: ReferenceRoot, match: TypeMatchReading): void {
     if (root !== 'self' || !this.required) {
       this.hasRuntimeConditions = true;
+      this.hasNonStageConditions = true;
       return;
     }
     this.selfTypeMatches.push(this.negated ? { kind: 'not', inner: match } : match);
