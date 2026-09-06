@@ -33,9 +33,9 @@ let bundledDocuments: ReadonlyMap<string, Document> | undefined;
  * 同梱ぶんを読むためのDocument（ファイル名順）。**控えをそのまま配る**——同じ文字列を読み込みの
  * たびにパースし直すのは高い（同梱ぶん全体で約180ms。2026-09-06計測）。
  *
- * 複製を挟まずに配れるのは、patch（GameElementDefinition.md 3.4節）が書き換えるのは名指しされた
- * 宣言のノードだけで、そこはRawObjectDefが自分の複製へ移してから書き換えるため
- * （RawObjectDef.modifyDeclaration）。
+ * 複製を挟まずに配れるのは、**読み込みが渡されたDocumentを書き換えないため**——patch
+ * （GameElementDefinition.md 3.4節）が書き換える宣言のノードも、そこへ接ぎ木する値も、読み込み元
+ * から切り離した複製の側にある（RawObjectDef.modifyDeclaration・RawPatch.value）。
  */
 function bundledDocumentsToRead(): ReadonlyMap<string, Document> {
   bundledDocuments ??= new Map(

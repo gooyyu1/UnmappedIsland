@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { parseDocument } from 'yaml';
 import { AssetPack } from '../../src/asset-pack/AssetPack';
 import { LoadReport } from '../../src/loader/LoadReport';
 import { loadWorldCodex } from '../../src/loader/loadWorldCodex';
+import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { zipArchive } from '../support/zipArchive';
@@ -56,5 +58,34 @@ describe('同梱ぶんのパース結果の控え', () => {
     expect(plain.propertyNames.tryGetId('patch_added_prop'), '足したpropが残らない').toBeUndefined();
     expect(plain.tagNames.tryGetId('patch_set_tag'), '差し替えたtagが残らない').toBeUndefined();
     expect(palmTreeOf(plain).declaresInteraction('pick_frond'), '落とした操作が戻っている').toBe(true);
+  });
+
+  /**
+   * 控えをそのまま配れる根拠は「**読み込みは渡されたDocumentを書き換えない**」で、宣言のノードは
+   * その一部でしかない。patchが接ぎ木する値も読み込み元のノードなので、複製せずに挿すと、
+   * その先へ降りた後続のpatchが読み込み元を書き換える（RawPatch.value）。
+   *
+   * 同梱ぶんはまだpatchを1つも持たないので、控えを通しては再現できない。読み込み1回で見る。
+   */
+  it('接ぎ木した値の先へ降りるpatchがあっても、渡したDocumentは書き換わらない', () => {
+    const doc = parseDocument(
+      [
+        'object_defs:',
+        '  thing:',
+        '    props:',
+        '      weight: {value: 1}',
+        'patch_object_defs:',
+        '  - add: thing.props.mood',
+        '    value: {value: 1}',
+        '  - set: thing.props.mood.value',
+        '    value: 99',
+        '',
+      ].join('\n'),
+    );
+    const before = String(doc);
+
+    new WorldCodexYamlLoader().loadDocument('patched.yaml', doc).buildAndReset();
+
+    expect(String(doc)).toBe(before);
   });
 });

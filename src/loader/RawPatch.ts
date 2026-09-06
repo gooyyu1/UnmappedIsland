@@ -25,9 +25,17 @@ export class RawPatch {
   /** ドット区切りのパス。先頭がobject_defの識別子（識別子に`.`は入らない、3.2節）。 */
   readonly path: string;
 
+  /**
+   * 宣言へ接ぎ木する値。**読み込み元から切り離した複製で持つ**——読んだノードをそのまま挿すと、
+   * その先へ降りた後続のpatchが読み込み元のDocumentを書き換える（宣言のノードと同じ理由。
+   * RawObjectDef.modifyDeclaration）。
+   */
   readonly value: YamlNode | undefined;
 
-  /** 配列の要素を指すときの目印（部分一致）。位置ではなく中身で指す。 */
+  /**
+   * 配列の要素を指すときの目印（部分一致）。位置ではなく中身で指す。**突き合わせるだけで宣言へは
+   * 入らない**ので、valueと違って複製しない。
+   */
   readonly where: YamlNode | undefined;
 
   /** 読み込み元。報告の出所表示に使う。 */
@@ -49,7 +57,7 @@ export class RawPatch {
   ) {
     this.verb = verb;
     this.path = path;
-    this.value = value;
+    this.value = value?.clone() as YamlNode | undefined;
     this.where = where;
     this.source = source;
     this.report = report;
