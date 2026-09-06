@@ -432,7 +432,7 @@ describe('traps.yamlの落とし穴', () => {
     const branch = spawnInto('thick_branch', forest, 'items');
     return (
       pitfall
-        .combinationsWith(branch, createBrightEnoughAgent(session, codex))
+        .combinationsWith(branch, createBrightEnoughAgent(session))
         .find((combination) => combination.name === 'drive_stake')
         ?.tryExecute() === true
     );
@@ -510,7 +510,7 @@ describe('traps.yamlの落とし穴', () => {
       const taro = spawnInto('taro', forest, 'items');
       expect(
         pitfall
-          .combinationsWith(taro, createBrightEnoughAgent(session, codex))
+          .combinationsWith(taro, createBrightEnoughAgent(session))
           .find((combination) => combination.name === 'add_plant_bait')
           ?.tryExecute() === true,
         '満ちるまでは仕掛けられる',
@@ -520,12 +520,12 @@ describe('traps.yamlの落とし穴', () => {
 
     const more = spawnInto('taro', forest, 'items');
     expect(
-      pitfall.combinationsWith(more, createBrightEnoughAgent(session, codex)),
+      pitfall.combinationsWith(more, createBrightEnoughAgent(session)),
       '成立する組み合わせは無い',
     ).toEqual([]);
     expect(
       pitfall
-        .refusedCombinationsWith(more, createBrightEnoughAgent(session, codex))
+        .refusedCombinationsWith(more, createBrightEnoughAgent(session))
         .map((combination) => combination.unmetRequirement()?.reasonName),
       '断る理由まで辿り着ける',
     ).toEqual(['trap_baited']);

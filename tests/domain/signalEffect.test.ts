@@ -81,10 +81,13 @@ object_defs:
         trigger: menu
         add:
           self: {stamina: -1}
-      # agentを渡さずに実行すると、この対象は解決できない。
       roar:
         trigger: menu
-        signal: {parent: startled}
+        signal: {agent: startled}
+      # どこにも置いていない物で実行すると、この対象は解決できない。
+      echo:
+        trigger: menu
+        signal: {parent: echoed}
       # 始まったことを告げる操作（announce、11.6節）。告げ方はsignalと同じで、違うのは告げる時点だけ。
       charge:
         trigger: menu
@@ -194,12 +197,20 @@ object_defs:
     expect(seen).toEqual(['stick: bounced']);
   });
 
+  it('動作主を対象に書けば、その動作主に起きたこととして告げる', () => {
+    const seen = observe(() => {
+      expect(beast.tryGetAction('roar', spawn('agent'))?.tryExecute() === true).toBe(true);
+    });
+
+    expect(seen).toEqual(['agent: startled']);
+  });
+
   it('解決できない対象へは何も告げない', () => {
     // 他の命令が対象を解決できないときと同じ扱い（どこにも置いていないので親が居ない）。
     const homeless = spawn('beast');
 
     const seen = observe(() => {
-      expect(homeless.tryGetAction('roar', spawn('agent'))?.tryExecute() === true).toBe(true);
+      expect(homeless.tryGetAction('echo', spawn('agent'))?.tryExecute() === true).toBe(true);
     });
 
     expect(seen).toEqual([]);

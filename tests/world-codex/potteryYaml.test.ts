@@ -76,7 +76,7 @@ describe('pottery.yamlの土器の連鎖', () => {
   function craft(productName: string, recipeName: string, materials: readonly string[][]): void {
     // 工程を進めるには手元の明るさが要る（IlluminationSystem.md 5節）。ここで見たいのは土器の
     // 連鎖なので、時刻や光源を組み立てずに作り手の側で明るさを満たす。
-    const potter = createBrightEnoughAgent(session, codex);
+    const potter = createBrightEnoughAgent(session);
     const recipe = codex.objects.get(codex.objectNames.getId(productName)).recipesProducingThis[0];
     const materialsId = codex.vocabulary.engine.materialsSlotId;
     const wip = spawnInProgressObject(
@@ -104,7 +104,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     const log = spawnInto('log', land, 'items');
     expect(
       kiln
-        .combinationsWith(log, createBrightEnoughAgent(session, codex))
+        .combinationsWith(log, createBrightEnoughAgent(session))
         .find((c) => c.name === 'add_fuel')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -263,9 +263,9 @@ describe('pottery.yamlの土器の連鎖', () => {
     // 消える物の中身は、消える自分ではなく自分の親へこぼれる（9.3節）。焼いた物まで道連れにしない。
     const kiln = fireDriedGreenware(24);
 
-    expect(
-      kiln.tryGetAction('break_open', createBrightEnoughAgent(session, codex))?.tryExecute() === true,
-    ).toBe(true);
+    expect(kiln.tryGetAction('break_open', createBrightEnoughAgent(session))?.tryExecute() === true).toBe(
+      true,
+    );
 
     expect(fixturesOn(land), '炉は一度きり').toEqual([]);
     expect(itemsOn(land), '甕は土地へこぼれる').toEqual(['jar']);

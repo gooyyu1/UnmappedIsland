@@ -865,7 +865,7 @@ export class WorldObject {
   private candidateCombinationsWith(instrument: WorldObject, agent: WorldObject): readonly Combination[] {
     return this.def.dragTriggers
       .filter((trigger) => trigger.acceptsInstrument(instrument.def))
-      .map((trigger) => new Combination(trigger, this, instrument, agent))
+      .map((trigger) => new Combination(trigger, this, agent, instrument))
       .filter((combination) => combination.hasSomethingToHappen());
   }
 
