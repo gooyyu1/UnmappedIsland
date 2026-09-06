@@ -5,7 +5,9 @@ import type {
   PropertyConditionReading,
 } from '../domain/ConditionReader';
 import type { ObjectDef } from '../domain/ObjectDef';
+import type { StageBound } from '../domain/PropertyDef';
 import type { TransferReading } from '../domain/EffectReader';
+import { mutuallyExclusive } from './conditionCases';
 import type {
   GateReading,
   PassiveDeclaration,
@@ -55,8 +57,7 @@ export class TickGate {
    * ——そこへ届くまでは効かない。{@link watchedSelfProperties} の裏側。
    *
    * 段の宣言の下に置かれた増減（8.2節）と、条件が名指した段（`in_stage`・`in_stage_or_above`、
-   * 14.1節）のどちらもここへ来る。**ちょうどその段かその段以上かは分けない**——どちらも同じ下端を
-   * 下から跨いだ時点で成立するので、そこへ届くまでの時間は変わらない。
+   * 14.1節）のどちらもここへ来る。
    */
   readonly requiredSelfStages: readonly SelfStageRequirement[];
 
@@ -73,7 +74,7 @@ export class TickGate {
   /** 型だけでは真偽の決まらない条件が残っているか（{@link conditional}）。 */
   private readonly hasRuntimeConditions: boolean;
 
-  constructor(gate: GateReading) {
+  constructor(gate: GateReading, def: ObjectDef) {
     const collector = new GateConditionCollector();
     gate.conditions?.read(collector);
 
@@ -81,14 +82,39 @@ export class TickGate {
     this.conditions = gate.conditions;
     this.watchedSelfProperties = collector.selfProperties;
     this.requiredSelfStages = [
+      // 段の宣言（8.2節）の下に置かれた増減は、その段ちょうどに居る間だけ効く。
       ...(gate.stage === undefined
         ? []
-        : [{ propertyGlobalId: gate.stage.propertyGlobalId, stageName: gate.stage.name }]),
+        : [
+            {
+              propertyGlobalId: gate.stage.propertyGlobalId,
+              stageName: gate.stage.name,
+              bound: 'exact' as const,
+            },
+          ]),
       ...collector.requiredSelfStages,
-    ];
+    ].map((required) => ({ ...required, lowerBound: lowerBoundOf(def, required) }));
     this.ancestorConditions = collector.ancestorConditions;
     this.selfTypeMatches = collector.selfTypeMatches;
     this.hasRuntimeConditions = collector.hasRuntimeConditions;
+  }
+
+  /**
+   * その2つのゲートが**同時には成立しないと、宣言だけから言い切れるか**。言い切れないものは
+   * 重なりうる側へ倒す（{@link mutuallyExclusive} と同じ約束）。
+   *
+   * 言い切れる根拠は、**書かれた条件そのものが重なりを禁じている**こと（同じ気温を`lt`と`gte`で
+   * 見ている寒さと暖かさ）か、**要る段が値の並びの上で重ならない**こと。段を条件と別に見るのは、
+   * 段の宣言（8.2節）が条件の木の外に在るため——炉の火力は`conditions`を1つも持たないので、条件だけを
+   * 読むと「重なりうる」に倒れ、段ごとの火力が足し合わさる。
+   */
+  neverHoldsWith(other: TickGate): boolean {
+    return (
+      mutuallyExclusive(this.conditions, other.conditions) ||
+      this.requiredSelfStages.some((mine) =>
+        other.requiredSelfStages.some((theirs) => disjointStages(mine, theirs)),
+      )
+    );
   }
 
   /**
@@ -117,6 +143,50 @@ export class TickGate {
 export interface SelfStageRequirement {
   readonly propertyGlobalId: number;
   readonly stageName: string;
+
+  /** ちょうどその段か、その段以上か（14.1節）。 */
+  readonly bound: StageBound;
+
+  /**
+   * その段が値の並びの上で始まる位置。**受け皿（6.4節）はそれより下の全部を拾うので負の無限大**
+   * ——下端を書いていないことと、並びの上に位置を持たないことは別。undefinedになるのは位置を
+   * 持たない段のほうで、完全一致で決まる段（シンボル型、6.6節）と、綴り違いで宣言に無い名前。
+   */
+  readonly lowerBound: number | undefined;
+}
+
+/** 名指された段が値の並びの上で始まる位置（SelfStageRequirement.lowerBound）。 */
+function lowerBoundOf(
+  def: ObjectDef,
+  required: { readonly propertyGlobalId: number; readonly stageName: string },
+): number | undefined {
+  const stage = def
+    .tryGetPropertyDef(required.propertyGlobalId)
+    ?.stages.find((named) => named.name === required.stageName);
+  if (stage === undefined || stage.eq !== undefined) return undefined;
+  return stage.lowerBound ?? Number.NEGATIVE_INFINITY;
+}
+
+/**
+ * 同じプロパティに課された2つの段の指定が、**どの値でも同時には成り立たない**か
+ * （TickGate.neverHoldsWith）。
+ *
+ * 値は1つの段にしか居ないので、ちょうどその段どうし（`exact`）は名前が違えば必ず外れる。片方が
+ * 「その段以上」（`or_above`）なら、そちらの始まる位置がちょうどの段より上に在るときだけ外れる
+ * ——下に在れば、ちょうどの段はその段以上に呑まれる。どちらも「その段以上」なら、上の段は下の段
+ * 以上に呑まれるので外れない。
+ */
+function disjointStages(a: SelfStageRequirement, b: SelfStageRequirement): boolean {
+  if (a.propertyGlobalId !== b.propertyGlobalId) return false;
+  if (a.bound === 'exact' && b.bound === 'exact') return a.stageName !== b.stageName;
+  if (a.bound === 'or_above' && b.bound === 'or_above') return false;
+
+  const [exact, orAbove] = a.bound === 'exact' ? [a, b] : [b, a];
+  return (
+    exact.lowerBound !== undefined &&
+    orAbove.lowerBound !== undefined &&
+    orAbove.lowerBound > exact.lowerBound
+  );
 }
 
 /** 祖先のプロパティに課された比較1つ。 */
@@ -186,7 +256,7 @@ class TickDeltaCollector implements PassiveReader {
    * （TickGate.possibleFor）。
    */
   private tickGateOf(gate: GateReading): TickGate | undefined {
-    const tickGate = new TickGate(gate);
+    const tickGate = new TickGate(gate, this.def);
     return tickGate.possibleFor(this.def) ? tickGate : undefined;
   }
 }
@@ -220,7 +290,9 @@ function matchesType(def: ObjectDef, match: TypeMatchReading): boolean {
  */
 class GateConditionCollector implements ConditionReader {
   readonly selfProperties: number[] = [];
-  readonly requiredSelfStages: SelfStageRequirement[] = [];
+
+  /** 下端はまだ読めない（プロパティの定義を持たない）ので、TickGateが引いて補う。 */
+  readonly requiredSelfStages: Omit<SelfStageRequirement, 'lowerBound'>[] = [];
   readonly ancestorConditions: AncestorCondition[] = [];
   readonly selfTypeMatches: TypeMatchReading[] = [];
 
@@ -244,11 +316,11 @@ class GateConditionCollector implements ConditionReader {
     });
   }
 
-  propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string): void {
+  propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string, bound: StageBound): void {
     this.hasRuntimeConditions = true;
     if (root !== 'self') return;
     this.selfProperties.push(propertyGlobalId);
-    if (this.required && !this.negated) this.requiredSelfStages.push({ propertyGlobalId, stageName });
+    if (this.required && !this.negated) this.requiredSelfStages.push({ propertyGlobalId, stageName, bound });
   }
 
   slotPosition(): void {

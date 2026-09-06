@@ -25,7 +25,10 @@ PR="${1:?PR番号}"
 
 # **自分の置き場からリポジトリの根まで出る。** 呼び手のカレントに依らずに済み、`git` の出す
 # パスもリポジトリからの形で揃う（カレントからの相対で出ると、記録した後で何のファイルか読めない）。
-cd "$(dirname "${BASH_SOURCE[0]}")"
+# `%/*` は区切りが無いと文字列をそのまま返す。
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+cd "$HERE"
 cd "$(git rev-parse --show-toplevel)"
 
 git fetch -q origin main || exit 2

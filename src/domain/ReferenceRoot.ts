@@ -115,8 +115,8 @@ export class InteractionRelation {
   private bound<T>(claimsAgent: boolean, body: (context: ReferenceContext) => T): T {
     const leaves: (() => void)[] = [];
     try {
-      for (const [participant, isAgent] of this.participants())
-        leaves.push(participant.joinInteraction(this, claimsAgent && isAgent));
+      for (const participant of this.participants)
+        leaves.push(participant.joinInteraction(this, claimsAgent && participant === this.agent));
       return body(this.contextFor(this.patient));
     } finally {
       while (leaves.length > 0) leaves.pop()!();
@@ -124,15 +124,24 @@ export class InteractionRelation {
   }
 
   /**
-   * 関係を刻む相手を1つずつ（同じ物が2つの役に就く再帰的な操作、11.5節では1回だけ）。
-   * **agentを先頭に置く**ので、一意性が破れているときは他の誰も加わらないうちに止まる。
+   * この関係に加わっている物のうち、selfでないもの。**役を対象にした持続効果（8節）の宣言元は、
+   * 相手から見れば必ずここに居る**——役を指せるのは参加者からだけなので、宣言元も相手も同じ1つの
+   * 関係に加わっている（WorldObject.readInfluences）。
    */
-  private participants(): readonly (readonly [WorldObject, boolean])[] {
-    const joined: (readonly [WorldObject, boolean])[] = [];
+  participantsOtherThan(self: WorldObject): readonly WorldObject[] {
+    return this.participants.filter((participant) => participant !== self);
+  }
+
+  /**
+   * この関係に加わっている物を1つずつ（同じ物が2つの役に就く再帰的な操作、11.5節では1回だけ）。
+   * **agentを先頭に置く**ので、一意性が破れているときは他の誰も加わらないうちに止まる（bound）。
+   */
+  private get participants(): readonly WorldObject[] {
+    const joined: WorldObject[] = [];
     for (const role of INTERACTION_ROLES) {
       const participant = this.objectAt(role);
-      if (participant === undefined || joined.some(([already]) => already === participant)) continue;
-      joined.push([participant, participant === this.agent]);
+      if (participant === undefined || joined.includes(participant)) continue;
+      joined.push(participant);
     }
     return joined;
   }

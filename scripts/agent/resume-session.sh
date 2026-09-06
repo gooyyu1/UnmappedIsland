@@ -32,7 +32,10 @@ SESSION="${1:?セッションIDを渡す}"
 KIND="${2:?理由を渡す（resume-prompt.md の節の名前）}"
 NUMBER="${3:?対象の番号を渡す}"
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# `%/*` は区切りが無いと文字列をそのまま返す。
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+HERE="$(cd "$HERE" && pwd)"
 CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 TEMPLATE="${RESUME_PROMPT:-$HERE/../../.claude/resume-prompt.md}"
 
