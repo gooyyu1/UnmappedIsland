@@ -21,9 +21,15 @@ export interface ExternalTickDelta {
 
   readonly propertyGlobalId: number;
 
-  /** 最も遅い場合と最も速い場合の量（tickAmountsOfと同じ見方。炉は火力の段で3段階に変わる）。 */
-  readonly slowest: number;
-  readonly fastest: number;
+  /**
+   * その押し手がtick毎に取りうる量。**同時に成立しうる組み合わせごとに1つ**（tickAmountsOfの
+   * `possible` と同じ見方）で、同じ値は畳んである。炉は火力の段で1・3・5を取る。
+   *
+   * **幅（最も遅い・最も速い）へ畳まずに並びのまま持つ。** 足し合わせた押し方は向きが揃うとは
+   * 限らず（常時引く分と条件つきで足す分）、畳むと押される向きのどちらかが落ちる。どちらの端の
+   * イベントへ向かうかで選び直すのは、受け取る側（paceTowards）の仕事。
+   */
+  readonly amounts: readonly number[];
 
   /**
    * その増減が効き始めるまでのtick数。**段に入って初めて効く増減**——傷が宿主の菌を押し上げるのは
@@ -216,8 +222,9 @@ function sortedTicksToRangeEnd(
  * 腐り切ってからの2つで宿主の菌を押し上げる。
  *
  * **問いは自分のプロパティの側（tickAmountsOf）と同じで、「どの組み合わせが同時に成立しうるか」。**
- * 同時に効く宣言は足し合わせて1つの押し方にし（常時にじむ血と、雨の間だけ裂けて増える分）、同時には
- * 効かない押し方どうしを幅として1つの押し手に束ねる（炉の火力はheatの段で1/3/5）。
+ * 常時効く宣言と条件つきの宣言が並べば、起こるのは「常時分」と「常時分＋条件つき分」で、
+ * 「条件つき分だけ」は起こらない。同時には効かない押し方どうし（炉の火力はheatの段で1/3/5）は、
+ * 1つの押し手が取りうる量として並べる。
  */
 export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): readonly ExternalTickDelta[] {
   const byProperty = new Map<number, TickDelta[]>();
@@ -241,14 +248,7 @@ export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): 
       byWindow.set(key, {
         sourceGlobalId: def.globalId,
         propertyGlobalId,
-        slowest:
-          known === undefined || Math.abs(pushing.amount) < Math.abs(known.slowest)
-            ? pushing.amount
-            : known.slowest,
-        fastest:
-          known === undefined || Math.abs(pushing.amount) > Math.abs(known.fastest)
-            ? pushing.amount
-            : known.fastest,
+        amounts: [...new Set([...(known?.amounts ?? []), pushing.amount])],
         ticksUntilStart: pushing.ticksUntilStart,
         ticksUntilStop: pushing.ticksUntilStop,
       });
@@ -406,7 +406,7 @@ function paceTowards(
  */
 function totalsWithDriver(own: TickAmounts, driver: ExternalTickDelta | undefined): readonly number[] {
   if (driver === undefined) return own.possible;
-  return [own.unconditional + driver.slowest, own.unconditional + driver.fastest];
+  return driver.amounts.map((amount) => own.unconditional + amount);
 }
 
 /**

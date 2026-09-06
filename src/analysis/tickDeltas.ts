@@ -148,20 +148,23 @@ export interface SelfStageRequirement {
   readonly bound: StageBound;
 
   /**
-   * その段の下端（PropertyStage.lowerBound）。**値の並びの上に位置を持たない段ではundefined**
-   * ——受け皿（6.4節）と完全一致で決まる段（シンボル型、6.6節）、そして綴り違いで宣言に無い名前。
+   * その段が値の並びの上で始まる位置。**受け皿（6.4節）はそれより下の全部を拾うので負の無限大**
+   * ——下端を書いていないことと、並びの上に位置を持たないことは別。undefinedになるのは位置を
+   * 持たない段のほうで、完全一致で決まる段（シンボル型、6.6節）と、綴り違いで宣言に無い名前。
    */
   readonly lowerBound: number | undefined;
 }
 
-/** 名指された段の下端（SelfStageRequirement.lowerBound）。 */
+/** 名指された段が値の並びの上で始まる位置（SelfStageRequirement.lowerBound）。 */
 function lowerBoundOf(
   def: ObjectDef,
   required: { readonly propertyGlobalId: number; readonly stageName: string },
 ): number | undefined {
-  return def
+  const stage = def
     .tryGetPropertyDef(required.propertyGlobalId)
-    ?.stages.find((stage) => stage.name === required.stageName)?.lowerBound;
+    ?.stages.find((named) => named.name === required.stageName);
+  if (stage === undefined || stage.eq !== undefined) return undefined;
+  return stage.lowerBound ?? Number.NEGATIVE_INFINITY;
 }
 
 /**
@@ -169,9 +172,9 @@ function lowerBoundOf(
  * （TickGate.neverHoldsWith）。
  *
  * 値は1つの段にしか居ないので、ちょうどその段どうし（`exact`）は名前が違えば必ず外れる。片方が
- * 「その段以上」（`or_above`）なら、そちらの下端がちょうどの段より上に在るときだけ外れる——下に
- * 在れば、ちょうどの段はその段以上に呑まれる。どちらも「その段以上」なら、上の段は下の段以上に
- * 呑まれるので外れない。
+ * 「その段以上」（`or_above`）なら、そちらの始まる位置がちょうどの段より上に在るときだけ外れる
+ * ——下に在れば、ちょうどの段はその段以上に呑まれる。どちらも「その段以上」なら、上の段は下の段
+ * 以上に呑まれるので外れない。
  */
 function disjointStages(a: SelfStageRequirement, b: SelfStageRequirement): boolean {
   if (a.propertyGlobalId !== b.propertyGlobalId) return false;

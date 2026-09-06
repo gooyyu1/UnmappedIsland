@@ -346,8 +346,7 @@ object_defs:
         {
           sourceGlobalId: huntId('wound'),
           propertyGlobalId: expect.any(Number),
-          slowest: -15,
-          fastest: -15,
+          amounts: [-15],
           ticksUntilStart: 0,
           ticksUntilStop: 4,
         },

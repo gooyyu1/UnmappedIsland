@@ -11,8 +11,9 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  * （`RangeEventReadout`）——`add`で足して戻すのも`set`で書き戻すのも、上端から戻るのも下端から
  * 戻るのも、同じ1つの向き（端からrangeの内側へ）で測らないと、周期が端によって別の意味になる。
  * そして**外からの押し手をどう束ねるか**——問いは自分のプロパティの側と同じで、同時に効く分は
- * 足し合わせ、同時には効かない分が幅になる。束ねられるのは効いている間が同じものどうしだけで、
- * 立ち上がりや止まるまでの違うものを1つにすると、どの仕掛けも持っていない押し手ができる。
+ * 足し合わせ、同時には効かない分が1つの押し手の取りうる量として並ぶ。束ねられるのは効いている間が
+ * 同じものどうしだけで、立ち上がりや止まるまでの違うものを1つにすると、どの仕掛けも持っていない
+ * 押し手ができる。
  *
  * 形はどれも同梱の定義から採っているが、宣言はここに置く（tests/architecture/testKinds.test.ts）。
  */
@@ -284,9 +285,8 @@ object_defs:
     const propertyGlobalId = codex.propertyNames.getId(propertyName);
     return externalTickDeltasOf(defOf(objectName), 'parent')
       .filter((delta) => delta.propertyGlobalId === propertyGlobalId)
-      .map(({ slowest, fastest, ticksUntilStart, ticksUntilStop }) => ({
-        slowest,
-        fastest,
+      .map(({ amounts, ticksUntilStart, ticksUntilStop }) => ({
+        amounts,
         ticksUntilStart,
         ticksUntilStop,
       }));
@@ -297,8 +297,8 @@ object_defs:
     // 無いので足し合わせた-55は起こらず、1つの幅に束ねると最も遅い-15と「止まらない」がひと組に
     // なって、どちらの経路も持っていない押し手ができる。
     expect(externalDeltasOf('gash', 'blood')).toEqual([
-      { slowest: -15, fastest: -15, ticksUntilStart: 0, ticksUntilStop: 4 },
-      { slowest: -40, fastest: -40, ticksUntilStart: 320, ticksUntilStop: undefined },
+      { amounts: [-15], ticksUntilStart: 0, ticksUntilStop: 4 },
+      { amounts: [-40], ticksUntilStart: 320, ticksUntilStop: undefined },
     ]);
   });
 
@@ -307,24 +307,24 @@ object_defs:
     // 「膿み始めた時点で-2」という、どちらの段も持っていない押し手ができる。
     // 0から+0.25/tickなので、festering（40）へは160 tick、septic（80）へは320 tick。
     expect(externalDeltasOf('gash', 'hydration')).toEqual([
-      { slowest: -1, fastest: -1, ticksUntilStart: 160, ticksUntilStop: undefined },
-      { slowest: -2, fastest: -2, ticksUntilStart: 320, ticksUntilStop: undefined },
+      { amounts: [-1], ticksUntilStart: 160, ticksUntilStop: undefined },
+      { amounts: [-2], ticksUntilStart: 320, ticksUntilStop: undefined },
     ]);
   });
 
   it('同時に効く押し手は足し合わせる', () => {
     // 常時にじむ-1と、雨の間だけ裂ける-4は同時に起こる。別々の押し手として並べると、雨だけが
-    // 効いている-4という起こらない速さが幅の端になる。実際に起こるのは-1と-5。
+    // 効いている-4という起こらない速さが数に入る。実際に起こるのは-1と-5。
     expect(externalDeltasOf('thorn', 'blood')).toEqual([
-      { slowest: -1, fastest: -5, ticksUntilStart: 0, ticksUntilStop: undefined },
+      { amounts: [-1, -5], ticksUntilStart: 0, ticksUntilStop: undefined },
     ]);
   });
 
-  it('段で入れ替わる押し手は、止まるまでが速さで変わっても1つの幅に収まる', () => {
+  it('段で入れ替わる押し手は、止まるまでが速さで変わっても1つに収まる', () => {
     // どちらも毒が尽きる20 tickで止まり、同時には効かない。止まるまでを動かせる総量で持つと
     // 60mLと180mLの別々の押し手に見え、同時に起こりえない段の代替が2本の仕掛けとして数えられる。
     expect(externalDeltasOf('sting', 'blood')).toEqual([
-      { slowest: -3, fastest: -9, ticksUntilStart: 0, ticksUntilStop: 20 },
+      { amounts: [-3, -9], ticksUntilStart: 0, ticksUntilStop: 20 },
     ]);
   });
 
