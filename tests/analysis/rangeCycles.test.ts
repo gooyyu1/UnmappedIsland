@@ -191,6 +191,24 @@ object_defs:
       - conditions: [{prop: infection, in_stage: septic}]
         add: {parent: {blood: -40, hydration: -2}}
 
+  # 焼けただれ。**「その段以上」で縛られた押し手**——焦げ始めてから水を奪い、上の段へ抜けても
+  # 奪い続ける。ちょうどその段でだけ効く傷の膿みと分かれるのはここ。
+  burn:
+    tags: [injury]
+    props:
+      charring:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: reddened}
+          - {name: blistered, min: 40}
+          - {name: charred, min: 80}
+        passives:
+          - add: {self: {charring: 0.25}}
+    passives:
+      - conditions: [{prop: charring, in_stage_or_above: blistered}]
+        add: {parent: {hydration: -1}}
+
   # 刺さったままの棘。抜けない痛みで常に血がにじみ、雨に打たれている間はさらに裂ける。どちらも
   # 止まらず負った瞬間から効くので、起こるのは-1と-5——**-4だけになる場面は無い**。
   thorn:
@@ -347,8 +365,17 @@ object_defs:
     // 「膿み始めた時点で-2」という、どちらの段も持っていない押し手ができる。
     // 0から+0.25/tickなので、festering（40）へは160 tick、septic（80）へは320 tick。
     expect(externalDeltasOf('gash', 'hydration')).toEqual([
-      { amounts: [-1], ticksUntilStart: 160, ticksUntilStop: undefined },
+      { amounts: [-1], ticksUntilStart: 160, ticksUntilStop: 320 },
       { amounts: [-2], ticksUntilStart: 320, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('段を上へ抜けて止まるのは、ちょうどその段で縛られた押し手だけ', () => {
+    // 見ている値が尽きるまでしか数えないと、増える一方のinfectionでは尽きる時が来ず、festeringの
+    // 間だけ効く-1が「止まらない」として残る。**「その段以上」は上へ抜けても成立したまま**なので、
+    // 同じに扱うと焦げ切った傷が水を奪うのを止めてしまう。効き始めはどちらも名指した段の下端（40）。
+    expect(externalDeltasOf('burn', 'hydration')).toEqual([
+      { amounts: [-1], ticksUntilStart: 160, ticksUntilStop: undefined },
     ]);
   });
 
