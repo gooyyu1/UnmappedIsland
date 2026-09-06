@@ -45,6 +45,9 @@
 # （2.20）。書くのは [`board-publish.mjs`](board-publish.mjs) で、**間隔を持つのはこちら**
 # （`PUBLISH_INTERVAL`）——1周ごとに書くと、読む人が読み切れない速さで issue が書き換わる。
 #
+# **書き出すのは、盤面を引けた周のぶんだけ**で、セッションの一覧もその周に引いたものを渡す（1.7）。
+# 引けない周が続けば最終更新が伸びないので、**動いていないことは読む人に見える。**
+#
 # **書けなかった周は、ログへ1行残して次へ進む。** 古くなるのは読む先だけで、打つ手には関わらない。
 #
 # ## 走るのは複製。入れ替わったら、新しい版で回り直す
@@ -143,6 +146,10 @@ running() { [ -d "$LOCK" ] && beating; }
 
 # 盤面を常設の issue へ書き出す（2.20）。**間隔が満ちていなければ何もしない。**
 #
+# **セッションの一覧は、この周のぶんを渡す**——書き出す側に引き直させると、`list_sessions` を叩く
+# 回数がそのまま盤面の回る速さの天井に効く（1.7）。同じ周の答えを使うので、**issue に出る表と、
+# その周に打った手の根拠が同じ一覧**になる。
+#
 # **書けなくても周は止めない。** 読む先が古くなるだけで、打つ手には関わらない——ここで諦める側へ
 # 倒さないと、GitHubが数分沈むたびに盤面ごと止まる。
 publish_board() {
@@ -155,7 +162,8 @@ publish_board() {
   # **叩いた時刻は、成否によらず控える。** 失敗のたびに次の周で叩き直すと、GitHubが沈んでいる間
   # 30秒おきに打ち続けることになる——遅れて困るのは読む人だけなので、周期のぶんは待ってよい。
   echo "$now" >"$PUBLISHED"
-  node "$ORIGIN/board-publish.mjs" || log "盤面を書き出せなかった（次の周期でやり直す）"
+  LIVE_SESSIONS_TSV="$STATE_DIR/live-sessions.tsv" node "$ORIGIN/board-publish.mjs" ||
+    log "盤面を書き出せなかった（次の周期でやり直す）"
 }
 
 report() {
@@ -290,13 +298,15 @@ while true; do
   if BOARD_STATE="$STATE_DIR" node "$ORIGIN/board-round.mjs"; then
     [ "$failures" -lt "$FAILURE_LIMIT" ] || log "引けるようになったので、${INTERVAL}秒おきへ戻る"
     failures=0
+    # **書き出すのは、引けた周のぶんだけ。** 引けなかった周に書くと、その周の一覧が無いまま
+    # 前の周の写しへ新しい時刻を貼ることになる——**読む人は、動いていないことを時刻で読む。**
+    publish_board
   else
     failures=$((failures + 1))
     log "盤面を引けなかった（${failures}回目）"
     [ "$failures" -ne "$FAILURE_LIMIT" ] ||
       log "${FAILURE_LIMIT}回続けて失敗したので、${RETRY_INTERVAL}秒おきへ落とす（認証切れか通信断。直れば自分で戻る）"
   fi
-  publish_board
   [ -z "${ONCE:-}" ] || break
   [ -z "$stopping" ] || break
   # 寝る前に見るのは、**古い版のまま `INTERVAL` ぶん待たせない**ため（上の「走るのは複製」）。複製元へ

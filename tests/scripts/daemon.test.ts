@@ -306,6 +306,29 @@ describe('daemon.sh', () => {
     expect(result.log).toContain('盤面を書き出せなかった');
   });
 
+  // **叩いた時刻は成否によらず控える**（2.20.2）。失敗のたびに次の周で叩き直すと、GitHubが沈んで
+  // いる間じゅう周と同じ速さで打ち続けることになる。
+  it('書き出せなかった周も、次の周期までは叩き直さない', () => {
+    const result = daemon({
+      publishFails: true,
+      args: ['run'],
+      then: [['run']],
+      env: { PUBLISH_INTERVAL: '3600' },
+    });
+
+    expect(result.rounds).toBe(2);
+    expect(result.publishes).toBe(1);
+  });
+
+  // 引けなかった周は一覧そのものが無い（`board-round.mjs` が置く前に落ちる）。**前の周の写しへ
+  // 新しい時刻を貼らない**——読む人は、動いていないことを最終更新の時刻で読む。
+  it('盤面を引けなかった周は、書き出さない', () => {
+    const result = daemon({ roundFails: true });
+
+    expect(result.rounds).toBe(1);
+    expect(result.publishes).toBe(0);
+  });
+
   it('restart は、走っているものを入れ替える', () => {
     const result = daemon({
       args: ['start'],
