@@ -102,8 +102,9 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 8. 待たされていた手番（`trigger: tick` で `duration` を持つもの、
    [`GameElementDefinition.md`](./GameElementDefinition.md) 11.5 節）を起こす。**ここが操作の切れ目**で、
    5 の経過中に配られた手番はその場では起きずにここまで待つ（`WorldSession.runToSeam`）。
-   時間を進める操作は他にもある（製作の 1 工程・枠へ入れる）ので、切れ目もそれぞれが名乗る
-   ——操作の外で時間だけが動いた場合は、その進行そのものが切れ目になる。
+   時間を進める操作は他にもある（製作の 1 工程・枠へ入れる）が、**どれも実行として関係を張る**ので、
+   切れ目を名乗るのは関係を張る側（`InteractionRelation.whileActing`）だけ——操作の外で時間だけが
+   動いた場合は、その進行そのものが切れ目になる。
 
 ## 3. 実行可能条件（conditions）
 

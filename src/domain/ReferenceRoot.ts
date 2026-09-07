@@ -106,9 +106,18 @@ export class InteractionRelation {
   /**
    * 実行として関係を張る。**同じ物が2つの操作のagentになることはない**（11.5節の不変条件。動作主は
    * 一度に1つの動作しかできない）ので、既に動いている個体をagentにしようとすればその場で止まる。
+   *
+   * **抜けたところが操作の切れ目になる**（WorldSession.runToSeam）。実行として張られている間が
+   * そのまま操作1つなので、囲うのはここ——時間を使う操作は経過中に手番を配りうるので、囲いを
+   * 呼び出し側に任せると、忘れた経路では内側の時間経過自身の切れ目が深さ0で開き、効果を適用する
+   * 前に手番が走る。
+   *
+   * **切れ目はクレームの外側で閉じる。** 内側で閉じると、切れ目が配る待たせた手番が自分自身の操作
+   * （例: 強制的な時間経過、11.5節「再帰的な操作」）だったとき、まだ外れていないクレームへ同じagentの
+   * 再クレームが走り、上の不変条件が破れる。
    */
   whileActing<T>(body: (context: ReferenceContext) => T): T {
-    return this.bound(true, body);
+    return this.agent.session.runToSeam(() => this.bound(true, body));
   }
 
   private bound<T>(claimsAgent: boolean, body: (context: ReferenceContext) => T): T {
