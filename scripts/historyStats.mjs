@@ -58,9 +58,17 @@ import { lineChart } from './lineChart.mjs';
  * 行数の列。値は `git grep` へ渡す pathspec で、C#期とTS期の置き場を合併してある。
  *
  * **拡張子は `**.ts` の形で書く。** 途中にスラッシュを挟む形（`**` とスラッシュと `*.ts`）は、
- * 置き場の**直下**にあるファイルを取りこぼす——文書の列が `docs/HowWeGotHere.md` を数えて
- * いなかった。
+ * 置き場の**直下**にあるファイルを取りこぼす——文書の列が `docs/` 直下（`HowWeGotHere.md`
+ * など）を1つも数えていなかった。**どの列も拡張子で絞る**——絞らないと、置き場へ画像や zip が
+ * 入った日に、`git grep -c ''` がそれへ返す数が黙って列へ乗る。
  */
+
+/** 運用を回す道具の置き場。本番のプログラムではないので、`実装` とは別の列で数える。 */
+const TOOL_DIRECTORIES = ['scripts', '.claude', 'tools'];
+
+/** 道具として数える拡張子。**実行されるものとその型だけ**で、傍らの `*.md` や設定は入らない。 */
+const TOOL_EXTENSIONS = ['mjs', 'mts', 'sh', 'py'];
+
 const LINE_COLUMNS = [
   { header: '実装', pathspecs: ['Assets/Scripts/**.cs', 'src/**.ts', ':!src/**.test.ts'] },
   { header: '試験', pathspecs: ['Tests/**.cs', 'tests/**.ts', 'src/**.test.ts'] },
@@ -69,14 +77,11 @@ const LINE_COLUMNS = [
     header: '定義',
     pathspecs: ['Assets/StreamingAssets/**.yaml', 'public/**.yaml', 'src/assets/**.yaml'],
   },
-  /**
-   * リポジトリの運用を回す道具。**本番のプログラムではないが、書かれた量としては数える。**
-   * `scripts/` は丸ごと（説明の `*.md` を除く）、`.claude/` は実行されるものだけ——あちらの
-   * `*.md` は取り決めの文書で、道具ではない。
-   */
   {
     header: '道具',
-    pathspecs: ['scripts/**', ':!scripts/**.md', '.claude/**.sh', '.claude/**.mjs'],
+    pathspecs: TOOL_DIRECTORIES.flatMap((directory) =>
+      TOOL_EXTENSIONS.map((extension) => `${directory}/**.${extension}`),
+    ),
   },
 ];
 
