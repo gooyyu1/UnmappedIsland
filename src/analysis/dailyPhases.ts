@@ -44,26 +44,20 @@ export const SLEEP_MINUTES_PER_DAY = 360;
 export const NIGHT_CRAFT_MINUTES_PER_DAY = MINUTES_PER_DAY - OUTDOOR_WINDOW_MINUTES - SLEEP_MINUTES_PER_DAY;
 
 /**
- * 1日の枠のうち、収支表の最小労働（BalanceStats.md）から出る2つ。**どちらも書き写さない**
- * ——最小労働が動けば、生存の採取も自由時間も一緒に動く。
+ * 1日の枠のうち、収支表の最小労働（BalanceStats.md）から出るぶん。**書き写さない**——最小労働が
+ * 動けば、生存の採取も一緒に動く。
  */
 export interface DailyBudget {
   /** 1日を賄う生存の採取（分）。最小労働から睡眠を引いた、昼に払うぶん。 */
   readonly survivalGatheringMinutes: number;
-
-  /** 最小労働を払って残る自由時間（分）。山の量を日数へ直すときの分母。 */
-  readonly surplusMinutes: number;
 }
 
 /**
  * 収支表の最小労働を、1日の割り付けへ当てはめる。**引き算は最小労働から睡眠を落とす1回だけ**
- * ——自由時間そのものは収支表が持っている（`BalanceTables.surplusMinutes`）ので、ここでは組み直さない。
+ * ——自由時間は収支表が持っている（`BalanceTables.surplusMinutes`）ので、ここへ写さない。
  */
 export function dailyBudgetOf(balance: BalanceTables): DailyBudget {
-  return {
-    survivalGatheringMinutes: balance.minimumLabourMinutes - SLEEP_MINUTES_PER_DAY,
-    surplusMinutes: balance.surplusMinutes,
-  };
+  return { survivalGatheringMinutes: balance.minimumLabourMinutes - SLEEP_MINUTES_PER_DAY };
 }
 
 /** 探索できる土地の型1つの、局面の勘定に要るぶん。 */
@@ -228,15 +222,14 @@ export function workPileAmountsOf(
   codex: WorldCodex,
   characterName: string,
   balance: BalanceTables,
-  budget: DailyBudget,
 ): readonly WorkPileAmount[] {
   return WORK_PILES.map((pile) => {
     const objectNames = amountObjectNamesOf(codex, characterName, balance, pile.amount);
     const minutes =
       typeof pile.amount === 'number'
-        ? pile.amount * budget.surplusMinutes
+        ? pile.amount * balance.surplusMinutes
         : objectNames.reduce((sum, name) => sum + objectCostMinutesOf(balance, name), 0);
-    return { pile, objectNames, minutes, days: minutes / budget.surplusMinutes };
+    return { pile, objectNames, minutes, days: minutes / balance.surplusMinutes };
   });
 }
 
@@ -361,14 +354,18 @@ export interface WorkTotal {
   readonly baseDays: number;
 }
 
-export function workTotalOf(amounts: readonly WorkPileAmount[], budget: DailyBudget): WorkTotal {
+/**
+ * 山の量の合計。**日数は山1つずつの日数の和**で、分母になる自由時間は、山の量を出した収支表の
+ * ものだけ。
+ */
+export function workTotalOf(amounts: readonly WorkPileAmount[]): WorkTotal {
   const minutes = amounts.reduce((sum, amount) => sum + amount.minutes, 0);
   const baseMinutes = minutes * (1 - OUTDOOR_WORK_SHARE);
 
   return {
     pileCount: amounts.length,
     minutes,
-    days: minutes / budget.surplusMinutes,
+    days: amounts.reduce((sum, amount) => sum + amount.days, 0),
     outdoorMinutes: minutes * OUTDOOR_WORK_SHARE,
     baseMinutes,
     baseDays: baseMinutes / NIGHT_CRAFT_MINUTES_PER_DAY,
@@ -483,11 +480,11 @@ export interface CycleDays {
  *
  * 日帰りで開き切れない島と、定常の局面を持たない拠点ではundefined。
  */
-export function cycleDaysOf(base: BaseDailyPhases, outdoorWorkMinutes: number): CycleDays | undefined {
+export function cycleDaysOf(base: BaseDailyPhases, work: WorkTotal): CycleDays | undefined {
   const explorationDays = base.exploration.dayTripDays;
   if (explorationDays === undefined || base.steady === undefined) return undefined;
 
-  const steadyDays = outdoorWorkMinutes / base.steady.workMinutesPerDay;
+  const steadyDays = work.outdoorMinutes / base.steady.workMinutesPerDay;
   return { explorationDays, steadyDays, totalDays: explorationDays + steadyDays };
 }
 
