@@ -772,5 +772,63 @@
     ],
     "positive": "exactly one low dome of packed wet earth alone on an empty white page, a rough rounded mound patted together by hand out of dark damp clay and soil, wider than it is tall, its surface uneven and lumpy with the marks of hands pressed into it, a row of three small round air holes low along its foot and one larger round opening at the top of the dome, the openings dark inside, no door and no bricks, deep grey brown damp earth clearly darker than the white page, the mound is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "fire, flame, flames, smoke, embers, glow, sparks, bricks, brickwork, masonry, stonework, stone wall, arch, archway, doorway, door, iron door, chimney, flue, pipe, oven, bread oven, pizza oven, tandoor, furnace, forge, igloo, tent, hut, house, roof, grave, burial mound, anthill, termite mound, haystack, rock, boulder, cave, tunnel, pottery, pots, jars, tools, two mounds, three mounds, several mounds, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+  },
+  "log_stool": {
+    "description": [
+      "丸太の腰掛け（src/assets/world-codex/furnishings.yaml）。丸太を短く割り、座面を斧で",
+      "平らに削っただけの物。"
+    ],
+    "positive": "exactly one thick round of a tree trunk standing on its end alone on an empty white page, a squat block of wood used as a seat, no taller than it is wide, rough furrowed dark brown bark wrapping right around its curved side, its top hewn flat and level into a smooth round seat, the bare pale wood of that seat showing plainly against the dark bark, seen from the side and a little above so the round seat shows as an oval, warm brown tones, matte dry surface, it is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "tall, tall column, pillar, post, totem pole, standing trunk, dead tree, snag, splintered top, jagged top, torn wood, hollow, hollowed out, vase, vessel, legs, three legged stool, four legs, spindles, rungs, chair, armchair, backrest, bar stool, step stool, cushion, upholstery, fabric seat, side table, tree stump, roots, rooted, in the ground, soil, moss, mushrooms, ivy, leaves, foliage, growing, tree, forest, sawn plank, plank, board, lumber, log cabin, firewood, woodpile, axe, hatchet, saw, carved face, human face, face, eyes, nose, mouth, sculpture, varnished, polished, lacquered, glossy, wet, white wood, grey wood, bleached driftwood, two stools, three stools, several stools, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+  },
+  "branch_table": {
+    "description": [
+      "枝の卓（src/assets/world-codex/furnishings.yaml）。太い枝を組み、縄で締めた低い卓。",
+      "",
+      "**NGワードに table を入れてはいけない。** 他のアイテムでは「物が載っている台」を落とすために",
+      "入れているが、この絵では卓そのものが被写体になる（_comment「ある物のために入れた否定が",
+      "別の物を壊す」）。落とすのは desk の側だけ。",
+      "",
+      "**ほぞ組みではなく縛りで組む**（docs/world/Skills.md 2.1節）。継ぎ目に縄の巻きが見えることが",
+      "「指物の腕を要らない卓」であることの唯一の手掛かりなので、釘・金具を否定して巻きを本文で言う。",
+      "**それでも本文どおりに巻きが描かれるのはまれで、seedで選ぶ**（recipes/branch_table.json）。"
+    ],
+    "positive": "exactly one rough camp table lashed together from straight wooden poles alone on an empty white page, four short straight poles standing as legs and several more straight poles laid side by side across them to make a flat top, every crossing bound with many tight turns of rough twisted plant fibre cord whose strands show, the poles all straight and stout with rough brown bark still on them, a low bushcraft table wider than it is tall, seen from the side and a little above so the top surface shows, warm brown and tan tones, matte dry surface, it is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "gnarled, twisted branches, tangled branches, tangle, roots, tree roots, driftwood, driftwood sculpture, sculpture, art piece, installation, nest, bare tree, dead tree, thin twigs, twigs, brushwood, wicker, woven top, tall table, console table, pedestal table, round table top, slab top, live edge slab, nails, screws, bolts, metal brackets, metal, iron, glass top, tablecloth, cloth on top, plates, dishes, bowls, cups, food, fruit, books, candle, lamp, potted plant, vase, chair, chairs, stool, bench, backrest, bed, ladder, easel, tripod, sawhorse, fence, gate, hurdle, raft, tent, hut, roof, shelf, crate, pallet, room, wall, floorboards, carpet, rug, polished, varnished, lacquered, glossy, wet, sawn plank, plank top, board top, lumber, two tables, three tables, several tables, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+  },
+  "wood_carving": {
+    "description": [
+      "木彫りの像（src/assets/world-codex/furnishings.yaml）。太い枝1本から刃物だけで削り出した物。",
+      "",
+      "**顔を描かせない。** 人の形を頼むと彫りの細かい工芸品になり、島で削り出した物に見えなくなる。",
+      "頭は丸めた瘤として置き、目鼻口をNGワードで落とす。",
+      "",
+      "**細さを落とすNGワードを足してはいけない。** 最初の6枚が細い操り人形になったので",
+      "stick figure / artist mannequin / thin limbs / long legs などを足したところ、8枚とも人の形が",
+      "消えて枯れ木と板になった（thick_branch と同じ壊れ方）。**ずんぐりさは本文の側だけで言う**",
+      "——NGワードでは言えないので、言える場所がここしか無い。**それでも生成の手足は細いままで、",
+      "太さは本文では動かない**（recipes/wood_carving.json）。"
+    ],
+    "positive": "exactly one small wooden figurine alone on an empty white page, one short thick piece of branch carved into a solid little standing figure, still round and stout like the branch it was cut from, a rounded knob at the top for a head with a plain blank front, a barrel body below it, the arms only suggested as shallow grooves cut down its sides, thick and stubby everywhere with nothing thin and nothing sticking out, broad flat facets left by the blade all over the bare pale brown wood, plain and crude with no fine detail anywhere, warm light brown tones, matte dry surface, it is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "face, human face, eyes, nose, mouth, smile, portrait, realistic sculpture, marble statue, bronze, ivory, jade, netsuke, totem pole, tiki, idol, chess piece, pawn, doll, toy, teddy bear, matryoshka, mask, animal, bird, owl, bear, fish, horse, painted, colourful paint, decorated, carved pattern, engraving, inlay, pedestal, plinth, base, stand, display case, knife, chisel, tools, wood shavings, wood chips, polished, varnished, lacquered, glossy, wet, white wood, grey wood, bleached driftwood, two figurines, three figurines, several figurines, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+  },
+  "log_drum": {
+    "description": [
+      "木の太鼓（src/assets/world-codex/furnishings.yaml）。丸太をくり抜き、生皮を縄で締めた物。",
+      "",
+      "**腰掛け（log_stool）と並んで札に出る。** どちらも立てた丸太なので、分けるのは天面",
+      "——腰掛けは削った木の面、太鼓は張った生皮と、縁を回る縄の巻き。両方を本文で言うが、",
+      "**本文で出るのは張った皮までで、縄の巻きは出ない**（recipes/log_drum.json）。",
+      "",
+      "**金具と樽形を否定する。** 何も言わないと締め具の付いた現代の太鼓か、腰のくびれたジャンベに",
+      "なり、丸太をくり抜いた物に見えなくなる。",
+      "",
+      "**ただし太鼓の種類をNGワードで落としてはいけない。** djembe / conga / snare drum などを",
+      "並べた6枚は、6枚とも皮の張っていない中空の丸太（花器）になった。頭の名詞が drum なので、",
+      "種類を並べると太鼓そのものが消える。落とすのは金具（tuning lugs・metal hoop）だけにして、",
+      "形は本文で言う（thick_branch と同じで、この被写体もNGワードを増やすと壊れる）。"
+    ],
+    "positive": "exactly one hand made drum alone on an empty white page, a drum built from one short hollowed section of tree trunk standing upright, a taut head of tan brown animal hide stretched over its round top, the edge of that hide folded down over the rim and held there by many tight turns of rough twisted plant fibre cord passing right around the body of the drum, rough dark brown bark still on the outside of the trunk, a straight cylinder a little taller than it is wide, seen from the side and a little above so the round hide head shows as an oval, warm brown wood with a tan hide head, matte dry surface, it is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "open top, empty hollow, no head, uncovered, vase, vessel, bowl, pot, jar, bucket, barrel, keg, basket, metal hoop, metal rim, tuning lugs, screws, bolts, hardware, drumsticks, mallets, beater, painted pattern, tribal pattern, carved pattern, decoration, tree stump, roots, rooted, in the ground, soil, moss, mushrooms, leaves, foliage, growing, tree, forest, splintered top, jagged top, torn wood, white wood, bleached driftwood, two drums, three drums, several drums, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
   }
 }
