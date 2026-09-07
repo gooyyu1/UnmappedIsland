@@ -469,8 +469,6 @@ export function moves(input) {
     if (labels.includes('収束せず')) continue;
 
     // 結論のラベルが無い＝この差分はまだ読まれていない（push で外れる。`board-labels.yml`）。
-    // **コンフリクトを解いただけの push もここへ来る。** 解いた字面は誰も読んでいないものとして
-    // 必ず新しく現れるので、押された版と読まれた版の突き合わせでは弾けない（2.12.5）。
     if (check !== 'green') continue;
     // **マージできると分かるまで出さない。** `mergeable` は3値で、`main` が動くたびに開いているPRが
     // 全部 `UNKNOWN` へ落ち、GitHub が計算し直すまでそのまま。上の `CONFLICTING` だけで弾くと、
