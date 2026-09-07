@@ -54,14 +54,29 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { lineChart } from './lineChart.mjs';
 
-/** 行数の4列。値は `git grep` へ渡す pathspec で、C#期とTS期の置き場を合併してある。 */
+/**
+ * 行数の列。値は `git grep` へ渡す pathspec で、C#期とTS期の置き場を合併してある。
+ *
+ * **拡張子は `**.ts` の形で書く。** 途中にスラッシュを挟む形（`**` とスラッシュと `*.ts`）は、
+ * 置き場の**直下**にあるファイルを取りこぼす——文書の列が `docs/HowWeGotHere.md` を数えて
+ * いなかった。
+ */
 const LINE_COLUMNS = [
-  { header: '実装', pathspecs: ['Assets/Scripts/**/*.cs', 'src/**/*.ts', ':!src/**/*.test.ts'] },
-  { header: '試験', pathspecs: ['Tests/**/*.cs', 'tests/**/*.ts', 'src/**/*.test.ts'] },
-  { header: '文書', pathspecs: ['Documents/**/*.md', 'docs/**/*.md'] },
+  { header: '実装', pathspecs: ['Assets/Scripts/**.cs', 'src/**.ts', ':!src/**.test.ts'] },
+  { header: '試験', pathspecs: ['Tests/**.cs', 'tests/**.ts', 'src/**.test.ts'] },
+  { header: '文書', pathspecs: ['Documents/**.md', 'docs/**.md'] },
   {
     header: '定義',
-    pathspecs: ['Assets/StreamingAssets/**/*.yaml', 'public/**/*.yaml', 'src/assets/**/*.yaml'],
+    pathspecs: ['Assets/StreamingAssets/**.yaml', 'public/**.yaml', 'src/assets/**.yaml'],
+  },
+  /**
+   * リポジトリの運用を回す道具。**本番のプログラムではないが、書かれた量としては数える。**
+   * `scripts/` は丸ごと（説明の `*.md` を除く）、`.claude/` は実行されるものだけ——あちらの
+   * `*.md` は取り決めの文書で、道具ではない。
+   */
+  {
+    header: '道具',
+    pathspecs: ['scripts/**', ':!scripts/**.md', '.claude/**.sh', '.claude/**.mjs'],
   },
 ];
 

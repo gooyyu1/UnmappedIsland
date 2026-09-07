@@ -96,7 +96,7 @@ function tableOf(stdout: string): Map<string, string>[] {
     .map((cells) => new Map(headers.map((header, index) => [header, cells[index]])));
 }
 
-const NUMBER_COLUMNS = ['実装', '試験', '文書', '定義', 'PR'];
+const NUMBER_COLUMNS = ['実装', '試験', '文書', '定義', '道具', 'PR'];
 
 describe.runIf(IS_SHALLOW)('浅いクローンでの育ち方の推移', () => {
   const { stdout, status } = run([TODAY]);
