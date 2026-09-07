@@ -800,7 +800,12 @@
       "木彫りの像（src/assets/world-codex/furnishings.yaml）。太い枝1本から刃物だけで削り出した物。",
       "",
       "**顔を描かせない。** 人の形を頼むと彫りの細かい工芸品になり、島で削り出した物に見えなくなる。",
-      "頭は丸めた瘤として置き、目鼻口をNGワードで落とす。"
+      "頭は丸めた瘤として置き、目鼻口をNGワードで落とす。",
+      "",
+      "**細さを落とすNGワードを足してはいけない。** 最初の6枚が細い操り人形になったので",
+      "stick figure / artist mannequin / thin limbs / long legs などを足したところ、8枚とも人の形が",
+      "消えて枯れ木と板になった（thick_branch と同じ壊れ方）。**ずんぐりさは本文の側だけで言う**",
+      "——「枝から切り出した1本の塊」「何も細くなく、何も突き出ていない」と書けば出る。"
     ],
     "positive": "exactly one small wooden figurine alone on an empty white page, one short thick piece of branch carved into a solid little standing figure, still round and stout like the branch it was cut from, a rounded knob at the top for a head with a plain blank front, a barrel body below it, the arms only suggested as shallow grooves cut down its sides, thick and stubby everywhere with nothing thin and nothing sticking out, broad flat facets left by the blade all over the bare pale brown wood, plain and crude with no fine detail anywhere, warm light brown tones, matte dry surface, it is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "face, human face, eyes, nose, mouth, smile, portrait, realistic sculpture, marble statue, bronze, ivory, jade, netsuke, totem pole, tiki, idol, chess piece, pawn, doll, toy, teddy bear, matryoshka, mask, animal, bird, owl, bear, fish, horse, painted, colourful paint, decorated, carved pattern, engraving, inlay, pedestal, plinth, base, stand, display case, knife, chisel, tools, wood shavings, wood chips, polished, varnished, lacquered, glossy, wet, white wood, grey wood, bleached driftwood, two figurines, three figurines, several figurines, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
@@ -813,7 +818,12 @@
       "——腰掛けは削った木の面、太鼓は張った生皮と、縁を回る縄の巻き。両方を本文で言う。",
       "",
       "**金具と樽形を否定する。** 何も言わないと締め具の付いた現代の太鼓か、腰のくびれたジャンベに",
-      "なり、丸太をくり抜いた物に見えなくなる。"
+      "なり、丸太をくり抜いた物に見えなくなる。",
+      "",
+      "**ただし太鼓の種類をNGワードで落としてはいけない。** djembe / conga / snare drum などを",
+      "並べた6枚は、6枚とも皮の張っていない中空の丸太（花器）になった。頭の名詞が drum なので、",
+      "種類を並べると太鼓そのものが消える。落とすのは金具（tuning lugs・metal hoop）だけにして、",
+      "形は本文で言う（thick_branch と同じで、この被写体もNGワードを増やすと壊れる）。"
     ],
     "positive": "exactly one hand made drum alone on an empty white page, a drum built from one short hollowed section of tree trunk standing upright, a taut head of tan brown animal hide stretched over its round top, the edge of that hide folded down over the rim and held there by many tight turns of rough twisted plant fibre cord passing right around the body of the drum, rough dark brown bark still on the outside of the trunk, a straight cylinder a little taller than it is wide, seen from the side and a little above so the round hide head shows as an oval, warm brown wood with a tan hide head, matte dry surface, it is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "open top, empty hollow, no head, uncovered, vase, vessel, bowl, pot, jar, bucket, barrel, keg, basket, metal hoop, metal rim, tuning lugs, screws, bolts, hardware, drumsticks, mallets, beater, painted pattern, tribal pattern, carved pattern, decoration, tree stump, roots, rooted, in the ground, soil, moss, mushrooms, leaves, foliage, growing, tree, forest, splintered top, jagged top, torn wood, white wood, bleached driftwood, two drums, three drums, several drums, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
