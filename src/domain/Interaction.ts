@@ -58,12 +58,7 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
   }
 
   tryExecute(): boolean {
-    // クレーム（whileActing）の外側でseamを閉じる。内側で閉じると、seamが配る待たせた手番が
-    // 自分自身の操作（例: 強制的な時間経過、11.5節「再帰的な操作」）だったとき、外側のクレームが
-    // まだ外れていない状態で同じagentへの再クレームが走り、排他違反になる。
-    return this.self.session.runToSeam(() =>
-      this.relation.whileActing((context) => this.def.tryExecute(context, this.self.session)),
-    );
+    return this.relation.whileActing((context) => this.def.tryExecute(context, this.self.session));
   }
 }
 

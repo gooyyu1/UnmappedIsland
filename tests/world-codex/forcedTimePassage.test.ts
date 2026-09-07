@@ -135,6 +135,21 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
     expect(player.parent).toBe(grassland);
   });
 
+  it('待たせた手番が起きるのは、操作の効果を適用し終えてから', () => {
+    // 操作をまるごと囲わないと、内側の時間経過（WorldSession.advanceWorldTime）自身の切れ目が
+    // 深さ0で開き、効果を適用する前に手番が走る——歩き終わる前に倒れることになり、同じ物が2つの
+    // 操作のagentに就く（11.5節の不変条件）。過ぎた分数にも着いた先にも出ないので、告げられた
+    // 時点でどこに立っているかで見る。
+    drain('stamina');
+
+    let standingWhenCollapsed: WorldObject | undefined;
+    session.observeSignals(() => {
+      standingWhenCollapsed = player.parent;
+    }, travel);
+
+    expect(standingWhenCollapsed, '倒れるのは、草原へ着いた後').toBe(grassland);
+  });
+
   it('切れ目までに限界を抜けていれば、待たせた手番は起きない', () => {
     // 待たせた手番の要件は切れ目で引き直される。待機は15分で体力を+2戻すので、切れ目に着いた
     // 時点では下限に居ない。
