@@ -53,6 +53,33 @@ describe('merge-and-close.sh', () => {
     expect(result.status).toBe(2);
   });
 
+  // 張り替えても差分には下のぶんが混ざったままで、CIも古い base で得た緑のまま。base が `main` に
+  // なったぶん盤面は普通に捌きにかかるので、**その場で書いた本人へ差し戻す**（#1633）。差し戻す理由は
+  // PRを見ても分からない（コンフリクトもCIの赤もレビューの指摘も無い）ので、文面を一緒に残す。
+  it('下ろしたPRは、理由を残して書いた本人へ差し戻す', () => {
+    const result = run({ stacked: [1001] });
+
+    expect(result.labels).toEqual(['--add-label 直し待ち']);
+    expect(result.comments).toContain('base を `main` へ張り替えました');
+    expect(result.status).toBe(0);
+  });
+
+  // base が消えていないので、まだ積まれたまま。書いた本人にできることが無い。
+  it('下ろせなかったPRは、差し戻さない', () => {
+    const result = run({ stacked: [1001], retargetFails: true });
+
+    expect(result.labels).toEqual([]);
+    expect(result.comments).toBe('');
+  });
+
+  it('下ろしたPRを差し戻せなければ、後片付けの残りとして出す', () => {
+    const result = run({ stacked: [1001], sendBackFails: true });
+
+    expect(result.lines).toContain('RETARGETED 1001');
+    expect(result.lines).toContain('UNMENDED 1001');
+    expect(result.status).toBe(2);
+  });
+
   it('コンフリクトしているPRはマージせずに終わる', () => {
     const result = run({ mergeable: 'CONFLICTING' });
 
