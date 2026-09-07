@@ -262,7 +262,8 @@ object_texts:
         icon: 🛡️
         description: 菌を抑え込む力。壊血病・空腹・寝不足・気の塞ぎで落ち、感染しているあいだに上がる。多く摂っても強くはならない。
       # 腕前（docs/engine/SkillSystem.md、一覧は docs/world/Skills.md 2節）。**説明にはその腕を伸ばす
-      # 行動を書く**——伸ばす行動を持たない本では、どうにもならないことがそこで分かる。
+      # 行動を書く**——伸ばす行動を持たない本では、どうにもならないことがそこで分かる。伸ばす行動の
+      # 指し方は reason_texts の `needs_` の前書きと同じ。
       skill_knapping:
         display_name: 石器
         icon: 🪨
@@ -270,11 +271,11 @@ object_texts:
       skill_cordage:
         display_name: 繊維・編み
         icon: 🧶
-        description: 繊維を撚り、葉を編む腕。掻き取り・撚り・編みのどれでも上がる。
+        description: 繊維を撚り、葉を編む腕。繊維を採り、撚り、編むほど上がる。
       skill_woodwork:
         display_name: 木材加工
         icon: 🪵
-        description: 木を伐り、刃を当てて削り出す腕。木を倒し、流木を玉切りし、骨を削るほど上がる。
+        description: 木を伐り、刃を当てて削り出す腕。木を伐り、木や骨を削り出すほど上がる。
       skill_joinery:
         display_name: 指物・接合
         icon: 🪑
@@ -302,7 +303,7 @@ object_texts:
       skill_hunting:
         display_name: 狩猟
         icon: 🏹
-        description: 獣を狩る腕。武器を手に打ちかかるほど上がる。上がるほど獲物に出くわし、打った一撃が当たる。
+        description: 獣を狩る腕。その場で獲物へ手を出すほど上がる。上がるほど獲物に出くわし、打った一撃が当たる。
       skill_smelting:
         display_name: 採鉱・製錬
         icon: ⛏️
@@ -1544,12 +1545,13 @@ reason_texts:
   # レシピの解放条件（docs/engine/SkillSystem.md 4節）。**足りない腕と、それを伸ばす行動**を書く
   # ——出る先は札を押している間の吹き出しで（docs/ui/Windows.md 9.3節）、そこから次にやることへ
   # 辿れる。**どの段が要るかは書かない**——文言は理由の名前に1つで、要る段の違う条件が同じ理由を
-  # 共有しうる。今いる段はプロパティのウィンドウの腕前のタブが持つ。**伸ばす行動は、入口を数え上げず
-  # まとめて指す**——入口が増えても嘘にならないように。
+  # 共有しうる。今いる段はプロパティのウィンドウの腕前のタブが持つので、**腕はそのタブに並ぶ名前
+  # （display_name）で呼ぶ**——違う語で呼ぶと、辿った先でどれを見ればよいか決められない。
+  # **伸ばす行動は、入口を数え上げずまとめて指す**——入口が増えても嘘にならないように。
   needs_knapping: 石器の腕がまだ足りない。石へ石を重ねて打ち、刃を出す手つきから覚える。
-  needs_cordage: 繊維の腕がまだ足りない。繊維を採って撚り、編むうちに身につく。
+  needs_cordage: 繊維・編みの腕がまだ足りない。繊維を採って撚り、編むうちに身につく。
   needs_woodwork: 木材加工の腕がまだ足りない。木を伐り、刃物で削り出すうちに身につく。
-  needs_leatherwork: 皮革の腕がまだ足りない。獣を捌き、皮を剥ぐうちに身につく。
+  needs_leatherwork: 皮革の腕がまだ足りない。獣を捌くうちに身につく。
 
 # 段（GameElementDefinition.md 6.4節のstages）のうち、UIが名前を読んで画面に出すもの。カードの上へ
 # 覆いとして出る（CardView.md 9.1節）ほか、死亡ダイアログが死因として出し（VitalsSystem.md 6節）、

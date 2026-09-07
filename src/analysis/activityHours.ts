@@ -1,3 +1,4 @@
+import { everyBranchOf } from '../domain/EffectReader';
 import type { ConditionalReading, EffectReader, PickCandidateReading } from '../domain/EffectReader';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { PassiveDeclaration, PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
@@ -353,8 +354,7 @@ class SpawnCollector implements EffectReader {
 
   /** 条件つき（6.3節）も同じ——満たさない回へ倒れる先も、生む先としては数える。 */
   conditional(reading: ConditionalReading): void {
-    reading.whenMet.read(this);
-    reading.otherwise?.read(this);
+    for (const branch of everyBranchOf(reading)) branch.read(this);
   }
 
   set(): void {}

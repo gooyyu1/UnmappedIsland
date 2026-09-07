@@ -108,7 +108,7 @@ const ACTIVE_WORKERS = 3;
 /**
  * 棚卸しが付ける**分類**の接頭辞（2.17.1）。**未整理は「これを1つも持たないこと」で表す**——
  * `kind:task` でも `kind:meta` でも無い、という否定の列挙にすると、出口が増えるたびに条件を
- * 書き換えることになり、書き忘れた出口の issue が毎周また拾われる。
+ * 書き換えることになり、書き忘れた出口の issue が毎周また拾われる（2.17.3）。
  */
 const KIND = 'kind:';
 
@@ -197,7 +197,47 @@ const CYCLES = [
     prompt: '.claude/policy-cycle-prompt.md',
     due: (board) => (board.pendingDecisions ?? 0) > 0,
   },
+  {
+    name: 'dig',
+    // **見つからない周が続いても1日1本に収める。** 配れる task が尽きた状態は、次の1本が入るまで
+    // 続く——間隔を置かないと、盤面が空いている間ずっとこの係だけが立ち続ける。
+    hours: 24,
+    // クラウドで足りる。**リポジトリへは1行も書かない**（`.claude/dig-prompt.md`）。
+    env: 'cloud',
+    locks: [],
+    prompt: '.claude/dig-prompt.md',
+    // **配れる `kind:task` が尽きた周がこの係の出番。** 枠（`HELD_TASKS`・`ACTIVE_WORKERS`）や錠で
+    // 待っているだけの周は立てない——待っている task は在るので、掘り起こしても配れる先が増えない。
+    due: (board) => readyTasks(board).length === 0,
+  },
 ];
+
+/**
+ * 今すぐ配れる `kind:task`（`TASK` に出す候補）を、**`急ぎ` が先、その中では古い順**に並べる。
+ * 一覧は新しい順に返るので、並べ直さないと古い issue が永久に後回しになる。
+ *
+ * **掘り起こす係の `due` も同じものを読む**（`CYCLES` の `dig`）——「配れる task が尽きた」は
+ * 投入の側が配れると判断する範囲そのもので、条件を2箇所に書くと、片方を絞った周に**配る手も
+ * 掘る手も出ない**空白ができる。
+ */
+function readyTasks(input) {
+  return (
+    [...input.issues]
+      .sort(
+        (a, b) =>
+          Number(names(b).includes(URGENT)) - Number(names(a).includes(URGENT)) || a.number - b.number,
+      )
+      .filter((issue) => names(issue).includes(`${KIND}task`))
+      // 返ってきたものは、人が `判断待ち` を外すまで配らない（2.15）。**分類は `kind:task` のまま**
+      // ——「もうやる必要がない」は分類ではなく人の手番の印なので、`kind:` の側は動かさない（2.17.1）。
+      // 人の手番は1タップで済む。**不変条件を持つのは投入する側**（1.4）で、ここはその写し。
+      .filter((issue) => !names(issue).includes('判断待ち'))
+      .filter((issue) => !(issue.blockedBy?.nodes ?? []).some((node) => node.state === 'OPEN'))
+      .filter((issue) => !input.prs.some((pr) => closes(pr.body).includes(issue.number)))
+      // 既にセッションが持っている issue は配り直さない（「投入済みか」は生死で見る。1.2）。
+      .filter((issue) => !input.sessions.some((session) => session.tags.includes(`task-${issue.number}`)))
+  );
+}
 
 /** `task-<番号>` のタグから担当の issue 番号を引く。持っていなければ `undefined`。 */
 function heldIssue(session) {
@@ -614,21 +654,7 @@ export function moves(input) {
     (holder) => holder.issue !== undefined || issueStates[String(holder.number)] !== 'CLOSED',
   );
 
-  // **`急ぎ` が先、その中では古いものから投入する。** 一覧は新しい順に返るので、番号で並べ直さないと
-  // 古い issue が永久に後回しになる。
-  const ready = [...input.issues]
-    .sort(
-      (a, b) => Number(names(b).includes(URGENT)) - Number(names(a).includes(URGENT)) || a.number - b.number,
-    )
-    .filter((issue) => names(issue).includes(`${KIND}task`))
-    // 返ってきたものは、人が `判断待ち` を外すまで配らない（2.15）。**分類は `kind:task` のまま**
-    // ——「もうやる必要がない」は分類ではなく人の手番の印なので、`kind:` の側は動かさない（2.17.1）。
-    // 人の手番は1タップで済む。**不変条件を持つのは投入する側**（1.4）で、ここはその写し。
-    .filter((issue) => !names(issue).includes('判断待ち'))
-    .filter((issue) => !(issue.blockedBy?.nodes ?? []).some((node) => node.state === 'OPEN'))
-    .filter((issue) => !input.prs.some((pr) => closes(pr.body).includes(issue.number)))
-    // 既にセッションが持っている issue は配り直さない（「投入済みか」は生死で見る。1.2）。
-    .filter((issue) => alive(`task-${issue.number}`).length === 0);
+  const ready = readyTasks(input);
 
   /**
    * その issue をどこへ投入するか（`dispatch-task.sh` の引数）。**知らない `env:*` は配らない**

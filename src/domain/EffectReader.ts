@@ -71,8 +71,10 @@ export interface EffectReader {
    * 満たした回の効果と満たさない回の効果を並べて渡すと、宣言順を「順に起こる」と読む読み手
    * （`src/analysis/effectOutcomes.ts`）が、起こりえない組み合わせを1つの場合として畳む。
    *
-   * `pick`と違い**重みが無い**ので、どちらへ倒れるかは確率としては言えない。両方を起こりうる場合と
-   * して数えるか、片方を代表に採るかは読み手の裁量。
+   * `pick`と違い**重みが無い**ので、どちらへ倒れるかは確率としては言えない。**受け方はこの下に
+   * 名前を付けて置いてある**ので、読み手はその1つを名指しで選ぶ——自分の問いにどれが合うかは、
+   * 選択肢それぞれの説明が持つ。宣言を**そのまま読み上げるだけ**の相手は、二択を二択のまま出すので
+   * 選ばない。
    */
   conditional(reading: ConditionalReading): void;
 }
@@ -90,6 +92,32 @@ export interface ConditionalReading {
    * 倒れる先が無ければundefined。
    */
   readonly otherwise: EffectDeclaration | undefined;
+}
+
+/**
+ * 二択（EffectReader.conditional）の**両方の枝**。倒れる先が無ければ著者の枝だけ。
+ *
+ * 選ぶのは「**それが起こりうるか**」を問う読み手——生む先・行き先・書き換え先を探すもの。条件を
+ * 満たさない回も実際に起こる回なので、倒れる先を落とすと、起きることを見落とす。
+ *
+ * 返すのは読み上げが持つ**宣言そのもの**なので、{@link authoredBranchOf}が返す枝はこの中に居る。
+ */
+export function everyBranchOf(reading: ConditionalReading): readonly EffectDeclaration[] {
+  return reading.otherwise === undefined ? [reading.whenMet] : [reading.whenMet, reading.otherwise];
+}
+
+/**
+ * 二択のうち、**著者が書いた枝**（`whenMet`）だけ。
+ *
+ * 選ぶのは「**何がどれだけ起こるか**」を問う読み手——量を集めるもの。**どちらへ倒れる回がどれだけ
+ * あるかは宣言のどこにも無い**ので、両方を場合として並べると、宣言に無い割合で場合を分けたことに
+ * なる。倒れる先は既定のクランプ（ConditionalEffect参照）で、**著者が条件を書いたせいで既定を失わない
+ * ための埋め合わせ**なので、宣言が何をすると言っているかへの答えは著者が書いた枝の側。
+ *
+ * 代わりに、**倒れる先でだけ起こることは、この枝から出る答えに入らない。**
+ */
+export function authoredBranchOf(reading: ConditionalReading): EffectDeclaration {
+  return reading.whenMet;
 }
 
 /**

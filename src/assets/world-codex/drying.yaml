@@ -129,7 +129,7 @@ object_defs:
     # docs/world/Skills.md 2.4節。
     recipes:
       # 枝を立てて縄を張るだけ。**掘削具も刃物も要らない**——太い枝は拾える物なので、保存の系統の
-      # 最初の山が前半に届く（docs/world/Skills.md 4節）。
+      # 最初の山も、腕の入口と同じ前半に来る（docs/world/Skills.md 4節）。
       lashed:
         steps:
           - requires:
