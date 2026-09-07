@@ -12,12 +12,12 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 describe('局面ごとの1日の前提', () => {
   it('収支表の最小労働が、睡眠と自由時間の両方を残す幅に収まっている', () => {
     const codex = bundledCodex();
-    const budget = dailyBudgetOf(buildBalanceTables(codex, SAMPLE_CHARACTER));
+    const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
 
     // 最小労働が睡眠を割ると生存の採取が負になり、1日の実入りが全土地で水増しされる。
-    expect(budget.survivalGatheringMinutes, '昼に払う生存の採取').toBeGreaterThan(0);
+    expect(dailyBudgetOf(balance).survivalGatheringMinutes, '昼に払う生存の採取').toBeGreaterThan(0);
     // 1日を使い切ると自由時間が0以下になり、山の日数が出なくなる（ObjectCost.days）。
-    expect(budget.surplusMinutes, '最小労働を払って残る自由時間').toBeGreaterThan(0);
+    expect(balance.surplusMinutes, '最小労働を払って残る自由時間').toBeGreaterThan(0);
   });
 
   it('山の配分の割合が、合計で1になる', () => {
@@ -31,7 +31,7 @@ describe('局面ごとの1日の前提', () => {
     const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
 
     // 値段が出ない型やどの型も名乗らないタグを名乗っていれば workPileAmountsOf が投げる。
-    const amounts = workPileAmountsOf(codex, SAMPLE_CHARACTER, balance, dailyBudgetOf(balance));
+    const amounts = workPileAmountsOf(codex, SAMPLE_CHARACTER, balance);
 
     expect(
       amounts.filter((amount) => amount.minutes <= 0).map((amount) => amount.pile.label),
