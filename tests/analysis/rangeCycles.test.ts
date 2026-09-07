@@ -209,6 +209,99 @@ object_defs:
       - conditions: [{prop: charring, in_stage_or_above: blistered}]
         add: {parent: {hydration: -1}}
 
+  # 焼け石（characters/player_character.yamlのwarmthを上げる側）。**段の下端を割って効かなくなる
+  # 押し手**——熱いうちだけ置かれた場所を暖める。熱は冷める一方なので、止まるのは熱が尽きたときでは
+  # なく、hotの下端（60）を割ったとき。
+  hot_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: hot, min: 60}
+        passives:
+          - add: {self: {heat: -5}}
+    passives:
+      - conditions: [{prop: heat, in_stage: hot}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 布に包んだ温石。**「その段以上」でも下へは抜ける**——上へ抜けても成立したままなのが焼けただれ
+  # （burn）との違いで、名指した段の下端を割れば外れるのは焼け石と変わらない。
+  wrapped_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: hot, min: 60}
+        passives:
+          - add: {self: {heat: -5}}
+    passives:
+      - conditions: [{prop: heat, in_stage_or_above: hot}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 凍傷。**受け皿の段（6.4節）に居ることを求める押し手**——巡りが鈍っている間、持ち主の熱を奪う。
+  # 巡りは落ちる一方だが、受け皿には下端が無いので、下端まで落ちても段は外れない。
+  frostbite:
+    tags: [injury]
+    props:
+      circulation:
+        value: 30
+        range: {min: 0, max: 100}
+        stages:
+          - {name: numb}
+          - {name: flowing, min: 60}
+        passives:
+          - add: {self: {circulation: -1}}
+    passives:
+      - conditions: [{prop: circulation, in_stage: numb}]
+        add: {parent: {warmth: -2}}
+
+  # 炉（fire.yamlのhearth）。**火力は段の下に置かれた増減で育つ**（8.2節）ので、tickAmountsOfは
+  # そこを数えず、読める増減は雨で削られる分だけになる。焼く分は火力の段の下に在り、生まれた時点の
+  # 火力（0）はその段の下端（5）より下——**まだ入っていない段を、下へ抜けたことにしてはならない**。
+  # したことにすると、焼く押し手が丸ごと消える。いつ入るかを答えるのは効き始めの側。
+  firepit:
+    tags: [fixture]
+    props:
+      fuel:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: none}
+          - name: stocked
+            min: 1
+            passives:
+              - conditions: [{prop: heat, gt: 0}]
+                add: {self: {heat: 2}}
+      heat:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: out}
+          - name: coals
+            min: 5
+            passives:
+              - add:
+                  self: {fuel: -0.5}
+                  child: {cooking_progress: 1}
+    passives:
+      - conditions: [{subject: ancestor, prop: wetness, gte: 1}]
+        add: {self: {heat: -4}}
+    slots:
+      fire:
+        cell_count: 1
+        cell: {accept: {tag: roastable}}
+
+  raw_meat:
+    tags: [item, roastable]
+    props:
+      cooking_progress: {value: 0, range: {min: 0, max: 40}}
+
   # 刺さったままの棘。抜けない痛みで常に血がにじみ、雨に打たれている間はさらに裂ける。どちらも
   # 止まらず負った瞬間から効くので、起こるのは-1と-5——**-4だけになる場面は無い**。
   thorn:
@@ -448,10 +541,10 @@ object_defs:
     expect(cycleOf('clock', 'minute')).toMatchObject([{ minutes: 4 * 15, repeats: true }]);
   });
 
-  /** その型が親へ与える押し手のうち、そのプロパティを動かすもの。 */
-  function externalDeltasOf(objectName: string, propertyName: string) {
+  /** その型が隣の物（既定では親）へ与える押し手のうち、そのプロパティを動かすもの。 */
+  function externalDeltasOf(objectName: string, propertyName: string, root: 'parent' | 'child' = 'parent') {
     const propertyGlobalId = codex.propertyNames.getId(propertyName);
-    return externalTickDeltasOf(defOf(objectName), 'parent')
+    return externalTickDeltasOf(defOf(objectName), root)
       .filter((delta) => delta.propertyGlobalId === propertyGlobalId)
       .map(({ amounts, ticksUntilStart, ticksUntilStop }) => ({
         amounts,
@@ -486,6 +579,36 @@ object_defs:
     // 同じに扱うと焦げ切った傷が水を奪うのを止めてしまう。効き始めはどちらも名指した段の下端（40）。
     expect(externalDeltasOf('burn', 'hydration')).toEqual([
       { amounts: [-1], ticksUntilStart: 160, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('段の下端を割って効かなくなる押し手は、値が尽きるより先に止まる', () => {
+    // 冷めていく熱を段で見ている押し手は、値が0まで尽きるより先に段を出る。段の条件が見ている値を
+    // 「尽きるまで」でも数えると、100が-5で尽きる20 tickになり、暖められる時間が倍を超えて延びる。
+    // 100から-5/tickなので、hotの下端60を割るのは9 tick目（8 tick後はちょうど60＝まだhot）。
+    // **「その段以上」も下端は同じ**——上へ抜けないことと、下へ抜けないことは別。
+    expect(externalDeltasOf('hot_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: 9 },
+    ]);
+    expect(externalDeltasOf('wrapped_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: 9 },
+    ]);
+  });
+
+  it('受け皿の段に居ることを求める押し手は、値が下端まで落ちても止まらない', () => {
+    // 受け皿（6.4節）には下端が無いので、下へ抜けようが無い。段の条件が見ている値を「尽きるまで」でも
+    // 数えると、巡りが0へ落ちる30 tickで止まるものとして数えられる。
+    expect(externalDeltasOf('frostbite', 'warmth')).toEqual([
+      { amounts: [-2], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('生まれた時点で段の下端より下に在る値は、下へ抜けたことにならない', () => {
+    // 炉の火力は段の下に置かれた増減で育つので、読める増減は雨で削られる分だけ。生まれた時点の
+    // 火力（0）を「coalsの下端（5）を割った」と読むと、焼く押し手が生まれた瞬間に止まったことに
+    // なって消える——その段へ入るのはこれからで、いつ入るかは効き始めの側が答える。
+    expect(externalDeltasOf('firepit', 'cooking_progress', 'child')).toEqual([
+      { amounts: [1], ticksUntilStart: 0, ticksUntilStop: undefined },
     ]);
   });
 

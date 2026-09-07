@@ -741,6 +741,20 @@ export class PropertyDef {
     return lowerBound === undefined ? undefined : this.stageAbove(lowerBound)?.bound;
   }
 
+  /**
+   * 名指した段の下端のうち、**そこより下へ値が行けるもの**＝押し割って抜け出る先。抜け出る先が
+   * 無ければundefinedで、位置を持たない段・宣言に無い名前も同じ。
+   *
+   * 抜け出る先を持たないのは、下端が `range` の下限以下の段——下がどこまでも続く受け皿（6.4節）と、
+   * 下限そのものから始まる段。**値が取れない位置は抜け出る先にならない**という、
+   * {@link upperBoundOfStage} が `range` の上限より上の段を落とすのと同じ見方を、下の端でしたもの。
+   */
+  lowerExitOfStage(stageName: string): number | undefined {
+    const lowerBound = this.lowerBoundOfStage(stageName);
+    if (lowerBound === undefined) return undefined;
+    return lowerBound > (this.range?.min ?? Number.NEGATIVE_INFINITY) ? lowerBound : undefined;
+  }
+
   /** 名指した段（6.4節）。段を外から指す術は名前しか無いので、探すのも名前で。 */
   private stageNamed(stageName: string): PropertyStage | undefined {
     return this.stages.find((stage) => stage.name === stageName);

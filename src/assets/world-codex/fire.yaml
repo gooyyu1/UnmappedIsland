@@ -92,7 +92,8 @@ traits:
         # 炎（3/tick）なら4tick＝1時間、熾火（1/tick）なら3時間で溜まり切る。
         range: {min: 0, max: 12}
         stages:
-          # 湯を沸かすには、溜め切った石の半分が要る（hot_stoneのboil）。炉から出して30分が持ち時間。
+          # 湯を沸かすには、溜め切った石の半分が要る（hot_stoneのboil）。炉から出して45分——6ちょうどは
+          # まだこの段なので、下回るのは3tick目——が持ち時間。
           - {name: cool}
           - {name: searing, min: 6}
         passives:

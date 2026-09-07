@@ -3,8 +3,8 @@ import type { PropertyDef } from '../../src/domain/PropertyDef';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
- * 名指した段が値の並びの上で占める位置（`PropertyDef.lowerBoundOfStage`／`upperBoundOfStage`、
- * GameElementDefinition.md 6.4節）。
+ * 名指した段が値の並びの上で占める位置（`PropertyDef.lowerBoundOfStage`／`upperBoundOfStage`／
+ * `lowerExitOfStage`、GameElementDefinition.md 6.4節）。
  *
  * 段の並びを知っているのはPropertyDefだけで、**下端を書かなかった受け皿を値の並びの上のどこへ置くか**と
  * **すぐ上に来る段をどう選ぶか**は、バーの刻み（`stageReading`）も定義から周期を読む側（src/analysis）も
@@ -63,6 +63,16 @@ object_defs:
     expect(water.upperBoundOfStage('some'), '値が取れない位置は行き着く先にならない').toBeUndefined();
   });
 
+  it('下へ抜け出る先は、そこより下へ値が行ける段だけが持つ', () => {
+    expect(water.lowerExitOfStage('some')).toBe(25);
+    expect(water.lowerExitOfStage('empty'), '受け皿の下には何も無い').toBeUndefined();
+    expect(
+      water.lowerExitOfStage('film'),
+      'rangeの下限そのものから始まる段も、そこより下へは行けない',
+    ).toBeUndefined();
+    expect(water.lowerExitOfStage('sone')).toBeUndefined();
+  });
+
   it('完全一致で決まる段（シンボル型）は、値の並びの上に位置を持たない', () => {
     const weather = propertyDefOf(
       `
@@ -81,5 +91,6 @@ object_defs:
 
     expect(weather.lowerBoundOfStage('clear')).toBeUndefined();
     expect(weather.upperBoundOfStage('clear')).toBeUndefined();
+    expect(weather.lowerExitOfStage('clear')).toBeUndefined();
   });
 });
