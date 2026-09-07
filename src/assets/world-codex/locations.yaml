@@ -138,8 +138,8 @@ object_defs:
         spawn: {object: sharp_stone}
 
   # 小枝。指の太さの細い枝を拾い集めたもので、焚き付け・結びに使う。柄にすると折れる。
-  # 槍や銛の柄になる2mほどの長い棒は、拾う物ではなく若木を刃物で切って採る別の物として後から入る
-  # （docs/world/SurvivalItems.md 0節）。ここを長くして兼ねさせない。
+  # 槍の軸になる2mほどの長い棒は、拾う物ではなく若木を刃物で切って採る別の物（timber.yaml、
+  # docs/world/SurvivalItems.md 0節）。ここを長くして兼ねさせない。
   twig:
     tags: [item]
     # 火口にも燃料にもなる（docs/engine/FireSystem.md 3.2節）。火起こし具へ重ねれば焚き付けとして
@@ -574,6 +574,9 @@ object_defs:
       # 斧で倒せる木が1本見つかる候補の重み（timber.yaml）。丸太の出どころなので、森を特徴づける。
       tree_find:
         value: 15
+      # 刃物で切れる若木が1本見つかる候補の重み（timber.yaml）。長い棒の出どころ。
+      sapling_find:
+        value: 15
     interactions:
       explore:
         trigger: menu
@@ -601,6 +604,12 @@ object_defs:
           - weight: {prop: tree_find}
             spawn:
               - {object: broadleaf_tree, into: self}
+              - {object: twig, into: self}
+          # **若木も2個の候補として置く**（広葉樹と同じ形）。1個の候補にすると、1回あたりの平均個数
+          # （約2個）がそのぶん下がる。
+          - weight: {prop: sapling_find}
+            spawn:
+              - {object: sapling, into: self}
               - {object: twig, into: self}
           - weight: 20
             spawn: {object: twig, count: 2, into: self}
@@ -658,6 +667,9 @@ object_defs:
       # 斧で倒せる木が1本見つかる候補の重み（timber.yaml）。
       tree_find:
         value: 12
+      # 刃物で切れる若木が1本見つかる候補の重み（timber.yaml）。長い棒の出どころ。
+      sapling_find:
+        value: 12
     interactions:
       explore:
         trigger: menu
@@ -687,6 +699,11 @@ object_defs:
           - weight: {prop: tree_find}
             spawn:
               - {object: broadleaf_tree, into: self}
+              - {object: twig, into: self}
+          # 森と同じく2個の候補（森のsapling_find参照）。
+          - weight: {prop: sapling_find}
+            spawn:
+              - {object: sapling, into: self}
               - {object: twig, into: self}
           - weight: 17
             spawn:

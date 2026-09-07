@@ -43,6 +43,15 @@ TARO_RING = (170, 142, 110)
 PAGE = (255, 255, 255)
 
 
+def draw_cut_face(draw: ImageDraw.ImageDraw, centre: tuple[float, float], radius: float) -> None:
+    """切り口を1つ。淡い木口に年輪を入れて、樹皮に覆われた胴と見分ける。"""
+    x, y = centre
+    draw.ellipse([x - radius, y - radius, x + radius, y + radius], fill=FACE, outline=OUTLINE, width=4)
+    for ring in (0.66, 0.36):
+        inner = radius * ring
+        draw.ellipse([x - inner, y - inner, x + inner, y + inner], outline=FACE_LINE, width=3)
+
+
 def draw_branch(
     draw: ImageDraw.ImageDraw,
     start: tuple[float, float],
@@ -63,20 +72,7 @@ def draw_branch(
         fill=BARK_DARK,
         width=thickness // 3,
     )
-    radius = thickness // 2
-    draw.ellipse(
-        [end_x - radius, end_y - radius, end_x + radius, end_y + radius],
-        fill=FACE,
-        outline=OUTLINE,
-        width=4,
-    )
-    for ring in (0.66, 0.36):
-        inner = radius * ring
-        draw.ellipse(
-            [end_x - inner, end_y - inner, end_x + inner, end_y + inner],
-            outline=FACE_LINE,
-            width=3,
-        )
+    draw_cut_face(draw, (end_x, end_y), thickness // 2)
 
 
 def draw_stone(
@@ -515,6 +511,23 @@ def draw_spear(draw: ImageDraw.ImageDraw) -> None:
     draw_hafted(draw, (120, 800), (960, 240), 26, (190, 30, 46, 8), 170, across=False)
 
 
+def draw_pole(draw: ImageDraw.ImageDraw) -> None:
+    """長い棒。若木を切った2mの棒（src/assets/world-codex/timber.yaml）。
+
+    **丸太と同じで、姿勢と太さは生成では決まらない**（prompts/objects.json の log 参照）ので、
+    ここで決める。分けたい相手は3つあり、それぞれ別の点で分かれる——丸太とは太さ、太い枝とは
+    長さと「端まで同じ太さ」、槍とは穂先と紐が無いこと。対角線いっぱいに寝かせるのは槍と同じ
+    理由で、2mという長さが見せ場だから（card_art.py の align_to_diagonal）。
+
+    **両端に切り口を置く。** 拾った太い枝の端は折れ口だが、こちらは刃物で断って枝を払った棒。
+    """
+    near, far = (140.0, 790.0), (1010.0, 190.0)
+    span = math.hypot(far[0] - near[0], far[1] - near[1])
+    thickness = 38
+    draw_branch(draw, near, ((far[0] - near[0]) / span, (far[1] - near[1]) / span), span, thickness)
+    draw_cut_face(draw, near, thickness // 2)
+
+
 def draw_harpoon(draw: ImageDraw.ImageDraw) -> None:
     """突き銛。柄は斧と同じ太い枝、穂先の向きは槍と同じ柄の延長上（docs/world/Voyage.md 3.9.4節）。"""
     draw_hafted(draw, (880, 780), (350, 300), 44, (150, 40, 38, 9), 150, across=False)
@@ -528,6 +541,7 @@ LAYS = {
     "fan": draw_fan,
     "log": draw_log,
     "needle": draw_needle,
+    "pole": draw_pole,
     "raft": draw_raft,
     "sail": draw_sail,
     "snare": draw_snare,

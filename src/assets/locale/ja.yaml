@@ -748,8 +748,8 @@ object_texts:
     description: 長い棒の先に石の穂先を固定した武器。突けば深く刺さるが、外すことも多く、解体には使えない。
     recipes:
       hafted:
-        display_name: 割って柄を付ける
-        description: 丸太を斧で割って長い軸を削り出し、穂先を溝へ据えて紐で締め上げる。
+        display_name: 削って柄を付ける
+        description: 長い棒の皮を剥いで軸に削り、穂先を溝へ据えて紐で締め上げる。
   bone_needle:
     display_name: 骨針
     description: 小さな骨を削って穴を開けた縫い針。皮を縫い合わせるのに要る。使っても減らない。
@@ -1029,9 +1029,19 @@ object_texts:
       buck:
         display_name: 玉切りにする
         description: 運べる長さに斧で切り分ける。倒す手間が無いぶん、伐り倒すより早い。
+  sapling:
+    display_name: 若木
+    description: 幹がまだ細い木。斧が無くても刃物で切り倒せて、まっすぐな根元から長い棒が採れる。
+    interactions:
+      cut_pole:
+        display_name: 切って棒を採る
+        description: 根元を刃物で断ち、枝を払って2mの棒に切る。若木は残らない。
   log:
     display_name: 丸太
     description: 幹を2mほどに切ったもの。1本でも相当に重いが、水に浮く。
+  long_pole:
+    display_name: 長い棒
+    description: 若木から切り出した2mの棒。軽いが、抱えて歩くにも籠へ入れるにもかさばる。
   tree_bark:
     display_name: 樹皮
     description: 剥いだ樹皮を丸めたひと巻き。含まれる渋が、生皮を革に変える。

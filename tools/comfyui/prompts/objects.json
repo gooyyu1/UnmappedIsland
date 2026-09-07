@@ -169,6 +169,21 @@
     "positive": "exactly one broadleaf tree alone on an empty white page, seen from far enough back that the whole tree is well inside the page with a wide empty white margin on all four sides, a single hardwood tree with one thick straight trunk as wide as a barrel, the trunk rising clear before it divides into a few strong spreading boughs, a full rounded canopy of many small broad green leaves, the whole tree down to where the trunk meets the ground, deep green foliage and warm brown bark, matte surface, the tree is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "exposed roots, root flare, roots, soil, earth, mound, hillock, turf, undergrowth, palm tree, coconut palm, palm fronds, frond, banana tree, bamboo, fern, cycad, conifer, pine, fir, spruce, cypress, needles, cherry blossom, blossom, flowers, fruit, apples, autumn colours, red leaves, yellow leaves, bare winter tree, leafless, dead tree, snag, weeping willow, bonsai, potted plant, plant pot, topiary, hedge, bush, shrub, two trees, three trees, several trees, group of trees, grove, forest, row of trees, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, cropped, cut off, out of frame, filling the frame, close-up, only leaves, single leaf, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
   },
+  "sapling": {
+    "description": [
+      "若木。刃物で切り倒すと長い棒が採れる木（src/assets/world-codex/timber.yaml）。",
+      "設置物なので、他のアイテムより大きくカードに載る。",
+      "",
+      "**同じ土地に立つ広葉樹（broadleaf_tree）と一目で分かれること。** 分ける軸は幹の太さ1つで、",
+      "こちらは親指ほどの細い幹が枝分かれせずに伸び、葉は頂部にわずかに付くだけ。広葉樹の",
+      "「樽ほどの幹＋丸く茂った樹冠」と逆の形を本文で言う。",
+      "",
+      "**NGワードは広葉樹のものをそのまま使い、太さと茂りを落とす語だけを足す。** 画材・作風に",
+      "関わる語を足すと絵が壊れるのは広葉樹と同じ（同項参照）。"
+    ],
+    "positive": "exactly one young tree alone on an empty white page, seen from far enough back that the whole tree is well inside the page with a wide empty white margin on all four sides, a single young hardwood tree with one slender straight trunk no thicker than a wrist, the slim trunk rising bare and clear of branches for the whole lower half before it divides into a few thin springy branches, a small narrow crown of broad green leaves, the whole young tree down to where the slim trunk meets the ground, deep green foliage and warm brown bark, matte surface, the tree is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "seedling, sprout, shoot, cutting, herb, single leafy stem, thick trunk, wide trunk, stout trunk, barrel, mature tree, old tree, gnarled trunk, twisted trunk, dense canopy, full rounded canopy, many branches, spreading boughs, exposed roots, root flare, roots, soil, earth, mound, hillock, turf, undergrowth, palm tree, coconut palm, palm fronds, frond, banana tree, bamboo, fern, cycad, conifer, pine, fir, spruce, cypress, needles, cherry blossom, blossom, flowers, fruit, apples, autumn colours, red leaves, yellow leaves, bare winter tree, leafless, dead tree, snag, weeping willow, bonsai, potted plant, plant pot, topiary, hedge, bush, shrub, two trees, three trees, several trees, group of trees, grove, forest, row of trees, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, cropped, cut off, out of frame, filling the frame, close-up, only leaves, single leaf, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
+  },
   "coconut": {
     "description": [
       "熟したヤシの実。熟した側の連鎖の基準になる1枚で、加工段階（皮を剥いだ実・皮・半割・果肉・器）は",
