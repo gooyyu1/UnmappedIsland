@@ -1,0 +1,42 @@
+{
+  "_comment": [
+    "src/assets/objects/long_pole.png を作り直すためのレシピ。build.py が読む。",
+    "若木を切って採った2mの棒（src/assets/world-codex/timber.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: pole）。** 丸太と同じで、まっすぐな棒の姿勢と太さは生成では",
+    "決まらない（prompts/objects.json の log 参照）。形が単純なぶん、下絵で決めるほうが速い。",
+    "",
+    "**紛れる相手それぞれと、分かれる点が違う。** 丸太（太さ）・太い枝（長さと真っ直ぐさ）・槍",
+    "（穂先と紐が無いこと）で、編集の指示ではこの3点を名指しで言う。",
+    "",
+    "**端は折れ口ではなく切り口。** 拾った太い枝と違い、刃物で断って枝を払った棒なので、",
+    "両端に斜めの切り口を見せる。",
+    "",
+    "**色を緑寄りに言うと、塗った棒になる。** 切ったばかりの生木のつもりで greenish brown と",
+    "書いた版は、一様なオリーブ色のつるりとした棒になった。warm mid brown を主にして、緑は",
+    "faintly と添えるだけにする。",
+    "",
+    "**竹に寄るのは、下絵で細らせて外す。** 太さが端まで変わらない棒を渡すと、編集は等間隔の節を",
+    "回して竹にする。『節も輪も無い、竹ではない』と本文で否定しても6枚とも消えなかった。",
+    "**下絵の側を根元から梢へ細らせる**（layout_sketch.py の draw_pole）と、同じ本文のまま節が",
+    "消える——細りは若木の幹であることの証拠なので、言葉で否定するより効く。",
+    "",
+    "段は400、対角線へ倒す（diagonal）。2mの長さが見せ場で、そこは槍と同じ",
+    "（card_art.py の align_to_diagonal）。"
+  ],
+  "output": "src/assets/objects/long_pole.png",
+  "sketch": "pole",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: one long slender wooden pole lying flat on the ground, running corner to corner across the page with its thick end at the bottom left and its thin end at the top right, in exactly the same place at the same angle and the same length, and tapering steadily from the thick end to the thin end just as in the diagram. Paint it as one straight pole cut from the trunk of a young tree, slim and straight along its whole length. It is wrapped in thin bark of warm mid brown wood, faintly greenish in places, marked with fine darker lines that run lengthwise along the pole and small pale flecks, its surface slightly uneven, rough and matte, never smooth or polished or painted. Its bark is one continuous unbroken skin from one end to the other: nothing crosses it, no rings, no bands, no joints, no nodes, no segments, no collars and no swellings anywhere along it. This is a young tree trunk, not bamboo, not a cane and not a walking stick. At each end show a small pale cut face of the wood, cleanly sliced through at a slant where a blade cut it, the one at the thin end much smaller than the one at the thick end. The pole has no side branches, no twigs, no leaves, no knots and no splintered or broken ends. Nothing is tied or fixed to it: no stone point, no blade, no cord, no binding of any kind. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow on the ground beneath the pole. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 2
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "diagonal": true,
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

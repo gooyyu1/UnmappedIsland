@@ -368,10 +368,11 @@ object_defs:
       # **穴は掘り直さない。** becomeは同じ個体のまま型を差し替える（9.9節）ので、耐久も餌も
       # 掛かるまでの残りもそのまま引き継ぐ。
       #
-      # **杭は太い枝で代用している。** 立てるべき長い棒（docs/world/SurvivalItems.md 3節）は
-      # 若木を切って採る物で、それを採る手がまだ無い——畑の掘り棒（farming.yaml）と同じ仮置き。
+      # **立てるのは長い棒**（timber.yaml、docs/world/SurvivalItems.md 3節）。獣の落ちる深さを
+      # 貫くので、70cmの太い枝では底に届かない。**この分岐だけが刃物と若木を要求する**ので、
+      # 穴を掘る側（下のdug、掘削具をまだ待っている）より殺す側が後に来る。
       drive_stake:
-        trigger: {drag: {object: thick_branch}}
+        trigger: {drag: {object: long_pole}}
         duration: 60
         conditions:
           - reason: already_staked
