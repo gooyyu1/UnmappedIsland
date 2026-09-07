@@ -136,18 +136,21 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
   });
 
   it('待たせた手番が起きるのは、操作の効果を適用し終えてから', () => {
-    // 操作をまるごと囲わないと、内側の時間経過（WorldSession.advanceWorldTime）自身の切れ目が
-    // 深さ0で開き、効果を適用する前に手番が走る——歩き終わる前に倒れることになり、同じ物が2つの
-    // 操作のagentに就く（11.5節の不変条件）。過ぎた分数にも着いた先にも出ないので、告げられた
-    // 時点でどこに立っているかで見る。
-    drain('stamina');
+    // 操作をまるごと囲わないと、内側の時間経過（WorldSession.advanceWorldTime）自身の切れ目が深さ0で
+    // 開き、効果を適用する前に手番が走る。**倒れるのが歩いている本人なら例外で止まる**（まだ外れて
+    // いないクレームへ同じagentの再クレームが走る、11.5節）が、動作主が別なら誰も止めないまま順序
+    // だけが崩れるので、そちらで見る——歩き手が着く前に、留守番が倒れることになる。
+    const camp = spawnInto('grassland', world, 'locations');
+    const companion = spawnInto(SAMPLE_CHARACTER, camp, 'characters');
+    companion.getProperty(codex.propertyNames.getId('stamina')).setNumber(0);
 
-    let standingWhenCollapsed: WorldObject | undefined;
-    session.observeSignals(() => {
-      standingWhenCollapsed = player.parent;
+    let walkerStandingAt: WorldObject | undefined;
+    session.observeSignals((signal) => {
+      expect(signal.object, '倒れるのは留守番のほう').toBe(companion);
+      walkerStandingAt = player.parent;
     }, travel);
 
-    expect(standingWhenCollapsed, '倒れるのは、草原へ着いた後').toBe(grassland);
+    expect(walkerStandingAt, '留守番が倒れるのは、歩き手が草原へ着いた後').toBe(grassland);
   });
 
   it('切れ目までに限界を抜けていれば、待たせた手番は起きない', () => {
