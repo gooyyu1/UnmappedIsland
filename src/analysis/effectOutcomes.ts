@@ -1,3 +1,4 @@
+import { authoredBranchOf, everyBranchOf } from '../domain/EffectReader';
 import type {
   AddReading,
   ConditionalReading,
@@ -49,7 +50,7 @@ export interface EffectReading {
  * ここが置いている近似は次のもの。**重みを確率に読み替えること**——実際の抽選は実行時の実効値で
  * 行われるので、宣言値から出す確率はその代用でしかない。**分岐を直積で畳むこと**——
  * 宣言順に並んだ効果は順に起こるので、pickが2つ並べば枝は掛け算になる。そして**条件つきの効果を、
- * 著者が書いた側で代表すること**（OutcomeReader.conditional）。
+ * 著者が書いた枝で代表すること**（authoredBranchOf）。
  *
  * resolveBecomeDestinationを省くと、`become`の行き先は産出として数えられない。変わる前の型として
  * 残らないことは、行き先を解けなくても言えるので、省いても控える。
@@ -234,25 +235,18 @@ class OutcomeReader implements EffectReader {
   }
 
   /**
-   * 条件つきの効果（6.3節）は、**著者が書いた側（`whenMet`）を代表に採る**。条件を満たす割合は
-   * 宣言のどこにも無いので、両方を場合として並べると、宣言に無い確率でどちらの回にも起きない量
-   * （半分だけ湧く産出、半分だけ戻る値）が答えになる。宣言が何をすると言っているかを問うている以上、
-   * 答えるのは著者が書いたほうで、`otherwise`は**著者が条件を書いたせいで既定を失わないための埋め合わせ**
-   * （ConditionalEffect参照）。
+   * 条件つきの効果（6.3節）には**問いが2つある**ので、問いごとに受け方を選ぶ。
    *
-   * 消える物・変わる物だけは`otherwise`の側からも集める——`pick`と同じく「どれか1つの分岐でそうなるか」
-   * を問うものなので、代表がどちらかとは関わらない。
+   * 量は「何がどれだけ起こるか」なので著者が書いた枝で代表し（authoredBranchOf）、消える物・変わる物は
+   * `pick`と同じく「どれか1つの分岐でそうなるか」を問うものなので両方の枝から集める（everyBranchOf）。
    */
   conditional(reading: ConditionalReading): void {
-    const met = this.readNested(reading.whenMet);
-    this.destroyed.push(...met.destroyed);
-    this.transformed.push(...met.transformed);
-    if (reading.otherwise !== undefined) {
-      const fallen = this.readNested(reading.otherwise);
-      this.destroyed.push(...fallen.destroyed);
-      this.transformed.push(...fallen.transformed);
+    for (const branch of everyBranchOf(reading)) {
+      const nested = this.readNested(branch);
+      this.destroyed.push(...nested.destroyed);
+      this.transformed.push(...nested.transformed);
     }
-    this.combine(met.outcomes);
+    this.combine(this.readNested(authoredBranchOf(reading)).outcomes);
   }
 
   private readNested(declaration: EffectDeclaration): EffectReading {

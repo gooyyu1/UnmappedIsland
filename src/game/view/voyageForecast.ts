@@ -1,3 +1,4 @@
+import { everyBranchOf } from '../../domain/EffectReader';
 import type {
   ConditionalReading,
   EffectReader,
@@ -94,8 +95,7 @@ class SelfMoveDestinations implements EffectReader {
 
   /** 二択の奥も両方見る。**問うているのは行き先になりうるか**なので、どちらへ倒れるかは関わらない。 */
   conditional(reading: ConditionalReading): void {
-    reading.whenMet.read(this);
-    reading.otherwise?.read(this);
+    for (const branch of everyBranchOf(reading)) branch.read(this);
   }
 
   set(): void {}
@@ -137,8 +137,7 @@ class DepartureCandidates implements EffectReader {
 
   /** 条件の下に置かれた卓も見る——条件は卓を隠さない。 */
   conditional(reading: ConditionalReading): void {
-    reading.whenMet.read(this);
-    reading.otherwise?.read(this);
+    for (const branch of everyBranchOf(reading)) branch.read(this);
   }
 
   set(): void {}
