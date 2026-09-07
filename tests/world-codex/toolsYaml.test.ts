@@ -23,6 +23,21 @@ describe('tools.yamlの道具定義', () => {
     codex = bundledCodex();
   });
 
+  /** その物を作るレシピ（1つだけ持つ物にしか使えない）。 */
+  function recipeOf(name: string): RecipeDef {
+    const recipes = codex.objects.get(codex.objectNames.getId(name)).recipesProducingThis;
+    expect(recipes, `'${name}' のレシピは1つ`).toHaveLength(1);
+    return recipes[0];
+  }
+
+  /** そのレシピが要求する物の名前（型を名指ししない要求は、当てはまる物の名前で並ぶ）。 */
+  function materialsOf(recipe: RecipeDef): string[] {
+    return Array.from({ length: codex.objects.count }, (_, globalId) => codex.objects.get(globalId))
+      .filter((def) => recipe.requires(def))
+      .map((def) => def.name)
+      .sort();
+  }
+
   it('尖った石は、ものを切る道具のタグと武器のタグを持つ', () => {
     const sharpStone = codex.objects.get(codex.objectNames.getId('sharp_stone'));
 
@@ -92,21 +107,20 @@ describe('tools.yamlの道具定義', () => {
     expect(harpoon.tags, '獣を突く道具ではない').not.toContain(codex.tagNames.getId('weapon'));
   });
 
+  it('槍の軸は長い棒で、斧を要求しない', () => {
+    // 軸は若木を刃物で切って採る長い棒（docs/world/SurvivalItems.md 0節）。**材料が斧を要求するか
+    // どうかだけで、狩りの入口が刃物の後ろに来るか斧の後ろに来るかが変わる**（同3節）ので、
+    // 丸太を割る形へ戻ればここで落ちる。
+    const spear = recipeOf('spear');
+
+    expect(materialsOf(spear), '長い棒・尖った石・紐の3つ').toEqual(['cord', 'long_pole', 'sharp_stone']);
+    expect(materialsOf(spear), '丸太も、それを割る斧も要らない').not.toContain('stone_axe');
+  });
+
   it('突き銛の材料と工程は石斧と同じ（新しい素材を足していない）', () => {
     // **島の産物から筏・帆へ届く鎖の上に、素材を足さずに載る**（docs/world/Voyage.md 3.9.4節）。
-    // 繊維で直に締める形にすれば柄付けの標準が2つ並び、丸太から軸を削り出す形にすれば、槍と同じく
-    // 斧と木材加工の腕の後ろへ回る。
-    const recipeOf = (name: string): RecipeDef => {
-      const recipes = codex.objects.get(codex.objectNames.getId(name)).recipesProducingThis;
-      expect(recipes, `'${name}' のレシピは1つ`).toHaveLength(1);
-      return recipes[0];
-    };
-    const materialsOf = (recipe: RecipeDef): string[] =>
-      Array.from({ length: codex.objects.count }, (_, globalId) => codex.objects.get(globalId))
-        .filter((def) => recipe.requires(def))
-        .map((def) => def.name)
-        .sort();
-
+    // 繊維で直に締める形にすれば柄付けの標準が2つ並び、長い棒から軸を削り出す形にすれば、槍と同じく
+    // 若木と木材加工の腕の後ろへ回る。
     const harpoon = recipeOf('fishing_harpoon');
     const axe = recipeOf('stone_axe');
 

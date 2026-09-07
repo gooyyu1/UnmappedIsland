@@ -166,7 +166,7 @@ location_types:
       - {id: undergrowth}
       - {id: mossy}
       - {id: fallen_trees}
-      - {id: young_trees}
+      - {id: young_trees, props: {sapling_find: 30}}
       - {id: dark}
       - {id: dappled}
       - {id: deep}

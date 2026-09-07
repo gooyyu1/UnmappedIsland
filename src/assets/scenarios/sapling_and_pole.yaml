@@ -1,0 +1,17 @@
+# 若木と長い棒（src/assets/world-codex/timber.yaml）の札を確かめるための開始状態。
+#
+# 見るのは**太さで分かれる木材が、札の上でも分かれて見えるか**。若木は広葉樹と並べると
+# 幹の細さだけで分かれ、長い棒は太い枝・丸太と並べると長さだけで分かれる。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 若木と長い棒
+
+# 3は開始地点が砂浜になるシード。土地の種類は下で森に差し替える。
+seed: 3
+
+location:
+  type: forest
+  # 探索を待たずに並べる。
+  fixtures: [sapling, broadleaf_tree]
+  items: [long_pole, thick_branch, log]

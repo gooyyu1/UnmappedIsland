@@ -8,8 +8,8 @@ meta:
 need_sources:
   - {need: 火口, object: dry_grass, location: grassland, unit: items_per_explore, expected: 0.090}
   - {need: 火口, object: dry_grass, location: wasteland, unit: items_per_explore, expected: 0.105}
-  - {need: 錐, object: twig, location: forest, unit: items_per_explore, expected: 1.101}
-  - {need: 錐, object: twig, location: jungle, unit: items_per_explore, expected: 0.522}
+  - {need: 錐, object: twig, location: forest, unit: items_per_explore, expected: 1.091}
+  - {need: 錐, object: twig, location: jungle, unit: items_per_explore, expected: 0.556}
   - {need: 錐, object: twig, location: rocky_field, unit: items_per_explore, expected: 0.552}
   - {need: 錐, object: twig, location: wasteland, unit: items_per_explore, expected: 0.500}
   - {need: 錐, object: twig, location: mountainside, unit: items_per_explore, expected: 0.619}
@@ -24,10 +24,10 @@ need_sources:
   - {need: 刃, object: stone, location: mountain_peak, unit: items_per_explore, expected: 1.186}
   - {need: 水, object: palm_tree, location: sandy_beach, unit: items_per_explore, expected: 0.116}
   - {need: 水, object: spring, location: grassland, unit: items_per_explore, expected: 0.075}
-  - {need: 水, object: spring, location: forest, unit: items_per_explore, expected: 0.067}
-  - {need: 水, object: palm_tree, location: jungle, unit: items_per_explore, expected: 0.096}
+  - {need: 水, object: spring, location: forest, unit: items_per_explore, expected: 0.061}
+  - {need: 水, object: palm_tree, location: jungle, unit: items_per_explore, expected: 0.089}
   - {need: 道具の要らない食料, object: water_spinach, location: grassland, unit: items_per_explore, expected: 0.850}
-  - {need: 道具の要らない食料, object: water_spinach, location: jungle, unit: items_per_explore, expected: 0.197}
+  - {need: 道具の要らない食料, object: water_spinach, location: jungle, unit: items_per_explore, expected: 0.183}
 
 location_supplies:
   - {location: sandy_beach, needs: [軸, 水], unit: minutes, path_discovery: 135}

@@ -3,6 +3,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
+import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
@@ -48,6 +49,12 @@ describe('timber.yamlの伐採', () => {
     return new Location(location, codex).items.map((object) => object.def.name);
   }
 
+  function carriedBy(character: WorldObject): string[] {
+    return new PlayerCharacter(character, codex).handStacks.flatMap((stack) =>
+      stack.map((object) => object.def.name),
+    );
+  }
+
   it('斧で伐り倒すと木が消え、丸太と太い枝が落ちる', () => {
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
     const axe = spawnInto('stone_axe', player, 'hand');
@@ -82,6 +89,58 @@ describe('timber.yamlの伐採', () => {
 
     expect(tree.combinationsWith(player, player), '尖った石を当てても成立しない').toEqual([]);
     expect(tree.parent, '木は立ったまま').toBe(forest);
+  });
+
+  it('若木は刃物で切ると消え、長い棒が1本採れる', () => {
+    // 長い棒の唯一の出どころ（docs/world/SurvivalItems.md 0節）。**斧を要求しない**ことが、
+    // 槍を斧の後ろから外している（同3節）。
+    const sapling = spawnInto('sapling', forest, 'fixtures');
+    const knife = spawnInto('sharp_stone', player, 'hand');
+
+    expect(
+      sapling
+        .combinationsWith(knife, player)
+        .find((c) => c.name === 'cut_pole')
+        ?.tryExecute() === true,
+    ).toBe(true);
+
+    expect(
+      carriedBy(player).filter((name) => name === 'long_pole'),
+      '長い棒が1本',
+    ).toHaveLength(1);
+    expect(sapling.parent, '切った若木は残らない').toBeUndefined();
+    expect(knife.parent, '刃物は消費されない').toBe(player);
+  });
+
+  it('若木を切ると木材加工が伸びる（斧を持たないまま伸ばせる）', () => {
+    // 伐るのは木材加工（docs/engine/SkillSystem.md 3節の実行経路）。**槍が要求する腕を、槍の材料を
+    // 採る手そのものが配る**ので、刃物1本から槍まで繋がる（docs/world/SurvivalItems.md 3節）。
+    const sapling = spawnInto('sapling', forest, 'fixtures');
+    const knife = spawnInto('sharp_stone', player, 'hand');
+    const woodworkId = codex.propertyNames.getId('skill_woodwork');
+    const before = player.tryGetProperty(woodworkId)?.number ?? 0;
+
+    expect(
+      sapling
+        .combinationsWith(knife, player)
+        .find((c) => c.name === 'cut_pole')
+        ?.tryExecute() === true,
+    ).toBe(true);
+
+    expect(player.tryGetProperty(woodworkId)?.number ?? 0).toBeGreaterThan(before);
+  });
+
+  it('長い棒は太い枝より軽いのに、かさは何倍もある', () => {
+    // 長さの違いは目方ではなくかさで効く（docs/world/SurvivalItems.md 0節）。
+    const weightId = codex.propertyNames.getId('weight');
+    const volumeId = codex.propertyNames.getId('volume');
+    const pole = spawnInto('long_pole', forest, 'items');
+    const branch = spawnInto('thick_branch', forest, 'items');
+    const valueOf = (object: WorldObject, propertyGlobalId: number): number =>
+      object.tryGetProperty(propertyGlobalId)?.number ?? 0;
+
+    expect(valueOf(pole, weightId)).toBeLessThan(valueOf(branch, weightId));
+    expect(valueOf(pole, volumeId)).toBeGreaterThan(valueOf(branch, volumeId) * 3);
   });
 
   it('丸太1本は、キャラクタが担げる限界に近い重さ', () => {
