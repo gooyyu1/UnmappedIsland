@@ -30,6 +30,7 @@
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments ],
 //     "mergedPrs":[ gh pr list --state merged --json number,comments ],   … スメルを拾う係が読む範囲
 //     "pendingDecisions": 12,   … `.claude/decisions/` のうち `archive/` に入っていない件数
+//     "unsummarizedAnalyses": 3,   … `.claude/analysis/` のうち、二次がまだ読んでいない件数
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
 //     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
 //                     "bucket": "SESSION_STATUS_BUCKET_…", "env": "cloud | bridge | -",
@@ -577,7 +578,7 @@ export function moves(input) {
     const spent = session.tags.find((tag) => tag.startsWith('review-') || tag.startsWith('chore-'));
     if (spent !== undefined) {
       // **自分のPRが開いているうちは畳まない**（2.17）。周期の係にもPRを出すものが居る
-      // （`CYCLES` の `analysis`）ので、畳むと**指摘とコンフリクトを直す相手が消える**
+      // （`CYCLES` のうち記録を残すもの）ので、畳むと**指摘とコンフリクトを直す相手が消える**
       // ——差し戻す先はコミットのトレーラで引く1本だけ（2.11）。
       if (Object.values(prSessions).includes(session.id)) continue;
       const idle = idleMinutes(session);

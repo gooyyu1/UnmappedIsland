@@ -25,16 +25,15 @@ import { liveSessions } from './live-sessions.mjs';
 import { gh as runGh } from './spawn.mjs';
 
 /**
- * 判断の履歴の置き場（`CLAUDE.md`「価値観の記録」）。**盤面が唯一、GitHub と CCR の外を見る場所。**
- * 価値観を畳む係の仕事は issue にもPRにも現れず、**リポジトリの中にしか無い**ので、ここで数える
- * 以外に「仕事があるか」を知る手立てが無い。
+ * **盤面が GitHub と CCR の外を見るのは、この2つの置き場だけ。** どちらも、その係の仕事が
+ * issue にもPRにも現れず**リポジトリの中にしか無い**ので、ここで数える以外に「仕事があるか」を
+ * 知る手立てが無い。
+ *
+ * - `DECISIONS` … 判断の履歴（`CLAUDE.md`「価値観の記録」）。読むのは価値観を畳む係の `due`。
+ * - `ANALYSES` / `ANALYSIS_SUMMARIES` … 一次の分析係が回ごとに書く記録と、二次が横断してまとめた
+ *   記録（`.claude/board-design.md` 2.17.4）。読むのは回をまたぐ形を見る係の `due`。
  */
 const DECISIONS = new URL('../../.claude/decisions/', import.meta.url);
-
-/**
- * 一次の分析係が回ごとに書く記録と、二次が横断してまとめた記録の置き場。**どちらも issue にもPRにも
- * 残らない**ので、`DECISIONS` と同じくここで数える以外に「仕事があるか」を知る手立てが無い。
- */
 const ANALYSES = new URL('../../.claude/analysis/', import.meta.url);
 const ANALYSIS_SUMMARIES = new URL('summary/', ANALYSES);
 
@@ -86,6 +85,11 @@ function countDecisions(log) {
  * **一次のファイルに処理済みの印を持たせない**（`.claude/board-design.md` 2.17.4）——印を持たせると、
  * 一次に二次の都合が入る。代わりに**二次が最後に書いた日付より後の一次のファイルを数える**
  * （どちらも `<YYYY-MM-DD>` で始まるので、文字列の大小がそのまま日付の前後になる）。
+ *
+ * **粒が日なので、二次が書いた後に同じ日の一次が入ると、その1件は引き金にならない。** 割り切って
+ * いる——**中身は落ちない**（二次は次の周に `.claude/analysis/` を読み直し、読む範囲を自分で決める）
+ * ので、失うのは引き金1回ぶん。日より細かい印を持たせると、一次のファイルへ二次の都合を書くことに
+ * なり、上の一点を崩す。
  *
  * **読めなかった周は0にして進む。** その周に係が立たないだけで、他の手は打てる。
  *
