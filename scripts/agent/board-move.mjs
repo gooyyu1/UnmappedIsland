@@ -186,6 +186,18 @@ const CYCLES = [
     due: (board) => hasUnreadSmell(board.mergedPrs ?? []),
   },
   {
+    name: 'trend',
+    // **週1回。** 一次は1日1回なので、1本で7回ぶんが読める。**回をまたいで同じ形が出たか**を見る
+    // 係なので、溜まっていないと仕事にならない（`.claude/analysis-trend-prompt.md`）。
+    hours: 168,
+    // クラウドで足りる。**既存 issue の本文は書き換えない**——切るのは新しい issue で、記録は
+    // 自分のPRに載せる（2.17・2.17.4）。
+    env: 'cloud',
+    locks: [],
+    prompt: '.claude/analysis-trend-prompt.md',
+    due: (board) => (board.unsummarizedAnalyses ?? 0) > 0,
+  },
+  {
     name: 'policy',
     // **週1回。** 履歴が増えるのはユーザーと直接話したときだけで、**束ねるには溜まっている必要が
     // ある**（`.claude/skills/policy-review/SKILL.md`「棚卸しの手順」——孤立した1件は抽出しない）。

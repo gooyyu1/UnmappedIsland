@@ -31,6 +31,13 @@ import { gh as runGh } from './spawn.mjs';
  */
 const DECISIONS = new URL('../../.claude/decisions/', import.meta.url);
 
+/**
+ * 一次の分析係が回ごとに書く記録と、二次が横断してまとめた記録の置き場。**どちらも issue にもPRにも
+ * 残らない**ので、`DECISIONS` と同じくここで数える以外に「仕事があるか」を知る手立てが無い。
+ */
+const ANALYSES = new URL('../../.claude/analysis/', import.meta.url);
+const ANALYSIS_SUMMARIES = new URL('summary/', ANALYSES);
+
 /** PRの一覧に要る項目。**1回で引く**——項目ごとに引くと、項目ごとに見ている時点がずれる。 */
 const PR_FIELDS =
   'number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments';
@@ -70,6 +77,46 @@ function countDecisions(log) {
     log('判断の履歴を数えられなかった（この周は、価値観を畳む係を立てない）');
     return 0;
   }
+}
+
+/**
+ * まだ二次が読んでいない、一次の分析の記録の件数。**読むのは回をまたぐ形を見る係の `due`**
+ * （[`board-move.mjs`](board-move.mjs) の `CYCLES`）。
+ *
+ * **一次のファイルに処理済みの印を持たせない**（`.claude/board-design.md` 2.17.4）——印を持たせると、
+ * 一次に二次の都合が入る。代わりに**二次が最後に書いた日付より後の一次のファイルを数える**
+ * （どちらも `<YYYY-MM-DD>` で始まるので、文字列の大小がそのまま日付の前後になる）。
+ *
+ * **読めなかった周は0にして進む。** その周に係が立たないだけで、他の手は打てる。
+ *
+ * **置き場を引数で受けるのは、実物を起こさずに検査するため**（このファイルの冒頭）。日付の比較と
+ * 「二次がまだ一度も書いていない」の分岐を持つので、**実物のディレクトリの今の中身で通すと、
+ * 二次が1回書いた日から検査の意味が変わる。**
+ */
+export function countUnsummarizedAnalyses(log, { analyses = ANALYSES, summaries = ANALYSIS_SUMMARIES } = {}) {
+  const days = (dir) => {
+    const named = /^(\d{4}-\d{2}-\d{2})/;
+    return readdirSync(dir)
+      .filter((name) => name.endsWith('.md'))
+      .map((name) => named.exec(name)?.[1])
+      .filter((day) => day !== undefined);
+  };
+  let written;
+  try {
+    written = days(analyses);
+  } catch {
+    log('分析の記録を数えられなかった（この周は、回をまたぐ形を見る係を立てない）');
+    return 0;
+  }
+  // **二次がまだ一度も書いていない周は、置き場そのものが無い。** そこを読めない扱いにすると係が
+  // 永久に立たないので、**一次の記録が全部そのまま未処理**として返す。
+  let summarized;
+  try {
+    summarized = days(summaries).sort().at(-1);
+  } catch {
+    return written.length;
+  }
+  return written.filter((day) => summarized === undefined || day > summarized).length;
 }
 
 /** この時刻より前に止まっているPRは、チェックが0本でも緑と読む。 */
@@ -138,6 +185,7 @@ export function readBoard({
   sessions = liveSessions,
   log,
   pendingDecisions = () => countDecisions(log),
+  unsummarizedAnalyses = () => countUnsummarizedAnalyses(log),
   now,
   settleMinutes,
   taken,
@@ -189,6 +237,7 @@ export function readBoard({
     prs: JSON.parse(prs),
     mergedPrs: mergedPrs === undefined ? [] : JSON.parse(mergedPrs),
     pendingDecisions: pendingDecisions(),
+    unsummarizedAnalyses: unsummarizedAnalyses(),
     issues: openIssues,
     taken,
     issueStates: issueStates(gh, live, openIssues),
