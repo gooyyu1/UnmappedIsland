@@ -14,7 +14,7 @@ import { LocationTypeDef } from '../../src/domain/generation/LocationTypeDef';
  */
 
 /** 1日の枠。**この試験が効かせたいのは移動時間だけ**なので、生存の採取は実測に近い値で固定する。 */
-const BUDGET: DailyBudget = { survivalGatheringMinutes: 266, surplusMinutes: 814 };
+const BUDGET: DailyBudget = { survivalGatheringMinutes: 266 };
 
 /** 土地の型3つ。山の配分（`WORK_SHARES`）の3つの組へ1つずつ入る。 */
 const LOCATION_TYPES = ['grassland', 'forest', 'jungle'] as const;

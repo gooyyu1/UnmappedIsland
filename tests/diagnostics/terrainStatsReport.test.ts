@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import { activityHoursOf } from '../../src/analysis/activityHours';
+import type { BalanceTables } from '../../src/analysis/balanceTables';
 import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import type {
   BaseDailyPhases,
@@ -144,7 +145,7 @@ interface ShareStats {
   readonly dayShare: Stat;
 }
 
-function addDailyPhases(stats: TerrainStats, base: BaseDailyPhases, outdoorWorkMinutes: number): void {
+function addDailyPhases(stats: TerrainStats, base: BaseDailyPhases, work: WorkTotal): void {
   const exploration = stats.exploration;
   exploration.explorationMinutes.add(base.exploration.explorationMinutes);
   exploration.mixedDays.add(base.exploration.mixedDays);
@@ -158,7 +159,7 @@ function addDailyPhases(stats: TerrainStats, base: BaseDailyPhases, outdoorWorkM
     exploration.dayTripSpareMinutesPerDay.add(base.exploration.dayTripSpareMinutesPerDay!);
   }
 
-  const cycle = cycleDaysOf(base, outdoorWorkMinutes);
+  const cycle = cycleDaysOf(base, work);
   if (cycle !== undefined) {
     stats.cycle.steadyDays.add(cycle.steadyDays);
     stats.cycle.totalDays.add(cycle.totalDays);
@@ -223,7 +224,7 @@ function collect(
   elevationSpan: number,
   locationDays: ReadonlyMap<number, LocationTypeDay>,
   budget: DailyBudget,
-  outdoorWorkMinutes: number,
+  work: WorkTotal,
 ): void {
   const metersPerElevationUnit = scope.metersPerElevationUnit(elevationSpan);
   const elevationOf = (site: number): number => map.sites[site].axisValues.get(scope.elevationAxis)!;
@@ -260,7 +261,7 @@ function collect(
   const phases = dailyPhasesOf(map, locationDays, budget);
   stats.chosenBaseOneWayMinutes.add(phases.bestBase.oneWayMinutes);
   for (const base of phases.bases) stats.anyBaseOneWayMinutes.add(base.oneWayMinutes);
-  addDailyPhases(stats, phases.bestBase, outdoorWorkMinutes);
+  addDailyPhases(stats, phases.bestBase, work);
 }
 
 /** 測った項目1つぶんの、名前と単位と分布。 */
@@ -284,23 +285,19 @@ function degreeHistogramRecords(degree: Stat): YamlRecord[] {
 }
 
 /** 山の一覧を、系統ごとにまとめたレコード。並びは`WORK_PILES`に現れる順。 */
-function workPilesBySystemRecords(amounts: readonly WorkPileAmount[], budget: DailyBudget): YamlRecord[] {
+function workPilesBySystemRecords(amounts: readonly WorkPileAmount[]): YamlRecord[] {
   const systems = [...new Set(amounts.map((amount) => amount.pile.system))];
   return systems.map((system) => {
     const inSystem = amounts.filter((amount) => amount.pile.system === system);
+    const days = inSystem.reduce((sum, amount) => sum + amount.days, 0);
     const minutes = inSystem.reduce((sum, amount) => sum + amount.minutes, 0);
-    return {
-      system,
-      piles: inSystem.length,
-      days: rounded(minutes / budget.surplusMinutes, 2),
-      minutes: rounded(minutes, 1),
-    };
+    return { system, piles: inSystem.length, days: rounded(days, 2), minutes: rounded(minutes, 1) };
   });
 }
 
 function buildSections(
   stats: TerrainStats,
-  budget: DailyBudget,
+  balance: BalanceTables,
   amounts: readonly WorkPileAmount[],
   work: WorkTotal,
 ): readonly YamlReportSection[] {
@@ -356,8 +353,8 @@ function buildSections(
           outdoor_window: OUTDOOR_WINDOW_MINUTES,
           night_craft: NIGHT_CRAFT_MINUTES_PER_DAY,
           sleep: SLEEP_MINUTES_PER_DAY,
-          survival_gathering: budget.survivalGatheringMinutes,
-          surplus: budget.surplusMinutes,
+          survival_gathering: dailyBudgetOf(balance).survivalGatheringMinutes,
+          surplus: balance.surplusMinutes,
         },
       ],
     },
@@ -374,7 +371,7 @@ function buildSections(
         minutes: rounded(minutes, 1),
       })),
     },
-    { key: 'work_piles_by_system', records: workPilesBySystemRecords(amounts, budget) },
+    { key: 'work_piles_by_system', records: workPilesBySystemRecords(amounts) },
     {
       key: 'work_piles_total',
       records: [
@@ -477,8 +474,8 @@ function buildReportFromDefinitions(): string {
   // 1日の枠も山の量も収支表から出る（ContentSkeleton.md 8.3節）ので、先に1度だけ解く。
   const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
   const budget = dailyBudgetOf(balance);
-  const amounts = workPileAmountsOf(codex, SAMPLE_CHARACTER, balance, budget);
-  const work = workTotalOf(amounts, budget);
+  const amounts = workPileAmountsOf(codex, SAMPLE_CHARACTER, balance);
+  const work = workTotalOf(amounts);
 
   const scope = codex.generation!.scopes.get('island')!;
   const elevationRange = codex.generation!.axes.get(scope.elevationAxis)!.range;
@@ -499,7 +496,7 @@ function buildReportFromDefinitions(): string {
   const stats = createStats(codex.generation!.locationTypes.map((type) => type.name));
   for (let seed = 0; seed < SEED_COUNT; seed++) {
     const map = generateIsland(codex.generation, 'island', seed);
-    collect(stats, map, scope, elevationSpan, locationDays, budget, work.outdoorMinutes);
+    collect(stats, map, scope, elevationSpan, locationDays, budget, work);
   }
 
   return formatYamlReport(
@@ -508,7 +505,7 @@ function buildReportFromDefinitions(): string {
       '生成物。手で書き換えず、npm run stats:terrain で作り直す。',
       '何を測ったか・引いた線・数えていないものは docs/diagnostics/TerrainStats.md。',
     ],
-    buildSections(stats, budget, amounts, work),
+    buildSections(stats, balance, amounts, work),
   );
 }
 
