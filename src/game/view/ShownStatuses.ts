@@ -1,5 +1,5 @@
 import type { StatusDelta } from './statusChanges';
-import { mergedStatuses, statusChangesAfter } from './statusChanges';
+import { statusChangesAfter } from './statusChanges';
 import { statusRows } from './statusRows';
 import type { PropertyCategory as PropertyTab } from '../ui/PropertiesPane';
 import type { StatusContent } from '../ui/StatusBar';
@@ -8,11 +8,14 @@ import type { StatusContent } from '../ui/StatusBar';
 export interface StatusSource {
   /** ステータスタグが付いた行（常に候補、PlayScreenView.statuses）。 */
   readonly statuses: () => readonly StatusContent[];
-  /**
-   * プロパティのタブ（PlayScreenView.propertyCategories）。ここにしか出ない行は、
-   * 固定表示にされたときだけステータスエリアの候補に加わる。
-   */
+  /** プロパティのタブ（PlayScreenView.propertyCategories）。タブの中身を答えるためだけに読む。 */
   readonly categories: () => readonly PropertyTab[];
+  /**
+   * キャラクタのプロパティ全部（PlayScreenView.properties）。**上の2つはここの部分集合**で、
+   * どこにも並ばないプロパティ——ホームシックの詳細に居心地の枠として現れるもの——もここには居る。
+   * ステータスタグを持たない行も、固定表示にされればここからステータスエリアの候補に加わる。
+   */
+  readonly properties: () => readonly StatusContent[];
   /** 経過を見せている途中か。バーは減った分の帯を縮めずに溜める（ProgressBar.setRatio）。 */
   readonly midAction: () => boolean;
   /** 固定表示が変わった（控えとバーの引き直しは呼び出し側の仕事）。 */
@@ -88,21 +91,14 @@ export class ShownStatuses {
   rows(wouldShowChangeFor: (status: StatusContent) => boolean): readonly StatusContent[] {
     return statusRows(
       this.source.statuses().map((status) => this.shownRowOf(status)),
-      this.categoryRows().map((status) => this.shownRowOf(status)),
+      this.all(),
       wouldShowChangeFor,
     );
   }
 
-  /** プロパティのタブにだけ出る行も含めた全件（タブの並び順）。 */
-  private categoryRows(): readonly StatusContent[] {
-    return this.source.categories().flatMap((tab) => tab.entries);
-  }
-
-  /** 全プロパティの行（重複は先勝ち、mergedStatuses）。バーを作るときと、行動の前後を比べるときに使う。 */
+  /** 全プロパティの行（propsの宣言順）。バーを作るときと、行動の前後を比べるときに使う。 */
   all(): readonly StatusContent[] {
-    return mergedStatuses(this.source.statuses(), this.source.categories()).map((status) =>
-      this.shownRowOf(status),
-    );
+    return this.source.properties().map((status) => this.shownRowOf(status));
   }
 
   /** その1件（そのプロパティが無ければundefined）。 */

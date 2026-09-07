@@ -3,8 +3,9 @@ import type { StatusContent } from '../ui/StatusBar';
 /**
  * ステータスエリアに並べる行を、出すものだけ表示順に選ぶ（StatusArea.md）。
  *
- * taggedはstatusタグが付いたもの（常に候補）、othersはプロパティのタブにだけ出るもので、
- * 固定表示にされたものだけが候補に加わる。安全域は固定表示でなければ出さない。
+ * taggedはstatusタグが付いたもの（常に候補）、othersはそれ以外も含めた全プロパティで、固定表示に
+ * されたものだけが候補に加わる（StatusArea.md 3節「どのプロパティも固定表示にすればここへ出せる」）。
+ * 安全域は固定表示でなければ出さない。
  *
  * ただし安全域へ戻ったばかりの行は、その変化を見せ終わるまで残す（wouldShowChangeFor）。ここで即座に
  * 落とすと、良くなった分の帯が動く前にバーごと消えてしまい、何がどれだけ良くなったのかが見えない。
@@ -17,7 +18,8 @@ export function statusRows(
   others: readonly StatusContent[],
   wouldShowChangeFor: (status: StatusContent) => boolean,
 ): readonly StatusContent[] {
-  // 同じプロパティが複数のタブに現れるため（満腹度はstatusでありnutritionでもある）、識別子で束ねる。
+  // taggedはothersの部分集合（statusタグの付いた行も、キャラクタのプロパティには違いない）なので、
+  // 同じ行が両方から来る。識別子で束ね、常に候補のtaggedを先に置く。
   const candidates = new Map<string, StatusContent>();
   for (const status of tagged) candidates.set(status.key, status);
   for (const status of others)
