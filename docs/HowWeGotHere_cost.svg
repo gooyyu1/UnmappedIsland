@@ -3,21 +3,27 @@
 <text x="68" y="22" font-size="14" font-weight="600" fill="#24292f">AIに払った額（ドル）</text>
 <line x1="68" y1="246" x2="734" y2="246" stroke="#d8dee4"/>
 <text x="60" y="250" text-anchor="end" fill="#6e7781">0</text>
-<line x1="68" y1="182.66666666666666" x2="734" y2="182.66666666666666" stroke="#d8dee4"/>
-<text x="60" y="186.66666666666666" text-anchor="end" fill="#6e7781">2,000</text>
-<line x1="68" y1="119.33333333333333" x2="734" y2="119.33333333333333" stroke="#d8dee4"/>
-<text x="60" y="123.33333333333333" text-anchor="end" fill="#6e7781">4,000</text>
+<line x1="68" y1="208" x2="734" y2="208" stroke="#d8dee4"/>
+<text x="60" y="212" text-anchor="end" fill="#6e7781">1,000</text>
+<line x1="68" y1="170" x2="734" y2="170" stroke="#d8dee4"/>
+<text x="60" y="174" text-anchor="end" fill="#6e7781">2,000</text>
+<line x1="68" y1="132" x2="734" y2="132" stroke="#d8dee4"/>
+<text x="60" y="136" text-anchor="end" fill="#6e7781">3,000</text>
+<line x1="68" y1="94" x2="734" y2="94" stroke="#d8dee4"/>
+<text x="60" y="98" text-anchor="end" fill="#6e7781">4,000</text>
 <line x1="68" y1="56" x2="734" y2="56" stroke="#d8dee4"/>
-<text x="60" y="60" text-anchor="end" fill="#6e7781">6,000</text>
+<text x="60" y="60" text-anchor="end" fill="#6e7781">5,000</text>
 <text x="68" y="48" fill="#24292f" font-weight="600">Claude（区間）</text>
-<polyline points="68,244.92035033333335 176.4186046511628,234.73025766666666 284.8372093023256,205.78187033333333 470.69767441860466,179.23740416666666 625.5813953488372,139.88592466666665 672.046511627907,207.90652316666666 734,82.34026683333332" fill="none" stroke="#0072B2" stroke-width="2.5" stroke-linejoin="round"/>
-<circle cx="68" cy="244.92035033333335" r="3" fill="#0072B2"/>
-<circle cx="176.4186046511628" cy="234.73025766666666" r="3" fill="#0072B2"/>
-<circle cx="284.8372093023256" cy="205.78187033333333" r="3" fill="#0072B2"/>
-<circle cx="470.69767441860466" cy="179.23740416666666" r="3" fill="#0072B2"/>
-<circle cx="625.5813953488372" cy="139.88592466666665" r="3" fill="#0072B2"/>
-<circle cx="672.046511627907" cy="207.90652316666666" r="3" fill="#0072B2"/>
-<circle cx="734" cy="82.34026683333332" r="3" fill="#0072B2"/>
+<polyline points="68,244.7044204 159.41176470588235,232.4763092 250.8235294117647,201.6165814 407.52941176470586,172.8572276 538.1176470588235,118.66310959999998 577.2941176470588,200.2878278 629.5294117647059,60.54782099999997 694.8235294117648,201.7407806 734,130.5877832" fill="none" stroke="#0072B2" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="68" cy="244.7044204" r="3" fill="#0072B2"/>
+<circle cx="159.41176470588235" cy="232.4763092" r="3" fill="#0072B2"/>
+<circle cx="250.8235294117647" cy="201.6165814" r="3" fill="#0072B2"/>
+<circle cx="407.52941176470586" cy="172.8572276" r="3" fill="#0072B2"/>
+<circle cx="538.1176470588235" cy="118.66310959999998" r="3" fill="#0072B2"/>
+<circle cx="577.2941176470588" cy="200.2878278" r="3" fill="#0072B2"/>
+<circle cx="629.5294117647059" cy="60.54782099999997" r="3" fill="#0072B2"/>
+<circle cx="694.8235294117648" cy="201.7407806" r="3" fill="#0072B2"/>
+<circle cx="734" cy="130.5877832" r="3" fill="#0072B2"/>
 <line x1="68" y1="478" x2="734" y2="478" stroke="#d8dee4"/>
 <text x="60" y="482" text-anchor="end" fill="#6e7781">0</text>
 <line x1="68" y1="430.5" x2="734" y2="430.5" stroke="#d8dee4"/>
@@ -29,40 +35,46 @@
 <line x1="68" y1="288" x2="734" y2="288" stroke="#d8dee4"/>
 <text x="60" y="292" text-anchor="end" fill="#6e7781">80</text>
 <text x="68" y="280" fill="#24292f" font-weight="600">Copilot（区間）</text>
-<polyline points="68,394.27103750000003 176.4186046511628,393.16713749999997 284.8372093023256,478 470.69767441860466,464.02645 625.5813953488372,478 672.046511627907,478 734,325.4224" fill="none" stroke="#D55E00" stroke-width="2.5" stroke-linejoin="round"/>
+<polyline points="68,394.27103750000003 159.41176470588235,393.16713749999997 250.8235294117647,478 407.52941176470586,464.02645 538.1176470588235,478 577.2941176470588,478 629.5294117647059,325.4224 694.8235294117648,478 734,478" fill="none" stroke="#D55E00" stroke-width="2.5" stroke-linejoin="round"/>
 <circle cx="68" cy="394.27103750000003" r="3" fill="#D55E00"/>
-<circle cx="176.4186046511628" cy="393.16713749999997" r="3" fill="#D55E00"/>
-<circle cx="284.8372093023256" cy="478" r="3" fill="#D55E00"/>
-<circle cx="470.69767441860466" cy="464.02645" r="3" fill="#D55E00"/>
-<circle cx="625.5813953488372" cy="478" r="3" fill="#D55E00"/>
-<circle cx="672.046511627907" cy="478" r="3" fill="#D55E00"/>
-<circle cx="734" cy="325.4224" r="3" fill="#D55E00"/>
+<circle cx="159.41176470588235" cy="393.16713749999997" r="3" fill="#D55E00"/>
+<circle cx="250.8235294117647" cy="478" r="3" fill="#D55E00"/>
+<circle cx="407.52941176470586" cy="464.02645" r="3" fill="#D55E00"/>
+<circle cx="538.1176470588235" cy="478" r="3" fill="#D55E00"/>
+<circle cx="577.2941176470588" cy="478" r="3" fill="#D55E00"/>
+<circle cx="629.5294117647059" cy="325.4224" r="3" fill="#D55E00"/>
+<circle cx="694.8235294117648" cy="478" r="3" fill="#D55E00"/>
+<circle cx="734" cy="478" r="3" fill="#D55E00"/>
 <line x1="68" y1="710" x2="734" y2="710" stroke="#d8dee4"/>
 <text x="60" y="714" text-anchor="end" fill="#6e7781">0</text>
 <line x1="68" y1="672" x2="734" y2="672" stroke="#d8dee4"/>
-<text x="60" y="676" text-anchor="end" fill="#6e7781">5</text>
+<text x="60" y="676" text-anchor="end" fill="#6e7781">10</text>
 <line x1="68" y1="634" x2="734" y2="634" stroke="#d8dee4"/>
-<text x="60" y="638" text-anchor="end" fill="#6e7781">10</text>
+<text x="60" y="638" text-anchor="end" fill="#6e7781">20</text>
 <line x1="68" y1="596" x2="734" y2="596" stroke="#d8dee4"/>
-<text x="60" y="600" text-anchor="end" fill="#6e7781">15</text>
+<text x="60" y="600" text-anchor="end" fill="#6e7781">30</text>
 <line x1="68" y1="558" x2="734" y2="558" stroke="#d8dee4"/>
-<text x="60" y="562" text-anchor="end" fill="#6e7781">20</text>
+<text x="60" y="562" text-anchor="end" fill="#6e7781">40</text>
 <line x1="68" y1="520" x2="734" y2="520" stroke="#d8dee4"/>
-<text x="60" y="524" text-anchor="end" fill="#6e7781">25</text>
+<text x="60" y="524" text-anchor="end" fill="#6e7781">50</text>
 <text x="68" y="512" fill="#24292f" font-weight="600">Claude・PR1本あたり</text>
-<polyline points="68,704.6017516666667 176.4186046511628,674.41134 284.8372093023256,597.7633590697675 470.69767441860466,609.2262704402516 625.5813953488372,594.2391905454546 672.046511627907,626.8869596363636 734,553.5126057370518" fill="none" stroke="#009E73" stroke-width="2.5" stroke-linejoin="round"/>
-<circle cx="68" cy="704.6017516666667" r="3" fill="#009E73"/>
-<circle cx="176.4186046511628" cy="674.41134" r="3" fill="#009E73"/>
-<circle cx="284.8372093023256" cy="597.7633590697675" r="3" fill="#009E73"/>
-<circle cx="470.69767441860466" cy="609.2262704402516" r="3" fill="#009E73"/>
-<circle cx="625.5813953488372" cy="594.2391905454546" r="3" fill="#009E73"/>
-<circle cx="672.046511627907" cy="626.8869596363636" r="3" fill="#009E73"/>
-<circle cx="734" cy="553.5126057370518" r="3" fill="#009E73"/>
+<polyline points="68,707.5085007692307 159.41176470588235,692.20567 250.8235294117647,657.7842134117648 407.52941176470586,668.2041300571428 538.1176470588235,651.588582385321 577.2941176470588,663.8260886868687 629.5294117647059,635.5212132530121 694.8235294117648,539.772233076923 734,605.0798029090909" fill="none" stroke="#009E73" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="68" cy="707.5085007692307" r="3" fill="#009E73"/>
+<circle cx="159.41176470588235" cy="692.20567" r="3" fill="#009E73"/>
+<circle cx="250.8235294117647" cy="657.7842134117648" r="3" fill="#009E73"/>
+<circle cx="407.52941176470586" cy="668.2041300571428" r="3" fill="#009E73"/>
+<circle cx="538.1176470588235" cy="651.588582385321" r="3" fill="#009E73"/>
+<circle cx="577.2941176470588" cy="663.8260886868687" r="3" fill="#009E73"/>
+<circle cx="629.5294117647059" cy="635.5212132530121" r="3" fill="#009E73"/>
+<circle cx="694.8235294117648" cy="539.772233076923" r="3" fill="#009E73"/>
+<circle cx="734" cy="605.0798029090909" r="3" fill="#009E73"/>
 <text x="68" y="726" text-anchor="middle" fill="#6e7781">07-18</text>
-<text x="176.4186046511628" y="726" text-anchor="middle" fill="#6e7781">07-25</text>
-<text x="284.8372093023256" y="726" text-anchor="middle" fill="#6e7781">08-01</text>
-<text x="470.69767441860466" y="726" text-anchor="middle" fill="#6e7781">08-13</text>
-<text x="625.5813953488372" y="726" text-anchor="middle" fill="#6e7781">08-23</text>
-<text x="672.046511627907" y="726" text-anchor="middle" fill="#6e7781">08-26</text>
-<text x="734" y="726" text-anchor="middle" fill="#6e7781">08-30</text>
+<text x="159.41176470588235" y="726" text-anchor="middle" fill="#6e7781">07-25</text>
+<text x="250.8235294117647" y="726" text-anchor="middle" fill="#6e7781">08-01</text>
+<text x="407.52941176470586" y="726" text-anchor="middle" fill="#6e7781">08-13</text>
+<text x="538.1176470588235" y="726" text-anchor="middle" fill="#6e7781">08-23</text>
+<text x="577.2941176470588" y="726" text-anchor="middle" fill="#6e7781">08-26</text>
+<text x="629.5294117647059" y="726" text-anchor="middle" fill="#6e7781">08-30</text>
+<text x="694.8235294117648" y="726" text-anchor="middle" fill="#6e7781">09-04</text>
+<text x="734" y="726" text-anchor="middle" fill="#6e7781">09-07</text>
 </svg>
