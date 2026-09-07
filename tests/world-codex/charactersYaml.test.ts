@@ -284,8 +284,8 @@ describe('プレイヤーキャラクタの定義', () => {
       // メンタルの不調を代表する1本（Characters.md 幸福度節）。心も健康のうちなので、専用のタブは
       // 作らずhealthへ入れる。
       ['happiness', ['status', 'health']],
-      // 時間の経過から生える圧（同 ホームシック節）。**プレイヤーが読むのはこちら**なので、
-      // 溜める側の孤独と抑える側の居心地はstatusを持たない（下のテスト）。
+      // 時間の経過から生える圧（同 ホームシック節）。**常時のバーに出るのはこちら**で、溜める側の
+      // 孤独と抑える側の居心地はstatusを持たず、この詳細から辿って読む（下のテスト）。
       ['homesickness', ['status', 'health']],
       // 全身の菌（DigestionSystem.md 6節）。発症したときだけステータスエリアに出る。
       ['pathogen', ['status', 'health']],
@@ -299,9 +299,9 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(tagNames.sort()).toEqual([...expectedTags].sort());
     });
 
-    it('孤独と、抑える側の2つは画面に出ない', () => {
-      // 見えない値が結果だけを変える形にしないため、読ませるのは間のホームシックだけにする
-      // （Characters.md ホームシック節）。
+    it('孤独と、抑える側の2つは常時のバーにもプロパティのタブにも出ない', () => {
+      // 増減の理由を1本へ集めるため、常時見せるのは間のホームシックだけにする（Characters.md
+      // ホームシック節）。読めないわけではなく、そのホームシックの詳細から辿って開く。
       for (const propertyName of ['loneliness', 'comfort', 'company'])
         expect(propOf(def(character), propertyName).tags, `${propertyName} はstatusを持たない`).toEqual([]);
     });

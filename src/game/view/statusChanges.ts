@@ -1,22 +1,5 @@
-import type { PropertyCategory as PropertyTab } from '../ui/PropertiesPane';
 import type { StatusChange, StatusContent } from '../ui/StatusBar';
 import { barFillOf, barKeepsAxis } from './statusBarLook';
-
-/**
- * ステータスエリアの候補とプロパティの全カテゴリを、**重複は先勝ちで**1つの並びへ畳む。
- * 行動の前後を比べるのも、バーを作るのも、この1つの畳み方を通す——別々に畳むと、控え
- * （runAndRecordChange）と表示（ShownStatuses）が違う集合を答える。
- */
-export function mergedStatuses(
-  statuses: readonly StatusContent[],
-  categories: readonly PropertyTab[],
-): readonly StatusContent[] {
-  const all = new Map<string, StatusContent>();
-  for (const status of [...statuses, ...categories.flatMap((tab) => tab.entries)]) {
-    if (!all.has(status.key)) all.set(status.key, status);
-  }
-  return [...all.values()];
-}
 
 /** 行動の前後で変わった1件分（StatusArea.md）。 */
 export interface StatusDelta {

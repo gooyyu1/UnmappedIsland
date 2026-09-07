@@ -1,0 +1,17 @@
+# 里心の設え（src/assets/world-codex/furnishings.yaml）の札を確かめるための開始状態。
+# どれも作るのに丸太か太い枝と縄が要るので、遊んで辿り着くには何段も掛かる。
+#
+# 見るのは**札どうしが見分けられるか**。腰掛けと太鼓はどちらも立てた丸太なので、天面だけで
+# 分かれていることをここで確かめる。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 里心の設え
+
+# 3は開始地点が砂浜になるシード。
+seed: 3
+
+location:
+  type: sandy_beach
+  # 探索を待たずに設置物を並べる。
+  fixtures: [log_stool, branch_table, wood_carving, log_drum]

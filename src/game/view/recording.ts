@@ -8,7 +8,7 @@ import type { PlayScreenView } from './PlayScreenView';
 import { fromGameSession, withFrozenCards } from './PlayScreenView';
 import type { CardPlace } from './cardPlaces';
 import type { StatusDelta } from './statusChanges';
-import { mergedStatuses, statusChangesBetween } from './statusChanges';
+import { statusChangesBetween } from './statusChanges';
 
 /**
  * ワールドを変えている途中の、あるtick境界での表示内容（runAndRecordChange）。
@@ -81,8 +81,8 @@ export function runAndRecordChange(
   handLaneCells?: number,
 ): Recording {
   const before = fromGameSession(game, codex, locale, handLaneCells);
-  // 出ていない行の増減も取りこぼさないよう、比べる元は全ステータス（重複は先勝ち）。
-  const statusesBefore = mergedStatuses(before.statuses, before.propertyCategories);
+  // 出ていない行の増減も取りこぼさないよう、比べる元は全プロパティ。
+  const statusesBefore = before.properties;
   const recorded: RecordedView[] = [];
   let changes: WorldChange[] = [];
   let signals: WorldSignal[] = [];
@@ -104,10 +104,7 @@ export function runAndRecordChange(
                 recorded.push({
                   minutes: game.world.totalMinutes,
                   view,
-                  statusChanges: statusChangesBetween(
-                    statusesBefore,
-                    mergedStatuses(view.statuses, view.propertyCategories),
-                  ),
+                  statusChanges: statusChangesBetween(statusesBefore, view.properties),
                   changes,
                   signals,
                 });

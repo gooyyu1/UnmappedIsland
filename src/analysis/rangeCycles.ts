@@ -540,16 +540,22 @@ function totalsWithDriver(own: TickAmounts, driver: ExternalTickDelta | undefine
 
 /**
  * ゲートが落ちて、その増減が効かなくなるまでのtick数（TickGate参照）。**見ている自分の値が
- * 尽きるか、居ることを要求された段を上へ抜けるか**で落ちる。どちらも来なければundefined＝
+ * 尽きるか、居ることを要求された段を抜けるか**で落ちる。どちらも来なければundefined＝
  * 止まらない。**生まれた時点から数える**ので、効き始めまでの時間（ticksUntilGateRises）と同じ
  * 物差しの上に乗る。
+ *
+ * **段は上へも下へも抜ける。** 値がどちらへ動くかは定義からは1つに決まらないので、どちらの抜け方も
+ * 数える。
  *
  * 落ちるのは**要るもののどれか1つが外れた時点**なので、最も早いものを採る。
  */
 function ticksUntilGateFalls(def: ObjectDef, gate: TickGate): number | undefined {
   const falls = [
     ...gate.watchedSelfProperties.map((propertyGlobalId) => ticksUntilValueRunsOut(def, propertyGlobalId)),
-    ...gate.requiredSelfStages.map((required) => ticksUntilStageLeftUpward(def, required)),
+    ...gate.requiredSelfStages.flatMap((required) => [
+      ticksUntilStageLeftUpward(def, required),
+      ticksUntilStageLeftDownward(def, required),
+    ]),
   ].filter((ticks): ticks is number => ticks !== undefined);
   return falls.length === 0 ? undefined : Math.min(...falls);
 }
@@ -583,9 +589,46 @@ function ticksUntilStageLeftUpward(def: ObjectDef, required: SelfStageRequiremen
   );
 }
 
+/**
+ * 要求された段を下へ抜けて、条件が外れるまでのtick数。下がっていかない値、抜け出る先が無い段
+ * （PropertyDef.lowerExitOfStage）ならundefined。
+ *
+ * **ちょうどその段（`in_stage`）も「その段以上」（`in_stage_or_above`、14.1節）も、名指した段の
+ * 下端を割れば外れる**ので、抜ける先は同じ。上へ抜けるほう（ticksUntilStageLeftUpward）が
+ * `in_stage`だけなのと、ここが違う。
+ */
+function ticksUntilStageLeftDownward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
+  const lowerBound = stageLowerExitOf(def, required);
+  if (lowerBound === undefined) return undefined;
+
+  const value = staticValueOf(def, required.propertyGlobalId, 'lowest');
+  // **下へ抜けるのは、その段に居る値だけ。** 生まれた時点で下端より下に在るなら、その段へ入るのは
+  // これから——いつ入るかを答えるのはticksUntilGateRisesで、そちらは読めない立ち上がりを0と見て
+  // いる（炉の火力）。ここで抜けたことにすると、その押し手が丸ごと消える。
+  if (value === undefined || value < lowerBound) return undefined;
+
+  // 速さもロールもticksUntilStageLeftUpwardと同じ側——効き始めから抜けるまでが最も狭くなる組で、
+  // 押し手を控えめに数える。
+  const perTick = paceTowards(tickAmountsOf(def, required.propertyGlobalId).possible, 'on_min')?.fastest
+    .amount;
+  if (perTick === undefined) return undefined;
+
+  // **下端ちょうどに着いた時点では、まだ割っていない**（段は下端を含む半開区間、6.4節）ので、
+  // 端まで測るticksToReachより1 tick遅くなることがある。
+  return Math.floor((lowerBound - value) / perTick) + 1;
+}
+
 /** 名指された段の上端＝押し抜けて行き着く先（PropertyDef.upperBoundOfStage）。上に段が無ければundefined。 */
 function stageUpperBoundOf(def: ObjectDef, required: SelfStageRequirement): number | undefined {
   return def.tryGetPropertyDef(required.propertyGlobalId)?.upperBoundOfStage(required.stageName);
+}
+
+/**
+ * 名指された段の下端＝押し割って抜け出る先（PropertyDef.lowerExitOfStage）。下へ抜けようが無ければ
+ * undefined。
+ */
+function stageLowerExitOf(def: ObjectDef, required: SelfStageRequirement): number | undefined {
+  return def.tryGetPropertyDef(required.propertyGlobalId)?.lowerExitOfStage(required.stageName);
 }
 
 /**

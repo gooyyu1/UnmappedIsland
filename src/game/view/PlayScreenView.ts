@@ -255,10 +255,18 @@ export interface PlayScreenView {
   readonly statuses: readonly StatusContent[];
 
   /**
-   * キャラクタのプロパティのカテゴリ（property_tagsの宣言順）。ステータスエリアの固定表示の
-   * 引き当て（ShownStatuses）が読む。子ウィンドウへ出るぶんはcharacterWindow.propertiesが持つ。
+   * キャラクタのプロパティのカテゴリ（property_tagsの宣言順）。プロパティのタブの中身そのもので、
+   * 印を重ねる側（ShownStatuses.tabs）が読む。子ウィンドウへ出るぶんはcharacterWindow.propertiesが持つ。
    */
   readonly propertyCategories: readonly PropertyTab[];
+
+  /**
+   * キャラクタのプロパティ全部（propsの宣言順）。**タグの有無で絞らない**——タグが決めるのは
+   * どこへ並べるか（常時のバー・プロパティのタブ）だけで、**詳細を開ける相手はそれより広い**。
+   * ホームシックの詳細に出る居心地のように、どこにも並ばないプロパティが影響の枠として現れる
+   * （[`Windows.md`](../../../docs/ui/Windows.md) 8.2節）。
+   */
+  readonly properties: readonly StatusContent[];
   /**
    * 状況アイコンの絵の識別子（ScreenLayout.md 4.1.1節）。**今いる段が名乗ったものだけ**が並ぶので、
    * 何も妨げていない間は空になる。並びはキャラクタのpropsの宣言順。
@@ -606,24 +614,40 @@ export function fromGameSession(
       ? object.tryGetProperty(influence.counterpart.propertyGlobalId)
       : undefined;
 
+  /** プロパティ1つ分の行（バーの中身とその詳細）。出す場所は問わない——どこに並べるかは読む側が決める。 */
+  const rowOf = (object: WorldObject, property: PropertyValue): StatusContent => {
+    const texts = locale.object(object.def.name).prop(property.def.name);
+    return {
+      key: property.def.name,
+      name: texts.displayName,
+      icon: texts.icon,
+      value: property.getEffectiveValue(),
+      ratio: property.ratio,
+      stage: stageReadingOf(property),
+      alert: property.alert,
+      worsensUpward: property.def.worsensUpward,
+      detail: detailOf(object, property),
+    };
+  };
+
+  /**
+   * そのオブジェクトのプロパティ全部の行を、propsの宣言順で。**タグでは絞らない**——タグが決めるのは
+   * どこへ並べるかだけで、詳細を開ける相手はそれより広い（PlayScreenView.properties）。
+   */
+  const everyRowOf = (object: WorldObject): readonly StatusContent[] => {
+    const rows: StatusContent[] = [];
+    for (const propertyDef of object.def.enumeratePropertyDefs()) {
+      const property = object.tryGetProperty(propertyDef.globalId);
+      if (property !== undefined) rows.push(rowOf(object, property));
+    }
+    return rows;
+  };
+
   /** タグが付いたそのオブジェクトのプロパティを、表示名に直して並べる。未宣言のタグでは空。 */
   const entriesWithTag = (object: WorldObject, tagGlobalId: number | undefined): readonly StatusContent[] =>
     tagGlobalId === undefined
       ? []
-      : object.propertiesWithTag(tagGlobalId).map((property) => {
-          const texts = locale.object(object.def.name).prop(property.def.name);
-          return {
-            key: property.def.name,
-            name: texts.displayName,
-            icon: texts.icon,
-            value: property.getEffectiveValue(),
-            ratio: property.ratio,
-            stage: stageReadingOf(property),
-            alert: property.alert,
-            worsensUpward: property.def.worsensUpward,
-            detail: detailOf(object, property),
-          };
-        });
+      : object.propertiesWithTag(tagGlobalId).map((property) => rowOf(object, property));
 
   /**
    * そのオブジェクトのプロパティを、カテゴリ（`property_tags`、GameElementDefinition.md 6.7節）ごとに
@@ -870,6 +894,7 @@ export function fromGameSession(
     conditions: situationsOf(game.player.instance),
     statuses: entriesWithTag(game.player.instance, codex.propertyTagNames.tryGetId(STATUS_TAG)),
     propertyCategories,
+    properties: everyRowOf(game.player.instance),
     // dayは1始まり（GameElementDefinition.md 17節）なので、生存日数は0始まりへ直す。
     elapsedDays: game.world.day - 1,
     hour: game.world.hour,

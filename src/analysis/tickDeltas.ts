@@ -46,8 +46,13 @@ export class TickGate {
   readonly conditions: ConditionDeclaration | undefined;
 
   /**
-   * 条件が見ている、宣言元自身のプロパティ。**その増減がいつまで効くか**の手掛かりで、出血なら
-   * `bleeding`——それが尽きた時点で血を奪うのが止まる。
+   * 条件が値そのものを見ている、宣言元自身のプロパティ。**その増減がいつまで効くか**の手掛かりで、
+   * 出血なら `bleeding`——それが尽きた時点で血を奪うのが止まる。
+   *
+   * **段を名指した条件（`in_stage`・`in_stage_or_above`、14.1節）が見ている値はここへ来ない。**
+   * 段の条件が外れるのは値が尽きたときではなく段を出たときで、それは下の{@link requiredSelfStages}が
+   * 段の下端と上端から答える。ここへ混ぜると、下端を書いていない受け皿の段（6.4節）——値が下端まで
+   * 落ちても居続ける段——を求める増減まで、尽きた時点で止まるものとして数えられる。
    */
   readonly watchedSelfProperties: readonly number[];
 
@@ -287,7 +292,9 @@ function matchesType(def: ObjectDef, match: TypeMatchReading): boolean {
  * そして宣言元自身の型に課された指定（口径ごとに分かれた蒸発・雨の宣言）。
  *
  * selfのプロパティは比較の相手（valueRef）を数えない——尽きて条件が外れるのは、見ている側の値が
- * 動いたときだから。自身の段・祖先・型の指定は**論理積の枝にあるものだけ**を採る（下のreadAlternative）。
+ * 動いたときだから。**段を名指した条件が見ている値も数えない**——その条件が外れるのは値が尽きた
+ * ときではなく段を出たときで、答えるのは段の側（TickGate.watchedSelfProperties）。自身の段・祖先・
+ * 型の指定は**論理積の枝にあるものだけ**を採る（下のreadAlternative）。
  *
  * **ここが集めるのは上の問いへの答えだけで、条件そのものではない。** 枠を見る葉
  * （`{in_slot}`・`{slot, matches}`）はどれにも答えない——枠に入っているかは、尽きる値でも
@@ -336,7 +343,6 @@ class GateConditionCollector implements ConditionReader {
       this.hasNonStageConditions = true;
       return;
     }
-    this.selfProperties.push(propertyGlobalId);
     if (this.required && !this.negated) this.requiredSelfStages.push({ propertyGlobalId, stageName, bound });
     else this.hasNonStageConditions = true;
   }
