@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
+import { Location } from '../../src/domain/wrappers/Location';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
@@ -319,6 +320,19 @@ describe('smoking.yamlの燻製と燻し小屋', () => {
         step!.requirements[index].requires(codex.objects.get(codex.objectNames.getId(name))),
         `${index}番目は${name}`,
       ).toBe(true);
+  });
+
+  it('燻し小屋を2基据えても、1枚のカードに束ならない', () => {
+    // stackable: false（SlotSystem.md 4節）。束ねると火力も薪も吊るした物も代表の1基ぶんしか
+    // 見えなくなる——干し場・塩田と同じで、留守番の設備は中身が個体ごとに違う。
+    const { session, land } = open();
+    spawnInto(session, 'smokehouse', land, 'fixtures');
+    spawnInto(session, 'smokehouse', land, 'fixtures');
+
+    expect(
+      new Location(land, codex).fixtureStacks.map((stack) => stack.length),
+      '2つの枠に1基ずつ並ぶ',
+    ).toEqual([1, 1]);
   });
 
   it('据えた燻し小屋は、持ち歩けない', () => {
