@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { StartedGame } from '../../src/domain/generation/NewGame';
 import { startNewGame } from '../../src/domain/generation/NewGame';
+import { ShownStatuses } from '../../src/game/view/ShownStatuses';
 import type { PlayScreenView } from '../../src/game/view/PlayScreenView';
 import { fromGameSession } from '../../src/game/view/PlayScreenView';
 import type { CardPlace, ScreenPlace } from '../../src/game/view/cardPlaces';
@@ -29,6 +30,20 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
   /** その区画のレーンに並んでいる札（空き枠を除いたもの）。 */
   function lane(view: PlayScreenView, game: StartedGame, screen: ScreenPlace) {
     return view.cardsIn(place(game, screen)).filter((card) => card !== undefined);
+  }
+
+  /** その画面のステータス（固定表示は無し・経過中でもない）。詳細を引ける先を見るために通す。 */
+  function shownStatusesOf(view: PlayScreenView): ShownStatuses {
+    const shown = new ShownStatuses({
+      statuses: () => view.statuses,
+      categories: () => view.propertyCategories,
+      properties: () => view.properties,
+      midAction: () => false,
+      onPinned: () => {},
+      onOpenDetail: () => {},
+    });
+    shown.reset([]);
+    return shown;
   }
 
   function place(game: StartedGame, screen: ScreenPlace): CardPlace {
@@ -140,5 +155,24 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
     const fromStones = load?.received.filter((influence) => influence.name === '石');
     expect(fromStones?.length, '40個の石は1枠').toBe(1);
     expect(fromStones?.[0].count).toBe(40);
+  });
+
+  it('影響の枠が指す先は、タグを1つも持たないプロパティでも開ける', () => {
+    // Windows.md 8.2節: 枠を押すと相手の詳細へ入れ替わる（開けないのはオブジェクトの枠だけ）。
+    // 居心地・連れ・孤独はタグを持たないので常時のバーにもプロパティのタブにも出ない
+    // （docs/world/Characters.md ホームシック節）が、ホームシックの詳細には枠として出る。
+    // 開ける先が無いと、押せる見た目のまま何も起きない枠になる。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
+    const shown = shownStatusesOf(fromGameSession(game, codex, locale));
+
+    const received = shown.contentOf('homesickness')?.detail?.received ?? [];
+    expect(received.map((influence) => influence.key)).toEqual(['loneliness', 'comfort', 'company']);
+
+    for (const influence of received) {
+      const key = influence.key;
+      expect(key).toBeDefined();
+      expect(shown.contentOf(key ?? ''), `${key ?? ''}の詳細が開ける`).toBeDefined();
+    }
+    expect(shown.contentOf('comfort')?.stage?.key, '設えを据えていない土地は素のまま').toBe('bare');
   });
 });
