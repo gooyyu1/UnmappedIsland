@@ -5,8 +5,10 @@
 //
 // 使い方:
 //   node scripts/historyStats.mjs                      開始日から7日刻み＋今日
-//   node scripts/historyStats.mjs 2026-07-18 2026-08-30 指定した日だけ
+//   node scripts/historyStats.mjs 2026-07-18 2026-08-30 区切りの日を指定する
 //   node scripts/historyStats.mjs --svg docs <日付...>  表に加えて、貼り込む図も書き出す
+//
+// **渡すのは区切りの日だけで、系列の先頭にはリポジトリができた日が必ず付く**（`firstCommitDay`）。
 //
 // 日付は**日本時間**で読み、その日の最終コミットの状態を測る。時差で日が変わるので、UTCの
 // 履歴をそのまま日で切ると1日ずれる。**呼ぶ側も日付をJSTで作ること**——UTCの「今日」を渡すと、
@@ -264,9 +266,14 @@ function repository() {
   return match[1];
 }
 
+/** リポジトリができた日（日本時間）。**系列の始まりはここで、渡す側が選ぶものではない。** */
+function firstCommitDay() {
+  return dayOf(git(['log', '--reverse', '--format=%at']).split('\n')[0].trim());
+}
+
 /** 引数が無いときの既定。最初のコミットの日から7日刻みで、最後は今日。 */
 function defaultDays() {
-  const first = dayOf(git(['log', '--reverse', '--format=%at']).split('\n')[0].trim());
+  const first = firstCommitDay();
   const today = dayOf(git(['log', '-1', '--format=%at']));
   const days = [];
   for (let at = new Date(`${first}T00:00:00+09:00`); ; at.setUTCDate(at.getUTCDate() + DEFAULT_STEP_DAYS)) {
@@ -545,19 +552,22 @@ if (svgIndex !== -1 && (svgDirectory === undefined || svgDirectory.startsWith('-
 }
 
 const days = svgIndex === -1 ? argv : [...argv.slice(0, svgIndex), ...argv.slice(svgIndex + 2)];
-const targets = days.length > 0 ? days : defaultDays();
-for (const day of targets) {
+for (const day of days) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
     console.error(`日付は YYYY-MM-DD で指定してください: ${day}`);
     process.exit(1);
   }
 }
 
+// **渡すのは区切りの日で、系列の始まりは渡さない。** 「どこで作り方が変わったか」は選ぶものだが、
+// 「いつ始まったか」は履歴の側に在る事実なので、道具が足す。渡す側に任せていたときは、表も図も
+// リポジトリができた5日後から始まっていて、読み手にはそこが始まりに見えていた。
+const firstDay = firstCommitDay();
+const targets = days.length === 0 ? defaultDays() : [...(days[0] > firstDay ? [firstDay] : []), ...days];
+
 const pullRequests = mergedPullRequests();
 const costs = costByDay();
 const measurements = [];
-// 最初の区間の始まりは、`main` へ最初のPRが入った日。以降は前の区切りの翌日。
-const firstDay = pullRequests[0]?.day ?? targets[0];
 let previousDay = '';
 for (const day of targets) {
   measurements.push(
