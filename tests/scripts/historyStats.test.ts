@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest';
  * 深さ1なので、両方を書かないとどちらかの環境で何も見ていないことになる。
  *
  * - 浅い: **表を出さずに落ちること**だけを見る。道具はここで止まる決まり（`requireFullHistory`）。
- * - 深い: 行数の4列とPRの累計が0でないこと、図の点が枠の中に散らばっていること。
+ * - 深い: 行数の列とPRの累計が0でないこと、図の点が枠の中に散らばっていること。
  *
  * 日付は**JSTで作る**。道具はJSTの 23:59:59 で切るので、UTCの「今日」を渡すと、JSTで日が
  * 変わった後の時間帯（CIの実行時刻がここに入る）にはその日のコミットが1つも無いことになる。
@@ -96,7 +96,7 @@ function tableOf(stdout: string): Map<string, string>[] {
     .map((cells) => new Map(headers.map((header, index) => [header, cells[index]])));
 }
 
-const NUMBER_COLUMNS = ['実装', '試験', '文書', '定義', 'PR'];
+const NUMBER_COLUMNS = ['実装', '試験', '文書', '定義', '道具', 'PR'];
 
 describe.runIf(IS_SHALLOW)('浅いクローンでの育ち方の推移', () => {
   const { stdout, status } = run([TODAY]);

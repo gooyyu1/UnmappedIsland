@@ -54,14 +54,42 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { lineChart } from './lineChart.mjs';
 
-/** 行数の4列。値は `git grep` へ渡す pathspec で、C#期とTS期の置き場を合併してある。 */
+/** 運用を回す道具の置き場。本番のプログラムではないので、`実装` とは別の列で数える。 */
+const TOOL_DIRECTORIES = ['scripts', '.claude', 'tools'];
+
+/** 道具として数える拡張子。**実行されるものとその型だけ**で、傍らの `*.md` や設定は入らない。 */
+const TOOL_EXTENSIONS = ['mjs', 'mts', 'sh', 'py'];
+
+/**
+ * 行数の列。値は `git grep` へ渡す pathspec で、C#期とTS期の置き場を合併してある。
+ *
+ * **どこへ数えるかは、置き場ではなく中身の性質で決める。** 絵のレシピは `tools/` に在っても
+ * データなので `定義` へ、運用の取り決めは `.claude/` に在っても文書なので `文書` へ入る。
+ * **`.claude/decisions/` は判断の履歴なので、どの列にも数えない**——文書とは別のもの。
+ *
+ * **拡張子は `**.ts` の形で書く。** 途中にスラッシュを挟む形（`**` とスラッシュと `*.ts`）は、
+ * 置き場の**直下**にあるファイルを取りこぼす——文書の列が `docs/` 直下（`HowWeGotHere.md`
+ * など）を1つも数えていなかった。**どの列も拡張子で絞る**——絞らないと、置き場へ画像や zip が
+ * 入った日に、`git grep -c ''` がそれへ返す数が黙って列へ乗る。
+ */
 const LINE_COLUMNS = [
-  { header: '実装', pathspecs: ['Assets/Scripts/**/*.cs', 'src/**/*.ts', ':!src/**/*.test.ts'] },
-  { header: '試験', pathspecs: ['Tests/**/*.cs', 'tests/**/*.ts', 'src/**/*.test.ts'] },
-  { header: '文書', pathspecs: ['Documents/**/*.md', 'docs/**/*.md'] },
+  { header: '実装', pathspecs: ['Assets/Scripts/**.cs', 'src/**.ts', ':!src/**.test.ts'] },
+  { header: '試験', pathspecs: ['Tests/**.cs', 'tests/**.ts', 'src/**.test.ts'] },
+  {
+    // `:(glob)` を付けると `*` がスラッシュを跨がなくなる。`.claude/` は**直下だけ**が取り決めで、
+    // 下の階層（`skills/`・`decisions/`）は別のもの。
+    header: '文書',
+    pathspecs: ['Documents/**.md', 'docs/**.md', ':(glob).claude/*.md'],
+  },
   {
     header: '定義',
-    pathspecs: ['Assets/StreamingAssets/**/*.yaml', 'public/**/*.yaml', 'src/assets/**/*.yaml'],
+    pathspecs: ['Assets/StreamingAssets/**.yaml', 'public/**.yaml', 'src/assets/**.yaml', 'tools/**.json'],
+  },
+  {
+    header: '道具',
+    pathspecs: TOOL_DIRECTORIES.flatMap((directory) =>
+      TOOL_EXTENSIONS.map((extension) => `${directory}/**.${extension}`),
+    ),
   },
 ];
 
@@ -173,6 +201,9 @@ const CODE_DIRECTORIES = /^(src|tests|Assets\/Scripts|Tests)\//;
  * `bothSides` は、文書と実装（試験を含む）の**両方**を1本のPRで触ったかどうか。仕様を先に
  * 書いてから実装する進め方が、機能ごとに閉じている（アジャイル的）か、文書を全部書いてから
  * 実装へ移る（ウォーターフォール的）かは、この割合に出る。
+ *
+ * **ここでの「文書」は仕様の置き場だけ**で、`文書` の列とは範囲が違う——`.claude/` の取り決めは、
+ * 実装と対で書かれるものではないので、対になっているかを見るこの割合には入れない。
  */
 function diffOf(sha) {
   const numstat = git(['diff', '--numstat', `${sha}^1`, sha]);
