@@ -44,7 +44,9 @@
 // [`stats/usage/`](../stats/usage) を読む（作り方と限界は
 // [`scripts/usage/README.md`](usage/README.md)）。**Claude はクラウドと手元の両方**が入っており、
 // 1時間ごとの記録を日本時間の日へ束ね直してから区間へ足す。**Copilot は日単位の記録しか無い**ので
-// UTCの日付をそのまま使う——区間の端が最大9時間ずれるが、Copilot が動いた日は区間の端に無い。
+// UTCの日付をそのまま日本時間の日として使う。**これ以上は寄せられない**——UTCの1日は日本時間の
+// 同じ日付の15時間と翌日の9時間に跨るので、同じ日付へ丸めるのが、時刻を持たない記録から取れる
+// 唯一の割り当て。日をまたいだ分（最大9時間ぶん）は1日前に出る。
 //
 // **記録の無い区間は0**。両方とも最初のセッションから通して記録があるので、空欄は「使っていない」
 // を意味する。
@@ -156,6 +158,7 @@ function lineCount(revision, pathspecs) {
 /** `main` へPRとして入ったコミット（第1親系列）を、古い順に日付付きで。 */
 function mergedPullRequests() {
   const log = git(['log', '--first-parent', '--format=%H@@%at@@%s']);
+  const diffs = diffsBySha();
   return log
     .split('\n')
     .filter((line) => line !== '')
@@ -164,7 +167,8 @@ function mergedPullRequests() {
       return { sha, day: dayOf(at), subject };
     })
     .filter(({ subject }) => /^Merge pull request #\d+/.test(subject) || /\(#\d+\)$/.test(subject))
-    .reverse();
+    .reverse()
+    .map((pullRequest) => ({ ...pullRequest, diff: diffs.get(pullRequest.sha) }));
 }
 
 /** 見出しの行を持つTSVを、1行1レコードの配列にする。 */
@@ -204,23 +208,35 @@ const CODE_DIRECTORIES = /^(src|tests|Assets\/Scripts|Tests)\//;
  *
  * **ここでの「文書」は仕様の置き場だけ**で、`文書` の列とは範囲が違う——`.claude/` の取り決めは、
  * 実装と対で書かれるものではないので、対になっているかを見るこの割合には入れない。
+ *
+ * **全部のPRぶんを1回の `git log` で取る。** 1本ずつ `git diff` を呼ぶと、履歴が千本を超えた
+ * あたりから子プロセスの起動だけで数十秒かかる。`-m --first-parent` は、マージコミットでも
+ * 第1親との差分だけを出す。
  */
-function diffOf(sha) {
-  const numstat = git(['diff', '--numstat', `${sha}^1`, sha]);
-  let files = 0;
-  let lines = 0;
-  let documents = false;
-  let code = false;
-  for (const row of numstat.split('\n')) {
-    if (row === '') continue;
+function diffsBySha() {
+  const log = git(['log', '--first-parent', '-m', '--numstat', '--format=@@%H']);
+  const diffs = new Map();
+  let current = null;
+  for (const row of log.split('\n')) {
+    if (row.startsWith('@@')) {
+      current = { files: 0, lines: 0, documents: false, code: false };
+      diffs.set(row.slice(2), current);
+      continue;
+    }
+    if (current === null || row === '') continue;
     const [added, removed, path] = row.split('\t');
-    files += 1;
+    current.files += 1;
     // バイナリは `-` で出る。行数としては数えず、ファイル数だけ数える。
-    lines += (Number(added) || 0) + (Number(removed) || 0);
-    if (DOCUMENT_DIRECTORIES.test(path)) documents = true;
-    if (CODE_DIRECTORIES.test(path)) code = true;
+    current.lines += (Number(added) || 0) + (Number(removed) || 0);
+    if (DOCUMENT_DIRECTORIES.test(path)) current.documents = true;
+    if (CODE_DIRECTORIES.test(path)) current.code = true;
   }
-  return { files, lines, bothSides: documents && code };
+  return new Map(
+    [...diffs].map(([sha, { files, lines, documents, code }]) => [
+      sha,
+      { files, lines, bothSides: documents && code },
+    ]),
+  );
 }
 
 /** その日までに立てられた issue の累計。`gh` が無い・originがGitHubでないなら null。 */
@@ -266,6 +282,94 @@ function formatDay(date) {
   return new Date(date.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
+/** `YYYY-MM-DD`（日本時間）を count 日ずらす。 */
+function shiftDay(day, count) {
+  const at = new Date(`${day}T00:00:00+09:00`);
+  at.setUTCDate(at.getUTCDate() + count);
+  return formatDay(at);
+}
+
+/** `from` から `to` まで（両端を含む）の日。 */
+function daysBetween(from, to) {
+  const days = [];
+  for (let day = from; day <= to; day = shiftDay(day, 1)) days.push(day);
+  return days;
+}
+
+/**
+ * 区間の量を置く日。**区切りの日ではなく、区間の真ん中に置く。**
+ *
+ * 行数や累計はその日の状態なので区切りの日で正しいが、区間を平均した量は区間のどこかを代表する
+ * 値なので、同じx座標に並べると右端へ張り付く。区切りは「作り方を変えた日」で決めていて幅が
+ * 揃っていないので、ずれる量も点ごとに変わる。
+ *
+ * `from` は `to` 以前であること（区間が空だと代表する日が無い）。
+ */
+function middleDay(from, to) {
+  const at = (day) => Date.parse(`${day}T00:00:00+09:00`);
+  return shiftDay(from, Math.floor((at(to) - at(from)) / (2 * 86400000)));
+}
+
+/**
+ * 区間の量を出す窓の幅。**段の区切りは使わない**（`dailyTotals`）。
+ *
+ * **奇数であること**——中央合わせなので、真ん中の日が1つに決まらないと窓が対称にならない。
+ */
+const WINDOW_DAYS = 3;
+
+/**
+ * 日ごとの、コストとPRの量。
+ *
+ * **図の区間の段は、段の区切りではなくここから固定幅の窓で作る。** 段の区切りは「作り方を変えた
+ * 日」で決まっていて幅が揃わないので、区間の量を段ごとに出すと、**区切りを1日動かすだけで値が
+ * 半分になる**（2026-09-07 時点の測定で、変更1千行あたりが $95.6 と $52.5 に分かれた）。
+ */
+function dailyTotals(pullRequests, costs, from, to) {
+  const totals = new Map(
+    daysBetween(from, to).map((day) => [day, { day, claude: 0, copilot: 0, count: 0, lines: 0 }]),
+  );
+  for (const [key, source] of [
+    ['claude', costs.claude],
+    ['copilot', costs.copilot],
+  ]) {
+    for (const [day, cost] of source) {
+      const total = totals.get(day);
+      if (total !== undefined) total[key] += cost;
+    }
+  }
+  for (const { day, diff } of pullRequests) {
+    const total = totals.get(day);
+    if (total === undefined) continue;
+    total.count += 1;
+    total.lines += diff.lines;
+  }
+  return [...totals.values()];
+}
+
+/**
+ * 中央合わせの移動窓で均した、日ごとの量。
+ *
+ * **端では窓が痩せる**——線を最後の日まで引くため。単価は、窓にPRが1本も無ければ定義できないので
+ * null にし、その日は段から落とす（0で埋めると「ただ同然で作れた日」に見える）。
+ */
+function rollingSeries(totals) {
+  const half = (WINDOW_DAYS - 1) / 2;
+  return totals.map((_, index) => {
+    const window = totals.slice(Math.max(0, index - half), index + half + 1);
+    const sum = (pick) => window.reduce((total, row) => total + pick(row), 0);
+    const claude = sum((row) => row.claude);
+    const count = sum((row) => row.count);
+    const lines = sum((row) => row.lines);
+    return {
+      day: totals[index].day,
+      claudePerDay: claude / window.length,
+      copilotPerDay: sum((row) => row.copilot) / window.length,
+      claudePerPullRequest: count === 0 ? null : claude / count,
+      claudePerThousandLines: lines === 0 ? null : (1000 * claude) / lines,
+    };
+  });
+}
+
 function formatTable(rows) {
   const headers = [
     '日',
@@ -283,7 +387,7 @@ function formatTable(rows) {
 }
 
 /** その日の実測。表もグラフもここから作る。 */
-function measureAt(day, previousDay, pullRequests, costs) {
+function measureAt(day, previousDay, from, pullRequests, costs) {
   const revision = revisionAt(day);
   if (revision === '') {
     console.error(`${day} までのコミットが履歴に無い。浅いクローンなら 'git fetch --unshallow' が要る。`);
@@ -291,7 +395,7 @@ function measureAt(day, previousDay, pullRequests, costs) {
   }
 
   const merged = pullRequests.filter(({ day: at }) => at <= day);
-  const diffs = merged.filter(({ day: at }) => at > previousDay).map(({ sha }) => diffOf(sha));
+  const diffs = merged.filter(({ day: at }) => at > previousDay).map(({ diff }) => diff);
   const mean = (pick) => diffs.reduce((sum, diff) => sum + pick(diff), 0) / diffs.length;
   const spent = (total) =>
     [...total].reduce((sum, [at, cost]) => (at > previousDay && at <= day ? sum + cost : sum), 0);
@@ -303,6 +407,8 @@ function measureAt(day, previousDay, pullRequests, costs) {
   const changedLines = diffs.reduce((sum, diff) => sum + diff.lines, 0);
   return {
     day,
+    // 区間の始まりの日（この日を含む）。区間の量を図のどこへ置くかは、ここと `day` で決まる。
+    from,
     counts: LINE_COLUMNS.map((column) => lineCount(revision, column.pathspecs)),
     issues: issueCountAt(day),
     pullRequests: merged.length,
@@ -349,9 +455,16 @@ function toRow(measurement) {
  * 貼り込む図。ファイル名は参照する文書の名前を頭に付ける（`docs/ui/StartScreen_*.png` と同じ形）。
  * 桁の違う量は同じ枠へ重ねないので、1枚あたりのパネル数は中身で決まる。
  */
-function chartsOf(measurements) {
+function chartsOf(measurements, rolling) {
   const days = measurements.map((measurement) => measurement.day);
+  // 区間の量は区間の真ん中へ置く（`middleDay`）。時点の量だけが区切りの日に乗る。
+  const middles = measurements.map((measurement) => middleDay(measurement.from, measurement.day));
   const series = (name, pick) => ({ name, values: measurements.map(pick) });
+  /** 移動窓の段。値が定義できない日は、0で埋めずにその段から落とす。 */
+  const window = (label, pick) => {
+    const rows = rolling.filter((row) => pick(row) !== null);
+    return { label, days: rows.map((row) => row.day), series: [{ name: 'コスト', values: rows.map(pick) }] };
+  };
   const charts = [
     {
       file: 'HowWeGotHere_lines.svg',
@@ -371,26 +484,33 @@ function chartsOf(measurements) {
       title: 'PR1本あたりの大きさ',
       days,
       panels: [
-        { label: '変更行数', series: [series('1PRあたり', (m) => m.linesPerPullRequest ?? 0)] },
-        { label: 'ファイル数', series: [series('1PRあたり', (m) => m.filesPerPullRequest ?? 0)] },
+        {
+          label: '変更行数',
+          days: middles,
+          series: [series('1PRあたり', (m) => m.linesPerPullRequest ?? 0)],
+        },
+        {
+          label: 'ファイル数',
+          days: middles,
+          series: [series('1PRあたり', (m) => m.filesPerPullRequest ?? 0)],
+        },
       ],
     },
   ];
 
   // 桁が2つ違うので、Claude と Copilot は同じ枠へ重ねずに段を分ける。
+  // **総額ではなく1日あたり**——区間の長さが揃っていないと、総額の上下は使ったペースではなく
+  // 区間の長さを描くことになる。
   charts.push({
     file: 'HowWeGotHere_cost.svg',
-    title: 'AIに払った額（ドル）',
-    days,
+    title: `AIに払った額（ドル・${WINDOW_DAYS}日の移動窓）`,
+    days: rolling.map((row) => row.day),
     panels: [
-      { label: 'Claude（区間）', series: [series('コスト', (m) => m.claudeCost)] },
-      { label: 'Copilot（区間）', series: [series('コスト', (m) => m.copilotCost)] },
-      { label: 'Claude・PR1本あたり', series: [series('コスト', (m) => m.claudeCostPerPullRequest ?? 0)] },
+      window('Claude・1日あたり', (row) => row.claudePerDay),
+      window('Copilot・1日あたり', (row) => row.copilotPerDay),
+      window('Claude・PR1本あたり', (row) => row.claudePerPullRequest),
       // PRの粒は期を通じて変わるので、1本あたりだけでは値段と粒度が混ざる。
-      {
-        label: 'Claude・変更1千行あたり',
-        series: [series('コスト', (m) => m.claudeCostPerThousandLines ?? 0)],
-      },
+      window('Claude・変更1千行あたり', (row) => row.claudePerThousandLines),
     ],
   });
 
@@ -436,9 +556,19 @@ for (const day of targets) {
 const pullRequests = mergedPullRequests();
 const costs = costByDay();
 const measurements = [];
+// 最初の区間の始まりは、`main` へ最初のPRが入った日。以降は前の区切りの翌日。
+const firstDay = pullRequests[0]?.day ?? targets[0];
 let previousDay = '';
 for (const day of targets) {
-  measurements.push(measureAt(day, previousDay, pullRequests, costs));
+  measurements.push(
+    measureAt(
+      day,
+      previousDay,
+      previousDay === '' ? firstDay : shiftDay(previousDay, 1),
+      pullRequests,
+      costs,
+    ),
+  );
   previousDay = day;
 }
 
@@ -451,7 +581,10 @@ console.log(formatTable(measurements.map(toRow)));
 
 if (svgDirectory !== null) {
   mkdirSync(svgDirectory, { recursive: true });
-  for (const chart of chartsOf(measurements)) {
+  const rolling = rollingSeries(
+    dailyTotals(pullRequests, costs, firstDay, measurements[measurements.length - 1].day),
+  );
+  for (const chart of chartsOf(measurements, rolling)) {
     const path = join(svgDirectory, chart.file);
     writeFileSync(path, lineChart(chart));
     console.error(`書き出した: ${path}`);

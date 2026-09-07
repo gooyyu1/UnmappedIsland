@@ -42,6 +42,9 @@ function escapeText(text) {
 /** 目盛りの本数の上限。これを超えない中で最も細かい刻みを選ぶ。 */
 const MAX_TICKS = 5;
 
+/** 横軸に置く日付ラベルの本数の上限。日ごとに点を打つ図では、全部出すと重なって読めない。 */
+const MAX_AXIS_LABELS = 12;
+
 /**
  * 0からmax以上までを覆う、切りの良い目盛り。刻みは 1・2・2.5・5 の10のべき乗倍から選ぶ。
  *
@@ -75,11 +78,16 @@ function dayToTime(day) {
  * @param {object} chart
  * @param {string} chart.title 図の題。図の中に書く（`![]()` の代替テキストは読み上げにしか出ない）。
  * @param {readonly string[]} chart.days 横軸の日付（`YYYY-MM-DD`）。間隔は実際の日数どおりに取る。
- * @param {readonly {label: string, series: readonly {name: string, values: readonly number[]}[]}[]} chart.panels
+ *   目盛りのラベルはここから引く。
+ * @param {readonly {label: string, days?: readonly string[], series: readonly {name: string, values: readonly number[]}[]}[]} chart.panels
+ *   パネルは自分の `days` を持てる。**値が定義できない日を落とした段**や、点の置き場が図全体と
+ *   違う段（区間の量を区間の真ん中へ置く、など）に要る。省けば `chart.days` を使う。
  */
 export function lineChart({ title, days, panels }) {
   const times = days.map(dayToTime);
-  const [firstTime, lastTime] = [Math.min(...times), Math.max(...times)];
+  const panelTimes = panels.map((panel) => (panel.days ?? days).map(dayToTime));
+  const spread = [...times, ...panelTimes.flat()];
+  const [firstTime, lastTime] = [Math.min(...spread), Math.max(...spread)];
   const plotWidth = WIDTH - MARGIN.left - MARGIN.right;
   const xOf = (time) =>
     MARGIN.left + (lastTime === firstTime ? 0 : (plotWidth * (time - firstTime)) / (lastTime - firstTime));
@@ -127,7 +135,9 @@ export function lineChart({ title, days, panels }) {
         legendX += 24 + series.name.length * 13 + 18;
       }
 
-      const points = series.values.map((value, index) => `${xOf(times[index])},${yOf(value)}`);
+      const points = series.values.map(
+        (value, index) => `${xOf(panelTimes[panelIndex][index])},${yOf(value)}`,
+      );
       parts.push(
         `<polyline points="${points.join(' ')}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"/>`,
       );
@@ -138,9 +148,17 @@ export function lineChart({ title, days, panels }) {
     }
   });
 
-  for (const [index, time] of times.entries()) {
+  // **末尾は必ず出す**——最後の点がいつなのかは、この図で最も読まれる。間引いた直前のラベルと
+  // 近すぎるときは、そちらを落として末尾を取る。
+  const every = Math.max(1, Math.ceil(times.length / MAX_AXIS_LABELS));
+  const labelled = times.map((_, index) => index).filter((index) => index % every === 0);
+  if (labelled[labelled.length - 1] !== times.length - 1) {
+    if (times.length - 1 - labelled[labelled.length - 1] < every / 2) labelled.pop();
+    labelled.push(times.length - 1);
+  }
+  for (const index of labelled) {
     parts.push(
-      `<text x="${xOf(time)}" y="${axisY + 16}" text-anchor="middle" fill="${MUTED}">${days[index].slice(5)}</text>`,
+      `<text x="${xOf(times[index])}" y="${axisY + 16}" text-anchor="middle" fill="${MUTED}">${days[index].slice(5)}</text>`,
     );
   }
 
