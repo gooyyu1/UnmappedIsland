@@ -550,14 +550,30 @@ export class WorldObject {
 
   /** 参加している関係を差し替える。役を対象にした持続効果（8節）の登録先も、ここで移す。 */
   private setParticipation(relation: InteractionRelation | undefined): void {
-    if (this._participation !== undefined) this.setRoleTargetsRegistered(false);
+    this.setRoleTargetsRegistered(false);
     this._participation = relation;
-    if (relation !== undefined) this.setRoleTargetsRegistered(true);
+    this.setRoleTargetsRegistered(true);
   }
 
-  /** 役を対象にしたpassives（8.1節）を、今参加している関係の相手へ登録/解除する。 */
+  /**
+   * 役を対象にしたpassives（8.1節）を、今参加している関係の相手へ登録/解除する。**関係へ加わって
+   * いなければ相手が居ないので何もしない**——呼ぶ側が参加の有無を見なくてよい。
+   */
   private setRoleTargetsRegistered(register: boolean): void {
+    if (this._participation === undefined) return;
     for (const role of INTERACTION_ROLES) this.def.passives.setRelationRegistered(this, role, register);
+  }
+
+  /**
+   * 今加わっている関係で、役を対象にした寄与を張っているすべての参加者について、その登録を解除/登録
+   * する（becomeType用）。**この物が関わる向きは2つある**——自分が相手へ張ったものと、相手が自分へ
+   * 張ったもの。型が変わればどちらの相手も変わる（宣言は新しいdefのもの、登録先は新しいプロパティ）
+   * ので、片方だけでは旧型の宣言が相手に残るか、相手の寄与が新しいプロパティに載らないかになる。
+   */
+  private setRoleTargetsOfParticipantsRegistered(register: boolean): void {
+    this.setRoleTargetsRegistered(register);
+    for (const other of this._participation?.participantsOtherThan(this) ?? [])
+      other.setRoleTargetsRegistered(register);
   }
 
   /**
@@ -721,6 +737,7 @@ export class WorldObject {
 
     this.setAncestorTargetsRegistered(false);
     this._def.passives.setRelationRegistered(this, 'self', false);
+    this.setRoleTargetsOfParticipantsRegistered(false);
     if (parent !== undefined) this.setEdgeRegistered(parent, false);
     for (const { child } of rehomed) child.setEdgeRegistered(this, false);
 
@@ -740,6 +757,7 @@ export class WorldObject {
     }
 
     this._def.passives.setRelationRegistered(this, 'self', true);
+    this.setRoleTargetsOfParticipantsRegistered(true);
     if (parent !== undefined) this.setEdgeRegistered(parent, true);
     for (const { child } of rehomed) child.setEdgeRegistered(this, true);
     this.setAncestorTargetsRegistered(true);

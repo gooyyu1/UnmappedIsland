@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { InteractionRelation } from '../../src/domain/ReferenceRoot';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -166,6 +167,94 @@ object_defs:
     expect(stamina(), '手番の外ではagent対象は解決しない').toBe(9);
     session.advanceWorldTime(15);
     expect(stamina(), '手番を終えても、常時の寄与は残っている').toBe(9);
+  });
+
+  /**
+   * 関係の内側で型が変わっても、役を対象にした寄与（8.1節）は新しい型で張り直される（9.9節）。
+   * 張り直さないと、**宣言した側が変わったとき**は旧型の宣言のまま相手に残り（関係を抜けるときの解除は
+   * そのときのdefのpassivesを辿るので、新しい型からは見つからない）、**寄与を受けている側が変わった
+   * とき**は作り直されたプロパティに載らないまま消える。
+   */
+  describe('関係の内側で型が変わったとき', () => {
+    const CLAY = `
+traits:
+  fired:
+    tags: [fired]
+  weary:
+    tags: [weary]
+object_defs:
+  hauler:
+    props:
+      strength: {value: 10, range: {min: 0, max: 10}}
+    variation_axes:
+      mood: {of: {tag: weary}}
+  weary_mood:
+    traits: [weary]
+  clay:
+    passives:
+      # 捏ねている間だけ動作主の力を削ぐ（agentを見る）。
+      - modify: {agent: {strength: -3}}
+    interactions:
+      harden:
+        trigger: menu
+        duration: 30
+        become: {state: fired_clay}
+    variation_axes:
+      state: {of: {tag: fired}}
+  fired_clay:
+    traits: [fired]
+`;
+
+    /** 素焼き前の粘土と、それを捏ねる者。粘土は世界の木に繋いである。 */
+    function buildClayWorld(): {
+      clay: WorldObject;
+      hauler: WorldObject;
+      strength: () => number | undefined;
+    } {
+      const { codex, session, world } = buildWorldSession(CLAY);
+      const clay = placeInWorld(codex, world, session.createObject(codex.objectNames.getId('clay')));
+      const hauler = session.createObject(codex.objectNames.getId('hauler'));
+      return {
+        clay,
+        hauler,
+        strength: () => hauler.tryGetProperty(codex.propertyNames.getId('strength'))?.getEffectiveValue(),
+      };
+    }
+
+    it('宣言した側が変わっても、寄与は新しい型のものへ張り替わる', () => {
+      const { clay, hauler, strength } = buildClayWorld();
+
+      new InteractionRelation(clay, hauler, undefined).during(() => {
+        expect(strength(), '関係を張れば効いている').toBe(7);
+
+        clay.becomeAlong(new Map([['state', 'fired_clay']]));
+
+        expect(strength(), '同じ宣言を持つ型になったので、効き目は変わらない').toBe(7);
+      });
+
+      expect(strength(), '関係を抜ければ、旧型で張った寄与も残らない').toBe(10);
+    });
+
+    it('寄与を受けている側が変わっても、寄与は作り直されたプロパティへ載り直す', () => {
+      const { clay, hauler, strength } = buildClayWorld();
+
+      new InteractionRelation(clay, hauler, undefined).during(() => {
+        hauler.becomeAlong(new Map([['mood', 'weary_mood']]));
+
+        expect(strength(), '値と同じく、寄与も新しいプロパティへ移る').toBe(7);
+      });
+
+      expect(strength(), '関係を抜ければ外れる').toBe(10);
+    });
+
+    it('becomeを効果に持つ操作を通しても残らない', () => {
+      const { clay, hauler, strength } = buildClayWorld();
+
+      expect(clay.tryGetAction('harden', hauler)?.tryExecute()).toBe(true);
+
+      expect(clay.def.name, '素焼きの変種になっている').not.toBe('clay');
+      expect(strength(), '操作を終えれば、削がれた力は戻る').toBe(10);
+    });
   });
 
   it('ゲートの役は、辺の子側ではなく宣言元から解ける（child対象と併せて書いたとき）', () => {
