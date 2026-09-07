@@ -208,7 +208,7 @@ class EffectDescriber implements EffectReader {
    * 二択は見出しで分けて書く（6.3節）。**並べて書くと「両方が順に起こる」と読める**——rangeイベントの
    * `otherwise`は既定のクランプなので、著者の効果のすぐ下に「端へ戻す」が並ぶことになる。
    *
-   * 二択を二択のまま出すので、**受け方の選択肢（everyBranchOf・authoredBranchOf）はどちらも選ばない。**
+   * 二択を二択のまま出すので、**受け方の選択肢（EffectReader.conditional）は選ばない。**
    */
   conditional(reading: ConditionalReading): void {
     this.out.write(...conditionTokens(reading.condition, this.names), text(' なら:'));

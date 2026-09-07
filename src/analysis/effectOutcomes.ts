@@ -50,7 +50,8 @@ export interface EffectReading {
  * ここが置いている近似は次のもの。**重みを確率に読み替えること**——実際の抽選は実行時の実効値で
  * 行われるので、宣言値から出す確率はその代用でしかない。**分岐を直積で畳むこと**——
  * 宣言順に並んだ効果は順に起こるので、pickが2つ並べば枝は掛け算になる。そして**条件つきの効果を、
- * 著者が書いた枝で代表すること**（authoredBranchOf）。
+ * 著者が書いた枝で代表すること**——受け方はドメインが名前を付けて持つ（authoredBranchOf）が、それを
+ * 全体の答えとして採るのはここの近似。
  *
  * resolveBecomeDestinationを省くと、`become`の行き先は産出として数えられない。変わる前の型として
  * 残らないことは、行き先を解けなくても言えるので、省いても控える。
@@ -235,18 +236,19 @@ class OutcomeReader implements EffectReader {
   }
 
   /**
-   * 条件つきの効果（6.3節）には**問いが2つある**ので、問いごとに受け方を選ぶ。
+   * 条件つきの効果（6.3節）は、量と、消える物・変わる物とで**問いが違う**ので、問いごとに受け方を選ぶ。
    *
    * 量は「何がどれだけ起こるか」なので著者が書いた枝で代表し（authoredBranchOf）、消える物・変わる物は
    * `pick`と同じく「どれか1つの分岐でそうなるか」を問うものなので両方の枝から集める（everyBranchOf）。
    */
   conditional(reading: ConditionalReading): void {
+    const authored = authoredBranchOf(reading);
     for (const branch of everyBranchOf(reading)) {
       const nested = this.readNested(branch);
       this.destroyed.push(...nested.destroyed);
       this.transformed.push(...nested.transformed);
+      if (branch === authored) this.combine(nested.outcomes);
     }
-    this.combine(this.readNested(authoredBranchOf(reading)).outcomes);
   }
 
   private readNested(declaration: EffectDeclaration): EffectReading {
