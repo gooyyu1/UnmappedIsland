@@ -84,8 +84,10 @@ describe('全身の菌と免疫', () => {
    * 1切れ**食べるので、食べる間隔は満腹の減りだけで決まる。**途中で死んだらそこで止まる。**
    *
    * 返すのは食べた切れ数と、その間に菌が最も高くなったときの値と段。**段は最大値の側で見る**
-   * ——症状へ届いたかは通り過ぎた高さの話で、区間の終わりに残っている値ではない。**呼んだ時点の
-   * 値も最大の候補に含める**ので、続けて呼べば区間の切れ目で山を見落とさない。
+   * ——症状へ届いたかは通り過ぎた高さの話で、区間の終わりに残っている値ではない。**候補はtickの前後
+   * 両方から採る**——正味が引く側の体なら山は食べた直後に立ち、増える側の体なら食事を挟んで積み上がった
+   * 先に立つので、片側だけでは見落とす。**呼んだ時点の値も候補に含める**ので、続けて呼べば区間の
+   * 切れ目で山を見落とさない。
    */
   function liveEatingOnlyRawMeat(
     count: number,
@@ -94,17 +96,20 @@ describe('全身の菌と免疫', () => {
     let meals = 0;
     let peak = prop('pathogen').number;
     let peakStage = prop('pathogen').stage?.name;
+    const recordPeakIfHigher = (): void => {
+      if (prop('pathogen').number <= peak) return;
+      peak = prop('pathogen').number;
+      peakStage = prop('pathogen').stage?.name;
+    };
     for (let i = 0; i < count; i++) {
       if (!prop('satiety').isInStage('fed', 'or_above')) {
         eatRawMeat();
         meals++;
       }
+      recordPeakIfHigher();
       live(1, held);
-      // 死んだtickの値も拾ってから抜ける——菌が最も高くなるのはたいていその手前。
-      if (prop('pathogen').number > peak) {
-        peak = prop('pathogen').number;
-        peakStage = prop('pathogen').stage?.name;
-      }
+      // 抜けるのはこの後——死んだtickの値も候補に入れる。
+      recordPeakIfHigher();
       if (player.parent === undefined) break;
     }
     return { meals, peak, peakStage };
@@ -247,7 +252,7 @@ describe('全身の菌と免疫', () => {
 
     expect(voyage.meals, '6日で19切れ＝1日3.17切れ').toBe(19);
     expect(voyage.peakStage, '症状の段へは一度も上がらない').toBe('latent');
-    expect(voyage.peak, 'いちばん高くなったところでこの値').toBeCloseTo(4.65, 5);
+    expect(voyage.peak, 'いちばん高いのは1切れが入った直後で、この値').toBeCloseTo(4.7, 5);
     expect(prop('vitamin').stage?.name, 'ビタミンは削れるが、免疫を押す段までは落ちない').toBe('waning');
   });
 
@@ -267,7 +272,7 @@ describe('全身の菌と免疫', () => {
 
     const rest = liveEatingOnlyRawMeat(6 * DAY - FEVER_ONSET, held);
     expect(rest.peakStage, '止まらずに血まで回る').toBe('septicemic');
-    expect(rest.peak).toBeCloseTo(7.55, 5);
+    expect(rest.peak).toBeCloseTo(7.6, 5);
   });
 
   it('壊血病を抱えて出れば、食べ続けても2日ともたない', () => {
