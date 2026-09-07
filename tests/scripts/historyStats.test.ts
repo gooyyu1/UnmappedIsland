@@ -136,6 +136,31 @@ describe.skipIf(IS_SHALLOW)('育ち方の推移', () => {
   });
 });
 
+/** SVGの点のx座標。 */
+function centersOf(svg: string): number[] {
+  return [...svg.matchAll(/<circle cx="([\d.]+)"/g)].map(([, cx]) => Number(cx));
+}
+
+describe.skipIf(IS_SHALLOW)('区間の量の置き方', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'history-stats-spans-'));
+  run(['--svg', directory, EARLY, TODAY]);
+  const svg = (name: string) => readFileSync(join(directory, name), 'utf-8');
+
+  it('コストの図は、区切りの日ではなく日ごとの窓から描かれる', () => {
+    // 段の区切りは幅が揃わないので、区間の量を段ごとに出すと区切りを1日動かすだけで値が変わる。
+    // 点が区切りの数しか無ければ、固定幅の窓ではなく段ごとに戻っているということ。
+    expect(centersOf(svg('HowWeGotHere_cost.svg')).length).toBeGreaterThan(4 * 2);
+  });
+
+  it('区間の量は、区切りの日ではなく区間の真ん中に置かれる', () => {
+    // 行数は時点の量なので最後の区切りの日（＝枠の右端）に乗る。1PRあたりは区間の量なので、
+    // 最後の区間の真ん中、つまりそれより左に乗る。
+    const stock = Math.max(...centersOf(svg('HowWeGotHere_lines.svg')));
+    const span = Math.max(...centersOf(svg('HowWeGotHere_pr_size.svg')));
+    expect(span, `時点 ${stock} / 区間 ${span}`).toBeLessThan(stock);
+  });
+});
+
 describe.skipIf(IS_SHALLOW)('育ち方の推移の図', () => {
   const directory = mkdtempSync(join(tmpdir(), 'history-stats-'));
   run(['--svg', directory, TODAY]);
