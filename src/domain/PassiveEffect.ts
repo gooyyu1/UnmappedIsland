@@ -232,8 +232,9 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * （WorldObject.setAncestorTargetsRegistered）が守る前提で、「今この瞬間の祖先」を毎回辿るだけで
    * よく、前回の登録先を憶えない。
    *
-   * 操作の役（11.5節）も、ownerが今参加している関係から辿れるので同じ経路に乗る（登録/解除を頼むのは
-   * 関係を張った/外した契機、WorldObject.joinInteraction）。
+   * 操作の役（11.5節）も、ownerが今参加している関係から辿れるので同じ経路に乗る。**頼まれる契機は
+   * 関係を張った/外したときだけではない**——関係の内側で型が変われば、宣言も登録先も入れ替わるので
+   * そこでも張り直す（頼む側はWorldObject.setRoleTargetsRegisteredの呼び手）。
    *
    * childは相手（どの子か）がownerから一意に辿れないため、ここでは扱わずsetChildRegisteredを使う。
    */
