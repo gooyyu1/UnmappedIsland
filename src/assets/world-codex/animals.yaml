@@ -568,8 +568,8 @@ object_defs:
             in_stage_or_above: bright
         duration: 60
         # 皮革の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
-        # characters/player_character.yaml）。**皮を剥ぐ手つきがなめしへ移る**（Skills.md 2節の
-        # 皮革の最初の一歩）ので、獣の大小によらずどの解体も同じだけ伸ばす。
+        # characters/player_character.yaml）。**獣に刃を入れて分ける手つきがなめしへ移る**（Skills.md
+        # 2節の皮革の最初の一歩）ので、獣の大小によらず、生皮の採れない獲物の解体でも同じだけ伸ばす。
         add: {agent: {skill_leatherwork: 2}}
         destroy: self
         spawn:

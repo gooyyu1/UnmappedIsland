@@ -109,6 +109,58 @@ function declaredSignalNames(): readonly string[] {
   return [...found];
 }
 
+/** 腕前のプロパティの名前の頭（characters/player_character.yaml）。 */
+const SKILL_PREFIX = 'skill_';
+
+/** その節の下で `{subject: agent, prop: <腕前>}` として読まれている腕前の名前。 */
+function agentSkillsReadUnder(node: unknown, found: Set<string>): void {
+  if (isSeq(node)) {
+    for (const item of node.items) agentSkillsReadUnder(item, found);
+    return;
+  }
+  if (!isMap(node)) return;
+
+  const subject = node.get('subject', true);
+  const prop = node.get('prop', true);
+  if (
+    isScalar(subject) &&
+    String(subject.value) === 'agent' &&
+    isScalar(prop) &&
+    String(prop.value).startsWith(SKILL_PREFIX)
+  )
+    found.add(String(prop.value));
+  for (const pair of node.items) agentSkillsReadUnder(pair.value, found);
+}
+
+/**
+ * 腕前を読む要件が名乗る理由（reason）を、その要件が読む腕前の名前と組にして集める。**どの腕を指す
+ * 吹き出しかは理由の綴りでは決まらない**ので、同じ要件の下に書かれた `{subject: agent, prop: <腕前>}`
+ * から引く。
+ */
+function skillReasonPairs(): readonly { reasonName: string; skillName: string }[] {
+  const pairs = new Map<string, { reasonName: string; skillName: string }>();
+
+  const walk = (node: unknown): void => {
+    if (isSeq(node)) {
+      for (const item of node.items) walk(item);
+      return;
+    }
+    if (!isMap(node)) return;
+
+    const reason = node.get('reason', true);
+    if (isScalar(reason)) {
+      const skills = new Set<string>();
+      agentSkillsReadUnder(node, skills);
+      for (const skillName of skills)
+        pairs.set(`${String(reason.value)}/${skillName}`, { reasonName: String(reason.value), skillName });
+    }
+    for (const pair of node.items) walk(pair.value);
+  };
+
+  for (const path of worldCodexYamlPaths()) walk(parseDocument(readFileSync(path, 'utf8')).contents);
+  return [...pairs.values()];
+}
+
 describe('同梱の表示文字列ファイル', () => {
   let codex: WorldCodex;
   let locale: Localization;
@@ -182,6 +234,28 @@ describe('同梱の表示文字列ファイル', () => {
     // （GameElementDefinition.md 14.6節）。
     for (const reasonName of declaredReasonNames().get('condition')!)
       expect(locale.reason(reasonName), `reason '${reasonName}' には文言が必要`).toBeDefined();
+  });
+
+  it('腕前が足りないと告げる吹き出しは、その腕前を腕前のタブに並ぶ名前で呼ぶ', () => {
+    // 吹き出しは足りない腕を名指しするだけで、今いる段は持たない（reason_textsの前書き）——読み手は
+    // そこから腕前のタブへ辿る。タブに並ぶのはdisplay_nameなので、吹き出しが別の語で呼ぶと、辿った
+    // 先でどれを見ればよいか決められない。**要件と対応表は別のファイルに分かれている**ので、
+    // 名前を変えた側だけを直しても目視では気付けない。
+    const props = locale.object('player_character');
+    const pairs = skillReasonPairs();
+
+    expect(pairs.length, '腕前を読む要件が1つも無い').toBeGreaterThan(0);
+    expect(
+      pairs
+        .filter(
+          ({ reasonName, skillName }) =>
+            !locale.reason(reasonName)?.includes(props.prop(skillName).displayName),
+        )
+        .map(
+          ({ reasonName, skillName }) =>
+            `${reasonName}: '${locale.reason(reasonName)}' は '${props.prop(skillName).displayName}' を名乗らない`,
+        ),
+    ).toEqual([]);
   });
 
   it('destroyが名乗る消し方（reason）はすべて文言を持つ', () => {
