@@ -467,12 +467,12 @@ describe('traps.yamlの落とし穴', () => {
     throw new Error('落とし穴に何も落ちなかった');
   }
 
-  /** 穴へ太い枝を立てて、杭を打った版にする。 */
+  /** 穴へ長い棒を立てて、杭を打った版にする。 */
   function driveStake(): boolean {
-    const branch = spawnInto('thick_branch', forest, 'items');
+    const pole = spawnInto('long_pole', forest, 'items');
     return (
       pitfall
-        .combinationsWith(branch, createBrightEnoughAgent(session))
+        .combinationsWith(pole, createBrightEnoughAgent(session))
         .find((combination) => combination.name === 'drive_stake')
         ?.tryExecute() === true
     );
@@ -569,6 +569,19 @@ describe('traps.yamlの落とし穴', () => {
         .map((combination) => combination.unmetRequirement()?.reasonName),
       '断る理由まで辿り着ける',
     ).toEqual(['trap_baited']);
+  });
+
+  it('杭に立てるのは長い棒で、太い枝では届かない', () => {
+    // **殺す罠へ変える手だけが刃物と若木を要求する**（TrapSystem.md 8節）。穴を掘る側は落ちている
+    // 太い枝1本で足りるので、生かす罠から殺す罠への分岐がそこで初めて重くなる。
+    open(CATCHES_BOAR);
+    const branch = spawnInto('thick_branch', forest, 'items');
+
+    expect(
+      pitfall.combinationsWith(branch, createBrightEnoughAgent(session)),
+      '太い枝を落としても成立しない',
+    ).toEqual([]);
+    expect(driveStake(), '長い棒なら立つ').toBe(true);
   });
 
   it('杭は二度打てない', () => {
