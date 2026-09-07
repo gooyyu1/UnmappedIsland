@@ -68,7 +68,6 @@ const LINE_COLUMNS = [
 /** 使用量の置き場。手元とクラウドを合わせて集めたもの。 */
 const USAGE_DIRECTORY = new URL('../stats/usage/', import.meta.url);
 
-const TIMEZONE = 'Asia/Tokyo';
 const OFFSET = '+0900';
 const DEFAULT_STEP_DAYS = 7;
 
@@ -76,8 +75,19 @@ function git(args) {
   return execFileSync('git', args, {
     encoding: 'utf8',
     maxBuffer: 256 * 1024 * 1024,
-    env: { ...process.env, TZ: TIMEZONE },
   }).trim();
+}
+
+/**
+ * コミットの時刻（`%at` のエポック秒）から、日本時間の日を出す。
+ *
+ * **`--date=format-local` は使わない。** あれは git が環境の時間帯をどう解釈するかに乗っており、
+ * 解釈できない環境では黙って別の日境で切る——**ずれても表は正常な形で出る**ので、貼った先で
+ * 気づけない（2026-09-07、この道具の出力が行数だけ日本時間・PRだけ別の日境になっていた）。
+ * 日境を決める場所は、`revisionAt` の `OFFSET` と合わせてここ1つに寄せる。
+ */
+function dayOf(epochSeconds) {
+  return formatDay(new Date(Number(epochSeconds) * 1000));
 }
 
 /**
@@ -117,13 +127,13 @@ function lineCount(revision, pathspecs) {
 
 /** `main` へPRとして入ったコミット（第1親系列）を、古い順に日付付きで。 */
 function mergedPullRequests() {
-  const log = git(['log', '--first-parent', '--format=%H@@%ad@@%s', '--date=format-local:%Y-%m-%d']);
+  const log = git(['log', '--first-parent', '--format=%H@@%at@@%s']);
   return log
     .split('\n')
     .filter((line) => line !== '')
     .map((line) => {
-      const [sha, day, subject] = line.split('@@');
-      return { sha, day, subject };
+      const [sha, at, subject] = line.split('@@');
+      return { sha, day: dayOf(at), subject };
     })
     .filter(({ subject }) => /^Merge pull request #\d+/.test(subject) || /\(#\d+\)$/.test(subject))
     .reverse();
@@ -209,10 +219,8 @@ function repository() {
 
 /** 引数が無いときの既定。最初のコミットの日から7日刻みで、最後は今日。 */
 function defaultDays() {
-  const first = git(['log', '--reverse', '--format=%ad', '--date=format-local:%Y-%m-%d'])
-    .split('\n')[0]
-    .trim();
-  const today = git(['log', '-1', '--format=%ad', '--date=format-local:%Y-%m-%d']);
+  const first = dayOf(git(['log', '--reverse', '--format=%at']).split('\n')[0].trim());
+  const today = dayOf(git(['log', '-1', '--format=%at']));
   const days = [];
   for (let at = new Date(`${first}T00:00:00+09:00`); ; at.setUTCDate(at.getUTCDate() + DEFAULT_STEP_DAYS)) {
     const day = formatDay(at);
