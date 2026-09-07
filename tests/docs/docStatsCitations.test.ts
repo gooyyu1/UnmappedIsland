@@ -152,17 +152,16 @@ function disagreement(written: string, cell: number, coarseness: Coarseness | nu
 }
 
 /**
- * 文書の本文から印を拾う。コードとして書いた印は書式の例なので、出どころを持たない——フェンスで
- * 囲んだブロックは行ごと、バッククォートで囲んだ中は**印だけ**を落とす。囲みの中に書いた数は
- * 落とさない（`約`4,200`分<!-- … -->` の `4,200` は印の直前の数）。
+ * 文書の本文から印を拾う。**コードとして囲んだ中——フェンスの中もバッククォートの中も——本文と
+ * 同じに拾う。** 囲みは数の読み方にも効かない（`約`4,200`分<!-- … -->` の `4,200` は印の直前の数）。
+ *
+ * 出どころを持たない**書式そのもの**は、`<ファイル>` のようなプレースホルダで書く——`>` を含む
+ * ので `MARK_PATTERN` に掛からない。
  */
 function citationsIn(doc: string, text: string): Citation[] {
   const found: Citation[] = [];
-  let inFence = false;
   text.split('\n').forEach((raw, index) => {
-    if (raw.trimStart().startsWith('```')) inFence = !inFence;
-    if (inFence) return;
-    const line = raw.replace(/`[^`]*`/g, (code) => code.slice(1, -1).replace(MARK_PATTERN, ''));
+    const line = raw.replace(/`([^`]*)`/g, '$1');
 
     for (const match of line.matchAll(MARK_PATTERN)) {
       // 先に置かれた印の中身は数として読まない（印の本文に数字が入りうる）。
@@ -362,16 +361,20 @@ describe('印の直前に書かれている数', () => {
   });
 });
 
-describe('コードとして書いた印', () => {
-  it('フェンスで囲んだブロックの中は、行ごと読み飛ばす', () => {
-    expect(citationsIn('doc.md', `\`\`\`text\n約4,200分${RAFT_MARK}\n\`\`\``)).toEqual([]);
+describe('コードとして囲んだ印', () => {
+  it('フェンスで囲んだブロックの中も、本文と同じに拾う', () => {
+    expect(writtenIn(`\`\`\`text\n約4,200分${RAFT_MARK}\n\`\`\``)).toBe('4200');
   });
 
-  it('バッククォートで囲んだ印は読み飛ばす', () => {
-    expect(citationsIn('doc.md', `形は \`${RAFT_MARK}\` です`)).toEqual([]);
+  it('バッククォートで囲んだ印も、本文と同じに拾う', () => {
+    expect(citationsIn('doc.md', `形は \`${RAFT_MARK}\` です`)).toHaveLength(1);
   });
 
   it('バッククォートで囲んだ数は、印の直前の数として読む', () => {
     expect(writtenIn(`入力 約\`4,200\`分${RAFT_MARK}`)).toBe('4200');
+  });
+
+  it('出どころをプレースホルダで書いた形は、印として読まない', () => {
+    expect(citationsIn('doc.md', '形は `<!-- stats: <ファイル> <節> <読む列> -->` です')).toEqual([]);
   });
 });
