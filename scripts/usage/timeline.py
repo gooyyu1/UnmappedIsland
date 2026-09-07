@@ -9,8 +9,9 @@
 
 出どころが2つあり、重なっている。
 
-  - CCR (list_sessions): `cost_usd` を持つ。時刻はセッション単位しか無いので
-    created_at〜updated_at の区間へ均等に割る。クラウドと bridge の両方を含む。
+  - CCR (list_sessions): `cost_usd` を持つ。メタデータの時刻はセッション単位しか無いので、
+    **イベントの記録が在ればその時刻ごとのトークン量で配り**、無ければ created_at〜updated_at
+    へ均等に割る（`hour_weights`）。クラウドと bridge の両方を含む。
   - ローカル (~/.claude/projects): メッセージ単位の時刻を持つが `cost_usd` が無い。
 
 bridge（ローカル実行）は両方に現れるので、CCR 側で数えて、対応するローカルの
@@ -45,6 +46,35 @@ def week_start(t):
     return (b - dt.timedelta(days=(b.weekday() - 3) % 7)).strftime("%Y-%m-%d")
 
 
+def hour_weights(session):
+    """セッションの額を時間へ配る割合（時刻 -> 割合。合計1）。
+
+    **イベントの記録が在れば、その時刻ごとのトークン量で配る。** メタデータは
+    created_at〜updated_at しか持たず、均等に割ると**止まっていた時間にも額が乗る**——枠が
+    尽きて数日空き、同じセッションが再開した区間で、イベントが1件しか無い2日間へ $345 が
+    塗られていた（2026-09-01〜09-02）。イベントの無い古いセッションは均等割りのまま。
+
+    トークンは4種の公称単価で重み付ける。配るのは既知の総額なので、要るのは比だけ。
+    """
+    path = data("events", "%s.jsonl" % session["id"])
+    if os.path.exists(path):
+        weight = defaultdict(float)
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                r = json.loads(line)
+                if not r.get("ts"):
+                    continue
+                at = ts(r["ts"]).replace(minute=0, second=0, microsecond=0)
+                weight[at] += sum((r.get(c) or 0) * PRICE[c] for c in COLS)
+        total = sum(weight.values())
+        if total > 0:
+            return {at: w / total for at, w in weight.items()}
+    a = ts(session["created_at"])
+    b = ts(session.get("updated_at") or session["created_at"])
+    n = max(1, int((b - a).total_seconds() // 3600) + 1)
+    return {a + dt.timedelta(hours=i): 1 / n for i in range(n)}
+
+
 def main():
     hour = defaultdict(lambda: defaultdict(float))
 
@@ -63,16 +93,14 @@ def main():
         c = u.get("cost_usd") or 0
         if not c:
             continue
-        a, b = ts(s["created_at"]), ts(s.get("updated_at") or s["created_at"])
-        n = max(1, int((b - a).total_seconds() // 3600) + 1)
         tok = {
             "input": u.get("input_tokens", 0),
             "output": u.get("output_tokens", 0),
             "cache_write": u.get("cache_write_tokens", 0),
             "cache_read": u.get("cache_read_tokens", 0),
         }
-        for i in range(n):
-            add(a + dt.timedelta(hours=i), c / n, {k: v / n for k, v in tok.items()})
+        for at, share in hour_weights(s).items():
+            add(at, c * share, {k: v * share for k, v in tok.items()})
         ccr_cost += c
 
     linked = linked_session_files(sessions)
