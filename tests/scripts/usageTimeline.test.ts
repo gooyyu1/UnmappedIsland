@@ -39,8 +39,16 @@ interface Session {
   readonly events?: readonly Event[];
 }
 
-/** セッションを並べて `timeline.py` を走らせ、UTCの日ごとのコストを返す。 */
-function costByDay(sessions: readonly Session[]): Map<string, number> {
+/**
+ * セッションを並べて `timeline.py` を走らせ、UTCの日ごとのコストを返す。
+ *
+ * `carried` を渡すと、**旧の配り方で書かれた集計**を置いてから境目付きで走らせる。境目より前は
+ * そこから持ち越されるので、境目を跨ぐセッションを別の配り方で数え直すと合計がずれる。
+ */
+function costByDay(
+  sessions: readonly Session[],
+  carried?: { readonly keep: string; readonly hours: ReadonlyMap<string, number> },
+): Map<string, number> {
   const work = mkdtempSync(join(tmpdir(), 'usage-timeline-'));
   cpSync(join(ROOT, 'scripts/usage'), join(work, 'scripts/usage'), { recursive: true });
   mkdirSync(join(work, '.usage-data/events'), { recursive: true });
@@ -66,7 +74,19 @@ function costByDay(sessions: readonly Session[]): Map<string, number> {
     );
   }
 
-  execFileSync(PYTHON as string, [join(work, 'scripts/usage/timeline.py')], { stdio: 'ignore' });
+  const script = join(work, 'scripts/usage/timeline.py');
+  const args = [script];
+  if (carried !== undefined) {
+    mkdirSync(join(work, 'stats/usage'), { recursive: true });
+    writeFileSync(
+      join(work, 'stats/usage/by_hour.tsv'),
+      ['hour_utc\tcost_usd\tinput\toutput\tcache_write\tcache_read']
+        .concat([...carried.hours].map(([hour, cost]) => `${hour}\t${cost.toFixed(4)}\t0\t0\t0\t0`))
+        .join('\n'),
+    );
+    args.push(carried.keep);
+  }
+  execFileSync(PYTHON as string, args, { stdio: 'ignore' });
   const [, ...lines] = readFileSync(join(work, 'stats/usage/by_day.tsv'), 'utf-8').trim().split('\n');
   return new Map(lines.map((line) => line.split('\t')).map(([day, cost]) => [day, Number(cost)]));
 }
@@ -99,6 +119,25 @@ describe.runIf(PYTHON !== undefined)('使用量の時間への配り方', () => 
     // 桁の丸めより粗く、二重計上や取りこぼしより細かいところで見る。
     const total = [...costByDay([IDLE]).values()].reduce((sum, cost) => sum + cost, 0);
     expect(total).toBeCloseTo(IDLE.cost, 3);
+  });
+
+  it('境目を跨ぐセッションの額が、持ち越しと二重にならない', () => {
+    // 旧の集計は開始から最終更新まで均等に割って書かれている。境目より前はそこから持ち越すので、
+    // 跨ぐセッションだけをイベント基準で数え直すと、**額が二重に乗るか消える。**
+    const HOURS = 97; // 09-01T00 から 09-05T00 まで
+    const KEEP = '2026-09-03';
+    const evenly = new Map(
+      Array.from({ length: 48 }, (_, index) => [
+        `2026-09-0${index < 24 ? 1 : 2}T${String(index % 24).padStart(2, '0')}:00Z`,
+        IDLE.cost / HOURS,
+      ]),
+    );
+
+    const total = [...costByDay([IDLE], { keep: KEEP, hours: evenly }).values()].reduce(
+      (sum, cost) => sum + cost,
+      0,
+    );
+    expect(total).toBeCloseTo(IDLE.cost, 2);
   });
 
   it('イベントの記録が無いセッションは、開始から最終更新まで均等に割る', () => {
