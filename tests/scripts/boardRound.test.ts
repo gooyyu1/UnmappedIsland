@@ -45,6 +45,11 @@ interface World {
    * リポジトリを数えさせると、履歴が溜まっている間だけこの係が全部の周に混ざる。
    */
   readonly pendingDecisions?: number;
+  /**
+   * 二次がまだ読んでいない、一次の分析の記録の数（回をまたぐ形を見る係の `due`）。**既定は0**
+   * ——上と同じ理由で、本物のリポジトリを数えさせるとこの係が全部の周に混ざる。
+   */
+  readonly unsummarizedAnalyses?: number;
   /** `main` の先頭のCI。既定は緑。 */
   readonly mainChecks?: readonly { readonly status: string; readonly conclusion: string }[];
   /** `archive-session.sh` が渡された相手について返す行の頭。既定は畳めた。 */
@@ -215,6 +220,7 @@ function playRound(world: World = {}): Result {
         return world.sessions ?? [];
       },
       pendingDecisions: () => world.pendingDecisions ?? 0,
+      unsummarizedAnalyses: () => world.unsummarizedAnalyses ?? 0,
       runScript,
     });
 

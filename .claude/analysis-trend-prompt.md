@@ -81,9 +81,9 @@
 ## 打ってはいけないこと
 
 - **`.claude/policies.md`・`docs/concept/DesignPrinciples.md` などの方針の文書へ書かないこと**
-  （出どころ: ユーザーの指示・2026-09-07）。**そこへ畳むのは棚卸し役の仕事**
-  （`.claude/skills/policy-review/SKILL.md`）で、役が重なります。あなたの出口は **issue と記録の
-  2つだけ**です。
+  （出どころ: ユーザーの指示・2026-09-07）。**そこへ畳むのは価値観を畳む係の仕事**
+  （`.claude/policy-cycle-prompt.md`・`.claude/skills/policy-review/SKILL.md`）で、役が重なります。
+  あなたの出口は **issue と記録の2つだけ**です。
 - **一次の記録（`.claude/analysis/<日付>.md`）を書き換えないこと。** あなたが書くのは
   `summary/` の下だけです。両方が同じファイルを書くと、どちらの観測かが読めなくなります。
 - **スメルを自分で直さないこと。** 直す値打ちがあるなら issue にします。

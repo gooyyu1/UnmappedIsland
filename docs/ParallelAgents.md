@@ -53,6 +53,7 @@ flowchart LR
     Daemon -->|"配れる kind:task が無いとき（一日一回）"| Digger
     Worker ==>|"PRを作る前に1本"| SelfReview
     Analysis ==>|"PRを作る前に1本"| SelfReview
+    Trend ==>|"PRを作る前に1本"| SelfReview
     Adviser ==>|"PRを作る前に1本"| SelfReview
 ```
 
