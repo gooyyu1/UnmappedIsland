@@ -1,0 +1,41 @@
+{
+  "_comment": [
+    "src/assets/objects/wood_carving.png を作り直すためのレシピ。build.py が読む。",
+    "太い枝1本から刃物だけで削り出した小さな像（src/assets/world-codex/furnishings.yaml）。",
+    "",
+    "**手足の太さは編集で作る。** 生成が出すのは細い操り人形で、太さはプロンプトでは動かない",
+    "（prompts/objects.json の wood_carving 参照）。編集で「枝と同じ太さの、突き出た瘤」と",
+    "言い直す。**「太くしろ」だけでは足りず**、1枚目は腕と脚が針金のまま残った。採った絵でも",
+    "手足は胴より細い——札の大きさで人の形と分かればよいので、そこで止めた。",
+    "",
+    "**足元の台は編集で外す。** 生成は像を切り株や枝の上へ載せたがる。載せたままだと、札の上では",
+    "台のほうが大きく写って像に見えない。",
+    "",
+    "**mode: flood で抜く**（設えのどれも同じ。recipes/branch_table.json に理由を書いた）。",
+    "",
+    "段は256。設えの中で唯一の小さい物（300g）なので、石と同じ段に置いてほかの設えと見分ける。"
+  ],
+  "output": "src/assets/objects/wood_carving.png",
+  "prompts": "objects.json",
+  "prompt": "wood_carving",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 3004,
+  "width": 896,
+  "height": 1152,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same little wooden figure standing upright in the same place at the same angle, but carve the whole of it out of one solid piece of branch. Thicken its arms and legs until each of them is as thick as the branch itself, so that they read as blunt stumps growing straight out of the body: there is no thin stick, no wire and no gap anywhere on the figure, and the legs meet the ground as one wide solid base. Give it a rounded knob for a head with a plain blank front and no face, and a stout barrel body. Cover the whole figure in broad flat facets left by a knife blade, with the cut marks plainly visible, so that it looks hacked out of dry wood rather than turned or sanded, and give it no paint, no varnish and no shine. Take away the branch, the log and everything else it is standing on, so that the figure stands directly on the page. Remove the background completely and replace it with a plain empty white page, leaving the figure alone in the middle with a wide white margin all around it and one soft grey shadow on the ground beneath it. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Warm mid brown wood, dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 2
+  },
+  "cardArt": {
+    "size": "256",
+    "mode": "flood",
+    "fg": 100,
+    "bg": 6,
+    "unshade": true,
+    "edge": 1.5,
+    "shadow": 1,
+    "reach": 24
+  }
+}

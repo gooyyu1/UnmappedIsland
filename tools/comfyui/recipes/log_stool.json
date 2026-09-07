@@ -1,0 +1,43 @@
+{
+  "_comment": [
+    "src/assets/objects/log_stool.png を作り直すためのレシピ。build.py が読む。",
+    "丸太を短く割り、座面を斧で削っただけの腰掛け（src/assets/world-codex/furnishings.yaml）。",
+    "",
+    "**枠を正方形（1024x1024）にする。** 縦枠（832x1280）で6枚振ると、6枚とも背の高い立ち枯れか",
+    "裂けた切り株になった。丸太と同じで、ずんぐりした物では枠の縦横がそのまま姿勢を決める",
+    "（prompts/objects.json の log 参照）。",
+    "",
+    "**樹皮と座面は編集で足す。** 生成は「削り出した木の塊」までしか出さず、側面の樹皮と削った",
+    "座面の対比が出ない。足す物は編集のほうが強い（recipes/fire_drill.json と同じ理由）。",
+    "",
+    "**太鼓（log_drum）と並んで札に出る。** どちらも立てた丸太なので、分けるのは天面だけ",
+    "——こちらは削った木の面で、縄も皮も無いことを編集の指示で名指しする。",
+    "",
+    "**mode: flood で抜く**（設えのどれも同じ。recipes/branch_table.json に理由を書いた）。",
+    "",
+    "段は320。丸太（400）から割った物なので一回り小さく、ずんぐりしているぶん札の上では広く見える。"
+  ],
+  "output": "src/assets/objects/log_stool.png",
+  "prompts": "objects.json",
+  "prompt": "log_stool",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 3004,
+  "width": 1024,
+  "height": 1024,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same squat block of tree trunk standing on its end, in the same place at the same angle and the same size, cut from one single piece of wood with no join and no separate base. Wrap its curved side in rough furrowed dark brown bark all the way around, and keep its top hewn flat and level as a smooth round seat of pale bare wood, tilted a little towards us so that the seat shows as an oval. Nothing is tied to it: no cord, no rope, no hide, no skin. Remove the background completely and replace it with a plain empty white page, leaving the stool alone in the middle with a wide white margin all around it and one soft grey shadow on the ground beneath it. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Warm brown bark, dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "320",
+    "mode": "flood",
+    "fg": 100,
+    "bg": 6,
+    "unshade": true,
+    "edge": 1.5,
+    "shadow": 1,
+    "reach": 24
+  }
+}
