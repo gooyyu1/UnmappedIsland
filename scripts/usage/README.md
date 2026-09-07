@@ -13,7 +13,8 @@ cd scripts/usage
 python sweep_sessions.py 2026-07-01   # セッション一覧を、この日まで遡って落とす
 python local_usage.py                 # ローカルの transcript から usage を抜く
 python calibrate.py                   # ローカル分の換算係数を実測する
-python timeline.py                    # 時間・日・週ごと -> stats/usage/by_{hour,day,week}.tsv
+python timeline.py 2026-08-30         # 時間・日・週ごと -> stats/usage/by_{hour,day,week}.tsv
+                                      # （渡した日より前は、既にある集計から持ち越す）
 
 python sweep_events.py 2026-08-25     # 種別ごとの内訳に要る（セッション1本につき数十回のHTTP）
 python agent_kinds.py 2026-08-25 2026-09-01   # -> stats/usage/by_agent_kind.tsv
@@ -49,6 +50,10 @@ AI usage report の CSV）を書き写したもの。取りに行く先が違う
 
 ## 数字の限界
 
+- **過去は測り直せない。** ローカルの transcript は古いものから消えるので、**一度測った時間を
+  取り直すと痩せる**（2026-09-07 の再取得で、8月頭の3日ぶんが $285 減った）。だから
+  `timeline.py` には境目を渡し、**それより前は既にある集計から持ち越す。** 渡す値は、生データを
+  落とし直した範囲の先頭に合わせる。
 - **ローカル分は換算値。** ローカルの transcript は `cost_usd` を持たないので、公称単価に
   `calibrate.py` が実測した係数を掛けている。両方に現れる38本での比は 2.34〜3.09 とばらつくので、
   ローカルが支配的な時期は ±15% ほどの幅がある。CCR 側は実額。

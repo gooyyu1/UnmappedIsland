@@ -24,6 +24,7 @@ describe('traps.yamlのくくり罠', () => {
 
   let codex: WorldCodex;
   let session: WorldSession;
+  let world: WorldObject;
   let grassland: WorldObject;
   let player: WorldObject;
   let snare: WorldObject;
@@ -31,6 +32,7 @@ describe('traps.yamlのくくり罠', () => {
   let vulnerabilityId: number;
   let bloodId: number;
   let durabilityId: number;
+  let stayRemainingId: number;
   let catchRemainingId: number;
   let missWeightId: number;
   let herbivoreWeightId: number;
@@ -43,6 +45,7 @@ describe('traps.yamlのくくり罠', () => {
     vulnerabilityId = codex.propertyNames.getId('vulnerability');
     bloodId = codex.propertyNames.getId('blood');
     durabilityId = codex.propertyNames.getId('durability');
+    stayRemainingId = codex.propertyNames.getId('stay_remaining');
     catchRemainingId = codex.propertyNames.getId('catch_remaining');
     missWeightId = codex.propertyNames.getId('miss_weight');
     herbivoreWeightId = codex.propertyNames.getId('herbivore_weight');
@@ -52,13 +55,9 @@ describe('traps.yamlのくくり罠', () => {
 
   /** 草原に立つプレイヤーと、その足元へ仕掛けた罠から始める。rollがpickの引きを決める。 */
   function open(roll: number, locationName = 'grassland'): void {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
-    session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(roll));
-    grassland = spawnInto(locationName, worldInstance, 'locations');
+    world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), new WorldSession(codex));
+    session = new WorldSession(codex, new World(world, codex), fixedRng(roll));
+    grassland = spawnInto(locationName, world, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, grassland, 'characters');
     // 掛かった獲物の解体は明るさを要求する（IlluminationSystem.md 5節）。ここで見たいのは罠なので、
     // 時刻や光源を組み立てずに作業者の側で明るさを満たす。
@@ -100,6 +99,23 @@ describe('traps.yamlのくくり罠', () => {
       if (first !== undefined) return first;
     }
     throw new Error('罠に何も掛からなかった');
+  }
+
+  /** 条件が成り立つまで進める。上限まで回しても成り立たなければfalse。 */
+  function tickUntil(done: () => boolean, limit: number): boolean {
+    for (let i = 0; i < limit; i++) {
+      tick(1);
+      if (done()) return true;
+    }
+    return false;
+  }
+
+  /** プレイヤーを別の土地へ移して、罠を仕掛けた草原を無人にする。 */
+  function leaveGrassland(): void {
+    const elsewhere = spawnInto('grassland', world, 'locations');
+    expect(
+      player.moveToSlotOrRejection(elsewhere.getSlot(codex.slotNames.getId('characters'))),
+    ).toBeUndefined();
   }
 
   /** 上限まで餌を仕掛ける。返すのは、そのうえでもう1つ重ねる餌。 */
@@ -268,8 +284,8 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('獲物が入っている間は速く傷み、壊れれば中身は土地へこぼれる', () => {
-    // 放置の罰は獲物と罠の両方を失うこと（6.1節）。壊れた罠の中身は道連れにならず親へこぼれ、
-    // 拘束のmodifyが消えるので警戒が戻る。
+    // 放置の罰は獲物と罠の両方を失うこと（6.1節）。壊れた罠の中身は道連れにならず親へこぼれる。
+    // 拘束のmodifyは消えるが、警戒の実体値は罠の中でも引き切っているので戻らない（同節）。
     open(CATCHES_FOWL);
     const empty = snare.tryGetProperty(durabilityId)!.getEffectiveValue();
     tick(1);
@@ -284,6 +300,30 @@ describe('traps.yamlのくくり罠', () => {
     tick(200);
     expect(itemsOnGround(), '罠は壊れ、獲物が地面に立っている').toEqual(['junglefowl']);
     expect(prey.parent, '中身は道連れにならず土地へこぼれる').toBe(grassland);
+  });
+
+  it('こぼれた獲物は、誰も戻らなければ立ち去る', () => {
+    // 立ち去りまでの残りは土地の地面に居る間だけ減る（HuntingSystem.md 5.6節）ので、掛かっている
+    // 間は止まる。**止まるのは中に居る間だけ**で、罠が破られてこぼれればそこから動き出す
+    // ——放置の罰は罠を失うことに留まらない（6.1節）。
+    open(CATCHES_FOWL);
+    const prey = tickUntilCaught();
+    const stayWhenCaught = prey.tryGetProperty(stayRemainingId)!.getEffectiveValue();
+    leaveGrassland();
+
+    expect(
+      tickUntil(() => itemsOnGround().includes('junglefowl'), 200),
+      '罠は破られ、獲物が地面へこぼれる',
+    ).toBe(true);
+    expect(
+      prey.tryGetProperty(stayRemainingId)!.getEffectiveValue(),
+      '罠の中では止まっていたので、こぼれた時点では1も減っていない',
+    ).toBe(stayWhenCaught);
+
+    expect(
+      tickUntil(() => itemsOnGround().length === 0, 200),
+      '取りに戻らなければ立ち去る',
+    ).toBe(true);
   });
 
   it('ヤケイを解体すると、肉と羽に分かれる', () => {
