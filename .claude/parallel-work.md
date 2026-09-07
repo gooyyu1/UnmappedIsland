@@ -691,7 +691,7 @@ ready として配る。**判断する側と張れる側が別なので、間を
   **申告の先を issue にするのは、PRの本文が読み返されないから**（次節）——順序を待っているのは
   issue の側なので、そこに在れば消えない。
 - **張るのは棚卸し**（[`triage-prompt.md`](./triage-prompt.md)）。分類のために全件の本文を読む係で、
-  **ブリッジ固定なので REST が通る**（[`board-design.md`](board-design.md) 2.17.1）。未整理の issue は
+  **ブリッジ固定なので REST が通る**（[`board-design.md`](board-design.md) 2.17.3）。未整理の issue は
   必ずここを通るので、申告が張られないまま配られることはない。
 
   ```bash
