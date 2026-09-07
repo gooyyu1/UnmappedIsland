@@ -284,8 +284,8 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('獲物が入っている間は速く傷み、壊れれば中身は土地へこぼれる', () => {
-    // 放置の罰は獲物と罠の両方を失うこと（6.1節）。壊れた罠の中身は道連れにならず親へこぼれ、
-    // 拘束のmodifyが消えるので警戒が戻る。
+    // 放置の罰は獲物と罠の両方を失うこと（6.1節）。壊れた罠の中身は道連れにならず親へこぼれる。
+    // 拘束のmodifyは消えるが、警戒の実体値は罠の中でも引き切っているので戻らない（同節）。
     open(CATCHES_FOWL);
     const empty = snare.tryGetProperty(durabilityId)!.getEffectiveValue();
     tick(1);
