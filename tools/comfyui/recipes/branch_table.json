@@ -1,0 +1,51 @@
+{
+  "_comment": [
+    "src/assets/objects/branch_table.png を作り直すためのレシピ。build.py が読む。",
+    "太い枝を組み、縄で締めた低い卓（src/assets/world-codex/furnishings.yaml）。",
+    "",
+    "**seedは縄の巻きで選ぶ。** 縄で締めてあることがこの物の唯一の手掛かりだが、生成では巻きが",
+    "ほとんど出ない（石斧・槍と同じ、prompts/objects.json の stone_axe 参照）。18枚のうち継ぎ目に",
+    "巻きが描かれたのは数枚で、そのうち卓の形に見えるものを採った。**出ていない絵を編集で足すより、",
+    "出ている絵を選ぶほうが確実**——編集は今ある巻きを濃くはできるが、無い所へ全部の継ぎ目ぶんを",
+    "描き足すと縄の太さと本数が揃わない。",
+    "",
+    "**天板は編集で丸太へ直す。** 生成は天板を1枚の板か張った皮として描く。ほぞ組みの板でも",
+    "張り物でもなく「丸太を並べて縛った面」であることが要る（docs/world/Skills.md 2.1節）ので、",
+    "編集で並べた丸太へ描き直させる。",
+    "",
+    "**地面と書き込みを消す。** 生成はどのseedでも野外の下絵として出て、草・砂・注記の文字が入る。",
+    "",
+    "**mode: flood で抜く**（石斧・槍と同じ、recipes/stone_axe.json）。**4つの設えで共通の判断で、",
+    "理由はここにまとめる。** 卓は面が大きいぶん落ち影も広く、`background` では影が芯に入って卓の下に",
+    "不透明な板として残る（実測でRGB185・不透明度255が6,823画素）。**彩度で外す neutralShadow では",
+    "直らない**——影は脚の下半分にも掛かっているので、外すと脚の足元まで一緒に白く抜けた（16でも8でも",
+    "残る）。floodは費用の綱引きで決めるので、垂れた縄の先のような細い輪郭も残ったまま影だけが層に",
+    "なる。残る3つは影が小さく `background` でも既存の絵（log・stone）と同じ程度だったが、floodなら",
+    "淡い不透明の残りが0〜3画素まで落ちるので揃えた。",
+    "",
+    "段は400。設えの中でいちばん大きく、横に広いので太い枝と同じ幅まで使う。"
+  ],
+  "output": "src/assets/objects/branch_table.png",
+  "prompts": "objects.json",
+  "prompt": "branch_table",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 3002,
+  "width": 1152,
+  "height": 896,
+  "edit": {
+    "prompt": "Redraw this picture as a soft hand painted illustration on a plain empty white page, keeping the same low table in the same place at the same angle and the same size. It is built from straight stout branches: short branches standing as legs, cross pieces running between them, and the top made of several straight branches laid side by side across the frame, so that the round side of each branch shows and narrow gaps run between them. The top is not a plank, not a slab and not a stretched skin. Keep the rough brown bark on every branch. At every place where two branches cross, wrap many tight turns of rough twisted plant fibre cord, warm tan and mid brown with its strands visible, binding them together; there is no nail, no screw and no metal anywhere. Remove the ground, the grass, the sand and everything else in the background completely and replace it with a plain empty white page, leaving the table alone in the middle with a wide white margin all around it and one soft grey shadow on the ground beneath it. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Warm brown wood, dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "flood",
+    "fg": 100,
+    "bg": 6,
+    "unshade": true,
+    "edge": 1.5,
+    "shadow": 1,
+    "reach": 24
+  }
+}

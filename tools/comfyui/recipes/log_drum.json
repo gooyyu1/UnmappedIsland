@@ -1,0 +1,43 @@
+{
+  "_comment": [
+    "src/assets/objects/log_drum.png を作り直すためのレシピ。build.py が読む。",
+    "丸太をくり抜き、生皮を張って縄で締めた太鼓（src/assets/world-codex/furnishings.yaml）。",
+    "",
+    "**太鼓の種類をNGワードで落とすと、太鼓そのものが消える。** 1周目は djembe / conga / snare drum",
+    "などを並べたところ、6枚とも皮の張っていない中空の丸太（花器）になった。落とすのは金具",
+    "（tuning lugs・metal hoop）だけにして、形は本文で言う。",
+    "",
+    "**縄は編集で足す。** 皮を張った天面までは生成で出るが、縁を回る縄の巻きは出ない",
+    "（石斧・槍と同じ、prompts/objects.json の stone_axe 参照）。",
+    "",
+    "**胴は編集で樹皮へ戻す。** 生成は胴まで淡い皮で包んでしまい、白い紙から切り出せる暗さが",
+    "残らない（生皮・編み籠と同じ制約、README「透過」節）。暗いのは胴の樹皮だけでよい。",
+    "",
+    "**mode: flood で抜く**（4つの設えで共通。recipes/branch_table.json に理由を書いた）。",
+    "",
+    "段は320。腰掛けと同じ丸太1本ぶんの物なので、同じ段に置く。"
+  ],
+  "output": "src/assets/objects/log_drum.png",
+  "prompts": "objects.json",
+  "prompt": "log_drum",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 3001,
+  "width": 896,
+  "height": 1152,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same drum standing upright in the same place at the same angle and the same size: one short hollowed section of tree trunk with a taut head of tan brown animal hide stretched right across its round top, tilted a little towards us so that the head shows as a full oval with no hole in it. The head is a piece of skin pulled tight over the opening, so paint it as one smooth unbroken sheet, slightly stretched and creased where it is pulled down at the rim, with no wood grain, no growth rings and no cracks on it: it must not look like a cut face of wood. Paint the body of the drum in rough furrowed dark brown bark over its whole curved side, from its left edge to its right edge and from the rim down to the ground, with no pale patch, no white panel and no cream coloured area anywhere on it. Every part of the body is dark brown, clearly darker than the hide head. Fold the edge of the hide down over the rim, and wrap many tight turns of rough twisted plant fibre cord, warm tan and mid brown with its strands visible, right around the body just below the rim to hold the hide down. There is no metal, no hoop and no fitting of any kind. Remove the background completely and replace it with a plain empty white page, leaving the drum alone in the middle with a wide white margin all around it and one soft grey shadow on the ground beneath it. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 3
+  },
+  "cardArt": {
+    "size": "320",
+    "mode": "flood",
+    "fg": 100,
+    "bg": 6,
+    "unshade": true,
+    "edge": 1.5,
+    "shadow": 1,
+    "reach": 24
+  }
+}
