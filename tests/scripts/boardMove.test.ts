@@ -51,6 +51,17 @@ interface Board {
  */
 const LONG_IDLE = '2026-09-04T02:00:00Z';
 
+/**
+ * 掘り起こす係（`board-move.mjs` の `CYCLES` の `dig`）は、既定で**たった今立てた**ことにする。
+ * あの係の `due` は**配れる task が無いこと**なので、**task を置かなかった盤面には全部当たる**
+ * ——既定のままだと、掘り起こしと関わりのない検査の期待値へ一律に1手増え、**その検査が何を見て
+ * いるのかが読めなくなる。** 立つところを見る検査は、`taken` の `cycle:dig` を古い時刻で上書きする。
+ */
+const DUG_JUST_NOW = { 'cycle:dig': NOW };
+
+/** 掘り起こす係を立てる手。**上の既定を外した盤面はどれもこれを出す**ので、ここで名前を持つ。 */
+const DIG = `CHORE dig .claude/dig-prompt.md ${NOW}`;
+
 function moves(board: Board): string[] {
   const idled: Record<string, string> = {};
   for (const session of board.sessions ?? []) {
@@ -63,7 +74,7 @@ function moves(board: Board): string[] {
     issues: [],
     sessions: [],
     ...board,
-    taken: { ...idled, ...board.taken },
+    taken: { ...idled, ...DUG_JUST_NOW, ...board.taken },
   });
 }
 
@@ -929,10 +940,12 @@ describe('board-move.mjs', () => {
     });
 
     // **覚えが無いのは「ずっと空いている」ではない。** 台帳が消えた直後もここへ来るので、
-    // 動かない側へ倒す（打つ手はどちらも取り返しが付かない）。上の既定を通さずに直に渡す。
-    it('空いてからの長さが分からなければ、何もしない', () => {
+    // 動かない側へ倒す（打つ手はどちらも取り返しが付かない）。上の既定を通さずに直に渡すので、
+    // **掘り起こす係だけは立つ**——覚えが無いのは「まだ一度も立てていない」でもあり、あちらは
+    // 取り返しの付く手（読んで数えるだけ）なので、倒す先が逆になる。
+    it('空いてからの長さが分からなければ、停滞の手は打たない', () => {
       const board = stalling({});
-      expect(decide({ now: NOW, settledBefore: SETTLED, prs: [], ...board })).toEqual([]);
+      expect(decide({ now: NOW, settledBefore: SETTLED, prs: [], ...board })).toEqual([DIG]);
     });
 
     // **起こした合図が効くには時間が要る。** 次の周（既定30秒）で見限ると、届く前に必ず返す。
@@ -1123,7 +1136,7 @@ describe('board-move.mjs', () => {
   // `dispatch-chore.sh` が要る2つを持っていること**。片方でも欠けると、係は毎周立とうとして
   // 毎周失敗する（時刻を残さないので、間隔で黙りもしない）。
   it('周期の係のプロンプトは、題と囲みを持つ', () => {
-    for (const move of [TRIAGE, ANALYSIS, POLICY]) {
+    for (const move of [TRIAGE, ANALYSIS, POLICY, DIG]) {
       const text = readFileSync(resolve(__dirname, '../..', move.split(' ')[2]), 'utf-8');
       expect(text).toMatch(/^題: \S/m);
       expect(text).toMatch(/^````$/m);
@@ -1219,5 +1232,42 @@ describe('board-move.mjs', () => {
   it('週が明けたら、価値観を畳む係をもう一度立てる', () => {
     const board = { pendingDecisions: 3, taken: { 'cycle:policy': '2026-08-29T01:00:00Z' } };
     expect(moves(board)).toEqual([POLICY]);
+  });
+
+  // ## 掘り起こす係（2.17）
+  //
+  // 仕事の在り処が**盤面の空きそのもの**にある係。配れる `kind:task` が尽きた周に立ち、完成の
+  // 定義に照らして残りを数える。**上の既定（`DUG_JUST_NOW`）を外した盤面だけが立てる**ので、
+  // ここは `cycle:dig` を古い時刻で上書きして見る。
+  const DUG_YESTERDAY = { 'cycle:dig': '2026-09-04T01:00:00Z' };
+  const task = (number: number) => ({ number, ...label('kind:task'), blockedBy: { nodes: [] } });
+
+  it('配れる kind:task が無ければ、掘り起こす係を立てる', () => {
+    expect(moves({ taken: DUG_YESTERDAY })).toEqual([DIG]);
+  });
+
+  it('配れる kind:task が1件でもあれば、掘り起こす係は立てない', () => {
+    expect(moves({ issues: [task(10)], taken: DUG_YESTERDAY })).toEqual(['TASK 10']);
+  });
+
+  // **配れないだけの周は出番ではない。** 枠が満ちているのも錠を取り合っているのも、配る先が
+  // 空くまでの話で、掘り起こしても盤面は動かない（`ready` が空であることだけを見る理由）。
+  it('枠が満ちて配れないだけなら、掘り起こす係は立てない', () => {
+    const board = {
+      issues: [task(1), task(2), task(3), task(10)],
+      sessions: [working('a', 'task-1'), working('b', 'task-2'), working('c', 'task-3')],
+      taken: DUG_YESTERDAY,
+    };
+    expect(moves(board)).not.toContain(DIG);
+  });
+
+  // 人へ返した task は配られないので、**残っていても「配れる task」ではない**（2.15）。
+  it('返された task しか無ければ、掘り起こす係を立てる', () => {
+    const returned = { number: 10, ...label('kind:task', '判断待ち'), blockedBy: { nodes: [] } };
+    expect(moves({ issues: [returned], taken: DUG_YESTERDAY })).toEqual([DIG]);
+  });
+
+  it('前に立ててから一日が経つまで、掘り起こす係は立てない', () => {
+    expect(moves({ taken: { 'cycle:dig': '2026-09-04T03:00:00Z' } })).toEqual([]);
   });
 });

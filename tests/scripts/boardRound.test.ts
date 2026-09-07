@@ -98,11 +98,23 @@ function commits(session: string) {
  */
 const LONG_IDLE = '2026-09-04T02:00:00Z';
 
-/** 台帳を、打った手の指紋と、手が空いた時刻の覚えに分ける。 */
+/**
+ * 掘り起こす係（`board-move.mjs` の `CYCLES` の `dig`）は、既定で**たった今立てた**ことにする。
+ * あの係の `due` は**配れる task が無いこと**なので、**task を置かなかった世界には全部当たる**
+ * ——既定のままだと、掘り起こしと関わりのない検査の1手ぶんがこれに埋まる。
+ */
+const DUG_JUST_NOW = { 'cycle:dig': NOW.toISOString() };
+
+/**
+ * 台帳を、打った手の指紋と、手が空いた時刻の覚えに分ける。**上で置いた `DUG_JUST_NOW` は
+ * どちらにも入れない**——周が書いたものではなく、こちらが置いた足場なので、**周が何を残したか**を
+ * 見る検査に混ぜると全部の期待値が1件ずつ太る。周が `cycle:` を捨てないことは別の検査が見る。
+ */
 function split(ledger: Record<string, string>) {
   const marks: Record<string, string> = {};
   const idleMarks: Record<string, string> = {};
   for (const [key, value] of Object.entries(ledger)) {
+    if (key === 'cycle:dig' && value === DUG_JUST_NOW['cycle:dig']) continue;
     (key.startsWith('idle:') ? idleMarks : marks)[key] = value;
   }
   return { ledger: marks, idleMarks };
@@ -117,7 +129,11 @@ function playRound(world: World = {}): Result {
         idled[`idle:${session.id}`] = LONG_IDLE;
       }
     }
-    writeFileSync(join(stateDir, 'taken.json'), JSON.stringify({ ...idled, ...world.ledger }), 'utf-8');
+    writeFileSync(
+      join(stateDir, 'taken.json'),
+      JSON.stringify({ ...idled, ...DUG_JUST_NOW, ...world.ledger }),
+      'utf-8',
+    );
     if (world.conflictLog !== undefined) {
       writeFileSync(join(stateDir, 'conflicts.jsonl'), world.conflictLog, 'utf-8');
     }
