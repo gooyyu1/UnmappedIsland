@@ -590,17 +590,16 @@ function ticksUntilStageLeftUpward(def: ObjectDef, required: SelfStageRequiremen
 }
 
 /**
- * 要求された段を下へ抜けて、条件が外れるまでのtick数。下がっていかない値、値の並びの上に位置を
- * 持たない段（シンボル型、6.6節）、そして**下端を持たない受け皿の段**（6.4節）ならundefined
- * ——受け皿はいちばん下なので、値が下端まで落ちても抜けようが無い。
+ * 要求された段を下へ抜けて、条件が外れるまでのtick数。下がっていかない値、抜け出る先が無い段
+ * （PropertyDef.lowerExitOfStage）ならundefined。
  *
  * **ちょうどその段（`in_stage`）も「その段以上」（`in_stage_or_above`、14.1節）も、名指した段の
  * 下端を割れば外れる**ので、抜ける先は同じ。上へ抜けるほう（ticksUntilStageLeftUpward）が
  * `in_stage`だけなのと、ここが違う。
  */
 function ticksUntilStageLeftDownward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
-  const { lowerBound } = required;
-  if (lowerBound === undefined || !Number.isFinite(lowerBound)) return undefined;
+  const lowerBound = stageLowerExitOf(def, required);
+  if (lowerBound === undefined) return undefined;
 
   const value = staticValueOf(def, required.propertyGlobalId, 'lowest');
   // **下へ抜けるのは、その段に居る値だけ。** 生まれた時点で下端より下に在るなら、その段へ入るのは
@@ -622,6 +621,14 @@ function ticksUntilStageLeftDownward(def: ObjectDef, required: SelfStageRequirem
 /** 名指された段の上端＝押し抜けて行き着く先（PropertyDef.upperBoundOfStage）。上に段が無ければundefined。 */
 function stageUpperBoundOf(def: ObjectDef, required: SelfStageRequirement): number | undefined {
   return def.tryGetPropertyDef(required.propertyGlobalId)?.upperBoundOfStage(required.stageName);
+}
+
+/**
+ * 名指された段の下端＝押し割って抜け出る先（PropertyDef.lowerExitOfStage）。下へ抜けようが無ければ
+ * undefined。
+ */
+function stageLowerExitOf(def: ObjectDef, required: SelfStageRequirement): number | undefined {
+  return def.tryGetPropertyDef(required.propertyGlobalId)?.lowerExitOfStage(required.stageName);
 }
 
 /**
