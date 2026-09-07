@@ -59,6 +59,9 @@ function jstDay(epochSeconds: string): string {
 const TODAY = jstDay(git(['log', '-1', '--format=%at']));
 const IS_SHALLOW = git(['rev-parse', '--is-shallow-repository']) === 'true';
 
+/** リポジトリができた日。**渡さなくても系列の先頭に付く**のが道具の決まり。 */
+const FIRST = IS_SHALLOW ? TODAY : jstDay(git(['log', '--reverse', '--format=%at']).split('\n')[0]);
+
 /**
  * 履歴の始まりに近い日。**日境のずれは、ここでしか出ない。**
  *
@@ -68,6 +71,12 @@ const EARLY_DAYS = 5;
 const EARLY = IS_SHALLOW
   ? TODAY
   : jstDay(String(Number(git(['log', '--reverse', '--format=%at']).split('\n')[0]) + EARLY_DAYS * 86400));
+
+/** 表の最後の行。**先頭はリポジトリができた日が入る**ので、頼んだ日は末尾に出る。 */
+function latestOf(stdout: string): Map<string, string> | undefined {
+  const rows = tableOf(stdout);
+  return rows[rows.length - 1];
+}
 
 /** その日までに `main` へPRとして入った本数。道具とは別に、明示のオフセットだけで数える。 */
 function mergedPullRequestsUntil(day: string): number {
@@ -109,15 +118,21 @@ describe.runIf(IS_SHALLOW)('浅いクローンでの育ち方の推移', () => {
 });
 
 describe.skipIf(IS_SHALLOW)('育ち方の推移', () => {
-  const rows = tableOf(run([TODAY]).stdout);
-  const value = (header: string) => Number(rows[0]?.get(header)?.replace(/,/g, ''));
+  const stdout = run([TODAY]).stdout;
+  const latest = latestOf(stdout);
+  const value = (header: string) => Number(latest?.get(header)?.replace(/,/g, ''));
 
   it('最新の日の行が出る', () => {
-    expect(rows.length, '表に日付の行が1つも無い').toBe(1);
+    expect(latest?.get('日'), `表に日付の行が1つも無い`).toBe(TODAY.slice(5));
+  });
+
+  it('系列の先頭は、渡していなくてもリポジトリができた日', () => {
+    // ここを渡す側に任せると、表も図も途中から始まったまま誰も気づかない（07-13 が5日ぶん欠けていた）。
+    expect(tableOf(stdout)[0]?.get('日')).toBe(FIRST.slice(5));
   });
 
   it.each(NUMBER_COLUMNS)('%s の列が0でない', (header) => {
-    expect(value(header), `${[...(rows[0]?.values() ?? [])].join(' | ')}`).toBeGreaterThan(0);
+    expect(value(header), `${[...(latest?.values() ?? [])].join(' | ')}`).toBeGreaterThan(0);
   });
 
   it('履歴に無い日を頼まれたら、0を出さずに落ちる', () => {
@@ -128,9 +143,9 @@ describe.skipIf(IS_SHALLOW)('育ち方の推移', () => {
   it('PRの累計が、日本時間の日境で数えた本数と一致する', () => {
     // **日境がずれても、表は正常な形で出る**ので、貼った先では気づけない（PRの列だけが別の
     // 日境で数えられ、行数の列とは違う日で切られていた）。だからここは形ではなく値を見る。
-    const early = tableOf(run([EARLY]).stdout);
-    const count = Number(early[0]?.get('PR')?.replace(/,/g, ''));
-    expect(count, `${EARLY} の行: ${[...(early[0]?.values() ?? [])].join(' | ')}`).toBe(
+    const early = latestOf(run([EARLY]).stdout);
+    const count = Number(early?.get('PR')?.replace(/,/g, ''));
+    expect(count, `${EARLY} の行: ${[...(early?.values() ?? [])].join(' | ')}`).toBe(
       mergedPullRequestsUntil(EARLY),
     );
   });
