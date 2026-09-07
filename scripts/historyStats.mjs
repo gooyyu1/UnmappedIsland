@@ -297,8 +297,8 @@ function measureAt(day, previousDay, pullRequests, costs) {
     [...total].reduce((sum, [at, cost]) => (at > previousDay && at <= day ? sum + cost : sum), 0);
   const claudeCost = spent(costs.claude);
   /**
-   * 区間のPRが動かした行（追加＋削除）。**純増ではない**——書き直しと削除は純増に現れないが、
-   * 同じだけコストが掛かっている。純増を分母にすると、それらを0として扱うことになる。
+   * 区間のPRが動かした行（追加＋削除）。**行数の列の増分（純増）とは別物**——書き直しと削除は
+   * 純増に現れないが、掛かったコストは同じ。値段を割る分母はこちら。
    */
   const changedLines = diffs.reduce((sum, diff) => sum + diff.lines, 0);
   return {
@@ -324,18 +324,15 @@ function toRow(measurement) {
       ? '-'
       : `${measurement.filesPerPullRequest.toFixed(1)}ファイル / ${Math.round(measurement.linesPerPullRequest).toLocaleString('en-US')}行`;
   const dollars = (value) => `$${Math.round(value).toLocaleString('en-US')}`;
-  const perUnit = [
-    measurement.claudeCostPerPullRequest === null
-      ? null
-      : `1本 $${measurement.claudeCostPerPullRequest.toFixed(1)}`,
+  // 千行あたりだけが欠けるのは、PRは在るのに動いた行が0のとき（全部バイナリ）。
+  const perThousandLines =
     measurement.claudeCostPerThousandLines === null
-      ? null
-      : `千行 $${measurement.claudeCostPerThousandLines.toFixed(1)}`,
-  ].filter((part) => part !== null);
+      ? ''
+      : `・千行 $${measurement.claudeCostPerThousandLines.toFixed(1)}`;
   const cost =
-    perUnit.length === 0
+    measurement.claudeCostPerPullRequest === null
       ? dollars(measurement.claudeCost)
-      : `${dollars(measurement.claudeCost)}（${perUnit.join('・')}）`;
+      : `${dollars(measurement.claudeCost)}（1本 $${measurement.claudeCostPerPullRequest.toFixed(1)}${perThousandLines}）`;
   return [
     measurement.day.slice(5),
     ...measurement.counts.map((count) => count.toLocaleString('en-US')),
