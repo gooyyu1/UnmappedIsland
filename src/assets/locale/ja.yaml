@@ -303,7 +303,7 @@ object_texts:
       skill_hunting:
         display_name: 狩猟
         icon: 🏹
-        description: 獣を狩る腕。獲物へ手を出すほど上がる。上がるほど獲物に出くわし、打った一撃が当たる。
+        description: 獣を狩る腕。その場で獲物へ手を出すほど上がる。上がるほど獲物に出くわし、打った一撃が当たる。
       skill_smelting:
         display_name: 採鉱・製錬
         icon: ⛏️
