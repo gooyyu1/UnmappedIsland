@@ -355,8 +355,8 @@ export interface WorkTotal {
 }
 
 /**
- * 山の量を足し上げる。**日数も山1つずつの日数から足す**——合計の分を自由時間で割り直すと、
- * 山を出した収支表とは別の収支表を分母に渡せてしまう。
+ * 山の量の合計。**日数は山1つずつの日数の和**で、分母になる自由時間は、山の量を出した収支表の
+ * ものだけ。
  */
 export function workTotalOf(amounts: readonly WorkPileAmount[]): WorkTotal {
   const minutes = amounts.reduce((sum, amount) => sum + amount.minutes, 0);

@@ -4,7 +4,6 @@ import type { BalanceTables } from '../../src/analysis/balanceTables';
 import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import type {
   BaseDailyPhases,
-  DailyBudget,
   LocationTypeDay,
   WorkPileAmount,
   WorkTotal,
@@ -223,7 +222,7 @@ function collect(
   scope: GenerationScopeDef,
   elevationSpan: number,
   locationDays: ReadonlyMap<number, LocationTypeDay>,
-  budget: DailyBudget,
+  balance: BalanceTables,
   work: WorkTotal,
 ): void {
   const metersPerElevationUnit = scope.metersPerElevationUnit(elevationSpan);
@@ -258,7 +257,7 @@ function collect(
   stats.typesPerIsland.add(counts.size);
   for (const [name, stat] of stats.countByType) stat.add(counts.get(name) ?? 0);
 
-  const phases = dailyPhasesOf(map, locationDays, budget);
+  const phases = dailyPhasesOf(map, locationDays, dailyBudgetOf(balance));
   stats.chosenBaseOneWayMinutes.add(phases.bestBase.oneWayMinutes);
   for (const base of phases.bases) stats.anyBaseOneWayMinutes.add(base.oneWayMinutes);
   addDailyPhases(stats, phases.bestBase, work);
@@ -299,8 +298,9 @@ function buildSections(
   stats: TerrainStats,
   balance: BalanceTables,
   amounts: readonly WorkPileAmount[],
-  work: WorkTotal,
 ): readonly YamlReportSection[] {
+  const work = workTotalOf(amounts);
+
   return [
     { key: 'meta', records: [{ seeds: SEED_COUNT }] },
     {
@@ -473,7 +473,6 @@ function buildReportFromDefinitions(): string {
 
   // 1日の枠も山の量も収支表から出る（ContentSkeleton.md 8.3節）ので、先に1度だけ解く。
   const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
-  const budget = dailyBudgetOf(balance);
   const amounts = workPileAmountsOf(codex, SAMPLE_CHARACTER, balance);
   const work = workTotalOf(amounts);
 
@@ -496,7 +495,7 @@ function buildReportFromDefinitions(): string {
   const stats = createStats(codex.generation!.locationTypes.map((type) => type.name));
   for (let seed = 0; seed < SEED_COUNT; seed++) {
     const map = generateIsland(codex.generation, 'island', seed);
-    collect(stats, map, scope, elevationSpan, locationDays, budget, work);
+    collect(stats, map, scope, elevationSpan, locationDays, balance, work);
   }
 
   return formatYamlReport(
@@ -505,7 +504,7 @@ function buildReportFromDefinitions(): string {
       '生成物。手で書き換えず、npm run stats:terrain で作り直す。',
       '何を測ったか・引いた線・数えていないものは docs/diagnostics/TerrainStats.md。',
     ],
-    buildSections(stats, balance, amounts, work),
+    buildSections(stats, balance, amounts),
   );
 }
 
