@@ -48,6 +48,11 @@ slot_texts:
   # 干し場に掛けてある食べ物（drying.yaml）。
   drying:
     display_name: 干している物
+  # 炉の火床（fire.yaml）。焚き火や炉では火にかけた物が並び、覆い焼きの炉では焼く土器、燻し小屋
+  # （smoking.yaml）では吊るした食べ物が並ぶ。**枠が受ける物は炉ごとに違う**ので、名前は物ではなく
+  # 場所で名乗る。
+  fire:
+    display_name: 火床
 
 object_texts:
   # 全オブジェクト共通のメンバー。ここにdisplay_name/descriptionを書いても、
