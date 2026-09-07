@@ -273,6 +273,7 @@ function formatTable(rows) {
     'issue',
     'PR',
     '1PRあたり',
+    '変更行',
     'Claudeのコスト',
     '文書と実装が同じPR',
   ];
@@ -295,6 +296,11 @@ function measureAt(day, previousDay, pullRequests, costs) {
   const spent = (total) =>
     [...total].reduce((sum, [at, cost]) => (at > previousDay && at <= day ? sum + cost : sum), 0);
   const claudeCost = spent(costs.claude);
+  /**
+   * 区間のPRが動かした行（追加＋削除）。**行数の列の増分（純増）とは別物**——書き直しと削除は
+   * 純増に現れないが、掛かったコストは同じ。値段を割る分母はこちら。
+   */
+  const changedLines = diffs.reduce((sum, diff) => sum + diff.lines, 0);
   return {
     day,
     counts: LINE_COLUMNS.map((column) => lineCount(revision, column.pathspecs)),
@@ -302,6 +308,8 @@ function measureAt(day, previousDay, pullRequests, costs) {
     pullRequests: merged.length,
     claudeCost,
     copilotCost: spent(costs.copilot),
+    changedLines,
+    claudeCostPerThousandLines: changedLines === 0 ? null : (1000 * claudeCost) / changedLines,
     // 区間にPRが1本も無い日は平均が定義できない。0で埋めると「小さいPRが並んだ」と読めてしまう。
     claudeCostPerPullRequest: diffs.length === 0 ? null : claudeCost / diffs.length,
     filesPerPullRequest: diffs.length === 0 ? null : mean((diff) => diff.files),
@@ -316,16 +324,22 @@ function toRow(measurement) {
       ? '-'
       : `${measurement.filesPerPullRequest.toFixed(1)}ファイル / ${Math.round(measurement.linesPerPullRequest).toLocaleString('en-US')}行`;
   const dollars = (value) => `$${Math.round(value).toLocaleString('en-US')}`;
+  // 千行あたりだけが欠けるのは、PRは在るのに動いた行が0のとき（全部バイナリ）。
+  const perThousandLines =
+    measurement.claudeCostPerThousandLines === null
+      ? ''
+      : `・千行 $${measurement.claudeCostPerThousandLines.toFixed(1)}`;
   const cost =
     measurement.claudeCostPerPullRequest === null
       ? dollars(measurement.claudeCost)
-      : `${dollars(measurement.claudeCost)}（1本 $${measurement.claudeCostPerPullRequest.toFixed(1)}）`;
+      : `${dollars(measurement.claudeCost)}（1本 $${measurement.claudeCostPerPullRequest.toFixed(1)}${perThousandLines}）`;
   return [
     measurement.day.slice(5),
     ...measurement.counts.map((count) => count.toLocaleString('en-US')),
     measurement.issues === null ? '-' : measurement.issues.toLocaleString('en-US'),
     measurement.pullRequests.toLocaleString('en-US'),
     size,
+    measurement.changedLines.toLocaleString('en-US'),
     cost,
     measurement.bothSidesShare === null ? '-' : `${Math.round(100 * measurement.bothSidesShare)}%`,
   ];
@@ -372,6 +386,11 @@ function chartsOf(measurements) {
       { label: 'Claude（区間）', series: [series('コスト', (m) => m.claudeCost)] },
       { label: 'Copilot（区間）', series: [series('コスト', (m) => m.copilotCost)] },
       { label: 'Claude・PR1本あたり', series: [series('コスト', (m) => m.claudeCostPerPullRequest ?? 0)] },
+      // PRの粒は期を通じて変わるので、1本あたりだけでは値段と粒度が混ざる。
+      {
+        label: 'Claude・変更1千行あたり',
+        series: [series('コスト', (m) => m.claudeCostPerThousandLines ?? 0)],
+      },
     ],
   });
 
