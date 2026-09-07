@@ -28,6 +28,8 @@ STONE = (146, 146, 146)
 STONE_DARK = (104, 104, 104)
 CORD = (163, 124, 78)
 CORD_DARK = (120, 88, 52)
+LEAF = (198, 172, 112)
+LEAF_DARK = (150, 126, 76)
 SAIL = (198, 186, 160)
 BONE = (216, 203, 176)
 BONE_DARK = (166, 152, 126)
@@ -233,6 +235,68 @@ def draw_kiln(draw: ImageDraw.ImageDraw) -> None:
     # 裾の空気穴。3つを等間隔に置く。
     for hole_x in (center_x - 215, center_x - 5, center_x + 205):
         draw.ellipse([hole_x - 36, base - 62, hole_x + 36, base - 6], fill=HOLE)
+
+
+def draw_smokehouse(draw: ImageDraw.ImageDraw) -> None:
+    """燻し小屋。枝を寄せて立てた骨組みを編んだ葉で巻き、裾に焚き口を1つ開ける。
+
+    **生成では小屋にならない。** hut と頼むと編んだ蓑をまとった人物が出た（prompts/objects.json の
+    smokehouse 参照）。枝の先が天で交わること・面が編み目であること・裾の口が1つだけであることが
+    燻し小屋の手掛かりなので、そこを下絵で決める。
+
+    火の付いた絵（_ember）は煙が天から立つので、**塚と同じく上を空けておく**（headroom、
+    README「火の付いた炉」節）。
+    """
+    centre_x = 576.0
+    top_y, base_y = 300.0, 770.0
+    top_half, base_half = 62.0, 250.0
+
+    def half_width_at(y: float) -> float:
+        return top_half + (base_half - top_half) * (y - top_y) / (base_y - top_y)
+
+    # 骨組み。天で交わって突き出た先だけが、このあと被せる囲いの上から見える。
+    for start_x, direction in (
+        (326.0, (0.447, -0.894)),
+        (826.0, (-0.447, -0.894)),
+        (462.0, (0.259, -0.966)),
+        (690.0, (-0.259, -0.966)),
+    ):
+        draw_branch(draw, (start_x, base_y + 20), direction, 660, 46)
+    # 天の縛り。枝が束ねてあることが、屋根の形の理由になる。**枝の幅で止める**——長く引くと
+    # 柵の横木に見える。
+    for offset in (0, 26):
+        draw.line([(centre_x - 62, 238 + offset), (centre_x + 62, 228 + offset)], fill=CORD, width=13)
+
+    # 囲い。裾へ向かって開く筒で、面は編んだ葉。
+    draw.polygon(
+        [
+            (centre_x - top_half, top_y),
+            (centre_x + top_half, top_y),
+            (centre_x + base_half, base_y),
+            (centre_x - base_half, base_y),
+        ],
+        fill=LEAF,
+        outline=OUTLINE,
+        width=4,
+    )
+    # 編み目。段ごとに傾きを返して、互い違いに組んだ短冊に見せる。
+    rows = 13
+    for row in range(rows):
+        y = top_y + (row + 0.5) * (base_y - top_y) / rows
+        half = half_width_at(y) - 12
+        lean = 26 if row % 2 == 0 else -26
+        x = -half
+        while x < half:
+            draw.line([(centre_x + x, y - 14), (centre_x + x + lean, y + 14)], fill=LEAF_DARK, width=7)
+            x += 46
+    # 胴を回る縄。編んだ面を骨組みへ締めている。
+    for y in (top_y + 150, top_y + 320):
+        half = half_width_at(y)
+        draw.line([(centre_x - half, y), (centre_x + half, y)], fill=CORD_DARK, width=13)
+
+    # 焚き口。裾に1つだけで、中は暗い。**人が通れる大きさにしない**——戸口にすると住居になる。
+    draw.pieslice([centre_x - 56, base_y - 130, centre_x + 56, base_y - 46], 180, 360, fill=HOLE)
+    draw.rectangle([centre_x - 56, base_y - 88, centre_x + 56, base_y], fill=HOLE)
 
 
 def draw_log(draw: ImageDraw.ImageDraw) -> None:
@@ -570,6 +634,7 @@ LAYS = {
     "pole": draw_pole,
     "raft": draw_raft,
     "sail": draw_sail,
+    "smokehouse": draw_smokehouse,
     "snare": draw_snare,
     "spear": draw_spear,
     "taro": draw_taro,

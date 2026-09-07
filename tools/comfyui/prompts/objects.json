@@ -845,5 +845,25 @@
     ],
     "positive": "exactly one hand made drum alone on an empty white page, a drum built from one short hollowed section of tree trunk standing upright, a taut head of tan brown animal hide stretched over its round top, the edge of that hide folded down over the rim and held there by many tight turns of rough twisted plant fibre cord passing right around the body of the drum, rough dark brown bark still on the outside of the trunk, a straight cylinder a little taller than it is wide, seen from the side and a little above so the round hide head shows as an oval, warm brown wood with a tan hide head, matte dry surface, it is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "open top, empty hollow, no head, uncovered, vase, vessel, bowl, pot, jar, bucket, barrel, keg, basket, metal hoop, metal rim, tuning lugs, screws, bolts, hardware, drumsticks, mallets, beater, painted pattern, tribal pattern, carved pattern, decoration, tree stump, roots, rooted, in the ground, soil, moss, mushrooms, leaves, foliage, growing, tree, forest, splintered top, jagged top, torn wood, white wood, bleached driftwood, two drums, three drums, several drums, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+  },
+  "smokehouse": {
+    "description": [
+      "燻し小屋（src/assets/world-codex/smoking.yaml）。枝の骨組みへ編んだ葉を巡らせ、底で火を",
+      "燻らせる小屋。",
+      "",
+      "**この本文は使っていない**（recipes/smokehouse.json は sketch から起こす）。生成で外した",
+      "記録として残す。",
+      "",
+      "**hut は建物を呼ばず、人を呼ぶ。** 下の本文で出たのは、編んだ蓑を頭からかぶった人物の胸像",
+      "だった。人物を否定する語（person / character / hands）は既に入っていて効いていない",
+      "——**大きさを人の身体で言った**（no taller than a person's waist）のが呼び水になっている。",
+      "住居の部品（戸口・窓・煙突）と布・幕を落とす手当ては、そこまで届かない。",
+      "",
+      "**枝の先が天で交わること・面が編み目であること・裾の口が焚き口の大きさであることが、",
+      "燻し小屋であることの手掛かり。** どれも配置の話なので、下絵で決める",
+      "（覆い焼きの炉・焚き火と同じ、layout_sketch.py）。"
+    ],
+    "positive": "exactly one small empty hut alone on an empty white page, a low hut no taller than a person's waist, its frame made of six thick brown branches leaning inwards and lashed together at the top with rough twisted plant fibre cord, its sides closed in all the way round with panels of plaited dried palm leaf strips tied onto the branches, one small low opening left at the foot of the near side and dark inside, no door and no window anywhere else, the plaited leaf a dry straw yellow over warm mid brown branches, matte dry surface, it is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "fire, flame, smoke, embers, glow, ash, tent, canvas, fabric, cloth, tarpaulin, teepee, tipi, wigwam, yurt, house, home, cottage, cabin, village, hut village, roof tiles, thatched cottage, chimney, hinged door, doorway with frame, window, glass, brick, masonry, stone wall, timber framing, garden shed, beach umbrella, parasol, haystack, straw bale, birdhouse, dog kennel, beehive, palm tree, two huts, three huts, several huts, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
   }
 }

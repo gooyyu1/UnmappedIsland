@@ -115,7 +115,7 @@ object_defs:
   # なく育った水のほう（寄生虫）なので、物としては生食に向く。ヤシガニとタロイモは違う（各項参照）。
   water_spinach:
     tags: [item, food, plant_bait]
-    traits: [perishable, spoils_normal, dryable]
+    traits: [perishable, spoils_normal, dryable, smokable]
     props:
       weight: {value: 150}
       # 罠へ仕掛けると草食の卓が引かれやすくなる（docs/engine/TrapSystem.md 4節）。
@@ -160,7 +160,7 @@ object_defs:
   coconut_crab:
     tags: [item, meat_bait, roastable]
     # 生の甲殻類。食べられなくても傷むのは同じなので、foodタグの有無とは関わりなく腐る。
-    traits: [perishable, spoils_fast, dryable]
+    traits: [perishable, spoils_fast, dryable, smokable]
     props:
       weight: {value: 2000}
       meat_bait: {value: 12}

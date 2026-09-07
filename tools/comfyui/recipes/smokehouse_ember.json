@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "src/assets/objects/smokehouse_ember.png を作り直すためのレシピ。build.py が読む。",
+    "火の入った燻し小屋（heatのember段、src/assets/world-codex/smoking.yaml）。",
+    "",
+    "**炎の絵は無い。** 燻し小屋の火力は種火の段より上へ行かない（同ファイルのheatの上限）ので、",
+    "`_lit` に当たる段はそもそも現れない。出し分けるのは消えているか燻っているかの2つだけ",
+    "（README「火の付いた炉」節の3枚のうち、この設備が使うのは2枚）。",
+    "",
+    "**炎は1つも描かせない。** 遊ぶ側がこの絵から読むのは「今この小屋は働いている」なので、",
+    "焚き口の熾の光と、天から立つ細い煙だけで出す。",
+    "",
+    "**煙は小屋の高さの半分まで。** 越えたぶんはheadroomの外へ落ちる（同節）。"
+  ],
+  "output": "src/assets/objects/smokehouse_ember.png",
+  "edit": {
+    "source": "smokehouse.json",
+    "prompt": "Keep this picture exactly as it is: the same small cone shaped hut of plaited palm leaf, in the same place, at the same size, with the same branch frame and the same cords, painted in the same soft hand painted style on the same plain empty white page with the same wide white margin, and the same soft grey shadow along its foot. Now show a fire smouldering inside it. Deep orange and dark red embers half covered in pale grey ash glow low inside the small arched hole at its foot, and the plaited leaf just around that hole is smudged with soot. A single thin wisp of pale grey smoke rises straight up from the crown where the branch ends cross, no higher than half the height of the hut above it, and fades away before it reaches the top. There is no flame anywhere in the picture, not one. Do not move, resize or redraw the hut. The white page stays plain white: there is no glow, no haze and no coloured light spilling onto the page, and nothing comes near the edges of the page. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "headroom": 110,
+    "align": "smokehouse.json",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
