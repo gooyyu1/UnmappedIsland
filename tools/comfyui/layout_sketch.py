@@ -43,8 +43,8 @@ TARO_RING = (170, 142, 110)
 PAGE = (255, 255, 255)
 
 
-def draw_cut_face(draw: ImageDraw.ImageDraw, centre: tuple[float, float], radius: float) -> None:
-    """切り口を1つ。淡い木口に年輪を入れて、樹皮に覆われた胴と見分ける。"""
+def draw_end_grain(draw: ImageDraw.ImageDraw, centre: tuple[float, float], radius: float) -> None:
+    """端の木口を1つ。淡い面に年輪を入れて、樹皮に覆われた胴と見分ける。"""
     x, y = centre
     draw.ellipse([x - radius, y - radius, x + radius, y + radius], fill=FACE, outline=OUTLINE, width=4)
     for ring in (0.66, 0.36):
@@ -72,7 +72,7 @@ def draw_branch(
         fill=BARK_DARK,
         width=thickness // 3,
     )
-    draw_cut_face(draw, (end_x, end_y), thickness // 2)
+    draw_end_grain(draw, (end_x, end_y), thickness // 2)
 
 
 def draw_stone(
@@ -515,17 +515,43 @@ def draw_pole(draw: ImageDraw.ImageDraw) -> None:
     """長い棒。若木を切った2mの棒（src/assets/world-codex/timber.yaml）。
 
     **丸太と同じで、姿勢と太さは生成では決まらない**（prompts/objects.json の log 参照）ので、
-    ここで決める。分けたい相手は3つあり、それぞれ別の点で分かれる——丸太とは太さ、太い枝とは
-    長さと「端まで同じ太さ」、槍とは穂先と紐が無いこと。対角線いっぱいに寝かせるのは槍と同じ
-    理由で、2mという長さが見せ場だから（card_art.py の align_to_diagonal）。
+    ここで決める。紛れる相手それぞれと、分かれる点が違う——丸太とは太さ、太い枝とは長さと
+    真っ直ぐさ、槍とは穂先と紐が無いこと。対角線いっぱいに寝かせるのは槍と同じ理由で、2mという
+    長さが見せ場だから（card_art.py の align_to_diagonal）。
 
-    **両端に切り口を置く。** 拾った太い枝の端は折れ口だが、こちらは刃物で断って枝を払った棒。
+    **両端に木口を置く。** 拾った太い枝は伸びた先の1つだけだが、こちらは根元も梢も刃物で断っている。
+
+    **根元から梢へ細らせる。** 太さが端まで変わらない棒を渡すと、編集は節を回して竹にする
+    （recipes/long_pole.json）。細りは若木の幹であることの証拠で、言葉で否定するより効く。
     """
     near, far = (140.0, 790.0), (1010.0, 190.0)
     span = math.hypot(far[0] - near[0], far[1] - near[1])
-    thickness = 38
-    draw_branch(draw, near, ((far[0] - near[0]) / span, (far[1] - near[1]) / span), span, thickness)
-    draw_cut_face(draw, near, thickness // 2)
+    dx, dy = (far[0] - near[0]) / span, (far[1] - near[1]) / span
+    nx, ny = -dy, dx
+    near_half, far_half = 23.0, 13.0
+    draw.polygon(
+        [
+            (near[0] + nx * near_half, near[1] + ny * near_half),
+            (far[0] + nx * far_half, far[1] + ny * far_half),
+            (far[0] - nx * far_half, far[1] - ny * far_half),
+            (near[0] - nx * near_half, near[1] - ny * near_half),
+        ],
+        fill=BARK,
+        outline=OUTLINE,
+        width=4,
+    )
+    # 影の側。丸みが無いと、棒が板に見える。
+    draw.polygon(
+        [
+            (near[0] + nx * near_half, near[1] + ny * near_half),
+            (far[0] + nx * far_half, far[1] + ny * far_half),
+            (far[0] + nx * far_half * 0.3, far[1] + ny * far_half * 0.3),
+            (near[0] + nx * near_half * 0.3, near[1] + ny * near_half * 0.3),
+        ],
+        fill=BARK_DARK,
+    )
+    draw_end_grain(draw, near, near_half)
+    draw_end_grain(draw, far, far_half)
 
 
 def draw_harpoon(draw: ImageDraw.ImageDraw) -> None:
