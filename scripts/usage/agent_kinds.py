@@ -33,12 +33,18 @@ BACK = 0.9  # 直後3turnで元の9割まで戻ればキャッシュの失効
 # 司令塔にも、司令塔が投入した個別のタスク（`issue-741` と併記される）にも付く。
 # 種別として読むと作業セッションが司令塔に化ける。
 ALIAS = {"shirei": "commander"}
-KNOWN = ("task", "review", "commander", "shirei", "adviser", "grammar", "issue", "held")
+KNOWN = (
+    "task", "review", "chore", "probe",
+    "commander", "shirei", "adviser", "grammar", "issue", "held",
+)
 
 # 司令塔は人がローカルから開くのでタグが付かない本がある。タグの無いものに限り、題名
 # （人が打った指示の1行目）で拾う。題名だけで判定すると、司令塔について書いたタスクや
 # レビューまで入るので、タグの付いたものはタグを優先する。
 COMMANDER = re.compile(r"司令塔|parallel-work\.md")
+# **題名で拾ってよいのは、司令塔が居た間だけ。** デーモンへ移った後のブリッジのセッションは、
+# 盤面を作り直す相談そのものが題になるので、題名が当たっても司令塔ではない。
+COMMANDER_UNTIL = "2026-09-05T00:00:00Z"
 
 
 def kind(s):
@@ -48,7 +54,9 @@ def kind(s):
             return ALIAS.get(name, name)
     if s.get("environment_kind") != "bridge":
         return "untagged"
-    return "commander" if COMMANDER.search(s.get("title") or "") else "bridge"
+    if s["created_at"] < COMMANDER_UNTIL and COMMANDER.search(s.get("title") or ""):
+        return "commander"
+    return "bridge"
 
 
 def drops(rows):

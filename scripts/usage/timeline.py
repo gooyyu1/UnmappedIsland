@@ -1,5 +1,12 @@
 """使用量を時間・日・週ごとに集計し、stats/usage/ へ書く。
 
+    python timeline.py [YYYY-MM-DD この日以降だけ測り直す]
+
+**ローカルの transcript は古いものから消える**（Claude Code が無期限には持たない）ので、
+**一度測った時間は取り直せない。** 何も渡さずに走らせると、消えたぶんだけ過去の額が痩せた
+表で上書きしてしまう。境目を渡すと、**それより前の時間は既に在る `by_hour.tsv` の値を
+そのまま持ち越す**——渡す値は、生データを取り直した範囲の先頭に合わせる。
+
 出どころが2つあり、重なっている。
 
   - CCR (list_sessions): `cost_usd` を持つ。時刻はセッション単位しか無いので
@@ -14,8 +21,10 @@ transcript を落とす。残ったローカル分は公称単価 × RATE で CC
 """
 
 import datetime as dt
+import csv
 import json
 import os
+import sys
 from collections import defaultdict
 
 from calibrate import PRICE, linked_session_files
@@ -76,6 +85,22 @@ def main():
         add(ts(r["ts"]), c, tok)
         local_cost += c
 
+    if len(sys.argv) > 1:
+        keep = dt.datetime.fromisoformat(sys.argv[1]).replace(tzinfo=dt.timezone.utc)
+        for t in [t for t in hour if t < keep]:
+            del hour[t]
+        carried = 0
+        with open(stats("by_hour.tsv"), encoding="utf-8") as f:
+            for r in csv.DictReader(f, delimiter="\t"):
+                t = ts(r["hour_utc"].replace("T", " ").replace(":00Z", ":00:00Z"))
+                if t >= keep:
+                    continue
+                hour[t]["cost"] += float(r["cost_usd"])
+                for c in COLS:
+                    hour[t][c] += float(r[c])
+                carried += 1
+        print("%s より前の %d 時間は、既にある集計から持ち越し" % (sys.argv[1], carried))
+
     def dump(name, keyf, label):
         agg = defaultdict(lambda: defaultdict(float))
         for t, v in hour.items():
@@ -92,7 +117,8 @@ def main():
     dump("by_day.tsv", lambda t: t.strftime("%Y-%m-%d"), "day_utc")
     wk = dump("by_week.tsv", week_start, "week_start_thu16utc")
 
-    print("CCR $%.2f + ローカル(CCR未記録分) $%.2f = 合計 $%.2f" % (ccr_cost, local_cost, ccr_cost + local_cost))
+    # 持ち越した時間はこの2つに入らないので、書いた表の合計は別に足す。
+    print("CCR $%.2f + ローカル(CCR未記録分) $%.2f / 表の合計 $%.2f" % (ccr_cost, local_cost, sum(v["cost"] for v in hour.values())))
     print()
     print("%-14s %11s %10s %10s %11s %11s" % ("週(木16:00UTC〜)", "コスト", "入力", "出力", "cacheWrite", "cacheRead"))
     for k in sorted(wk):

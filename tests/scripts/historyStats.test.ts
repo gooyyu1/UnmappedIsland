@@ -22,13 +22,17 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = resolve(__dirname, '../..');
 
-function run(args: readonly string[]): { readonly stdout: string; readonly status: number } {
+function run(
+  args: readonly string[],
+  env: NodeJS.ProcessEnv = {},
+): { readonly stdout: string; readonly status: number } {
   try {
     return {
       stdout: execFileSync('node', [join(ROOT, 'scripts/historyStats.mjs'), ...args], {
         cwd: ROOT,
         encoding: 'utf-8',
         stdio: ['ignore', 'pipe', 'ignore'],
+        env: { ...process.env, ...env },
       }),
       status: 0,
     };
@@ -38,15 +42,42 @@ function run(args: readonly string[]): { readonly stdout: string; readonly statu
 }
 
 function git(args: readonly string[]): string {
-  return execFileSync('git', args, {
-    cwd: ROOT,
-    encoding: 'utf-8',
-    env: { ...process.env, TZ: 'Asia/Tokyo' },
-  }).trim();
+  return execFileSync('git', args, { cwd: ROOT, encoding: 'utf-8' }).trim();
 }
 
-const TODAY = git(['log', '-1', '--format=%ad', '--date=format-local:%Y-%m-%d']);
+/**
+ * エポック秒から日本時間の日を出す。
+ *
+ * **`--date=format-local` にも `TZ=Asia/Tokyo` にも頼らない。** git がその名前を解釈できるかは
+ * 環境で違い、解釈できなければ黙って別の日境で切る。ここが道具と独立した基準になるので、
+ * 道具と同じ道具立てで作ると、ずれたときに両方が同じだけずれて検査が素通りする。
+ */
+function jstDay(epochSeconds: string): string {
+  return new Date((Number(epochSeconds) + 9 * 60 * 60) * 1000).toISOString().slice(0, 10);
+}
+
+const TODAY = jstDay(git(['log', '-1', '--format=%at']));
 const IS_SHALLOW = git(['rev-parse', '--is-shallow-repository']) === 'true';
+
+/**
+ * 履歴の始まりに近い日。**日境のずれは、ここでしか出ない。**
+ *
+ * 最新の日で数えると累計が全部入るので、どの日境で切っても同じ本数になり、ずれが消える。
+ */
+const EARLY_DAYS = 5;
+const EARLY = IS_SHALLOW
+  ? TODAY
+  : jstDay(String(Number(git(['log', '--reverse', '--format=%at']).split('\n')[0]) + EARLY_DAYS * 86400));
+
+/** その日までに `main` へPRとして入った本数。道具とは別に、明示のオフセットだけで数える。 */
+function mergedPullRequestsUntil(day: string): number {
+  return git(['log', '--first-parent', '--format=%at@@%s'])
+    .split('\n')
+    .filter((line) => line !== '')
+    .map((line) => line.split('@@'))
+    .filter(([at, subject]) => jstDay(at) <= day && /^Merge pull request #\d+|\(#\d+\)$/.test(subject))
+    .length;
+}
 
 function cellsOf(line: string): string[] {
   return line.split('|').map((cell) => cell.trim());
@@ -92,6 +123,16 @@ describe.skipIf(IS_SHALLOW)('育ち方の推移', () => {
   it('履歴に無い日を頼まれたら、0を出さずに落ちる', () => {
     // リポジトリが始まる前の日。ここで空の表を返すと、遡れなかったことが読む側に伝わらない。
     expect(run(['2020-01-01']).status).not.toBe(0);
+  });
+
+  it('PRの累計が、日本時間の日境で数えた本数と一致する', () => {
+    // **日境がずれても、表は正常な形で出る**ので、貼った先では気づけない（PRの列だけが別の
+    // 日境で数えられ、行数の列とは違う日で切られていた）。だからここは形ではなく値を見る。
+    const early = tableOf(run([EARLY]).stdout);
+    const count = Number(early[0]?.get('PR')?.replace(/,/g, ''));
+    expect(count, `${EARLY} の行: ${[...(early[0]?.values() ?? [])].join(' | ')}`).toBe(
+      mergedPullRequestsUntil(EARLY),
+    );
   });
 });
 
