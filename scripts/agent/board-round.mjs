@@ -283,9 +283,10 @@ export function round({
   runScript = defaultRunScript,
   gh = runGh,
   sessions = liveSessions,
-  // 棚卸しを通っていない判断の履歴の数え方（`board-read.mjs`）。**外を触る手は全部渡す**ので、
-  // これも渡せる形にしてある——渡さなければ本物のリポジトリを数える。
+  // 棚卸しを通っていない判断の履歴と、二次がまだ読んでいない分析の記録の数え方（`board-read.mjs`）。
+  // **外を触る手は全部渡す**ので、これも渡せる形にしてある——渡さなければ本物のリポジトリを数える。
   pendingDecisions,
+  unsummarizedAnalyses,
   log = defaultLog,
   echo = defaultEcho,
   warn = defaultWarn,
@@ -326,6 +327,7 @@ export function round({
     gh,
     sessions: () => live,
     pendingDecisions,
+    unsummarizedAnalyses,
     log,
     now: at,
     settleMinutes,

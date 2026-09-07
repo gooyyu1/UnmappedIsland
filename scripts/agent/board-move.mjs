@@ -30,6 +30,7 @@
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments ],
 //     "mergedPrs":[ gh pr list --state merged --json number,comments ],   … スメルを拾う係が読む範囲
 //     "pendingDecisions": 12,   … `.claude/decisions/` のうち `archive/` に入っていない件数
+//     "unsummarizedAnalyses": 3,   … `.claude/analysis/` のうち、二次がまだ読んでいない件数
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
 //     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
 //                     "bucket": "SESSION_STATUS_BUCKET_…", "env": "cloud | bridge | -",
@@ -161,8 +162,9 @@ function hasUnreadSmell(mergedPrs) {
  * - `locks` … 掴む資源（`area:` と同じ綴り）。書くセッションと取り合う。
  * - `prompt` … 渡す本文の在り処（リポジトリからの相対）。
  *
- * **PRを出す係が居ても、作業者の枠（`HELD_TASKS`・`ACTIVE_WORKERS`）には数えない。** 1日1回・
- * 記録だけの差分で、マージの列を詰まらせないため。数えると、書く側の並列度がその分だけ黙って下がる。
+ * **PRを出す係が居ても、作業者の枠（`HELD_TASKS`・`ACTIVE_WORKERS`）には数えない。** 間隔を空けて
+ * 立つ係の、記録だけの差分で、マージの列を詰まらせないため。数えると、書く側の並列度がその分だけ
+ * 黙って下がる。
  */
 const CYCLES = [
   {
@@ -184,6 +186,18 @@ const CYCLES = [
     locks: [],
     prompt: '.claude/analysis-prompt.md',
     due: (board) => hasUnreadSmell(board.mergedPrs ?? []),
+  },
+  {
+    name: 'trend',
+    // **週1回。** 一次は1日1回なので、1本で7回ぶんが読める。**回をまたいで同じ形が出たか**を見る
+    // 係なので、溜まっていないと仕事にならない（`.claude/analysis-trend-prompt.md`）。
+    hours: 168,
+    // クラウドで足りる。**既存 issue の本文は書き換えない**——切るのは新しい issue で、記録は
+    // 自分のPRに載せる（2.17・2.17.4）。
+    env: 'cloud',
+    locks: [],
+    prompt: '.claude/analysis-trend-prompt.md',
+    due: (board) => (board.unsummarizedAnalyses ?? 0) > 0,
   },
   {
     name: 'policy',
@@ -564,7 +578,7 @@ export function moves(input) {
     const spent = session.tags.find((tag) => tag.startsWith('review-') || tag.startsWith('chore-'));
     if (spent !== undefined) {
       // **自分のPRが開いているうちは畳まない**（2.17）。周期の係にもPRを出すものが居る
-      // （`CYCLES` の `analysis`）ので、畳むと**指摘とコンフリクトを直す相手が消える**
+      // （`CYCLES` のうち記録を残すもの）ので、畳むと**指摘とコンフリクトを直す相手が消える**
       // ——差し戻す先はコミットのトレーラで引く1本だけ（2.11）。
       if (Object.values(prSessions).includes(session.id)) continue;
       const idle = idleMinutes(session);
@@ -729,8 +743,8 @@ export function moves(input) {
     }
   }
 
-  // **周期の係**（2.17）。作業者の枠はどちらも見ない——PRを出す係も1日1回・記録だけの差分で、
-  // マージの列を詰まらせない。
+  // **周期の係**（2.17）。作業者の枠はどちらも見ない——PRを出す係も、間隔を空けて立つ記録だけの
+  // 差分なので、マージの列を詰まらせない。
   for (const cycle of CYCLES) {
     // **前の1本が終わっていなければ立てない**（見方は `stillWorking`。「終わった」と「承認を
     // 待っている」は同じ形に見える）。

@@ -28,6 +28,8 @@ interface Board {
   mergedPrs?: readonly unknown[];
   /** `archive/` に入っていない判断の履歴の数。価値観を畳む係の `due` が読む。 */
   pendingDecisions?: number;
+  /** 二次がまだ読んでいない、一次の分析の記録の数。回をまたぐ形を見る係の `due` が読む。 */
+  unsummarizedAnalyses?: number;
   issues?: readonly unknown[];
   sessions?: readonly {
     id: string;
@@ -1049,6 +1051,7 @@ describe('board-move.mjs', () => {
   const TRIAGE = `CHORE triage .claude/triage-prompt.md ${NOW} --bridge`;
   const ANALYSIS = `CHORE analysis .claude/analysis-prompt.md ${NOW}`;
   const POLICY = `CHORE policy .claude/policy-cycle-prompt.md ${NOW}`;
+  const TREND = `CHORE trend .claude/analysis-trend-prompt.md ${NOW}`;
 
   /** レビュアーがスメルを残した判定コメント（`review-criteria.md`「挙げ方」）。読んだ印を変えられる形で持つ。 */
   const smell = (number: number, read = false) => ({
@@ -1232,6 +1235,30 @@ describe('board-move.mjs', () => {
   it('週が明けたら、価値観を畳む係をもう一度立てる', () => {
     const board = { pendingDecisions: 3, taken: { 'cycle:policy': '2026-08-29T01:00:00Z' } };
     expect(moves(board)).toEqual([POLICY]);
+  });
+
+  // ## 回をまたぐ形を見る係（2.17.4）
+  //
+  // 一次の分析係が回ごとに書いた記録を横断して読む二次の係。仕事の在り処は価値観を畳む係と同じく
+  // **リポジトリの中**（`.claude/analysis/`）で、数えるのは `board-read.mjs`。
+  it('二次がまだ読んでいない分析の記録があれば、回をまたぐ形を見る係を立てる', () => {
+    expect(moves({ unsummarizedAnalyses: 1 })).toEqual([TREND]);
+  });
+
+  it('分析の記録を二次が全部読んでいれば、回をまたぐ形を見る係は立てない', () => {
+    expect(moves({ unsummarizedAnalyses: 0 })).toEqual([]);
+  });
+
+  // **間隔は週1回**（2.17.4。一次は1日1回なので、1本で7回ぶんが読める）。**他の係と同じ一日では
+  // 立たない**ことまで見る——2日空いた盤面を渡すので、間隔を一日に縮めるとここが赤くなる。
+  it('前に立ててから週が明けるまで、回をまたぐ形を見る係は立てない', () => {
+    const board = { unsummarizedAnalyses: 3, taken: { 'cycle:trend': '2026-09-03T02:00:00Z' } };
+    expect(moves(board)).toEqual([]);
+  });
+
+  it('週が明けたら、回をまたぐ形を見る係をもう一度立てる', () => {
+    const board = { unsummarizedAnalyses: 3, taken: { 'cycle:trend': '2026-08-29T01:00:00Z' } };
+    expect(moves(board)).toEqual([TREND]);
   });
 
   // ## 掘り起こす係（2.17）

@@ -15,6 +15,8 @@ export interface RoundDeps {
   sessions?: () => readonly unknown[];
   /** `archive/` に入っていない判断の履歴の数（`board-read.mjs`）。省くと本物のリポジトリを数える。 */
   pendingDecisions?: () => number;
+  /** 二次がまだ読んでいない、一次の分析の記録の数（`board-read.mjs`）。省くと本物のリポジトリを数える。 */
+  unsummarizedAnalyses?: () => number;
   log?: (line: string) => void;
   echo?: (text: string) => void;
   warn?: (line: string) => void;

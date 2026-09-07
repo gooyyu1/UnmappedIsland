@@ -25,11 +25,17 @@ import { liveSessions } from './live-sessions.mjs';
 import { gh as runGh } from './spawn.mjs';
 
 /**
- * 判断の履歴の置き場（`CLAUDE.md`「価値観の記録」）。**盤面が唯一、GitHub と CCR の外を見る場所。**
- * 価値観を畳む係の仕事は issue にもPRにも現れず、**リポジトリの中にしか無い**ので、ここで数える
- * 以外に「仕事があるか」を知る手立てが無い。
+ * **盤面が GitHub と CCR の外を見るのは、この2つの置き場だけ。** どちらも、その係の仕事が
+ * issue にもPRにも現れず**リポジトリの中にしか無い**ので、ここで数える以外に「仕事があるか」を
+ * 知る手立てが無い。
+ *
+ * - `DECISIONS` … 判断の履歴（`CLAUDE.md`「価値観の記録」）。読むのは価値観を畳む係の `due`。
+ * - `ANALYSES` / `ANALYSIS_SUMMARIES` … 一次の分析係が回ごとに書く記録と、二次が横断してまとめた
+ *   記録（`.claude/board-design.md` 2.17.4）。読むのは回をまたぐ形を見る係の `due`。
  */
 const DECISIONS = new URL('../../.claude/decisions/', import.meta.url);
+const ANALYSES = new URL('../../.claude/analysis/', import.meta.url);
+const ANALYSIS_SUMMARIES = new URL('summary/', ANALYSES);
 
 /** PRの一覧に要る項目。**1回で引く**——項目ごとに引くと、項目ごとに見ている時点がずれる。 */
 const PR_FIELDS =
@@ -70,6 +76,51 @@ function countDecisions(log) {
     log('判断の履歴を数えられなかった（この周は、価値観を畳む係を立てない）');
     return 0;
   }
+}
+
+/**
+ * まだ二次が読んでいない、一次の分析の記録の件数。**読むのは回をまたぐ形を見る係の `due`**
+ * （[`board-move.mjs`](board-move.mjs) の `CYCLES`）。
+ *
+ * **一次のファイルに処理済みの印を持たせない**（`.claude/board-design.md` 2.17.4）——印を持たせると、
+ * 一次に二次の都合が入る。代わりに**二次が最後に書いた日付より後の一次のファイルを数える**
+ * （どちらも `<YYYY-MM-DD>` で始まるので、文字列の大小がそのまま日付の前後になる）。
+ *
+ * **粒が日なので、二次が書いた後に同じ日の一次が入ると、その1件は引き金にならない。** 割り切って
+ * いる——**中身は落ちない**（二次は次の周に `.claude/analysis/` を読み直し、読む範囲を自分で決める）
+ * ので、失うのは引き金1回ぶん。日より細かい印を持たせると、一次のファイルへ二次の都合を書くことに
+ * なり、上の一点を崩す。
+ *
+ * **読めなかった周は0にして進む。** その周に係が立たないだけで、他の手は打てる。
+ *
+ * **置き場を引数で受けるのは、実物を起こさずに検査するため**（このファイルの冒頭）。日付の比較と
+ * 「二次がまだ一度も書いていない」の分岐を持つので、**実物のディレクトリの今の中身で通すと、
+ * 二次が1回書いた日から検査の意味が変わる。**
+ */
+export function countUnsummarizedAnalyses(log, { analyses = ANALYSES, summaries = ANALYSIS_SUMMARIES } = {}) {
+  const days = (dir) => {
+    const named = /^(\d{4}-\d{2}-\d{2})/;
+    return readdirSync(dir)
+      .filter((name) => name.endsWith('.md'))
+      .map((name) => named.exec(name)?.[1])
+      .filter((day) => day !== undefined);
+  };
+  let written;
+  try {
+    written = days(analyses);
+  } catch {
+    log('分析の記録を数えられなかった（この周は、回をまたぐ形を見る係を立てない）');
+    return 0;
+  }
+  // **二次がまだ一度も書いていない周は、置き場そのものが無い。** そこを読めない扱いにすると係が
+  // 永久に立たないので、**一次の記録が全部そのまま未処理**として返す。
+  let summarized;
+  try {
+    summarized = days(summaries).sort().at(-1);
+  } catch {
+    return written.length;
+  }
+  return written.filter((day) => summarized === undefined || day > summarized).length;
 }
 
 /** この時刻より前に止まっているPRは、チェックが0本でも緑と読む。 */
@@ -138,6 +189,7 @@ export function readBoard({
   sessions = liveSessions,
   log,
   pendingDecisions = () => countDecisions(log),
+  unsummarizedAnalyses = () => countUnsummarizedAnalyses(log),
   now,
   settleMinutes,
   taken,
@@ -189,6 +241,7 @@ export function readBoard({
     prs: JSON.parse(prs),
     mergedPrs: mergedPrs === undefined ? [] : JSON.parse(mergedPrs),
     pendingDecisions: pendingDecisions(),
+    unsummarizedAnalyses: unsummarizedAnalyses(),
     issues: openIssues,
     taken,
     issueStates: issueStates(gh, live, openIssues),
