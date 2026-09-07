@@ -790,7 +790,8 @@
       "別の物を壊す」）。落とすのは desk の側だけ。",
       "",
       "**ほぞ組みではなく縛りで組む**（docs/world/Skills.md 2.1節）。継ぎ目に縄の巻きが見えることが",
-      "「指物の腕を要らない卓」であることの唯一の手掛かりなので、釘・金具を否定して巻きを本文で言う。"
+      "「指物の腕を要らない卓」であることの唯一の手掛かりなので、釘・金具を否定して巻きを本文で言う。",
+      "**それでも本文どおりに巻きが描かれるのはまれで、seedで選ぶ**（recipes/branch_table.json）。"
     ],
     "positive": "exactly one rough camp table lashed together from straight wooden poles alone on an empty white page, four short straight poles standing as legs and several more straight poles laid side by side across them to make a flat top, every crossing bound with many tight turns of rough twisted plant fibre cord whose strands show, the poles all straight and stout with rough brown bark still on them, a low bushcraft table wider than it is tall, seen from the side and a little above so the top surface shows, warm brown and tan tones, matte dry surface, it is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "gnarled, twisted branches, tangled branches, tangle, roots, tree roots, driftwood, driftwood sculpture, sculpture, art piece, installation, nest, bare tree, dead tree, thin twigs, twigs, brushwood, wicker, woven top, tall table, console table, pedestal table, round table top, slab top, live edge slab, nails, screws, bolts, metal brackets, metal, iron, glass top, tablecloth, cloth on top, plates, dishes, bowls, cups, food, fruit, books, candle, lamp, potted plant, vase, chair, chairs, stool, bench, backrest, bed, ladder, easel, tripod, sawhorse, fence, gate, hurdle, raft, tent, hut, roof, shelf, crate, pallet, room, wall, floorboards, carpet, rug, polished, varnished, lacquered, glossy, wet, sawn plank, plank top, board top, lumber, two tables, three tables, several tables, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
@@ -805,7 +806,8 @@
       "**細さを落とすNGワードを足してはいけない。** 最初の6枚が細い操り人形になったので",
       "stick figure / artist mannequin / thin limbs / long legs などを足したところ、8枚とも人の形が",
       "消えて枯れ木と板になった（thick_branch と同じ壊れ方）。**ずんぐりさは本文の側だけで言う**",
-      "——「枝から切り出した1本の塊」「何も細くなく、何も突き出ていない」と書けば出る。"
+      "——NGワードでは言えないので、言える場所がここしか無い。**それでも生成の手足は細いままで、",
+      "太さは本文では動かない**（recipes/wood_carving.json）。"
     ],
     "positive": "exactly one small wooden figurine alone on an empty white page, one short thick piece of branch carved into a solid little standing figure, still round and stout like the branch it was cut from, a rounded knob at the top for a head with a plain blank front, a barrel body below it, the arms only suggested as shallow grooves cut down its sides, thick and stubby everywhere with nothing thin and nothing sticking out, broad flat facets left by the blade all over the bare pale brown wood, plain and crude with no fine detail anywhere, warm light brown tones, matte dry surface, it is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "face, human face, eyes, nose, mouth, smile, portrait, realistic sculpture, marble statue, bronze, ivory, jade, netsuke, totem pole, tiki, idol, chess piece, pawn, doll, toy, teddy bear, matryoshka, mask, animal, bird, owl, bear, fish, horse, painted, colourful paint, decorated, carved pattern, engraving, inlay, pedestal, plinth, base, stand, display case, knife, chisel, tools, wood shavings, wood chips, polished, varnished, lacquered, glossy, wet, white wood, grey wood, bleached driftwood, two figurines, three figurines, several figurines, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
@@ -815,7 +817,8 @@
       "木の太鼓（src/assets/world-codex/furnishings.yaml）。丸太をくり抜き、生皮を縄で締めた物。",
       "",
       "**腰掛け（log_stool）と並んで札に出る。** どちらも立てた丸太なので、分けるのは天面",
-      "——腰掛けは削った木の面、太鼓は張った生皮と、縁を回る縄の巻き。両方を本文で言う。",
+      "——腰掛けは削った木の面、太鼓は張った生皮と、縁を回る縄の巻き。両方を本文で言うが、",
+      "**本文で出るのは張った皮までで、縄の巻きは出ない**（recipes/log_drum.json）。",
       "",
       "**金具と樽形を否定する。** 何も言わないと締め具の付いた現代の太鼓か、腰のくびれたジャンベに",
       "なり、丸太をくり抜いた物に見えなくなる。",
