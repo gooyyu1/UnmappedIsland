@@ -2,6 +2,7 @@
 date: 2026-09-05
 context: ラベルの言語の規則（issue は ASCII・PR は日本語）と、`origin:` の軸・`kind:` への改名・
   「AIが勝手に直した分」の数え方を訊いたときの返事
+declined: 1683
 ---
 
 ## ユーザーの発言

@@ -30,6 +30,7 @@ description: >-
 | [`policies.md`](../../policies.md) | これまでの判断全体に通底している価値観・好み | 全文 |
 | [`DesignPrinciples.md`](../../../docs/concept/DesignPrinciples.md) | ゲーム内容を決めるときに効く判断軸 | 見出しだけ |
 | [`parallel-work.md`](../../parallel-work.md) | 盤面を回す側だけが要る運用の取り決め | しない |
+| [`board-design.md`](../../board-design.md) | 盤面・デーモンそのものの作りを決める判断 | しない |
 | [`DocumentStyle.md`](../../../docs/DocumentStyle.md) | `docs/` の文書の構造（見出し・節番号・確定の表し方） | しない |
 | [`CodingConventions.md`](../../../docs/engine/CodingConventions.md) | TypeScript の規約のうち、機械で強制できないもの | しない |
 | [`CodeStructure.md`](../../../docs/CodeStructure.md) | `src/` の置き場と、どこが何を知ってよいか | しない |
@@ -139,11 +140,11 @@ context: policies.md の書き方の見直し（会話のみ）
 1項目は3行以内で、フィールドをこの順に置く。
 
 ```markdown
-## 分岐の書き方
+## 名前の付け方
 
-- **場面**: `if (a) return x; return y;` と `return a ? x : y;` のどちらで書くか。
-  **選ぶ方**: 後者。
-  **重視**: 処理の分岐ではなく値の分岐だから。形が中身と一致していてほしい。
+- **場面**: 短くて一語で済む名前と、長いが何をするかが読める名前。
+  **選ぶ方**: 後者。「つい短くしたくなる」ときほどこちら。
+  **重視**: 名前は読み手への説明そのもので、字数は書く側のコストにすぎない。
 ```
 
 - **事例を本文へ書かない。** 具体のファイル名・節番号・PRやissueの番号は、履歴と
