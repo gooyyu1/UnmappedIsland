@@ -218,8 +218,11 @@ export class ReferenceContext {
    * 操作ではないが、問う側がagentを渡す場所（レシピの解放条件・`crafting_conditions`、13.3・13.4節）。
    * **関係は張らない**——「誰にとって解放されているか」を問う判定であって、誰も何にも働きかけていない
    * （11.5節）。成果物のインスタンスがまだ無いのでselfも居ない。
+   *
+   * **問いが「誰にとって」なので、agentは必ず居る**（13.3節）。誰かを立てずに条件そのものの有無を
+   * 見たいなら、条件を持っているか（`RecipeDef.unlock`）を直接見る。
    */
-  static asking(agent: WorldObject | undefined): ReferenceContext {
+  static asking(agent: WorldObject): ReferenceContext {
     return new ReferenceContext(undefined, agent, undefined, undefined, undefined);
   }
 

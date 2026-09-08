@@ -112,7 +112,7 @@ object_defs:
             duration: 5
 `);
 
-    expect(recipesOf(codex, 'stick')[0].unmetUnlockRequirement(undefined)).toBeUndefined();
+    expect(recipesOf(codex, 'stick')[0].unlock).toBeUndefined();
   });
 
   it('conditionsはagentのスキルの段で解放を判定する', () => {

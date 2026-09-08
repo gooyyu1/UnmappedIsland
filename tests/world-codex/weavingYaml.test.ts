@@ -124,6 +124,6 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
 
     // 素材はヤシの葉だけで初日から揃うので、開けるのは編んだ数のほう（SkillSystem.md 4.2節）。
     // 腕を持たない者では落ちる——段ごとの通り抜けは tests/world-codex/skillsYaml.test.ts が見る。
-    expect(recipe.unmetUnlockRequirement(undefined)?.reasonName).toBe('needs_cordage');
+    expect(recipe.unmetUnlockRequirement(player)?.reasonName).toBe('needs_cordage');
   });
 });

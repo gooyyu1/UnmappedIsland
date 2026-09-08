@@ -479,7 +479,7 @@ describe('腕前とレシピの解放条件', () => {
       const product = codex.objects.get(globalId);
       for (const recipe of product.recipesProducingThis)
         // 作りかけの型（レシピの軸を持つ変種）は同じレシピを二度数えさせるので、素の型だけを見る。
-        if (recipe.unmetUnlockRequirement(undefined) !== undefined && codex.baseOf(product) === product)
+        if (recipe.unlock !== undefined && codex.baseOf(product) === product)
           found.push({ product: product.name, recipe });
     }
     return found;
