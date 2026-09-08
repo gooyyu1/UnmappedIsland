@@ -3,18 +3,19 @@
 #
 #   bash scripts/agent/dispatch-review.sh 1152
 #   bash scripts/agent/dispatch-review.sh 1152 --bridge   # このPCで走らせる
-#   DRY_RUN=1 bash scripts/agent/dispatch-review.sh 1152  # 渡す引数を見るだけ
+#   DRY_RUN=1 bash scripts/agent/dispatch-review.sh 1152     # 渡す引数を見るだけ
+#   DRY_RUN=full bash scripts/agent/dispatch-review.sh 1152  # 指示の本文も切らずに出す
 #
 # 指示は [`.claude/review-prompt.md`](../../.claude/review-prompt.md) から読む。**補足は無い**——
 # 見どころはPRごとに変わらないので、投入する側が書き足すものが無い（`dispatch-task.sh` との違いはここ）。
 #
-# 出力は1行1件。**前のレビューを畳むのはここではない**——盤面が毎周見て打つ
+# **前のレビューを畳むのはここではない**——盤面が毎周見て打つ
 # （[`board-move.mjs`](board-move.mjs)、`board-design.md` 2.10.3）。
-#   SESSION <セッションID>
-#   SOURCES <リポジトリのURL>@<リビジョン>   … PRのブランチで起動していることの確認
-#   一致 / 不一致                            … 送った指示が化けずに届いたか
+#
+# 出す行は [`dispatch-steps.sh`](dispatch-steps.sh) の `create_session_and_check`。`SOURCES` が出す
+# リビジョンは、下の「`main` ではなくPRのブランチで起動する」のとおりPRのブランチ。
 #   終了コード 0 … 投入できて、指示も一致した
-#   終了コード 1 … どこかで失敗した（上の行がどこまで出たかで分かる）
+#   終了コード 1 … どこかで失敗した（出た行がどこまで進んだかを示す）
 #
 # ## `main` ではなくPRのブランチで起動する
 #
@@ -44,39 +45,14 @@ set -euo pipefail
 PR="${1:?PRの番号を渡す（例: 1152）}"
 WHERE="${2:-}"
 
-REPO_URL="https://github.com/$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
+# shellcheck source=scripts/agent/dispatch-steps.sh
+source "$(dirname "${BASH_SOURCE[0]}")/dispatch-steps.sh"
+TEMPLATE="$AGENT_DIR/../../.claude/review-prompt.md"
 
-# `%/*` は区切りが無いと文字列をそのまま返す。
-HERE="${BASH_SOURCE[0]%/*}"
-if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
-HERE="$(cd "$HERE" && pwd)"
-# shellcheck source=scripts/agent/ccr-env.sh
-source "$HERE/ccr-env.sh"
-CCR_META="$HERE/../../.claude/ccr-meta.sh"
-CHECK_PROMPT="$HERE/../../.claude/ccr-check-prompt.sh"
-TEMPLATE="$HERE/../../.claude/review-prompt.md"
-WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
-
-# **立てる先が決まれば、渡すものは全部決まる**（`ccr-env.sh`）。ブリッジはリポジトリを既に持って
-# いるので `source_url` を渡さず、承認モードも無指定。**クラウドで `auto` を渡さないと、差分に
-# `.claude/**` が含まれるPRのレビューが、そこを読もうとした時点で承認を待って止まる**（#1567）。
-if [ "$WHERE" = "--bridge" ]; then
-  ENV_ID="$BRIDGE_ENV"
-  MODE="$BRIDGE_MODE"
-  SOURCE=""
-else
-  ENV_ID="$CLOUD_ENV"
-  MODE="$CLOUD_MODE"
-  SOURCE="$REPO_URL"
-fi
+choose_target "$WHERE"
 
 RAW="$WORK/template.md"
-awk '/^```$/ { inside = !inside; next } inside' "$TEMPLATE" >"$RAW"
-[ -s "$RAW" ] || {
-  echo "ひな形から指示を取り出せない: $TEMPLATE" >&2
-  exit 1
-}
+template_body "$TEMPLATE" "$RAW"
 INSTRUCTION="$WORK/prompt.md"
 
 # **題も本文もシェルの文字列にしない。** gh の出力はファイルへ落とし、JSONの組み立ては node に
@@ -125,15 +101,11 @@ node -e '
   if (mode) args.permission_mode = mode;
   process.stdout.write(JSON.stringify(args));
   });
-' "$HERE/review-verdicts.mjs" "$WORK/pr.json" "$RAW" "$INSTRUCTION" "$PR" "$ENV_ID" "$SOURCE" "$MODE" >"$WORK/args.json"
+' "$AGENT_DIR/review-verdicts.mjs" "$WORK/pr.json" "$RAW" "$INSTRUCTION" "$PR" "$ENV_ID" "$SOURCE" "$MODE" >"$WORK/args.json"
 
-# 立てずに、渡す引数だけを見る（`DRY_RUN=1 bash …`）。指示ファイルを差し替えたときの確認用なので、
-# **指示は切らずに出す**——埋めた値（`<番号>`・`<前の版>`）は本文の途中に出るので、頭だけ見せると
-# 確かめたいものがちょうど落ちる。
-if [ -n "${DRY_RUN:-}" ]; then
-  jq . "$WORK/args.json"
-  exit 0
-fi
+# **埋めた値（`<番号>`・`<前の版>`）を確かめるなら `DRY_RUN=full`**——本文の途中に出るので、切った
+# ほうではちょうど落ちる（[`dispatch-steps.sh`](dispatch-steps.sh)）。
+dump_dry_run "$WORK/args.json"
 
 # 見るのは前のレビューだけではない。**そのPRを直しているセッションが走っていたら立てない。**
 # `直し待ち` のラベルは「直しが要る」しか言わず、**直している最中か誰も居ないかを区別しない**
@@ -163,25 +135,6 @@ done < <(jq -r '.body // ""' "$WORK/pr.json" |
 
 # 手綱と占有。**再レビューは止まらない**——判定に使うのは走行中かどうかで、判定を書き終えた
 # レビューは占有していない（[`board-design.md`](../../.claude/board-design.md) 1.2）。
-CCR_META="$CCR_META" bash "$HERE/may-dispatch.sh" "$kind" "${review_tags[@]}"
+CCR_META="$CCR_META" bash "$AGENT_DIR/may-dispatch.sh" "$kind" "${review_tags[@]}"
 
-# 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
-session=$(bash "$CCR_META" create_session <"$WORK/args.json" | grep -o '{"ccr".*' | jq -r '.ccr.id')
-[ -n "$session" ] && [ "$session" != "null" ] || {
-  echo "セッションを立てられなかった" >&2
-  exit 1
-}
-echo "SESSION $session"
-
-if [ "$WHERE" != "--bridge" ]; then
-  printf '{"session_id":"%s"}' "$session" >"$WORK/get.json"
-  sources=$(bash "$CCR_META" get_session <"$WORK/get.json" | grep -o '{"ccr".*' |
-    jq -r '.ccr.session_context.sources[]?.git_repository | "\(.url)@\(.revision)"')
-  [ -n "$sources" ] || {
-    echo "リポジトリが入っていない（空の箱で起動している）。畳んで立て直す。" >&2
-    exit 1
-  }
-  echo "SOURCES $sources"
-fi
-
-bash "$CHECK_PROMPT" "$session" "$INSTRUCTION"
+create_session_and_check "$WORK/args.json" "$INSTRUCTION"

@@ -3,8 +3,10 @@
 #
 #   bash scripts/agent/dispatch-chore.sh triage .claude/triage-prompt.md --bridge
 #   DRY_RUN=1 bash scripts/agent/dispatch-chore.sh triage .claude/triage-prompt.md
+#   DRY_RUN=full bash scripts/agent/dispatch-chore.sh triage .claude/triage-prompt.md  # 本文も切らない
 #
-# 出力と終了コードは [`dispatch-task.sh`](dispatch-task.sh) と同じ。
+# 出す行は [`dispatch-steps.sh`](dispatch-steps.sh) の `create_session_and_check`。終了コードの
+# 読み方は [`dispatch-task.sh`](dispatch-task.sh) と同じ。
 #
 # ## `dispatch-task.sh` と別なのは、渡すものが issue ではないから
 #
@@ -24,11 +26,9 @@ NAME="${1:?係の名前を渡す（例: triage）}"
 PROMPT="${2:?プロンプトのファイルを渡す（例: .claude/triage-prompt.md）}"
 WHERE="${3:-}"
 
-# `%/*` は区切りが無いと文字列をそのまま返す。
-HERE="${BASH_SOURCE[0]%/*}"
-if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
-HERE="$(cd "$HERE" && pwd)"
-ROOT="$(cd "$HERE/../.." && pwd)"
+# shellcheck source=scripts/agent/dispatch-steps.sh
+source "$(dirname "${BASH_SOURCE[0]}")/dispatch-steps.sh"
+ROOT="$(cd "$AGENT_DIR/../.." && pwd)"
 
 # **プロンプトはリポジトリからの相対で受ける。** 盤面が持っているのは `CYCLES` に書いた綴りだけで、
 # デーモンがどこから叩かれるかは知らない。
@@ -41,39 +41,13 @@ esac
   exit 1
 }
 
-# shellcheck source=scripts/agent/ccr-env.sh
-source "$HERE/ccr-env.sh"
-CCR_META="$HERE/../../.claude/ccr-meta.sh"
-CHECK_PROMPT="$HERE/../../.claude/ccr-check-prompt.sh"
-REPO_URL="https://github.com/$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
-WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
+choose_target "$WHERE"
 
-if [ "$WHERE" = "--bridge" ]; then
-  ENV_ID="$BRIDGE_ENV"
-  MODE="$BRIDGE_MODE"
-  SOURCE=""
-else
-  ENV_ID="$CLOUD_ENV"
-  MODE="$CLOUD_MODE"
-  SOURCE="$REPO_URL"
-fi
-
-# 渡すのは囲みの中だけ（`dispatch-task.sh` と同じ形）。**最初のブロックで切る**ので、後ろに例を
-# 置いても本体へ混ざらない。
 INSTRUCTION="$WORK/prompt.md"
-awk '/^````$/ { inside = !inside; if (!inside) exit; next } inside' "$PROMPT" >"$INSTRUCTION"
-[ -s "$INSTRUCTION" ] || {
-  echo "プロンプトの囲み（\`\`\`\`）が空: $PROMPT" >&2
-  exit 1
-}
+template_body "$PROMPT" "$INSTRUCTION"
 
 TITLE="$WORK/title.txt"
-sed -n 's/^題: *//p' "$PROMPT" | head -1 >"$TITLE"
-[ -s "$TITLE" ] || {
-  echo "プロンプトに \`題:\` の行が無い: $PROMPT" >&2
-  exit 1
-}
+template_title "$PROMPT" "$TITLE"
 
 node -e '
   const fs = require("node:fs");
@@ -92,38 +66,13 @@ node -e '
   process.stdout.write(JSON.stringify(args));
 ' "$TITLE" "$INSTRUCTION" "$NAME" "$ENV_ID" "$SOURCE" "$MODE" >"$WORK/args.json"
 
-if [ -n "${DRY_RUN:-}" ]; then
-  if [ "$DRY_RUN" = full ]; then
-    cat "$WORK/args.json"
-  else
-    jq '.prompt |= (split("\n") | .[0:3] | join("\n") + "\n…")' "$WORK/args.json"
-  fi
-  exit 0
-fi
+dump_dry_run "$WORK/args.json"
 
 # 手綱と占有。種類は `other`（[`brake.sh`](brake.sh) の「その他のエージェント」）。
 #
 # **二重に立つことを実際に止めているのは盤面**（[`board-move.mjs`](board-move.mjs) の `CYCLES`）で、
 # ここが訊く占有は `--busy`——手が空いたまま残っている前の1本は塞がない。**手で叩いたときに、
 # 走っている最中の1本へ重ねないため**に通す。
-CCR_META="$CCR_META" bash "$HERE/may-dispatch.sh" other "chore-$NAME"
+CCR_META="$CCR_META" bash "$AGENT_DIR/may-dispatch.sh" other "chore-$NAME"
 
-session=$(bash "$CCR_META" create_session <"$WORK/args.json" | grep -o '{"ccr".*' | jq -r '.ccr.id')
-[ -n "$session" ] && [ "$session" != "null" ] || {
-  echo "セッションを立てられなかった" >&2
-  exit 1
-}
-echo "SESSION $session"
-
-if [ "$WHERE" != "--bridge" ]; then
-  printf '{"session_id":"%s"}' "$session" >"$WORK/get.json"
-  sources=$(bash "$CCR_META" get_session <"$WORK/get.json" | grep -o '{"ccr".*' |
-    jq -r '.ccr.session_context.sources[]?.git_repository | "\(.url)@\(.revision)"')
-  [ -n "$sources" ] || {
-    echo "リポジトリが入っていない（空の箱で起動している）。畳んで立て直す。" >&2
-    exit 1
-  }
-  echo "SOURCES $sources"
-fi
-
-bash "$CHECK_PROMPT" "$session" "$INSTRUCTION"
+create_session_and_check "$WORK/args.json" "$INSTRUCTION"
