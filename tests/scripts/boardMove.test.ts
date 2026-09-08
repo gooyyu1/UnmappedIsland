@@ -864,7 +864,7 @@ describe('board-move.mjs', () => {
   });
 
   // **回すのはクラウドのセッションだけ。** `env:` の付かない issue をブリッジで走らせる形は実在
-  // する（棚卸し役・手元からの投入）ので、既定の `cloud` との食い違いがそのまま当たり、手元で
+  // する（手元からの投入）ので、既定の `cloud` との食い違いがそのまま当たり、手元で
   // 走っているワーカーが片端から畳まれてクラウドへ立て直される。
   it('ブリッジのワーカーは、走らせる先が食い違っていても畳まない', () => {
     const board = {
@@ -1048,7 +1048,7 @@ describe('board-move.mjs', () => {
   // 書き換わらない**——「`task` でも `meta` でも無い」で書いていたときは、出口が増えるたびに
   // 条件を足す必要があった。
   const unsorted = (number: number) => ({ number, labels: [], blockedBy: { nodes: [] } });
-  const TRIAGE = `CHORE triage .claude/triage-prompt.md ${NOW} --bridge`;
+  const TRIAGE = `CHORE triage .claude/triage-prompt.md ${NOW}`;
   const ANALYSIS = `CHORE analysis .claude/analysis-prompt.md ${NOW}`;
   const POLICY = `CHORE policy .claude/policy-cycle-prompt.md ${NOW}`;
   const TREND = `CHORE trend .claude/analysis-trend-prompt.md ${NOW}`;
