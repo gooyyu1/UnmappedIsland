@@ -753,8 +753,9 @@ describe('animals.yamlの動物', () => {
     }
 
     it('野生の個体は渇きも飢えもしない', () => {
-      // **これを落とすと島中の獣が3日半で死ぬ**（TrapSystem.md 5.4節）。獣が自分で水を探す仕組みは
-      // 無いので、`in_slot: catch`のゲート1つが「飲めない状況に置いたのは誰か」を言い分けている。
+      // **これを落とすと島中の獣が3日半で死ぬ**（TrapSystem.md 5.4節。3日半は同5.5節）。獣が自分で
+      // 水を探す仕組みは無いので、`in_slot: catch`のゲート1つが「飲めない状況に置いたのは誰か」を
+      // 言い分けている。
       tick(400, jungle);
 
       expect(monkey.tryGetProperty(hydrationId)!.number, '満たされたまま').toBe(336);

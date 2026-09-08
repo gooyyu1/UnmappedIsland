@@ -136,7 +136,7 @@ describe('fire.yamlの火の連鎖', () => {
     expect(requires('twig')).toBe(true);
     // **誰でも作れる。** これが作れないと火の腕を伸ばす操作に手が届かず、きりもみ式が道具も紐も
     // 要求しないことで保証されている立ち上がり（SkillSystem.md 3.2節）が崩れる。
-    expect(drill.recipesProducingThis[0].unmetUnlockRequirement(undefined)).toBeUndefined();
+    expect(drill.recipesProducingThis[0].unlock).toBeUndefined();
   });
 
   it('火口に火起こし具を重ねると火種ができ、火口は消える', () => {
