@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "src/assets/objects/smokehouse.png を作り直すためのレシピ。build.py が読む。",
+    "枝の骨組みへ編んだ葉を巡らせ、底で火を燻らせる小屋（src/assets/world-codex/smoking.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: smokehouse）。** 生成では小屋にならない（prompts/objects.json の",
+    "smokehouse 参照）。枝の先が天で交わること・面が編み目であること・裾の口が焚き口の大きさで",
+    "1つだけあることが燻し小屋の手掛かりなので、そこを下絵で決める。",
+    "",
+    "**火は描かない。** これは火の消えている段（heatのout）の絵で、種火は別の絵が持つ",
+    "（smokehouse_ember.json）。上に空ける余白（headroom）はその絵と共通で、煙が入る場所になる",
+    "（README「火の付いた炉」節）。",
+    "",
+    "段は400。炉の梯子（焚き火・三石・石囲い・覆い焼き）と揃える。"
+  ],
+  "output": "src/assets/objects/smokehouse.png",
+  "sketch": "smokehouse",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout and the same sizes: one small squat cone shaped smoking hut standing on the ground, its frame made of thick branches leaning inwards and lashed together with rough twisted plant fibre cord at the top, where their snapped ends cross and stick out above the covering, its sides wrapped all the way round with mats of plaited dried palm leaf strips crossing over and under each other, two cords tied round the body holding the mats onto the frame, and one small low arched stoking hole at the foot of the near side, dark inside. Paint the branches as real branches with rough brown bark, and the mats in dry straw yellow and tan, clearly darker than the white page. It is only knee high and squat, not a dwelling: there is no door, no window, no chimney and no one can go inside. There is no cloth, no canvas, no tent and no person anywhere in the picture. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow along the foot of the hut. Dry matte surface, flat even lighting. There is no fire, no flame, no smoke and no glow anywhere in the picture. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "headroom": 110,
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

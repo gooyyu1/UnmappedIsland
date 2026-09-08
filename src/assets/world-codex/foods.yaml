@@ -21,7 +21,7 @@
 #
 # 食べ物は他のファイル（coconut.yaml・fiber.yaml・animals.yaml）にも居るので、そこからも参照する。
 #
-# 保存（塩蔵はsalt.yaml、天日干しはdrying.yaml）は`cure`軸として食べ物の側が名乗る。軸を宣言した型に
+# 保存は`cure`軸として食べ物の側が名乗る（値と、それを与える加工は保存の手ごとのファイルに在る）。軸を宣言した型に
 # だけ加工を重ねられ、重ねると同じ個体が保存された版になる（3.5.1節）。**軸を持つのは生のままの物
 # だけ**——焼くのは食べるための工程なので、焼いた物を保たせる形（塩漬けの焼き芋）は作らない。
 #
@@ -77,8 +77,8 @@ traits:
   # 屋外の上乗せ（分類によらず-1）は上のperishableが持ったままなので、保存しても外へ置けば6.7日に
   # 落ちる。**塩も日差しも温度と湿りの代わりにはならない。**
   #
-  # **保存の仕方が増えても行き先はここ1つ。** cure軸の値がこのtraitを配るので、加工の側
-  # （salt.yamlのsalted・drying.yamlのdried）が名乗るのは名前だけになる。
+  # **保存の仕方が増えても行き先はここ1つ。** cure軸の値がこのtraitを配るので、加工の側が名乗るのは
+  # 名前だけになる。
   cured:
     tags: [cured]
     passives:
@@ -115,7 +115,7 @@ object_defs:
   # なく育った水のほう（寄生虫）なので、物としては生食に向く。ヤシガニとタロイモは違う（各項参照）。
   water_spinach:
     tags: [item, food, plant_bait]
-    traits: [perishable, spoils_normal, dryable]
+    traits: [perishable, spoils_normal, dryable, smokable]
     props:
       weight: {value: 150}
       # 罠へ仕掛けると草食の卓が引かれやすくなる（docs/engine/TrapSystem.md 4節）。
@@ -160,7 +160,7 @@ object_defs:
   coconut_crab:
     tags: [item, meat_bait, roastable]
     # 生の甲殻類。食べられなくても傷むのは同じなので、foodタグの有無とは関わりなく腐る。
-    traits: [perishable, spoils_fast, dryable]
+    traits: [perishable, spoils_fast, dryable, smokable]
     props:
       weight: {value: 2000}
       meat_bait: {value: 12}

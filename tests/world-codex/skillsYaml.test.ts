@@ -721,10 +721,10 @@ describe('腕前とレシピの解放条件', () => {
     ]);
   });
 
-  it('伸ばす操作を持つのに効き先が無い腕は、保存だけ', () => {
+  it('伸ばす操作を持つ腕は、どれも効き先を持つ', () => {
     // 一つ上の数え上げと逆向き。**伸ばす操作を持つ腕は段が動く**が、効き先が無ければ、動いても
-    // 何も起きないバーが画面に並ぶ（docs/ui/StatusArea.md 9節）。効き先が入った本はここから
-    // 外れ、まだ無い本は名前で残る。
+    // 何も起きないバーが画面に並ぶ（docs/ui/StatusArea.md 9節）。伸ばす操作を先に入れて効き先を
+    // 後から入れる順で世界が育つので、その間が空いたままにならないよう、ここで塞ぐ。
     //
     // 効き先は系統で分かれる（Skills.md 2節）。**製作系は誰かがその腕を読むこと**（レシピの解放
     // 条件・操作の条件）、**アクセス系は重みへの上乗せ**（同5節）で、アクセス系はレシピを開けない
@@ -735,6 +735,6 @@ describe('腕前とレシピの解放条件', () => {
       ...ACCESS_BONUSES.map((entry) => entry.skill),
     ]);
 
-    expect(SKILLS.filter((name) => gains.has(name) && !effective.has(name))).toEqual(['skill_preserving']);
+    expect(SKILLS.filter((name) => gains.has(name) && !effective.has(name))).toEqual([]);
   });
 });

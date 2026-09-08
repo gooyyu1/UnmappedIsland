@@ -1,0 +1,141 @@
+# 燻製と燻し小屋（docs/world/ContentSkeleton.md 4節の保存の段3、docs/world/SurvivalItems.md 11節）。
+#
+# **煙で保たせる。** 枝の骨組みへ編んだ葉を巡らせた小屋の底で火を焚き、吊るした食べ物を煙に晒す。
+# 罠・畑・塩田・干し場とまったく同じ「仕掛けて待つ」形で、新しい文法は1つも足していない。
+#
+# **炉そのものである。** 薪をくべる口も火種を落とす口もfire.yamlのhearthから継ぐので、この型が
+# 名乗るのは火力の上限だけになる。上限を種火の段の中（4）に置くと、**炎に届かないぶん、掛けた
+# 食べ物は焼けない**——熱を子へ渡すのは熾火より上の段だけ（fire.yaml）なので、焼けないことを
+# 条件で止める必要が無い。炉の梯子が既に「火力の上限と、火に何を載せられるか」で差を付けている
+# （焚き火は器を載せられず、覆い焼きは土器しか受けない、docs/engine/FireSystem.md 6節）ので、
+# ここも同じ2つだけで分かれる。
+#
+# **干し場より遅い。** 燻し上がりに要るのは96tick＝経過時間で1日ぶん。干し場は日差しの当たる帯
+# （1日24tick、salt.yamlのdrying_remaining）を使い切るだけなので、晴れていれば半日と掛からない。
+# **晴れた日に掛けるなら干し場のほうが速く、薪も要らない**——燻し小屋が引き換えに持つのは、
+# 曇っても夜でも樹冠の下でも同じに進むこと1つで、そこが干し場を残す線になる
+# （docs/concept/DesignPrinciples.md「後から足す手段は、既存の手段を残す強さに抑える」）。
+#
+# **残りを持つのは食べ物のほうで、小屋は何も持たない**（干し場と同じ、drying.yaml）。途中で
+# 掛け替えても進んだぶんが残るのはそのため。
+
+traits:
+  # 燻せる物。**宣言するのは生のままの食べ物だけ**——干せる物（drying.yamlのdryable）とまったく
+  # 同じ切り分けで、焼いた物も、殻や皮に隔てられて既に最も遅い段に居る物も持たない。
+  #
+  # **cure軸（3.5.1節）を併せて宣言している型にだけ付ける。** becomeの軸はロード時に検証されない
+  # （9.9節）ので、軸を持たない型が名乗ると黙って燻し上がらなくなる。
+  # tests/world-codex/smokingYaml.test.tsが、名乗る全型について軸の有無を見る。
+  smokable:
+    # 燻し小屋の枠はこのタグだけを受け入れる（下のsmokehouse）。
+    tags: [smokable]
+    props:
+      # 燻し上がるまでの残り。罠のcatch_remaining・塩田や食べ物のdrying_remainingと同じ見えない
+      # タイマー（docs/engine/TrapSystem.md 2節）で、**火の生きているtickの数だけを数える**。
+      #
+      # 96は「経過時間で1日ぶん」。煙は時刻を選ばないので、日差しの当たる帯を数える干し場
+      # （drying.yaml）と違って経過時間そのもので数える。**日差しを選ばないぶん、遅い**——
+      # 晴れていれば干し場のほうが先に上がる（上の冒頭）。
+      #
+      # **初期値に幅を持たせない**（干し場と同じ理由、drying.yaml）——食べ物は自分が吊るされた
+      # ところから数え始めるので、設備どうしの位相をずらす必要が無い。
+      smoking_remaining:
+        value: 96
+        range: {min: 0, max: 96}
+        passives:
+          # 火の生きている燻し小屋に吊るしているあいだ。**火力の段は見ない**——この小屋の火力は
+          # 種火の段より上へ行かない（下のsmokehouseのheat）ので、生きているかどうかしかない。
+          #
+          # **保存済みの物では止める。** 塩漬けを吊るしたまま放つと、燻し上がりが塩漬けを塗り替える
+          # ——枠は型で受けるので、同じ型の保存済みの個体だけを弾く書き方が無い（干し場と同じ、
+          # drying.yaml）。
+          - conditions:
+              - not: {subject: self, matches: {tag: cured}}
+              - {subject: parent, matches: {object: smokehouse}}
+              - {subject: parent, prop: heat, gt: 0}
+            add: {self: {smoking_remaining: -1}}
+        # 燻し上がる。**別の型は作らず**、塩漬け・干物と同じcure軸の値になる（become、9.9節）ので、
+        # 傷み具合はそのまま引き継がれる。
+        #
+        # **燻した物へ塩は打てない。** 止めているのは条件ではなく軸のほうで、**変種の変種は
+        # 作らない**（3.5.1節）ため燻製にはもう行き先が無い（干物と同じ、drying.yaml）。
+        on_min:
+          become: {cure: smoked}
+
+object_defs:
+  # cure軸の値。**traitsだけを宣言する**（3.5.1節）——変種へ配られるのはfoods.yamlのcuredで、
+  # この型自身のインスタンスは作られない。塩漬け・干物と同じ行き先を名乗るのは、どれも腐敗の段の端へ
+  # 移す加工だから（foods.yamlのcured）。
+  smoked:
+    traits: [cured]
+
+  # 燻し小屋。太い枝で骨組みを立て、編んだ葉を巡らせて煙を溜める小屋。
+  #
+  # **開けるのは「日差しの要らない保存」**（docs/world/SurvivalItems.md 11節）。干し場も塩田も
+  # 強い日差しを当てにしているので、曇りが続く日・夜・樹冠の深い土地では保存の手が止まる。
+  #
+  # **据える場所は縛らない**（干し場・塩田と同じ）。日差しを見ないので、樹冠の下でも夜でも同じに
+  # 進む——**天気で開け閉めされるのは日差しの側だけ**になる。
+  smokehouse:
+    traits: [hearth]
+    # 中身が個体ごとに違うので束ねない（SlotSystem.md 4節）。**炉から継ぐ側ではない**——焚き火は
+    # 束ねてよいが、この小屋は干し場・塩田と同じく吊るした物を抱えて留守番する。
+    stackable: false
+    props:
+      # 太い枝6本（1,000×6）＋編んだ葉6枚（400×6）＋縄2本（600×2）。**据えた物も目方を名乗る**
+      # （core.yaml）。
+      weight: {value: 9600}
+      # 太い枝2本（fuel 20×2）でちょうど満ちる。種火は1tickに0.1しか食わない（fire.yamlのhearthの
+      # ember段）ので、満たせば1回ぶん（96tick）を焚いてなお何度か焚ける。
+      #
+      # **薪が心細いと雨に負ける。** 雨が炉から削るのは4で、薪の段が火を育てるのは少なければ2
+      # （fire.yamlのhearth）。小枝しか入っていない小屋は野ざらしでは燃え続けられない——**囲いが
+      # 火を守るのは、中で薪が焚けている間だけ。**
+      fuel:
+        value: 0
+        range: {min: 0, max: 40}
+      # **火力の上限。これがこの型の全部。** 熾火の段（5）へ届かないので、火は炎にならず、掛けた
+      # 食べ物へ熱が渡らない（fire.yamlのhearthのheat）——**燻し小屋で肉が焼けないのは、条件で
+      # 止めているのではなく、そこまで火が育たないから。**
+      heat:
+        range: {min: 0, max: 4}
+    slots:
+      # 吊るしてある食べ物。**炉の火床の枠をそのまま使う**（覆い焼きの炉が土器だけを受けるのと
+      # 同じ、pottery.yaml）——名前は炉のvisible_slotsが決めていて、traitの側は足し合わせにしか
+      # ならない（7.11節）ので、別の名前は名乗れない。**受けるのはsmokableだけ**——焼いた物も
+      # 腐らない物も吊るせないので、燻す軸を持たないことは吊るす口が無いことで分かる。
+      # **既に保存済みの物は吊るせる**が、上のsmokableが止めるので何も起きない。
+      #
+      # **枠ごとに1つ**（maxを置く、7.2節）——食べ物は束ねられるので、maxが無いと1つの枠に何個でも
+      # 積まれて、小屋の広さが何も意味しなくなる（干し場と同じ、drying.yaml）。**枠の数も干し場と
+      # 同じ**にする——一度に扱える数まで差を付けると、遅いだけの設備になる。
+      fire:
+        cell_count: 6
+        cell: {accept: {tag: smokable}, max: 1}
+    passives:
+      # 種火が冷める速さ。葉を巡らせた囲いは熱を抱えるが、灰へ埋めて空気を絞る石囲いの炉ほどは
+      # 保たない——覆い焼きの炉（pottery.yaml）と同じ速さで、薪が尽きれば2時間で消える。
+      - conditions:
+          - {prop: heat, in_stage: ember}
+          - {prop: fuel, in_stage: none}
+        add: {self: {heat: -0.5}}
+    interactions:
+      # 満杯なら断る理由を出す（fire.yamlのhearthのadd_fuel）。値は上のfuelのrange.max。
+      add_fuel:
+        conditions:
+          - {reason: hearth_full, prop: fuel, lt: 40}
+    recipes:
+      # 枝を立てて葉で囲い、縄で締める。**掘削具も刃物も要らない**——材料はどれも拾った物と、
+      # 素手で編める葉から出る（weaving.yaml）。
+      built:
+        # **保存の腕を要求する唯一のレシピ**（docs/engine/SkillSystem.md 4節）。腕が伸びるのは
+        # 塩漬け（salt.yamlのcure）だけなので、燻製は塩蔵の後ろに来る——段の順序どおりで、
+        # 循環もしない（同3.2節、docs/world/Skills.md 2.4節）。
+        conditions:
+          - {reason: needs_preserving, subject: agent, prop: skill_preserving, in_stage_or_above: basic}
+        steps:
+          - requires:
+              - {object: thick_branch, count: 6, consume: true}
+              - {object: woven_leaf, count: 6, consume: true}
+              - {object: rope, count: 2, consume: true}
+            duration: 240

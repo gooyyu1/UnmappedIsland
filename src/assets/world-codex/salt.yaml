@@ -47,9 +47,10 @@ object_defs:
             prop: durability
             in_stage_or_above: sound
         # 保存の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
-        # characters/player_character.yaml）。**今のところ保存を伸ばす唯一の操作。** 天日干しは
-        # 入ったが（drying.yaml）、並べて待つだけで操作を持たないので腕は伸びない
-        # （docs/world/Skills.md 2節）。
+        # characters/player_character.yaml）。**今のところ保存を伸ばす唯一の操作。** 天日干しも
+        # 燻製も入ったが（drying.yaml・smoking.yaml）、どちらも仕掛けて待つだけで操作を持たないので
+        # 腕は伸びない（docs/world/Skills.md 2.4節）。**燻し小屋はこの腕を要求する側**なので、
+        # そちらから伸ばして自分を開ける道は無い。
         add: {agent: {skill_preserving: 2}}
         become: {subject: instrument, cure: salted}
         destroy: self

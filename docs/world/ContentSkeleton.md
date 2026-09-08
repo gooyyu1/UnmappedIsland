@@ -268,7 +268,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 ## 4. 各系統の段
 
 **最初の段（2.1節）に入るものと、そのあとに来る「1日以上の山」を分けて並べます。山は合計27個<!-- stats: terrain.yaml work_piles_total piles -->、
-日数にして70.63日<!-- stats: terrain.yaml work_piles_total days -->ぶんです。**
+日数にして71.03日<!-- stats: terrain.yaml work_piles_total days -->ぶんです。**
 
 **この表の一覧そのものが、1周回の日数の出どころです。** 山を何と数えるかは `src/analysis/dailyPhases.ts` の
 `WORK_PILES` が宣言し、そこから下の数は全部 [`stats/terrain.yaml`](../../stats/terrain.yaml) が出します
@@ -276,15 +276,15 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 （1日833分<!-- stats: terrain.yaml daily_budget surplus -->）に対する概算で、**実測**と書いたものは量を
 その型の値段そのもので採っています。
 
-**この70.63日<!-- stats: terrain.yaml work_piles_total days -->は、明るさと移動時間を無視した下限です**——どちらも入れると同じ山が
-99.2日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->ぶんに広がり、島を開く16.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->を足すと
-1周回は約115日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->になります（8節）。
+**この71.03日<!-- stats: terrain.yaml work_piles_total days -->は、明るさと移動時間を無視した下限です**——どちらも入れると同じ山が
+99.8日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->ぶんに広がり、島を開く16.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->を足すと
+1周回は約116日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->になります（8節）。
 
 | # | 系統 | 最初の段の中で手に入るもの | 1日以上の山（括弧内は日数） | 山 | 日 |
 | --- | --- | --- | --- | --: | --: |
 | 1 | 水 | ヤシの実・湧き水・運ぶ器 | 雨受けと貯水を据える（2<!-- stats: terrain.yaml work_piles pile=雨受けと貯水を据える days -->）／甕を10個焼く（3.2<!-- stats: terrain.yaml work_piles pile=甕を10個焼く days -->）／航海ぶんの水を積む（1<!-- stats: terrain.yaml work_piles pile=航海ぶんの水を積む days -->） | 3<!-- stats: terrain.yaml work_piles_by_system system=1 piles --> | 6.2<!-- stats: terrain.yaml work_piles_by_system system=1 days --> |
 | 2 | 食の調達 | 拾う・掘る・くくり罠 | 畑を拓いて回す（4<!-- stats: terrain.yaml work_piles pile=畑を拓いて回す days -->）／**家畜の囲い（3.1<!-- stats: terrain.yaml work_piles pile=家畜の囲い days -->・実測）**／大型の狩り（2<!-- stats: terrain.yaml work_piles pile=大型の狩り days -->） | 3<!-- stats: terrain.yaml work_piles_by_system system=2 piles --> | 9.1<!-- stats: terrain.yaml work_piles_by_system system=2 days --> |
-| 3 | 保存 | 天日に並べて干す | **干し場（1.16<!-- stats: terrain.yaml work_piles pile=干し場 days -->・実測）**／燻し小屋（2<!-- stats: terrain.yaml work_piles pile=燻し小屋 days -->）／製塩（3<!-- stats: terrain.yaml work_piles pile=製塩 days -->）／航海ぶんを塩漬けにする（1<!-- stats: terrain.yaml work_piles pile=航海ぶんを塩漬けにする days -->） | 4<!-- stats: terrain.yaml work_piles_by_system system=3 piles --> | 7.2<!-- stats: terrain.yaml work_piles_by_system system=3 days --> |
+| 3 | 保存 | 天日に並べて干す | **干し場（1.16<!-- stats: terrain.yaml work_piles pile=干し場 days -->・実測）**／**燻し小屋（2.40<!-- stats: terrain.yaml work_piles pile=燻し小屋 days -->・実測）**／製塩（3<!-- stats: terrain.yaml work_piles pile=製塩 days -->）／航海ぶんを塩漬けにする（1<!-- stats: terrain.yaml work_piles pile=航海ぶんを塩漬けにする days -->） | 4<!-- stats: terrain.yaml work_piles_by_system system=3 piles --> | 7.6<!-- stats: terrain.yaml work_piles_by_system system=3 days --> |
 | 4 | 刃物・打撃 | 剥片・叩き石・石の斧 | 鉱石を掘って製錬（5<!-- stats: terrain.yaml work_piles pile=鉱石を掘って製錬 days -->） | 1<!-- stats: terrain.yaml work_piles_by_system system=4 piles --> | 5<!-- stats: terrain.yaml work_piles_by_system system=4 days --> |
 | 5 | 火 | きりもみ・焚き火・覆い焼きの炉 | — | 0 | 0 |
 | 6 | 狩りの道具 | くくり罠・木の槍 | 石鏃の槍（1<!-- stats: terrain.yaml work_piles pile=石鏃の槍 days -->）／青銅の穂先（2<!-- stats: terrain.yaml work_piles pile=青銅の穂先 days -->） | 2<!-- stats: terrain.yaml work_piles_by_system system=6 piles --> | 3<!-- stats: terrain.yaml work_piles_by_system system=6 days --> |
@@ -294,7 +294,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 10 | 住居 | 洞窟・雨よけ | 葉の小屋（3<!-- stats: terrain.yaml work_piles pile=葉の小屋 days -->）／高床（4<!-- stats: terrain.yaml work_piles pile=高床 days -->）／板の壁・床（5<!-- stats: terrain.yaml work_piles pile=板の壁・床 days -->） | 3<!-- stats: terrain.yaml work_piles_by_system system=10 piles --> | 12<!-- stats: terrain.yaml work_piles_by_system system=10 days --> |
 | 11 | 船と海図 | — | **筏（5.1<!-- stats: terrain.yaml work_piles pile=筏 days -->・実測）**／**帆（3.8<!-- stats: terrain.yaml work_piles pile=帆 days -->・実測）**／櫂と舵（2<!-- stats: terrain.yaml work_piles pile=櫂と舵 days -->）／沿岸航海（3<!-- stats: terrain.yaml work_piles pile=沿岸航海 days -->）／海図を仕上げる（5<!-- stats: terrain.yaml work_piles pile=海図を仕上げる days -->） | 5<!-- stats: terrain.yaml work_piles_by_system system=11 piles --> | 18.9<!-- stats: terrain.yaml work_piles_by_system system=11 days --> |
 | 12 | 家具・娯楽 | — | **設えを積んで里心を止める（1.78<!-- stats: terrain.yaml work_piles pile=設えを積んで里心を止める days -->・実測）** | 1<!-- stats: terrain.yaml work_piles_by_system system=12 piles --> | 1.78<!-- stats: terrain.yaml work_piles_by_system system=12 days --> |
-| | | | **合計** | **27**<!-- stats: terrain.yaml work_piles_total piles --> | **70.63**<!-- stats: terrain.yaml work_piles_total days --> |
+| | | | **合計** | **27**<!-- stats: terrain.yaml work_piles_total piles --> | **71.03**<!-- stats: terrain.yaml work_piles_total days --> |
 
 **山が「量」で立っていることに注意してください**（2.4節）。石の斧も甕も1つでは段になりません
 ——段になるのは家1軒ぶんの丸太であり、貯水に足りる数の甕です。**畑も塩田も1枚では1日に届きません**
@@ -314,17 +314,18 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 [`Dwellings.md`](./Dwellings.md) 3節、7は [`Containers.md`](./Containers.md) 2節、4・5・6は
 [`SurvivalItems.md`](./SurvivalItems.md) 1〜3節、11は [`Voyage.md`](./Voyage.md) 1〜3節に既にあります。
 **新しく足したのは1・2・3**で、このうち2の飼育は [`Animals.md`](./Animals.md) 3.1節、3の製塩と
-塩蔵は [`SurvivalItems.md`](./SurvivalItems.md) 9節、3の干し場は同10節が持ちます。残りはまだどの文書も
-担当していません。**12のカタログは文書を持たず、`src/assets/world-codex/furnishings.yaml` が中身
+塩蔵は [`SurvivalItems.md`](./SurvivalItems.md) 9節、3の干し場は同10節、3の燻し小屋は同11節が
+持ちます。残りはまだどの文書も担当していません。**12のカタログは文書を持たず、`src/assets/world-codex/furnishings.yaml` が中身
 そのものです**——設えは点数と手間の対応が全部で、文書へ書き写すと定義と二重に持つことになります。
 
 **新しく足した系統の多くは、仕掛けて待つ形です。** 水を溜める・畑と家畜・保存の設備（干す・燻す・天日で
 塩を採る）はいずれも、留守の間に設備が働きます。罠が既にこの形なので
-（[`TrapSystem.md`](../engine/TrapSystem.md)）、新しい仕組みは要りません。**畑と家畜、塩田、そして干し場が
-この形で入っています**——`farming.yaml` の `field`・`pen`、`salt.yaml` の `salt_pan`、`drying.yaml` の
-`drying_rack` は罠と同じ宣言だけで書けていて、新しい文法は1つも足していません（飼育の中身は
-[`Animals.md`](./Animals.md) 3.1節、製塩と塩蔵は [`SurvivalItems.md`](./SurvivalItems.md) 9節、
-干し場は同10節）。**まだ宣言が無いのは、水を溜める設備と燻し小屋です。**
+（[`TrapSystem.md`](../engine/TrapSystem.md)）、新しい仕組みは要りません。**畑と家畜、塩田、干し場、
+そして燻し小屋がこの形で入っています**——`farming.yaml` の `field`・`pen`、`salt.yaml` の `salt_pan`、
+`drying.yaml` の `drying_rack`、`smoking.yaml` の `smokehouse` は罠と同じ宣言だけで書けていて、新しい
+文法は1つも足していません（飼育の中身は [`Animals.md`](./Animals.md) 3.1節、製塩と塩蔵は
+[`SurvivalItems.md`](./SurvivalItems.md) 9節、干し場は同10節、燻し小屋は同11節）。**まだ宣言が無いのは、
+水を溜める設備です。**
 
 **磨いた石器（系統4）と恒久窯（系統5）は、山に数えません。** どちらも開けるものを持たないためです
 ——最初の段の石の斧で丸太も板も出ているので、磨いて初めてできることが1つも無く
@@ -466,12 +467,12 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 ## 8. 埋まる時間
 
-**同じ27個<!-- stats: terrain.yaml work_piles_total piles -->の山が、明るさ・移動・土地の差を入れると99.2日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->ぶんになり、島を開く16.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->を足して
-1周回は約115日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->です。1日833分<!-- stats: terrain.yaml daily_budget surplus -->という自由時間は上限であって、実際に使える時間ではありません。**
+**同じ27個<!-- stats: terrain.yaml work_piles_total piles -->の山が、明るさ・移動・土地の差を入れると99.8日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->ぶんになり、島を開く16.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->を足して
+1周回は約116日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->です。1日833分<!-- stats: terrain.yaml daily_budget surplus -->という自由時間は上限であって、実際に使える時間ではありません。**
 
 1日を賄う最小労働は607分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->（[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum`）なので、差し引きの自由
-時間は1日833分<!-- stats: terrain.yaml daily_budget surplus -->。4節の山の合計は約58,800分<!-- stats: terrain.yaml work_piles_total minutes ±100 -->なので、
-**そのまま割れば70.63日ぶん**<!-- stats: terrain.yaml work_piles_total days -->です。しかしこの833分<!-- stats: terrain.yaml daily_budget surplus -->は、
+時間は1日833分<!-- stats: terrain.yaml daily_budget surplus -->。4節の山の合計は約59,200分<!-- stats: terrain.yaml work_piles_total minutes ±100 -->なので、
+**そのまま割れば71.03日ぶん**<!-- stats: terrain.yaml work_piles_total days -->です。しかしこの833分<!-- stats: terrain.yaml daily_budget surplus -->は、
 1日のどの時間でも何でもできる場合の数字で、**明るさと移動がこれを削ります**（8.1・8.2）。
 
 **山の数を増やしても日数は伸びません。** 日数は山の合計そのものなので、増やす道は「山を増やす」か
@@ -834,8 +835,8 @@ ambient_brightnessをそのまま土台にするためです
 
 ### 8.3 1周回は、2つの局面を積んで出す
 
-**同じ27個<!-- stats: terrain.yaml work_piles_total piles -->の山が、局面ごとに数え直すと約115日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->ぶんになります。** 内訳は
-**島を開く16.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->**と、**開き切った後の99.2日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->**です。
+**同じ27個<!-- stats: terrain.yaml work_piles_total piles -->の山が、局面ごとに数え直すと約116日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->ぶんになります。** 内訳は
+**島を開く16.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->**と、**開き切った後の99.8日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->**です。
 
 局面は2つに割りました。**割る位置を決めているのは「探索がまだ残っているか」の1点だけ**で、
 どちらの1日も8.2節の同じ式で出ます。1日の側は500シード<!-- stats: terrain.yaml meta seeds -->の実測
@@ -847,12 +848,12 @@ ambient_brightnessをそのまま土台にするためです
 | 局面 | 1日の移動 | 1日に進む分 | 消化するもの | 日数 |
 | --- | --: | --: | --: | --: |
 | **探索**（島を開き切るまで） | 172分<!-- stats: terrain.yaml exploration_phase metric=day_trip_travel_per_day mean --> | 探索 171分<!-- stats: terrain.yaml exploration_phase metric=day_trip_exploration_per_day mean --> | 全土地を探索率100%まで（2,795分<!-- stats: terrain.yaml exploration_phase metric=exploration_minutes mean -->） | **16.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->** |
-| **定常**（開き切った後） | 62分<!-- stats: terrain.yaml steady_phase metric=travel_per_day mean --> | 山 399分<!-- stats: terrain.yaml steady_phase metric=work_per_day mean --> | 屋外の山（約39,200分<!-- stats: terrain.yaml work_piles_total outdoor_minutes ±100 -->） | **99.2日**<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean --> |
-| 合計 | | | | **115.7日**<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean --> |
+| **定常**（開き切った後） | 62分<!-- stats: terrain.yaml steady_phase metric=travel_per_day mean --> | 山 399分<!-- stats: terrain.yaml steady_phase metric=work_per_day mean --> | 屋外の山（約39,400分<!-- stats: terrain.yaml work_piles_total outdoor_minutes ±100 -->） | **99.8日**<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean --> |
+| 合計 | | | | **116.2日**<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean --> |
 
-27個<!-- stats: terrain.yaml work_piles_total piles -->の山（約58,800分<!-- stats: terrain.yaml work_piles_total minutes ±100 -->）のうち、屋外での採取・伐採・運搬を2/3
-（約39,200分<!-- stats: terrain.yaml work_piles_total outdoor_minutes ±100 -->）、拠点での加工を1/3
-（約19,600分<!-- stats: terrain.yaml work_piles_total base_minutes ±100 -->）と置いています。**この割合と、下の土地の配分は
+27個<!-- stats: terrain.yaml work_piles_total piles -->の山（約59,200分<!-- stats: terrain.yaml work_piles_total minutes ±100 -->）のうち、屋外での採取・伐採・運搬を2/3
+（約39,400分<!-- stats: terrain.yaml work_piles_total outdoor_minutes ±100 -->）、拠点での加工を1/3
+（約19,700分<!-- stats: terrain.yaml work_piles_total base_minutes ±100 -->）と置いています。**この割合と、下の土地の配分は
 仮置きです。**
 
 **探索の局面で移動が重いのは、行き先が選べないからです。** 未踏の土地は拠点から近い順に開いていく
@@ -873,11 +874,11 @@ ambient_brightnessをそのまま土台にするためです
 （2.3節）から決め直すことになるので、本節では触っていません。
 
 **夜**は、睡眠360分<!-- stats: terrain.yaml daily_budget sleep -->と、焚き火のそばでの加工360分<!-- stats: terrain.yaml daily_budget night_craft -->。
-**律速は屋外です**——拠点での加工は約19,600分<!-- stats: terrain.yaml work_piles_total base_minutes ±100 -->で、夜の枠に対して
-54日ぶん<!-- stats: terrain.yaml work_piles_total base_days -->なので、約115日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->の中に余裕で収まります。**夜が足りなくなることはなく、
+**律速は屋外です**——拠点での加工は約19,700分<!-- stats: terrain.yaml work_piles_total base_minutes ±100 -->で、夜の枠に対して
+55日ぶん<!-- stats: terrain.yaml work_piles_total base_days -->なので、約116日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->の中に余裕で収まります。**夜が足りなくなることはなく、
 足りないのは昼です。**
 
-**この約115日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->は上限としても下限としても読めません。** 上へ振れる材料は、4節の山のうちそり（2日<!-- stats: terrain.yaml work_piles pile=そり days -->）に
+**この約116日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->は上限としても下限としても読めません。** 上へ振れる材料は、4節の山のうちそり（2日<!-- stats: terrain.yaml work_piles pile=そり days -->）に
 **まだ宣言が無く、日数が実測ではなく置いた値である**こと。下へ振れる材料は、**探索の局面の
 16.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->に山を1分も乗せていない**こと
 ——1日の枠301分<!-- stats: terrain.yaml exploration_phase metric=day_trip_window_per_day mean -->に対して探索は
@@ -917,7 +918,7 @@ ambient_brightnessをそのまま土台にするためです
 
 ## 未決事項・今後の検討課題
 
-- 1周回の日数（8節）。局面ごとに数えると**約115日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->**（探索16.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->＋定常99.2日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->、8.3節）。**残る仮置きは
+- 1周回の日数（8節）。局面ごとに数えると**約116日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->**（探索16.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->＋定常99.8日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->、8.3節）。**残る仮置きは
   屋外の割合（2/3）と土地の配分（開けた1/2・森1/4・密林1/4）の2つ**で、日数を支配しているのは後者
   ——密林で1日に進む山の少なさが、4分の1の配分で日数の3分の1を持っていきます。**どの材料がどの土地で採れるか
   （2.3節）を決めると、この数字は動きます。**

@@ -757,8 +757,8 @@ traits:
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
-      # 得た食を保たせる（salt.yamlのcure）。開けるレシピはまだ無い——保存の設備はどれも解放条件を
-      # 持たないので、この腕を読む側が世界に無い（docs/engine/SkillSystem.md 概要節）。
+      # 得た食を保たせる（salt.yamlのcure）。開けるのは燻し小屋（smoking.yamlのsmokehouse）で、
+      # 日差しの要らない保存がその先にある（docs/world/SurvivalItems.md 11節）。
       skill_preserving:
         tags: [skill]
         value: 0

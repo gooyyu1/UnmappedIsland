@@ -4,7 +4,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/DurationStats.md。
 
 meta:
-  - {unit: days, minimum: 1, durations: 101, longest: 67.00, shortest: 1.00, tool_wears: 14}
+  - {unit: days, minimum: 1, durations: 123, longest: 67.00, shortest: 1.00, tool_wears: 14}
 
 durations:
   - {object: junglefowl, property: body_fat, unit: days, days: 67.00, shortest_days: 67.00, longest_days: 67.00, repeats: false, destroys: true}
@@ -16,31 +16,42 @@ durations:
   - {object: world, property: season_remaining, unit: days, days: 30.00, shortest_days: 30.00, longest_days: 30.00, repeats: true, destroys: false}
   - {object: banana__cure_dried, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: banana__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
+  - {object: banana__cure_smoked, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: bird_egg, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: coconut, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: coconut_crab__cure_dried, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: coconut_crab__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
+  - {object: coconut_crab__cure_smoked, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: coconut_jelly__cure_dried, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: coconut_jelly__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
+  - {object: coconut_jelly__cure_smoked, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: coconut_meat__cure_dried, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: coconut_meat__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
+  - {object: coconut_meat__cure_smoked, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: green_coconut, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: husked_coconut, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: junglefowl_carcass__cure_dried, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: junglefowl_carcass__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
+  - {object: junglefowl_carcass__cure_smoked, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: monkey_carcass__cure_dried, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: monkey_carcass__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
+  - {object: monkey_carcass__cure_smoked, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: rat_carcass__cure_dried, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: rat_carcass__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
+  - {object: rat_carcass__cure_smoked, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: raw_meat__cure_dried, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: raw_meat__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
+  - {object: raw_meat__cure_smoked, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: seaweed__cure_dried, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: seaweed__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
+  - {object: seaweed__cure_smoked, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: taro, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: water_spinach__cure_dried, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: water_spinach__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
+  - {object: water_spinach__cure_smoked, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: wild_boar_carcass__cure_dried, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: wild_boar_carcass__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
+  - {object: wild_boar_carcass__cure_smoked, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: captain, property: vitamin, unit: days, days: 18.75, shortest_days: 18.75, longest_days: 18.75, repeats: false, destroys: false}
   - {object: engineer, property: vitamin, unit: days, days: 18.75, shortest_days: 18.75, longest_days: 18.75, repeats: false, destroys: false}
   - {object: farmer, property: vitamin, unit: days, days: 18.75, shortest_days: 18.75, longest_days: 18.75, repeats: false, destroys: false}
@@ -103,11 +114,22 @@ durations:
   - {object: farmer, property: immunity, unit: days, days: 1.67, shortest_days: 1.67, longest_days: 1.67, repeats: false, destroys: false}
   - {object: medic, property: immunity, unit: days, days: 1.67, shortest_days: 1.67, longest_days: 1.67, repeats: false, destroys: false}
   - {object: bruise, property: severity, unit: days, days: 1.25, shortest_days: 1.25, longest_days: 2.50, repeats: false, destroys: true}
+  - {object: banana, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
+  - {object: coconut_crab, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
+  - {object: coconut_jelly, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
+  - {object: coconut_meat, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
   - {object: junglefowl, property: stay_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: true}
+  - {object: junglefowl_carcass, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
   - {object: monkey, property: stay_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: true}
+  - {object: monkey_carcass, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
   - {object: rat, property: stay_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: true}
+  - {object: rat_carcass, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
+  - {object: raw_meat, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
+  - {object: seaweed, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
   - {object: unfired_jar, property: moisture, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
+  - {object: water_spinach, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
   - {object: wild_boar, property: stay_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: true}
+  - {object: wild_boar_carcass, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
 
 tool_wear:
   - {object: stone_axe, property: durability, step: buck, owner: driftwood_trunk, unit: uses, uses: 16.00, labor_minutes: 120}

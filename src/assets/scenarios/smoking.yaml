@@ -1,0 +1,28 @@
+# 燻製のテスト用（src/assets/world-codex/smoking.yaml）。吊るしてから燻し上がるまでを試せる。
+#
+# 手順: 太い枝を燻し小屋へくべる → 火起こし具を枯れ草へ重ねる → できた火種を燻し小屋へ重ねる →
+# 1日待つ。**薪が先。** 火種を落とす操作は薪の入っていない炉を断る（fire.yamlのhearthのignite）ので、
+# 逆の順で辿ると火種を1つ失う（1tickで燃え尽きる）。
+#
+# **遊んで辿り着くには塩田から先が要る。** 燻し小屋は保存の腕を要求し、その腕は塩漬けでしか
+# 伸びないので、据えるまでに製塩を一通り回すことになる。ここでは最初から据えておく。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 燻し小屋
+
+# 3は開始地点が砂浜になるシード（fire_making.yamlと同じ）。
+seed: 3
+
+player:
+  # 火起こしは4割外すので、枯れ草は何度か試せる数を持たせる。
+  hand: [fire_drill, dry_grass, dry_grass, dry_grass]
+
+location:
+  type: sandy_beach
+  fixtures: [smokehouse]
+  # 太い枝1本で薪の段は「そこそこ」（fuel 20）になり、雨に降られても火は落ちない。
+  items: [thick_branch, thick_branch, raw_meat]
+  inside:
+    # 吊るした状態から始める。焼けないことも同じ画面で分かる。
+    smokehouse: [raw_meat, raw_meat]
