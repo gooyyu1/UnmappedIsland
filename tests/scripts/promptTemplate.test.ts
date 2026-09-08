@@ -87,6 +87,23 @@ describe('template_body', () => {
     expect(taken.text).toBe(`指示の本体\n${FENCE}\nここは指示の一部\n${FENCE}\n`);
   });
 
+  // ラベル付きの囲みの閉じも「バッククォートだけの行」なので、飛ばさないと本体の始まりに見える。
+  // 中身の違う本体が空にならないまま渡り、届いた本文を読むまで気づけない。
+  it('前置きのラベル付きの囲みは、本体の始まりにしない', () => {
+    const taken = take('template_body', [
+      '前置き',
+      `${FENCE}bash`,
+      'npm test',
+      FENCE,
+      '説明',
+      FENCE,
+      '指示の本体',
+      FENCE,
+    ]);
+
+    expect(taken.text).toBe('指示の本体\n');
+  });
+
   // 空の指示でセッションを立てると、何をすればよいか書いていない相手が1本増える。
   it('囲みが無ければ止まる', () => {
     const taken = take('template_body', ['囲みを書き忘れたひな形']);

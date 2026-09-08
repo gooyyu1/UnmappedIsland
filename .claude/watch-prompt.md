@@ -11,8 +11,8 @@
 **この係は [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh) からは投入されない。** 渡す形
 （`題:` の行と、本文を囲むバッククォート）だけを揃えてあるのは、
 [`watch-routine.sh`](../scripts/agent/watch-routine.sh) が周期の係と同じ読み方
-（[`prompt-template.sh`](../scripts/agent/prompt-template.sh)）でここを読むため。**`題:` の行は Routine の名前にもなる**（`watch-routine.sh` が探すときの鍵）ので、
-変えると次の登録が2本目を作る。
+（[`prompt-template.sh`](../scripts/agent/prompt-template.sh)）でここを読むため。**`題:` の行は
+Routine の名前にもなる**（`watch-routine.sh` が探すときの鍵）ので、変えると次の登録が2本目を作る。
 
 題: 監視 デーモンの点検
 
