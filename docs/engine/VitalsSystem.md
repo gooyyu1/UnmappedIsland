@@ -522,8 +522,8 @@ pathogen:
 | `chilled` | 560 | 留意 | 34.6℃ |
 | `warm` | 700 | 安全 | 37℃ |
 
-比べる相手は、居る場所の `ambient_temperature` と、自分の `chill_point`（素は 16℃）です。守る側は
-`modify` で `chill_point` を下げます（衣服は `equip` に入っている間、寝床は寝ている間）。
+比べる相手は、居る場所の `ambient_temperature` と、自分の `chill_point`（素は 16℃）で、守る側はそれを
+`modify` で下げます（衣服は `equip` に入っている間、寝床は寝ている間）。
 
 削る速さは `-2/tick`、雨に打たれている間は `-6/tick`、境目より上に居る間の戻りは `+8/tick` です。
 濡れた一晩（48 tick）で失う 288 kcal は、火のそばの 9 時間で戻ります。

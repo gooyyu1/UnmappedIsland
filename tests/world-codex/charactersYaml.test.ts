@@ -125,7 +125,7 @@ interface Place {
 }
 
 /**
- * 寒さの入口を下回る夜に1 tick置いたときの、熱の増減（VitalsSystem.md 8.3節）。満タンでも下限でも
+ * 寒さの入口を下回る夜に1 tick置いたときの、熱の増減（VitalsSystem.md 8.4節）。満タンでも下限でも
  * 頭打ちに掛からないよう、真ん中の位置から測る。
  */
 function warmthChange(character: string, weatherName: string, place: Place): number {
@@ -143,7 +143,7 @@ function warmthChange(character: string, weatherName: string, place: Place): num
   return (player.instance.tryGetProperty(warmthId)?.number ?? 0) - before;
 }
 
-/** 熱の削りと戻りが、居場所と天気でどう変わるか（VitalsSystem.md 8.3節）。 */
+/** 熱の削りと戻りが、居場所と天気でどう変わるか（VitalsSystem.md 8.3節。速さは同8.4節）。 */
 const WARMTH_CASES: readonly { situation: string; weather: string; place: Place; perTick: number }[] = [
   { situation: '寒い夜に野ざらしでも、雨が降っていなければ', weather: 'clear', place: {}, perTick: -2 },
   {

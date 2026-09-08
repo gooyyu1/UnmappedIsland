@@ -130,7 +130,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   `ambient_temperature` と `chill_point`（素は16℃）の比較1つで決まる**——下回る間は `-2/tick`、
   屋根も蓋も無い所で雨に打たれている間は `-6/tick` で削られ、上回る間は `+8/tick` で戻る。尽きた段の
   名前は **`frozen`**。段の境目は深部体温で置く（刻み方は
-  [`VitalsSystem.md`](../engine/VitalsSystem.md) 8.3 節）。個体差は持たせず trait が配る。
+  [`VitalsSystem.md`](../engine/VitalsSystem.md) 8.4 節）。個体差は持たせず trait が配る。
   **`chill_point` は、防ぐ側（衣服・寝床）が `modify` で押し下げるための境目**で、火だけは境目ではなく
   気温の側を上げる。
 - **`load`（荷重）**: 持ち物と装備の重さ（g）。自分では動かず、中身から導出される
@@ -168,7 +168,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - `blood` は**失った割合**で切る（臨床の出血性ショックの分類、
   [`VitalsSystem.md`](../engine/VitalsSystem.md) 3 節）。2割失って安全域を外れるので、上の80%の境界と
   ちょうど一致する。以降 3割で `caution`、4割で `danger`、6割で `fatal`。
-- **`warmth` の境目は深部体温で切る**（[`VitalsSystem.md`](../engine/VitalsSystem.md) 8.3 節）ので、
+- **`warmth` の境目は深部体温で切る**（[`VitalsSystem.md`](../engine/VitalsSystem.md) 8.4 節）ので、
   上の80%は安全域の境目ではなく `caution` の境目になる（560 ＝ 34.6℃ ＝ 軽度低体温症の入口）。
   **安全域は `max` ちょうど**（37℃）で、満タンから始まり、そこから 560 までが `watch`——体温は満タンが
   常態なので、失った熱はそれだけで留意に値する。
