@@ -11,7 +11,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * ここが守るのは**一覧を人が読めること**（`.claude/board-design.md` 2.9）。とくに「何回目の判定に
  * なるはずか」は数えて出す値なので、数え方がずれても**それらしい番号が付いたまま**気づけない。
  *
- * `DRY_RUN=1` で叩くので、セッションは立たない。`gh` は PATH の先頭で差し替える。
+ * `DRY_RUN` で叩くので、セッションは立たない。`gh` は PATH の先頭で差し替える。
  */
 
 // 実プロセス（bash + node + gh のスタブ）を起こすため、`npm test` 全体を並行実行したときのCPU競合
@@ -37,7 +37,7 @@ interface Args {
   readonly permission_mode?: string;
 }
 
-/** `DRY_RUN=1` で組み立てさせて、`create_session` へ渡るはずの引数を返す。 */
+/** `DRY_RUN` で組み立てさせて、`create_session` へ渡るはずの引数を返す。 */
 function args(pr: number, world: World = {}): Args {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-dispatch-review-'));
   const dir = pathForBash(work);
@@ -74,7 +74,9 @@ esac
       env: {
         ...process.env,
         PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
-        DRY_RUN: '1',
+        // 埋めた値（`<番号>`・`<前の版>`）まで見るので切らせない（`dispatch-steps.sh` の
+        // `DRY_RUN=full`）。
+        DRY_RUN: 'full',
         CLOUD_ENV: 'env_TEST_CLOUD',
         BRIDGE_ENV: 'env_TEST_BRIDGE',
       },

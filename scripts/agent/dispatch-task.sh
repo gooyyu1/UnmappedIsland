@@ -15,24 +15,22 @@
 # [`.claude/ccr-meta.sh`](../../.claude/ccr-meta.sh)「指示は Write で書く」）。**書くことが無いなら、
 # 空のファイルでよい。**
 #
-# 出力は1行1件。
-#   SESSION <セッションID>
-#   SOURCES <リポジトリのURL>@<リビジョン>   … 空の箱で起動していないことの確認
-#   一致 / 不一致                            … 送った指示が化けずに届いたか
+# 出す行は [`dispatch-steps.sh`](dispatch-steps.sh) の `create_session_and_check`。
 #   終了コード 0 … 投入できて、指示も一致した
-#   終了コード 1 … どこかで失敗した（上の行がどこまで出たかで分かる）
+#   終了コード 1 … どこかで失敗した（出た行がどこまで進んだかを示す）
 #
-# ## 畳んだのは、毎回手で組んでいたJSONと、忘れがちな2つの確認
+# ## 畳んだのは、毎回手で組んでいたJSONと、忘れがちな確認
 #
 # `create_session` の引数は毎回ほぼ同じなのに手で組んでいたので、**渡し忘れが事故になっていた**。
 #
 # - **`source_url` を渡し忘れると、リポジトリの無い `/home/user` で走り出す。** 立てた直後に
-#   `get_session` で確かめるところまでを、ここに含める。
+#   `get_session` で確かめるところまでを、投入の段取り（[`dispatch-steps.sh`](dispatch-steps.sh)）が
+#   持つ。
 # - **`tags` を渡し忘れると、盤面から見えないセッションになる。** デーモンが占有も止まりも読むのは
 #   `task-<番号>` のタグからなので、タグの無いセッションは二重投入も空回りも防げない。
 # - `environment_id` と `permission_mode` は必須（この経路には呼び元が無いので継げない）。
-#   **どちらも投入先で決まる**ので、[`ccr-env.sh`](ccr-env.sh) から取って下の分岐で選ぶ。
-#   `permission_mode` は空のことがあり、**そのときは渡さない**（それがブリッジの選び方）。
+#   **どちらも投入先で決まる**ので、[`dispatch-steps.sh`](dispatch-steps.sh) の `choose_target` から
+#   取る。`permission_mode` は空のことがあり、**そのときは渡さない**（それがブリッジの選び方）。
 # - **閉じた issue へ立てると、空待ちになる。** 題を引くのと同じ `gh issue view` で `state` も見る。
 
 set -euo pipefail
@@ -46,40 +44,17 @@ WHERE="${3:-}"
   exit 1
 }
 
-REPO_URL="https://github.com/$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
+# shellcheck source=scripts/agent/dispatch-steps.sh
+source "$(dirname "${BASH_SOURCE[0]}")/dispatch-steps.sh"
+TEMPLATE="$AGENT_DIR/../../.claude/dispatch-prompt.md"
 
-# `%/*` は区切りが無いと文字列をそのまま返す。
-HERE="${BASH_SOURCE[0]%/*}"
-if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
-HERE="$(cd "$HERE" && pwd)"
-# shellcheck source=scripts/agent/ccr-env.sh
-source "$HERE/ccr-env.sh"
-CCR_META="$HERE/../../.claude/ccr-meta.sh"
-CHECK_PROMPT="$HERE/../../.claude/ccr-check-prompt.sh"
-TEMPLATE="$HERE/../../.claude/dispatch-prompt.md"
-WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
+choose_target "$WHERE"
 
-# **立てる先が決まれば、渡すものは全部決まる**（`ccr-env.sh`）。ブリッジはリポジトリを既に持って
-# いるので `source_url` を渡さず、承認モードも無指定（[`ccr-env.sh`](ccr-env.sh)）。
-# **渡す文面は投入先で変わらない**（`.claude/dispatch-prompt.md`「走る場所で文面を変えない」）。
-if [ "$WHERE" = "--bridge" ]; then
-  ENV_ID="$BRIDGE_ENV"
-  MODE="$BRIDGE_MODE"
-  SOURCE=""
-else
-  ENV_ID="$CLOUD_ENV"
-  MODE="$CLOUD_MODE"
-  SOURCE="$REPO_URL"
-fi
-
-# ひな形は手で書き写さない。**書き写すと必ず何かが落ちる**——2026-08-27 に「PRを見張らない」の
-# 一文が3本すべてから抜け、3セッションが承認待ちで止まった。ここで `dispatch-prompt.md` の
-# ``` の中を読み、`<番号>` を埋めて、渡された補足を末尾へ足す。投入する側が書くのは補足だけ。
+# ここで `dispatch-prompt.md` の囲みの中を読み、`<番号>` を埋めて、渡された補足を末尾へ足す。
+# 投入する側が書くのは補足だけ。
 INSTRUCTION="$WORK/prompt.md"
-# **読むのは最初のブロックだけ**（`exit`）。ひな形の説明が後ろで例を挙げても、本体へ混ざらない。
-awk '/^```$/ { inside = !inside; if (!inside) exit; next } inside' "$TEMPLATE" |
-  sed "s/<番号>/$ISSUE/g" >"$INSTRUCTION"
+template_body "$TEMPLATE" "$INSTRUCTION"
+sed -i "s/<番号>/$ISSUE/g" "$INSTRUCTION"
 # ひな形の最後の行は補足の置き場を説明する山括弧なので、補足そのものへ差し替える。
 grep -q '^<このタスク固有の補足' "$INSTRUCTION" || {
   echo "ひな形から補足の置き場が消えている: $TEMPLATE" >&2
@@ -147,40 +122,11 @@ node -e '
   process.stdout.write(JSON.stringify(args));
 ' "$WORK/issue.json" "$INSTRUCTION" "$ISSUE" "$ENV_ID" "$SOURCE" "$MODE" >"$WORK/args.json"
 
-# 立てずに、渡す引数だけを見る（`DRY_RUN=1 bash …`）。指示ファイルを差し替えたときの確認用。
-# **本文は頭だけに切る**——目で見たいのは引数の形（環境ID・タグ・`source_url`）で、指示の全文は
-# 邪魔になる。**`DRY_RUN=full` なら切らない**（渡す本文そのものを確かめる側が使う）。
-if [ -n "${DRY_RUN:-}" ]; then
-  if [ "$DRY_RUN" = full ]; then
-    cat "$WORK/args.json"
-  else
-    jq '.prompt |= (split("\n") | .[0:3] | join("\n") + "\n…")' "$WORK/args.json"
-  fi
-  exit 0
-fi
+dump_dry_run "$WORK/args.json"
 
 # 手綱と占有。**立ててよいかの判定は [`may-dispatch.sh`](may-dispatch.sh) が持つ**ので、ここは
 # 種類とタグを渡すだけ。タグは下の `create_session` へ渡すものと同じ文字列であること——**別の
 # 文字列を見に行くと、判定は通るのに二重に立つ。**
-CCR_META="$CCR_META" bash "$HERE/may-dispatch.sh" new-task "task-$ISSUE"
+CCR_META="$CCR_META" bash "$AGENT_DIR/may-dispatch.sh" new-task "task-$ISSUE"
 
-# 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
-session=$(bash "$CCR_META" create_session <"$WORK/args.json" | grep -o '{"ccr".*' | jq -r '.ccr.id')
-[ -n "$session" ] && [ "$session" != "null" ] || {
-  echo "セッションを立てられなかった" >&2
-  exit 1
-}
-echo "SESSION $session"
-
-if [ "$WHERE" != "--bridge" ]; then
-  printf '{"session_id":"%s"}' "$session" >"$WORK/get.json"
-  sources=$(bash "$CCR_META" get_session <"$WORK/get.json" | grep -o '{"ccr".*' |
-    jq -r '.ccr.session_context.sources[]?.git_repository | "\(.url)@\(.revision)"')
-  [ -n "$sources" ] || {
-    echo "リポジトリが入っていない（空の箱で起動している）。畳んで立て直す。" >&2
-    exit 1
-  }
-  echo "SOURCES $sources"
-fi
-
-bash "$CHECK_PROMPT" "$session" "$INSTRUCTION"
+create_session_and_check "$WORK/args.json" "$INSTRUCTION"
