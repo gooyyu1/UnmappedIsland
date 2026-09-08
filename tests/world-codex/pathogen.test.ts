@@ -139,7 +139,7 @@ describe('全身の菌と免疫', () => {
 
   it('免疫が足りていれば、症状が出ないまま0へ戻る', () => {
     // 除去（robustの0.2）が増殖（0.15）を上回るので、正味-0.05/tickで引いていく。
-    expect(prop('immunity').getEffectiveValue(), '健康な体は生来の高さから始まる').toBe(60);
+    expect(prop('immunity').getEffectiveValue(), '何も抱えていない体は素の60から始まる').toBe(60);
     expect(prop('immunity').stage?.name).toBe('robust');
 
     eatRawMeat();
@@ -206,12 +206,12 @@ describe('全身の菌と免疫', () => {
     expect(prop('pathogen').number, '段が上がった次の回から減りに転じる').toBeLessThan(peak);
   });
 
-  it('罹って治った体は、生来より高いところで止まる', () => {
+  it('罹って治った体は、素の60より高いところで止まる', () => {
     // 獲得免疫。いちばん上の段（primed）だけが自分を引き戻すので、上げた分は使い切られずに残る。
     // 押し下げ2つ（惨め-10と寝不足-15）を当てて、罹る前と後で段が変わることを見る。
     prop('happiness').setNumberWithoutEvents(0);
     prop('wakefulness').setNumberWithoutEvents(0);
-    expect(prop('immunity').stage?.name, '生来の60では、2つ重なると落ちる').toBe('weakened');
+    expect(prop('immunity').stage?.name, '素の60では、2つ重なると落ちる').toBe('weakened');
     prop('happiness').setNumberWithoutEvents(75);
     prop('wakefulness').setNumberWithoutEvents(192);
 
@@ -219,7 +219,7 @@ describe('全身の菌と免疫', () => {
     live(10 * DAY);
 
     expect(prop('pathogen').number, '感染は収まっている').toBe(0);
-    expect(prop('immunity').number, '生来の60より高い').toBeGreaterThan(60);
+    expect(prop('immunity').number, '素の60より高い').toBeGreaterThan(60);
     expect(prop('immunity').number, 'いちばん上の段を抜けたところで止まる').toBeLessThan(70);
 
     prop('happiness').setNumberWithoutEvents(0);
@@ -232,7 +232,7 @@ describe('全身の菌と免疫', () => {
     // 壊血病（-40）と空腹（-20）を抱えたままでは除去がfailingの0.05まで落ち、菌は上限へ暴走する。
     prop('vitamin').setNumberWithoutEvents(0);
     prop('satiety').setNumberWithoutEvents(0);
-    expect(prop('immunity').getEffectiveValue(), '生来の免疫より下へは行かない').toBe(20);
+    expect(prop('immunity').getEffectiveValue(), '押し下げが重なっても、守りの底より下へは行かない').toBe(20);
     expect(prop('immunity').stage?.name).toBe('failing');
 
     eatRawMeat();
@@ -276,7 +276,7 @@ describe('全身の菌と免疫', () => {
   });
 
   it('壊血病を抱えて出れば、食べ続けても2日ともたない', () => {
-    // 壊血病（-40）を抱えた体は免疫の下限＝failingから始まる。除去がいちばん薄い段なので菌は
+    // 壊血病（-40）を抱えた体は守りの底＝failingから始まる。除去がいちばん薄い段なので菌は
     // まず上限へ届き、**感染が続く間に免疫が上がってrobustまで戻っても止まらない**——除去が増殖を
     // 上回った正味で食事の間隔に引ける量が、1切れの運ぶ菌に届かないため。**食べることでは止まらない**
     // ——菌を運んでいるのが食事そのものだから。
