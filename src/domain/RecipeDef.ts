@@ -110,12 +110,15 @@ export class RecipeDef {
   }
 
   /**
-   * 解放条件を満たしていない場合、最初に落ちた要件。満たしていればundefined。
+   * agentが解放条件を満たしていない場合、最初に落ちた要件。満たしていればundefined。
    *
    * 未解放のレシピも一覧へ出し、そこでなぜ作れないかを言うため、可否と理由を1回の評価から得る
    * （Requirements.firstUnmet と同じ理由）。
+   *
+   * **問うのは「この者にとって解放されているか」なので、agentは必ず要る**（13.3節）。誰にとってでも
+   * ない「解放条件を持つか」は`unlock`が直接答える。
    */
-  unmetUnlockRequirement(agent: WorldObject | undefined): Requirement | undefined {
+  unmetUnlockRequirement(agent: WorldObject): Requirement | undefined {
     // まだ成果物のインスタンスが無いので、selfを持たない文脈で評価する（13.3節）——selfを起点に辿る
     // 参照はそのまま解決先を持たない。
     return this.unlock?.firstUnmet(ReferenceContext.asking(agent));
