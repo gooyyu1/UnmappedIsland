@@ -9,8 +9,9 @@
 してだけ要る。1行に畳んである理由（auto の分類器が打った文字列で判断する）は、そちらの冒頭。
 
 **この係は [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh) からは投入されない。** 渡す形
-（`題:` の行と、本文を囲むバッククォート4つ）だけを揃えてあるのは、読む側が2通りの綴りを覚えなくて
-よいようにするため。**`題:` の行は Routine の名前にもなる**（`watch-routine.sh` が探すときの鍵）ので、
+（`題:` の行と、本文を囲むバッククォート）だけを揃えてあるのは、
+[`watch-routine.sh`](../scripts/agent/watch-routine.sh) が周期の係と同じ読み方
+（[`prompt-template.sh`](../scripts/agent/prompt-template.sh)）でここを読むため。**`題:` の行は Routine の名前にもなる**（`watch-routine.sh` が探すときの鍵）ので、
 変えると次の登録が2本目を作る。
 
 題: 監視 デーモンの点検

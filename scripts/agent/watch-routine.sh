@@ -63,6 +63,8 @@ CCR_META="${CCR_META:-$ROOT/.claude/ccr-meta.sh}"
 
 # shellcheck source=scripts/agent/ccr-env.sh
 source "$HERE/ccr-env.sh"
+# shellcheck source=scripts/agent/prompt-template.sh
+source "$HERE/prompt-template.sh"
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -153,21 +155,11 @@ fi
 
 # --- 自分の Routine を直す ----------------------------------------------------
 
-# 渡すのは囲みの中だけ（[`dispatch-chore.sh`](dispatch-chore.sh) と同じ形）。
+# 渡すのは囲みの中だけで、Routine の名前はひな形が名乗る題（[`prompt-template.sh`](prompt-template.sh)）。
 INSTRUCTION="$WORK/prompt.md"
-awk '/^````$/ { inside = !inside; if (!inside) exit; next } inside' "$PROMPT" >"$INSTRUCTION"
-[ -s "$INSTRUCTION" ] || {
-  echo "プロンプトの囲み（\`\`\`\`）が空: $PROMPT" >&2
-  exit 1
-}
-
-# **日本語をシェル変数に載せない**（`dispatch-chore.sh` と同じ）。ファイルで node へ渡す。
+template_body "$PROMPT" "$INSTRUCTION"
 NAME="$WORK/name.txt"
-sed -n 's/^題: *//p' "$PROMPT" | head -1 >"$NAME"
-[ -s "$NAME" ] || {
-  echo "プロンプトに \`題:\` の行が無い: $PROMPT" >&2
-  exit 1
-}
+template_title "$PROMPT" "$NAME"
 
 # 登録済みの Routine を引く。**繰れない**——`list_triggers` は `cursor` を受けるが、応答に返して
 # よこすのは `has_more` だけで、次を指す印が無い（2026-09-06 に実測）。**1回で引ききれたことを見て、

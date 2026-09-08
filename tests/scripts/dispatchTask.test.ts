@@ -80,7 +80,7 @@ esac
         env: {
           ...process.env,
           PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
-          // 本文まで見るので切らせない（`dispatch-task.sh` の `DRY_RUN=full`）。
+          // 本文まで見るので切らせない（`dispatch-steps.sh` の `DRY_RUN=full`）。
           DRY_RUN: 'full',
           CLOUD_ENV: 'env_TEST_CLOUD',
           BRIDGE_ENV: 'env_TEST_BRIDGE',
