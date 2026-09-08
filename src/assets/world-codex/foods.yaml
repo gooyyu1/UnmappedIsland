@@ -4,7 +4,7 @@
 # 両者は別の数（docs/engine/DigestionSystem.md）。水気の多い物はかさだけ大きく、生肉はかさの割に
 # 身にならない。値はいずれも仮のもの。
 #
-# **かさ・中身とは別に、口にした喜び（happiness）も名乗る。** どの食べ物がどの値を名乗るかは
+# **かさ・中身とは別に、食べた喜び（happiness）も名乗る。** どの食べ物がどの値を名乗るかは
 # docs/world/Characters.md 幸福度節の表が持ち、書き忘れは tests/world-codex/foodsYaml.test.ts が
 # 全数で見張る。
 #
