@@ -53,7 +53,7 @@ export function parseConditionList(
  * 指すため、Requirement参照）。
  *
  * `fieldName`は、この並びが載っているキーの名前（エラーメッセージ用）。`conditions`とは限らない
- * ——ルートキーの`crafting_conditions`（13.4節）も同じ形を共有するので、呼び出し側が答える。
+ * ——ルートキーの`crafting_conditions`（13.5節）も同じ形を共有するので、呼び出し側が答える。
  */
 export function parseRequirementList(
   loader: WorldCodexYamlLoader,

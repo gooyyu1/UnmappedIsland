@@ -201,13 +201,17 @@ generation_scopes:
   30 km² で 727 m）。
 - **道の無い熱帯の地面を歩く速さは 4 km/h**（`move_cost` が 1.0 の土地）。
 
-これらは `generation_scopes.island` の `diameter_meters`・`elevation_top_meters`・
-`walk_meters_per_hour` として、**それぞれ現実の単位で別々に宣言**します。1つの値に縮尺と速さを
-兼ねさせると、どちらも外の知識と突き合わせて検算できなくなるためです
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656) の 14
+
+#### 大きさと速さは、それぞれ別のキーで宣言する
+
+上の値をどう持つかを決めたもので、覆すのに人間の判断は要りません。
+
+`generation_scopes.island` の `diameter_meters`・`elevation_top_meters`・`walk_meters_per_hour`
+として、**それぞれ現実の単位で別々に宣言**します。1つの値に縮尺と速さを兼ねさせると、どちらも外の
+知識と突き合わせて検算できなくなるためです
 （[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「現実に単位があるものは、その単位で持つ」
 「1つの原因に、複数の結果を兼ねさせない」）。
-
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656) の 14
 
 #### 3.5.1 座標配置（海岸に囲まれ、かつ海岸過多にならない配置）
 

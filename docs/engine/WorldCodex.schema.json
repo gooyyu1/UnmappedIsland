@@ -88,7 +88,7 @@
     },
     "crafting_conditions": {
       "$ref": "#/$defs/conditions_list",
-      "description": "全レシピの工程を進めるのに一律で掛かる条件（GameElementDefinition.md 13.4節）。要件の並びなので、要素ごとにreasonを書ける（14.6節）。"
+      "description": "全レシピの工程を進めるのに一律で掛かる条件（GameElementDefinition.md 13.4節）。要件の並びなので、要素ごとにreasonを書ける（同13.5節・14.6節）。"
     },
     "patch_object_defs": {
       "description": "既にあるobject_defへの変更（GameElementDefinition.md 3.4節）。",

@@ -171,7 +171,7 @@ export class WorldCodex {
    *
    * 可否と「なぜできないか」を同じ1回の評価から返すのは、レシピの解放条件
    * （`RecipeDef.unmetUnlockRequirement`）と同じ理由。成果物のインスタンスはまだ無いので、
-   * 参照できるのはagentだけ（13.4節）。
+   * 参照できるのはagentだけ（13.5節）。
    */
   unmetCraftingRequirement(agent: WorldObject | undefined): Requirement | undefined {
     return this.craftingConditions?.firstUnmet(ReferenceContext.asking(agent));

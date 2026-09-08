@@ -80,7 +80,7 @@ function stand(character: string): {
   return { player: new PlayerCharacter(instance, codex), session, world: worldInstance, land: beach };
 }
 
-/** 寒さの入口（`chill_point`）の素の値（VitalsSystem.md 8.3節）。 */
+/** 寒さの入口（`chill_point`）の素の値（VitalsSystem.md 8.4節）。 */
 const CHILL_POINT = 16;
 
 /**
