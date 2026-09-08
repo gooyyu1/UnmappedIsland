@@ -109,9 +109,8 @@ export class CellLayout {
   }
 
   /**
-   * スタックの区別を畳み込んだ、中身全部の写し。**読んだ時点の顔ぶれを写して返す**ので、受け取った側は
-   * 辿っている途中で中身が出入りしても構わない（時間経過は辿りながら子を消す。WorldObject.tick）。
-   * 写しであることは契約（GameElementDefinition.md 7.6節）。
+   * スタックの区別を畳み込んだ、中身全部の写し。**読んだ時点の顔ぶれを写して返すのは契約**
+   * （GameElementDefinition.md 7.6節）。
    */
   get contents(): readonly WorldObject[] {
     const contents: WorldObject[] = [];
