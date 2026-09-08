@@ -512,7 +512,7 @@ flowchart TB
 | 何をするとき | 打つもの | 畳んだ中に必ず入る確認 |
 | --- | --- | --- |
 | 盤面を見る | [`board.sh`](../scripts/agent/board.sh) | 依存（`blockedBy`）と、もう投入したか |
-| 投入する | [`dispatch-task.sh`](../scripts/agent/dispatch-task.sh) / [`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) | issue（PR）が開いているか・空の箱で起動していないか・**指示が化けずに届いたか** |
+| 投入する | [`dispatch-task.sh`](../scripts/agent/dispatch-task.sh) / [`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) | issue（PR）が開いているか・空の箱で起動していないか・**指示が欠けずに届いたか** |
 | 盤面を回す | [`daemon.sh`](../scripts/agent/daemon.sh) | 8節の手・手綱・**同じ盤面へ二度打たないこと** |
 | マージして片付ける | [`merge-and-close.sh`](../scripts/agent/merge-and-close.sh) | 機械の関門・issue が閉じたか・レビューのセッションを畳んだか・本体の追随 |
 | 画面を貼る | [`push-screenshot.sh`](../scripts/agent/push-screenshot.sh) | 証跡を `main` にも消える枝にも置かないこと |
