@@ -71,7 +71,7 @@ dump_dry_run() {
 #
 #   SESSION <セッションID>
 #   SOURCES <リポジトリのURL>@<リビジョン>   … 空の箱で起動していないことの確認
-#   一致 / 不一致                            … 送った指示（`$2`）が化けずに届いたか
+#   一致 / 不一致                            … 送った指示（`$2`）が欠けずに届いたか
 create_session_and_check() {
   local args="$1" instruction="$2" session sources
   # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
