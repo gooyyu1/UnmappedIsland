@@ -1048,7 +1048,7 @@ describe('board-move.mjs', () => {
   // 書き換わらない**——「`task` でも `meta` でも無い」で書いていたときは、出口が増えるたびに
   // 条件を足す必要があった。
   const unsorted = (number: number) => ({ number, labels: [], blockedBy: { nodes: [] } });
-  const TRIAGE = `CHORE triage .claude/triage-prompt.md ${NOW} --bridge`;
+  const TRIAGE = `CHORE triage .claude/triage-prompt.md ${NOW}`;
   const ANALYSIS = `CHORE analysis .claude/analysis-prompt.md ${NOW}`;
   const POLICY = `CHORE policy .claude/policy-cycle-prompt.md ${NOW}`;
   const TREND = `CHORE trend .claude/analysis-trend-prompt.md ${NOW}`;

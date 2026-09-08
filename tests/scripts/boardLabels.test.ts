@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { parse } from 'yaml';
-import { pathForBash, runScript } from '../support/runScript';
+import { pathForBash, runScript, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
@@ -217,14 +217,22 @@ describe('board-labels.yml の verdict', () => {
 });
 
 /**
- * ワーカーが仕事を人へ返す段（`.claude/board-design.md` 2.15.2）。**ここが動かないと、返したことが
- * ラベルにならない**——issue は `kind:task` が付いたままなので、盤面はそのまま次のセッションへ
- * 配り直し、返した意味が消える。
+ * セッションの名乗りを盤面へ移す段（`.claude/board-design.md` 2.15.2・2.16.2・2.17.3）。**ここが
+ * 動かないと、返したことがラベルにならない**——issue は `kind:task` が付いたままなので、盤面は
+ * そのまま次のセッションへ配り直し、返した意味が消える。**順序（`blockedBy`）はここが唯一の
+ * 経路**なので、動かなければ張られないまま配られる。
  */
 describe('board-labels.yml の declared', () => {
   const ISSUE = '1376';
 
+  /** 通る名乗り用。**落ちたことを結果に混ぜない**ので、落ちれば「何もしない」と区別が付く。 */
   function runDeclared(body: string): string[] {
+    const result = spawnDeclared(body);
+    if (result.status !== 0) throw new Error(`declared が ${result.status} で終わった: ${body}`);
+    return result.edits;
+  }
+
+  function spawnDeclared(body: string): { readonly edits: string[]; readonly status: number | null } {
     const work = mkdtempSync(join(tmpdir(), 'unmapped-island-returned-'));
     const dir = pathForBash(work);
     try {
@@ -236,6 +244,15 @@ case "$1 $2" in
 "issue edit")
   shift 2
   echo "$*" >>'${dir}/edits.txt'
+  ;;
+"api --method")
+  shift 3
+  echo "api $*" >>'${dir}/edits.txt'
+  ;;
+# 先に要るほうの数値 ID を引く側。**番号から導ける値を返す**ので、どの issue を引いたかが
+# 打たれた行に残る。
+"api repos/"*)
+  printf '88%s\\n' "\${2##*/}"
   ;;
 *) exit 1 ;;
 esac
@@ -253,7 +270,7 @@ esac
       const step = join(work, 'step.sh');
       writeFileSync(step, run, 'utf-8');
 
-      runScript(step, [], {
+      const result = spawnScript(step, [], {
         stdio: 'pipe',
         env: {
           ...process.env,
@@ -265,10 +282,13 @@ esac
         },
       });
 
-      return readFileSync(join(work, 'edits.txt'), 'utf-8')
-        .split('\n')
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
+      return {
+        edits: readFileSync(join(work, 'edits.txt'), 'utf-8')
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0),
+        status: result.status,
+      };
     } finally {
       rmSync(work, { recursive: true, force: true });
     }
@@ -281,7 +301,7 @@ esac
     ]);
   });
 
-  // **クラウドのセッションが盤面へ書ける経路はこれだけ**（2.16.2）——あちらはラベルを操作できない。
+  // **名乗らせるのは、なぜブリッジが要るのかがラベルに残らないから**（2.16.2）。
   it('1行目が [ブリッジ] で始まっていれば、env:bridge を付ける', () => {
     expect(runDeclared('[ブリッジ] .claude/parallel-work.md を直す必要がある\n\nここまで調べた')).toEqual([
       `${ISSUE} --repo gooyyu1/UnmappedIsland --add-label env:bridge`,
@@ -294,10 +314,27 @@ esac
     expect(runDeclared('[返却] 決められない').join('\n')).not.toContain('kind:');
   });
 
+  // 棚卸しはクラウドで立つので、依存を張る道具を持たない（2.17.3）。**コメントを置いた issue が
+  // 待つ側**で、1行目が挙げる番号が先に要るほう。
+  it('1行目が [順序] なら、その issue を、挙がった番号の後ろへ回す', () => {
+    expect(runDeclared('[順序] #1234 の後（宣言を読む側がこの issue）')).toEqual([
+      `api repos/gooyyu1/UnmappedIsland/issues/${ISSUE}/dependencies/blocked_by -F issue_id=881234`,
+    ]);
+  });
+
+  // **黙って何もしないと、申告した側は張られたと思ったまま進む。**
+  it('[順序] の番号が読めなければ落ちる', () => {
+    const result = spawnDeclared('[順序] さっきの issue の後');
+
+    expect(result.status).not.toBe(0);
+    expect(result.edits).toEqual([]);
+  });
+
   it('名乗りの行でないコメントには何もしない', () => {
     expect(runDeclared('進捗です。あと少しで出せます。')).toEqual([]);
     expect(runDeclared('前置き\n[返却] 決められない')).toEqual([]);
     expect(runDeclared('前置き\n[ブリッジ] 承認で止まる')).toEqual([]);
+    expect(runDeclared('前置き\n[順序] #1234 の後')).toEqual([]);
   });
 });
 

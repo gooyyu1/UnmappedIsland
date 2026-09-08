@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # 周期で起きる係を1本、CCRのセッションへ投入する（`.claude/board-design.md` 2.17）。
 #
-#   bash scripts/agent/dispatch-chore.sh triage .claude/triage-prompt.md --bridge
+#   bash scripts/agent/dispatch-chore.sh triage .claude/triage-prompt.md
+#   bash scripts/agent/dispatch-chore.sh triage .claude/triage-prompt.md --bridge  # このPCで走らせる
 #   DRY_RUN=1 bash scripts/agent/dispatch-chore.sh triage .claude/triage-prompt.md
 #   DRY_RUN=full bash scripts/agent/dispatch-chore.sh triage .claude/triage-prompt.md  # 本文も切らない
 #

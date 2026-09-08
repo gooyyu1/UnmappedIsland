@@ -326,7 +326,7 @@ describe('board-round.mjs', () => {
   it('未整理があれば棚卸しを立て、立てた時刻を台帳へ残す', () => {
     const result = playRound({ issues: [{ number: 9, labels: [], blockedBy: { nodes: [] } }] });
 
-    expect(result.calls).toEqual(['dispatch-chore.sh triage .claude/triage-prompt.md --bridge']);
+    expect(result.calls).toEqual(['dispatch-chore.sh triage .claude/triage-prompt.md']);
     expect(result.ledger).toEqual({ 'cycle:triage': NOW.toISOString() });
   });
 

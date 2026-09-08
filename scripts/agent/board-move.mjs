@@ -170,9 +170,9 @@ const CYCLES = [
   {
     name: 'triage',
     hours: 24,
-    // **ブリッジでしか走れない**（2.16）。クラウドは GitHub の REST が塞がっていて、**既存 issue の
-    // 本文を書き換えられない**——番号を保ったまま書き換えるのが棚卸しの中心。
-    env: 'bridge',
+    // クラウドで足りる。**既存 issue の本文もラベルも、用意された道具で書き換えられる**
+    // ——番号を保ったまま書き換えるのが棚卸しの中心（2.17.3）。
+    env: 'cloud',
     locks: [],
     prompt: '.claude/triage-prompt.md',
     due: (board) => board.issues.some((issue) => !names(issue).some((name) => name.startsWith(KIND))),

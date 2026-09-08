@@ -5,10 +5,6 @@
 未整理が1件でもあれば一日一回立つ。渡し方は
 [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。
 
-**ブリッジ（`--bridge`）で走らせること。** クラウドのセッションは GitHub の REST が丸ごと塞がって
-いて、**既存の issue の本文を書き換えられない**。番号を保ったまま書き換えるのが棚卸しの中心なので、
-クラウドでは仕事にならない。
-
 **未整理の全件をまとめて1セッションに渡す。** 1件ずつ配ると、この係にしかできない仕事が全部落ちる
 ——**別々に立った issue が同じ原因であること**（#1042・#1043・#1044 はどれもカードの移動
 アニメーションの話だった）、**張るべき順序**、**重複**。どれも複数を並べて見た者にしか見えない。
@@ -23,14 +19,35 @@
 ````
 [デーモン] 未整理の issue を棚卸しします。
 
-**未整理**とは、open で `kind:` のラベルを1つも持たない issue です。まずこれを引いてください。
+**未整理**とは、open で `kind:` のラベルを1つも持たない issue です。これらを分類し、投入できる形へ
+翻訳するのが、このセッションの仕事です。
+
+## GitHub を触る道具
+
+**まず `command -v gh` を打ってください。** この係はクラウドで立つので、**入っていないほうが普通
+です。** 無いときは GitHub の MCP で同じことをします。
+
+| やること | `gh` があるとき | 無いとき |
+| --- | --- | --- |
+| 未整理を引く | `gh issue list --state open --limit 100 --json number,title,labels` | `list_issues`（`state: "OPEN"`） |
+| 本文を読む | `gh issue view <番号> --json body` | `issue_read`（`method: "get"`） |
+| 本文を書き換える | `gh issue edit <番号> --body-file <本文>` | `issue_write`（`method: "update"`・`issue_number`・`body`） |
+| ラベルを付ける | `gh issue edit <番号> --add-label kind:task` | `issue_write`（`method: "update"`・`issue_number`・`labels`） |
+| issue を立てる | `gh issue create --title <題> --body-file <本文> --label kind:task --label origin:agent` | `issue_write`（`method: "create"`・`title`・`body`・`labels`） |
+| コメントを置く | `gh issue comment <番号> --body-file <本文>` | `add_issue_comment`（`issue_number`・`body`） |
+
+引いた一覧から `kind:` を持たないものを選ぶのはあなたです。`gh` があるなら次で絞れます。
 
 ```
 gh issue list --state open --limit 100 --json number,title,labels |
   jq -r '.[] | select([.labels[].name] | map(startswith("kind:")) | any | not) | "\(.number)\t\(.title)"'
 ```
 
-これらを分類し、投入できる形へ翻訳するのが、このセッションの仕事です。
+**`issue_write` の `labels` には、付け直した後の全部を渡してください。** 足すぶんだけを渡すと、
+既に付いているラベルが落ちます。**本文を長く書くときは `--body-file`**——シェルの引数に載せると
+引用符で壊れます。
+
+**依存（`blockedBy`）だけは、どちらの側でも自分では触りません。** 頼み方は下の「順序を張る」。
 
 ## やること
 
@@ -88,8 +105,8 @@ gh issue list --state open --limit 100 --json number,title,labels |
 加えて、当てはまるものだけ:
 
 - **`env:bridge`** — **クラウドではできない仕事**のとき。手元の画面やローカルにしか無いものを使う、
-  既存 issue の本文を書き換える、など（`.claude/board-design.md` 2.16）。**`.claude/**` を触ることは
-  理由になりません**——クラウドのセッションもそこは書き換えられます。
+  など（`.claude/board-design.md` 2.16）。**`.claude/**` を触ることも、既存 issue の本文やラベルを
+  書き換えることも理由になりません**——クラウドのセッションもどちらもできます。
 - **`急ぎ`** — **それが片付くまで他の仕事が止まる**とき（盤面が回らない・`main` のCIが赤い、など）。
   効くのは投入の順だけです（`.claude/board-design.md` 2.18）。**迷ったら付けないこと**——
   全部に付けば、無いのと同じ「古いものから」に戻ります。
@@ -98,20 +115,12 @@ gh issue list --state open --limit 100 --json number,title,labels |
   （`scripts/agent/**`・`.github/workflows/board-labels.yml`）。
 
 分類している issue に付けるのは `kind:` から下だけです。**出どころの印は動かしません**——立てた側が
-起票のときに名乗るもので、後から見分けられる者は居ません。
+起票のときに名乗るもので、後から見分けられる者は居ません。`origin:agent` を渡すのは (c) で新しく
+立てる子だけで、**起票のときに一緒に**渡します。
 
-```
-gh issue edit <番号> --add-label kind:task --add-label env:bridge
-```
-
-`origin:agent` を渡すのは (c) で新しく立てる子だけで、**起票のときに一緒に**渡します。
-
-```
-gh issue create --title <題> --body-file <本文> --label kind:task --label origin:agent
-```
-
-**ラベルの綴りに `:` が入っていても、Windows で化けることはありません**——`kind:task` も
-`origin:agent` もそのまま通ります（実測 2026-09-06）。`MSYS2_ARG_CONV_EXCL='*'` を前に置くのは
+打ち方は上の「GitHub を触る道具」。**ラベルの綴りに `:` が入っていても、Windows で化けることは
+ありません**——`kind:task` も `origin:agent` もそのまま通ります（実測 2026-09-06）。
+`MSYS2_ARG_CONV_EXCL='*'` を前に置くのは
 `git show origin/main:.claude/x.md` のような綴りのほうで、あれは `origin\main;.claude\x.md` に
 化けます。`/tmp/...` のような絶対パスも書き換わりますが、行き先は同じなので害はありません。
 
@@ -119,15 +128,19 @@ gh issue create --title <題> --body-file <本文> --label kind:task --label ori
 
 **issue の本文に `## 順序` 節があったら、`blockedBy` を張ってください。** そこは立てたセッションが
 「先に片付いていないと着手できない issue」を申告した場所です（`.claude/parallel-work.md`「順序は
-issue の本文で申告し、棚卸しが張る」）。**張るのはあなたです**——セッションの側は申告までで、
+issue の本文で申告し、棚卸しが張る」）。**決めるのはあなたです**——セッションの側は申告までで、
 **張るかどうかの判断はここに集めてあります。**
 
+**張るのは、待つ側の issue へ次の形のコメントを1つ置くことです。** 1行目がこの形なら
+[`board-labels.yml`](../.github/workflows/board-labels.yml) が `blockedBy` を張ります
+（`.claude/board-design.md` 2.17.3）。**自分で依存の API を叩かないでください**——この経路なら、
+どこで走っていても同じ手で張れて、**なぜその順序かも issue に残ります。**
+
 ```
-gh api --method POST repos/gooyyu1/UnmappedIsland/issues/<この issue>/dependencies/blocked_by \
-  -F issue_id="$(gh api repos/gooyyu1/UnmappedIsland/issues/<先に要るほう> --jq .id)"
+[順序] #<先に要るほう> の後（<なぜ後でないと着手できないか>）
 ```
 
-渡すのは REST の数値 ID（`--jq .id`）で、`I_kwDO...` の node ID では通りません。
+**1件につき1つのコメント**にしてください。読むのは1行目だけで、そこに挙がった番号が先に要るほうです。
 
 - **推定しないこと。** 申告の無い issue に順序を作らない。本文を読んで思いついた前後関係も、
   同じ原因だと見抜いた組も、**申告が無いなら張りません。**
@@ -139,7 +152,7 @@ gh api --method POST repos/gooyyu1/UnmappedIsland/issues/<この issue>/dependen
   コンフリクトとして出るので、盤面が直させます。
 - **迷ったら張らない。** 張り忘れ（早すぎる着手）はリベース1回で済みますが、余分な鎖は黙って
   遅くなり、誤りに誰も気づきません。
-- 循環は GitHub が 422 で拒みます。
+- 循環は GitHub が 422 で拒み、張りに行ったワークフローが赤くなります。
 
 ## 守ること
 

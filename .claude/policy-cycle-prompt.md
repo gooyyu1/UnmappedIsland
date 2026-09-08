@@ -40,8 +40,8 @@
 | issue を立てる | `gh issue create --title <題> --body-file <本文> --label 判断待ち --label origin:agent` | `issue_write`（`method: "create"`・`title`・`body`・`labels: ["判断待ち", "origin:agent"]`） |
 
 `origin:agent` は、人が立てた issue と見分けるための印です（`.claude/parallel-work.md`「自分で立てた
-issue には `origin:agent` を付ける」）。**起票のときに一緒に渡してください**——この係はクラウドで
-立つので、後からラベルだけを付け直す道がありません（`.claude/board-design.md` 2.16）。ラベルの綴りに
+issue には `origin:agent` を付ける」）。**起票のときに一緒に渡してください**——後から付け直す道は
+ありますが、別の手が要る形にすると、付け忘れた issue が「人が立てた」として数えられます。ラベルの綴りに
 `:` が入っていても、引数が化ける心配はありません。**`--body-file` で渡してください**——本文は
 チェックボックスの一覧で長く、シェルの引数に載せると引用符で壊れます。
 
