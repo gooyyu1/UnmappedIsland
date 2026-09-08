@@ -83,7 +83,8 @@ required_props:
   # 自分も積荷として効き、手に持った物の重さもそこを通る。
   character: [load, weight]
 
-# 工程を進めるのに満たしていなければならない条件（GameElementDefinition.md 13.4節）。
+# 工程を進めるのに満たしていなければならない条件（GameElementDefinition.md 13.4節。
+# ルートキーで持つことは同13.5節）。
 # **全レシピに一律で掛かる。** レシピが表しているのは物を3つ以上組み合わせる複雑な作業なので、
 # 手元が見えなければどれも進まない（docs/engine/IlluminationSystem.md 5節）。
 #

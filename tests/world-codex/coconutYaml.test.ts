@@ -292,7 +292,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     const lipidId = codex.propertyNames.getId('lipid');
     // 1 tickぶんの減りを載せた値から測る（0まで減ると尽きて死ぬので、その手前から）。脂質は在庫が
     // 0だと輸送も動かないが、そのぶん脂の尽きた段に入るので水分は倍の-2/tickで減る
-    // （DigestionSystem.md 7節）。
+    // （DigestionSystem.md 8節）。
     player.getProperty(satietyId).setNumberWithoutEvents(16);
     player.getProperty(hydrationId).setNumberWithoutEvents(3);
     player.getProperty(lipidId).setNumberWithoutEvents(0);
