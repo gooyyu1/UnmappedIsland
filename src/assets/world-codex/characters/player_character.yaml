@@ -331,7 +331,7 @@ traits:
         range: {min: 0, max: 1500}
         stages:
           # 腹に何も無い間は免疫が落ちる（docs/engine/DigestionSystem.md 6.2節）。押し下げるのはビタミン・
-          # 空腹・寝不足・気の塞ぎの4つで、**空腹はビタミンに次いで重い**。modifyなので、食べればその場で戻る。
+          # 空腹・寝不足・気の塞ぎで、**空腹はビタミンに次いで重い**。modifyなので、食べればその場で戻る。
           - name: starving
             alert: danger
             passives:
@@ -406,7 +406,7 @@ traits:
         stages:
           # 壊血病。古傷が開き、歯が抜ける。痛みは刺し傷・牙の傷と並ぶ60で、この島で最も重い段。
           # modifyなので可逆——葉物を食べて段を抜ければ、その場で引く。
-          # 免疫も押し下げる（docs/engine/DigestionSystem.md 6.2節）。**押し下げる4つのうちビタミンが
+          # 免疫も押し下げる（docs/engine/DigestionSystem.md 6.2節）。**押し下げるものの中でビタミンが
           # 最も重く、しかもここと下のdeficientの2段で押す**——壊血病の創傷治癒不全が現実で最も確かめ
           # られているから。上の「古傷が開く」と同じ現象を、傷ではなく菌の側から見たものにあたる。
           - name: scurvy
@@ -545,7 +545,7 @@ traits:
         value: 75
         range: {min: 0, max: 100}
         stages:
-          # 心が折れている間は免疫も落ちる（docs/engine/DigestionSystem.md 6.2節）。**押し下げる4つのうち
+          # 心が折れている間は免疫も落ちる（docs/engine/DigestionSystem.md 6.2節）。**押し下げるものの中で
           # 気の塞ぎが最も軽い**——現実で最も裏付けの弱い経路なので、順位の一番下に置く。
           - name: miserable
             alert: danger
