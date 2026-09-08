@@ -100,10 +100,11 @@ object_defs:
     expect(second.requirements[0].count).toBe(1);
   });
 
-  it('conditionsが無いレシピは最初から解放されている', () => {
+  it('conditionsが無いレシピは、誰にとっても解放されている', () => {
     const codex = load(`
 object_defs:
   wood: {}
+  character: {}
   stick:
     recipes:
       basic:
@@ -112,7 +113,13 @@ object_defs:
             duration: 5
 `);
 
-    expect(recipesOf(codex, 'stick')[0].unmetUnlockRequirement(undefined)).toBeUndefined();
+    const session = new WorldSession(codex);
+    const agent = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
+
+    const recipe = recipesOf(codex, 'stick')[0];
+
+    expect(recipe.unlock).toBeUndefined();
+    expect(recipe.unmetUnlockRequirement(agent)).toBeUndefined();
   });
 
   it('conditionsはagentのスキルの段で解放を判定する', () => {
