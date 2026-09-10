@@ -5,7 +5,7 @@ import type { CraftingInput, CraftingStep } from './CraftingStep';
 import { craftingStepsOf } from './craftingSteps';
 import type { IslandLocations } from './islandLocations';
 import { islandLocationsOf } from './islandLocations';
-import { externalTickDeltasOn, rangeCyclesOf } from './rangeCycles';
+import { rangeCyclesOf } from './rangeCycles';
 
 /**
  * 島の産物から**島を出るのに要るもの**まで、工程の鎖が閉じているかを数える。`startupReach.ts` が
@@ -180,7 +180,7 @@ function stepsOf(codex: WorldCodex): readonly CraftingStep[] {
   const defs = [...codex.objects];
   return defs.flatMap((def) => [
     ...craftingStepsOf(codex, def),
-    ...rangeCyclesOf(def, undefined, externalTickDeltasOn(def, defs))
+    ...rangeCyclesOf(def, undefined, defs)
       .filter((cycle) => cycle.repeats || cycle.drivenBy !== undefined)
       .map((cycle) => cycle.step),
   ]);

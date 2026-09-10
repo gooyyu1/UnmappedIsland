@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { externalTickDeltasOf, externalTickDeltasOn, rangeCyclesOf } from '../../src/analysis/rangeCycles';
+import { externalTickDeltasOf, rangeCyclesOf } from '../../src/analysis/rangeCycles';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
@@ -692,10 +692,8 @@ object_defs:
   it('押し手に押される周期が要るのは、押し手が傍に在ることだけ', () => {
     // 押し手は取りうる量のぶんだけ場合を作り、そのどれもが自分の条件つきを数えない。畳まないと
     // 「条件を1つも要らない」が量の数だけ並ぶので、棘（-1と-5）では2本になっていた。
-    const external = externalTickDeltasOn(defOf('hare'), [...codex.objects]);
-
     expect(
-      rangeCyclesOf(defOf('hare'), undefined, external)
+      rangeCyclesOf(defOf('hare'), undefined, [...codex.objects])
         .filter((cycle) => cycle.drivenBy === defOf('thorn').globalId)
         .map((cycle) => cycle.gatedBy),
     ).toEqual([[[]]]);
@@ -705,10 +703,8 @@ object_defs:
     // 固まるまでの60mLでは4,600mLは尽きないので、失血死は敗血症の-40/tickだけが起こす。その-40は
     // 傷が膿み切ってから効き始めるので、倒れるまでは320 + 115＝435 tick。立ち上がりを数えないと、
     // 負った瞬間から血が減るものとして115 tickになっていた。
-    const external = externalTickDeltasOn(defOf('boar'), [...codex.objects]);
-
     expect(
-      rangeCyclesOf(defOf('boar'), undefined, external).filter(
+      rangeCyclesOf(defOf('boar'), undefined, [...codex.objects]).filter(
         (cycle) => codex.propertyNames.getName(cycle.propertyGlobalId) === 'blood',
       ),
     ).toMatchObject([{ minutes: (320 + 115) * 15, destroysSelf: true, drivenBy: defOf('gash').globalId }]);
@@ -716,8 +712,7 @@ object_defs:
 
   /** その型の、そのプロパティが持つ周期のうち、外から押されて回るもの。 */
   function drivenCyclesOf(objectName: string, propertyName: string) {
-    const def = defOf(objectName);
-    return rangeCyclesOf(def, undefined, externalTickDeltasOn(def, [...codex.objects])).filter(
+    return rangeCyclesOf(defOf(objectName), undefined, [...codex.objects]).filter(
       (cycle) =>
         cycle.drivenBy !== undefined && codex.propertyNames.getName(cycle.propertyGlobalId) === propertyName,
     );

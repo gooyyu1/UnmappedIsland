@@ -111,14 +111,16 @@ export interface RangeCycle {
  * **押し手がその段を開けた場合だけは別**で、そこは押し手ごとに1つの速さに決まる
  * （relayedTickDeltasOf）。
  *
- * externalは、隣の物が与えるtick毎の増減（ExternalTickDelta参照）。同じプロパティを動かすものが
- * 複数あれば、**押し手ごとに別の周期**を返す——炉で焼くのと傷で失血するのは、要る物も速さも違う。
+ * neighborsは、この型の傍に置かれうる型。**そこから押し手を拾うのはここ**（externalTickDeltasOn）
+ * ——同じプロパティを動かすものが複数あれば、**押し手ごとに別の周期**を返す。炉で焼くのと傷で
+ * 失血するのは、要る物も速さも違う。省くと、隣に押されて初めて進む周期は返らない。
  */
 export function rangeCyclesOf(
   def: ObjectDef,
   outer?: StaticValueResolver,
-  external: readonly ExternalTickDelta[] = [],
+  neighbors: readonly ObjectDef[] = [],
 ): readonly RangeCycle[] {
+  const external = externalTickDeltasOn(def, neighbors);
   const pushed = [...external, ...external.flatMap((driver) => relayedTickDeltasOf(def, driver))];
 
   const cycles: RangeCycle[] = [];
@@ -413,10 +415,7 @@ function pushingCaseOf(def: ObjectDef, combination: readonly TickDelta[]): Pushi
  * 炉の火の枠が`roastable`を受けるから炉は肉を焼けるし、獲物の怪我の枠が`injury`を受けるから
  * 刺さった傷は血を奪える。
  */
-export function externalTickDeltasOn(
-  def: ObjectDef,
-  defs: readonly ObjectDef[],
-): readonly ExternalTickDelta[] {
+function externalTickDeltasOn(def: ObjectDef, defs: readonly ObjectDef[]): readonly ExternalTickDelta[] {
   const found: ExternalTickDelta[] = [];
   for (const source of defs) {
     if (source.globalId === def.globalId) continue;
