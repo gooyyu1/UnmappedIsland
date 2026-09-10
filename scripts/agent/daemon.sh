@@ -234,8 +234,9 @@ stop_daemon() {
 # 0で返す。** 道具の言い分（`git`・`npm` が出すもの）は `$DAEMON_LOG` へ流す。
 sync_origin() {
   local common='' main_dir='' before='' head=''
-  # **引けなければ空のまま**（`watch-routine.sh` と同じ）。既定値を置くと、当てずっぽうの場所を
-  # 本体として進めにいく。`--path-format=absolute` を明示するのは、既定が相対で返りうるため。
+  # **引けなければ空のまま**（[`daemon-wake-task.sh`](daemon-wake-task.sh) と同じ）。既定値を置くと、
+  # 当てずっぽうの場所を本体として進めにいく。`--path-format=absolute` を明示するのは、既定が相対で
+  # 返りうるため。
   common=$(git -C "$ORIGIN" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || common=''
   [ -z "$common" ] || main_dir=$(dirname "$common")
   if [ -z "$main_dir" ]; then
