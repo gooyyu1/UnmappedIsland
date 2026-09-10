@@ -43,9 +43,9 @@ function decayPerTick(character: string, propertyName: string): number {
 
 /**
  * その段（GameElementDefinition.md 6.4節）に入る値。段は下端だけを書く半開区間なので下端がそのまま
- * 入るが、**下端を宣言していない受け皿**は値の並びの上で負の無限大に始まるので、すぐ上の段の1つ手前を
- * 採る（値の刻みは整数）。受け皿の下端をそのまま置くとrangeの下限へ丸まり、そこに`on_min`を持つ
- * プロパティでは段を見る前に死ぬ。
+ * 入るが、**下端を宣言していない受け皿**は値の並びの上で負の無限大に始まるので、rangeの下限と
+ * すぐ上の段の真ん中を採る。下端をそのまま置くとrangeの下限へ丸まり、そこに`on_min`を持つ
+ * プロパティでは段を見る前に死ぬ——真ん中なら、段の幅がどれだけ狭くても下限そのものにはならない。
  */
 function valueInStage(objectDef: ObjectDef, propertyName: string, stageName: string): number {
   const propertyDef = propOf(objectDef, propertyName);
@@ -55,9 +55,10 @@ function valueInStage(objectDef: ObjectDef, propertyName: string, stageName: str
   if (Number.isFinite(lowerBound)) return lowerBound;
 
   const upperBound = propertyDef.upperBoundOfStage(stageName);
-  if (upperBound === undefined)
-    throw new Error(`'${objectDef.name}'.${propertyName} の段'${stageName}'に入る値がありません。`);
-  return upperBound - 1;
+  const range = propertyDef.range;
+  if (upperBound === undefined || range === undefined)
+    throw new Error(`'${objectDef.name}'.${propertyName} の受け皿'${stageName}'に入る値がありません。`);
+  return (range.min + upperBound) / 2;
 }
 
 /**
