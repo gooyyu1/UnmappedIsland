@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
@@ -42,28 +43,44 @@ interface Run {
   readonly calls: readonly string[];
   /** `schtasks /create` へ渡されたファイルの中身そのまま。渡っていなければ `undefined`。 */
   readonly handed: Buffer | undefined;
-  /** 起こす先として渡るはずの、本体のチェックアウト。 */
+  /** 起こす先として渡るはずの、本体のチェックアウト。**綴りは bash のもの**（下の `bashPath`）。 */
   readonly root: string;
 }
 
 /** `schtasks` の言い分。撥ねた理由をそのまま出しているかは、この文字列で追う。 */
 const EXCUSE = 'ERROR: アクセスが拒否されました。';
 
+/**
+ * そのディレクトリを、**bash が呼ぶ名前**で答える。
+ *
+ * XMLへ入るのは `cd … && pwd` が出した綴りで、**MSYS2 の bash はそこで `/c/…` を返す**（`C:/…` では
+ * ない。[`ccr-env.sh`](../../scripts/agent/ccr-env.sh) が同じ往復を記録している）。Node が組んだ綴りと
+ * 直に突き合わせると、**Windowsで `npm test` を打った者にだけ赤くなり**、`schtasks` の無いCIでは
+ * 気づけない。
+ */
+function bashPath(path: string): string {
+  return execFileSync('bash', ['-c', `cd '${pathForBash(path)}' && pwd`], {
+    encoding: 'utf-8',
+  }).trim();
+}
+
 function register(world: World = {}): Run {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-daemon-wake-task-'));
   try {
     const dir = pathForBash(work);
-    const root = `${dir}/main`;
     // `--git-common-dir` の親が実在しないと、そこへ `cd` する側が転ぶ。
     mkdirSync(join(work, 'main', '.git'), { recursive: true });
+    const root = bashPath(join(work, 'main'));
 
+    // **答えるのは Windows の綴り**（`C:/…`）。本物の `git` がそう答えるので、身代わりも同じ形で
+    // 返す——`cd … && pwd` を通った後の綴り（`root`）とは違う。
     const git = join(work, 'git');
     writeFileSync(
       git,
       `${STUB_SHEBANG}
 ${world.gitFails === true ? 'exit 1' : ''}
 case "$*" in
-  *--git-common-dir*) printf '%s' '${root}/.git' ;;
+  *--git-common-dir*) printf '%s' '${dir}/main/.git' ;;
 esac
 `,
       'utf-8',
@@ -170,18 +187,17 @@ describe('daemon-wake-task.sh', () => {
   it('打つのは `daemon.sh start` の1行だけ', () => {
     const run = register();
 
-    expect(handedXml(run)).toContain(
-      `<Arguments>-lc "cd '${run.root}' &amp;&amp; bash scripts/agent/daemon.sh start"</Arguments>`,
-    );
+    // `&` はXMLでは書けないので、繋ぎは `&amp;&amp;`。**`cd` が転んだら打たない。**
+    expect(handedXml(run)).toContain('&amp;&amp; bash scripts/agent/daemon.sh start"</Arguments>');
     expect(handedXml(run).match(/<Exec>/g)).toHaveLength(1);
   });
 
-  // 起こす先は**本体のチェックアウト**。作業ツリーから打っても、進めた本体が走る。
+  // 起こす先は**本体のチェックアウト**（`.git` そのものではない）。作業ツリーから打っても、進めた
+  // 本体が走る。
   it('起こす先は、`--git-common-dir` が答えた本体', () => {
     const run = register();
 
-    expect(handedXml(run)).toContain(`cd '${run.root}' `);
-    expect(handedXml(run)).not.toContain(`${run.root}/.git`);
+    expect(handedXml(run)).toContain(`<Arguments>-lc "cd '${run.root}' `);
   });
 
   // **再起動の直後**（ログオン）と**落ちた跡**（毎時）で、拾う相手が違う（2.19）。
