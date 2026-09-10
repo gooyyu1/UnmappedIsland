@@ -112,10 +112,10 @@ describe('段へ届かせる、いちばん安い積み方', () => {
 describe('積む型が1つも出ない形は、どれを直せばよいかを名指しする', () => {
   const CANDIDATE: Candidate = { name: 'log_stool', lift: 8, minutes: 100 };
 
-  /** タグ・プロパティ・段の名乗りだけを差し替えて解かせ、投げた文言を返す。 */
-  function thrownBy(stack: typeof STACK, yaml: string): string {
+  /** 名乗り（タグ・プロパティ・段・人物）だけを差し替えて解かせ、投げた文言を返す。 */
+  function thrownBy(stack: typeof STACK, yaml: string, characterName = 'hermit'): string {
     try {
-      cheapestStackOf(buildCodex(yaml), 'hermit', () => CANDIDATE.minutes, stack);
+      cheapestStackOf(buildCodex(yaml), characterName, () => CANDIDATE.minutes, stack);
     } catch (error) {
       return (error as Error).message;
     }
@@ -194,8 +194,12 @@ object_defs:
     expect(message).toContain('常に押し上げる型が1つもありません');
   });
 
-  it('プロパティと人物は、別々に名指しする', () => {
+  it('プロパティの綴りと人物の綴りは、別々に名指しする', () => {
     expect(thrownBy({ ...STACK, propertyName: 'comfy' }, WORLD)).toContain('プロパティが、世界にありません');
+    expect(thrownBy(STACK, WORLD, 'hermlt')).toContain('人物が、世界にありません');
+  });
+
+  it('人物は在るが、その段を持たなければ、段の下限が無いと言う', () => {
     expect(thrownBy({ ...STACK, stageName: 'cozy' }, WORLD)).toContain('段の下限が、その人物にありません');
   });
 });
