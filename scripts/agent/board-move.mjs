@@ -6,6 +6,7 @@
 // **打つのは呼び手**（[`board-round.mjs`](board-round.mjs)）で、ここは決めるだけ。決める材料が
 // 全部引数に載っているので、実物を触らずに検査できる。
 //
+//   TIDY    <PR番号> <指紋>                  … マージ済みのPRを後片付けする（誰が入れたかを見ない）
 //   MERGE   <PR番号>
 //   ARCHIVE <セッションID> <指紋>            … 起こす先が無くなったセッションを畳む
 //   RESUME  <セッションID> mend   <PR番号>    <指紋>  … 差し戻し・コンフリクト・CIの赤を直させる
@@ -28,7 +29,7 @@
 //     "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
 //     "mainChecks": [ { "status": "COMPLETED", "conclusion": "SUCCESS" } ],   … `main` の先頭のCI
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments ],
-//     "mergedPrs":[ gh pr list --state merged --search merged:>=<窓の始まり> --json number,comments ],   … スメルを拾う係が読む範囲
+//     "mergedPrs":[ gh pr list --state merged --search merged:>=<窓の始まり> --json number,comments ],   … 後片付けの相手と、スメルを拾う係が読む範囲
 //     "pendingDecisions": 12,   … `.claude/decisions/` のうち `archive/` に入っていない件数
 //     "unsummarizedAnalyses": 3,   … `.claude/analysis/` のうち、二次がまだ読んでいない件数
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
@@ -442,8 +443,20 @@ export function moves(input) {
    */
   const mainCheck = color(input.mainChecks ?? []);
 
+  const tidies = [];
   const merges = [];
   const archives = [];
+
+  // **後片付けは、マージした手からは切り離してある**（2.10.4）。マージ済みのPRを見つけたら打つので、
+  // **ユーザーが画面から入れたPRも同じ1回を通る。** 指紋を残すのは、窓（`MERGED_WINDOW_HOURS`）の
+  // 幅ぶん同じPRが一覧に載り続けるため——**1回だけ**にするのはこの覚えで、無くしたときに重なるのは
+  // 窓に入っているぶんだけ（[`tidy-merged-pr.sh`](tidy-merged-pr.sh) は二度打っても同じ結果になる）。
+  //
+  // **古いものから捌く**（下の開いているPRと同じ向き）。
+  for (const pr of [...(input.mergedPrs ?? [])].sort((a, b) => a.number - b.number)) {
+    if (taken[`tidy:${pr.number}`] !== undefined) continue;
+    tidies.push(`TIDY ${pr.number} ${input.now}`);
+  }
   const mends = [];
   const stalls = [];
   const returns = [];
@@ -460,8 +473,8 @@ export function moves(input) {
 
     // **他のPRの上に積まれたPRは、盤面では捌けない。** CIは古い base の上で緑になり、レビューが読む
     // 差分にも下のPRの変更が混ざる（#1508 はこれで2周ぶん無駄にしている）。触らずに書き残すだけに
-    // する。下が入ると `merge-and-close.sh` が `main` へ張り替え、**そのまま書いた本人へ差し戻す**
-    // ——張り替えても差分とCIは載せ直すまで古いまま（あちらの「積まれたPRは…」）。
+    // する。下が入ると GitHub が base を `main` へ張り替え、`tidy-merged-pr.sh` が**そのまま書いた
+    // 本人へ差し戻す**——張り替わっても差分とCIは載せ直すまで古いまま（あちらの「張り替わったPRは…」）。
     if ((pr.baseRefName ?? 'main') !== 'main') {
       notes.push(`PR #${pr.number} は ${pr.baseRefName} の上に積まれている（下が入るまで触らない）`);
       continue;
@@ -523,7 +536,7 @@ export function moves(input) {
 
     if (labels.includes('通してよい')) {
       // PRの `判断待ち` が止めるのはマージだけ（2.13）。越え方は出どころで違う——機械が付けたものは
-      // `merge-and-close.sh <PR> --user-ok`（2.13.3）、レビュアーが付けたものはラベルを外す（2.13.4）。
+      // `merge-pr.sh <PR> --user-ok`（2.13.3）、レビュアーが付けたものはラベルを外す（2.13.4）。
       // **どちらもここでは見分けない。** 止める効き目は同じで、外れていれば下のマージが出る。
       if (labels.includes('判断待ち')) continue;
       if (check === 'green' && pr.mergeable === 'MERGEABLE') merges.push(`MERGE ${pr.number}`);
@@ -788,6 +801,9 @@ export function moves(input) {
   // 畳むのをマージの次に置くのは、**抱えているタスクの枠が空くから**（3.1 の並列度）。後ろへ回すと、
   // 終わったワーカーが枠を握ったまま、待っている task が投入されない周が続く。
   return [
+    // **後片付けはマージより先。** 本体のチェックアウトは作業ツリー全部の共有先なので、片付けを
+    // 後ろへ回すと、**入る本数だけ古いまま**になる（マージできるPRが並んでいる周は、片付く前に次が入る）。
+    ...tidies,
     ...merges,
     ...archives,
     ...mends,

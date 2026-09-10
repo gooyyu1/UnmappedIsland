@@ -27,6 +27,8 @@ interface Session {
 
 interface World {
   readonly prs?: readonly Record<string, unknown>[];
+  /** 窓に載っているマージ済みPR（後片付けの相手）。既定は1本も無い。 */
+  readonly mergedPrs?: readonly Record<string, unknown>[];
   readonly issues?: readonly unknown[];
   readonly sessions?: readonly Session[];
   /** 一覧そのものを引けない周。 */
@@ -60,6 +62,8 @@ interface World {
   readonly conflictLog?: string;
   /** 非0で終わらせる打ち手（スクリプトの名前）。 */
   readonly fails?: readonly string[];
+  /** 後片付けが終了コード2（残りがある）で返る周。 */
+  readonly leftover?: boolean;
   readonly ghFails?: boolean;
   /** `gh issue comment` だけが失敗する周（返す手が打てなかった形）。 */
   readonly commentFails?: boolean;
@@ -161,7 +165,10 @@ function playRound(world: World = {}): Result {
         comments.push(readFileSync(args[args.indexOf('--body-file') + 1], 'utf-8'));
         return '';
       }
-      if (first === 'pr' && second === 'list') return JSON.stringify(world.prs ?? []);
+      // 開いているPRの一覧と、窓に載っているマージ済みPRの一覧は、同じ `gh pr list` で引かれる。
+      if (first === 'pr' && second === 'list') {
+        return JSON.stringify((args.includes('merged') ? world.mergedPrs : world.prs) ?? []);
+      }
       if (first === 'issue' && second === 'list') return JSON.stringify(world.issues ?? []);
       if (first === 'issue' && second === 'view') {
         const state = (world.issueStates ?? {})[Number(third)];
@@ -190,6 +197,7 @@ function playRound(world: World = {}): Result {
       if (name === 'usage-record.sh') return { status: 0, stdout: '' };
       calls.push([name, ...args].join(' '));
       if ((world.fails ?? []).includes(name)) return { status: 1, stdout: '' };
+      if (name === 'tidy-merged-pr.sh' && world.leftover === true) return { status: 2, stdout: '' };
       // 畳んでよいかの判定は持たない（それは `archive-session.sh` の仕事）。渡された相手について、
       // 決めた行を1本返すだけ。
       if (name === 'archive-session.sh' && options?.capture === true) {
@@ -283,14 +291,38 @@ describe('board-round.mjs', () => {
   it('打つのは1周に1手だけ', () => {
     const result = playRound({ prs: [pr(10, passed), pr(20, passed)] });
 
-    expect(result.calls).toEqual(['merge-and-close.sh 10']);
+    expect(result.calls).toEqual(['merge-pr.sh 10']);
   });
 
   // 打てなかった手で周ごと止めると、止まっている種類と関係のない手まで巻き添えになる。
   it('打てなかった手の次へ進む', () => {
-    const result = playRound({ prs: [pr(10, passed), pr(20)], fails: ['merge-and-close.sh'] });
+    const result = playRound({ prs: [pr(10, passed), pr(20)], fails: ['merge-pr.sh'] });
 
-    expect(result.calls).toEqual(['merge-and-close.sh 10', 'dispatch-review.sh 20']);
+    expect(result.calls).toEqual(['merge-pr.sh 10', 'dispatch-review.sh 20']);
+  });
+
+  // 後片付けはマージした手から切り離してあるので、**マージ済みのPRを見つけた周に打つ**（2.10.4）。
+  // 打ったことを台帳へ残さないと、窓に載っているあいだ毎周打ち直す。
+  it('マージ済みのPRを後片付けし、打ったことを台帳へ残す', () => {
+    const result = playRound({ mergedPrs: [{ number: 9, comments: [] }] });
+
+    expect(result.calls).toEqual(['tidy-merged-pr.sh 9']);
+    expect(result.ledger).toEqual({ 'tidy:9': NOW.toISOString() });
+  });
+
+  // 終了コード2は「後片付けに残りがある」。**手は打てている**ので、覚えを残して次の周は別の手へ進む
+  // ——残りの多くは打ち直しても同じ結果になる。
+  it('後片付けに残りがあっても、打ったことにする', () => {
+    const result = playRound({ mergedPrs: [{ number: 9, comments: [] }], leftover: true });
+
+    expect(result.ledger).toEqual({ 'tidy:9': NOW.toISOString() });
+  });
+
+  // 打てなかった手の覚えを残すと、次の周からその相手は永久に飛ばされる。
+  it('後片付けを打てなかったら、覚えを残さない', () => {
+    const result = playRound({ mergedPrs: [{ number: 9, comments: [] }], fails: ['tidy-merged-pr.sh'] });
+
+    expect(result.ledger).toEqual({});
   });
 
   it('打った手は、そのときの指紋とともに台帳へ残る', () => {
@@ -310,6 +342,19 @@ describe('board-round.mjs', () => {
 
     expect(result.ok).toBe(true);
     expect(result.ledger).toEqual({ 'review:10': 'aaa111' });
+  });
+
+  // **後片付けの相手は開いているPRの一覧に載らない**ので、載っていないことでは捨てられない
+  // ——引けなかった周を「1件も無い」と読むと、その周に全部の覚えが消え、次の周に窓ぶんが丸ごと
+  // 打ち直される。捨てるのは窓（48時間）を過ぎたものだけ。
+  it('後片付けの覚えは、窓を過ぎたものだけ台帳から捨てる', () => {
+    const result = playRound({
+      prs: [pr(10)],
+      ledger: { 'tidy:8': '2026-09-04T02:00:00Z', 'tidy:9': '2026-09-01T02:00:00Z' },
+    });
+
+    expect(result.ledger['tidy:8']).toBe('2026-09-04T02:00:00Z');
+    expect(result.ledger['tidy:9']).toBeUndefined();
   });
 
   // **`cycle:` は盤面の何かに紐づく指紋ではない**（周期の係を前に立てた時刻。2.17）。掃除に
@@ -468,7 +513,7 @@ describe('board-round.mjs', () => {
 
     expect(result.ok).toBe(true);
     expect(result.log).toContain('差し戻す相手を引けなかった');
-    expect(result.calls).toEqual(['merge-and-close.sh 10']);
+    expect(result.calls).toEqual(['merge-pr.sh 10']);
   });
 
   // 一覧が欠けると**占有が全部「無い」に見えて投入が止まらない**——2026-09-05 に、書くセッションが
