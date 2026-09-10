@@ -1214,6 +1214,23 @@ auto の分類器は**打った文字列で判断する**。`git worktree list |
 デーモンの死は監視係が拾い、監視係の死は次の発火が拾うが、**発火そのものの死を拾う者は居ない。**
 見張りを足しても同じ場所へ戻る（足した見張りもこのPCで走る）ので、ここは仕組みで塞がない。
 
+#### 2.19.5 PCを再起動すると、Routine は投入先ごと死ぬ
+
+**ブリッジの環境はPCの再起動で作り直され、前のIDは消える。** Routine が持つ投入先は登録のときに
+決まり、`update_trigger` では替えられない（2.19.1）ので、**再起動を跨いだ Routine は、上がっている
+`remote-control` を横目に、存在しない環境へ発火し続ける**——2026-09-11、消えた環境を指したまま丸一日
+発火せず、その間デーモンも止まったままだった。
+
+**自分では直らない。** Routine を直すのは監視係自身（2.19.1）で、その監視係を立てるのが当の Routine
+だから。**再起動のあと、人が一度だけ次を打つ**——立て直した先は、そのとき生きている環境になる
+（[`ccr-env.sh`](../scripts/agent/ccr-env.sh)「ブリッジのIDは、開き直すたびに変わる」）。
+
+```bash
+bash scripts/agent/daemon.sh start        # 盤面を先に動かす
+printf '{"trigger_id":"<消えた環境を指す Routine>"}' | bash .claude/ccr-meta.sh delete_trigger
+bash scripts/agent/watch-routine.sh       # 立て直す。投入先は生きている環境になる
+```
+
 ### 2.20 盤面は、人が読める issue へ周期で書き出す
 
 盤面を見るには [`board.sh`](../scripts/agent/board.sh) を手元で叩くしかなく、**セッションを立て
