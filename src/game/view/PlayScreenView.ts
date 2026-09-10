@@ -556,7 +556,7 @@ export function fromGameSession(
             key: undefined,
             name: looks.nameOf(counterpart.object),
             icon: looks.iconOf(counterpart.object.def),
-            art: looks.artOf(counterpart.object.def, counterpart.object),
+            art: looks.artOf(counterpart.object),
           }
         : propertyLabelOf(object, counterpart.propertyGlobalId);
 
