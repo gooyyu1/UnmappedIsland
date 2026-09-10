@@ -554,19 +554,15 @@ export function moves(input) {
       continue;
     }
 
-    // **止める側と、読まれたかを見る側で、倒れる先が逆になる**（2.13.5）。前者は名乗りの無い判定も
-    // 今の版のものとして数える——数えないと、**名乗りを書き忘れた周だけ、人へ回した判定が消えて
-    // 取り消せないマージになる。** 後者は数えない——数えると、押した後の差分が二度と読まれない。
-    const stopping = verdictOn(pr, true);
-    const wasRead = verdictOn(pr, false);
-
     if (labels.includes('通してよい')) {
       // PRの `判断待ち` が止めるのはマージだけ（2.13）。**出どころで見分けない**——レビュアーが
       // 付けたものも機械が付けたものも、通すなら人が画面からマージする（2.13.1）。
       //
       // **レビュアーが求めたぶんは、ラベルが外れていても判定から読み直す**（2.13.5）。人が外して
       // から `却下` が付くまでの窓でここを通すと、**差し戻すつもりで外した操作がそのまま
-      // マージになる**——取り消せない。
+      // マージになる**——取り消せない。**名乗りの無い判定も今の版のものとして数える**（`true`）
+      // ——数えないと、名乗りを書き忘れた周だけ同じ窓が開く。
+      const stopping = verdictOn(pr, true);
       if (labels.includes('判断待ち') || (stopping !== undefined && asksUser(stopping))) continue;
       if (check === 'green' && pr.mergeable === 'MERGEABLE') merges.push(`MERGE ${pr.number}`);
       continue;
@@ -578,7 +574,9 @@ export function moves(input) {
 
     // **結論のラベルが無いことは、読まれていないことではない**（2.13.5）。人が外した窓では判定が
     // コメントにだけ残るので、そちらを先に訊く——ラベルで読むと、読み終えた差分へもう1本立つ。
-    if (wasRead !== undefined) {
+    // **こちらは名乗りの無い判定を数えない**（`false`）——どの版を読んだのか言えないものを数えると、
+    // 押した後の差分が二度と読まれない。**倒れる先が、上の `stopping` と逆になる。**
+    if (verdictOn(pr, false) !== undefined) {
       notes.push(`PR #${pr.number} は今の版の判定が書かれている（結論のラベルが付くのを待っている）`);
       continue;
     }
@@ -597,7 +595,7 @@ export function moves(input) {
     // **指紋が言えるのは「この差分を出した」までで、「読まれた」ではない。** 読み手がもう居ない
     // のに出したことを読まれたことと読むと、判定を書かずに終わったレビューがそのPRを永久に止める
     // （issue #1569。畳まれた理由が何であれ同じ）。**居るなら読んでいる最中**——畳むのは 2.10.3 の側。
-    // **判定を書き終えた形は、上の `verdict` が先に捕まえる。**
+    // **判定を書き終えた形は、上の `verdictOn` の枝が先に捕まえる。**
     const sent = taken[`review:${pr.number}`] === pr.headRefOid;
     if (sent && alive(`review-${pr.number}`).length > 0) {
       notes.push(`PR #${pr.number} はレビューが読んでいる最中で、結論のラベルはまだ無い`);
