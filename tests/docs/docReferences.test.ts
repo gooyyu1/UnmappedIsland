@@ -113,8 +113,8 @@ function withoutCode(markdown: string): string {
  * フェンスの中のYAMLコメントも実在のファイル・節を指している（docs/DocumentStyle.md 5節）。
  *
  * 節番号・節名の参照は原文をそのまま読む。あちらは `.md` 以外も見るので、Markdownの囲みという
- * 概念が無い。**書式そのものを見せる行は、この形の外に置く**——インラインコードで囲むか、
- * `<パス>` のようなプレースホルダで書く。
+ * 概念が無い。**インラインコードで外せるのはリンクだけ**で、書式そのものを見せる行の書き方は
+ * 参照の種類で違う（docs/DocumentStyle.md 5節）。
  */
 function withoutInlineCode(markdown: string): string {
   return markdown
@@ -529,6 +529,15 @@ describe('ドキュメントの参照', () => {
     expect(brokenLinkAnchorsIn(probe, fenced('[表示名](#no-such-anchor)'))).toHaveLength(1);
     const anchor = githubSlugs(headingsByPath.get(probe) ?? [])[0];
     expect(brokenLinkAnchorsIn(probe, fenced(`[表示名](#${anchor})`))).toHaveLength(0);
+  });
+
+  it('インラインコードで外せるのはリンクだけ（DocumentStyle.md 5節）', () => {
+    // 書式そのものを見せたい行の書き方が、参照の種類で違う。節の参照は囲んでも検査されるので、
+    // 書式は `文書名.md N節` のように日本語のプレースホルダで書く（この形は照合に掛からない）。
+    const probe = join('docs', 'DocumentStyle.md');
+    expect(brokenNumberedRefsIn(probe, '`GameElementDefinition.md 999節`')).toHaveLength(1);
+    expect(brokenNumberedRefsIn(probe, '`文書名.md N節`')).toHaveLength(0);
+    expect(brokenLinkFilesIn(probe, '`[表示名](./NoSuchFile.md)`')).toHaveLength(0);
   });
 
   it('印を探す本文は、コードフェンスの中を落とす（規約が書式を例示する）', () => {
