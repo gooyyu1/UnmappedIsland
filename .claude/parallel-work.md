@@ -210,7 +210,8 @@ bash scripts/agent/daemon.sh restart   # 直接 push した版や環境変数を
   |---|---|
   | 盤面を見る | [`board.sh`](../scripts/agent/board.sh)（開いているPR・`kind:task` の issue・畳んでいないセッションを1つの表に） |
   | 投入する | [`dispatch-task.sh`](../scripts/agent/dispatch-task.sh)（`<issue番号>` と指示ファイル） |
-  | マージして片付ける | [`merge-and-close.sh`](../scripts/agent/merge-and-close.sh)（`<PR番号>`） |
+  | マージする | [`merge-pr.sh`](../scripts/agent/merge-pr.sh)（`<PR番号>`） |
+  | マージ済みのPRを片付ける | [`tidy-merged-pr.sh`](../scripts/agent/tidy-merged-pr.sh)（`<PR番号>`） |
 
   **投入とマージはもう [`daemon.sh`](../scripts/agent/daemon.sh) が打っている。** 手で打つのは、
   デーモンが手を出さないものを捌くときだけ。
@@ -324,7 +325,7 @@ open な `blockedBy` が無く、open なPRが `Closes` で指していないも
 **一定時間ごとに自分を起こして掃除する形は採らない**（`send_later`）。自動承認ができないので、掃除
 1回ごとにユーザーのタップが要る——放っておいても壊れないものに、それは高すぎる。
 
-### 本体のチェックアウトは、マージのたびに追随させる
+### 本体のチェックアウトは、マージ済みのPRを見つけるたびに追随させる
 
 作業ツリーは `<repo>/.claude/worktrees/` に置かれる。**リポジトリの中なので、Node も npm も親を
 遡って本体の `node_modules` を共有する。** 作業ツリーごとに `npm install` を打つ必要は無い。
@@ -334,9 +335,10 @@ open な `blockedBy` が無く、open なPRが `Closes` で指していないも
 `ajv` 8 を持たず eslint 由来の 6 だけ在ったとき、`require` は通ったままテストが1本落ちた。踏んだ側は
 自分の変更を疑う。
 
-そこで [`merge-and-close.sh`](../scripts/agent/merge-and-close.sh) が、マージと同じ1回で本体を
+そこで [`tidy-merged-pr.sh`](../scripts/agent/tidy-merged-pr.sh) が、後片付けの1回で本体を
 `origin/main` へ進める（`SYNCED`）。`package-lock.json` が動いたときだけ `npm install` も打つ
-（`INSTALLED`）。**本体はブランチを持たない（detached HEAD）**——`main` は同時に2箇所へチェックアウト
+（`INSTALLED`）。**マージした手には繋いでいない**——繋ぐと、ユーザーが画面からマージした回は一度も
+走らない（[`board-design.md`](board-design.md) 2.10.4）。**本体はブランチを持たない（detached HEAD）**——`main` は同時に2箇所へチェックアウト
 できず、本体が握ると作業ツリーが作れなくなる。detached は「固定」ではなく、指す先を毎回新しい `main`
 へ付け替える形。本体に未コミットの変更があるときは触らず `DIRTY` を出す（未追跡は見ない）。
 
@@ -790,7 +792,7 @@ PR本文の節は次のとおり。**必ず置くのは `## 仮決め` と `## �
 
 | PRの状態 | 扱い |
 | --- | --- |
-| `needs-user-review.sh` が該当を出す（`【確定】` の印が動いた） | **機械にはマージできない。** `merge-and-close.sh` が `判断待ち` を付けて `HELD` で止める。**ラベルを外すだけでは越えられない**（次の周に付き直す）——越えるのは `merge-and-close.sh <PR> --user-ok` だけ |
+| `needs-user-review.sh` が該当を出す（`【確定】` の印が動いた） | **機械にはマージできない。** `merge-pr.sh` が `判断待ち` を付けて `HELD` で止める。**ラベルを外すだけでは越えられない**（次の周に付き直す）——通すなら**画面からマージする**（[`board-design.md`](board-design.md) 2.10.4） |
 | レビューが `[レビュー] 通してよい（人の判断が要る）` を出す | `通してよい` と `判断待ち` が付き、**マージだけが止まる**。**ラベルを1つ外せば通る**（機械は付け直さない。[`board-design.md`](board-design.md) 2.13.4） |
 | 差分が画像だけ | **そのままマージする**（下の「絵は素通しに固定する」） |
 | それ以外 | **レビューのセッションを1本立てる**（下の「差分を読むのはレビューのセッション」） |
@@ -960,7 +962,7 @@ PRのコメントには `[スメル] ` の行が2つの口から入る——レ�
 | --- | --- |
 | **承認** → 何もしない | 緑になった時点でマージされる |
 | **承認**（レビュアーが `判断待ち` を付けている） → **ラベルを外す** | 次の周でマージされる（[`board-design.md`](board-design.md) 2.13.4） |
-| **承認**（機械が `判断待ち` を付けている） → `merge-and-close.sh <PR> --user-ok` | その場でマージされる。**ラベルを外すだけでは越えられない**（同 2.13.3） |
+| **承認**（機械が `判断待ち` を付けている） → **画面からマージする** | 後片付けはマージした手から切り離してあるので、そのまま片付く（同 2.10.4）。**ラベルを外すだけでは越えられない**（同 2.13.3） |
 | **却下** → `却下` を付ける | デーモンが書いた本人を起こし、通らなかった仮決めを取り下げさせる。理由はコメントに書けばよい |
 
 - **コメントだけでは止まらない。** デーモンが読むのはラベルだけで、**コメントは読まない**。
@@ -1049,8 +1051,9 @@ for n in $(gh pr list --state open --json number --jq '.[].number'); do gh pr up
 [`board-move.mjs`](../scripts/agent/board-move.mjs) が決める。
 
 - **判定のラベルが無く、緑** → `dispatch-review.sh <番号>`。マージの前に必ずここを通る。
-- **`通してよい` があり、緑で、コンフリクトも無い** → `merge-and-close.sh`。issue が閉じたことの
-  確認と、書いたセッションを畳むところまで同じ1回で済む。
+- **`通してよい` があり、緑で、コンフリクトも無い** → `merge-pr.sh`。**後片付けは別の手**
+  （`tidy-merged-pr.sh`）で、マージ済みのPRを見つけた周に打つ——`Closes` の issue が閉じたことの
+  確認と、本体のチェックアウトの追随はそちら。
 - **`直し待ち`・CIが赤・コンフリクト** → **そのPRの `task-<番号>` のセッションを起こして直させる**
   （[`resume-session.sh`](../scripts/agent/resume-session.sh)。渡す文は
   [`resume-prompt.md`](resume-prompt.md) の `## mend`）。**起こすほうが既定**——PRの文脈を持って
@@ -1192,7 +1195,7 @@ GitHubから毎回引き直す——走っているセッション・PRとその
 同じ性質——**タスクのセッションも必要なら直しに来るが、重なりを避ける必要は無い**（同じファイルを
 2本が書くことは止めない。2節）。
 
-**盤面のスクリプトの試験（`tests/scripts/mergeAndClose.test.ts` のような、`scripts/agent/` の
+**盤面のスクリプトの試験（`tests/scripts/tidyMergedPr.test.ts` のような、`scripts/agent/` の
 1本に張り付いた試験）も同じ扱い。** 分けると、スクリプトだけが先に `main` へ入って CI が赤くなる。
 
 `src/` `docs/` `tests/` を触る変更は今までどおりPR。CIが要り、他のセッションと触る先が重なりうる。

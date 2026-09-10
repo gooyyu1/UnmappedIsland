@@ -21,7 +21,7 @@ import { bundledCodex } from '../support/worldCodexFiles';
 const codex = bundledCodex();
 
 // 1件で95日ぶんの暮らしを3本まで生きるものがあり、単独で走らせても3.5秒かかる。既定の5秒だと
-// `npm test` 全体を並行実行したときのCPU競合だけで時間切れになる（mergeAndClose.test.tsと同じ）。
+// `npm test` 全体を並行実行したときのCPU競合だけで時間切れになる（tidyMergedPr.test.tsと同じ）。
 vi.setConfig({ testTimeout: 20000 });
 
 const MINUTES_PER_TICK = 15;

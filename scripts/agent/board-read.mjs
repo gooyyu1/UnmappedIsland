@@ -42,14 +42,16 @@ const PR_FIELDS =
   'number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments';
 
 /**
- * マージ済みPRから引く項目。**読むのはスメルを拾う係の `due`**（[`board-move.mjs`](board-move.mjs)
- * の `CYCLES`）で、要るのは本文とリアクションだけ——上の一覧には混ぜられない（あちらは開いている
- * PRで、スメルを拾うのはマージ後だから）。
+ * マージ済みPRから引く項目。**読むのは後片付けの手**（[`board-move.mjs`](board-move.mjs) の `TIDY`）
+ * **とスメルを拾う係の `due`**（同 `CYCLES`）で、要るのは番号とコメントだけ——上の一覧には
+ * 混ぜられない（あちらは開いているPRで、後片付けもスメルもマージ後だから）。
  */
 const MERGED_PR_FIELDS = 'number,comments';
 
 /**
- * さかのぼるマージ済みPRの幅（時間）。**本数ではなく期間で持つ。** 本数は、1本あたりに掛かる
+ * さかのぼるマージ済みPRの幅（時間）。**後片付けが追える幅でもある**——デーモンがこれより長く
+ * 止まっていた間に入ったPRは、窓から出るので後片付けが走らない（[`board-move.mjs`](board-move.mjs)
+ * の `TIDY`）。**本数ではなく期間で持つ。** 本数は、1本あたりに掛かる
  * 時間が変われば覆う期間も変わるので、係の間隔ぶんに入る本数を下回った瞬間、**拾われないまま窓から
  * 出るスメルが出る**——30本で1日を覆うつもりだったものが、実測（2026-09-07）では15時間ぶんしか
  * なく、#1659〜#1740 が一度も読まれずに落ちた。期間で持てば、その間に何本入っても落ちない。
@@ -241,8 +243,8 @@ export function readBoard({
     'number,labels,blockedBy',
   ]);
   if (issues === undefined) return undefined;
-  // **引けなくても盤面は捨てない。** これを読むのは1日1回の係の `due` だけなので、欠けた周は
-  // その係が立たないだけで済む——必須にすると、**マージもレビューも投入も1周まるごと止まる。**
+  // **引けなくても盤面は捨てない。** 欠けた周は後片付けと1日1回の係が出ないだけで済む——必須に
+  // すると、**マージもレビューも投入も1周まるごと止まる。**
   // **黙って空にしない**（下の差し戻す相手と同じ理由。空は「1件も無い」と同じ形になる）。
   const mergedRaw = gh(
     [
@@ -262,7 +264,9 @@ export function readBoard({
     ],
     { allowFail: true },
   );
-  if (mergedRaw === undefined) log('マージ済みPRを引けなかった（この周は、スメルを拾う係を立てない）');
+  if (mergedRaw === undefined) {
+    log('マージ済みPRを引けなかった（この周は、後片付けもスメルを拾う係も出ない）');
+  }
   const mergedPrs = capped(
     log,
     'マージ済みPR',
