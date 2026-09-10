@@ -50,7 +50,7 @@ if ! body=$(gh issue view "$ISSUE" --json body -q .body 2>/dev/null); then
 fi
 
 # `## 手綱` から次の `## ` の手前まで。節の外に書かれたチェックボックスは見ない。
-# **`awk` が `$` で留めるので、行末の `\r` は先に落とす**（[`merge-and-close.sh`](merge-and-close.sh)
+# **`awk` が `$` で留めるので、行末の `\r` は先に落とす**（[`tidy-merged-pr.sh`](tidy-merged-pr.sh)
 # の「`\r` を落とす側と落とさない側」）。
 body="${body//$'\r'/}"
 section=$(printf '%s\n' "$body" |

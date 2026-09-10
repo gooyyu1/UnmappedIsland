@@ -24,8 +24,13 @@ interface Board {
   /** `main` の先頭のCI。省くと緑（既存の盤面はどれも `main` が緑のときの話）。 */
   mainChecks?: readonly unknown[];
   prs?: readonly unknown[];
-  /** マージ済みPRとそのコメント。スメルを拾う係の `due` が読む（`board-move.mjs` の `CYCLES`）。 */
-  mergedPrs?: readonly unknown[];
+  /**
+   * マージ済みPRとそのコメント。**後片付けの相手**（`board-move.mjs` の `TIDY`）と、スメルを拾う係の
+   * `due`（同 `CYCLES`）が読む。
+   */
+  mergedPrs?: readonly { number: number }[];
+  /** 後片付けをまだ打っていない形にするか。既定は打った後（下の `TIDIED_ALREADY`）。 */
+  untidied?: boolean;
   /** `archive/` に入っていない判断の履歴の数。価値観を畳む係の `due` が読む。 */
   pendingDecisions?: number;
   /** 二次がまだ読んでいない、一次の分析の記録の数。回をまたぐ形を見る係の `due` が読む。 */
@@ -64,11 +69,21 @@ const DUG_JUST_NOW = { 'cycle:dig': NOW };
 /** 掘り起こす係を立てる手。**上の既定を外した盤面はどれもこれを出す**ので、ここで名前を持つ。 */
 const DIG = `CHORE dig .claude/dig-prompt.md ${NOW}`;
 
+/**
+ * マージ済みPRの後片付け（`board-move.mjs` の `TIDY`）は、既定で**もう打った**ことにする。窓に載って
+ * いるPRには全部当たるので、**既定のままだと、後片付けと関わりのない検査の期待値へ1手ずつ増える。**
+ * 打つところを見る検査は `untidied` を立てる。
+ */
+function tidiedAlready(mergedPrs: readonly { number: number }[]): Record<string, string> {
+  return Object.fromEntries(mergedPrs.map((merged) => [`tidy:${merged.number}`, NOW]));
+}
+
 function moves(board: Board): string[] {
   const idled: Record<string, string> = {};
   for (const session of board.sessions ?? []) {
     if (session.status !== 'SESSION_STATUS_RUNNING') idled[`idle:${session.id}`] = LONG_IDLE;
   }
+  const tidied = board.untidied === true ? {} : tidiedAlready(board.mergedPrs ?? []);
   return decide({
     now: NOW,
     settledBefore: SETTLED,
@@ -76,7 +91,7 @@ function moves(board: Board): string[] {
     issues: [],
     sessions: [],
     ...board,
-    taken: { ...idled, ...DUG_JUST_NOW, ...board.taken },
+    taken: { ...idled, ...tidied, ...DUG_JUST_NOW, ...board.taken },
   });
 }
 
@@ -134,6 +149,26 @@ describe('board-move.mjs', () => {
 
   it('マージはレビューより先に打つ', () => {
     expect(moves({ prs: [pr(10), pr(20, label('通してよい'))] })).toEqual(['MERGE 20', 'REVIEW 10 aaa1111']);
+  });
+
+  // ## マージ済みのPRの後片付け（2.10.4）
+  //
+  // **マージした手からは切り離してある。** 盤面はマージ済みのPRを見つけて打つので、**ユーザーが
+  // 画面から入れたPRも同じ1回を通る。**
+  it('マージ済みのPRは、誰が入れたかに関わらず後片付けする', () => {
+    expect(moves({ untidied: true, mergedPrs: [{ number: 9 }] })).toEqual([`TIDY 9 ${NOW}`]);
+  });
+
+  // 窓（`MERGED_WINDOW_HOURS`）の幅ぶん同じPRが一覧に載り続けるので、覚えが無いと毎周打ち直す。
+  it('後片付けを打ったPRには、二度打たない', () => {
+    expect(moves({ mergedPrs: [{ number: 9 }] })).toEqual([]);
+  });
+
+  // 本体のチェックアウトは作業ツリー全部の共有先なので、片付けを後ろへ回すと**入る本数だけ古いまま**
+  // になる（マージできるPRが並んでいる周は、片付く前に次が入る）。
+  it('後片付けはマージより先に打つ', () => {
+    const board = { untidied: true, mergedPrs: [{ number: 9 }], prs: [pr(10, label('通してよい'))] };
+    expect(moves(board)).toEqual([`TIDY 9 ${NOW}`, 'MERGE 10']);
   });
 
   it('コンフリクトしていれば、通してよいが付いていてもマージしない', () => {
@@ -602,7 +637,7 @@ describe('board-move.mjs', () => {
   });
 
   // 積まれたPRのCIは古い base の上で緑になり、レビューの差分にも下のPRの変更が混ざる。下が入れば
-  // `merge-and-close.sh` が `main` へ張り替える（#1493 → #1508）。
+  // GitHub が base を `main` へ張り替え、`tidy-merged-pr.sh` が書いた本人へ差し戻す。
   it('他のPRの上に積まれたPRは、緑でも触らない', () => {
     const board = { prs: [pr(10, { ...label('通してよい'), baseRefName: 'claude/issue-9' })] };
     expect(moves(board)).toEqual([

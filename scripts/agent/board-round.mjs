@@ -28,7 +28,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { busySession, moves } from './board-move.mjs';
-import { readBoard } from './board-read.mjs';
+import { MERGED_WINDOW_HOURS, readBoard } from './board-read.mjs';
 import { formatLive, liveSessions } from './live-sessions.mjs';
 import { gh as runGh, posix, runBash } from './spawn.mjs';
 
@@ -141,14 +141,21 @@ export function newConflicts(prs, written, describe, at) {
  *
  * **`cycle:` だけは残す。** あれは盤面の何かに紐づく指紋ではなく、**周期の係を前に立てた時刻**
  * （`board-move.mjs` の `CYCLES`）。捨てると、次の周に間隔が満ちていないものまで立つ。
+ *
+ * **`tidy:` は時刻で捨てる。** 後片付けの相手はマージ済みのPRで、開いているPRの一覧には載らない
+ * ——**引けなかった周を「1件も無い」と読むと、その周に全部の覚えが消える**（次の周、窓に入って
+ * いるぶんが丸ごと打ち直される）。指紋は打った時刻なので、**窓（`MERGED_WINDOW_HOURS`）を過ぎた
+ * ものだけを捨てれば、盤面が相手として見ているあいだは必ず残っている。**
  */
 export function pruneTaken(taken, board) {
   const ids = new Set(board.sessions.map((session) => session.id));
   const numbers = new Set(board.prs.map((pr) => String(pr.number)));
+  const tidyFrom = Date.parse(board.now) - MERGED_WINDOW_HOURS * 3_600_000;
   const kept = {};
   for (const [key, mark] of Object.entries(taken)) {
     const lives =
       key.startsWith('cycle:') ||
+      (key.startsWith('tidy:') && Date.parse(mark) >= tidyFrom) ||
       (key.startsWith('resume:') && ids.has(key.slice('resume:'.length))) ||
       (key.startsWith('review:') && numbers.has(key.slice('review:'.length))) ||
       (key.startsWith('archive:') && ids.has(key.slice('archive:'.length))) ||
@@ -199,10 +206,16 @@ const returnBody = (session, issue) =>
 export function play(kind, args, { runScript, gh, remember, log, echo }) {
   const [a = '', b = '', c = '', d = ''] = args;
   switch (kind) {
+    case 'TIDY': {
+      // 終了コード2は「後片付けに残りがある」。手は打てているので、次の周は別の手へ進む
+      // ——**残りの多くは打ち直しても同じ結果になる**（本体が汚れている・`Closes` が閉じ損ねている）。
+      const code = runScript('tidy-merged-pr.sh', [a]).status;
+      if (code !== 0 && code !== 2) return false;
+      remember(`tidy:${a}`, b);
+      return true;
+    }
     case 'MERGE': {
-      // 終了コード2は「マージはできたが後始末が残った」。手は打てているので、次の周は別の手へ進む。
-      const code = runScript('merge-and-close.sh', [a]).status;
-      return code === 0 || code === 2;
+      return runScript('merge-pr.sh', [a]).status === 0;
     }
     case 'RESUME': {
       if (runScript('resume-session.sh', [a, b, c]).status !== 0) return false;

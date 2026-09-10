@@ -41,7 +41,7 @@ export function play(
 
 export function pruneTaken(
   taken: Readonly<Record<string, string>>,
-  board: { sessions: readonly { id: string }[]; prs: readonly { number: number }[] },
+  board: { sessions: readonly { id: string }[]; prs: readonly { number: number }[]; now: string },
 ): Record<string, string>;
 
 export function trackIdle(
