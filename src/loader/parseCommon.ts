@@ -20,7 +20,8 @@ import { PropertyPath } from '../domain/ReferenceRoot';
 import { DeclaredNumber } from '../domain/DeclaredNumber';
 
 /**
- * 複数の領域（props/conditions/active効果/pick）から使う小さなパースヘルパー。
+ * どの領域にも属さない小さなパースヘルパー。宣言のどこに書かれていても同じ意味を持つ**1つの値**の
+ * 読み方は、領域ごとの`parse*`ではなくここが持つ。
  */
 
 /**
