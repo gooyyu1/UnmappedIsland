@@ -1738,7 +1738,7 @@ interactions:
   - **`to_object`**: 行き先の型。世界の木を辿って**その型のインスタンス**を探し、移動先とします。
     **世界にただ1つ在る型（`singleton`、15 節）のためのもの**で、海区・本土のように定義の時点で型は
     分かっているが、生成時のインスタンスIDは分からない行き先を指します
-    （[`Voyage.md`](../world/Voyage.md) 4 節）。**`singleton` でない型を指すのはロード時エラー**です
+    （[`Voyage.md`](../world/Voyage.md) 4.2 節）。**`singleton` でない型を指すのはロード時エラー**です
     ——複数在りうる型では、どの個体へ着くかを世界の形が決めてしまうためです。
     **型の書き方は分かれますが、探し方は同じです。** `object_defs` の識別子をそのまま書くか、型を値に持つ
     `self` のプロパティを `{prop: <名前>}` で引きます（6.9 節）。**リテラルと参照の見分けがスカラーか
@@ -2796,7 +2796,7 @@ object_defs:
 天候・季節なども同じ `world` が持つ。）
 
 **「1つだけ存在すべき」は「世界を作った時点で在る」と読みます。** ただし湧かせるのは、`world` が直に
-受け入れられる型だけです（`NewGame.spawnSingletonsAcceptedByWorld`）——海区・本土（[`Voyage.md`](../world/Voyage.md) 4 節）は
+受け入れられる型だけです（`NewGame.spawnSingletonsAcceptedByWorld`）——海区・本土（[`Voyage.md`](../world/Voyage.md) 4.2 節）は
 `world` の `locations` 枠に入るのでそこに在り、キャラクタも `singleton` ですが、`world` のどの枠にも入らない
 （土地の `characters` 枠に入る物です）ので湧きません。何が最初から在るかを決めるのは枠の宣言だけで、
 エンジンは型の名前を1つも知りません。これにより、型の名前で行き先を指す `move` の `to_object`（9.6 節）は
