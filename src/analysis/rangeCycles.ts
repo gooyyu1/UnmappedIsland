@@ -1,6 +1,6 @@
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { PropertyDef, RangeEventLabel } from '../domain/PropertyDef';
-import { movesTowardEnd, RANGE_EVENT_LABELS, ROLL_ENDS } from '../domain/PropertyDef';
+import { movesTowardEnd, RANGE_EVENT_LABELS, rollEndAwayFrom, ROLL_ENDS } from '../domain/PropertyDef';
 import type { SelfStageRequirement, TickDelta, TickGate } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 import type { CraftingStep } from './CraftingStep';
@@ -670,6 +670,10 @@ function ticksUntilGateRises(def: ObjectDef, gate: TickGate): number {
  * 段の上端を割った時点で入る。「その段以上」（`in_stage_or_above`、14.1節）に上から入ることは
  * 起こらない（上に在る値は既に成立させている）ので、上端を持たないことがそのまま答えになる。
  *
+ * **初期値も向きで裏返る**（rollEndAwayFrom）——段から遠いのは、押し上げるなら軽く出たほう、
+ * 押し下げるなら重く出たほう。片方に固定すると、下へ押す場合だけ段の近くに生まれた個体を数える
+ * ことになり、控えめに見るという約束が向きによって破れる。
+ *
  * **押されていない値の段が一緒に要求されていても、待たない**——ticksUntilGateRisesが届くまでの
  * 読めない段を0と見るのと同じ側で、押し手を数え落とさないほうへ倒している。
  */
@@ -679,8 +683,9 @@ function ticksUntilDrivenStage(
   gate: TickGate,
   pushedToward: RangeEventLabel,
 ): number | undefined {
-  const value = staticValueOf(def, driver.propertyGlobalId, 'lowest');
-  // 入るまでを**最も長く**見る側（slowest）。効き始めをticksUntilGateRisesと同じ側へ揃える。
+  // 入るまでを**最も長く**見る側——速さは最も遅いもの（slowest）、ロールは段から遠いほう。
+  // ticksUntilGateRisesが上へ押される場合にしている見立てを、どちらの向きへも当てたもの。
+  const value = staticValueOf(def, driver.propertyGlobalId, rollEndAwayFrom(pushedToward));
   const perTick = drivenPaceOf(def, driver, pushedToward)?.slowest.amount;
 
   let longest: number | undefined;
@@ -710,9 +715,9 @@ function ticksUntilDrivenStageLeft(
   gate: TickGate,
   pushedToward: RangeEventLabel,
 ): number | undefined {
-  const value = staticValueOf(def, driver.propertyGlobalId, 'lowest');
-  // 抜けるまでを**最も短く**見る側（fastest）。効き始めから抜けるまでが最も狭くなる組で、
-  // ticksUntilStageLeftUpwardと同じ側。
+  // 速さは抜けるまでを**最も短く**見る側（fastest）で、ロールは入り口（ticksUntilDrivenStage）と
+  // 同じもの——窓は同じ1つの個体についての長さなので、効き始めと別の初期値は採れない。
+  const value = staticValueOf(def, driver.propertyGlobalId, rollEndAwayFrom(pushedToward));
   const perTick = drivenPaceOf(def, driver, pushedToward)?.fastest.amount;
 
   let earliest: number | undefined;

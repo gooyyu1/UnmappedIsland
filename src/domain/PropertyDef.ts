@@ -251,6 +251,17 @@ export function endMovedToward(amount: number): RangeEventLabel | undefined {
   return RANGE_EVENT_LABELS.find((label) => movesTowardEnd(label, amount));
 }
 
+/**
+ * その端から**最も遠い側**に出た、生成時のロール（6.2節）。その端へ向かって動く値が最も長く掛かる
+ * 初期値で、上端へ向かうなら軽く出たほう、下端へ向かうなら重く出たほう。
+ *
+ * **どちらの端かは{@link inwardOf}から引く**——端から範囲の内側へ向かう向きが、そのまま端から
+ * 遠ざかる向きなので、上下の対応をここへもう1つ書かずに済む。
+ */
+export function rollEndAwayFrom(label: RangeEventLabel): RollEnd {
+  return inwardOf(label) < 0 ? 'lowest' : 'highest';
+}
+
 /** 段（6.4節）がrangeの中で占める区間。両端とも0〜1で、startがminの側。 */
 export interface StageSpan {
   readonly start: number;
@@ -746,8 +757,7 @@ export class PropertyDef {
    * 名指した段の上端＝値の並びの上でその段のすぐ上に来る段の下端（stageAbove）。上に段が無ければ
    * undefinedで、位置を持たない段・宣言に無い名前も同じ。
    *
-   * **段の並びを知っているのはここだけ**なので、段の上端を要る側（バーの区間・段の中の進み・押し手が
-   * 段を上へ抜けるまで）はどれもここから引く。
+   * **段の並びを知っているのはここだけ**なので、段の上端が要る側はどれもここから引く。
    */
   upperBoundOfStage(stageName: string): number | undefined {
     const lowerBound = this.lowerBoundOfStage(stageName);

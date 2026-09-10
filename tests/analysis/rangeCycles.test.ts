@@ -484,11 +484,14 @@ object_defs:
 
   # 血を失って弱る獣（characters/player_character.yamlのbloodの段）。**血の段は上からしか入らない**
   # ——傷が押し下げて初めてhemorrhagingが開き、そこで削られる体力が尽きて倒れる。
+  #
+  # 血に個体差を持たせてあるのは、**段から遠いロールが向きで裏返る**のを見るため（6.2節）。押し下げ
+  # られる値では、重く出た個体のほうが段から遠い。
   doe:
     tags: [item]
     props:
       blood:
-        value: 4000
+        value: {min: 3000, max: 4000}
         range: {min: 0, max: 4000}
         stages:
           - {name: exsanguinated}
@@ -762,7 +765,9 @@ object_defs:
   it('押し下げる押し手が開ける段も辿る', () => {
     // 血を流す傷は宿主の血を奪うだけで、気の遠のきには触れない。段は下からしか開かないものとして
     // 数えると、流血で倒れる道が丸ごと消える。上端2,000を割ってhemorrhagingへ入るのは-10で201 tick
-    // （4,000ちょうどから2,000へ着いた時点ではまだ段の上）、そこから開いた-10で体力100が10 tick。
+    // （段から遠い＝重く出た4,000から数える。2,000へ着いた時点ではまだ段の上）、そこから開いた
+    // -10で体力100が10 tick。軽く出た3,000を採ると101 tickになり、押し手を控えめに数えるという
+    // 約束が押す向きによって破れる。
     expect(drivenCyclesOf('doe', 'stamina')).toMatchObject([
       { minutes: (201 + 10) * 15, destroysSelf: true, drivenBy: defOf('seeping_bite').globalId },
     ]);
