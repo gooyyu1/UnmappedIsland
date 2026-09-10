@@ -345,8 +345,7 @@ describe('fire.yamlの火の連鎖', () => {
   });
 
   it('種火だけの炉も火種を断る（火が生きているかは火力が0より大きいこと）', () => {
-    // 種火（heatが1）へ落とすと差分は0で、火種だけが黙って消える。薪は入れておく——薪の有無より
-    // 先に火が生きていることを言うので、断る理由はalready_litのほう。
+    // 種火（heatが1）へ落としても差分は0で、火種だけが黙って消える。
     const hearth = spawnInto('campfire', land, 'fixtures');
     hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(20);
     hearth.getProperty(codex.propertyNames.getId('heat')).setNumberWithoutEvents(1);
@@ -358,6 +357,14 @@ describe('fire.yamlの火の連鎖', () => {
     ).toEqual([]);
     expect(
       hearth.refusedCombinationsWith(tinder, player).map((c) => c.unmetRequirement()?.reasonName),
+    ).toEqual(['already_lit']);
+
+    // 薪が尽きていれば2つの条件が同時に落ちる。画面へ出るのは宣言順で最初のほう（14.6節の
+    // unmetRequirement）なので、火種では足せないことを言うalready_litが先だと固定する。
+    hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(0);
+    expect(
+      hearth.refusedCombinationsWith(tinder, player).map((c) => c.unmetRequirement()?.reasonName),
+      '薪も尽きているが、火種を断る理由は「もう火が付いている」のほう',
     ).toEqual(['already_lit']);
   });
 
