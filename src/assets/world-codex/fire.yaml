@@ -224,9 +224,14 @@ traits:
           to_prop: fuel
         destroy: instrument
       # 火種を落として着火する。置くのは種火1つぶんだけで、そこから先は薪が育てる。
+      #
+      # **火が生きている炉は断る**（生きているかは火力が0より大きいこと、上のheat）。setが置くのは
+      # 種火の1だけなので、燃えている炉へ重ねると火種を失ったうえに火力がそこまで落ちる。理由を
+      # 名乗るのは、断るだけでは「重ねても何も起きない」になるため（docs/ui/CardInteraction.md 2.1節）。
       ignite:
         trigger: {drag: {object: burning_tinder}}
         conditions:
+          - {reason: already_lit, prop: heat, eq: 0}
           - {reason: no_fuel, prop: fuel, gt: 0}
         destroy: instrument
         set: {self: {heat: 1}}
@@ -319,9 +324,14 @@ object_defs:
     interactions:
       # 火種を移して灯す。炉の着火（hearthのignite）と同じ形で、火種は1tickで燃え尽きるので
       # 火を起こした土地でしか灯せない。
+      #
+      # **灯っている松明も同じ形で断る。** setの差分は0でも火種は消えるので、断らなければ黙って
+      # 火種だけを失う。
       light:
         trigger: {drag: {object: burning_tinder}}
         duration: 1
+        conditions:
+          - {reason: already_lit, prop: lit, eq: 0}
         destroy: instrument
         set: {self: {lit: 1}}
 

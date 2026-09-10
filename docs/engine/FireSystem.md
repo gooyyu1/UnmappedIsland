@@ -326,10 +326,16 @@ interactions:
   ignite:
     trigger: {drag: {object: burning_tinder}}
     conditions:
+      - {reason: already_lit, prop: heat, eq: 0}   # 火が生きている炉には置き直せない
       - {reason: no_fuel, prop: fuel, gt: 0}
     destroy: instrument
     set: {self: {heat: 1}}      # 種火の段のいちばん下から始まる
 ```
+
+**火が生きている炉は火種を断ります。** 置くのは種火 1 つぶんなので、燃えている炉へ重ねると火種を
+失ったうえに火力がそこまで落ちます。**断る理由を名乗る**ので、プレイヤーには落とす前に届きます
+（[`CardInteraction.md`](../ui/CardInteraction.md) 2.1 節）。火を大きくするのは薪で、火種ではありません
+（2.2 節）。**灯っている松明も同じです**——`torch` の `light` が同じ理由で断ります。
 
 **着火が置くのは種火 1 つぶんだけです。** そこから先は薪が育てます（2.2 節）——火種を落としてすぐ煮炊きが
 できるわけではなく、炎になるまで数十分かかります。着火の強さを炉ごとに書き分ける必要もありません。

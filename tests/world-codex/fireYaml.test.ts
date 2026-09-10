@@ -325,6 +325,74 @@ describe('fire.yamlの火の連鎖', () => {
     ).toEqual(['no_fuel']);
   });
 
+  it('燃えている炉は火種を断る。重ねて火力を種火まで落とすことはない', () => {
+    const hearth = litCampfire();
+    session.advanceWorldTime(60);
+    expect(heatIs(hearth, 'flame'), '炎まで育っている').toBe(true);
+    const grown = effectiveNumberOf(hearth, 'heat');
+
+    const tinder = spawnInto('burning_tinder', land, 'items');
+    expect(
+      hearth.combinationsWith(tinder, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
+    expect(
+      hearth.refusedCombinationsWith(tinder, player).map((c) => c.unmetRequirement()?.reasonName),
+      '断る理由まで辿り着ける（落とすと火力が種火まで落ちる）',
+    ).toEqual(['already_lit']);
+    expect(effectiveNumberOf(hearth, 'heat'), '火力は落ちない').toBe(grown);
+    expect(itemsOn(land), '火種も失われない').toEqual(['burning_tinder']);
+  });
+
+  it('種火だけの炉も火種を断る（火が生きているかは火力が0より大きいこと）', () => {
+    // 種火（heatが1）へ落としても差分は0で、火種だけが黙って消える。
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(20);
+    hearth.getProperty(codex.propertyNames.getId('heat')).setNumberWithoutEvents(1);
+    const tinder = spawnInto('burning_tinder', land, 'items');
+
+    expect(
+      hearth.combinationsWith(tinder, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
+    expect(
+      hearth.refusedCombinationsWith(tinder, player).map((c) => c.unmetRequirement()?.reasonName),
+    ).toEqual(['already_lit']);
+
+    // 薪が尽きていれば2つの条件が同時に落ちる。画面へ出るのは宣言順で最初のほう（14.6節の
+    // unmetRequirement）なので、火種では足せないことを言うalready_litが先だと固定する。
+    hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(0);
+    expect(
+      hearth.refusedCombinationsWith(tinder, player).map((c) => c.unmetRequirement()?.reasonName),
+      '薪も尽きているが、火種を断る理由は「もう火が付いている」のほう',
+    ).toEqual(['already_lit']);
+  });
+
+  it('松明は火種で灯り、灯った松明は2つ目の火種を断る', () => {
+    const torch = spawnInto('torch', player, 'hand');
+    const tinder = spawnInto('burning_tinder', land, 'items');
+
+    expect(
+      torch
+        .combinationsWith(tinder, player)
+        .find((c) => c.name === 'light')
+        ?.tryExecute() === true,
+    ).toBe(true);
+    expect(effectiveNumberOf(torch, 'lit'), '灯った').toBe(1);
+    expect(itemsOn(land), '火種は移った').toEqual([]);
+
+    // litのrangeは0〜1なので、重ねてもsetの差分は0。断らなければ火種だけが消える。
+    const second = spawnInto('burning_tinder', land, 'items');
+    expect(
+      torch.combinationsWith(second, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
+    expect(
+      torch.refusedCombinationsWith(second, player).map((c) => c.unmetRequirement()?.reasonName),
+    ).toEqual(['already_lit']);
+    expect(itemsOn(land), '2つ目の火種は失われない').toEqual(['burning_tinder']);
+  });
+
   it('着火が置くのは種火だけで、そこから薪が火を育てる', () => {
     const hearth = litCampfire();
 
