@@ -68,13 +68,14 @@ export class WorldSession {
   private readonly insideTick = new Scoped<boolean>();
 
   /**
-   * 今の操作が宣言した持続効果（11.7節）と、その宣言元。`duration`を進めている間だけ立つ。
-   * **経過中のtickで、そのぶんだけを操作の稼ぎとして拾う**ための控え（recordPassiveGain）。
+   * 今効いている、操作が宣言した持続効果（11.7節）と、その宣言元。`duration`を進めている間だけ並ぶ。
+   * **経過中のtickで、そのぶんだけを操作の稼ぎとして拾う**ための控え（recordPassiveGain）であり、
+   * **宣言元がbecomeしたときに登録を張り直す先**でもある（setInteractionPassivesRegistered）。
+   *
+   * **1つではなく積む。** 経過中のtickは手番を配り、その手番も操作なのでここへ乗る（入れ子）。
+   * 内側だけを持つと、外側のぶんは登録されたまま辿れなくなる。
    */
-  private readonly interactionPassives = new Scoped<{
-    readonly owner: WorldObject;
-    readonly passives: PassiveEffects;
-  }>();
+  private readonly runningInteractionPassives: { owner: WorldObject; passives: PassiveEffects }[] = [];
 
   /** 今どのオブジェクトの効果を適用しているか（withSubject）。記録する変化の主体になる。 */
   private readonly subject = new Scoped<WorldObject>();
@@ -189,19 +190,32 @@ export class WorldSession {
 
   /**
    * 操作が宣言した持続効果（11.7節）が効いている間としてbodyを実行する。登録はその一式が持ち
-   * （PassiveEffects.setAllRegistered）、こちらは経過中のtickで足したぶんを控える先を差し替える。
+   * （PassiveEffects.setAllRegistered）、こちらは効いている間のぶんを積んで持つ。
    */
   whileInteractionPassives<T>(owner: WorldObject, passives: PassiveEffects, body: () => T): T {
-    let result!: T;
-    this.interactionPassives.during({ owner, passives }, () => {
+    this.runningInteractionPassives.push({ owner, passives });
+    try {
       passives.setAllRegistered(owner, true);
-      try {
-        result = body();
-      } finally {
-        passives.setAllRegistered(owner, false);
-      }
-    });
-    return result;
+      return body();
+    } finally {
+      passives.setAllRegistered(owner, false);
+      this.runningInteractionPassives.pop();
+    }
+  }
+
+  /**
+   * declarerが宣言元になっている、経過中の操作の持続効果（11.7節）の登録を、対象を問わずまとめて
+   * 外す/載せ直す（WorldObject.becomeTypeが、プロパティを作り直す前後で呼ぶ）。
+   *
+   * **この登録を辿れるのはここだけ。** 宣言しているのは物ではなく操作で、効いている間そのdefを
+   * 持っているのはこのセッションなので、物のdefからは見つからない。
+   *
+   * **載る先は宣言元とは限らない**（役を対象にできる、11.5節）ので、誰の型が変わったときに呼ぶかを
+   * 決めるのは呼ぶ側（WorldObject.setInteractionPassivesOfParticipantsRegistered）。
+   */
+  setInteractionPassivesRegistered(declarer: WorldObject, register: boolean): void {
+    for (const running of this.runningInteractionPassives)
+      if (running.owner === declarer) running.passives.setAllRegistered(declarer, register);
   }
 
   /**
@@ -369,8 +383,9 @@ export class WorldSession {
   private runTick(world: World): void {
     this.insideTick.during(true, () => {
       // 積分の前に読む——足す前の量が「このtickに入るぶん」で、足した後は端で丸められた結果しか
-      // 残らない（PropertyValue.changePerTick）。
-      const running = this.interactionPassives.current;
+      // 残らない（PropertyValue.changePerTick）。**このtickを進めているのは一番内側**で、
+      // 外側は自分のtickをこの中で回している最中なので、二重に数えない。
+      const running = this.runningInteractionPassives.at(-1);
       running?.passives.recordTickGains(running.owner, this);
 
       world.instance.tick();

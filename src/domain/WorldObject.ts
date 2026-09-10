@@ -586,6 +586,21 @@ export class WorldObject {
   }
 
   /**
+   * 今効いている、操作が宣言した持続効果（11.7節）のうち、**この物へ登録が載りうるもの**をすべて
+   * 解除/登録する（becomeType用）。宣言を持っているのは物ではなく操作なので、辿れるのは
+   * セッションだけ（WorldSession.setInteractionPassivesRegistered）。
+   *
+   * **向きは役を対象にしたpassivesと同じ2つ**（setRoleTargetsOfParticipantsRegistered）——自分が
+   * 宣言元のぶんは`self`が自分を指し、相手が宣言元のぶんは役が自分を指す。相手の宣言も同じ関係の
+   * 中に居るので、参加者を辿れば全部が挙がる。
+   */
+  private setInteractionPassivesOfParticipantsRegistered(register: boolean): void {
+    this.session.setInteractionPassivesRegistered(this, register);
+    for (const other of this._participation?.participantsOtherThan(this) ?? [])
+      this.session.setInteractionPassivesRegistered(other, register);
+  }
+
+  /**
    * 親子のエッジが形成/解消された契機を、双方の効果（modify/add、8節）へ伝える（register=trueで登録、
    * falseで解除）。親側だけ子thisを明示的に渡すのは、親からどの子かを一意に辿れないため。target=selfは
    * コンストラクタで登録済みのため、ここでは扱わない。
@@ -719,8 +734,10 @@ export class WorldObject {
    * - 同じ名前のスロットは中身をそのまま引き継ぐ。**新しい型が持たないスロットの中身は親へこぼれる**
    *   （destroyと同じ規則、9.3節）。
    *
-   * 登録済みの持続効果は、組み直す前にすべて解除して新しいdefで登録し直す——解除は宣言元のdefを辿るので、
-   * 先に差し替えると外し先を見失う。
+   * 登録済みの持続効果は、組み直す前にすべて解除して登録し直す——解除は宣言元の宣言を辿るので、先に
+   * 差し替えると外し先を見失う。**宣言元は物のdefだけではない**——今この物へ効いている操作が宣言した
+   * ぶん（11.7節）は、効いている間だけセッションが持っている
+   * （WorldSession.setInteractionPassivesRegistered）。
    */
   private becomeType(newDef: ObjectDef): void {
     if (newDef === this._def) return;
@@ -747,6 +764,7 @@ export class WorldObject {
     this.setAncestorTargetsRegistered(false);
     this._def.passives.setRelationRegistered(this, 'self', false);
     this.setRoleTargetsOfParticipantsRegistered(false);
+    this.setInteractionPassivesOfParticipantsRegistered(false);
     if (parent !== undefined) this.setEdgeRegistered(parent, false);
     for (const { child } of rehomed) child.setEdgeRegistered(this, false);
 
@@ -767,6 +785,7 @@ export class WorldObject {
 
     this._def.passives.setRelationRegistered(this, 'self', true);
     this.setRoleTargetsOfParticipantsRegistered(true);
+    this.setInteractionPassivesOfParticipantsRegistered(true);
     if (parent !== undefined) this.setEdgeRegistered(parent, true);
     for (const { child } of rehomed) child.setEdgeRegistered(this, true);
     this.setAncestorTargetsRegistered(true);
