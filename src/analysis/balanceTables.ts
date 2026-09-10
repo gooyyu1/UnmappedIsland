@@ -392,9 +392,7 @@ export interface BalanceTables {
 export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): BalanceTables {
   const characterNames = codex.objectDefNamesWithTag(codex.vocabulary.world.characterTagId);
   const character = codex.objects.get(codex.objectNames.getId(sampleCharacter));
-  const dailyNeeds = dailyNeedsOf(codex, character);
-  const islandLocations = islandLocationsOf(codex);
-  const { places, gaps, islandWide } = placeBalances(codex, character);
+  const { places, gaps, islandWide, dailyNeeds, islandLocations } = placeBalances(codex, character);
 
   // 島全体の献立が最小労働（places[0]は島全体）。
   const minimumLabourMinutes = Math.round(places[0].menu.totalMinutes);
@@ -584,6 +582,11 @@ function placeBalances(
   readonly places: readonly PlaceBalance[];
   readonly gaps: readonly Gap[];
   readonly islandWide: Acquisition;
+
+  // 表の他の欄も要る値。**導出した側が返す**——同じ導出を呼び出し側でやり直すと、
+  // islandLocationsOfの全型走査（seaOnlyObjectsOf）が丸ごと二重になる。
+  readonly dailyNeeds: readonly DailyNeed[];
+  readonly islandLocations: IslandLocations;
 } {
   const dailyNeeds = dailyNeedsOf(codex, character);
   const islandLocations = islandLocationsOf(codex);
@@ -610,7 +613,7 @@ function placeBalances(
     };
   });
 
-  return { places, gaps: gapsOf(islandRoutes), islandWide };
+  return { places, gaps: gapsOf(islandRoutes), islandWide, dailyNeeds, islandLocations };
 }
 
 /**
@@ -1216,9 +1219,9 @@ function reachableSteps(steps: readonly StepRef[]): readonly StepRef[] {
  * ときは他の土地が宣言する工程も落ちるが、漁り場も海藻も土地ではないのでそちらでは落ちない。
  *
  * standingAtは、立っている土地。**祖先が入れる値を解く文脈と、届く工程の絞り込みは同じ土地から
- * 出る**ので、渡すのはその土地1つだけ——罠が掛ける動物の重みは土地が宣言する（`base`）ので、
- * 文脈が土地を決めていないと候補が全部0になり、他の土地の工程を残すとそこへ行かずに実行できる
- * ことになる。省くと島全体（全土地を祖先に置き、どの土地の工程も残す）。
+ * 出る**ので、渡すのはその土地1つだけ——罠が掛ける動物の重みは土地が宣言する（`base`）ので文脈は
+ * その土地を祖先に置き、他の土地が宣言する工程はそこへ行かないと実行できないので落とす。省くと
+ * 島全体で、全土地を祖先に置いてどの土地の工程も残す。
  */
 function allSteps(
   codex: WorldCodex,

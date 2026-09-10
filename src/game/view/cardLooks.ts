@@ -397,19 +397,21 @@ export function cardLooksOf(
   const iconOf = (def: ObjectDef): string => placeholderIconOf(def.name) ?? KIND_ICONS[kindOf(def)];
 
   /**
-   * 型だけのカードに映す絵の出所。製作中オブジェクトは完成品の絵を映す——作りかけであることは青の
-   * 覆いが示すので、絵は何が出来つつあるのかを出せばよい（CardView.md 10節 製作中オブジェクトの
-   * カード）。自動生成される型（RecipeSystem.md）に絵を用意する道は無いため、これが唯一の出所でもある。
+   * カードに映す絵の出所。製作中オブジェクトは完成品の絵を映す——作りかけであることは青の覆いが
+   * 示すので、絵は何が出来つつあるのかを出せばよい（CardView.md 10節 製作中オブジェクトのカード）。
+   * 自動生成される型（RecipeSystem.md）に絵を用意する道は無いため、これが唯一の出所でもある。
    */
-  const artOfType = (def: ObjectDef): string => artNameFor(codex.baseOf(def).artName, undefined);
+  const artNameOf = (def: ObjectDef, suffix: string | undefined): string =>
+    artNameFor(codex.baseOf(def).artName, suffix);
+
+  /** 型そのものを表すカードの絵。個体の状態を持たないので、段による差し替えは起こらない。 */
+  const artOfType = (def: ObjectDef): string => artNameOf(def, undefined);
 
   /**
-   * その個体のカードに映す絵。出所は型の絵（artOfType）と同じで、そこから`art_by_stage`
-   * （GameElementDefinition.md 6.4節）が指す段の絵へ差し替える（CardView.md 5.1節）。**差し替えを
-   * 決めるのは個体の状態だけ**なので、型だけのカードには段が無い。
+   * その個体のカードに映す絵。`art_by_stage`（GameElementDefinition.md 6.4節）が指す段の絵へ
+   * 差し替える（CardView.md 5.1節）。
    */
-  const artOf = (object: WorldObject): string =>
-    artNameFor(codex.baseOf(object.def).artName, object.artSuffix);
+  const artOf = (object: WorldObject): string => artNameOf(object.def, object.artSuffix);
 
   /**
    * そのオブジェクトが今在るスロット（カードの地を引く先。CardView.md 7節）。
