@@ -227,9 +227,7 @@ export function characterStageMinimumOf(codex: WorldCodex, propertyName: string,
   const characterNamesByMinimum = new Map<number | undefined, string[]>();
   for (const def of codex.objects) {
     if (!def.hasTag(codex.vocabulary.world.characterTagId)) continue;
-    const minimum = def
-      .tryGetPropertyDef(propertyGlobalId)
-      ?.stages.find((stage) => stage.name === stageName)?.min;
+    const minimum = def.tryGetPropertyDef(propertyGlobalId)?.lowerBoundOfStage(stageName);
     characterNamesByMinimum.set(minimum, [...(characterNamesByMinimum.get(minimum) ?? []), def.name]);
   }
 

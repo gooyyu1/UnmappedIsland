@@ -268,7 +268,7 @@ function cheapestStackOf(
   const threshold = codex.objects
     .get(characterGlobalId)
     .tryGetPropertyDef(propertyGlobalId)
-    ?.stages.find((stage) => stage.name === stack.stageName)?.min;
+    ?.lowerBoundOfStage(stack.stageName);
   if (threshold === undefined) throw new Error(`${where}が名乗る段の下限が、その人物にありません。`);
   if (threshold <= 0) throw new Error(`${where}が名乗る段の下限が0以下で、何も積まずに届きます。`);
 
