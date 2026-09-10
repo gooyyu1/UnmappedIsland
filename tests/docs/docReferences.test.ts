@@ -83,10 +83,11 @@ const REF_FILES = [
  * コードフェンスの外の各行と、原文での行番号。`text` はインラインコードも除いた本文
  * （例示の印を検査対象から外す）、`raw` は原文のまま。
  *
- * **フェンスを落としてよいのは、印と見出しを探すときだけ。** そこに書かれた `#` や `【確定】` は
- * 規約が見せている書式そのもので、拾うと書式を説明した文書が印を持つ文書になる
- * （`docStatus.mjs` の `declaresWholeDocument` と同じ理由）。**参照は逆で、フェンスの中の
- * `Foo.md N節` もリンクも実在の対象を指している**ので、{@link withoutInlineCode} で見る。
+ * **フェンスを落としてよいのは、文書が何を宣言しているかを見るとき。** 見出し・印と、その印の
+ * 射程に入る本文がこれで、フェンスの中に在る `#` や `【確定】` は規約が見せている書式そのもの
+ * ——拾うと、書式を説明した文書が印を持つ文書になる（`docStatus.mjs` の `declaresWholeDocument`
+ * と同じ理由）。**参照は逆で、フェンスの中の `Foo.md N節` もリンクも実在の対象を指している**ので、
+ * {@link withoutInlineCode} で見る。
  *
  * **改行を割るのはここだけで、`\r` は行に残さない。** 作業ツリーがCRLFのとき、行末の `\r` は
  * `.` にも `$` にも一致しないので、行末を見る判定が**全部**空振りする（issue #867）。
@@ -538,6 +539,10 @@ describe('ドキュメントの参照', () => {
     expect(brokenNumberedRefsIn(probe, '`GameElementDefinition.md 999節`')).toHaveLength(1);
     expect(brokenNumberedRefsIn(probe, '`文書名.md N節`')).toHaveLength(0);
     expect(brokenLinkFilesIn(probe, '`[表示名](./NoSuchFile.md)`')).toHaveLength(0);
+    // 囲みは行ごとに見るので、フェンスの中でも同じに外れる。
+    expect(
+      brokenLinkFilesIn(probe, '```yaml\n# `[表示名](./NoSuchFile.md)`\n```\n'),
+    ).toHaveLength(0);
   });
 
   it('印を探す本文は、コードフェンスの中を落とす（規約が書式を例示する）', () => {
