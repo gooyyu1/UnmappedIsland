@@ -1,5 +1,6 @@
 import type { AlertLevel } from './AlertLevel';
 import type { PropertyDef, PropertyStage, CurrentStageReading, StageBound } from './PropertyDef';
+import { movesTowardEnd } from './PropertyDef';
 import { INT32_MAX } from '../util/int32';
 import { removeWhere } from '../util/arrays';
 import type { PropertyPassiveEffect } from './PassiveEffect';
@@ -231,7 +232,7 @@ export class PropertyValue {
 
   /**
    * 今の進み方が続いたとき、あと何tickでrange.maxへ届く（on_maxが起きる、6.3節）か。
-   * 進んでいない（合計が0以下）・rangeを持たない場合はundefined。
+   * 上端へ向かって進んでいない・rangeを持たない場合はundefined。
    *
    * **切り上げるのは、届くのがtickの回る瞬間だからで、表示のための丸めではない。** 最低1を返すのも
    * 同じ理由——既にmaxに居ても、溢れて`on_max`が起きるのは次のtickなので、0tick後ではない。
@@ -242,8 +243,8 @@ export class PropertyValue {
     if (range === undefined) return undefined;
 
     const perTick = this.changePerTick();
-    if (perTick <= 0) return undefined;
-    return Math.max(1, Math.ceil((range.max - this._number) / perTick));
+    if (!movesTowardEnd('on_max', perTick)) return undefined;
+    return Math.max(1, Math.ceil(range.inwardFrom('on_max', this._number) / perTick));
   }
 
   /**
