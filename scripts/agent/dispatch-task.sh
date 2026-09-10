@@ -15,7 +15,7 @@
 # [`.claude/ccr-meta.sh`](../../.claude/ccr-meta.sh)「指示は Write で書く」）。**書くことが無いなら、
 # 空のファイルでよい。**
 #
-# 出す行は [`dispatch-steps.sh`](dispatch-steps.sh) の `create_session_and_check`。
+# 出す行は [`dispatch-steps.sh`](dispatch-steps.sh) の `dispatch_session`。
 #   終了コード 0 … 投入できて、指示も一致した
 #   終了コード 1 … どこかで失敗した（出た行がどこまで進んだかを示す）
 #
@@ -103,30 +103,10 @@ existing=$(gh pr list --state open --limit 50 --json number,body |
   exit 1
 }
 
-node -e '
-  const fs = require("node:fs");
-  const [issuePath, promptPath, issue, envId, repoUrl, mode] = process.argv.slice(1);
-  const args = {
-    environment_id: envId,
-    // 頭の語で種類が分かる形（`board-design.md` 2.9）。
-    title: `作業 #${issue} ${JSON.parse(fs.readFileSync(issuePath, "utf8")).title.trim()}`,
-    prompt: fs.readFileSync(promptPath, "utf8"),
-    tags: [`task-${issue}`],
-  };
-  if (repoUrl) {
-    args.source_url = repoUrl;
-    args.source_revision = "main";
-  }
-  // **空なら渡さない。** 渡さないこと自体が1つの選択（`ccr-env.sh`）。
-  if (mode) args.permission_mode = mode;
-  process.stdout.write(JSON.stringify(args));
-' "$WORK/issue.json" "$INSTRUCTION" "$ISSUE" "$ENV_ID" "$SOURCE" "$MODE" >"$WORK/args.json"
-
-dump_dry_run "$WORK/args.json"
-
 # 手綱と占有。**立ててよいかの判定は [`may-dispatch.sh`](may-dispatch.sh) が持つ**ので、ここは
-# 種類とタグを渡すだけ。タグは下の `create_session` へ渡すものと同じ文字列であること——**別の
-# 文字列を見に行くと、判定は通るのに二重に立つ。**
-CCR_META="$CCR_META" bash "$AGENT_DIR/may-dispatch.sh" new-task "task-$ISSUE"
+# 種類とタグを渡すだけ。**訊くタグと、セッションへ付けるタグは同じ変数から出す**——別の文字列を
+# 見に行くと、判定は通るのに二重に立つ。
+TAG="task-$ISSUE"
 
-create_session_and_check "$WORK/args.json" "$INSTRUCTION"
+dispatch_session new-task "$TAG" -- \
+  task --tag "$TAG" --issue "$ISSUE" --issue-json "$WORK/issue.json" --prompt "$INSTRUCTION"

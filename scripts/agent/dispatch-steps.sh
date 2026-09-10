@@ -3,11 +3,10 @@
 #
 #   # shellcheck source=scripts/agent/dispatch-steps.sh
 #   source "$(dirname "${BASH_SOURCE[0]}")/dispatch-steps.sh"
-#   choose_target "$WHERE"                                     # ENV_ID・MODE・SOURCE が決まる
-#   template_body "$TEMPLATE" "$INSTRUCTION"                   # ひな形から渡す本体を取り出す
-#   …題・タグ・投入する前の関門は、投入するものごとに違うので呼ぶ側が持つ…
-#   dump_dry_run "$WORK/args.json"                             # DRY_RUN が立っていれば、ここで終わる
-#   create_session_and_check "$WORK/args.json" "$INSTRUCTION"  # 立てて、届いたことを確かめる
+#   choose_target "$WHERE"                    # ENV_ID・MODE・SOURCE が決まる
+#   template_body "$TEMPLATE" "$INSTRUCTION"  # ひな形から渡す本体を取り出す
+#   …投入する前の関門は、投入するものごとに違うので呼ぶ側が持つ…
+#   dispatch_session new-task "$TAG" -- task --tag "$TAG" …   # 立てて、届いたことを確かめる
 #
 # **投入するものごとに違うのは、題・タグと、投入する前の関門だけ。** それ以外を写しで持つと、
 # 片方だけ直したときに黙って食い違う。
@@ -25,7 +24,6 @@ source "$AGENT_DIR/ccr-env.sh"
 # shellcheck source=scripts/agent/prompt-template.sh
 source "$AGENT_DIR/prompt-template.sh"
 CCR_META="$AGENT_DIR/../../.claude/ccr-meta.sh"
-CHECK_PROMPT="$AGENT_DIR/../../.claude/ccr-check-prompt.sh"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
@@ -51,49 +49,46 @@ choose_target() {
   fi
 }
 
-# 立てずに、渡す引数（`$1`）だけを見る（`DRY_RUN=1 bash …`）。**立っていなければ何もしない**ので、
-# 呼ぶ側は「立っていたら抜ける」を覚えていなくてよい。
+# セッションを1本立てて、届いたことを確かめる。**組み立てから確認までは1つの node の中**
+# （[`dispatch-session.mjs`](dispatch-session.mjs)）——分けると投入1回あたりの node が増え、その数が
+# そのまま常時の固定費になる（[`ccr-meta.mjs`](../../.claude/ccr-meta.mjs)「node から呼ぶ側は」）。
 #
-# **本文は頭だけに切る**——目で見たいのは引数の形（環境ID・タグ・`source_url`）で、指示の全文は
-# 邪魔になる。**`DRY_RUN=full` なら切らない**（埋めた値は本文の途中に出るので、そこを確かめる側は
-# こちらを使う）。
-dump_dry_run() {
-  [ -n "${DRY_RUN:-}" ] || return 0
-  if [ "$DRY_RUN" = full ]; then
-    jq . "$1"
-  else
-    jq '.prompt |= (split("\n") | .[0:3] | join("\n") + "\n…")' "$1"
-  fi
-  exit 0
-}
-
-# 渡す引数（`$1`）でセッションを立てて、届いたことを確かめる。出すのは1行1件。
+#   dispatch_session <関門の種類> <タグ…> -- <投入するものの種類> <dispatch-session.mjs へ渡す引数…>
+#
+# **順を持つのはここ。** `DRY_RUN` は立てないので関門の手前で降り、関門
+# （[`may-dispatch.sh`](may-dispatch.sh)）は**立てる直前**に訊く——間が空くほど、その隙に他が
+# 立てられる。呼ぶ側がこの順を覚えていると、片方だけ入れ替わっても誰も気づかない。
+#
+# 出すのは1行1件。
 #
 #   SESSION <セッションID>
 #   SOURCES <リポジトリのURL>@<リビジョン>   … 空の箱で起動していないことの確認
-#   一致 / 不一致                            … 送った指示（`$2`）が欠けずに届いたか
-create_session_and_check() {
-  local args="$1" instruction="$2" session sources
-  # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
-  session=$(bash "$CCR_META" create_session <"$args" | grep -o '{"ccr".*' | jq -r '.ccr.id')
-  [ -n "$session" ] && [ "$session" != "null" ] || {
-    echo "セッションを立てられなかった" >&2
+#   一致 / 不一致                            … 送った指示が欠けずに届いたか
+dispatch_session() {
+  local -a gate=()
+  while [ "$#" -gt 0 ] && [ "$1" != '--' ]; do
+    gate+=("$1")
+    shift
+  done
+  [ "$#" -gt 0 ] || {
+    echo "dispatch_session: 関門と引数を \`--\` で区切る" >&2
     return 1
   }
-  echo "SESSION $session"
+  shift
 
-  # **渡した `source_url` が入ったかを見る**ので、渡していない（`choose_target` がブリッジを選んで
-  # `SOURCE` を空にした）なら確かめるものが無い。
-  if [ -n "$SOURCE" ]; then
-    printf '{"session_id":"%s"}' "$session" >"$WORK/get.json"
-    sources=$(bash "$CCR_META" get_session <"$WORK/get.json" | grep -o '{"ccr".*' |
-      jq -r '.ccr.session_context.sources[]?.git_repository | "\(.url)@\(.revision)"')
-    [ -n "$sources" ] || {
-      echo "リポジトリが入っていない（空の箱で起動している）。畳んで立て直す。" >&2
-      return 1
-    }
-    echo "SOURCES $sources"
+  # 立てる先が決めるもの（`choose_target`）。**空なら渡さない**、が呼び手の約束（`ccr-env.sh`）。
+  local -a where=(--env "$ENV_ID")
+  [ -z "$SOURCE" ] || where+=(--source "$SOURCE")
+  [ -z "$MODE" ] || where+=(--mode "$MODE")
+
+  # **本文は頭だけに切る**——目で見たいのは引数の形（環境ID・タグ・`source_url`）で、指示の全文は
+  # 邪魔になる。**`DRY_RUN=full` なら切らない**（埋めた値は本文の途中に出るので、そこを確かめる側は
+  # こちらを使う）。
+  if [ -n "${DRY_RUN:-}" ]; then
+    node "$AGENT_DIR/dispatch-session.mjs" "$@" "${where[@]}" --dry-run "$DRY_RUN"
+    return
   fi
 
-  bash "$CHECK_PROMPT" "$session" "$instruction"
+  CCR_META="$CCR_META" bash "$AGENT_DIR/may-dispatch.sh" "${gate[@]}"
+  node "$AGENT_DIR/dispatch-session.mjs" "$@" "${where[@]}"
 }
