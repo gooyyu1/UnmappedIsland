@@ -219,6 +219,8 @@ export const ROLL_ENDS: readonly RollEnd[] = ['lowest', 'highest'];
 /** range系イベント（6.3節）の名前。 */
 export type RangeEventLabel = 'on_max' | 'on_min';
 
+const RANGE_EVENT_LABELS: readonly RangeEventLabel[] = ['on_max', 'on_min'];
+
 /**
  * その端から範囲の内側へ向かう向き（上へなら`1`、下へなら`-1`）。
  *
@@ -236,6 +238,16 @@ function inwardOf(label: RangeEventLabel): 1 | -1 {
  */
 export function movesTowardEnd(label: RangeEventLabel, amount: number): boolean {
   return amount * inwardOf(label) < 0;
+}
+
+/**
+ * その増減が向かっていく端。どちらの端へも向かわない増減——値を動かさない0——ではundefined。
+ *
+ * **向きから端を引く問いも、{@link movesTowardEnd}が真になる端を探して答える。** 逆向きの対応を
+ * 別に書くと、片方だけが裏返っても気付けない。
+ */
+export function endMovedToward(amount: number): RangeEventLabel | undefined {
+  return RANGE_EVENT_LABELS.find((label) => movesTowardEnd(label, amount));
 }
 
 /** 段（6.4節）がrangeの中で占める区間。両端とも0〜1で、startがminの側。 */

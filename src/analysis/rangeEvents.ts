@@ -1,4 +1,5 @@
 import type { PropertyDef, RangeEventLabel } from '../domain/PropertyDef';
+import { endMovedToward } from '../domain/PropertyDef';
 import type { StepOutcome } from './CraftingStep';
 import { destroysRoot, readEffect } from './effectOutcomes';
 import type { EndBoundValueResolver } from './staticValue';
@@ -100,9 +101,13 @@ export function ticksToRangeEnd(
   perTick: number,
 ): number | undefined {
   const range = propertyDef.range;
-  if (range === undefined || perTick === 0 || value === undefined) return undefined;
+  if (range === undefined || value === undefined) return undefined;
 
-  // 向かう先は、動く向きが決める——下がるなら下端、上がるなら上端。
-  const distance = range.inwardFrom(perTick < 0 ? 'on_min' : 'on_max', value);
+  // 向かう先を増減の向きから引くのはプロパティ自身（PropertyDef.endMovedToward）。向かう先が無い
+  // ＝値が動かないなら、端へ届くこともない。
+  const label = endMovedToward(perTick);
+  if (label === undefined) return undefined;
+
+  const distance = range.inwardFrom(label, value);
   return distance <= 0 ? undefined : distance / Math.abs(perTick);
 }
