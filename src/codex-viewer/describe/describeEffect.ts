@@ -205,18 +205,17 @@ class EffectDescriber implements EffectReader {
   }
 
   /**
-   * 二択は見出しで分けて書く（6.3節）。**並べて書くと「両方が順に起こる」と読める**——rangeイベントの
-   * `otherwise`は既定のクランプなので、著者の効果のすぐ下に「端へ戻す」が並ぶことになる。
+   * 二択は見出しで分けて書く（6.3節）。**並べて書くと「両方が順に起こる」と読める**——rangeイベントで
+   * 倒れる先は既定のクランプなので、著者の効果のすぐ下に「端へ戻す」が並ぶことになる。
    *
-   * 二択を二択のまま出すので、**受け方の選択肢（EffectReader.conditional）は選ばない。**
+   * 二択を二択のまま出すので、枝は1つずつ受けて**著者が書いた枝かどうかで見出しを選ぶ**
+   * （ConditionalReading.forEachBranch）。
    */
   conditional(reading: ConditionalReading): void {
-    this.out.write(...conditionTokens(reading.condition, this.names), text(' なら:'));
-    this.out.indented(() => describeEffect(reading.whenMet, this.names, this.out));
-
-    const otherwise = reading.otherwise;
-    if (otherwise === undefined) return;
-    this.out.write(text('そうでなければ:'));
-    this.out.indented(() => describeEffect(otherwise, this.names, this.out));
+    reading.forEachBranch((branch) => {
+      if (branch.authored) this.out.write(...conditionTokens(reading.condition, this.names), text(' なら:'));
+      else this.out.write(text('そうでなければ:'));
+      this.out.indented(() => describeEffect(branch.effect, this.names, this.out));
+    });
   }
 }
