@@ -9,6 +9,8 @@
 //   node scripts/historyStats.mjs --svg docs <日付...>  表に加えて、貼り込む図も書き出す
 //
 // **渡すのは区切りの日だけで、系列の先頭にはリポジトリができた日が必ず付く**（`firstCommitDay`）。
+// **区切りは古い順に、重ならないように渡す**——区間が逆さになると、その区間の量を置く日が区間の
+// 外へ出る（`middleDay`）。
 //
 // 日付は**日本時間**で読み、その日の最終コミットの状態を測る。時差で日が変わるので、UTCの
 // 履歴をそのまま日で切ると1日ずれる。**呼ぶ側も日付をJSTで作ること**——UTCの「今日」を渡すと、
@@ -182,10 +184,10 @@ function readTable(name) {
 
 /** 日（日本時間）ごとに払った額。Claude と Copilot で、元の記録の細かさが違う（冒頭の「コストの数え方」）。 */
 function costByDay() {
-  const sum = (rows, dayOf) => {
+  const sum = (rows, spentDay) => {
     const total = new Map();
     for (const row of rows) {
-      const day = dayOf(row);
+      const day = spentDay(row);
       total.set(day, (total.get(day) ?? 0) + Number(row.cost_usd));
     }
     return total;
@@ -272,8 +274,7 @@ function firstCommitDay() {
 }
 
 /** 引数が無いときの既定。最初のコミットの日から7日刻みで、最後は今日。 */
-function defaultDays() {
-  const first = firstCommitDay();
+function defaultDays(first) {
   const today = dayOf(git(['log', '-1', '--format=%at']));
   const days = [];
   for (let at = new Date(`${first}T00:00:00+09:00`); ; at.setUTCDate(at.getUTCDate() + DEFAULT_STEP_DAYS)) {
@@ -310,19 +311,25 @@ function daysBetween(from, to) {
  * 値なので、同じx座標に並べると右端へ張り付く。区切りは「作り方を変えた日」で決めていて幅が
  * 揃っていないので、ずれる量も点ごとに変わる。
  *
- * `from` は `to` 以前であること（区間が空だと代表する日が無い）。
+ * `from` が `to` より後だと、代表する日が区間の外へ出る。図は歪んだ形のまま出てしまうので、
+ * ここで落とす。
  */
 function middleDay(from, to) {
+  if (from > to) throw new Error(`区間の始まりが終わりより後: ${from}..${to}`);
   const at = (day) => Date.parse(`${day}T00:00:00+09:00`);
   return shiftDay(from, Math.floor((at(to) - at(from)) / (2 * 86400000)));
 }
 
 /**
- * 区間の量を出す窓の幅。**段の区切りは使わない**（`dailyTotals`）。
+ * 区間の量を出す窓の、中央から片側の日数。**段の区切りは使わない**（`dailyTotals`）。
  *
- * **奇数であること**——中央合わせなので、真ん中の日が1つに決まらないと窓が対称にならない。
+ * **幅ではなく片側で持つ。** 幅で持つと偶数を書けてしまい、真ん中の日が1つに決まらないまま
+ * 窓が非対称になる。片側から作れば、対称であることを書き間違えようが無い。
  */
-const WINDOW_DAYS = 3;
+const WINDOW_HALF_DAYS = 1;
+
+/** 移動窓の幅（日）。中央の1日と、その両側。 */
+const WINDOW_DAYS = 2 * WINDOW_HALF_DAYS + 1;
 
 /**
  * 日ごとの、コストとPRの量。
@@ -360,9 +367,8 @@ function dailyTotals(pullRequests, costs, from, to) {
  * null にし、その日は段から落とす（0で埋めると「ただ同然で作れた日」に見える）。
  */
 function rollingSeries(totals) {
-  const half = (WINDOW_DAYS - 1) / 2;
   return totals.map((_, index) => {
-    const window = totals.slice(Math.max(0, index - half), index + half + 1);
+    const window = totals.slice(Math.max(0, index - WINDOW_HALF_DAYS), index + WINDOW_HALF_DAYS + 1);
     const sum = (pick) => window.reduce((total, row) => total + pick(row), 0);
     const claude = sum((row) => row.claude);
     const count = sum((row) => row.count);
@@ -464,14 +470,20 @@ function toRow(measurement) {
  */
 function chartsOf(measurements, rolling) {
   const days = measurements.map((measurement) => measurement.day);
-  // 区間の量は区間の真ん中へ置く（`middleDay`）。時点の量だけが区切りの日に乗る。
-  const middles = measurements.map((measurement) => middleDay(measurement.from, measurement.day));
   const series = (name, pick) => ({ name, values: measurements.map(pick) });
-  /** 移動窓の段。値が定義できない日は、0で埋めずにその段から落とす。 */
-  const window = (label, pick) => {
-    const rows = rolling.filter((row) => pick(row) !== null);
-    return { label, days: rows.map((row) => row.day), series: [{ name: 'コスト', values: rows.map(pick) }] };
+  /**
+   * 系列を1本だけ持つ段。**値が定義できない日は、0で埋めずに落とす**——0にすると、
+   * 「ただ同然で作れた日」「0行のPRが並んだ日」として描かれる。
+   */
+  const panel = (label, name, rows, plotDay, pick) => {
+    const defined = rows.filter((row) => pick(row) !== null);
+    return { label, days: defined.map(plotDay), series: [{ name, values: defined.map(pick) }] };
   };
+  /** 移動窓の段。窓は日ごとなので、点も日ごとに並ぶ。 */
+  const windowPanel = (label, pick) => panel(label, 'コスト', rolling, (row) => row.day, pick);
+  /** 区間の量の段。区切りの日ではなく区間の真ん中へ置く（`middleDay`）。時点の量だけが区切りの日に乗る。 */
+  const spanPanel = (label, pick) =>
+    panel(label, '1PRあたり', measurements, (row) => middleDay(row.from, row.day), pick);
   const charts = [
     {
       file: 'HowWeGotHere_lines.svg',
@@ -491,16 +503,8 @@ function chartsOf(measurements, rolling) {
       title: 'PR1本あたりの大きさ',
       days,
       panels: [
-        {
-          label: '変更行数',
-          days: middles,
-          series: [series('1PRあたり', (m) => m.linesPerPullRequest ?? 0)],
-        },
-        {
-          label: 'ファイル数',
-          days: middles,
-          series: [series('1PRあたり', (m) => m.filesPerPullRequest ?? 0)],
-        },
+        spanPanel('変更行数', (measurement) => measurement.linesPerPullRequest),
+        spanPanel('ファイル数', (measurement) => measurement.filesPerPullRequest),
       ],
     },
   ];
@@ -513,11 +517,11 @@ function chartsOf(measurements, rolling) {
     title: `AIに払った額（ドル・${WINDOW_DAYS}日の移動窓）`,
     days: rolling.map((row) => row.day),
     panels: [
-      window('Claude・1日あたり', (row) => row.claudePerDay),
-      window('Copilot・1日あたり', (row) => row.copilotPerDay),
-      window('Claude・PR1本あたり', (row) => row.claudePerPullRequest),
+      windowPanel('Claude・1日あたり', (row) => row.claudePerDay),
+      windowPanel('Copilot・1日あたり', (row) => row.copilotPerDay),
+      windowPanel('Claude・PR1本あたり', (row) => row.claudePerPullRequest),
       // PRの粒は期を通じて変わるので、1本あたりだけでは値段と粒度が混ざる。
-      window('Claude・変更1千行あたり', (row) => row.claudePerThousandLines),
+      windowPanel('Claude・変更1千行あたり', (row) => row.claudePerThousandLines),
     ],
   });
 
@@ -552,18 +556,21 @@ if (svgIndex !== -1 && (svgDirectory === undefined || svgDirectory.startsWith('-
 }
 
 const days = svgIndex === -1 ? argv : [...argv.slice(0, svgIndex), ...argv.slice(svgIndex + 2)];
-for (const day of days) {
+for (const [index, day] of days.entries()) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
     console.error(`日付は YYYY-MM-DD で指定してください: ${day}`);
     process.exit(1);
   }
+  // 古い順でないと区間が逆さになり、区間の量が「1本も入らなかった日」として出る（`middleDay`）。
+  if (index > 0 && day <= days[index - 1]) {
+    console.error(`区切りの日は古い順に、重ならないように指定してください: ${days[index - 1]} の次に ${day}`);
+    process.exit(1);
+  }
 }
 
-// **渡すのは区切りの日で、系列の始まりは渡さない。** 「どこで作り方が変わったか」は選ぶものだが、
-// 「いつ始まったか」は履歴の側に在る事実なので、道具が足す。渡す側に任せていたときは、表も図も
-// リポジトリができた5日後から始まっていて、読み手にはそこが始まりに見えていた。
 const firstDay = firstCommitDay();
-const targets = days.length === 0 ? defaultDays() : [...(days[0] > firstDay ? [firstDay] : []), ...days];
+const targets =
+  days.length === 0 ? defaultDays(firstDay) : [...(days[0] > firstDay ? [firstDay] : []), ...days];
 
 const pullRequests = mergedPullRequests();
 const costs = costByDay();
