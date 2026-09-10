@@ -61,26 +61,14 @@ const OFFSHORE: ReadonlyMap<string, string> = new Map([
 /** 海岸が「この海区に面している」と名乗るつまみの綴り（voyage.yamlのcoast trait）。 */
 const OFFSHORE_PREFIX = 'offshore_';
 
-/** 見張りの発見量のつまみ（voyage.yamlのsea_zone）。 */
-const KNOBS = [
-  'barren_find',
-  'driftwood_find',
-  'flotsam_find',
-  'seaweed_find',
-  'egg_find',
-  'wreck_find',
-  'shoal_find',
-  'seabird_find',
-];
-
 /**
  * 顔ぶれごとに、見張りが返すもの——拾えるもの（手に入る）・湧くもの（海区に立つ）・実りの濃さ
  * （見張りの卓のうち、ハズレでない重みの割合）。**顔ぶれ1つにつき1つの海区**を見る（同じ顔ぶれの
  * 海区が同じ配り方であることは別の検査が受け持つ）。
  *
  * **濃さは卓の宣言そのもので、見張った結果から数え直さない**（yieldRateOf）。数えて出すと、値は
- * その試行の中で世界がどう進んだかに動く——同じ乱数列を天気も気分も引くので、無関係な変更で
- * 引き当てる並びがずれるし、筏の積荷が埋まった後に拾った物はこぼれて数に入らない。
+ * その試行の中で世界がどう進んだかに動く——見張りは天気も気分も引く同じ乱数列を引くので、
+ * 無関係な変更で引き当てる並びがずれる。
  */
 const YIELDS: readonly (readonly [string, readonly string[], readonly string[], number])[] = [
   ['coastal_waters', ['thick_branch', 'seaweed'], ['fish_shoal'], 0.8],
@@ -98,6 +86,31 @@ const WATCHES = 120;
 
 /** 海区の網（航路の宣言から組み立てたもの）。行き先の型から海区を引くのに使う。 */
 const SEA_CHART = readSeaChart();
+
+/**
+ * 見張りの卓（voyage.yamlのsea_zoneのexplore）——発見量のつまみの名前と、その候補が効果を持つか
+ * （＝当たりか）。**手で並べず宣言から引く。** 一覧を手で持つと、卓へ候補が増えたときに足し忘れても
+ * 赤くならず、宣言より小さい卓のまま検査が通る。
+ */
+const WATCH_TABLE: ReadonlyMap<string, boolean> = readWatchTable();
+
+function readWatchTable(): ReadonlyMap<string, boolean> {
+  const pick = nodeAt(SEA_CHART.traitBodies.get('sea_zone'), 'interactions', 'explore', 'pick');
+  if (!Array.isArray(pick) || pick.length === 0) throw new Error('sea_zone の見張りに卓がありません。');
+
+  const table = new Map<string, boolean>();
+  for (const candidate of pick) {
+    // 重みをつまみで書いていない候補が混ざると、海区の側から卓を読めない（読めないまま合計すると、
+    // 宣言より小さい卓を検査が正しいものとして扱う）。
+    const knob = nodeAt(candidate, 'weight', 'prop');
+    if (typeof knob !== 'string') throw new Error('見張りの卓に、つまみで重みを書いていない候補があります。');
+    table.set(
+      knob,
+      namedEntries(candidate).some(([key]) => key !== 'weight'),
+    );
+  }
+  return table;
+}
 
 /** 真夜中。海区は樹冠も反射も持たないので、明るさは暗さの底（−6）そのものになる。 */
 const MIDNIGHT = 0;
@@ -182,15 +195,22 @@ describe('筏と航海', () => {
   }
 
   /**
-   * その海区の実りの濃さ——見張り1回が何かを返す割合（Voyage.md 3.3節）。**素の重みの合計に対する
-   * ハズレ以外の割合**そのもので、卓を引かずに宣言から出る。
+   * その海区の実りの濃さ——見張り1回が何かを返す割合。**卓の重みの合計に対する、効果を持つ候補の
+   * 割合**そのもの（Voyage.md 3.3節「実りの濃淡は、この候補の重みの高さで表します」）で、卓を
+   * 引かずに宣言から出る。重みを1つも持たない海区は何も返さないので0。
    *
-   * 卓を持たない海区は何も返さないので0。**見張る人の狩猟の腕は入らない**——腕を土台にするつまみ
-   * （shoal_find・seabird_find）は、抽選する人が居て初めて積まれる。
+   * **見張る人の狩猟の腕は入らない**——顔ぶれの表の「実り」は `novice` のもの（同節）で、腕を
+   * 土台にするつまみ（shoal_find・seabird_find）は抽選する人が居て初めて積まれる。
    */
   function yieldRateOf(zone: WorldObject): number {
-    const total = KNOBS.reduce((sum, knob) => sum + propertyOf(zone, knob), 0);
-    return total === 0 ? 0 : (total - propertyOf(zone, 'barren_find')) / total;
+    let total = 0;
+    let hit = 0;
+    for (const [knob, isHit] of WATCH_TABLE) {
+      const weight = propertyOf(zone, knob);
+      total += weight;
+      if (isHit) hit += weight;
+    }
+    return total === 0 ? 0 : hit / total;
   }
 
   /** 1tick（15分）進める。 */
@@ -1327,7 +1347,7 @@ describe('筏と航海', () => {
 
     for (const zoneName of skipped) {
       const zone = singletonPlace(game, zoneName);
-      expect(yieldRateOf(zone), `${zoneName}: ハズレばかりではない`).toBeGreaterThan(0.5);
+      expect(yieldRateOf(zone), `${zoneName}: 見張りが何かを返す`).toBeGreaterThan(0.5);
     }
   });
 
@@ -1336,9 +1356,9 @@ describe('筏と航海', () => {
     // 海区が別の配り方を持ち始めたら、それは表に無い9種類目ができたということ。
     const { game } = ready();
     const knobsOf = (zoneName: string): string =>
-      KNOBS.map((knob) =>
-        propertyOf(game.session.createObject(codex.objectNames.getId(zoneName)), knob),
-      ).join('/');
+      [...WATCH_TABLE.keys()]
+        .map((knob) => propertyOf(game.session.createObject(codex.objectNames.getId(zoneName)), knob))
+        .join('/');
 
     for (const [face, zones] of FACES)
       expect(new Set(zones.map(knobsOf)).size, `${face} の海区は同じ配り方`).toBe(1);
