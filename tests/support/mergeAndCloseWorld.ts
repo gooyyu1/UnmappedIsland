@@ -35,6 +35,23 @@ const SCRIPT = resolve(__dirname, '../../scripts/agent/merge-and-close.sh');
  */
 export const DEFAULT_BODY = '_[Claude Code](https://claude.ai/code/session_01ZZZZZZZZZZZZZZZZZZZZZZ)_';
 
+/**
+ * 失敗した `gh` が標準エラーへ書く理由。**身代わりにも言わせる**——黙って転ぶ身代わりでは、理由を
+ * 落とす実装がそのまま緑で通る。`delete` のぶんだけ複数行なのは、**1行1件**の出力へ畳めていることを
+ * 叩く側から見るため。
+ */
+export const REFUSALS = {
+  list: 'gh: Could not resolve to a Repository with the name {owner}/{repo}. (HTTP 502)',
+  retarget: 'gh: Validation Failed. Base branch was not found. (HTTP 422)',
+  sendBack: 'gh: Resource not accessible by integration (HTTP 403)',
+  delete: 'gh: Reference does not exist (HTTP 422)\nTry authenticating with: gh auth login',
+} as const;
+
+/** 身代わりが理由を吐いて転ぶところ。失敗しない世界では、何も言わずに通す。 */
+function refuse(fails: boolean | undefined, refusal: string): string {
+  return fails === true ? `printf '%s\\n' '${refusal}' >&2; exit 1` : 'true';
+}
+
 export interface World {
   readonly mergeable?: string;
   readonly body?: string;
@@ -52,6 +69,8 @@ export interface World {
   readonly gateStatus?: number;
   /** このPRの head を base にしている開いたPR（＝上に積まれたPR）。 */
   readonly stacked?: readonly number[];
+  /** 積まれたPRを引く `gh pr list` が失敗するか（＝在るかどうかが分からない）。 */
+  readonly stackedUnknown?: boolean;
   /** `gh pr edit --base` が失敗するか。 */
   readonly retargetFails?: boolean;
   /** 張り替えたPRへ `直し待ち` を付ける `gh pr edit` が失敗するか。 */
@@ -124,17 +143,18 @@ if [ "$1" = pr ] && [ "$2" = view ]; then
   exit 0
 fi
 if [ "$1" = pr ] && [ "$2" = list ]; then
+  ${refuse(world.stackedUnknown, REFUSALS.list)}
   for n in $(printf '%s' '${(world.stacked ?? []).join(' ')}'); do printf '%s\\n' "$n"; done
   exit 0
 fi
 if [ "$1" = pr ] && [ "$2" = edit ]; then
   shift 3
   case "$*" in
-    *--base*) exit ${world.retargetFails ? 1 : 0} ;;
+    *--base*) ${refuse(world.retargetFails, REFUSALS.retarget)}; exit 0 ;;
   esac
   echo "$*" >> '${dir}/labels'
   case "$*" in
-    *直し待ち*) exit ${world.sendBackFails ? 1 : 0} ;;
+    *直し待ち*) ${refuse(world.sendBackFails, REFUSALS.sendBack)}; exit 0 ;;
   esac
   exit 0
 fi
@@ -142,7 +162,8 @@ if [ "$1" = api ]; then
   case "$*" in
     *DELETE*)
       echo "\${@: -1}" >> '${dir}/deleted'
-      exit ${world.deleteFails === true ? 1 : 0} ;;
+      ${refuse(world.deleteFails, REFUSALS.delete)}
+      exit 0 ;;
   esac
   exit ${world.branchGone === true ? 1 : 0}
 fi

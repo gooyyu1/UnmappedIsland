@@ -9,10 +9,10 @@
 #   HELD     <PR番号>              … 関門に掛かった。マージしていない（理由が続けて出る）
 #   MERGED   <PR番号>
 #   RETARGETED <PR番号>            … このPRの上に積まれていたPRの base を `main` へ張り替えた
-#   UNRETARGETED <PR番号>          … その張り替えに失敗した。ブランチは消していない
-#   UNMENDED <PR番号>              … 張り替えたが、書いた本人へ差し戻せなかった（`直し待ち` が
+#   UNRETARGETED <PR番号>: <理由>  … その張り替えに失敗した。ブランチは消していない
+#   UNMENDED <PR番号>: <理由>      … 張り替えたが、書いた本人へ差し戻せなかった（`直し待ち` が
 #                                    付いていない）
-#   UNDELETED <ブランチ>            … マージ済みのブランチを消せなかった
+#   UNDELETED <ブランチ>: <理由>    … マージ済みのブランチを消せなかった
 #   CLOSED   <issue番号>            … PR本文の `Closes #N` が閉じたことの確認
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
 #   SYNCED   <コミット>             … 本体のチェックアウトを新しい `main` へ進めた
@@ -22,6 +22,14 @@
 #   終了コード 1 … マージできなかった（何もしていない。関門を含む）
 #   終了コード 2 … マージはしたが、後片付けに残りがある
 #                  （上の `UNRETARGETED`・`UNMENDED`・`UNDELETED`・`OPEN`・`DIRTY`）
+#
+# ## 後片付けの失敗は、打った `gh` の言葉で出す
+#
+# 失敗の行（`UNRETARGETED`・`UNMENDED`・`UNDELETED`）にタグと対象だけを載せると、読んだ側は**失敗した
+# 事実しか受け取れない**——権限が足りないのか、参照がもう無いのか、GitHubが断ったのかへ辿り着けず、
+# 同じコマンドを手で打ち直すところから始めることになる。理由を持っているのは `gh` の標準エラーなので、
+# 捨てずに同じ行へ載せる（[`archive-session.sh`](archive-session.sh) の `DIRTY` と同じ形。issue #1557
+# では、パスだけの行を読んだ側が実際に誤読した）。**出力は1行1件**なので、改行は空白へ畳む。
 #
 # ## 積まれたPRは、ブランチを消す前に `main` へ下ろす
 #
@@ -191,11 +199,20 @@ echo "MERGED $PR"
 
 leftover=0
 
+# 後片付けの残りを1件出す（上の「後片付けの失敗は、打った `gh` の言葉で出す」）。**残りが在ることを
+# 数えるのもここ**——出した側が後で `leftover` を立て忘れると、片付いていないのに終了コード 0 で返る。
+unfinished() {
+  echo "$1 $2: ${3//$'\n'/ }"
+  leftover=1
+}
+
 # 上に積まれたPRを `main` へ下ろしてから、マージ済みのブランチを消す（上の「積まれたPRは…」）。
 # **1本でも下ろせなければ、ブランチを残す。** 引けなかったときも同じ——積まれたPRが在るかどうかが
 # 分からないまま消すと、閉じられたPRは機械では戻せない。
 retargeted=1
-if stacked=$(gh pr list --state open --base "$head" --json number --jq '.[].number'); then
+# 引けなかった理由は標準エラーに在るが、この `gh` は**標準出力が値**なので、混ぜずに受ける。
+stderr="$(mktemp)"
+if stacked=$(gh pr list --state open --base "$head" --json number --jq '.[].number' 2>"$stderr"); then
   # 差し戻す理由は、起こされた本人がPRを見て分かるものではない（コンフリクトもCIの赤もレビューの
   # 指摘も無い）ので、ここで書き残す。**張り替えたPR全部に同じ文面**なので、1回だけ組む。
   note="$(mktemp)"
@@ -210,34 +227,32 @@ if stacked=$(gh pr list --state open --base "$head" --json number --jq '.[].numb
   } >"$note"
   while read -r other; do
     [ -n "$other" ] || continue
-    if ! gh pr edit "$other" --base main >/dev/null; then
-      echo "UNRETARGETED $other"
+    if ! err=$(gh pr edit "$other" --base main 2>&1 >/dev/null); then
+      unfinished UNRETARGETED "$other" "$err"
       retargeted=0
       continue
     fi
     echo "RETARGETED $other"
-    if gh pr comment "$other" --body-file "$note" >/dev/null &&
-      gh pr edit "$other" --add-label 直し待ち >/dev/null; then
+    if err=$(gh pr comment "$other" --body-file "$note" 2>&1 >/dev/null) &&
+      err=$(gh pr edit "$other" --add-label 直し待ち 2>&1 >/dev/null); then
       continue
     fi
     # 理由を残せなければラベルも付けない（`UNMENDED` は「`直し待ち` が付いていない」と同じ意味に
     # しておく）。**張り替えは済んでいるので、盤面はこのPRを普通に捌きにかかる**——ここで出せるのは
     # 「差し戻せなかった」までで、混ざった差分がレビューへ出るのは止められない。
-    echo "UNMENDED $other"
-    leftover=1
+    unfinished UNMENDED "$other" "$err"
   done <<<"$stacked"
   rm -f "$note"
 else
-  echo "UNRETARGETED $PR"
+  unfinished UNRETARGETED "$PR" "$(cat "$stderr")"
   retargeted=0
 fi
-[ "$retargeted" -eq 1 ] || leftover=1
+rm -f "$stderr"
 # 既に消えているブランチは、消さない（同じPRへ二度叩いたときに `UNDELETED` が出ないように）。
 if [ "$retargeted" -eq 1 ] && gh api "repos/{owner}/{repo}/git/refs/heads/$head" >/dev/null 2>&1; then
-  gh api -X DELETE "repos/{owner}/{repo}/git/refs/heads/$head" >/dev/null 2>&1 || {
-    echo "UNDELETED $head"
-    leftover=1
-  }
+  if ! err=$(gh api -X DELETE "repos/{owner}/{repo}/git/refs/heads/$head" 2>&1 >/dev/null); then
+    unfinished UNDELETED "$head" "$err"
+  fi
 fi
 
 # `Closes #123` だけを拾う。番号だけの参照（`#123`）では閉じないので、ここでも見ない。
