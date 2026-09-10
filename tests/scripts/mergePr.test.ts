@@ -39,7 +39,8 @@ describe('merge-pr.sh', () => {
     expect(result.status).toBe(1);
   });
 
-  // 自動では越えられない関門。越えるにはユーザーの許可を引いて `--user-ok` で叩き直す。
+  // **越える道はこの道具に無い。** ここで止まったPRは、ユーザーが画面からマージするか、ラベルを
+  // 外して差し戻すかのどちらかへ行く（`board-design.md` 2.13.1）。
   it('関門に掛かったPRはマージせず、判断待ちを付けて理由ごと HELD で返す', () => {
     const result = run({ gate: ['MARK docs/ui/Windows.md 9.3 未解放レシピの理由【確定】'] });
 
@@ -58,20 +59,22 @@ describe('merge-pr.sh', () => {
     expect(result.lines).toEqual(['HELD 1000', '    PR #1000 のファイル一覧を引けなかった']);
   });
 
-  it('--user-ok なら、許可を受けたことをPRへ残してからマージする', () => {
-    const result = run({ gate: ['MARK docs/ui/Windows.md 9.3 未解放レシピの理由【確定】'], userOk: true });
+  // **関門を越える引数を持たない。** 許可を渡して叩き直す口があると、ユーザーが覚える操作が
+  // 「外す・マージする」の2つから増える（`board-design.md` 2.13.1）。
+  it('引数を足しても、関門に掛かったPRはマージしない', () => {
+    const result = run({
+      gate: ['MARK docs/ui/Windows.md 9.3 未解放レシピの理由【確定】'],
+      extra: ['--user-ok'],
+    });
 
-    expect(result.merged).toBe(true);
-    expect(result.comments).toContain('MARK docs/ui/Windows.md 9.3 未解放レシピの理由【確定】');
-    expect(result.labels).toEqual(['--remove-label 判断待ち']);
-    expect(result.status).toBe(0);
+    expect(result.merged).toBe(false);
+    expect(result.status).toBe(1);
   });
 
-  it('関門に掛からないPRは、--user-ok を付けなくてもコメントを残さずマージする', () => {
+  it('関門に掛からないPRは、ラベルを動かさずにマージする', () => {
     const result = run({});
 
     expect(result.merged).toBe(true);
-    expect(result.comments).toBe('');
     expect(result.labels).toEqual([]);
   });
 });

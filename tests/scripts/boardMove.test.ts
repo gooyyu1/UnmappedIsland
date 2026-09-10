@@ -266,12 +266,9 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
   });
 
-  it('収束せずのPRに人が通してよいを付けたら、マージする', () => {
-    expect(moves({ prs: [pr(10, label('収束せず', '通してよい'))] })).toEqual(['MERGE 10']);
-  });
-
-  // **`mend` ではなく `reject`。** 指摘に答えるのではなく、通らなかった仮決めを取り下げる作業。
-  it('却下のPRは、仮決めを取り下げさせる形で差し戻す', () => {
+  // **`mend` ではなく `reject`。** レビューの指摘に答えるのではなく、ユーザーが何を通さなかったのかを
+  // 読みに行く作業（`resume-prompt.md` の `## reject`）。
+  it('却下のPRは、ユーザーの差し戻しとして起こす', () => {
     const board = {
       prs: [pr(10, label('却下'))],
       prSessions: { 10: 'session_a' },
@@ -280,7 +277,8 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa1111']);
   });
 
-  // **却下は判断待ちの出口。** 外す手間を人に負わせないので、両方付いたまま届く（2.13.1）。
+  // **人が外すのは1つずつ。** `判断待ち` と `収束せず` が並んだPRで片方だけ外せば、残ったほうは
+  // 付いたまま `却下` が付く（2.13.1）。止めるのはマージとレビューで、差し戻しは止めない（2.13.2）。
   it('判断待ちが付いたままでも、却下は差し戻す', () => {
     const board = {
       prs: [pr(10, label('判断待ち', '却下'))],
