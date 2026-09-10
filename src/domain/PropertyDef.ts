@@ -219,7 +219,8 @@ export const ROLL_ENDS: readonly RollEnd[] = ['lowest', 'highest'];
 /** range系イベント（6.3節）の名前。 */
 export type RangeEventLabel = 'on_max' | 'on_min';
 
-const RANGE_EVENT_LABELS: readonly RangeEventLabel[] = ['on_max', 'on_min'];
+/** 値の向かいうる端。**どちらへ動く場合も見る側**（周期を読む側）が、ここから両方を採る。 */
+export const RANGE_EVENT_LABELS: readonly RangeEventLabel[] = ['on_max', 'on_min'];
 
 /**
  * その端から範囲の内側へ向かう向き（上へなら`1`、下へなら`-1`）。
