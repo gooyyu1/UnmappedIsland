@@ -25,6 +25,15 @@ export interface AnalysisDirs {
 export function readBoard(deps: ReadDeps): Record<string, unknown> | undefined;
 
 /**
+ * さかのぼるマージ済みPRの幅（時間）。スメルを拾う係が読む窓と同じで、係の間隔より広い
+ * （`.claude/board-design.md` 4.4.2）。
+ */
+export const MERGED_WINDOW_HOURS: number;
+
+/** 1周で引くマージ済みPRの上限。窓の幅ではなく、引きすぎを止める栓。 */
+export const MERGED_CAP: number;
+
+/**
  * まだ二次が読んでいない、一次の分析の記録の件数（`.claude/board-design.md` 2.17.4）。
  * 読めなかったときは0。
  */

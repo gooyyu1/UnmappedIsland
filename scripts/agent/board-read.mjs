@@ -49,10 +49,39 @@ const PR_FIELDS =
 const MERGED_PR_FIELDS = 'number,comments';
 
 /**
- * さかのぼるマージ済みPRの本数。**1日に入る本数より多く取る**——係は1日1回なので、この幅が
- * 1日ぶんを下回ると、拾われないまま窓から出るスメルが出る。
+ * さかのぼるマージ済みPRの幅（時間）。**本数ではなく期間で持つ。** 本数は、1本あたりに掛かる
+ * 時間が変われば覆う期間も変わるので、係の間隔ぶんに入る本数を下回った瞬間、**拾われないまま窓から
+ * 出るスメルが出る**——30本で1日を覆うつもりだったものが、実測（2026-09-07）では15時間ぶんしか
+ * なく、#1659〜#1740 が一度も読まれずに落ちた。期間で持てば、その間に何本入っても落ちない。
+ *
+ * **係の間隔**（[`board-move.mjs`](board-move.mjs) の `CYCLES` の `analysis` の `hours`）**より
+ * 広く取る。** 同じ幅を [`analysis-prompt.md`](../../.claude/analysis-prompt.md) が係へも渡す
+ * ——**盤面より係の窓が狭いと、盤面が見つけた未読が係の窓の外に落ち**、印が付かないので
+ * **毎日立って毎日同じ空振りを繰り返す。**
  */
-const MERGED_LIMIT = 30;
+export const MERGED_WINDOW_HOURS = 48;
+
+/**
+ * 1回で引く一覧の上限。**当たった周の盤面は全部を見ていない**ので、`capped` が黙って切らずに言う。
+ *
+ * マージ済みPRのぶんは**窓の幅ではなく、引きすぎを止める栓**——1周は30秒なので
+ * （[`daemon.sh`](daemon.sh) の `INTERVAL`）、窓に入る本数がそのまま毎周の重さになる。
+ * 実測（2026-09-10）では48時間ぶんが6本、**いちばん流量の多かった48時間**（2026-09-05T12:00Z
+ * からの2日）で117本。普段は本数で切っていたころより軽く、混んだ日だけ重い。
+ */
+const CAPS = { openPrs: 50, issues: 100, mergedPrs: 200 };
+
+/** 検査から見える上限（マージ済みPRのぶん）。 */
+export const MERGED_CAP = CAPS.mergedPrs;
+
+/**
+ * 上限に当たったら言う。**黙って切ると、切られた側は盤面から消える**——「1件も無い」と同じ形に
+ * なるので、次の周も、その次の周も同じに読む。
+ */
+function capped(log, what, items, cap) {
+  if (items.length >= cap) log(`${what}が上限（${cap}件）に達した（この周の盤面は全部を見ていない）`);
+  return items;
+}
 
 /**
  * 差し戻す相手は、そのPRのコミットの `Claude-Session:` トレーラで引く（2.11）。**上の一覧には
@@ -61,7 +90,8 @@ const MERGED_LIMIT = 30;
  */
 const PR_SESSIONS_QUERY =
   'query($owner:String!,$name:String!){repository(owner:$owner,name:$name)' +
-  '{pullRequests(states:OPEN,first:50){nodes{number commits(last:20){nodes{commit{message}}}}}}}';
+  // **本数は開いているPRの一覧と同じ。** 別々に持つと、片方だけが届く帯ができる。
+  `{pullRequests(states:OPEN,first:${CAPS.openPrs}){nodes{number commits(last:20){nodes{commit{message}}}}}}}`;
 
 /**
  * まだ棚卸しを通っていない判断の履歴の件数（`archive/` に入っていないもの）。**読むのは価値観を
@@ -123,10 +153,14 @@ export function countUnsummarizedAnalyses(log, { analyses = ANALYSES, summaries 
   return written.filter((day) => summarized === undefined || day > summarized).length;
 }
 
+/** `now` からさかのぼった時刻。比べる相手（PRの `updatedAt`・GitHubの検索）と同じ形で書く。 */
+function isoBefore(now, ms) {
+  return new Date(now.getTime() - ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
 /** この時刻より前に止まっているPRは、チェックが0本でも緑と読む。 */
 function settledBefore(now, settleMinutes) {
-  const at = new Date(now.getTime() - settleMinutes * 60_000);
-  return at.toISOString().replace(/\.\d{3}Z$/, 'Z');
+  return isoBefore(now, settleMinutes * 60_000);
 }
 
 /**
@@ -194,7 +228,7 @@ export function readBoard({
   settleMinutes,
   taken,
 }) {
-  const prs = gh(['pr', 'list', '--state', 'open', '--limit', '50', '--json', PR_FIELDS]);
+  const prs = gh(['pr', 'list', '--state', 'open', '--limit', String(CAPS.openPrs), '--json', PR_FIELDS]);
   if (prs === undefined) return undefined;
   const issues = gh([
     'issue',
@@ -202,7 +236,7 @@ export function readBoard({
     '--state',
     'open',
     '--limit',
-    '100',
+    String(CAPS.issues),
     '--json',
     'number,labels,blockedBy',
   ]);
@@ -210,11 +244,31 @@ export function readBoard({
   // **引けなくても盤面は捨てない。** これを読むのは1日1回の係の `due` だけなので、欠けた周は
   // その係が立たないだけで済む——必須にすると、**マージもレビューも投入も1周まるごと止まる。**
   // **黙って空にしない**（下の差し戻す相手と同じ理由。空は「1件も無い」と同じ形になる）。
-  const mergedPrs = gh(
-    ['pr', 'list', '--state', 'merged', '--limit', String(MERGED_LIMIT), '--json', MERGED_PR_FIELDS],
+  const mergedRaw = gh(
+    [
+      'pr',
+      'list',
+      '--state',
+      'merged',
+      // **絞るのはマージされた時刻。** `gh pr list` が並べるのは作成日なので、本数で切ると、
+      // **長く開いていたPRはマージされる頃には窓の外に居る**（`判断待ち` で人の手番へ移ったPRは
+      // 1周から数周遅れて入る）。マージで絞れば、入った順のとおりに窓へ載る。
+      '--search',
+      `merged:>=${isoBefore(now, MERGED_WINDOW_HOURS * 3_600_000)}`,
+      '--limit',
+      String(CAPS.mergedPrs),
+      '--json',
+      MERGED_PR_FIELDS,
+    ],
     { allowFail: true },
   );
-  if (mergedPrs === undefined) log('マージ済みPRを引けなかった（この周は、スメルを拾う係を立てない）');
+  if (mergedRaw === undefined) log('マージ済みPRを引けなかった（この周は、スメルを拾う係を立てない）');
+  const mergedPrs = capped(
+    log,
+    'マージ済みPR',
+    mergedRaw === undefined ? [] : JSON.parse(mergedRaw),
+    CAPS.mergedPrs,
+  );
   const checks = gh(['api', 'repos/{owner}/{repo}/commits/main/check-runs']);
   if (checks === undefined) return undefined;
 
@@ -231,15 +285,16 @@ export function readBoard({
   // ここでも受けると、次に足す失敗をどちらへ載せるかが決まらなくなる。
   const live = sessions();
 
-  const openIssues = JSON.parse(issues);
+  const openIssues = capped(log, '開いている issue', JSON.parse(issues), CAPS.issues);
+  const openPrs = capped(log, '開いているPR', JSON.parse(prs), CAPS.openPrs);
   return {
     // **手が空いてからの長さを測るのに要る**（`board-move.mjs` の `STALL_MINUTES`）。この周の
     // 時刻は1つで、比べる相手（台帳の `idle:`）も同じ形で書く。
     now: now.toISOString(),
     settledBefore: settledBefore(now, settleMinutes),
     mainChecks: mainChecks(checks),
-    prs: JSON.parse(prs),
-    mergedPrs: mergedPrs === undefined ? [] : JSON.parse(mergedPrs),
+    prs: openPrs,
+    mergedPrs,
     pendingDecisions: pendingDecisions(),
     unsummarizedAnalyses: unsummarizedAnalyses(),
     issues: openIssues,

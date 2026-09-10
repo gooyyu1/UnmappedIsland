@@ -4,14 +4,20 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-import { countUnsummarizedAnalyses, readBoard } from '../../scripts/agent/board-read.mjs';
+import { cycleHours } from '../../scripts/agent/board-move.mjs';
+import {
+  MERGED_CAP,
+  MERGED_WINDOW_HOURS,
+  countUnsummarizedAnalyses,
+  readBoard,
+} from '../../scripts/agent/board-read.mjs';
 
 /**
  * `scripts/agent/board-read.mjs` の検査。
  *
- * 盤面を組み立てる手のうち、**GitHub と CCR の外を見る2つ**——判断の履歴と、分析の記録の数え方
- * ——だけをここで見る。`gh` と一覧から作る分は `boardRound.test.ts` が通し、手を決める分は
- * `boardMove.test.ts` が持つ。
+ * 盤面を組み立てる手のうち、**GitHub と CCR の外を見る分**——判断の履歴と、分析の記録の数え方
+ * ——と、**スメルを拾う係が読む窓の取り方**をここで見る。手を決める分は `boardMove.test.ts`、
+ * 1周を通した形は `boardRound.test.ts` が持つ。
  *
  * **判断の履歴は、差し替えの口を通さずに実物を通す。** あちらは `pendingDecisions` を渡して数を
  * 決めてしまうので、**既定の経路（`archive/` を除く・`.md` だけ数える）は誰も通らない。**
@@ -57,6 +63,62 @@ describe('board-read.mjs', () => {
   // `withFileTypes` から名前へ変えても気づけない**ので、入れ子の中身を数えていないことを別に見る。
   it('archive の中の件数を足していない', () => {
     expect(pendingDecisions()).toBeLessThan(direct.length + archived.length);
+  });
+});
+
+describe('スメルを拾う係が読む窓（board-design.md 4.4.2）', () => {
+  const NOW = new Date('2026-09-07T12:00:00Z');
+
+  /** `gh` へ渡った引数を控えながら盤面を1つ組む。`merged` はマージ済みPRの一覧として返る。 */
+  function readWith(merged: readonly unknown[] = []) {
+    const calls: string[][] = [];
+    const log: string[] = [];
+    const gh = (args: readonly string[]): string => {
+      calls.push([...args]);
+      if (args[0] === 'api' && args[1] === 'graphql') return '{"data":{}}';
+      if (args[0] === 'pr' && args[1] === 'list' && args.includes('merged')) {
+        return JSON.stringify(merged);
+      }
+      return '[]';
+    };
+    readBoard({
+      gh,
+      sessions: () => [],
+      pendingDecisions: () => 0,
+      unsummarizedAnalyses: () => 0,
+      log: (line) => log.push(line),
+      now: NOW,
+      settleMinutes: 10,
+      taken: {},
+    });
+    return { merged: calls.find((args) => args.includes('merged')), log: log.join('\n') };
+  }
+
+  // 窓が間隔を下回ると、間に入ったぶんが誰にも読まれないまま落ちる（#1787）。
+  it('窓の幅が、係の立つ間隔より広い', () => {
+    const interval = cycleHours('analysis');
+    if (interval === undefined) throw new Error('`analysis` が CYCLES に居ない');
+    expect(MERGED_WINDOW_HOURS).toBeGreaterThan(interval);
+  });
+
+  // **本数で切らない。** 本数は1本あたりの時間が変われば覆う期間も変わる。**窓の幅そのものは
+  // 上の検査が見る**ので、ここは絞り方だけを見る（幅を写すと、幅を動かしただけでここが赤くなる）。
+  it('マージされた時刻で絞って引く', () => {
+    const merged = readWith().merged ?? [];
+    const start = new Date(NOW.getTime() - MERGED_WINDOW_HOURS * 3_600_000);
+    expect(merged[merged.indexOf('--search') + 1]).toBe(
+      `merged:>=${start.toISOString().replace(/\.\d{3}Z$/, 'Z')}`,
+    );
+  });
+
+  // **黙って切らない。** 切られた側は「1件も無い」と同じ形になり、次の周も同じに読まれる。
+  it('引きすぎの栓に当たった周は、全部を見ていないと言う', () => {
+    const many = Array.from({ length: MERGED_CAP }, (_, index) => ({ number: index, comments: [] }));
+    expect(readWith(many).log).toContain('マージ済みPRが上限');
+  });
+
+  it('栓に届いていない周は言わない', () => {
+    expect(readWith([{ number: 1, comments: [] }]).log).not.toContain('上限');
   });
 });
 

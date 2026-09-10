@@ -28,7 +28,7 @@
 //     "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
 //     "mainChecks": [ { "status": "COMPLETED", "conclusion": "SUCCESS" } ],   … `main` の先頭のCI
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments ],
-//     "mergedPrs":[ gh pr list --state merged --json number,comments ],   … スメルを拾う係が読む範囲
+//     "mergedPrs":[ gh pr list --state merged --search merged:>=<窓の始まり> --json number,comments ],   … スメルを拾う係が読む範囲
 //     "pendingDecisions": 12,   … `.claude/decisions/` のうち `archive/` に入っていない件数
 //     "unsummarizedAnalyses": 3,   … `.claude/analysis/` のうち、二次がまだ読んでいない件数
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
@@ -226,6 +226,17 @@ const CYCLES = [
     due: (board) => readyTasks(board).length === 0,
   },
 ];
+
+/**
+ * 周期の係を前に立ててから空ける間隔（時間）。知らない名前には `undefined`。
+ *
+ * **公開しているのは、係の窓を持つ側がここより広いことを言えるようにするため**——スメルを拾う係の
+ * 窓（[`board-read.mjs`](board-read.mjs) の `MERGED_WINDOW_HOURS`）がこの間隔を下回ると、間に入った
+ * ぶんが誰にも読まれないまま落ちる（`.claude/board-design.md` 4.4.2）。
+ */
+export function cycleHours(name) {
+  return CYCLES.find((cycle) => cycle.name === name)?.hours;
+}
 
 /**
  * 今すぐ配れる `kind:task`（`TASK` に出す候補）を、**`急ぎ` が先、その中では古い順**に並べる。
