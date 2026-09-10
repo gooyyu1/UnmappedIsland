@@ -303,9 +303,8 @@ object_defs:
   });
 
   it('同じプロパティの行は、どこへ並んでいても1つ', () => {
-    // 行の詳細（StatusDetail）は影響の出入りを子孫まで辿るので、並べる先の数だけ組み立て直すと
-    // その分だけ効く。statusタグを持つhydrationは、ステータスエリア・プロパティのタブ・全部の
-    // 3箇所へ出る。
+    // 行の詳細（StatusDetail）は影響の出入りを子孫まで辿るので、並べる先ごとに組み立て直すと
+    // その分だけ効く。statusタグを持つhydrationは、タグで絞る並びにも絞らない並びにも出る。
     const mini = setUp();
 
     const view = viewOf(mini);
