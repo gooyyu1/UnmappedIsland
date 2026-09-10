@@ -121,12 +121,13 @@ export abstract class PassiveEffect {
   }
 
   /**
-   * この1 tickで実体値へ足すぶんを、操作の稼ぎとして控える（PassiveEffects.recordTickGains）。
+   * この1 tickで自分が動かす先を、操作の稼ぎを数える対象として名乗る
+   * （PassiveEffects.countTickMovementsAsGains）。
    *
    * **既定は何もしない。** 呼ばれるのは操作が宣言した一式だけで（11.7節）、そこに書けるのは
    * 実体値へ積む`add`と、実体値を動かさない`modify`しかない——輸送は書けない（8.4.1節）。
    */
-  recordTickGain(_owner: WorldObject, _context: ReferenceContext, _session: WorldSession): void {}
+  countTickMovementAsGain(_owner: WorldObject, _context: ReferenceContext, _session: WorldSession): void {}
 }
 
 /**
@@ -201,26 +202,28 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
   }
 
   /**
-   * 実体値へ積む寄与（`add`）なら、この1 tickで足すぶんを控える。可逆な寄与（`modify`）は実体値を
-   * 動かさないので控えない。
+   * 実体値へ積む寄与（`add`）なら、動かす先を稼ぎの数え先として名乗る。可逆な寄与（`modify`）は
+   * 実体値を動かさないので名乗らない。
    *
    * **相手はcontextから辿る**（setRegisteredInContextと同じ、登録先と同じ物になる）。呼ばれるのは
    * 操作の宣言だけで、そこにchildは書けない（8.1節）ので、ゲートのselfはownerでよい。
    *
-   * **端を越えて積めるぶんは数えない**（6.3節の既定のクランプが押し戻す）。一度きりの`add`が
-   * クランプの書き戻しを含めた正味で数えられるのと揃える。
+   * **名乗るのは先だけで、量は言わない。** 数えられるのはそのプロパティがこのtickで実際に動いた量
+   * （PropertyValue.tick）で、同じtickの他の寄与も端のクランプも既に引かれている。
+   *
+   * **今tick何も足さないなら名乗らない。** ゲートが閉じている効果の対象を数え先にすると、物が
+   * 自分で宣言した増減まで操作の稼ぎになる。
    */
-  override recordTickGain(owner: WorldObject, context: ReferenceContext, session: WorldSession): void {
-    if (this.reversible) return;
+  override countTickMovementAsGain(
+    owner: WorldObject,
+    context: ReferenceContext,
+    session: WorldSession,
+  ): void {
+    if (this.reversible || this.activeAmount(owner, owner) === 0) return;
 
     const target = this.target.owner(context);
     const property = target?.tryGetProperty(this.target.propertyGlobalId);
-    if (target === undefined || property === undefined) return;
-
-    const amount = this.activeAmount(owner, owner);
-    const range = property.def.range;
-    const accepted = range === undefined ? amount : range.clamp(property.number + amount) - property.number;
-    session.recordPassiveGain(target, property.def, accepted);
+    if (property !== undefined) session.countTickMovementAsGain(property);
   }
 
   /**

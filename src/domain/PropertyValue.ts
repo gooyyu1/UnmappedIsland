@@ -24,7 +24,12 @@ export class PropertyValue {
   }
 
   readonly def: PropertyDef;
-  private readonly owner: WorldObject;
+
+  /**
+   * このプロパティを持つ物。**値1件を指すには「どの物のどの定義か」の組が要る**ので、defと並べて
+   * 公開する（WorldSession.recordTickMovement）。
+   */
+  readonly owner: WorldObject;
 
   /**
    * modify効果（実効値へ寄与、getEffectiveValueが走査）と積分効果（YAMLでは`add`。tick毎に実体値へ加減算、tickが走査）
@@ -211,11 +216,18 @@ export class PropertyValue {
    * passivesの`add`を実体値へ加減算し（8.4節、不可逆）、rangeイベント（6.3節）を判定する。
    * 1tickにつき1回、WorldObject.tick経由で呼ばれる想定。
    *
+   * **このtickで動いた量を言うのは自分**（PropertyGain）。稼ぎとして数えるかを決めるのは受け取る側
+   * （WorldSession.recordTickMovement）で、こちらは動いた量を渡すだけ。渡すのは、この値へ入る`add`を
+   * まとめ（changePerTick）、端のクランプ（applyRangeEvents）まで済ませた後の正味。
    */
   tick(): void {
+    const before = this._number;
+
     this._number += this.changePerTick();
 
     this.applyRangeEvents();
+
+    this.owner.session.recordTickMovement(this, this._number - before);
   }
 
   /**
