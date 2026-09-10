@@ -163,6 +163,15 @@ export class WorldObject {
   }
 
   /**
+   * 自分が持つプロパティを、propsの宣言順で全部。**絞る口（gaugeProperties・propertiesWithTag）で
+   * 足りない側は、定義（enumeratePropertyDefs）から引き直さずにこれを読む**——1つずつ引き当てると、
+   * 持ち主なら知っている「型の宣言と1対1」を、引けなかった場合の分岐として書くことになる。
+   */
+  allProperties(): readonly PropertyValue[] {
+    return this.properties;
+  }
+
+  /**
    * 指定したタグ（6.7節）が付いたプロパティを、propsの宣言順で。タグの付いたプロパティを
    * 1つも持たないオブジェクトでは空配列。
    */

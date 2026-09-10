@@ -614,10 +614,26 @@ export function fromGameSession(
       ? object.tryGetProperty(influence.counterpart.propertyGlobalId)
       : undefined;
 
-  /** プロパティ1つ分の行（バーの中身とその詳細）。出す場所は問わない——どこに並べるかは読む側が決める。 */
+  /**
+   * この問い合わせが組み立てた行。**1つのプロパティの行は1つ**で、どこへ並べるときも同じそれを
+   * 借りる——詳細（detailOf）は影響の元を子孫まで辿るので、並べる先ごとに組み立て直すと
+   * その分だけ効く。
+   *
+   * 映しているのはこの問い合わせを作った時点の世界で、世界が変わったら作り直されるのは
+   * PlayScreenViewごと（PlayScene.viewOfGame）。
+   */
+  const rowsByProperty = new Map<PropertyValue, StatusContent>();
+
+  /**
+   * プロパティ1つ分の行（バーの中身とその詳細）。出す場所は問わない——どこに並べるかは読む側が決める。
+   * objectはpropertyの持ち主。
+   */
   const rowOf = (object: WorldObject, property: PropertyValue): StatusContent => {
+    const built = rowsByProperty.get(property);
+    if (built !== undefined) return built;
+
     const texts = locale.object(object.def.name).prop(property.def.name);
-    return {
+    const row: StatusContent = {
       key: property.def.name,
       name: texts.displayName,
       icon: texts.icon,
@@ -628,20 +644,16 @@ export function fromGameSession(
       worsensUpward: property.def.worsensUpward,
       detail: detailOf(object, property),
     };
+    rowsByProperty.set(property, row);
+    return row;
   };
 
   /**
    * そのオブジェクトのプロパティ全部の行を、propsの宣言順で。**タグでは絞らない**——タグが決めるのは
    * どこへ並べるかだけで、詳細を開ける相手はそれより広い（PlayScreenView.properties）。
    */
-  const everyRowOf = (object: WorldObject): readonly StatusContent[] => {
-    const rows: StatusContent[] = [];
-    for (const propertyDef of object.def.enumeratePropertyDefs()) {
-      const property = object.tryGetProperty(propertyDef.globalId);
-      if (property !== undefined) rows.push(rowOf(object, property));
-    }
-    return rows;
-  };
+  const everyRowOf = (object: WorldObject): readonly StatusContent[] =>
+    object.allProperties().map((property) => rowOf(object, property));
 
   /** タグが付いたそのオブジェクトのプロパティを、表示名に直して並べる。未宣言のタグでは空。 */
   const entriesWithTag = (object: WorldObject, tagGlobalId: number | undefined): readonly StatusContent[] =>
@@ -680,14 +692,8 @@ export function fromGameSession(
    * 見るのはキャラクタのプロパティだけ。周りの事情（手元の明るさ・屋根の下か）は、キャラクタが
    * `base`で祖先から継いだうえで自分の段を持つ（player_character.yaml）。
    */
-  const situationsOf = (object: WorldObject): readonly string[] => {
-    const situations: string[] = [];
-    for (const propertyDef of object.def.enumeratePropertyDefs()) {
-      const situation = object.tryGetProperty(propertyDef.globalId)?.stage?.situation;
-      if (situation !== undefined) situations.push(situation);
-    }
-    return situations;
-  };
+  const situationsOf = (object: WorldObject): readonly string[] =>
+    object.allProperties().flatMap((property) => property.stage?.situation ?? []);
 
   /**
    * その物が今いる場所。**世界が答える**ので、札を作る側が「どこの札か」を言い添える必要は無い
