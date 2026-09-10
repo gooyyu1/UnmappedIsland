@@ -101,10 +101,14 @@ describe('スメルを拾う係が読む窓（board-design.md 4.4.2）', () => {
     expect(MERGED_WINDOW_HOURS).toBeGreaterThan(interval);
   });
 
-  // **本数で切らない。** 本数は1本あたりの時間が変われば覆う期間も変わる。
+  // **本数で切らない。** 本数は1本あたりの時間が変われば覆う期間も変わる。**窓の幅そのものは
+  // 上の検査が見る**ので、ここは絞り方だけを見る（幅を写すと、幅を動かしただけでここが赤くなる）。
   it('マージされた時刻で絞って引く', () => {
     const merged = readWith().merged ?? [];
-    expect(merged[merged.indexOf('--search') + 1]).toBe('merged:>=2026-09-05T12:00:00Z');
+    const start = new Date(NOW.getTime() - MERGED_WINDOW_HOURS * 3_600_000);
+    expect(merged[merged.indexOf('--search') + 1]).toBe(
+      `merged:>=${start.toISOString().replace(/\.\d{3}Z$/, 'Z')}`,
+    );
   });
 
   // **黙って切らない。** 切られた側は「1件も無い」と同じ形になり、次の周も同じに読まれる。

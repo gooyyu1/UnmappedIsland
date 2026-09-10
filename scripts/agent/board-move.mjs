@@ -28,7 +28,7 @@
 //     "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
 //     "mainChecks": [ { "status": "COMPLETED", "conclusion": "SUCCESS" } ],   … `main` の先頭のCI
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments ],
-//     "mergedPrs":[ gh pr list --state merged --json number,comments ],   … スメルを拾う係が読む範囲
+//     "mergedPrs":[ gh pr list --state merged --search merged:>=<窓の始まり> --json number,comments ],   … スメルを拾う係が読む範囲
 //     "pendingDecisions": 12,   … `.claude/decisions/` のうち `archive/` に入っていない件数
 //     "unsummarizedAnalyses": 3,   … `.claude/analysis/` のうち、二次がまだ読んでいない件数
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],

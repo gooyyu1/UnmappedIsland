@@ -57,9 +57,9 @@
 **道具は `gh` があるかで分かれます。** まず `command -v gh` を打ってください。**クラウドの
 セッションには入っていません**——無いほうが普通です。無いときは GitHub の MCP で同じことをします。
 どちらも `<窓の始まり>` は「今から `MERGED_WINDOW_HOURS` 時間前」を `2026-09-05T12:00:00Z` の形で
-書いたものです。
+書いたものです。**引く本数の栓は同じファイルの `CAPS.mergedPrs`**（盤面が使うのと同じ値）。
 
-- `gh` があるとき: `gh pr list --state merged --search 'merged:>=<窓の始まり>' --limit 200 --json number`
+- `gh` があるとき: `gh pr list --state merged --search 'merged:>=<窓の始まり>' --limit <CAPS.mergedPrs> --json number`
   でPRの番号を引き、そのそれぞれへ
   `gh api repos/{owner}/{repo}/issues/<PR番号>/comments --jq '.[] | {id, body, reactions}'`。
 - 無いとき: `search_pull_requests`
@@ -69,6 +69,10 @@
   そのぶんが窓から落ちます。**`list_pull_requests` では取れません**——`state: closed` は
   **マージされずに閉じたPRも返し**、応答の `merged` は常に偽なので、マージ済みだけを取る手が
   ありません。
+
+**栓に当たったら、窓を取り切れていません。** 引けた本数が `CAPS.mergedPrs` に達していたら、
+**記録の `## 読んだ範囲` にそう書いてください**——黙って切ると、切られたぶんは誰にも見えないまま
+消えます。
 
 **どちらの経路でも、コメントの `id`（数値）と `reactions` を控えてください。** `id` は次の周へ印を
 付けるのに要ります。`reactions.eyes` が1以上なら 👀 が付いています。
