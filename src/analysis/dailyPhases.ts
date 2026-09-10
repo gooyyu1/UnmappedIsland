@@ -1,6 +1,6 @@
 import type { IslandMap } from '../domain/generation/IslandMap';
 import type { ObjectDef } from '../domain/ObjectDef';
-import type { PassiveDeclaration, PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
+import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { ActivityHoursRow } from './activityHours';
 import type { BalanceTables } from './balanceTables';
@@ -312,7 +312,7 @@ function cheapestStackOf(
 /** その型が、据えた先（祖先）のプロパティを常時いくつ押し上げるか。段や条件で縛られた寄与は数えない。 */
 function ancestorLiftOf(def: ObjectDef, propertyGlobalId: number): number {
   const collector = new AncestorLiftCollector(propertyGlobalId);
-  for (const declaration of def.passives.declarations) (declaration as PassiveDeclaration).read(collector);
+  def.passives.read(collector);
   return collector.lift;
 }
 

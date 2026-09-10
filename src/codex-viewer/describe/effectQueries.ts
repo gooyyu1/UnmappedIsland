@@ -1,4 +1,3 @@
-import { everyBranchOf } from '../../domain/EffectReader';
 import type {
   AddReading,
   ConditionalReading,
@@ -73,7 +72,7 @@ abstract class IgnoringEffectReader implements EffectReader {
 
   /** 二択の奥も両方数える。**問うているのは起こりうるか**なので、どちらへ倒れるかは関わらない。 */
   conditional(reading: ConditionalReading): void {
-    for (const branch of everyBranchOf(reading)) branch.read(this);
+    reading.readEveryBranch(this);
   }
 }
 

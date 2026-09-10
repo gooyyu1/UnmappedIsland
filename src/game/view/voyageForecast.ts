@@ -1,4 +1,3 @@
-import { everyBranchOf } from '../../domain/EffectReader';
 import type {
   ConditionalReading,
   EffectReader,
@@ -66,7 +65,7 @@ class ModifySum implements PassiveReader {
 /** その型が宣言している`modify`のうち、条件に合うものの量の合計。 */
 function sumModify(def: ObjectDef, accepts: (reading: PassivePropertyReading) => boolean): number {
   const sum = new ModifySum(accepts);
-  for (const passive of def.passives.declarations) passive.read(sum);
+  def.passives.read(sum);
   return sum.total;
 }
 
@@ -95,7 +94,7 @@ class SelfMoveDestinations implements EffectReader {
 
   /** 二択の奥も両方見る。**問うているのは行き先になりうるか**なので、どちらへ倒れるかは関わらない。 */
   conditional(reading: ConditionalReading): void {
-    for (const branch of everyBranchOf(reading)) branch.read(this);
+    reading.readEveryBranch(this);
   }
 
   set(): void {}
@@ -137,7 +136,7 @@ class DepartureCandidates implements EffectReader {
 
   /** 条件の下に置かれた卓も見る——条件は卓を隠さない。 */
   conditional(reading: ConditionalReading): void {
-    for (const branch of everyBranchOf(reading)) branch.read(this);
+    reading.readEveryBranch(this);
   }
 
   set(): void {}
