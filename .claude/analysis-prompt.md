@@ -46,22 +46,29 @@
 **読んだコメントには 👀 が付いています。** これが処理済みの印なので、**付いていないコメントだけ**が
 今回の対象です。
 
-**さかのぼる本数は、盤面の窓を覆ってください**——`scripts/agent/board-read.mjs` の `MERGED_LIMIT`
-が、盤面が「立てろ」を決めるときに見ているマージ済みPRの本数です。**下回ると、盤面が見つけた未読の
-スメルが係の窓の外に落ち**、印が付かないので**毎日立って毎日同じ空振りを繰り返します。** 多く読む
-ぶんには構いません。
+**さかのぼるのは本数ではなく期間です**——`scripts/agent/board-read.mjs` の `MERGED_WINDOW_HOURS`
+が、盤面が「立てろ」を決めるときに見ている幅（時間）で、**そこから今までにマージされたPRを
+全部**読んでください。**盤面の窓を下回ると、盤面が見つけた未読のスメルが係の窓の外に落ち**、印が
+付かないので**毎日立って毎日同じ空振りを繰り返します。** 多く読むぶんには構いません。
+
+**絞るのはマージされた時刻で、作成日ではありません。** 長く開いていたPR（`判断待ち` で人の手番へ
+移ったものなど）は、作成日で数えると、マージされる頃には窓の外に居ます。
 
 **道具は `gh` があるかで分かれます。** まず `command -v gh` を打ってください。**クラウドの
 セッションには入っていません**——無いほうが普通です。無いときは GitHub の MCP で同じことをします。
+どちらも `<窓の始まり>` は「今から `MERGED_WINDOW_HOURS` 時間前」を `2026-09-05T12:00:00Z` の形で
+書いたものです。
 
-- `gh` があるとき: `gh pr list --state merged --limit <MERGED_LIMIT> --json number` でPRの番号を
-  引き、そのそれぞれへ
+- `gh` があるとき: `gh pr list --state merged --search 'merged:>=<窓の始まり>' --limit 200 --json number`
+  でPRの番号を引き、そのそれぞれへ
   `gh api repos/{owner}/{repo}/issues/<PR番号>/comments --jq '.[] | {id, body, reactions}'`。
-- 無いとき: `search_pull_requests`（`query: "repo:gooyyu1/UnmappedIsland is:pr is:merged"`・
-  `sort: created`・`order: desc`・`perPage: <MERGED_LIMIT>`）でマージ済みのPRを引き、そのそれぞれへ
-  `pull_request_read`（`method: get_comments`）。**`list_pull_requests` では取れません**——
-  `state: closed` は**マージされずに閉じたPRも返し**、応答の `merged` は常に偽なので、マージ済み
-  だけを取る手がありません。
+- 無いとき: `search_pull_requests`
+  （`query: "repo:gooyyu1/UnmappedIsland is:pr is:merged merged:>=<窓の始まり>"`・`perPage: 100`）で
+  マージ済みのPRを引き、そのそれぞれへ `pull_request_read`（`method: get_comments`）。
+  **`total_count` が返ったぶんより多ければ `page` を繰ってください**——1ページで打ち切ると、
+  そのぶんが窓から落ちます。**`list_pull_requests` では取れません**——`state: closed` は
+  **マージされずに閉じたPRも返し**、応答の `merged` は常に偽なので、マージ済みだけを取る手が
+  ありません。
 
 **どちらの経路でも、コメントの `id`（数値）と `reactions` を控えてください。** `id` は次の周へ印を
 付けるのに要ります。`reactions.eyes` が1以上なら 👀 が付いています。

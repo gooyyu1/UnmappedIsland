@@ -228,6 +228,17 @@ const CYCLES = [
 ];
 
 /**
+ * 周期の係を前に立ててから空ける間隔（時間）。知らない名前には `undefined`。
+ *
+ * **公開しているのは、係の窓を持つ側がここより広いことを言えるようにするため**——スメルを拾う係の
+ * 窓（[`board-read.mjs`](board-read.mjs) の `MERGED_WINDOW_HOURS`）がこの間隔を下回ると、間に入った
+ * ぶんが誰にも読まれないまま落ちる（`.claude/board-design.md` 4.4.2）。
+ */
+export function cycleHours(name) {
+  return CYCLES.find((cycle) => cycle.name === name)?.hours;
+}
+
+/**
  * 今すぐ配れる `kind:task`（`TASK` に出す候補）を、**`急ぎ` が先、その中では古い順**に並べる。
  * 一覧は新しい順に返るので、並べ直さないと古い issue が永久に後回しになる。
  *
