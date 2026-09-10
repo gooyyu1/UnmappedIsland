@@ -301,4 +301,24 @@ object_defs:
     expect(shown.has('body_fat')).toBe(true);
     expect(inStatusArea.has('body_fat')).toBe(false);
   });
+
+  it('同じプロパティの行は、どこへ並んでいても1つ', () => {
+    // 行の詳細（StatusDetail）は影響の出入りを子孫まで辿るので、並べる先の数だけ組み立て直すと
+    // その分だけ効く。statusタグを持つhydrationは、ステータスエリア・プロパティのタブ・全部の
+    // 3箇所へ出る。
+    const mini = setUp();
+
+    const view = viewOf(mini);
+
+    const hydration = view.statuses.find((status) => status.key === 'hydration');
+    expect(hydration).toBeDefined();
+    expect(view.properties.find((row) => row.key === 'hydration')).toBe(hydration);
+    expect(
+      view.propertyCategories.flatMap((category) => category.entries).find((row) => row.key === 'hydration'),
+    ).toBe(hydration);
+    expect(
+      view.characterWindow.properties.flatMap((tab) => tab.entries).find((row) => row.key === 'hydration'),
+      '子ウィンドウのタブも同じ行を借りる',
+    ).toBe(hydration);
+  });
 });
