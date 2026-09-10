@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { run } from '../support/mergeAndCloseWorld';
+import { REFUSALS, run } from '../support/mergeAndCloseWorld';
 
 /**
  * `merge-and-close.sh` がマージしてよいかを決め、マージの後始末（ブランチ・上に積まれたPR・本体の
@@ -27,10 +27,13 @@ describe('merge-and-close.sh', () => {
     expect(result.lines.some((line) => line.startsWith('UNDELETED '))).toBe(false);
   });
 
-  it('ブランチを消せなければ、後片付けの残りとして出す', () => {
+  // ブランチの名前だけでは**失敗した事実しか運ばない**。権限が足りないのか参照がもう無いのかへ
+  // 読んだ側が辿り着けるように、打った `gh` の標準エラーを同じ行へ載せる（issue #1698）。理由が
+  // 複数行でも**出力は1行1件**——畳めていなければ、理由の続きが次の行として現れて落ちる。
+  it('ブランチを消せなければ、理由ごと1行で後片付けの残りとして出す', () => {
     const result = run({ deleteFails: true });
 
-    expect(result.lines).toContain('UNDELETED claude/issue-999');
+    expect(result.lines).toContain(`UNDELETED claude/issue-999: ${REFUSALS.delete.replace(/\n/g, ' ')}`);
     expect(result.status).toBe(2);
   });
 
@@ -45,10 +48,20 @@ describe('merge-and-close.sh', () => {
     expect(result.deleted).toEqual(['repos/{owner}/{repo}/git/refs/heads/claude/issue-999']);
   });
 
-  it('積まれたPRを下ろせなければ、ブランチを残す', () => {
+  it('積まれたPRを下ろせなければ、理由ごと出してブランチを残す', () => {
     const result = run({ stacked: [1001], retargetFails: true });
 
-    expect(result.lines).toContain('UNRETARGETED 1001');
+    expect(result.lines).toContain(`UNRETARGETED 1001: ${REFUSALS.retarget}`);
+    expect(result.deleted).toEqual([]);
+    expect(result.status).toBe(2);
+  });
+
+  // 積まれたPRが在るかどうかが分からないまま消すと、閉じられたPRは機械では戻せない。**引けなかった
+  // ことも**、打った `gh` の理由ごと出す。
+  it('積まれたPRを引けなければ、理由ごと出してブランチを残す', () => {
+    const result = run({ stackedUnknown: true });
+
+    expect(result.lines).toContain(`UNRETARGETED 1000: ${REFUSALS.list}`);
     expect(result.deleted).toEqual([]);
     expect(result.status).toBe(2);
   });
@@ -72,11 +85,21 @@ describe('merge-and-close.sh', () => {
     expect(result.comments).toBe('');
   });
 
-  it('下ろしたPRを差し戻せなければ、後片付けの残りとして出す', () => {
+  // 理由を残せなければラベルも付けない（`UNMENDED` は「`直し待ち` が付いていない」と同じ意味）。
+  it('差し戻す理由を残せなければ、ラベルを付けずに理由ごと出す', () => {
+    const result = run({ stacked: [1001], noteFails: true });
+
+    expect(result.lines).toContain(`UNMENDED 1001: ${REFUSALS.note}`);
+    expect(result.labels).toEqual([]);
+    expect(result.comments).toBe('');
+    expect(result.status).toBe(2);
+  });
+
+  it('下ろしたPRを差し戻せなければ、理由ごと後片付けの残りとして出す', () => {
     const result = run({ stacked: [1001], sendBackFails: true });
 
     expect(result.lines).toContain('RETARGETED 1001');
-    expect(result.lines).toContain('UNMENDED 1001');
+    expect(result.lines).toContain(`UNMENDED 1001: ${REFUSALS.sendBack}`);
     expect(result.status).toBe(2);
   });
 
@@ -144,10 +167,12 @@ describe('merge-and-close.sh', () => {
     expect(run({ mainInstalled: false }).installed).toBe(true);
   });
 
-  it('本体に未コミットの変更があれば触らず、残りとして報せる', () => {
+  // パスだけでは、触らなかったことしか運ばない。**何が汚れているか**まで同じ行へ載せる（本体は
+  // 誰も作業しない場所なので、読んだ側は何が残っているのか見当が付かない）。
+  it('本体に未コミットの変更があれば触らず、何が汚れているかごと1行で報せる', () => {
     const result = run({ mainDirty: true });
 
-    expect(result.lines.some((line) => line.startsWith('DIRTY '))).toBe(true);
+    expect(result.lines.find((line) => line.startsWith('DIRTY '))).toMatch(/: +M docs\/x\.md +M src\/y\.ts$/);
     expect(result.git.some((call) => call.includes('checkout'))).toBe(false);
     expect(result.installed).toBe(false);
     expect(result.status).toBe(2);
