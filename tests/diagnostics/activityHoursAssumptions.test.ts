@@ -35,7 +35,7 @@ describe('活動時間表の前提', () => {
 
     for (const action of ACTION_CLASSES)
       expect(documented.get(action.documentedClass), `${action.documentedClass}のしきい値`).toBe(
-        characterStageMinimumOf(codex, action.propertyName, action.stageName),
+        characterStageMinimumOf(codex, action),
       );
   });
 

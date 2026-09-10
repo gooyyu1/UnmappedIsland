@@ -34,14 +34,20 @@ import { islandLocationsOf } from './islandLocations';
  */
 
 /**
+ * 段の名指し。**段の名前は、それを宣言しているプロパティと組でしか意味を持たない**——同じ `bright`
+ * が looking_brightness と hand_brightness では別の境目を指す（IlluminationSystem.md 5節）。
+ */
+export interface PropertyStageName {
+  readonly propertyName: string;
+  readonly stageName: string;
+}
+
+/**
  * 表の1列。行動のクラス（IlluminationSystem.md 5節）が見る明るさと、その行動ができる最も暗い段、
  * そして風雨がその行動を止めるか（ContentSkeleton.md 8.1.4節）。
  * **列と行動のクラスは1対1**——1列に2つを畳むと、境目が別々に動いたときにその列の意味が消える。
  */
-interface ActivityColumn {
-  readonly propertyName: string;
-  readonly stageName: string;
-
+interface ActivityColumn extends PropertyStageName {
   /** 嵐の時間を引くか。引かない列は、明るさだけで切った時間になる。 */
   readonly stoppedByWind: boolean;
 }
@@ -76,11 +82,11 @@ const HANDWORK_COLUMN: ActivityColumn = {
 
 /** 風雨の強さ（`core.yaml`のworld・`characters/player_character.yaml`）と、嵐と呼ぶ段。 */
 const WIND_PROPERTY = 'wind_speed';
-const GALE_STAGE = 'gale';
+const GALE_STAGE: PropertyStageName = { propertyName: WIND_PROPERTY, stageName: 'gale' };
 
 /** 屋根や岩陰に守られていること（ContainerSystem.md 6節）と、守られていると数える段。 */
 const SHELTERED_PROPERTY = 'sheltered';
-const SHELTERED_STAGE = 'sheltered';
+const SHELTERED_STAGE: PropertyStageName = { propertyName: SHELTERED_PROPERTY, stageName: 'sheltered' };
 
 /** 季節1つぶんの、天候の出現時間の実測値（`stats/climate.yaml`の`weather_hours`）。 */
 export interface SeasonWeatherHours {
@@ -170,13 +176,11 @@ export function activityHoursOf(
 ): readonly ActivityHoursRow[] {
   const worldAmbientAt = worldAmbientBrightnessOf(codex);
   const worldWindAt = worldWindSpeedOf(codex);
-  const thresholdOf = (column: ActivityColumn): number =>
-    characterStageMinimumOf(codex, column.propertyName, column.stageName);
-  const travelThreshold = thresholdOf(TRAVEL_COLUMN);
-  const gatheringThreshold = thresholdOf(GATHERING_COLUMN);
-  const explorationThreshold = thresholdOf(EXPLORATION_COLUMN);
-  const handworkThreshold = thresholdOf(HANDWORK_COLUMN);
-  const galeThreshold = characterStageMinimumOf(codex, WIND_PROPERTY, GALE_STAGE);
+  const travelThreshold = characterStageMinimumOf(codex, TRAVEL_COLUMN);
+  const gatheringThreshold = characterStageMinimumOf(codex, GATHERING_COLUMN);
+  const explorationThreshold = characterStageMinimumOf(codex, EXPLORATION_COLUMN);
+  const handworkThreshold = characterStageMinimumOf(codex, HANDWORK_COLUMN);
+  const galeThreshold = characterStageMinimumOf(codex, GALE_STAGE);
 
   const rows: ActivityHoursRow[] = [];
   for (const place of activityPlacesOf(codex)) {
@@ -221,7 +225,8 @@ export function activityHoursOf(
  * **キャラクタ全員を見て、食い違っていたら例外にする。** 活動時間表は誰が動くかを区別せず1行しか
  * 出さないので、境目が個体ごとに違えばその行の意味が消える。
  */
-export function characterStageMinimumOf(codex: WorldCodex, propertyName: string, stageName: string): number {
+export function characterStageMinimumOf(codex: WorldCodex, stage: PropertyStageName): number {
+  const { propertyName, stageName } = stage;
   const propertyGlobalId = codex.propertyNames.getId(propertyName);
   const characterNamesByMinimum = new Map<number | undefined, string[]>();
   for (const def of codex.objects) {
@@ -262,7 +267,7 @@ function activityPlacesOf(codex: WorldCodex): readonly ActivityPlace[] {
   const ambientId = codex.vocabulary.world.ambientBrightnessId;
   const shelteredId = codex.propertyNames.getId(SHELTERED_PROPERTY);
   // 守られていると数える境目も、キャラクタの段の宣言から読む（境目を書き写す箇所を作らない）。
-  const shelteredMinimum = characterStageMinimumOf(codex, SHELTERED_PROPERTY, SHELTERED_STAGE);
+  const shelteredMinimum = characterStageMinimumOf(codex, SHELTERED_STAGE);
   const isSheltered = (def: ObjectDef): boolean =>
     (def.tryGetPropertyDef(shelteredId)?.initialValueWithoutRoll ?? 0) >= shelteredMinimum;
 

@@ -15,6 +15,16 @@ import { EMPTY_HTML, escapeHtml, inlineArtHtml } from './html';
 export type NamingMode = 'display' | 'identifier';
 
 /**
+ * 名指したものの名乗り。**識別子と表示名は組でしか意味を持たない**——見出しにどちらを出すか
+ * （識別子表示モード）も、未翻訳の印を付けるかも、この2つを見比べて決まる。表示名の引き方は
+ * 名指すものの種類ごとに違うので、組にするのは引き当てる側（`objectIdentity`・`slotIdentity`）の仕事。
+ */
+export interface DisplayIdentity {
+  readonly identifier: string;
+  readonly displayName: string;
+}
+
+/**
  * 読み込んだ定義を人間向けのHTMLに変換する窓口。
  *
  * 定義の中身をどう言い表すかは`describe*`（describe/）が知っているので、ここが担うのは**見せ方**
@@ -111,8 +121,18 @@ export class CodexView {
   // 表示名（識別子表示モードでは識別子そのもの）
   // ------------------------------------------------------------------
 
+  /** 名乗りのうち、いま見出しに出すほう。 */
+  labelOf(identity: DisplayIdentity): string {
+    return this.namingMode === 'identifier' ? identity.identifier : identity.displayName;
+  }
+
   objectLabel(name: string): string {
-    return this.identifierOrDisplayName(name, this.objectDisplayName(name));
+    return this.labelOf(this.objectIdentity(name));
+  }
+
+  /** 型の名乗り。 */
+  objectIdentity(name: string): DisplayIdentity {
+    return { identifier: name, displayName: this.objectDisplayName(name) };
   }
 
   /**
@@ -145,15 +165,23 @@ export class CodexView {
    * 持ち主が分かっていればそれを使い、分からなければdefaultエントリだけで引く。
    */
   propertyLabel(objectName: string | undefined, propertyName: string): string {
-    return this.identifierOrDisplayName(
-      propertyName,
-      this.propertyTexts(objectName, propertyName).displayName,
-    );
+    return this.labelOf(this.propertyIdentity(objectName, propertyName));
+  }
+
+  /** プロパティの名乗り。表示名は持ち主ごとに変えられる（Localization.md）ので、持ち主とセットで引く。 */
+  propertyIdentity(objectName: string | undefined, propertyName: string): DisplayIdentity {
+    return {
+      identifier: propertyName,
+      displayName: this.propertyTexts(objectName, propertyName).displayName,
+    };
   }
 
   /** 操作の表示名。オブジェクトのメンバーなので持ち主とセットで引く。 */
   interactionLabel(objectName: string, name: string): string {
-    return this.identifierOrDisplayName(name, this.interactionTexts(objectName, name).displayName);
+    return this.labelOf({
+      identifier: name,
+      displayName: this.interactionTexts(objectName, name).displayName,
+    });
   }
 
   interactionTexts(objectName: string, name: string): Texts {
@@ -161,25 +189,30 @@ export class CodexView {
   }
 
   slotLabel(name: string): string {
-    return this.identifierOrDisplayName(name, this.locale.slot(name).displayName);
+    return this.labelOf(this.slotIdentity(name));
+  }
+
+  /** スロットの名乗り。 */
+  slotIdentity(name: string): DisplayIdentity {
+    return { identifier: name, displayName: this.locale.slot(name).displayName };
   }
 
   symbolLabel(name: string): string {
-    return this.identifierOrDisplayName(name, this.locale.symbol(name).displayName);
+    return this.labelOf({ identifier: name, displayName: this.locale.symbol(name).displayName });
   }
 
   propertyTagLabel(name: string): string {
-    return this.identifierOrDisplayName(name, this.locale.propertyTag(name).displayName);
+    return this.labelOf({ identifier: name, displayName: this.locale.propertyTag(name).displayName });
   }
 
   /** 告げる出来事（9.8節のsignal）の文言。札の上に出るのと同じ言葉。 */
   signalLabel(name: string): string {
-    return this.identifierOrDisplayName(name, this.locale.signal(name));
+    return this.labelOf({ identifier: name, displayName: this.locale.signal(name) });
   }
 
   /** 消し方の名乗り（9.3節のdestroyのreason）の文言。死亡ダイアログに出るのと同じ言葉。 */
   destroyReasonLabel(name: string): string {
-    return this.identifierOrDisplayName(name, this.locale.destroyReason(name));
+    return this.labelOf({ identifier: name, displayName: this.locale.destroyReason(name) });
   }
 
   /**
@@ -201,18 +234,14 @@ export class CodexView {
    * 表示名が対応表に無いか。識別子がそのまま出ている状態を「未翻訳」とみなす目安で、
    * 翻訳の抜けを見つける手掛かりとして印を付けるためだけに使う。
    */
-  isUntranslated(identifier: string, displayName: string): boolean {
-    return identifier === displayName;
+  isUntranslated(identity: DisplayIdentity): boolean {
+    return identity.identifier === identity.displayName;
   }
 
   private propertyTexts(objectName: string | undefined, propertyName: string) {
     // 未登録の識別子でも窓口は必ず返り、defaultエントリ→識別子の順にフォールバックする
     // （Localization.md）。持ち主が分からないときは空文字を渡してdefaultだけを引く。
     return this.locale.object(objectName ?? '').prop(propertyName);
-  }
-
-  private identifierOrDisplayName(identifier: string, displayName: string): string {
-    return this.namingMode === 'identifier' ? identifier : displayName;
   }
 
   // ------------------------------------------------------------------

@@ -361,7 +361,7 @@ function withTriggeredRangeEvents(
 
     for (const [propertyGlobalId, value] of selfPropertyValuesAfterOf(def, outcome, outer)) {
       const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
-      const readout = propertyDef === undefined ? undefined : rangeEventAt(propertyDef, value, resolve);
+      const readout = propertyDef === undefined ? undefined : rangeEventAt({ propertyDef, value }, resolve);
       if (readout === undefined) continue;
       // 分岐の確率は積で畳まれる（rangeイベントの分岐の和は1）ので、掛け直さなくてよい。
       outcomes = combineOutcomes(outcomes, readout.outcomes, 'triggered');
