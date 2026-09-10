@@ -504,8 +504,8 @@ export function moves(input) {
 
     if (kind !== null) {
       // **`main` が赤い間は直しを頼まない**（2.14）。頼む先が居るかを調べる手前で止める——相手が
-      // 誰であっても、直せないことは変わらない。`reject` と `look` は `main` の色と関わらない作業
-      // （仮決めの取り下げ・画面の証跡）なので、そのまま出す。
+      // 誰であっても、直せないことは変わらない。`reject` と `look` は**出た理由が `main` の色と
+      // 関わらない**ので、そのまま出す（待たせても変わらず、押し返されても印は付き直らない）。
       if (kind === 'mend' && mainCheck === 'red') {
         notes.push(`PR #${pr.number} は${reason}が、\`main\` が赤いので直しを頼まない`);
         continue;
