@@ -1,6 +1,7 @@
 import type { InfluenceWriter } from './PropertyInfluence';
 import type { WorldObject } from './WorldObject';
 import type { PassiveEffect, PropertyPassiveEffect, TransferPassiveEffect } from './PassiveEffect';
+import type { PassiveReader } from './PassiveReader';
 import type { ReferenceRoot } from './ReferenceRoot';
 import type { WorldSession } from './WorldSession';
 
@@ -93,7 +94,20 @@ export class PassiveEffects {
       effect.setChildRegistered(owner, child, register);
   }
 
-  /** 宣言されている持続効果を宣言順に挙げる（読み上げは効果自身が答える、PassiveReader参照）。 */
+  /**
+   * この一式が宣言していることを、宣言順にすべて読み上げさせる（PassiveReader参照）。
+   *
+   * **一式をまるごと読む相手はこちらを呼ぶ。** 宣言を1件ずつ取り出して読ませる形にすると、読み手の
+   * 数だけ同じ繰り返しが書き写される。
+   */
+  read(reader: PassiveReader): void {
+    for (const effect of this.effects) effect.read(reader);
+  }
+
+  /**
+   * 宣言されている持続効果を宣言順に挙げる。**1件ずつを別々に扱う相手だけが呼ぶ**——宣言ごとに絞り込む・
+   * 1件につき1つの書き出しを作る・宣言があるかを見る、といったもの。一式をまとめて読むならreadを呼ぶ。
+   */
   get declarations(): readonly PassiveEffect[] {
     return this.effects;
   }

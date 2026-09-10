@@ -8,6 +8,7 @@ import type { Requirement, Requirements } from './Requirement';
 import type { SignalEffect } from './SignalEffect';
 import type { PassiveEffect } from './PassiveEffect';
 import type { PassiveEffects } from './PassiveEffects';
+import type { PassiveReader } from './PassiveReader';
 import { spendDurationAndReportParticipantsAlive } from './actionTime';
 
 /**
@@ -63,7 +64,16 @@ export class InteractionDef {
     this.passives = passives;
   }
 
-  /** 経過の間だけ効く持続効果（11.7節）の宣言。1つも宣言していなければ空。 */
+  /**
+   * 経過の間だけ効く持続効果（11.7節）が宣言していることを、宣言順にすべて読み上げさせる
+   * （PassiveReader参照）。一式をまるごと読む相手はこちらを呼ぶ。
+   */
+  readPassives(reader: PassiveReader): void {
+    this.passives.read(reader);
+  }
+
+  /** 経過の間だけ効く持続効果（11.7節）の宣言。1つも宣言していなければ空。
+   * **1件ずつを別々に扱う相手だけが呼ぶ**（PassiveEffects.declarations参照）。 */
   get passiveDeclarations(): readonly PassiveEffect[] {
     return this.passives.declarations;
   }

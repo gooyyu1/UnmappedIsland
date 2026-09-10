@@ -8,12 +8,7 @@ import type { ObjectDef } from '../domain/ObjectDef';
 import type { StageBound } from '../domain/PropertyDef';
 import type { TransferReading } from '../domain/EffectReader';
 import { mutuallyExclusive } from './conditionCases';
-import type {
-  GateReading,
-  PassiveDeclaration,
-  PassivePropertyReading,
-  PassiveReader,
-} from '../domain/PassiveReader';
+import type { GateReading, PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import type { TypeMatchReading } from '../domain/TypeMatchRule';
 
@@ -216,7 +211,7 @@ export interface AncestorCondition {
  */
 export function tickDeltasOf(def: ObjectDef): readonly TickDelta[] {
   const collector = new TickDeltaCollector(def);
-  for (const declaration of def.passives.declarations) (declaration as PassiveDeclaration).read(collector);
+  def.passives.read(collector);
   return collector.deltas;
 }
 
