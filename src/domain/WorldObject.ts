@@ -566,8 +566,11 @@ export class WorldObject {
   }
 
   /**
-   * 加わっている関係の積みが動く間、この物が宣言した役を対象にした登録を外しておく。**役を解くのは
+   * 加わっている関係の積みが動く間、この物のdefが宣言した役を対象にした登録を外しておく。**役を解くのは
    * 最も内側の関係だけ**（participation）なので、積みが動けばこの物が張っている先も動く。
+   *
+   * 操作が宣言したぶん（11.7節）はここでは動かない——そちらの役は、宣言した操作の関係が答える
+   * （WorldSession.whileInteractionPassives）。
    */
   private whileRoleTargetsDetached(moveParticipations: () => void): void {
     this.setRoleTargetsRegistered(false);
@@ -576,19 +579,12 @@ export class WorldObject {
   }
 
   /**
-   * この物が宣言した、役を対象にした持続効果（11.5節）の登録を、役を解く関係の相手へ登録/解除する。
-   * **関係へ加わっていなければ相手が居ないので何もしない**——呼ぶ側が参加の有無を見なくてよい。
-   *
-   * **宣言元は物のdefだけではない**——今この物を宣言元にして効いている操作のぶん（11.7節）も同じ関係から
-   * 役を解くので、一緒に動かす。そちらは対象を問わずまとめて動く（辿れる口が対象別になっていない、
-   * WorldSession.setInteractionPassivesRegistered）が、役以外の対象は関係を見ずに解けるので往復で釣り合う。
-   * 効いているぶんが在るのは**この物が関係に加わっている間だけ**（張るのは関係の内側、
-   * WorldSession.whileInteractionPassives）なので、上の「何もしない」で取りこぼさない。
+   * この物のdefが宣言した、役を対象にしたpassives（11.5節）の登録を、役を解く関係の相手へ登録/解除
+   * する。**関係へ加わっていなければ相手が居ないので何もしない**——呼ぶ側が参加の有無を見なくてよい。
    */
   private setRoleTargetsRegistered(register: boolean): void {
     if (this.participation === undefined) return;
     for (const role of INTERACTION_ROLES) this.def.passives.setRelationRegistered(this, role, register);
-    this.session.setInteractionPassivesRegistered(this, register);
   }
 
   /**
@@ -607,18 +603,30 @@ export class WorldObject {
   }
 
   /**
-   * この物が宣言した、役を対象にした持続効果のうち**objectへ載るぶん**を解除/登録する。**役を解くのは
-   * 最も内側の関係からだけ**（participation）なので、そこでobjectが就いていない役は登録先が別の物で、
-   * objectの型が変わっても動かない。
-   *
-   * 操作が宣言したぶん（11.7節）は役ごとに分けて辿れないので、まとめて動かす（setRoleTargetsRegistered）。
+   * この物のdefが宣言した、役を対象にしたpassivesのうち**objectへ載るぶん**を解除/登録する。
+   * **役を解くのは最も内側の関係からだけ**（participation）なので、そこでobjectが就いていない役は
+   * 登録先が別の物で、objectの型が変わっても動かない。
    */
   private setRoleTargetsLandingOnRegistered(object: WorldObject, register: boolean): void {
     const relation = this.participation;
     if (relation === undefined) return;
     for (const role of INTERACTION_ROLES)
       if (relation.objectAt(role) === object) this.def.passives.setRelationRegistered(this, role, register);
+  }
+
+  /**
+   * 今効いている、操作が宣言した持続効果（11.7節）のうち、**この物へ登録が載りうるもの**をすべて
+   * 解除/登録する（becomeType用）。宣言を持っているのは物ではなく操作なので、辿れるのは
+   * セッションだけ（WorldSession.setInteractionPassivesRegistered）。
+   *
+   * **向きは役を対象にしたpassivesと同じ2つ**（setRoleTargetsOfParticipantsRegistered）——自分が
+   * 宣言元のぶんは`self`が自分を指し、相手が宣言元のぶんは役が自分を指す。相手の宣言も同じ関係の
+   * 中に居るので、参加者を辿れば全部が挙がる。
+   */
+  private setInteractionPassivesOfParticipantsRegistered(register: boolean): void {
     this.session.setInteractionPassivesRegistered(this, register);
+    for (const other of this.participantsSharingAnyRelation())
+      this.session.setInteractionPassivesRegistered(other, register);
   }
 
   /**
@@ -799,6 +807,7 @@ export class WorldObject {
     this.setAncestorTargetsRegistered(false);
     this._def.passives.setRelationRegistered(this, 'self', false);
     this.setRoleTargetsOfParticipantsRegistered(false);
+    this.setInteractionPassivesOfParticipantsRegistered(false);
     if (parent !== undefined) this.setEdgeRegistered(parent, false);
     for (const { child } of rehomed) child.setEdgeRegistered(this, false);
 
@@ -819,6 +828,7 @@ export class WorldObject {
 
     this._def.passives.setRelationRegistered(this, 'self', true);
     this.setRoleTargetsOfParticipantsRegistered(true);
+    this.setInteractionPassivesOfParticipantsRegistered(true);
     if (parent !== undefined) this.setEdgeRegistered(parent, true);
     for (const { child } of rehomed) child.setEdgeRegistered(this, true);
     this.setAncestorTargetsRegistered(true);

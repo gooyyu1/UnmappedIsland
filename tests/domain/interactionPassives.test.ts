@@ -83,6 +83,24 @@ object_defs:
   baker:
     props:
       heat: {value: 0}
+      strength: {value: 10}
+  # 焼いている者の力を削ぐ窯。窯自身の手番は、その力が残っているかを問う。
+  draining_kiln:
+    props:
+      strength: {value: 3}
+    interactions:
+      bake:
+        trigger: menu
+        duration: 30
+        passives:
+          - modify: {agent: {strength: -5}}
+      settle:
+        trigger: tick
+        conditions:
+          - {subject: agent, prop: strength, gt: 0}
+        become: {state: fired_clay}
+    variation_axes:
+      state: {of: {tag: fired}}
   # 焼いている途中で自分の型が変わる者。
   potter:
     props:
@@ -171,8 +189,9 @@ object_defs:
     });
 
     /**
-     * 宣言元が**入れ子の関係の内側で**変わっても、載る先は外側の関係の役から解ける（11.5節）。
-     * 内側の関係で解き直すと、agentを宣言元自身へ向けた登録が残り、経過が終わっても誰も外せない。
+     * 宣言元が**入れ子の関係の内側で**変わっても、載る先はこの操作の関係の役から解ける（11.5節）。
+     * 宣言元が今役を解く関係（＝内側）から解き直すと、`agent`を宣言元自身へ向けた登録が生まれ、
+     * 経過が終わっても誰も外せない——外すときに引くのはこの操作の関係だから。
      */
     it('変わったのが宣言元で、それが入れ子の関係の内側だったとき', () => {
       const { session, place, heat } = buildWorld();
@@ -188,5 +207,27 @@ object_defs:
       session.advanceWorldTime(60);
       expect(heat(kiln), '経過を終えた後も、窯へ載った登録は残っていない').toBe(0);
     });
+  });
+
+  /**
+   * 宣言元が経過中に別の関係へも加わっても、**この操作の役の解決先は動かない**（11.5節）。宣言元が今
+   * 役を解く関係から辿り直すと、内側に居る間だけ寄与が別の物へ載り替わり、内側で引いた条件や所要時間が
+   * その値を読む。
+   *
+   * ここでは窯自身の手番（時間を要さないので経過中のtickでその場で起きる）が、押す前の問い合わせとして
+   * 内側の関係を張り、その中で`agent`の力を問う。載り替わっていれば窯自身の力が削がれて条件が落ちる。
+   */
+  it('宣言元が入れ子の関係へ加わっても、役の解決先は動かない', () => {
+    const { place, codex } = buildWorld();
+    const kiln = place('draining_kiln');
+    const baker = place('baker');
+    const strength = (object: WorldObject) =>
+      object.tryGetProperty(codex.propertyNames.getId('strength'))?.getEffectiveValue();
+
+    expect(kiln.tryGetAction('bake', baker)?.tryExecute()).toBe(true);
+
+    expect(strength(kiln), '窯の力は削がれていない（agentは窯ではない）').toBe(3);
+    expect(kiln.def.name, '窯の力が残っているので、経過中の手番が起きている').not.toBe('draining_kiln');
+    expect(strength(baker), '経過を終えれば、削がれた力は戻る').toBe(10);
   });
 });

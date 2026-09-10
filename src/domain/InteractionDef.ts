@@ -158,7 +158,7 @@ export class InteractionDef {
 
       const involved = [self, context.agent, context.instrument];
       const minutes = this.minutesFor(context);
-      const alive = session.whileInteractionPassives(self, this.passives, () =>
+      const alive = session.whileInteractionPassives(self, context, this.passives, () =>
         spendDurationAndReportParticipantsAlive(minutes, session, involved),
       );
       if (!alive) return false;

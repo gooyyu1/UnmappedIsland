@@ -126,7 +126,7 @@ export abstract class PassiveEffect {
    * **既定は何もしない。** 呼ばれるのは操作が宣言した一式だけで（11.7節）、そこに書けるのは
    * 実体値へ積む`add`と、実体値を動かさない`modify`しかない——輸送は書けない（8.4.1節）。
    */
-  recordTickGain(_owner: WorldObject, _session: WorldSession): void {}
+  recordTickGain(_owner: WorldObject, _context: ReferenceContext, _session: WorldSession): void {}
 }
 
 /**
@@ -204,16 +204,16 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * 実体値へ積む寄与（`add`）なら、この1 tickで足すぶんを控える。可逆な寄与（`modify`）は実体値を
    * 動かさないので控えない。
    *
-   * **相手はownerが今参加している関係から辿る**（setRelationRegisteredと同じ経路）。呼ばれるのは
+   * **相手はcontextから辿る**（setRegisteredInContextと同じ、登録先と同じ物になる）。呼ばれるのは
    * 操作の宣言だけで、そこにchildは書けない（8.1節）ので、ゲートのselfはownerでよい。
    *
    * **端を越えて積めるぶんは数えない**（6.3節の既定のクランプが押し戻す）。一度きりの`add`が
    * クランプの書き戻しを含めた正味で数えられるのと揃える。
    */
-  override recordTickGain(owner: WorldObject, session: WorldSession): void {
+  override recordTickGain(owner: WorldObject, context: ReferenceContext, session: WorldSession): void {
     if (this.reversible) return;
 
-    const target = this.target.owner(ReferenceContext.forParticipant(owner));
+    const target = this.target.owner(context);
     const property = target?.tryGetProperty(this.target.propertyGlobalId);
     if (target === undefined || property === undefined) return;
 
@@ -239,11 +239,16 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * childは相手（どの子か）がownerから一意に辿れないため、ここでは扱わずsetChildRegisteredを使う。
    */
   setRelationRegistered(owner: WorldObject, register: boolean): void {
-    this.setResolvedRelationRegistered(
-      owner,
-      this.target.owner(ReferenceContext.forParticipant(owner)),
-      register,
-    );
+    this.setRegisteredInContext(owner, ReferenceContext.forParticipant(owner), register);
+  }
+
+  /**
+   * contextで対象を解いて、この効果を相手へ登録/解除する。**役の解決先を呼び出し側が持っているとき
+   * だけ**呼ぶ——操作が宣言した持続効果（11.7節）の役は、宣言したその操作の関係が答えるもので、
+   * 宣言元が後から別の関係へ加わっても動かない（WorldSession.whileInteractionPassives）。
+   */
+  setRegisteredInContext(owner: WorldObject, context: ReferenceContext, register: boolean): void {
+    this.setResolvedRelationRegistered(owner, this.target.owner(context), register);
   }
 
   /**

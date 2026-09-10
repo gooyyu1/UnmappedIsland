@@ -2,7 +2,7 @@ import type { InfluenceWriter } from './PropertyInfluence';
 import type { WorldObject } from './WorldObject';
 import type { PassiveEffect, PropertyPassiveEffect, TransferPassiveEffect } from './PassiveEffect';
 import type { PassiveReader } from './PassiveReader';
-import type { ReferenceRoot } from './ReferenceRoot';
+import type { ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 import type { WorldSession } from './WorldSession';
 
 /** 1つも宣言していない関係の契機で配る先（毎回空の配列を作らずに済ませる）。 */
@@ -69,13 +69,15 @@ export class PassiveEffects {
 
   /**
    * 宣言している寄与を、関係を問わずまとめて登録/解除する（操作が宣言した持続効果、11.7節）。
+   * **役はcontextが答える**——宣言したその操作の関係のものなので、ownerが後から別の関係へ加わっても
+   * 登録先は動かない（PropertyPassiveEffect.setRegisteredInContext）。
    *
    * **物の宣言はここを通らない。** そちらは関係ごとに契機が別々に来る（setRelationRegistered）が、
    * 操作の持続効果は「始まった」「終わった」の1つの契機で全部が同時に動く。
    */
-  setAllRegistered(owner: WorldObject, register: boolean): void {
+  setAllRegistered(owner: WorldObject, context: ReferenceContext, register: boolean): void {
     for (const effects of this.registrationsByRelation.values())
-      for (const effect of effects) effect.setRelationRegistered(owner, register);
+      for (const effect of effects) effect.setRegisteredInContext(owner, context, register);
   }
 
   /**
@@ -84,8 +86,8 @@ export class PassiveEffects {
    * **控えるのは操作が宣言した一式だけ**（WorldSession.whileInteractionPassives）。物が自分で
    * 宣言した増減は、誰かの操作が増やしたものではない。
    */
-  recordTickGains(owner: WorldObject, session: WorldSession): void {
-    for (const effect of this.effects) effect.recordTickGain(owner, session);
+  recordTickGains(owner: WorldObject, context: ReferenceContext, session: WorldSession): void {
+    for (const effect of this.effects) effect.recordTickGain(owner, context, session);
   }
 
   /** childがowner（親）に付く/離れる契機を、target=childの効果へ伝える。 */
