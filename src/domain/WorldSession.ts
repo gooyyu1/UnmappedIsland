@@ -194,8 +194,8 @@ export class WorldSession {
    */
   whileInteractionPassives<T>(owner: WorldObject, passives: PassiveEffects, body: () => T): T {
     this.runningInteractionPassives.push({ owner, passives });
-    passives.setAllRegistered(owner, true);
     try {
+      passives.setAllRegistered(owner, true);
       return body();
     } finally {
       passives.setAllRegistered(owner, false);
@@ -204,15 +204,18 @@ export class WorldSession {
   }
 
   /**
-   * objectの上に載っている、操作が宣言した持続効果（11.7節）の登録を、まとめて外す/載せ直す
-   * （WorldObject.becomeTypeが、プロパティを作り直す前後で呼ぶ）。
+   * declarerが宣言元になっている、経過中の操作の持続効果（11.7節）の登録を、対象を問わずまとめて
+   * 外す/載せ直す（WorldObject.becomeTypeが、プロパティを作り直す前後で呼ぶ）。
    *
    * **この登録を辿れるのはここだけ。** 宣言しているのは物ではなく操作で、効いている間そのdefを
    * 持っているのはこのセッションなので、物のdefからは見つからない。
+   *
+   * **載る先は宣言元とは限らない**（役を対象にできる、11.5節）ので、誰の型が変わったときに呼ぶかを
+   * 決めるのは呼ぶ側（WorldObject.setInteractionPassivesOfParticipantsRegistered）。
    */
-  setInteractionPassivesRegistered(object: WorldObject, register: boolean): void {
+  setInteractionPassivesRegistered(declarer: WorldObject, register: boolean): void {
     for (const running of this.runningInteractionPassives)
-      if (running.owner === object) running.passives.setAllRegistered(object, register);
+      if (running.owner === declarer) running.passives.setAllRegistered(declarer, register);
   }
 
   /**

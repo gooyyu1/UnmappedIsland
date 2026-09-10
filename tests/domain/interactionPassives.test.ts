@@ -18,6 +18,8 @@ describe('操作が宣言した持続効果（11.7節）', () => {
 traits:
   fired:
     tags: [fired]
+  weary:
+    tags: [weary]
 object_defs:
   world:
     singleton: true
@@ -55,14 +57,33 @@ object_defs:
       state: {of: {tag: fired}}
   fired_clay:
     traits: [fired]
+  # 焼いている者（agent）を温める窯。宣言元ではなく相手のプロパティへ登録が載る。
+  kiln:
+    interactions:
+      bake:
+        trigger: menu
+        duration: 30
+        passives:
+          - add: {agent: {heat: 1}}
+  # 焼いている途中で自分の型が変わる者。
+  potter:
+    props:
+      progress: {value: 0, range: {min: 0, max: 1}, on_max: {become: {mood: weary_mood}}}
+      heat: {value: 0}
+    passives:
+      - add: {self: {progress: 1}}
+    variation_axes:
+      mood: {of: {tag: weary}}
+  weary_mood:
+    traits: [weary]
 `;
 
-  /** 世界の`stuff`枠へその型を1つ置いた場面。tickが回るのは世界の木に繋がっている物だけ。 */
-  function place(objectName: string): {
+  /** 世界を1つ組み、その`stuff`枠へ型を置ける場面。tickが回るのは世界の木に繋がっている物だけ。 */
+  function buildWorld(): {
     codex: WorldCodex;
     session: WorldSession;
-    object: WorldObject;
-    heat: () => number | undefined;
+    place: (objectName: string) => WorldObject;
+    heat: (object: WorldObject) => number | undefined;
   } {
     const codex = new WorldCodexYamlLoader()
       .load('clay.yaml', YAML)
@@ -73,37 +94,62 @@ object_defs:
     const world = new World(instance, codex);
     const session = new WorldSession(codex, world);
 
-    const object = session.createObject(codex.objectNames.getId(objectName));
-    expect(object.moveToSlotOrRejection(instance.getSlot(codex.slotNames.getId('stuff')))).toBeUndefined();
     return {
       codex,
       session,
-      object,
-      heat: () => object.tryGetProperty(codex.propertyNames.getId('heat'))?.number,
+      place: (objectName) => {
+        const object = session.createObject(codex.objectNames.getId(objectName));
+        expect(
+          object.moveToSlotOrRejection(instance.getSlot(codex.slotNames.getId('stuff'))),
+        ).toBeUndefined();
+        return object;
+      },
+      heat: (object) => object.tryGetProperty(codex.propertyNames.getId('heat'))?.number,
     };
   }
 
   it('経過の間、宣言元へ毎tick積まれ、終われば外れる', () => {
-    const { session, object, heat } = place('sand');
+    const { session, place, heat } = buildWorld();
+    const sand = place('sand');
 
-    expect(object.tryGetAction('harden', createAgent(session))?.tryExecute()).toBe(true);
-    expect(heat(), '30分＝2 tickぶん').toBe(2);
+    expect(sand.tryGetAction('harden', createAgent(session))?.tryExecute()).toBe(true);
+    expect(heat(sand), '30分＝2 tickぶん').toBe(2);
 
     session.advanceWorldTime(60);
-    expect(heat(), '経過を終えれば外れるので、その後の時間では積まれない').toBe(2);
+    expect(heat(sand), '経過を終えれば外れるので、その後の時間では積まれない').toBe(2);
   });
 
-  it('経過の途中で宣言元がbecomeしても、作り直されたプロパティへ載り直す', () => {
-    const { session, object, heat } = place('clay');
+  /**
+   * 積まれるのが`sand`より1 tick少ないのは、**becomeを起こしたtickのぶんが落ちるため**——積分は
+   * 差し替え前のプロパティの配列を回り続けるので、宣言順で`become`より後ろにある`heat`は、新しい
+   * プロパティのほうが積分されないまま次のtickへ行く。ここで見るのは載り直したかどうかで、そちらは別。
+   */
+  describe('経過の途中でbecomeしても、作り直されたプロパティへ載り直す', () => {
+    it('変わったのが宣言元（selfを対象にした宣言）', () => {
+      const { session, place, heat } = buildWorld();
+      const clay = place('clay');
 
-    expect(object.tryGetAction('harden', createAgent(session))?.tryExecute()).toBe(true);
+      expect(clay.tryGetAction('harden', createAgent(session))?.tryExecute()).toBe(true);
 
-    expect(object.def.name, '1 tick目の途中で素焼きへ変わっている').not.toBe('clay');
-    // 型が変わったtickのぶんは入らない——becomeが作り直したプロパティは、そのtickの積分をもう済ませた
-    // 古いプロパティの代わりに置かれるので、次のtickから積まれる。
-    expect(heat(), '残りの1 tickぶんが、新しいプロパティへ積まれている').toBe(1);
+      expect(clay.def.name, '1 tick目の途中で素焼きへ変わっている').not.toBe('clay');
+      expect(heat(clay), '残りの1 tickぶんが、新しいプロパティへ積まれている').toBe(1);
 
-    session.advanceWorldTime(60);
-    expect(heat(), '新しいプロパティからも、経過の終わりに外れている').toBe(1);
+      session.advanceWorldTime(60);
+      expect(heat(clay), '新しいプロパティからも、経過の終わりに外れている').toBe(1);
+    });
+
+    it('変わったのが対象の側（役を対象にした宣言）', () => {
+      const { session, place, heat } = buildWorld();
+      const kiln = place('kiln');
+      const potter = place('potter');
+
+      expect(kiln.tryGetAction('bake', potter)?.tryExecute()).toBe(true);
+
+      expect(potter.def.name, '1 tick目の途中で型が変わっている').not.toBe('potter');
+      expect(heat(potter), '宣言元は変わっていないが、載る先が作り直されている').toBe(1);
+
+      session.advanceWorldTime(60);
+      expect(heat(potter), '新しいプロパティからも、経過の終わりに外れている').toBe(1);
+    });
   });
 });

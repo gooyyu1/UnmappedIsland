@@ -586,6 +586,21 @@ export class WorldObject {
   }
 
   /**
+   * 今効いている、操作が宣言した持続効果（11.7節）のうち、**この物へ登録が載りうるもの**をすべて
+   * 解除/登録する（becomeType用）。宣言を持っているのは物ではなく操作なので、辿れるのは
+   * セッションだけ（WorldSession.setInteractionPassivesRegistered）。
+   *
+   * **向きは役を対象にしたpassivesと同じ2つ**（setRoleTargetsOfParticipantsRegistered）——自分が
+   * 宣言元のぶんは`self`が自分を指し、相手が宣言元のぶんは役が自分を指す。相手の宣言も同じ関係の
+   * 中に居るので、参加者を辿れば全部が挙がる。
+   */
+  private setInteractionPassivesOfParticipantsRegistered(register: boolean): void {
+    this.session.setInteractionPassivesRegistered(this, register);
+    for (const other of this._participation?.participantsOtherThan(this) ?? [])
+      this.session.setInteractionPassivesRegistered(other, register);
+  }
+
+  /**
    * 親子のエッジが形成/解消された契機を、双方の効果（modify/add、8節）へ伝える（register=trueで登録、
    * falseで解除）。親側だけ子thisを明示的に渡すのは、親からどの子かを一意に辿れないため。target=selfは
    * コンストラクタで登録済みのため、ここでは扱わない。
@@ -749,7 +764,7 @@ export class WorldObject {
     this.setAncestorTargetsRegistered(false);
     this._def.passives.setRelationRegistered(this, 'self', false);
     this.setRoleTargetsOfParticipantsRegistered(false);
-    this.session.setInteractionPassivesRegistered(this, false);
+    this.setInteractionPassivesOfParticipantsRegistered(false);
     if (parent !== undefined) this.setEdgeRegistered(parent, false);
     for (const { child } of rehomed) child.setEdgeRegistered(this, false);
 
@@ -770,7 +785,7 @@ export class WorldObject {
 
     this._def.passives.setRelationRegistered(this, 'self', true);
     this.setRoleTargetsOfParticipantsRegistered(true);
-    this.session.setInteractionPassivesRegistered(this, true);
+    this.setInteractionPassivesOfParticipantsRegistered(true);
     if (parent !== undefined) this.setEdgeRegistered(parent, true);
     for (const { child } of rehomed) child.setEdgeRegistered(this, true);
     this.setAncestorTargetsRegistered(true);
