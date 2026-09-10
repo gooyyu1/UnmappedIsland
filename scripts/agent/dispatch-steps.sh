@@ -5,11 +5,12 @@
 #   source "$(dirname "${BASH_SOURCE[0]}")/dispatch-steps.sh"
 #   choose_target "$WHERE"                    # ENV_ID・MODE・SOURCE が決まる
 #   template_body "$TEMPLATE" "$INSTRUCTION"  # ひな形から渡す本体を取り出す
-#   …投入する前の関門は、投入するものごとに違うので呼ぶ側が持つ…
+#   …立ててよいかを投入するものから確かめる（開いているか・閉じるPRが既に無いか）のは呼ぶ側…
 #   dispatch_session new-task "$TAG" -- task --tag "$TAG" …   # 立てて、届いたことを確かめる
 #
-# **投入するものごとに違うのは、題・タグと、投入する前の関門だけ。** それ以外を写しで持つと、
-# 片方だけ直したときに黙って食い違う。
+# **呼ぶ側が持つのは、渡すタグと、投入するものからしか確かめられない関門だけ。** 手綱と占有へ訊く
+# のは下の `dispatch_session` が、題の組み立ては [`dispatch-session.mjs`](dispatch-session.mjs) が
+# 持つ——写しで持つと、片方だけ直したときに黙って食い違う。
 #
 # `source` した側は、次も受け取る。
 #
