@@ -286,7 +286,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
         expect(amounts.get('stamina'), '粒もその量').toBe(2);
       });
 
-      /** 幸福度を削る2本（player_character.yaml）。どちらも危険域は-0.5/tick。 */
+      /** 幸福度を削る側（player_character.yaml）。ここで使う危険域の段は、どれも-0.5/tick。 */
       const HAPPINESS_DRAINS = [
         { name: '痛み', deepen: (): void => void spawnInto('fracture', player, 'injuries') },
         {
@@ -307,6 +307,17 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
           expect(amounts.get('happiness'), '粒もその量').toBe(16);
         },
       );
+
+      it('削っているのが自分自身でも同じ——眠り込みの粒は、眠気の減りを引いた量', () => {
+        // 眠気は誰にも担がれず、自分で-1/tick減り続ける（player_character.yaml）。眠り込みの
+        // +3/tick から引いた +2/tick が、6時間ぶん。
+        drain('wakefulness');
+
+        const amounts = gainsDuring(() => session.advanceWorldTime(15));
+
+        expect(valueOf('wakefulness'), '眠り込みで実際に戻った量').toBe(48);
+        expect(amounts.get('wakefulness'), '粒もその量').toBe(48);
+      });
     });
   });
 });

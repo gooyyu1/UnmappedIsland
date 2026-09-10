@@ -217,8 +217,8 @@ export class PropertyValue {
    * 1tickにつき1回、WorldObject.tick経由で呼ばれる想定。
    *
    * **このtickで動いた量を言うのは自分**（PropertyGain）。稼ぎとして数えるかを決めるのは受け取る側
-   * （WorldSession.recordTickMovement）で、こちらは動いた量を渡すだけ。渡すのは端のクランプ
-   * （applyRangeEvents）まで済んだ後の正味で、同じtickの他の寄与もそこに引かれている。
+   * （WorldSession.recordTickMovement）で、こちらは動いた量を渡すだけ。渡すのは、この値へ入る`add`を
+   * まとめ（changePerTick）、端のクランプ（applyRangeEvents）まで済ませた後の正味。
    */
   tick(): void {
     const before = this._number;

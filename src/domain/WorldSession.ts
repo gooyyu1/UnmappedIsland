@@ -246,9 +246,9 @@ export class WorldSession {
    * このtickで実体値が動いたぶんを溜める（PropertyValue.tickからのみ呼ぶ）。**時間の経過の中で
    * 起きるのに操作の稼ぎになる唯一のもの**なので、recordGainとは別の口で受ける。
    *
-   * **受け取るのは、同じtickの他の寄与も端のクランプも済んだ後の正味。** 数え先かどうかは名乗り
-   * （countTickMovementAsGain）が決めるが、数える量は宣言した量ではなく動いた量で、荷や痛みが
-   * 同じtickで削ったぶんはそこから引かれている。
+   * **受け取るのは、その値へ同じtickに入る`add`をまとめ、端のクランプまで済ませた後の正味。**
+   * 数え先かどうかは名乗り（countTickMovementAsGain）が決めるが、数える量は宣言した量ではなく
+   * 動いた量で、荷や痛みが同じtickで削ったぶんはそこから引かれている。
    */
   recordTickMovement(property: PropertyValue, delta: number): void {
     if (this.tickGainTargets.current?.has(property) !== true) return;
