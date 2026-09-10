@@ -12,7 +12,7 @@
 # **前のレビューを畳むのはここではない**——盤面が毎周見て打つ
 # （[`board-move.mjs`](board-move.mjs)、`board-design.md` 2.10.3）。
 #
-# 出す行は [`dispatch-steps.sh`](dispatch-steps.sh) の `create_session_and_check`。`SOURCES` が出す
+# 出す行は [`dispatch-steps.sh`](dispatch-steps.sh) の `dispatch_session`。`SOURCES` が出す
 # リビジョンは、下の「`main` ではなくPRのブランチで起動する」のとおりPRのブランチ。
 #   終了コード 0 … 投入できて、指示も一致した
 #   終了コード 1 … どこかで失敗した（出た行がどこまで進んだかを示す）
@@ -67,46 +67,11 @@ state=$(jq -r '.state' "$WORK/pr.json")
   exit 1
 }
 
-# 判定のコメントの見分け方は [`review-verdicts.mjs`](review-verdicts.mjs) が持つ。**盤面の側も同じ
-# コメントを読む**（そのレビューが書き終えたか。`board-move.mjs`）ので、緩め方がずれないように
-# 1箇所へ寄せてある。**`require` からは `import()` でしか入らない**ので、続きはその中で書く。
-node -e '
-  const fs = require("node:fs");
-  const [modulePath, prPath, rawPath, promptPath, pr, envId, repoUrl, mode] = process.argv.slice(1);
-  import(require("node:url").pathToFileURL(modulePath)).then(({ verdicts, readVersion }) => {
-  const info = JSON.parse(fs.readFileSync(prPath, "utf8"));
-  const written = verdicts(info.comments);
-  // 何回目の判定になるはずか。**数えて出すので状態を持たない。** 判定を書かずに落ちたレビューは
-  // 数に入らず、次の1本が同じ番号を名乗る。
-  const round = written.length + 1;
-  // 前の周が読んだ版（`review-prompt.md`「読んだ版」の節）。**盤面の指紋では引かない**——あちらは
-  // 投入するたびに動くので、判定を書かずに落ちた周のぶんだけ進み、次の1本が読んでいない範囲を
-  // 「前の周が見た」ことにしてしまう。数と版が同じコメントから出れば、その食い違いが起きない。
-  const previous = readVersion(written.at(-1)) ?? "なし";
-  fs.writeFileSync(
-    promptPath,
-    fs.readFileSync(rawPath, "utf8").replaceAll("<番号>", pr).replaceAll("<前の版>", previous),
-  );
-  const args = {
-    environment_id: envId,
-    title: `レビュー #${pr}:${round} ${info.title.trim()}`,
-    prompt: fs.readFileSync(promptPath, "utf8"),
-    tags: [`review-${pr}`],
-  };
-  if (repoUrl) {
-    args.source_url = repoUrl;
-    args.source_revision = info.headRefName;
-  }
-  // **空なら渡さない。** 渡さないこと自体が1つの選択（`ccr-env.sh`）。
-  if (mode) args.permission_mode = mode;
-  process.stdout.write(JSON.stringify(args));
-  });
-' "$AGENT_DIR/review-verdicts.mjs" "$WORK/pr.json" "$RAW" "$INSTRUCTION" "$PR" "$ENV_ID" "$SOURCE" "$MODE" >"$WORK/args.json"
-
-# **埋めた値（`<番号>`・`<前の版>`）を確かめるなら `DRY_RUN=full`**——本文の途中に出るので、切った
-# ほうではちょうど落ちる（[`dispatch-steps.sh`](dispatch-steps.sh)）。
-dump_dry_run "$WORK/args.json"
-
+# 何回目の判定か・前の周が読んだ版・送る本文の組み立ては
+# [`dispatch-session.mjs`](dispatch-session.mjs) の `review`。**埋めた値（`<番号>`・`<前の版>`）を
+# 確かめるなら `DRY_RUN=full`**——本文の途中に出るので、切ったほうではちょうど落ちる
+# （[`dispatch-steps.sh`](dispatch-steps.sh)）。
+#
 # 見るのは前のレビューだけではない。**そのPRを直しているセッションが走っていたら立てない。**
 # `直し待ち` のラベルは「直しが要る」しか言わず、**直している最中か誰も居ないかを区別しない**
 # （[`board-design.md`](../../.claude/board-design.md) 1.3）。区別は占有の側にしか無いので、
@@ -122,7 +87,8 @@ dump_dry_run "$WORK/args.json"
 #
 # **本文の `\r` は落とさない**——受けるのが `grep -o` だけで、抜き出すのは数字なので入らない
 # （[`merge-and-close.sh`](merge-and-close.sh) の「`\r` を落とす側と落とさない側」）。
-review_tags=("review-$PR")
+TAG="review-$PR"
+review_tags=("$TAG")
 kind=review-untasked
 while read -r issue; do
   [ -n "$issue" ] || continue
@@ -135,6 +101,5 @@ done < <(jq -r '.body // ""' "$WORK/pr.json" |
 
 # 手綱と占有。**再レビューは止まらない**——判定に使うのは走行中かどうかで、判定を書き終えた
 # レビューは占有していない（[`board-design.md`](../../.claude/board-design.md) 1.2）。
-CCR_META="$CCR_META" bash "$AGENT_DIR/may-dispatch.sh" "$kind" "${review_tags[@]}"
-
-create_session_and_check "$WORK/args.json" "$INSTRUCTION"
+dispatch_session "$kind" "${review_tags[@]}" -- \
+  review --tag "$TAG" --pr "$PR" --pr-json "$WORK/pr.json" --template "$RAW" --prompt "$INSTRUCTION"

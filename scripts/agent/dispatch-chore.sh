@@ -6,7 +6,7 @@
 #   DRY_RUN=1 bash scripts/agent/dispatch-chore.sh triage .claude/triage-prompt.md
 #   DRY_RUN=full bash scripts/agent/dispatch-chore.sh triage .claude/triage-prompt.md  # 本文も切らない
 #
-# 出す行は [`dispatch-steps.sh`](dispatch-steps.sh) の `create_session_and_check`。終了コードの
+# 出す行は [`dispatch-steps.sh`](dispatch-steps.sh) の `dispatch_session`。終了コードの
 # 読み方は [`dispatch-task.sh`](dispatch-task.sh) と同じ。
 #
 # ## `dispatch-task.sh` と別なのは、渡すものが issue ではないから
@@ -50,30 +50,11 @@ template_body "$PROMPT" "$INSTRUCTION"
 TITLE="$WORK/title.txt"
 template_title "$PROMPT" "$TITLE"
 
-node -e '
-  const fs = require("node:fs");
-  const [titlePath, promptPath, name, envId, repoUrl, mode] = process.argv.slice(1);
-  const args = {
-    environment_id: envId,
-    title: fs.readFileSync(titlePath, "utf8").trim(),
-    prompt: fs.readFileSync(promptPath, "utf8"),
-    tags: [`chore-${name}`],
-  };
-  if (repoUrl) {
-    args.source_url = repoUrl;
-    args.source_revision = "main";
-  }
-  if (mode) args.permission_mode = mode;
-  process.stdout.write(JSON.stringify(args));
-' "$TITLE" "$INSTRUCTION" "$NAME" "$ENV_ID" "$SOURCE" "$MODE" >"$WORK/args.json"
-
-dump_dry_run "$WORK/args.json"
-
 # 手綱と占有。種類は `other`（[`brake.sh`](brake.sh) の「その他のエージェント」）。
 #
 # **二重に立つことを実際に止めているのは盤面**（[`board-move.mjs`](board-move.mjs) の `CYCLES`）で、
 # ここが訊く占有は `--busy`——手が空いたまま残っている前の1本は塞がない。**手で叩いたときに、
 # 走っている最中の1本へ重ねないため**に通す。
-CCR_META="$CCR_META" bash "$AGENT_DIR/may-dispatch.sh" other "chore-$NAME"
+TAG="chore-$NAME"
 
-create_session_and_check "$WORK/args.json" "$INSTRUCTION"
+dispatch_session other "$TAG" -- chore --tag "$TAG" --title "$TITLE" --prompt "$INSTRUCTION"

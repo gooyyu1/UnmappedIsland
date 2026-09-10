@@ -84,18 +84,9 @@ esac
 
 # **本文をシェルの文字列にしない**（危ないのは文字の符号ではなく**シェルの展開**なので、構文ごとに
 # 載せてよいかを判断せず、載せないほうを決めておく。
-# [`.claude/ccr-meta.sh`](../../.claude/ccr-meta.sh)「指示は Write で書く」）。本文はファイル経由で
-# JSONへ入れる。
-node -e '
-  const fs = require("node:fs");
-  const [session, bodyPath] = process.argv.slice(1);
-  process.stdout.write(JSON.stringify({
-    session_id: session,
-    message: fs.readFileSync(bodyPath, "utf8"),
-  }));
-' "$SESSION" "$BODY" >"$WORK/args.json"
-
-bash "$CCR_META" send_message <"$WORK/args.json" >"$WORK/out.txt" || {
+# [`.claude/ccr-meta.sh`](../../.claude/ccr-meta.sh)「指示は Write で書く」）。ファイルのまま渡して、
+# 読むのも組み立てるのも送るのも [`send-message.mjs`](send-message.mjs) の中で済ませる。
+node "$HERE/send-message.mjs" "$SESSION" "$BODY" || {
   echo "送れなかった: $SESSION" >&2
   exit 1
 }
