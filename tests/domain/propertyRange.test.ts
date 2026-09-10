@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { movesTowardEnd, PropertyRange } from '../../src/domain/PropertyDef';
+import { endMovedToward, movesTowardEnd, PropertyRange } from '../../src/domain/PropertyDef';
 
 // `on_min`／`on_max`がrangeのどちらの端かを持つのは1箇所だけ（PropertyDef.tsのinwardOf）。ここが裏返ると
 // 端で走る効果・端へ達したかの判定・端からの距離・その端へ向かっているかが揃って裏返るので、対応そのものを
@@ -43,5 +43,15 @@ describe('PropertyRangeの端', () => {
   it('動かない増減は、どちらの端へも向かわない', () => {
     expect(movesTowardEnd('on_min', 0)).toBe(false);
     expect(movesTowardEnd('on_max', 0)).toBe(false);
+  });
+
+  // 向きから端を引く逆向きの問いも、同じ対応から出る（別に書くと片方だけ裏返っても気付けない）。
+  it('増減が向かっていく端は、その端へ向かうと言えるほうの端', () => {
+    expect(endMovedToward(-1), '減る値は下端へ向かう').toBe('on_min');
+    expect(endMovedToward(1), '増える値は上端へ向かう').toBe('on_max');
+  });
+
+  it('動かない増減には、向かっていく端が無い', () => {
+    expect(endMovedToward(0)).toBeUndefined();
   });
 });
