@@ -121,7 +121,7 @@ describe('template_title', () => {
     expect(taken.text).toBe('棚卸 未整理の issue\n');
   });
 
-  // 題は Routine を探す鍵にもなる（`watch-routine.sh`）ので、無いまま進むと2本目が立つ。
+  // 題が無いまま進むと、立てたセッションが何の係か分からないまま一覧に並ぶ。
   it('`題:` の行が無ければ止まる', () => {
     const taken = take('template_title', [FENCE, '本体', FENCE]);
 
