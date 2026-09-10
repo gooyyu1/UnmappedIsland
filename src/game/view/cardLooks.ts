@@ -306,11 +306,10 @@ export function cardLooksOf(
    */
   const ownCookingOf = (object: WorldObject): CardCooking | undefined =>
     soonestOf(
-      object.def
-        .enumeratePropertyDefs()
-        .filter(showsCookingOverlay)
-        .map((propertyDef) => object.tryGetProperty(propertyDef.globalId))
-        .map((property) => (property === undefined ? undefined : cookingFrom(property))),
+      object
+        .allProperties()
+        .filter((property) => showsCookingOverlay(property.def))
+        .map(cookingFrom),
     );
 
   /**

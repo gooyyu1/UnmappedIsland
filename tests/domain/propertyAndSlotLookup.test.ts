@@ -18,6 +18,7 @@ object_defs:
   path:
     props:
       travel_minutes: {value: 60}
+      width: {value: 2}
     slots:
       contents: {}
   stone:
@@ -28,6 +29,16 @@ object_defs:
     .buildAndReset();
 
   const spawn = (name: string) => new WorldSession(codex).createObject(codex.objectNames.getId(name));
+
+  it('全部を答える口は、propsの宣言順でその物のプロパティを返す', () => {
+    // 絞らずに全部が要る側（画面のプロパティ一覧）は、定義から1つずつ引き当てずにこれを読む。
+    const path = spawn('path');
+
+    expect(path.allProperties().map((property) => property.def.name)).toEqual(['travel_minutes', 'width']);
+    expect(path.allProperties()[0], '引き当てで得るものと同じ1つ').toBe(
+      path.tryGetProperty(codex.propertyNames.getId('travel_minutes')),
+    );
+  });
 
   it('持たないものはtryGet系ならundefined', () => {
     const stone = spawn('stone');
