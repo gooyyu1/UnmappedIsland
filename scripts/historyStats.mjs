@@ -9,6 +9,8 @@
 //   node scripts/historyStats.mjs --svg docs <日付...>  表に加えて、貼り込む図も書き出す
 //
 // **渡すのは区切りの日だけで、系列の先頭にはリポジトリができた日が必ず付く**（`firstCommitDay`）。
+// **区切りは古い順に、重ならないように渡す**——区間が逆さになると、その区間の量を置く日が区間の
+// 外へ出る（`middleDay`）。
 //
 // 日付は**日本時間**で読み、その日の最終コミットの状態を測る。時差で日が変わるので、UTCの
 // 履歴をそのまま日で切ると1日ずれる。**呼ぶ側も日付をJSTで作ること**——UTCの「今日」を渡すと、
@@ -182,10 +184,10 @@ function readTable(name) {
 
 /** 日（日本時間）ごとに払った額。Claude と Copilot で、元の記録の細かさが違う（冒頭の「コストの数え方」）。 */
 function costByDay() {
-  const sum = (rows, dayOf) => {
+  const sum = (rows, spentDay) => {
     const total = new Map();
     for (const row of rows) {
-      const day = dayOf(row);
+      const day = spentDay(row);
       total.set(day, (total.get(day) ?? 0) + Number(row.cost_usd));
     }
     return total;
@@ -473,9 +475,9 @@ function chartsOf(measurements, rolling) {
    * 系列を1本だけ持つ段。**値が定義できない日は、0で埋めずに落とす**——0にすると、
    * 「ただ同然で作れた日」「0行のPRが並んだ日」として描かれる。
    */
-  const panel = (label, name, rows, dayOf, pick) => {
+  const panel = (label, name, rows, plotDay, pick) => {
     const defined = rows.filter((row) => pick(row) !== null);
-    return { label, days: defined.map(dayOf), series: [{ name, values: defined.map(pick) }] };
+    return { label, days: defined.map(plotDay), series: [{ name, values: defined.map(pick) }] };
   };
   /** 移動窓の段。窓は日ごとなので、点も日ごとに並ぶ。 */
   const windowPanel = (label, pick) => panel(label, 'コスト', rolling, (row) => row.day, pick);
