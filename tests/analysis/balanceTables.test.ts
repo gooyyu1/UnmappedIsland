@@ -834,3 +834,61 @@ object_defs:
     });
   });
 });
+
+/**
+ * 収支表が、組んだ代表キャラクタを自分で持っていること。1日の必要量はこの1人のもので、表を使う側
+ * （`workPileAmountsOf`）が同じ人物を見る。**表が名前を持たないと、使う側が名前をもう一度書くことに
+ * なり、片方だけ別の人物にしても型は止まらない。**
+ */
+describe('収支表を組んだ代表キャラクタ', () => {
+  const YAML = `
+object_defs:
+  captain:
+    tags: [character]
+    props:
+      hydration:
+        value: 96
+        range: {min: 0, max: 96}
+        passives:
+          - add: {self: {hydration: -1}}
+
+  medic:
+    tags: [character]
+    props:
+      hydration:
+        value: 48
+        range: {min: 0, max: 48}
+        passives:
+          - add: {self: {hydration: -1}}
+
+  sandy_beach:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 60
+        spawn: {object: gourd, into: self}
+
+  gourd:
+    tags: [item]
+    interactions:
+      drink:
+        trigger: menu
+        duration: 5
+        destroy: self
+        add: {agent: {hydration: 96}}
+`;
+
+  it('全キャラクタの一覧ではなく、渡した1人を持つ', () => {
+    const tables = buildBalanceTables(
+      new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset(),
+      'medic',
+    );
+
+    // 先頭のcaptainではなくmedicで組んでいるので、一覧の先頭を代表として読んでいれば食い違う。
+    expect(tables.characterNames).toEqual(['captain', 'medic']);
+    expect(tables.sampleCharacterName).toBe('medic');
+  });
+});

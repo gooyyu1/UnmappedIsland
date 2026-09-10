@@ -142,7 +142,7 @@ const SUPPLY_SECTION = '供給';
 function chainsHtml(view: CodexView, tables: BalanceTables): string {
   return (
     `<h2>連鎖（素材から摂取まで）</h2>` +
-    `<p class="muted">1日ぶんの必要量は ${escapeHtml(SAMPLE_CHARACTER)} のもの。` +
+    `<p class="muted">1日ぶんの必要量は ${escapeHtml(tables.sampleCharacterName)} のもの。` +
     `行を開くと内訳・同時に返す値・前提が出る。</p>` +
     // 他の土地で用意した材料が要っても可否は分けない（普通の遊び方なので）。ただし移動時間を
     // 数えていない以上そのぶん不利になるので、その土地だけで回るかを見たいときはここで絞る。

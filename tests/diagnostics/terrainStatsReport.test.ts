@@ -473,7 +473,7 @@ function buildReportFromDefinitions(): string {
 
   // 1日の枠も山の量も収支表から出る（ContentSkeleton.md 8.3節）ので、先に1度だけ解く。
   const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
-  const amounts = workPileAmountsOf(codex, SAMPLE_CHARACTER, balance);
+  const amounts = workPileAmountsOf(codex, balance);
   const work = workTotalOf(amounts);
 
   const scope = codex.generation!.scopes.get('island')!;

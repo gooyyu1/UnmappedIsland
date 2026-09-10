@@ -31,7 +31,7 @@ describe('局面ごとの1日の前提', () => {
     const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
 
     // 値段が出ない型やどの型も名乗らないタグを名乗っていれば workPileAmountsOf が投げる。
-    const amounts = workPileAmountsOf(codex, SAMPLE_CHARACTER, balance);
+    const amounts = workPileAmountsOf(codex, balance);
 
     expect(
       amounts.filter((amount) => amount.minutes <= 0).map((amount) => amount.pile.label),
