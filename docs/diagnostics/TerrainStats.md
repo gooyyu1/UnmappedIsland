@@ -88,7 +88,8 @@ YAMLとずれます）。
 
 **この並びは遊び方の推奨ではない。** 安さは `object_costs` の総労働で測っていて、そこには前提の道具が
 入らない（BalanceStats.md）ので、**道具の要る型ほど安く見える**。プレイヤーがどう積むかは自由で、
-どの積み方でも払う手間はこの量の前後に収まる（[`Characters.md`](../world/Characters.md) ホームシック節）。`days` と `minutes` は同じ量の別の書き方で、
+**この量は積み方の真ん中ではなく下限**——いちばん安い積み方そのものなので、実際に払う手間はこれ以上に
+なる（[`Characters.md`](../world/Characters.md) ホームシック節）。`days` と `minutes` は同じ量の別の書き方で、
 換算は `daily_budget.surplus`（`object_costs` の `days` と同じ分母）。
 
 `work_piles_total` は合計と、それを屋外（採取・伐採・運搬）と拠点（加工）へ割ったもの。割合は
