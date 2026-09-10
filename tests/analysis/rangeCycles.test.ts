@@ -473,6 +473,56 @@ object_defs:
 
   sow_carcass:
     tags: [item]
+
+  # 血だけを流し続ける傷（injuries.yamlのbite_wound）。**押し下げる押し手**——奪うのは宿主の血だけ
+  # で、そこから先の弱り方は知らない。押し上げる傷（suppurating_cut）と別の枠へ入れるのは、上へ
+  # 開く道が混ざると、押し下げて開いた段だけを見られないから。
+  seeping_bite:
+    tags: [seeping]
+    passives:
+      - add: {parent: {blood: -10}}
+
+  # 血を失って弱る獣（characters/player_character.yamlのbloodの段）。**血の段は上からしか入らない**
+  # ——傷が押し下げて初めてhemorrhagingが開き、そこで削られる体力が尽きて倒れる。
+  #
+  # 血に個体差を持たせてあるのは、**段から遠いロールが向きで裏返る**のを見るため（6.2節）。押し下げ
+  # られる値では、重く出た個体のほうが段から遠い。
+  doe:
+    tags: [item]
+    props:
+      blood:
+        value: {min: 3000, max: 4000}
+        range: {min: 0, max: 4000}
+        stages:
+          - {name: exsanguinated}
+          - name: hemorrhaging
+            min: 1000
+            passives:
+              # 気が遠のく。開いた段の中で尽きるので、押し切られる前に倒れる。
+              - add: {self: {stamina: -10}}
+              # 体そのものの弱り。**開いた段を割って抜けるほうが先**なので、この-0.5では尽きない。
+              - add: {self: {vitality: -0.5}}
+          - {name: replete, min: 2000}
+      stamina:
+        value: 100
+        range: {min: 0, max: 100}
+        on_min: {destroy: self}
+      vitality:
+        value: 100
+        range: {min: 0, max: 100}
+        on_min: {destroy: self}
+      # 血が減っている間ずっと痛む。**「その段以上」へ上から入るということは起こらない**——生まれた
+      # 時点でhemorrhagingより上に在る値は、既にこの条件を成立させている。
+      pain:
+        value: 0
+        range: {min: 0, max: 40}
+    passives:
+      - conditions: [{prop: blood, in_stage_or_above: hemorrhaging}]
+        add: {self: {pain: 1}}
+    slots:
+      injuries:
+        cell_count: 4
+        cell: {accept: {tag: seeping}}
 `;
 
   const codex = new WorldCodexYamlLoader().load('rangeCycles.yaml', YAML).buildAndReset();
@@ -710,5 +760,30 @@ object_defs:
     // 菌の居ない体が活力を戻すのは、傷が在ろうと無かろうと起こる。押し手に付けると、傷が傍に
     // 在って初めて活力が戻る周期になる。
     expect(drivenCyclesOf('sow', 'vitality')).toEqual([]);
+  });
+
+  it('押し下げる押し手が開ける段も辿る', () => {
+    // 血を流す傷は宿主の血を奪うだけで、気の遠のきには触れない。段は下からしか開かないものとして
+    // 数えると、流血で倒れる道が丸ごと消える。上端2,000を割ってhemorrhagingへ入るのは-10で201 tick
+    // （段から遠い＝重く出た4,000から数える。2,000へ着いた時点ではまだ段の上）、そこから開いた
+    // -10で体力100が10 tick。軽く出た3,000を採ると101 tickになり、押し手を控えめに数えるという
+    // 約束が押す向きによって破れる。
+    expect(drivenCyclesOf('doe', 'stamina')).toMatchObject([
+      { minutes: (201 + 10) * 15, destroysSelf: true, drivenBy: defOf('seeping_bite').globalId },
+    ]);
+  });
+
+  it('押し手が開けた段は、同じ押し手がそのまま下へ割って抜けさせる', () => {
+    // 段の下端1,000を割るのは-10で301 tickなので、開いている間は100 tickしか無い。-0.5で100を
+    // 削り切るには200 tick要るので、この周期は立たない。上へ抜ける場合しか止まらないことにすると、
+    // 押し切られた後も削り続けるものとして数えられ、弱って倒れる周期が立つ。
+    expect(drivenCyclesOf('doe', 'vitality')).toEqual([]);
+  });
+
+  it('「その段以上」へ上から入ることは起こらない', () => {
+    // 血が減っている間ずっと痛む分は、生まれた時点（4,000）で既に成立している——押し下げる押し手は
+    // その条件を開けていない。上端を割った時点で開いたことにすると、傷が傍に在って初めて痛み
+    // 始めることになる。
+    expect(drivenCyclesOf('doe', 'pain')).toEqual([]);
   });
 });
