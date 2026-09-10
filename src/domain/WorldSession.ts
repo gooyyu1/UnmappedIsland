@@ -205,13 +205,14 @@ export class WorldSession {
 
   /**
    * declarerが宣言元になっている、経過中の操作の持続効果（11.7節）の登録を、対象を問わずまとめて
-   * 外す/載せ直す（WorldObject.becomeTypeが、プロパティを作り直す前後で呼ぶ）。
+   * 外す/載せ直す。
    *
    * **この登録を辿れるのはここだけ。** 宣言しているのは物ではなく操作で、効いている間そのdefを
    * 持っているのはこのセッションなので、物のdefからは見つからない。
    *
-   * **載る先は宣言元とは限らない**（役を対象にできる、11.5節）ので、誰の型が変わったときに呼ぶかを
-   * 決めるのは呼ぶ側（WorldObject.setInteractionPassivesOfParticipantsRegistered）。
+   * **載る先は宣言元とは限らない**（役を対象にできる、11.5節）ので、いつ呼ぶかを決めるのは呼ぶ側
+   * （WorldObject.setRoleTargetsRegistered）——載る先のプロパティが作り直されたときと、宣言元が役を
+   * 解く関係が変わったときの両方で呼ばれる。
    */
   setInteractionPassivesRegistered(declarer: WorldObject, register: boolean): void {
     for (const running of this.runningInteractionPassives)

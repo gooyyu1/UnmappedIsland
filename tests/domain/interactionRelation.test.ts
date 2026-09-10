@@ -257,6 +257,52 @@ object_defs:
     });
   });
 
+  /**
+   * 関係が入れ子になっている（11.5節「数えるのは、同時に張られている関係です」）ときに、内側の関係の
+   * 中で型が変わっても、**外側の関係の相手が張った寄与**が残る。内側へ入っても外側の関係から抜けた
+   * わけではないので、相手の寄与は作り直されたプロパティへ載り直さなければならない。
+   *
+   * 入れ子になるのは、時間を要する操作の経過中に配られた手番（`trigger: tick`、11.1節）が、時間を
+   * 要さずにその場で起きたとき。
+   */
+  it('入れ子の関係の内側で型が変わっても、外側の関係の相手が張った寄与は残る', () => {
+    const { codex, session, world } = buildWorldSession(`
+traits:
+  fired:
+    tags: [fired]
+object_defs:
+  hauler:
+    props:
+      strength: {value: 10}
+    passives:
+      # 捏ねている相手を手の熱で温め続ける。役はagentに限られない（add、8.4節）。
+      - add: {patient: {heat: 1}}
+  clay:
+    props:
+      heat: {value: 0}
+    interactions:
+      knead:
+        trigger: menu
+        duration: 45
+      # 時間を要さない手番なので、捏ねている経過中のtickでその場で起きる（11.5節）。
+      settle:
+        trigger: tick
+        become: {state: fired_clay}
+    variation_axes:
+      state: {of: {tag: fired}}
+  fired_clay:
+    traits: [fired]
+`);
+    const clay = placeInWorld(codex, world, session.createObject(codex.objectNames.getId('clay')));
+    const hauler = session.createObject(codex.objectNames.getId('hauler'));
+    const heat = () => clay.tryGetProperty(codex.propertyNames.getId('heat'))?.number;
+
+    expect(clay.tryGetAction('knead', hauler)?.tryExecute()).toBe(true);
+
+    expect(clay.def.name, '経過中の手番で素焼きの変種になっている').not.toBe('clay');
+    expect(heat(), '型が変わった後のtickも、捏ねている者の熱を受け取る').toBe(3);
+  });
+
   it('ゲートの役は、辺の子側ではなく宣言元から解ける（child対象と併せて書いたとき）', () => {
     // ゲートのselfは辺の子側（child対象なら子）だが、役を指せるのは参加者からだけで、ここでの
     // 参加者は宣言を持つ側（11.5節）。まとめて子から引くと、宣言元が操作に参加していても解決しない。

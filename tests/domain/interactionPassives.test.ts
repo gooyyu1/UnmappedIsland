@@ -65,6 +65,24 @@ object_defs:
         duration: 30
         passives:
           - add: {agent: {heat: 1}}
+  # 焼いている間に自分の手番で型が変わる窯。手番は時間を要さないので、bakeの関係の内側で起きる。
+  shifting_kiln:
+    props:
+      heat: {value: 0}
+    interactions:
+      bake:
+        trigger: menu
+        duration: 30
+        passives:
+          - add: {agent: {heat: 1}}
+      settle:
+        trigger: tick
+        become: {state: fired_clay}
+    variation_axes:
+      state: {of: {tag: fired}}
+  baker:
+    props:
+      heat: {value: 0}
   # 焼いている途中で自分の型が変わる者。
   potter:
     props:
@@ -150,6 +168,25 @@ object_defs:
 
       session.advanceWorldTime(60);
       expect(heat(potter), '新しいプロパティからも、経過の終わりに外れている').toBe(1);
+    });
+
+    /**
+     * 宣言元が**入れ子の関係の内側で**変わっても、載る先は外側の関係の役から解ける（11.5節）。
+     * 内側の関係で解き直すと、agentを宣言元自身へ向けた登録が残り、経過が終わっても誰も外せない。
+     */
+    it('変わったのが宣言元で、それが入れ子の関係の内側だったとき', () => {
+      const { session, place, heat } = buildWorld();
+      const kiln = place('shifting_kiln');
+      const baker = place('baker');
+
+      expect(kiln.tryGetAction('bake', baker)?.tryExecute()).toBe(true);
+
+      expect(kiln.def.name, '経過中の手番で型が変わっている').not.toBe('shifting_kiln');
+      expect(heat(baker), '焼いている者が温まる').toBe(2);
+      expect(heat(kiln), '窯自身は温まらない（agentは窯ではない）').toBe(0);
+
+      session.advanceWorldTime(60);
+      expect(heat(kiln), '経過を終えた後も、窯へ載った登録は残っていない').toBe(0);
     });
   });
 });
