@@ -194,7 +194,7 @@ describe('同梱の表示文字列ファイル', () => {
 
   it('外から見えるスロット（visible_slots）はすべて表示名を持つ', () => {
     // 子ウィンドウのタブの見出しになる（Windows.md 1.2節）ため、欠けると識別子（salt等）が
-    // そのままタブに出る。名乗らないスロットは画面に見出しを持たないので、visible_slotsだけを見る。
+    // そのままタブに出る。名乗らないスロットはタブに並ばないので、ここではvisible_slotsだけを見る。
     for (let globalId = 0; globalId < codex.objects.count; globalId++) {
       const objectDef = codex.objects.get(globalId);
       for (const slotGlobalId of objectDef.visibleSlotGlobalIds) {
