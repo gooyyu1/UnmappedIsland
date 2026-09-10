@@ -322,7 +322,7 @@ describe('daemon.sh', () => {
     expect(result.code).toBe(1);
   });
 
-  // **立て直しは、古い版で回り出す機会でもある。** 落ちた跡から起こすのは監視係で、打つのは `start`
+  // **立て直しは、古い版で回り出す機会でもある。** 落ちた跡から起こすのは起こす係で、打つのは `start`
   // だけなので、ここが寄せないと落ちた時点の版が次のマージまで回り続ける。
   it('start は、本体を `origin/main` へ寄せてから立てる', () => {
     const result = daemon({
@@ -333,8 +333,8 @@ describe('daemon.sh', () => {
 
     expect(result.git.some((call) => call.includes('fetch --quiet origin main'))).toBe(true);
     expect(result.git.some((call) => call.includes('checkout --quiet --detach origin/main'))).toBe(true);
-    // **`start` が出すのは1行。** 監視係が丸ごと自分の `DAEMON` の1行へ載せる（`watch-routine.sh`）
-    // ので、行を増やすと読む側の約束が崩れる。
+    // **`start` が出すのは1行**（`daemon.sh`「`start` が出すのは1行」）。立ったのかどうかを、
+    // 起こす係のタスクが残す実行結果から1行で読めるようにしてある。
     expect(result.logs[0].split('\n').filter(Boolean)).toHaveLength(1);
     expect(result.logs[0]).toContain('立てた（本体は deadbee。');
     // 跨いだ差に依存の更新が無ければ、共有先は揺らさない。
