@@ -19,6 +19,12 @@ export function makeBrightEnoughForAnyAction(character: WorldObject, codex: Worl
     character.getProperty(codex.propertyNames.getId(name)).setNumberWithoutEvents(BRIGHT_ENOUGH);
 }
 
+/** そのキャラクタを、明るさを要求する操作がどれも成立しない暗さにする（上の裏返し）。 */
+export function makeTooDarkToWork(character: WorldObject, codex: WorldCodex): void {
+  for (const name of ['hand_brightness', 'looking_brightness'])
+    character.getProperty(codex.propertyNames.getId(name)).setNumberWithoutEvents(-BRIGHT_ENOUGH);
+}
+
 /**
  * 明るさの条件に引っかからないキャラクタを1体作る。**どのスロットへも入れない**ので、
  * 呼び手は置き場所を用意しなくてよく、居場所の明るさにも左右されない。

@@ -1037,7 +1037,7 @@ object_texts:
   # 木を伐って丸太を採る（timber.yaml）。
   broadleaf_tree:
     display_name: 広葉樹
-    description: 幹の太い木。斧があれば倒して丸太にでき、刃物があれば立ったまま樹皮を剥げる。
+    description: 幹の太い木。斧があれば倒して丸太にでき、手に握る刃物があれば立ったまま樹皮を剥げる。
     interactions:
       fell:
         display_name: 伐り倒す
