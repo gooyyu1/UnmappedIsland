@@ -1,5 +1,5 @@
 import type { ObjectDef } from '../../domain/ObjectDef';
-import type { PassiveDeclaration, PassivePropertyReading, PassiveReader } from '../../domain/PassiveReader';
+import type { PassivePropertyReading, PassiveReader } from '../../domain/PassiveReader';
 import type { WorldCodex } from '../../domain/WorldCodex';
 
 /** 手元の細かい作業ができるキャラクタのプロパティと、その段（IlluminationSystem.md 5節・8節）。 */
@@ -101,7 +101,7 @@ function litHoursOf(codex: WorldCodex, character: ObjectDef): ReadonlySet<number
  */
 function sunDeltasOf(world: ObjectDef, ambientId: number, hourId: number): ReadonlyMap<string, number> {
   const collector = new HourModifyCollector(ambientId, hourId);
-  for (const declaration of world.passives.declarations) (declaration as PassiveDeclaration).read(collector);
+  world.passives.read(collector);
   return collector.deltas;
 }
 

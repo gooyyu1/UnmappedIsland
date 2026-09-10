@@ -1,7 +1,6 @@
-import { everyBranchOf } from '../domain/EffectReader';
 import type { ConditionalReading, EffectReader, PickCandidateReading } from '../domain/EffectReader';
 import type { ObjectDef } from '../domain/ObjectDef';
-import type { PassiveDeclaration, PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
+import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
 import type { WorldCodex } from '../domain/WorldCodex';
 import { islandLocationsOf } from './islandLocations';
 
@@ -352,7 +351,7 @@ class SpawnCollector implements EffectReader {
 
   /** 条件つき（6.3節）も同じ——満たさない回へ倒れる先も、生む先としては数える。 */
   conditional(reading: ConditionalReading): void {
-    for (const branch of everyBranchOf(reading)) branch.read(this);
+    reading.readEveryBranch(this);
   }
 
   set(): void {}
@@ -381,7 +380,7 @@ function stageModifyDeltasOf(
   gateByPropertyGlobalId: number,
 ): ReadonlyMap<string, number> {
   const collector = new StageModifyCollector(propertyGlobalId, gateByPropertyGlobalId);
-  for (const declaration of def.passives.declarations) (declaration as PassiveDeclaration).read(collector);
+  def.passives.read(collector);
   return collector.deltas;
 }
 
