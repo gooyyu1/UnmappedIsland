@@ -75,26 +75,25 @@ const KNOBS = [
 
 /**
  * 顔ぶれごとに、見張りが返すもの——拾えるもの（手に入る）・湧くもの（海区に立つ）・実りの濃さ
- * （1回の見張りで何かが返る割合）。**顔ぶれ1つにつき1つの海区**を見る（同じ顔ぶれの海区が同じ
- * 配り方であることは別の検査が受け持つ）。
+ * （見張りの卓のうち、ハズレでない重みの割合）。**顔ぶれ1つにつき1つの海区**を見る（同じ顔ぶれの
+ * 海区が同じ配り方であることは別の検査が受け持つ）。
  *
- * 濃さの許容幅は、試行回数ぶんの揺れ（標準誤差は0.04ほど）より広く、顔ぶれの差（0.8/0.55/0.2/0）
- * より狭く取る。**卓の当たりの割合そのものよりは低く出る**——数えるのは新しい個体が現れた回で、
- * 筏の積荷が埋まった後に拾った物はこぼれ落ちて数に入らない（watchRepeatedly）。埋まり具合は
- * 試行のあいだの成り行きで決まるので、下端は素の当たりから遠めに取る。
+ * **濃さは卓の宣言そのもので、見張った結果から数え直さない**（yieldRateOf）。数えて出すと、値は
+ * その試行の中で世界がどう進んだかに動く——同じ乱数列を天気も気分も引くので、無関係な変更で
+ * 引き当てる並びがずれるし、筏の積荷が埋まった後に拾った物はこぼれて数に入らない。
  */
-const YIELDS: readonly (readonly [string, readonly string[], readonly string[], number, number])[] = [
-  ['coastal_waters', ['thick_branch', 'seaweed'], ['fish_shoal'], 0.7, 0.9],
-  ['tide_rip', [], ['fish_shoal'], 0.7, 0.9],
-  ['kelp_belt', ['seaweed'], [], 0.4, 0.65],
-  ['reef_shallows', ['thick_branch', 'rope'], ['fish_shoal'], 0.4, 0.65],
-  ['gull_rock', ['bird_egg', 'feather'], ['seabird_flock'], 0.4, 0.65],
-  ['wreck_waters', ['thick_branch', 'rope', 'golden_chalice'], [], 0.1, 0.3],
-  ['islet_waters', [], [], 0, 0],
-  ['open_water', [], [], 0, 0],
+const YIELDS: readonly (readonly [string, readonly string[], readonly string[], number])[] = [
+  ['coastal_waters', ['thick_branch', 'seaweed'], ['fish_shoal'], 0.8],
+  ['tide_rip', [], ['fish_shoal'], 0.8],
+  ['kelp_belt', ['seaweed'], [], 0.55],
+  ['reef_shallows', ['thick_branch', 'rope'], ['fish_shoal'], 0.55],
+  ['gull_rock', ['bird_egg', 'feather'], ['seabird_flock'], 0.55],
+  ['wreck_waters', ['thick_branch', 'rope', 'golden_chalice'], [], 0.2],
+  ['islet_waters', [], [], 0],
+  ['open_water', [], [], 0],
 ];
 
-/** 1つの海区を何回見張って数えるか。 */
+/** 1つの海区を何回見張って、返るものを数え上げるか。 */
 const WATCHES = 120;
 
 /** 海区の網（航路の宣言から組み立てたもの）。行き先の型から海区を引くのに使う。 */
@@ -180,6 +179,18 @@ describe('筏と航海', () => {
 
   function propertyOf(object: WorldObject, name: string): number {
     return object.tryGetProperty(codex.propertyNames.getId(name))?.getEffectiveValue() ?? 0;
+  }
+
+  /**
+   * その海区の実りの濃さ——見張り1回が何かを返す割合（Voyage.md 3.3節）。**素の重みの合計に対する
+   * ハズレ以外の割合**そのもので、卓を引かずに宣言から出る。
+   *
+   * 卓を持たない海区は何も返さないので0。**見張る人の狩猟の腕は入らない**——腕を土台にするつまみ
+   * （shoal_find・seabird_find）は、抽選する人が居て初めて積まれる。
+   */
+  function yieldRateOf(zone: WorldObject): number {
+    const total = KNOBS.reduce((sum, knob) => sum + propertyOf(zone, knob), 0);
+    return total === 0 ? 0 : (total - propertyOf(zone, 'barren_find')) / total;
   }
 
   /** 1tick（15分）進める。 */
@@ -1173,16 +1184,20 @@ describe('筏と航海', () => {
   });
 
   /**
-   * その海区を繰り返し見張り、**手に入った物の名前・海区に湧いた物の名前・何かが返った割合**を返す。
+   * その海区を繰り返し見張り、**手に入った物の名前と、海区に湧いた物の名前**を返す。
    *
    * 見張りの進捗が上限へ達すると航路（と小島）が現れる。**ここで見たいのは卓のほうだけ**なので、
    * 毎回進捗を戻して上限へ届かせず、航路も小島も数に混ぜない。湧いた物は立ち去る（fish_shoalの
-   * stay_remaining）ので、今そこに居るかではなく**居たことがあるか**を個体で数える。
+   * stay_remaining）ので、見るのは今そこに居るかではなく**居たことがあるか**。
+   *
+   * **拾えた物は数え終えたその場で世界から出す。** 積荷が埋まると、そこから先に拾った物はこぼれて
+   * 失われる（GameEndings.md 12.7節）ので、置いたままにすると数え上げが途中で止まり、薄い候補ほど
+   * 取りこぼす。
    */
   function watchRepeatedly(
     zoneName: string,
     times: number,
-  ): { picked: ReadonlySet<string>; spawned: ReadonlySet<string>; yieldRate: number } {
+  ): { picked: ReadonlySet<string>; spawned: ReadonlySet<string> } {
     const { game, raft } = ready();
     raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
     const zone = singletonPlace(game, zoneName);
@@ -1191,28 +1206,23 @@ describe('筏と航海', () => {
     const seaRouteTag = codex.tagNames.getId('sea_route');
     // 出航のしたくの積荷（ヤシの実・聖杯）と乗り手は、見張りが返した物ではない。
     const cargoAtStart = new Set([...raft.descendants()].map((object) => object.instanceId));
-    const spawned = new Map<number, string>();
-    const picked = new Map<number, string>();
-    let returned = 0;
+    const spawned = new Set<string>();
+    const picked = new Set<string>();
 
     for (let i = 0; i < times; i++) {
       zone.getProperty(codex.propertyNames.getId('exploration_progress')).setNumberWithoutEvents(0);
 
-      const before = picked.size + spawned.size;
       expect(keepWatch(game, zone), `${zoneName}: 見張りは成立する`).toBe(true);
       for (const fixture of new Location(zone, codex).fixtures)
-        if (fixture !== raft && !fixture.def.hasTag(seaRouteTag))
-          spawned.set(fixture.instanceId, fixture.def.name);
-      for (const object of raft.descendants())
-        if (!cargoAtStart.has(object.instanceId)) picked.set(object.instanceId, object.def.name);
-      if (picked.size + spawned.size > before) returned++;
+        if (fixture !== raft && !fixture.def.hasTag(seaRouteTag)) spawned.add(fixture.def.name);
+      for (const object of [...raft.descendants()])
+        if (!cargoAtStart.has(object.instanceId)) {
+          picked.add(object.def.name);
+          object.destroy();
+        }
     }
 
-    return {
-      picked: new Set(picked.values()),
-      spawned: new Set(spawned.values()),
-      yieldRate: returned / times,
-    };
+    return { picked, spawned };
   }
 
   it('島から本土まで、8種類の顔ぶれから配った十数個の海区の網を渡る', () => {
@@ -1317,10 +1327,7 @@ describe('筏と航海', () => {
 
     for (const zoneName of skipped) {
       const zone = singletonPlace(game, zoneName);
-      // 素の重みの合計に対するハズレの割合が、そのまま「何も返さない見張り」の割合（Voyage.md 3.3節）。
-      const total = KNOBS.reduce((sum, knob) => sum + propertyOf(zone, knob), 0);
-      expect(total, `${zoneName}: 見張りの卓がある`).toBeGreaterThan(0);
-      expect(propertyOf(zone, 'barren_find') / total, `${zoneName}: ハズレばかりではない`).toBeLessThan(0.5);
+      expect(yieldRateOf(zone), `${zoneName}: ハズレばかりではない`).toBeGreaterThan(0.5);
     }
   });
 
@@ -1337,17 +1344,21 @@ describe('筏と航海', () => {
       expect(new Set(zones.map(knobsOf)).size, `${face} の海区は同じ配り方`).toBe(1);
   });
 
-  it.each(YIELDS)(
-    '%s の見張りは、その海区の顔ぶれのものだけを返す',
-    (zoneName, pickable, spawnable, low, high) => {
-      const watched = watchRepeatedly(zoneName, WATCHES);
+  it.each(YIELDS)('%s の見張りは、その海区の顔ぶれのものだけを返す', (zoneName, pickable, spawnable) => {
+    const watched = watchRepeatedly(zoneName, WATCHES);
 
-      expect([...watched.picked].sort(), `${zoneName}: 拾えるもの`).toEqual([...pickable].sort());
-      expect([...watched.spawned].sort(), `${zoneName}: 湧くもの`).toEqual([...spawnable].sort());
-      expect(watched.yieldRate, `${zoneName}: 実りの濃さ`).toBeGreaterThanOrEqual(low);
-      expect(watched.yieldRate, `${zoneName}: 実りの濃さ`).toBeLessThanOrEqual(high);
-    },
-  );
+    expect([...watched.picked].sort(), `${zoneName}: 拾えるもの`).toEqual([...pickable].sort());
+    expect([...watched.spawned].sort(), `${zoneName}: 湧くもの`).toEqual([...spawnable].sort());
+  });
+
+  it('顔ぶれごとに、見張りの卓の実りの濃さが決まっている', () => {
+    // **濃さは顔ぶれの差そのもの**（ContentSkeleton.md 7節）。豊かな海から何も返さない海までが卓の
+    // 重みで分かれていることを、宣言から出した割合で見る。
+    const { game } = ready();
+
+    for (const [zoneName, , , yieldRate] of YIELDS)
+      expect(yieldRateOf(singletonPlace(game, zoneName)), `${zoneName}: 実りの濃さ`).toBeCloseTo(yieldRate);
+  });
 
   it('小島は、降りて探索でき、漕ぎ出せば海へ戻る', () => {
     const { game, raft } = ready();
