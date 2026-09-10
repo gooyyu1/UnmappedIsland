@@ -719,8 +719,10 @@ export class WorldObject {
    * - 同じ名前のスロットは中身をそのまま引き継ぐ。**新しい型が持たないスロットの中身は親へこぼれる**
    *   （destroyと同じ規則、9.3節）。
    *
-   * 登録済みの持続効果は、組み直す前にすべて解除して新しいdefで登録し直す——解除は宣言元のdefを辿るので、
-   * 先に差し替えると外し先を見失う。
+   * 登録済みの持続効果は、組み直す前にすべて解除して登録し直す——解除は宣言元の宣言を辿るので、先に
+   * 差し替えると外し先を見失う。**宣言元は物のdefだけではない**——今この物へ効いている操作が宣言した
+   * ぶん（11.7節）は、効いている間だけセッションが持っている
+   * （WorldSession.setInteractionPassivesRegistered）。
    */
   private becomeType(newDef: ObjectDef): void {
     if (newDef === this._def) return;
@@ -747,6 +749,7 @@ export class WorldObject {
     this.setAncestorTargetsRegistered(false);
     this._def.passives.setRelationRegistered(this, 'self', false);
     this.setRoleTargetsOfParticipantsRegistered(false);
+    this.session.setInteractionPassivesRegistered(this, false);
     if (parent !== undefined) this.setEdgeRegistered(parent, false);
     for (const { child } of rehomed) child.setEdgeRegistered(this, false);
 
@@ -767,6 +770,7 @@ export class WorldObject {
 
     this._def.passives.setRelationRegistered(this, 'self', true);
     this.setRoleTargetsOfParticipantsRegistered(true);
+    this.session.setInteractionPassivesRegistered(this, true);
     if (parent !== undefined) this.setEdgeRegistered(parent, true);
     for (const { child } of rehomed) child.setEdgeRegistered(this, true);
     this.setAncestorTargetsRegistered(true);
