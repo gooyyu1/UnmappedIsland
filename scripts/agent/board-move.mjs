@@ -57,7 +57,7 @@
 // **片方だけで書くと、再レビューが永久に止まるか、手が空いた上へ2本目が立つ。**
 // どの値がどちらに答えるかは 1.6。
 
-import { readVersion, verdicts } from './review-verdicts.mjs';
+import { asksUser, readsVersion, verdicts } from './review-verdicts.mjs';
 
 /**
  * 今その差分へ手が動いているか（1.6）。**言うのは `session_status` だけ**——`status_bucket` は
@@ -384,7 +384,18 @@ export function moves(input) {
     const pr = input.prs.find((item) => item.number === Number(number));
     if (pr === undefined) return true;
     const sent = taken[`review:${number}`];
-    return sent !== undefined && verdicts(pr.comments).some((c) => readVersion(c) === sent);
+    return sent !== undefined && verdicts(pr.comments).some((c) => readsVersion(c, sent));
+  }
+
+  /**
+   * **今の差分に対する判定**（無ければ `undefined`）。**ラベルではなくコメントから引く**
+   * ——人がラベルを外してから `board-labels.yml` が `却下` を付けるまでの窓では、ラベルだけを見る
+   * 盤面に「止める印が何も無いPR」として映る（2.13.5）。判定はコメントに残り、読んだ版も名乗って
+   * あるので、**外されても消えない側**から読む。
+   */
+  function verdictOn(pr) {
+    const read = verdicts(pr.comments).filter((c) => readsVersion(c, pr.headRefOid));
+    return read[read.length - 1];
   }
 
   /**
@@ -534,11 +545,16 @@ export function moves(input) {
       continue;
     }
 
+    const verdict = verdictOn(pr);
+
     if (labels.includes('通してよい')) {
       // PRの `判断待ち` が止めるのはマージだけ（2.13）。**出どころで見分けない**——レビュアーが
-      // 付けたものも機械が付けたものも、通すなら人が画面からマージする（2.13.1）。人が外せば
-      // 上の `却下` が付いて差し戻しへ回るので、ここへは戻ってこない。
-      if (labels.includes('判断待ち')) continue;
+      // 付けたものも機械が付けたものも、通すなら人が画面からマージする（2.13.1）。
+      //
+      // **レビュアーが求めたぶんは、ラベルが外れていても判定から読み直す**（2.13.5）。人が外して
+      // から `却下` が付くまでの窓でここを通すと、**差し戻すつもりで外した操作がそのまま
+      // マージになる**——取り消せない。
+      if (labels.includes('判断待ち') || (verdict !== undefined && asksUser(verdict))) continue;
       if (check === 'green' && pr.mergeable === 'MERGEABLE') merges.push(`MERGE ${pr.number}`);
       continue;
     }
@@ -547,7 +563,13 @@ export function moves(input) {
     // 出さない——人が画面からマージするか、外して差し戻すまで、この先へは進まない（2.13.1）。
     if (labels.includes('収束せず')) continue;
 
-    // 結論のラベルが無い＝この差分はまだ読まれていない（push で外れる。`board-labels.yml`）。
+    // **結論のラベルが無いことは、読まれていないことではない**（2.13.5）。人が外した窓では判定が
+    // コメントにだけ残るので、そちらを先に訊く——ラベルで読むと、読み終えた差分へもう1本立つ。
+    if (verdict !== undefined) {
+      notes.push(`PR #${pr.number} は今の版の判定が書かれている（結論のラベルが付くのを待っている）`);
+      continue;
+    }
+
     if (check !== 'green') continue;
     // **マージできると分かるまで出さない。** `mergeable` は3値で、`main` が動くたびに開いているPRが
     // 全部 `UNKNOWN` へ落ち、GitHub が計算し直すまでそのまま。上の `CONFLICTING` だけで弾くと、
@@ -562,15 +584,8 @@ export function moves(input) {
     // **指紋が言えるのは「この差分を出した」までで、「読まれた」ではない。** 読み手がもう居ない
     // のに出したことを読まれたことと読むと、判定を書かずに終わったレビューがそのPRを永久に止める
     // （issue #1569。畳まれた理由が何であれ同じ）。**居るなら読んでいる最中**——畳むのは 2.10.3 の側。
-    //
-    // **読み手が居ないことより先に、判定が書かれたかを訊く。** 書き終えたレビューは畳まれてから
-    // 結論のラベルが付くまでの間だけ「居ないのにラベルも無い」形になり、そこを読み違えると、
-    // 判定の付いた差分へもう1本立つ。
+    // **判定を書き終えた形は、上の `verdict` が先に捕まえる。**
     const sent = taken[`review:${pr.number}`] === pr.headRefOid;
-    if (sent && judged(`review-${pr.number}`)) {
-      notes.push(`PR #${pr.number} のレビューは判定を書き終えていて、結論のラベルが付くのを待っている`);
-      continue;
-    }
     if (sent && alive(`review-${pr.number}`).length > 0) {
       notes.push(`PR #${pr.number} はレビューが読んでいる最中で、結論のラベルはまだ無い`);
       continue;
