@@ -53,9 +53,13 @@ object_defs:
   #
   # **握って殴るだけなので、獲物を沈められない。** 浅く当たる一撃しか持たず、衝撃はネズミ・ヤケイの
   # 体格を越える程度で止まる。サルには数撃、イノシシには何撃当てても足りない。
+  #
+  # **柄に固定されていない刃**（handheld_blade）。刃を寝かせて相手へ沿わせ、そのまま長く走らせられる
+  # ——柄の先へ据えた石斧の頭部（下のstone_axe）にはできない持ち方で、樹皮を帯で剥ぐ（timber.yaml）
+  # のはこちらの手つき。斧ができてもこの石が要る場面が残るのは、この違いによる。
   sharp_stone:
     traits: [weapon]
-    tags: [item, tool, cutting_tool]
+    tags: [item, tool, cutting_tool, handheld_blade]
     props:
       weight: {value: 400}
       volume: {value: 300}

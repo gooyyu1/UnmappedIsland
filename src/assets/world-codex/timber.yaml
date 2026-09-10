@@ -57,13 +57,18 @@ object_defs:
           - {object: thick_branch, count: 3, into: self}
         destroy: self
 
-      # 幹に縦の切れ目を入れ、内樹皮ごと帯で剥がす。刃を通すだけなので斧は要らない
-      # （fiber.yamlの茎剥ぎと同じcutting_tool）。木は立ったままなので、後から倒して丸太も採れる。
+      # 幹に縦の切れ目を入れ、内樹皮ごと帯で剥がす。**要るのは握りの刃**（handheld_blade、
+      # tools.yaml）——刃を幹へ沿わせて長く走らせる手つきなので、柄の先へ据えて打ち込む石斧では
+      # 帯にならない。斧を待たないという意味では上のfellと変わらず、樹皮は丸太とは別の入口のまま。
+      # 木は立ったままなので、後から倒して丸太も採れる。
+      #
+      # **上のfellと同時に成立させない**（GameElementDefinition.md 12.1節）。石斧はcutting_toolでも
+      # あるので、ここをcutting_toolで受けると斧では必ず先頭のfellになり、樹皮を剥ぐ道が消える。
       #
       # 剥いでも木は減らない。採取ポイントの枯渇はヤシの木（coconut.yaml）と同じく今後の課題で、
       # ここだけ先に持ち込むと木ごとに枯れ方の違う世界になる。
       strip_bark:
-        trigger: {drag: {tag: cutting_tool}}
+        trigger: {drag: {tag: handheld_blade}}
         # 立ち木を回りながら剥ぐ屋外の行動なので、見るのは視界の側
         # （docs/engine/IlluminationSystem.md 5節）。
         conditions:

@@ -91,7 +91,7 @@ describe('なめし革の連鎖', () => {
     return wip;
   }
 
-  it('立ち木から刃物で樹皮を剥ぐと、樹皮が3巻き手に入り、木は残る', () => {
+  it('立ち木から握りの刃で樹皮を剥ぐと、樹皮が3巻き手に入り、木は残る', () => {
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
     const knife = spawnInto('sharp_stone', player, 'hand');
 
@@ -111,13 +111,18 @@ describe('なめし革の連鎖', () => {
 
   it('樹皮を剥いだ木は、後から倒して丸太も採れる', () => {
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
+    const knife = spawnInto('sharp_stone', player, 'hand');
     const axe = spawnInto('stone_axe', player, 'hand');
 
-    // 石斧は刃物でもある（tools.yaml）ので、剥ぐのも倒すのも同じ1本でできる。
-    for (const name of ['strip_bark', 'fell'])
+    // 剥ぐのは握りの刃、倒すのは柄付きの斧（timber.yaml）。剥いでも木は残るので、同じ木へ続けて
+    // 斧を当てられる。
+    for (const [name, instrument] of [
+      ['strip_bark', knife],
+      ['fell', axe],
+    ] as const)
       expect(
         tree
-          .combinationsWith(axe, player)
+          .combinationsWith(instrument, player)
           .find((c) => c.name === name)
           ?.tryExecute() === true,
         name,
@@ -126,7 +131,7 @@ describe('なめし革の連鎖', () => {
     expect(tree.parent, '倒した木は残らない').toBeUndefined();
   });
 
-  it('素手では樹皮を剥げない（刃物が要る）', () => {
+  it('素手では樹皮を剥げない（握りの刃が要る）', () => {
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
 
     expect(tree.combinationsWith(player, player), '手を当てても成立しない').toEqual([]);
