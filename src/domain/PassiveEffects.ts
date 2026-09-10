@@ -79,13 +79,13 @@ export class PassiveEffects {
   }
 
   /**
-   * この一式がこの1 tickで実体値へ足すぶんを、操作の稼ぎとして控える（PropertyGain）。
+   * この一式がこの1 tickで動かす先を、操作の稼ぎを数える対象として名乗る（PropertyGain）。
    *
-   * **控えるのは操作が宣言した一式だけ**（WorldSession.whileInteractionPassives）。物が自分で
+   * **名乗るのは操作が宣言した一式だけ**（WorldSession.whileInteractionPassives）。物が自分で
    * 宣言した増減は、誰かの操作が増やしたものではない。
    */
-  recordTickGains(owner: WorldObject, session: WorldSession): void {
-    for (const effect of this.effects) effect.recordTickGain(owner, session);
+  countTickMovementsAsGains(owner: WorldObject, session: WorldSession): void {
+    for (const effect of this.effects) effect.countTickMovementAsGain(owner, session);
   }
 
   /** childがowner（親）に付く/離れる契機を、target=childの効果へ伝える。 */

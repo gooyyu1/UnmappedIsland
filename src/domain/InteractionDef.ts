@@ -152,7 +152,7 @@ export class InteractionDef {
     if (this.unmetRequirement(context) !== undefined) return false;
 
     // 実行のはじめから囲う。経過中のtickが動かした値は「操作が増やしたもの」に入らないが、この操作
-    // 自身が宣言した持続効果が足したぶんは入る（PropertyGain参照）。
+    // 自身が宣言した持続効果が動かす先は、そのtickで動いたぶんが入る（PropertyGain参照）。
     return session.withInteractionGains(self, () => {
       for (const announcement of this.announcements) announcement.apply(context, session);
 
