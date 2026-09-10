@@ -1049,8 +1049,8 @@ for n in $(gh pr list --state open --json number --jq '.[].number'); do gh pr up
 [`daemon.sh`](../scripts/agent/daemon.sh) が毎周1手だけ打つ。順は
 [`board-move.mjs`](../scripts/agent/board-move.mjs) が決める。
 
-- **判定のラベルが無く、緑** → `dispatch-review.sh <番号>`。マージの前に必ずここを通る。
-- **`通してよい` があり、緑で、コンフリクトも無い** → `merge-pr.sh`。**後片付けは別の手**
+- **今の版の判定がまだ無く、緑** → `dispatch-review.sh <番号>`。マージの前に必ずここを通る。
+- **`通してよい` があり、緑で、コンフリクトも無く、人の手番で止まっていない** → `merge-pr.sh`。**後片付けは別の手**
   （`tidy-merged-pr.sh`）で、マージ済みのPRを見つけた周に打つ——`Closes` の issue が閉じたことの
   確認と、本体のチェックアウトの追随はそちら。
 - **`直し待ち`・CIが赤・コンフリクト** → **そのPRの `task-<番号>` のセッションを起こして直させる**

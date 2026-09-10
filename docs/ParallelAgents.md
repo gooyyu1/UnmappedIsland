@@ -252,10 +252,10 @@ sequenceDiagram
         D->>W: 書いたセッションを起こして直させる
         W->>G: 直しを push（ラベルは push で外れる）
     else 通してよい かつ 緑
-        alt 判断待ち が付いている
+        alt 人の手番で止まっている
             D->>G: マージを出さない
             H->>G: 承認（画面からマージする）／却下（直してほしいことを書いてラベルを外す）
-        else 付いていない
+        else 止まっていない
             D->>G: マージ（人間は通らない）
         end
     end
@@ -348,7 +348,7 @@ flowchart LR
 | 手 | いつ打つか | 何をするか |
 | --- | --- | --- |
 | `TIDY` | 窓（48時間）に載っているマージ済みのPRで、まだ片付けていないもの | [`tidy-merged-pr.sh`](../scripts/agent/tidy-merged-pr.sh)。`Closes` の issue が閉じたかの確認 → 積まれていたPRの差し戻し → 本体を新しい `main` へ進める |
-| `MERGE` | `通してよい` があり、緑で、コンフリクトも無く、`判断待ち` も無い | [`merge-pr.sh`](../scripts/agent/merge-pr.sh)。機械の関門を通してマージするだけ |
+| `MERGE` | `通してよい` があり、緑で、コンフリクトも無く、**人の手番で止まっていない** | [`merge-pr.sh`](../scripts/agent/merge-pr.sh)。機械の関門を通してマージするだけ |
 | `ARCHIVE` | 担当の issue が閉じたか人へ返され、手が空いた `task-*` のセッション | **書いたセッションを畳む**（[`archive-session.sh`](../scripts/agent/archive-session.sh)） |
 | `RESUME … mend` | `直し待ち`・CIが赤・`main` と衝突 | **書いたセッションを起こして直させる**（[`resume-session.sh`](../scripts/agent/resume-session.sh)） |
 | `RESUME … reject` | `却下`（人がPRを止めている印を外した） | 起こして、**何が通らなかったのかをコメントから読ませ、やり直させる** |

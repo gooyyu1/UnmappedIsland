@@ -57,7 +57,7 @@
 // **片方だけで書くと、再レビューが永久に止まるか、手が空いた上へ2本目が立つ。**
 // どの値がどちらに答えるかは 1.6。
 
-import { asksUser, readsVersion, verdicts } from './review-verdicts.mjs';
+import { asksUser, readVersion, readsVersion, verdicts } from './review-verdicts.mjs';
 
 /**
  * 今その差分へ手が動いているか（1.6）。**言うのは `session_status` だけ**——`status_bucket` は
@@ -392,9 +392,14 @@ export function moves(input) {
    * ——人がラベルを外してから `board-labels.yml` が `却下` を付けるまでの窓では、ラベルだけを見る
    * 盤面に「止める印が何も無いPR」として映る（2.13.5）。判定はコメントに残り、読んだ版も名乗って
    * あるので、**外されても消えない側**から読む。
+   *
+   * **読んだ版を名乗っていないコメントは、どの版のものか言えない**（名乗りは書き忘れうる。
+   * `review-prompt.md`「読んだ版」）。**数えるかは、訊く側の倒れる先で決める**——`countUnnamed`。
    */
-  function verdictOn(pr) {
-    const read = verdicts(pr.comments).filter((c) => readsVersion(c, pr.headRefOid));
+  function verdictOn(pr, countUnnamed) {
+    const read = verdicts(pr.comments).filter(
+      (c) => readsVersion(c, pr.headRefOid) || (countUnnamed && readVersion(c) === undefined),
+    );
     return read[read.length - 1];
   }
 
@@ -545,7 +550,11 @@ export function moves(input) {
       continue;
     }
 
-    const verdict = verdictOn(pr);
+    // **止める側と、読まれたかを見る側で、倒れる先が逆になる**（2.13.5）。前者は名乗りの無い判定も
+    // 今の版のものとして数える——数えないと、**名乗りを書き忘れた周だけ、人へ回した判定が消えて
+    // 取り消せないマージになる。** 後者は数えない——数えると、押した後の差分が二度と読まれない。
+    const stopping = verdictOn(pr, true);
+    const wasRead = verdictOn(pr, false);
 
     if (labels.includes('通してよい')) {
       // PRの `判断待ち` が止めるのはマージだけ（2.13）。**出どころで見分けない**——レビュアーが
@@ -554,7 +563,7 @@ export function moves(input) {
       // **レビュアーが求めたぶんは、ラベルが外れていても判定から読み直す**（2.13.5）。人が外して
       // から `却下` が付くまでの窓でここを通すと、**差し戻すつもりで外した操作がそのまま
       // マージになる**——取り消せない。
-      if (labels.includes('判断待ち') || (verdict !== undefined && asksUser(verdict))) continue;
+      if (labels.includes('判断待ち') || (stopping !== undefined && asksUser(stopping))) continue;
       if (check === 'green' && pr.mergeable === 'MERGEABLE') merges.push(`MERGE ${pr.number}`);
       continue;
     }
@@ -565,7 +574,7 @@ export function moves(input) {
 
     // **結論のラベルが無いことは、読まれていないことではない**（2.13.5）。人が外した窓では判定が
     // コメントにだけ残るので、そちらを先に訊く——ラベルで読むと、読み終えた差分へもう1本立つ。
-    if (verdict !== undefined) {
+    if (wasRead !== undefined) {
       notes.push(`PR #${pr.number} は今の版の判定が書かれている（結論のラベルが付くのを待っている）`);
       continue;
     }

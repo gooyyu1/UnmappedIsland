@@ -262,6 +262,21 @@ describe('board-move.mjs', () => {
     expect(moves({ prs: [pr(10, { ...label('通してよい'), comments })] })).toEqual(['MERGE 10']);
   });
 
+  // **読んだ版の名乗りは書き忘れうる**（`review-prompt.md`）。どの版のものか言えない判定を数え
+  // ないと、**その周だけ人へ回した判定が消えて、取り消せないマージになる**（2.13.5）。ラベルを
+  // 付ける側（`board-labels.yml`）は1行目しか見ないので、名乗りが無くても `判断待ち` は付く。
+  it('版を名乗っていなくても、人の判断を求める判定はマージを止める', () => {
+    const comments = [{ body: '[レビュー] 通してよい（人の判断が要る）\n\n倍率を足している。\n' }];
+    expect(moves({ prs: [pr(10, { ...label('通してよい'), comments })] })).toEqual([]);
+  });
+
+  // **逆に、読まれたかを見る側は数えない。** どの版を読んだのか言えないものを数えると、押した後の
+  // 差分が二度と読まれない（2.13.5）。
+  it('版を名乗っていない判定は、読まれた証拠にはしない', () => {
+    const comments = [{ body: '[レビュー] 通してよい\n\n直しは要らない。\n' }];
+    expect(moves({ prs: [pr(10, { comments })] })).toEqual(['REVIEW 10 aaa1111']);
+  });
+
   it('判断待ちでも、コンフリクトは差し戻す', () => {
     const board = {
       prs: [pr(10, { ...label('判断待ち'), mergeable: 'CONFLICTING' })],
