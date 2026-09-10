@@ -8,10 +8,13 @@ import type { WorldObject } from './WorldObject';
  * `modify`・`base`で押し上げられた実効値は含まない。満腹度は誰も書かず、胃と腸の段が押し上げて
  * いるだけなので現れず、食べた操作が増やしたものとして現れるのは胃と栄養になる。
  *
- * **毎tickの積分（passivesの`add`）のうち、入るのはその操作自身が宣言した分だけ**
- * （`interactions`の`passives`、11.7節。`WorldSession.recordPassiveGain`）。物が自分で宣言した増減は、
+ * **毎tickの積分（passivesの`add`）のうち、入るのはその操作自身が宣言した先だけ**
+ * （`interactions`の`passives`、11.7節。`WorldSession.recordTickMovement`）。物が自分で宣言した増減は、
  * 誰かの操作が増やしたものではないので入らない——時間の経過の中での実体値への書き込みは、端の
  * クランプも輸送もまとめて数えない（`WorldSession.insideTick`）。
+ *
+ * **入るのは、その先がそのtickで実際に動いた量。** 宣言した量ではないので、荷や痛みが同じtickで
+ * 削ったぶんは引かれている——倒れ込みで戻る量が薄いことは、値だけでなく粒にも出る。
  */
 export interface PropertyGain {
   /** 値が増えたオブジェクト。 */

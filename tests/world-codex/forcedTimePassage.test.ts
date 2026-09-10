@@ -249,5 +249,64 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
       // 宣言（+2.5/tick）から痛みの削り（-0.5/tick）を引いた +2/tick が、2時間ぶん。
       expect(valueOf('happiness'), '痛みの無いときの +20 より薄い').toBe(16);
     });
+
+    /**
+     * 画面に出る回復の粒（`WorldSession.observeGains`、docs/ui/CardInteraction.md 10.1節）が示すのは、
+     * その操作がそのtickで実際に動かした量。宣言した量をそのまま出すと、荷を担いだまま倒れ込んだ
+     * プレイヤーは +20 の粒を見ながら +4 しか戻っていない。
+     */
+    describe('粒が示す量も、同じ正味', () => {
+      /** bodyの間にプレイヤーの値が増えた量を、プロパティ名から引ける形にする。 */
+      function gainsDuring(body: () => void): Map<string, number> {
+        const amounts = new Map<string, number>();
+        session.observeGains((observed) => {
+          for (const gain of observed.gains)
+            if (gain.object === player) amounts.set(gain.property.name, gain.amount);
+        }, body);
+        return amounts;
+      }
+
+      it('荷が削っている間の倒れ込みは、引いたぶんの粒を出す', () => {
+        carryTooMuch();
+        drain('stamina');
+
+        const amounts = gainsDuring(() => session.advanceWorldTime(15));
+
+        expect(valueOf('stamina'), '倒れ込みで実際に戻った量').toBe(4);
+        expect(amounts.get('stamina'), '粒もその量').toBe(4);
+      });
+
+      it('荷が削っている間の休息は、引いたぶんの粒を出す', () => {
+        carryTooMuch();
+        player.getProperty(codex.propertyNames.getId('stamina')).setNumber(50);
+
+        const amounts = gainsDuring(rest);
+
+        expect(valueOf('stamina') - 50, '1時間の休憩で実際に戻った量').toBe(2);
+        expect(amounts.get('stamina'), '粒もその量').toBe(2);
+      });
+
+      /** 幸福度を削る2本（player_character.yaml）。どちらも危険域は-0.5/tick。 */
+      const HAPPINESS_DRAINS = [
+        { name: '痛み', deepen: (): void => void spawnInto('fracture', player, 'injuries') },
+        {
+          name: '里心',
+          deepen: (): void => player.getProperty(codex.propertyNames.getId('homesickness')).setNumber(100),
+        },
+      ] as const;
+
+      it.each(HAPPINESS_DRAINS)(
+        '$name が削っている間の打ちひしがれは、引いたぶんの粒を出す',
+        ({ deepen }) => {
+          deepen();
+          drain('happiness');
+
+          const amounts = gainsDuring(() => session.advanceWorldTime(15));
+
+          expect(valueOf('happiness'), '打ちひしがれで実際に戻った量').toBe(16);
+          expect(amounts.get('happiness'), '粒もその量').toBe(16);
+        },
+      );
+    });
   });
 });
