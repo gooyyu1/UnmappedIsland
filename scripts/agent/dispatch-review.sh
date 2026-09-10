@@ -86,7 +86,7 @@ state=$(jq -r '.state' "$WORK/pr.json")
 # 子の手綱を外すなら本文の `Closes` が要る。
 #
 # **本文の `\r` は落とさない**——受けるのが `grep -o` だけで、抜き出すのは数字なので入らない
-# （[`merge-and-close.sh`](merge-and-close.sh) の「`\r` を落とす側と落とさない側」）。
+# （[`tidy-merged-pr.sh`](tidy-merged-pr.sh) の「`\r` を落とす側と落とさない側」）。
 TAG="review-$PR"
 review_tags=("$TAG")
 kind=review-untasked

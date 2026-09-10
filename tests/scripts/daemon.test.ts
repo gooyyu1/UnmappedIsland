@@ -356,7 +356,7 @@ describe('daemon.sh', () => {
   });
 
   // 本体は作業ツリーの共有先なので、手が入っているところへ `checkout` を打たない
-  // （`merge-and-close.sh` の `DIRTY` と同じ判定）。
+  // （`tidy-merged-pr.sh` の `DIRTY` と同じ判定）。
   it('本体に未コミットの変更があれば、触らずに立てる', () => {
     const result = daemon({
       mainDirty: true,
