@@ -141,7 +141,6 @@ function toolWearsIn(codex: WorldCodex, step: CraftingStep): readonly ToolWear[]
       // 時間でも減るなら、その物の寿命は使い方に依らない——日の列が答える。
       if (rangeCyclesOf(tool).some((cycle) => cycle.propertyGlobalId === propertyGlobalId)) continue;
 
-      // 読めない初期値からは、端までの距離も出ない。
       const value = staticValueOf(tool, propertyGlobalId, 'lowest');
       if (value === undefined) continue;
 

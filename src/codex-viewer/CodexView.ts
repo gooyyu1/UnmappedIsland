@@ -121,13 +121,13 @@ export class CodexView {
   // 表示名（識別子表示モードでは識別子そのもの）
   // ------------------------------------------------------------------
 
-  /** 名乗りのうち、いま見出しに出すほう。 */
-  labelOf(identity: DisplayIdentity): string {
+  /** 名乗りのうち、いま出すほうを`namingMode`に従って選ぶ。引き当てはしない。 */
+  identifierOrDisplayName(identity: DisplayIdentity): string {
     return this.namingMode === 'identifier' ? identity.identifier : identity.displayName;
   }
 
   objectLabel(name: string): string {
-    return this.labelOf(this.objectIdentity(name));
+    return this.identifierOrDisplayName(this.objectIdentity(name));
   }
 
   /** 型の名乗り。 */
@@ -165,7 +165,7 @@ export class CodexView {
    * 持ち主が分かっていればそれを使い、分からなければdefaultエントリだけで引く。
    */
   propertyLabel(objectName: string | undefined, propertyName: string): string {
-    return this.labelOf(this.propertyIdentity(objectName, propertyName));
+    return this.identifierOrDisplayName(this.propertyIdentity(objectName, propertyName));
   }
 
   /** プロパティの名乗り。表示名は持ち主ごとに変えられる（Localization.md）ので、持ち主とセットで引く。 */
@@ -178,10 +178,12 @@ export class CodexView {
 
   /** 操作の表示名。オブジェクトのメンバーなので持ち主とセットで引く。 */
   interactionLabel(objectName: string, name: string): string {
-    return this.labelOf({
-      identifier: name,
-      displayName: this.interactionTexts(objectName, name).displayName,
-    });
+    return this.identifierOrDisplayName(this.interactionIdentity(objectName, name));
+  }
+
+  /** 操作の名乗り。 */
+  interactionIdentity(objectName: string, name: string): DisplayIdentity {
+    return { identifier: name, displayName: this.interactionTexts(objectName, name).displayName };
   }
 
   interactionTexts(objectName: string, name: string): Texts {
@@ -189,7 +191,7 @@ export class CodexView {
   }
 
   slotLabel(name: string): string {
-    return this.labelOf(this.slotIdentity(name));
+    return this.identifierOrDisplayName(this.slotIdentity(name));
   }
 
   /** スロットの名乗り。 */
@@ -198,21 +200,27 @@ export class CodexView {
   }
 
   symbolLabel(name: string): string {
-    return this.labelOf({ identifier: name, displayName: this.locale.symbol(name).displayName });
+    return this.identifierOrDisplayName({
+      identifier: name,
+      displayName: this.locale.symbol(name).displayName,
+    });
   }
 
   propertyTagLabel(name: string): string {
-    return this.labelOf({ identifier: name, displayName: this.locale.propertyTag(name).displayName });
+    return this.identifierOrDisplayName({
+      identifier: name,
+      displayName: this.locale.propertyTag(name).displayName,
+    });
   }
 
   /** 告げる出来事（9.8節のsignal）の文言。札の上に出るのと同じ言葉。 */
   signalLabel(name: string): string {
-    return this.labelOf({ identifier: name, displayName: this.locale.signal(name) });
+    return this.identifierOrDisplayName({ identifier: name, displayName: this.locale.signal(name) });
   }
 
   /** 消し方の名乗り（9.3節のdestroyのreason）の文言。死亡ダイアログに出るのと同じ言葉。 */
   destroyReasonLabel(name: string): string {
-    return this.labelOf({ identifier: name, displayName: this.locale.destroyReason(name) });
+    return this.identifierOrDisplayName({ identifier: name, displayName: this.locale.destroyReason(name) });
   }
 
   /**

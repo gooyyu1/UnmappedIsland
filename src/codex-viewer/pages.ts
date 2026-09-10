@@ -158,7 +158,7 @@ function renderPropertyPage(view: CodexView, objectName: string, propertyName: s
   return (
     `<p class="breadcrumb"><a href="${view.objectHref(objectName)}">← ` +
     `${escapeHtml(view.objectLabel(objectName))}</a></p>` +
-    `<h1>${escapeHtml(view.labelOf(identity))}</h1>` +
+    `<h1>${escapeHtml(view.identifierOrDisplayName(identity))}</h1>` +
     `<p class="identifier"><code>${escapeHtml(objectName)}.${escapeHtml(propertyName)}</code>` +
     `${untranslatedBadgeHtml(view, identity)}</p>` +
     (texts.description === undefined ? '' : `<p class="lead">${escapeHtml(texts.description)}</p>`) +
@@ -508,7 +508,7 @@ function propertiesHtml(view: CodexView, def: ObjectDef): string {
       return (
         `<tr><td>` +
         `<a href="${view.propertyHref(def.name, propertyDef.name)}">` +
-        `${escapeHtml(view.labelOf(identity))}</a>` +
+        `${escapeHtml(view.identifierOrDisplayName(identity))}</a>` +
         identifier +
         description +
         `</td>` +
@@ -529,13 +529,15 @@ function propertiesHtml(view: CodexView, def: ObjectDef): string {
 function slotsHtml(view: CodexView, def: ObjectDef): string {
   const rows = def
     .enumerateSlotDefs()
-    .map(
-      (slotDef) =>
+    .map((slotDef) => {
+      const identity = view.slotIdentity(slotDef.name);
+      return (
         `<tr><td><a href="${view.slotHref(slotDef.name)}">` +
-        `${escapeHtml(view.slotLabel(slotDef.name))}</a>` +
-        `${headingIdentifierHtml(view.slotLabel(slotDef.name), slotDef.name)}</td>` +
-        `${slotCellsHtml(view, def.name, slotDef)}</tr>`,
-    )
+        `${escapeHtml(view.identifierOrDisplayName(identity))}</a>` +
+        `${headingIdentifierHtml(view, identity)}</td>` +
+        `${slotCellsHtml(view, def.name, slotDef)}</tr>`
+      );
+    })
     .join('');
   return rows === '' ? EMPTY_HTML : slotTableHtml('スロット', rows);
 }
@@ -547,9 +549,9 @@ function interactionsHtml(view: CodexView, def: ObjectDef, triggers: readonly In
       const texts = view.interactionTexts(def.name, interaction.name);
       const description =
         texts.description === undefined ? '' : `<p class="muted">${escapeHtml(texts.description)}</p>`;
-      const label = view.interactionLabel(def.name, interaction.name);
+      const identity = view.interactionIdentity(def.name, interaction.name);
       return cardHtml(
-        escapeHtml(label) + headingIdentifierHtml(label, interaction.name),
+        escapeHtml(view.identifierOrDisplayName(identity)) + headingIdentifierHtml(view, identity),
         description + view.describeHtml(def.name, (out) => describeInteraction(trigger, view.names, out)),
       );
     })
@@ -606,8 +608,10 @@ function cardHtml(heading: string, body: string): string {
 }
 
 /** 見出しの脇に小さく添える識別子。見出しがすでに識別子そのものなら何も足さない。 */
-function headingIdentifierHtml(label: string, identifier: string): string {
-  return label === identifier ? '' : ` <code>${escapeHtml(identifier)}</code>`;
+function headingIdentifierHtml(view: CodexView, identity: DisplayIdentity): string {
+  return view.identifierOrDisplayName(identity) === identity.identifier
+    ? ''
+    : ` <code>${escapeHtml(identity.identifier)}</code>`;
 }
 
 /**
@@ -616,7 +620,9 @@ function headingIdentifierHtml(label: string, identifier: string): string {
  */
 function identifierLineHtml(view: CodexView, identity: DisplayIdentity): string {
   const code =
-    view.labelOf(identity) === identity.identifier ? '' : `<code>${escapeHtml(identity.identifier)}</code>`;
+    view.identifierOrDisplayName(identity) === identity.identifier
+      ? ''
+      : `<code>${escapeHtml(identity.identifier)}</code>`;
   const badge = untranslatedBadgeHtml(view, identity);
   return code === '' && badge === '' ? '' : `<p class="identifier">${code}${badge}</p>`;
 }
