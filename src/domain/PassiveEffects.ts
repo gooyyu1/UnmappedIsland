@@ -105,9 +105,8 @@ export class PassiveEffects {
   }
 
   /**
-   * 宣言されている持続効果を宣言順に挙げる。**1件ずつを別々に扱う相手だけが呼ぶ**——宣言ごとに絞り込む
-   * （describeInfluencesOn）・1件につき1つの書き出しを作る（describePassive）もので、一式をまとめて
-   * 読むならreadを呼ぶ。
+   * 宣言されている持続効果を宣言順に挙げる。**1件ずつを別々に扱う相手だけが呼ぶ**——宣言ごとに絞り込む・
+   * 1件につき1つの書き出しを作る・宣言があるかを見る、といったもの。一式をまとめて読むならreadを呼ぶ。
    */
   get declarations(): readonly PassiveEffect[] {
     return this.effects;

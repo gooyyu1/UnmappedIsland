@@ -273,7 +273,7 @@ function interactionStep(
  */
 function passiveOutcomes(interaction: InteractionDef, minutes: number): readonly StepOutcome[] {
   const collector = new PassiveDeltaCollector(minutes / MINUTES_PER_TICK);
-  for (const declaration of interaction.passiveDeclarations) declaration.read(collector);
+  interaction.readPassives(collector);
 
   if (collector.deltas.length === 0) return UNCHANGED_OUTCOMES;
   return [{ probability: 1, spawns: [], deltas: collector.deltas, assignments: [] }];
