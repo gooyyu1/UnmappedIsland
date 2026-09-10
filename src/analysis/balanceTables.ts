@@ -356,6 +356,14 @@ export interface ObjectCost {
 }
 
 export interface BalanceTables {
+  /**
+   * この表を組んだ代表キャラクタ。1日の必要量（`dailyNeeds`）も、そこから出る最小労働も、この1人の
+   * ものなので、**表と同じ人物を見たい側はここから採る**——使う側がもう一度名前を書くと、必要量を
+   * 出した人物と食い違ったまま数字が出る。
+   */
+  readonly sampleCharacterName: string;
+
+  /** 世界の全キャラクタ（宣言順）。 */
   readonly characterNames: readonly string[];
 
   /**
@@ -388,10 +396,10 @@ export interface BalanceTables {
   readonly rainWater: readonly RainWaterRow[];
 }
 
-/** 収支表を丸ごと組み立てる。sampleCharacterは1日の必要量を取る代表キャラクタ。 */
-export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): BalanceTables {
+/** 収支表を丸ごと組み立てる。sampleCharacterNameは1日の必要量を取る代表キャラクタ。 */
+export function buildBalanceTables(codex: WorldCodex, sampleCharacterName: string): BalanceTables {
   const characterNames = codex.objectDefNamesWithTag(codex.vocabulary.world.characterTagId);
-  const character = codex.objects.get(codex.objectNames.getId(sampleCharacter));
+  const character = codex.objects.get(codex.objectNames.getId(sampleCharacterName));
   const { places, gaps, islandWide, dailyNeeds, islandLocations } = placeBalances(codex, character);
 
   // 島全体の献立が最小労働（places[0]は島全体）。
@@ -399,6 +407,7 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
   const surplusMinutes = MINUTES_PER_DAY - minimumLabourMinutes;
 
   return {
+    sampleCharacterName,
     characterNames,
     minimumLabourMinutes,
     surplusMinutes,

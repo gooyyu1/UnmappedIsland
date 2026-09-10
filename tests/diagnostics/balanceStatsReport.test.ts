@@ -84,7 +84,7 @@ function buildSections(codex: WorldCodex, tables: BalanceTables): readonly YamlR
       key: 'meta',
       records: [
         {
-          character: SAMPLE_CHARACTER,
+          character: tables.sampleCharacterName,
           minutes_per_tick: MINUTES_PER_TICK,
           ticks_per_day: TICKS_PER_DAY,
           minutes_per_day: MINUTES_PER_DAY,

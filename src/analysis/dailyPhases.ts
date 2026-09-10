@@ -215,16 +215,12 @@ export interface WorkPileAmount {
  * 収支表から足す。**型が収支表に出ていなければ投げる**——0分の山として黙って通すと、1周回の日数
  * だけが静かに縮む。
  *
- * `characterName` は、段へ届くまで積む山（{@link StackUntilStage}）が見る人物。段の線はその人物の
- * プロパティが持つ。
+ * 段へ届くまで積む山（{@link StackUntilStage}）が見る人物は、収支表を組んだ代表キャラクタ
+ * （`BalanceTables.sampleCharacterName`）。段の線はその人物のプロパティが持つ。
  */
-export function workPileAmountsOf(
-  codex: WorldCodex,
-  characterName: string,
-  balance: BalanceTables,
-): readonly WorkPileAmount[] {
+export function workPileAmountsOf(codex: WorldCodex, balance: BalanceTables): readonly WorkPileAmount[] {
   return WORK_PILES.map((pile) => {
-    const objectNames = amountObjectNamesOf(codex, characterName, balance, pile.amount);
+    const objectNames = amountObjectNamesOf(codex, balance, pile.amount);
     const minutes =
       typeof pile.amount === 'number'
         ? pile.amount * balance.surplusMinutes
@@ -236,13 +232,17 @@ export function workPileAmountsOf(
 /** 量を採る型を、積む順に挙げる。 */
 function amountObjectNamesOf(
   codex: WorldCodex,
-  characterName: string,
   balance: BalanceTables,
   amount: WorkPileAmountSource,
 ): readonly string[] {
   if (typeof amount === 'number') return [];
   if ('object' in amount) return [amount.object];
-  return cheapestStackOf(codex, characterName, (name) => objectCostMinutesOf(balance, name), amount.stack);
+  return cheapestStackOf(
+    codex,
+    balance.sampleCharacterName,
+    (name) => objectCostMinutesOf(balance, name),
+    amount.stack,
+  );
 }
 
 /**
