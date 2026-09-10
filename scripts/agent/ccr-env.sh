@@ -12,7 +12,31 @@
 # 古いIDを見続ける。
 
 CLOUD_ENV="${CLOUD_ENV:-env_01JEqw2RUbL6EFo4p8EgRLSC}"
-BRIDGE_ENV="${BRIDGE_ENV:-env_018uF5fo4jU3HVotrg51gqLe}"
+
+# ## ブリッジのIDは、開き直すたびに変わる
+#
+# **書かない。** ブリッジの環境は CLI のプロセス1つにつき1つ立ち、閉じれば消える——PCを再起動して
+# 開き直すと、**前のIDはもう存在しない**。直書きすると、投入も Routine も消えた環境を指したまま
+# 黙って動かなくなる（2026-09-11、監視の Routine が消えた環境を指したまま丸一日発火しなかった）。
+#
+# 引くのは CLI 自身が書く手元の記録（`bridge-pointer.json`）。置き場は**その CLI の作業ディレクトリ**
+# ごとに分かれ、名前は英数字以外を `-` へ潰したパス。**見るのは本体のチェックアウト**なので、
+# 作業ツリーの中から読んでも、このPCで開いている CLI が返る。
+#
+# **開いていなければ空。** 立てようとした側がそこで転ぶ（[`dispatch-steps.sh`](dispatch-steps.sh)）
+# ——ここで代わりのIDを当てずっぽうに埋めると、居ない相手へ投げて返らないセッションになる。
+bridge_env_id() {
+  local root slug pointer
+  root=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || return 0
+  # MSYS2 の bash は `/c/...` を返すが、CLI が知っているのは Windows のパス（`pwd -W`）。
+  root=$(cd "$(dirname "$root")" 2>/dev/null && { pwd -W 2>/dev/null || pwd; }) || return 0
+  slug=$(printf '%s' "$root" | sed 's/[^A-Za-z0-9]/-/g')
+  pointer="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/$slug/bridge-pointer.json"
+  [ -f "$pointer" ] || return 0
+  jq -r '.environmentId // empty' "$pointer" 2>/dev/null || return 0
+}
+
+BRIDGE_ENV="${BRIDGE_ENV:-$(bridge_env_id)}"
 
 # ## 承認モードは環境で決まる
 #
@@ -48,6 +72,10 @@ BRIDGE_MODE="${BRIDGE_MODE-}"
 # **出すのは環境IDだけ。** 読む側は `BRIDGE_ENV` 以外の行を全部クラウドの環境IDとして扱うので、
 # モードをここへ足すと、その値が環境IDとして対応表に載る。モードを要るのは投入する側だけで、
 # あちらは `source` して読む。
+#
+# **決まらなかった側は出さない**（上の「開いていなければ空」）。空のIDを出すと、環境IDを持たない
+# セッションが**ブリッジで走っている**ことになる。
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
-  printf 'CLOUD_ENV=%s\nBRIDGE_ENV=%s\n' "$CLOUD_ENV" "$BRIDGE_ENV"
+  [ -z "$CLOUD_ENV" ] || printf 'CLOUD_ENV=%s\n' "$CLOUD_ENV"
+  [ -z "$BRIDGE_ENV" ] || printf 'BRIDGE_ENV=%s\n' "$BRIDGE_ENV"
 fi
