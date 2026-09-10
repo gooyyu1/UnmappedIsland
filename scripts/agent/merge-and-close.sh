@@ -17,17 +17,17 @@
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
 #   SYNCED   <コミット>             … 本体のチェックアウトを新しい `main` へ進めた
 #   INSTALLED                       … 依存が変わったので本体で `npm install` した
-#   DIRTY    <本体のパス>           … 本体に未コミットの変更があるので触らなかった
+#   DIRTY    <本体のパス>: <理由>   … 本体に未コミットの変更があるので触らなかった
 #   終了コード 0 … すべて片付いた
 #   終了コード 1 … マージできなかった（何もしていない。関門を含む）
 #   終了コード 2 … マージはしたが、後片付けに残りがある
 #                  （上の `UNRETARGETED`・`UNMENDED`・`UNDELETED`・`OPEN`・`DIRTY`）
 #
-# ## 後片付けの失敗は、打った `gh` の言葉で出す
+# ## 後片付けの残りは、`<タグ> <対象>: <理由>` で出す
 #
-# 失敗の行（`UNRETARGETED`・`UNMENDED`・`UNDELETED`）にタグと対象だけを載せると、読んだ側は**失敗した
-# 事実しか受け取れない**——権限が足りないのか、参照がもう無いのか、GitHubが断ったのかへ辿り着けず、
-# 同じコマンドを手で打ち直すところから始めることになる。理由を持っているのは `gh` の標準エラーなので、
+# 残りの行にタグと対象だけを載せると、読んだ側は**片付かなかった事実しか受け取れない**——権限が
+# 足りないのか、参照がもう無いのか、GitHubが断ったのかへ辿り着けず、同じコマンドを手で打ち直すところ
+# から始めることになる。理由を持っているのは打った側（`gh` の標準エラー・`git status` の中身）なので、
 # 捨てずに同じ行へ載せる（[`archive-session.sh`](archive-session.sh) の `DIRTY` と同じ形。issue #1557
 # では、パスだけの行を読んだ側が実際に誤読した）。**出力は1行1件**なので、改行は空白へ畳む。
 #
@@ -199,8 +199,8 @@ echo "MERGED $PR"
 
 leftover=0
 
-# 後片付けの残りを1件出す（上の「後片付けの失敗は、打った `gh` の言葉で出す」）。**残りが在ることを
-# 数えるのもここ**——出した側が後で `leftover` を立て忘れると、片付いていないのに終了コード 0 で返る。
+# 後片付けの残りを1件出す（上の「後片付けの残りは…」）。**この行を出したぶんの `leftover` もここで
+# 立てる**——出した側の仕事にすると、立て忘れたぶんが片付いていないのに終了コード 0 で返る。
 unfinished() {
   echo "$1 $2: ${3//$'\n'/ }"
   leftover=1
@@ -270,9 +270,8 @@ done <<<"$closes"
 # 本体は作業ツリーの共有先なので、進める前に汚れていないことを見る。未追跡は見ない——手で置いた
 # ものが本体を進める妨げになるなら、その場で `git merge --ff-only` が失敗して分かる。
 main_dir="$(cd "$HERE" && cd "$(git rev-parse --git-common-dir)/.." && pwd)"
-if [ -n "$(git -C "$main_dir" status --porcelain --untracked-files=no)" ]; then
-  echo "DIRTY $main_dir"
-  leftover=1
+if changes=$(git -C "$main_dir" status --porcelain --untracked-files=no) && [ -n "$changes" ]; then
+  unfinished DIRTY "$main_dir" "$changes"
 else
   before=$(git -C "$main_dir" rev-parse HEAD:package-lock.json)
   git -C "$main_dir" fetch --quiet origin main

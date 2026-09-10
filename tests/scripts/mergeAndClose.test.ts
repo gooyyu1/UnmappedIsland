@@ -85,6 +85,16 @@ describe('merge-and-close.sh', () => {
     expect(result.comments).toBe('');
   });
 
+  // 理由を残せなければラベルも付けない（`UNMENDED` は「`直し待ち` が付いていない」と同じ意味）。
+  it('差し戻す理由を残せなければ、ラベルを付けずに理由ごと出す', () => {
+    const result = run({ stacked: [1001], noteFails: true });
+
+    expect(result.lines).toContain(`UNMENDED 1001: ${REFUSALS.note}`);
+    expect(result.labels).toEqual([]);
+    expect(result.comments).toBe('');
+    expect(result.status).toBe(2);
+  });
+
   it('下ろしたPRを差し戻せなければ、理由ごと後片付けの残りとして出す', () => {
     const result = run({ stacked: [1001], sendBackFails: true });
 
@@ -157,10 +167,12 @@ describe('merge-and-close.sh', () => {
     expect(run({ mainInstalled: false }).installed).toBe(true);
   });
 
-  it('本体に未コミットの変更があれば触らず、残りとして報せる', () => {
+  // パスだけでは、触らなかったことしか運ばない。**何が汚れているか**まで同じ行へ載せる（本体は
+  // 誰も作業しない場所なので、読んだ側は何が残っているのか見当が付かない）。
+  it('本体に未コミットの変更があれば触らず、何が汚れているかごと1行で報せる', () => {
     const result = run({ mainDirty: true });
 
-    expect(result.lines.some((line) => line.startsWith('DIRTY '))).toBe(true);
+    expect(result.lines.find((line) => line.startsWith('DIRTY '))).toMatch(/: +M docs\/x\.md +M src\/y\.ts$/);
     expect(result.git.some((call) => call.includes('checkout'))).toBe(false);
     expect(result.installed).toBe(false);
     expect(result.status).toBe(2);

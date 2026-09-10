@@ -43,6 +43,7 @@ export const DEFAULT_BODY = '_[Claude Code](https://claude.ai/code/session_01ZZZ
 export const REFUSALS = {
   list: 'gh: Could not resolve to a Repository with the name {owner}/{repo}. (HTTP 502)',
   retarget: 'gh: Validation Failed. Base branch was not found. (HTTP 422)',
+  note: 'gh: Unable to create comment. Issue is locked. (HTTP 403)',
   sendBack: 'gh: Resource not accessible by integration (HTTP 403)',
   delete: 'gh: Reference does not exist (HTTP 422)\nTry authenticating with: gh auth login',
 } as const;
@@ -73,6 +74,8 @@ export interface World {
   readonly stackedUnknown?: boolean;
   /** `gh pr edit --base` が失敗するか。 */
   readonly retargetFails?: boolean;
+  /** 張り替えたPRへ差し戻す理由を残す `gh pr comment` が失敗するか。 */
+  readonly noteFails?: boolean;
   /** 張り替えたPRへ `直し待ち` を付ける `gh pr edit` が失敗するか。 */
   readonly sendBackFails?: boolean;
   /** マージ済みのブランチが既に消えているか。既定は残っている。 */
@@ -168,6 +171,7 @@ if [ "$1" = api ]; then
   exit ${world.branchGone === true ? 1 : 0}
 fi
 if [ "$1" = pr ] && [ "$2" = comment ]; then
+  ${refuse(world.noteFails, REFUSALS.note)}
   cat "$5" >> '${dir}/comments'
   exit 0
 fi
@@ -191,7 +195,7 @@ exit 1
 echo "$*" >> '${dir}/git-calls'
 case "$*" in
   *'rev-parse --git-common-dir'*) printf '%s' '${dir}/main/.git' ;;
-  *'status --porcelain'*) printf '%s' '${world.mainDirty === true ? ' M docs/x.md' : ''}' ;;
+  *'status --porcelain'*) printf '%s' '${world.mainDirty === true ? ' M docs/x.md\n M src/y.ts' : ''}' ;;
   *'HEAD:package-lock.json'*)
     if [ -e '${dir}/checked-out' ]; then printf '%s' '${world.lockChanged === true ? 'bbb222' : 'aaa111'}'
     else printf '%s' 'aaa111'; fi ;;
