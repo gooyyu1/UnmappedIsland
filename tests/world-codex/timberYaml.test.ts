@@ -7,7 +7,7 @@ import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
-import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import { makeBrightEnoughForAnyAction, makeTooDarkToWork } from '../support/illumination';
 
 /**
  * timber.yamlの伐採を、実ファイルの定義だけで検証する。斧でしか倒せないこと、倒せば丸太が採れること
@@ -83,12 +83,50 @@ describe('timber.yamlの伐採', () => {
     ).toBeLessThan(960);
   });
 
-  it('刃物では伐り倒せない（斧が要る）', () => {
+  it('尖った石では伐り倒せない。当てて成立するのは樹皮剥ぎだけ', () => {
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
-    spawnInto('sharp_stone', player, 'hand');
+    const knife = spawnInto('sharp_stone', player, 'hand');
 
-    expect(tree.combinationsWith(player, player), '尖った石を当てても成立しない').toEqual([]);
+    expect(tree.combinationsWith(knife, player).map((c) => c.name)).toEqual(['strip_bark']);
+    expect(tree.combinationsWith(player, player), '素手では何も成立しない').toEqual([]);
     expect(tree.parent, '木は立ったまま').toBe(forest);
+  });
+
+  it('石斧を当てて成立するのは伐採だけ（樹皮剥ぎと同時に成立させない）', () => {
+    // **画面が出せるのは成立するもの1つだけ**で、複数あれば宣言順の先頭が勝つ
+    // （docs/ui/CardInteraction.md 2節、docs/engine/GameElementDefinition.md 12.1節）。石斧が
+    // 樹皮剥ぎにも当たると、先に書かれたfellが必ず勝って剥ぐ道がプレイヤーへ届かなくなる。
+    const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
+    const axe = spawnInto('stone_axe', player, 'hand');
+
+    expect(tree.combinationsWith(axe, player).map((c) => c.name)).toEqual(['fell']);
+  });
+
+  it('摩耗した石斧が暗がりで名乗る理由は、その斧にできる操作のもの', () => {
+    // 断る組み合わせが複数並ぶと、画面へ出るのは先頭だけ（docs/ui/CardInteraction.md 2.1節）。
+    // 斧が樹皮剥ぎにも当たっていた
+    // 頃は、暗さで塞がれた樹皮剥ぎの理由が伐採の「摩耗」に隠れていた。
+    const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
+    const axe = spawnInto('stone_axe', player, 'hand');
+    axe.getProperty(codex.propertyNames.getId('durability')).setNumberWithoutEvents(0);
+    makeTooDarkToWork(player, codex);
+
+    expect(tree.combinationsWith(axe, player), '成立するものは無い').toEqual([]);
+    expect(
+      tree.refusedCombinationsWith(axe, player).map((c) => [c.name, c.unmetRequirement()?.reasonName]),
+      '断るのは伐採だけで、理由も斧そのものを指す',
+    ).toEqual([['fell', 'too_worn']]);
+  });
+
+  it('暗がりで尖った石を当てると、樹皮剥ぎが暗さを理由に断る', () => {
+    const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
+    const knife = spawnInto('sharp_stone', player, 'hand');
+    makeTooDarkToWork(player, codex);
+
+    expect(tree.combinationsWith(knife, player)).toEqual([]);
+    expect(
+      tree.refusedCombinationsWith(knife, player).map((c) => [c.name, c.unmetRequirement()?.reasonName]),
+    ).toEqual([['strip_bark', 'too_dark']]);
   });
 
   it('若木は刃物で切ると消え、長い棒が1本採れる', () => {
