@@ -6,8 +6,8 @@ import type { WorldObject } from './WorldObject';
  * 物の出入り（`WorldChange`）も値の増減も伴わない出来事——空振り・回避——は、世界を読み直しても
  * 現れない。**告げるのは、それを起こした側だけ**で、ここはその告知をそのまま運ぶ。
  *
- * 告げ方は2つあるが、運ぶ形はこの1つ。結果として告げる`signal`（GameElementDefinition.md 9.8節）も、
- * 操作が始まったことを告げる`announce`（同 11.6節）も、受け取る側にとっては「起きたこと」1件でしかない。
+ * どの告げ方で宣言されたものも、運ぶ形はこの1つ（告げ方の書き方はGameElementDefinition.md 9.8節）。
+ * 受け取る側にとっては、どれも「起きたこと」1件でしかない。
  */
 export interface WorldSignal {
   /** 何が起きたかの識別子。表示文言はlocaleが持つ（Localization.md signal_texts節）。 */

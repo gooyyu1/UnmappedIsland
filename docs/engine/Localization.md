@@ -255,9 +255,9 @@ destroy_reason_texts:
 ## signal_texts: 告げられた出来事の文言
 
 告げられた出来事の識別子も、どのオブジェクトにも属さないので独立した節に書きます。`reason_texts` と
-同じく**1行の文字列そのもの**です。**告げ方によらず引き先はここ1つ**——結果として告げる `signal`
-（[GameElementDefinition.md](./GameElementDefinition.md) 9.8節）も、時間を進める前に告げる `announce`
-（同 11.6節）も、告げられた側から見れば「起きたこと」1件でしかありません。
+同じく**1行の文字列そのもの**です。**告げ方によらず引き先はここ1つ**——どの告げ方
+（書き方は [GameElementDefinition.md](./GameElementDefinition.md) 9.8節）で宣言されたものも、告げられた
+側から見れば「起きたこと」1件でしかありません。
 
 ```yaml
 signal_texts:
