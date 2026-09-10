@@ -60,7 +60,7 @@ export function craftingStepsOf(
     for (const instrument of instrumentTypesOf(codex, trigger)) {
       if (conditionsNeverMet(codex, def, instrument, trigger.interaction, context)) continue;
       steps.push(
-        withTriggeredRangeEvents(def, interactionStep(codex, def, trigger, instrument, context), context),
+        withTriggeredRangeEvents(codex, interactionStep(codex, def, trigger, instrument, context), context),
       );
     }
   for (const recipe of def.recipesProducingThis) steps.push(recipeStep(def, recipe));
@@ -345,12 +345,15 @@ function recipeStep(def: ObjectDef, recipe: RecipeDef): CraftingStep {
  *
  * 押した先で自分が消えるなら、自分は**その確率のぶんだけ**消費される入力になる（CraftingInput参照）
  * ——外した回の獲物はその場に残るので、1回の実行に獲物1匹ぶんの値段を載せてはいけない。
+ *
+ * 押される側は工程が名乗っている型（`CraftingStep.ownerGlobalId`）で、呼び出し側は渡さない。
  */
 function withTriggeredRangeEvents(
-  def: ObjectDef,
+  codex: WorldCodex,
   step: CraftingStep,
   outer: StaticValueResolver | undefined,
 ): CraftingStep {
+  const def = codex.objects.get(step.ownerGlobalId);
   const resolve = staticResolverOf(def, 'lowest', outer);
 
   let destroyedProbability = 0;

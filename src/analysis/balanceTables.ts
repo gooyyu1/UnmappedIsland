@@ -13,7 +13,7 @@ import { analysisContextOf, craftingStepsOf } from './craftingSteps';
 import type { IslandLocations } from './islandLocations';
 import { islandLocationsOf } from './islandLocations';
 import type { RangeCycle } from './rangeCycles';
-import { externalTickDeltasOn, rangeCyclesOf } from './rangeCycles';
+import { rangeCyclesOf } from './rangeCycles';
 import { rangeEventReadouts } from './rangeEvents';
 import type { RainWaterRow } from './seasonalRain';
 import { rainWaterRows } from './seasonalRain';
@@ -400,9 +400,7 @@ export interface BalanceTables {
 export function buildBalanceTables(codex: WorldCodex, sampleCharacterName: string): BalanceTables {
   const characterNames = codex.objectDefNamesWithTag(codex.vocabulary.world.characterTagId);
   const character = codex.objects.get(codex.objectNames.getId(sampleCharacterName));
-  const dailyNeeds = dailyNeedsOf(codex, character);
-  const islandLocations = islandLocationsOf(codex);
-  const { places, gaps, islandWide } = placeBalances(codex, character, dailyNeeds, islandLocations);
+  const { places, gaps, islandWide, dailyNeeds, islandLocations } = placeBalances(codex, character);
 
   // 島全体の献立が最小労働（places[0]は島全体）。
   const minimumLabourMinutes = Math.round(places[0].menu.totalMinutes);
@@ -417,11 +415,8 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacterName: strin
     gaps,
     objectCosts: objectCosts(codex, islandWide, surplusMinutes, islandLocations.seaOnly),
     consumption: consumptionRows(codex, characterNames),
-    // 供給表は島全体の文脈で出す。罠の重みは土地が入れるので、土地を決めないと候補が全部0になる。
-    supply: supplyRows(
-      codex,
-      allSteps(codex, islandLocations.seaOnly, analysisContext(codex, islandLocations.island)),
-    ),
+    // 供給表は島のどこで起こる工程も並べるので、土地を渡さず島全体で出す。
+    supply: supplyRows(codex, allSteps(codex, islandLocations)),
     places,
     rainWater: rainWaterRows(codex),
   };
@@ -592,26 +587,25 @@ function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly Supp
 function placeBalances(
   codex: WorldCodex,
   character: ObjectDef,
-  dailyNeeds: readonly DailyNeed[],
-  { island: locations, seaOnly }: IslandLocations,
 ): {
   readonly places: readonly PlaceBalance[];
   readonly gaps: readonly Gap[];
   readonly islandWide: Acquisition;
+
+  // 表の他の欄も要る値。**導出した側が返す**——同じ導出を呼び出し側でやり直すと、
+  // islandLocationsOfの全型走査（seaOnlyObjectsOf）が丸ごと二重になる。
+  readonly dailyNeeds: readonly DailyNeed[];
+  readonly islandLocations: IslandLocations;
 } {
+  const dailyNeeds = dailyNeedsOf(codex, character);
+  const islandLocations = islandLocationsOf(codex);
+
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
-  const islandContext = analysisContext(codex, locations);
-  const islandWide = new Acquisition(codex, reachableSteps(allSteps(codex, seaOnly, islandContext)));
+  const islandWide = new Acquisition(codex, reachableSteps(allSteps(codex, islandLocations)));
 
   let islandRoutes: readonly ChainRoute[] = [];
-  const places = [undefined, ...locations].map((location) => {
-    // 罠が掛ける動物の重みは土地が宣言する（base）ので、土地を決めてから工程を組み立てる。
-    const context = location === undefined ? islandContext : analysisContext(codex, [location]);
-    const steps = reachableSteps(
-      location === undefined
-        ? allSteps(codex, seaOnly, context)
-        : stepsAt(codex, allSteps(codex, seaOnly, context), location),
-    );
+  const places = [undefined, ...islandLocations.island].map((location) => {
+    const steps = reachableSteps(allSteps(codex, islandLocations, location));
     const acquisition = location === undefined ? islandWide : new Acquisition(codex, steps, islandWide);
     const routes = routeCandidates(codex, character, acquisition, steps, dailyNeeds, location);
 
@@ -628,7 +622,7 @@ function placeBalances(
     };
   });
 
-  return { places, gaps: gapsOf(islandRoutes), islandWide };
+  return { places, gaps: gapsOf(islandRoutes), islandWide, dailyNeeds, islandLocations };
 }
 
 /**
@@ -854,7 +848,7 @@ function buildRoute(
     blocked: [...prerequisites.values()].some(isGap),
     needsImport: resolved.imported || [...prerequisites.values()].some(({ imported }) => imported),
     // その土地を起点にする経路か。**持ち込みが1つも要らないなら起点はここ**——他の土地の産物は
-    // 必ず持ち込みとして解かれるため（stepsAtが他の土地の探索を外している）。休息もここに入る。
+    // 必ず持ち込みとして解かれるため（`allSteps`が他の土地の探索を外している）。休息もここに入る。
     rootedHere:
       place === undefined ||
       route.some((ref) => ref.def.globalId === place.globalId) ||
@@ -1228,24 +1222,28 @@ function reachableSteps(steps: readonly StepRef[]): readonly StepRef[] {
  * 島の全型の全工程。宣言順（型のグローバルID順、型の中は宣言順）。プレイヤーが起こす工程に続けて、
  * 時間で回る工程（罠の判定）も並べる。軸の値の型は飛ばす（axisValueGlobalIds参照）。
  *
- * **海でしか手に入らない型が宣言する工程も飛ばす**（seaOnly、`islandLocations`）——この表が数えるのは
+ * **海でしか手に入らない型が宣言する工程も飛ばす**（`IslandLocations.seaOnly`）——この表が数えるのは
  * 島の1日で、海はその外。海区の見張りだけでなく漁り場の漁も落ちる：生肉を30分で返す漁り場を残すと、
- * 生肉の代表経路が海に決まり、島で最も安い肉の経路（イノシシ）が表から押し出される。土地ごとの表は
- * `stepsAt`が既に他の土地の工程を落としているが、漁り場も海藻も土地ではないのでそちらでは落ちない。
+ * 生肉の代表経路が海に決まり、島で最も安い肉の経路（イノシシ）が表から押し出される。土地を渡した
+ * ときは他の土地が宣言する工程も落ちるが、漁り場も海藻も土地ではないのでそちらでは落ちない。
  *
- * outerは、祖先（＝置かれている土地）が入れる値を解く手立て。罠が掛ける動物の重みは土地が
- * 宣言するので（`base`）、これが無いと候補が全部0になる。
+ * standingAtは、立っている土地。**祖先が入れる値を解く文脈と、届く工程の絞り込みは同じ土地から
+ * 出る**ので、渡すのはその土地1つだけ——罠が掛ける動物の重みは土地が宣言する（`base`）ので文脈は
+ * その土地を祖先に置き、他の土地が宣言する工程はそこへ行かないと実行できないので落とす。省くと
+ * 島全体で、全土地を祖先に置いてどの土地の工程も残す。
  */
 function allSteps(
   codex: WorldCodex,
-  seaOnly: ReadonlySet<number>,
-  outer?: StaticValueResolver,
+  islandLocations: IslandLocations,
+  standingAt?: ObjectDef,
 ): readonly StepRef[] {
+  const outer = analysisContext(codex, standingAt === undefined ? islandLocations.island : [standingAt]);
   const defs = [...codex.objects];
   const axisValues = axisValueGlobalIds(codex);
   return defs.flatMap((def) => {
-    if (axisValues.has(def.globalId) || seaOnly.has(def.globalId)) return [];
-    const cycles = rangeCyclesOf(def, outer, externalTickDeltasOn(def, defs));
+    if (axisValues.has(def.globalId) || islandLocations.seaOnly.has(def.globalId)) return [];
+    if (standingAt !== undefined && isLocation(codex, def) && def.globalId !== standingAt.globalId) return [];
+    const cycles = rangeCyclesOf(def, outer, defs);
     const lifetime = decayLifetimeOf(cycles);
     return [
       ...craftingStepsOf(codex, def, outer).map((step) => ({ def, step, cycle: undefined })),
@@ -1300,11 +1298,6 @@ function analysisContext(codex: WorldCodex, ancestorLocations: readonly ObjectDe
     highestDeclaredLayer('instrument', [...codex.objects], 'unresolved'),
     highestDeclaredLayer('ancestor', ancestorLocations, 'zero'),
   ]);
-}
-
-/** その土地に立っているときに実行できる工程（他の土地が宣言する工程は届かない）。 */
-function stepsAt(codex: WorldCodex, steps: readonly StepRef[], location: ObjectDef): readonly StepRef[] {
-  return steps.filter((ref) => !isLocation(codex, ref.def) || ref.def.globalId === location.globalId);
 }
 
 /**
