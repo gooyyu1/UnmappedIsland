@@ -53,6 +53,10 @@ slot_texts:
   # 場所で名乗る。
   fire:
     display_name: 火床
+  # 塩田に干し上がった塩（salt.yaml）。畑の実り（crop）と同じで、プレイヤーは入れられず、
+  # 採れたぶんだけが並ぶ。
+  salt:
+    display_name: 採れた塩
 
 object_texts:
   # 全オブジェクト共通のメンバー。ここにdisplay_name/descriptionを書いても、
