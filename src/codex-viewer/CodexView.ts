@@ -246,6 +246,14 @@ export class CodexView {
     return identity.identifier === identity.displayName;
   }
 
+  /**
+   * 見出しに出るのが識別子そのものか（識別子表示モード、または未翻訳）。**そのとき識別子を脇や下へ
+   * 添えると、同じ文字列が2つ並ぶだけになる。**
+   */
+  labelIsIdentifier(identity: DisplayIdentity): boolean {
+    return this.identifierOrDisplayName(identity) === identity.identifier;
+  }
+
   private propertyTexts(objectName: string | undefined, propertyName: string) {
     // 未登録の識別子でも窓口は必ず返り、defaultエントリ→識別子の順にフォールバックする
     // （Localization.md）。持ち主が分からないときは空文字を渡してdefaultだけを引く。

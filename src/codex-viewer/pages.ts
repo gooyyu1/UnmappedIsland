@@ -609,20 +609,12 @@ function cardHtml(heading: string, body: string): string {
 
 /** 見出しの脇に小さく添える識別子。見出しがすでに識別子そのものなら何も足さない。 */
 function headingIdentifierHtml(view: CodexView, identity: DisplayIdentity): string {
-  return view.identifierOrDisplayName(identity) === identity.identifier
-    ? ''
-    : ` <code>${escapeHtml(identity.identifier)}</code>`;
+  return view.labelIsIdentifier(identity) ? '' : ` <code>${escapeHtml(identity.identifier)}</code>`;
 }
 
-/**
- * 見出しの下に置く識別子の行。見出しがすでに識別子そのものを出しているとき（識別子表示モード、
- * または未翻訳）は繰り返さない。
- */
+/** 見出しの下に置く識別子の行。見出しがすでに識別子そのものを出しているなら繰り返さない。 */
 function identifierLineHtml(view: CodexView, identity: DisplayIdentity): string {
-  const code =
-    view.identifierOrDisplayName(identity) === identity.identifier
-      ? ''
-      : `<code>${escapeHtml(identity.identifier)}</code>`;
+  const code = view.labelIsIdentifier(identity) ? '' : `<code>${escapeHtml(identity.identifier)}</code>`;
   const badge = untranslatedBadgeHtml(view, identity);
   return code === '' && badge === '' ? '' : `<p class="identifier">${code}${badge}</p>`;
 }
