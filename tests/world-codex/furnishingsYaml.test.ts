@@ -65,11 +65,9 @@ function comfortOf(site: Camp): number {
  * ——境目が動いたら、下の「何個並べれば届くか」もその場で動くべきなので。
  */
 function snugFrom(site: Camp): number {
-  const snug = site.player
-    .getProperty(propertyId('comfort'))
-    .def.stages.find((stage) => stage.name === 'snug');
-  expect(snug?.min, 'snugの下限').toBeDefined();
-  return snug!.min!;
+  const snug = site.player.getProperty(propertyId('comfort')).def.lowerBoundOfStage('snug');
+  expect(snug, 'snugの下限').toBeDefined();
+  return snug!;
 }
 
 describe('里心を抑える設え(src/assets/world-codex/furnishings.yaml)', () => {

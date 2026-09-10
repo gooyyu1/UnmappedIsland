@@ -66,8 +66,7 @@ function litHoursOf(codex: WorldCodex, character: ObjectDef): ReadonlySet<number
   const threshold =
     handBrightnessId === undefined
       ? undefined
-      : character.tryGetPropertyDef(handBrightnessId)?.stages.find((stage) => stage.name === HANDWORK_STAGE)
-          ?.min;
+      : character.tryGetPropertyDef(handBrightnessId)?.lowerBoundOfStage(HANDWORK_STAGE);
 
   const worldId = codex.objectNames.tryGetId(words.worldObject);
   const world = worldId === undefined ? undefined : codex.objects.tryGet(worldId);

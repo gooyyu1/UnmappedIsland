@@ -42,15 +42,34 @@ function decayPerTick(character: string, propertyName: string): number {
 }
 
 /**
+ * その段（GameElementDefinition.md 6.4節）に入る値。段は下端だけを書く半開区間なので下端がそのまま
+ * 入るが、**下端を宣言していない受け皿**は値の並びの上で負の無限大に始まるので、すぐ上の段の1つ手前を
+ * 採る（値の刻みは整数）。受け皿の下端をそのまま置くとrangeの下限へ丸まり、そこに`on_min`を持つ
+ * プロパティでは段を見る前に死ぬ。
+ */
+function valueInStage(objectDef: ObjectDef, propertyName: string, stageName: string): number {
+  const propertyDef = propOf(objectDef, propertyName);
+  const lowerBound = propertyDef.lowerBoundOfStage(stageName);
+  if (lowerBound === undefined)
+    throw new Error(`'${objectDef.name}'.${propertyName} に段'${stageName}'がありません。`);
+  if (Number.isFinite(lowerBound)) return lowerBound;
+
+  const upperBound = propertyDef.upperBoundOfStage(stageName);
+  if (upperBound === undefined)
+    throw new Error(`'${objectDef.name}'.${propertyName} の段'${stageName}'に入る値がありません。`);
+  return upperBound - 1;
+}
+
+/**
  * 痛みをその段へ置いて1 tick進めたときの、幸福度の減り幅（docs/world/Characters.md 幸福度節）。
- * **置くのは段の下限**で、条件の側へ閾値を書き写さないため。
+ * **置く値は段から読む**（valueInStage）ので、条件の側の閾値をここへ書き写さない。
  */
 function happinessDrainInStage(character: string, stageName: string): number {
   const instance = new WorldObject(1, def(character), new WorldSession(codex));
   const happinessId = codex.propertyNames.getId('happiness');
-  const stage = propOf(def(character), 'pain').stages.find((one) => one.name === stageName);
-  if (stage === undefined) throw new Error(`痛みに段'${stageName}'がありません。`);
-  instance.getProperty(codex.propertyNames.getId('pain')).setNumber(stage.min ?? 0);
+  instance
+    .getProperty(codex.propertyNames.getId('pain'))
+    .setNumber(valueInStage(def(character), 'pain', stageName));
   const before = instance.getProperty(happinessId).number;
 
   instance.tick();
@@ -537,13 +556,12 @@ describe('プレイヤーキャラクタの定義', () => {
       const instance = new WorldObject(1, def(character), session);
       const bloodId = codex.propertyNames.getId('blood');
       const property = instance.tryGetProperty(codex.propertyNames.getId(propertyName))!;
-      const stage = propOf(def(character), propertyName).stages.find((one) => one.name === stageName)!;
       // 水分は満たしておく（体脂肪を見る回で、水分のほうが止めていることにならないように）。
       instance
         .tryGetProperty(codex.propertyNames.getId('hydration'))
         ?.setNumber(maxOf(character, 'hydration'));
       instance.tryGetProperty(bloodId)?.setNumber(1000);
-      property.setNumber(stage.min ?? 1);
+      property.setNumber(valueInStage(def(character), propertyName, stageName));
 
       instance.tick();
 
