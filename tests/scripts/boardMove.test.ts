@@ -1185,12 +1185,14 @@ describe('board-move.mjs', () => {
 
   // 引き金は件数ではなく時間（2.17）。**件数のしきい値は「そこまでは残ってよい」の宣言になる。**
   it('前に立ててから間隔が空くまで、棚卸しは立てない', () => {
-    const board = { issues: [unsorted(9)], taken: { 'cycle:triage': '2026-09-04T03:00:00Z' } };
+    const board = { issues: [unsorted(9)], taken: { 'cycle:triage': '2026-09-04T15:00:00Z' } };
     expect(moves(board)).toEqual([]);
   });
 
+  // 前に立ててから11時間では立たず、13時間で立つ。**この2件で間隔そのものを留めている**ので、
+  // `CYCLES` の `hours` を動かすと落ちる。
   it('間隔が空いたら、棚卸しをもう一度立てる', () => {
-    const board = { issues: [unsorted(9)], taken: { 'cycle:triage': '2026-09-04T01:00:00Z' } };
+    const board = { issues: [unsorted(9)], taken: { 'cycle:triage': '2026-09-04T13:00:00Z' } };
     expect(moves(board)).toEqual([TRIAGE]);
   });
 

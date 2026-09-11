@@ -44,7 +44,7 @@ flowchart LR
 
     Human -->|"新しいセッションを立てて話しかける"| Adviser
     Task -->|"ログオンと毎時。生きていれば何もしない"| Daemon
-    Daemon -->|"未整理の issue があるとき（一日一回）"| Triage
+    Daemon -->|"未整理の issue があるとき（一日二回）"| Triage
     Daemon -->|"読まれていないスメルがあるとき（一日一回）"| Analysis
     Daemon -->|"読まれていない分析があるとき（週一回）"| Trend
     Daemon -->|"棚卸ししていない記録があるとき（週一回）"| Policy
@@ -72,7 +72,7 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | 💬 **相談役** | 人間と直接やりとりして、決まっていないことを決める。**訊かれたら実装ではなく設計案を返す** | PR（合意できた分だけ）、価値観の記録（`.claude/decisions/`） | **人間が新しいセッションを立てて話しかける** | セッション |
 | ⛏️ **掘り起こし役** | 完成の定義に照らして、**まだ issue になっていない残りを数える** | **新しい issue だけ**——やると決まっているものはそのまま、やるかどうかから訊くものは `判断待ち` を付けたチェックの一覧に（分類は棚卸し役が付ける） | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**配れる `kind:task` が無ければ一日一回** | セッション |
-| 📋 **棚卸し役** | 未整理の issue を分類し、投入できる形へ翻訳する | **issue の本文とラベル**（原文は `## 元の報告` として残す） | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**未整理があれば一日一回** | セッション |
+| 📋 **棚卸し役** | 未整理の issue を分類し、投入できる形へ翻訳する | **issue の本文とラベル**（原文は `## 元の報告` として残す） | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**未整理があれば一日二回** | セッション |
 | 📊 **分析係（一次）** | マージ済みPRのコメントに残ったスメル（[`board-design.md`](../.claude/board-design.md) 4.4）を拾う——書き手はレビュアーと、PRを書いた側の両方。**見るのはその回の帯だけで、過去の回の分析は読まない** | **新しい issue**（`kind:` は付けない）と、**記録のPR1本**（`.claude/analysis/<日付>.md`）。読んだコメントには 👀 を付ける | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**読まれていないスメルがあれば一日一回** | セッション |
 | 📈 **分析係（二次）** | 一次が回ごとに書いた記録を横断して読み、**複数の回に現れている形に根本対策を打つか決める**（[`board-design.md`](../.claude/board-design.md) 2.17.4）。PRのコメントも issue も読み直さない | **新しい issue**（`kind:` は付けない）と、**記録のPR1本**（`.claude/analysis/summary/<日付>.md`）。方針の文書へは書かない——畳むのは価値観を畳む係 | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**二次がまだ読んでいない一次の記録があれば週一回** | セッション |
 | 🧭 **価値観を畳む係** | `.claude/decisions/` に溜まった判断の履歴を読み、**一般則へ畳む候補を並べる。反映はしない** | **`判断待ち` を付けた issue 1本だけ**（リポジトリへは1行も書かない）。反映するのは、チェックが埋まった後に配られる別のセッション | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**棚卸ししていない記録があれば週一回** | セッション |
@@ -177,7 +177,7 @@ flowchart TB
     Digger -->|"やるかどうかから訊くものを、チェックの一覧にして立てる"| New
     Adviser -->|"合意できた分を書く"| PR
     Daemon -->|"マージする"| PR
-    Daemon -->|"未整理があれば一日一回"| Triage
+    Daemon -->|"未整理があれば一日二回"| Triage
     New -.->|"まとめて読む"| Triage
     Triage -->|"分類する・投入できる形へ書き換える"| Task
     Triage -->|"申告を読んで順序を張る"| Task
@@ -247,7 +247,7 @@ sequenceDiagram
 
     H->>G: issue を自分の言葉で書く
     D->>G: 盤面を引く（一定の間隔で）
-    D->>T: 未整理があり、前に立ててから一日空いたので、棚卸しを1本立てる
+    D->>T: 未整理があり、前に立ててから半日空いたので、棚卸しを1本立てる
     T->>G: 分類し、担当・完了条件・拠り所を書く（kind:task）
     D->>W: セッションを立て、issue の URL を渡す
     Note over W: 決まっていない箇所は<br/>止まらず仮決めして進む
