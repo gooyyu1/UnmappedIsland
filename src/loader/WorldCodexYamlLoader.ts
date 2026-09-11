@@ -10,6 +10,7 @@ import {
   tryGetMap,
   tryGetSeq,
 } from './yamlMapping';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 import { YamlLoadError } from './YamlLoadError';
 import { messageOf } from './errorMessage';
 import { RawObjectDef } from './RawObjectDef';
@@ -86,7 +87,7 @@ export class WorldCodexYamlLoader {
   private rawCardFilters: RawCardFilter[] = [];
 
   /** タグが宣言を義務づけるプロパティ（required_props、4.2節）。タグID → プロパティIDの並び。 */
-  private requiredPropsByTag = new Map<number, number[]>();
+  private requiredPropsByTag = new Map<number, PropertyGlobalId[]>();
 
   /**
    * 製作中オブジェクトが完成品から引き継ぐタグ（in_progress_tags、RecipeSystem.md 5節）。
@@ -105,7 +106,7 @@ export class WorldCodexYamlLoader {
   private objectDefDestinations: ObjectDefDestination[] = [];
 
   private _objectNames = new NameRegistry();
-  private _propertyNames = new NameRegistry();
+  private _propertyNames = new NameRegistry<PropertyGlobalId>();
   private _slotNames = new NameRegistry();
   private _tagNames = new NameRegistry();
   private _propertyTagNames = new NameRegistry();
@@ -126,7 +127,7 @@ export class WorldCodexYamlLoader {
   get objectNames(): NameRegistry {
     return this._objectNames;
   }
-  get propertyNames(): NameRegistry {
+  get propertyNames(): NameRegistry<PropertyGlobalId> {
     return this._propertyNames;
   }
   get slotNames(): NameRegistry {
@@ -148,7 +149,7 @@ export class WorldCodexYamlLoader {
   }
 
   /** 型を値に持つプロパティ（6.9節）から行き先を引いた宣言を1件覚える（parseDestinationRefから）。 */
-  noteObjectDefPropertyDestination(propertyGlobalId: number, context: string): void {
+  noteObjectDefPropertyDestination(propertyGlobalId: PropertyGlobalId, context: string): void {
     this.objectDefDestinations.push({ kind: 'property', propertyGlobalId, context });
   }
 
@@ -420,7 +421,7 @@ export class WorldCodexYamlLoader {
     this.objectDefDestinations = [];
     resetGeneration(this);
     this._objectNames = new NameRegistry();
-    this._propertyNames = new NameRegistry();
+    this._propertyNames = new NameRegistry<PropertyGlobalId>();
     this._slotNames = new NameRegistry();
     this._tagNames = new NameRegistry();
     this._propertyTagNames = new NameRegistry();

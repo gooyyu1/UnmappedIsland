@@ -4,6 +4,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { seededRng } from '../../src/domain/Rng';
 import { bundledCodex } from '../support/worldCodexFiles';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 時間の経過そのものから生える圧（docs/world/Characters.md ホームシック節）を、同梱のYAMLに対して
@@ -26,7 +27,7 @@ vi.setConfig({ testTimeout: 20000 });
 
 const MINUTES_PER_TICK = 15;
 
-function propertyId(name: string): number {
+function propertyId(name: string): PropertyGlobalId {
   return codex.propertyNames.getId(name);
 }
 

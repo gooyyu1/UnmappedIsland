@@ -6,6 +6,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * farming.yamlの畑と囲いを、実ファイルの定義だけで検証する。
@@ -35,19 +36,19 @@ describe('farming.yamlの畑と囲い', () => {
   /** 囲いを据える土地。据えた土地が掛かる相手を決める（TrapSystem.md 3節）ので、試験ごとに選ぶ。 */
   let land: WorldObject;
   let player: WorldObject;
-  let warinessId: number;
-  let vulnerabilityId: number;
-  let bloodId: number;
-  let hydrationId: number;
-  let fodderId: number;
-  let drinkingWaterId: number;
-  let fillId: number;
-  let taroSownId: number;
-  let growthRemainingId: number;
-  let breedingRemainingId: number;
-  let catchRemainingId: number;
-  let missWeightId: number;
-  let herbivoreWeightId: number;
+  let warinessId: PropertyGlobalId;
+  let vulnerabilityId: PropertyGlobalId;
+  let bloodId: PropertyGlobalId;
+  let hydrationId: PropertyGlobalId;
+  let fodderId: PropertyGlobalId;
+  let drinkingWaterId: PropertyGlobalId;
+  let fillId: PropertyGlobalId;
+  let taroSownId: PropertyGlobalId;
+  let growthRemainingId: PropertyGlobalId;
+  let breedingRemainingId: PropertyGlobalId;
+  let catchRemainingId: PropertyGlobalId;
+  let missWeightId: PropertyGlobalId;
+  let herbivoreWeightId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();

@@ -19,6 +19,7 @@ import type { ExplorationContent } from '../ui/ExplorationPane';
 import type { CardKind } from '../looks/theme';
 import type { PropertyCategory as PropertyTab } from '../ui/PropertiesPane';
 import type { StatusContent, StatusDetail, StatusInfluence, StatusStage } from '../ui/StatusBar';
+import type { PropertyGlobalId } from '../../domain/GlobalId';
 
 /**
  * 積み重なったカードの束（ドメインのObjectStackに対応する画面側の1まとまり）。
@@ -530,7 +531,7 @@ export function fromGameSession(
    */
   const propertyLabelOf = (
     object: WorldObject,
-    propertyGlobalId: number,
+    propertyGlobalId: PropertyGlobalId,
   ): { key: string | undefined; name: string; icon: string | undefined; art: string | undefined } => {
     const name = codex.propertyNames.getName(propertyGlobalId);
     const texts = locale.object(object.def.name).prop(name);

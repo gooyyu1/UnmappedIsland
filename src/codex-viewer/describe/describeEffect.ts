@@ -23,6 +23,7 @@ import type { ObjectRefReading } from '../../domain/ObjectRef';
 import { conditionTokens } from './conditionTokens';
 import { typeMatchTokens } from './typeMatchTokens';
 import type { ReferenceRoot } from '../../domain/ReferenceRoot';
+import type { PropertyGlobalId } from '../../domain/GlobalId';
 
 /**
  * 効果の宣言（EffectReader）を、読める形へ書き出す（Description参照）。命令1つにつき1行で、
@@ -45,7 +46,7 @@ export function describeEffect(
  */
 export function addTokens(
   target: ReferenceRoot,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   amount: number,
   verb: string,
   names: DefNames,
@@ -129,7 +130,7 @@ class EffectDescriber implements EffectReader {
     this.out = out;
   }
 
-  set(target: ReferenceRoot, propertyGlobalId: number, value: SetValueReading): void {
+  set(target: ReferenceRoot, propertyGlobalId: PropertyGlobalId, value: SetValueReading): void {
     this.out.write(
       text('set '),
       propertyPathRef(this.names.propertyName(propertyGlobalId), target),

@@ -6,6 +6,7 @@ import { craftingStepsOf } from './craftingSteps';
 import { rangeCyclesOf } from './rangeCycles';
 import { ticksToRangeEnd } from './rangeEvents';
 import { staticValueOf } from './staticValue';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 定義全体から**日をまたぐ長さ**を集め、種類を問わず1本の列に並べる。怪我が治るまでも食べ物が
@@ -166,8 +167,8 @@ function toolWearsIn(codex: WorldCodex, step: CraftingStep): readonly ToolWear[]
  * 自分の値（`self`）を除くのは、それが工程の主のものだから——主は借りてこられる道具ではなく、
  * 工程が起こる場所そのもの（木を伐る工程にとっての木）。
  */
-function outwardDeltasOf(step: CraftingStep): ReadonlyMap<number, number> {
-  const byProperty = new Map<number, number>();
+function outwardDeltasOf(step: CraftingStep): ReadonlyMap<PropertyGlobalId, number> {
+  const byProperty = new Map<PropertyGlobalId, number>();
   for (const outcome of step.outcomes)
     for (const delta of outcome.deltas) {
       if (delta.target === 'self') continue;

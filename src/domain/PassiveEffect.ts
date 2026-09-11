@@ -10,6 +10,7 @@ import { ReferenceContext } from './ReferenceRoot';
 import type { PropertyPath } from './ReferenceRoot';
 import type { PassiveAmount } from './PassiveAmount';
 import type { WorldSession } from './WorldSession';
+import type { PropertyGlobalId } from './GlobalId';
 
 /**
  * 効果の発動条件。判別子は持たず、各フィールドの有無が「何をチェックすべきか」を表す
@@ -26,11 +27,11 @@ export class PassiveEffectGate {
    * 見ている段（8.2節）。**プロパティと段の名前は組で1つ**——片方だけでは「どのプロパティのどの段か」
    * を言えないので、分けて持たない。段で縛っていないゲートではundefined。
    */
-  private readonly stage: { readonly propertyGlobalId: number; readonly name: string } | undefined;
+  private readonly stage: { readonly propertyGlobalId: PropertyGlobalId; readonly name: string } | undefined;
 
   constructor(
     conditions: ConditionNode | undefined,
-    stage?: { readonly propertyGlobalId: number; readonly name: string },
+    stage?: { readonly propertyGlobalId: PropertyGlobalId; readonly name: string },
   ) {
     this.conditions = conditions;
     this.stage = stage;
@@ -40,7 +41,7 @@ export class PassiveEffectGate {
    * このゲートが見ている段のプロパティ。段で縛っていないゲートではundefined。
    * 「このステータスが何を動かしているか」（PropertyInfluences）は、これを原因として辿る。
    */
-  get stagePropertyGlobalId(): number | undefined {
+  get stagePropertyGlobalId(): PropertyGlobalId | undefined {
     return this.stage?.propertyGlobalId;
   }
 

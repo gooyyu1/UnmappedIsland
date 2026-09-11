@@ -9,6 +9,7 @@ import { rangeEventReadouts, ticksToRangeEnd } from './rangeEvents';
 import type { StaticValueResolver } from './staticValue';
 import { MINUTES_PER_TICK } from './balanceTables';
 import { staticValueOf, trackingResolverOf } from './staticValue';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 外から与えられるtick毎の増減。**焼くのも失血も、自分では動かない値を隣の物が動かす**——炉が
@@ -19,7 +20,7 @@ export interface ExternalTickDelta {
   /** その増減を与える型。その周期を回すのに要る物（炉・刺さった傷）として工程の入力に並ぶ。 */
   readonly sourceGlobalId: number;
 
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
 
   /**
    * その押し手がtick毎に取りうる量。**同時に成立しうる組み合わせごとに1つ**（tickAmountsOfの
@@ -56,7 +57,7 @@ export interface ExternalTickDelta {
  * 自分が消えるので、minutesはその型の寿命そのものになる。
  */
 export interface RangeCycle {
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
 
   /**
    * 端へ届くまでの時間（分）。**同時に成立しうる条件（8.2節）の組み合わせのうち、端へ最も遅く
@@ -315,7 +316,7 @@ function sortedTicksToRangeEnd(
  * 1つの押し手が取りうる量として並べる。
  */
 export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): readonly ExternalTickDelta[] {
-  const byProperty = new Map<number, TickDelta[]>();
+  const byProperty = new Map<PropertyGlobalId, TickDelta[]>();
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== root || delta.amount === 0) continue;
     const known = byProperty.get(delta.propertyGlobalId);
@@ -460,7 +461,7 @@ interface TickTotal {
  * 落とせない対を持つのが罠の耐久で、地面にある間の-1と獲物を抱えている間の-10は、同時にも起こる
  * ので-11の場合を持つ。
  */
-function tickAmountsOf(def: ObjectDef, propertyGlobalId: number): TickAmounts {
+function tickAmountsOf(def: ObjectDef, propertyGlobalId: PropertyGlobalId): TickAmounts {
   const always: TickDelta[] = [];
   const conditional: TickDelta[] = [];
   for (const delta of tickDeltasOf(def)) {
@@ -570,7 +571,7 @@ function ticksUntilGateFalls(def: ObjectDef, gate: TickGate): number | undefined
 }
 
 /** その値が尽きて、それを見ている条件が外れるまでのtick数。尽きない値ならundefined。 */
-function ticksUntilValueRunsOut(def: ObjectDef, propertyGlobalId: number): number | undefined {
+function ticksUntilValueRunsOut(def: ObjectDef, propertyGlobalId: PropertyGlobalId): number | undefined {
   // 尽きるまでを**最も短く**見る側（fastest）に合わせて、ロールも軽く出たほうを採る。
   return ticksToReach(
     staticValueOf(def, propertyGlobalId, 'lowest'),

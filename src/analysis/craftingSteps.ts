@@ -30,6 +30,7 @@ import {
   staticValueOf,
   trackingResolverOf,
 } from './staticValue';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 定義を「入力 → 工程 → 出力」の形へ均す（CraftingStep参照）。
@@ -183,7 +184,7 @@ function conditionsNeverMet(
 function staticValueRangeOf(
   codex: WorldCodex,
   def: ObjectDef,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   resolve: EndBoundValueResolver,
 ): StaticValueRange | undefined {
   const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
@@ -400,8 +401,8 @@ function selfPropertyValuesAfterOf(
   def: ObjectDef,
   outcome: StepOutcome,
   outer: StaticValueResolver | undefined,
-): readonly (readonly [number, number])[] {
-  const moves: (readonly [number, number])[] = [];
+): readonly (readonly [PropertyGlobalId, number])[] {
+  const moves: (readonly [PropertyGlobalId, number])[] = [];
   for (const delta of outcome.deltas) {
     if (delta.target !== 'self') continue;
     const before = staticValueOf(def, delta.propertyGlobalId, 'lowest', outer);

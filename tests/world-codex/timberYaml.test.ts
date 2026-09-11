@@ -8,6 +8,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction, makeTooDarkToWork } from '../support/illumination';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * timber.yamlの伐採を、実ファイルの定義だけで検証する。斧でしか倒せないこと、倒せば丸太が採れること
@@ -174,7 +175,7 @@ describe('timber.yamlの伐採', () => {
     const volumeId = codex.propertyNames.getId('volume');
     const pole = spawnInto('long_pole', forest, 'items');
     const branch = spawnInto('thick_branch', forest, 'items');
-    const valueOf = (object: WorldObject, propertyGlobalId: number): number =>
+    const valueOf = (object: WorldObject, propertyGlobalId: PropertyGlobalId): number =>
       object.tryGetProperty(propertyGlobalId)?.number ?? 0;
 
     expect(valueOf(pole, weightId)).toBeLessThan(valueOf(branch, weightId));

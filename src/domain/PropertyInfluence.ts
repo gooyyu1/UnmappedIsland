@@ -1,4 +1,5 @@
 import type { WorldObject } from './WorldObject';
+import type { PropertyGlobalId } from './GlobalId';
 
 /**
  * 影響の相手（[`Windows.md`](../../docs/ui/Windows.md) 8節）。同じオブジェクトの別のプロパティか、
@@ -8,7 +9,7 @@ import type { WorldObject } from './WorldObject';
  * 押し上げるのは怪我、押し下げるのは治療具で、どちらもプロパティではない。
  */
 export type InfluenceCounterpart =
-  | { readonly kind: 'property'; readonly propertyGlobalId: number }
+  | { readonly kind: 'property'; readonly propertyGlobalId: PropertyGlobalId }
   | { readonly kind: 'object'; readonly object: WorldObject };
 
 /** 1つのプロパティから見た、影響1件。 */
@@ -44,10 +45,10 @@ export interface InfluenceEdge {
    * 原因の側のプロパティ（causeObjectのもの）。プロパティを名指せない効果——段で縛っていない
    * `modify`/`add`——ではundefinedで、動く先そのものが原因になる（自分で自分を減らす基礎代謝）。
    */
-  readonly causePropertyGlobalId: number | undefined;
+  readonly causePropertyGlobalId: PropertyGlobalId | undefined;
 
   readonly target: WorldObject;
-  readonly targetPropertyGlobalId: number;
+  readonly targetPropertyGlobalId: PropertyGlobalId;
 
   readonly reversible: boolean;
   readonly increases: boolean;
@@ -85,12 +86,12 @@ export interface PropertyInfluenceReading {
  */
 export class PropertyInfluences implements InfluenceWriter {
   private readonly viewer: WorldObject;
-  private readonly propertyGlobalId: number;
+  private readonly propertyGlobalId: PropertyGlobalId;
 
   private readonly givenEntries = new Map<string, PropertyInfluence>();
   private readonly receivedEntries = new Map<string, PropertyInfluence>();
 
-  constructor(viewer: WorldObject, propertyGlobalId: number) {
+  constructor(viewer: WorldObject, propertyGlobalId: PropertyGlobalId) {
     this.viewer = viewer;
     this.propertyGlobalId = propertyGlobalId;
   }
@@ -119,7 +120,7 @@ export class PropertyInfluences implements InfluenceWriter {
   }
 
   /** 自分のプロパティならプロパティとして、他のオブジェクトならそのオブジェクトとして指す。 */
-  private counterpartOf(object: WorldObject, propertyGlobalId: number): InfluenceCounterpart {
+  private counterpartOf(object: WorldObject, propertyGlobalId: PropertyGlobalId): InfluenceCounterpart {
     return object === this.viewer ? { kind: 'property', propertyGlobalId } : { kind: 'object', object };
   }
 

@@ -6,6 +6,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * animals.yamlの動物を、実ファイルの定義だけで検証する（docs/engine/HuntingSystem.md・
@@ -30,13 +31,13 @@ describe('animals.yamlの動物', () => {
   let jungle: WorldObject;
   let player: WorldObject;
   let monkey: WorldObject;
-  let warinessId: number;
-  let painId: number;
-  let shockId: number;
-  let consciousnessId: number;
-  let bloodId: number;
-  let hydrationId: number;
-  let bodyFatId: number;
+  let warinessId: PropertyGlobalId;
+  let painId: PropertyGlobalId;
+  let shockId: PropertyGlobalId;
+  let consciousnessId: PropertyGlobalId;
+  let bloodId: PropertyGlobalId;
+  let hydrationId: PropertyGlobalId;
+  let bodyFatId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();
@@ -119,7 +120,7 @@ describe('animals.yamlの動物', () => {
   }
 
   /** 今の実効値（modifyの寄与を加味した、画面に出るのと同じ値）。 */
-  const effective = (propertyGlobalId: number): number | undefined =>
+  const effective = (propertyGlobalId: PropertyGlobalId): number | undefined =>
     monkey.tryGetProperty(propertyGlobalId)?.getEffectiveValue();
 
   /** 今のサルの意識（実効値と域）。痛み・衝撃の寄与が合流した後の姿で、カードのバーに出るのと同じ。 */
@@ -378,7 +379,7 @@ describe('animals.yamlの動物', () => {
     /** 自然回復（animals.yaml）。出血と同時に走るので、失う量からわずかに差し引かれる。 */
     const RECOVERED_PER_TICK = 0.16;
 
-    let bleedingId: number;
+    let bleedingId: PropertyGlobalId;
 
     beforeAll(() => {
       bleedingId = codex.propertyNames.getId('bleeding');

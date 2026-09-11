@@ -13,6 +13,7 @@ import type { StepOutcome } from './CraftingStep';
 import { UNCHANGED_OUTCOMES, combineOutcomes, scaleOutcomes } from './CraftingStep';
 import type { EndBoundValueResolver } from './staticValue';
 import { resolveDeclaredNumber } from './staticValue';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * `become`（9.9節）の行き先の型を、定義だけから解く手立て。行き先を解けない——対象の型が定義から
@@ -103,7 +104,7 @@ function spentAmountsOf(outcomes: readonly StepOutcome[]): ReadonlyMap<string, n
   return spent;
 }
 
-function stockKey(root: ReferenceRoot, propertyGlobalId: number): string {
+function stockKey(root: ReferenceRoot, propertyGlobalId: PropertyGlobalId): string {
   return `${root}:${propertyGlobalId}`;
 }
 
@@ -148,7 +149,7 @@ class OutcomeReader implements EffectReader {
    * ——静的に言えるのは「そのプロパティが書き換わる」までで、いくつになるかは言えない。
    * **書き換わること自体は載せる**ので、それより前の増減が残らないことは数え方に効く。
    */
-  set(target: ReferenceRoot, propertyGlobalId: number, value: SetValueReading): void {
+  set(target: ReferenceRoot, propertyGlobalId: PropertyGlobalId, value: SetValueReading): void {
     const assignment = { target, propertyGlobalId, value: typeof value === 'number' ? value : undefined };
     this.combine([{ probability: 1, spawns: [], deltas: [], assignments: [assignment] }]);
   }

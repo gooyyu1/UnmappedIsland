@@ -1,6 +1,7 @@
 import type { WorldObject } from './WorldObject';
 import type { ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 import { PropertyPath } from './ReferenceRoot';
+import type { PropertyGlobalId } from './GlobalId';
 
 /**
  * オブジェクトを1つ指す参照の宣言（ObjectRef参照）。指し方をそのまま表す。
@@ -11,10 +12,14 @@ import { PropertyPath } from './ReferenceRoot';
 export type ObjectRefReading =
   | { readonly kind: 'root'; readonly root: ReferenceRoot }
   /** 実効値をインスタンスIDとして解釈した相手。どの個体かは実行時にしか決まらない。 */
-  | { readonly kind: 'property'; readonly subject: ReferenceRoot; readonly propertyGlobalId: number }
+  | {
+      readonly kind: 'property';
+      readonly subject: ReferenceRoot;
+      readonly propertyGlobalId: PropertyGlobalId;
+    }
   | { readonly kind: 'object'; readonly objectGlobalId: number }
   /** 実効値を型として解釈した相手（`{object: ...}`をプロパティに置いた形、6.9節）。 */
-  | { readonly kind: 'object_property'; readonly propertyGlobalId: number };
+  | { readonly kind: 'object_property'; readonly propertyGlobalId: PropertyGlobalId };
 
 /**
  * オブジェクトそのものを1つ指す参照（`destroy`の対象・`move`の`subject`と移動先、9.3節・9.6節）。
@@ -71,7 +76,7 @@ export class ObjectRef {
   }
 
   /** 型を値に持つ`self`のプロパティ（6.9節）から引く参照。 */
-  static ofObjectDefProperty(propertyGlobalId: number): ObjectRef {
+  static ofObjectDefProperty(propertyGlobalId: PropertyGlobalId): ObjectRef {
     return new ObjectRef(undefined, new PropertyPath('self', propertyGlobalId), undefined, true);
   }
 

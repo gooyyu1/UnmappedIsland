@@ -1,4 +1,5 @@
 import type { ReferenceRoot } from '../../domain/ReferenceRoot';
+import type { PropertyGlobalId } from '../../domain/GlobalId';
 
 /**
  * 定義（conditions・passives・active効果など）が自分自身を書き表した説明の断片。
@@ -167,7 +168,7 @@ export class DescriptionWriter {
  */
 export interface DefNames {
   objectName(globalId: number): string;
-  propertyName(globalId: number): string;
+  propertyName(globalId: PropertyGlobalId): string;
   slotName(globalId: number): string;
   tagName(globalId: number): string;
   propertyTagName(globalId: number): string;
@@ -176,5 +177,5 @@ export interface DefNames {
    * プロパティの値1つの書き表し方。シンボル型プロパティ（6.6節）の値はシンボル名へ戻し、
    * それ以外は数値のまま書く（型に関わらず実行時の値はどちらも数値なので、プロパティ側に尋ねる）。
    */
-  propertyValueToken(propertyGlobalId: number, value: number): DescriptionToken;
+  propertyValueToken(propertyGlobalId: PropertyGlobalId, value: number): DescriptionToken;
 }

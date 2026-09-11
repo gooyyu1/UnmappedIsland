@@ -1,6 +1,7 @@
 import type { ObjectDef } from '../../domain/ObjectDef';
 import type { PassivePropertyReading, PassiveReader } from '../../domain/PassiveReader';
 import type { WorldCodex } from '../../domain/WorldCodex';
+import type { PropertyGlobalId } from '../../domain/GlobalId';
 
 /** 手元の細かい作業ができるキャラクタのプロパティと、その段（IlluminationSystem.md 5節・8節）。 */
 const HAND_BRIGHTNESS = 'hand_brightness';
@@ -99,7 +100,11 @@ function litHoursOf(codex: WorldCodex, character: ObjectDef): ReadonlySet<number
  * 決まりで（CodeStructure.md 5節、`tests/architecture/layers.test.ts`）、定義から数値を導く近似がこちらの
  * 契約へ混ざらないよう境界が引いてある。
  */
-function sunDeltasOf(world: ObjectDef, ambientId: number, hourId: number): ReadonlyMap<string, number> {
+function sunDeltasOf(
+  world: ObjectDef,
+  ambientId: PropertyGlobalId,
+  hourId: PropertyGlobalId,
+): ReadonlyMap<string, number> {
   const collector = new HourModifyCollector(ambientId, hourId);
   world.passives.read(collector);
   return collector.deltas;
@@ -109,8 +114,8 @@ class HourModifyCollector implements PassiveReader {
   readonly deltas = new Map<string, number>();
 
   constructor(
-    private readonly propertyGlobalId: number,
-    private readonly gateByPropertyGlobalId: number,
+    private readonly propertyGlobalId: PropertyGlobalId,
+    private readonly gateByPropertyGlobalId: PropertyGlobalId,
   ) {}
 
   modify(reading: PassivePropertyReading): void {
