@@ -1,6 +1,6 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { TITLE, checkValues, surveyValues } from '../../scripts/agent/check-values.mjs';
@@ -163,6 +163,24 @@ describe('check-values.mjs の見立て', () => {
     });
 
     expect(survey.map((value) => value.key)).not.toContain('BRIDGE_ENV');
+  });
+
+  // **直し方の表の鍵は `ccr-env.sh` が出す名前の写し**で、突き合わせるものが無いと、あちらで名前を
+  // 変えた瞬間に直し方が黙って「分からない」へ落ちる（`判断待ち` の issue から直し方だけが消える）。
+  it('`ccr-env.sh` が出しうる名前には、どれも直し方が在る', async () => {
+    const source = readFileSync(resolve(import.meta.dirname, '../../scripts/agent/ccr-env.sh'), 'utf-8');
+    const names = [...source.matchAll(/printf '([A-Z_]+)=%s/g)].map((hit) => hit[1]);
+    expect(names.length).toBeGreaterThan(0);
+
+    const survey = await surveyValues({
+      call: async () => JSON.stringify({ environments: [] }),
+      gh: () => '',
+      envs: () => names.map((name) => ({ name, id: 'env_whatever' })),
+    });
+
+    for (const name of names) {
+      expect(survey.find((value) => value.key === name)?.remedy).not.toContain('直し方は分からない');
+    }
   });
 
   it('`gh auth status` が非0で終われば、`gh` の資格情報が死んでいると読む', async () => {

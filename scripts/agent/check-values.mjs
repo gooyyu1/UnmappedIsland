@@ -2,7 +2,7 @@
 // 生きているかを見回り、死んでいれば人へ告げる（`.claude/board-design.md` 2.22）。
 //
 //   node scripts/agent/check-values.mjs            # 1回見回る
-//   DRY_RUN=1 node scripts/agent/check-values.mjs  # 調べて、告げる中身を出すだけ（何も書かない）
+//   DRY_RUN=1 node scripts/agent/check-values.mjs  # 調べるだけ（issue も台帳も書かない）
 //
 // **周期を持つのは呼び手**（[`daemon.sh`](daemon.sh) の `CHECK_INTERVAL`）——手で叩いた
 // 1回が「まだ早い」と言って何もしないのは、叩いた側から見て何も起きていないのと同じ
@@ -181,7 +181,7 @@ export function report(due, now) {
     '',
     ...deadTable(due),
     '',
-    '**直ったら、この issue は次の見回りが閉じます。**',
+    '**直れば、次の見回りが閉じます**——ただし `gh` が死んでいる間は誰も触れません（2.22.3）。',
   ].join('\n')}\n`;
 }
 
@@ -299,8 +299,9 @@ export async function checkValues({
     // **閉じてよいのは、台帳が空のときだけ。** `due` が空なのは「猶予に届いていない」「確かめられ
     // なかった」でも起きるので、そこで閉じると**死んだままの周に「全部生き返った」と告げ**、次に
     // 確かめられた周には題で引く先が無くなって2本目が立つ。
+    // `gh` が死んでいれば台帳に残るので、ここへ来た時点で `gh` は生きている。
     const healed = Object.keys(dead).length === 0;
-    const closed = healed && ghAlive && !dryRun && closeIssue(gh);
+    const closed = healed && !dryRun && closeIssue(gh);
     say(
       `値の見回り: 告げることは無い（${survey.map((value) => `${value.key}=${value.state}`).join(' ')}）${
         closed ? '。生き返ったので issue を閉じた' : ''
