@@ -90,14 +90,14 @@ object_defs:
 
   const setUp = (): MiniGame => miniGame(WORLD);
 
-  const viewOf = (mini: MiniGame): PlayScreenView => fromGameSession(mini.game, mini.codex, locale);
+  const viewOf = (mini: MiniGame): PlayScreenView => fromGameSession(mini.game, locale);
 
   /**
    * ハンドレーンに枠がhandLaneCells個だけ見えている画面。手持ちの前詰めは**入り切らないときだけ**の
    * 場当たり対応なので（ScreenLayout.md 7.3節）、その条件を作るのに要る。
    */
   const viewOnLane = (mini: MiniGame, handLaneCells: number): PlayScreenView =>
-    fromGameSession(mini.game, mini.codex, locale, handLaneCells);
+    fromGameSession(mini.game, locale, handLaneCells);
 
   /**
    * 画面の区画（3つのレーン）が今映している場所。テストは区画を名前で書きたいので、その都度ビューと

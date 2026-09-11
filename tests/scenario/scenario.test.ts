@@ -34,7 +34,7 @@ describe('テスト用シナリオ', () => {
       const scenario = load(name);
       expect(scenario.title, `${name} に表示名が無い`).not.toBe('');
       const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
-      expect(() => applyScenario(game, scenario, codex), `${name} を適用できない`).not.toThrow();
+      expect(() => applyScenario(game, scenario), `${name} を適用できない`).not.toThrow();
     }
   });
 
@@ -42,7 +42,7 @@ describe('テスト用シナリオ', () => {
     const scenario = load('basket_and_stones');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     expect(game.player.hand[0]?.def.name, '手持ちの先頭が編み籠').toBe('woven_basket');
     expect(
@@ -60,7 +60,7 @@ describe('テスト用シナリオ', () => {
     const scenario = load('failing_status');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     const alertOf = (propertyName: string): string | undefined =>
       game.player.instance.tryGetProperty(codex.propertyNames.getId(propertyName))?.alert;
@@ -76,7 +76,7 @@ describe('テスト用シナリオ', () => {
     const scenario = load('sprained_ankle');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     expect(game.player.injuryStacks.map((stack) => stack[0].def.name)).toEqual(['sprained_ankle']);
     expect(
@@ -88,7 +88,7 @@ describe('テスト用シナリオ', () => {
     const scenario = load('jungle_start');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     expect(game.startLocation.instance.def.name, '開始地点が密林になる').toBe('jungle');
     expect(game.player.location?.instance, 'プレイヤーもその土地に居る').toBe(game.startLocation.instance);
@@ -100,7 +100,7 @@ describe('テスト用シナリオ', () => {
     const scenario = load('scorching_haze');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     expect(heatHazeFor(game.world.ambientTemperature), '開始時点で陽炎が立つ').toBeDefined();
 
@@ -114,7 +114,7 @@ describe('テスト用シナリオ', () => {
     const scenario = load('storm');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     expect(game.world.weather).toBe('storm');
 
@@ -130,7 +130,7 @@ describe('テスト用シナリオ', () => {
     const scenario = parseScenario('jungle.yaml', 'seed: 7\nlocation:\n  type: jungle\n  items: [stone]\n');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     expect(game.startLocation.items.map((item) => item.def.name)).toEqual(['stone']);
   });
@@ -140,7 +140,7 @@ describe('テスト用シナリオ', () => {
     const scenario = parseScenario('nojungle.yaml', 'seed: 5\nlocation:\n  type: jungle\n');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
-    expect(() => applyScenario(game, scenario, codex)).toThrow(/jungle/);
+    expect(() => applyScenario(game, scenario)).toThrow(/jungle/);
   });
 
   it('個数の指定は、同じものをその数だけ並べたのと同じ', () => {
@@ -153,7 +153,7 @@ describe('テスト用シナリオ', () => {
     const scenario = load('many_stones');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     expect(game.player.hand[0]?.def.name).toBe('stone');
     expect(game.player.handStacks[0]?.length, '100個でも手持ちの1枠に収まる').toBe(100);
@@ -167,7 +167,7 @@ describe('テスト用シナリオ', () => {
     const scenario = parseScenario('bad.yaml', 'seed: 1\nplayer:\n  hand: [no_such_item]\n');
     const game = startNewGame(codex, SAMPLE_CHARACTER, 1, seededRng(1));
 
-    expect(() => applyScenario(game, scenario, codex)).toThrow(/no_such_item/);
+    expect(() => applyScenario(game, scenario)).toThrow(/no_such_item/);
   });
 
   it('受け入れられない置き方はエラーになる（手持ちの枠を超える）', () => {
@@ -175,14 +175,14 @@ describe('テスト用シナリオ', () => {
     const scenario = parseScenario('over.yaml', `seed: 1\nplayer:\n  hand: [${names.join(', ')}]\n`);
     const game = startNewGame(codex, SAMPLE_CHARACTER, 1, seededRng(1));
 
-    expect(() => applyScenario(game, scenario, codex)).toThrow(/woven_basket/);
+    expect(() => applyScenario(game, scenario)).toThrow(/woven_basket/);
   });
 
   it('propsはキャラクターのプロパティを上書きする', () => {
     const scenario = parseScenario('props.yaml', 'seed: 1\nplayer:\n  props:\n    hydration: 12\n');
     const game = startNewGame(codex, SAMPLE_CHARACTER, 1, seededRng(1));
 
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     expect(game.player.instance.tryGetProperty(codex.propertyNames.getId('hydration'))?.number ?? 0).toBe(12);
   });
@@ -191,7 +191,7 @@ describe('テスト用シナリオ', () => {
     const scenario = parseScenario('weather.yaml', 'seed: 1\nworld:\n  props:\n    weather: storm\n');
     const game = startNewGame(codex, SAMPLE_CHARACTER, 1, seededRng(1));
 
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     const weatherId = codex.propertyNames.getId('weather');
     expect(game.world.instance.tryGetProperty(weatherId)?.number ?? 0).toBe(codex.symbolNames.getId('storm'));
@@ -201,7 +201,7 @@ describe('テスト用シナリオ', () => {
     const scenario = parseScenario('bad.yaml', 'seed: 1\nworld:\n  props:\n    weather: rainy\n');
     const game = startNewGame(codex, SAMPLE_CHARACTER, 1, seededRng(1));
 
-    expect(() => applyScenario(game, scenario, codex)).toThrow(/rainy/);
+    expect(() => applyScenario(game, scenario)).toThrow(/rainy/);
   });
 
   it('hunting_groundは、体格の違う獲物と3つの武器を並べる', () => {
@@ -211,7 +211,7 @@ describe('テスト用シナリオ', () => {
     const scenario = load('hunting_ground');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     const [rat, junglefowl, monkey, boar, ...loot] = game.startLocation.items;
     expect(
@@ -243,7 +243,7 @@ describe('テスト用シナリオ', () => {
     const scenario = load('rain_collecting');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     const weatherId = codex.propertyNames.getId('weather');
     expect(game.world.instance.tryGetProperty(weatherId)?.number ?? 0, '雨を待たずに試せる').toBe(

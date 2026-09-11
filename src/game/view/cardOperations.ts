@@ -1,4 +1,3 @@
-import type { WorldCodex } from '../../domain/WorldCodex';
 import type { StartedGame } from '../../domain/generation/NewGame';
 import type { WorldObject } from '../../domain/WorldObject';
 import type { Requirement } from '../../domain/Requirement';
@@ -137,11 +136,7 @@ export interface CardOperationsFactory {
 }
 
 /** 今のゲームでの札の操作を作れるようにする。 */
-export function cardOperationsOf(
-  game: StartedGame,
-  codex: WorldCodex,
-  locale: Localization,
-): CardOperationsFactory {
+export function cardOperationsOf(game: StartedGame, locale: Localization): CardOperationsFactory {
   /**
    * 実行できるかと、できないなら宣言された理由（14.6節）。**ボタンの操作も重ねる操作も同じ答え方**を
    * するので、locale を引く手順は1箇所に置く。
@@ -177,7 +172,7 @@ export function cardOperationsOf(
         ...permissionOf(action.unmetRequirement()),
       };
     });
-    return [...craftingActions(instance, codex, game, locale), ...fromDefinition];
+    return [...craftingActions(instance, game, locale), ...fromDefinition];
   };
 
   /**

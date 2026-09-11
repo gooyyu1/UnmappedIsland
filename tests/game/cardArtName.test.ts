@@ -83,8 +83,7 @@ object_defs:
     );
   };
 
-  const viewOf = (mini: MiniGame, game = mini.game): PlayScreenView =>
-    fromGameSession(game, mini.codex, locale);
+  const viewOf = (mini: MiniGame, game = mini.game): PlayScreenView => fromGameSession(game, locale);
 
   it('道の札は、行き先の土地の絵の名前で引く', () => {
     const { mini } = setUp();
@@ -105,7 +104,7 @@ object_defs:
   it('レシピ一覧の完成品は、完成品の絵の名前で引く', () => {
     const { mini } = setUp();
 
-    const shelves = recipeCategories(mini.game, mini.codex, locale, () => {});
+    const shelves = recipeCategories(mini.game, locale, () => {});
 
     expect(shelves.flatMap((shelf) => shelf.entries).map((entry) => entry.card.art)).toEqual([SHARED_ART]);
   });
