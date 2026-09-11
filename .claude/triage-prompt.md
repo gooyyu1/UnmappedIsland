@@ -2,7 +2,7 @@
 
 **未整理の issue**——open で `kind:` のラベルを1つも持たないもの——を分類し、投入できる形へ翻訳する
 係の本文。投入するのは盤面（[`board-move.mjs`](../scripts/agent/board-move.mjs) の `CYCLES`）で、
-未整理が1件でもあれば一日一回立つ。渡し方は
+未整理が1件でもあれば一日二回立つ。渡し方は
 [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。
 
 **未整理の全件をまとめて1セッションに渡す。** 1件ずつ配ると、この係にしかできない仕事が全部落ちる
