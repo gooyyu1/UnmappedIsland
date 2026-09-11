@@ -52,11 +52,17 @@ const PROVISIONAL_LABELS = ['【未確定】', '【暫定】'];
 /** 確定節が本文に置く、印の根拠の行（DocumentStyle.md 6.1節）。 */
 const SOURCE_LINE_PREFIX = '**出どころ**:';
 
+/** 確定待ちの issue。項目番号は詰め替わるので、出どころが指せるのはこの issue そのものだけ。 */
+const PENDING_ISSUE = '#656';
+
 /**
- * 確定待ちの issue（#656）を**項目番号で**指す形（DocumentStyle.md 6.1節）。番号は答えの済んだ
- * ものから詰め替わるので書けない。`#656` そのものを指すのはよい。
+ * 項目を**番号で**指す形（DocumentStyle.md 6.1節）。`の 21`・`の 9・10` のほか、2件目を受ける
+ * `同 13` も同じ形。
+ *
+ * 数字の手前に空白を要求して、決定の文言の中の数（`難易度の3段目`）を外す。数字が節番号
+ * （`同 6.4節`・`の 5 節`）なら指しているのは文書なので、これも外す。
  */
-const ISSUE_ITEM_NUMBER = /#656.* の [0-9]/;
+const ITEM_NUMBER = /(?:の|同)\s+(?=[0-9])(?![0-9.]*\s*節)/;
 
 /**
  * 本文が暫定であることを自白する語（DocumentStyle.md 6.1節）。確定節の射程には現れない——
@@ -545,28 +551,32 @@ describe('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節�
     ).toEqual([]);
   });
 
-  it('出どころが、#656 を項目番号で指していない', () => {
+  it(`出どころが、${PENDING_ISSUE} を項目番号で指していない`, () => {
     // 番号は答えの済んだものから詰め替わるので、書いた当時に正しくても後から別の決定を指す
     // （#1834 の時点で13箇所あり、うち1つは既にずれていた）。指すのは決めた中身で。
     const found: string[] = [];
     for (const [rel, text] of docByPath) {
       for (const { line, text: body } of textLines(text)) {
-        if (body.startsWith(SOURCE_LINE_PREFIX) && ISSUE_ITEM_NUMBER.test(body)) {
+        if (body.startsWith(SOURCE_LINE_PREFIX) && body.includes(PENDING_ISSUE) && ITEM_NUMBER.test(body)) {
           found.push(`${rel}:${line}: ${body}`);
         }
       }
     }
     expect(
       found,
-      `#656 を番号で指した出どころ（何を決めたかで指す）:\n${found.join('\n')}`,
+      `${PENDING_ISSUE} を番号で指した出どころ（何を決めたかで指す）:\n${found.join('\n')}`,
     ).toEqual([]);
   });
 
-  it('項目番号の照合が、中身の側の数字を拾わない', () => {
-    // 当たらなくなっても違反ゼロと同じ緑になるので、既知の入力で別に確かめる。
-    expect(ISSUE_ITEM_NUMBER.test('**出どころ**: #656 の 21')).toBe(true);
-    expect(ISSUE_ITEM_NUMBER.test('**出どころ**: [#656](https://x/issues/656) の 9・10')).toBe(true);
-    expect(ISSUE_ITEM_NUMBER.test('**出どころ**: #656（難易度の3段目を「熟練者」に改める）')).toBe(false);
+  it('項目番号の照合が、決定の文言の中の数と節番号を拾わない', () => {
+    // 当たらなくなっても違反ゼロと同じ緑になるので、当たる側と外す側を既知の入力で確かめる。
+    expect(ITEM_NUMBER.test('**出どころ**: #656 の 21')).toBe(true);
+    expect(ITEM_NUMBER.test('**出どころ**: [#656](https://x/issues/656) の 9・10')).toBe(true);
+    // 2件目を受ける `同 <番号>`。#1841 がこの綴りで、`の <番号>` だけを見ていた頃は素通りした。
+    expect(ITEM_NUMBER.test('**出どころ**: #656（難易度の線）と、同 13（3段目の呼び名）')).toBe(true);
+    expect(ITEM_NUMBER.test('**出どころ**: #656（難易度の3段目を「熟練者」に改める）')).toBe(false);
+    expect(ITEM_NUMBER.test('**出どころ**: #656（同 6.4節の照合に使う）')).toBe(false);
+    expect(ITEM_NUMBER.test('**出どころ**: #656（同 5 節の火口）')).toBe(false);
   });
 });
 
