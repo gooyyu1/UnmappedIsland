@@ -4,7 +4,7 @@
 //   node scripts/agent/check-values.mjs            # 1回見回る
 //   DRY_RUN=1 node scripts/agent/check-values.mjs  # 調べて、告げる中身を出すだけ（何も書かない）
 //
-// 出すのは1行。**周期を持つのは呼び手**（[`daemon.sh`](daemon.sh) の `CHECK_INTERVAL`）——手で叩いた
+// **周期を持つのは呼び手**（[`daemon.sh`](daemon.sh) の `CHECK_INTERVAL`）——手で叩いた
 // 1回が「まだ早い」と言って何もしないのは、叩いた側から見て何も起きていないのと同じ
 // （[`board-publish.mjs`](board-publish.mjs) と同じ形）。
 //
