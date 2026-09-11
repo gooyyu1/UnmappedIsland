@@ -7,8 +7,8 @@ import { describe, expect, it } from 'vitest';
  * 定めた節を持っていることの検査。
  *
  * **この係は過去の回の記録を読まない**（`.claude/board-design.md` 2.17.4）ので、記録の書き方が
- * 回ごとにずれても、次の回には何も届かない。**定めを置ける場所は本文だけで、守られたかを見る者は
- * 居ない**——読んだスメルのうち issue にしなかったものは、コメントへ 👀 が付いた時点で二度と
+ * 回ごとにずれても、次の回には何も届かない。**定めを置ける場所は本文だけなので、守られたかを見るのは
+ * ここ**——読んだスメルのうち issue にしなかったものは、コメントへ 👀 が付いた時点で二度と
  * 拾われないので、記録から落ちるとそのまま消える。
  *
  * **要る節は本文から引く。** ここへ節名を書き写すと、本文を直したときに写しだけが古くなる。
@@ -28,7 +28,10 @@ const RECORDS_FROM = '2026-09-12';
 /** 記録の節を定めている節の見出し。本文はひな形の囲みの中に在るので、原文から引く。 */
 const RECORD_SECTION = '## 記録';
 
-/** 本文の「記録」の節に並ぶ箇条書きと、そこから引けた見出し。 */
+/**
+ * 本文の「記録」の節が**最初に並べた箇条書き**と、そこから引けた見出し。置く節を並べているのが
+ * この一覧で、節の後ろに続く補足の箇条書きまで見出しの定義として読まない。
+ */
 function recordSections(): { readonly bullets: number; readonly headings: readonly string[] } {
   const lines = readFileSync(PROMPT, 'utf-8').split(/\r?\n/);
   const start = lines.findIndex((line) => line === RECORD_SECTION);
@@ -36,9 +39,14 @@ function recordSections(): { readonly bullets: number; readonly headings: readon
   const rest = lines.slice(start + 1);
   const end = rest.findIndex((line) => /^## /.test(line));
   const block = end < 0 ? rest : rest.slice(0, end);
+  const first = block.findIndex((line) => line.startsWith('- '));
+  if (first < 0) throw new Error(`置く節の一覧が ${RECORD_SECTION} に無い`);
+  // 一覧の終わりは空行。項目が折り返した続きの行は字下げで続くので、そこでは切れない。
+  const after = block.slice(first).findIndex((line) => line.trim() === '');
+  const list = block.slice(first, after < 0 ? undefined : first + after);
   return {
-    bullets: block.filter((line) => line.startsWith('- ')).length,
-    headings: block.flatMap((line) => {
+    bullets: list.filter((line) => line.startsWith('- ')).length,
+    headings: list.flatMap((line) => {
       const found = /^- \*\*`(## [^`]+)`\*\*/.exec(line);
       return found ? [found[1]] : [];
     }),
