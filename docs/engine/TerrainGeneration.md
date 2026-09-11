@@ -199,7 +199,7 @@ generation_scopes:
   クルーソー島（約 48 km²）よりやや小さい大きさです。
 - **島の最高点は海抜 400 m。** 同じ縮尺で自然な高さです（青ヶ島は 8.7 km² で 423 m、ボラボラ島は
   30 km² で 727 m）。
-- **道の無い熱帯の地面を歩く速さは 4 km/h**（`move_cost` が 1.0 の土地）。
+- **道の無い熱帯の地面を歩く速さは 4 km/h。**
 
 **出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656) の 14
 
@@ -208,7 +208,8 @@ generation_scopes:
 上の値をどう持つかを決めたもので、覆すのに人間の判断は要りません。
 
 `generation_scopes.island` の `diameter_meters`・`elevation_top_meters`・`walk_meters_per_hour`
-として、**それぞれ現実の単位で別々に宣言**します。1つの値に縮尺と速さを兼ねさせると、どちらも外の
+として、**それぞれ現実の単位で別々に宣言**します。速さが当たるのは `move_cost` が 1.0 の土地です。
+1つの値に縮尺と速さを兼ねさせると、どちらも外の
 知識と突き合わせて検算できなくなるためです
 （[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「現実に単位があるものは、その単位で持つ」
 「1つの原因に、複数の結果を兼ねさせない」）。
