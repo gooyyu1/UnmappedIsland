@@ -20,7 +20,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { STUCK, boardState, readLedger } from './board-state.mjs';
+import { UNREADABLE, boardState, readLastPatrol, readLedger } from './board-state.mjs';
 import { issueBody } from './board.mjs';
 import { gh as runGh } from './spawn.mjs';
 
@@ -39,17 +39,21 @@ const defaultWarn = (line) => writeSync(2, `${line}\n`);
  * 消えた盤面**が残る——古いままのほうが、読む側は最終更新の時刻で気づける。**セッションの一覧を
  * 引けなかっただけなら書き込む**（[`board.mjs`](board.mjs) が、一覧を根拠にした行を落として組む）。
  *
- * **盤面が進んでいない印は、デーモンの台帳から引く**（[`board-state.mjs`](board-state.mjs)）。
+ * **盤面を引けていない印は、デーモンの台帳から引く**（[`board-state.mjs`](board-state.mjs)）。
  * 置くのは1周を回す側で、**人へ見せるのはここ**——引けない周にできるのはこれだけ（2.21）。
+ *
+ * **見回りの記録も同じ理由でここから渡す。** 書くのは係のセッションで、**走ったこと自体が人に
+ * 見えるのはこの本文だけ**（2.21.4）。
  */
 export function publish({
   gh = runGh,
   body = issueBody,
   issue = ISSUE,
   warn = defaultWarn,
-  stuckSince = readLedger(boardState())[STUCK],
+  unreadableSince = readLedger(boardState())[UNREADABLE],
+  patrol = readLastPatrol(boardState()),
 } = {}) {
-  const text = body({ gh, warn, stuckSince });
+  const text = body({ gh, warn, unreadableSince, patrol });
   if (text === undefined) return false;
 
   // 本文は複数行なので、引数ではなくファイルで渡す（`board-round.mjs` の `RETURN` と同じ）。

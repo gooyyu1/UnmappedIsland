@@ -29,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 
 import { busySession, moves } from './board-move.mjs';
 import { MERGED_WINDOW_HOURS, readBoard } from './board-read.mjs';
-import { STUCK, boardState, readLedger, writeLedger } from './board-state.mjs';
+import { UNREADABLE, boardState, readLedger, writeLedger } from './board-state.mjs';
 import { formatLive, liveSessions } from './live-sessions.mjs';
 import { gh as runGh, posix, runBash } from './spawn.mjs';
 
@@ -57,17 +57,14 @@ const defaultWarn = (line) => writeSync(2, `${line}\n`);
 const defaultRunScript = (name, args, options) => runBash(join(HERE, name), args, options);
 
 /**
- * **盤面が進んでいないと見え始めた時刻**を控える／消す（`board-state.mjs` の `STUCK`）。
- *
- * **進んでいないの中身は2つあり、印は1つ。** 盤面を引けなかった周と、**打つべき手が在ったのに
- * 手綱以外の理由で1つも打てなかった周**——どちらも、外から見れば盤面が1ミリも動いていない周で、
- * **続いた長さだけが読む側の要る値**（`.claude/board-design.md` 2.21）。
+ * **盤面を引けなくなった時刻**を控える（`board-state.mjs` の `UNREADABLE`）。**読むのは人**
+ * ——引けない周にデーモンが打てる手は無い（`.claude/board-design.md` 2.21.1）。
  *
  * **始まりだけを覚える。** 毎周書き直すと、続いた長さが出せない。
  */
-function markStuck(stateDir, at) {
+function markUnreadable(stateDir, at) {
   const taken = readLedger(stateDir);
-  taken[STUCK] ??= at;
+  taken[UNREADABLE] ??= at;
   writeLedger(stateDir, taken);
 }
 
@@ -143,8 +140,8 @@ export function newConflicts(prs, written, describe, at) {
  * **`cycle:` だけは残す。** あれは盤面の何かに紐づく指紋ではなく、**周期の係を前に立てた時刻**
  * （`board-move.mjs` の `CYCLES`）。捨てると、次の周に間隔が満ちていないものまで立つ。
  *
- * **`stuck:` も残す。** あれは盤面の何かに紐づく指紋ではなく、**盤面が進んでいないと見え始めた
- * 時刻**（`board-state.mjs` の `STUCK`）。捨てると、続いた長さが毎周0へ戻る。
+ * **`unreadable:` も残す。** あれは盤面の何かに紐づく指紋ではなく、**盤面を引けなくなった時刻**
+ * （`board-state.mjs` の `UNREADABLE`）。捨てると、続いた長さが毎周0へ戻る。
  *
  * **`tidy:` は時刻で捨てる。** 後片付けの相手はマージ済みのPRで、開いているPRの一覧には載らない
  * ——**引けなかった周を「1件も無い」と読むと、その周に全部の覚えが消える**（次の周、窓に入って
@@ -159,7 +156,7 @@ export function pruneTaken(taken, board) {
   for (const [key, mark] of Object.entries(taken)) {
     const lives =
       key.startsWith('cycle:') ||
-      key.startsWith('stuck:') ||
+      key.startsWith('unreadable:') ||
       (key.startsWith('tidy:') && Date.parse(mark) >= tidyFrom) ||
       (key.startsWith('resume:') && ids.has(key.slice('resume:'.length))) ||
       (key.startsWith('review:') && numbers.has(key.slice('review:'.length))) ||
@@ -210,7 +207,10 @@ const returnBody = (session, issue) =>
 /**
  * 1手の結果。**「打てなかった」を、直す相手が要る分（`FAILED`）と、答えが返っている分
  * （`SETTLED`）に割る**——人が手綱で止めている・畳んではいけないと分かった、など。
- * **盤面が進まない周を詰まりと読む側**は後者を数えてはいけない（`.claude/board-design.md` 2.21）。
+ *
+ * **割るのは、ログを読む側のため。** 盤面を見回る係（`board-move.mjs` の `CYCLES` の `patrol`）は
+ * `~/daemon.log` から「何が止まっているか」を読むので、**直す相手の居ない手が転んで見えると、
+ * 毎回そこを調べに行く**（`.claude/board-design.md` 2.21.2）。
  */
 export const PLAYED = 'played';
 export const FAILED = 'failed';
@@ -342,7 +342,7 @@ export function round({
   // 引くと同じ答えを4回買うことになる——`list_sessions` の上限は1時間あたりで数えるので、その
   // 回数がそのまま盤面の回る速さの天井になる。引いたものはファイルへ置き、叩くスクリプトへは
   // 環境変数で在り処だけを渡す。**この周のうちに立ったセッションは、次の周の一覧に載る。**
-  // **この周の時刻は1つ**（比べる相手も、詰まりの印も同じ形で書く）。
+  // **この周の時刻は1つ**（比べる相手も、引けていない印も同じ形で書く）。
   const at = now();
 
   let live;
@@ -351,9 +351,9 @@ export function round({
   } catch (error) {
     // **理由を言えるのは投げた側だけ**なので、その言葉をそのまま出す。
     warn(error instanceof Error ? error.message : String(error));
-    // **引けなかった周も、盤面は1ミリも動いていない。** 引けない間は誰もセッションを立てられない
-    // ので、ここで控えた印を読むのは人（2.20 の書き出し）。
-    if (!dryRun) markStuck(stateDir, at.toISOString());
+    // **引けない間は誰もセッションを立てられない**ので、ここで控えた印を読むのは人
+    // （2.20 の書き出し）。
+    if (!dryRun) markUnreadable(stateDir, at.toISOString());
     return false;
   }
   const livePath = join(stateDir, 'live-sessions.tsv');
@@ -381,11 +381,14 @@ export function round({
     taken,
   });
   if (board === undefined) {
-    if (!dryRun) markStuck(stateDir, at.toISOString());
+    if (!dryRun) markUnreadable(stateDir, at.toISOString());
     return false;
   }
 
   const remaining = trackIdle(pruneTaken(taken, board), board, at.toISOString());
+  // **引けた周に印を消す。** ここまで来られたのは盤面を引けたからで、残すと直った後も人へ
+  // 「引けていない」と出続ける（`board-state.mjs` の `UNREADABLE`）。
+  delete remaining[UNREADABLE];
   writeLedger(stateDir, remaining);
   board.taken = remaining;
   const remember = (key, mark) => {
@@ -422,16 +425,10 @@ export function round({
     log(`ぶつかった: PR #${record.pr} ${record.files.join(' ')}${rivals === '' ? '' : ` … ${rivals}`}`);
   }
 
-  // **この周に、転んだ手が1つでもあったか**（`board-state.mjs` の `STUCK`）。答えが返っている手
-  // （`SETTLED`）は数えない——直す相手が居ないので、詰まりを解く係を立てても仕事が無い。
-  //
-  // **打てた手が後ろに在っても、手前で転んだ手は数える。** 盤面が全体として進んでいても、**同じ手
-  // だけが毎周転び続ける形**（投入だけが通らない・レビューだけが立たない）がこの仕組みの相手で、
-  // 「1手でも打てたなら健康」と読むと、その形がまるごと見えなくなる。
-  //
-  // **見えないのは、打てた手より後ろに並んでいた手。** 1周1手で切り上げるので試していない
-  // （2.21）。
-  let blocked = false;
+  // **盤面が引けている周の不調は、ここでは数えない**（2.21.2）。転んだ手を数えて印を立てていたが、
+  // **手が1つも出ない周**（錠で全部が待たされる・差し戻す相手を引けない）には掛からず、2026-09-11
+  // にそのまま2時間11分止まった（#1939）。見るのは毎回立つ係（`CYCLES` の `patrol`）で、**この
+  // ログが見る側の材料**——打った手と、打てなかった手の理由がここに残る。
   for (const line of played) {
     const [kind, ...args] = line.split(' ');
     const [a = '', b = '', c = ''] = args;
@@ -443,12 +440,7 @@ export function round({
       break;
     }
     log(`打てなかった: ${kind} ${a}${result === SETTLED ? '（転んだのではない）' : ''}`);
-    if (result === FAILED) blocked = true;
   }
-  // **打てた手が1つも無くても、出した手が無ければ詰まりではない**（やることが無い周）。
-  if (blocked) remaining[STUCK] ??= at.toISOString();
-  else delete remaining[STUCK];
-  writeLedger(stateDir, remaining);
   return true;
 }
 

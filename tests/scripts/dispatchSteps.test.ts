@@ -7,11 +7,12 @@ import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
  * `scripts/agent/dispatch-steps.sh` の `dispatch_session` が、**関門の終了コードをそのまま呼び手の
- * 終了コードにする**ことの検査（`.claude/board-design.md` 2.21）。
+ * 終了コードにする**ことの検査（`.claude/board-design.md` 2.21.2）。
  *
- * **人が手綱で止めている周（3）と、それ以外で転んだ周（1）を、盤面が見分けられなくなると、
- * 手綱を引いているあいだじゅう「詰まっている」と読んで係を立て続ける。** 関門を抜けたところに
- * `if` が1つ挟まるだけで潰れる区別なので、**投入するスクリプトを実際に走らせて**見る。
+ * **人が手綱で止めている周（3）と、それ以外で転んだ周（1）を、1周を回す側が見分けられなくなると、
+ * ログがどちらも「転んだ」と言う**——それを毎回読む盤面を見回る係が、人の意思で止まっている周を
+ * 毎回調べに行くことになる。関門を抜けたところに `if` が1つ挟まるだけで潰れる区別なので、
+ * **投入するスクリプトを実際に走らせて**見る。
  *
  * `gh` は PATH の先頭で差し替え、セッションの一覧はこの周のぶんの写しを渡す
  * （[`live-sessions.mjs`](../../scripts/agent/live-sessions.mjs)）。**写しに同じタグの1本を置くのは
@@ -64,12 +65,12 @@ esac
     const live = join(work, 'live.tsv');
     writeFileSync(
       live,
-      'session_busy\tSESSION_STATUS_RUNNING\tSESSION_STATUS_BUCKET_WORKING\tchore-unstick\tbridge\n',
+      'session_busy\tSESSION_STATUS_RUNNING\tSESSION_STATUS_BUCKET_WORKING\tchore-patrol\tbridge\n',
       'utf-8',
     );
 
     try {
-      runScript(SCRIPT, ['unstick', '.claude/unstick-prompt.md'], {
+      runScript(SCRIPT, ['patrol', '.claude/patrol-prompt.md'], {
         stdio: 'pipe',
         env: {
           ...process.env,
