@@ -208,11 +208,17 @@ function slugsOf(headings: readonly string[]): Set<string> {
   return new Set(githubSlugs(headings));
 }
 
+/**
+ * 実装状況の印（DocumentStyle.md 4節・4.1節）を課す対象。**こちらは `docs/` の中だけ**——
+ * `【未実装: 識別子】` は `src/` との照合、`【いつか: 識別子】` は {@link SOMEDAY_DOC} の項目との
+ * 1対1で見るので、指し先が `docs/` の外の文書には無い。**確定度の印（6節）は外へも課す**
+ * （{@link MARK_RULE_FILES}）。
+ */
 const docByPath = new Map(DOC_FILES.map((rel) => [rel, read(rel)]));
 
 /**
- * 参照の指し先になりうる文書。**`docs/` の外にも在る**（`CLAUDE.md`・`.claude/**`）ので、
- * `DocumentStyle.md` の規約を課す対象（`docByPath`）とは別に持つ。
+ * 参照の指し先になりうる文書。**規約を課す対象とは別に持つ**——指し先には、どの規約も課さない文書
+ * （日付ごとの記録。{@link isDecisionRecord}・{@link isAnalysisRecord}）も入る。
  */
 const REF_TARGETS = [...DOC_FILES, 'CLAUDE.md', ...listFiles('.claude', ['.md'])];
 
