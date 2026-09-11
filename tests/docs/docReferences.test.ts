@@ -52,8 +52,14 @@ const PROVISIONAL_LABELS = ['【未確定】', '【暫定】'];
 /** 確定節が本文に置く、印の根拠の行（DocumentStyle.md 6.1節）。 */
 const SOURCE_LINE_PREFIX = '**出どころ**:';
 
-/** 確定待ちの issue。項目番号は詰め替わるので、出どころが指せるのはこの issue そのものだけ。 */
-const PENDING_ISSUE = '#656';
+/**
+ * 出どころが指す issue の番号（`#1970` など）。**指せるのは issue そのものだけ**で、その中の項目番号は
+ * 指せない——詰め替わるので、書いた当時に正しくても後から別の決定を指す。
+ *
+ * **どの issue かで絞らない。** 確認は1問1 issue で出す（`CLAUDE.md`）ので、出どころの行き先は
+ * 問いの数だけある。1本に絞ると、**絞った先以外の出どころは番号で指し放題**になる。
+ */
+const ISSUE_NUMBER = /#[0-9]+/;
 
 /**
  * 項目を**番号で**指す形（DocumentStyle.md 6.1節）。`の 21`・`の 9・10` のほか、2件目を受ける
@@ -625,21 +631,18 @@ describe('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節�
     ).toEqual([]);
   });
 
-  it(`出どころが、${PENDING_ISSUE} を項目番号で指していない`, () => {
+  it('出どころが、issue の中の項目を番号で指していない', () => {
     // 番号は答えの済んだものから詰め替わるので、書いた当時に正しくても後から別の決定を指す
     // （#1834 の時点で13箇所あり、うち1つは既にずれていた）。指すのは決めた中身で。
     const found: string[] = [];
     for (const [rel, text] of docByPath) {
       for (const { line, text: body } of textLines(text)) {
-        if (body.startsWith(SOURCE_LINE_PREFIX) && body.includes(PENDING_ISSUE) && ITEM_NUMBER.test(body)) {
+        if (body.startsWith(SOURCE_LINE_PREFIX) && ISSUE_NUMBER.test(body) && ITEM_NUMBER.test(body)) {
           found.push(`${rel}:${line}: ${body}`);
         }
       }
     }
-    expect(
-      found,
-      `${PENDING_ISSUE} を番号で指した出どころ（何を決めたかで指す）:\n${found.join('\n')}`,
-    ).toEqual([]);
+    expect(found, `項目を番号で指した出どころ（何を決めたかで指す）:\n${found.join('\n')}`).toEqual([]);
   });
 
   it('項目番号の照合が、決定の文言の中の数と節番号を拾わない', () => {
