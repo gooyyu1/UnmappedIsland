@@ -4,7 +4,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
-// ObjectStack.tryInsert（7.6節）が「同種（Matches: ObjectDef・代表ObjectDef列が一致）だけが積み重なる」
+// ObjectStack.tryInsert（SlotSystem.md 5節）が「同種（Matches: ObjectDef・代表ObjectDef列が一致）だけが積み重なる」
 // というスタックの不変条件を、呼び出し側の事前確認に依存せず自分自身で守ることを検証する。
 describe('ObjectStack', () => {
   const yaml = `
