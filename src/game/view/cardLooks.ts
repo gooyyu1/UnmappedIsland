@@ -17,6 +17,7 @@ import { voyageDaysText } from '../looks/timeTexts';
 import type { CardContent, CardCooking, CardGauge } from '../ui/Card';
 import { COLOR } from '../looks/theme';
 import type { CardKind } from '../looks/theme';
+import type { ObjectGlobalId } from '../../domain/GlobalId';
 
 /**
  * 絵がまだ無い物の、種別ごとの代役アイコン（iconOf参照）。**種別はすべてここに行がある**
@@ -145,7 +146,7 @@ export interface CardLooks {
    * 型そのものを表す札。インスタンスを持たないので、まだ在るとは限らない物——枠が受け入れる素材
    * （LaneCell.accepts）——を見せるのに使う。
    */
-  readonly cardOfType: (objectGlobalId: number) => CardContent;
+  readonly cardOfType: (objectGlobalId: ObjectGlobalId) => CardContent;
 
   /** そのオブジェクトの表示名。 */
   readonly nameOf: (object: WorldObject) => string;
@@ -430,7 +431,7 @@ export function cardLooksOf(
    * 型そのものを表すカード。インスタンスが1つも無くても作れるので、まだ在るとは限らない物
    * （枠が受け入れる素材）を見せるのに使う。個体ごとに違い得る値は持たない。
    */
-  const cardOfType = (objectGlobalId: number): CardContent => {
+  const cardOfType = (objectGlobalId: ObjectGlobalId): CardContent => {
     const def = codex.objects.get(objectGlobalId);
     return {
       icon: iconOf(def),

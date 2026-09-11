@@ -23,7 +23,7 @@ import type { ObjectRefReading } from '../../domain/ObjectRef';
 import { conditionTokens } from './conditionTokens';
 import { typeMatchTokens } from './typeMatchTokens';
 import type { ReferenceRoot } from '../../domain/ReferenceRoot';
-import type { PropertyGlobalId } from '../../domain/GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId } from '../../domain/GlobalId';
 
 /**
  * 効果の宣言（EffectReader）を、読める形へ書き出す（Description参照）。命令1つにつき1行で、
@@ -146,7 +146,7 @@ class EffectDescriber implements EffectReader {
   }
 
   /** 配置先（`into`）は書かない——どこの枠へ入るかは、何が起きたかの説明には要らない。 */
-  spawn(objectGlobalId: number, count: number): void {
+  spawn(objectGlobalId: ObjectGlobalId, count: number): void {
     const tokens = [text('spawn '), objectRef(this.names.objectName(objectGlobalId))];
     if (count !== 1) tokens.push(text(` ×${count}`));
     this.out.write(...tokens);
@@ -178,7 +178,11 @@ class EffectDescriber implements EffectReader {
     });
   }
 
-  move(subject: ObjectRefReading, destination: ObjectRefReading, slotGlobalId: number | undefined): void {
+  move(
+    subject: ObjectRefReading,
+    destination: ObjectRefReading,
+    slotGlobalId: SlotGlobalId | undefined,
+  ): void {
     this.out.write(
       text('move '),
       ...objectRefTokens(subject, this.names),

@@ -56,7 +56,7 @@ object_defs:
     const codex = build(declaration);
 
     expect(codex.propertyTagNames.count).toBe(3);
-    expect([0, 1, 2].map((id) => codex.propertyTagNames.getName(id))).toEqual([
+    expect(codex.propertyTagNames.ids.map((id) => codex.propertyTagNames.getName(id))).toEqual([
       'status',
       'health',
       'nutrition',

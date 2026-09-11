@@ -1,4 +1,4 @@
-import type { PropertyGlobalId } from './GlobalId';
+import type { PropertyGlobalId, SlotGlobalId, TagGlobalId } from './GlobalId';
 import type { NameRegistry } from './NameRegistry';
 
 /**
@@ -48,8 +48,8 @@ export class WorldVocabulary {
 
   constructor(
     propertyNames: NameRegistry<PropertyGlobalId>,
-    slotNames: NameRegistry,
-    tagNames: NameRegistry,
+    slotNames: NameRegistry<SlotGlobalId>,
+    tagNames: NameRegistry<TagGlobalId>,
   ) {
     this.engine = new EngineVocabulary(propertyNames, slotNames);
     this.world = new WorldRuleVocabulary(propertyNames, slotNames, tagNames);
@@ -77,9 +77,9 @@ export class EngineVocabulary {
 
   readonly progressId: PropertyGlobalId;
   readonly finishedStepsId: PropertyGlobalId;
-  readonly materialsSlotId: number;
+  readonly materialsSlotId: SlotGlobalId;
 
-  constructor(propertyNames: NameRegistry<PropertyGlobalId>, slotNames: NameRegistry) {
+  constructor(propertyNames: NameRegistry<PropertyGlobalId>, slotNames: NameRegistry<SlotGlobalId>) {
     this.volumeId = propertyNames.intern(VOLUME_PROPERTY);
     this.fillId = propertyNames.intern('fill');
     this.weightId = propertyNames.intern('weight');
@@ -115,9 +115,9 @@ export class WorldRuleVocabulary {
   // ---- キャラクタ（docs/world/Characters.md、wrappers/PlayerCharacter） ----
   readonly hpId: PropertyGlobalId;
   readonly satietyId: PropertyGlobalId;
-  readonly handSlotId: number;
-  readonly equipmentSlotId: number;
-  readonly injuriesSlotId: number;
+  readonly handSlotId: SlotGlobalId;
+  readonly equipmentSlotId: SlotGlobalId;
+  readonly injuriesSlotId: SlotGlobalId;
 
   // ---- 土地と道（ExplorationSystem.md、wrappers/Location・wrappers/Path・generation） ----
   readonly explorationProgressId: PropertyGlobalId;
@@ -125,39 +125,39 @@ export class WorldRuleVocabulary {
   readonly destinationIdId: PropertyGlobalId;
   readonly returnPathIdId: PropertyGlobalId;
   readonly travelMinutesId: PropertyGlobalId;
-  readonly locationsSlotId: number;
-  readonly itemsSlotId: number;
-  readonly fixturesSlotId: number;
-  readonly charactersSlotId: number;
-  readonly undiscoveredFixturesSlotId: number;
+  readonly locationsSlotId: SlotGlobalId;
+  readonly itemsSlotId: SlotGlobalId;
+  readonly fixturesSlotId: SlotGlobalId;
+  readonly charactersSlotId: SlotGlobalId;
+  readonly undiscoveredFixturesSlotId: SlotGlobalId;
 
   // ---- 種別を言うタグ ----
-  readonly locationTagId: number;
-  readonly characterTagId: number;
-  readonly pathTagId: number;
+  readonly locationTagId: TagGlobalId;
+  readonly characterTagId: TagGlobalId;
+  readonly pathTagId: TagGlobalId;
 
   /**
    * 海区（`voyage.yaml`）。**島の土地と同じ場所**（location＋explorable）なので、島だけを数える側は
    * これで見分ける（`analysis/islandLocations`）。
    */
-  readonly seaTagId: number;
+  readonly seaTagId: TagGlobalId;
 
   /**
    * 物が何であるかを言うタグ。**兼ねる物がある**（動物はitemでもあり、編み籠はitemでもfixtureでもある）
    * ので、どれを先に見るかは読む側が決める（cardLooks.kindOf）。
    */
-  readonly itemTagId: number;
-  readonly fixtureTagId: number;
-  readonly injuryTagId: number;
-  readonly animalTagId: number;
-  readonly foodTagId: number;
-  readonly containerTagId: number;
-  readonly liquidContainerTagId: number;
-  readonly toolTagId: number;
+  readonly itemTagId: TagGlobalId;
+  readonly fixtureTagId: TagGlobalId;
+  readonly injuryTagId: TagGlobalId;
+  readonly animalTagId: TagGlobalId;
+  readonly foodTagId: TagGlobalId;
+  readonly containerTagId: TagGlobalId;
+  readonly liquidContainerTagId: TagGlobalId;
+  readonly toolTagId: TagGlobalId;
 
   /** 周回の終わりを読む（docs/concept/GameEndings.md）。本土へ渡り、持ち帰った秘宝を数える。 */
-  readonly mainlandTagId: number;
-  readonly artifactTagId: number;
+  readonly mainlandTagId: TagGlobalId;
+  readonly artifactTagId: TagGlobalId;
 
   // ---- 名前で指して実行するアクション（IDではなく名前で引く、ActionSystem.md 1節） ----
   readonly exploreAction = 'explore';
@@ -169,8 +169,8 @@ export class WorldRuleVocabulary {
 
   constructor(
     propertyNames: NameRegistry<PropertyGlobalId>,
-    slotNames: NameRegistry,
-    tagNames: NameRegistry,
+    slotNames: NameRegistry<SlotGlobalId>,
+    tagNames: NameRegistry<TagGlobalId>,
   ) {
     this.dayId = propertyNames.intern('day');
     this.hourId = propertyNames.intern('hour');

@@ -1,11 +1,12 @@
 import type { ObjectDef } from './ObjectDef';
+import type { ObjectGlobalId, TagGlobalId } from './GlobalId';
 
 /** 「どの型を指しているか」の読み上げ（TypeMatchRule.reading参照）。 */
 export type TypeMatchReading =
   /** 候補がそのタグ（4.1節）を持っていれば真。 */
-  | { readonly kind: 'tag'; readonly tagGlobalId: number }
+  | { readonly kind: 'tag'; readonly tagGlobalId: TagGlobalId }
   /** 候補がまさにその型そのものであれば真。 */
-  | { readonly kind: 'object'; readonly objectGlobalId: number }
+  | { readonly kind: 'object'; readonly objectGlobalId: ObjectGlobalId }
   /** innerが当てはまらない型（4.1節）。 */
   | { readonly kind: 'not'; readonly inner: TypeMatchReading };
 
@@ -32,11 +33,11 @@ export class TypeMatchRule {
     this.reading = reading;
   }
 
-  static ofTag(tagGlobalId: number): TypeMatchRule {
+  static ofTag(tagGlobalId: TagGlobalId): TypeMatchRule {
     return new TypeMatchRule({ kind: 'tag', tagGlobalId });
   }
 
-  static ofObjectDef(objectGlobalId: number): TypeMatchRule {
+  static ofObjectDef(objectGlobalId: ObjectGlobalId): TypeMatchRule {
     return new TypeMatchRule({ kind: 'object', objectGlobalId });
   }
 
@@ -88,8 +89,8 @@ export class TypeMatchRule {
    * （inProgressObjects）ときに、宣言をYAMLへ戻すために使う。
    */
   toAcceptSpec(names: {
-    objectName(globalId: number): string;
-    tagName(globalId: number): string;
+    objectName(globalId: ObjectGlobalId): string;
+    tagName(globalId: TagGlobalId): string;
   }): AcceptSpec {
     return acceptSpecOf(this.reading, names);
   }
@@ -102,7 +103,7 @@ function keyOf(reading: TypeMatchReading): string {
 
 function acceptSpecOf(
   reading: TypeMatchReading,
-  names: { objectName(globalId: number): string; tagName(globalId: number): string },
+  names: { objectName(globalId: ObjectGlobalId): string; tagName(globalId: TagGlobalId): string },
 ): AcceptSpec {
   if (reading.kind === 'not') return { not: acceptSpecOf(reading.inner, names) };
   return reading.kind === 'tag'

@@ -5,11 +5,12 @@ import type { TypeMatchReading, TypeMatchRule } from './TypeMatchRule';
 import type { DeclaredNumberReading } from './EffectReader';
 import type { DeclaredNumber } from './DeclaredNumber';
 import type { WorldObject } from './WorldObject';
+import type { SlotGlobalId } from './GlobalId';
 
 /** `among`の宣言（AmongSpec参照）。 */
 export interface AmongReading {
   readonly root: ReferenceRoot;
-  readonly slotGlobalId: number;
+  readonly slotGlobalId: SlotGlobalId;
 
   /** 候補の絞り込み。省略していればundefined＝そのスロットの中身すべて。 */
   readonly match: TypeMatchReading | undefined;
@@ -32,7 +33,7 @@ export class AmongSpec {
   /** 候補を探す相手（そのスロットの持ち主）。 */
   private readonly root: ReferenceRoot;
 
-  private readonly slotGlobalId: number;
+  private readonly slotGlobalId: SlotGlobalId;
 
   /** 候補の絞り込み。undefinedならそのスロットの中身すべて。 */
   private readonly match: TypeMatchRule | undefined;
@@ -45,7 +46,7 @@ export class AmongSpec {
 
   constructor(
     root: ReferenceRoot,
-    slotGlobalId: number,
+    slotGlobalId: SlotGlobalId,
     match: TypeMatchRule | undefined,
     weight: DeclaredNumber | undefined,
   ) {

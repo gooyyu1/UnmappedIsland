@@ -101,6 +101,7 @@ import { addLabel } from '../ui/labels';
 import type { BoxStyle } from '../ui/shapes';
 import { addInputBlockingPanel, addTiledImage, addTiledImageVertical, drawBox } from '../ui/shapes';
 import { COLOR, SIZE } from './looks/theme';
+import type { ObjectGlobalId } from '../domain/GlobalId';
 
 /** 紙として置かれるボタン（スロットボタン・バーのアイコンボタン）が落とす影のずらし幅（u単位）。 */
 const PAPER_BUTTON_SHADOW = 1.5;
@@ -2370,7 +2371,7 @@ export class PlayScene extends ResponsiveScene {
    * **これだけは出どころが世界の事実ではない。** プレイヤーの操作が直に生んだので主体が居らず、
    * 出どころも閉じた一覧の中にしか無かった札の位置なので、その矩形を直に渡す（MotionContext.origins）。
    */
-  private startCrafting(inProgressDefGlobalId: number, origin: Rect): void {
+  private startCrafting(inProgressDefGlobalId: ObjectGlobalId, origin: Rect): void {
     const location = this.gameSession.player.location;
     if (location === undefined) return;
 

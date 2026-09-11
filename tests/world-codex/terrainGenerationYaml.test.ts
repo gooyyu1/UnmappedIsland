@@ -3,6 +3,7 @@ import type { GenerationDefs } from '../../src/domain/generation/GenerationDefs'
 import type { GenerationScopeDef } from '../../src/domain/generation/GenerationScopeDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { bundledCodex } from '../support/worldCodexFiles';
+import type { ObjectGlobalId } from '../../src/domain/GlobalId';
 
 /** LINQのSingleOrDefault相当: 条件に一致する要素が2つ以上あれば例外、0または1ならその要素(無ければundefined)。 */
 function singleOrUndefined<T>(items: readonly T[], predicate: (item: T) => boolean): T | undefined {
@@ -56,12 +57,11 @@ describe('terrain_generation.yamlの地形生成定義', () => {
     const fixtureTag = codex.tagNames.getId('fixture');
     const singletonIds = new Set(codex.singletonGlobalIds());
     const referencedDefIds = new Set(generation.locationTypes.map((t) => t.objectDefGlobalId));
-    for (let id = 0; id < codex.objects.count; id++) {
-      const def = codex.objects.tryGet(id);
-      if (def === undefined || def.tryGetPropertyDef(progressId) === undefined) continue;
-      if (singletonIds.has(id) || def.tags.includes(fixtureTag)) continue;
+    for (const def of codex.objects) {
+      if (def.tryGetPropertyDef(progressId) === undefined) continue;
+      if (singletonIds.has(def.globalId) || def.tags.includes(fixtureTag)) continue;
       expect(
-        referencedDefIds.has(id),
+        referencedDefIds.has(def.globalId),
         `探索できる土地 '${def.name}' はいずれかのlocation_typeから参照される`,
       ).toBe(true);
     }
@@ -104,7 +104,7 @@ describe('terrain_generation.yamlの地形生成定義', () => {
     // **海岸かどうかは土地の側が名乗る**（voyage.yamlのcoast trait）。ここで型名を並べ直すと、
     // 海岸を1つ足したときに2箇所を揃える仕事が生まれ、揃え忘れても赤が出ない。
     const coastTag = codex.tagNames.getId('coast');
-    const isCoastal = (objectDefGlobalId: number): boolean =>
+    const isCoastal = (objectDefGlobalId: ObjectGlobalId): boolean =>
       codex.objects.get(objectDefGlobalId).tags.includes(coastTag);
 
     for (const type of generation.locationTypes) {

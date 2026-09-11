@@ -34,8 +34,8 @@ describe('アイコンの絵', () => {
   /** 同梱の宣言のうち、段が名乗っている状況アイコンの識別子。 */
   function situationNames(): string[] {
     const situations = new Set<string>();
-    for (let globalId = 0; globalId < codex.objects.count; globalId++)
-      for (const propertyDef of codex.objects.get(globalId).enumeratePropertyDefs())
+    for (const def of codex.objects)
+      for (const propertyDef of def.enumeratePropertyDefs())
         for (const stage of propertyDef.stages)
           if (stage.situation !== undefined) situations.add(stage.situation);
     return [...situations];

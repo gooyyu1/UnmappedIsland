@@ -476,8 +476,7 @@ describe('腕前とレシピの解放条件', () => {
   /** 解放条件を持つレシピすべて（完成品の名前を添える）。 */
   function gatedRecipes(): readonly { product: string; recipe: RecipeDef }[] {
     const found: { product: string; recipe: RecipeDef }[] = [];
-    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const product = codex.objects.get(globalId);
+    for (const product of codex.objects) {
       for (const recipe of product.recipesProducingThis)
         // 作りかけの型（レシピの軸を持つ変種）は同じレシピを二度数えさせるので、素の型だけを見る。
         if (recipe.unlock !== undefined && codex.baseOf(product) === product)

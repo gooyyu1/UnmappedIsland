@@ -13,7 +13,13 @@ import { PropertyValue } from './PropertyValue';
 import { Slot } from './Slot';
 import type { SlotPosition } from './SlotPosition';
 import type { WorldSession } from './WorldSession';
-import type { PropertyGlobalId } from './GlobalId';
+import type {
+  ObjectGlobalId,
+  PropertyGlobalId,
+  PropertyTagGlobalId,
+  SlotGlobalId,
+  TagGlobalId,
+} from './GlobalId';
 
 /** 引けなかったものの呼び名（notFoundMessage）。どの名前空間で引くかもこれが決める。 */
 type MemberKind = 'プロパティ' | 'スロット';
@@ -176,8 +182,8 @@ export class WorldObject {
    * 指定したタグ（6.7節）が付いたプロパティを、propsの宣言順で。タグの付いたプロパティを
    * 1つも持たないオブジェクトでは空配列。
    */
-  propertiesWithTag(tagGlobalId: number): readonly PropertyValue[] {
-    return this.properties.filter((property) => property.def.hasTag(tagGlobalId));
+  propertiesWithTag(propertyTagGlobalId: PropertyTagGlobalId): readonly PropertyValue[] {
+    return this.properties.filter((property) => property.def.hasTag(propertyTagGlobalId));
   }
 
   // ---- スロットを引く・中を見る（7節） ----
@@ -186,7 +192,7 @@ export class WorldObject {
    * tryGetSlotと同じ引き方で、持っていないことを許さない版（getPropertyと同じ対）。名指しした枠が
    * 必ずあるはずの場所——生成・シナリオ・ビューが自分の型の枠を引くとき——に使う。
    */
-  getSlot(globalSlotId: number): Slot {
+  getSlot(globalSlotId: SlotGlobalId): Slot {
     const slot = this.tryGetSlot(globalSlotId);
     if (slot === undefined) {
       const name = this.session.codex.slotNames.tryGetName(globalSlotId);
@@ -195,7 +201,7 @@ export class WorldObject {
     return slot;
   }
 
-  tryGetSlot(globalSlotId: number): Slot | undefined {
+  tryGetSlot(globalSlotId: SlotGlobalId): Slot | undefined {
     const local = this.def.slotIndexByGlobalId.toLocal(globalSlotId);
     return local === LocalIndexByGlobalId.missing ? undefined : this.slots[local];
   }
@@ -263,7 +269,7 @@ export class WorldObject {
   }
 
   /** 名指しのタグを持つ最も近い祖先。自分自身は見ない（findAncestorWithPropertyと同じ扱い）。 */
-  findAncestorWithTag(tagGlobalId: number): WorldObject | undefined {
+  findAncestorWithTag(tagGlobalId: TagGlobalId): WorldObject | undefined {
     for (let node = this._parent; node !== undefined; node = node.parent) {
       if (node.def.hasTag(tagGlobalId)) return node;
     }
@@ -298,7 +304,7 @@ export class WorldObject {
    * 世界にただ1つ在る型（`singleton`、15節）を名前で指す`move`の`to_object`（9.6節）が使う。
    * 同じ型が複数在れば最初に見つかったものを返す。
    */
-  findSelfOrDescendantOfDef(objectDefGlobalId: number): WorldObject | undefined {
+  findSelfOrDescendantOfDef(objectDefGlobalId: ObjectGlobalId): WorldObject | undefined {
     if (this.def.globalId === objectDefGlobalId) return this;
 
     for (const slot of this.slots) {
@@ -1055,7 +1061,7 @@ export class WorldObject {
    * さらに上へ遡る（place・spillTo参照）。どこにも入らなければ、生成したオブジェクトはそのまま消える。
    */
   executeSpawn(
-    objectGlobalId: number,
+    objectGlobalId: ObjectGlobalId,
     into: SpawnTarget,
     context: ReferenceContext,
     sameSlotSpawnSite: SameSlotSpawnSite | undefined,

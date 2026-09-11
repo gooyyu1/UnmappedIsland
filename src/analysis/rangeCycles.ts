@@ -9,7 +9,7 @@ import { rangeEventReadouts, ticksToRangeEnd } from './rangeEvents';
 import type { StaticValueResolver } from './staticValue';
 import { MINUTES_PER_TICK } from './balanceTables';
 import { staticValueOf, trackingResolverOf } from './staticValue';
-import type { PropertyGlobalId } from '../domain/GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 外から与えられるtick毎の増減。**焼くのも失血も、自分では動かない値を隣の物が動かす**——炉が
@@ -18,7 +18,7 @@ import type { PropertyGlobalId } from '../domain/GlobalId';
  */
 export interface ExternalTickDelta {
   /** その増減を与える型。その周期を回すのに要る物（炉・刺さった傷）として工程の入力に並ぶ。 */
-  readonly sourceGlobalId: number;
+  readonly sourceGlobalId: ObjectGlobalId;
 
   readonly propertyGlobalId: PropertyGlobalId;
 
@@ -97,7 +97,7 @@ export interface RangeCycle {
   readonly gatedBy: readonly (readonly TickDelta[])[];
 
   /** 外から与えられた増減で動いた周期なら、それを与える型（炉が焼く・傷が血を奪う）。 */
-  readonly drivenBy: number | undefined;
+  readonly drivenBy: ObjectGlobalId | undefined;
 
   /** この周期を1つの工程として見たもの。何も生まない周期では出力が空になる。 */
   readonly step: CraftingStep;

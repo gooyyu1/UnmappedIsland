@@ -5,20 +5,28 @@
  *
  * 型引数はこの名前空間が配るIDの型（{@link GlobalId}）。**素の `number` とIDの境界はこのクラスの中
  * だけ**——名前から引く経路しか外に開いていないので、YAMLに書かれた数・生成物から読んだ数・URLの
- * 数値が、そのままIDとして通ることがない。既定の `number` は、**まだ種類を分けていない名前空間の
- * ためのつなぎ**——それらは互いのIDを渡し合えるままで、分けた順に型引数が埋まっていく。
+ * 数値が、そのままIDとして通ることがない。**既定を持たない**のは、既定を置くと型引数を書き忘れた
+ * 名前空間が素の `number` を配り、そこだけ他の名前空間のIDを受け取れるようになるため。
  *
  * `in out`（不変）を外すと、**種類の付いた名前空間を素の `number` の名前空間へ広げられる**
  * ——メソッドの引数は既定では双変なので、`種類を選んで引く` と書いた三項の型が
  * `NameRegistry<number>` へ落ち、そこから先は素の数が通る。境界がこのクラスの中だけであることを
  * 保っているのはこの2語。
  */
-export class NameRegistry<in out Id extends number = number> {
+export class NameRegistry<in out Id extends number> {
   private readonly nameToId = new Map<string, Id>();
   private readonly idToName: string[] = [];
 
   get count(): number {
     return this.idToName.length;
+  }
+
+  /**
+   * 配ったIDを、配った順（＝宣言順）に。**IDの並びが要る側はこれを読む**——`count`まで添字を数える
+   * 形で書くと、そこが素の数からIDを組み立てる場所になり、境界がこのクラスの外へ出る。
+   */
+  get ids(): readonly Id[] {
+    return this.idToName.map((_, index) => index as Id);
   }
 
   /** 名前を登録し、そのグローバルIDを返す。登録済みなら既存のIDを返す（冪等）。 */

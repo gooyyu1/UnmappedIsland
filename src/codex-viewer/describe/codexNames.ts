@@ -23,11 +23,11 @@ export function defNamesOf(codex: WorldCodex): DefNames {
      */
     propertyValueToken: (propertyGlobalId: PropertyGlobalId, value: number): DescriptionToken => {
       if (codex.objectDefProperties.has(propertyGlobalId)) {
-        const name = codex.objectNames.tryGetName(value);
+        const name = codex.tryObjectNameOfPropertyValue(value);
         return name === undefined ? text(String(value)) : objectRef(name);
       }
       if (!codex.symbolicProperties.has(propertyGlobalId)) return text(String(value));
-      const name = codex.symbolNames.tryGetName(value);
+      const name = codex.trySymbolNameOfPropertyValue(value);
       return name === undefined ? text(String(value)) : symbolRef(name);
     },
   };

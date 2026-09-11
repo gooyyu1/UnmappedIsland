@@ -1,7 +1,7 @@
 import type { WorldCodex } from '../WorldCodex';
 import type { WorldRuleVocabulary } from '../WorldVocabulary';
 import type { WorldObject } from '../WorldObject';
-import type { PropertyGlobalId } from '../GlobalId';
+import type { PropertyGlobalId, SlotGlobalId } from '../GlobalId';
 
 /**
  * 1つの`WorldObject`を、世界の語彙で名前を与えて読み書きするための型付きの窓
@@ -41,12 +41,12 @@ export abstract class ObjectWrapper {
   }
 
   /** 名指しの枠の中身。宣言していなければ空。 */
-  protected contentsOf(slotGlobalId: number): readonly WorldObject[] {
+  protected contentsOf(slotGlobalId: SlotGlobalId): readonly WorldObject[] {
     return this.instance.tryGetSlot(slotGlobalId)?.contents ?? [];
   }
 
   /** 名指しの枠の中身を、積み重なっているまとまりごとに分けたもの。宣言していなければ空。 */
-  protected stacksOf(slotGlobalId: number): readonly (readonly WorldObject[])[] {
+  protected stacksOf(slotGlobalId: SlotGlobalId): readonly (readonly WorldObject[])[] {
     return this.instance.tryGetSlot(slotGlobalId)?.stacks ?? [];
   }
 }

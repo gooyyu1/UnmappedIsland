@@ -350,8 +350,7 @@ function typeNamesWithTag(codex: WorldCodex, tagName: string): string[] {
   const tag = codex.tagNames.getId(tagName);
   const names: string[] = [];
 
-  for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-    const def = codex.objects.get(globalId);
+  for (const def of codex.objects) {
     if (!def.tags.includes(tag)) continue;
     if (codex.generatedTypes.baseGlobalIdIfVariantOn(def, 'cure') !== undefined) continue;
     names.push(def.name);

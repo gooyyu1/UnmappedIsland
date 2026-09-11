@@ -84,7 +84,7 @@ object_defs:
     changes = [];
   }
 
-  const slot = (name: string): number => codex.slotNames.getId(name);
+  const slot = (name: string) => codex.slotNames.getId(name);
   const spawn = (name: string): WorldObject => session.createObject(codex.objectNames.getId(name));
 
   /** その名前のオブジェクトを生成し、地面へ置く。 */

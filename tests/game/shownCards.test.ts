@@ -8,6 +8,7 @@ import type { ObjectCardStack } from '../../src/game/view/PlayScreenView';
 import type { CardCombination } from '../../src/game/view/cardOperations';
 import type { CardPlace, CardPlacement, ScreenPlace } from '../../src/game/view/cardPlaces';
 import { planMotion } from '../../src/game/view/cardMotionPlan';
+import type { ObjectGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 画面に出ている札の並びと、その上の操作の意味（ShownCards）の自動テスト。
@@ -64,7 +65,8 @@ function stack(
     identity: ids,
     count: ids.length,
     objects: ids.map(object),
-    objectGlobalId: 0,
+    // 札の並べ替えは型を読まない（identityで見分ける）ので、どの型でもよい1つを名前空間を通さずに置く。
+    objectGlobalId: 0 as ObjectGlobalId,
     actions: [],
     place,
     visibleSlots: [],
