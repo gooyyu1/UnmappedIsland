@@ -13,6 +13,7 @@ import { PropertyValue } from './PropertyValue';
 import { Slot } from './Slot';
 import type { SlotPosition } from './SlotPosition';
 import type { WorldSession } from './WorldSession';
+import type { PropertyGlobalId } from './GlobalId';
 
 /** 引けなかったものの呼び名（notFoundMessage）。どの名前空間で引くかもこれが決める。 */
 type MemberKind = 'プロパティ' | 'スロット';
@@ -103,7 +104,7 @@ export class WorldObject {
 
   // ---- プロパティを引く（6節） ----
 
-  tryGetProperty(globalPropertyId: number): PropertyValue | undefined {
+  tryGetProperty(globalPropertyId: PropertyGlobalId): PropertyValue | undefined {
     const local = this.def.propertyIndexByGlobalId.toLocal(globalPropertyId);
     return local === LocalIndexByGlobalId.missing ? undefined : this.properties[local];
   }
@@ -113,7 +114,7 @@ export class WorldObject {
    * プロパティ**——生成が書き込む行き先ID、シナリオが名指しする値——を引くときに使う。名前の綴り違いが
    * 黙って無視されず、書いた場所で分かる。
    */
-  getProperty(globalPropertyId: number): PropertyValue {
+  getProperty(globalPropertyId: PropertyGlobalId): PropertyValue {
     const property = this.tryGetProperty(globalPropertyId);
     if (property === undefined) {
       throw new Error(this.notFoundMessage('プロパティ', globalPropertyId));
@@ -250,7 +251,7 @@ export class WorldObject {
    * 呼び手はReferenceContext.ownerOfPropertyだけで、`ancestor`起点の参照はどこに書かれたものも
    * そこを通る（どの文法から来たかは、この時点で区別されていない）。
    */
-  findAncestorWithProperty(propertyGlobalId: number): WorldObject | undefined {
+  findAncestorWithProperty(propertyGlobalId: PropertyGlobalId): WorldObject | undefined {
     let current = this._parent;
     while (current !== undefined) {
       if (current.def.propertyIndexByGlobalId.toLocal(propertyGlobalId) !== LocalIndexByGlobalId.missing)
@@ -811,7 +812,7 @@ export class WorldObject {
     if (parent !== undefined) this.setEdgeRegistered(parent, false);
     for (const { child } of rehomed) child.setEdgeRegistered(this, false);
 
-    const carriedValues = new Map<number, number>();
+    const carriedValues = new Map<PropertyGlobalId, number>();
     for (const property of this.properties) carriedValues.set(property.def.globalId, property.number);
 
     this._def = newDef;
@@ -857,7 +858,7 @@ export class WorldObject {
    * 宣言元は必ず前者に居り、操作の役（agent・instrument・patient）を対象に書いた効果なら必ず後者に
    * 居る——横に並んだ物どうしは、木でも操作でも結ばれていない限り互いに届かない。
    */
-  readInfluences(propertyGlobalId: number): PropertyInfluenceReading {
+  readInfluences(propertyGlobalId: PropertyGlobalId): PropertyInfluenceReading {
     const influences = new PropertyInfluences(this, propertyGlobalId);
     this.collectInfluencesRecursively(influences);
     for (let ancestor = this._parent; ancestor !== undefined; ancestor = ancestor._parent)

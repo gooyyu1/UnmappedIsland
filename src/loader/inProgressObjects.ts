@@ -25,6 +25,7 @@ import {
   PROGRESS_PROPERTY,
   VOLUME_PROPERTY,
 } from '../domain/WorldVocabulary';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 製作中オブジェクトの型の名前（RecipeSystem.md 1節）。人間もMOD作成者もこの型を直接書かないため、
@@ -49,7 +50,7 @@ export function inProgressObjectsYaml(
   inheritedTagIds: ReadonlySet<number>,
   tagNames: NameRegistry,
   objectNames: NameRegistry,
-  propertyNames: NameRegistry,
+  propertyNames: NameRegistry<PropertyGlobalId>,
 ): GeneratedObjectDefs | undefined {
   const objectDefs: Record<string, unknown> = {};
   const coordinates = new Map<string, GeneratedCoordinate>();
@@ -82,7 +83,7 @@ function inProgressObjectDef(
   inheritedTagIds: ReadonlySet<number>,
   tagNames: NameRegistry,
   objectNames: NameRegistry,
-  propertyNames: NameRegistry,
+  propertyNames: NameRegistry<PropertyGlobalId>,
 ): Record<string, unknown> {
   const totalMinutes = recipe.steps.reduce((sum, step) => sum + step.durationMinutes, 0);
 
@@ -147,7 +148,10 @@ function inProgressObjectDef(
 }
 
 /** 完成品が宣言しているかさ（volume）を、そのままの形で写した`props`の断片。無ければ空。 */
-function declaredVolume(product: ObjectDef, propertyNames: NameRegistry): Record<string, unknown> {
+function declaredVolume(
+  product: ObjectDef,
+  propertyNames: NameRegistry<PropertyGlobalId>,
+): Record<string, unknown> {
   const declared = product.tryGetPropertyDef(propertyNames.intern(VOLUME_PROPERTY))?.initialValueReading;
   if (declared === undefined) return {};
   return {

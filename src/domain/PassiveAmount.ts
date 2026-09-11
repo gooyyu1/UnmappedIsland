@@ -1,9 +1,10 @@
 import type { WorldObject } from './WorldObject';
+import type { PropertyGlobalId } from './GlobalId';
 
 /** 寄与する量の宣言（PassiveAmount.reading）。 */
 export type AmountReading =
   | { readonly kind: 'fixed'; readonly value: number }
-  | { readonly kind: 'product'; readonly factorPropertyGlobalIds: readonly number[] };
+  | { readonly kind: 'product'; readonly factorPropertyGlobalIds: readonly PropertyGlobalId[] };
 
 /**
  * 持続効果が寄与する量（GameElementDefinition.md 8.3節）。
@@ -46,9 +47,9 @@ export class FixedAmount extends PassiveAmount {
  * 組み立てる側（containerPropagation）だけが持つ。
  */
 export class ProductAmount extends PassiveAmount {
-  private readonly factorPropertyGlobalIds: readonly number[];
+  private readonly factorPropertyGlobalIds: readonly PropertyGlobalId[];
 
-  constructor(factorPropertyGlobalIds: readonly number[]) {
+  constructor(factorPropertyGlobalIds: readonly PropertyGlobalId[]) {
     super();
     this.factorPropertyGlobalIds = factorPropertyGlobalIds;
   }

@@ -1,5 +1,6 @@
 import type { CardFilter } from './CardFilter';
 import type { GenerationDefs } from './generation/GenerationDefs';
+import type { PropertyGlobalId } from './GlobalId';
 import { GeneratedTypes } from './GeneratedTypes';
 import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef, ObjectDefTable } from './ObjectDef';
@@ -20,7 +21,7 @@ import type { WorldObject } from './WorldObject';
  */
 export type ObjectDefDestination = { readonly context: string } & (
   | { readonly kind: 'object'; readonly objectGlobalId: number }
-  | { readonly kind: 'property'; readonly propertyGlobalId: number }
+  | { readonly kind: 'property'; readonly propertyGlobalId: PropertyGlobalId }
 );
 
 /**
@@ -34,7 +35,7 @@ export type ObjectDefDestination = { readonly context: string } & (
  */
 export class WorldCodex {
   readonly objectNames: NameRegistry;
-  readonly propertyNames: NameRegistry;
+  readonly propertyNames: NameRegistry<PropertyGlobalId>;
   readonly slotNames: NameRegistry;
   readonly tagNames: NameRegistry;
 
@@ -81,7 +82,7 @@ export class WorldCodex {
 
   constructor(
     objectNames: NameRegistry,
-    propertyNames: NameRegistry,
+    propertyNames: NameRegistry<PropertyGlobalId>,
     slotNames: NameRegistry,
     tagNames: NameRegistry,
     propertyTagNames: NameRegistry,
@@ -91,7 +92,7 @@ export class WorldCodex {
     generation?: GenerationDefs,
     generatedTypes?: GeneratedTypes,
     recipeCategoryTagIdsByPriority: readonly number[] = [],
-    requiredPropsByTag: ReadonlyMap<number, readonly number[]> = new Map(),
+    requiredPropsByTag: ReadonlyMap<number, readonly PropertyGlobalId[]> = new Map(),
     craftingConditions?: Requirements,
     objectDefDestinations: readonly ObjectDefDestination[] = [],
     cardFilters: readonly CardFilter[] = [],
@@ -156,7 +157,7 @@ export class WorldCodex {
    * ここでは分からない**（プロパティは型ごとに違う値を持てる）が、それは宣言の側
    * （`props`の`{object: ...}`）が既に受けている。
    */
-  private requireObjectDefValuedProperty(propertyGlobalId: number, context: string): void {
+  private requireObjectDefValuedProperty(propertyGlobalId: PropertyGlobalId, context: string): void {
     if (this.objectDefProperties.has(propertyGlobalId)) return;
 
     const name = this.propertyNames.getName(propertyGlobalId);
@@ -187,7 +188,9 @@ export class WorldCodex {
    *
    * 何をどのタグに要求するかはエンジンではなく世界が決める（要求を1つも書かない世界も成立する）。
    */
-  private requirePropsRequiredByTags(requiredPropsByTag: ReadonlyMap<number, readonly number[]>): void {
+  private requirePropsRequiredByTags(
+    requiredPropsByTag: ReadonlyMap<number, readonly PropertyGlobalId[]>,
+  ): void {
     for (const objectDef of this.objects)
       for (const [tagGlobalId, propertyGlobalIds] of requiredPropsByTag) {
         if (!objectDef.hasTag(tagGlobalId)) continue;

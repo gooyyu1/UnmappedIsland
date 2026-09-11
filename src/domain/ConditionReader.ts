@@ -1,6 +1,7 @@
 import type { StageBound } from './PropertyDef';
 import type { PropertyPath, ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchReading } from './TypeMatchRule';
+import type { PropertyGlobalId } from './GlobalId';
 
 /** GameElementDefinition.md 14.1節の比較演算子。 */
 export type ConditionOp = 'lt' | 'lte' | 'gt' | 'gte' | 'eq' | 'neq' | 'in' | 'not_in';
@@ -23,7 +24,12 @@ export interface ConditionReader {
    * `{subject, prop, in_stage}`・`{subject, prop, in_stage_or_above}`。propの実効値がその名前の段
    * （6.4節）に該当しているか。boundはちょうどその段か、その段以上か（14.1節）。
    */
-  propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string, bound: StageBound): void;
+  propertyStage(
+    root: ReferenceRoot,
+    propertyGlobalId: PropertyGlobalId,
+    stageName: string,
+    bound: StageBound,
+  ): void;
 
   /** `{subject, in_slot}`。subjectが今まさに親のそのスロットに入っているか。 */
   slotPosition(root: ReferenceRoot, slotGlobalId: number): void;
@@ -55,7 +61,7 @@ export interface ConditionDeclaration {
 /** プロパティ比較1つの宣言。valuesとvalueRefはどちらか一方だけを持つ。 */
 export interface PropertyConditionReading {
   readonly root: ReferenceRoot;
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
   readonly op: ConditionOp;
 
   /** リテラルとの比較。lt/lte/gt/gte/eq/neqは常に1要素、in/not_inは複数になりうる。 */

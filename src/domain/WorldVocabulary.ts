@@ -1,3 +1,4 @@
+import type { PropertyGlobalId } from './GlobalId';
 import type { NameRegistry } from './NameRegistry';
 
 /**
@@ -45,7 +46,11 @@ export class WorldVocabulary {
   readonly engine: EngineVocabulary;
   readonly world: WorldRuleVocabulary;
 
-  constructor(propertyNames: NameRegistry, slotNames: NameRegistry, tagNames: NameRegistry) {
+  constructor(
+    propertyNames: NameRegistry<PropertyGlobalId>,
+    slotNames: NameRegistry,
+    tagNames: NameRegistry,
+  ) {
     this.engine = new EngineVocabulary(propertyNames, slotNames);
     this.world = new WorldRuleVocabulary(propertyNames, slotNames, tagNames);
   }
@@ -63,18 +68,18 @@ export class WorldVocabulary {
  * - progress / finished_steps / materials: 製作中オブジェクトの進捗・工程数・材料枠（RecipeSystem.md）。
  */
 export class EngineVocabulary {
-  readonly volumeId: number;
-  readonly fillId: number;
-  readonly weightId: number;
-  readonly densityId: number;
-  readonly loadId: number;
-  readonly loadRateId: number;
+  readonly volumeId: PropertyGlobalId;
+  readonly fillId: PropertyGlobalId;
+  readonly weightId: PropertyGlobalId;
+  readonly densityId: PropertyGlobalId;
+  readonly loadId: PropertyGlobalId;
+  readonly loadRateId: PropertyGlobalId;
 
-  readonly progressId: number;
-  readonly finishedStepsId: number;
+  readonly progressId: PropertyGlobalId;
+  readonly finishedStepsId: PropertyGlobalId;
   readonly materialsSlotId: number;
 
-  constructor(propertyNames: NameRegistry, slotNames: NameRegistry) {
+  constructor(propertyNames: NameRegistry<PropertyGlobalId>, slotNames: NameRegistry) {
     this.volumeId = propertyNames.intern(VOLUME_PROPERTY);
     this.fillId = propertyNames.intern('fill');
     this.weightId = propertyNames.intern('weight');
@@ -99,27 +104,27 @@ export class EngineVocabulary {
  */
 export class WorldRuleVocabulary {
   // ---- 時間と気候（ClimateSystem.md、wrappers/World） ----
-  readonly dayId: number;
-  readonly hourId: number;
-  readonly minuteId: number;
-  readonly minutesPerTickId: number;
-  readonly weatherId: number;
-  readonly ambientBrightnessId: number;
-  readonly ambientTemperatureId: number;
+  readonly dayId: PropertyGlobalId;
+  readonly hourId: PropertyGlobalId;
+  readonly minuteId: PropertyGlobalId;
+  readonly minutesPerTickId: PropertyGlobalId;
+  readonly weatherId: PropertyGlobalId;
+  readonly ambientBrightnessId: PropertyGlobalId;
+  readonly ambientTemperatureId: PropertyGlobalId;
 
   // ---- キャラクタ（docs/world/Characters.md、wrappers/PlayerCharacter） ----
-  readonly hpId: number;
-  readonly satietyId: number;
+  readonly hpId: PropertyGlobalId;
+  readonly satietyId: PropertyGlobalId;
   readonly handSlotId: number;
   readonly equipmentSlotId: number;
   readonly injuriesSlotId: number;
 
   // ---- 土地と道（ExplorationSystem.md、wrappers/Location・wrappers/Path・generation） ----
-  readonly explorationProgressId: number;
-  readonly requiredProgressId: number;
-  readonly destinationIdId: number;
-  readonly returnPathIdId: number;
-  readonly travelMinutesId: number;
+  readonly explorationProgressId: PropertyGlobalId;
+  readonly requiredProgressId: PropertyGlobalId;
+  readonly destinationIdId: PropertyGlobalId;
+  readonly returnPathIdId: PropertyGlobalId;
+  readonly travelMinutesId: PropertyGlobalId;
   readonly locationsSlotId: number;
   readonly itemsSlotId: number;
   readonly fixturesSlotId: number;
@@ -162,7 +167,11 @@ export class WorldRuleVocabulary {
   readonly worldObject = 'world';
   readonly pathObject = 'path';
 
-  constructor(propertyNames: NameRegistry, slotNames: NameRegistry, tagNames: NameRegistry) {
+  constructor(
+    propertyNames: NameRegistry<PropertyGlobalId>,
+    slotNames: NameRegistry,
+    tagNames: NameRegistry,
+  ) {
     this.dayId = propertyNames.intern('day');
     this.hourId = propertyNames.intern('hour');
     this.minuteId = propertyNames.intern('minute');

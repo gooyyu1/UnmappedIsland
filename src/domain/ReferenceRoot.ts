@@ -1,5 +1,6 @@
 import type { PropertyValue } from './PropertyValue';
 import type { WorldObject } from './WorldObject';
+import type { PropertyGlobalId } from './GlobalId';
 
 /**
  * 宣言が**誰を見るか**を指す起点。self.prop/parent.propのような1階層の参照のみ対応。
@@ -282,7 +283,7 @@ export class ReferenceContext {
    * 「そのプロパティを定義している最初の祖先」なので、探すプロパティが決まって初めて相手が決まる
    * （8.6節）。
    */
-  ownerOfProperty(root: ReferenceRoot, propertyGlobalId: number): WorldObject | undefined {
+  ownerOfProperty(root: ReferenceRoot, propertyGlobalId: PropertyGlobalId): WorldObject | undefined {
     return root === 'ancestor' ? this.self?.findAncestorWithProperty(propertyGlobalId) : this.objectAt(root);
   }
 }
@@ -298,9 +299,9 @@ export class ReferenceContext {
  */
 export class PropertyPath {
   readonly root: ReferenceRoot;
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
 
-  constructor(root: ReferenceRoot, propertyGlobalId: number) {
+  constructor(root: ReferenceRoot, propertyGlobalId: PropertyGlobalId) {
     this.root = root;
     this.propertyGlobalId = propertyGlobalId;
   }

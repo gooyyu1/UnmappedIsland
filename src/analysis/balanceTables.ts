@@ -19,6 +19,7 @@ import type { RainWaterRow } from './seasonalRain';
 import { rainWaterRows } from './seasonalRain';
 import type { StaticValueResolver } from './staticValue';
 import { highestDeclaredLayer, staticValueOf } from './staticValue';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 定義（`src/assets/world-codex/*.yaml`）だけから「時間あたりの収支」を計算する。
@@ -102,7 +103,7 @@ export interface ChainRoute {
   readonly craftMinutes: number;
 
   /** 1回の実行で埋まる需要（キーは需要のプロパティ）。体脂肪は三大栄養素の増分がまとまって効く。 */
-  readonly fills: ReadonlyMap<number, number>;
+  readonly fills: ReadonlyMap<PropertyGlobalId, number>;
 
   /** 1回の実行で動く値すべて。時間を按分していないので、これらを縦に足すと二重計上になる。 */
   readonly deltas: readonly NamedAmount[];
@@ -176,7 +177,7 @@ export function isGap(prerequisite: RoutePrerequisite): boolean {
 
 /** 連鎖表の、プロパティ1つぶん。 */
 export interface PropertyChains {
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
   readonly propertyName: string;
 
   /** 1日に減る量。 */
@@ -431,14 +432,14 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacterName: strin
  * 流量を要求量として数えると、必要な3.5倍を食べさせることになる。
  */
 export interface DailyNeed {
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
   readonly name: string;
 
   /** 1日に賄う量。 */
   readonly amount: number;
 
   /** この需要を埋められるプロパティ。体脂肪は三大栄養素が原資なので、そちらの増分で埋まる。 */
-  readonly suppliedBy: readonly number[];
+  readonly suppliedBy: readonly PropertyGlobalId[];
 
   /** 尽きると死ぬか（`on_min` が自分を消す、VitalsSystem.md）。 */
   readonly lethal: boolean;
@@ -460,7 +461,7 @@ function dailyNeedsOf(codex: WorldCodex, character: ObjectDef): readonly DailyNe
   const sources = [...new Set(deltas.filter((d) => d.capped && d.amount < 0).map((d) => d.propertyGlobalId))];
   const sinks = new Set(deltas.filter((d) => d.capped && d.amount > 0).map((d) => d.propertyGlobalId));
 
-  const perTick = new Map<number, number>();
+  const perTick = new Map<PropertyGlobalId, number>();
   for (const delta of deltas) {
     if (delta.capped || delta.gate.conditional || delta.amount >= 0) continue;
     if (character.tryGetPropertyDef(delta.propertyGlobalId)?.worsensUpward === true) continue;
@@ -489,7 +490,7 @@ function inInitialStage(def: ObjectDef, delta: TickDelta): boolean {
 }
 
 /** そのプロパティが尽きたとき、持ち主ごと消えるか（`on_min: destroy self`）。 */
-function destroysWhenEmpty(def: ObjectDef, propertyGlobalId: number): boolean {
+function destroysWhenEmpty(def: ObjectDef, propertyGlobalId: PropertyGlobalId): boolean {
   const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
   if (propertyDef === undefined) return false;
   return rangeEventReadouts(propertyDef, () => undefined).some(
@@ -700,7 +701,7 @@ function routeCandidates(
   dailyNeeds: readonly DailyNeed[],
   place: ObjectDef | undefined,
 ): readonly ChainRoute[] {
-  const suppliers = new Map<number, number[]>();
+  const suppliers = new Map<PropertyGlobalId, PropertyGlobalId[]>();
   for (const dailyNeed of dailyNeeds)
     for (const propertyGlobalId of dailyNeed.suppliedBy) {
       const list = suppliers.get(propertyGlobalId) ?? [];
@@ -718,7 +719,7 @@ function routeCandidates(
 
     const deltas = gainsOf(codex, ref);
     // その工程が埋める需要（体脂肪は三大栄養素の増分がまとまって効く）。
-    const fills = new Map<number, number>();
+    const fills = new Map<PropertyGlobalId, number>();
     for (const [propertyGlobalId, amount] of deltas) {
       if (amount <= 0) continue;
       for (const requirementId of suppliers.get(propertyGlobalId) ?? [])
@@ -736,7 +737,7 @@ function routeCandidates(
  * その工程がキャラクタへ返す値。**宣言元がキャラクタ自身なら `self` も数える**——休息
  * （`wait`/`rest`/`nap`/`sleep`）は自分の値を自分で戻す工程で、他の工程のように `agent` を持たない。
  */
-function gainsOf(codex: WorldCodex, ref: StepRef): ReadonlyMap<number, number> {
+function gainsOf(codex: WorldCodex, ref: StepRef): ReadonlyMap<PropertyGlobalId, number> {
   const agent = expectedDeltas(ref.step, 'agent');
   if (!isCharacter(codex, ref.def)) return agent;
 
@@ -826,8 +827,8 @@ function buildRoute(
   acquisition: Acquisition,
   route: readonly StepRef[],
   resolved: StepCost,
-  deltas: ReadonlyMap<number, number>,
-  fills: ReadonlyMap<number, number>,
+  deltas: ReadonlyMap<PropertyGlobalId, number>,
+  fills: ReadonlyMap<PropertyGlobalId, number>,
   place: ObjectDef | undefined,
 ): ChainRoute {
   const cost = resolved.cost;
@@ -872,7 +873,7 @@ function buildRoute(
 function greedyMenu(dailyNeeds: readonly DailyNeed[], routes: readonly ChainRoute[]): DailyMenu {
   const usable = routes.filter((route) => !route.untimed && route.executionMinutes > 0);
   const remaining = new Map(dailyNeeds.map((need) => [need.propertyGlobalId, need.amount]));
-  const chosen = new Map<number, ChainRoute>();
+  const chosen = new Map<PropertyGlobalId, ChainRoute>();
 
   // **menuForと同じ順序で、同じ数え方で選ぶ。** 「どの需要を先に満たしたか」で経路を割り当てると、
   // その経路がその需要を丸ごと賄うことになり、得意でない値を1つで埋めさせてしまう
@@ -910,7 +911,7 @@ function greedyMenu(dailyNeeds: readonly DailyNeed[], routes: readonly ChainRout
  */
 export function menuFor(
   dailyNeeds: readonly DailyNeed[],
-  chosen: ReadonlyMap<number, ChainRoute>,
+  chosen: ReadonlyMap<PropertyGlobalId, ChainRoute>,
 ): DailyMenu {
   const remaining = new Map(dailyNeeds.map((need) => [need.propertyGlobalId, need.amount]));
   const entries: MenuEntry[] = [];
@@ -1072,8 +1073,8 @@ function expectedSpawns(step: CraftingStep): ReadonlyMap<number, number> {
 }
 
 /** 1回の実行で、対象のプロパティが動く期待量（分岐の確率で重み付けした和）。 */
-function expectedDeltas(step: CraftingStep, target: 'agent' | 'self'): ReadonlyMap<number, number> {
-  const amounts = new Map<number, number>();
+function expectedDeltas(step: CraftingStep, target: 'agent' | 'self'): ReadonlyMap<PropertyGlobalId, number> {
+  const amounts = new Map<PropertyGlobalId, number>();
   for (const outcome of step.outcomes)
     for (const delta of outcome.deltas) {
       if (delta.target !== target) continue;
@@ -1120,7 +1121,7 @@ interface DeviceCycle {
 /** その型が朽ちるまでの時間（分）と、尽きて自分を消すプロパティ。 */
 interface DecayLifetime {
   readonly minutes: number;
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
 }
 
 /** 工程1回の値段と、それが他の土地からの持ち込みを含むか。 */

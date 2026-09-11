@@ -2,6 +2,7 @@ import type { ConditionOp, ConditionReader } from './ConditionReader';
 import type { StageBound } from './PropertyDef';
 import type { PropertyPath, ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
+import type { PropertyGlobalId } from './GlobalId';
 
 type ConditionNodeKind =
   /** {subject, prop, <比較演算子>: value}形式のプロパティ比較。 */
@@ -33,7 +34,7 @@ type ConditionNodeKind =
 /** kindごとに使うフィールドだけを渡すための、生成時の入力（ConditionNodeの各staticが組み立てる）。 */
 interface ConditionNodeFields {
   readonly root?: ReferenceRoot;
-  readonly propertyGlobalId?: number;
+  readonly propertyGlobalId?: PropertyGlobalId;
   readonly op?: ConditionOp;
   readonly values?: readonly number[];
   readonly valueRef?: PropertyPath;
@@ -57,7 +58,7 @@ export class ConditionNode {
   private readonly root: ReferenceRoot | undefined;
 
   /** property/property_stage葉のみ有効。 */
-  private readonly propertyGlobalId: number | undefined;
+  private readonly propertyGlobalId: PropertyGlobalId | undefined;
 
   /** property葉のみ有効。 */
   private readonly op: ConditionOp | undefined;
@@ -106,7 +107,7 @@ export class ConditionNode {
 
   static property(
     root: ReferenceRoot,
-    propertyGlobalId: number,
+    propertyGlobalId: PropertyGlobalId,
     op: ConditionOp,
     values: readonly number[] | undefined,
     valueRef?: PropertyPath,
@@ -116,7 +117,7 @@ export class ConditionNode {
 
   static propertyStage(
     root: ReferenceRoot,
-    propertyGlobalId: number,
+    propertyGlobalId: PropertyGlobalId,
     stageName: string,
     stageBound: StageBound,
   ): ConditionNode {
@@ -255,7 +256,7 @@ export class ConditionNode {
   /** rootが指す相手のpropertyGlobalIdの実効値。相手が解決できない・持たない場合はundefined。 */
   private effectiveValueAt(
     root: ReferenceRoot,
-    propertyGlobalId: number,
+    propertyGlobalId: PropertyGlobalId,
     context: ReferenceContext,
   ): number | undefined {
     return context

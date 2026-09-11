@@ -7,6 +7,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 腕前（characters/player_character.yaml）と、レシピの解放条件（docs/engine/SkillSystem.md 4節）の
@@ -458,7 +459,7 @@ function declaredInteractions(): readonly InteractionGains[] {
 
 describe('腕前とレシピの解放条件', () => {
   let codex: WorldCodex;
-  let skillIds: readonly number[];
+  let skillIds: readonly PropertyGlobalId[];
 
   beforeAll(() => {
     codex = bundledCodex();

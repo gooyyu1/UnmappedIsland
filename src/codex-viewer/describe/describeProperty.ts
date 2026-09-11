@@ -3,6 +3,7 @@ import type { PropertyDef, PropertyStage } from '../../domain/PropertyDef';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { propertyPathRef, propertyTagRef, stageRef, text } from './Description';
 import { describeEffect } from './describeEffect';
+import type { PropertyGlobalId } from '../../domain/GlobalId';
 
 /** 初期値の書き表し。一覧の表など、1行で済ませたい場所向けに断片で返す。 */
 export function initialValueTokens(def: PropertyDef, names: DefNames): readonly DescriptionToken[] {
@@ -43,7 +44,7 @@ export function describeProperty(def: PropertyDef, names: DefNames, out: Descrip
 /** 段1つ（6.4節）を書き表す。propertyGlobalIdは、eqの値をシンボル名へ戻すために要る。 */
 function stageTokens(
   stage: PropertyStage,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   names: DefNames,
 ): readonly DescriptionToken[] {
   const tokens: DescriptionToken[] = [stageRef(stage.name)];

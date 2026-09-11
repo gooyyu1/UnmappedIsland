@@ -20,6 +20,7 @@ import { CodexPage } from './CodexPage';
 import type { CodexView } from './CodexView';
 import { escapeHtml, inlineArtHtml } from './html';
 import { objectLinkHtml } from './pages';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 収支のページ（`#/balance`）。1ページに全部を並べ、`#/balance/<場所>` で節の頭へ送る
@@ -662,7 +663,7 @@ function wireBalanceMenu(tables: BalanceTables): void {
 
     const selects = [...menu.querySelectorAll<HTMLSelectElement>('select[data-menu-property]')];
     const update = (): void => {
-      const chosen = new Map<number, ChainRoute>();
+      const chosen = new Map<PropertyGlobalId, ChainRoute>();
       for (const select of selects) {
         const dailyNeed = tables.dailyNeeds.find((r) => r.name === select.dataset.menuProperty);
         const chains = place.properties.find((c) => c.propertyName === select.dataset.menuProperty);

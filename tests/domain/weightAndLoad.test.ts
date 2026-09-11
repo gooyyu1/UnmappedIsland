@@ -3,6 +3,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * weight（物の重さ）とload（担いだ人が感じる負荷）の実効値導出に対する自動テスト（ContainerSystem.md）。
@@ -81,8 +82,8 @@ object_defs:
   function build(): {
     codex: WorldCodex;
     session: WorldSession;
-    weightId: number;
-    loadId: number;
+    weightId: PropertyGlobalId;
+    loadId: PropertyGlobalId;
     make: (name: string) => WorldObject;
     put: (child: WorldObject, parent: WorldObject, slotName: string) => void;
   } {

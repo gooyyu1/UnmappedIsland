@@ -1,6 +1,7 @@
 import type { WorldCodex } from '../WorldCodex';
 import type { WorldRuleVocabulary } from '../WorldVocabulary';
 import type { WorldObject } from '../WorldObject';
+import type { PropertyGlobalId } from '../GlobalId';
 
 /**
  * 1つの`WorldObject`を、世界の語彙で名前を与えて読み書きするための型付きの窓
@@ -30,12 +31,12 @@ export abstract class ObjectWrapper {
   }
 
   /** 名指しのプロパティの実効値。宣言していなければ0。 */
-  protected effectiveNumberOf(propertyGlobalId: number): number {
+  protected effectiveNumberOf(propertyGlobalId: PropertyGlobalId): number {
     return this.instance.tryGetProperty(propertyGlobalId)?.getEffectiveValue() ?? 0;
   }
 
   /** 名指しのプロパティの実効値。**宣言していなければundefined**——0と区別したい問いだけが使う。 */
-  protected tryEffectiveNumberOf(propertyGlobalId: number): number | undefined {
+  protected tryEffectiveNumberOf(propertyGlobalId: PropertyGlobalId): number | undefined {
     return this.instance.tryGetProperty(propertyGlobalId)?.getEffectiveValue();
   }
 

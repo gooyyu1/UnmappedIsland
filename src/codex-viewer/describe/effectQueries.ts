@@ -10,6 +10,7 @@ import type {
 import type { PassiveDeclaration, PassivePropertyReading, PassiveReader } from '../../domain/PassiveReader';
 import type { ObjectRefReading } from '../../domain/ObjectRef';
 import type { ReferenceRoot } from '../../domain/ReferenceRoot';
+import type { PropertyGlobalId } from '../../domain/GlobalId';
 
 /**
  * 効果の宣言に対する逆引き（「このプロパティを書き換えるのは誰か」「これを生むのは誰か」）。
@@ -26,7 +27,7 @@ import type { ReferenceRoot } from '../../domain/ReferenceRoot';
  */
 export function writesToProperty(
   declaration: EffectDeclaration,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   ownedByDeclarer: boolean,
 ): boolean {
   const reader = new PropertyWriterFinder(propertyGlobalId, ownedByDeclarer);
@@ -37,7 +38,7 @@ export function writesToProperty(
 /** その持続効果がpropertyGlobalIdのプロパティを書き換えうるか（writesToPropertyの持続効果版）。 */
 export function passiveWritesToProperty(
   declaration: PassiveDeclaration,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   ownedByDeclarer: boolean,
 ): boolean {
   const reader = new PassivePropertyWriterFinder(propertyGlobalId, ownedByDeclarer);
@@ -56,7 +57,7 @@ export function spawnsObject(declaration: EffectDeclaration, objectGlobalId: num
 abstract class IgnoringEffectReader implements EffectReader {
   found = false;
 
-  set(_target: ReferenceRoot, _propertyGlobalId: number, _value: SetValueReading): void {}
+  set(_target: ReferenceRoot, _propertyGlobalId: PropertyGlobalId, _value: SetValueReading): void {}
   add(_reading: AddReading): void {}
   spawn(_objectGlobalId: number, _count: number): void {}
   destroy(_target: ObjectRefReading, _reason: string | undefined): void {}
@@ -77,16 +78,16 @@ abstract class IgnoringEffectReader implements EffectReader {
 }
 
 class PropertyWriterFinder extends IgnoringEffectReader {
-  private readonly propertyGlobalId: number;
+  private readonly propertyGlobalId: PropertyGlobalId;
   private readonly ownedByDeclarer: boolean;
 
-  constructor(propertyGlobalId: number, ownedByDeclarer: boolean) {
+  constructor(propertyGlobalId: PropertyGlobalId, ownedByDeclarer: boolean) {
     super();
     this.propertyGlobalId = propertyGlobalId;
     this.ownedByDeclarer = ownedByDeclarer;
   }
 
-  override set(target: ReferenceRoot, propertyGlobalId: number): void {
+  override set(target: ReferenceRoot, propertyGlobalId: PropertyGlobalId): void {
     this.markIfWritesToWantedProperty(target, propertyGlobalId);
   }
 
@@ -101,7 +102,7 @@ class PropertyWriterFinder extends IgnoringEffectReader {
       this.markIfWritesToWantedProperty(linked.target, linked.propertyGlobalId);
   }
 
-  private markIfWritesToWantedProperty(target: ReferenceRoot, propertyGlobalId: number): void {
+  private markIfWritesToWantedProperty(target: ReferenceRoot, propertyGlobalId: PropertyGlobalId): void {
     if (writesTo(target, propertyGlobalId, this.propertyGlobalId, this.ownedByDeclarer)) this.found = true;
   }
 }
@@ -110,10 +111,10 @@ class PropertyWriterFinder extends IgnoringEffectReader {
 class PassivePropertyWriterFinder implements PassiveReader {
   found = false;
 
-  private readonly propertyGlobalId: number;
+  private readonly propertyGlobalId: PropertyGlobalId;
   private readonly ownedByDeclarer: boolean;
 
-  constructor(propertyGlobalId: number, ownedByDeclarer: boolean) {
+  constructor(propertyGlobalId: PropertyGlobalId, ownedByDeclarer: boolean) {
     this.propertyGlobalId = propertyGlobalId;
     this.ownedByDeclarer = ownedByDeclarer;
   }
@@ -133,7 +134,7 @@ class PassivePropertyWriterFinder implements PassiveReader {
       this.markIfWritesToWantedProperty(linked.target, linked.propertyGlobalId);
   }
 
-  private markIfWritesToWantedProperty(target: ReferenceRoot, propertyGlobalId: number): void {
+  private markIfWritesToWantedProperty(target: ReferenceRoot, propertyGlobalId: PropertyGlobalId): void {
     if (writesTo(target, propertyGlobalId, this.propertyGlobalId, this.ownedByDeclarer)) this.found = true;
   }
 }
@@ -144,7 +145,7 @@ class PassivePropertyWriterFinder implements PassiveReader {
  */
 function writesTo(
   target: ReferenceRoot,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   wanted: number,
   ownedByDeclarer: boolean,
 ): boolean {

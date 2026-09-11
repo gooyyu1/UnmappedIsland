@@ -6,6 +6,7 @@ import type { ActivityHoursRow } from './activityHours';
 import type { BalanceTables } from './balanceTables';
 import { MINUTES_PER_DAY } from './balanceTables';
 import { craftingStepsOf } from './craftingSteps';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 生成された島を測って、**1日を局面ごとに数える**（ContentSkeleton.md 8.2節・8.3節）。
@@ -320,7 +321,7 @@ export function cheapestStackOf(
 }
 
 /** その型が、据えた先（祖先）のプロパティを常時いくつ押し上げるか。段や条件で縛られた寄与は数えない。 */
-function ancestorLiftOf(def: ObjectDef, propertyGlobalId: number): number {
+function ancestorLiftOf(def: ObjectDef, propertyGlobalId: PropertyGlobalId): number {
   const collector = new AncestorLiftCollector(propertyGlobalId);
   def.passives.read(collector);
   return collector.lift;
@@ -329,7 +330,7 @@ function ancestorLiftOf(def: ObjectDef, propertyGlobalId: number): number {
 class AncestorLiftCollector implements PassiveReader {
   lift = 0;
 
-  constructor(private readonly propertyGlobalId: number) {}
+  constructor(private readonly propertyGlobalId: PropertyGlobalId) {}
 
   modify(reading: PassivePropertyReading): void {
     if (reading.target !== 'ancestor' || reading.propertyGlobalId !== this.propertyGlobalId) return;

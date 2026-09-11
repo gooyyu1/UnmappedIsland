@@ -37,6 +37,37 @@
 - 条件で値を選ぶだけの分岐は `if (a) return x; return y;` ではなく `return a ? x : y;` と書く。
   処理の分岐ではなく値の分岐なので、形が中身と一致する（短さは理由ではない）。
 
+### グローバルIDは、名前空間ごとに別の型
+
+名前空間（`NameRegistry` 1つぶん）が配るグローバルIDは、`number` に型の上だけの印を交ぜた
+[`GlobalId<名前空間>`](../../src/domain/GlobalId.ts) で受ける。実体は素の `number` のままなので、
+比較もMapの鍵も配列の添字もそのまま使える。名前空間が違えば別の型になり、プロパティのIDを受ける宣言へ
+スロットのIDや素の数を渡すと型で止まる（[`tests/architecture/globalId.test.ts`](../../tests/architecture/globalId.test.ts)
+が `@ts-expect-error` で見張る。受け口が `number` へ戻ると `npm run typecheck` が赤くなる）。
+
+**分け終わっているのはプロパティの名前空間だけ**（2026-09-11時点）。残りは `NameRegistry` の型引数の
+既定である素の `number` のままで、**互いのIDを渡し合える**。分ける手順は下に置くので、ここを読んで
+「もう全部が分かれている」と読まないこと。
+
+**素の `number` から専用の型へ変わるのは `NameRegistry` の中だけ。** 番号を決めているのが
+`intern` の1行で、外へ開いているのは名前から引く経路（`intern`/`getId`/`tryGetId`）しか無い。
+YAMLもシナリオも生成物もURLも**名前で越境する**ので、外から来た数がIDとして通ることがない。
+
+名前空間を1つ増やすときの手順:
+
+1. `GlobalId.ts` に `GlobalId<'その名前'>` の別名を置く。
+2. 配る側の `NameRegistry` をその別名で型付けする（`WorldCodex`・`WorldCodexYamlLoader` の
+   フィールドとゲッター）。
+3. `npm run typecheck` が挙げる箇所を追う。**明示的に `number` と書いてある宣言だけが残る**
+   ——`intern` から受けた値をそのまま渡している経路は推論で埋まる。
+
+跨ぐ場所を新しく作らなければならないなら、**跨ぐ理由をその場に書く**（既にある例外は、どの名前空間も
+配っていないIDを渡す試験——`tests/domain/propertyAndSlotLookup.test.ts`）。
+
+**プロパティの「値」に別の名前空間のIDが入ることがある**（型を値に持つプロパティは `objectNames` の
+ID、シンボル型は `symbolNames` のID。GameElementDefinition.md 6.6節・6.9節）。値は宣言された数であって
+名前空間が配ったIDではないので、その2つを型で分けるなら、読み出す側が越境の場所になる。
+
 ## クラス
 
 - getterの背後にある可変フィールドだけ `_` プレフィックスを付ける（`private _number` と `get number()`）。

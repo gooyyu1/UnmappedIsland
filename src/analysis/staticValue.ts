@@ -9,6 +9,7 @@ import type { ObjectDef } from '../domain/ObjectDef';
 import type { RollEnd } from '../domain/PropertyDef';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import type { TypeMatchReading } from '../domain/TypeMatchRule';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 定義だけから値を解く手立てと、その周りの近似。
@@ -32,7 +33,7 @@ import type { TypeMatchReading } from '../domain/TypeMatchRule';
  */
 export type StaticValueResolver = (
   root: ReferenceRoot,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   end: RollEnd,
 ) => number | undefined;
 
@@ -113,7 +114,10 @@ export function highestDeclaredLayer(
  * 端を1つに決めたStaticValueResolver（staticResolverOf）。効果や条件の宣言を読む側は、自分が
  * どちらの端の話をしているかを知らないまま値を引ける。**端を選べるのは、問いを立てた側だけ。**
  */
-export type EndBoundValueResolver = (root: ReferenceRoot, propertyGlobalId: number) => number | undefined;
+export type EndBoundValueResolver = (
+  root: ReferenceRoot,
+  propertyGlobalId: PropertyGlobalId,
+) => number | undefined;
 
 /**
  * defを起点として、定義だけから値を解く手立て。selfは自分のプロパティ宣言が答え、それ以外の起点は
@@ -142,7 +146,7 @@ export function staticResolverOf(
  */
 export function staticValueOf(
   def: ObjectDef,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   end: RollEnd,
   outer?: StaticValueResolver,
 ): number | undefined {
@@ -218,7 +222,7 @@ export interface StaticValueRange {
  */
 export interface StaticSubjectReader {
   /** その起点が指す型が、そのプロパティに取りうる値の範囲（StaticValueRange）。 */
-  rangeOf(root: ReferenceRoot, propertyGlobalId: number): StaticValueRange | undefined;
+  rangeOf(root: ReferenceRoot, propertyGlobalId: PropertyGlobalId): StaticValueRange | undefined;
 
   /** その起点が指す型そのものが、その指定（4.1節）に当てはまるか。 */
   matchesType(root: ReferenceRoot, match: TypeMatchReading): boolean | undefined;
