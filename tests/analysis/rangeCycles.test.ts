@@ -244,6 +244,28 @@ object_defs:
       - conditions: [{prop: heat, in_stage_or_above: hot}]
         add: {parent: {ambient_temperature: 2}}
 
+  # 窯出しの石。**上から落ちて入る段で縛られた押し手**——焼けたてはsearingで、そこから冷めてhotへ
+  # 落ちてきて初めて暖める。段は下から開くものとして数えると、窯から出した瞬間から暖めることになる。
+  #
+  # 熱に個体差を持たせてあるのは、**上から入る場合でもロールは軽く出たほうを採る**のを見るため
+  # （GATE_WINDOW_ROLL_END）。効き始めと止まるまでは同じ1つの個体についての長さなので、向きで
+  # 裏返すと、落ちて入る個体と割って出る個体が別々になる。
+  kiln_stone:
+    tags: [item]
+    props:
+      heat:
+        value: {min: 80, max: 100}
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: hot, min: 20}
+          - {name: searing, min: 60}
+        passives:
+          - add: {self: {heat: -1}}
+    passives:
+      - conditions: [{prop: heat, in_stage: hot}]
+        add: {parent: {ambient_temperature: 2}}
+
   # 凍傷。**受け皿の段（6.4節）に居ることを求める押し手**——巡りが鈍っている間、持ち主の熱を奪う。
   # 巡りは落ちる一方だが、受け皿には下端が無いので、下端まで落ちても段は外れない。
   frostbite:
@@ -642,6 +664,17 @@ object_defs:
     ]);
     expect(externalDeltasOf('wrapped_stone', 'ambient_temperature')).toEqual([
       { amounts: [2], ticksUntilStart: 0, ticksUntilStop: 9 },
+    ]);
+  });
+
+  it('自分の増減で上から段へ落ちて効き始める押し手は、落ちるまでの時間を持つ', () => {
+    // 段を下端へ届くことでしか開かないものとして数えると、冷めていく熱では届く時が来ないので
+    // 立ち上がりが0＝窯から出した瞬間から暖めるものとして数えられる。軽く出た80から-1/tickなので、
+    // hotの上端60を割るのは21 tick目（20 tick後はちょうど60＝まだsearing）、下端20を割って
+    // 止まるのは61 tick目。重く出た100を採ると41 tickと81 tickになり、効き始めと止まるまでが
+    // 別々の個体の長さになる。
+    expect(externalDeltasOf('kiln_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 21, ticksUntilStop: 61 },
     ]);
   });
 
