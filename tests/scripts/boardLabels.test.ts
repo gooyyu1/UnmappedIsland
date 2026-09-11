@@ -354,3 +354,90 @@ describe('board-labels.yml の synchronized', () => {
     }
   });
 });
+
+/**
+ * 人がPRのラベルを外したことを、差し戻しへ訳す段（`.claude/board-design.md` 2.13.1）。
+ *
+ * **ここが「外したのは誰か」を取り違えると、盤面が回らなくなる。** 上の `synchronized` は push の
+ * たびに同じラベルを外すので、機械のぶんまで差し戻しに読むと、**直して push した本人がその push で
+ * 差し戻される**——直すほど差し戻る輪になる。
+ */
+describe('board-labels.yml の unlabeled_by_hand', () => {
+  const PR = '1701';
+
+  /** 外れたラベルと、外した相手の種別を渡して走らせる。 */
+  function runUnlabeled(label: string, sender = 'User'): string[] {
+    const work = mkdtempSync(join(tmpdir(), 'unmapped-island-unlabeled-'));
+    const dir = pathForBash(work);
+    try {
+      const gh = join(work, 'gh');
+      writeFileSync(
+        gh,
+        `${STUB_SHEBANG}
+case "$1 $2" in
+"pr edit")
+  shift 2
+  echo "$*" >>'${dir}/edits.txt'
+  ;;
+*) exit 1 ;;
+esac
+`,
+        'utf-8',
+      );
+      chmodSync(gh, 0o755);
+      writeFileSync(join(work, 'edits.txt'), '', 'utf-8');
+
+      const workflow = parse(readFileSync(WORKFLOW, 'utf-8')) as {
+        jobs: Record<string, { steps: { run?: string }[] }>;
+      };
+      const step = workflow.jobs.unlabeled_by_hand.steps.find((s) => s.run !== undefined)?.run;
+      if (step === undefined) throw new Error('unlabeled_by_hand ジョブに run: が無い');
+      const file = join(work, 'step.sh');
+      writeFileSync(file, step, 'utf-8');
+
+      const result = spawnScript(file, [], {
+        stdio: 'pipe',
+        env: {
+          ...process.env,
+          PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
+          GH_TOKEN: 'x',
+          REPO: 'gooyyu1/UnmappedIsland',
+          PR,
+          LABEL: label,
+          SENDER: sender,
+        },
+      });
+      if (result.status !== 0) throw new Error(`unlabeled_by_hand が ${result.status} で終わった`);
+
+      return readFileSync(join(work, 'edits.txt'), 'utf-8')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+    } finally {
+      rmSync(work, { recursive: true, force: true });
+    }
+  }
+
+  const REJECTED = [`${PR} --repo gooyyu1/UnmappedIsland --add-label 却下`];
+
+  // 人がすることは「外す＝直してもらう」「マージする＝それでよい」の2つだけ（2.13.1）。
+  it('PRを止めている印を人が外したら、却下 を付ける', () => {
+    expect(runUnlabeled('判断待ち')).toEqual(REJECTED);
+    expect(runUnlabeled('収束せず')).toEqual(REJECTED);
+    expect(runUnlabeled('通してよい')).toEqual(REJECTED);
+  });
+
+  // **push で機械が外したぶんは差し戻しではない。**
+  it('機械が外したぶんでは、却下 を付けない', () => {
+    expect(runUnlabeled('判断待ち', 'Bot')).toEqual([]);
+    expect(runUnlabeled('収束せず', 'Bot')).toEqual([]);
+    expect(runUnlabeled('通してよい', 'Bot')).toEqual([]);
+  });
+
+  // 既に差し戻し中の印を外しても、打つ手は変わらない。分類（`kind:`）や `急ぎ` も同じ。
+  it('PRを止めていない印を外しても、何もしない', () => {
+    expect(runUnlabeled('直し待ち')).toEqual([]);
+    expect(runUnlabeled('却下')).toEqual([]);
+    expect(runUnlabeled('急ぎ')).toEqual([]);
+  });
+});

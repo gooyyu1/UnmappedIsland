@@ -33,8 +33,8 @@ export interface World {
   readonly gate?: readonly string[];
   /** 関門の終了コード。既定は理由の有無から決まる（あれば 0、無ければ 1）。 */
   readonly gateStatus?: number;
-  /** `--user-ok` を付けて叩くか。 */
-  readonly userOk?: boolean;
+  /** PRの番号の後ろへ足す引数。**関門を越える口が生えていないこと**を見張るのに使う。 */
+  readonly extra?: readonly string[];
 }
 
 export interface Run {
@@ -44,8 +44,6 @@ export interface Run {
   readonly merged: boolean;
   /** `gh pr edit` に渡されたラベルの操作。 */
   readonly labels: string[];
-  /** PRへ書いたコメントの本文。 */
-  readonly comments: string;
 }
 
 /** 世界を組んで叩く。 */
@@ -77,10 +75,6 @@ if [ "$1" = pr ] && [ "$2" = edit ]; then
   echo "$*" >> '${dir}/labels'
   exit 0
 fi
-if [ "$1" = pr ] && [ "$2" = comment ]; then
-  cat "$5" >> '${dir}/comments'
-  exit 0
-fi
 exit 1
 `,
       'utf-8',
@@ -100,7 +94,7 @@ exit 1
     let status = 0;
     let out = '';
     try {
-      out = runScript(SCRIPT, ['1000', ...(world.userOk === true ? ['--user-ok'] : [])], {
+      out = runScript(SCRIPT, ['1000', ...(world.extra ?? [])], {
         env: {
           ...process.env,
           PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
@@ -118,7 +112,6 @@ exit 1
       status,
       merged: existsSync(join(work, 'merged')),
       labels: existsSync(join(work, 'labels')) ? lines(readFileSync(join(work, 'labels'), 'utf-8')) : [],
-      comments: existsSync(join(work, 'comments')) ? readFileSync(join(work, 'comments'), 'utf-8') : '',
     };
   } finally {
     rmSync(work, { recursive: true, force: true });

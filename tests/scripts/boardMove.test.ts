@@ -122,6 +122,14 @@ const pending = (number: number) =>
 const verdict = (version: string) => ({
   comments: [{ body: `[レビュー] 通してよい\n読んだ版: ${version}\n\n直しは要らない。\n` }],
 });
+/** 通したうえで人へ回す形の判定（2.13.4）。 */
+const asked = (version: string) => ({
+  comments: [
+    {
+      body: `[レビュー] 通してよい（人の判断が要る）\n読んだ版: ${version}\n\n倍率を足している。\n`,
+    },
+  ],
+});
 const working = (id: string, ...tags: string[]) => ({
   id,
   status: 'SESSION_STATUS_RUNNING',
@@ -239,6 +247,36 @@ describe('board-move.mjs', () => {
     expect(moves({ prs: [pr(10, label('通してよい', '判断待ち'))] })).toEqual([]);
   });
 
+  /**
+   * **人が外してから `却下` が付くまでの窓**（2.13.5）。ラベルだけを見ると、この周は「止める印が
+   * 何も無い緑のPR」に見える——**差し戻すつもりで外した操作が、そのまま取り消せないマージになる。**
+   * 判定はコメントに残っていて、読んだ版も名乗ってあるので、そちらから読む。
+   */
+  it('判断待ちが外れていても、今の版の判定が人の判断を求めていればマージしない', () => {
+    expect(moves({ prs: [pr(10, { ...label('通してよい'), ...asked('aaa1111') })] })).toEqual([]);
+  });
+
+  // **前の差分への判定は、今の差分を止めない**（2.13.4。周ごとに判定は変わりうる）。
+  it('前の版で人の判断を求めていても、今の版の判定が通してよいならマージする', () => {
+    const comments = [...asked('9990000').comments, ...verdict('aaa1111').comments];
+    expect(moves({ prs: [pr(10, { ...label('通してよい'), comments })] })).toEqual(['MERGE 10']);
+  });
+
+  // **読んだ版の名乗りは書き忘れうる**（`review-prompt.md`）。どの版のものか言えない判定を数え
+  // ないと、**その周だけ人へ回した判定が消えて、取り消せないマージになる**（2.13.5）。ラベルを
+  // 付ける側（`board-labels.yml`）は1行目しか見ないので、名乗りが無くても `判断待ち` は付く。
+  it('版を名乗っていなくても、人の判断を求める判定はマージを止める', () => {
+    const comments = [{ body: '[レビュー] 通してよい（人の判断が要る）\n\n倍率を足している。\n' }];
+    expect(moves({ prs: [pr(10, { ...label('通してよい'), comments })] })).toEqual([]);
+  });
+
+  // **逆に、読まれたかを見る側は数えない。** どの版を読んだのか言えないものを数えると、押した後の
+  // 差分が二度と読まれない（2.13.5）。
+  it('版を名乗っていない判定は、読まれた証拠にはしない', () => {
+    const comments = [{ body: '[レビュー] 通してよい\n\n直しは要らない。\n' }];
+    expect(moves({ prs: [pr(10, { comments })] })).toEqual(['REVIEW 10 aaa1111']);
+  });
+
   it('判断待ちでも、コンフリクトは差し戻す', () => {
     const board = {
       prs: [pr(10, { ...label('判断待ち'), mergeable: 'CONFLICTING' })],
@@ -266,12 +304,9 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
   });
 
-  it('収束せずのPRに人が通してよいを付けたら、マージする', () => {
-    expect(moves({ prs: [pr(10, label('収束せず', '通してよい'))] })).toEqual(['MERGE 10']);
-  });
-
-  // **`mend` ではなく `reject`。** 指摘に答えるのではなく、通らなかった仮決めを取り下げる作業。
-  it('却下のPRは、仮決めを取り下げさせる形で差し戻す', () => {
+  // **`mend` ではなく `reject`。** レビューの指摘に答えるのではなく、ユーザーが何を通さなかったのかを
+  // 読みに行く作業（`resume-prompt.md` の `## reject`）。
+  it('却下のPRは、ユーザーの差し戻しとして起こす', () => {
     const board = {
       prs: [pr(10, label('却下'))],
       prSessions: { 10: 'session_a' },
@@ -280,7 +315,8 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa1111']);
   });
 
-  // **却下は判断待ちの出口。** 外す手間を人に負わせないので、両方付いたまま届く（2.13.1）。
+  // **人が外すのは1つずつ。** `判断待ち` と `収束せず` が並んだPRで片方だけ外せば、残ったほうは
+  // 付いたまま `却下` が付く（2.13.1）。止めるのはマージとレビューで、差し戻しは止めない（2.13.2）。
   it('判断待ちが付いたままでも、却下は差し戻す', () => {
     const board = {
       prs: [pr(10, label('判断待ち', '却下'))],
@@ -380,7 +416,15 @@ describe('board-move.mjs', () => {
   it('判定を書き終えたPRへは、読み手がもう居なくてもレビューを立て直さない', () => {
     const board = { prs: [pr(10, verdict('aaa1111'))], taken: { 'review:10': 'aaa1111' } };
     expect(moves(board)).toEqual([
-      'NOTE PR #10 のレビューは判定を書き終えていて、結論のラベルが付くのを待っている',
+      'NOTE PR #10 は今の版の判定が書かれている（結論のラベルが付くのを待っている）',
+    ]);
+  });
+
+  // **判定はコメントに残る。** 台帳が消えていても、人が結論のラベルを外していても同じで、
+  // 読み終えた差分へもう1本立てる理由にはならない（2.13.5）。
+  it('台帳に無くても、今の版の判定が書かれていればレビューを立てない', () => {
+    expect(moves({ prs: [pr(10, verdict('aaa1111'))] })).toEqual([
+      'NOTE PR #10 は今の版の判定が書かれている（結論のラベルが付くのを待っている）',
     ]);
   });
 
@@ -488,7 +532,7 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['NOTE PR #10 はCIが赤いが、`main` が赤いので直しを頼まない']);
   });
 
-  // 止めるのは `mend` だけ。**仮決めの取り下げも画面の証跡も、`main` の色と関わらない作業**なので、
+  // 止めるのは `mend` だけ。**人の差し戻しも画面の証跡も、出た理由が `main` の色と関わらない**ので、
   // ここまで止めると `main` の赤が長引いた分だけ関係の無い手が遅れる。
   it('main が赤くても、却下は差し戻す', () => {
     const board = {

@@ -3,7 +3,6 @@
 # セッションが `通してよい` を返した後に叩く、決まりきった手順だけをまとめてある。
 #
 #   bash scripts/agent/merge-pr.sh 1036
-#   bash scripts/agent/merge-pr.sh 1036 --user-ok   … 関門をユーザーの許可で越える
 #
 # 出力は1行1件。
 #   HELD     <PR番号>              … 関門に掛かった。マージしていない（理由が続けて出る）
@@ -23,28 +22,25 @@
 # 盤面が打つ。ブランチの削除と、上に積まれたPRの base の張り替えは**GitHub 自身がやる**ので、
 # どちらもここには無い（あちらの「GitHub が肩代わりするもの」）。
 #
-# ## 関門（`needs-user-review.sh`）は、この道具では越えられない
+# ## 関門（`needs-user-review.sh`）を越える道は、この道具に無い
 #
 # 確定の宣言（節の `【確定】` と、文書単位の `**本書は全体が確定です。**`）を足した／消したPRは、
 # **ユーザー以外の判断ではマージしない**。
 # [`needs-user-review.sh`](needs-user-review.sh) が該当を出したら `判断待ち` を付けて `HELD` で止め、
-# ユーザーへ回す。越えるにはユーザーの許可を引いて `--user-ok` を付けて叩き直す——**そのとき許可を
-# 受けたことをPRへコメントとして残す**ので、後からどのPRが誰の許可で通ったのかを辿れる。
+# ユーザーへ回す。**そこから先はユーザーが画面からマージする**——人が画面から入れるなら、その判断は
+# 定義上もう済んでいる（[`board-design.md`](../../.claude/board-design.md) 2.13.1）。**許可を引いて
+# 叩き直す口は持たない。** 打つ操作を1つ足すと、ユーザーが覚えることがその分だけ増える。
 #
 # **自動では越えられない関門にしてあるのは、越えられる関門は越えるから。** 直近25本で
 # `## 仮決め` に中身のあったPRが22本、`判断待ち` が付いたのは0本だった。
 #
-# **レビュアーが付けた `判断待ち` は、こことは別。** `[レビュー] 通してよい（人の判断が要る）` で
-# 付くほうを見ているのは盤面（[`board-move.mjs`](board-move.mjs)）で、**この道具はラベルを見ない**
-# ——外れればマージの手が出て、ここは該当なしで通す。だから `--user-ok` は要らない
-# （[`board-design.md`](../../.claude/board-design.md) 2.13.4）。**ラベルを1つ外すだけで越えられる形に
-# してあるのは、何を判断してほしいかがレビューのコメントに書いてあるから。**
+# **レビュアーが付けた `判断待ち` も、越え方は同じ**（画面からのマージ）。ラベルを見ているのは盤面
+# （[`board-move.mjs`](board-move.mjs)）で、**この道具はラベルを見ない**——付いている間は盤面が
+# マージの手を出さないので、ここまで来ない（2.13.4）。
 
 set -euo pipefail
 
 PR="${1:?PRの番号を渡す（例: 1036）}"
-USER_OK=0
-[ "${2:-}" != "--user-ok" ] || USER_OK=1
 
 # `%/*` は区切りが無いと文字列をそのまま返す。
 HERE="${BASH_SOURCE[0]%/*}"
@@ -59,25 +55,10 @@ if [ "$state" = "OPEN" ]; then
   # 関門。**マージの前に見る**——通した後では、印が付いた状態が `main` に入ってしまう。
   reasons=$(bash "$NEEDS_USER_REVIEW" "$PR" 2>&1) && gate=0 || gate=$?
   if [ "$gate" -ne 1 ]; then
-    if [ "$USER_OK" -eq 0 ]; then
-      echo "HELD $PR"
-      echo "$reasons" | sed 's/^/    /'
-      gh pr edit "$PR" --add-label 判断待ち >/dev/null
-      exit 1
-    fi
-    note="$(mktemp)"
-    {
-      echo "[デーモン] **ユーザーの許可を得てマージします。**"
-      echo
-      echo '`needs-user-review.sh` はこのPRを止めていました。'
-      echo
-      echo '```'
-      echo "$reasons"
-      echo '```'
-    } >"$note"
-    gh pr comment "$PR" --body-file "$note" >/dev/null
-    rm -f "$note"
-    gh pr edit "$PR" --remove-label 判断待ち >/dev/null 2>&1 || true
+    echo "HELD $PR"
+    echo "$reasons" | sed 's/^/    /'
+    gh pr edit "$PR" --add-label 判断待ち >/dev/null
+    exit 1
   fi
 
   mergeable=$(gh pr view "$PR" --json mergeable --jq '.mergeable')
