@@ -18,6 +18,15 @@ export interface LiveSessionsDeps {
 
 export function liveSessions(deps?: LiveSessionsDeps): LiveSession[];
 
+/** `ccr-env.sh` が出した環境ID1つ。名前はあちらが出す綴りのまま（`CLOUD_ENV` / `BRIDGE_ENV`）。 */
+export interface EnvironmentId {
+  readonly name: string;
+  readonly id: string;
+}
+
+/** 今の環境ID。**決まらなかった側は並びに居ない**（[`live-sessions.mjs`](live-sessions.mjs)）。 */
+export function environmentIds(): EnvironmentId[];
+
 /** TSVの1行へ。列の並びを持つのは [`live-sessions.mjs`](live-sessions.mjs)。 */
 export function formatLive(session: LiveSession): string;
 

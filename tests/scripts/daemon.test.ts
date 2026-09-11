@@ -39,6 +39,8 @@ interface World {
   readonly roundFails?: boolean;
   /** 盤面の書き出しが非0で終わるか（＝issue へ書けない周）。 */
   readonly publishFails?: boolean;
+  /** 値の見回りが非0で終わるか。 */
+  readonly checkFails?: boolean;
   /** 錠の中に置いておく心拍。 */
   readonly heartbeat?: string;
   /** 周ごとに、`daemon.sh` を書き換える中身（`null` を置いた周は書き換えない）。 */
@@ -73,6 +75,8 @@ interface Result {
   readonly publishes: number;
   /** 書き出しへ渡した `LIVE_SESSIONS_TSV`（渡していない周は `-`）。 */
   readonly published: readonly string[];
+  /** 値を見回った回数。 */
+  readonly checks: number;
   /** 走る実体として置かれた複製の中身（置かれていなければ `undefined`）。 */
   readonly copy: string | undefined;
   /** `git` に渡された引数。 */
@@ -116,6 +120,18 @@ function daemon(world: World = {}): Result {
       `import { appendFileSync } from 'node:fs';\n` +
         `appendFileSync(${JSON.stringify(publishes)}, (process.env.LIVE_SESSIONS_TSV ?? '-') + '\\n');\n` +
         `process.exit(${world.publishFails === true ? 1 : 0});\n`,
+      'utf-8',
+    );
+
+    // 値の見回りの身代わり（`.claude/board-design.md` 2.22）。**周とも書き出しとも別に数える**
+    // ——見回るのは、盤面を引けたかによらず、間隔が満ちたときだけ。
+    const checks = join(work, 'checks.txt');
+    writeFileSync(checks, '', 'utf-8');
+    writeFileSync(
+      join(here, 'check-values.mjs'),
+      `import { appendFileSync } from 'node:fs';\n` +
+        `appendFileSync(${JSON.stringify(checks)}, (process.env.BOARD_STATE ?? '-') + '\\n');\n` +
+        `process.exit(${world.checkFails === true ? 1 : 0});\n`,
       'utf-8',
     );
 
@@ -202,6 +218,7 @@ exit ${world.gitFails === true ? 1 : 0}
       rounds: readFileSync(rounds, 'utf-8').split('\n').filter(Boolean).length,
       publishes: readFileSync(publishes, 'utf-8').split('\n').filter(Boolean).length,
       published: readFileSync(publishes, 'utf-8').split('\n').filter(Boolean),
+      checks: readFileSync(checks, 'utf-8').split('\n').filter(Boolean).length,
       copy: existsSync(copy) ? readFileSync(copy, 'utf-8') : undefined,
       git: existsSync(calls) ? readFileSync(calls, 'utf-8').split('\n').filter(Boolean) : [],
       installed: existsSync(join(work, 'npm-calls')),
@@ -487,6 +504,32 @@ describe('daemon.sh', () => {
   it('引けなかった周には、セッションの一覧を渡さない', () => {
     expect(daemon({ roundFails: true }).published).toEqual(['-']);
     expect(daemon().published).toEqual([expect.stringContaining('live-sessions.tsv')]);
+  });
+
+  // 見回るのは環境IDと資格情報で、動くのは人が設定を打ち直したときだけ（2.22）。周と同じ速さで
+  // 叩いても、分かることは増えない。
+  it('値の見回りは、間隔が満ちたときだけ', () => {
+    const result = daemon({ args: ['run'], then: [['run']], env: { CHECK_INTERVAL: '3600' } });
+
+    expect(result.rounds).toBe(2);
+    expect(result.checks).toBe(1);
+  });
+
+  // **引けない理由がまさにこの値**（2.22.1）。盤面の成否で回すと、いちばん告げてほしい周だけ
+  // 見回らないことになる。
+  it('盤面を引けなかった周も、値を見回る', () => {
+    const result = daemon({ roundFails: true });
+
+    expect(result.rounds).toBe(1);
+    expect(result.checks).toBe(1);
+  });
+
+  it('値を見回れなくても、周は続く', () => {
+    const result = daemon({ checkFails: true });
+
+    expect(result.code).toBe(0);
+    expect(result.rounds).toBe(1);
+    expect(result.log).toContain('値を見回れなかった');
   });
 
   it('restart は、走っているものを入れ替える', () => {
