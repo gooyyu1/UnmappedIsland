@@ -1,4 +1,4 @@
-import type { ConditionalReading, EffectReader, PickCandidateReading } from '../domain/EffectReader';
+import type { ConditionalReading, EffectReader, PickReading } from '../domain/EffectReader';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
 import type { WorldCodex } from '../domain/WorldCodex';
@@ -350,9 +350,9 @@ class SpawnCollector implements EffectReader {
     this.objectGlobalIds.add(objectGlobalId);
   }
 
-  pick(candidates: readonly PickCandidateReading[]): void {
+  pick(reading: PickReading): void {
     // 重みは見ない。**起こりうるかだけを問う**ので、確率0の枝も生む先として数える。
-    for (const candidate of candidates) candidate.effect.read(this);
+    reading.readEveryCandidate(this);
   }
 
   /** 条件つき（6.3節）も同じ——満たさない回へ倒れる先も、生む先としては数える。 */
