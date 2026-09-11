@@ -138,7 +138,7 @@ object_defs:
 
   /** そのオブジェクトを映している札。 */
   function cardOf(mini: MiniGame, object: WorldObject): ObjectCardStack {
-    const view = fromGameSession(mini.game, mini.codex, locale);
+    const view = fromGameSession(mini.game, locale);
     return view.cardsIn(object.parentSlot!).find((card) => card?.objects[0] === object)!;
   }
 
@@ -225,7 +225,7 @@ object_defs:
     // 傷のカードは開かないと見えないので、そこだけに出していると流し見のあいだに失血が進む
     // （VitalsSystem.md 9節）。
     const mini = setUp();
-    const characterMark = () => fromGameSession(mini.game, mini.codex, locale).characterCard.mark;
+    const characterMark = () => fromGameSession(mini.game, locale).characterCard.mark;
 
     expect(characterMark(), '無傷なら何も出ない').toBeUndefined();
 
@@ -244,7 +244,7 @@ object_defs:
     const bruise = mini.createObject('bruise', mini.slot('injuries'));
     mini.createObject('bandage', mini.slot('treatment', bruise));
 
-    expect(fromGameSession(mini.game, mini.codex, locale).characterCard.mark).toBeUndefined();
+    expect(fromGameSession(mini.game, locale).characterCard.mark).toBeUndefined();
   });
 
   it('血が流れている傷を負った動物は、そのカードに出血の印を出す', () => {

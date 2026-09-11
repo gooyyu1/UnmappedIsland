@@ -40,7 +40,7 @@ describe('推定日数', () => {
     if (scenario === undefined) throw new Error('同梱シナリオ voyage_ready がありません。');
 
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     const raft = game.startLocation.fixtures.find((fixture) => fixture.def.name === 'raft');
     if (raft === undefined) throw new Error('シナリオが筏を置いていません。');

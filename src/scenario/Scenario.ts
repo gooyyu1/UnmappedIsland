@@ -176,7 +176,8 @@ function propertyValues(
  * 受け入れられない組み合わせ（手持ちの上限超過など）はその場でエラーにする——黙って落ちると、
  * テストしたかった状態と違う状態でゲームが始まってしまうため。
  */
-export function applyScenario(game: StartedGame, scenario: Scenario, codex: WorldCodex): void {
+export function applyScenario(game: StartedGame, scenario: Scenario): void {
+  const codex = game.session.codex;
   // 置き場所は開始地点を基準にするため、地形の指定は中身を置く前に効かせる。
   if (scenario.locationType !== undefined && !game.startAt(objectIdOf(codex, scenario.locationType))) {
     throw new YamlLoadError(
@@ -184,12 +185,12 @@ export function applyScenario(game: StartedGame, scenario: Scenario, codex: Worl
     );
   }
 
-  place(game, codex, scenario.hand, 'hand');
-  place(game, codex, scenario.equipment, 'equipment');
-  place(game, codex, scenario.injuries, 'injuries');
-  place(game, codex, scenario.items, 'items');
-  place(game, codex, scenario.fixtures, 'fixtures');
-  placeInside(game, codex, scenario.inside);
+  place(game, scenario.hand, 'hand');
+  place(game, scenario.equipment, 'equipment');
+  place(game, scenario.injuries, 'injuries');
+  place(game, scenario.items, 'items');
+  place(game, scenario.fixtures, 'fixtures');
+  placeInside(game, scenario.inside);
 
   for (const [name, raw] of scenario.props) {
     game.player.instance
@@ -222,9 +223,10 @@ function resolveValue(codex: WorldCodex, propertyName: string, raw: string): num
 }
 
 /** 名前で並べたobject_defを1つずつ生成し、そのスロットへ入れる。 */
-function place(game: StartedGame, codex: WorldCodex, contents: SlotContents, slot: string): void {
+function place(game: StartedGame, contents: SlotContents, slot: string): void {
   if (contents.length === 0) return;
 
+  const codex = game.session.codex;
   const slotId = slotIdOf(codex, slot);
 
   // 手持ち・装備・怪我はキャラクター自身のスロット、それ以外は開始地点の土地のスロット。
@@ -248,7 +250,8 @@ function place(game: StartedGame, codex: WorldCodex, contents: SlotContents, slo
  * 入れる先が見つからない・受け入れられない（かさの上限を超える）場合はエラーにする——黙って
  * 落とすと、積んだつもりの物が地面に落ちた状態でゲームが始まってしまう。
  */
-function placeInside(game: StartedGame, codex: WorldCodex, inside: ReadonlyMap<string, SlotContents>): void {
+function placeInside(game: StartedGame, inside: ReadonlyMap<string, SlotContents>): void {
+  const codex = game.session.codex;
   for (const [ownerName, contents] of inside) {
     const ownerDefId = objectIdOf(codex, ownerName);
     const owner = game.startLocation.fixtures.find((fixture) => fixture.def.globalId === ownerDefId);

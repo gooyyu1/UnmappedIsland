@@ -38,7 +38,7 @@ describe('探索のタブの文言（世界→映し→対応表 通し）', () 
 
   /** その場所の探索のタブの見出し（探索できない場所ではundefined）。 */
   function titleOf(game: StartedGame, place: WorldObject): string | undefined {
-    return fromGameSession(game, codex, locale).windowOf(place).exploration?.title;
+    return fromGameSession(game, locale).windowOf(place).exploration?.title;
   }
 
   it('タブの見出しは、言い換えていない土地では画面の既定語', () => {

@@ -1,4 +1,3 @@
-import type { WorldCodex } from '../../domain/WorldCodex';
 import type { StartedGame } from '../../domain/generation/NewGame';
 import type { RecipeDef } from '../../domain/RecipeDef';
 import { RECIPE_AXIS } from '../../domain/RecipeDef';
@@ -26,7 +25,8 @@ const LOCKED_MARK = '🔒';
  * 製作中オブジェクトは完成品の変種で、**どのレシピから生まれたかは軸`recipe`の値**
  * （GameElementDefinition.md 3.5節）。完成品はその素の型。
  */
-export function recipeOf(target: WorldObject, codex: WorldCodex): RecipeDef | undefined {
+export function recipeOf(target: WorldObject): RecipeDef | undefined {
+  const codex = target.session.codex;
   const recipeName = codex.variationsOf(target.def).get(RECIPE_AXIS);
   if (recipeName === undefined) return undefined;
   return codex.baseOf(target.def).recipesProducingThis.find((candidate) => candidate.name === recipeName);
@@ -44,10 +44,11 @@ export function recipeOf(target: WorldObject, codex: WorldCodex): RecipeDef | un
  */
 export function recipeCategories(
   game: StartedGame,
-  codex: WorldCodex,
   locale: Localization,
   onSelect: (inProgressDefGlobalId: ObjectGlobalId, origin: Rect) => void,
 ): readonly RecipeCategory[] {
+  const codex = game.session.codex;
+
   /** 棚のタグのグローバルID → その棚に載るレシピ。どの棚にも載らないものはothersへ。 */
   const byShelf = new Map<TagGlobalId, RecipeEntry[]>();
   const others: RecipeEntry[] = [];

@@ -151,7 +151,7 @@ describe('筏と航海', () => {
     if (scenario === undefined) throw new Error('同梱シナリオ voyage_ready がありません。');
 
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, rng ?? seededRng(scenario.seed));
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
     makeBrightEnoughForAnyAction(game.player.instance, codex);
 
     const raft = game.startLocation.fixtures.find((fixture) => fixture.def.name === 'raft');

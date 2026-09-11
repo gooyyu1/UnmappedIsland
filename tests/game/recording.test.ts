@@ -38,7 +38,7 @@ object_defs:
     const game = mini.game;
     const before = game.world.totalMinutes;
 
-    const recording = runAndRecordChange(game, mini.codex, locale, undefined, () => {
+    const recording = runAndRecordChange(game, locale, undefined, () => {
       game.session.advanceWorldTime(60);
     });
 
@@ -78,7 +78,7 @@ object_defs:
       { name: '設置物', lane: fixtures, object: mini.createObject('tree', fixtures) },
     ].map((lane) => ({ ...lane, instanceId: lane.object.instanceId }));
 
-    const recording = runAndRecordChange(mini.game, mini.codex, locale, undefined, () => {
+    const recording = runAndRecordChange(mini.game, locale, undefined, () => {
       mini.game.session.advanceWorldTime(60);
       for (const { object } of shown) object.destroy();
     });
@@ -124,7 +124,7 @@ object_defs:
     );
 
     const startedAt = mini.game.world.totalMinutes;
-    const recording = runAndRecordChange(mini.game, mini.codex, locale, undefined, () => {
+    const recording = runAndRecordChange(mini.game, locale, undefined, () => {
       mini.game.session.advanceWorldTime(60);
     });
 
@@ -170,7 +170,7 @@ object_defs:
     );
 
     const startedAt = mini.game.world.totalMinutes;
-    const recording = runAndRecordChange(mini.game, mini.codex, locale, undefined, () => {
+    const recording = runAndRecordChange(mini.game, locale, undefined, () => {
       mini.game.session.advanceWorldTime(60);
     });
 
@@ -188,7 +188,7 @@ object_defs:
     const mini = setUp();
 
     let stoneId = -1;
-    const recording = runAndRecordChange(mini.game, mini.codex, locale, undefined, () => {
+    const recording = runAndRecordChange(mini.game, locale, undefined, () => {
       stoneId = mini.createObject('stone', mini.slot('hand')).instanceId;
     });
 
