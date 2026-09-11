@@ -99,7 +99,7 @@ const REF_FILES = [
  * 射程に入る本文がこれで、フェンスの中に在る `#` や `【確定】` は規約が見せている書式そのもの
  * ——拾うと、書式を説明した文書が印を持つ文書になる（`docStatus.mjs` の `declaresWholeDocument`
  * と同じ理由）。**参照は逆で、フェンスの中の `Foo.md N節` もリンクも実在の対象を指している**ので、
- * 原文を読み、書式の例示は {@link isPlaceholder} だけで外す。
+ * 原文を読む。書式の例示は囲みではなく、指し先として読めない書き方で外す（{@link isPlaceholder}）。
  *
  * **改行を割るのはここだけで、`\r` は行に残さない。** 作業ツリーがCRLFのとき、行末の `\r` は
  * `.` にも `$` にも一致しないので、行末を見る判定が**全部**空振りする（issue #867）。
@@ -122,11 +122,14 @@ function withoutCode(markdown: string): string {
 }
 
 /**
- * 参照ではなく**書式そのもの**を見せている箇所か（docs/DocumentStyle.md 5節）。
+ * リンクの指し先が、実在のパスではなく**書式そのもの**を見せている箇所か
+ * （docs/DocumentStyle.md 5節。`docStatsCitations` が出どころの書式を `<ファイル>` と書くのと同じ規約）。
  *
- * **参照の検査に逃げ道はこれ1つだけ。** 囲み（インラインコード・コードフェンス）では外れない
- * ——節番号の参照は原文を読むので、囲みを逃げ道にすると参照の種類ごとに別の作法を覚えることに
- * なる。`docStatsCitations` が出どころの書式を `<ファイル>` と書くのと同じ規約。
+ * **判定が要るのはリンクだけ。** 節番号・節名の参照は `文書名.md N節` のように書けば
+ * {@link brokenNumberedRefsIn} の `tokenPattern` が最初から拾わない（ファイル名の先頭に
+ * `[A-Za-z]` を要求している）が、リンクの指し先は何が入っていても形が崩れないので、ここで外す。
+ *
+ * **囲み（インラインコード・コードフェンス）は、どちらの側でも逃げ道にならない。**
  */
 function isPlaceholder(text: string): boolean {
   return text.includes('<') || text.includes('>');
@@ -542,15 +545,17 @@ describe('ドキュメントの参照', () => {
     expect(brokenLinkAnchorsIn(probe, fenced(`[表示名](#${anchor})`))).toHaveLength(0);
   });
 
-  it('書式の例示を外すのはプレースホルダだけで、囲みでは外れない（DocumentStyle.md 5節）', () => {
-    // 逃げ道が参照の種類ごとに違うと、書き手はどちらを書いているかで作法を選ぶことになる。
+  it('書式の例示は指し先として読めない形で外し、囲みでは外れない（DocumentStyle.md 5節）', () => {
     const probe = join('docs', 'DocumentStyle.md');
+    // 外れる形。リンクは `isPlaceholder` が、節の参照は `tokenPattern` が拾わないことで外れる。
     expect(brokenLinkFilesIn(probe, '[<表示名>](<パス>)')).toHaveLength(0);
     expect(brokenLinkAnchorsIn(probe, '[<表示名>](#<アンカー>)')).toHaveLength(0);
     expect(brokenNumberedRefsIn(probe, '文書名.md N節')).toHaveLength(0);
     // 囲みは逃げ道ではない——囲んだだけの参照も、指し先を明示したものとして検査する。
     expect(brokenLinkFilesIn(probe, '`[表示名](./NoSuchFile.md)`')).toHaveLength(1);
     expect(brokenNumberedRefsIn(probe, '`GameElementDefinition.md 999節`')).toHaveLength(1);
+    // 節の参照に `<...>` は効かない（リンクと同じ形で書けると読まれないよう、ここで固定する）。
+    expect(brokenNumberedRefsIn(probe, '<GameElementDefinition.md> 999節')).toHaveLength(1);
   });
 
   it('印を探す本文は、コードフェンスの中を落とす（規約が書式を例示する）', () => {
