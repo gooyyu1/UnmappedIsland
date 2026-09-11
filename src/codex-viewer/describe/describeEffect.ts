@@ -196,10 +196,6 @@ class EffectDescriber implements EffectReader {
     this.out.write(text('signal '), signalRef(name));
   }
 
-  /**
-   * 候補は重みと`among`を添えて1つずつ書き出すので、候補を1つずつ受ける
-   * （PickReading.forEachCandidate）。
-   */
   pick(reading: PickReading): void {
     this.out.write(text('pick:'));
     this.out.indented(() => {

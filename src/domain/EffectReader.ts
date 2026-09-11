@@ -108,8 +108,7 @@ export interface ConditionalReading {
    * 枝を**1つずつ**、宣言順（著者の枝が先）に渡す。
    *
    * 呼ぶのは、枝ごとに扱いが変わる読み手——量は著者の枝で代表しつつ起こりうるものは両方から集める
-   * もの（`src/analysis/effectOutcomes.ts`）と、二択を二択のまま書き分けるもの（`describePassive`と
-   * 並ぶ`describeEffect`）。
+   * ものと、二択を二択のまま書き分けるもの。
    */
   forEachBranch(visit: (branch: ConditionalBranch) => void): void;
 }
@@ -158,9 +157,8 @@ export interface PickReading {
   /**
    * 候補を**1つずつ**、宣言順に渡す。
    *
-   * 呼ぶのは、候補ごとに扱いが変わる読み手——重みを確率へ直して畳むもの（`src/analysis/effectOutcomes.ts`）・
-   * 重みと`among`を書き出すもの（`describeEffect`）・候補ごとに別の読み手を回すもの
-   * （`voyageForecast`の出航の卓）。
+   * 呼ぶのは、候補ごとに扱いが変わる読み手——重みを確率へ直して畳むもの・重みや`among`を書き出す
+   * もの・候補ごとに別の読み手を回すもの。
    */
   forEachCandidate(visit: (candidate: PickCandidateReading) => void): void;
 }
