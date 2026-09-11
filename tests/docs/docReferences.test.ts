@@ -10,7 +10,8 @@ import { linesOutsideFence } from '../../scripts/markdownFences.mjs';
  * ドキュメントの参照が実在の対象へ解決するかの検査（docs/DocumentStyle.md 5節）。
  *
  * **見るのは `docs/` だけではない。** `.claude/**` は互いを節名で引き合っており、そちらの節を畳んだ
- * ときに嘘になる。指し先も `docs/` の外（`CLAUDE.md`・`.claude/**`）まで広げてある。
+ * ときに嘘になる。指し先も `docs/` の外（`CLAUDE.md`・`.claude/**`）まで広げてある。確定度の印の
+ * 条件も同じで、印を使う文書なら `docs/` の外でも課す（{@link MARK_RULE_FILES}）。
  *
  * - Markdownリンク（ファイル・アンカー）が実在すること
  * - コード・YAML・ドキュメント中の「Foo.md N節」「Foo.md 〇〇節」が実在の節を指すこと
@@ -199,6 +200,20 @@ const docByPath = new Map(DOC_FILES.map((rel) => [rel, read(rel)]));
  */
 const REF_TARGETS = [...DOC_FILES, 'CLAUDE.md', ...listFiles('.claude', ['.md'])];
 
+/**
+ * 確定度の印の規約（DocumentStyle.md 6節・6.1節・6.2節）を課す対象。**`docs/` の中だけではない**
+ * ——`CLAUDE.md`・`.claude/**` も同じ印を使い、そこの確定節も同じ意味（覆すには人間の判断が要る）
+ * で読まれるので、条件も同じ1つ。指し先になるだけの {@link REF_TARGETS} とは別に持つ。
+ *
+ * **日付ごとの記録は入らない。** `.claude/decisions/**` は当時の発言を、`.claude/analysis/**` は
+ * その回の観測を原文のまま残す場所で、印はそこでは**題材として**現れる（「印の射程が変わる」など）
+ * ——課すと、印を論じた行が印として読まれる。
+ */
+const MARK_RULE_FILES = REF_TARGETS.filter(
+  (rel) =>
+    !rel.startsWith(join('.claude', 'decisions')) && !rel.startsWith(join('.claude', 'analysis')),
+);
+
 /** ひな形。セッションへ渡す本体を囲みに入れて持つ（`scripts/agent/prompt-body.mjs`）。 */
 function isPromptTemplate(rel: string): boolean {
   return rel.startsWith(`.claude${sep}`) && rel.endsWith('-prompt.md');
@@ -227,12 +242,51 @@ const namedSectionsByPath = new Map(
   REF_TARGETS.map((rel) => [rel, namedSectionsOf(rel, read(rel))]),
 );
 
+const markRuleByPath = new Map(MARK_RULE_FILES.map((rel) => [rel, read(rel)]));
+
 /** `【確定】` の付いた節（DocumentStyle.md 6.1節の4条件を課される対象）。 */
-const confirmedSections = [...docByPath].flatMap(([doc, text]) =>
+const confirmedSections = [...markRuleByPath].flatMap(([doc, text]) =>
   sectionsOf(text)
     .filter((section) => section.heading.includes(CONFIRMED_LABEL))
     .map((section) => ({ doc, ...section })),
 );
+
+/** ある節が、出どころの1行（DocumentStyle.md 6.1節）を本文に持つか。 */
+function hasSourceLine(section: { readonly body: readonly { readonly text: string }[] }): boolean {
+  return section.body.some(({ text }) => text.startsWith(SOURCE_LINE_PREFIX));
+}
+
+/**
+ * 出どころの行を持たないまま印が付いている節。**印を外すのはユーザーの判断**（DocumentStyle.md
+ * 6節）なので、答えが下りるまでの据え置きで、出どころの検査だけを免れる（射程・中身は課す）。
+ *
+ * ここに在るのは、`.claude/decisions/` が出来る前（最古は 2026-09-05）に固まった節で、**ユーザーの
+ * 発言が原文で残っていない**——出どころを書くと、実測や既存規約からの導出をユーザーの判断として
+ * 名乗ることになる。答えは
+ * [#2024](https://github.com/gooyyu1/UnmappedIsland/issues/2024) で訊いてあり、下りたら印を外すか
+ * 出どころを書くかのどちらかで、この一覧は空になる。
+ *
+ * **新しく付ける印をここへ足さない。** 足せば、出どころの無い印が次から素通りする。
+ */
+const SOURCE_PENDING_SECTIONS: readonly { readonly doc: string; readonly heading: string }[] = [
+  { doc: join('.claude', 'board-design.md'), heading: '1.1 事実と占有を分ける【確定】' },
+  {
+    doc: join('.claude', 'board-design.md'),
+    heading: '1.2.1 「居るか」と「手が動いているか」を、1つの占有へ畳まない【確定】',
+  },
+  {
+    doc: join('.claude', 'board-design.md'),
+    heading: '1.4.1 不変条件は、投入する側が自分で持つ【確定】',
+  },
+  {
+    doc: join('.claude', 'board-design.md'),
+    heading: '2.1 分け目は「CCRの資格情報が要るか」【確定】',
+  },
+  {
+    doc: join('.claude', 'board-design.md'),
+    heading: '4.5.1 新しく止めてよいのは、前の周以降の差分だけ【確定】',
+  },
+];
 
 /**
  * 全体が確定であることを宣言した文書（DocumentStyle.md 6.2節の条件を課される対象）。
@@ -240,7 +294,9 @@ const confirmedSections = [...docByPath].flatMap(([doc, text]) =>
  * 宣言の判定は `stats:docs` が確定欄を `全` と出すのに使うものと**同じ1つ**を呼ぶ。別々に持つと、
  * 表では全体が確定と出るのに 6.2 節の条件は掛かっていない、が成立する。
  */
-const wholeDocumentConfirmed = [...docByPath].filter(([, text]) => declaresWholeDocument(text));
+const wholeDocumentConfirmed = [...markRuleByPath].filter(([, text]) =>
+  declaresWholeDocument(text),
+);
 
 /** ファイル名（basename）→ 指し先の候補パス。 */
 const docsByBasename = new Map<string, string[]>();
@@ -531,7 +587,7 @@ describe('ドキュメントの参照', () => {
 
   it('【確定】が見出しにだけ付いている（DocumentStyle.md 6節）', () => {
     const misplaced: string[] = [];
-    for (const [rel, text] of docByPath) {
+    for (const [rel, text] of markRuleByPath) {
       for (const { line, text: body } of textLines(text)) {
         if (body.includes(CONFIRMED_LABEL) && !/^#{1,6}\s/.test(body)) {
           misplaced.push(`${rel}:${line}`);
@@ -546,7 +602,7 @@ describe('ドキュメントの参照', () => {
 
   it('暫定の側に印を付けていない（DocumentStyle.md 6節）', () => {
     const found: string[] = [];
-    for (const [rel, text] of docByPath) {
+    for (const [rel, text] of markRuleByPath) {
       for (const { line, text: body } of textLines(text)) {
         for (const label of PROVISIONAL_LABELS) {
           if (body.includes(label)) found.push(`${rel}:${line}: ${label}`);
@@ -648,6 +704,13 @@ describe('ドキュメントの参照', () => {
     expect(confirmedSections.length).toBeGreaterThan(0);
   });
 
+  it('`docs/` の外で印を使う文書も、条件の対象に入っている', () => {
+    // 対象が `docs/` だけだった頃、`.claude/board-design.md` には出どころの無い確定節が長く
+    // 残った（#1878）。`docs/` の確定節だけで数は足りるので、外側が落ちても上の土台は緑になる。
+    const outside = confirmedSections.filter(({ doc }) => !doc.startsWith(`docs${sep}`));
+    expect(outside.map(({ doc }) => doc)).not.toEqual([]);
+  });
+
   it('暫定を表す語の照合が、他の語の一部を拾わない', () => {
     // 6.1節の検査は「当たらない」と「規約どおり」を区別できないので、既知の入力で別に確かめる。
     expect('未定です'.match(PROVISIONAL_WORD)).toEqual(['未定']);
@@ -686,7 +749,13 @@ describe('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節�
     // 置き場は縛らない。本文の先頭は結論の1文の場所（DocumentStyle.md 3節）なので、そこを
     // 出どころで取ると、節の書き方の規約が2箇所に割れる。
     const missing = confirmedSections
-      .filter((section) => !section.body.some(({ text }) => text.startsWith(SOURCE_LINE_PREFIX)))
+      .filter(
+        (section) =>
+          !hasSourceLine(section) &&
+          !SOURCE_PENDING_SECTIONS.some(
+            (pending) => pending.doc === section.doc && pending.heading === section.heading,
+          ),
+      )
       .map((section) => `${section.doc}:${section.line} ${section.heading}`);
     expect(
       missing,
@@ -694,11 +763,29 @@ describe('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節�
     ).toEqual([]);
   });
 
+  it('据え置きの一覧に、もう当てはまらない節が残っていない', () => {
+    // 据え置きは答えが来るまでの措置なので、**当てはまらなくなったら落ちる**。印が外れた・出どころが
+    // 書かれた・節の名が変わったのに一覧へ残っていると、次に印を足した者がその行を手本にする。
+    const stale = SOURCE_PENDING_SECTIONS.filter(
+      (pending) =>
+        !confirmedSections.some(
+          (section) =>
+            section.doc === pending.doc &&
+            section.heading === pending.heading &&
+            !hasSourceLine(section),
+        ),
+    ).map(({ doc, heading }) => `${doc} ${heading}`);
+    expect(
+      stale,
+      `据え置きの一覧に、もう出どころの無い確定節ではないものが残っている:\n${stale.join('\n')}`,
+    ).toEqual([]);
+  });
+
   it(`出どころが、${PENDING_ISSUE} を項目番号で指していない`, () => {
     // 番号は答えの済んだものから詰め替わるので、書いた当時に正しくても後から別の決定を指す
     // （#1834 の時点で13箇所あり、うち1つは既にずれていた）。指すのは決めた中身で。
     const found: string[] = [];
-    for (const [rel, text] of docByPath) {
+    for (const [rel, text] of markRuleByPath) {
       for (const { line, text: body } of textLines(text)) {
         if (body.startsWith(SOURCE_LINE_PREFIX) && body.includes(PENDING_ISSUE) && ITEM_NUMBER.test(body)) {
           found.push(`${rel}:${line}: ${body}`);
