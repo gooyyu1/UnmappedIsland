@@ -3,6 +3,7 @@ import type { WorldCodex } from '../domain/WorldCodex';
 import type { StepOutcome } from './CraftingStep';
 import { craftingStepsOf } from './craftingSteps';
 import { rangeEventReadouts } from './rangeEvents';
+import type { ObjectGlobalId } from '../domain/GlobalId';
 
 /**
  * 診断レポートが数える土地の集め方。**収支（`balanceTables`）と活動時間（`activityHours`）が同じ集合を
@@ -33,7 +34,7 @@ export interface IslandLocations {
    * 30分で返すので、これを外さないと生肉の代表経路が海に決まり、島で最も安い肉の経路が表から
    * 押し出される。`excludedSea`はこの集合のうち土地であるもの。
    */
-  readonly seaOnly: ReadonlySet<number>;
+  readonly seaOnly: ReadonlySet<ObjectGlobalId>;
 }
 
 /** 表から外した場所1つ。 */
@@ -73,15 +74,15 @@ export function islandLocationsOf(codex: WorldCodex): IslandLocations {
  * 湧き元を数え漏らした型は「湧き元を持たない」＝島にあるもの、へ倒れる。**外し過ぎない側へ倒れる**
  * ので、外した一覧に載るのは湧き元を実際に辿れたものだけになる。
  */
-function seaOnlyObjectsOf(codex: WorldCodex): ReadonlySet<number> {
+function seaOnlyObjectsOf(codex: WorldCodex): ReadonlySet<ObjectGlobalId> {
   const defs = [...codex.objects];
-  const spawnsOf = new Map<number, readonly number[]>();
+  const spawnsOf = new Map<ObjectGlobalId, readonly ObjectGlobalId[]>();
 
   /** 他の型が湧かせる型。ここに居ない型は、世界に置かれるか持ち物から組み立てるかで、湧く場所を持たない。 */
-  const spawnedByOthers = new Set<number>();
+  const spawnedByOthers = new Set<ObjectGlobalId>();
 
   /** 自分が自分の湧き元になっている型（spawnsFrom参照）。持ち物から組み立てるので、湧く場所を持たない。 */
-  const madeOfItself = new Set<number>();
+  const madeOfItself = new Set<ObjectGlobalId>();
 
   for (const def of defs) {
     const produced = spawnsFrom(codex, def);
@@ -91,9 +92,9 @@ function seaOnlyObjectsOf(codex: WorldCodex): ReadonlySet<number> {
     for (const objectGlobalId of byOthers) spawnedByOthers.add(objectGlobalId);
   }
 
-  const reachable = new Set<number>();
-  const pending: number[] = [];
-  const reach = (globalId: number): void => {
+  const reachable = new Set<ObjectGlobalId>();
+  const pending: ObjectGlobalId[] = [];
+  const reach = (globalId: ObjectGlobalId): void => {
     if (reachable.has(globalId)) return;
     reachable.add(globalId);
     pending.push(globalId);
@@ -116,8 +117,8 @@ function seaOnlyObjectsOf(codex: WorldCodex): ReadonlySet<number> {
  * **自分自身も返す。** レシピの宣言は産物の側に付く（`recipesProducingThis`）ので、自分を湧かせる型は
  * 「持ち物から組み立てるもの」——縄も筏も湧く場所を持たず、どこで作ってもよい。
  */
-function spawnsFrom(codex: WorldCodex, def: ObjectDef): readonly number[] {
-  const produced = new Set<number>();
+function spawnsFrom(codex: WorldCodex, def: ObjectDef): readonly ObjectGlobalId[] {
+  const produced = new Set<ObjectGlobalId>();
   const add = (outcomes: readonly StepOutcome[]): void => {
     for (const outcome of outcomes) for (const spawn of outcome.spawns) produced.add(spawn.objectGlobalId);
   };

@@ -1,5 +1,11 @@
 import type { ReferenceRoot } from '../../domain/ReferenceRoot';
-import type { PropertyGlobalId } from '../../domain/GlobalId';
+import type {
+  ObjectGlobalId,
+  PropertyGlobalId,
+  PropertyTagGlobalId,
+  SlotGlobalId,
+  TagGlobalId,
+} from '../../domain/GlobalId';
 
 /**
  * 定義（conditions・passives・active効果など）が自分自身を書き表した説明の断片。
@@ -167,11 +173,11 @@ export class DescriptionWriter {
  * 「IDから名前へ戻す係」を別に受け取る必要がある。
  */
 export interface DefNames {
-  objectName(globalId: number): string;
+  objectName(globalId: ObjectGlobalId): string;
   propertyName(globalId: PropertyGlobalId): string;
-  slotName(globalId: number): string;
-  tagName(globalId: number): string;
-  propertyTagName(globalId: number): string;
+  slotName(globalId: SlotGlobalId): string;
+  tagName(globalId: TagGlobalId): string;
+  propertyTagName(globalId: PropertyTagGlobalId): string;
 
   /**
    * プロパティの値1つの書き表し方。シンボル型プロパティ（6.6節）の値はシンボル名へ戻し、

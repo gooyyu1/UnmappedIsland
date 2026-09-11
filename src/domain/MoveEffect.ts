@@ -2,6 +2,7 @@ import { ActiveEffect } from './ActiveEffect';
 import type { EffectReader } from './EffectReader';
 import type { ObjectRef } from './ObjectRef';
 import type { ReferenceContext } from './ReferenceRoot';
+import type { SlotGlobalId } from './GlobalId';
 
 /**
  * move の1命令。既に世界に存在するオブジェクト（subject）を、移動先のオブジェクトの中へ移動する。
@@ -20,9 +21,9 @@ export class MoveEffect extends ActiveEffect {
   private readonly destination: ObjectRef;
 
   /** 名指しの行き先スロット（`to_slot`）。undefinedなら宣言順で最初に受け入れた枠へ入る。 */
-  private readonly slotGlobalId: number | undefined;
+  private readonly slotGlobalId: SlotGlobalId | undefined;
 
-  constructor(subject: ObjectRef, destination: ObjectRef, slotGlobalId?: number) {
+  constructor(subject: ObjectRef, destination: ObjectRef, slotGlobalId?: SlotGlobalId) {
     super();
     this.subject = subject;
     this.destination = destination;

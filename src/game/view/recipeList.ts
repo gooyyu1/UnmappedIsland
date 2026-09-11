@@ -7,6 +7,7 @@ import type { Localization } from '../../locale/Localization';
 import { inProgressObjectName } from '../../loader/inProgressObjects';
 import type { Rect } from '../../ui/Rect';
 import type { RecipeCategory, RecipeEntry } from '../ui/RecipeWindow';
+import type { ObjectGlobalId, TagGlobalId } from '../../domain/GlobalId';
 
 /** 完成品のカードの絵が無いときに代わりに出す絵文字。 */
 const PRODUCT_ICON = '📦';
@@ -45,14 +46,13 @@ export function recipeCategories(
   game: StartedGame,
   codex: WorldCodex,
   locale: Localization,
-  onSelect: (inProgressDefGlobalId: number, origin: Rect) => void,
+  onSelect: (inProgressDefGlobalId: ObjectGlobalId, origin: Rect) => void,
 ): readonly RecipeCategory[] {
   /** 棚のタグのグローバルID → その棚に載るレシピ。どの棚にも載らないものはothersへ。 */
-  const byShelf = new Map<number, RecipeEntry[]>();
+  const byShelf = new Map<TagGlobalId, RecipeEntry[]>();
   const others: RecipeEntry[] = [];
 
-  for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-    const product = codex.objects.get(globalId);
+  for (const product of codex.objects) {
     if (product.recipesProducingThis.length === 0) continue;
 
     const shelfTagId = codex.recipeCategoryTagIdsByPriority.find((tagId) => product.hasTag(tagId));

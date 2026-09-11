@@ -25,7 +25,7 @@ import {
   PROGRESS_PROPERTY,
   VOLUME_PROPERTY,
 } from '../domain/WorldVocabulary';
-import type { PropertyGlobalId } from '../domain/GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId, TagGlobalId } from '../domain/GlobalId';
 
 /**
  * 製作中オブジェクトの型の名前（RecipeSystem.md 1節）。人間もMOD作成者もこの型を直接書かないため、
@@ -47,9 +47,9 @@ const NAME_SEPARATOR = '__';
  */
 export function inProgressObjectsYaml(
   defs: readonly ObjectDef[],
-  inheritedTagIds: ReadonlySet<number>,
-  tagNames: NameRegistry,
-  objectNames: NameRegistry,
+  inheritedTagIds: ReadonlySet<TagGlobalId>,
+  tagNames: NameRegistry<TagGlobalId>,
+  objectNames: NameRegistry<ObjectGlobalId>,
   propertyNames: NameRegistry<PropertyGlobalId>,
 ): GeneratedObjectDefs | undefined {
   const objectDefs: Record<string, unknown> = {};
@@ -80,9 +80,9 @@ export function inProgressObjectsYaml(
 function inProgressObjectDef(
   product: ObjectDef,
   recipe: ObjectDef['recipesProducingThis'][number],
-  inheritedTagIds: ReadonlySet<number>,
-  tagNames: NameRegistry,
-  objectNames: NameRegistry,
+  inheritedTagIds: ReadonlySet<TagGlobalId>,
+  tagNames: NameRegistry<TagGlobalId>,
+  objectNames: NameRegistry<ObjectGlobalId>,
   propertyNames: NameRegistry<PropertyGlobalId>,
 ): Record<string, unknown> {
   const totalMinutes = recipe.steps.reduce((sum, step) => sum + step.durationMinutes, 0);
@@ -167,8 +167,8 @@ function declaredVolume(
  */
 function requirementCells(
   recipe: ObjectDef['recipesProducingThis'][number],
-  tagNames: NameRegistry,
-  objectNames: NameRegistry,
+  tagNames: NameRegistry<TagGlobalId>,
+  objectNames: NameRegistry<ObjectGlobalId>,
 ): Array<Record<string, unknown>> {
   const totals = new Map<string, { match: TypeMatchRule; max: number }>();
   for (const step of recipe.steps)
@@ -180,8 +180,8 @@ function requirementCells(
     }
 
   const names = {
-    objectName: (globalId: number) => objectNames.getName(globalId),
-    tagName: (globalId: number) => tagNames.getName(globalId),
+    objectName: (globalId: ObjectGlobalId) => objectNames.getName(globalId),
+    tagName: (globalId: TagGlobalId) => tagNames.getName(globalId),
   };
   return [...totals.values()].map(({ match, max }) => ({ accept: match.toAcceptSpec(names), max }));
 }

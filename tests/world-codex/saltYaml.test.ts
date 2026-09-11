@@ -215,8 +215,7 @@ describe('salt.yamlの塩田と塩蔵', () => {
     // ——数が増えても気付けるよう、軸を持つ全型を検査する。
     const useless: string[] = [];
 
-    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const def = codex.objects.get(globalId);
+    for (const def of codex.objects) {
       const baseGlobalId = codex.generatedTypes.baseGlobalIdIfVariantOn(def, 'cure');
       if (baseGlobalId === undefined) continue;
 

@@ -1,5 +1,5 @@
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
-import type { PropertyGlobalId } from '../domain/GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId, TagGlobalId } from '../domain/GlobalId';
 
 /**
  * クラフトの1工程を「入力 → 工程 → 出力」の形に均した見方。
@@ -21,20 +21,20 @@ export type CraftingInput =
    */
   | {
       readonly kind: 'object';
-      readonly objectGlobalId: number;
+      readonly objectGlobalId: ObjectGlobalId;
       readonly consumed: boolean;
       readonly count: number;
     }
   | {
       readonly kind: 'tag';
-      readonly tagGlobalId: number;
+      readonly tagGlobalId: TagGlobalId;
       readonly consumed: boolean;
       readonly count: number;
     };
 
 /** 工程の出力1つ。countsは1回の実行で生まれうる個数（分岐どうしで違いうるため、出現した値を全て持つ）。 */
 export interface CraftingOutput {
-  readonly objectGlobalId: number;
+  readonly objectGlobalId: ObjectGlobalId;
   readonly counts: readonly number[];
 }
 
@@ -71,7 +71,7 @@ export interface PropertyAssignment {
 
 /** 1つの分岐で生まれる型と個数。同じ型を複数回spawnする分岐では合算済み。 */
 export interface SpawnedCount {
-  readonly objectGlobalId: number;
+  readonly objectGlobalId: ObjectGlobalId;
   readonly count: number;
 }
 
@@ -112,7 +112,7 @@ export interface CraftingStep {
    */
   readonly startedByPlayer: boolean;
   readonly name: string;
-  readonly ownerGlobalId: number;
+  readonly ownerGlobalId: ObjectGlobalId;
   readonly inputs: readonly CraftingInput[];
 
   /** 生まれうる型の一覧（outcomesから導いたもの）。何も生まない工程では空。 */
@@ -204,7 +204,7 @@ function propertyKey(entry: PropertyDelta | PropertyAssignment): string {
 
 /** 分岐ごとの産出から、型ごとに出現した個数をまとめた出力の列を作る（出力の線1本＝1つの型）。 */
 export function collectOutputs(outcomes: readonly StepOutcome[]): readonly CraftingOutput[] {
-  const countsByObject = new Map<number, number[]>();
+  const countsByObject = new Map<ObjectGlobalId, number[]>();
   for (const outcome of outcomes)
     for (const spawn of outcome.spawns) {
       const counts = countsByObject.get(spawn.objectGlobalId);
@@ -218,7 +218,7 @@ function mergeSpawns(left: readonly SpawnedCount[], right: readonly SpawnedCount
   if (left.length === 0) return right;
   if (right.length === 0) return left;
 
-  const countByObject = new Map<number, number>();
+  const countByObject = new Map<ObjectGlobalId, number>();
   for (const spawn of [...left, ...right])
     countByObject.set(spawn.objectGlobalId, (countByObject.get(spawn.objectGlobalId) ?? 0) + spawn.count);
   return [...countByObject].map(([objectGlobalId, count]) => ({ objectGlobalId, count }));

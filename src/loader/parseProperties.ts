@@ -32,7 +32,7 @@ import {
 } from '../domain/PropertyDef';
 import type { PassiveEffect } from '../domain/PassiveEffect';
 import { PropertyPath, ReferenceScope } from '../domain/ReferenceRoot';
-import type { PropertyGlobalId } from '../domain/GlobalId';
+import type { PropertyGlobalId, PropertyTagGlobalId } from '../domain/GlobalId';
 
 /** props（6節）の1エントリが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。
  * unitは単位表記などの注記用で、ローダーは解釈しない（WorldCodex.schema.json参照）。 */
@@ -78,8 +78,9 @@ export function parsePropAppendingPassives(
     // 型を指す値（6.9節）。持つのはobject_defのグローバルIDで、ロードした時点で決まる定数。
     // singletonであることの検査は、行き先を型で名指した宣言と同じ経路へ乗せる。
     requireKnownKeys(valueNode, ['object'], `${context}.value`);
-    initialValue = loader.objectNames.intern(requireScalar(valueNode, 'object', context));
-    loader.noteObjectDefDestination(initialValue, `${context}.value.object`);
+    const objectGlobalId = loader.objectNames.intern(requireScalar(valueNode, 'object', context));
+    loader.noteObjectDefDestination(objectGlobalId, `${context}.value.object`);
+    initialValue = objectGlobalId;
     isSymbolProperty = false;
     isObjectProperty = true;
   } else if (isMap(valueNode)) {
@@ -228,11 +229,15 @@ function parseGauge(context: string, node: YAMLMap): GaugeDef | undefined {
  * props.'name'.tags（6.7節）を読む。未宣言のタグ名はエラーにする（object_defのtagsと違い、
  * property_tagsという宣言の場があるため、綴り間違いをロード時に捕まえられる）。
  */
-function parsePropertyTags(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): readonly number[] {
+function parsePropertyTags(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YAMLMap,
+): readonly PropertyTagGlobalId[] {
   const tagsNode = tryGetSeq(node, 'tags', context);
   if (tagsNode === undefined) return [];
 
-  const tagIds = new Set<number>();
+  const tagIds = new Set<PropertyTagGlobalId>();
   for (const item of tagsNode.items as YamlNode[]) {
     const tagName = asScalarText(item, context);
     const tagId = loader.propertyTagNames.tryGetId(tagName);

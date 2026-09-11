@@ -9,7 +9,7 @@
  * 持つ何かのローカル位置が返り、持っていないはずのものが引ける。`in out`（不変）の理由は
  * {@link NameRegistry} と同じで、外すと種類の付いた表を素の `number` の表として扱えてしまう。
  */
-export class LocalIndexByGlobalId<in out Id extends number = number> {
+export class LocalIndexByGlobalId<in out Id extends number> {
   static readonly missing = -1;
 
   private readonly globalToLocal: number[];

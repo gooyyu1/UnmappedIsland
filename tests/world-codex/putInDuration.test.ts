@@ -19,7 +19,7 @@ describe('時間のかかる枠', () => {
 
   beforeAll(() => {
     codex = bundledCodex();
-    defs = Array.from({ length: codex.objects.count }, (_, globalId) => codex.objects.get(globalId));
+    defs = [...codex.objects];
   });
 
   it('入れるのに時間がかかる枠は、まとめて受け取れない', () => {

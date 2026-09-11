@@ -34,7 +34,7 @@ export class World extends ObjectWrapper {
    */
   get weather(): string | undefined {
     const value = this.tryEffectiveNumberOf(this.words.weatherId);
-    return value === undefined ? undefined : this.codex.symbolNames.getName(value);
+    return value === undefined ? undefined : this.codex.trySymbolNameOfPropertyValue(value);
   }
 
   /**

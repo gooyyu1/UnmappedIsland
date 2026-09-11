@@ -8,6 +8,7 @@ import type { Location } from '../wrappers/Location';
 import type { IslandMap } from './IslandMap';
 import { generateIsland } from './TerrainGenerator';
 import { spawnIslandIntoWorld, placePlayer, placePlayerAt } from './IslandSpawner';
+import type { ObjectGlobalId } from '../GlobalId';
 
 /** NewGame.startNewGameが組み立てた、開始直後のゲーム一式。 */
 export class StartedGame {
@@ -43,7 +44,7 @@ export class StartedGame {
    * 開始地点を、渡したobject_def（locations.yamlの土地）の土地のうちindex順で最初のものへ移す。
    * プレイヤーもそこへ移る。その土地が島に1つも無ければfalseで、開始地点は変わらない。
    */
-  startAt(locationDefGlobalId: number): boolean {
+  startAt(locationDefGlobalId: ObjectGlobalId): boolean {
     const site = this.map.sites.find((s) => s.type!.objectDefGlobalId === locationDefGlobalId);
     if (site === undefined) return false;
 

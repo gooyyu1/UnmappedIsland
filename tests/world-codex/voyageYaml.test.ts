@@ -661,10 +661,7 @@ describe('筏と航海', () => {
     };
 
     const coastDefs: string[] = [];
-    for (let id = 0; id < codex.objects.count; id++) {
-      const def = codex.objects.tryGet(id);
-      if (def?.tags.includes(coastTag) === true) coastDefs.push(def.name);
-    }
+    for (const def of codex.objects) if (def.tags.includes(coastTag)) coastDefs.push(def.name);
 
     expect(coastDefs.sort(), '海岸の型は表と過不足なく対応する').toEqual([...OFFSHORE.keys()].sort());
     for (const coastName of coastDefs)

@@ -25,6 +25,12 @@
 - **枠は自分の持ち主を知っている**（`Slot.owner`）。受け入れ判定に要る規約プロパティも、断る理由に
   書く名前も、呼び出し側から渡されずに自分で辿る。
 
+セルとスタックの区別を畳み込んだ派生ビューが `Slot.contents` で、位置を要さない内部処理（タグ判定・
+重さ集計など）はこちらを読む。**`Slot.contents` は読んだ時点の顔ぶれを写して返す**——これは実装の
+都合ではなく契約で、受け取った側は辿っている途中でそのスロットの中身が出入りしても構わない
+（時間経過は、中身を辿りながら子を消す。`WorldObject.tick`）。写しでなくなれば
+`tests/domain/stacking.test.ts` が落ちる。
+
 出入りは唯一の汎用操作 `move_to_slot`（`WorldObject.moveToSlotOrRejection` →
 `attachToSlotOrRejection`）経由のみ。
 親子整合・weight 伝播・passive エッジの登録という副作用を1箇所に集約する。

@@ -1,7 +1,7 @@
 import type { StageBound } from './PropertyDef';
 import type { PropertyPath, ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchReading } from './TypeMatchRule';
-import type { PropertyGlobalId } from './GlobalId';
+import type { PropertyGlobalId, SlotGlobalId } from './GlobalId';
 
 /** GameElementDefinition.md 14.1節の比較演算子。 */
 export type ConditionOp = 'lt' | 'lte' | 'gt' | 'gte' | 'eq' | 'neq' | 'in' | 'not_in';
@@ -32,10 +32,10 @@ export interface ConditionReader {
   ): void;
 
   /** `{subject, in_slot}`。subjectが今まさに親のそのスロットに入っているか。 */
-  slotPosition(root: ReferenceRoot, slotGlobalId: number): void;
+  slotPosition(root: ReferenceRoot, slotGlobalId: SlotGlobalId): void;
 
   /** `{subject, slot, matches}`。subjectが持つスロットの中に、当てはまる子が1つでもあるか。 */
-  slotContent(root: ReferenceRoot, slotGlobalId: number, match: TypeMatchReading): void;
+  slotContent(root: ReferenceRoot, slotGlobalId: SlotGlobalId, match: TypeMatchReading): void;
 
   /** `{subject, matches}`。subject自身が当てはまるか。 */
   objectMatches(root: ReferenceRoot, match: TypeMatchReading): void;

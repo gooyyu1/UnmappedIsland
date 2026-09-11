@@ -8,7 +8,7 @@ import type { StageBound } from './PropertyDef';
 import type { ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchReading } from './TypeMatchRule';
 import type { WorldCodex } from './WorldCodex';
-import type { PropertyGlobalId } from './GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId, TagGlobalId } from './GlobalId';
 
 /**
  * 条件（14節）の文を組み立てる語の作り手。**識別子を語へ戻すのも作り手の仕事**で、読み手ごとに
@@ -30,9 +30,9 @@ export interface ConditionWordMaker<T> {
   /** 比較の相手のリテラル1つ。シンボル型プロパティ（6.6節）の値はシンボル名へ戻す。 */
   propertyValue(propertyGlobalId: PropertyGlobalId, value: number): T;
 
-  slot(globalId: number): T;
-  tag(globalId: number): T;
-  object(globalId: number): T;
+  slot(globalId: SlotGlobalId): T;
+  tag(globalId: TagGlobalId): T;
+  object(globalId: ObjectGlobalId): T;
 
   /** 段（6.4節）の名前。段は宣言したプロパティごとの名前で、独立した名前空間を持たない。 */
   stage(name: string): T;
@@ -171,7 +171,7 @@ class ConditionWordWriter<T> implements ConditionReader, ConditionPhrase<T> {
     ];
   }
 
-  slotPosition(root: ReferenceRoot, slotGlobalId: number): void {
+  slotPosition(root: ReferenceRoot, slotGlobalId: SlotGlobalId): void {
     this.words = [
       ...this.subject(root, 'が'),
       this.make.slot(slotGlobalId),
@@ -179,7 +179,7 @@ class ConditionWordWriter<T> implements ConditionReader, ConditionPhrase<T> {
     ];
   }
 
-  slotContent(root: ReferenceRoot, slotGlobalId: number, match: TypeMatchReading): void {
+  slotContent(root: ReferenceRoot, slotGlobalId: SlotGlobalId, match: TypeMatchReading): void {
     this.words = [
       ...this.subject(root, 'の'),
       this.make.slot(slotGlobalId),
@@ -272,7 +272,7 @@ function plainWordMaker(codex: WorldCodex): ConditionWordMaker<string> {
     property: (globalId) => codex.propertyNames.getName(globalId),
     propertyValue: (propertyGlobalId, value) => {
       if (!codex.symbolicProperties.has(propertyGlobalId)) return String(value);
-      return codex.symbolNames.tryGetName(value) ?? String(value);
+      return codex.trySymbolNameOfPropertyValue(value) ?? String(value);
     },
     slot: (globalId) => codex.slotNames.getName(globalId),
     tag: (globalId) => codex.tagNames.getName(globalId),

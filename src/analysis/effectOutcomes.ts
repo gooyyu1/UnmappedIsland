@@ -13,7 +13,7 @@ import type { StepOutcome } from './CraftingStep';
 import { UNCHANGED_OUTCOMES, combineOutcomes, scaleOutcomes } from './CraftingStep';
 import type { EndBoundValueResolver } from './staticValue';
 import { resolveDeclaredNumber } from './staticValue';
-import type { PropertyGlobalId } from '../domain/GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * `become`（9.9節）の行き先の型を、定義だけから解く手立て。行き先を解けない——対象の型が定義から
@@ -22,7 +22,7 @@ import type { PropertyGlobalId } from '../domain/GlobalId';
 export type BecomeDestinationResolver = (
   subject: ObjectRefReading,
   axisValues: ReadonlyMap<string, string>,
-) => number | undefined;
+) => ObjectGlobalId | undefined;
 
 /** 効果の宣言を1度読み下した結果。 */
 export interface EffectReading {
@@ -158,7 +158,7 @@ class OutcomeReader implements EffectReader {
     this.combine([{ probability: 1, spawns: [], deltas: [reading], assignments: [] }]);
   }
 
-  spawn(objectGlobalId: number, count: number): void {
+  spawn(objectGlobalId: ObjectGlobalId, count: number): void {
     this.combine([{ probability: 1, spawns: [{ objectGlobalId, count }], deltas: [], assignments: [] }]);
   }
 

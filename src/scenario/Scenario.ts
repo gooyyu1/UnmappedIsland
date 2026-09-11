@@ -5,7 +5,7 @@ import { asMap, entriesInOrder, requireInt, tryGetMap, tryGetScalar, tryGetSeq }
 import { YamlLoadError } from '../loader/YamlLoadError';
 import type { YamlNode } from '../loader/yamlMapping';
 import { asScalarText } from '../loader/yamlMapping';
-import type { PropertyGlobalId } from '../domain/GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId } from '../domain/GlobalId';
 
 /**
  * 同梱シナリオの中身。置き場所と名前の規約は `src/assets/scenarios/<シナリオ名>.yaml` のみで、
@@ -265,13 +265,13 @@ function placeInside(game: StartedGame, codex: WorldCodex, inside: ReadonlyMap<s
   }
 }
 
-function objectIdOf(codex: WorldCodex, name: string): number {
+function objectIdOf(codex: WorldCodex, name: string): ObjectGlobalId {
   const id = codex.objectNames.tryGetId(name);
   if (id === undefined) throw new YamlLoadError(`シナリオ: object_def '${name}' がありません。`);
   return id;
 }
 
-function slotIdOf(codex: WorldCodex, name: string): number {
+function slotIdOf(codex: WorldCodex, name: string): SlotGlobalId {
   const id = codex.slotNames.tryGetId(name);
   if (id === undefined) throw new YamlLoadError(`シナリオ: スロット '${name}' がありません。`);
   return id;
