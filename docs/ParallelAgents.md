@@ -360,11 +360,12 @@ flowchart LR
 | --- | --- | --- |
 | `TIDY` | 窓（48時間）に載っているマージ済みのPRで、まだ片付けていないもの | [`tidy-merged-pr.sh`](../scripts/agent/tidy-merged-pr.sh)。`Closes` の issue が閉じたかの確認 → 積まれていたPRの差し戻し → 本体を新しい `main` へ進める |
 | `MERGE` | `通してよい` があり、緑で、コンフリクトも無く、**人の手番で止まっていない** | [`merge-pr.sh`](../scripts/agent/merge-pr.sh)。機械の関門を通してマージするだけ |
-| `ARCHIVE` | 担当の issue が閉じたか人へ返され、手が空いた `task-*` のセッション | **書いたセッションを畳む**（[`archive-session.sh`](../scripts/agent/archive-session.sh)） |
+| `ARCHIVE` | **もう誰も起こさないセッション**——担当の issue が閉じたか人へ返された作業者、判定を書き終えた（起こしても書かなかった分も）レビュー、手が空いたままの周期の係（[`board-design.md`](../.claude/board-design.md) 2.10） | **セッションを畳む**（[`archive-session.sh`](../scripts/agent/archive-session.sh)）。**どの役でも同じこの手で畳みます** |
 | `RESUME … mend` | `直し待ち`・CIが赤・`main` と衝突 | **書いたセッションを起こして直させる**（[`resume-session.sh`](../scripts/agent/resume-session.sh)） |
 | `RESUME … reject` | `却下`（人がPRを止めている印を外した） | 起こして、**何が通らなかったのかをコメントから読ませ、やり直させる** |
 | `RESUME … look` | 画面が変わるのに `## 見た目` が無い | 起こして、**画面を撮って本文へ貼らせる** |
 | `RESUME … stall` | PRを出さないまま手が空いた `task-*` のセッション | **1回だけ**起こす |
+| `RESUME … review-stall` | 判定を書かないまま手が空いた `review-*` のセッション（読んだ差分がまだ頭のとき） | **1回だけ**起こして続きを書かせる。畳むと、次に立つ1本が差分を読み直すところから始まるため |
 | `RETURN` | 起こしても動かなかった `task-*` のセッション | issue へ `[返却]` のコメントを置き、**仕事を人へ返す**（5節） |
 | `REVIEW` | 判定のラベルが無く、緑で、マージできると分かっている | [`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) |
 | `TASK` | **抱えているタスクと、手の動いている作業者のどちらも上限に達しておらず**、走っている issue と `area:` の錠を取り合わない（**相手の担当が読めないときも、錠を持つ issue は出しません**） | `kind:task` を1件投入する。**`急ぎ` が先、その中では一番古いもの**（返されたものは配らない） |
