@@ -26,7 +26,11 @@ const TABLE_HEADER = '| 手 | いつ打つか | 何をするか |';
  */
 function playableHands(): readonly string[] {
   const source = readFileSync(ROUND, 'utf-8');
-  const played = [...source.matchAll(/^\s*case '([A-Z]+)':/gm)].map((found) => found[1]);
+  // **見るのは `play()` の中だけ。** ファイル全体を走査すると、別の場所で分けている大文字の名前が
+  // 手として黙って混ざる。
+  const body = source.slice(source.indexOf('export function play('));
+  const play = body.slice(0, body.indexOf('\nexport '));
+  const played = [...play.matchAll(/^\s*case '([A-Z]+)':/gm)].map((found) => found[1]);
   if (played.length === 0) throw new Error(`打ち分けている手が ${ROUND} から引けない`);
   if (!/startsWith\('NOTE '\)/.test(source)) throw new Error(`NOTE を記録する行が ${ROUND} に無い`);
   return [...played, 'NOTE'];
