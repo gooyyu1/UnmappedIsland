@@ -16,7 +16,8 @@
 # 出力は1行1件。
 #   SENT <セッションID>
 #   終了コード 0 … 届いた
-#   終了コード 1 … 送らなかった（手綱・走行中・引けなかった）
+#   終了コード 3 … 人が手綱で止めている（[`brake.sh`](brake.sh)）
+#   終了コード 1 … それ以外で送らなかった（走行中・引けなかった）
 #
 # ## 立てるのではなく起こすので、`may-dispatch.sh` は通らない
 #
@@ -58,9 +59,12 @@ if [ -n "${DRY_RUN:-}" ]; then
   exit 0
 fi
 
-if ! brake=$(bash "$HERE/brake.sh" resume); then
+# **終了コードごと渡す**（[`may-dispatch.sh`](may-dispatch.sh) と同じ理由。人が止めている＝3）。
+gate=0
+brake=$(bash "$HERE/brake.sh" resume) || gate=$?
+if [ "$gate" -ne 0 ]; then
   echo "投入の手綱で止まっている: $brake" >&2
-  exit 1
+  exit "$gate"
 fi
 
 # 走っている相手へ送ると、仕上げの最中に別の仕事を積むことになる。**手が動いているかを言うのは

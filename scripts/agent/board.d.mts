@@ -12,5 +12,8 @@ export function board(
   deps: BoardDeps & { checkedItems?: (issuesJson: string) => string },
 ): string[] | undefined;
 
-/** 常設の issue の本文（`.claude/board-design.md` 2.20）。`now` は最終更新として本文に出る。 */
-export function issueBody(deps: BoardDeps & { now?: Date }): string | undefined;
+/**
+ * 常設の issue の本文（`.claude/board-design.md` 2.20）。`now` は最終更新として本文に出る。
+ * `stuckSince` は、盤面が進んでいないと見え始めた時刻（2.21。進んでいれば渡らない）。
+ */
+export function issueBody(deps: BoardDeps & { now?: Date; stuckSince?: string }): string | undefined;

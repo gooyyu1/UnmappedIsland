@@ -5,6 +5,7 @@
 #   bash scripts/agent/may-dispatch.sh review   review-1500 task-1415
 #
 # 終了コードが0なら立ててよい。**立ててはいけないときは理由を標準エラーへ出して非0**で終わる。
+# **3は「人が手綱で止めている」**（[`brake.sh`](brake.sh)）、1はそれ以外。
 #
 # **タグは複数渡せる**（[`occupancy.sh`](occupancy.sh)）。1つの仕事に、占有を持ちうるセッションが
 # 2種類あることがある——レビューなら「前のレビュー」と「そのPRを直しているセッション」。
@@ -41,9 +42,14 @@ HERE="${BASH_SOURCE[0]%/*}"
 if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
 HERE="$(cd "$HERE" && pwd)"
 
-if ! brake=$(bash "$HERE/brake.sh" "$KIND"); then
+# **手綱の答えは、終了コードごと呼び手へ渡す**（[`brake.sh`](brake.sh)）。人が止めている（3）のか
+# 読めなかった（1）のかは、**盤面が進まない周を詰まりと読む側**が要る区別で、ここで1つに潰すと
+# 復元できない。
+gate=0
+brake=$(bash "$HERE/brake.sh" "$KIND") || gate=$?
+if [ "$gate" -ne 0 ]; then
   echo "投入の手綱で止まっている: $brake" >&2
-  exit 1
+  exit "$gate"
 fi
 
 # **種類ごとに、占有へ訊く問いが違う**（[`occupancy.sh`](occupancy.sh)・`board-design.md` 1.2）。
