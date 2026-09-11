@@ -23,7 +23,7 @@ export class AssetPack {
   /** パックが名乗った識別子。出所の表示（エラーメッセージと、定義の出所に使う）。 */
   readonly name: string;
 
-  /** パックが名乗った版。文字列で、大小の順序は持たない（AssetPack.md 3.2節）。 */
+  /** パックが名乗った版。大小の順序は持たず（AssetPack.md 3.2節）、書くのは文字列（同 3.5節）。 */
   readonly version: string;
 
   private readonly files: ReadonlyMap<string, Uint8Array>;

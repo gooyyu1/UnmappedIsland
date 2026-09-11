@@ -194,7 +194,7 @@ traits:
       # 届かない（docs/engine/IlluminationSystem.md 3節）。炉自身はどこへ効くのかを知らない。
       #
       # どちらも段では見ない。種火も炎も同じ値として扱い、持つのは線を1本跨がせる量だけ——明かりは
-      # 暗闇から作業できる明るさへ持ち上げる+11（ContentSkeleton.md 8.1.1.1節）、暖は世界が最も
+      # 暗闇から作業できる明るさへ持ち上げる+11（ContentSkeleton.md 8.1.1.2節）、暖は世界が最も
       # 冷えるとき（涼しい季節-5＋夜-3、core.yaml）をちょうど平年の気温へ戻す+8。
       - conditions: [{prop: heat, gt: 0}]
         modify: {parent: {hand_brightness: 11, looking_brightness: 11, ambient_temperature: 8}}
