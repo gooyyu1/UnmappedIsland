@@ -328,7 +328,7 @@ describe('board-round.mjs', () => {
   it('手綱で止まっているだけの周には、印を置かない', () => {
     const result = playRound({ prs: [pr(10)], braked: ['dispatch-review.sh'] });
 
-    expect(result.log).toContain('打てなかった: REVIEW 10（手綱で止まっている）');
+    expect(result.log).toContain('打てなかった: REVIEW 10（転んだのではない）');
     expect(result.stuck).toBeUndefined();
   });
 
@@ -340,12 +340,22 @@ describe('board-round.mjs', () => {
   });
 
   // **始まりだけを覚える。** 毎周書き直すと、続いた長さが出せない——読む側が要るのはそれだけ。
+  // 時刻を `STUCK_HOURS` の内側に採るのは、詰まりを解く係が立つ周を避けるため（下）。
   it('印は、進み始めるまで最初の時刻のまま', () => {
-    const first = '2026-09-05T00:00:00Z';
+    const first = '2026-09-05T01:30:00Z';
     expect(
       playRound({ prs: [pr(10, passed)], fails: ['merge-pr.sh'], ledger: { [STUCK]: first } }).stuck,
     ).toBe(first);
     expect(playRound({ prs: [pr(10, passed)], ledger: { [STUCK]: first } }).stuck).toBeUndefined();
+  });
+
+  // **係を立てられた周も、手が打てた周。** 印は消え、まだ詰まっていれば次の周が新しい時刻で
+  // 置き直す（2.21.2）。消さないと、直った後も印が残って係が立ち続ける。
+  it('詰まりを解く係を立てられたら、印を消す', () => {
+    const result = playRound({ ledger: { [STUCK]: '2026-09-05T00:00:00Z' } });
+
+    expect(result.calls).toEqual(['dispatch-chore.sh unstick .claude/unstick-prompt.md --bridge']);
+    expect(result.stuck).toBeUndefined();
   });
 
   // 後片付けはマージした手から切り離してあるので、**マージ済みのPRを見つけた周に打つ**（2.10.4）。
@@ -456,6 +466,8 @@ describe('board-round.mjs', () => {
 
     expect(result.log).toContain('KEPT session_a');
     expect(result.ledger).toEqual({ 'archive:session_a': 'closed:8' });
+    // **安定した答えであって、転んだのではない**（2.21.2）。数えると、健康な盤面に詰まりの印が立つ。
+    expect(result.stuck).toBeUndefined();
   });
 
   // 失敗は答えではないので、次の周にもう一度試す。

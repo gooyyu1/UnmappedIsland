@@ -1246,6 +1246,20 @@ describe('board-move.mjs', () => {
     expect(moves({})).toEqual([]);
   });
 
+  // **並びの先頭に置く**（2.21.3）。1周1手で切り上げるので、他の周期の係と同じ最後尾に置くと、
+  // **転ばずに打てる手が毎周1つでも在るかぎり手番が回らない**——投入だけが通らない盤面で、
+  // 片付けやマージは通り続ける形がまさにそれ。
+  it('他に打てる手が在っても、詰まりを解く係を先に置く', () => {
+    const board = {
+      untidied: true,
+      mergedPrs: [{ number: 9 }],
+      prs: [pr(10, label('通してよい'))],
+      taken: { [STUCK]: '2026-09-05T00:30:00Z' },
+    };
+
+    expect(moves(board)).toEqual([UNSTICK, `TIDY 9 ${NOW}`, 'MERGE 10']);
+  });
+
   // 盤面を回す仕組みそのものを書き換える係なので、同じ資源を触る task と並べない（2.17 の `locks`）。
   it('`area:daemon` を持つ task が走っている間は、立てない', () => {
     const board = {

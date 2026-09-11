@@ -208,13 +208,13 @@ const returnBody = (session, issue) =>
 `;
 
 /**
- * 1手の結果。**「打てなかった」を2つに割る**——人が手綱で止めている周（`BRAKED`）と、それ以外
- * （`FAILED`）。**盤面が進まない周を詰まりと読む側**は前者を数えてはいけない
- * （`.claude/board-design.md` 2.21。手綱で止まっているのは人の意思で、直す相手が居ない）。
+ * 1手の結果。**「打てなかった」を、直す相手が要る分（`FAILED`）と、答えが返っている分
+ * （`SETTLED`）に割る**——人が手綱で止めている・畳んではいけないと分かった、など。
+ * **盤面が進まない周を詰まりと読む側**は後者を数えてはいけない（`.claude/board-design.md` 2.21）。
  */
 export const PLAYED = 'played';
 export const FAILED = 'failed';
-export const BRAKED = 'braked';
+export const SETTLED = 'settled';
 
 /**
  * セッションを立てる・起こすスクリプトが、**人が手綱で止めていることを名乗る**終了コード
@@ -223,7 +223,7 @@ export const BRAKED = 'braked';
 const BRAKED_EXIT = 3;
 
 /** 投入・再開のスクリプトの終了コードを、1手の結果へ読み替える。 */
-const dispatched = (status) => (status === 0 ? PLAYED : status === BRAKED_EXIT ? BRAKED : FAILED);
+const dispatched = (status) => (status === 0 ? PLAYED : status === BRAKED_EXIT ? SETTLED : FAILED);
 
 /** 1手打つ。打てたら `PLAYED`（呼び手は周を切り上げる）、それ以外は次の手へ進む。 */
 export function play(kind, args, { runScript, gh, remember, log, echo }) {
@@ -283,7 +283,10 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
       // 素性を引けなかったもの）。
       // 指紋を残さないと、**1周1手のうちの1手がこれで埋まり続ける。** `UNARCHIVED` は失敗なので残さず、
       // 次の周にもう一度試す。
-      if (verdicts.includes(`KEPT ${a}`)) remember(`archive:${a}`, b);
+      if (verdicts.includes(`KEPT ${a}`)) {
+        remember(`archive:${a}`, b);
+        return SETTLED;
+      }
       return FAILED;
     }
     case 'TASK': {
@@ -419,8 +422,8 @@ export function round({
     log(`ぶつかった: PR #${record.pr} ${record.files.join(' ')}${rivals === '' ? '' : ` … ${rivals}`}`);
   }
 
-  // **この周に、手綱以外の理由で打てなかった手が1つでもあったか**（`board-state.mjs` の `STUCK`）。
-  // 人が止めているだけの周は数えない——直す相手が居ないので、詰まりを解く係を立てても仕事が無い。
+  // **この周に、転んだ手が1つでもあったか**（`board-state.mjs` の `STUCK`）。答えが返っている手
+  // （`SETTLED`）は数えない——直す相手が居ないので、詰まりを解く係を立てても仕事が無い。
   //
   // **打てた手が後ろに在っても、手前で転んだ手は数える。** 盤面が全体として進んでいても、**同じ手
   // だけが毎周転び続ける形**（投入だけが通らない・レビューだけが立たない）がこの仕組みの相手で、
@@ -439,7 +442,7 @@ export function round({
       // **打つのは1周に1手**（このファイルの冒頭）。
       break;
     }
-    log(`打てなかった: ${kind} ${a}${result === BRAKED ? '（手綱で止まっている）' : ''}`);
+    log(`打てなかった: ${kind} ${a}${result === SETTLED ? '（転んだのではない）' : ''}`);
     if (result === FAILED) blocked = true;
   }
   // **打てた手が1つも無くても、出した手が無ければ詰まりではない**（やることが無い周）。

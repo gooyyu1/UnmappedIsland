@@ -186,6 +186,9 @@ function hasUnreadSmell(mergedPrs) {
  * - `env` … 投入先（`DISPATCH_TO` の値）。
  * - `locks` … 掴む資源（`area:` と同じ綴り）。書くセッションと取り合う。
  * - `prompt` … 渡す本文の在り処（リポジトリからの相対）。
+ * - `urgent` … **待たせてよいか。** 既定（省略）は待たせてよい＝最後尾で、根拠は「間隔が満ちて
+ *   いる限り次の周でも同じ手が出る」こと。**その根拠が言えない係だけが立てる**（下の `unstick`。
+ *   `.claude/board-design.md` 2.21.3）。
  *
  * **PRを出す係が居ても、作業者の枠（`HELD_TASKS`・`ACTIVE_WORKERS`）には数えない。** 間隔を空けて
  * 立つ係の、記録だけの差分で、マージの列を詰まらせないため。数えると、書く側の並列度がその分だけ
@@ -261,6 +264,9 @@ const CYCLES = [
     locks: ['area:daemon'],
     prompt: '.claude/unstick-prompt.md',
     due: (board) => stuckHours(board) >= STUCK_HOURS,
+    // **この係が立つ周は、まさに手が転んでいる周。** 転ばずに打てる手が毎周1つでも在れば、
+    // 1周1手の切り上げで最後尾までたどり着かない——待たせてよい根拠がここだけ成り立たない。
+    urgent: true,
   },
 ];
 
@@ -519,6 +525,7 @@ export function moves(input) {
   const reviews = [];
   const tasks = [];
   const chores = [];
+  const urgentChores = [];
   const notes = [];
 
   // **古いものから捌く。** 一覧は新しい順に返るので、そのまま回すと**打つのは1周に1手**（`daemon.sh`）
@@ -857,12 +864,16 @@ export function moves(input) {
       continue;
     }
     const flag = DISPATCH_TO[cycle.env];
-    chores.push(`CHORE ${cycle.name} ${cycle.prompt} ${input.now}${flag === '' ? '' : ` ${flag}`}`);
+    const move = `CHORE ${cycle.name} ${cycle.prompt} ${input.now}${flag === '' ? '' : ` ${flag}`}`;
+    (cycle.urgent === true ? urgentChores : chores).push(move);
   }
 
   // 畳むのをマージの次に置くのは、**抱えているタスクの枠が空くから**（3.1 の並列度）。後ろへ回すと、
   // 終わったワーカーが枠を握ったまま、待っている task が投入されない周が続く。
   return [
+    // **`urgent` の係だけが先頭。** 盤面が詰まっていると分かっている周に、転んだ手をもう一度試す
+    // より、原因を直させるほうが先（`.claude/board-design.md` 2.21.3）。
+    ...urgentChores,
     // **後片付けはマージより先。** 本体のチェックアウトは作業ツリー全部の共有先なので、片付けを
     // 後ろへ回すと、**入る本数だけ古いまま**になる（マージできるPRが並んでいる周は、片付く前に次が入る）。
     ...tidies,
@@ -873,8 +884,8 @@ export function moves(input) {
     ...returns,
     ...reviews,
     ...tasks,
-    // **周期の係は最後尾。** 急ぐ仕事ではないうえ、間隔が満ちている限り次の周でも同じ手が出るので、
-    // 先に置くと待っている直しやレビューを1周ぶん押しのけるだけになる。
+    // **残りの周期の係は最後尾。** 急ぐ仕事ではないうえ、間隔が満ちている限り次の周でも同じ手が
+    // 出るので、先に置くと待っている直しやレビューを1周ぶん押しのけるだけになる。
     ...chores,
     ...notes.map((note) => `NOTE ${note}`),
   ];

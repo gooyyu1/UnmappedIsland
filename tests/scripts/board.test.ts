@@ -277,17 +277,17 @@ describe('issueBody', () => {
     const { lines } = body({ stuckSince: '2026-09-07T01:19:05Z' });
 
     expect(lines).toContain(
-      '⚠ **盤面が進んでいません。** 2026-09-07T01:19:05Z から 1時間45分、手が1つも進んでいません',
+      '⚠ **盤面が詰まっています**（2026-09-07T01:19:05Z から 1時間45分）。手が転んだままか、盤面そのものを引けない周が続いています',
     );
   });
 
   it('進んでいる盤面には、断りを出さない', () => {
-    expect(body().lines.join('\n')).not.toContain('盤面が進んでいません');
+    expect(body().lines.join('\n')).not.toContain('盤面が詰まっています');
   });
 
   // 出どころは台帳のテキストなので、壊れていることがありうる。**壊れた値で嘘の長さを出さない。**
   it('読めない時刻なら、断りを出さない', () => {
-    expect(body({ stuckSince: 'ゆうべ' }).lines.join('\n')).not.toContain('盤面が進んでいません');
+    expect(body({ stuckSince: 'ゆうべ' }).lines.join('\n')).not.toContain('盤面が詰まっています');
   });
 
   it('配ってよいかで数えた件数を出す', () => {
@@ -418,5 +418,23 @@ describe('issueBody', () => {
     expect(lines).toContain('⚠ （セッションの一覧を引けなかった。投入済みの判定はPRだけで行う）');
     // ログ側にも同じ声が出る（手元で追う側は、ここだけを読む）。
     expect(warnings).toEqual(['（セッションの一覧を引けなかった。投入済みの判定はPRだけで行う）']);
+  });
+
+  // **断りだけでは足りない**（2.20.2）。空の一覧で組むと、投入済みの task が `着手可`・`担当無し`
+  // に化けて**在るはずのものが消えた盤面**になり、読んだ人は投入してよいと読む。**表が在れば、
+  // 断りより表のほうが読まれる。**
+  it('セッションの一覧を引けなかったら、それを根拠にした行は出さない', () => {
+    const { lines } = body({
+      issues: [issue(8, '直す'), issue(9, 'なにか', { labels: [] })],
+      sessionsFail: true,
+    });
+    const text = lines.join('\n');
+
+    expect(text).not.toContain('| 着手可 |');
+    expect(text).not.toContain('| 投入済み |');
+    expect(text).not.toContain('| 畳んでいないセッション |');
+    expect(lines).toContain('（セッションの一覧を引けなかったので、出せない）');
+    // 一覧を見ずに数えられるものは、そのまま出す。
+    expect(lines).toContain('| 未整理 | 1 |');
   });
 });

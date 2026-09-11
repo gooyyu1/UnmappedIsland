@@ -28,10 +28,10 @@ export interface RoundDeps {
 
 export function round(deps?: RoundDeps): boolean;
 
-/** 1手の結果。**「打てなかった」を、人が手綱で止めた分とそれ以外に割る**（2.21.2）。 */
+/** 1手の結果。**「打てなかった」を、直す相手が要る分と答えが返っている分に割る**（2.21.2）。 */
 export const PLAYED: 'played';
 export const FAILED: 'failed';
-export const BRAKED: 'braked';
+export const SETTLED: 'settled';
 
 export function play(
   kind: string,
@@ -42,7 +42,7 @@ export function play(
     log: NonNullable<RoundDeps['log']>;
     echo: NonNullable<RoundDeps['echo']>;
   },
-): typeof PLAYED | typeof FAILED | typeof BRAKED;
+): typeof PLAYED | typeof FAILED | typeof SETTLED;
 
 export function pruneTaken(
   taken: Readonly<Record<string, string>>,
