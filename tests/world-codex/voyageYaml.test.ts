@@ -10,7 +10,9 @@ import { applyScenario, bundledScenario } from '../../src/scenario/Scenario';
 import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import { namedEntries, nodeAt, objectValueAt, readSeaChart } from '../support/seaChain';
+import type { Rng } from '../../src/domain/Rng';
 import { seededRng } from '../../src/domain/Rng';
+import { fixedRng } from '../support/rng';
 
 /**
  * 8種類の顔ぶれ（docs/world/ContentSkeleton.md 7節）と、それを配った海区。**顔ぶれは型でもタグでも
@@ -140,12 +142,15 @@ describe('筏と航海', () => {
    * **乗り手は明るさの条件に引っかからない**（tests/support/illumination.ts）。見張りも漁も明るい
    * うちだけ（docs/world/Voyage.md 3.10節）なので、そうしないと何日もかかる航海の検査が、途中の夜で
    * 止まる。**暗さそのものを見る検査だけが、これを戻す**（下の「真夜中の海では」）。
+   *
+   * **卓のどれを引くかを名指ししたい検査は、乱数源を渡す**（fixedRng）。渡さなければシナリオの種から
+   * 引くので、どの候補に当たるかは世界がそこまでにどう進んだか次第になる。
    */
-  function ready(): { game: StartedGame; raft: WorldObject } {
+  function ready(rng?: Rng): { game: StartedGame; raft: WorldObject } {
     const scenario = bundledScenario('voyage_ready');
     if (scenario === undefined) throw new Error('同梱シナリオ voyage_ready がありません。');
 
-    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, rng ?? seededRng(scenario.seed));
     applyScenario(game, scenario, codex);
     makeBrightEnoughForAnyAction(game.player.instance, codex);
 
@@ -1028,63 +1033,88 @@ describe('筏と航海', () => {
   }
 
   /**
-   * 銛で`tries`回突いて、**返った生肉の数と銛を失った回数**を数える。突く相手が違うだけの同じ手順で
-   * 群れと海面の両方を数える——見たいのは当たりの落差そのもの（Voyage.md 3.9.2節）。
-   *
-   * 銛は失うたびに持ち直し、群れは立ち去りまでの残りを毎回戻して留める。数えたいのは1回あたりの
-   * 当たりなので、銛の在庫も群れの寿命も混ぜない。獲れた生肉はその場で捨てる——手も積荷も詰まると、
-   * 湧いた生肉が黙って手に入らなくなる（`into: agent`、9.4節）。
+   * 卓の境目を挟む幅。**この幅で挟めること自体が、当たりの区間が宣言どおりの位置に在ること**
+   * ——広く取るほど、卓の書き換えを見逃す。
    */
-  function spearRepeatedly(
+  const ROLL_MARGIN = 0.001;
+
+  /**
+   * `expert` の段に届く狩猟の腕と、その段が押し上げる狙いの量
+   * （characters/player_character.yaml の `skill_hunting` と `hunting_aim`）。
+   */
+  const EXPERT_HUNTING = 180;
+  const EXPERT_AIM = 40;
+
+  /**
+   * 銛で1回突いて、**手に入った生肉の数・銛を失ったか・かかった分数**を返す。突く相手が違うだけの
+   * 同じ手順で群れと海面の両方を見る——見たいのは当たりの落差そのもの（Voyage.md 3.9.2節）。
+   *
+   * **卓のどこを引くかは呼ぶ側が決める**（`roll` は卓全体に対する割合。fixedRng）。突く手は見張りや
+   * 天気と同じ乱数列を引くので、**当たりの割合を突いた回数から数えると、無関係な変更で引き当てる並びが
+   * ずれる**——数えるのをやめて、引く値のほうを名指しする。
+   *
+   * 出航のしたくの積荷（ヤシの実70個）は降ろす——手も積荷も詰まると、湧いた生肉が黙って手に
+   * 入らなくなる（`into: agent`、9.4節）。
+   */
+  function spearAt(
     target: 'shoal' | 'sea',
-    tries: number,
+    roll: number,
     hunting = 0,
-  ): { meat: number; lost: number } {
-    const { game, raft } = ready();
+  ): { meat: number; lost: boolean; minutes: number } {
+    const { game, raft } = ready(fixedRng(roll));
     // 荒天で押し流されると、立てた群れと筏の居る海区がずれる。見たいのは卓だけなので天気を止める。
     holdWeather(game, 'clear', 'crosswind');
     expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute()).toBe(true);
-    // 出航のしたくの積荷（ヤシの実70個）を降ろす。枠が空いていないと獲れた生肉が置けない。
     for (const cargo of [...raft.children()]) {
       if (cargo !== game.player.instance) cargo.destroy();
     }
 
-    let harpoon = giveHarpoon(game);
-    let shoal: WorldObject | undefined;
-    let meat = 0;
-    let lost = 0;
+    const harpoon = giveHarpoon(game);
+    // 突く人の狙い（hunting_aim）は、当たる回の重み（catch_chance）がbaseの土台にする
+    // （docs/world/Skills.md 5節）。腕はその狙いの段を決める。
+    game.player.instance.getProperty(codex.propertyNames.getId('skill_hunting')).setNumber(hunting);
 
-    for (let i = 0; i < tries; i++) {
-      keepAlive(game);
-      // 突くたびに狩猟の腕が+2伸び、段が上がるとcatch_chanceへ狙いが積まれる（docs/world/Skills.md
-      // 5節）。数えるのを卓だけにしたいので、群れの立ち去りと同じく毎回この段へ戻す。
-      game.player.instance.getProperty(codex.propertyNames.getId('skill_hunting')).setNumber(hunting);
-      if (harpoon.parent === undefined) harpoon = giveHarpoon(game);
-      if (target === 'shoal') {
-        shoal ??= raiseQuarry(game, raft.parent!, 'fish_shoal');
-        // 突いている最中に群れが去ると、そのぶんが空振りとして数に混ざる（立ち去りは6時間、
-        // 突くのは1回30分）。残りを毎回満たして、数えるのを卓だけにする。
-        const staying = shoal.getProperty(codex.propertyNames.getId('stay_remaining'));
-        staying.setNumberWithoutEvents(staying.def.range?.max ?? 0);
-      }
+    const name = target === 'shoal' ? 'spear_shoal' : 'spear_sea';
+    const quarry = target === 'shoal' ? raiseQuarry(game, raft.parent!, 'fish_shoal') : raft;
+    const spear = quarry
+      .combinationsWith(harpoon, game.player.instance)
+      .find((candidate) => candidate.name === name);
+    expect(spear, `${name} が成立する`).toBeDefined();
 
-      const name = target === 'shoal' ? 'spear_shoal' : 'spear_sea';
-      const spear = (target === 'shoal' ? shoal! : raft)
-        .combinationsWith(harpoon, game.player.instance)
-        .find((candidate) => candidate.name === name);
-      expect(spear, `${name} が成立する`).toBeDefined();
-      expect(spear?.tryExecute(), `${name} を突く`).toBe(true);
+    const minutes = spear!.executionMinutes();
+    expect(spear!.tryExecute(), `${name} を突く`).toBe(true);
+    return {
+      meat: [...raft.descendants()].filter((object) => object.def.name === 'raw_meat').length,
+      lost: harpoon.parent === undefined,
+      minutes,
+    };
+  }
 
-      if (harpoon.parent === undefined) lost++;
-      for (const object of [...raft.descendants()]) {
-        if (object.def.name === 'raw_meat') {
-          meat++;
-          object.destroy();
-        }
-      }
-    }
+  /**
+   * 突く相手ごとの、1回にかかる分数と当たりの割合（Voyage.md 3.9.2節の表）を確かめる。
+   * **当たりは卓の先頭**なので、割合の手前を引けば生肉が1つ返り、先を引けば返らない。
+   */
+  function expectCatchRate(target: 'shoal' | 'sea', minutes: number, rate: number, hunting = 0): void {
+    const where = `${target}: 卓の${percent(rate)}`;
+    const hit = spearAt(target, rate - ROLL_MARGIN, hunting);
+    expect(hit.meat, `${where}までは生肉が1つ返る`).toBe(1);
+    expect(hit.minutes, `${target}: 1回は${minutes}分`).toBe(minutes);
+    expect(spearAt(target, rate + ROLL_MARGIN, hunting).meat, `${where}から先は返らない`).toBe(0);
+  }
 
-    return { meat, lost };
+  /**
+   * 突いた魚に銛を持って行かれる割合（同3.9.4節）を確かめる。**失う回は卓の末尾**なので、末尾から
+   * その割合ぶんを引けば失い、その手前では失わない。
+   */
+  function expectHarpoonLossRate(target: 'shoal' | 'sea', rate: number, hunting = 0): void {
+    const where = `${target}: 卓の末尾${percent(rate)}`;
+    expect(spearAt(target, 1 - rate + ROLL_MARGIN, hunting).lost, `${where}を引けば失う`).toBe(true);
+    expect(spearAt(target, 1 - rate - ROLL_MARGIN, hunting).lost, `${where}の手前では失わない`).toBe(false);
+  }
+
+  /** 卓のどこを指しているかを、検査が落ちたときに読める形にする。 */
+  function percent(rate: number): string {
+    return `${(rate * 100).toFixed(1)}%`;
   }
 
   it('魚を突くには銛が要る（手では獲れない）', () => {
@@ -1106,36 +1136,34 @@ describe('筏と航海', () => {
   });
 
   it('群れへ突くほうが、群れの居ない海面へ突くよりよく獲れる', () => {
-    const tries = 120;
-    const shoal = spearRepeatedly('shoal', tries);
-    const sea = spearRepeatedly('sea', tries);
-
-    // 30分に0.78切れと、60分に0.15切れ（Voyage.md 3.9.2節）。**この落差が「積むか釣るか」の判断を
-    // 作っている**ので、見るのは平均ではなく差のほう。幅は試行回数ぶんの揺れ（標準誤差は0.04ほど）
-    // より広く、卓の差（0.78/0.15）より狭く取る。
-    expect(shoal.meat / tries, '群れは30分に0.78切れ').toBeGreaterThan(0.6);
-    expect(sea.meat / tries, '群れの居ない海面は60分に0.15切れ').toBeLessThan(0.3);
+    // 群れは30分に0.78切れ、群れの居ない海面は60分に0.15切れ（Voyage.md 3.9.2節）。当たりの重みが
+    // 卓に占める割合そのもので、**この落差が「積むか釣るか」の判断を作っている**ので、どちらか
+    // 一方だけを動かさない。
+    expectCatchRate('shoal', 30, 78 / 100);
+    expectCatchRate('sea', 60, 15 / 100);
   });
 
-  it('狩猟の腕が上がると、同じ海面でもよく獲れる', () => {
+  it('狩猟の腕が上がると、どちらの相手からもよく獲れる', () => {
     // 当たる回の重み（catch_chance）が狙い（hunting_aim）を土台に積む（docs/world/Skills.md 5節）
-    // ので、群れの居ない海面は素人の15対85から、expertの55対85へ動く。**突き損ねと、銛を持って
-    // 行かれる回は素のまま**なので、伸びたぶんだけ獲れない回の割合が落ちる。
-    const tries = 120;
-    const novice = spearRepeatedly('sea', tries);
-    const expert = spearRepeatedly('sea', tries, 180);
+    // ので、群れの居ない海面は素人の0.15から0.39へ、群れは0.78から0.84へ動く（Voyage.md 3.9.2節）。
+    // **上乗せが積まれるのは当たる側だけで、突き損ねと銛を持って行かれる回は素のまま**——伸びたぶんが
+    // 卓ごと太るので、群れと海面の落差はそのぶん縮む。
+    expectCatchRate('sea', 60, (15 + EXPERT_AIM) / (100 + EXPERT_AIM), EXPERT_HUNTING);
+    expectCatchRate('shoal', 30, (78 + EXPERT_AIM) / (100 + EXPERT_AIM), EXPERT_HUNTING);
 
-    expect(expert.meat, '熟達したほうがよく獲れる').toBeGreaterThan(novice.meat);
-    expect(expert.meat / tries, '60分に0.39切れ').toBeGreaterThan(0.25);
+    // 同じ引きでも、素人には返らない側が熟達した人には返る。
+    const roll = 0.3;
+    expect(spearAt('sea', roll, EXPERT_HUNTING).meat, '熟達すれば当たる引き').toBe(1);
+    expect(spearAt('sea', roll).meat, '素人には同じ引きが空振り').toBe(0);
   });
 
   it('突いた魚に銛を持って行かれることがある', () => {
-    // 50回に1回（Voyage.md 3.9.4節）。**だから積むのは銛1本ではなく、穂先と紐の予備**になる。
-    const tries = 200;
-    const { lost } = spearRepeatedly('shoal', tries);
-
-    expect(lost, '突き続ければ失う').toBeGreaterThan(0);
-    expect(lost / tries, '失うのは稀（50回に1回）').toBeLessThan(0.1);
+    // どちらの卓も50回に1回で、expertでは70回に1回（Voyage.md 3.9.4節）——**失う重み2は動かず、腕は
+    // 当たる側だけを太らせる**ので、上手いほど失いにくい。**だから積むのは銛1本ではなく、穂先に
+    // なる尖った石と、締める紐**になる。
+    expectHarpoonLossRate('shoal', 2 / 100);
+    expectHarpoonLossRate('sea', 2 / 100);
+    expectHarpoonLossRate('sea', 2 / (100 + EXPERT_AIM), EXPERT_HUNTING);
   });
 
   it('海へ突く手は、浮いている間だけ（浜に繋いだ筏では突けない）', () => {
