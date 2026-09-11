@@ -51,6 +51,16 @@
 #
 # **書けなかった周は、ログへ1行残して次へ進む。** 古くなるのは読む先だけで、打つ手には関わらない。
 #
+# ## 盤面が動くのに要る値の生死を見回る
+#
+# 環境IDと資格情報は、死んでも誰も言わない（2.22）。見回るのは
+# [`check-values.mjs`](check-values.mjs) で、**間隔を持つのはこちら**（`CHECK_INTERVAL`）。
+#
+# **周期の係（2.17）には載せられない。** 係を立てるかを決めるのは1周の中（`board-round.mjs`）で、
+# **`gh` が死ぬとその1周が引けない**——いちばん告げてほしい死のときに、告げる者が立たない。
+#
+# **引けなかった周こそ見回る。** 引けない理由がまさにこの値なので、盤面の成否では回さない。
+#
 # ## 走るのは複製。入れ替わったら、新しい版で回り直す
 #
 # **回っている bash は、最初に読んだ版のまま。** `TIDY` を打つと本体が `main` へ進む（`SYNCED`）ので、
@@ -118,6 +128,9 @@ INTERVAL="${INTERVAL:-30}"
 # 盤面を常設の issue へ書き出す間隔（2.20）。**周と同じ速さでは書かない**——読むのは人で、
 # 30秒ごとに書き換えても読み切れないうえ、issue の編集履歴がそれで埋まる。
 PUBLISH_INTERVAL="${PUBLISH_INTERVAL:-300}"
+# 盤面が動くのに要る値を見回る間隔（2.22）。**死んだと言うまでの猶予は見回る側が持つ**ので、ここが
+# 決めるのは「どれだけ細かく見るか」だけ。
+CHECK_INTERVAL="${CHECK_INTERVAL:-3600}"
 FAILURE_LIMIT="${FAILURE_LIMIT:-5}"
 # 続けて引けなくなった後の、待つ間隔。**`ROUND_LIMIT` より短くしておく**——心拍の間隔がそのまま
 # 延びるので、越えると `status` が生きているものを「止まっている」と答える。
@@ -140,6 +153,9 @@ HEARTBEAT="$STATE_DIR/heartbeat"
 # 最後に盤面を書き出した時刻（エポック秒）。**心拍と同じく錠の外**——`stop` して `start` し直した
 # だけで書き出しの周期が頭から始まると、立て直すたびに1回ずつ余分に書く。
 PUBLISHED="$STATE_DIR/published"
+# 最後に値を見回った時刻（エポック秒）。**`PUBLISHED` と同じく錠の外**——立て直すたびに頭から
+# 数え直すと、`start` を打つだけで見回りが1回ずつ余分に走る。
+CHECKED="$STATE_DIR/checked"
 # **PIDは錠の中。** 撃つ相手は錠を持っている者そのものなので、寿命が同じでないと嘘になる。
 PIDFILE="$LOCK/pid"
 # 1周が掛かってよい上限。心拍は周の頭にしか書かないので、**時間の掛かる手（マージ）の最中に錠を
@@ -168,6 +184,22 @@ beating() {
 # 新しいままで、心拍だけでは「止めた」と「動いている」が同じに見える。
 running() { [ -d "$LOCK" ] && beating; }
 
+# 周とは別の間隔で叩くものの、時計。**満ちていれば0を返し、叩いた時刻を控える。**
+#
+#   due_now "$PUBLISHED" "$PUBLISH_INTERVAL" || return 0
+#
+# **控えるのは成否によらず。** 失敗のたびに次の周で叩き直すと、相手が沈んでいる間ずっと30秒おきに
+# 打ち続けることになる——遅れて困るのは読む人だけなので、周期のぶんは待ってよい。
+due_now() {
+  local mark="$1" interval="$2" now last=0
+  now=$(date -u +%s)
+  [ ! -f "$mark" ] || last=$(cat "$mark")
+  # 読めた中身が数でなければ、一度も叩いていないものとして扱う（次の1回で書き直る）。
+  [[ "$last" =~ ^[0-9]+$ ]] || last=0
+  [ $((now - last)) -ge "$interval" ] || return 1
+  echo "$now" >"$mark"
+}
+
 # 盤面を常設の issue へ書き出す（2.20）。**間隔が満ちていなければ何もしない。**
 #
 #   publish_board fresh   # この周に盤面を引けた（一覧もこの周のぶんが在る）
@@ -184,20 +216,22 @@ running() { [ -d "$LOCK" ] && beating; }
 # **書けなくても周は止めない。** 読む先が古くなるだけで、打つ手には関わらない——ここで諦める側へ
 # 倒さないと、GitHubが数分沈むたびに盤面ごと止まる。
 publish_board() {
-  local now last=0
-  now=$(date -u +%s)
-  [ ! -f "$PUBLISHED" ] || last=$(cat "$PUBLISHED")
-  # 読めた中身が数でなければ、一度も書いていないものとして扱う（次の1回で書き直る）。
-  [[ "$last" =~ ^[0-9]+$ ]] || last=0
-  [ $((now - last)) -ge "$PUBLISH_INTERVAL" ] || return 0
-  # **叩いた時刻は、成否によらず控える。** 失敗のたびに次の周で叩き直すと、GitHubが沈んでいる間
-  # 30秒おきに打ち続けることになる——遅れて困るのは読む人だけなので、周期のぶんは待ってよい。
-  echo "$now" >"$PUBLISHED"
+  due_now "$PUBLISHED" "$PUBLISH_INTERVAL" || return 0
   # 詰まりの印は台帳に在る（[`board-state.mjs`](board-state.mjs)）ので、置き場を渡す。
   local -a pass=("BOARD_STATE=$STATE_DIR")
   [ "${1:-}" != 'fresh' ] || pass+=("LIVE_SESSIONS_TSV=$STATE_DIR/live-sessions.tsv")
   env "${pass[@]}" node "$ORIGIN/board-publish.mjs" ||
     log "盤面を書き出せなかった（次の周期でやり直す）"
+}
+
+# 盤面が動くのに要る値の生死を見回る（2.22）。**間隔が満ちていなければ何もしない。**
+#
+# **盤面を引けたかは渡さない。** 引けない理由がまさにこの値なので、成否で回すと**告げてほしい周だけ
+# 見回らない**。台帳（死んでいる値と、いつからか）の置き場は1周を回す側と同じ。
+check_values() {
+  due_now "$CHECKED" "$CHECK_INTERVAL" || return 0
+  BOARD_STATE="$STATE_DIR" node "$ORIGIN/check-values.mjs" ||
+    log "値を見回れなかった（次の周期でやり直す）"
 }
 
 report() {
@@ -395,6 +429,7 @@ while true; do
     [ "$failures" -ne "$FAILURE_LIMIT" ] ||
       log "${FAILURE_LIMIT}回続けて失敗したので、${RETRY_INTERVAL}秒おきへ落とす（認証切れか通信断。直れば自分で戻る）"
   fi
+  check_values
   [ -z "${ONCE:-}" ] || break
   [ -z "$stopping" ] || break
   # 寝る前に見るのは、**古い版のまま `INTERVAL` ぶん待たせない**ため（上の「走るのは複製」）。複製元へ

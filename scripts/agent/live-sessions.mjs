@@ -56,26 +56,41 @@ const CCR_META = process.env.CCR_META ?? resolve(HERE, '../../.claude/ccr-meta.s
 const DRY_PAGES = Number(process.env.LIVE_SESSIONS_DRY_PAGES || 2);
 
 /**
- * どこで走っているか（`board-design.md` 2.16）。**既定のIDを持つのは
- * [`ccr-env.sh`](ccr-env.sh) 1箇所**なので、直接叩いて読む——書き写すと、あちらを直したときに
- * ここが黙って古いIDを見続ける。
+ * 今の環境ID（`board-design.md` 2.16）。**既定のIDを持つのは [`ccr-env.sh`](ccr-env.sh) 1箇所**
+ * なので、直接叩いて読む——書き写すと、あちらを直したときにここが黙って古いIDを見続ける。
  *
- * **知らない環境は `-`。** `cloud` に寄せない——盤面はこの値で「間違った場所に居るワーカー」を
- * 畳むので、知らないものを既定へ落とすと、正しく走っているセッションを畳みうる。
+ * 返すのは `{ name, id }` の並びで、**名前は `ccr-env.sh` が出す綴りのまま**（`CLOUD_ENV` /
+ * `BRIDGE_ENV`）。**決まらなかった側は出てこない**（あちらの「決まらなかった側は出さない」）ので、
+ * 並びに居ないことと、居るが死んでいることは別（[`check-values.mjs`](check-values.mjs)）。
  *
- * **引けなかったら止める。** 空の対応表を返すと全セッションが `-` へ落ち、**配り直しの仕組みが
- * どこにも跡を残さずに死ぬ**——`-` は「食い違いを見ない」側なので、赤くも遅くもならない。
+ * **引けなかったら止める。** 空で返すと、呼び手には「環境が1つも無い」と見分けが付かない。
  */
-function environments() {
+export function environmentIds() {
   // パスで呼ぶため PATH では差し替わらない。試験は `CCR_ENV` で差し替える。
   const path = process.env.CCR_ENV ?? resolve(HERE, 'ccr-env.sh');
   const call = runBash(path, [], { capture: true });
   if (call.status !== 0) throw new Error(`ccr-env.sh を起こせなかった: ${path}`);
-  const found = {};
+  const found = [];
   for (const line of call.stdout.split(/\r?\n/)) {
     const at = line.indexOf('=');
-    if (at > 0) found[line.slice(at + 1)] = line.slice(0, at) === 'BRIDGE_ENV' ? 'bridge' : 'cloud';
+    if (at > 0) found.push({ name: line.slice(0, at), id: line.slice(at + 1) });
   }
+  return found;
+}
+
+/**
+ * どこで走っているか（`board-design.md` 2.16）。
+ *
+ * **知らない環境は `-`。** `cloud` に寄せない——盤面はこの値で「間違った場所に居るワーカー」を
+ * 畳むので、知らないものを既定へ落とすと、正しく走っているセッションを畳みうる。
+ *
+ * **引けなければ `environmentIds` が投げるのに任せる**（受けて空を返さない）。空の対応表は全セッション
+ * を `-` へ落とし、**配り直しの仕組みがどこにも跡を残さずに死ぬ**——`-` は「食い違いを見ない」側
+ * なので、赤くも遅くもならない。
+ */
+function environments() {
+  const found = {};
+  for (const { name, id } of environmentIds()) found[id] = name === 'BRIDGE_ENV' ? 'bridge' : 'cloud';
   return found;
 }
 
