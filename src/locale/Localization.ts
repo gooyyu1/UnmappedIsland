@@ -93,8 +93,8 @@ function format(text: string, values: Readonly<Record<string, string>>): string 
 /**
  * 1つのスロットの表示文字列。
  *
- * **名前は持ち主を込めない**（「マルコの装備」ではなく「装備」）。スロットの名前が出るのは子ウィンドウの
- * タブの見出しで、持ち主の名前はその窓の見出しに既に出ている（Windows.md 1.2節）。
+ * **名前は持ち主を込めない**（「マルコの装備」ではなく「装備」）。持ち主を名乗るのは名前を出す側で、
+ * 子ウィンドウのタブなら窓の見出しがそれに当たる（Windows.md 1.2節）。
  */
 export class SlotTexts {
   readonly displayName: string;
@@ -399,9 +399,6 @@ export class Localization {
 
   /**
    * スロット（GameElementDefinition.md 7節）の表示文字列。未登録なら識別子そのもの。
-   *
-   * 子ウィンドウのタブの見出しがこれを使う（Windows.md 1.2節）。**持ち主は込めない**——持ち主の名前は
-   * 窓の見出しに既に出ている。
    */
   slot(slotName: string): SlotTexts {
     const declared = this.slots.get(slotName);
