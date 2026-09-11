@@ -362,8 +362,8 @@ export interface ObjectCost {
  * 山の量。ContentSkeleton.md 4節）が桁の下で揺れる。
  *
  * **日数の分母はこの1つだけ。** 同じ量を読み手ごとに引き算し直すと、生成物ごとに換算が変わる。
- * **素の分で受け渡さない**——1日の長さも最小労働も同じ`number`なので、取り違えても型は通り、
- * 桁だけが静かにずれる。
+ * 対で1つの型にしてあるのは、分母を`number`で受けると1日の長さでも最小労働でも型が通り、
+ * 桁だけが静かにずれるため。
  */
 export interface DailyLabour {
   readonly minimumLabourMinutes: number;
