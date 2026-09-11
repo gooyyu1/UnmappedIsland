@@ -540,17 +540,19 @@ export function moves(input) {
     //
     // **どのラベルが付いていても差し戻す。** PRの `判断待ち` はマージを、`収束せず` はレビューを
     // 止めるだけで、直しを止める理由にはならない——コンフリクトの解消を人の返事まで待たせない（2.13）。
-    const [kind, reason] = labels.includes('却下')
-      ? ['reject', 'ユーザーが差し戻した']
+    //
+    // **束ねるのは渡す文面だけで、指紋は理由ごとに分ける**（下の `cause`）。
+    const [kind, reason, cause] = labels.includes('却下')
+      ? ['reject', 'ユーザーが差し戻した', 'reject']
       : missingLook(pr)
-        ? ['look', '画面が変わるのに `## 見た目` が無い']
+        ? ['look', '画面が変わるのに `## 見た目` が無い', 'look']
         : labels.includes('直し待ち')
-          ? ['mend', '差し戻された']
+          ? ['mend', '差し戻された', 'mend:returned']
           : pr.mergeable === 'CONFLICTING'
-            ? ['mend', 'コンフリクトしている']
+            ? ['mend', 'コンフリクトしている', 'mend:conflict']
             : check === 'red'
-              ? ['mend', 'CIが赤い']
-              : [null, null];
+              ? ['mend', 'CIが赤い', 'mend:red']
+              : [null, null, null];
 
     if (kind !== null) {
       // **`main` が赤い間は直しを頼まない**（2.14）。頼む先が居るかを調べる手前で止める——相手が
@@ -575,9 +577,13 @@ export function moves(input) {
       }
       for (const holder of holders) {
         if (busySession(holder)) continue;
-        // **指紋に種類を入れる。** セッションごとに1枠しか持たないので、同じ差分で別の種類を打つとき
-        // （直しの後に却下が来る、など）に前の指紋と一致してしまい、後から来たほうが黙って落ちる。
-        const mark = `${kind}:${pr.number}:${pr.headRefOid}`;
+        // **指紋は理由ごとに分ける。** セッションごとに1枠しか持たないので、同じ差分で別の理由の手を
+        // 打つときに前の指紋と一致してしまい、後から来たほうが黙って落ちる。
+        //
+        // **`mend` の3つも、渡す文面は同じだが指紋では分ける。** コンフリクトとCIの赤は**PRの版が
+        // 変わらないまま `main` が動いて生まれる**ので、束ねると「先に別の理由で1回打った版」が
+        // 二度と差し戻せなくなる——誰の手番でもないまま止まる（2026-09-11、PR #1982）。
+        const mark = `${cause}:${pr.number}:${pr.headRefOid}`;
         if (taken[`resume:${holder.id}`] === mark) continue;
         mends.push(`RESUME ${holder.id} ${kind} ${pr.number} ${mark}`);
       }
