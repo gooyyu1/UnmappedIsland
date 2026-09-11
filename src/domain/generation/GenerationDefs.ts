@@ -24,7 +24,7 @@ export class GenerationDefs {
     this.locationTypes = locationTypes;
     this.scopes = scopes;
 
-    // 3つのルートキーは互いを名前で指す。**指した先が無ければ黙って効かない**（軸が無ければ好みも
+    // ルートキーどうしは互いを名前で指す。**指した先が無ければ黙って効かない**（軸が無ければ好みも
     // 上限も評価されず、location_typeが無ければ保証だけが満たされない）ので、組み上がった時点で弾く。
     for (const type of locationTypes)
       for (const [key, entries] of [

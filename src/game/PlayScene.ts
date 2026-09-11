@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import type { Rect } from '../ui/Rect';
 import type { BarIconRow } from './looks/PlayScreenLayout';
 import { CHARACTER_DISPLAY_PADDING, PlayScreenLayout } from './looks/PlayScreenLayout';
+import type { BarIcon } from './looks/barIcons';
+import { MENU_ICON, OPTION_ICONS } from './looks/barIcons';
 import { ScreenMetrics } from './looks/ScreenMetrics';
 import { isAlive } from '../ui/lifetime';
 import { SCREEN_DEPTH } from './looks/screenDepth';
@@ -169,20 +171,6 @@ const ACTIVITY_TEXT_NAMES: Readonly<Record<Activity, UiTextName>> = {
 };
 
 /**
- * バーのアイコンボタン1つ。絵があればそれを、無ければ絵文字を置く（iconArt参照）。
- *
- * **絵の名前は画面が名指しするとは限らない**——フィルターのボタンはワールドの宣言が名乗る
- * （`card_filters`の`id`、ScreenLayout.md 8.1.3節）。
- */
-interface BarIcon {
-  readonly art?: string;
-  readonly icon: string;
-}
-
-/** メニューだけは押したときの行き先があるため、判別できるよう切り出す。 */
-const MENU_ICON: BarIcon = { icon: '☰' };
-
-/**
  * スロットボタンの代役アイコン。**絵（art）が届くまでの繋ぎ**で、押した先の中身とは関係が無い
  * ——ボタンの姿は画面の意匠なので、ワールドを映すPlayScreenViewには置かない。
  *
@@ -225,12 +213,6 @@ const CHARACTER_SLOT_BUTTONS: Readonly<
   injuries: { art: 'injury', icon: SLOT_BUTTON_ICONS.injuries, fill: COLOR.injuryButton },
 };
 
-const OPTION_ICONS: readonly BarIcon[] = [
-  { art: 'settings', icon: '⚙️' },
-  { art: 'codex', icon: '📖' },
-  { art: 'diary', icon: '📓' },
-  MENU_ICON,
-];
 /**
  * 絞り込みを解除するボタン（ScreenLayout.md 8.1.1節）。**ワールドのフィルターの一覧には入れず、
  * 画面が常に先頭へ置く**——アセットパックが解除の手段を消せてしまうため。
@@ -2039,7 +2021,7 @@ export class PlayScene extends ResponsiveScene {
 
     const columnX = area.x + padding + portraitWidth + gap;
     // 状況アイコンはポートレイトの下だけに置き、ボタンの列はその行の下端まで伸ばす。
-    // こうすると同じ大きさのボタンが4つ入る（ScreenLayout.md 4.1節）。
+    // こうすると、列に並べるボタンがどれも同じ大きさで入る（ScreenLayout.md 4.1節）。
     const conditionSize = this.metrics.px(SIZE.conditionButton);
     this.addSlotButtonColumn({
       x: columnX,

@@ -902,7 +902,7 @@ export class WorldObject {
   /**
    * 名指しした操作（宣言が無ければundefined）。土地のexplore・道のtravelが使う。
    *
-   * 探すのは相手を伴わないきっかけ（menu・tick）だけ——重ねる操作は相手が決まらないと引けない。
+   * 探すのは相手を伴わないきっかけだけ——重ねる操作は相手が決まらないと引けない。
    */
   tryGetAction(actionName: string, agent: WorldObject): Action | undefined {
     const trigger = [...this.def.menuTriggers, ...this.def.tickTriggers].find(

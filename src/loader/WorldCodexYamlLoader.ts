@@ -294,7 +294,7 @@ export class WorldCodexYamlLoader {
         }
       });
 
-    // 地形生成の3ルートキー（axes/location_types/generation_scopes。parseGeneration.ts）。
+    // 地形生成のルートキー（どれを読むかはparseGeneration.tsが持つ）。
     loadGenerationSections(this, label, root);
 
     return this;

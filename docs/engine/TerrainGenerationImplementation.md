@@ -55,14 +55,12 @@ startNewGame(codex, characterDefName, seed, rng)          src/domain/generation/
 ## 2. ロード: YAML → `GenerationDefs`
 
 地形生成関連の処理は、`object_defs`/`traits` を読む本体 `src/loader/WorldCodexYamlLoader.ts` とは別モジュール
-`src/loader/parseGeneration.ts` に分離されています。`WorldCodexYamlLoader` が持つ `axes`/`location_types`/
-`generation_scopes` の蓄積フィールド（`generationAxes`/`generationLocationTypes`/`generationScopes`）は、
-`loader` 引数として `parseGeneration.ts` 側の関数へ渡されます。
+`src/loader/parseGeneration.ts` に分離されています。`WorldCodexYamlLoader` が持つ地形生成の蓄積フィールド
+（`generation` で始まる名前のもの）は、`loader` 引数として `parseGeneration.ts` 側の関数へ渡されます。
 
-- `loadGenerationSections(loader, label, root)`: `load()` の中から呼ばれ、YAMLルートの `axes`/`location_types`/
-  `generation_scopes` の3キーを読んで、`loader.generationAxes`/`loader.generationLocationTypes`/
-  `loader.generationScopes` へ蓄積します（`object_defs`/`traits` の蓄積と同じパターン。複数ファイルへ分割しても
-  `load` を繰り返し呼べば1つに集約されます）。
+- `loadGenerationSections(loader, label, root)`: `load()` の中から呼ばれ、地形生成のルートキー（どれを読むかは
+  この関数自身が持ちます）を対応する蓄積フィールドへ溜めます（`object_defs`/`traits` の蓄積と同じパターン。
+  複数ファイルへ分割しても `load` を繰り返し呼べば1つに集約されます）。
 - `parseAxis`/`parseGeneratorLayer`: `axes.'name'` 1件を `AxisDef`（`GeneratorLayer` の
   リストを持つ、`src/domain/generation/AxisDef.ts`）へ変換します。
 - `parseLocationType`: `location_types.'name'` 1件を `LocationTypeDef`
@@ -77,9 +75,9 @@ startNewGame(codex, characterDefName, seed, rng)          src/domain/generation/
   `GenerationDefs` を組み立てて返します。生成関連のYAMLが1つもロードされていなければ `undefined` を返します
   （`WorldCodex.generation` が `undefined` になりうる、という契約はここに由来します）。
 
-## 3. `generateIsland`（`TerrainGenerator.ts`）: 6ステップの内訳
+## 3. `generateIsland`（`TerrainGenerator.ts`）: ステップの内訳
 
-`TerrainGenerator.ts`（`generateIsland` 1関数のみをエクスポート）は、以下の6モジュールの関数を順番に呼ぶだけの
+`TerrainGenerator.ts`（`generateIsland` 1関数のみをエクスポート）は、以下のモジュールの関数を順番に呼ぶだけの
 オーケストレータです。各モジュールも状態を持たない関数の集まりで、`Site`/`IslandEdge` の配列を受け取って
 書き換える・新しく作る、という素朴な手続きです。
 
@@ -178,7 +176,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
   汎用メソッド）で実体を解決し、`characters` スロットへ `moveToSlotOrRejection` した上で
   `Location`（`src/domain/wrappers/Location.ts`）を返します。
 
-## 5. データの流れ（型で見る3層）
+## 5. データの流れ（型で見る層）
 
 | 層 | 主な型 | 特徴 |
 |---|---|---|

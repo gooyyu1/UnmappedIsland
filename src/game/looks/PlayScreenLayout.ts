@@ -1,4 +1,5 @@
 import { INFORMATION_PAPER_INSET } from '../../art/informationArt';
+import { OPTION_ICONS } from './barIcons';
 import { SIZE } from './theme';
 import { LANE_MIN_CARDS } from './ScreenMetrics';
 import type { Rect } from '../../ui/Rect';
@@ -81,8 +82,9 @@ function characterDisplayHeight(bottomPadding: number): number {
 /** 縦型のキャラクター表示エリア幅。ポートレイト205 + 地図・装備・怪我の列 + ギャップ・パディング。 */
 const CHARACTER_DISPLAY_WIDTH_PORTRAIT = 460;
 
-/** 横型のオプションバー高（アイコンボタン4個の縦積み + 上下パディング16×2）。 */
-const OPTIONS_HEIGHT_LANDSCAPE = SIZE.iconButton * 4 + SIZE.barGap * 3 + 32;
+/** 横型のオプションバー高（オプションバーのボタンの縦積み + 上下パディング16×2）。 */
+const OPTIONS_HEIGHT_LANDSCAPE =
+  SIZE.iconButton * OPTION_ICONS.length + SIZE.barGap * (OPTION_ICONS.length - 1) + 32;
 
 /**
  * ハンドレーンの枠の上限（ScreenLayout.md 7.3節）。**これを超えて広げた幅を使う相手がフィールド

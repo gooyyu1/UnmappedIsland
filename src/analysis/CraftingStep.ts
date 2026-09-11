@@ -93,7 +93,7 @@ export interface StepOutcome {
  * クラフトの1工程。nameは宣言上の名前（アクション・combination・レシピの識別子）で、
  * ownerGlobalIdはそれを宣言している型。kindは表示名の引き方が違うため持つ（Localization.md）。
  *
- * 時間・産出・値の増減の3つが揃っているので、「1回の実行にいくらかかって何が返るか」がこれだけで
+ * 時間・産出・値の増減が揃っているので、「1回の実行にいくらかかって何が返るか」がこれだけで
  * 分かる（収支表はこれを足し合わせる）。
  */
 export interface CraftingStep {

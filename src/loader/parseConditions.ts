@@ -147,9 +147,9 @@ const MATCHES_KEY = 'matches';
  *
  * | 主語 | 使える演算子キー |
  * | --- | --- |
- * | `prop`（subjectのそのプロパティの実効値） | `lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`/`in_stage`/`in_stage_or_above` |
- * | `slot`（subjectのそのスロットの中身） | `matches`（当てはまる中身が1つでもあるか） |
- * | 無し（subject自身） | `in_slot`（親の中での位置）/`matches`（subject自身が当てはまるか） |
+ * | `prop`（subjectのそのプロパティの実効値） | PROPERTY_OPSとSTAGE_KEYS |
+ * | `slot`（subjectのそのスロットの中身） | MATCHES_KEY（当てはまる中身が1つでもあるか） |
+ * | 無し（subject自身） | `in_slot`（親の中での位置）/MATCHES_KEY（subject自身が当てはまるか） |
  *
  * **量化は主語が決める。** 同じ`matches`でも、`slot`があれば中身に対する存在判定、無ければ
  * subject自身への判定になる（14.3節・14.4節）。
