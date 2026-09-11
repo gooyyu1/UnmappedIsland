@@ -53,18 +53,19 @@ export class PassiveEffectGate {
   /**
    * 段（WhenOwnStage）とconditionsを両方満たすか。段は宣言元（declarer）自身のプロパティを見る。
    *
-   * **conditionsを解く文脈は受け取る。** そのselfは辺の子側（slotBearer）で、役の出どころは別
-   * （11.5節。組み立てるのはRegisteredPassiveEffect）——child対象では両者が食い違うので、まとめて
-   * 片方から引くと「宣言元は操作に参加しているのに解決しない」が起きる。
+   * **conditionsのselfは辺の子側（slotBearer）、役はrolesが答える。** 両者を組み合わせるのはここ
+   * だけで、呼び出し側は役の出どころ（宣言が置かれた場所で決まる。11.5節・RegisteredPassiveEffect）
+   * を渡すだけでよい。child対象ではselfと宣言元が食い違うので、まとめて片方から引くと「宣言元は
+   * 操作に参加しているのに解決しない」が起きる。
    */
-  isSatisfied(declarer: WorldObject, context: ReferenceContext): boolean {
+  isSatisfied(declarer: WorldObject, slotBearer: WorldObject, roles: ReferenceContext): boolean {
     if (
       this.stage !== undefined &&
       !(declarer.tryGetProperty(this.stage.propertyGlobalId)?.isInStage(this.stage.name) ?? false)
     )
       return false;
 
-    return this.conditions === undefined || this.conditions.evaluate(context);
+    return this.conditions === undefined || this.conditions.evaluate(roles.withSelf(slotBearer));
   }
 }
 
@@ -176,7 +177,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
         targetPropertyGlobalId: this.target.propertyGlobalId,
         reversible: this.reversible,
         increases: this.amount.amountFor(declarer) >= 0,
-        active: this.gate.isSatisfied(declarer, roles.withSelf(slotBearer)),
+        active: this.gate.isSatisfied(declarer, slotBearer, roles),
       });
     }
   }
@@ -191,10 +192,10 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
     };
   }
 
-  /** contextでゲート（8.2節）が有効ならamountを、無効なら0を返す。modifyでもaddでも同じ量。
-   * contextの組み立て方はRegisteredPassiveEffect.gateContext。 */
-  activeAmount(declarer: WorldObject, context: ReferenceContext): number {
-    return this.gate.isSatisfied(declarer, context) ? this.amount.amountFor(declarer) : 0;
+  /** ゲート（8.2節）が有効ならamountを、無効なら0を返す。modifyでもaddでも同じ量。
+   * rolesは役の出どころ（PassiveEffectGate.isSatisfied）。 */
+  activeAmount(declarer: WorldObject, slotBearer: WorldObject, roles: ReferenceContext): number {
+    return this.gate.isSatisfied(declarer, slotBearer, roles) ? this.amount.amountFor(declarer) : 0;
   }
 
   override get relationRegistration(): RelationRegistration {
@@ -219,7 +220,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
     context: ReferenceContext,
     session: WorldSession,
   ): void {
-    if (this.reversible || this.activeAmount(owner, context.withSelf(owner)) === 0) return;
+    if (this.reversible || this.activeAmount(owner, owner, context) === 0) return;
 
     const target = this.target.owner(context);
     const property = target?.tryGetProperty(this.target.propertyGlobalId);
@@ -365,14 +366,14 @@ export class TransferPassiveEffect extends PassiveEffect {
 
   /** ゲートが開いている間、1 tick分の輸送を走らせる（activeの輸送と同じ経路をそのまま通る）。 */
   applyTick(owner: WorldObject): void {
-    const context = ReferenceContext.forParticipant(owner);
-    if (!this.gate.isSatisfied(owner, context)) return;
-    this.transfer.apply(context);
+    const roles = ReferenceContext.forParticipant(owner);
+    if (!this.gate.isSatisfied(owner, owner, roles)) return;
+    this.transfer.apply(roles);
   }
 
   override collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {
-    const satisfied = this.gate.isSatisfied(declarer, ReferenceContext.forParticipant(declarer));
-    this.transfer.collectTransferInfluences(declarer, satisfied, out);
+    const roles = ReferenceContext.forParticipant(declarer);
+    this.transfer.collectTransferInfluences(declarer, this.gate.isSatisfied(declarer, declarer, roles), out);
   }
 
   read(reader: PassiveReader): void {

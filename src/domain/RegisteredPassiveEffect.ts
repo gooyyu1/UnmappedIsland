@@ -57,13 +57,11 @@ export class RegisteredPassiveEffect {
 
   /** この効果が現在寄与している量。ゲート（8.2節）が有効ならAmount、無効なら0。 */
   activeAmount(): number {
-    return this.def.activeAmount(this.declarer, this.gateContext);
+    return this.def.activeAmount(this.declarer, this.slotBearer, this.gateRoles);
   }
 
-  /** ゲートのconditionsを解く文脈。selfは辺の子側（slotBearer）、役はinteractionRolesの決まりで。 */
-  private get gateContext(): ReferenceContext {
-    return (this.interactionRoles ?? ReferenceContext.forParticipant(this.declarer)).withSelf(
-      this.slotBearer,
-    );
+  /** ゲートの役を答える文脈（interactionRolesの決まりで）。selfはゲート自身が差し替える。 */
+  private get gateRoles(): ReferenceContext {
+    return this.interactionRoles ?? ReferenceContext.forParticipant(this.declarer);
   }
 }
