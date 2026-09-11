@@ -102,22 +102,17 @@ object_texts:
 
 ## slot_texts: スロットの名前
 
-スロットは必ず持ち主のものなので、名前も 2 通り持てます。`display_name` はスロットだけを指す短い
-言い方（「装備」）、`display_name_with_owner` は持ち主込みの言い方（「マルコの装備」）です。
-子ウィンドウの見出しが後者を使います（[`Windows.md`](../ui/Windows.md) 1 節）。
+`display_name` は、子ウィンドウのタブの見出しに出るスロットの名前です
+（[`Windows.md`](../ui/Windows.md) 1.2 節）。**持ち主は込めません**——「マルコの装備」ではなく「装備」で、
+持ち主の名前は窓の見出しに既に出ているためです。
 
 ```yaml
 slot_texts:
-  default:
-    display_name_with_owner: '{owner}の{slot}'   # 装備 + マルコ → マルコの装備
   contents:
-    display_name: 中身                            # 中身 + 編み籠 → 編み籠の中身
+    display_name: 中身
   equipment:
     display_name: 装備
 ```
-
-**書式だけは `default` エントリを参照します**（次節の `variation_names` と同じ理由）。
-`{slot}` は各スロット自身の名前から埋まるので、共通の書式を書いてもすべてが同じ名前にはなりません。
 
 `put_in` は、**そこへ物を入れる操作**の呼び名と説明です。ドラッグ中の吹き出しに出ます
 （[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。スロットの名前が場所を指す

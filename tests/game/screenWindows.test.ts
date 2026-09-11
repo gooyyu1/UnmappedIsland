@@ -168,6 +168,25 @@ object_defs:
     ).toEqual(['equipment', 'injuries']);
   });
 
+  it('タブの見出しはスロットの名前だけで、持ち主を込めない', () => {
+    // 持ち主の名前は窓の上段の見出しに既に出ているので、タブにまで繰り返す場所が無い
+    // （Windows.md 1.2節）。
+    const mini = setUp();
+    const crate = mini.createObject('crate', mini.slot('hand'));
+
+    const view = viewOf(
+      mini,
+      parseLocale(
+        'ja.yaml',
+        'object_texts:\n  crate:\n    display_name: 木箱\nslot_texts:\n  contents:\n    display_name: 中身\n',
+      ),
+    );
+    const contents = crate.getSlot(mini.codex.slotNames.getId('contents'));
+
+    expect(view.windowOf(crate).card.name, '持ち主を名乗るのは窓の見出し').toBe('木箱');
+    expect(view.slotViewOf(contents).label, 'タブは「木箱の中身」ではなく「中身」').toBe('中身');
+  });
+
   it('液体の容器は中身を開かない（水を単独で取り出させない）', () => {
     // 中身は容器自身のfillなので、そもそも開く先が無い（LiquidContainerSystem.md 2節）。
     const mini = setUp();

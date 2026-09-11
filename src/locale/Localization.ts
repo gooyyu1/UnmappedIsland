@@ -93,9 +93,8 @@ function format(text: string, values: Readonly<Record<string, string>>): string 
 /**
  * 1つのスロットの表示文字列。
  *
- * スロットは必ず持ち主のものなので、名前は2通りある。`displayName` はスロットだけを指す短い言い方
- * （「装備」）、`displayNameWithOwner` は持ち主込みの言い方（「マルコの装備」）で、後者は書式から
- * 組み立てる。変種の名前（`variationName`）と同じ考え方。
+ * **名前は持ち主を込めない**（「マルコの装備」ではなく「装備」）。スロットの名前が出るのは子ウィンドウの
+ * タブの見出しで、持ち主の名前はその窓の見出しに既に出ている（Windows.md 1.2節）。
  */
 export class SlotTexts {
   readonly displayName: string;
@@ -107,21 +106,9 @@ export class SlotTexts {
    */
   readonly putIn: Texts | undefined;
 
-  private readonly format: string | undefined;
-
-  constructor(displayName: string, format?: string, putIn?: Texts) {
+  constructor(displayName: string, putIn?: Texts) {
     this.displayName = displayName;
-    this.format = format;
     this.putIn = putIn;
-  }
-
-  /**
-   * 持ち主込みの言い方。書式の `{slot}` がスロットの名前、`{owner}` が持ち主の名前。
-   * 書式が無ければスロットの名前だけを返す。
-   */
-  displayNameWithOwner(ownerName: string): string {
-    if (this.format === undefined) return this.displayName;
-    return format(this.format, { slot: this.displayName, owner: ownerName });
   }
 }
 
@@ -130,7 +117,6 @@ interface DeclaredTexts {
   readonly displayName: string | undefined;
   readonly description: string | undefined;
   readonly icon: string | undefined;
-  readonly displayNameWithOwner: string | undefined;
 
   /** 変種の名前の書式（GameElementDefinition.md 3.5.1節）。軸の名前 → 書式。 */
   readonly variationNames: ReadonlyMap<string, string> | undefined;
@@ -414,17 +400,14 @@ export class Localization {
   /**
    * スロット（GameElementDefinition.md 7節）の表示文字列。未登録なら識別子そのもの。
    *
-   * スロットは必ず持ち主のものなので、名前も**持ち主込みの言い方**を持てる（`display_name_with_owner`、
-   * 中身入りの入れ物の名前と同じ考え方）。子ウィンドウの見出しがこれを使う。
+   * 子ウィンドウのタブの見出しがこれを使う（Windows.md 1.2節）。**持ち主は込めない**——持ち主の名前は
+   * 窓の見出しに既に出ている。
    */
   slot(slotName: string): SlotTexts {
     const declared = this.slots.get(slotName);
-    const format =
-      declared?.own?.displayNameWithOwner ?? this.slots.get(DEFAULT_KEY)?.own?.displayNameWithOwner;
     const putIn = declared?.putIn;
     return new SlotTexts(
       declared?.own?.displayName ?? slotName,
-      format,
       putIn === undefined ? undefined : new Texts(putIn.displayName ?? slotName, putIn.description),
     );
   }
@@ -685,13 +668,11 @@ function parseTexts(node: YAMLMap, context: string): DeclaredTexts | undefined {
   const displayName = tryGetScalar(node, 'display_name', context);
   const description = tryGetScalar(node, 'description', context);
   const icon = tryGetScalar(node, 'icon', context);
-  const displayNameWithOwner = tryGetScalar(node, 'display_name_with_owner', context);
   const variationNames = parseTextMap(node, 'variation_names', context);
   if (
     displayName === undefined &&
     description === undefined &&
     icon === undefined &&
-    displayNameWithOwner === undefined &&
     variationNames === undefined
   )
     return undefined;
@@ -699,7 +680,6 @@ function parseTexts(node: YAMLMap, context: string): DeclaredTexts | undefined {
     displayName,
     description,
     icon,
-    displayNameWithOwner,
     variationNames,
   };
 }
