@@ -20,9 +20,7 @@ function propertyId(name: string): PropertyGlobalId {
 }
 
 /** furnishing を名乗る型（宣言順）。 */
-const FURNISHINGS: readonly string[] = Array.from({ length: codex.objects.count }, (unused, globalId) =>
-  codex.objects.get(globalId),
-)
+const FURNISHINGS: readonly string[] = [...codex.objects]
   .filter((def) => def.tags.includes(codex.tagNames.getId('furnishing')))
   .map((def) => codex.objectNames.getName(def.globalId));
 

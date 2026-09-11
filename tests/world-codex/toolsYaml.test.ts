@@ -32,7 +32,7 @@ describe('tools.yamlの道具定義', () => {
 
   /** そのレシピが要求する物の名前（型を名指ししない要求は、当てはまる物の名前で並ぶ）。 */
   function materialsOf(recipe: RecipeDef): string[] {
-    return Array.from({ length: codex.objects.count }, (_, globalId) => codex.objects.get(globalId))
+    return [...codex.objects]
       .filter((def) => recipe.requires(def))
       .map((def) => def.name)
       .sort();

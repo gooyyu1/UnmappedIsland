@@ -33,9 +33,7 @@ describe('core.yamlのworld定義', () => {
   }
 
   it('property_tagsは宣言順にIDが振られる（UIのタブの並び順になる）', () => {
-    const declared = [...Array(codex.propertyTagNames.count).keys()].map((id) =>
-      codex.propertyTagNames.getName(id),
-    );
+    const declared = codex.propertyTagNames.ids.map((id) => codex.propertyTagNames.getName(id));
 
     expect(declared).toEqual(['status', 'health', 'nutrition', 'skill']);
   });

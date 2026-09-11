@@ -1,4 +1,5 @@
 import type { ObjectDef } from './ObjectDef';
+import type { ObjectGlobalId } from './GlobalId';
 
 /**
  * 軸の値として「その軸を持たない」を表す識別子。`become: {recipe: none}` は、軸 `recipe` を落とした
@@ -11,7 +12,7 @@ export const NO_AXIS_VALUE = 'none';
  * 軸を1つも持たない座標は素の型そのものを指す。
  */
 export interface GeneratedCoordinate {
-  readonly baseGlobalId: number;
+  readonly baseGlobalId: ObjectGlobalId;
 
   /** 軸名 → 値の識別子。どちらも生成器が決める名前で、ここは意味を解釈しない。 */
   readonly axisValues: ReadonlyMap<string, string>;
@@ -24,16 +25,16 @@ export interface GeneratedCoordinate {
  */
 export class GeneratedTypes {
   /** 生成型のグローバルID → 座標。素の型は登録しない（自分自身がbaseで、軸の値を持たない）。 */
-  private readonly coordinates = new Map<number, GeneratedCoordinate>();
+  private readonly coordinates = new Map<ObjectGlobalId, GeneratedCoordinate>();
 
   /** 座標の鍵 → その座標に居る型のグローバルID。 */
-  private readonly byKey = new Map<string, number>();
+  private readonly byKey = new Map<string, ObjectGlobalId>();
 
   /**
    * 生成した型を、その座標とともに登録する。同じ座標を2つの型が主張したらエラー——生成器が名前を
    * 組み立てる規則の取り違えは、黙って片方を捨てるより早く気付けるほうがよい。
    */
-  register(globalId: number, coordinate: GeneratedCoordinate): void {
+  register(globalId: ObjectGlobalId, coordinate: GeneratedCoordinate): void {
     const key = keyOf(coordinate);
     const existing = this.byKey.get(key);
     if (existing !== undefined && existing !== globalId)
@@ -57,7 +58,7 @@ export class GeneratedTypes {
   tryResolveTypeAtMovedCoordinate(
     def: ObjectDef,
     axisValues: ReadonlyMap<string, string>,
-  ): number | undefined {
+  ): ObjectGlobalId | undefined {
     const current = this.coordinateOf(def);
     const moved = new Map(current.axisValues);
     for (const [axis, value] of axisValues) {
@@ -70,7 +71,7 @@ export class GeneratedTypes {
   }
 
   /** defが軸axisの値を持つ生成型なら、その素の型のグローバルID。そうでなければundefined。 */
-  baseGlobalIdIfVariantOn(def: ObjectDef, axis: string): number | undefined {
+  baseGlobalIdIfVariantOn(def: ObjectDef, axis: string): ObjectGlobalId | undefined {
     const coordinate = this.coordinates.get(def.globalId);
     return coordinate?.axisValues.has(axis) === true ? coordinate.baseGlobalId : undefined;
   }

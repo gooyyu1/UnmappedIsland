@@ -40,7 +40,7 @@ describe('object_defごとの絵', () => {
    */
   function declaredArtNames(): Set<string> {
     const names = new Set<string>();
-    for (let id = 0; id < codex.objectNames.count; id++) names.add(codex.objects.get(id).artName);
+    for (const def of codex.objects) names.add(def.artName);
     return names;
   }
 
@@ -50,8 +50,7 @@ describe('object_defごとの絵', () => {
    */
   function stageArtNames(): Set<string> {
     const names = new Set<string>();
-    for (let id = 0; id < codex.objectNames.count; id++) {
-      const objectDef = codex.objects.get(id);
+    for (const objectDef of codex.objects) {
       for (const suffix of objectDef.artSuffixes()) names.add(`${objectDef.artName}_${suffix}`);
     }
     return names;

@@ -11,6 +11,7 @@ import {
   worldCodexPath,
 } from '../support/worldCodexFiles';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
+import type { SlotGlobalId } from '../../src/domain/GlobalId';
 
 describe('liquid_containers.yamlの液体容器定義', () => {
   let codex: WorldCodex;
@@ -19,7 +20,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   let wakefulnessId: PropertyGlobalId;
   let weatherId: PropertyGlobalId;
   let hourId: PropertyGlobalId;
-  let locationsSlotId: number;
+  let locationsSlotId: SlotGlobalId;
   let fillId: PropertyGlobalId;
   let handBrightnessId: PropertyGlobalId;
 

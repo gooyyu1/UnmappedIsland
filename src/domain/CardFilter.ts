@@ -1,4 +1,5 @@
 import type { WorldObject } from './WorldObject';
+import type { TagGlobalId } from './GlobalId';
 
 /**
  * フィルターバーのボタン1つ（`card_filters`、docs/ui/ScreenLayout.md 8.1.3節）。**既にあるタグを
@@ -15,9 +16,9 @@ export class CardFilter {
   readonly icon: string;
 
   /** このボタンが残す札のタグ。どれか1つでも持てば残る（宣言順）。 */
-  readonly tagGlobalIds: readonly number[];
+  readonly tagGlobalIds: readonly TagGlobalId[];
 
-  constructor(id: string, icon: string, tagGlobalIds: readonly number[]) {
+  constructor(id: string, icon: string, tagGlobalIds: readonly TagGlobalId[]) {
     this.id = id;
     this.icon = icon;
     this.tagGlobalIds = tagGlobalIds;

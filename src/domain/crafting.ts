@@ -5,6 +5,7 @@ import { spendDurationAndReportParticipantsAlive } from './actionTime';
 import { InteractionRelation } from './ReferenceRoot';
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
+import type { ObjectGlobalId, SlotGlobalId } from './GlobalId';
 
 /**
  * 製作中オブジェクトで、今取り掛かっている工程（RecipeSystem.md 1節）。
@@ -88,7 +89,7 @@ function allocateContentsToRequirements(
 export function spawnInProgressObject(
   session: WorldSession,
   location: WorldObject,
-  inProgressDefGlobalId: number,
+  inProgressDefGlobalId: ObjectGlobalId,
 ): WorldObject {
   const spawned = session.createObject(inProgressDefGlobalId);
   spawned.spillTo(location);
@@ -103,7 +104,7 @@ export function spawnInProgressObject(
  */
 export function stepSupplyRatio(
   inProgress: WorldObject,
-  materialsSlotGlobalId: number,
+  materialsSlotGlobalId: SlotGlobalId,
   step: RecipeStepDef,
 ): number {
   const allocated = allocateContentsToRequirements(
@@ -123,7 +124,7 @@ export function stepSupplyRatio(
 /** その工程が要求する素材と道具が、材料スロットに揃っているか。 */
 export function stepIsSupplied(
   inProgress: WorldObject,
-  materialsSlotGlobalId: number,
+  materialsSlotGlobalId: SlotGlobalId,
   step: RecipeStepDef,
 ): boolean {
   return stepSupplyRatio(inProgress, materialsSlotGlobalId, step) >= 1;
@@ -142,7 +143,7 @@ export function stepIsSupplied(
  */
 export function tryAdvanceCrafting(
   inProgress: WorldObject,
-  materialsSlotGlobalId: number,
+  materialsSlotGlobalId: SlotGlobalId,
   recipe: RecipeDef,
   codex: WorldCodex,
   session: WorldSession,
@@ -205,7 +206,7 @@ export function tryAdvanceCrafting(
  */
 function spillUnneeded(
   inProgress: WorldObject,
-  materialsSlotGlobalId: number,
+  materialsSlotGlobalId: SlotGlobalId,
   recipe: RecipeDef,
   codex: WorldCodex,
 ): void {

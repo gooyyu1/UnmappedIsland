@@ -61,13 +61,8 @@ export class CodexView {
    * 別の顔が増えるだけで、読み手には重複にしか見えない。識別子で名指しすれば個別のページは開ける。
    */
   listedObjectDefs(): readonly ObjectDef[] {
-    const defs: ObjectDef[] = [];
-    for (let globalId = 0; globalId < this.codex.objects.count; globalId++) {
-      const def = this.codex.objects.tryGet(globalId);
-      // 名前だけが登録されて定義が無いグローバルID（参照だけされた型）は飛ばす。
-      if (def !== undefined && !this.codex.isGenerated(def)) defs.push(def);
-    }
-    return defs;
+    // ObjectDefTableの走査は、名前だけが登録されて定義が無いグローバルID（参照だけされた型）を飛ばす。
+    return [...this.codex.objects].filter((def) => !this.codex.isGenerated(def));
   }
 
   /** タグ（4.1節）を持つobject_defの識別子（宣言順）。一覧に出さない型は含まない（listedObjectDefs参照）。 */
@@ -93,10 +88,7 @@ export class CodexView {
 
   /** 宣言されているobject_defのタグ（4.1節）を、宣言順（グローバルIDの順）に返す。 */
   tagNames(): readonly string[] {
-    const names: string[] = [];
-    for (let globalId = 0; globalId < this.codex.tagNames.count; globalId++)
-      names.push(this.codex.tagNames.getName(globalId));
-    return names;
+    return this.codex.tagNames.ids.map((globalId) => this.codex.tagNames.getName(globalId));
   }
 
   /** propertyNameという名前のプロパティを持つobject_defの識別子（宣言順）。 */

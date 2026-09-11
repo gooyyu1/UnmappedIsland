@@ -14,6 +14,7 @@ import type {
   TransferReading,
 } from './EffectReader';
 import type { PropertyPath, ReferenceContext } from './ReferenceRoot';
+import type { ObjectGlobalId } from './GlobalId';
 
 /**
  * 「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。**対象の解決と適用まで自分で
@@ -318,7 +319,7 @@ export type SpawnTarget =
  * spawnしたオブジェクトは配置されないまま消える。
  */
 export class SpawnEffect extends ActiveEffect {
-  private readonly objectGlobalId: number;
+  private readonly objectGlobalId: ObjectGlobalId;
   private readonly into: SpawnTarget;
 
   /**
@@ -327,7 +328,7 @@ export class SpawnEffect extends ActiveEffect {
    */
   private readonly count: number;
 
-  constructor(objectGlobalId: number, into: SpawnTarget, count = 1) {
+  constructor(objectGlobalId: ObjectGlobalId, into: SpawnTarget, count = 1) {
     super();
     if (!Number.isInteger(count) || count < 1)
       throw new Error(`countは1以上の整数である必要があります（値: ${count}）。`);

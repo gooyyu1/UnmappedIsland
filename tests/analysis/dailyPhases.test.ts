@@ -3,6 +3,7 @@ import type { DailyBudget, LocationTypeDay } from '../../src/analysis/dailyPhase
 import { dailyPhasesOf } from '../../src/analysis/dailyPhases';
 import { IslandEdge, IslandMap, Site } from '../../src/domain/generation/IslandMap';
 import { LocationTypeDef } from '../../src/domain/generation/LocationTypeDef';
+import type { ObjectGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 局面ごとの1日（`src/analysis/dailyPhases.ts`）が、**移動時間がどれだけ伸びても計測を続ける**こと
@@ -39,7 +40,10 @@ const LOCATION_DAYS: ReadonlyMap<number, LocationTypeDay> = new Map(
 function islandWithJungleAt(jungleOneWayMinutes: number): IslandMap {
   const sites = LOCATION_TYPES.map((name, index) => {
     const site = new Site(index, index, 0, false);
-    site.type = new LocationTypeDef(name, index + 1, [], [], 1, true, 0, [], []);
+    // **この島はCodexを持たない**——数えるのは道の分数だけで、型の中身は読まれない。名前空間を
+    // 通さずに型のIDを作るのはそのぶんここだけで、土地どうしが別の型であればよい。
+    const objectDefGlobalId = (index + 1) as ObjectGlobalId;
+    site.type = new LocationTypeDef(name, objectDefGlobalId, [], [], 1, true, 0, [], []);
     return site;
   });
 

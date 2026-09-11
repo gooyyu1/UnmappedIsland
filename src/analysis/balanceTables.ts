@@ -19,7 +19,7 @@ import type { RainWaterRow } from './seasonalRain';
 import { rainWaterRows } from './seasonalRain';
 import type { StaticValueResolver } from './staticValue';
 import { highestDeclaredLayer, staticValueOf } from './staticValue';
-import type { PropertyGlobalId } from '../domain/GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 定義（`src/assets/world-codex/*.yaml`）だけから「時間あたりの収支」を計算する。
@@ -640,7 +640,7 @@ function objectCosts(
   codex: WorldCodex,
   islandWide: Acquisition,
   surplusMinutes: number,
-  seaOnly: ReadonlySet<number>,
+  seaOnly: ReadonlySet<ObjectGlobalId>,
 ): readonly ObjectCost[] {
   const rows: ObjectCost[] = [];
   const axisValues = axisValueGlobalIds(codex);
@@ -1061,8 +1061,8 @@ function combinationLabel(codex: WorldCodex, combination: readonly TickDelta[], 
 }
 
 /** 1回の実行で、その型が生まれる期待個数（分岐の確率で重み付けした和）。 */
-function expectedSpawns(step: CraftingStep): ReadonlyMap<number, number> {
-  const counts = new Map<number, number>();
+function expectedSpawns(step: CraftingStep): ReadonlyMap<ObjectGlobalId, number> {
+  const counts = new Map<ObjectGlobalId, number>();
   for (const outcome of step.outcomes)
     for (const spawn of outcome.spawns)
       counts.set(
@@ -1105,7 +1105,7 @@ interface DeviceCycle {
   readonly gatedBy: readonly (readonly TickDelta[])[];
 
   /** 外から押されて進む周期（炉が焼く・傷が血を奪う）なら、押し手の型（RangeCycle.drivenBy）。 */
-  readonly drivenBy: number | undefined;
+  readonly drivenBy: ObjectGlobalId | undefined;
 
   /**
    * 繰り返す仕掛け（罠）か。真なら**プレイヤーは待ち時間を払わないが、設備は待っている間も朽ちる**
@@ -1132,7 +1132,7 @@ interface StepCost {
 
 /** 消費される入力1件を、どの型で・いくらで満たすか。 */
 interface InputSource {
-  readonly objectGlobalId: number;
+  readonly objectGlobalId: ObjectGlobalId;
   readonly cost: Cost;
   readonly imported: boolean;
 }
@@ -1142,7 +1142,7 @@ interface InputSource {
  * 分母（寿命）が無いだけで、工程も設備も在る。
  */
 interface ObtainableSource {
-  readonly objectGlobalId: number;
+  readonly objectGlobalId: ObjectGlobalId;
   readonly cost: Cost | undefined;
 
   /**
@@ -1158,7 +1158,7 @@ interface ObtainableSource {
  */
 interface Prerequisite {
   readonly label: string;
-  readonly objectGlobalId: number | undefined;
+  readonly objectGlobalId: ObjectGlobalId | undefined;
   readonly cost: Cost | undefined;
   readonly imported: boolean;
 }
@@ -1196,8 +1196,8 @@ function isCharacter(codex: WorldCodex, def: ObjectDef): boolean {
  * 軸の値の識別子は生成器が決める名前だが、`variation_axes` の軸では値の型の名前そのもの
  * （axisVariants）。レシピの軸の値はレシピ名なので、型として引けたものだけを見る。
  */
-function axisValueGlobalIds(codex: WorldCodex): ReadonlySet<number> {
-  const ids = new Set<number>();
+function axisValueGlobalIds(codex: WorldCodex): ReadonlySet<ObjectGlobalId> {
+  const ids = new Set<ObjectGlobalId>();
   for (const def of codex.objects)
     for (const value of codex.variationsOf(def).values()) {
       const globalId = codex.objectNames.tryGetId(value);
@@ -1309,10 +1309,10 @@ function analysisContext(codex: WorldCodex, ancestorLocations: readonly ObjectDe
  * 入手時間は含めない——繰り返し使えるものを1個あたりへ按分するには「何回使うか」の仮定が要る。
  */
 class Acquisition {
-  readonly costByObject = new Map<number, Cost>();
+  readonly costByObject = new Map<ObjectGlobalId, Cost>();
 
   /** どこかの工程が生み出す型。土地のように「生成されるもの」と、作れる物を分けるのに使う。 */
-  readonly producedObjects = new Set<number>();
+  readonly producedObjects = new Set<ObjectGlobalId>();
 
   /**
    * 手に入るのに値段が付かない型。**値段が付かないのは入手経路が無いからではない**——工程も
@@ -1322,16 +1322,16 @@ class Acquisition {
    *
    * **島全体で1つ**（constructor参照）。土地の文脈は同じ集合を見る。
    */
-  readonly obtainableWithoutCost: Set<number>;
+  readonly obtainableWithoutCost: Set<ObjectGlobalId>;
 
   /**
    * その型を最も安く手に入れる道筋が、他の土地の産物を含むか。**入手連鎖を伝って残す**——
    * 熟したヤシの実を持ち込んで加工した果肉は、果肉そのものがこの土地で作れても「持ち込みが要る」。
    */
-  private readonly importedByObject = new Map<number, boolean>();
+  private readonly importedByObject = new Map<ObjectGlobalId, boolean>();
 
   /** その型を最も安く生む工程。連鎖を遡って前提の道具を集めるのに使う。 */
-  private readonly viaStep = new Map<number, StepRef>();
+  private readonly viaStep = new Map<ObjectGlobalId, StepRef>();
 
   private readonly steps: readonly StepRef[];
   private readonly codex: WorldCodex;
@@ -1366,7 +1366,7 @@ class Acquisition {
    * その型を島のどこかで手に入れられるか。**値段が付くかとは別の問い**——待ち生産に行き着く型は
    * 按分できないので値段が付かないが、待てば手に入る（obtainableWithoutCost）。
    */
-  obtainable(objectGlobalId: number): boolean {
+  obtainable(objectGlobalId: ObjectGlobalId): boolean {
     return this.costByObject.has(objectGlobalId) || this.obtainableWithoutCost.has(objectGlobalId);
   }
 
@@ -1449,7 +1449,7 @@ class Acquisition {
    * 工程）のものを返す——どこで詰まっているかを1つに絞らないと、読み手が辿る先を決められない。
    * 手に入る型では空（obtainable）。
    */
-  missingInputsFor(objectGlobalId: number): readonly string[] {
+  missingInputsFor(objectGlobalId: ObjectGlobalId): readonly string[] {
     if (this.obtainable(objectGlobalId)) return [];
 
     let best: readonly string[] | undefined;
@@ -1486,14 +1486,14 @@ class Acquisition {
    * 焼け石を沸かすと石が戻るが、その焼け石が石を焼いたものである以上、その経路は石を自前で
    * 用意したことにならない。
    */
-  netOutputsOf(ref: StepRef): readonly number[] {
+  netOutputsOf(ref: StepRef): readonly ObjectGlobalId[] {
     return [...expectedSpawns(ref.step).keys()].filter(
       (objectGlobalId) => !this.consumesOwnOutput(ref, objectGlobalId),
     );
   }
 
   /** その型を手に入れるまでの連鎖に現れる工程を、最も安い経路だけ遡って挙げる。 */
-  routeOf(objectGlobalId: number, seen = new Set<number>()): readonly StepRef[] {
+  routeOf(objectGlobalId: ObjectGlobalId, seen = new Set<ObjectGlobalId>()): readonly StepRef[] {
     if (seen.has(objectGlobalId)) return [];
     seen.add(objectGlobalId);
 
@@ -1517,11 +1517,11 @@ class Acquisition {
    */
   private importedInputCost(
     input: CraftingStep['inputs'][number],
-  ): { readonly objectGlobalId: number; readonly cost: Cost } | undefined {
+  ): { readonly objectGlobalId: ObjectGlobalId; readonly cost: Cost } | undefined {
     const island = this.islandWide;
     if (island === undefined) return undefined;
 
-    let best: { objectGlobalId: number; cost: Cost } | undefined;
+    let best: { objectGlobalId: ObjectGlobalId; cost: Cost } | undefined;
     for (const objectGlobalId of this.candidatesOf(input)) {
       const cost = island.costByObject.get(objectGlobalId);
       if (cost === undefined) continue;
@@ -1531,7 +1531,7 @@ class Acquisition {
   }
 
   /** 用意する必要が無い入力か（立っている土地と、自分自身）。 */
-  private isAlwaysAtHand(objectGlobalId: number): boolean {
+  private isAlwaysAtHand(objectGlobalId: ObjectGlobalId): boolean {
     const def = this.codex.objects.get(objectGlobalId);
     return isLocation(this.codex, def) || isCharacter(this.codex, def);
   }
@@ -1562,13 +1562,13 @@ class Acquisition {
   }
 
   /** 入力1件を満たす型のうち、値段は付かないが手に入るもの（obtainableWithoutCost）。 */
-  private unpricedCandidate(input: CraftingStep['inputs'][number]): number | undefined {
+  private unpricedCandidate(input: CraftingStep['inputs'][number]): ObjectGlobalId | undefined {
     return this.candidatesOf(input).find((objectGlobalId) => this.obtainableWithoutCost.has(objectGlobalId));
   }
 
   /** 入力1件を満たすのに最も安い型。この文脈で値段の付く型がどれも無ければundefined。 */
-  private cheapestCandidate(input: CraftingStep['inputs'][number]): number | undefined {
-    let best: number | undefined;
+  private cheapestCandidate(input: CraftingStep['inputs'][number]): ObjectGlobalId | undefined {
+    let best: ObjectGlobalId | undefined;
     let bestCost: Cost | undefined;
     for (const objectGlobalId of this.candidatesOf(input)) {
       const cost = this.costByObject.get(objectGlobalId);
@@ -1603,10 +1603,10 @@ class Acquisition {
   }
 
   /** 入力1件を満たしうる型のグローバルID（タグ指定なら、そのタグを持つ型すべて）。 */
-  private candidatesOf(input: CraftingStep['inputs'][number]): readonly number[] {
+  private candidatesOf(input: CraftingStep['inputs'][number]): readonly ObjectGlobalId[] {
     if (input.kind === 'object') return [input.objectGlobalId];
 
-    const found: number[] = [];
+    const found: ObjectGlobalId[] = [];
     for (const def of this.codex.objects) if (def.hasTag(input.tagGlobalId)) found.push(def.globalId);
     return found;
   }
@@ -1627,7 +1627,7 @@ class Acquisition {
    */
   private consumesOwnOutput(
     ref: StepRef,
-    objectGlobalId: number,
+    objectGlobalId: ObjectGlobalId,
     visited = new Set<CraftingStep>(),
   ): boolean {
     if (visited.has(ref.step)) return false;

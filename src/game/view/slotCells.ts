@@ -3,6 +3,7 @@ import type { CardContent } from '../ui/Card';
 import type { LaneCell } from '../ui/laneCells';
 import type { CraftingMaterial } from './craftingView';
 import type { ObjectCardStack, SlotView } from './PlayScreenView';
+import type { ObjectGlobalId } from '../../domain/GlobalId';
 
 /**
  * その場所を映すレーン（3つのレーンも子ウィンドウのタブも）に並べる枠（CardView.md 11節）。
@@ -16,7 +17,7 @@ export function slotCells(
   stacks: readonly (ObjectCardStack | undefined)[],
   cards: readonly (CardContent | undefined)[],
   cycle: number,
-  cardOfType: (objectGlobalId: number) => CardContent,
+  cardOfType: (objectGlobalId: ObjectGlobalId) => CardContent,
 ): readonly LaneCell[] {
   return slot.materials === undefined
     ? plainCells(slot, cards)
@@ -60,11 +61,11 @@ export function materialCells(
   stacks: readonly (ObjectCardStack | undefined)[],
   cards: readonly (CardContent | undefined)[],
   cycle: number,
-  cardOfType: (objectGlobalId: number) => CardContent,
+  cardOfType: (objectGlobalId: ObjectGlobalId) => CardContent,
 ): readonly LaneCell[] {
   // 枠に入っている物から、それがどの要求のものかを引く。**タグの要求は当てはまる型が複数ある**ので、
   // 型からの逆引きは1対1にならない（先に書いた要求を採る、craftingのallocateと同じ順）。
-  const materialOf = (objectGlobalId: number | undefined): CraftingMaterial | undefined =>
+  const materialOf = (objectGlobalId: ObjectGlobalId | undefined): CraftingMaterial | undefined =>
     objectGlobalId === undefined
       ? undefined
       : materials.find((material) => material.objectGlobalIds.includes(objectGlobalId));
@@ -99,7 +100,7 @@ export function materialCells(
  * その要求の空き枠に、今出す型。**タグの要求は当てはまる型を順に出す**——どれか1つを選んで出すと、
  * その型でなければ入らないように見えてしまう。
  */
-function cyclingType(material: CraftingMaterial, cycle: number): number {
+function cyclingType(material: CraftingMaterial, cycle: number): ObjectGlobalId {
   const candidates = material.objectGlobalIds;
   return candidates[cycle % candidates.length] ?? candidates[0];
 }

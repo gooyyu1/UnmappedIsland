@@ -22,6 +22,7 @@ import type { PropertyDef } from '../domain/PropertyDef';
 import type { SlotDef } from '../domain/SlotDef';
 import { StackOrderDef } from '../domain/StackOrderDef';
 import { WornCoverage } from '../domain/WornCoverage';
+import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 
 /** object_defが宣言一式に足して読むキー（型自身の素性。RawDeclarationBody.readFields参照）。 */
 const OBJECT_DEF_OWN_KEYS = ['traits', 'singleton', 'recipes', 'variation_axes'];
@@ -45,7 +46,7 @@ export class RawObjectDef {
   readonly packName: string | undefined;
 
   /** objectNames.internによるグローバルID。trait解決を待たずパース時点で確定する。 */
-  readonly globalId: number;
+  readonly globalId: ObjectGlobalId;
 
   /**
    * 宣言そのもの。**読むだけ**——渡された時点では読み込み元のもので、そちらは同じノードを次の
@@ -76,7 +77,7 @@ export class RawObjectDef {
    */
   variationAxes: YAMLMap | undefined;
 
-  constructor(name: string, source: string, globalId: number, node: YAMLMap, packName?: string) {
+  constructor(name: string, source: string, globalId: ObjectGlobalId, node: YAMLMap, packName?: string) {
     this.name = name;
     this.source = source;
     this.packName = packName;
@@ -297,7 +298,7 @@ function requireNoSelfBaseCycle(objectDefName: string, propertyDefs: readonly Pr
   const byGlobalId = new Map(propertyDefs.map((propertyDef) => [propertyDef.globalId, propertyDef]));
 
   for (const start of propertyDefs) {
-    const visited = new Set<number>([start.globalId]);
+    const visited = new Set<PropertyGlobalId>([start.globalId]);
     let current: PropertyDef = start;
     while (current.base !== undefined && current.base.root === 'self') {
       const next: PropertyDef | undefined = byGlobalId.get(current.base.propertyGlobalId);

@@ -10,7 +10,7 @@ import type {
 import type { PassiveDeclaration, PassivePropertyReading, PassiveReader } from '../../domain/PassiveReader';
 import type { ObjectRefReading } from '../../domain/ObjectRef';
 import type { ReferenceRoot } from '../../domain/ReferenceRoot';
-import type { PropertyGlobalId } from '../../domain/GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId } from '../../domain/GlobalId';
 
 /**
  * 効果の宣言に対する逆引き（「このプロパティを書き換えるのは誰か」「これを生むのは誰か」）。
@@ -47,7 +47,7 @@ export function passiveWritesToProperty(
 }
 
 /** この宣言がobjectGlobalIdの型を生み出しうるか。生むのは`spawn`（9.4節）だけ。 */
-export function spawnsObject(declaration: EffectDeclaration, objectGlobalId: number): boolean {
+export function spawnsObject(declaration: EffectDeclaration, objectGlobalId: ObjectGlobalId): boolean {
   const reader = new SpawnFinder(objectGlobalId);
   declaration.read(reader);
   return reader.found;
@@ -59,11 +59,15 @@ abstract class IgnoringEffectReader implements EffectReader {
 
   set(_target: ReferenceRoot, _propertyGlobalId: PropertyGlobalId, _value: SetValueReading): void {}
   add(_reading: AddReading): void {}
-  spawn(_objectGlobalId: number, _count: number): void {}
+  spawn(_objectGlobalId: ObjectGlobalId, _count: number): void {}
   destroy(_target: ObjectRefReading, _reason: string | undefined): void {}
   become(_subject: ObjectRefReading, _axisValues: ReadonlyMap<string, string>): void {}
   transfer(_reading: TransferReading): void {}
-  move(_subject: ObjectRefReading, _destination: ObjectRefReading, _slotGlobalId: number | undefined): void {}
+  move(
+    _subject: ObjectRefReading,
+    _destination: ObjectRefReading,
+    _slotGlobalId: SlotGlobalId | undefined,
+  ): void {}
   signal(_name: string): void {}
 
   /** 候補の奥にあるものも数える（pickは分岐でしかなく、起こることを隠さない）。 */
@@ -153,14 +157,14 @@ function writesTo(
 }
 
 class SpawnFinder extends IgnoringEffectReader {
-  private readonly objectGlobalId: number;
+  private readonly objectGlobalId: ObjectGlobalId;
 
-  constructor(objectGlobalId: number) {
+  constructor(objectGlobalId: ObjectGlobalId) {
     super();
     this.objectGlobalId = objectGlobalId;
   }
 
-  override spawn(objectGlobalId: number): void {
+  override spawn(objectGlobalId: ObjectGlobalId): void {
     if (objectGlobalId === this.objectGlobalId) this.found = true;
   }
 }

@@ -10,6 +10,7 @@ import type { GateReading, PassivePropertyReading, PassiveReader } from '../../d
 import type { WorldCodex } from '../../domain/WorldCodex';
 import type { WorldObject } from '../../domain/WorldObject';
 import type { World } from '../../domain/wrappers/World';
+import type { ObjectGlobalId } from '../../domain/GlobalId';
 
 /** 1日の分数（推定日数を出すのに要る唯一の定数）。 */
 const MINUTES_PER_DAY = 24 * 60;
@@ -81,7 +82,7 @@ function isStageOnly(gate: GateReading): boolean {
 
 /** 自分を型で名指した場所へ移す`move`だけを拾う読み手（`pick`の候補の中を見る）。 */
 class SelfMoveDestinations implements EffectReader {
-  readonly destinations: number[] = [];
+  readonly destinations: ObjectGlobalId[] = [];
 
   move(subject: ObjectRefReading, destination: ObjectRefReading): void {
     if (subject.kind === 'root' && subject.root === 'self' && destination.kind === 'object')
@@ -115,7 +116,7 @@ class SelfMoveDestinations implements EffectReader {
 /** 出航の卓の候補1つ——引かれる重みと、そのとき自分が移る先の型。 */
 interface DepartureCandidate {
   readonly weight: DeclaredNumberReading;
-  readonly destinationGlobalId: number;
+  readonly destinationGlobalId: ObjectGlobalId;
 }
 
 /**

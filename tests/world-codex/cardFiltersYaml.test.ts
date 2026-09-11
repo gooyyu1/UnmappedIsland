@@ -56,7 +56,7 @@ describe('フィルターバーの絞り込み', () => {
   it('指しているタグは、どれも名乗る型を持つ（綴りの誤り検知）', () => {
     // ロード時には落とせない（タグはファイルをまたいで付く、8.1.3節）ので、世界を丸ごと読んだ
     // ここで見る。綴りを間違えたタグは、黙って何も残さないボタンになる。
-    const defs = Array.from({ length: codex.objects.count }, (_, globalId) => codex.objects.get(globalId));
+    const defs = [...codex.objects];
     const unused = codex.cardFilters.flatMap((entry) =>
       entry.tagGlobalIds
         .filter((tagGlobalId) => !defs.some((def) => def.tags.includes(tagGlobalId)))

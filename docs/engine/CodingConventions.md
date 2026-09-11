@@ -45,13 +45,16 @@
 スロットのIDや素の数を渡すと型で止まる（[`tests/architecture/globalId.test.ts`](../../tests/architecture/globalId.test.ts)
 が `@ts-expect-error` で見張る。受け口が `number` へ戻ると `npm run typecheck` が赤くなる）。
 
-**分け終わっているのはプロパティの名前空間だけ**（2026-09-11時点）。残りは `NameRegistry` の型引数の
-既定である素の `number` のままで、**互いのIDを渡し合える**。分ける手順は下に置くので、ここを読んで
-「もう全部が分かれている」と読まないこと。
+**`WorldCodex` が持つ名前空間はどれも分かれている。** 別名は `GlobalId.ts` に並ぶ。とくに**タグは
+2つの名前空間に分かれる**——型のタグ（4.1節、`tagNames`）とプロパティのタグ（6.7節、
+`propertyTagNames`）で、取り違えても番号としては通り、「そのタグを持たない」が静かに返る。
 
 **素の `number` から専用の型へ変わるのは `NameRegistry` の中だけ。** 番号を決めているのが
 `intern` の1行で、外へ開いているのは名前から引く経路（`intern`/`getId`/`tryGetId`）しか無い。
 YAMLもシナリオも生成物もURLも**名前で越境する**ので、外から来た数がIDとして通ることがない。
+
+IDの並びが要る側は `NameRegistry.ids` を読む。**`count` まで添字を数えると、そこが素の数からIDを
+組み立てる場所になる**（型の一覧なら `ObjectDefTable` の走査。名前だけ登録されて定義の無いIDを飛ばす)。
 
 IDを型引数で受けるクラスは `in out`（不変）で宣言する。**外すと、種類の付いた名前空間を素の
 `number` の名前空間として扱えてしまう**——メソッドの引数は既定では双変なので、
@@ -68,12 +71,16 @@ IDを型引数で受けるクラスは `in out`（不変）で宣言する。**�
    ぶんここで型エラーになる。**選ぶのをやめて、名前空間を知っている側が引く**形へ直す
    （`WorldObject.notFoundMessage`）。
 
-跨ぐ場所を新しく作らなければならないなら、**跨ぐ理由をその場に書く**（既にある例外は、どの名前空間も
-配っていないIDを渡す試験——`tests/domain/propertyAndSlotLookup.test.ts`）。
+跨ぐ場所を新しく作らなければならないなら、**跨ぐ理由をその場に書く**。既にある例外は、Codexを
+持てない試験——どの名前空間も配っていないIDを渡すもの、世界を読まずに画面の組み立てだけを見るもの
+——で、`as <種類>GlobalId` を grep すれば在り処が全部挙がる。
 
-**プロパティの「値」に別の名前空間のIDが入ることがある**（型を値に持つプロパティは `objectNames` の
-ID、シンボル型は `symbolNames` のID。GameElementDefinition.md 6.6節・6.9節）。値は宣言された数であって
-名前空間が配ったIDではないので、その2つを型で分けるなら、読み出す側が越境の場所になる。
+**プロパティの「値」に別の名前空間のIDが入る**（型を値に持つプロパティは `objectNames` のID、
+シンボル型は `symbolNames` のID。GameElementDefinition.md 6.6節・6.9節）。値は著者が書いた数であって
+名前空間が配ったIDではないので、型の上では繋がっていない。読み替えるのは
+`GlobalId.ts` の `objectGlobalIdOfPropertyValue`・`symbolGlobalIdOfPropertyValue` で、
+**`NameRegistry` の外で素の数がIDへ変わるのはこの2つだけ**——宣言を書き込む側と読み出す側が同じ
+読み替えをしているかは、この名前を grep すれば全部が挙がる。
 
 ## クラス
 

@@ -2,7 +2,7 @@ import type { AmongReading } from './AmongSpec';
 import type { ConditionDeclaration } from './ConditionReader';
 import type { ObjectRefReading } from './ObjectRef';
 import type { ReferenceRoot } from './ReferenceRoot';
-import type { PropertyGlobalId } from './GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId } from './GlobalId';
 
 /**
  * 自分が何を宣言しているかを読み上げられるもの（効果そのものと、それを抱える操作）。入れ子の候補も
@@ -30,7 +30,7 @@ export interface EffectReader {
   add(reading: AddReading): void;
 
   /** `spawn`（9.4節）。配置先（into）は読み上げない——どこへ入るかは世界の形の話で、宣言の意味ではない。 */
-  spawn(objectGlobalId: number, count: number): void;
+  spawn(objectGlobalId: ObjectGlobalId, count: number): void;
 
   /**
    * `destroy`（9.3節）。reasonはこの消滅が名乗る名前で、書かれていなければundefined
@@ -51,7 +51,11 @@ export interface EffectReader {
    * `move`（9.6節）。オブジェクトの居場所を変えるだけで、値も個数も動かさない。
    * slotGlobalIdは名指しの行き先スロット（`to_slot`）で、undefinedなら宣言順で最初に受け入れた枠。
    */
-  move(subject: ObjectRefReading, destination: ObjectRefReading, slotGlobalId: number | undefined): void;
+  move(
+    subject: ObjectRefReading,
+    destination: ObjectRefReading,
+    slotGlobalId: SlotGlobalId | undefined,
+  ): void;
 
   /**
    * `signal`（9.8節）。世界の形は何も変わらない。

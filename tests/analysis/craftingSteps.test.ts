@@ -70,10 +70,7 @@ object_defs:
   });
 
   it('クラフトネットワークは、出力を持つ工程だけを描く', () => {
-    const network = buildCraftingNetwork(
-      [...Array(codex.objects.count).keys()].map((globalId) => codex.objects.get(globalId)),
-      codex,
-    );
+    const network = buildCraftingNetwork([...codex.objects], codex);
 
     const stepNames = network.nodes.filter((node) => node.kind === 'step').map((node) => node.stepName);
     expect(stepNames).toContain('explore');

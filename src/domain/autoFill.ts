@@ -2,6 +2,7 @@ import type { WorldCodex } from './WorldCodex';
 import type { SlotCell } from './CellLayout';
 import type { RecipeRequirementDef } from './RecipeDef';
 import type { WorldObject } from './WorldObject';
+import type { SlotGlobalId } from './GlobalId';
 
 /**
  * 製作中オブジェクトの枠へ、手元と足元から素材を自動で入れる（RecipeSystem.md 4節）。
@@ -21,7 +22,7 @@ import type { WorldObject } from './WorldObject';
  */
 export function autoFillMaterials(
   inProgress: WorldObject,
-  materialsSlotGlobalId: number,
+  materialsSlotGlobalId: SlotGlobalId,
   sources: readonly (readonly WorldObject[])[],
   codex: WorldCodex,
   /** 残りの工程が要求するもの（crafting.remainingRequirements）。省略すると全ての枠を埋める。 */

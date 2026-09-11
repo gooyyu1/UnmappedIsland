@@ -3,7 +3,7 @@ import type { ObjectDef } from '../domain/ObjectDef';
 import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
 import type { WorldCodex } from '../domain/WorldCodex';
 import { islandLocationsOf } from './islandLocations';
-import type { PropertyGlobalId } from '../domain/GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 土地×季節ごとの「移動できる／活動できる時間（時間/日）」を、`core.yaml`の`hour`・`weather`の段
@@ -337,16 +337,16 @@ function hostAmbientOf(codex: WorldCodex, def: ObjectDef, ambientId: PropertyGlo
 }
 
 /** その型の操作が生みうるオブジェクト（`spawn`、9.4節）。**抽選の枝も分け隔てなく集める。** */
-function spawnedObjectIdsOf(def: ObjectDef): ReadonlySet<number> {
+function spawnedObjectIdsOf(def: ObjectDef): ReadonlySet<ObjectGlobalId> {
   const collector = new SpawnCollector();
   for (const trigger of def.triggers) trigger.interaction.read(collector);
   return collector.objectGlobalIds;
 }
 
 class SpawnCollector implements EffectReader {
-  readonly objectGlobalIds = new Set<number>();
+  readonly objectGlobalIds = new Set<ObjectGlobalId>();
 
-  spawn(objectGlobalId: number): void {
+  spawn(objectGlobalId: ObjectGlobalId): void {
     this.objectGlobalIds.add(objectGlobalId);
   }
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { ObjectGlobalId } from '../../src/domain/GlobalId';
 import { COLOR } from '../../src/game/looks/theme';
 import type { CardContent } from '../../src/game/ui/Card';
 import { LANE_CELLS_MAX } from '../../src/game/ui/laneCells';
@@ -23,12 +24,18 @@ const slot = (options: Partial<SlotView> = {}): SlotView => ({
   ...options,
 });
 
+/**
+ * 型のグローバルID。**この試験はCodexを持たない**——枠の並びは型の中身を見ないので、どの型かを
+ * 区別できれば足りる。名前空間を通さずに素の数からIDにするのは、そのぶんここだけ。
+ */
+const typeId = (id: number): ObjectGlobalId => id as ObjectGlobalId;
+
 /** 型そのものを表す札。どの型を出したかが分かればよい。 */
-const cardOfType = (objectGlobalId: number): CardContent =>
+const cardOfType = (objectGlobalId: ObjectGlobalId): CardContent =>
   ({ icon: '📦', name: `type#${objectGlobalId}` }) as CardContent;
 
 const material = (options: Partial<CraftingMaterial> = {}): CraftingMaterial => ({
-  objectGlobalIds: [1],
+  objectGlobalIds: [typeId(1)],
   needed: 1,
   held: 0,
   inCurrentStep: true,
@@ -36,7 +43,7 @@ const material = (options: Partial<CraftingMaterial> = {}): CraftingMaterial => 
 });
 
 /** その型を1つ入れた枠。 */
-const stack = (objectGlobalId: number): ObjectCardStack =>
+const stack = (objectGlobalId: ObjectGlobalId): ObjectCardStack =>
   ({ objectGlobalId, name: `held#${objectGlobalId}` }) as ObjectCardStack;
 
 /**
@@ -47,11 +54,11 @@ describe('スロットの枠', () => {
   it('材料の要求を持つスロットだけが、飾りの付いた枠になる', () => {
     const cards = [card('丸太')];
     const plain = slot({ cells: 3 });
-    const materials = slot({ cells: 3, materials: [material({ objectGlobalIds: [1] })] });
+    const materials = slot({ cells: 3, materials: [material({ objectGlobalIds: [typeId(1)] })] });
 
     expect(slotCells(plain, [undefined], cards, 0, cardOfType), '宣言どおりの3枠').toHaveLength(3);
     expect(
-      slotCells(materials, [stack(1)], cards, 0, cardOfType)[0].borderColor,
+      slotCells(materials, [stack(typeId(1))], cards, 0, cardOfType)[0].borderColor,
       '要求の枠は縁が染まる',
     ).toBe(COLOR.cellCurrentStep);
   });
@@ -129,7 +136,10 @@ describe('材料の枠', () => {
   it('何も入っていなければ、要求の数だけ透かしの入った空き枠が出る', () => {
     // 材料スロットは要求ごとの枠を持つので、その空き枠をそのまま並べると、透かしの入らない枠が
     // 要求の数だけ並んだ後ろに透かしの入った枠が続くことになる（a75472aの回帰）。
-    const materials = [material({ objectGlobalIds: [1] }), material({ objectGlobalIds: [2] })];
+    const materials = [
+      material({ objectGlobalIds: [typeId(1)] }),
+      material({ objectGlobalIds: [typeId(2)] }),
+    ];
 
     const cells = cellsOf({ materials, stacks: [undefined, undefined] });
 
@@ -142,18 +152,21 @@ describe('材料の枠', () => {
   });
 
   it('入っている枠は、札と印の両方を持つ', () => {
-    const materials = [material({ objectGlobalIds: [1], needed: 3, held: 1 })];
+    const materials = [material({ objectGlobalIds: [typeId(1)], needed: 3, held: 1 })];
 
-    const [cell] = cellsOf({ materials, stacks: [stack(1)] });
+    const [cell] = cellsOf({ materials, stacks: [stack(typeId(1))] });
 
     expect(cell.card?.name).toBe('held#1');
     expect(cell.overlay, '2つ以上要る枠は、あといくつかを出す').toBe('1/3');
   });
 
   it('入っている要求は、空き枠として重ねて出さない', () => {
-    const materials = [material({ objectGlobalIds: [1] }), material({ objectGlobalIds: [2] })];
+    const materials = [
+      material({ objectGlobalIds: [typeId(1)] }),
+      material({ objectGlobalIds: [typeId(2)] }),
+    ];
 
-    const cells = cellsOf({ materials, stacks: [stack(1), undefined] });
+    const cells = cellsOf({ materials, stacks: [stack(typeId(1)), undefined] });
 
     expect(cells).toHaveLength(2);
     expect(cells[0].card?.name, '入っている枠').toBe('held#1');
@@ -162,7 +175,10 @@ describe('材料の枠', () => {
 
   it('もう要求されない型は、取り出すための枠として残るが印は持たない', () => {
     // 工程を終えて出番が済んだ型。こぼす前に取り出せるよう枠は残る。
-    const cells = cellsOf({ materials: [material({ objectGlobalIds: [1] })], stacks: [stack(9)] });
+    const cells = cellsOf({
+      materials: [material({ objectGlobalIds: [typeId(1)] })],
+      stacks: [stack(typeId(9))],
+    });
 
     expect(cells[0].card?.name).toBe('held#9');
     expect(cells[0].accepts, '何を入れる枠でもない').toBeUndefined();
@@ -178,8 +194,8 @@ describe('材料の枠', () => {
 
   it('今の工程の枠と、後の工程の枠は縁の色で分ける', () => {
     const materials = [
-      material({ objectGlobalIds: [1], inCurrentStep: true }),
-      material({ objectGlobalIds: [2], inCurrentStep: false }),
+      material({ objectGlobalIds: [typeId(1)], inCurrentStep: true }),
+      material({ objectGlobalIds: [typeId(2)], inCurrentStep: false }),
     ];
 
     const cells = cellsOf({ materials, stacks: [] });
@@ -190,7 +206,7 @@ describe('材料の枠', () => {
 
   it('タグの要求は、拍ごとに当てはまる型を順に出す', () => {
     // どれか1つを選んで出すと、その型でなければ入らないように見えてしまう。
-    const materials = [material({ objectGlobalIds: [4, 5, 6] })];
+    const materials = [material({ objectGlobalIds: [typeId(4), typeId(5), typeId(6)] })];
     const shownAt = (cycle: number) => cellsOf({ materials, stacks: [], cycle })[0].accepts?.name;
 
     expect([0, 1, 2, 3].map(shownAt)).toEqual(['type#4', 'type#5', 'type#6', 'type#4']);

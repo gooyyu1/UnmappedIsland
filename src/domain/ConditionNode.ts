@@ -2,7 +2,7 @@ import type { ConditionOp, ConditionReader } from './ConditionReader';
 import type { StageBound } from './PropertyDef';
 import type { PropertyPath, ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
-import type { PropertyGlobalId } from './GlobalId';
+import type { PropertyGlobalId, SlotGlobalId } from './GlobalId';
 
 type ConditionNodeKind =
   /** {subject, prop, <比較演算子>: value}形式のプロパティ比較。 */
@@ -40,8 +40,8 @@ interface ConditionNodeFields {
   readonly valueRef?: PropertyPath;
   readonly stageName?: string;
   readonly stageBound?: StageBound;
-  readonly containerSlotGlobalId?: number;
-  readonly ownedSlotGlobalId?: number;
+  readonly containerSlotGlobalId?: SlotGlobalId;
+  readonly ownedSlotGlobalId?: SlotGlobalId;
   readonly matchRule?: TypeMatchRule;
   readonly children?: readonly ConditionNode[];
 }
@@ -79,10 +79,10 @@ export class ConditionNode {
   private readonly stageBound: StageBound | undefined;
 
   /** slot_position葉のみ有効。subjectがその枠に入っているかを見る、subjectの親の側のスロット。 */
-  private readonly containerSlotGlobalId: number | undefined;
+  private readonly containerSlotGlobalId: SlotGlobalId | undefined;
 
   /** slot_content葉のみ有効。中身を見る、subject自身が持つスロット。 */
-  private readonly ownedSlotGlobalId: number | undefined;
+  private readonly ownedSlotGlobalId: SlotGlobalId | undefined;
 
   /** slot_content/object_matches葉のみ有効。 */
   private readonly matchRule: TypeMatchRule | undefined;
@@ -124,13 +124,13 @@ export class ConditionNode {
     return new ConditionNode('property_stage', { root, propertyGlobalId, stageName, stageBound });
   }
 
-  static slotPosition(root: ReferenceRoot, containerSlotGlobalId: number): ConditionNode {
+  static slotPosition(root: ReferenceRoot, containerSlotGlobalId: SlotGlobalId): ConditionNode {
     return new ConditionNode('slot_position', { root, containerSlotGlobalId });
   }
 
   static slotContent(
     root: ReferenceRoot,
-    ownedSlotGlobalId: number,
+    ownedSlotGlobalId: SlotGlobalId,
     matchRule: TypeMatchRule,
   ): ConditionNode {
     return new ConditionNode('slot_content', { root, ownedSlotGlobalId, matchRule });

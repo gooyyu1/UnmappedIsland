@@ -1,7 +1,8 @@
 import type { WorldObject } from './WorldObject';
 import type { ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 import { PropertyPath } from './ReferenceRoot';
-import type { PropertyGlobalId } from './GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId } from './GlobalId';
+import { objectGlobalIdOfPropertyValue } from './GlobalId';
 
 /**
  * オブジェクトを1つ指す参照の宣言（ObjectRef参照）。指し方をそのまま表す。
@@ -17,7 +18,7 @@ export type ObjectRefReading =
       readonly subject: ReferenceRoot;
       readonly propertyGlobalId: PropertyGlobalId;
     }
-  | { readonly kind: 'object'; readonly objectGlobalId: number }
+  | { readonly kind: 'object'; readonly objectGlobalId: ObjectGlobalId }
   /** 実効値を型として解釈した相手（`{object: ...}`をプロパティに置いた形、6.9節）。 */
   | { readonly kind: 'object_property'; readonly propertyGlobalId: PropertyGlobalId };
 
@@ -46,7 +47,7 @@ export class ObjectRef {
   private readonly path: PropertyPath | undefined;
 
   /** 型で指す参照ならそのobject_defのグローバルID、それ以外はundefined。 */
-  private readonly objectGlobalId: number | undefined;
+  private readonly objectGlobalId: ObjectGlobalId | undefined;
 
   /** pathの実効値を、インスタンスIDではなく型として読むか（6.9節）。 */
   private readonly pathHoldsObjectDef: boolean;
@@ -54,7 +55,7 @@ export class ObjectRef {
   private constructor(
     root: ReferenceRoot | undefined,
     path: PropertyPath | undefined,
-    objectGlobalId?: number,
+    objectGlobalId?: ObjectGlobalId,
     pathHoldsObjectDef = false,
   ) {
     this.root = root;
@@ -71,7 +72,7 @@ export class ObjectRef {
     return new ObjectRef(undefined, path);
   }
 
-  static ofObjectDef(objectGlobalId: number): ObjectRef {
+  static ofObjectDef(objectGlobalId: ObjectGlobalId): ObjectRef {
     return new ObjectRef(undefined, undefined, objectGlobalId);
   }
 
@@ -96,7 +97,7 @@ export class ObjectRef {
     const value = this.path!.effectiveNumber(context);
     if (value === undefined) return undefined;
     return this.pathHoldsObjectDef
-      ? owner.findRoot().findSelfOrDescendantOfDef(value)
+      ? owner.findRoot().findSelfOrDescendantOfDef(objectGlobalIdOfPropertyValue(value))
       : owner.findRoot().findSelfOrDescendantByInstanceId(value);
   }
 

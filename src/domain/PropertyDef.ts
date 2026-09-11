@@ -8,7 +8,7 @@ import { PropertyPath, ReferenceContext } from './ReferenceRoot';
 import type { EffectDeclaration } from './EffectReader';
 import type { AlertLevel } from './AlertLevel';
 import { ALERT_LEVELS } from './AlertLevel';
-import type { PropertyGlobalId } from './GlobalId';
+import type { PropertyGlobalId, PropertyTagGlobalId } from './GlobalId';
 
 /**
  * 値がどちらへ動くと悪いか（PropertyDef.alertDirection）。mixedは「両端が悪い」並びで、バーの
@@ -413,7 +413,7 @@ export class PropertyDef {
    * このプロパティに付いたタグのグローバルIDの一覧（6.7節）。object_defのタグ（4.1節）とは別の
    * 名前空間で、UIがプロパティをカテゴリ別にまとめるために使う。
    */
-  readonly tags: readonly number[];
+  readonly tags: readonly PropertyTagGlobalId[];
 
   /**
    * 値がシンボル（6.6節。天気の`clear`、季節の`dry`）か。実行時の値は数値なので、シンボル名へ
@@ -443,7 +443,7 @@ export class PropertyDef {
     stages: readonly PropertyStage[],
     onMin?: RangeEventDef,
     base: PropertyPath | undefined = undefined,
-    tags: readonly number[] = [],
+    tags: readonly PropertyTagGlobalId[] = [],
     isSymbolic = false,
     gauge: GaugeDef | undefined = undefined,
     worsens: WorseningDirection | undefined = undefined,
@@ -609,8 +609,8 @@ export class PropertyDef {
   }
 
   /** このプロパティにタグ（6.7節）が付いているか。 */
-  hasTag(tagGlobalId: number): boolean {
-    return this.tags.includes(tagGlobalId);
+  hasTag(propertyTagGlobalId: PropertyTagGlobalId): boolean {
+    return this.tags.includes(propertyTagGlobalId);
   }
 
   /**

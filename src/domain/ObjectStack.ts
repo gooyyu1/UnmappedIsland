@@ -1,5 +1,6 @@
 import type { StackOrderDef } from './StackOrderDef';
 import type { WorldObject } from './WorldObject';
+import type { ObjectGlobalId } from './GlobalId';
 
 /**
  * Slot内で「見た目上1つのまとまり」として積み重なる、同じ種類のWorldObjectの集まり
@@ -10,7 +11,7 @@ export class ObjectStack {
    * このスタックのアイデンティティ（生成時点のseedのObjectDef）。生成後は書き換えない。メンバーの型が
    * 変わって（become、9.9節）合致しなくなった場合に動くのは、そのメンバーの所属スタックであってこの値ではない。
    */
-  private readonly objectDefGlobalId: number;
+  private readonly objectDefGlobalId: ObjectGlobalId;
 
   private readonly _members: WorldObject[];
   get members(): readonly WorldObject[] {

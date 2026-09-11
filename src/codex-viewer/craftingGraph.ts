@@ -2,6 +2,7 @@ import type { CraftingStep } from '../analysis/CraftingStep';
 import { craftingStepsOf } from '../analysis/craftingSteps';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
+import type { ObjectGlobalId, TagGlobalId } from '../domain/GlobalId';
 
 /**
  * クラフトネットワークのグラフ構造。
@@ -59,9 +60,9 @@ function tagNodeId(tagName: string): string {
 export function buildCraftingNetwork(defs: readonly ObjectDef[], codex: WorldCodex): CraftingNetwork {
   const nodes = new Map<string, NetworkNode>();
   const edges: NetworkEdge[] = [];
-  const usedTagIds = new Set<number>();
+  const usedTagIds = new Set<TagGlobalId>();
 
-  const objectNode = (globalId: number): string => {
+  const objectNode = (globalId: ObjectGlobalId): string => {
     const name = codex.objectNames.getName(globalId);
     const id = objectNodeId(name);
     if (!nodes.has(id)) nodes.set(id, { kind: 'object', id, objectName: name });

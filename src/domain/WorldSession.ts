@@ -14,6 +14,7 @@ import type { ReferenceContext } from './ReferenceRoot';
 import { WorldObject } from './WorldObject';
 import { EffectiveValueReading } from './EffectiveValueReading';
 import { Scoped } from '../util/scoped';
+import type { ObjectGlobalId } from './GlobalId';
 
 /**
  * 1セッション分の実行時状態。WorldCodexはロード後不変な定義の集合であり続けるため、instance IDの発行という
@@ -129,7 +130,7 @@ export class WorldSession {
   }
 
   /** 指定したObjectDefの新しいWorldObjectを生成する（spawn、9.4節）。まだどこにも配置されていないため、呼び出し側がmoveToSlotOrRejectionで配置する。 */
-  createObject(objectDefGlobalId: number): WorldObject {
+  createObject(objectDefGlobalId: ObjectGlobalId): WorldObject {
     const def = this.codex.objects.get(objectDefGlobalId);
     return new WorldObject(this.nextInstanceId++, def, this);
   }
