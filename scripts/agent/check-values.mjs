@@ -45,8 +45,16 @@ import { gh as runGh } from './spawn.mjs';
 /** 告げ先の題。**2本目を作らない鍵はこれだけ**——台帳が失われても、題が合えば書き換えになる。 */
 export const TITLE = '盤面が動くのに要る値が死んでいる';
 
-/** 死んだまま、これだけ経ってから告げる（時間）。 */
-const GRACE_HOURS = Number(process.env.VALUE_GRACE_HOURS || 6);
+/**
+ * 死んだまま、これだけ経ってから告げる（時間）。
+ *
+ * **数でない値は既定へ落とす。** `NaN` を通すと猶予の比較が全部 false になり、**見張りが黙って
+ * 止まる**——毎周「告げることは無い」と言い続けるので、効いているのと見分けが付かない。
+ */
+function graceHours() {
+  const given = Number(process.env.VALUE_GRACE_HOURS);
+  return Number.isFinite(given) ? given : 6;
+}
 
 /** 台帳の置き場。**1周を回す側の `taken.json` とは分ける**——書き手が違うので、混ぜると潰し合う。 */
 const ledgerPath = (stateDir) => join(stateDir, 'value-check.json');
@@ -169,7 +177,7 @@ function deadTable(due) {
 }
 
 /** issue の本文。**丸ごと書き換わる**ので、人が書き足しても消えることを頭に置く。 */
-export function report(due, now) {
+function report(due, now) {
   return `${[
     '**この本文は `scripts/agent/check-values.mjs` が周期で丸ごと書き換えます。**',
     '人が書いたものは次の見回りで消えます（`.claude/board-design.md` 2.22）。',
@@ -275,7 +283,7 @@ export async function checkValues({
   envs = environmentIds,
   stateDir = boardState(),
   now = new Date(),
-  grace = GRACE_HOURS,
+  grace = graceHours(),
   dryRun = process.env.DRY_RUN !== undefined && process.env.DRY_RUN !== '',
   say = console.log,
 } = {}) {

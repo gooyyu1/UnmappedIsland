@@ -289,6 +289,22 @@ describe('check-values.mjs の告げ方', () => {
     expect(run.ledger.CLOUD_ENV).toBeUndefined();
   });
 
+  // **`VALUE_GRACE_HOURS` は 2.22.2 が「人が詰める摘み」として案内している**ので、打ち間違いは
+  // 踏みうる。`NaN` を通すと猶予の比較が全部 false になり、**毎周「告げることは無い」と言い続ける
+  // 見張り**になる（効いているのと見分けが付かない）。
+  it('猶予に数でない値が入っていても、既定へ落ちて告げる', async () => {
+    const before = process.env.VALUE_GRACE_HOURS;
+    process.env.VALUE_GRACE_HOURS = '6時間';
+    try {
+      const run = await check({ living: [CLOUD], ledger: { BRIDGE_ENV: { since: LONG_AGO } } });
+
+      expect(run.told).toBe(true);
+    } finally {
+      if (before === undefined) delete process.env.VALUE_GRACE_HOURS;
+      else process.env.VALUE_GRACE_HOURS = before;
+    }
+  });
+
   it('生き返った値は、台帳から消えて数え直しになる', async () => {
     const run = await check({ ledger: { BRIDGE_ENV: { since: JUST_NOW } } });
 

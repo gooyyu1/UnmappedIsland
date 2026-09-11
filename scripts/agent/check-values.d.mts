@@ -32,7 +32,4 @@ export const TITLE: string;
 
 export function surveyValues(deps?: SurveyValuesDeps): Promise<CheckedValue[]>;
 
-/** issue の本文。 */
-export function report(due: readonly (CheckedValue & { readonly since: string })[], now: Date): string;
-
 export function checkValues(deps?: CheckValuesDeps): Promise<boolean>;
