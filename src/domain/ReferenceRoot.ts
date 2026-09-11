@@ -231,7 +231,7 @@ export class ReferenceContext {
     self: WorldObject | undefined,
     agent: WorldObject,
     instrument: WorldObject | undefined,
-    patient: WorldObject | undefined,
+    patient: WorldObject,
   ): ReferenceContext {
     return new ReferenceContext(self, agent, instrument, patient, undefined);
   }
