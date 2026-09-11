@@ -2,7 +2,6 @@ import type { WorldCodex } from './WorldCodex';
 import { randomRng } from './Rng';
 import type { Rng } from './Rng';
 import type { World } from './wrappers/World';
-import type { PropertyDef } from './PropertyDef';
 import type { PropertyValue } from './PropertyValue';
 import type { InteractionGains, PropertyGain } from './PropertyGain';
 import type { PassiveEffects } from './PassiveEffects';
@@ -24,8 +23,8 @@ import type { ObjectGlobalId } from './GlobalId';
  * 変わっても続くので、tickの手前で名乗った先と、tickが実際に動かした先とが同じものだと言えるのは
  * こちらだけ。
  */
-function gainTargetKey(object: WorldObject, property: PropertyDef): string {
-  return `${object.instanceId}:${property.globalId}`;
+function gainTargetKey(property: PropertyValue): string {
+  return `${property.owner.instanceId}:${property.def.globalId}`;
 }
 
 /**
@@ -261,9 +260,9 @@ export class WorldSession {
    * 実体値への書き込み1件を溜める（PropertyValue.addからのみ呼ぶ）。操作を実行している間
    * （withInteractionGains）の、**時間の経過の外**での書き込みだけを数える。
    */
-  recordGain(object: WorldObject, property: PropertyDef, delta: number): void {
+  recordGain(property: PropertyValue, delta: number): void {
     if (this.insideTick.current === true) return;
-    this.gather(object, property, delta);
+    this.gather(property, delta);
   }
 
   /**
@@ -271,7 +270,7 @@ export class WorldSession {
    * 手前で自分の対象を名乗る）。名乗れるのは今の操作が宣言した持続効果（11.7節）だけ。
    */
   countTickMovementAsGain(property: PropertyValue): void {
-    this.tickGainTargets.current?.add(gainTargetKey(property.owner, property.def));
+    this.tickGainTargets.current?.add(gainTargetKey(property));
   }
 
   /**
@@ -283,17 +282,21 @@ export class WorldSession {
    * 動いた量で、荷や痛みが同じtickで削ったぶんはそこから引かれている。
    */
   recordTickMovement(property: PropertyValue, delta: number): void {
-    if (this.tickGainTargets.current?.has(gainTargetKey(property.owner, property.def)) !== true) return;
-    this.gather(property.owner, property.def, delta);
+    if (this.tickGainTargets.current?.has(gainTargetKey(property)) !== true) return;
+    this.gather(property, delta);
   }
 
-  private gather(object: WorldObject, property: PropertyDef, delta: number): void {
+  private gather(property: PropertyValue, delta: number): void {
     const gathered = this.gainsBeingGathered.current;
     if (gathered === undefined) return;
 
-    const key = gainTargetKey(object, property);
+    const key = gainTargetKey(property);
     const found = gathered.get(key);
-    gathered.set(key, { object, property, amount: (found?.amount ?? 0) + delta });
+    gathered.set(key, {
+      object: property.owner,
+      property: property.def,
+      amount: (found?.amount ?? 0) + delta,
+    });
   }
 
   /**

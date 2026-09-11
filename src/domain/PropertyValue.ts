@@ -115,7 +115,7 @@ export class PropertyValue {
     this._number += delta;
 
     // 操作が直に動かした値はここだけを通る（毎tickの積分はtick()が直に足す、PropertyGain参照）。
-    this.owner.session.recordGain(this.owner, this.def, delta);
+    this.owner.session.recordGain(this, delta);
     this.applyRangeEvents();
     // 値が動けば、持ち主の下に居られるかも変わりうる（resists、7.13節）。どう変わるかを知っているのは
     // 持ち主の側なので、変わったことだけを伝える。
