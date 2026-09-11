@@ -53,14 +53,14 @@ export class WorldObject {
   private properties: PropertyValue[];
   private slots: Slot[];
 
-  /** 所属先（7.1節）。ルート（未格納）ならundefined。 */
+  /** 所属先の逆引きキャッシュ（SlotSystem.md 1節）。ルート（未格納）ならundefined。 */
   private _parent: WorldObject | undefined;
   get parent(): WorldObject | undefined {
     return this._parent;
   }
 
   /**
-   * 今自分が入っている枠（7.1節）。どこにも入っていなければundefined。
+   * 今自分が入っている枠の逆引きキャッシュ（SlotSystem.md 1節）。どこにも入っていなければundefined。
    *
    * **親の中での位置を、親のローカルIDでは持たない。** ローカルIDはそのオブジェクトの中でしか意味を
    * 持たない値で、他人の番号を控えると、控えた側が「誰の番号か」を覚えている必要がある。
