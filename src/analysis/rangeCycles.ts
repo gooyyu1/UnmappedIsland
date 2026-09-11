@@ -1,5 +1,5 @@
 import type { ObjectDef } from '../domain/ObjectDef';
-import type { PropertyDef, RangeEventLabel } from '../domain/PropertyDef';
+import type { PropertyDef, RangeEventLabel, RollEnd } from '../domain/PropertyDef';
 import { movesTowardEnd, RANGE_EVENT_LABELS, rollEndAwayFrom, ROLL_ENDS } from '../domain/PropertyDef';
 import type { SelfStageRequirement, TickDelta, TickGate } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
@@ -549,6 +549,20 @@ function totalsWithDriver(own: TickAmounts, driver: ExternalTickDelta | undefine
 }
 
 /**
+ * ゲートが開いている間——効き始め（ticksUntilGateRises）から止まるまで（ticksUntilGateFalls）——を
+ * 数えるときに読む、生成時のロール（6.2節）の端。
+ *
+ * **窓は同じ1つの個体についての長さ**なので、入り口と出口で別の端を採ってはならない。向きごとに
+ * 裏返すと、段へ落ちて入る個体と段を割って出る個体が入れ替わり、窓が縮む・消えるといった、どちらの
+ * 個体にも起こらない長さが出る。押し手の側（ticksUntilDrivenStage）が向きで裏返せるのは、押して
+ * いる向きが1つに決まっているからで、自分の増減で動く値には同じ手が使えない——同じ値に上向きと
+ * 下向きの組が並ぶ。
+ *
+ * 軽く出たほうを採るのは、上がっていって段へ入る場合に**段から遠い＝効き始めが最も遅い**側だから。
+ */
+const GATE_WINDOW_ROLL_END: RollEnd = 'lowest';
+
+/**
  * ゲートが落ちて、その増減が効かなくなるまでのtick数（TickGate参照）。**見ている自分の値が
  * 尽きるか、居ることを要求された段を抜けるか**で落ちる。どちらも来なければundefined＝
  * 止まらない。**生まれた時点から数える**ので、効き始めまでの時間（ticksUntilGateRises）と同じ
@@ -572,9 +586,9 @@ function ticksUntilGateFalls(def: ObjectDef, gate: TickGate): number | undefined
 
 /** その値が尽きて、それを見ている条件が外れるまでのtick数。尽きない値ならundefined。 */
 function ticksUntilValueRunsOut(def: ObjectDef, propertyGlobalId: PropertyGlobalId): number | undefined {
-  // 尽きるまでを**最も短く**見る側（fastest）に合わせて、ロールも軽く出たほうを採る。
+  // 尽きるまでを**最も短く**見る側（fastest）。
   return ticksToReach(
-    staticValueOf(def, propertyGlobalId, 'lowest'),
+    staticValueOf(def, propertyGlobalId, GATE_WINDOW_ROLL_END),
     0,
     paceTowards(tickAmountsOf(def, propertyGlobalId).possible, 'on_min')?.fastest.amount,
   );
@@ -585,10 +599,10 @@ function ticksUntilValueRunsOut(def: ObjectDef, propertyGlobalId: PropertyGlobal
  * 値の並びの上に位置を持たない段（シンボル型、6.6節）ならundefined。
  */
 function ticksUntilStageLeftUpward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
-  // 速さは**最も速い増減**（fastest）で、ロールは効き始め（ticksUntilGateRises）と同じ段から
-  // 遠いほうを採る。**効き始めから抜けるまでが最も狭くなる組**で、押し手を控えめに数える側。
+  // 速さは**最も速い増減**（fastest）——**効き始めから抜けるまでが最も狭くなる組**で、押し手を
+  // 控えめに数える側。
   return ticksToReach(
-    staticValueOf(def, required.propertyGlobalId, 'lowest'),
+    staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
     stageUpperBoundOf(def, required),
     paceTowards(tickAmountsOf(def, required.propertyGlobalId).possible, 'on_max')?.fastest.amount,
   );
@@ -607,10 +621,10 @@ function ticksUntilStageLeftUpward(def: ObjectDef, required: SelfStageRequiremen
  * 消える。
  */
 function ticksUntilStageLeftDownward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
-  // 速さもロールもticksUntilStageLeftUpwardと同じ側——効き始めから抜けるまでが最も狭くなる組で、
-  // 押し手を控えめに数える。
+  // 速さはticksUntilStageLeftUpwardと同じ側——効き始めから抜けるまでが最も狭くなる組で、押し手を
+  // 控えめに数える。
   return ticksToFallBelow(
-    staticValueOf(def, required.propertyGlobalId, 'lowest'),
+    staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
     stageLowerExitOf(def, required),
     paceTowards(tickAmountsOf(def, required.propertyGlobalId).possible, 'on_min')?.fastest.amount,
   );
@@ -641,22 +655,54 @@ function stageLowerExitOf(def: ObjectDef, required: SelfStageRequirement): numbe
  * 段を見ていない、届くまでが読めない段なら0＝最初のtickから効く。**炉の火力がこれ**——火は段の
  * 下に置かれた増減（8.2節）で育つが、そこはtickAmountsOfが数から外している。
  *
+ * **段は下からも上からも開く**（ticksUntilStageEnteredUpward・ticksUntilStageEnteredDownward）
+ * ——上がっていって下端へ届くか、下がっていって上端を割るか。値がどちらへ動くかは定義からは1つに
+ * 決まらないので、抜けるほう（ticksUntilGateFalls）と同じく両方を数える。
+ *
  * **要る段が複数あれば最も遅いものに合わせる**——どれか1つでも跨いでいなければ増減は効かない。
  * ゲートが落ちるのは要るもののどれか1つが外れた時点なので、ticksUntilGateFallsとは向きが逆になる。
  */
 function ticksUntilGateRises(def: ObjectDef, gate: TickGate): number {
-  let longest = 0;
-  for (const { propertyGlobalId, lowerBound } of gate.requiredSelfStages) {
-    // 届くまでを**最も長く**見る側（slowest）に合わせて、ロールも段から遠いほうを採る。押し手が
-    // 押せる間を最も短く見る側へ揃える。
-    const ticks = ticksToReach(
-      staticValueOf(def, propertyGlobalId, 'lowest'),
-      lowerBound,
-      paceTowards(tickAmountsOf(def, propertyGlobalId).possible, 'on_max')?.slowest.amount,
-    );
-    if (ticks !== undefined && ticks > longest) longest = ticks;
-  }
-  return longest;
+  const enters = gate.requiredSelfStages
+    .flatMap((required) => [
+      ticksUntilStageEnteredUpward(def, required),
+      ticksUntilStageEnteredDownward(def, required),
+    ])
+    .filter((ticks): ticks is number => ticks !== undefined);
+  return Math.max(0, ...enters);
+}
+
+/**
+ * 要求された段へ、値が上がっていって**下端へ届く**までのtick数。上がっていかない値、値の並びの上に
+ * 位置を持たない段（シンボル型、6.6節）ならundefined。
+ *
+ * **既にその段に居るなら0**（ticksToReach）。段より上に在る値も0になるが、そこから上がっていく値は
+ * その段を跨がない——落とすのはticksUntilStageLeftUpwardの側で、効き始めと同時に抜けた押し手として
+ * 消える。
+ */
+function ticksUntilStageEnteredUpward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
+  // 届くまでを**最も長く**見る側（slowest）。押し手が押せる間を最も短く見る側へ揃える。
+  return ticksToReach(
+    staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
+    required.lowerBound,
+    paceTowards(tickAmountsOf(def, required.propertyGlobalId).possible, 'on_max')?.slowest.amount,
+  );
+}
+
+/**
+ * 要求された段へ、値が下がっていって**上端を割る**までのtick数。下がっていかない値、上から入れない
+ * 段（stageUpperBoundOf）ならundefined。
+ *
+ * **生まれた時点で上端より下に在る値は、ここでは入らない**（ticksToFallBelow）——その段に居るか、
+ * 既に下へ抜けたかのどちらかで、どちらも上から落ちて入るのとは別。
+ */
+function ticksUntilStageEnteredDownward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
+  // 速さはticksUntilStageEnteredUpwardと同じく、届くまでを**最も長く**見る側（slowest）。
+  return ticksToFallBelow(
+    staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
+    stageUpperBoundOf(def, required),
+    paceTowards(tickAmountsOf(def, required.propertyGlobalId).possible, 'on_min')?.slowest.amount,
+  );
 }
 
 /**
