@@ -192,7 +192,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:conflict:10:aaa1111']);
   });
 
   // まだ計算中。次の周には決まるので、何も打たずに待つ。
@@ -290,7 +290,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:conflict:10:aaa1111']);
   });
 
   it('収束せずのPRは、レビューへ出さない', () => {
@@ -308,7 +308,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:red:10:aaa1111']);
   });
 
   // **`mend` ではなく `reject`。** レビューの指摘に答えるのではなく、ユーザーが何を通さなかったのかを
@@ -339,7 +339,7 @@ describe('board-move.mjs', () => {
       prs: [pr(10, label('却下'))],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
-      taken: { 'resume:session_a': 'mend:10:aaa1111' },
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
     };
     expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa1111']);
   });
@@ -353,7 +353,7 @@ describe('board-move.mjs', () => {
       // `task-9` を持つほうは `Closes #9` の相手。書いたのが誰かとは別なので、選ばれない。
       sessions: [idle('session_a'), idle('session_holder', 'task-9')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:returned:10:aaa1111']);
   });
 
   // **畳む合図を、他の手が起きることに繋がない。** マージのついでに掃いていたときは、人が画面から
@@ -519,7 +519,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:red:10:aaa1111']);
   });
 
   const RED_MAIN = [{ status: 'COMPLETED', conclusion: 'FAILURE' }];
@@ -570,7 +570,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:red:10:aaa1111']);
   });
 
   // 起こしたセッションが何もせずに止まると、盤面は前の周と同じまま残る。
@@ -579,9 +579,22 @@ describe('board-move.mjs', () => {
       prs: [pr(10, label('直し待ち'))],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
-      taken: { 'resume:session_a': 'mend:10:aaa1111' },
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
     };
     expect(moves(board)).toEqual([]);
+  });
+
+  // **コンフリクトとCIの赤は、PRの版が変わらないまま `main` が動いて生まれる。** `mend` の3つを
+  // 1つの指紋へ束ねていたときは、先に別の理由で1回起こした版が二度と差し戻せず、**誰の手番でも
+  // ないまま止まった**（2026-09-11、PR #1982。直し待ちで起こした後にコンフリクトした）。
+  it('同じ版でも、直しの後に生まれたコンフリクトは差し戻す', () => {
+    const board = {
+      prs: [pr(10, { ...label('判断待ち'), mergeable: 'CONFLICTING' })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
+    };
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:conflict:10:aaa1111']);
   });
 
   it('直しが push されたら、また起こす', () => {
@@ -589,9 +602,9 @@ describe('board-move.mjs', () => {
       prs: [pr(10, { ...label('直し待ち'), headRefOid: 'bbb2222' })],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
-      taken: { 'resume:session_a': 'mend:10:aaa1111' },
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:bbb2222']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:returned:10:bbb2222']);
   });
 
   it('直している最中のセッションは起こさない', () => {
