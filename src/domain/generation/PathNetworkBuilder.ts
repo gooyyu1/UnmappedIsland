@@ -1,4 +1,4 @@
-import type { AxisDef } from './AxisDef';
+import type { GenerationDefs } from './GenerationDefs';
 import type { GenerationScopeDef } from './GenerationScopeDef';
 import { IslandEdge } from './IslandMap';
 import type { Site } from './IslandMap';
@@ -29,7 +29,7 @@ export function buildPathNetwork(
   sites: readonly Site[],
   delaunayEdges: readonly (readonly [number, number])[],
   scope: GenerationScopeDef,
-  axes: ReadonlyMap<string, AxisDef>,
+  defs: GenerationDefs,
 ): IslandEdge[] {
   // 抽象座標をメートルへ直すのはここ1箇所。以降の距離はすべて現実の長さで扱う。
   const metersPerDistanceUnit = scope.metersPerDistanceUnit;
@@ -69,9 +69,7 @@ export function buildPathNetwork(
     if (viaGraph > edge.distanceMeters * detourFactor) chosen.push(edge);
   }
 
-  // 標高軸の実在はGenerationDefsが組み上がった時点で確かめている。
-  const elevationRange = axes.get(scope.elevationAxis)!.range;
-  const metersPerElevationUnit = scope.metersPerElevationUnit(elevationRange.max - elevationRange.min);
+  const metersPerElevationUnit = defs.metersPerElevationUnit(scope);
 
   return chosen.map(
     (e) =>

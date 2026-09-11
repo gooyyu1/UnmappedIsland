@@ -129,7 +129,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 始め、`Site` を1点ずつ挿入するたびに外接円判定（モジュール内関数 `inCircumcircle`）で無効化された三角形を
 削除・再分割します。最後にスーパートライアングルの頂点を含む三角形を除いて、無向辺の集合を返します。
 
-### 3.5 `buildPathNetwork(sites, delaunayEdges, scope, axes): IslandEdge[]`（`PathNetworkBuilder.ts`）
+### 3.5 `buildPathNetwork(sites, delaunayEdges, scope, defs): IslandEdge[]`（`PathNetworkBuilder.ts`）
 
 - サイト間の距離を `scope.metersPerDistanceUnit` でメートルへ直します。**抽象座標を現実の長さへ
   変換するのはここ1箇所**で、以降の距離はすべてメートルです。
@@ -138,8 +138,8 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
   求めた「現在のグラフでの2点間最短距離」が、直結距離 × `scope.extraEdgeDetourThreshold` を超えていれば
   その辺を復活させます。
 - 採用した各辺について、モジュール内関数 `travelMinutes` で移動時間（分、`TRAVEL_MINUTES_STEP` 刻み・
-  下限も同じ1刻み）を計算し、`IslandEdge` を作ります。標高軸の値域は `axes` から引きます
-  （どの軸を標高として読むかは `scope.elevationAxis`）。
+  下限も同じ1刻み）を計算し、`IslandEdge` を作ります。標高の値をメートルへ直す倍率は
+  `defs.metersPerElevationUnit(scope)` が返します（スコープが持つ上端の高さと、軸が持つ値域の商）。
 
 ### 3.6 `assignNames(sites, rng)`（`NameAssigner.ts`）
 

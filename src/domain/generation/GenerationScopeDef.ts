@@ -31,10 +31,7 @@ export class CoverageGuaranteeDef {
  * 除くのは導出される値（メートル換算）だけ。除き忘れても、構築側がその計算結果まで要求されて
  * 型検査で止まるので、黙って通ることはない。
  */
-export type GenerationScopeParams = Omit<
-  GenerationScopeDef,
-  'metersPerDistanceUnit' | 'metersPerElevationUnit'
->;
+export type GenerationScopeParams = Omit<GenerationScopeDef, 'metersPerDistanceUnit'>;
 
 /**
  * 生成スコープ（TerrainGeneration.md 3.7節）: 島の生成と構造物内部の生成が共有する
@@ -128,10 +125,5 @@ export class GenerationScopeDef {
   /** 抽象座標1単位が何メートルか。抽象座標系は半径ISLAND_RADIUSの円盤で、その直径がdiameterMeters。 */
   get metersPerDistanceUnit(): number {
     return this.diameterMeters / (ISLAND_RADIUS * 2);
-  }
-
-  /** 標高軸の値1あたりの高さ（m）。軸の値域はスコープ側では分からないので呼び手が渡す。 */
-  metersPerElevationUnit(elevationAxisSpan: number): number {
-    return this.elevationTopMeters / elevationAxisSpan;
   }
 }
