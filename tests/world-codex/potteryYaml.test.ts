@@ -77,10 +77,8 @@ describe('pottery.yamlの土器の連鎖', () => {
     // 工程を進めるには手元の明るさが要る（IlluminationSystem.md 5節）。ここで見たいのは土器の
     // 連鎖なので、時刻や光源を組み立てずに作り手の側で明るさを満たす。
     const potter = createBrightEnoughAgent(session);
-    const recipe = codex.objects.get(codex.objectNames.getId(productName)).recipesProducingThis[0];
     const materialsId = codex.vocabulary.engine.materialsSlotId;
     const wip = spawnInProgressObject(
-      session,
       land,
       codex.objectNames.getId(inProgressObjectName(productName, recipeName)),
     );
@@ -91,10 +89,7 @@ describe('pottery.yamlの土器の連鎖', () => {
           session.createObject(codex.objectNames.getId(name)).moveToSlotOrRejection(wip.getSlot(materialsId)),
         ).toBeUndefined();
       }
-      expect(
-        tryAdvanceCrafting(wip, materialsId, recipe, codex, session, potter),
-        `${productName}の工程`,
-      ).toBe(true);
+      expect(tryAdvanceCrafting(wip, potter), `${productName}の工程`).toBe(true);
     }
   }
 
@@ -200,7 +195,6 @@ describe('pottery.yamlの土器の連鎖', () => {
     // 名乗れば、まだ形になっていないものが窯へ入って甕になれてしまう。
     const kiln = spawnInto('earth_kiln', land, 'fixtures');
     const wip = spawnInProgressObject(
-      session,
       land,
       codex.objectNames.getId(inProgressObjectName('unfired_jar', 'coiled')),
     );

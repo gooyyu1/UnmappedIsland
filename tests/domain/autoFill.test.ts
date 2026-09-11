@@ -74,12 +74,10 @@ object_defs:
   }
 
   const fill = () =>
-    autoFillMaterials(
-      wip,
-      codex.vocabulary.engine.materialsSlotId,
-      [player.tryGetSlot(slotOf('hand'))?.contents ?? [], ground.tryGetSlot(slotOf('items'))?.contents ?? []],
-      codex,
-    );
+    autoFillMaterials(wip, [
+      player.tryGetSlot(slotOf('hand'))?.contents ?? [],
+      ground.tryGetSlot(slotOf('items'))?.contents ?? [],
+    ]);
 
   it('手持ちから必要な数だけ入る', () => {
     place('woven_leaf', 5, player, 'hand');
@@ -142,9 +140,7 @@ object_defs:
       const recipe = codex.objects.get(idOf('torch')).recipesProducingThis[0];
       return autoFillMaterials(
         torch,
-        codex.vocabulary.engine.materialsSlotId,
         [player.tryGetSlot(slotOf('hand'))?.contents ?? []],
-        codex,
         remainingRequirements(recipe, recipe.steps[0].durationMinutes),
       );
     }
@@ -173,12 +169,7 @@ object_defs:
     it('残りの要求を渡さなければ、全ての枠を埋める', () => {
       place('reed', 3, player, 'hand');
 
-      const moved = autoFillMaterials(
-        torch,
-        codex.vocabulary.engine.materialsSlotId,
-        [player.tryGetSlot(slotOf('hand'))?.contents ?? []],
-        codex,
-      );
+      const moved = autoFillMaterials(torch, [player.tryGetSlot(slotOf('hand'))?.contents ?? []]);
 
       expect(moved).toBe(3);
       expect(cells(), '選んだ枠へ入る（reedの枠に2つ、itemの枠に1つ）').toEqual(['reed×2', 'reed×1']);

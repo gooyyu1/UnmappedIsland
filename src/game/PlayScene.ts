@@ -2374,7 +2374,7 @@ export class PlayScene extends ResponsiveScene {
     const location = this.gameSession.player.location;
     if (location === undefined) return;
 
-    const spawned = spawnInProgressObject(this.gameSession.session, location.instance, inProgressDefGlobalId);
+    const spawned = spawnInProgressObject(location.instance, inProgressDefGlobalId);
     this.view = this.viewOfGame();
     this.showView({ origins: new Map([[spawned.instanceId, origin]]), born: [spawned.instanceId] });
 

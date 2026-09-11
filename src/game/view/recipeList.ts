@@ -1,7 +1,4 @@
 import type { StartedGame } from '../../domain/generation/NewGame';
-import type { RecipeDef } from '../../domain/RecipeDef';
-import { RECIPE_AXIS } from '../../domain/RecipeDef';
-import type { WorldObject } from '../../domain/WorldObject';
 import type { Localization } from '../../locale/Localization';
 import { inProgressObjectName } from '../../loader/inProgressObjects';
 import type { Rect } from '../../ui/Rect';
@@ -18,19 +15,6 @@ const PRODUCT_ICON = '📦';
  * （Windows.md 9.3節）ので、押す前に分かるのは印だけになる。
  */
 const LOCKED_MARK = '🔒';
-
-/**
- * その製作中オブジェクトが従っているレシピ（製作中オブジェクトでなければundefined）。
- *
- * 製作中オブジェクトは完成品の変種で、**どのレシピから生まれたかは軸`recipe`の値**
- * （GameElementDefinition.md 3.5節）。完成品はその素の型。
- */
-export function recipeOf(target: WorldObject): RecipeDef | undefined {
-  const codex = target.session.codex;
-  const recipeName = codex.variationsOf(target.def).get(RECIPE_AXIS);
-  if (recipeName === undefined) return undefined;
-  return codex.baseOf(target.def).recipesProducingThis.find((candidate) => candidate.name === recipeName);
-}
 
 /**
  * レシピ一覧に並べる棚を組み立てる（Windows.md 9節）。
