@@ -17,6 +17,18 @@ import { Scoped } from '../util/scoped';
 import type { ObjectGlobalId } from './GlobalId';
 
 /**
+ * 稼ぎ1件が指す先（どの個体のどのプロパティか）。
+ *
+ * **PropertyValueそのもので指さない。** becomeはプロパティを丸ごと作り直す（WorldObject.becomeType）
+ * ので、値を運んでいる先は同じでも個体は別物になる。instanceIdとプロパティのグローバルIDは型が
+ * 変わっても続くので、tickの手前で名乗った先と、tickが実際に動かした先とが同じものだと言えるのは
+ * こちらだけ。
+ */
+function gainTargetKey(object: WorldObject, property: PropertyDef): string {
+  return `${object.instanceId}:${property.globalId}`;
+}
+
+/**
  * 1セッション分の実行時状態。WorldCodexはロード後不変な定義の集合であり続けるため、instance IDの発行という
  * 可変な状態はここに持たせる。スロット移動はWorldObject.moveToSlotOrRejectionが自分自身の責務として行うため、ここでは
  * 仲介しない。
@@ -72,9 +84,10 @@ export class WorldSession {
 
   /**
    * 今のtickで動いたぶんが操作の稼ぎになるプロパティ（countTickMovementAsGain）。tickを回す手前で、
-   * その操作が宣言した持続効果（11.7節）が対象を名乗って並べる。
+   * その操作が宣言した持続効果（11.7節）が対象を名乗って並べる。持つのは指し先（gainTargetKey）で、
+   * プロパティそのものではない——名乗ってから動くまでの間にbecomeが挟まりうる。
    */
-  private readonly tickGainTargets = new Scoped<Set<PropertyValue>>();
+  private readonly tickGainTargets = new Scoped<Set<string>>();
 
   /**
    * 今効いている、操作が宣言した持続効果（11.7節）と、その宣言元、そして**その操作の関係が用意した
@@ -258,7 +271,7 @@ export class WorldSession {
    * 手前で自分の対象を名乗る）。名乗れるのは今の操作が宣言した持続効果（11.7節）だけ。
    */
   countTickMovementAsGain(property: PropertyValue): void {
-    this.tickGainTargets.current?.add(property);
+    this.tickGainTargets.current?.add(gainTargetKey(property.owner, property.def));
   }
 
   /**
@@ -270,7 +283,7 @@ export class WorldSession {
    * 動いた量で、荷や痛みが同じtickで削ったぶんはそこから引かれている。
    */
   recordTickMovement(property: PropertyValue, delta: number): void {
-    if (this.tickGainTargets.current?.has(property) !== true) return;
+    if (this.tickGainTargets.current?.has(gainTargetKey(property.owner, property.def)) !== true) return;
     this.gather(property.owner, property.def, delta);
   }
 
@@ -278,7 +291,7 @@ export class WorldSession {
     const gathered = this.gainsBeingGathered.current;
     if (gathered === undefined) return;
 
-    const key = `${object.instanceId}:${property.globalId}`;
+    const key = gainTargetKey(object, property);
     const found = gathered.get(key);
     gathered.set(key, { object, property, amount: (found?.amount ?? 0) + delta });
   }
