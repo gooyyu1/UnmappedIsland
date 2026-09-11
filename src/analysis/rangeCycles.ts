@@ -293,7 +293,8 @@ function sortedTicksToRangeEnd(
   perTick: number,
 ): readonly number[] {
   return initialValues
-    .map((value) => ticksToRangeEnd(propertyDef, value, perTick))
+    .filter((value): value is number => value !== undefined)
+    .map((value) => ticksToRangeEnd({ propertyDef, value }, perTick))
     .filter((ticks): ticks is number => ticks !== undefined)
     .sort((a, b) => a - b);
 }

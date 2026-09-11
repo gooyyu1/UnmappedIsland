@@ -23,6 +23,15 @@ export interface RangeEventReadout {
   readonly outcomes: readonly StepOutcome[];
 }
 
+/**
+ * プロパティの宣言と、そこに入っている値。**端に届いているかも、端までの距離も、この2つが揃って
+ * 初めて出る**——値だけではどのrangeの内側かが決まらず、宣言だけでは今どこに居るかが分からない。
+ */
+export interface PropertyAtValue {
+  readonly propertyDef: PropertyDef;
+  readonly value: number;
+}
+
 /** そのプロパティが宣言しているrange系イベントを、端で起こることまで開いて読む。 */
 export function rangeEventReadouts(
   propertyDef: PropertyDef,
@@ -79,8 +88,7 @@ function selfValueAfter(propertyDef: PropertyDef, outcome: StepOutcome, end: num
  * 作り方がどこにも無いことになる。
  */
 export function rangeEventAt(
-  propertyDef: PropertyDef,
-  value: number,
+  { propertyDef, value }: PropertyAtValue,
   resolve: EndBoundValueResolver,
 ): RangeEventReadout | undefined {
   // どちらの端に達したかはプロパティ自身が答える（PropertyDef.rangeEventLabelsAt）。ここが読むのは、
@@ -92,16 +100,14 @@ export function rangeEventAt(
 
 /**
  * 値がtick毎にperTickずつ動いたとき、rangeの端へ届くまでのtick数。端まで届かない向きへ動く場合と、
- * rangeを持たない場合、初期値が読めない場合はundefined（range系イベントが発火するのは端へ届いた
- * 瞬間、6.3節）。
+ * rangeを持たない場合はundefined（range系イベントが発火するのは端へ届いた瞬間、6.3節）。
  */
 export function ticksToRangeEnd(
-  propertyDef: PropertyDef,
-  value: number | undefined,
+  { propertyDef, value }: PropertyAtValue,
   perTick: number,
 ): number | undefined {
   const range = propertyDef.range;
-  if (range === undefined || value === undefined) return undefined;
+  if (range === undefined) return undefined;
 
   // 向かう先を増減の向きから引くのはプロパティ自身（PropertyDef.endMovedToward）。向かう先が無い
   // ＝値が動かないなら、端へ届くこともない。
