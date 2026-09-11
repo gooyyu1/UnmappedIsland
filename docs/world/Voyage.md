@@ -104,7 +104,7 @@
 **筏は置いた物でありながら、場所でもあります。** 積荷も乗り手も、筏に載るのではなく筏の**中**に
 入ります。
 
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)
+**出どころ**: ユーザーの指示（積荷も乗り手も筏の中に入る。[#1884](https://github.com/gooyyu1/UnmappedIsland/issues/1884)）
 
 ### 2.4 兼ねさせ方は、タグと trait の組み合わせ
 
@@ -735,7 +735,7 @@
 のと同じ分担で（[`VitalsSystem.md`](../engine/VitalsSystem.md) 6 節）、到達は「本土の中に居る」ことが
 そのまま表します。
 
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)
+**出どころ**: ユーザーの指示（最後の航路を渡ると筏ごと本土へ着く。[#1884](https://github.com/gooyyu1/UnmappedIsland/issues/1884)）
 
 ### 4.2 本土の湧かせ方と、着いた後に画面がすること
 
@@ -768,7 +768,7 @@
 同じ物を2度持ち帰っても枠は増えません。棚はタイトル画面からも開けます——空きが見えていることが次の
 周回へ向かう動機だからです（[`GameEndings.md`](../concept/GameEndings.md) 6 節）。
 
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)
+**出どころ**: ユーザーの指示（棚の枠はアーティファクトの型そのもの。[#1884](https://github.com/gooyyu1/UnmappedIsland/issues/1884)）
 
 ### 5.2 枠を増やすことは、`artifacts.yaml` へ1つ足すこと
 
