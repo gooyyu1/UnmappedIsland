@@ -356,7 +356,28 @@ export interface ObjectCost {
   readonly days: number | undefined;
 }
 
-export interface BalanceTables {
+/**
+ * 1日を賄う最小労働（分）と、それを払って残る自由時間（分）。**分の整数へ丸めて持つ**
+ * ——BalanceStats.mdが載せるのと同じ桁で、端数を残すと、これを分母にした日数（`ObjectCost.days`・
+ * 山の量。ContentSkeleton.md 4節）が桁の下で揺れる。
+ *
+ * **日数の分母はこの1つだけ。** 同じ量を読み手ごとに引き算し直すと、生成物ごとに換算が変わる。
+ * 対で1つの型にしてあるのは、分母を`number`で受けると1日の長さでも最小労働でも型が通り、
+ * 桁だけが静かにずれるため。
+ */
+export interface DailyLabour {
+  readonly minimumLabourMinutes: number;
+  readonly surplusMinutes: number;
+}
+
+/** 島全体の献立が最小労働（BalanceStats.md）。残りが自由時間で、引き算はここ1箇所。 */
+function dailyLabourOf(islandMenu: DailyMenu): DailyLabour {
+  const minimumLabourMinutes = Math.round(islandMenu.totalMinutes);
+
+  return { minimumLabourMinutes, surplusMinutes: MINUTES_PER_DAY - minimumLabourMinutes };
+}
+
+export interface BalanceTables extends DailyLabour {
   /**
    * この表を組んだ代表キャラクタ。1日の必要量（`dailyNeeds`）も、そこから出る最小労働も、この1人の
    * ものなので、**表と同じ人物を見たい側はここから採る**——使う側がもう一度名前を書くと、必要量を
@@ -366,16 +387,6 @@ export interface BalanceTables {
 
   /** 世界の全キャラクタ（宣言順）。 */
   readonly characterNames: readonly string[];
-
-  /**
-   * 1日を賄う最小労働（分）と、それを払って残る自由時間（分）。**分の整数へ丸めて持つ**
-   * ——BalanceStats.mdが載せるのと同じ桁で、端数を残すと、これを分母にした日数（`ObjectCost.days`・
-   * 山の量。ContentSkeleton.md 4節）が桁の下で揺れる。
-   *
-   * **日数の分母はこの1つだけ。** 同じ量を読み手ごとに引き算し直すと、生成物ごとに換算が変わる。
-   */
-  readonly minimumLabourMinutes: number;
-  readonly surplusMinutes: number;
 
   /** 全オブジェクトの総コスト（宣言順）。 */
   readonly objectCosts: readonly ObjectCost[];
@@ -403,18 +414,16 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacterName: strin
   const character = codex.objects.get(codex.objectNames.getId(sampleCharacterName));
   const { places, gaps, islandWide, dailyNeeds, islandLocations } = placeBalances(codex, character);
 
-  // 島全体の献立が最小労働（places[0]は島全体）。
-  const minimumLabourMinutes = Math.round(places[0].menu.totalMinutes);
-  const surplusMinutes = MINUTES_PER_DAY - minimumLabourMinutes;
+  // places[0]は島全体。
+  const labour = dailyLabourOf(places[0].menu);
 
   return {
     sampleCharacterName,
     characterNames,
-    minimumLabourMinutes,
-    surplusMinutes,
+    ...labour,
     dailyNeeds,
     gaps,
-    objectCosts: objectCosts(codex, islandWide, surplusMinutes, islandLocations.seaOnly),
+    objectCosts: objectCosts(codex, islandWide, labour, islandLocations.seaOnly),
     consumption: consumptionRows(codex, characterNames),
     // 供給表は島のどこで起こる工程も並べるので、土地を渡さず島全体で出す。
     supply: supplyRows(codex, allSteps(codex, islandLocations)),
@@ -639,7 +648,7 @@ function placeBalances(
 function objectCosts(
   codex: WorldCodex,
   islandWide: Acquisition,
-  surplusMinutes: number,
+  labour: DailyLabour,
   seaOnly: ReadonlySet<ObjectGlobalId>,
 ): readonly ObjectCost[] {
   const rows: ObjectCost[] = [];
@@ -665,7 +674,8 @@ function objectCosts(
       prerequisites,
       missing: cost === undefined ? islandWide.missingInputsFor(def.globalId) : [],
       blockedByTool: cost !== undefined && prerequisites.some(isGap),
-      days: cost === undefined || surplusMinutes <= 0 ? undefined : totalOf(cost) / surplusMinutes,
+      days:
+        cost === undefined || labour.surplusMinutes <= 0 ? undefined : totalOf(cost) / labour.surplusMinutes,
     });
   }
   return rows;

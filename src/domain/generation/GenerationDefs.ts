@@ -56,4 +56,15 @@ export class GenerationDefs {
       }
     }
   }
+
+  /**
+   * そのスコープの標高軸の値1あたりの高さ（m、TerrainGeneration.md 3.5節）。**上端の高さを持つのは
+   * スコープ、値域を持つのは軸**なので、両方を持つここが解く——どちらか一方を渡された側が相手を
+   * 探しに行くと、同じ引き算が呼ぶ側の数だけ散る。
+   */
+  metersPerElevationUnit(scope: GenerationScopeDef): number {
+    // 標高軸の実在はコンストラクタが確かめている。
+    const range = this.axes.get(scope.elevationAxis)!.range;
+    return scope.elevationTopMeters / (range.max - range.min);
+  }
 }

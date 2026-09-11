@@ -4,6 +4,7 @@ import type { BalanceTables } from '../../src/analysis/balanceTables';
 import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import type {
   BaseDailyPhases,
+  DailyBudget,
   LocationTypeDay,
   WorkPileAmount,
   WorkTotal,
@@ -21,9 +22,9 @@ import {
   WORK_SHARES,
 } from '../../src/analysis/dailyPhases';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
-import type { GenerationScopeDef } from '../../src/domain/generation/GenerationScopeDef';
-import type { IslandMap } from '../../src/domain/generation/IslandMap';
+import type { IslandMap, Site } from '../../src/domain/generation/IslandMap';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
 import {
   describeDocumentedSections,
@@ -50,6 +51,9 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  */
 
 const SEED_COUNT = 500;
+
+/** 測る生成スコープ。**島を生成する側と、標高の縮尺を引く側が同じものを指す**ための1箇所。 */
+const SCOPE_NAME = 'island';
 
 /** このレポートの分布レコード。**低い側の裾を見る**表なので、真ん中の列は`p5`。 */
 const statRecord = statRecordWith('p5');
@@ -216,25 +220,24 @@ function createStats(typeNames: readonly string[]): TerrainStats {
   };
 }
 
+/** `elevationMetersOf`は土地の海抜（m）。島をまたいで変わらないので、呼び手が1度だけ組む。 */
 function collect(
   stats: TerrainStats,
   map: IslandMap,
-  scope: GenerationScopeDef,
-  elevationSpan: number,
+  elevationMetersOf: (site: Site) => number,
   locationDays: ReadonlyMap<number, LocationTypeDay>,
-  balance: BalanceTables,
+  budget: DailyBudget,
   work: WorkTotal,
 ): void {
-  const metersPerElevationUnit = scope.metersPerElevationUnit(elevationSpan);
-  const elevationOf = (site: number): number => map.sites[site].axisValues.get(scope.elevationAxis)!;
-
   const n = map.sites.length;
   const degrees = new Array<number>(n).fill(0);
   for (const edge of map.edges) {
     degrees[edge.a]++;
     degrees[edge.b]++;
     stats.distanceMeters.add(edge.distanceMeters);
-    stats.climbMeters.add(Math.abs(elevationOf(edge.a) - elevationOf(edge.b)) * metersPerElevationUnit);
+    stats.climbMeters.add(
+      Math.abs(elevationMetersOf(map.sites[edge.a]) - elevationMetersOf(map.sites[edge.b])),
+    );
     stats.travelMinutes.add(edge.travelMinutes);
   }
 
@@ -257,7 +260,7 @@ function collect(
   stats.typesPerIsland.add(counts.size);
   for (const [name, stat] of stats.countByType) stat.add(counts.get(name) ?? 0);
 
-  const phases = dailyPhasesOf(map, locationDays, dailyBudgetOf(balance));
+  const phases = dailyPhasesOf(map, locationDays, budget);
   stats.chosenBaseOneWayMinutes.add(phases.bestBase.oneWayMinutes);
   for (const base of phases.bases) stats.anyBaseOneWayMinutes.add(base.oneWayMinutes);
   addDailyPhases(stats, phases.bestBase, work);
@@ -294,13 +297,29 @@ function workPilesBySystemRecords(amounts: readonly WorkPileAmount[]): YamlRecor
   });
 }
 
+/**
+ * 収支表と、そこから解いた値（1日の枠・山の量とその合計）。**組むのは`solvedBalanceOf`だけ**
+ * ——収支表とその導出を別々の引数で配ると、別の収支表から出た値を組ませて渡せてしまう。
+ */
+interface SolvedBalance {
+  readonly balance: BalanceTables;
+  readonly budget: DailyBudget;
+  readonly amounts: readonly WorkPileAmount[];
+  readonly work: WorkTotal;
+}
+
+/** 1日の枠も山の量も収支表から出る（ContentSkeleton.md 8.3節）ので、ここで1度だけ解く。 */
+function solvedBalanceOf(codex: WorldCodex): SolvedBalance {
+  const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
+  const amounts = workPileAmountsOf(codex, balance);
+
+  return { balance, budget: dailyBudgetOf(balance), amounts, work: workTotalOf(amounts) };
+}
+
 function buildSections(
   stats: TerrainStats,
-  balance: BalanceTables,
-  amounts: readonly WorkPileAmount[],
+  { balance, budget, amounts, work }: SolvedBalance,
 ): readonly YamlReportSection[] {
-  const work = workTotalOf(amounts);
-
   return [
     { key: 'meta', records: [{ seeds: SEED_COUNT }] },
     {
@@ -353,7 +372,7 @@ function buildSections(
           outdoor_window: OUTDOOR_WINDOW_MINUTES,
           night_craft: NIGHT_CRAFT_MINUTES_PER_DAY,
           sleep: SLEEP_MINUTES_PER_DAY,
-          survival_gathering: dailyBudgetOf(balance).survivalGatheringMinutes,
+          survival_gathering: budget.survivalGatheringMinutes,
           surplus: balance.surplusMinutes,
         },
       ],
@@ -470,15 +489,13 @@ const DOC_PATH = join('docs', 'diagnostics', 'TerrainStats.md');
 /** 定義から島を生成して測り、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
 function buildReportFromDefinitions(): string {
   const codex = bundledCodex();
+  const solved = solvedBalanceOf(codex);
 
-  // 1日の枠も山の量も収支表から出る（ContentSkeleton.md 8.3節）ので、先に1度だけ解く。
-  const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
-  const amounts = workPileAmountsOf(codex, balance);
-  const work = workTotalOf(amounts);
-
-  const scope = codex.generation!.scopes.get('island')!;
-  const elevationRange = codex.generation!.axes.get(scope.elevationAxis)!.range;
-  const elevationSpan = elevationRange.max - elevationRange.min;
+  const generation = codex.generation!;
+  const scope = generation.scopes.get(SCOPE_NAME)!;
+  const metersPerElevationUnit = generation.metersPerElevationUnit(scope);
+  const elevationMetersOf = (site: Site): number =>
+    site.axisValues.get(scope.elevationAxis)! * metersPerElevationUnit;
 
   const locationDays = locationTypeDaysOf(
     codex,
@@ -492,10 +509,10 @@ function buildReportFromDefinitions(): string {
     ),
   );
 
-  const stats = createStats(codex.generation!.locationTypes.map((type) => type.name));
+  const stats = createStats(generation.locationTypes.map((type) => type.name));
   for (let seed = 0; seed < SEED_COUNT; seed++) {
-    const map = generateIsland(codex.generation, 'island', seed);
-    collect(stats, map, scope, elevationSpan, locationDays, balance, work);
+    const map = generateIsland(generation, SCOPE_NAME, seed);
+    collect(stats, map, elevationMetersOf, locationDays, solved.budget, solved.work);
   }
 
   return formatYamlReport(
@@ -504,7 +521,7 @@ function buildReportFromDefinitions(): string {
       '生成物。手で書き換えず、npm run stats:terrain で作り直す。',
       '何を測ったか・引いた線・数えていないものは docs/diagnostics/TerrainStats.md。',
     ],
-    buildSections(stats, balance, amounts),
+    buildSections(stats, solved),
   );
 }
 
