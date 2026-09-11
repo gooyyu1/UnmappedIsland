@@ -40,8 +40,13 @@
 //
 // ## issue の数え方
 //
-// GitHubにしか無いので `gh` へ訊く。`gh` が無い環境（CIなど）では `-` を出す——他の列は git
-// だけで出るので、issue が引けないことを理由に全部を止めない。
+// GitHubにしか無いので、[`stats/issues.tsv`](../stats/issues.tsv) を読む（集めるのは
+// `npm run stats:issues`＝[`collectIssueHistory.mjs`](collectIssueHistory.mjs)）。**この道具は
+// 網へ出ない**——出ると、`gh` も網も無い環境では issue の列だけが落ちた表が出て、貼り直した先で
+// 今ある値を失う（issue #1887）。
+//
+// **集めた日より後の日を頼まれたら、そこまでの累計を持ち越して「持ち越し」と書く。** 実測と
+// 見分けが付かない形で出すと、古い数字が今の実測として読まれる。
 //
 // ## コストの数え方
 //
@@ -58,6 +63,8 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { formatIssueCount, issueCountAt, readIssueHistory } from './issueHistory.mjs';
+import { JAPAN_OFFSET, japanDayOf } from './japanDay.mjs';
 import { lineChart } from './lineChart.mjs';
 
 /** 運用を回す道具の置き場。本番のプログラムではないので、`実装` とは別の列で数える。 */
@@ -102,7 +109,6 @@ const LINE_COLUMNS = [
 /** 使用量の置き場。手元とクラウドを合わせて集めたもの。 */
 const USAGE_DIRECTORY = new URL('../stats/usage/', import.meta.url);
 
-const OFFSET = '+0900';
 const DEFAULT_STEP_DAYS = 7;
 
 function git(args) {
@@ -112,16 +118,9 @@ function git(args) {
   }).trim();
 }
 
-/**
- * コミットの時刻（`%at` のエポック秒）から、日本時間の日を出す。
- *
- * **`--date=format-local` は使わない。** あれは git が環境の時間帯をどう解釈するかに乗っており、
- * 解釈できない環境では黙って別の日境で切る——**ずれても表は正常な形で出る**ので、貼った先で
- * 気づけない（2026-09-07、この道具の出力が行数だけ日本時間・PRだけ別の日境になっていた）。
- * 日境を決める場所は、`revisionAt` の `OFFSET` と合わせてここ1つに寄せる。
- */
+/** コミットの時刻（`%at` のエポック秒）から、日本時間の日を出す（`japanDayOf`）。 */
 function dayOf(epochSeconds) {
-  return formatDay(new Date(Number(epochSeconds) * 1000));
+  return japanDayOf(new Date(Number(epochSeconds) * 1000));
 }
 
 /**
@@ -141,7 +140,7 @@ function requireFullHistory() {
 
 /** その日（日本時間）の最終コミット。まだ1つも無い日は空文字。 */
 function revisionAt(day) {
-  return git(['rev-list', '-1', `--before=${day} 23:59:59 ${OFFSET}`, 'HEAD']);
+  return git(['rev-list', '-1', `--before=${day} 23:59:59 ${JAPAN_OFFSET}`, 'HEAD']);
 }
 
 /** pathspec に当たるファイルの総行数。`git grep -c ''` は1行1ファイルで `rev:path:行数` を返す。 */
@@ -175,9 +174,14 @@ function mergedPullRequests() {
     .map((pullRequest) => ({ ...pullRequest, diff: diffs.get(pullRequest.sha) }));
 }
 
-/** 見出しの行を持つTSVを、1行1レコードの配列にする。 */
+/**
+ * 見出しの行を持つTSVを、1行1レコードの配列にする。
+ *
+ * **改行は `\r?\n` で割る**（`issueHistory.mjs` の `parseIssueHistory` と同じ理由）。作業ツリーが
+ * CRLFのとき、末尾の列の名前に `\r` が残ると、その列を引いた値が丸ごと `undefined` になる。
+ */
 function readTable(name) {
-  const [header, ...lines] = readFileSync(new URL(name, USAGE_DIRECTORY), 'utf8').trim().split('\n');
+  const [header, ...lines] = readFileSync(new URL(name, USAGE_DIRECTORY), 'utf8').trim().split(/\r?\n/);
   const keys = header.split('\t');
   return lines.map((line) => Object.fromEntries(line.split('\t').map((cell, index) => [keys[index], cell])));
 }
@@ -193,7 +197,7 @@ function costByDay() {
     return total;
   };
   return {
-    claude: sum(readTable('by_hour.tsv'), (row) => formatDay(new Date(row.hour_utc))),
+    claude: sum(readTable('by_hour.tsv'), (row) => japanDayOf(new Date(row.hour_utc))),
     copilot: sum(readTable('copilot_by_day.tsv'), (row) => row.day_utc),
   };
 }
@@ -243,31 +247,6 @@ function diffsBySha() {
   );
 }
 
-/** その日までに立てられた issue の累計。`gh` が無い・originがGitHubでないなら null。 */
-function issueCountAt(day) {
-  const nextDay = new Date(`${day}T00:00:00+09:00`);
-  nextDay.setUTCDate(nextDay.getUTCDate() + 1);
-  const bound = nextDay.toISOString().replace(/\.\d+Z$/, 'Z');
-  try {
-    const query = `repo:${repository()} is:issue created:<${bound}`;
-    return Number(
-      execFileSync('gh', ['api', '-X', 'GET', 'search/issues', '-f', `q=${query}`, '--jq', '.total_count'], {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      }).trim(),
-    );
-  } catch {
-    return null;
-  }
-}
-
-function repository() {
-  const url = git(['remote', 'get-url', 'origin']);
-  const match = /github\.com[/:]([^/]+\/[^/.]+)/.exec(url);
-  if (match === null) throw new Error(`originのURLから owner/repo を取れない: ${url}`);
-  return match[1];
-}
-
 /** リポジトリができた日（日本時間）。**系列の始まりはここで、渡す側が選ぶものではない。** */
 function firstCommitDay() {
   return dayOf(git(['log', '--reverse', '--format=%at']).split('\n')[0].trim());
@@ -278,7 +257,7 @@ function defaultDays(first) {
   const today = dayOf(git(['log', '-1', '--format=%at']));
   const days = [];
   for (let at = new Date(`${first}T00:00:00+09:00`); ; at.setUTCDate(at.getUTCDate() + DEFAULT_STEP_DAYS)) {
-    const day = formatDay(at);
+    const day = japanDayOf(at);
     if (day >= today) break;
     days.push(day);
   }
@@ -286,15 +265,11 @@ function defaultDays(first) {
   return days;
 }
 
-function formatDay(date) {
-  return new Date(date.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
-}
-
 /** `YYYY-MM-DD`（日本時間）を count 日ずらす。 */
 function shiftDay(day, count) {
   const at = new Date(`${day}T00:00:00+09:00`);
   at.setUTCDate(at.getUTCDate() + count);
-  return formatDay(at);
+  return japanDayOf(at);
 }
 
 /** `from` から `to` まで（両端を含む）の日。 */
@@ -400,7 +375,7 @@ function formatTable(rows) {
 }
 
 /** その日の実測。表もグラフもここから作る。 */
-function measureAt(day, previousDay, from, pullRequests, costs) {
+function measureAt(day, previousDay, from, pullRequests, costs, issues) {
   const revision = revisionAt(day);
   if (revision === '') {
     console.error(`${day} までのコミットが履歴に無い。浅いクローンなら 'git fetch --unshallow' が要る。`);
@@ -423,7 +398,7 @@ function measureAt(day, previousDay, from, pullRequests, costs) {
     // 区間の始まりの日（この日を含む）。区間の量を図のどこへ置くかは、ここと `day` で決まる。
     from,
     counts: LINE_COLUMNS.map((column) => lineCount(revision, column.pathspecs)),
-    issues: issueCountAt(day),
+    issues: issueCountAt(issues, day),
     pullRequests: merged.length,
     claudeCost,
     copilotCost: spent(costs.copilot),
@@ -455,7 +430,7 @@ function toRow(measurement) {
   return [
     measurement.day.slice(5),
     ...measurement.counts.map((count) => count.toLocaleString('en-US')),
-    measurement.issues === null ? '-' : measurement.issues.toLocaleString('en-US'),
+    formatIssueCount(measurement.issues),
     measurement.pullRequests.toLocaleString('en-US'),
     size,
     measurement.changedLines.toLocaleString('en-US'),
@@ -525,8 +500,9 @@ function chartsOf(measurements, rolling) {
     ],
   });
 
-  // issue が引けなかった実行では、PRだけの図にならないよう1枚まるごと落とす。
-  if (measurements.every((measurement) => measurement.issues !== null)) {
+  // 持ち越した値が混じった実行では、1枚まるごと落とす。図には「持ち越し」と書く場所が無いので、
+  // 出すと止まった線が実測として読まれる。
+  if (measurements.every((measurement) => measurement.issues.measured)) {
     charts.push({
       file: 'HowWeGotHere_issues_prs.svg',
       title: 'issue と PR の累計',
@@ -535,7 +511,7 @@ function chartsOf(measurements, rolling) {
         {
           label: '累計',
           series: [
-            series('issue（立てた）', (m) => m.issues),
+            series('issue（立てた）', (m) => m.issues.count),
             series('PR（mainへ入った）', (m) => m.pullRequests),
           ],
         },
@@ -574,6 +550,7 @@ const targets =
 
 const pullRequests = mergedPullRequests();
 const costs = costByDay();
+const issues = readIssueHistory();
 const measurements = [];
 let previousDay = '';
 for (const day of targets) {
@@ -584,6 +561,7 @@ for (const day of targets) {
       previousDay === '' ? firstDay : shiftDay(previousDay, 1),
       pullRequests,
       costs,
+      issues,
     ),
   );
   previousDay = day;

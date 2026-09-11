@@ -131,6 +131,15 @@ describe.skipIf(IS_SHALLOW)('育ち方の推移', () => {
     expect(value(header), `${[...(latest?.values() ?? [])].join(' | ')}`).toBeGreaterThan(0);
   });
 
+  it('issue の列が消えない', () => {
+    // `gh` を辿れない環境——タスクのセッションが走るクラウド——では、ここが `-` になっていた
+    // （issue #1887）。列が落ちた表を貼り直すと、今ある値を失う。数は `stats/issues.tsv` から
+    // 出るので、`gh` も網も無くても埋まる。集めた日より後の行は「（持ち越し）」が付く。
+    const issues = latest?.get('issue') ?? '';
+    expect(issues).toMatch(/^\d[\d,]*(（持ち越し）)?$/);
+    expect(Number(issues.replace(/,/g, '').replace('（持ち越し）', ''))).toBeGreaterThan(0);
+  });
+
   it('履歴に無い日を頼まれたら、0を出さずに落ちる', () => {
     // リポジトリが始まる前の日。ここで空の表を返すと、遡れなかったことが読む側に伝わらない。
     expect(run(['2020-01-01']).status).not.toBe(0);
