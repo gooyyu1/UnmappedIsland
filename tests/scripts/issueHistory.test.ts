@@ -53,6 +53,13 @@ describe('issue の累計の置き場', () => {
     expect(formatIssueCount({ count: 1234, measured: false })).toBe('1,234（持ち越し）');
   });
 
+  it('CRLFの作業ツリーでも読める', () => {
+    // 行末に `\r` が残ると、見出しも日付も照合が外れて道具ごと落ちる（同じ形で issue #867）。
+    const history = parseIssueHistory(formatIssueHistory(DAYS, '2026-08-01').replace(/\n/g, '\r\n'));
+    expect(history.measuredDay).toBe('2026-08-01');
+    expect(issueCountAt(history, '2026-08-01')).toEqual({ count: 17, measured: true });
+  });
+
   it.each([
     ['見出しが違う', 'day\tcreated\n2026-07-13\t12\n'],
     ['日付が読めない', 'day_jst\tcreated\n2026-07\t12\n'],

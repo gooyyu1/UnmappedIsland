@@ -174,9 +174,14 @@ function mergedPullRequests() {
     .map((pullRequest) => ({ ...pullRequest, diff: diffs.get(pullRequest.sha) }));
 }
 
-/** 見出しの行を持つTSVを、1行1レコードの配列にする。 */
+/**
+ * 見出しの行を持つTSVを、1行1レコードの配列にする。
+ *
+ * **改行は `\r?\n` で割る**（`issueHistory.mjs` の `parseIssueHistory` と同じ理由）。作業ツリーが
+ * CRLFのとき、末尾の列の名前に `\r` が残ると、その列を引いた値が丸ごと `undefined` になる。
+ */
 function readTable(name) {
-  const [header, ...lines] = readFileSync(new URL(name, USAGE_DIRECTORY), 'utf8').trim().split('\n');
+  const [header, ...lines] = readFileSync(new URL(name, USAGE_DIRECTORY), 'utf8').trim().split(/\r?\n/);
   const keys = header.split('\t');
   return lines.map((line) => Object.fromEntries(line.split('\t').map((cell, index) => [keys[index], cell])));
 }

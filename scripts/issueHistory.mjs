@@ -46,7 +46,9 @@ export function formatIssueHistory(createdByDay, measuredDay) {
  * @returns {{ measuredDay: string, createdByDay: Map<string, number> }} 測った日と、日ごとの数
  */
 export function parseIssueHistory(text) {
-  const [header, ...lines] = text.trim().split('\n');
+  // **改行は `\r?\n` で割る。** 作業ツリーがCRLFのとき、行末に `\r` が残ると見出しの照合も日付の
+  // 照合も外れ、表が1列欠けるのではなく道具ごと落ちる（同じ形で issue #867）。
+  const [header, ...lines] = text.trim().split(/\r?\n/);
   if (header !== HEADER.join('\t')) throw new Error(`issue の履歴の見出しが違う: ${header}`);
   const createdByDay = new Map();
   let measuredDay = '';
