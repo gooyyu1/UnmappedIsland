@@ -183,7 +183,7 @@ export class CellLayout {
   }
 
   /**
-   * same_slotによる置き換え（GameElementDefinition.md 9.4節）。合流先が無ければ置き換えオブジェクトを新規
+   * same_slotによる置き換え（置き場の決まりはSlotSystem.md 3節）。合流先が無ければ置き換えオブジェクトを新規
    * スタックとして、originが居たセル(originCellIndex)を基準に配置する（SameSlotSpawnSite参照）。自動整列は行わない
    * （同種はObjectStack内で整列されるため、スタック間の位置は著者が見た位置を保つ）。
    *
