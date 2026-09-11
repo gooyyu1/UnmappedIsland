@@ -239,7 +239,7 @@ export class ReferenceContext {
 
   /**
    * selfだけを差し替えた文脈。**役の出どころは変えずに、起点だけを移す**場面で使う——passivesのゲートは
-   * selfが辺の子側（slotBearer）、役は宣言元（11.5節。PassiveEffectGate.isSatisfied）。
+   * selfが辺の子側（slotBearer）で、役はその宣言の出どころが答える（11.5節。RegisteredPassiveEffect）。
    */
   withSelf(self: WorldObject | undefined): ReferenceContext {
     return new ReferenceContext(self, this.agent, this.instrument, this.patient, this.picked);
