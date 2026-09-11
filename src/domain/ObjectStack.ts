@@ -3,7 +3,7 @@ import type { WorldObject } from './WorldObject';
 
 /**
  * Slot内で「見た目上1つのまとまり」として積み重なる、同じ種類のWorldObjectの集まり
- * （GameElementDefinition.md 7.6節）。同じObjectDefのインスタンス同士だけがまとまる。
+ * （SlotSystem.md 1節）。同じObjectDefのインスタンス同士だけがまとまる（同 5節）。
  */
 export class ObjectStack {
   /**

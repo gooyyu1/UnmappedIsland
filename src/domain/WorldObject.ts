@@ -835,7 +835,7 @@ export class WorldObject {
     for (const { child } of rehomed) child.setEdgeRegistered(this, true);
     this.setAncestorTargetsRegistered(true);
 
-    // 型が変われば同種の判定も変わる（7.6節）ので、所属スタックを判定し直させる。
+    // 型が変われば同種の判定も変わる（SlotSystem.md 5節）ので、所属スタックを判定し直させる。
     this._parentSlot?.restack(this);
   }
 
