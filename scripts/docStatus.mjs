@@ -63,8 +63,9 @@ function headingsOf(markdown) {
 /**
  * 1つの文書の中身から数えたもの。
  *
- * **行を割るのは、行数を数えるここと [`markdownFences.mjs`](markdownFences.mjs) だけ。** 作業ツリーが
- * CRLFのとき、行末に`\r`が残ると行末を見る判定（見出しの`$`）が一致しなくなる（issue #867）。
+ * **この文書を割るのは、行数を数えるここと [`markdownFences.mjs`](markdownFences.mjs) だけ。**
+ * 作業ツリーがCRLFのとき、行末に`\r`が残ると行末を見る判定（見出しの`$`）が一致しなくなる
+ * （issue #867）。
  */
 export function statusOfMarkdown(markdown) {
   const headings = headingsOf(markdown);

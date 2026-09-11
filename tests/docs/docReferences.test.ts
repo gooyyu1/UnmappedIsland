@@ -595,6 +595,8 @@ describe('ドキュメントの参照', () => {
     const rel = join('.claude', 'probe-prompt.md');
 
     expect(namedSectionsOf(rel, template.join('\n'))).toEqual(['題名', '本体の節']);
+    // 本体を取り出す側も `\r` を残さない（issue #867。残ると囲みの綴りと一致しなくなる）。
+    expect(namedSectionsOf(rel, template.join('\r\n'))).toEqual(['題名', '本体の節']);
     // ひな形でない文書では、囲みの中は今までどおり例示のまま。
     expect(namedSectionsOf(join('docs', 'DocumentStyle.md'), template.join('\n'))).toEqual(['題名']);
   });
@@ -612,15 +614,11 @@ describe('ドキュメントの参照', () => {
   it('囲みの中の見出しは、アンカーの照合には入らない', () => {
     // 頁ではコードのままなのでIDが振られない。節として引けることを理由に混ぜると、**開けない
     // リンクが緑で通る。**
+    const insideOf = (rel: string): string[] => headingsOf(promptBody(read(rel)) ?? '');
     const probe = REF_TARGETS.find(
-      (rel) =>
-        isPromptTemplate(rel) &&
-        (namedSectionsByPath.get(rel) ?? []).length > (anchorHeadingsByPath.get(rel) ?? []).length,
+      (rel) => isPromptTemplate(rel) && insideOf(rel).length > 0,
     ) as string;
-    const inside = (namedSectionsByPath.get(probe) ?? []).slice(
-      (anchorHeadingsByPath.get(probe) ?? []).length,
-    );
-    const [anchor] = githubSlugs(inside);
+    const [anchor] = githubSlugs(insideOf(probe));
 
     // 拾えていないと、下は「アンカーが無い」ではなく「見出しが無い」で1件になる。
     expect(anchor).toBeTypeOf('string');
