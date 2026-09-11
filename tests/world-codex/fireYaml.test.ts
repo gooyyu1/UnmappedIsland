@@ -325,6 +325,17 @@ describe('fire.yamlの火の連鎖', () => {
     ).toEqual(['no_fuel']);
   });
 
+  it('火種は1tickで燃え尽きる。薪を組むのが後になれば、その1つを失う', () => {
+    // 「薪が先」（FireSystem.md 3.1節）の後半。断られること自体は上の2つが見ているので、ここは
+    // 断られた火種が手元に残らないことだけを見る。
+    lightDryGrass();
+    expect(itemsOn(land), '火種はできている').toEqual(['burning_tinder']);
+
+    session.advanceWorldTime(15);
+
+    expect(itemsOn(land), '薪を取りに行くあいだに燃え尽きる').toEqual([]);
+  });
+
   it('燃えている炉は火種を断る。重ねて火力を種火まで落とすことはない', () => {
     const hearth = litCampfire();
     session.advanceWorldTime(60);
