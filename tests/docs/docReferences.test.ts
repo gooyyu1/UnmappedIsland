@@ -87,7 +87,7 @@ const REF_FILES = [
  * 射程に入る本文がこれで、フェンスの中に在る `#` や `【確定】` は規約が見せている書式そのもの
  * ——拾うと、書式を説明した文書が印を持つ文書になる（`docStatus.mjs` の `declaresWholeDocument`
  * と同じ理由）。**参照は逆で、フェンスの中の `Foo.md N節` もリンクも実在の対象を指している**ので、
- * {@link withoutInlineCode} で見る。
+ * 原文を読み、書式の例示は {@link isPlaceholder} だけで外す。
  *
  * **改行を割るのはここだけで、`\r` は行に残さない。** 作業ツリーがCRLFのとき、行末の `\r` は
  * `.` にも `$` にも一致しないので、行末を見る判定が**全部**空振りする（issue #867）。
@@ -110,18 +110,14 @@ function withoutCode(markdown: string): string {
 }
 
 /**
- * インラインコードだけを除いた本文。**フェンスの中も本文と同じに残す**——参照を探すのはここで、
- * フェンスの中のYAMLコメントも実在のファイル・節を指している（docs/DocumentStyle.md 5節）。
+ * 参照ではなく**書式そのもの**を見せている箇所か（docs/DocumentStyle.md 5節）。
  *
- * 節番号・節名の参照は原文をそのまま読む。あちらは `.md` 以外も見るので、Markdownの囲みという
- * 概念が無い。**インラインコードで外せるのはリンクだけ**で、書式そのものを見せる行の書き方は
- * 参照の種類で違う（docs/DocumentStyle.md 5節）。
+ * **参照の検査に逃げ道はこれ1つだけ。** 囲み（インラインコード・コードフェンス）では外れない
+ * ——節番号の参照は原文を読むので、囲みを逃げ道にすると参照の種類ごとに別の作法を覚えることに
+ * なる。`docStatsCitations` が出どころの書式を `<ファイル>` と書くのと同じ規約。
  */
-function withoutInlineCode(markdown: string): string {
-  return markdown
-    .split(/\r?\n/)
-    .map((raw) => raw.replace(/`[^`]*`/g, ''))
-    .join('\n');
+function isPlaceholder(text: string): boolean {
+  return text.includes('<') || text.includes('>');
 }
 
 function read(rel: string): string {
@@ -220,9 +216,10 @@ function hasNumberedSection(docRel: string, num: string): boolean {
 /** `source` の中で、指し先のファイルが無いMarkdownリンク。`rel` はリンクを解決する起点。 */
 function brokenLinkFilesIn(rel: string, source: string): string[] {
   const broken: string[] = [];
-  for (const match of withoutInlineCode(source).matchAll(/\]\(([^)#\s]+)(#[^)\s]*)?\)/g)) {
+  for (const match of source.matchAll(/\]\(([^)#\s]+)(#[^)\s]*)?\)/g)) {
     const target = match[1];
     if (/^[a-z]+:/.test(target)) continue; // http(s):等
+    if (isPlaceholder(target)) continue;
     if (!existsSync(resolve(ROOT, dirname(rel), target))) broken.push(`${rel}: ${target}`);
   }
   return broken;
@@ -231,9 +228,10 @@ function brokenLinkFilesIn(rel: string, source: string): string[] {
 /** `source` の中で、リンク先の見出しに解決しないアンカー。`rel` はリンクを解決する起点。 */
 function brokenLinkAnchorsIn(rel: string, source: string): string[] {
   const broken: string[] = [];
-  for (const match of withoutInlineCode(source).matchAll(/\]\(([^)#\s]*)#([^)\s]+)\)/g)) {
+  for (const match of source.matchAll(/\]\(([^)#\s]*)#([^)\s]+)\)/g)) {
     const [, file, anchor] = match;
     if (/^[a-z]+:/.test(file)) continue;
+    if (isPlaceholder(file) || isPlaceholder(anchor)) continue;
     let targetRel = rel;
     if (file !== '') {
       if (!file.endsWith('.md')) continue; // HTML等のアンカーは対象外
@@ -532,17 +530,15 @@ describe('ドキュメントの参照', () => {
     expect(brokenLinkAnchorsIn(probe, fenced(`[表示名](#${anchor})`))).toHaveLength(0);
   });
 
-  it('インラインコードで外せるのはリンクだけ（DocumentStyle.md 5節）', () => {
-    // 書式そのものを見せたい行の書き方が、参照の種類で違う。節の参照は囲んでも検査されるので、
-    // 書式は `文書名.md N節` のように日本語のプレースホルダで書く（この形は照合に掛からない）。
+  it('書式の例示を外すのはプレースホルダだけで、囲みでは外れない（DocumentStyle.md 5節）', () => {
+    // 逃げ道が参照の種類ごとに違うと、書き手はどちらを書いているかで作法を選ぶことになる。
     const probe = join('docs', 'DocumentStyle.md');
+    expect(brokenLinkFilesIn(probe, '[<表示名>](<パス>)')).toHaveLength(0);
+    expect(brokenLinkAnchorsIn(probe, '[<表示名>](#<アンカー>)')).toHaveLength(0);
+    expect(brokenNumberedRefsIn(probe, '文書名.md N節')).toHaveLength(0);
+    // 囲みは逃げ道ではない——囲んだだけの参照も、指し先を明示したものとして検査する。
+    expect(brokenLinkFilesIn(probe, '`[表示名](./NoSuchFile.md)`')).toHaveLength(1);
     expect(brokenNumberedRefsIn(probe, '`GameElementDefinition.md 999節`')).toHaveLength(1);
-    expect(brokenNumberedRefsIn(probe, '`文書名.md N節`')).toHaveLength(0);
-    expect(brokenLinkFilesIn(probe, '`[表示名](./NoSuchFile.md)`')).toHaveLength(0);
-    // 囲みは行ごとに見るので、フェンスの中でも同じに外れる。
-    expect(
-      brokenLinkFilesIn(probe, '```yaml\n# `[表示名](./NoSuchFile.md)`\n```\n'),
-    ).toHaveLength(0);
   });
 
   it('印を探す本文は、コードフェンスの中を落とす（規約が書式を例示する）', () => {
@@ -550,7 +546,6 @@ describe('ドキュメントの参照', () => {
     // 拾うと書式を説明した文書が印を持つ文書になる。
     const fenced = '```\n### 節番号 見出し【確定】【未実装: 識別子】\n```\n';
     expect(withoutCode(fenced)).not.toContain('【');
-    expect(withoutInlineCode(fenced)).toContain('【確定】');
   });
 
   it('見出しの解析が、CRLFの作業ツリーでも効く', () => {
