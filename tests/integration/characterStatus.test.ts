@@ -61,7 +61,7 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
     // 持続効果の宣言（characters/）から導いたものをそのまま並べる。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
     const bodyFat = view.propertyCategories
       .flatMap((tab) => tab.entries)
       .find((entry) => entry.key === 'body_fat');
@@ -94,7 +94,7 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
     const travelOf = (view: ReturnType<typeof fromGameSession>) =>
       lane(view, game, 'fixtures').find((card) => card.objects[0].def.tags.includes(pathTagId))!.actions[0];
 
-    expect(travelOf(fromGameSession(game, codex, localeWithReason)).enabled, '空身なら歩ける').toBe(true);
+    expect(travelOf(fromGameSession(game, localeWithReason)).enabled, '空身なら歩ける').toBe(true);
 
     // 手持ちへ石（1kgずつ）を積んで、どのキャラクタでも危険域へ届く重さにする。同じ物は束ねられる
     // ので、枠数の決まった手持ちにも40個入る。
@@ -108,7 +108,7 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
       '持ち物の重さがそのまま負荷になる',
     ).toBeGreaterThan(0);
 
-    const travel = travelOf(fromGameSession(game, codex, localeWithReason));
+    const travel = travelOf(fromGameSession(game, localeWithReason));
     expect(travel.enabled).toBe(false);
     expect(travel.reason).toBe('荷が重すぎて歩けない。');
 
@@ -129,7 +129,7 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
         .createObject(codex.objectNames.getId('stone'))
         .moveToSlotOrRejection(game.player.instance.getSlot(handId));
 
-    const load = fromGameSession(game, codex, locale)
+    const load = fromGameSession(game, locale)
       .propertyCategories.flatMap((tab) => tab.entries)
       .find((entry) => entry.key === 'load')?.detail;
     const delay = load?.given.find((influence) => influence.key === 'travel_delay');
@@ -148,7 +148,7 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
         .createObject(codex.objectNames.getId('stone'))
         .moveToSlotOrRejection(game.player.instance.getSlot(handId));
 
-    const load = fromGameSession(game, codex, locale)
+    const load = fromGameSession(game, locale)
       .propertyCategories.flatMap((tab) => tab.entries)
       .find((entry) => entry.key === 'load')?.detail;
 
@@ -163,7 +163,7 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
     // （docs/world/Characters.md ホームシック節）が、ホームシックの詳細には枠として出る。
     // 開ける先が無いと、押せる見た目のまま何も起きない枠になる。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
-    const shown = shownStatusesOf(fromGameSession(game, codex, locale));
+    const shown = shownStatusesOf(fromGameSession(game, locale));
 
     const received = shown.contentOf('homesickness')?.detail?.received ?? [];
     expect(received.map((influence) => influence.key)).toEqual(['loneliness', 'comfort', 'company']);

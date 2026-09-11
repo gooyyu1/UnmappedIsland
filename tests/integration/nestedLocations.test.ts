@@ -32,7 +32,7 @@ describe('入れ物の中から見た外側の場所（世界→映し 通し）
     if (scenario === undefined) throw new Error('同梱シナリオ voyage_ready がありません。');
 
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     const raft = game.startLocation.fixtures.find((fixture) => fixture.def.name === 'raft');
     if (raft === undefined) throw new Error('シナリオが筏を置いていません。');
@@ -50,7 +50,7 @@ describe('入れ物の中から見た外側の場所（世界→映し 通し）
   it('陸に立っている間は、映せる場所が現在地だけになる', () => {
     const { game } = ready();
 
-    const nested = fromGameSession(game, codex, locale).nestedLocations;
+    const nested = fromGameSession(game, locale).nestedLocations;
 
     expect(nested, '砂浜を含む場所は世界そのものなので、切り替える先は無い').toHaveLength(1);
     expect(nested[0].window.card.identity).toEqual([game.startLocation.instance.instanceId]);
@@ -60,7 +60,7 @@ describe('入れ物の中から見た外側の場所（世界→映し 通し）
     const { game, raft } = ready();
     board(game, raft);
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
     const nested = view.nestedLocations;
 
     expect(nested, '現在地（筏）と、それを載せている砂浜').toHaveLength(2);
@@ -76,7 +76,7 @@ describe('入れ物の中から見た外側の場所（世界→映し 通し）
     board(game, raft);
     expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute(), '出航できる').toBe(true);
 
-    const nested = fromGameSession(game, codex, locale).nestedLocations;
+    const nested = fromGameSession(game, locale).nestedLocations;
 
     expect(nested, '海の上でも現在地と外側の2件').toHaveLength(2);
     expect(nested[1].fixtures.owner.def.name, '外側は島に最も近い海区').toBe('coastal_waters');

@@ -37,7 +37,7 @@ describe('発見物の枠（世界→映し 通し）', () => {
     if (scenario === undefined) throw new Error('同梱シナリオ voyage_ready がありません。');
 
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
 
     const raft = game.startLocation.fixtures.find((fixture) => fixture.def.name === 'raft');
     if (raft === undefined) throw new Error('シナリオが筏を置いていません。');
@@ -83,7 +83,7 @@ describe('発見物の枠（世界→映し 通し）', () => {
 
   /** 見張りを1回。画面と同じく、経過の控えを取りながら実行する。 */
   function exploreOnce(game: StartedGame, view: PlayScreenView): Recording {
-    return runAndRecordChange(game, codex, locale, undefined, () => {
+    return runAndRecordChange(game, locale, undefined, () => {
       expect(exploredIn(view).explore(), '見張りを実行できる').toBe(true);
     });
   }
@@ -98,13 +98,13 @@ describe('発見物の枠（世界→映し 通し）', () => {
 
   it('海区の見張りで手元に入ったアイテムも、発見物の枠に並ぶ', () => {
     const { game } = afloat();
-    let view = fromGameSession(game, codex, locale);
+    let view = fromGameSession(game, locale);
     const shown = shownCardsOf(() => view);
 
     // 見張りが返すものは抽選（voyage.yamlの pick）なので、拾い物が出る回まで繰り返す。
     for (let attempt = 0; attempt < 40; attempt++) {
       const recording = exploreOnce(game, view);
-      view = fromGameSession(game, codex, locale);
+      view = fromGameSession(game, locale);
       const picked = spawnedIntoHand(game, recording);
       shown.takeFound(recording.changesAtEnd);
       if (picked.length === 0) continue;
@@ -127,13 +127,13 @@ describe('発見物の枠（世界→映し 通し）', () => {
     // 道は生まれるのではなく、未発見の枠から設置物の枠へ移って「発見」される
     // （Location.revealDueFixtures）。生まれた物だけを数えると、こちらが落ちる。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
-    let view = fromGameSession(game, codex, locale);
+    let view = fromGameSession(game, locale);
     const shown = shownCardsOf(() => view);
 
     const fixtures = game.startLocation.instance.getSlot(game.startLocation.fixturesSlotId);
     for (let attempt = 0; attempt < game.startLocation.explorationProgressMax; attempt++) {
       const recording = exploreOnce(game, view);
-      view = fromGameSession(game, codex, locale);
+      view = fromGameSession(game, locale);
       const revealed = recording.changesAtEnd
         .filter((change) => change.to === fixtures && change.from !== undefined)
         .map((change) => change.object);
@@ -152,13 +152,13 @@ describe('発見物の枠（世界→映し 通し）', () => {
 
   it('見張りで現れた航路も、同じ控えから発見物になる', () => {
     const { game, zone } = afloat();
-    let view = fromGameSession(game, codex, locale);
+    let view = fromGameSession(game, locale);
     const shown = shownCardsOf(() => view);
 
     const fixtures = zone.getSlot(codex.slotNames.getId('fixtures'));
     for (let attempt = 0; attempt < 40; attempt++) {
       const recording = exploreOnce(game, view);
-      view = fromGameSession(game, codex, locale);
+      view = fromGameSession(game, locale);
       const routes = recording.changesAtEnd
         .filter((change) => change.to === fixtures)
         .map((change) => change.object);

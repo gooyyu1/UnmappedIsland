@@ -1,4 +1,3 @@
-import type { WorldCodex } from '../../domain/WorldCodex';
 import type { StartedGame } from '../../domain/generation/NewGame';
 import { Location } from '../../domain/wrappers/Location';
 import { Path } from '../../domain/wrappers/Path';
@@ -478,10 +477,10 @@ function collapsed(looks: readonly InfluenceLook[]): readonly StatusInfluence[] 
  */
 export function fromGameSession(
   game: StartedGame,
-  codex: WorldCodex,
   locale: Localization,
   handLaneCells: number = Number.POSITIVE_INFINITY,
 ): PlayScreenView {
+  const codex = game.session.codex;
   const location = game.player.location ?? game.startLocation;
   const places = cardPlacesOf(game.player, location);
 
@@ -496,7 +495,7 @@ export function fromGameSession(
   };
 
   const looks = cardLooksOf(codex, locale, game.world, instanceName);
-  const operations = cardOperationsOf(game, codex, locale);
+  const operations = cardOperationsOf(game, locale);
 
   /**
    * その場所を並びとして見せるのに要るもの（SlotView）。**スロットの宣言を1度だけ引く**——
@@ -514,7 +513,7 @@ export function fromGameSession(
       cells: slotDef?.cellCountPolicy ?? 'grows',
       acceptsCards: slotDef !== undefined && codex.anyTypeCanBeBroughtInto(slotDef),
       background: slotDef === undefined ? undefined : { owner: place.owner.def.name, slot: slotDef.name },
-      materials: craftingMaterials(place.owner, codex),
+      materials: craftingMaterials(place.owner),
     };
   };
 

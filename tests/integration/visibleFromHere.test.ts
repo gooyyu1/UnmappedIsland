@@ -41,15 +41,13 @@ describe('現在地から見える範囲（世界→映し 通し）', () => {
     const left = game.startLocation.instance;
     const road = pathsIn(game.startLocation, codex)[0];
     expect(road, '探索し切れば道が見つかっている').toBeDefined();
-    expect(fromGameSession(game, codex, locale).visible(road), '渡る前は現在地の設置物').toBe(true);
+    expect(fromGameSession(game, locale).visible(road), '渡る前は現在地の設置物').toBe(true);
 
     expect(new Path(road, codex).travel(game.player.instance), '道を渡れる').toBe(true);
 
     expect(game.player.location?.instance, '別の土地へ移った').not.toBe(left);
     expect(road.parent, '道は置いてきた土地の設置物のまま世界に在る').toBe(left);
-    expect(fromGameSession(game, codex, locale).visible(road), '世界に在っても、移った先からは見えない').toBe(
-      false,
-    );
+    expect(fromGameSession(game, locale).visible(road), '世界に在っても、移った先からは見えない').toBe(false);
   });
 
   it('キャラクタ自身と現在地そのものも見える', () => {
@@ -57,7 +55,7 @@ describe('現在地から見える範囲（世界→映し 通し）', () => {
     // なったので、ここが偽になると窓が操作のたびに閉じる。設置物だけを見る実装では通らない。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
 
     expect(view.visible(game.player.instance), 'キャラクタは現在地の中に居る').toBe(true);
     expect(view.visible(game.startLocation.instance), '現在地は見える範囲そのもの').toBe(true);
@@ -67,7 +65,7 @@ describe('現在地から見える範囲（世界→映し 通し）', () => {
     const scenario = bundledScenario('voyage_ready');
     if (scenario === undefined) throw new Error('同梱シナリオ voyage_ready がありません。');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
-    applyScenario(game, scenario, codex);
+    applyScenario(game, scenario);
     const raft = game.startLocation.fixtures.find((fixture) => fixture.def.name === 'raft');
     if (raft === undefined) throw new Error('シナリオが筏を置いていません。');
 
@@ -77,7 +75,7 @@ describe('現在地から見える範囲（世界→映し 通し）', () => {
       '筏へ乗り込める',
     ).toBeUndefined();
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
     const outside: readonly WorldObject[] = game.startLocation.fixtures;
     expect(outside.length, '外側の砂浜には設置物（筏を含む）が並んでいる').toBeGreaterThan(0);
     expect(

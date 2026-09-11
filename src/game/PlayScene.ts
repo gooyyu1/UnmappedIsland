@@ -518,7 +518,7 @@ export class PlayScene extends ResponsiveScene {
     );
     const character = resolveCharacterDefNameOrFirst(this.codex, data.save.characterId);
     this.gameSession = startNewGame(this.codex, character, data.save.seed, seededRng(data.save.seed));
-    if (data.scenario !== undefined) applyScenario(this.gameSession, data.scenario, this.codex);
+    if (data.scenario !== undefined) applyScenario(this.gameSession, data.scenario);
     this.view = this.viewOfGame();
     this.sunlight = SunlightHours.of(this.codex, this.gameSession.player.instance.def);
     // 開いた時点の空を基準にする。開いた瞬間にまたいだことにはならない。
@@ -1521,7 +1521,6 @@ export class PlayScene extends ResponsiveScene {
   private runAndRecord(change: () => void): Recording {
     return runAndRecordChange(
       this.gameSession,
-      this.codex,
       this.locale,
       this.childWindowPlace,
       change,
@@ -1535,7 +1534,7 @@ export class PlayScene extends ResponsiveScene {
    * 一度に見えている枠の数」は画面の側にしか無い。
    */
   private viewOfGame(): PlayScreenView {
-    return fromGameSession(this.gameSession, this.codex, this.locale, this.handLaneCells());
+    return fromGameSession(this.gameSession, this.locale, this.handLaneCells());
   }
 
   /**
@@ -2327,7 +2326,7 @@ export class PlayScene extends ResponsiveScene {
     this.recipeWindow?.close();
     this.recipeWindow = new RecipeWindow(this, this.metrics, {
       title: this.locale.uiText('recipe_title'),
-      categories: recipeCategories(this.gameSession, this.codex, this.locale, (defGlobalId, origin) => {
+      categories: recipeCategories(this.gameSession, this.locale, (defGlobalId, origin) => {
         this.closeRecipeWindow();
         this.startCrafting(defGlobalId, origin);
       }),

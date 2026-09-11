@@ -87,7 +87,7 @@ object_defs:
 
   /** そのオブジェクトの札が出しているバーのうち、鍵が一致する1本（無ければundefined）。 */
   function gaugeOf(mini: MiniGame, object: WorldObject, key: string): CardGauge | undefined {
-    const view = fromGameSession(mini.game, mini.codex, locale);
+    const view = fromGameSession(mini.game, locale);
     const card = view.cardsIn(object.parentSlot!).find((held) => held?.objects[0] === object);
     return card?.gauges?.find((gauge) => gauge.key === key);
   }
