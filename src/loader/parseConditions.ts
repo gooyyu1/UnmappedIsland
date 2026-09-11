@@ -157,8 +157,8 @@ const MATCHES_KEY = 'matches';
  * **演算子キーは複数書ける（暗黙のAND）。** 条件の並びと同じ規則で、範囲判定
  * （`{prop: x, gte: 100, lt: 200}`）のために同じ`prop`を2度書かなくて済む。
  *
- * 比較の相手はリテラルか{subject, prop}参照（10.2節と同じ二択）。参照はlt/lte/gt/gte/eq/neqのみで
- * 使える（in/not_inは複数値との比較のため噛み合わない）。
+ * 比較の相手はリテラルか{subject, prop}参照（10.2節と同じ二択）。参照を使えるのは相手が1つの値である
+ * 演算子だけ（in/not_inは複数値との比較のため噛み合わない）。
  */
 function parseConditionLeaf(
   loader: WorldCodexYamlLoader,

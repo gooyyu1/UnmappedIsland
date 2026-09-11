@@ -160,8 +160,7 @@ export class WorldCodexYamlLoader {
     this.objectDefDestinations.push({ kind: 'property', propertyGlobalId, context });
   }
 
-  /** load系メソッドで蓄積した地形生成定義（axes/location_types/generation_scopes）。
-   * parseGeneration.tsの関数群だけが読み書きする。 */
+  /** load系メソッドで蓄積した地形生成定義。parseGeneration.tsの関数群だけが読み書きする。 */
   readonly generationAxes = new Map<string, AxisDef>();
   readonly generationLocationTypes: LocationTypeDef[] = [];
   readonly generationScopes = new Map<string, GenerationScopeDef>();

@@ -2397,21 +2397,16 @@ export class PlayScene extends ResponsiveScene {
 
   /** 縦型は画面最上部の横長バー（右寄せ）、横型は右サイドバー上段の縦積み。 */
   private buildOptionsBar(area: Rect): void {
-    this.buildIconBar(
-      area,
-      COLOR.optionsBar,
-      this.layout.optionsBarIcons(OPTION_ICONS.length),
-      (rect, index) => {
-        const spec = OPTION_ICONS[index];
-        return this.addIconButton(
-          rect,
-          spec,
-          false,
-          COLOR.paperButtonBorder,
-          spec === MENU_ICON ? () => this.confirmReturnToTitle() : undefined,
-        );
-      },
-    );
+    this.buildIconBar(area, COLOR.optionsBar, this.layout.optionsBarIcons(), (rect, index) => {
+      const spec = OPTION_ICONS[index];
+      return this.addIconButton(
+        rect,
+        spec,
+        false,
+        COLOR.paperButtonBorder,
+        spec === MENU_ICON ? () => this.confirmReturnToTitle() : undefined,
+      );
+    });
   }
 
   /**

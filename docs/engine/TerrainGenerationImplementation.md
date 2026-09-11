@@ -23,7 +23,7 @@
 ```
 [ロード]
 WorldCodexYamlLoader.load(label, yamlText)               src/loader/WorldCodexYamlLoader.ts
-  └─ loadGenerationSections(loader, label, root)          src/loader/parseGeneration.ts（axes/location_types/generation_scopesを読む）
+  └─ loadGenerationSections(loader, label, root)          src/loader/parseGeneration.ts（地形生成のルートキーを読む）
        ├─ parseAxis / parseGeneratorLayer                  → loader.generationAxes へ蓄積
        ├─ parseLocationType                                 → loader.generationLocationTypes へ蓄積
        └─ parseGenerationScope                              → loader.generationScopes へ蓄積
@@ -231,14 +231,14 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 
 | ファイル | 役割 |
 |---|---|
-| `src/domain/generation/AxisDef.ts` | `AxisDef`・`GeneratorLayer`・`GeneratorLayerType`（層の種類の文字列リテラルユニオン） |
-| `src/domain/generation/LocationTypeDef.ts` | `LocationTypeDef`・`LocationVariantDef`・`AxisPreference`・`AxisLimit` |
-| `src/domain/generation/GenerationScopeDef.ts` | `GenerationScopeDef`・`GenerationScopeParams`・`CoverageGuaranteeDef`・`GuaranteePick` |
-| `src/domain/generation/GenerationDefs.ts` | `GenerationDefs`（上記の束、`WorldCodex.generation` の中身） |
+| `src/domain/generation/AxisDef.ts` | 軸1本の定義（層を積んで軸値を作る手順、3.2節） |
+| `src/domain/generation/LocationTypeDef.ts` | LocationType 1件の定義（軸の好み・上限・変種、3.3節） |
+| `src/domain/generation/GenerationScopeDef.ts` | 生成スコープ1件の定義（サイト数・偏り・網羅の保証、3.1節・3.3節） |
+| `src/domain/generation/GenerationDefs.ts` | 上記の束（`WorldCodex.generation` の中身、2節） |
 | `src/loader/parseGeneration.ts` | YAML → 上記Defsのパース（2節） |
-| `src/domain/Pcg32.ts` | 用途ごとの列を作る決定的RNG（`Pcg32`・`RandomPurpose`） |
-| `src/domain/generation/ValueNoise.ts` | シード付き格子値ノイズ |
-| `src/domain/generation/IslandMap.ts` | `Site`・`IslandEdge`・`IslandMap`・`LocationName`（生成結果のデータ） |
+| `src/domain/Pcg32.ts` | 用途ごとの列を作る決定的RNG（6節） |
+| `src/domain/generation/ValueNoise.ts` | シード付き格子値ノイズ（3.2節） |
+| `src/domain/generation/IslandMap.ts` | 生成結果のデータ（座標・軸値・型・命名・辺、5節） |
 | `src/domain/generation/SitePlacer.ts` | 3.1節: 座標配置 |
 | `src/domain/generation/AxisSampler.ts` | 3.2節: 軸値サンプリング |
 | `src/domain/generation/LocationTypeMatcher.ts` | 3.3節: LocationTypeマッチング |

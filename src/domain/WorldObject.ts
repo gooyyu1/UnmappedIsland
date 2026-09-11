@@ -905,9 +905,7 @@ export class WorldObject {
    * 探すのは相手を伴わないきっかけだけ——重ねる操作は相手が決まらないと引けない。
    */
   tryGetAction(actionName: string, agent: WorldObject): Action | undefined {
-    const trigger = [...this.def.menuTriggers, ...this.def.tickTriggers].find(
-      (candidate) => candidate.interaction.name === actionName,
-    );
+    const trigger = this.def.actionTriggers.find((candidate) => candidate.interaction.name === actionName);
     return trigger === undefined ? undefined : new Action(trigger, this, agent);
   }
 

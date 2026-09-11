@@ -373,8 +373,13 @@ export class PlayScreenLayout {
     return laneCellsIn(this.fieldArea.width, this.metrics);
   }
 
-  /** オプションバーに並ぶアイコンボタン。横型は高さいっぱいの中央へ、縦型は右端へ寄せる。 */
-  optionsBarIcons(count: number): BarIconRow {
+  /**
+   * オプションバーに並ぶアイコンボタン。横型は高さいっぱいの中央へ、縦型は右端へ寄せる。
+   *
+   * **既定はバーの寸法を決めたのと同じ並び**（`OPTION_ICONS`）なので、呼び手は数を数えない。
+   * 別の数を渡せば、収まらない分は送って読む（`barIcons`）。
+   */
+  optionsBarIcons(count: number = OPTION_ICONS.length): BarIconRow {
     return this.metrics.isLandscape
       ? this.barIcons(this.optionsBar, count, 'center', 0)
       : this.barIcons(this.optionsBar, count, 'end', this.metrics.px(OPTIONS_BAR_PADDING_X));

@@ -3,7 +3,7 @@ import type { GenerationScopeDef } from './GenerationScopeDef';
 import type { LocationTypeDef } from './LocationTypeDef';
 
 /**
- * 地形生成の定義一式（terrain_generation.yamlのaxes/location_types/generation_scopes）。
+ * 地形生成の定義一式（terrain_generation.yaml）。
  * WorldCodexの一部としてロード後不変。生成ファイルがロードされていない場合、
  * WorldCodex.generationはundefinedになる。
  *
