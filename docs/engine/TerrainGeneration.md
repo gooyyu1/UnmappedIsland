@@ -201,7 +201,7 @@ generation_scopes:
   30 km² で 727 m）。
 - **道の無い熱帯の地面を歩く速さは 4 km/h**（`move_cost` が 1.0 の土地）。
 
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656) の 14
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（島の大きさと歩く速さ）
 
 #### 大きさと速さは、それぞれ別のキーで宣言する
 

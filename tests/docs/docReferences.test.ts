@@ -53,6 +53,12 @@ const PROVISIONAL_LABELS = ['【未確定】', '【暫定】'];
 const SOURCE_LINE_PREFIX = '**出どころ**:';
 
 /**
+ * 確定待ちの issue（#656）を**項目番号で**指す形（DocumentStyle.md 6.1節）。番号は答えの済んだ
+ * ものから詰め替わるので書けない。`#656` そのものを指すのはよい。
+ */
+const ISSUE_ITEM_NUMBER = /#656.* の [0-9]/;
+
+/**
  * 本文が暫定であることを自白する語（DocumentStyle.md 6.1節）。確定節の射程には現れない——
  * 印は見出しに付くので、但し書きを本文へ添えても印を弱められない。
  *
@@ -537,6 +543,30 @@ describe('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節�
       missing,
       `出どころの無い確定節（人間の判断の在処が節から読めない）:\n${missing.join('\n')}`,
     ).toEqual([]);
+  });
+
+  it('出どころが、#656 を項目番号で指していない', () => {
+    // 番号は答えの済んだものから詰め替わるので、書いた当時に正しくても後から別の決定を指す
+    // （#1834 の時点で13箇所あり、うち1つは既にずれていた）。指すのは決めた中身で。
+    const found: string[] = [];
+    for (const [rel, text] of docByPath) {
+      for (const { line, text: body } of textLines(text)) {
+        if (body.startsWith(SOURCE_LINE_PREFIX) && ISSUE_ITEM_NUMBER.test(body)) {
+          found.push(`${rel}:${line}: ${body}`);
+        }
+      }
+    }
+    expect(
+      found,
+      `#656 を番号で指した出どころ（何を決めたかで指す）:\n${found.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('項目番号の照合が、中身の側の数字を拾わない', () => {
+    // 当たらなくなっても違反ゼロと同じ緑になるので、既知の入力で別に確かめる。
+    expect(ISSUE_ITEM_NUMBER.test('**出どころ**: #656 の 21')).toBe(true);
+    expect(ISSUE_ITEM_NUMBER.test('**出どころ**: [#656](https://x/issues/656) の 9・10')).toBe(true);
+    expect(ISSUE_ITEM_NUMBER.test('**出どころ**: #656（難易度の3段目を「熟練者」に改める）')).toBe(false);
   });
 });
 

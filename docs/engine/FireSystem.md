@@ -357,7 +357,7 @@ interactions:
 **濡れることを燃料の側では表しません。** 雨ざらしの薪が炉へ運ぶ `fuel`（2 節）は変わらず、炉も雨で
 崩れません（8.1 節）。雨が閉じるのは着火の 1 点だけです。
 
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656) の 2
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（雨の日は屋外で火が起こせない）
 
 ### 3.2 火口になるのは繊維状のものだけ
 
@@ -617,7 +617,7 @@ passives:
 **雨が削るのは火力だけで、炉は残ります。** 組んだ炉は火が消えても崩れず、雨が上がれば火種を運んで
 また灯せます。炉に耐久値を持たせて雨で削ることはしません。
 
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656) の 2
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（雨の日は屋外で火が起こせない）
 
 ## 9. 火が与えるもの
 

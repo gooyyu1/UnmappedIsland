@@ -361,7 +361,7 @@ laceration:
 ので、最初から死に方ではありません。だから `become` は死因を持ちません——他の終わり方へ名前を配れる
 ようにしておく必要もありません。
 
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656) の 16
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（`become` は死に方ではない）
 
 ## 7. 体の値は、人にも獣にも配る
 

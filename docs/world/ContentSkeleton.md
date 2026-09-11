@@ -154,7 +154,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | **経験者** | 3歩 |
 | **熟練者** | 4歩以上 |
 
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（難易度の線）と、同 13（3段目の呼び名）
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（難易度の線）と、同（難易度の3段目を「熟練者」に改める）
 
 #### 2.3.3 運の幅は、生成の側で締める
 
@@ -782,7 +782,7 @@ ambient_brightnessをそのまま土台にするためです
 **嵐の日、屋根の下でない場所での採取はできません。** 明るさが足りていてもできず、松明でも埋まりません
 ——止めているのは風雨で、それは明るさとは別の値だからです（8.1節）。
 
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656) の 3
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（嵐の日は屋外の採取ができない）
 
 #### 8.1.5 風雨は、風速（m/s）で持つ
 
