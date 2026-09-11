@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { ISSUE_CAP } from '../../scripts/agent/board-read.mjs';
 import { board, issueBody } from '../../scripts/agent/board.mjs';
 
 /**
@@ -95,6 +96,18 @@ const session = (id: string, tags: readonly string[] = []): LiveSession => ({
 describe('board.mjs', () => {
   it('引けなければ、何も並べない', () => {
     expect(board({ gh: () => undefined, sessions: () => [], warn: () => {} })).toBeUndefined();
+  });
+
+  // 切られるのは古い側なので、**黙って切ると「そんな issue は無い」と同じ形**になる。担当の居る
+  // task が消えた実績がある（2026-09-11、#1722）。
+  it('開いている issue が上限に達したら、そう言う', () => {
+    const many = Array.from({ length: ISSUE_CAP }, (_, index) => ({
+      number: index + 1,
+      title: `見出し${index + 1}`,
+      labels: [{ name: 'kind:task' }],
+    }));
+    expect(show({ issues: many }).warnings.join('\n')).toContain(`上限（${ISSUE_CAP}件）`);
+    expect(show({ issues: many.slice(1) }).warnings).toEqual([]);
   });
 
   it('節は、中身が無くても出る', () => {
