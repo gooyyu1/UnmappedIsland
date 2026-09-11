@@ -17,7 +17,13 @@ interface Call {
   readonly body: string;
 }
 
-function run(over: { body?: () => string | undefined; ghFails?: boolean } = {}): {
+function run(
+  over: {
+    body?: (given: { stuckSince?: string }) => string | undefined;
+    ghFails?: boolean;
+    stuckSince?: string;
+  } = {},
+): {
   ok: boolean;
   calls: Call[];
 } {
@@ -31,6 +37,7 @@ function run(over: { body?: () => string | undefined; ghFails?: boolean } = {}):
     body: over.body ?? (() => '盤面\n'),
     issue: '99',
     warn: () => {},
+    stuckSince: over.stuckSince,
   });
   return { ok, calls };
 }
@@ -51,6 +58,21 @@ describe('board-publish.mjs', () => {
 
     expect(ok).toBe(false);
     expect(calls).toEqual([]);
+  });
+
+  // **印を置くのは1周を回す側で、人へ見せるのはここ**（`.claude/board-design.md` 2.21）。
+  // 渡らなければ、盤面が止まっていることは誰にも届かない。
+  it('盤面が進んでいない印を、本文を組む側へ渡す', () => {
+    let given: string | undefined;
+    run({
+      stuckSince: '2026-09-11T00:39:08Z',
+      body: (args) => {
+        given = args.stuckSince;
+        return '盤面\n';
+      },
+    });
+
+    expect(given).toBe('2026-09-11T00:39:08Z');
   });
 
   it('書き込めなければ、そう答える', () => {

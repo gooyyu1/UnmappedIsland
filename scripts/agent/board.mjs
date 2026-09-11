@@ -140,9 +140,11 @@ function survey({ gh, sessions, warn }) {
   // 畳んでいないセッション。ここが「もう投入したか」の主な根拠。**引けなければ空のまま進む**
   // ——投入済みの判定はPRだけになるが、PRと issue は並べられる。
   let live = [];
+  let sessionsKnown = true;
   try {
     live = sessions();
   } catch {
+    sessionsKnown = false;
     warn('（セッションの一覧を引けなかった。投入済みの判定はPRだけで行う）');
   }
 
@@ -181,7 +183,7 @@ function survey({ gh, sessions, warn }) {
   const unsorted = issues.filter((issue) => !names(issue).some((name) => name.startsWith('kind:')));
 
   // `issuesRaw` を返すのは、**`確定待ち` を引くのが端末の側だけ**だから（下の `board`）。
-  return { issuesRaw, prs, tasks, unsorted, live };
+  return { issuesRaw, prs, tasks, unsorted, live, sessionsKnown };
 }
 
 /** 端末へ1行1件で出す形（[`board.sh`](board.sh)）。引けなければ `undefined`。 */
@@ -242,15 +244,44 @@ const counted = (task) => (task.state.startsWith('待ち') ? '待ち' : task.sta
 const cell = (text) => String(text).replace(/\|/g, '\\|');
 
 /**
+ * 経過した長さ。**読む人に引き算をさせない**——リポジトリも時計も開かずに、止まっている長さが
+ * そのまま読める形にする。
+ */
+function elapsed(from, now) {
+  const minutes = Math.floor((now.getTime() - from) / 60_000);
+  if (minutes < 60) return `${minutes}分`;
+  return `${Math.floor(minutes / 60)}時間${minutes % 60}分`;
+}
+
+/**
+ * 盤面が進んでいないことの断り（`.claude/board-design.md` 2.21）。**印を置くのはデーモン**
+ * （[`board-state.mjs`](board-state.mjs) の `STUCK`）で、ここはその読み手。
+ *
+ * **いちばん上へ出す。** 引けない周のデーモンにできることはこれだけで、**直せるのは Claude Code
+ * 本体を触れる人だけ**——表の状態より先に読まれる必要がある。
+ *
+ * **読めない値なら何も出さない。** 出どころは台帳のテキストなので、壊れていることがありうる。
+ */
+function stuckNote(since, now) {
+  const from = Date.parse(since ?? '');
+  if (Number.isNaN(from)) return undefined;
+  // **「1つも進んでいない」とは言わない。** 印が立つのは転んだ手が在る周で、同じ周に打てた手が
+  // 在ることもある（`board-round.mjs`）——盤面が全体として動いていても、同じ手だけが毎周転び
+  // 続けている形がこの断りの相手。
+  return `**盤面が詰まっています**（${since} から ${elapsed(from, now)}）。手が転んだままか、盤面そのものを引けない周が続いています`;
+}
+
+/**
  * 常設の issue の本文（[`board-publish.mjs`](board-publish.mjs)）。読むのは**スマホの人間**で、
  * 手元でスクリプトを叩けない相手なので、**リポジトリを開かずに読める形**にする。
  *
- * **断りは本文へも出す。** 一覧を引けなかった周は状態が当てにならないが、**それを知らせる先が
- * ログしか無いと、読んでいる人は嘘の表を正しいものとして読む。**
+ * **断りは本文へも出す。** 知らせる先がログしか無いと、**ログを読めるのは手元で叩ける人だけ**
+ * なので、読んでいる人には届かない。セッションの一覧を引けなかった周は、断りに加えて
+ * **一覧を根拠にした行そのものを落とす**（下の `sessionsKnown`）。
  *
  * 引けなければ `undefined`（呼び手は書き込まない——**古い本文が残るほうが、欠けた盤面より正しい**）。
  */
-export function issueBody({ gh = runGh, sessions = liveSessions, warn, now = new Date() } = {}) {
+export function issueBody({ gh = runGh, sessions = liveSessions, warn, now = new Date(), stuckSince } = {}) {
   const notes = [];
   const found = survey({
     gh,
@@ -269,6 +300,10 @@ export function issueBody({ gh = runGh, sessions = liveSessions, warn, now = new
     '',
     `最終更新 ${at}`,
   ];
+  // **詰まりの断りが先。** 一覧を引けなかった周の断り（`notes`）は表の読み方の注釈だが、こちらは
+  // **読んだ人に手を打ってもらうための行**（2.21）。
+  const stuck = stuckNote(stuckSince, now);
+  if (stuck !== undefined) lines.push('', `⚠ ${stuck}`);
   for (const note of notes) lines.push('', `⚠ ${note}`);
 
   const tally = new Map(COUNTS.map((name) => [name, 0]));
@@ -277,23 +312,29 @@ export function issueBody({ gh = runGh, sessions = liveSessions, warn, now = new
     tally.set(name, (tally.get(name) ?? 0) + 1);
   }
 
+  // **セッションの一覧が無い周は、それを根拠にした行を出さない。** 空の一覧で組むと、投入済みの
+  // task が `着手可`・`担当無し` に化けて**在るはずのものが消えた盤面**になり、読んだ人は投入して
+  // よいと読む（1.1・2.20.2）。**断りだけでは足りない**——表が在れば、表のほうが読まれる。
   lines.push('', '## 件数', '', '| 何が | 件数 |', '|---|---|');
-  for (const [name, count] of tally) lines.push(`| ${name} | ${count} |`);
+  if (found.sessionsKnown) for (const [name, count] of tally) lines.push(`| ${name} | ${count} |`);
   lines.push(`| 未整理 | ${found.unsorted.length} |`);
   lines.push(`| 開いているPR | ${found.prs.length} |`);
-  lines.push(`| 畳んでいないセッション | ${found.live.length} |`);
+  if (found.sessionsKnown) lines.push(`| 畳んでいないセッション | ${found.live.length} |`);
 
   lines.push('', '## 投入済み', '');
-  const rows = found.tasks
-    .filter((task) => task.state === '投入済み')
-    .map(
-      (task) =>
-        `| #${task.number} | ${cell(task.title)} | ${task.progress} | ${
-          task.pr === undefined ? '-' : `#${task.pr.number} ${checks(task.pr)} ${mergeability(task.pr)}`
-        } |`,
-    );
-  if (rows.length === 0) lines.push('（無し）');
-  else lines.push('| issue | 題 | 状態 | PR |', '|---|---|---|---|', ...rows);
+  if (!found.sessionsKnown) lines.push('（セッションの一覧を引けなかったので、出せない）');
+  else {
+    const rows = found.tasks
+      .filter((task) => task.state === '投入済み')
+      .map(
+        (task) =>
+          `| #${task.number} | ${cell(task.title)} | ${task.progress} | ${
+            task.pr === undefined ? '-' : `#${task.pr.number} ${checks(task.pr)} ${mergeability(task.pr)}`
+          } |`,
+      );
+    if (rows.length === 0) lines.push('（無し）');
+    else lines.push('| issue | 題 | 状態 | PR |', '|---|---|---|---|', ...rows);
+  }
 
   return `${lines.join('\n')}\n`;
 }

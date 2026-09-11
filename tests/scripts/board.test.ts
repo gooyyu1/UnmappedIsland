@@ -28,6 +28,8 @@ interface World {
   /** 一覧を引けない（[`live-sessions.mjs`](../../scripts/agent/live-sessions.mjs) は投げる）。 */
   readonly sessionsFail?: boolean;
   readonly checked?: string;
+  /** 盤面が進んでいないと見え始めた時刻（デーモンの台帳。`board-state.mjs` の `STUCK`）。 */
+  readonly stuckSince?: string;
 }
 
 const deps = (world: World, warn: (line: string) => void) => ({
@@ -55,6 +57,7 @@ function body(world: World = {}): { lines: string[]; warnings: string[] } {
   const text = issueBody({
     ...deps(world, (line: string) => warnings.push(line)),
     now: new Date('2026-09-07T03:04:05.678Z'),
+    stuckSince: world.stuckSince,
   });
   return { lines: (text ?? '').split('\n'), warnings };
 }
@@ -268,6 +271,25 @@ describe('issueBody', () => {
     expect(body().lines).toContain('最終更新 2026-09-07T03:04:05Z');
   });
 
+  // **盤面を引けない周に、デーモンにできるのはこれだけ**（2.21）。直せるのは Claude Code 本体を
+  // 触れる人だけで、`~/daemon.log` を読めるのは手元で叩ける人だけ——**届く先はここしか無い。**
+  it('盤面が進んでいなければ、続いた長さを添えて断る', () => {
+    const { lines } = body({ stuckSince: '2026-09-07T01:19:05Z' });
+
+    expect(lines).toContain(
+      '⚠ **盤面が詰まっています**（2026-09-07T01:19:05Z から 1時間45分）。手が転んだままか、盤面そのものを引けない周が続いています',
+    );
+  });
+
+  it('進んでいる盤面には、断りを出さない', () => {
+    expect(body().lines.join('\n')).not.toContain('盤面が詰まっています');
+  });
+
+  // 出どころは台帳のテキストなので、壊れていることがありうる。**壊れた値で嘘の長さを出さない。**
+  it('読めない時刻なら、断りを出さない', () => {
+    expect(body({ stuckSince: 'ゆうべ' }).lines.join('\n')).not.toContain('盤面が詰まっています');
+  });
+
   it('配ってよいかで数えた件数を出す', () => {
     const { lines } = body({
       issues: [
@@ -396,5 +418,23 @@ describe('issueBody', () => {
     expect(lines).toContain('⚠ （セッションの一覧を引けなかった。投入済みの判定はPRだけで行う）');
     // ログ側にも同じ声が出る（手元で追う側は、ここだけを読む）。
     expect(warnings).toEqual(['（セッションの一覧を引けなかった。投入済みの判定はPRだけで行う）']);
+  });
+
+  // **断りだけでは足りない**（2.20.2）。空の一覧で組むと、投入済みの task が `着手可`・`担当無し`
+  // に化けて**在るはずのものが消えた盤面**になり、読んだ人は投入してよいと読む。**表が在れば、
+  // 断りより表のほうが読まれる。**
+  it('セッションの一覧を引けなかったら、それを根拠にした行は出さない', () => {
+    const { lines } = body({
+      issues: [issue(8, '直す'), issue(9, 'なにか', { labels: [] })],
+      sessionsFail: true,
+    });
+    const text = lines.join('\n');
+
+    expect(text).not.toContain('| 着手可 |');
+    expect(text).not.toContain('| 投入済み |');
+    expect(text).not.toContain('| 畳んでいないセッション |');
+    expect(lines).toContain('（セッションの一覧を引けなかったので、出せない）');
+    // 一覧を見ずに数えられるものは、そのまま出す。
+    expect(lines).toContain('| 未整理 | 1 |');
   });
 });

@@ -143,17 +143,19 @@ describe('may-dispatch.sh', () => {
     expect(run('new-task', 'task-1234')).toEqual({ code: 0, stderr: '' });
   });
 
+  // **人が止めている周は3で名乗る**（`brake.sh`。`.claude/board-design.md` 2.21）——盤面が進まない
+  // 周を詰まりと読む側が、人の意思で止まっている周を数えないために要る区別。
   it('親の「投入する」が外れていれば、種類に関わらず止まる', () => {
     const result = run('review', 'review-1500', { brake: off('投入する') });
 
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(3);
     expect(result.stderr).toContain('手綱');
   });
 
   it('その種類だけ外れていれば、その種類だけが止まる', () => {
     const brake = off('レビュー');
 
-    expect(run('review', 'review-1500', { brake }).code).toBe(1);
+    expect(run('review', 'review-1500', { brake }).code).toBe(3);
     expect(run('new-task', 'task-1234', { brake }).code).toBe(0);
   });
 
@@ -161,12 +163,12 @@ describe('may-dispatch.sh', () => {
   it('子だけ外れていれば、その子の種類だけが止まる', () => {
     const brake = off('task を持たないPRも読む');
 
-    expect(run('review-untasked', 'review-1526', { brake }).code).toBe(1);
+    expect(run('review-untasked', 'review-1526', { brake }).code).toBe(3);
     expect(run('review', 'review-1500', { brake }).code).toBe(0);
   });
 
   it('親のレビューが外れていれば、子の種類も止まる', () => {
-    expect(run('review-untasked', 'review-1526', { brake: off('レビュー') }).code).toBe(1);
+    expect(run('review-untasked', 'review-1526', { brake: off('レビュー') }).code).toBe(3);
   });
 
   // 手綱を読む側と書く側が食い違ったときに、通す側へ倒れないこと。

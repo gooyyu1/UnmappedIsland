@@ -6,6 +6,7 @@ import { moves as decide } from '../../scripts/agent/board-move.mjs';
 // 打った手の覚えを消す側（`trackIdle`）。**盤面が選ぶ指紋が、あちらの消去に当たらないこと**を
 // 下で留める。
 import { trackIdle } from '../../scripts/agent/board-round.mjs';
+import { STUCK } from '../../scripts/agent/board-state.mjs';
 
 /**
  * `scripts/agent/board-move.mjs` の検査。
@@ -1131,6 +1132,8 @@ describe('board-move.mjs', () => {
   const ANALYSIS = `CHORE analysis .claude/analysis-prompt.md ${NOW}`;
   const POLICY = `CHORE policy .claude/policy-cycle-prompt.md ${NOW}`;
   const TREND = `CHORE trend .claude/analysis-trend-prompt.md ${NOW}`;
+  /** 詰まりを解く係（2.21）。**このPCでしか調べられない**ので、宛先が付く。 */
+  const UNSTICK = `CHORE unstick .claude/unstick-prompt.md ${NOW} --bridge`;
 
   /** レビュアーがスメルを残した判定コメント（`review-criteria.md`「挙げ方」）。読んだ印を変えられる形で持つ。 */
   const smell = (number: number, read = false) => ({
@@ -1218,11 +1221,54 @@ describe('board-move.mjs', () => {
   // `dispatch-chore.sh` が要る2つを持っていること**。片方でも欠けると、係は毎周立とうとして
   // 毎周失敗する（時刻を残さないので、間隔で黙りもしない）。
   it('周期の係のプロンプトは、題と囲みを持つ', () => {
-    for (const move of [TRIAGE, ANALYSIS, POLICY, DIG]) {
+    for (const move of [TRIAGE, ANALYSIS, POLICY, DIG, UNSTICK]) {
       const text = readFileSync(resolve(__dirname, '../..', move.split(' ')[2]), 'utf-8');
       expect(text).toMatch(/^題: \S/m);
       expect(text).toMatch(/^````$/m);
     }
+  });
+
+  // ## 詰まりを解く係（2.21）
+  //
+  // **立てるのはデーモン自身**なので、この手が出たこと自体が「デーモンは生きている」の証拠になる
+  // ——落ちた跡から起こす係（2.19）とは、立つ条件が背反。二重に手を出す形は、錠ではなくここで消える。
+  it('進んでいない状態が続いたら、詰まりを解く係を立てる', () => {
+    expect(moves({ taken: { [STUCK]: '2026-09-05T00:30:00Z' } })).toEqual([UNSTICK]);
+  });
+
+  // 一時の失敗でも手は転ぶ（GitHubが数分沈む・立てた直後の取り合い）。直す相手が要るのは、
+  // **自分では戻らなかったもの**だけ。
+  it('進んでいない時間が短いうちは、立てない', () => {
+    expect(moves({ taken: { [STUCK]: '2026-09-05T01:30:00Z' } })).toEqual([]);
+  });
+
+  it('進んでいる盤面では、立てない', () => {
+    expect(moves({})).toEqual([]);
+  });
+
+  // **並びの先頭に置く**（2.21.3）。1周1手で切り上げるので、他の周期の係と同じ最後尾に置くと、
+  // **転ばずに打てる手が毎周1つでも在るかぎり手番が回らない**——投入だけが通らない盤面で、
+  // 片付けやマージは通り続ける形がまさにそれ。
+  it('他に打てる手が在っても、詰まりを解く係を先に置く', () => {
+    const board = {
+      untidied: true,
+      mergedPrs: [{ number: 9 }],
+      prs: [pr(10, label('通してよい'))],
+      taken: { [STUCK]: '2026-09-05T00:30:00Z' },
+    };
+
+    expect(moves(board)).toEqual([UNSTICK, `TIDY 9 ${NOW}`, 'MERGE 10']);
+  });
+
+  // 盤面を回す仕組みそのものを書き換える係なので、同じ資源を触る task と並べない（2.17 の `locks`）。
+  it('`area:daemon` を持つ task が走っている間は、立てない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('kind:task', 'area:daemon'), blockedBy: { nodes: [] } }],
+      sessions: [working('session_a', 'task-9')],
+      taken: { [STUCK]: '2026-09-05T00:30:00Z' },
+    };
+
+    expect(moves(board)).toEqual(['NOTE `unstick` は #9 と資源を取り合うので立てない']);
   });
 
   // ## スメルを拾う係（4.4）
