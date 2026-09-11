@@ -20,7 +20,8 @@
 スロットの中身は「**セルの並び**」として持つ（`Slot.cells`）。
 
 - セル = 1つの `ObjectStack`（同種のまとまり）か、空（null）。**位置 = セルの添字**。
-- `ObjectStack` = 見た目上1単位として積み重なる同種インスタンスのリスト（7.6節）。
+- `ObjectStack` = 見た目上1単位として積み重なる同種インスタンスのリスト（束ねて見せることの宣言は
+  [`GameElementDefinition.md`](./GameElementDefinition.md) 7.6節）。
 - 親子関係の正の情報源は親側のスロット配列で、子側の `WorldObject.parentSlot` は逆引きキャッシュ。
   ツリーそのものの決まり（1つの子は1つの親、`world` を根とすること）は
   [`GameElementDefinition.md`](./GameElementDefinition.md) 7.1節。
