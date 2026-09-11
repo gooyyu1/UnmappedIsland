@@ -22,17 +22,15 @@
 // トークンが切れただけの周に環境IDまで死んだことになる。**確かめられなかった値は、死とも生とも
 // 数えず、それまで数えていた長さもそのまま残す。**
 //
-// ## 告げ先は1つ、運ぶ手は2つ
+// ## 告げ先は issue 1本だけ
 //
-// 告げるのは**題で引く issue 1本**だけ（`TITLE`）。開いていれば本文を丸ごと書き換え、無ければ立てる
-// ——**題が鍵なので、同じ死が続いても2本目にならない。** 全部生き返ったら閉じる。
+// 告げるのは**題で引く issue 1本**（`TITLE`）。開いていれば本文を丸ごと書き換え、無ければ立てる
+// ——**題が鍵なので、同じ死が続いても2本目にならない。** 死んでいる値も、確かめられなかった値も
+// 1つも残らなくなったら閉じる。
 //
-// **`gh` が死んでいる周は、その issue を自分では書けない。** 残っている口は CCR だけなので、
-// **Routine の完了通知**（`notifications`）で人の電話へ出す。**こちらは押した回数がそのまま届く**
-// ので、issue と違って**1つの死につき1回**に絞る（台帳の `pushed`）。
-//
-// **両方死んでいれば告げる手が無い。** 外から見ている者がこの口座に1つも無いので、ここは
-// `.claude/board-design.md` 2.19.3 と同じ場所（人の目）へ落ちる。
+// **`gh` が死んでいる周は、その issue を書けない。告げる手はそこで尽きる**——理由は
+// `.claude/board-design.md` 2.22.3。黙らずに `~/daemon.log` へは残すが、**読む者が居ないので
+// 告げたことにはならない。**
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -44,7 +42,7 @@ import { boardState } from './board-state.mjs';
 import { environmentIds } from './live-sessions.mjs';
 import { gh as runGh } from './spawn.mjs';
 
-/** 告げ先の題。**issue と Routine で同じ綴りを使う**——どちらも題が鍵で、2本目を作らない印。 */
+/** 告げ先の題。**2本目を作らない鍵はこれだけ**——台帳が失われても、題が合えば書き換えになる。 */
 export const TITLE = '盤面が動くのに要る値が死んでいる';
 
 /** 死んだまま、これだけ経ってから告げる（時間）。 */
@@ -115,7 +113,6 @@ export async function surveyValues({ call = callMeta, gh = runGh, envs = environ
   for (const { name, id } of envs()) {
     found.push({
       key: name,
-      id,
       label: `${name}（\`${id}\`）`,
       state: living === undefined ? 'unknown' : living.has(id) ? 'alive' : 'dead',
       seen: '`list_environments` の一覧に居ない',
@@ -157,19 +154,12 @@ function trackDead(previous, survey, now) {
       continue;
     }
     if (value.state === 'alive') continue;
-    next[value.key] = {
-      since: before?.since ?? stamp(now),
-      ...(before?.pushed === undefined ? {} : { pushed: before.pushed }),
-    };
+    next[value.key] = { since: before?.since ?? stamp(now) };
   }
   return next;
 }
 
-/**
- * 死んでいる値の表。**読む人はリポジトリを開かない**ので、直し方まで升に入れる。
- *
- * **告げ先が変わっても、中身はこれ1つ。** 変わるのは包み（下の `report` と `notice`）だけ。
- */
+/** 死んでいる値の表。**読む人はリポジトリを開かない**ので、直し方まで升に入れる。 */
 function deadTable(due) {
   const lines = ['| 値 | いつから | 見えた形 | 直し方 |', '|---|---|---|---|'];
   for (const value of due) {
@@ -196,17 +186,12 @@ export function report(due, now) {
 }
 
 /**
- * 電話へ出す報せ（`gh` が死んでいる周）。**issue を指さない**——`gh` が死んでいるからこちらへ来て
- * いるので、指した先は立っていないし、次の見回りが閉じにも行けない。
+ * `~/daemon.log` へ残す1行ぶん（`gh` が死んでいる周）。**告げたことにはならない**——ログを読める
+ * のは手元で叩ける人だけで、定期的に読む者が居ない（`.claude/board-design.md`「未決」）。
+ * **それでも黙らないのは、後から追えるようにするため。**
  */
-export function notice(due, now) {
-  return `${[
-    `${stamp(now)} 時点で、UnmappedIsland の盤面が動くのに要る値が死んでいます。`,
-    '**`gh` の資格情報も死んでいるので issue を立てられません。この報せが唯一の告げ先です。**',
-    '盤面はここが直るまで進みません。直せるのは人の手だけです。',
-    '',
-    ...deadTable(due),
-  ].join('\n')}\n`;
+function deadBrief(due) {
+  return due.map((value) => `${cell(value.label)}（${value.since} から）`).join('・');
 }
 
 /**
@@ -280,48 +265,6 @@ function closeIssue(gh) {
 }
 
 /**
- * Routine が立てるセッションへ渡す本文。**調べさせない**——`gh` が死んでいる周に、クラウドの
- * セッションへ盤面を調べさせても、こちらが見た値の生死は向こうからは見えない。**運ぶのは通知だけ。**
- */
-const ROUTINE_PROMPT = [
-  'これは UnmappedIsland のブリッジ（ユーザーのPC）から押された報せです。',
-  '**何も調べず、何も書き換えないでください。** 続けて届く本文が報せの中身そのものです。',
-  '届いた本文を、そのまま結論として述べて終わってください。',
-].join('\n');
-
-/**
- * CCR の通知で告げる（`gh` が死んでいる周）。**押せたら `true`。**
- *
- * Routine は**題で引いて、無ければ立てる**——立てっぱなしにするのは、`delete_trigger` を打てる者が
- * 居ないからではなく、**次に `gh` が死んだときに同じ口を使う**ため。
- */
-async function tellByPush(call, environmentId, body) {
-  const listed = metaJson(await call('list_triggers', { limit: 100 }));
-  let trigger = (listed?.data ?? []).find((item) => item.name === TITLE)?.id;
-  if (trigger === undefined) {
-    const made = metaJson(
-      await call('create_trigger', {
-        name: TITLE,
-        prompt: ROUTINE_PROMPT,
-        initiation: 'own_initiative',
-        // **発火は押したときだけ**（`cron_expression` も `run_once_at` も渡さない）。時計で立つと、
-        // 直った後も鳴り続ける。
-        create_new_session_on_fire: true,
-        environment_id: environmentId,
-        // **人の電話へ出るのはここだけ。** 立てた Routine が通知を持たないと、押しても誰も知らない。
-        notifications: { push: true, email: true },
-        // **`connectors` は渡さない。** 空で渡しても撥ねられる（2026-09-11 に実測。
-        // `the connectors parameter is not available for this organization`）。
-      }),
-    );
-    trigger = made?.trigger?.id;
-  }
-  if (trigger === undefined) return false;
-  await call('fire_trigger', { trigger_id: trigger, text: body });
-  return true;
-}
-
-/**
  * 1回見回って、告げる。**告げたら `true`。**
  *
  * 差し替え口は試験のため（`tests/scripts/checkValues.test.ts`）。省いたものは本物が入る。
@@ -367,47 +310,25 @@ export async function checkValues({
     return false;
   }
 
-  // **告げ先で包みが変わる**（上の「告げ先は1つ、運ぶ手は2つ」）。issue の本文は issue を指すので、
-  // issue を立てられない周にそれを流すと、在りもしない1本を待てと言うことになる。
-  const body = ghAlive ? report(due, now) : notice(due, now);
+  // **`gh` が死んでいれば、告げる手はそこで尽きる**（2.22.3）。ログへ残すだけで、届く先は無い。
+  if (!ghAlive) {
+    say(`値の見回り: \`gh\` が死んでいるので告げられない（${deadBrief(due)}）`);
+    write(dead);
+    return false;
+  }
+
+  const body = report(due, now);
   if (dryRun) {
-    say(`値の見回り: ${ghAlive ? 'issue' : '通知'}で告げる（DRY_RUN なので打たない）\n${body}`);
+    say(`値の見回り: issue で告げる（DRY_RUN なので打たない）\n${body}`);
     return false;
   }
 
-  if (ghAlive) {
-    const told = tellByIssue(gh, body);
-    say(
-      `値の見回り: ${due.map((value) => value.key).join(' ')} を issue へ${told ? '書いた' : '書けなかった'}`,
-    );
-    write(dead);
-    return told;
-  }
-
-  // **押すのは1つの死につき1回。** 既に押してある周は、押し直さずに黙る。
-  if (due.every((value) => dead[value.key].pushed !== undefined)) {
-    say(`値の見回り: ${due.map((value) => value.key).join(' ')} は通知済み（押し直さない）`);
-    write(dead);
-    return false;
-  }
-  // クラウドの環境が死んでいれば、Routine を立てる先が無い。
-  const cloud = survey.find((value) => value.key === 'CLOUD_ENV' && value.state === 'alive');
-  let pushed = false;
-  let excuse = 'クラウドの環境が死んでいる';
-  if (cloud !== undefined) {
-    try {
-      pushed = await tellByPush(call, cloud.id, body);
-      if (!pushed) excuse = 'Routine を立てられなかった';
-    } catch (error) {
-      // **ここで投げさせない。** 投げると台帳を書かずに終わり、**死んでいた長さを数え直す**ことに
-      // なる——次の周も同じところで転べば、猶予は永久に満ちない。
-      excuse = error instanceof Error ? error.message : String(error);
-    }
-  }
-  if (pushed) for (const value of due) dead[value.key].pushed = stamp(now);
-  say(`値の見回り: \`gh\` が死んでいるので通知で告げ${pushed ? 'た' : `られなかった（${excuse}）`}`);
+  const told = tellByIssue(gh, body);
+  say(
+    `値の見回り: ${due.map((value) => value.key).join(' ')} を issue へ${told ? '書いた' : '書けなかった'}`,
+  );
   write(dead);
-  return pushed;
+  return told;
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

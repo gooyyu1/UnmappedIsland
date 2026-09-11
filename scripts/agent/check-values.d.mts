@@ -3,8 +3,6 @@ export interface CheckedValue {
   readonly key: string;
   /** 告げる本文に出る綴り。 */
   readonly label: string;
-  /** 環境IDのときだけ持つ、そのID。 */
-  readonly id?: string;
   /** `unknown` は「確かめられなかった」——死でも生でもない。 */
   readonly state: 'alive' | 'dead' | 'unknown';
   /** 死んでいるときに見える形。 */
@@ -29,15 +27,12 @@ export interface CheckValuesDeps extends SurveyValuesDeps {
   say?: (line: string) => void;
 }
 
-/** 告げ先の題。issue と Routine で同じ綴りを使う。 */
+/** 告げ先の題。**2本目を作らない鍵はこれだけ。** */
 export const TITLE: string;
 
 export function surveyValues(deps?: SurveyValuesDeps): Promise<CheckedValue[]>;
 
 /** issue の本文。 */
 export function report(due: readonly (CheckedValue & { readonly since: string })[], now: Date): string;
-
-/** 電話へ出す報せ（`gh` が死んでいる周）。**issue を指さない。** */
-export function notice(due: readonly (CheckedValue & { readonly since: string })[], now: Date): string;
 
 export function checkValues(deps?: CheckValuesDeps): Promise<boolean>;

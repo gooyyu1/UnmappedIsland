@@ -15,10 +15,10 @@ import { TITLE, checkValues, surveyValues } from '../../scripts/agent/check-valu
  * - 死んでいる値を死んでいると読むこと（**一覧に居ないID**・`gh auth status` の失敗・CCRへ届かない）
  * - **直る途中のものを告げないこと**（猶予。CCRのトークンは数時間で切れて自分で直る）
  * - **確かめられなかったことを死と数えないこと**（CCRが落ちた周の環境ID）
- * - **同じ死で2つ目を出さないこと**（issue は題で引いて書き換え、通知は1つの死につき1回）
+ * - **同じ死で2つ目を出さないこと**（題で引いて、開いていれば書き換えるだけ）
  *
  * 外を触る手（CCR・`gh`）はすべて差し替える。**本物を打つと、走らせた者のリポジトリに issue が
- * 立ち、その口座に Routine が1本増える。**
+ * 立つ。**
  */
 
 const CLOUD = 'env_cloud';
@@ -42,13 +42,9 @@ interface World {
   /** `ccr-env.sh` が出す環境ID。 */
   readonly envs?: readonly { readonly name: string; readonly id: string }[];
   /** 台帳の中身。 */
-  readonly ledger?: Record<string, { since: string; pushed?: string }>;
+  readonly ledger?: Record<string, { since: string }>;
   /** 題で引ける、開いている issue の番号。 */
   readonly openIssue?: number;
-  /** 口座に在る Routine。 */
-  readonly triggers?: readonly { readonly id: string; readonly name: string }[];
-  /** 押すところで CCR が転ぶか。 */
-  readonly fireFails?: boolean;
   /** `gh issue list` が転ぶか（＝開いている issue を引けない周）。 */
   readonly listFails?: boolean;
 }
@@ -59,10 +55,8 @@ interface Run {
   readonly gh: readonly (readonly string[])[];
   /** `--body-file` で渡された本文（渡っていなければ `undefined`）。 */
   readonly body: string | undefined;
-  /** CCRへ投げた道具と引数。 */
-  readonly meta: readonly { readonly tool: string; readonly args: Record<string, unknown> }[];
   /** 見回りの後の台帳。 */
-  readonly ledger: Record<string, { since: string; pushed?: string } | undefined>;
+  readonly ledger: Record<string, { since: string } | undefined>;
   readonly said: readonly string[];
 }
 
@@ -89,17 +83,12 @@ async function check(world: World = {}): Promise<Run> {
       return '';
     };
 
-    const meta: { tool: string; args: Record<string, unknown> }[] = [];
-    const call = async (tool: string, args: Record<string, unknown> = {}): Promise<string> => {
-      meta.push({ tool, args });
+    const call = async (tool: string): Promise<string> => {
       if (tool === 'list_environments') {
         if (world.ccrFails === true) throw new Error('失敗: HTTP 401 トークンが切れている');
         const living = world.living ?? [CLOUD, BRIDGE];
         return JSON.stringify({ environments: living.map((id) => ({ environment_id: id })) });
       }
-      if (tool === 'list_triggers') return JSON.stringify({ data: world.triggers ?? [] });
-      if (tool === 'create_trigger') return JSON.stringify({ trigger: { id: 'trig_made' } });
-      if (tool === 'fire_trigger' && world.fireFails === true) throw new Error('失敗: HTTP 500');
       return '{}';
     };
 
@@ -124,7 +113,6 @@ async function check(world: World = {}): Promise<Run> {
       told,
       gh: ghCalls,
       body,
-      meta,
       ledger: existsSync(path) ? JSON.parse(readFileSync(path, 'utf-8')) : {},
       said,
     };
@@ -132,9 +120,6 @@ async function check(world: World = {}): Promise<Run> {
     rmSync(work, { recursive: true, force: true });
   }
 }
-
-/** その道具へ投げた引数。投げていなければ `undefined`。 */
-const sent = (run: Run, tool: string) => run.meta.find((one) => one.tool === tool)?.args;
 
 /** `gh` のその手。打っていなければ `undefined`。 */
 const ran = (run: Run, ...head: string[]) =>
@@ -293,76 +278,29 @@ describe('check-values.mjs の告げ方', () => {
   });
 });
 
+/**
+ * `gh` が死んでいる周（`.claude/board-design.md` 2.22.3）。**告げる手はそこで尽きる**ので、
+ * ここで守るのは「**告げられなかったことを、告げたことにしない**」の1点だけ。
+ */
 describe('check-values.mjs の、`gh` が死んでいる周', () => {
   const dead = { ghAuth: false, ledger: { gh: { since: LONG_AGO } } } as const;
 
-  it('issue を書かず、Routine を立てて押す', async () => {
+  // **issue を立てる手が `gh` そのもの。** 打てば転ぶし、転んだ結果を成功と読むと嘘が混ざる。
+  it('告げられなかったと答え、issue も書かない', async () => {
     const run = await check(dead);
 
-    expect(run.told).toBe(true);
+    expect(run.told).toBe(false);
     expect(ran(run, 'issue', 'create')).toBeUndefined();
-    // 通知を持たない Routine を立てると、押しても誰にも届かない（2.22.3）。
-    expect(sent(run, 'create_trigger')).toMatchObject({
-      name: TITLE,
-      environment_id: CLOUD,
-      create_new_session_on_fire: true,
-      notifications: { push: true },
-    });
-    // 時計で立つと、直った後も鳴り続ける。
-    expect(sent(run, 'create_trigger')).not.toHaveProperty('cron_expression');
-    expect(sent(run, 'create_trigger')).not.toHaveProperty('run_once_at');
-    // 空で渡しても撥ねられる（2026-09-11 に実測）。
-    expect(sent(run, 'create_trigger')).not.toHaveProperty('connectors');
-    expect(sent(run, 'fire_trigger')).toMatchObject({ trigger_id: 'trig_made' });
-    expect(String(sent(run, 'fire_trigger')?.text)).toContain('`gh` の資格情報');
+    expect(ran(run, 'issue', 'edit')).toBeUndefined();
+    expect(run.said.join('\n')).toContain('告げられない');
   });
 
-  // **押す本文は issue を指さない。** 指した先は立っていないし、次の見回りが閉じにも行けない。
-  it('押す本文は、issue の本文とは別物', async () => {
-    const run = await check(dead);
+  // **告げられない周も、死んでいた長さは書く。** 書かずに返すと、`gh` が死んでいる間は猶予が
+  // いつまでも満ちず、生き返った周にも「今死んだ」から数え直しになる。
+  it('告げられない周も、死んでいた長さは台帳に書く', async () => {
+    const run = await check({ ...dead, living: [CLOUD] });
 
-    const text = String(sent(run, 'fire_trigger')?.text);
-    expect(text).toContain('この報せが唯一の告げ先です');
-    expect(text).not.toContain('この issue');
-  });
-
-  it('題の同じ Routine が在れば、立て直さずにそれを押す', async () => {
-    const run = await check({ ...dead, triggers: [{ id: 'trig_old', name: TITLE }] });
-
-    expect(sent(run, 'create_trigger')).toBeUndefined();
-    expect(sent(run, 'fire_trigger')).toMatchObject({ trigger_id: 'trig_old' });
-  });
-
-  // **押した回数がそのまま届く**ので、issue と違って1つの死につき1回に絞る（2.22.3）。
-  it('同じ死では押し直さない', async () => {
-    const run = await check({ ...dead, ledger: { gh: { since: LONG_AGO, pushed: JUST_NOW } } });
-
-    expect(run.told).toBe(false);
-    expect(sent(run, 'fire_trigger')).toBeUndefined();
-  });
-
-  it('押したことは台帳に残る', async () => {
-    const run = await check(dead);
-
-    expect(run.ledger.gh?.pushed).toBe(NOW_STAMP);
-  });
-
-  // **押すところで転んでも、死んでいた長さは残す。** 消すと、次の周も同じところで転んだときに
-  // 猶予が永久に満ちない。
-  it('押すところで CCR が転んでも、台帳は残る', async () => {
-    const run = await check({ ...dead, fireFails: true });
-
-    expect(run.told).toBe(false);
     expect(run.ledger.gh?.since).toBe(LONG_AGO);
-    expect(run.ledger.gh?.pushed).toBeUndefined();
-  });
-
-  // **両方死んでいれば告げる手が無い**（2.22.3）。黙って成功したことにしない。
-  it('クラウドの環境も死んでいれば、押せなかったと答える', async () => {
-    const run = await check({ ...dead, living: [BRIDGE] });
-
-    expect(run.told).toBe(false);
-    expect(sent(run, 'fire_trigger')).toBeUndefined();
-    expect(run.said.join('\n')).toContain('告げられなかった（クラウドの環境が死んでいる）');
+    expect(run.ledger.BRIDGE_ENV?.since).toBe(NOW_STAMP);
   });
 });
