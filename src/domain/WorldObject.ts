@@ -53,14 +53,14 @@ export class WorldObject {
   private properties: PropertyValue[];
   private slots: Slot[];
 
-  /** 所属先（7.1節）。ルート（未格納）ならundefined。 */
+  /** 所属先の逆引きキャッシュ（SlotSystem.md 1節）。ルート（未格納）ならundefined。 */
   private _parent: WorldObject | undefined;
   get parent(): WorldObject | undefined {
     return this._parent;
   }
 
   /**
-   * 今自分が入っている枠（7.1節）。どこにも入っていなければundefined。
+   * 今自分が入っている枠の逆引きキャッシュ（SlotSystem.md 1節）。どこにも入っていなければundefined。
    *
    * **親の中での位置を、親のローカルIDでは持たない。** ローカルIDはそのオブジェクトの中でしか意味を
    * 持たない値で、他人の番号を控えると、控えた側が「誰の番号か」を覚えている必要がある。
@@ -317,10 +317,10 @@ export class WorldObject {
     return undefined;
   }
 
-  // ---- スロット移動（7.1節のmove_to_slot） ----
+  // ---- スロット移動（SlotSystem.md 1節のmove_to_slot） ----
 
   /**
-   * スロット移動を行う唯一の汎用操作（7.1節の`move_to_slot`）。枠の要件・capacityの検証は対象Slot
+   * スロット移動を行う唯一の汎用操作（SlotSystem.md 1節の`move_to_slot`）。枠の要件・capacityの検証は対象Slot
    * 自身（Slot.rejectionFor）に委ねる。
    *
    * atを渡すと枠の中の位置まで指定する（SlotPosition参照）。**指した位置に置けなければ失敗**で、
