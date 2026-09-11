@@ -183,7 +183,7 @@ function survey({ gh, sessions, warn }) {
   const unsorted = issues.filter((issue) => !names(issue).some((name) => name.startsWith('kind:')));
 
   // `issuesRaw` を返すのは、**`確定待ち` を引くのが端末の側だけ**だから（下の `board`）。
-  return { issuesRaw, prs, tasks, unsorted, live, sessionsKnown };
+  return { issuesRaw, issues, prs, tasks, unsorted, live, sessionsKnown };
 }
 
 /** 端末へ1行1件で出す形（[`board.sh`](board.sh)）。引けなければ `undefined`。 */
@@ -297,6 +297,34 @@ function patrolNote(patrol, now) {
 }
 
 /**
+ * 人の手番で止まっているもの（`判断待ち`。2.13）。**届く先はここしか無い**——ラベルを付けるのは
+ * 機械かレビュアーで、PRを出すのも issue を返すのも人と同じアカウントなので、GitHub の通知は
+ * 鳴らない。端末の盤面にはラベルの列が出るが（`board`）、**叩けない人が読めるのは本文だけ。**
+ *
+ * **何が止まるかを一緒に書く。** 効き目は1つでも、その先は母集団で決まる（1.3）——PRならマージ、
+ * issue なら投入。**なぜ止めたかは判定のコメントに在る**ので、ここは番号と題で足りる。
+ *
+ * **無い周は節ごと出さない。** 毎周「（無し）」が出る節は、在る周も同じ見た目のまま読み飛ばされる。
+ */
+function humanTurn(found) {
+  const held = [
+    ...found.prs.map((pr) => ({ item: pr, what: `PR #${pr.number}`, stops: 'マージされない' })),
+    ...found.issues.map((issue) => ({ item: issue, what: `#${issue.number}`, stops: '配られない' })),
+  ].filter(({ item }) => names(item).includes('判断待ち'));
+  if (held.length === 0) return [];
+  return [
+    '',
+    '## 人の手番',
+    '',
+    '**`判断待ち` が外れるまで、下は進みません。** 通すならPRを画面からマージ、通さないならラベルを外す（2.13.1）。',
+    '',
+    '| どれ | 外れないと | 題 |',
+    '|---|---|---|',
+    ...held.map(({ item, what, stops }) => `| ${what} | ${stops} | ${cell(item.title)} |`),
+  ];
+}
+
+/**
  * 常設の issue の本文（[`board-publish.mjs`](board-publish.mjs)）。読むのは**スマホの人間**で、
  * 手元でスクリプトを叩けない相手なので、**リポジトリを開かずに読める形**にする。
  *
@@ -338,6 +366,9 @@ export function issueBody({
   if (unreadable !== undefined) lines.push('', `⚠ ${unreadable}`);
   for (const note of notes) lines.push('', `⚠ ${note}`);
   lines.push('', patrolNote(patrol, now));
+  // **人の手番は、状態の表より先。** 断りと同じで、**読んだ人に手を打ってもらうための行**
+  // （2.20.2）——件数と表は、その後で読めばよい。
+  lines.push(...humanTurn(found));
 
   const tally = new Map(COUNTS.map((name) => [name, 0]));
   for (const task of found.tasks) {

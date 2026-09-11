@@ -332,6 +332,45 @@ describe('issueBody', () => {
     );
   });
 
+  // ## 人の手番（2.13・2.20）
+  //
+  // **ラベルを付けるのは機械かレビュアーで、PRを出すのも issue を返すのも人と同じアカウント**
+  // なので、GitHub の通知は鳴らない。端末の盤面にはラベルの列が出るが、**叩けない人が読めるのは
+  // 本文だけ**——ここに出ないなら、人は自分の手番であることを知らないまま、錠を握られた task が
+  // 全部止まる。
+  it('`判断待ち` のPRを、何が止まるかと一緒に出す', () => {
+    const { lines } = body({
+      prs: [
+        {
+          number: 10,
+          title: 'ラベルを割る',
+          labels: [{ name: '通してよい' }, { name: '判断待ち' }],
+          statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'SUCCESS' }],
+          mergeable: 'MERGEABLE',
+          body: '',
+        },
+      ],
+    });
+
+    expect(lines).toContain('## 人の手番');
+    expect(lines).toContain('| PR #10 | マージされない | ラベルを割る |');
+  });
+
+  // **issue の `判断待ち` は、ワーカーが人へ返した印**（2.15）。件数の表には「返却」として数だけ
+  // 出るが、**どれを返したかは番号が要る。**
+  it('`判断待ち` の issue を、配られないものとして出す', () => {
+    const { lines } = body({
+      issues: [issue(8, '決められない', { labels: [{ name: 'kind:task' }, { name: '判断待ち' }] })],
+    });
+
+    expect(lines).toContain('| #8 | 配られない | 決められない |');
+  });
+
+  // **毎周「（無し）」が出る節は、在る周も同じ見た目のまま読み飛ばされる。**
+  it('人の手番が無ければ、節ごと出さない', () => {
+    expect(body({ issues: [issue(1, '着手可')] }).lines).not.toContain('## 人の手番');
+  });
+
   it('配ってよいかで数えた件数を出す', () => {
     const { lines } = body({
       issues: [
