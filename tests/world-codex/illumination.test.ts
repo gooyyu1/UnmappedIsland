@@ -204,10 +204,8 @@ describe('明るさが行動を制限する', () => {
    * レシピ側ではなく世界の`crafting_conditions`（GameElementDefinition.md 13.4節）が持つ。
    */
   function carvesFireDrill(session: WorldSession, land: WorldObject, player: WorldObject): boolean {
-    const recipe = codex.objects.get(codex.objectNames.getId('fire_drill')).recipesProducingThis[0];
     const materialsSlotId = codex.vocabulary.engine.materialsSlotId;
     const wip = spawnInProgressObject(
-      session,
       land,
       codex.objectNames.getId(inProgressObjectName('fire_drill', 'carved')),
     );
@@ -218,7 +216,7 @@ describe('明るさが行動を制限する', () => {
           .moveToSlotOrRejection(wip.getSlot(materialsSlotId)),
       ).toBeUndefined();
 
-    return tryAdvanceCrafting(wip, materialsSlotId, recipe, codex, session, player);
+    return tryAdvanceCrafting(wip, player);
   }
 
   /** 繊維2束を撚る（fiber.yamlのspin）。手元の明るさを要求する工程の代表。 */

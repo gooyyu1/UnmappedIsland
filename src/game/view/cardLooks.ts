@@ -5,13 +5,12 @@ import type { PropertyValue } from '../../domain/PropertyValue';
 import type { WorldCodex } from '../../domain/WorldCodex';
 import type { WorldObject } from '../../domain/WorldObject';
 import type { World } from '../../domain/wrappers/World';
-import { currentStep, stepSupplyRatio } from '../../domain/crafting';
+import { currentStep, recipeOf, stepSupplyRatio } from '../../domain/crafting';
 import type { Localization } from '../../locale/Localization';
 import { artNameFor } from '../../art/objectArt';
 import { typeDisplayName } from '../../locale/typeDisplayName';
 import type { SlotRef } from '../../art/backgroundArt';
 import { placeholderIconOf } from './characterCard';
-import { recipeOf } from './recipeList';
 import { voyageForecastOf } from './voyageForecast';
 import { voyageDaysText } from '../looks/timeTexts';
 import type { CardContent, CardCooking, CardGauge } from '../ui/Card';
@@ -262,7 +261,7 @@ export function cardLooksOf(
     return { key: BUILTIN_GAUGE_KEYS.capacity, ratio, atMin: 'good', atMax: 'bad', worsensUpward: true };
   };
 
-  const { progressId, materialsSlotId } = codex.vocabulary.engine;
+  const { progressId } = codex.vocabulary.engine;
   /**
    * 製作中オブジェクトのカードに出す材料の充足バー（RecipeSystem.md、CardView.md 10.1節）。
    * 製作中でない物、今の工程が無い物ではundefined。
@@ -278,7 +277,7 @@ export function cardLooksOf(
 
     const step = currentStep(recipe, object.tryGetProperty(progressId)?.number ?? 0);
     if (step === undefined) return undefined;
-    const ratio = stepSupplyRatio(object, materialsSlotId, step);
+    const ratio = stepSupplyRatio(object, step);
     return { key: BUILTIN_GAUGE_KEYS.material, ratio, atMin: 'bad', atMax: 'good', worsensUpward: false };
   };
 

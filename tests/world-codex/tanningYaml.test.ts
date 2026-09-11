@@ -62,7 +62,6 @@ describe('なめし革の連鎖', () => {
   /** 材料を材料スロットへ入れた、作りかけの1つ。置き場所は作り手の手元。 */
   function startCrafting(objectName: string, recipeName: string, materials: readonly string[]): WorldObject {
     const wip = spawnInProgressObject(
-      session,
       player,
       codex.objectNames.getId(inProgressObjectName(objectName, recipeName)),
     );
@@ -82,10 +81,7 @@ describe('なめし革の連鎖', () => {
     const wip = startCrafting(objectName, recipeName, materials);
 
     for (const [index] of recipe.steps.entries())
-      expect(
-        tryAdvanceCrafting(wip, codex.vocabulary.engine.materialsSlotId, recipe, codex, session, player),
-        `${objectName}の工程${index + 1}`,
-      ).toBe(true);
+      expect(tryAdvanceCrafting(wip, player), `${objectName}の工程${index + 1}`).toBe(true);
 
     expect(wip.def.name, `${objectName} ができていない`).toBe(objectName);
     return wip;
@@ -146,10 +142,7 @@ describe('なめし革の連鎖', () => {
     expect(knife.moveToSlotOrRejection(wip.getSlot(codex.vocabulary.engine.materialsSlotId))).toBeUndefined();
 
     for (const [index] of recipe.steps.entries())
-      expect(
-        tryAdvanceCrafting(wip, codex.vocabulary.engine.materialsSlotId, recipe, codex, session, player),
-        `工程${index + 1}`,
-      ).toBe(true);
+      expect(tryAdvanceCrafting(wip, player), `工程${index + 1}`).toBe(true);
 
     expect(wip.def.name).toBe('tanned_leather');
     expect(knife.parent, '刃物は消費されない').toBeDefined();
@@ -158,34 +151,18 @@ describe('なめし革の連鎖', () => {
   it('刃物が無ければ、毛と肉を落とす工程が進まない', () => {
     const wip = startCrafting('tanned_leather', 'tanned', ['rawhide', 'tree_bark', 'tree_bark', 'tree_bark']);
 
-    expect(
-      tryAdvanceCrafting(
-        wip,
-        codex.vocabulary.engine.materialsSlotId,
-        recipeOf('tanned_leather'),
-        codex,
-        session,
-        player,
-      ),
-    ).toBe(false);
+    expect(tryAdvanceCrafting(wip, player)).toBe(false);
   });
 
   it('樹皮が無ければ、漬ける工程で止まる（生皮だけではなめせない）', () => {
-    const recipe = recipeOf('tanned_leather');
     const wip = startCrafting('tanned_leather', 'tanned', ['rawhide']);
 
     expect(
       spawn('sharp_stone').moveToSlotOrRejection(wip.getSlot(codex.vocabulary.engine.materialsSlotId)),
     ).toBeUndefined();
 
-    expect(
-      tryAdvanceCrafting(wip, codex.vocabulary.engine.materialsSlotId, recipe, codex, session, player),
-      '毛と肉は落とせる',
-    ).toBe(true);
-    expect(
-      tryAdvanceCrafting(wip, codex.vocabulary.engine.materialsSlotId, recipe, codex, session, player),
-      '漬ける樹皮が無い',
-    ).toBe(false);
+    expect(tryAdvanceCrafting(wip, player), '毛と肉は落とせる').toBe(true);
+    expect(tryAdvanceCrafting(wip, player), '漬ける樹皮が無い').toBe(false);
     expect(wip.def.name, 'なめし革になっていない').not.toBe('tanned_leather');
   });
 

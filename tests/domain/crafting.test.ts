@@ -152,14 +152,14 @@ object_defs:
 
   it('材料の充足率は、今の工程の要求を素材も道具も数える', () => {
     put('wood', 1);
-    expect(stepSupplyRatio(wip, materialsId(), recipe.steps[0]), '木1/2、刃物0/1').toBeCloseTo(1 / 3);
+    expect(stepSupplyRatio(wip, recipe.steps[0]), '木1/2、刃物0/1').toBeCloseTo(1 / 3);
 
     put('knife', 1);
-    expect(stepSupplyRatio(wip, materialsId(), recipe.steps[0]), '道具も数に入る').toBeCloseTo(2 / 3);
+    expect(stepSupplyRatio(wip, recipe.steps[0]), '道具も数に入る').toBeCloseTo(2 / 3);
 
     put('wood', 1);
-    expect(stepSupplyRatio(wip, materialsId(), recipe.steps[0])).toBe(1);
-    expect(stepIsSupplied(wip, materialsId(), recipe.steps[0]), '揃った時点で作業できる').toBe(true);
+    expect(stepSupplyRatio(wip, recipe.steps[0])).toBe(1);
+    expect(stepIsSupplied(wip, recipe.steps[0]), '揃った時点で作業できる').toBe(true);
   });
 
   it('要求数を超えて入っている分は、充足率を進めない', () => {
@@ -170,7 +170,7 @@ object_defs:
     for (let i = 0; i < 3; i += 1)
       session.createObject(idOf('wood')).moveToSlotOrRejection(raftWip.getSlot(materialsId()));
 
-    expect(stepSupplyRatio(raftWip, materialsId(), raft.steps[0]), '1工程目は1つで足りる').toBe(1);
+    expect(stepSupplyRatio(raftWip, raft.steps[0]), '1工程目は1つで足りる').toBe(1);
   });
 
   it('終えた工程の数はfinished_stepsに現れ、割合は終えた工程の数÷全工程数になる', () => {
@@ -181,7 +181,7 @@ object_defs:
 
     put('wood', 2);
     put('knife', 1);
-    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, worker())).toBe(true);
+    expect(tryAdvanceCrafting(wip, worker())).toBe(true);
 
     expect(wip.tryGetProperty(finishedStepsId)?.number ?? 0, '1工程終えるごとに1増える').toBe(1);
     expect(wip.tryGetProperty(finishedStepsId)?.ratio, '2工程中1工程＝0.5').toBe(0.5);
@@ -199,12 +199,22 @@ object_defs:
     expect(spearWip.tryGetProperty(finishedStepsId!)).toBeUndefined();
   });
 
+  it('製作中オブジェクトでない物は、レシピを名乗らないので進まない', () => {
+    // どのレシピに従うかは物自身が名乗る（recipeOf）。名乗らない物には進める工程が無いので、
+    // 時間も使わずに断る。
+    const plain = putOnGround('wood');
+    const before = session.world!.totalMinutes;
+
+    expect(tryAdvanceCrafting(plain, worker())).toBe(false);
+    expect(session.world!.totalMinutes - before, '時間も進まない').toBe(0);
+  });
+
   it('素材が足りなければ進まない', () => {
     put('wood', 1);
     put('knife', 1);
 
-    expect(stepIsSupplied(wip, materialsId(), recipe.steps[0])).toBe(false);
-    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, worker())).toBe(false);
+    expect(stepIsSupplied(wip, recipe.steps[0])).toBe(false);
+    expect(tryAdvanceCrafting(wip, worker())).toBe(false);
     expect(wip.tryGetProperty(progressId())?.number ?? 0).toBe(0);
   });
 
@@ -212,7 +222,7 @@ object_defs:
     put('wood', 2);
     put('knife', 1);
 
-    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, worker())).toBe(true);
+    expect(tryAdvanceCrafting(wip, worker())).toBe(true);
     // 木は消費される。刃物は2工程目が要求しないので、箱に留めず親へ返す。
     expect(boxContents()).toEqual([]);
     expect(onGround().sort()).toEqual([inProgressObjectName('axe', 'basic'), 'knife']);
@@ -224,7 +234,7 @@ object_defs:
     put('knife', 1);
     const before = session.world!.totalMinutes;
 
-    tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, worker());
+    tryAdvanceCrafting(wip, worker());
 
     expect(session.world!.totalMinutes - before).toBe(30);
   });
@@ -236,7 +246,7 @@ object_defs:
     const duringTicks: string[][] = [];
     session.observeTicks(
       () => duringTicks.push(boxContents()),
-      () => tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, worker()),
+      () => tryAdvanceCrafting(wip, worker()),
     );
 
     expect(duringTicks.length, '30分＝2tick').toBe(2);
@@ -252,18 +262,17 @@ object_defs:
     const seenProgress = () =>
       crafter.tryGetProperty(codex.propertyNames.getId('seen_progress'))?.getEffectiveValue();
 
-    const bench = codex.objects.get(idOf('bench')).recipesProducingThis[0];
     const benchWip = putOnGround(inProgressObjectName('bench', 'basic'));
     for (let i = 0; i < 2; i += 1)
       session.createObject(idOf('wood')).moveToSlotOrRejection(benchWip.getSlot(materialsId()));
 
     expect(seenProgress(), '工程の外ではpatientが居ない').toBe(0);
-    expect(tryAdvanceCrafting(benchWip, materialsId(), bench, codex, session, crafter)).toBe(true);
+    expect(tryAdvanceCrafting(benchWip, crafter)).toBe(true);
 
     const during: (number | undefined)[] = [];
     session.observeTicks(
       () => during.push(seenProgress()),
-      () => tryAdvanceCrafting(benchWip, materialsId(), bench, codex, session, crafter),
+      () => tryAdvanceCrafting(benchWip, crafter),
     );
 
     expect(during, '2工程目の最中は、どのtickでも1工程目ぶんの進捗が見える').toEqual([30, 30]);
@@ -285,7 +294,7 @@ object_defs:
         checked += 1;
         expect(startAnotherAction).toThrowError(/agent/);
       },
-      () => tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, crafter),
+      () => tryAdvanceCrafting(wip, crafter),
     );
 
     expect(checked, '30分＝2tick、どちらの最中も主張されている').toBe(2);
@@ -294,13 +303,12 @@ object_defs:
 
   // 在庫確認は開始時に一度だけで、経過中の再判定はしない（ActionSystem.md 6.1節）。
   it('経過中に素材が失われても、始めた工程は成立する', () => {
-    const spear = codex.objects.get(idOf('spear')).recipesProducingThis[0];
     const spearWip = session.createObject(idOf(inProgressObjectName('spear', 'basic')));
     spearWip.moveToSlotOrRejection(ground.getSlot(codex.slotNames.getId('items')));
     const rotting = session.createObject(idOf('crumbling_wood'));
     rotting.moveToSlotOrRejection(spearWip.getSlot(materialsId()));
 
-    expect(tryAdvanceCrafting(spearWip, materialsId(), spear, codex, session, worker())).toBe(true);
+    expect(tryAdvanceCrafting(spearWip, worker())).toBe(true);
 
     expect(rotting.parent, '素材は経過中に壊れて世界から外れている').toBeUndefined();
     expect(spearWip.def.name, 'それでも工程は成立し、同じ個体が完成品になる').toBe('spear');
@@ -311,13 +319,13 @@ object_defs:
     put('knife', 1);
     put('rope', 1);
 
-    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, worker())).toBe(true);
+    expect(tryAdvanceCrafting(wip, worker())).toBe(true);
     expect(onGround().sort(), '途中はまだ製作中。用済みの刃物は先にこぼれる').toEqual([
       inProgressObjectName('axe', 'basic'),
       'knife',
     ]);
 
-    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, worker())).toBe(true);
+    expect(tryAdvanceCrafting(wip, worker())).toBe(true);
     expect(onGround().sort()).toEqual(['axe', 'knife']);
   });
 });
@@ -377,16 +385,12 @@ object_defs:
   });
 
   it('製作中オブジェクトは、引き継いだ置き場所のタグが通るスロットへ入る', () => {
-    const axe = spawnInProgressObject(session, ground, idOf(inProgressObjectName('axe', 'basic')));
+    const axe = spawnInProgressObject(ground, idOf(inProgressObjectName('axe', 'basic')));
     expect(axe.parent, 'アイテムはitemsへ').toBe(ground);
     expect(contentsOf('items')).toEqual([inProgressObjectName('axe', 'basic')]);
 
     // itemsはfixtureを受け入れないので、スロット名を決め打ちすると行き先を失う。
-    const campfire = spawnInProgressObject(
-      session,
-      ground,
-      idOf(inProgressObjectName('campfire', 'stacked')),
-    );
+    const campfire = spawnInProgressObject(ground, idOf(inProgressObjectName('campfire', 'stacked')));
     expect(campfire.parent, '設置物はfixturesへ').toBe(ground);
     expect(contentsOf('fixtures')).toEqual([inProgressObjectName('campfire', 'stacked')]);
   });

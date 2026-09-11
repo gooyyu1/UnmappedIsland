@@ -209,16 +209,11 @@ describe('石斧を作る', () => {
 
   /** 石斧の作りかけを、その土地へ置く。 */
   function startAxe(session: WorldSession, field: WorldObject): WorldObject {
-    return spawnInProgressObject(
-      session,
-      field,
-      codex.objectNames.getId(inProgressObjectName('stone_axe', 'hafted')),
-    );
+    return spawnInProgressObject(field, codex.objectNames.getId(inProgressObjectName('stone_axe', 'hafted')));
   }
 
   it('太い枝・尖った石・紐から、2工程で石斧ができる', () => {
     const { session, field } = rockyField();
-    const recipe = codex.objects.get(codex.objectNames.getId('stone_axe')).recipesProducingThis[0];
     const materialsId = codex.vocabulary.engine.materialsSlotId;
     const wip = startAxe(session, field);
     // 工程を進めるには手元の明るさが要る（IlluminationSystem.md 5節）。
@@ -229,11 +224,11 @@ describe('石斧を作る', () => {
       ).toBeUndefined();
 
     put('thick_branch');
-    expect(tryAdvanceCrafting(wip, materialsId, recipe, codex, session, smith), '柄を削り出す').toBe(true);
+    expect(tryAdvanceCrafting(wip, smith), '柄を削り出す').toBe(true);
 
     put('sharp_stone');
     put('cord');
-    expect(tryAdvanceCrafting(wip, materialsId, recipe, codex, session, smith), '刃を据えて縛る').toBe(true);
+    expect(tryAdvanceCrafting(wip, smith), '刃を据えて縛る').toBe(true);
 
     expect(
       new Location(field, codex).items.map((item) => item.def.name),
