@@ -192,6 +192,21 @@ describe('同梱の表示文字列ファイル', () => {
     }
   });
 
+  it('外から見えるスロット（visible_slots）はすべて表示名を持つ', () => {
+    // 子ウィンドウのタブの見出しになる（Windows.md 1.2節）ため、欠けると識別子（salt等）が
+    // そのままタブに出る。名乗らないスロットはタブに並ばないので、ここではvisible_slotsだけを見る。
+    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
+      const objectDef = codex.objects.get(globalId);
+      for (const slotGlobalId of objectDef.visibleSlotGlobalIds) {
+        const name = codex.slotNames.getName(slotGlobalId);
+        expect(
+          locale.slot(name).displayName,
+          `${objectDef.name}が見せるスロット ${name} には表示名が必要`,
+        ).not.toBe(name);
+      }
+    }
+  });
+
   it('キャラクタのプロパティはすべてアイコンを持つ', () => {
     // ステータスの行の左に出る（StatusArea.md 3節）。どのプロパティも固定表示にすればそこへ並ぶので、
     // statusタグの有無では絞らない。欠けるとその行だけ絵ではなく名前になる。
