@@ -29,13 +29,11 @@ import { fileURLToPath } from 'node:url';
 
 import { busySession, moves } from './board-move.mjs';
 import { MERGED_WINDOW_HOURS, readBoard } from './board-read.mjs';
+import { STUCK, boardState, readLedger, writeLedger } from './board-state.mjs';
 import { formatLive, liveSessions } from './live-sessions.mjs';
 import { gh as runGh, posix, runBash } from './spawn.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-
-/** 打った手を、そのとき盤面がどう見えていたか（指紋）とともに残す台帳。 */
-const ledgerPath = (stateDir) => join(stateDir, 'taken.json');
 
 /**
  * ぶつかった実績の帳面（1行1件のJSON。`.claude/board-design.md` 3.1）。**盤面は同じファイルを書く
@@ -58,16 +56,19 @@ const defaultWarn = (line) => writeSync(2, `${line}\n`);
 /** 隣のスクリプトを1本叩く。 */
 const defaultRunScript = (name, args, options) => runBash(join(HERE, name), args, options);
 
-function readLedger(stateDir) {
-  try {
-    return JSON.parse(readFileSync(ledgerPath(stateDir), 'utf8'));
-  } catch {
-    return {};
-  }
-}
-
-function writeLedger(stateDir, taken) {
-  writeFileSync(ledgerPath(stateDir), `${JSON.stringify(taken, undefined, 2)}\n`);
+/**
+ * **盤面が進んでいないと見え始めた時刻**を控える／消す（`board-state.mjs` の `STUCK`）。
+ *
+ * **進んでいないの中身は2つあり、印は1つ。** 盤面を引けなかった周と、**打つべき手が在ったのに
+ * 手綱以外の理由で1つも打てなかった周**——どちらも、外から見れば盤面が1ミリも動いていない周で、
+ * **続いた長さだけが読む側の要る値**（`.claude/board-design.md` 2.21）。
+ *
+ * **始まりだけを覚える。** 毎周書き直すと、続いた長さが出せない。
+ */
+function markStuck(stateDir, at) {
+  const taken = readLedger(stateDir);
+  taken[STUCK] ??= at;
+  writeLedger(stateDir, taken);
 }
 
 /** 帳面に既に載っている `<PR>:<先頭コミット>`。読めない周は空（帳面がまだ無い周と同じ）。 */
@@ -142,6 +143,9 @@ export function newConflicts(prs, written, describe, at) {
  * **`cycle:` だけは残す。** あれは盤面の何かに紐づく指紋ではなく、**周期の係を前に立てた時刻**
  * （`board-move.mjs` の `CYCLES`）。捨てると、次の周に間隔が満ちていないものまで立つ。
  *
+ * **`stuck:` も残す。** あれは盤面の何かに紐づく指紋ではなく、**盤面が進んでいないと見え始めた
+ * 時刻**（`board-state.mjs` の `STUCK`）。捨てると、続いた長さが毎周0へ戻る。
+ *
  * **`tidy:` は時刻で捨てる。** 後片付けの相手はマージ済みのPRで、開いているPRの一覧には載らない
  * ——**引けなかった周を「1件も無い」と読むと、その周に全部の覚えが消える**（次の周、窓に入って
  * いるぶんが丸ごと打ち直される）。指紋は打った時刻なので、**窓（`MERGED_WINDOW_HOURS`）を過ぎた
@@ -155,6 +159,7 @@ export function pruneTaken(taken, board) {
   for (const [key, mark] of Object.entries(taken)) {
     const lives =
       key.startsWith('cycle:') ||
+      key.startsWith('stuck:') ||
       (key.startsWith('tidy:') && Date.parse(mark) >= tidyFrom) ||
       (key.startsWith('resume:') && ids.has(key.slice('resume:'.length))) ||
       (key.startsWith('review:') && numbers.has(key.slice('review:'.length))) ||
@@ -202,7 +207,25 @@ const returnBody = (session, issue) =>
 同じ内容でもう一度投入するなら、この issue（#${issue}）から \`判断待ち\` を外してください。
 `;
 
-/** 1手打つ。打てたら `true`、打たなかったら `false`（呼び手は次の手へ進む）。 */
+/**
+ * 1手の結果。**「打てなかった」を2つに割る**——人が手綱で止めている周（`BRAKED`）と、それ以外
+ * （`FAILED`）。**盤面が進まない周を詰まりと読む側**は前者を数えてはいけない
+ * （`.claude/board-design.md` 2.21。手綱で止まっているのは人の意思で、直す相手が居ない）。
+ */
+export const PLAYED = 'played';
+export const FAILED = 'failed';
+export const BRAKED = 'braked';
+
+/**
+ * セッションを立てる・起こすスクリプトが、**人が手綱で止めていることを名乗る**終了コード
+ * （[`brake.sh`](brake.sh)。そちらが綴りを持ち、ここはその読み手）。
+ */
+const BRAKED_EXIT = 3;
+
+/** 投入・再開のスクリプトの終了コードを、1手の結果へ読み替える。 */
+const dispatched = (status) => (status === 0 ? PLAYED : status === BRAKED_EXIT ? BRAKED : FAILED);
+
+/** 1手打つ。打てたら `PLAYED`（呼び手は周を切り上げる）、それ以外は次の手へ進む。 */
 export function play(kind, args, { runScript, gh, remember, log, echo }) {
   const [a = '', b = '', c = '', d = ''] = args;
   switch (kind) {
@@ -210,17 +233,18 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
       // 終了コード2は「後片付けに残りがある」。手は打てているので、次の周は別の手へ進む
       // ——**残りの多くは打ち直しても同じ結果になる**（本体が汚れている・`Closes` が閉じ損ねている）。
       const code = runScript('tidy-merged-pr.sh', [a]).status;
-      if (code !== 0 && code !== 2) return false;
+      if (code !== 0 && code !== 2) return FAILED;
       remember(`tidy:${a}`, b);
-      return true;
+      return PLAYED;
     }
     case 'MERGE': {
-      return runScript('merge-pr.sh', [a]).status === 0;
+      return runScript('merge-pr.sh', [a]).status === 0 ? PLAYED : FAILED;
     }
     case 'RESUME': {
-      if (runScript('resume-session.sh', [a, b, c]).status !== 0) return false;
+      const result = dispatched(runScript('resume-session.sh', [a, b, c]).status);
+      if (result !== PLAYED) return result;
       remember(`resume:${a}`, d);
-      return true;
+      return PLAYED;
     }
     case 'RETURN': {
       // 本文は複数行なので、引数ではなくファイルで渡す。**`gh` は Windows のバイナリ**なので、
@@ -229,17 +253,18 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
       try {
         const body = join(work, 'return.md');
         writeFileSync(body, returnBody(b, a));
-        if (gh(['issue', 'comment', a, '--body-file', body]) === undefined) return false;
+        if (gh(['issue', 'comment', a, '--body-file', body]) === undefined) return FAILED;
       } finally {
         rmSync(work, { recursive: true, force: true });
       }
       remember(`resume:${b}`, c);
-      return true;
+      return PLAYED;
     }
     case 'REVIEW': {
-      if (runScript('dispatch-review.sh', [a]).status !== 0) return false;
+      const result = dispatched(runScript('dispatch-review.sh', [a]).status);
+      if (result !== PLAYED) return result;
       remember(`review:${a}`, b);
-      return true;
+      return PLAYED;
     }
     case 'ARCHIVE': {
       // 畳んでよいかの判定は [`archive-session.sh`](archive-session.sh) が持つ。**終了コードは見ない**
@@ -249,17 +274,17 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
         input: `${a}\n`,
         capture: true,
       });
-      if (out.status !== 0) return false;
+      if (out.status !== 0) return FAILED;
       echo(`${out.stdout.replace(/\n+$/, '')}\n`);
 
       const verdicts = out.stdout.split(/\r?\n/);
-      if (verdicts.includes(`ARCHIVED ${a}`)) return true;
+      if (verdicts.includes(`ARCHIVED ${a}`)) return PLAYED;
       // `KEPT` は「畳んではいけない」という**安定した答え**（接頭辞に当たるタグを持たないもの・
       // 素性を引けなかったもの）。
       // 指紋を残さないと、**1周1手のうちの1手がこれで埋まり続ける。** `UNARCHIVED` は失敗なので残さず、
       // 次の周にもう一度試す。
       if (verdicts.includes(`KEPT ${a}`)) remember(`archive:${a}`, b);
-      return false;
+      return FAILED;
     }
     case 'TASK': {
       // **補足は無い。** 書けるのはモデルだけで、デーモンには書くものが無い——issue 本文が全部を持つ
@@ -272,7 +297,7 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
         const supplement = join(work, 'supplement.md');
         writeFileSync(supplement, '');
         const where = b === '' ? [] : [b];
-        return runScript('dispatch-task.sh', [a, posix(supplement), ...where]).status === 0;
+        return dispatched(runScript('dispatch-task.sh', [a, posix(supplement), ...where]).status);
       } finally {
         rmSync(work, { recursive: true, force: true });
       }
@@ -281,13 +306,14 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
       // 周期の係（`board-move.mjs` の `CYCLES`）。**指紋は立てた時刻**で、次に立ててよいかを決める
       // のは盤面。**立てられなかった周は覚えない**——覚えると、失敗したまま間隔ぶん黙る。
       const where = d === '' ? [] : [d];
-      if (runScript('dispatch-chore.sh', [a, b, ...where]).status !== 0) return false;
+      const result = dispatched(runScript('dispatch-chore.sh', [a, b, ...where]).status);
+      if (result !== PLAYED) return result;
       remember(`cycle:${a}`, c);
-      return true;
+      return PLAYED;
     }
     default:
       log(`知らない手なので打たない: ${kind} ${a} ${b} ${c}`);
-      return false;
+      return FAILED;
   }
 }
 
@@ -304,7 +330,7 @@ export function round({
   echo = defaultEcho,
   warn = defaultWarn,
   now = () => new Date(),
-  stateDir = process.env.BOARD_STATE ?? `${process.env.USERPROFILE ?? process.env.HOME}/.claude/board-state`,
+  stateDir = boardState(),
   // チェックが1本も登録されないPRを緑と読むまでの猶予。登録の途中と見分けが付かないので待つ。
   settleMinutes = Number(process.env.SETTLE_MINUTES || 10),
   dryRun = (process.env.DRY_RUN ?? '') !== '',
@@ -313,12 +339,18 @@ export function round({
   // 引くと同じ答えを4回買うことになる——`list_sessions` の上限は1時間あたりで数えるので、その
   // 回数がそのまま盤面の回る速さの天井になる。引いたものはファイルへ置き、叩くスクリプトへは
   // 環境変数で在り処だけを渡す。**この周のうちに立ったセッションは、次の周の一覧に載る。**
+  // **この周の時刻は1つ**（比べる相手も、詰まりの印も同じ形で書く）。
+  const at = now();
+
   let live;
   try {
     live = sessions();
   } catch (error) {
     // **理由を言えるのは投げた側だけ**なので、その言葉をそのまま出す。
     warn(error instanceof Error ? error.message : String(error));
+    // **引けなかった周も、盤面は1ミリも動いていない。** 引けない間は誰もセッションを立てられない
+    // ので、ここで控えた印を読むのは人（2.20 の書き出し）。
+    if (!dryRun) markStuck(stateDir, at.toISOString());
     return false;
   }
   const livePath = join(stateDir, 'live-sessions.tsv');
@@ -335,7 +367,6 @@ export function round({
   }
 
   const taken = readLedger(stateDir);
-  const at = now();
   const board = readBoard({
     gh,
     sessions: () => live,
@@ -346,7 +377,10 @@ export function round({
     settleMinutes,
     taken,
   });
-  if (board === undefined) return false;
+  if (board === undefined) {
+    if (!dryRun) markStuck(stateDir, at.toISOString());
+    return false;
+  }
 
   const remaining = trackIdle(pruneTaken(taken, board), board, at.toISOString());
   writeLedger(stateDir, remaining);
@@ -385,16 +419,33 @@ export function round({
     log(`ぶつかった: PR #${record.pr} ${record.files.join(' ')}${rivals === '' ? '' : ` … ${rivals}`}`);
   }
 
+  // **この周に、手綱以外の理由で打てなかった手が1つでもあったか**（`board-state.mjs` の `STUCK`）。
+  // 人が止めているだけの周は数えない——直す相手が居ないので、詰まりを解く係を立てても仕事が無い。
+  //
+  // **打てた手が後ろに在っても、手前で転んだ手は数える。** 盤面が全体として進んでいても、**同じ手
+  // だけが毎周転び続ける形**（投入だけが通らない・レビューだけが立たない）がこの仕組みの相手で、
+  // 「1手でも打てたなら健康」と読むと、その形がまるごと見えなくなる。
+  //
+  // **見えないのは、打てた手より後ろに並んでいた手。** 1周1手で切り上げるので試していない
+  // （2.21）。
+  let blocked = false;
   for (const line of played) {
     const [kind, ...args] = line.split(' ');
     const [a = '', b = '', c = ''] = args;
     log(`打つ: ${kind} ${a} ${b} ${c}`);
-    if (play(kind, args, { runScript: runScriptHere, gh, remember, log, echo })) {
+    const result = play(kind, args, { runScript: runScriptHere, gh, remember, log, echo });
+    if (result === PLAYED) {
       log(`打てた: ${kind} ${a}`);
-      return true;
+      // **打つのは1周に1手**（このファイルの冒頭）。
+      break;
     }
-    log(`打てなかった: ${kind} ${a}`);
+    log(`打てなかった: ${kind} ${a}${result === BRAKED ? '（手綱で止まっている）' : ''}`);
+    if (result === FAILED) blocked = true;
   }
+  // **打てた手が1つも無くても、出した手が無ければ詰まりではない**（やることが無い周）。
+  if (blocked) remaining[STUCK] ??= at.toISOString();
+  else delete remaining[STUCK];
+  writeLedger(stateDir, remaining);
   return true;
 }
 

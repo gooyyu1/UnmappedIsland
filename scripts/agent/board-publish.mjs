@@ -20,6 +20,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { STUCK, boardState, readLedger } from './board-state.mjs';
 import { issueBody } from './board.mjs';
 import { gh as runGh } from './spawn.mjs';
 
@@ -36,9 +37,18 @@ const defaultWarn = (line) => writeSync(2, `${line}\n`);
  *
  * **引けなかった周は書き込まない。** 欠けた盤面で上書きすると、**在るはずのものが消えた盤面**が
  * 残る——古いままのほうが、読む側は最終更新の時刻で気づける。
+ *
+ * **盤面が進んでいない印は、デーモンの台帳から引く**（[`board-state.mjs`](board-state.mjs)）。
+ * 置くのは1周を回す側で、**人へ見せるのはここ**——引けない周にできるのはこれだけ（2.21）。
  */
-export function publish({ gh = runGh, body = issueBody, issue = ISSUE, warn = defaultWarn } = {}) {
-  const text = body({ gh, warn });
+export function publish({
+  gh = runGh,
+  body = issueBody,
+  issue = ISSUE,
+  warn = defaultWarn,
+  stuckSince = readLedger(boardState())[STUCK],
+} = {}) {
+  const text = body({ gh, warn, stuckSince });
   if (text === undefined) return false;
 
   // 本文は複数行なので、引数ではなくファイルで渡す（`board-round.mjs` の `RETURN` と同じ）。

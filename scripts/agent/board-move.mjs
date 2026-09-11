@@ -57,6 +57,7 @@
 // **片方だけで書くと、再レビューが永久に止まるか、手が空いた上へ2本目が立つ。**
 // どの値がどちらに答えるかは 1.6。
 
+import { STUCK } from './board-state.mjs';
 import { asksUser, readVersion, readsVersion, verdicts } from './review-verdicts.mjs';
 
 /**
@@ -138,6 +139,28 @@ const READ_MARK = 'EYES';
  * **粒度はコメント**。1つのコメントに `[スメル] ` の行が複数入るが、**マージ後のコメントは増えない**
  * ので、コメント1つに印1つで足りる。
  */
+/**
+ * 盤面が進まないまま**これだけ続いたら、詰まりと読む**（`.claude/board-design.md` 2.21）。
+ *
+ * **短くしない。** 打てない手は一時の失敗でも出る（GitHubが数分沈む・立てた直後の取り合い）ので、
+ * 直す相手が要るのは**自分では戻らなかったもの**だけ。**長くもしない**——詰まっている間、盤面は
+ * 1ミリも動かない。
+ */
+const STUCK_HOURS = Number(process.env.STUCK_HOURS || 1);
+
+/**
+ * 盤面が進まないまま続いている時間（進んでいれば0）。**印を置くのは1周を回す側**
+ * （[`board-round.mjs`](board-round.mjs)）で、ここはその読み手。
+ *
+ * **覚えが無ければ0**——この周に詰まり始めたか、まだ一度も見ていないかのどちらかで、どちらも
+ * 「続いている」とは言えない（`idleMinutes` と同じ倒し方）。
+ */
+function stuckHours(board) {
+  const since = Date.parse(board.taken?.[STUCK] ?? '');
+  const at = Date.parse(board.now ?? '');
+  return Number.isNaN(since) || Number.isNaN(at) ? 0 : (at - since) / 3_600_000;
+}
+
 function hasUnreadSmell(mergedPrs) {
   return mergedPrs.some((pr) =>
     (pr.comments ?? []).some(
@@ -225,6 +248,19 @@ const CYCLES = [
     // **配れる `kind:task` が尽きた周がこの係の出番。** 枠（`HELD_TASKS`・`ACTIVE_WORKERS`）や錠で
     // 待っているだけの周は立てない——待っている task は在るので、掘り起こしても配れる先が増えない。
     due: (board) => readyTasks(board).length === 0,
+  },
+  {
+    name: 'unstick',
+    // **仕事があるときしか立たない係なので、間隔は「どれだけ止まったままでよいか」。** 詰まって
+    // いる間、盤面は1ミリも動かない——溜めてから捌く性質が無い。
+    hours: 1,
+    // **このPCでしか調べられない。** 何が転んだかが残っているのは `~/daemon.log` と
+    // `~/.claude/board-state` で、どちらもクラウドの箱には無い（`.claude/board-design.md` 2.21）。
+    env: 'bridge',
+    // **盤面を回す仕組みそのものを書き換える係**なので、同じ資源を触る task と並べない。
+    locks: ['area:daemon'],
+    prompt: '.claude/unstick-prompt.md',
+    due: (board) => stuckHours(board) >= STUCK_HOURS,
   },
 ];
 

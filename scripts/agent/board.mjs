@@ -242,15 +242,41 @@ const counted = (task) => (task.state.startsWith('待ち') ? '待ち' : task.sta
 const cell = (text) => String(text).replace(/\|/g, '\\|');
 
 /**
+ * 経過した長さ。**読む人に引き算をさせない**——リポジトリも時計も開かずに、止まっている長さが
+ * そのまま読める形にする。
+ */
+function elapsed(from, now) {
+  const minutes = Math.floor((now.getTime() - from) / 60_000);
+  if (minutes < 60) return `${minutes}分`;
+  return `${Math.floor(minutes / 60)}時間${minutes % 60}分`;
+}
+
+/**
+ * 盤面が進んでいないことの断り（`.claude/board-design.md` 2.21）。**印を置くのはデーモン**
+ * （[`board-state.mjs`](board-state.mjs) の `STUCK`）で、ここはその読み手。
+ *
+ * **いちばん上へ出す。** 引けない周のデーモンにできることはこれだけで、**直せるのは Claude Code
+ * 本体を触れる人だけ**——表の状態より先に読まれる必要がある。
+ *
+ * **読めない値なら何も出さない。** 出どころは台帳のテキストなので、壊れていることがありうる。
+ */
+function stuckNote(since, now) {
+  const from = Date.parse(since ?? '');
+  if (Number.isNaN(from)) return undefined;
+  return `**盤面が進んでいません。** ${since} から ${elapsed(from, now)}、手が1つも進んでいません`;
+}
+
+/**
  * 常設の issue の本文（[`board-publish.mjs`](board-publish.mjs)）。読むのは**スマホの人間**で、
  * 手元でスクリプトを叩けない相手なので、**リポジトリを開かずに読める形**にする。
  *
  * **断りは本文へも出す。** 一覧を引けなかった周は状態が当てにならないが、**それを知らせる先が
- * ログしか無いと、読んでいる人は嘘の表を正しいものとして読む。**
+ * ログしか無いと、読んでいる人は嘘の表を正しいものとして読む。** 盤面が進んでいないこと
+ * （`stuckSince`）も同じで、**ログを読めるのは手元で叩ける人だけ。**
  *
  * 引けなければ `undefined`（呼び手は書き込まない——**古い本文が残るほうが、欠けた盤面より正しい**）。
  */
-export function issueBody({ gh = runGh, sessions = liveSessions, warn, now = new Date() } = {}) {
+export function issueBody({ gh = runGh, sessions = liveSessions, warn, now = new Date(), stuckSince } = {}) {
   const notes = [];
   const found = survey({
     gh,
@@ -269,6 +295,10 @@ export function issueBody({ gh = runGh, sessions = liveSessions, warn, now = new
     '',
     `最終更新 ${at}`,
   ];
+  // **詰まりの断りが先。** 一覧を引けなかった周の断り（`notes`）は表の読み方の注釈だが、こちらは
+  // **読んだ人に手を打ってもらうための行**（2.21）。
+  const stuck = stuckNote(stuckSince, now);
+  if (stuck !== undefined) lines.push('', `⚠ ${stuck}`);
   for (const note of notes) lines.push('', `⚠ ${note}`);
 
   const tally = new Map(COUNTS.map((name) => [name, 0]));

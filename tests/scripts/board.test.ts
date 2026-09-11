@@ -28,6 +28,8 @@ interface World {
   /** 一覧を引けない（[`live-sessions.mjs`](../../scripts/agent/live-sessions.mjs) は投げる）。 */
   readonly sessionsFail?: boolean;
   readonly checked?: string;
+  /** 盤面が進んでいないと見え始めた時刻（デーモンの台帳。`board-state.mjs` の `STUCK`）。 */
+  readonly stuckSince?: string;
 }
 
 const deps = (world: World, warn: (line: string) => void) => ({
@@ -55,6 +57,7 @@ function body(world: World = {}): { lines: string[]; warnings: string[] } {
   const text = issueBody({
     ...deps(world, (line: string) => warnings.push(line)),
     now: new Date('2026-09-07T03:04:05.678Z'),
+    stuckSince: world.stuckSince,
   });
   return { lines: (text ?? '').split('\n'), warnings };
 }
@@ -266,6 +269,25 @@ describe('issueBody', () => {
   // そのまま「デーモンが動いていない」を告げる。
   it('最終更新の時刻を書く', () => {
     expect(body().lines).toContain('最終更新 2026-09-07T03:04:05Z');
+  });
+
+  // **盤面を引けない周に、デーモンにできるのはこれだけ**（2.21）。直せるのは Claude Code 本体を
+  // 触れる人だけで、`~/daemon.log` を読めるのは手元で叩ける人だけ——**届く先はここしか無い。**
+  it('盤面が進んでいなければ、続いた長さを添えて断る', () => {
+    const { lines } = body({ stuckSince: '2026-09-07T01:19:05Z' });
+
+    expect(lines).toContain(
+      '⚠ **盤面が進んでいません。** 2026-09-07T01:19:05Z から 1時間45分、手が1つも進んでいません',
+    );
+  });
+
+  it('進んでいる盤面には、断りを出さない', () => {
+    expect(body().lines.join('\n')).not.toContain('盤面が進んでいません');
+  });
+
+  // 出どころは台帳のテキストなので、壊れていることがありうる。**壊れた値で嘘の長さを出さない。**
+  it('読めない時刻なら、断りを出さない', () => {
+    expect(body({ stuckSince: 'ゆうべ' }).lines.join('\n')).not.toContain('盤面が進んでいません');
   });
 
   it('配ってよいかで数えた件数を出す', () => {
