@@ -1,7 +1,7 @@
 name: Board labels
 
 # 盤面のラベルと依存を付け外しする。**モデルのセッションが手で付けていたぶん**を引き取る
-# （[`.claude/board-design.md`](../../.claude/board-design.md) 2.2・段3）。
+# （[`.claude/board-design.md`](../../.claude/board-design.md) 2.2.1・段3）。
 #
 # ラベルは**事実**しか持たない（1.3）。ここが動かすのは次。
 #
@@ -17,7 +17,7 @@ name: Board labels
 # 確かめられない。**
 #
 # `GITHUB_TOKEN` で足りる。他のワークフローを起こす必要が無いのはラベルだけで、**マージには
-# PAT が要る**（2.2。段5）。
+# PAT が要る**（2.2.3。段5）。
 
 on:
   issue_comment:
