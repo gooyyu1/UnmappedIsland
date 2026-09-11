@@ -936,10 +936,10 @@ PRのコメントには `[スメル] ` の行が2つの口から入る——レ�
 形**は `.claude/analysis/<日付>.md` へ1回1ファイルで残す。渡す本文は
 [`analysis-prompt.md`](analysis-prompt.md)。
 
-**この係が見るのはその回の帯だけで、過去の回の記録は読まない**（[`board-design.md`](board-design.md)
-2.17.4）。**回をまたいで同じ形が出ているかを見るのは二次の係**
-（[`analysis-trend-prompt.md`](analysis-trend-prompt.md)）で、そちらの入力は一次が書いた記録だけ、
-書く先は `.claude/analysis/summary/<日付>.md`。**同じ形を一次が毎回書くのは無駄ではない**——何回の帯に
+**この係が見るのはその回の帯だけで、過去の回の記録で傾向を探さない**（[`board-design.md`](board-design.md)
+2.17.4。**その回のスメルが名指した行を確かめるために開くのは別**）。**回をまたいで同じ形が出ているかを
+見るのは二次の係**（[`analysis-trend-prompt.md`](analysis-trend-prompt.md)）で、そちらの入力は一次が
+書いた記録だけ、書く先は `.claude/analysis/summary/<日付>.md`。**同じ形を一次が毎回書くのは無駄ではない**——何回の帯に
 独立して現れたかが、二次にとっての根拠そのもの。
 
 - **読むのはマージ済みのPRだけ。** 開いているPRのコメントは、次の周のレビューや直しで消えることが
