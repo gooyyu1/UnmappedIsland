@@ -1,5 +1,6 @@
 import type { PropertyPassiveEffect } from './PassiveEffect';
 import type { WorldObject } from './WorldObject';
+import { ReferenceContext } from './ReferenceRoot';
 
 /**
  * 登録済みの効果1件。targetの起点・kind(modify/add)を問わず同じ形で持つ（対象に書ける起点は
@@ -23,10 +24,27 @@ export class RegisteredPassiveEffect {
   private readonly slotBearer: WorldObject;
   private readonly def: PropertyPassiveEffect;
 
-  constructor(declarer: WorldObject, slotBearer: WorldObject, def: PropertyPassiveEffect) {
+  /**
+   * ゲート（8.2節）の役（11.5節）を答える文脈。**持つのは操作が宣言した持続効果（11.7節）だけ**
+   * ——役を答えるのは宣言したその操作の関係で、宣言元が経過中に別の関係へも加わっても動かない
+   * （押す先を登録時に確定させるのと同じ理由。WorldSession.whileInteractionPassives）。
+   *
+   * **物のdefの宣言では持たず、そのつど宣言元の今の参加から解く。** self/parent対象の宣言は参加が
+   * 変わっても張り直されないので、憶えると「手番の外で登録された分は、どの手番でもagentを解決しない」
+   * になる。
+   */
+  private readonly interactionRoles: ReferenceContext | undefined;
+
+  constructor(
+    declarer: WorldObject,
+    slotBearer: WorldObject,
+    def: PropertyPassiveEffect,
+    interactionRoles: ReferenceContext | undefined,
+  ) {
     this.declarer = declarer;
     this.slotBearer = slotBearer;
     this.def = def;
+    this.interactionRoles = interactionRoles;
   }
 
   /**
@@ -39,6 +57,13 @@ export class RegisteredPassiveEffect {
 
   /** この効果が現在寄与している量。ゲート（8.2節）が有効ならAmount、無効なら0。 */
   activeAmount(): number {
-    return this.def.activeAmount(this.declarer, this.slotBearer);
+    return this.def.activeAmount(this.declarer, this.gateContext);
+  }
+
+  /** ゲートのconditionsを解く文脈。selfは辺の子側（slotBearer）、役はinteractionRolesの決まりで。 */
+  private get gateContext(): ReferenceContext {
+    return (this.interactionRoles ?? ReferenceContext.forParticipant(this.declarer)).withSelf(
+      this.slotBearer,
+    );
   }
 }
