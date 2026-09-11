@@ -1157,7 +1157,7 @@ describe('board-move.mjs', () => {
   });
 
   it('分類の付いた issue しかなければ、棚卸しは立てない', () => {
-    const board = { issues: [{ number: 9, ...label('kind:meta'), blockedBy: { nodes: [] } }] };
+    const board = { issues: [{ number: 9, ...label('kind:board'), blockedBy: { nodes: [] } }] };
     expect(moves(board)).toEqual([]);
   });
 

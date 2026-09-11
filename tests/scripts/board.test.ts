@@ -225,7 +225,7 @@ describe('board.mjs', () => {
     const { lines } = show({
       issues: [
         issue(1, 'kind:task が付いている'),
-        issue(2, 'meta の盤', { labels: [{ name: 'kind:meta' }] }),
+        issue(2, '常設の盤', { labels: [{ name: 'kind:board' }] }),
         issue(3, '束ねた側', {
           labels: [{ name: 'kind:task' }],
           blockedBy: { nodes: [{ number: 9, state: 'OPEN' }] },

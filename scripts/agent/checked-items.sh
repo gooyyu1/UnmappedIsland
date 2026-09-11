@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 確定待ちの盤（`kind:meta` の issue）の本文で、チェックの付いている項目を `<番号> <項目>` の行にする。
+# 確定待ちの盤（`kind:ask` の issue）の本文で、チェックの付いている項目を `<番号> <項目>` の行にする。
 # 標準入力は `gh issue list --json number,labels,body ...` が返す配列。
 #
 #   gh issue list --state open --limit 100 --json number,labels,body |
@@ -15,15 +15,25 @@
 # **デーモンはこれを読まない。** 拾うのは判断の要る仕事で、届ける口はまだ無い
 # （[`board-design.md`](../../.claude/board-design.md) の未決「人間への入力の口」）。
 #
-# ## 見るのは `kind:meta` の issue だけ
+# ## 見るのは `kind:ask` の issue だけ
 #
-# **ここが拾うのは、下ろす先が人しか無いチェックだけ。** 確定待ちの盤（`kind:meta`）のチェックが
-# それで、`kind:task` の issue が本文に持つ手順の一覧はただの覚え書き。区別せずに拾うと、下ろす
-# 手立ての無い項目で盤面が毎回埋まる。
+# **ここが拾うのは、拾われたら項目ごと消えるチェックだけ。** 答えを受ける盤（`kind:ask`）の
+# チェックがそれで、`kind:task` の issue が本文に持つ手順の一覧はただの覚え書き。区別せずに拾うと、
+# 下ろす手立ての無い項目で盤面が毎回埋まる。
 #
 # **`kind:task` にも、ユーザーの答えそのものであるチェックはある**——周期の係が起票する諾否の一覧
 # （[`board-design.md`](../../.claude/board-design.md) 2.17.2）。あれを拾わないのは覚え書きだからでは
 # なく、**下ろす先が既に在る**から（ユーザーが `判断待ち` を外せば、投入されたセッションが読む）。
+#
+# **常設の盤にも、ここが拾ってはいけないチェックがある**（`kind:switch`。2.17.1）。投入の手綱
+# （[`brake.sh`](brake.sh)）のチェックは**答えではなく設定**で、機械が毎周読むが、誰も下ろさない
+# ——拾うと、下ろされない項目が `## 確定待ち` に居座り、本物の答えがその中に埋もれる。
+# **機械が本文を書く盤**（`kind:board`。[`board-publish.mjs`](board-publish.mjs) が書き換える
+# [#1714](https://github.com/gooyyu1/UnmappedIsland/issues/1714)）も同じ理由で外れる——拾えば、
+# デーモンが自分の書いたものをユーザーの答えとして読むことになる。
+#
+# **ラベルの綴りが、そのまま「ここが読むか」を表す。** `kind:` の値ごとに見る・見ないを書き分けると、
+# 出口が増えたときに書き足し忘れた値が既定で拾われる側へ落ちる。
 #
 # ## 黙るのは、項目が一覧から下りたとき
 #
@@ -38,7 +48,7 @@ set -euo pipefail
 # jq は Windows では改行を CRLF で書く（msys の text mode）。番号の突き合わせに使う側があるので、
 # ここで `\r` を落としておく。
 jq -r '.[]
-       | select([.labels[].name] | index("kind:meta"))
+       | select([.labels[].name] | index("kind:ask"))
        | .number as $number
        | (.body // "")
        | split("\n")[]
