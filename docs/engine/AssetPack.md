@@ -119,7 +119,7 @@ ZIPと `sample-pack/` が食い違っていないかは `tests/asset-pack/sample
 **版は大小の順序を持ちません。** 使い道は「同じ版か」の照合（6.4節）だけで、比べる用途が
 ありません。
 
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656) の 9・10
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（`pack.yaml` に識別子と版を書かせ省略は認めない）と、同（版は文字列で順序を持たない）
 
 ### 3.3 `pack.yaml` の知らない欄はエラーにする
 
@@ -251,7 +251,7 @@ ZIPのエントリから作るBlobのURLです。Blobは要求された絵の分
 どのパックを外せばよいかが分かります。パックを書く側は、自分の識別子に固有の接頭辞を付ける慣習で
 避けられます——**規約にはしません。** 規約にすると、同梱ぶんの識別子にも接頭辞が要ることになります。
 
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656) の 11
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（名前空間は設けず、ぶつかったらエラー）
 
 ### 6.4 パックの並びが違うセーブは開かない
 
