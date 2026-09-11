@@ -108,7 +108,7 @@ export class ShownCards {
 
   /** そこに並ぶ束。持ち出されている札と絞り込みで隠れる札を差し引いた、画面に出ている姿そのもの。 */
   stacksAt(spot: CardSpot): readonly (ObjectCardStack | undefined)[] {
-    return this.matching(spot, this.presentAt(spot));
+    return this.presentAndShownAt(spot).shown;
   }
 
   /**
@@ -119,8 +119,39 @@ export class ShownCards {
    * 押せば戻る枠が、そのぶんだけ在る。
    */
   hiddenAt(spot: CardSpot): number {
+    const { present, shown } = this.presentAndShownAt(spot);
+    return present.length - shown.length;
+  }
+
+  /**
+   * そこに並ぶ束を、絞り込みを掛ける前（present）と後（shown）で一度に。**hiddenAtが引き算に要る
+   * 2つを1度に返す**ので、前と後で別々に引いて突き合わせることがない。
+   *
+   * 絞り込みが効くのは設置物レーンとアイテムレーンだけ（ScreenLayout.md 8.1.6節）——手持ちは左へ
+   * 詰まっていて隠しても短くならず、子ウィンドウの中は今開けている入れ物そのものの中身なので、
+   * 絞ると開けた意味が消える。
+   *
+   * **出ている個体が1つも当たらない札は隠れる。** 貸し出し中の枠に残る印（objectsが空）も同じで、
+   * 帰ってくる先はその札が当たるようになったときに現れる。
+   */
+  private presentAndShownAt(spot: CardSpot): {
+    readonly present: readonly (ObjectCardStack | undefined)[];
+    readonly shown: readonly (ObjectCardStack | undefined)[];
+  } {
     const present = this.presentAt(spot);
-    return present.length - this.matching(spot, present).length;
+
+    const filter = this.source.filter();
+    if (filter === undefined) return { present, shown: present };
+
+    const places = this.source.places;
+    if (spot !== places('fixtures') && spot !== places('items')) return { present, shown: present };
+
+    return {
+      present,
+      shown: present.filter(
+        (stack) => stack === undefined || stack.objects.some((object) => filter.matches(object)),
+      ),
+    };
   }
 
   /** そこに並ぶ束から、持ち出されているぶんだけを引いた並び（絞り込みはまだ掛けていない）。 */
@@ -134,29 +165,6 @@ export class ShownCards {
       : stacks.flatMap<ObjectCardStack | undefined>((stack) =>
           stack === undefined ? [undefined] : this.shownStacksOf(stack, aloft),
         );
-  }
-
-  /**
-   * 絞り込みに当たる札だけ（何も選んでいない場所・レーンではそのまま）。**効くのは設置物レーンと
-   * アイテムレーンだけ**（ScreenLayout.md 8.1.6節）——手持ちは左へ詰まっていて隠しても短くならず、
-   * 子ウィンドウの中は今開けている入れ物そのものの中身なので、絞ると開けた意味が消える。
-   *
-   * **出ている個体が1つも当たらない札は隠れる。** 貸し出し中の枠に残る印（objectsが空）も同じで、
-   * 帰ってくる先はその札が当たるようになったときに現れる。
-   */
-  private matching(
-    spot: CardSpot,
-    stacks: readonly (ObjectCardStack | undefined)[],
-  ): readonly (ObjectCardStack | undefined)[] {
-    const filter = this.source.filter();
-    if (filter === undefined) return stacks;
-
-    const places = this.source.places;
-    if (spot !== places('fixtures') && spot !== places('items')) return stacks;
-
-    return stacks.filter(
-      (stack) => stack === undefined || stack.objects.some((object) => filter.matches(object)),
-    );
   }
 
   /**
