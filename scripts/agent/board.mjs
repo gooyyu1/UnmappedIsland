@@ -81,7 +81,7 @@
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { busySession } from './board-move.mjs';
+import { PATROL, busySession, cycleHours } from './board-move.mjs';
 import { liveSessions } from './live-sessions.mjs';
 import { gh as runGh, runBash } from './spawn.mjs';
 
@@ -254,21 +254,46 @@ function elapsed(from, now) {
 }
 
 /**
- * 盤面が進んでいないことの断り（`.claude/board-design.md` 2.21）。**印を置くのはデーモン**
- * （[`board-state.mjs`](board-state.mjs) の `STUCK`）で、ここはその読み手。
+ * **これだけ見回りが途切れたら、断りにする。** 係の間隔（[`board-move.mjs`](board-move.mjs) の
+ * `CYCLES` の `patrol`）から出すので、間隔を変えてもここは書き換わらない。**間隔そのものでは
+ * 鳴らさない**——1回ぶんの立ち遅れ（手綱で止まっている・投入が転んだ・係が長く走っている）は
+ * 毎日出るので、それで鳴ると読む人がこの行を読まなくなる。
+ */
+const STALE_PATROL_HOURS = (cycleHours(PATROL) ?? 1) * 3;
+
+/**
+ * 盤面を引けていないことの断り（`.claude/board-design.md` 2.21）。**印を置くのはデーモン**
+ * （[`board-state.mjs`](board-state.mjs) の `UNREADABLE`）で、ここはその読み手。
  *
  * **いちばん上へ出す。** 引けない周のデーモンにできることはこれだけで、**直せるのは Claude Code
  * 本体を触れる人だけ**——表の状態より先に読まれる必要がある。
  *
  * **読めない値なら何も出さない。** 出どころは台帳のテキストなので、壊れていることがありうる。
  */
-function stuckNote(since, now) {
+function unreadableNote(since, now) {
   const from = Date.parse(since ?? '');
   if (Number.isNaN(from)) return undefined;
-  // **「1つも進んでいない」とは言わない。** 印が立つのは転んだ手が在る周で、同じ周に打てた手が
-  // 在ることもある（`board-round.mjs`）——盤面が全体として動いていても、同じ手だけが毎周転び
-  // 続けている形がこの断りの相手。
-  return `**盤面が詰まっています**（${since} から ${elapsed(from, now)}）。手が転んだままか、盤面そのものを引けない周が続いています`;
+  return `**盤面を引けていません**（${since} から ${elapsed(from, now)}）。GitHub か CCR から引けない周が続いています——**直せるのは人だけ**で、この間セッションは1本も立ちません`;
+}
+
+/**
+ * 盤面を見回る係（`.claude/board-design.md` 2.21）が最後に残した1行。**記録を書くのは係自身**
+ * （[`patrol-prompt.md`](../../.claude/patrol-prompt.md)）で、ここはその読み手。
+ *
+ * **「異常なし」と「立たなかった」を分けるのがこの行**——立たなければ時刻が古いまま残るので、
+ * **`STALE_PATROL_HOURS` を過ぎたら断りにする**（長さと、その決め方はあちらが持つ）。係が黙って
+ * 立たなくなったことは、他のどこにも出ない。
+ *
+ * **「盤面の」を落とさない。** デーモンにはもう1つ見回り（2.22 の、値の生死を見る手）が在るので、
+ * 裸の「見回り」だと読む人がどちらの話か分からない。
+ */
+function patrolNote(patrol, now) {
+  if (patrol === undefined)
+    return '⚠ **盤面を見回る係の記録がありません。** 立っていないか、記録が壊れています（2.21）';
+  const from = Date.parse(patrol.at);
+  const line = `盤面の見回り ${patrol.at} … ${patrol.verdict === '' ? '（判定なし）' : patrol.verdict}${patrol.summary === '' ? '' : ` ${patrol.summary}`}`;
+  if (now.getTime() - from < STALE_PATROL_HOURS * 3_600_000) return line;
+  return `⚠ **盤面を見回る係が ${elapsed(from, now)} 立っていません。** 最後の記録は「${line}」（2.21）`;
 }
 
 /**
@@ -281,7 +306,14 @@ function stuckNote(since, now) {
  *
  * 引けなければ `undefined`（呼び手は書き込まない——**古い本文が残るほうが、欠けた盤面より正しい**）。
  */
-export function issueBody({ gh = runGh, sessions = liveSessions, warn, now = new Date(), stuckSince } = {}) {
+export function issueBody({
+  gh = runGh,
+  sessions = liveSessions,
+  warn,
+  now = new Date(),
+  unreadableSince,
+  patrol,
+} = {}) {
   const notes = [];
   const found = survey({
     gh,
@@ -300,11 +332,12 @@ export function issueBody({ gh = runGh, sessions = liveSessions, warn, now = new
     '',
     `最終更新 ${at}`,
   ];
-  // **詰まりの断りが先。** 一覧を引けなかった周の断り（`notes`）は表の読み方の注釈だが、こちらは
-  // **読んだ人に手を打ってもらうための行**（2.21）。
-  const stuck = stuckNote(stuckSince, now);
-  if (stuck !== undefined) lines.push('', `⚠ ${stuck}`);
+  // **引けていない断りが先。** 一覧を引けなかった周の断り（`notes`）は表の読み方の注釈だが、
+  // こちらは**読んだ人に手を打ってもらうための行**（2.21）。
+  const unreadable = unreadableNote(unreadableSince, now);
+  if (unreadable !== undefined) lines.push('', `⚠ ${unreadable}`);
   for (const note of notes) lines.push('', `⚠ ${note}`);
+  lines.push('', patrolNote(patrol, now));
 
   const tally = new Map(COUNTS.map((name) => [name, 0]));
   for (const task of found.tasks) {

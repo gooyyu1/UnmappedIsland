@@ -6,7 +6,6 @@ import { moves as decide } from '../../scripts/agent/board-move.mjs';
 // 打った手の覚えを消す側（`trackIdle`）。**盤面が選ぶ指紋が、あちらの消去に当たらないこと**を
 // 下で留める。
 import { trackIdle } from '../../scripts/agent/board-round.mjs';
-import { STUCK } from '../../scripts/agent/board-state.mjs';
 
 /**
  * `scripts/agent/board-move.mjs` の検査。
@@ -71,6 +70,13 @@ const DUG_JUST_NOW = { 'cycle:dig': NOW };
 const DIG = `CHORE dig .claude/dig-prompt.md ${NOW}`;
 
 /**
+ * 盤面を見回る係（`board-move.mjs` の `CYCLES` の `patrol`）も、既定で**たった今立てた**ことにする。
+ * あの係の `due` は**常に真**（2.21.2）なので、**どの盤面にも当たる**——既定のままだと、見回りと
+ * 関わりのない検査の期待値へ一律に1手増える。立つところを見る検査は `taken` で上書きする。
+ */
+const PATROLLED_JUST_NOW = { 'cycle:patrol': NOW };
+
+/**
  * マージ済みPRの後片付け（`board-move.mjs` の `TIDY`）は、既定で**もう打った**ことにする。窓に載って
  * いるPRには全部当たるので、**既定のままだと、後片付けと関わりのない検査の期待値へ1手ずつ増える。**
  * 打つところを見る検査は `untidied` を立てる。
@@ -92,7 +98,7 @@ function moves(board: Board): string[] {
     issues: [],
     sessions: [],
     ...board,
-    taken: { ...idled, ...tidied, ...DUG_JUST_NOW, ...board.taken },
+    taken: { ...idled, ...tidied, ...DUG_JUST_NOW, ...PATROLLED_JUST_NOW, ...board.taken },
   });
 }
 
@@ -1023,11 +1029,11 @@ describe('board-move.mjs', () => {
 
     // **覚えが無いのは「ずっと空いている」ではない。** 台帳が消えた直後もここへ来るので、
     // 動かない側へ倒す（打つ手はどちらも取り返しが付かない）。上の既定を通さずに直に渡すので、
-    // **掘り起こす係だけは立つ**——覚えが無いのは「まだ一度も立てていない」でもあり、あちらは
-    // 取り返しの付く手（読んで数えるだけ）なので、倒す先が逆になる。
+    // **読んで数えるだけの係は立つ**——覚えが無いのは「まだ一度も立てていない」でもあり、
+    // 取り返しの付く手なので倒す先が逆になる。
     it('空いてからの長さが分からなければ、停滞の手は打たない', () => {
       const board = stalling({});
-      expect(decide({ now: NOW, settledBefore: SETTLED, prs: [], ...board })).toEqual([DIG]);
+      expect(decide({ now: NOW, settledBefore: SETTLED, prs: [], ...board })).toEqual([PATROL, DIG]);
     });
 
     // **起こした合図が効くには時間が要る。** 次の周（既定30秒）で見限ると、届く前に必ず返す。
@@ -1132,8 +1138,8 @@ describe('board-move.mjs', () => {
   const ANALYSIS = `CHORE analysis .claude/analysis-prompt.md ${NOW}`;
   const POLICY = `CHORE policy .claude/policy-cycle-prompt.md ${NOW}`;
   const TREND = `CHORE trend .claude/analysis-trend-prompt.md ${NOW}`;
-  /** 詰まりを解く係（2.21）。**このPCでしか調べられない**ので、宛先が付く。 */
-  const UNSTICK = `CHORE unstick .claude/unstick-prompt.md ${NOW} --bridge`;
+  /** 盤面を見回る係（2.21）。**このPCでしか調べられない**ので、宛先が付く。 */
+  const PATROL = `CHORE patrol .claude/patrol-prompt.md ${NOW} --bridge`;
 
   /** レビュアーがスメルを残した判定コメント（`review-criteria.md`「挙げ方」）。読んだ印を変えられる形で持つ。 */
   const smell = (number: number, read = false) => ({
@@ -1221,54 +1227,72 @@ describe('board-move.mjs', () => {
   // `dispatch-chore.sh` が要る2つを持っていること**。片方でも欠けると、係は毎周立とうとして
   // 毎周失敗する（時刻を残さないので、間隔で黙りもしない）。
   it('周期の係のプロンプトは、題と囲みを持つ', () => {
-    for (const move of [TRIAGE, ANALYSIS, POLICY, DIG, UNSTICK]) {
+    for (const move of [TRIAGE, ANALYSIS, POLICY, DIG, PATROL]) {
       const text = readFileSync(resolve(__dirname, '../..', move.split(' ')[2]), 'utf-8');
       expect(text).toMatch(/^題: \S/m);
       expect(text).toMatch(/^````$/m);
     }
   });
 
-  // ## 詰まりを解く係（2.21）
+  // ## 盤面を見回る係（2.21）
   //
   // **立てるのはデーモン自身**なので、この手が出たこと自体が「デーモンは生きている」の証拠になる
   // ——落ちた跡から起こす係（2.19）とは、立つ条件が背反。二重に手を出す形は、錠ではなくここで消える。
-  it('進んでいない状態が続いたら、詰まりを解く係を立てる', () => {
-    expect(moves({ taken: { [STUCK]: '2026-09-05T00:30:00Z' } })).toEqual([UNSTICK]);
+  //
+  // **印で絞らない**（2.21.2）。絞る条件は既に知っている壊れ方の一覧でしかなく、**手が1つも出ない
+  // 周**はどの印にも掛からなかった（#1939 で2時間11分）。**盤面がどう見えていようと立つ**ことを、
+  // 次の3つが留める——健全な盤面・打つ手が在る盤面・手が1つも出ない盤面。
+  it('健全な盤面でも、間隔が空いていれば見回る係を立てる', () => {
+    expect(moves({ taken: { 'cycle:patrol': '2026-09-05T00:30:00Z' } })).toEqual([PATROL]);
   });
 
-  // 一時の失敗でも手は転ぶ（GitHubが数分沈む・立てた直後の取り合い）。直す相手が要るのは、
-  // **自分では戻らなかったもの**だけ。
-  it('進んでいない時間が短いうちは、立てない', () => {
-    expect(moves({ taken: { [STUCK]: '2026-09-05T01:30:00Z' } })).toEqual([]);
+  it('前に立ててから間隔が空くまで、見回る係は立てない', () => {
+    expect(moves({ taken: { 'cycle:patrol': '2026-09-05T01:30:00Z' } })).toEqual([]);
   });
 
-  it('進んでいる盤面では、立てない', () => {
-    expect(moves({})).toEqual([]);
+  // **手が1つも出ない周**（錠で全部の task が待たされ、差し戻す相手も居ない）。**転んだ手が無いので
+  // 印には掛からない**形で、これが 2026-09-11 に2時間11分止まった形（#1939）。
+  it('手が1つも出ない周でも、見回る係は立つ', () => {
+    const board = {
+      issues: [
+        { number: 9, ...label('kind:task', 'area:daemon'), blockedBy: { nodes: [] } },
+        { number: 10, ...label('kind:task', 'area:daemon'), blockedBy: { nodes: [] } },
+      ],
+      sessions: [working('session_a', 'task-9')],
+      taken: { 'cycle:patrol': '2026-09-05T00:30:00Z' },
+    };
+
+    expect(moves(board)).toEqual([
+      PATROL,
+      'NOTE 1件の task が待っている。先頭は #10 と #9 が `area:daemon` を取り合う',
+    ]);
   });
 
   // **並びの先頭に置く**（2.21.3）。1周1手で切り上げるので、他の周期の係と同じ最後尾に置くと、
   // **転ばずに打てる手が毎周1つでも在るかぎり手番が回らない**——投入だけが通らない盤面で、
   // 片付けやマージは通り続ける形がまさにそれ。
-  it('他に打てる手が在っても、詰まりを解く係を先に置く', () => {
+  it('他に打てる手が在っても、見回る係を先に置く', () => {
     const board = {
       untidied: true,
       mergedPrs: [{ number: 9 }],
       prs: [pr(10, label('通してよい'))],
-      taken: { [STUCK]: '2026-09-05T00:30:00Z' },
+      taken: { 'cycle:patrol': '2026-09-05T00:30:00Z' },
     };
 
-    expect(moves(board)).toEqual([UNSTICK, `TIDY 9 ${NOW}`, 'MERGE 10']);
+    expect(moves(board)).toEqual([PATROL, `TIDY 9 ${NOW}`, 'MERGE 10']);
   });
 
-  // 盤面を回す仕組みそのものを書き換える係なので、同じ資源を触る task と並べない（2.17 の `locks`）。
-  it('`area:daemon` を持つ task が走っている間は、立てない', () => {
+  // **錠を取らない**（2.21.3）。`area:daemon` を握ったまま止まっているセッションが在ることは
+  // 詰まりの典型なので、要求すると**詰まっているときほど立てない**。上の「手が1つも出ない周」が
+  // まさにその盤面で、あそこで立つことがこの決めごとの現物。**逆向きも留める**——毎回立つ係が錠を
+  // 持つと、間隔ごとに `area:daemon` の task が投入されなくなる。
+  it('見回る係が走っていても、`area:daemon` の task は投入できる', () => {
     const board = {
       issues: [{ number: 9, ...label('kind:task', 'area:daemon'), blockedBy: { nodes: [] } }],
-      sessions: [working('session_a', 'task-9')],
-      taken: { [STUCK]: '2026-09-05T00:30:00Z' },
+      sessions: [working('session_c', 'chore-patrol')],
     };
 
-    expect(moves(board)).toEqual(['NOTE `unstick` は #9 と資源を取り合うので立てない']);
+    expect(moves(board)).toEqual(['TASK 9']);
   });
 
   // ## スメルを拾う係（4.4）

@@ -28,8 +28,12 @@ interface World {
   /** 一覧を引けない（[`live-sessions.mjs`](../../scripts/agent/live-sessions.mjs) は投げる）。 */
   readonly sessionsFail?: boolean;
   readonly checked?: string;
-  /** 盤面が進んでいないと見え始めた時刻（デーモンの台帳。`board-state.mjs` の `STUCK`）。 */
-  readonly stuckSince?: string;
+  /** 盤面を引けなくなった時刻（デーモンの台帳。`board-state.mjs` の `UNREADABLE`）。 */
+  readonly unreadableSince?: string;
+  /** 最後の見回り（デーモンの記録。`board-state.mjs` の `readLastPatrol`）。 */
+  readonly patrol?: { at: string; verdict: string; summary: string };
+  /** 見回りの記録が無い（走っていないか、読めない）。 */
+  readonly patrolMissing?: boolean;
 }
 
 const deps = (world: World, warn: (line: string) => void) => ({
@@ -57,7 +61,13 @@ function body(world: World = {}): { lines: string[]; warnings: string[] } {
   const text = issueBody({
     ...deps(world, (line: string) => warnings.push(line)),
     now: new Date('2026-09-07T03:04:05.678Z'),
-    stuckSince: world.stuckSince,
+    unreadableSince: world.unreadableSince,
+    // **見回りは、既定でたった今届いたことにする。** 断りは出る側なので、既定のままだと
+    // 見回りと関わりのない検査の本文へ一律に1行増える。
+    patrol:
+      world.patrolMissing === true
+        ? undefined
+        : (world.patrol ?? { at: '2026-09-07T03:00:00Z', verdict: '異常なし', summary: '' }),
   });
   return { lines: (text ?? '').split('\n'), warnings };
 }
@@ -273,21 +283,53 @@ describe('issueBody', () => {
 
   // **盤面を引けない周に、デーモンにできるのはこれだけ**（2.21）。直せるのは Claude Code 本体を
   // 触れる人だけで、`~/daemon.log` を読めるのは手元で叩ける人だけ——**届く先はここしか無い。**
-  it('盤面が進んでいなければ、続いた長さを添えて断る', () => {
-    const { lines } = body({ stuckSince: '2026-09-07T01:19:05Z' });
+  it('盤面を引けていなければ、続いた長さを添えて断る', () => {
+    const { lines } = body({ unreadableSince: '2026-09-07T01:19:05Z' });
 
     expect(lines).toContain(
-      '⚠ **盤面が詰まっています**（2026-09-07T01:19:05Z から 1時間45分）。手が転んだままか、盤面そのものを引けない周が続いています',
+      '⚠ **盤面を引けていません**（2026-09-07T01:19:05Z から 1時間45分）。GitHub か CCR から引けない周が続いています——**直せるのは人だけ**で、この間セッションは1本も立ちません',
     );
   });
 
-  it('進んでいる盤面には、断りを出さない', () => {
-    expect(body().lines.join('\n')).not.toContain('盤面が詰まっています');
+  it('引けている盤面には、断りを出さない', () => {
+    expect(body().lines.join('\n')).not.toContain('盤面を引けていません');
   });
 
   // 出どころは台帳のテキストなので、壊れていることがありうる。**壊れた値で嘘の長さを出さない。**
   it('読めない時刻なら、断りを出さない', () => {
-    expect(body({ stuckSince: 'ゆうべ' }).lines.join('\n')).not.toContain('盤面が詰まっています');
+    expect(body({ unreadableSince: 'ゆうべ' }).lines.join('\n')).not.toContain('盤面を引けていません');
+  });
+
+  // ## 見回りが届いているか（2.21.4）
+  //
+  // **「異常なし」と「係が立たなかった」を分けるのは、この行だけ。** 記録はこのPCにしか無く、
+  // 読む人はスマホから読む——ここに出ないなら、届いていないのと同じ。
+  it('最後の見回りを、判定ごと出す', () => {
+    const { lines } = body({
+      patrol: { at: '2026-09-07T02:30:00Z', verdict: '異常なし', summary: '8件の task は錠待ち' },
+    });
+
+    expect(lines).toContain('盤面の見回り 2026-09-07T02:30:00Z … 異常なし 8件の task は錠待ち');
+  });
+
+  // **立たなくなったことは、他のどこにも出ない**（間隔の3倍で断る。`board.mjs` の
+  // `STALE_PATROL_HOURS`）。
+  it('見回りが途切れていれば、断りにする', () => {
+    const { lines } = body({
+      patrol: { at: '2026-09-06T20:00:00Z', verdict: '異常なし', summary: '' },
+    });
+
+    expect(lines).toContain(
+      '⚠ **盤面を見回る係が 7時間4分 立っていません。** 最後の記録は「盤面の見回り 2026-09-06T20:00:00Z … 異常なし」（2.21）',
+    );
+  });
+
+  // **記録が無い周も、読めない周も同じ断り。** 人から見れば、走らなかったのと読めないのは同じ
+  // だけ危ない（`board-state.mjs` の `readLastPatrol` が、どちらも `undefined` にして渡す）。
+  it('見回りの記録が無ければ、断りにする', () => {
+    expect(body({ patrolMissing: true }).lines).toContain(
+      '⚠ **盤面を見回る係の記録がありません。** 立っていないか、記録が壊れています（2.21）',
+    );
   });
 
   it('配ってよいかで数えた件数を出す', () => {

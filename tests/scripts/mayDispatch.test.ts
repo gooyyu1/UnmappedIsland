@@ -143,8 +143,8 @@ describe('may-dispatch.sh', () => {
     expect(run('new-task', 'task-1234')).toEqual({ code: 0, stderr: '' });
   });
 
-  // **人が止めている周は3で名乗る**（`brake.sh`。`.claude/board-design.md` 2.21）——盤面が進まない
-  // 周を詰まりと読む側が、人の意思で止まっている周を数えないために要る区別。
+  // **人が止めている周は3で名乗る**（`brake.sh`。`.claude/board-design.md` 2.21.2）——1周のログを
+  // 読む側（盤面を見回る係）が、人の意思で止まっている周を調べに行かないために要る区別。
   it('親の「投入する」が外れていれば、種類に関わらず止まる', () => {
     const result = run('review', 'review-1500', { brake: off('投入する') });
 

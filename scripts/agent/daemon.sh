@@ -217,7 +217,8 @@ due_now() {
 # 倒さないと、GitHubが数分沈むたびに盤面ごと止まる。
 publish_board() {
   due_now "$PUBLISHED" "$PUBLISH_INTERVAL" || return 0
-  # 詰まりの印は台帳に在る（[`board-state.mjs`](board-state.mjs)）ので、置き場を渡す。
+  # 引けていない印と見回りの記録は、どちらもデーモンの手元に在る
+  # （[`board-state.mjs`](board-state.mjs)）ので、置き場を渡す。
   local -a pass=("BOARD_STATE=$STATE_DIR")
   [ "${1:-}" != 'fresh' ] || pass+=("LIVE_SESSIONS_TSV=$STATE_DIR/live-sessions.tsv")
   env "${pass[@]}" node "$ORIGIN/board-publish.mjs" ||

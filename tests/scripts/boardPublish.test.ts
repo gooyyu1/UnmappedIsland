@@ -19,9 +19,13 @@ interface Call {
 
 function run(
   over: {
-    body?: (given: { stuckSince?: string }) => string | undefined;
+    body?: (given: {
+      unreadableSince?: string;
+      patrol?: { at: string; verdict: string; summary: string };
+    }) => string | undefined;
     ghFails?: boolean;
-    stuckSince?: string;
+    unreadableSince?: string;
+    patrol?: { at: string; verdict: string; summary: string };
   } = {},
 ): {
   ok: boolean;
@@ -37,7 +41,8 @@ function run(
     body: over.body ?? (() => '盤面\n'),
     issue: '99',
     warn: () => {},
-    stuckSince: over.stuckSince,
+    unreadableSince: over.unreadableSince,
+    patrol: over.patrol,
   });
   return { ok, calls };
 }
@@ -60,19 +65,24 @@ describe('board-publish.mjs', () => {
     expect(calls).toEqual([]);
   });
 
-  // **印を置くのは1周を回す側で、人へ見せるのはここ**（`.claude/board-design.md` 2.21）。
-  // 渡らなければ、盤面が止まっていることは誰にも届かない。
-  it('盤面が進んでいない印を、本文を組む側へ渡す', () => {
-    let given: string | undefined;
+  // **印と記録を置くのはデーモンの側で、人へ見せるのはここ**（`.claude/board-design.md` 2.21）。
+  // 渡らなければ、盤面が引けていないことも、見回りが途切れたことも誰にも届かない。
+  it('引けていない印と、最後の見回りを、本文を組む側へ渡す', () => {
+    const given: { unreadableSince?: string; patrolAt?: string } = {};
     run({
-      stuckSince: '2026-09-11T00:39:08Z',
+      unreadableSince: '2026-09-11T00:39:08Z',
+      patrol: { at: '2026-09-11T00:30:00Z', verdict: '異常なし', summary: '' },
       body: (args) => {
-        given = args.stuckSince;
+        given.unreadableSince = args.unreadableSince;
+        given.patrolAt = args.patrol?.at;
         return '盤面\n';
       },
     });
 
-    expect(given).toBe('2026-09-11T00:39:08Z');
+    expect(given).toEqual({
+      unreadableSince: '2026-09-11T00:39:08Z',
+      patrolAt: '2026-09-11T00:30:00Z',
+    });
   });
 
   it('書き込めなければ、そう答える', () => {

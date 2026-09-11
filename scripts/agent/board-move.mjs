@@ -57,7 +57,6 @@
 // **片方だけで書くと、再レビューが永久に止まるか、手が空いた上へ2本目が立つ。**
 // どの値がどちらに答えるかは 1.6。
 
-import { STUCK } from './board-state.mjs';
 import { asksUser, readVersion, readsVersion, verdicts } from './review-verdicts.mjs';
 
 /**
@@ -139,28 +138,6 @@ const READ_MARK = 'EYES';
  * **粒度はコメント**。1つのコメントに `[スメル] ` の行が複数入るが、**マージ後のコメントは増えない**
  * ので、コメント1つに印1つで足りる。
  */
-/**
- * 盤面が進まないまま**これだけ続いたら、詰まりと読む**（`.claude/board-design.md` 2.21）。
- *
- * **短くしない。** 打てない手は一時の失敗でも出る（GitHubが数分沈む・立てた直後の取り合い）ので、
- * 直す相手が要るのは**自分では戻らなかったもの**だけ。**長くもしない**——詰まっている間、盤面は
- * 1ミリも動かない。
- */
-const STUCK_HOURS = Number(process.env.STUCK_HOURS || 1);
-
-/**
- * 盤面が進まないまま続いている時間（進んでいれば0）。**印を置くのは1周を回す側**
- * （[`board-round.mjs`](board-round.mjs)）で、ここはその読み手。
- *
- * **覚えが無ければ0**——この周に詰まり始めたか、まだ一度も見ていないかのどちらかで、どちらも
- * 「続いている」とは言えない（`idleMinutes` と同じ倒し方）。
- */
-function stuckHours(board) {
-  const since = Date.parse(board.taken?.[STUCK] ?? '');
-  const at = Date.parse(board.now ?? '');
-  return Number.isNaN(since) || Number.isNaN(at) ? 0 : (at - since) / 3_600_000;
-}
-
 function hasUnreadSmell(mergedPrs) {
   return mergedPrs.some((pr) =>
     (pr.comments ?? []).some(
@@ -176,19 +153,31 @@ function hasUnreadSmell(mergedPrs) {
 }
 
 /**
+ * 盤面を見回る係の名（下の `CYCLES`）。**綴りを合わせる相手が居るので、ここから出す**
+ * ——[`board.mjs`](board.mjs) が、見回りが途切れたと言うまでの長さをこの係の間隔から引く
+ * （`.claude/board-design.md` 2.21.4）。
+ */
+export const PATROL = 'patrol';
+
+/**
  * **周期で起きる係**（2.17）。人が投入しなくても、仕事があれば間隔を空けて自分で立つ。
  *
  * - `due` … 今この係に仕事があるか。**無ければ間隔が満ちても立てない。** 渡すのは盤面ごと
  *   ——仕事の在り処は係ごとに違う（issue の側に在る係と、マージ済みPRの側に在る係が同じ表に載る）。
+ *   **盤面の見え方で絞らない係は `() => true`**——**盤面が健全であることを確かめるのが仕事**なら、
+ *   仕事はいつでも在る（下の `patrol`。`.claude/board-design.md` 2.21.2）。
  * - `hours` … 前に立ててから空ける間隔。**溜めてからまとめて捌く係と、来たそばから捌く係が
  *   同じ表に載る**ので、係ごとに持つ。件数のしきい値は置かない——「そこまでは残ってよい」を
  *   宣言することになり、滞留を仕様にする（`.claude/board-design.md` 2.18節）。
  * - `env` … 投入先（`DISPATCH_TO` の値）。
- * - `locks` … 掴む資源（`area:` と同じ綴り）。書くセッションと取り合う。
  * - `prompt` … 渡す本文の在り処（リポジトリからの相対）。
  * - `urgent` … **待たせてよいか。** 既定（省略）は待たせてよい＝最後尾で、根拠は「間隔が満ちて
- *   いる限り次の周でも同じ手が出る」こと。**その根拠が言えない係だけが立てる**（下の `unstick`。
+ *   いる限り次の周でも同じ手が出る」こと。**その根拠が言えない係だけが立てる**（下の `patrol`。
  *   `.claude/board-design.md` 2.21.3）。
+ *
+ * **係は錠を取らない。** 資源を取り合うのは担当の issue を持つセッションどうしだけ（`area:` の錠。
+ * 3.1）で、**間隔で立つ係を、その取り合いに混ぜない**——待たされる先が、まさにその係に見てほしい
+ * 詰まりであることがある（`.claude/board-design.md` 2.21.3）。
  *
  * **PRを出す係が居ても、作業者の枠（`HELD_TASKS`・`ACTIVE_WORKERS`）には数えない。** 間隔を空けて
  * 立つ係の、記録だけの差分で、マージの列を詰まらせないため。数えると、書く側の並列度がその分だけ
@@ -201,7 +190,6 @@ const CYCLES = [
     // クラウドで足りる。**既存 issue の本文もラベルも、用意された道具で書き換えられる**
     // ——番号を保ったまま書き換えるのが棚卸しの中心（2.17.3）。
     env: 'cloud',
-    locks: [],
     prompt: '.claude/triage-prompt.md',
     due: (board) => board.issues.some((issue) => !names(issue).some((name) => name.startsWith(KIND))),
   },
@@ -211,7 +199,6 @@ const CYCLES = [
     // クラウドで足りる。**既存 issue の本文は書き換えない**——切るのは新しい issue で、記録は
     // 自分のPRに載せる（2.17・4.4）。
     env: 'cloud',
-    locks: [],
     prompt: '.claude/analysis-prompt.md',
     due: (board) => hasUnreadSmell(board.mergedPrs ?? []),
   },
@@ -223,7 +210,6 @@ const CYCLES = [
     // クラウドで足りる。**既存 issue の本文は書き換えない**——切るのは新しい issue で、記録は
     // 自分のPRに載せる（2.17・2.17.4）。
     env: 'cloud',
-    locks: [],
     prompt: '.claude/analysis-trend-prompt.md',
     due: (board) => (board.unsummarizedAnalyses ?? 0) > 0,
   },
@@ -235,7 +221,6 @@ const CYCLES = [
     // クラウドで足りる。**既存 issue の本文は書き換えない**——出すのは新しい issue 1本だけで、
     // リポジトリへは1行も書かない（`.claude/policy-cycle-prompt.md`）。
     env: 'cloud',
-    locks: [],
     prompt: '.claude/policy-cycle-prompt.md',
     due: (board) => (board.pendingDecisions ?? 0) > 0,
   },
@@ -246,26 +231,26 @@ const CYCLES = [
     hours: 24,
     // クラウドで足りる。**リポジトリへは1行も書かない**（`.claude/dig-prompt.md`）。
     env: 'cloud',
-    locks: [],
     prompt: '.claude/dig-prompt.md',
     // **配れる `kind:task` が尽きた周がこの係の出番。** 枠（`HELD_TASKS`・`ACTIVE_WORKERS`）や錠で
     // 待っているだけの周は立てない——待っている task は在るので、掘り起こしても配れる先が増えない。
     due: (board) => readyTasks(board).length === 0,
   },
   {
-    name: 'unstick',
-    // **仕事があるときしか立たない係なので、間隔は「どれだけ止まったままでよいか」。** 詰まって
-    // いる間、盤面は1ミリも動かない——溜めてから捌く性質が無い。
+    name: PATROL,
+    // **間隔は「盤面が止まったまま放っておいてよい長さ」。** 健全な周にも立つので費用はこの数で
+    // 決まるが、短くするほど気づくのが早い（`.claude/board-design.md` 2.21.2）。
     hours: 1,
     // **このPCでしか調べられない。** 何が転んだかが残っているのは `~/daemon.log` と
     // `~/.claude/board-state` で、どちらもクラウドの箱には無い（`.claude/board-design.md` 2.21）。
     env: 'bridge',
-    // **盤面を回す仕組みそのものを書き換える係**なので、同じ資源を触る task と並べない。
-    locks: ['area:daemon'],
-    prompt: '.claude/unstick-prompt.md',
-    due: (board) => stuckHours(board) >= STUCK_HOURS,
-    // **この係が立つ周は、まさに手が転んでいる周。** 転ばずに打てる手が毎周1つでも在れば、
-    // 1周1手の切り上げで最後尾までたどり着かない——待たせてよい根拠がここだけ成り立たない。
+    prompt: '.claude/patrol-prompt.md',
+    // **盤面の見え方で絞らない。** 絞る条件は既に知っている壊れ方の一覧でしかなく、**未知の形は
+    // どの条件にも掛からない**——2026-09-11、手が1つも出ない周が2時間11分続いたが、印は一度も
+    // 立たなかった（#1939）。健全な周は「異常なし」を記録して終わる。
+    due: () => true,
+    // **打てる手が在る周にも立つ**ので、最後尾に置くと**転ばずに打てる手が毎周1つでも在るかぎり
+    // 手番が回らない**。押しのけるのは間隔ごとに1周ぶん。
     urgent: true,
   },
 ];
@@ -791,12 +776,6 @@ export function moves(input) {
       const lock = mine.find((name) => locks(holder.issue).includes(name));
       if (lock !== undefined) return `#${issue.number} と #${holder.number} が \`${lock}\` を取り合う`;
     }
-    // **周期の係も資源を掴む**（2.17）。担当の issue を持たないので `workers` には居ない。
-    for (const cycle of CYCLES) {
-      if (alive(`chore-${cycle.name}`).length === 0) continue;
-      const lock = mine.find((name) => cycle.locks.includes(name));
-      if (lock !== undefined) return `#${issue.number} と \`${cycle.name}\` が \`${lock}\` を取り合う`;
-    }
     return undefined;
   }
 
@@ -854,15 +833,6 @@ export function moves(input) {
     if (!Number.isNaN(since) && at - since < cycle.hours * 3_600_000) {
       continue;
     }
-    const taker = cycle.locks
-      .map((lock) =>
-        workers.find((holder) => holder.issue !== undefined && locks(holder.issue).includes(lock)),
-      )
-      .find((holder) => holder !== undefined);
-    if (taker !== undefined) {
-      notes.push(`\`${cycle.name}\` は #${taker.number} と資源を取り合うので立てない`);
-      continue;
-    }
     const flag = DISPATCH_TO[cycle.env];
     const move = `CHORE ${cycle.name} ${cycle.prompt} ${input.now}${flag === '' ? '' : ` ${flag}`}`;
     (cycle.urgent === true ? urgentChores : chores).push(move);
@@ -871,8 +841,9 @@ export function moves(input) {
   // 畳むのをマージの次に置くのは、**抱えているタスクの枠が空くから**（3.1 の並列度）。後ろへ回すと、
   // 終わったワーカーが枠を握ったまま、待っている task が投入されない周が続く。
   return [
-    // **`urgent` の係だけが先頭。** 盤面が詰まっていると分かっている周に、転んだ手をもう一度試す
-    // より、原因を直させるほうが先（`.claude/board-design.md` 2.21.3）。
+    // **`urgent` の係だけが先頭。** 待たせてよい根拠は「間隔が満ちている限り次の周でも同じ手が
+    // 出るので、いつか手番が回る」ことで、**打てる手が在る周にも立つ係にはそれが言えない**
+    // （`.claude/board-design.md` 2.21.3）。
     ...urgentChores,
     // **後片付けはマージより先。** 本体のチェックアウトは作業ツリー全部の共有先なので、片付けを
     // 後ろへ回すと、**入る本数だけ古いまま**になる（マージできるPRが並んでいる周は、片付く前に次が入る）。

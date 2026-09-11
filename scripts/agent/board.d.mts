@@ -14,6 +14,13 @@ export function board(
 
 /**
  * 常設の issue の本文（`.claude/board-design.md` 2.20）。`now` は最終更新として本文に出る。
- * `stuckSince` は、盤面が進んでいないと見え始めた時刻（2.21。進んでいれば渡らない）。
+ * `unreadableSince` は、盤面を引けなくなった時刻（2.21。引けていれば渡らない）。`patrol` は
+ * 最後の見回り（2.21.4。走っていなければ渡らない）。
  */
-export function issueBody(deps: BoardDeps & { now?: Date; stuckSince?: string }): string | undefined;
+export function issueBody(
+  deps: BoardDeps & {
+    now?: Date;
+    unreadableSince?: string;
+    patrol?: { at: string; verdict: string; summary: string };
+  },
+): string | undefined;

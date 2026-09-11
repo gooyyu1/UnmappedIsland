@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { round } from '../../scripts/agent/board-round.mjs';
-import { STUCK } from '../../scripts/agent/board-state.mjs';
+import { UNREADABLE } from '../../scripts/agent/board-state.mjs';
 
 /**
  * `scripts/agent/board-round.mjs` の検査。
@@ -88,8 +88,8 @@ interface Result {
   readonly ledger: Record<string, string>;
   /** 手が空いた時刻の覚え。 */
   readonly idleMarks: Record<string, string>;
-  /** 盤面が進んでいないと見え始めた時刻（進んでいれば `undefined`）。 */
-  readonly stuck: string | undefined;
+  /** 盤面を引けなくなった時刻（引けていれば `undefined`）。 */
+  readonly unreadable: string | undefined;
   /** 叩いたスクリプトへ足された環境変数（この周の一覧の在り処）。 */
   readonly envs: readonly (Record<string, string> | undefined)[];
   /** この周が書いた一覧。 */
@@ -123,27 +123,35 @@ const LONG_IDLE = '2026-09-04T02:00:00Z';
 const DUG_RECENTLY = { 'cycle:dig': '2026-09-05T01:00:00Z' };
 
 /**
- * 台帳を、打った手の指紋と、手が空いた時刻の覚えと、**盤面が進んでいない印**（`board-state.mjs` の
- * `STUCK`）に分ける。**上で置いた `DUG_RECENTLY` はどれにも入れない**——周が書いたものではなく、
- * こちらが置いた足場なので、**周が何を残したか**を見る検査に混ぜると全部の期待値が1件ずつ太る。
- * **周が `cycle:dig` を書き換えたなら値が変わる**ので、そのときはそのまま指紋の側へ出る。
- *
- * **詰まりの印を分けるのも同じ理由。** あれは打った手の指紋ではなく、**打てなかったことの覚え**で、
- * 手が転ぶ検査には必ず付く。
+ * 盤面を見回る係（`board-move.mjs` の `CYCLES` の `patrol`）も、既定で**間隔の中に居る**ことにする。
+ * あの係の `due` は**常に真**（2.21.2）なので、**どの世界にも当たる**——既定のままだと、見回りと
+ * 関わりのない検査の1手ぶんがこれに埋まる。立つところを見る検査は `ledger` で上書きする。
  */
+const PATROLLED_RECENTLY = { 'cycle:patrol': '2026-09-05T01:30:00Z' };
+
+/**
+ * 台帳を、打った手の指紋と、手が空いた時刻の覚えと、**盤面を引けなくなった印**（`board-state.mjs`
+ * の `UNREADABLE`）に分ける。**上で置いた足場（`DUG_RECENTLY`・`PATROLLED_RECENTLY`）はどれにも
+ * 入れない**——周が書いたものではなく、こちらが置いたものなので、**周が何を残したか**を見る検査に
+ * 混ぜると全部の期待値が太る。**周が書き換えたなら値が変わる**ので、そのときはそのまま指紋の側へ出る。
+ *
+ * **引けない印を分けるのも同じ理由。** あれは打った手の指紋ではなく、**引けなかったことの覚え**。
+ */
+const SCAFFOLD: Record<string, string> = { ...DUG_RECENTLY, ...PATROLLED_RECENTLY };
+
 function split(ledger: Record<string, string>) {
   const marks: Record<string, string> = {};
   const idleMarks: Record<string, string> = {};
-  let stuck: string | undefined;
+  let unreadable: string | undefined;
   for (const [key, value] of Object.entries(ledger)) {
-    if (key === 'cycle:dig' && value === DUG_RECENTLY['cycle:dig']) continue;
-    if (key === STUCK) {
-      stuck = value;
+    if (SCAFFOLD[key] === value) continue;
+    if (key === UNREADABLE) {
+      unreadable = value;
       continue;
     }
     (key.startsWith('idle:') ? idleMarks : marks)[key] = value;
   }
-  return { ledger: marks, idleMarks, stuck };
+  return { ledger: marks, idleMarks, unreadable };
 }
 
 function playRound(world: World = {}): Result {
@@ -157,7 +165,7 @@ function playRound(world: World = {}): Result {
     }
     writeFileSync(
       join(stateDir, 'taken.json'),
-      JSON.stringify({ ...idled, ...DUG_RECENTLY, ...world.ledger }),
+      JSON.stringify({ ...idled, ...DUG_RECENTLY, ...PATROLLED_RECENTLY, ...world.ledger }),
       'utf-8',
     );
     if (world.conflictLog !== undefined) {
@@ -315,47 +323,44 @@ describe('board-round.mjs', () => {
     expect(result.calls).toEqual(['merge-pr.sh 10', 'dispatch-review.sh 20']);
   });
 
-  // ここから4件は、**盤面が進んでいない印**（`board-state.mjs` の `STUCK`）。詰まりを解く係の
-  // `due` と、人が読む書き出しが、同じこの1つを読む（`.claude/board-design.md` 2.21）。
-  it('手綱以外の理由で手が転んだ周は、進んでいない印を置く', () => {
-    const result = playRound({ prs: [pr(10, passed)], fails: ['merge-pr.sh'] });
-
-    expect(result.log).toContain('打てなかった: MERGE 10');
-    expect(result.stuck).toBe(NOW.toISOString());
-  });
-
-  // **人が止めているだけの周は詰まりではない**（2.4）。直す相手が居ないので、係を立てても仕事が無い。
-  it('手綱で止まっているだけの周には、印を置かない', () => {
-    const result = playRound({ prs: [pr(10)], braked: ['dispatch-review.sh'] });
-
-    expect(result.log).toContain('打てなかった: REVIEW 10（転んだのではない）');
-    expect(result.stuck).toBeUndefined();
-  });
-
-  // **引けなかった周も、外から見れば盤面は1ミリも動いていない。** 引けない間は誰もセッションを
-  // 立てられないので、この印を読むのは人（2.20 の書き出し）。
-  it('盤面を引けなかった周も、印を置く', () => {
-    expect(playRound({ sessionsFail: true }).stuck).toBe(NOW.toISOString());
-    expect(playRound({ ghFails: true }).stuck).toBe(NOW.toISOString());
+  // ここから4件は、**盤面を引けなくなった印**（`board-state.mjs` の `UNREADABLE`）。読むのは人が
+  // 読む書き出しだけで、**引ける周の不調はここに立てない**（`.claude/board-design.md` 2.21.2）。
+  it('盤面を引けなかった周は、印を置く', () => {
+    expect(playRound({ sessionsFail: true }).unreadable).toBe(NOW.toISOString());
+    expect(playRound({ ghFails: true }).unreadable).toBe(NOW.toISOString());
   });
 
   // **始まりだけを覚える。** 毎周書き直すと、続いた長さが出せない——読む側が要るのはそれだけ。
-  // 時刻を `STUCK_HOURS` の内側に採るのは、詰まりを解く係が立つ周を避けるため（下）。
-  it('印は、進み始めるまで最初の時刻のまま', () => {
+  it('印は、引けるようになるまで最初の時刻のまま', () => {
     const first = '2026-09-05T01:30:00Z';
-    expect(
-      playRound({ prs: [pr(10, passed)], fails: ['merge-pr.sh'], ledger: { [STUCK]: first } }).stuck,
-    ).toBe(first);
-    expect(playRound({ prs: [pr(10, passed)], ledger: { [STUCK]: first } }).stuck).toBeUndefined();
+    expect(playRound({ sessionsFail: true, ledger: { [UNREADABLE]: first } }).unreadable).toBe(first);
   });
 
-  // **係を立てられた周も、手が打てた周。** 印は消え、まだ詰まっていれば次の周が新しい時刻で
-  // 置き直す（2.21.2）。消さないと、直った後も印が残って係が立ち続ける。
-  it('詰まりを解く係を立てられたら、印を消す', () => {
-    const result = playRound({ ledger: { [STUCK]: '2026-09-05T00:00:00Z' } });
+  // 残すと、直った後も人へ「引けていない」と出続ける。
+  it('引けた周に、印を消す', () => {
+    expect(playRound({ ledger: { [UNREADABLE]: '2026-09-05T01:30:00Z' } }).unreadable).toBeUndefined();
+  });
 
-    expect(result.calls).toEqual(['dispatch-chore.sh unstick .claude/unstick-prompt.md --bridge']);
-    expect(result.stuck).toBeUndefined();
+  // **手が転んだ周は、印を置かない**（2.21.2）。転んだ手を数える形は、**手が1つも出ない周**に
+  // 掛からず2時間11分止まった（#1939）。見るのは毎回立つ係で、**材料はこのログ**——直す相手が
+  // 居ない手（手綱・`KEPT`）は、そうと分かる形で残す。
+  it('手が転んだ周は、ログに残すだけで印を置かない', () => {
+    const failed = playRound({ prs: [pr(10, passed)], fails: ['merge-pr.sh'] });
+    expect(failed.log).toContain('打てなかった: MERGE 10');
+    expect(failed.unreadable).toBeUndefined();
+
+    const braked = playRound({ prs: [pr(10)], braked: ['dispatch-review.sh'] });
+    expect(braked.log).toContain('打てなかった: REVIEW 10（転んだのではない）');
+    expect(braked.unreadable).toBeUndefined();
+  });
+
+  // **見回る係は、盤面の見え方によらず立つ**（2.21.2）。打つところまでを1周として留める
+  // ——ここが `dispatch-chore.sh` を呼ばないと、立つのは盤面の中だけの話になる。
+  it('間隔が空いていれば、見回る係を立てる', () => {
+    const result = playRound({ ledger: { 'cycle:patrol': '2026-09-05T00:00:00Z' } });
+
+    expect(result.calls).toEqual(['dispatch-chore.sh patrol .claude/patrol-prompt.md --bridge']);
+    expect(result.ledger).toEqual({ 'cycle:patrol': NOW.toISOString() });
   });
 
   // 後片付けはマージした手から切り離してあるので、**マージ済みのPRを見つけた周に打つ**（2.10.4）。
@@ -466,8 +471,9 @@ describe('board-round.mjs', () => {
 
     expect(result.log).toContain('KEPT session_a');
     expect(result.ledger).toEqual({ 'archive:session_a': 'closed:8' });
-    // **安定した答えであって、転んだのではない**（2.21.2）。数えると、健康な盤面に詰まりの印が立つ。
-    expect(result.stuck).toBeUndefined();
+    // **安定した答えであって、転んだのではない**（2.21.2）。ログにそう出ないと、見回る係が毎回
+    // ここを調べに行く。
+    expect(result.log).toContain('打てなかった: ARCHIVE session_a（転んだのではない）');
   });
 
   // 失敗は答えではないので、次の周にもう一度試す。
