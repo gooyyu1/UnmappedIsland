@@ -73,13 +73,21 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          claims=$(gh pr view "$PR" --repo "$REPO" --json commits --jq '
+          # **盤面と同じ1つを、同じ取り方で読む**（`scripts/agent/board-read.mjs` の `prSessions`）
+          # ——トレーラを持つ**最後の**コミットの、行を `/` で切った末尾がセッションID。
+          # **在ることだけを見ると、引けない名乗りが通る**——`bridge-cse_<ID>` の切り出しを誤った
+          # `session_cse_…` が通り抜け、PRに付いた却下が作者へ二度と届かなかった（2026-09-11、PR #1922）。
+          id=$(gh pr view "$PR" --repo "$REPO" --json commits --jq '
             [ .commits[].messageBody | split("\n")[]
-              | select(startswith("Claude-Session:")) ] | length')
-          if [ "$claims" -gt 0 ]; then
-            echo "名乗っているコミット: $claims"
+              | select(startswith("Claude-Session:")) | split("/")[-1] ] | last // ""' | tr -d '\r')
+          if printf '%s' "$id" | grep -q '^session_01[0-9A-Za-z]\{22\}$'; then
+            echo "名乗り: $id"
             exit 0
           fi
           # **1行で出す。** `::error::` は行ごとに別の注記になるので、分けると読む側で散らばる。
+          if [ -n "$id" ]; then
+            echo "::error::このPRで最後に名乗っている $id は、セッションIDの形になっていません。盤面はこの行を / で切った末尾でセッションを引くので、この形だと差し戻しが誰にも回りません。実在のIDは session_ に続けて 01 で始まる英数字22文字です——手元のブリッジは作業ツリーの名前 .claude/worktrees/bridge-cse_<ID> の <ID>（cse_ は入りません）、クラウドのセッションは自分がPR本文へ書くURLと同じもの。コミットを amend して push し直してください。"
+            exit 1
+          fi
           echo "::error::このPRのコミットに Claude-Session: のトレーラがありません。コミットメッセージの末尾（Co-Authored-By: と同じ段）へ 'Claude-Session: https://claude.ai/code/session_<自分のID>' を入れて push し直してください。クラウドのセッションは自分がPR本文へ書くURLと同じもの、手元のブリッジは作業ツリーの名前 .claude/worktrees/bridge-cse_<ID> の <ID> がそのまま session_<ID> になります。盤面はこの行で差し戻す相手を引くので、無いPRは直しが要るときに誰にも回りません。"
           exit 1

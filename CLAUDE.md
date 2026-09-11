@@ -241,8 +241,10 @@ Claude-Session: https://claude.ai/code/session_<自分のID>
 
 自分のIDは、クラウドのセッションなら自分がPR本文へ書くURLと同じもの。**手元のブリッジも同じ形で
 名乗る**——作業ツリーの名前 `bridge-cse_<ID>` の `<ID>` が、そのまま `session_<ID>` になる。
+**`cse_` は `<ID>` に入らない**（落とすのは `bridge-cse_` まで）。
 
-**入っていなければCIが赤くする**（`.github/workflows/tests.yml` の `名乗り`）。
+**入っていなければCIが赤くする。名乗っていても、盤面が引けない形なら赤くする**
+（`.github/workflows/tests.yml` の `名乗り`）——引けない名乗りは、無いのと同じだから。
 
 ## PRを出す前に、サブエージェントへ一次レビューさせる
 

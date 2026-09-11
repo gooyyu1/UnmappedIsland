@@ -33,8 +33,8 @@ function script(): string {
   return step.run;
 }
 
-/** そのPRのコミットの本文を渡して走らせ、通ったかを返す。 */
-function passes(bodies: readonly string[]): boolean {
+/** そのPRのコミットの本文を渡して走らせ、通ったかと出した注記を返す。 */
+function run(bodies: readonly string[]): { ok: boolean; output: string } {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-claimed-'));
   const dir = pathForBash(work);
   try {
@@ -72,13 +72,21 @@ jq -r "$filter" '${dir}/pr.json'
         PR: '1538',
       },
     });
-    return call.status === 0;
+    return { ok: call.status === 0, output: call.stdout + call.stderr };
   } finally {
     rmSync(work, { recursive: true, force: true });
   }
 }
 
+/** そのPRのコミットの本文を渡して走らせ、通ったかを返す。 */
+function passes(bodies: readonly string[]): boolean {
+  return run(bodies).ok;
+}
+
 const CLAIM = 'Claude-Session: https://claude.ai/code/session_01TyQngmJGi4rLDAWmfqjG9T';
+// 作業ツリーの `bridge-cse_<ID>` から落とすのは `bridge-` までではなく `bridge-cse_` まで。
+// 落とし損ねたこの形が PR #1922 で通った。
+const BROKEN = 'Claude-Session: https://claude.ai/code/session_cse_014cYXoMLEog6HpsE4m2bUn8';
 const SIGN = 'Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>';
 
 describe('tests.yml の claimed', () => {
@@ -106,5 +114,29 @@ describe('tests.yml の claimed', () => {
 
   it('コミットが1つも無いPRは止める', () => {
     expect(passes([])).toBe(false);
+  });
+
+  // **在るだけでは足りない。** そこが実在の形でなければ、名乗っていても差し戻しは誰にも回らない
+  // ——`bridge-cse_<ID>` から `cse_` を落とし損ねた名乗りが通り抜け、PR #1922 に付いた却下が
+  // 作者へ届かないまま盤面が止まった（2026-09-11）。
+  it('セッションIDの形になっていない名乗りは止める', () => {
+    expect(passes([`直した理由。\n\n${BROKEN}`])).toBe(false);
+  });
+
+  // 見るのは**盤面が引くのと同じ1つ**——トレーラを持つ最後のコミット（`board-read.mjs` の
+  // `prSessions`）。どれか1つでも形が合えば通す読み方だと、**後から積んだ壊れた名乗りが
+  // 引かれる**PRを緑で通してしまう。
+  it('最後の名乗りが壊れていれば、前が正しくても止める', () => {
+    expect(passes([`直した理由。\n\n${CLAIM}`, `続き。\n\n${BROKEN}`])).toBe(false);
+  });
+
+  it('壊れた名乗りの後に名乗り直していれば通す', () => {
+    expect(passes([`直した理由。\n\n${BROKEN}`, `名乗り直し。\n\n${CLAIM}`])).toBe(true);
+  });
+
+  // 直し方が違う（入れ忘れではなく切り出しの誤り）ので、**同じ案内では直せない。**
+  it('形が違うときと、無いときとで、別の注記を出す', () => {
+    expect(run([`直した理由。\n\n${BROKEN}`]).output).toContain('形になっていません');
+    expect(run(['整形だけ。']).output).toContain('トレーラがありません');
   });
 });
