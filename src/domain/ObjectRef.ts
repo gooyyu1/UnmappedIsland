@@ -1,8 +1,7 @@
 import type { WorldObject } from './WorldObject';
 import type { ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 import { PropertyPath } from './ReferenceRoot';
-import type { ObjectGlobalId, PropertyGlobalId } from './GlobalId';
-import { objectGlobalIdOfPropertyValue } from './GlobalId';
+import { type ObjectGlobalId, objectGlobalIdOfPropertyValue, type PropertyGlobalId } from './GlobalId';
 
 /**
  * オブジェクトを1つ指す参照の宣言（ObjectRef参照）。指し方をそのまま表す。

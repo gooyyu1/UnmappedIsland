@@ -4,8 +4,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { bundledCodex } from '../support/worldCodexFiles';
-import type { PropertyGlobalId } from '../../src/domain/GlobalId';
-import type { TagGlobalId } from '../../src/domain/GlobalId';
+import type { PropertyGlobalId, TagGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 固形物のかさ（volume）と入れ物の容量（capacity）を、実ファイルの定義だけで検証する

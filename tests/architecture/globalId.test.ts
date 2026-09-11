@@ -23,6 +23,7 @@ describe('グローバルIDの種類分け', () => {
       `
 property_tags:
   vitals:
+  wear:
 
 object_defs:
   stone:
@@ -30,6 +31,9 @@ object_defs:
     props:
       weight:
         tags: [vitals]
+        value: 100
+      condition:
+        tags: [wear]
         value: 100
       mood: {value: calm}
     slots:
@@ -95,9 +99,14 @@ object_defs:
     expect(stone.propertiesWithTag(vitalsPropertyTagId).map((p) => p.def.name)).toEqual(['weight']);
   });
 
-  it('NameRegistryが配ったIDの並びは、その名前空間の受け口へそのまま渡せる', () => {
+  it('NameRegistryが配ったIDの並びは、配った順にその名前空間を覆う', () => {
     // 添字を数える形で並びを作ると、そこが素の数からIDへ変わる場所になる（NameRegistry.ids）。
+    // 並びが宣言順であることは、UIがタブ・棚の並び順としてそのまま使う（WorldCodex.propertyTagNames）。
+    expect(codex.propertyTagNames.ids.map((id) => codex.propertyTagNames.getName(id))).toEqual([
+      'vitals',
+      'wear',
+    ]);
     expect(codex.slotNames.ids.map((id) => codex.slotNames.getName(id))).toContain('contents');
-    expect(codex.propertyTagNames.ids.every((id) => stone.propertiesWithTag(id).length >= 0)).toBe(true);
+    expect(codex.propertyTagNames.ids).toContain(vitalsPropertyTagId);
   });
 });

@@ -1,14 +1,15 @@
 import type { CardFilter } from './CardFilter';
 import type { GenerationDefs } from './generation/GenerationDefs';
-import type {
-  ObjectGlobalId,
-  PropertyGlobalId,
-  PropertyTagGlobalId,
-  SlotGlobalId,
-  SymbolGlobalId,
-  TagGlobalId,
+import {
+  type ObjectGlobalId,
+  objectGlobalIdOfPropertyValue,
+  type PropertyGlobalId,
+  type PropertyTagGlobalId,
+  type SlotGlobalId,
+  type SymbolGlobalId,
+  symbolGlobalIdOfPropertyValue,
+  type TagGlobalId,
 } from './GlobalId';
-import { objectGlobalIdOfPropertyValue, symbolGlobalIdOfPropertyValue } from './GlobalId';
 import { GeneratedTypes } from './GeneratedTypes';
 import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef, ObjectDefTable } from './ObjectDef';
@@ -301,10 +302,9 @@ export class WorldCodex {
    * シンボル型（6.6節）と宣言されたプロパティの値を、シンボルの名前へ戻す。宣言に数値リテラルが
    * 書かれていれば、どのシンボルのIDでもないのでundefined。
    *
-   * **プロパティの値から名前空間のIDへ越境するのはここ**（CodingConventions.md「グローバルIDは、
-   * 名前空間ごとに別の型」）——値は著者が書いた数であって`symbolNames`が配ったIDではないので、
-   * 型の上では繋がっていない。読み出す側それぞれが越境すると、どの名前空間へ持っていくかの判断が
-   * 読み手の数だけ散る。
+   * **値を名前まで戻すのはここ**——値がどの名前空間のものかを知っているのは名前空間を全部持つ
+   * このクラスで、読み手（条件の文・カードの説明・天気の表示）はそれを訊くだけ。値からIDへの
+   * 読み替えそのものは {@link symbolGlobalIdOfPropertyValue} が持つ。
    */
   trySymbolNameOfPropertyValue(value: number): string | undefined {
     return this.symbolNames.tryGetName(symbolGlobalIdOfPropertyValue(value));

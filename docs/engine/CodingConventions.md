@@ -71,16 +71,16 @@ IDを型引数で受けるクラスは `in out`（不変）で宣言する。**�
    ぶんここで型エラーになる。**選ぶのをやめて、名前空間を知っている側が引く**形へ直す
    （`WorldObject.notFoundMessage`）。
 
-跨ぐ場所を新しく作らなければならないなら、**跨ぐ理由をその場に書く**。既にある例外は、Codexを
-持てない試験——どの名前空間も配っていないIDを渡すもの、世界を読まずに画面の組み立てだけを見るもの
-——で、`as <種類>GlobalId` を grep すれば在り処が全部挙がる。
+跨ぐ場所を新しく作らなければならないなら、**跨ぐ理由をその場に書く**。既にある例外は試験だけで、
+どれも**名前空間が配っていない番号を自分で作る**もの（配っていないIDを渡して確かめる、あるいは
+Codexを持たずに組み立てだけを見る）。`as <種類>GlobalId` を grep すれば在り処が全部挙がる。
 
 **プロパティの「値」に別の名前空間のIDが入る**（型を値に持つプロパティは `objectNames` のID、
 シンボル型は `symbolNames` のID。GameElementDefinition.md 6.6節・6.9節）。値は著者が書いた数であって
 名前空間が配ったIDではないので、型の上では繋がっていない。読み替えるのは
-`GlobalId.ts` の `objectGlobalIdOfPropertyValue`・`symbolGlobalIdOfPropertyValue` で、
-**`NameRegistry` の外で素の数がIDへ変わるのはこの2つだけ**——宣言を書き込む側と読み出す側が同じ
-読み替えをしているかは、この名前を grep すれば全部が挙がる。
+`GlobalId.ts` の `objectGlobalIdOfPropertyValue`・`symbolGlobalIdOfPropertyValue` で、**値をIDとして
+読む経路はこの2つに寄せる**。書き込む側は越境ではない——ローダは名前から `NameRegistry` で引いて、
+そのIDを値として置くだけで、印を捨てる向きは型が支える。
 
 ## クラス
 

@@ -10,8 +10,7 @@ import {
   SAMPLE_CHARACTER,
   worldCodexPath,
 } from '../support/worldCodexFiles';
-import type { PropertyGlobalId } from '../../src/domain/GlobalId';
-import type { SlotGlobalId } from '../../src/domain/GlobalId';
+import type { PropertyGlobalId, SlotGlobalId } from '../../src/domain/GlobalId';
 
 describe('liquid_containers.yamlの液体容器定義', () => {
   let codex: WorldCodex;

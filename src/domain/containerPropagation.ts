@@ -4,6 +4,7 @@ import { ProductAmount } from './PassiveAmount';
 import type { PropertyDef } from './PropertyDef';
 import { PropertyPath } from './ReferenceRoot';
 import type { EngineVocabulary } from './WorldVocabulary';
+import type { PropertyGlobalId } from './GlobalId';
 
 /**
  * 中身の重さの伝播（[`ContainerSystem.md`](../../docs/engine/ContainerSystem.md) 1〜2節）を、
@@ -27,7 +28,8 @@ export function containerPropagationPassives(
   propertyDefs: readonly PropertyDef[],
   engine: EngineVocabulary,
 ): readonly PassiveEffect[] {
-  const declares = (globalId: number): boolean => propertyDefs.some((def) => def.globalId === globalId);
+  const declares = (propertyGlobalId: PropertyGlobalId): boolean =>
+    propertyDefs.some((def) => def.globalId === propertyGlobalId);
 
   // **量を抱える物は、重さを名乗っていなければならない。** 抱えている量の重さ（fill × density）を
   // 載せる先が無いと、その重さはどこにも現れないまま消える。

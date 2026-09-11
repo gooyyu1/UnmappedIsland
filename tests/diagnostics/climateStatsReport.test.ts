@@ -23,8 +23,7 @@ import {
 import { Stat } from '../support/Stat';
 import { bundledCodex, worldCodexPath } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
-import type { SymbolGlobalId } from '../../src/domain/GlobalId';
-import { symbolGlobalIdOfPropertyValue } from '../../src/domain/GlobalId';
+import { type SymbolGlobalId, symbolGlobalIdOfPropertyValue } from '../../src/domain/GlobalId';
 
 /**
  * 気候システム（ClimateSystem.md）の現在の実装について、季節の持続日数・気温・天気ごとの発生時間・
