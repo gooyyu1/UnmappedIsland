@@ -287,13 +287,10 @@ function hasSourceLine(section: { readonly body: readonly { readonly text: strin
  * 出どころの行を持たないまま印が付いている節。**印を外すのはユーザーの判断**（DocumentStyle.md
  * 6節）なので、答えが下りるまでの据え置きで、出どころの検査だけを免れる（射程・中身は課す）。
  *
- * ここに在るのは、`.claude/decisions/` が出来る前（最古は 2026-09-05）に固まった節で、**ユーザーの
- * 発言が原文で残っていない**——出どころを書くと、実測や既存規約からの導出をユーザーの判断として
- * 名乗ることになる。答えは
+ * ここに在るのは、**その節の結論を決めたユーザーの発言が `.claude/decisions/` に見当たらない**節
+ * ——書けば、実測や既存の規約からの導出をユーザーの判断として名乗ることになる。答えは
  * [#2024](https://github.com/gooyyu1/UnmappedIsland/issues/2024) で訊いてあり、下りたら印を外すか
  * 出どころを書くかのどちらかで、この一覧は空になる。
- *
- * **新しく付ける印をここへ足さない。** 足せば、出どころの無い印が次から素通りする。
  */
 const SOURCE_PENDING_SECTIONS: readonly { readonly doc: string; readonly heading: string }[] = [
   { doc: join('.claude', 'board-design.md'), heading: '1.1 事実と占有を分ける【確定】' },
@@ -309,11 +306,14 @@ const SOURCE_PENDING_SECTIONS: readonly { readonly doc: string; readonly heading
     doc: join('.claude', 'board-design.md'),
     heading: '2.1 分け目は「CCRの資格情報が要るか」【確定】',
   },
-  {
-    doc: join('.claude', 'board-design.md'),
-    heading: '4.5.1 新しく止めてよいのは、前の周以降の差分だけ【確定】',
-  },
 ];
+
+/** その節が据え置きの一覧に在るか。 */
+function isSourcePending(section: { readonly doc: string; readonly heading: string }): boolean {
+  return SOURCE_PENDING_SECTIONS.some(
+    (pending) => pending.doc === section.doc && pending.heading === section.heading,
+  );
+}
 
 /**
  * 全体が確定であることを宣言した文書（DocumentStyle.md 6.2節の条件を課される対象）。
@@ -735,7 +735,10 @@ describe('ドキュメントの参照', () => {
     // 対象が `docs/` だけだった頃、`.claude/board-design.md` には出どころの無い確定節が長く
     // 残った（#1878）。`docs/` の確定節だけで数は足りるので、外側が落ちても上の土台は緑になる。
     const outside = confirmedSections.filter(({ doc }) => !doc.startsWith(`docs${sep}`));
-    expect(outside.map(({ doc }) => doc)).not.toEqual([]);
+    expect(
+      outside.map(({ doc }) => doc),
+      '印の条件が `docs/` の中だけへ戻っている（`.claude/**` の確定節が1つも対象に入っていない）',
+    ).not.toEqual([]);
   });
 
   it('暫定を表す語の照合が、他の語の一部を拾わない', () => {
@@ -776,17 +779,12 @@ describe('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節�
     // 置き場は縛らない。本文の先頭は結論の1文の場所（DocumentStyle.md 3節）なので、そこを
     // 出どころで取ると、節の書き方の規約が2箇所に割れる。
     const missing = confirmedSections
-      .filter(
-        (section) =>
-          !hasSourceLine(section) &&
-          !SOURCE_PENDING_SECTIONS.some(
-            (pending) => pending.doc === section.doc && pending.heading === section.heading,
-          ),
-      )
+      .filter((section) => !hasSourceLine(section) && !isSourcePending(section))
       .map((section) => `${section.doc}:${section.line} ${section.heading}`);
     expect(
       missing,
-      `出どころの無い確定節（人間の判断の在処が節から読めない）:\n${missing.join('\n')}`,
+      '出どころの無い確定節（人間の判断の在処が節から読めない）。**据え置きの一覧は答えを待っている' +
+        `分で、新しい印の置き場ではない**:\n${missing.join('\n')}`,
     ).toEqual([]);
   });
 
