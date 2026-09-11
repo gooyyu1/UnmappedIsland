@@ -19,6 +19,7 @@ import type { ExplorationContent } from '../ui/ExplorationPane';
 import type { CardKind } from '../looks/theme';
 import type { PropertyCategory as PropertyTab } from '../ui/PropertiesPane';
 import type { StatusContent, StatusDetail, StatusInfluence, StatusStage } from '../ui/StatusBar';
+import type { ObjectGlobalId, PropertyGlobalId, PropertyTagGlobalId } from '../../domain/GlobalId';
 
 /**
  * 積み重なったカードの束（ドメインのObjectStackに対応する画面側の1まとまり）。
@@ -40,7 +41,7 @@ export interface ObjectCardStack extends CardContent {
   readonly objects: readonly WorldObject[];
 
   /** この束が映している物の型（object_defのグローバルID）。要求されている型と突き合わせるのに使う。 */
-  readonly objectGlobalId: number;
+  readonly objectGlobalId: ObjectGlobalId;
 
   /** カードを押して開く子ウィンドウに出す説明文。localeに書かれていなければundefined。 */
   readonly description?: string;
@@ -325,7 +326,7 @@ export interface PlayScreenView {
    * その型（object_defのグローバルID）そのものを表すカード。インスタンスを持たないので、まだ在るとは
    * 限らない物——枠が受け入れる素材（LaneCell.accepts）——を見せるのに使う。
    */
-  readonly cardOfType: (objectGlobalId: number) => CardContent;
+  readonly cardOfType: (objectGlobalId: ObjectGlobalId) => CardContent;
 
   /**
    * 挙げた個体だけを映すカード。**束は割れる**——子ウィンドウは束のうち1個だけを借りるので
@@ -530,7 +531,7 @@ export function fromGameSession(
    */
   const propertyLabelOf = (
     object: WorldObject,
-    propertyGlobalId: number,
+    propertyGlobalId: PropertyGlobalId,
   ): { key: string | undefined; name: string; icon: string | undefined; art: string | undefined } => {
     const name = codex.propertyNames.getName(propertyGlobalId);
     const texts = locale.object(object.def.name).prop(name);
@@ -556,7 +557,7 @@ export function fromGameSession(
             key: undefined,
             name: looks.nameOf(counterpart.object),
             icon: looks.iconOf(counterpart.object.def),
-            art: looks.artOf(counterpart.object.def, counterpart.object),
+            art: looks.artOf(counterpart.object),
           }
         : propertyLabelOf(object, counterpart.propertyGlobalId);
 
@@ -656,10 +657,13 @@ export function fromGameSession(
     object.allProperties().map((property) => rowOf(object, property));
 
   /** タグが付いたそのオブジェクトのプロパティを、表示名に直して並べる。未宣言のタグでは空。 */
-  const entriesWithTag = (object: WorldObject, tagGlobalId: number | undefined): readonly StatusContent[] =>
-    tagGlobalId === undefined
+  const entriesWithTag = (
+    object: WorldObject,
+    propertyTagGlobalId: PropertyTagGlobalId | undefined,
+  ): readonly StatusContent[] =>
+    propertyTagGlobalId === undefined
       ? []
-      : object.propertiesWithTag(tagGlobalId).map((property) => rowOf(object, property));
+      : object.propertiesWithTag(propertyTagGlobalId).map((property) => rowOf(object, property));
 
   /**
    * そのオブジェクトのプロパティを、カテゴリ（`property_tags`、GameElementDefinition.md 6.7節）ごとに
@@ -670,9 +674,9 @@ export function fromGameSession(
    * 空になりタブそのものが出ない。
    */
   const propertiesOf = (object: WorldObject): readonly PropertyTab[] => {
-    // タグのIDは宣言順に振られる（WorldCodex.propertyTagNames）ため、昇順に見ればタブの並び順になる。
+    // タグのIDは宣言順に振られる（WorldCodex.propertyTagNames）ため、配った順がタブの並び順になる。
     const categories: PropertyTab[] = [];
-    for (let tagGlobalId = 0; tagGlobalId < codex.propertyTagNames.count; tagGlobalId++) {
+    for (const tagGlobalId of codex.propertyTagNames.ids) {
       const entries = entriesWithTag(object, tagGlobalId);
       if (entries.length > 0)
         categories.push({

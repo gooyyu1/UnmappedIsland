@@ -4,6 +4,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { bundledCodex } from '../support/worldCodexFiles';
+import type { PropertyGlobalId, TagGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 固形物のかさ（volume）と入れ物の容量（capacity）を、実ファイルの定義だけで検証する
@@ -11,8 +12,8 @@ import { bundledCodex } from '../support/worldCodexFiles';
  */
 describe('固形物のかさと入れ物の容量', () => {
   let codex: WorldCodex;
-  let volumeId: number;
-  let itemTagId: number;
+  let volumeId: PropertyGlobalId;
+  let itemTagId: TagGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();
@@ -23,8 +24,7 @@ describe('固形物のかさと入れ物の容量', () => {
   /** 持ち歩ける物（itemタグ）の型。製作中オブジェクトは自動生成なので除く。 */
   function itemDefs(): ObjectDef[] {
     const defs: ObjectDef[] = [];
-    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const def = codex.objects.get(globalId);
+    for (const def of codex.objects) {
       if (!def.tags.includes(itemTagId)) continue;
       if (codex.isGenerated(def)) continue;
       defs.push(def);

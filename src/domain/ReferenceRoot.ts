@@ -1,5 +1,6 @@
 import type { PropertyValue } from './PropertyValue';
 import type { WorldObject } from './WorldObject';
+import type { PropertyGlobalId } from './GlobalId';
 
 /**
  * 宣言が**誰を見るか**を指す起点。self.prop/parent.propのような1階層の参照のみ対応。
@@ -132,9 +133,9 @@ export class InteractionRelation {
   }
 
   /**
-   * この関係に加わっている物のうち、selfでないもの。**役を対象にした持続効果（8節）の宣言元は、
-   * 相手から見れば必ずここに居る**——役を指せるのは参加者からだけなので、宣言元も相手も同じ1つの
-   * 関係に加わっている（WorldObject.readInfluences）。
+   * この関係に加わっている物のうち、selfでないもの。**役を対象にした持続効果（11.5節）の宣言元と相手は、
+   * 必ず同じ1つの関係に加わっている**——役を指せるのは参加者からだけだから。だから相手を残らず挙げるには、
+   * その物が加わっている関係のそれぞれでここを引く（WorldObject.participantsSharingAnyRelation）。
    */
   participantsOtherThan(self: WorldObject): readonly WorldObject[] {
     return this.participants.filter((participant) => participant !== self);
@@ -169,7 +170,7 @@ export class ReferenceContext {
   /** この文脈のself。効果の宣言元であり、parent・ancestorはここから辿る。 */
   readonly self: WorldObject | undefined;
 
-  /** この操作をしている者。誰かが操作しているとは限らない文脈（forSelf）ではundefined。 */
+  /** この操作をしている者。操作でもなく、問う側がagentを渡すのでもない文脈ではundefined（11.5節）。 */
   readonly agent: WorldObject | undefined;
 
   /** この操作で働きかけに使われる物。それを伴わない操作ではundefined（11.5節）。 */
@@ -205,9 +206,9 @@ export class ReferenceContext {
   }
 
   /**
-   * 参加者のprops（`base`・`passives`、ReferenceScope.participantProps）を読む文脈。役は、selfが今
-   * 参加している関係（世界に刻まれている、InteractionRelation）から解ける。参加していなければ
-   * forSelfと同じで、役はどれも解決先を持たない。
+   * 参加者のprops（`base`・`passives`、ReferenceScope.participantProps）を読む文脈。役は、selfが今役を
+   * 解く関係（世界に刻まれている、InteractionRelation。入れ子なら最も内側、11.5節）から解ける。参加して
+   * いなければforSelfと同じで、役はどれも解決先を持たない。
    */
   static forParticipant(self: WorldObject | undefined): ReferenceContext {
     const relation = self?.participation;
@@ -229,9 +230,9 @@ export class ReferenceContext {
   /** 3役が揃った文脈。組み立てられるのは関係を持っている側だけ（InteractionRelation.contextFor）。 */
   static withRoles(
     self: WorldObject | undefined,
-    agent: WorldObject | undefined,
+    agent: WorldObject,
     instrument: WorldObject | undefined,
-    patient: WorldObject | undefined,
+    patient: WorldObject,
   ): ReferenceContext {
     return new ReferenceContext(self, agent, instrument, patient, undefined);
   }
@@ -282,7 +283,7 @@ export class ReferenceContext {
    * 「そのプロパティを定義している最初の祖先」なので、探すプロパティが決まって初めて相手が決まる
    * （8.6節）。
    */
-  ownerOfProperty(root: ReferenceRoot, propertyGlobalId: number): WorldObject | undefined {
+  ownerOfProperty(root: ReferenceRoot, propertyGlobalId: PropertyGlobalId): WorldObject | undefined {
     return root === 'ancestor' ? this.self?.findAncestorWithProperty(propertyGlobalId) : this.objectAt(root);
   }
 }
@@ -298,9 +299,9 @@ export class ReferenceContext {
  */
 export class PropertyPath {
   readonly root: ReferenceRoot;
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
 
-  constructor(root: ReferenceRoot, propertyGlobalId: number) {
+  constructor(root: ReferenceRoot, propertyGlobalId: PropertyGlobalId) {
     this.root = root;
     this.propertyGlobalId = propertyGlobalId;
   }

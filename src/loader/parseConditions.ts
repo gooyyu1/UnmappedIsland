@@ -21,6 +21,7 @@ import { ConditionNode } from '../domain/ConditionNode';
 import type { ConditionOp } from '../domain/ConditionReader';
 import type { StageBound } from '../domain/PropertyDef';
 import { Requirement, Requirements } from '../domain/Requirement';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /** 要件の並びの要素にだけ書ける、満たさなかったときの理由の識別子（14.6節、Requirement参照）。 */
 const REASON_KEY = 'reason';
@@ -239,7 +240,7 @@ function parsePropertyComparison(
   loader: WorldCodexYamlLoader,
   context: string,
   root: ReferenceRoot,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   op: ConditionOp,
   valueNode: YamlNode,
   scope: ReferenceScope,

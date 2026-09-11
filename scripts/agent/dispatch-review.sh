@@ -15,7 +15,8 @@
 # 出す行は [`dispatch-steps.sh`](dispatch-steps.sh) の `dispatch_session`。`SOURCES` が出す
 # リビジョンは、下の「`main` ではなくPRのブランチで起動する」のとおりPRのブランチ。
 #   終了コード 0 … 投入できて、指示も一致した
-#   終了コード 1 … どこかで失敗した（出た行がどこまで進んだかを示す）
+#   終了コード 3 … 人が手綱で止めている（[`brake.sh`](brake.sh)）
+#   終了コード 1 … それ以外で失敗した（出た行がどこまで進んだかを示す）
 #
 # ## `main` ではなくPRのブランチで起動する
 #
@@ -86,7 +87,7 @@ state=$(jq -r '.state' "$WORK/pr.json")
 # 子の手綱を外すなら本文の `Closes` が要る。
 #
 # **本文の `\r` は落とさない**——受けるのが `grep -o` だけで、抜き出すのは数字なので入らない
-# （[`merge-and-close.sh`](merge-and-close.sh) の「`\r` を落とす側と落とさない側」）。
+# （[`tidy-merged-pr.sh`](tidy-merged-pr.sh) の「`\r` を落とす側と落とさない側」）。
 TAG="review-$PR"
 review_tags=("$TAG")
 kind=review-untasked

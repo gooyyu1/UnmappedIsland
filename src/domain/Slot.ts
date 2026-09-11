@@ -5,6 +5,7 @@ import type { WorldObject } from './WorldObject';
 import { CellLayout, type SlotCell } from './CellLayout';
 import { InteractionRelation } from './ReferenceRoot';
 import type { WornCoverage } from './WornCoverage';
+import type { PropertyGlobalId } from './GlobalId';
 
 /**
  * 1つのWorldObjectが持つ、1つのスロットの実行時状態。中身の並べ方はCellLayoutが持ち、こちらは
@@ -145,7 +146,7 @@ export class Slot {
     return this.contents.find((worn) => coverage.conflictsWith(worn.def.wornCoverage));
   }
 
-  private sumVolume(volumePropertyGlobalId: number): number {
+  private sumVolume(volumePropertyGlobalId: PropertyGlobalId): number {
     return this.contents.reduce((sum, o) => sum + (o.tryGetProperty(volumePropertyGlobalId)?.number ?? 0), 0);
   }
 
@@ -153,7 +154,7 @@ export class Slot {
    * 中身のかさ（7.3節のvolume）が上限（capacity）に対して占める割合（0〜1）。上限を持たないスロットは
    * 割合を定義できないためundefined。
    */
-  fillRatio(volumePropertyGlobalId: number): number | undefined {
+  fillRatio(volumePropertyGlobalId: PropertyGlobalId): number | undefined {
     if (this.def.capacity === undefined || this.def.capacity <= 0) return undefined;
     return Math.min(1, this.sumVolume(volumePropertyGlobalId) / this.def.capacity);
   }

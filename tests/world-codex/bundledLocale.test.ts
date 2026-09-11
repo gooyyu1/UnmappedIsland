@@ -174,8 +174,7 @@ describe('同梱の表示文字列ファイル', () => {
     // 対応表に無いと識別子（thick_branch等）がそのままカードに出るため、UIに出る型には必須とする。
     const carded = ['item', 'fixture', 'injury'].map((tag) => codex.tagNames.getId(tag));
 
-    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const objectDef = codex.objects.get(globalId);
+    for (const objectDef of codex.objects) {
       if (!carded.some((tag) => objectDef.tags.includes(tag))) continue;
       // 自動生成された型は自分のエントリを持たず、素の型の名前と書式から組み立てる（3.5節）。
       expect(typeDisplayName(codex, locale, objectDef), `${objectDef.name} には表示名が必要`).not.toBe(
@@ -186,9 +185,23 @@ describe('同梱の表示文字列ファイル', () => {
 
   it('宣言されたプロパティタグはすべて表示名を持つ', () => {
     // タブ名として画面に出るため、欠けると識別子（nutrition等）がそのままタブに出る。
-    for (let globalId = 0; globalId < codex.propertyTagNames.count; globalId++) {
+    for (const globalId of codex.propertyTagNames.ids) {
       const name = codex.propertyTagNames.getName(globalId);
       expect(locale.propertyTag(name).displayName, `${name} には表示名が必要`).not.toBe(name);
+    }
+  });
+
+  it('外から見えるスロット（visible_slots）はすべて表示名を持つ', () => {
+    // 子ウィンドウのタブの見出しになる（Windows.md 1.2節）ため、欠けると識別子（salt等）が
+    // そのままタブに出る。名乗らないスロットはタブに並ばないので、ここではvisible_slotsだけを見る。
+    for (const objectDef of codex.objects) {
+      for (const slotGlobalId of objectDef.visibleSlotGlobalIds) {
+        const name = codex.slotNames.getName(slotGlobalId);
+        expect(
+          locale.slot(name).displayName,
+          `${objectDef.name}が見せるスロット ${name} には表示名が必要`,
+        ).not.toBe(name);
+      }
     }
   });
 
@@ -197,8 +210,7 @@ describe('同梱の表示文字列ファイル', () => {
     // statusタグの有無では絞らない。欠けるとその行だけ絵ではなく名前になる。
     const characterTag = codex.tagNames.getId('character');
 
-    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const objectDef = codex.objects.get(globalId);
+    for (const objectDef of codex.objects) {
       if (!objectDef.tags.includes(characterTag)) continue;
 
       const texts = locale.object(objectDef.name);
@@ -212,7 +224,7 @@ describe('同梱の表示文字列ファイル', () => {
 
   it('宣言されたシンボル（天気・季節）はすべて表示名を持つ', () => {
     // 天気は状況エリアの空の窓に名前として出るため、欠けると識別子（scorching等）がそのまま出る。
-    for (let globalId = 0; globalId < codex.symbolNames.count; globalId++) {
+    for (const globalId of codex.symbolNames.ids) {
       const name = codex.symbolNames.getName(globalId);
       expect(locale.symbol(name).displayName, `${name} には表示名が必要`).not.toBe(name);
     }
@@ -303,8 +315,7 @@ describe('同梱の表示文字列ファイル', () => {
     // フォントを依存に加えたくない。全角1.0・半角0.5で数えると、実測（Noto Sans JP）に対して
     // 常に大きめに出る——16uでの英字の平均は0.50字ぶんで、最も細い並び（illi…）は0.19字ぶん。
     // つまり**この検査を通れば実物は必ず収まる**。
-    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const def = codex.objects.get(globalId);
+    for (const def of codex.objects) {
       const name = def.name;
       const label = typeDisplayName(codex, locale, def);
       expect(nameWidth(label), `'${label}' (${name}) はカードのタイトルに収まらない`).toBeLessThanOrEqual(

@@ -5,6 +5,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 動物の1手（docs/engine/HuntingSystem.md 5節）を、実ファイルの定義だけで検証する。
@@ -23,9 +24,9 @@ describe('動物の1手', () => {
   let grassland: WorldObject;
   let player: WorldObject;
 
-  let warinessId: number;
-  let fleeId: number;
-  let biteId: number;
+  let warinessId: PropertyGlobalId;
+  let fleeId: PropertyGlobalId;
+  let biteId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();

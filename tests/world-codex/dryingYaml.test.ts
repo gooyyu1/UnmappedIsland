@@ -6,6 +6,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * drying.yamlの天日干しと干し場を、実ファイルの定義だけで検証する。
@@ -39,8 +40,8 @@ const START_HOURS = [0, 3, 6, 9, 12, 15, 18, 21];
 
 describe('drying.yamlの天日干しと干し場', () => {
   let codex: WorldCodex;
-  let durabilityId: number;
-  let dryingRemainingId: number;
+  let durabilityId: PropertyGlobalId;
+  let dryingRemainingId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();
@@ -139,7 +140,7 @@ describe('drying.yamlの天日干しと干し場', () => {
     return Object.fromEntries(START_HOURS.map((hour) => [hour, result]));
   }
 
-  function numberOf(object: WorldObject, propertyId: number): number {
+  function numberOf(object: WorldObject, propertyId: PropertyGlobalId): number {
     return object.getProperty(propertyId).number;
   }
 
@@ -325,8 +326,7 @@ function dryableTypeNames(codex: WorldCodex): string[] {
   const dryable = codex.tagNames.getId('dryable');
   const names: string[] = [];
 
-  for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-    const def = codex.objects.get(globalId);
+  for (const def of codex.objects) {
     if (!def.tags.includes(dryable)) continue;
     if (codex.generatedTypes.baseGlobalIdIfVariantOn(def, 'cure') !== undefined) continue;
     names.push(def.name);

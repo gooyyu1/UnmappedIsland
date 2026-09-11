@@ -13,12 +13,13 @@ import { analysisContextOf, craftingStepsOf } from './craftingSteps';
 import type { IslandLocations } from './islandLocations';
 import { islandLocationsOf } from './islandLocations';
 import type { RangeCycle } from './rangeCycles';
-import { externalTickDeltasOn, rangeCyclesOf } from './rangeCycles';
+import { rangeCyclesOf } from './rangeCycles';
 import { rangeEventReadouts } from './rangeEvents';
 import type { RainWaterRow } from './seasonalRain';
 import { rainWaterRows } from './seasonalRain';
 import type { StaticValueResolver } from './staticValue';
 import { highestDeclaredLayer, staticValueOf } from './staticValue';
+import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 定義（`src/assets/world-codex/*.yaml`）だけから「時間あたりの収支」を計算する。
@@ -102,7 +103,7 @@ export interface ChainRoute {
   readonly craftMinutes: number;
 
   /** 1回の実行で埋まる需要（キーは需要のプロパティ）。体脂肪は三大栄養素の増分がまとまって効く。 */
-  readonly fills: ReadonlyMap<number, number>;
+  readonly fills: ReadonlyMap<PropertyGlobalId, number>;
 
   /** 1回の実行で動く値すべて。時間を按分していないので、これらを縦に足すと二重計上になる。 */
   readonly deltas: readonly NamedAmount[];
@@ -176,7 +177,7 @@ export function isGap(prerequisite: RoutePrerequisite): boolean {
 
 /** 連鎖表の、プロパティ1つぶん。 */
 export interface PropertyChains {
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
   readonly propertyName: string;
 
   /** 1日に減る量。 */
@@ -355,18 +356,37 @@ export interface ObjectCost {
   readonly days: number | undefined;
 }
 
-export interface BalanceTables {
-  readonly characterNames: readonly string[];
-
-  /**
-   * 1日を賄う最小労働（分）と、それを払って残る自由時間（分）。**分の整数へ丸めて持つ**
-   * ——BalanceStats.mdが載せるのと同じ桁で、端数を残すと、これを分母にした日数（`ObjectCost.days`・
-   * 山の量。ContentSkeleton.md 4節）が桁の下で揺れる。
-   *
-   * **日数の分母はこの1つだけ。** 同じ量を読み手ごとに引き算し直すと、生成物ごとに換算が変わる。
-   */
+/**
+ * 1日を賄う最小労働（分）と、それを払って残る自由時間（分）。**分の整数へ丸めて持つ**
+ * ——BalanceStats.mdが載せるのと同じ桁で、端数を残すと、これを分母にした日数（`ObjectCost.days`・
+ * 山の量。ContentSkeleton.md 4節）が桁の下で揺れる。
+ *
+ * **日数の分母はこの1つだけ。** 同じ量を読み手ごとに引き算し直すと、生成物ごとに換算が変わる。
+ * 対で1つの型にしてあるのは、分母を`number`で受けると1日の長さでも最小労働でも型が通り、
+ * 桁だけが静かにずれるため。
+ */
+export interface DailyLabour {
   readonly minimumLabourMinutes: number;
   readonly surplusMinutes: number;
+}
+
+/** 島全体の献立が最小労働（BalanceStats.md）。残りが自由時間で、引き算はここ1箇所。 */
+function dailyLabourOf(islandMenu: DailyMenu): DailyLabour {
+  const minimumLabourMinutes = Math.round(islandMenu.totalMinutes);
+
+  return { minimumLabourMinutes, surplusMinutes: MINUTES_PER_DAY - minimumLabourMinutes };
+}
+
+export interface BalanceTables extends DailyLabour {
+  /**
+   * この表を組んだ代表キャラクタ。1日の必要量（`dailyNeeds`）も、そこから出る最小労働も、この1人の
+   * ものなので、**表と同じ人物を見たい側はここから採る**——使う側がもう一度名前を書くと、必要量を
+   * 出した人物と食い違ったまま数字が出る。
+   */
+  readonly sampleCharacterName: string;
+
+  /** 世界の全キャラクタ（宣言順）。 */
+  readonly characterNames: readonly string[];
 
   /** 全オブジェクトの総コスト（宣言順）。 */
   readonly objectCosts: readonly ObjectCost[];
@@ -388,31 +408,25 @@ export interface BalanceTables {
   readonly rainWater: readonly RainWaterRow[];
 }
 
-/** 収支表を丸ごと組み立てる。sampleCharacterは1日の必要量を取る代表キャラクタ。 */
-export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): BalanceTables {
+/** 収支表を丸ごと組み立てる。sampleCharacterNameは1日の必要量を取る代表キャラクタ。 */
+export function buildBalanceTables(codex: WorldCodex, sampleCharacterName: string): BalanceTables {
   const characterNames = codex.objectDefNamesWithTag(codex.vocabulary.world.characterTagId);
-  const character = codex.objects.get(codex.objectNames.getId(sampleCharacter));
-  const dailyNeeds = dailyNeedsOf(codex, character);
-  const islandLocations = islandLocationsOf(codex);
-  const { places, gaps, islandWide } = placeBalances(codex, character, dailyNeeds, islandLocations);
+  const character = codex.objects.get(codex.objectNames.getId(sampleCharacterName));
+  const { places, gaps, islandWide, dailyNeeds, islandLocations } = placeBalances(codex, character);
 
-  // 島全体の献立が最小労働（places[0]は島全体）。
-  const minimumLabourMinutes = Math.round(places[0].menu.totalMinutes);
-  const surplusMinutes = MINUTES_PER_DAY - minimumLabourMinutes;
+  // places[0]は島全体。
+  const labour = dailyLabourOf(places[0].menu);
 
   return {
+    sampleCharacterName,
     characterNames,
-    minimumLabourMinutes,
-    surplusMinutes,
+    ...labour,
     dailyNeeds,
     gaps,
-    objectCosts: objectCosts(codex, islandWide, surplusMinutes, islandLocations.seaOnly),
+    objectCosts: objectCosts(codex, islandWide, labour, islandLocations.seaOnly),
     consumption: consumptionRows(codex, characterNames),
-    // 供給表は島全体の文脈で出す。罠の重みは土地が入れるので、土地を決めないと候補が全部0になる。
-    supply: supplyRows(
-      codex,
-      allSteps(codex, islandLocations.seaOnly, analysisContext(codex, islandLocations.island)),
-    ),
+    // 供給表は島のどこで起こる工程も並べるので、土地を渡さず島全体で出す。
+    supply: supplyRows(codex, allSteps(codex, islandLocations)),
     places,
     rainWater: rainWaterRows(codex),
   };
@@ -427,14 +441,14 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
  * 流量を要求量として数えると、必要な3.5倍を食べさせることになる。
  */
 export interface DailyNeed {
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
   readonly name: string;
 
   /** 1日に賄う量。 */
   readonly amount: number;
 
   /** この需要を埋められるプロパティ。体脂肪は三大栄養素が原資なので、そちらの増分で埋まる。 */
-  readonly suppliedBy: readonly number[];
+  readonly suppliedBy: readonly PropertyGlobalId[];
 
   /** 尽きると死ぬか（`on_min` が自分を消す、VitalsSystem.md）。 */
   readonly lethal: boolean;
@@ -456,7 +470,7 @@ function dailyNeedsOf(codex: WorldCodex, character: ObjectDef): readonly DailyNe
   const sources = [...new Set(deltas.filter((d) => d.capped && d.amount < 0).map((d) => d.propertyGlobalId))];
   const sinks = new Set(deltas.filter((d) => d.capped && d.amount > 0).map((d) => d.propertyGlobalId));
 
-  const perTick = new Map<number, number>();
+  const perTick = new Map<PropertyGlobalId, number>();
   for (const delta of deltas) {
     if (delta.capped || delta.gate.conditional || delta.amount >= 0) continue;
     if (character.tryGetPropertyDef(delta.propertyGlobalId)?.worsensUpward === true) continue;
@@ -485,7 +499,7 @@ function inInitialStage(def: ObjectDef, delta: TickDelta): boolean {
 }
 
 /** そのプロパティが尽きたとき、持ち主ごと消えるか（`on_min: destroy self`）。 */
-function destroysWhenEmpty(def: ObjectDef, propertyGlobalId: number): boolean {
+function destroysWhenEmpty(def: ObjectDef, propertyGlobalId: PropertyGlobalId): boolean {
   const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
   if (propertyDef === undefined) return false;
   return rangeEventReadouts(propertyDef, () => undefined).some(
@@ -583,26 +597,25 @@ function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly Supp
 function placeBalances(
   codex: WorldCodex,
   character: ObjectDef,
-  dailyNeeds: readonly DailyNeed[],
-  { island: locations, seaOnly }: IslandLocations,
 ): {
   readonly places: readonly PlaceBalance[];
   readonly gaps: readonly Gap[];
   readonly islandWide: Acquisition;
+
+  // 表の他の欄も要る値。**導出した側が返す**——同じ導出を呼び出し側でやり直すと、
+  // islandLocationsOfの全型走査（seaOnlyObjectsOf）が丸ごと二重になる。
+  readonly dailyNeeds: readonly DailyNeed[];
+  readonly islandLocations: IslandLocations;
 } {
+  const dailyNeeds = dailyNeedsOf(codex, character);
+  const islandLocations = islandLocationsOf(codex);
+
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
-  const islandContext = analysisContext(codex, locations);
-  const islandWide = new Acquisition(codex, reachableSteps(allSteps(codex, seaOnly, islandContext)));
+  const islandWide = new Acquisition(codex, reachableSteps(allSteps(codex, islandLocations)));
 
   let islandRoutes: readonly ChainRoute[] = [];
-  const places = [undefined, ...locations].map((location) => {
-    // 罠が掛ける動物の重みは土地が宣言する（base）ので、土地を決めてから工程を組み立てる。
-    const context = location === undefined ? islandContext : analysisContext(codex, [location]);
-    const steps = reachableSteps(
-      location === undefined
-        ? allSteps(codex, seaOnly, context)
-        : stepsAt(codex, allSteps(codex, seaOnly, context), location),
-    );
+  const places = [undefined, ...islandLocations.island].map((location) => {
+    const steps = reachableSteps(allSteps(codex, islandLocations, location));
     const acquisition = location === undefined ? islandWide : new Acquisition(codex, steps, islandWide);
     const routes = routeCandidates(codex, character, acquisition, steps, dailyNeeds, location);
 
@@ -619,7 +632,7 @@ function placeBalances(
     };
   });
 
-  return { places, gaps: gapsOf(islandRoutes), islandWide };
+  return { places, gaps: gapsOf(islandRoutes), islandWide, dailyNeeds, islandLocations };
 }
 
 /**
@@ -635,8 +648,8 @@ function placeBalances(
 function objectCosts(
   codex: WorldCodex,
   islandWide: Acquisition,
-  surplusMinutes: number,
-  seaOnly: ReadonlySet<number>,
+  labour: DailyLabour,
+  seaOnly: ReadonlySet<ObjectGlobalId>,
 ): readonly ObjectCost[] {
   const rows: ObjectCost[] = [];
   const axisValues = axisValueGlobalIds(codex);
@@ -661,7 +674,8 @@ function objectCosts(
       prerequisites,
       missing: cost === undefined ? islandWide.missingInputsFor(def.globalId) : [],
       blockedByTool: cost !== undefined && prerequisites.some(isGap),
-      days: cost === undefined || surplusMinutes <= 0 ? undefined : totalOf(cost) / surplusMinutes,
+      days:
+        cost === undefined || labour.surplusMinutes <= 0 ? undefined : totalOf(cost) / labour.surplusMinutes,
     });
   }
   return rows;
@@ -697,7 +711,7 @@ function routeCandidates(
   dailyNeeds: readonly DailyNeed[],
   place: ObjectDef | undefined,
 ): readonly ChainRoute[] {
-  const suppliers = new Map<number, number[]>();
+  const suppliers = new Map<PropertyGlobalId, PropertyGlobalId[]>();
   for (const dailyNeed of dailyNeeds)
     for (const propertyGlobalId of dailyNeed.suppliedBy) {
       const list = suppliers.get(propertyGlobalId) ?? [];
@@ -715,7 +729,7 @@ function routeCandidates(
 
     const deltas = gainsOf(codex, ref);
     // その工程が埋める需要（体脂肪は三大栄養素の増分がまとまって効く）。
-    const fills = new Map<number, number>();
+    const fills = new Map<PropertyGlobalId, number>();
     for (const [propertyGlobalId, amount] of deltas) {
       if (amount <= 0) continue;
       for (const requirementId of suppliers.get(propertyGlobalId) ?? [])
@@ -733,7 +747,7 @@ function routeCandidates(
  * その工程がキャラクタへ返す値。**宣言元がキャラクタ自身なら `self` も数える**——休息
  * （`wait`/`rest`/`nap`/`sleep`）は自分の値を自分で戻す工程で、他の工程のように `agent` を持たない。
  */
-function gainsOf(codex: WorldCodex, ref: StepRef): ReadonlyMap<number, number> {
+function gainsOf(codex: WorldCodex, ref: StepRef): ReadonlyMap<PropertyGlobalId, number> {
   const agent = expectedDeltas(ref.step, 'agent');
   if (!isCharacter(codex, ref.def)) return agent;
 
@@ -823,8 +837,8 @@ function buildRoute(
   acquisition: Acquisition,
   route: readonly StepRef[],
   resolved: StepCost,
-  deltas: ReadonlyMap<number, number>,
-  fills: ReadonlyMap<number, number>,
+  deltas: ReadonlyMap<PropertyGlobalId, number>,
+  fills: ReadonlyMap<PropertyGlobalId, number>,
   place: ObjectDef | undefined,
 ): ChainRoute {
   const cost = resolved.cost;
@@ -845,7 +859,7 @@ function buildRoute(
     blocked: [...prerequisites.values()].some(isGap),
     needsImport: resolved.imported || [...prerequisites.values()].some(({ imported }) => imported),
     // その土地を起点にする経路か。**持ち込みが1つも要らないなら起点はここ**——他の土地の産物は
-    // 必ず持ち込みとして解かれるため（stepsAtが他の土地の探索を外している）。休息もここに入る。
+    // 必ず持ち込みとして解かれるため（`allSteps`が他の土地の探索を外している）。休息もここに入る。
     rootedHere:
       place === undefined ||
       route.some((ref) => ref.def.globalId === place.globalId) ||
@@ -869,7 +883,7 @@ function buildRoute(
 function greedyMenu(dailyNeeds: readonly DailyNeed[], routes: readonly ChainRoute[]): DailyMenu {
   const usable = routes.filter((route) => !route.untimed && route.executionMinutes > 0);
   const remaining = new Map(dailyNeeds.map((need) => [need.propertyGlobalId, need.amount]));
-  const chosen = new Map<number, ChainRoute>();
+  const chosen = new Map<PropertyGlobalId, ChainRoute>();
 
   // **menuForと同じ順序で、同じ数え方で選ぶ。** 「どの需要を先に満たしたか」で経路を割り当てると、
   // その経路がその需要を丸ごと賄うことになり、得意でない値を1つで埋めさせてしまう
@@ -907,7 +921,7 @@ function greedyMenu(dailyNeeds: readonly DailyNeed[], routes: readonly ChainRout
  */
 export function menuFor(
   dailyNeeds: readonly DailyNeed[],
-  chosen: ReadonlyMap<number, ChainRoute>,
+  chosen: ReadonlyMap<PropertyGlobalId, ChainRoute>,
 ): DailyMenu {
   const remaining = new Map(dailyNeeds.map((need) => [need.propertyGlobalId, need.amount]));
   const entries: MenuEntry[] = [];
@@ -1057,8 +1071,8 @@ function combinationLabel(codex: WorldCodex, combination: readonly TickDelta[], 
 }
 
 /** 1回の実行で、その型が生まれる期待個数（分岐の確率で重み付けした和）。 */
-function expectedSpawns(step: CraftingStep): ReadonlyMap<number, number> {
-  const counts = new Map<number, number>();
+function expectedSpawns(step: CraftingStep): ReadonlyMap<ObjectGlobalId, number> {
+  const counts = new Map<ObjectGlobalId, number>();
   for (const outcome of step.outcomes)
     for (const spawn of outcome.spawns)
       counts.set(
@@ -1069,8 +1083,8 @@ function expectedSpawns(step: CraftingStep): ReadonlyMap<number, number> {
 }
 
 /** 1回の実行で、対象のプロパティが動く期待量（分岐の確率で重み付けした和）。 */
-function expectedDeltas(step: CraftingStep, target: 'agent' | 'self'): ReadonlyMap<number, number> {
-  const amounts = new Map<number, number>();
+function expectedDeltas(step: CraftingStep, target: 'agent' | 'self'): ReadonlyMap<PropertyGlobalId, number> {
+  const amounts = new Map<PropertyGlobalId, number>();
   for (const outcome of step.outcomes)
     for (const delta of outcome.deltas) {
       if (delta.target !== target) continue;
@@ -1101,7 +1115,7 @@ interface DeviceCycle {
   readonly gatedBy: readonly (readonly TickDelta[])[];
 
   /** 外から押されて進む周期（炉が焼く・傷が血を奪う）なら、押し手の型（RangeCycle.drivenBy）。 */
-  readonly drivenBy: number | undefined;
+  readonly drivenBy: ObjectGlobalId | undefined;
 
   /**
    * 繰り返す仕掛け（罠）か。真なら**プレイヤーは待ち時間を払わないが、設備は待っている間も朽ちる**
@@ -1117,7 +1131,7 @@ interface DeviceCycle {
 /** その型が朽ちるまでの時間（分）と、尽きて自分を消すプロパティ。 */
 interface DecayLifetime {
   readonly minutes: number;
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
 }
 
 /** 工程1回の値段と、それが他の土地からの持ち込みを含むか。 */
@@ -1128,7 +1142,7 @@ interface StepCost {
 
 /** 消費される入力1件を、どの型で・いくらで満たすか。 */
 interface InputSource {
-  readonly objectGlobalId: number;
+  readonly objectGlobalId: ObjectGlobalId;
   readonly cost: Cost;
   readonly imported: boolean;
 }
@@ -1138,7 +1152,7 @@ interface InputSource {
  * 分母（寿命）が無いだけで、工程も設備も在る。
  */
 interface ObtainableSource {
-  readonly objectGlobalId: number;
+  readonly objectGlobalId: ObjectGlobalId;
   readonly cost: Cost | undefined;
 
   /**
@@ -1154,7 +1168,7 @@ interface ObtainableSource {
  */
 interface Prerequisite {
   readonly label: string;
-  readonly objectGlobalId: number | undefined;
+  readonly objectGlobalId: ObjectGlobalId | undefined;
   readonly cost: Cost | undefined;
   readonly imported: boolean;
 }
@@ -1192,8 +1206,8 @@ function isCharacter(codex: WorldCodex, def: ObjectDef): boolean {
  * 軸の値の識別子は生成器が決める名前だが、`variation_axes` の軸では値の型の名前そのもの
  * （axisVariants）。レシピの軸の値はレシピ名なので、型として引けたものだけを見る。
  */
-function axisValueGlobalIds(codex: WorldCodex): ReadonlySet<number> {
-  const ids = new Set<number>();
+function axisValueGlobalIds(codex: WorldCodex): ReadonlySet<ObjectGlobalId> {
+  const ids = new Set<ObjectGlobalId>();
   for (const def of codex.objects)
     for (const value of codex.variationsOf(def).values()) {
       const globalId = codex.objectNames.tryGetId(value);
@@ -1219,24 +1233,28 @@ function reachableSteps(steps: readonly StepRef[]): readonly StepRef[] {
  * 島の全型の全工程。宣言順（型のグローバルID順、型の中は宣言順）。プレイヤーが起こす工程に続けて、
  * 時間で回る工程（罠の判定）も並べる。軸の値の型は飛ばす（axisValueGlobalIds参照）。
  *
- * **海でしか手に入らない型が宣言する工程も飛ばす**（seaOnly、`islandLocations`）——この表が数えるのは
+ * **海でしか手に入らない型が宣言する工程も飛ばす**（`IslandLocations.seaOnly`）——この表が数えるのは
  * 島の1日で、海はその外。海区の見張りだけでなく漁り場の漁も落ちる：生肉を30分で返す漁り場を残すと、
- * 生肉の代表経路が海に決まり、島で最も安い肉の経路（イノシシ）が表から押し出される。土地ごとの表は
- * `stepsAt`が既に他の土地の工程を落としているが、漁り場も海藻も土地ではないのでそちらでは落ちない。
+ * 生肉の代表経路が海に決まり、島で最も安い肉の経路（イノシシ）が表から押し出される。土地を渡した
+ * ときは他の土地が宣言する工程も落ちるが、漁り場も海藻も土地ではないのでそちらでは落ちない。
  *
- * outerは、祖先（＝置かれている土地）が入れる値を解く手立て。罠が掛ける動物の重みは土地が
- * 宣言するので（`base`）、これが無いと候補が全部0になる。
+ * standingAtは、立っている土地。**祖先が入れる値を解く文脈と、届く工程の絞り込みは同じ土地から
+ * 出る**ので、渡すのはその土地1つだけ——罠が掛ける動物の重みは土地が宣言する（`base`）ので文脈は
+ * その土地を祖先に置き、他の土地が宣言する工程はそこへ行かないと実行できないので落とす。省くと
+ * 島全体で、全土地を祖先に置いてどの土地の工程も残す。
  */
 function allSteps(
   codex: WorldCodex,
-  seaOnly: ReadonlySet<number>,
-  outer?: StaticValueResolver,
+  islandLocations: IslandLocations,
+  standingAt?: ObjectDef,
 ): readonly StepRef[] {
+  const outer = analysisContext(codex, standingAt === undefined ? islandLocations.island : [standingAt]);
   const defs = [...codex.objects];
   const axisValues = axisValueGlobalIds(codex);
   return defs.flatMap((def) => {
-    if (axisValues.has(def.globalId) || seaOnly.has(def.globalId)) return [];
-    const cycles = rangeCyclesOf(def, outer, externalTickDeltasOn(def, defs));
+    if (axisValues.has(def.globalId) || islandLocations.seaOnly.has(def.globalId)) return [];
+    if (standingAt !== undefined && isLocation(codex, def) && def.globalId !== standingAt.globalId) return [];
+    const cycles = rangeCyclesOf(def, outer, defs);
     const lifetime = decayLifetimeOf(cycles);
     return [
       ...craftingStepsOf(codex, def, outer).map((step) => ({ def, step, cycle: undefined })),
@@ -1293,11 +1311,6 @@ function analysisContext(codex: WorldCodex, ancestorLocations: readonly ObjectDe
   ]);
 }
 
-/** その土地に立っているときに実行できる工程（他の土地が宣言する工程は届かない）。 */
-function stepsAt(codex: WorldCodex, steps: readonly StepRef[], location: ObjectDef): readonly StepRef[] {
-  return steps.filter((ref) => !isLocation(codex, ref.def) || ref.def.globalId === location.globalId);
-}
-
 /**
  * 1つの文脈（土地1つ、または島全体）で、各型を1個手に入れるのに要する時間を求める。
  *
@@ -1306,10 +1319,10 @@ function stepsAt(codex: WorldCodex, steps: readonly StepRef[], location: ObjectD
  * 入手時間は含めない——繰り返し使えるものを1個あたりへ按分するには「何回使うか」の仮定が要る。
  */
 class Acquisition {
-  readonly costByObject = new Map<number, Cost>();
+  readonly costByObject = new Map<ObjectGlobalId, Cost>();
 
   /** どこかの工程が生み出す型。土地のように「生成されるもの」と、作れる物を分けるのに使う。 */
-  readonly producedObjects = new Set<number>();
+  readonly producedObjects = new Set<ObjectGlobalId>();
 
   /**
    * 手に入るのに値段が付かない型。**値段が付かないのは入手経路が無いからではない**——工程も
@@ -1319,16 +1332,16 @@ class Acquisition {
    *
    * **島全体で1つ**（constructor参照）。土地の文脈は同じ集合を見る。
    */
-  readonly obtainableWithoutCost: Set<number>;
+  readonly obtainableWithoutCost: Set<ObjectGlobalId>;
 
   /**
    * その型を最も安く手に入れる道筋が、他の土地の産物を含むか。**入手連鎖を伝って残す**——
    * 熟したヤシの実を持ち込んで加工した果肉は、果肉そのものがこの土地で作れても「持ち込みが要る」。
    */
-  private readonly importedByObject = new Map<number, boolean>();
+  private readonly importedByObject = new Map<ObjectGlobalId, boolean>();
 
   /** その型を最も安く生む工程。連鎖を遡って前提の道具を集めるのに使う。 */
-  private readonly viaStep = new Map<number, StepRef>();
+  private readonly viaStep = new Map<ObjectGlobalId, StepRef>();
 
   private readonly steps: readonly StepRef[];
   private readonly codex: WorldCodex;
@@ -1363,7 +1376,7 @@ class Acquisition {
    * その型を島のどこかで手に入れられるか。**値段が付くかとは別の問い**——待ち生産に行き着く型は
    * 按分できないので値段が付かないが、待てば手に入る（obtainableWithoutCost）。
    */
-  obtainable(objectGlobalId: number): boolean {
+  obtainable(objectGlobalId: ObjectGlobalId): boolean {
     return this.costByObject.has(objectGlobalId) || this.obtainableWithoutCost.has(objectGlobalId);
   }
 
@@ -1446,7 +1459,7 @@ class Acquisition {
    * 工程）のものを返す——どこで詰まっているかを1つに絞らないと、読み手が辿る先を決められない。
    * 手に入る型では空（obtainable）。
    */
-  missingInputsFor(objectGlobalId: number): readonly string[] {
+  missingInputsFor(objectGlobalId: ObjectGlobalId): readonly string[] {
     if (this.obtainable(objectGlobalId)) return [];
 
     let best: readonly string[] | undefined;
@@ -1483,14 +1496,14 @@ class Acquisition {
    * 焼け石を沸かすと石が戻るが、その焼け石が石を焼いたものである以上、その経路は石を自前で
    * 用意したことにならない。
    */
-  netOutputsOf(ref: StepRef): readonly number[] {
+  netOutputsOf(ref: StepRef): readonly ObjectGlobalId[] {
     return [...expectedSpawns(ref.step).keys()].filter(
       (objectGlobalId) => !this.consumesOwnOutput(ref, objectGlobalId),
     );
   }
 
   /** その型を手に入れるまでの連鎖に現れる工程を、最も安い経路だけ遡って挙げる。 */
-  routeOf(objectGlobalId: number, seen = new Set<number>()): readonly StepRef[] {
+  routeOf(objectGlobalId: ObjectGlobalId, seen = new Set<ObjectGlobalId>()): readonly StepRef[] {
     if (seen.has(objectGlobalId)) return [];
     seen.add(objectGlobalId);
 
@@ -1514,11 +1527,11 @@ class Acquisition {
    */
   private importedInputCost(
     input: CraftingStep['inputs'][number],
-  ): { readonly objectGlobalId: number; readonly cost: Cost } | undefined {
+  ): { readonly objectGlobalId: ObjectGlobalId; readonly cost: Cost } | undefined {
     const island = this.islandWide;
     if (island === undefined) return undefined;
 
-    let best: { objectGlobalId: number; cost: Cost } | undefined;
+    let best: { objectGlobalId: ObjectGlobalId; cost: Cost } | undefined;
     for (const objectGlobalId of this.candidatesOf(input)) {
       const cost = island.costByObject.get(objectGlobalId);
       if (cost === undefined) continue;
@@ -1528,7 +1541,7 @@ class Acquisition {
   }
 
   /** 用意する必要が無い入力か（立っている土地と、自分自身）。 */
-  private isAlwaysAtHand(objectGlobalId: number): boolean {
+  private isAlwaysAtHand(objectGlobalId: ObjectGlobalId): boolean {
     const def = this.codex.objects.get(objectGlobalId);
     return isLocation(this.codex, def) || isCharacter(this.codex, def);
   }
@@ -1559,13 +1572,13 @@ class Acquisition {
   }
 
   /** 入力1件を満たす型のうち、値段は付かないが手に入るもの（obtainableWithoutCost）。 */
-  private unpricedCandidate(input: CraftingStep['inputs'][number]): number | undefined {
+  private unpricedCandidate(input: CraftingStep['inputs'][number]): ObjectGlobalId | undefined {
     return this.candidatesOf(input).find((objectGlobalId) => this.obtainableWithoutCost.has(objectGlobalId));
   }
 
   /** 入力1件を満たすのに最も安い型。この文脈で値段の付く型がどれも無ければundefined。 */
-  private cheapestCandidate(input: CraftingStep['inputs'][number]): number | undefined {
-    let best: number | undefined;
+  private cheapestCandidate(input: CraftingStep['inputs'][number]): ObjectGlobalId | undefined {
+    let best: ObjectGlobalId | undefined;
     let bestCost: Cost | undefined;
     for (const objectGlobalId of this.candidatesOf(input)) {
       const cost = this.costByObject.get(objectGlobalId);
@@ -1600,10 +1613,10 @@ class Acquisition {
   }
 
   /** 入力1件を満たしうる型のグローバルID（タグ指定なら、そのタグを持つ型すべて）。 */
-  private candidatesOf(input: CraftingStep['inputs'][number]): readonly number[] {
+  private candidatesOf(input: CraftingStep['inputs'][number]): readonly ObjectGlobalId[] {
     if (input.kind === 'object') return [input.objectGlobalId];
 
-    const found: number[] = [];
+    const found: ObjectGlobalId[] = [];
     for (const def of this.codex.objects) if (def.hasTag(input.tagGlobalId)) found.push(def.globalId);
     return found;
   }
@@ -1624,7 +1637,7 @@ class Acquisition {
    */
   private consumesOwnOutput(
     ref: StepRef,
-    objectGlobalId: number,
+    objectGlobalId: ObjectGlobalId,
     visited = new Set<CraftingStep>(),
   ): boolean {
     if (visited.has(ref.step)) return false;

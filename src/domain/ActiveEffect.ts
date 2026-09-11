@@ -5,8 +5,16 @@ import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 import type { ConditionNode } from './ConditionNode';
 import type { ObjectRef } from './ObjectRef';
-import type { AddReading, EffectReader, SetValueReading, TransferReading } from './EffectReader';
+import type {
+  AddReading,
+  ConditionalBranch,
+  ConditionalReading,
+  EffectReader,
+  SetValueReading,
+  TransferReading,
+} from './EffectReader';
 import type { PropertyPath, ReferenceContext } from './ReferenceRoot';
+import type { ObjectGlobalId } from './GlobalId';
 
 /**
  * 「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。**対象の解決と適用まで自分で
@@ -149,7 +157,35 @@ export class ConditionalEffect extends ActiveEffect {
    * ——満たすかは実行時の世界で決まる。
    */
   read(reader: EffectReader): void {
-    reader.conditional({ condition: this.condition, whenMet: this.whenMet, otherwise: this.otherwise });
+    reader.conditional(new ConditionalBranches(this.condition, this.whenMet, this.otherwise));
+  }
+}
+
+/**
+ * 二択の読み上げ（ConditionalReading参照）。**どちらが著者の書いた枝かは枝自身が名乗る**ので、
+ * 読み手は枝の同一性を見ずに問いへ合う枝を選べる。
+ */
+class ConditionalBranches implements ConditionalReading {
+  readonly condition: ConditionNode;
+  private readonly branches: readonly ConditionalBranch[];
+
+  constructor(condition: ConditionNode, whenMet: ActiveEffect, otherwise: ActiveEffect | undefined) {
+    this.condition = condition;
+    this.branches =
+      otherwise === undefined
+        ? [{ effect: whenMet, authored: true }]
+        : [
+            { effect: whenMet, authored: true },
+            { effect: otherwise, authored: false },
+          ];
+  }
+
+  readEveryBranch(reader: EffectReader): void {
+    this.forEachBranch((branch) => branch.effect.read(reader));
+  }
+
+  forEachBranch(visit: (branch: ConditionalBranch) => void): void {
+    for (const branch of this.branches) visit(branch);
   }
 }
 
@@ -283,7 +319,7 @@ export type SpawnTarget =
  * spawnしたオブジェクトは配置されないまま消える。
  */
 export class SpawnEffect extends ActiveEffect {
-  private readonly objectGlobalId: number;
+  private readonly objectGlobalId: ObjectGlobalId;
   private readonly into: SpawnTarget;
 
   /**
@@ -292,7 +328,7 @@ export class SpawnEffect extends ActiveEffect {
    */
   private readonly count: number;
 
-  constructor(objectGlobalId: number, into: SpawnTarget, count = 1) {
+  constructor(objectGlobalId: ObjectGlobalId, into: SpawnTarget, count = 1) {
     super();
     if (!Number.isInteger(count) || count < 1)
       throw new Error(`countは1以上の整数である必要があります（値: ${count}）。`);

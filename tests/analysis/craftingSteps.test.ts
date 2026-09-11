@@ -70,10 +70,7 @@ object_defs:
   });
 
   it('クラフトネットワークは、出力を持つ工程だけを描く', () => {
-    const network = buildCraftingNetwork(
-      [...Array(codex.objects.count).keys()].map((globalId) => codex.objects.get(globalId)),
-      codex,
-    );
+    const network = buildCraftingNetwork([...codex.objects], codex);
 
     const stepNames = network.nodes.filter((node) => node.kind === 'step').map((node) => node.stepName);
     expect(stepNames).toContain('explore');
@@ -316,7 +313,7 @@ object_defs:
     const drivers = (source: string, root: 'parent' | 'child') => externalTickDeltasOf(defOf(source), root);
 
     it('炉が進める加熱は、炉を道具に要る1回きりの周期になる', () => {
-      const [cooking] = rangeCyclesOf(defOf('raw_meat'), undefined, drivers('hearth', 'child'));
+      const [cooking] = rangeCyclesOf(defOf('raw_meat'), undefined, [defOf('hearth')]);
 
       // maxちょうどでon_maxが起きる（6.3節）ので、届くべき距離は24。3/tickなので8 tick。
       expect(cooking.minutes).toBeCloseTo((24 / 3) * 15);
@@ -333,7 +330,7 @@ object_defs:
     it('押されている間は、自分の条件つきの増減を数えない', () => {
       // 石が冷めるのは炉の外に居る間の宣言（-3/tick）。押し手（+3/tick）へ足すと向きが消えて、
       // 熱を溜め切る周期そのものが立たなくなる。12 ÷ 3 = 4 tick で焼け石になる。
-      const [soaking] = rangeCyclesOf(defOf('stone'), undefined, drivers('hearth', 'child'));
+      const [soaking] = rangeCyclesOf(defOf('stone'), undefined, [defOf('hearth')]);
 
       expect(soaking.minutes).toBeCloseTo((12 / 3) * 15);
       expect(soaking.drivenBy).toBe(huntId('hearth'));
@@ -352,8 +349,8 @@ object_defs:
         },
       ]);
 
-      expect(rangeCyclesOf(defOf('rat'), undefined, drivers('wound', 'parent'))).toHaveLength(1);
-      expect(rangeCyclesOf(defOf('boar'), undefined, drivers('wound', 'parent'))).toEqual([]);
+      expect(rangeCyclesOf(defOf('rat'), undefined, [defOf('wound')])).toHaveLength(1);
+      expect(rangeCyclesOf(defOf('boar'), undefined, [defOf('wound')])).toEqual([]);
     });
 
     it('一撃で値を端の外へ押す工程は、そこで起こることまで含めて1つの工程になる', () => {

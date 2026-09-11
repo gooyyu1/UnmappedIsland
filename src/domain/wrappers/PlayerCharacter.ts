@@ -3,6 +3,7 @@ import type { SlotPosition } from '../SlotPosition';
 import type { WorldObject } from '../WorldObject';
 import { Ending } from './Ending';
 import { Location } from './Location';
+import type { SlotGlobalId } from '../GlobalId';
 
 /**
  * agent（プレイヤーキャラクター、GameElementDefinition.md 8.1節・11節）に対する、UI/ゲームロジック向けの型付き
@@ -11,15 +12,15 @@ import { Location } from './Location';
  * どのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みのものだけを実装している。
  */
 export class PlayerCharacter extends ObjectWrapper {
-  get handSlotId(): number {
+  get handSlotId(): SlotGlobalId {
     return this.words.handSlotId;
   }
 
-  get equipmentSlotId(): number {
+  get equipmentSlotId(): SlotGlobalId {
     return this.words.equipmentSlotId;
   }
 
-  get injuriesSlotId(): number {
+  get injuriesSlotId(): SlotGlobalId {
     return this.words.injuriesSlotId;
   }
 

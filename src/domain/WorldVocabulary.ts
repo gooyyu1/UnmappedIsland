@@ -1,3 +1,4 @@
+import type { PropertyGlobalId, SlotGlobalId, TagGlobalId } from './GlobalId';
 import type { NameRegistry } from './NameRegistry';
 
 /**
@@ -45,7 +46,11 @@ export class WorldVocabulary {
   readonly engine: EngineVocabulary;
   readonly world: WorldRuleVocabulary;
 
-  constructor(propertyNames: NameRegistry, slotNames: NameRegistry, tagNames: NameRegistry) {
+  constructor(
+    propertyNames: NameRegistry<PropertyGlobalId>,
+    slotNames: NameRegistry<SlotGlobalId>,
+    tagNames: NameRegistry<TagGlobalId>,
+  ) {
     this.engine = new EngineVocabulary(propertyNames, slotNames);
     this.world = new WorldRuleVocabulary(propertyNames, slotNames, tagNames);
   }
@@ -63,18 +68,18 @@ export class WorldVocabulary {
  * - progress / finished_steps / materials: 製作中オブジェクトの進捗・工程数・材料枠（RecipeSystem.md）。
  */
 export class EngineVocabulary {
-  readonly volumeId: number;
-  readonly fillId: number;
-  readonly weightId: number;
-  readonly densityId: number;
-  readonly loadId: number;
-  readonly loadRateId: number;
+  readonly volumeId: PropertyGlobalId;
+  readonly fillId: PropertyGlobalId;
+  readonly weightId: PropertyGlobalId;
+  readonly densityId: PropertyGlobalId;
+  readonly loadId: PropertyGlobalId;
+  readonly loadRateId: PropertyGlobalId;
 
-  readonly progressId: number;
-  readonly finishedStepsId: number;
-  readonly materialsSlotId: number;
+  readonly progressId: PropertyGlobalId;
+  readonly finishedStepsId: PropertyGlobalId;
+  readonly materialsSlotId: SlotGlobalId;
 
-  constructor(propertyNames: NameRegistry, slotNames: NameRegistry) {
+  constructor(propertyNames: NameRegistry<PropertyGlobalId>, slotNames: NameRegistry<SlotGlobalId>) {
     this.volumeId = propertyNames.intern(VOLUME_PROPERTY);
     this.fillId = propertyNames.intern('fill');
     this.weightId = propertyNames.intern('weight');
@@ -99,60 +104,60 @@ export class EngineVocabulary {
  */
 export class WorldRuleVocabulary {
   // ---- 時間と気候（ClimateSystem.md、wrappers/World） ----
-  readonly dayId: number;
-  readonly hourId: number;
-  readonly minuteId: number;
-  readonly minutesPerTickId: number;
-  readonly weatherId: number;
-  readonly ambientBrightnessId: number;
-  readonly ambientTemperatureId: number;
+  readonly dayId: PropertyGlobalId;
+  readonly hourId: PropertyGlobalId;
+  readonly minuteId: PropertyGlobalId;
+  readonly minutesPerTickId: PropertyGlobalId;
+  readonly weatherId: PropertyGlobalId;
+  readonly ambientBrightnessId: PropertyGlobalId;
+  readonly ambientTemperatureId: PropertyGlobalId;
 
   // ---- キャラクタ（docs/world/Characters.md、wrappers/PlayerCharacter） ----
-  readonly hpId: number;
-  readonly satietyId: number;
-  readonly handSlotId: number;
-  readonly equipmentSlotId: number;
-  readonly injuriesSlotId: number;
+  readonly hpId: PropertyGlobalId;
+  readonly satietyId: PropertyGlobalId;
+  readonly handSlotId: SlotGlobalId;
+  readonly equipmentSlotId: SlotGlobalId;
+  readonly injuriesSlotId: SlotGlobalId;
 
   // ---- 土地と道（ExplorationSystem.md、wrappers/Location・wrappers/Path・generation） ----
-  readonly explorationProgressId: number;
-  readonly requiredProgressId: number;
-  readonly destinationIdId: number;
-  readonly returnPathIdId: number;
-  readonly travelMinutesId: number;
-  readonly locationsSlotId: number;
-  readonly itemsSlotId: number;
-  readonly fixturesSlotId: number;
-  readonly charactersSlotId: number;
-  readonly undiscoveredFixturesSlotId: number;
+  readonly explorationProgressId: PropertyGlobalId;
+  readonly requiredProgressId: PropertyGlobalId;
+  readonly destinationIdId: PropertyGlobalId;
+  readonly returnPathIdId: PropertyGlobalId;
+  readonly travelMinutesId: PropertyGlobalId;
+  readonly locationsSlotId: SlotGlobalId;
+  readonly itemsSlotId: SlotGlobalId;
+  readonly fixturesSlotId: SlotGlobalId;
+  readonly charactersSlotId: SlotGlobalId;
+  readonly undiscoveredFixturesSlotId: SlotGlobalId;
 
   // ---- 種別を言うタグ ----
-  readonly locationTagId: number;
-  readonly characterTagId: number;
-  readonly pathTagId: number;
+  readonly locationTagId: TagGlobalId;
+  readonly characterTagId: TagGlobalId;
+  readonly pathTagId: TagGlobalId;
 
   /**
    * 海区（`voyage.yaml`）。**島の土地と同じ場所**（location＋explorable）なので、島だけを数える側は
    * これで見分ける（`analysis/islandLocations`）。
    */
-  readonly seaTagId: number;
+  readonly seaTagId: TagGlobalId;
 
   /**
    * 物が何であるかを言うタグ。**兼ねる物がある**（動物はitemでもあり、編み籠はitemでもfixtureでもある）
    * ので、どれを先に見るかは読む側が決める（cardLooks.kindOf）。
    */
-  readonly itemTagId: number;
-  readonly fixtureTagId: number;
-  readonly injuryTagId: number;
-  readonly animalTagId: number;
-  readonly foodTagId: number;
-  readonly containerTagId: number;
-  readonly liquidContainerTagId: number;
-  readonly toolTagId: number;
+  readonly itemTagId: TagGlobalId;
+  readonly fixtureTagId: TagGlobalId;
+  readonly injuryTagId: TagGlobalId;
+  readonly animalTagId: TagGlobalId;
+  readonly foodTagId: TagGlobalId;
+  readonly containerTagId: TagGlobalId;
+  readonly liquidContainerTagId: TagGlobalId;
+  readonly toolTagId: TagGlobalId;
 
   /** 周回の終わりを読む（docs/concept/GameEndings.md）。本土へ渡り、持ち帰った秘宝を数える。 */
-  readonly mainlandTagId: number;
-  readonly artifactTagId: number;
+  readonly mainlandTagId: TagGlobalId;
+  readonly artifactTagId: TagGlobalId;
 
   // ---- 名前で指して実行するアクション（IDではなく名前で引く、ActionSystem.md 1節） ----
   readonly exploreAction = 'explore';
@@ -162,7 +167,11 @@ export class WorldRuleVocabulary {
   readonly worldObject = 'world';
   readonly pathObject = 'path';
 
-  constructor(propertyNames: NameRegistry, slotNames: NameRegistry, tagNames: NameRegistry) {
+  constructor(
+    propertyNames: NameRegistry<PropertyGlobalId>,
+    slotNames: NameRegistry<SlotGlobalId>,
+    tagNames: NameRegistry<TagGlobalId>,
+  ) {
     this.dayId = propertyNames.intern('day');
     this.hourId = propertyNames.intern('hour');
     this.minuteId = propertyNames.intern('minute');

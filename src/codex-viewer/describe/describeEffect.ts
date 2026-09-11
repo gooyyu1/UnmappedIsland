@@ -23,6 +23,7 @@ import type { ObjectRefReading } from '../../domain/ObjectRef';
 import { conditionTokens } from './conditionTokens';
 import { typeMatchTokens } from './typeMatchTokens';
 import type { ReferenceRoot } from '../../domain/ReferenceRoot';
+import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId } from '../../domain/GlobalId';
 
 /**
  * 効果の宣言（EffectReader）を、読める形へ書き出す（Description参照）。命令1つにつき1行で、
@@ -45,7 +46,7 @@ export function describeEffect(
  */
 export function addTokens(
   target: ReferenceRoot,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   amount: number,
   verb: string,
   names: DefNames,
@@ -129,7 +130,7 @@ class EffectDescriber implements EffectReader {
     this.out = out;
   }
 
-  set(target: ReferenceRoot, propertyGlobalId: number, value: SetValueReading): void {
+  set(target: ReferenceRoot, propertyGlobalId: PropertyGlobalId, value: SetValueReading): void {
     this.out.write(
       text('set '),
       propertyPathRef(this.names.propertyName(propertyGlobalId), target),
@@ -145,7 +146,7 @@ class EffectDescriber implements EffectReader {
   }
 
   /** 配置先（`into`）は書かない——どこの枠へ入るかは、何が起きたかの説明には要らない。 */
-  spawn(objectGlobalId: number, count: number): void {
+  spawn(objectGlobalId: ObjectGlobalId, count: number): void {
     const tokens = [text('spawn '), objectRef(this.names.objectName(objectGlobalId))];
     if (count !== 1) tokens.push(text(` ×${count}`));
     this.out.write(...tokens);
@@ -177,7 +178,11 @@ class EffectDescriber implements EffectReader {
     });
   }
 
-  move(subject: ObjectRefReading, destination: ObjectRefReading, slotGlobalId: number | undefined): void {
+  move(
+    subject: ObjectRefReading,
+    destination: ObjectRefReading,
+    slotGlobalId: SlotGlobalId | undefined,
+  ): void {
     this.out.write(
       text('move '),
       ...objectRefTokens(subject, this.names),
@@ -205,18 +210,17 @@ class EffectDescriber implements EffectReader {
   }
 
   /**
-   * 二択は見出しで分けて書く（6.3節）。**並べて書くと「両方が順に起こる」と読める**——rangeイベントの
-   * `otherwise`は既定のクランプなので、著者の効果のすぐ下に「端へ戻す」が並ぶことになる。
+   * 二択は見出しで分けて書く（6.3節）。**並べて書くと「両方が順に起こる」と読める**——rangeイベントで
+   * 倒れる先は既定のクランプなので、著者の効果のすぐ下に「端へ戻す」が並ぶことになる。
    *
-   * 二択を二択のまま出すので、**受け方の選択肢（EffectReader.conditional）は選ばない。**
+   * 二択を二択のまま出すので、枝は1つずつ受けて**著者が書いた枝かどうかで見出しを選ぶ**
+   * （ConditionalReading.forEachBranch）。
    */
   conditional(reading: ConditionalReading): void {
-    this.out.write(...conditionTokens(reading.condition, this.names), text(' なら:'));
-    this.out.indented(() => describeEffect(reading.whenMet, this.names, this.out));
-
-    const otherwise = reading.otherwise;
-    if (otherwise === undefined) return;
-    this.out.write(text('そうでなければ:'));
-    this.out.indented(() => describeEffect(otherwise, this.names, this.out));
+    reading.forEachBranch((branch) => {
+      if (branch.authored) this.out.write(...conditionTokens(reading.condition, this.names), text(' なら:'));
+      else this.out.write(text('そうでなければ:'));
+      this.out.indented(() => describeEffect(branch.effect, this.names, this.out));
+    });
   }
 }

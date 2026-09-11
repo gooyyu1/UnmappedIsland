@@ -2,6 +2,7 @@ import type { ConditionOp, ConditionReader } from './ConditionReader';
 import type { StageBound } from './PropertyDef';
 import type { PropertyPath, ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
+import type { PropertyGlobalId, SlotGlobalId } from './GlobalId';
 
 type ConditionNodeKind =
   /** {subject, prop, <比較演算子>: value}形式のプロパティ比較。 */
@@ -33,14 +34,14 @@ type ConditionNodeKind =
 /** kindごとに使うフィールドだけを渡すための、生成時の入力（ConditionNodeの各staticが組み立てる）。 */
 interface ConditionNodeFields {
   readonly root?: ReferenceRoot;
-  readonly propertyGlobalId?: number;
+  readonly propertyGlobalId?: PropertyGlobalId;
   readonly op?: ConditionOp;
   readonly values?: readonly number[];
   readonly valueRef?: PropertyPath;
   readonly stageName?: string;
   readonly stageBound?: StageBound;
-  readonly containerSlotGlobalId?: number;
-  readonly ownedSlotGlobalId?: number;
+  readonly containerSlotGlobalId?: SlotGlobalId;
+  readonly ownedSlotGlobalId?: SlotGlobalId;
   readonly matchRule?: TypeMatchRule;
   readonly children?: readonly ConditionNode[];
 }
@@ -57,7 +58,7 @@ export class ConditionNode {
   private readonly root: ReferenceRoot | undefined;
 
   /** property/property_stage葉のみ有効。 */
-  private readonly propertyGlobalId: number | undefined;
+  private readonly propertyGlobalId: PropertyGlobalId | undefined;
 
   /** property葉のみ有効。 */
   private readonly op: ConditionOp | undefined;
@@ -78,10 +79,10 @@ export class ConditionNode {
   private readonly stageBound: StageBound | undefined;
 
   /** slot_position葉のみ有効。subjectがその枠に入っているかを見る、subjectの親の側のスロット。 */
-  private readonly containerSlotGlobalId: number | undefined;
+  private readonly containerSlotGlobalId: SlotGlobalId | undefined;
 
   /** slot_content葉のみ有効。中身を見る、subject自身が持つスロット。 */
-  private readonly ownedSlotGlobalId: number | undefined;
+  private readonly ownedSlotGlobalId: SlotGlobalId | undefined;
 
   /** slot_content/object_matches葉のみ有効。 */
   private readonly matchRule: TypeMatchRule | undefined;
@@ -106,7 +107,7 @@ export class ConditionNode {
 
   static property(
     root: ReferenceRoot,
-    propertyGlobalId: number,
+    propertyGlobalId: PropertyGlobalId,
     op: ConditionOp,
     values: readonly number[] | undefined,
     valueRef?: PropertyPath,
@@ -116,20 +117,20 @@ export class ConditionNode {
 
   static propertyStage(
     root: ReferenceRoot,
-    propertyGlobalId: number,
+    propertyGlobalId: PropertyGlobalId,
     stageName: string,
     stageBound: StageBound,
   ): ConditionNode {
     return new ConditionNode('property_stage', { root, propertyGlobalId, stageName, stageBound });
   }
 
-  static slotPosition(root: ReferenceRoot, containerSlotGlobalId: number): ConditionNode {
+  static slotPosition(root: ReferenceRoot, containerSlotGlobalId: SlotGlobalId): ConditionNode {
     return new ConditionNode('slot_position', { root, containerSlotGlobalId });
   }
 
   static slotContent(
     root: ReferenceRoot,
-    ownedSlotGlobalId: number,
+    ownedSlotGlobalId: SlotGlobalId,
     matchRule: TypeMatchRule,
   ): ConditionNode {
     return new ConditionNode('slot_content', { root, ownedSlotGlobalId, matchRule });
@@ -255,7 +256,7 @@ export class ConditionNode {
   /** rootが指す相手のpropertyGlobalIdの実効値。相手が解決できない・持たない場合はundefined。 */
   private effectiveValueAt(
     root: ReferenceRoot,
-    propertyGlobalId: number,
+    propertyGlobalId: PropertyGlobalId,
     context: ReferenceContext,
   ): number | undefined {
     return context

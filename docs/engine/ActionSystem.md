@@ -50,24 +50,24 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 
 引く口は次のとおり。
 
-- `MenuActionsFor(agent)` — このカードへ起こせる、**画面のボタンに出る**操作を宣言順に
+- `menuActionsFor(agent)` — このカードへ起こせる、**画面のボタンに出る**操作を宣言順に
   （`menuTriggers`。絞り込みは要らない）。
-- `TryGetAction(actionName, agent)` — 名指しで1つ。土地の `explore`、道の `travel`、動物の1手が使う。
+- `tryGetAction(actionName, agent)` — 名指しで1つ。土地の `explore`、道の `travel`、動物の1手が使う。
   探すのは相手を伴わないきっかけ（`menu`・`tick`）だけ。
-- `CombinationsWith(instrument, agent)` — ドラッグ中のハイライト等のために、**今成立する**重ねる操作を
+- `combinationsWith(instrument, agent)` — ドラッグ中のハイライト等のために、**今成立する**重ねる操作を
   宣言順に列挙する。相手のマッチング（1）だけでなく `conditions`（2）まで見る——**実行できないものを
   黙って落とし先にすると、落とせるのに何も起きない**という形になるため。
-- `RefusedCombinationsWith(instrument, agent)` — 逆に、`conditions` で成立せず、**断る理由**
+- `refusedCombinationsWith(instrument, agent)` — 逆に、`conditions` で成立せず、**断る理由**
   （`reason`、14.6節）を宣言しているものだけを列挙する。画面がこちらを**理由を言うためだけの落とし先**
   として出すのは、成立するものが1つも無いときだけ（[`../ui/CardInteraction.md`](../ui/CardInteraction.md)
   2.1 節）。上の「黙って」がここに掛かる——**理由が出るなら、実行できない落とし先を出してよい。**
 
-どちらの列挙も、相手のマッチングのほかに**行き先の型**（`BlocksOperation`。`become` の行き先に型が
+どちらの列挙も、相手のマッチングのほかに**行き先の型**（`blocksOperation`。`become` の行き先に型が
 居ない、9.9節）で先に絞る。**ここで落ちたものは `reason` を宣言していてもどちらにも入らない**＝理由が
 出ない。「なぜ理由が出ないのか」を追うときは、まずここを見る。
 
-**容量**（`AcceptedCount` が0の相手）はこの門ではなく、`CombinationsWith` の側の条件
-（`Combination.CanExecute`）。0は「何個受け取れるか」の答え＝**断る理由**であって、候補になるかどうかの
+**容量**（`acceptedCountIncludingSelf` が0の相手）はこの門ではなく、`combinationsWith` の側の条件
+（`Combination.canExecute`）。0は「何個受け取れるか」の答え＝**断る理由**であって、候補になるかどうかの
 判定ではない。両方の門にすると、満杯を `conditions` にも書いた宣言（満杯の罠の `trap_baited`）は条件と
 容量が同時に落ちるので、**宣言した理由が決して届かなくなる。**
 
@@ -75,9 +75,10 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 成立しないなら落とされた側）と、複数マッチした場合にどれを実行するかの解決はUI層に委ねる
 （[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節、`cardOperations.combinationBetween`）。
 
-まとめて重ねる操作（`allow_multiple`、12.4節）も `Combination` が持つ。`AcceptedCount(followers)` が
-落とす前に何枚ついてくるかを答え、`ExecuteWithFollowers(followers)` がその繰り返しを行う——**1つ
-実行するたびに世界が変わる**ので、都度まだ成立するかを見直し、成立しなくなった時点で止める。
+まとめて重ねる操作（`allow_multiple`、12.4節）も `Combination` が持つ。
+`acceptedCountIncludingSelf(followers)` が落とす前に、掴んだ1枚を含めて何枚落ちるかを答え、
+`executeWithFollowers(followers)` がその繰り返しを行う——**1つ実行するたびに世界が変わる**ので、
+都度まだ成立するかを見直し、成立しなくなった時点で止める。
 
 ## 2. 実行パイプライン
 
@@ -264,10 +265,9 @@ UI が演出のために「誰が何をしたか」を要る（[`HuntingSystem.m
 （`WorldSession.observeSignals`）。空振り・回避は「何も起きなかった」のではなく「外したことが起きた」ので、
 世界を読み直しても現れない以上、起こした側が告げる以外に伝える道がありません。
 
-**告げ方は2つあり、観測口は1つです。** 結果として告げる `signal`
-（[`GameElementDefinition.md`](./GameElementDefinition.md) 9.8 節）も、操作が始まったことを告げる
-`announce`（同 11.6 節）も、同じ口へ同じ形（`WorldSignal`）で流れます——受け取る側にとっては、
-どちらも「起きたこと」1 件でしかありません。
+**どの告げ方でも、観測口は1つです。** 告げると宣言された出来事は、告げ方（書き方は
+[`GameElementDefinition.md`](./GameElementDefinition.md) 9.8 節）によらず同じ口へ同じ形（`WorldSignal`）で
+流れます——受け取る側にとっては、どれも「起きたこと」1 件でしかありません。
 
 **告げる語彙を持っても、7.1 節の分担は変わりません。** 観測できる出来事はワールドの著者が書いた分
 だけで、エンジンが `pick` の分岐名を横流しするわけではありません——候補を足しても、その候補が
@@ -283,7 +283,7 @@ UI が演出のために「誰が何をしたか」を要る（[`HuntingSystem.m
 ## 8. 未決事項・今後の検討課題
 
 - 同じオブジェクト内で複数のキーが同じ `with` にマッチした場合の解決規則
-  （現状は `FindMatchingCombinations` が宣言順に列挙し、選択はUI層に委ねている）
+  （現状は `combinationsWith` が宣言順に列挙し、選択はUI層に委ねている）
 - ドラッグ型の操作を、`agent` の装備スロットを経由したパス参照（例: `agent.equip.tool`）を使う
   メニュー型の条件・効果として書き換えられないか
 - `with` で複数タグのAND条件を指定する必要があるか

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { round } from '../../scripts/agent/board-round.mjs';
+import { STUCK } from '../../scripts/agent/board-state.mjs';
 
 /**
  * `scripts/agent/board-round.mjs` の検査。
@@ -27,6 +28,8 @@ interface Session {
 
 interface World {
   readonly prs?: readonly Record<string, unknown>[];
+  /** 窓に載っているマージ済みPR（後片付けの相手）。既定は1本も無い。 */
+  readonly mergedPrs?: readonly Record<string, unknown>[];
   readonly issues?: readonly unknown[];
   readonly sessions?: readonly Session[];
   /** 一覧そのものを引けない周。 */
@@ -60,6 +63,10 @@ interface World {
   readonly conflictLog?: string;
   /** 非0で終わらせる打ち手（スクリプトの名前）。 */
   readonly fails?: readonly string[];
+  /** **人が手綱で止めている**として返す打ち手（終了コード3。`brake.sh`）。 */
+  readonly braked?: readonly string[];
+  /** 後片付けが終了コード2（残りがある）で返る周。 */
+  readonly leftover?: boolean;
   readonly ghFails?: boolean;
   /** `gh issue comment` だけが失敗する周（返す手が打てなかった形）。 */
   readonly commentFails?: boolean;
@@ -81,6 +88,8 @@ interface Result {
   readonly ledger: Record<string, string>;
   /** 手が空いた時刻の覚え。 */
   readonly idleMarks: Record<string, string>;
+  /** 盤面が進んでいないと見え始めた時刻（進んでいれば `undefined`）。 */
+  readonly stuck: string | undefined;
   /** 叩いたスクリプトへ足された環境変数（この周の一覧の在り処）。 */
   readonly envs: readonly (Record<string, string> | undefined)[];
   /** この周が書いた一覧。 */
@@ -114,19 +123,27 @@ const LONG_IDLE = '2026-09-04T02:00:00Z';
 const DUG_RECENTLY = { 'cycle:dig': '2026-09-05T01:00:00Z' };
 
 /**
- * 台帳を、打った手の指紋と、手が空いた時刻の覚えに分ける。**上で置いた `DUG_RECENTLY` は
- * どちらにも入れない**——周が書いたものではなく、こちらが置いた足場なので、**周が何を残したか**を
- * 見る検査に混ぜると全部の期待値が1件ずつ太る。**周が `cycle:dig` を書き換えたなら値が変わる**ので、
- * そのときはそのまま指紋の側へ出る。
+ * 台帳を、打った手の指紋と、手が空いた時刻の覚えと、**盤面が進んでいない印**（`board-state.mjs` の
+ * `STUCK`）に分ける。**上で置いた `DUG_RECENTLY` はどれにも入れない**——周が書いたものではなく、
+ * こちらが置いた足場なので、**周が何を残したか**を見る検査に混ぜると全部の期待値が1件ずつ太る。
+ * **周が `cycle:dig` を書き換えたなら値が変わる**ので、そのときはそのまま指紋の側へ出る。
+ *
+ * **詰まりの印を分けるのも同じ理由。** あれは打った手の指紋ではなく、**打てなかったことの覚え**で、
+ * 手が転ぶ検査には必ず付く。
  */
 function split(ledger: Record<string, string>) {
   const marks: Record<string, string> = {};
   const idleMarks: Record<string, string> = {};
+  let stuck: string | undefined;
   for (const [key, value] of Object.entries(ledger)) {
     if (key === 'cycle:dig' && value === DUG_RECENTLY['cycle:dig']) continue;
+    if (key === STUCK) {
+      stuck = value;
+      continue;
+    }
     (key.startsWith('idle:') ? idleMarks : marks)[key] = value;
   }
-  return { ledger: marks, idleMarks };
+  return { ledger: marks, idleMarks, stuck };
 }
 
 function playRound(world: World = {}): Result {
@@ -161,7 +178,10 @@ function playRound(world: World = {}): Result {
         comments.push(readFileSync(args[args.indexOf('--body-file') + 1], 'utf-8'));
         return '';
       }
-      if (first === 'pr' && second === 'list') return JSON.stringify(world.prs ?? []);
+      // 開いているPRの一覧と、窓に載っているマージ済みPRの一覧は、同じ `gh pr list` で引かれる。
+      if (first === 'pr' && second === 'list') {
+        return JSON.stringify((args.includes('merged') ? world.mergedPrs : world.prs) ?? []);
+      }
       if (first === 'issue' && second === 'list') return JSON.stringify(world.issues ?? []);
       if (first === 'issue' && second === 'view') {
         const state = (world.issueStates ?? {})[Number(third)];
@@ -190,6 +210,8 @@ function playRound(world: World = {}): Result {
       if (name === 'usage-record.sh') return { status: 0, stdout: '' };
       calls.push([name, ...args].join(' '));
       if ((world.fails ?? []).includes(name)) return { status: 1, stdout: '' };
+      if ((world.braked ?? []).includes(name)) return { status: 3, stdout: '' };
+      if (name === 'tidy-merged-pr.sh' && world.leftover === true) return { status: 2, stdout: '' };
       // 畳んでよいかの判定は持たない（それは `archive-session.sh` の仕事）。渡された相手について、
       // 決めた行を1本返すだけ。
       if (name === 'archive-session.sh' && options?.capture === true) {
@@ -283,14 +305,81 @@ describe('board-round.mjs', () => {
   it('打つのは1周に1手だけ', () => {
     const result = playRound({ prs: [pr(10, passed), pr(20, passed)] });
 
-    expect(result.calls).toEqual(['merge-and-close.sh 10']);
+    expect(result.calls).toEqual(['merge-pr.sh 10']);
   });
 
   // 打てなかった手で周ごと止めると、止まっている種類と関係のない手まで巻き添えになる。
   it('打てなかった手の次へ進む', () => {
-    const result = playRound({ prs: [pr(10, passed), pr(20)], fails: ['merge-and-close.sh'] });
+    const result = playRound({ prs: [pr(10, passed), pr(20)], fails: ['merge-pr.sh'] });
 
-    expect(result.calls).toEqual(['merge-and-close.sh 10', 'dispatch-review.sh 20']);
+    expect(result.calls).toEqual(['merge-pr.sh 10', 'dispatch-review.sh 20']);
+  });
+
+  // ここから4件は、**盤面が進んでいない印**（`board-state.mjs` の `STUCK`）。詰まりを解く係の
+  // `due` と、人が読む書き出しが、同じこの1つを読む（`.claude/board-design.md` 2.21）。
+  it('手綱以外の理由で手が転んだ周は、進んでいない印を置く', () => {
+    const result = playRound({ prs: [pr(10, passed)], fails: ['merge-pr.sh'] });
+
+    expect(result.log).toContain('打てなかった: MERGE 10');
+    expect(result.stuck).toBe(NOW.toISOString());
+  });
+
+  // **人が止めているだけの周は詰まりではない**（2.4）。直す相手が居ないので、係を立てても仕事が無い。
+  it('手綱で止まっているだけの周には、印を置かない', () => {
+    const result = playRound({ prs: [pr(10)], braked: ['dispatch-review.sh'] });
+
+    expect(result.log).toContain('打てなかった: REVIEW 10（転んだのではない）');
+    expect(result.stuck).toBeUndefined();
+  });
+
+  // **引けなかった周も、外から見れば盤面は1ミリも動いていない。** 引けない間は誰もセッションを
+  // 立てられないので、この印を読むのは人（2.20 の書き出し）。
+  it('盤面を引けなかった周も、印を置く', () => {
+    expect(playRound({ sessionsFail: true }).stuck).toBe(NOW.toISOString());
+    expect(playRound({ ghFails: true }).stuck).toBe(NOW.toISOString());
+  });
+
+  // **始まりだけを覚える。** 毎周書き直すと、続いた長さが出せない——読む側が要るのはそれだけ。
+  // 時刻を `STUCK_HOURS` の内側に採るのは、詰まりを解く係が立つ周を避けるため（下）。
+  it('印は、進み始めるまで最初の時刻のまま', () => {
+    const first = '2026-09-05T01:30:00Z';
+    expect(
+      playRound({ prs: [pr(10, passed)], fails: ['merge-pr.sh'], ledger: { [STUCK]: first } }).stuck,
+    ).toBe(first);
+    expect(playRound({ prs: [pr(10, passed)], ledger: { [STUCK]: first } }).stuck).toBeUndefined();
+  });
+
+  // **係を立てられた周も、手が打てた周。** 印は消え、まだ詰まっていれば次の周が新しい時刻で
+  // 置き直す（2.21.2）。消さないと、直った後も印が残って係が立ち続ける。
+  it('詰まりを解く係を立てられたら、印を消す', () => {
+    const result = playRound({ ledger: { [STUCK]: '2026-09-05T00:00:00Z' } });
+
+    expect(result.calls).toEqual(['dispatch-chore.sh unstick .claude/unstick-prompt.md --bridge']);
+    expect(result.stuck).toBeUndefined();
+  });
+
+  // 後片付けはマージした手から切り離してあるので、**マージ済みのPRを見つけた周に打つ**（2.10.4）。
+  // 打ったことを台帳へ残さないと、窓に載っているあいだ毎周打ち直す。
+  it('マージ済みのPRを後片付けし、打ったことを台帳へ残す', () => {
+    const result = playRound({ mergedPrs: [{ number: 9, comments: [] }] });
+
+    expect(result.calls).toEqual(['tidy-merged-pr.sh 9']);
+    expect(result.ledger).toEqual({ 'tidy:9': NOW.toISOString() });
+  });
+
+  // 終了コード2は「後片付けに残りがある」。**手は打てている**ので、覚えを残して次の周は別の手へ進む
+  // ——残りの多くは打ち直しても同じ結果になる。
+  it('後片付けに残りがあっても、打ったことにする', () => {
+    const result = playRound({ mergedPrs: [{ number: 9, comments: [] }], leftover: true });
+
+    expect(result.ledger).toEqual({ 'tidy:9': NOW.toISOString() });
+  });
+
+  // 打てなかった手の覚えを残すと、次の周からその相手は永久に飛ばされる。
+  it('後片付けを打てなかったら、覚えを残さない', () => {
+    const result = playRound({ mergedPrs: [{ number: 9, comments: [] }], fails: ['tidy-merged-pr.sh'] });
+
+    expect(result.ledger).toEqual({});
   });
 
   it('打った手は、そのときの指紋とともに台帳へ残る', () => {
@@ -310,6 +399,19 @@ describe('board-round.mjs', () => {
 
     expect(result.ok).toBe(true);
     expect(result.ledger).toEqual({ 'review:10': 'aaa111' });
+  });
+
+  // **後片付けの相手は開いているPRの一覧に載らない**ので、載っていないことでは捨てられない
+  // ——引けなかった周を「1件も無い」と読むと、その周に全部の覚えが消え、次の周に窓ぶんが丸ごと
+  // 打ち直される。捨てるのは窓（48時間）を過ぎたものだけ。
+  it('後片付けの覚えは、窓を過ぎたものだけ台帳から捨てる', () => {
+    const result = playRound({
+      prs: [pr(10)],
+      ledger: { 'tidy:8': '2026-09-04T02:00:00Z', 'tidy:9': '2026-09-01T02:00:00Z' },
+    });
+
+    expect(result.ledger['tidy:8']).toBe('2026-09-04T02:00:00Z');
+    expect(result.ledger['tidy:9']).toBeUndefined();
   });
 
   // **`cycle:` は盤面の何かに紐づく指紋ではない**（周期の係を前に立てた時刻。2.17）。掃除に
@@ -364,6 +466,8 @@ describe('board-round.mjs', () => {
 
     expect(result.log).toContain('KEPT session_a');
     expect(result.ledger).toEqual({ 'archive:session_a': 'closed:8' });
+    // **安定した答えであって、転んだのではない**（2.21.2）。数えると、健康な盤面に詰まりの印が立つ。
+    expect(result.stuck).toBeUndefined();
   });
 
   // 失敗は答えではないので、次の周にもう一度試す。
@@ -468,7 +572,7 @@ describe('board-round.mjs', () => {
 
     expect(result.ok).toBe(true);
     expect(result.log).toContain('差し戻す相手を引けなかった');
-    expect(result.calls).toEqual(['merge-and-close.sh 10']);
+    expect(result.calls).toEqual(['merge-pr.sh 10']);
   });
 
   // 一覧が欠けると**占有が全部「無い」に見えて投入が止まらない**——2026-09-05 に、書くセッションが

@@ -1,7 +1,8 @@
 import type { InfluenceWriter } from './PropertyInfluence';
 import type { WorldObject } from './WorldObject';
 import type { PassiveEffect, PropertyPassiveEffect, TransferPassiveEffect } from './PassiveEffect';
-import type { ReferenceRoot } from './ReferenceRoot';
+import type { PassiveReader } from './PassiveReader';
+import type { ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 import type { WorldSession } from './WorldSession';
 
 /** 1つも宣言していない関係の契機で配る先（毎回空の配列を作らずに済ませる）。 */
@@ -68,23 +69,25 @@ export class PassiveEffects {
 
   /**
    * 宣言している寄与を、関係を問わずまとめて登録/解除する（操作が宣言した持続効果、11.7節）。
+   * **役はcontextが答える**——宣言したその操作の関係のものなので、ownerが後から別の関係へ加わっても
+   * 登録先は動かない（PropertyPassiveEffect.setRegisteredInContext）。
    *
    * **物の宣言はここを通らない。** そちらは関係ごとに契機が別々に来る（setRelationRegistered）が、
    * 操作の持続効果は「始まった」「終わった」の1つの契機で全部が同時に動く。
    */
-  setAllRegistered(owner: WorldObject, register: boolean): void {
+  setAllRegistered(owner: WorldObject, context: ReferenceContext, register: boolean): void {
     for (const effects of this.registrationsByRelation.values())
-      for (const effect of effects) effect.setRelationRegistered(owner, register);
+      for (const effect of effects) effect.setRegisteredInContext(owner, context, register);
   }
 
   /**
-   * この一式がこの1 tickで実体値へ足すぶんを、操作の稼ぎとして控える（PropertyGain）。
+   * この一式がこの1 tickで動かす先を、操作の稼ぎを数える対象として名乗る（PropertyGain）。
    *
-   * **控えるのは操作が宣言した一式だけ**（WorldSession.whileInteractionPassives）。物が自分で
+   * **名乗るのは操作が宣言した一式だけ**（WorldSession.whileInteractionPassives）。物が自分で
    * 宣言した増減は、誰かの操作が増やしたものではない。
    */
-  recordTickGains(owner: WorldObject, session: WorldSession): void {
-    for (const effect of this.effects) effect.recordTickGain(owner, session);
+  countTickMovementsAsGains(owner: WorldObject, context: ReferenceContext, session: WorldSession): void {
+    for (const effect of this.effects) effect.countTickMovementAsGain(owner, context, session);
   }
 
   /** childがowner（親）に付く/離れる契機を、target=childの効果へ伝える。 */
@@ -93,7 +96,20 @@ export class PassiveEffects {
       effect.setChildRegistered(owner, child, register);
   }
 
-  /** 宣言されている持続効果を宣言順に挙げる（読み上げは効果自身が答える、PassiveReader参照）。 */
+  /**
+   * この一式が宣言していることを、宣言順にすべて読み上げさせる（PassiveReader参照）。
+   *
+   * **一式をまるごと読む相手はこちらを呼ぶ。** 宣言を1件ずつ取り出して読ませる形にすると、読み手の
+   * 数だけ同じ繰り返しが書き写される。
+   */
+  read(reader: PassiveReader): void {
+    for (const effect of this.effects) effect.read(reader);
+  }
+
+  /**
+   * 宣言されている持続効果を宣言順に挙げる。**1件ずつを別々に扱う相手だけが呼ぶ**——宣言ごとに絞り込む・
+   * 1件につき1つの書き出しを作る・宣言があるかを見る、といったもの。一式をまとめて読むならreadを呼ぶ。
+   */
   get declarations(): readonly PassiveEffect[] {
     return this.effects;
   }

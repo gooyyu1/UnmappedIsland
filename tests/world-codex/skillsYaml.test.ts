@@ -7,6 +7,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 腕前（characters/player_character.yaml）と、レシピの解放条件（docs/engine/SkillSystem.md 4節）の
@@ -458,7 +459,7 @@ function declaredInteractions(): readonly InteractionGains[] {
 
 describe('腕前とレシピの解放条件', () => {
   let codex: WorldCodex;
-  let skillIds: readonly number[];
+  let skillIds: readonly PropertyGlobalId[];
 
   beforeAll(() => {
     codex = bundledCodex();
@@ -475,8 +476,7 @@ describe('腕前とレシピの解放条件', () => {
   /** 解放条件を持つレシピすべて（完成品の名前を添える）。 */
   function gatedRecipes(): readonly { product: string; recipe: RecipeDef }[] {
     const found: { product: string; recipe: RecipeDef }[] = [];
-    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const product = codex.objects.get(globalId);
+    for (const product of codex.objects) {
       for (const recipe of product.recipesProducingThis)
         // 作りかけの型（レシピの軸を持つ変種）は同じレシピを二度数えさせるので、素の型だけを見る。
         if (recipe.unlock !== undefined && codex.baseOf(product) === product)

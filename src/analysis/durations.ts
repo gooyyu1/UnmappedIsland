@@ -6,6 +6,7 @@ import { craftingStepsOf } from './craftingSteps';
 import { rangeCyclesOf } from './rangeCycles';
 import { ticksToRangeEnd } from './rangeEvents';
 import { staticValueOf } from './staticValue';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 定義全体から**日をまたぐ長さ**を集め、種類を問わず1本の列に並べる。怪我が治るまでも食べ物が
@@ -21,7 +22,7 @@ import { staticValueOf } from './staticValue';
  * 1日未満の行に埋もれる。
  *
  * **隣の物に押されて初めて進むものは数えない。** 炉が焼く・刺さった傷が血を奪うといった増減は、
- * 置いておくだけでは起こらない（{@link rangeCyclesOf} の`external`を渡さないことがそのまま線に
+ * 置いておくだけでは起こらない（{@link rangeCyclesOf} に`neighbors`を渡さないことがそのまま線に
  * なる）。これを寿命と呼ぶと、火にかけていない肉まで勝手に焼け落ちることになる。
  *
  * **時間では減らず、使うたびに減る値は日で数えない**（{@link toolWearsOf}）。斧が何日で壊れるかは
@@ -141,8 +142,11 @@ function toolWearsIn(codex: WorldCodex, step: CraftingStep): readonly ToolWear[]
       // 時間でも減るなら、その物の寿命は使い方に依らない——日の列が答える。
       if (rangeCyclesOf(tool).some((cycle) => cycle.propertyGlobalId === propertyGlobalId)) continue;
 
+      const value = staticValueOf(tool, propertyGlobalId, 'lowest');
+      if (value === undefined) continue;
+
       // 端までの距離を1回あたりの減りで割るのは、tick毎の増減で割るのと同じ計算。
-      const uses = ticksToRangeEnd(propertyDef, staticValueOf(tool, propertyGlobalId, 'lowest'), perUse);
+      const uses = ticksToRangeEnd({ propertyDef, value }, perUse);
       if (uses === undefined) continue;
 
       found.push({
@@ -163,8 +167,8 @@ function toolWearsIn(codex: WorldCodex, step: CraftingStep): readonly ToolWear[]
  * 自分の値（`self`）を除くのは、それが工程の主のものだから——主は借りてこられる道具ではなく、
  * 工程が起こる場所そのもの（木を伐る工程にとっての木）。
  */
-function outwardDeltasOf(step: CraftingStep): ReadonlyMap<number, number> {
-  const byProperty = new Map<number, number>();
+function outwardDeltasOf(step: CraftingStep): ReadonlyMap<PropertyGlobalId, number> {
+  const byProperty = new Map<PropertyGlobalId, number>();
   for (const outcome of step.outcomes)
     for (const delta of outcome.deltas) {
       if (delta.target === 'self') continue;

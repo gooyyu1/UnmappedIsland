@@ -53,6 +53,10 @@ slot_texts:
   # 場所で名乗る。
   fire:
     display_name: 火床
+  # 塩田に干し上がった塩（salt.yaml）。畑の実り（crop）と同じで、プレイヤーは入れられず、
+  # 採れたぶんだけが並ぶ。
+  salt:
+    display_name: 採れた塩
 
 object_texts:
   # 全オブジェクト共通のメンバー。ここにdisplay_name/descriptionを書いても、
@@ -1829,7 +1833,7 @@ ui_texts:
   # 日の出の演出に出る日数の見出し（ScreenLayout.md 7.5.6節）。後ろに生存日数が続く。
   day: DAY
 
-  # 絞り込みが隠している枚数を、レーンの枠に重ねる印（ScreenLayout.md 8.1.7節）。**枠に収まる短さ**で
+  # 絞り込みが隠している枚数を、レーンの枠に重ねる印（ScreenLayout.md 8.1.9節）。**枠に収まる短さ**で
   # ——重ねる文字の板はカード1枚の幅しか持たない。
   lane_hidden_cards: '隠れ{count}枚'
 

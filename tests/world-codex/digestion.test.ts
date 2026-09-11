@@ -8,6 +8,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 胃→腸→蓄えの配管（docs/engine/DigestionSystem.md）を、実ファイルの定義だけで検証する。
@@ -22,10 +23,10 @@ describe('消化（かさ・栄養素・蓄え）', () => {
   let codex: WorldCodex;
   let session: WorldSession;
   let player: WorldObject;
-  let satietyId: number;
-  let carbohydrateId: number;
-  let bodyFatId: number;
-  let hydrationId: number;
+  let satietyId: PropertyGlobalId;
+  let carbohydrateId: PropertyGlobalId;
+  let bodyFatId: PropertyGlobalId;
+  let hydrationId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();
@@ -59,7 +60,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
     return session.createObject(codex.objectNames.getId(objectName));
   }
 
-  function valueOf(propertyId: number): number {
+  function valueOf(propertyId: PropertyGlobalId): number {
     return player.tryGetProperty(propertyId)?.number ?? 0;
   }
 

@@ -2,6 +2,7 @@ import type { AmongReading } from './AmongSpec';
 import type { ConditionDeclaration } from './ConditionReader';
 import type { ObjectRefReading } from './ObjectRef';
 import type { ReferenceRoot } from './ReferenceRoot';
+import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId } from './GlobalId';
 
 /**
  * 自分が何を宣言しているかを読み上げられるもの（効果そのものと、それを抱える操作）。入れ子の候補も
@@ -23,13 +24,13 @@ export interface EffectDeclaration {
  */
 export interface EffectReader {
   /** `set`（9.2節）。絶対値を代入する。 */
-  set(target: ReferenceRoot, propertyGlobalId: number, value: SetValueReading): void;
+  set(target: ReferenceRoot, propertyGlobalId: PropertyGlobalId, value: SetValueReading): void;
 
   /** `add`（9.2節）。加減算する。 */
   add(reading: AddReading): void;
 
   /** `spawn`（9.4節）。配置先（into）は読み上げない——どこへ入るかは世界の形の話で、宣言の意味ではない。 */
-  spawn(objectGlobalId: number, count: number): void;
+  spawn(objectGlobalId: ObjectGlobalId, count: number): void;
 
   /**
    * `destroy`（9.3節）。reasonはこの消滅が名乗る名前で、書かれていなければundefined
@@ -50,7 +51,11 @@ export interface EffectReader {
    * `move`（9.6節）。オブジェクトの居場所を変えるだけで、値も個数も動かさない。
    * slotGlobalIdは名指しの行き先スロット（`to_slot`）で、undefinedなら宣言順で最初に受け入れた枠。
    */
-  move(subject: ObjectRefReading, destination: ObjectRefReading, slotGlobalId: number | undefined): void;
+  move(
+    subject: ObjectRefReading,
+    destination: ObjectRefReading,
+    slotGlobalId: SlotGlobalId | undefined,
+  ): void;
 
   /**
    * `signal`（9.8節）。世界の形は何も変わらない。
@@ -71,53 +76,58 @@ export interface EffectReader {
    * 満たした回の効果と満たさない回の効果を並べて渡すと、宣言順を「順に起こる」と読む読み手
    * （`src/analysis/effectOutcomes.ts`）が、起こりえない組み合わせを1つの場合として畳む。
    *
-   * `pick`と違い**重みが無い**ので、どちらへ倒れるかは確率としては言えない。**受け方はこの下に
-   * 名前を付けて置いてある**ので、読み手はその1つを名指しで選ぶ——自分の問いにどれが合うかは、
-   * 選択肢それぞれの説明が持つ。宣言を**そのまま読み上げるだけ**の相手は、二択を二択のまま出すので
-   * 選ばない。
+   * `pick`と違い**重みが無い**ので、どちらへ倒れるかは確率としては言えない。**枝を読ませる口は
+   * 読み上げ（ConditionalReading）自身が持つ**ので、読み手は自分の問いに合う口を呼ぶだけでよい
+   * ——どれが自分の問いに合うかは、口それぞれの説明が持つ。
    */
   conditional(reading: ConditionalReading): void;
 }
 
-/** 条件つきの効果1つの読み上げ（EffectReader.conditional参照）。 */
+/**
+ * 条件つきの効果1つの読み上げ（EffectReader.conditional参照）。
+ *
+ * **枝は並べて出さず、読ませる口から渡す。** 二択のどちらを自分の答えに数えるかは問いで変わるので、
+ * 並べて出すと、読み手それぞれが選び方を書き写すことになる。
+ */
 export interface ConditionalReading {
   /** 分かれ目の条件（14節）。満たすかは実行時の世界が決めるので、答えではなく式を渡す。 */
   readonly condition: ConditionDeclaration;
 
-  /** 条件を満たした回に起こること——**著者が書いた効果そのもの**。 */
-  readonly whenMet: EffectDeclaration;
+  /**
+   * **両方の枝**を読み上げさせる。倒れる先が無ければ著者の枝だけ。
+   *
+   * 呼ぶのは「**それが起こりうるか**」を問う読み手——生む先・行き先・書き換え先を探すもの。条件を
+   * 満たさない回も実際に起こる回なので、倒れる先を落とすと、起きることを見落とす。
+   */
+  readEveryBranch(reader: EffectReader): void;
 
   /**
-   * 満たさなかった回に代わりに起こること。rangeイベントでは既定のクランプ（ConditionalEffect参照）で、
-   * 倒れる先が無ければundefined。
+   * 枝を**1つずつ**、宣言順（著者の枝が先）に渡す。
+   *
+   * 呼ぶのは、枝ごとに扱いが変わる読み手——量は著者の枝で代表しつつ起こりうるものは両方から集める
+   * もの（`src/analysis/effectOutcomes.ts`）と、二択を二択のまま書き分けるもの（`describePassive`と
+   * 並ぶ`describeEffect`）。
    */
-  readonly otherwise: EffectDeclaration | undefined;
+  forEachBranch(visit: (branch: ConditionalBranch) => void): void;
 }
 
-/**
- * 二択（EffectReader.conditional）の**両方の枝**。倒れる先が無ければ著者の枝だけ。
- *
- * 選ぶのは「**それが起こりうるか**」を問う読み手——生む先・行き先・書き換え先を探すもの。条件を
- * 満たさない回も実際に起こる回なので、倒れる先を落とすと、起きることを見落とす。
- *
- * 返すのは読み上げが持つ**宣言そのもの**なので、{@link authoredBranchOf}が返す枝はこの中に居る。
- */
-export function everyBranchOf(reading: ConditionalReading): readonly EffectDeclaration[] {
-  return reading.otherwise === undefined ? [reading.whenMet] : [reading.whenMet, reading.otherwise];
-}
+/** 二択の枝1つ（ConditionalReading.forEachBranch参照）。 */
+export interface ConditionalBranch {
+  /** この枝が起こすこと。 */
+  readonly effect: EffectDeclaration;
 
-/**
- * 二択のうち、**著者が書いた枝**（`whenMet`）だけ。
- *
- * 選ぶのは「**何がどれだけ起こるか**」を問う読み手——量を集めるもの。**どちらへ倒れる回がどれだけ
- * あるかは宣言のどこにも無い**ので、両方を場合として並べると、宣言に無い割合で場合を分けたことに
- * なる。倒れる先は既定のクランプ（ConditionalEffect参照）で、**著者が条件を書いたせいで既定を失わない
- * ための埋め合わせ**なので、宣言が何をすると言っているかへの答えは著者が書いた枝の側。
- *
- * 代わりに、**倒れる先でだけ起こることは、この枝から出る答えに入らない。**
- */
-export function authoredBranchOf(reading: ConditionalReading): EffectDeclaration {
-  return reading.whenMet;
+  /**
+   * **著者が書いた枝**（条件を満たした回）か。満たさなかった回へ倒れる先——rangeイベントでは既定の
+   * クランプ（ConditionalEffect参照）——ならfalse。
+   *
+   * 「**何がどれだけ起こるか**」を問う読み手は、この枝だけで代表する。**どちらへ倒れる回がどれだけ
+   * あるかは宣言のどこにも無い**ので、両方を場合として並べると、宣言に無い割合で場合を分けたことに
+   * なる。倒れる先は**著者が条件を書いたせいで既定を失わないための埋め合わせ**なので、宣言が何を
+   * すると言っているかへの答えは著者が書いた枝の側。
+   *
+   * 代わりに、**倒れる先でだけ起こることは、その答えに入らない。**
+   */
+  readonly authored: boolean;
 }
 
 /**
@@ -146,7 +156,7 @@ export interface PickCandidateReading {
 /** `{subject, prop}`参照1つの読み上げ。 */
 export interface PropertyRefReading {
   readonly subject: ReferenceRoot;
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
 }
 
 /**
@@ -161,9 +171,9 @@ export type DeclaredNumberReading =
 /** `transfer`（9.5節）の読み上げ。linkedはamountが全量動いた場合の`linked_add`。 */
 export interface TransferReading {
   readonly from: ReferenceRoot;
-  readonly fromPropertyGlobalId: number;
+  readonly fromPropertyGlobalId: PropertyGlobalId;
   readonly to: ReferenceRoot;
-  readonly toPropertyGlobalId: number;
+  readonly toPropertyGlobalId: PropertyGlobalId;
   readonly amount: number;
   readonly toAmount: number;
   readonly linked: readonly AddReading[];
@@ -175,6 +185,6 @@ export interface TransferReading {
  */
 export interface AddReading {
   readonly target: ReferenceRoot;
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
   readonly amount: number;
 }

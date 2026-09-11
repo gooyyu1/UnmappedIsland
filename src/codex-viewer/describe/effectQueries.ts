@@ -1,4 +1,3 @@
-import { everyBranchOf } from '../../domain/EffectReader';
 import type {
   AddReading,
   ConditionalReading,
@@ -11,6 +10,7 @@ import type {
 import type { PassiveDeclaration, PassivePropertyReading, PassiveReader } from '../../domain/PassiveReader';
 import type { ObjectRefReading } from '../../domain/ObjectRef';
 import type { ReferenceRoot } from '../../domain/ReferenceRoot';
+import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId } from '../../domain/GlobalId';
 
 /**
  * 効果の宣言に対する逆引き（「このプロパティを書き換えるのは誰か」「これを生むのは誰か」）。
@@ -27,7 +27,7 @@ import type { ReferenceRoot } from '../../domain/ReferenceRoot';
  */
 export function writesToProperty(
   declaration: EffectDeclaration,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   ownedByDeclarer: boolean,
 ): boolean {
   const reader = new PropertyWriterFinder(propertyGlobalId, ownedByDeclarer);
@@ -38,7 +38,7 @@ export function writesToProperty(
 /** その持続効果がpropertyGlobalIdのプロパティを書き換えうるか（writesToPropertyの持続効果版）。 */
 export function passiveWritesToProperty(
   declaration: PassiveDeclaration,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   ownedByDeclarer: boolean,
 ): boolean {
   const reader = new PassivePropertyWriterFinder(propertyGlobalId, ownedByDeclarer);
@@ -47,7 +47,7 @@ export function passiveWritesToProperty(
 }
 
 /** この宣言がobjectGlobalIdの型を生み出しうるか。生むのは`spawn`（9.4節）だけ。 */
-export function spawnsObject(declaration: EffectDeclaration, objectGlobalId: number): boolean {
+export function spawnsObject(declaration: EffectDeclaration, objectGlobalId: ObjectGlobalId): boolean {
   const reader = new SpawnFinder(objectGlobalId);
   declaration.read(reader);
   return reader.found;
@@ -57,13 +57,17 @@ export function spawnsObject(declaration: EffectDeclaration, objectGlobalId: num
 abstract class IgnoringEffectReader implements EffectReader {
   found = false;
 
-  set(_target: ReferenceRoot, _propertyGlobalId: number, _value: SetValueReading): void {}
+  set(_target: ReferenceRoot, _propertyGlobalId: PropertyGlobalId, _value: SetValueReading): void {}
   add(_reading: AddReading): void {}
-  spawn(_objectGlobalId: number, _count: number): void {}
+  spawn(_objectGlobalId: ObjectGlobalId, _count: number): void {}
   destroy(_target: ObjectRefReading, _reason: string | undefined): void {}
   become(_subject: ObjectRefReading, _axisValues: ReadonlyMap<string, string>): void {}
   transfer(_reading: TransferReading): void {}
-  move(_subject: ObjectRefReading, _destination: ObjectRefReading, _slotGlobalId: number | undefined): void {}
+  move(
+    _subject: ObjectRefReading,
+    _destination: ObjectRefReading,
+    _slotGlobalId: SlotGlobalId | undefined,
+  ): void {}
   signal(_name: string): void {}
 
   /** 候補の奥にあるものも数える（pickは分岐でしかなく、起こることを隠さない）。 */
@@ -73,21 +77,21 @@ abstract class IgnoringEffectReader implements EffectReader {
 
   /** 二択の奥も両方数える。**問うているのは起こりうるか**なので、どちらへ倒れるかは関わらない。 */
   conditional(reading: ConditionalReading): void {
-    for (const branch of everyBranchOf(reading)) branch.read(this);
+    reading.readEveryBranch(this);
   }
 }
 
 class PropertyWriterFinder extends IgnoringEffectReader {
-  private readonly propertyGlobalId: number;
+  private readonly propertyGlobalId: PropertyGlobalId;
   private readonly ownedByDeclarer: boolean;
 
-  constructor(propertyGlobalId: number, ownedByDeclarer: boolean) {
+  constructor(propertyGlobalId: PropertyGlobalId, ownedByDeclarer: boolean) {
     super();
     this.propertyGlobalId = propertyGlobalId;
     this.ownedByDeclarer = ownedByDeclarer;
   }
 
-  override set(target: ReferenceRoot, propertyGlobalId: number): void {
+  override set(target: ReferenceRoot, propertyGlobalId: PropertyGlobalId): void {
     this.markIfWritesToWantedProperty(target, propertyGlobalId);
   }
 
@@ -102,7 +106,7 @@ class PropertyWriterFinder extends IgnoringEffectReader {
       this.markIfWritesToWantedProperty(linked.target, linked.propertyGlobalId);
   }
 
-  private markIfWritesToWantedProperty(target: ReferenceRoot, propertyGlobalId: number): void {
+  private markIfWritesToWantedProperty(target: ReferenceRoot, propertyGlobalId: PropertyGlobalId): void {
     if (writesTo(target, propertyGlobalId, this.propertyGlobalId, this.ownedByDeclarer)) this.found = true;
   }
 }
@@ -111,10 +115,10 @@ class PropertyWriterFinder extends IgnoringEffectReader {
 class PassivePropertyWriterFinder implements PassiveReader {
   found = false;
 
-  private readonly propertyGlobalId: number;
+  private readonly propertyGlobalId: PropertyGlobalId;
   private readonly ownedByDeclarer: boolean;
 
-  constructor(propertyGlobalId: number, ownedByDeclarer: boolean) {
+  constructor(propertyGlobalId: PropertyGlobalId, ownedByDeclarer: boolean) {
     this.propertyGlobalId = propertyGlobalId;
     this.ownedByDeclarer = ownedByDeclarer;
   }
@@ -134,7 +138,7 @@ class PassivePropertyWriterFinder implements PassiveReader {
       this.markIfWritesToWantedProperty(linked.target, linked.propertyGlobalId);
   }
 
-  private markIfWritesToWantedProperty(target: ReferenceRoot, propertyGlobalId: number): void {
+  private markIfWritesToWantedProperty(target: ReferenceRoot, propertyGlobalId: PropertyGlobalId): void {
     if (writesTo(target, propertyGlobalId, this.propertyGlobalId, this.ownedByDeclarer)) this.found = true;
   }
 }
@@ -145,22 +149,22 @@ class PassivePropertyWriterFinder implements PassiveReader {
  */
 function writesTo(
   target: ReferenceRoot,
-  propertyGlobalId: number,
-  wanted: number,
+  propertyGlobalId: PropertyGlobalId,
+  wanted: PropertyGlobalId,
   ownedByDeclarer: boolean,
 ): boolean {
   return propertyGlobalId === wanted && (ownedByDeclarer || target !== 'self');
 }
 
 class SpawnFinder extends IgnoringEffectReader {
-  private readonly objectGlobalId: number;
+  private readonly objectGlobalId: ObjectGlobalId;
 
-  constructor(objectGlobalId: number) {
+  constructor(objectGlobalId: ObjectGlobalId) {
     super();
     this.objectGlobalId = objectGlobalId;
   }
 
-  override spawn(objectGlobalId: number): void {
+  override spawn(objectGlobalId: ObjectGlobalId): void {
     if (objectGlobalId === this.objectGlobalId) this.found = true;
   }
 }

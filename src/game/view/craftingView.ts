@@ -12,6 +12,7 @@ import type { Requirement } from '../../domain/Requirement';
 import type { Localization } from '../../locale/Localization';
 import type { CardAction } from './cardOperations';
 import { recipeOf } from './recipeList';
+import type { ObjectGlobalId } from '../../domain/GlobalId';
 
 /**
  * 製作中オブジェクトが出す操作と、材料の枠が要求しているもの（RecipeSystem.md 4節）。
@@ -29,7 +30,7 @@ export interface CraftingMaterial {
    * **1つとは限らない。** 要求はタグでも書けるので（刃物・縫い道具）、当てはまる型が複数になる。
    * どれを出すかは画面の都合——今は1秒ごとに順に出して、どれでもよいことを見せている。
    */
-  readonly objectGlobalIds: readonly number[];
+  readonly objectGlobalIds: readonly ObjectGlobalId[];
   /** 残りの工程が要求する数と、今その枠に入っている数。 */
   readonly needed: number;
   readonly held: number;

@@ -72,9 +72,9 @@ object_defs:
   let session: WorldSession;
   let ground: WorldObject;
 
-  const idOf = (name: string): number => codex.objectNames.getId(name);
-  const itemsId = (): number => codex.slotNames.getId('items');
-  const materialsId = (): number => codex.slotNames.getId('materials');
+  const idOf = (name: string) => codex.objectNames.getId(name);
+  const itemsId = () => codex.slotNames.getId('items');
+  const materialsId = () => codex.slotNames.getId('materials');
   const toBase = new Map([['recipe', 'none']]);
 
   /** groundの上に置いた、そのレシピの製作中オブジェクト。 */

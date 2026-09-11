@@ -1,6 +1,7 @@
 import { ObjectWrapper } from './ObjectWrapper';
 import type { SlotPosition } from '../SlotPosition';
 import type { WorldObject } from '../WorldObject';
+import type { SlotGlobalId } from '../GlobalId';
 
 /**
  * 土地（locations.yamlのexplorable trait実装オブジェクト）の包み（ObjectWrapper）。
@@ -10,11 +11,11 @@ import type { WorldObject } from '../WorldObject';
  * 呼び出し側は「この土地に居る動物へ1手ずつ与えてほしい」と頼むだけになる。
  */
 export class Location extends ObjectWrapper {
-  get itemsSlotId(): number {
+  get itemsSlotId(): SlotGlobalId {
     return this.words.itemsSlotId;
   }
 
-  get fixturesSlotId(): number {
+  get fixturesSlotId(): SlotGlobalId {
     return this.words.fixturesSlotId;
   }
 

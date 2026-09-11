@@ -71,6 +71,8 @@ interface Result {
   readonly rounds: number;
   /** 盤面を書き出した回数。 */
   readonly publishes: number;
+  /** 書き出しへ渡した `LIVE_SESSIONS_TSV`（渡していない周は `-`）。 */
+  readonly published: readonly string[];
   /** 走る実体として置かれた複製の中身（置かれていなければ `undefined`）。 */
   readonly copy: string | undefined;
   /** `git` に渡された引数。 */
@@ -107,10 +109,12 @@ function daemon(world: World = {}): Result {
     // 書き出しの身代わり。**周の数とは別に数える**——書くのは周ごとではなく、間隔が満ちたときだけ。
     const publishes = join(work, 'publishes.txt');
     writeFileSync(publishes, '', 'utf-8');
+    // **渡された一覧の在り処も控える**——引けなかった周に前の周の写しを渡すと、古い一覧が
+    // 今の表として載る（`.claude/board-design.md` 2.21）。
     writeFileSync(
       join(here, 'board-publish.mjs'),
       `import { appendFileSync } from 'node:fs';\n` +
-        `appendFileSync(${JSON.stringify(publishes)}, '1\\n');\n` +
+        `appendFileSync(${JSON.stringify(publishes)}, (process.env.LIVE_SESSIONS_TSV ?? '-') + '\\n');\n` +
         `process.exit(${world.publishFails === true ? 1 : 0});\n`,
       'utf-8',
     );
@@ -197,6 +201,7 @@ exit ${world.gitFails === true ? 1 : 0}
       log: logs.join(''),
       rounds: readFileSync(rounds, 'utf-8').split('\n').filter(Boolean).length,
       publishes: readFileSync(publishes, 'utf-8').split('\n').filter(Boolean).length,
+      published: readFileSync(publishes, 'utf-8').split('\n').filter(Boolean),
       copy: existsSync(copy) ? readFileSync(copy, 'utf-8') : undefined,
       git: existsSync(calls) ? readFileSync(calls, 'utf-8').split('\n').filter(Boolean) : [],
       installed: existsSync(join(work, 'npm-calls')),
@@ -356,7 +361,7 @@ describe('daemon.sh', () => {
   });
 
   // 本体は作業ツリーの共有先なので、手が入っているところへ `checkout` を打たない
-  // （`merge-and-close.sh` の `DIRTY` と同じ判定）。
+  // （`tidy-merged-pr.sh` の `DIRTY` と同じ判定）。
   it('本体に未コミットの変更があれば、触らずに立てる', () => {
     const result = daemon({
       mainDirty: true,
@@ -468,13 +473,20 @@ describe('daemon.sh', () => {
     expect(result.publishes).toBe(1);
   });
 
-  // 引けなかった周は一覧そのものが無い（`board-round.mjs` が置く前に落ちる）。**前の周の写しへ
-  // 新しい時刻を貼らない**——読む人は、動いていないことを最終更新の時刻で読む。
-  it('盤面を引けなかった周は、書き出さない', () => {
+  // **引けない周こそ書き出す**（2.21）。引けない間は誰もセッションを立てられないので、直せるのは
+  // 人だけ——ログを読めるのは手元で叩ける人だけなので、届く先は常設の issue しか無い。
+  it('盤面を引けなかった周も、書き出す', () => {
     const result = daemon({ roundFails: true });
 
     expect(result.rounds).toBe(1);
-    expect(result.publishes).toBe(0);
+    expect(result.publishes).toBe(1);
+  });
+
+  // 引けなかった周は一覧そのものが無い（`board-round.mjs` が置く前に落ちる）。**前の周の写しを
+  // 渡さない**——渡すと、古い一覧が今の表として載る。
+  it('引けなかった周には、セッションの一覧を渡さない', () => {
+    expect(daemon({ roundFails: true }).published).toEqual(['-']);
+    expect(daemon().published).toEqual([expect.stringContaining('live-sessions.tsv')]);
   });
 
   it('restart は、走っているものを入れ替える', () => {

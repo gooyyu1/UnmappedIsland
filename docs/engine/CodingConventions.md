@@ -37,6 +37,51 @@
 - 条件で値を選ぶだけの分岐は `if (a) return x; return y;` ではなく `return a ? x : y;` と書く。
   処理の分岐ではなく値の分岐なので、形が中身と一致する（短さは理由ではない）。
 
+### グローバルIDは、名前空間ごとに別の型
+
+名前空間（`NameRegistry` 1つぶん）が配るグローバルIDは、`number` に型の上だけの印を交ぜた
+[`GlobalId<名前空間>`](../../src/domain/GlobalId.ts) で受ける。実体は素の `number` のままなので、
+比較もMapの鍵も配列の添字もそのまま使える。名前空間が違えば別の型になり、プロパティのIDを受ける宣言へ
+スロットのIDや素の数を渡すと型で止まる（[`tests/architecture/globalId.test.ts`](../../tests/architecture/globalId.test.ts)
+が `@ts-expect-error` で見張る。受け口が `number` へ戻ると `npm run typecheck` が赤くなる）。
+
+**`WorldCodex` が持つ名前空間はどれも分かれている。** 別名は `GlobalId.ts` に並ぶ。とくに**タグは
+2つの名前空間に分かれる**——型のタグ（4.1節、`tagNames`）とプロパティのタグ（6.7節、
+`propertyTagNames`）で、取り違えても番号としては通り、「そのタグを持たない」が静かに返る。
+
+**素の `number` から専用の型へ変わるのは `NameRegistry` の中だけ。** 番号を決めているのが
+`intern` の1行で、外へ開いているのは名前から引く経路（`intern`/`getId`/`tryGetId`）しか無い。
+YAMLもシナリオも生成物もURLも**名前で越境する**ので、外から来た数がIDとして通ることがない。
+
+IDの並びが要る側は `NameRegistry.ids` を読む。**`count` まで添字を数えると、そこが素の数からIDを
+組み立てる場所になる**（型の一覧なら `ObjectDefTable` の走査。名前だけ登録されて定義の無いIDを飛ばす)。
+
+IDを型引数で受けるクラスは `in out`（不変）で宣言する。**外すと、種類の付いた名前空間を素の
+`number` の名前空間として扱えてしまう**——メソッドの引数は既定では双変なので、
+`種類を選んで引く` と書いた三項の型が `NameRegistry<number>` へ落ち、そこから先は素の数が通る。
+
+名前空間を1つ増やすときの手順:
+
+1. `GlobalId.ts` に `GlobalId<'その名前'>` の別名を置く。
+2. 配る側の `NameRegistry` をその別名で型付けする（`WorldCodex`・`WorldCodexYamlLoader` の
+   フィールドとゲッター）。
+3. `npm run typecheck` が挙げる箇所を追う。**明示的に `number` と書いてある宣言だけが残る**
+   ——`intern` から受けた値をそのまま渡している経路は推論で埋まる。
+4. 名前空間を実行時に選んでいる箇所（`kind` で `NameRegistry` を選ぶ三項など）は、不変にしてある
+   ぶんここで型エラーになる。**選ぶのをやめて、名前空間を知っている側が引く**形へ直す
+   （`WorldObject.notFoundMessage`）。
+
+跨ぐ場所を新しく作らなければならないなら、**跨ぐ理由をその場に書く**。既にある例外は試験だけで、
+どれも**名前空間が配っていない番号を自分で作る**もの（配っていないIDを渡して確かめる、あるいは
+Codexを持たずに組み立てだけを見る）。`as <種類>GlobalId` を grep すれば在り処が全部挙がる。
+
+**プロパティの「値」に別の名前空間のIDが入る**（型を値に持つプロパティは `objectNames` のID、
+シンボル型は `symbolNames` のID。GameElementDefinition.md 6.6節・6.9節）。値は著者が書いた数であって
+名前空間が配ったIDではないので、型の上では繋がっていない。読み替えるのは
+`GlobalId.ts` の `objectGlobalIdOfPropertyValue`・`symbolGlobalIdOfPropertyValue` で、**値をIDとして
+読む経路はこの2つに寄せる**。書き込む側は越境ではない——ローダは名前から `NameRegistry` で引いて、
+そのIDを値として置くだけで、印を捨てる向きは型が支える。
+
 ## クラス
 
 - getterの背後にある可変フィールドだけ `_` プレフィックスを付ける（`private _number` と `get number()`）。

@@ -62,9 +62,7 @@ describe('同梱のWorldCodex', () => {
 
   it('すべての型・プロパティ・スロット・操作・レシピが書き出せる', () => {
     const writer = new DescriptionWriter();
-    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const def = codex.objects.tryGet(globalId);
-      if (def === undefined) continue;
+    for (const def of codex.objects) {
       describeObjectDef(def, names, writer);
       describeAllPassives(def, names, writer);
       for (const propertyDef of def.enumeratePropertyDefs()) describeProperty(propertyDef, names, writer);
@@ -92,9 +90,7 @@ describe('同梱のWorldCodex', () => {
       'identifier',
     );
     const wrong: string[] = [];
-    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const def = codex.objects.tryGet(globalId);
-      if (def === undefined) continue;
+    for (const def of codex.objects) {
       for (const trigger of def.triggers)
         for (const requirement of trigger.interaction.requirementDeclarations) {
           const html = view.tokensHtml(conditionTokens(requirement.condition, names), def.name);

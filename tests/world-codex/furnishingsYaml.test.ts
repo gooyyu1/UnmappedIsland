@@ -3,6 +3,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { bundledCodex } from '../support/worldCodexFiles';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 里心を抑える設え（src/assets/world-codex/furnishings.yaml、docs/world/Characters.md ホームシック節）を、
@@ -14,14 +15,12 @@ import { bundledCodex } from '../support/worldCodexFiles';
  */
 const codex = bundledCodex();
 
-function propertyId(name: string): number {
+function propertyId(name: string): PropertyGlobalId {
   return codex.propertyNames.getId(name);
 }
 
 /** furnishing を名乗る型（宣言順）。 */
-const FURNISHINGS: readonly string[] = Array.from({ length: codex.objects.count }, (unused, globalId) =>
-  codex.objects.get(globalId),
-)
+const FURNISHINGS: readonly string[] = [...codex.objects]
   .filter((def) => def.tags.includes(codex.tagNames.getId('furnishing')))
   .map((def) => codex.objectNames.getName(def.globalId));
 
@@ -101,8 +100,8 @@ describe('里心を抑える設え(src/assets/world-codex/furnishings.yaml)', ()
   it('どれか1種だけを並べても届く——里心の対策は、ほかの系統の進み具合に縛られない', () => {
     // **ひと通り揃えることはsnugの条件ではない**（同節）。斧の要る物も狩りの要る物も飛ばして、
     // 刃物1本で作れる物だけを並べる道が残っている——**残っていなければ、里心の対策が狩りや
-    // 木の伐り出しの後ろへ回る**。並べたときの手間がひと通りとほとんど変わらないのは、点数を
-    // 手間に比例させてあるから（furnishings.yaml）。
+    // 木の伐り出しの後ろへ回る**。1種だけで並べても点あたりの手間がひと通りとおおむね揃うのは、
+    // 点数を手間に比例させてあるから（furnishings.yaml）。**総手間は並べ方で上へ振れる。**
     for (const name of FURNISHINGS) {
       const site = camp();
       const one = camp();

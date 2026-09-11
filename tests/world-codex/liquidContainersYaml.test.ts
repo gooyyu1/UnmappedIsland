@@ -10,17 +10,18 @@ import {
   SAMPLE_CHARACTER,
   worldCodexPath,
 } from '../support/worldCodexFiles';
+import type { PropertyGlobalId, SlotGlobalId } from '../../src/domain/GlobalId';
 
 describe('liquid_containers.yamlの液体容器定義', () => {
   let codex: WorldCodex;
   let nextInstanceId: number;
-  let hydrationId: number;
-  let wakefulnessId: number;
-  let weatherId: number;
-  let hourId: number;
-  let locationsSlotId: number;
-  let fillId: number;
-  let handBrightnessId: number;
+  let hydrationId: PropertyGlobalId;
+  let wakefulnessId: PropertyGlobalId;
+  let weatherId: PropertyGlobalId;
+  let hourId: PropertyGlobalId;
+  let locationsSlotId: SlotGlobalId;
+  let fillId: PropertyGlobalId;
+  let handBrightnessId: PropertyGlobalId;
 
   beforeAll(() => {
     const loader = new WorldCodexYamlLoader();

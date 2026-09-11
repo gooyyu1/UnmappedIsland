@@ -14,13 +14,14 @@ import type { RecipeDef } from './RecipeDef';
 import type { Placement, SlotDef } from './SlotDef';
 import type { StackOrderDef } from './StackOrderDef';
 import type { WornCoverage } from './WornCoverage';
+import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId, TagGlobalId } from './GlobalId';
 
 /**
  * 型定義（`object_defs` の1エントリ、4節）。ロード完了後は不変として扱う。
  * 実行時インスタンスは WorldObject（runtime）。
  */
 export class ObjectDef {
-  readonly globalId: number;
+  readonly globalId: ObjectGlobalId;
   readonly name: string;
 
   /** 唯一のインスタンスしか存在しない想定(9節、例: world)。 */
@@ -29,7 +30,7 @@ export class ObjectDef {
   /** この object_def が持つタグのグローバルIDの一覧（4節）。自分自身が直接宣言したタグと、参照した
    * trait（5節）が宣言していたタグの両方を合成済みで持つ（trait自体は合成後に消えるため、
    * タグ指定のマッチング（TypeMatchRule）はこのタグ集合だけを見る）。 */
-  readonly tags: readonly number[];
+  readonly tags: readonly TagGlobalId[];
 
   /**
    * 作りかけの物の型か（製作中オブジェクト、RecipeSystem.md 1節）。カードに青をかぶせる判定
@@ -38,13 +39,13 @@ export class ObjectDef {
   readonly isInProgress: boolean;
 
   /** グローバルなプロパティID → このObjectDefにおけるローカルindex。 */
-  readonly propertyIndexByGlobalId: LocalIndexByGlobalId;
+  readonly propertyIndexByGlobalId: LocalIndexByGlobalId<PropertyGlobalId>;
 
   /** ローカルindexで並ぶ密配列。propertyIndexByGlobalId と対になる。 */
   private readonly propertyDefs: readonly PropertyDef[];
 
   /** グローバルなスロットID → このObjectDefにおけるローカルindex。 */
-  readonly slotIndexByGlobalId: LocalIndexByGlobalId;
+  readonly slotIndexByGlobalId: LocalIndexByGlobalId<SlotGlobalId>;
 
   /** このobject_defが持つスロットの定義（宣言順）。 */
   readonly slotDefs: readonly SlotDef[];
@@ -66,7 +67,7 @@ export class ObjectDef {
    * 外から中身が見えるスロット（`visible_slots`、7.11節）のグローバルID。**並びが表示順**で、
    * 子ウィンドウのタブになる（Windows.md 1.2節）。名乗らないスロットは、中に入らないと分からない。
    */
-  readonly visibleSlotGlobalIds: readonly number[];
+  readonly visibleSlotGlobalIds: readonly SlotGlobalId[];
 
   /**
    * 物を溜める入れ物として使う型か（`storage`、7.12節）。名乗った型は、上限（capacity）を持つ
@@ -91,7 +92,7 @@ export class ObjectDef {
    * 1つの型につき高々1つ——複数のプロパティが同時に絵を主張する曖昧さを構造で禁じる。`art`（段の
    * 兄弟キー）を宣言できるのは、ここが指すプロパティの段だけ（ロード時に検証、RawObjectDef.resolve）。
    */
-  readonly artByStagePropertyGlobalId: number | undefined;
+  readonly artByStagePropertyGlobalId: PropertyGlobalId | undefined;
 
   /**
    * **単独では存在できない型か**（7.9節、既定false）。trueなら、入っていた親が消えるとき一緒に消える。
@@ -139,23 +140,23 @@ export class ObjectDef {
   readonly dragTriggers: readonly DragTrigger[];
 
   constructor(
-    globalId: number,
+    globalId: ObjectGlobalId,
     name: string,
     isSingleton: boolean,
-    propertyIndexByGlobalId: LocalIndexByGlobalId,
+    propertyIndexByGlobalId: LocalIndexByGlobalId<PropertyGlobalId>,
     propertyDefs: readonly PropertyDef[],
-    slotIndexByGlobalId: LocalIndexByGlobalId,
+    slotIndexByGlobalId: LocalIndexByGlobalId<SlotGlobalId>,
     slotDefs: readonly SlotDef[],
     passives: readonly PassiveEffect[],
     stackOrder?: StackOrderDef,
-    tags: readonly number[] = [],
+    tags: readonly TagGlobalId[] = [],
     triggers: readonly InteractionTrigger[] = [],
     boundToOwner = false,
     stackable = true,
     recipesProducingThis: readonly RecipeDef[] = [],
     art?: string,
-    artByStagePropertyGlobalId?: number,
-    visibleSlotGlobalIds: readonly number[] = [],
+    artByStagePropertyGlobalId?: PropertyGlobalId,
+    visibleSlotGlobalIds: readonly SlotGlobalId[] = [],
     isStorage = false,
     isInProgress = false,
     resists?: ConditionNode,
@@ -214,7 +215,7 @@ export class ObjectDef {
   }
 
   /** この型にタグ（5節）が付いているか（PropertyDef.hasTagと同じ揃え）。 */
-  hasTag(tagGlobalId: number): boolean {
+  hasTag(tagGlobalId: TagGlobalId): boolean {
     return this.tags.includes(tagGlobalId);
   }
 
@@ -225,13 +226,13 @@ export class ObjectDef {
   }
 
   /** グローバルIDでこのObjectDefのPropertyDefを取得する。存在しない場合はundefined。 */
-  tryGetPropertyDef(globalPropertyId: number): PropertyDef | undefined {
+  tryGetPropertyDef(globalPropertyId: PropertyGlobalId): PropertyDef | undefined {
     const local = this.propertyIndexByGlobalId.toLocal(globalPropertyId);
     return local === LocalIndexByGlobalId.missing ? undefined : this.propertyDefs[local];
   }
 
   /** グローバルIDでこのObjectDefのSlotDefを取得する。存在しない場合はundefined。 */
-  tryGetSlotDef(globalSlotId: number): SlotDef | undefined {
+  tryGetSlotDef(globalSlotId: SlotGlobalId): SlotDef | undefined {
     const local = this.slotIndexByGlobalId.toLocal(globalSlotId);
     return local === LocalIndexByGlobalId.missing ? undefined : this.slotDefs[local];
   }
@@ -279,14 +280,14 @@ export class ObjectDefTable {
    * そのIDの型。**名前だけが登録されていて定義が無いIDがありうる**（参照だけされた型）ので、
    * 在るか分からないIDを引くときはtryGetを使う（NameRegistryのgetId/tryGetIdと同じ揃え）。
    */
-  get(globalId: number): ObjectDef {
+  get(globalId: ObjectGlobalId): ObjectDef {
     const def = this.tryGet(globalId);
     if (def === undefined) throw new Error(`グローバルID ${globalId} の型は登録されていません。`);
     return def;
   }
 
   /** そのIDの型。定義が無ければundefined（範囲外・穴のどちらも同じ扱い）。 */
-  tryGet(globalId: number): ObjectDef | undefined {
+  tryGet(globalId: ObjectGlobalId): ObjectDef | undefined {
     return this.byGlobalId[globalId];
   }
 

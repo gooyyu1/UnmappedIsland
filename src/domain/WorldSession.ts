@@ -3,15 +3,18 @@ import { randomRng } from './Rng';
 import type { Rng } from './Rng';
 import type { World } from './wrappers/World';
 import type { PropertyDef } from './PropertyDef';
+import type { PropertyValue } from './PropertyValue';
 import type { InteractionGains, PropertyGain } from './PropertyGain';
 import type { PassiveEffects } from './PassiveEffects';
 import type { Slot } from './Slot';
 import type { WorldChange } from './WorldChange';
 import type { WorldSignal } from './WorldSignal';
 import type { Action } from './Interaction';
+import type { ReferenceContext } from './ReferenceRoot';
 import { WorldObject } from './WorldObject';
 import { EffectiveValueReading } from './EffectiveValueReading';
 import { Scoped } from '../util/scoped';
+import type { ObjectGlobalId } from './GlobalId';
 
 /**
  * 1セッション分の実行時状態。WorldCodexはロード後不変な定義の集合であり続けるため、instance IDの発行という
@@ -68,14 +71,29 @@ export class WorldSession {
   private readonly insideTick = new Scoped<boolean>();
 
   /**
-   * 今効いている、操作が宣言した持続効果（11.7節）と、その宣言元。`duration`を進めている間だけ並ぶ。
-   * **経過中のtickで、そのぶんだけを操作の稼ぎとして拾う**ための控え（recordPassiveGain）であり、
-   * **宣言元がbecomeしたときに登録を張り直す先**でもある（setInteractionPassivesRegistered）。
+   * 今のtickで動いたぶんが操作の稼ぎになるプロパティ（countTickMovementAsGain）。tickを回す手前で、
+   * その操作が宣言した持続効果（11.7節）が対象を名乗って並べる。
+   */
+  private readonly tickGainTargets = new Scoped<Set<PropertyValue>>();
+
+  /**
+   * 今効いている、操作が宣言した持続効果（11.7節）と、その宣言元、そして**その操作の関係が用意した
+   * 文脈**。`duration`を進めている間だけ並ぶ。**経過中のtickで、そのぶんだけを操作の稼ぎとして拾う**
+   * ための控え（countTickMovementAsGain）であり、**宣言元がbecomeしたときに登録を張り直す先**でもある
+   * （setInteractionPassivesRegistered）。
+   *
+   * **文脈を憶えるのは、役の解決先が宣言元の今の参加から決まらないから**（11.5節）。宣言元が経過中に
+   * 別の関係へも加わると、そちらが役を解く関係になる（WorldObject.participation）ので、辿り直しでは
+   * この操作の役に戻れない。
    *
    * **1つではなく積む。** 経過中のtickは手番を配り、その手番も操作なのでここへ乗る（入れ子）。
    * 内側だけを持つと、外側のぶんは登録されたまま辿れなくなる。
    */
-  private readonly runningInteractionPassives: { owner: WorldObject; passives: PassiveEffects }[] = [];
+  private readonly runningInteractionPassives: {
+    owner: WorldObject;
+    context: ReferenceContext;
+    passives: PassiveEffects;
+  }[] = [];
 
   /** 今どのオブジェクトの効果を適用しているか（withSubject）。記録する変化の主体になる。 */
   private readonly subject = new Scoped<WorldObject>();
@@ -112,7 +130,7 @@ export class WorldSession {
   }
 
   /** 指定したObjectDefの新しいWorldObjectを生成する（spawn、9.4節）。まだどこにも配置されていないため、呼び出し側がmoveToSlotOrRejectionで配置する。 */
-  createObject(objectDefGlobalId: number): WorldObject {
+  createObject(objectDefGlobalId: ObjectGlobalId): WorldObject {
     const def = this.codex.objects.get(objectDefGlobalId);
     return new WorldObject(this.nextInstanceId++, def, this);
   }
@@ -136,8 +154,8 @@ export class WorldSession {
   }
 
   /**
-   * bodyの実行中に告げられた出来事を、その1件ずつをonSignalへ流す（WorldSignal参照）。結果として
-   * 告げるsignal（9.8節）も、操作が始まったことを告げるannounce（11.6節）も、この1つの口を通る。
+   * bodyの実行中に告げられた出来事を、その1件ずつをonSignalへ流す（WorldSignal参照）。どの告げ方で
+   * 宣言されたものも、この1つの口を通る。
    *
    * **物の出入りとは別の観測口にする。** 出入りは世界の形が変わったことで、こちらは形が変わらない
    * ままの出来事なので、同じログに混ぜると受け取る側が毎回どちらかを選り分けることになる。
@@ -159,7 +177,7 @@ export class WorldSession {
   /**
    * bodyを「sourceが宣言した操作1回」として囲う（InteractionDefが、実行のはじめから終わりまでを
    * 囲う）。ここに居る間に操作が増やした値だけがobserveGainsへ流れる——経過中のtickが動かした値は
-   * 入らず（insideTick）、その操作が宣言した持続効果が足したぶんだけが入る（recordPassiveGain）。
+   * 入らず（insideTick）、その操作が宣言した持続効果が動かしたぶんだけが入る（recordTickMovement）。
    *
    * 溜めたぶんは抜けるときに流す。**入れ子になる**——経過中のtickが配った手番（動物の1手）は
    * その中で実行され、自分の稼ぎを自分の溜め場へ持つ。
@@ -191,21 +209,29 @@ export class WorldSession {
   /**
    * 操作が宣言した持続効果（11.7節）が効いている間としてbodyを実行する。登録はその一式が持ち
    * （PassiveEffects.setAllRegistered）、こちらは効いている間のぶんを積んで持つ。
+   *
+   * `context`はその操作の関係が用意した文脈（InteractionRelation.contextFor）。**役はここから解く**
+   * ——理由はrunningInteractionPassives。
    */
-  whileInteractionPassives<T>(owner: WorldObject, passives: PassiveEffects, body: () => T): T {
-    this.runningInteractionPassives.push({ owner, passives });
+  whileInteractionPassives<T>(
+    owner: WorldObject,
+    context: ReferenceContext,
+    passives: PassiveEffects,
+    body: () => T,
+  ): T {
+    this.runningInteractionPassives.push({ owner, context, passives });
     try {
-      passives.setAllRegistered(owner, true);
+      passives.setAllRegistered(owner, context, true);
       return body();
     } finally {
-      passives.setAllRegistered(owner, false);
+      passives.setAllRegistered(owner, context, false);
       this.runningInteractionPassives.pop();
     }
   }
 
   /**
    * declarerが宣言元になっている、経過中の操作の持続効果（11.7節）の登録を、対象を問わずまとめて
-   * 外す/載せ直す（WorldObject.becomeTypeが、プロパティを作り直す前後で呼ぶ）。
+   * 外す/載せ直す。
    *
    * **この登録を辿れるのはここだけ。** 宣言しているのは物ではなく操作で、効いている間そのdefを
    * 持っているのはこのセッションなので、物のdefからは見つからない。
@@ -215,7 +241,7 @@ export class WorldSession {
    */
   setInteractionPassivesRegistered(declarer: WorldObject, register: boolean): void {
     for (const running of this.runningInteractionPassives)
-      if (running.owner === declarer) running.passives.setAllRegistered(declarer, register);
+      if (running.owner === declarer) running.passives.setAllRegistered(declarer, running.context, register);
   }
 
   /**
@@ -228,11 +254,24 @@ export class WorldSession {
   }
 
   /**
-   * 今の操作が宣言した持続効果（11.7節）が、この1 tickで足すぶんを溜める。**時間の経過の中で
-   * 起きるのに操作の稼ぎになる唯一のもの**なので、recordGainとは別の口で受ける。
+   * このtickでpropertyが動いたぶんを、今の操作の稼ぎとして数える（PropertyPassiveEffectが、積分の
+   * 手前で自分の対象を名乗る）。名乗れるのは今の操作が宣言した持続効果（11.7節）だけ。
    */
-  recordPassiveGain(object: WorldObject, property: PropertyDef, delta: number): void {
-    this.gather(object, property, delta);
+  countTickMovementAsGain(property: PropertyValue): void {
+    this.tickGainTargets.current?.add(property);
+  }
+
+  /**
+   * このtickで実体値が動いたぶんを溜める（PropertyValue.tickからのみ呼ぶ）。**時間の経過の中で
+   * 起きるのに操作の稼ぎになる唯一のもの**なので、recordGainとは別の口で受ける。
+   *
+   * **受け取るのは、その値へ同じtickに入る`add`をまとめ、端のクランプまで済ませた後の正味。**
+   * 数え先かどうかは名乗り（countTickMovementAsGain）が決めるが、数える量は宣言した量ではなく
+   * 動いた量で、荷や痛みが同じtickで削ったぶんはそこから引かれている。
+   */
+  recordTickMovement(property: PropertyValue, delta: number): void {
+    if (this.tickGainTargets.current?.has(property) !== true) return;
+    this.gather(property.owner, property.def, delta);
   }
 
   private gather(object: WorldObject, property: PropertyDef, delta: number): void {
@@ -382,13 +421,17 @@ export class WorldSession {
    */
   private runTick(world: World): void {
     this.insideTick.during(true, () => {
-      // 積分の前に読む——足す前の量が「このtickに入るぶん」で、足した後は端で丸められた結果しか
-      // 残らない（PropertyValue.changePerTick）。**このtickを進めているのは一番内側**で、
-      // 外側は自分のtickをこの中で回している最中なので、二重に数えない。
-      const running = this.runningInteractionPassives.at(-1);
-      running?.passives.recordTickGains(running.owner, this);
+      this.tickGainTargets.during(new Set(), () => {
+        // 稼ぎとして数える先は積分の前に名乗らせ、量は積分が終わってから受け取る
+        // （recordTickMovement）——足す前に量を読むと、同じtickの他の寄与も端のクランプも
+        // 引かれていない。**このtickを進めているのは一番内側**で、外側は自分のtickをこの中で
+        // 回している最中なので、二重に数えない。
+        const running = this.runningInteractionPassives.at(-1);
+        if (running !== undefined)
+          running.passives.countTickMovementsAsGains(running.owner, running.context, this);
 
-      world.instance.tick();
+        world.instance.tick();
+      });
       world.instance.runTickActions();
     });
     this.tickObserver.current?.();

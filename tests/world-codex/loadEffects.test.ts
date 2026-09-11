@@ -9,6 +9,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 荷重の効き方（docs/world/Characters.md 荷重の効き方節）に対する自動テスト。**効かせ方は1箇所**
@@ -53,7 +54,7 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     return codex.objects.get(codex.objectNames.getId(name));
   }
 
-  function propertyId(name: string): number {
+  function propertyId(name: string): PropertyGlobalId {
     return codex.propertyNames.getId(name);
   }
 

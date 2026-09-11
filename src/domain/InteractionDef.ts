@@ -8,6 +8,7 @@ import type { Requirement, Requirements } from './Requirement';
 import type { SignalEffect } from './SignalEffect';
 import type { PassiveEffect } from './PassiveEffect';
 import type { PassiveEffects } from './PassiveEffects';
+import type { PassiveReader } from './PassiveReader';
 import { spendDurationAndReportParticipantsAlive } from './actionTime';
 
 /**
@@ -63,7 +64,16 @@ export class InteractionDef {
     this.passives = passives;
   }
 
-  /** 経過の間だけ効く持続効果（11.7節）の宣言。1つも宣言していなければ空。 */
+  /**
+   * 経過の間だけ効く持続効果（11.7節）が宣言していることを、宣言順にすべて読み上げさせる
+   * （PassiveReader参照）。一式をまるごと読む相手はこちらを呼ぶ。
+   */
+  readPassives(reader: PassiveReader): void {
+    this.passives.read(reader);
+  }
+
+  /** 経過の間だけ効く持続効果（11.7節）の宣言。1つも宣言していなければ空。
+   * **1件ずつを別々に扱う相手だけが呼ぶ**（PassiveEffects.declarations参照）。 */
   get passiveDeclarations(): readonly PassiveEffect[] {
     return this.passives.declarations;
   }
@@ -142,13 +152,13 @@ export class InteractionDef {
     if (this.unmetRequirement(context) !== undefined) return false;
 
     // 実行のはじめから囲う。経過中のtickが動かした値は「操作が増やしたもの」に入らないが、この操作
-    // 自身が宣言した持続効果が足したぶんは入る（PropertyGain参照）。
+    // 自身が宣言した持続効果が動かす先は、そのtickで動いたぶんが入る（PropertyGain参照）。
     return session.withInteractionGains(self, () => {
       for (const announcement of this.announcements) announcement.apply(context, session);
 
       const involved = [self, context.agent, context.instrument];
       const minutes = this.minutesFor(context);
-      const alive = session.whileInteractionPassives(self, this.passives, () =>
+      const alive = session.whileInteractionPassives(self, context, this.passives, () =>
         spendDurationAndReportParticipantsAlive(minutes, session, involved),
       );
       if (!alive) return false;

@@ -1,3 +1,5 @@
+import type { ObjectGlobalId, PropertyGlobalId } from '../GlobalId';
+
 /** ある軸に対する「理想点+許容範囲」（axis_preferencesの1エントリ、TerrainGeneration.md 3.2節）。 */
 export class AxisPreference {
   readonly axis: string;
@@ -60,9 +62,9 @@ export class LocationVariantDef {
   readonly id: string;
 
   /** プロパティのグローバルID→実体化時に書き込む値。空なら素の亜種（名前だけが変わる）。 */
-  readonly props: ReadonlyMap<number, number>;
+  readonly props: ReadonlyMap<PropertyGlobalId, number>;
 
-  constructor(id: string, props: ReadonlyMap<number, number>) {
+  constructor(id: string, props: ReadonlyMap<PropertyGlobalId, number>) {
     this.id = id;
     this.props = props;
   }
@@ -77,7 +79,7 @@ export class LocationTypeDef {
   readonly name: string;
 
   /** この型が実体化するときのobject_defのグローバルID（build時に存在検証済み）。 */
-  readonly objectDefGlobalId: number;
+  readonly objectDefGlobalId: ObjectGlobalId;
 
   /**
    * 同じ型が島に複数あるときに配る亜種（TerrainGeneration.md 3.6節）。個数が足りなければ名前は
@@ -102,7 +104,7 @@ export class LocationTypeDef {
 
   constructor(
     name: string,
-    objectDefGlobalId: number,
+    objectDefGlobalId: ObjectGlobalId,
     variants: readonly LocationVariantDef[],
     applicableScopes: readonly string[],
     moveCost: number,

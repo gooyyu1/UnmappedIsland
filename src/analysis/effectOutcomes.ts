@@ -1,4 +1,3 @@
-import { authoredBranchOf, everyBranchOf } from '../domain/EffectReader';
 import type {
   AddReading,
   ConditionalReading,
@@ -14,6 +13,7 @@ import type { StepOutcome } from './CraftingStep';
 import { UNCHANGED_OUTCOMES, combineOutcomes, scaleOutcomes } from './CraftingStep';
 import type { EndBoundValueResolver } from './staticValue';
 import { resolveDeclaredNumber } from './staticValue';
+import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * `become`（9.9節）の行き先の型を、定義だけから解く手立て。行き先を解けない——対象の型が定義から
@@ -22,7 +22,7 @@ import { resolveDeclaredNumber } from './staticValue';
 export type BecomeDestinationResolver = (
   subject: ObjectRefReading,
   axisValues: ReadonlyMap<string, string>,
-) => number | undefined;
+) => ObjectGlobalId | undefined;
 
 /** 効果の宣言を1度読み下した結果。 */
 export interface EffectReading {
@@ -50,8 +50,8 @@ export interface EffectReading {
  * ここが置いている近似は次のもの。**重みを確率に読み替えること**——実際の抽選は実行時の実効値で
  * 行われるので、宣言値から出す確率はその代用でしかない。**分岐を直積で畳むこと**——
  * 宣言順に並んだ効果は順に起こるので、pickが2つ並べば枝は掛け算になる。そして**条件つきの効果を、
- * 著者が書いた枝で代表すること**——受け方はドメインが名前を付けて持つ（authoredBranchOf）が、それを
- * 全体の答えとして採るのはここの近似。
+ * 著者が書いた枝で代表すること**——どちらが著者の枝かはドメインが名乗る（ConditionalBranch.authored）が、
+ * それを全体の答えとして採るのはここの近似。
  *
  * resolveBecomeDestinationを省くと、`become`の行き先は産出として数えられない。変わる前の型として
  * 残らないことは、行き先を解けなくても言えるので、省いても控える。
@@ -104,7 +104,7 @@ function spentAmountsOf(outcomes: readonly StepOutcome[]): ReadonlyMap<string, n
   return spent;
 }
 
-function stockKey(root: ReferenceRoot, propertyGlobalId: number): string {
+function stockKey(root: ReferenceRoot, propertyGlobalId: PropertyGlobalId): string {
   return `${root}:${propertyGlobalId}`;
 }
 
@@ -149,7 +149,7 @@ class OutcomeReader implements EffectReader {
    * ——静的に言えるのは「そのプロパティが書き換わる」までで、いくつになるかは言えない。
    * **書き換わること自体は載せる**ので、それより前の増減が残らないことは数え方に効く。
    */
-  set(target: ReferenceRoot, propertyGlobalId: number, value: SetValueReading): void {
+  set(target: ReferenceRoot, propertyGlobalId: PropertyGlobalId, value: SetValueReading): void {
     const assignment = { target, propertyGlobalId, value: typeof value === 'number' ? value : undefined };
     this.combine([{ probability: 1, spawns: [], deltas: [], assignments: [assignment] }]);
   }
@@ -158,7 +158,7 @@ class OutcomeReader implements EffectReader {
     this.combine([{ probability: 1, spawns: [], deltas: [reading], assignments: [] }]);
   }
 
-  spawn(objectGlobalId: number, count: number): void {
+  spawn(objectGlobalId: ObjectGlobalId, count: number): void {
     this.combine([{ probability: 1, spawns: [{ objectGlobalId, count }], deltas: [], assignments: [] }]);
   }
 
@@ -236,19 +236,18 @@ class OutcomeReader implements EffectReader {
   }
 
   /**
-   * 条件つきの効果（6.3節）は、量と、消える物・変わる物とで**問いが違う**ので、問いごとに受け方を選ぶ。
+   * 条件つきの効果（6.3節）は、量と、消える物・変わる物とで**問いが違う**ので、枝ごとに扱いを分ける。
    *
-   * 量は「何がどれだけ起こるか」なので著者が書いた枝で代表し（authoredBranchOf）、消える物・変わる物は
-   * `pick`と同じく「どれか1つの分岐でそうなるか」を問うものなので両方の枝から集める（everyBranchOf）。
+   * 量は「何がどれだけ起こるか」なので著者が書いた枝で代表し（ConditionalBranch.authored）、消える物・
+   * 変わる物は`pick`と同じく「どれか1つの分岐でそうなるか」を問うものなので両方の枝から集める。
    */
   conditional(reading: ConditionalReading): void {
-    const authored = authoredBranchOf(reading);
-    for (const branch of everyBranchOf(reading)) {
-      const nested = this.readNested(branch);
+    reading.forEachBranch((branch) => {
+      const nested = this.readNested(branch.effect);
       this.destroyed.push(...nested.destroyed);
       this.transformed.push(...nested.transformed);
-      if (branch === authored) this.combine(nested.outcomes);
-    }
+      if (branch.authored) this.combine(nested.outcomes);
+    });
   }
 
   private readNested(declaration: EffectDeclaration): EffectReading {

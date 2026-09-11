@@ -17,6 +17,7 @@ import { voyageDaysText } from '../looks/timeTexts';
 import type { CardContent, CardCooking, CardGauge } from '../ui/Card';
 import { COLOR } from '../looks/theme';
 import type { CardKind } from '../looks/theme';
+import type { ObjectGlobalId } from '../../domain/GlobalId';
 
 /**
  * 絵がまだ無い物の、種別ごとの代役アイコン（iconOf参照）。**種別はすべてここに行がある**
@@ -145,7 +146,7 @@ export interface CardLooks {
    * 型そのものを表す札。インスタンスを持たないので、まだ在るとは限らない物——枠が受け入れる素材
    * （LaneCell.accepts）——を見せるのに使う。
    */
-  readonly cardOfType: (objectGlobalId: number) => CardContent;
+  readonly cardOfType: (objectGlobalId: ObjectGlobalId) => CardContent;
 
   /** そのオブジェクトの表示名。 */
   readonly nameOf: (object: WorldObject) => string;
@@ -153,8 +154,8 @@ export interface CardLooks {
   /** 絵がまだ無いオブジェクトの代替アイコン。 */
   readonly iconOf: (def: ObjectDef) => string;
 
-  /** カードに映す絵の名前。 */
-  readonly artOf: (def: ObjectDef, instance?: WorldObject) => string;
+  /** そのオブジェクトのカードに映す絵の名前。 */
+  readonly artOf: (object: WorldObject) => string;
 }
 
 /**
@@ -400,12 +401,18 @@ export function cardLooksOf(
    * カードに映す絵の出所。製作中オブジェクトは完成品の絵を映す——作りかけであることは青の覆いが
    * 示すので、絵は何が出来つつあるのかを出せばよい（CardView.md 10節 製作中オブジェクトのカード）。
    * 自動生成される型（RecipeSystem.md）に絵を用意する道は無いため、これが唯一の出所でもある。
-   *
-   * instanceを渡すと、`art_by_stage`（GameElementDefinition.md 6.4節）が指す段の絵へ差し替える
-   * （CardView.md 5.1節）。型だけのカード（instance無し）は個体の状態を持たないので常に型自身の絵。
    */
-  const artOf = (def: ObjectDef, instance?: WorldObject): string =>
-    artNameFor(codex.baseOf(def).artName, instance?.artSuffix);
+  const artNameOf = (def: ObjectDef, suffix: string | undefined): string =>
+    artNameFor(codex.baseOf(def).artName, suffix);
+
+  /** 型そのものを表すカードの絵。個体の状態を持たないので、段による差し替えは起こらない。 */
+  const artOfType = (def: ObjectDef): string => artNameOf(def, undefined);
+
+  /**
+   * その個体のカードに映す絵。`art_by_stage`（GameElementDefinition.md 6.4節）が指す段の絵へ
+   * 差し替える（CardView.md 5.1節）。
+   */
+  const artOf = (object: WorldObject): string => artNameOf(object.def, object.artSuffix);
 
   /**
    * そのオブジェクトが今在るスロット（カードの地を引く先。CardView.md 7節）。
@@ -424,12 +431,12 @@ export function cardLooksOf(
    * 型そのものを表すカード。インスタンスが1つも無くても作れるので、まだ在るとは限らない物
    * （枠が受け入れる素材）を見せるのに使う。個体ごとに違い得る値は持たない。
    */
-  const cardOfType = (objectGlobalId: number): CardContent => {
+  const cardOfType = (objectGlobalId: ObjectGlobalId): CardContent => {
     const def = codex.objects.get(objectGlobalId);
     return {
       icon: iconOf(def),
       name: typeNameOf(def),
-      art: artOf(def),
+      art: artOfType(def),
       kind: kindOf(def),
       artifact: isArtifact(def),
       inProgress: def.isInProgress,
@@ -447,7 +454,7 @@ export function cardLooksOf(
     // 作りかけかどうかは物の型が決める。設置物として地面に据わっていても手に持っていても、
     // 同じ「まだ物になっていない」カードとして出す。
     inProgress: object.def.isInProgress,
-    art: artOf(object.def, object),
+    art: artOf(object),
     backgroundSlot: slotOfObject(object),
     gauges: gaugesOf(object),
     overlay: overlayOf(object),

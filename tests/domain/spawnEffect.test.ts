@@ -3,6 +3,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * spawn（GameElementDefinition.md 9.4節）が生むオブジェクトの初期値の検証。`same_slot`が引き継ぐのは
@@ -30,7 +31,7 @@ object_defs:
 `;
 
   let codex: WorldCodex;
-  let weightId: number;
+  let weightId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();

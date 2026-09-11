@@ -10,6 +10,14 @@ import {
   tryGetMap,
   tryGetSeq,
 } from './yamlMapping';
+import type {
+  ObjectGlobalId,
+  PropertyGlobalId,
+  PropertyTagGlobalId,
+  SlotGlobalId,
+  SymbolGlobalId,
+  TagGlobalId,
+} from '../domain/GlobalId';
 import { YamlLoadError } from './YamlLoadError';
 import { messageOf } from './errorMessage';
 import { RawObjectDef } from './RawObjectDef';
@@ -77,7 +85,7 @@ export class WorldCodexYamlLoader {
   private patches: RawPatch[] = [];
 
   /** レシピ一覧の棚に使うタグ（recipe_categories、Windows.md 9節）。宣言順がそのまま優先順位。 */
-  private recipeCategoryTagIdsByPriority: number[] = [];
+  private recipeCategoryTagIdsByPriority: TagGlobalId[] = [];
 
   /**
    * フィルターバーのボタン（card_filters、ScreenLayout.md 8.1.3節）。**タグは名前のまま貯める**
@@ -86,13 +94,13 @@ export class WorldCodexYamlLoader {
   private rawCardFilters: RawCardFilter[] = [];
 
   /** タグが宣言を義務づけるプロパティ（required_props、4.2節）。タグID → プロパティIDの並び。 */
-  private requiredPropsByTag = new Map<number, number[]>();
+  private requiredPropsByTag = new Map<TagGlobalId, PropertyGlobalId[]>();
 
   /**
    * 製作中オブジェクトが完成品から引き継ぐタグ（in_progress_tags、RecipeSystem.md 5節）。
    * 引き継ぐかどうかを問うだけなので、並び順は持たない。
    */
-  private inProgressTagIds = new Set<number>();
+  private inProgressTagIds = new Set<TagGlobalId>();
 
   /** 製作の工程を進めるのに要る条件（crafting_conditions、13.4節）。全レシピ共通の1本。 */
   private craftingConditions: Requirements | undefined;
@@ -104,12 +112,12 @@ export class WorldCodexYamlLoader {
    */
   private objectDefDestinations: ObjectDefDestination[] = [];
 
-  private _objectNames = new NameRegistry();
-  private _propertyNames = new NameRegistry();
-  private _slotNames = new NameRegistry();
-  private _tagNames = new NameRegistry();
-  private _propertyTagNames = new NameRegistry();
-  private _symbolNames = new NameRegistry();
+  private _objectNames = new NameRegistry<ObjectGlobalId>();
+  private _propertyNames = new NameRegistry<PropertyGlobalId>();
+  private _slotNames = new NameRegistry<SlotGlobalId>();
+  private _tagNames = new NameRegistry<TagGlobalId>();
+  private _propertyTagNames = new NameRegistry<PropertyTagGlobalId>();
+  private _symbolNames = new NameRegistry<SymbolGlobalId>();
 
   /**
    * エンジンが規約として直接読み書きする単語（EngineVocabulary）。**世界を組み立てる前から要る**
@@ -123,32 +131,32 @@ export class WorldCodexYamlLoader {
   }
 
   /** 名前空間（object/property/slot/tag/property_tag/symbol）のNameRegistry。 */
-  get objectNames(): NameRegistry {
+  get objectNames(): NameRegistry<ObjectGlobalId> {
     return this._objectNames;
   }
-  get propertyNames(): NameRegistry {
+  get propertyNames(): NameRegistry<PropertyGlobalId> {
     return this._propertyNames;
   }
-  get slotNames(): NameRegistry {
+  get slotNames(): NameRegistry<SlotGlobalId> {
     return this._slotNames;
   }
-  get tagNames(): NameRegistry {
+  get tagNames(): NameRegistry<TagGlobalId> {
     return this._tagNames;
   }
-  get propertyTagNames(): NameRegistry {
+  get propertyTagNames(): NameRegistry<PropertyTagGlobalId> {
     return this._propertyTagNames;
   }
-  get symbolNames(): NameRegistry {
+  get symbolNames(): NameRegistry<SymbolGlobalId> {
     return this._symbolNames;
   }
 
   /** 型の名前で行き先を指した宣言を1件覚える（parseDestinationRefから）。 */
-  noteObjectDefDestination(objectGlobalId: number, context: string): void {
+  noteObjectDefDestination(objectGlobalId: ObjectGlobalId, context: string): void {
     this.objectDefDestinations.push({ kind: 'object', objectGlobalId, context });
   }
 
   /** 型を値に持つプロパティ（6.9節）から行き先を引いた宣言を1件覚える（parseDestinationRefから）。 */
-  noteObjectDefPropertyDestination(propertyGlobalId: number, context: string): void {
+  noteObjectDefPropertyDestination(propertyGlobalId: PropertyGlobalId, context: string): void {
     this.objectDefDestinations.push({ kind: 'property', propertyGlobalId, context });
   }
 
@@ -297,7 +305,7 @@ export class WorldCodexYamlLoader {
   buildAndReset(): WorldCodex {
     applyPatches(this.patches, this.globalObjectDefs);
 
-    const objectDefsByGlobalId = new Map<number, ObjectDef>();
+    const objectDefsByGlobalId = new Map<ObjectGlobalId, ObjectDef>();
     for (const raw of this.globalObjectDefs.values()) {
       const def = raw.resolve(this.globalTraits, this);
       objectDefsByGlobalId.set(def.globalId, def);
@@ -389,7 +397,7 @@ export class WorldCodexYamlLoader {
   private loadGenerated(
     source: string,
     generated: GeneratedObjectDefs | undefined,
-    objectDefsByGlobalId: Map<number, ObjectDef>,
+    objectDefsByGlobalId: Map<ObjectGlobalId, ObjectDef>,
     generatedTypes: GeneratedTypes,
   ): void {
     if (generated === undefined) return;
@@ -419,12 +427,12 @@ export class WorldCodexYamlLoader {
     this.craftingConditions = undefined;
     this.objectDefDestinations = [];
     resetGeneration(this);
-    this._objectNames = new NameRegistry();
-    this._propertyNames = new NameRegistry();
-    this._slotNames = new NameRegistry();
-    this._tagNames = new NameRegistry();
-    this._propertyTagNames = new NameRegistry();
-    this._symbolNames = new NameRegistry();
+    this._objectNames = new NameRegistry<ObjectGlobalId>();
+    this._propertyNames = new NameRegistry<PropertyGlobalId>();
+    this._slotNames = new NameRegistry<SlotGlobalId>();
+    this._tagNames = new NameRegistry<TagGlobalId>();
+    this._propertyTagNames = new NameRegistry<PropertyTagGlobalId>();
+    this._symbolNames = new NameRegistry<SymbolGlobalId>();
     this._engine = new EngineVocabulary(this._propertyNames, this._slotNames);
   }
 }

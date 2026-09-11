@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
  *
  * 見方は2つあり、どちらが赤くなったかで直す場所が変わるので `it` を分けてある。
  *
- * 1. **`Xxx.yyy` の形**（下の「今は無い名前を指していない」）。見るのは `src`・`tests` の `.ts` の
+ * 1. **`Xxx.yyy`・`Xxx.Yyy` の形**（下の「今は無い名前を指していない」）。見るのは `src`・`tests` の `.ts` の
  *    コメントと、`docs/` の `.md` の全文。判定は「その名前がコード（コメント以外）に一度も出て
  *    こないなら、指す先が無い」。読み手が辿れることだけを見るので、公開・非公開は問わない。
  *    **ファイル名は参照ではない。** `ClimateSystem.md` のような書き方が `docs/` の大半を占めるので、
@@ -71,8 +71,12 @@ function codeOnly(text: string): string {
   return text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
-/** 参照の書き方。所有者は大文字始まり、メンバーは小文字始まり（型名を除くため）。 */
-const REFERENCE = /\b([A-Z][A-Za-z0-9]*)\.([a-z][A-Za-z0-9_]*)\b\.?/g;
+/**
+ * 参照の書き方。所有者もメンバーも大文字始まりでよい——型も定数も参照になる
+ * （`PlayScreenView.ObjectWindowView`・`SitePlacer.ISLAND_RADIUS`）。**メンバーを小文字に限ると、
+ * 小文字始まりへ改名された後も大文字のまま残っている名前が、丸ごと網から外れる。**
+ */
+const REFERENCE = /\b([A-Z][A-Za-z0-9]*)\.([A-Za-z][A-Za-z0-9_]*)\b\.?/g;
 
 const SOURCES = [...filesIn('src', '.ts'), ...filesIn('tests', '.ts')];
 const DOCUMENTS = filesIn('docs', '.md');

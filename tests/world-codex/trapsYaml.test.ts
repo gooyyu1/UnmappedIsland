@@ -6,6 +6,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent, makeBrightEnoughForAnyAction } from '../support/illumination';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * traps.yamlのくくり罠を、実ファイルの定義だけで検証する（docs/engine/TrapSystem.md）。
@@ -28,16 +29,16 @@ describe('traps.yamlのくくり罠', () => {
   let grassland: WorldObject;
   let player: WorldObject;
   let snare: WorldObject;
-  let warinessId: number;
-  let vulnerabilityId: number;
-  let bloodId: number;
-  let durabilityId: number;
-  let stayRemainingId: number;
-  let catchRemainingId: number;
-  let missWeightId: number;
-  let herbivoreWeightId: number;
-  let plantBaitId: number;
-  let meatBaitId: number;
+  let warinessId: PropertyGlobalId;
+  let vulnerabilityId: PropertyGlobalId;
+  let bloodId: PropertyGlobalId;
+  let durabilityId: PropertyGlobalId;
+  let stayRemainingId: PropertyGlobalId;
+  let catchRemainingId: PropertyGlobalId;
+  let missWeightId: PropertyGlobalId;
+  let herbivoreWeightId: PropertyGlobalId;
+  let plantBaitId: PropertyGlobalId;
+  let meatBaitId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();
@@ -410,10 +411,10 @@ describe('traps.yamlの落とし穴', () => {
   let session: WorldSession;
   let forest: WorldObject;
   let pitfall: WorldObject;
-  let catchRemainingId: number;
-  let durabilityId: number;
-  let bloodId: number;
-  let plantBaitId: number;
+  let catchRemainingId: PropertyGlobalId;
+  let durabilityId: PropertyGlobalId;
+  let bloodId: PropertyGlobalId;
+  let plantBaitId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();

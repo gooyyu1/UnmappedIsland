@@ -36,8 +36,8 @@ export class SlotCell {
   }
 
   /**
-   * 今入っているスタックへ合流できるか。束ねられる型で、代表チェーンが一致し、maxに空きがあること
-   * （GameElementDefinition.md 7.6節）。
+   * 今入っているスタックへ合流できるか。束ねられる型で（SlotSystem.md 4節）、代表チェーンが一致し
+   * （同 5節）、maxに空きがあること（GameElementDefinition.md 7.2節）。
    */
   canMerge(candidate: WorldObject): boolean {
     if (!candidate.def.stackable || this._stack === undefined) return false;
@@ -110,7 +110,7 @@ export class CellLayout {
 
   /**
    * スタックの区別を畳み込んだ、中身全部の写し。**読んだ時点の顔ぶれを写して返すのは契約**
-   * （GameElementDefinition.md 7.6節）。
+   * （SlotSystem.md 1節）。
    */
   get contents(): readonly WorldObject[] {
     const contents: WorldObject[] = [];

@@ -22,17 +22,13 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = resolve(__dirname, '../..');
 
-function run(
-  args: readonly string[],
-  env: NodeJS.ProcessEnv = {},
-): { readonly stdout: string; readonly status: number } {
+function run(args: readonly string[]): { readonly stdout: string; readonly status: number } {
   try {
     return {
       stdout: execFileSync('node', [join(ROOT, 'scripts/historyStats.mjs'), ...args], {
         cwd: ROOT,
         encoding: 'utf-8',
         stdio: ['ignore', 'pipe', 'ignore'],
-        env: { ...process.env, ...env },
       }),
       status: 0,
     };
@@ -127,7 +123,7 @@ describe.skipIf(IS_SHALLOW)('育ち方の推移', () => {
   });
 
   it('系列の先頭は、渡していなくてもリポジトリができた日', () => {
-    // ここを渡す側に任せると、表も図も途中から始まったまま誰も気づかない（07-13 が5日ぶん欠けていた）。
+    // ここを渡す側に任せると、表も図も途中から始まったまま誰も気づかない。
     expect(tableOf(stdout)[0]?.get('日')).toBe(FIRST.slice(5));
   });
 
@@ -138,6 +134,13 @@ describe.skipIf(IS_SHALLOW)('育ち方の推移', () => {
   it('履歴に無い日を頼まれたら、0を出さずに落ちる', () => {
     // リポジトリが始まる前の日。ここで空の表を返すと、遡れなかったことが読む側に伝わらない。
     expect(run(['2020-01-01']).status).not.toBe(0);
+  });
+
+  it('区切りを古い順でなく渡したら落ちる', () => {
+    // 区間が逆さになると、区間の量を置く日が区間の外へ出る（`middleDay`）。表も図も形は保たれる
+    // ので、落とさないと「1本も入らなかった区間」として読まれる。
+    const { stdout, status } = run([TODAY, EARLY]);
+    expect(status, `落ちずに出力した:\n${stdout}`).not.toBe(0);
   });
 
   it('PRの累計が、日本時間の日境で数えた本数と一致する', () => {
@@ -158,13 +161,15 @@ function centersOf(svg: string): number[] {
 
 describe.skipIf(IS_SHALLOW)('区間の量の置き方', () => {
   const directory = mkdtempSync(join(tmpdir(), 'history-stats-spans-'));
-  run(['--svg', directory, EARLY, TODAY]);
+  const stdout = run(['--svg', directory, EARLY, TODAY]).stdout;
   const svg = (name: string) => readFileSync(join(directory, name), 'utf-8');
 
   it('コストの図は、区切りの日ではなく日ごとの窓から描かれる', () => {
     // 段の区切りは幅が揃わないので、区間の量を段ごとに出すと区切りを1日動かすだけで値が変わる。
-    // 点が区切りの数しか無ければ、固定幅の窓ではなく段ごとに戻っているということ。
-    expect(centersOf(svg('HowWeGotHere_cost.svg')).length).toBeGreaterThan(4 * 2);
+    // パネルは横軸を共有するので、点の置き場の種類が表の行を超えなければ段ごとに戻っている。
+    const positions = new Set(centersOf(svg('HowWeGotHere_cost.svg')));
+    const breaks = tableOf(stdout).length;
+    expect(positions.size, `点の置き場 ${positions.size} / 表の行 ${breaks}`).toBeGreaterThan(breaks);
   });
 
   it('区間の量は、区切りの日ではなく区間の真ん中に置かれる', () => {

@@ -43,6 +43,7 @@ import { ObjectRef } from '../domain/ObjectRef';
 import { AmongSpec } from '../domain/AmongSpec';
 import { PickCandidateDef, PickEffect } from '../domain/PickEffect';
 import { SignalEffect } from '../domain/SignalEffect';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 効果の中身（9節の命令と、10節の`pick`）を読む。文法は「操作が上位、対象が下位」（9.1節。例:
@@ -199,7 +200,7 @@ function parseSetEffect(
   loader: WorldCodexYamlLoader,
   context: string,
   target: ReferenceRoot,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   valueNode: YamlNode,
   scope: ReferenceScope,
 ): SetEffect {

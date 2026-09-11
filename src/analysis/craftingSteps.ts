@@ -30,6 +30,7 @@ import {
   staticValueOf,
   trackingResolverOf,
 } from './staticValue';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 定義を「入力 → 工程 → 出力」の形へ均す（CraftingStep参照）。
@@ -60,7 +61,7 @@ export function craftingStepsOf(
     for (const instrument of instrumentTypesOf(codex, trigger)) {
       if (conditionsNeverMet(codex, def, instrument, trigger.interaction, context)) continue;
       steps.push(
-        withTriggeredRangeEvents(def, interactionStep(codex, def, trigger, instrument, context), context),
+        withTriggeredRangeEvents(codex, interactionStep(codex, def, trigger, instrument, context), context),
       );
     }
   for (const recipe of def.recipesProducingThis) steps.push(recipeStep(def, recipe));
@@ -183,7 +184,7 @@ function conditionsNeverMet(
 function staticValueRangeOf(
   codex: WorldCodex,
   def: ObjectDef,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   resolve: EndBoundValueResolver,
 ): StaticValueRange | undefined {
   const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
@@ -273,7 +274,7 @@ function interactionStep(
  */
 function passiveOutcomes(interaction: InteractionDef, minutes: number): readonly StepOutcome[] {
   const collector = new PassiveDeltaCollector(minutes / MINUTES_PER_TICK);
-  for (const declaration of interaction.passiveDeclarations) declaration.read(collector);
+  interaction.readPassives(collector);
 
   if (collector.deltas.length === 0) return UNCHANGED_OUTCOMES;
   return [{ probability: 1, spawns: [], deltas: collector.deltas, assignments: [] }];
@@ -345,12 +346,15 @@ function recipeStep(def: ObjectDef, recipe: RecipeDef): CraftingStep {
  *
  * 押した先で自分が消えるなら、自分は**その確率のぶんだけ**消費される入力になる（CraftingInput参照）
  * ——外した回の獲物はその場に残るので、1回の実行に獲物1匹ぶんの値段を載せてはいけない。
+ *
+ * 押される側は工程が名乗っている型（`CraftingStep.ownerGlobalId`）で、呼び出し側は渡さない。
  */
 function withTriggeredRangeEvents(
-  def: ObjectDef,
+  codex: WorldCodex,
   step: CraftingStep,
   outer: StaticValueResolver | undefined,
 ): CraftingStep {
+  const def = codex.objects.get(step.ownerGlobalId);
   const resolve = staticResolverOf(def, 'lowest', outer);
 
   let destroyedProbability = 0;
@@ -361,7 +365,7 @@ function withTriggeredRangeEvents(
 
     for (const [propertyGlobalId, value] of selfPropertyValuesAfterOf(def, outcome, outer)) {
       const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
-      const readout = propertyDef === undefined ? undefined : rangeEventAt(propertyDef, value, resolve);
+      const readout = propertyDef === undefined ? undefined : rangeEventAt({ propertyDef, value }, resolve);
       if (readout === undefined) continue;
       // 分岐の確率は積で畳まれる（rangeイベントの分岐の和は1）ので、掛け直さなくてよい。
       outcomes = combineOutcomes(outcomes, readout.outcomes, 'triggered');
@@ -397,8 +401,8 @@ function selfPropertyValuesAfterOf(
   def: ObjectDef,
   outcome: StepOutcome,
   outer: StaticValueResolver | undefined,
-): readonly (readonly [number, number])[] {
-  const moves: (readonly [number, number])[] = [];
+): readonly (readonly [PropertyGlobalId, number])[] {
+  const moves: (readonly [PropertyGlobalId, number])[] = [];
   for (const delta of outcome.deltas) {
     if (delta.target !== 'self') continue;
     const before = staticValueOf(def, delta.propertyGlobalId, 'lowest', outer);

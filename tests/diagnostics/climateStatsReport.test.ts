@@ -23,6 +23,7 @@ import {
 import { Stat } from '../support/Stat';
 import { bundledCodex, worldCodexPath } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
+import { type SymbolGlobalId, symbolGlobalIdOfPropertyValue } from '../../src/domain/GlobalId';
 
 /**
  * 気候システム（ClimateSystem.md）の現在の実装について、季節の持続日数・気温・天気ごとの発生時間・
@@ -95,9 +96,9 @@ function getStat<K>(map: Map<K, Stat>, key: K): Stat {
 }
 
 function createClimateStats(
-  seasonKinds: readonly number[],
-  weatherKinds: readonly number[],
-  rainWeatherKinds: readonly number[],
+  seasonKinds: readonly SymbolGlobalId[],
+  weatherKinds: readonly SymbolGlobalId[],
+  rainWeatherKinds: ReadonlySet<SymbolGlobalId>,
 ): ClimateStats {
   const stats: ClimateStats = {
     seasonDuration: new Map(),
@@ -143,11 +144,11 @@ function createClimateStats(
 /** 1つの季節インスタンス分のtick列（segTemps/segWeathers/segMoistures）を集計へ反映する。 */
 function processCompletedSegment(
   stats: ClimateStats,
-  weatherKinds: readonly number[],
-  isRain: (w: number) => boolean,
-  seasonSymbolId: number,
+  weatherKinds: readonly SymbolGlobalId[],
+  rainWeatherKinds: ReadonlySet<SymbolGlobalId>,
+  seasonSymbolId: SymbolGlobalId,
   temps: readonly number[],
-  weathers: readonly number[],
+  weathers: readonly SymbolGlobalId[],
   moistures: readonly number[],
 ): void {
   const len = temps.length;
@@ -188,11 +189,11 @@ function processCompletedSegment(
   // 連続降雨/連続未降雨の時間（日単位）
   let runStart = 0;
   for (let i = 1; i <= len; i++) {
-    if (i < len && isRain(weathers[i]) === isRain(weathers[runStart])) continue;
+    if (i < len && rainWeatherKinds.has(weathers[i]) === rainWeatherKinds.has(weathers[runStart])) continue;
     const runLen = i - runStart;
     const third = Math.min(2, Math.trunc((runStart * 3) / len));
     const days = runLen / 96;
-    if (isRain(weathers[runStart])) {
+    if (rainWeatherKinds.has(weathers[runStart])) {
       getStat(stats.rainStreak, seasonSymbolId).add(days);
       getStat(stats.rainStreakThird, `${seasonSymbolId},${third}`).add(days);
     } else {
@@ -212,7 +213,7 @@ function processCompletedSegment(
 
     const delta = curr - prev;
     const governingWeather = weathers[i - 1];
-    if (isRain(governingWeather)) {
+    if (rainWeatherKinds.has(governingWeather)) {
       getStat(stats.rainWeatherNetMoistureDelta, `${governingWeather},${seasonSymbolId}`).add(delta);
     } else {
       getStat(stats.seasonMoistureRate, seasonSymbolId).add(delta);
@@ -227,8 +228,8 @@ function processCompletedSegment(
  */
 function deriveWeatherMoistureDecrement(
   stats: ClimateStats,
-  seasonKinds: readonly number[],
-  weather: number,
+  seasonKinds: readonly SymbolGlobalId[],
+  weather: SymbolGlobalId,
 ): number {
   let weightedSum = 0;
   let totalCount = 0;
@@ -255,12 +256,12 @@ function segmentRecords(keys: YamlRecord, overall: Stat, byThird: (third: number
 
 function buildSections(
   codex: WorldCodex,
-  seasonKinds: readonly number[],
-  weatherKinds: readonly number[],
-  rainWeatherKinds: readonly number[],
+  seasonKinds: readonly SymbolGlobalId[],
+  weatherKinds: readonly SymbolGlobalId[],
+  rainWeatherKinds: ReadonlySet<SymbolGlobalId>,
   stats: ClimateStats,
 ): readonly YamlReportSection[] {
-  const nameOf = (id: number): string => codex.symbolNames.getName(id);
+  const nameOf = (id: SymbolGlobalId): string => codex.symbolNames.getName(id);
 
   const seasonWeatherHours: SeasonWeatherHours[] = seasonKinds.map((s) => ({
     seasonName: nameOf(s),
@@ -284,7 +285,7 @@ function buildSections(
     },
     {
       key: 'rain_weather_moisture_decrement',
-      records: rainWeatherKinds.map((w) => ({
+      records: [...rainWeatherKinds].map((w) => ({
         weather: nameOf(w),
         unit: 'per_tick',
         estimated: rounded(deriveWeatherMoistureDecrement(stats, seasonKinds, w), 1),
@@ -292,7 +293,7 @@ function buildSections(
     },
     {
       key: 'rain_weather_net_moisture_delta',
-      records: rainWeatherKinds.flatMap((w) =>
+      records: [...rainWeatherKinds].flatMap((w) =>
         seasonKinds
           .filter((s) => getStat(stats.rainWeatherNetMoistureDelta, `${w},${s}`).count > 0)
           .map((s) =>
@@ -395,8 +396,8 @@ async function buildReportFromDefinitions(): Promise<string> {
 
   const seasonKinds = [calmId, wetId, dryId];
   const weatherKinds = [scorchingId, sunnyId, clearId, cloudyId, lightRainId, heavyRainId, stormId];
-  const rainWeatherKinds = [lightRainId, heavyRainId, stormId];
-  const isRain = (w: number): boolean => w === lightRainId || w === heavyRainId || w === stormId;
+  // 雨の天気は**この集合1つ**で表す。列と述語に分けると、片方だけ足しても何も落ちない。
+  const rainWeatherKinds: ReadonlySet<SymbolGlobalId> = new Set([lightRainId, heavyRainId, stormId]);
 
   const stats = createClimateStats(seasonKinds, weatherKinds, rainWeatherKinds);
 
@@ -411,15 +412,24 @@ async function buildReportFromDefinitions(): Promise<string> {
     session.adoptWorld(new World(worldInstance, codex));
 
     // 現在進行中のセグメント（季節が変わるまでの一区間）のバッファ
-    let segSeason = worldInstance.tryGetProperty(seasonId)?.number ?? 0;
+    // 季節も天気もシンボル型（6.6節）なので、値はsymbolNamesのID。
+    let segSeason = symbolGlobalIdOfPropertyValue(worldInstance.tryGetProperty(seasonId)?.number ?? 0);
     let segTemps: number[] = [];
-    let segWeathers: number[] = [];
+    let segWeathers: SymbolGlobalId[] = [];
     let segMoistures: number[] = [];
     let isFirstSegment = true;
 
     const flushSegment = (): void => {
       if (!isFirstSegment) {
-        processCompletedSegment(stats, weatherKinds, isRain, segSeason, segTemps, segWeathers, segMoistures);
+        processCompletedSegment(
+          stats,
+          weatherKinds,
+          rainWeatherKinds,
+          segSeason,
+          segTemps,
+          segWeathers,
+          segMoistures,
+        );
       }
       segTemps = [];
       segWeathers = [];
@@ -429,7 +439,9 @@ async function buildReportFromDefinitions(): Promise<string> {
     for (let t = 0; t < totalTicks; t++) {
       session.advanceWorldTime(15); // minutes_per_tick分。ちょうど1tick進める
 
-      const currentSeason = worldInstance.tryGetProperty(seasonId)?.number ?? 0;
+      const currentSeason = symbolGlobalIdOfPropertyValue(
+        worldInstance.tryGetProperty(seasonId)?.number ?? 0,
+      );
       if (currentSeason !== segSeason) {
         flushSegment();
         isFirstSegment = false;
@@ -437,7 +449,7 @@ async function buildReportFromDefinitions(): Promise<string> {
       }
 
       segTemps.push(worldInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0);
-      segWeathers.push(worldInstance.tryGetProperty(weatherId)?.number ?? 0);
+      segWeathers.push(symbolGlobalIdOfPropertyValue(worldInstance.tryGetProperty(weatherId)?.number ?? 0));
       segMoistures.push(worldInstance.tryGetProperty(moistureId)?.number ?? 0);
     }
     // 末尾の未完了セグメントは破棄（flushSegmentを呼ばない）

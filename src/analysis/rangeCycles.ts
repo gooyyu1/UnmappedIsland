@@ -9,6 +9,7 @@ import { rangeEventReadouts, ticksToRangeEnd } from './rangeEvents';
 import type { StaticValueResolver } from './staticValue';
 import { MINUTES_PER_TICK } from './balanceTables';
 import { staticValueOf, trackingResolverOf } from './staticValue';
+import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 外から与えられるtick毎の増減。**焼くのも失血も、自分では動かない値を隣の物が動かす**——炉が
@@ -17,9 +18,9 @@ import { staticValueOf, trackingResolverOf } from './staticValue';
  */
 export interface ExternalTickDelta {
   /** その増減を与える型。その周期を回すのに要る物（炉・刺さった傷）として工程の入力に並ぶ。 */
-  readonly sourceGlobalId: number;
+  readonly sourceGlobalId: ObjectGlobalId;
 
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
 
   /**
    * その押し手がtick毎に取りうる量。**同時に成立しうる組み合わせごとに1つ**（tickAmountsOfの
@@ -56,7 +57,7 @@ export interface ExternalTickDelta {
  * 自分が消えるので、minutesはその型の寿命そのものになる。
  */
 export interface RangeCycle {
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
 
   /**
    * 端へ届くまでの時間（分）。**同時に成立しうる条件（8.2節）の組み合わせのうち、端へ最も遅く
@@ -96,7 +97,7 @@ export interface RangeCycle {
   readonly gatedBy: readonly (readonly TickDelta[])[];
 
   /** 外から与えられた増減で動いた周期なら、それを与える型（炉が焼く・傷が血を奪う）。 */
-  readonly drivenBy: number | undefined;
+  readonly drivenBy: ObjectGlobalId | undefined;
 
   /** この周期を1つの工程として見たもの。何も生まない周期では出力が空になる。 */
   readonly step: CraftingStep;
@@ -111,14 +112,16 @@ export interface RangeCycle {
  * **押し手がその段を開けた場合だけは別**で、そこは押し手ごとに1つの速さに決まる
  * （relayedTickDeltasOf）。
  *
- * externalは、隣の物が与えるtick毎の増減（ExternalTickDelta参照）。同じプロパティを動かすものが
- * 複数あれば、**押し手ごとに別の周期**を返す——炉で焼くのと傷で失血するのは、要る物も速さも違う。
+ * neighborsは、この型の傍に置かれうる型。**そこから押し手を拾うのはここ**（externalTickDeltasOn）
+ * ——同じプロパティを動かすものが複数あれば、**押し手ごとに別の周期**を返す。炉で焼くのと傷で
+ * 失血するのは、要る物も速さも違う。省くと、隣に押されて初めて進む周期は返らない。
  */
 export function rangeCyclesOf(
   def: ObjectDef,
   outer?: StaticValueResolver,
-  external: readonly ExternalTickDelta[] = [],
+  neighbors: readonly ObjectDef[] = [],
 ): readonly RangeCycle[] {
+  const external = externalTickDeltasOn(def, neighbors);
   const pushed = [...external, ...external.flatMap((driver) => relayedTickDeltasOf(def, driver))];
 
   const cycles: RangeCycle[] = [];
@@ -291,7 +294,8 @@ function sortedTicksToRangeEnd(
   perTick: number,
 ): readonly number[] {
   return initialValues
-    .map((value) => ticksToRangeEnd(propertyDef, value, perTick))
+    .filter((value): value is number => value !== undefined)
+    .map((value) => ticksToRangeEnd({ propertyDef, value }, perTick))
     .filter((ticks): ticks is number => ticks !== undefined)
     .sort((a, b) => a - b);
 }
@@ -312,7 +316,7 @@ function sortedTicksToRangeEnd(
  * 1つの押し手が取りうる量として並べる。
  */
 export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): readonly ExternalTickDelta[] {
-  const byProperty = new Map<number, TickDelta[]>();
+  const byProperty = new Map<PropertyGlobalId, TickDelta[]>();
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== root || delta.amount === 0) continue;
     const known = byProperty.get(delta.propertyGlobalId);
@@ -412,10 +416,7 @@ function pushingCaseOf(def: ObjectDef, combination: readonly TickDelta[]): Pushi
  * 炉の火の枠が`roastable`を受けるから炉は肉を焼けるし、獲物の怪我の枠が`injury`を受けるから
  * 刺さった傷は血を奪える。
  */
-export function externalTickDeltasOn(
-  def: ObjectDef,
-  defs: readonly ObjectDef[],
-): readonly ExternalTickDelta[] {
+function externalTickDeltasOn(def: ObjectDef, defs: readonly ObjectDef[]): readonly ExternalTickDelta[] {
   const found: ExternalTickDelta[] = [];
   for (const source of defs) {
     if (source.globalId === def.globalId) continue;
@@ -460,7 +461,7 @@ interface TickTotal {
  * 落とせない対を持つのが罠の耐久で、地面にある間の-1と獲物を抱えている間の-10は、同時にも起こる
  * ので-11の場合を持つ。
  */
-function tickAmountsOf(def: ObjectDef, propertyGlobalId: number): TickAmounts {
+function tickAmountsOf(def: ObjectDef, propertyGlobalId: PropertyGlobalId): TickAmounts {
   const always: TickDelta[] = [];
   const conditional: TickDelta[] = [];
   for (const delta of tickDeltasOf(def)) {
@@ -570,7 +571,7 @@ function ticksUntilGateFalls(def: ObjectDef, gate: TickGate): number | undefined
 }
 
 /** その値が尽きて、それを見ている条件が外れるまでのtick数。尽きない値ならundefined。 */
-function ticksUntilValueRunsOut(def: ObjectDef, propertyGlobalId: number): number | undefined {
+function ticksUntilValueRunsOut(def: ObjectDef, propertyGlobalId: PropertyGlobalId): number | undefined {
   // 尽きるまでを**最も短く**見る側（fastest）に合わせて、ロールも軽く出たほうを採る。
   return ticksToReach(
     staticValueOf(def, propertyGlobalId, 'lowest'),

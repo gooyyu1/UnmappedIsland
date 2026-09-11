@@ -13,6 +13,13 @@ import { PropertyValue } from './PropertyValue';
 import { Slot } from './Slot';
 import type { SlotPosition } from './SlotPosition';
 import type { WorldSession } from './WorldSession';
+import type {
+  ObjectGlobalId,
+  PropertyGlobalId,
+  PropertyTagGlobalId,
+  SlotGlobalId,
+  TagGlobalId,
+} from './GlobalId';
 
 /** 引けなかったものの呼び名（notFoundMessage）。どの名前空間で引くかもこれが決める。 */
 type MemberKind = 'プロパティ' | 'スロット';
@@ -103,7 +110,7 @@ export class WorldObject {
 
   // ---- プロパティを引く（6節） ----
 
-  tryGetProperty(globalPropertyId: number): PropertyValue | undefined {
+  tryGetProperty(globalPropertyId: PropertyGlobalId): PropertyValue | undefined {
     const local = this.def.propertyIndexByGlobalId.toLocal(globalPropertyId);
     return local === LocalIndexByGlobalId.missing ? undefined : this.properties[local];
   }
@@ -113,10 +120,11 @@ export class WorldObject {
    * プロパティ**——生成が書き込む行き先ID、シナリオが名指しする値——を引くときに使う。名前の綴り違いが
    * 黙って無視されず、書いた場所で分かる。
    */
-  getProperty(globalPropertyId: number): PropertyValue {
+  getProperty(globalPropertyId: PropertyGlobalId): PropertyValue {
     const property = this.tryGetProperty(globalPropertyId);
     if (property === undefined) {
-      throw new Error(this.notFoundMessage('プロパティ', globalPropertyId));
+      const name = this.session.codex.propertyNames.tryGetName(globalPropertyId);
+      throw new Error(this.notFoundMessage('プロパティ', globalPropertyId, name));
     }
     return property;
   }
@@ -128,12 +136,11 @@ export class WorldObject {
    * codexがそのIDを知らない場合だけIDのまま見せる——名前を出せないこと自体が、名前で引けなかった
    * （NameRegistryに登録の無い名前を使った）という手掛かりになる。
    *
-   * **どの名前空間で引くかはkindが決める。** 呼ぶ側にNameRegistryも渡させると、2つが噛み合って
-   * いなければならない決まりが呼び出しごとに増える。
+   * **名前を引くのは呼ぶ側。** どの名前空間かはIDの型そのものが持っているので、ここでkindから
+   * 名前空間を選び直すと、選んだ先が両方を受けられる形（`NameRegistry<number>`）へ広がり、
+   * 別の名前空間のIDも素の数も通るようになる。
    */
-  private notFoundMessage(kind: MemberKind, globalId: number): string {
-    const { propertyNames, slotNames } = this.session.codex;
-    const name = (kind === 'プロパティ' ? propertyNames : slotNames).tryGetName(globalId);
+  private notFoundMessage(kind: MemberKind, globalId: number, name: string | undefined): string {
     return name === undefined
       ? `'${this.def.name}' は${kind}(id=${globalId})を持ちません。`
       : `'${this.def.name}' は${kind} '${name}' を持ちません。`;
@@ -175,8 +182,8 @@ export class WorldObject {
    * 指定したタグ（6.7節）が付いたプロパティを、propsの宣言順で。タグの付いたプロパティを
    * 1つも持たないオブジェクトでは空配列。
    */
-  propertiesWithTag(tagGlobalId: number): readonly PropertyValue[] {
-    return this.properties.filter((property) => property.def.hasTag(tagGlobalId));
+  propertiesWithTag(propertyTagGlobalId: PropertyTagGlobalId): readonly PropertyValue[] {
+    return this.properties.filter((property) => property.def.hasTag(propertyTagGlobalId));
   }
 
   // ---- スロットを引く・中を見る（7節） ----
@@ -185,15 +192,16 @@ export class WorldObject {
    * tryGetSlotと同じ引き方で、持っていないことを許さない版（getPropertyと同じ対）。名指しした枠が
    * 必ずあるはずの場所——生成・シナリオ・ビューが自分の型の枠を引くとき——に使う。
    */
-  getSlot(globalSlotId: number): Slot {
+  getSlot(globalSlotId: SlotGlobalId): Slot {
     const slot = this.tryGetSlot(globalSlotId);
     if (slot === undefined) {
-      throw new Error(this.notFoundMessage('スロット', globalSlotId));
+      const name = this.session.codex.slotNames.tryGetName(globalSlotId);
+      throw new Error(this.notFoundMessage('スロット', globalSlotId, name));
     }
     return slot;
   }
 
-  tryGetSlot(globalSlotId: number): Slot | undefined {
+  tryGetSlot(globalSlotId: SlotGlobalId): Slot | undefined {
     const local = this.def.slotIndexByGlobalId.toLocal(globalSlotId);
     return local === LocalIndexByGlobalId.missing ? undefined : this.slots[local];
   }
@@ -250,7 +258,7 @@ export class WorldObject {
    * 呼び手はReferenceContext.ownerOfPropertyだけで、`ancestor`起点の参照はどこに書かれたものも
    * そこを通る（どの文法から来たかは、この時点で区別されていない）。
    */
-  findAncestorWithProperty(propertyGlobalId: number): WorldObject | undefined {
+  findAncestorWithProperty(propertyGlobalId: PropertyGlobalId): WorldObject | undefined {
     let current = this._parent;
     while (current !== undefined) {
       if (current.def.propertyIndexByGlobalId.toLocal(propertyGlobalId) !== LocalIndexByGlobalId.missing)
@@ -261,7 +269,7 @@ export class WorldObject {
   }
 
   /** 名指しのタグを持つ最も近い祖先。自分自身は見ない（findAncestorWithPropertyと同じ扱い）。 */
-  findAncestorWithTag(tagGlobalId: number): WorldObject | undefined {
+  findAncestorWithTag(tagGlobalId: TagGlobalId): WorldObject | undefined {
     for (let node = this._parent; node !== undefined; node = node.parent) {
       if (node.def.hasTag(tagGlobalId)) return node;
     }
@@ -296,7 +304,7 @@ export class WorldObject {
    * 世界にただ1つ在る型（`singleton`、15節）を名前で指す`move`の`to_object`（9.6節）が使う。
    * 同じ型が複数在れば最初に見つかったものを返す。
    */
-  findSelfOrDescendantOfDef(objectDefGlobalId: number): WorldObject | undefined {
+  findSelfOrDescendantOfDef(objectDefGlobalId: ObjectGlobalId): WorldObject | undefined {
     if (this.def.globalId === objectDefGlobalId) return this;
 
     for (const slot of this.slots) {
@@ -516,19 +524,25 @@ export class WorldObject {
   // ---- 操作の関係（11.5節） ----
 
   /**
-   * 今この物が参加している操作の関係（11.5節）。参加していなければundefined。**役を指せるのは
-   * 参加者からだけ**なので、この物のprops（`base`・`passives`）が役を解くのもここから
-   * （ReferenceContext.forParticipant）。
+   * 今この物が加わっている操作の関係（11.5節）を、内側を末尾にして積んだもの。**入れ子になる**
+   * ——時間を要する操作が関係を張り続けている間に配られた手番は、時間を要さなければその場で起きる
+   * ので、同じ物が外側と内側の両方に加わりうる（同節）。
    */
-  private _participation: InteractionRelation | undefined;
+  private readonly participations: InteractionRelation[] = [];
+
+  /**
+   * 今この物が役を解く操作の関係（11.5節）。加わっていなければundefined。**役を指せるのは参加者から
+   * だけ**なので、この物のprops（`base`・`passives`）が役を解くのもここから
+   * （ReferenceContext.forParticipant）。**入れ子なら最も内側が答える**（同節）。
+   */
   get participation(): InteractionRelation | undefined {
-    return this._participation;
+    return this.participations.at(-1);
   }
 
   /**
    * この物をagentとして張られている関係。**同じ物が2つの操作のagentになることはない**（11.5節の
    * 不変条件）ので、これが埋まっている間に2つ目を張ろうとすれば止まる。参加しているだけの関係
-   * （instrument・patient）は複数あってよいので、_participationとは別に持つ。
+   * （instrument・patient）は複数あってよいので、加わっている関係の積みとは別に持つ。
    */
   private _actingIn: InteractionRelation | undefined;
 
@@ -539,6 +553,9 @@ export class WorldObject {
    * `claimingAgent`は「この関係でこの物が実際に動く」（問い合わせではなく実行）。既に別の操作で
    * 動いていれば例外で止める——動作主は一度に1つの動作しかできない。進行中の操作を中断して別の操作を
    * 始めさせる仕組みはまだ無い（17節）。
+   *
+   * **返した外し方は、張った順の逆で呼ぶ**（InteractionRelation.bound）。加わっている関係は積みなので、
+   * 順序が崩れると外側の関係が内側として残る。
    */
   joinInteraction(relation: InteractionRelation, claimingAgent: boolean): () => void {
     if (claimingAgent && this._actingIn !== undefined)
@@ -546,43 +563,63 @@ export class WorldObject {
         `'${this.def.name}' は既に別の操作のagentです（同じ物が2つの操作のagentになることはありません、11.5節）。`,
       );
 
-    const previousParticipation = this._participation;
     const previousActing = this._actingIn;
-    this.setParticipation(relation);
+    this.whileRoleTargetsDetached(() => this.participations.push(relation));
     if (claimingAgent) this._actingIn = relation;
 
     return () => {
-      this.setParticipation(previousParticipation);
+      this.whileRoleTargetsDetached(() => this.participations.pop());
       this._actingIn = previousActing;
     };
   }
 
-  /** 参加している関係を差し替える。役を対象にした持続効果（8節）の登録先も、ここで移す。 */
-  private setParticipation(relation: InteractionRelation | undefined): void {
+  /**
+   * 加わっている関係の積みが動く間、この物のdefが宣言した役を対象にした登録を外しておく。**役を解くのは
+   * 最も内側の関係だけ**（participation）なので、積みが動けばこの物が張っている先も動く。
+   *
+   * 操作が宣言したぶん（11.7節）はここでは動かない——そちらの役は、宣言した操作の関係が答える
+   * （WorldSession.whileInteractionPassives）。
+   */
+  private whileRoleTargetsDetached(moveParticipations: () => void): void {
     this.setRoleTargetsRegistered(false);
-    this._participation = relation;
+    moveParticipations();
     this.setRoleTargetsRegistered(true);
   }
 
   /**
-   * 役を対象にしたpassives（8.1節）を、今参加している関係の相手へ登録/解除する。**関係へ加わって
-   * いなければ相手が居ないので何もしない**——呼ぶ側が参加の有無を見なくてよい。
+   * この物のdefが宣言した、役を対象にしたpassives（11.5節）の登録を、役を解く関係の相手へ登録/解除
+   * する。**関係へ加わっていなければ相手が居ないので何もしない**——呼ぶ側が参加の有無を見なくてよい。
    */
   private setRoleTargetsRegistered(register: boolean): void {
-    if (this._participation === undefined) return;
+    if (this.participation === undefined) return;
     for (const role of INTERACTION_ROLES) this.def.passives.setRelationRegistered(this, role, register);
   }
 
   /**
-   * 今加わっている関係で、役を対象にした寄与を張っているすべての参加者について、その登録を解除/登録
-   * する（becomeType用）。**この物が関わる向きは2つある**——自分が相手へ張ったものと、相手が自分へ
-   * 張ったもの。型が変わればどちらの相手も変わる（宣言は新しいdefのもの、登録先は新しいプロパティ）
-   * ので、片方だけでは旧型の宣言が相手に残るか、相手の寄与が新しいプロパティに載らないかになる。
+   * 役を対象にした寄与のうち**この物を一方の端に持つ組**を、すべて解除/登録する（becomeType用）。
+   * **この物が関わる向きは2つある**——自分が相手へ張ったものと、相手が自分へ張ったもの。型が変われば
+   * どちらの相手も変わる（宣言は新しいdefのもの、登録先は新しいプロパティ）ので、片方だけでは旧型の
+   * 宣言が相手に残るか、相手の寄与が新しいプロパティに載らないかになる。
+   *
+   * 相手どうしの組（agent↔instrumentなど）は、この物の型が変わっても宣言も登録先も変わらないので
+   * 触らない。
    */
   private setRoleTargetsOfParticipantsRegistered(register: boolean): void {
     this.setRoleTargetsRegistered(register);
-    for (const other of this._participation?.participantsOtherThan(this) ?? [])
-      other.setRoleTargetsRegistered(register);
+    for (const other of this.participantsSharingAnyRelation())
+      other.setRoleTargetsLandingOnRegistered(this, register);
+  }
+
+  /**
+   * この物のdefが宣言した、役を対象にしたpassivesのうち**objectへ載るぶん**を解除/登録する。
+   * **役を解くのは最も内側の関係からだけ**（participation）なので、そこでobjectが就いていない役は
+   * 登録先が別の物で、objectの型が変わっても動かない。
+   */
+  private setRoleTargetsLandingOnRegistered(object: WorldObject, register: boolean): void {
+    const relation = this.participation;
+    if (relation === undefined) return;
+    for (const role of INTERACTION_ROLES)
+      if (relation.objectAt(role) === object) this.def.passives.setRelationRegistered(this, role, register);
   }
 
   /**
@@ -596,8 +633,22 @@ export class WorldObject {
    */
   private setInteractionPassivesOfParticipantsRegistered(register: boolean): void {
     this.session.setInteractionPassivesRegistered(this, register);
-    for (const other of this._participation?.participantsOtherThan(this) ?? [])
+    for (const other of this.participantsSharingAnyRelation())
       this.session.setInteractionPassivesRegistered(other, register);
+  }
+
+  /**
+   * この物と同じ関係に加わっている相手（同じ物は1回だけ）。**外側の関係の相手もここに居る**
+   * ——入れ子の内側へ入っても外側の関係から抜けたわけではないので、外側で押された寄与はこの物の
+   * プロパティに載ったままになる（11.5節）。
+   */
+  private participantsSharingAnyRelation(): readonly WorldObject[] {
+    const others: WorldObject[] = [];
+    for (const relation of this.participations) {
+      for (const other of relation.participantsOtherThan(this))
+        if (!others.includes(other)) others.push(other);
+    }
+    return others;
   }
 
   /**
@@ -768,7 +819,7 @@ export class WorldObject {
     if (parent !== undefined) this.setEdgeRegistered(parent, false);
     for (const { child } of rehomed) child.setEdgeRegistered(this, false);
 
-    const carriedValues = new Map<number, number>();
+    const carriedValues = new Map<PropertyGlobalId, number>();
     for (const property of this.properties) carriedValues.set(property.def.globalId, property.number);
 
     this._def = newDef;
@@ -790,7 +841,7 @@ export class WorldObject {
     for (const { child } of rehomed) child.setEdgeRegistered(this, true);
     this.setAncestorTargetsRegistered(true);
 
-    // 型が変われば同種の判定も変わる（7.6節）ので、所属スタックを判定し直させる。
+    // 型が変われば同種の判定も変わる（SlotSystem.md 5節）ので、所属スタックを判定し直させる。
     this._parentSlot?.restack(this);
   }
 
@@ -808,17 +859,18 @@ export class WorldObject {
   /**
    * 名指しした1つのプロパティが、他と交わしている影響（docs/ui/Windows.md 8節）。
    *
-   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果に加えて、**今この物と同じ操作に
-   * 加わっている相手**（11.5節）が宣言するもの。木を辿る対象（self・parent・child・ancestor）なら
+   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果に加えて、**今この物と同じ関係に
+   * 加わっている相手**（11.5節。入れ子なら、外側の関係の相手も居る）が宣言するもの。木を辿る対象
+   * （self・parent・child・ancestor）なら
    * 宣言元は必ず前者に居り、操作の役（agent・instrument・patient）を対象に書いた効果なら必ず後者に
    * 居る——横に並んだ物どうしは、木でも操作でも結ばれていない限り互いに届かない。
    */
-  readInfluences(propertyGlobalId: number): PropertyInfluenceReading {
+  readInfluences(propertyGlobalId: PropertyGlobalId): PropertyInfluenceReading {
     const influences = new PropertyInfluences(this, propertyGlobalId);
     this.collectInfluencesRecursively(influences);
     for (let ancestor = this._parent; ancestor !== undefined; ancestor = ancestor._parent)
       ancestor.def.passives.collectInfluences(ancestor, influences);
-    for (const participant of this._participation?.participantsOtherThan(this) ?? [])
+    for (const participant of this.participantsSharingAnyRelation())
       participant.def.passives.collectInfluences(participant, influences);
     return influences;
   }
@@ -1009,7 +1061,7 @@ export class WorldObject {
    * さらに上へ遡る（place・spillTo参照）。どこにも入らなければ、生成したオブジェクトはそのまま消える。
    */
   executeSpawn(
-    objectGlobalId: number,
+    objectGlobalId: ObjectGlobalId,
     into: SpawnTarget,
     context: ReferenceContext,
     sameSlotSpawnSite: SameSlotSpawnSite | undefined,

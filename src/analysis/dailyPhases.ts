@@ -1,11 +1,12 @@
 import type { IslandMap } from '../domain/generation/IslandMap';
 import type { ObjectDef } from '../domain/ObjectDef';
-import type { PassiveDeclaration, PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
+import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { ActivityHoursRow } from './activityHours';
 import type { BalanceTables } from './balanceTables';
 import { MINUTES_PER_DAY } from './balanceTables';
 import { craftingStepsOf } from './craftingSteps';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 生成された島を測って、**1日を局面ごとに数える**（ContentSkeleton.md 8.2節・8.3節）。
@@ -215,16 +216,12 @@ export interface WorkPileAmount {
  * 収支表から足す。**型が収支表に出ていなければ投げる**——0分の山として黙って通すと、1周回の日数
  * だけが静かに縮む。
  *
- * `characterName` は、段へ届くまで積む山（{@link StackUntilStage}）が見る人物。段の線はその人物の
- * プロパティが持つ。
+ * 段へ届くまで積む山（{@link StackUntilStage}）が見る人物は、収支表を組んだ代表キャラクタ
+ * （`BalanceTables.sampleCharacterName`）。段の線はその人物のプロパティが持つ。
  */
-export function workPileAmountsOf(
-  codex: WorldCodex,
-  characterName: string,
-  balance: BalanceTables,
-): readonly WorkPileAmount[] {
+export function workPileAmountsOf(codex: WorldCodex, balance: BalanceTables): readonly WorkPileAmount[] {
   return WORK_PILES.map((pile) => {
-    const objectNames = amountObjectNamesOf(codex, characterName, balance, pile.amount);
+    const objectNames = amountObjectNamesOf(codex, balance, pile.amount);
     const minutes =
       typeof pile.amount === 'number'
         ? pile.amount * balance.surplusMinutes
@@ -236,34 +233,43 @@ export function workPileAmountsOf(
 /** 量を採る型を、積む順に挙げる。 */
 function amountObjectNamesOf(
   codex: WorldCodex,
-  characterName: string,
   balance: BalanceTables,
   amount: WorkPileAmountSource,
 ): readonly string[] {
   if (typeof amount === 'number') return [];
   if ('object' in amount) return [amount.object];
-  return cheapestStackOf(codex, characterName, balance, amount.stack);
+  return cheapestStackOf(
+    codex,
+    balance.sampleCharacterName,
+    (name) => objectCostMinutesOf(balance, name),
+    amount.stack,
+  );
 }
 
 /**
- * 段へ届かせる、いちばん安い積み方。同じ型を何個並べてもよいので、点あたりの手間がいちばん安い型を
- * 並べて、端数を最も安く埋める組み合わせを解く（無制限ナップサック）。
+ * 段へ届かせる、いちばん安い積み方。同じ型を何個並べてもよいので、線へ届く組み合わせのうち総労働が
+ * 最小のものを解く（無制限ナップサック）。**点あたりの手間がいちばん安い型を並べるだけでは最小に
+ * ならない**——1つあたりの点数が型ごとに違うので、線を越える手前で行き過ぎるぶんが総労働に乗る。
  *
- * **積む型が1つも出ない形は全部投げる**——タグを誰も名乗っていない・段が無い・下限が0以下・押し上げる
- * 型が1つも無い・押し上げが整数でない。0分の山として黙って通すと、1周回の日数だけが静かに縮む。
+ * `costMinutesOf` は型1つを素材から手に入れるまでの総労働（分）。**収支表そのものは受け取らない**
+ * ——ここが要るのは型の値段だけで、渡された側は何を見て積んだかを知らなくてよい。
+ *
+ * **積む型が1つも出ない形は全部投げる**——0分の山として黙って通すと、1周回の日数だけが静かに縮む。
+ * **何が足りないかは例外文が名指しする**——綴りの誤り・タグの付け忘れ・押し上げの書き忘れは、
+ * 受け取った側の直し方が別々なので、1つの文言に潰さない。
  */
-function cheapestStackOf(
+export function cheapestStackOf(
   codex: WorldCodex,
   characterName: string,
-  balance: BalanceTables,
+  costMinutesOf: (objectName: string) => number,
   stack: StackUntilStage,
 ): readonly string[] {
   const where = `${stack.tag}を積んで${characterName}の${stack.propertyName}を${stack.stageName}へ届かせる山`;
 
   const propertyGlobalId = codex.propertyNames.tryGetId(stack.propertyName);
+  if (propertyGlobalId === undefined) throw new Error(`${where}が名乗るプロパティが、世界にありません。`);
   const characterGlobalId = codex.objectNames.tryGetId(characterName);
-  if (propertyGlobalId === undefined || characterGlobalId === undefined)
-    throw new Error(`${where}が名乗る、プロパティか人物が世界にありません。`);
+  if (characterGlobalId === undefined) throw new Error(`${where}が名乗る人物が、世界にありません。`);
 
   const threshold = codex.objects
     .get(characterGlobalId)
@@ -272,15 +278,20 @@ function cheapestStackOf(
   if (threshold === undefined) throw new Error(`${where}が名乗る段の下限が、その人物にありません。`);
   if (threshold <= 0) throw new Error(`${where}が名乗る段の下限が0以下で、何も積まずに届きます。`);
 
-  // **値段を引くのは押し上げる型だけ**——押さない型まで引くと、山が積みもしない型の値段で落ちる。
   const tagGlobalId = codex.tagNames.tryGetId(stack.tag);
-  const stackable = (
-    tagGlobalId === undefined ? [] : [...codex.objects].filter((def) => def.hasTag(tagGlobalId))
-  )
+  if (tagGlobalId === undefined) throw new Error(`${where}が名乗るタグが、世界にありません。`);
+  const tagged = [...codex.objects].filter((def) => def.hasTag(tagGlobalId));
+  if (tagged.length === 0) throw new Error(`${where}のタグを名乗る型が、世界に1つもありません。`);
+
+  // **値段を引くのは押し上げる型だけ**——押さない型まで引くと、山が積みもしない型の値段で落ちる。
+  const stackable = tagged
     .map((def) => ({ name: def.name, lift: ancestorLiftOf(def, propertyGlobalId) }))
     .filter((candidate) => candidate.lift > 0)
-    .map((candidate) => ({ ...candidate, minutes: objectCostMinutesOf(balance, candidate.name) }));
-  if (stackable.length === 0) throw new Error(`${where}で積める型が、世界に1つもありません。`);
+    .map((candidate) => ({ ...candidate, minutes: costMinutesOf(candidate.name) }));
+  if (stackable.length === 0)
+    throw new Error(
+      `${where}のタグを名乗る型は在りますが、据えた先のプロパティを常に押し上げる型が1つもありません。`,
+    );
 
   // 点は刻みなので、整数で持つ前提（居心地の押し上げも段の下限も整数、core.yaml）。
   if (![threshold, ...stackable.map((candidate) => candidate.lift)].every(Number.isInteger))
@@ -310,16 +321,16 @@ function cheapestStackOf(
 }
 
 /** その型が、据えた先（祖先）のプロパティを常時いくつ押し上げるか。段や条件で縛られた寄与は数えない。 */
-function ancestorLiftOf(def: ObjectDef, propertyGlobalId: number): number {
+function ancestorLiftOf(def: ObjectDef, propertyGlobalId: PropertyGlobalId): number {
   const collector = new AncestorLiftCollector(propertyGlobalId);
-  for (const declaration of def.passives.declarations) (declaration as PassiveDeclaration).read(collector);
+  def.passives.read(collector);
   return collector.lift;
 }
 
 class AncestorLiftCollector implements PassiveReader {
   lift = 0;
 
-  constructor(private readonly propertyGlobalId: number) {}
+  constructor(private readonly propertyGlobalId: PropertyGlobalId) {}
 
   modify(reading: PassivePropertyReading): void {
     if (reading.target !== 'ancestor' || reading.propertyGlobalId !== this.propertyGlobalId) return;

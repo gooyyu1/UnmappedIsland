@@ -17,7 +17,7 @@ describe('用途のタグ', () => {
   beforeAll(() => {
     // 用途のタグはファイルをまたいで付くので、ディレクトリ全体を一括ロードする。
     codex = bundledCodex();
-    defs = Array.from({ length: codex.objects.count }, (_, globalId) => codex.objects.get(globalId));
+    defs = [...codex.objects];
   });
 
   it('口に入れると体の値が動く物には、食事のタグが付いている', () => {

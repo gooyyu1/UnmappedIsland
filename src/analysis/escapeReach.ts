@@ -5,7 +5,8 @@ import type { CraftingInput, CraftingStep } from './CraftingStep';
 import { craftingStepsOf } from './craftingSteps';
 import type { IslandLocations } from './islandLocations';
 import { islandLocationsOf } from './islandLocations';
-import { externalTickDeltasOn, rangeCyclesOf } from './rangeCycles';
+import { rangeCyclesOf } from './rangeCycles';
+import type { ObjectGlobalId, TagGlobalId } from '../domain/GlobalId';
 
 /**
  * 島の産物から**島を出るのに要るもの**まで、工程の鎖が閉じているかを数える。`startupReach.ts` が
@@ -121,7 +122,7 @@ export interface EscapeReach {
 }
 
 /** タグ → それを名乗る型（宣言順）。 */
-export type TagBearers = ReadonlyMap<number, readonly number[]>;
+export type TagBearers = ReadonlyMap<TagGlobalId, readonly ObjectGlobalId[]>;
 
 /**
  * 定義から一度だけ解けるもの。**島ごとに数えるときは使い回す**——工程の集めはコーデックスを丸ごと
@@ -136,7 +137,7 @@ export interface EscapeReachSources {
   readonly tagBearers: TagBearers;
 
   /** 島を出るのに要るもの（目標そのもの） → それを名乗っているタグ名。 */
-  readonly goals: ReadonlyMap<number, string>;
+  readonly goals: ReadonlyMap<ObjectGlobalId, string>;
 
   /** 探索できる土地の集め（`islandLocations.ts`）。出発集合はここから選ぶ。 */
   readonly locations: IslandLocations;
@@ -151,7 +152,7 @@ export interface EscapeReachSources {
 export function escapeReachSourcesOf(codex: WorldCodex): EscapeReachSources {
   const tagBearers = tagBearersOf(codex);
 
-  const goals = new Map<number, string>();
+  const goals = new Map<ObjectGlobalId, string>();
   for (const tagName of ESCAPE_GOAL_TAG_NAMES) {
     const tagGlobalId = codex.tagNames.tryGetId(tagName);
     const bearers = tagGlobalId === undefined ? [] : (tagBearers.get(tagGlobalId) ?? []);
@@ -180,7 +181,7 @@ function stepsOf(codex: WorldCodex): readonly CraftingStep[] {
   const defs = [...codex.objects];
   return defs.flatMap((def) => [
     ...craftingStepsOf(codex, def),
-    ...rangeCyclesOf(def, undefined, externalTickDeltasOn(def, defs))
+    ...rangeCyclesOf(def, undefined, defs)
       .filter((cycle) => cycle.repeats || cycle.drivenBy !== undefined)
       .map((cycle) => cycle.step),
   ]);
@@ -213,7 +214,7 @@ function reachFrom(sources: EscapeReachSources, departure: readonly ObjectDef[])
  */
 function departureOf(sources: EscapeReachSources, map: IslandMap): readonly ObjectDef[] {
   const islandGlobalIds = new Set(sources.locations.island.map((def) => def.globalId));
-  const present = new Set<number>();
+  const present = new Set<ObjectGlobalId>();
   for (const site of map.sites) {
     const objectGlobalId = site.type!.objectDefGlobalId;
     if (sources.locations.seaOnly.has(objectGlobalId)) continue;
@@ -230,10 +231,10 @@ function departureOf(sources: EscapeReachSources, map: IslandMap): readonly Obje
 /** 島の産物から届いた型と、そこまでの工程数・工程。 */
 interface Closure {
   /** 型 → 何工程先か。載っていない型は島から届かない。 */
-  readonly hops: ReadonlyMap<number, number>;
+  readonly hops: ReadonlyMap<ObjectGlobalId, number>;
 
   /** 型 → 最も少ない工程でそこへ届いた工程。出発集合の型は載らない。 */
-  readonly via: ReadonlyMap<number, CraftingStep>;
+  readonly via: ReadonlyMap<ObjectGlobalId, CraftingStep>;
 }
 
 /**
@@ -244,11 +245,11 @@ interface Closure {
  * 自分を材料にして自分へ届く鎖は数えられない。
  */
 function closureFrom(sources: EscapeReachSources, departure: readonly ObjectDef[]): Closure {
-  const hops = new Map<number, number>(departure.map((def) => [def.globalId, 0]));
-  const via = new Map<number, CraftingStep>();
+  const hops = new Map<ObjectGlobalId, number>(departure.map((def) => [def.globalId, 0]));
+  const via = new Map<ObjectGlobalId, CraftingStep>();
 
   for (let round = 1; ; round++) {
-    const arrived = new Map<number, CraftingStep>();
+    const arrived = new Map<ObjectGlobalId, CraftingStep>();
     for (const step of sources.steps) {
       if (!step.inputs.every((input) => satisfierOf(hops, sources.tagBearers, input) !== undefined)) continue;
       for (const objectGlobalId of producedBy(step))
@@ -268,7 +269,7 @@ function closureFrom(sources: EscapeReachSources, departure: readonly ObjectDef[
  * 工程すべてへ広げる——**途切れた先だけが広がる**ので、鎖が閉じている限り一覧は実際に通る道だけになる。
  */
 function needsOf(sources: EscapeReachSources, closure: Closure): readonly EscapeNeed[] {
-  const needs = new Map<number, EscapeNeed>();
+  const needs = new Map<ObjectGlobalId, EscapeNeed>();
   const pending = [...sources.goals.keys()];
 
   while (pending.length > 0) {
@@ -342,13 +343,13 @@ function needInputOf(sources: EscapeReachSources, closure: Closure, input: Craft
  * 工程の入力には宣言した型そのもの（self）も並ぶので、**木を見つけていなければ木は切れない**。
  */
 function satisfierOf(
-  hops: ReadonlyMap<number, number>,
+  hops: ReadonlyMap<ObjectGlobalId, number>,
   tagBearers: TagBearers,
   input: CraftingInput,
-): number | undefined {
+): ObjectGlobalId | undefined {
   if (input.kind === 'object') return hops.has(input.objectGlobalId) ? input.objectGlobalId : undefined;
 
-  let cheapest: number | undefined;
+  let cheapest: ObjectGlobalId | undefined;
   let cheapestHops = Number.MAX_SAFE_INTEGER;
   for (const objectGlobalId of tagBearers.get(input.tagGlobalId) ?? []) {
     const bearerHops = hops.get(objectGlobalId);
@@ -361,20 +362,20 @@ function satisfierOf(
 }
 
 /** その入力を満たしうる型（届いていなくてもよい）。途切れた先を辿るのはこちら。 */
-function declaredSatisfiersOf(tagBearers: TagBearers, input: CraftingInput): readonly number[] {
+function declaredSatisfiersOf(tagBearers: TagBearers, input: CraftingInput): readonly ObjectGlobalId[] {
   return input.kind === 'object' ? [input.objectGlobalId] : (tagBearers.get(input.tagGlobalId) ?? []);
 }
 
 /** 1回の実行で生まれうる型。**確率0の分岐は数えない**——重み0の候補は引かれない。 */
-function producedBy(step: CraftingStep): readonly number[] {
-  const produced = new Set<number>();
+function producedBy(step: CraftingStep): readonly ObjectGlobalId[] {
+  const produced = new Set<ObjectGlobalId>();
   for (const outcome of step.outcomes)
     if (outcome.probability > 0) for (const spawn of outcome.spawns) produced.add(spawn.objectGlobalId);
   return [...produced];
 }
 
 function tagBearersOf(codex: WorldCodex): TagBearers {
-  const bearers = new Map<number, number[]>();
+  const bearers = new Map<TagGlobalId, ObjectGlobalId[]>();
   for (const def of codex.objects)
     for (const tagGlobalId of def.tags) {
       const listed = bearers.get(tagGlobalId);

@@ -3,6 +3,7 @@ import type { DeclaredNumberReading } from './EffectReader';
 import type { DeclaredNumber } from './DeclaredNumber';
 import type { ReferenceContext } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
+import type { SlotGlobalId } from './GlobalId';
 
 /**
  * 誰がその枠へ物を入れる走査に参加するか（`placement`、GameElementDefinition.md 7.7節）。
@@ -51,7 +52,7 @@ const ANY_CELL = new CellDef(undefined, undefined);
  * ObjectDef.slotDefs の1要素として、ローカルIDをそのままindexとする密配列に格納される。
  */
 export class SlotDef {
-  readonly globalId: number;
+  readonly globalId: SlotGlobalId;
   readonly name: string;
 
   /**
@@ -89,7 +90,7 @@ export class SlotDef {
   private readonly putInDuration: DeclaredNumber | undefined;
 
   constructor(
-    globalId: number,
+    globalId: SlotGlobalId,
     name: string,
     cells: readonly CellDef[] | undefined,
     sharedCell: CellDef | undefined,

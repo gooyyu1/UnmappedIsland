@@ -325,6 +325,23 @@ describe('fire.yamlの火の連鎖', () => {
     ).toEqual(['no_fuel']);
   });
 
+  it('断られた火種は、薪を組み直すより先に燃え尽きて失われる', () => {
+    // 「薪が先」（FireSystem.md 3.1節）の根拠。断る→時間が経つ→失う、をひと続きで見る。
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    lightDryGrass();
+    const tinder = new Location(land, codex).items.find((o) => o.def.name === 'burning_tinder');
+    expect(tinder, '火起こしに成功している').toBeDefined();
+    expect(
+      hearth.combinationsWith(tinder!, player).map((c) => c.name),
+      '薪の無い炉は落とさせない',
+    ).toEqual([]);
+
+    session.advanceWorldTime(15);
+
+    expect(itemsOn(land), '断られているあいだに燃え尽きる').toEqual([]);
+    expect(heatIs(hearth, 'out'), '炉は消えたまま').toBe(true);
+  });
+
   it('燃えている炉は火種を断る。重ねて火力を種火まで落とすことはない', () => {
     const hearth = litCampfire();
     session.advanceWorldTime(60);

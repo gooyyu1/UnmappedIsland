@@ -1,8 +1,9 @@
 import type { WorldObject } from './WorldObject';
+import type { PropertyGlobalId } from './GlobalId';
 
 /** 「何の順に並ぶか」の読み上げ（StackOrderDef.reading参照）。 */
 export interface StackOrderReading {
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
 
   /** プロパティ値が増えるほどリスト内で後ろ（末尾側）に並ぶか。 */
   readonly ascending: boolean;
@@ -20,10 +21,10 @@ export interface StackOrderReading {
  * 挿入時点の相対順序が保たれる）。
  */
 export class StackOrderDef {
-  private readonly propertyGlobalId: number;
+  private readonly propertyGlobalId: PropertyGlobalId;
   private readonly ascending: boolean;
 
-  constructor(propertyGlobalId: number, ascending: boolean) {
+  constructor(propertyGlobalId: PropertyGlobalId, ascending: boolean) {
     this.propertyGlobalId = propertyGlobalId;
     this.ascending = ascending;
   }

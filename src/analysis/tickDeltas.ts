@@ -8,14 +8,10 @@ import type { ObjectDef } from '../domain/ObjectDef';
 import type { StageBound } from '../domain/PropertyDef';
 import type { TransferReading } from '../domain/EffectReader';
 import { mutuallyExclusive } from './conditionCases';
-import type {
-  GateReading,
-  PassiveDeclaration,
-  PassivePropertyReading,
-  PassiveReader,
-} from '../domain/PassiveReader';
+import type { GateReading, PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import type { TypeMatchReading } from '../domain/TypeMatchRule';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * tick毎に実体値を動かす持続効果を、実行時のオブジェクトを使わずに読んだもの（8.4節）。
@@ -23,7 +19,7 @@ import type { TypeMatchReading } from '../domain/TypeMatchRule';
  */
 export interface TickDelta {
   readonly target: ReferenceRoot;
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
   readonly amount: number;
   readonly gate: TickGate;
 
@@ -34,7 +30,7 @@ export interface TickDelta {
 /** tick毎の増減を縛るゲートの、定義だけから読める姿。 */
 export class TickGate {
   /** 段で縛られているならその段（8.2節）。常時効くならundefined。 */
-  readonly stage: { readonly propertyGlobalId: number; readonly name: string } | undefined;
+  readonly stage: { readonly propertyGlobalId: PropertyGlobalId; readonly name: string } | undefined;
 
   /**
    * 段以外の条件（conditions、14節）。無ければundefined。
@@ -54,7 +50,7 @@ export class TickGate {
    * 段の下端と上端から答える。ここへ混ぜると、下端を書いていない受け皿の段（6.4節）——値が下端まで
    * 落ちても居続ける段——を求める増減まで、尽きた時点で止まるものとして数えられる。
    */
-  readonly watchedSelfProperties: readonly number[];
+  readonly watchedSelfProperties: readonly PropertyGlobalId[];
 
   /**
    * 増減が効くために、宣言元自身が入っていなければならない段（6.4節）。**その増減がいつから
@@ -165,7 +161,7 @@ export class TickGate {
 
 /** 増減が効くために、宣言元自身が入っていなければならない段1つ（TickGate.requiredSelfStages）。 */
 export interface SelfStageRequirement {
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
   readonly stageName: string;
 
   /** ちょうどその段か、その段以上か（14.1節）。 */
@@ -202,7 +198,7 @@ function disjointStages(a: SelfStageRequirement, b: SelfStageRequirement): boole
 
 /** 祖先のプロパティに課された比較1つ。 */
 export interface AncestorCondition {
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
   readonly op: ConditionOp;
 
   /** 比較の相手。別のプロパティを見ている比較（valueRef）はここへ来ない。 */
@@ -216,7 +212,7 @@ export interface AncestorCondition {
  */
 export function tickDeltasOf(def: ObjectDef): readonly TickDelta[] {
   const collector = new TickDeltaCollector(def);
-  for (const declaration of def.passives.declarations) (declaration as PassiveDeclaration).read(collector);
+  def.passives.read(collector);
   return collector.deltas;
 }
 
@@ -302,7 +298,7 @@ function matchesType(def: ObjectDef, match: TypeMatchReading): boolean {
  * 宣言のまま持つ。
  */
 class GateConditionCollector implements ConditionReader {
-  readonly selfProperties: number[] = [];
+  readonly selfProperties: PropertyGlobalId[] = [];
 
   /** 下端はまだ読めない（プロパティの定義を持たない）ので、TickGateが引いて補う。 */
   readonly requiredSelfStages: Omit<SelfStageRequirement, 'lowerBound'>[] = [];
@@ -337,7 +333,12 @@ class GateConditionCollector implements ConditionReader {
     });
   }
 
-  propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string, bound: StageBound): void {
+  propertyStage(
+    root: ReferenceRoot,
+    propertyGlobalId: PropertyGlobalId,
+    stageName: string,
+    bound: StageBound,
+  ): void {
     this.hasRuntimeConditions = true;
     if (root !== 'self') {
       this.hasNonStageConditions = true;

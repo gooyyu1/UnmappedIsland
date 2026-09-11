@@ -6,6 +6,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * salt.yamlの塩田と塩蔵を、実ファイルの定義だけで検証する。
@@ -24,9 +25,9 @@ const NIGHT_HOUR = 0;
 
 describe('salt.yamlの塩田と塩蔵', () => {
   let codex: WorldCodex;
-  let brineId: number;
-  let dryingRemainingId: number;
-  let durabilityId: number;
+  let brineId: PropertyGlobalId;
+  let dryingRemainingId: PropertyGlobalId;
+  let durabilityId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();
@@ -72,7 +73,7 @@ describe('salt.yamlの塩田と塩蔵', () => {
     );
   }
 
-  function numberOf(object: WorldObject, propertyId: number): number {
+  function numberOf(object: WorldObject, propertyId: PropertyGlobalId): number {
     return object.getProperty(propertyId).number;
   }
 
@@ -214,8 +215,7 @@ describe('salt.yamlの塩田と塩蔵', () => {
     // ——数が増えても気付けるよう、軸を持つ全型を検査する。
     const useless: string[] = [];
 
-    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const def = codex.objects.get(globalId);
+    for (const def of codex.objects) {
       const baseGlobalId = codex.generatedTypes.baseGlobalIdIfVariantOn(def, 'cure');
       if (baseGlobalId === undefined) continue;
 

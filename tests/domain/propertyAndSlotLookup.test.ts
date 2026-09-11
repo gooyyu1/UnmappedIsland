@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { WorldSession } from '../../src/domain/WorldSession';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * プロパティ・スロットの引き方（WorldObject.tryGetProperty / getProperty / tryGetSlot / getSlot）に
@@ -61,6 +62,12 @@ object_defs:
   it('codexが知らないIDは、名前を出せないことごと伝える', () => {
     // 名前で引けなかった側（NameRegistryに登録の無い名前）がここへ来る。名前を出せないこと自体が
     // 手掛かりになるので、IDのまま見せる。
-    expect(() => spawn('stone').getProperty(-1)).toThrowError("'stone' はプロパティ(id=-1)を持ちません。");
+    //
+    // このcodexが配っていないIDを渡す試験なので、**IDを作れる唯一の口（NameRegistry）を通れない**
+    // ——素の数から型を跨ぐのはここだけで、その理由がこの試験そのもの。
+    const unissued = -1 as PropertyGlobalId;
+    expect(() => spawn('stone').getProperty(unissued)).toThrowError(
+      "'stone' はプロパティ(id=-1)を持ちません。",
+    );
   });
 });

@@ -1,5 +1,15 @@
 import type { CardFilter } from './CardFilter';
 import type { GenerationDefs } from './generation/GenerationDefs';
+import {
+  type ObjectGlobalId,
+  objectGlobalIdOfPropertyValue,
+  type PropertyGlobalId,
+  type PropertyTagGlobalId,
+  type SlotGlobalId,
+  type SymbolGlobalId,
+  symbolGlobalIdOfPropertyValue,
+  type TagGlobalId,
+} from './GlobalId';
 import { GeneratedTypes } from './GeneratedTypes';
 import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef, ObjectDefTable } from './ObjectDef';
@@ -19,8 +29,8 @@ import type { WorldObject } from './WorldObject';
  * contextはその宣言が書かれた場所で、指した先が正しくなかったときのエラーメッセージに使う。
  */
 export type ObjectDefDestination = { readonly context: string } & (
-  | { readonly kind: 'object'; readonly objectGlobalId: number }
-  | { readonly kind: 'property'; readonly propertyGlobalId: number }
+  | { readonly kind: 'object'; readonly objectGlobalId: ObjectGlobalId }
+  | { readonly kind: 'property'; readonly propertyGlobalId: PropertyGlobalId }
 );
 
 /**
@@ -33,18 +43,18 @@ export type ObjectDefDestination = { readonly context: string } & (
  * グローバルID→識別子の引き当ても引き受ける。名前空間をすべて持つのはここだけのため。
  */
 export class WorldCodex {
-  readonly objectNames: NameRegistry;
-  readonly propertyNames: NameRegistry;
-  readonly slotNames: NameRegistry;
-  readonly tagNames: NameRegistry;
+  readonly objectNames: NameRegistry<ObjectGlobalId>;
+  readonly propertyNames: NameRegistry<PropertyGlobalId>;
+  readonly slotNames: NameRegistry<SlotGlobalId>;
+  readonly tagNames: NameRegistry<TagGlobalId>;
 
   /**
    * プロパティのタグ（6.7節）の名前空間。object_defのタグ（tagNames）とは別で、`property_tags` で
    * 宣言された順にIDが振られる。UIはこのIDの昇順をカテゴリの表示順として使ってよい。
    */
-  readonly propertyTagNames: NameRegistry;
+  readonly propertyTagNames: NameRegistry<PropertyTagGlobalId>;
 
-  readonly symbolNames: NameRegistry;
+  readonly symbolNames: NameRegistry<SymbolGlobalId>;
 
   readonly objects: ObjectDefTable;
   /** コードがYAMLの単語へ寄せている依存の一覧（WorldVocabulary参照）。 */
@@ -65,7 +75,7 @@ export class WorldCodex {
    * レシピ一覧の棚に使うタグ（`recipe_categories`、Windows.md 9節）のグローバルID。
    * **並びが優先順位**で、完成品は最初に一致した棚にだけ載る。
    */
-  readonly recipeCategoryTagIdsByPriority: readonly number[];
+  readonly recipeCategoryTagIdsByPriority: readonly TagGlobalId[];
 
   /**
    * フィルターバーに並ぶボタン（`card_filters`、ScreenLayout.md 8.1.3節）。**宣言順がそのまま
@@ -80,18 +90,18 @@ export class WorldCodex {
   private readonly craftingConditions: Requirements | undefined;
 
   constructor(
-    objectNames: NameRegistry,
-    propertyNames: NameRegistry,
-    slotNames: NameRegistry,
-    tagNames: NameRegistry,
-    propertyTagNames: NameRegistry,
-    symbolNames: NameRegistry,
+    objectNames: NameRegistry<ObjectGlobalId>,
+    propertyNames: NameRegistry<PropertyGlobalId>,
+    slotNames: NameRegistry<SlotGlobalId>,
+    tagNames: NameRegistry<TagGlobalId>,
+    propertyTagNames: NameRegistry<PropertyTagGlobalId>,
+    symbolNames: NameRegistry<SymbolGlobalId>,
     objects: ObjectDefTable,
     vocabulary: WorldVocabulary,
     generation?: GenerationDefs,
     generatedTypes?: GeneratedTypes,
-    recipeCategoryTagIdsByPriority: readonly number[] = [],
-    requiredPropsByTag: ReadonlyMap<number, readonly number[]> = new Map(),
+    recipeCategoryTagIdsByPriority: readonly TagGlobalId[] = [],
+    requiredPropsByTag: ReadonlyMap<TagGlobalId, readonly PropertyGlobalId[]> = new Map(),
     craftingConditions?: Requirements,
     objectDefDestinations: readonly ObjectDefDestination[] = [],
     cardFilters: readonly CardFilter[] = [],
@@ -136,7 +146,7 @@ export class WorldCodex {
    * 複数在りうる型を指すと、どの個体へ行くかは世界の形が決め、著者の書いた通りには動かない
    * ——島へ戻る航路が、出た浜ではなく島で最初の浜へ着いていた。
    */
-  private requireSingletonObjectDef(objectGlobalId: number, context: string): void {
+  private requireSingletonObjectDef(objectGlobalId: ObjectGlobalId, context: string): void {
     const name = this.objectNames.getName(objectGlobalId);
     const def = this.objects.tryGet(objectGlobalId);
     if (def === undefined) throw new Error(`${context}: '${name}'という型は定義されていません。`);
@@ -156,7 +166,7 @@ export class WorldCodex {
    * ここでは分からない**（プロパティは型ごとに違う値を持てる）が、それは宣言の側
    * （`props`の`{object: ...}`）が既に受けている。
    */
-  private requireObjectDefValuedProperty(propertyGlobalId: number, context: string): void {
+  private requireObjectDefValuedProperty(propertyGlobalId: PropertyGlobalId, context: string): void {
     if (this.objectDefProperties.has(propertyGlobalId)) return;
 
     const name = this.propertyNames.getName(propertyGlobalId);
@@ -187,7 +197,9 @@ export class WorldCodex {
    *
    * 何をどのタグに要求するかはエンジンではなく世界が決める（要求を1つも書かない世界も成立する）。
    */
-  private requirePropsRequiredByTags(requiredPropsByTag: ReadonlyMap<number, readonly number[]>): void {
+  private requirePropsRequiredByTags(
+    requiredPropsByTag: ReadonlyMap<TagGlobalId, readonly PropertyGlobalId[]>,
+  ): void {
     for (const objectDef of this.objects)
       for (const [tagGlobalId, propertyGlobalIds] of requiredPropsByTag) {
         if (!objectDef.hasTag(tagGlobalId)) continue;
@@ -213,7 +225,7 @@ export class WorldCodex {
    * **`modify`されるかは型ひとつでは分からない**（宣言するのは他の型）ので、世界全体を持つここで見る。
    */
   private requireRangeEventsOnUnmodifiedProperties(): void {
-    const modifiedBy = new Map<number, string>();
+    const modifiedBy = new Map<PropertyGlobalId, string>();
 
     for (const objectDef of this.objects) {
       const reader: PassiveReader = {
@@ -223,7 +235,7 @@ export class WorldCodex {
         accumulate: () => {},
         transfer: () => {},
       };
-      for (const passive of objectDef.passives.declarations) passive.read(reader);
+      objectDef.passives.read(reader);
     }
 
     for (const objectDef of this.objects)
@@ -242,7 +254,7 @@ export class WorldCodex {
   /** 実効値が実体値と食い違いうる理由。一致するならundefined（requireRangeEventsOnUnmodifiedProperties参照）。 */
   private reasonEffectiveValueDiffers(
     propertyDef: PropertyDef,
-    modifiedBy: ReadonlyMap<number, string>,
+    modifiedBy: ReadonlyMap<PropertyGlobalId, string>,
   ): string | undefined {
     const modifier = modifiedBy.get(propertyDef.globalId);
     if (modifier !== undefined) return `'${modifier}'のpassivesがmodifyで書き換える`;
@@ -256,9 +268,9 @@ export class WorldCodex {
    *
    * **値をどう見せるかは読み手が決める**ので、ここが答えるのは「この値はシンボルか」だけ。
    */
-  get symbolicProperties(): ReadonlySet<number> {
+  get symbolicProperties(): ReadonlySet<PropertyGlobalId> {
     if (this.symbolicPropertyIds === undefined) {
-      const found = new Set<number>();
+      const found = new Set<PropertyGlobalId>();
       for (const objectDef of this.objects)
         for (const propertyDef of objectDef.enumeratePropertyDefs())
           if (propertyDef.isSymbolic) found.add(propertyDef.globalId);
@@ -267,15 +279,15 @@ export class WorldCodex {
     return this.symbolicPropertyIds;
   }
 
-  private symbolicPropertyIds: ReadonlySet<number> | undefined;
+  private symbolicPropertyIds: ReadonlySet<PropertyGlobalId> | undefined;
 
   /**
    * 型を値に持つ（6.9節）と宣言されたプロパティのグローバルID。読み方はsymbolicPropertiesと同じで、
    * 答えるのは「この値は型か」だけ。
    */
-  get objectDefProperties(): ReadonlySet<number> {
+  get objectDefProperties(): ReadonlySet<PropertyGlobalId> {
     if (this.objectDefPropertyIds === undefined) {
-      const found = new Set<number>();
+      const found = new Set<PropertyGlobalId>();
       for (const objectDef of this.objects)
         for (const propertyDef of objectDef.enumeratePropertyDefs())
           if (propertyDef.isObjectDef) found.add(propertyDef.globalId);
@@ -284,7 +296,27 @@ export class WorldCodex {
     return this.objectDefPropertyIds;
   }
 
-  private objectDefPropertyIds: ReadonlySet<number> | undefined;
+  private objectDefPropertyIds: ReadonlySet<PropertyGlobalId> | undefined;
+
+  /**
+   * シンボル型（6.6節）と宣言されたプロパティの値を、シンボルの名前へ戻す。宣言に数値リテラルが
+   * 書かれていれば、どのシンボルのIDでもないのでundefined。
+   *
+   * **値を名前まで戻すのはここ**——値がどの名前空間のものかを知っているのは名前空間を全部持つ
+   * このクラスで、読み手（条件の文・カードの説明・天気の表示）はそれを訊くだけ。値からIDへの
+   * 読み替えそのものは {@link symbolGlobalIdOfPropertyValue} が持つ。
+   */
+  trySymbolNameOfPropertyValue(value: number): string | undefined {
+    return this.symbolNames.tryGetName(symbolGlobalIdOfPropertyValue(value));
+  }
+
+  /**
+   * 型を値に持つ（6.9節）と宣言されたプロパティの値を、型の名前へ戻す。越境の扱いは
+   * {@link trySymbolNameOfPropertyValue} と同じ。
+   */
+  tryObjectNameOfPropertyValue(value: number): string | undefined {
+    return this.objectNames.tryGetName(objectGlobalIdOfPropertyValue(value));
+  }
 
   /**
    * 生成型（3.5節）の素の型。生成型でなければ自分自身。**絵と名前の骨格はここから引く**
@@ -340,11 +372,10 @@ export class WorldCodex {
    * いずれもこれで引く。
    *
    * **受け取るのは名前ではなくID**——コードが名指しするタグはWorldVocabularyに並んでいるので、
-   * ここで文字列から引き直すと同じ語が2箇所に書かれる。**世界の中身を名前で挙げる宣言はその外**
-   * ——山の一覧（analysis/dailyPhases.tsの`WORK_PILES`）は型もタグも名前で名乗り、`tagNames`を
-   * 引いてIDへ直してから型を選ぶ。
+   * ここで文字列から引き直すと同じ語が2箇所に書かれる。**タグを名前で名乗る宣言から引くなら**、
+   * 呼ぶ側が`tagNames`でIDへ直してから渡す。
    */
-  objectDefNamesWithTag(tagGlobalId: number): readonly string[] {
+  objectDefNamesWithTag(tagGlobalId: TagGlobalId): readonly string[] {
     const names: string[] = [];
     for (const objectDef of this.objects) if (objectDef.hasTag(tagGlobalId)) names.push(objectDef.name);
     return names;
@@ -356,8 +387,8 @@ export class WorldCodex {
    * 「1つだけ存在すべき」を「**世界を作った時点で必ず1つ在る**」と読む（NewGame.start）。そうでないと、
    * 型の名前で行き先を指す`move`の`to_object`（9.6節）が、まだ湧いていない場所を指すことになる。
    */
-  singletonGlobalIds(): readonly number[] {
-    const ids: number[] = [];
+  singletonGlobalIds(): readonly ObjectGlobalId[] {
+    const ids: ObjectGlobalId[] = [];
     for (const objectDef of this.objects) if (objectDef.isSingleton) ids.push(objectDef.globalId);
     return ids;
   }

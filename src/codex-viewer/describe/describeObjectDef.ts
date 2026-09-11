@@ -11,6 +11,7 @@ import { describeRangeEvent } from './describeProperty';
 import { stackOrderTokens } from './stackOrderTokens';
 import { describePassive } from './describePassive';
 import { passiveWritesToProperty, spawnsObject, writesToProperty } from './effectQueries';
+import type { ObjectGlobalId, PropertyGlobalId } from '../../domain/GlobalId';
 
 /**
  * 型そのものの性質（4節・7節の宣言）を書き出す。既定と同じ性質は書かない——「特に断っていない」ことと
@@ -57,7 +58,7 @@ export function describeObjectDef(def: ObjectDef, names: DefNames, out: Descript
  */
 export function describeInfluencesOn(
   def: ObjectDef,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   ownedByThisDef: boolean,
   names: DefNames,
   out: DescriptionWriter,
@@ -91,7 +92,7 @@ export function describeInfluencesOn(
  * どの操作で生まれるかまでは返さない——「これはどこから手に入るのか」を知りたい読み手には、生む側の型が
  * 答えで、その先はその型のページにある。
  */
-export function createsObject(def: ObjectDef, objectGlobalId: number): boolean {
+export function createsObject(def: ObjectDef, objectGlobalId: ObjectGlobalId): boolean {
   const matches = (declaration: EffectDeclaration): boolean => spawnsObject(declaration, objectGlobalId);
   return (
     def.enumeratePropertyDefs().some((propertyDef) => propertyDef.hasRangeEventMatching(matches)) ||

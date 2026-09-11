@@ -7,6 +7,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * smoking.yamlの燻製と燻し小屋を、実ファイルの定義だけで検証する。
@@ -37,11 +38,11 @@ const LIMIT_TICKS = 96 * 6;
 
 describe('smoking.yamlの燻製と燻し小屋', () => {
   let codex: WorldCodex;
-  let smokingRemainingId: number;
-  let cookingProgressId: number;
-  let durabilityId: number;
-  let fuelId: number;
-  let heatId: number;
+  let smokingRemainingId: PropertyGlobalId;
+  let cookingProgressId: PropertyGlobalId;
+  let durabilityId: PropertyGlobalId;
+  let fuelId: PropertyGlobalId;
+  let heatId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();
@@ -139,7 +140,7 @@ describe('smoking.yamlの燻製と燻し小屋', () => {
     return raceOf(session, spawnInto(session, 'raw_meat', house, 'fire'));
   }
 
-  function numberOf(object: WorldObject, propertyId: number): number {
+  function numberOf(object: WorldObject, propertyId: PropertyGlobalId): number {
     return object.getProperty(propertyId).number;
   }
 
@@ -349,8 +350,7 @@ function typeNamesWithTag(codex: WorldCodex, tagName: string): string[] {
   const tag = codex.tagNames.getId(tagName);
   const names: string[] = [];
 
-  for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-    const def = codex.objects.get(globalId);
+  for (const def of codex.objects) {
     if (!def.tags.includes(tag)) continue;
     if (codex.generatedTypes.baseGlobalIdIfVariantOn(def, 'cure') !== undefined) continue;
     names.push(def.name);

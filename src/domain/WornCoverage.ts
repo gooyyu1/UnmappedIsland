@@ -1,3 +1,5 @@
+import type { TagGlobalId } from './GlobalId';
+
 /**
  * 身につけたときに占める場所（`covers` / `layer`、GameElementDefinition.md 7.5節）。
  * **同じ部位の同じ階層は1つしか占められない**という不変条件を持つのはこの型で、衝突するかを
@@ -8,16 +10,16 @@
  */
 export class WornCoverage {
   /** 覆う部位（タグの名前空間のID）。空にはならない。 */
-  readonly partTagIds: readonly number[];
+  readonly partTagIds: readonly TagGlobalId[];
 
   /**
    * 重ね着の階層（タグの名前空間のID）。部位と同じ名前空間に置くのは、どちらも**場所を言う語**で
    * あって物の値ではないため——プレイヤーに見せる値（天気・季節）はシンボルの名前空間に居り、
    * あちらには表示名が要る。
    */
-  readonly layerTagId: number;
+  readonly layerTagId: TagGlobalId;
 
-  constructor(partTagIds: readonly number[], layerTagId: number) {
+  constructor(partTagIds: readonly TagGlobalId[], layerTagId: TagGlobalId) {
     if (partTagIds.length === 0) throw new Error('covers には覆う部位が少なくとも1つ要ります（7.5節）。');
 
     this.partTagIds = partTagIds;

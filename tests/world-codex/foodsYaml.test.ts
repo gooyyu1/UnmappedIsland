@@ -9,6 +9,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 describe('foods.yamlの食料定義', () => {
   let codex: WorldCodex;
@@ -176,7 +177,7 @@ describe('食べ物の腐敗', () => {
   const ONE_TICK = 15;
 
   let codex: WorldCodex;
-  let durabilityId: number;
+  let durabilityId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();
@@ -262,8 +263,7 @@ describe('食べ物の腐敗', () => {
     // 気付けるよう、ここで全数を検査する。
     const foodTagId = codex.tagNames.getId('food');
     const imperishable: string[] = [];
-    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const def = codex.objects.get(globalId);
+    for (const def of codex.objects) {
       if (!def.tags.includes(foodTagId) || codex.isGenerated(def)) continue;
       if (def.tryGetPropertyDef(durabilityId) === undefined) imperishable.push(def.name);
     }
@@ -278,7 +278,7 @@ describe('食べ物の腐敗', () => {
  */
 describe('食べ物が配る幸福度', () => {
   let codex: WorldCodex;
-  let happinessId: number;
+  let happinessId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();
@@ -288,8 +288,7 @@ describe('食べ物が配る幸福度', () => {
   /** `eat`をメニューに出す型の名前（自動生成された塩漬けの版を除く）。 */
   function eatableObjectNames(): string[] {
     const found: string[] = [];
-    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const def = codex.objects.get(globalId);
+    for (const def of codex.objects) {
       if (codex.isGenerated(def)) continue;
       if (def.menuTriggers.some((trigger) => trigger.interaction.name === 'eat')) found.push(def.name);
     }

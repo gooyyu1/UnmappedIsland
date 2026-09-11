@@ -6,10 +6,11 @@
 // **打つのは呼び手**（[`board-round.mjs`](board-round.mjs)）で、ここは決めるだけ。決める材料が
 // 全部引数に載っているので、実物を触らずに検査できる。
 //
+//   TIDY    <PR番号> <指紋>                  … マージ済みのPRを後片付けする（誰が入れたかを見ない）
 //   MERGE   <PR番号>
 //   ARCHIVE <セッションID> <指紋>            … 起こす先が無くなったセッションを畳む
 //   RESUME  <セッションID> mend   <PR番号>    <指紋>  … 差し戻し・コンフリクト・CIの赤を直させる
-//   RESUME  <セッションID> reject <PR番号>    <指紋>  … 通らなかった仮決めを取り下げさせる
+//   RESUME  <セッションID> reject <PR番号>    <指紋>  … ユーザーが差し戻したPRを直させる
 //   RESUME  <セッションID> look   <PR番号>    <指紋>  … 画面を撮って本文へ貼らせる
 //   RESUME  <セッションID> stall  <issue番号> <指紋>
 //   RESUME  <セッションID> review-stall <PR番号> <指紋>  … 判定を書かずに止まったレビューに続きを書かせる
@@ -28,7 +29,7 @@
 //     "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
 //     "mainChecks": [ { "status": "COMPLETED", "conclusion": "SUCCESS" } ],   … `main` の先頭のCI
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments ],
-//     "mergedPrs":[ gh pr list --state merged --search merged:>=<窓の始まり> --json number,comments ],   … スメルを拾う係が読む範囲
+//     "mergedPrs":[ gh pr list --state merged --search merged:>=<窓の始まり> --json number,comments ],   … 後片付けの相手と、スメルを拾う係が読む範囲
 //     "pendingDecisions": 12,   … `.claude/decisions/` のうち `archive/` に入っていない件数
 //     "unsummarizedAnalyses": 3,   … `.claude/analysis/` のうち、二次がまだ読んでいない件数
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
@@ -56,7 +57,8 @@
 // **片方だけで書くと、再レビューが永久に止まるか、手が空いた上へ2本目が立つ。**
 // どの値がどちらに答えるかは 1.6。
 
-import { readVersion, verdicts } from './review-verdicts.mjs';
+import { STUCK } from './board-state.mjs';
+import { asksUser, readVersion, readsVersion, verdicts } from './review-verdicts.mjs';
 
 /**
  * 今その差分へ手が動いているか（1.6）。**言うのは `session_status` だけ**——`status_bucket` は
@@ -137,6 +139,28 @@ const READ_MARK = 'EYES';
  * **粒度はコメント**。1つのコメントに `[スメル] ` の行が複数入るが、**マージ後のコメントは増えない**
  * ので、コメント1つに印1つで足りる。
  */
+/**
+ * 盤面が進まないまま**これだけ続いたら、詰まりと読む**（`.claude/board-design.md` 2.21）。
+ *
+ * **短くしない。** 打てない手は一時の失敗でも出る（GitHubが数分沈む・立てた直後の取り合い）ので、
+ * 直す相手が要るのは**自分では戻らなかったもの**だけ。**長くもしない**——詰まっている間、盤面は
+ * 1ミリも動かない。
+ */
+const STUCK_HOURS = Number(process.env.STUCK_HOURS || 1);
+
+/**
+ * 盤面が進まないまま続いている時間（進んでいれば0）。**印を置くのは1周を回す側**
+ * （[`board-round.mjs`](board-round.mjs)）で、ここはその読み手。
+ *
+ * **覚えが無ければ0**——この周に詰まり始めたか、まだ一度も見ていないかのどちらかで、どちらも
+ * 「続いている」とは言えない（`idleMinutes` と同じ倒し方）。
+ */
+function stuckHours(board) {
+  const since = Date.parse(board.taken?.[STUCK] ?? '');
+  const at = Date.parse(board.now ?? '');
+  return Number.isNaN(since) || Number.isNaN(at) ? 0 : (at - since) / 3_600_000;
+}
+
 function hasUnreadSmell(mergedPrs) {
   return mergedPrs.some((pr) =>
     (pr.comments ?? []).some(
@@ -162,6 +186,9 @@ function hasUnreadSmell(mergedPrs) {
  * - `env` … 投入先（`DISPATCH_TO` の値）。
  * - `locks` … 掴む資源（`area:` と同じ綴り）。書くセッションと取り合う。
  * - `prompt` … 渡す本文の在り処（リポジトリからの相対）。
+ * - `urgent` … **待たせてよいか。** 既定（省略）は待たせてよい＝最後尾で、根拠は「間隔が満ちて
+ *   いる限り次の周でも同じ手が出る」こと。**その根拠が言えない係だけが立てる**（下の `unstick`。
+ *   `.claude/board-design.md` 2.21.3）。
  *
  * **PRを出す係が居ても、作業者の枠（`HELD_TASKS`・`ACTIVE_WORKERS`）には数えない。** 間隔を空けて
  * 立つ係の、記録だけの差分で、マージの列を詰まらせないため。数えると、書く側の並列度がその分だけ
@@ -224,6 +251,22 @@ const CYCLES = [
     // **配れる `kind:task` が尽きた周がこの係の出番。** 枠（`HELD_TASKS`・`ACTIVE_WORKERS`）や錠で
     // 待っているだけの周は立てない——待っている task は在るので、掘り起こしても配れる先が増えない。
     due: (board) => readyTasks(board).length === 0,
+  },
+  {
+    name: 'unstick',
+    // **仕事があるときしか立たない係なので、間隔は「どれだけ止まったままでよいか」。** 詰まって
+    // いる間、盤面は1ミリも動かない——溜めてから捌く性質が無い。
+    hours: 1,
+    // **このPCでしか調べられない。** 何が転んだかが残っているのは `~/daemon.log` と
+    // `~/.claude/board-state` で、どちらもクラウドの箱には無い（`.claude/board-design.md` 2.21）。
+    env: 'bridge',
+    // **盤面を回す仕組みそのものを書き換える係**なので、同じ資源を触る task と並べない。
+    locks: ['area:daemon'],
+    prompt: '.claude/unstick-prompt.md',
+    due: (board) => stuckHours(board) >= STUCK_HOURS,
+    // **この係が立つ周は、まさに手が転んでいる周。** 転ばずに打てる手が毎周1つでも在れば、
+    // 1周1手の切り上げで最後尾までたどり着かない——待たせてよい根拠がここだけ成り立たない。
+    urgent: true,
   },
 ];
 
@@ -356,8 +399,12 @@ export function moves(input) {
    * まだ手が動いていると読む範囲。**`busySession` だけでは足りない**——あれは手番の切れ目ごとに
    * 落ちるので（1.6）、立てた直後のまだ走り出していないセッションも、下請けのレビューを待って
    * いる間も「動いていない」に見える。**空いたままが `STALL_MINUTES` に届くまでは動いている側**
-   * で数える。停滞と読む境目（`STALL_MINUTES`）と同じ線を使うのは、そこを越えたセッションには
-   * 起こす手か返す手が出るから——**動いていないと読む側と、止まったとして打つ側を1本の線で揃える。**
+   * で数える。停滞と読む境目（`STALL_MINUTES`）と同じ線を使うのは、**PRをまだ出していない
+   * セッションなら、そこを越えたところで起こす手か返す手が出るから**——動いていないと読む側と、
+   * 止まったとして打つ側を1本の線で揃える。**PRを出して待っている側には手が出ない**（下の `stall`
+   * の入口が「PRが出ていない」で切ってある）が、そちらも越えれば `ACTIVE_WORKERS` の側は空ける
+   * ——止まっているのではなく、続きがレビューとマージの側にあるので、`HELD_TASKS` だけを握って
+   * 待つ（3.1）。
    */
   const stillWorking = (session) => busySession(session) || idleMinutes(session) < STALL_MINUTES;
 
@@ -383,7 +430,23 @@ export function moves(input) {
     const pr = input.prs.find((item) => item.number === Number(number));
     if (pr === undefined) return true;
     const sent = taken[`review:${number}`];
-    return sent !== undefined && verdicts(pr.comments).some((c) => readVersion(c) === sent);
+    return sent !== undefined && verdicts(pr.comments).some((c) => readsVersion(c, sent));
+  }
+
+  /**
+   * **今の差分に対する判定**（無ければ `undefined`）。**ラベルではなくコメントから引く**
+   * ——人がラベルを外してから `board-labels.yml` が `却下` を付けるまでの窓では、ラベルだけを見る
+   * 盤面に「止める印が何も無いPR」として映る（2.13.5）。判定はコメントに残り、読んだ版も名乗って
+   * あるので、**外されても消えない側**から読む。
+   *
+   * **読んだ版を名乗っていないコメントは、どの版のものか言えない**（名乗りは書き忘れうる。
+   * `review-prompt.md`「読んだ版」）。**数えるかは、訊く側の倒れる先で決める**——`countUnnamed`。
+   */
+  function verdictOn(pr, countUnnamed) {
+    const read = verdicts(pr.comments).filter(
+      (c) => readsVersion(c, pr.headRefOid) || (countUnnamed && readVersion(c) === undefined),
+    );
+    return read[read.length - 1];
   }
 
   /**
@@ -442,14 +505,27 @@ export function moves(input) {
    */
   const mainCheck = color(input.mainChecks ?? []);
 
+  const tidies = [];
   const merges = [];
   const archives = [];
+
+  // **後片付けは、マージした手からは切り離してある**（2.10.4）。マージ済みのPRを見つけたら打つので、
+  // **ユーザーが画面から入れたPRも同じ1回を通る。** 指紋を残すのは、窓（`MERGED_WINDOW_HOURS`）の
+  // 幅ぶん同じPRが一覧に載り続けるため——**1回だけ**にするのはこの覚えで、無くしたときに重なるのは
+  // 窓に入っているぶんだけ（[`tidy-merged-pr.sh`](tidy-merged-pr.sh) は二度打っても同じ結果になる）。
+  //
+  // **古いものから捌く**（下の開いているPRと同じ向き）。
+  for (const pr of [...(input.mergedPrs ?? [])].sort((a, b) => a.number - b.number)) {
+    if (taken[`tidy:${pr.number}`] !== undefined) continue;
+    tidies.push(`TIDY ${pr.number} ${input.now}`);
+  }
   const mends = [];
   const stalls = [];
   const returns = [];
   const reviews = [];
   const tasks = [];
   const chores = [];
+  const urgentChores = [];
   const notes = [];
 
   // **古いものから捌く。** 一覧は新しい順に返るので、そのまま回すと**打つのは1周に1手**（`daemon.sh`）
@@ -460,8 +536,8 @@ export function moves(input) {
 
     // **他のPRの上に積まれたPRは、盤面では捌けない。** CIは古い base の上で緑になり、レビューが読む
     // 差分にも下のPRの変更が混ざる（#1508 はこれで2周ぶん無駄にしている）。触らずに書き残すだけに
-    // する。下が入ると `merge-and-close.sh` が `main` へ張り替え、**そのまま書いた本人へ差し戻す**
-    // ——張り替えても差分とCIは載せ直すまで古いまま（あちらの「積まれたPRは…」）。
+    // する。下が入ると GitHub が base を `main` へ張り替え、`tidy-merged-pr.sh` が**そのまま書いた
+    // 本人へ差し戻す**——張り替わっても差分とCIは載せ直すまで古いまま（あちらの「張り替わったPRは…」）。
     if ((pr.baseRefName ?? 'main') !== 'main') {
       notes.push(`PR #${pr.number} は ${pr.baseRefName} の上に積まれている（下が入るまで触らない）`);
       continue;
@@ -471,14 +547,14 @@ export function moves(input) {
     // **差し戻す種類は、起こされた側がやることで分ける**（1.3）。盤面から見た効き目（どれも
     // 「書いた本人を起こす」）で束ねると、渡す文面が1つになって作業が読めない。
     //
-    // - `reject` … 通らなかった仮決めを取り下げて、別の決め方でやり直す
+    // - `reject` … ユーザーがPRを読んで差し戻した（2.13.1）。何を直すかはコメントに書いてある
     // - `look`   … 画面を撮って本文へ貼る
     // - `mend`   … PRを見て直す（差し戻し・コンフリクト・CIの赤。**この3つは作業が同じ**なので束ねる）
     //
     // **どのラベルが付いていても差し戻す。** PRの `判断待ち` はマージを、`収束せず` はレビューを
     // 止めるだけで、直しを止める理由にはならない——コンフリクトの解消を人の返事まで待たせない（2.13）。
     const [kind, reason] = labels.includes('却下')
-      ? ['reject', '仮決めが却下された']
+      ? ['reject', 'ユーザーが差し戻した']
       : missingLook(pr)
         ? ['look', '画面が変わるのに `## 見た目` が無い']
         : labels.includes('直し待ち')
@@ -491,8 +567,8 @@ export function moves(input) {
 
     if (kind !== null) {
       // **`main` が赤い間は直しを頼まない**（2.14）。頼む先が居るかを調べる手前で止める——相手が
-      // 誰であっても、直せないことは変わらない。`reject` と `look` は `main` の色と関わらない作業
-      // （仮決めの取り下げ・画面の証跡）なので、そのまま出す。
+      // 誰であっても、直せないことは変わらない。`reject` と `look` は**出た理由が `main` の色と
+      // 関わらない**ので、そのまま出す（待たせても変わらず、押し返されても印は付き直らない）。
       if (kind === 'mend' && mainCheck === 'red') {
         notes.push(`PR #${pr.number} は${reason}が、\`main\` が赤いので直しを頼まない`);
         continue;
@@ -522,19 +598,32 @@ export function moves(input) {
     }
 
     if (labels.includes('通してよい')) {
-      // PRの `判断待ち` が止めるのはマージだけ（2.13）。越え方は出どころで違う——機械が付けたものは
-      // `merge-and-close.sh <PR> --user-ok`（2.13.3）、レビュアーが付けたものはラベルを外す（2.13.4）。
-      // **どちらもここでは見分けない。** 止める効き目は同じで、外れていれば下のマージが出る。
-      if (labels.includes('判断待ち')) continue;
+      // PRの `判断待ち` が止めるのはマージだけ（2.13）。**出どころで見分けない**——レビュアーが
+      // 付けたものも機械が付けたものも、通すなら人が画面からマージする（2.13.1）。
+      //
+      // **レビュアーが求めたぶんは、ラベルが外れていても判定から読み直す**（2.13.5）。人が外して
+      // から `却下` が付くまでの窓でここを通すと、**差し戻すつもりで外した操作がそのまま
+      // マージになる**——取り消せない。**名乗りの無い判定も今の版のものとして数える**（`true`）
+      // ——数えないと、名乗りを書き忘れた周だけ同じ窓が開く。
+      const stopping = verdictOn(pr, true);
+      if (labels.includes('判断待ち') || (stopping !== undefined && asksUser(stopping))) continue;
       if (check === 'green' && pr.mergeable === 'MERGEABLE') merges.push(`MERGE ${pr.number}`);
       continue;
     }
 
     // `収束せず` が止めるのはレビューだけ（2.13）。往復では決まらないと分かった差分へ、次の周を
-    // 出さない——人が `通してよい` か `直し待ち` で答えるまで、この先へは進まない。
+    // 出さない——人が画面からマージするか、外して差し戻すまで、この先へは進まない（2.13.1）。
     if (labels.includes('収束せず')) continue;
 
-    // 結論のラベルが無い＝この差分はまだ読まれていない（push で外れる。`board-labels.yml`）。
+    // **結論のラベルが無いことは、読まれていないことではない**（2.13.5）。人が外した窓では判定が
+    // コメントにだけ残るので、そちらを先に訊く——ラベルで読むと、読み終えた差分へもう1本立つ。
+    // **こちらは名乗りの無い判定を数えない**（`false`）——どの版を読んだのか言えないものを数えると、
+    // 押した後の差分が二度と読まれない。**倒れる先が、上の `stopping` と逆になる。**
+    if (verdictOn(pr, false) !== undefined) {
+      notes.push(`PR #${pr.number} は今の版の判定が書かれている（結論のラベルが付くのを待っている）`);
+      continue;
+    }
+
     if (check !== 'green') continue;
     // **マージできると分かるまで出さない。** `mergeable` は3値で、`main` が動くたびに開いているPRが
     // 全部 `UNKNOWN` へ落ち、GitHub が計算し直すまでそのまま。上の `CONFLICTING` だけで弾くと、
@@ -549,15 +638,8 @@ export function moves(input) {
     // **指紋が言えるのは「この差分を出した」までで、「読まれた」ではない。** 読み手がもう居ない
     // のに出したことを読まれたことと読むと、判定を書かずに終わったレビューがそのPRを永久に止める
     // （issue #1569。畳まれた理由が何であれ同じ）。**居るなら読んでいる最中**——畳むのは 2.10.3 の側。
-    //
-    // **読み手が居ないことより先に、判定が書かれたかを訊く。** 書き終えたレビューは畳まれてから
-    // 結論のラベルが付くまでの間だけ「居ないのにラベルも無い」形になり、そこを読み違えると、
-    // 判定の付いた差分へもう1本立つ。
+    // **判定を書き終えた形は、上の `verdictOn` の枝が先に捕まえる。**
     const sent = taken[`review:${pr.number}`] === pr.headRefOid;
-    if (sent && judged(`review-${pr.number}`)) {
-      notes.push(`PR #${pr.number} のレビューは判定を書き終えていて、結論のラベルが付くのを待っている`);
-      continue;
-    }
     if (sent && alive(`review-${pr.number}`).length > 0) {
       notes.push(`PR #${pr.number} はレビューが読んでいる最中で、結論のラベルはまだ無い`);
       continue;
@@ -782,12 +864,19 @@ export function moves(input) {
       continue;
     }
     const flag = DISPATCH_TO[cycle.env];
-    chores.push(`CHORE ${cycle.name} ${cycle.prompt} ${input.now}${flag === '' ? '' : ` ${flag}`}`);
+    const move = `CHORE ${cycle.name} ${cycle.prompt} ${input.now}${flag === '' ? '' : ` ${flag}`}`;
+    (cycle.urgent === true ? urgentChores : chores).push(move);
   }
 
   // 畳むのをマージの次に置くのは、**抱えているタスクの枠が空くから**（3.1 の並列度）。後ろへ回すと、
   // 終わったワーカーが枠を握ったまま、待っている task が投入されない周が続く。
   return [
+    // **`urgent` の係だけが先頭。** 盤面が詰まっていると分かっている周に、転んだ手をもう一度試す
+    // より、原因を直させるほうが先（`.claude/board-design.md` 2.21.3）。
+    ...urgentChores,
+    // **後片付けはマージより先。** 本体のチェックアウトは作業ツリー全部の共有先なので、片付けを
+    // 後ろへ回すと、**入る本数だけ古いまま**になる（マージできるPRが並んでいる周は、片付く前に次が入る）。
+    ...tidies,
     ...merges,
     ...archives,
     ...mends,
@@ -795,8 +884,8 @@ export function moves(input) {
     ...returns,
     ...reviews,
     ...tasks,
-    // **周期の係は最後尾。** 急ぐ仕事ではないうえ、間隔が満ちている限り次の周でも同じ手が出るので、
-    // 先に置くと待っている直しやレビューを1周ぶん押しのけるだけになる。
+    // **残りの周期の係は最後尾。** 急ぐ仕事ではないうえ、間隔が満ちている限り次の周でも同じ手が
+    // 出るので、先に置くと待っている直しやレビューを1周ぶん押しのけるだけになる。
     ...chores,
     ...notes.map((note) => `NOTE ${note}`),
   ];

@@ -6,6 +6,7 @@ import { moves as decide } from '../../scripts/agent/board-move.mjs';
 // 打った手の覚えを消す側（`trackIdle`）。**盤面が選ぶ指紋が、あちらの消去に当たらないこと**を
 // 下で留める。
 import { trackIdle } from '../../scripts/agent/board-round.mjs';
+import { STUCK } from '../../scripts/agent/board-state.mjs';
 
 /**
  * `scripts/agent/board-move.mjs` の検査。
@@ -24,8 +25,13 @@ interface Board {
   /** `main` の先頭のCI。省くと緑（既存の盤面はどれも `main` が緑のときの話）。 */
   mainChecks?: readonly unknown[];
   prs?: readonly unknown[];
-  /** マージ済みPRとそのコメント。スメルを拾う係の `due` が読む（`board-move.mjs` の `CYCLES`）。 */
-  mergedPrs?: readonly unknown[];
+  /**
+   * マージ済みPRとそのコメント。**後片付けの相手**（`board-move.mjs` の `TIDY`）と、スメルを拾う係の
+   * `due`（同 `CYCLES`）が読む。
+   */
+  mergedPrs?: readonly { number: number }[];
+  /** 後片付けをまだ打っていない形にするか。既定は打った後（下の `TIDIED_ALREADY`）。 */
+  untidied?: boolean;
   /** `archive/` に入っていない判断の履歴の数。価値観を畳む係の `due` が読む。 */
   pendingDecisions?: number;
   /** 二次がまだ読んでいない、一次の分析の記録の数。回をまたぐ形を見る係の `due` が読む。 */
@@ -64,11 +70,21 @@ const DUG_JUST_NOW = { 'cycle:dig': NOW };
 /** 掘り起こす係を立てる手。**上の既定を外した盤面はどれもこれを出す**ので、ここで名前を持つ。 */
 const DIG = `CHORE dig .claude/dig-prompt.md ${NOW}`;
 
+/**
+ * マージ済みPRの後片付け（`board-move.mjs` の `TIDY`）は、既定で**もう打った**ことにする。窓に載って
+ * いるPRには全部当たるので、**既定のままだと、後片付けと関わりのない検査の期待値へ1手ずつ増える。**
+ * 打つところを見る検査は `untidied` を立てる。
+ */
+function tidiedAlready(mergedPrs: readonly { number: number }[]): Record<string, string> {
+  return Object.fromEntries(mergedPrs.map((merged) => [`tidy:${merged.number}`, NOW]));
+}
+
 function moves(board: Board): string[] {
   const idled: Record<string, string> = {};
   for (const session of board.sessions ?? []) {
     if (session.status !== 'SESSION_STATUS_RUNNING') idled[`idle:${session.id}`] = LONG_IDLE;
   }
+  const tidied = board.untidied === true ? {} : tidiedAlready(board.mergedPrs ?? []);
   return decide({
     now: NOW,
     settledBefore: SETTLED,
@@ -76,7 +92,7 @@ function moves(board: Board): string[] {
     issues: [],
     sessions: [],
     ...board,
-    taken: { ...idled, ...DUG_JUST_NOW, ...board.taken },
+    taken: { ...idled, ...tidied, ...DUG_JUST_NOW, ...board.taken },
   });
 }
 
@@ -107,6 +123,14 @@ const pending = (number: number) =>
 const verdict = (version: string) => ({
   comments: [{ body: `[レビュー] 通してよい\n読んだ版: ${version}\n\n直しは要らない。\n` }],
 });
+/** 通したうえで人へ回す形の判定（2.13.4）。 */
+const asked = (version: string) => ({
+  comments: [
+    {
+      body: `[レビュー] 通してよい（人の判断が要る）\n読んだ版: ${version}\n\n倍率を足している。\n`,
+    },
+  ],
+});
 const working = (id: string, ...tags: string[]) => ({
   id,
   status: 'SESSION_STATUS_RUNNING',
@@ -134,6 +158,26 @@ describe('board-move.mjs', () => {
 
   it('マージはレビューより先に打つ', () => {
     expect(moves({ prs: [pr(10), pr(20, label('通してよい'))] })).toEqual(['MERGE 20', 'REVIEW 10 aaa1111']);
+  });
+
+  // ## マージ済みのPRの後片付け（2.10.4）
+  //
+  // **マージした手からは切り離してある。** 盤面はマージ済みのPRを見つけて打つので、**ユーザーが
+  // 画面から入れたPRも同じ1回を通る。**
+  it('マージ済みのPRは、誰が入れたかに関わらず後片付けする', () => {
+    expect(moves({ untidied: true, mergedPrs: [{ number: 9 }] })).toEqual([`TIDY 9 ${NOW}`]);
+  });
+
+  // 窓（`MERGED_WINDOW_HOURS`）の幅ぶん同じPRが一覧に載り続けるので、覚えが無いと毎周打ち直す。
+  it('後片付けを打ったPRには、二度打たない', () => {
+    expect(moves({ mergedPrs: [{ number: 9 }] })).toEqual([]);
+  });
+
+  // 本体のチェックアウトは作業ツリー全部の共有先なので、片付けを後ろへ回すと**入る本数だけ古いまま**
+  // になる（マージできるPRが並んでいる周は、片付く前に次が入る）。
+  it('後片付けはマージより先に打つ', () => {
+    const board = { untidied: true, mergedPrs: [{ number: 9 }], prs: [pr(10, label('通してよい'))] };
+    expect(moves(board)).toEqual([`TIDY 9 ${NOW}`, 'MERGE 10']);
   });
 
   it('コンフリクトしていれば、通してよいが付いていてもマージしない', () => {
@@ -204,6 +248,36 @@ describe('board-move.mjs', () => {
     expect(moves({ prs: [pr(10, label('通してよい', '判断待ち'))] })).toEqual([]);
   });
 
+  /**
+   * **人が外してから `却下` が付くまでの窓**（2.13.5）。ラベルだけを見ると、この周は「止める印が
+   * 何も無い緑のPR」に見える——**差し戻すつもりで外した操作が、そのまま取り消せないマージになる。**
+   * 判定はコメントに残っていて、読んだ版も名乗ってあるので、そちらから読む。
+   */
+  it('判断待ちが外れていても、今の版の判定が人の判断を求めていればマージしない', () => {
+    expect(moves({ prs: [pr(10, { ...label('通してよい'), ...asked('aaa1111') })] })).toEqual([]);
+  });
+
+  // **前の差分への判定は、今の差分を止めない**（2.13.4。周ごとに判定は変わりうる）。
+  it('前の版で人の判断を求めていても、今の版の判定が通してよいならマージする', () => {
+    const comments = [...asked('9990000').comments, ...verdict('aaa1111').comments];
+    expect(moves({ prs: [pr(10, { ...label('通してよい'), comments })] })).toEqual(['MERGE 10']);
+  });
+
+  // **読んだ版の名乗りは書き忘れうる**（`review-prompt.md`）。どの版のものか言えない判定を数え
+  // ないと、**その周だけ人へ回した判定が消えて、取り消せないマージになる**（2.13.5）。ラベルを
+  // 付ける側（`board-labels.yml`）は1行目しか見ないので、名乗りが無くても `判断待ち` は付く。
+  it('版を名乗っていなくても、人の判断を求める判定はマージを止める', () => {
+    const comments = [{ body: '[レビュー] 通してよい（人の判断が要る）\n\n倍率を足している。\n' }];
+    expect(moves({ prs: [pr(10, { ...label('通してよい'), comments })] })).toEqual([]);
+  });
+
+  // **逆に、読まれたかを見る側は数えない。** どの版を読んだのか言えないものを数えると、押した後の
+  // 差分が二度と読まれない（2.13.5）。
+  it('版を名乗っていない判定は、読まれた証拠にはしない', () => {
+    const comments = [{ body: '[レビュー] 通してよい\n\n直しは要らない。\n' }];
+    expect(moves({ prs: [pr(10, { comments })] })).toEqual(['REVIEW 10 aaa1111']);
+  });
+
   it('判断待ちでも、コンフリクトは差し戻す', () => {
     const board = {
       prs: [pr(10, { ...label('判断待ち'), mergeable: 'CONFLICTING' })],
@@ -231,12 +305,9 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa1111']);
   });
 
-  it('収束せずのPRに人が通してよいを付けたら、マージする', () => {
-    expect(moves({ prs: [pr(10, label('収束せず', '通してよい'))] })).toEqual(['MERGE 10']);
-  });
-
-  // **`mend` ではなく `reject`。** 指摘に答えるのではなく、通らなかった仮決めを取り下げる作業。
-  it('却下のPRは、仮決めを取り下げさせる形で差し戻す', () => {
+  // **`mend` ではなく `reject`。** レビューの指摘に答えるのではなく、ユーザーが何を通さなかったのかを
+  // 読みに行く作業（`resume-prompt.md` の `## reject`）。
+  it('却下のPRは、ユーザーの差し戻しとして起こす', () => {
     const board = {
       prs: [pr(10, label('却下'))],
       prSessions: { 10: 'session_a' },
@@ -245,7 +316,8 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa1111']);
   });
 
-  // **却下は判断待ちの出口。** 外す手間を人に負わせないので、両方付いたまま届く（2.13.1）。
+  // **人が外すのは1つずつ。** `判断待ち` と `収束せず` が並んだPRで片方だけ外せば、残ったほうは
+  // 付いたまま `却下` が付く（2.13.1）。止めるのはマージとレビューで、差し戻しは止めない（2.13.2）。
   it('判断待ちが付いたままでも、却下は差し戻す', () => {
     const board = {
       prs: [pr(10, label('判断待ち', '却下'))],
@@ -345,7 +417,15 @@ describe('board-move.mjs', () => {
   it('判定を書き終えたPRへは、読み手がもう居なくてもレビューを立て直さない', () => {
     const board = { prs: [pr(10, verdict('aaa1111'))], taken: { 'review:10': 'aaa1111' } };
     expect(moves(board)).toEqual([
-      'NOTE PR #10 のレビューは判定を書き終えていて、結論のラベルが付くのを待っている',
+      'NOTE PR #10 は今の版の判定が書かれている（結論のラベルが付くのを待っている）',
+    ]);
+  });
+
+  // **判定はコメントに残る。** 台帳が消えていても、人が結論のラベルを外していても同じで、
+  // 読み終えた差分へもう1本立てる理由にはならない（2.13.5）。
+  it('台帳に無くても、今の版の判定が書かれていればレビューを立てない', () => {
+    expect(moves({ prs: [pr(10, verdict('aaa1111'))] })).toEqual([
+      'NOTE PR #10 は今の版の判定が書かれている（結論のラベルが付くのを待っている）',
     ]);
   });
 
@@ -453,7 +533,7 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['NOTE PR #10 はCIが赤いが、`main` が赤いので直しを頼まない']);
   });
 
-  // 止めるのは `mend` だけ。**仮決めの取り下げも画面の証跡も、`main` の色と関わらない作業**なので、
+  // 止めるのは `mend` だけ。**人の差し戻しも画面の証跡も、出た理由が `main` の色と関わらない**ので、
   // ここまで止めると `main` の赤が長引いた分だけ関係の無い手が遅れる。
   it('main が赤くても、却下は差し戻す', () => {
     const board = {
@@ -602,7 +682,7 @@ describe('board-move.mjs', () => {
   });
 
   // 積まれたPRのCIは古い base の上で緑になり、レビューの差分にも下のPRの変更が混ざる。下が入れば
-  // `merge-and-close.sh` が `main` へ張り替える（#1493 → #1508）。
+  // GitHub が base を `main` へ張り替え、`tidy-merged-pr.sh` が書いた本人へ差し戻す。
   it('他のPRの上に積まれたPRは、緑でも触らない', () => {
     const board = { prs: [pr(10, { ...label('通してよい'), baseRefName: 'claude/issue-9' })] };
     expect(moves(board)).toEqual([
@@ -1052,6 +1132,8 @@ describe('board-move.mjs', () => {
   const ANALYSIS = `CHORE analysis .claude/analysis-prompt.md ${NOW}`;
   const POLICY = `CHORE policy .claude/policy-cycle-prompt.md ${NOW}`;
   const TREND = `CHORE trend .claude/analysis-trend-prompt.md ${NOW}`;
+  /** 詰まりを解く係（2.21）。**このPCでしか調べられない**ので、宛先が付く。 */
+  const UNSTICK = `CHORE unstick .claude/unstick-prompt.md ${NOW} --bridge`;
 
   /** レビュアーがスメルを残した判定コメント（`review-criteria.md`「挙げ方」）。読んだ印を変えられる形で持つ。 */
   const smell = (number: number, read = false) => ({
@@ -1139,11 +1221,54 @@ describe('board-move.mjs', () => {
   // `dispatch-chore.sh` が要る2つを持っていること**。片方でも欠けると、係は毎周立とうとして
   // 毎周失敗する（時刻を残さないので、間隔で黙りもしない）。
   it('周期の係のプロンプトは、題と囲みを持つ', () => {
-    for (const move of [TRIAGE, ANALYSIS, POLICY, DIG]) {
+    for (const move of [TRIAGE, ANALYSIS, POLICY, DIG, UNSTICK]) {
       const text = readFileSync(resolve(__dirname, '../..', move.split(' ')[2]), 'utf-8');
       expect(text).toMatch(/^題: \S/m);
       expect(text).toMatch(/^````$/m);
     }
+  });
+
+  // ## 詰まりを解く係（2.21）
+  //
+  // **立てるのはデーモン自身**なので、この手が出たこと自体が「デーモンは生きている」の証拠になる
+  // ——落ちた跡から起こす係（2.19）とは、立つ条件が背反。二重に手を出す形は、錠ではなくここで消える。
+  it('進んでいない状態が続いたら、詰まりを解く係を立てる', () => {
+    expect(moves({ taken: { [STUCK]: '2026-09-05T00:30:00Z' } })).toEqual([UNSTICK]);
+  });
+
+  // 一時の失敗でも手は転ぶ（GitHubが数分沈む・立てた直後の取り合い）。直す相手が要るのは、
+  // **自分では戻らなかったもの**だけ。
+  it('進んでいない時間が短いうちは、立てない', () => {
+    expect(moves({ taken: { [STUCK]: '2026-09-05T01:30:00Z' } })).toEqual([]);
+  });
+
+  it('進んでいる盤面では、立てない', () => {
+    expect(moves({})).toEqual([]);
+  });
+
+  // **並びの先頭に置く**（2.21.3）。1周1手で切り上げるので、他の周期の係と同じ最後尾に置くと、
+  // **転ばずに打てる手が毎周1つでも在るかぎり手番が回らない**——投入だけが通らない盤面で、
+  // 片付けやマージは通り続ける形がまさにそれ。
+  it('他に打てる手が在っても、詰まりを解く係を先に置く', () => {
+    const board = {
+      untidied: true,
+      mergedPrs: [{ number: 9 }],
+      prs: [pr(10, label('通してよい'))],
+      taken: { [STUCK]: '2026-09-05T00:30:00Z' },
+    };
+
+    expect(moves(board)).toEqual([UNSTICK, `TIDY 9 ${NOW}`, 'MERGE 10']);
+  });
+
+  // 盤面を回す仕組みそのものを書き換える係なので、同じ資源を触る task と並べない（2.17 の `locks`）。
+  it('`area:daemon` を持つ task が走っている間は、立てない', () => {
+    const board = {
+      issues: [{ number: 9, ...label('kind:task', 'area:daemon'), blockedBy: { nodes: [] } }],
+      sessions: [working('session_a', 'task-9')],
+      taken: { [STUCK]: '2026-09-05T00:30:00Z' },
+    };
+
+    expect(moves(board)).toEqual(['NOTE `unstick` は #9 と資源を取り合うので立てない']);
   });
 
   // ## スメルを拾う係（4.4）

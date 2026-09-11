@@ -25,8 +25,8 @@ export interface AnalysisDirs {
 export function readBoard(deps: ReadDeps): Record<string, unknown> | undefined;
 
 /**
- * さかのぼるマージ済みPRの幅（時間）。スメルを拾う係が読む窓と同じで、係の間隔より広い
- * （`.claude/board-design.md` 4.4.2）。
+ * さかのぼるマージ済みPRの幅（時間）。後片付けが追える幅であり、スメルを拾う係が読む窓でもある
+ * （係の間隔より広い。`.claude/board-design.md` 4.4.2）。
  */
 export const MERGED_WINDOW_HOURS: number;
 
