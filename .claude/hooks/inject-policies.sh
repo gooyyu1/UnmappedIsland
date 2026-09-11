@@ -27,7 +27,7 @@ context=""
 if [ -f "$POLICIES" ]; then
   context+="過去のセッションで記録した、ユーザーの価値観。A・Bどちらもあり得る場面ではこれに従い、訊き直さない。"
   context+=$'\n\n'
-  context+="$(cat "$POLICIES")"
+  context+="$(<"$POLICIES")"
   context+=$'\n\n'
 fi
 
@@ -45,7 +45,13 @@ fi
 
 if [ -d "$DECISIONS" ]; then
   # 直下の .md だけを数える。archive/ に在るのは棚卸し済み。
-  pending=$(find "$DECISIONS" -maxdepth 1 -name '*.md' -type f | wc -l | tr -d '[:space:]')
+  # `-f` は、1件も無くて展開されなかったパターン自身と、`*.md` という名のディレクトリを弾く。
+  pending=0
+  for entry in "$DECISIONS"/*.md; do
+    if [ -f "$entry" ]; then
+      pending=$((pending + 1))
+    fi
+  done
   if [ "$pending" -ge "$DECISIONS_THRESHOLD" ]; then
     context+=$'\n'
     context+="棚卸ししていない判断の履歴が $pending 件ある。ユーザーと会話できるセッションなら、"
