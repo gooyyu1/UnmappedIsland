@@ -174,7 +174,8 @@ object_defs:
       # 据え付けの光源も効くので、焚き火のそばなら夜でもはげる。
       #
       # **要るのは握りの刃**（handheld_blade、tools.yaml）——実の丸みへ刃を沿わせて繊維を起こす
-      # 手つきなので、石斧では剥げない。**割る側の操作（下のsplit・pry_open）とは道具が違う。**
+      # 手つきなので、石斧では剥げない。**割る側の操作（husked_coconutのpry_open、
+      # drained_green_coconutのsplit）とは道具が違う。**
       husk:
         trigger: {drag: {tag: handheld_blade}}
         conditions:
