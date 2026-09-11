@@ -1,14 +1,17 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { promptBody } from '../../scripts/agent/prompt-body.mjs';
 import { declaresWholeDocument, WHOLE_DOCUMENT_CONFIRMED } from '../../scripts/docStatus.mjs';
 import { githubSlugs } from '../../scripts/githubSlugs.mjs';
+import { linesOutsideFence } from '../../scripts/markdownFences.mjs';
 
 /**
  * ドキュメントの参照が実在の対象へ解決するかの検査（docs/DocumentStyle.md 5節）。
  *
- * **見るのは `docs/` だけではない。** `.claude/**` は互いを節名で引き合っており、そちらの節を畳んだ
- * ときに嘘になる。指し先も `docs/` の外（`CLAUDE.md`・`.claude/**`）まで広げてある。
+ * **見るのは `docs/` だけではない。** `.claude/**` は互いを節名でもリンクでも引き合っており、そちらの
+ * 節やファイルを畳んだときに嘘になる。走査する側（{@link REF_FILES}・{@link LINK_CHECKED_FILES}）も
+ * 指し先（{@link REF_TARGETS}）も `docs/` の外まで広げてある。
  *
  * - Markdownリンク（ファイル・アンカー）が実在すること
  * - コード・YAML・ドキュメント中の「Foo.md N節」「Foo.md 〇〇節」が実在の節を指すこと
@@ -81,6 +84,14 @@ const PROVISIONAL_WORD = /目安|仮置き|仮決め|まだ決め|未定(?!義)|
 /** 「いつか実装したいもの」の実体の一覧（DocumentStyle.md 4.1節）。 */
 const SOMEDAY_DOC = join('docs', 'Someday.md');
 
+/**
+ * 判断の履歴か。**当時の発言と当時の文脈を原文のまま残す場所**なので、指し先が消えても直さない
+ * ——検査する側からは外す（指し先の候補としては生きている）。
+ */
+function isDecisionRecord(rel: string): boolean {
+  return rel.startsWith(join('.claude', 'decisions'));
+}
+
 /** 参照を検査する対象。ドキュメント自身と、節番号でドキュメントを指すコード・データ。 */
 const REF_FILES = [
   ...DOC_FILES,
@@ -93,8 +104,7 @@ const REF_FILES = [
 ].filter(
   (rel) =>
     !rel.startsWith(join('tests', 'docs')) && // 本テスト自身の例・正規表現は対象外
-    // 判断の履歴は、当時の発言と当時の文脈を原文のまま残す場所。後から直すものではない。
-    !rel.startsWith(join('.claude', 'decisions')),
+    !isDecisionRecord(rel),
 );
 
 /**
@@ -107,17 +117,18 @@ const REF_FILES = [
  * と同じ理由）。**参照は逆で、フェンスの中の `Foo.md N節` もリンクも実在の対象を指している**ので、
  * 原文を読む。書式の例示は囲みではなく、指し先として読めない書き方で外す（{@link isPlaceholder}）。
  *
- * **改行を割るのはここだけで、`\r` は行に残さない。** 作業ツリーがCRLFのとき、行末の `\r` は
- * `.` にも `$` にも一致しないので、行末を見る判定が**全部**空振りする（issue #867）。
+ * **例外はひな形（`.claude/*-prompt.md`）で、そこの囲みは例示ではなく渡す本体**——中の見出しは
+ * その文書の節なので、別に拾う（{@link namedSectionsOf}）。
+ *
+ * **どの行がフェンスの外かを決めるのは [`markdownFences.mjs`](../../scripts/markdownFences.mjs)**
+ * ——確定度の表を出す側と同じ1つ。ここが足すのは、インラインコードを除いた `text` だけ。
  */
 function textLines(markdown: string): { line: number; text: string; raw: string }[] {
-  const kept: { line: number; text: string; raw: string }[] = [];
-  let inFence = false;
-  markdown.split(/\r?\n/).forEach((raw, index) => {
-    if (/^\s*```/.test(raw)) inFence = !inFence;
-    else if (!inFence) kept.push({ line: index + 1, text: raw.replace(/`[^`]*`/g, ''), raw });
-  });
-  return kept;
+  return linesOutsideFence(markdown).map(({ line, raw }) => ({
+    line,
+    text: raw.replace(/`[^`]*`/g, ''),
+    raw,
+  }));
 }
 
 /** インラインコード・コードフェンスを除いた本文。印を探すのはここ（{@link textLines}）。 */
@@ -202,7 +213,45 @@ const docByPath = new Map(DOC_FILES.map((rel) => [rel, read(rel)]));
  */
 const REF_TARGETS = [...DOC_FILES, 'CLAUDE.md', ...listFiles('.claude', ['.md'])];
 
-const headingsByPath = new Map(REF_TARGETS.map((rel) => [rel, headingsOf(read(rel))]));
+/**
+ * Markdownリンク（ファイル・アンカー）を検査する対象。**指し先の候補（{@link REF_TARGETS}）から
+ * 導く**——リンクは `docs/` の中だけで閉じておらず、`.claude/**` は互いを相対リンクで引いている。
+ *
+ * 走査する側と指し先を1つの集合から出すのは、**片側にしか居ない文書を作らない**ため。走査だけの
+ * 文書を足すと、そこの `#見出し` は指し先の一覧に無いので誤って赤くなる。
+ *
+ * コード（`.ts`・`.mjs`・`.sh`）は入らない。あちらにも**本物のリンクは在る**が、正規表現
+ * （`['"]([^'"]+)['"]`）や画面へ出す書式の例示と字面で見分けられないので、見分けの仕組みが要る。
+ */
+const LINK_CHECKED_FILES = REF_TARGETS.filter((rel) => !isDecisionRecord(rel));
+
+/** ひな形。セッションへ渡す本体を囲みに入れて持つ（`scripts/agent/prompt-body.mjs`）。 */
+function isPromptTemplate(rel: string): boolean {
+  return rel.startsWith(`.claude${sep}`) && rel.endsWith('-prompt.md');
+}
+
+/**
+ * その文書が持つ、**名前・番号で引ける節**の見出し。
+ *
+ * ひな形は囲みの中が本体なので、そこの見出しも節として引ける。取り出しは渡す側と同じ1つを呼ぶ
+ * （`scripts/agent/prompt-body.mjs`）——別に持つと、**渡る本文と、節を引ける範囲がずれる。**
+ * 本体の中のさらなる囲みは今までどおり例示で、{@link headingsOf} が落とす。
+ */
+function namedSectionsOf(rel: string, markdown: string): string[] {
+  const headings = headingsOf(markdown);
+  if (!isPromptTemplate(rel)) return headings;
+  return [...headings, ...headingsOf(promptBody(markdown) ?? '')];
+}
+
+/**
+ * 公開の頁がIDを振る見出し。アンカーの照合はこちらだけを見る——**囲みの中の見出しは頁では
+ * コードのまま**なので、節として引けてもアンカーは無い。混ぜると、開けないリンクが緑で通る。
+ */
+const anchorHeadingsByPath = new Map(REF_TARGETS.map((rel) => [rel, headingsOf(read(rel))]));
+
+const namedSectionsByPath = new Map(
+  REF_TARGETS.map((rel) => [rel, namedSectionsOf(rel, read(rel))]),
+);
 
 /** `【確定】` の付いた節（DocumentStyle.md 6.1節の4条件を課される対象）。 */
 const confirmedSections = [...docByPath].flatMap(([doc, text]) =>
@@ -228,7 +277,7 @@ for (const rel of REF_TARGETS) {
 
 /** その文書が番号 `num` の節を持つか。 */
 function hasNumberedSection(docRel: string, num: string): boolean {
-  return (headingsByPath.get(docRel) ?? []).some((h) => {
+  return (namedSectionsByPath.get(docRel) ?? []).some((h) => {
     const match = /^(\d+(?:\.\d+)*)[.\s]/.exec(h);
     return match !== null && match[1] === num;
   });
@@ -258,7 +307,7 @@ function brokenLinkAnchorsIn(rel: string, source: string): string[] {
       if (!file.endsWith('.md')) continue; // HTML等のアンカーは対象外
       targetRel = resolve(ROOT, dirname(rel), file).slice(ROOT.length + 1);
     }
-    const headings = headingsByPath.get(targetRel);
+    const headings = anchorHeadingsByPath.get(targetRel);
     if (headings === undefined || !slugsOf(headings).has(decodeURIComponent(anchor))) {
       broken.push(`${rel}: ${file}#${anchor}`);
     }
@@ -339,7 +388,7 @@ function normalizeName(name: string): string {
 
 /** その文書が、名前 `name`（`normalizeName` 済み）を含む見出しを持つか。 */
 function hasNamedSection(docRel: string, name: string): boolean {
-  return (headingsByPath.get(docRel) ?? []).some((h) => normalizeName(h).includes(name));
+  return (namedSectionsByPath.get(docRel) ?? []).some((h) => normalizeName(h).includes(name));
 }
 
 /**
@@ -373,12 +422,12 @@ function unimplementedHeadingLines(): string[] {
 
 describe('ドキュメントの参照', () => {
   it('Markdownリンクの先のファイルが存在する', () => {
-    const broken = [...docByPath].flatMap(([rel, text]) => brokenLinkFilesIn(rel, text));
+    const broken = LINK_CHECKED_FILES.flatMap((rel) => brokenLinkFilesIn(rel, read(rel)));
     expect(broken, `リンク切れ:\n${broken.join('\n')}`).toEqual([]);
   });
 
   it('Markdownリンクのアンカーが、リンク先の見出しに解決する', () => {
-    const broken = [...docByPath].flatMap(([rel, text]) => brokenLinkAnchorsIn(rel, text));
+    const broken = LINK_CHECKED_FILES.flatMap((rel) => brokenLinkAnchorsIn(rel, read(rel)));
     expect(broken, `アンカー切れ:\n${broken.join('\n')}`).toEqual([]);
   });
 
@@ -547,7 +596,7 @@ describe('ドキュメントの参照', () => {
     expect(brokenLinkFilesIn(probe, fenced('[表示名](./NoSuchFile.md)'))).toHaveLength(1);
     expect(brokenLinkFilesIn(probe, fenced('[表示名](./DocumentStyle.md)'))).toHaveLength(0);
     expect(brokenLinkAnchorsIn(probe, fenced('[表示名](#no-such-anchor)'))).toHaveLength(1);
-    const anchor = githubSlugs(headingsByPath.get(probe) ?? [])[0];
+    const anchor = githubSlugs(anchorHeadingsByPath.get(probe) ?? [])[0];
     expect(brokenLinkAnchorsIn(probe, fenced(`[表示名](#${anchor})`))).toHaveLength(0);
   });
 
@@ -562,6 +611,46 @@ describe('ドキュメントの参照', () => {
     expect(brokenNumberedRefsIn(probe, '`GameElementDefinition.md 999節`')).toHaveLength(1);
     // 節の参照に `<...>` は効かない（リンクと同じ形で書けると読まれないよう、ここで固定する）。
     expect(brokenNumberedRefsIn(probe, '<GameElementDefinition.md> 999節')).toHaveLength(1);
+  });
+
+  it('ひな形の囲みの中の見出しが、その文書の節として引ける', () => {
+    // ひな形は渡す本体を囲みに入れて持つので、囲みを落として拾うと**題名のほかに節が1つも無い
+    // 文書**になり、節名で指した記述が必ず赤くなる（issue #1845）。本体の中の囲みは今までどおり
+    // 例示なので、そこの見出しは拾わない。
+    const template = ['# 題名', '````', '## 本体の節', '```', '## 例の中の節', '```', '````'];
+    const rel = join('.claude', 'probe-prompt.md');
+
+    expect(namedSectionsOf(rel, template.join('\n'))).toEqual(['題名', '本体の節']);
+    // 本体を取り出す側も `\r` を残さない（issue #867。残ると囲みの綴りと一致しなくなる）。
+    expect(namedSectionsOf(rel, template.join('\r\n'))).toEqual(['題名', '本体の節']);
+    // ひな形でない文書では、囲みの中は今までどおり例示のまま。
+    expect(namedSectionsOf(join('docs', 'DocumentStyle.md'), template.join('\n'))).toEqual(['題名']);
+  });
+
+  it('ひな形の囲みの中から、実際に節を拾えている', () => {
+    // 拾えていない状態は、どの参照も節名で指していない状態と同じ緑になる。
+    const gained = REF_TARGETS.filter(
+      (rel) => (namedSectionsByPath.get(rel) ?? []).length > (anchorHeadingsByPath.get(rel) ?? []).length,
+    );
+
+    expect(gained.every(isPromptTemplate)).toBe(true);
+    expect(gained.length).toBeGreaterThan(0);
+  });
+
+  it('囲みの中の見出しは、アンカーの照合には入らない', () => {
+    // 頁ではコードのままなのでIDが振られない。節として引けることを理由に混ぜると、**開けない
+    // リンクが緑で通る。**
+    const insideOf = (rel: string): string[] => headingsOf(promptBody(read(rel)) ?? '');
+    const probe = REF_TARGETS.find(
+      (rel) => isPromptTemplate(rel) && insideOf(rel).length > 0,
+    ) as string;
+    const [anchor] = githubSlugs(insideOf(probe));
+
+    // 拾えていないと、下は「アンカーが無い」ではなく「見出しが無い」で1件になる。
+    expect(anchor).toBeTypeOf('string');
+    expect(brokenLinkAnchorsIn(probe, `[表示名](${probe.split(sep).pop()}#${anchor})`)).toHaveLength(
+      1,
+    );
   });
 
   it('印を探す本文は、コードフェンスの中を落とす（規約が書式を例示する）', () => {

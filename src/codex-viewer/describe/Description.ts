@@ -11,7 +11,7 @@ import type {
  * 定義（conditions・passives・active効果など）が自分自身を書き表した説明の断片。
  *
  * 識別子への参照を地の文と分けて持つのは、**表示側が識別子をどう見せるかを選べるようにする**ため。
- * 表示名（[`Localization`](../locale/Localization.ts)）へ差し替える、リンクを張る、識別子のまま
+ * 表示名（[`Localization`](../../locale/Localization.ts)）へ差し替える、リンクを張る、識別子のまま
  * 出す——どれを採るかは読み手（ゲーム画面かデータベースビューアか）によって違う。
  */
 export type DescriptionToken =

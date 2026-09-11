@@ -4,7 +4,7 @@
 #   bash scripts/agent/push-screenshot.sh <画像ファイル> <名前>
 #   => https://raw.githubusercontent.com/gooyyu1/UnmappedIsland/screenshots/<枝>/<名前>.png
 #
-# 出力は1行。返ってきたURLをそのまま `![<名前>](URL)` の形でPR本文へ書く。
+# 出力は1行。返ってきたURLをそのまま `![<名前>](<URL>)` の形でPR本文へ書く。
 #
 # ## なぜ専用のブランチが要るのか
 #

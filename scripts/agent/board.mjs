@@ -86,6 +86,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { PATROL, busySession, cycleHours } from './board-move.mjs';
+import { ISSUE_CAP } from './board-read.mjs';
 import { liveSessions } from './live-sessions.mjs';
 import { gh as runGh, runBash } from './spawn.mjs';
 
@@ -133,13 +134,19 @@ function survey({ gh, sessions, warn }) {
     '--state',
     'open',
     '--limit',
-    '100',
+    String(ISSUE_CAP),
     '--json',
     'number,title,labels,blockedBy,body',
   ]);
   if (prsRaw === undefined || issuesRaw === undefined) return undefined;
   const prs = JSON.parse(prsRaw);
   const issues = JSON.parse(issuesRaw);
+  // **上限に当たったら言う。** `gh issue list` が並べるのは作成の新しい順なので、切られるのは
+  // **いちばん古い issue**。黙って切ると、担当の居る task も人の手番の1件も「無い」と同じ形で消え、
+  // ここを読む人には**欠けていること自体が見えない**（`board-read.mjs` の `capped` と同じ理由）。
+  if (issues.length >= ISSUE_CAP) {
+    warn(`（開いている issue が上限（${ISSUE_CAP}件）に達した。古い側がこの盤面に出ていない）`);
+  }
 
   // 畳んでいないセッション。ここが「もう投入したか」の主な根拠。**引けなければ空のまま進む**
   // ——投入済みの判定はPRだけになるが、PRと issue は並べられる。

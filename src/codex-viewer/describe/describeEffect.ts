@@ -13,7 +13,7 @@ import type {
   EffectDeclaration,
   EffectReader,
   AddReading,
-  PickCandidateReading,
+  PickReading,
   SetValueReading,
   TransferReading,
   DeclaredNumberReading,
@@ -196,16 +196,16 @@ class EffectDescriber implements EffectReader {
     this.out.write(text('signal '), signalRef(name));
   }
 
-  pick(candidates: readonly PickCandidateReading[]): void {
+  pick(reading: PickReading): void {
     this.out.write(text('pick:'));
     this.out.indented(() => {
-      for (const candidate of candidates) {
+      reading.forEachCandidate((candidate) => {
         this.out.write(text('weight = '), ...declaredNumberTokens(candidate.weight, this.names));
         this.out.indented(() => {
           if (candidate.among !== undefined) this.out.write(...amongTokens(candidate.among, this.names));
           describeEffect(candidate.effect, this.names, this.out);
         });
-      }
+      });
     });
   }
 

@@ -3,7 +3,7 @@ import type {
   ConditionalReading,
   EffectDeclaration,
   EffectReader,
-  PickCandidateReading,
+  PickReading,
   SetValueReading,
   TransferReading,
 } from '../domain/EffectReader';
@@ -209,28 +209,32 @@ class OutcomeReader implements EffectReader {
    * 解けない重みは0として数える。そのぶん配分は歪むので、読み手が気付けるように、工程を組む側が
    * 「確定しない」印を立てる（craftingSteps、CraftingStep.hasUnresolvedReferences）。
    */
-  pick(candidates: readonly PickCandidateReading[]): void {
-    if (candidates.length === 0) return;
+  pick(reading: PickReading): void {
+    const weighted: { readonly nested: EffectReading; readonly weight: number }[] = [];
+    reading.forEachCandidate((candidate) => {
+      const nested = this.readNested(candidate.effect);
+      weighted.push({
+        nested,
+        weight: Math.max(
+          0,
+          resolveDeclaredNumber(candidate.weight, stockedResolverOf(this.resolve, nested)) ?? 0,
+        ),
+      });
+    });
+    if (weighted.length === 0) return;
 
-    const readings = candidates.map((candidate) => this.readNested(candidate.effect));
-    const weights = candidates.map((candidate, index) =>
-      Math.max(
-        0,
-        resolveDeclaredNumber(candidate.weight, stockedResolverOf(this.resolve, readings[index])) ?? 0,
-      ),
-    );
-    const total = weights.reduce((sum, weight) => sum + weight, 0);
     // 消える物・変わる物は分岐をまたいで集める——「どれか1つの分岐でそうなるか」を問うものなので。
-    for (const reading of readings) {
-      this.destroyed.push(...reading.destroyed);
-      this.transformed.push(...reading.transformed);
+    for (const { nested } of weighted) {
+      this.destroyed.push(...nested.destroyed);
+      this.transformed.push(...nested.transformed);
     }
 
+    const total = weighted.reduce((sum, candidate) => sum + candidate.weight, 0);
     if (total <= 0) {
-      this.combine(readings[0].outcomes);
+      this.combine(weighted[0].nested.outcomes);
     } else {
       this.combine(
-        readings.flatMap((reading, index) => scaleOutcomes(reading.outcomes, weights[index] / total)),
+        weighted.flatMap((candidate) => scaleOutcomes(candidate.nested.outcomes, candidate.weight / total)),
       );
     }
   }

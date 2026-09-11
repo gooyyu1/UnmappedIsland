@@ -314,7 +314,7 @@ Claude Code 本体が入れているもので、リポジトリの設定では�
   不備そのものでは止めない**ので、短くてよい。
 - **`## 見た目`** — `src/game/**` か `src/assets/**` を触ったなら、画面の画像か「不要」＋理由の1行。
   撮り方は [`run` skill](.claude/skills/run/SKILL.md)、貼り方は
-  `bash scripts/agent/push-screenshot.sh <画像> <名前>`（返ってきたURLを `![<名前>](URL)` の形で
+  `bash scripts/agent/push-screenshot.sh <画像> <名前>`（返ってきたURLを `![<名前>](<URL>)` の形で
   本文へ）。詳細は [`.claude/parallel-work.md`](.claude/parallel-work.md)「見た目が変わるPRには、
   画面を貼らせる」。
 
