@@ -77,6 +77,9 @@
 - `kind:` のラベルは付けないでください（分類するのは棚卸しです。`.claude/board-design.md` 2.17.1）。
 - **`origin:agent` は起票のときに一緒に渡してください**（`.claude/parallel-work.md`「自分で立てた
   issue には `origin:agent` を付ける」）。
+  **向かう先（`goal:`）も一緒に渡してください**——盤面が配る順と、発掘係を立てるかを
+  この印で決めます（`.claude/board-design.md` 2.18.1）。この係が立てるものは仕組みを整える
+  ためのものなので `goal:upkeep` です。
 - **本文には、出どころの回（`.claude/analysis/<日付>.md`）を並べてください。** 一次の記録が根拠なので、
   読んだ人がそこへ戻れる形にします。
 - issue の型は `.claude/parallel-work.md` 3節。

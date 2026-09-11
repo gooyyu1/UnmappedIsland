@@ -760,14 +760,20 @@ describe('board-move.mjs', () => {
     expect(moves({ issues: [upkeep(9), upkeep(20), game(30)] })).toEqual(['TASK 30', 'TASK 9', 'TASK 20']);
   });
 
-  // **`急ぎ` は向かう先より強い**（2.18 の「効き目は配る順だけ」を、この軸の上でも保つ）。
+  // **`急ぎ` は向かう先より強い**（2.18 の「効き目は配る順だけ」を、この軸の上でも保つ）。盤面
+  // そのものが止まる整備は、これで越える。
   it('急ぎ の付いた goal:upkeep は、goal:game より先に投入する', () => {
-    const rush = { number: 40, ...label('kind:task', 'origin:agent', '急ぎ'), blockedBy: { nodes: [] } };
+    const rush = {
+      number: 40,
+      ...label('kind:task', 'origin:agent', 'goal:upkeep', '急ぎ'),
+      blockedBy: { nodes: [] },
+    };
     expect(moves({ issues: [game(9), rush] })).toEqual(['TASK 40', 'TASK 9']);
   });
 
-  // 印が無いときの既定（2.18.1）。**機械が立てたものは整備、人が立てたものは完成へ近づける仕事。**
-  it('goal: が無ければ、origin:agent の付いた issue は goal:upkeep より後ろに並ばない', () => {
+  // 印が無いときの既定（2.18.1）。**機械が立てたものは整備、人が立てたものは完成へ近づける仕事**
+  // ——どちらも `goal:` を名乗っていないのに、並ぶ順が分かれる。
+  it('goal: がどちらにも無ければ、人が立てた issue が origin:agent より先に出る', () => {
     const byAgent = { number: 9, ...label('kind:task', 'origin:agent'), blockedBy: { nodes: [] } };
     const byHuman = { number: 30, ...label('kind:task'), blockedBy: { nodes: [] } };
     expect(moves({ issues: [byAgent, byHuman] })).toEqual(['TASK 30', 'TASK 9']);
@@ -1483,20 +1489,12 @@ describe('board-move.mjs', () => {
   // 整備の issue を積んだので、**この係は立てられなくなっていた**——2026-09-11 に配れた46件のうち、
   // 完成の定義へ向かうものは7件で、残る39件が「配れる task が在る」を成立させ続けていた。
   it('配れるのが整備の仕事だけなら、掘り起こす係を立てる', () => {
-    const chores = [1, 2, 3, 4, 5].map((number) => ({
-      number,
-      ...label('kind:task', 'origin:agent', 'goal:upkeep'),
-      blockedBy: { nodes: [] },
-    }));
+    const chores = [1, 2, 3, 4, 5].map(upkeep);
     expect(moves({ issues: chores, taken: DUG_YESTERDAY })).toContain(DIG);
   });
 
   it('配れる goal:game が1件でもあれば、掘り起こす係は立てない', () => {
-    const mixed = [
-      { number: 1, ...label('kind:task', 'origin:agent', 'goal:upkeep'), blockedBy: { nodes: [] } },
-      { number: 2, ...label('kind:task', 'origin:agent', 'goal:game'), blockedBy: { nodes: [] } },
-    ];
-    expect(moves({ issues: mixed, taken: DUG_YESTERDAY })).not.toContain(DIG);
+    expect(moves({ issues: [upkeep(1), game(2)], taken: DUG_YESTERDAY })).not.toContain(DIG);
   });
 
   // 印が無いときの既定（2.18.1）。**名乗らない機械の仕事は整備として読む**ので、付け忘れが
