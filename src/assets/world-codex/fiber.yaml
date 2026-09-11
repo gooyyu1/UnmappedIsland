@@ -114,8 +114,12 @@ object_defs:
       volume: {value: 6000}
     interactions:
       # 葉鞘を1枚ずつ剥ぎ、刃を立てて引き抜いて肉を落とす。残る髄と水はその場に捨てる。
+      #
+      # **要るのは握りの刃**（handheld_blade、tools.yaml）——葉鞘の長さぶん刃を沿わせて引き抜く
+      # 手つきなので、石斧では掻き取れない。**株を断つ上のfellとは道具が違う**——あちらは刃を根元へ
+      # 入れるだけなので斧でも通る。
       strip:
-        trigger: {drag: {tag: cutting_tool}}
+        trigger: {drag: {tag: handheld_blade}}
         # 刃の角度を目で見ながら送る手元の作業（docs/engine/IlluminationSystem.md 5節）。
         # 据え付けの光源も効くので、焚き火のそばなら夜でも進められる。
         conditions:

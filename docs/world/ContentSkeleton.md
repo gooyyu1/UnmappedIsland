@@ -96,7 +96,8 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 **刃物と火は仕組みの上では本物の前提ですが、プレイヤーが追う目的としては置きません。**
 
-前提としては外せません——水の経路はどれも `cutting_tool` を要求し（[`stats/balance.yaml`](../../stats/balance.yaml)
+前提としては外せません——水の経路はどれも刃物を要求し（`cutting_tool`、あるいはその一部で柄に固定
+されていない刃だけを指す `handheld_blade`。[`stats/balance.yaml`](../../stats/balance.yaml)
 の `chain_routes` の `property: hydration`）、タロイモもヤシガニも火が要ります（[`Animals.md`](./Animals.md) 1節）。外すと組み立てが
 崩れます。
 

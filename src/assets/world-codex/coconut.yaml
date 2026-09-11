@@ -172,8 +172,11 @@ object_defs:
     interactions:
       # 厚い繊維を刃で起こしては引き剥がす手元の作業（docs/engine/IlluminationSystem.md 5節）。
       # 据え付けの光源も効くので、焚き火のそばなら夜でもはげる。
+      #
+      # **要るのは握りの刃**（handheld_blade、tools.yaml）——実の丸みへ刃を沿わせて繊維を起こす
+      # 手つきなので、石斧では剥げない。**割る側の操作（下のsplit・pry_open）とは道具が違う。**
       husk:
-        trigger: {drag: {tag: cutting_tool}}
+        trigger: {drag: {tag: handheld_blade}}
         conditions:
           - reason: too_dark
             subject: agent
@@ -202,7 +205,7 @@ object_defs:
     interactions:
       # 水に漬けて柔らかくし、石で叩いて繊維を解す（コイア）。**植物繊維の2つ目の入口**で、
       # 違うのは道具ではなく採れる土地——バショウ属の草（fiber.yaml）が生えない島でも、ヤシの実さえ
-      # あれば繊維へ届く。**刃物の段は飛ばない**（皮を出すのは上のhuskで、そこがcutting_toolを要求する）。
+      # あれば繊維へ届く。**刃物の段は飛ばない**（皮を出すのは上のhuskで、そこが握りの刃を要求する）。
       #
       # 漬けておく時間はこの1工程へ畳んである。掻き取り（30分）より長いのはそのぶん。600gの皮から
       # 繊維2束（120g）で、残りは叩き落とす髄。
@@ -251,9 +254,10 @@ object_defs:
       volume: {value: 900}
     interactions:
       # 殻を割らないよう刃を内側の丸みに沿わせて送る手元の作業（docs/engine/IlluminationSystem.md
-      # 5節）。掻き方が雑だと器になる殻を損なう。
+      # 5節）。掻き方が雑だと器になる殻を損なう。**沿わせて送る以上、要るのは握りの刃**
+      # （handheld_blade、tools.yaml）——石斧の頭部は椀の内側へ寝かせられない。
       scrape:
-        trigger: {drag: {tag: cutting_tool}}
+        trigger: {drag: {tag: handheld_blade}}
         conditions:
           - reason: too_dark
             subject: agent
