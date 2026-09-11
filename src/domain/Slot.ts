@@ -10,7 +10,7 @@ import type { PropertyGlobalId } from './GlobalId';
 /**
  * 1つのWorldObjectが持つ、1つのスロットの実行時状態。中身の並べ方はCellLayoutが持ち、こちらは
  * **このスロットが何を受け入れるか**を答える。正の情報源はこちら側（親のスロット配列）であり、
- * 子側のWorldObject.parentは逆引き用のキャッシュ（7.1節）。
+ * 子側のWorldObject.parentは逆引き用のキャッシュ（SlotSystem.md 1節）。
  *
  * 中身の追加・削除はWorldObjectのスロット移動系経由でのみ行う（親子の整合性を1箇所でのみ保証するため）。
  */
@@ -48,7 +48,7 @@ export class Slot {
 
   /**
    * この候補オブジェクトを受け入れない理由（受け入れるならundefined）。見るのは枠の型・枠の空き・
-   * capacity（move_to_slot、7.1〜7.3節）と、身につける枠なら装備の排他（7.5節）。
+   * capacityと、身につける枠なら装備の排他（重ならない問いへの分け方はSlotSystem.md 2節）。
    */
   rejectionFor(candidate: WorldObject): string | undefined {
     const engine = this.owner.session.codex.vocabulary.engine;

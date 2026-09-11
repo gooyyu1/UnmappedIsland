@@ -972,6 +972,46 @@ object_defs:
     ).toEqual(['type_c4', 'type_a5', 'type_d4', 'type_b5']);
   });
 
+  it('fixedPositions+same_slotは、両隣が空いていれば右を選ぶ', () => {
+    // 「_ A _」→ Aから(destroyなしで)Cが生まれる → 「_ A C」（左も空いているが右が先）
+    const yaml = `
+object_defs:
+  hand_owner9:
+    slots:
+      hand:
+        cell_count: 3
+  type_c9: {}
+  type_a9:
+    props:
+      spawn_c:
+        value: 1
+        range: {min: 0, max: 2147483647}
+        on_min:
+          spawn:
+            object: type_c9
+            into: same_slot
+`;
+    const codex = load(yaml);
+    const handSlotId = codex.slotNames.getId('hand');
+    const spawnCId = codex.propertyNames.getId('spawn_c');
+    const aTypeId = codex.objectNames.getId('type_a9');
+    const cTypeId = codex.objectNames.getId('type_c9');
+
+    const handInstance = spawn(codex, 'hand_owner9');
+    const aInstance = spawn(codex, 'type_a9');
+    aInstance.moveToSlotOrRejection(handInstance.getSlot(handSlotId));
+
+    const hand9 = handInstance.tryGetSlot(handSlotId)!;
+    // 前提を「_ A _」（A=1）に合わせる。
+    expect(hand9.moveStackTo(stackOfType(hand9, aTypeId)!, { kind: 'cell', index: 1 })).toBe(true);
+
+    aInstance.getProperty(spawnCId).setNumberWithoutEvents(0);
+    handInstance.tick();
+
+    expect(gridIndexOfType(hand9, aTypeId), 'Aの番号は変わらない').toBe(1);
+    expect(gridIndexOfType(hand9, cTypeId), '0番も空いているが、右隣の2番へ入る').toBe(2);
+  });
+
   it('fixedPositionsの左方向シフトは、押し出される複数個のスタックの中身を保つ', () => {
     // 押し出される型がスタック（同種複数個）であっても、その中身がバラけたり
     // 個数が変化したりしないことを確認する。

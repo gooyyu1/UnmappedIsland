@@ -317,10 +317,10 @@ export class WorldObject {
     return undefined;
   }
 
-  // ---- スロット移動（7.1節のmove_to_slot） ----
+  // ---- スロット移動（SlotSystem.md 1節のmove_to_slot） ----
 
   /**
-   * スロット移動を行う唯一の汎用操作（7.1節の`move_to_slot`）。枠の要件・capacityの検証は対象Slot
+   * スロット移動を行う唯一の汎用操作（SlotSystem.md 1節の`move_to_slot`）。枠の要件・capacityの検証は対象Slot
    * 自身（Slot.rejectionFor）に委ねる。
    *
    * atを渡すと枠の中の位置まで指定する（SlotPosition参照）。**指した位置に置けなければ失敗**で、
