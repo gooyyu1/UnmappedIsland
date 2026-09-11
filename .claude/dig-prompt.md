@@ -1,8 +1,13 @@
 # 掘り起こしのプロンプト
 
 **完成の定義に照らして、まだ issue になっていない残りを数える**係の本文。投入するのは盤面
-（[`board-move.mjs`](../scripts/agent/board-move.mjs) の `CYCLES`）で、**配れる `kind:task` が
-無くなった周**に一日一回立つ。渡し方は [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。
+（[`board-move.mjs`](../scripts/agent/board-move.mjs) の `CYCLES`）で、**配れる `goal:game` の
+`kind:task` が無くなった周**に一日一回立つ。渡し方は
+[`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。
+
+**在庫の数では立たない**（[`board-design.md`](board-design.md) 2.18.1）。スメルを拾う係の入力は
+PRが出るたびに生えるので、「配れる task が尽きた」を条件にしていた間、**整備の issue が在庫を
+満たし続け、この係は立てられなくなっていた。**
 
 **「仕事を探せ」とは言わない**（[`docs/ParallelAgents.md`](../docs/ParallelAgents.md)「⛏️ 掘り起こし役
 — 探すのではなく、数える」）。そう言われたエージェントは必ず何か見つけるので、出力の質が観点の質と
@@ -20,7 +25,7 @@
 ---
 
 ````
-[デーモン] 配れる `kind:task` が尽きました。完成の定義に照らして、残りを数えてください。
+[デーモン] 配れる「完成へ近づける仕事」が尽きました。完成の定義に照らして、残りを数えてください。
 
 まず `CLAUDE.md` と `.claude/parallel-work.md` を読んでください。
 
@@ -38,7 +43,13 @@
 
 この係が引くのは**開いている issue**で、既に issue になっているものを数えるために使うので、
 **打ち切らずに全部**引いてください——**引く数を渡さないと30件で切れます。**
-立てるときのラベルは `origin:agent`——ユーザーへ訊く issue には `判断待ち` も足します。
+立てるときのラベルは `origin:agent` と **`goal:game`**——ユーザーへ訊く issue には `判断待ち` も
+足します。
+
+**`goal:game` は、この係が立てるもの全部に付けてください**（[`board-design.md`](board-design.md)
+2.18.1）。**この係は完成の定義からしか issue を作らない**ので、例外はありません。**盤面はこの印で、
+完成へ近づける仕事を整備の仕事より先に配り、この係を立てるかを決めます**——付け忘れた issue は
+整備として読まれ、**後から積まれた整備の在庫の最後尾へ回ります。**
 
 `origin:agent` は、人が立てた issue と見分けるための印です（`.claude/parallel-work.md`「自分で立てた
 issue には `origin:agent` を付ける」）。**起票のときに一緒に渡してください**（後から付け直さずに

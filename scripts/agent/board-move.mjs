@@ -124,6 +124,32 @@ const KIND = 'kind:';
 const URGENT = '急ぎ';
 
 /**
+ * その仕事が**何へ向かうか**の印（2.18.1）。**立てた本人が起票のときに付ける**——向かう先を知って
+ * いるのは立てた側だけで、後から状態を見ても引けない。
+ *
+ * - `goal:game` … 完成の定義を1つ埋める（世界の中身・遊びの仕組み・画面）。
+ * - `goal:upkeep` … 作る仕組みと記述を整える（盤面の道具・参照のずれ・置き場の直し）。
+ */
+const GOAL_GAME = 'goal:game';
+
+/** 出どころの印（`.claude/parallel-work.md`「自分で立てた issue には `origin:agent` を付ける」）。 */
+const BY_AGENT = 'origin:agent';
+
+/**
+ * その issue は**完成へ近づける仕事か**（2.18.1）。
+ *
+ * **印が無いときの既定を、立てた側で分ける。** 機械が立てたもの（`origin:agent`）は**整備**として
+ * 読む——仕組みが自分で作った仕事が、名乗らないだけで前へ進める仕事の前に出られては、この軸を
+ * 置いた意味が無い。人が立てたものは**完成へ近づける仕事**として読む——ラベルはスマホから付かない
+ * うえ、人がわざわざ立てるのは前へ進めたいものだから。
+ */
+const advancesGame = (issue) => {
+  const marks = names(issue);
+  if (marks.includes(GOAL_GAME)) return true;
+  return !marks.some((name) => name.startsWith('goal:')) && !marks.includes(BY_AGENT);
+};
+
+/**
  * PRのコメントに残ったスメルを、拾う側が読んだ印（4.4）。**印を自前の台帳で持たない**——コメントに
  * 付いたリアクションなら、盤面と拾う側が同じものを見る（`.claude/board-design.md` 1節の、状態は
  * 基盤が既に持っているものを使う）。
@@ -234,9 +260,15 @@ const CYCLES = [
     // クラウドで足りる。**リポジトリへは1行も書かない**（`.claude/dig-prompt.md`）。
     env: 'cloud',
     prompt: '.claude/dig-prompt.md',
-    // **配れる `kind:task` が尽きた周がこの係の出番。** 枠（`HELD_TASKS`・`ACTIVE_WORKERS`）や錠で
-    // 待っているだけの周は立てない——待っている task は在るので、掘り起こしても配れる先が増えない。
-    due: (board) => readyTasks(board).length === 0,
+    // **配れる「完成へ近づける仕事」が尽きた周がこの係の出番**（2.18.1）。枠（`HELD_TASKS`・
+    // `ACTIVE_WORKERS`）や錠で待っているだけの周は立てない——待っている task は在るので、掘り
+    // 起こしても配れる先が増えない（`readyTasks` が既にそこを外している）。
+    //
+    // **数えるのは在庫の数ではなく組成。** スメルを拾う係は**PRが出るたびに生える入力**から毎日
+    // issue を作るので、「配れる task が尽きた」で見ると、**仕組みが自分で作った整備の仕事が在庫を
+    // 満たし続けるかぎり、この係は二度と立たない**（実測: 2026-09-11 に配れる46件のうち、完成の
+    // 定義へ向かうものは7件だった）。
+    due: (board) => readyTasks(board).filter(advancesGame).length === 0,
   },
   {
     name: PATROL,
@@ -269,19 +301,26 @@ export function cycleHours(name) {
 }
 
 /**
- * 今すぐ配れる `kind:task`（`TASK` に出す候補）を、**`急ぎ` が先、その中では古い順**に並べる。
+ * 今すぐ配れる `kind:task`（`TASK` に出す候補）を、**`急ぎ` が先、次に完成へ近づける仕事
+ * （`advancesGame`）、その中では古い順**に並べる。
  * 一覧は新しい順に返るので、並べ直さないと古い issue が永久に後回しになる。
  *
- * **掘り起こす係の `due` も同じものを読む**（`CYCLES` の `dig`）——「配れる task が尽きた」は
- * 投入の側が配れると判断する範囲そのもので、条件を2箇所に書くと、片方を絞った周に**配る手も
- * 掘る手も出ない**空白ができる。
+ * **完成へ近づける仕事を古い順より前に置く**のは、**掘り起こしたものが必ず最新だから**（2.18.1）
+ * ——古い順だけで並べると、掘り起こした先から、それより前に積まれた整備の仕事の最後尾へ回る。
+ * 掘る条件だけを直しても、配られるまでに整備の在庫を全部捌くことになり、詰まりは動かない。
+ *
+ * **掘り起こす係の `due` も同じものを読む**（`CYCLES` の `dig`）——配れると判断する範囲は投入の側が
+ * 持つもので、条件を2箇所に書くと、片方を絞った周に**配る手も掘る手も出ない**空白ができる。
+ * **向かう先で絞るのは、この関数が返したものの上**で行う。
  */
 function readyTasks(input) {
   return (
     [...input.issues]
       .sort(
         (a, b) =>
-          Number(names(b).includes(URGENT)) - Number(names(a).includes(URGENT)) || a.number - b.number,
+          Number(names(b).includes(URGENT)) - Number(names(a).includes(URGENT)) ||
+          Number(advancesGame(b)) - Number(advancesGame(a)) ||
+          a.number - b.number,
       )
       .filter((issue) => names(issue).includes(`${KIND}task`))
       // 返ってきたものは、人が `判断待ち` を外すまで配らない（2.15）。**分類は `kind:task` のまま**
