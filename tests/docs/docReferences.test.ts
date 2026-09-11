@@ -93,7 +93,13 @@ const REF_FILES = [
 
 /**
  * コードフェンスの外の各行と、原文での行番号。`text` はインラインコードも除いた本文
- * （例示のリンク・参照・印を検査対象から外す）、`raw` は原文のまま。
+ * （例示の印を検査対象から外す）、`raw` は原文のまま。
+ *
+ * **フェンスを落としてよいのは、文書が何を宣言しているかを見るとき。** 見出し・印と、その印の
+ * 射程に入る本文がこれで、フェンスの中に在る `#` や `【確定】` は規約が見せている書式そのもの
+ * ——拾うと、書式を説明した文書が印を持つ文書になる（`docStatus.mjs` の `declaresWholeDocument`
+ * と同じ理由）。**参照は逆で、フェンスの中の `Foo.md N節` もリンクも実在の対象を指している**ので、
+ * 原文を読む。書式の例示は囲みではなく、指し先として読めない書き方で外す（{@link isPlaceholder}）。
  *
  * **改行を割るのはここだけで、`\r` は行に残さない。** 作業ツリーがCRLFのとき、行末の `\r` は
  * `.` にも `$` にも一致しないので、行末を見る判定が**全部**空振りする（issue #867）。
@@ -108,11 +114,25 @@ function textLines(markdown: string): { line: number; text: string; raw: string 
   return kept;
 }
 
-/** インラインコード・コードフェンスを除いた本文。 */
+/** インラインコード・コードフェンスを除いた本文。印を探すのはここ（{@link textLines}）。 */
 function withoutCode(markdown: string): string {
   return textLines(markdown)
     .map(({ text }) => text)
     .join('\n');
+}
+
+/**
+ * リンクの指し先が、実在のパスではなく**書式そのもの**を見せている箇所か
+ * （docs/DocumentStyle.md 5節。`docStatsCitations` が出どころの書式を `<ファイル>` と書くのと同じ規約）。
+ *
+ * **判定が要るのはリンクだけ。** 節番号・節名の参照は `文書名.md N節` のように書けば
+ * {@link brokenNumberedRefsIn} の `tokenPattern` が最初から拾わない（ファイル名の先頭に
+ * `[A-Za-z]` を要求している）が、リンクの指し先は何が入っていても形が崩れないので、ここで外す。
+ *
+ * **囲み（インラインコード・コードフェンス）は、どちらの側でも逃げ道にならない。**
+ */
+function isPlaceholder(text: string): boolean {
+  return text.includes('<') || text.includes('>');
 }
 
 function read(rel: string): string {
@@ -208,6 +228,101 @@ function hasNumberedSection(docRel: string, num: string): boolean {
   });
 }
 
+/** `source` の中で、指し先のファイルが無いMarkdownリンク。`rel` はリンクを解決する起点。 */
+function brokenLinkFilesIn(rel: string, source: string): string[] {
+  const broken: string[] = [];
+  for (const match of source.matchAll(/\]\(([^)#\s]+)(#[^)\s]*)?\)/g)) {
+    const target = match[1];
+    if (/^[a-z]+:/.test(target)) continue; // http(s):等
+    if (isPlaceholder(target)) continue;
+    if (!existsSync(resolve(ROOT, dirname(rel), target))) broken.push(`${rel}: ${target}`);
+  }
+  return broken;
+}
+
+/** `source` の中で、リンク先の見出しに解決しないアンカー。`rel` はリンクを解決する起点。 */
+function brokenLinkAnchorsIn(rel: string, source: string): string[] {
+  const broken: string[] = [];
+  for (const match of source.matchAll(/\]\(([^)#\s]*)#([^)\s]+)\)/g)) {
+    const [, file, anchor] = match;
+    if (/^[a-z]+:/.test(file)) continue;
+    if (isPlaceholder(file) || isPlaceholder(anchor)) continue;
+    let targetRel = rel;
+    if (file !== '') {
+      if (!file.endsWith('.md')) continue; // HTML等のアンカーは対象外
+      targetRel = resolve(ROOT, dirname(rel), file).slice(ROOT.length + 1);
+    }
+    const headings = headingsByPath.get(targetRel);
+    if (headings === undefined || !slugsOf(headings).has(decodeURIComponent(anchor))) {
+      broken.push(`${rel}: ${file}#${anchor}`);
+    }
+  }
+  return broken;
+}
+
+/**
+ * `source` の中で、実在の節へ解決しない節番号の参照。`rel` は自文書の判定と失敗メッセージに使う。
+ *
+ * 指し先の規約（docs/DocumentStyle.md 5節）:
+ * - 「Foo.md N節」= その文書の節
+ * - 「同 N節」= 同じファイル内で直前に名前を挙げた文書の節
+ * - 裸の「N節」= 読み手の解釈と同じ優先順で、自文書 → 直前に名前を挙げた文書 →
+ *   GameElementDefinition.md（WorldCodex文法の節）のどれか
+ * - 「・」「、」で続く番号の列挙は、直前の参照と同じ文書
+ *
+ * **原文をそのまま読む。** 見るのは `.md` 以外も含む（{@link REF_FILES}）ので、Markdownの囲みで
+ * 削れない——フェンスの中のYAMLコメントも実在の節を指している。
+ */
+function brokenNumberedRefsIn(rel: string, source: string): string[] {
+  const broken: string[] = [];
+  const tokenPattern =
+    /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?|(同\s*)?(\d+(?:\.\d+)*)(?:\s*[〜～]\s*(\d+(?:\.\d+)*))?\s*節/g;
+  const resolves = (base: string, nums: readonly string[]): boolean => {
+    const candidates = docsByBasename.get(base);
+    return (
+      candidates !== undefined &&
+      nums.every((n) => candidates.some((doc) => hasNumberedSection(doc, n)))
+    );
+  };
+  const text = source.replace(/\n[\s*/#-]*/g, ' '); // コメントの継続行をまたぐ参照を繋ぐ
+  const selfBase = docByPath.has(rel) ? (rel.split(sep).pop() as string) : null;
+  let lastNamedBase: string | null = null;
+  let lastNamedEnd = -1;
+  let prevRef: { base: string | null; end: number } | null = null;
+  for (const match of text.matchAll(tokenPattern)) {
+    const whole = match[0];
+    // 捕獲グループは**マッチしなければundefined**になるが、TSの型は string[] と言っている。
+    const [namedBase, dou, num, rangeEnd] = match.slice(1) as (string | undefined)[];
+    if (namedBase !== undefined) {
+      lastNamedBase = namedBase;
+      lastNamedEnd = match.index + whole.length;
+      continue;
+    }
+    if (num === undefined) continue;
+    const nums = rangeEnd === undefined ? [num] : [num, rangeEnd];
+    const gap = text.slice(lastNamedEnd, match.index);
+    const sincePrev = prevRef === null ? null : text.slice(prevRef.end, match.index);
+    // 指し先の候補（先頭から順に試し、最初に解決した文書を採る）
+    let candidates: (string | null)[];
+    if (lastNamedBase !== null && /^[\s`の)）]*$/.test(gap)) {
+      candidates = [lastNamedBase]; // 明示: Foo.md N節（リンク形式の閉じ括弧は挟んでよい）
+    } else if (dou !== undefined) {
+      candidates = [lastNamedBase]; // 同 N節
+    } else if (sincePrev !== null && /^[・、]\s*$/.test(sincePrev)) {
+      candidates = [prevRef!.base]; // 列挙の続き: N節・M節
+    } else {
+      candidates = [selfBase, lastNamedBase, 'GameElementDefinition.md'];
+    }
+    const bases = [...new Set(candidates.filter((c): c is string => c !== null))];
+    const resolved = bases.find((base) => resolves(base, nums)) ?? null;
+    prevRef = { base: resolved, end: match.index + whole.length };
+    if (resolved === null) {
+      broken.push(`${rel}: 「${whole.trim()}」が解決しない（候補: ${bases.join('・')}）`);
+    }
+  }
+  return broken;
+}
+
 /**
  * 見出しと参照を突き合わせる形へ揃える。**引用の記号と強調は、引く側と引かれる側で揃わない**
  * ——見出しの `` `main` `` を、引く側は素の `main` と書く。
@@ -252,93 +367,17 @@ function unimplementedHeadingLines(): string[] {
 
 describe('ドキュメントの参照', () => {
   it('Markdownリンクの先のファイルが存在する', () => {
-    const broken: string[] = [];
-    for (const [rel, text] of docByPath) {
-      for (const match of withoutCode(text).matchAll(/\]\(([^)#\s]+)(#[^)\s]*)?\)/g)) {
-        const target = match[1];
-        if (/^[a-z]+:/.test(target)) continue; // http(s):等
-        const resolved = resolve(ROOT, dirname(rel), target);
-        if (!existsSync(resolved)) broken.push(`${rel}: ${target}`);
-      }
-    }
+    const broken = [...docByPath].flatMap(([rel, text]) => brokenLinkFilesIn(rel, text));
     expect(broken, `リンク切れ:\n${broken.join('\n')}`).toEqual([]);
   });
 
   it('Markdownリンクのアンカーが、リンク先の見出しに解決する', () => {
-    const broken: string[] = [];
-    for (const [rel, text] of docByPath) {
-      for (const match of withoutCode(text).matchAll(/\]\(([^)#\s]*)#([^)\s]+)\)/g)) {
-        const [, file, anchor] = match;
-        if (/^[a-z]+:/.test(file)) continue;
-        let targetRel = rel;
-        if (file !== '') {
-          if (!file.endsWith('.md')) continue; // HTML等のアンカーは対象外
-          targetRel = resolve(ROOT, dirname(rel), file).slice(ROOT.length + 1);
-        }
-        const headings = headingsByPath.get(targetRel);
-        if (headings === undefined || !slugsOf(headings).has(decodeURIComponent(anchor))) {
-          broken.push(`${rel}: ${file}#${anchor}`);
-        }
-      }
-    }
+    const broken = [...docByPath].flatMap(([rel, text]) => brokenLinkAnchorsIn(rel, text));
     expect(broken, `アンカー切れ:\n${broken.join('\n')}`).toEqual([]);
   });
 
   it('節番号の参照が実在の節に解決する（明示・同・裸の全形式）', () => {
-    // 参照の指し先の規約（docs/DocumentStyle.md 5節）:
-    // - 「Foo.md N節」= その文書の節
-    // - 「同 N節」= 同じファイル内で直前に名前を挙げた文書の節
-    // - 裸の「N節」= 読み手の解釈と同じ優先順で、自文書 → 直前に名前を挙げた文書 →
-    //   GameElementDefinition.md（WorldCodex文法の節）のどれか
-    // - 「・」「、」で続く番号の列挙は、直前の参照と同じ文書
-    const broken: string[] = [];
-    const tokenPattern =
-      /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?|(同\s*)?(\d+(?:\.\d+)*)(?:\s*[〜～]\s*(\d+(?:\.\d+)*))?\s*節/g;
-    const resolves = (base: string, nums: readonly string[]): boolean => {
-      const candidates = docsByBasename.get(base);
-      return (
-        candidates !== undefined &&
-        nums.every((n) => candidates.some((doc) => hasNumberedSection(doc, n)))
-      );
-    };
-    for (const rel of REF_FILES) {
-      const text = read(rel).replace(/\n[\s*/#-]*/g, ' '); // コメントの継続行をまたぐ参照を繋ぐ
-      const selfBase = docByPath.has(rel) ? (rel.split(sep).pop() as string) : null;
-      let lastNamedBase: string | null = null;
-      let lastNamedEnd = -1;
-      let prevRef: { base: string | null; end: number } | null = null;
-      for (const match of text.matchAll(tokenPattern)) {
-        const whole = match[0];
-        // 捕獲グループは**マッチしなければundefined**になるが、TSの型は string[] と言っている。
-        const [namedBase, dou, num, rangeEnd] = match.slice(1) as (string | undefined)[];
-        if (namedBase !== undefined) {
-          lastNamedBase = namedBase;
-          lastNamedEnd = match.index + whole.length;
-          continue;
-        }
-        if (num === undefined) continue;
-        const nums = rangeEnd === undefined ? [num] : [num, rangeEnd];
-        const gap = text.slice(lastNamedEnd, match.index);
-        const sincePrev = prevRef === null ? null : text.slice(prevRef.end, match.index);
-        // 指し先の候補（先頭から順に試し、最初に解決した文書を採る）
-        let candidates: (string | null)[];
-        if (lastNamedBase !== null && /^[\s`の)）]*$/.test(gap)) {
-          candidates = [lastNamedBase]; // 明示: Foo.md N節（リンク形式の閉じ括弧は挟んでよい）
-        } else if (dou !== undefined) {
-          candidates = [lastNamedBase]; // 同 N節
-        } else if (sincePrev !== null && /^[・、]\s*$/.test(sincePrev)) {
-          candidates = [prevRef!.base]; // 列挙の続き: N節・M節
-        } else {
-          candidates = [selfBase, lastNamedBase, 'GameElementDefinition.md'];
-        }
-        const bases = [...new Set(candidates.filter((c): c is string => c !== null))];
-        const resolved = bases.find((base) => resolves(base, nums)) ?? null;
-        prevRef = { base: resolved, end: match.index + whole.length };
-        if (resolved === null) {
-          broken.push(`${rel}: 「${whole.trim()}」が解決しない（候補: ${bases.join('・')}）`);
-        }
-      }
-    }
+    const broken = REF_FILES.flatMap((rel) => brokenNumberedRefsIn(rel, read(rel)));
     expect(broken, `節番号の参照切れ:\n${broken.join('\n')}`).toEqual([]);
   });
 
@@ -489,6 +528,41 @@ describe('ドキュメントの参照', () => {
       found,
       `暫定は既定なので印を付けない（印が多数側に付くと背景になって読めない）:\n${found.join('\n')}`,
     ).toEqual([]);
+  });
+
+  it('参照の照合が、コードフェンスの中の行も見る', () => {
+    // フェンスの中のYAMLコメントは実在の節・ファイルを指している。落とすと、指し先が動いても
+    // 緑のままで、**読み手には本文の参照と見分けが付かない**（issue #1773）。
+    const fenced = (body: string): string => `\`\`\`yaml\n# ${body}\n\`\`\`\n`;
+    const probe = join('docs', 'DocumentStyle.md');
+    // 「解決しない」と「1つも拾えていない」は同じ0件になるので、両向きを見る。
+    expect(brokenNumberedRefsIn(probe, fenced('GameElementDefinition.md 999節'))).toHaveLength(1);
+    expect(brokenNumberedRefsIn(probe, fenced('GameElementDefinition.md 1節'))).toHaveLength(0);
+    expect(brokenLinkFilesIn(probe, fenced('[表示名](./NoSuchFile.md)'))).toHaveLength(1);
+    expect(brokenLinkFilesIn(probe, fenced('[表示名](./DocumentStyle.md)'))).toHaveLength(0);
+    expect(brokenLinkAnchorsIn(probe, fenced('[表示名](#no-such-anchor)'))).toHaveLength(1);
+    const anchor = githubSlugs(headingsByPath.get(probe) ?? [])[0];
+    expect(brokenLinkAnchorsIn(probe, fenced(`[表示名](#${anchor})`))).toHaveLength(0);
+  });
+
+  it('書式の例示は指し先として読めない形で外し、囲みでは外れない（DocumentStyle.md 5節）', () => {
+    const probe = join('docs', 'DocumentStyle.md');
+    // 外れる形。リンクは `isPlaceholder` が、節の参照は `tokenPattern` が拾わないことで外れる。
+    expect(brokenLinkFilesIn(probe, '[<表示名>](<パス>)')).toHaveLength(0);
+    expect(brokenLinkAnchorsIn(probe, '[<表示名>](#<アンカー>)')).toHaveLength(0);
+    expect(brokenNumberedRefsIn(probe, '文書名.md N節')).toHaveLength(0);
+    // 囲みは逃げ道ではない——囲んだだけの参照も、指し先を明示したものとして検査する。
+    expect(brokenLinkFilesIn(probe, '`[表示名](./NoSuchFile.md)`')).toHaveLength(1);
+    expect(brokenNumberedRefsIn(probe, '`GameElementDefinition.md 999節`')).toHaveLength(1);
+    // 節の参照に `<...>` は効かない（リンクと同じ形で書けると読まれないよう、ここで固定する）。
+    expect(brokenNumberedRefsIn(probe, '<GameElementDefinition.md> 999節')).toHaveLength(1);
+  });
+
+  it('印を探す本文は、コードフェンスの中を落とす（規約が書式を例示する）', () => {
+    // 参照と逆の扱い（上）。フェンスの中の `【確定】` は規約が見せている書式そのものなので、
+    // 拾うと書式を説明した文書が印を持つ文書になる。
+    const fenced = '```\n### 節番号 見出し【確定】【未実装: 識別子】\n```\n';
+    expect(withoutCode(fenced)).not.toContain('【');
   });
 
   it('見出しの解析が、CRLFの作業ツリーでも効く', () => {
