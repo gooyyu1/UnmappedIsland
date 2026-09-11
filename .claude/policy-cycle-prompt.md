@@ -31,19 +31,14 @@
 
 ## GitHub を触る道具
 
-**まず `command -v gh` を打ってください。** この係はクラウドで立つので、**入っていないほうが普通
-です。** 無いときは GitHub の MCP で同じことをします。
+**道具は `.claude/github-access.md`「issue を読む・書く」に従ってください。**
 
-| やること | `gh` があるとき | 無いとき |
-| --- | --- | --- |
-| 前の周の issue を探す | `gh issue list --state open --limit 100 --json number,title --search '"価値観の棚卸し: 畳む候補の諾否" in:title'` | `search_issues`（`query: "repo:gooyyu1/UnmappedIsland is:issue is:open \"価値観の棚卸し: 畳む候補の諾否\" in:title"`） |
-| issue を立てる | `gh issue create --title <題> --body-file <本文> --label 判断待ち --label origin:agent` | `issue_write`（`method: "create"`・`title`・`body`・`labels: ["判断待ち", "origin:agent"]`） |
+この係が探すのは、**題が「価値観の棚卸し: 畳む候補の諾否」で始まる open の issue** だけです（下の
+「先に、前の周の issue が残っていないか見る」）。立てるときのラベルは下の「起票する issue」。
 
 `origin:agent` は、人が立てた issue と見分けるための印です（`.claude/parallel-work.md`「自分で立てた
 issue には `origin:agent` を付ける」）。**起票のときに一緒に渡してください**——後から付け直す道は
-ありますが、別の手が要る形にすると、付け忘れた issue が「人が立てた」として数えられます。ラベルの綴りに
-`:` が入っていても、引数が化ける心配はありません。**`--body-file` で渡してください**——本文は
-チェックボックスの一覧で長く、シェルの引数に載せると引用符で壊れます。
+ありますが、別の手が要る形にすると、付け忘れた issue が「人が立てた」として数えられます。
 
 ## 先に、前の周の issue が残っていないか見る
 
@@ -85,8 +80,8 @@ issue には `origin:agent` を付ける」）。**起票のときに一緒に�
 **次の周が前の周の issue を見つけられず、2本目を立てます。** 逆に、人が偶然この綴りで始まる issue を
 立てて係が黙ることも、この長さなら起きません。
 
-**ラベルは `判断待ち` の1つだけ**（上の表の道具で、立てるときに付けます）。`kind:` は付けないで
-ください（分類するのは棚卸しの係です。`.claude/board-design.md` 2.17.1）。
+**付けるラベルは `判断待ち` と、上の `origin:agent`**——どちらも立てるときに渡します。`kind:` は
+付けないでください（分類するのは棚卸しの係です。`.claude/board-design.md` 2.17.1）。
 
 本文は `.claude/parallel-work.md` 3節の**タスク issue の型**に従います（`## 担当`・`## 完了の条件`
 は必ず置く）。**この型で書くのは、チェックが埋まった後そのまま配られるから**です——型を外すと、

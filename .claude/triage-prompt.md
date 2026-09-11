@@ -24,30 +24,17 @@
 
 ## GitHub を触る道具
 
-**まず `command -v gh` を打ってください。** この係はクラウドで立つので、**入っていないほうが普通
-です。** 無いときは GitHub の MCP で同じことをします。
+**道具は `.claude/github-access.md`「issue を読む・書く」に従ってください。**
 
-| やること | `gh` があるとき | 無いとき |
-| --- | --- | --- |
-| 未整理を引く | `gh issue list --state open --limit 100 --json number,title,labels` | `list_issues`（`state: "OPEN"`） |
-| 本文を読む | `gh issue view <番号> --json body` | `issue_read`（`method: "get"`） |
-| 本文を書き換える | `gh issue edit <番号> --body-file <本文>` | `issue_write`（`method: "update"`・`issue_number`・`body`） |
-| ラベルを付ける | `gh issue edit <番号> --add-label kind:task` | `issue_write`（`method: "update"`・`issue_number`・`labels`） |
-| issue を立てる | `gh issue create --title <題> --body-file <本文> --label kind:task --label origin:agent` | `issue_write`（`method: "create"`・`title`・`body`・`labels`） |
-| コメントを置く | `gh issue comment <番号> --body-file <本文>` | `add_issue_comment`（`issue_number`・`body`） |
-
-引いた一覧から `kind:` を持たないものを選ぶのはあなたです。`gh` があるなら次で絞れます。
+引くのは**開いている issue**で、そこから `kind:` を持たないものを選ぶのはあなたです。`gh` があるなら
+次で絞れます。
 
 ```
 gh issue list --state open --limit 100 --json number,title,labels |
   jq -r '.[] | select([.labels[].name] | map(startswith("kind:")) | any | not) | "\(.number)\t\(.title)"'
 ```
 
-**`issue_write` の `labels` には、付け直した後の全部を渡してください。** 足すぶんだけを渡すと、
-既に付いているラベルが落ちます。`gh` の側では、**本文は必ず `--body-file` で渡してください**
-——シェルの引数に載せると引用符で壊れます。
-
-**依存（`blockedBy`）だけは、どちらの側でも自分では触りません。** 頼み方は下の「順序を張る」。
+**依存（`blockedBy`）だけは、どの道具でも自分では触りません。** 頼み方は下の「順序を張る」。
 
 ## やること
 
@@ -118,11 +105,10 @@ gh issue list --state open --limit 100 --json number,title,labels |
 起票のときに名乗るもので、後から見分けられる者は居ません。`origin:agent` を渡すのは (c) で新しく
 立てる子だけで、**起票のときに一緒に**渡します。
 
-打ち方は上の「GitHub を触る道具」。**ラベルの綴りに `:` が入っていても、Windows で化けることは
-ありません**——`kind:task` も `origin:agent` もそのまま通ります（実測 2026-09-06）。
-`MSYS2_ARG_CONV_EXCL='*'` を前に置くのは
-`git show origin/main:.claude/x.md` のような綴りのほうで、あれは `origin\main;.claude\x.md` に
-化けます。`/tmp/...` のような絶対パスも書き換わりますが、行き先は同じなので害はありません。
+打ち方は上の「GitHub を触る道具」。**`:` を含む綴りで身構えるのは
+`git show origin/main:.claude/x.md` のような引数のほう**で、Windows ではあれが
+`origin\main;.claude\x.md` に化けるので `MSYS2_ARG_CONV_EXCL='*'` を前に置きます。`/tmp/...` のような
+絶対パスも書き換わりますが、行き先は同じなので害はありません。
 
 ## 順序を張る
 

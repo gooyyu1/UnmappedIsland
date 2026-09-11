@@ -34,17 +34,11 @@
 
 ## GitHub を触る道具
 
-**まず `command -v gh` を打ってください。** この係はクラウドで立つので、**入っていないほうが普通
-です。** 無いときは GitHub の MCP で同じことをします。
+**道具は `.claude/github-access.md`「issue を読む・書く」に従ってください。**
 
-| やること | `gh` があるとき | 無いとき |
-| --- | --- | --- |
-| 開いている issue を読む | `gh issue list --state open --limit 200 --json number,title,labels` | `list_issues`（`state: "OPEN"`・`fields: ["number","title","labels"]`） |
-| issue を立てる | `gh issue create --title <題> --body-file <本文> --label origin:agent` | `issue_write`（`method: "create"`・`title`・`body`・`labels: ["origin:agent"]`） |
-| 訊く issue を立てる | 上に `--label 判断待ち` を足す | 上の `labels` へ `"判断待ち"` を足す |
-
-**本文は `--body-file` で渡してください**——チェックボックスの一覧は長く、シェルの引数に載せると
-引用符で壊れます。
+この係が引くのは**開いている issue**で、既に issue になっているものを数えるために使うので、
+**打ち切らずに全部**引いてください。立てるときのラベルは `origin:agent`——ユーザーへ訊く issue には
+`判断待ち` も足します。
 
 `origin:agent` は、人が立てた issue と見分けるための印です（`.claude/parallel-work.md`「自分で立てた
 issue には `origin:agent` を付ける」）。**起票のときに一緒に渡してください**（後から付け直さずに
