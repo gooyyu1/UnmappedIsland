@@ -259,9 +259,9 @@ export class WorldCodex {
    *
    * **値をどう見せるかは読み手が決める**ので、ここが答えるのは「この値はシンボルか」だけ。
    */
-  get symbolicProperties(): ReadonlySet<number> {
+  get symbolicProperties(): ReadonlySet<PropertyGlobalId> {
     if (this.symbolicPropertyIds === undefined) {
-      const found = new Set<number>();
+      const found = new Set<PropertyGlobalId>();
       for (const objectDef of this.objects)
         for (const propertyDef of objectDef.enumeratePropertyDefs())
           if (propertyDef.isSymbolic) found.add(propertyDef.globalId);
@@ -270,15 +270,15 @@ export class WorldCodex {
     return this.symbolicPropertyIds;
   }
 
-  private symbolicPropertyIds: ReadonlySet<number> | undefined;
+  private symbolicPropertyIds: ReadonlySet<PropertyGlobalId> | undefined;
 
   /**
    * 型を値に持つ（6.9節）と宣言されたプロパティのグローバルID。読み方はsymbolicPropertiesと同じで、
    * 答えるのは「この値は型か」だけ。
    */
-  get objectDefProperties(): ReadonlySet<number> {
+  get objectDefProperties(): ReadonlySet<PropertyGlobalId> {
     if (this.objectDefPropertyIds === undefined) {
-      const found = new Set<number>();
+      const found = new Set<PropertyGlobalId>();
       for (const objectDef of this.objects)
         for (const propertyDef of objectDef.enumeratePropertyDefs())
           if (propertyDef.isObjectDef) found.add(propertyDef.globalId);
@@ -287,7 +287,7 @@ export class WorldCodex {
     return this.objectDefPropertyIds;
   }
 
-  private objectDefPropertyIds: ReadonlySet<number> | undefined;
+  private objectDefPropertyIds: ReadonlySet<PropertyGlobalId> | undefined;
 
   /**
    * 生成型（3.5節）の素の型。生成型でなければ自分自身。**絵と名前の骨格はここから引く**

@@ -146,7 +146,7 @@ class PassivePropertyWriterFinder implements PassiveReader {
 function writesTo(
   target: ReferenceRoot,
   propertyGlobalId: PropertyGlobalId,
-  wanted: number,
+  wanted: PropertyGlobalId,
   ownedByDeclarer: boolean,
 ): boolean {
   return propertyGlobalId === wanted && (ownedByDeclarer || target !== 'self');

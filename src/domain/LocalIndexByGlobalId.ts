@@ -6,12 +6,11 @@
  *
  * 型引数は引く側のグローバルIDの種類（{@link GlobalId}）。**名前空間ごとに別の表**なので、
  * プロパティの表へスロットのIDを渡すと型で止まる——通してしまうと、別の名前空間で同じ番号を
- * 持つ何かのローカル位置が返り、持っていないはずのものが引ける。
+ * 持つ何かのローカル位置が返り、持っていないはずのものが引ける。`in out`（不変）の理由は
+ * {@link NameRegistry} と同じで、外すと種類の付いた表を素の `number` の表として扱えてしまう。
  */
-export class LocalIndexByGlobalId<Id extends number = number> {
+export class LocalIndexByGlobalId<in out Id extends number = number> {
   static readonly missing = -1;
-
-  static readonly empty = new LocalIndexByGlobalId(0, []);
 
   private readonly globalToLocal: number[];
 

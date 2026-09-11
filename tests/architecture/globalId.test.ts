@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { WorldSession } from '../../src/domain/WorldSession';
+import type { GlobalId } from '../../src/domain/GlobalId';
 
 /**
  * グローバルIDの種類分け（[`GlobalId`](../../src/domain/GlobalId.ts)）が効いていることの検査。
@@ -43,9 +44,14 @@ object_defs:
   });
 
   it('別の名前空間のIDは、プロパティのIDを受ける宣言へ渡せない', () => {
-    // @ts-expect-error スロットのIDはプロパティのIDではない（型で止まる）。どちらも0始まりの
-    //   連番なので、通れば別の名前空間の同じ番号が黙って引かれる。
-    stone.tryGetProperty(contentsSlotId);
-    expect(typeof contentsSlotId).toBe('number');
+    // 印はまだプロパティの名前空間にしか付いていないので、**比べる相手をこの検査が自分で作る**
+    // ——素のnumberとして止まったのでは、名前空間で分かれていることを確かめたことにならない
+    //   （`GlobalId<Namespace>` が Namespace を見なくなっても緑のままになる）。
+    const asSlotId = contentsSlotId as unknown as GlobalId<'slot'>;
+
+    // @ts-expect-error スロットの名前空間のIDは、プロパティのIDではない（型で止まる）。どちらも
+    //   0始まりの連番なので、通れば別の名前空間の同じ番号が黙って引かれる。
+    stone.tryGetProperty(asSlotId);
+    expect(typeof asSlotId).toBe('number');
   });
 });
