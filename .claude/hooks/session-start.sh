@@ -37,9 +37,6 @@ if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ]; then
 fi
 
 # --- 手元の作業ツリー: 共有先が古くないかだけ見る -----------------------------
-# **このフックが bash なのは、node が無ければ黙って降りるため。** 下の突き合わせは JSON を読むので
-# node に任せるしかないが、フック自体を node で書くと node の不在がそのままフックの失敗になり、
-# セッションが始まらない。
 command -v node >/dev/null || exit 0
 [ -f package-lock.json ] || exit 0
 # 自前で持っているなら、そちらが解決されるので共有先は関係ない。
@@ -59,6 +56,7 @@ if [ ! -e "$INSTALLED" ]; then
   exit 0
 fi
 
+# **JSON を読む手が bash に無いので、突き合わせは node に任せる。**
 # `.package-lock.json` は実際に入っている木。プラットフォーム依存の任意依存は入っていなくて
 # 当たり前なので（実測で272件中80件）、`optional`・`os`・`cpu` の付いた宣言は数えない。
 short=$(node -e '

@@ -28,12 +28,14 @@ interface World {
   readonly decisions?: number;
   /** `.claude/decisions/archive/` に置く棚卸し済みの履歴の件数。 */
   readonly archived?: number;
+  /** `.claude/decisions/` の直下に置く、名前がドットで始まる履歴の件数。 */
+  readonly hidden?: number;
 }
 
-function writeDecisions(dir: string, count: number): void {
+function writeDecisions(dir: string, count: number, prefix = '2026-09-05-item-'): void {
   mkdirSync(dir, { recursive: true });
   for (let index = 0; index < count; index += 1) {
-    writeFileSync(join(dir, `2026-09-05-item-${index}.md`), '> 発言。\n', 'utf-8');
+    writeFileSync(join(dir, `${prefix}${index}.md`), '> 発言。\n', 'utf-8');
   }
 }
 
@@ -53,6 +55,9 @@ function run(world: World): string {
     }
     if (world.archived !== undefined) {
       writeDecisions(join(work, '.claude', 'decisions', 'archive'), world.archived);
+    }
+    if (world.hidden !== undefined) {
+      writeDecisions(join(work, '.claude', 'decisions'), world.hidden, '.2026-09-05-hidden-');
     }
 
     return runScript(HOOK, [], {
@@ -109,6 +114,14 @@ describe('inject-policies.sh', () => {
 
     expect(context).toContain(`${THRESHOLD} 件`);
     expect(context).not.toContain('発言。');
+  });
+
+  // 名前がドットで始まっていても履歴。**グロブは既定でそれを拾わない**ので、数え方を変えると
+  // 件数だけが静かに減り、棚卸しの促しが出ないまま溜まり続ける。
+  it('名前がドットで始まる履歴も数える', () => {
+    const context = contextOf({ policies: '## 場面', decisions: THRESHOLD - 1, hidden: 1 });
+
+    expect(context).toContain(`${THRESHOLD} 件`);
   });
 
   it('棚卸し済みの履歴は数えない', () => {

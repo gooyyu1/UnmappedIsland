@@ -44,11 +44,12 @@ if [ -f "$PRINCIPLES" ]; then
 fi
 
 if [ -d "$DECISIONS" ]; then
-  # 直下の .md だけを数える。archive/ に在るのは棚卸し済み。
-  # `-f` は、1件も無くて展開されなかったパターン自身と、`*.md` という名のディレクトリを弾く。
+  # 直下の .md だけを数える。archive/ に在るのは棚卸し済み。**隠しファイルも履歴なので拾い**
+  # （`.*.md`）、実体でないものは数えない——1件も無くて展開されなかったパターン自身・ディレクトリ・
+  # シンボリックリンク。
   pending=0
-  for entry in "$DECISIONS"/*.md; do
-    if [ -f "$entry" ]; then
+  for entry in "$DECISIONS"/*.md "$DECISIONS"/.*.md; do
+    if [ -f "$entry" ] && [ ! -L "$entry" ]; then
       pending=$((pending + 1))
     fi
   done

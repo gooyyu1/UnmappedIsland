@@ -33,6 +33,8 @@ interface World {
   readonly own?: boolean;
   /** `optional`・`os`・`cpu` の付いた宣言（入っていなくて当たり前のもの）。 */
   readonly optional?: readonly string[];
+  /** `git` が本体を辿れない（`--git-common-dir` が失敗する）。 */
+  readonly gitFails?: boolean;
 }
 
 function lock(tree: Tree, optional: readonly string[] = []): string {
@@ -62,7 +64,8 @@ function run(world: World): string {
     }
 
     const git = join(work, 'git');
-    writeFileSync(git, `${STUB_SHEBANG}\nprintf '%s' '${dir}/main/.git'\n`, 'utf-8');
+    const answer = world.gitFails === true ? 'exit 1' : `printf '%s' '${dir}/main/.git'`;
+    writeFileSync(git, `${STUB_SHEBANG}\n${answer}\n`, 'utf-8');
     chmodSync(git, 0o755);
 
     return runScript(HOOK, [], {
@@ -117,6 +120,12 @@ describe('session-start.sh（手元の作業ツリー）', () => {
         optional: ['@rollup/rollup-linux-x64-gnu'],
       }),
     ).toBe('');
+  });
+
+  // **フックが落ちるとセッションが始まらない。** 促すだけの経路なので、本体を辿れなければ何も
+  // 言わずに降りる。`runScript` は非0で終われば投げるので、倒れ方が変わればここが赤くなる。
+  it('本体を辿れなければ、何も言わずに降りる', () => {
+    expect(run({ want: { ajv: '8.20.0' }, have: { ajv: null }, gitFails: true })).toBe('');
   });
 
   it('作業ツリーが自前の node_modules を持っていれば、共有先は見ない', () => {
