@@ -21,33 +21,35 @@
 
 - セル = 1つの `ObjectStack`（同種のまとまり）か、空（null）。**位置 = セルの添字**。
 - `ObjectStack` = 見た目上1単位として積み重なる同種インスタンスのリスト（7.6節）。
-- 親子関係の正の情報源は親側のスロット配列で、子側の `WorldObject.ParentSlot` は逆引きキャッシュ（7.1節）。
-- **枠は自分の持ち主を知っている**（`Slot.Owner`）。受け入れ判定に要る規約プロパティも、断る理由に
+- 親子関係の正の情報源は親側のスロット配列で、子側の `WorldObject.parentSlot` は逆引きキャッシュ（7.1節）。
+- **枠は自分の持ち主を知っている**（`Slot.owner`）。受け入れ判定に要る規約プロパティも、断る理由に
   書く名前も、呼び出し側から渡されずに自分で辿る。
 
-出入りは唯一の汎用操作 `move_to_slot`（`WorldObject.MoveToSlot` → `AttachToSlot`）経由のみ。
+出入りは唯一の汎用操作 `move_to_slot`（`WorldObject.moveToSlotOrRejection` →
+`attachToSlotOrRejection`）経由のみ。
 親子整合・weight 伝播・passive エッジの登録という副作用を1箇所に集約する。
-**枠が受け入れないものを押し込む経路は無い。** 行き場を失った物は `WorldObject.SpillTo` で親、さらに
+**枠が受け入れないものを押し込む経路は無い。** 行き場を失った物は `WorldObject.spillTo` で親、さらに
 その親…と落ちていき、どこにも入らなければ世界から消える（9.4節）。どの段でも枠の宣言はそのまま効く。
 
 出入りの入口は、違いが**位置をどう指すか**だけ（`WorldObject`）。
 
-- `MoveToSlot(slot, at?)` — 位置は任意。省略すると置き場所は枠に任せる。
-- `InsertSameSlot(slot, placement)` — `same_slot` の置き換え専用。`placement` は位置ではなく
+- `moveToSlotOrRejection(slot, at?)` — 位置は任意。省略すると置き場所は枠に任せる。
+- `insertSameSlotOrRejection(slot, placement)` — `same_slot` の置き換え専用。`placement` は位置ではなく
   「origin が居たセルと、そこに同種が残るか」で、どこへ置くかは配置時に決まる（9.4節）。
-- `ReorderInParentSlot(at)` — 今いる枠の中での並び替え。**`MoveToSlot` で同じ枠を指すのとは別物**で、
-  付け替えはいったん抜いてから入れるため抜いた時点でセルが詰まり、指した位置の意味がずれる。動かすのも
-  1個ではなくスタック丸ごと。
+- `reorderInParentSlot(at)` — 今いる枠の中での並び替え。**`moveToSlotOrRejection` で同じ枠を指すのとは
+  別物**で、付け替えはいったん抜いてから入れるため抜いた時点でセルが詰まり、指した位置の意味がずれる。
+  動かすのも1個ではなくスタック丸ごと。
 
 **行き先は `Slot` そのもので指す。** 「どのオブジェクトの、どの名前の枠か」を組で渡すと、2つが
-食い違う書き方が作れてしまう。枠を引くのは `WorldObject.TryGetSlot` / `GetSlot`（プロパティと同じ
-try/get の対）で、引いた後は枠だけが行き先になる——世界の変化の記録（`WorldChange.From` / `To`）も、
+食い違う書き方が作れてしまう。枠を引くのは `WorldObject.tryGetSlot` / `getSlot`（プロパティと同じ
+try/get の対）で、引いた後は枠だけが行き先になる——世界の変化の記録（`WorldChange.from` / `to`）も、
 画面がカードを並べる場所（`CardPlace`）も同じ `Slot` を指す。
 
 ## 2. 受け入れ判定: 重ならない問い
 
 スロットは中身を直接持たず、**枠（セル）の並び**を持つ。何が入るかも何個入るかも枠ごとに決まり、
-`Slot.CanAccept` は次を順に検証する。いずれも定義が無ければ無制限。
+`Slot.rejectionFor` は次を検証し、**入らないならその理由を返す**（入るなら `undefined`）。
+いずれも定義が無ければ無制限。
 
 | 制約 | 答える問い | 書く場所 |
 | --- | --- | --- |
@@ -77,8 +79,9 @@ try/get の対）で、引いた後は枠だけが行き先になる——世界
 だけが持つ（理由は [`DesignNotes.md`](./DesignNotes.md)）。
 
 `auto_placement`（7.7節）はここには入らない。「このスロットへこの物を入れられるか」ではなく「エンジンが宛先を
-自分で選ぶ走査に加わるか」を表すため、判定するのは `Slot.CanAccept` ではなく走査する側
-（`ObjectDef.EnumerateAutoPlacementSlotDefs`）。名指しの `move_to_slot` はこの属性を見ない。
+自分で選ぶ走査に加わるか」を表すため、判定するのは `Slot.rejectionFor` ではなく走査する枠を集める側
+（`ObjectDef.placementSlotDefs`——枠がその走査に加わるかは `SlotDef.allows` が答える）。名指しの
+`move_to_slot` はこの属性を見ない。
 
 ## 3. 枠数を決めたスロットと、決めていないスロット
 
@@ -135,17 +138,17 @@ try/get の対）で、引いた後は枠だけが行き先になる——世界
 
 ## 5. スタックの同一性
 
-`ObjectStack` は生成時に seed の `ObjectDef` をスナップショットし、合流判定（`Matches`）はこれとの
+`ObjectStack` は生成時に seed の `ObjectDef` をスナップショットし、合流判定（`canMerge`）はこれとの
 一致を要求する。水入り甕と茶入り甕が別スタックになるのは、中身入りの容器が中身ごとに別の型だから
 （[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 1 節）で、スタック側は型を1つ見るだけでよい。
 
 - スナップショットは生成後不変。`become`（9.9節）でメンバーの型が変わり合致しなくなったとき動くのは
-  **メンバーの側**で、所属スタックの `Restack`（抜いて入れ直し）が「同種は1スタックにまとまる」
+  **メンバーの側**で、今いる枠へ入れ直しを頼む（`Slot.restack`）。これが「同種は1スタックにまとまる」
   不変条件を回復する。
-- 「同種のみが積み重なる」は `ObjectStack.TryInsert` 自身が保証し、呼び出し側の事前確認に
+- 「同種のみが積み重なる」は `ObjectStack.tryInsert` 自身が保証し、呼び出し側の事前確認に
   依存しない。
 - セルの位置を型（`ObjectDef`）で引くことはしない: 位置は常に具体的な `ObjectStack` で特定する
-  （`Slot.IndexOfStack`）。
+  （`Slot.indexOfStack`）。
 
 ## 6. スタック内の並び順（stack_order）
 
@@ -159,7 +162,7 @@ try/get の対）で、引いた後は枠だけが行き先になる——世界
 
 - `set` など tick 毎の `add` 以外の値の変化で「同種は同じ速度で変化する」前提が崩れた場合も再ソート
   しない、という割り切りのままでよいか
-- `Restack` で入れ直されたスタックは元のセル位置を保たない（最初の空きセル/末尾へ入る）。
+- `restack` で入れ直されたスタックは元のセル位置を保たない（最初の空きセル/末尾へ入る）。
   中身の入れ替わった容器の表示位置を保持する必要があるか
 - 手動並び替え（枠数を決めたスロット）と `stack_order` の関係（並び替え対象はスタック単位であり
   スタック内はstack_order順のまま、が現状の挙動）
