@@ -96,6 +96,19 @@ describe('session-start.sh（手元の作業ツリー）', () => {
     expect(run({ want: { ajv: '8.20.0' }, have: { ajv: '6.15.0' } })).toContain('ajv');
   });
 
+  // 名指しは先頭だけ、件数は足りない分を全部。**どちらも同じ一覧から出る**ので、数え方を変えると
+  // 「5件しか足りていない」と読める文が出て、受け取った側は名前の続きを探さなくなる。
+  it('足りない依存は全部を数え、名指しは先頭の5件までにする', () => {
+    const want: Record<string, string> = {};
+    for (let index = 0; index < 7; index += 1) want[`pkg-${index}`] = '1.0.0';
+
+    const out = run({ want, have: {} });
+
+    expect(out).toContain('7 件足りていません');
+    expect(out).toContain('pkg-0 pkg-1 pkg-2 pkg-3 pkg-4');
+    expect(out).not.toContain('pkg-5');
+  });
+
   it('プラットフォーム依存の任意依存は、入っていなくても数えない', () => {
     expect(
       run({

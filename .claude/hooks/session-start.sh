@@ -37,6 +37,9 @@ if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ]; then
 fi
 
 # --- 手元の作業ツリー: 共有先が古くないかだけ見る -----------------------------
+# **このフックが bash なのは、node が無ければ黙って降りるため。** 下の突き合わせは JSON を読むので
+# node に任せるしかないが、フック自体を node で書くと node の不在がそのままフックの失敗になり、
+# セッションが始まらない。
 command -v node >/dev/null || exit 0
 [ -f package-lock.json ] || exit 0
 # 自前で持っているなら、そちらが解決されるので共有先は関係ない。
@@ -73,9 +76,9 @@ process.stdout.write(short.map((key) => key.replace(/^node_modules\//, "")).join
 
 [ -n "$short" ] || exit 0
 
-count=$(wc -w <<<"$short")
+read -r -a missing <<<"$short"
 echo "[session-start] 共有している本体（$MAIN_DIR）の依存が、この作業ツリーの package-lock.json に"
-echo "[session-start] $count 件足りていません: $(cut -d' ' -f1-5 <<<"$short")"
+echo "[session-start] ${#missing[@]} 件足りていません: ${missing[*]:0:5}"
 echo "[session-start] このまま走らせると 'Cannot find module' ではなく、古い版が解決されて一部だけ"
 echo "[session-start] 壊れます。この作業ツリーで 'npm install' を実行してください（本体は次のマージで"
 echo "[session-start] 追いつきます）。"
