@@ -976,9 +976,20 @@ export class WorldObject {
    *
    * rangeイベントが走らせる命令は、処理中に自分自身や兄弟をツリーから切り離しうる。辿っている最中の
    * 出入りを気にしなくてよい根拠はSlot.contents。
+   *
+   * **プロパティは、今この物が持っているものを毎回引き直す。** rangeイベントからbecome（9.9節）が走ると
+   * プロパティは丸ごと作り直されるので、始めに掴んだ配列を回り続けると、作り直された後ろのぶんがその
+   * tickの積分を受け取れない。済んだかどうかを覚えるのがグローバルIDなのは、作り直された同じ名前の
+   * プロパティが値を引き継いでいるから——個体で覚えると、引き継いだ値へもう一度積むことになる。
    */
   tick(): void {
-    for (const property of this.properties) property.tick();
+    const integrated = new Set<PropertyGlobalId>();
+    for (;;) {
+      const property = this.properties.find((p) => !integrated.has(p.def.globalId));
+      if (property === undefined) break;
+      integrated.add(property.def.globalId);
+      property.tick();
+    }
     // 輸送は、この物のプロパティが積分され切ってから走らせる（8.4節）。
     this.def.passives.applyTickTransfers(this);
     // 抵抗の判定も積分の後（7.13節）。時間で動くのは実体値だけでなく、寄与の掛かり方も同じtickで

@@ -156,9 +156,8 @@ object_defs:
   });
 
   /**
-   * 積まれるのが`sand`より1 tick少ないのは、**becomeを起こしたtickのぶんが落ちるため**——積分は
-   * 差し替え前のプロパティの配列を回り続けるので、宣言順で`become`より後ろにある`heat`は、新しい
-   * プロパティのほうが積分されないまま次のtickへ行く。ここで見るのは載り直したかどうかで、そちらは別。
+   * 積まれる量は、経過の途中で型が変わらない`sand`と同じ——載り直しが済んでいれば、becomeを起こした
+   * tickのぶんも作り直された側へ積まれる（積分がどちらを回るかはWorldObject.tick）。
    */
   describe('経過の途中でbecomeしても、作り直されたプロパティへ載り直す', () => {
     it('変わったのが宣言元（selfを対象にした宣言）', () => {
@@ -168,10 +167,10 @@ object_defs:
       expect(clay.tryGetAction('harden', createAgent(session))?.tryExecute()).toBe(true);
 
       expect(clay.def.name, '1 tick目の途中で素焼きへ変わっている').not.toBe('clay');
-      expect(heat(clay), '残りの1 tickぶんが、新しいプロパティへ積まれている').toBe(1);
+      expect(heat(clay), '変わったtickのぶんも含めて、新しいプロパティへ積まれている').toBe(2);
 
       session.advanceWorldTime(60);
-      expect(heat(clay), '新しいプロパティからも、経過の終わりに外れている').toBe(1);
+      expect(heat(clay), '新しいプロパティからも、経過の終わりに外れている').toBe(2);
     });
 
     it('変わったのが対象の側（役を対象にした宣言）', () => {
@@ -182,10 +181,10 @@ object_defs:
       expect(kiln.tryGetAction('bake', potter)?.tryExecute()).toBe(true);
 
       expect(potter.def.name, '1 tick目の途中で型が変わっている').not.toBe('potter');
-      expect(heat(potter), '宣言元は変わっていないが、載る先が作り直されている').toBe(1);
+      expect(heat(potter), '宣言元は変わっていないが、載る先が作り直されている').toBe(2);
 
       session.advanceWorldTime(60);
-      expect(heat(potter), '新しいプロパティからも、経過の終わりに外れている').toBe(1);
+      expect(heat(potter), '新しいプロパティからも、経過の終わりに外れている').toBe(2);
     });
 
     /**

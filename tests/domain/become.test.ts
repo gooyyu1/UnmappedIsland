@@ -13,6 +13,9 @@ import { AGENT_YAML, createAgent } from '../support/agent';
 describe('become（同じ個体のまま型を差し替える）', () => {
   const YAML = `
 in_progress_tags: [item]
+traits:
+  burnt:
+    tags: [burnt]
 object_defs:
   ground:
     tags: [location]
@@ -57,6 +60,18 @@ object_defs:
           - requires:
               - {object: stick, count: 2, consume: true}
             duration: 30
+  # 積分の途中で自分の型が変わる熾火。progressが1 tickで上限へ届き、heatはその後ろに宣言してある。
+  ember:
+    props:
+      progress: {value: 0, range: {min: 0, max: 1}, on_max: {become: {state: burnt_ember}}}
+      heat: {value: 0}
+    passives:
+      - add: {self: {progress: 1}}
+      - add: {self: {heat: 1}}
+    variation_axes:
+      state: {of: {tag: burnt}}
+  burnt_ember:
+    traits: [burnt]
   # 作りかけと名前の重なるスロットを持たない完成品。中身は行き場を失う。
   torch:
     tags: [item]
@@ -205,5 +220,26 @@ object_defs:
     wip.becomeAlong(toBase);
 
     expect(items.stacks, '完成品になったので既にある斧と同じ枠へまとまる').toHaveLength(1);
+  });
+
+  /**
+   * 積分はプロパティを宣言順に回る（8.4節）。becomeはプロパティを作り直すので、回る先が差し替え前の
+   * 顔ぶれのままだと、`become`を起こしたものより後ろのぶんがそのtickから落ちる。
+   */
+  it('積分の途中で型が変わっても、宣言順で後ろのプロパティはそのtickぶんを受け取る', () => {
+    const ember = session.createObject(idOf('ember'));
+    const heatId = codex.propertyNames.getId('heat');
+    const progressId = codex.propertyNames.getId('progress');
+
+    ember.tick();
+
+    expect(ember.def.name, 'progressの積分でon_maxが起き、その場で型が変わっている').not.toBe('ember');
+    expect(ember.tryGetProperty(heatId)?.number, '作り直された後ろのheatにも、このtickぶんが積まれる').toBe(
+      1,
+    );
+    expect(
+      ember.tryGetProperty(progressId)?.number,
+      '済ませたprogressは、作り直されても二度は積まれない',
+    ).toBe(1);
   });
 });

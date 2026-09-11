@@ -25,6 +25,8 @@ traits:
     tags: [liquid]
     props:
       density: {value: 1}
+  weary:
+    tags: [weary]
   water_liquid:
     interactions:
       drink:
@@ -54,9 +56,12 @@ object_defs:
     props:
       stamina: {value: 100, range: {min: 0, max: 100}}
       # 何もしなくても毎tick減る。休憩の経過中にも動くので、増加として流れないことが見える。
+      # 尽きると疲れ切った自分へ変わる（経過の途中でbecomeを起こす仕掛け。宣言順でこれより後ろの
+      # プロパティが、その積分の最中に作り直される）。
       wakefulness:
         value: 100
         range: {min: 0, max: 100}
+        on_min: {become: {mood: weary_mood}}
         passives:
           - add: {self: {wakefulness: -1}}
       satiety: {value: 1000, range: {min: 0, max: 2000}}
@@ -80,9 +85,20 @@ object_defs:
         duration: 60
         passives:
           - add: {self: {stamina: 2.5}}
+      # 経過の間ずっと飲み続ける（11.7節）。足す先のhydrationは、宣言順でwakefulnessより後ろに居る。
+      sip:
+        trigger: menu
+        duration: 60
+        passives:
+          - add: {self: {hydration: 5}}
       wait:
         trigger: menu
         duration: 15
+    variation_axes:
+      mood: {of: {tag: weary}}
+
+  weary_mood:
+    traits: [weary]
 
   roasted_taro:
     tags: [item]
@@ -221,6 +237,20 @@ object_defs:
     expect(amounts.get('stamina'), 'tick毎に足した4 tickぶん').toBe(10);
     expect(amounts.has('wakefulness'), '経過中に減った分は増加ではない').toBe(false);
     expect(amounts.has('body_fat'), '物が自分で宣言した増減は、操作が増やしたものではない').toBe(false);
+  });
+
+  it('経過の途中で相手の型が変わっても、その後のtickで足した分まで数える', () => {
+    drain('hydration', 100);
+    // 1 tick目の積分で覚醒度が尽き、そこで型が変わる。足す先のhydrationは宣言順でその後ろなので、
+    // 残りのtickでは作り直されたプロパティへ足す——数え先を個体で控えていると、そこから引けない。
+    drain('wakefulness', 1);
+
+    const { amounts } = gainsDuring(() => {
+      expect(player.tryGetAction('sip', player)?.tryExecute() === true).toBe(true);
+    });
+
+    expect(player.def.name, '1 tick目の積分の途中で型が変わっている').not.toBe('survivor');
+    expect(amounts.get('hydration'), '型が変わったtickも含めた4 tickぶん').toBe(20);
   });
 
   it('経過の間ずっと効く宣言も、上限で押し戻された分は数えない', () => {
