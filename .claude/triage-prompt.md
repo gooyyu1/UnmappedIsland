@@ -26,12 +26,11 @@
 
 **道具は `.claude/github-access.md`「issue を読む・書く」に従ってください。**
 
-引くのは**開いている issue**で、そこから `kind:` を持たないものを選ぶのはあなたです。`gh` があるなら
-次で絞れます。
+引くのは**開いている issue**で、そこから `kind:` を持たないものを選ぶのはあなたです。`gh` で
+`number,title,labels` を引いたなら、次で絞れます。
 
 ```
-gh issue list --state open --limit 100 --json number,title,labels |
-  jq -r '.[] | select([.labels[].name] | map(startswith("kind:")) | any | not) | "\(.number)\t\(.title)"'
+... | jq -r '.[] | select([.labels[].name] | map(startswith("kind:")) | any | not) | "\(.number)\t\(.title)"'
 ```
 
 **依存（`blockedBy`）だけは、どの道具でも自分では触りません。** 頼み方は下の「順序を張る」。
