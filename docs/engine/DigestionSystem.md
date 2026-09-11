@@ -285,9 +285,8 @@
 （[`VitalsSystem.md`](./VitalsSystem.md) 8 節）。
 
 段と `spoilage` は `foods.yaml` の `perishable` が配るので**腐る物すべてが持ち**、引く `pick` は
-**食べられる物すべての `eat` に書いてあります**（`foods.yaml`・`coconut.yaml`・`animals.yaml`・
-`voyage.yaml`・`fiber.yaml`）。例外は焦げた塊（`charred_lump`）だけで、水も栄養素も残らない炭は
-腐らないので `spoilage` を持ちません。
+**食べられる物すべての `eat` に書いてあります**。例外は焦げた塊（`charred_lump`）だけで、
+水も栄養素も残らない炭は腐らないので `spoilage` を持ちません。
 
 ## 7. 食の偏りは、水と蓄えを削って既存の死に方へ流す【確定】
 
