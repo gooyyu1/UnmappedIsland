@@ -82,6 +82,12 @@ const CAPS = { openPrs: 50, issues: 300, mergedPrs: 200 };
 export const MERGED_CAP = CAPS.mergedPrs;
 
 /**
+ * 開いている issue のぶん。**常設の盤を書く側**（[`board.mjs`](board.mjs)）**も同じ値で引く**
+ * ——別々に持つと、盤面には載っているのに人の読む窓からだけ消える帯ができる。
+ */
+export const ISSUE_CAP = CAPS.issues;
+
+/**
  * 上限に当たったら言う。**黙って切ると、切られた側は盤面から消える**——「1件も無い」と同じ形に
  * なるので、次の周も、その次の周も同じに読む。
  */
