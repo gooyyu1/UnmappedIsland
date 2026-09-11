@@ -9,8 +9,9 @@ import { linesOutsideFence } from '../../scripts/markdownFences.mjs';
 /**
  * ドキュメントの参照が実在の対象へ解決するかの検査（docs/DocumentStyle.md 5節）。
  *
- * **見るのは `docs/` だけではない。** `.claude/**` は互いを節名で引き合っており、そちらの節を畳んだ
- * ときに嘘になる。指し先も `docs/` の外（`CLAUDE.md`・`.claude/**`）まで広げてある。
+ * **見るのは `docs/` だけではない。** `.claude/**` は互いを節名でもリンクでも引き合っており、そちらの
+ * 節やファイルを畳んだときに嘘になる。走査する側（{@link REF_FILES}・{@link LINK_CHECKED_FILES}）も
+ * 指し先（{@link REF_TARGETS}）も `docs/` の外まで広げてある。
  *
  * - Markdownリンク（ファイル・アンカー）が実在すること
  * - コード・YAML・ドキュメント中の「Foo.md N節」「Foo.md 〇〇節」が実在の節を指すこと
@@ -77,6 +78,14 @@ const PROVISIONAL_WORD = /目安|仮置き|仮決め|まだ決め|未定(?!義)|
 /** 「いつか実装したいもの」の実体の一覧（DocumentStyle.md 4.1節）。 */
 const SOMEDAY_DOC = join('docs', 'Someday.md');
 
+/**
+ * 判断の履歴か。**当時の発言と当時の文脈を原文のまま残す場所**なので、指し先が消えても直さない
+ * ——検査する側からは外す（指し先の候補としては生きている）。
+ */
+function isDecisionRecord(rel: string): boolean {
+  return rel.startsWith(join('.claude', 'decisions'));
+}
+
 /** 参照を検査する対象。ドキュメント自身と、節番号でドキュメントを指すコード・データ。 */
 const REF_FILES = [
   ...DOC_FILES,
@@ -89,8 +98,7 @@ const REF_FILES = [
 ].filter(
   (rel) =>
     !rel.startsWith(join('tests', 'docs')) && // 本テスト自身の例・正規表現は対象外
-    // 判断の履歴は、当時の発言と当時の文脈を原文のまま残す場所。後から直すものではない。
-    !rel.startsWith(join('.claude', 'decisions')),
+    !isDecisionRecord(rel),
 );
 
 /**
@@ -198,6 +206,18 @@ const docByPath = new Map(DOC_FILES.map((rel) => [rel, read(rel)]));
  * `DocumentStyle.md` の規約を課す対象（`docByPath`）とは別に持つ。
  */
 const REF_TARGETS = [...DOC_FILES, 'CLAUDE.md', ...listFiles('.claude', ['.md'])];
+
+/**
+ * Markdownリンク（ファイル・アンカー）を検査する対象。**指し先の候補（{@link REF_TARGETS}）から
+ * 導く**——リンクは `docs/` の中だけで閉じておらず、`.claude/**` は互いを相対リンクで引いている。
+ *
+ * 走査する側と指し先を1つの集合から出すのは、**片側にしか居ない文書を作らない**ため。走査だけの
+ * 文書を足すと、そこの `#見出し` は指し先の一覧に無いので誤って赤くなる。
+ *
+ * コード（`.ts`・`.mjs`・`.sh`）は入らない。あちらにも**本物のリンクは在る**が、正規表現
+ * （`['"]([^'"]+)['"]`）や画面へ出す書式の例示と字面で見分けられないので、見分けの仕組みが要る。
+ */
+const LINK_CHECKED_FILES = REF_TARGETS.filter((rel) => !isDecisionRecord(rel));
 
 /** ひな形。セッションへ渡す本体を囲みに入れて持つ（`scripts/agent/prompt-body.mjs`）。 */
 function isPromptTemplate(rel: string): boolean {
@@ -396,12 +416,12 @@ function unimplementedHeadingLines(): string[] {
 
 describe('ドキュメントの参照', () => {
   it('Markdownリンクの先のファイルが存在する', () => {
-    const broken = [...docByPath].flatMap(([rel, text]) => brokenLinkFilesIn(rel, text));
+    const broken = LINK_CHECKED_FILES.flatMap((rel) => brokenLinkFilesIn(rel, read(rel)));
     expect(broken, `リンク切れ:\n${broken.join('\n')}`).toEqual([]);
   });
 
   it('Markdownリンクのアンカーが、リンク先の見出しに解決する', () => {
-    const broken = [...docByPath].flatMap(([rel, text]) => brokenLinkAnchorsIn(rel, text));
+    const broken = LINK_CHECKED_FILES.flatMap((rel) => brokenLinkAnchorsIn(rel, read(rel)));
     expect(broken, `アンカー切れ:\n${broken.join('\n')}`).toEqual([]);
   });
 
