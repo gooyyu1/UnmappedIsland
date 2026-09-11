@@ -780,7 +780,7 @@ describe('animals.yamlの動物', () => {
     });
 
     it('水分が安全域を外れている間は、血が戻らない', () => {
-      // 判定は段の名前で行う（VitalsSystem.md 3.1節）ので、置くのは**その段に入る位置**であって、
+      // 判定は段の名前で行う（VitalsSystem.md 3.2節）ので、置くのは**その段に入る位置**であって、
       // 条件の側の閾値ではない。192はdryish（留意域）の下端。
       const blood = monkey.tryGetProperty(bloodId)!;
       blood.setNumber(200);
