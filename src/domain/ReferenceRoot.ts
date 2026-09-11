@@ -169,7 +169,7 @@ export class ReferenceContext {
   /** この文脈のself。効果の宣言元であり、parent・ancestorはここから辿る。 */
   readonly self: WorldObject | undefined;
 
-  /** この操作をしている者。誰かが操作しているとは限らない文脈（forSelf）ではundefined。 */
+  /** この操作をしている者。操作でもなく、問う側がagentを渡すのでもない文脈ではundefined（11.5節）。 */
   readonly agent: WorldObject | undefined;
 
   /** この操作で働きかけに使われる物。それを伴わない操作ではundefined（11.5節）。 */
@@ -229,7 +229,7 @@ export class ReferenceContext {
   /** 3役が揃った文脈。組み立てられるのは関係を持っている側だけ（InteractionRelation.contextFor）。 */
   static withRoles(
     self: WorldObject | undefined,
-    agent: WorldObject | undefined,
+    agent: WorldObject,
     instrument: WorldObject | undefined,
     patient: WorldObject | undefined,
   ): ReferenceContext {
