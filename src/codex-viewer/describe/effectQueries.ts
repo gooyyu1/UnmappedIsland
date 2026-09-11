@@ -3,7 +3,7 @@ import type {
   ConditionalReading,
   EffectDeclaration,
   EffectReader,
-  PickCandidateReading,
+  PickReading,
   SetValueReading,
   TransferReading,
 } from '../../domain/EffectReader';
@@ -71,8 +71,8 @@ abstract class IgnoringEffectReader implements EffectReader {
   signal(_name: string): void {}
 
   /** 候補の奥にあるものも数える（pickは分岐でしかなく、起こることを隠さない）。 */
-  pick(candidates: readonly PickCandidateReading[]): void {
-    for (const candidate of candidates) candidate.effect.read(this);
+  pick(reading: PickReading): void {
+    reading.readEveryCandidate(this);
   }
 
   /** 二択の奥も両方数える。**問うているのは起こりうるか**なので、どちらへ倒れるかは関わらない。 */

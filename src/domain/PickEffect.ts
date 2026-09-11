@@ -3,7 +3,7 @@ import type { AmongSpec } from './AmongSpec';
 import type { SameSlotSpawnSite } from './SameSlotSpawnSite';
 import type { WorldSession } from './WorldSession';
 import { ActiveEffect } from './ActiveEffect';
-import type { EffectReader, PickCandidateReading } from './EffectReader';
+import type { EffectReader, PickCandidateReading, PickReading } from './EffectReader';
 import type { ReferenceContext } from './ReferenceRoot';
 import type { DeclaredNumber } from './DeclaredNumber';
 
@@ -34,7 +34,7 @@ export class PickEffect extends ActiveEffect {
   }
 
   read(reader: EffectReader): void {
-    reader.pick(this.candidates.map((candidate) => candidate.reading));
+    reader.pick(new PickCandidates(this.candidates));
   }
 
   /** **数えられない。** 引くたびに起きることが変わるので、2回目が何をするかは実行するまで分からない。 */
@@ -59,6 +59,26 @@ export class PickEffect extends ActiveEffect {
       session.rng,
     );
     return chosen ?? available[0];
+  }
+}
+
+/**
+ * 抽選の読み上げ（PickReading参照）。**候補が何を起こすかは候補自身が読み上げる**ので、読み手は
+ * 候補の中身を組み立て直さずに問いへ合う口を選べる。
+ */
+class PickCandidates implements PickReading {
+  private readonly candidates: readonly PickCandidateDef[];
+
+  constructor(candidates: readonly PickCandidateDef[]) {
+    this.candidates = candidates;
+  }
+
+  readEveryCandidate(reader: EffectReader): void {
+    this.forEachCandidate((candidate) => candidate.effect.read(reader));
+  }
+
+  forEachCandidate(visit: (candidate: PickCandidateReading) => void): void {
+    for (const candidate of this.candidates) visit(candidate.reading);
   }
 }
 
@@ -106,7 +126,7 @@ export class PickCandidateDef {
     this.effect.apply(context.withPicked(picked), session, sameSlotSpawnSite);
   }
 
-  /** この候補の宣言（PickCandidateReading参照）。PickEffect.readが読み手へ渡す。 */
+  /** この候補の宣言（PickCandidateReading参照）。PickCandidatesが読み手へ渡す。 */
   get reading(): PickCandidateReading {
     return { weight: this.weight.reading, effect: this.effect, among: this.among?.reading };
   }
