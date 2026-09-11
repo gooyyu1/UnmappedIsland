@@ -15,6 +15,8 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { linesOutsideFence } from './markdownFences.mjs';
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS = 'docs';
 
@@ -27,19 +29,13 @@ export const WHOLE_DOCUMENT_CONFIRMED = '**本書は全体が確定です。**';
 /**
  * 文書まるごとの確定を宣言しているか（docs/DocumentStyle.md 6.2節）。
  *
- * 見るのは**コードフェンスの外の行頭**だけ。規約そのものが書式を例示するので、フェンスの中まで
- * 見ると、書式を説明した文書が宣言した文書になる。
+ * 見るのは**コードフェンスの外の行頭**だけ（[`markdownFences.mjs`](markdownFences.mjs)）。
  *
  * **判定はここにしか無い。** 表を出す側と 6.2 節の条件を検査する側が別々に判定すると、条件が
  * 食い違ったとき——確定欄は `全` と出るのに条件は掛かっていない、が成立する。
  */
 export function declaresWholeDocument(markdown) {
-  let inFence = false;
-  for (const line of markdown.split(/\r?\n/)) {
-    if (/^\s*```/.test(line)) inFence = !inFence;
-    else if (!inFence && line.startsWith(WHOLE_DOCUMENT_CONFIRMED)) return true;
-  }
-  return false;
+  return linesOutsideFence(markdown).some(({ raw }) => raw.startsWith(WHOLE_DOCUMENT_CONFIRMED));
 }
 
 function markdownFilesIn(dir) {
@@ -53,16 +49,11 @@ function markdownFilesIn(dir) {
 }
 
 /** コードフェンスの外の見出し行（`#`を除いた本文）。 */
-function headingsOf(lines) {
+function headingsOf(markdown) {
   const headings = [];
-  let inFence = false;
-  for (const line of lines) {
-    if (/^\s*```/.test(line)) {
-      inFence = !inFence;
-      continue;
-    }
-    const match = /^(#{1,6})\s+(.*)$/.exec(line);
-    if (!inFence && match !== null && match[1].length >= SHALLOWEST_SECTION_DEPTH) {
+  for (const { raw } of linesOutsideFence(markdown)) {
+    const match = /^(#{1,6})\s+(.*)$/.exec(raw);
+    if (match !== null && match[1].length >= SHALLOWEST_SECTION_DEPTH) {
       headings.push(match[2].trim());
     }
   }
@@ -72,14 +63,13 @@ function headingsOf(lines) {
 /**
  * 1つの文書の中身から数えたもの。
  *
- * **改行を割るのはここだけ。** 作業ツリーがCRLFのとき、行末に`\r`が残ると行末を見る判定
- * （見出しの`$`）が一致しなくなる（issue #867）。
+ * **行を割るのは、行数を数えるここと [`markdownFences.mjs`](markdownFences.mjs) だけ。** 作業ツリーが
+ * CRLFのとき、行末に`\r`が残ると行末を見る判定（見出しの`$`）が一致しなくなる（issue #867）。
  */
 export function statusOfMarkdown(markdown) {
-  const lines = markdown.split(/\r?\n/);
-  const headings = headingsOf(lines);
+  const headings = headingsOf(markdown);
   return {
-    lines: lines.length,
+    lines: markdown.split(/\r?\n/).length,
     sections: headings.length,
     confirmed: headings.filter((heading) => heading.includes('【確定】')).length,
     wholeDocumentConfirmed: declaresWholeDocument(markdown),
