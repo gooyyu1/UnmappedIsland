@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildBalanceTables } from '../../src/analysis/balanceTables';
+import { buildBalanceTables, objectCostMinutesOf } from '../../src/analysis/balanceTables';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import type { BalanceTables } from '../../src/analysis/balanceTables';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -79,18 +80,14 @@ function snugFrom(site: Camp): number {
  */
 const COMFORT_COST_SPREAD_LIMIT = 1.2;
 
-/** その設えを1つ作るのに払う総手間（分）。前提の道具は含まない（ObjectCost.prerequisites）。 */
-function craftMinutesOf(balance: ReturnType<typeof buildBalanceTables>, name: string): number {
-  const minutes = balance.objectCosts.find((cost) => cost.objectName === name)?.minutes;
-  expect(minutes, `${name}の総手間`).toBeDefined();
-  return minutes!;
-}
-
-/** その設えの、居心地1点あたりの手間（分）。 */
-function minutesPerComfortPoint(balance: ReturnType<typeof buildBalanceTables>, name: string): number {
+/**
+ * その設えの、居心地1点あたりの手間（分）。総手間に前提の道具は含まない
+ * （ObjectCost.prerequisites）。
+ */
+function minutesPerComfortPoint(balance: BalanceTables, name: string): number {
   const site = camp();
   furnish(site, name);
-  return craftMinutesOf(balance, name) / comfortOf(site);
+  return objectCostMinutesOf(balance, name) / comfortOf(site);
 }
 
 describe('里心を抑える設え(src/assets/world-codex/furnishings.yaml)', () => {

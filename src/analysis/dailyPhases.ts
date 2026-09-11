@@ -4,7 +4,7 @@ import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveRea
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { ActivityHoursRow } from './activityHours';
 import type { BalanceTables } from './balanceTables';
-import { MINUTES_PER_DAY } from './balanceTables';
+import { MINUTES_PER_DAY, objectCostMinutesOf } from './balanceTables';
 import { craftingStepsOf } from './craftingSteps';
 import type { PropertyGlobalId } from '../domain/GlobalId';
 
@@ -342,13 +342,6 @@ class AncestorLiftCollector implements PassiveReader {
   accumulate(): void {}
 
   transfer(): void {}
-}
-
-function objectCostMinutesOf(balance: BalanceTables, objectName: string): number {
-  const cost = balance.objectCosts.find((row) => row.objectName === objectName);
-  if (cost?.minutes === undefined)
-    throw new Error(`山が名乗る型 '${objectName}' の総労働が、収支表に出ていません。`);
-  return cost.minutes;
 }
 
 /** 山の合計を、屋外と拠点へ割ったもの（ContentSkeleton.md 8.3節）。 */
