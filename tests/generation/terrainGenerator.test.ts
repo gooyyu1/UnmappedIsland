@@ -153,8 +153,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   // 宣言のほうが嘘になるので、両端が出ることを島ごとに見張る。
   it('標高は、宣言した両端（海面0mと最高点）が島ごとに実際に出る', () => {
     const island = scope();
-    const elevationRange = codex.generation!.axes.get(island.elevationAxis)!.range;
-    const metersPerElevationUnit = island.metersPerElevationUnit(elevationRange.max - elevationRange.min);
+    const metersPerElevationUnit = codex.generation!.metersPerElevationUnit(island);
 
     for (const [seed, map] of islands) {
       const meters = map.sites.map(
@@ -170,8 +169,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   // 実測（500シード）の上限68mに対して余裕を持たせてある。
   it('海岸帯の土地は海面近くに出る', () => {
     const island = scope();
-    const elevationRange = codex.generation!.axes.get(island.elevationAxis)!.range;
-    const metersPerElevationUnit = island.metersPerElevationUnit(elevationRange.max - elevationRange.min);
+    const metersPerElevationUnit = codex.generation!.metersPerElevationUnit(island);
 
     for (const [seed, map] of islands)
       for (const site of map.sites)
@@ -187,8 +185,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   // 戻された**ことは捕まえられない。宣言だけから組み直した値と突き合わせる。
   it('移動時間は、宣言した縮尺と速さだけから組み直せる', () => {
     const island = scope();
-    const elevationRange = codex.generation!.axes.get(island.elevationAxis)!.range;
-    const metersPerElevationUnit = island.metersPerElevationUnit(elevationRange.max - elevationRange.min);
+    const metersPerElevationUnit = codex.generation!.metersPerElevationUnit(island);
     const elevationOf = (site: { axisValues: ReadonlyMap<string, number> }): number =>
       site.axisValues.get(island.elevationAxis)!;
 
