@@ -57,7 +57,7 @@ const MERGED_PR_FIELDS = 'number,comments';
  * なく、#1659〜#1740 が一度も読まれずに落ちた。期間で持てば、その間に何本入っても落ちない。
  *
  * **係の間隔**（[`board-move.mjs`](board-move.mjs) の `CYCLES` の `analysis` の `hours`）**より
- * 広く取る。** 同じ幅を [`analysis-prompt.md`](../../.claude/analysis-prompt.md) が係へも渡す
+ * 広く取る。** 同じ幅を [`analysis-prompt.md`](../../.claude/analysis-prompt.md)「読む範囲」が係へも渡す
  * ——**盤面より係の窓が狭いと、盤面が見つけた未読が係の窓の外に落ち**、印が付かないので
  * **毎日立って毎日同じ空振りを繰り返す。**
  */
