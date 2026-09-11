@@ -10,6 +10,7 @@ import type { Slot } from './Slot';
 import type { WorldChange } from './WorldChange';
 import type { WorldSignal } from './WorldSignal';
 import type { Action } from './Interaction';
+import type { ReferenceContext } from './ReferenceRoot';
 import { WorldObject } from './WorldObject';
 import { EffectiveValueReading } from './EffectiveValueReading';
 import { Scoped } from '../util/scoped';
@@ -75,14 +76,23 @@ export class WorldSession {
   private readonly tickGainTargets = new Scoped<Set<PropertyValue>>();
 
   /**
-   * 今効いている、操作が宣言した持続効果（11.7節）と、その宣言元。`duration`を進めている間だけ並ぶ。
-   * **経過中のtickで、そのぶんだけを操作の稼ぎとして拾う**ための控え（countTickMovementAsGain）であり、
-   * **宣言元がbecomeしたときに登録を張り直す先**でもある（setInteractionPassivesRegistered）。
+   * 今効いている、操作が宣言した持続効果（11.7節）と、その宣言元、そして**その操作の関係が用意した
+   * 文脈**。`duration`を進めている間だけ並ぶ。**経過中のtickで、そのぶんだけを操作の稼ぎとして拾う**
+   * ための控え（countTickMovementAsGain）であり、**宣言元がbecomeしたときに登録を張り直す先**でもある
+   * （setInteractionPassivesRegistered）。
+   *
+   * **文脈を憶えるのは、役の解決先が宣言元の今の参加から決まらないから**（11.5節）。宣言元が経過中に
+   * 別の関係へも加わると、そちらが役を解く関係になる（WorldObject.participation）ので、辿り直しでは
+   * この操作の役に戻れない。
    *
    * **1つではなく積む。** 経過中のtickは手番を配り、その手番も操作なのでここへ乗る（入れ子）。
    * 内側だけを持つと、外側のぶんは登録されたまま辿れなくなる。
    */
-  private readonly runningInteractionPassives: { owner: WorldObject; passives: PassiveEffects }[] = [];
+  private readonly runningInteractionPassives: {
+    owner: WorldObject;
+    context: ReferenceContext;
+    passives: PassiveEffects;
+  }[] = [];
 
   /** 今どのオブジェクトの効果を適用しているか（withSubject）。記録する変化の主体になる。 */
   private readonly subject = new Scoped<WorldObject>();
@@ -198,21 +208,29 @@ export class WorldSession {
   /**
    * 操作が宣言した持続効果（11.7節）が効いている間としてbodyを実行する。登録はその一式が持ち
    * （PassiveEffects.setAllRegistered）、こちらは効いている間のぶんを積んで持つ。
+   *
+   * `context`はその操作の関係が用意した文脈（InteractionRelation.contextFor）。**役はここから解く**
+   * ——理由はrunningInteractionPassives。
    */
-  whileInteractionPassives<T>(owner: WorldObject, passives: PassiveEffects, body: () => T): T {
-    this.runningInteractionPassives.push({ owner, passives });
+  whileInteractionPassives<T>(
+    owner: WorldObject,
+    context: ReferenceContext,
+    passives: PassiveEffects,
+    body: () => T,
+  ): T {
+    this.runningInteractionPassives.push({ owner, context, passives });
     try {
-      passives.setAllRegistered(owner, true);
+      passives.setAllRegistered(owner, context, true);
       return body();
     } finally {
-      passives.setAllRegistered(owner, false);
+      passives.setAllRegistered(owner, context, false);
       this.runningInteractionPassives.pop();
     }
   }
 
   /**
    * declarerが宣言元になっている、経過中の操作の持続効果（11.7節）の登録を、対象を問わずまとめて
-   * 外す/載せ直す（WorldObject.becomeTypeが、プロパティを作り直す前後で呼ぶ）。
+   * 外す/載せ直す。
    *
    * **この登録を辿れるのはここだけ。** 宣言しているのは物ではなく操作で、効いている間そのdefを
    * 持っているのはこのセッションなので、物のdefからは見つからない。
@@ -222,7 +240,7 @@ export class WorldSession {
    */
   setInteractionPassivesRegistered(declarer: WorldObject, register: boolean): void {
     for (const running of this.runningInteractionPassives)
-      if (running.owner === declarer) running.passives.setAllRegistered(declarer, register);
+      if (running.owner === declarer) running.passives.setAllRegistered(declarer, running.context, register);
   }
 
   /**
@@ -408,7 +426,8 @@ export class WorldSession {
         // 引かれていない。**このtickを進めているのは一番内側**で、外側は自分のtickをこの中で
         // 回している最中なので、二重に数えない。
         const running = this.runningInteractionPassives.at(-1);
-        running?.passives.countTickMovementsAsGains(running.owner, this);
+        if (running !== undefined)
+          running.passives.countTickMovementsAsGains(running.owner, running.context, this);
 
         world.instance.tick();
       });

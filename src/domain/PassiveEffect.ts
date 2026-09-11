@@ -127,7 +127,7 @@ export abstract class PassiveEffect {
    * **既定は何もしない。** 呼ばれるのは操作が宣言した一式だけで（11.7節）、そこに書けるのは
    * 実体値へ積む`add`と、実体値を動かさない`modify`しかない——輸送は書けない（8.4.1節）。
    */
-  countTickMovementAsGain(_owner: WorldObject, _session: WorldSession): void {}
+  countTickMovementAsGain(_owner: WorldObject, _context: ReferenceContext, _session: WorldSession): void {}
 }
 
 /**
@@ -205,7 +205,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * 実体値へ積む寄与（`add`）なら、動かす先を稼ぎの数え先として名乗る。可逆な寄与（`modify`）は
    * 実体値を動かさないので名乗らない。
    *
-   * **相手はownerが今参加している関係から辿る**（setRelationRegisteredと同じ経路）。呼ばれるのは
+   * **相手はcontextから辿る**（setRegisteredInContextと同じ、登録先と同じ物になる）。呼ばれるのは
    * 操作の宣言だけで、そこにchildは書けない（8.1節）ので、ゲートのselfはownerでよい。
    *
    * **名乗るのは先だけで、量は言わない。** 数えられるのはそのプロパティがこのtickで実際に動いた量
@@ -214,10 +214,14 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * **今tick何も足さないなら名乗らない。** ゲートが閉じている効果の対象を数え先にすると、物が
    * 自分で宣言した増減まで操作の稼ぎになる。
    */
-  override countTickMovementAsGain(owner: WorldObject, session: WorldSession): void {
+  override countTickMovementAsGain(
+    owner: WorldObject,
+    context: ReferenceContext,
+    session: WorldSession,
+  ): void {
     if (this.reversible || this.activeAmount(owner, owner) === 0) return;
 
-    const target = this.target.owner(ReferenceContext.forParticipant(owner));
+    const target = this.target.owner(context);
     const property = target?.tryGetProperty(this.target.propertyGlobalId);
     if (property !== undefined) session.countTickMovementAsGain(property);
   }
@@ -231,18 +235,23 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * （WorldObject.setAncestorTargetsRegistered）が守る前提で、「今この瞬間の祖先」を毎回辿るだけで
    * よく、前回の登録先を憶えない。
    *
-   * 操作の役（11.5節）も、ownerが今参加している関係から辿れるので同じ経路に乗る。**頼まれる契機は
+   * 操作の役（11.5節）も、ownerが今役を解く関係から辿れるので同じ経路に乗る。**頼まれる契機は
    * 関係を張った/外したときだけではない**——関係の内側で型が変われば、宣言も登録先も入れ替わるので
    * そこでも張り直す（頼む側はWorldObject.setRoleTargetsRegisteredの呼び手）。
    *
    * childは相手（どの子か）がownerから一意に辿れないため、ここでは扱わずsetChildRegisteredを使う。
    */
   setRelationRegistered(owner: WorldObject, register: boolean): void {
-    this.setResolvedRelationRegistered(
-      owner,
-      this.target.owner(ReferenceContext.forParticipant(owner)),
-      register,
-    );
+    this.setRegisteredInContext(owner, ReferenceContext.forParticipant(owner), register);
+  }
+
+  /**
+   * contextで対象を解いて、この効果を相手へ登録/解除する。**役の解決先を呼び出し側が持っているとき
+   * だけ**呼ぶ——操作が宣言した持続効果（11.7節）の役は、宣言したその操作の関係が答えるもので、
+   * 宣言元が後から別の関係へ加わっても動かない（WorldSession.whileInteractionPassives）。
+   */
+  setRegisteredInContext(owner: WorldObject, context: ReferenceContext, register: boolean): void {
+    this.setResolvedRelationRegistered(owner, this.target.owner(context), register);
   }
 
   /**

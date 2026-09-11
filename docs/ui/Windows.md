@@ -530,8 +530,9 @@ UI が決めていた頃は 2 度外しました。`container` タグの有無�
 ### 8.4 影響は宣言から導く
 
 一覧は、**このステータスの持ち主自身・その祖先・その子孫**が宣言している持続効果
-（[GameElementDefinition.md](../engine/GameElementDefinition.md) 8 節）と、**今その持ち主と同じ操作に
-加わっている相手**（同 11.5 節）が宣言している持続効果から導きます（`WorldObject.readInfluences`）。
+（[GameElementDefinition.md](../engine/GameElementDefinition.md) 8 節）と、**今その持ち主と同じ関係に
+加わっている相手**（同 11.5 節。関係が入れ子なら、外側の関係の相手も含みます）が宣言している持続効果
+から導きます（`WorldObject.readInfluences`）。
 対象に何を書けるかは宣言が置かれた場所が決めます（一覧は同 14.1 節の表）。
 
 **集める範囲が木だけで済まないのは、宣言元が相手へ届く経路が木だけではないからです。** 木を辿る対象

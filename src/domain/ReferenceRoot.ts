@@ -132,9 +132,9 @@ export class InteractionRelation {
   }
 
   /**
-   * この関係に加わっている物のうち、selfでないもの。**役を対象にした持続効果（8節）の宣言元は、
-   * 相手から見れば必ずここに居る**——役を指せるのは参加者からだけなので、宣言元も相手も同じ1つの
-   * 関係に加わっている（WorldObject.readInfluences）。
+   * この関係に加わっている物のうち、selfでないもの。**役を対象にした持続効果（11.5節）の宣言元と相手は、
+   * 必ず同じ1つの関係に加わっている**——役を指せるのは参加者からだけだから。だから相手を残らず挙げるには、
+   * その物が加わっている関係のそれぞれでここを引く（WorldObject.participantsSharingAnyRelation）。
    */
   participantsOtherThan(self: WorldObject): readonly WorldObject[] {
     return this.participants.filter((participant) => participant !== self);
@@ -205,9 +205,9 @@ export class ReferenceContext {
   }
 
   /**
-   * 参加者のprops（`base`・`passives`、ReferenceScope.participantProps）を読む文脈。役は、selfが今
-   * 参加している関係（世界に刻まれている、InteractionRelation）から解ける。参加していなければ
-   * forSelfと同じで、役はどれも解決先を持たない。
+   * 参加者のprops（`base`・`passives`、ReferenceScope.participantProps）を読む文脈。役は、selfが今役を
+   * 解く関係（世界に刻まれている、InteractionRelation。入れ子なら最も内側、11.5節）から解ける。参加して
+   * いなければforSelfと同じで、役はどれも解決先を持たない。
    */
   static forParticipant(self: WorldObject | undefined): ReferenceContext {
     const relation = self?.participation;
