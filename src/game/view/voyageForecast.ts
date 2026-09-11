@@ -1,7 +1,7 @@
 import type {
   ConditionalReading,
   EffectReader,
-  PickCandidateReading,
+  PickReading,
   DeclaredNumberReading,
 } from '../../domain/EffectReader';
 import type { ObjectRefReading } from '../../domain/ObjectRef';
@@ -89,8 +89,8 @@ class SelfMoveDestinations implements EffectReader {
       this.destinations.push(destination.objectGlobalId);
   }
 
-  pick(candidates: readonly PickCandidateReading[]): void {
-    for (const candidate of candidates) candidate.effect.read(this);
+  pick(reading: PickReading): void {
+    reading.readEveryCandidate(this);
   }
 
   /** 二択の奥も両方見る。**問うているのは行き先になりうるか**なので、どちらへ倒れるかは関わらない。 */
@@ -126,13 +126,13 @@ interface DepartureCandidate {
 class DepartureCandidates implements EffectReader {
   readonly candidates: DepartureCandidate[] = [];
 
-  pick(candidates: readonly PickCandidateReading[]): void {
-    for (const candidate of candidates) {
+  pick(reading: PickReading): void {
+    reading.forEachCandidate((candidate) => {
       const moves = new SelfMoveDestinations();
       candidate.effect.read(moves);
       for (const destinationGlobalId of moves.destinations)
         this.candidates.push({ weight: candidate.weight, destinationGlobalId });
-    }
+    });
   }
 
   /** 条件の下に置かれた卓も見る——条件は卓を隠さない。 */

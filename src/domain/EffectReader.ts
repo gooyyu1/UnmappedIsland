@@ -66,10 +66,13 @@ export interface EffectReader {
   signal(name: string): void;
 
   /**
-   * `pick`（10節）。候補は宣言順で、重みは**宣言のまま**（リテラルか参照）渡す。確率へ直すのも、
-   * 全部0のときに先頭を選ぶ規約（PickEffect.selectWeighted）を当てはめるのも読み手の側。
+   * `pick`（10節）。重みは**宣言のまま**（リテラルか参照）渡す。確率へ直すのも、全部0のときに
+   * 先頭を選ぶ規約（PickEffect.selectWeighted）を当てはめるのも読み手の側。
+   *
+   * **候補を読ませる口は読み上げ（PickReading）自身が持つ**ので、読み手は自分の問いに合う口を
+   * 呼ぶだけでよい——どれが自分の問いに合うかは、口それぞれの説明が持つ。
    */
-  pick(candidates: readonly PickCandidateReading[]): void;
+  pick(reading: PickReading): void;
 
   /**
    * 条件つきの効果（rangeイベントの`conditions`、6.3節）。**排他な二択を、排他なまま渡す**——
@@ -137,7 +140,32 @@ export interface ConditionalBranch {
  */
 export type SetValueReading = number | ObjectRefReading;
 
-/** `pick`の候補1つの読み上げ（EffectReader.pick参照）。 */
+/**
+ * `pick`1つの読み上げ（EffectReader.pick参照）。
+ *
+ * **候補は並べて出さず、読ませる口から渡す。** 候補のどこを自分の答えに数えるかは問いで変わるので、
+ * 並べて出すと、読み手それぞれが読み下し方を書き写すことになる。
+ */
+export interface PickReading {
+  /**
+   * **どの候補の奥も**読み上げさせる。重みは渡さない。
+   *
+   * 呼ぶのは「**それが起こりうるか**」を問う読み手——生む先・行き先・書き換え先を探すもの。抽選は
+   * 分岐でしかなく起こることを隠さないので、重み0の候補も起こりうるものとして数える。
+   */
+  readEveryCandidate(reader: EffectReader): void;
+
+  /**
+   * 候補を**1つずつ**、宣言順に渡す。
+   *
+   * 呼ぶのは、候補ごとに扱いが変わる読み手——重みを確率へ直して畳むもの（`src/analysis/effectOutcomes.ts`）・
+   * 重みと`among`を書き出すもの（`describeEffect`）・候補ごとに別の読み手を回すもの
+   * （`voyageForecast`の出航の卓）。
+   */
+  forEachCandidate(visit: (candidate: PickCandidateReading) => void): void;
+}
+
+/** `pick`の候補1つの読み上げ（PickReading.forEachCandidate参照）。 */
 export interface PickCandidateReading {
   readonly weight: DeclaredNumberReading;
 
