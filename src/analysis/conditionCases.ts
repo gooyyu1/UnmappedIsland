@@ -5,6 +5,7 @@ import type {
   PropertyConditionReading,
 } from '../domain/ConditionReader';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 2つの条件（14節）が**同時には成立しない**と、宣言だけから言い切れるか。
@@ -40,7 +41,7 @@ type ConditionCase = readonly Comparison[];
 /** 比較1つを、**同時に成立しうるか**だけの目で見たもの。 */
 interface Comparison {
   readonly root: ReferenceRoot;
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
   readonly op: ConditionOp;
 
   /** リテラルとの比較なら、その値の並び。参照との比較ではundefined。 */

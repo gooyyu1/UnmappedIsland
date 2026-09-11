@@ -18,6 +18,7 @@ import { isInCraftingNetwork } from './networkPage';
 import { CodexPage } from './CodexPage';
 import type { CodexView, DisplayIdentity } from './CodexView';
 import { EMPTY_HTML, escapeHtml, inlineArtHtml } from './html';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 型・プロパティ・スロット・タグを辿るページ（CodexPage参照）。組み立てはDOMに触らず文字列を返す
@@ -578,7 +579,7 @@ function recipesHtml(view: CodexView, def: ObjectDef): string {
  * すべての型に尋ね、1行でも書いた型だけを並べる。**尋ねるだけで宣言の中身は覗かない**——
  * 何をどう書き表すかはdescribeInfluencesOnが知っている。
  */
-function influencesHtml(view: CodexView, owner: ObjectDef, propertyGlobalId: number): string {
+function influencesHtml(view: CodexView, owner: ObjectDef, propertyGlobalId: PropertyGlobalId): string {
   const groups = view
     .listedObjectDefs()
     .map((def) => {

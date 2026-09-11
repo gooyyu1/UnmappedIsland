@@ -7,6 +7,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { bundledCodex } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent } from '../support/illumination';
 import { seededRng } from '../../src/domain/Rng';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 探索1回で見つかる物（locations.yamlのexploreのpickテーブル）を、実際に探索を繰り返して検証する。
@@ -81,7 +82,7 @@ describe('探索で見つかる物', () => {
    */
   function findingsOf(
     landName: string,
-    props: ReadonlyMap<number, number> = new Map(),
+    props: ReadonlyMap<PropertyGlobalId, number> = new Map(),
     trials: number = TRIALS,
     huntingSkill = 0,
   ): Finding[] {
@@ -121,7 +122,7 @@ describe('探索で見つかる物', () => {
    * その後も動き、くわえた物を落として立ち去る（HuntingSystem.md 5.4・5.6節）ので、そのぶんの
    * 増減が「1回の探索で見つかった数」に混ざる。獣の候補そのものは下のテストが受け持つ。
    */
-  function withoutBeasts(landName: string): ReadonlyMap<number, number> {
+  function withoutBeasts(landName: string): ReadonlyMap<PropertyGlobalId, number> {
     return new Map(
       BEAST_FINDS.filter(([land]) => land === landName).map(([, knob]) => [
         codex.propertyNames.getId(knob),

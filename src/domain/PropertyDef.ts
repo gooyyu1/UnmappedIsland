@@ -8,6 +8,7 @@ import { PropertyPath, ReferenceContext } from './ReferenceRoot';
 import type { EffectDeclaration } from './EffectReader';
 import type { AlertLevel } from './AlertLevel';
 import { ALERT_LEVELS } from './AlertLevel';
+import type { PropertyGlobalId } from './GlobalId';
 
 /**
  * 値がどちらへ動くと悪いか（PropertyDef.alertDirection）。mixedは「両端が悪い」並びで、バーの
@@ -309,7 +310,7 @@ export interface CurrentStageReading {
  * 答えになるので、持ち主が何体居ても答えは変わらない——1つの定義を全個体で共有したままでよい。
  */
 export class PropertyDef {
-  readonly globalId: number;
+  readonly globalId: PropertyGlobalId;
   readonly name: string;
 
   /** 抽選を経ない初期値（スカラー）。initialValueRangeを持つ場合は、RNGを使わない生成でのフォールバック（= range.min）。 */
@@ -433,7 +434,7 @@ export class PropertyDef {
   readonly gauge: GaugeDef | undefined;
 
   constructor(
-    globalId: number,
+    globalId: PropertyGlobalId,
     name: string,
     initialValue: number,
     initialValueRange: PropertyRange | undefined,
@@ -896,7 +897,7 @@ export class PropertyDef {
  */
 function defaultClampEffect(
   range: PropertyRange | undefined,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   label: RangeEventLabel,
 ): ActiveEffect | undefined {
   if (range === undefined) return undefined;

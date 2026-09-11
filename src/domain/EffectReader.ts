@@ -2,6 +2,7 @@ import type { AmongReading } from './AmongSpec';
 import type { ConditionDeclaration } from './ConditionReader';
 import type { ObjectRefReading } from './ObjectRef';
 import type { ReferenceRoot } from './ReferenceRoot';
+import type { PropertyGlobalId } from './GlobalId';
 
 /**
  * 自分が何を宣言しているかを読み上げられるもの（効果そのものと、それを抱える操作）。入れ子の候補も
@@ -23,7 +24,7 @@ export interface EffectDeclaration {
  */
 export interface EffectReader {
   /** `set`（9.2節）。絶対値を代入する。 */
-  set(target: ReferenceRoot, propertyGlobalId: number, value: SetValueReading): void;
+  set(target: ReferenceRoot, propertyGlobalId: PropertyGlobalId, value: SetValueReading): void;
 
   /** `add`（9.2節）。加減算する。 */
   add(reading: AddReading): void;
@@ -151,7 +152,7 @@ export interface PickCandidateReading {
 /** `{subject, prop}`参照1つの読み上げ。 */
 export interface PropertyRefReading {
   readonly subject: ReferenceRoot;
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
 }
 
 /**
@@ -166,9 +167,9 @@ export type DeclaredNumberReading =
 /** `transfer`（9.5節）の読み上げ。linkedはamountが全量動いた場合の`linked_add`。 */
 export interface TransferReading {
   readonly from: ReferenceRoot;
-  readonly fromPropertyGlobalId: number;
+  readonly fromPropertyGlobalId: PropertyGlobalId;
   readonly to: ReferenceRoot;
-  readonly toPropertyGlobalId: number;
+  readonly toPropertyGlobalId: PropertyGlobalId;
   readonly amount: number;
   readonly toAmount: number;
   readonly linked: readonly AddReading[];
@@ -180,6 +181,6 @@ export interface TransferReading {
  */
 export interface AddReading {
   readonly target: ReferenceRoot;
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
   readonly amount: number;
 }

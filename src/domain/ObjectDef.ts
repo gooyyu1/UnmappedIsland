@@ -14,6 +14,7 @@ import type { RecipeDef } from './RecipeDef';
 import type { Placement, SlotDef } from './SlotDef';
 import type { StackOrderDef } from './StackOrderDef';
 import type { WornCoverage } from './WornCoverage';
+import type { PropertyGlobalId } from './GlobalId';
 
 /**
  * 型定義（`object_defs` の1エントリ、4節）。ロード完了後は不変として扱う。
@@ -38,7 +39,7 @@ export class ObjectDef {
   readonly isInProgress: boolean;
 
   /** グローバルなプロパティID → このObjectDefにおけるローカルindex。 */
-  readonly propertyIndexByGlobalId: LocalIndexByGlobalId;
+  readonly propertyIndexByGlobalId: LocalIndexByGlobalId<PropertyGlobalId>;
 
   /** ローカルindexで並ぶ密配列。propertyIndexByGlobalId と対になる。 */
   private readonly propertyDefs: readonly PropertyDef[];
@@ -91,7 +92,7 @@ export class ObjectDef {
    * 1つの型につき高々1つ——複数のプロパティが同時に絵を主張する曖昧さを構造で禁じる。`art`（段の
    * 兄弟キー）を宣言できるのは、ここが指すプロパティの段だけ（ロード時に検証、RawObjectDef.resolve）。
    */
-  readonly artByStagePropertyGlobalId: number | undefined;
+  readonly artByStagePropertyGlobalId: PropertyGlobalId | undefined;
 
   /**
    * **単独では存在できない型か**（7.9節、既定false）。trueなら、入っていた親が消えるとき一緒に消える。
@@ -142,7 +143,7 @@ export class ObjectDef {
     globalId: number,
     name: string,
     isSingleton: boolean,
-    propertyIndexByGlobalId: LocalIndexByGlobalId,
+    propertyIndexByGlobalId: LocalIndexByGlobalId<PropertyGlobalId>,
     propertyDefs: readonly PropertyDef[],
     slotIndexByGlobalId: LocalIndexByGlobalId,
     slotDefs: readonly SlotDef[],
@@ -154,7 +155,7 @@ export class ObjectDef {
     stackable = true,
     recipesProducingThis: readonly RecipeDef[] = [],
     art?: string,
-    artByStagePropertyGlobalId?: number,
+    artByStagePropertyGlobalId?: PropertyGlobalId,
     visibleSlotGlobalIds: readonly number[] = [],
     isStorage = false,
     isInProgress = false,
@@ -225,7 +226,7 @@ export class ObjectDef {
   }
 
   /** グローバルIDでこのObjectDefのPropertyDefを取得する。存在しない場合はundefined。 */
-  tryGetPropertyDef(globalPropertyId: number): PropertyDef | undefined {
+  tryGetPropertyDef(globalPropertyId: PropertyGlobalId): PropertyDef | undefined {
     const local = this.propertyIndexByGlobalId.toLocal(globalPropertyId);
     return local === LocalIndexByGlobalId.missing ? undefined : this.propertyDefs[local];
   }

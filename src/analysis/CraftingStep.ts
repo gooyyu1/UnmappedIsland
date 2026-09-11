@@ -1,4 +1,5 @@
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * クラフトの1工程を「入力 → 工程 → 出力」の形に均した見方。
@@ -46,7 +47,7 @@ export interface CraftingOutput {
  */
 export interface PropertyDelta {
   readonly target: ReferenceRoot;
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
   readonly amount: number;
 }
 
@@ -59,7 +60,7 @@ export interface PropertyDelta {
  */
 export interface PropertyAssignment {
   readonly target: ReferenceRoot;
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
 
   /**
    * 代入する値。個体を指す代入（9.2節）はどの個体かが実行時にしか決まらないのでundefined

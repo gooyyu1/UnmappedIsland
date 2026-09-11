@@ -3,6 +3,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { bundledCodex } from '../support/worldCodexFiles';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 里心を抑える設え（src/assets/world-codex/furnishings.yaml、docs/world/Characters.md ホームシック節）を、
@@ -14,7 +15,7 @@ import { bundledCodex } from '../support/worldCodexFiles';
  */
 const codex = bundledCodex();
 
-function propertyId(name: string): number {
+function propertyId(name: string): PropertyGlobalId {
   return codex.propertyNames.getId(name);
 }
 

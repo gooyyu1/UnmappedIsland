@@ -8,6 +8,7 @@ import type { StageBound } from './PropertyDef';
 import type { ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchReading } from './TypeMatchRule';
 import type { WorldCodex } from './WorldCodex';
+import type { PropertyGlobalId } from './GlobalId';
 
 /**
  * 条件（14節）の文を組み立てる語の作り手。**識別子を語へ戻すのも作り手の仕事**で、読み手ごとに
@@ -24,10 +25,10 @@ export interface ConditionWordMaker<T> {
    * プロパティ参照。**主語を文に出すのは文の側**（下のSUBJECT_WORDS）なので、rootは語ではなく
    * 「どのオブジェクトのプロパティか」として渡す——リンクを張る読み手はこれで持ち主を決める。
    */
-  property(globalId: number, root: ReferenceRoot): T;
+  property(globalId: PropertyGlobalId, root: ReferenceRoot): T;
 
   /** 比較の相手のリテラル1つ。シンボル型プロパティ（6.6節）の値はシンボル名へ戻す。 */
-  propertyValue(propertyGlobalId: number, value: number): T;
+  propertyValue(propertyGlobalId: PropertyGlobalId, value: number): T;
 
   slot(globalId: number): T;
   tag(globalId: number): T;
@@ -155,7 +156,12 @@ class ConditionWordWriter<T> implements ConditionReader, ConditionPhrase<T> {
     ];
   }
 
-  propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string, bound: StageBound): void {
+  propertyStage(
+    root: ReferenceRoot,
+    propertyGlobalId: PropertyGlobalId,
+    stageName: string,
+    bound: StageBound,
+  ): void {
     this.words = [
       ...this.subject(root, 'の'),
       this.make.property(propertyGlobalId, root),

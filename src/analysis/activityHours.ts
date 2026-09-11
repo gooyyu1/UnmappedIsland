@@ -3,6 +3,7 @@ import type { ObjectDef } from '../domain/ObjectDef';
 import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
 import type { WorldCodex } from '../domain/WorldCodex';
 import { islandLocationsOf } from './islandLocations';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 土地×季節ごとの「移動できる／活動できる時間（時間/日）」を、`core.yaml`の`hour`・`weather`の段
@@ -293,7 +294,7 @@ function activityPlacesOf(codex: WorldCodex): readonly ActivityPlace[] {
 /** ambient_brightnessを宣言していれば、その場所。宣言していなければundefined（表に出さない）。 */
 function placeOf(
   def: ObjectDef,
-  ambientId: number,
+  ambientId: PropertyGlobalId,
   hostAmbient: number,
   sheltered: boolean,
 ): ActivityPlace | undefined {
@@ -318,7 +319,7 @@ function placeOf(
  * 暗さは土地との差なので、砂浜の浅い洞窟と森の浅い洞窟は別の明るさになる）。生え先が1つも見つから
  * ないときも同じ——抽選の書き方が変わって辿れなくなったのに、0として黙って通すことになる。
  */
-function hostAmbientOf(codex: WorldCodex, def: ObjectDef, ambientId: number): number {
+function hostAmbientOf(codex: WorldCodex, def: ObjectDef, ambientId: PropertyGlobalId): number {
   const hosts = [...codex.objects].filter((candidate) => spawnedObjectIdsOf(candidate).has(def.globalId));
   const values = new Map<number, string[]>();
   for (const host of hosts) {
@@ -381,8 +382,8 @@ class SpawnCollector implements EffectReader {
  */
 function stageModifyDeltasOf(
   def: ObjectDef,
-  propertyGlobalId: number,
-  gateByPropertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
+  gateByPropertyGlobalId: PropertyGlobalId,
 ): ReadonlyMap<string, number> {
   const collector = new StageModifyCollector(propertyGlobalId, gateByPropertyGlobalId);
   def.passives.read(collector);
@@ -393,8 +394,8 @@ class StageModifyCollector implements PassiveReader {
   readonly deltas = new Map<string, number>();
 
   constructor(
-    private readonly propertyGlobalId: number,
-    private readonly gateByPropertyGlobalId: number,
+    private readonly propertyGlobalId: PropertyGlobalId,
+    private readonly gateByPropertyGlobalId: PropertyGlobalId,
   ) {}
 
   modify(reading: PassivePropertyReading): void {

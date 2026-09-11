@@ -5,6 +5,7 @@ import { asMap, entriesInOrder, requireInt, tryGetMap, tryGetScalar, tryGetSeq }
 import { YamlLoadError } from '../loader/YamlLoadError';
 import type { YamlNode } from '../loader/yamlMapping';
 import { asScalarText } from '../loader/yamlMapping';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 同梱シナリオの中身。置き場所と名前の規約は `src/assets/scenarios/<シナリオ名>.yaml` のみで、
@@ -276,7 +277,7 @@ function slotIdOf(codex: WorldCodex, name: string): number {
   return id;
 }
 
-function propertyIdOf(codex: WorldCodex, name: string): number {
+function propertyIdOf(codex: WorldCodex, name: string): PropertyGlobalId {
   const id = codex.propertyNames.tryGetId(name);
   if (id === undefined) throw new YamlLoadError(`シナリオ: プロパティ '${name}' がありません。`);
   return id;

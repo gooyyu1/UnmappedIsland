@@ -2,6 +2,7 @@ import type { AmountReading } from './PassiveAmount';
 import type { ConditionDeclaration } from './ConditionReader';
 import type { TransferReading } from './EffectReader';
 import type { ReferenceRoot } from './ReferenceRoot';
+import type { PropertyGlobalId } from './GlobalId';
 
 /**
  * 持続効果（8節）が**何を宣言しているか**を読み上げる相手（PassiveEffect.read）。
@@ -24,7 +25,7 @@ export interface PassiveReader {
 /** `modify`/`add` 1件の宣言。 */
 export interface PassivePropertyReading {
   readonly target: ReferenceRoot;
-  readonly propertyGlobalId: number;
+  readonly propertyGlobalId: PropertyGlobalId;
   readonly amount: AmountReading;
   readonly gate: GateReading;
 }
@@ -35,7 +36,7 @@ export interface PassivePropertyReading {
  */
 export interface GateReading {
   /** 段で縛られているならその段。常時効くならundefined。 */
-  readonly stage: { readonly propertyGlobalId: number; readonly name: string } | undefined;
+  readonly stage: { readonly propertyGlobalId: PropertyGlobalId; readonly name: string } | undefined;
 
   /** 段以外の条件。無ければundefined。 */
   readonly conditions: ConditionDeclaration | undefined;

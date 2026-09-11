@@ -11,6 +11,7 @@ import { describeRangeEvent } from './describeProperty';
 import { stackOrderTokens } from './stackOrderTokens';
 import { describePassive } from './describePassive';
 import { passiveWritesToProperty, spawnsObject, writesToProperty } from './effectQueries';
+import type { PropertyGlobalId } from '../../domain/GlobalId';
 
 /**
  * 型そのものの性質（4節・7節の宣言）を書き出す。既定と同じ性質は書かない——「特に断っていない」ことと
@@ -57,7 +58,7 @@ export function describeObjectDef(def: ObjectDef, names: DefNames, out: Descript
  */
 export function describeInfluencesOn(
   def: ObjectDef,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
   ownedByThisDef: boolean,
   names: DefNames,
   out: DescriptionWriter,

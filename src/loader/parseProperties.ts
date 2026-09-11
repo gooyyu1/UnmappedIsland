@@ -32,6 +32,7 @@ import {
 } from '../domain/PropertyDef';
 import type { PassiveEffect } from '../domain/PassiveEffect';
 import { PropertyPath, ReferenceScope } from '../domain/ReferenceRoot';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 
 /** props（6節）の1エントリが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。
  * unitは単位表記などの注記用で、ローダーは解釈しない（WorldCodex.schema.json参照）。 */
@@ -179,7 +180,7 @@ function parseBase(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YAMLMap,
-  propertyGlobalId: number,
+  propertyGlobalId: PropertyGlobalId,
 ): PropertyPath | undefined {
   const baseNode = tryGetMap(node, 'base', context);
   if (baseNode === undefined) return undefined;

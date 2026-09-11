@@ -8,6 +8,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * coconut.yamlのヤシの実の加工の連鎖を、実ファイルの定義だけで検証する。熟度で分かれる2本
@@ -21,7 +22,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
   let startMinutes: number;
   let beach: WorldObject;
   let player: WorldObject;
-  let hydrationId: number;
+  let hydrationId: PropertyGlobalId;
 
   beforeAll(() => {
     // 刃物（tools.yaml）・土地（locations.yaml）・殻の容器（liquid_containers.yaml）への

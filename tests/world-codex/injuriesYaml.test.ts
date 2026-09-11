@@ -8,6 +8,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * injuries.yamlの怪我を、実ファイルの定義だけで検証する（docs/engine/InjurySystem.md）。
@@ -23,7 +24,7 @@ describe('injuries.yamlの怪我', () => {
   let session: WorldSession;
   let beach: WorldObject;
   let player: WorldObject;
-  let painId: number;
+  let painId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();
@@ -94,7 +95,7 @@ describe('injuries.yamlの怪我', () => {
   }
 
   /** 荷重（load）のプロパティ番号。 */
-  function loadId(): number {
+  function loadId(): PropertyGlobalId {
     return codex.propertyNames.getId('load');
   }
 

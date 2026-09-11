@@ -9,6 +9,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 describe('foods.yamlの食料定義', () => {
   let codex: WorldCodex;
@@ -176,7 +177,7 @@ describe('食べ物の腐敗', () => {
   const ONE_TICK = 15;
 
   let codex: WorldCodex;
-  let durabilityId: number;
+  let durabilityId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();
@@ -278,7 +279,7 @@ describe('食べ物の腐敗', () => {
  */
 describe('食べ物が配る幸福度', () => {
   let codex: WorldCodex;
-  let happinessId: number;
+  let happinessId: PropertyGlobalId;
 
   beforeAll(() => {
     codex = bundledCodex();
