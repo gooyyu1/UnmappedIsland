@@ -98,6 +98,7 @@ tail -3 "$PATROL"
 | 今の盤面 | `bash scripts/agent/board.sh` |
 | デーモンの生死 | `bash scripts/agent/daemon.sh status` |
 | 盤面を引けていないか | デーモンの台帳（記録と同じ置き場の `taken.json`）の `unreadable:since` |
+| 誰の手番でもない跡 | 本体のチェックアウトの `git status`（issue でもPRでもセッションでもないので、盤面には映りません） |
 
 **転んだ手は、実際に手で打ち直して確かめてください。** ログに残るのは「打てなかった」までで、
 理由はそのスクリプトの標準エラーにしか出ていません。`DRY_RUN=1` を付ければ立てずに引数だけ見られます。
