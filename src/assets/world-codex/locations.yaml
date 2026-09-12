@@ -653,9 +653,9 @@ object_defs:
       # 罠の候補に載る。どの型の罠に載るかは、罠の側が並べた候補の一覧が決める（同1.1節）。
       rat_catch: {value: 6}
       junglefowl_catch: {value: 8}
-      # 檻（farming.yamlのpen）に掛かる大型。森と同じ重み——イノシシの居方は
-      # 森と同じ値（森のwild_boar_catch参照）。`wild_boar_find`が両方3で並んでいるとおりで、
-      # 檻の側で差を付ける理由が無い。
+      # 檻（farming.yamlのpen）と落とし穴（traps.yaml）に掛かる大型。森と同じ重み（森の
+      # wild_boar_catch参照）——イノシシの居方は`wild_boar_find`が両方3で並んでいるとおりで、
+      # 罠の側で差を付ける理由が無い。
       wild_boar_catch: {value: 2}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
       rat_find: {value: 3, base: {subject: agent, prop: quarry_sense}}
