@@ -12,6 +12,7 @@
  */
 
 import { uiText } from '../locale/uiTexts';
+import { messageOf } from '../util/errorMessage';
 
 /** 文面の行の字下げ（幅は文面の見た目の都合なので、対応表ではなくこちらが持つ）。 */
 const INDENT = '  ';
@@ -81,7 +82,7 @@ export function installErrorReport(): void {
 /** エラーを1件受け取る。既に同じものが出ていれば回数を足すだけ。 */
 function receive(error: unknown, fallback: string): void {
   try {
-    const message = messageOf(error, fallback);
+    const message = reportMessageOf(error, fallback);
     const stack = stackTraceOf(error);
     // 同じ場所から出た同じ文言なら同じエラー。呼び出し元が違えばスタックの先頭行が変わる。
     const key = `${message}\n${stack.split('\n')[0] ?? ''}`;
@@ -154,14 +155,18 @@ function describeState(): readonly string[] {
   try {
     return stateReporter().map((line) => INDENT + line);
   } catch (error) {
-    const message = messageOf(error, uiText('unknown'));
+    const message = reportMessageOf(error, uiText('unknown'));
     return [INDENT + uiText('report_state_failed', { message })];
   }
 }
 
-function messageOf(error: unknown, fallback: string): string {
-  if (error instanceof Error) return `${error.name}: ${error.message}`;
-  return typeof error === 'string' ? error : fallback;
+/**
+ * 報告へ載せる1行。**例外の種類（`TypeError`）を文言の前に置く**——同じ文言でも種類が違えば別の
+ * 不具合で、貼られた報告を読む側はそこで見分ける。スタックを持たない例外もある（stackTraceOf）ので、
+ * 種類を名乗るのは報告の側の仕事。文言そのものの作り方は例外の側の話なので持たない（messageOf）。
+ */
+function reportMessageOf(error: unknown, fallback: string): string {
+  return (error instanceof Error ? `${error.name}: ` : '') + messageOf(error, fallback);
 }
 
 function stackTraceOf(error: unknown): string {

@@ -1,5 +1,6 @@
 import { ObjectWrapper } from './ObjectWrapper';
 import type { Rng } from '../Rng';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR } from '../worldTime';
 
 /**
  * world（唯一のシングルトン、GameElementDefinition.md 15節）の包み（ObjectWrapper）。
@@ -24,7 +25,7 @@ export class World extends ObjectWrapper {
    * 扱いたい場面——経過量を求める・その分だけ実時間をかけて時計を進める——のための読み取り。
    */
   get totalMinutes(): number {
-    return ((this.day - 1) * 24 + this.hour) * 60 + this.minute;
+    return ((this.day - 1) * HOURS_PER_DAY + this.hour) * MINUTES_PER_HOUR + this.minute;
   }
 
   /**

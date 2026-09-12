@@ -13,7 +13,7 @@ import { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
  * 拡張子の範囲はテスト側の走査（tests/support/worldCodexFiles.ts）と揃える。片方だけが拾う
  * ファイルがあると、テストは全部通るのにゲームでは定義が欠ける。
  */
-const FILES = import.meta.glob('../assets/world-codex/**/*.{yaml,yml}', {
+const CODEX_FILES = import.meta.glob('../assets/world-codex/**/*.{yaml,yml}', {
   eager: true,
   query: '?raw',
   import: 'default',
@@ -21,7 +21,7 @@ const FILES = import.meta.glob('../assets/world-codex/**/*.{yaml,yml}', {
 
 /** 同梱WorldCodexのファイル名（src/assets/world-codex/からの相対）と、その中身（ファイル名順）。 */
 export const WORLD_CODEX_TEXTS: ReadonlyMap<string, string> = new Map(
-  Object.entries(FILES)
+  Object.entries(CODEX_FILES)
     .map(([path, text]): [string, string] => [path.replace(/^.*\/world-codex\//, ''), text])
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
 );

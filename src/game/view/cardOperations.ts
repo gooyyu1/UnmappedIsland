@@ -34,14 +34,16 @@ export interface CardAction {
 }
 
 /**
- * 札を落とす先について言うこと1件。**画面は、宣言された組み合わせと枠へ入れる操作を区別しない**
- * ——どちらも名前と時間を吹き出しに出し、実行するだけ（CardInteraction.md 2節）。**起きることとは
- * 限らない**——離しても何も起きない落とし先（enabledがfalse）もこの形で返る（同2.1節）。
+ * 札を落としたら何が起きるか、の答え1件（**落とし先そのものはCardDragControllerのCardDrop**）。
+ * **画面は、宣言された組み合わせと枠へ入れる操作を区別しない**
+ * ——どちらも名前と時間を吹き出しに出し、実行するだけ（CardInteraction.md 2節）。**答えが返ることは
+ * 「起きる」を意味しない**——離しても何も起きない落とし先も、断る理由を告げるためにこの形で返る
+ * （enabledがfalse、同2.1節）。
  *
  * **実行できるかと、できない理由の持ち方はCardActionと同じ。** ボタンで押せない操作も、重ねても
  * 起きない組み合わせも、宣言が書いた1行（14.6節のreason）を同じ形で画面へ渡す。
  */
-export interface CardDrop {
+export interface CardDropEffect {
   /**
    * 吹き出しに出す名前。名前も時間も宣言していない枠ではundefined——ただ位置が変わるだけの移動に
    * 説明は要らない。
@@ -76,7 +78,7 @@ export interface CardDrop {
  * 名前が必ずある。**実行できるとは限らない**——理由を宣言している要件で落ちているものは、その理由を
  * 見せて断るために返る（enabled・reason）。
  */
-export interface CardCombination extends CardDrop {
+export interface CardCombination extends CardDropEffect {
   readonly name: string;
 }
 
@@ -97,7 +99,7 @@ function carriedOf<T>(stack: readonly T[], count: number): readonly T[] {
 export interface CardOperations {
   readonly actions: readonly CardAction[];
   readonly movedIds: (count: number) => readonly number[];
-  readonly dropInto: (place: CardPlace, at?: CardPlacement, count?: number) => CardDrop | undefined;
+  readonly dropInto: (place: CardPlace, at?: CardPlacement, count?: number) => CardDropEffect | undefined;
   readonly reorderActionAt: (at: CardPlacement) => (() => void) | undefined;
 }
 
@@ -185,7 +187,7 @@ export function cardOperationsOf(game: StartedGame, locale: Localization): CardO
    */
   const dropInto =
     (stack: readonly WorldObject[], from: CardPlace) =>
-    (place: CardPlace, at?: CardPlacement, count = 1): CardDrop | undefined => {
+    (place: CardPlace, at?: CardPlacement, count = 1): CardDropEffect | undefined => {
       if (place === from) return undefined;
       if (stack[0].rejectionForMoveTo(place) !== undefined) return undefined;
 

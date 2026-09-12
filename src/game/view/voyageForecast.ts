@@ -11,9 +11,7 @@ import type { WorldCodex } from '../../domain/WorldCodex';
 import type { WorldObject } from '../../domain/WorldObject';
 import type { World } from '../../domain/wrappers/World';
 import type { ObjectGlobalId } from '../../domain/GlobalId';
-
-/** 1日の分数（推定日数を出すのに要る唯一の定数）。 */
-const MINUTES_PER_DAY = 24 * 60;
+import { MINUTES_PER_DAY } from '../../domain/worldTime';
 
 /**
  * 見積もりを丸める刻み（日）。**半日**にするのは、積み下ろしのたびに動く細かさが要る一方、
