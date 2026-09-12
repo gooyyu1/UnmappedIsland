@@ -52,6 +52,15 @@ const TREE_MODULES = ['src/domain/ActiveEffect.ts', 'src/domain/ConditionNode.ts
 /** 宣言を読み上げてもらう側の置き場（CodeStructure.md 5節）。 */
 const TREE_READERS = ['src/analysis', 'src/codex-viewer'];
 
+/**
+ * `src/domain/` 直下に置く、1つの話題で閉じたまとまり（CodeStructure.md 3節）。
+ *
+ * **宣言と実体はフォルダで分けない。** 定義は世界を引数に取る振る舞いなので、宣言と実行は同居して
+ * いるのが普通の状態で、分ける単位にならない（DesignNotes.md「定義と実行時状態」）。その線で
+ * フォルダが増えたらここが落ちるので、戻すなら決めごとのほうを先に直すことになる。
+ */
+const DOMAIN_SUBDIRS = ['generation', 'wrappers'];
+
 /** そのディレクトリ以下の.tsファイル（リポジトリ相対）。 */
 function sourcesIn(dir: string): string[] {
   // 検査対象にはファイル1つを名指しするものもある（層の外の `errorReport.ts`・`launchSeed.ts`）。
@@ -226,6 +235,18 @@ describe('層の境界', () => {
       importsOf(rel, true).some((target) => TREE_MODULES.includes(target)),
     );
     expect(offenders, 'このファイルが木そのものを輸入している').toEqual([]);
+  });
+
+  it('src/domain/ 直下が、宣言と実体のフォルダへ分かれていない', () => {
+    // 見るのはディレクトリだけ。**直下のファイルがどう並んでいるかは見ない**——並びを固定すると、
+    // ファイルを1つ足すたびにここが落ちるようになり、決めごとを見張る役から在庫表へ変わる。
+    const subdirs = readdirSync(join(ROOT, 'src/domain')).filter((entry) =>
+      statSync(join(ROOT, 'src/domain', entry)).isDirectory(),
+    );
+
+    expect([...subdirs].sort(), '直下のまとまりが増減している（CodeStructure.md 3節）').toEqual(
+      [...DOMAIN_SUBDIRS].sort(),
+    );
   });
 
   it('検査対象の置き場が実在する', () => {

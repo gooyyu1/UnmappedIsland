@@ -167,6 +167,19 @@ codex ビューアはゲームの画面を持たない別ページとして層�
 インスタンスに定義への素通しを生やすと、この線がぼやけます。`WorldObject.def`・`Slot.def`・
 `PropertyValue.def` はいずれも公開で、素通しは持ちません。
 
+**この線を引くのはクラスであって、ディレクトリではありません。** 同じものの宣言と実体が別のクラスと
+して並んでいること（`ObjectDef` と `WorldObject`、`SlotDef` と `Slot`、`PropertyDef` と
+`PropertyValue`）が線の現れで、**どちらへ訊くかはメソッドがどちらに生えているかで決まります**。
+定義は受動的なレコードではなく**世界を引数に取る振る舞い**（`ConditionNode.evaluate`・
+`InteractionDef.tryExecute`）なので、宣言と実行はもともと同居しています——`src/domain/` 直下を宣言と
+実体のフォルダへ分ける形が不採用なのはそのためで、測ったものは
+[`DesignNotes.md`](./engine/DesignNotes.md)「定義と実行時状態」が持ちます。
+
+そのため**直下に置くサブディレクトリは、1つの話題で閉じたまとまりだけ**です。**どれが在るかは
+[`tests/architecture/layers.test.ts`](../tests/architecture/layers.test.ts) の `DOMAIN_SUBDIRS` が
+持ちます**——ここへ書き写すと、一致を誰も検査しない2つ目の一覧が増えるので置きません。宣言と実体で
+分ける線がフォルダとして生えたらそこが落ちるので、戻すなら決めごとのほうを先に直すことになります。
+
 ## 4. Phaser をやめるとどうなるか
 
 **書き換えるのは部品・汎用部品・組み立てだけです。** 残りはどれも Phaser を知ってはいけない側なので、
