@@ -221,6 +221,7 @@ describe('check-values.mjs の告げ方', () => {
     expect(created).toContain(TITLE);
     expect(created).toContain('判断待ち');
     expect(created).toContain('origin:agent');
+    expect(created).toContain('goal:upkeep');
     // **読む人はリポジトリを開かない**ので、直し方まで本文に入っている（2.22.3）。
     expect(run.body).toContain(BRIDGE);
     expect(run.body).toContain(LONG_AGO);
