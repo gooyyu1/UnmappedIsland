@@ -266,6 +266,7 @@ sequenceDiagram
     alt 直し待ち／CIが赤／コンフリクト／見た目が無い
         D->>W: 書いたセッションを起こして直させる
         W->>G: 直しを push（ラベルは push で外れる）
+        Note over D,R: 本文だけを直して戻ってこなければ<br/>もう1周レビューへ渡す
     else 通してよい かつ 緑
         alt 人の手番で止まっている
             D->>G: マージを出さない
@@ -371,7 +372,7 @@ flowchart LR
 | `RESUME … stall` | PRを出さないまま手が空いた `task-*` のセッション | **1回だけ**起こす |
 | `RESUME … review-stall` | 判定を書かないまま手が空いた `review-*` のセッション（読んだ差分がまだ頭のとき） | **1回だけ**起こして続きを書かせる。畳むと、次に立つ1本が差分を読み直すところから始まるため |
 | `RETURN` | 起こしても動かなかった `task-*` のセッション | issue へ `[返却]` のコメントを置き、**仕事を人へ返す**（5節） |
-| `REVIEW` | 判定のラベルが無く、緑で、マージできると分かっている | [`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) |
+| `REVIEW` | 判定のラベルが無く、緑で、マージできると分かっている。**`直し待ち` で頼み終えても戻ってこないPRも**（[`board-design.md`](../.claude/board-design.md) 2.13.6） | [`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) |
 | `TASK` | **抱えているタスクと、手の動いている作業者のどちらも上限に達しておらず**、走っている issue と `area:` の錠を取り合わない（**相手の担当が読めないときも、錠を持つ issue は出しません**） | `kind:task` を1件投入する。**`急ぎ` が先、その中では一番古いもの**（返されたものは配らない） |
 | `CHORE` | 周期で起きる係に仕事があり、前に立ててから間隔が空いた | [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**PRを出す係が居ても、作業者の枠には数えません**（`TASK` の行に挙がっている上限は、どちらも見ません） |
 | `NOTE` | 手を打てない事情がある | `覚え書き:` の行をログへ残す。**読むのは人です** |
