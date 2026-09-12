@@ -622,16 +622,24 @@ describe('traps.yamlの落とし穴', () => {
     // **生かす側が常に高くつく**（TrapSystem.md 1.2節）を値で見る場所。時間で差を付けていないので、
     // 穴と檻の差は「太い枝1本」と「丸太と縄」の差そのものになる。どちらかの時間を動かすと、
     // 材料表だけで成り立っていた比較が崩れる。
-    function onlyRecipeOf(objectName: string): RecipeDef {
-      const [recipe] = codex.objects.get(codex.objectNames.getId(objectName)).recipesProducingThis;
-      return recipe!;
+    function recipeOf(objectName: string): RecipeDef {
+      const recipes = codex.objects.get(codex.objectNames.getId(objectName)).recipesProducingThis;
+      expect(recipes, `${objectName}を作る道は1本だけ`).toHaveLength(1);
+      return recipes[0]!;
     }
 
-    const digging = onlyRecipeOf('pitfall');
-    const fencing = onlyRecipeOf('pen');
+    /** そのレシピが素材として名指ししている物を、宣言の並びのまま返す。 */
+    function requiredNames(recipe: RecipeDef): string[] {
+      return ['thick_branch', 'log', 'rope', 'long_pole'].filter((name) =>
+        recipe.requires(codex.objects.get(codex.objectNames.getId(name))),
+      );
+    }
+
+    const digging = recipeOf('pitfall');
+    const fencing = recipeOf('pen');
 
     expect(digging.totalMinutes, '掘る手間と組む手間は同値').toBe(fencing.totalMinutes);
-    expect(digging.steps[0]!.requirements, '穴が要るのは1種類だけ').toHaveLength(1);
-    expect(fencing.steps[0]!.requirements.length, '檻はそれより多い').toBeGreaterThan(1);
+    expect(requiredNames(digging), '穴は太い枝1本だけ').toEqual(['thick_branch']);
+    expect(requiredNames(fencing), '檻は丸太と縄').toEqual(['log', 'rope']);
   });
 });

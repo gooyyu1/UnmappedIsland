@@ -592,7 +592,8 @@ describe('animals.yamlの動物', () => {
 
     it('獲物が大きいほど、同じ物が多く取れる', () => {
       // 得られる素材は獲物の種類によらず同じで、大きさは個数が表す（HuntingSystem.md 1.5節）。
-      // 12倍の体格から、12倍の枚数が出る。
+      // **枚数は体重の比ではない**——肉・骨・生皮で倍率が違うのは、どれも現実の割合へ別に
+      // 合わせた結果（下の「肉として出るのは」「生皮の割合は」）。
       const boarCarcass = spawnInto('wild_boar_carcass', jungle, 'items');
 
       butcher(boarCarcass);
@@ -638,16 +639,24 @@ describe('animals.yamlの動物', () => {
       expect(fowlShare, 'ヤケイは1枚で上端に付く').toBeGreaterThan(Math.max(monkeyShare, boarShare));
     });
 
-    it('生皮の割合は、小さい獲物ほど高くなる', () => {
-      // 生皮は1枚が固定なので、体重に対する割合は獲物の大小で飛ぶ（HuntingSystem.md 1.5節）。
-      // 体表の割合が体格とともに下がる現実と向きは合うので、これは合わせた結果のほう。
+    it('生皮の割合は、小さい獲物ほど高く、どちらも現実の帯に入る', () => {
+      // **枚数は体重の比ではない**（HuntingSystem.md 1.5節）。体表の割合は体格とともに下がるので、
+      // 枚数を体重に比例させると大型の生皮が現実から外れる。帯の端は現実の値——ブタの皮が体重の
+      // 6〜8%、ウサギのような小型が10〜12%。
       const monkeyShare = rawhideShareOf('monkey_carcass');
       const boarShare = rawhideShareOf('wild_boar_carcass');
 
-      expect(monkeyShare).toBeGreaterThan(boarShare);
+      expect(monkeyShare, 'サルのほうが高い').toBeGreaterThan(boarShare);
+      for (const [name, share] of [
+        ['サル', monkeyShare],
+        ['イノシシ', boarShare],
+      ] as const) {
+        expect(share, `${name}は体重の5%以上`).toBeGreaterThanOrEqual(0.05);
+        expect(share, `${name}は体重の13%以下`).toBeLessThanOrEqual(0.13);
+      }
     });
 
-    it('イノシシ1頭ぶんの肉は、腐るまでに4人で食べ切れる量を超える', () => {
+    it('イノシシ1頭ぶんの肉は、腐るまでに全員で食べ切れる量を超える', () => {
       // **檻と落とし穴の`<動物>_catch`を上げない理由がこれ**（TrapSystem.md 3節）。上げても増えるのは
       // 腐る量だけで、食べ切れる量を動かすのは重みではなく保存（salt.yaml・smoking.yaml・drying.yaml）
       // の側になる。ここが逆転したら、腐敗が上限を握っているという根拠が消える。

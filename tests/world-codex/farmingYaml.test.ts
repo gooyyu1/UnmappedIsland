@@ -386,20 +386,37 @@ describe('farming.yamlの畑と囲い', () => {
     // 飼葉の減りは獣の側の1行（animals.yamlのbreeding_remaining）が持つので、1 tickの減りへ周期を
     // 掛けて出す。**通しで回さないのは、途中で甕1杯が尽きるから**（上の試験）。
     open();
+    const { pen, fowl } = penWithCalmFowl();
+    const fodder = pen.tryGetProperty(fodderId)!;
+
+    const before = fodder.getEffectiveValue();
+    tick(1);
+    const perCycle =
+      (before - fodder.getEffectiveValue()) * fowl.tryGetProperty(breedingRemainingId)!.def.range!.max;
+
+    const taro = spawnInto('taro', player, 'hand');
+    const perTaro = taro.tryGetProperty(codex.propertyNames.getId('plant_bait'))!.getEffectiveValue();
+    expect(perCycle, '1周期ぶんの消費は芋2個ぶん').toBeCloseTo(perTaro * 2);
+  });
+
+  it('飼葉を芋2個ぶんだけ入れた囲いは、周期の終わりで止まる', () => {
+    // ゲートは`fodder gte 1`（animals.yamlのbreeding_remaining）なので、**置いておく量と1周期ぶんの
+    // 消費量（上の試験）は別**——ちょうど2個ぶん入れると、最後の刻みを食べられずに周期が止まる。
+    open();
     const fowl = calmJunglefowl();
     const pen = spawnInto('pen', land, 'fixtures');
     feed(pen, 2);
     expect(fowl.moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('catch')))).toBeUndefined();
-
+    const breeding = fowl.tryGetProperty(breedingRemainingId)!;
+    breeding.setNumber(breeding.def.range!.max);
+    // 渇いて死ぬ前に飼葉が尽きるだけの水（上の「甕1杯の水では通せない」）。
+    pourWater(pen);
     const fodder = pen.tryGetProperty(fodderId)!;
-    const twoTaro = fodder.getEffectiveValue();
-    tick(1);
-    const perTick = twoTaro - fodder.getEffectiveValue();
 
-    expect(
-      perTick * fowl.tryGetProperty(breedingRemainingId)!.def.range!.max,
-      '1周期ぶんで、与えた芋2個をちょうど使い切る',
-    ).toBeCloseTo(twoTaro);
+    for (let i = 0; i < 2000 && fodder.getEffectiveValue() >= 1; i++) tick(1);
+
+    expect(pennedCount(pen), '増えていない').toBe(1);
+    expect(breeding.getEffectiveValue(), '周期が残ったまま止まる').toBeGreaterThan(0);
   });
 
   it('水をやらなければ、囲いの獣は3日半で渇いて死ぬ', () => {
