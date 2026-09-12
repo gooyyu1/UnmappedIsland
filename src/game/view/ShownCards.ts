@@ -512,7 +512,7 @@ export class ShownCards {
    * 元どおりアイテムへ落ちる。開いているだけで手持ちの端が使えなくなるのは不便なため。
    *
    * **候補の並びを公開しているのは、順と長さがここからしか見えないため。** edgeMoveActionが返すのは
-   * 実行する閉包だけで、1番手が受け取ったのか2番手へ落ちたのかを外から区別できない。
+   * 落とせた1つを実行する閉包だけなので、**どれも落とせない向きに候補が何番目まで在るか**は出ない。
    */
   edgeTargets(from: CardPlace, direction: CardEdgeDirection): readonly CardPlace[] {
     const places = this.source.places;

@@ -25,8 +25,9 @@ const LOCALE_TEXTS = import.meta.glob('../assets/locale/*.yaml', {
  * LOCALE_FILEの中身。
  *
  * **生のテキストのまま返す口を公開しているのは、宣言されている識別子の集合を数える読み手のため。**
- * Localizationは引く口しか持たず、知らない識別子は識別子のまま返すので、引くだけでは「宣言されて
- * いない」と「宣言されている」を見分けられない。
+ * 節ごとの対応表のうちLocalizationが外へ出しているのはuiTextsだけで、他の節は引く口しか無い。
+ * 知らない識別子は識別子のまま返るので、引くだけでは「宣言されていない」と「宣言されている」を
+ * 見分けられない。
  */
 export function bundledLocaleText(): string {
   const text = LOCALE_TEXTS[`../assets/locale/${LANGUAGE}.yaml`];
@@ -508,9 +509,9 @@ function mergedRejectingDuplicates<T>(
  * 表示文字列のYAMLを読む（labelはエラーメッセージ用の出所表示）。知らない節・キーは無視するため、
  * 実装が追いつく前に節を足しても壊れない。
  *
- * **テキストを1枚だけ読む口を公開しているのは、同梱していない書き方を確かめる読み手のため。**
- * loadLocalizationは同梱ぶんから読み始めるので、任意の書き方（節の書き誤り・識別子の重複）を
- * そちらからは試せない。
+ * **テキスト1枚ぶんの対応表を返す口を公開しているのは、同梱ぶんを混ぜずに読みたい読み手のため。**
+ * loadLocalizationは必ず同梱ぶんから読み始めるので、「宣言していない識別子は識別子のまま返る」の
+ * ように**載っていないこと**を確かめたい読み手は、そちらを通れない。
  */
 export function parseLocale(label: string, yamlText: string): Localization {
   const document = parseDocument(yamlText);
