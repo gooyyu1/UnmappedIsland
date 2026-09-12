@@ -53,7 +53,7 @@ export class AxisLimit {
  * 書き込むプロパティの上書きを持つ。表示名はlocaleが持つ（Localization.md）。
  *
  * **上書きしてよいのは発見量のつまみだけ**という制約は、YAMLの書き手が守る（プロパティの実在は
- * build時に検証する）。亜種は「少しだけ木苺が多い森」の類であって、そこにしか無いものを作る
+ * buildAndReset時に検証する）。亜種は「少しだけ木苺が多い森」の類であって、そこにしか無いものを作る
  * 仕組みではない——同じ型は島に高々3個で、型ごとの出現率も5割前後なので、亜種に固有のものを
  * 紐づけると「島のどこにも無い」が普通に起きる。
  */
@@ -78,7 +78,7 @@ export class LocationVariantDef {
 export class LocationTypeDef {
   readonly name: string;
 
-  /** この型が実体化するときのobject_defのグローバルID（build時に存在検証済み）。 */
+  /** この型が実体化するときのobject_defのグローバルID（buildAndReset時に存在検証済み）。 */
   readonly objectDefGlobalId: ObjectGlobalId;
 
   /**

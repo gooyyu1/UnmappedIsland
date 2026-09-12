@@ -520,8 +520,8 @@ props:
   ```
 
   数値型の「最下段（min省略）＝フォールバック」という概念は、シンボル型には存在しません。`stages` に
-  書かなかった値は単に「該当する段階が無い」となり、`resolveStage` は `undefined` を返します。呼び出し側
-  （`WhenOwnStage` ゲートを含む）は必ず `undefined` チェックを行います（`WorldObject.isInStage` 参照）。
+  書かなかった値は単に「該当する段階が無い」となり、`PropertyDef.stageAt` は `undefined` を返します。呼び出し側
+  （`WhenOwnStage` ゲートを含む）は必ず `undefined` チェックを行います（`PropertyDef.isInStage` 参照）。
   複数のシンボル値を1つの段階名にまとめたい場合は、`stages` ではなく利用側の `conditions` の `in`
   （14.1 節）で表現します。`stages` は1つのプロパティ自身の値と段階名を1対1で対応させる仕組みです。
 - 現在値に基づいて常に一意に段階を決定します。ヒステリシス（上昇時・下降時で閾値をずらす仕組み）は採用しません。

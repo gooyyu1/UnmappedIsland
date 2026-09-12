@@ -384,7 +384,7 @@ export class WorldCodex {
   /**
    * 世界にただ1つ存在する型（`singleton: true`、15節）のグローバルIDを宣言順で返す。
    *
-   * 「1つだけ存在すべき」を「**世界を作った時点で必ず1つ在る**」と読む（NewGame.start）。そうでないと、
+   * 「1つだけ存在すべき」を「**世界を作った時点で必ず1つ在る**」と読む（NewGame.startNewGame）。そうでないと、
    * 型の名前で行き先を指す`move`の`to_object`（9.6節）が、まだ湧いていない場所を指すことになる。
    */
   singletonGlobalIds(): readonly ObjectGlobalId[] {

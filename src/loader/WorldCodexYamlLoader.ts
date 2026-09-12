@@ -74,14 +74,14 @@ export interface PackSource {
  * 厳格モード）。「後勝ちで上書き」の規則は一切持たない（MODによる差し替えは専用のpatch文法で
  * 表現する想定）。
  *
- * buildは蓄積内容から不変のWorldCodexを組み立てて返し、このインスタンスの蓄積状態を初期化する。
+ * buildAndResetは蓄積内容から不変のWorldCodexを組み立てて返し、このインスタンスの蓄積状態を初期化する。
  */
 export class WorldCodexYamlLoader {
   /** load系メソッドで蓄積した、パース済みだがtrait未解決のobject_defs/traits。 */
   private readonly globalObjectDefs = new Map<string, RawObjectDef>();
   private readonly globalTraits = new Map<string, RawTrait>();
 
-  /** 読み込んだpatch（3.4節）。当たる先が全部揃ってからでないと当てられないので、buildまで貯める。 */
+  /** 読み込んだpatch（3.4節）。当たる先が全部揃ってからでないと当てられないので、buildAndResetまで貯める。 */
   private patches: RawPatch[] = [];
 
   /** レシピ一覧の棚に使うタグ（recipe_categories、Windows.md 9節）。宣言順がそのまま優先順位。 */
@@ -89,7 +89,7 @@ export class WorldCodexYamlLoader {
 
   /**
    * フィルターバーのボタン（card_filters、ScreenLayout.md 8.1.3節）。**タグは名前のまま貯める**
-   * ——型のtagsが解決されるのはbuildなので、綴りが実在するかはこの時点では見られない。
+   * ——型のtagsが解決されるのはbuildAndResetなので、綴りが実在するかはこの時点では見られない。
    */
   private rawCardFilters: RawCardFilter[] = [];
 
@@ -186,7 +186,7 @@ export class WorldCodexYamlLoader {
     const root = asMap(doc.contents, label);
 
     // プロパティタグ（6.7節）はprops側の参照より先に揃っている必要があるが、object_defのtrait解決
-    // （＝propsの解釈）はbuild時なので、ファイル間の読み込み順は問わない。IDは宣言順に振られ、
+    // （＝propsの解釈）はbuildAndReset時なので、ファイル間の読み込み順は問わない。IDは宣言順に振られ、
     // それがそのままUIでのカテゴリの並び順になる。重複宣言はinternが冪等なので黙って無視される。
     const propertyTags = tryGetMap(root, 'property_tags', label);
     if (propertyTags !== undefined)
@@ -280,7 +280,7 @@ export class WorldCodexYamlLoader {
           'traits',
         );
 
-    // 既存のobject_defへの変更（3.4節）。当たる先が揃っている必要があるので、適用はbuildまで待つ。
+    // 既存のobject_defへの変更（3.4節）。当たる先が揃っている必要があるので、適用はbuildAndResetまで待つ。
     const patches = tryGetSeq(root, 'patch_object_defs', label);
     if (patches !== undefined)
       (patches.items as YamlNode[]).forEach((node, index) => {
@@ -310,8 +310,8 @@ export class WorldCodexYamlLoader {
       objectDefsByGlobalId.set(def.globalId, def);
     }
 
-    // レシピを持つ型から製作中オブジェクトを生成する（RecipeSystem.md 1節）。build()の中でしか
-    // 行えない——objectNames.countはこの直後に密配列の長さとして確定し、build()後に型を足すと
+    // レシピを持つ型から製作中オブジェクトを生成する（RecipeSystem.md 1節）。buildAndReset()の中でしか
+    // 行えない——objectNames.countはこの直後に密配列の長さとして確定し、buildAndReset()後に型を足すと
     // グローバルIDが配列からはみ出すため。
     const generatedTypes = new GeneratedTypes();
     this.loadGenerated(

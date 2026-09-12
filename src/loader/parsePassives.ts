@@ -147,7 +147,7 @@ function parsePassiveBlockInto(
 /**
  * ゲートを組み立てる。stagePropertyNameとconditionsの両方が指定されていれば、両方を満たす間
  * だけ有効になる（PassiveEffect.activeAmount参照）。ゲートはグローバルIDのまま持ち、評価時に
- * ローカルIDへ変換する（WorldObject.isInStage参照）。
+ * ローカルIDへ変換する（WorldObject.tryGetProperty参照）。
  */
 function buildGate(
   loader: WorldCodexYamlLoader,

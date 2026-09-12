@@ -88,7 +88,7 @@ export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
   if (yaml.trim() !== '') loader.load('test.yaml', yaml);
   const codex = loader.buildAndReset();
 
-  // NewGame.startと同じ順序で組み立てる（worldインスタンスもセッションに属させるため）。
+  // NewGame.startNewGameと同じ順序で組み立てる（worldインスタンスもセッションに属させるため）。
   const session = new WorldSession(codex, undefined, options.rng);
   const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
   const world = new World(worldInstance, codex);
