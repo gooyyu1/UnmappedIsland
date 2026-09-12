@@ -496,7 +496,11 @@ describe('board-round.mjs', () => {
   it('投入先を寄越された手は、その引数を付けて投入する', () => {
     const result = playRound({
       issues: [
-        { number: 9, labels: [{ name: 'kind:task' }, { name: 'env:bridge' }], blockedBy: { nodes: [] } },
+        {
+          number: 9,
+          labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }, { name: 'env:bridge' }],
+          blockedBy: { nodes: [] },
+        },
       ],
     });
 
@@ -505,7 +509,9 @@ describe('board-round.mjs', () => {
 
   it('投入先が無ければ、引数を足さない', () => {
     const result = playRound({
-      issues: [{ number: 9, labels: [{ name: 'kind:task' }], blockedBy: { nodes: [] } }],
+      issues: [
+        { number: 9, labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }], blockedBy: { nodes: [] } },
+      ],
     });
 
     expect(result.calls[0]).toMatch(/^dispatch-task\.sh 9 \S+$/);
@@ -513,7 +519,9 @@ describe('board-round.mjs', () => {
 
   it('起こしても動かないワーカーの仕事を、コメントで人へ返す', () => {
     const result = playRound({
-      issues: [{ number: 8, labels: [{ name: 'kind:task' }], blockedBy: { nodes: [] } }],
+      issues: [
+        { number: 8, labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }], blockedBy: { nodes: [] } },
+      ],
       sessions: [idle('session_a', 'task-8')],
       ledger: { 'resume:session_a': 'stall:8' },
     });
@@ -527,7 +535,9 @@ describe('board-round.mjs', () => {
 
   it('返せなかったら、指紋を残さない', () => {
     const result = playRound({
-      issues: [{ number: 8, labels: [{ name: 'kind:task' }], blockedBy: { nodes: [] } }],
+      issues: [
+        { number: 8, labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }], blockedBy: { nodes: [] } },
+      ],
       sessions: [idle('session_a', 'task-8')],
       ledger: { 'resume:session_a': 'stall:8' },
       commentFails: true,
@@ -541,7 +551,9 @@ describe('board-round.mjs', () => {
   // 引き直さない。
   it('開いている issue を担当しているワーカーのぶんは、issue を引き直さない', () => {
     const result = playRound({
-      issues: [{ number: 8, labels: [{ name: 'kind:task' }], blockedBy: { nodes: [] } }],
+      issues: [
+        { number: 8, labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }], blockedBy: { nodes: [] } },
+      ],
       sessions: [working('session_a', 'task-8')],
     });
 
@@ -733,7 +745,9 @@ describe('board-round.mjs', () => {
       bucket: 'SESSION_STATUS_BUCKET_WORKING',
       tags: ['task-8'],
     });
-    const openTask = [{ number: 8, labels: [{ name: 'kind:task' }], blockedBy: { nodes: [] } }];
+    const openTask = [
+      { number: 8, labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }], blockedBy: { nodes: [] } },
+    ];
 
     it('空いているセッションの、空いた時刻を残す', () => {
       const result = playRound({

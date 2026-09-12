@@ -67,6 +67,13 @@ const LONG_IDLE = '2026-09-04T02:00:00Z';
  */
 const DUG_JUST_NOW = { 'cycle:dig': NOW };
 
+/**
+ * 棚卸しの係も、**たった今立てた**ことにできる足場。あの係の `due` には**`kind:task` なのに
+ * `goal:` が無いこと**が入った（2.17.1）ので、**取りこぼしを置いた盤面には必ず当たる**
+ * ——向かう先そのものを見る検査の期待値へ、棚卸しを立てる手が1つ混ざる。
+ */
+const TRIAGED_JUST_NOW = { 'cycle:triage': NOW };
+
 /** 掘り起こす係を立てる手。**上の既定を外した盤面はどれもこれを出す**ので、ここで名前を持つ。 */
 const DIG = `CHORE dig .claude/dig-prompt.md ${NOW}`;
 
@@ -118,7 +125,24 @@ function pr(number: number, over: Record<string, unknown> = {}) {
   };
 }
 
-const label = (...names: string[]) => ({ labels: names.map((name) => ({ name })) });
+/**
+ * ラベルの一覧。**`kind:task` を渡したら `goal:` も足す**——**棚卸しを通った issue は向かう先を持つ**
+ * （`.claude/board-design.md` 2.17.1 の、棚卸しが出す結論）ので、持たない盤面のほうが例外。
+ * 足さないと、向かう先と関わりのない検査の期待値へ一律に `NOTE` が1行増える（2.18.1）。
+ *
+ * **その例外を見る検査は、自分で `labels` を組む**（下の `unnamedTask`）。
+ */
+const label = (...names: string[]) => {
+  const goalless = names.includes('kind:task') && !names.some((name) => name.startsWith('goal:'));
+  return { labels: (goalless ? [...names, 'goal:upkeep'] : names).map((name) => ({ name })) };
+};
+
+/** 棚卸しの取りこぼし——配れる形なのに向かう先を名乗っていない issue（2.18.1）。 */
+const unnamedTask = (number: number, ...extra: string[]) => ({
+  number,
+  labels: ['kind:task', ...extra].map((name) => ({ name })),
+  blockedBy: { nodes: [] },
+});
 /**
  * 同じ番号の issue を閉じる、人のマージ待ちのPR（`通してよい` と `判断待ち` が並んだ形）。**盤面に
  * 打つ手は残っていない**——マージは `判断待ち` が止め（2.13）、書いた本人を起こす理由も無い。
@@ -784,12 +808,35 @@ describe('board-move.mjs', () => {
     expect(moves({ issues: [game(9), rush] })).toEqual(['TASK 40', 'TASK 9']);
   });
 
-  // 印が無いときの既定（2.18.1）。**機械が立てたものは整備、人が立てたものは完成へ近づける仕事**
-  // ——どちらも `goal:` を名乗っていないのに、並ぶ順が分かれる。
-  it('goal: がどちらにも無ければ、人が立てた issue が origin:agent より先に出る', () => {
-    const byAgent = { number: 9, ...label('kind:task', 'origin:agent'), blockedBy: { nodes: [] } };
-    const byHuman = { number: 30, ...label('kind:task'), blockedBy: { nodes: [] } };
-    expect(moves({ issues: [byAgent, byHuman] })).toEqual(['TASK 30', 'TASK 9']);
+  // **既定は無い**（2.18.1）。`goal:game` を名乗るものだけが先に出る——**立てた側の印
+  // （`origin:agent`）からは推し量らない。** あれは誰が書き込んだかしか答えられず、棚卸しの分解で
+  // 立つ子には必ず付くので、既定に使うと**人の仕事が分解された瞬間に整備へ落ちる。**
+  it('goal: を名乗らない issue は、人が立てたものでも整備として並ぶ', () => {
+    const board = { issues: [unnamedTask(9), game(30)], taken: TRIAGED_JUST_NOW };
+    expect(moves(board)).toEqual([
+      'TASK 30',
+      'TASK 9',
+      'NOTE 向かう先(`goal:`)の無い kind:task がある。整備として並ぶ: #9',
+    ]);
+  });
+
+  // **配るのは止めない**（2.18.1）。止めると、取りこぼし1件で盤面が静かに詰まる。
+  it('向かう先を名乗らない kind:task は、配ったうえで覚え書きに挙げる', () => {
+    const board = {
+      issues: [unnamedTask(9), unnamedTask(20, 'origin:agent')],
+      taken: TRIAGED_JUST_NOW,
+    };
+    expect(moves(board)).toEqual([
+      'TASK 9',
+      'TASK 20',
+      'NOTE 向かう先(`goal:`)の無い kind:task がある。整備として並ぶ: #9 #20',
+    ]);
+  });
+
+  // **取りこぼしを直す者を呼ぶ**（2.17.1）。`kind:` の有無だけを入口にしていたら、`kind:` が付いた
+  // 時点で issue が棚卸しの視界から消え、後から足した `goal:` の取りこぼしを拾う者が居なくなる。
+  it('向かう先を名乗らない kind:task があれば、棚卸しの係を立てる', () => {
+    expect(moves({ issues: [unnamedTask(9)] })).toContain(`CHORE triage .claude/triage-prompt.md ${NOW}`);
   });
 
   // 順を変えるだけで、配ってよいかは変えない（1.3）。
@@ -1182,7 +1229,7 @@ describe('board-move.mjs', () => {
 
   // ## 周期で起きる係（2.17）
   //
-  // 未整理は `kind:` を1つも持たないことで表す（2.17.1）。**分類の綴りを増やしても、ここは
+  // 未整理は棚卸しの結論が揃っていないことで表す（2.17.1）。**分類の綴りを増やしても、ここは
   // 書き換わらない**——「`task` でも `meta` でも無い」で書いていたときは、出口が増えるたびに
   // 条件を足す必要があった。
   const unsorted = (number: number) => ({ number, labels: [], blockedBy: { nodes: [] } });
@@ -1470,22 +1517,15 @@ describe('board-move.mjs', () => {
   // （2.18.1）、完成の定義に照らして残りを数える。**上の既定（`DUG_JUST_NOW`）を外した盤面だけが
   // 立てる**ので、ここは `cycle:dig` を古い時刻で上書きして見る。
   const DUG_YESTERDAY = { 'cycle:dig': '2026-09-04T01:00:00Z' };
-  const task = (number: number) => ({ number, ...label('kind:task'), blockedBy: { nodes: [] } });
-
   it('配れる kind:task が無ければ、掘り起こす係を立てる', () => {
     expect(moves({ taken: DUG_YESTERDAY })).toEqual([DIG]);
-  });
-
-  // 人が立てた issue は `goal:` を名乗らないが、**完成へ近づける仕事として読む**（2.18.1）。
-  it('人が立てた配れる issue が1件でもあれば、掘り起こす係は立てない', () => {
-    expect(moves({ issues: [task(10)], taken: DUG_YESTERDAY })).toEqual(['TASK 10']);
   });
 
   // **配れないだけの周は出番ではない。** 枠が満ちているのも錠を取り合っているのも、配る先が
   // 空くまでの話で、掘り起こしても盤面は動かない（`ready` が空であることだけを見る理由）。
   it('枠が満ちて配れないだけなら、掘り起こす係は立てない', () => {
     const board = {
-      issues: [task(1), task(2), task(3), task(10)],
+      issues: [game(1), game(2), game(3), game(10)],
       sessions: [working('a', 'task-1'), working('b', 'task-2'), working('c', 'task-3')],
       taken: DUG_YESTERDAY,
     };
@@ -1494,7 +1534,7 @@ describe('board-move.mjs', () => {
 
   // 人へ返した task は配られないので、**残っていても「配れる task」ではない**（2.15）。
   it('返された task しか無ければ、掘り起こす係を立てる', () => {
-    const returned = { number: 10, ...label('kind:task', '判断待ち'), blockedBy: { nodes: [] } };
+    const returned = { number: 10, ...label('kind:task', 'goal:game', '判断待ち'), blockedBy: { nodes: [] } };
     expect(moves({ issues: [returned], taken: DUG_YESTERDAY })).toEqual([DIG]);
   });
 
@@ -1510,11 +1550,11 @@ describe('board-move.mjs', () => {
     expect(moves({ issues: [upkeep(1), game(2)], taken: DUG_YESTERDAY })).not.toContain(DIG);
   });
 
-  // 印が無いときの既定（2.18.1）。**名乗らない機械の仕事は整備として読む**ので、付け忘れが
-  // 「完成へ近づける仕事が在る」を成立させることはない。
-  it('goal: を名乗らない origin:agent の issue しか無ければ、掘り起こす係を立てる', () => {
-    const unnamed = { number: 1, ...label('kind:task', 'origin:agent'), blockedBy: { nodes: [] } };
-    expect(moves({ issues: [unnamed], taken: DUG_YESTERDAY })).toContain(DIG);
+  // **棚卸しの取りこぼしは、掘り起こす係を止めない**（2.18.1）。`goal:game` を名乗るものだけが
+  // 「完成へ近づける仕事」なので、名乗り漏れが「在る」を成立させることはない。**`label()` は
+  // `kind:task` へ `goal:upkeep` を足す**ので、ここは `unnamedTask` で名乗りの無い形を自分で組む。
+  it('向かう先を名乗らない kind:task しか無ければ、掘り起こす係を立てる', () => {
+    expect(moves({ issues: [unnamedTask(1, 'origin:agent')], taken: DUG_YESTERDAY })).toContain(DIG);
   });
 
   it('前に立ててから一日が経つまで、掘り起こす係は立てない', () => {

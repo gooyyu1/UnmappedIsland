@@ -75,8 +75,8 @@
    同じ形が何本のPRに出ているかは、並べて見た者にしか見えません——それがこの係の仕事の中心です。
 2. **手を打つべきものは issue を切る**（道具は `.claude/github-access.md`「issue を読む・書く」）。
    `kind:` のラベルは付けないでください（分類するのは棚卸しです。`.claude/board-design.md`
-   2.17.1）。**`origin:agent` と `goal:` は、起票のときに一緒に渡してください**——立てた本人しか
-   付けられない印です（`.claude/parallel-work.md`「自分で立てた issue には `origin:agent` を
+   2.17.1）。**`origin:agent` と `goal:` は、起票のときに一緒に渡してください**——`origin:agent` は
+   立てた本人しか付けられず、`goal:` は立てた本人がいちばん確かに知っています（`.claude/parallel-work.md`「自分で立てた issue には `origin:agent` を
    付ける」・`.claude/board-design.md` 2.18.1）。後から付け直す道はありますが、**別の手が要る形に
    すると、付け忘れた issue が「人が立てた」として数えられます。**
    **1件のスメルが1件の issue とは限りません**——同じ原因のものは1件にまとめ、本文に
