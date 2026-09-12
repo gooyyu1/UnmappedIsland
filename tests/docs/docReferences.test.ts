@@ -380,6 +380,36 @@ for (const rel of REF_TARGETS.filter((target) => !isVerbatimRecord(target))) {
   docsByBasename.set(base, [...(docsByBasename.get(base) ?? []), rel]);
 }
 
+/**
+ * 裸の「N節」を `GameElementDefinition.md` へ落とし込むのを、まだ許す文書。
+ *
+ * **文書の裸の「N節」は自文書の節**（DocumentStyle.md 5節）で、文書名の言及から離れた場所で他の
+ * 文書の節を番号だけで指すことはできない。その落とし込みは**コード・YAMLのための既定**なので、
+ * 文書に効かせると「4節」と「7.2節」が同じ形で別の文書を指す（読み手には見分けが付かない）。
+ *
+ * ここに在るのは、その形がまだ残っている文書。落とし込みを外すと今日ある参照が赤くなるので、
+ * 書き直すまでの据え置きで、**新しく生えるほうだけを止める**。書き直しは
+ * [#2071](https://github.com/gooyyu1/UnmappedIsland/issues/2071)。
+ */
+const GRAMMAR_FALLBACK_PENDING: readonly string[] = [
+  join('.claude', 'analysis', '2026-09-06-backfill.md'),
+  join('docs', 'engine', 'ActionSystem.md'),
+  join('docs', 'engine', 'ContainerSystem.md'),
+  join('docs', 'engine', 'ExplorationSystem.md'),
+  join('docs', 'engine', 'HuntingSystem.md'),
+  join('docs', 'engine', 'SkillSystem.md'),
+  join('docs', 'engine', 'TrapSystem.md'),
+  join('docs', 'ui', 'CardView.md'),
+];
+
+/**
+ * 裸の「N節」が `GameElementDefinition.md` まで落ちてよいファイルか。**コード・YAMLは常に落ちる**
+ * （そちらの既定。DocumentStyle.md 5節）。文書は据え置きのものだけ。
+ */
+function fallsBackToGrammar(rel: string): boolean {
+  return !isRefTarget(rel) || GRAMMAR_FALLBACK_PENDING.includes(rel);
+}
+
 /** その文書が番号 `num` の節を持つか。 */
 function hasNumberedSection(docRel: string, num: string): boolean {
   return (namedSectionsByPath.get(docRel) ?? []).some((h) => {
@@ -426,14 +456,19 @@ function brokenLinkAnchorsIn(rel: string, source: string): string[] {
  * 指し先の規約（docs/DocumentStyle.md 5節）:
  * - 「Foo.md N節」= その文書の節
  * - 「同 N節」= 同じファイル内で直前に名前を挙げた文書の節
- * - 裸の「N節」= 読み手の解釈と同じ優先順で、自文書 → 直前に名前を挙げた文書 →
- *   GameElementDefinition.md（WorldCodex文法の節）のどれか
+ * - 裸の「N節」= 読み手の解釈と同じ優先順で、自文書 → 直前に名前を挙げた文書のどれか。
+ *   **GameElementDefinition.md（WorldCodex文法の節）まで落ちるのはコード・YAMLだけ**
+ *   （{@link fallsBackToGrammar}）
  * - 「・」「、」で続く番号の列挙は、直前の参照と同じ文書
  *
  * **原文をそのまま読む。** 見るのは `.md` 以外も含む（{@link REF_FILES}）ので、Markdownの囲みで
  * 削れない——フェンスの中のYAMLコメントも実在の節を指している。
  */
-function brokenNumberedRefsIn(rel: string, source: string): string[] {
+function brokenNumberedRefsIn(
+  rel: string,
+  source: string,
+  grammarFallback: boolean = fallsBackToGrammar(rel),
+): string[] {
   const broken: string[] = [];
   const tokenPattern =
     /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?|(同\s*)?(\d+(?:\.\d+)*)(?:\s*[〜～]\s*(\d+(?:\.\d+)*))?\s*節/g;
@@ -471,7 +506,9 @@ function brokenNumberedRefsIn(rel: string, source: string): string[] {
     } else if (sincePrev !== null && /^[・、]\s*$/.test(sincePrev)) {
       candidates = [prevRef!.base]; // 列挙の続き: N節・M節
     } else {
-      candidates = [selfBase, lastNamedBase, 'GameElementDefinition.md'];
+      candidates = grammarFallback
+        ? [selfBase, lastNamedBase, 'GameElementDefinition.md']
+        : [selfBase, lastNamedBase];
     }
     const bases = [...new Set(candidates.filter((c): c is string => c !== null))];
     const resolved = bases.find((base) => resolves(base, nums)) ?? null;
@@ -827,6 +864,33 @@ describe('ドキュメントの参照', () => {
 
     expect(ownOnly, `${rel} だけが持つ節番号が無く、この検査は何も確かめていない`).toBeDefined();
     expect(brokenNumberedRefsIn(rel, `${ownOnly as string}節`)).toEqual([]);
+  });
+
+  it('文書の裸の「N節」が、GameElementDefinition.md へは落ちない', () => {
+    // 落とし込みが文書にも効いていた頃、SlotSystem.md の「7.2節」「9.9節」は自分の節と同じ形で
+    // 文法書を指していた（読み手には見分けが付かないまま緑）。
+    const rel = join('docs', 'engine', 'SlotSystem.md');
+    const grammar = join('docs', 'engine', 'GameElementDefinition.md');
+    const grammarOnly = (namedSectionsByPath.get(grammar) ?? [])
+      .flatMap((heading) => /^(\d+(?:\.\d+)+)[.\s]/.exec(heading)?.[1] ?? [])
+      .find((num) => !hasNumberedSection(rel, num));
+
+    expect(grammarOnly, `${grammar} だけが持つ節番号が無く、この検査は何も確かめていない`).toBeDefined();
+    expect(brokenNumberedRefsIn(rel, `${grammarOnly as string}節`)).toHaveLength(1);
+    const named = `[\`GameElementDefinition.md\`](./GameElementDefinition.md) ${grammarOnly as string}節`;
+    expect(brokenNumberedRefsIn(rel, named)).toEqual([]);
+  });
+
+  it('据え置きの一覧に、もう落とし込みの要らない文書が残っていない', () => {
+    // 据え置きは書き直すまでの措置なので、**要らなくなったら落ちる**。残っていると、次に裸で
+    // 指した者がその行を手本にする。
+    const stale = GRAMMAR_FALLBACK_PENDING.filter(
+      (rel) => brokenNumberedRefsIn(rel, read(rel), false).length === 0,
+    );
+    expect(
+      stale,
+      `据え置きの一覧に、もう文法書への落とし込みが要らない文書が残っている:\n${stale.join('\n')}`,
+    ).toEqual([]);
   });
 
   it('暫定を表す語の照合が、他の語の一部を拾わない', () => {
