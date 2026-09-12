@@ -53,8 +53,15 @@ interface World {
    * ——上と同じ理由で、本物のリポジトリを数えさせるとこの係が全部の周に混ざる。
    */
   readonly unsummarizedAnalyses?: number;
-  /** `main` の先頭のCI。既定は緑。 */
-  readonly mainChecks?: readonly { readonly status: string; readonly conclusion: string }[];
+  /**
+   * `main` の先頭の指紋へ結び付いている走り。既定は緑の `push` 1本。`event` を書かなければ
+   * `push`——**木を見ていない走り**（issue へのコメントで立つ札の係など）を混ぜるときだけ書く。
+   */
+  readonly mainChecks?: readonly {
+    readonly status: string;
+    readonly conclusion: string;
+    readonly event?: string;
+  }[];
   /** `archive-session.sh` が渡された相手について返す行の頭。既定は畳めた。 */
   readonly archiveVerdict?: 'ARCHIVED' | 'KEPT' | 'UNARCHIVED';
   /** `describe-conflict.sh` が返す、ぶつかったファイルと相手。 */
@@ -99,6 +106,9 @@ interface Result {
 }
 
 const NOW = new Date('2026-09-05T02:00:00Z');
+
+/** `main` の先頭の指紋。CIの色は**この指紋で絞って引いたぶんだけ**が返る（2.14.2）。 */
+const MAIN_HEAD = 'e0e0e0e0';
 
 /** トレーラを載せたコミットの並び。**拾われるのは最後の1本**。 */
 function commits(session: string) {
@@ -204,8 +214,17 @@ function playRound(world: World = {}): Result {
         }));
         return JSON.stringify({ data: { repository: { pullRequests: { nodes } } } });
       }
+      // `main` の先頭の指紋。**これで絞られていない問い合わせには何も返さない**（下）。
+      if (first === 'api' && second === 'repos/{owner}/{repo}/commits/main') return `${MAIN_HEAD}\n`;
+      // **本物と同じで、コミットへ結び付いているだけの走りも混ぜて持っている。** 絞り込みは
+      // 問い合わせの側の仕事なので、`event` と `head_sha` を読んでから返す——**どちらかを落とすと
+      // 混ざったほうが出てきて、下の2つの `it` が落ちる。**
+      const runs = world.mainChecks ?? [{ status: 'COMPLETED', conclusion: 'SUCCESS' }];
+      const query = new URLSearchParams(second.split('?')[1] ?? '');
+      if (query.get('head_sha') !== MAIN_HEAD) return JSON.stringify({ workflow_runs: [] });
+      const event = query.get('event');
       return JSON.stringify({
-        check_runs: world.mainChecks ?? [{ status: 'COMPLETED', conclusion: 'SUCCESS' }],
+        workflow_runs: runs.filter((run) => event === null || (run.event ?? 'push') === event),
       });
     };
 
@@ -583,6 +602,23 @@ describe('board-round.mjs', () => {
     });
 
     expect(result.calls).toEqual([]);
+  });
+
+  // 札の係は issue へのコメントで立ち、走りは**既定ブランチの先頭の指紋へ結び付く**。木を見ていない
+  // ので、転んでもそれを取り込んだPRは赤くならない——ここで `mend` を止めると、2.14.1 の輪が回らない
+  // 色で盤面だけが進まなくなる（2026-09-12 に17分）。
+  it('木を見ていない走りが転んでも、main は赤くない', () => {
+    const result = playRound({
+      mainChecks: [
+        { status: 'COMPLETED', conclusion: 'SUCCESS' },
+        { status: 'COMPLETED', conclusion: 'FAILURE', event: 'issue_comment' },
+      ],
+      prs: [pr(10, { statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }] })],
+      prSessions: { 10: 'session_writer' },
+      sessions: [idle('session_writer')],
+    });
+
+    expect(result.calls).toEqual(['resume-session.sh session_writer mend 10']);
   });
 
   // 引けない日に盤面ごと落とすと、差し戻し以外の手まで止まる。
