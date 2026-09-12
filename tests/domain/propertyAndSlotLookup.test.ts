@@ -59,15 +59,19 @@ object_defs:
     );
   });
 
-  it('codexが知らないIDは、名前を出せないことごと伝える', () => {
-    // 名前で引けなかった側（NameRegistryに登録の無い名前）がここへ来る。名前を出せないこと自体が
-    // 手掛かりになるので、IDのまま見せる。
+  it('配られていないIDは、宣言されていないことと混ぜずに投げる', () => {
+    // **「この物が持っていない」と「そもそも誰にも配られていない番号」は別の話。** 前者はYAMLの
+    // 書き間違い（上の試験が見ている文面）で、後者は名前を経由せずに数を作った引き方の間違い。
+    // 畳むと、壊れたIDを渡した側が「持っていない」を受け取って先へ進む。
     //
     // このcodexが配っていないIDを渡す試験なので、**IDを作れる唯一の口（NameRegistry）を通れない**
     // ——素の数から型を跨ぐのはここだけで、その理由がこの試験そのもの。
-    const unissued = -1 as PropertyGlobalId;
+    const unissued = codex.propertyNames.count as PropertyGlobalId;
     expect(() => spawn('stone').getProperty(unissued)).toThrowError(
-      "'stone' はプロパティ(id=-1)を持ちません。",
+      `グローバルID ${codex.propertyNames.count} は、この名前空間が配った番号ではありません`,
+    );
+    expect(() => spawn('stone').tryGetProperty(-1 as PropertyGlobalId)).toThrowError(
+      'この名前空間が配った番号ではありません',
     );
   });
 });

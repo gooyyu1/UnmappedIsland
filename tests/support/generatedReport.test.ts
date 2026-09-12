@@ -1,7 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { documentedSections } from './generatedReport';
+import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import type { YamlRecord } from './generatedReport';
+import { documentedSections, formatYamlReport, rounded } from './generatedReport';
 
 /**
  * 手書きの文書（`docs/diagnostics/*.md`）の「YAMLの節」の表を読む側の検査。
@@ -34,5 +36,28 @@ describe('手書きの文書の「YAMLの節」の表', () => {
     for (const { name, markdown } of documents) {
       expect(documentedSections(markdown.replace(/\n/g, '\r\n')), name).toEqual(documentedSections(markdown));
     }
+  });
+});
+
+/**
+ * 生成物へ書き出す値が、グローバルIDを受け付けないことの検査。
+ *
+ * IDは世界を読み込むたびに振り直される番号なので、生成物に出ると**定義を1つ足しただけで無関係な行が
+ * 全部動く**。それを止めているのは {@link YamlScalar} が素の数（`NotAGlobalId`）で受けていることだけ
+ * ——`number` へ戻した瞬間に、下の `@ts-expect-error` が余って `npm run typecheck` が赤くなる。
+ */
+describe('生成物へ書き出す値', () => {
+  it('グローバルIDを受け付けない', () => {
+    const codex = new WorldCodexYamlLoader()
+      .load('generatedReport.yaml', 'object_defs:\n  stone:\n    props:\n      weight: {value: 1}\n')
+      .buildAndReset();
+    const weightId = codex.propertyNames.getId('weight');
+
+    // @ts-expect-error IDは生成物へ出さない。出したい値なら、書き出す手前で名前へ戻す。
+    const record: YamlRecord = { property: weightId };
+    // @ts-expect-error 丸めて通す道も同じく塞ぐ。
+    rounded(weightId, 0);
+
+    expect(formatYamlReport([], [{ key: 'properties', records: [record] }])).toContain('property');
   });
 });

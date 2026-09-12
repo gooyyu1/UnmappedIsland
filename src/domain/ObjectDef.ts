@@ -291,7 +291,14 @@ export class ObjectDefTable {
     return def;
   }
 
-  /** そのIDの型。定義が無ければundefined（範囲外・穴のどちらも同じ扱い）。 */
+  /**
+   * そのIDの型。定義が無ければundefined（範囲外・穴のどちらも同じ扱い）。
+   *
+   * **範囲外を投げないのは、ここが「値をIDとして読んだ数」の着地点だから**
+   * （`GlobalId.ts` の `objectGlobalIdOfPropertyValue`）。著者が宣言へ書いた数がそのまま来るので、
+   * どの型も指していないことがありうる——名前空間が配ったIDしか来ない
+   * {@link LocalIndexByGlobalId} とは、そこが違う。
+   */
   tryGet(globalId: ObjectGlobalId): ObjectDef | undefined {
     return this.byGlobalId[globalId];
   }

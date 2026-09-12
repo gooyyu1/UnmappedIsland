@@ -1,4 +1,5 @@
 import type { ConditionOp } from '../domain/ConditionReader';
+import type { SymbolGlobalId } from '../domain/GlobalId';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
 import { worldAmbientBrightnessOf } from './activityHours';
@@ -196,9 +197,10 @@ class SeasonalFillClimate {
 
   private stateAt(hour: number, weatherName: string): AncestorState {
     return {
-      // 定義に無い天候の名前は、どのシンボルとも等しくない番号にする——`eq` は成立せず `not_in` は
-      // 成立するという、その天候が定義に無いことの正しい読み方になる。
-      weatherSymbolId: this.codex.symbolNames.tryGetId(weatherName) ?? UNKNOWN_SYMBOL_ID,
+      // 実測の表にだけ在って、この世界が宣言していない天候は undefined のまま持つ。**どのシンボルとも
+      // 一致しない番号を作らない**——名前空間が配っていない数はIDではないので、作れば「配ったものだけが
+      // IDだ」という境界がここで破れる。undefined のときの読み方は holdsWithoutSymbol。
+      weatherSymbolId: this.codex.symbolNames.tryGetId(weatherName),
       ambientBrightness: this.worldAmbientAt(hour, weatherName),
     };
   }
@@ -220,7 +222,9 @@ class SeasonalFillClimate {
   private conditionHolds(condition: AncestorCondition, state: AncestorState): boolean {
     const { world } = this.codex.vocabulary;
     if (condition.propertyGlobalId === world.weatherId)
-      return comparisonHolds(condition.op, state.weatherSymbolId, condition.values);
+      return state.weatherSymbolId === undefined
+        ? holdsWithoutSymbol(condition.op)
+        : comparisonHolds(condition.op, state.weatherSymbolId, condition.values);
     if (condition.propertyGlobalId === world.ambientBrightnessId)
       return comparisonHolds(condition.op, state.ambientBrightness, condition.values);
     return true;
@@ -229,12 +233,21 @@ class SeasonalFillClimate {
 
 /** その器が居る場所の状態のうち、`fill` の増減が見ているもの。 */
 interface AncestorState {
-  readonly weatherSymbolId: number;
+  /** この世界が宣言していない天候（実測の表にだけ在る名前）なら undefined。 */
+  readonly weatherSymbolId: SymbolGlobalId | undefined;
+
   readonly ambientBrightness: number;
 }
 
-/** どのシンボルとも一致しない番号（シンボルの識別子は0以上）。 */
-const UNKNOWN_SYMBOL_ID = -1;
+/**
+ * どのシンボルでもない天候のときに、その比較が成立するか。**条件がその天候を名指していることは
+ * ありえない**——条件に書いた名前は書いた時点で名前空間へ登録されるので、登録の無い名前は条件の
+ * 中にも無い。よって一致（`eq`・`in`）は成立せず、不一致（`neq`・`not_in`）は成立する。
+ * シンボルに順序は無いので、大小の比較はどれも成立しない。
+ */
+function holdsWithoutSymbol(op: ConditionOp): boolean {
+  return op === 'neq' || op === 'not_in';
+}
 
 /** その型が宣言している、自分の `fill` をtick毎に動かす分。 */
 function fillDeltasOf(codex: WorldCodex, def: ObjectDef): readonly TickDelta[] {
