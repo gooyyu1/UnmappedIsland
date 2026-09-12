@@ -63,6 +63,9 @@ describe('画面に重ねる層の階梯', () => {
         .map((match) => match[1].replace(/\s+/g, '').replace(/,$/, ''))
         .filter((argument) => !/^SCREEN_DEPTH\.\w+$/.test(argument))
         .filter((argument) => {
+          // 名前をそのまま渡したものだけが、受け口の型で身元を確かめられる。式にして渡したものは
+          // 階梯の外で値を決めているので、中身を見るまでもなく挙げる。
+          if (!/^\w+(?:\.\w+)*$/.test(argument)) return true;
           const received = argument.split('.').pop() ?? argument;
           return !new RegExp(String.raw`\b${received}\??:\s*ScreenDepth\b`).test(source);
         })
@@ -73,7 +76,7 @@ describe('画面に重ねる層の階梯', () => {
   });
 
   it('シーンの表示リストごと持ち上げている場所が無い', () => {
-    // 表示リストは層が動いたときにしか並べ直さないので、そこで持ち上げたものは次の並べ直しまで
+    // 持ち上げは深度での並べ直しを予約しないので、そこで持ち上げたものは次の並べ直しまで
     // どの層よりも手前に居る。**階梯を黙って越える唯一の道**がこれ。
     const liftsPastLayers =
       /\b(?:children|displayList)\.(?:bringToTop|sendToBack|moveAbove|moveBelow|moveUp|moveDown|moveTo)\b/;
