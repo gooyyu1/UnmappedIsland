@@ -2,6 +2,12 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { promptBody } from '../../scripts/agent/prompt-body.mjs';
+import {
+  isAnalysisRecord,
+  isVerbatimRecord,
+  trackedDocs,
+  trackedFiles,
+} from '../../scripts/docScope.mjs';
 import { declaresWholeDocument, WHOLE_DOCUMENT_CONFIRMED } from '../../scripts/docStatus.mjs';
 import { githubSlugs } from '../../scripts/githubSlugs.mjs';
 import { linesOutsideFence } from '../../scripts/markdownFences.mjs';
@@ -9,10 +15,13 @@ import { linesOutsideFence } from '../../scripts/markdownFences.mjs';
 /**
  * ドキュメントの参照が実在の対象へ解決するかの検査（docs/DocumentStyle.md 5節）。
  *
- * **見るのは `docs/` だけではない。** `.claude/**` は互いを節名でもリンクでも引き合っており、そちらの
- * 節やファイルを畳んだときに嘘になる。走査する側（{@link REF_FILES}・{@link LINK_CHECKED_FILES}）も
- * 指し先（{@link REF_TARGETS}）も `docs/` の外まで広げてある。確定度の印の条件も同じで、印を使う
- * 文書なら `docs/` の外でも課す（{@link MARK_RULE_FILES}）。
+ * **射程は、追跡しているMarkdown全部**（{@link TRACKED_DOCS}）。`docs/` の外の文書も互いを節名でも
+ * リンクでも引き合っており、そちらの節やファイルを畳んだときに同じように嘘になる。走査する側
+ * （{@link REF_FILES}・{@link LINK_CHECKED_FILES}）も指し先（{@link REF_TARGETS}）もそこから絞る。
+ * 確定度の印の条件も同じで、印を使う文書なら `docs/` の外でも課す（{@link MARK_RULE_FILES}）。
+ *
+ * **外すのは、当時の現物をそのまま残す記録だけ**（{@link isVerbatimRecord}。DocumentStyle.md 10節）。
+ * 実装状況の印（4節・4.1節）だけは `docs/` に閉じており、理由は {@link docByPath}。
  *
  * - Markdownリンク（ファイル・アンカー）が実在すること
  * - コード・YAML・ドキュメント中の「Foo.md N節」「Foo.md 〇〇節」が実在の節を指すこと
@@ -45,7 +54,32 @@ function listFiles(dir: string, exts: readonly string[]): string[] {
   return result;
 }
 
+/** 実装状況の印（4節・4.1節）を課す対象。**こちらだけが `docs/` に閉じる**（{@link docByPath}）。 */
 const DOC_FILES = listFiles('docs', ['.md']);
+
+/**
+ * リポジトリが追跡しているMarkdownすべて。**参照の規約を課す側も指し先も、ここから絞って作る**
+ * ——`docs/` の外にも規約は掛かる（DocumentStyle.md 10節）ので、既定は「全部」で、外すものだけを
+ * 述語で名指しする（`isVerbatimRecord`・`isAnalysisRecord`）。
+ *
+ * **射程を決めるのは [`docScope.mjs`](../../scripts/docScope.mjs)**——同じ規約を課す
+ * `docMemberReferences.test.ts` と同じ1つ。別に持つと、片方だけが `docs/` に取り残される。
+ */
+const TRACKED_DOCS = trackedDocs(ROOT);
+
+/**
+ * 射程の見張りが突き合わせる、**もう1つの数え方**。追跡しているファイルを丸ごと引いてから `.md` を
+ * 選ぶ——{@link TRACKED_DOCS} は git へ `*.md` の pathspec を渡して絞っているので、**絞りを通らない
+ * 経路**になる。
+ *
+ * **射程を出しているのと同じ経路で数えない**のが要点（{@link unimplementedHeadingLines} が捕獲側の
+ * 正規表現を使わないのと同じ理由）——{@link TRACKED_DOCS} から数え直すと、射程が縮んだときに両側が
+ * 同じだけ縮むので、**差が出ないまま緑になる。** 在り処の一覧でも数えない。そちらは足した日にしか
+ * 更新されないので、**見張りの側に同じ穴を作る。**
+ */
+function everyTrackedMarkdown(): string[] {
+  return trackedFiles(ROOT).filter((rel) => rel.endsWith('.md'));
+}
 
 /** 確定度の印（DocumentStyle.md 6節）。付くのは節の見出しだけ。 */
 const CONFIRMED_LABEL = '【確定】';
@@ -85,35 +119,18 @@ const PROVISIONAL_WORD = /目安|仮置き|仮決め|まだ決め|未定(?!義)|
 /** 「いつか実装したいもの」の実体の一覧（DocumentStyle.md 4.1節）。 */
 const SOMEDAY_DOC = join('docs', 'Someday.md');
 
-/**
- * 判断の履歴か。**当時の発言と当時の文脈を原文のまま残す場所**なので、指し先が消えても直さない
- * ——検査する側からは外す（指し先の候補としては生きている）。
- */
-function isDecisionRecord(rel: string): boolean {
-  return rel.startsWith(join('.claude', 'decisions'));
-}
-
-/**
- * その回に見たことの記録か（1回1ファイル）。判断の履歴（{@link isDecisionRecord}）と同じく、
- * **当時の観測を原文のまま残す場所**なので、規約を課す側からは外す。
- */
-function isAnalysisRecord(rel: string): boolean {
-  return rel.startsWith(join('.claude', 'analysis'));
-}
-
 /** 参照を検査する対象。ドキュメント自身と、節番号でドキュメントを指すコード・データ。 */
 const REF_FILES = [
-  ...DOC_FILES,
-  'CLAUDE.md',
-  ...listFiles('.claude', ['.md', '.sh']),
+  ...TRACKED_DOCS,
+  ...listFiles('.claude', ['.sh']),
   ...listFiles('scripts', ['.sh', '.mjs']),
   ...listFiles('src', ['.ts', '.yaml']),
   ...listFiles('tests', ['.ts']),
-  ...listFiles('tools', ['.md', '.json']),
+  ...listFiles('tools', ['.json']),
 ].filter(
   (rel) =>
     !rel.startsWith(join('tests', 'docs')) && // 本テスト自身の例・正規表現は対象外
-    !isDecisionRecord(rel),
+    !isVerbatimRecord(rel),
 );
 
 /**
@@ -224,9 +241,9 @@ const docByPath = new Map(DOC_FILES.map((rel) => [rel, read(rel)]));
 
 /**
  * 参照の指し先になりうる文書。**規約を課す対象とは別に持つ**——指し先には、どの規約も課さない文書
- * （日付ごとの記録。{@link isDecisionRecord}・{@link isAnalysisRecord}）も入る。
+ * （日付ごとの記録。{@link isVerbatimRecord}）も入る。
  */
-const REF_TARGETS = [...DOC_FILES, 'CLAUDE.md', ...listFiles('.claude', ['.md'])];
+const REF_TARGETS = TRACKED_DOCS;
 
 /**
  * Markdownリンク（ファイル・アンカー）を検査する対象。**指し先の候補（{@link REF_TARGETS}）から
@@ -238,19 +255,19 @@ const REF_TARGETS = [...DOC_FILES, 'CLAUDE.md', ...listFiles('.claude', ['.md'])
  * コード（`.ts`・`.mjs`・`.sh`）は入らない。あちらにも**本物のリンクは在る**が、正規表現
  * （`['"]([^'"]+)['"]`）や画面へ出す書式の例示と字面で見分けられないので、見分けの仕組みが要る。
  */
-const LINK_CHECKED_FILES = REF_TARGETS.filter((rel) => !isDecisionRecord(rel));
+const LINK_CHECKED_FILES = REF_TARGETS.filter((rel) => !isVerbatimRecord(rel));
 
 /**
  * 確定度の印の規約（DocumentStyle.md 6節・6.1節・6.2節）を課す対象。**`docs/` の中だけではない**
- * ——`CLAUDE.md`・`.claude/**` も同じ印を使い、そこの確定節も同じ意味（覆すには人間の判断が要る）
- * で読まれるので、条件も同じ1つ。
+ * ——印の意味は置き場で変わらない（どこの確定節も「覆すには人間の判断が要る」）ので、条件も同じ1つ。
+ * **どこまで掛かるかは同 10節**が持つ。
  *
- * **日付ごとの記録は入らない**（{@link isDecisionRecord}・{@link isAnalysisRecord}）。印はそこでは
+ * **日付ごとの記録は入らない**（{@link isVerbatimRecord}・{@link isAnalysisRecord}）。印はそこでは
  * **題材として**現れる（見出しに「`【確定】` の印の射程が変わる」と書く）ので、課すと印を論じた行が
  * 印として読まれる。
  */
 const MARK_RULE_FILES = REF_TARGETS.filter(
-  (rel) => !isDecisionRecord(rel) && !isAnalysisRecord(rel),
+  (rel) => !isVerbatimRecord(rel) && !isAnalysisRecord(rel),
 );
 
 /** ひな形。セッションへ渡す本体を囲みに入れて持つ（`scripts/agent/prompt-body.mjs`）。 */
@@ -337,9 +354,28 @@ const wholeDocumentConfirmed = [...markRuleByPath].filter(([, text]) =>
   declaresWholeDocument(text),
 );
 
-/** ファイル名（basename）→ 指し先の候補パス。 */
+const refTargets = new Set(REF_TARGETS);
+
+/**
+ * 自分の節を裸の「N節」で指せるファイルか（DocumentStyle.md 5節）。**文書かどうかで決まる**
+ * ——コード・YAMLの裸の「N節」は `GameElementDefinition.md` を指す既定なので、そちらには自文書が
+ * 無い。**`docs/` の中かでは決められない**——`.claude/**` も自分の節を番号で引く。
+ */
+function isRefTarget(rel: string): boolean {
+  return refTargets.has(rel);
+}
+
+/**
+ * ファイル名（basename）→ 指し先の候補パス。「`Foo.md` N節」は名前だけで文書を決めるので、
+ * **同名のファイルが増えるほど当たりやすくなる**——候補のどれかで解決すれば緑になる。
+ *
+ * **記録は入れない**（{@link isVerbatimRecord}）。`analysis.md`・`README.md` のような名前は畳んだ回の
+ * 明細にも在るので、入れると**今の文書を指したはずの参照が、当時の記録のほうで解決しうる。**
+ * パスで指すリンクは basename を通らない（{@link anchorHeadingsByPath}）ので、記録へのリンクは
+ * これと関係なく解決する。
+ */
 const docsByBasename = new Map<string, string[]>();
-for (const rel of REF_TARGETS) {
+for (const rel of REF_TARGETS.filter((target) => !isVerbatimRecord(target))) {
   const base = rel.split(sep).pop() as string;
   docsByBasename.set(base, [...(docsByBasename.get(base) ?? []), rel]);
 }
@@ -409,7 +445,7 @@ function brokenNumberedRefsIn(rel: string, source: string): string[] {
     );
   };
   const text = source.replace(/\n[\s*/#-]*/g, ' '); // コメントの継続行をまたぐ参照を繋ぐ
-  const selfBase = docByPath.has(rel) ? (rel.split(sep).pop() as string) : null;
+  const selfBase = isRefTarget(rel) ? (rel.split(sep).pop() as string) : null;
   let lastNamedBase: string | null = null;
   let lastNamedEnd = -1;
   let prevRef: { base: string | null; end: number } | null = null;
@@ -751,6 +787,46 @@ describe('ドキュメントの参照', () => {
       outside.map(({ doc }) => doc),
       '印の条件が `docs/` の中だけへ戻っている（`.claude/**` の確定節が1つも対象に入っていない）',
     ).not.toEqual([]);
+  });
+
+  it('追跡しているMarkdownが、記録を除いて全部リンクの検査に入っている', () => {
+    // 射程を在り処の一覧で持っていた頃、`review/**` も `.github/**` も誰も見ていなかった（#1948）。
+    // 一覧は足した日にしか更新されないので、**フォルダを1つ作ると黙って射程の外が増える。**
+    const covered = new Set(LINK_CHECKED_FILES);
+    const uncovered = everyTrackedMarkdown().filter((rel) => !isVerbatimRecord(rel) && !covered.has(rel));
+
+    expect(uncovered, `リンクの検査に入っていない文書:\n${uncovered.join('\n')}`).toEqual([]);
+  });
+
+  it('記録のファイル名が、名前指しの候補に入らない', () => {
+    // 同名の明細が畳んだ回に在ると（`analysis.md`・`README.md`）、今の文書を指したはずの
+    // 「Foo.md 〇〇節」が、当時の記録のほうで解決して緑になる。
+    const inMap = new Set([...docsByBasename.values()].flat());
+    const records = everyTrackedMarkdown().filter(isVerbatimRecord);
+
+    expect(records.length).toBeGreaterThan(0);
+    expect(records.filter((rel) => inMap.has(rel))).toEqual([]);
+  });
+
+  it('どの規約も課さない記録が、指し先としては生きている', () => {
+    // 課す側から外した拍子に指し先からも落とすと、そこへのリンクが実在するのに赤くなる。
+    const records = everyTrackedMarkdown().filter(isVerbatimRecord);
+
+    expect(records.length).toBeGreaterThan(0);
+    expect(records.filter((rel) => !isRefTarget(rel))).toEqual([]);
+  });
+
+  it('裸の「N節」が、`docs/` の外の文書でも自文書へ解決する', () => {
+    // 自文書の判定が `docs/` に閉じていた頃、`.claude/**` の裸の参照は自分の節へ届かず、直前に
+    // 名を挙げた文書か GameElementDefinition.md へ流れていた（届いてしまえば誤った指し先で緑）。
+    const rel = join('.claude', 'board-design.md');
+    const grammar = join('docs', 'GameElementDefinition.md');
+    const ownOnly = (namedSectionsByPath.get(rel) ?? [])
+      .flatMap((heading) => /^(\d+(?:\.\d+)+)[.\s]/.exec(heading)?.[1] ?? [])
+      .find((num) => !hasNumberedSection(grammar, num));
+
+    expect(ownOnly, `${rel} だけが持つ節番号が無く、この検査は何も確かめていない`).toBeDefined();
+    expect(brokenNumberedRefsIn(rel, `${ownOnly as string}節`)).toEqual([]);
   });
 
   it('暫定を表す語の照合が、他の語の一部を拾わない', () => {
