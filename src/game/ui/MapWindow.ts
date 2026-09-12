@@ -73,6 +73,12 @@ export class MapWindow {
   private readonly roadInk: Phaser.GameObjects.Graphics;
   private readonly outline: Phaser.GameObjects.Graphics;
 
+  /**
+   * 土地のカードだけを入れる器。掴んだ札を手前へ出す先をこの中に閉じるためのもの——シーンごと
+   * 持ち上げると、階梯の層を持つ表示物まで越えてしまう（screenDepth.ts）。
+   */
+  private readonly cardLayer: Phaser.GameObjects.Container;
+
   /** 描画の変換。screen = norm × 画面寸法 × zoom + pan。 */
   private zoom = 1;
   private panX = 0;
@@ -104,6 +110,9 @@ export class MapWindow {
     // 道はカードより奥に描く（カードの下から点線が延びて見える）。
     this.roadInk = scene.add.graphics();
     this.ownedObjects.push(this.roadInk);
+
+    this.cardLayer = scene.add.container(0, 0);
+    this.ownedObjects.push(this.cardLayer);
 
     for (const land of options.lands) {
       this.placements.set(land.site, this.openingPlacement(land.site, options.positions));
@@ -200,7 +209,7 @@ export class MapWindow {
     }
 
     // 掴んだカードは他のカードより手前へ出す（重なりの下へ潜ったまま動くと掴んでいる実感が無い）。
-    card.on('dragstart', () => this.scene.children.bringToTop(card));
+    card.on('dragstart', () => this.cardLayer.bringToTop(card));
     card.on('drag', (_pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
       const clamped = this.clampTopLeft(dragX, dragY, this.zoom);
       card.setPosition(clamped.x, clamped.y);
@@ -210,7 +219,7 @@ export class MapWindow {
     card.on('dragend', () => onPlace(land.site, this.placements.get(land.site)!));
 
     this.cards.set(land.site, card);
-    this.ownedObjects.push(card);
+    this.cardLayer.add(card);
   }
 
   /** カードの左上位置を、閉じるボタンの帯を除いた画面内へ収める。 */

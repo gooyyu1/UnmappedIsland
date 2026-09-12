@@ -290,7 +290,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
 
     for (const text of createLabel(scene, metrics, content, label)) this.add(text);
 
-    // バーは重ねる文字より先に作る（表示順は生成順で決まるので、後から作ると文字が塗りに沈む）。
+    // バーは重ねる文字より先に作る（後から作ると文字が塗りに沈む。screenDepth.ts）。
     this.bar = new ProgressBar(scene, metrics, barX, 0, barWidth, height, barFillOf(content) ?? 0, {
       worsensUpward: this.worsensUpward,
       onCaughtUp: options.onCaughtUp,
