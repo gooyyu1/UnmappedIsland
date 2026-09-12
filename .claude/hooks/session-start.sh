@@ -56,6 +56,7 @@ if [ ! -e "$INSTALLED" ]; then
   exit 0
 fi
 
+# **JSON を読む手が bash に無いので、突き合わせは node に任せる。**
 # `.package-lock.json` は実際に入っている木。プラットフォーム依存の任意依存は入っていなくて
 # 当たり前なので（実測で272件中80件）、`optional`・`os`・`cpu` の付いた宣言は数えない。
 short=$(node -e '
@@ -73,9 +74,9 @@ process.stdout.write(short.map((key) => key.replace(/^node_modules\//, "")).join
 
 [ -n "$short" ] || exit 0
 
-count=$(wc -w <<<"$short")
+read -r -a missing <<<"$short"
 echo "[session-start] 共有している本体（$MAIN_DIR）の依存が、この作業ツリーの package-lock.json に"
-echo "[session-start] $count 件足りていません: $(cut -d' ' -f1-5 <<<"$short")"
+echo "[session-start] ${#missing[@]} 件足りていません: ${missing[*]:0:5}"
 echo "[session-start] このまま走らせると 'Cannot find module' ではなく、古い版が解決されて一部だけ"
 echo "[session-start] 壊れます。この作業ツリーで 'npm install' を実行してください（本体は次のマージで"
 echo "[session-start] 追いつきます）。"
