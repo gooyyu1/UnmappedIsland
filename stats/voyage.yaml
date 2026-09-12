@@ -1,0 +1,121 @@
+# 航海を区間に割って測ったもの。定義（src/assets/world-codex/*.yaml）だけから計算した。実行は通していない。
+# 生成物。手で書き換えず、npm run stats:voyage で作り直す。
+# 何を測ったか・引いた線・数えていないものは docs/diagnostics/VoyageStats.md。
+
+meta:
+  - {zones: 14, courses: 6, daily_free_minutes: 833.0}
+
+zones:
+  - {zone: coastal_waters, to_mainland: 12, lookouts: 2, lookout_minutes: 30.0, crossing_minutes: 360.0, storm_drift_minutes: 240.0, legs: [kelp_belt]}
+  - {zone: kelp_belt, to_mainland: 11, lookouts: 3, lookout_minutes: 45.0, crossing_minutes: 360.0, storm_drift_minutes: 240.0, legs: [tide_rip]}
+  - {zone: tide_rip, to_mainland: 10, lookouts: 3, lookout_minutes: 45.0, crossing_minutes: 360.0, storm_drift_minutes: 240.0, legs: [reef_shallows]}
+  - {zone: reef_shallows, to_mainland: 9, lookouts: 3, lookout_minutes: 45.0, crossing_minutes: 360.0, storm_drift_minutes: 120.0, legs: [gull_rock]}
+  - {zone: gull_rock, to_mainland: 8, lookouts: 3, lookout_minutes: 45.0, crossing_minutes: 360.0, storm_drift_minutes: 240.0, legs: [islet_waters]}
+  - {zone: islet_waters, to_mainland: 7, lookouts: 3, lookout_minutes: 45.0, crossing_minutes: 360.0, storm_drift_minutes: 240.0, legs: [open_water]}
+  - {zone: open_water, to_mainland: 6, lookouts: 5, lookout_minutes: 75.0, crossing_minutes: 360.0, storm_drift_minutes: 240.0, legs: [wreck_waters]}
+  - {zone: wreck_waters, to_mainland: 5, lookouts: 4, lookout_minutes: 60.0, crossing_minutes: 360.0, storm_drift_minutes: 240.0, legs: [long_swell]}
+  - {zone: long_swell, to_mainland: 4, lookouts: 5, lookout_minutes: 75.0, crossing_minutes: 360.0, storm_drift_minutes: 240.0, legs: [drifting_kelp, outer_tide_rip]}
+  - {zone: outer_tide_rip, to_mainland: 5, lookouts: 3, lookout_minutes: 45.0, crossing_minutes: 360.0, storm_drift_minutes: 240.0, legs: [black_reef]}
+  - {zone: black_reef, to_mainland: 4, lookouts: 3, lookout_minutes: 45.0, crossing_minutes: 360.0, storm_drift_minutes: 120.0, legs: [drifting_kelp]}
+  - {zone: drifting_kelp, to_mainland: 3, lookouts: 3, lookout_minutes: 45.0, crossing_minutes: 360.0, storm_drift_minutes: 240.0, legs: [white_rock]}
+  - {zone: white_rock, to_mainland: 2, lookouts: 3, lookout_minutes: 45.0, crossing_minutes: 360.0, storm_drift_minutes: 240.0, legs: [mainland_shallows]}
+  - {zone: mainland_shallows, to_mainland: 1, lookouts: 2, lookout_minutes: 30.0, crossing_minutes: 360.0, storm_drift_minutes: 240.0, legs: [mainland]}
+
+zone_yields:
+  - {zone: coastal_waters, unit: percent, barren: 20.00, foraged: 55.00, spawned: 25.00, spawned_by_sighting: 43.75}
+  - {zone: kelp_belt, unit: percent, barren: 45.00, foraged: 55.00, spawned: 0.00, spawned_by_sighting: 0.00}
+  - {zone: tide_rip, unit: percent, barren: 20.00, foraged: 0.00, spawned: 80.00, spawned_by_sighting: 99.20}
+  - {zone: reef_shallows, unit: percent, barren: 45.00, foraged: 35.00, spawned: 20.00, spawned_by_sighting: 48.80}
+  - {zone: gull_rock, unit: percent, barren: 45.00, foraged: 35.00, spawned: 20.00, spawned_by_sighting: 48.80}
+  - {zone: islet_waters, unit: percent, barren: 100.00, foraged: 0.00, spawned: 0.00, spawned_by_sighting: 0.00}
+  - {zone: open_water, unit: percent, barren: 100.00, foraged: 0.00, spawned: 0.00, spawned_by_sighting: 0.00}
+  - {zone: wreck_waters, unit: percent, barren: 80.00, foraged: 20.00, spawned: 0.00, spawned_by_sighting: 0.00}
+  - {zone: long_swell, unit: percent, barren: 100.00, foraged: 0.00, spawned: 0.00, spawned_by_sighting: 0.00}
+  - {zone: outer_tide_rip, unit: percent, barren: 20.00, foraged: 0.00, spawned: 80.00, spawned_by_sighting: 99.20}
+  - {zone: black_reef, unit: percent, barren: 45.00, foraged: 35.00, spawned: 20.00, spawned_by_sighting: 48.80}
+  - {zone: drifting_kelp, unit: percent, barren: 45.00, foraged: 55.00, spawned: 0.00, spawned_by_sighting: 0.00}
+  - {zone: white_rock, unit: percent, barren: 45.00, foraged: 35.00, spawned: 20.00, spawned_by_sighting: 48.80}
+  - {zone: mainland_shallows, unit: percent, barren: 20.00, foraged: 55.00, spawned: 25.00, spawned_by_sighting: 43.75}
+
+zone_finds:
+  - {zone: coastal_waters, object: thick_branch, stands_in_zone: false, unit: items_per_lookout, expected: 0.60}
+  - {zone: coastal_waters, object: seaweed, stands_in_zone: false, unit: items_per_lookout, expected: 0.50}
+  - {zone: coastal_waters, object: fish_shoal, stands_in_zone: true, unit: items_per_lookout, expected: 0.25}
+  - {zone: kelp_belt, object: seaweed, stands_in_zone: false, unit: items_per_lookout, expected: 1.10}
+  - {zone: tide_rip, object: fish_shoal, stands_in_zone: true, unit: items_per_lookout, expected: 0.80}
+  - {zone: reef_shallows, object: thick_branch, stands_in_zone: false, unit: items_per_lookout, expected: 0.35}
+  - {zone: reef_shallows, object: rope, stands_in_zone: false, unit: items_per_lookout, expected: 0.35}
+  - {zone: reef_shallows, object: fish_shoal, stands_in_zone: true, unit: items_per_lookout, expected: 0.20}
+  - {zone: gull_rock, object: bird_egg, stands_in_zone: false, unit: items_per_lookout, expected: 0.35}
+  - {zone: gull_rock, object: feather, stands_in_zone: false, unit: items_per_lookout, expected: 0.35}
+  - {zone: gull_rock, object: seabird_flock, stands_in_zone: true, unit: items_per_lookout, expected: 0.20}
+  - {zone: wreck_waters, object: thick_branch, stands_in_zone: false, unit: items_per_lookout, expected: 0.15}
+  - {zone: wreck_waters, object: rope, stands_in_zone: false, unit: items_per_lookout, expected: 0.15}
+  - {zone: wreck_waters, object: golden_chalice, stands_in_zone: false, unit: items_per_lookout, expected: 0.05}
+  - {zone: outer_tide_rip, object: fish_shoal, stands_in_zone: true, unit: items_per_lookout, expected: 0.80}
+  - {zone: black_reef, object: thick_branch, stands_in_zone: false, unit: items_per_lookout, expected: 0.35}
+  - {zone: black_reef, object: rope, stands_in_zone: false, unit: items_per_lookout, expected: 0.35}
+  - {zone: black_reef, object: fish_shoal, stands_in_zone: true, unit: items_per_lookout, expected: 0.20}
+  - {zone: drifting_kelp, object: seaweed, stands_in_zone: false, unit: items_per_lookout, expected: 1.10}
+  - {zone: white_rock, object: bird_egg, stands_in_zone: false, unit: items_per_lookout, expected: 0.35}
+  - {zone: white_rock, object: feather, stands_in_zone: false, unit: items_per_lookout, expected: 0.35}
+  - {zone: white_rock, object: seabird_flock, stands_in_zone: true, unit: items_per_lookout, expected: 0.20}
+  - {zone: mainland_shallows, object: thick_branch, stands_in_zone: false, unit: items_per_lookout, expected: 0.60}
+  - {zone: mainland_shallows, object: seaweed, stands_in_zone: false, unit: items_per_lookout, expected: 0.50}
+  - {zone: mainland_shallows, object: fish_shoal, stands_in_zone: true, unit: items_per_lookout, expected: 0.25}
+
+courses:
+  - {coast: sandy_beach, zone: coastal_waters, course: shortest, legs: 12, lookouts: 39, lookout_minutes: 585.0, crossing_minutes: 4320.0, total_minutes: 4905.0, days: 5.89}
+  - {coast: sandy_beach, zone: coastal_waters, course: detour, legs: 14, lookouts: 45, lookout_minutes: 675.0, crossing_minutes: 5040.0, total_minutes: 5715.0, days: 6.86}
+  - {coast: rocky_coast, zone: tide_rip, course: shortest, legs: 10, lookouts: 34, lookout_minutes: 510.0, crossing_minutes: 3600.0, total_minutes: 4110.0, days: 4.93}
+  - {coast: rocky_coast, zone: tide_rip, course: detour, legs: 12, lookouts: 40, lookout_minutes: 600.0, crossing_minutes: 4320.0, total_minutes: 4920.0, days: 5.91}
+  - {coast: cliff_coast, zone: gull_rock, course: shortest, legs: 8, lookouts: 28, lookout_minutes: 420.0, crossing_minutes: 2880.0, total_minutes: 3300.0, days: 3.96}
+  - {coast: cliff_coast, zone: gull_rock, course: detour, legs: 10, lookouts: 34, lookout_minutes: 510.0, crossing_minutes: 3600.0, total_minutes: 4110.0, days: 4.93}
+
+wind_legs:
+  - {wind: tailwind, direction: toward_mainland, unit: minutes, minutes: -60.0}
+  - {wind: tailwind, direction: toward_offshore, unit: minutes, minutes: 30.0}
+  - {wind: crosswind, direction: toward_mainland, unit: minutes, minutes: -30.0}
+  - {wind: crosswind, direction: toward_offshore, unit: minutes, minutes: -30.0}
+  - {wind: headwind, direction: toward_mainland, unit: minutes, minutes: 30.0}
+  - {wind: headwind, direction: toward_offshore, unit: minutes, minutes: -60.0}
+
+course_wind:
+  - {coast: sandy_beach, zone: coastal_waters, course: shortest, wind: tailwind, total_minutes: 4185.0, days: 5.02}
+  - {coast: sandy_beach, zone: coastal_waters, course: shortest, wind: crosswind, total_minutes: 4545.0, days: 5.46}
+  - {coast: sandy_beach, zone: coastal_waters, course: shortest, wind: headwind, total_minutes: 5265.0, days: 6.32}
+  - {coast: sandy_beach, zone: coastal_waters, course: detour, wind: tailwind, total_minutes: 4965.0, days: 5.96}
+  - {coast: sandy_beach, zone: coastal_waters, course: detour, wind: crosswind, total_minutes: 5295.0, days: 6.36}
+  - {coast: sandy_beach, zone: coastal_waters, course: detour, wind: headwind, total_minutes: 6045.0, days: 7.26}
+  - {coast: rocky_coast, zone: tide_rip, course: shortest, wind: tailwind, total_minutes: 3510.0, days: 4.21}
+  - {coast: rocky_coast, zone: tide_rip, course: shortest, wind: crosswind, total_minutes: 3810.0, days: 4.57}
+  - {coast: rocky_coast, zone: tide_rip, course: shortest, wind: headwind, total_minutes: 4410.0, days: 5.29}
+  - {coast: rocky_coast, zone: tide_rip, course: detour, wind: tailwind, total_minutes: 4290.0, days: 5.15}
+  - {coast: rocky_coast, zone: tide_rip, course: detour, wind: crosswind, total_minutes: 4560.0, days: 5.47}
+  - {coast: rocky_coast, zone: tide_rip, course: detour, wind: headwind, total_minutes: 5190.0, days: 6.23}
+  - {coast: cliff_coast, zone: gull_rock, course: shortest, wind: tailwind, total_minutes: 2820.0, days: 3.39}
+  - {coast: cliff_coast, zone: gull_rock, course: shortest, wind: crosswind, total_minutes: 3060.0, days: 3.67}
+  - {coast: cliff_coast, zone: gull_rock, course: shortest, wind: headwind, total_minutes: 3540.0, days: 4.25}
+  - {coast: cliff_coast, zone: gull_rock, course: detour, wind: tailwind, total_minutes: 3600.0, days: 4.32}
+  - {coast: cliff_coast, zone: gull_rock, course: detour, wind: crosswind, total_minutes: 3810.0, days: 4.57}
+  - {coast: cliff_coast, zone: gull_rock, course: detour, wind: headwind, total_minutes: 4320.0, days: 5.19}
+
+course_season:
+  - {coast: sandy_beach, zone: coastal_waters, course: shortest, season: calm, total_minutes: 4617.0, days: 5.54}
+  - {coast: sandy_beach, zone: coastal_waters, course: shortest, season: wet, total_minutes: 4761.0, days: 5.72}
+  - {coast: sandy_beach, zone: coastal_waters, course: shortest, season: dry, total_minutes: 4473.0, days: 5.37}
+  - {coast: sandy_beach, zone: coastal_waters, course: detour, season: calm, total_minutes: 5383.5, days: 6.46}
+  - {coast: sandy_beach, zone: coastal_waters, course: detour, season: wet, total_minutes: 5529.0, days: 6.64}
+  - {coast: sandy_beach, zone: coastal_waters, course: detour, season: dry, total_minutes: 5242.5, days: 6.29}
+  - {coast: rocky_coast, zone: tide_rip, course: shortest, season: calm, total_minutes: 3870.0, days: 4.65}
+  - {coast: rocky_coast, zone: tide_rip, course: shortest, season: wet, total_minutes: 3990.0, days: 4.79}
+  - {coast: rocky_coast, zone: tide_rip, course: shortest, season: dry, total_minutes: 3750.0, days: 4.50}
+  - {coast: rocky_coast, zone: tide_rip, course: detour, season: calm, total_minutes: 4636.5, days: 5.57}
+  - {coast: rocky_coast, zone: tide_rip, course: detour, season: wet, total_minutes: 4758.0, days: 5.71}
+  - {coast: rocky_coast, zone: tide_rip, course: detour, season: dry, total_minutes: 4519.5, days: 5.43}
+  - {coast: cliff_coast, zone: gull_rock, course: shortest, season: calm, total_minutes: 3108.0, days: 3.73}
+  - {coast: cliff_coast, zone: gull_rock, course: shortest, season: wet, total_minutes: 3204.0, days: 3.85}
+  - {coast: cliff_coast, zone: gull_rock, course: shortest, season: dry, total_minutes: 3012.0, days: 3.62}
+  - {coast: cliff_coast, zone: gull_rock, course: detour, season: calm, total_minutes: 3874.5, days: 4.65}
+  - {coast: cliff_coast, zone: gull_rock, course: detour, season: wet, total_minutes: 3972.0, days: 4.77}
+  - {coast: cliff_coast, zone: gull_rock, course: detour, season: dry, total_minutes: 3781.5, days: 4.54}
