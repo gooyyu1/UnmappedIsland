@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
