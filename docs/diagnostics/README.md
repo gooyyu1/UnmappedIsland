@@ -106,6 +106,7 @@ npm run stats:escape
 npm run stats:escape-islands
 npm run stats:startup
 npm run stats:terrain
+npm run stats:voyage
 ```
 
 ## 再生成し忘れると赤くなる
@@ -132,6 +133,7 @@ PRの段では `npm test` が、`main` へ入った後は
 | [島ごとの脱出可否](../../stats/island_escape_reach.yaml) | **丸ごと作り直して比べる**（2秒） |
 | [開始地点の立ち上がり](../../stats/startup_reach.yaml) | **丸ごと作り直して比べる**（2秒） |
 | [地形生成統計](../../stats/terrain.yaml) | **丸ごと作り直して比べる**（1秒） |
+| [航海](../../stats/voyage.yaml) | **丸ごと作り直して比べる**（2秒） |
 
 いずれも、節が消えていないことはキーが在って中身が空でないことで見ます。
 
@@ -195,3 +197,9 @@ PRの段では `npm test` が、`main` へ入った後は
   活動できる時間から数える（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.2節・8.3節参照）。
   読み方は [`TerrainStats.md`](./TerrainStats.md)。
   生成元: `tests/diagnostics/terrainStatsReport.test.ts`（局面の計算は `src/analysis/dailyPhases.ts`）
+- [航海](../../stats/voyage.yaml) — 海区ごとの見張りの回数・素の横断時間・見張り1回が返すものと、
+  出航地点ごとの針路（近道と遠回り）の合計と日数、風と季節がその合計へ与える差
+  （[`Voyage.md`](../world/Voyage.md) 3節参照）。定義だけから計算した値で、遠回りを選ぶ理由があるか・
+  季節の窓が期限として働くかの判定は出さない。
+  読み方は [`VoyageStats.md`](./VoyageStats.md)。
+  生成元: `tests/diagnostics/voyageStatsReport.test.ts`（計算は `src/analysis/voyageLegs.ts`）
