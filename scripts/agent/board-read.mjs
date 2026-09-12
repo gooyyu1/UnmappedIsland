@@ -254,7 +254,7 @@ export function readBoard({
     'number,labels,blockedBy',
   ]);
   if (issues === undefined) return undefined;
-  // **引けなくても盤面は捨てない。** 欠けた周は後片付けと1日1回の係が出ないだけで済む——必須に
+  // **引けなくても盤面は捨てない。** 欠けた周は後片付けと周期の係が出ないだけで済む——必須に
   // すると、**マージもレビューも投入も1周まるごと止まる。**
   // **黙って空にしない**（下の差し戻す相手と同じ理由。空は「1件も無い」と同じ形になる）。
   const mergedRaw = gh(

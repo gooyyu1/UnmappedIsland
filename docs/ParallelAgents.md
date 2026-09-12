@@ -44,14 +44,14 @@ flowchart LR
 
     Human -->|"新しいセッションを立てて話しかける"| Adviser
     Task -->|"ログオンと毎時。生きていれば何もしない"| Daemon
-    Daemon -->|"未整理の issue があるとき（一日二回）"| Triage
-    Daemon -->|"読まれていないスメルがあるとき（一日一回）"| Analysis
-    Daemon -->|"読まれていない分析があるとき（週一回）"| Trend
-    Daemon -->|"棚卸ししていない記録があるとき（週一回）"| Policy
+    Daemon -->|"未整理の issue があるとき"| Triage
+    Daemon -->|"読まれていないスメルがあるとき"| Analysis
+    Daemon -->|"読まれていない分析があるとき"| Trend
+    Daemon -->|"棚卸ししていない記録があるとき"| Policy
     Daemon -->|"着手できる kind:task があるとき"| Worker
     Daemon -->|"判定のラベルが無い緑のPRがあるとき"| Reviewer
-    Daemon -->|"配れる goal:game が無いとき（一日一回）"| Digger
-    Daemon -->|"一時間に一回。健全かどうかによらず"| Patrol
+    Daemon -->|"配れる goal:game が無いとき"| Digger
+    Daemon -->|"健全かどうかによらず"| Patrol
     Worker ==>|"PRを作る前に1本"| SelfReview
     Analysis ==>|"PRを作る前に1本"| SelfReview
     Trend ==>|"PRを作る前に1本"| SelfReview
@@ -71,12 +71,12 @@ flowchart LR
 | 種類 | 何をするか | **何に書けるか** | **何で立つか** | どう走るか |
 | --- | --- | --- | --- | --- |
 | 💬 **相談役** | 人間と直接やりとりして、決まっていないことを決める。**訊かれたら実装ではなく設計案を返す** | PR（合意できた分だけ）、価値観の記録（`.claude/decisions/`） | **人間が新しいセッションを立てて話しかける** | セッション |
-| ⛏️ **掘り起こし役** | 完成の定義に照らして、**まだ issue になっていない残りを数える** | **新しい issue だけ**——やると決まっているものはそのまま、やるかどうかから訊くものは `判断待ち` を付けたチェックの一覧に（分類は棚卸し役が付ける） | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**配れる `goal:game` の `kind:task` が無ければ一日一回** | セッション |
-| 📋 **棚卸し役** | 未整理の issue を分類し、投入できる形へ翻訳する | **issue の本文とラベル**（原文は `## 元の報告` として残す） | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**未整理があれば一日二回** | セッション |
-| 📊 **分析係（一次）** | マージ済みPRのコメントに残ったスメル（[`board-design.md`](../.claude/board-design.md) 4.4）を拾う——書き手はレビュアーと、PRを書いた側の両方。**見るのはその回の帯だけで、過去の回の記録で傾向を探さない**（その回のスメルが名指した行を確かめるために開くのは別） | **新しい issue**（`kind:` は付けない）と、**記録のPR1本**（`.claude/analysis/<日付>.md`）。読んだコメントには 👀 を付ける | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**読まれていないスメルがあれば一日一回** | セッション |
-| 📈 **分析係（二次）** | 一次が回ごとに書いた記録を横断して読み、**複数の回に現れている形に根本対策を打つか決める**（[`board-design.md`](../.claude/board-design.md) 2.17.4）。PRのコメントも issue も読み直さない | **新しい issue**（`kind:` は付けない）と、**記録のPR1本**（`.claude/analysis/summary/<日付>.md`）。方針の文書へは書かない——畳むのは価値観を畳む係 | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**二次がまだ読んでいない一次の記録があれば週一回** | セッション |
-| 🧭 **価値観を畳む係** | `.claude/decisions/` に溜まった判断の履歴を読み、**一般則へ畳む候補を並べる。反映はしない** | **`判断待ち` を付けた issue 1本だけ**（リポジトリへは1行も書かない）。反映するのは、チェックが埋まった後に配られる別のセッション | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**棚卸ししていない記録があれば週一回** | セッション |
-| 🔧 **盤面を見回る係** | **デーモンは生きているのに盤面が進んでいない**形を拾うため、正常の定義（不変条件）に照らして盤面が健全かを毎回確かめ、崩れていれば原因を特定して直す（[`board-design.md`](../.claude/board-design.md) 2.21） | **`main` への直接 push**（PRにすると、詰まっている間はマージされないので直しが届かない）と、人にしか直せないときの issue、**見回りの記録**（`~/.claude/board-state/patrol.jsonl`） | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**一時間に一回、盤面の見え方によらず**（**印で絞ると、印に掛からない壊れ方を拾えない**）。**このPCでしか調べられない**（`~/daemon.log`） | セッション |
+| ⛏️ **掘り起こし役** | 完成の定義に照らして、**まだ issue になっていない残りを数える** | **新しい issue だけ**——やると決まっているものはそのまま、やるかどうかから訊くものは `判断待ち` を付けたチェックの一覧に（分類は棚卸し役が付ける） | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**配れる `goal:game` の `kind:task` が無ければ立つ** | セッション |
+| 📋 **棚卸し役** | 未整理の issue を分類し、投入できる形へ翻訳する | **issue の本文とラベル**（原文は `## 元の報告` として残す） | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**未整理があれば立つ** | セッション |
+| 📊 **分析係（一次）** | マージ済みPRのコメントに残ったスメル（[`board-design.md`](../.claude/board-design.md) 4.4）を拾う——書き手はレビュアーと、PRを書いた側の両方。**見るのはその回の帯だけで、過去の回の記録で傾向を探さない**（その回のスメルが名指した行を確かめるために開くのは別） | **新しい issue**（`kind:` は付けない）と、**記録のPR1本**（`.claude/analysis/<日付>.md`）。読んだコメントには 👀 を付ける | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**読まれていないスメルがあれば立つ** | セッション |
+| 📈 **分析係（二次）** | 一次が回ごとに書いた記録を横断して読み、**複数の回に現れている形に根本対策を打つか決める**（[`board-design.md`](../.claude/board-design.md) 2.17.4）。PRのコメントも issue も読み直さない | **新しい issue**（`kind:` は付けない）と、**記録のPR1本**（`.claude/analysis/summary/<日付>.md`）。方針の文書へは書かない——畳むのは価値観を畳む係 | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**二次がまだ読んでいない一次の記録があれば立つ** | セッション |
+| 🧭 **価値観を畳む係** | `.claude/decisions/` に溜まった判断の履歴を読み、**一般則へ畳む候補を並べる。反映はしない** | **`判断待ち` を付けた issue 1本だけ**（リポジトリへは1行も書かない）。反映するのは、チェックが埋まった後に配られる別のセッション | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**棚卸ししていない記録があれば立つ** | セッション |
+| 🔧 **盤面を見回る係** | **デーモンは生きているのに盤面が進んでいない**形を拾うため、正常の定義（不変条件）に照らして盤面が健全かを毎回確かめ、崩れていれば原因を特定して直す（[`board-design.md`](../.claude/board-design.md) 2.21） | **`main` への直接 push**（PRにすると、詰まっている間はマージされないので直しが届かない）と、人にしか直せないときの issue、**見回りの記録**（`~/.claude/board-state/patrol.jsonl`） | デーモンが [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。**盤面の見え方によらず立つ**（**印で絞ると、印に掛からない壊れ方を拾えない**）。**このPCでしか調べられない**（`~/daemon.log`） | セッション |
 | ⚙️ **作業者** | task issue を1件実装する | PR1本 ＋ 気づいた別件の新しい issue ＋ 立てるほどではない気づきの `[スメル] ` コメント | デーモンが [`dispatch-task.sh`](../scripts/agent/dispatch-task.sh) | セッション |
 | 🩺 **自己レビュー役** | **これから出す差分**を、レビュアーと同じ観点で読む。**直さない** | **どこにも書かない。** 指摘を受けた本人が、直すか理由を書くかして PR本文の `## 自己点検` へ載せる | **PRを出す側が誰でも**、**PRを作る前**に1本（立てられない環境では、理由を1行書いて同じ観点を自分で通す） | **PRを出す側のサブエージェント** |
 | 🔬 **レビュアー** | PR1本の差分と、その外まで読む。**直さない** | **PRへのコメント1つだけ**（issue も立てない） | デーモンが [`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) | セッション |
@@ -85,7 +85,7 @@ flowchart LR
 
 **PRを出すのは主に作業者と相談役**で、どちらも**1セッション＝1ブランチ＝1PR**に閉じます。**一次と二次の分析係も記録のPRを1本ずつ出します**が、記録だけの差分なので、**作業者の枠には数えません**（8節の `CHORE`）。**棚卸し役・レビュアー・掘り起こし役・価値観を畳む係は作業ツリーへ書かない**ので、何本立てても互いの足元を壊しません。自己レビュー役はPRを出す側のチェックアウトをそのまま使いますが、**読むだけ**なので同じです。
 
-**周期で立つ係の引き金は、「仕事があるか」と「前に立ててから間隔が空いたか」の2つです**（[`board-design.md`](../.claude/board-design.md) 2.17）。**件数のしきい値は置きません**——溜まるまで待つ形にすると、1件のまま来ない日が続いたときにそれが放置され、しきい値そのものが「そこまでは残ってよい」の宣言になります。上の表で周期の係に書いた「何で立つか」は、この2つを並べたものです。
+**周期で立つ係の引き金は、「仕事があるか」と「前に立ててから間隔が空いたか」です**（[`board-design.md`](../.claude/board-design.md) 2.17）。**間隔そのものは [`board-move.mjs`](../scripts/agent/board-move.mjs) の `CYCLES` が係ごとに持ちます**——ここへ書き写すと、写しだけが古くなる先が増えます。**件数のしきい値は置きません**——溜まるまで待つ形にすると、1件のまま来ない日が続いたときにそれが放置され、しきい値そのものが「そこまでは残ってよい」の宣言になります。上の表で周期の係に書いた「何で立つか」は、このうち仕事の側だけです。
 
 **掘り起こし役に実装させないのは、報告と反映を同じ役に持たせないためです。** 掘り起こし役が出すのは材料で、それを配るのはデーモン、手を動かすのは配られた作業者です。棚卸し役だけが**既にある** issue の更新権限を持ちますが、**書き換えるのは型であって中身ではありません**（原文を消させない）。
 
@@ -120,7 +120,7 @@ flowchart LR
 
 ### ⛏️ 掘り起こし役 — 探すのではなく、数える
 
-**立つのは、配れる「完成へ近づける仕事」（`goal:game`）が尽きた周です**（[`board-design.md`](../.claude/board-design.md) 2.17・2.18.1）。**在庫の数では立ちません**——スメルを拾う役の入力はPRが出るたびに生えるので、「配れる `kind:task` が尽きた」で見ていた間、整備の issue が在庫を満たし続け、この役は立てられなくなっていました。見つからない周が続いても一日一回に収めます。渡す本文は [`dig-prompt.md`](../.claude/dig-prompt.md)。
+**立つのは、配れる「完成へ近づける仕事」（`goal:game`）が尽きた周です**（[`board-design.md`](../.claude/board-design.md) 2.17・2.18.1）。**在庫の数では立ちません**——スメルを拾う役の入力はPRが出るたびに生えるので、「配れる `kind:task` が尽きた」で見ていた間、整備の issue が在庫を満たし続け、この役は立てられなくなっていました。見つからない周が続いても、間隔（`CYCLES`）のぶんは空けます。渡す本文は [`dig-prompt.md`](../.claude/dig-prompt.md)。
 
 **「仕事を探せ」とは言いません。** そう言われたエージェントは必ず何か見つけるので、出力の質が観点の質と同じになり、**観点を毎回考える人が要る**ことになります。機械が起こす役なので、その人は居ません。
 
@@ -172,12 +172,12 @@ flowchart TB
     Human -->|"チェックを外す＝投入を止める"| Brake
     Human -->|"PRを止めている印を外す＝書き直させる"| PR
     Brake -.->|"毎周読む"| Daemon
-    Daemon -->|"配れる goal:game が無ければ一日一回"| Digger
+    Daemon -->|"配れる goal:game が無ければ立てる"| Digger
     Digger -->|"やると決まっているものを立てる"| New
     Digger -->|"やるかどうかから訊くものを、チェックの一覧にして立てる"| New
     Adviser -->|"合意できた分を書く"| PR
     Daemon -->|"マージする"| PR
-    Daemon -->|"未整理があれば一日二回"| Triage
+    Daemon -->|"未整理があれば立てる"| Triage
     New -.->|"まとめて読む"| Triage
     Triage -->|"分類する・投入できる形へ書き換える"| Task
     Triage -->|"申告を読んで順序を張る"| Task
@@ -188,11 +188,11 @@ flowchart TB
     Worker -->|"仮決めした箇所を訊く（進みながら）"| Ask
     Worker -->|"確定の宣言に反する変更が要るとき1本立てる（進めずに）"| Ask
     Reviewer -->|"結論をコメントする"| PR
-    Daemon -->|"読まれていないスメルがあれば一日一回"| Analysis
+    Daemon -->|"読まれていないスメルがあれば立てる"| Analysis
     PR -.->|"マージ済みのスメルを読む"| Analysis
     Analysis -->|"手を打つべきものを立てる"| New
     Analysis -->|"記録を出す"| PR
-    Daemon -->|"読まれていない分析があれば週一回"| Trend
+    Daemon -->|"読まれていない分析があれば立てる"| Trend
     Analysis -.->|"回ごとの記録を横断して読む"| Trend
     Trend -->|"回をまたぐ形に根本対策を立てる"| New
     Trend -->|"記録を出す"| PR
@@ -363,7 +363,7 @@ flowchart LR
 
 | 手 | いつ打つか | 何をするか |
 | --- | --- | --- |
-| `TIDY` | 窓（48時間）に載っているマージ済みのPRで、まだ片付けていないもの | [`tidy-merged-pr.sh`](../scripts/agent/tidy-merged-pr.sh)。`Closes` の issue が閉じたかの確認 → 積まれていたPRの差し戻し → 本体を新しい `main` へ進める |
+| `TIDY` | 窓（[`board-read.mjs`](../scripts/agent/board-read.mjs) の `MERGED_WINDOW_HOURS`）に載っているマージ済みのPRで、まだ片付けていないもの | [`tidy-merged-pr.sh`](../scripts/agent/tidy-merged-pr.sh)。`Closes` の issue が閉じたかの確認 → 積まれていたPRの差し戻し → 本体を新しい `main` へ進める |
 | `MERGE` | `通してよい` があり、緑で、コンフリクトも無く、**人の手番で止まっていない** | [`merge-pr.sh`](../scripts/agent/merge-pr.sh)。機械の関門を通してマージするだけ |
 | `ARCHIVE` | **もう誰も起こさないセッション**——作業者は担当の issue がもう自分の仕事でなくなったとき、レビューは判定を書き終えたとき（書かないまま止まれば、下の `review-stall` で1回起こしてから）。**条件は役ごとに違い、[`board-design.md`](../.claude/board-design.md) 2.10 が持ちます** | **セッションを畳む**（[`archive-session.sh`](../scripts/agent/archive-session.sh)）。**役によらず同じこの手です** |
 | `RESUME … mend` | `直し待ち`・CIが赤・`main` と衝突 | **書いたセッションを起こして直させる**（[`resume-session.sh`](../scripts/agent/resume-session.sh)） |

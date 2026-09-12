@@ -271,7 +271,7 @@ object_texts:
       immunity:
         display_name: 免疫
         icon: 🛡️
-        description: 菌を抑え込む力。壊血病・空腹・寝不足・気の塞ぎで落ち、感染しているあいだに上がる。多く摂っても強くはならない。
+        description: 菌を抑え込む力。欠乏や不調を抱えているあいだは落ち、感染しているあいだに上がる。多く摂っても強くはならない。
       # 腕前（docs/engine/SkillSystem.md、一覧は docs/world/Skills.md 2節）。**説明にはその腕を伸ばす
       # 行動を書く**——伸ばす行動を持たない本では、どうにもならないことがそこで分かる。伸ばす行動の
       # 指し方は reason_texts の `needs_` の前書きと同じ。
