@@ -52,7 +52,7 @@ export class Location extends ObjectWrapper {
    * atは並びの中の位置（SlotPosition）。省略すると末尾（合流できる同種があればそのスタック）へ入る。
    *
    * **どの枠へ入れるかを知っているのはこの包みなので、呼び出し側はスロットを引く手順を持たない**
-   * （PlayerCharacter.takeと対）。位置を指した受け入れの決まりを確かめられるのもこの口だけ。
+   * （PlayerCharacter.takeと対）。公開しているのはそのためで、`src`の呼び手はまだ無い。
    */
   receiveItem(item: WorldObject, at?: SlotPosition): boolean {
     return item.moveToSlotOrRejection(this.instance.getSlot(this.itemsSlotId), at) === undefined;
