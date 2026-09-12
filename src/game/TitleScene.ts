@@ -4,6 +4,7 @@ import { Button } from './ui/Button';
 import { addLabel } from '../ui/labels';
 import { uiText } from '../locale/uiTexts';
 import { COLOR, mixColor } from './looks/theme';
+import { cssColorWithAlpha } from '../util/cssColor';
 
 /** 「はじめる」「設定」ボタンの寸法（StartScreen_Mock.htmlの.title-button）。 */
 const MENU_BUTTON_HEIGHT = 92;
@@ -13,6 +14,9 @@ const LOGO_MENU_GAP = 56;
 
 /** 空・海・砂浜を思わせる背景の、上側グラデーションが占める割合。 */
 const HORIZON_RATIO = 0.55;
+
+/** 題名の落ち影の濃さ。背景は図形なので明暗の差が小さく、輪郭がにじむ程度で足りる。 */
+const TITLE_SHADOW_ALPHA = 0.35;
 
 /**
  * タイトル画面（StartScreen.md 画面構成 1）。
@@ -36,7 +40,14 @@ export class TitleScene extends ResponsiveScene {
       color: COLOR.textOnDark,
       bold: true,
     }).setOrigin(0.5, 0);
-    mainLabel.setShadow(0, this.metrics.px(2), 'rgba(0,0,0,0.35)', this.metrics.px(6), false, true);
+    mainLabel.setShadow(
+      0,
+      this.metrics.px(2),
+      cssColorWithAlpha(COLOR.textShadow, TITLE_SHADOW_ALPHA),
+      this.metrics.px(6),
+      false,
+      true,
+    );
 
     // テスト用シナリオは同梱されているときだけ並べる（SaveDataManagement.md「テスト用シナリオ」節）。
     const menu: { label: string; primary: boolean; onTap?: () => void }[] = [
