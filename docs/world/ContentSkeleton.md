@@ -96,7 +96,8 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 **刃物と火は仕組みの上では本物の前提ですが、プレイヤーが追う目的としては置きません。**
 
-前提としては外せません——水の経路はどれも `cutting_tool` を要求し（[`stats/balance.yaml`](../../stats/balance.yaml)
+前提としては外せません——水の経路はどれも刃物を要求し（`cutting_tool`、あるいはその一部で柄に固定
+されていない刃だけを指す `handheld_blade`。[`stats/balance.yaml`](../../stats/balance.yaml)
 の `chain_routes` の `property: hydration`）、タロイモもヤシガニも火が要ります（[`Animals.md`](./Animals.md) 1節）。外すと組み立てが
 崩れます。
 
@@ -387,7 +388,8 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 生皮 | イノシシ・サル（森・密林） | 海岸に降りるサル |
 
 **斧と刃物の段は飛びません**——繊維はどちらの入口も刃物を通り（掻き取るのも実の皮を剥ぐのも
-`cutting_tool`）、流木の幹も斧を要求し（[`Voyage.md`](./Voyage.md) 1節）、獣を仕留めるには武器が要ります。
+`handheld_blade`。柄付きの斧では代われません）、流木の幹も斧を要求し（[`Voyage.md`](./Voyage.md) 1節）、
+獣を仕留めるには武器が要ります。
 増やしたのは入口であって、段ではありません。
 
 ### 5.1 望遠鏡は置かない【確定】

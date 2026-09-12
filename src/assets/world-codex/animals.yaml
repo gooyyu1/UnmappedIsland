@@ -552,7 +552,9 @@ object_defs:
     variation_axes:
       cure: {of: {tag: cured}}
     interactions:
-      # 刃物を重ねて解体する（HuntingSystem.md 1.5節）。
+      # 握りの刃を重ねて解体する（HuntingSystem.md 1.5節）。**要るのはhandheld_blade**（tools.yaml）
+      # ——皮と肉の間へ刃を寝かせて走らせる手つきなので、柄の先へ頭部を据えた石斧では剥げない。
+      # 狩るのは斧のほうが速くても、捌くには尖った石が別に要る（他の獣の死体も同じ）。
       #
       # 5000gの内訳: 生肉500g×4 + 獣骨500g + 生皮600g = 3100g。残る1900gは血と内臓・頭で、
       # 使い道が無いのでカードにしない。値を変えるときはこの内訳を崩さないこと。
@@ -561,7 +563,7 @@ object_defs:
       # （docs/engine/IlluminationSystem.md 5節。他の獣の死体も同じ）。据え付けの光源も効くので、
       # 焚き火のそばなら夜でも捌ける。
       butcher:
-        trigger: {drag: {tag: cutting_tool}}
+        trigger: {drag: {tag: handheld_blade}}
         conditions:
           - reason: too_dark
             subject: agent
@@ -852,7 +854,7 @@ object_defs:
       # 大きいぶん時間がかかるが、1kgあたりで見ればサル（60分/5kg）より速い——同じ手数で
       # 大きく取れるため。
       butcher:
-        trigger: {drag: {tag: cutting_tool}}
+        trigger: {drag: {tag: handheld_blade}}
         conditions:
           - reason: too_dark
             subject: agent
@@ -881,7 +883,7 @@ object_defs:
       cure: {of: {tag: cured}}
     interactions:
       butcher:
-        trigger: {drag: {tag: cutting_tool}}
+        trigger: {drag: {tag: handheld_blade}}
         conditions:
           - reason: too_dark
             subject: agent
@@ -976,11 +978,13 @@ object_defs:
       weight: {value: 10}
       volume: {value: 15}
     interactions:
-      # 削って針にする（tools.yamlのbone_needle）。刃物を当てる側（instrument）は残り、削られる骨だけが
-      # 針へ置き換わる——石を打ち割って尖った石を作るのと同じ形（locations.yamlのknap）。
+      # 削って針にする（tools.yamlのbone_needle）。**要るのは握りの刃**（handheld_blade、tools.yaml）
+      # ——骨を握って刃を面へ沿わせ、少しずつ削ぎ落とす手つきなので、石斧では細らせられない。
+      # 刃を当てる側（instrument）は残り、削られる骨だけが針へ置き換わる——石を打ち割って尖った石を
+      # 作るのと同じ形（locations.yamlのknap）。
       # 明るさの条件も同じで、削り出す形が手元の明るさに掛かる（docs/engine/IlluminationSystem.md 5節）。
       whittle:
-        trigger: {drag: {tag: cutting_tool}}
+        trigger: {drag: {tag: handheld_blade}}
         conditions:
           - reason: too_dark
             subject: agent

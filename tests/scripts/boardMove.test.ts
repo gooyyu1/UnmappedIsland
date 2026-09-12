@@ -60,9 +60,10 @@ const LONG_IDLE = '2026-09-04T02:00:00Z';
 
 /**
  * 掘り起こす係（`board-move.mjs` の `CYCLES` の `dig`）は、既定で**たった今立てた**ことにする。
- * あの係の `due` は**配れる task が無いこと**なので、**task を置かなかった盤面には全部当たる**
- * ——既定のままだと、掘り起こしと関わりのない検査の期待値へ一律に1手増え、**その検査が何を見て
- * いるのかが読めなくなる。** 立つところを見る検査は、`taken` の `cycle:dig` を古い時刻で上書きする。
+ * あの係の `due` は**配れる「完成へ近づける仕事」が無いこと**（2.18.1）なので、**そういう task を
+ * 置かなかった盤面には全部当たる**——既定のままだと、掘り起こしと関わりのない検査の期待値へ一律に
+ * 1手増え、**その検査が何を見ているのかが読めなくなる。** 立つところを見る検査は、`taken` の
+ * `cycle:dig` を古い時刻で上書きする。
  */
 const DUG_JUST_NOW = { 'cycle:dig': NOW };
 
@@ -753,6 +754,44 @@ describe('board-move.mjs', () => {
     expect(moves({ issues: [rush(30), rush(9), rush(20)] })).toEqual(['TASK 9', 'TASK 20', 'TASK 30']);
   });
 
+  // ## 向かう先（2.18.1）
+  //
+  // **完成へ近づける仕事が、古い順より前に出る。** 掘り起こしたものは必ず最新なので、古い順だけで
+  // 並べると、掘り起こした先から整備の在庫の最後尾へ回る。
+  const upkeep = (number: number) => ({
+    number,
+    ...label('kind:task', 'origin:agent', 'goal:upkeep'),
+    blockedBy: { nodes: [] },
+  });
+  const game = (number: number) => ({
+    number,
+    ...label('kind:task', 'origin:agent', 'goal:game'),
+    blockedBy: { nodes: [] },
+  });
+
+  it('goal:game の issue は、それより古い goal:upkeep より先に投入する', () => {
+    expect(moves({ issues: [upkeep(9), upkeep(20), game(30)] })).toEqual(['TASK 30', 'TASK 9', 'TASK 20']);
+  });
+
+  // **`急ぎ` は向かう先より強い**（2.18 の「効き目は配る順だけ」を、この軸の上でも保つ）。盤面
+  // そのものが止まる整備は、これで越える。
+  it('急ぎ の付いた goal:upkeep は、goal:game より先に投入する', () => {
+    const rush = {
+      number: 40,
+      ...label('kind:task', 'origin:agent', 'goal:upkeep', '急ぎ'),
+      blockedBy: { nodes: [] },
+    };
+    expect(moves({ issues: [game(9), rush] })).toEqual(['TASK 40', 'TASK 9']);
+  });
+
+  // 印が無いときの既定（2.18.1）。**機械が立てたものは整備、人が立てたものは完成へ近づける仕事**
+  // ——どちらも `goal:` を名乗っていないのに、並ぶ順が分かれる。
+  it('goal: がどちらにも無ければ、人が立てた issue が origin:agent より先に出る', () => {
+    const byAgent = { number: 9, ...label('kind:task', 'origin:agent'), blockedBy: { nodes: [] } };
+    const byHuman = { number: 30, ...label('kind:task'), blockedBy: { nodes: [] } };
+    expect(moves({ issues: [byAgent, byHuman] })).toEqual(['TASK 30', 'TASK 9']);
+  });
+
   // 順を変えるだけで、配ってよいかは変えない（1.3）。
   it('急ぎ でも、判断待ちなら配らない', () => {
     const board = {
@@ -1427,9 +1466,9 @@ describe('board-move.mjs', () => {
 
   // ## 掘り起こす係（2.17）
   //
-  // 仕事の在り処が**盤面の空きそのもの**にある係。配れる `kind:task` が尽きた周に立ち、完成の
-  // 定義に照らして残りを数える。**上の既定（`DUG_JUST_NOW`）を外した盤面だけが立てる**ので、
-  // ここは `cycle:dig` を古い時刻で上書きして見る。
+  // 仕事の在り処が**盤面の空きそのもの**にある係。配れる「完成へ近づける仕事」が尽きた周に立ち
+  // （2.18.1）、完成の定義に照らして残りを数える。**上の既定（`DUG_JUST_NOW`）を外した盤面だけが
+  // 立てる**ので、ここは `cycle:dig` を古い時刻で上書きして見る。
   const DUG_YESTERDAY = { 'cycle:dig': '2026-09-04T01:00:00Z' };
   const task = (number: number) => ({ number, ...label('kind:task'), blockedBy: { nodes: [] } });
 
@@ -1437,7 +1476,8 @@ describe('board-move.mjs', () => {
     expect(moves({ taken: DUG_YESTERDAY })).toEqual([DIG]);
   });
 
-  it('配れる kind:task が1件でもあれば、掘り起こす係は立てない', () => {
+  // 人が立てた issue は `goal:` を名乗らないが、**完成へ近づける仕事として読む**（2.18.1）。
+  it('人が立てた配れる issue が1件でもあれば、掘り起こす係は立てない', () => {
     expect(moves({ issues: [task(10)], taken: DUG_YESTERDAY })).toEqual(['TASK 10']);
   });
 
@@ -1456,6 +1496,25 @@ describe('board-move.mjs', () => {
   it('返された task しか無ければ、掘り起こす係を立てる', () => {
     const returned = { number: 10, ...label('kind:task', '判断待ち'), blockedBy: { nodes: [] } };
     expect(moves({ issues: [returned], taken: DUG_YESTERDAY })).toEqual([DIG]);
+  });
+
+  // **数えるのは在庫の数ではなく組成**（2.18.1）。ここが在庫の数を見ていた間、スメルを拾う係が毎日
+  // 整備の issue を積んだので、**この係は立てられなくなっていた**——2026-09-11 に配れた46件のうち、
+  // 完成の定義へ向かうものは7件で、残る39件が「配れる task が在る」を成立させ続けていた。
+  it('配れるのが整備の仕事だけなら、掘り起こす係を立てる', () => {
+    const chores = [1, 2, 3, 4, 5].map(upkeep);
+    expect(moves({ issues: chores, taken: DUG_YESTERDAY })).toContain(DIG);
+  });
+
+  it('配れる goal:game が1件でもあれば、掘り起こす係は立てない', () => {
+    expect(moves({ issues: [upkeep(1), game(2)], taken: DUG_YESTERDAY })).not.toContain(DIG);
+  });
+
+  // 印が無いときの既定（2.18.1）。**名乗らない機械の仕事は整備として読む**ので、付け忘れが
+  // 「完成へ近づける仕事が在る」を成立させることはない。
+  it('goal: を名乗らない origin:agent の issue しか無ければ、掘り起こす係を立てる', () => {
+    const unnamed = { number: 1, ...label('kind:task', 'origin:agent'), blockedBy: { nodes: [] } };
+    expect(moves({ issues: [unnamed], taken: DUG_YESTERDAY })).toContain(DIG);
   });
 
   it('前に立ててから一日が経つまで、掘り起こす係は立てない', () => {

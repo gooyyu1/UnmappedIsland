@@ -147,9 +147,9 @@ const MATCHES_KEY = 'matches';
  *
  * | 主語 | 使える演算子キー |
  * | --- | --- |
- * | `prop`（subjectのそのプロパティの実効値） | `lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`/`in_stage`/`in_stage_or_above` |
- * | `slot`（subjectのそのスロットの中身） | `matches`（当てはまる中身が1つでもあるか） |
- * | 無し（subject自身） | `in_slot`（親の中での位置）/`matches`（subject自身が当てはまるか） |
+ * | `prop`（subjectのそのプロパティの実効値） | PROPERTY_OPSとSTAGE_KEYS |
+ * | `slot`（subjectのそのスロットの中身） | MATCHES_KEY（当てはまる中身が1つでもあるか） |
+ * | 無し（subject自身） | `in_slot`（親の中での位置）/MATCHES_KEY（subject自身が当てはまるか） |
  *
  * **量化は主語が決める。** 同じ`matches`でも、`slot`があれば中身に対する存在判定、無ければ
  * subject自身への判定になる（14.3節・14.4節）。
@@ -157,8 +157,8 @@ const MATCHES_KEY = 'matches';
  * **演算子キーは複数書ける（暗黙のAND）。** 条件の並びと同じ規則で、範囲判定
  * （`{prop: x, gte: 100, lt: 200}`）のために同じ`prop`を2度書かなくて済む。
  *
- * 比較の相手はリテラルか{subject, prop}参照（10.2節と同じ二択）。参照はlt/lte/gt/gte/eq/neqのみで
- * 使える（in/not_inは複数値との比較のため噛み合わない）。
+ * 比較の相手はリテラルか{subject, prop}参照（10.2節と同じ二択）。参照を使えるのは相手が1つの値である
+ * 演算子だけ（in/not_inは複数値との比較のため噛み合わない）。
  */
 function parseConditionLeaf(
   loader: WorldCodexYamlLoader,

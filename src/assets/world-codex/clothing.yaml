@@ -35,9 +35,12 @@ object_defs:
         # 伸ばさない（GameElementDefinition.md 11.3節）。工程を2つに割ってあるのも同じ理由。
         steps:
           # 毛と肉を落とす。掻き落とすだけなので刃物は減らない（tools.yamlのsharp_stone）。
+          # **要るのは握りの刃**（handheld_blade、tools.yaml）——皮を張って刃を寝かせ、面を端から端まで
+          # 送る手つきなので、石斧では掻けない。皮を剥ぐ解体（animals.yamlのbutcher）と同じ持ち方で、
+          # なめしへ進める者が解体してきた者であることと辻褄が合う。
           - requires:
               - {object: rawhide, count: 1, consume: true}
-              - {tag: cutting_tool, count: 1, consume: false}
+              - {tag: handheld_blade, count: 1, consume: false}
             duration: 120
           # 砕いた樹皮の渋に漬け、揉みながら乾かす。ひと剥ぎぶん（timber.yamlのstrip_bark）で革1枚。
           - requires:

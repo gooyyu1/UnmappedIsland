@@ -3,7 +3,7 @@ import type { Pcg32 } from '../Pcg32';
 import { Site } from './IslandMap';
 
 /**
- * サイト（Site）の座標配置。半径ISLAND_RADIUSの円盤を島とみなし、次の2段で配置する。
+ * サイト（Site）の座標配置。半径ISLAND_RADIUSの円盤を島とみなし、次の順で配置する。
  *
  * 1. 外周リング: 島を囲む海岸候補のサイトを、外周の円環（半径85〜95%）へ等間隔+ジッタで置く。
  *    個数は全体の約35%（4〜7個に制限）。島が必ず海岸に囲まれることと、海岸が多くなり
@@ -35,7 +35,7 @@ export function placeSites(scope: GenerationScopeDef, rng: Pcg32): Site[] {
   const total = rng.nextInt(scope.siteCountMin, scope.siteCountMax + 1);
 
   // 海岸（外周リング）の個数: 全体の約35%、ただし「島を囲める最低限」として4個以上、
-  // 「多くなりすぎない」上限として7個以下。内陸にも最低3個は残す（山+内陸2種の余地）。
+  // 「多くなりすぎない」上限として7個以下。内陸にも最低3個は残す（山と内陸の型が並ぶ余地）。
   let coastCount = Math.min(Math.max(Math.round(total * 0.35), 4), 7);
   coastCount = Math.min(coastCount, total - 3);
 

@@ -60,7 +60,7 @@ export class WorldCodex {
   /** コードがYAMLの単語へ寄せている依存の一覧（WorldVocabulary参照）。 */
   readonly vocabulary: WorldVocabulary;
 
-  /** 地形生成の定義一式（terrain_generation.yamlのaxes/location_types/generation_scopes）。
+  /** 地形生成の定義一式（terrain_generation.yaml）。
    * 生成定義を1つも含まないロードではundefined（地形生成を使わないCodexも成立する）。 */
   readonly generation: GenerationDefs | undefined;
 

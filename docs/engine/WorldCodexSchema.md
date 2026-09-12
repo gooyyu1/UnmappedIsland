@@ -16,7 +16,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 **`npm test` が毎回検証します**（`tests/world-codex/worldCodexSchema.test.ts`。`ajv` の Draft 2020-12
 バリデータを使う）。手で走らせて確かめるものではないので、乖離はその場で赤になります。
 
-見るのは3つで、**赤の意味が3つに分かれる**ようにしています。
+見るものを次のように分け、**赤の意味が分かれる**ようにしています。
 
 - **スキーマ自体の妥当性**: Draft 2020-12 として組めること。ajvのstrictモードを切っていないので、
   綴りを間違えたキーワード（`additionalProprties`）が黙って無視される事故もここで落ちます。
@@ -43,9 +43,9 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 
 ### 2.2 対象だが中身を検証しないもの・ローダー未実装のもの
 
-- **地形生成（`axes`/`location_types`/`generation_scopes`、`TerrainGeneration.md`）**: ローダーは実装・ロード済み
-  （`parseGeneration.ts`、`terrain_generation.yaml`）。本スキーマはこの3ルートキーを**許容するが
-  中身は検証しない**（`true` スキーマ）。詳細スキーマ化は今後の課題。
+- **地形生成（`TerrainGeneration.md`）**: ローダーは実装・ロード済み
+  （`parseGeneration.ts`、`terrain_generation.yaml`）。本スキーマは `parseGeneration.ts` が読むルートキーを
+  **許容するが中身は検証しない**（`true` スキーマ）。詳細スキーマ化は今後の課題。
 - **`covers`/`layer`（object_def直下）・`unit`（prop直下）**: 文法として文書化済みでスキーマにも
   含めているが、ローダーは現時点でこれらのキーを解釈しない（読み飛ばす）。
 - **文脈依存の制約**: 参照の起点（`conditions` の `subject`・効果の対象キー）に何を書けるかは、その宣言が
@@ -65,7 +65,8 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
   ない）ため、必須項目としました。`count` の省略時
   デフォルト（`RecipeSystem.md` 5節で未決定）はスキーマ上も任意項目のままにしています。
 - 枠（`slots.*.cells[]` / `slots.*.cell`）の `max` は省略可で、省略すると無制限です。
-- `interactions.*.trigger` に書けるのは `menu`・`tick`・`{drag: ...}` の3つです（ローダーも他の値をエラーにします）。
+- `interactions.*.trigger` に書けるきっかけは `src/domain/InteractionTrigger.ts` が持ち、スキーマもそれに揃えます
+  （ローダーも他の値をエラーにします）。
   必須にしているのは `traits` 側だけで、`object_defs` 側では省略できます——trait が配った同名の操作へ
   フィールド単位で重ねられる（`GameElementDefinition.md` 5節）ので、`conditions` だけを書いた形が正しく、
   単独で立つ操作に `trigger` が要ることは trait 合成の後でしか分かりません（2.2節）。

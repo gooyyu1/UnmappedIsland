@@ -1,4 +1,5 @@
 import { INFORMATION_PAPER_INSET } from '../../art/informationArt';
+import { OPTION_ICONS } from './barIcons';
 import { SIZE } from './theme';
 import { LANE_MIN_CARDS } from './ScreenMetrics';
 import type { Rect } from '../../ui/Rect';
@@ -81,8 +82,9 @@ function characterDisplayHeight(bottomPadding: number): number {
 /** 縦型のキャラクター表示エリア幅。ポートレイト205 + 地図・装備・怪我の列 + ギャップ・パディング。 */
 const CHARACTER_DISPLAY_WIDTH_PORTRAIT = 460;
 
-/** 横型のオプションバー高（アイコンボタン4個の縦積み + 上下パディング16×2）。 */
-const OPTIONS_HEIGHT_LANDSCAPE = SIZE.iconButton * 4 + SIZE.barGap * 3 + 32;
+/** 横型のオプションバー高（オプションバーのボタンの縦積み + 上下パディング16×2）。 */
+const OPTIONS_HEIGHT_LANDSCAPE =
+  SIZE.iconButton * OPTION_ICONS.length + SIZE.barGap * (OPTION_ICONS.length - 1) + 32;
 
 /**
  * ハンドレーンの枠の上限（ScreenLayout.md 7.3節）。**これを超えて広げた幅を使う相手がフィールド
@@ -371,8 +373,13 @@ export class PlayScreenLayout {
     return laneCellsIn(this.fieldArea.width, this.metrics);
   }
 
-  /** オプションバーに並ぶアイコンボタン。横型は高さいっぱいの中央へ、縦型は右端へ寄せる。 */
-  optionsBarIcons(count: number): BarIconRow {
+  /**
+   * オプションバーに並ぶアイコンボタン。横型は高さいっぱいの中央へ、縦型は右端へ寄せる。
+   *
+   * **既定はバーの寸法を決めたのと同じ並び**（`OPTION_ICONS`）なので、呼び手は数を数えない。
+   * 別の数を渡せば、収まらない分は送って読む（`barIcons`）。
+   */
+  optionsBarIcons(count: number = OPTION_ICONS.length): BarIconRow {
     return this.metrics.isLandscape
       ? this.barIcons(this.optionsBar, count, 'center', 0)
       : this.barIcons(this.optionsBar, count, 'end', this.metrics.px(OPTIONS_BAR_PADDING_X));

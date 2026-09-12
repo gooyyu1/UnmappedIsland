@@ -31,8 +31,8 @@ import {
 } from '../domain/generation/LocationTypeDef';
 import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 
-/** 蓄積した地形生成定義（axes/location_types/generation_scopes）をLoad系メソッドの呼び出しごとに
- * この関数群を通じて登録する。trait合成が無いためパース済みのDefで持ち、他ファイルとの相互参照の
+/** 地形生成のルートキーを、Load系メソッドの呼び出しごとにこの関数群を通じてloaderへ登録する。
+ * trait合成が無いためパース済みのDefで持ち、他ファイルとの相互参照の
  * 検証だけをbuildGenerationDefsまで遅延する。 */
 export function loadGenerationSections(loader: WorldCodexYamlLoader, label: string, root: YAMLMap): void {
   const axes = tryGetMap(root, 'axes', label);

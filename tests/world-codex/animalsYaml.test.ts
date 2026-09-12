@@ -576,16 +576,19 @@ describe('animals.yamlの動物', () => {
       const carcass = kill();
       const stone = spawnInto('stone', player, 'hand');
 
-      expect(carcass.combinationsWith(stone, player), '素手の石はcutting_toolタグを持たない').toEqual([]);
+      expect(carcass.combinationsWith(stone, player), '素手の石はhandheld_bladeタグを持たない').toEqual([]);
     });
 
-    it('槍では解体できない', () => {
-      // 穂先は柄の先に固定されていて皮を剥ぐ手つきにならない（tools.yaml）。狩れても捌けないので、
-      // 刃物を別に持つ理由が残る。
+    it('槍でも石斧でも解体できない', () => {
+      // 解体が要求するのは握りの刃（handheld_blade、tools.yaml）。どちらも刃を柄の先へ固定した物で、
+      // 皮と肉の間へ刃を寝かせて走らせる手つきにならない——狩れても捌けないので、刃物を別に持つ
+      // 理由が残る。**斧は狩りの道具としては上**なので、ここが緩むと尖った石を持ち歩く理由が消える。
       const carcass = kill();
       const spear = spawnInto('spear', player, 'hand');
+      const axe = spawnInto('stone_axe', player, 'hand');
 
-      expect(carcass.combinationsWith(spear, player), '槍はcutting_toolタグを持たない').toEqual([]);
+      expect(carcass.combinationsWith(spear, player), '槍はhandheld_bladeタグを持たない').toEqual([]);
+      expect(carcass.combinationsWith(axe, player), '石斧もhandheld_bladeタグを持たない').toEqual([]);
     });
 
     it('生肉は食べられる', () => {

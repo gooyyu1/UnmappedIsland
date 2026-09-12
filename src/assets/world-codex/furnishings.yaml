@@ -10,7 +10,10 @@
 #
 # **点数は、その物に掛かる手間に比例させる**（stats/balance.yaml の object_costs）。設えは積むほど
 # 効いてよい（同節）ので同じ物を並べても効き、**どれを並べても点あたりの手間はおおむね揃う**
-# ——比例させてあるのはそのため。**それでも払う総手間は並べ方で上へ振れる**——点あたりの手間は型ごとに
+# ——比例させてあるのはそのため。**どこまでの開きを「おおむね」と呼ぶかの線は試験が持つ**
+# （tests/world-codex/furnishingsYaml.test.ts）——点数は整数で手間は素材の連鎖から出るので、ぴったり
+# 揃う組み合わせは選べず、**上流のレシピが動けば設えを触らなくても開く。**
+# **それでも払う総手間は並べ方で上へ振れる**——点あたりの手間は型ごとに
 # 少しずつ違い、そのうえ1つあたりの点数も違うので、snug を越える手前で行き過ぎる量まで変わる。
 # いちばん安い積み方（stats/terrain.yaml の work_piles）が下限で、そこから下へは振れない。
 # **単体で snug（50）へ届く物は無く、積んで初めて届く**
@@ -87,9 +90,12 @@ object_defs:
     recipes:
       whittled:
         steps:
+          # **要るのは握りの刃**（handheld_blade、tools.yaml）——枝を押さえて刃を面へ沿わせ、像の形が
+          # 出るまで削ぎ続ける手つきで、骨針の削り出し（animals.yamlのwhittle）と同じ持ち方。下の
+          # 太鼓のくり抜きが刃物なら何でもよいのと、そこが違う。
           - requires:
               - {object: thick_branch, count: 1, consume: true}
-              - {tag: cutting_tool, count: 1, consume: false}
+              - {tag: handheld_blade, count: 1, consume: false}
             duration: 210
 
   # 木の太鼓。丸太をくり抜き、生皮を張って縄で締めた物。
@@ -108,7 +114,8 @@ object_defs:
     recipes:
       hollowed:
         steps:
-          # 丸太の芯をくり抜く。
+          # 丸太の芯をくり抜く。**刃物なら何でもよい**（cutting_tool）——刃を打ち込んでは屑を起こす
+          # 手つきで、面へ沿わせる必要が無いので石斧でも通る（分け方は tools.yaml の sharp_stone）。
           - requires:
               - {object: log, count: 1, consume: true}
               - {tag: cutting_tool, count: 1, consume: false}
