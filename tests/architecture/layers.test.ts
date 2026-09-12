@@ -245,10 +245,13 @@ describe('層の境界', () => {
   });
 
   it('地形生成は、実体化された世界を輸入しない', () => {
-    // `IslandMap`（と生成のパイプライン）が名乗る「WorldObjectを1つも持たない」を見る。**ここは
-    // 到達可能性ではなく直接の輸入を見る**——持つには輸入が要るので辿らなくても言えるし、辿ると
-    // 型だけの繋がり（AxisDef → PropertyDef → WorldObject）に必ず当たって何も言えなくなる。
-    // **型としての輸入も数える。** 対応表を1つ持てば、そこから先は実体化の順序に縛られる。
+    // `IslandMap`（と生成のパイプライン）が名乗る「WorldObjectを1つも持たない」の、**輸入の面だけ**を
+    // 見る。instanceIdの対応表は数の配列でも書けるので、そちらは生成結果の欄を見る検査が持つ
+    // （tests/generation/terrainGenerator.test.ts「生成結果は、実体化された土地との対応を持たない」）。
+    //
+    // **ここは到達可能性ではなく直接の輸入を見る**——持つには輸入が要るので辿らなくても言えるし、
+    // 辿ると型だけの繋がり（AxisDef → PropertyDef → WorldObject）に必ず当たって何も言えなくなる。
+    // **型としての輸入も数える。** 署名に現れた時点で、生成結果は実体化された世界を知っている。
     const offenders = sourcesIn('src/domain/generation')
       .filter((rel) => !SPAWNING.includes(rel))
       .filter((rel) => importsOf(rel, true).some(SPAWNED_WORLD));

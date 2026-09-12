@@ -210,13 +210,10 @@ describe('探索と地図（世界→映し 通し）', () => {
 
     const view = fromGameSession(game, locale);
 
-    const root = game.startLocation.instance.findRoot();
     for (const shown of view.mapLands) {
-      const instanceId = game.island.landOf(game.island.map.sites[shown.site]).instanceId;
-      expect(shown.card.name).toBe(locale.locationName(game.island.nameOf(instanceId)!));
-      expect(shown.card.art, '絵は土地の型が名乗る絵の名前で引く').toBe(
-        root.findSelfOrDescendantByInstanceId(instanceId)?.def.artName,
-      );
+      const land = game.island.landOf(game.island.map.sites[shown.site]);
+      expect(shown.card.name).toBe(locale.locationName(game.island.nameOf(land.instanceId)!));
+      expect(shown.card.art, '絵は土地の型が名乗る絵の名前で引く').toBe(land.def.artName);
       expect(shown.card.art).toBeDefined();
     }
   });

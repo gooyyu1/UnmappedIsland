@@ -50,8 +50,10 @@ startNewGame(codex, characterDefName, seed, rng)          src/domain/generation/
 `generateIsland`（`TerrainGenerator.ts`）までは **`WorldObject` に一切触れない純粋な計算**です（`IslandMap`/`Site`/
 `IslandEdge` はただのデータ）。`WorldObject` の生成・配置が始まるのは `IslandSpawner` からです。この境界を
 意識すると、「レイアウトのバグ」（`src/domain/generation/` 側）と「実体化のバグ」（`IslandSpawner` 以降）の
-どちらを疑うべきかを素早く切り分けられます。この境界は字面の約束ではなく、実体化を担うファイル以外が
-`WorldObject` とその包みを輸入していないことの検査（`tests/architecture/layers.test.ts`）で保たれています。
+どちらを疑うべきかを素早く切り分けられます。この境界を保つのは2つの検査です——実体化を担うファイル以外が
+`WorldObject` とその包みを輸入していないこと（`tests/architecture/layers.test.ts`）と、`IslandMap` が
+生成の結果しか欄に持たないこと（`tests/generation/terrainGenerator.test.ts`。**対応表は数の配列でも
+書けるので、輸入を見るだけでは足りません**）。
 
 ## 2. ロード: YAML → `GenerationDefs`
 

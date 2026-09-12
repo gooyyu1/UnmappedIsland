@@ -72,13 +72,21 @@ object_defs:
    * 現在地と行き先の2つだけを置いた島に差し替える。
    */
   const withMap = (mini: MiniGame, meadow: WorldObject): StartedGame => {
-    const map = new IslandMap('test', 0, [new Site(0, 0, 0, false), new Site(1, 1, 0, false)], []);
+    const here = new Site(0, 0, 0, false);
+    const there = new Site(1, 1, 0, false);
+    const map = new IslandMap('test', 0, [here, there], []);
     return new StartedGame(
       mini.game.session,
       mini.game.world,
       mini.game.player,
       mini.game.startLocation,
-      new SpawnedIsland(map, [mini.land, meadow]),
+      new SpawnedIsland(
+        map,
+        new Map([
+          [here, mini.land],
+          [there, meadow],
+        ]),
+      ),
     );
   };
 

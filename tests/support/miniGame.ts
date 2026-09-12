@@ -115,7 +115,7 @@ export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
     new PlayerCharacter(playerInstance, codex),
     new Location(landInstance, codex),
     // 生成を通さないので島は空（サイトが無いので土地も無い）。
-    new SpawnedIsland(new IslandMap('test', 0, [], []), []),
+    new SpawnedIsland(new IslandMap('test', 0, [], []), new Map()),
   );
 
   return {

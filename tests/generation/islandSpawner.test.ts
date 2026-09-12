@@ -203,7 +203,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     // 「まだ実体化していない」の場合分けが要らない。
     const map = new IslandMap('island', 0, [new Site(0, 0, 0, false)], []);
 
-    expect(() => new SpawnedIsland(map, [])).toThrow(/全サイトの土地を要する/);
+    expect(() => new SpawnedIsland(map, new Map())).toThrow(/全サイトの土地を要する/);
   });
 
   it('実体化された島は、別の島のサイトでは土地を引けない', () => {

@@ -41,7 +41,7 @@ export function spawnIslandIntoWorld(session: WorldSession, map: IslandMap): Spa
   const pathDefId = codex.objectNames.getId(words.pathObject);
 
   // 1. 土地の実体化。
-  const locations = new Array<WorldObject>(map.sites.length);
+  const lands = new Map<Site, WorldObject>();
   for (const site of map.sites) {
     const location = session.createObject(site.type!.objectDefGlobalId);
     // 亜種の個体差は、探索の抽選がweightとして読むプロパティ（TerrainGeneration.md 3.6節）。
@@ -50,21 +50,23 @@ export function spawnIslandIntoWorld(session: WorldSession, map: IslandMap): Spa
         location.getProperty(propertyGlobalId).setNumberWithoutEvents(value);
     const error = location.moveToSlotOrRejection(world.getSlot(locationsSlotId));
     if (error !== undefined) throw new Error(`土地 '${site.type!.name}' を配置できません: ${error}`);
-    locations[site.index] = location;
+    lands.set(site, location);
   }
 
   // 2. 道の実体化（辺1本につき両端へ1個ずつ）。土地ごとに、繋がる相手のindex順で
   //    requiredProgressを[FIRST_PATH_PROGRESS, 探索上限-1]へ等間隔に割り当てる。
   //    3で互いに結ぶため、「どのサイトから、どのサイトへ向かう道か」で引けるようにしておく。
+  //    辺が繋ぐ相手はサイトindexなので、相手の土地はmap.sites越しに引く（IslandEdgeの規約）。
   const pathsByEnds = new Map<string, WorldObject>();
   for (const site of map.sites) {
+    const land = lands.get(site)!;
     const touching = map.edges
       .filter((e) => e.a === site.index || e.b === site.index)
       .map((e) => ({ edge: e, other: e.a === site.index ? e.b : e.a }))
       .sort((x, y) => x.other - y.other);
     if (touching.length === 0) continue;
 
-    const progressMax = locations[site.index].def.tryGetPropertyDef(progressId)!.range!.max;
+    const progressMax = land.def.tryGetPropertyDef(progressId)!.range!.max;
     const lastPathProgress = progressMax - 1;
 
     for (let i = 0; i < touching.length; i++) {
@@ -78,8 +80,8 @@ export function spawnIslandIntoWorld(session: WorldSession, map: IslandMap): Spa
       const path = session.createObject(pathDefId);
       path.getProperty(travelMinutesId).setNumberWithoutEvents(edge.travelMinutes);
       path.getProperty(requiredProgressId).setNumberWithoutEvents(requiredProgress);
-      path.getProperty(destinationIdId).setNumberWithoutEvents(locations[other].instanceId);
-      const error = path.moveToSlotOrRejection(locations[site.index].getSlot(undiscoveredFixturesSlotId));
+      path.getProperty(destinationIdId).setNumberWithoutEvents(lands.get(map.sites[other])!.instanceId);
+      const error = path.moveToSlotOrRejection(land.getSlot(undiscoveredFixturesSlotId));
       if (error !== undefined) throw new Error(`道を配置できません: ${error}`);
       pathsByEnds.set(endsKey(site.index, other), path);
     }
@@ -96,7 +98,7 @@ export function spawnIslandIntoWorld(session: WorldSession, map: IslandMap): Spa
     backward.getProperty(returnPathIdId).setNumberWithoutEvents(forward.instanceId);
   }
 
-  return new SpawnedIsland(map, locations);
+  return new SpawnedIsland(map, lands);
 }
 
 /** pathsByEndsのキー: どのサイトから、どのサイトへ向かう道か。 */

@@ -25,16 +25,19 @@ export class SpawnedIsland {
   private readonly landsBySite: ReadonlyMap<Site, WorldObject>;
   private readonly sitesByLandInstanceId: ReadonlyMap<number, Site>;
 
-  /** landsBySiteはサイトindexで引ける、実体化された土地（すべてのサイトのぶんが要る）。 */
-  constructor(map: IslandMap, landsBySite: readonly WorldObject[]) {
-    if (landsBySite.length !== map.sites.length)
+  /** landsBySiteは、サイトとそこから湧いた土地の1対1（mapのすべてのサイトのぶんが要る）。 */
+  constructor(map: IslandMap, landsBySite: ReadonlyMap<Site, WorldObject>) {
+    const missing = map.sites.filter((site) => !landsBySite.has(site));
+    if (missing.length > 0 || landsBySite.size !== map.sites.length)
       throw new Error(
-        `実体化された島は全サイトの土地を要する: サイト${map.sites.length}件に対し土地${landsBySite.length}件。`,
+        `実体化された島は全サイトの土地を要する: サイト${map.sites.length}件に対し土地${landsBySite.size}件` +
+          `（土地の無いサイト${missing.length}件）。`,
       );
 
     this.map = map;
-    this.lands = map.sites.map((site) => ({ site, land: landsBySite[site.index] }));
-    this.landsBySite = new Map(this.lands.map(({ site, land }) => [site, land]));
+    this.lands = map.sites.map((site) => ({ site, land: landsBySite.get(site)! }));
+    // 写し取る。渡した側が後から足せると、コンストラクタで確かめた1対1がそこで破れる。
+    this.landsBySite = new Map(landsBySite);
     this.sitesByLandInstanceId = new Map(this.lands.map(({ site, land }) => [land.instanceId, site]));
   }
 
