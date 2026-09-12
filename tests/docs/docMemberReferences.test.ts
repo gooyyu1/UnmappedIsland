@@ -208,14 +208,18 @@ function nameIn(text: string): string | null {
 /**
  * バッククォートの中身のうち、名前を挙げているもの。ファイル参照そのものは名前ではない。
  *
- * **語を空白で並べたものも名前ではない**（`npm test`）。囲みは「これは識別子だ」だけを表す記法では
- * なく、打つコマンドにも付くので、**先頭の語だけを取ると、その行が挙げていない名前を指し先へ
+ * **英字の語を空白で並べたものも名前ではない**（`npm test`）。囲みは「これは識別子だ」だけを表す
+ * 記法ではなく、打つコマンドにも付くので、**先頭の語だけを取ると、その行が挙げていない名前を指し先へ
  * 突き合わせることになる**（`npm test`（`Foo.test.ts`）で `npm` が `Foo.test.ts` のメンバーとして
- * 挙がる）。引数の並びは空白で切れないので、ここで落ちるのは句だけ。
+ * 挙がる）。
+ *
+ * **続くのが英字のときだけ落とす。** 和文を続けた言及（`placeSites を呼ぶ`）は名前を挙げている
+ * ので残す——落とすと、**指し先が消えても気づけない箇所が言い回しの数だけ増える。** 引数の並びは
+ * 空白で切れないので、どちらの規則でも残る。
  */
 function quotedName(quoted: string): string | null {
   if (quoted.includes('/') || /\.[A-Za-z]+$/.test(quoted)) return null;
-  if (/^[A-Za-z_][A-Za-z0-9_]*\s/.test(quoted)) return null;
+  if (/^[A-Za-z_][A-Za-z0-9_]*\s+[A-Za-z_-]/.test(quoted)) return null;
   return nameIn(quoted);
 }
 
@@ -320,9 +324,12 @@ describe('説明の参照', () => {
   });
 
   it('囲みの中が名前か句かで、ファイルと並んだ組を採る／採らない', () => {
-    // 句の先頭の語を名前として採ると、その行が挙げていない名前が指し先へ突き合わされる。
-    const asName = fileMembersOn('`placeSites`（`SitePlacer.ts`）', false);
-    expect(asName.map(({ name }) => name)).toEqual(['placeSites']);
-    expect(fileMembersOn('`npm test`（`SitePlacer.ts`）', false)).toEqual([]);
+    // 句の先頭の語を名前として採ると、その行が挙げていない名前が指し先へ突き合わされる。一方、
+    // 和文を続けた言及は名前を挙げているので、落とすと指し先が消えても気づけなくなる。
+    const named = (text: string) => fileMembersOn(text, false).map(({ name }) => name);
+
+    expect(named('`placeSites`（`SitePlacer.ts`）')).toEqual(['placeSites']);
+    expect(named('`placeSites を呼ぶ`（`SitePlacer.ts`）')).toEqual(['placeSites']);
+    expect(named('`npm test`（`SitePlacer.ts`）')).toEqual([]);
   });
 });

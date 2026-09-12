@@ -2,7 +2,12 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { promptBody } from '../../scripts/agent/prompt-body.mjs';
-import { isAnalysisRecord, isVerbatimRecord, trackedDocs } from '../../scripts/docScope.mjs';
+import {
+  isAnalysisRecord,
+  isVerbatimRecord,
+  trackedDocs,
+  trackedFiles,
+} from '../../scripts/docScope.mjs';
 import { declaresWholeDocument, WHOLE_DOCUMENT_CONFIRMED } from '../../scripts/docStatus.mjs';
 import { githubSlugs } from '../../scripts/githubSlugs.mjs';
 import { linesOutsideFence } from '../../scripts/markdownFences.mjs';
@@ -61,6 +66,20 @@ const DOC_FILES = listFiles('docs', ['.md']);
  * `docMemberReferences.test.ts` と同じ1つ。別に持つと、片方だけが `docs/` に取り残される。
  */
 const TRACKED_DOCS = trackedDocs(ROOT);
+
+/**
+ * 射程の見張りが突き合わせる、**もう1つの数え方**。追跡しているファイルを丸ごと引いてから `.md` を
+ * 選ぶ——{@link TRACKED_DOCS} は git へ `*.md` の pathspec を渡して絞っているので、**絞りを通らない
+ * 経路**になる。
+ *
+ * **射程を出しているのと同じ経路で数えない**のが要点（{@link unimplementedHeadingLines} が捕獲側の
+ * 正規表現を使わないのと同じ理由）——{@link TRACKED_DOCS} から数え直すと、射程が縮んだときに両側が
+ * 同じだけ縮むので、**差が出ないまま緑になる。** 在り処の一覧でも数えない。そちらは足した日にしか
+ * 更新されないので、**見張りの側に同じ穴を作る。**
+ */
+function everyTrackedMarkdown(): string[] {
+  return trackedFiles(ROOT).filter((rel) => rel.endsWith('.md'));
+}
 
 /** 確定度の印（DocumentStyle.md 6節）。付くのは節の見出しだけ。 */
 const CONFIRMED_LABEL = '【確定】';
@@ -240,8 +259,8 @@ const LINK_CHECKED_FILES = REF_TARGETS.filter((rel) => !isVerbatimRecord(rel));
 
 /**
  * 確定度の印の規約（DocumentStyle.md 6節・6.1節・6.2節）を課す対象。**`docs/` の中だけではない**
- * ——`CLAUDE.md`・`.claude/**` も同じ印を使い、そこの確定節も同じ意味（覆すには人間の判断が要る）
- * で読まれるので、条件も同じ1つ。
+ * ——印の意味は置き場で変わらない（どこの確定節も「覆すには人間の判断が要る」）ので、条件も同じ1つ。
+ * **どこまで掛かるかは同 10節**が持つ。
  *
  * **日付ごとの記録は入らない**（{@link isVerbatimRecord}・{@link isAnalysisRecord}）。印はそこでは
  * **題材として**現れる（見出しに「`【確定】` の印の射程が変わる」と書く）ので、課すと印を論じた行が
@@ -346,9 +365,17 @@ function isRefTarget(rel: string): boolean {
   return refTargets.has(rel);
 }
 
-/** ファイル名（basename）→ 指し先の候補パス。 */
+/**
+ * ファイル名（basename）→ 指し先の候補パス。「`Foo.md` N節」は名前だけで文書を決めるので、
+ * **同名のファイルが増えるほど当たりやすくなる**——候補のどれかで解決すれば緑になる。
+ *
+ * **記録は入れない**（{@link isVerbatimRecord}）。`analysis.md`・`README.md` のような名前は畳んだ回の
+ * 明細にも在るので、入れると**今の文書を指したはずの参照が、当時の記録のほうで解決しうる。**
+ * パスで指すリンクは basename を通らない（{@link anchorHeadingsByPath}）ので、記録へのリンクは
+ * これと関係なく解決する。
+ */
 const docsByBasename = new Map<string, string[]>();
-for (const rel of REF_TARGETS) {
+for (const rel of REF_TARGETS.filter((target) => !isVerbatimRecord(target))) {
   const base = rel.split(sep).pop() as string;
   docsByBasename.set(base, [...(docsByBasename.get(base) ?? []), rel]);
 }
@@ -486,26 +513,6 @@ function appearsInSources(ident: string, sources: string): boolean {
  * 見出しに【未実装】の印が現れる行。**捕獲側の正規表現は使わない**——同じ経路で数えると、
  * 両方が同じように落ちたときに気づけない（`docStatus.test.ts` と同じ考え方）。
  */
-/**
- * 射程の見張りが突き合わせる、**もう1つの数え方**。在るMarkdownをディスクから直に数える。
- *
- * **射程を出しているのと同じ経路で数えない**——{@link TRACKED_DOCS} から数え直すと、射程が縮んだ
- * ときに両側が同じだけ縮むので、**差が出ないまま緑になる**（{@link unimplementedHeadingLines} が
- * 捕獲側の正規表現を使わないのと同じ理由）。git を通さないのは、**`git add` していない新しい文書も
- * ここでは数える**ため——追跡されるまで検査の外に居ることを、こちらが先に見つける。
- */
-function allMarkdown(): string[] {
-  return [
-    ...listFiles('docs', ['.md']),
-    ...listFiles('.claude', ['.md']),
-    ...listFiles('.github', ['.md']),
-    ...listFiles('review', ['.md']),
-    ...listFiles('scripts', ['.md']),
-    ...listFiles('tools', ['.md']),
-    ...readdirSync(ROOT).filter((entry) => entry.endsWith('.md')),
-  ];
-}
-
 function unimplementedHeadingLines(): string[] {
   const found: string[] = [];
   for (const [rel, text] of docByPath) {
@@ -786,14 +793,24 @@ describe('ドキュメントの参照', () => {
     // 射程を在り処の一覧で持っていた頃、`review/**` も `.github/**` も誰も見ていなかった（#1948）。
     // 一覧は足した日にしか更新されないので、**フォルダを1つ作ると黙って射程の外が増える。**
     const covered = new Set(LINK_CHECKED_FILES);
-    const uncovered = allMarkdown().filter((rel) => !isVerbatimRecord(rel) && !covered.has(rel));
+    const uncovered = everyTrackedMarkdown().filter((rel) => !isVerbatimRecord(rel) && !covered.has(rel));
 
     expect(uncovered, `リンクの検査に入っていない文書:\n${uncovered.join('\n')}`).toEqual([]);
   });
 
+  it('記録のファイル名が、名前指しの候補に入らない', () => {
+    // 同名の明細が畳んだ回に在ると（`analysis.md`・`README.md`）、今の文書を指したはずの
+    // 「Foo.md 〇〇節」が、当時の記録のほうで解決して緑になる。
+    const inMap = new Set([...docsByBasename.values()].flat());
+    const records = everyTrackedMarkdown().filter(isVerbatimRecord);
+
+    expect(records.length).toBeGreaterThan(0);
+    expect(records.filter((rel) => inMap.has(rel))).toEqual([]);
+  });
+
   it('どの規約も課さない記録が、指し先としては生きている', () => {
     // 課す側から外した拍子に指し先からも落とすと、そこへのリンクが実在するのに赤くなる。
-    const records = allMarkdown().filter(isVerbatimRecord);
+    const records = everyTrackedMarkdown().filter(isVerbatimRecord);
 
     expect(records.length).toBeGreaterThan(0);
     expect(records.filter((rel) => !isRefTarget(rel))).toEqual([]);
