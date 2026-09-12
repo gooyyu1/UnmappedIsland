@@ -96,7 +96,7 @@ object_defs:
     });
   });
 
-  it('covers・layerは、traitにもobject_defにも書ける（7.5節）', () => {
+  it('covers・layerは、traitにもobject_defにも書ける（5節）', () => {
     expect(() =>
       load(`
 traits:

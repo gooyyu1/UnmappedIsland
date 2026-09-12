@@ -430,6 +430,135 @@ object_defs:
     );
   });
 
+  it('stack_orderは、trait側の宣言も参照でき、自分自身の指定が勝つ（5節）', () => {
+    const yaml = `
+traits:
+  perishable:
+    props:
+      freshness: {value: 100}
+      wetness: {value: 0}
+    stack_order: {property: freshness, ascending: false}
+object_defs:
+  apple:
+    traits: [perishable]
+  log:
+    traits: [perishable]
+    stack_order: {property: wetness, ascending: true}
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const readingOf = (name: string) => codex.objects.get(codex.objectNames.getId(name)).stackOrder?.reading;
+
+    expect(readingOf('apple'), 'trait側の宣言を参照する').toEqual({
+      propertyGlobalId: codex.propertyNames.getId('freshness'),
+      ascending: false,
+    });
+    expect(readingOf('log'), '自分自身の指定が勝つ').toEqual({
+      propertyGlobalId: codex.propertyNames.getId('wetness'),
+      ascending: true,
+    });
+  });
+
+  it('stack_orderが複数のtraitで重複して宣言されるとエラーになる（5節）', () => {
+    const yaml = `
+traits:
+  trait_a:
+    props: {freshness: {value: 100}}
+    stack_order: {property: freshness, ascending: false}
+  trait_b:
+    props: {wetness: {value: 0}}
+    stack_order: {property: wetness, ascending: true}
+object_defs:
+  apple:
+    traits: [trait_a, trait_b]
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /stack_order/,
+    );
+  });
+
+  it('coversはtrait由来を先に連結し、layerは自分自身の指定が勝つ（5節）', () => {
+    const yaml = `
+traits:
+  worn: {covers: [torso], layer: base}
+object_defs:
+  coat:
+    traits: [worn]
+    covers: [arms]
+    layer: outer
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const coverage = codex.objects.get(codex.objectNames.getId('coat')).wornCoverage;
+
+    expect(coverage?.partTagIds, 'trait由来が先、自分自身が後ろ').toEqual([
+      codex.tagNames.getId('torso'),
+      codex.tagNames.getId('arms'),
+    ]);
+    expect(coverage?.layerTagId, '自分自身の指定が勝つ').toBe(codex.tagNames.getId('outer'));
+  });
+
+  it('layerが複数のtraitで重複して宣言されるとエラーになる（5節）', () => {
+    const yaml = `
+traits:
+  trait_a: {covers: [torso], layer: base}
+  trait_b: {covers: [arms], layer: outer}
+object_defs:
+  coat:
+    traits: [trait_a, trait_b]
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/layer/);
+  });
+
+  it('art・resistsも、複数のtraitが宣言していればエラーになる（5節）', () => {
+    const load = (yaml: string) => () => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+
+    expect(
+      load(`
+traits:
+  trait_a: {art: lit}
+  trait_b: {art: out}
+object_defs:
+  campfire:
+    traits: [trait_a, trait_b]
+`),
+    ).toThrowError(/art/);
+
+    expect(
+      load(`
+traits:
+  trait_a:
+    props: {alertness: {value: 0}}
+    resists: [{prop: alertness, gt: 50}]
+  trait_b:
+    props: {wetness: {value: 0}}
+    resists: [{prop: wetness, gt: 50}]
+object_defs:
+  boar:
+    traits: [trait_a, trait_b]
+`),
+    ).toThrowError(/resists/);
+  });
+
+  it('真偽値のキーは、traitと自分自身のどれか1つでも真なら真（5節）', () => {
+    const yaml = `
+traits:
+  injury: {bound_to_owner: true}
+  unique: {stackable: false}
+object_defs:
+  sprain:
+    traits: [injury]
+  woven_basket:
+    traits: [unique]
+  stone: {tags: [item]}
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const def = (name: string) => codex.objects.get(codex.objectNames.getId(name));
+
+    expect(def('sprain').boundToOwner, 'trait由来で立つ').toBe(true);
+    expect(def('woven_basket').stackable, 'trait側のstackable: falseが効く').toBe(false);
+    expect(def('stone').boundToOwner, '既定は単独で在れる').toBe(false);
+    expect(def('stone').stackable, '既定は束ねる').toBe(true);
+  });
+
   it('art_by_stageが指さないプロパティの段がartを宣言しているとエラーになる', () => {
     // 1オブジェクト1絵（GameElementDefinition.md 6.4節）。黙って無視すると、書いたartが効いている
     // つもりのまま出ない。
