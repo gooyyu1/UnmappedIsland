@@ -7,6 +7,8 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { MINUTES_PER_TICK } from '../../src/analysis/balanceTables';
+import { MINUTES_PER_DAY } from '../../src/domain/worldTime';
 import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
 
 function load(yamlText: string): WorldCodex {
@@ -60,6 +62,21 @@ describe('core.yamlのworld定義', () => {
 
     const hour = propOf(world, 'hour');
     expect(hour.range?.max, '24時で1日へ繰り上がる').toBe(24);
+  });
+
+  it('コードが持つ1日の長さ・1tickの長さは、この宣言から数え直したものと一致する', () => {
+    // 時計の表示も航海の日数の見積もりも収支の表も、実体化された世界を持たずにこの2つを使う
+    // （src/domain/worldTime.ts・src/analysis/balanceTables.ts）。宣言だけを変えると、世界は
+    // 新しい1日で回るのにコードは古い長さで計算し続けるので、ここで突き合わせる。
+    const world = codex.objects.get(codex.objectNames.getId('world'));
+    const hoursPerDay = propOf(world, 'hour').range?.max ?? 0;
+    const minutesPerHour = propOf(world, 'minute').range?.max ?? 0;
+    const instance = new WorldSession(codex).createObject(world.globalId);
+    const declaredMinutesPerTick =
+      instance.tryGetProperty(codex.propertyNames.getId('minutes_per_tick'))?.number ?? 0;
+
+    expect(MINUTES_PER_DAY).toBe(hoursPerDay * minutesPerHour);
+    expect(MINUTES_PER_TICK).toBe(declaredMinutesPerTick);
   });
 
   it('tickは毎tick加算されるが、minuteはtick駆動では変化しない', () => {

@@ -631,7 +631,7 @@ describe('ドロップの意味', () => {
     noCombination.dropEffect(drop)?.execute();
 
     expect(moves.at(-1), '2枚まとめて中へ').toEqual({ ids: [1, 2], to: inside, at: undefined });
-    expect(noCombination.multiDropLimit(drop), '入る枚数は枠の宣言（CardDrop.maxCount）').toBe(2);
+    expect(noCombination.multiDropLimit(drop), '入る枚数は枠の宣言（CardDropEffect.maxCount）').toBe(2);
   });
 
   /**

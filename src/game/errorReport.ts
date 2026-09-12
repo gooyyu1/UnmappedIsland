@@ -12,6 +12,7 @@
  */
 
 import { uiText } from '../locale/uiTexts';
+import { messageOf } from '../util/errorMessage';
 
 /** 文面の行の字下げ（幅は文面の見た目の都合なので、対応表ではなくこちらが持つ）。 */
 const INDENT = '  ';
@@ -157,11 +158,6 @@ function describeState(): readonly string[] {
     const message = messageOf(error, uiText('unknown'));
     return [INDENT + uiText('report_state_failed', { message })];
   }
-}
-
-function messageOf(error: unknown, fallback: string): string {
-  if (error instanceof Error) return `${error.name}: ${error.message}`;
-  return typeof error === 'string' ? error : fallback;
 }
 
 function stackTraceOf(error: unknown): string {

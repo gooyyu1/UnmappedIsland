@@ -19,7 +19,7 @@ import type {
   TagGlobalId,
 } from '../domain/GlobalId';
 import { YamlLoadError } from './YamlLoadError';
-import { messageOf } from './errorMessage';
+import { messageOf } from '../util/errorMessage';
 import { RawObjectDef } from './RawObjectDef';
 import type { LoadReport } from './LoadReport';
 import type { RawPatch } from './RawPatch';

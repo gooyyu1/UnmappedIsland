@@ -1,3 +1,4 @@
+import { bundledArt } from './bundledArt';
 import type { PackArt } from './packArt';
 import { rebuildArtCatalog } from './packArt';
 
@@ -15,15 +16,9 @@ import { rebuildArtCatalog } from './packArt';
  * 持ち主によらない絵は `<スロット名>_<用途>.png` に置き、持ち主ごとの絵が無いときの受け皿になる
  * （手はプレイヤー自身のものなので、キャラクタごとに描き分けていない）。
  *
- * 同梱ぶんの一覧はimport.meta.globがビルド時に作る。実行時に総当たりで読みに行くと、絵をまだ
- * 用意していないスロットのぶんだけ404が出るため。アセットパックのぶんは、載せるパックが決まった
- * 時点で重ねる（installPackBackgroundArt、AssetPack.md 4節）。
+ * 同梱ぶんの一覧の作り方はbundledArt。アセットパックのぶんは、載せるパックが決まった時点で重ねる
+ * （installPackBackgroundArt、AssetPack.md 4節）。
  */
-const FILES = import.meta.glob('../assets/backgrounds/*.png', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-}) as Record<string, string>;
 
 /** 背景を引く先——そのカード・そのレーンが映しているスロット。 */
 export interface SlotRef {
@@ -37,9 +32,7 @@ export interface SlotRef {
 type Use = 'lane' | 'card';
 
 /** 同梱ぶんのテクスチャキー → 画像のURL。組み直しの土台なので、ここは変わらない。 */
-const BUNDLED_BACKGROUND_ART: ReadonlyMap<string, string> = new Map(
-  Object.entries(FILES).map(([path, url]) => [path.replace(/^.*\/(.+)\.png$/, 'background:$1'), url]),
-);
+const BUNDLED_BACKGROUND_ART: ReadonlyMap<string, string> = bundledArt('backgrounds', 'background:');
 
 /**
  * テクスチャキー → 画像のURL。用意されている絵だけが並ぶ。同梱ぶんを土台に、載せるパックが

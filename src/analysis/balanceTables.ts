@@ -20,6 +20,7 @@ import { rainWaterRows } from './seasonalRain';
 import type { StaticValueResolver } from './staticValue';
 import { highestDeclaredLayer, staticValueOf } from './staticValue';
 import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
+import { MINUTES_PER_DAY } from '../domain/worldTime';
 
 /**
  * 定義（`src/assets/world-codex/*.yaml`）だけから「時間あたりの収支」を計算する。
@@ -32,9 +33,13 @@ import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
  * スナップショット（tests/diagnostics/balanceStatsReport.test.ts）が同じ結果を別の形に描く。
  */
 
-export const TICKS_PER_DAY = 96;
+/**
+ * 1tickの長さ（分）。**core.yamlの`world`が宣言する`minutes_per_tick`**と同じ値を、実体化された
+ * 世界を持たずに使えるように置く（一致は `tests/world-codex/coreYaml.test.ts` が見る）。
+ * 1日の長さはドメインが持つ（`MINUTES_PER_DAY`）ので、1日のtick数はその割り算で出す。
+ */
 export const MINUTES_PER_TICK = 15;
-export const MINUTES_PER_DAY = TICKS_PER_DAY * MINUTES_PER_TICK;
+export const TICKS_PER_DAY = MINUTES_PER_DAY / MINUTES_PER_TICK;
 
 /**
  * 資源は土地ごとに分かれているので、1つの土地に閉じると多くの連鎖が「前提が揃わない」で終わる。
@@ -206,7 +211,7 @@ export interface PropertyRoute {
   /** この需要を1単位埋めるのに要る労働（分）。 */
   readonly perUnitMinutes: number;
 
-  /** 1日ぶんを賄うのに要る労働（分）と、それが1日（1440分）に占める割合（%）。 */
+  /** 1日ぶんを賄うのに要る労働（分）と、それが1日に占める割合（%）。 */
   readonly dailyMinutes: number;
   readonly dailyShare: number;
 

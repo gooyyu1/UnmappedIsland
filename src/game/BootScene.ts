@@ -18,6 +18,7 @@ import { ICON_ART } from '../art/iconArt';
 import { WEATHER_ART } from '../art/weatherArt';
 import { commonArtFiles, locationNamesWithBackgroundArt } from '../art/artFiles';
 import { cssColor } from '../util/cssColor';
+import { messageOf } from '../util/errorMessage';
 import { COLOR, FONT_FAMILY } from './looks/theme';
 import { loadDefinitions } from '../loader/loadDefinitions';
 import { LOAD_REPORT } from '../loader/LoadReport';
@@ -68,9 +69,7 @@ export class BootScene extends Phaser.Scene {
       codex = definitions.codex;
       localization = definitions.localization;
     } catch (error) {
-      this.showMessage(
-        `定義ファイルのロードに失敗しました:\n${error instanceof Error ? error.message : error}`,
-      );
+      this.showMessage(`定義ファイルのロードに失敗しました:\n${messageOf(error)}`);
       throw error;
     }
 

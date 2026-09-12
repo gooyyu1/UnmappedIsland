@@ -5,7 +5,7 @@ import type { Localization } from '../locale/Localization';
 import { loadLocalization } from '../locale/Localization';
 import { LoadReport } from './LoadReport';
 import { loadWorldCodex, WORLD_CODEX_TEXTS } from './loadWorldCodex';
-import { messageOf } from './errorMessage';
+import { messageOf } from '../util/errorMessage';
 
 /** 読み込めた定義一式。 */
 export interface Definitions {
