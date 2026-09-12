@@ -4,7 +4,7 @@
 （[`board-design.md`](board-design.md) 4.4）——を拾い、手を打つべきものは issue へ、そこまでではないが
 繰り返し現れている形は記録へ落とす係の本文。投入するのは盤面
 （[`board-move.mjs`](../scripts/agent/board-move.mjs) の `CYCLES`）で、読まれていないスメルが1件でも
-あれば一日一回立つ。渡し方は [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。
+あれば立つ。渡し方は [`dispatch-chore.sh`](../scripts/agent/dispatch-chore.sh)。
 
 **この係が見るのは、その回の帯だけ。過去の回の記録で傾向を探さない**（出どころ: ユーザーの指示・
 2026-09-07。[`board-design.md`](board-design.md) 2.17.4）。**回をまたいで同じ形を探すのは二次の係**
