@@ -36,7 +36,7 @@ import { gh as runGh, posix, runBash } from './spawn.mjs';
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /**
- * ぶつかった実績の帳面（1行1件のJSON。`.claude/board-design.md` 3.1）。**盤面は同じファイルを書く
+ * ぶつかった実績の帳面（1行1件のJSON。`agent-ops/board-design.md` 3.1）。**盤面は同じファイルを書く
  * issue を並べて投入する**ので、実際にぶつかった組を控えておかないと、`area:` の錠を足すべき資源が
  * 後から分からない。**手ではない**——打つ手が何であっても、見えたものをその周のうちに書く。
  */
@@ -58,7 +58,7 @@ const defaultRunScript = (name, args, options) => runBash(join(HERE, name), args
 
 /**
  * **盤面を引けなくなった時刻**を控える（`board-state.mjs` の `UNREADABLE`）。**読むのは人**
- * ——引けない周にデーモンが打てる手は無い（`.claude/board-design.md` 2.21.1）。
+ * ——引けない周にデーモンが打てる手は無い（`agent-ops/board-design.md` 2.21.1）。
  *
  * **始まりだけを覚える。** 毎周書き直すと、続いた長さが出せない。
  */
@@ -193,7 +193,7 @@ export function trackIdle(taken, board, now) {
 /**
  * 人へ返すときに issue へ置くコメント。**1行目が返却の宣言**で、ここを読んでラベルを動かすのは
  * [`board-labels.yml`](../../.github/workflows/board-labels.yml)——**ワーカーが自分で返すときと同じ道**
- * （`.claude/board-design.md` 2.15）。ラベルを盤面から直に触らないので、返す経路が2つに割れない。
+ * （`agent-ops/board-design.md` 2.15）。ラベルを盤面から直に触らないので、返す経路が2つに割れない。
  */
 const returnBody = (session, issue) =>
   `[返却] 起こしても手が動かなかった
@@ -210,7 +210,7 @@ const returnBody = (session, issue) =>
  *
  * **割るのは、ログを読む側のため。** 盤面を見回る係（`board-move.mjs` の `CYCLES` の `patrol`）は
  * `~/daemon.log` から「何が止まっているか」を読むので、**直す相手の居ない手が転んで見えると、
- * 毎回そこを調べに行く**（`.claude/board-design.md` 2.21.2）。
+ * 毎回そこを調べに行く**（`agent-ops/board-design.md` 2.21.2）。
  */
 export const PLAYED = 'played';
 export const FAILED = 'failed';

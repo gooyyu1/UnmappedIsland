@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { TITLE, checkValues, surveyValues } from '../../scripts/agent/check-values.mjs';
 
 /**
- * `scripts/agent/check-values.mjs` の検査（`.claude/board-design.md` 2.22）。
+ * `scripts/agent/check-values.mjs` の検査（`agent-ops/board-design.md` 2.22）。
  *
  * **告げられない見張りは、値が生きているのと同じ顔をする。** 環境IDも資格情報も、死んだことに誰も
  * 気づかないのがこの係の出どころなので、**告げ損ねても盤面はただ静かに止まる**——緑であることでは
@@ -314,7 +314,7 @@ describe('check-values.mjs の告げ方', () => {
 });
 
 /**
- * `gh` が死んでいる周（`.claude/board-design.md` 2.22.3）。**告げる手はそこで尽きる**ので、
+ * `gh` が死んでいる周（`agent-ops/board-design.md` 2.22.3）。**告げる手はそこで尽きる**ので、
  * ここで守るのは「**告げられなかったことを、告げたことにしない**」の1点だけ。
  */
 describe('check-values.mjs の、`gh` が死んでいる周', () => {

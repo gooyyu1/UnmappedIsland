@@ -12,7 +12,7 @@
 # 分岐点から `main` の先頭までのうち、衝突したファイルを触った件名だけを引く。
 #
 # 使うのは [`board-round.mjs`](board-round.mjs) で、**手を打つためではなく控えるため**
-# （`.claude/board-design.md` 3.1）。盤面は同じファイルを書く issue を並べて投入するので、
+# （`agent-ops/board-design.md` 3.1）。盤面は同じファイルを書く issue を並べて投入するので、
 # ぶつかった実績を残しておかないと、`area:` の錠を足すべき資源が後から分からない。
 
 set -euo pipefail

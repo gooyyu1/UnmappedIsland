@@ -124,7 +124,7 @@ const LONG_IDLE = '2026-09-04T02:00:00Z';
 
 /**
  * 掘り起こす係（`board-move.mjs` の `CYCLES` の `dig`）は、既定で**間隔の中に居る**ことにする。
- * あの係の `due` は**配れる「完成へ近づける仕事」が無いこと**（`.claude/board-design.md` 2.18.1）
+ * あの係の `due` は**配れる「完成へ近づける仕事」が無いこと**（`agent-ops/board-design.md` 2.18.1）
  * なので、**そういう task を置かなかった世界には全部当たる**——既定のままだと、掘り起こしと
  * 関わりのない検査の1手ぶんがこれに埋まる。
  *
@@ -344,7 +344,7 @@ describe('board-round.mjs', () => {
   });
 
   // ここから4件は、**盤面を引けなくなった印**（`board-state.mjs` の `UNREADABLE`）。読むのは人が
-  // 読む書き出しだけで、**引ける周の不調はここに立てない**（`.claude/board-design.md` 2.21.2）。
+  // 読む書き出しだけで、**引ける周の不調はここに立てない**（`agent-ops/board-design.md` 2.21.2）。
   it('盤面を引けなかった周は、印を置く', () => {
     expect(playRound({ sessionsFail: true }).unreadable).toBe(NOW.toISOString());
     expect(playRound({ ghFails: true }).unreadable).toBe(NOW.toISOString());
@@ -379,7 +379,7 @@ describe('board-round.mjs', () => {
   it('間隔が空いていれば、見回る係を立てる', () => {
     const result = playRound({ ledger: { 'cycle:patrol': '2026-09-05T00:00:00Z' } });
 
-    expect(result.calls).toEqual(['dispatch-chore.sh patrol .claude/patrol-prompt.md --bridge']);
+    expect(result.calls).toEqual(['dispatch-chore.sh patrol agent-ops/prompts/patrol-prompt.md --bridge']);
     expect(result.ledger).toEqual({ 'cycle:patrol': NOW.toISOString() });
   });
 
@@ -453,7 +453,7 @@ describe('board-round.mjs', () => {
   it('未整理があれば棚卸しを立て、立てた時刻を台帳へ残す', () => {
     const result = playRound({ issues: [{ number: 9, labels: [], blockedBy: { nodes: [] } }] });
 
-    expect(result.calls).toEqual(['dispatch-chore.sh triage .claude/triage-prompt.md']);
+    expect(result.calls).toEqual(['dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md']);
     expect(result.ledger).toEqual({ 'cycle:triage': NOW.toISOString() });
   });
 
@@ -737,7 +737,7 @@ describe('board-round.mjs', () => {
   });
 
   /**
-   * **一覧はこの周に1回だけ引き、叩く相手へはファイルで渡す**（`.claude/board-design.md` 1.7）。
+   * **一覧はこの周に1回だけ引き、叩く相手へはファイルで渡す**（`agent-ops/board-design.md` 1.7）。
    * `list_sessions` は1000回/時で頭打ちになるので、要る側が別々に引くと盤面の回る速さがそこで決まる。
    */
   describe('この周の一覧を、叩くスクリプトへ渡す', () => {

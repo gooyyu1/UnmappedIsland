@@ -1,5 +1,5 @@
 // 盤面が動くのに要る値——CCR の環境ID（`CLOUD_ENV` / `BRIDGE_ENV`）と、CCR・`gh` の資格情報——が
-// 生きているかを見回り、死んでいれば人へ告げる（`.claude/board-design.md` 2.22）。
+// 生きているかを見回り、死んでいれば人へ告げる（`agent-ops/board-design.md` 2.22）。
 //
 //   node scripts/agent/check-values.mjs            # 1回見回る
 //   DRY_RUN=1 node scripts/agent/check-values.mjs  # 調べるだけ（issue も台帳も書かない）
@@ -29,7 +29,7 @@
 // 1つも残らなくなったら閉じる。
 //
 // **`gh` が死んでいる周は、その issue を書けない。告げる手はそこで尽きる**——理由は
-// `.claude/board-design.md` 2.22.3。黙らずに `~/daemon.log` へは残すが、**読む者が居ないので
+// `agent-ops/board-design.md` 2.22.3。黙らずに `~/daemon.log` へは残すが、**読む者が居ないので
 // 告げたことにはならない。**
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -80,7 +80,7 @@ const ENV_REMEDY = {
 
 /**
  * `list_environments` で、今在る環境IDを引く。**CCR の資格情報が生きているかは、これが返ったこと
- * そのもの**（`.claude/board-design.md` 2.22）——別の口を作ると、確かめる対象が2つになる。
+ * そのもの**（`agent-ops/board-design.md` 2.22）——別の口を作ると、確かめる対象が2つになる。
  *
  * 返すのは環境IDの集合。届かなければ、道具が言った理由をそのまま投げる。
  */
@@ -180,7 +180,7 @@ function deadTable(due) {
 function report(due, now) {
   return `${[
     '**この本文は `scripts/agent/check-values.mjs` が周期で丸ごと書き換えます。**',
-    '人が書いたものは次の見回りで消えます（`.claude/board-design.md` 2.22）。',
+    '人が書いたものは次の見回りで消えます（`agent-ops/board-design.md` 2.22）。',
     '',
     `最終更新 ${stamp(now)}`,
     '',
@@ -195,7 +195,7 @@ function report(due, now) {
 
 /**
  * `~/daemon.log` へ残す1行ぶん（`gh` が死んでいる周）。**告げたことにはならない**——ログを読める
- * のは手元で叩ける人だけで、定期的に読む者が居ない（`.claude/board-design.md`「未決」）。
+ * のは手元で叩ける人だけで、定期的に読む者が居ない（`agent-ops/board-design.md`「未決」）。
  * **それでも黙らないのは、後から追えるようにするため。**
  */
 function deadBrief(due) {
@@ -250,7 +250,7 @@ function tellByIssue(gh, body) {
         '判断待ち',
         '--label',
         'origin:agent',
-        // **人が `判断待ち` を外した後に効く**（`.claude/board-design.md` 2.18.1）。名乗らなくても
+        // **人が `判断待ち` を外した後に効く**（`agent-ops/board-design.md` 2.18.1）。名乗らなくても
         // 整備として並ぶだけだが、そのぶん未整理として毎周拾われるので、ここで名乗る。
         '--label',
         'goal:upkeep',

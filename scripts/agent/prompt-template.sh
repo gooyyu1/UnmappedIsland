@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ひな形（`.claude/*-prompt.md`）から、セッションへ渡す本体と題を取り出す。**シェルから `source`
+# ひな形（`agent-ops/prompts/*-prompt.md`）から、セッションへ渡す本体と題を取り出す。**シェルから `source`
 # して使う。**
 #
 #   # shellcheck source=scripts/agent/prompt-template.sh

@@ -35,7 +35,7 @@ function options(argv) {
 }
 
 /**
- * 投入するものごとに違う分。**題は頭の語で種類が分かる形**（`.claude/board-design.md` 2.9）で、
+ * 投入するものごとに違う分。**題は頭の語で種類が分かる形**（`agent-ops/board-design.md` 2.9）で、
  * `revision` は起こすリビジョン。
  */
 const KINDS = {

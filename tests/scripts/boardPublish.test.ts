@@ -8,7 +8,7 @@ import { publish } from '../../scripts/agent/board-publish.mjs';
  *
  * ここが持つのは**届け先**だけ（並べる形は `board.mjs`、周期は `daemon.sh`）。守るのは2つ——
  * 組んだ本文がそのまま issue の本文になること、**引けなかった周は書き込まないこと**
- * （`.claude/board-design.md` 2.20.2）。欠けた盤面で上書きすると、在るはずのものが消えた盤面が残る。
+ * （`agent-ops/board-design.md` 2.20.2）。欠けた盤面で上書きすると、在るはずのものが消えた盤面が残る。
  */
 
 interface Call {
@@ -65,7 +65,7 @@ describe('board-publish.mjs', () => {
     expect(calls).toEqual([]);
   });
 
-  // **印と記録を置くのはデーモンの側で、人へ見せるのはここ**（`.claude/board-design.md` 2.21）。
+  // **印と記録を置くのはデーモンの側で、人へ見せるのはここ**（`agent-ops/board-design.md` 2.21）。
   // 渡らなければ、盤面が引けていないことも、見回りが途切れたことも誰にも届かない。
   it('引けていない印と、最後の見回りを、本文を組む側へ渡す', () => {
     const given: { unreadableSince?: string; patrolAt?: string } = {};
