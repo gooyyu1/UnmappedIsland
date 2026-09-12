@@ -68,6 +68,15 @@ const TREE_MODULES = ['src/domain/ActiveEffect.ts', 'src/domain/ConditionNode.ts
 const TREE_READERS = ['src/analysis', 'src/codex-viewer'];
 
 /**
+ * `src/domain/` 直下に置く、1つの話題で閉じたまとまり（CodeStructure.md 3節）。
+ *
+ * **宣言と実体はフォルダで分けない。** 定義は世界を引数に取る振る舞いなので、宣言と実行は同居して
+ * いるのが普通の状態で、分ける単位にならない（DesignNotes.md「定義と実行時状態」）。直下のまとまりが
+ * 増減したらここが落ちるので、その線でフォルダを生やすなら決めごとのほうを先に直すことになる。
+ */
+const DOMAIN_SUBDIRS = ['generation', 'wrappers'];
+
+/**
  * そのファイルが**実行時に**読み込む先（相対指定は解決して、パッケージ名はそのまま）。
  *
  * `import type` は数えない。契約（`CardContent`・`StatusContent` ほか）を定めるのは部品側で、映しは
@@ -228,6 +237,21 @@ describe('層の境界', () => {
       importsOf(rel, true).some((target) => TREE_MODULES.includes(target)),
     );
     expect(offenders, 'このファイルが木そのものを輸入している').toEqual([]);
+  });
+
+  it('src/domain/ 直下のまとまりが、決めた通りのものだけ', () => {
+    // 見るのはディレクトリだけ。**直下のファイルがどう並んでいるかは見ない**——並びを固定すると、
+    // ファイルを1つ足すたびにここが落ちるようになり、決めごとを見張る役から在庫表へ変わる。
+    //
+    // 落ちるのは宣言と実体で分けたときに限らない。話題のまとまりを1つ足すときも同じ合図が要る
+    // ——直下に何を置いてよいかを決めているのは3節のほうなので、先に読み直す先はそこ。
+    const subdirs = readdirSync(join(ROOT, 'src/domain')).filter((entry) =>
+      statSync(join(ROOT, 'src/domain', entry)).isDirectory(),
+    );
+
+    expect([...subdirs].sort(), '直下のまとまりが増減している（CodeStructure.md 3節）').toEqual(
+      [...DOMAIN_SUBDIRS].sort(),
+    );
   });
 
   it('地形生成は、実体化された世界を輸入しない', () => {
