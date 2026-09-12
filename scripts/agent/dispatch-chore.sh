@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# 周期で起きる係を1本、CCRのセッションへ投入する（`.claude/board-design.md` 2.17）。
+# 周期で起きる係を1本、CCRのセッションへ投入する（`agent-ops/board-design.md` 2.17）。
 #
-#   bash scripts/agent/dispatch-chore.sh triage .claude/triage-prompt.md
-#   bash scripts/agent/dispatch-chore.sh triage .claude/triage-prompt.md --bridge  # このPCで走らせる
-#   DRY_RUN=1 bash scripts/agent/dispatch-chore.sh triage .claude/triage-prompt.md
-#   DRY_RUN=full bash scripts/agent/dispatch-chore.sh triage .claude/triage-prompt.md  # 本文も切らない
+#   bash scripts/agent/dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md
+#   bash scripts/agent/dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md --bridge  # このPCで走らせる
+#   DRY_RUN=1 bash scripts/agent/dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md
+#   DRY_RUN=full bash scripts/agent/dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md  # 本文も切らない
 #
 # 出す行は [`dispatch-steps.sh`](dispatch-steps.sh) の `dispatch_session`。終了コードの
 # 読み方は [`dispatch-task.sh`](dispatch-task.sh) と同じ。
@@ -24,7 +24,7 @@
 set -euo pipefail
 
 NAME="${1:?係の名前を渡す（例: triage）}"
-PROMPT="${2:?プロンプトのファイルを渡す（例: .claude/triage-prompt.md）}"
+PROMPT="${2:?プロンプトのファイルを渡す（例: agent-ops/prompts/triage-prompt.md）}"
 WHERE="${3:-}"
 
 # shellcheck source=scripts/agent/dispatch-steps.sh

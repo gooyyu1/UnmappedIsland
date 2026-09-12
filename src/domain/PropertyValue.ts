@@ -159,7 +159,13 @@ export class PropertyValue {
     removeWhere(this.accumulateEffects, (c) => c.declaredBy(declarer, def));
   }
 
-  /** 現在登録されている全寄与（modify/add両方）。UI表示用。 */
+  /**
+   * 現在登録されている全寄与（modify/add両方）を、種別を落として1本にしたもの。何がこの値を押して
+   * いるかは寄与の`declarer`が名乗る。
+   *
+   * **種別によらず全部が載ることを見られるのはここだけ**——効き方の違う2本（実効値へ効くmodifyと、
+   * tickごとに実体値へ足すadd）は、それぞれ別の口からしか観測できない。**画面に出す口はまだ無い。**
+   */
   get registeredContributions(): readonly RegisteredPassiveEffect[] {
     return [...this.modifyEffects, ...this.accumulateEffects];
   }

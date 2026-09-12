@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawnScript } from '../support/runScript';
 
 /**
- * 使用量の口を叩く間隔の検査（`.claude/board-design.md` 2.5.2）。
+ * 使用量の口を叩く間隔の検査（`agent-ops/board-design.md` 2.5.2）。
  *
  * **この口は2分に1回ほどしか通らない**ので、盤面の周（35秒）ごとに叩くと大半が `429` で返り、
  * ログが失敗で埋まって本物の失敗が見えなくなる。ここが守るのは**間隔が空いていない周は、外へ

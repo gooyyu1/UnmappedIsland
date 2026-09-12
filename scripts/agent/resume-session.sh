@@ -5,7 +5,7 @@
 #   bash scripts/agent/resume-session.sh cse_012ABC stall 1400
 #   DRY_RUN=1 bash scripts/agent/resume-session.sh cse_012ABC mend 1512   # 送る本文を見るだけ
 #
-# 本文は [`.claude/resume-prompt.md`](../../.claude/resume-prompt.md) の `## <理由>` 節から読む。
+# 本文は [`agent-ops/prompts/resume-prompt.md`](../../agent-ops/prompts/resume-prompt.md) の `## <理由>` 節から読む。
 # **書き足すものは無い**——理由は盤面から機械的に決まり（[`board-move.mjs`](board-move.mjs)）、
 # そのPRで何が起きているかは、起こされた本人がPRを見れば分かる。
 #
@@ -22,7 +22,7 @@
 # ## 立てるのではなく起こすので、`may-dispatch.sh` は通らない
 #
 # 見るのは**このセッション1本が今動いているか**で、タグの指す仕事が占有されているかではない
-# （[`board-design.md`](../../.claude/board-design.md) 1.2）。同じ相手へ二度送っても2本にはならない
+# （[`board-design.md`](../../agent-ops/board-design.md) 1.2）。同じ相手へ二度送っても2本にはならない
 # ——増えるのは無駄な指示だけ。手綱（[`brake.sh`](brake.sh)）は「投入」の一種として掛ける。
 #
 # **同じ盤面へ二度送らないのは呼び手の側**（`board-move.mjs` の `taken`）。ここは1回ぶんを送る。
@@ -38,7 +38,7 @@ HERE="${BASH_SOURCE[0]%/*}"
 if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
 HERE="$(cd "$HERE" && pwd)"
 CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
-TEMPLATE="${RESUME_PROMPT:-$HERE/../../.claude/resume-prompt.md}"
+TEMPLATE="${RESUME_PROMPT:-$HERE/../../agent-ops/prompts/resume-prompt.md}"
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -69,7 +69,7 @@ fi
 
 # 走っている相手へ送ると、仕上げの最中に別の仕事を積むことになる。**手が動いているかを言うのは
 # `session_status` だけ**——`status_bucket` は手番が終わった後の要約から決まるので、どの値も
-# 「処理中」を意味しない（[`board-design.md`](../../.claude/board-design.md) 1.6）。
+# 「処理中」を意味しない（[`board-design.md`](../../agent-ops/board-design.md) 1.6）。
 if ! live=$(CCR_META="$CCR_META" bash "$HERE/live-sessions.sh"); then
   echo "セッションの一覧を引けなかった" >&2
   exit 1

@@ -1,4 +1,4 @@
-// 使用量の増分を、そのとき動いていたセッションへ割り当てる（`.claude/board-design.md` 2.5）。
+// 使用量の増分を、そのとき動いていたセッションへ割り当てる（`agent-ops/board-design.md` 2.5）。
 //
 //   echo '{"utilization":12,"now":"...","live":[{"id":"cse_a","tags":["task-1"],"working":true}]}' \
 //     | node scripts/agent/usage-attribute.mjs <状態のファイル> <記録のファイル>

@@ -114,7 +114,7 @@ function daemon(world: World = {}): Result {
     const publishes = join(work, 'publishes.txt');
     writeFileSync(publishes, '', 'utf-8');
     // **渡された一覧の在り処も控える**——引けなかった周に前の周の写しを渡すと、古い一覧が
-    // 今の表として載る（`.claude/board-design.md` 2.21）。
+    // 今の表として載る（`agent-ops/board-design.md` 2.21）。
     writeFileSync(
       join(here, 'board-publish.mjs'),
       `import { appendFileSync } from 'node:fs';\n` +
@@ -123,7 +123,7 @@ function daemon(world: World = {}): Result {
       'utf-8',
     );
 
-    // 値の見回りの身代わり（`.claude/board-design.md` 2.22）。**周とも書き出しとも別に数える**
+    // 値の見回りの身代わり（`agent-ops/board-design.md` 2.22）。**周とも書き出しとも別に数える**
     // ——見回るのは、盤面を引けたかによらず、間隔が満ちたときだけ。
     const checks = join(work, 'checks.txt');
     writeFileSync(checks, '', 'utf-8');
@@ -459,7 +459,7 @@ describe('daemon.sh', () => {
   });
 
   // 盤面を読む先はスマホなので、周（既定30秒）と同じ速さで書き換えても読み切れない
-  // （`.claude/board-design.md` 2.20）。**間隔が満ちるまでは叩かない。**
+  // （`agent-ops/board-design.md` 2.20）。**間隔が満ちるまでは叩かない。**
   it('盤面の書き出しは、間隔が満ちたときだけ', () => {
     const result = daemon({ args: ['run'], then: [['run']], env: { PUBLISH_INTERVAL: '3600' } });
 

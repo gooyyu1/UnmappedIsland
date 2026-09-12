@@ -9,6 +9,7 @@ import { COLOR, SIZE } from '../looks/theme';
 import { addInputBlockingPanel, addInputBlockingTiledPanel } from '../../ui/shapes';
 import { ScrollIndicator } from './ScrollIndicator';
 import type { HazeSurface, HazeTarget } from './LaneHaze';
+import type { ScreenDepth } from '../looks/screenDepth';
 
 /**
  * ドロップ先として見たときの、レーン上の1点の意味。
@@ -47,10 +48,10 @@ export interface CardLaneOptions {
    */
   readonly clip?: boolean;
   /**
-   * 表示物を置く層（省略すると既定の0）。レーンだけを作り直しても描画順を保ちたい場合に、
+   * 表示物を置く層（省略すると既定の0）。レーンだけを作り直しても周りとの前後関係を保ちたい場合に、
    * 周りより奥の層を指定する（SCREEN_DEPTH.field）。
    */
-  readonly depth?: number;
+  readonly depth?: ScreenDepth;
   /**
    * 背景板と左右の余白を持たないレーンか。**矩形がそのまま枠の並びになる**ので、札1枚ぶんの場所
    * （ポートレイト、子ウィンドウが映すオブジェクトのカード）に置ける。板が無いぶん横ドラッグでの

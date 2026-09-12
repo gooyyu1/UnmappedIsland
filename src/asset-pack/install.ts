@@ -1,6 +1,6 @@
 import { installPackBackgroundArt } from '../art/backgroundArt';
 import { installPackObjectArt } from '../art/objectArt';
-import { messageOf } from '../loader/errorMessage';
+import { messageOf } from '../util/errorMessage';
 import type { LoadReport } from '../loader/LoadReport';
 import { AssetPack } from './AssetPack';
 
@@ -17,8 +17,12 @@ const SAMPLE_PACK_URL = 'sample-pack.zip';
  * （AssetPack.md 6.2節）。
  *
  * **同じ識別子のパックは2つ入れられない**（同3.4節）。出所の表示が一意でなくなり、どちらのパックの
- * 話なのかが読めなくなる。同じパックの2つの版を並べることもできないのは、版まで含めて識別子が
- * 1つだから。
+ * 話なのかが読めなくなる。同じパックの2つの版を並べることもできないのは、**版が識別子に入らない**
+ * から——一致を見るのは名乗った `id`（`AssetPack.name`）だけで、版は「同じ版か」の照合にしか
+ * 使わない（同3.2節）。
+ *
+ * **クラスそのものを公開しているのは、使い捨ての並びを作れる口がここしか無いため。** `src` が触るのは
+ * モジュールの`installed`ただ1つで、そこには空へ戻す口が無い（起動時に入って以後不変）。
  */
 export class AssetPacks {
   private readonly packs: AssetPack[] = [];
@@ -46,6 +50,9 @@ export class AssetPacks {
    * 設定の言う通りに読んだか。**並びが空かどうかでは代えられない**——読めなかった配布物は外れて
    * 並びが空のままになるが（AssetPack.md 6.1節）、それは設定どおりに読んだ結果であって、
    * 読み込み直しても変わらない。
+   *
+   * `requested`は一度立てば戻らないので、**「まだ取りに行っていない起動」を見られるのは新しい並びを
+   * 作ったときだけ**——モジュールの入口（assetPackInstallMatchesSetting）はその状態へ戻せない。
    */
   matchesSetting(loadsAssetPack: boolean): boolean {
     return this.requested === loadsAssetPack;

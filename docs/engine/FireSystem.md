@@ -24,9 +24,10 @@
 | プロパティ | `fuel`（くべた薪。燃料の側では「くべると増える量」）・`heat`（火力。一番下の段が種火）・`stones`（積んだ石）・`heat_soak`（石の蓄熱。湯の側では残っている熱）・`cooking_progress`（加熱の進み） |
 | 型 | `campfire`（焚き火）・`three_stone_hearth`（三石のかまど）・`stone_hearth`（石囲いの炉）・`fire_drill`（火起こし具）・`burning_tinder`（火種）・`hot_stone`（焼け石）・`hot_water_liquid`（湯） |
 
-定義は `src/assets/world-codex/fire.yaml`（燃料になる物と火口は `locations.yaml`・`coconut.yaml`・
-`fiber.yaml`、焼ける物は `animals.yaml`、焼く前の石は `locations.yaml`、沸かした湯は
-`liquid_containers.yaml`）、検証は `tests/world-codex/fireYaml.test.ts` です。
+定義は `src/assets/world-codex/fire.yaml` です。**火にくべる物・火に入れる物・火から出る物は、その物が
+元から定義されているファイルの側にあります**——燃料も火口も焼ける物も、それを産する土地・草木・生き物の
+定義にタグが1つ増えるだけなので、在り処は上の表のタグと型の名前で引きます。検証は
+`tests/world-codex/fireYaml.test.ts` です。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。**本書の設計はすべて実装済み**です。数値は
 いずれも目安で、`tick` = 15 分・1 日 = 96 tick（[`DurabilitySystem.md`](./DurabilitySystem.md) 1 節）を

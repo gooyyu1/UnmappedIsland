@@ -9,10 +9,11 @@ import { seededRng } from '../../src/domain/Rng';
 import { voyageForecastOf } from '../../src/game/view/voyageForecast';
 import { cardLooksOf } from '../../src/game/view/cardLooks';
 import { voyageDaysText } from '../../src/game/looks/timeTexts';
-import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
+import { loadLocalization, parseLocale } from '../../src/locale/Localization';
 import { setUiTexts } from '../../src/locale/uiTexts';
 import { borrowedFace } from '../../src/game/ui/cardFace';
 import { readSeaChart, shortestRouteToMainland } from '../support/seaChain';
+import { MINUTES_PER_DAY } from '../../src/domain/worldTime';
 
 /** 海区の網（航路の宣言から組み立てたもの）。真値を測る経路をここから決める。 */
 const SEA_CHART = readSeaChart();
@@ -31,7 +32,7 @@ describe('推定日数', () => {
   beforeAll(() => {
     codex = bundledCodex();
     // 日数の字面は画面そのものの語（ui_texts）から出るので、同梱の対応表を入れておく。
-    setUiTexts(parseLocale(LOCALE_FILE, bundledLocaleText()));
+    setUiTexts(loadLocalization([]));
   });
 
   /** 出航のしたくシナリオの状態（砂浜に積荷入りの筏があり、プレイヤーは岸に立っている）。 */
@@ -108,7 +109,7 @@ describe('推定日数', () => {
 
   /** 札と同じ刻み（半日・切り上げ）へ直す。帯の両端も同じ丸めを受けているので、比べるならこの単位。 */
   function inHalfDays(minutes: number): number {
-    return Math.ceil(minutes / (24 * 60) / 0.5) * 0.5;
+    return Math.ceil(minutes / MINUTES_PER_DAY / 0.5) * 0.5;
   }
 
   /** 出航先1つぶんの、札に出る帯と実際にかかる日数。 */

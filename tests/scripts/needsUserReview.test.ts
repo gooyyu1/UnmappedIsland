@@ -106,7 +106,7 @@ function hunk(path: string, lines: readonly string[]): string {
 
 /**
  * 宣言文法・スキーマへの変更は、**ここでは引かない**（判定するのは差分を読むレビュアー。
- * `.claude/review-criteria.md`「人の判断へ回す」）。ファイルの線で引いていた頃は、スキーマの
+ * `agent-ops/review-criteria.md`「人の判断へ回す」）。ファイルの線で引いていた頃は、スキーマの
  * `description` を変えただけの差分も文法を足した差分も同じに見えていた。
  */
 describe('needs-user-review.sh は文法・スキーマのファイルでは止めない', () => {

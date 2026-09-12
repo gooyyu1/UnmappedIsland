@@ -110,7 +110,12 @@ export class PropertyRange {
     return (value - end) * inward;
   }
 
-  /** その値が、そのイベントの見ている端へ達しているか（超えている場合を含む、6.3節）。 */
+  /**
+   * その値が、そのイベントの見ている端へ達しているか（超えている場合を含む、6.3節）。
+   *
+   * **端ちょうどを含めるかを持っているのはここだけなので、公開して直に確かめる。** `min`・`max`は
+   * ただの数で比較の向きを持たず、`inwardFrom`から組み立てると`<= 0`の決めが読む側へ移る。
+   */
   hasReached(label: RangeEventLabel, value: number): boolean {
     return this.inwardFrom(label, value) <= 0;
   }

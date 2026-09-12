@@ -8,13 +8,8 @@ import type {
   RoutePrerequisite,
   RouteStep,
 } from '../../src/analysis/balanceTables';
-import {
-  buildBalanceTables,
-  isGap,
-  MINUTES_PER_DAY,
-  MINUTES_PER_TICK,
-  TICKS_PER_DAY,
-} from '../../src/analysis/balanceTables';
+import { buildBalanceTables, isGap } from '../../src/analysis/balanceTables';
+import { MINUTES_PER_DAY, MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 import { islandLocationsOf } from '../../src/analysis/islandLocations';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';

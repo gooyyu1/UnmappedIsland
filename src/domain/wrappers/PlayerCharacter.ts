@@ -9,7 +9,8 @@ import type { SlotGlobalId } from '../GlobalId';
  * agent（プレイヤーキャラクター、GameElementDefinition.md 8.1節・11節）に対する、UI/ゲームロジック向けの型付き
  * ビュー。Worldと同じ理由で継承ではなくラップにしている。
  *
- * どのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みのものだけを実装している。
+ * **キャラクタの値を名前で引く口は、ここには置かない。** 画面は`status`タグの付いたプロパティを
+ * 宣言順に束ねて並べる（PlayScreenView）ので、`hp`のような名前を知っている読み手がゲーム側に居ない。
  */
 export class PlayerCharacter extends ObjectWrapper {
   get handSlotId(): SlotGlobalId {
@@ -24,30 +25,27 @@ export class PlayerCharacter extends ObjectWrapper {
     return this.words.injuriesSlotId;
   }
 
-  get hp(): number {
-    return this.effectiveNumberOf(this.words.hpId);
-  }
-
-  get satiety(): number {
-    return this.effectiveNumberOf(this.words.satietyId);
-  }
-
   /**
    * 手持ちスロットの各セルの中身（空きセルは空配列、先頭が代表）。固定枠スロットのため、
    * 配列長は常にcellCountと等しく、位置＝添字が安定する（SlotSystem.md 3節）。
    * スロット自体を持たないcodexでは空配列。
+   *
+   * 代表だけを返すhandでは見えない面——同じ枠に何個重なっているかは、こちらでしか数えられない。
    */
   get handStacks(): readonly (readonly WorldObject[])[] {
     const slot = this.instance.tryGetSlot(this.handSlotId);
     return slot === undefined ? [] : slot.cells.map((cell) => cell.stack?.members ?? []);
   }
 
-  /** 装備スロットの中身を、積み重なっているまとまりごとに分けたもの（前詰めなので空きセルは無い）。 */
+  /**
+   * 装備スロットの中身を、積み重なっているまとまりごとに分けたもの（前詰めなので空きセルは無い、
+   * stacksOf）。
+   */
   get equipmentStacks(): readonly (readonly WorldObject[])[] {
     return this.stacksOf(this.equipmentSlotId);
   }
 
-  /** 怪我スロットの中身を、積み重なっているまとまりごとに分けたもの。 */
+  /** 怪我スロットの中身を、積み重なっているまとまりごとに分けたもの（stacksOf）。 */
   get injuryStacks(): readonly (readonly WorldObject[])[] {
     return this.stacksOf(this.injuriesSlotId);
   }

@@ -16,8 +16,8 @@ import { ReferenceContext } from './ReferenceRoot';
  */
 export class RegisteredPassiveEffect {
   /**
-   * この効果を宣言したオブジェクト。解除時の同定と、「このプロパティに何が効いているか」のUI表示
-   * （PropertyValue.registeredContributions）のため公開する。
+   * この効果を宣言したオブジェクト。解除時の同定と、「このプロパティに何が効いているか」を名乗る
+   * ため公開する（PropertyValue.registeredContributions。**画面に出す口はまだ無い**）。
    */
   readonly declarer: WorldObject;
 

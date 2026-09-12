@@ -3,19 +3,20 @@ import { join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * `gh` と GitHub の MCP の使い分けが、`.claude/github-access.md` の1箇所だけに在ることの検査。
+ * `gh` と GitHub の MCP の使い分けが、`agent-ops/github-access.md` の1箇所だけに在ることの検査。
  *
  * **写しが増えても、写した側は動く。** 動くまま古くなるので、道具の名前や引数が変わったときに
  * 直るのは触った1本だけで、残りは古い手順のまま係を動かす（[issue #1831](https://github.com/gooyyu1/UnmappedIsland/issues/1831)）。
  * 係のプロンプトが持ってよいのは**何を引き・何を書くか**までで、**どちらの道具で引くか**は
  * 持たない、という分け方をここで押さえる。
  *
- * 写しが増えうるのは係のプロンプトだけではないので、`.claude/**` と `scripts/**` まで降りる。
+ * 写しが増えうるのは係のプロンプトだけではないので、`agent-ops/**`・`.claude/**`・`scripts/**` まで
+ * 降りる。
  * ただし `analysis/`・`decisions/` はその時点の記録で、後から事実を書き換える先ではないので除く。
  */
 
 const ROOT = resolve(__dirname, '../..');
-const CLAUDE_DIR = join(ROOT, '.claude');
+const OPS_DIR = join(ROOT, 'agent-ops');
 
 /** 降りない場所。記録と、追跡していない各セッションのリポジトリ。 */
 const SKIP_DIRS = new Set(['analysis', 'decisions', 'worktrees', 'node_modules']);
@@ -45,7 +46,7 @@ const MCP_TOOLS = [
  */
 const PROBE = 'command -v gh';
 
-/** 写しが増えうる場所。`.claude/**` と `scripts/**` の、記録を除いた全部。 */
+/** 写しが増えうる場所。`agent-ops/**`・`.claude/**`・`scripts/**` の、記録を除いた全部。 */
 function filesUnder(dir: string, exts: readonly string[]): readonly string[] {
   const found: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -62,14 +63,18 @@ function filesUnder(dir: string, exts: readonly string[]): readonly string[] {
 
 /** 責務を持つ1箇所を除いた、見る先。`[path, 中身]` の組で返す。 */
 function others(exts: readonly string[]): readonly (readonly [string, string])[] {
-  return [...filesUnder(CLAUDE_DIR, exts), ...filesUnder(join(ROOT, 'scripts'), exts)]
-    .filter((path) => path !== join(CLAUDE_DIR, OWNER))
+  return [
+    ...filesUnder(OPS_DIR, exts),
+    ...filesUnder(join(ROOT, '.claude'), exts),
+    ...filesUnder(join(ROOT, 'scripts'), exts),
+  ]
+    .filter((path) => path !== join(OPS_DIR, OWNER))
     .map((path) => [relative(ROOT, path), readFileSync(path, 'utf-8')] as const);
 }
 
 describe('gh と MCP の使い分け', () => {
   it('責務を持つ1箇所が、どちらの道具も名指ししている', () => {
-    const owner = readFileSync(join(CLAUDE_DIR, OWNER), 'utf-8');
+    const owner = readFileSync(join(OPS_DIR, OWNER), 'utf-8');
 
     expect(owner).toContain(PROBE);
     for (const tool of MCP_TOOLS) {

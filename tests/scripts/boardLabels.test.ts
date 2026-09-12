@@ -9,7 +9,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
 /**
  * `.github/workflows/board-labels.yml` の、結論をラベルへ変える段の検査。
  *
- * ここが守るのは**レビューの上限**（`.claude/board-design.md` 4.6）。上限をレビュアーへの指示に
+ * ここが守るのは**レビューの上限**（`agent-ops/board-design.md` 4.6）。上限をレビュアーへの指示に
  * だけ書いていたときは、書き忘れれば誰も止めず、PR #1527 で4周目が走った。**止めるのは機械の側**
  * になったので、ここが壊れると同じことが黙って起きる。
  *
@@ -217,7 +217,7 @@ describe('board-labels.yml の verdict', () => {
 });
 
 /**
- * セッションの名乗りを盤面へ移す段（`.claude/board-design.md` 2.15.2・2.16.2・2.17.3）。**ここが
+ * セッションの名乗りを盤面へ移す段（`agent-ops/board-design.md` 2.15.2・2.16.2・2.17.3）。**ここが
  * 動かないと、返したことがラベルにならない**——issue は `kind:task` が付いたままなので、盤面は
  * そのまま次のセッションへ配り直し、返した意味が消える。**順序（`blockedBy`）はここが唯一の
  * 経路**なので、動かなければ張られないまま配られる。
@@ -303,7 +303,7 @@ esac
 
   // **名乗らせるのは、なぜブリッジが要るのかがラベルに残らないから**（2.16.2）。
   it('1行目が [ブリッジ] で始まっていれば、env:bridge を付ける', () => {
-    expect(runDeclared('[ブリッジ] .claude/parallel-work.md を直す必要がある\n\nここまで調べた')).toEqual([
+    expect(runDeclared('[ブリッジ] agent-ops/parallel-work.md を直す必要がある\n\nここまで調べた')).toEqual([
       `${ISSUE} --repo gooyyu1/UnmappedIsland --add-label env:bridge`,
     ]);
   });
@@ -356,7 +356,7 @@ describe('board-labels.yml の synchronized', () => {
 });
 
 /**
- * 人がPRのラベルを外したことを、差し戻しへ訳す段（`.claude/board-design.md` 2.13.1）。
+ * 人がPRのラベルを外したことを、差し戻しへ訳す段（`agent-ops/board-design.md` 2.13.1）。
  *
  * **ここが「外したのは誰か」を取り違えると、盤面が回らなくなる。** 上の `synchronized` は push の
  * たびに同じラベルを外すので、機械のぶんまで差し戻しに読むと、**直して push した本人がその push で

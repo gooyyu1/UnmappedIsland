@@ -201,7 +201,7 @@ export class CardTable {
       });
     }
     for (const card of plan.fadeIns) card.appear(firstShow);
-    for (const { card } of left) card.destroy();
+    for (const card of plan.discards) card.destroy();
 
     // 飛んでいる途中の便と置いてある札は、行き先を引き直す（世界が変わって帰り先も変わりうる）。
     this.retarget(preexisting, plan.landings, context);

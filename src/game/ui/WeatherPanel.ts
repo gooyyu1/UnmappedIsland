@@ -4,12 +4,16 @@ import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { FlipCalendar } from './FlipCalendar';
 import { addLabel } from '../../ui/labels';
 import { COLOR } from '../looks/theme';
+import { cssColorWithAlpha } from '../../util/cssColor';
 import { drawBox } from '../../ui/shapes';
 import { weatherTexture } from '../../art/weatherArt';
 
 /** 空の絵の内側の余白。日時と天候名はこの内側に収める。 */
 const CONTENT_PADDING_PORTRAIT = { x: 24, y: 16 };
 const CONTENT_PADDING_LANDSCAPE = { x: 20, y: 16 };
+
+/** 天候名の落ち影の濃さ。空の絵は明るい所も暗い所もあるので、濃いめに敷いて白い字を浮かせる。 */
+const LABEL_SHADOW_ALPHA = 0.7;
 
 export interface WeatherPanelContent {
   /** 天気の識別子。これに対応する絵があれば敷き、無ければ単色の板になる（weatherArt参照）。 */
@@ -77,7 +81,14 @@ export class WeatherPanel extends Phaser.GameObjects.Container {
         bold: true,
         color: COLOR.textOnDark,
       });
-      label.setShadow(0, metrics.px(2), 'rgba(0,0,0,0.7)', metrics.px(6), false, true);
+      label.setShadow(
+        0,
+        metrics.px(2),
+        cssColorWithAlpha(COLOR.textShadow, LABEL_SHADOW_ALPHA),
+        metrics.px(6),
+        false,
+        true,
+      );
       if (metrics.isLandscape) {
         // 日時が下端を占めるので、天候名は上の段へ。
         label.setOrigin(0, 0).setPosition(panel.x + padX, panel.y + padY);

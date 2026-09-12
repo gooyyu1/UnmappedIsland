@@ -9,7 +9,7 @@ import { formatLive, liveSessions } from '../../scripts/agent/live-sessions.mjs'
  * `scripts/agent/live-sessions.mjs` の検査。
  *
  * ここが守るのは**「畳まれていない」の定義が1箇所に留まること**と、**どこで走っているかを
- * 取り違えないこと**（`.claude/board-design.md` 2.16.2）。後者を誤ると、盤面が正しく走っている
+ * 取り違えないこと**（`agent-ops/board-design.md` 2.16.2）。後者を誤ると、盤面が正しく走っている
  * ワーカーを「場所が違う」と読んで畳む。
  *
  * 環境IDの既定値を持つのは [`ccr-env.sh`](../../scripts/agent/ccr-env.sh) なので、**そこを叩いて
@@ -110,7 +110,7 @@ describe('live-sessions.mjs', () => {
   });
 
   /**
-   * **繰る回数が履歴の長さに比例して増えないこと**（`.claude/board-design.md` 1.7）。
+   * **繰る回数が履歴の長さに比例して増えないこと**（`agent-ops/board-design.md` 1.7）。
    * `list_sessions` は1000回/時で頭打ちになるので、末尾まで繰ると**セッションを作るほど盤面が
    * 止まりやすくなる**。上限に当たった周は一覧が引けず、レビューも投入も1件も出ない。
    */

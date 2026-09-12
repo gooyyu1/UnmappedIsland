@@ -1,7 +1,7 @@
 name: Board labels
 
 # 盤面のラベルと依存を付け外しする。**モデルのセッションが手で付けていたぶん**を引き取る
-# （[`.claude/board-design.md`](../../.claude/board-design.md) 2.2.1・段3）。
+# （[`agent-ops/board-design.md`](../../agent-ops/board-design.md) 2.2.1・段3）。
 #
 # ラベルは**事実**しか持たない（1.3）。ここが動かすのは次。
 #
@@ -37,7 +37,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # レビューの結論を、コメントの1行目から読む（`.claude/review-prompt.md`「書き方」）。
+  # レビューの結論を、コメントの1行目から読む（`agent-ops/prompts/review-prompt.md`「書き方」）。
   # **投稿者を絞る**——誰でもコメントできる場所なので、書き込み権のある者の発言だけを見る。
   verdict:
     if: >-
@@ -91,7 +91,7 @@ jobs:
           for label in "${add[@]}"; do adds+=(--add-label "$label"); done
           gh pr edit "$PR" --repo "$REPO" "${adds[@]}" --remove-label "$remove"
 
-          # **3周目の判定が「直しが要る」なら、そこで人へ上げる**（`.claude/board-design.md` 4.6）。
+          # **3周目の判定が「直しが要る」なら、そこで人へ上げる**（`agent-ops/board-design.md` 4.6）。
           # **上限を持つのはここ。** レビュアーへの指示にしか書いていなかったので、書き忘れれば
           # 誰も止めず、実際に PR #1527 で4周目が走った。
           #
@@ -114,7 +114,7 @@ jobs:
           fi
 
   # セッションが自分の行き先や、張ると決めた順序を名乗ったことを、issue のコメントの1行目から読む
-  # （[`.claude/board-design.md`](../../.claude/board-design.md) 2.15・2.16・2.17.3）。**PRではなく
+  # （[`agent-ops/board-design.md`](../../agent-ops/board-design.md) 2.15・2.16・2.17.3）。**PRではなく
   # issue の側**——名乗るのはPRを出す手前で詰まったときなので、そこにはまだPRが無い。
   #
   # **ラベルを直に付けさせず、名乗りを訳すのは、理由の置き場がコメントにしか無いから**——ラベルは
@@ -202,7 +202,7 @@ jobs:
             --remove-label 直し待ち --remove-label 通してよい \
             --remove-label 判断待ち --remove-label 収束せず --remove-label 却下
 
-  # **人がPRのラベルを外したこと**を、差し戻しへ訳す（[`.claude/board-design.md`](../../.claude/board-design.md)
+  # **人がPRのラベルを外したこと**を、差し戻しへ訳す（[`agent-ops/board-design.md`](../../agent-ops/board-design.md)
   # 2.13.1）。人がすることは2つだけ——**外す＝書いた本人に直してもらう**、**マージする＝それでよい**。
   # だから外れたPRに残る仕事は差し戻しの1つで、`却下` はその事実を持つ。
   #
@@ -211,7 +211,7 @@ jobs:
   # と同じ形で、**訳した先のラベルを付けるのは機械。**
   #
   # **理由は写さない。** ユーザーは外す前に直してほしいことをPRへ書くので、**それがそのまま
-  # 差し戻しの文面**になる（[`resume-prompt.md`](../../.claude/resume-prompt.md) の `## reject` が
+  # 差し戻しの文面**になる（[`resume-prompt.md`](../../agent-ops/prompts/resume-prompt.md) の `## reject` が
   # そこを読ませる）。ラベルは事実しか持たない（1.3）ので、理由の置き場はコメントのまま動かさない。
   unlabeled_by_hand:
     if: github.event_name == 'pull_request' && github.event.action == 'unlabeled'

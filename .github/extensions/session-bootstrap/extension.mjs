@@ -4,8 +4,8 @@
 // 気づいたら整形する／気づいたらやめる」に頼れない（気づきに依存しない形で入れる、というのが
 // 元のフックの設計意図）。
 //
-// - onSessionStart: .claude/policies.md（全文）と docs/concept/DesignPrinciples.md（見出しのみ）を
-//   セッション開始時に無条件でコンテキストへ注入する。判断の履歴（.claude/decisions/）は入れず、
+// - onSessionStart: agent-ops/policies.md（全文）と docs/concept/DesignPrinciples.md（見出しのみ）を
+//   セッション開始時に無条件でコンテキストへ注入する。判断の履歴（agent-ops/decisions/）は入れず、
 //   未処理がしきい値を超えたときに件数だけ足す（理由は .claude/hooks/inject-policies.sh）。
 // - onPreToolUse: シェルの呼び出しを bash に限り、シェルからのファイル書き換えを拒否する。
 // - onPostToolUse: create/edit で書き込んだファイルへ prettier --write を掛ける。
@@ -32,7 +32,7 @@ const DECISIONS_THRESHOLD = 10;
 async function countPendingDecisions(repoDir) {
   try {
     // 直下の .md だけを数える。archive/ に在るのは棚卸し済み。
-    const entries = await readdir(path.join(repoDir, '.claude', 'decisions'), { withFileTypes: true });
+    const entries = await readdir(path.join(repoDir, 'agent-ops', 'decisions'), { withFileTypes: true });
     return entries.filter((entry) => entry.isFile() && entry.name.endsWith('.md')).length;
   } catch {
     return 0;
@@ -42,7 +42,7 @@ async function countPendingDecisions(repoDir) {
 async function buildPoliciesContext(repoDir) {
   let context = '';
 
-  const policies = await readIfExists(path.join(repoDir, '.claude', 'policies.md'));
+  const policies = await readIfExists(path.join(repoDir, 'agent-ops', 'policies.md'));
   if (policies !== null) {
     context +=
       '過去のセッションで記録した、ユーザーの価値観。A・Bどちらもあり得る場面ではこれに従い、訊き直さない。\n\n';

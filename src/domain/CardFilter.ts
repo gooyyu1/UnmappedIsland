@@ -15,7 +15,12 @@ export class CardFilter {
   /** 絵がまだ無いときに代わりに置く絵文字（同4.2節）。 */
   readonly icon: string;
 
-  /** このボタンが残す札のタグ。どれか1つでも持てば残る（宣言順）。 */
+  /**
+   * このボタンが残す札のタグ。どれか1つでも持てば残る（宣言順）。
+   *
+   * **1つずつ見られるように公開している**——`matches`はどれか1つでも当たれば真を返すので、綴りを
+   * 間違えて誰も名乗っていないタグが混じっていても、そこからは見分けられない。
+   */
   readonly tagGlobalIds: readonly TagGlobalId[];
 
   constructor(id: string, icon: string, tagGlobalIds: readonly TagGlobalId[]) {

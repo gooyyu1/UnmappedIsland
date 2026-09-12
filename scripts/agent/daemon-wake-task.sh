@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# デーモンを起こす係を、このPCのタスクとして登録する（`.claude/board-design.md` 2.19）。
+# デーモンを起こす係を、このPCのタスクとして登録する（`agent-ops/board-design.md` 2.19）。
 #
 #   bash scripts/agent/daemon-wake-task.sh            # 登録する。何度打っても1本のまま
 #   DRY_RUN=1 bash scripts/agent/daemon-wake-task.sh  # 登録せずに、渡すXMLを出す
@@ -56,7 +56,7 @@ cat >"$WORK/task.xml" <<XML
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
     <Author>$WHO</Author>
-    <Description>盤面のデーモンを起こす。生きていれば何もしない（UnmappedIsland の .claude/board-design.md 2.19）。</Description>
+    <Description>盤面のデーモンを起こす。生きていれば何もしない（UnmappedIsland の agent-ops/board-design.md 2.19）。</Description>
   </RegistrationInfo>
   <Principals>
     <Principal id="Author">

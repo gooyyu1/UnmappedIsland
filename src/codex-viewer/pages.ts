@@ -296,12 +296,27 @@ function slotTableHtml(firstColumn: string, rows: string): string {
   );
 }
 
+/**
+ * 誰がここへ物を入れてよいか（`placement`、GameElementDefinition.md 7.7節）の注記。既定（エンジンも
+ * プレイヤーも入れられる）なら何も言わない。
+ *
+ * **どちらも外した枠に「手で入れる」と言わない。** 名指しの移動でしか入らない枠（隠された道の
+ * undiscovered_fixtures）を「手で入れられる」と読ませると、遊ぶ側には無い入口を探すことになる。
+ */
+function placementNote(slotDef: SlotDef): string | undefined {
+  if (slotDef.autoPlacement && slotDef.manualPlacement) return undefined;
+  if (slotDef.autoPlacement) return '手では入れられない（自動配置か、名指しの移動でだけ入る）';
+  if (slotDef.manualPlacement) return '自動配置の対象にしない（手で入れるか、名指しの移動でだけ入る）';
+  return '名指しの移動でだけ入る（自動配置もプレイヤーも対象にしない）';
+}
+
 /** スロット1つぶんのセル（1列目＝名前を除く）。 */
 function slotCellsHtml(view: CodexView, selfObjectName: string, slotDef: SlotDef): string {
   const notes: string[] = [];
   const putIn = putInDurationTokens(slotDef, view.names);
   if (putIn !== undefined) notes.push(`入れるのに${view.tokensHtml(putIn, selfObjectName)}分かかる`);
-  if (!slotDef.autoPlacement) notes.push('自動配置の対象にしない（手で入れるか、名指しの移動でだけ入る）');
+  const placement = placementNote(slotDef);
+  if (placement !== undefined) notes.push(placement);
 
   return (
     `<td>${view.describeHtml(selfObjectName, (out) => describeAccept(slotDef, view.names, out))}</td>` +

@@ -166,7 +166,7 @@ export class RawObjectDef {
         );
     requireNoSelfBaseCycle(this.name, propertyDefs);
     const propertyIndexByGlobalId = new LocalIndexByGlobalId(
-      loader.propertyNames.count,
+      loader.propertyNames,
       propertyDefs.map((p) => p.globalId),
     );
 
@@ -177,7 +177,7 @@ export class RawObjectDef {
           parseSlot(loader, this.name, slotName, asMap(slotValueNode, `'${this.name}'.slots.'${slotName}'`)),
         );
     const slotIndexByGlobalId = new LocalIndexByGlobalId(
-      loader.slotNames.count,
+      loader.slotNames,
       slotDefs.map((s) => s.globalId),
     );
 

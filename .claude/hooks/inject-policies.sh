@@ -2,10 +2,10 @@
 # SessionStart hook: 記録済みの価値観を、セッションの文脈へ無条件に流し込む。
 #
 # 「必要なら読め」では機能しない。参照すべき場面だと気づけないことこそが記録を残す動機なので、
-# 気づきに依存しない形で入れる。進め方の価値観（.claude/policies.md）は全文、ゲーム内容の判断基準
+# 気づきに依存しない形で入れる。進め方の価値観（agent-ops/policies.md）は全文、ゲーム内容の判断基準
 # （docs/concept/DesignPrinciples.md）は見出し（＝結論）だけを入れ、詳細は必要なときに読ませる。
 #
-# **入れるのは抽出済みの一般則だけで、判断の履歴（.claude/decisions/）は入れない。** 履歴は
+# **入れるのは抽出済みの一般則だけで、判断の履歴（agent-ops/decisions/）は入れない。** 履歴は
 # 溜まる一方なので、入れると全セッションがその分を毎回払う。棚卸しの契機だけが要るので、
 # 未処理がしきい値を超えたときに件数を1行足す。
 #
@@ -14,9 +14,9 @@
 set -euo pipefail
 
 REPO_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
-POLICIES="$REPO_DIR/.claude/policies.md"
+POLICIES="$REPO_DIR/agent-ops/policies.md"
 PRINCIPLES="$REPO_DIR/docs/concept/DesignPrinciples.md"
-DECISIONS="$REPO_DIR/.claude/decisions"
+DECISIONS="$REPO_DIR/agent-ops/decisions"
 
 # 未処理の履歴がこの数に達したら棚卸しを促す。毎回件数を告げると、注入されるのは一般則だけ、
 # という分け方が崩れる。

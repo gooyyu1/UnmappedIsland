@@ -1,7 +1,7 @@
-import { execSync } from 'node:child_process';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { basename, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { isVerbatimRecord, trackedDocs, trackedFiles } from '../../scripts/docScope.mjs';
 
 /**
  * 説明が挙げる名前が、今も在るものを指しているかの検査。**説明だけが古い名前で取り残される**
@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
  * 見方は2つあり、どちらが赤くなったかで直す場所が変わるので `it` を分けてある。
  *
  * 1. **`Xxx.yyy`・`Xxx.Yyy` の形**（下の「今は無い名前を指していない」）。見るのは `src`・`tests` の `.ts` の
- *    コメントと、`docs/` の `.md` の全文。判定は「**その所有者が**そのメンバーを持っていないなら、
+ *    コメントと、{@link DOCUMENTS} の全文。判定は「**その所有者が**そのメンバーを持っていないなら、
  *    指す先が無い」（hasMember）。読み手が辿れることだけを見るので、公開・非公開は問わない。
  *    この形で書けば今も在るものを指している、と読む——**過去に在ったものを語る箇所での書き方**は
  *    `DocumentStyle.md` 5節「今は無い名前」。
@@ -81,7 +81,14 @@ function codeOnly(text: string): string {
 const REFERENCE = /\b([A-Z][A-Za-z0-9]*)\.([A-Za-z][A-Za-z0-9_]*)\b\.?/g;
 
 const SOURCES = [...filesIn('src', '.ts'), ...filesIn('tests', '.ts')];
-const DOCUMENTS = filesIn('docs', '.md');
+
+/**
+ * 名前を挙げている文書。**射程は `docs/` に閉じない**——`.claude/**` の係の本文もルートの
+ * `CLAUDE.md` も `Xxx.yyy` の形で実装を指しており、畳めば同じように嘘になる。**どこまで掛かるかを
+ * 決めるのは [`docScope.mjs`](../../scripts/docScope.mjs)**——同じ規約（`DocumentStyle.md` 5節）を
+ * 課す `docReferences.test.ts` と同じ1つ。
+ */
+const DOCUMENTS = trackedDocs(ROOT).filter((rel) => !isVerbatimRecord(rel));
 const TARGETS = [
   { files: SOURCES, proseOf: commentLines },
   { files: DOCUMENTS, proseOf: allLines },
@@ -97,10 +104,7 @@ function appearsInCode(name: string): boolean {
   return found;
 }
 
-const TRACKED_PATHS = execSync('git ls-files', { cwd: ROOT, encoding: 'utf-8' })
-  .split('\n')
-  .map((path) => path.trim())
-  .filter((path) => path !== '');
+const TRACKED_PATHS = trackedFiles(ROOT);
 
 /** git の管理下にあるファイルの名前（ディレクトリを除いた最後の部分）。 */
 const FILE_NAMES = new Set(TRACKED_PATHS.map((path) => basename(path)));
@@ -201,9 +205,21 @@ function nameIn(text: string): string | null {
   return NAME.exec(text)?.[0] ?? null;
 }
 
-/** バッククォートの中身のうち、名前を挙げているもの。ファイル参照そのものは名前ではない。 */
+/**
+ * バッククォートの中身のうち、名前を挙げているもの。ファイル参照そのものは名前ではない。
+ *
+ * **英字の語を空白で並べたものも名前ではない**（`npm test`）。囲みは「これは識別子だ」だけを表す
+ * 記法ではなく、打つコマンドにも付くので、**先頭の語だけを取ると、その行が挙げていない名前を指し先へ
+ * 突き合わせることになる**（`npm test`（`Foo.test.ts`）で `npm` が `Foo.test.ts` のメンバーとして
+ * 挙がる）。
+ *
+ * **続くのが英字のときだけ落とす。** 和文を続けた言及（`placeSites を呼ぶ`）は名前を挙げている
+ * ので残す——落とすと、**指し先が消えても気づけない箇所が言い回しの数だけ増える。** 引数の並びは
+ * 空白で切れないので、どちらの規則でも残る。
+ */
 function quotedName(quoted: string): string | null {
   if (quoted.includes('/') || /\.[A-Za-z]+$/.test(quoted)) return null;
+  if (/^[A-Za-z_][A-Za-z0-9_]*\s+[A-Za-z_-]/.test(quoted)) return null;
   return nameIn(quoted);
 }
 
@@ -298,5 +314,22 @@ describe('説明の参照', () => {
       missing,
       `文書がファイルと並べて挙げた名前が、そのファイルに無い:\n${missing.join('\n')}`,
     ).toEqual([]);
+  });
+
+  it('`docs/` の外の文書も、走査に入っている', () => {
+    // 走査が `docs/` だけだった頃、`.claude/**` の係の本文が挙げる名前は誰も見ていなかった
+    // （#1948）。`docs/` の文書だけで数は足りるので、外側が落ちても上の検査は緑になる。
+    const outside = DOCUMENTS.filter((rel) => !rel.startsWith(`docs${sep}`));
+    expect(outside, '走査が `docs/` の中だけへ戻っている').not.toEqual([]);
+  });
+
+  it('囲みの中が名前か句かで、ファイルと並んだ組を採る／採らない', () => {
+    // 句の先頭の語を名前として採ると、その行が挙げていない名前が指し先へ突き合わされる。一方、
+    // 和文を続けた言及は名前を挙げているので、落とすと指し先が消えても気づけなくなる。
+    const named = (text: string) => fileMembersOn(text, false).map(({ name }) => name);
+
+    expect(named('`placeSites`（`SitePlacer.ts`）')).toEqual(['placeSites']);
+    expect(named('`placeSites を呼ぶ`（`SitePlacer.ts`）')).toEqual(['placeSites']);
+    expect(named('`npm test`（`SitePlacer.ts`）')).toEqual([]);
   });
 });

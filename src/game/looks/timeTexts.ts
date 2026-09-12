@@ -1,6 +1,5 @@
+import { MINUTES_PER_DAY } from '../../domain/worldTime';
 import { uiText } from '../../locale/uiTexts';
-
-const MINUTES_PER_DAY = 24 * 60;
 
 /**
  * 総経過分を日・時・分へ分ける。**時計に出すのも、記録へ添える文字にするのも同じ分け方**——

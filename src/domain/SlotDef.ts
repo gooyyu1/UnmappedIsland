@@ -120,6 +120,9 @@ export class SlotDef {
   /**
    * ここへ入れるのに時間がかかるか（`put_in`の宣言があるか）。値そのものはownerとitemで変わるので、
    * 「宣言しているか」だけを答える。
+   *
+   * **公開しているのは、acceptsAtMostOneと対で同梱の宣言を見張るため**——`put_in`を持つ枠を選び出す
+   * 口が無いと、その不変条件を数える側が全部の枠へputInMinutesを引くことになる。
    */
   get hasPutInDuration(): boolean {
     return this.putInDuration !== undefined;

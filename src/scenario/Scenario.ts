@@ -12,7 +12,7 @@ import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId } from '../domain/G
  * コード側への登録は要らない。一覧はimport.meta.globがビルド時に作る——画面にシナリオを並べるには
  * 名前を列挙できる必要があるが、public/配下に置くと実行時に一覧を得る手段が無いため。
  */
-const FILES = import.meta.glob('../assets/scenarios/*.yaml', {
+const SCENARIO_FILES = import.meta.glob('../assets/scenarios/*.yaml', {
   eager: true,
   query: '?raw',
   import: 'default',
@@ -20,7 +20,7 @@ const FILES = import.meta.glob('../assets/scenarios/*.yaml', {
 
 /** 同梱シナリオの名前と、そのファイルの中身。 */
 const SCENARIO_TEXTS: ReadonlyMap<string, string> = new Map(
-  Object.entries(FILES)
+  Object.entries(SCENARIO_FILES)
     .map(([path, text]): [string, string] => [path.replace(/^.*\/(.+)\.yaml$/, '$1'), text])
     .sort(([a], [b]) => a.localeCompare(b)),
 );
@@ -83,7 +83,12 @@ export interface Scenario {
   readonly worldProps: ReadonlyMap<string, string>;
 }
 
-/** シナリオファイルを読む。書式の誤りはYamlLoadErrorで、読み込んだ側が画面に出す。 */
+/**
+ * シナリオファイルを読む。書式の誤りはYamlLoadErrorで、読み込んだ側が画面に出す。
+ *
+ * **テキストから読む口を公開しているのは、同梱していない書き方を確かめる読み手のため。** 名前から
+ * 引く口（bundledScenario）は同梱のファイルしか読めないので、書式の誤りをそちらからは試せない。
+ */
 export function parseScenario(fileName: string, text: string): Scenario {
   const document = parseDocument(text);
   if (document.errors.length > 0) {
@@ -185,11 +190,11 @@ export function applyScenario(game: StartedGame, scenario: Scenario): void {
     );
   }
 
-  place(game, scenario.hand, 'hand');
-  place(game, scenario.equipment, 'equipment');
-  place(game, scenario.injuries, 'injuries');
-  place(game, scenario.items, 'items');
-  place(game, scenario.fixtures, 'fixtures');
+  placeIntoSlot(game, scenario.hand, 'hand');
+  placeIntoSlot(game, scenario.equipment, 'equipment');
+  placeIntoSlot(game, scenario.injuries, 'injuries');
+  placeIntoSlot(game, scenario.items, 'items');
+  placeIntoSlot(game, scenario.fixtures, 'fixtures');
   placeInside(game, scenario.inside);
 
   for (const [name, raw] of scenario.props) {
@@ -222,8 +227,8 @@ function resolveValue(codex: WorldCodex, propertyName: string, raw: string): num
   return symbolId;
 }
 
-/** 名前で並べたobject_defを1つずつ生成し、そのスロットへ入れる。 */
-function place(game: StartedGame, contents: SlotContents, slot: string): void {
+/** 名前で並べたobject_defを1つずつ生成し、名前で指したスロットへ入れる。 */
+function placeIntoSlot(game: StartedGame, contents: SlotContents, slot: string): void {
   if (contents.length === 0) return;
 
   const codex = game.session.codex;

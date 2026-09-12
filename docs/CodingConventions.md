@@ -59,6 +59,10 @@ IDの並びが要る側は `NameRegistry.ids` を読む。**`count` まで添字
 IDを型引数で受けるクラスは `in out`（不変）で宣言する。**外すと、種類の付いた名前空間を素の
 `number` の名前空間として扱えてしまう**——メソッドの引数は既定では双変なので、
 `種類を選んで引く` と書いた三項の型が `NameRegistry<number>` へ落ち、そこから先は素の数が通る。
+**素の `number` の側へ広げられないこと**は、そう代入して `@ts-expect-error` で止める形で
+[`tests/architecture/globalId.test.ts`](../tests/architecture/globalId.test.ts) が見張る
+（広がった瞬間に代入が通り、余った `@ts-expect-error` が `npm run typecheck` を赤くする）。
+`in out` はそれを保つ手段のひとつで、**見張っているのは広がらないことのほう**。
 
 名前空間を1つ増やすときの手順:
 
@@ -74,6 +78,9 @@ IDを型引数で受けるクラスは `in out`（不変）で宣言する。**�
 跨ぐ場所を新しく作らなければならないなら、**跨ぐ理由をその場に書く**。既にある例外は試験だけで、
 どれも**名前空間が配っていない番号を自分で作る**もの（配っていないIDを渡して確かめる、あるいは
 Codexを持たずに組み立てだけを見る）。`as <種類>GlobalId` を grep すれば在り処が全部挙がる。
+`src/` に生えていないことは
+[`tests/architecture/globalId.test.ts`](../tests/architecture/globalId.test.ts) が見張る
+——読み替えは型の上だけで済むので、型検査では気づけない。
 
 **プロパティの「値」に別の名前空間のIDが入る**（型を値に持つプロパティは `objectNames` のID、
 シンボル型は `symbolNames` のID。GameElementDefinition.md 6.6節・6.9節）。値は著者が書いた数であって
@@ -81,6 +88,11 @@ Codexを持たずに組み立てだけを見る）。`as <種類>GlobalId` を g
 `GlobalId.ts` の `objectGlobalIdOfPropertyValue`・`symbolGlobalIdOfPropertyValue` で、**値をIDとして
 読む経路はこの2つに寄せる**。書き込む側は越境ではない——ローダは名前から `NameRegistry` で引いて、
 そのIDを値として置くだけで、印を捨てる向きは型が支える。
+
+**IDは生成物（`stats/*.yaml`）へ出さない。** 番号は読み込むたびに振り直されるので、定義を1つ足す
+だけで無関係な行が全部動く。書き出す値の型がIDを受け付けない形
+（[`GlobalId.ts`](../src/domain/GlobalId.ts) の `NotAGlobalId`）になっているので、混ぜると
+`npm run typecheck` が赤くなる。出したいなら書き出す手前で名前へ戻す。
 
 ## クラス
 

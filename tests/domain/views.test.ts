@@ -81,29 +81,6 @@ object_defs:
     expect(world.weather, '天気の語彙を持たないCodex').toBeUndefined();
   });
 
-  it('PlayerCharacterはhpとsatietyを公開する', () => {
-    const yaml = `
-object_defs:
-  character:
-    props:
-      hp:
-        value: 100
-      satiety:
-        value: 50
-`;
-    const codex = load(yaml);
-    const instance = new WorldObject(
-      1,
-      codex.objects.get(codex.objectNames.getId('character')),
-      new WorldSession(codex),
-    );
-
-    const agent = new PlayerCharacter(instance, codex);
-
-    expect(agent.hp).toBe(100);
-    expect(agent.satiety).toBe(50);
-  });
-
   it('PlayerCharacterのhandは固定枠の空きセルをundefinedとして並べる', () => {
     const yaml = `
 object_defs:

@@ -37,7 +37,7 @@ trap 'rm -rf "$WORK"' EXIT
 # - `MODE` … 承認モード。**空なら `permission_mode` を渡さない**、が呼び手の約束（`ccr-env.sh`）
 # - `SOURCE` … `source_url` へ渡すリポジトリのURL。ブリッジでは空
 #
-# **渡す文面は投入先で変わらない**（`.claude/dispatch-prompt.md`「走る場所で文面を変えない」）。
+# **渡す文面は投入先で変わらない**（`agent-ops/prompts/dispatch-prompt.md`「走る場所で文面を変えない」）。
 choose_target() {
   if [ "${1:-}" = "--bridge" ]; then
     ENV_ID="$BRIDGE_ENV"

@@ -1,6 +1,11 @@
 import type { ObjectGlobalId, PropertyGlobalId } from '../GlobalId';
 
-/** ある軸に対する「理想点+許容範囲」（axis_preferencesの1エントリ、TerrainGeneration.md 3.2節）。 */
+/**
+ * ある軸に対する「理想点+許容範囲」（axis_preferencesの1エントリ、TerrainGeneration.md 3.2節）。
+ *
+ * **どの値も公開する。** 宣言をそのまま写した器で、距離の計算（normalizedDistanceFrom）から逆算
+ * できる値もあるが、どれがYAMLのどのキーから来たかは写した値を見ないと言えない。
+ */
 export class AxisPreference {
   readonly axis: string;
 

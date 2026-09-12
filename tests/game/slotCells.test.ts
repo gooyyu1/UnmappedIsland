@@ -2,10 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { ObjectGlobalId } from '../../src/domain/GlobalId';
 import { COLOR } from '../../src/game/looks/theme';
 import type { CardContent } from '../../src/game/ui/Card';
-import { LANE_CELLS_MAX } from '../../src/game/ui/laneCells';
 import type { CraftingMaterial } from '../../src/game/view/craftingView';
 import type { ObjectCardStack, SlotView } from '../../src/game/view/PlayScreenView';
-import { materialCells, plainCells, slotCells } from '../../src/game/view/slotCells';
+import { slotCells } from '../../src/game/view/slotCells';
 
 const card = (name: string): CardContent => ({ icon: '🪵', name });
 
@@ -45,6 +44,13 @@ const material = (options: Partial<CraftingMaterial> = {}): CraftingMaterial => 
 /** その型を1つ入れた枠。 */
 const stack = (objectGlobalId: ObjectGlobalId): ObjectCardStack =>
   ({ objectGlobalId, name: `held#${objectGlobalId}` }) as ObjectCardStack;
+
+/**
+ * 材料の要求を持たないスロットの枠。**枠を並べる入口はslotCellsだけ**なので、材料の枠しか使わない
+ * 引数（入っている物・拍・型の札）はここで埋める。
+ */
+const plainCells = (slot: SlotView, cards: readonly (CardContent | undefined)[]) =>
+  slotCells(slot, [], cards, 0, cardOfType);
 
 /**
  * その場所に並べる枠（slotCells）の自動テスト。**枠ごとの飾りを持つのは材料スロットだけ**で、
@@ -93,9 +99,9 @@ describe('クセの無い枠', () => {
   });
 
   it('一度に見せられる数を超える枠も、枠数のぶんだけ並べる', () => {
-    // 見える数（LANE_CELLS_MAX）は窓の幅の話で、枠数の上限ではない。入り切らない枠は横スクロールで
-    // 送れるので、10枠の編み籠でも「あと何枠空いているか」が見て取れる。
-    const cells = LANE_CELLS_MAX + 6;
+    // 一度に見せる数（laneCellsのLANE_CELLS_MAX）は窓の幅の話で、枠数の上限ではない。入り切らない枠は
+    // 横スクロールで送れるので、10枠の編み籠でも「あと何枠空いているか」が見て取れる。
+    const cells = 10;
 
     expect(emptyCells(plainCells(slot({ cells }), [card('石')]))).toBe(cells - 1);
   });
@@ -125,8 +131,8 @@ describe('材料の枠', () => {
     stacks: readonly (ObjectCardStack | undefined)[];
     cycle?: number;
   }) =>
-    materialCells(
-      options.materials,
+    slotCells(
+      slot({ materials: options.materials }),
       options.stacks,
       options.stacks.map((held) => (held === undefined ? undefined : (held as CardContent))),
       options.cycle ?? 0,

@@ -1,3 +1,5 @@
+import type { NameRegistry } from './NameRegistry';
+
 /**
  * 特定の ObjectDef に閉じたローカル配列（PropertyDef[] / SlotDef[] など）と、
  * ゲーム全体で共有されるグローバルID空間とを対応付ける表。ObjectDef側は自分が実際に持つ
@@ -6,20 +8,28 @@
  *
  * 型引数は引く側のグローバルIDの種類（{@link GlobalId}）。**名前空間ごとに別の表**なので、
  * プロパティの表へスロットのIDを渡すと型で止まる——通してしまうと、別の名前空間で同じ番号を
- * 持つ何かのローカル位置が返り、持っていないはずのものが引ける。`in out`（不変）の理由は
- * {@link NameRegistry} と同じで、外すと種類の付いた表を素の `number` の表として扱えてしまう。
+ * 持つ何かのローカル位置が返り、持っていないはずのものが引ける。`in out`（不変）を書く理由は
+ * {@link NameRegistry} と同じ。**この表が素の `number` の表へ広げられないことを見張るのは
+ * `tests/architecture/globalId.test.ts`** で、`in out` はその一手段——今は不変の
+ * {@link NameRegistry} を持っていることでも同じ不変性が出るので、この2語だけを外しても広がらない。
  */
 export class LocalIndexByGlobalId<in out Id extends number> {
   static readonly missing = -1;
 
+  private readonly names: NameRegistry<Id>;
   private readonly globalToLocal: number[];
 
   /**
-   * @param globalCount 現時点のグローバルID空間の大きさ（NameRegistry.count）。
+   * @param names この表が引くIDを配る名前空間。**大きさの写しではなく名前空間そのものを持つ**
+   *   ——表を組むのは読み込みの途中で、名前空間はその後も伸びる。組んだ時点の大きさを持つと、
+   *   後から配られたIDが全部「表の外」に落ち、**配られていない番号と見分けが付かなくなる。**
    * @param globalIdsOrderedByLocalIndex ローカル配列の並び順そのままに並べたグローバルID列。
    */
-  constructor(globalCount: number, globalIdsOrderedByLocalIndex: readonly Id[]) {
-    this.globalToLocal = new Array(globalCount).fill(LocalIndexByGlobalId.missing);
+  constructor(names: NameRegistry<Id>, globalIdsOrderedByLocalIndex: readonly Id[]) {
+    this.names = names;
+    // 表が覆うのは自分が持つIDの範囲まで。その先は、引かれた時点で名前空間に照らして判じる。
+    const size = globalIdsOrderedByLocalIndex.reduce((max, global) => Math.max(max, global + 1), 0);
+    this.globalToLocal = new Array<number>(size).fill(LocalIndexByGlobalId.missing);
 
     for (let local = 0; local < globalIdsOrderedByLocalIndex.length; local++) {
       const global = globalIdsOrderedByLocalIndex[local];
@@ -27,8 +37,22 @@ export class LocalIndexByGlobalId<in out Id extends number> {
     }
   }
 
+  /**
+   * そのグローバルIDのローカル位置。この物が宣言していなければ {@link missing}。
+   *
+   * **この名前空間が配っていない番号は投げる。** 名前を経由せずに作った数は、番号としてはそのまま
+   * 表を引けてしまう——**壊れたIDと「宣言されていない」は呼び手にとって別の話**で、黙って畳むと
+   * 引き方の間違いが「持っていない」として通る。
+   *
+   * **捕まるのは、どの名前も持たない番号だけ。** どの{@link NameRegistry}も0から振るので、別の世界が
+   * 配ったIDはたいていこちらの範囲にも収まり、番号だけでは見分けが付かない——そちらを止めているのは
+   * この検査ではなく、世界をまたいで物を渡さないこと。
+   */
   toLocal(globalId: Id): number {
-    if (globalId < 0 || globalId >= this.globalToLocal.length) return LocalIndexByGlobalId.missing;
-    return this.globalToLocal[globalId];
+    if (globalId < 0 || globalId >= this.names.count)
+      throw new Error(
+        `グローバルID ${globalId} は、この名前空間が配った番号ではありません（配ったのは ${this.names.count} 件）。`,
+      );
+    return globalId < this.globalToLocal.length ? this.globalToLocal[globalId] : LocalIndexByGlobalId.missing;
   }
 }

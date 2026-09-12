@@ -11,7 +11,7 @@ import { trackIdle } from '../../scripts/agent/board-round.mjs';
  * `scripts/agent/board-move.mjs` の検査。
  *
  * ここが守るのは**盤面から出る手が1つに決まること**。デーモンは出た手をそのまま打つので
- * （`.claude/board-design.md` 2.3）、判定を間違えると走っているセッションへ二重に投げるか、
+ * （`agent-ops/board-design.md` 2.3）、判定を間違えると走っているセッションへ二重に投げるか、
  * 直しを待つPRが誰にも渡らないまま止まる。同じ盤面へ同じ手を二度出さないことも見る。
  */
 
@@ -75,7 +75,7 @@ const DUG_JUST_NOW = { 'cycle:dig': NOW };
 const TRIAGED_JUST_NOW = { 'cycle:triage': NOW };
 
 /** 掘り起こす係を立てる手。**上の既定を外した盤面はどれもこれを出す**ので、ここで名前を持つ。 */
-const DIG = `CHORE dig .claude/dig-prompt.md ${NOW}`;
+const DIG = `CHORE dig agent-ops/prompts/dig-prompt.md ${NOW}`;
 
 /**
  * 盤面を見回る係（`board-move.mjs` の `CYCLES` の `patrol`）も、既定で**たった今立てた**ことにする。
@@ -127,7 +127,7 @@ function pr(number: number, over: Record<string, unknown> = {}) {
 
 /**
  * ラベルの一覧。**`kind:task` を渡したら `goal:` も足す**——**棚卸しを通った issue は向かう先を持つ**
- * （`.claude/board-design.md` 2.17.1 の、棚卸しが出す結論）ので、持たない盤面のほうが例外。
+ * （`agent-ops/board-design.md` 2.17.1 の、棚卸しが出す結論）ので、持たない盤面のほうが例外。
  * 足さないと、向かう先と関わりのない検査の期待値へ一律に `NOTE` が1行増える（2.18.1）。
  *
  * **その例外を見る検査は、自分で `labels` を組む**（下の `unnamedTask`）。
@@ -930,7 +930,9 @@ describe('board-move.mjs', () => {
   // **取りこぼしを直す者を呼ぶ**（2.17.1）。`kind:` の有無だけを入口にしていたら、`kind:` が付いた
   // 時点で issue が棚卸しの視界から消え、後から足した `goal:` の取りこぼしを拾う者が居なくなる。
   it('向かう先を名乗らない kind:task があれば、棚卸しの係を立てる', () => {
-    expect(moves({ issues: [unnamedTask(9)] })).toContain(`CHORE triage .claude/triage-prompt.md ${NOW}`);
+    expect(moves({ issues: [unnamedTask(9)] })).toContain(
+      `CHORE triage agent-ops/prompts/triage-prompt.md ${NOW}`,
+    );
   });
 
   // 順を変えるだけで、配ってよいかは変えない（1.3）。
@@ -1317,7 +1319,7 @@ describe('board-move.mjs', () => {
       .map((move) => move.split(' ')[2]);
     expect(kinds).toEqual(['mend', 'reject', 'look', 'stall', 'review-stall']);
 
-    const template = readFileSync(resolve(__dirname, '../../.claude/resume-prompt.md'), 'utf-8');
+    const template = readFileSync(resolve(__dirname, '../../agent-ops/prompts/resume-prompt.md'), 'utf-8');
     for (const kind of kinds) expect(template).toContain(`\n## ${kind} `);
   });
 
@@ -1327,12 +1329,12 @@ describe('board-move.mjs', () => {
   // 書き換わらない**——「`task` でも `meta` でも無い」で書いていたときは、出口が増えるたびに
   // 条件を足す必要があった。
   const unsorted = (number: number) => ({ number, labels: [], blockedBy: { nodes: [] } });
-  const TRIAGE = `CHORE triage .claude/triage-prompt.md ${NOW}`;
-  const ANALYSIS = `CHORE analysis .claude/analysis-prompt.md ${NOW}`;
-  const POLICY = `CHORE policy .claude/policy-cycle-prompt.md ${NOW}`;
-  const TREND = `CHORE trend .claude/analysis-trend-prompt.md ${NOW}`;
+  const TRIAGE = `CHORE triage agent-ops/prompts/triage-prompt.md ${NOW}`;
+  const ANALYSIS = `CHORE analysis agent-ops/prompts/analysis-prompt.md ${NOW}`;
+  const POLICY = `CHORE policy agent-ops/prompts/policy-cycle-prompt.md ${NOW}`;
+  const TREND = `CHORE trend agent-ops/prompts/analysis-trend-prompt.md ${NOW}`;
   /** 盤面を見回る係（2.21）。**このPCでしか調べられない**ので、宛先が付く。 */
-  const PATROL = `CHORE patrol .claude/patrol-prompt.md ${NOW} --bridge`;
+  const PATROL = `CHORE patrol agent-ops/prompts/patrol-prompt.md ${NOW} --bridge`;
 
   /** レビュアーがスメルを残した判定コメント（`review-criteria.md`「挙げ方」）。読んだ印を変えられる形で持つ。 */
   const smell = (number: number, read = false) => ({
@@ -1558,7 +1560,7 @@ describe('board-move.mjs', () => {
 
   // ## 価値観を畳む係（2.17.2）
   //
-  // 仕事の在り処が issue でもPRでもなく**リポジトリの中**（`.claude/decisions/`）にある係。盤面が
+  // 仕事の在り処が issue でもPRでもなく**リポジトリの中**（`agent-ops/decisions/`）にある係。盤面が
   // GitHub と CCR の外を見るのはここだけで、数えるのは `board-read.mjs`。
   it('棚卸しを通っていない履歴があれば、価値観を畳む係を立てる', () => {
     expect(moves({ pendingDecisions: 1 })).toEqual([POLICY]);
@@ -1568,7 +1570,7 @@ describe('board-move.mjs', () => {
     expect(moves({ pendingDecisions: 0 })).toEqual([]);
   });
 
-  // **間隔は週1回**（2.17。履歴が増えるのはユーザーと直接話したときだけで、束ねるには溜まって
+  // **間隔は `CYCLES` の `policy` が持つ**（2.17。履歴が増えるのはユーザーと直接話したときだけで、束ねるには溜まって
   // いる必要がある）。**他の係と同じ一日では立たない**ことまで見る——2日空いた盤面を渡すので、
   // 間隔を一日に縮めるとここが赤くなる。
   it('前に立ててから週が明けるまで、価値観を畳む係は立てない', () => {
@@ -1584,7 +1586,7 @@ describe('board-move.mjs', () => {
   // ## 回をまたぐ形を見る係（2.17.4）
   //
   // 一次の分析係が回ごとに書いた記録を横断して読む二次の係。仕事の在り処は価値観を畳む係と同じく
-  // **リポジトリの中**（`.claude/analysis/`）で、数えるのは `board-read.mjs`。
+  // **リポジトリの中**（`agent-ops/analysis/`）で、数えるのは `board-read.mjs`。
   it('二次がまだ読んでいない分析の記録があれば、回をまたぐ形を見る係を立てる', () => {
     expect(moves({ unsummarizedAnalyses: 1 })).toEqual([TREND]);
   });
@@ -1593,7 +1595,7 @@ describe('board-move.mjs', () => {
     expect(moves({ unsummarizedAnalyses: 0 })).toEqual([]);
   });
 
-  // **間隔は週1回**（2.17.4。一次は1日1回なので、1本で7回ぶんが読める）。**他の係と同じ一日では
+  // **間隔は `CYCLES` の `trend` が持つ**（2.17.4。一次はこれより短い間隔で立つので、1本で何回ぶんもの記録が読める）。**他の係と同じ一日では
   // 立たない**ことまで見る——2日空いた盤面を渡すので、間隔を一日に縮めるとここが赤くなる。
   it('前に立ててから週が明けるまで、回をまたぐ形を見る係は立てない', () => {
     const board = { unsummarizedAnalyses: 3, taken: { 'cycle:trend': '2026-09-03T02:00:00Z' } };
