@@ -23,8 +23,8 @@ export type GlobalId<Namespace extends string> = number & {
  * グローバルIDではない素の数。**IDを受け取らないと宣言する側は、`number` ではなくこれで受ける**
  * ——`number` で受けるとどの名前空間のIDも通る（印は `number` に足しただけなので）。
  *
- * 受け口をこれにすると、IDを渡した側が型で止まる。生成物へ書き出す値（`tests/support/generatedReport.ts`）
- * がこれで受けており、IDが混ざった瞬間に `npm run typecheck` が赤くなる。
+ * 受け口をこれにすると、IDを渡した側が型で止まる。生成物（`stats/*.yaml`）へ書き出す値がこれで
+ * 受けているので、IDが混ざった瞬間に `npm run typecheck` が赤くなる。
  */
 export type NotAGlobalId = number & { readonly [namespaceOfGlobalId]?: undefined };
 

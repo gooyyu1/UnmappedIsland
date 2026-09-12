@@ -61,7 +61,7 @@ object_defs:
 
   it('配られていないIDは、宣言されていないことと混ぜずに投げる', () => {
     // **「この物が持っていない」と「そもそも誰にも配られていない番号」は別の話。** 前者はYAMLの
-    // 書き間違いで、後者は引き方——別の世界が配ったIDや、名前を経由せずに作った数——の間違い。
+    // 書き間違い（上の試験が見ている文面）で、後者は名前を経由せずに数を作った引き方の間違い。
     // 畳むと、壊れたIDを渡した側が「持っていない」を受け取って先へ進む。
     //
     // このcodexが配っていないIDを渡す試験なので、**IDを作れる唯一の口（NameRegistry）を通れない**
@@ -72,11 +72,6 @@ object_defs:
     );
     expect(() => spawn('stone').tryGetProperty(-1 as PropertyGlobalId)).toThrowError(
       'この名前空間が配った番号ではありません',
-    );
-
-    // 配られてはいるが、この物が宣言していないほうは、今までどおり名前で言う。
-    expect(() => spawn('stone').getProperty(codex.propertyNames.getId('travel_minutes'))).toThrowError(
-      "'stone' はプロパティ 'travel_minutes' を持ちません。",
     );
   });
 });

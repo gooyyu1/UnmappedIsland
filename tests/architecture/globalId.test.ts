@@ -156,8 +156,9 @@ object_defs:
     // **型検査は緑のまま**——書き換えは型の上だけで済んでしまう。字面で見張る以外に手立てが無い。
     //
     // 見張る綴りは GlobalId.ts が持つ別名そのものから作る（ここへ書き写すと、名前空間を1つ足した
-    // ぶんだけ見張りに穴が空く）。
-    const aliases = [...readSource(READERS).matchAll(/export type (\w+GlobalId) =/g)].map(
+    // ぶんだけ見張りに穴が空く）。**拾うのは名前空間の別名だけ**——`NotAGlobalId` のように
+    // 「IDではない」と名乗る型は、綴りは似ていても向きが逆で、書いても越境にならない。
+    const aliases = [...readSource(READERS).matchAll(/export type (\w+) = GlobalId</g)].map(
       (match) => match[1],
     );
     expect(aliases.length, '別名が1つも読めていない').toBeGreaterThan(0);
