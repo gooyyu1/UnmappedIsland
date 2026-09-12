@@ -39,6 +39,12 @@ const readSource = (rel: string): string => readFileSync(join(ROOT, rel), 'utf-8
 /** 階梯の外の `src/**` 。 */
 const outsideLadder = sourcesIn('src').filter((file) => file !== LADDER);
 
+/**
+ * 階梯の外の `src/game/**` 。画面の層という名前の `depth` を持つのはここだけで、他の層（解析・
+ * 説明文の字下げ）は同じ綴りの別物なので混ぜない。
+ */
+const outsideLadderInGame = outsideLadder.filter((file) => file.startsWith('src/game/'));
+
 describe('画面に重ねる層の階梯', () => {
   it('奥から手前へ、宣言の順に並ぶ', () => {
     // 宣言の順がそのまま奥から手前の順であることが、この一覧を上から読める根拠。順序と値が
@@ -71,6 +77,15 @@ describe('画面に重ねる層の階梯', () => {
         })
         .map((argument) => `${file}: setDepth(${argument})`);
     });
+
+    expect(offenders).toEqual([]);
+  });
+
+  it('層に数を直接書いている場所が無い', () => {
+    // `ScreenDepth` は階梯の値そのものの合併なので、**階梯に在る数を直書きすると型では止まらない**
+    // （`depth: 1.2`）。書けてしまえば、階梯の項を動かしたときに置き去りになる数がそこに残る。
+    const writesNumber = /\bdepth\s*[:=]\s*-?\d/;
+    const offenders = outsideLadderInGame.filter((file) => writesNumber.test(readSource(file)));
 
     expect(offenders).toEqual([]);
   });

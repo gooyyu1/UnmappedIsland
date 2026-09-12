@@ -9,8 +9,8 @@ import { COLOR } from '../looks/theme';
  * 幕は敷いた時点から入力を遮る（addInputBlockingPanel）。まだ暗くなり切っていなくても、その範囲は次の場面へ
  * 移り始めているため、そこへの操作を受け付けてはならない。
  *
- * 層（depth）は指定しない。既定の層の中で最後に作られることによって、敷いた時点で最も手前に居る
- * （screenDepth.ts）。**覆うのは既定の層まで**で、自分の層を持つ表示物は幕の手前に残る。
+ * 層（depth）は指定しない。既定の層の中で最後に作られることによって、敷いた時点でその層の最も手前に
+ * 居る（screenDepth.ts）。**覆えるのは幕より奥の層まで**で、手前の層を持つ表示物は暗転しても残る。
  */
 export class Curtain {
   private readonly scene: Phaser.Scene;

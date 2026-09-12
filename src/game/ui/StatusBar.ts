@@ -219,6 +219,9 @@ export interface StatusBarOptions {
  *
  * 危険域・致命的域のバーは枠を明滅させる（StatusArea.md）。行はどこをタップしても、その
  * ステータスの詳細が開く。
+ *
+ * **この行の表示物は、一度作ったら作り直さない。** 作り直すと、開いている子ウィンドウの覆いより
+ * 手前へ出てしまう（screenDepth.ts）。出さないものは消さずに空にし、値は中身だけ差し替える。
  */
 export class StatusBar extends Phaser.GameObjects.Container {
   static height(metrics: ScreenMetrics): number {
@@ -228,7 +231,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
   /**
    * バーと、その上に重ねる文字（左＝値の読み、右＝次の段）。**どちらも作っておいて出し分ける**
    * ——段が上がると満たされ具合を言えなくなる（最上段には次が無い）ので、どちらを出すかは行の
-   * 一生を通じて固定ではない。出さない文字は空にする（作り直すと表示順が変わるため消さない）。
+   * 一生を通じて固定ではない。出さない文字は空にする。
    */
   private readonly bar: ProgressBar;
   private readonly valueText: Phaser.GameObjects.Text;
@@ -244,7 +247,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
    */
   readonly inputSurface: Phaser.GameObjects.Zone;
 
-  /** 増減の記号と固定表示の印。出ていないときは空文字にする（作り直すと表示順が変わるため消さない）。 */
+  /** 増減の記号と固定表示の印。出ていないときは空文字にする。 */
   private readonly changeMark: Phaser.GameObjects.Text;
   private readonly pinMark: Phaser.GameObjects.Text;
 
@@ -384,9 +387,8 @@ export class StatusBar extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 値・増減・域・固定表示を今の状態へ書き換える。作り直さず中身だけ差し替えるのは、作り直すと画面の
-   * 表示順が変わって子ウィンドウの覆いより手前へ出てしまうことと、バーが減る様子（ProgressBar.setRatio）を
-   * 見せている途中で捨てないため。
+   * 値・増減・域・固定表示を今の状態へ書き換える。作り直さないこと自体はこの行の契約だが、値には
+   * もう1つ理由がある——バーが減る様子（ProgressBar.setRatio）を見せている途中で捨てないため。
    */
   setContent(content: StatusContent): void {
     this.applyContent(content, true);
