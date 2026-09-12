@@ -89,7 +89,10 @@ describe('timber.yamlの伐採', () => {
     const knife = spawnInto('sharp_stone', player, 'hand');
 
     expect(tree.combinationsWith(knife, player).map((c) => c.name)).toEqual(['strip_bark']);
-    expect(tree.combinationsWith(player, player), '素手では何も成立しない').toEqual([]);
+    expect(
+      tree.combinationsWith(player, player).map((c) => c.name),
+      '素手では何も成立しない',
+    ).toEqual([]);
     expect(tree.parent, '木は立ったまま').toBe(forest);
   });
 
@@ -112,7 +115,10 @@ describe('timber.yamlの伐採', () => {
     axe.getProperty(codex.propertyNames.getId('durability')).setNumberWithoutEvents(0);
     makeTooDarkToWork(player, codex);
 
-    expect(tree.combinationsWith(axe, player), '成立するものは無い').toEqual([]);
+    expect(
+      tree.combinationsWith(axe, player).map((c) => c.name),
+      '成立するものは無い',
+    ).toEqual([]);
     expect(
       tree.refusedCombinationsWith(axe, player).map((c) => [c.name, c.unmetRequirement()?.reasonName]),
       '断るのは伐採だけで、理由も斧そのものを指す',
@@ -124,7 +130,7 @@ describe('timber.yamlの伐採', () => {
     const knife = spawnInto('sharp_stone', player, 'hand');
     makeTooDarkToWork(player, codex);
 
-    expect(tree.combinationsWith(knife, player)).toEqual([]);
+    expect(tree.combinationsWith(knife, player).map((c) => c.name)).toEqual([]);
     expect(
       tree.refusedCombinationsWith(knife, player).map((c) => [c.name, c.unmetRequirement()?.reasonName]),
     ).toEqual([['strip_bark', 'too_dark']]);

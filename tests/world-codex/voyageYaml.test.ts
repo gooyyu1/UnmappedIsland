@@ -1130,9 +1130,10 @@ describe('筏と航海', () => {
       shoal.tryGetAction('spear_shoal', game.player.instance),
       '道具なしで押せる手は無い',
     ).toBeUndefined();
-    expect(shoal.combinationsWith(branch, game.player.instance), '銛でない物を当てても成立しない').toEqual(
-      [],
-    );
+    expect(
+      shoal.combinationsWith(branch, game.player.instance).map((c) => c.name),
+      '銛でない物を当てても成立しない',
+    ).toEqual([]);
   });
 
   it('群れへ突くほうが、群れの居ない海面へ突くよりよく獲れる', () => {

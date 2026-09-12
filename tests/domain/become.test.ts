@@ -207,7 +207,7 @@ object_defs:
     const other = session.createObject(idOf('stick'));
     other.moveToSlotOrRejection(ground.getSlot(itemsId()));
 
-    expect(stick.combinationsWith(other, createAgent(session))).toEqual([]);
+    expect(stick.combinationsWith(other, createAgent(session)).map((c) => c.name)).toEqual([]);
   });
 
   it('型が変われば、同種のまとまりも判定し直される', () => {

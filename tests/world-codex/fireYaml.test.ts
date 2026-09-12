@@ -160,7 +160,7 @@ describe('fire.yamlの火の連鎖', () => {
     const grass = spawnInto('dry_grass', land, 'items');
     const wipDrill = spawnInto(inProgressObjectName('fire_drill', 'carved'), player, 'hand');
 
-    expect(grass.combinationsWith(wipDrill, player)).toEqual([]);
+    expect(grass.combinationsWith(wipDrill, player).map((c) => c.name)).toEqual([]);
     expect(
       grass
         .combinationsWith(wipDrill, player)
@@ -220,7 +220,10 @@ describe('fire.yamlの火の連鎖', () => {
     const grass = spawnInto('dry_grass', land, 'items');
     const drill = spawnInto('fire_drill', player, 'hand');
 
-    expect(grass.combinationsWith(drill, player), '候補にも挙がらない').toEqual([]);
+    expect(
+      grass.combinationsWith(drill, player).map((c) => c.name),
+      '候補にも挙がらない',
+    ).toEqual([]);
     expect(itemsOn(land), '外した回と違って火口も減らない').toEqual(['dry_grass']);
   });
 
@@ -272,7 +275,10 @@ describe('fire.yamlの火の連鎖', () => {
     const twig = spawnInto('twig', land, 'items');
     const drill = spawnInto('fire_drill', player, 'hand');
 
-    expect(twig.combinationsWith(drill, player), '小枝と火起こし具は組み合わない').toEqual([]);
+    expect(
+      twig.combinationsWith(drill, player).map((c) => c.name),
+      '小枝と火起こし具は組み合わない',
+    ).toEqual([]);
   });
 
   it('ヤシの実の皮と植物繊維も火口になる', () => {
@@ -318,7 +324,10 @@ describe('fire.yamlの火の連鎖', () => {
     const hearth = spawnInto('campfire', land, 'fixtures');
     const tinder = spawnInto('burning_tinder', land, 'items');
 
-    expect(hearth.combinationsWith(tinder, player), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      hearth.combinationsWith(tinder, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
     expect(
       hearth.refusedCombinationsWith(tinder, player).map((c) => c.unmetRequirement()?.reasonName),
       '断る理由まで辿り着ける（14.6節のreason）',
@@ -500,7 +509,10 @@ describe('fire.yamlの火の連鎖', () => {
     expect(effectiveNumberOf(hearth, 'fuel')).toBe(30);
 
     const extra = spawnInto('thick_branch', land, 'items');
-    expect(hearth.combinationsWith(extra, player), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      hearth.combinationsWith(extra, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
     expect(
       hearth
         .combinationsWith(extra, player)
@@ -535,7 +547,10 @@ describe('fire.yamlの火の連鎖', () => {
       ).toEqual(['add_fuel']);
 
       hearth.getProperty(fuelId).setNumberWithoutEvents(capacity);
-      expect(hearth.combinationsWith(branch, player), `${def.name}: 満杯では成立しない`).toEqual([]);
+      expect(
+        hearth.combinationsWith(branch, player).map((c) => c.name),
+        `${def.name}: 満杯では成立しない`,
+      ).toEqual([]);
       expect(
         hearth.refusedCombinationsWith(branch, player).map((c) => c.unmetRequirement()?.reasonName),
         `${def.name}: 満杯を告げる`,
@@ -718,7 +733,10 @@ describe('fire.yamlの火の連鎖', () => {
     session.advanceWorldTime(15 * 3);
     expect(effectiveNumberOf(hot, 'heat_soak')).toBe(3);
 
-    expect(hot.combinationsWith(bowl, player), '候補にも挙がらない').toEqual([]);
+    expect(
+      hot.combinationsWith(bowl, player).map((c) => c.name),
+      '候補にも挙がらない',
+    ).toEqual([]);
     expect(bowl.def.name, '水のまま').toBe('coconut_bowl__content_water_liquid');
   });
 
