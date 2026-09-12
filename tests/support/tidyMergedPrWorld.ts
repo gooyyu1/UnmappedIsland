@@ -43,14 +43,17 @@ export const RETARGETED = '2026-09-10T12:00:00Z';
 export const PUSHED = '2026-09-10T11:00:00Z';
 
 /**
- * 失敗した `gh` が標準エラーへ書く理由。**身代わりにも言わせる**——黙って転ぶ身代わりでは、理由を
- * 落とす実装がそのまま緑で通る。`stacked` のぶんだけ複数行なのは、**1行1件**の出力へ畳めていることを
+ * 失敗した `gh`・`git` が標準エラーへ書く理由。**身代わりにも言わせる**——黙って転ぶ身代わりでは、
+ * 理由を落とす実装がそのまま緑で通る。複数行のものが混じるのは、**1行1件**の出力へ畳めていることを
  * 叩く側から見るため。
  */
 export const REFUSALS = {
   stacked: 'gh: Something went wrong while executing your query. (HTTP 502)\nTry again later.',
   note: 'gh: Unable to create comment. Issue is locked. (HTTP 403)',
   sendBack: 'gh: Resource not accessible by integration (HTTP 403)',
+  checkout:
+    'error: The following untracked working tree files would be overwritten by checkout:\n' +
+    '  .claude/decisions/x.md\nPlease move or remove them before you switch branches.\nAborting',
 } as const;
 
 /** 身代わりが理由を吐いて転ぶところ。失敗しない世界では、何も言わずに通す。 */
@@ -78,6 +81,8 @@ export interface World {
   readonly issues?: Record<number, string>;
   /** 本体に未コミットの変更（追跡済み）があるか。 */
   readonly mainDirty?: boolean;
+  /** 本体を進める `git checkout` が失敗するか（未追跡のものが妨げになった場合など）。 */
+  readonly checkoutFails?: boolean;
   /** マージで `package-lock.json` が変わったか。 */
   readonly lockChanged?: boolean;
   /** 本体に依存が入っているか。既定は入っている。 */
@@ -208,7 +213,7 @@ case "$*" in
     if [ -e '${dir}/checked-out' ]; then printf '%s' '${world.lockChanged === true ? 'bbb222' : 'aaa111'}'
     else printf '%s' 'aaa111'; fi ;;
   *'rev-parse --short HEAD'*) printf '%s' 'deadbee' ;;
-  *checkout*) touch '${dir}/checked-out' ;;
+  *checkout*) ${refuse(world.checkoutFails, REFUSALS.checkout)}; touch '${dir}/checked-out' ;;
 esac
 exit 0
 `,

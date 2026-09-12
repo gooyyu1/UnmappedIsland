@@ -138,4 +138,18 @@ describe('tidy-merged-pr.sh', () => {
     expect(result.installed).toBe(false);
     expect(result.status).toBe(2);
   });
+
+  // 未追跡のものが妨げになるかは `checkout` 自身が判定するので、その失敗も後片付けの残りとして
+  // 受ける。`set -e` へ落とすと、既に済んだ `MENDED`・`CLOSED` ごと「打てなかった」の一語になり、
+  // 盤面は覚えを残さず毎周同じところまで打ち直す（`board-move.mjs` の `TIDY`）。
+  it('本体を進められなければ、済んだぶんを残したまま、理由ごと1行で後片付けの残りとして出す', () => {
+    const result = run({ open: [{ number: 1001, oldBase: HEAD }], checkoutFails: true });
+
+    expect(result.lines).toContain('MENDED 1001');
+    const dirty = result.lines.find((line) => line.startsWith('DIRTY '));
+    expect(dirty?.endsWith(REFUSALS.checkout.replace(/\n/g, ' '))).toBe(true);
+    expect(result.lines.some((line) => line.startsWith('SYNCED '))).toBe(false);
+    expect(result.installed).toBe(false);
+    expect(result.status).toBe(2);
+  });
 });
