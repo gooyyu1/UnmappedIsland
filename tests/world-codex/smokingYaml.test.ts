@@ -7,6 +7,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -34,7 +35,7 @@ const FROZEN_WEATHER_TICKS = 999999;
 const SMOKING_TICKS = 96;
 
 /** 打ち切り。生肉の屋外寿命（2日）を大きく超えて回しても答えは変わらない。 */
-const LIMIT_TICKS = 96 * 6;
+const LIMIT_TICKS = TICKS_PER_DAY * 6;
 
 describe('smoking.yamlの燻製と燻し小屋', () => {
   let codex: WorldCodex;

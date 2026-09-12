@@ -6,7 +6,7 @@ import { HEAD, PUSHED, REFUSALS, RETARGETED, run } from '../support/tidyMergedPr
  * マージ済みのPR1本の後片付け——上に積まれていたPRの差し戻しと、本体のチェックアウトの追随。
  *
  * **誰がマージしたかを見ない**ので、ユーザーが画面から入れたPRも同じ道を通る
- * （`.claude/board-design.md` 2.10.4）。
+ * （`agent-ops/board-design.md` 2.10.4）。
  *
  * 世界の組み方と、ファイルを分けてある理由は `tests/support/tidyMergedPrWorld.ts`。
  */

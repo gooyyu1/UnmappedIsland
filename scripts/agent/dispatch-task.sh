@@ -6,7 +6,7 @@
 #   DRY_RUN=1 bash scripts/agent/dispatch-task.sh 1029 <補足ファイル>     # 渡す引数を見るだけ
 #   DRY_RUN=full bash scripts/agent/dispatch-task.sh 1029 <補足ファイル>  # 指示の本文も切らずに出す
 #
-# **渡すのは補足だけ。** 共通のひな形（[`.claude/dispatch-prompt.md`](../../.claude/dispatch-prompt.md)）は
+# **渡すのは補足だけ。** 共通のひな形（[`agent-ops/prompts/dispatch-prompt.md`](../../agent-ops/prompts/dispatch-prompt.md)）は
 # ここで読んで前へ付ける。ひな形自身が「手で書き写すと必ず何かが落ちる」と書いているものを、
 # 投入のたびに投入する側へ書き写させていた。
 #
@@ -47,7 +47,7 @@ WHERE="${3:-}"
 
 # shellcheck source=scripts/agent/dispatch-steps.sh
 source "$(dirname "${BASH_SOURCE[0]}")/dispatch-steps.sh"
-TEMPLATE="$AGENT_DIR/../../.claude/dispatch-prompt.md"
+TEMPLATE="$AGENT_DIR/../../agent-ops/prompts/dispatch-prompt.md"
 
 choose_target "$WHERE"
 

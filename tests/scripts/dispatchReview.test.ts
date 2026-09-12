@@ -8,7 +8,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
 /**
  * `scripts/agent/dispatch-review.sh` が組み立てるタイトルの検査。
  *
- * ここが守るのは**一覧を人が読めること**（`.claude/board-design.md` 2.9）。とくに「何回目の判定に
+ * ここが守るのは**一覧を人が読めること**（`agent-ops/board-design.md` 2.9）。とくに「何回目の判定に
  * なるはずか」は数えて出す値なので、数え方がずれても**それらしい番号が付いたまま**気づけない。
  *
  * `DRY_RUN` で叩くので、セッションは立たない。`gh` は PATH の先頭で差し替える。

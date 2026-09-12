@@ -333,14 +333,12 @@ describe('筏と航海', () => {
 
   it('海に面していない土地からは出航できない', () => {
     const { game, raft } = ready();
-    const inland = game.map.sites.find((site) => site.type!.name === 'grassland');
+    const inland = game.island.map.sites.find((site) => site.type!.name === 'grassland');
     expect(inland, 'シード3の島に草原がある').toBeDefined();
 
-    const landing = game.world.instance.findSelfOrDescendantByInstanceId(
-      game.map.siteInstanceIds[inland!.index],
-    );
+    const landing = game.island.landOf(inland!);
     expect(
-      raft.moveToSlotOrRejection(landing!.getSlot(codex.slotNames.getId('fixtures'))),
+      raft.moveToSlotOrRejection(landing.getSlot(codex.slotNames.getId('fixtures'))),
       '筏を内陸へ運ぶ',
     ).toBeUndefined();
 
@@ -1547,11 +1545,9 @@ describe('筏と航海', () => {
    * （locations.yamlの山頂の on_max）。
    */
   function surveyFromPeak(game: StartedGame, times: number): void {
-    const peak = game.map.sites.find((site) => site.type!.name === 'mountain_peak');
+    const peak = game.island.map.sites.find((site) => site.type!.name === 'mountain_peak');
     expect(peak, 'シード3の島に山頂がある').toBeDefined();
-    const summit = game.world.instance.findSelfOrDescendantByInstanceId(
-      game.map.siteInstanceIds[peak!.index],
-    )!;
+    const summit = game.island.landOf(peak!);
 
     for (let i = 0; i < times; i++) {
       keepAlive(game);

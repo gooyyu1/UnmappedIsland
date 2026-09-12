@@ -1,4 +1,4 @@
-// ひな形（`.claude/*-prompt.md`）から、セッションへ渡す本体を取り出す。
+// ひな形（`agent-ops/prompts/*-prompt.md`）から、セッションへ渡す本体を取り出す。
 //
 //   node scripts/agent/prompt-body.mjs <ひな形のパス>   本体を標準出力へ（囲みが無ければ何も出さない）
 

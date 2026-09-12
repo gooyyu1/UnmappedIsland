@@ -6,7 +6,7 @@
 #   DRY_RUN=1 bash scripts/agent/dispatch-review.sh 1152     # 渡す引数を見るだけ
 #   DRY_RUN=full bash scripts/agent/dispatch-review.sh 1152  # 指示の本文も切らずに出す
 #
-# 指示は [`.claude/review-prompt.md`](../../.claude/review-prompt.md) から読む。**補足は無い**——
+# 指示は [`agent-ops/prompts/review-prompt.md`](../../agent-ops/prompts/review-prompt.md) から読む。**補足は無い**——
 # 見どころはPRごとに変わらないので、投入する側が書き足すものが無い（`dispatch-task.sh` との違いはここ）。
 #
 # **前のレビューを畳むのはここではない**——盤面が毎周見て打つ
@@ -48,7 +48,7 @@ WHERE="${2:-}"
 
 # shellcheck source=scripts/agent/dispatch-steps.sh
 source "$(dirname "${BASH_SOURCE[0]}")/dispatch-steps.sh"
-TEMPLATE="$AGENT_DIR/../../.claude/review-prompt.md"
+TEMPLATE="$AGENT_DIR/../../agent-ops/prompts/review-prompt.md"
 
 choose_target "$WHERE"
 
@@ -75,7 +75,7 @@ state=$(jq -r '.state' "$WORK/pr.json")
 #
 # 見るのは前のレビューだけではない。**そのPRを直しているセッションが走っていたら立てない。**
 # `直し待ち` のラベルは「直しが要る」しか言わず、**直している最中か誰も居ないかを区別しない**
-# （[`board-design.md`](../../.claude/board-design.md) 1.3）。区別は占有の側にしか無いので、
+# （[`board-design.md`](../../agent-ops/board-design.md) 1.3）。区別は占有の側にしか無いので、
 # `Closes #N` から直す側のタグ（`task-N`）を起こして一緒に渡す。
 # 脚注のセッションIDではなくタグで引くのは、**同じ issue へ2回投入されていても両方が同じタグを
 # 持つ**ため。生きているほうを取り逃がさない。
@@ -101,6 +101,6 @@ done < <(jq -r '.body // ""' "$WORK/pr.json" |
   grep -oiE 'closes[[:space:]]+#[0-9]+' | grep -oE '[0-9]+' | sort -u || true)
 
 # 手綱と占有。**再レビューは止まらない**——判定に使うのは走行中かどうかで、判定を書き終えた
-# レビューは占有していない（[`board-design.md`](../../.claude/board-design.md) 1.2）。
+# レビューは占有していない（[`board-design.md`](../../agent-ops/board-design.md) 1.2）。
 dispatch_session "$kind" "${review_tags[@]}" -- \
   review --tag "$TAG" --pr "$PR" --pr-json "$WORK/pr.json" --template "$RAW" --prompt "$INSTRUCTION"

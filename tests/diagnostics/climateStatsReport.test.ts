@@ -24,6 +24,7 @@ import { Stat } from '../support/Stat';
 import { bundledCodex, worldCodexPath } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 import { type SymbolGlobalId, symbolGlobalIdOfPropertyValue } from '../../src/domain/GlobalId';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * 気候システム（ClimateSystem.md）の現在の実装について、季節の持続日数・気温・天気ごとの発生時間・
@@ -402,7 +403,7 @@ async function buildReportFromDefinitions(): Promise<string> {
   const stats = createClimateStats(seasonKinds, weatherKinds, rainWeatherKinds);
 
   const worldDef = codex.objects.get(codex.objectNames.getId('world'));
-  const totalTicks = SIM_DAYS * 96;
+  const totalTicks = SIM_DAYS * TICKS_PER_DAY;
 
   for (let seed = 1; seed <= SEED_COUNT; seed++) {
     await yieldToEventLoop();

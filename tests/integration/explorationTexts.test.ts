@@ -5,7 +5,7 @@ import { startNewGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { fromGameSession } from '../../src/game/view/PlayScreenView';
 import type { Localization } from '../../src/locale/Localization';
-import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
+import { loadLocalization } from '../../src/locale/Localization';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 
@@ -22,7 +22,7 @@ describe('探索のタブの文言（世界→映し→対応表 通し）', () 
 
   beforeAll(() => {
     codex = bundledCodex();
-    locale = parseLocale(LOCALE_FILE, bundledLocaleText());
+    locale = loadLocalization([]);
   });
 
   function newGame(): StartedGame {

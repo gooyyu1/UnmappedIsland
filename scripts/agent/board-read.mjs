@@ -1,5 +1,5 @@
 // GitHub と CCR、それにリポジトリ自身から盤面を1つ組み立てる。**判断は1つも持たない**——ここが
-// 集めた形を読んで手を決めるのは [`board-move.mjs`](board-move.mjs)（`.claude/board-design.md` 2.3）。
+// 集めた形を読んで手を決めるのは [`board-move.mjs`](board-move.mjs)（`agent-ops/board-design.md` 2.3）。
 //
 //   import { readBoard } from './board-read.mjs';
 //   readBoard({ log })   // → 盤面（`gh` が引けなければ undefined）
@@ -31,10 +31,10 @@ import { gh as runGh } from './spawn.mjs';
  *
  * - `DECISIONS` … 判断の履歴（`CLAUDE.md`「価値観の記録」）。読むのは価値観を畳む係の `due`。
  * - `ANALYSES` / `ANALYSIS_SUMMARIES` … 一次の分析係が回ごとに書く記録と、二次が横断してまとめた
- *   記録（`.claude/board-design.md` 2.17.4）。読むのは回をまたぐ形を見る係の `due`。
+ *   記録（`agent-ops/board-design.md` 2.17.4）。読むのは回をまたぐ形を見る係の `due`。
  */
-const DECISIONS = new URL('../../.claude/decisions/', import.meta.url);
-const ANALYSES = new URL('../../.claude/analysis/', import.meta.url);
+const DECISIONS = new URL('../../agent-ops/decisions/', import.meta.url);
+const ANALYSES = new URL('../../agent-ops/analysis/', import.meta.url);
 const ANALYSIS_SUMMARIES = new URL('summary/', ANALYSES);
 
 /** PRの一覧に要る項目。**1回で引く**——項目ごとに引くと、項目ごとに見ている時点がずれる。 */
@@ -57,7 +57,7 @@ const MERGED_PR_FIELDS = 'number,comments';
  * なく、#1659〜#1740 が一度も読まれずに落ちた。期間で持てば、その間に何本入っても落ちない。
  *
  * **係の間隔**（[`board-move.mjs`](board-move.mjs) の `CYCLES` の `analysis` の `hours`）**より
- * 広く取る。** 同じ幅を [`analysis-prompt.md`](../../.claude/analysis-prompt.md)「読む範囲」が係へも渡す
+ * 広く取る。** 同じ幅を [`analysis-prompt.md`](../../agent-ops/prompts/analysis-prompt.md)「読む範囲」が係へも渡す
  * ——**盤面より係の窓が狭いと、盤面が見つけた未読が係の窓の外に落ち**、印が付かないので
  * **毎日立って毎日同じ空振りを繰り返す。**
  */
@@ -125,12 +125,12 @@ function countDecisions(log) {
  * まだ二次が読んでいない、一次の分析の記録の件数。**読むのは回をまたぐ形を見る係の `due`**
  * （[`board-move.mjs`](board-move.mjs) の `CYCLES`）。
  *
- * **一次のファイルに処理済みの印を持たせない**（`.claude/board-design.md` 2.17.4）——印を持たせると、
+ * **一次のファイルに処理済みの印を持たせない**（`agent-ops/board-design.md` 2.17.4）——印を持たせると、
  * 一次に二次の都合が入る。代わりに**二次が最後に書いた日付より後の一次のファイルを数える**
  * （どちらも `<YYYY-MM-DD>` で始まるので、文字列の大小がそのまま日付の前後になる）。
  *
  * **粒が日なので、二次が書いた後に同じ日の一次が入ると、その1件は引き金にならない。** 割り切って
- * いる——**中身は落ちない**（二次は次の周に `.claude/analysis/` を読み直し、読む範囲を自分で決める）
+ * いる——**中身は落ちない**（二次は次の周に `agent-ops/analysis/` を読み直し、読む範囲を自分で決める）
  * ので、失うのは引き金1回ぶん。日より細かい印を持たせると、一次のファイルへ二次の都合を書くことに
  * なり、上の一点を崩す。
  *
@@ -178,10 +178,13 @@ function settledBefore(now, settleMinutes) {
 
 /**
  * `main` の先頭のCI。**赤い間は差し戻しを打たない**（`board-move.mjs`、`board-design.md` 2.14）。
- * 語彙をPRの `statusCheckRollup` に合わせて渡すので、向こうは1つの判定で両方を読める。
+ * 数えるのは**`main` の木を見て走ったものだけ**（2.14.2）——issue へのコメントなどで立つ
+ * ワークフローも既定ブランチの先頭へ結び付くが、あれは木を見ていないので、落ちてもそれを取り込んだ
+ * PRは赤くならない。語彙をPRの `statusCheckRollup` に合わせて渡すので、向こうは1つの判定で両方を
+ * 読める。
  */
 function mainChecks(raw) {
-  return (JSON.parse(raw).check_runs ?? []).map((run) => ({
+  return (JSON.parse(raw).workflow_runs ?? []).map((run) => ({
     status: (run.status ?? '').toUpperCase(),
     conclusion: (run.conclusion ?? '').toUpperCase(),
   }));
@@ -284,7 +287,11 @@ export function readBoard({
     mergedRaw === undefined ? [] : JSON.parse(mergedRaw),
     CAPS.mergedPrs,
   );
-  const checks = gh(['api', 'repos/{owner}/{repo}/commits/main/check-runs']);
+  // **先頭の指紋で絞る**（2.14.2）。ブランチの名前だけで引くと、`main` へ push が入った直後の
+  // 数十秒は**1つ前のコミットの色**が返り、赤くなった `main` を緑と読む。
+  const head = gh(['api', 'repos/{owner}/{repo}/commits/main', '--jq', '.sha']);
+  if (head === undefined) return undefined;
+  const checks = gh(['api', `repos/{owner}/{repo}/actions/runs?event=push&head_sha=${head.trim()}`]);
   if (checks === undefined) return undefined;
 
   // **引けなかった周は空にして進む。** 差し戻す相手が分からないだけで、他の手は打てる

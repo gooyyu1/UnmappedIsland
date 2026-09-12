@@ -36,6 +36,10 @@ export class Pcg32 {
     this.nextUint();
   }
 
+  /**
+   * 32bitの生の出力。**公開しているのは、参照実装と突き合わせる既知の乱数列がこの面だから**
+   * ——nextDoubleは割った後の値なので、同じ列を突き合わせられない。
+   */
   nextUint(): number {
     const old = this.state;
     this.state = (old * MULTIPLIER + INCREMENT) & MASK_64;

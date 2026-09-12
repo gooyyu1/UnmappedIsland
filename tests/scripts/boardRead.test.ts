@@ -27,7 +27,7 @@ import {
  */
 
 const ROOT = resolve(__dirname, '../..');
-const DECISIONS = join(ROOT, '.claude', 'decisions');
+const DECISIONS = join(ROOT, 'agent-ops', 'decisions');
 
 /** 盤面のうち、履歴の数え方に関わらない部分。引けたことにして先へ通す。 */
 const EMPTY_GH = (args: readonly string[]): string | undefined =>

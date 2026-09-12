@@ -202,7 +202,7 @@ export class ObjectWindow {
     const windowWidth = decideWidth(metrics, options.area, this.tabSpecs, padding);
     const contentWidth = windowWidth - padding * 2;
 
-    // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に置く必要がある。
+    // 台紙は寸法が決まる前に作る。後から作る文字より先に置く必要があるため（screenDepth.ts）。
     const board = scene.add.graphics();
     this.ownedObjects.push(board);
 

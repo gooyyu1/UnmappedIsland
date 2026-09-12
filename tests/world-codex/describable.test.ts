@@ -15,7 +15,7 @@ import { conditionWords } from '../../src/domain/conditionWords';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { ReferenceRoot } from '../../src/domain/ReferenceRoot';
 import type { DefNames } from '../../src/codex-viewer/describe/Description';
-import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
+import { loadLocalization } from '../../src/locale/Localization';
 import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
@@ -85,10 +85,7 @@ describe('同梱のWorldCodex', () => {
    * （listedObjectDefs）だけでは現れない。
    */
   it('条件のプロパティ参照は、起点がselfでなければ宣言元の型を指さない', () => {
-    const view = new CodexView(
-      new CodexSource(codex, parseLocale(LOCALE_FILE, bundledLocaleText()), []),
-      'identifier',
-    );
+    const view = new CodexView(new CodexSource(codex, loadLocalization([]), []), 'identifier');
     const wrong: string[] = [];
     for (const def of codex.objects) {
       for (const trigger of def.triggers)

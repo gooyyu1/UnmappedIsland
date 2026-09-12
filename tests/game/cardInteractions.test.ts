@@ -230,7 +230,7 @@ object_defs:
     expect(dropped?.execute, '刃物を蔓へ重ねる').toBeTypeOf('function');
     expect(reversed?.execute, '蔓を刃物へ重ねても同じ組み合わせが成立する').toBeTypeOf('function');
     expect(reversed?.name, '実行するのは蔓が宣言しているcut_down').toBe(dropped?.name);
-    // 掴んでいたのは蔓のほうなので、手を離した場所から動き出すのも蔓（CardDrop.movedIds）。
+    // 掴んでいたのは蔓のほうなので、手を離した場所から動き出すのも蔓（CardDropEffect.movedIds）。
     expect(reversed?.movedIds).toEqual([vine.instanceId]);
     expect(dropped?.movedIds).toEqual([knife.instanceId]);
 
@@ -358,7 +358,7 @@ reason_texts:
 
     expect(dropped?.enabled, '松明を炉へ重ねると、成立する側が選ばれる').toBe(true);
     expect(reversed?.name, '炉を松明へ運んでも同じ組み合わせ').toBe(dropped?.name);
-    // 掴んでいたのは松明のほうなので、動き出すのも松明（CardDrop.movedIds）。
+    // 掴んでいたのは松明のほうなので、動き出すのも松明（CardDropEffect.movedIds）。
     expect(dropped?.movedIds).toEqual([torch.instanceId]);
 
     dropped?.execute();

@@ -1,4 +1,5 @@
 import { ObjectWrapper } from './ObjectWrapper';
+import { Path } from './Path';
 import type { SlotPosition } from '../SlotPosition';
 import type { WorldObject } from '../WorldObject';
 import type { SlotGlobalId } from '../GlobalId';
@@ -37,7 +38,10 @@ export class Location extends ObjectWrapper {
     return this.contentsOf(this.itemsSlotId);
   }
 
-  /** アイテムスロットの中身を、積み重なっているまとまり（ObjectStack）ごとに分けたもの（先頭が代表）。 */
+  /**
+   * アイテムスロットの中身を、積み重なっているまとまり（ObjectStack）ごとに分けたもの（先頭が代表）。
+   * 平らに返すitemsでは見えない面（stacksOf）。
+   */
   get itemStacks(): readonly (readonly WorldObject[])[] {
     return this.stacksOf(this.itemsSlotId);
   }
@@ -46,6 +50,10 @@ export class Location extends ObjectWrapper {
    * アイテムスロットへ受け入れる。受け入れられなければ（枠の型・容量）false。
    *
    * atは並びの中の位置（SlotPosition）。省略すると末尾（合流できる同種があればそのスタック）へ入る。
+   *
+   * **どの枠へ入れるかを知っているのはこの包みなので、呼び出し側はスロットを引く手順を持たない**
+   * （PlayerCharacter.takeと対）。同じことは`instance.getSlot`と`moveToSlotOrRejection`でも書けるが、
+   * それは包みが消した手順を呼び手へ戻す。**`src`の呼び手はまだ無い。**
    */
   receiveItem(item: WorldObject, at?: SlotPosition): boolean {
     return item.moveToSlotOrRejection(this.instance.getSlot(this.itemsSlotId), at) === undefined;
@@ -95,8 +103,9 @@ export class Location extends ObjectWrapper {
 
     const progress = this.explorationProgress;
     for (const fixture of hidden.contents) {
-      if ((fixture.tryGetProperty(this.words.requiredProgressId)?.getEffectiveValue() ?? 0) <= progress)
-        this.reveal(fixture);
+      // 要る進捗も帰り道の在り処も名乗るのは道なので（locations.yaml）、生のプロパティではなくPathに
+      // 訊く。道でない設置物が混ざっても、宣言していない名前は0として読める（ObjectWrapper）。
+      if (new Path(fixture, this.codex).requiredProgress <= progress) this.reveal(fixture);
     }
   }
 
@@ -108,7 +117,7 @@ export class Location extends ObjectWrapper {
   private reveal(fixture: WorldObject): void {
     this.revealInOwnLocation(fixture);
 
-    const returnPathId = fixture.tryGetProperty(this.words.returnPathIdId)?.getEffectiveValue() ?? 0;
+    const returnPathId = new Path(fixture, this.codex).returnPathInstanceId;
     if (returnPathId === 0) return;
 
     const returnPath = fixture.findRoot().findSelfOrDescendantByInstanceId(returnPathId);

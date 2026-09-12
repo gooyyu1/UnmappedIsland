@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TICKS_PER_DAY } from '../../src/analysis/balanceTables';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { RainWaterRow, SeasonName } from '../../src/analysis/seasonalRain';
 import { SEASON_CLIMATE, rainWaterRows } from '../../src/analysis/seasonalRain';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -233,8 +233,8 @@ object_defs:
       for (const seasonName of ['calm', 'wet', 'dry'] as const) {
         const perDay = rowOf(containerName, seasonName).evaporationPerDay;
         const label = `${containerName} / ${seasonName}`;
-        expect(perDay, label).toBeGreaterThan(base * 96 * dryFractionOf(seasonName));
-        expect(perDay, label).toBeLessThan(withBonus * 96 * dryFractionOf(seasonName));
+        expect(perDay, label).toBeGreaterThan(base * TICKS_PER_DAY * dryFractionOf(seasonName));
+        expect(perDay, label).toBeLessThan(withBonus * TICKS_PER_DAY * dryFractionOf(seasonName));
       }
   });
 

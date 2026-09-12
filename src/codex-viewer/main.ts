@@ -1,6 +1,7 @@
 import './codex.css';
 import { installSampleAssetPack } from '../asset-pack/install';
 import { LOAD_REPORT } from '../loader/LoadReport';
+import { messageOf } from '../util/errorMessage';
 import type { CodexSource } from './CodexSource';
 import { loadCodexSource } from './CodexSource';
 import type { NamingMode } from './CodexView';
@@ -109,7 +110,7 @@ async function initialize(): Promise<void> {
   try {
     source = loadCodexSource();
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = messageOf(error);
     appElement().innerHTML = `<div class="error"><strong>読み込みに失敗しました。</strong><br>${escapeHtml(message)}</div>`;
     setStatus('エラー');
     return;

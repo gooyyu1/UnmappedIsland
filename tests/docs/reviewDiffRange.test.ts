@@ -25,8 +25,8 @@ const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'site', 'worktrees', 
  * このファイルは検査自身。
  */
 const RECORDS = new Set([
-  join(ROOT, '.claude', 'analysis'),
-  join(ROOT, '.claude', 'decisions'),
+  join(ROOT, 'agent-ops', 'analysis'),
+  join(ROOT, 'agent-ops', 'decisions'),
   join(ROOT, 'docs', 'engine', 'DesignNotes.md'),
   __filename,
 ]);

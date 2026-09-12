@@ -5,7 +5,7 @@ import type { Rng } from '../Rng';
 import { World } from '../wrappers/World';
 import { PlayerCharacter } from '../wrappers/PlayerCharacter';
 import type { Location } from '../wrappers/Location';
-import type { IslandMap } from './IslandMap';
+import type { SpawnedIsland } from './SpawnedIsland';
 import { generateIsland } from './TerrainGenerator';
 import { spawnIslandIntoWorld, placePlayer, placePlayerAt } from './IslandSpawner';
 import type { ObjectGlobalId } from '../GlobalId';
@@ -18,21 +18,24 @@ export class StartedGame {
 
   private _startLocation: Location;
 
-  /** 生成された島のレイアウト（土地の座標・名前・道のネットワーク。UI/デバッグ用）。 */
-  readonly map: IslandMap;
+  /**
+   * 実体化された島。レイアウト（土地の座標・名前・道のネットワーク）は`island.map`が持ち、
+   * サイトと世界に居る土地の対応は`island`自身が答える。
+   */
+  readonly island: SpawnedIsland;
 
   constructor(
     session: WorldSession,
     world: World,
     player: PlayerCharacter,
     startLocation: Location,
-    map: IslandMap,
+    island: SpawnedIsland,
   ) {
     this.session = session;
     this.world = world;
     this.player = player;
     this._startLocation = startLocation;
-    this.map = map;
+    this.island = island;
   }
 
   /** プレイヤーが漂着した開始地点の土地。 */
@@ -45,10 +48,10 @@ export class StartedGame {
    * プレイヤーもそこへ移る。その土地が島に1つも無ければfalseで、開始地点は変わらない。
    */
   startAt(locationDefGlobalId: ObjectGlobalId): boolean {
-    const site = this.map.sites.find((s) => s.type!.objectDefGlobalId === locationDefGlobalId);
+    const site = this.island.map.sites.find((s) => s.type!.objectDefGlobalId === locationDefGlobalId);
     if (site === undefined) return false;
 
-    this._startLocation = placePlayerAt(this.session, this.map, this.player.instance, site);
+    this._startLocation = placePlayerAt(this.session, this.island, this.player.instance, site);
     return true;
   }
 }
@@ -110,11 +113,10 @@ export function startNewGame(
 
   const character = session.createObject(codex.objectNames.getId(characterDefName));
 
-  const map = generateIsland(codex.generation, 'island', seed);
-  spawnIslandIntoWorld(session, map);
-  const startLocation = placePlayer(session, map, character);
+  const island = spawnIslandIntoWorld(session, generateIsland(codex.generation, 'island', seed));
+  const startLocation = placePlayer(session, island, character);
 
-  return new StartedGame(session, world, new PlayerCharacter(character, codex), startLocation, map);
+  return new StartedGame(session, world, new PlayerCharacter(character, codex), startLocation, island);
 }
 
 /**

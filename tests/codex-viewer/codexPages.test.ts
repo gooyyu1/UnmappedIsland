@@ -104,6 +104,15 @@ object_defs:
 
   coconut_half: {tags: [item]}
 
+  # 誰が入れてよいか（placement、7.7節）の4通り。既定（両方）・エンジンだけ・プレイヤーだけ・どちらも
+  # 入れられない（名指しの移動でだけ入る）を、備考の書き分けを確かめるために1つの型へ並べる。
+  seed_bed:
+    slots:
+      open_shelf: {cell: {accept: {tag: item}}}
+      harvest: {cell: {accept: {tag: item}}, placement: [auto]}
+      pouch: {cell: {accept: {tag: item}}, placement: [manual]}
+      sealed: {cell: {accept: {tag: item}}, placement: []}
+
   woven_basket:
     tags: [item]
     storage: true
@@ -222,6 +231,23 @@ describe('WorldCodexビューアのページ', () => {
     expect(html).toContain('影響元');
     expect(html).toContain('modify');
     expect(html).toContain('#/object/world');
+  });
+
+  it('placementを外した枠は、外した側だけを備考に書く', () => {
+    const rows = renderObjectPage(view, 'seed_bed').split('<tr>');
+    const noteOf = (slotName: string): string => {
+      // 行を引き当てられないまま「何も書いていない」を通さない。
+      const row = rows.find((each) => each.includes(slotName));
+      if (row === undefined) throw new Error(`${slotName}の行がスロットの表に無い`);
+      return row;
+    };
+
+    expect(noteOf('open_shelf'), '既定は言うことが無い').not.toContain('入れ');
+    expect(noteOf('harvest')).toContain('手では入れられない');
+    expect(noteOf('pouch')).toContain('自動配置の対象にしない');
+    // どちらも外した枠（隠された道のundiscovered_fixtures）を「手で入れる」と読ませない。
+    expect(noteOf('sealed')).toContain('名指しの移動でだけ入る（自動配置もプレイヤーも対象にしない）');
+    expect(noteOf('sealed')).not.toContain('手で入れるか');
   });
 
   it('スロットからその型を辿れる', () => {

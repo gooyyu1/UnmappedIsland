@@ -6,6 +6,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -33,7 +34,7 @@ const NIGHT_HOUR = 0;
 const FROZEN_WEATHER_TICKS = 999999;
 
 /** 打ち切り。最も長い野菜の屋外寿命（3.3日）を大きく超えて回しても答えは変わらない。 */
-const LIMIT_TICKS = 96 * 6;
+const LIMIT_TICKS = TICKS_PER_DAY * 6;
 
 /** 1日を通して並べ始めうる時刻。**線が開始時刻に左右されないこと**まで見る。 */
 const START_HOURS = [0, 3, 6, 9, 12, 15, 18, 21];

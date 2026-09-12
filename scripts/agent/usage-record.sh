@@ -13,12 +13,12 @@
 #
 # **`working` を立てるのはここ。** 一覧は畳まれていないセッションを全部出し（占有の側がそれを
 # 要る）、消費を積むのは動いていたものだけ、という違いを呼び手が引き受ける。走行中かの見方は
-# [`board-design.md`](../../.claude/board-design.md) 1.6——**`status_bucket` ではなく
+# [`board-design.md`](../../agent-ops/board-design.md) 1.6——**`status_bucket` ではなく
 # `session_status`**（あちらは手が空いても `..._WORKING` のまま固まることがある）。
 #
 # ## 置き場をリポジトリの外にする
 #
-# 蓄積はデーモンの手元のファイルへ置く（[`board-design.md`](../../.claude/board-design.md) 2.5.3）。
+# 蓄積はデーモンの手元のファイルへ置く（[`board-design.md`](../../agent-ops/board-design.md) 2.5.3）。
 # リポジトリへ入れると毎周がコミットになる。**これは過去の記録なのでデーモンが死んでも嘘にならず、
 # 消えない場所に置いてよい**（1.1）。
 #

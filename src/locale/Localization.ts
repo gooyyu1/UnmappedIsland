@@ -11,7 +11,7 @@ import type { UiTextName } from './uiTexts';
 const LANGUAGE = 'ja';
 
 /** ゲーム本体に同梱される表示文字列ファイル（src/assets/locale/、ビルド時に中身が埋め込まれる）。 */
-export const LOCALE_FILE = `locale/${LANGUAGE}.yaml`;
+const LOCALE_FILE = `locale/${LANGUAGE}.yaml`;
 
 /** 同梱される表示文字列ファイルの中身。言語ごとに1ファイルで、コード側への登録は要らない。 */
 const LOCALE_TEXTS = import.meta.glob('../assets/locale/*.yaml', {
@@ -21,7 +21,14 @@ const LOCALE_TEXTS = import.meta.glob('../assets/locale/*.yaml', {
   // 何が同梱されているかはビルド時のファイル次第なので、どのキーも在るとは限らない。
 }) as Record<string, string | undefined>;
 
-/** LOCALE_FILEの中身。 */
+/**
+ * LOCALE_FILEの中身。
+ *
+ * **生のテキストのまま返す口を公開しているのは、宣言されている識別子の集合を数える読み手のため。**
+ * 節ごとの対応表のうちLocalizationが外へ出しているのはuiTextsだけで、他の節は引く口しか無い。
+ * 知らない識別子は識別子のまま返るので、引くだけでは「宣言されていない」と「宣言されている」を
+ * 見分けられない。
+ */
 export function bundledLocaleText(): string {
   const text = LOCALE_TEXTS[`../assets/locale/${LANGUAGE}.yaml`];
   if (text === undefined) throw new YamlLoadError(`'${LOCALE_FILE}' が同梱されていません。`);
@@ -501,6 +508,10 @@ function mergedRejectingDuplicates<T>(
 /**
  * 表示文字列のYAMLを読む（labelはエラーメッセージ用の出所表示）。知らない節・キーは無視するため、
  * 実装が追いつく前に節を足しても壊れない。
+ *
+ * **テキスト1枚ぶんの対応表を返す口を公開しているのは、同梱ぶんを混ぜずに読みたい読み手のため。**
+ * loadLocalizationは必ず同梱ぶんから読み始めるので、「宣言していない識別子は識別子のまま返る」の
+ * ように**載っていないこと**を確かめたい読み手は、そちらを通れない。
  */
 export function parseLocale(label: string, yamlText: string): Localization {
   const document = parseDocument(yamlText);

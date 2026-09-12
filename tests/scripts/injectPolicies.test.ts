@@ -20,15 +20,15 @@ const HOOK = resolve(__dirname, '../../.claude/hooks/inject-policies.sh');
 const THRESHOLD = 10;
 
 interface World {
-  /** `.claude/policies.md` の中身。`undefined` は「ファイルが無い」。 */
+  /** `agent-ops/policies.md` の中身。`undefined` は「ファイルが無い」。 */
   readonly policies?: string;
   /** `docs/concept/DesignPrinciples.md` の中身。`undefined` は「ファイルが無い」。 */
   readonly principles?: string;
-  /** `.claude/decisions/` に置く未処理の履歴の件数。 */
+  /** `agent-ops/decisions/` に置く未処理の履歴の件数。 */
   readonly decisions?: number;
-  /** `.claude/decisions/archive/` に置く棚卸し済みの履歴の件数。 */
+  /** `agent-ops/decisions/archive/` に置く棚卸し済みの履歴の件数。 */
   readonly archived?: number;
-  /** `.claude/decisions/` の直下に置く、名前がドットで始まる履歴の件数。 */
+  /** `agent-ops/decisions/` の直下に置く、名前がドットで始まる履歴の件数。 */
   readonly hidden?: number;
 }
 
@@ -43,21 +43,21 @@ function run(world: World): string {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-inject-policies-'));
   try {
     if (world.policies !== undefined) {
-      mkdirSync(join(work, '.claude'), { recursive: true });
-      writeFileSync(join(work, '.claude', 'policies.md'), world.policies, 'utf-8');
+      mkdirSync(join(work, 'agent-ops'), { recursive: true });
+      writeFileSync(join(work, 'agent-ops', 'policies.md'), world.policies, 'utf-8');
     }
     if (world.principles !== undefined) {
       mkdirSync(join(work, 'docs', 'concept'), { recursive: true });
       writeFileSync(join(work, 'docs', 'concept', 'DesignPrinciples.md'), world.principles, 'utf-8');
     }
     if (world.decisions !== undefined) {
-      writeDecisions(join(work, '.claude', 'decisions'), world.decisions);
+      writeDecisions(join(work, 'agent-ops', 'decisions'), world.decisions);
     }
     if (world.archived !== undefined) {
-      writeDecisions(join(work, '.claude', 'decisions', 'archive'), world.archived);
+      writeDecisions(join(work, 'agent-ops', 'decisions', 'archive'), world.archived);
     }
     if (world.hidden !== undefined) {
-      writeDecisions(join(work, '.claude', 'decisions'), world.hidden, '.2026-09-05-hidden-');
+      writeDecisions(join(work, 'agent-ops', 'decisions'), world.hidden, '.2026-09-05-hidden-');
     }
 
     return runScript(HOOK, [], {

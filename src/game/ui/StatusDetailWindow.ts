@@ -163,8 +163,8 @@ export class StatusDetailWindow {
     const windowWidth = Math.min(metrics.px(MIN_WINDOW_WIDTH), options.area.width, width * 0.92);
     const contentWidth = windowWidth - padding * 2;
 
-    // 台紙と段の名札は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に
-    // 置く必要がある（後から作ると、板が自分の上の文字を覆う）。
+    // 台紙と段の名札は寸法が決まる前に作る。後から作ると、板が自分の上の文字を覆うため
+    // （screenDepth.ts）。
     const board = scene.add.graphics();
     this.ownedObjects.push(board);
     const plate = scene.add.graphics();
@@ -278,7 +278,7 @@ export class StatusDetailWindow {
       tailX = span === undefined ? left : bar.xAt((span.start + span.end) / 2);
 
       // 段の中の進みを映すバーだけ、満ちる先として次の段の名前を右端へ重ねる（行と同じ、
-      // StatusArea.md 9節）。バーより後に作る（表示順は生成順で決まるため）。
+      // StatusArea.md 9節）。バーに重ねるので、バーより後に作る（screenDepth.ts）。
       const nextStage = barNextStageTextOf(content);
       if (nextStage !== '')
         this.ownedObjects.push(

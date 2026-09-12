@@ -13,7 +13,7 @@ export function board(
 ): string[] | undefined;
 
 /**
- * 常設の issue の本文（`.claude/board-design.md` 2.20）。`now` は最終更新として本文に出る。
+ * 常設の issue の本文（`agent-ops/board-design.md` 2.20）。`now` は最終更新として本文に出る。
  * `unreadableSince` は、盤面を引けなくなった時刻（2.21。引けていれば渡らない）。`patrol` は
  * 最後の見回り（2.21.4。走っていなければ渡らない）。
  */

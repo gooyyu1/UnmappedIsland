@@ -7,7 +7,7 @@ import { pathForBash, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
- * `scripts/agent/daemon-wake-task.sh` の検査（`.claude/board-design.md` 2.19）。
+ * `scripts/agent/daemon-wake-task.sh` の検査（`agent-ops/board-design.md` 2.19）。
  *
  * **デーモンが落ちたときに起こす唯一の経路。** 壊れても、次に気づくのは「デーモンが落ちたまま盤面が
  * 止まっている」ときになる。しかも**登録が黙って空振りすることと、正しく登録できて何も言うことが

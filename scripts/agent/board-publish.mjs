@@ -1,4 +1,4 @@
-// デーモンが見ている盤面を、常設の issue の本文へ書き出す（`.claude/board-design.md` 2.20）。
+// デーモンが見ている盤面を、常設の issue の本文へ書き出す（`agent-ops/board-design.md` 2.20）。
 //
 //   node scripts/agent/board-publish.mjs        # 1回書き込む。書けなければ終了コード1
 //   BOARD_ISSUE=1714 node scripts/agent/board-publish.mjs
@@ -9,7 +9,7 @@
 //
 // 盤面の事実は GitHub と CCR に在り、[`board-round.mjs`](board-round.mjs) は毎周そちらから引き直す。
 // **ここが書くのは、そのときの見え方の写し**——**写しを持つと古くなったことに誰も気づけない**
-// （[`parallel-work.md`](../../.claude/parallel-work.md) 5節）ので、**いつ時点かを本文へ一緒に書く。**
+// （[`parallel-work.md`](../../agent-ops/parallel-work.md) 5節）ので、**いつ時点かを本文へ一緒に書く。**
 // 機械が読み返さないので、古い写しが手を決めることはない。
 //
 // **周期を持つのは呼び手**（[`daemon.sh`](daemon.sh)）。ここは呼ばれたら1回書くだけで、間隔を知らない

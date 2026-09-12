@@ -1,3 +1,4 @@
+import type { Site } from '../../domain/generation/IslandMap';
 import type { StartedGame } from '../../domain/generation/NewGame';
 import { Location } from '../../domain/wrappers/Location';
 import { Path } from '../../domain/wrappers/Path';
@@ -8,7 +9,7 @@ import type { Localization } from '../../locale/Localization';
 import type { CraftingMaterial } from './craftingView';
 import { craftingMaterials } from './craftingView';
 import { cardLooksOf } from './cardLooks';
-import type { CardAction, CardCombination, CardDrop, CardOperations } from './cardOperations';
+import type { CardAction, CardCombination, CardDropEffect, CardOperations } from './cardOperations';
 import { cardOperationsOf } from './cardOperations';
 import type { CardPlace, CardPlacement, ScreenPlaceResolver } from './cardPlaces';
 import { cardPlacesOf, nestedFixturePlacesOf } from './cardPlaces';
@@ -68,7 +69,7 @@ export interface ObjectCardStack extends CardContent {
    * 先での置き場所（1つ目にだけ効く）で、省略すると空いている場所へ入る。動かせない束（設置物・怪我）
    * にはない。
    */
-  readonly dropInto?: (place: CardPlace, at?: CardPlacement, count?: number) => CardDrop | undefined;
+  readonly dropInto?: (place: CardPlace, at?: CardPlacement, count?: number) => CardDropEffect | undefined;
 
   /**
    * countを渡した操作（dropInto）が動かすインスタンスのID。先頭は束の代表＝掴まれていた1つ。
@@ -488,9 +489,9 @@ export function fromGameSession(
   // 前へ詰める場当たり対応（ScreenLayout.md 7.3節）。
   packToFrontIfHidden(places('hand'), handLaneCells);
 
-  /** ワールドが個体に付けた名前（土地の命名、IslandMap）。付いていない個体ではundefined。 */
+  /** ワールドが個体に付けた名前（土地の命名、SpawnedIsland.nameOf）。付いていない個体ではundefined。 */
   const instanceName = (instanceId: number): string | undefined => {
-    const name = game.map.nameOfInstance(instanceId);
+    const name = game.island.nameOf(instanceId);
     return name === undefined ? undefined : locale.locationName(name);
   };
 
@@ -731,14 +732,14 @@ export function fromGameSession(
   });
 
   /**
-   * 実体化された土地の表示名。生成側（IslandMap）が持つのは識別子の組み合わせだけなので、
-   * 表示文字列はここで対応表から組み立てる（Localization.md）。
+   * 実体化された土地の表示名。生成側（LocationName）が持つのは識別子の組み合わせだけなので、
+   * 表示文字列はここで組み立てる（Localization.md）。
    */
   const locationNameOf = (instanceId: number, defName?: string): string => {
     const named = instanceName(instanceId);
     if (named !== undefined) return named;
 
-    // 名前を付けるのは地形生成だけ（IslandMap）なので、島の外の場所——筏・海区・本土
+    // 名前を付けるのは地形生成だけ（LocationName）なので、島の外の場所——筏・海区・本土
     // （voyage.yaml）——はそこに載っていない。そういう場所は型の表示名がそのまま名前になる。
     const displayName = defName === undefined ? undefined : locale.object(defName).displayName;
     return displayName === undefined || displayName === defName
@@ -774,41 +775,35 @@ export function fromGameSession(
    * 導出する。道は両端で対になっている（発見も対で起きる）ので、無向辺として1本にまとめる。
    */
   const discoveredMap = (): { lands: readonly MapLandView[]; roads: readonly MapRoadView[] } => {
-    const siteOf = new Map<number, number>();
-    game.map.siteInstanceIds.forEach((instanceId, site) => {
-      if (instanceId !== 0) siteOf.set(instanceId, site);
-    });
-
-    const root = location.instance.findRoot();
-    const known = new Set<number>();
-    const currentSite = siteOf.get(location.instance.instanceId);
+    const island = game.island;
+    const known = new Set<Site>();
+    const currentSite = island.siteOf(location.instance.instanceId);
     if (currentSite !== undefined) known.add(currentSite);
 
     const roads = new Map<string, MapRoadView>();
-    for (const [instanceId, site] of siteOf) {
-      const land = root.findSelfOrDescendantByInstanceId(instanceId);
-      if (land === undefined) continue;
+    for (const { site, land } of island.lands) {
       for (const fixture of new Location(land, codex).fixtures) {
         if (!fixture.def.hasTag(pathTagId)) continue;
-        const destination = siteOf.get(new Path(fixture, codex).destinationInstanceId);
+        const destination = island.siteOf(new Path(fixture, codex).destinationInstanceId);
         if (destination === undefined) continue;
         known.add(site);
         known.add(destination);
-        const [a, b] = site < destination ? [site, destination] : [destination, site];
+        const [a, b] =
+          site.index < destination.index ? [site.index, destination.index] : [destination.index, site.index];
         roads.set(`${a}/${b}`, { a, b });
       }
     }
 
     const lands: MapLandView[] = [...known]
-      .sort((a, b) => a - b)
+      .sort((a, b) => a.index - b.index)
       .map((site) => {
-        const instanceId = game.map.siteInstanceIds[site];
+        const land = island.landOf(site);
         return {
-          site,
+          site: site.index,
           card: {
             icon: LOCATION_ICON,
-            name: locationNameOf(instanceId),
-            art: root.findSelfOrDescendantByInstanceId(instanceId)?.def.artName,
+            name: locationNameOf(land.instanceId),
+            art: land.def.artName,
             kind: 'location',
           },
           current: site === currentSite,

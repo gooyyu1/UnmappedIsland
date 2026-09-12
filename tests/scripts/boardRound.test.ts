@@ -53,8 +53,15 @@ interface World {
    * ——上と同じ理由で、本物のリポジトリを数えさせるとこの係が全部の周に混ざる。
    */
   readonly unsummarizedAnalyses?: number;
-  /** `main` の先頭のCI。既定は緑。 */
-  readonly mainChecks?: readonly { readonly status: string; readonly conclusion: string }[];
+  /**
+   * `main` の先頭の指紋へ結び付いている走り。既定は緑の `push` 1本。`event` を書かなければ
+   * `push`——**木を見ていない走り**（issue へのコメントで立つ札の係など）を混ぜるときだけ書く。
+   */
+  readonly mainChecks?: readonly {
+    readonly status: string;
+    readonly conclusion: string;
+    readonly event?: string;
+  }[];
   /** `archive-session.sh` が渡された相手について返す行の頭。既定は畳めた。 */
   readonly archiveVerdict?: 'ARCHIVED' | 'KEPT' | 'UNARCHIVED';
   /** `describe-conflict.sh` が返す、ぶつかったファイルと相手。 */
@@ -100,6 +107,9 @@ interface Result {
 
 const NOW = new Date('2026-09-05T02:00:00Z');
 
+/** `main` の先頭の指紋。CIの色は**この指紋で絞って引いたぶんだけ**が返る（2.14.2）。 */
+const MAIN_HEAD = 'e0e0e0e0';
+
 /** トレーラを載せたコミットの並び。**拾われるのは最後の1本**。 */
 function commits(session: string) {
   return { nodes: [{ commit: { message: `題\n\nClaude-Session: https://claude.ai/code/${session}` } }] };
@@ -114,7 +124,7 @@ const LONG_IDLE = '2026-09-04T02:00:00Z';
 
 /**
  * 掘り起こす係（`board-move.mjs` の `CYCLES` の `dig`）は、既定で**間隔の中に居る**ことにする。
- * あの係の `due` は**配れる「完成へ近づける仕事」が無いこと**（`.claude/board-design.md` 2.18.1）
+ * あの係の `due` は**配れる「完成へ近づける仕事」が無いこと**（`agent-ops/board-design.md` 2.18.1）
  * なので、**そういう task を置かなかった世界には全部当たる**——既定のままだと、掘り起こしと
  * 関わりのない検査の1手ぶんがこれに埋まる。
  *
@@ -204,8 +214,17 @@ function playRound(world: World = {}): Result {
         }));
         return JSON.stringify({ data: { repository: { pullRequests: { nodes } } } });
       }
+      // `main` の先頭の指紋。**これで絞られていない問い合わせには何も返さない**（下）。
+      if (first === 'api' && second === 'repos/{owner}/{repo}/commits/main') return `${MAIN_HEAD}\n`;
+      // **本物と同じで、コミットへ結び付いているだけの走りも混ぜて持っている。** 絞り込みは
+      // 問い合わせの側の仕事なので、`event` と `head_sha` を読んでから返す——**どちらかを落とすと
+      // 混ざったほうが出てきて、下の2つの `it` が落ちる。**
+      const runs = world.mainChecks ?? [{ status: 'COMPLETED', conclusion: 'SUCCESS' }];
+      const query = new URLSearchParams(second.split('?')[1] ?? '');
+      if (query.get('head_sha') !== MAIN_HEAD) return JSON.stringify({ workflow_runs: [] });
+      const event = query.get('event');
       return JSON.stringify({
-        check_runs: world.mainChecks ?? [{ status: 'COMPLETED', conclusion: 'SUCCESS' }],
+        workflow_runs: runs.filter((run) => event === null || (run.event ?? 'push') === event),
       });
     };
 
@@ -325,7 +344,7 @@ describe('board-round.mjs', () => {
   });
 
   // ここから4件は、**盤面を引けなくなった印**（`board-state.mjs` の `UNREADABLE`）。読むのは人が
-  // 読む書き出しだけで、**引ける周の不調はここに立てない**（`.claude/board-design.md` 2.21.2）。
+  // 読む書き出しだけで、**引ける周の不調はここに立てない**（`agent-ops/board-design.md` 2.21.2）。
   it('盤面を引けなかった周は、印を置く', () => {
     expect(playRound({ sessionsFail: true }).unreadable).toBe(NOW.toISOString());
     expect(playRound({ ghFails: true }).unreadable).toBe(NOW.toISOString());
@@ -360,7 +379,7 @@ describe('board-round.mjs', () => {
   it('間隔が空いていれば、見回る係を立てる', () => {
     const result = playRound({ ledger: { 'cycle:patrol': '2026-09-05T00:00:00Z' } });
 
-    expect(result.calls).toEqual(['dispatch-chore.sh patrol .claude/patrol-prompt.md --bridge']);
+    expect(result.calls).toEqual(['dispatch-chore.sh patrol agent-ops/prompts/patrol-prompt.md --bridge']);
     expect(result.ledger).toEqual({ 'cycle:patrol': NOW.toISOString() });
   });
 
@@ -434,7 +453,7 @@ describe('board-round.mjs', () => {
   it('未整理があれば棚卸しを立て、立てた時刻を台帳へ残す', () => {
     const result = playRound({ issues: [{ number: 9, labels: [], blockedBy: { nodes: [] } }] });
 
-    expect(result.calls).toEqual(['dispatch-chore.sh triage .claude/triage-prompt.md']);
+    expect(result.calls).toEqual(['dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md']);
     expect(result.ledger).toEqual({ 'cycle:triage': NOW.toISOString() });
   });
 
@@ -585,6 +604,23 @@ describe('board-round.mjs', () => {
     expect(result.calls).toEqual([]);
   });
 
+  // 札の係は issue へのコメントで立ち、走りは**既定ブランチの先頭の指紋へ結び付く**。木を見ていない
+  // ので、転んでもそれを取り込んだPRは赤くならない——ここで `mend` を止めると、2.14.1 の輪が回らない
+  // 色で盤面だけが進まなくなる（2026-09-12 に17分）。
+  it('木を見ていない走りが転んでも、main は赤くない', () => {
+    const result = playRound({
+      mainChecks: [
+        { status: 'COMPLETED', conclusion: 'SUCCESS' },
+        { status: 'COMPLETED', conclusion: 'FAILURE', event: 'issue_comment' },
+      ],
+      prs: [pr(10, { statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }] })],
+      prSessions: { 10: 'session_writer' },
+      sessions: [idle('session_writer')],
+    });
+
+    expect(result.calls).toEqual(['resume-session.sh session_writer mend 10']);
+  });
+
   // 引けない日に盤面ごと落とすと、差し戻し以外の手まで止まる。
   it('トレーラを引けなかった周も、他の手は打つ', () => {
     const result = playRound({ prs: [pr(10, passed)], prSessionsFail: true });
@@ -701,7 +737,7 @@ describe('board-round.mjs', () => {
   });
 
   /**
-   * **一覧はこの周に1回だけ引き、叩く相手へはファイルで渡す**（`.claude/board-design.md` 1.7）。
+   * **一覧はこの周に1回だけ引き、叩く相手へはファイルで渡す**（`agent-ops/board-design.md` 1.7）。
    * `list_sessions` は1000回/時で頭打ちになるので、要る側が別々に引くと盤面の回る速さがそこで決まる。
    */
   describe('この周の一覧を、叩くスクリプトへ渡す', () => {

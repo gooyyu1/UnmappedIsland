@@ -53,7 +53,7 @@ export const REFUSALS = {
   sendBack: 'gh: Resource not accessible by integration (HTTP 403)',
   checkout:
     'error: The following untracked working tree files would be overwritten by checkout:\n' +
-    '  .claude/decisions/x.md\nPlease move or remove them before you switch branches.\nAborting',
+    '  agent-ops/decisions/x.md\nPlease move or remove them before you switch branches.\nAborting',
 } as const;
 
 /** 身代わりが理由を吐いて転ぶところ。失敗しない世界では、何も言わずに通す。 */

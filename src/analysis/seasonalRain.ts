@@ -3,7 +3,7 @@ import type { SymbolGlobalId } from '../domain/GlobalId';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
 import { worldAmbientBrightnessOf } from './activityHours';
-import { TICKS_PER_DAY } from './balanceTables';
+import { TICKS_PER_DAY } from '../domain/worldTime';
 import type { AncestorCondition, TickDelta } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 

@@ -50,11 +50,11 @@ jobs:
       - name: Run tests
         run: npx vitest run --reporter=default --reporter=github-actions
 
-  # PRを出したセッションが名乗っているか（[`.claude/board-design.md`](../../.claude/board-design.md)
+  # PRを出したセッションが名乗っているか（[`agent-ops/board-design.md`](../../agent-ops/board-design.md)
   # 2.11）。**盤面は差し戻す相手をコミットの `Claude-Session:` トレーラで引く**ので、名乗っていない
   # PRは、CIが赤くてもコンフリクトしても誰にも回らない。**促すだけにしないのは、書き忘れが既に
   # 実害を出しているから**（#1083・#1177 で本文の脚注が落ち、#1538 は差し戻す相手が引けなかった。
-  # [`.claude/policies.md`](../../.claude/policies.md)「仕組みの作り方」）。
+  # [`agent-ops/policies.md`](../../agent-ops/policies.md)「仕組みの作り方」）。
   #
   # 上の `test` と分けるのは、**止まる理由を混ぜないため**。名乗り忘れは中身の誤りではないので、
   # 直し方も直す人も別。

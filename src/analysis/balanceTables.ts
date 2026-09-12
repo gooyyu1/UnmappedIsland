@@ -20,21 +20,18 @@ import { rainWaterRows } from './seasonalRain';
 import type { StaticValueResolver } from './staticValue';
 import { highestDeclaredLayer, staticValueOf } from './staticValue';
 import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
+import { MINUTES_PER_DAY, TICKS_PER_DAY } from '../domain/worldTime';
 
 /**
  * 定義（`src/assets/world-codex/*.yaml`）だけから「時間あたりの収支」を計算する。
  *
  * 消費（passivesのtick毎の増減）も供給（工程の所要時間と産出）も、突き詰めれば「プロパティ量 ÷ 分」
- * という1つの物差しに乗る——tick毎の増減は「15分かかって値が動く工程」と同じ形なので、消費と供給は
- * 符号の違いでしかなく、連鎖はその足し算になる。
+ * という1つの物差しに乗る——tick毎の増減は「1tickぶんの時間をかけて値が動く工程」と同じ形なので、
+ * 消費と供給は符号の違いでしかなく、連鎖はその足し算になる。
  *
  * ここが返すのは数値と識別子だけで、見せ方は持たない。ビューアのページ（balancePage）とMarkdownの
  * スナップショット（tests/diagnostics/balanceStatsReport.test.ts）が同じ結果を別の形に描く。
  */
-
-export const TICKS_PER_DAY = 96;
-export const MINUTES_PER_TICK = 15;
-export const MINUTES_PER_DAY = TICKS_PER_DAY * MINUTES_PER_TICK;
 
 /**
  * 資源は土地ごとに分かれているので、1つの土地に閉じると多くの連鎖が「前提が揃わない」で終わる。
@@ -206,7 +203,7 @@ export interface PropertyRoute {
   /** この需要を1単位埋めるのに要る労働（分）。 */
   readonly perUnitMinutes: number;
 
-  /** 1日ぶんを賄うのに要る労働（分）と、それが1日（1440分）に占める割合（%）。 */
+  /** 1日ぶんを賄うのに要る労働（分）と、それが1日に占める割合（%）。 */
   readonly dailyMinutes: number;
   readonly dailyShare: number;
 

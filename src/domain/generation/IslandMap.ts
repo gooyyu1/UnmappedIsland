@@ -86,10 +86,11 @@ export class IslandEdge {
 }
 
 /**
- * 地形生成の結果（サイト・型・命名・パスネットワーク）を表す不変のデータ。
- * TerrainGenerator.generateIslandの出力であり、WorldObjectには一切触れない純粋な計算結果。
- * 世界への実体化（spawn）はIslandSpawnerがこのデータを読んで行い、その際に
- * siteInstanceIds（サイトindex→生成されたWorldObject.instanceId）を書き込む。
+ * 地形生成の結果（サイト・型・命名・パスネットワーク）。TerrainGenerator.generateIslandの出力で、
+ * **WorldObjectを1つも持たない**——種と定義だけから決まる計算結果なので、同じ種なら常に同じものが出る。
+ *
+ * **実体化された土地との対応はここに無い。** それを持つのは世界の側のSpawnedIslandで、
+ * IslandSpawnerが実体化と同時に作る。
  */
 export class IslandMap {
   readonly scopeName: string;
@@ -97,28 +98,10 @@ export class IslandMap {
   readonly sites: readonly Site[];
   readonly edges: readonly IslandEdge[];
 
-  /** サイトindex→実体化されたLocationのWorldObject.instanceId（IslandSpawnerが埋める。
-   * 未実体化なら0）。 */
-  readonly siteInstanceIds: number[];
-
   constructor(scopeName: string, seed: number, sites: readonly Site[], edges: readonly IslandEdge[]) {
     this.scopeName = scopeName;
     this.seed = seed;
     this.sites = sites;
     this.edges = edges;
-    this.siteInstanceIds = new Array<number>(sites.length).fill(0);
-  }
-
-  /**
-   * 実体化されたLocationのinstanceIdから、命名処理（NameAssigner）が付けた名前を引く。
-   * 土地の名前はインスタンスごとに決まる（同じobject_defでも「花咲く草原」「露の草原」）ため、
-   * 型側ではなくこちらが唯一の出所になる。未実体化・未知のIDならundefined。
-   */
-  nameOfInstance(instanceId: number): LocationName | undefined {
-    // 未実体化のsiteInstanceIdsは0のまま。instanceIdの発行は1始まりなので、0は必ず「該当なし」。
-    if (instanceId === 0) return undefined;
-
-    const index = this.siteInstanceIds.indexOf(instanceId);
-    return index < 0 ? undefined : this.sites[index].name;
   }
 }

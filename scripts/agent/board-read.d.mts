@@ -26,7 +26,7 @@ export function readBoard(deps: ReadDeps): Record<string, unknown> | undefined;
 
 /**
  * さかのぼるマージ済みPRの幅（時間）。後片付けが追える幅であり、スメルを拾う係が読む窓でもある
- * （係の間隔より広い。`.claude/board-design.md` 4.4.2）。
+ * （係の間隔より広い。`agent-ops/board-design.md` 4.4.2）。
  */
 export const MERGED_WINDOW_HOURS: number;
 
@@ -37,7 +37,7 @@ export const MERGED_CAP: number;
 export const ISSUE_CAP: number;
 
 /**
- * まだ二次が読んでいない、一次の分析の記録の件数（`.claude/board-design.md` 2.17.4）。
+ * まだ二次が読んでいない、一次の分析の記録の件数（`agent-ops/board-design.md` 2.17.4）。
  * 読めなかったときは0。
  */
 export function countUnsummarizedAnalyses(log: (line: string) => void, dirs?: AnalysisDirs): number;

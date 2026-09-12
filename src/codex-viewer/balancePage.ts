@@ -7,15 +7,8 @@ import type {
   PropertyRoute,
   RoutePrerequisite,
 } from '../analysis/balanceTables';
-import {
-  MINUTES_PER_DAY,
-  MINUTES_PER_TICK,
-  TICKS_PER_DAY,
-  WHOLE_ISLAND,
-  buildBalanceTables,
-  isGap,
-  menuFor,
-} from '../analysis/balanceTables';
+import { WHOLE_ISLAND, buildBalanceTables, isGap, menuFor } from '../analysis/balanceTables';
+import { MINUTES_PER_DAY, MINUTES_PER_TICK, TICKS_PER_DAY } from '../domain/worldTime';
 import { CodexPage } from './CodexPage';
 import type { CodexView } from './CodexView';
 import { escapeHtml, inlineArtHtml } from './html';
@@ -238,7 +231,7 @@ function menuHtml(view: CodexView, place: PlaceBalance): string {
     `<div class="menu" data-menu-place="${escapeHtml(place.name)}">` +
     `<p class="menu-total">1日を賄う最小労働: ` +
     `<b data-menu-total>${formatNumber(place.menu.totalMinutes, 0)}</b> 分` +
-    `<span class="muted">（1440分の <span data-menu-share>` +
+    `<span class="muted">（${MINUTES_PER_DAY}分の <span data-menu-share>` +
     `${formatNumber((place.menu.totalMinutes * 100) / MINUTES_PER_DAY, 1)}</span>%）</span></p>` +
     (place.menu.unmet.length === 0
       ? ''

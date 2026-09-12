@@ -4,6 +4,7 @@ import { parseLocale } from '../../src/locale/Localization';
 import { runAndRecordChange } from '../../src/game/view/recording';
 import type { MiniGame } from '../support/miniGame';
 import { miniGame } from '../support/miniGame';
+import { MINUTES_PER_DAY, MINUTES_PER_HOUR } from '../../src/domain/worldTime';
 
 /**
  * ワールドを変える操作の、経過中のtickごとの控え（runAndRecordChange）の自動テスト。
@@ -57,7 +58,8 @@ object_defs:
 
     // 各控えは、その時点の時計を映している（viewの時刻 = 控えの時刻）。
     for (const tick of recording.ticks) {
-      const minutes = tick.view.elapsedDays * 24 * 60 + tick.view.hour * 60 + tick.view.minute;
+      const minutes =
+        tick.view.elapsedDays * MINUTES_PER_DAY + tick.view.hour * MINUTES_PER_HOUR + tick.view.minute;
       expect(minutes, '控えたviewはそのtick時点のワールドから作られている').toBe(
         Math.trunc(tick.minutes) - (Math.trunc(tick.minutes) % game.world.rawMinutesPerTick),
       );

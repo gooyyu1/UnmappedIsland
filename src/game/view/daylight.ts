@@ -47,7 +47,12 @@ export class SunlightHours {
     return new SunlightHours(litHoursOf(codex, character));
   }
 
-  /** その時刻に、太陽の光だけで手元の細かい作業ができるか。 */
+  /**
+   * その時刻に、太陽の光だけで手元の細かい作業ができるか。
+   *
+   * **明るい時刻の集合そのものを見られるのはここだけ。** daybreakBetweenはまたいだ1回しか答えない
+   * ので、一日中明るい世界と一日中暗い世界がどちらもundefinedになって区別が付かない。
+   */
   handworkLitAt(hour: number): boolean {
     return this.litHours.has(hour);
   }
