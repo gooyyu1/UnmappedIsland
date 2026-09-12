@@ -130,24 +130,32 @@ const URGENT = '急ぎ';
  * - `goal:game` … 完成の定義を1つ埋める（世界の中身・遊びの仕組み・画面）。
  * - `goal:upkeep` … 作る仕組みと記述を整える（盤面の道具・参照のずれ・置き場の直し）。
  */
-const GOAL_GAME = 'goal:game';
-
-/** 出どころの印（`.claude/parallel-work.md`「自分で立てた issue には `origin:agent` を付ける」）。 */
-const BY_AGENT = 'origin:agent';
+const GOAL = 'goal:';
+const GOAL_GAME = `${GOAL}game`;
 
 /**
- * その issue は**完成へ近づける仕事か**（2.18.1）。
+ * その issue は**完成へ近づける仕事か**（2.18.1）。**名乗っているものだけが真**で、既定は置かない。
  *
- * **印が無いときの既定を、立てた側で分ける。** 機械が立てたもの（`origin:agent`）は**整備**として
- * 読む——仕組みが自分で作った仕事が、名乗らないだけで前へ進める仕事の前に出られては、この軸を
- * 置いた意味が無い。人が立てたものは**完成へ近づける仕事**として読む——ラベルはスマホから付かない
- * うえ、人がわざわざ立てるのは前へ進めたいものだから。
+ * **立てた側の印（`origin:agent`）から推測しない。** あれが答えられるのは**誰が書き込んだか**だけで、
+ * 向かう先の代理にならない——棚卸しの分解で立つ子には必ず付くので、**元が人の issue でも子は
+ * 「機械が立てたもの」に見え、人の仕事が分解された瞬間に整備へ落ちる。**
+ *
+ * 名乗りは棚卸しが保証する（2.17.1）ので、**配られる issue には必ず `goal:` が付いている。**
+ * 落ちたものは下の `missingGoal` が告げる。
  */
-const advancesGame = (issue) => {
-  const marks = names(issue);
-  if (marks.includes(GOAL_GAME)) return true;
-  return !marks.some((name) => name.startsWith('goal:')) && !marks.includes(BY_AGENT);
-};
+const advancesGame = (issue) => names(issue).includes(GOAL_GAME);
+
+/**
+ * **棚卸しの取りこぼし**——配れる形（`kind:task`）なのに、向かう先を名乗っていない issue（2.18.1）。
+ *
+ * **配るのは止めない。** 止めると、取りこぼし1件で盤面が静かに詰まる。整備として並ぶあいだに、
+ * 次の棚卸し（半日以内）が印を付ける。**告げるだけなのは、直せる者が別に居るから。**
+ */
+const missingGoal = (issue) =>
+  names(issue).includes(`${KIND}task`) && !names(issue).some((name) => name.startsWith(GOAL));
+
+/** まだ分類されていない issue（2.17.1）。**否定の列挙にしないための、接頭辞1つでの判定。** */
+const unsorted = (issue) => !names(issue).some((name) => name.startsWith(KIND));
 
 /**
  * PRのコメントに残ったスメルを、拾う側が読んだ印（4.4）。**印を自前の台帳で持たない**——コメントに
@@ -219,7 +227,10 @@ const CYCLES = [
     // ——番号を保ったまま書き換えるのが棚卸しの中心（2.17.3）。
     env: 'cloud',
     prompt: '.claude/triage-prompt.md',
-    due: (board) => board.issues.some((issue) => !names(issue).some((name) => name.startsWith(KIND))),
+    // **未整理は、棚卸しの結論が揃っていないこと**（2.17.1）——`kind:` が無いか、`kind:task` なのに
+    // `goal:` が無いか。**`kind:` の有無だけを入口にすると、`kind:` が付いた時点で issue が棚卸しの
+    // 視界から消える**ので、後から足した `goal:` の取りこぼしを直す者が居なくなる。
+    due: (board) => board.issues.some((issue) => unsorted(issue) || missingGoal(issue)),
   },
   {
     name: 'analysis',
@@ -795,6 +806,13 @@ export function moves(input) {
   );
 
   const ready = readyTasks(input);
+
+  // **棚卸しの取りこぼしを告げる**（2.18.1）。**開いている `kind:task` を全部見る**——配れるものだけに
+  // 絞ると、枠が満ちている周や錠で待っている周に落ちたぶんが、誰にも見えないまま整備として並ぶ。
+  const unnamed = input.issues.filter(missingGoal).map((issue) => `#${issue.number}`);
+  if (unnamed.length > 0) {
+    notes.push(`向かう先(\`goal:\`)の無い kind:task がある。整備として並ぶ: ${unnamed.join(' ')}`);
+  }
 
   /**
    * その issue をどこへ投入するか（`dispatch-task.sh` の引数）。**知らない `env:*` は配らない**
