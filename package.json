@@ -17,6 +17,7 @@
     "stats:balance": "RUN_BALANCE_STATS=1 vitest run tests/diagnostics/balanceStatsReport.test.ts",
     "stats:climate": "RUN_CLIMATE_STATS=1 vitest run tests/diagnostics/climateStatsReport.test.ts",
     "stats:declarations": "node scripts/declarationInventory.mjs",
+    "stats:discovery": "RUN_DISCOVERY_COVERAGE_STATS=1 vitest run tests/diagnostics/discoveryCoverageStatsReport.test.ts",
     "stats:escape": "RUN_ESCAPE_REACH_STATS=1 vitest run tests/diagnostics/escapeReachStatsReport.test.ts",
     "stats:escape-islands": "RUN_ISLAND_ESCAPE_REACH_STATS=1 vitest run tests/diagnostics/islandEscapeReachStatsReport.test.ts",
     "stats:docs": "node scripts/docStatus.mjs",
