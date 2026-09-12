@@ -35,8 +35,10 @@ docs/
 だけが `【確定】` を持ちます（同 6 節）。文書まるごとが確定のものは、節ごとの印ではなく題名の直後で
 1回宣言します（同 6.2 節）。文書ごとの内訳は `npm run stats:docs` が出します。
 
-**`src/` のコードをどこへ置き、何を知ってよいか**は [`CodeStructure.md`](./CodeStructure.md) が決めます。
-ドメインから画面まで全体に掛かるので、領域別のフォルダには入れずここに置いています。
+**`src/` のコードをどこへ置き、何を知ってよいか**は [`CodeStructure.md`](./CodeStructure.md)、
+**TypeScriptをどう書くか**（Prettier・ESLint・`tsc` で強制できない分）は
+[`CodingConventions.md`](./CodingConventions.md) が決めます。どちらもドメインから画面まで全体に
+掛かるので、領域別のフォルダには入れずここに置いています。
 
 **このゲームは複数のAIエージェントが同時に開発しています。** その仕組みの全体像——誰が何をして、
 人間はどこで決めるのか——は [`ParallelAgents.md`](./ParallelAgents.md)、**そこへ辿り着くまでに作り方を

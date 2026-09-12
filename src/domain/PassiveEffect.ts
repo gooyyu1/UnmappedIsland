@@ -309,7 +309,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
 
 /**
  * 条件が真の間だけ、都度導出される実効値に寄与する持続効果（可逆、8.3節）。実体値そのものは
- * 書き換えない。PropertyValueのmodify用incomingへ登録され、WorldObject.getEffectiveValueが走査する。
+ * 書き換えない。PropertyValueのmodify用incomingへ登録され、PropertyValue.getEffectiveValueが走査する。
  */
 export class ModifyEffect extends PropertyPassiveEffect {
   read(reader: PassiveReader): void {

@@ -10,3 +10,6 @@ export const PATROL: string;
 
 /** 周期の係を前に立ててから空ける間隔（時間）。知らない名前には `undefined`。 */
 export function cycleHours(name: string): number | undefined;
+
+/** 未整理（棚卸しの結論が揃っていない issue。`.claude/board-design.md` 2.17.1）。 */
+export function unsorted(issue: { labels?: { name: string }[] }): boolean;

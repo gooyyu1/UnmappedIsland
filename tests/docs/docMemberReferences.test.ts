@@ -12,8 +12,10 @@ import { describe, expect, it } from 'vitest';
  * 見方は2つあり、どちらが赤くなったかで直す場所が変わるので `it` を分けてある。
  *
  * 1. **`Xxx.yyy`・`Xxx.Yyy` の形**（下の「今は無い名前を指していない」）。見るのは `src`・`tests` の `.ts` の
- *    コメントと、`docs/` の `.md` の全文。判定は「その名前がコード（コメント以外）に一度も出て
- *    こないなら、指す先が無い」。読み手が辿れることだけを見るので、公開・非公開は問わない。
+ *    コメントと、`docs/` の `.md` の全文。判定は「**その所有者が**そのメンバーを持っていないなら、
+ *    指す先が無い」（hasMember）。読み手が辿れることだけを見るので、公開・非公開は問わない。
+ *    この形で書けば今も在るものを指している、と読む——**過去に在ったものを語る箇所での書き方**は
+ *    `DocumentStyle.md` 5節「今は無い名前」。
  *    **ファイル名は参照ではない。** `ClimateSystem.md` のような書き方が `docs/` の大半を占めるので、
  *    リポジトリに在るファイルの名前と一致するものを除く。拡張子の一覧では弾かない——一覧のほうが
  *    古びて、増えた拡張子に気づけないまま素通しになる。
@@ -103,18 +105,16 @@ const TRACKED_PATHS = execSync('git ls-files', { cwd: ROOT, encoding: 'utf-8' })
 /** git の管理下にあるファイルの名前（ディレクトリを除いた最後の部分）。 */
 const FILE_NAMES = new Set(TRACKED_PATHS.map((path) => basename(path)));
 
+/** 名前を宣言している語。この後ろに続く名前が、このリポジトリの持ち物。 */
+const DECLARES = '(?:class|interface|type|enum|function|namespace|const|let|var)';
+
 /**
  * その名前をこのリポジトリが持っているか——**宣言そのものか、モジュール**（`NewGame.startNewGame`
  * のように、ファイル名で呼ぶ書き方）。持っていない名前（Phaser・JSの組み込み・文書の例の`Foo`）の
  * メンバーが在るかは、このリポジトリが決めていないので答えられない。
  */
 function ownedHere(name: string): boolean {
-  return (
-    FILE_NAMES.has(`${name}.ts`) ||
-    new RegExp(`\\b(?:class|interface|type|enum|function|namespace|const|let|var)\\s+${name}\\b`).test(
-      CODE,
-    )
-  );
+  return FILE_NAMES.has(`${name}.ts`) || new RegExp(`\\b${DECLARES}\\s+${name}\\b`).test(CODE);
 }
 
 /**
@@ -132,19 +132,56 @@ function tsFileOf(reference: string): string | null {
   return TS_FILE_BY_REFERENCE.get(reference) ?? TS_FILE_BY_REFERENCE.get(basename(reference)) ?? null;
 }
 
-/**
- * その名前がそのファイルに現れるか。**コメントも見る**——YAMLのプロパティ名（`ambient_brightness`）は
- * そのファイルを説明するコメントにしか現れないことがあり、それでも「そのファイルが扱っている」ことに
- * 変わりはない。ここが見たいのは指す先が在るかで、名前がコードの語彙かどうかではない。
- */
-const textByFile = new Map<string, string>();
-function appearsIn(file: string, name: string): boolean {
-  let text = textByFile.get(file);
-  if (text === undefined) {
-    text = read(file);
-    textByFile.set(file, text);
+/** ファイルのどの面を見るか。`all` はコメントも含む全部、`code` はコメントを落とした残り。 */
+type Face = 'all' | 'code';
+
+/** その面のファイルの中身。面ごとに1度だけ読む。 */
+const contentByFace = new Map<string, string>();
+function contentOf(file: string, face: Face): string {
+  const key = `${face} ${file}`;
+  let content = contentByFace.get(key);
+  if (content === undefined) {
+    content = face === 'code' ? codeOnly(read(file)) : read(file);
+    contentByFace.set(key, content);
   }
-  return new RegExp(`\\b${name}\\b`).test(text);
+  return content;
+}
+
+/** その名前が、そのファイルのその面に現れるか。どの面で足りるかは、問いごとに呼び手が選ぶ。 */
+function appearsIn(file: string, name: string, face: Face): boolean {
+  return new RegExp(`\\b${name}\\b`).test(contentOf(file, face));
+}
+
+/**
+ * その名前を宣言しているファイル。**1箇所に決まらないもの（同じ名前を複数のファイルが宣言して
+ * いる）は持たない**——どれの持ち物かが決まらないので、メンバーが在るかも答えられない。
+ */
+const DECLARING_FILE = new Map<string, string | null>();
+const DECLARATION = new RegExp(`\\b${DECLARES}\\s+([A-Z][A-Za-z0-9]*)\\b`, 'g');
+for (const rel of SOURCES) {
+  for (const [, name] of contentOf(rel, 'code').matchAll(DECLARATION)) {
+    DECLARING_FILE.set(name, !DECLARING_FILE.has(name) || DECLARING_FILE.get(name) === rel ? rel : null);
+  }
+}
+
+/**
+ * **所有者がそのメンバーを持っているか。** 所有者のファイルが決まるなら、その中だけを見る
+ * ——コード全体では、別の型が持つ同名のメンバーや、無関係な文字列に同じ語が在るだけで素通りする
+ * （在りもしない `AxisDef` の `Range` が、別のテストの `describe` に渡した文字列の中の `Range` で
+ * 在ることにされていた）。
+ *
+ * ファイルは**宣言の在り処**から引き、決まらなければ所有者と同名の `.ts` で引く——型の名前と
+ * ファイル名は揃っていないことがあり（`PassiveEffectGate` は `PassiveEffect.ts`）、名前だけで
+ * 引くと、揃っている所有者しか所有者として見られない。どちらでも決まらないときだけ、従来どおり
+ * コード全体で足りるとする。
+ *
+ * 見る面はどちらもコメント以外。**コメントを含めると、改名前の名前を語っているコメントが同じ
+ * ファイルに残っているだけで、消えたメンバーが在ることになる**——改名への追随はコメントのほうが
+ * 遅れるので、そこを証拠にすると追随漏れどうしが互いを裏書きする。
+ */
+function hasMember(owner: string, member: string): boolean {
+  const file = DECLARING_FILE.get(owner) ?? tsFileOf(`${owner}.ts`);
+  return file === null ? appearsInCode(member) : appearsIn(file, member, 'code');
 }
 
 /** 文書がファイルと並べて挙げた名前と、その指す先。 */
@@ -224,7 +261,7 @@ describe('説明の参照', () => {
             if (match[0].endsWith('.')) continue;
             const [whole, owner, member] = match;
             if (FILE_NAMES.has(whole)) continue;
-            if (!ownedHere(owner) || appearsInCode(member)) continue;
+            if (!ownedHere(owner) || hasMember(owner, member)) continue;
             dangling.push(`${rel}:${line} ${whole}`);
           }
         }
@@ -233,7 +270,8 @@ describe('説明の参照', () => {
 
     expect(
       dangling,
-      `説明が指す名前がコードのどこにも無い:\n${dangling.join('\n')}`,
+      '説明が指す名前を、その所有者が持っていない（過去に在ったものを語る箇所なら、所有者と' +
+        `メンバーを切り離して書く——DocumentStyle.md 5節）:\n${dangling.join('\n')}`,
     ).toEqual([]);
   });
 
@@ -247,7 +285,10 @@ describe('説明の参照', () => {
           continue;
         }
         for (const { file, name } of fileMembersOn(text, insideFence)) {
-          if (appearsIn(file, name)) continue;
+          // **コメントも見る**——YAMLのプロパティ名（`ambient_brightness`）はそのファイルを説明する
+          // コメントにしか現れないことがあり、それでも「そのファイルが扱っている」ことに変わりはない。
+          // ここが見たいのは指す先が在るかで、名前がコードの語彙かどうかではない。
+          if (appearsIn(file, name, 'all')) continue;
           missing.push(`${rel}:${line} ${name}（${file} に無い）`);
         }
       }

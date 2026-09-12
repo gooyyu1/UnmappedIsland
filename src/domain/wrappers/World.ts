@@ -74,7 +74,7 @@ export class World extends ObjectWrapper {
 
   /**
    * 現在時刻を、その日のearliestMinutes〜latestMinutes（0:00からの経過分、両端を含む）の中から
-   * tick刻み（minutes_per_tick）で1つ選んで設定する（NewGame.start専用）。
+   * tick刻み（minutes_per_tick）で1つ選んで設定する（NewGame.startNewGame専用）。
    *
    * tickが回るのは絶対時刻がminutes_per_tickの倍数になる瞬間（WorldSession.advanceWorldTime）なので、
    * 刻みに乗らない時刻から始めると、以後ずっとtick境界が半端な時刻へずれる。

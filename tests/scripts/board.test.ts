@@ -76,7 +76,9 @@ function body(world: World = {}): { lines: string[]; warnings: string[] } {
 const issue = (number: number, title: string, over: Record<string, unknown> = {}) => ({
   number,
   title,
-  labels: [{ name: 'kind:task' }],
+  // **棚卸しを通った issue は向かう先を持つ**（`.claude/board-design.md` 2.17.1）ので、足場も
+  // その形にする。足さないと、向かう先と関わりのない検査の `## 未整理` に issue が並ぶ。
+  labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }],
   blockedBy: { nodes: [] },
   ...over,
 });
@@ -209,7 +211,11 @@ describe('board.mjs', () => {
   // 見分けが付かないと、人は列に並んでいるものと区別できない。
   it('人へ返された issue は、返却として出す', () => {
     const { lines } = show({
-      issues: [issue(8, '決められない', { labels: [{ name: 'kind:task' }, { name: '判断待ち' }] })],
+      issues: [
+        issue(8, '決められない', {
+          labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }, { name: '判断待ち' }],
+        }),
+      ],
     });
 
     expect(lines).toContain('TASK 8 返却 決められない');
@@ -218,7 +224,11 @@ describe('board.mjs', () => {
   // 走らせる先の指定は状態と別の軸（2.16）なので、状態を潰さずに後ろへ並べる。
   it('走らせる先の指定があれば、状態の後ろに出す', () => {
     const { lines } = show({
-      issues: [issue(8, '盤面を直す', { labels: [{ name: 'kind:task' }, { name: 'env:bridge' }] })],
+      issues: [
+        issue(8, '盤面を直す', {
+          labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }, { name: 'env:bridge' }],
+        }),
+      ],
     });
 
     expect(lines).toContain('TASK 8 着手可 env:bridge 盤面を直す');
@@ -232,25 +242,28 @@ describe('board.mjs', () => {
     expect(lines).toContain('TASK 8 着手可 後');
   });
 
-  // 未整理は `kind:` を1つも持たないことで表す（否定の列挙では表さない）。依存が張ってあっても、
-  // 棚卸しが分類を付けて出るので外す必要は無い。
-  it('未整理に出るのは、kind: を1つも持たない issue', () => {
+  // **未整理は棚卸しの結論（`kind:` と `goal:`）が揃っていないことで表す**（2.17.1。否定の列挙では
+  // 表さない）。依存が張ってあっても、棚卸しが分類を付けて出るので外す必要は無い。**常設の盤に
+  // 向かう先は要らない**——投入する先が無いので。
+  it('未整理に出るのは、棚卸しの結論が揃っていない issue', () => {
     const { lines } = show({
       issues: [
-        issue(1, 'kind:task が付いている'),
+        issue(1, '結論が揃っている'),
         issue(2, '常設の盤', { labels: [{ name: 'kind:board' }] }),
         issue(3, '束ねた側', {
-          labels: [{ name: 'kind:task' }],
+          labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }],
           blockedBy: { nodes: [{ number: 9, state: 'OPEN' }] },
         }),
         issue(4, '人の言葉のまま', { labels: [] }),
         issue(5, '分類の無い bug', { labels: [{ name: 'bug' }] }),
+        issue(6, '向かう先がまだ', { labels: [{ name: 'kind:task' }] }),
       ],
     });
 
     expect(lines.filter((line) => line.startsWith('未整理 '))).toEqual([
       '未整理 4 - 人の言葉のまま',
       '未整理 5 bug 分類の無い bug',
+      '未整理 6 kind:task 向かう先がまだ',
     ]);
   });
 
@@ -373,7 +386,11 @@ describe('issueBody', () => {
   // 出るが、**どれを返したかは番号が要る。**
   it('`判断待ち` の issue を、配られないものとして出す', () => {
     const { lines } = body({
-      issues: [issue(8, '決められない', { labels: [{ name: 'kind:task' }, { name: '判断待ち' }] })],
+      issues: [
+        issue(8, '決められない', {
+          labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }, { name: '判断待ち' }],
+        }),
+      ],
     });
 
     expect(lines).toContain('| #8 | 配られない | 決められない |');
@@ -390,7 +407,9 @@ describe('issueBody', () => {
         issue(1, '着手可'),
         issue(2, '投入済み'),
         issue(3, '塞がっている', { blockedBy: { nodes: [{ number: 9, state: 'OPEN' }] } }),
-        issue(4, '返された', { labels: [{ name: 'kind:task' }, { name: '判断待ち' }] }),
+        issue(4, '返された', {
+          labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }, { name: '判断待ち' }],
+        }),
         issue(5, '未整理', { labels: [] }),
       ],
       sessions: [session('session_a', ['task-2'])],
