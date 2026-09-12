@@ -1,5 +1,6 @@
 import { join } from 'node:path';
-import { buildBalanceTables, MINUTES_PER_TICK } from '../../src/analysis/balanceTables';
+import { buildBalanceTables } from '../../src/analysis/balanceTables';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 import type { CourseTotal, VoyageCourse, VoyageLegs } from '../../src/analysis/voyageLegs';
 import { voyageLegsOf } from '../../src/analysis/voyageLegs';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
