@@ -130,6 +130,10 @@ const pending = (number: number) =>
 const verdict = (version: string) => ({
   comments: [{ body: `[レビュー] 通してよい\n読んだ版: ${version}\n\n直しは要らない。\n` }],
 });
+/** 「直しが要る」の判定（`直し待ち` はこのコメントから付く）。 */
+const returned = (version: string) => ({
+  comments: [{ body: `[レビュー] 直しが要る\n読んだ版: ${version}\n\n- PR本文の \`## 自己点検\` が…\n` }],
+});
 /** 通したうえで人へ回す形の判定（2.13.4）。 */
 const asked = (version: string) => ({
   comments: [
@@ -574,13 +578,78 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:red:10:aaa1111']);
   });
 
-  // 起こしたセッションが何もせずに止まると、盤面は前の周と同じまま残る。
+  // 起こしたセッションが何もせずに止まると、盤面は前の周と同じまま残る。**同じ差し戻しは二度と
+  // 出ない**——次の手は下の「頼み終えた差し戻し」の側にある。
   it('同じ差分で一度起こした相手は、二度起こさない', () => {
     const board = {
       prs: [pr(10, label('直し待ち'))],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
       taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
+    };
+    expect(moves(board)).not.toContain('RESUME session_a mend 10 mend:returned:10:aaa1111');
+  });
+
+  // ## 頼み終えた差し戻しは、レビューへ渡す（2.13.6）
+  //
+  // **レビューの指摘がPR本文だけを相手にしていると、直してもコミットが生まれない。** 差し戻しの
+  // 指紋は `headRefOid` なので同じ手は二度と出ず、`直し待ち` を外す契機（push とレビューの
+  // `通してよい`）もどちらも起きない——**書いた本人は「直した」と思って手を止め、盤面は「頼み
+  // 終えた」と読み、どちらも次の手を持たない**（issue #2014、PR #1982 が1時間45分ぶん止まった）。
+  //
+  // 盤面はこの形を出し尽くしと読み、**もう1周レビューを出す**。`直し待ち` が付いている＝今の版への
+  // 判定は「直しが要る」なので、読み終えたことは止める理由にならない。
+  it('本文だけを直して手が空いたPRは、もう1周レビューへ渡す', () => {
+    const board = {
+      prs: [pr(10, { ...label('直し待ち'), ...returned('aaa1111') })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
+    };
+    expect(moves(board)).toEqual(['REVIEW 10 aaa1111']);
+  });
+
+  it('直している最中なら、レビューへは渡さない', () => {
+    const board = {
+      prs: [pr(10, { ...label('直し待ち'), ...returned('aaa1111') })],
+      prSessions: { 10: 'session_a' },
+      sessions: [working('session_a')],
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
+    };
+    expect(moves(board)).toEqual([]);
+  });
+
+  // **`busySession` だけで見ると、直している最中のセッションが毎周この形に見える**——手番の切れ目
+  // ごとに落ちるので（1.6）、起こした直後の周で早々にレビューが立つ。戻ってこないと読む線は
+  // `stillWorking` と揃える。
+  it('起こしたばかりで手が空いているだけなら、レビューへは渡さない', () => {
+    const board = {
+      prs: [pr(10, { ...label('直し待ち'), ...returned('aaa1111') })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111', 'idle:session_a': NOW },
+    };
+    expect(moves(board)).toEqual([]);
+  });
+
+  it('もう1周のレビューが読んでいる最中なら、二本目は立てない', () => {
+    const board = {
+      prs: [pr(10, { ...label('直し待ち'), ...returned('aaa1111') })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a'), working('session_r', 'review-10')],
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111', 'review:10': 'aaa1111' },
+    };
+    expect(moves(board)).toEqual([]);
+  });
+
+  // **渡すのは `直し待ち` の差し戻しだけ。** `却下` は人が付けた印で、**外れるのは push のときだけ**
+  // ——レビューをもう1周出しても印は消えないので、読ませるぶんが丸ごと無駄になる。
+  it('却下で頼み終えたPRは、レビューへ渡さない', () => {
+    const board = {
+      prs: [pr(10, { ...label('却下'), ...returned('aaa1111') })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': 'reject:10:aaa1111' },
     };
     expect(moves(board)).toEqual([]);
   });
