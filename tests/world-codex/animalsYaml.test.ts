@@ -635,6 +635,7 @@ describe('animals.yamlの動物', () => {
         expect(share, `${name}は5割以下`).toBeLessThanOrEqual(0.5);
       }
       expect(boarShare, 'イノシシがいちばん低い').toBeLessThan(Math.min(monkeyShare, fowlShare));
+      expect(fowlShare, 'ヤケイは1枚で上端に付く').toBeGreaterThan(Math.max(monkeyShare, boarShare));
     });
 
     it('生皮の割合は、小さい獲物ほど高くなる', () => {
