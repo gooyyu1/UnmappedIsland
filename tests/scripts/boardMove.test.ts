@@ -154,6 +154,10 @@ const pending = (number: number) =>
 const verdict = (version: string) => ({
   comments: [{ body: `[レビュー] 通してよい\n読んだ版: ${version}\n\n直しは要らない。\n` }],
 });
+/** 「直しが要る」の判定（`直し待ち` はこのコメントから付く）。 */
+const returned = (version: string) => ({
+  comments: [{ body: `[レビュー] 直しが要る\n読んだ版: ${version}\n\n- PR本文の \`## 自己点検\` が…\n` }],
+});
 /** 通したうえで人へ回す形の判定（2.13.4）。 */
 const asked = (version: string) => ({
   comments: [
@@ -180,7 +184,7 @@ const idle = (id: string, ...tags: string[]) => ({
 
 describe('board-move.mjs', () => {
   it('結論のラベルが無い緑のPRは、レビューへ出す', () => {
-    expect(moves({ prs: [pr(10)] })).toEqual(['REVIEW 10 aaa1111']);
+    expect(moves({ prs: [pr(10)] })).toEqual(['REVIEW 10 aaa1111:0']);
   });
 
   it('通してよいが付いた緑のPRは、マージする', () => {
@@ -188,7 +192,10 @@ describe('board-move.mjs', () => {
   });
 
   it('マージはレビューより先に打つ', () => {
-    expect(moves({ prs: [pr(10), pr(20, label('通してよい'))] })).toEqual(['MERGE 20', 'REVIEW 10 aaa1111']);
+    expect(moves({ prs: [pr(10), pr(20, label('通してよい'))] })).toEqual([
+      'MERGE 20',
+      'REVIEW 10 aaa1111:0',
+    ]);
   });
 
   // ## マージ済みのPRの後片付け（2.10.4）
@@ -243,7 +250,7 @@ describe('board-move.mjs', () => {
 
   it('画面が変わらないPRには、見た目 を求めない', () => {
     expect(moves({ prs: [pr(10, { files: [{ path: 'src/domain/Slot.ts' }] })] })).toEqual([
-      'REVIEW 10 aaa1111',
+      'REVIEW 10 aaa1111:0',
     ]);
   });
 
@@ -256,7 +263,7 @@ describe('board-move.mjs', () => {
         }),
       ],
     };
-    expect(moves(board)).toEqual(['REVIEW 10 aaa1111']);
+    expect(moves(board)).toEqual(['REVIEW 10 aaa1111:0']);
   });
 
   // 節だけ置いて中身を書かない形。画像も「不要」＋理由も無いので、後から補えるものが差分に残らない。
@@ -306,7 +313,7 @@ describe('board-move.mjs', () => {
   // 差分が二度と読まれない（2.13.5）。
   it('版を名乗っていない判定は、読まれた証拠にはしない', () => {
     const comments = [{ body: '[レビュー] 通してよい\n\n直しは要らない。\n' }];
-    expect(moves({ prs: [pr(10, { comments })] })).toEqual(['REVIEW 10 aaa1111']);
+    expect(moves({ prs: [pr(10, { comments })] })).toEqual(['REVIEW 10 aaa1111:0']);
   });
 
   it('判断待ちでも、コンフリクトは差し戻す', () => {
@@ -395,7 +402,7 @@ describe('board-move.mjs', () => {
     const board = {
       prs: [pr(1549, verdict('aaa1111'))],
       sessions: [idle('session_r', 'review-1549')],
-      taken: { 'review:1549': 'aaa1111' },
+      taken: { 'review:1549': 'aaa1111:0' },
     };
 
     expect(moves(board)).toContain('ARCHIVE session_r done:review-1549');
@@ -409,7 +416,7 @@ describe('board-move.mjs', () => {
       sessions: [idle('session_a', 'review-10')],
       taken: { 'idle:session_a': '2026-09-05T01:59:00Z' },
     };
-    expect(moves(board)).toEqual(['REVIEW 10 aaa1111']);
+    expect(moves(board)).toEqual(['REVIEW 10 aaa1111:0']);
   });
 
   // **窓が要るのは、終わったかを他に訊けないときだけ。** 判定を書いたかはPRのコメントに出る
@@ -418,7 +425,7 @@ describe('board-move.mjs', () => {
     const board = {
       prs: [pr(10, verdict('aaa1111'))],
       sessions: [idle('session_r', 'review-10')],
-      taken: { 'review:10': 'aaa1111', 'idle:session_r': '2026-09-05T01:59:00Z' },
+      taken: { 'review:10': 'aaa1111:0', 'idle:session_r': '2026-09-05T01:59:00Z' },
     };
     expect(moves(board)).toContain('ARCHIVE session_r done:review-10');
   });
@@ -438,7 +445,7 @@ describe('board-move.mjs', () => {
     const board = {
       prs: [pr(10, verdict('9990000'))],
       sessions: [idle('session_r', 'review-10')],
-      taken: { 'review:10': 'aaa1111', 'idle:session_r': '2026-09-05T01:59:00Z' },
+      taken: { 'review:10': 'aaa1111:0', 'idle:session_r': '2026-09-05T01:59:00Z' },
     };
     expect(moves(board)).not.toContain('ARCHIVE session_r done:review-10');
   });
@@ -446,7 +453,7 @@ describe('board-move.mjs', () => {
   // 結論のラベルを付けるのは `board-labels.yml` で、判定が書かれてから遅れて付く。その隙間で
   // 読み手だけが先に畳まれると、盤面には「読み手が居ないのにラベルも無い」と見える。
   it('判定を書き終えたPRへは、読み手がもう居なくてもレビューを立て直さない', () => {
-    const board = { prs: [pr(10, verdict('aaa1111'))], taken: { 'review:10': 'aaa1111' } };
+    const board = { prs: [pr(10, verdict('aaa1111'))], taken: { 'review:10': 'aaa1111:0' } };
     expect(moves(board)).toEqual([
       'NOTE PR #10 は今の版の判定が書かれている（結論のラベルが付くのを待っている）',
     ]);
@@ -468,7 +475,7 @@ describe('board-move.mjs', () => {
     const stalling = (over: Record<string, string>) => ({
       prs: [pr(10)],
       sessions: [idle('session_r', 'review-10')],
-      taken: { 'review:10': 'aaa1111', ...over },
+      taken: { 'review:10': 'aaa1111:0', ...over },
     });
     const READING = 'NOTE PR #10 はレビューが読んでいる最中で、結論のラベルはまだ無い';
 
@@ -498,8 +505,8 @@ describe('board-move.mjs', () => {
     // 判定の1行目しか読まないので、それが今の頭へ `通してよい` として付く——押された後のコミットを
     // 誰も読まないままマージされうる。畳めば、次の周に今の差分の1本が立つ。
     it('読んだ差分がもう頭でなければ、起こさずに畳む', () => {
-      const board = stalling({ 'review:10': '9990000' });
-      expect(moves(board)).toEqual(['ARCHIVE session_r done:review-10', 'REVIEW 10 aaa1111']);
+      const board = stalling({ 'review:10': '9990000:0' });
+      expect(moves(board)).toEqual(['ARCHIVE session_r done:review-10', 'REVIEW 10 aaa1111:0']);
     });
 
     /**
@@ -598,13 +605,100 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:red:10:aaa1111']);
   });
 
-  // 起こしたセッションが何もせずに止まると、盤面は前の周と同じまま残る。
+  // 起こしたセッションが何もせずに止まると、盤面は前の周と同じまま残る。**同じ差し戻しは二度と
+  // 出ない**——次の手は下の「頼み終えた差し戻し」の側にある。
   it('同じ差分で一度起こした相手は、二度起こさない', () => {
     const board = {
       prs: [pr(10, label('直し待ち'))],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
       taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
+    };
+    expect(moves(board)).not.toContain('RESUME session_a mend 10 mend:returned:10:aaa1111');
+  });
+
+  // ## 頼み終えた差し戻しは、レビューへ渡す（2.13.6）
+  //
+  // **レビューの指摘がPR本文だけを相手にしていると、直してもコミットが生まれない。** 差し戻しの
+  // 指紋は `headRefOid` なので同じ手は二度と出ず、`直し待ち` を外す契機（push とレビューの
+  // `通してよい`）もどちらも起きない——**書いた本人は「直した」と思って手を止め、盤面は「頼み
+  // 終えた」と読み、どちらも次の手を持たない**（issue #2014、PR #1982 が1時間45分ぶん止まった）。
+  //
+  // 盤面はこの形を出し尽くしと読み、**もう1周レビューを出す**。`直し待ち` が付いている＝今の版への
+  // 判定は「直しが要る」なので、読み終えたことは止める理由にならない。
+  it('本文だけを直して手が空いたPRは、もう1周レビューへ渡す', () => {
+    const board = {
+      prs: [pr(10, { ...label('直し待ち'), ...returned('aaa1111') })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
+    };
+    // **指紋には、出したときに在った判定の数が入る。** 版だけだと、この2本目は前の周の判定を
+    // 自分が書いたものとして数えられ、立った直後に畳まれる（`board-move.mjs` の `reviewMark`）。
+    expect(moves(board)).toEqual([
+      'REVIEW 10 aaa1111:1',
+      'NOTE PR #10 は差し戻しを頼み終えて戻ってこないので、もう1周読ませる',
+    ]);
+  });
+
+  it('直している最中なら、レビューへは渡さない', () => {
+    const board = {
+      prs: [pr(10, { ...label('直し待ち'), ...returned('aaa1111') })],
+      prSessions: { 10: 'session_a' },
+      sessions: [working('session_a')],
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
+    };
+    expect(moves(board)).toEqual([]);
+  });
+
+  // **`busySession` だけで見ると、直している最中のセッションが毎周この形に見える**——手番の切れ目
+  // ごとに落ちるので（1.6）、起こした直後の周で早々にレビューが立つ。戻ってこないと読む線は
+  // `stillWorking` と揃える。
+  it('起こしたばかりで手が空いているだけなら、レビューへは渡さない', () => {
+    const board = {
+      prs: [pr(10, { ...label('直し待ち'), ...returned('aaa1111') })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111', 'idle:session_a': NOW },
+    };
+    expect(moves(board)).toEqual([]);
+  });
+
+  it('もう1周のレビューが読んでいる最中なら、二本目は立てない', () => {
+    const board = {
+      prs: [pr(10, { ...label('直し待ち'), ...returned('aaa1111') })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a'), working('session_r', 'review-10')],
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111', 'review:10': 'aaa1111:1' },
+    };
+    expect(moves(board)).toEqual([]);
+  });
+
+  // **立てた直後のセッションは手が空いて見える**（1.6）。`REVIEW` の指紋が版だけだったときは、
+  // 書き終えたかを見る側（`judged`）が**前の周の判定をこの1本が書いたものと読み**、走り出す前に
+  // 畳んだ——盤面は投入と後片付けを繰り返し、判定は1つも増えない。
+  it('もう1周立てたレビューを、前の周の判定で畳まない', () => {
+    const board = {
+      prs: [pr(10, { ...label('直し待ち'), ...returned('aaa1111') })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a'), idle('session_r', 'review-10')],
+      taken: {
+        'resume:session_a': 'mend:returned:10:aaa1111',
+        'review:10': 'aaa1111:1',
+        'idle:session_r': '2026-09-05T01:59:00Z',
+      },
+    };
+    expect(moves(board)).toEqual(['NOTE PR #10 はレビューが読んでいる最中で、結論のラベルはまだ無い']);
+  });
+
+  // **渡すのは `直し待ち` の差し戻しだけ。** `却下` は人が付けた印で、**外れるのは push のときだけ**
+  // ——レビューをもう1周出しても印は消えないので、読ませるぶんが丸ごと無駄になる。
+  it('却下で頼み終えたPRは、レビューへ渡さない', () => {
+    const board = {
+      prs: [pr(10, { ...label('却下'), ...returned('aaa1111') })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': 'reject:10:aaa1111' },
     };
     expect(moves(board)).toEqual([]);
   });
@@ -668,7 +762,7 @@ describe('board-move.mjs', () => {
         },
       ],
     };
-    expect(moves(board)).toEqual(['REVIEW 10 aaa1111']);
+    expect(moves(board)).toEqual(['REVIEW 10 aaa1111:0']);
   });
 
   it('レビューが走っているPRは、二重に出さない', () => {
@@ -682,9 +776,9 @@ describe('board-move.mjs', () => {
     const board = {
       prs: [pr(10, verdict('9990000'))],
       sessions: [idle('session_r', 'review-10')],
-      taken: { 'review:10': '9990000' },
+      taken: { 'review:10': '9990000:0' },
     };
-    expect(moves(board)).toEqual(['ARCHIVE session_r done:review-10', 'REVIEW 10 aaa1111']);
+    expect(moves(board)).toEqual(['ARCHIVE session_r done:review-10', 'REVIEW 10 aaa1111:0']);
   });
 
   it('著者が書いている最中のPRは、レビューへ出さない', () => {
@@ -697,7 +791,7 @@ describe('board-move.mjs', () => {
     const board = {
       prs: [pr(10)],
       sessions: [idle('session_r', 'review-10')],
-      taken: { 'review:10': 'aaa1111', 'idle:session_r': '2026-09-05T01:59:00Z' },
+      taken: { 'review:10': 'aaa1111:0', 'idle:session_r': '2026-09-05T01:59:00Z' },
     };
     expect(moves(board)).toEqual(['NOTE PR #10 はレビューが読んでいる最中で、結論のラベルはまだ無い']);
   });
@@ -705,9 +799,9 @@ describe('board-move.mjs', () => {
   // 指紋だけを見て「出した＝読まれた」と読むと、判定を書かずに終わったレビューがそのPRを永久に
   // 止める（issue #1569）。読み手が居なくなっていることが、その読みが終わった印。
   it('出した差分の読み手が居なくなっていれば、もう一度出す', () => {
-    const board = { prs: [pr(10)], taken: { 'review:10': 'aaa1111' } };
+    const board = { prs: [pr(10)], taken: { 'review:10': 'aaa1111:0' } };
     expect(moves(board)).toEqual([
-      'REVIEW 10 aaa1111',
+      'REVIEW 10 aaa1111:0',
       'NOTE PR #10 のレビューは判定を書かずに終わったので、もう一度出す',
     ]);
   });
@@ -716,7 +810,7 @@ describe('board-move.mjs', () => {
     expect(moves({ prs: [pr(10, { statusCheckRollup: [], updatedAt: NOW })] })).toEqual([]);
     const still = '2026-09-05T00:30:00Z';
     expect(moves({ prs: [pr(10, { statusCheckRollup: [], updatedAt: still })] })).toEqual([
-      'REVIEW 10 aaa1111',
+      'REVIEW 10 aaa1111:0',
     ]);
   });
 
@@ -746,9 +840,9 @@ describe('board-move.mjs', () => {
   // 打つのは1周に1手なので、新しい順のまま回すと後から出たPRが毎周先に拾われる。
   it('捌く順は、古いPRから', () => {
     expect(moves({ prs: [pr(30), pr(9), pr(20)] })).toEqual([
-      'REVIEW 9 aaa1111',
-      'REVIEW 20 aaa1111',
-      'REVIEW 30 aaa1111',
+      'REVIEW 9 aaa1111:0',
+      'REVIEW 20 aaa1111:0',
+      'REVIEW 30 aaa1111:0',
     ]);
   });
 
@@ -1215,7 +1309,7 @@ describe('board-move.mjs', () => {
         issues: [{ number: 9, ...label('kind:task'), blockedBy: { nodes: [] } }],
         sessions: [idle('a', 'task-9')],
       },
-      { prs: [pr(10)], sessions: [idle('a', 'review-10')], taken: { 'review:10': 'aaa1111' } },
+      { prs: [pr(10)], sessions: [idle('a', 'review-10')], taken: { 'review:10': 'aaa1111:0' } },
     ];
     const kinds = boards
       .flatMap(moves)

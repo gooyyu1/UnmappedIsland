@@ -126,6 +126,12 @@ const KIND = 'kind:';
 const URGENT = '急ぎ';
 
 /**
+ * `直し待ち` で差し戻すときの、指紋の頭（`moves` の `cause`）。**打つ側と、頼み終えたかを見る側
+ * （同 `askedAlready`）が同じ綴りを見る**ので、ここから出す。
+ */
+const RETURNED = 'mend:returned';
+
+/**
  * その仕事が**何へ向かうか**の印（2.18.1）。**立てた本人が起票のときに付ける**のがいちばん確かで、
  * **名乗り漏れは棚卸しが拾う**（2.17.1）。
  *
@@ -454,8 +460,12 @@ export function moves(input) {
   const stillWorking = (session) => busySession(session) || idleMinutes(session) < STALL_MINUTES;
 
   /**
-   * そのレビューが判定を書き終えたか（2.10.3）。**訊くのはコメントそのもの**——投入したときの版
-   * （台帳の指紋）を名乗った判定のコメントが在れば、この1本の仕事は終わっている。
+   * そのレビューが判定を書き終えたか（2.10.3）。**訊くのはコメントそのもの**——投入したときの版を
+   * 名乗った判定のコメントが、**投入したときより増えていれば**、この1本の仕事は終わっている。
+   *
+   * **在るかでは見ない。** `直し待ち` のままもう1周読ませる経路（2.13.6）では**同じ版へ2本目が立つ**
+   * ので、在るかで訊くと**前の周の判定がこの1本の「書き終えた」証拠**になり、立てた直後のまだ走り
+   * 出していない1本がそこで畳まれる。数えるものは台帳の指紋が持つ（`reviewMark`）。
    *
    * **結論のラベルでは見ない。** ラベルは `board-labels.yml` が後から付けるので、付く前は書き終えた
    * ことを言えず、**著者が push すると外れる**ので書き終えた後にも言えなくなる。どちらの側でも、
@@ -474,24 +484,50 @@ export function moves(input) {
     const number = tag.slice('review-'.length);
     const pr = input.prs.find((item) => item.number === Number(number));
     if (pr === undefined) return true;
-    const sent = taken[`review:${number}`];
-    return sent !== undefined && verdicts(pr.comments).some((c) => readsVersion(c, sent));
+    const sent = readReviewMark(taken[`review:${number}`]);
+    return sent !== undefined && verdictsOn(pr, sent.version, false).length > sent.rounds;
   }
 
   /**
-   * **今の差分に対する判定**（無ければ `undefined`）。**ラベルではなくコメントから引く**
-   * ——人がラベルを外してから `board-labels.yml` が `却下` を付けるまでの窓では、ラベルだけを見る
-   * 盤面に「止める印が何も無いPR」として映る（2.13.5）。判定はコメントに残り、読んだ版も名乗って
-   * あるので、**外されても消えない側**から読む。
+   * その版への判定（古い順）。**ラベルではなくコメントから引く**——人がラベルを外してから
+   * `board-labels.yml` が `却下` を付けるまでの窓では、ラベルだけを見る盤面に「止める印が何も無いPR」
+   * として映る（2.13.5）。判定はコメントに残り、読んだ版も名乗ってあるので、**外されても消えない側**
+   * から読む。
    *
    * **読んだ版を名乗っていないコメントは、どの版のものか言えない**（名乗りは書き忘れうる。
    * `review-prompt.md`「読んだ版」）。**数えるかは、訊く側の倒れる先で決める**——`countUnnamed`。
    */
-  function verdictOn(pr, countUnnamed) {
-    const read = verdicts(pr.comments).filter(
-      (c) => readsVersion(c, pr.headRefOid) || (countUnnamed && readVersion(c) === undefined),
+  function verdictsOn(pr, version, countUnnamed) {
+    return verdicts(pr.comments).filter(
+      (c) => readsVersion(c, version) || (countUnnamed && readVersion(c) === undefined),
     );
-    return read[read.length - 1];
+  }
+
+  /** **今の差分に対する判定**（無ければ `undefined`）。引き方は `verdictsOn`。 */
+  function verdictOn(pr, countUnnamed) {
+    return verdictsOn(pr, pr.headRefOid, countUnnamed).at(-1);
+  }
+
+  /**
+   * レビューを出したときの、**盤面の見え方**（`REVIEW` の指紋）。出した版と、**そのとき既に在った
+   * 判定の数**を並べる。
+   *
+   * **版だけでは足りない。** `直し待ち` のまま、もう1周読ませる経路（2.13.6）では**同じ版へ2本目が
+   * 立つ**ので、版だけを見る `judged` は**前の周の判定を「この1本が書いた」と読む**——立てた直後に
+   * 畳まれ、盤面は投入と後片付けを繰り返して判定が1つも増えない。
+   */
+  const reviewMark = (pr) => `${pr.headRefOid}:${verdictsOn(pr, pr.headRefOid, false).length}`;
+
+  /**
+   * `REVIEW` の指紋を、出した版と判定の数へ戻す。覚えが無ければ `undefined`。
+   *
+   * **古い形の覚え（版だけ）では `rounds` が `NaN` になり、どの比較も偽になる**——書き終えたと
+   * 言えない側＝畳むのを待つ側へ倒れるので、次の投入で入れ替わるまでの窓1つぶんで済む。
+   */
+  function readReviewMark(mark) {
+    if (mark === undefined) return undefined;
+    const [version, rounds] = mark.split(':');
+    return { version, rounds: Number(rounds) };
   }
 
   /**
@@ -502,6 +538,35 @@ export function moves(input) {
   function menders(pr) {
     const id = prSessions[String(pr.number)];
     return id === undefined ? [] : input.sessions.filter((session) => session.id === id);
+  }
+
+  /**
+   * 差し戻しの指紋。**理由ごとに分ける**（下の `cause`）——セッションは枠を1つしか持たないので、
+   * 同じ差分で別の理由の手を打つときに前の指紋と一致すると、後から来たほうが黙って落ちる。
+   *
+   * **打つ側と、頼み終えたかを見る側（`askedAlready`）が同じ綴りを見る**ので、ここから出す。
+   */
+  const mendMark = (cause, pr) => `${cause}:${pr.number}:${pr.headRefOid}`;
+
+  /**
+   * `直し待ち` の差し戻しを**頼み終えた**か（2.13.6）。頼む相手が全員、同じ指紋で一度起こされた
+   * あと、手が空いたまま戻ってこない形——**盤面がこの版へ打てる手は出し尽くしていて、相手も
+   * 動いていない。**
+   *
+   * **本文だけを直した周がこれ。** 直しがコミットにならないと指紋が動かないので、同じ差し戻しは
+   * 二度と出ず、印も外れない（issue #2014、PR #1982）。
+   *
+   * **`busySession` では足りない**（1.6）。手番の切れ目ごとに落ちるので、直している最中の
+   * セッションが毎周この形に見える——`stillWorking` と同じ線で、戻ってこないことのほうを見る。
+   */
+  function askedAlready(pr) {
+    const holders = menders(pr);
+    return (
+      holders.length > 0 &&
+      holders.every(
+        (holder) => !stillWorking(holder) && taken[`resume:${holder.id}`] === mendMark(RETURNED, pr),
+      )
+    );
   }
 
   /**
@@ -605,14 +670,21 @@ export function moves(input) {
       : missingLook(pr)
         ? ['look', '画面が変わるのに `## 見た目` が無い', 'look']
         : labels.includes('直し待ち')
-          ? ['mend', '差し戻された', 'mend:returned']
+          ? ['mend', '差し戻された', RETURNED]
           : pr.mergeable === 'CONFLICTING'
             ? ['mend', 'コンフリクトしている', 'mend:conflict']
             : check === 'red'
               ? ['mend', 'CIが赤い', 'mend:red']
               : [null, null, null];
 
-    if (kind !== null) {
+    // **頼み終えた差し戻しは、レビューへ渡す**（2.13.6）。`直し待ち` が付いたまま、同じ版で起こした
+    // 相手が戻ってこない形は、**盤面がこの版へ打てる手を出し尽くしている**——ここで止めると、
+    // 書いた本人は「直した」と思って手を止め、盤面は「頼み終えた」と読み、**どちらも次の手を
+    // 持たない**（issue #2014）。差し戻しを打ち直しても指紋が同じで落ちるだけなので、**止めずに
+    // 下のレビューの入口へ落とす。**
+    const asked = cause === RETURNED && askedAlready(pr);
+
+    if (kind !== null && !asked) {
       // **`main` が赤い間は直しを頼まない**（2.14）。頼む先が居るかを調べる手前で止める——相手が
       // 誰であっても、直せないことは変わらない。`reject` と `look` は**出た理由が `main` の色と
       // 関わらない**ので、そのまま出す（待たせても変わらず、押し返されても印は付き直らない）。
@@ -641,7 +713,7 @@ export function moves(input) {
         // **`mend` の3つも、渡す文面は同じだが指紋では分ける。** コンフリクトとCIの赤は**PRの版が
         // 変わらないまま `main` が動いて生まれる**ので、束ねると「先に別の理由で1回打った版」が
         // 二度と差し戻せなくなる——誰の手番でもないまま止まる（2026-09-11、PR #1982）。
-        const mark = `${cause}:${pr.number}:${pr.headRefOid}`;
+        const mark = mendMark(cause, pr);
         if (taken[`resume:${holder.id}`] === mark) continue;
         mends.push(`RESUME ${holder.id} ${kind} ${pr.number} ${mark}`);
       }
@@ -670,7 +742,11 @@ export function moves(input) {
     // コメントにだけ残るので、そちらを先に訊く——ラベルで読むと、読み終えた差分へもう1本立つ。
     // **こちらは名乗りの無い判定を数えない**（`false`）——どの版を読んだのか言えないものを数えると、
     // 押した後の差分が二度と読まれない。**倒れる先が、上の `stopping` と逆になる。**
-    if (verdictOn(pr, false) !== undefined) {
+    //
+    // **頼み終えた差し戻し（上の `asked`）だけは、判定が在っても出す。** `直し待ち` が付いている
+    // ことは、その判定が「直しが要る」だったことそのもの——**読み終えたことを理由に止めると、
+    // 誰の手番でもないまま残る**（2.13.6）。
+    if (!asked && verdictOn(pr, false) !== undefined) {
       notes.push(`PR #${pr.number} は今の版の判定が書かれている（結論のラベルが付くのを待っている）`);
       continue;
     }
@@ -689,14 +765,18 @@ export function moves(input) {
     // **指紋が言えるのは「この差分を出した」までで、「読まれた」ではない。** 読み手がもう居ない
     // のに出したことを読まれたことと読むと、判定を書かずに終わったレビューがそのPRを永久に止める
     // （issue #1569。畳まれた理由が何であれ同じ）。**居るなら読んでいる最中**——畳むのは 2.10.3 の側。
-    // **判定を書き終えた形は、上の `verdictOn` の枝が先に捕まえる。**
-    const sent = taken[`review:${pr.number}`] === pr.headRefOid;
+    // **判定を書き終えた形は、上の `verdictOn` の枝が先に捕まえる**（`asked` で落ちてきたぶんを
+    // 除く。2.13.6）。
+    const sent = readReviewMark(taken[`review:${pr.number}`])?.version === pr.headRefOid;
     if (sent && alive(`review-${pr.number}`).length > 0) {
       notes.push(`PR #${pr.number} はレビューが読んでいる最中で、結論のラベルはまだ無い`);
       continue;
     }
-    if (sent) notes.push(`PR #${pr.number} のレビューは判定を書かずに終わったので、もう一度出す`);
-    reviews.push(`REVIEW ${pr.number} ${pr.headRefOid}`);
+    // **理由を分けて残す。** `asked` で落ちてきたぶんは判定が書かれていて、出し直しではなく次の周
+    // ——同じ文面にすると、ログを読む人が詰まりの場所を取り違える。
+    if (asked) notes.push(`PR #${pr.number} は差し戻しを頼み終えて戻ってこないので、もう1周読ませる`);
+    else if (sent) notes.push(`PR #${pr.number} のレビューは判定を書かずに終わったので、もう一度出す`);
+    reviews.push(`REVIEW ${pr.number} ${reviewMark(pr)}`);
   }
 
   // 手が空いたセッションの行き先。**レビューは畳み**、ワーカーは**担当の issue がもう自分の仕事で
@@ -739,7 +819,7 @@ export function moves(input) {
         //
         // **両方 `undefined` にはならない**——開いていないPRのレビューは、上の `judged` が終わりと
         // 返してここへ来ない。
-        if (taken[`review:${number}`] === head) {
+        if (readReviewMark(taken[`review:${number}`])?.version === head) {
           // **指紋を `stall:` で始めない。** `board-round.mjs` の `trackIdle` は `stall:` で始まる
           // 覚えを動き出した時点で捨てる（ワーカーは再び空けばもう一度起こす側）ので、始めると
           // レビューも起こし直しになる。

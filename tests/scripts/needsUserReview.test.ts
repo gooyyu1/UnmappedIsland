@@ -173,6 +173,52 @@ describe('needs-user-review.sh の MARK と SOURCED', () => {
     expect(result.code).toBe(1);
   });
 
+  // 確認は1問1 issue で出すので（`CLAUDE.md`）、**出どころが指すのはその問いの issue**。
+  // 特定の番号（かつての確定待ちの盤 #656）に縛ると、**新しい経路で出た答えが全部止まる**
+  // ——同じ答えに二度目のタップを求めることになる。
+  it('出どころが指すのが #656 以外の issue でも、止めない', () => {
+    const result = judge(
+      [PATH],
+      hunk(PATH, ['-## 9.3 未解放レシピの理由は押している間だけ出す', `+${HEADING}【確定】`]),
+      {
+        [PATH]: {
+          base: doc(HEADING, ['押している間だけ吹き出しで出す。']),
+          head: doc(`${HEADING}【確定】`, [
+            '**出どころ**: #1970（未解放レシピの理由は押している間の吹き出しで出す）',
+            '',
+            '押している間だけ出す。',
+          ]),
+        },
+      },
+    );
+
+    expect(result.lines).toEqual([`SOURCED ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】`]);
+    expect(result.code).toBe(1);
+  });
+
+  // `ユーザーの指示` は、issue を通らず対話の中で決まったもの（`DocumentStyle.md` 6.1節）。
+  // 答えの在処として issue の番号を添える形が実在する（`Voyage.md` 2.3節）ので、行のどこかに
+  // 番号があれば緩める判定にすると、**チェックの跡が無いものまで素通りする。**
+  it('出どころが `ユーザーの指示` なら、答えの在処が添えてあっても止める', () => {
+    const result = judge(
+      [PATH],
+      hunk(PATH, ['-## 9.3 未解放レシピの理由は押している間だけ出す', `+${HEADING}【確定】`]),
+      {
+        [PATH]: {
+          base: doc(HEADING, ['押している間だけ吹き出しで出す。']),
+          head: doc(`${HEADING}【確定】`, [
+            '**出どころ**: ユーザーの指示（押している間の吹き出しで出す。[#1884](https://github.com/gooyyu1/UnmappedIsland/issues/1884)）',
+            '',
+            '押している間だけ出す。',
+          ]),
+        },
+      },
+    );
+
+    expect(result.lines).toEqual([`MARK ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】`]);
+    expect(result.code).toBe(0);
+  });
+
   it('出どころの1行が無い印は、今までどおり止める', () => {
     const result = judge(
       [PATH],
