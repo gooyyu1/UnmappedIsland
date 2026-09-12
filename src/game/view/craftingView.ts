@@ -1,17 +1,17 @@
-import type { WorldCodex } from '../../domain/WorldCodex';
 import type { StartedGame } from '../../domain/generation/NewGame';
 import type { WorldObject } from '../../domain/WorldObject';
 import { autoFillMaterials } from '../../domain/autoFill';
 import {
   tryAdvanceCrafting,
   currentStep,
+  materialsSlotOf,
+  recipeOf,
   remainingRequirements,
   stepIsSupplied,
 } from '../../domain/crafting';
 import type { Requirement } from '../../domain/Requirement';
 import type { Localization } from '../../locale/Localization';
 import type { CardAction } from './cardOperations';
-import { recipeOf } from './recipeList';
 import type { ObjectGlobalId } from '../../domain/GlobalId';
 
 /**
@@ -44,16 +44,15 @@ export interface CraftingMaterial {
  */
 export function craftingActions(
   object: WorldObject,
-  codex: WorldCodex,
   game: StartedGame,
   locale: Localization,
 ): readonly CardAction[] {
-  const recipe = recipeOf(object, codex);
+  const codex = object.session.codex;
+  const recipe = recipeOf(object);
   if (recipe === undefined) return [];
 
-  const materialsSlotId = codex.vocabulary.engine.materialsSlotId;
-  const step = currentStep(recipe, progressOf(object, codex));
-  const supplied = step !== undefined && stepIsSupplied(object, materialsSlotId, step);
+  const step = currentStep(recipe, progressOf(object));
+  const supplied = step !== undefined && stepIsSupplied(object, step);
   // 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.4節）。素材より先に見るのは、
   // 満たしていなければ素材が揃っていても手が付けられないため。
   const unmetCrafting = codex.unmetCraftingRequirement(game.player.instance);
@@ -70,13 +69,11 @@ export function craftingActions(
         // 出ていくことになり、しまうという操作の意味が無くなる。
         autoFillMaterials(
           object,
-          materialsSlotId,
           [
             game.player.instance.tryGetSlot(codex.vocabulary.world.handSlotId)?.contents ?? [],
             game.player.location?.items ?? [],
           ],
-          codex,
-          remainingRequirements(recipe, progressOf(object, codex)),
+          remainingRequirements(recipe, progressOf(object)),
         );
       },
     },
@@ -87,7 +84,7 @@ export function craftingActions(
       enabled: supplied && unmetCrafting === undefined,
       reason: reasonNotToWork(unmetCrafting, supplied, locale),
       execute: () => {
-        tryAdvanceCrafting(object, materialsSlotId, recipe, codex, game.session, game.player.instance);
+        tryAdvanceCrafting(object, game.player.instance);
       },
     },
     {
@@ -109,16 +106,14 @@ export function craftingActions(
  * **枠は残りの工程が要求する型ごとに1つ**で、要求の順に並ぶ。出番の終わった型は挙げない——こぼした
  * あとの空枠が残っていると、まだ何か入れられるように見えてしまうため。
  */
-export function craftingMaterials(
-  container: WorldObject,
-  codex: WorldCodex,
-): readonly CraftingMaterial[] | undefined {
-  const recipe = recipeOf(container, codex);
+export function craftingMaterials(container: WorldObject): readonly CraftingMaterial[] | undefined {
+  const codex = container.session.codex;
+  const recipe = recipeOf(container);
   if (recipe === undefined) return undefined;
 
-  const progress = progressOf(container, codex);
+  const progress = progressOf(container);
   const inStep = new Set(currentStep(recipe, progress)?.requirements.map((r) => r.match.key));
-  const contents = container.tryGetSlot(codex.vocabulary.engine.materialsSlotId)?.contents ?? [];
+  const contents = materialsSlotOf(container)?.contents ?? [];
 
   return remainingRequirements(recipe, progress).map((requirement) => ({
     objectGlobalIds: requirement.match.matchingDefs(codex.objects).map((def) => def.globalId),
@@ -128,8 +123,8 @@ export function craftingMaterials(
   }));
 }
 
-function progressOf(object: WorldObject, codex: WorldCodex): number {
-  return object.tryGetProperty(codex.vocabulary.engine.progressId)?.number ?? 0;
+function progressOf(object: WorldObject): number {
+  return object.tryGetProperty(object.session.codex.vocabulary.engine.progressId)?.number ?? 0;
 }
 
 /**

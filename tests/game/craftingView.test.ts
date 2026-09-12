@@ -57,15 +57,14 @@ ui_texts:
   crafting_no_materials: 素材が足りない。
 `,
   );
-  const actionsOn = (mini: MiniGame, target: WorldObject) =>
-    craftingActions(target, mini.codex, mini.game, locale);
+  const actionsOn = (mini: MiniGame, target: WorldObject) => craftingActions(target, mini.game, locale);
 
   it('製作中でない物は、操作も材料の枠も持たない', () => {
     const mini = miniGame(WORLD);
     const leaf = mini.createObject('leaf');
 
     expect(actionsOn(mini, leaf)).toEqual([]);
-    expect(craftingMaterials(leaf, mini.codex)).toBeUndefined();
+    expect(craftingMaterials(leaf)).toBeUndefined();
   });
 
   it('操作は自動補充・作業する・中断の3つで、素材が足りなければ作業できない', () => {
@@ -127,7 +126,7 @@ ui_texts:
     leavesInHand(mini, 2);
     actionsOn(mini, wip)[0].execute();
 
-    const materials = craftingMaterials(wip, mini.codex);
+    const materials = craftingMaterials(wip);
 
     expect(materials).toHaveLength(1);
     expect(materials?.[0]).toMatchObject({
@@ -156,7 +155,7 @@ object_defs:
 `);
     const wip = mini.createObject(inProgressObjectName('hut', 'withYamlContext'));
 
-    const materials = craftingMaterials(wip, mini.codex);
+    const materials = craftingMaterials(wip);
 
     expect(
       materials?.map((material) => material.inCurrentStep),

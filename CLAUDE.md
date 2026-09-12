@@ -269,9 +269,12 @@ Claude Code 本体が入れているもので、リポジトリの設定では�
    結果を書く場所なので、まだ中身が無い。**位置で切らないこと**（節の並びに決まりは無く、
    `## 仮決め`・`## 見た目` を後ろへ置くPRがある。落とすと、レビュアーが見ると決めて
    いる節が渡らないまま「要る節が無い」と挙がる）。
-2. 渡すのは、**外のレビュアーが見るのと同じ3つだけ**——差分（`git diff main...HEAD`）・issue の番号
-   （閉じる issue が無いならPRの主題）・本文の原稿のパス。指示は「`.claude/review-criteria.md` の
-   観点で読み、問題のあった箇所だけを返せ」。**観点の一覧は `main` の版を読ませる**
+2. 渡すのは、**外のレビュアーが見るのと同じ3つだけ**——差分（`git diff origin/main...HEAD`）・issue の
+   番号（閉じる issue が無いならPRの主題）・本文の原稿のパス。**差分の起点は `origin/main` で、
+   ローカルの `main` ではない**——作業ブランチは `origin/main` から切るのでローカルの `main` は一度も
+   動かず、クローンしたときのまま古い環境（クラウドのセッション）では、そこから先に `origin/main` へ
+   入った他人の変更が丸ごと差分に混ざる。指示は「`.claude/review-criteria.md` の
+   観点で読み、問題のあった箇所だけを返せ」。**観点の一覧も `origin/main` の版を読ませる**
    （`MSYS2_ARG_CONV_EXCL='*' git show origin/main:.claude/review-criteria.md`。**手元の bash では
    この前置きを落とすと引数が `origin\main;.claude\review-criteria.md` に化けて読めない**）
    ——作業ツリーに在るのはブランチを切った時点の

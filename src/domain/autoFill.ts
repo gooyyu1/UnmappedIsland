@@ -1,8 +1,7 @@
-import type { WorldCodex } from './WorldCodex';
 import type { SlotCell } from './CellLayout';
+import { materialsSlotOf } from './crafting';
 import type { RecipeRequirementDef } from './RecipeDef';
 import type { WorldObject } from './WorldObject';
-import type { SlotGlobalId } from './GlobalId';
 
 /**
  * 製作中オブジェクトの枠へ、手元と足元から素材を自動で入れる（RecipeSystem.md 4節）。
@@ -22,13 +21,11 @@ import type { SlotGlobalId } from './GlobalId';
  */
 export function autoFillMaterials(
   inProgress: WorldObject,
-  materialsSlotGlobalId: SlotGlobalId,
   sources: readonly (readonly WorldObject[])[],
-  codex: WorldCodex,
   /** 残りの工程が要求するもの（crafting.remainingRequirements）。省略すると全ての枠を埋める。 */
   stillNeeded?: readonly RecipeRequirementDef[],
 ): number {
-  const slot = inProgress.tryGetSlot(materialsSlotGlobalId);
+  const slot = materialsSlotOf(inProgress);
   if (slot === undefined) return 0;
 
   // 材料スロットは要求ごとの枠を持つ（inProgressObjects）ので、枠数は必ず決まっている。
@@ -43,8 +40,7 @@ export function autoFillMaterials(
 
     for (const candidate of chooseFillersForCell(cell, available)) {
       // 入れる先は選んだ枠そのもの。スロットに任せると、同じ型を受け入れる別の枠へ入りうる。
-      const target = inProgress.getSlot(materialsSlotGlobalId);
-      if (candidate.moveToSlotOrRejection(target, { kind: 'cell', index }) !== undefined) break;
+      if (candidate.moveToSlotOrRejection(slot, { kind: 'cell', index }) !== undefined) break;
       available.splice(available.indexOf(candidate), 1);
       moved += 1;
     }

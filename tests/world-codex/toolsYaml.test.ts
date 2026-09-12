@@ -208,19 +208,14 @@ describe('石斧を作る', () => {
   }
 
   /** 石斧の作りかけを、その土地へ置く。 */
-  function startAxe(session: WorldSession, field: WorldObject): WorldObject {
-    return spawnInProgressObject(
-      session,
-      field,
-      codex.objectNames.getId(inProgressObjectName('stone_axe', 'hafted')),
-    );
+  function startAxe(field: WorldObject): WorldObject {
+    return spawnInProgressObject(field, codex.objectNames.getId(inProgressObjectName('stone_axe', 'hafted')));
   }
 
   it('太い枝・尖った石・紐から、2工程で石斧ができる', () => {
     const { session, field } = rockyField();
-    const recipe = codex.objects.get(codex.objectNames.getId('stone_axe')).recipesProducingThis[0];
     const materialsId = codex.vocabulary.engine.materialsSlotId;
-    const wip = startAxe(session, field);
+    const wip = startAxe(field);
     // 工程を進めるには手元の明るさが要る（IlluminationSystem.md 5節）。
     const smith = createBrightEnoughAgent(session);
     const put = (name: string) =>
@@ -229,11 +224,11 @@ describe('石斧を作る', () => {
       ).toBeUndefined();
 
     put('thick_branch');
-    expect(tryAdvanceCrafting(wip, materialsId, recipe, codex, session, smith), '柄を削り出す').toBe(true);
+    expect(tryAdvanceCrafting(wip, smith), '柄を削り出す').toBe(true);
 
     put('sharp_stone');
     put('cord');
-    expect(tryAdvanceCrafting(wip, materialsId, recipe, codex, session, smith), '刃を据えて縛る').toBe(true);
+    expect(tryAdvanceCrafting(wip, smith), '刃を据えて縛る').toBe(true);
 
     expect(
       new Location(field, codex).items.map((item) => item.def.name),
@@ -245,7 +240,7 @@ describe('石斧を作る', () => {
     // 製作中オブジェクトが引き継ぐのは置き場所を言うタグだけ（RecipeSystem.md 5節）。刃物である
     // ことは完成品になって初めて名乗るので、重ねる操作の側に作りかけを弾く判定は要らない。
     const { session, field } = rockyField();
-    const wip = startAxe(session, field);
+    const wip = startAxe(field);
 
     const stem = session.createObject(codex.objectNames.getId('banana_stem'));
     expect(stem.moveToSlotOrRejection(field.getSlot(codex.slotNames.getId('items')))).toBeUndefined();

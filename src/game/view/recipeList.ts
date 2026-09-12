@@ -1,8 +1,4 @@
-import type { WorldCodex } from '../../domain/WorldCodex';
 import type { StartedGame } from '../../domain/generation/NewGame';
-import type { RecipeDef } from '../../domain/RecipeDef';
-import { RECIPE_AXIS } from '../../domain/RecipeDef';
-import type { WorldObject } from '../../domain/WorldObject';
 import type { Localization } from '../../locale/Localization';
 import { inProgressObjectName } from '../../loader/inProgressObjects';
 import type { Rect } from '../../ui/Rect';
@@ -21,18 +17,6 @@ const PRODUCT_ICON = '📦';
 const LOCKED_MARK = '🔒';
 
 /**
- * その製作中オブジェクトが従っているレシピ（製作中オブジェクトでなければundefined）。
- *
- * 製作中オブジェクトは完成品の変種で、**どのレシピから生まれたかは軸`recipe`の値**
- * （GameElementDefinition.md 3.5節）。完成品はその素の型。
- */
-export function recipeOf(target: WorldObject, codex: WorldCodex): RecipeDef | undefined {
-  const recipeName = codex.variationsOf(target.def).get(RECIPE_AXIS);
-  if (recipeName === undefined) return undefined;
-  return codex.baseOf(target.def).recipesProducingThis.find((candidate) => candidate.name === recipeName);
-}
-
-/**
  * レシピ一覧に並べる棚を組み立てる（Windows.md 9節）。
  *
  * 棚は**完成品のタグ**で、どのタグを棚にするかと、その並びは `recipe_categories` が持つ。タグは型の
@@ -44,10 +28,11 @@ export function recipeOf(target: WorldObject, codex: WorldCodex): RecipeDef | un
  */
 export function recipeCategories(
   game: StartedGame,
-  codex: WorldCodex,
   locale: Localization,
   onSelect: (inProgressDefGlobalId: ObjectGlobalId, origin: Rect) => void,
 ): readonly RecipeCategory[] {
+  const codex = game.session.codex;
+
   /** 棚のタグのグローバルID → その棚に載るレシピ。どの棚にも載らないものはothersへ。 */
   const byShelf = new Map<TagGlobalId, RecipeEntry[]>();
   const others: RecipeEntry[] = [];

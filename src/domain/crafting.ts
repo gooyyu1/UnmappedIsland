@@ -1,11 +1,33 @@
-import type { WorldCodex } from './WorldCodex';
-import { RecipeRequirementDef } from './RecipeDef';
+import { RecipeRequirementDef, RECIPE_AXIS } from './RecipeDef';
 import type { RecipeDef, RecipeStepDef } from './RecipeDef';
 import { spendDurationAndReportParticipantsAlive } from './actionTime';
 import { InteractionRelation } from './ReferenceRoot';
+import type { Slot } from './Slot';
 import type { WorldObject } from './WorldObject';
-import type { WorldSession } from './WorldSession';
-import type { ObjectGlobalId, SlotGlobalId } from './GlobalId';
+import type { ObjectGlobalId } from './GlobalId';
+
+/**
+ * その製作中オブジェクトが従っているレシピ（製作中オブジェクトでなければundefined）。
+ *
+ * 製作中オブジェクトは完成品の変種で、**どのレシピから生まれたかは軸`recipe`の値**
+ * （GameElementDefinition.md 3.5節）。完成品はその素の型。
+ */
+export function recipeOf(target: WorldObject): RecipeDef | undefined {
+  const codex = target.session.codex;
+  const recipeName = codex.variationsOf(target.def).get(RECIPE_AXIS);
+  if (recipeName === undefined) return undefined;
+  return codex.baseOf(target.def).recipesProducingThis.find((candidate) => candidate.name === recipeName);
+}
+
+/**
+ * その製作中オブジェクトの材料スロット（RecipeSystem.md 4節。持っていなければundefined）。
+ *
+ * **どの枠が材料かは製作中オブジェクト自身から決まる**ので、呼び出し側に名指しさせない。
+ * スロットのIDは素の識別子で、取り違えても型は通り、中身が空の枠として黙って読めてしまう。
+ */
+export function materialsSlotOf(inProgress: WorldObject): Slot | undefined {
+  return inProgress.tryGetSlot(inProgress.session.codex.vocabulary.engine.materialsSlotId);
+}
 
 /**
  * 製作中オブジェクトで、今取り掛かっている工程（RecipeSystem.md 1節）。
@@ -87,11 +109,10 @@ function allocateContentsToRequirements(
  * 先頭のスロットへ落とす——場違いな場所にでも出ている方が、黙って画面から消えるよりよい。
  */
 export function spawnInProgressObject(
-  session: WorldSession,
   location: WorldObject,
   inProgressDefGlobalId: ObjectGlobalId,
 ): WorldObject {
-  const spawned = session.createObject(inProgressDefGlobalId);
+  const spawned = location.session.createObject(inProgressDefGlobalId);
   spawned.spillTo(location);
   return spawned;
 }
@@ -102,15 +123,8 @@ export function spawnInProgressObject(
  * **道具（`consume: false`）も数に入れる。** 作業を止めるのは素材と同じで、揃っていなければ
  * 工程は進まない。要求を持たない工程は1（揃っている）。
  */
-export function stepSupplyRatio(
-  inProgress: WorldObject,
-  materialsSlotGlobalId: SlotGlobalId,
-  step: RecipeStepDef,
-): number {
-  const allocated = allocateContentsToRequirements(
-    inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [],
-    step,
-  );
+export function stepSupplyRatio(inProgress: WorldObject, step: RecipeStepDef): number {
+  const allocated = allocateContentsToRequirements(materialsSlotOf(inProgress)?.contents ?? [], step);
   let needed = 0;
   let held = 0;
   for (const requirement of step.requirements) {
@@ -122,12 +136,8 @@ export function stepSupplyRatio(
 }
 
 /** その工程が要求する素材と道具が、材料スロットに揃っているか。 */
-export function stepIsSupplied(
-  inProgress: WorldObject,
-  materialsSlotGlobalId: SlotGlobalId,
-  step: RecipeStepDef,
-): boolean {
-  return stepSupplyRatio(inProgress, materialsSlotGlobalId, step) >= 1;
+export function stepIsSupplied(inProgress: WorldObject, step: RecipeStepDef): boolean {
+  return stepSupplyRatio(inProgress, step) >= 1;
 }
 
 /**
@@ -138,17 +148,17 @@ export function stepIsSupplied(
  * 表せないため、ここに置く（RecipeSystem.md 2節・4節）。**時間と効果の順序はactions/combinationsと
  * 同じ**（ActionSystem.md 2節）。
  *
- * @returns 進めたら true。作業できる状況にない、素材が足りない、全工程を終えている、経過中に
- *   製作中オブジェクト自身が失われたなら false。最後の場合だけは時間が経過している（actionTime参照）。
+ * @returns 進めたら true。そもそも製作中オブジェクトでない、作業できる状況にない、素材が足りない、
+ *   全工程を終えている、経過中に製作中オブジェクト自身が失われたなら false。最後の場合だけは
+ *   時間が経過している（actionTime参照）。
  */
-export function tryAdvanceCrafting(
-  inProgress: WorldObject,
-  materialsSlotGlobalId: SlotGlobalId,
-  recipe: RecipeDef,
-  codex: WorldCodex,
-  session: WorldSession,
-  agent: WorldObject,
-): boolean {
+export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject): boolean {
+  const session = inProgress.session;
+  const codex = session.codex;
+  // 従っているレシピは製作中オブジェクト自身が名乗っている（recipeOf）ので、外から渡させない。
+  const recipe = recipeOf(inProgress);
+  if (recipe === undefined) return false;
+
   // 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.4節）。画面も同じ問いで
   // ボタンの可否と理由を出すが、**止めるのはここ**——画面を通らない経路から進められては困る。
   //
@@ -165,7 +175,7 @@ export function tryAdvanceCrafting(
     const progressGlobalId = codex.vocabulary.engine.progressId;
     const step = currentStep(recipe, inProgress.tryGetProperty(progressGlobalId)?.number ?? 0);
     if (step === undefined) return false;
-    if (!stepIsSupplied(inProgress, materialsSlotGlobalId, step)) return false;
+    if (!stepIsSupplied(inProgress, step)) return false;
 
     // actions/combinationsと同じ順序で、時間を進めてから効果（消費と進捗）を適用する
     // （ActionSystem.md 2節）。素材は作業のあいだ材料スロットに在り、無くなるのは作業を終えた
@@ -177,10 +187,7 @@ export function tryAdvanceCrafting(
     if (!spendDurationAndReportParticipantsAlive(step.durationMinutes, session, [inProgress])) return false;
 
     // 消費が進捗より先なのは、進捗が上限を超えた瞬間に完成し、残っている物は親へこぼれてしまうため。
-    const allocated = allocateContentsToRequirements(
-      inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [],
-      step,
-    );
+    const allocated = allocateContentsToRequirements(materialsSlotOf(inProgress)?.contents ?? [], step);
     for (const requirement of step.requirements) {
       if (!requirement.consume) continue;
       for (const object of allocated.get(requirement) ?? []) object.destroy();
@@ -192,7 +199,7 @@ export function tryAdvanceCrafting(
     // 回数。工程が1つのレシピにはそもそも宣言が無いので、持っていなければ何も起きない。
     inProgress.tryGetProperty(codex.vocabulary.engine.finishedStepsId)?.add(1);
 
-    spillUnneeded(inProgress, materialsSlotGlobalId, recipe, codex);
+    spillUnneeded(inProgress, recipe);
     return true;
   });
 }
@@ -204,12 +211,7 @@ export function tryAdvanceCrafting(
  * 隠せなくなる（隠すと取り出せなくなる）。完成時に残りがこぼれるのと同じ扱いを、工程の
  * 区切りへ前倒ししている（RecipeSystem.md 3節）。
  */
-function spillUnneeded(
-  inProgress: WorldObject,
-  materialsSlotGlobalId: SlotGlobalId,
-  recipe: RecipeDef,
-  codex: WorldCodex,
-): void {
+function spillUnneeded(inProgress: WorldObject, recipe: RecipeDef): void {
   const parent = inProgress.parent;
   // こぼす先は、製作中オブジェクト自身が居るスロット（足元なら足元、かごの中ならかごの中）。
   const parentSlot = inProgress.parentSlot?.def;
@@ -217,9 +219,9 @@ function spillUnneeded(
 
   const stillNeeded = remainingRequirements(
     recipe,
-    inProgress.tryGetProperty(codex.vocabulary.engine.progressId)?.number ?? 0,
+    inProgress.tryGetProperty(inProgress.session.codex.vocabulary.engine.progressId)?.number ?? 0,
   );
-  const leftovers = (inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? []).filter(
+  const leftovers = (materialsSlotOf(inProgress)?.contents ?? []).filter(
     (object) => !stillNeeded.some((requirement) => requirement.requires(object.def)),
   );
 

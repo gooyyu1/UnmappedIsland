@@ -47,7 +47,7 @@ describe('火起こし（世界→映し 通し）', () => {
     const drill = put('fire_drill', handSlot);
     const grass = put('dry_grass', itemsSlot);
 
-    const recording = runAndRecordChange(game, codex, locale, undefined, () => {
+    const recording = runAndRecordChange(game, locale, undefined, () => {
       const light = grass.combinationsWith(drill, player).find((c) => c.name === 'light');
       expect(light?.tryExecute(), '火起こしが成立する').toBe(true);
     });

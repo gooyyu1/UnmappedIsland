@@ -141,8 +141,7 @@ object_defs:
 
   const setUp = (): MiniGame => miniGame(WORLD, { player: 'eater' });
 
-  const viewOf = (mini: MiniGame, texts = locale): PlayScreenView =>
-    fromGameSession(mini.game, mini.codex, texts);
+  const viewOf = (mini: MiniGame, texts = locale): PlayScreenView => fromGameSession(mini.game, texts);
 
   /** そのオブジェクトを映している札。 */
   const cardOf = (view: PlayScreenView, object: WorldObject): ObjectCardStack =>

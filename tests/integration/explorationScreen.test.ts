@@ -49,7 +49,7 @@ describe('探索と地図（世界→映し 通し）', () => {
   it('開始直後は漂着地だけが出て、設置物・アイテムのレーンは空になる', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
 
     expect(view.currentLocationCard.name, '現在地は命名処理が付けた漂着地の名前').toBe(
       locale.locationName(game.map.nameOfInstance(game.startLocation.instance.instanceId)!),
@@ -67,7 +67,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     const location = game.startLocation;
     exploreToFull(game);
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
 
     expect(lane(view, game, 'items').map((card) => card.name)).toEqual(
       location.itemStacks.map((stack) => locale.object(stack[0].def.name).displayName),
@@ -93,7 +93,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     const destinations = new Set(paths.map((path) => new Path(path, codex).destinationInstanceId));
     expect(destinations.size, '行き先の違う道が2本以上ある土地で確かめる').toBeGreaterThan(1);
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
 
     // 設置物のレーンには探索で見つかった木や茂みも並ぶので、道のカードだけを数える。
     const pathTagId = codex.tagNames.getId('path');
@@ -108,7 +108,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
     exploreToFull(game);
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
 
     const pathTagId = codex.tagNames.getId('path');
     const [paths, others] = [true, false].map((isPath) =>
@@ -131,19 +131,19 @@ describe('探索と地図（世界→映し 通し）', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
 
     expect(
-      fromGameSession(game, codex, locale).nestedLocations[0].window.exploration?.ratio,
+      fromGameSession(game, locale).nestedLocations[0].window.exploration?.ratio,
       '開始直後は未探索',
     ).toBe(0);
 
     exploreToFull(game);
     expect(
-      fromGameSession(game, codex, locale).nestedLocations[0].window.exploration?.ratio,
+      fromGameSession(game, locale).nestedLocations[0].window.exploration?.ratio,
       '探索し切れば100%',
     ).toBe(1);
 
     // 100%到達後も探索は続けられる（ExplorationSystem.md 2節）が、探索率は100%のまま。
     expect(game.player.explore()).toBe(true);
-    expect(fromGameSession(game, codex, locale).nestedLocations[0].window.exploration?.ratio).toBe(1);
+    expect(fromGameSession(game, locale).nestedLocations[0].window.exploration?.ratio).toBe(1);
   });
 
   it('道のカードのアクションで、現在地が行き先へ移る', () => {
@@ -151,11 +151,11 @@ describe('探索と地図（世界→映し 通し）', () => {
     exploreToFull(game);
     const path = new Path(pathsIn(game.startLocation, codex)[0], codex);
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
     const card = lane(view, game, 'fixtures').find((fixture) => fixture.objects[0] === path.instance)!;
     card.actions.find((action) => action.name === 'travel')!.execute();
 
-    expect(fromGameSession(game, codex, locale).currentLocationCard.name).toBe(
+    expect(fromGameSession(game, locale).currentLocationCard.name).toBe(
       locale.locationName(game.map.nameOfInstance(path.destinationInstanceId)!),
     );
   });
@@ -163,7 +163,7 @@ describe('探索と地図（世界→映し 通し）', () => {
   it('開始直後の地図は、現在地の土地だけを知っていて道は無い', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
 
     expect(view.mapLands.map((land) => land.card.name)).toEqual([view.currentLocationCard.name]);
     expect(view.mapLands[0].site, 'サイトindexは現在地の土地を指す').toBe(
@@ -177,7 +177,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
     exploreToFull(game);
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
 
     const currentSite = game.map.siteInstanceIds.indexOf(game.startLocation.instance.instanceId);
     const destinations = pathsIn(game.startLocation, codex).map((path) =>
@@ -208,7 +208,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
     exploreToFull(game);
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
 
     const root = game.startLocation.instance.findRoot();
     for (const land of view.mapLands) {
@@ -224,11 +224,11 @@ describe('探索と地図（世界→映し 通し）', () => {
   it('移動しても、それまでに知った土地と道は地図に残る', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
     exploreToFull(game);
-    const before = fromGameSession(game, codex, locale);
+    const before = fromGameSession(game, locale);
     const path = new Path(pathsIn(game.startLocation, codex)[0], codex);
     expect(path.travel(game.player.instance)).toBe(true);
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
 
     expect(new Set(view.mapLands.map((land) => land.site))).toEqual(
       new Set(before.mapLands.map((land) => land.site)),
@@ -248,7 +248,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     const path = new Path(pathsIn(game.startLocation, codex)[0], codex);
     expect(path.travel(game.player.instance)).toBe(true);
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
 
     expect(view.currentLocationCard.name).toBe(
       locale.locationName(game.map.nameOfInstance(path.destinationInstanceId)!),
@@ -262,7 +262,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     exploreToFull(game);
     const path = pathsIn(game.startLocation, codex)[0];
 
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
     const travel = lane(view, game, 'fixtures').find((card) => card.objects[0] === path)!.actions[0];
 
     expect(travel.minutes).toBe(new Path(path, codex).travelMinutes);
@@ -273,7 +273,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     // どちらもWorldObjectで、種別は物の型が名乗るタグ（character / location、core.yaml）から決まる。
     // 札の作り方を対象ごとに分けると、印・バー・個体の識別子といった規約がそこにだけ届かなくなる。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
-    const view = fromGameSession(game, codex, locale);
+    const view = fromGameSession(game, locale);
 
     expect(view.characterCard.kind).toBe('character');
     expect(view.characterCard.icon, 'キャラクタは型ごとの代役アイコンを持つ').toBe(

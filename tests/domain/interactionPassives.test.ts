@@ -101,6 +101,29 @@ object_defs:
         become: {state: fired_clay}
     variation_axes:
       state: {of: {tag: fired}}
+  # 力の無い焼く者。
+  weak_baker:
+    props:
+      strength: {value: 0}
+  # 焼く者に力があるときだけ自分を温める窯。窯自身の手番は、その温もりが在るかを問う。
+  gated_kiln:
+    props:
+      strength: {value: 0}
+      heat: {value: 0}
+    interactions:
+      bake:
+        trigger: menu
+        duration: 30
+        passives:
+          - conditions: [{subject: agent, prop: strength, gt: 0}]
+            modify: {self: {heat: 10}}
+      settle:
+        trigger: tick
+        conditions:
+          - {subject: self, prop: heat, gt: 0}
+        become: {state: fired_clay}
+    variation_axes:
+      state: {of: {tag: fired}}
   # 焼いている途中で自分の型が変わる者。
   potter:
     props:
@@ -228,5 +251,34 @@ object_defs:
     expect(strength(kiln), '窯の力は削がれていない（agentは窯ではない）').toBe(3);
     expect(kiln.def.name, '窯の力が残っているので、経過中の手番が起きている').not.toBe('draining_kiln');
     expect(strength(baker), '経過を終えれば、削がれた力は戻る').toBe(10);
+  });
+
+  /**
+   * ゲート（8.2節）の役も、押す先と同じくその操作の関係が答える。宣言元が今役を解く関係から辿り直すと、
+   * 内側に居る間だけゲートが別の物を見て、**誰に効いているかと何を見て効くかが食い違う**。
+   *
+   * ここでは窯自身の手番（時間を要さないので経過中のtickでその場で起きる）が内側の関係を張り、その中で
+   * 自分の温もりを問う。ゲートが内側の`agent`（＝窯、力は0）を見ていれば寄与が消え、手番が落ちる。
+   */
+  describe('宣言元が入れ子の関係へ加わっても、ゲートが見る役は動かない', () => {
+    it('見ているのは焼く者の力', () => {
+      const { place } = buildWorld();
+      const kiln = place('gated_kiln');
+      const baker = place('baker');
+
+      expect(kiln.tryGetAction('bake', baker)?.tryExecute()).toBe(true);
+
+      expect(kiln.def.name, '焼く者に力があるので、窯は温まり手番が起きている').not.toBe('gated_kiln');
+    });
+
+    it('窯自身の力ではない', () => {
+      const { place } = buildWorld();
+      const kiln = place('gated_kiln');
+      const baker = place('weak_baker');
+
+      expect(kiln.tryGetAction('bake', baker)?.tryExecute()).toBe(true);
+
+      expect(kiln.def.name, '焼く者に力が無ければ、窯は温まらず手番も起きない').toBe('gated_kiln');
+    });
   });
 });

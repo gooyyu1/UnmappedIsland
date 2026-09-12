@@ -43,7 +43,7 @@ object_defs:
     tags: [item]
 ${yaml}
 `);
-    return recipeCategories(mini.game, mini.codex, locale, () => {}).map((shelf) => ({
+    return recipeCategories(mini.game, locale, () => {}).map((shelf) => ({
       label: shelf.label,
       names: shelf.entries.map((entry) => entry.card.name),
     }));
@@ -143,7 +143,7 @@ ${conditions}
 `,
       { player: 'knapper' },
     );
-    return recipeCategories(mini.game, mini.codex, locale, () => {})[0]?.entries[0];
+    return recipeCategories(mini.game, locale, () => {})[0]?.entries[0];
   };
 
   /** 段に届いていない解放条件（理由の宣言はconditionsごとに変える）。 */

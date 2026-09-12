@@ -50,23 +50,22 @@ export class PassiveEffectGate {
     return { stage: this.stage, conditions: this.conditions };
   }
 
-  isSatisfied(declarer: WorldObject, slotBearer: WorldObject): boolean {
+  /**
+   * 段（WhenOwnStage）とconditionsを両方満たすか。段は宣言元（declarer）自身のプロパティを見る。
+   *
+   * **conditionsのselfは辺の子側（slotBearer）、役はrolesが答える。** 両者を組み合わせるのはここ
+   * だけで、呼び出し側は役の出どころ（宣言が置かれた場所で決まる。11.5節・RegisteredPassiveEffect）
+   * を渡すだけでよい。child対象ではselfと宣言元が食い違うので、まとめて片方から引くと「宣言元は
+   * 操作に参加しているのに解決しない」が起きる。
+   */
+  isSatisfied(declarer: WorldObject, slotBearer: WorldObject, roles: ReferenceContext): boolean {
     if (
       this.stage !== undefined &&
       !(declarer.tryGetProperty(this.stage.propertyGlobalId)?.isInStage(this.stage.name) ?? false)
     )
       return false;
 
-    // ゲートのselfは辺の子側（slotBearer）だが、**役は宣言元から解く**——役を指せるのは参加者からだけで、
-    // ここでの参加者はこのpropsを宣言した個体（declarer）だから（11.5節）。child対象では両者が
-    // 食い違うので、まとめて片方から引くと「宣言元は操作に参加しているのに解決しない」が起きる。
-    if (
-      this.conditions !== undefined &&
-      !this.conditions.evaluate(ReferenceContext.forParticipant(declarer).withSelf(slotBearer))
-    )
-      return false;
-
-    return true;
+    return this.conditions === undefined || this.conditions.evaluate(roles.withSelf(slotBearer));
   }
 }
 
@@ -167,6 +166,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * （setChildRegistered）が子ごとに1件ずつ作られるのと同じで、「どの子か」は1つに決まらない。
    */
   override collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {
+    const roles = ReferenceContext.forParticipant(declarer);
     for (const target of declarer.resolveInfluenceTargets(this.target)) {
       // ゲートのself（＝slotBearer）はエッジの子側（setResolvedRelationRegisteredと同じ決まり）。
       const slotBearer = this.target.root === 'child' ? target : declarer;
@@ -177,7 +177,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
         targetPropertyGlobalId: this.target.propertyGlobalId,
         reversible: this.reversible,
         increases: this.amount.amountFor(declarer) >= 0,
-        active: this.gate.isSatisfied(declarer, slotBearer),
+        active: this.gate.isSatisfied(declarer, slotBearer, roles),
       });
     }
   }
@@ -192,10 +192,10 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
     };
   }
 
-  /** declarer/slotBearerの現在の文脈でゲート（8.2節）が有効ならamountを、無効なら0を返す。
-   * modifyでもaddでも同じ量。 */
-  activeAmount(declarer: WorldObject, slotBearer: WorldObject): number {
-    return this.gate.isSatisfied(declarer, slotBearer) ? this.amount.amountFor(declarer) : 0;
+  /** ゲート（8.2節）が有効ならamountを、無効なら0を返す。modifyでもaddでも同じ量。
+   * rolesは役の出どころ（PassiveEffectGate.isSatisfied）。 */
+  activeAmount(declarer: WorldObject, slotBearer: WorldObject, roles: ReferenceContext): number {
+    return this.gate.isSatisfied(declarer, slotBearer, roles) ? this.amount.amountFor(declarer) : 0;
   }
 
   override get relationRegistration(): RelationRegistration {
@@ -206,8 +206,8 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * 実体値へ積む寄与（`add`）なら、動かす先を稼ぎの数え先として名乗る。可逆な寄与（`modify`）は
    * 実体値を動かさないので名乗らない。
    *
-   * **相手はcontextから辿る**（setRegisteredInContextと同じ、登録先と同じ物になる）。呼ばれるのは
-   * 操作の宣言だけで、そこにchildは書けない（8.1節）ので、ゲートのselfはownerでよい。
+   * **相手もゲートの役もcontextから解く**（setRegisteredInContextと同じ、登録先と同じ物になる）。
+   * 呼ばれるのは操作の宣言だけで、そこにchildは書けない（8.1節）ので、ゲートのselfはownerでよい。
    *
    * **名乗るのは先だけで、量は言わない。** 数えられるのはそのプロパティがこのtickで実際に動いた量
    * （PropertyValue.tick）で、同じtickの他の寄与も端のクランプも既に引かれている。
@@ -220,7 +220,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
     context: ReferenceContext,
     session: WorldSession,
   ): void {
-    if (this.reversible || this.activeAmount(owner, owner) === 0) return;
+    if (this.reversible || this.activeAmount(owner, owner, context) === 0) return;
 
     const target = this.target.owner(context);
     const property = target?.tryGetProperty(this.target.propertyGlobalId);
@@ -243,16 +243,22 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * childは相手（どの子か）がownerから一意に辿れないため、ここでは扱わずsetChildRegisteredを使う。
    */
   setRelationRegistered(owner: WorldObject, register: boolean): void {
-    this.setRegisteredInContext(owner, ReferenceContext.forParticipant(owner), register);
+    // 今の参加を引くのは登録先を解くためだけで、**憶えさせない**——物のdefの宣言が見る役は、
+    // 登録の後もownerの参加に追随する（RegisteredPassiveEffect参照）。
+    const target = this.target.owner(ReferenceContext.forParticipant(owner));
+    this.setResolvedRelationRegistered(owner, target, register, undefined);
   }
 
   /**
    * contextで対象を解いて、この効果を相手へ登録/解除する。**役の解決先を呼び出し側が持っているとき
    * だけ**呼ぶ——操作が宣言した持続効果（11.7節）の役は、宣言したその操作の関係が答えるもので、
    * 宣言元が後から別の関係へ加わっても動かない（WorldSession.whileInteractionPassives）。
+   *
+   * **憶えるのは登録先だけではない。** ゲート（8.2節）が見る役も同じ関係が答えるので、contextを
+   * 登録そのものへ持たせる（RegisteredPassiveEffect）。
    */
   setRegisteredInContext(owner: WorldObject, context: ReferenceContext, register: boolean): void {
-    this.setResolvedRelationRegistered(owner, this.target.owner(context), register);
+    this.setResolvedRelationRegistered(owner, this.target.owner(context), register, context);
   }
 
   /**
@@ -260,21 +266,24 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * 登録/解除する。childは相手がownerから一意に辿れない唯一の関係のため、childを明示的に受け取る。
    */
   setChildRegistered(owner: WorldObject, child: WorldObject, register: boolean): void {
-    this.setResolvedRelationRegistered(owner, child, register);
+    this.setResolvedRelationRegistered(owner, child, register, undefined);
   }
 
   /**
    * 内部共通処理: relatedの対象プロパティへこの効果を登録/解除する。
    * gateのself（＝slotBearer）はエッジの子側（child対象なら子=related、それ以外はowner）。
    * 対象と食い違うrelatedを外部から渡せないよう非公開。
+   *
+   * interactionRolesは、ゲートの役を答える文脈（RegisteredPassiveEffect参照）。
    */
   private setResolvedRelationRegistered(
     owner: WorldObject,
     related: WorldObject | undefined,
     register: boolean,
+    interactionRoles: ReferenceContext | undefined,
   ): void {
     const slotBearer = this.target.root === 'child' ? related! : owner;
-    if (register) this.register(related, owner, slotBearer);
+    if (register) this.register(related, owner, slotBearer, interactionRoles);
     else this.unregister(related, owner);
   }
 
@@ -283,12 +292,13 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
     targetOwner: WorldObject | undefined,
     declarer: WorldObject,
     slotBearer: WorldObject,
+    interactionRoles: ReferenceContext | undefined,
   ): void {
     if (targetOwner === undefined) return;
     const target = targetOwner.tryGetProperty(this.target.propertyGlobalId);
     // modify用と積分用のどちらへ入れるかは、具象クラスのregisterIntoが決める（8.3節）。
     if (target !== undefined)
-      this.registerInto(target, new RegisteredPassiveEffect(declarer, slotBearer, this));
+      this.registerInto(target, new RegisteredPassiveEffect(declarer, slotBearer, this, interactionRoles));
   }
 
   /** targetOwnerの対象プロパティから、declarerが宣言した登録を解除する。 */
@@ -356,12 +366,14 @@ export class TransferPassiveEffect extends PassiveEffect {
 
   /** ゲートが開いている間、1 tick分の輸送を走らせる（activeの輸送と同じ経路をそのまま通る）。 */
   applyTick(owner: WorldObject): void {
-    if (!this.gate.isSatisfied(owner, owner)) return;
-    this.transfer.apply(ReferenceContext.forParticipant(owner));
+    const roles = ReferenceContext.forParticipant(owner);
+    if (!this.gate.isSatisfied(owner, owner, roles)) return;
+    this.transfer.apply(roles);
   }
 
   override collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {
-    this.transfer.collectTransferInfluences(declarer, this.gate.isSatisfied(declarer, declarer), out);
+    const roles = ReferenceContext.forParticipant(declarer);
+    this.transfer.collectTransferInfluences(declarer, this.gate.isSatisfied(declarer, declarer, roles), out);
   }
 
   read(reader: PassiveReader): void {

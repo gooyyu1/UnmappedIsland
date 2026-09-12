@@ -65,7 +65,6 @@ describe('clothing.yamlの衣類', () => {
   /** 材料を材料スロットへ入れた、作りかけの1着。置き場所は作り手の手元。 */
   function startCrafting(clothing: (typeof CLOTHING)[number], withTools: boolean): WorldObject {
     const wip = spawnInProgressObject(
-      session,
       player,
       codex.objectNames.getId(inProgressObjectName(clothing.name, clothing.recipe)),
     );
@@ -82,13 +81,9 @@ describe('clothing.yamlの衣類', () => {
    * 返るのは同じオブジェクト。
    */
   function craft(clothing: (typeof CLOTHING)[number]): WorldObject {
-    const recipe = codex.objects.get(codex.objectNames.getId(clothing.name)).recipesProducingThis[0];
     const wip = startCrafting(clothing, true);
 
-    expect(
-      tryAdvanceCrafting(wip, codex.vocabulary.engine.materialsSlotId, recipe, codex, session, player),
-      `${clothing.name}の工程`,
-    ).toBe(true);
+    expect(tryAdvanceCrafting(wip, player), `${clothing.name}の工程`).toBe(true);
     expect(wip.def.name, `${clothing.name} ができていない`).toBe(clothing.name);
     return wip;
   }
@@ -156,11 +151,8 @@ describe('clothing.yamlの衣類', () => {
     // 骨針は消費されない道具（consume: false）だが、無ければ工程は進まない。素材だけで進んで
     // しまうと、縫製が骨針より前に来てしまう（SurvivalItems.md 1.2節の経路が意味を失う）。
     const sewn = CLOTHING.find((clothing) => clothing.name === 'tanned_leather_clothing')!;
-    const recipe = codex.objects.get(codex.objectNames.getId(sewn.name)).recipesProducingThis[0];
     const wip = startCrafting(sewn, false);
 
-    expect(
-      tryAdvanceCrafting(wip, codex.vocabulary.engine.materialsSlotId, recipe, codex, session, player),
-    ).toBe(false);
+    expect(tryAdvanceCrafting(wip, player)).toBe(false);
   });
 });

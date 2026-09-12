@@ -103,7 +103,7 @@ object_defs:
   const setUp = (): MiniGame => miniGame(WORLD, { player: 'survivor' });
 
   const viewOf = (mini: MiniGame, texts: Localization = locale): PlayScreenView =>
-    fromGameSession(mini.game, mini.codex, texts);
+    fromGameSession(mini.game, texts);
 
   const cardOf = (view: PlayScreenView, object: WorldObject): ObjectCardStack =>
     view.cardsIn(object.parentSlot!).find((card) => card?.objects[0] === object)!;

@@ -1,4 +1,3 @@
-import type { WorldCodex } from '../../domain/WorldCodex';
 import type { StartedGame } from '../../domain/generation/NewGame';
 import type { InteractionGains } from '../../domain/PropertyGain';
 import type { WorldChange } from '../../domain/WorldChange';
@@ -74,13 +73,12 @@ export interface Recording {
  */
 export function runAndRecordChange(
   game: StartedGame,
-  codex: WorldCodex,
   locale: Localization,
   windowPlace: CardPlace | undefined,
   change: () => void,
   handLaneCells?: number,
 ): Recording {
-  const before = fromGameSession(game, codex, locale, handLaneCells);
+  const before = fromGameSession(game, locale, handLaneCells);
   // 出ていない行の増減も取りこぼさないよう、比べる元は全プロパティ。
   const statusesBefore = before.properties;
   const recorded: RecordedView[] = [];
@@ -98,9 +96,7 @@ export function runAndRecordChange(
             (signal) => signals.push(signal),
             () => {
               game.session.observeTicks(() => {
-                const view = withFrozenCards(fromGameSession(game, codex, locale, handLaneCells), [
-                  windowPlace,
-                ]);
+                const view = withFrozenCards(fromGameSession(game, locale, handLaneCells), [windowPlace]);
                 recorded.push({
                   minutes: game.world.totalMinutes,
                   view,
