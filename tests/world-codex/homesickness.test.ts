@@ -4,6 +4,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { seededRng } from '../../src/domain/Rng';
 import { bundledCodex } from '../support/worldCodexFiles';
+import { MINUTES_PER_TICK } from '../../src/analysis/balanceTables';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -24,8 +25,6 @@ const codex = bundledCodex();
 // 1件で95日ぶんの暮らしを3本まで生きるものがあり、単独で走らせても3.5秒かかる。既定の5秒だと
 // `npm test` 全体を並行実行したときのCPU競合だけで時間切れになる（tidyMergedPr.test.tsと同じ）。
 vi.setConfig({ testTimeout: 20000 });
-
-const MINUTES_PER_TICK = 15;
 
 function propertyId(name: string): PropertyGlobalId {
   return codex.propertyNames.getId(name);

@@ -1,7 +1,3 @@
-import { bundledArt } from './bundledArt';
-import type { PackArt } from './packArt';
-import { rebuildArtCatalog } from './packArt';
-
 /**
  * 背景の絵（レーンの全面に敷くもの・カードの地に敷くもの）の解決。
  *
@@ -19,6 +15,10 @@ import { rebuildArtCatalog } from './packArt';
  * 同梱ぶんの一覧の作り方はbundledArt。アセットパックのぶんは、載せるパックが決まった時点で重ねる
  * （installPackBackgroundArt、AssetPack.md 4節）。
  */
+
+import { bundledArt } from './bundledArt';
+import type { PackArt } from './packArt';
+import { rebuildArtCatalog } from './packArt';
 
 /** 背景を引く先——そのカード・そのレーンが映しているスロット。 */
 export interface SlotRef {

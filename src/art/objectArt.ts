@@ -1,8 +1,3 @@
-import { packQualifiedName } from '../asset-pack/packNames';
-import { bundledArt } from './bundledArt';
-import type { PackArt } from './packArt';
-import { artKeyIn, rebuildArtCatalog } from './packArt';
-
 /**
  * object_defごとの絵の解決。
  *
@@ -22,6 +17,11 @@ import { artKeyIn, rebuildArtCatalog } from './packArt';
  * 絵の名前にも出所のパックが同じ形で付く（ObjectDef.artName）ので、引けば必ずその型を宣言した
  * パックの絵に当たり、そのパックに無ければ同梱ぶんへ落ちる（同5節）。
  */
+
+import { packQualifiedName } from '../asset-pack/packNames';
+import { bundledArt } from './bundledArt';
+import type { PackArt } from './packArt';
+import { artKeyIn, rebuildArtCatalog } from './packArt';
 
 /** 同梱ぶんの絵の名前 → 画像のURL。組み直しの土台なので、ここは変わらない（rebuildArtCatalog）。 */
 const BUNDLED_ART_BY_NAME: ReadonlyMap<string, string> = bundledArt('objects');
