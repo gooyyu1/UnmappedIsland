@@ -7,6 +7,7 @@ import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * farming.yamlの畑と囲いを、実ファイルの定義だけで検証する。
@@ -361,6 +362,65 @@ describe('farming.yamlの畑と囲い', () => {
     const twoRate = beforeTwo - pen.tryGetProperty(fodderId)!.getEffectiveValue();
 
     expect(twoRate, '2羽なら2倍').toBeCloseTo(oneRate * 2);
+  });
+
+  it('1羽増えるまでの周期は、甕1杯の水では通せない', () => {
+    // **増える速さの物差しは、繁殖の早さではなく水やりの周期**（docs/world/Animals.md 3.1節）。
+    // 甕1杯で通せてしまうなら、水をやりに戻らずに増えることになり、留守番の設備が世話の作業へ
+    // 変わる線がどこにも無くなる。
+    open();
+    const { pen, fowl } = penWithCalmFowl();
+    const breeding = fowl.tryGetProperty(breedingRemainingId)!;
+    // 生成時のロール（TrapSystem.md 2.1節の位相）に依らず、1周期まるごとを見る。
+    breeding.setNumber(breeding.def.range!.max);
+    pourWater(pen);
+    const water = pen.tryGetProperty(drinkingWaterId)!;
+
+    for (let i = 0; i < 2000 && water.getEffectiveValue() > 0; i++) tick(1);
+
+    expect(water.getEffectiveValue(), '甕1杯を飲み切っている').toBe(0);
+    expect(pennedCount(pen), 'まだ増えていない').toBe(1);
+    expect(breeding.getEffectiveValue(), '周期はまだ残っている').toBeGreaterThan(0);
+  });
+
+  it('1羽増えるまでに1羽が食べる飼葉は、芋2個ぶん', () => {
+    // 飼葉の減りは獣の側の1行（animals.yamlのbreeding_remaining）が持つので、1 tickの減りへ周期を
+    // 掛けて出す。**通しで回さないのは、途中で甕1杯が尽きるから**（上の試験）。
+    open();
+    const { pen, fowl } = penWithCalmFowl();
+    const fodder = pen.tryGetProperty(fodderId)!;
+
+    const before = fodder.getEffectiveValue();
+    tick(1);
+    const perCycle =
+      (before - fodder.getEffectiveValue()) * fowl.tryGetProperty(breedingRemainingId)!.def.range!.max;
+
+    const taro = spawnInto('taro', player, 'hand');
+    const perTaro = taro.tryGetProperty(codex.propertyNames.getId('plant_bait'))!.getEffectiveValue();
+    expect(perCycle, '1周期ぶんの消費は芋2個ぶん').toBeCloseTo(perTaro * 2);
+  });
+
+  it('飼葉を芋2個ぶんだけ入れた囲いは、周期の終わりで止まる', () => {
+    // ゲートは`fodder gte 1`（animals.yamlのbreeding_remaining）なので、**置いておく量と1周期ぶんの
+    // 消費量（上の試験）は別**——ちょうど2個ぶん入れると、最後の刻みを食べられずに周期が止まる。
+    open();
+    const fowl = calmJunglefowl();
+    const pen = spawnInto('pen', land, 'fixtures');
+    feed(pen, 2);
+    expect(fowl.moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('catch')))).toBeUndefined();
+    const breeding = fowl.tryGetProperty(breedingRemainingId)!;
+    breeding.setNumber(breeding.def.range!.max);
+    const water = pen.tryGetProperty(drinkingWaterId)!;
+
+    // **打ち切りに飼葉を使わない**——ゲートと同じ量で打ち切ると、ゲートを外しても止まって
+    // 見える。1周期を越えるまで回し、渇いて死なないよう水だけ注ぎ足す。
+    for (let i = 0; i < breeding.def.range!.max + TICKS_PER_DAY; i++) {
+      if (water.getEffectiveValue() <= 0) pourWater(pen);
+      tick(1);
+    }
+
+    expect(pennedCount(pen), '増えていない').toBe(1);
+    expect(breeding.getEffectiveValue(), '周期が残ったまま止まる').toBeGreaterThan(0);
   });
 
   it('水をやらなければ、囲いの獣は3日半で渇いて死ぬ', () => {
