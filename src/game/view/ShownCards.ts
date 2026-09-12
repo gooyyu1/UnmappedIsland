@@ -2,7 +2,7 @@ import type { CardFilter } from '../../domain/CardFilter';
 import type { WorldChange } from '../../domain/WorldChange';
 import type { WorldObject } from '../../domain/WorldObject';
 import type { ObjectCardStack } from './PlayScreenView';
-import type { CardCombination, CardDrop } from './cardOperations';
+import type { CardCombination, CardDropEffect } from './cardOperations';
 import type { CardPlace, CardPlacement, ScreenPlaceResolver } from './cardPlaces';
 import type { CardContent, CardEdgeDirection } from '../ui/Card';
 import { borrowedFace, cardFace } from '../ui/cardFace';
@@ -45,7 +45,7 @@ export interface CardSource {
   readonly places: ScreenPlaceResolver;
 }
 
-/** ドラッグしたカードを落とした先（CardDropの、レーンを場所に直した形）。 */
+/** ドラッグしたカードを落とした先（CardDragControllerのCardDropの、レーンを場所に直した形）。 */
 export interface ShownDrop {
   readonly from: CardSpot;
   readonly fromIndex: number;
@@ -401,7 +401,7 @@ export class ShownCards {
    */
   private combineEffect(
     drop: ShownDrop,
-  ): { readonly told: CardDrop; readonly combination: CardCombination | undefined } | undefined {
+  ): { readonly told: CardDropEffect; readonly combination: CardCombination | undefined } | undefined {
     if (drop.target.kind !== 'combine') return undefined;
 
     const dragged = this.stacksAt(drop.from)[drop.fromIndex];
@@ -424,13 +424,13 @@ export class ShownCards {
    * 並び替え、場所をまたぐならカード1枚の移動。**起きることとは限らない**——下のとおり、離しても何も
    * 起きない断る組み合わせもこの形で返る（enabledがfalse）。
    *
-   * **どれも同じ1つの形（CardDrop）で返る。** 画面は「重ねた」と「入れた」を区別せず、名前と時間を
+   * **どれも同じ1つの形（CardDropEffect）で返る。** 画面は「重ねた」と「入れた」を区別せず、名前と時間を
    * 吹き出しに出して実行するだけ（CardInteraction.md 2節）。
    *
    * **理由を告げて断る組み合わせ（enabledがfalse）は、入れ物としての受け入れに譲る**（順はcombineEffect）。
    * 実際に起きることのほうが、起きない理由より先に見せるものだから。
    */
-  dropEffect(drop: ShownDrop): CardDrop | undefined {
+  dropEffect(drop: ShownDrop): CardDropEffect | undefined {
     const dragged = this.stacksAt(drop.from)[drop.fromIndex];
     if (dragged === undefined) return undefined;
 
@@ -471,7 +471,7 @@ export class ShownCards {
 
   /**
    * そのドロップで手から放したもの（MotionContext.released。矩形を添えるのは呼び出し側）。
-   * どの個体が動くのかは、起きることの側が答える（CardDrop.movedIds）——ワールドが動かすものと
+   * どの個体が動くのかは、起きることの側が答える（CardDropEffect.movedIds）——ワールドが動かすものと
    * 画面が飛ばすものを食い違わせないため。
    */
   releasedBy(

@@ -1,7 +1,7 @@
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
-import { MINUTES_PER_DAY } from './balanceTables';
+import { MINUTES_PER_DAY } from '../domain/worldTime';
 import { craftingStepsOf } from './craftingSteps';
 import { rangeCyclesOf } from './rangeCycles';
 import { ticksToRangeEnd } from './rangeEvents';

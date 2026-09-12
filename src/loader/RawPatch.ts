@@ -5,7 +5,7 @@ import type { RawObjectDef } from './RawObjectDef';
 import { asMap, asScalarText, entriesInOrder, keysOf, tryGetNode } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { messageOf } from './errorMessage';
+import { messageOf } from '../util/errorMessage';
 
 /**
  * patchの動詞。**動詞がパスの読み方を決める。** `add` のパスは「まだ無いキー」、`append` のパスは

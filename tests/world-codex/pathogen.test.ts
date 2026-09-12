@@ -4,6 +4,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * 食中毒（docs/engine/DigestionSystem.md 6節）を、実ファイルの定義だけで検証する。
@@ -13,8 +14,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  * 筋書きも乱数を置かずにそのまま辿れる。
  */
 describe('全身の菌と免疫', () => {
-  /** 1日 = 96 tick（1 tick = 15分）。 */
-  const DAY = 96;
+  const DAY = TICKS_PER_DAY;
   /** 生肉1切れが運ぶ菌（animals.yamlのraw_meatのeat）。 */
   const ONE_RAW_MEAL = 3;
   /**

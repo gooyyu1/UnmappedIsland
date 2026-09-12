@@ -178,10 +178,13 @@ function settledBefore(now, settleMinutes) {
 
 /**
  * `main` の先頭のCI。**赤い間は差し戻しを打たない**（`board-move.mjs`、`board-design.md` 2.14）。
- * 語彙をPRの `statusCheckRollup` に合わせて渡すので、向こうは1つの判定で両方を読める。
+ * 数えるのは**`main` の木を見て走ったものだけ**（2.14.2）——issue へのコメントなどで立つ
+ * ワークフローも既定ブランチの先頭へ結び付くが、あれは木を見ていないので、落ちてもそれを取り込んだ
+ * PRは赤くならない。語彙をPRの `statusCheckRollup` に合わせて渡すので、向こうは1つの判定で両方を
+ * 読める。
  */
 function mainChecks(raw) {
-  return (JSON.parse(raw).check_runs ?? []).map((run) => ({
+  return (JSON.parse(raw).workflow_runs ?? []).map((run) => ({
     status: (run.status ?? '').toUpperCase(),
     conclusion: (run.conclusion ?? '').toUpperCase(),
   }));
@@ -284,7 +287,11 @@ export function readBoard({
     mergedRaw === undefined ? [] : JSON.parse(mergedRaw),
     CAPS.mergedPrs,
   );
-  const checks = gh(['api', 'repos/{owner}/{repo}/commits/main/check-runs']);
+  // **先頭の指紋で絞る**（2.14.2）。ブランチの名前だけで引くと、`main` へ push が入った直後の
+  // 数十秒は**1つ前のコミットの色**が返り、赤くなった `main` を緑と読む。
+  const head = gh(['api', 'repos/{owner}/{repo}/commits/main', '--jq', '.sha']);
+  if (head === undefined) return undefined;
+  const checks = gh(['api', `repos/{owner}/{repo}/actions/runs?event=push&head_sha=${head.trim()}`]);
   if (checks === undefined) return undefined;
 
   // **引けなかった周は空にして進む。** 差し戻す相手が分からないだけで、他の手は打てる

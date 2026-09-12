@@ -9,7 +9,7 @@ import type { Localization } from '../../locale/Localization';
 import type { CraftingMaterial } from './craftingView';
 import { craftingMaterials } from './craftingView';
 import { cardLooksOf } from './cardLooks';
-import type { CardAction, CardCombination, CardDrop, CardOperations } from './cardOperations';
+import type { CardAction, CardCombination, CardDropEffect, CardOperations } from './cardOperations';
 import { cardOperationsOf } from './cardOperations';
 import type { CardPlace, CardPlacement, ScreenPlaceResolver } from './cardPlaces';
 import { cardPlacesOf, nestedFixturePlacesOf } from './cardPlaces';
@@ -69,7 +69,7 @@ export interface ObjectCardStack extends CardContent {
    * 先での置き場所（1つ目にだけ効く）で、省略すると空いている場所へ入る。動かせない束（設置物・怪我）
    * にはない。
    */
-  readonly dropInto?: (place: CardPlace, at?: CardPlacement, count?: number) => CardDrop | undefined;
+  readonly dropInto?: (place: CardPlace, at?: CardPlacement, count?: number) => CardDropEffect | undefined;
 
   /**
    * countを渡した操作（dropInto）が動かすインスタンスのID。先頭は束の代表＝掴まれていた1つ。
