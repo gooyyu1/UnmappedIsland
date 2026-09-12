@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { ROOT, sourcesIn } from '../support/sourceFiles';
 
 /**
  * 層の境界の検査（docs/CodeStructure.md 1節）。
@@ -12,8 +13,6 @@ import { describe, expect, it } from 'vitest';
  * 持ち込まない限り、その層は画面を作らずに確かめられる（tests/game/shownCards.test.ts ほか）。
  * `src/ui` がこのゲームを知らない限り、そこにあるものはこのゲーム抜きで読める。
  */
-
-const ROOT = resolve(__dirname, '../..');
 
 /** Phaserへ到達してはいけない置き場（CodeStructure.md 1節）。 */
 const PHASER_FREE = [
@@ -67,19 +66,6 @@ const TREE_MODULES = ['src/domain/ActiveEffect.ts', 'src/domain/ConditionNode.ts
 
 /** 宣言を読み上げてもらう側の置き場（CodeStructure.md 5節）。 */
 const TREE_READERS = ['src/analysis', 'src/codex-viewer'];
-
-/** そのディレクトリ以下の.tsファイル（リポジトリ相対）。 */
-function sourcesIn(dir: string): string[] {
-  // 検査対象にはファイル1つを名指しするものもある（層の外の `errorReport.ts`・`launchSeed.ts`）。
-  if (dir.endsWith('.ts')) return [dir];
-  const found: string[] = [];
-  for (const entry of readdirSync(join(ROOT, dir))) {
-    const rel = `${dir}/${entry}`;
-    if (statSync(join(ROOT, rel)).isDirectory()) found.push(...sourcesIn(rel));
-    else if (entry.endsWith('.ts')) found.push(rel);
-  }
-  return found;
-}
 
 /**
  * そのファイルが**実行時に**読み込む先（相対指定は解決して、パッケージ名はそのまま）。
