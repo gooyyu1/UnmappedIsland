@@ -15,8 +15,8 @@ import { linesOutsideFence } from '../../scripts/markdownFences.mjs';
  * （{@link REF_FILES}・{@link LINK_CHECKED_FILES}）も指し先（{@link REF_TARGETS}）もそこから絞る。
  * 確定度の印の条件も同じで、印を使う文書なら `docs/` の外でも課す（{@link MARK_RULE_FILES}）。
  *
- * **外すのは、当時の字面を原文のまま抱えている記録だけ**（{@link isVerbatimRecord}）。実装状況の印
- * （4節・4.1節）だけは `docs/` に閉じており、理由は {@link docByPath}。
+ * **外すのは、当時の現物をそのまま残す記録だけ**（{@link isVerbatimRecord}。DocumentStyle.md 10節）。
+ * 実装状況の印（4節・4.1節）だけは `docs/` に閉じており、理由は {@link docByPath}。
  *
  * - Markdownリンク（ファイル・アンカー）が実在すること
  * - コード・YAML・ドキュメント中の「Foo.md N節」「Foo.md 〇〇節」が実在の節を指すこと
