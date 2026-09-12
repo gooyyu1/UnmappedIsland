@@ -39,10 +39,7 @@ const readSource = (rel: string): string => readFileSync(join(ROOT, rel), 'utf-8
 /** 階梯の外の `src/**` 。 */
 const outsideLadder = sourcesIn('src').filter((file) => file !== LADDER);
 
-/**
- * 階梯の外の `src/game/**` 。画面の層という名前の `depth` を持つのはここだけで、他の層（解析・
- * 説明文の字下げ）は同じ綴りの別物なので混ぜない。
- */
+/** 階梯の外の `src/game/**` 。 */
 const outsideLadderInGame = outsideLadder.filter((file) => file.startsWith('src/game/'));
 
 describe('画面に重ねる層の階梯', () => {
@@ -84,10 +81,16 @@ describe('画面に重ねる層の階梯', () => {
   it('層に数を直接書いている場所が無い', () => {
     // `ScreenDepth` は階梯の値そのものの合併なので、**階梯に在る数を直書きすると型では止まらない**
     // （`depth: 1.2`）。書けてしまえば、階梯の項を動かしたときに置き去りになる数がそこに残る。
-    const writesNumber = /\bdepth\s*[:=]\s*-?\d/;
-    const offenders = outsideLadderInGame.filter((file) => writesNumber.test(readSource(file)));
+    //
+    // 渡す形（`depth: 1.2`）は `src/**` 全体で見る。代入の形（`x.depth = 1.2`）だけ `src/game/**` へ
+    // 絞るのは、**画面の層ではない `depth` が同じ綴りで在る**ため——説明文の字下げ（Description）と
+    // 実効値の入れ子（EffectiveValueReading）が、どちらも `depth = 0` で数え始める。
+    const offenders = [
+      ...outsideLadder.filter((file) => /\bdepth:\s*-?\d/.test(readSource(file))),
+      ...outsideLadderInGame.filter((file) => /\bdepth\s*=\s*-?\d/.test(readSource(file))),
+    ];
 
-    expect(offenders).toEqual([]);
+    expect([...new Set(offenders)]).toEqual([]);
   });
 
   it('シーンの表示リストごと持ち上げている場所が無い', () => {

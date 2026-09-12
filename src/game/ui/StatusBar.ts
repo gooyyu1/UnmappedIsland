@@ -219,9 +219,6 @@ export interface StatusBarOptions {
  *
  * 危険域・致命的域のバーは枠を明滅させる（StatusArea.md）。行はどこをタップしても、その
  * ステータスの詳細が開く。
- *
- * **この行の表示物は、一度作ったら作り直さない。** 作り直すと、開いている子ウィンドウの覆いより
- * 手前へ出てしまう（screenDepth.ts）。出さないものは消さずに空にし、値は中身だけ差し替える。
  */
 export class StatusBar extends Phaser.GameObjects.Container {
   static height(metrics: ScreenMetrics): number {
@@ -387,8 +384,8 @@ export class StatusBar extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 値・増減・域・固定表示を今の状態へ書き換える。作り直さないこと自体はこの行の契約だが、値には
-   * もう1つ理由がある——バーが減る様子（ProgressBar.setRatio）を見せている途中で捨てないため。
+   * 値・増減・域・固定表示を今の状態へ書き換える。行ごと作り直さずに済ませるのは、バーが減る様子
+   * （ProgressBar.setRatio）を見せている途中で捨てないため。
    */
   setContent(content: StatusContent): void {
     this.applyContent(content, true);
