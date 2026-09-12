@@ -392,7 +392,7 @@ describe('board-round.mjs', () => {
     const result = playRound({ prs: [pr(10)] });
 
     expect(result.calls).toEqual(['dispatch-review.sh 10']);
-    expect(result.ledger).toEqual({ 'review:10': 'aaa111' });
+    expect(result.ledger).toEqual({ 'review:10': 'aaa111:0' });
   });
 
   // 残すと、番号が回り込んだときに古い指紋が効く。

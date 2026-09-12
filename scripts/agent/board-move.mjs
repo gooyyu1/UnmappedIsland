@@ -461,24 +461,50 @@ export function moves(input) {
     const number = tag.slice('review-'.length);
     const pr = input.prs.find((item) => item.number === Number(number));
     if (pr === undefined) return true;
-    const sent = taken[`review:${number}`];
-    return sent !== undefined && verdicts(pr.comments).some((c) => readsVersion(c, sent));
+    const sent = readReviewMark(taken[`review:${number}`]);
+    return sent !== undefined && verdictsOn(pr, sent.version, false).length > sent.rounds;
   }
 
   /**
-   * **今の差分に対する判定**（無ければ `undefined`）。**ラベルではなくコメントから引く**
-   * ——人がラベルを外してから `board-labels.yml` が `却下` を付けるまでの窓では、ラベルだけを見る
-   * 盤面に「止める印が何も無いPR」として映る（2.13.5）。判定はコメントに残り、読んだ版も名乗って
-   * あるので、**外されても消えない側**から読む。
+   * その版への判定（古い順）。**ラベルではなくコメントから引く**——人がラベルを外してから
+   * `board-labels.yml` が `却下` を付けるまでの窓では、ラベルだけを見る盤面に「止める印が何も無いPR」
+   * として映る（2.13.5）。判定はコメントに残り、読んだ版も名乗ってあるので、**外されても消えない側**
+   * から読む。
    *
    * **読んだ版を名乗っていないコメントは、どの版のものか言えない**（名乗りは書き忘れうる。
    * `review-prompt.md`「読んだ版」）。**数えるかは、訊く側の倒れる先で決める**——`countUnnamed`。
    */
-  function verdictOn(pr, countUnnamed) {
-    const read = verdicts(pr.comments).filter(
-      (c) => readsVersion(c, pr.headRefOid) || (countUnnamed && readVersion(c) === undefined),
+  function verdictsOn(pr, version, countUnnamed) {
+    return verdicts(pr.comments).filter(
+      (c) => readsVersion(c, version) || (countUnnamed && readVersion(c) === undefined),
     );
-    return read[read.length - 1];
+  }
+
+  /** **今の差分に対する判定**（無ければ `undefined`）。引き方は `verdictsOn`。 */
+  function verdictOn(pr, countUnnamed) {
+    return verdictsOn(pr, pr.headRefOid, countUnnamed).at(-1);
+  }
+
+  /**
+   * レビューを出したときの、**盤面の見え方**（`REVIEW` の指紋）。出した版と、**そのとき既に在った
+   * 判定の数**を並べる。
+   *
+   * **版だけでは足りない。** `直し待ち` のまま、もう1周読ませる経路（2.13.6）では**同じ版へ2本目が
+   * 立つ**ので、版だけを見る `judged` は**前の周の判定を「この1本が書いた」と読む**——立てた直後に
+   * 畳まれ、盤面は投入と後片付けを繰り返して判定が1つも増えない。
+   */
+  const reviewMark = (pr) => `${pr.headRefOid}:${verdictsOn(pr, pr.headRefOid, false).length}`;
+
+  /**
+   * `REVIEW` の指紋を、出した版と判定の数へ戻す。覚えが無ければ `undefined`。
+   *
+   * **古い形の覚え（版だけ）では `rounds` が `NaN` になり、どの比較も偽になる**——書き終えたと
+   * 言えない側＝畳むのを待つ側へ倒れるので、次の投入で入れ替わるまでの窓1つぶんで済む。
+   */
+  function readReviewMark(mark) {
+    if (mark === undefined) return undefined;
+    const [version, rounds] = mark.split(':');
+    return { version, rounds: Number(rounds) };
   }
 
   /**
@@ -716,14 +742,18 @@ export function moves(input) {
     // **指紋が言えるのは「この差分を出した」までで、「読まれた」ではない。** 読み手がもう居ない
     // のに出したことを読まれたことと読むと、判定を書かずに終わったレビューがそのPRを永久に止める
     // （issue #1569。畳まれた理由が何であれ同じ）。**居るなら読んでいる最中**——畳むのは 2.10.3 の側。
-    // **判定を書き終えた形は、上の `verdictOn` の枝が先に捕まえる。**
-    const sent = taken[`review:${pr.number}`] === pr.headRefOid;
+    // **判定を書き終えた形は、上の `verdictOn` の枝が先に捕まえる**（`asked` で落ちてきたぶんを
+    // 除く。2.13.6）。
+    const sent = readReviewMark(taken[`review:${pr.number}`])?.version === pr.headRefOid;
     if (sent && alive(`review-${pr.number}`).length > 0) {
       notes.push(`PR #${pr.number} はレビューが読んでいる最中で、結論のラベルはまだ無い`);
       continue;
     }
-    if (sent) notes.push(`PR #${pr.number} のレビューは判定を書かずに終わったので、もう一度出す`);
-    reviews.push(`REVIEW ${pr.number} ${pr.headRefOid}`);
+    // **理由を分けて残す。** `asked` で落ちてきたぶんは判定が書かれていて、出し直しではなく次の周
+    // ——同じ文面にすると、ログを読む人が詰まりの場所を取り違える。
+    if (asked) notes.push(`PR #${pr.number} は差し戻しを頼み終えて戻ってこないので、もう1周読ませる`);
+    else if (sent) notes.push(`PR #${pr.number} のレビューは判定を書かずに終わったので、もう一度出す`);
+    reviews.push(`REVIEW ${pr.number} ${reviewMark(pr)}`);
   }
 
   // 手が空いたセッションの行き先。**レビューは畳み**、ワーカーは**担当の issue がもう自分の仕事で
@@ -766,7 +796,7 @@ export function moves(input) {
         //
         // **両方 `undefined` にはならない**——開いていないPRのレビューは、上の `judged` が終わりと
         // 返してここへ来ない。
-        if (taken[`review:${number}`] === head) {
+        if (readReviewMark(taken[`review:${number}`])?.version === head) {
           // **指紋を `stall:` で始めない。** `board-round.mjs` の `trackIdle` は `stall:` で始まる
           // 覚えを動き出した時点で捨てる（ワーカーは再び空けばもう一度起こす側）ので、始めると
           // レビューも起こし直しになる。
