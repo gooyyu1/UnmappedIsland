@@ -113,8 +113,6 @@ export class WorldRuleVocabulary {
   readonly ambientTemperatureId: PropertyGlobalId;
 
   // ---- キャラクタ（docs/world/Characters.md、wrappers/PlayerCharacter） ----
-  readonly hpId: PropertyGlobalId;
-  readonly satietyId: PropertyGlobalId;
   readonly handSlotId: SlotGlobalId;
   readonly equipmentSlotId: SlotGlobalId;
   readonly injuriesSlotId: SlotGlobalId;
@@ -180,8 +178,6 @@ export class WorldRuleVocabulary {
     this.ambientBrightnessId = propertyNames.intern('ambient_brightness');
     this.ambientTemperatureId = propertyNames.intern('ambient_temperature');
 
-    this.hpId = propertyNames.intern('hp');
-    this.satietyId = propertyNames.intern('satiety');
     this.handSlotId = slotNames.intern('hand');
     this.equipmentSlotId = slotNames.intern('equipment');
     this.injuriesSlotId = slotNames.intern('injuries');

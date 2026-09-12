@@ -4,11 +4,16 @@ import type { ObjectCardStack, PlayScreenView } from '../../src/game/view/PlaySc
 import { fromGameSession, withFrozenCards } from '../../src/game/view/PlayScreenView';
 import type { CardPlace, ScreenPlace } from '../../src/game/view/cardPlaces';
 import { cardPlacesOf } from '../../src/game/view/cardPlaces';
-import { plainCells } from '../../src/game/view/slotCells';
+import { slotCells } from '../../src/game/view/slotCells';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { parseLocale } from '../../src/locale/Localization';
 import type { MiniGame } from '../support/miniGame';
 import { miniGame } from '../support/miniGame';
+
+/** 材料の要求を持たないスロットでは引かれない、型そのものを表す札（slotCellsの引数）。 */
+const unusedCardOfType = (): never => {
+  throw new Error('材料の要求を持たないスロットでは型の札を引かない');
+};
 
 /**
  * プレイ中の画面の表示内容が、ワールドの実際の状態（現在地・そのスロットの中身・手持ち）から
@@ -195,7 +200,8 @@ object_defs:
     ]);
     expect(cells, '詰めても枠の総数は変わらない').toHaveLength(6);
     expect(
-      plainCells(view.slotViewOf(place(mini, 'hand')), cells),
+      // 手持ちは材料の要求を持たないので、材料の枠だけが使う引数（入っている物・拍・型の札）は要らない。
+      slotCells(view.slotViewOf(place(mini, 'hand')), [], cells, 0, unusedCardOfType),
       'レーンに並ぶ枠も6つのまま（持てる種類の数は画面の広さで変わらない）',
     ).toHaveLength(6);
   });

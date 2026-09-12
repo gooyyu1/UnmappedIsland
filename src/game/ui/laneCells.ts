@@ -18,7 +18,7 @@ const PEEK_WIDTH = 40;
  *
  * **枠数そのものの上限ではありません。** 10枠のスロットは10枠を並べ、そのうち4枠が見えます。
  */
-export const LANE_CELLS_MAX = 4;
+const LANE_CELLS_MAX = 4;
 
 /**
  * レーンに並ぶ枠1つ（CardView.md 11節 枠（セル）を一級の単位にする）。**位置＝添字**で、

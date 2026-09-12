@@ -5,7 +5,7 @@ import { startNewGame } from '../../src/domain/generation/NewGame';
 import { Path } from '../../src/domain/wrappers/Path';
 import type { PlayScreenView } from '../../src/game/view/PlayScreenView';
 import { fromGameSession } from '../../src/game/view/PlayScreenView';
-import { characterIcon } from '../../src/game/view/characterCard';
+import { placeholderIconOf } from '../../src/game/view/characterCard';
 import type { CardPlace, ScreenPlace } from '../../src/game/view/cardPlaces';
 import { cardPlacesOf } from '../../src/game/view/cardPlaces';
 import type { Localization } from '../../src/locale/Localization';
@@ -274,7 +274,7 @@ describe('探索と地図（世界→映し 通し）', () => {
 
     expect(view.characterCard.kind).toBe('character');
     expect(view.characterCard.icon, 'キャラクタは型ごとの代役アイコンを持つ').toBe(
-      characterIcon(SAMPLE_CHARACTER),
+      placeholderIconOf(SAMPLE_CHARACTER),
     );
     expect(view.characterCard.identity, '貸し出した札が帰る先の鍵').toEqual([
       game.player.instance.instanceId,

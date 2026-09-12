@@ -70,7 +70,12 @@ export class GeneratedTypes {
     return this.byKey.get(keyOf({ baseGlobalId: current.baseGlobalId, axisValues: moved }));
   }
 
-  /** defが軸axisの値を持つ生成型なら、その素の型のグローバルID。そうでなければundefined。 */
+  /**
+   * defが軸axisの値を持つ生成型なら、その素の型のグローバルID。そうでなければundefined。
+   *
+   * **coordinateOfで書けることを別の口にしているのは、座標の持ち方を呼び手へ写さないため**
+   * ——「軸の値を持つか」と「素は何か」を続けて訊く形にすると、axisValuesの形を読み手が知ることになる。
+   */
   baseGlobalIdIfVariantOn(def: ObjectDef, axis: string): ObjectGlobalId | undefined {
     const coordinate = this.coordinates.get(def.globalId);
     return coordinate?.axisValues.has(axis) === true ? coordinate.baseGlobalId : undefined;
