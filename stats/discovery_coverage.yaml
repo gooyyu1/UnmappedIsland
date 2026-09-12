@@ -97,7 +97,3 @@ island_missing_tag:
   - {tag: shelter, unit: percent, share: 0.00}
   - {tag: smokable, unit: percent, share: 0.00}
   - {tag: tinder, unit: percent, share: 0.10}
-
-island_missing_any:
-  - {written_as: object, unit: percent, share: 54.60}
-  - {written_as: tag, unit: percent, share: 5.85}

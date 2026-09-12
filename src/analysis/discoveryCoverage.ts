@@ -1,4 +1,4 @@
-import type { IslandMap } from '../domain/generation/IslandMap';
+import type { IslandMap, Site } from '../domain/generation/IslandMap';
 import type { LocationTypeDef } from '../domain/generation/LocationTypeDef';
 import type { ObjectGlobalId } from '../domain/GlobalId';
 import type { ObjectDef } from '../domain/ObjectDef';
@@ -119,13 +119,23 @@ export function islandDiscoveryCoverageOf(
   sources: DiscoverySources,
   map: IslandMap,
 ): IslandDiscoveryCoverage {
-  const present = new Set(map.sites.map((site) => site.type!.objectDefGlobalId));
+  const present = new Set(map.sites.map((site) => locationDefIdOf(site)));
 
   return {
     seed: map.seed,
     missingObjectIndices: missingIndicesOf(sources.objects, present),
     missingTagIndices: missingIndicesOf(sources.tags, present),
   };
+}
+
+/**
+ * そのサイトが実体化する土地の型。**型の付かないサイトは投げる**——生成の最後まで型が決まらない
+ * サイトは残らない（LocationTypeMatcherが受け皿の型へ倒す）が、それはこの表からは読めない不変条件で、
+ * 破れると「その土地が無い島」として黙って取りこぼしの側へ数えてしまう。
+ */
+function locationDefIdOf(site: Site): ObjectGlobalId {
+  if (site.type === undefined) throw new Error(`サイト ${site.index} の土地の型が決まっていません。`);
+  return site.type.objectDefGlobalId;
 }
 
 /** その土地の型が生成されなかったせいで、島から消えた契機の添字。 */

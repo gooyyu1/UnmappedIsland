@@ -36,12 +36,6 @@ interface DiscoveryCoverageStats {
   /** その札を持つ型を出す土地が1つも無かった島の数（並びはsources.tagsと同じ）。 */
   readonly missingTagCounts: number[];
 
-  /** 型を名指しで契機に据えたとき、契機が1つでも消えた島の数。 */
-  islandsMissingAnyObject: number;
-
-  /** 札で束ねて契機に据えたとき、契機が1つでも消えた島の数。 */
-  islandsMissingAnyTag: number;
-
   islandCount: number;
 }
 
@@ -49,8 +43,6 @@ function createStats(sources: DiscoverySources): DiscoveryCoverageStats {
   return {
     missingObjectCounts: sources.objects.map(() => 0),
     missingTagCounts: sources.tags.map(() => 0),
-    islandsMissingAnyObject: 0,
-    islandsMissingAnyTag: 0,
     islandCount: 0,
   };
 }
@@ -62,8 +54,6 @@ function collect(
   stats.islandCount++;
   for (const index of coverage.missingObjectIndices) stats.missingObjectCounts[index]++;
   for (const index of coverage.missingTagIndices) stats.missingTagCounts[index]++;
-  if (coverage.missingObjectIndices.length > 0) stats.islandsMissingAnyObject++;
-  if (coverage.missingTagIndices.length > 0) stats.islandsMissingAnyTag++;
 }
 
 function buildSections(
@@ -110,13 +100,6 @@ function buildSections(
         sources.tags.map((tag) => ({ tag: tag.name })),
         stats.missingTagCounts,
       ),
-    },
-    {
-      key: 'island_missing_any',
-      records: [
-        shareRecord({ written_as: 'object' }, stats.islandsMissingAnyObject / stats.islandCount),
-        shareRecord({ written_as: 'tag' }, stats.islandsMissingAnyTag / stats.islandCount),
-      ],
     },
   ];
 }
