@@ -697,7 +697,7 @@ issue**（2.16.2）も、そこはこのワーカーの居場所ではない。*
 
 残りは [`merge-pr.sh`](../scripts/agent/merge-pr.sh) が持つ——関門（2.13.3）とマージだけ。
 
-**相手はマージ済みPRの一覧で、窓は 48時間**（`board-read.mjs` の `MERGED_WINDOW_HOURS`）。
+**相手はマージ済みPRの一覧で、窓は `board-read.mjs` の `MERGED_WINDOW_HOURS`**。
 **1回だけにするのは台帳の覚え**（`tidy:<PR番号>`）で、**覚えを失っても壊れない**——打ち直しても
 同じ結果になる形にしてある（下の 2.10.5）。**デーモンが窓より長く止まっていた間に入ったPRは
 後片付けが走らない**ので、立て直すときに本体だけ [`daemon.sh`](../scripts/agent/daemon.sh) が寄せる。

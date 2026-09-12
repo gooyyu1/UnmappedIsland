@@ -47,6 +47,17 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
     return this.def.name;
   }
 
+  /**
+   * 印字のときに自分を名乗る形。**差分に出るのを、どの操作かの1語に留める。**
+   *
+   * 操作は素のまま深い比較へ渡されることがある（成立しないことを確かめる試験）。名乗らないと、
+   * 差分にはぶら下げている宣言と結び付けた相手が並び、**赤の理由がその中に埋もれる**。
+   * 名前だけを返すので、刷る側が辿る先はここで尽きる。
+   */
+  toJSON(): unknown {
+    return { name: this.name };
+  }
+
   /** 実行にかかるゲーム内時間（分）。durationを省いていれば0。実行前に見せる用途にも使う。 */
   executionMinutes(): number {
     return this.relation.during((context) => this.def.minutesFor(context));

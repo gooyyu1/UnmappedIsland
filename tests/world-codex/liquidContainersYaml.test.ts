@@ -562,8 +562,11 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const dropped = spawnContainer('jar', 'water', capacityOf('jar')!);
     const held = spawnContainer('jar', 'water', capacityOf('jar')!);
 
-    expect(dropped.combinationsWith(held, agent), 'どちらの向きにも成立しない').toEqual([]);
-    expect(held.combinationsWith(dropped, agent)).toEqual([]);
+    expect(
+      dropped.combinationsWith(held, agent).map((c) => c.name),
+      'どちらの向きにも成立しない',
+    ).toEqual([]);
+    expect(held.combinationsWith(dropped, agent).map((c) => c.name)).toEqual([]);
 
     // **名指しで引かない。** 断る組み合わせは複数あり（空の器へ注ぐ側もinstrumentが空でないことを
     // 理由付きで断る）、画面が出すのは宣言順の先頭（CardInteraction.md 2節）。名指しで引くと、
@@ -651,7 +654,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const water = spawnContainer('jar', 'water', 500);
 
     expect(
-      water.combinationsWith(tea, spawn(SAMPLE_CHARACTER)),
+      water.combinationsWith(tea, spawn(SAMPLE_CHARACTER)).map((c) => c.name),
       '混ぜる組み合わせがそもそも現れない',
     ).toEqual([]);
     water

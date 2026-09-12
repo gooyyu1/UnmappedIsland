@@ -130,7 +130,10 @@ describe('なめし革の連鎖', () => {
   it('素手では樹皮を剥げない（握りの刃が要る）', () => {
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
 
-    expect(tree.combinationsWith(player, player), '手を当てても成立しない').toEqual([]);
+    expect(
+      tree.combinationsWith(player, player).map((c) => c.name),
+      '手を当てても成立しない',
+    ).toEqual([]);
   });
 
   it('生皮と樹皮からなめし革ができ、刃物は減らない', () => {

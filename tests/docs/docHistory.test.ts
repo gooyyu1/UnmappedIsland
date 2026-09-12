@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, posix, relative, resolve, sep } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -17,11 +17,14 @@ const ROOT = resolve(__dirname, '../..');
 const DOCUMENT_STYLE = 'docs/DocumentStyle.md';
 
 /**
- * リポジトリルートからの相対パスを `/` 区切りで持つ。**照合する両側を揃えるため**——`path.join` は
- * Windows で `\` を返すので、片側だけそれで組むと一致が一度も起きない。
+ * リポジトリルートからの相対パスを `/` 区切りで持つ。**この検査でパスを組むのは、どこもここを通す**
+ * ——`path.join` も `path.relative` も Windows では `\` を返すので、片側だけ素で組むと照合が一度も
+ * 当たらない。**当たらないことは CI（ubuntu）では見えない**ので、揃える手段を2通りにしない。
  */
-function repoPath(path: string): string {
-  return path.split(sep).join('/');
+function repoPath(...segments: string[]): string {
+  return join(...segments)
+    .split(sep)
+    .join('/');
 }
 
 /** 印そのものを持つこのファイル。中身が印と一致するので、自分自身は見られない。 */
@@ -40,8 +43,7 @@ function documentsAllowedToTellHistory(): Set<string> {
   if (section === null) throw new Error(`${DOCUMENT_STYLE} に 9.1 節が無い`);
   const allowed = new Set<string>();
   for (const [, target] of section[1].matchAll(/^\| \[[^\]]+\]\(([^)\s]+)\)/gm)) {
-    // リンクの綴りは `/` 区切りなので、`posix` で畳んで先頭の `./` だけを落とす。
-    allowed.add(posix.join('docs', target.split('#')[0]));
+    allowed.add(repoPath('docs', target.split('#')[0]));
   }
   if (allowed.size === 0) throw new Error(`${DOCUMENT_STYLE} 9.1 節の表から文書を引けない`);
   return allowed;
@@ -50,7 +52,7 @@ function documentsAllowedToTellHistory(): Set<string> {
 function filesIn(dir: string, extension: string): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(join(ROOT, dir))) {
-    const rel = `${dir}/${entry}`;
+    const rel = repoPath(dir, entry);
     if (statSync(join(ROOT, rel)).isDirectory()) found.push(...filesIn(rel, extension));
     else if (entry.endsWith(extension)) found.push(rel);
   }

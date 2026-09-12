@@ -89,6 +89,17 @@ export class WorldObject {
    */
   readonly session: WorldSession;
 
+  /**
+   * 印字のときに自分を名乗る形。**世界の丸ごとを刷らせないために持つ。**
+   *
+   * 物は親・枠・セッションを辿って世界の全部へ繋がっているので、素のまま深い比較へ渡されると、
+   * 差分を出す側がそのグラフを辿り続けて**落ちたことが誰にも届かない**（赤を出す前に戻ってこない）。
+   * 名乗るのは、どの個体かを見分けられるだけ——型の名前と個体の番号で、**辿り先はここで尽きる**。
+   */
+  toJSON(): unknown {
+    return { name: this.def.name, instanceId: this.instanceId };
+  }
+
   /** 中身から受ける寄与（containerContributionTo）が使う、規約で決まったプロパティのID。 */
   private get engine(): EngineVocabulary {
     return this.session.codex.vocabulary.engine;
@@ -122,10 +133,10 @@ export class WorldObject {
    */
   getProperty(globalPropertyId: PropertyGlobalId): PropertyValue {
     const property = this.tryGetProperty(globalPropertyId);
-    if (property === undefined) {
-      const name = this.session.codex.propertyNames.tryGetName(globalPropertyId);
-      throw new Error(this.notFoundMessage('プロパティ', globalPropertyId, name));
-    }
+    if (property === undefined)
+      throw new Error(
+        this.notFoundMessage('プロパティ', this.session.codex.propertyNames.getName(globalPropertyId)),
+      );
     return property;
   }
 
@@ -133,17 +144,15 @@ export class WorldObject {
    * getProperty・getSlotが引けなかったときの文面。**捕まえたいのはYAMLの書き間違い**なので、
    * IDではなくその名前で言う（'path' はプロパティ 'travel_minute' を持ちません）。
    *
-   * codexがそのIDを知らない場合だけIDのまま見せる——名前を出せないこと自体が、名前で引けなかった
-   * （NameRegistryに登録の無い名前を使った）という手掛かりになる。
+   * **ここへ来るIDは必ず名前を持つ。** 名前空間が配っていない番号は{@link LocalIndexByGlobalId}が
+   * 手前で投げるので、「持っていない」と「そもそも配られていない」がこの文面で混ざることはない。
    *
    * **名前を引くのは呼ぶ側。** どの名前空間かはIDの型そのものが持っているので、ここでkindから
    * 名前空間を選び直すと、選んだ先が両方を受けられる形（`NameRegistry<number>`）へ広がり、
    * 別の名前空間のIDも素の数も通るようになる。
    */
-  private notFoundMessage(kind: MemberKind, globalId: number, name: string | undefined): string {
-    return name === undefined
-      ? `'${this.def.name}' は${kind}(id=${globalId})を持ちません。`
-      : `'${this.def.name}' は${kind} '${name}' を持ちません。`;
+  private notFoundMessage(kind: MemberKind, name: string): string {
+    return `'${this.def.name}' は${kind} '${name}' を持ちません。`;
   }
 
   // ---- 全プロパティに跨る問い ----
@@ -194,10 +203,8 @@ export class WorldObject {
    */
   getSlot(globalSlotId: SlotGlobalId): Slot {
     const slot = this.tryGetSlot(globalSlotId);
-    if (slot === undefined) {
-      const name = this.session.codex.slotNames.tryGetName(globalSlotId);
-      throw new Error(this.notFoundMessage('スロット', globalSlotId, name));
-    }
+    if (slot === undefined)
+      throw new Error(this.notFoundMessage('スロット', this.session.codex.slotNames.getName(globalSlotId)));
     return slot;
   }
 

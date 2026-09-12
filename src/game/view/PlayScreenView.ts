@@ -597,7 +597,7 @@ export function fromGameSession(
    * プロパティを別の物が持っていても、値も影響もその物のもの。
    */
   const detailOf = (object: WorldObject, property: PropertyValue): StatusDetail => {
-    const influences = object.readInfluences(codex.propertyNames.getId(property.def.name));
+    const influences = object.readInfluences(property.def.globalId);
     return {
       description: locale.object(object.def.name).prop(property.def.name).description,
       // 与えている影響で動くのは相手、受けている影響で動くのは自分（influenceOfのmoved）。

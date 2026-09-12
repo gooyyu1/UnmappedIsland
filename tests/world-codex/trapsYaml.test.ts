@@ -264,7 +264,10 @@ describe('traps.yamlのくくり罠', () => {
     const more = baitUntilFull('taro', 'add_plant_bait', 2);
     expect(snare.tryGetProperty(plantBaitId)!.number, '上限まで仕掛けてある').toBe(24);
 
-    expect(snare.combinationsWith(more, player), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      snare.combinationsWith(more, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
     expect(
       snare.refusedCombinationsWith(more, player).map((c) => c.unmetRequirement()?.reasonName),
       '断る理由まで辿り着ける',
@@ -277,7 +280,10 @@ describe('traps.yamlのくくり罠', () => {
     const more = baitUntilFull('coconut_crab', 'add_meat_bait', 2);
     expect(snare.tryGetProperty(meatBaitId)!.number, '上限まで仕掛けてある').toBe(24);
 
-    expect(snare.combinationsWith(more, player), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      snare.combinationsWith(more, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
     expect(
       snare.refusedCombinationsWith(more, player).map((c) => c.unmetRequirement()?.reasonName),
       '断る理由まで辿り着ける',
@@ -561,7 +567,7 @@ describe('traps.yamlの落とし穴', () => {
 
     const more = spawnInto('taro', forest, 'items');
     expect(
-      pitfall.combinationsWith(more, createBrightEnoughAgent(session)),
+      pitfall.combinationsWith(more, createBrightEnoughAgent(session)).map((c) => c.name),
       '成立する組み合わせは無い',
     ).toEqual([]);
     expect(
@@ -579,7 +585,7 @@ describe('traps.yamlの落とし穴', () => {
     const branch = spawnInto('thick_branch', forest, 'items');
 
     expect(
-      pitfall.combinationsWith(branch, createBrightEnoughAgent(session)),
+      pitfall.combinationsWith(branch, createBrightEnoughAgent(session)).map((c) => c.name),
       '太い枝を落としても成立しない',
     ).toEqual([]);
     expect(driveStake(), '長い棒なら立つ').toBe(true);
