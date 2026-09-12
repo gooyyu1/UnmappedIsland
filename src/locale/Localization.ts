@@ -11,7 +11,7 @@ import type { UiTextName } from './uiTexts';
 const LANGUAGE = 'ja';
 
 /** ゲーム本体に同梱される表示文字列ファイル（src/assets/locale/、ビルド時に中身が埋め込まれる）。 */
-export const LOCALE_FILE = `locale/${LANGUAGE}.yaml`;
+const LOCALE_FILE = `locale/${LANGUAGE}.yaml`;
 
 /** 同梱される表示文字列ファイルの中身。言語ごとに1ファイルで、コード側への登録は要らない。 */
 const LOCALE_TEXTS = import.meta.glob('../assets/locale/*.yaml', {

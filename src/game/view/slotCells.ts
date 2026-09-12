@@ -34,7 +34,7 @@ export function slotCells(
  *   1つなので、見せる先も1つ。
  * - **受け入れないスロット（怪我）には添えない。** 出せば「落とせる」と誤って伝えることになる。
  */
-export function plainCells(slot: SlotView, cards: readonly (CardContent | undefined)[]): readonly LaneCell[] {
+function plainCells(slot: SlotView, cards: readonly (CardContent | undefined)[]): readonly LaneCell[] {
   const cells: LaneCell[] = cards.map((card) => ({ card }));
   if (!slot.acceptsCards) return cells;
 
@@ -56,7 +56,7 @@ export function plainCells(slot: SlotView, cards: readonly (CardContent | undefi
  * materialsは残りの工程が要求している型（要求の順、craftingMaterials）。cycleは拍で、タグで書かれた
  * 要求の空き枠に出す型をこれで順に送る。cardOfTypeは型そのものを表す札を引く。
  */
-export function materialCells(
+function materialCells(
   materials: readonly CraftingMaterial[],
   stacks: readonly (ObjectCardStack | undefined)[],
   cards: readonly (CardContent | undefined)[],

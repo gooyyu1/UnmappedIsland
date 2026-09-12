@@ -6,7 +6,7 @@ import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { characterIcon } from '../../src/game/view/characterCard';
+import { placeholderIconOf } from '../../src/game/view/characterCard';
 import { bundledCodex } from '../support/worldCodexFiles';
 
 // describe.eachへ渡すため、beforeAllではなく読み込み時にCodexを組み立てる。
@@ -790,7 +790,7 @@ describe('プレイヤーキャラクタの定義', () => {
 
     it('絵ができるまでの代替アイコンを持つ', () => {
       // 表に無いと選択画面で全員が同じ姿になる（characterCard.ts）。
-      expect(characterIcon(character)).not.toBe(characterIcon('いなくなったキャラクタ'));
+      expect(placeholderIconOf(character), '代役の表に載っている').toBeDefined();
     });
   });
 });

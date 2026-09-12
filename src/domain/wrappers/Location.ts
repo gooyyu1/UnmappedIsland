@@ -1,4 +1,5 @@
 import { ObjectWrapper } from './ObjectWrapper';
+import { Path } from './Path';
 import type { SlotPosition } from '../SlotPosition';
 import type { WorldObject } from '../WorldObject';
 import type { SlotGlobalId } from '../GlobalId';
@@ -108,7 +109,9 @@ export class Location extends ObjectWrapper {
   private reveal(fixture: WorldObject): void {
     this.revealInOwnLocation(fixture);
 
-    const returnPathId = fixture.tryGetProperty(this.words.returnPathIdId)?.getEffectiveValue() ?? 0;
+    // 帰り道の在り処を名乗るのは道なので、生のプロパティではなくPathに訊く。道でない設置物は
+    // その名前を宣言していないため0が返る（ObjectWrapper）。
+    const returnPathId = new Path(fixture, this.codex).returnPathInstanceId;
     if (returnPathId === 0) return;
 
     const returnPath = fixture.findRoot().findSelfOrDescendantByInstanceId(returnPathId);

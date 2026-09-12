@@ -3,7 +3,7 @@ import { parseDocument, isMap, isScalar, isSeq } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { Localization } from '../../src/locale/Localization';
-import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
+import { bundledLocaleText, loadLocalization } from '../../src/locale/Localization';
 import { UI_TEXT_NAMES } from '../../src/locale/uiTexts';
 import { typeDisplayName } from '../../src/locale/typeDisplayName';
 import { bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
@@ -167,7 +167,7 @@ describe('同梱の表示文字列ファイル', () => {
 
   beforeAll(() => {
     codex = bundledCodex();
-    locale = parseLocale(LOCALE_FILE, bundledLocaleText());
+    locale = loadLocalization([]);
   });
 
   it('カードに並ぶもの（item/fixture/injury）はすべて表示名を持つ', () => {
