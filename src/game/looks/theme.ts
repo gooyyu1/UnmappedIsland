@@ -217,6 +217,24 @@ export const COLOR = {
   skyShade: 0x0a1420,
   skyGlow: 0xfff0c8,
 
+  /** 日の出・日の入りの演出（DaybreakOverlay）で空を染める色と、地平線に引く線。 */
+  sunriseSky: 0xff9d4a,
+  sunriseHorizon: 0xfff0cf,
+  sunsetSky: 0x1d2a56,
+  sunsetHorizon: 0xff9f7a,
+  /**
+   * 同じ演出で日の出のときだけ出る日数の文字と、その縁取り。**染まった空（sunriseSky）の上でも
+   * 読めるだけの差を付ける。**
+   */
+  daybreakDayText: 0xfff6e0,
+  daybreakDayTextOutline: 0x5a2a08,
+  /** 同じ演出で昇り沈む天体。 */
+  sunGlow: 0xffc24a,
+  sunDisc: 0xffd34a,
+  sunCore: 0xfff3b8,
+  moonDisc: 0xeef1f8,
+  moonCrater: 0xc2cad9,
+
   statusBarTrack: 0xdddddd,
   statusBarTrackBorder: 0x999999,
   // ステータスバーの塗りは、域（alert）の深刻さで安全域の緑から致命的域の茶へ寄っていく。
@@ -278,6 +296,12 @@ export const COLOR = {
   text: 0x111111,
   textOnDark: 0xffffff,
   textMuted: 0x666666,
+  /**
+   * 絵の上へ直に載る文字の落ち影（タイトル・天候名）。**下地の明るさによらず黒へ倒す**——絵は
+   * 場所によって明暗が変わるので、明るい側へ倒すと暗い絵の上で影が消える。**濃さは敷く側が持つ**
+   * （どれだけ絵を邪魔してよいかは、その文字の大きさと絵で決まる）。
+   */
+  textShadow: 0x000000,
 } as const;
 
 /**
