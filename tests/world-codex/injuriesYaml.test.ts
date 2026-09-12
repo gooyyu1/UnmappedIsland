@@ -8,6 +8,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -401,8 +402,7 @@ describe('injuries.yamlの怪我', () => {
     const TO_FESTERING = 160;
     /** cleanからsepticへ届くまでのtick数。 */
     const TO_SEPTIC = 320;
-    /** 1日 = 96 tick（1 tick = 15分）。 */
-    const DAY = 96;
+    const DAY = TICKS_PER_DAY;
 
     const infectionId = () => codex.propertyNames.getId('infection');
 

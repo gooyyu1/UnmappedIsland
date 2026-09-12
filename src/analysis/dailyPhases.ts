@@ -4,7 +4,8 @@ import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveRea
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { ActivityHoursRow } from './activityHours';
 import type { BalanceTables } from './balanceTables';
-import { MINUTES_PER_DAY, objectCostMinutesOf } from './balanceTables';
+import { objectCostMinutesOf } from './balanceTables';
+import { MINUTES_PER_DAY } from '../domain/worldTime';
 import { craftingStepsOf } from './craftingSteps';
 import type { PropertyGlobalId } from '../domain/GlobalId';
 

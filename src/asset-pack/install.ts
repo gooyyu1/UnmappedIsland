@@ -1,6 +1,6 @@
 import { installPackBackgroundArt } from '../art/backgroundArt';
 import { installPackObjectArt } from '../art/objectArt';
-import { messageOf } from '../loader/errorMessage';
+import { messageOf } from '../util/errorMessage';
 import type { LoadReport } from '../loader/LoadReport';
 import { AssetPack } from './AssetPack';
 

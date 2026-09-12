@@ -1,4 +1,4 @@
-import { messageOf } from './errorMessage';
+import { messageOf } from '../util/errorMessage';
 import type { YAMLMap } from 'yaml';
 import { isMap, isScalar } from 'yaml';
 import {
