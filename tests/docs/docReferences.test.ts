@@ -401,7 +401,7 @@ for (const rel of REF_TARGETS.filter((target) => !isVerbatimRecord(target))) {
  * [#2071](https://github.com/gooyyu1/UnmappedIsland/issues/2071)。
  */
 const GRAMMAR_FALLBACK_PENDING: readonly string[] = [
-  join('.claude', 'analysis', '2026-09-06-backfill.md'),
+  join('agent-ops', 'analysis', '2026-09-06-backfill.md'),
   join('docs', 'engine', 'ActionSystem.md'),
   join('docs', 'engine', 'ContainerSystem.md'),
   join('docs', 'engine', 'ExplorationSystem.md'),
