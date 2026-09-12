@@ -199,22 +199,29 @@ while read -r issue; do
   fi
 done <<<"$closes"
 
-# 本体は作業ツリーの共有先なので、進める前に汚れていないことを見る。未追跡は見ない——手で置いた
-# ものが本体を進める妨げになるなら、その場で `git merge --ff-only` が失敗して分かる。
+# 本体は作業ツリーの共有先なので、進める前に汚れていないことを見る。**未追跡は数え上げない**
+# ——妨げになるかは、進める先に同じパスが在るかで決まるので、判定は `checkout` 自身に任せる。
+#
+# **その `checkout` の失敗も `DIRTY` で受ける。** `set -e` へ落とすと、既に済んだ `MENDED`・`CLOSED`
+# ごと「打てなかった」の一語になり、盤面は覚えを残さないので**毎周同じところまで打ち直し続ける**
+# （[`board-move.mjs`](board-move.mjs) の `TIDY` が覚えるのは、終了コード 0 と 2 だけ）。
 main_dir="$(cd "$HERE" && cd "$(git rev-parse --git-common-dir)/.." && pwd)"
 if changes=$(git -C "$main_dir" status --porcelain --untracked-files=no) && [ -n "$changes" ]; then
   unfinished DIRTY "$main_dir" "$changes"
 else
   before=$(git -C "$main_dir" rev-parse HEAD:package-lock.json)
   git -C "$main_dir" fetch --quiet origin main
-  git -C "$main_dir" checkout --quiet --detach origin/main
-  echo "SYNCED $(git -C "$main_dir" rev-parse --short HEAD)"
-  # 依存が変わったときだけ入れ直す。`npm install` の最中は共有先が揺れるので、毎回は打たない
-  # （直近30日で `package-lock.json` を触ったコミットは1572件中3件）。
-  if [ "$before" != "$(git -C "$main_dir" rev-parse HEAD:package-lock.json)" ] ||
-    [ ! -e "$main_dir/node_modules/.package-lock.json" ]; then
-    (cd "$main_dir" && npm install --no-fund --no-audit)
-    echo "INSTALLED"
+  if ! err=$(git -C "$main_dir" checkout --quiet --detach origin/main 2>&1); then
+    unfinished DIRTY "$main_dir" "$err"
+  else
+    echo "SYNCED $(git -C "$main_dir" rev-parse --short HEAD)"
+    # 依存が変わったときだけ入れ直す。`npm install` の最中は共有先が揺れるので、毎回は打たない
+    # （直近30日で `package-lock.json` を触ったコミットは1572件中3件）。
+    if [ "$before" != "$(git -C "$main_dir" rev-parse HEAD:package-lock.json)" ] ||
+      [ ! -e "$main_dir/node_modules/.package-lock.json" ]; then
+      (cd "$main_dir" && npm install --no-fund --no-audit)
+      echo "INSTALLED"
+    fi
   fi
 fi
 
