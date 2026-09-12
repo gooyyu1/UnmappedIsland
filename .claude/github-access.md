@@ -17,6 +17,7 @@ issue とPRを読み書きする手。**ここが持つのは「どちらの道�
 | 開いているものを引く | `gh issue list --state open --limit <上限> --json number,title,labels` | `list_issues`（`state: "OPEN"`・`fields: ["number","title","labels"]`） |
 | 題や本文で探す | `gh issue list --state open --limit <上限> --json number,title --search '<検索語>'` | `search_issues`（`owner: "gooyyu1"`・`repo: "UnmappedIsland"`・`query: "<検索語>"`） |
 | 本文を読む | `gh issue view <番号> --json body` | `issue_read`（`method: "get"`） |
+| コメントを読む | `gh issue view <番号> --comments` | `issue_read`（`method: "get_comments"`） |
 | 立てる | `gh issue create --title <題> --body-file <本文のファイル> --label <ラベル>` | `issue_write`（`method: "create"`・`title`・`body`・`labels`） |
 | 本文を書き換える | `gh issue edit <番号> --body-file <本文のファイル>` | `issue_write`（`method: "update"`・`issue_number`・`body`） |
 | ラベルを付け替える | `gh issue edit <番号> --add-label <ラベル>` | `issue_write`（`method: "update"`・`issue_number`・`labels`） |
