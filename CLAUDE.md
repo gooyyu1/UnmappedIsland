@@ -1,6 +1,6 @@
 # 実装スタイル
 
-TypeScriptのコーディング規約は [`docs/engine/CodingConventions.md`](docs/engine/CodingConventions.md)
+TypeScriptのコーディング規約は [`docs/CodingConventions.md`](docs/CodingConventions.md)
 に従う。変更後は `npm run lint` / `npm run typecheck` / `npm test` / `npm run format:check` が
 すべて成功することを確認する（CIが走らせるのはこの4つ）。
 

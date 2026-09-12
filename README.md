@@ -86,7 +86,7 @@ UnmappedIsland/
 
 開発ドキュメントは [`docs/`](./docs/README.md) フォルダで管理します。
 ゲームコンセプトは [`docs/concept/GameConcept.md`](./docs/concept/GameConcept.md) にまとめています。
-コーディング規約は [`docs/engine/CodingConventions.md`](./docs/engine/CodingConventions.md) を参照してください。
+コーディング規約は [`docs/CodingConventions.md`](./docs/CodingConventions.md) を参照してください。
 `src/` のクラス・型とJSDocコメントから生成したソースリファレンスは
 <https://gooyyu1.github.io/UnmappedIsland/reference/> で公開しています。
 ユーザー向けのゲーム内ヘルプやチュートリアルはゲームコンテンツとして実装します。

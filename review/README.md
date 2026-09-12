@@ -69,7 +69,7 @@
 「その説明は名前の言い換えか、それとも名前が言えていないことか」。
 
 打ち手が改名でありコメントではないこと、`private` を基準にしないことは規約の側にある
-（[`docs/engine/CodingConventions.md`](../docs/engine/CodingConventions.md)「ファイルと命名」「コメント」）。
+（[`docs/CodingConventions.md`](../docs/CodingConventions.md)「ファイルと命名」「コメント」）。
 
 ### 2.3 兄弟が揃っているか
 
@@ -118,7 +118,7 @@
 
 **その回の明細は、日付を頭に付けたフォルダへ畳む。** 次の回が読むのはこの `README.md` だけで、
 記録は当時の答えとして残す。方針として次も使うものが出たなら、責務を持つ文書
-（`docs/engine/CodingConventions.md`・`docs/CodeStructure.md`・`docs/engine/DesignNotes.md`）か、
+（`docs/CodingConventions.md`・`docs/CodeStructure.md`・`docs/engine/DesignNotes.md`）か、
 この `README.md` へ移してから畳む。
 
 **その回の中では終わらないと書いて先送りしたものは、畳む前に issue にする。** 次の回が記録を開くのは

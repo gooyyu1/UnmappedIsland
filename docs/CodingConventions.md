@@ -2,17 +2,17 @@
 
 機械的に強制できる整形・静的検査は Prettier・ESLint・`tsc --strict`（`npm run lint` / `npm run typecheck`）に
 任せる。ここには機械化できない規約だけを書く。設計方針（カプセル化・コメントの書き方）は
-[`CLAUDE.md`](../../CLAUDE.md) を参照。
+[`CLAUDE.md`](../CLAUDE.md) を参照。
 
 ## ファイルと命名
 
-- どのフォルダへ置くかは、そのファイルが答えることで決まる（[`CodeStructure.md`](../CodeStructure.md) 1節）。
+- どのフォルダへ置くかは、そのファイルが答えることで決まる（[`CodeStructure.md`](./CodeStructure.md) 1節）。
 - ファイル名は主要エクスポートの名前に一致させる。クラス・型が主ならPascalCase（`PropertyValue.ts`）、
   関数群のモジュールならcamelCase（`yamlMapping.ts`）。
 - ディレクトリ名は小文字で、複数語はケバブケース（`domain/generation`・`asset-pack`・`assets/world-codex`）。
   ファイル名と違い指す識別子が無いので、綴りを合わせる相手がいない。データのファイル名（`src/assets/`
   以下）だけは例外で、識別子と同じsnake_caseに揃える
-  （[`GameElementDefinition.md`](./GameElementDefinition.md) 3.2節）。
+  （[`GameElementDefinition.md`](./engine/GameElementDefinition.md) 3.2節）。
 - 1ファイル1責務。1つのクラスを複数ファイルへ分割しない（大きくなりすぎる場合は
   協力クラス・関数モジュールへ切り出す）。
 - クラス・型・インターフェース: PascalCase。メソッド・プロパティ・変数: camelCase。
@@ -40,9 +40,9 @@
 ### グローバルIDは、名前空間ごとに別の型
 
 名前空間（`NameRegistry` 1つぶん）が配るグローバルIDは、`number` に型の上だけの印を交ぜた
-[`GlobalId<名前空間>`](../../src/domain/GlobalId.ts) で受ける。実体は素の `number` のままなので、
+[`GlobalId<名前空間>`](../src/domain/GlobalId.ts) で受ける。実体は素の `number` のままなので、
 比較もMapの鍵も配列の添字もそのまま使える。名前空間が違えば別の型になり、プロパティのIDを受ける宣言へ
-スロットのIDや素の数を渡すと型で止まる（[`tests/architecture/globalId.test.ts`](../../tests/architecture/globalId.test.ts)
+スロットのIDや素の数を渡すと型で止まる（[`tests/architecture/globalId.test.ts`](../tests/architecture/globalId.test.ts)
 が `@ts-expect-error` で見張る。受け口が `number` へ戻ると `npm run typecheck` が赤くなる）。
 
 **`WorldCodex` が持つ名前空間はどれも分かれている。** 別名は `GlobalId.ts` に並ぶ。とくに**タグは
@@ -105,7 +105,7 @@ Codexを持たずに組み立てだけを見る）。`as <種類>GlobalId` を g
 
 ## コメント
 
-- TSDoc（`/** … */`）で書く。言語は日本語。何を書いてよいかは [`CLAUDE.md`](../../CLAUDE.md) の
+- TSDoc（`/** … */`）で書く。言語は日本語。何を書いてよいかは [`CLAUDE.md`](../CLAUDE.md) の
   コメント方針に従う。`@param`/`@returns` の羅列はしない（本文で足りる説明を優先する）。
 - **説明が要ると感じたら、第一手は改名。** 名前にしてなお言い残す契約があるときだけコメントを足す。
   コメントが無いこと自体は欠陥ではない——名前が責務を言い切っていれば、それが良い状態。
@@ -138,8 +138,8 @@ Codexを持たずに組み立てだけを見る）。`as <種類>GlobalId` を g
 その層が赤くなり、赤の読み方が決まらない。確かめたい形はそのテストの中にYAMLで宣言する——1つの
 テストが読むぶんだけを、そのテストの隣に書く（テスト間で1つの大きな定義を共有しない）。
 
-映しの層は入口が `StartedGame` なので、[`tests/support/miniGame.ts`](../../tests/support/miniGame.ts)
+映しの層は入口が `StartedGame` なので、[`tests/support/miniGame.ts`](../tests/support/miniGame.ts)
 が地形生成を通さない一式を組み立てる。時間を進めるだけなら
-[`tests/support/worldYaml.ts`](../../tests/support/worldYaml.ts) の world を読む。
+[`tests/support/worldYaml.ts`](../tests/support/worldYaml.ts) の world を読む。
 
 通しのテストは実データとrngの引きに依存してよい。**何を前提にしているかは冒頭に書く。**
