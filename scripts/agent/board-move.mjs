@@ -108,9 +108,11 @@ const HELD_TASKS = 10;
 const ACTIVE_WORKERS = 3;
 
 /**
- * 棚卸しが付ける**分類**の接頭辞（2.17.1）。**未整理は「これを1つも持たないこと」で表す**——
+ * 棚卸しが付ける**分類**の接頭辞（2.17.1）。**「これを1つも持たないこと」で分類がまだかを表す**——
  * 分類の値を数え上げて、そのどれでも無い、という否定の列挙にすると、出口が増えるたびに条件を
  * 書き換えることになり、書き忘れた出口の issue が毎周また拾われる（2.17.3）。
+ *
+ * **未整理はこれだけでは決まらない**（下の `unsorted`）——向かう先を名乗っていない `kind:task` も入る。
  */
 const KIND = 'kind:';
 
@@ -124,8 +126,8 @@ const KIND = 'kind:';
 const URGENT = '急ぎ';
 
 /**
- * その仕事が**何へ向かうか**の印（2.18.1）。**立てた本人が起票のときに付ける**——向かう先を知って
- * いるのは立てた側だけで、後から状態を見ても引けない。
+ * その仕事が**何へ向かうか**の印（2.18.1）。**立てた本人が起票のときに付ける**のがいちばん確かで、
+ * **名乗り漏れは棚卸しが拾う**（2.17.1）。
  *
  * - `goal:game` … 完成の定義を1つ埋める（世界の中身・遊びの仕組み・画面）。
  * - `goal:upkeep` … 作る仕組みと記述を整える（盤面の道具・参照のずれ・置き場の直し）。
@@ -140,8 +142,8 @@ const GOAL_GAME = `${GOAL}game`;
  * 向かう先の代理にならない——棚卸しの分解で立つ子には必ず付くので、**元が人の issue でも子は
  * 「機械が立てたもの」に見え、人の仕事が分解された瞬間に整備へ落ちる。**
  *
- * 名乗りは棚卸しが保証する（2.17.1）ので、**配られる issue には必ず `goal:` が付いている。**
- * 落ちたものは下の `missingGoal` が告げる。
+ * 名乗り漏れは棚卸しが拾う（2.17.1）ので、**名乗りの無い issue が残り続けることはない。** ただし
+ * **配る手前で止めはしない**ので、印が付くまでのあいだは整備として並ぶ（下の `missingGoal`）。
  */
 const advancesGame = (issue) => names(issue).includes(GOAL_GAME);
 
@@ -154,8 +156,14 @@ const advancesGame = (issue) => names(issue).includes(GOAL_GAME);
 const missingGoal = (issue) =>
   names(issue).includes(`${KIND}task`) && !names(issue).some((name) => name.startsWith(GOAL));
 
-/** まだ分類されていない issue（2.17.1）。**否定の列挙にしないための、接頭辞1つでの判定。** */
-const unsorted = (issue) => !names(issue).some((name) => name.startsWith(KIND));
+/**
+ * **未整理**——棚卸しの結論（`kind:` と `goal:`）が揃っていない issue（2.17.1）。
+ * **分類がまだ**か、**分類は済んだが向かう先を名乗っていない**か。
+ *
+ * **`board.mjs` の `## 未整理` も、棚卸しの係の `due` も、ここから引く。** 2箇所で書くと片方だけが
+ * 直り、**盤面が並べる「未整理」と、棚卸しが立つ理由が食い違う。**
+ */
+export const unsorted = (issue) => !names(issue).some((name) => name.startsWith(KIND)) || missingGoal(issue);
 
 /**
  * PRのコメントに残ったスメルを、拾う側が読んだ印（4.4）。**印を自前の台帳で持たない**——コメントに
@@ -230,7 +238,7 @@ const CYCLES = [
     // **未整理は、棚卸しの結論が揃っていないこと**（2.17.1）——`kind:` が無いか、`kind:task` なのに
     // `goal:` が無いか。**`kind:` の有無だけを入口にすると、`kind:` が付いた時点で issue が棚卸しの
     // 視界から消える**ので、後から足した `goal:` の取りこぼしを直す者が居なくなる。
-    due: (board) => board.issues.some((issue) => unsorted(issue) || missingGoal(issue)),
+    due: (board) => board.issues.some(unsorted),
   },
   {
     name: 'analysis',

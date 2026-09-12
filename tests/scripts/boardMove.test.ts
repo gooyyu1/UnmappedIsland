@@ -126,7 +126,7 @@ function pr(number: number, over: Record<string, unknown> = {}) {
 }
 
 /**
- * ラベルの一覧。**`kind:task` を渡したら `goal:` も足す**——**配られる issue は必ず向かう先を持つ**
+ * ラベルの一覧。**`kind:task` を渡したら `goal:` も足す**——**棚卸しを通った issue は向かう先を持つ**
  * （`.claude/board-design.md` 2.17.1 の、棚卸しが出す結論）ので、持たない盤面のほうが例外。
  * 足さないと、向かう先と関わりのない検査の期待値へ一律に `NOTE` が1行増える（2.18.1）。
  *
@@ -1229,7 +1229,7 @@ describe('board-move.mjs', () => {
 
   // ## 周期で起きる係（2.17）
   //
-  // 未整理は `kind:` を1つも持たないことで表す（2.17.1）。**分類の綴りを増やしても、ここは
+  // 未整理は棚卸しの結論が揃っていないことで表す（2.17.1）。**分類の綴りを増やしても、ここは
   // 書き換わらない**——「`task` でも `meta` でも無い」で書いていたときは、出口が増えるたびに
   // 条件を足す必要があった。
   const unsorted = (number: number) => ({ number, labels: [], blockedBy: { nodes: [] } });
@@ -1550,11 +1550,11 @@ describe('board-move.mjs', () => {
     expect(moves({ issues: [upkeep(1), game(2)], taken: DUG_YESTERDAY })).not.toContain(DIG);
   });
 
-  // 印が無いときの既定（2.18.1）。**名乗らない機械の仕事は整備として読む**ので、付け忘れが
-  // 「完成へ近づける仕事が在る」を成立させることはない。
-  it('goal: を名乗らない origin:agent の issue しか無ければ、掘り起こす係を立てる', () => {
-    const unnamed = { number: 1, ...label('kind:task', 'origin:agent'), blockedBy: { nodes: [] } };
-    expect(moves({ issues: [unnamed], taken: DUG_YESTERDAY })).toContain(DIG);
+  // **棚卸しの取りこぼしは、掘り起こす係を止めない**（2.18.1）。`goal:game` を名乗るものだけが
+  // 「完成へ近づける仕事」なので、名乗り漏れが「在る」を成立させることはない。**`label()` は
+  // `kind:task` へ `goal:upkeep` を足す**ので、ここは `unnamedTask` で名乗りの無い形を自分で組む。
+  it('向かう先を名乗らない kind:task しか無ければ、掘り起こす係を立てる', () => {
+    expect(moves({ issues: [unnamedTask(1, 'origin:agent')], taken: DUG_YESTERDAY })).toContain(DIG);
   });
 
   it('前に立ててから一日が経つまで、掘り起こす係は立てない', () => {

@@ -69,8 +69,11 @@
 //
 // ## `未整理` は、棚卸しがまだ見ていない issue
 //
-// **`kind:` のラベルを1つも持たない open な issue**（`.claude/board-design.md` 2.17.1）。分類は
-// 棚卸しが付けるので、持っていないことがそのまま「まだ見ていない」を指す。
+// **棚卸しの結論（`kind:` と `goal:`）が揃っていない open な issue**（`.claude/board-design.md`
+// 2.17.1）。分類がまだか、分類は済んだが向かう先を名乗っていないか。
+//
+// **判定は [`board-move.mjs`](board-move.mjs) の `unsorted` から引く**——棚卸しの係が立つ理由も
+// 同じものを読むので、2箇所で書くと**ここに並ぶ「未整理」と、棚卸しが立つ理由が食い違う。**
 //
 // **分類の値を数え上げて、そのどれでもない、という否定の列挙では表さない。** 出口が増えるたびに条件を
 // 書き換えることになり、書き忘れた出口の issue が毎周また並ぶ。分解した親も、別の issue へ束ねた
@@ -82,7 +85,7 @@
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PATROL, busySession, cycleHours } from './board-move.mjs';
+import { PATROL, busySession, cycleHours, unsorted as unsortedIssue } from './board-move.mjs';
 import { ISSUE_CAP } from './board-read.mjs';
 import { liveSessions } from './live-sessions.mjs';
 import { gh as runGh, runBash } from './spawn.mjs';
@@ -188,7 +191,7 @@ function survey({ gh, sessions, warn }) {
       };
     });
 
-  const unsorted = issues.filter((issue) => !names(issue).some((name) => name.startsWith('kind:')));
+  const unsorted = issues.filter(unsortedIssue);
 
   // `issuesRaw` を返すのは、**`確定待ち` を引くのが端末の側だけ**だから（下の `board`）。
   return { issuesRaw, issues, prs, tasks, unsorted, live, sessionsKnown };
