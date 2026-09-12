@@ -212,10 +212,12 @@ object_defs:
   /** 日数の分母。**丸い数にする**——測っている値ではないので、桁の一致で読み手を迷わせない。 */
   const LABOUR: DailyLabour = { minimumLabourMinutes: 640, surplusMinutes: 800 };
 
-  const legs: VoyageLegs = voyageLegsOf(
-    new WorldCodexYamlLoader().load('voyage-test.yaml', YAML).buildAndReset(),
-    LABOUR,
-  );
+  /** その世界を測る。**世界を書き換えた場合も同じ入口を通す**ので、線を踏み外したときの挙動が読める。 */
+  function legsFrom(yaml: string): VoyageLegs {
+    return voyageLegsOf(new WorldCodexYamlLoader().load('voyage-test.yaml', yaml).buildAndReset(), LABOUR);
+  }
+
+  const legs: VoyageLegs = legsFrom(YAML);
 
   function zone(name: string) {
     const found = legs.zones.find((candidate) => candidate.name === name);
@@ -319,5 +321,55 @@ object_defs:
 
     // 穏やかは追い風50・横風25・向かい風25。本土の側の辺1本あたり -17.5 分。
     expect(shortest.bySeason.get('calm')?.totalMinutes).toBe(655);
+  });
+
+  it('寄与を宣言していない風でも、区間ぶんの素の横断時間は落とさない', () => {
+    // 横風の寄与を消す。その風では素のまま渡るだけで、**区間が合計から消えてはいけない。**
+    const withoutCrosswind = legsFrom(
+      YAML.replace(
+        `      - conditions:
+          - {subject: ancestor, prop: wind, eq: crosswind}
+        modify: {self: {crossing_minutes: -10}}\n`,
+        '',
+      ),
+    );
+    const shortest = withoutCrosswind.courses.find((c) => c.coastName === 'sandy_beach' && !c.detour);
+
+    expect(shortest?.byWind.get('crosswind')?.totalMinutes).toBe(shortest?.total.totalMinutes);
+
+    // 季節の期待値も、横風のぶんが素の横断時間として残る（追い風50・横風25・向かい風25）。
+    expect(shortest?.bySeason.get('calm')?.totalMinutes).toBe(660);
+  });
+
+  it('航路の range が、寄与の重なった横断時間の底になる', () => {
+    // 底を素の横断時間より上へ持ち上げると、追い風で縮めた分がそこで止まる。
+    const withFloor = legsFrom(
+      YAML.replace(
+        'base: {subject: parent, prop: crossing_minutes}\n        range: {min: 60, max: 900}',
+        'base: {subject: parent, prop: crossing_minutes}\n        range: {min: 290, max: 900}',
+      ),
+    );
+    const shortest = withFloor.courses.find((c) => c.coastName === 'sandy_beach' && !c.detour);
+
+    // 300-40 と 240-40 が どちらも 290 で止まる（見張り150分＋290×2）。
+    expect(shortest?.byWind.get('tailwind')?.totalMinutes).toBe(730);
+  });
+
+  it('針路が3本以上になったら投げる', () => {
+    const threeWays = YAML.replace(
+      '            - {object: route_to_outer_waters, into: self}',
+      '            - {object: route_to_outer_waters, into: self}\n            - {object: route_to_mainland, into: self}',
+    );
+
+    expect(() => legsFrom(threeWays)).toThrowError(/針路が3本/);
+  });
+
+  it('風の寄与に読めない条件が付いていたら投げる', () => {
+    const unreadable = YAML.replace(
+      '    passives:\n      - conditions:\n          - {subject: ancestor, prop: wind, eq: crosswind}',
+      '    passives:\n      - conditions:\n          - {prop: destination_zones_to_mainland, gte: 1}\n        modify: {self: {crossing_minutes: -5}}\n      - conditions:\n          - {subject: ancestor, prop: wind, eq: crosswind}',
+    );
+
+    expect(() => legsFrom(unreadable)).toThrowError(/読めない条件/);
   });
 });

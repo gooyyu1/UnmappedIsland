@@ -81,23 +81,23 @@ wind_legs:
   - {wind: headwind, direction: toward_offshore, unit: minutes, minutes: -60.0}
 
 course_wind:
-  - {coast: sandy_beach, zone: coastal_waters, course: shortest, wind: crosswind, total_minutes: 4545.0, days: 5.46}
   - {coast: sandy_beach, zone: coastal_waters, course: shortest, wind: tailwind, total_minutes: 4185.0, days: 5.02}
+  - {coast: sandy_beach, zone: coastal_waters, course: shortest, wind: crosswind, total_minutes: 4545.0, days: 5.46}
   - {coast: sandy_beach, zone: coastal_waters, course: shortest, wind: headwind, total_minutes: 5265.0, days: 6.32}
-  - {coast: sandy_beach, zone: coastal_waters, course: detour, wind: crosswind, total_minutes: 5295.0, days: 6.36}
   - {coast: sandy_beach, zone: coastal_waters, course: detour, wind: tailwind, total_minutes: 4965.0, days: 5.96}
+  - {coast: sandy_beach, zone: coastal_waters, course: detour, wind: crosswind, total_minutes: 5295.0, days: 6.36}
   - {coast: sandy_beach, zone: coastal_waters, course: detour, wind: headwind, total_minutes: 6045.0, days: 7.26}
-  - {coast: rocky_coast, zone: tide_rip, course: shortest, wind: crosswind, total_minutes: 3810.0, days: 4.57}
   - {coast: rocky_coast, zone: tide_rip, course: shortest, wind: tailwind, total_minutes: 3510.0, days: 4.21}
+  - {coast: rocky_coast, zone: tide_rip, course: shortest, wind: crosswind, total_minutes: 3810.0, days: 4.57}
   - {coast: rocky_coast, zone: tide_rip, course: shortest, wind: headwind, total_minutes: 4410.0, days: 5.29}
-  - {coast: rocky_coast, zone: tide_rip, course: detour, wind: crosswind, total_minutes: 4560.0, days: 5.47}
   - {coast: rocky_coast, zone: tide_rip, course: detour, wind: tailwind, total_minutes: 4290.0, days: 5.15}
+  - {coast: rocky_coast, zone: tide_rip, course: detour, wind: crosswind, total_minutes: 4560.0, days: 5.47}
   - {coast: rocky_coast, zone: tide_rip, course: detour, wind: headwind, total_minutes: 5190.0, days: 6.23}
-  - {coast: cliff_coast, zone: gull_rock, course: shortest, wind: crosswind, total_minutes: 3060.0, days: 3.67}
   - {coast: cliff_coast, zone: gull_rock, course: shortest, wind: tailwind, total_minutes: 2820.0, days: 3.39}
+  - {coast: cliff_coast, zone: gull_rock, course: shortest, wind: crosswind, total_minutes: 3060.0, days: 3.67}
   - {coast: cliff_coast, zone: gull_rock, course: shortest, wind: headwind, total_minutes: 3540.0, days: 4.25}
-  - {coast: cliff_coast, zone: gull_rock, course: detour, wind: crosswind, total_minutes: 3810.0, days: 4.57}
   - {coast: cliff_coast, zone: gull_rock, course: detour, wind: tailwind, total_minutes: 3600.0, days: 4.32}
+  - {coast: cliff_coast, zone: gull_rock, course: detour, wind: crosswind, total_minutes: 3810.0, days: 4.57}
   - {coast: cliff_coast, zone: gull_rock, course: detour, wind: headwind, total_minutes: 4320.0, days: 5.19}
 
 course_season:

@@ -220,7 +220,7 @@
 `*_weight` を重みとする `pick` が次を選ぶ——ですが、天気と違って持続は一律です。向きしか無いので、
 長さまで振ると何が変わったのか読めなくなります。
 
-**この重みが横断時間へ返すものは、1 周回に 1 度の航海では半日ぶんです。** 砂浜から近道で渡ると、
+**この重みが横断時間へ返すものは、1 周回に 1 度の航海では半日に満たない差です。** 砂浜から近道で渡ると、
 乾季なら 5.37 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=dry days -->、
 雨季なら 5.72 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=wet days -->——
 最も短い岸壁からでも
@@ -343,8 +343,7 @@
 
 **測った値は [`stats/voyage.yaml`](../../stats/voyage.yaml) が出します**——`zone_yields` が見張り 1 回の
 卓の割り方（何も返らない／拾えるものが返る／湧くものが立つ）を、`zone_finds` が何が何個返るかを、
-海区ごとに持ちます（読み方は [`VoyageStats.md`](../diagnostics/VoyageStats.md)）。**上の表の「実り」は
-`zone_yields` の `barren` の裏返しです。**
+海区ごとに持ちます（読み方は [`VoyageStats.md`](../diagnostics/VoyageStats.md)）。
 
 **海だけが「何も見つからない」候補を持ちます。** 地上の探索は必ず 1 個以上を返しますが
 （[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 2 節）、
