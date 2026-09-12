@@ -4,7 +4,7 @@ import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import type { Daybreak } from '../view/daylight';
 import { cssColor } from '../../util/cssColor';
 import { uiText } from '../../locale/uiTexts';
-import { FONT_FAMILY } from '../looks/theme';
+import { COLOR, FONT_FAMILY } from '../looks/theme';
 
 /**
  * 染まってから醒めるまで（ms）。1回の経過に使う実時間の上限（PlayScene.REAL_MS_MAX）より短くして、
@@ -38,29 +38,16 @@ const DAY_TEXT_Y = 320;
 const BODY_OFFSET_X_RATIO = 0.3;
 const DAY_TEXT_Y_RATIO = 0.36;
 
-/**
- * 演出そのものの色。**`theme.ts`へは出さない**——画面のどこかと揃える色ではなく、この演出だけが
- * 使う空の色だから。
- */
+/** 空を染める色と、地平線の線。どちらへ向かう演出かで組が変わる。 */
 interface DaybreakLook {
-  /** 空を染める色と、地平線の線。 */
   readonly sky: number;
   readonly horizon: number;
-  /** 日数の文字と、その縁取り。染まった空の上でも読めるだけの差を付ける。 */
-  readonly text: number;
-  readonly textOutline: number;
 }
 
 const LOOK: Readonly<Record<Daybreak['kind'], DaybreakLook>> = {
-  sunrise: { sky: 0xff9d4a, horizon: 0xfff0cf, text: 0xfff6e0, textOutline: 0x5a2a08 },
-  sunset: { sky: 0x1d2a56, horizon: 0xff9f7a, text: 0xffe6d0, textOutline: 0x120a24 },
+  sunrise: { sky: COLOR.sunriseSky, horizon: COLOR.sunriseHorizon },
+  sunset: { sky: COLOR.sunsetSky, horizon: COLOR.sunsetHorizon },
 };
-
-const SUN_GLOW = 0xffc24a;
-const SUN_DISC = 0xffd34a;
-const SUN_CORE = 0xfff3b8;
-const MOON_DISC = 0xeef1f8;
-const MOON_CRATER = 0xc2cad9;
 
 /** 太陽の光条の本数と、月の海の位置・大きさ（半径に対する割合）。 */
 const SUN_RAYS = 8;
@@ -99,7 +86,7 @@ export class DaybreakOverlay extends Phaser.GameObjects.Container {
 
     if (daybreak.kind === 'sunrise') {
       const y = -Math.min(metrics.px(DAY_TEXT_Y), rect.height * DAY_TEXT_Y_RATIO);
-      this.addDayText(scene, metrics, y, daybreak.elapsedDays, look);
+      this.addDayText(scene, metrics, y, daybreak.elapsedDays);
     }
 
     this.setAlpha(0);
@@ -150,22 +137,16 @@ export class DaybreakOverlay extends Phaser.GameObjects.Container {
   }
 
   /** 日の出のときだけ出す `DAY 10`。太陽が昇り切るころに現れる。 */
-  private addDayText(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    y: number,
-    elapsedDays: number,
-    look: DaybreakLook,
-  ): void {
+  private addDayText(scene: Phaser.Scene, metrics: ScreenMetrics, y: number, elapsedDays: number): void {
     const text = scene.add
       .text(0, y, `${uiText('day')} ${elapsedDays}`, {
         fontFamily: FONT_FAMILY,
         fontSize: `${metrics.fontPx(DAY_TEXT_SIZE)}px`,
         fontStyle: 'bold',
-        color: cssColor(look.text),
+        color: cssColor(COLOR.daybreakDayText),
       })
       .setOrigin(0.5)
-      .setStroke(cssColor(look.textOutline), metrics.px(DAY_TEXT_STROKE))
+      .setStroke(cssColor(COLOR.daybreakDayTextOutline), metrics.px(DAY_TEXT_STROKE))
       .setAlpha(0);
     this.add(text);
 
@@ -184,10 +165,10 @@ export class DaybreakOverlay extends Phaser.GameObjects.Container {
   private sun(scene: Phaser.Scene, metrics: ScreenMetrics): Phaser.GameObjects.Graphics {
     const radius = metrics.px(BODY_RADIUS);
     const graphics = scene.add.graphics();
-    graphics.fillStyle(SUN_GLOW, 0.35).fillCircle(0, 0, radius * 1.35);
-    graphics.fillStyle(SUN_DISC, 1).fillCircle(0, 0, radius);
-    graphics.fillStyle(SUN_CORE, 1).fillCircle(0, 0, radius * 0.6);
-    graphics.lineStyle(Math.max(2, radius * 0.09), SUN_DISC, 0.9);
+    graphics.fillStyle(COLOR.sunGlow, 0.35).fillCircle(0, 0, radius * 1.35);
+    graphics.fillStyle(COLOR.sunDisc, 1).fillCircle(0, 0, radius);
+    graphics.fillStyle(COLOR.sunCore, 1).fillCircle(0, 0, radius * 0.6);
+    graphics.lineStyle(Math.max(2, radius * 0.09), COLOR.sunDisc, 0.9);
     for (let ray = 0; ray < SUN_RAYS; ray++) {
       const angle = ((Math.PI * 2) / SUN_RAYS) * ray;
       const [cos, sin] = [Math.cos(angle), Math.sin(angle)];
@@ -200,9 +181,9 @@ export class DaybreakOverlay extends Phaser.GameObjects.Container {
   private moon(scene: Phaser.Scene, metrics: ScreenMetrics): Phaser.GameObjects.Graphics {
     const radius = metrics.px(BODY_RADIUS);
     const graphics = scene.add.graphics();
-    graphics.fillStyle(MOON_DISC, 0.25).fillCircle(0, 0, radius * 1.25);
-    graphics.fillStyle(MOON_DISC, 1).fillCircle(0, 0, radius);
-    graphics.fillStyle(MOON_CRATER, 1);
+    graphics.fillStyle(COLOR.moonDisc, 0.25).fillCircle(0, 0, radius * 1.25);
+    graphics.fillStyle(COLOR.moonDisc, 1).fillCircle(0, 0, radius);
+    graphics.fillStyle(COLOR.moonCrater, 1);
     for (const [x, y, size] of MOON_CRATERS) graphics.fillCircle(x * radius, y * radius, size * radius);
     return graphics;
   }
