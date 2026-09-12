@@ -12,8 +12,10 @@ import { describe, expect, it } from 'vitest';
  * 見方は2つあり、どちらが赤くなったかで直す場所が変わるので `it` を分けてある。
  *
  * 1. **`Xxx.yyy`・`Xxx.Yyy` の形**（下の「今は無い名前を指していない」）。見るのは `src`・`tests` の `.ts` の
- *    コメントと、`docs/` の `.md` の全文。判定は「その名前がコード（コメント以外）に一度も出て
- *    こないなら、指す先が無い」。読み手が辿れることだけを見るので、公開・非公開は問わない。
+ *    コメントと、`docs/` の `.md` の全文。判定は「**その所有者が**そのメンバーを持っていないなら、
+ *    指す先が無い」（hasMember）。読み手が辿れることだけを見るので、公開・非公開は問わない。
+ *    この形で書けば今も在るものを指している、と読む——**過去に在ったものを語る箇所での書き方**は
+ *    `DocumentStyle.md` 5節「今は無い名前」。
  *    **ファイル名は参照ではない。** `ClimateSystem.md` のような書き方が `docs/` の大半を占めるので、
  *    リポジトリに在るファイルの名前と一致するものを除く。拡張子の一覧では弾かない——一覧のほうが
  *    古びて、増えた拡張子に気づけないまま素通しになる。
@@ -147,6 +149,33 @@ function appearsIn(file: string, name: string): boolean {
   return new RegExp(`\\b${name}\\b`).test(text);
 }
 
+/** そのファイルのコメント以外に、その名前が現れるか（`appearsInCode` と同じ面を1ファイルで見る）。 */
+const codeByFile = new Map<string, string>();
+function appearsInCodeOf(file: string, name: string): boolean {
+  let code = codeByFile.get(file);
+  if (code === undefined) {
+    code = codeOnly(read(file));
+    codeByFile.set(file, code);
+  }
+  return new RegExp(`\\b${name}\\b`).test(code);
+}
+
+/**
+ * **所有者がそのメンバーを持っているか。** 所有者と同名の `.ts` が引けるなら、その中だけを見る
+ * ——コード全体では、別の型が持つ同名のメンバーや、無関係な文字列に同じ語が在るだけで素通りする
+ * （在りもしない `AxisDef` の `Range` が、別のテストの `describe` に渡した文字列の中の `Range` で
+ * 在ることにされていた）。所有者からファイルを決められないとき（同名の `.ts` が無い・複数ある）
+ * だけ、従来どおりコード全体で足りるとする。
+ *
+ * 見る面はどちらもコメント以外。**コメントを含めると、改名前の名前を語っているコメントが同じ
+ * ファイルに残っているだけで、消えたメンバーが在ることになる**——改名への追随はコメントのほうが
+ * 遅れるので、そこを証拠にすると追随漏れどうしが互いを裏書きする。
+ */
+function hasMember(owner: string, member: string): boolean {
+  const file = tsFileOf(`${owner}.ts`);
+  return file === null ? appearsInCode(member) : appearsInCodeOf(file, member);
+}
+
 /** 文書がファイルと並べて挙げた名前と、その指す先。 */
 type FileMember = { readonly file: string; readonly name: string };
 
@@ -224,7 +253,7 @@ describe('説明の参照', () => {
             if (match[0].endsWith('.')) continue;
             const [whole, owner, member] = match;
             if (FILE_NAMES.has(whole)) continue;
-            if (!ownedHere(owner) || appearsInCode(member)) continue;
+            if (!ownedHere(owner) || hasMember(owner, member)) continue;
             dangling.push(`${rel}:${line} ${whole}`);
           }
         }
@@ -233,7 +262,8 @@ describe('説明の参照', () => {
 
     expect(
       dangling,
-      `説明が指す名前がコードのどこにも無い:\n${dangling.join('\n')}`,
+      '説明が指す名前を、その所有者が持っていない（過去に在ったものを語る箇所なら、所有者と' +
+        `メンバーを切り離して書く——DocumentStyle.md 5節）:\n${dangling.join('\n')}`,
     ).toEqual([]);
   });
 

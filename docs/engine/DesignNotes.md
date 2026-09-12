@@ -411,8 +411,8 @@
   かつては `InteractionExecutor` が操作の宣言の条件と効果を外から読んで実行し、
   `ConditionEvaluator` が `ConditionNode` を外から読んで判定していた。「この定義をどう実行するか」が
   所有者の外にあるため、定義を1つ足すたびに実行器の分岐が増え、実行器から見たい内部を定義側で
-  広く公開する必要もあった。今は定義自身が判定・実行を持つ（`ConditionNode.isSatisfied`・
-  `InteractionDef.execute`）。**定義は受動的なレコードではなく、世界を引数に取る振る舞い**。
+  広く公開する必要もあった。今は定義自身が判定・実行を持つ（`ConditionNode.evaluate`・
+  `InteractionDef.tryExecute`）。**定義は受動的なレコードではなく、世界を引数に取る振る舞い**。
 - **`defs/` と `runtime/` にフォルダを分ける形へ戻さないこと。** 型宣言と実行時状態という線は
   引かれていなかった——畳んだ時点で、定義側31ファイルのうち19が実行時の型を参照し、`actionTime.ts` は
   中身が実行時処理そのものだった。宣言と実行が同居しているのが普通の状態なので、分ける単位にならない。
@@ -423,7 +423,8 @@
 
 - **宣言を書き表す仕組みを、定義クラスのメソッドとして持たせないこと。** かつては `describe` が23個、
   10個の定義クラスに生えていた。呼ぶのはデータベースビューアだけ（ゲームは一度も呼ばない）で、
-  `ObjectDef.describeInfluencesOn(propertyGlobalId, ownedByThisDef, …)` の `ownedByThisDef` は
+  `ObjectDef` に生えていた `describeInfluencesOn(propertyGlobalId, ownedByThisDef, …)` の
+  `ownedByThisDef` は
   **ビューアのプロパティページの問いがそのままシグネチャになったもの**だった。害は2つで、定義が
   「自分がどう見られるか」を知ってしまうことと、`import` に現れない依存になること
   （`Description` を輸入しているだけなので、依存図にはビューアが出てこない）。
