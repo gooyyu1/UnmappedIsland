@@ -1,4 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { IslandMap, Site } from '../../src/domain/generation/IslandMap';
+import { SpawnedIsland } from '../../src/domain/generation/SpawnedIsland';
 import { startNewGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { Location } from '../../src/domain/wrappers/Location';
@@ -18,7 +20,8 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
 
   it('全サイトが土地として実体化され、辺1本につき両端へ1個ずつ道が作られる', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 3, seededRng(99));
-    const map = game.map;
+    const island = game.island;
+    const map = island.map;
 
     const locationsSlotId = codex.slotNames.getId('locations');
     const locations = game.world.instance.tryGetSlot(locationsSlotId);
@@ -34,19 +37,20 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     );
 
     let totalPaths = 0;
-    for (const site of map.sites) {
-      const location = game.world.instance.findSelfOrDescendantByInstanceId(map.siteInstanceIds[site.index]);
-      expect(location, `サイト${site.index}の土地が世界に居る`).toBeDefined();
+    for (const { site, land } of island.lands) {
       expect(
-        location!.def.globalId,
-        `サイト${site.index}はLocationTypeどおりのobject_defで実体化される`,
-      ).toBe(site.type!.objectDefGlobalId);
+        game.world.instance.findSelfOrDescendantByInstanceId(land.instanceId),
+        `サイト${site.index}の土地が世界に居る`,
+      ).toBe(land);
+      expect(land.def.globalId, `サイト${site.index}はLocationTypeどおりのobject_defで実体化される`).toBe(
+        site.type!.objectDefGlobalId,
+      );
 
-      const view = new Location(location!, codex);
+      const view = new Location(land, codex);
       const degree = map.edges.filter((e) => e.a === site.index || e.b === site.index).length;
       expect(pathsIn(view, codex), '開始直後、発見済みの道は無い').toEqual([]);
 
-      const hidden = location!.tryGetSlot(codex.slotNames.getId('undiscovered_fixtures'));
+      const hidden = land.tryGetSlot(codex.slotNames.getId('undiscovered_fixtures'));
       expect(hidden!.contents.length, `サイト${site.index}: 繋がる辺の数だけ道が隠されている`).toBe(degree);
       totalPaths += hidden!.contents.length;
     }
@@ -56,18 +60,18 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
 
   it('道は隣接する土地を指し、探索進捗が最大へ達する前に見つかる範囲のrequired_progressを持つ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 5, seededRng(99));
-    const map = game.map;
+    const island = game.island;
+    const map = island.map;
     const progressId = codex.propertyNames.getId('exploration_progress');
 
-    for (const site of map.sites) {
-      const location = game.world.instance.findSelfOrDescendantByInstanceId(map.siteInstanceIds[site.index])!;
-      const progressMax = location.def.tryGetPropertyDef(progressId)!.range!.max;
-      const hidden = location.tryGetSlot(codex.slotNames.getId('undiscovered_fixtures'))!;
+    for (const { site, land } of island.lands) {
+      const progressMax = land.def.tryGetPropertyDef(progressId)!.range!.max;
+      const hidden = land.tryGetSlot(codex.slotNames.getId('undiscovered_fixtures'))!;
 
       const neighborInstanceIds = new Set(
         map.edges
           .filter((e) => e.a === site.index || e.b === site.index)
-          .map((e) => map.siteInstanceIds[e.a === site.index ? e.b : e.a]),
+          .map((e) => island.landOf(map.sites[e.a === site.index ? e.b : e.a]).instanceId),
       );
 
       for (const pathInstance of hidden.contents) {
@@ -90,13 +94,10 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
 
   it('辺の両端の道は互いをreturn_path_idで指す', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 5, seededRng(99));
-    const map = game.map;
     const hiddenSlotId = codex.slotNames.getId('undiscovered_fixtures');
 
-    for (const site of map.sites) {
-      const location = game.world.instance.findSelfOrDescendantByInstanceId(map.siteInstanceIds[site.index])!;
-
-      for (const pathInstance of location.tryGetSlot(hiddenSlotId)!.contents) {
+    for (const { site, land } of game.island.lands) {
+      for (const pathInstance of land.tryGetSlot(hiddenSlotId)!.contents) {
         const path = new Path(pathInstance, codex);
         const returnInstance = game.world.instance.findSelfOrDescendantByInstanceId(
           path.returnPathInstanceId,
@@ -104,7 +105,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
         expect(returnInstance, `サイト${site.index}: 帰り道が世界に居る`).toBeDefined();
 
         const back = new Path(returnInstance!, codex);
-        expect(back.destinationInstanceId, '帰り道はこちらの土地を指す').toBe(location.instanceId);
+        expect(back.destinationInstanceId, '帰り道はこちらの土地を指す').toBe(land.instanceId);
         expect(back.returnPathInstanceId, '帰り道もこちらの道を指す（相互）').toBe(pathInstance.instanceId);
         expect(returnInstance!.parent?.instanceId, '帰り道は移動先の土地に居る').toBe(
           path.destinationInstanceId,
@@ -149,8 +150,8 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
       game.player.instance,
     );
 
-    const startIndex = game.map.siteInstanceIds.indexOf(game.startLocation.instance.instanceId);
-    expect(game.map.sites[startIndex].onCoastRing, '漂着地点は海岸（外周リング）の土地').toBe(true);
+    const start = game.island.siteOf(game.startLocation.instance.instanceId);
+    expect(start?.onCoastRing, '漂着地点は海岸（外周リング）の土地').toBe(true);
   });
 
   it('探索ですべての道が見つかり、その後の移動でプレイヤーと時間が進む', () => {
@@ -158,8 +159,8 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     const start = game.startLocation;
     const agent = game.player.instance;
 
-    const startIndex = game.map.siteInstanceIds.indexOf(start.instance.instanceId);
-    const degree = game.map.edges.filter((e) => e.a === startIndex || e.b === startIndex).length;
+    const startIndex = game.island.siteOf(start.instance.instanceId)!.index;
+    const degree = game.island.map.edges.filter((e) => e.a === startIndex || e.b === startIndex).length;
     expect(degree, '開始地点にも必ず道がある(MSTの連結性)').toBeGreaterThanOrEqual(1);
 
     // 探索率100%まで繰り返す。途中(上限-1以前)ですべての道が見つかる。
@@ -184,14 +185,32 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     );
   });
 
-  it('IslandMapは実体化された土地のinstanceIdから命名処理の付けた名前を引ける', () => {
+  it('実体化された島は、土地のinstanceIdから命名処理の付けた名前とサイトを引ける', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 13, seededRng(99));
 
-    for (const site of game.map.sites)
-      expect(game.map.nameOfInstance(game.map.siteInstanceIds[site.index])).toBe(site.name);
+    for (const { site, land } of game.island.lands) {
+      expect(game.island.nameOf(land.instanceId)).toBe(site.name);
+      expect(game.island.siteOf(land.instanceId)).toBe(site);
+    }
 
-    expect(game.map.nameOfInstance(0), '未実体化を表す0は該当なし').toBeUndefined();
-    expect(game.map.nameOfInstance(-1), '未知のinstanceIdは該当なし').toBeUndefined();
+    // 島の外の場所（海区・本土）と土地でない物は、この島の対応に載っていない。
+    expect(game.island.siteOf(game.player.instance.instanceId), '土地でない物は該当なし').toBeUndefined();
+    expect(game.island.nameOf(game.player.instance.instanceId), '土地でない物は該当なし').toBeUndefined();
+  });
+
+  it('実体化された島は、サイトの数だけ土地が揃っていないと作れない', () => {
+    // 対応が実体化と同時に完成することの裏返し。揃っていない状態を作れないので、読む側に
+    // 「まだ実体化していない」の場合分けが要らない。
+    const map = new IslandMap('island', 0, [new Site(0, 0, 0, false)], []);
+
+    expect(() => new SpawnedIsland(map, new Map())).toThrow(/全サイトの土地を要する/);
+  });
+
+  it('実体化された島は、別の島のサイトでは土地を引けない', () => {
+    // indexが偶然合うだけの他島のSiteを、その位置の土地として黙って返さない。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 13, seededRng(99));
+
+    expect(() => game.island.landOf(new Site(0, 0, 0, false))).toThrow(/この島のサイトではありません/);
   });
 
   it('亜種のプロパティが、実体化した土地へ書き込まれる', () => {
@@ -199,18 +218,12 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     // 素の値のままでは名前だけの飾りになるので、実体へ届いていることを確かめる。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 3, seededRng(99));
 
-    const withProps = game.map.sites.filter((site) => (site.variant?.props.size ?? 0) > 0);
+    const withProps = game.island.lands.filter(({ site }) => (site.variant?.props.size ?? 0) > 0);
     expect(withProps.length, 'propsを持つ亜種が出るシードで確かめる').toBeGreaterThan(0);
 
-    for (const site of withProps) {
-      const location = game.world.instance.findSelfOrDescendantByInstanceId(
-        game.map.siteInstanceIds[site.index],
-      )!;
+    for (const { site, land } of withProps)
       for (const [propertyGlobalId, value] of site.variant!.props)
-        expect(location.tryGetProperty(propertyGlobalId)?.getEffectiveValue() ?? 0, `${site.name}`).toBe(
-          value,
-        );
-    }
+        expect(land.tryGetProperty(propertyGlobalId)?.getEffectiveValue() ?? 0, `${site.name}`).toBe(value);
   });
 
   it('開始時刻は朝8:00〜正午12:00の間のtick刻みで決まる', () => {
@@ -238,11 +251,11 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     const first = startNewGame(codex, SAMPLE_CHARACTER, 21, seededRng(1));
     const second = startNewGame(codex, SAMPLE_CHARACTER, 21, seededRng(2));
 
-    expect(second.map.sites.map((s) => [s.x, s.y, s.type!.name, s.name])).toEqual(
-      first.map.sites.map((s) => [s.x, s.y, s.type!.name, s.name]),
+    expect(second.island.map.sites.map((s) => [s.x, s.y, s.type!.name, s.name])).toEqual(
+      first.island.map.sites.map((s) => [s.x, s.y, s.type!.name, s.name]),
     );
-    expect(second.map.edges.map((e) => [e.a, e.b, e.travelMinutes])).toEqual(
-      first.map.edges.map((e) => [e.a, e.b, e.travelMinutes]),
+    expect(second.island.map.edges.map((e) => [e.a, e.b, e.travelMinutes])).toEqual(
+      first.island.map.edges.map((e) => [e.a, e.b, e.travelMinutes]),
     );
   });
 });

@@ -43,14 +43,17 @@ startNewGame(codex, characterDefName, seed, rng)          src/domain/generation/
   │    ├─ 4. triangulate(sites)                              → readonly [number, number][]  DelaunayTriangulator.ts
   │    ├─ 5. buildPathNetwork(sites, delaunayEdges, scope, defs.axes) → IslandEdge[]  PathNetworkBuilder.ts
   │    └─ 6. assignNames(sites, rng)                         → Site.name を確定  NameAssigner.ts
-  ├─ spawnIslandIntoWorld(session, map)                     → 各SiteをWorldObjectとして生成し、道も生成  IslandSpawner.ts
-  └─ placePlayer(session, map, character)                   → 開始地点へキャラクタを配置、Locationを返す  IslandSpawner.ts
+  ├─ spawnIslandIntoWorld(session, map) → SpawnedIsland     → 各SiteをWorldObjectとして生成し、道も生成  IslandSpawner.ts
+  └─ placePlayer(session, island, character)                → 開始地点へキャラクタを配置、Locationを返す  IslandSpawner.ts
 ```
 
 `generateIsland`（`TerrainGenerator.ts`）までは **`WorldObject` に一切触れない純粋な計算**です（`IslandMap`/`Site`/
 `IslandEdge` はただのデータ）。`WorldObject` の生成・配置が始まるのは `IslandSpawner` からです。この境界を
 意識すると、「レイアウトのバグ」（`src/domain/generation/` 側）と「実体化のバグ」（`IslandSpawner` 以降）の
-どちらを疑うべきかを素早く切り分けられます。
+どちらを疑うべきかを素早く切り分けられます。この境界を保つのは2つの検査です——実体化を担うファイル以外が
+`WorldObject` とその包みを輸入していないこと（`tests/architecture/layers.test.ts`）と、`IslandMap` が
+生成の結果しか欄に持たないこと（`tests/generation/terrainGenerator.test.ts`。**対応表は数の配列でも
+書けるので、輸入を見るだけでは足りません**）。
 
 ## 2. ロード: YAML → `GenerationDefs`
 
@@ -156,11 +159,10 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 `generateIsland`（`TerrainGenerator.ts`）の結果（`IslandMap`、まだ `WorldObject` を含まないデータ）を、実際の世界
 （`world` を根とするツリー）へ実体化します。
 
-- **`spawnIslandIntoWorld(session, map)`**:
+- **`spawnIslandIntoWorld(session, map)`**: 実体化した島（`SpawnedIsland`、下記）を返します。
   1. `map.sites` を1つずつ `session.createObject(site.type.objectDefGlobalId)` し、`site.variant` があれば
      その `props` を `getProperty(...).setNumberWithoutEvents` で書き込んでから、`world.locations` スロットへ
-     `moveToSlotOrRejection`。生成したインスタンスの `instanceId` を `map.siteInstanceIds[site.index]` へ
-     書き込みます（これが `IslandMap` を書き換える唯一の箇所です）。
+     `moveToSlotOrRejection`。
   2. `map.sites` を1つずつ、その `Site` に接続する `map.edges` を集め（`filter`/`map`）、
      `ObjectDef.tryGetPropertyDef(progressId).range.max` から探索率100%の進捗 `progressMax` を読み、道の本数に
      応じて `required_progress` を `[FIRST_PATH_PROGRESS(=2), progressMax - 1]` へ等間隔割当てする式
@@ -171,10 +173,16 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
   3. 生成した道を「どのサイトからどのサイトへ向かう道か」で引けるように控えておき、`map.edges` を1本ずつ
      辿って両端の道へ互いの `instanceId` を `return_path_id` として書き込みます（発見が両側同時になる、
      [`ExplorationSystem.md`](./ExplorationSystem.md) 3.1 節）。
-- **`placePlayer(session, map, character)`**: 開始地点を `sandy_beach` 優先、無ければ `Site.onCoastRing`、
-  それも無ければ `map.sites[0]` の順で選び、`WorldObject.findSelfOrDescendantByInstanceId`（`WorldObject` 自身の
-  汎用メソッド）で実体を解決し、`characters` スロットへ `moveToSlotOrRejection` した上で
-  `Location`（`src/domain/wrappers/Location.ts`）を返します。
+- **`placePlayer(session, island, character)`**: 開始地点を `sandy_beach` 優先、無ければ `Site.onCoastRing`、
+  それも無ければサイトの並びの先頭の順で選び、`SpawnedIsland.landOf` でその土地を引いて、`characters`
+  スロットへ `moveToSlotOrRejection` した上で `Location`（`src/domain/wrappers/Location.ts`）を返します。
+
+`SpawnedIsland`（`src/domain/generation/SpawnedIsland.ts`）は、生成結果（`map`）と、そこから湧いた土地の
+`WorldObject` の対応を束ねたものです。**対応は実体化と同時に出来上がる**（コンストラクタがすべての
+サイトの土地を要求する）ので、「まだ実体化していないサイト」という状態がありません。読む側は
+「サイト → `instanceId` → `WorldObject`」を自分で辿らず、`landOf(site)`・`siteOf(instanceId)`・
+`nameOf(instanceId)`・`lands` を使います。土地の名前（`LocationName`）の唯一の出所もここです
+——個体ごとに決まる名前なので、型（`ObjectDef`）の側は知りません。
 
 ## 5. データの流れ（型で見る層）
 
@@ -183,6 +191,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 | 定義（ロード後不変） | `GenerationDefs`（`AxisDef`/`LocationTypeDef`/`GenerationScopeDef`、`src/domain/generation/`） | `WorldCodex.generation` として1つだけ存在。YAMLの内容そのもの |
 | 生成の中間・最終結果（純粋計算） | `Site`/`IslandEdge`/`IslandMap`（`src/domain/generation/IslandMap.ts`） | `WorldObject` を一切含まない。`generateIsland`（`TerrainGenerator.ts`）が返す。座標・軸値・確定した `LocationTypeDef`・命名・辺を持つだけの、ただのデータ |
 | 実体化後（実行時状態） | `WorldObject`（`Location`/`Path` でラップ、`src/domain/wrappers/`） | `IslandSpawner` が `Site`/`IslandEdge` を読んで生成する、実際にゲームが動かす対象 |
+| 生成結果と実体の対応 | `SpawnedIsland`（`src/domain/generation/SpawnedIsland.ts`） | `spawnIslandIntoWorld` が返す。サイトとその土地の対応を持ち、実体化と同時に出来上がる（4節） |
 
 `IslandMap`（中間層）を経由することで、`generateIsland`（`TerrainGenerator.ts`）は完全に決定的な純粋関数として単体テスト
 でき（`tests/generation/terrainGenerator.test.ts`）、`IslandSpawner` 以降の実体化のテスト
@@ -247,6 +256,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 | `src/domain/generation/NameAssigner.ts` | 3.6節: 命名 |
 | `src/domain/generation/TerrainGenerator.ts` | 3節全体のオーケストレータ（`generateIsland`） |
 | `src/domain/generation/IslandSpawner.ts` | 4節: 実体化（`spawnIslandIntoWorld`/`placePlayer`/`placePlayerAt`） |
+| `src/domain/generation/SpawnedIsland.ts` | 4節: 実体化された島（サイトと土地の対応） |
 | `src/domain/generation/NewGame.ts` | ゲーム開始の入口（`startNewGame`）・`StartedGame` |
 | `src/domain/MoveEffect.ts` | 7節: `move` 効果動詞 |
 | `src/domain/InteractionDef.ts` | 7節: `duration` フィールド |
