@@ -87,7 +87,7 @@ export class IslandEdge {
 
 /**
  * 地形生成の結果（サイト・型・命名・パスネットワーク）を表す不変のデータ。
- * TerrainGenerator.generateの出力であり、WorldObjectには一切触れない純粋な計算結果。
+ * TerrainGenerator.generateIslandの出力であり、WorldObjectには一切触れない純粋な計算結果。
  * 世界への実体化（spawn）はIslandSpawnerがこのデータを読んで行い、その際に
  * siteInstanceIds（サイトindex→生成されたWorldObject.instanceId）を書き込む。
  */

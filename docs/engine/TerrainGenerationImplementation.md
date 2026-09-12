@@ -27,7 +27,7 @@ WorldCodexYamlLoader.load(label, yamlText)               src/loader/WorldCodexYa
        ├─ parseAxis / parseGeneratorLayer                  → loader.generationAxes へ蓄積
        ├─ parseLocationType                                 → loader.generationLocationTypes へ蓄積
        └─ parseGenerationScope                              → loader.generationScopes へ蓄積
-WorldCodexYamlLoader.build()
+WorldCodexYamlLoader.buildAndReset()
   └─ buildGenerationDefs(loader, objectDefsByGlobalId)     src/loader/parseGeneration.ts（object_def/axis/location_type の相互参照を検証）
        └─ new GenerationDefs(axes, locationTypes, scopes)  src/domain/generation/GenerationDefs.ts
             → WorldCodex.generation プロパティへ格納        src/domain/WorldCodex.ts
@@ -69,7 +69,7 @@ startNewGame(codex, characterDefName, seed, rng)          src/domain/generation/
   `buildGenerationDefs` まで遅延）。
 - `parseGenerationScope`: `generation_scopes.'name'` 1件を `GenerationScopeDef`
   （`guarantees` を含む、`src/domain/generation/GenerationScopeDef.ts`）へ変換します。
-- `buildGenerationDefs(loader, objectDefsByGlobalId)`: `WorldCodexYamlLoader.build()` の中から、全 `object_defs` の
+- `buildGenerationDefs(loader, objectDefsByGlobalId)`: `WorldCodexYamlLoader.buildAndReset()` の中から、全 `object_defs` の
   解決が終わった後に呼ばれます。`LocationTypeDef.objectDefGlobalId` が実在するか、`axis_preferences`/
   `hard_limits`/`guarantees` が参照する軸名・`LocationType` 名が実在するかをここでまとめて検証し、
   `GenerationDefs` を組み立てて返します。生成関連のYAMLが1つもロードされていなければ `undefined` を返します
