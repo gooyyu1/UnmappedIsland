@@ -101,6 +101,7 @@
 ```bash
 npm run stats:balance
 npm run stats:climate
+npm run stats:discovery
 npm run stats:durations
 npm run stats:escape
 npm run stats:escape-islands
@@ -129,6 +130,7 @@ PRの段では `npm test` が、`main` へ入った後は
 |---|---|
 | [アイテム収支](../../stats/balance.yaml) | **丸ごと作り直して比べる**（1秒で済むので取りこぼしが無い） |
 | [気候システム統計](../../stats/climate.yaml) | シミュレーションの入力（`core.yaml`）の**指紋**をレポートへ書き込み、突き合わせる。定義から静的に解ける `activity_hours`・`excluded_locations` の節だけは作り直して比べる |
+| [発見物の行き渡り](../../stats/discovery_coverage.yaml) | **丸ごと作り直して比べる**（2秒） |
 | [日をまたぐ長さ](../../stats/durations.yaml) | **丸ごと作り直して比べる**（定義から解くだけなので一瞬） |
 | [島を出るまでの工程数](../../stats/escape_reach.yaml) | **丸ごと作り直して比べる**（定義から解くだけなので一瞬） |
 | [狩りの手数](../../stats/hunt.yaml) | **丸ごと作り直して比べる**（遭遇を実際に通すので6秒） |
@@ -170,6 +172,12 @@ PRの段では `npm test` が、`main` へ入った後は
   連続降雨/未降雨時間（[`ClimateSystem.md`](../engine/ClimateSystem.md) 参照）と、土地×季節ごとの活動時間。
   読み方は [`ClimateSystemStats.md`](./ClimateSystemStats.md)。
   生成元: `tests/diagnostics/climateStatsReport.test.ts`
+- [発見物の行き渡り](../../stats/discovery_coverage.yaml) — 探索で見つかる型ごと・その型が持つ札ごとに、
+  **それを出す土地が1つも生成されなかった島の割合**。発見で腕前が伸びる契機
+  （[`SkillSystem.md`](../engine/SkillSystem.md) 3節）を、型を名指しで書くか札で束ねて書くかを
+  決めるための表で、どちらで書くべきかの判定は出さない。
+  読み方は [`DiscoveryCoverageStats.md`](./DiscoveryCoverageStats.md)。
+  生成元: `tests/diagnostics/discoveryCoverageStatsReport.test.ts`（計算は `src/analysis/discoveryCoverage.ts`）
 - [日をまたぐ長さ](../../stats/durations.yaml) — 怪我が治るまで・食べ物が腐るまで・季節が変わるまで・
   渇きや飢えで倒れるまでといった、**1日以上かかる長さを種類を問わず1本の列**にしたもの。並びの狂い
   （軽い傷のほうが治りが遅い、など）を見つけるための表なので、種類では分けない。あわせて、時間では
