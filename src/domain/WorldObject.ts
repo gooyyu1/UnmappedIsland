@@ -95,8 +95,6 @@ export class WorldObject {
    * 物は親・枠・セッションを辿って世界の全部へ繋がっているので、素のまま深い比較へ渡されると、
    * 差分を出す側がそのグラフを辿り続けて**落ちたことが誰にも届かない**（赤を出す前に戻ってこない）。
    * 名乗るのは、どの個体かを見分けられるだけ——型の名前と個体の番号で、**辿り先はここで尽きる**。
-   *
-   * 物を抱えている側（`Interaction`）の名乗りも、辿り先が尽きるのはここ。
    */
   toJSON(): unknown {
     return { name: this.def.name, instanceId: this.instanceId };

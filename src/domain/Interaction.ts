@@ -52,9 +52,7 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
    *
    * 操作は素のまま深い比較へ渡されることがある（成立しないことを確かめる試験）。名乗らないと、
    * 差分にはぶら下げている宣言と結び付けた相手が並び、**赤の理由がその中に埋もれる**。
-   *
-   * **世界の全部まで辿られるのを止めているのはここではない**——止めるのは `WorldObject.toJSON`
-   * で、そちらが無ければ、この名乗りがあっても相手を伝って刷り続ける。
+   * 名前だけを返すので、刷る側が辿る先はここで尽きる。
    */
   toJSON(): unknown {
     return { name: this.name };
