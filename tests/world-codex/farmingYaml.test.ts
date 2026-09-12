@@ -168,15 +168,16 @@ describe('farming.yamlの畑と囲い', () => {
   }
 
   /**
-   * 落ち着いたヤケイを1羽用意する。**野生の個体は警戒した状態で現れる**（animals.yamlのwariness）ので、
-   * 引き切るまで待つ——手で囲いへ入れるなら、生け捕りにして待つのが唯一の入口になる
-   * （docs/engine/VitalsSystem.md 7節・TrapSystem.md 5.2節）。
+   * 落ち着いたヤケイを1羽用意する。**ヤケイは警戒した状態で現れる**（animals.yamlのwariness。現れたときの
+   * 値は獣ごとに違う、docs/engine/HuntingSystem.md 3.1節）ので、引き切るまで待つ——手で囲いへ入れるなら、
+   * 生け捕りにして待つのが唯一の入口になる（docs/engine/VitalsSystem.md 7節・TrapSystem.md 5.2節）。
    *
-   * **囲いを据える前に呼ぶこと。** 空の囲いは罠なので、待っている40 tickのあいだに掛かってしまう。
+   * **囲いを据える前に呼ぶこと。** 空の囲いは罠なので、待っているあいだに掛かってしまう。
    */
   function calmJunglefowl(): WorldObject {
     const fowl = spawnInto('junglefowl', land, 'items');
-    tick(40);
+    // ヤケイの初期値は24で、減りは-1/tick。この島でいちばん早く引き切る（飼いならしの学習台）。
+    tick(24);
     expect(fowl.tryGetProperty(warinessId)!.getEffectiveValue(), '警戒が引き切っている').toBe(0);
     return fowl;
   }

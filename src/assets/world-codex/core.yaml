@@ -172,6 +172,15 @@ traits:
       company:
         value: 0
         base: {subject: ancestor}
+      # その場で、間合いのある武器が構えられているか（docs/engine/HuntingSystem.md 1.2節）。
+      # 構えている側（tools.yamlのweapon trait）がmodifyで立て、獣（animals.yamlのbeast trait）が
+      # 読んで踏み込む手を細らせる。**武器はどんな獣が居るかを知らず、獣はどんな武器が在るかを
+      # 知らない**——条件は入れ子のスロットを見られない（14.3節）ので、場所が1つ挟まる。
+      #
+      # **上の居心地・慰めと違って、囲っている場所から継がない。** 外で構えた槍は、入った洞窟の中
+      # までは届かない——継ぐと、その場に居ない者の構えが内側を守ることになる。
+      braced_reach:
+        value: 0
 
 object_defs:
   world:

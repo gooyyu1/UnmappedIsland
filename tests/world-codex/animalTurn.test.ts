@@ -68,6 +68,21 @@ describe('動物の1手', () => {
     return spawnInto(name, jungle, 'items');
   }
 
+  /**
+   * その動物を警戒した姿にする。**現れたときの警戒は獣ごとに違う**（animals.yaml）ので、
+   * 「警戒していれば何をするか」を見る検証は、種の初期値に頼らず自分で立てる——イノシシは
+   * 落ち着いた姿で現れる唯一の獣なので、素のままでは攻め手も逃走も抽選に出ない。
+   */
+  function alarm(animal: WorldObject): WorldObject {
+    animal.getProperty(warinessId).setNumberWithoutEvents(40);
+    return animal;
+  }
+
+  /** その動物の1手の重み（実効値。押し引きを加味した、抽選が実際に見る値）。 */
+  function weightOf(animal: WorldObject, propertyName: string): number {
+    return animal.tryGetProperty(codex.propertyNames.getId(propertyName))?.getEffectiveValue() ?? 0;
+  }
+
   /** 1手ぶんの時間を進める。手番を配るのはtickの後処理（WorldSession.advanceWorldTime）。 */
   function passTurn(count = 1): void {
     session.advanceWorldTime(TICK_MINUTES * count);
@@ -105,8 +120,8 @@ describe('動物の1手', () => {
   });
 
   it('警戒したネズミは、道があれば隣の土地へ逃げる', () => {
-    // 逃走が配分の8割を占める（animals.yaml）。野生の個体は警戒した状態で現れるので、置いた
-    // 次の手番から逃げにかかる。
+    // 逃走が配分の8割を占める（animals.yaml）。ネズミは警戒した姿で現れる（現れたときの警戒は
+    // 獣ごとに違う、HuntingSystem.md 3.1節）ので、置いた次の手番から逃げにかかる。
     open(0.5);
     openPath();
     const rat = release('rat');
@@ -178,7 +193,7 @@ describe('動物の1手', () => {
 
   it('警戒したイノシシは牙で突き、その傷はこの島で最も血が流れる', () => {
     open(0.5);
-    const boar = release('wild_boar');
+    const boar = alarm(release('wild_boar'));
 
     passTurn();
 
@@ -193,7 +208,7 @@ describe('動物の1手', () => {
     // 密林に居るイノシシの候補は様子見15・牙30・圧し掛かり10（足元に物も逃げ道も無いので、
     // 残りは抽選に出ない）。合計55のうち末尾の10を引くrollを渡す。
     open(0.9);
-    const boar = release('wild_boar');
+    const boar = alarm(release('wild_boar'));
 
     passTurn();
 
@@ -274,7 +289,7 @@ describe('動物の1手', () => {
   it('人の居ない土地では襲う手が抽選から外れる', () => {
     open(0.5);
     const goreId = codex.propertyNames.getId('gore');
-    const boar = release('wild_boar');
+    const boar = alarm(release('wild_boar'));
 
     passTurn();
 
@@ -290,6 +305,79 @@ describe('動物の1手', () => {
     // amongが集合を見るからで、著者は「相手が居なければ起こらない」を書いていない（10.3節）。
     expect(boar.tryGetProperty(goreId)?.getEffectiveValue() ?? 0).toBeGreaterThan(0);
     expect(injuriesOf(player), '相手が居なければ、襲う候補は抽選に出ない').toEqual(['gore_wound']);
+  });
+
+  it('現れたときの警戒は獣ごとに違い、落ち着いた姿で現れるのはイノシシだけ', () => {
+    // 全種が同じ姿勢で現れていたのを、獣ごとの値にした（HuntingSystem.md 3.1節、issue #1994）。
+    // **初期値がそのまま「掴めるようになるまでの手数」**で、そこから19を引いたものが
+    // 「近寄れる（落ち着く）までの手数」になる——減り方は獣によらず-1/tickだから。
+    open(0.5);
+    const wariness = new Map(
+      ['rat', 'junglefowl', 'monkey', 'wild_boar'].map((name) => {
+        const property = release(name).getProperty(warinessId);
+        return [name, { value: property.number, stage: property.stage?.name }] as const;
+      }),
+    );
+    const values = [...wariness.values()].map((seen) => seen.value);
+
+    expect(new Set(values).size, 'どの2種も同じ値では現れない').toBe(values.length);
+    expect(
+      [...wariness].filter(([, seen]) => seen.stage === 'calm').map(([name]) => name),
+      '落ち着いた姿で現れるのはイノシシだけ（人を恐れない）',
+    ).toEqual(['wild_boar']);
+    expect(Math.max(...values), 'いちばん長く落ち着かないのはネズミ').toBe(wariness.get('rat')?.value);
+  });
+
+  it('間合いのある武器を構えている間は、獣が踏み込む手が細る', () => {
+    // 構えている側（tools.yamlのweapon trait）が土地へbraced_reachを立て、獣がそれを読む
+    // （HuntingSystem.md 1.2節）。**武器はどんな獣が居るかを知らず、獣はどんな武器が在るかを
+    // 知らない**——条件は入れ子のスロットを見られないので、土地が1つ挟まる。
+    open(0.0);
+    const boar = alarm(release('wild_boar'));
+    const spear = release('spear');
+    const hand = codex.slotNames.getId('hand');
+
+    passTurn();
+
+    expect(weightOf(boar, 'gore'), '地面に置いた槍は誰も構えていない').toBe(30);
+
+    expect(spear.moveToSlotOrRejection(player.getSlot(hand))).toBeUndefined();
+    passTurn();
+
+    expect(weightOf(boar, 'gore'), '牙は3分の1まで細る').toBe(10);
+    expect(weightOf(boar, 'crush'), '圧し掛かりは間合いの外へ出る').toBeLessThanOrEqual(0);
+
+    // 70cmの柄は、牙の届く間合いの内側（tools.yamlのstone_axe）。
+    expect(spear.moveToSlotOrRejection(jungle.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
+    expect(release('stone_axe').moveToSlotOrRejection(player.getSlot(hand))).toBeUndefined();
+    passTurn();
+
+    expect(weightOf(boar, 'gore'), '石斧を構えても間合いは取れない').toBe(30);
+  });
+
+  it('深手を負った獣は立ち去らず、傷が癒えるより先に膿んで倒れる', () => {
+    // 立ち去りが先に来ると、逃げた獲物は傷があと何百手も残っている時点で消える（HuntingSystem.md
+    // 5.6節、issue #1994で測った）。止めた結果、**追跡の窓を閉じるのは立ち去りではなく化膿**に
+    // なる——獣は自分で傷を洗えない（injuries.yamlのwash）ので、深い傷は必ずそこへ行き着く。
+    open(0.0);
+    const stayId = codex.propertyNames.getId('stay_remaining');
+    const boar = release('wild_boar');
+    wound(boar);
+    expect(
+      player.moveToSlotOrRejection(grassland.getSlot(codex.slotNames.getId('characters'))),
+    ).toBeUndefined();
+
+    // 丸1日（96tick）の立ち去りを大きく越えても、裂傷はまだ半分も治っていない（480tick）。
+    passTurn(200);
+
+    expect(boar.parent, '痛む間はその土地に居る').toBe(jungle);
+    expect(boar.tryGetProperty(stayId)?.getEffectiveValue() ?? 0, 'タイマーは減ってすらいない').toBe(96);
+
+    // 傷が膿みきる（infectionがsepticへ届く）と、菌が血を削り始める。
+    passTurn(280);
+
+    expect(boar.parent, '立ち去ったのではなく倒れた').toBeUndefined();
+    expect(itemsIn(jungle), '追いつけば、死体はその土地に残っている').toEqual(['wild_boar_carcass']);
   });
 
   it('誰も見ていない土地の動物は、丸1日で立ち去る', () => {

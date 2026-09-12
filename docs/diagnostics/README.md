@@ -104,6 +104,7 @@ npm run stats:climate
 npm run stats:durations
 npm run stats:escape
 npm run stats:escape-islands
+npm run stats:hunt
 npm run stats:startup
 npm run stats:terrain
 ```
@@ -129,6 +130,7 @@ PRの段では `npm test` が、`main` へ入った後は
 | [気候システム統計](../../stats/climate.yaml) | シミュレーションの入力（`core.yaml`）の**指紋**をレポートへ書き込み、突き合わせる。定義から静的に解ける `activity_hours`・`excluded_locations` の節だけは作り直して比べる |
 | [日をまたぐ長さ](../../stats/durations.yaml) | **丸ごと作り直して比べる**（定義から解くだけなので一瞬） |
 | [島を出るまでの工程数](../../stats/escape_reach.yaml) | **丸ごと作り直して比べる**（定義から解くだけなので一瞬） |
+| [狩りの手数](../../stats/hunt.yaml) | **丸ごと作り直して比べる**（遭遇を実際に通すので6秒） |
 | [島ごとの脱出可否](../../stats/island_escape_reach.yaml) | **丸ごと作り直して比べる**（2秒） |
 | [開始地点の立ち上がり](../../stats/startup_reach.yaml) | **丸ごと作り直して比べる**（2秒） |
 | [地形生成統計](../../stats/terrain.yaml) | **丸ごと作り直して比べる**（1秒） |
@@ -182,6 +184,12 @@ PRの段では `npm test` が、`main` へ入った後は
   持つ土地**から数えたもの。島を出られない島の割合と、土地の型の取りこぼし・鎖の切れ目。
   読み方は [`IslandEscapeReachStats.md`](./IslandEscapeReachStats.md)。
   生成元: `tests/diagnostics/islandEscapeReachStatsReport.test.ts`（計算は `src/analysis/escapeReach.ts`）
+- [狩りの手数](../../stats/hunt.yaml) — 獣と武器の組み合わせごとに、遭遇が決着するまでの手数・
+  殴る側が負う怪我・結末の割合と、獣の1手の顔ぶれ、現れてから近寄れるまでの手数、一撃入れて
+  退いた後に獲物が残る手数（[`HuntingSystem.md`](../engine/HuntingSystem.md) 参照）。
+  **定義から解くのではなく、遭遇を実際に通して数えた値**で、強すぎる・弱すぎるの判定は出さない。
+  読み方は [`HuntStats.md`](./HuntStats.md)。
+  生成元: `tests/diagnostics/huntStatsReport.test.ts`（遭遇の組み方は `src/analysis/huntEncounter.ts`）
 - [開始地点の立ち上がり](../../stats/startup_reach.yaml) — 最初の段を越えるのに要るものが、
   各サイトから何歩先にあるか（移動時間・道を見つける探索時間つき）と、島ごとに最も条件の良い
   サイトの値の分布（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 2.3節参照）。

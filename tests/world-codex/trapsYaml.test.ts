@@ -309,10 +309,10 @@ describe('traps.yamlのくくり罠', () => {
     expect(prey.parent, '中身は道連れにならず土地へこぼれる').toBe(grassland);
   });
 
-  it('こぼれた獲物は、誰も戻らなければ立ち去る', () => {
+  it('こぼれた獲物は、罠の傷が癒えるまで残り、そのあと立ち去る', () => {
     // 立ち去りまでの残りは土地の地面に居る間だけ減る（HuntingSystem.md 5.6節）ので、掛かっている
-    // 間は止まる。**止まるのは中に居る間だけ**で、罠が破られてこぼれればそこから動き出す
-    // ——放置の罰は罠を失うことに留まらない（6.1節）。
+    // 間は止まる。**こぼれても、くくり罠の傷が痛む間はまだ動き出さない**（同節の深手のゲート）
+    // ——罠を放置した罰は「罠を失う」が先に来て、獲物を失うのはその傷が癒えてからになる（6.1節）。
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
     const stayWhenCaught = prey.tryGetProperty(stayRemainingId)!.getEffectiveValue();
@@ -329,7 +329,18 @@ describe('traps.yamlのくくり罠', () => {
 
     expect(
       tickUntil(() => itemsOnGround().length === 0, 200),
-      '取りに戻らなければ立ち去る',
+      'くくり罠の傷が痛む間は、こぼれてもその場に残る',
+    ).toBe(false);
+    expect(
+      prey.tryGetProperty(stayRemainingId)!.getEffectiveValue(),
+      'タイマーは止まったままで、1も減っていない',
+    ).toBe(stayWhenCaught);
+
+    // 傷はseverityが-1/tickで治る（InjurySystem.md 2節）。最も深く掛かったくくり罠の傷でも480tick、
+    // そこから立ち去りまでの96tickが動き出す。
+    expect(
+      tickUntil(() => itemsOnGround().length === 0, 480 + 96),
+      '癒えてしまえば、取りに戻らなかった獲物は立ち去る',
     ).toBe(true);
   });
 
