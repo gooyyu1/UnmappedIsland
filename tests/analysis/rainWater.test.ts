@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { TICKS_PER_DAY } from '../../src/analysis/balanceTables';
 import type { RainWaterRow, SeasonName } from '../../src/analysis/seasonalRain';
 import { SEASON_CLIMATE, rainWaterRows } from '../../src/analysis/seasonalRain';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -242,6 +243,62 @@ object_defs:
     for (const season of SEASON_CLIMATE) {
       const hours = Object.values(season.hoursByWeather).reduce((sum, value) => sum + value, 0);
       expect(hours, season.name).toBeCloseTo(season.durationDays * 24, 0);
+    }
+  });
+});
+
+/**
+ * 実測の表にだけ在って、その世界が宣言していない天候の読み方
+ * （`seasonalRain.ts` の `holdsWithoutSymbol`）。
+ *
+ * **世界が宣言する天候は、実測の表の全部とは限らない。** 解析だけを見る小さな定義は、雨の天候しか
+ * 名指さない。名指されなかった名前は名前空間へ登録されないので、どのシンボルのIDでもない——そこで
+ * 「どのシンボルとも一致しない番号」を作ると、名前空間が配ったものだけがIDだという境界が破れる。
+ */
+describe('宣言されていない天候', () => {
+  const codex = new WorldCodexYamlLoader()
+    .load(
+      'unnamedWeather.yaml',
+      `
+object_defs:
+  world:
+    props:
+      hour: {value: 12, range: {min: 0, max: 24}}
+      ambient_brightness: {value: 0}
+  jar:
+    props:
+      fill: {value: 0, range: {min: 0, max: 1000}}
+      weight: {value: 200}
+    passives:
+      # 名前空間へ登録されるのは、ここで名指した light_rain だけ。
+      - conditions: [{subject: ancestor, prop: weather, eq: light_rain}]
+        add: {self: {fill: 10}}
+      - conditions: [{subject: ancestor, prop: weather, not_in: [light_rain]}]
+        add: {self: {fill: -1}}
+`,
+    )
+    .buildAndReset();
+
+  const rows = rainWaterRows(codex);
+
+  it('一致は成立せず、不一致は成立する', () => {
+    // 一致が成立してしまえば降雨が全時間ぶんへ膨らみ、不一致が成立しなければ蒸発が消える。
+    // どちらも、宣言されていない天候の時間がそのまま量に出る形で落ちる。
+    for (const season of SEASON_CLIMATE) {
+      const row = rows.find((candidate) => candidate.seasonName === season.name)!;
+      const seasonHours = season.durationDays * 24;
+      const lightRainHours = season.hoursByWeather.light_rain;
+      const otherHours =
+        Object.values(season.hoursByWeather).reduce((sum, hours) => sum + hours, 0) - lightRainHours;
+
+      expect(row.rainPerDay, `${season.name} の降雨`).toBeCloseTo(
+        (10 * TICKS_PER_DAY * lightRainHours) / seasonHours,
+        6,
+      );
+      expect(row.evaporationPerDay, `${season.name} の蒸発`).toBeCloseTo(
+        (TICKS_PER_DAY * otherHours) / seasonHours,
+        6,
+      );
     }
   });
 });

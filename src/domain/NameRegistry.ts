@@ -55,7 +55,11 @@ export class NameRegistry<in out Id extends number> {
     return this.idToName[id];
   }
 
-  /** 登録されていないIDならundefined（エラーの文面のように、名前を出せないことがありうる場所で使う）。 */
+  /**
+   * 登録されていないIDならundefined。**使うのは、この名前空間が配ったとは限らない数を引くとき**
+   * ——プロパティの「値」をIDとして読んだ先（`WorldCodex.trySymbolNameOfPropertyValue`）は著者が書いた数なので、
+   * どの名前も指していないことがありうる。
+   */
   tryGetName(id: Id): string | undefined {
     return this.idToName[id] as string | undefined;
   }

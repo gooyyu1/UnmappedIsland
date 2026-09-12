@@ -4,6 +4,7 @@ import process from 'node:process';
 import { setImmediate } from 'node:timers';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
+import type { NotAGlobalId } from '../../src/domain/GlobalId';
 import type { Stat } from './Stat';
 
 /**
@@ -192,7 +193,14 @@ export class RoundedNumber {
   }
 }
 
-export type YamlScalar = string | number | boolean | null | RoundedNumber;
+/**
+ * YAMLへ書き出す1つの値。**数はグローバルIDでない素の数だけ**（{@link NotAGlobalId}）——IDは
+ * 世界を読み込むたびに振り直される番号で、生成物に出ると**定義を1つ足しただけで無関係な行が全部
+ * 動く**。名前で書けば、その行が指すものは読み込み順に依らない。
+ *
+ * 出したい値がIDなら、書き出す手前で名前へ戻す（`NameRegistry.getName`）。
+ */
+export type YamlScalar = string | NotAGlobalId | boolean | null | RoundedNumber;
 export type YamlRecordValue = YamlScalar | readonly YamlScalar[] | readonly YamlRecord[];
 
 /** YAMLへ1行で書き出す1レコード。 */
@@ -214,7 +222,7 @@ export interface YamlReportSection {
  *
  * **桁は必ず受け取る**——既定を置くと、桁を書いていない呼び出しの出力が既定の変更で黙って変わる。
  */
-export function rounded(value: number | undefined, decimals: number): RoundedNumber | null {
+export function rounded(value: NotAGlobalId | undefined, decimals: number): RoundedNumber | null {
   if (value === undefined || !Number.isFinite(value)) return null;
   const zero = (0).toFixed(decimals);
   return new RoundedNumber(value.toFixed(decimals) === `-${zero}` ? 0 : value, decimals);

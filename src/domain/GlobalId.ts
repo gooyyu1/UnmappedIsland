@@ -19,6 +19,15 @@ export type GlobalId<Namespace extends string> = number & {
   readonly [namespaceOfGlobalId]: Namespace;
 };
 
+/**
+ * グローバルIDではない素の数。**IDを受け取らないと宣言する側は、`number` ではなくこれで受ける**
+ * ——`number` で受けるとどの名前空間のIDも通る（印は `number` に足しただけなので）。
+ *
+ * 受け口をこれにすると、IDを渡した側が型で止まる。生成物へ書き出す値（`tests/support/generatedReport.ts`）
+ * がこれで受けており、IDが混ざった瞬間に `npm run typecheck` が赤くなる。
+ */
+export type NotAGlobalId = number & { readonly [namespaceOfGlobalId]?: undefined };
+
 /** object_def（GameElementDefinition.md 4節）のグローバルID。生成型（3.5節）も同じ名前空間に入る。 */
 export type ObjectGlobalId = GlobalId<'object'>;
 
