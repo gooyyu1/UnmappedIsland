@@ -250,8 +250,8 @@ function tellByIssue(gh, body) {
         '判断待ち',
         '--label',
         'origin:agent',
-        // **人が `判断待ち` を外した後に効く**（`.claude/board-design.md` 2.18.1）。名乗らないと
-        // 既定で整備として読まれるので害は無いが、名乗る側の兄弟をここだけ欠かさない。
+        // **人が `判断待ち` を外した後に効く**（`.claude/board-design.md` 2.18.1）。名乗らなくても
+        // 整備として並ぶだけだが、そのぶん未整理として毎周拾われるので、ここで名乗る。
         '--label',
         'goal:upkeep',
       ]) !== undefined
