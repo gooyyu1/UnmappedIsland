@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
+import { characterDefNames } from '../../src/domain/generation/NewGame';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { TICKS_PER_DAY } from '../../src/domain/worldTime';
@@ -39,6 +40,8 @@ const LIQUID_DOC = docText('engine', 'LiquidContainerSystem.md');
 const VITALS_DOC = docText('engine', 'VitalsSystem.md');
 const VOYAGE_DOC = docText('world', 'Voyage.md');
 const ENDINGS_DOC = docText('concept', 'GameEndings.md');
+const CHARACTERS_DOC = docText('world', 'Characters.md');
+const SKELETON_DOC = docText('world', 'ContentSkeleton.md');
 
 describe('文書が書いた「何日ぶん」', () => {
   const codex = bundledCodex();
@@ -175,16 +178,82 @@ describe('文書が書いた「何日ぶん」', () => {
     expect(regainedPerDay, '血が戻らない（ゲートの条件が変わった）').toBeGreaterThan(0);
 
     expect(numberIn(VITALS_DOC, /失う最大は (\d+)mL/, '1つの傷で失う最大'), '牙の傷が奪う量').toBe(lost);
-    expect(numberIn(VITALS_DOC, /牙の傷1つが\s*奪う(\d+)mL/, '3節が書いた牙の傷の量')).toBe(lost);
-    for (const [label, pattern] of [
-      ['3節', /牙の傷1つが\s*奪う\d+mLに([\d.]+)日/],
-      ['3.3節', /戻るのに\s*\*\*([\d.]+) 日\*\*かかります/],
+    // **同じ組（量と日数）が並ぶ箇所を残らず見る。** 1箇所だけ見ていると、宣言が動いたときに
+    // 見ていない側は緑のまま古い数を持つ（`Characters.md` がそうなっていた）。
+    for (const [label, text] of [
+      ['VitalsSystem.md 3節', VITALS_DOC],
+      ['Characters.md', CHARACTERS_DOC],
     ] as const) {
-      expect(numberIn(VITALS_DOC, pattern, `${label}の戻りの日数`), `${label}が書いた日数`).toBeCloseTo(
-        lost / regainedPerDay,
-        1,
-      );
+      expect(numberIn(text, /牙の傷1つが\s*奪う(\d+)mL/, `${label}の牙の傷の量`)).toBe(lost);
+      expect(
+        numberIn(text, /牙の傷1つが\s*奪う\d+mLに([\d.]+)日/, `${label}の戻りの日数`),
+        `${label}が書いた日数`,
+      ).toBeCloseTo(lost / regainedPerDay, 1);
     }
+    expect(
+      numberIn(VITALS_DOC, /戻るのに\s*\*\*([\d.]+) 日\*\*かかります/, '3.3節の戻りの日数'),
+      '3.3節が書いた日数',
+    ).toBeCloseTo(lost / regainedPerDay, 1);
+  });
+
+  /**
+   * 航海ぶんを一度に担いだときの重さ（g）。**そりが要る理由がここから出る**ので、
+   * `ContentSkeleton.md` 5節4番の結論はこの数と繋がっていなければならない。
+   */
+  function voyageLoadGrams(jars: number, meats: number, artifacts: number): number {
+    const filled = spawn('jar__content_water_liquid');
+    filled.getProperty(fillId).setNumberWithoutEvents(filled.getProperty(fillId).def.range!.max);
+    const meat = spawn('raw_meat').getProperty(weightId).getEffectiveValue();
+    const artifact = spawn('golden_chalice').getProperty(weightId).getEffectiveValue();
+    return filled.getProperty(weightId).getEffectiveValue() * jars + meat * meats + artifact * artifacts;
+  }
+
+  /** キャラクタが通れなくなる荷重（`load` の `too_heavy` 段の下端）。 */
+  function tooHeavyThresholds(): readonly { name: string; grams: number }[] {
+    const loadId = codex.propertyNames.getId('load');
+    return characterDefNames(codex).map((name) => {
+      const stage = codex.objects
+        .get(codex.objectNames.getId(name))
+        .tryGetPropertyDef(loadId)
+        ?.stages.find((candidate) => candidate.name === 'too_heavy');
+      expect(stage?.min, `${name} が通れなくなる段を持たない`).toBeDefined();
+      return { name, grams: stage!.min! };
+    });
+  }
+
+  it('そりが要る理由が、ContentSkeleton.md 5節4番の書きぶりのとおりに出る', () => {
+    const thresholds = tooHeavyThresholds();
+    expect(thresholds.length, '`too_heavy` を持つキャラクタが居ない').toBeGreaterThan(1);
+    expect(
+      SKELETON_DOC,
+      '5節4番の結論が見当たらない（書き換えたなら、この検査も同じ主張を見るよう直す）',
+    ).toContain('線を越えるのはアーティファクトを1つ載せた時点');
+
+    // 水と食料だけでは、短い側でも誰も止まらない——止めるのはアーティファクトを載せた1つ目。
+    const foodOnly = voyageLoadGrams(3, 12, 0);
+    for (const { name, grams } of thresholds) {
+      expect(foodOnly, `水と食料だけ（${foodOnly}g）で ${name} が既に通れない`).toBeLessThan(grams);
+    }
+
+    // 短い側（4日ぶん）へアーティファクトを1つ載せると、誰かが線を越える。
+    const short = voyageLoadGrams(3, 12, 1);
+    expect(
+      thresholds.filter(({ grams }) => short >= grams).length,
+      `短い側（${short}g）で通れなくなる者が居ない`,
+    ).toBeGreaterThan(0);
+
+    // 長い側（6日ぶん）では、同じ1つで4人とも線を越える。
+    const long = voyageLoadGrams(4, 18, 1);
+    for (const { name, grams } of thresholds) {
+      expect(long, `長い側（${long}g）で ${name} が通れてしまう`).toBeGreaterThanOrEqual(grams);
+    }
+  });
+
+  it('ContentSkeleton.md 5節4番が書いた水の重さが、甕の重さから出る', () => {
+    const range = /甕で運ぶ水は下限でも3〜4つ＝(\d+)〜(\d+)kg/.exec(SKELETON_DOC);
+    expect(range, '水の重さの幅が読めない').not.toBeNull();
+    expect(Number(range![1]), '甕3つ').toBeCloseTo(voyageLoadGrams(3, 0, 0) / 1000, 0);
+    expect(Number(range![2]), '甕4つ').toBeCloseTo(voyageLoadGrams(4, 0, 0) / 1000, 0);
   });
 });
 
