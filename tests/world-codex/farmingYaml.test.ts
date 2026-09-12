@@ -363,6 +363,45 @@ describe('farming.yamlの畑と囲い', () => {
     expect(twoRate, '2羽なら2倍').toBeCloseTo(oneRate * 2);
   });
 
+  it('1羽増えるまでの周期は、甕1杯の水では通せない', () => {
+    // **増える速さの物差しは、繁殖の早さではなく水やりの周期**（docs/world/Animals.md 3.1節）。
+    // 甕1杯で通せてしまうなら、水をやりに戻らずに増えることになり、留守番の設備が世話の作業へ
+    // 変わる線がどこにも無くなる。
+    open();
+    const { pen, fowl } = penWithCalmFowl();
+    const breeding = fowl.tryGetProperty(breedingRemainingId)!;
+    // 生成時のロール（TrapSystem.md 2.1節の位相）に依らず、1周期まるごとを見る。
+    breeding.setNumber(breeding.def.range!.max);
+    pourWater(pen);
+    const water = pen.tryGetProperty(drinkingWaterId)!;
+
+    for (let i = 0; i < 2000 && water.getEffectiveValue() > 0; i++) tick(1);
+
+    expect(water.getEffectiveValue(), '甕1杯を飲み切っている').toBe(0);
+    expect(pennedCount(pen), 'まだ増えていない').toBe(1);
+    expect(breeding.getEffectiveValue(), '周期はまだ残っている').toBeGreaterThan(0);
+  });
+
+  it('1羽増えるまでに1羽が食べる飼葉は、芋2個ぶん', () => {
+    // 飼葉の減りは獣の側の1行（animals.yamlのbreeding_remaining）が持つので、1 tickの減りへ周期を
+    // 掛けて出す。**通しで回さないのは、途中で甕1杯が尽きるから**（上の試験）。
+    open();
+    const fowl = calmJunglefowl();
+    const pen = spawnInto('pen', land, 'fixtures');
+    feed(pen, 2);
+    expect(fowl.moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('catch')))).toBeUndefined();
+
+    const fodder = pen.tryGetProperty(fodderId)!;
+    const twoTaro = fodder.getEffectiveValue();
+    tick(1);
+    const perTick = twoTaro - fodder.getEffectiveValue();
+
+    expect(
+      perTick * fowl.tryGetProperty(breedingRemainingId)!.def.range!.max,
+      '1周期ぶんで、与えた芋2個をちょうど使い切る',
+    ).toBeCloseTo(twoTaro);
+  });
+
   it('水をやらなければ、囲いの獣は3日半で渇いて死ぬ', () => {
     // **これが檻を放置した罰**（TrapSystem.md 5.4節）。丸太を組んだ檻に耐久は無く、くくり罠のように
     // もがかれて壊れることもないので、渇きだけがその空白を埋める。

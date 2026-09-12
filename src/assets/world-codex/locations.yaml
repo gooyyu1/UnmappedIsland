@@ -558,8 +558,11 @@ object_defs:
       # 罠に掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
       # 罠の候補に載る。どの型の罠に載るかは、罠の側が並べた候補の一覧が決める（同1.1節）。
       rat_catch: {value: 6}
-      # 檻（farming.yamlのpen）に掛かる大型。**探索の重みより低い**——姿を見かけるのと、
-      # 自分から檻へ入るのは別の頻度で、探索の`_find`とは別のつまみになっている（同3節）。
+      # 檻（farming.yamlのpen）と落とし穴（traps.yaml）に掛かる大型。**探索の`_find`とは別のつまみ**
+      # で、卓が違うので重みの大小では比べられない（同3節）。
+      #
+      # **ここを上げない理由は掛かりにくさではなく腐敗**——1頭から出る生肉は、4人が食べ切る前に
+      # 腐る側にある（同3節）。上げても増えるのは腐る量だけになる。
       wild_boar_catch: {value: 2}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
       rat_find: {value: 3, base: {subject: agent, prop: quarry_sense}}
@@ -651,7 +654,8 @@ object_defs:
       rat_catch: {value: 6}
       junglefowl_catch: {value: 8}
       # 檻（farming.yamlのpen）に掛かる大型。森と同じ重み——イノシシの居方は
-      # `wild_boar_find`が両方3で並んでいるとおりで、檻の側で差を付ける理由が無い。
+      # 森と同じ値（森のwild_boar_catch参照）。`wild_boar_find`が両方3で並んでいるとおりで、
+      # 檻の側で差を付ける理由が無い。
       wild_boar_catch: {value: 2}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
       rat_find: {value: 3, base: {subject: agent, prop: quarry_sense}}

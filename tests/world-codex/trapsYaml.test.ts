@@ -7,6 +7,7 @@ import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent, makeBrightEnoughForAnyAction } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
+import type { RecipeDef } from '../../src/domain/RecipeDef';
 
 /**
  * traps.yamlのくくり罠を、実ファイルの定義だけで検証する（docs/engine/TrapSystem.md）。
@@ -615,5 +616,22 @@ describe('traps.yamlの落とし穴', () => {
       pitfall.moveToSlotOrRejection(forest.getSlot(codex.slotNames.getId('items'))),
       '地面の物として拾えない',
     ).toBeDefined();
+  });
+
+  it('穴を掘る手間は檻を組む手間と同じで、開いている差は材料だけ', () => {
+    // **生かす側が常に高くつく**（TrapSystem.md 1.2節）を値で見る場所。時間で差を付けていないので、
+    // 穴と檻の差は「太い枝1本」と「丸太と縄」の差そのものになる。どちらかの時間を動かすと、
+    // 材料表だけで成り立っていた比較が崩れる。
+    function onlyRecipeOf(objectName: string): RecipeDef {
+      const [recipe] = codex.objects.get(codex.objectNames.getId(objectName)).recipesProducingThis;
+      return recipe!;
+    }
+
+    const digging = onlyRecipeOf('pitfall');
+    const fencing = onlyRecipeOf('pen');
+
+    expect(digging.totalMinutes, '掘る手間と組む手間は同値').toBe(fencing.totalMinutes);
+    expect(digging.steps[0]!.requirements, '穴が要るのは1種類だけ').toHaveLength(1);
+    expect(fencing.steps[0]!.requirements.length, '檻はそれより多い').toBeGreaterThan(1);
   });
 });
