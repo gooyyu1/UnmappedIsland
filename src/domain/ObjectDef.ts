@@ -1,4 +1,5 @@
 import type {
+  ActionTrigger,
   DragTrigger,
   InteractionTrigger,
   MenuTrigger,
@@ -139,6 +140,9 @@ export class ObjectDef {
   /** このObjectDefが（selfとして）持つ、カードを重ねて起こす操作（12節）。 */
   readonly dragTriggers: readonly DragTrigger[];
 
+  /** 相手を伴わない操作（11節）。名前で引く側が、きっかけの種類を見分けずに読む。 */
+  readonly actionTriggers: readonly ActionTrigger[];
+
   constructor(
     globalId: ObjectGlobalId,
     name: string,
@@ -178,11 +182,12 @@ export class ObjectDef {
     this.tags = tags;
     this.triggers = triggers;
     // どの束に入るかはきっかけ自身が知っている（InteractionTrigger.addTo）。
-    const groups: TriggerGroups = { menu: [], tick: [], drag: [] };
+    const groups: TriggerGroups = { menu: [], tick: [], drag: [], action: [] };
     for (const trigger of triggers) trigger.addTo(groups);
     this.menuTriggers = groups.menu;
     this.tickTriggers = groups.tick;
     this.dragTriggers = groups.drag;
+    this.actionTriggers = groups.action;
     this.boundToOwner = boundToOwner;
     this.resists = resists;
     this.stackable = stackable;

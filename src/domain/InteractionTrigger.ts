@@ -15,6 +15,8 @@ export interface TriggerGroups {
   readonly menu: MenuTrigger[];
   readonly tick: TickTrigger[];
   readonly drag: DragTrigger[];
+  /** 相手を伴わないきっかけ（ActionTrigger）。種類を見分けずに名前で引く側が読む。 */
+  readonly action: ActionTrigger[];
 }
 
 /**
@@ -54,11 +56,23 @@ export abstract class ActionTrigger extends InteractionTrigger {
   constructor(interaction: InteractionDef) {
     super(interaction);
   }
+
+  /**
+   * 相手を伴わないものは、種類別の束に加えて`action`にも入る。**名前で引く側（`WorldObject.tryGetAction`）は
+   * 種類を見分けない**ので、この種類が増えても引き手は書き換わらない。
+   */
+  addTo(groups: TriggerGroups): void {
+    groups.action.push(this);
+    this.addToKind(groups);
+  }
+
+  /** 種類別の束。**種類を足したら実装しないとコンパイルが通らない。** */
+  protected abstract addToKind(groups: TriggerGroups): void;
 }
 
 /** プレイヤーが押したときに起きる（11.1節）。**画面のボタンに出るのはこれだけ。** */
 export class MenuTrigger extends ActionTrigger {
-  addTo(groups: TriggerGroups): void {
+  protected addToKind(groups: TriggerGroups): void {
     groups.menu.push(this);
   }
 
@@ -76,7 +90,7 @@ export class MenuTrigger extends ActionTrigger {
  * メニュー型と同じ（動物の1手、docs/engine/HuntingSystem.md 5節）。
  */
 export class TickTrigger extends ActionTrigger {
-  addTo(groups: TriggerGroups): void {
+  protected addToKind(groups: TriggerGroups): void {
     groups.tick.push(this);
   }
 

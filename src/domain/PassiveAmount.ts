@@ -9,8 +9,8 @@ export type AmountReading =
 /**
  * 持続効果が寄与する量（GameElementDefinition.md 8.3節）。
  *
- * 定数と、**宣言元自身のプロパティの実効値の積**の2つ。YAMLが書けるのは定数だけで、積を使うのは
- * エンジンが生やす中身の重さの伝播（[`ContainerSystem.md`](../../docs/engine/ContainerSystem.md)
+ * 書ける形はAmountReadingが持つ。YAMLが書けるのは定数だけで、**宣言元自身のプロパティの実効値の積**を
+ * 使うのはエンジンが生やす中身の重さの伝播（[`ContainerSystem.md`](../../docs/engine/ContainerSystem.md)
  * 1〜2節）だけ。伝播を寄与の登録と同じ経路に乗せるために、量のほうを差し替えられるようにしてある。
  */
 export abstract class PassiveAmount {
