@@ -161,6 +161,10 @@ water_liquid:
 （[`GameEndings.md`](../concept/GameEndings.md) 9.2 節）。数が宣言とずれれば
 `tests/diagnostics/waterAndBloodPace.test.ts` が落ちます。
 
+**これは素の減りでの目盛りで、上限のほうです。** 器に入れたまま置けば蒸発が引き（6 節）、脂を切らせば
+水分の保ちが半分になる（[`DigestionSystem.md`](./DigestionSystem.md) 8 節）ので、**どちらも
+1.7 日を短くする向きにしか働きません。**
+
 飲用は液体トレイト側のメニュー型の操作。`transfer` で自分の `fill` から 1回 250（＝250mL）出し、
 `agent.hydration` を 10 増やします。`transfer` の在庫クランプにより、残量が 250mL 未満なら残っている分だけ
 飲みます（増える水分もその比で減ります）。逆に `hydration` 側の空きが 10 tick 分未満なら入る分だけ飲み、

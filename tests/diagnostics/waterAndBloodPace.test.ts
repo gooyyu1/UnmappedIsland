@@ -77,9 +77,26 @@ describe('文書が書いた「何日ぶん」', () => {
     return { drinks, hydrationTicks };
   }
 
+  /**
+   * 素の水分の減り（1日ぶん）。**宣言を読まずに `TICKS_PER_DAY` で割らない**——tick数で持っている
+   * のは受け取る側の単位であって、1 tick に 1 減ることは減りの宣言（`characters/*.yaml` の
+   * `hydration`）がそう書いているから出るだけ。埋め込むと、減りを倍にしても検査は緑のまま
+   * 文書の日数だけが嘘になる。
+   */
+  function hydrationDecayPerDay(): number {
+    const agent = spawn(SAMPLE_CHARACTER);
+    const before = agent.getProperty(hydrationId).number;
+    agent.tick();
+    const perDay = (before - agent.getProperty(hydrationId).number) * TICKS_PER_DAY;
+    expect(perDay, '水分が減っていない').toBeGreaterThan(0);
+    return perDay;
+  }
+
   it('器1つが何日ぶんかが、容量と飲用の換算率と素の減りから出る', () => {
     const jar = drainOf('jar');
     const bowl = drainOf('coconut_bowl');
+    const decayPerDay = hydrationDecayPerDay();
+    const jarDays = jar.hydrationTicks / decayPerDay;
 
     expect(numberIn(LIQUID_DOC, /甕（4,000mL）は \*\*(\d+) 杯/, '甕の杯数'), '甕1つで飲める回数').toBe(
       jar.drinks,
@@ -87,7 +104,7 @@ describe('文書が書いた「何日ぶん」', () => {
     expect(
       numberIn(LIQUID_DOC, /甕（4,000mL）は \*\*\d+ 杯＝([\d.]+) 日ぶん\*\*/, '甕の日数'),
       '甕1つが賄う日数',
-    ).toBeCloseTo(jar.hydrationTicks / TICKS_PER_DAY, 1);
+    ).toBeCloseTo(jarDays, 1);
     expect(
       numberIn(LIQUID_DOC, /ヤシの器（250mL）は \*\*(\d+) 杯/, 'ヤシの器の杯数'),
       'ヤシの器1つで飲める回数',
@@ -95,7 +112,7 @@ describe('文書が書いた「何日ぶん」', () => {
     expect(
       numberIn(LIQUID_DOC, /ヤシの器（250mL）は \*\*\d+ 杯＝([\d.]+) 時間ぶん\*\*/, 'ヤシの器の時間'),
       'ヤシの器1つが賄う時間',
-    ).toBeCloseTo((bowl.hydrationTicks * MINUTES_PER_TICK) / 60, 1);
+    ).toBeCloseTo((bowl.hydrationTicks / decayPerDay) * 24, 1);
 
     // 積む数の元になる目盛りは、同じ1つでなければならない（3か所に同じ数が書いてある）。
     for (const [doc, text] of [
@@ -105,7 +122,7 @@ describe('文書が書いた「何日ぶん」', () => {
       expect(
         numberIn(text, /甕 1 つは ([\d.]+) 日ぶん/, `${doc} の甕の日数`),
         `${doc} が書いた甕の日数`,
-      ).toBeCloseTo(jar.hydrationTicks / TICKS_PER_DAY, 1);
+      ).toBeCloseTo(jarDays, 1);
     }
   });
 
@@ -187,6 +204,7 @@ describe('最小の献立について文書が言っていること', () => {
     daily_minimum: readonly { place: string; unmet: readonly string[] }[];
     daily_minimum_menu: readonly MenuRow[];
     chain_routes: readonly ChainRow[];
+    devices: readonly { place: string; device: string; product: string; per_day: number }[];
   };
 
   const WHOLE_ISLAND = '島全体';
@@ -195,6 +213,14 @@ describe('最小の献立について文書が言っていること', () => {
     const row = balance.daily_minimum.find((entry) => entry.place === WHOLE_ISLAND);
     expect(row, `daily_minimum に ${WHOLE_ISLAND} の行が無い`).toBeDefined();
     expect(row!.unmet, '最小の献立が賄えない値').toEqual([]);
+  });
+
+  it('落とし穴がイノシシを返す間隔が、VitalsSystem.md 3.3節の日数と合う', () => {
+    const row = balance.devices.find(
+      (entry) => entry.place === WHOLE_ISLAND && entry.device === 'pitfall' && entry.product === 'wild_boar',
+    );
+    expect(row, '落とし穴がイノシシを返す行が無い').toBeDefined();
+    expect(numberIn(VITALS_DOC, /\*\*([\d.]+) 日に 1 頭\*\*/, '獲物の間隔')).toBeCloseTo(1 / row!.per_day, 1);
   });
 
   it('最小の献立が運ぶ脂が、1日ぶんの輸送の半分に届かない（DigestionSystem.md 未決事項節）', () => {
