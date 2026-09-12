@@ -143,7 +143,7 @@ beast:
 monkey_carcass:
   interactions:
     butcher:
-      trigger: {drag: {tag: cutting_tool}}
+      trigger: {drag: {tag: handheld_blade}}
       duration: 60
       destroy: self
       spawn:
@@ -152,6 +152,9 @@ monkey_carcass:
         - {object: rawhide}
 ```
 
+- **要るのは握りの刃です**（`handheld_blade`。`tools.yaml` の `sharp_stone`）。皮と肉の間へ刃を寝かせて
+  走らせる手つきなので、柄の先へ頭部を据えた石斧では剥げません——**獲物を沈めるのが速い道具と、捌ける
+  道具が別**になり、狩りへ出る前に尖った石を持っているかが問われます
 - **得られる素材は獲物の種類によらず同じで、獲物の大きさは個数が表します。** 5kg のサルと 60kg の
   イノシシで別の肉を作ると、それを使う側（料理・皮革）が獲物の数だけ分岐します。**鶏肉も獣肉も
   同じ `raw_meat` です**——栄養と味の違いが実際に効くようになるまで、獲物の種類で肉を分けません

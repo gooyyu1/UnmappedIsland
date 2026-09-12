@@ -87,9 +87,12 @@ object_defs:
     recipes:
       whittled:
         steps:
+          # **要るのは握りの刃**（handheld_blade、tools.yaml）——枝を押さえて刃を面へ沿わせ、像の形が
+          # 出るまで削ぎ続ける手つきで、骨針の削り出し（animals.yamlのwhittle）と同じ持ち方。下の
+          # 太鼓のくり抜きが刃物なら何でもよいのと、そこが違う。
           - requires:
               - {object: thick_branch, count: 1, consume: true}
-              - {tag: cutting_tool, count: 1, consume: false}
+              - {tag: handheld_blade, count: 1, consume: false}
             duration: 210
 
   # 木の太鼓。丸太をくり抜き、生皮を張って縄で締めた物。
@@ -108,7 +111,8 @@ object_defs:
     recipes:
       hollowed:
         steps:
-          # 丸太の芯をくり抜く。
+          # 丸太の芯をくり抜く。**刃物なら何でもよい**（cutting_tool）——刃を打ち込んでは屑を起こす
+          # 手つきで、面へ沿わせる必要が無いので石斧でも通る（分け方は tools.yaml の sharp_stone）。
           - requires:
               - {object: log, count: 1, consume: true}
               - {tag: cutting_tool, count: 1, consume: false}

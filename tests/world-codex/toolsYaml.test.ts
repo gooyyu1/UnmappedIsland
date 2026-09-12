@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { tryAdvanceCrafting, spawnInProgressObject } from '../../src/domain/crafting';
 import type { RecipeDef } from '../../src/domain/RecipeDef';
+import type { TypeMatchReading } from '../../src/domain/TypeMatchRule';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
@@ -77,8 +78,8 @@ describe('tools.yamlの道具定義', () => {
   });
 
   it('石斧は打ち砕き、槍は突き通す', () => {
-    // 上位の武器2つは、同じ配分の目盛りの上で性格が分かれる（tools.yaml）。石斧は解体にも使えるが、
-    // 槍は穂先が柄に固定されているので刃物にならない。
+    // 上位の武器2つは、同じ配分の目盛りの上で性格が分かれる（tools.yaml）。石斧は断つ・割る側の
+    // 刃物だが、槍は穂先が突き刺さる形なので刃物にならない。
     const session = new WorldSession(codex);
     const axe = session.createObject(codex.objectNames.getId('stone_axe'));
     const spear = session.createObject(codex.objectNames.getId('spear'));
@@ -95,7 +96,11 @@ describe('tools.yamlの道具定義', () => {
     expect(axe.tryGetProperty(codex.propertyNames.getId('thrust'))?.number ?? 0).toBe(0);
 
     expect(axe.def.tags).toContain(codex.tagNames.getId('cutting_tool'));
-    expect(spear.def.tags, '槍では解体できない').not.toContain(codex.tagNames.getId('cutting_tool'));
+    expect(spear.def.tags, '槍は刃物ではない').not.toContain(codex.tagNames.getId('cutting_tool'));
+    expect(
+      axe.def.tags,
+      '斧の頭部は柄に固定されているので、剥ぐ・掻く・削り出す側には回れない',
+    ).not.toContain(codex.tagNames.getId('handheld_blade'));
   });
 
   it('突き銛は釣りの道具で、獣を突く武器ではない', () => {
@@ -245,6 +250,9 @@ describe('石斧を作る', () => {
     const stem = session.createObject(codex.objectNames.getId('banana_stem'));
     expect(stem.moveToSlotOrRejection(field.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
     expect(wip.def.tags, 'タグの上でも刃物ではない').not.toContain(codex.tagNames.getId('cutting_tool'));
+    expect(wip.def.tags, '掻き取りが探す握りの刃でもない').not.toContain(
+      codex.tagNames.getId('handheld_blade'),
+    );
 
     // 掻き取りは手元の明るさも要求する（IlluminationSystem.md 5節）。ここで見たいのは刃物かどうか
     // なので、明るさの側は満たしておく。
@@ -263,5 +271,147 @@ describe('石斧を作る', () => {
       stem.combinationsWith(sharpStone, stripper).map((combination) => combination.name),
       '出来上がった刃物でなら成立する',
     ).toEqual(['strip']);
+  });
+});
+
+/**
+ * 刃物を要求する操作が、石斧で通るか通らないかを実ファイルの定義だけで見張る。線の引き方は
+ * `src/assets/world-codex/tools.yaml` の sharp_stone——**刃を面へ沿わせて送り続ける操作は
+ * handheld_blade、刃を一点・一線へ入れて済む操作は cutting_tool** で受ける。
+ *
+ * **表は片側だけでは効かない。** 通らない側だけを並べると、全部を handheld_blade へ寄せても緑のままで、
+ * 石斧に何も残っていないことに気づけない。**表に載っていない宣言が無いことも下で数える**——載せ忘れた
+ * 分だけ、分け方を誰も確かめないまま通ってしまうため。
+ */
+
+/**
+ * 刃物のタグを名指ししている宣言と、それがどちら側かの表。`owner`は宣言している型、`step`は重ねる操作
+ * またはレシピの名前。`handheldOnly`が真なら握りの刃でしか通らない。
+ */
+const BLADE_DECLARATIONS = [
+  // 刃を面へ沿わせて送る操作。剥ぐ・掻き取る・削り出す。
+  { owner: 'broadleaf_tree', step: 'strip_bark', recipe: false, handheldOnly: true },
+  { owner: 'monkey_carcass', step: 'butcher', recipe: false, handheldOnly: true },
+  { owner: 'wild_boar_carcass', step: 'butcher', recipe: false, handheldOnly: true },
+  { owner: 'junglefowl_carcass', step: 'butcher', recipe: false, handheldOnly: true },
+  { owner: 'small_bone', step: 'whittle', recipe: false, handheldOnly: true },
+  { owner: 'banana_stem', step: 'strip', recipe: false, handheldOnly: true },
+  { owner: 'coconut', step: 'husk', recipe: false, handheldOnly: true },
+  { owner: 'coconut_half', step: 'scrape', recipe: false, handheldOnly: true },
+  { owner: 'tanned_leather', step: 'tanned', recipe: true, handheldOnly: true },
+  { owner: 'wood_carving', step: 'whittled', recipe: true, handheldOnly: true },
+  // 刃を一点・一線へ入れれば済む操作。断つ・割る・こじる・穴を開ける・くり抜く。
+  { owner: 'abaca', step: 'fell', recipe: false, handheldOnly: false },
+  { owner: 'banana_plant', step: 'fell', recipe: false, handheldOnly: false },
+  { owner: 'sapling', step: 'cut_pole', recipe: false, handheldOnly: false },
+  { owner: 'palm_frond', step: 'split_and_weave', recipe: false, handheldOnly: false },
+  { owner: 'green_coconut', step: 'bore', recipe: false, handheldOnly: false },
+  { owner: 'drained_green_coconut', step: 'split', recipe: false, handheldOnly: false },
+  { owner: 'husked_coconut', step: 'pry_open', recipe: false, handheldOnly: false },
+  { owner: 'log_drum', step: 'hollowed', recipe: true, handheldOnly: false },
+] as const;
+
+const declarationsWhere = (recipe: boolean, handheldOnly: boolean) =>
+  BLADE_DECLARATIONS.filter((row) => row.recipe === recipe && row.handheldOnly === handheldOnly).map(
+    (row) => [row.owner, row.step] as const,
+  );
+
+describe('刃物を要求する操作が、石斧で通るかどうか', () => {
+  let codex: WorldCodex;
+
+  beforeAll(() => {
+    codex = bundledCodex();
+  });
+
+  /**
+   * その相手にその道具を当てたときに、**相手として名乗り出た**操作の名前。成立したものと、
+   * 条件で断られたものの両方を数える——ここで見たいのは道具のタグが当たるかどうかで、明るさや
+   * 天気で断られるかは別の話だから。
+   */
+  function triggeredCombinationNames(targetName: string, toolName: string): string[] {
+    const session = new WorldSession(codex);
+    const agent = createBrightEnoughAgent(session);
+    const target = session.createObject(codex.objectNames.getId(targetName));
+    const tool = session.createObject(codex.objectNames.getId(toolName));
+
+    return [...target.combinationsWith(tool, agent), ...target.refusedCombinationsWith(tool, agent)].map(
+      (combination) => combination.name,
+    );
+  }
+
+  /** その名前のレシピが、その道具を要求のどれかに当てはめるか。 */
+  function recipeAccepts(productName: string, recipeName: string, toolName: string): boolean {
+    const recipes = codex.objects.get(codex.objectNames.getId(productName)).recipesProducingThis;
+    const recipe = recipes.find((candidate) => candidate.name === recipeName);
+    expect(recipe, `'${productName}' に '${recipeName}' のレシピがある`).toBeDefined();
+    return recipe!.requires(codex.objects.get(codex.objectNames.getId(toolName)));
+  }
+
+  /**
+   * 刃物のタグを名指ししている宣言を、定義から全部拾う（`型名.操作名`）。**軸から生成された変種は
+   * 数えない**——塩漬けの死体も生のものと同じ宣言を写し取っているだけで、分け方を決める場所ではない。
+   */
+  function declaredBladeSteps(): string[] {
+    const bladeTags = [codex.tagNames.getId('cutting_tool'), codex.tagNames.getId('handheld_blade')];
+    const namesTagged = (reading: TypeMatchReading): boolean =>
+      reading.kind === 'tag' && bladeTags.includes(reading.tagGlobalId);
+    const found = new Set<string>();
+
+    for (const def of codex.objects) {
+      if (codex.isGenerated(def)) continue;
+      for (const trigger of def.dragTriggers) {
+        const reading = trigger.reading;
+        if (reading.kind === 'drag' && namesTagged(reading.with))
+          found.add(`${def.name}.${trigger.interaction.name}`);
+      }
+      for (const recipe of def.recipesProducingThis)
+        for (const step of recipe.steps)
+          for (const requirement of step.requirements)
+            if (namesTagged(requirement.match.reading)) found.add(`${def.name}.${recipe.name}`);
+    }
+    return [...found].sort();
+  }
+
+  it.each(declarationsWhere(false, true))(
+    '%s の %s は握りの刃でしか成立せず、石斧は相手にすらならない',
+    (targetName, stepName) => {
+      expect(triggeredCombinationNames(targetName, 'sharp_stone'), '尖った石は名乗り出る').toContain(
+        stepName,
+      );
+      expect(
+        triggeredCombinationNames(targetName, 'stone_axe'),
+        '石斧では組み合わせが立たない（断られるのでもなく、候補に出ない）',
+      ).not.toContain(stepName);
+    },
+  );
+
+  it.each(declarationsWhere(false, false))(
+    '%s の %s は、石斧でも尖った石でも成立する',
+    (targetName, stepName) => {
+      expect(triggeredCombinationNames(targetName, 'sharp_stone')).toContain(stepName);
+      expect(triggeredCombinationNames(targetName, 'stone_axe')).toContain(stepName);
+    },
+  );
+
+  it.each(declarationsWhere(true, true))(
+    '%s の %s は、握りの刃を要求する（石斧では工程が埋まらない）',
+    (productName, recipeName) => {
+      expect(recipeAccepts(productName, recipeName, 'sharp_stone')).toBe(true);
+      expect(recipeAccepts(productName, recipeName, 'stone_axe')).toBe(false);
+    },
+  );
+
+  it.each(declarationsWhere(true, false))(
+    '%s の %s は、石斧でも尖った石でも工程が埋まる',
+    (productName, recipeName) => {
+      expect(recipeAccepts(productName, recipeName, 'sharp_stone')).toBe(true);
+      expect(recipeAccepts(productName, recipeName, 'stone_axe')).toBe(true);
+    },
+  );
+
+  it('刃物のタグを名指しする宣言は、残らず表に載っている', () => {
+    // 載せ忘れた宣言は、どちら側なのかを誰も確かめないまま通る。**定義の側を数え直して突き合わせる**
+    // ので、新しく刃物を要求する宣言を書いたらここが落ちる（分け方は tools.yaml の sharp_stone）。
+    expect(declaredBladeSteps()).toEqual(BLADE_DECLARATIONS.map((row) => `${row.owner}.${row.step}`).sort());
   });
 });
