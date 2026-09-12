@@ -77,8 +77,8 @@ const TOOL_EXTENSIONS = ['mjs', 'mts', 'sh', 'py'];
  * 行数の列。値は `git grep` へ渡す pathspec で、C#期とTS期の置き場を合併してある。
  *
  * **どこへ数えるかは、置き場ではなく中身の性質で決める。** 絵のレシピは `tools/` に在っても
- * データなので `定義` へ、運用の取り決めは `.claude/` に在っても文書なので `文書` へ入る。
- * **`.claude/decisions/` は判断の履歴なので、どの列にも数えない**——文書とは別のもの。
+ * データなので `定義` へ、運用の取り決めは `agent-ops/` に在っても文書なので `文書` へ入る。
+ * **`agent-ops/decisions/` は判断の履歴なので、どの列にも数えない**——文書とは別のもの。
  *
  * **拡張子は `**.ts` の形で書く。** 途中にスラッシュを挟む形（`**` とスラッシュと `*.ts`）は、
  * 置き場の**直下**にあるファイルを取りこぼす——文書の列が `docs/` 直下（`HowWeGotHere.md`
@@ -89,10 +89,17 @@ const LINE_COLUMNS = [
   { header: '実装', pathspecs: ['Assets/Scripts/**.cs', 'src/**.ts', ':!src/**.test.ts'] },
   { header: '試験', pathspecs: ['Tests/**.cs', 'tests/**.ts', 'src/**.test.ts'] },
   {
-    // `:(glob)` を付けると `*` がスラッシュを跨がなくなる。`.claude/` は**直下だけ**が取り決めで、
-    // 下の階層（`skills/`・`decisions/`）は別のもの。
+    // `:(glob)` を付けると `*` がスラッシュを跨がなくなる。取り決めと、セッションへ渡すひな形だけを
+    // 取り、下の階層（`decisions/`・`analysis/`）は別のもの。**`.claude/*.md` も残す**——取り決めが
+    // そこに在った頃の commit では、そちらに数える対象が在る。
     header: '文書',
-    pathspecs: ['Documents/**.md', 'docs/**.md', ':(glob).claude/*.md'],
+    pathspecs: [
+      'Documents/**.md',
+      'docs/**.md',
+      ':(glob).claude/*.md',
+      ':(glob)agent-ops/*.md',
+      ':(glob)agent-ops/prompts/*.md',
+    ],
   },
   {
     header: '定義',
@@ -214,7 +221,7 @@ const CODE_DIRECTORIES = /^(src|tests|Assets\/Scripts|Tests)\//;
  * 書いてから実装する進め方が、機能ごとに閉じている（アジャイル的）か、文書を全部書いてから
  * 実装へ移る（ウォーターフォール的）かは、この割合に出る。
  *
- * **ここでの「文書」は仕様の置き場だけ**で、`文書` の列とは範囲が違う——`.claude/` の取り決めは、
+ * **ここでの「文書」は仕様の置き場だけ**で、`文書` の列とは範囲が違う——`agent-ops/` の取り決めは、
  * 実装と対で書かれるものではないので、対になっているかを見るこの割合には入れない。
  *
  * **全部のPRぶんを1回の `git log` で取る。** 1本ずつ `git diff` を呼ぶと、履歴が千本を超えた

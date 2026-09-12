@@ -10,7 +10,7 @@ import { board, issueBody } from '../../scripts/agent/board.mjs';
  * 正しく付くこと、棚卸しの済んでいない issue だけが `未整理` に出ること。並べ方を間違えると、
  * 盤面を読んだ側は同じ issue を二重に投入するか、着手できる仕事を待ちだと読んで止める。
  *
- * 出口は端末（`board`）と常設 issue の本文（`issueBody`。`.claude/board-design.md` 2.20）の2つで、
+ * 出口は端末（`board`）と常設 issue の本文（`issueBody`。`agent-ops/board-design.md` 2.20）の2つで、
  * **突き合わせは1箇所**。どちらの検査も同じ世界を渡して、同じ事実が両方に出ることを見る。
  */
 
@@ -76,7 +76,7 @@ function body(world: World = {}): { lines: string[]; warnings: string[] } {
 const issue = (number: number, title: string, over: Record<string, unknown> = {}) => ({
   number,
   title,
-  // **棚卸しを通った issue は向かう先を持つ**（`.claude/board-design.md` 2.17.1）ので、足場も
+  // **棚卸しを通った issue は向かう先を持つ**（`agent-ops/board-design.md` 2.17.1）ので、足場も
   // その形にする。足さないと、向かう先と関わりのない検査の `## 未整理` に issue が並ぶ。
   labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }],
   blockedBy: { nodes: [] },
@@ -85,7 +85,7 @@ const issue = (number: number, title: string, over: Record<string, unknown> = {}
 
 /**
  * 畳まれていないセッション1件（`live-sessions.mjs` が返す形）。**何をしているかはタグで引く**
- * （`.claude/board-design.md` 1.2）——題は一覧に含まれない。
+ * （`agent-ops/board-design.md` 1.2）——題は一覧に含まれない。
  */
 const session = (id: string, tags: readonly string[] = []): LiveSession => ({
   id,
@@ -207,7 +207,7 @@ describe('board.mjs', () => {
     expect(lines).toContain('TASK 8 待ち:#9 後');
   });
 
-  // 返された issue は `kind:task` が付いたまま残る（`.claude/board-design.md` 2.15.2）ので、状態で
+  // 返された issue は `kind:task` が付いたまま残る（`agent-ops/board-design.md` 2.15.2）ので、状態で
   // 見分けが付かないと、人は列に並んでいるものと区別できない。
   it('人へ返された issue は、返却として出す', () => {
     const { lines } = show({
@@ -292,7 +292,7 @@ describe('board.mjs', () => {
 });
 
 /**
- * 常設 issue の本文（`.claude/board-design.md` 2.20）。**読むのはスマホの人間**で、リポジトリも
+ * 常設 issue の本文（`agent-ops/board-design.md` 2.20）。**読むのはスマホの人間**で、リポジトリも
  * ログも開かないので、ここが守るのは**本文だけで読み切れること**——いつ時点か・何件あるか・
  * 投入した1件ごとに今何が起きているか。
  */

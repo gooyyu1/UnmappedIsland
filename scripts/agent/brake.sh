@@ -15,16 +15,16 @@
 #   UNKNOWN <理由>                … 終了コード 1
 #
 # **`STOP` だけ別の終了コードを持つのは、人が止めていることを呼び手が見分けるため**
-# （[`board-design.md`](../../.claude/board-design.md) 2.21.2）。1周を回す側はこれを見て、
+# （[`board-design.md`](../../agent-ops/board-design.md) 2.21.2）。1周を回す側はこれを見て、
 # **打てなかった手のうち直す相手が居ないものを、ログでそう名乗らせる**
 # （[`board-round.mjs`](board-round.mjs) の `SETTLED`）——そのログを毎回読むのは盤面を見回る係で、
 # **区別が消えると、人が止めているだけの周を毎回調べに行く。** 理由を言えるのはここしか居ないので、
 # 後から状態を見て推し量るのではなく、止めた側がその場で名乗る
-# （[`policies.md`](../../.claude/policies.md)「理由の持たせ方」）。**読めなかった（`UNKNOWN`）は
+# （[`policies.md`](../../agent-ops/policies.md)「理由の持たせ方」）。**読めなかった（`UNKNOWN`）は
 # 直す相手が要る側**——手綱が読めないこと自体が、誰かが直すべき状態だから。
 #
 # 掛かるのは**セッションを立てること**だけ。マージやラベルは止めない
-# （[`board-design.md`](../../.claude/board-design.md) 2.4）。走っているセッションにも触らない。
+# （[`board-design.md`](../../agent-ops/board-design.md) 2.4）。走っているセッションにも触らない。
 #
 # ## 行の文字列で見分ける
 #
@@ -33,7 +33,7 @@
 # 読めないときは止まる側へ倒すので、規約が揺れても壊れる先は安全側に限られる。
 #
 # **ここのチェックは設定で、答えではない**（分類は `kind:switch`。
-# [`board-design.md`](../../.claude/board-design.md) 2.17.5）。だから
+# [`board-design.md`](../../agent-ops/board-design.md) 2.17.5）。だから
 # [`checked-items.sh`](checked-items.sh) は拾わない——拾うと、誰も下ろさない項目が `## 確定待ち` に
 # 居座る。
 #

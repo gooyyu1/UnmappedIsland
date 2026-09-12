@@ -7,7 +7,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
  * `scripts/agent/dispatch-steps.sh` の `dispatch_session` が、**関門の終了コードをそのまま呼び手の
- * 終了コードにする**ことの検査（`.claude/board-design.md` 2.21.2）。
+ * 終了コードにする**ことの検査（`agent-ops/board-design.md` 2.21.2）。
  *
  * **人が手綱で止めている周（3）と、それ以外で転んだ周（1）を、1周を回す側が見分けられなくなると、
  * ログがどちらも「転んだ」と言う**——それを毎回読む盤面を見回る係が、人の意思で止まっている周を
@@ -70,7 +70,7 @@ esac
     );
 
     try {
-      runScript(SCRIPT, ['patrol', '.claude/patrol-prompt.md'], {
+      runScript(SCRIPT, ['patrol', 'agent-ops/prompts/patrol-prompt.md'], {
         stdio: 'pipe',
         env: {
           ...process.env,

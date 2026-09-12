@@ -11,7 +11,7 @@ import { pathForBash, spawnScript } from '../support/runScript';
  * `create_session` は通ってしまい、**中身の薄い指示を持ったセッションが立つ**——投入した側には
  * `SESSION` の行が出るので、届いた本文を読むまで気づけない。
  *
- * 囲みの綴りを取り出す側が決め打つと、その綴りを本文に含むひな形（`.claude/triage-prompt.md` の
+ * 囲みの綴りを取り出す側が決め打つと、その綴りを本文に含むひな形（`agent-ops/prompts/triage-prompt.md` の
  * ように、指示の中でコードブロックを見せるもの）が書けない。**綴りはひな形が決める**ので、
  * その判定をここで押さえる。
  */

@@ -3,14 +3,14 @@ import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * 分析係の記録が、係の本文（`.claude/*-prompt.md`）の定めた節を持っていることの検査。
+ * 分析係の記録が、係の本文（`agent-ops/prompts/*-prompt.md`）の定めた節を持っていることの検査。
  *
  * **一次も二次も同じ形で回る**（{@link SERIES}）——どちらも本文の `## 記録` が置く節を並べ、1回1
  * ファイルで日付の名前を付ける。**見る仕組みを分ける差は無い**ので、置き場と本文だけを変えて同じ
  * 1つを掛ける。
  *
  * 検査がここに要るのは、**記録の書き方がずれても次の回には何も届かない**ため。一次が過去の回の記録を
- * 開くのはその回のスメルが名指した行を確かめるときだけ（`.claude/board-design.md` 2.17.4）で、
+ * 開くのはその回のスメルが名指した行を確かめるときだけ（`agent-ops/board-design.md` 2.17.4）で、
  * 二次が必ず読むのも直前の1件までしかない。**定めを置ける場所は本文だけなので、守られたかを見るのは
  * ここ**——読んだスメルのうち issue にしなかったものは、コメントへ 👀 が付いた時点で二度と拾われない
  * ので、記録から落ちるとそのまま消える。
@@ -43,8 +43,8 @@ interface Series {
 const SERIES: readonly Series[] = [
   {
     name: '一次',
-    prompt: join(ROOT, '.claude', 'analysis-prompt.md'),
-    dir: join(ROOT, '.claude', 'analysis'),
+    prompt: join(ROOT, 'agent-ops', 'prompts', 'analysis-prompt.md'),
+    dir: join(ROOT, 'agent-ops', 'analysis'),
     // 節を足した日に走る回は、この定めが入る前に記録を書いている。**日付を付けるのは記録を書く係で、
     // クラウドなら UTC・手元なら日本時間**と、どちらの日境で切るかは決まっていないため、
     // `## 開いた過去の記録` を足した回（UTC の 2026-09-11、日本時間の 2026-09-12）はどちらも外す。
@@ -52,8 +52,8 @@ const SERIES: readonly Series[] = [
   },
   {
     name: '二次',
-    prompt: join(ROOT, '.claude', 'analysis-trend-prompt.md'),
-    dir: join(ROOT, '.claude', 'analysis', 'summary'),
+    prompt: join(ROOT, 'agent-ops', 'prompts', 'analysis-trend-prompt.md'),
+    dir: join(ROOT, 'agent-ops', 'analysis', 'summary'),
   },
 ];
 
@@ -117,7 +117,7 @@ describe.each(SERIES)('$name の分析の記録', ({ prompt, dir, from }: Series
     expect(headings.length).toBe(bullets);
   });
 
-  // 二次の係は回の前後をファイル名の文字列の大小で並べる（`.claude/board-design.md` 2.17.4）。
+  // 二次の係は回の前後をファイル名の文字列の大小で並べる（`agent-ops/board-design.md` 2.17.4）。
   // 日付で始まらない記録は、そこから外れるうえ、下の検査でも回を引けない。
   it('記録は日付で始まる', () => {
     expect(records(dir).filter(({ name }) => !/^\d{4}-\d{2}-\d{2}/.test(name))).toEqual([]);

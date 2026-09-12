@@ -13,8 +13,8 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = resolve(__dirname, '../..');
 
-const POLICIES = join(ROOT, '.claude', 'policies.md');
-const DECISIONS = join(ROOT, '.claude', 'decisions');
+const POLICIES = join(ROOT, 'agent-ops', 'policies.md');
+const DECISIONS = join(ROOT, 'agent-ops', 'decisions');
 
 /** `policies.md` の総量の上限（SKILL.md「棚卸しの手順」）。超えたら畳むか捨てる。 */
 const MAX_LINES = 220;

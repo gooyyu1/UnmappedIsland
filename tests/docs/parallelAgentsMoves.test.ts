@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest';
 const ROOT = resolve(__dirname, '../..');
 const DOC = join(ROOT, 'docs', 'ParallelAgents.md');
 const ROUND = join(ROOT, 'scripts', 'agent', 'board-round.mjs');
-const RESUME_PROMPT = join(ROOT, '.claude', 'resume-prompt.md');
+const RESUME_PROMPT = join(ROOT, 'agent-ops', 'prompts', 'resume-prompt.md');
 
 /** 手の表の見出しの行。表そのものは節の中に1つしか無いので、これで在り処が決まる。 */
 const TABLE_HEADER = '| 手 | いつ打つか | 何をするか |';

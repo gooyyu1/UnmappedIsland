@@ -48,17 +48,17 @@ export function trackedDocs(root) {
  */
 export function isVerbatimRecord(rel) {
   return (
-    rel.startsWith(join('.claude', 'decisions') + sep) ||
+    rel.startsWith(join('agent-ops', 'decisions') + sep) ||
     new RegExp(`^review\\${sep}\\d{4}-\\d{2}-\\d{2}`).test(rel)
   );
 }
 
 /**
- * その回の観測の記録か（`.claude/analysis/**`）。参照は今のリポジトリを指すので規約が掛かり、
+ * その回の観測の記録か（`agent-ops/analysis/**`）。参照は今のリポジトリを指すので規約が掛かり、
  * **確定度の印だけが外れる**——印はそこでは題材として現れる。
  *
  * @param {string} rel 根からの相対パス
  */
 export function isAnalysisRecord(rel) {
-  return rel.startsWith(join('.claude', 'analysis') + sep);
+  return rel.startsWith(join('agent-ops', 'analysis') + sep);
 }

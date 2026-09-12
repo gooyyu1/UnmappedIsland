@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
  * なる**（#1943・#1883 が実際にその書き換えを1本ずつ払っている）。読み手へは在り処だけを指させる。
  *
  * **見るのは、値を持たない側で値を説明している場所。** 値を持つ側（`scripts/`）と、当時の観測を残す
- * 記録（`.claude/analysis/**`）は写しではないので入れない。盤面の検査（`tests/scripts/**`）は、
+ * 記録（`agent-ops/analysis/**`）は写しではないので入れない。盤面の検査（`tests/scripts/**`）は、
  * 値そのものは足場の日付で留めているので、文章で綴り直すのはやはり写しになる。
  */
 
@@ -22,14 +22,14 @@ const READ = join(ROOT, 'scripts', 'agent', 'board-read.mjs');
 
 /** 間隔と窓を説明する文書。ここが在り処を指すか、値を写すかの分かれ目になる。 */
 const WATCHED = [
-  join('.claude', 'board-design.md'),
-  join('.claude', 'parallel-work.md'),
-  join('.claude', 'triage-prompt.md'),
-  join('.claude', 'dig-prompt.md'),
-  join('.claude', 'analysis-prompt.md'),
-  join('.claude', 'analysis-trend-prompt.md'),
-  join('.claude', 'patrol-prompt.md'),
-  join('.claude', 'policy-cycle-prompt.md'),
+  join('agent-ops', 'board-design.md'),
+  join('agent-ops', 'parallel-work.md'),
+  join('agent-ops', 'prompts', 'triage-prompt.md'),
+  join('agent-ops', 'prompts', 'dig-prompt.md'),
+  join('agent-ops', 'prompts', 'analysis-prompt.md'),
+  join('agent-ops', 'prompts', 'analysis-trend-prompt.md'),
+  join('agent-ops', 'prompts', 'patrol-prompt.md'),
+  join('agent-ops', 'prompts', 'policy-cycle-prompt.md'),
   join('docs', 'ParallelAgents.md'),
   join('tests', 'scripts', 'boardMove.test.ts'),
   join('tests', 'scripts', 'boardRound.test.ts'),

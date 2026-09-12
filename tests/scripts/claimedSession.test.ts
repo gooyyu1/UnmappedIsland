@@ -9,7 +9,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
 /**
  * `.github/workflows/tests.yml` の、PRを出したセッションが名乗っているかを見る段の検査。
  *
- * ここが守るのは**差し戻しの宛先**（`.claude/board-design.md` 2.11）。盤面はコミットの
+ * ここが守るのは**差し戻しの宛先**（`agent-ops/board-design.md` 2.11）。盤面はコミットの
  * `Claude-Session:` トレーラで相手を引くので、**名乗っていないPRは直しが要るときに誰にも回らない**
  * ——判定は出ているのに動かない、という止まり方をする（#1538）。
  *

@@ -6,7 +6,7 @@
 //
 //   [`board.sh`](board.sh)               … 端末へ1回。1行1件（読むのは、セッションを立てられる者）
 //   [`board-publish.mjs`](board-publish.mjs) … 常設の issue の本文へ周期で（読むのはスマホの人間。
-//                                             `.claude/board-design.md` 2.20）
+//                                             `agent-ops/board-design.md` 2.20）
 //
 // ## 往復を減らすためだけの道具ではない
 //
@@ -73,7 +73,7 @@
 //
 // ## `未整理` は、棚卸しの結論がまだ揃っていない issue
 //
-// **棚卸しの結論（`kind:` と `goal:`）が揃っていない open な issue**（`.claude/board-design.md`
+// **棚卸しの結論（`kind:` と `goal:`）が揃っていない open な issue**（`agent-ops/board-design.md`
 // 2.17.1）。分類がまだか、分類は済んだが向かう先を名乗っていないか。
 //
 // **「まだ見ていない」ではない。** 後者は `kind:` が付いている以上**棚卸しが一度見たもの**で、
@@ -280,7 +280,7 @@ function elapsed(from, now) {
 const STALE_PATROL_HOURS = (cycleHours(PATROL) ?? 1) * 3;
 
 /**
- * 盤面を引けていないことの断り（`.claude/board-design.md` 2.21）。**印を置くのはデーモン**
+ * 盤面を引けていないことの断り（`agent-ops/board-design.md` 2.21）。**印を置くのはデーモン**
  * （[`board-state.mjs`](board-state.mjs) の `UNREADABLE`）で、ここはその読み手。
  *
  * **いちばん上へ出す。** 引けない周のデーモンにできることはこれだけで、**直せるのは Claude Code
@@ -295,8 +295,8 @@ function unreadableNote(since, now) {
 }
 
 /**
- * 盤面を見回る係（`.claude/board-design.md` 2.21）が最後に残した1行。**記録を書くのは係自身**
- * （[`patrol-prompt.md`](../../.claude/patrol-prompt.md)）で、ここはその読み手。
+ * 盤面を見回る係（`agent-ops/board-design.md` 2.21）が最後に残した1行。**記録を書くのは係自身**
+ * （[`patrol-prompt.md`](../../agent-ops/prompts/patrol-prompt.md)）で、ここはその読み手。
  *
  * **「異常なし」と「立たなかった」を分けるのがこの行**——立たなければ時刻が古いまま残るので、
  * **`STALE_PATROL_HOURS` を過ぎたら断りにする**（長さと、その決め方はあちらが持つ）。係が黙って
@@ -374,7 +374,7 @@ export function issueBody({
   const at = now.toISOString().replace(/\.\d{3}Z$/, 'Z');
   const lines = [
     '**この本文はデーモンが周期で丸ごと書き換えます。** 人が書いたものは次の更新で消えます',
-    '（周期と、書けなかったときの振る舞いは `.claude/board-design.md` 2.20）。',
+    '（周期と、書けなかったときの振る舞いは `agent-ops/board-design.md` 2.20）。',
     '',
     `最終更新 ${at}`,
   ];
