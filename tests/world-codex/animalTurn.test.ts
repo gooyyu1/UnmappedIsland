@@ -380,6 +380,27 @@ describe('動物の1手', () => {
     expect(itemsIn(jungle), '追いつけば、死体はその土地に残っている').toEqual(['wild_boar_carcass']);
   });
 
+  it('浅い傷では立ち去りは止まらない', () => {
+    // 線を引くのは痛みの段で、傷の数や種類ではない（HuntingSystem.md 5.6節）。生かす罠の打ち身は
+    // sore に留まる（injuries.yamlのbruiseは痛み30）ので、**素の穴からこぼれた獲物はこぼれた時から
+    // 数え始める**——止まるのは、こちらが付ける傷と殺す罠の傷（どれもhurting以上）だけ。
+    open(0.0);
+    const boar = release('wild_boar');
+    wound(boar, 'bruise');
+    expect(
+      player.moveToSlotOrRejection(grassland.getSlot(codex.slotNames.getId('characters'))),
+    ).toBeUndefined();
+
+    expect(
+      boar.tryGetProperty(codex.propertyNames.getId('pain'))?.stage?.name,
+      '痛むが、深手の段には届かない',
+    ).toBe('sore');
+
+    passTurn(96);
+
+    expect(boar.parent, '丸1日で立ち去る').toBeUndefined();
+  });
+
   it('誰も見ていない土地の動物は、丸1日で立ち去る', () => {
     // 動物は探索が際限なく湧かせるので、消える口が無いと島に溜まり続ける（HuntingSystem.md 5.6節）。
     open(0.0);
@@ -464,11 +485,11 @@ describe('動物の1手', () => {
   });
 
   /**
-   * その動物へ裂傷を1つ負わせる（痛みを押し上げるため）。刺し傷ではなく裂傷なのは、失血で
-   * 意識まで落とさないため——気を失った動物は警戒も消えるので、逃げるかどうかの話にならない。
+   * その動物へ傷を1つ刺す。既定が裂傷なのは、刺し傷では失血で意識まで落ちるため——気を失った動物は
+   * 警戒も消えるので、逃げるかどうかの話にならない。
    */
-  function wound(animal: WorldObject): void {
-    const injury = session.createObject(codex.objectNames.getId('laceration'));
+  function wound(animal: WorldObject, injuryName = 'laceration'): void {
+    const injury = session.createObject(codex.objectNames.getId(injuryName));
     expect(injury.moveToSlotOrRejection(animal.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
   }
 });
