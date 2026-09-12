@@ -454,8 +454,8 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 
 **時間を進める操作は、キャラクタ自身のアクションです。** どれも同じ形（`duration` と `passives`）で
 `player_character` trait に並び、[`ActionSystem.md`](../engine/ActionSystem.md) 2 節の実行パイプラインを
-そのまま通ります。**違うのは長さと回復量、そして睡眠だけが持つ要件です**——眠るものだけが
-`wakefulness` も戻します。
+そのまま通ります。**違うのは長さと回復量、そして睡眠だけが持つ要件です**——このうち
+`wakefulness` も戻すのは眠るものです。
 時間を進める専用の仕組みは持ちません——プレイヤーが押せない[限界](#限界)の操作も同じ形です。
 
 **戻すのは tick 毎です**（`passives`、[`GameElementDefinition.md`](../engine/GameElementDefinition.md)

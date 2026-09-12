@@ -10,8 +10,9 @@ import { describe, expect, it } from 'vitest';
  * 数字や頻度の語で書き写すと、**値を1つ動かすたびに写した全部の書き換えが要り、漏れがそのまま嘘に
  * なる**（#1943・#1883 が実際にその書き換えを1本ずつ払っている）。読み手へは在り処だけを指させる。
  *
- * **見るのは盤面を説明する文書だけ。** 値を持つ側（`scripts/`）と、当時の観測を残す記録
- * （`.claude/analysis/**`）は、写しではないので入れない。
+ * **見るのは、値を持たない側で値を説明している場所。** 値を持つ側（`scripts/`）と、当時の観測を残す
+ * 記録（`.claude/analysis/**`）は写しではないので入れない。盤面の検査（`tests/scripts/**`）は、
+ * 値そのものは足場の日付で留めているので、文章で綴り直すのはやはり写しになる。
  */
 
 const ROOT = resolve(__dirname, '../..');
@@ -30,6 +31,8 @@ const WATCHED = [
   join('.claude', 'patrol-prompt.md'),
   join('.claude', 'policy-cycle-prompt.md'),
   join('docs', 'ParallelAgents.md'),
+  join('tests', 'scripts', 'boardMove.test.ts'),
+  join('tests', 'scripts', 'boardRound.test.ts'),
 ] as const;
 
 /**
@@ -45,11 +48,25 @@ const INTERVAL_SPELLINGS: ReadonlyMap<number, readonly string[]> = new Map([
   [168, ['週一回', '週1回', '一週間に一回', '168時間ごと']],
 ]);
 
-/** `CYCLES` が持っている間隔。`hours:` は `CYCLES` の中にしか無い。 */
+/**
+ * `CYCLES` が持っている間隔。**係の数と突き合わせる**——どれか1つが別の書き方になって引けなくなると、
+ * その係の間隔だけが黙って検査から抜ける。
+ */
 function cycleHours(): readonly number[] {
-  const found = [...readFileSync(MOVE, 'utf-8').matchAll(/^\s*hours: (\d+),$/gm)];
-  if (found.length === 0) throw new Error(`周期の係の間隔が ${MOVE} から引けない`);
-  return [...new Set(found.map((match) => Number(match[1])))];
+  const source = readFileSync(MOVE, 'utf-8');
+  const opened = source.indexOf('const CYCLES = [');
+  if (opened < 0) throw new Error(`周期の係の一覧が ${MOVE} に無い`);
+  const cycles = source.slice(opened, source.indexOf('\n];', opened));
+  const names = [...cycles.matchAll(/^\s*name: /gm)];
+  const hours = [...cycles.matchAll(/^\s*hours: (\d+),?$/gm)];
+  if (names.length === 0) throw new Error(`周期の係が ${MOVE} から引けない`);
+  if (hours.length !== names.length) {
+    throw new Error(
+      `${MOVE} の周期の係は ${names.length} 件だが、間隔を引けたのは ${hours.length} 件` +
+        `——引けなかった係の間隔が検査から抜けるので、ここの読み方を直すこと`,
+    );
+  }
+  return [...new Set(hours.map((match) => Number(match[1])))];
 }
 
 /** スメルを拾う窓（時間）。 */
