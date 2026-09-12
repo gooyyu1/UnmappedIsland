@@ -49,10 +49,7 @@ function listFiles(dir: string, exts: readonly string[]): string[] {
   return result;
 }
 
-/**
- * 実装状況の印（4節・4.1節）を課す対象。**こちらだけが `docs/` に閉じる**——理由は
- * {@link docByPath}。
- */
+/** 実装状況の印（4節・4.1節）を課す対象。**こちらだけが `docs/` に閉じる**（{@link docByPath}）。 */
 const DOC_FILES = listFiles('docs', ['.md']);
 
 /**
@@ -343,7 +340,7 @@ const refTargets = new Set(REF_TARGETS);
 /**
  * 自分の節を裸の「N節」で指せるファイルか（DocumentStyle.md 5節）。**文書かどうかで決まる**
  * ——コード・YAMLの裸の「N節」は `GameElementDefinition.md` を指す既定なので、そちらには自文書が
- * 無い。**`docs/` の中かでは決められない**——`.claude/**` も `review/**` も自分の節を番号で引く。
+ * 無い。**`docs/` の中かでは決められない**——`.claude/**` も自分の節を番号で引く。
  */
 function isRefTarget(rel: string): boolean {
   return refTargets.has(rel);
@@ -489,6 +486,26 @@ function appearsInSources(ident: string, sources: string): boolean {
  * 見出しに【未実装】の印が現れる行。**捕獲側の正規表現は使わない**——同じ経路で数えると、
  * 両方が同じように落ちたときに気づけない（`docStatus.test.ts` と同じ考え方）。
  */
+/**
+ * 射程の見張りが突き合わせる、**もう1つの数え方**。在るMarkdownをディスクから直に数える。
+ *
+ * **射程を出しているのと同じ経路で数えない**——{@link TRACKED_DOCS} から数え直すと、射程が縮んだ
+ * ときに両側が同じだけ縮むので、**差が出ないまま緑になる**（{@link unimplementedHeadingLines} が
+ * 捕獲側の正規表現を使わないのと同じ理由）。git を通さないのは、**`git add` していない新しい文書も
+ * ここでは数える**ため——追跡されるまで検査の外に居ることを、こちらが先に見つける。
+ */
+function allMarkdown(): string[] {
+  return [
+    ...listFiles('docs', ['.md']),
+    ...listFiles('.claude', ['.md']),
+    ...listFiles('.github', ['.md']),
+    ...listFiles('review', ['.md']),
+    ...listFiles('scripts', ['.md']),
+    ...listFiles('tools', ['.md']),
+    ...readdirSync(ROOT).filter((entry) => entry.endsWith('.md')),
+  ];
+}
+
 function unimplementedHeadingLines(): string[] {
   const found: string[] = [];
   for (const [rel, text] of docByPath) {
@@ -768,15 +785,16 @@ describe('ドキュメントの参照', () => {
   it('追跡しているMarkdownが、記録を除いて全部リンクの検査に入っている', () => {
     // 射程を在り処の一覧で持っていた頃、`review/**` も `.github/**` も誰も見ていなかった（#1948）。
     // 一覧は足した日にしか更新されないので、**フォルダを1つ作ると黙って射程の外が増える。**
-    const uncovered = TRACKED_DOCS.filter(
-      (rel) => !isVerbatimRecord(rel) && !LINK_CHECKED_FILES.includes(rel),
-    );
+    const covered = new Set(LINK_CHECKED_FILES);
+    const uncovered = allMarkdown().filter((rel) => !isVerbatimRecord(rel) && !covered.has(rel));
+
     expect(uncovered, `リンクの検査に入っていない文書:\n${uncovered.join('\n')}`).toEqual([]);
   });
 
   it('どの規約も課さない記録が、指し先としては生きている', () => {
     // 課す側から外した拍子に指し先からも落とすと、そこへのリンクが実在するのに赤くなる。
-    const records = TRACKED_DOCS.filter(isVerbatimRecord);
+    const records = allMarkdown().filter(isVerbatimRecord);
+
     expect(records.length).toBeGreaterThan(0);
     expect(records.filter((rel) => !isRefTarget(rel))).toEqual([]);
   });

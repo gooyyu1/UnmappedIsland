@@ -31,8 +31,11 @@ interface Series {
   /**
    * 検査の掛かる最初の回（`YYYY-MM-DD`）。**これより前の回は、当時の定めで書かれたその時点の記録**
    * で、後から書き換える先ではない（`tests/docs/githubAccess.test.ts` が `analysis/` を降りないのと
-   * 同じ理由）。**全部の回が今の定めを満たしているなら置かない**——外した回は緑でも走っていない
-   * ので、要らない起点は検査を空にする。
+   * 同じ理由）。
+   *
+   * **置いた係は、その日付の回が書かれるまで1件も見ない**——「揃っている」と「1件も見ていない」は
+   * 緑では区別が付かないので、**置くのは、今在る回が当時の定めで書かれていて満たしようがないときだけ**。
+   * 満たしているなら置かず、全部の回に掛ける。
    */
   readonly from?: string;
 }
@@ -98,6 +101,13 @@ function missingHeadings(text: string, headings: readonly string[]): string[] {
   return headings.filter((heading) => !written.has(heading));
 }
 
+/** 節の検査が実際に掛かる回。日付で始まらない記録は回を引けないので外れる。 */
+function checkedRecords(dir: string, from: string | undefined) {
+  return records(dir).filter(
+    ({ name }) => /^\d{4}-\d{2}-\d{2}/.test(name) && name.slice(0, 10) >= (from ?? ''),
+  );
+}
+
 describe.each(SERIES)('$name の分析の記録', ({ prompt, dir, from }: Series) => {
   // 引けなかった節は、下の検査から黙って外れる——節を1つ足したのに要求が増えない、が緑で通る。
   it('要る節を本文の箇条書きから全部引けている', () => {
@@ -115,8 +125,7 @@ describe.each(SERIES)('$name の分析の記録', ({ prompt, dir, from }: Series
 
   it('記録が本文の定めた節を持つ', () => {
     const { headings } = recordSections(prompt);
-    const missing = records(dir)
-      .filter(({ name }) => /^\d{4}-\d{2}-\d{2}/.test(name) && name.slice(0, 10) >= (from ?? ''))
+    const missing = checkedRecords(dir, from)
       .map(({ name, text }) => ({ name, missing: missingHeadings(text, headings) }))
       .filter((record) => record.missing.length > 0);
 
@@ -133,15 +142,12 @@ describe('節の照合', () => {
     ]);
   });
 
-  // 起点を置いた係は、そこから後の回だけを見る。置いていない係は全部の回を見る。
-  it('起点を置かない係は、いちばん古い回も外れない', () => {
-    const withoutFrom = SERIES.filter(({ from }) => from === undefined);
+  it('少なくとも1つの係が、記録を実際に見ている', () => {
+    // 起点（`Series.from`）を置いた係は、その日付の回が書かれるまで1件も見ない。全部の係がそう
+    // なると、上の「記録が本文の定めた節を持つ」は**1件も読まないまま緑**になる。
+    const seen = SERIES.map(({ name, dir, from }) => `${name}: ${checkedRecords(dir, from).length}`);
+    const total = SERIES.reduce((sum, { dir, from }) => sum + checkedRecords(dir, from).length, 0);
 
-    expect(withoutFrom.length).toBeGreaterThan(0);
-    for (const { dir } of withoutFrom) {
-      expect(records(dir).length, `${dir} に記録が無く、この係の検査は走っていない`).toBeGreaterThan(
-        0,
-      );
-    }
+    expect(total, `どの係も記録を見ていない（見た件数 — ${seen.join('・')}）`).toBeGreaterThan(0);
   });
 });

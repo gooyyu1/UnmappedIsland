@@ -1,8 +1,7 @@
-import { execSync } from 'node:child_process';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { isVerbatimRecord, trackedDocs } from '../../scripts/docScope.mjs';
+import { isVerbatimRecord, trackedDocs, trackedFiles } from '../../scripts/docScope.mjs';
 
 /**
  * 説明が挙げる名前が、今も在るものを指しているかの検査。**説明だけが古い名前で取り残される**
@@ -105,10 +104,7 @@ function appearsInCode(name: string): boolean {
   return found;
 }
 
-const TRACKED_PATHS = execSync('git ls-files', { cwd: ROOT, encoding: 'utf-8' })
-  .split('\n')
-  .map((path) => path.trim())
-  .filter((path) => path !== '');
+const TRACKED_PATHS = trackedFiles(ROOT);
 
 /** git の管理下にあるファイルの名前（ディレクトリを除いた最後の部分）。 */
 const FILE_NAMES = new Set(TRACKED_PATHS.map((path) => basename(path)));

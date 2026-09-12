@@ -11,18 +11,33 @@ import { join, sep } from 'node:path';
  */
 
 /**
- * 追跡しているMarkdown。**在り処を列挙せず git に訊く**——一覧は足した日にしか更新されないので、
+ * 追跡しているファイル。**在り処を列挙せず git に訊く**——一覧は足した日にしか更新されないので、
  * フォルダを1つ作るたびに黙って射程の外が増える。追跡されていないもの（`site/`・`worktrees/`）は
  * 初めから入らない。
+ *
+ * **裏を返せば、`git add` する前の新しい文書はここに現れない。** 検査が素通しになるのは手元で
+ * 書いている間だけで、コミットした時点で射程へ入る（CIでは起きない）。
+ *
+ * @param {string} root リポジトリの根
+ * @param {string} [pathspec] git の pathspec で絞る
+ * @returns {string[]} 根からの相対パス（区切りはそのプラットフォームのもの）
+ */
+export function trackedFiles(root, pathspec) {
+  const spec = pathspec === undefined ? '' : ` -- "${pathspec}"`;
+  return execSync(`git ls-files -z${spec}`, { cwd: root, encoding: 'utf-8' })
+    .split('\0')
+    .filter((path) => path !== '')
+    .map((path) => path.split('/').join(sep));
+}
+
+/**
+ * 追跡しているMarkdown。文書の規約を課す側も、指し先も、ここから絞って作る。
  *
  * @param {string} root リポジトリの根
  * @returns {string[]} 根からの相対パス（区切りはそのプラットフォームのもの）
  */
 export function trackedDocs(root) {
-  return execSync('git ls-files -z -- "*.md"', { cwd: root, encoding: 'utf-8' })
-    .split('\0')
-    .filter((path) => path !== '')
-    .map((path) => path.split('/').join(sep));
+  return trackedFiles(root, '*.md');
 }
 
 /**
