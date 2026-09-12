@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { ROOT } from '../support/sourceFiles';
 
 /**
  * **テストからしか読まれていない公開**（`export` と `public` メンバ）の検査。
@@ -22,8 +23,6 @@ import { describe, expect, it } from 'vitest';
  * 現れない。**外れるのは取りこぼす向きだけ**なので、一覧に載っているものは確かにテストしか読んでいない
  * が、**載っていないことは `src` に読み手が居ることの証明にはならない。**
  */
-
-const ROOT = resolve(__dirname, '../..');
 
 /** 出力は`src`の量に比例して伸びるので、既定の上限（1MB）には頼らない。 */
 const MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
