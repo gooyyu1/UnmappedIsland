@@ -65,8 +65,8 @@ describe('core.yamlのworld定義', () => {
 
   it('コードが持つ1日の長さ・1tickの長さは、この宣言から数え直したものと一致する', () => {
     // 時計の表示も航海の日数の見積もりも収支の表も、実体化された世界を持たずにこの2つを使う
-    // （src/domain/worldTime.ts・src/analysis/balanceTables.ts）。宣言だけを変えると、世界は
-    // 新しい1日で回るのにコードは古い長さで計算し続けるので、ここで突き合わせる。
+    // （src/domain/worldTime.ts）。宣言だけを変えると、世界は新しい暦で回るのにコードは古い
+    // 長さで計算し続けるので、ここで突き合わせる。
     const world = codex.objects.get(codex.objectNames.getId('world'));
     const hoursPerDay = propOf(world, 'hour').range?.max ?? 0;
     const minutesPerHour = propOf(world, 'minute').range?.max ?? 0;

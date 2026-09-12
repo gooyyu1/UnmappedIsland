@@ -26,8 +26,8 @@ import { MINUTES_PER_DAY, TICKS_PER_DAY } from '../domain/worldTime';
  * 定義（`src/assets/world-codex/*.yaml`）だけから「時間あたりの収支」を計算する。
  *
  * 消費（passivesのtick毎の増減）も供給（工程の所要時間と産出）も、突き詰めれば「プロパティ量 ÷ 分」
- * という1つの物差しに乗る——tick毎の増減は「15分かかって値が動く工程」と同じ形なので、消費と供給は
- * 符号の違いでしかなく、連鎖はその足し算になる。
+ * という1つの物差しに乗る——tick毎の増減は「1tickぶんの時間をかけて値が動く工程」と同じ形なので、
+ * 消費と供給は符号の違いでしかなく、連鎖はその足し算になる。
  *
  * ここが返すのは数値と識別子だけで、見せ方は持たない。ビューアのページ（balancePage）とMarkdownの
  * スナップショット（tests/diagnostics/balanceStatsReport.test.ts）が同じ結果を別の形に描く。
