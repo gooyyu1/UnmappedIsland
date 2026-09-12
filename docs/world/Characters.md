@@ -68,7 +68,8 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   （[`DigestionSystem.md`](../engine/DigestionSystem.md) 2 節）。`max` が胃の容量なので、下の
   「安全域を外れるのは `max` の80%」も「初期値は75%」も当てはまらない。`max` の6割に置いた段
   **`full`** を `eat` が読んで「もう食べられない」を見る。餓死は `body_fat` が受け持つため
-  致命的域は持たない。個体差は無く `player_character` trait が配る。
+  致命的域は持たない。個体差は無く `player_character` trait が配る。**練習の間は減りが倍になる**
+  （[`SkillSystem.md`](../engine/SkillSystem.md) 3.1.2 節。練習の操作はまだ無い）。
 - **栄養素の在庫**（`carbohydrate` / `protein` / `lipid`）: **単位は tick**（体脂肪と同じ物差し）。
   在庫がある間は `body_fat` へ流れ続け、速さは栄養素ごとに違う（同 3 節）。個体差は持たず trait が配る。
   **段を持つのは `lipid` だけ**で、一番下の **`fat_starved`**（脂が尽きた域）が `hydration` と
@@ -109,10 +110,12 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   配る液体（茶。[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md)）。**`max` は「満タンから、
   意識を保てなくなって眠り込むまでの時間」**で、普通の人間の48時間（192 tick）を基準に置く。外から起こし続ける実験の記録
   （数日〜十日）は採らない——あれは自力で起きていられる長さではないため。眠らずにいられる長さの
-  個人差はここに出る。
+  個人差はここに出る。**練習の間は -3/tick まで速まり、そのぶん睡眠と時間を取り合う**
+  （[`SkillSystem.md`](../engine/SkillSystem.md) 3.1.2 節。練習の操作はまだ無い）。
 - **`stamina`（体力）**: 疲労の逆。戻すのは休息（同節）と、倒れ込み・眠り込み（下の[限界](#限界)節）。
-  **tickで減るのは荷を担いでいる間だけ**で、減らすのは `load` の段（下の荷重の効き方節）。空身なら
-  1 も減らない。0で倒れ込む。
+  **tickで減るのは荷を担いでいる間と練習している間だけ**で、減らすのは `load` の段（下の荷重の効き方節）と
+  練習（[`SkillSystem.md`](../engine/SkillSystem.md) 3.1.2 節。練習の操作はまだ無い）。空身で
+  練習もしていなければ 1 も減らない。0で倒れ込む。
 - **`pain`（痛み）**: 負っている怪我（[`InjurySystem.md`](../engine/InjurySystem.md)）が `modify` で押し上げる値。自分では
   動かないので `value` は 0 のまま、`max` は「これ以上は耐えられない」点。痛みの感じ方は食の好みではなく
   身体の仕組みなので、栄養バランスと同じく個体差を持たせず `player_character` trait が配る。
@@ -153,10 +156,13 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **`hydration` と `happiness` の初期値は `max` の75%**（安全域のやや下）。満腹感も同じ狙いで留意域（300mL）から
   始める（[`DigestionSystem.md`](../engine/DigestionSystem.md) 2 節）。満タンで始めると alert が
   `safe` でステータスバーに出ず（[`StatusArea.md`](../ui/StatusArea.md)）、
-  飲食の操作も最初は試せないため。**空身では減らない `stamina`** と、序盤に眠らせたくない
+  飲食の操作も最初は試せないため。**荷も練習も無ければ減らない `stamina`** と、序盤に眠らせたくない
   `wakefulness` は満タンで始める。
 - **減る速さが一定のものは、80%より下を残り時間で切る。** `wakefulness` は残り12時間未満で
-  `caution`、残り3時間未満で `danger`。
+  `caution`、残り3時間未満で `danger`。**練習の間は3倍で進むが（[`SkillSystem.md`](../engine/SkillSystem.md)
+  3.1.2 節）、残り時間で切るのは変えない**——段が指す「このまま起きていたら何時間か」の既定は素の
+  減りのほうで、練習は押している間だけの行動である。下の `stamina` と違い、担いだまま続く状態では
+  ないので、段の意味が入れ替わり続けることにはならない。
 - `hydration` も残り時間で切る: 残り2日未満で `caution`、残り1日未満で `danger`、
   残り6時間未満で `fatal`。
 - **`stamina` は割合で切る**: `max` の60%未満で `caution`、20%未満で `danger`。**減る速さが担いでいる
@@ -196,7 +202,8 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **疲れる側は、今の文法でそのまま書けます。** 段の `passives` が `add` で `stamina` を削るだけです
   （[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.4 節）。**削るのが時間なので、
   往復の回数そのものが重みを持ちます**——重い荷で長い道を歩くほど、削られる tick が増えます。
-  `stamina` が空身では減らない、という既定が破れるのはここだけです。
+  `stamina` が空身では減らない、という既定が破れるのは、ここと練習
+  （[`SkillSystem.md`](../engine/SkillSystem.md) 3.1.2 節。練習の操作はまだ無い）だけです。
 - **桁は「1 日で使い切れる」位置に取ります。** 起きている 18 時間（72 tick）を `heavy` のまま担ぎ通すと
   `-72` で、`max` 100 のほとんどを使い切ります（`captain.yaml`）。**荷を下ろして眠れば +90** なので、
   **重い荷の 1 日ぶんと、一晩の回復がちょうど釣り合う**位置です。これより 1 桁小さいと、何往復しても
@@ -206,7 +213,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   入ります（下の[休息](#休息)節）——`heavy` のまま 6 時間眠っても +66 で、釣り合いは崩れます。
   **荷を下ろす理由がここから出ます**（そりを作る理由と同じ向きで、下ろす手間そのものは要りません）。
 - **遅くなる側は、道が担ぎ手の遅れを土台に継ぎます。** 道の所要時間は道自身が持つので、そこへ
-  `base: {subject: agent, prop: travel_delay}`（同 6.5 節）を書き、`duration` は `{prop: travel_minutes}`
+  `base: {subject: agent, prop: travel_delay}`（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.5 節）を書き、`duration` は `{prop: travel_minutes}`
   の 1 つを読むだけにします。`travel_delay` は素が 0 で、`load` の段が `modify` で押し上げる**分**です。
   **道が知っているのは「自分の所要時間は歩く人の遅れで伸びる」ことだけ**で、遅れの内訳（荷・怪我）は
   知りません——遅くするものが増えても押す先は人の `travel_delay` なので、道の宣言は変わりません。

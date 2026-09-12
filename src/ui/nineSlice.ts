@@ -52,6 +52,9 @@ export interface SliceSpan {
  * どの区間も必ず隙間なく辺を埋める——隙間が空くと、そこに下地が透けて筋に見える。
  *
  * 端が両方入らないほど短い辺では、端どうしが重ならないよう端の側を詰める（中央は消える）。
+ *
+ * **区間の割り方だけを公開しているのは、ここを直に呼ぶ以外に上の契約を確かめる道が無いため。**
+ * 敷く側（addNineSlice）はPhaserのシーンを要る。
  */
 export function sliceSpans(total: number, border: number): readonly SliceSpan[] {
   const edge = Math.min(border, total / 2);

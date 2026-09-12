@@ -18,7 +18,7 @@ CLOUD_ENV="${CLOUD_ENV:-env_01JEqw2RUbL6EFo4p8EgRLSC}"
 # **書かない。** ブリッジの環境は CLI のプロセス1つにつき1つ立ち、閉じれば消える——PCを再起動して
 # 開き直すと、**前のIDはもう存在しない**。直書きすると、投入は消えた環境を指したまま黙って通らなく
 # なる（2026-09-11、当時デーモンを起こしていた Routine が同じIDを指したまま丸一日発火しなかった。
-# あの係は `.claude/board-design.md` 2.19.2 でこのPCのタスクへ移した）。
+# あの係は `agent-ops/board-design.md` 2.19.2 でこのPCのタスクへ移した）。
 #
 # 引くのは CLI 自身が書く手元の記録（`bridge-pointer.json`）。置き場は**その CLI の作業ディレクトリ**
 # ごとに分かれ、名前は英数字以外を `-` へ潰したパス。**見るのは本体のチェックアウト**なので、
@@ -42,7 +42,7 @@ BRIDGE_ENV="${BRIDGE_ENV:-$(bridge_env_id)}"
 # ## 承認モードは環境で決まる
 #
 # **投入する側は選ばない。** どちらへ立てるかを決めれば、モードも一緒に決まる
-# （`.claude/board-design.md` 2.16）。**空なら `permission_mode` を渡さない**、が呼び手の約束。
+# （`agent-ops/board-design.md` 2.16）。**空なら `permission_mode` を渡さない**、が呼び手の約束。
 #
 # **渡さなければ、投入先ごとに違うモードで立つ。** 書くのは観測だけで、**そうなる理由は突き止めて
 # いない**——`.claude/settings.json`（`defaultMode: bypassPermissions`）はリポジトリに追跡されていて

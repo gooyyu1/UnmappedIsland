@@ -45,7 +45,12 @@ export abstract class ObjectWrapper {
     return this.instance.tryGetSlot(slotGlobalId)?.contents ?? [];
   }
 
-  /** 名指しの枠の中身を、積み重なっているまとまりごとに分けたもの。宣言していなければ空。 */
+  /**
+   * 名指しの枠の中身を、積み重なっているまとまりごとに分けたもの。宣言していなければ空。
+   *
+   * **平らに返す口（contentsOf）と別に持つのは、1枚に2個と2枚に1個ずつを区別するため。** 束ねる／
+   * 束ねない（stackable）の決まりが守られているかは、この分かれ方でしか確かめられない。
+   */
   protected stacksOf(slotGlobalId: SlotGlobalId): readonly (readonly WorldObject[])[] {
     return this.instance.tryGetSlot(slotGlobalId)?.stacks ?? [];
   }

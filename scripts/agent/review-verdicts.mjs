@@ -1,4 +1,4 @@
-// PRのコメントから、レビューが書いた**判定**を拾う（`.claude/board-design.md` 2.9）。
+// PRのコメントから、レビューが書いた**判定**を拾う（`agent-ops/board-design.md` 2.9）。
 //
 //   import { verdicts, readVersion, readsVersion, asksUser } from './review-verdicts.mjs';
 //   verdicts(pr.comments)        // → 判定のコメントだけを、古い順に

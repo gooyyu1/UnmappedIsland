@@ -26,7 +26,7 @@ export function placeholderIconOf(objectDefName: string): string | undefined {
   return PLACEHOLDER_ICONS.get(objectDefName);
 }
 
-export function characterIcon(characterDefName: string): string {
+function characterIcon(characterDefName: string): string {
   return placeholderIconOf(characterDefName) ?? UNKNOWN_CHARACTER_ICON;
 }
 

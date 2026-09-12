@@ -7,7 +7,7 @@
 // 形を持つ。**読む側が2つある**（[`board-publish.mjs`](board-publish.mjs) が `UNREADABLE` を人へ
 // 見せる）ので、置き場の綴りを両方に書き写さないために分けてある。
 //
-// **見回りの記録を書くのは係のセッション**（[`patrol-prompt.md`](../../.claude/patrol-prompt.md)）で、
+// **見回りの記録を書くのは係のセッション**（[`patrol-prompt.md`](../../agent-ops/prompts/patrol-prompt.md)）で、
 // 読むのは次の回の係と、人への書き出し（`board.mjs`）。
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -17,7 +17,7 @@ import { join } from 'node:path';
  * **盤面を引けなくなった時刻**（ISO。引けているあいだは台帳に無い）。
  *
  * **読む側は人だけ。** 引けない周にデーモンが打てる手は無い——CCRが落ちていればセッションは1本も
- * 立たないので、直せるのは Claude Code 本体を触れる人だけ（`.claude/board-design.md` 2.21.1）。
+ * 立たないので、直せるのは Claude Code 本体を触れる人だけ（`agent-ops/board-design.md` 2.21.1）。
  * 常設の issue の本文へ出す（2.20）。
  *
  * **引けている周の不調はここに入らない。** 手が転んでいる・手が1つも出ない、といった形を見るのは
@@ -49,8 +49,8 @@ export function writeLedger(stateDir, taken) {
 }
 
 /**
- * 見回りの記録（1行1件のJSON。`.claude/board-design.md` 2.21.4）。**書くのは係のセッション**で、
- * 綴りを持つのは [`patrol-prompt.md`](../../.claude/patrol-prompt.md)。
+ * 見回りの記録（1行1件のJSON。`agent-ops/board-design.md` 2.21.4）。**書くのは係のセッション**で、
+ * 綴りを持つのは [`patrol-prompt.md`](../../agent-ops/prompts/patrol-prompt.md)。
  *
  * **追記で持つのは、前回と突き合わせるため**——進んでいないことは1枚の写真には写らない。
  */

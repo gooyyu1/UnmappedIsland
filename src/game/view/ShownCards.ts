@@ -510,6 +510,9 @@ export class ShownCards {
    * 手持ちの上は、子ウィンドウを開いている間だけそちらを先に見る——カードをやり取りする相手が
    * 画面に出ているなら、端を押す操作もその相手を指すのが自然なため。受け取れない相手（怪我）なら
    * 元どおりアイテムへ落ちる。開いているだけで手持ちの端が使えなくなるのは不便なため。
+   *
+   * **候補の並びを公開しているのは、順と長さがここからしか見えないため。** edgeMoveActionが返すのは
+   * 落とせた1つを実行する閉包だけなので、**どれも落とせない向きに候補が何番目まで在るか**は出ない。
    */
   edgeTargets(from: CardPlace, direction: CardEdgeDirection): readonly CardPlace[] {
     const places = this.source.places;

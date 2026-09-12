@@ -274,7 +274,8 @@ export function scenarioPlayData(scenario: Scenario): PlaySceneData {
  *
  * カードはレーンからはみ出しても切り抜かず、後から描く隣接エリアの背景板で隠す。そのため
  * 組み立ての順序（フィールドエリア → ダッシュボード列 → オプション／フィルターバー）に意味がある。
- * フィールドエリアの表示物だけは、順序ではなくFIELD_DEPTHの層で奥へ置く（そこだけを作り直すため）。
+ * フィールドエリアの表示物だけは、順序ではなくSCREEN_DEPTH.fieldの層で奥へ置く（そこだけを
+ * 作り直すため）。
  */
 export class PlayScene extends ResponsiveScene {
   /** いずれもinitで必ず設定される（Phaserはinit→createの順に呼ぶ）。 */

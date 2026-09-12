@@ -7,6 +7,7 @@ import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * animals.yamlの動物を、実ファイルの定義だけで検証する（docs/engine/HuntingSystem.md・
@@ -526,6 +527,37 @@ describe('animals.yamlの動物', () => {
         .contents.map((object) => object.tryGetProperty(weightId)?.number ?? 0);
     }
 
+    /** 解体で出た物だけの重さ（g）。足元に立っている生きたサルを除く。 */
+    function yieldWeightsInJungle(): number[] {
+      const weightId = codex.propertyNames.getId('weight');
+      return jungle
+        .tryGetSlot(codex.slotNames.getId('items'))!
+        .contents.filter((object) => object.def.name !== monkey.def.name)
+        .map((object) => object.tryGetProperty(weightId)?.number ?? 0);
+    }
+
+    /**
+     * その死体を捌いて、肉として出た重さが体重の何割かを返す。**出た肉は片付ける**ので、
+     * 続けて別の死体を渡せる。
+     */
+    function meatShareOf(carcassName: string): number {
+      const weightId = codex.propertyNames.getId('weight');
+      const carcass = spawnInto(carcassName, jungle, 'items');
+      const carcassWeight = carcass.tryGetProperty(weightId)!.number;
+
+      butcher(carcass);
+
+      const pieces = jungle
+        .tryGetSlot(codex.slotNames.getId('items'))!
+        .contents.filter((object) => object.def.name === 'raw_meat');
+      const meatWeight = pieces.reduce(
+        (total, piece) => total + (piece.tryGetProperty(weightId)?.number ?? 0),
+        0,
+      );
+      for (const piece of pieces) piece.destroy();
+      return meatWeight / carcassWeight;
+    }
+
     it('刃物を死体へ重ねると、肉・骨・生皮に分かれる', () => {
       const carcass = kill();
 
@@ -560,7 +592,8 @@ describe('animals.yamlの動物', () => {
 
     it('獲物が大きいほど、同じ物が多く取れる', () => {
       // 得られる素材は獲物の種類によらず同じで、大きさは個数が表す（HuntingSystem.md 1.5節）。
-      // 12倍の体格から、12倍の枚数が出る。
+      // **枚数は体重の比ではない**——肉・骨・生皮で倍率が違うのは、どれも現実の割合へ別に
+      // 合わせた結果（下の「肉として出るのは」「生皮の割合は」）。
       const boarCarcass = spawnInto('wild_boar_carcass', jungle, 'items');
 
       butcher(boarCarcass);
@@ -571,6 +604,114 @@ describe('animals.yamlの動物', () => {
         counts.set(name, (counts.get(name) ?? 0) + 1);
       expect(Object.fromEntries(counts)).toEqual({ raw_meat: 40, animal_bone: 6, rawhide: 6 });
     });
+
+    it('ヤケイの取り分は、羽と小さな骨まで内訳どおりの重さになる', () => {
+      // 内訳（animals.yamlのjunglefowl_carcass）が崩れると、1000gに収まらない取り分ができる。
+      // 肉・骨・生皮の重さはサルの内訳（上）が留めているので、ここで残るのは羽と小さな骨。
+      const carcass = spawnInto('junglefowl_carcass', jungle, 'items');
+
+      butcher(carcass);
+
+      expect(yieldWeightsInJungle()).toEqual([500, 40, 10]);
+      expect(
+        yieldWeightsInJungle().reduce((total, weight) => total + weight),
+        '1000gのうち550g',
+      ).toBe(550);
+    });
+
+    it('肉として出るのは体重の3〜5割で、いちばん低いのはイノシシ', () => {
+      // 現実の骨格筋が体格によらず体重の4割前後であることに合わせた幅（HuntingSystem.md 1.5節）。
+      // **刻みが肉1枚ぶんなので、小さい獲物ほど割合が飛ぶ**——ヤケイの1枚が上端に当たる。
+      // イノシシを下端側へ外してあるのは、島でいちばん安く満腹を埋める経路がここだから（同節）。
+      const monkeyShare = meatShareOf('monkey_carcass');
+      const boarShare = meatShareOf('wild_boar_carcass');
+      const fowlShare = meatShareOf('junglefowl_carcass');
+
+      for (const [name, share] of [
+        ['サル', monkeyShare],
+        ['イノシシ', boarShare],
+        ['ヤケイ', fowlShare],
+      ] as const) {
+        expect(share, `${name}は3割以上`).toBeGreaterThanOrEqual(0.3);
+        expect(share, `${name}は5割以下`).toBeLessThanOrEqual(0.5);
+      }
+      expect(boarShare, 'イノシシがいちばん低い').toBeLessThan(Math.min(monkeyShare, fowlShare));
+      expect(fowlShare, 'ヤケイは1枚で上端に付く').toBeGreaterThan(Math.max(monkeyShare, boarShare));
+    });
+
+    it('生皮の割合は、小さい獲物ほど高く、どちらも現実の帯に入る', () => {
+      // **枚数は体重の比ではない**（HuntingSystem.md 1.5節）。体表の割合は体格とともに下がるので、
+      // 枚数を体重に比例させると大型の生皮が現実から外れる。帯の端は現実の値——ブタの皮が体重の
+      // 6〜8%、ウサギのような小型が10〜12%。
+      const monkeyShare = rawhideShareOf('monkey_carcass');
+      const boarShare = rawhideShareOf('wild_boar_carcass');
+
+      expect(monkeyShare, 'サルのほうが高い').toBeGreaterThan(boarShare);
+      for (const [name, share] of [
+        ['サル', monkeyShare],
+        ['イノシシ', boarShare],
+      ] as const) {
+        expect(share, `${name}は体重の5%以上`).toBeGreaterThanOrEqual(0.05);
+        expect(share, `${name}は体重の13%以下`).toBeLessThanOrEqual(0.13);
+      }
+    });
+
+    it('イノシシ1頭ぶんの肉は、腐るまでに全員で食べ切れる量を超える', () => {
+      // **檻と落とし穴の`<動物>_catch`を上げない理由がこれ**（TrapSystem.md 3節）。上げても増えるのは
+      // 腐る量だけで、食べ切れる量を動かすのは重みではなく保存（salt.yaml・smoking.yaml・drying.yaml）
+      // の側になる。ここが逆転したら、腐敗が上限を握っているという根拠が消える。
+      const boarCarcass = spawnInto('wild_boar_carcass', jungle, 'items');
+      butcher(boarCarcass);
+      const pieces = itemsInJungle().filter((name) => name === 'raw_meat').length;
+
+      const satietyId = codex.propertyNames.getId('satiety');
+      const satietyBefore = player.tryGetProperty(satietyId)!.number;
+      player.tick();
+      // 1 tickで空く満腹。食べる側の増減も同じtickで動くので、食べさせる前に測る。
+      const drainPerTick = satietyBefore - player.tryGetProperty(satietyId)!.number;
+      const mouths = codex.objectDefNamesWithTag(codex.vocabulary.world.characterTagId).length;
+
+      const meat = jungle
+        .tryGetSlot(codex.slotNames.getId('items'))!
+        .contents.find((object) => object.def.name === 'raw_meat')!;
+      const filled = player.tryGetProperty(satietyId)!.number;
+      expect(meat.tryGetAction('eat', player)?.tryExecute() === true).toBe(true);
+      // 食べるのに1 tickかかり、時間は効果より先に進む（上の「生肉は食べられる」）ので足し戻す。
+      const satietyPerPiece = player.tryGetProperty(satietyId)!.number - filled + drainPerTick;
+
+      const daysToEat = (pieces * satietyPerPiece) / (drainPerTick * TICKS_PER_DAY * mouths);
+
+      expect(daysToEat).toBeGreaterThan(ticksUntilSpoiled() / TICKS_PER_DAY);
+    });
+
+    /** その死体を捌いて、生皮として出た重さが体重の何割かを返す。 */
+    function rawhideShareOf(carcassName: string): number {
+      const weightId = codex.propertyNames.getId('weight');
+      const carcass = spawnInto(carcassName, jungle, 'items');
+      const carcassWeight = carcass.tryGetProperty(weightId)!.number;
+
+      butcher(carcass);
+
+      const hides = jungle
+        .tryGetSlot(codex.slotNames.getId('items'))!
+        .contents.filter((object) => object.def.name === 'rawhide');
+      const hideWeight = hides.reduce(
+        (total, hide) => total + (hide.tryGetProperty(weightId)?.number ?? 0),
+        0,
+      );
+      for (const hide of hides) hide.destroy();
+      return hideWeight / carcassWeight;
+    }
+
+    /** 生肉が1枚、置いたまま腐って消えるまでのtick数。 */
+    function ticksUntilSpoiled(): number {
+      const piece = spawnInto('raw_meat', jungle, 'items');
+      for (let ticks = 1; ticks <= TICKS_PER_DAY * 30; ticks++) {
+        piece.tick();
+        if (piece.parent === undefined) return ticks;
+      }
+      throw new Error('生肉が腐らなかった');
+    }
 
     it('刃物でない物を重ねても解体できない', () => {
       const carcass = kill();

@@ -1,4 +1,4 @@
-// 盤面から、次に打つ手を優先順に並べる（`.claude/board-design.md` 2.3）。
+// 盤面から、次に打つ手を優先順に並べる（`agent-ops/board-design.md` 2.3）。
 //
 //   import { moves } from './board-move.mjs';
 //   moves(盤面)   // → 1要素1手の文字列の配列
@@ -30,8 +30,8 @@
 //     "mainChecks": [ { "status": "COMPLETED", "conclusion": "SUCCESS" } ],   … `main` の先頭のCI
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments ],
 //     "mergedPrs":[ gh pr list --state merged --search merged:>=<窓の始まり> --json number,comments ],   … 後片付けの相手と、スメルを拾う係が読む範囲
-//     "pendingDecisions": 12,   … `.claude/decisions/` のうち `archive/` に入っていない件数
-//     "unsummarizedAnalyses": 3,   … `.claude/analysis/` のうち、二次がまだ読んでいない件数
+//     "pendingDecisions": 12,   … `agent-ops/decisions/` のうち `archive/` に入っていない件数
+//     "unsummarizedAnalyses": 3,   … `agent-ops/analysis/` のうち、二次がまだ読んでいない件数
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
 //     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
 //                     "bucket": "SESSION_STATUS_BUCKET_…", "env": "cloud | bridge | -",
@@ -173,7 +173,7 @@ export const unsorted = (issue) => !names(issue).some((name) => name.startsWith(
 
 /**
  * PRのコメントに残ったスメルを、拾う側が読んだ印（4.4）。**印を自前の台帳で持たない**——コメントに
- * 付いたリアクションなら、盤面と拾う側が同じものを見る（`.claude/board-design.md` 1節の、状態は
+ * 付いたリアクションなら、盤面と拾う側が同じものを見る（`agent-ops/board-design.md` 1節の、状態は
  * 基盤が既に持っているものを使う）。
  * 綴りは `gh` の `reactionGroups` の値。
  */
@@ -203,7 +203,7 @@ function hasUnreadSmell(mergedPrs) {
 /**
  * 盤面を見回る係の名（下の `CYCLES`）。**綴りを合わせる相手が居るので、ここから出す**
  * ——[`board.mjs`](board.mjs) が、見回りが途切れたと言うまでの長さをこの係の間隔から引く
- * （`.claude/board-design.md` 2.21.4）。
+ * （`agent-ops/board-design.md` 2.21.4）。
  */
 export const PATROL = 'patrol';
 
@@ -213,19 +213,19 @@ export const PATROL = 'patrol';
  * - `due` … 今この係に仕事があるか。**無ければ間隔が満ちても立てない。** 渡すのは盤面ごと
  *   ——仕事の在り処は係ごとに違う（issue の側に在る係と、マージ済みPRの側に在る係が同じ表に載る）。
  *   **盤面の見え方で絞らない係は `() => true`**——**盤面が健全であることを確かめるのが仕事**なら、
- *   仕事はいつでも在る（下の `patrol`。`.claude/board-design.md` 2.21.2）。
+ *   仕事はいつでも在る（下の `patrol`。`agent-ops/board-design.md` 2.21.2）。
  * - `hours` … 前に立ててから空ける間隔。**溜めてからまとめて捌く係と、来たそばから捌く係が
  *   同じ表に載る**ので、係ごとに持つ。件数のしきい値は置かない——「そこまでは残ってよい」を
- *   宣言することになり、滞留を仕様にする（`.claude/board-design.md` 2.18節）。
+ *   宣言することになり、滞留を仕様にする（`agent-ops/board-design.md` 2.18節）。
  * - `env` … 投入先（`DISPATCH_TO` の値）。
  * - `prompt` … 渡す本文の在り処（リポジトリからの相対）。
  * - `urgent` … **待たせてよいか。** 既定（省略）は待たせてよい＝最後尾で、根拠は「間隔が満ちて
  *   いる限り次の周でも同じ手が出る」こと。**その根拠が言えない係だけが立てる**（下の `patrol`。
- *   `.claude/board-design.md` 2.21.3）。
+ *   `agent-ops/board-design.md` 2.21.3）。
  *
  * **係は錠を取らない。** 資源を取り合うのは担当の issue を持つセッションどうしだけ（`area:` の錠。
  * 3.1）で、**間隔で立つ係を、その取り合いに混ぜない**——待たされる先が、まさにその係に見てほしい
- * 詰まりであることがある（`.claude/board-design.md` 2.21.3）。
+ * 詰まりであることがある（`agent-ops/board-design.md` 2.21.3）。
  *
  * **PRを出す係が居ても、作業者の枠（`HELD_TASKS`・`ACTIVE_WORKERS`）には数えない。** 間隔を空けて
  * 立つ係の、記録だけの差分で、マージの列を詰まらせないため。数えると、書く側の並列度がその分だけ
@@ -240,7 +240,7 @@ const CYCLES = [
     // クラウドで足りる。**既存 issue の本文もラベルも、用意された道具で書き換えられる**
     // ——番号を保ったまま書き換えるのが棚卸しの中心（2.17.3）。
     env: 'cloud',
-    prompt: '.claude/triage-prompt.md',
+    prompt: 'agent-ops/prompts/triage-prompt.md',
     // **未整理は、棚卸しの結論が揃っていないこと**（2.17.1）——`kind:` が無いか、`kind:task` なのに
     // `goal:` が無いか。**`kind:` の有無だけを入口にすると、`kind:` が付いた時点で issue が棚卸しの
     // 視界から消える**ので、後から足した `goal:` の取りこぼしを直す者が居なくなる。
@@ -252,18 +252,18 @@ const CYCLES = [
     // クラウドで足りる。**既存 issue の本文は書き換えない**——切るのは新しい issue で、記録は
     // 自分のPRに載せる（2.17・4.4）。
     env: 'cloud',
-    prompt: '.claude/analysis-prompt.md',
+    prompt: 'agent-ops/prompts/analysis-prompt.md',
     due: (board) => hasUnreadSmell(board.mergedPrs ?? []),
   },
   {
     name: 'trend',
     // **週1回。** 一次は1日1回なので、1本で7回ぶんが読める。**回をまたいで同じ形が出たか**を見る
-    // 係なので、溜まっていないと仕事にならない（`.claude/analysis-trend-prompt.md`）。
+    // 係なので、溜まっていないと仕事にならない（`agent-ops/prompts/analysis-trend-prompt.md`）。
     hours: 168,
     // クラウドで足りる。**既存 issue の本文は書き換えない**——切るのは新しい issue で、記録は
     // 自分のPRに載せる（2.17・2.17.4）。
     env: 'cloud',
-    prompt: '.claude/analysis-trend-prompt.md',
+    prompt: 'agent-ops/prompts/analysis-trend-prompt.md',
     due: (board) => (board.unsummarizedAnalyses ?? 0) > 0,
   },
   {
@@ -272,9 +272,9 @@ const CYCLES = [
     // ある**（`.claude/skills/policy-review/SKILL.md`「棚卸しの手順」——孤立した1件は抽出しない）。
     hours: 168,
     // クラウドで足りる。**既存 issue の本文は書き換えない**——出すのは新しい issue 1本だけで、
-    // リポジトリへは1行も書かない（`.claude/policy-cycle-prompt.md`）。
+    // リポジトリへは1行も書かない（`agent-ops/prompts/policy-cycle-prompt.md`）。
     env: 'cloud',
-    prompt: '.claude/policy-cycle-prompt.md',
+    prompt: 'agent-ops/prompts/policy-cycle-prompt.md',
     due: (board) => (board.pendingDecisions ?? 0) > 0,
   },
   {
@@ -282,9 +282,9 @@ const CYCLES = [
     // **見つからない周が続いても1日1本に収める。** 下の `due` が真である状態は、次の1本が入るまで
     // 続く——間隔を置かないと、そのあいだずっとこの係だけが立ち続ける。
     hours: 24,
-    // クラウドで足りる。**リポジトリへは1行も書かない**（`.claude/dig-prompt.md`）。
+    // クラウドで足りる。**リポジトリへは1行も書かない**（`agent-ops/prompts/dig-prompt.md`）。
     env: 'cloud',
-    prompt: '.claude/dig-prompt.md',
+    prompt: 'agent-ops/prompts/dig-prompt.md',
     // **配れる「完成へ近づける仕事」が尽きた周がこの係の出番**（2.18.1）。枠（`HELD_TASKS`・
     // `ACTIVE_WORKERS`）や錠で**待たされているだけの周は立てない**——順番待ちの task は
     // `readyTasks` に残るので、この数は0にならない。掘り起こしても配れる先が増えないため。
@@ -298,12 +298,12 @@ const CYCLES = [
   {
     name: PATROL,
     // **間隔は「盤面が止まったまま放っておいてよい長さ」。** 健全な周にも立つので費用はこの数で
-    // 決まるが、短くするほど気づくのが早い（`.claude/board-design.md` 2.21.2）。
+    // 決まるが、短くするほど気づくのが早い（`agent-ops/board-design.md` 2.21.2）。
     hours: 1,
     // **このPCでしか調べられない。** 何が転んだかが残っているのは `~/daemon.log` と
-    // `~/.claude/board-state` で、どちらもクラウドの箱には無い（`.claude/board-design.md` 2.21）。
+    // `~/.claude/board-state` で、どちらもクラウドの箱には無い（`agent-ops/board-design.md` 2.21）。
     env: 'bridge',
-    prompt: '.claude/patrol-prompt.md',
+    prompt: 'agent-ops/prompts/patrol-prompt.md',
     // **盤面の見え方で絞らない。** 絞る条件は既に知っている壊れ方の一覧でしかなく、**未知の形は
     // どの条件にも掛からない**——2026-09-11、手が1つも出ない周が2時間11分続いたが、印は一度も
     // 立たなかった（#1939）。健全な周は「異常なし」を記録して終わる。
@@ -319,7 +319,7 @@ const CYCLES = [
  *
  * **公開しているのは、係の窓を持つ側がここより広いことを言えるようにするため**——スメルを拾う係の
  * 窓（[`board-read.mjs`](board-read.mjs) の `MERGED_WINDOW_HOURS`）がこの間隔を下回ると、間に入った
- * ぶんが誰にも読まれないまま落ちる（`.claude/board-design.md` 4.4.2）。
+ * ぶんが誰にも読まれないまま落ちる（`agent-ops/board-design.md` 4.4.2）。
  */
 export function cycleHours(name) {
   return CYCLES.find((cycle) => cycle.name === name)?.hours;
@@ -369,7 +369,7 @@ function heldIssue(session) {
 }
 
 /**
- * その issue が取る**錠**（`area:` のラベル。[`parallel-work.md`](../../.claude/parallel-work.md) 2節）。
+ * その issue が取る**錠**（`area:` のラベル。[`parallel-work.md`](../../agent-ops/parallel-work.md) 2節）。
  * **同時に1本しか動かせない資源**を指すので、同じ錠を持つ issue は並べて投入しない。
  *
  * **投入を止めるのはこれだけ。** 同じファイルを2本が書くことは止めない——盤面にできるのは投入を
@@ -996,7 +996,7 @@ export function moves(input) {
   return [
     // **`urgent` の係だけが先頭。** 待たせてよい根拠は「間隔が満ちている限り次の周でも同じ手が
     // 出るので、いつか手番が回る」ことで、**打てる手が在る周にも立つ係にはそれが言えない**
-    // （`.claude/board-design.md` 2.21.3）。
+    // （`agent-ops/board-design.md` 2.21.3）。
     ...urgentChores,
     // **後片付けはマージより先。** 本体のチェックアウトは作業ツリー全部の共有先なので、片付けを
     // 後ろへ回すと、**入る本数だけ古いまま**になる（マージできるPRが並んでいる周は、片付く前に次が入る）。

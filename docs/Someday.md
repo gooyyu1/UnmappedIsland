@@ -134,7 +134,7 @@ ZIPから読むのは定義YAML・絵・表示文字列だけで、他の拡張�
 | **未決事項ではなく、本文へ移すべき記述** | 「`weight` の合計が0のときは宣言順で先頭を選ぶ、と実装上決定した」（`GameElementDefinition.md` 17節）、「異種液体の混合は表現できない、が現状の仕様」（`LiquidContainerSystem.md` 9節） |
 
 **3列目は本書の対象外です。** 印を付けて issue にするものですが、要否の判断を通さずに流さない決まりが
-あるため（[`.claude/parallel-work.md`](../.claude/parallel-work.md) の「承認の要る未実装を、勝手に
+あるため（[`agent-ops/parallel-work.md`](../agent-ops/parallel-work.md) の「承認の要る未実装を、勝手に
 流さない」節）、判断が要るものは `判断待ち` を付けた issue で1件ずつ訊いています。
 
 **4列目は、決着済みなのに未決事項節に残っている記述です。** 本文の書き換えを伴うので、印の付け替えだけを

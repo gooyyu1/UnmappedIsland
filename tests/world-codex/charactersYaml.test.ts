@@ -6,7 +6,7 @@ import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { characterIcon } from '../../src/game/view/characterCard';
+import { placeholderIconOf } from '../../src/game/view/characterCard';
 import { bundledCodex } from '../support/worldCodexFiles';
 
 // describe.eachへ渡すため、beforeAllではなく読み込み時にCodexを組み立てる。
@@ -788,9 +788,22 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(takeRest(character, 'sleep').wakefulness).toBeLessThan(maxOf(character, 'wakefulness'));
     });
 
+    it('練習を続けたとき、先に尽きるのは体力ではなく眠気', () => {
+      // docs/engine/SkillSystem.md 3.1.2節。**続けられる長さを決めるのは眠気**という読みは、
+      // キャラクタごとの持ち（range.max）の比でしか成り立たない——体力の薄いキャラクタを足せば
+      // 線を引くのは体力へ移り、仕様書の側が嘘になる。**練習のアクションはまだ無い**ので、見るのは
+      // 同節が置いた割を当てたときの持ち時間（tick）。
+      const WAKEFULNESS_DRAIN_PER_TICK = 3;
+      const STAMINA_DRAIN_PER_TICK = 1;
+
+      expect(maxOf(character, 'wakefulness') / WAKEFULNESS_DRAIN_PER_TICK, '眠気が尽きるまで').toBeLessThan(
+        maxOf(character, 'stamina') / STAMINA_DRAIN_PER_TICK,
+      );
+    });
+
     it('絵ができるまでの代替アイコンを持つ', () => {
       // 表に無いと選択画面で全員が同じ姿になる（characterCard.ts）。
-      expect(characterIcon(character)).not.toBe(characterIcon('いなくなったキャラクタ'));
+      expect(placeholderIconOf(character), '代役の表に載っている').toBeDefined();
     });
   });
 });

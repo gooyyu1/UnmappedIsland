@@ -83,7 +83,12 @@ export interface Scenario {
   readonly worldProps: ReadonlyMap<string, string>;
 }
 
-/** シナリオファイルを読む。書式の誤りはYamlLoadErrorで、読み込んだ側が画面に出す。 */
+/**
+ * シナリオファイルを読む。書式の誤りはYamlLoadErrorで、読み込んだ側が画面に出す。
+ *
+ * **テキストから読む口を公開しているのは、同梱していない書き方を確かめる読み手のため。** 名前から
+ * 引く口（bundledScenario）は同梱のファイルしか読めないので、書式の誤りをそちらからは試せない。
+ */
 export function parseScenario(fileName: string, text: string): Scenario {
   const document = parseDocument(text);
   if (document.errors.length > 0) {

@@ -9,7 +9,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * `scripts/agent/may-dispatch.sh`（と、その下の `brake.sh` / `occupancy.sh`）の検査。
  *
  * ここが守るのは**安全側へ倒れること**。誤って止めれば投入が遅れるだけだが、誤って通すと同じ仕事へ
- * 2本立ち、同じPRへ食い違う判定が残る（`.claude/board-design.md` 1.5 の PR #1493）。手綱もセッション
+ * 2本立ち、同じPRへ食い違う判定が残る（`agent-ops/board-design.md` 1.5 の PR #1493）。手綱もセッション
  * 一覧も**引けなかったときは止まる**ことを、実際にスクリプトを走らせて見る。
  *
  * `gh` を PATH の先頭に、`ccr-meta.sh` を `CCR_META` で差し替える。
@@ -143,7 +143,7 @@ describe('may-dispatch.sh', () => {
     expect(run('new-task', 'task-1234')).toEqual({ code: 0, stderr: '' });
   });
 
-  // **人が止めている周は3で名乗る**（`brake.sh`。`.claude/board-design.md` 2.21.2）——1周のログを
+  // **人が止めている周は3で名乗る**（`brake.sh`。`agent-ops/board-design.md` 2.21.2）——1周のログを
   // 読む側（盤面を見回る係）が、人の意思で止まっている周を調べに行かないために要る区別。
   it('親の「投入する」が外れていれば、種類に関わらず止まる', () => {
     const result = run('review', 'review-1500', { brake: off('投入する') });

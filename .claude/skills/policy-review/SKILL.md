@@ -1,7 +1,7 @@
 ---
 name: policy-review
 description: >-
-  `.claude/decisions/` に溜まった判断の履歴を棚卸しし、通底しているものを、既に在る方針の文書へ畳む。
+  `agent-ops/decisions/` に溜まった判断の履歴を棚卸しし、通底しているものを、既に在る方針の文書へ畳む。
   「棚卸しして」「価値観を整理して」と言われたときと、セッション開始時に未処理の件数を告げられた
   ときに使う。抽出の諾否はユーザーにしか出せないので、答えを受け取る口を持つセッション——ユーザーと
   会話できるか、issue を起票できるか——でだけ動かす。
@@ -13,9 +13,9 @@ description: >-
 
 | | 置き場 | いつ書くか | セッションへ注入 |
 | --- | --- | --- | --- |
-| 判断の履歴 | `.claude/decisions/*.md` | ユーザーの発言を受けたその場 | しない |
+| 判断の履歴 | `agent-ops/decisions/*.md` | ユーザーの発言を受けたその場 | しない |
 | 一般則 | 下の「行き先」の文書 | この棚卸しのときだけ | 文書による（下の表） |
-| 処理済みの履歴 | `.claude/decisions/archive/*.md` | 棚卸しが移す | しない |
+| 処理済みの履歴 | `agent-ops/decisions/archive/*.md` | 棚卸しが移す | しない |
 
 **1件だけを見て「これは一般則か」は判断できない。** 別の題材で同じ選び方をした判断が出て初めて、
 それが通底している価値観なのか、その題材だけの判断なのかが分かる。記録の場を分けてあるのは、
@@ -27,10 +27,10 @@ description: >-
 
 | 行き先 | 持つもの | セッションへ注入 |
 | --- | --- | --- |
-| [`policies.md`](../../policies.md) | これまでの判断全体に通底している価値観・好み | 全文 |
+| [`policies.md`](../../../agent-ops/policies.md) | これまでの判断全体に通底している価値観・好み | 全文 |
 | [`DesignPrinciples.md`](../../../docs/concept/DesignPrinciples.md) | ゲーム内容を決めるときに効く判断軸 | 見出しだけ |
-| [`parallel-work.md`](../../parallel-work.md) | 盤面を回す側だけが要る運用の取り決め | しない |
-| [`board-design.md`](../../board-design.md) | 盤面・デーモンそのものの作りを決める判断 | しない |
+| [`parallel-work.md`](../../../agent-ops/parallel-work.md) | 盤面を回す側だけが要る運用の取り決め | しない |
+| [`board-design.md`](../../../agent-ops/board-design.md) | 盤面・デーモンそのものの作りを決める判断 | しない |
 | [`DocumentStyle.md`](../../../docs/DocumentStyle.md) | `docs/` の文書の構造（見出し・節番号・確定の表し方）と、何を書き残し何を書かないか | しない |
 | [`CodingConventions.md`](../../../docs/CodingConventions.md) | TypeScript の規約のうち、機械で強制できないもの | しない |
 | [`CodeStructure.md`](../../../docs/CodeStructure.md) | `src/` の置き場と、どこが何を知ってよいか | しない |
@@ -63,7 +63,7 @@ description: >-
 
 ## 履歴の書式
 
-`.claude/decisions/<YYYY-MM-DD>-<英小文字のslug>.md` に1件1ファイル。並列に走るセッションが
+`agent-ops/decisions/<YYYY-MM-DD>-<英小文字のslug>.md` に1件1ファイル。並列に走るセッションが
 同時に書いても衝突しない。
 
 ```markdown
@@ -98,13 +98,13 @@ context: policies.md の書き方の見直し（会話のみ）
 - `archive/` の履歴には `declined:` が付いていることがある（手順4）。**書くのは棚卸しだけ**で、
   記録するときには付けない。
 - **記録はレビューの対象ではない**（出どころ: ユーザーの指示・2026-09-07。
-  [`review-criteria.md`](../../review-criteria.md)「見ないもの」）。質を見るのはこの棚卸し。
+  [`review-criteria.md`](../../../agent-ops/review-criteria.md)「見ないもの」）。質を見るのはこの棚卸し。
 
 ## 棚卸しの手順
 
-1. `.claude/decisions/` の未処理を全部読み、**選び方が同じもの**で束ねる。**束ねる前に、各件の
+1. `agent-ops/decisions/` の未処理を全部読み、**選び方が同じもの**で束ねる。**束ねる前に、各件の
    `## エージェントの解釈` が `## ユーザーの発言` から読み取れる範囲かを確かめる**——読みの広さを
-   見るのはここだけで、**レビューは記録を読まない**（[`review-criteria.md`](../../review-criteria.md)
+   見るのはここだけで、**レビューは記録を読まない**（[`review-criteria.md`](../../../agent-ops/review-criteria.md)
    「見ないもの」）。読み取れないものは、原文の側へ寄せて書き直してから束ねる。
 2. 束ごとに上の「一般則と、個別の判断の見分け方」を当て、**通ったものだけ**を候補にする。書式は
    下の「一般則の書式」、行き先は上の「行き先」から1つ。落ちた束と孤立した1件は、抽出せず履歴に
@@ -114,7 +114,7 @@ context: policies.md の書き方の見直し（会話のみ）
    経路でも、リポジトリを開かずに答えられるだけの文脈を添える**——ここだけが人間の仕事。
    - **ユーザーと会話しているなら、普通の文章で訊く。** 答えを受けたら手順4へ。
    - **周期の係として立ったなら、候補をチェックボックスで並べた issue を1本起票して終わる**
-     （[`policy-cycle-prompt.md`](../../policy-cycle-prompt.md)）。訊いた側が答えを待って止まる
+     （[`policy-cycle-prompt.md`](../../../agent-ops/prompts/policy-cycle-prompt.md)）。訊いた側が答えを待って止まる
      ので、同じセッションでは反映しない。手順4以降は、チェックの付いた issue を受け取った別の
      セッションが行う。
 4. 承認されたぶんを反映し、元になった履歴を `archive/` へ `git mv` する。**一般則にならずとも、
@@ -124,7 +124,7 @@ context: policies.md の書き方の見直し（会話のみ）
    から——**見送ったことが残っていないと、次の棚卸しが同じ候補をもう一度出す。** `date` と
    `context` の**間へ挿すと `tests/docs/policies.test.ts` が落ちる**（隣り合っていることを見ている）。
    候補に出さなかった履歴——束にならなかった1件も、見分け方で落ちた束も——が
-   `.claude/decisions/` に残る。
+   `agent-ops/decisions/` に残る。
 5. 節を畳んだ・改名したなら、**その節名を引いている参照を直す。** どこが切れたかは
    `npm test`（`tests/docs/docReferences.test.ts`）が挙げる。
 6. `policies.md` の総量が上限（220行）を超えているなら、畳むか捨てるかしてから終える。
