@@ -7,6 +7,7 @@ import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * farming.yamlの畑と囲いを、実ファイルの定義だけで検証する。
@@ -409,11 +410,14 @@ describe('farming.yamlの畑と囲い', () => {
     expect(fowl.moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('catch')))).toBeUndefined();
     const breeding = fowl.tryGetProperty(breedingRemainingId)!;
     breeding.setNumber(breeding.def.range!.max);
-    // 渇いて死ぬ前に飼葉が尽きるだけの水（上の「甕1杯の水では通せない」）。
-    pourWater(pen);
-    const fodder = pen.tryGetProperty(fodderId)!;
+    const water = pen.tryGetProperty(drinkingWaterId)!;
 
-    for (let i = 0; i < 2000 && fodder.getEffectiveValue() >= 1; i++) tick(1);
+    // **打ち切りに飼葉を使わない**——ゲートと同じ量で打ち切ると、ゲートを外しても止まって
+    // 見える。1周期を越えるまで回し、渇いて死なないよう水だけ注ぎ足す。
+    for (let i = 0; i < breeding.def.range!.max + TICKS_PER_DAY; i++) {
+      if (water.getEffectiveValue() <= 0) pourWater(pen);
+      tick(1);
+    }
 
     expect(pennedCount(pen), '増えていない').toBe(1);
     expect(breeding.getEffectiveValue(), '周期が残ったまま止まる').toBeGreaterThan(0);
