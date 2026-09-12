@@ -206,6 +206,13 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     expect(() => new SpawnedIsland(map, [])).toThrow(/全サイトの土地を要する/);
   });
 
+  it('実体化された島は、別の島のサイトでは土地を引けない', () => {
+    // indexが偶然合うだけの他島のSiteを、その位置の土地として黙って返さない。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 13, seededRng(99));
+
+    expect(() => game.island.landOf(new Site(0, 0, 0, false))).toThrow(/この島のサイトではありません/);
+  });
+
   it('亜種のプロパティが、実体化した土地へ書き込まれる', () => {
     // 亜種は「その土地らしさ」を発見量のつまみ（locations.yamlのweight: {prop:...}）で表す。
     // 素の値のままでは名前だけの飾りになるので、実体へ届いていることを確かめる。

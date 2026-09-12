@@ -22,6 +22,7 @@ export class SpawnedIsland {
   /** サイトとその土地の対を、サイトindexの順に並べたもの。 */
   readonly lands: readonly SpawnedLand[];
 
+  private readonly landsBySite: ReadonlyMap<Site, WorldObject>;
   private readonly sitesByLandInstanceId: ReadonlyMap<number, Site>;
 
   /** landsBySiteはサイトindexで引ける、実体化された土地（すべてのサイトのぶんが要る）。 */
@@ -33,15 +34,16 @@ export class SpawnedIsland {
 
     this.map = map;
     this.lands = map.sites.map((site) => ({ site, land: landsBySite[site.index] }));
+    this.landsBySite = new Map(this.lands.map(({ site, land }) => [site, land]));
     this.sitesByLandInstanceId = new Map(this.lands.map(({ site, land }) => [land.instanceId, site]));
   }
 
-  /** そのサイトから湧いた土地。 */
+  /** そのサイトから湧いた土地。この島のサイトでなければ投げる（index が偶然合うだけの他島のSiteを含む）。 */
   landOf(site: Site): WorldObject {
-    if (site.index < 0 || site.index >= this.lands.length)
-      throw new Error(`サイト${site.index}はこの島のサイトではありません。`);
+    const land = this.landsBySite.get(site);
+    if (land === undefined) throw new Error(`サイト${site.index}はこの島のサイトではありません。`);
 
-    return this.lands[site.index].land;
+    return land;
   }
 
   /**
