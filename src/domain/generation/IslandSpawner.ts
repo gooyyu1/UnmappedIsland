@@ -2,12 +2,14 @@ import type { WorldObject } from '../WorldObject';
 import type { WorldSession } from '../WorldSession';
 import { Location } from '../wrappers/Location';
 import type { IslandMap, Site } from './IslandMap';
+import { SpawnedIsland } from './SpawnedIsland';
 
 /** 最初の道が見つかる進捗。1回目の探索でいきなり道が出ないようにする最低値。 */
 const FIRST_PATH_PROGRESS = 2;
 
 /**
- * IslandMap（TerrainGeneratorの純粋な計算結果）を、実際の世界（worldツリー）へ実体化する。
+ * IslandMap（TerrainGeneratorの純粋な計算結果）を、実際の世界（worldツリー）へ実体化し、
+ * サイトと湧いた土地の対応を持つSpawnedIslandを返す。
  *
  * - 各SiteのLocationTypeが指すobject_defをspawnし、worldのlocationsスロットへ配置する
  * - 各辺（IslandEdge）につき道（path）を両端に1個ずつspawnし、travelMinutes・requiredProgress・
@@ -20,7 +22,7 @@ const FIRST_PATH_PROGRESS = 2;
  * 「探索の進捗が最大へ達する前に、その土地のすべての道が見つかる」という要求を、
  * データの丸め方ではなく生成の不変条件として保証する（テストで検証する）。
  */
-export function spawnIslandIntoWorld(session: WorldSession, map: IslandMap): void {
+export function spawnIslandIntoWorld(session: WorldSession, map: IslandMap): SpawnedIsland {
   if (session.world === undefined)
     throw new Error('spawnIslandIntoWorld には World を持つ WorldSession が必要です。');
 
@@ -49,7 +51,6 @@ export function spawnIslandIntoWorld(session: WorldSession, map: IslandMap): voi
     const error = location.moveToSlotOrRejection(world.getSlot(locationsSlotId));
     if (error !== undefined) throw new Error(`土地 '${site.type!.name}' を配置できません: ${error}`);
     locations[site.index] = location;
-    map.siteInstanceIds[site.index] = location.instanceId;
   }
 
   // 2. 道の実体化（辺1本につき両端へ1個ずつ）。土地ごとに、繋がる相手のindex順で
@@ -94,6 +95,8 @@ export function spawnIslandIntoWorld(session: WorldSession, map: IslandMap): voi
     forward.getProperty(returnPathIdId).setNumberWithoutEvents(backward.instanceId);
     backward.getProperty(returnPathIdId).setNumberWithoutEvents(forward.instanceId);
   }
+
+  return new SpawnedIsland(map, locations);
 }
 
 /** pathsByEndsのキー: どのサイトから、どのサイトへ向かう道か。 */
@@ -106,29 +109,26 @@ function endsKey(from: number, to: number): string {
  * 開始地点は砂浜を優先し、無ければ外周リング（海岸）、それも無ければ最初のサイト
  * （いずれもindex順で決定的）。
  */
-export function placePlayer(session: WorldSession, map: IslandMap, character: WorldObject): Location {
+export function placePlayer(session: WorldSession, island: SpawnedIsland, character: WorldObject): Location {
+  const sites = island.map.sites;
   const start: Site =
-    map.sites.find((s) => s.type!.name === 'sandy_beach') ??
-    map.sites.find((s) => s.onCoastRing) ??
-    map.sites[0];
+    sites.find((s) => s.type!.name === 'sandy_beach') ?? sites.find((s) => s.onCoastRing) ?? sites[0];
 
-  return placePlayerAt(session, map, character, start);
+  return placePlayerAt(session, island, character, start);
 }
 
 /** 指定したサイトの土地へプレイヤーキャラクタを移し、その土地のビューを返す。 */
 export function placePlayerAt(
   session: WorldSession,
-  map: IslandMap,
+  island: SpawnedIsland,
   character: WorldObject,
   site: Site,
 ): Location {
   const codex = session.codex;
-  const location = session.world!.instance.findSelfOrDescendantByInstanceId(map.siteInstanceIds[site.index]);
-  if (location === undefined)
-    throw new Error('開始地点の土地が実体化されていません（先にspawnIslandIntoWorldを呼んでください）。');
+  const land = island.landOf(site);
 
-  const error = character.moveToSlotOrRejection(location.getSlot(codex.vocabulary.world.charactersSlotId));
+  const error = character.moveToSlotOrRejection(land.getSlot(codex.vocabulary.world.charactersSlotId));
   if (error !== undefined) throw new Error(`プレイヤーを開始地点へ配置できません: ${error}`);
 
-  return new Location(location, codex);
+  return new Location(land, codex);
 }

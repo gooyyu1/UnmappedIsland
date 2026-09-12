@@ -52,7 +52,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     const view = fromGameSession(game, locale);
 
     expect(view.currentLocationCard.name, '現在地は命名処理が付けた漂着地の名前').toBe(
-      locale.locationName(game.map.nameOfInstance(game.startLocation.instance.instanceId)!),
+      locale.locationName(game.island.nameOf(game.startLocation.instance.instanceId)!),
     );
     expect(lane(view, game, 'fixtures'), '未探索なので設置物も道も見つかっていない').toEqual([]);
     expect(lane(view, game, 'items'), '未探索なので土地には何も落ちていない').toEqual([]);
@@ -79,7 +79,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     expect(lane(view, game, 'fixtures').map((card) => card.name)).toEqual(
       location.fixtureStacks.map((stack) =>
         stack[0].def.tags.includes(pathTagId)
-          ? locale.locationName(game.map.nameOfInstance(new Path(stack[0], codex).destinationInstanceId)!)
+          ? locale.locationName(game.island.nameOf(new Path(stack[0], codex).destinationInstanceId)!)
           : locale.object(stack[0].def.name).displayName,
       ),
     );
@@ -156,7 +156,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     card.actions.find((action) => action.name === 'travel')!.execute();
 
     expect(fromGameSession(game, locale).currentLocationCard.name).toBe(
-      locale.locationName(game.map.nameOfInstance(path.destinationInstanceId)!),
+      locale.locationName(game.island.nameOf(path.destinationInstanceId)!),
     );
   });
 
@@ -167,7 +167,7 @@ describe('探索と地図（世界→映し 通し）', () => {
 
     expect(view.mapLands.map((land) => land.card.name)).toEqual([view.currentLocationCard.name]);
     expect(view.mapLands[0].site, 'サイトindexは現在地の土地を指す').toBe(
-      game.map.siteInstanceIds.indexOf(game.startLocation.instance.instanceId),
+      game.island.siteOf(game.startLocation.instance.instanceId)!.index,
     );
     expect(view.mapLands[0].current, '現在地のカードは強調表示の対象').toBe(true);
     expect(view.mapRoads).toEqual([]);
@@ -179,9 +179,9 @@ describe('探索と地図（世界→映し 通し）', () => {
 
     const view = fromGameSession(game, locale);
 
-    const currentSite = game.map.siteInstanceIds.indexOf(game.startLocation.instance.instanceId);
-    const destinations = pathsIn(game.startLocation, codex).map((path) =>
-      game.map.siteInstanceIds.indexOf(new Path(path, codex).destinationInstanceId),
+    const currentSite = game.island.siteOf(game.startLocation.instance.instanceId)!.index;
+    const destinations = pathsIn(game.startLocation, codex).map(
+      (path) => game.island.siteOf(new Path(path, codex).destinationInstanceId)!.index,
     );
     expect(destinations.length, '道が見つかる土地で確かめる').toBeGreaterThan(0);
 
@@ -211,13 +211,13 @@ describe('探索と地図（世界→映し 通し）', () => {
     const view = fromGameSession(game, locale);
 
     const root = game.startLocation.instance.findRoot();
-    for (const land of view.mapLands) {
-      const instanceId = game.map.siteInstanceIds[land.site];
-      expect(land.card.name).toBe(locale.locationName(game.map.nameOfInstance(instanceId)!));
-      expect(land.card.art, '絵は土地の型が名乗る絵の名前で引く').toBe(
+    for (const shown of view.mapLands) {
+      const instanceId = game.island.landOf(game.island.map.sites[shown.site]).instanceId;
+      expect(shown.card.name).toBe(locale.locationName(game.island.nameOf(instanceId)!));
+      expect(shown.card.art, '絵は土地の型が名乗る絵の名前で引く').toBe(
         root.findSelfOrDescendantByInstanceId(instanceId)?.def.artName,
       );
-      expect(land.card.art).toBeDefined();
+      expect(shown.card.art).toBeDefined();
     }
   });
 
@@ -239,7 +239,7 @@ describe('探索と地図（世界→映し 通し）', () => {
 
     // 強調表示（current）は1枚だけで、移動に追従する。
     const currentSites = view.mapLands.filter((land) => land.current).map((land) => land.site);
-    expect(currentSites).toEqual([game.map.siteInstanceIds.indexOf(path.destinationInstanceId)]);
+    expect(currentSites).toEqual([game.island.siteOf(path.destinationInstanceId)!.index]);
   });
 
   it('現在地は移動に追従する', () => {
@@ -251,7 +251,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     const view = fromGameSession(game, locale);
 
     expect(view.currentLocationCard.name).toBe(
-      locale.locationName(game.map.nameOfInstance(path.destinationInstanceId)!),
+      locale.locationName(game.island.nameOf(path.destinationInstanceId)!),
     );
   });
 
@@ -286,7 +286,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     expect(view.currentLocationCard.kind).toBe('location');
     expect(view.currentLocationCard.identity).toEqual([game.startLocation.instance.instanceId]);
     expect(view.currentLocationCard.name, '個体に付いた名前は型の名前より優先される').toBe(
-      locale.locationName(game.map.nameOfInstance(game.startLocation.instance.instanceId)!),
+      locale.locationName(game.island.nameOf(game.startLocation.instance.instanceId)!),
     );
   });
 });

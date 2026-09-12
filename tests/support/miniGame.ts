@@ -7,6 +7,7 @@ import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { World } from '../../src/domain/wrappers/World';
 import { IslandMap } from '../../src/domain/generation/IslandMap';
+import { SpawnedIsland } from '../../src/domain/generation/SpawnedIsland';
 import { StartedGame } from '../../src/domain/generation/NewGame';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { WORLD_TIME_YAML } from './worldYaml';
@@ -113,7 +114,8 @@ export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
     world,
     new PlayerCharacter(playerInstance, codex),
     new Location(landInstance, codex),
-    new IslandMap('test', 0, [], []),
+    // 生成を通さないので島は空（サイトが無いので土地も無い）。
+    new SpawnedIsland(new IslandMap('test', 0, [], []), []),
   );
 
   return {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { IslandMap, Site } from '../../src/domain/generation/IslandMap';
+import { SpawnedIsland } from '../../src/domain/generation/SpawnedIsland';
 import { StartedGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import type { PlayScreenView } from '../../src/game/view/PlayScreenView';
@@ -68,18 +69,16 @@ object_defs:
 
   /**
    * 島の地図を持ったゲーム。miniGameの島はサイトを持たない（地形生成を通さないため）ので、
-   * 現在地と行き先の2つだけを置いた地図に差し替える。
+   * 現在地と行き先の2つだけを置いた島に差し替える。
    */
   const withMap = (mini: MiniGame, meadow: WorldObject): StartedGame => {
     const map = new IslandMap('test', 0, [new Site(0, 0, 0, false), new Site(1, 1, 0, false)], []);
-    map.siteInstanceIds[0] = mini.land.instanceId;
-    map.siteInstanceIds[1] = meadow.instanceId;
     return new StartedGame(
       mini.game.session,
       mini.game.world,
       mini.game.player,
       mini.game.startLocation,
-      map,
+      new SpawnedIsland(map, [mini.land, meadow]),
     );
   };
 

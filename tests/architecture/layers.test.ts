@@ -46,6 +46,22 @@ const ANALYSIS_FREE = ['src/domain', 'src/loader', 'src/locale', 'src/game', 'sr
  */
 const VIEWER_FREE = ['src/domain', 'src/loader', 'src/locale', 'src/game', 'src/ui', 'src/analysis'];
 
+/**
+ * `src/domain/generation/` のうち、**実体化を担うもの**。ここだけが実体化された世界
+ * （`WorldObject`とその包み）を扱う。
+ */
+const SPAWNING = [
+  'src/domain/generation/IslandSpawner.ts',
+  'src/domain/generation/SpawnedIsland.ts',
+  'src/domain/generation/NewGame.ts',
+];
+
+/** 実体化された世界そのもの。生成の結果（`IslandMap`ほか）はこれを1つも持たない。 */
+const SPAWNED_WORLD = (target: string): boolean =>
+  target === 'src/domain/WorldObject.ts' ||
+  target === 'src/domain/WorldSession.ts' ||
+  target.startsWith('src/domain/wrappers/');
+
 /** 効果と条件の木そのもの。組み立ててよいのはドメインと、YAMLから作るローダーだけ。 */
 const TREE_MODULES = ['src/domain/ActiveEffect.ts', 'src/domain/ConditionNode.ts'];
 
@@ -228,8 +244,25 @@ describe('層の境界', () => {
     expect(offenders, 'このファイルが木そのものを輸入している').toEqual([]);
   });
 
+  it('地形生成は、実体化された世界を輸入しない', () => {
+    // `IslandMap`（と生成のパイプライン）が名乗る「WorldObjectを1つも持たない」を見る。**ここは
+    // 到達可能性ではなく直接の輸入を見る**——持つには輸入が要るので辿らなくても言えるし、辿ると
+    // 型だけの繋がり（AxisDef → PropertyDef → WorldObject）に必ず当たって何も言えなくなる。
+    // **型としての輸入も数える。** 対応表を1つ持てば、そこから先は実体化の順序に縛られる。
+    const offenders = sourcesIn('src/domain/generation')
+      .filter((rel) => !SPAWNING.includes(rel))
+      .filter((rel) => importsOf(rel, true).some(SPAWNED_WORLD));
+
+    expect(offenders, 'このファイルが、種から決まるはずの生成結果へ実体化された世界を持ち込んでいる').toEqual(
+      [],
+    );
+  });
+
   it('検査対象の置き場が実在する', () => {
     // 引っ越しで置き場が消えたときに、検査が黙って空を通さないようにする。
+    expect(SPAWNING.filter((rel) => !existsSync(join(ROOT, rel)))).toEqual([]);
+    // 実体化を担うもの以外にも生成のファイルが在ること。全部が除外になれば、上の検査は何も見ていない。
+    expect(sourcesIn('src/domain/generation').length).toBeGreaterThan(SPAWNING.length);
     expect(PHASER_FREE.filter((dir) => !existsSync(join(ROOT, dir)))).toEqual([]);
     expect(VIEWER_FREE.filter((dir) => !existsSync(join(ROOT, dir)))).toEqual([]);
     expect(ANALYSIS_FREE.filter((dir) => !existsSync(join(ROOT, dir)))).toEqual([]);
