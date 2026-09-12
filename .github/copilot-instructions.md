@@ -1,7 +1,7 @@
 # Copilot Agent Instructions
 
 作業手順・設計方針は [`CLAUDE.md`](../CLAUDE.md) に、TypeScriptのコーディング規約は
-[`docs/engine/CodingConventions.md`](../docs/engine/CodingConventions.md) に従うこと。
+[`docs/CodingConventions.md`](../docs/CodingConventions.md) に従うこと。
 CLAUDE.mdはClaude Code専用ではなくこのリポジトリ共通の指示書なので、全文を読むこと。
 
 このファイルには、Copilot CLI固有のツール（`create_session`等）を使うときの注意だけを書く。

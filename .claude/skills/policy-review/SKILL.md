@@ -32,7 +32,7 @@ description: >-
 | [`parallel-work.md`](../../parallel-work.md) | 盤面を回す側だけが要る運用の取り決め | しない |
 | [`board-design.md`](../../board-design.md) | 盤面・デーモンそのものの作りを決める判断 | しない |
 | [`DocumentStyle.md`](../../../docs/DocumentStyle.md) | `docs/` の文書の構造（見出し・節番号・確定の表し方）と、何を書き残し何を書かないか | しない |
-| [`CodingConventions.md`](../../../docs/engine/CodingConventions.md) | TypeScript の規約のうち、機械で強制できないもの | しない |
+| [`CodingConventions.md`](../../../docs/CodingConventions.md) | TypeScript の規約のうち、機械で強制できないもの | しない |
 | [`CodeStructure.md`](../../../docs/CodeStructure.md) | `src/` の置き場と、どこが何を知ってよいか | しない |
 | [`DesignNotes.md`](../../../docs/engine/DesignNotes.md) | 繰り返さないために残す事例 | しない |
 
