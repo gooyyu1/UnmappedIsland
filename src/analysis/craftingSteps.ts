@@ -10,7 +10,7 @@ import type { WorldCodex } from '../domain/WorldCodex';
 import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
 import type { CraftingInput, CraftingStep, PropertyDelta, StepOutcome } from './CraftingStep';
 import { UNCHANGED_OUTCOMES, collectOutputs, combineOutcomes } from './CraftingStep';
-import { MINUTES_PER_TICK } from './balanceTables';
+import { MINUTES_PER_TICK } from '../domain/worldTime';
 import type { BecomeDestinationResolver, EffectReading } from './effectOutcomes';
 import { consumesRoot, destroysRoot, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';

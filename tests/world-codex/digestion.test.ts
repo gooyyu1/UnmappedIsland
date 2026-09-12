@@ -8,6 +8,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -17,8 +18,7 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
  * 絶食して死ぬまでの日数。配分を刻み直したら必ずここが落ちる。
  */
 describe('消化（かさ・栄養素・蓄え）', () => {
-  /** 1日 = 96 tick（1 tick = 15分）。 */
-  const DAY = 96;
+  const DAY = TICKS_PER_DAY;
 
   let codex: WorldCodex;
   let session: WorldSession;

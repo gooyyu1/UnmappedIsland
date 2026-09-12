@@ -5,7 +5,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
-import { TICKS_PER_DAY } from '../../src/analysis/balanceTables';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 const SIM_DAYS = 170; // 初回サイクル90日 + 2周目の季節2つが最長(36日×2)でも完了する長さ
 const SIM_TICKS = SIM_DAYS * TICKS_PER_DAY;

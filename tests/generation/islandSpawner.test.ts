@@ -5,7 +5,6 @@ import { startNewGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { Location } from '../../src/domain/wrappers/Location';
 import { Path } from '../../src/domain/wrappers/Path';
-import type { World } from '../../src/domain/wrappers/World';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { pathsIn } from '../support/paths';
@@ -172,7 +171,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
 
     // 見つかった道で移動する。
     const path = new Path(pathsIn(start, codex)[0], codex);
-    const minutesBefore = totalMinutes(game.world);
+    const minutesBefore = game.world.totalMinutes;
 
     expect(path.travel(agent)).toBe(true);
 
@@ -180,7 +179,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     expect(new Location(agent.parent!, codex).characters, '移動先ではcharactersスロットに入る').toContain(
       agent,
     );
-    expect(totalMinutes(game.world) - minutesBefore, '移動時間の分だけゲーム内時間が進む').toBe(
+    expect(game.world.totalMinutes - minutesBefore, '移動時間の分だけゲーム内時間が進む').toBe(
       path.travelMinutes,
     );
   });
@@ -259,7 +258,3 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     );
   });
 });
-
-function totalMinutes(world: World): number {
-  return (world.day - 1) * 24 * 60 + world.hour * 60 + world.minute;
-}

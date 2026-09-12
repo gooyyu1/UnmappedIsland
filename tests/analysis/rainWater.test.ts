@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TICKS_PER_DAY } from '../../src/analysis/balanceTables';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { RainWaterRow, SeasonName } from '../../src/analysis/seasonalRain';
 import { SEASON_CLIMATE, rainWaterRows } from '../../src/analysis/seasonalRain';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';

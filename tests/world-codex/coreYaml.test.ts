@@ -7,8 +7,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { MINUTES_PER_TICK } from '../../src/analysis/balanceTables';
-import { MINUTES_PER_DAY } from '../../src/domain/worldTime';
+import { MINUTES_PER_DAY, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
 
 function load(yamlText: string): WorldCodex {

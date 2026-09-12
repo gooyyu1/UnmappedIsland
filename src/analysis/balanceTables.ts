@@ -20,7 +20,7 @@ import { rainWaterRows } from './seasonalRain';
 import type { StaticValueResolver } from './staticValue';
 import { highestDeclaredLayer, staticValueOf } from './staticValue';
 import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
-import { MINUTES_PER_DAY } from '../domain/worldTime';
+import { MINUTES_PER_DAY, TICKS_PER_DAY } from '../domain/worldTime';
 
 /**
  * 定義（`src/assets/world-codex/*.yaml`）だけから「時間あたりの収支」を計算する。
@@ -32,14 +32,6 @@ import { MINUTES_PER_DAY } from '../domain/worldTime';
  * ここが返すのは数値と識別子だけで、見せ方は持たない。ビューアのページ（balancePage）とMarkdownの
  * スナップショット（tests/diagnostics/balanceStatsReport.test.ts）が同じ結果を別の形に描く。
  */
-
-/**
- * 1tickの長さ（分）。**core.yamlの`world`が宣言する`minutes_per_tick`**と同じ値を、実体化された
- * 世界を持たずに使えるように置く（一致は `tests/world-codex/coreYaml.test.ts` が見る）。
- * 1日の長さはドメインが持つ（`MINUTES_PER_DAY`）ので、1日のtick数はその割り算で出す。
- */
-export const MINUTES_PER_TICK = 15;
-export const TICKS_PER_DAY = MINUTES_PER_DAY / MINUTES_PER_TICK;
 
 /**
  * 資源は土地ごとに分かれているので、1つの土地に閉じると多くの連鎖が「前提が揃わない」で終わる。

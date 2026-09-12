@@ -7,7 +7,7 @@ import type { CraftingStep } from './CraftingStep';
 import { collectOutputs } from './CraftingStep';
 import { rangeEventReadouts, ticksToRangeEnd } from './rangeEvents';
 import type { StaticValueResolver } from './staticValue';
-import { MINUTES_PER_TICK } from './balanceTables';
+import { MINUTES_PER_TICK } from '../domain/worldTime';
 import { staticValueOf, trackingResolverOf } from './staticValue';
 import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 

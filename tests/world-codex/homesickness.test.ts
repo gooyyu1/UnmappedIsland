@@ -4,7 +4,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { seededRng } from '../../src/domain/Rng';
 import { bundledCodex } from '../support/worldCodexFiles';
-import { MINUTES_PER_TICK } from '../../src/analysis/balanceTables';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**

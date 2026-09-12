@@ -7,15 +7,8 @@ import type {
   PropertyRoute,
   RoutePrerequisite,
 } from '../analysis/balanceTables';
-import {
-  MINUTES_PER_TICK,
-  TICKS_PER_DAY,
-  WHOLE_ISLAND,
-  buildBalanceTables,
-  isGap,
-  menuFor,
-} from '../analysis/balanceTables';
-import { MINUTES_PER_DAY } from '../domain/worldTime';
+import { WHOLE_ISLAND, buildBalanceTables, isGap, menuFor } from '../analysis/balanceTables';
+import { MINUTES_PER_DAY, MINUTES_PER_TICK, TICKS_PER_DAY } from '../domain/worldTime';
 import { CodexPage } from './CodexPage';
 import type { CodexView } from './CodexView';
 import { escapeHtml, inlineArtHtml } from './html';
