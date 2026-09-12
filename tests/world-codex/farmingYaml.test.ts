@@ -427,7 +427,10 @@ describe('farming.yamlの畑と囲い', () => {
     expect(pen.tryGetProperty(drinkingWaterId)!.number, '甕1杯で上限まで').toBe(4000);
 
     const taro = spawnInto('taro', player, 'hand');
-    expect(pen.combinationsWith(taro, player), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      pen.combinationsWith(taro, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
     expect(
       pen
         .refusedCombinationsWith(taro, player)
@@ -437,7 +440,10 @@ describe('farming.yamlの畑と囲い', () => {
 
     const jar = spawnInto('jar__content_water_liquid', player, 'hand');
     jar.tryGetProperty(fillId)!.setNumber(4000);
-    expect(pen.combinationsWith(jar, player), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      pen.combinationsWith(jar, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
     expect(
       pen
         .refusedCombinationsWith(jar, player)

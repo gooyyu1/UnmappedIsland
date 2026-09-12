@@ -257,7 +257,10 @@ describe('石斧を作る', () => {
     // 掻き取りは手元の明るさも要求する（IlluminationSystem.md 5節）。ここで見たいのは刃物かどうか
     // なので、明るさの側は満たしておく。
     const stripper = createBrightEnoughAgent(session);
-    expect(stem.combinationsWith(wip, stripper), '作りかけは相手にならない').toEqual([]);
+    expect(
+      stem.combinationsWith(wip, stripper).map((c) => c.name),
+      '作りかけは相手にならない',
+    ).toEqual([]);
     expect(
       stem
         .combinationsWith(wip, stripper)

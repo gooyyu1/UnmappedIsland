@@ -576,7 +576,10 @@ describe('animals.yamlの動物', () => {
       const carcass = kill();
       const stone = spawnInto('stone', player, 'hand');
 
-      expect(carcass.combinationsWith(stone, player), '素手の石はhandheld_bladeタグを持たない').toEqual([]);
+      expect(
+        carcass.combinationsWith(stone, player).map((c) => c.name),
+        '素手の石はhandheld_bladeタグを持たない',
+      ).toEqual([]);
     });
 
     it('槍でも石斧でも解体できない', () => {
@@ -587,8 +590,14 @@ describe('animals.yamlの動物', () => {
       const spear = spawnInto('spear', player, 'hand');
       const axe = spawnInto('stone_axe', player, 'hand');
 
-      expect(carcass.combinationsWith(spear, player), '槍はhandheld_bladeタグを持たない').toEqual([]);
-      expect(carcass.combinationsWith(axe, player), '石斧もhandheld_bladeタグを持たない').toEqual([]);
+      expect(
+        carcass.combinationsWith(spear, player).map((c) => c.name),
+        '槍はhandheld_bladeタグを持たない',
+      ).toEqual([]);
+      expect(
+        carcass.combinationsWith(axe, player).map((c) => c.name),
+        '石斧もhandheld_bladeタグを持たない',
+      ).toEqual([]);
     });
 
     it('生肉は食べられる', () => {
@@ -802,6 +811,9 @@ describe('animals.yamlの動物', () => {
   it('武器でない物を重ねても殴れない', () => {
     const stone = spawnInto('stone', player, 'hand');
 
-    expect(monkey.combinationsWith(stone, player), '素手の石はweaponタグを持たない').toEqual([]);
+    expect(
+      monkey.combinationsWith(stone, player).map((c) => c.name),
+      '素手の石はweaponタグを持たない',
+    ).toEqual([]);
   });
 });
