@@ -50,14 +50,15 @@ describe('起動URLで固定した種から始めるゲーム（通し）', () =
 /** 開始直後の状態のうち、画面に出るもの（島・時刻・漂着地）の指紋。 */
 function fingerprint(game: StartedGame): string {
   const world = game.world;
-  const sites = game.map.sites.map(
+  const map = game.island.map;
+  const sites = map.sites.map(
     (site) => `${site.index}:(${site.x.toFixed(6)},${site.y.toFixed(6)})${site.type!.name}/${site.name!.key}`,
   );
-  const edges = game.map.edges.map((edge) => `${edge.a}-${edge.b}:${edge.travelMinutes.toFixed(3)}`);
+  const edges = map.edges.map((edge) => `${edge.a}-${edge.b}:${edge.travelMinutes.toFixed(3)}`);
   return [
-    `seed=${game.map.seed}`,
+    `seed=${map.seed}`,
     `time=${world.day}/${world.hour}:${world.minute}`,
-    `start=site${game.map.siteInstanceIds.indexOf(game.startLocation.instance.instanceId)}`,
+    `start=site${game.island.siteOf(game.startLocation.instance.instanceId)!.index}`,
     ...sites,
     ...edges,
   ].join('\n');

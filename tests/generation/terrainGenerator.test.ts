@@ -32,6 +32,16 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
     return codex.generation!.scopes.get('island')!;
   }
 
+  it('生成結果は、実体化された土地との対応を持たない', () => {
+    // `IslandMap` の doc が名乗る「WorldObjectを1つも持たない」の、数の側を見る
+    // （輸入の側は tests/architecture/layers.test.ts）。**対応表は数の配列でも書けるので、
+    // 輸入の検査だけでは issue #1957 の形（siteInstanceIds: number[]）が戻ってきても落ちない。**
+    //
+    // 欄が増えたらここが落ちる。増やす欄が「種と定義だけから決まるもの」かを、そのとき確かめる
+    // ——実体化された土地を指す欄は SpawnedIsland が持つ。
+    expect(Object.keys(islands.get(0)!).sort()).toEqual(['edges', 'scopeName', 'seed', 'sites']);
+  });
+
   it('同じシードなら同じ島を生成する（決定性）', () => {
     for (const seed of [0, 7, 12345]) {
       const first = fingerprint(generate(seed));

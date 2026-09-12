@@ -25,7 +25,7 @@ export class Path extends ObjectWrapper {
 
   /**
    * 移動先のLocation。世界のツリーから引く（MoveEffectの移動先の解決と同じ引き方）ので、
-   * 呼び出し側はインスタンスIDから実体を辿る手順を知らなくてよい。まだ実体化していなければundefined。
+   * 呼び出し側はインスタンスIDから実体を辿る手順を知らなくてよい。行き先がツリーに居なければundefined。
    */
   get destination(): WorldObject | undefined {
     return this.instance.findRoot().findSelfOrDescendantByInstanceId(this.destinationInstanceId);
