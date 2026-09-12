@@ -86,7 +86,7 @@
     git fetch origin main && MSYS2_ARG_CONV_EXCL='*' git show origin/main:agent-ops/review-criteria.md
 
 **`MSYS2_ARG_CONV_EXCL='*'` を落とさないこと。** ブリッジ（Windows）の bash では、この引数が
-パスの並びと読まれて `origin\main;.claude\review-criteria.md` に化け、**観点を1つも読めないまま**
+パスの並びと読まれて `origin\main;agent-ops\review-criteria.md` に化け、**観点を1つも読めないまま**
 レビューが始まります（実測 2026-09-06）。クラウドでは付いていても害がありません。
 
 **作業ディレクトリの `agent-ops/review-criteria.md` を読まないこと。** このセッションはPRのブランチで

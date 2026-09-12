@@ -158,8 +158,8 @@ issue には、例外なく**付けてください。
 立てる子だけで、**起票のときに一緒に**渡します。
 
 打ち方は上の「GitHub を触る道具」。**`:` を含む綴りで身構えるのは
-`git show origin/main:.claude/x.md` のような引数のほう**で、Windows ではあれが
-`origin\main;.claude\x.md` に化けるので `MSYS2_ARG_CONV_EXCL='*'` を前に置きます。`/tmp/...` のような
+`git show origin/main:agent-ops/x.md` のような引数のほう**で、Windows ではあれが
+`origin\main;agent-ops\x.md` に化けるので `MSYS2_ARG_CONV_EXCL='*'` を前に置きます。`/tmp/...` のような
 絶対パスも書き換わりますが、行き先は同じなので害はありません。
 
 ## 順序を張る

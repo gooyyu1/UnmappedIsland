@@ -603,7 +603,7 @@ Qwen Image Edit は1枚90秒〜15分かかるので、**後処理を1行直す�
 
 **08-30、PRを出す側が、出す前にサブエージェントへ同じ観点で読ませる形にしました**
 （[#1358](https://github.com/gooyyu1/UnmappedIsland/pull/1358)）。観点の一覧
-[`agent-ops/review-criteria.md`](../agent-ops/review-criteria.md) は1つで、**出す側とレビュアーが同じものを
+`.claude/review-criteria.md` は1つで、**出す側とレビュアーが同じものを
 読みます**——外で見つかるものを、外へ出す前に1回通すためです。
 
 **この一次レビューの値段は、1回 $1.0**（当時の内訳で、task の `cost_sub_usd` が60回で $60.47。
