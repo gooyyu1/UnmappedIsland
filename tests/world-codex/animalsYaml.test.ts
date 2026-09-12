@@ -151,8 +151,8 @@ describe('animals.yamlの動物', () => {
     expect(monkey.tryGetProperty(warinessId)?.alert, '現れた時点で安全域ではない').not.toBe('safe');
     expect(monkey.tryGetProperty(warinessId)?.def.worsensUpward, '増えるほど悪い').toBe(true);
 
-    // 40からの-1/tickなので、21tick（5時間15分）で安全域へ落ちる。
-    tick(21);
+    // サルの32からの-1/tickなので、13tick（3時間15分）で安全域へ落ちる。
+    tick(13);
 
     expect(monkey.tryGetProperty(warinessId)?.alert, '待てば落ち着く').toBe('safe');
   });
@@ -776,7 +776,7 @@ describe('animals.yamlの動物', () => {
     // カードの覆いが言う（同 9.1節）——UIはunconsciousの段の名前だけを読む。
     strikeWith('stone_axe');
 
-    expect(monkey.tryGetProperty(warinessId)?.number ?? 0, '警戒そのものは上がっている').toBe(40 + 25 - 1);
+    expect(monkey.tryGetProperty(warinessId)?.number ?? 0, '警戒そのものは上がっている').toBe(32 + 25 - 1);
     expect(monkey.tryGetProperty(warinessId)?.getEffectiveValue(), '気絶が打ち消すので実効値は0').toBe(0);
     expect(monkey.tryGetProperty(warinessId)?.alert, '縁は明滅しない').toBe('safe');
     expect(
@@ -860,8 +860,8 @@ describe('animals.yamlの動物', () => {
 
     it('掴めるのは完全に落ち着いてからで、安全域に入っただけでは掴めない', () => {
       // しきい値は1（HuntingSystem.md 4節）なので、輪郭の明滅が止まる20を切ってもまだ抵抗する。
-      // 40からの-1/tickなので、掴めるようになるのは10時間後。
-      tick(21);
+      // サルの32からの-1/tickなので、掴めるようになるのは8時間後。
+      tick(13);
       expect(monkey.tryGetProperty(warinessId)?.alert, '明滅は止まっている').toBe('safe');
       expect(tryToPickUp(monkey), 'それでもまだ掴めない').toContain('収まりません');
 

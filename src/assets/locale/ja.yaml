@@ -148,6 +148,9 @@ object_texts:
       whiff:
         display_name: 空振り
         description: この武器で打ちかかったとき、空を切りやすさ。
+      reach:
+        display_name: 間合い
+        description: 穂先や刃先が握り手からどれだけ離れているか。長い物を構えている間は、獣が踏み込んでこられなくなる。
       severity:
         display_name: 傷の重さ
         description: 残っている傷。時間とともに引いていき、尽きれば治る。
@@ -198,7 +201,7 @@ object_texts:
         description: 1手の重み配分のうち、隣の土地へ逃げる回の重み。深手を負うほど太くなる。
       stay_remaining:
         display_name: 立ち去りまで
-        description: この場に留まる残り。誰も居ない土地でだけ減っていき、尽きた動物はどこかへ行ってしまう。
+        description: この場に留まる残り。誰も居ない土地に居て、深手も負っていない間だけ減っていき、尽きた動物はどこかへ行ってしまう。
       wariness:
         display_name: 警戒
         description: この動物がどれだけ気を立てているか。傷を負わされれば上がり、放っておけば下がる。
@@ -260,6 +263,9 @@ object_texts:
         display_name: 連れ
         icon: 🐾
         description: 今いる場所に、世話をしている獣の居る囲いがいくつあるか。いくつ並べても、何頭居ても慰めは変わらない。
+      braced_reach:
+        display_name: 構えた間合い
+        description: 今いる場所で、間合いのある武器が構えられているか。構えている間は、獣が踏み込んでこられなくなる。
       happiness:
         display_name: 幸福度
         icon: 😊

@@ -21,6 +21,7 @@
     "stats:escape-islands": "RUN_ISLAND_ESCAPE_REACH_STATS=1 vitest run tests/diagnostics/islandEscapeReachStatsReport.test.ts",
     "stats:docs": "node scripts/docStatus.mjs",
     "stats:history": "node scripts/historyStats.mjs",
+    "stats:hunt": "RUN_HUNT_STATS=1 vitest run tests/diagnostics/huntStatsReport.test.ts",
     "stats:issues": "NODE_USE_ENV_PROXY=1 node scripts/collectIssueHistory.mjs",
     "stats:durations": "RUN_DURATION_STATS=1 vitest run tests/diagnostics/durationStatsReport.test.ts",
     "stats:lines": "node scripts/countLines.mjs",
