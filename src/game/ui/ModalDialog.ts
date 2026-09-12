@@ -68,7 +68,7 @@ export class ModalDialog {
     const actionHeight = metrics.px(BUTTON_HEIGHT);
     const contentWidth = plateWidth - padding * 2;
 
-    // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る札・文字より先に置く必要がある。
+    // 台紙は寸法が決まる前に作る。後から作る札・文字より先に置く必要があるため（screenDepth.ts）。
     const plate = scene.add.graphics();
     this.ownedObjects.push(plate);
 
