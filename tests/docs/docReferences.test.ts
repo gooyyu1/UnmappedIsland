@@ -744,8 +744,8 @@ describe('ドキュメントの参照', () => {
   });
 
   it('`docs/` の外で印を使う文書も、条件の対象に入っている', () => {
-    // 対象が `docs/` だけだった頃、`.claude/board-design.md` には出どころの無い確定節が長く
-    // 残った（#1878）。`docs/` の確定節だけで数は足りるので、外側が落ちても上の土台は緑になる。
+    // 対象を `docs/` だけにすると、`.claude/board-design.md` の出どころの無い確定節が残り続ける
+    // （#1878）。`docs/` の確定節だけで数は足りるので、外側が落ちても上の土台は緑になる。
     const outside = confirmedSections.filter(({ doc }) => !doc.startsWith(`docs${sep}`));
     expect(
       outside.map(({ doc }) => doc),
@@ -836,7 +836,7 @@ describe('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節�
     // 当たらなくなっても違反ゼロと同じ緑になるので、当たる側と外す側を既知の入力で確かめる。
     expect(ITEM_NUMBER.test('**出どころ**: #656 の 21')).toBe(true);
     expect(ITEM_NUMBER.test('**出どころ**: [#656](https://x/issues/656) の 9・10')).toBe(true);
-    // 2件目を受ける `同 <番号>`。#1841 がこの綴りで、`の <番号>` だけを見ていた頃は素通りした。
+    // 2件目を受ける `同 <番号>`。#1841 がこの綴りで、`の <番号>` だけを見ると素通りする。
     expect(ITEM_NUMBER.test('**出どころ**: #656（難易度の線）と、同 13（3段目の呼び名）')).toBe(true);
     expect(ITEM_NUMBER.test('**出どころ**: #656 の項目18')).toBe(true);
     expect(ITEM_NUMBER.test('**出どころ**: #656（難易度の3段目を「熟練者」に改める）')).toBe(false);

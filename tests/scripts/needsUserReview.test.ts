@@ -106,8 +106,8 @@ function hunk(path: string, lines: readonly string[]): string {
 
 /**
  * 宣言文法・スキーマへの変更は、**ここでは引かない**（判定するのは差分を読むレビュアー。
- * `.claude/review-criteria.md`「人の判断へ回す」）。ファイルの線で引いていた頃は、スキーマの
- * `description` を変えただけの差分も文法を足した差分も同じに見えていた。
+ * `.claude/review-criteria.md`「人の判断へ回す」）。ファイルの線で引くと、スキーマの
+ * `description` を変えただけの差分も文法を足した差分も同じに見える。
  */
 describe('needs-user-review.sh は文法・スキーマのファイルでは止めない', () => {
   it('yaml に書ける形を決めているファイルの、実体の変更でも止めない', () => {
@@ -174,7 +174,7 @@ describe('needs-user-review.sh の MARK と SOURCED', () => {
   });
 
   // 確認は1問1 issue で出すので（`CLAUDE.md`）、**出どころが指すのはその問いの issue**。
-  // 特定の番号（かつての確定待ちの盤 #656）に縛ると、**新しい経路で出た答えが全部止まる**
+  // 特定の番号（確定待ちを並べた盤 #656）に縛ると、**新しい経路で出た答えが全部止まる**
   // ——同じ答えに二度目のタップを求めることになる。
   it('出どころが指すのが #656 以外の issue でも、止めない', () => {
     const result = judge(

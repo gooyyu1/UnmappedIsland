@@ -205,7 +205,8 @@ PR本文は「やるつもりのこと」ではなく「実際に入った変更
   過去の失敗を繰り返さないために残す価値がある事項だけを
   [`docs/engine/DesignNotes.md`](docs/engine/DesignNotes.md) に集約する。
   **この禁止が掛からないのは、経緯そのものを主題とする文書だけ**——どの文書がそれかと、その中での
-  書き方は [`docs/DocumentStyle.md`](docs/DocumentStyle.md) 9.1節。
+  書き方は [`docs/DocumentStyle.md`](docs/DocumentStyle.md) 9.1節。過去の姿を語り出す語が生えて
+  いないかは `tests/docs/docHistory.test.ts` が検査する（文書と、ソースのコメントの両方）。
 
 ## 数え上げを書かない
 

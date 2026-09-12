@@ -1,13 +1,14 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * 経緯を主題としない文書に、過去の姿を語る記述が生えていないかの検査
- * （[`docs/DocumentStyle.md`](../../docs/DocumentStyle.md) 9.1節）。
+ * 経緯を主題としない文書とコメントに、過去の姿を語る記述が生えていないかの検査
+ * （[`docs/DocumentStyle.md`](../../docs/DocumentStyle.md) 9.1節、
+ * [`CLAUDE.md`](../../CLAUDE.md)「ドキュメント・コメントのスタイル」）。
  *
  * **書いてよい文書の別は、9.1節の表からだけ引く。** ここへ写すと、表を増やしたときに2箇所が
- * ずれる。表に無い文書で「かつて」「以前は」と書き始めた記述は、旧仕様を知らない読み手には
+ * ずれる。表に無い文書やコメントで過去の姿から書き始めた記述は、旧仕様を知らない読み手には
  * 要らないものになる（issue #1936）。
  */
 
@@ -15,9 +16,12 @@ const ROOT = resolve(__dirname, '../..');
 
 const DOCUMENT_STYLE = 'docs/DocumentStyle.md';
 
+/** 印そのものを持つこのファイル。中身が印と一致するので、自分自身は見られない。 */
+const SELF = relative(ROOT, __filename).split('\\').join('/');
+
 /**
- * 過去の姿を語り出す印。**「かつて」「以前は」のように、過去の姿を指すことがその語の意味である
- * ものだけを挙げる。** 単なる過去形（「〜でした」）は測定の報告にも使うので、見ない。
+ * 過去の姿を語り出す印。**過去の姿を指すことがその語の意味であるものだけを挙げる。** 単なる
+ * 過去形（「〜でした」）は測定の報告にも使うので、見ない。
  */
 const MARKERS = ['かつて', '以前は', 'ていた頃', 'だった頃', '時期があ'];
 
@@ -34,30 +38,49 @@ function documentsAllowedToTellHistory(): Set<string> {
   return allowed;
 }
 
-function docsIn(dir: string): string[] {
+function filesIn(dir: string, extension: string): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(join(ROOT, dir))) {
     const rel = `${dir}/${entry}`;
-    if (statSync(join(ROOT, rel)).isDirectory()) found.push(...docsIn(rel));
-    else if (entry.endsWith('.md')) found.push(rel);
+    if (statSync(join(ROOT, rel)).isDirectory()) found.push(...filesIn(rel, extension));
+    else if (entry.endsWith(extension)) found.push(rel);
   }
   return found;
 }
 
-const ALLOWED = documentsAllowedToTellHistory();
+/** その行がコメントの一部か（ブロックの途中も含む）。データの中の語まで見ないための線。 */
+function isComment(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*');
+}
 
-// 9.1節そのものを持つ文書は、どこに経緯を書いてよいかを決める側なので対象から外す。
-const SUBJECTS = docsIn('docs').filter((doc) => !ALLOWED.has(doc) && doc !== DOCUMENT_STYLE);
-
-describe('経緯を主題としない文書は、過去の姿を語らない', () => {
-  it.each(SUBJECTS)('%s', (doc) => {
-    const lines = readFileSync(join(ROOT, doc), 'utf-8').split('\n');
-    const found: string[] = [];
-    lines.forEach((line, index) => {
+function historyIn(file: string, lookAt: (line: string) => boolean): string[] {
+  const found: string[] = [];
+  readFileSync(join(ROOT, file), 'utf-8')
+    .split('\n')
+    .forEach((line, index) => {
+      if (!lookAt(line)) return;
       for (const marker of MARKERS) {
-        if (line.includes(marker)) found.push(`${doc}:${index + 1} 「${marker}」 ${line.trim()}`);
+        if (line.includes(marker)) found.push(`${file}:${index + 1} 「${marker}」 ${line.trim()}`);
       }
     });
-    expect(found).toEqual([]);
+  return found;
+}
+
+const ALLOWED = documentsAllowedToTellHistory();
+const DOCUMENTS = filesIn('docs', '.md').filter((doc) => !ALLOWED.has(doc));
+const SOURCES = [...filesIn('src', '.ts'), ...filesIn('tests', '.ts')].filter(
+  (source) => source !== SELF,
+);
+
+describe('経緯を主題としない文書は、過去の姿を語らない', () => {
+  it.each(DOCUMENTS)('%s', (doc) => {
+    expect(historyIn(doc, () => true)).toEqual([]);
+  });
+});
+
+describe('コメントは、過去の姿を語らない', () => {
+  it.each(SOURCES)('%s', (source) => {
+    expect(historyIn(source, isComment)).toEqual([]);
   });
 });
