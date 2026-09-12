@@ -9,9 +9,9 @@ import type { SlotGlobalId } from '../GlobalId';
  * agent（プレイヤーキャラクター、GameElementDefinition.md 8.1節・11節）に対する、UI/ゲームロジック向けの型付き
  * ビュー。Worldと同じ理由で継承ではなくラップにしている。
  *
- * **プロパティを名前で読む口は置かない。** 画面は`status`タグの付いたプロパティを宣言順に並べる
- * （PlayScreenView）ので、名前で引きたい読み手が居ない。置くと、世界の宣言からその名前が消えた後も
- * 0を返し続ける窓になる（ObjectWrapper「宣言していない名前は、空・0として読める」）。
+ * **キャラクタの値を名前で引く口は、ここには置かない。** 画面は`status`タグの付いたプロパティを
+ * 宣言順に束ねて並べる（PlayScreenView）ので、`hp`のような名前を知っている読み手がゲーム側に居ない。
+ * ここが名乗るのはスロットと、スロットをまたぐ操作。
  */
 export class PlayerCharacter extends ObjectWrapper {
   get handSlotId(): SlotGlobalId {

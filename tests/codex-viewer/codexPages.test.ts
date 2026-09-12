@@ -235,7 +235,12 @@ describe('WorldCodexビューアのページ', () => {
 
   it('placementを外した枠は、外した側だけを備考に書く', () => {
     const rows = renderObjectPage(view, 'seed_bed').split('<tr>');
-    const noteOf = (slotName: string): string => rows.find((row) => row.includes(slotName)) ?? '';
+    const noteOf = (slotName: string): string => {
+      // 行を引き当てられないまま「何も書いていない」を通さない。
+      const row = rows.find((each) => each.includes(slotName));
+      if (row === undefined) throw new Error(`${slotName}の行がスロットの表に無い`);
+      return row;
+    };
 
     expect(noteOf('open_shelf'), '既定は言うことが無い').not.toContain('入れ');
     expect(noteOf('harvest')).toContain('手では入れられない');

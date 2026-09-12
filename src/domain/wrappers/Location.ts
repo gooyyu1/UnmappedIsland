@@ -96,8 +96,9 @@ export class Location extends ObjectWrapper {
 
     const progress = this.explorationProgress;
     for (const fixture of hidden.contents) {
-      if ((fixture.tryGetProperty(this.words.requiredProgressId)?.getEffectiveValue() ?? 0) <= progress)
-        this.reveal(fixture);
+      // 要る進捗も帰り道の在り処も名乗るのは道なので（locations.yaml）、生のプロパティではなくPathに
+      // 訊く。道でない設置物が混ざっても、宣言していない名前は0として読める（ObjectWrapper）。
+      if (new Path(fixture, this.codex).requiredProgress <= progress) this.reveal(fixture);
     }
   }
 
@@ -109,8 +110,6 @@ export class Location extends ObjectWrapper {
   private reveal(fixture: WorldObject): void {
     this.revealInOwnLocation(fixture);
 
-    // 帰り道の在り処を名乗るのは道なので、生のプロパティではなくPathに訊く。道でない設置物は
-    // その名前を宣言していないため0が返る（ObjectWrapper）。
     const returnPathId = new Path(fixture, this.codex).returnPathInstanceId;
     if (returnPathId === 0) return;
 

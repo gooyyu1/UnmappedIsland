@@ -10,6 +10,11 @@ import { parseLocale } from '../../src/locale/Localization';
 import type { MiniGame } from '../support/miniGame';
 import { miniGame } from '../support/miniGame';
 
+/** 材料の要求を持たないスロットでは引かれない、型そのものを表す札（slotCellsの引数）。 */
+const unusedCardOfType = (): never => {
+  throw new Error('材料の要求を持たないスロットでは型の札を引かない');
+};
+
 /**
  * プレイ中の画面の表示内容が、ワールドの実際の状態（現在地・そのスロットの中身・手持ち）から
  * 作られていることの自動テスト。
@@ -17,11 +22,6 @@ import { miniGame } from '../support/miniGame';
  * **同梱の定義は読まない**。ここで見るのは「どのレーンが何を映し、札をどこへ動かせるか」で、
  * どの物がどんな性質を持つかは、確かめたい形をその場で宣言すれば足りる。
  */
-/** 材料の要求を持たないスロットでは引かれない、型そのものを表す札（slotCellsの引数）。 */
-const unusedCardOfType = (): never => {
-  throw new Error('材料の要求を持たないスロットでは型の札を引かない');
-};
-
 describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', () => {
   const locale = parseLocale(
     'ja.yaml',
