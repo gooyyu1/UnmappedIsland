@@ -433,6 +433,20 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacterName: strin
 }
 
 /**
+ * その型を1つ手に入れるのに払う総労働（分）。**出ない型は名指しで落とす**——値段を持たない型を
+ * 渡した側は、0分で手に入ると読める数を受け取ってはいけない（`ObjectCost.minutes` が`undefined`に
+ * なる理由は2つあり、どちらも「かからない」ではない）。
+ *
+ * **引き方をここに置くのは、表の並びを知っているのが表の側だから**——読む側がそれぞれ`find`すると、
+ * 出なかったときにどうするかが読む側の数だけ分かれる。
+ */
+export function objectCostMinutesOf(balance: BalanceTables, objectName: string): number {
+  const cost = balance.objectCosts.find((row) => row.objectName === objectName);
+  if (cost?.minutes === undefined) throw new Error(`型 '${objectName}' の総労働が、収支表に出ていません。`);
+  return cost.minutes;
+}
+
+/**
  * 1日に賄わなければならない値1つ。
  *
  * **輸送で減る値は需要にしない。** `carbohydrate`/`protein`/`lipid` は tick 毎に体脂肪へ流れるが、

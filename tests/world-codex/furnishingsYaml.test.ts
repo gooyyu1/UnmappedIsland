@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { buildBalanceTables, objectCostMinutesOf } from '../../src/analysis/balanceTables';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
-import { bundledCodex } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import type { BalanceTables } from '../../src/analysis/balanceTables';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -69,6 +71,25 @@ function snugFrom(site: Camp): number {
   return snug!;
 }
 
+/**
+ * 点あたりの手間の開き（いちばん高い型 ÷ いちばん安い型）として、「おおむね揃う」と言える上限
+ * （furnishings.yaml 冒頭、docs/world/Characters.md ホームシック節）。**比例は割り切れない**
+ * ——点数は整数で、手間は素材の連鎖から出る端数付きの分なので、ぴったり揃う組み合わせは選べない。
+ * **1割台までは「おおむね」で、2割を越えたら、どれを並べるかが手間の多寡になる**——そこまで開くと
+ * 里心の対策が「いちばん安い型を選べるか」の問題になり、ほかの系統の進み具合に縛られなくした意味が消える。
+ */
+const COMFORT_COST_SPREAD_LIMIT = 1.2;
+
+/**
+ * その設えの、居心地1点あたりの手間（分）。総手間に前提の道具は含まない
+ * （ObjectCost.prerequisites）。
+ */
+function minutesPerComfortPoint(balance: BalanceTables, name: string): number {
+  const site = camp();
+  furnish(site, name);
+  return objectCostMinutesOf(balance, name) / comfortOf(site);
+}
+
 describe('里心を抑える設え(src/assets/world-codex/furnishings.yaml)', () => {
   it('据えれば、そこに立つ人の居心地になる', () => {
     // 押しているのは場所のほうで、キャラクタは base で継ぐだけ（core.yaml の comfort）。
@@ -111,6 +132,29 @@ describe('里心を抑える設え(src/assets/world-codex/furnishings.yaml)', ()
 
       expect(site.player.getProperty(propertyId('comfort')).isInStage('snug'), name).toBe(true);
     }
+  });
+
+  it('点あたりの手間が、どの型でもおおむね揃う——点数は手間に比例させてある', () => {
+    // **点数はYAMLに書いてあるが、手間は素材の連鎖から出る**（stats/balance.yaml の object_costs）ので、
+    // 設えを触らなくても上流のレシピや入手経路が動けば比例は崩れる。崩れると、furnishings.yaml 冒頭と
+    // docs/world/Characters.md ホームシック節の「点あたりの手間はおおむね揃う」が黙って嘘になる。
+    //
+    // **見るのは道具を除いた総手間**——前提の道具は並べ方で変わることを織り込み済み（同冒頭）で、
+    // 比例させてあると言っているのは object_costs のほう。
+    const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
+    const perPoint = FURNISHINGS.map((name) => ({
+      name,
+      minutes: minutesPerComfortPoint(balance, name),
+    }));
+    const minutes = perPoint.map((furnishing) => furnishing.minutes);
+    const readout = perPoint
+      .map((furnishing) => `${furnishing.name} ${furnishing.minutes.toFixed(1)}分/点`)
+      .join('、');
+
+    expect(
+      Math.max(...minutes) / Math.min(...minutes),
+      `点あたりの手間の開き（${readout}）`,
+    ).toBeLessThanOrEqual(COMFORT_COST_SPREAD_LIMIT);
   });
 
   it('同じ物を並べても効く（連れと違って積み上がる）', () => {
