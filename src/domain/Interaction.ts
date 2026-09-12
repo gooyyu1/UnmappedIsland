@@ -47,6 +47,18 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
     return this.def.name;
   }
 
+  /**
+   * 印字のときに自分を名乗る形。**世界の丸ごとを刷らせないために持つ。**
+   *
+   * 操作は相手（`relation`）を結び付けているので、そこから `WorldObject` → `WorldSession` →
+   * `WorldCodex` と世界の全部へ繋がっている。素のまま深い比較へ渡されると、差分を出す側が
+   * このグラフを辿り続けて**失敗したことが誰にも届かない**（vitestの比較は落ちる前に戻らなくなる）。
+   * 名乗るのは名前だけで、印字する側が辿る先はここで尽きる。
+   */
+  toJSON(): unknown {
+    return { name: this.name };
+  }
+
   /** 実行にかかるゲーム内時間（分）。durationを省いていれば0。実行前に見せる用途にも使う。 */
   executionMinutes(): number {
     return this.relation.during((context) => this.def.minutesFor(context));
