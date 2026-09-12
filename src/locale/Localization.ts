@@ -21,7 +21,13 @@ const LOCALE_TEXTS = import.meta.glob('../assets/locale/*.yaml', {
   // 何が同梱されているかはビルド時のファイル次第なので、どのキーも在るとは限らない。
 }) as Record<string, string | undefined>;
 
-/** LOCALE_FILEの中身。 */
+/**
+ * LOCALE_FILEの中身。
+ *
+ * **生のテキストのまま返す口を公開しているのは、宣言されている識別子の集合を数える読み手のため。**
+ * Localizationは引く口しか持たず、知らない識別子は識別子のまま返すので、引くだけでは「宣言されて
+ * いない」と「宣言されている」を見分けられない。
+ */
 export function bundledLocaleText(): string {
   const text = LOCALE_TEXTS[`../assets/locale/${LANGUAGE}.yaml`];
   if (text === undefined) throw new YamlLoadError(`'${LOCALE_FILE}' が同梱されていません。`);
@@ -501,6 +507,9 @@ function mergedRejectingDuplicates<T>(
 /**
  * 表示文字列のYAMLを読む（labelはエラーメッセージ用の出所表示）。知らない節・キーは無視するため、
  * 実装が追いつく前に節を足しても壊れない。
+ *
+ * **1ファイル分を読む口を公開しているのは、重ねる前の姿を確かめる読み手のため。** loadLocalizationは
+ * 重ねた結果しか返さないので、1ファイルの中の識別子の重複はそちらからは見えない。
  */
 export function parseLocale(label: string, yamlText: string): Localization {
   const document = parseDocument(yamlText);

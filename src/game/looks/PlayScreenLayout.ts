@@ -99,6 +99,10 @@ const DASHBOARD_MIN_HEIGHT_PORTRAIT =
 /**
  * プレイ中の画面（ScreenLayout.md）の各エリアの位置・大きさ。
  * 縦型・横型で同じエリアを配置し直すだけという設計原則に合わせ、同じプロパティ名で両方の向きを表す。
+ *
+ * **区画はどれも公開する。** 画面が置き場として読むのは一部で、切り出しの途中（informationContent・
+ * statusArea）は読まないが、内側の寸法を決めている値（INFORMATION_PAPER_INSET・STATUS_PADDING）を
+ * 外へ出していないので、途中を隠すと「どれだけ内側か」を言える場所が無くなる。
  */
 export class PlayScreenLayout {
   readonly metrics: ScreenMetrics;

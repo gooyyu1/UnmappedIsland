@@ -4,24 +4,30 @@ import { describe, expect, it } from 'vitest';
 import { ROOT } from '../support/sourceFiles';
 
 /**
- * **テストからしか読まれていない公開**（`export` と `public` メンバ）の検査。
+ * **`src` に読み手が居ない公開**（`export` と `public` メンバ）の検査。読んでいるのは `src` の外
+ * ——`tests/` と、ビルド用の `scripts/`——だけ、という宣言を集める。
  *
  * 隣の `exports.test.ts` が見るのは「どこからも輸入されない値の export」で、`tests/` は正当な輸入元
  * として数える。**その網の手前に、`src` の誰も使っていないのに公開のままのものが残る。** 公開は
- * 「外から使う」という宣言なので、外がテストしか居ないなら、**テストのために実装が歪んでいる**か、
- * **テストへ開いていてよい読み取り口**かのどちらかで、混ざったまま置くと見分けが付かない。
+ * 「外から使う」という宣言なので、外が試験と道具しか居ないなら、**そのために実装が歪んでいる**か、
+ * **外へ開いていてよい読み取り口**かのどちらかで、混ざったまま置くと見分けが付かない。
  *
- * 倒し方は「**公開の入口から同じ契約を確かめられるか**」。確かめられるなら畳む——テストは入口を
+ * 倒し方は「**公開の入口から同じ契約を確かめられるか**」。確かめられるなら畳む——外の読み手は入口を
  * 通ればよく、そのぶん入口の側が守られる。確かめられないなら開いておく。確かめられない形は、
  * 入口が Phaser を要る（`sliceSpans`）・入口では別の面しか見えない（`combinationAt` は断る組み合わせ
  * まで返す唯一の口）・宣言そのものを数える材料になる（`ICON_NAMES`）、など。
  *
- * **一覧に在ることは「開いていてよい」の証明ではない。** 証明はその宣言に付いた説明が持つ。
+ * **一覧に在ることは「開いていてよい」の証明ではない。** 証明はその宣言に付いた説明——型なら、
+ * それを名乗る公開の署名——が持つ。
  *
- * **数えているのは名前の一致で、型解決ではない**（`scripts/declarationInventory.mjs`）。`src` のどこかに
- * 同じ名前の無関係な識別子——別のクラスの同名メンバ、ローカル変数——が1つでも在れば、その宣言はここに
- * 現れない。**外れるのは取りこぼす向きだけ**なので、一覧に載っているものは確かにテストしか読んでいない
- * が、**載っていないことは `src` に読み手が居ることの証明にはならない。**
+ * **メンバを見るのは、exportしたクラスの中だけ。** インターフェースや型のフィールドには可視性の
+ * 選択が無く（形そのものが契約で、`private` にはできない）、exportしていない宣言の中身は外から
+ * そもそも触れない。**倒しようのないものを並べても、判定を待っているものに見えるだけ。**
+ *
+ * **数えているのは名前の一致で、型解決ではない**（`scripts/declarationInventory.mjs`）。ずれは両向きに
+ * 出る——`src` のどこかに同じ名前の無関係な識別子が在れば現れず、逆に `tests/` 側の無関係な同名の
+ * 識別子も「外の読み手」として数える。**確かなのは「`src` の他ファイルにその名前が無い」ことだけ**
+ * なので、1件ずつ倒すときは現物の呼び手を見ること。
  */
 
 /** 出力は`src`の量に比例して伸びるので、既定の上限（1MB）には頼らない。 */
@@ -37,15 +43,14 @@ const MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
 const OUT_OF_SCOPE = ['src/analysis/'];
 
 /**
- * 今、テストからしか読まれていない公開。**増やす前に、上の物差しで1件ずつ倒すこと。**
+ * 今、`src` に読み手が居ない公開。**増やす前に、上の物差しで1件ずつ倒すこと。**
  *
- * 畳んだものはここから消す。消し忘れると、この検査が「まだテスト専用だ」と言い続ける。
+ * 畳んだものはここから消す。消し忘れると、この検査が「まだ外にしか読み手が居ない」と言い続ける。
  */
-const EXPOSED_TO_TESTS = [
+const READ_ONLY_FROM_OUTSIDE = [
   'src/art/iconArt.ts ICON_NAMES',
   'src/asset-pack/install.ts AssetPacks',
   'src/asset-pack/install.ts AssetPacks.matchesSetting',
-  'src/asset-pack/zip.ts ZipEntry.method',
   'src/asset-pack/zip.ts ZipReadError',
   'src/codex-viewer/describe/Description.ts DescriptionLine.toPlainText',
   'src/codex-viewer/describe/Description.ts DescriptionWriter.toPlainText',
@@ -69,20 +74,14 @@ const EXPOSED_TO_TESTS = [
   'src/domain/wrappers/PlayerCharacter.ts PlayerCharacter.injuryStacks',
   'src/game/looks/PlayScreenLayout.ts PlayScreenLayout.informationContent',
   'src/game/looks/PlayScreenLayout.ts PlayScreenLayout.statusArea',
-  'src/game/looks/rainStyle.ts RainStyle.drops',
-  'src/game/looks/rainStyle.ts RainStyle.gusts',
   'src/game/ui/CardDragController.ts CardDragHandlers',
   'src/game/view/ShownCards.ts ShownCards.combinationAt',
   'src/game/view/ShownCards.ts ShownCards.edgeTargets',
   'src/game/view/cardMotionPlan.ts MotionInput',
-  'src/game/view/cardMotionPlan.ts MotionPlan.discards',
   'src/game/view/daylight.ts SunlightHours.handworkLitAt',
-  'src/loader/LoadReport.ts LoadProblem.attempted',
-  'src/locale/Localization.ts LocaleSections.destroyReasons',
   'src/locale/Localization.ts bundledLocaleText',
   'src/locale/Localization.ts parseLocale',
   'src/locale/uiTexts.ts UI_TEXT_NAMES',
-  'src/scenario/Scenario.ts Scenario.inside',
   'src/scenario/Scenario.ts parseScenario',
   'src/ui/nineSlice.ts sliceSpans',
 ];
@@ -90,20 +89,25 @@ const EXPOSED_TO_TESTS = [
 /** `scripts/declarationInventory.mjs --json` の1件。読むのはこの検査が使う分だけ。 */
 interface Declaration {
   readonly file: string;
-  /** 所属するクラス・インターフェース。モジュール直下の宣言は`(モジュール)`。 */
+  /** 所属するクラス・インターフェース。モジュール直下の宣言は`MODULE`。 */
   readonly owner: string;
   readonly name: string;
+  /** `class`・`interface`・`function`など。メンバの所有者がどちらかを見るのに使う。 */
+  readonly kind: string;
   readonly visibility: string;
   readonly referencedOnlyByTests: boolean;
 }
 
+/** モジュール直下の宣言に、インベントリが付ける所属名。 */
+const MODULE = '(モジュール)';
+
 /** 一覧に並べる名前。所属を持つメンバだけが`所有者.名前`になる。 */
 function labelOf(declaration: Declaration): string {
-  const owner = declaration.owner === '(モジュール)' ? '' : `${declaration.owner}.`;
+  const owner = declaration.owner === MODULE ? '' : `${declaration.owner}.`;
   return `${declaration.file} ${owner}${declaration.name}`;
 }
 
-describe('テストからしか読まれない公開', () => {
+describe('`src` に読み手が居ない公開', () => {
   it('一覧に無いものが増えていない', () => {
     const reported = execFileSync('node', [join(ROOT, 'scripts/declarationInventory.mjs'), '--json'], {
       cwd: ROOT,
@@ -111,17 +115,29 @@ describe('テストからしか読まれない公開', () => {
       maxBuffer: MAX_OUTPUT_BYTES,
     });
 
-    const found = (JSON.parse(reported) as readonly Declaration[])
+    const declarations = JSON.parse(reported) as readonly Declaration[];
+    const topLevel = new Map(
+      declarations
+        .filter((each) => each.owner === MODULE)
+        .map((each) => [`${each.file}::${each.name}`, each]),
+    );
+    const visibilityIsAChoice = (declaration: Declaration): boolean => {
+      if (declaration.owner === MODULE) return declaration.visibility === 'export';
+      const owner = topLevel.get(`${declaration.file}::${declaration.owner}`);
+      return declaration.visibility === 'public' && owner?.kind === 'class' && owner.visibility === 'export';
+    };
+
+    const found = declarations
       .filter((declaration) => declaration.referencedOnlyByTests)
-      .filter((declaration) => ['export', 'public'].includes(declaration.visibility))
       .filter((declaration) => !OUT_OF_SCOPE.some((dir) => declaration.file.startsWith(dir)))
+      .filter(visibilityIsAChoice)
       .map(labelOf)
       .sort();
 
     expect(
       found,
-      'テストからしか読まれない公開が動いた。増えたものは畳むか、開いておく理由を宣言へ書いて一覧へ足す。' +
+      '`src` に読み手が居ない公開が動いた。増えたものは畳むか、開いておく理由を宣言へ書いて一覧へ足す。' +
         '減ったものは一覧から消す',
-    ).toEqual([...EXPOSED_TO_TESTS].sort());
+    ).toEqual([...READ_ONLY_FROM_OUTSIDE].sort());
   });
 });

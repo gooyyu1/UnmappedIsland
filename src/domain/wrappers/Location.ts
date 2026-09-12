@@ -38,7 +38,10 @@ export class Location extends ObjectWrapper {
     return this.contentsOf(this.itemsSlotId);
   }
 
-  /** アイテムスロットの中身を、積み重なっているまとまり（ObjectStack）ごとに分けたもの（先頭が代表）。 */
+  /**
+   * アイテムスロットの中身を、積み重なっているまとまり（ObjectStack）ごとに分けたもの（先頭が代表）。
+   * 平らに返すitemsでは見えない面（stacksOf）。
+   */
   get itemStacks(): readonly (readonly WorldObject[])[] {
     return this.stacksOf(this.itemsSlotId);
   }
@@ -47,6 +50,9 @@ export class Location extends ObjectWrapper {
    * アイテムスロットへ受け入れる。受け入れられなければ（枠の型・容量）false。
    *
    * atは並びの中の位置（SlotPosition）。省略すると末尾（合流できる同種があればそのスタック）へ入る。
+   *
+   * **どの枠へ入れるかを知っているのはこの包みなので、呼び出し側はスロットを引く手順を持たない**
+   * （PlayerCharacter.takeと対）。位置を指した受け入れの決まりを確かめられるのもこの口だけ。
    */
   receiveItem(item: WorldObject, at?: SlotPosition): boolean {
     return item.moveToSlotOrRejection(this.instance.getSlot(this.itemsSlotId), at) === undefined;

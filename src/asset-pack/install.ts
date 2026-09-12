@@ -22,6 +22,8 @@ const SAMPLE_PACK_URL = 'sample-pack.zip';
  * 使わない（同3.2節）。
  */
 export class AssetPacks {
+  // このクラスを公開しているのは、使い捨ての並びを作れる口がここしか無いため。`src` が触るのは
+  // モジュールの`installed`ただ1つで、そこには空へ戻す口が無い（起動時に入って以後不変）。
   private readonly packs: AssetPack[] = [];
 
   /** 配布物を1つでも取りに行ったか。読めずに外したぶんも数える（matchesSetting）。 */
@@ -47,6 +49,9 @@ export class AssetPacks {
    * 設定の言う通りに読んだか。**並びが空かどうかでは代えられない**——読めなかった配布物は外れて
    * 並びが空のままになるが（AssetPack.md 6.1節）、それは設定どおりに読んだ結果であって、
    * 読み込み直しても変わらない。
+   *
+   * `requested`は一度立てば戻らないので、**「まだ取りに行っていない起動」を見られるのは新しい並びを
+   * 作ったときだけ**——モジュールの入口（assetPackInstallMatchesSetting）はその状態へ戻せない。
    */
   matchesSetting(loadsAssetPack: boolean): boolean {
     return this.requested === loadsAssetPack;
