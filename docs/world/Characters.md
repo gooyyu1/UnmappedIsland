@@ -155,10 +155,13 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **`hydration` と `happiness` の初期値は `max` の75%**（安全域のやや下）。満腹感も同じ狙いで留意域（300mL）から
   始める（[`DigestionSystem.md`](../engine/DigestionSystem.md) 2 節）。満タンで始めると alert が
   `safe` でステータスバーに出ず（[`StatusArea.md`](../ui/StatusArea.md)）、
-  飲食の操作も最初は試せないため。**空身では減らない `stamina`** と、序盤に眠らせたくない
+  飲食の操作も最初は試せないため。**荷も練習も無ければ減らない `stamina`** と、序盤に眠らせたくない
   `wakefulness` は満タンで始める。
 - **減る速さが一定のものは、80%より下を残り時間で切る。** `wakefulness` は残り12時間未満で
-  `caution`、残り3時間未満で `danger`。
+  `caution`、残り3時間未満で `danger`。**練習の間は3倍で進むが（[`SkillSystem.md`](../engine/SkillSystem.md)
+  3.1.2 節）、残り時間で切るのは変えない**——段が指す「このまま起きていたら何時間か」の既定は素の
+  減りのほうで、練習は押している間だけの行動である。下の `stamina` と違い、担いだまま続く状態では
+  ないので、段の意味が入れ替わり続けることにはならない。
 - `hydration` も残り時間で切る: 残り2日未満で `caution`、残り1日未満で `danger`、
   残り6時間未満で `fatal`。
 - **`stamina` は割合で切る**: `max` の60%未満で `caution`、20%未満で `danger`。**減る速さが担いでいる
