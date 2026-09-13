@@ -45,7 +45,7 @@ export class MoveEffect extends ActiveEffect {
     if (slot !== undefined) mover.moveToSlotOrRejection(slot);
   }
 
-  read(reader: EffectReader): void {
+  readBy(reader: EffectReader): void {
     reader.move(this.subject.reading, this.destination.reading, this.slotGlobalId);
   }
 }

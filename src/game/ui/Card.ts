@@ -60,18 +60,18 @@ const ALERT_OUTLINE_WIDTH = 5;
 const ALERT_BLINK_MIN_ALPHA = 0.15;
 
 /**
- * 枠の桟の幅と、タイトルの板の高さ、窓の角の丸み（u単位。CardView.md 1節 カードの枠）。
+ * 枠の寸法（u単位。CardView.md 1節 カードの枠）。
  *
  * 左右と上は無地の桟で、板はその内側の窓の上端に乗る。下の桟だけは中身で高さが変わるので、
  * ここには持たない（railMetrics）。
  */
-const FRAME_SIDE = 8;
-const FRAME_HEAD = 22;
+const FRAME_SIDE_WIDTH = 8;
+const FRAME_HEAD_HEIGHT = 22;
 const WINDOW_RADIUS = 4;
 
 /**
  * タイトルの板を走る光の筋の傾き（u単位）。板の上端と下端の間で横へずれる量で、**板の高さ
- * （FRAME_HEAD）に対する比が筋の角度**になる（drawPlate）。
+ * （FRAME_HEAD_HEIGHT）に対する比が筋の角度**になる（drawPlate）。
  */
 const PLATE_SHEEN_SLANT = 14;
 
@@ -1066,8 +1066,8 @@ export class Card extends Phaser.GameObjects.Container {
     const metrics = this.metrics;
     const paper = paperRect(metrics, this.cardWidth, this.cardHeight);
     const inner = windowRect(metrics, this.cardWidth, this.cardHeight, rail.height);
-    const side = metrics.px(FRAME_SIDE);
-    const head = metrics.px(FRAME_HEAD);
+    const side = metrics.px(FRAME_SIDE_WIDTH);
+    const head = metrics.px(FRAME_HEAD_HEIGHT);
     const radius = metrics.px(WINDOW_RADIUS);
     const line = metrics.linePx(BORDER_WIDTH);
 
@@ -1610,7 +1610,7 @@ function createNameText(
 ): Phaser.GameObjects.Text {
   const paper = paperRect(metrics, width, height);
   return scene.add
-    .text(width / 2, paper.y + metrics.px(FRAME_SIDE) + metrics.px(FRAME_HEAD) / 2, '', {
+    .text(width / 2, paper.y + metrics.px(FRAME_SIDE_WIDTH) + metrics.px(FRAME_HEAD_HEIGHT) / 2, '', {
       fontFamily: FONT_FAMILY,
       fontSize: `${metrics.fontPx(NAME_SIZE)}px`,
       fontStyle: 'bold',
@@ -1675,14 +1675,14 @@ function windowSpan(
   height: number,
 ): { readonly x: number; readonly width: number } {
   const paper = paperRect(metrics, width, height);
-  const side = metrics.px(FRAME_SIDE);
+  const side = metrics.px(FRAME_SIDE_WIDTH);
   return { x: paper.x + side, width: paper.width - side * 2 };
 }
 
 /** 枠の内側の、絵が見える窓。上端にはタイトルの板が乗り、下端は桟の高さで動く。 */
 function windowRect(metrics: ScreenMetrics, width: number, height: number, railHeight: number): Rect {
   const paper = paperRect(metrics, width, height);
-  const side = metrics.px(FRAME_SIDE);
+  const side = metrics.px(FRAME_SIDE_WIDTH);
   return {
     ...windowSpan(metrics, width, height),
     y: paper.y + side,
@@ -1738,7 +1738,7 @@ function railMetrics(
   // **バーの下は左右の桟と同じ厚みにする。** 中身の上下へ同じ余白を取ると、バーを持つカードだけ
   // 下の枠が細くなり、持たないカードと並んだときに枠が痩せて見える。上は枠ではなく絵との間隔なので、
   // 揃える相手が違う。
-  const side = metrics.px(FRAME_SIDE);
+  const side = metrics.px(FRAME_SIDE_WIDTH);
   const railHeight = rows === 0 ? side : metrics.px(RAIL_PAD) + stack + side;
   const top = paper.y + paper.height - railHeight + metrics.px(RAIL_PAD);
   const railTextTop = top + (road ? arrowHeight + gap : 0);
@@ -1756,7 +1756,7 @@ function railMetrics(
  * 半分だけ内側へ寄せる（角の丸みも同じだけ小さくして同心にする）。
  *
  * 絵の紙は縁からいきなり不透明で始まる（card_frame.pngの実測で、410px幅の絵の5px目でアルファが
- * 255になる＝FRAME_INSETの2.5u）。線は経路の上に太さの半分ずつ広がるので、経路を紙の縁そのものに
+ * 255になる＝PAPER_INSETの2.5u）。線は経路の上に太さの半分ずつ広がるので、経路を紙の縁そのものに
  * 置くと線の外半分が紙の外へ出て、輪郭が実物のカードより一回り大きく見える。塗り（inProgressVeil）は
  * 経路が縁そのものなので、こちらを通さない。
  */

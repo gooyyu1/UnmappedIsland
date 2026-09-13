@@ -95,7 +95,7 @@ export abstract class PassiveEffect {
    * この効果が何を宣言しているかを読み上げる（PassiveReader参照）。**抽象なのは取りこぼしを防ぐため**
    * ——既定を持たせると、動詞を1つ足したときに読み手が黙って何も受け取らなくなる。
    */
-  abstract read(reader: PassiveReader): void;
+  abstract readBy(reader: PassiveReader): void;
 
   /**
    * この効果が持つ影響の辺（InfluenceEdge）を書き出す。declarerは宣言したオブジェクトで、
@@ -319,7 +319,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
  * 書き換えない。PropertyValueのmodify用incomingへ登録され、PropertyValue.getEffectiveValueが走査する。
  */
 export class ModifyEffect extends PropertyPassiveEffect {
-  read(reader: PassiveReader): void {
+  readBy(reader: PassiveReader): void {
     reader.modify(this.reading);
   }
 
@@ -337,7 +337,7 @@ export class ModifyEffect extends PropertyPassiveEffect {
  * PropertyValueの積分用incomingへ登録され、WorldObject.tickが走査する。
  */
 export class AccumulateEffect extends PropertyPassiveEffect {
-  read(reader: PassiveReader): void {
+  readBy(reader: PassiveReader): void {
     reader.accumulate(this.reading);
   }
 
@@ -387,7 +387,7 @@ export class TransferPassiveEffect extends PassiveEffect {
     );
   }
 
-  read(reader: PassiveReader): void {
+  readBy(reader: PassiveReader): void {
     reader.transfer(this.transfer.reading, this.gate.reading);
   }
 }

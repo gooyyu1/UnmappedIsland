@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw
 from scipy.ndimage import gaussian_filter
 
 # 出来上がりの寸法と、紙が占める範囲（card_art.py の PAPER_MARGIN / PAPER_RADIUS、
-# および Card.ts の FRAME_INSET / FRAME_RADIUS と揃っていなければならない）。
+# および Card.ts の PAPER_INSET / PAPER_RADIUS と揃っていなければならない）。
 CARD_WIDTH = 410
 CARD_HEIGHT = 640
 MARGIN = 5
