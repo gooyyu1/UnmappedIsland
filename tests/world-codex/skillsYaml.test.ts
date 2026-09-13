@@ -58,7 +58,11 @@ type SkillRoute = 'execution' | 'discovery';
 /** 1回で伸びる量（SkillSystem.md 3節の表の「中」と「小」）。どちらも作業の長さに依らず一律。 */
 const GAIN_BY_ROUTE: Readonly<Record<SkillRoute, number>> = { execution: 2, discovery: 1 };
 
-/** 島を何個生成して発見の契機の行き渡りを見るか。**stats/discovery_coverage.yaml と同じ数**に揃える。 */
+/**
+ * 島を何個生成して発見の契機の行き渡りを見るか。**1つでも取りこぼせば落ちる**ので、必要なのは
+ * 「稀にしか起きない取りこぼしが1件は現れる」規模。土地の型が1つも生成されない確率は小さいほうで
+ * 0.1%の桁なので、2,000個で1件は出る。
+ */
 const ISLAND_SEED_COUNT = 2000;
 
 /**
@@ -417,13 +421,20 @@ function beastSpawningCandidates(): readonly { where: string; missingSkill: bool
 }
 
 /**
- * 発見の契機（SkillSystem.md 3.3節）が配る腕ごとに、その契機を出す型の名前を集める。
+ * 発見の契機（SkillSystem.md 3.3節）が配る腕ごとに、**その契機を担っている型**の名前を集める。
  *
  * **候補は自分の `spawn` と `add` を並べて持つ**ので、見るのは候補1つの中だけ。入れ子の `pick`
  * （山頂の `on_max` など）も、候補として同じように辿る。
+ *
+ * **候補が出す型を全部その腕の担い手と数えてはいけない。** 候補は複数の型を出すので、そのままだと
+ * 腕と関係の無い型（石と一緒に出る小枝）が束に混ざり、**束が島から消えない理由をその型が肩代わり
+ * する**——石器の契機を石の出ない土地へ寄せても、どの土地にも在る小枝が残るぶん緑のままになる。
+ * 担い手と数えるのは、**その型を出す候補がどれもその腕を配っているとき**だけ。石と一緒にも小枝だけ
+ * でも出る型は、どちらの腕の担い手でもない。
  */
 function discoveryGrantTypes(): ReadonlyMap<string, ReadonlySet<string>> {
-  const bySkill = new Map<string, Set<string>>();
+  /** 型 → その型を出す候補が**どれも**配っている腕（積集合。undefinedは「まだ1件も見ていない」）。 */
+  const skillsByType = new Map<string, Set<string>>();
 
   const walk = (node: unknown): void => {
     if (isSeq(node)) {
@@ -436,21 +447,31 @@ function discoveryGrantTypes(): ReadonlyMap<string, ReadonlySet<string>> {
       if (isScalar(pair.key) && String(pair.key.value) === 'pick' && isSeq(pair.value))
         for (const candidate of pair.value.items) {
           if (!isMap(candidate)) continue;
-          const types = spawnedTypesOf(candidate.get('spawn', true));
+          const granted = new Set<string>();
           // 候補から見て `pick` をくぐらないもの＝この候補自身の `add`。入れ子の候補の `add` は
-          // `discovery` で届くので、そちらの型と混ざらない（入れ子は下の再帰が自分で拾う）。
+          // `discovery` で届くので、そちらと混ざらない（入れ子は下の再帰が自分で拾う）。
           walkAgentSkillGains(candidate, (skillName, _amount, route) => {
-            if (route !== 'execution') return;
-            const found = bySkill.get(skillName) ?? new Set<string>();
-            bySkill.set(skillName, found);
-            for (const type of types) found.add(type);
+            if (route === 'execution') granted.add(skillName);
           });
+          for (const type of spawnedTypesOf(candidate.get('spawn', true))) {
+            const shared = skillsByType.get(type);
+            if (shared === undefined) skillsByType.set(type, new Set(granted));
+            else for (const skillName of shared) if (!granted.has(skillName)) shared.delete(skillName);
+          }
         }
       walk(pair.value);
     }
   };
 
   for (const path of worldCodexYamlPaths()) walk(parseDocument(readFileSync(path, 'utf8')).contents);
+
+  const bySkill = new Map<string, Set<string>>();
+  for (const [type, skillNames] of skillsByType)
+    for (const skillName of skillNames) {
+      const found = bySkill.get(skillName) ?? new Set<string>();
+      bySkill.set(skillName, found);
+      found.add(type);
+    }
   return bySkill;
 }
 
@@ -649,6 +670,17 @@ describe('腕前とレシピの解放条件', () => {
     }
 
     expect(lost.slice(0, 5), `${ISLAND_SEED_COUNT}個の島で、契機が丸ごと消えた腕`).toEqual([]);
+  });
+
+  it('探索そのものは腕を配らない（配るのは当たった候補の側）', () => {
+    // SkillSystem.md 3.3節。土地を調べる1手ではなく**何に出くわしたか**が腕を分けるので、`explore`の
+    // 直下へ`add`を書いてはいけない。書くと、獣も石も出なかった回まで同じだけ伸びる。
+    // **直下に書かれた`add`は実行経路として数えられる**ので、量の検査（+2なら緑）では捕まらない。
+    expect(
+      declaredInteractions()
+        .filter((interaction) => interaction.name === 'explore' && interaction.skills.length > 0)
+        .map((interaction) => interaction.skills.join('・')),
+    ).toEqual([]);
   });
 
   it('狩猟の腕を配る相手を湧かせる候補は、腕を土台にしたつまみを読む', () => {
