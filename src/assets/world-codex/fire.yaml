@@ -313,8 +313,8 @@ object_defs:
       weight: {value: 50}
       volume: {value: 500}
       # 1tickで燃え尽きる。運べるのは同じ土地の中までで、**それが火を別の土地から持って来られない
-      # ことの根拠**（道1本には最低1tickかかる、docs/engine/FireSystem.md 3.1節）。延ばすと火が島を
-      # 移動する。
+      # ことの根拠**（道1本には最低1tickかかる、docs/engine/FireSystem.md 3.1節）。延ばすと、別の
+      # 土地で起こした火で炉に火を点けられるようになる。
       life:
         value: 1
         range: {min: 0, max: 1}

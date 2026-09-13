@@ -8,6 +8,7 @@ import { Path } from '../../src/domain/wrappers/Path';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { pathsIn } from '../support/paths';
+import { SHORTEST_TRAVEL_MINUTES } from '../../src/domain/generation/PathNetworkBuilder';
 import { seededRng } from '../../src/domain/Rng';
 
 describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
@@ -78,7 +79,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
         expect(neighborInstanceIds, `サイト${site.index}: 道は隣接する土地を指す`).toContain(
           path.destinationInstanceId,
         );
-        expect(path.travelMinutes).toBeGreaterThanOrEqual(15);
+        expect(path.travelMinutes).toBeGreaterThanOrEqual(SHORTEST_TRAVEL_MINUTES);
         expect(
           path.requiredProgress,
           `サイト${site.index}: すべての道は進捗が最大へ達する前に見つかる`,

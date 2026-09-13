@@ -942,40 +942,39 @@ describe('炉の火床の枠が名乗る型', () => {
 });
 
 /**
- * 火が土地を越えないこと（docs/engine/FireSystem.md 3.1節）を、宣言の全数から見る。
+ * 炉に火を点ける物が土地を越えられないこと（docs/engine/FireSystem.md 3.1節）を、宣言の全数から見る。
  *
- * **炉も操作も名前では拾わない**——火力（`heat`）を持つ型を炉とみなし、その火力を上へ動かす工程を
- * 効き目で拾う。名前を変えても、別の炉へ同じ口を足しても、新しい口を作っても、ここへ出る。
+ * **炉も操作も名前では拾わない**——火力（`heat`）を上へ動かす工程を効き目で拾い、その工程で**火を
+ * 運んでいる側**を運び手とみなす。宣言が炉に乗っていれば運び手は重ねた相手、相手のほうに乗っていれば
+ * 運び手は宣言している型そのもの（12.3節はどちらへ書くかしか決めない）。
+ *
+ * **拾えないのは、火の点いた炉を`spawn`・`become`で置き換える形**——そちらは火を運ぶのではなく、
+ * 火の無いところに火を作る形で、越えるかどうかとは別の問い。
  *
  * 上の連鎖のテストが実際に運んで見せるのは松明1本ぶんで、**次に「持ち運べる明かり」が増えたときに
  * そちらは緑のまま通る。** 越えられる物を1つも受けていないことは、全数を数えるここが言う。
  */
-describe('炉の火を立ち上げられる相手', () => {
+describe('炉に火を点けられる物', () => {
   const codex = bundledCodex();
   const heatId = codex.propertyNames.getId('heat');
 
-  /** 炉1つの、火力を立ち上げる工程1つと、その相手として受け取りうる型1つ。 */
+  /** 火力を立ち上げる工程1つと、その工程で火を運んでいる側の型1つ。 */
   interface LightingRoute {
-    readonly hearth: string;
+    readonly owner: string;
     readonly step: string;
-    readonly instrument: string;
+    readonly carrier: string;
   }
 
-  /** 火力（heat）を持つ型＝炉（fire.yamlのhearth trait・pottery.yaml・smoking.yaml）。 */
-  function hearthDefs(): readonly ObjectDef[] {
-    return [...codex.objects].filter((def) => def.tryGetPropertyDef(heatId) !== undefined);
-  }
-
-  /** その工程が自分の火力を上へ動かすか。**代入先が実行時に決まる場合も上へ動かしうると見る。** */
-  function raisesOwnHeat(step: CraftingStep): boolean {
+  /** その工程が、そこを土台にした火力を上へ動かすか。**代入先が実行時に決まる場合も動かしうると見る。** */
+  function raisesHeatOn(step: CraftingStep, target: 'self' | 'instrument'): boolean {
     return step.outcomes.some(
       (outcome) =>
         outcome.deltas.some(
-          (delta) => delta.target === 'self' && delta.propertyGlobalId === heatId && delta.amount > 0,
+          (delta) => delta.target === target && delta.propertyGlobalId === heatId && delta.amount > 0,
         ) ||
         outcome.assignments.some(
           (assignment) =>
-            assignment.target === 'self' &&
+            assignment.target === target &&
             assignment.propertyGlobalId === heatId &&
             (assignment.value === undefined || assignment.value > 0),
         ),
@@ -983,9 +982,9 @@ describe('炉の火を立ち上げられる相手', () => {
   }
 
   /** その工程が相手として受け取りうる型の名前。タグで受けているならそのタグを持つ型すべて。 */
-  function instrumentNamesOf(step: CraftingStep, hearth: ObjectDef): string[] {
+  function instrumentNamesOf(step: CraftingStep, owner: ObjectDef): string[] {
     return step.inputs
-      .filter((input) => !(input.kind === 'object' && input.objectGlobalId === hearth.globalId))
+      .filter((input) => !(input.kind === 'object' && input.objectGlobalId === owner.globalId))
       .flatMap((input) =>
         input.kind === 'object'
           ? [codex.objects.get(input.objectGlobalId).name]
@@ -994,22 +993,25 @@ describe('炉の火を立ち上げられる相手', () => {
   }
 
   function lightingRoutes(): readonly LightingRoute[] {
-    return hearthDefs().flatMap((hearth) =>
-      craftingStepsOf(codex, hearth)
-        .filter(raisesOwnHeat)
-        .flatMap((step) =>
-          instrumentNamesOf(step, hearth).map((instrument) => ({
-            hearth: hearth.name,
-            step: step.name,
-            instrument,
-          })),
-        ),
+    return [...codex.objects].flatMap((owner) =>
+      craftingStepsOf(codex, owner).flatMap((step) => {
+        // 炉の側に乗った宣言では相手が火を運んでいて、相手の側に乗った宣言では宣言した型が運んでいる。
+        const carriers = [
+          ...(raisesHeatOn(step, 'self') ? instrumentNamesOf(step, owner) : []),
+          ...(raisesHeatOn(step, 'instrument') ? [owner.name] : []),
+        ];
+        return carriers.map((carrier) => ({ owner: owner.name, step: step.name, carrier }));
+      }),
     );
   }
 
   /**
    * その型を置いておくだけで、自分から消えるまでの分数。**条件つきでしか消えない物**——灯している
    * あいだだけ燃え減る松明——と、消えない物はundefined。
+   *
+   * **いちばん長生きする見方を採る。** 端へ最も遅く届く条件の組み合わせ（minutes）と、生成時のロールが
+   * 端から遠い側に出た回（longestMinutes）の両方で、長いほう——**一度でも渡り切れるなら越えられる**
+   * ので、短いほうで見ると振り幅を持った物を取りこぼす。時計が複数あるなら、先に尽きるほうが寿命。
    */
   function minutesUntilGoneOnItsOwn(objectName: string): number | undefined {
     const clocks = rangeCyclesOf(codex.objects.get(codex.objectNames.getId(objectName)))
@@ -1019,37 +1021,40 @@ describe('炉の火を立ち上げられる相手', () => {
           !cycle.repeats &&
           cycle.gatedBy.some((combination) => combination.length === 0),
       )
-      // 端へいちばん遅く届く見方（minutes）の中で、先に尽きる時計がその物の寿命。
-      .map((cycle) => cycle.minutes);
+      .map((cycle) => Math.max(cycle.minutes, cycle.longestMinutes));
     return clocks.length === 0 ? undefined : Math.min(...clocks);
   }
 
-  it('火力を立ち上げる工程は、どの炉にもちょうど1つ在る（ignite）', () => {
-    // 立ち上げる口が炉ごとに増えれば、下のテストが見る相手も増える。**口の側も数える**ので、
-    // 相手を伴わない口（メニューで点く炉）を足してもここが落ちる。
-    const byHearth = new Map(hearthDefs().map((hearth) => [hearth.name, new Set<string>()]));
-    for (const hearth of hearthDefs())
-      for (const step of craftingStepsOf(codex, hearth).filter(raisesOwnHeat))
-        byHearth.get(hearth.name)!.add(step.name);
+  it('火力を立ち上げる工程は、どれも着火（ignite）', () => {
+    // 名前で拾っていないので、別の名前の口を足せばここへ出る。**相手を伴わない口**（メニューで点く炉）
+    // も出る——運び手が居ないぶん下のテストは何も言わないので、口の側を数えるここが受け持つ。
+    const steps = [...codex.objects].flatMap((owner) =>
+      craftingStepsOf(codex, owner)
+        .filter((step) => raisesHeatOn(step, 'self') || raisesHeatOn(step, 'instrument'))
+        .map((step) => `${owner.name}: ${step.name}`),
+    );
 
-    expect(byHearth.size, '火力を持つ型が1つも無い（この走査は何も見ていない）').toBeGreaterThan(0);
     expect(
-      [...byHearth].map(([hearth, steps]) => `${hearth}: ${[...steps].join(',')}`),
-      '炉ごとの、火力を立ち上げる工程',
-    ).toEqual([...byHearth.keys()].map((hearth) => `${hearth}: ignite`));
+      steps.length,
+      '火力を立ち上げる工程が1つも見つからない（この走査は何も見ていない）',
+    ).toBeGreaterThan(0);
+    expect(
+      steps.filter((step) => !step.endsWith(': ignite')),
+      '着火のほかに火力を立ち上げる工程が在る',
+    ).toEqual([]);
   });
 
-  it('受け取るのは、道1本ぶんの時間より先に自分から消える物だけ', () => {
-    // 越えられる物で炉に火が立つと、火が島を移動する（FireSystem.md 3.1節）。火種の寿命を延ばしても、
-    // 立ち上げる口をタグ（lightable）へ広げても、ここが落ちる。
+  it('火を運べるのは、道1本ぶんの時間より先に自分から消える物だけ', () => {
+    // 越えられる物で炉に火が立つと、別の土地で起こした火で点けられる（FireSystem.md 3.1節）。火種の
+    // 寿命を延ばしても、立ち上げる口をタグ（lightable）へ広げても、ここが落ちる。
     const routes = lightingRoutes();
-    expect(routes.length, '火を立ち上げる道が1つも見つからない').toBeGreaterThan(0);
+    expect(routes.length, '火を運ぶ道が1つも見つからない').toBeGreaterThan(0);
 
     expect(
       routes.filter(
-        (route) => (minutesUntilGoneOnItsOwn(route.instrument) ?? Infinity) > SHORTEST_TRAVEL_MINUTES,
+        (route) => (minutesUntilGoneOnItsOwn(route.carrier) ?? Infinity) > SHORTEST_TRAVEL_MINUTES,
       ),
-      '土地を越えられる物で炉の火を立ち上げられる',
+      '土地を越えられる物で炉に火を点けられる',
     ).toEqual([]);
   });
 });
