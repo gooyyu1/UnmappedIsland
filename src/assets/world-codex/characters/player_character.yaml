@@ -670,8 +670,8 @@ traits:
       # **配るのは、Skills.md 2節がその腕の技術として挙げている作業だけ。** 打ち欠く（knap）、繊維を
       # 採って撚って編む（strip・ret・spin・ply・weave）、刃で木を断って削り出す（fell・buck・whittle）、
       # 皮を剥ぐ（butcher）、打ちかかる（strike——獣にも、据えた的にも。hunting_practice.yaml）、
-      # 獲物を突く・捕る（spear_*・catch_seabird）、火を起こす（light）、
-      # 保たせる加工（cure）で全部。
+      # 獲物を突く・捕る（spear_*・catch_seabird）、火を起こす（light）、保たせる加工（cure）、
+      # 食材の下ごしらえ（chop）で全部。
       #
       # **出す物がそっくり同じ操作は、同じ腕を同じだけ配る。** 同じ仕事に入口が2つあるということなので
       # （植物繊維はfiber.yamlのstripとcoconut.yamlのret、編んだ葉はweaveとsplit_and_weave）、片方だけに
@@ -688,9 +688,10 @@ traits:
       # pick_frond・樹皮を剥ぐstrip_bark・実を割るcrack）。土地を調べるexplore（発見経路そのもので、
       # **配るのはexplore自身ではなくpickの候補の側**——SkillSystem.md 3.3節。まだ書いていない）。
       #
-      # **伸ばす行動をまだ持たない本がある**（指物・接合、建築、料理、採鉱・製錬）。開ける物が世界に
+      # **伸ばす行動をまだ持たない本がある**（指物・接合、建築、採鉱・製錬）。開ける物が世界に
       # 1つも無く、伸ばす操作の置き場も無いため。**それらは解放条件にも書かない**——書けば永久に
-      # 開かないレシピになる（SkillSystem.md 3.2節）。
+      # 開かないレシピになる（SkillSystem.md 3.2節）。**料理は伸ばす操作だけを持つ**——開ける物は
+      # まだ無いが、下ごしらえの手が先に入った（下のskill_cooking）。
       # ------------------------------------------------------------------
       # 石を打ち欠く（locations.yamlのknap）。柄付けの刃（tools.yaml）を開ける。
       # 段が押し上げるのは下のknapping_deftnessで、読むのは打ち欠く仕事の側——レシピは`deftness`で
@@ -795,16 +796,30 @@ traits:
             min: 180
             passives:
               - modify: {self: {leatherwork_deftness: -15}}
-      # 調理する。伸ばす行動がまだ無い——焼くのは炉が子のcooking_progressを進めるだけで
-      # （docs/engine/FireSystem.md 7節）、人が行う操作になっていない。
+      # 食材を下ごしらえする（foods.yamlのchop）。**火にかける手からは伸びない**——焼くのは炉が子の
+      # cooking_progressを進めるだけで（docs/engine/FireSystem.md 7節）、人が持つのは火にかける1手
+      # だけだから（docs/world/Skills.md 2.5節）。
+      #
+      # **開けるレシピはまだ無い**（調理の全般が未設計、同2節）。段が押し上げるのは下の
+      # cooking_deftnessで、読むのは下ごしらえ自身の時間——**開ける物が無くても、手を動かす操作が
+      # あれば積む先はある**（同7節）。
       skill_cooking:
         tags: [skill]
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {cooking_deftness: -3}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {cooking_deftness: -8}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {cooking_deftness: -15}}
       # 得た食を保たせる（salt.yamlのcure）。開けるのは燻し小屋（smoking.yamlのsmokehouse）で、
       # 日差しの要らない保存がその先にある（docs/world/SurvivalItems.md 11節）。
       # 段が押し上げるのは下のpreserving_deftnessで、読むのは保たせる仕事の側——**開ける側より
@@ -944,5 +959,7 @@ traits:
       woodwork_deftness: {value: 0}
       # 皮をなめす・縫う手際。
       leatherwork_deftness: {value: 0}
+      # 食材を下ごしらえする手際。
+      cooking_deftness: {value: 0}
       # 保たせる造作を組む手際。
       preserving_deftness: {value: 0}
