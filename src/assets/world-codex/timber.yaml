@@ -20,11 +20,17 @@ object_defs:
     props:
       # 立ち木1本ぶん。倒して採れるのは丸太2本と太枝3本（43kg）で、残りは根と梢と枝葉。
       weight: {value: 150000}
+      # 倒して玉切りするのにかかる時間。素の値は木が持ち、今斧を入れている人の手際をbaseで継ぐ
+      # （docs/world/Skills.md 7節）。
+      fell_minutes:
+        value: 240
+        base: {subject: agent, prop: woodwork_deftness}
+        range: {min: 120, max: 240}
     interactions:
       # 根元を斧で断つ。倒した幹を運べる長さに玉切りするところまでを1つの作業として扱う。
       fell:
         trigger: {drag: {tag: chopping_tool}}
-        duration: 240
+        duration: {prop: fell_minutes}
         conditions:
           # **1本ぶんの余力（下のadd と同じ120）が残っていなければ始められない。** 尽きた刃で
           # 始めても倒し切れないうえ、0へ届いた刃は折れて無くなる（weathering.yaml の on_min）ので、
@@ -97,6 +103,11 @@ object_defs:
     props:
       # 丸太2本（40kg）に、玉切りで落ちる末口と割れた部分を足した重さ。
       weight: {value: 60000}
+      # 玉切りするのにかかる時間（上のfell_minutesと同じ形）。既に倒れているぶん素の値が半分。
+      buck_minutes:
+        value: 120
+        base: {subject: agent, prop: woodwork_deftness}
+        range: {min: 60, max: 120}
     interactions:
       # 運べる長さに玉切りする。既に倒れているので、立ち木を倒すより半分の手間で済む。
       buck:
@@ -117,7 +128,7 @@ object_defs:
             in_stage_or_above: bright
           - reason: too_stormy
             not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
-        duration: 120
+        duration: {prop: buck_minutes}
         add:
           agent:
             skill_woodwork: 2
@@ -138,6 +149,12 @@ object_defs:
       # 細い木1本ぶん。幹（3.5mほど、根元で3cm）に枝葉を足した重さで、採れる2m（長い棒600g）は
       # そのおよそ半分。残りは根と梢と枝葉になる。
       weight: {value: 1200}
+      # 断って棒に切るのにかかる時間。素の値は若木が持ち、今切っている人の手際をbaseで継ぐ
+      # （docs/world/Skills.md 7節）。
+      cut_pole_minutes:
+        value: 60
+        base: {subject: agent, prop: woodwork_deftness}
+        range: {min: 30, max: 60}
     interactions:
       # 根元を刃物で断ち、枝を払って2mの棒に切る。斧は要らない（ファイル冒頭）。
       cut_pole:
@@ -152,7 +169,7 @@ object_defs:
             in_stage_or_above: bright
           - reason: too_stormy
             not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
-        duration: 60
+        duration: {prop: cut_pole_minutes}
         # **木部を断つので木材加工が伸びる**（docs/engine/SkillSystem.md 3節の実行経路）。同じ
         # cutting_toolで断つバショウ属・バナナの株（fiber.yaml）が何も配らないのは、あちらが草だから
         # ——スキルを分ける軸は素材ではなく技術（docs/world/Skills.md 1節）で、伐るのは木に対してだけ

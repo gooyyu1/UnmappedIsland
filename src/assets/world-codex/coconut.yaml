@@ -203,6 +203,12 @@ object_defs:
       weight: {value: 600}
       # ばらけた繊維は詰めても縮まないので、嵩そのままで見る。
       volume: {value: 4000}
+      # 叩き解すのにかかる時間。素の値は皮が持ち、今叩いている人の手際をbaseで継ぐ
+      # （docs/world/Skills.md 7節）。
+      ret_minutes:
+        value: 120
+        base: {subject: agent, prop: cordage_deftness}
+        range: {min: 60, max: 120}
     interactions:
       # 水に漬けて柔らかくし、石で叩いて繊維を解す（コイア）。**植物繊維の2つ目の入口**で、
       # 違うのは道具ではなく採れる土地——バショウ属の草（fiber.yaml）が生えない島でも、ヤシの実さえ
@@ -214,13 +220,19 @@ object_defs:
       # **明るさの条件は書かない**——叩いて解すだけで、暗くて損なう形が無い（crackと同じ理由）。
       ret:
         trigger: {drag: {object: stone}}
-        duration: 120
+        duration: {prop: ret_minutes}
         # 繊維・編みの腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。**掻き取り（fiber.yamlのstrip）と同じだけ配る**
         # ——同じ植物繊維を出す2つの入口で、違うのは採れる土地だけ（上のコメント）。
         add: {agent: {skill_cordage: 2}}
         destroy: self
         spawn: {object: plant_fiber, count: 2}
+        # 無駄の無さ（docs/world/Skills.md 7節）。**掻き取りと同じ形で同じ刻み**——髄をどこまで叩き
+        # 落とすかで取れる束が変わるのは、刃を送る側と同じ（fiber.yamlのstripの注記）。
+        pick:
+          - weight: 100
+          - weight: {subject: agent, prop: cordage_thrift}
+            spawn: {object: plant_fiber}
 
   # 皮を剥いだ熟したヤシの実。硬い殻は、石で叩いても刃物をこじ入れても割れるので、道具のタグごとに
   # 1つずつcombinationを持つ（withは1つのタグしか取らないため）。

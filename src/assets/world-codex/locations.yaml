@@ -116,6 +116,12 @@ object_defs:
     props:
       weight: {value: 1000}
       volume: {value: 700}
+      # 打ち欠くのにかかる時間。素の値は石が持ち、今打っている人の手際をbaseで継ぐ
+      # （docs/world/Skills.md 7節。上のtravel_minutesと同じ形）。
+      knap_minutes:
+        value: 60
+        base: {subject: agent, prop: knapping_deftness}
+        range: {min: 30, max: 60}
       heat_soak:
         on_max:
           destroy: self
@@ -130,11 +136,13 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
-        duration: 60
+        duration: {prop: knap_minutes}
         # 石器の腕はここから立ち上がる（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。道具を要求しないので、何も持たない状態から回る。
         add: {agent: {skill_knapping: 2}}
         destroy: self
+        # **余分の卓は持たない。** 1つの石から取り出すのは狙った縁の刃1つで、まとめて取れる物では
+        # ない（docs/world/Skills.md 7節）。
         spawn: {object: sharp_stone}
 
   # 小枝。指の太さの細い枝を拾い集めたもので、焚き付け・結びに使う。柄にすると折れる。
