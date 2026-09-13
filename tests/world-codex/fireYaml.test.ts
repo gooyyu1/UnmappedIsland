@@ -777,6 +777,9 @@ describe('fire.yamlの火の連鎖', () => {
 describe('炉の火床の枠が名乗る型', () => {
   const codex = bundledCodex();
 
+  /** 器を載せる枠を持つ炉（docs/engine/FireSystem.md 6節の段の表）。 */
+  const COOKWARE_HEARTHS = ['three_stone_hearth', 'stone_hearth'];
+
   const fireCells = (hearthName: string): readonly (readonly string[])[] => {
     const hearth = codex.objects.get(codex.objectNames.getId(hearthName));
     const slotDef = hearth.tryGetSlotDef(codex.slotNames.getId('fire'));
@@ -791,18 +794,23 @@ describe('炉の火床の枠が名乗る型', () => {
     );
   };
 
-  it('器を載せられる炉は、火の中の枠と石の上の枠で違う型を名乗る', () => {
-    // 石の上の枠が名乗る型は、cookwareを持つ型が世界に入るまで空（煮炊きは11節の未決事項）。
-    for (const hearthName of ['three_stone_hearth', 'stone_hearth']) {
-      const cells = fireCells(hearthName);
-      const inFire = cells[0];
-      const onStones = cells[cells.length - 1];
+  it('器を載せられる炉は、火の中の枠が焼ける物を名乗る', () => {
+    for (const hearthName of COOKWARE_HEARTHS) {
+      expect(fireCells(hearthName)[0].length, `${hearthName} の火の中の枠`).toBeGreaterThan(0);
+    }
+  });
 
-      expect(inFire.length, `${hearthName} の火の中の枠は、焼ける物を名乗る`).toBeGreaterThan(0);
-      expect(
-        onStones.some((name) => inFire.includes(name)),
-        `${hearthName} の石の上の枠に、火の中へ入れる物が混ざっている`,
-      ).toBe(false);
+  it('石の上の枠は、載せられる器が世界に入るまで紙のまま', () => {
+    // **docs/engine/FireSystem.md 1.1節がそう書いている。** 器が入れば枠は名乗り始めるので、
+    // そのとき同節を書き直すためにここで落とす（煮炊きのレシピは同11節の未決事項）。
+    expect(
+      codex.objectDefNamesWithTag(codex.tagNames.getId('cookware')),
+      'cookwareを名乗る型が入った。FireSystem.md 1.1節の「今は紙のまま」を書き直す',
+    ).toEqual([]);
+
+    for (const hearthName of COOKWARE_HEARTHS) {
+      const cells = fireCells(hearthName);
+      expect(cells[cells.length - 1], `${hearthName} の石の上の枠`).toEqual([]);
     }
   });
 

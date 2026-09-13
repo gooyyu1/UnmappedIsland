@@ -32,8 +32,9 @@ export interface LaneCell {
   readonly card?: CardContent;
 
   /**
-   * その枠が受け入れる物（1つに決まっていなければundefined）。空き枠のときだけ、そのカードを薄く
-   * 敷いて何を入れる枠なのかを示す。
+   * その枠が受け入れる物として今出している1つ（名乗らない枠ならundefined）。空き枠のときだけ、
+   * そのカードを薄く敷いて何を入れる枠なのかを示す。**当てはまる型が複数あるなら送り手が順に
+   * 送り替える**（slotCells）ので、ここに来るのはその時点の1つ。
    */
   readonly accepts?: CardContent;
 
