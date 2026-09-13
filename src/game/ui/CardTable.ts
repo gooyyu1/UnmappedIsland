@@ -54,10 +54,11 @@ export interface MotionContext {
   readonly vanished?: readonly number[];
   readonly born?: readonly number[];
   /**
-   * 突進した個体と、その相手（changedInstances.lungeTargetByInstance、HuntingSystem.md 6.1節）。
-   * 矩形に直すのは計画の側——突き当たる先は差し替え前の並びにしか無い。
+   * 突進した個体と、手を出した相手の候補（changedInstances.lungeTargetsByInstance、
+   * HuntingSystem.md 6.1節）。相手を選ぶのも矩形に直すのも計画の側——突き当たる先は差し替え前の
+   * 並びにしか無い。
    */
-  readonly lunges?: ReadonlyMap<number, number>;
+  readonly lunges?: ReadonlyMap<number, readonly number[]>;
 }
 
 /** 飛んでいる途中の便を外から止める手立て（運んでいた札を掴み直したときなど）。 */
@@ -98,13 +99,13 @@ interface Lunge {
   /** 帰って合流する枠の札と、その枠。 */
   into: Card;
   home: Rect;
-  /** 駆け出した場所（帰り先とは限らない。PlannedLunge.from）。 */
-  readonly from: Rect;
   readonly to: Rect;
+  /** 今の脚の始点。帰り先が引き直されたら、今いる場所から測り直す（便のfromX/fromYと同じ）。 */
+  legFrom: Rect;
   /** 突き当たるまで出したままにしておく相手の札。 */
   struck: Card | undefined;
   readonly raisesDust: boolean;
-  /** 今の脚（行きか帰りか）と、その脚が始まってからの経過。 */
+  /** 今の脚が帰りかどうかと、その脚が始まってからの経過。 */
   returning: boolean;
   elapsed: number;
 }
@@ -265,8 +266,8 @@ export class CardTable {
       id: planned.id,
       into: planned.into,
       home: planned.home,
-      from: planned.from,
       to: planned.to,
+      legFrom: planned.from,
       struck,
       raisesDust: planned.raisesDust,
       returning: false,
@@ -274,12 +275,16 @@ export class CardTable {
     });
   }
 
-  /** 突進を終わらせる（帰り着いた枠の札へ合流する）。打ち切りなら相手の札も道連れに片付ける。 */
+  /**
+   * 突進を終わらせる（帰り着いた枠の札へ合流する）。**突き当たる前に打ち切ったなら、相手の消滅は
+   * その場で見せる**——見せ損ねると、札だけが黙って消える。
+   */
   private endLunge(lunge: Lunge, arrived: boolean): void {
     const index = this.lunges.indexOf(lunge);
     if (index < 0) return;
 
     this.lunges.splice(index, 1);
+    if (!lunge.returning && lunge.raisesDust) this.dust.burst(lunge.to);
     lunge.struck?.destroy();
     if (arrived) lunge.into.absorbReturnedIds([lunge.id]);
     lunge.card.destroy();
@@ -325,7 +330,14 @@ export class CardTable {
         continue;
       }
       lunge.into = landing.into;
+      if (landing.to.x === lunge.home.x && landing.to.y === lunge.home.y) continue;
+
       lunge.home = landing.to;
+      // 帰りの途中で帰り先が動いたら、今いる場所から測り直す（便が向き直るのと同じ、retarget）。
+      if (lunge.returning) {
+        lunge.legFrom = lunge.card.rect;
+        lunge.elapsed = 0;
+      }
     }
 
     for (const freed of [...this.freed]) {
@@ -449,7 +461,7 @@ export class CardTable {
    */
   private stepLunge(lunge: Lunge, delta: number): void {
     lunge.elapsed += delta;
-    const from = lunge.returning ? lunge.to : lunge.from;
+    const from = lunge.legFrom;
     const to = lunge.returning ? lunge.home : lunge.to;
     const progress = flightProgress(lunge.elapsed, 0);
     lunge.card.setPosition(from.x + (to.x - from.x) * progress, from.y + (to.y - from.y) * progress);
@@ -463,6 +475,7 @@ export class CardTable {
     lunge.struck = undefined;
     if (lunge.raisesDust) this.dust.burst(lunge.to);
     lunge.returning = true;
+    lunge.legFrom = lunge.to;
     lunge.elapsed = 0;
   }
 

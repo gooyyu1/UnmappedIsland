@@ -72,7 +72,7 @@ import type { MotionContext } from './ui/CardTable';
 import { CardTable } from './ui/CardTable';
 import {
   bornInstances,
-  lungeTargetByInstance,
+  lungeTargetsByInstance,
   originInstanceByInstance,
   vanishedInstances,
 } from './view/changedInstances';
@@ -1116,7 +1116,7 @@ export class PlayScene extends ResponsiveScene {
       origins: this.originRectsOf(changes),
       vanished: vanishedInstances(changes),
       born: bornInstances(changes),
-      lunges: lungeTargetByInstance(changes),
+      lunges: lungeTargetsByInstance(changes),
     };
   }
 

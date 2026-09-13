@@ -67,10 +67,10 @@ export interface MotionInput<C, R> {
   /** 世界に生まれたインスタンス。こちらもbeforeに居ないだけでは区別できない（移ってきた物と同じ）。 */
   readonly born?: readonly number[];
   /**
-   * 突進した個体と、その相手（changedInstances.lungeTargetByInstance）。どちらも差し替え前の並びに
-   * 居なければ、行き先も出発点も無いので突進は立たない。
+   * 突進した個体と、手を出した相手の候補（changedInstances.lungeTargetsByInstance）。**相手を1つに
+   * 決めるのはここ**——画面に出ている候補を選ぶ。1つも出ていなければ突進は立たない。
    */
-  readonly lunges?: ReadonlyMap<number, number>;
+  readonly lunges?: ReadonlyMap<number, readonly number[]>;
 }
 
 /** 札1枚の飛行。 */
@@ -168,19 +168,35 @@ export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
     for (const id of placed.ids) after.set(id, placed);
   const leftCards = new Set(input.left.map(({ card }) => card));
 
+  // 砂埃は**1枚の札につき1回**——3個の束が丸ごと消えても、居なくなった札は1枚だから。突進が
+  // 引き取った札の分はその突進が着いてから立てるので、ここで先に取り合いを済ませる。
+  const dusted = new Set<C>();
+
   const lunges: PlannedLunge<C, R>[] = [];
-  // 突き当たられた側。砂埃も片付けも突進が着いてからなので、この差し替えでは何も立てない。
+  // 突き当たられた側。片付けるのも突進が着いてからなので、この差し替えでは消さない。
   const struckIds = new Set<number>();
   const struckCards = new Set<C>();
-  for (const [id, targetId] of input.lunges ?? []) {
-    // 指が運んだ物へは突進しない——その動きは指が既に見せている（released）。
-    if (aloft.has(id) || input.released?.ids.includes(targetId) === true) continue;
+  for (const [id, candidates] of input.lunges ?? []) {
+    if (aloft.has(id)) continue;
 
-    const target = before.get(targetId);
     const home = after.get(id);
-    if (target === undefined || home === undefined || target.card === home.card) continue;
+    if (home === undefined) continue;
 
-    const struck = leftCards.has(target.card) ? target.card : undefined;
+    // **手を出した相手は、画面に出ている候補のうち最初のもの。** 起きた順の先頭とは限らない
+    // （壊れた入れ物の中身は、入れ物の消滅より先に記録される）。指が運んだ物は、その動きを指が
+    // 既に見せているので相手にしない（released）。
+    const targetId = candidates.find(
+      (candidate) =>
+        input.released?.ids.includes(candidate) !== true &&
+        before.get(candidate) !== undefined &&
+        before.get(candidate) !== home,
+    );
+    const target = targetId === undefined ? undefined : before.get(targetId);
+    if (targetId === undefined || target === undefined) continue;
+
+    // 相手の札を引き取るのは1つの突進だけ。2匹が同じ束へ手を出しても、片付けは1回。
+    const struck = leftCards.has(target.card) && !struckCards.has(target.card) ? target.card : undefined;
+    const raisesDust = vanishedIds.has(targetId) && !dusted.has(target.card);
     lunges.push({
       id,
       into: home.card,
@@ -188,17 +204,16 @@ export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
       from: before.get(id)?.rect ?? input.origins?.get(id) ?? home.rect,
       to: target.rect,
       struck,
-      raisesDust: vanishedIds.has(targetId),
+      raisesDust,
     });
     // 突進している間、その個体はどの枠にも居ない。引き算は運びの最中の札と同じ。
     aloft.add(id);
     struckIds.add(targetId);
     if (struck !== undefined) struckCards.add(struck);
+    if (raisesDust) dusted.add(target.card);
   }
 
-  // 消えた札は、差し替え前に居た枠で砂埃を立てる。**1枚の札につき1回**——3個の束が丸ごと
-  // 消えても、居なくなった札は1枚だから。画面に出ていなかったものは枠を持たず、何も立たない。
-  const dusted = new Set<C>();
+  // 消えた札は、差し替え前に居た枠で砂埃を立てる。画面に出ていなかったものは枠を持たず、何も立たない。
   for (const id of vanishedIds) {
     const placed = before.get(id);
     if (placed === undefined || dusted.has(placed.card) || struckIds.has(id)) continue;

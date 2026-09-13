@@ -7,7 +7,7 @@ import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import type { WorldChange } from '../../src/domain/WorldChange';
-import { lungeTargetByInstance, vanishedInstances } from '../../src/game/view/changedInstances';
+import { lungeTargetsByInstance, vanishedInstances } from '../../src/game/view/changedInstances';
 
 /**
  * 動物の1手（docs/engine/HuntingSystem.md 5節）を、実ファイルの定義だけで検証する。
@@ -393,7 +393,7 @@ describe('動物の1手', () => {
 
       const changes = changesOf(() => passTurn());
 
-      expect(lungeTargetByInstance(changes)).toEqual(new Map([[monkey.instanceId, coconut.instanceId]]));
+      expect(lungeTargetsByInstance(changes)).toEqual(new Map([[monkey.instanceId, [coconut.instanceId]]]));
     });
 
     it('壊した回も同じ形で読め、壊された物は世界から出たものとして挙がる', () => {
@@ -405,8 +405,25 @@ describe('動物の1手', () => {
 
       const changes = changesOf(() => passTurn());
 
-      expect(lungeTargetByInstance(changes)).toEqual(new Map([[boar.instanceId, basket.instanceId]]));
+      expect(lungeTargetsByInstance(changes)).toEqual(new Map([[boar.instanceId, [basket.instanceId]]]));
       expect(vanishedInstances(changes)).toContain(basket.instanceId);
+    });
+
+    it('中身のある入れ物を壊した回は、こぼれた中身も候補に挙がる（先に記録されるのは中身）', () => {
+      // WorldObject.destroyは中身をこぼしてから自分の消滅を記録するので、**起きた順の先頭は
+      // 手を出した相手ではない**。どちらを相手にするかは、画面に出ているかで決まる（cardMotionPlan）。
+      open(0.5);
+      const boar = release('wild_boar');
+      boar.getProperty(warinessId).setNumberWithoutEvents(0);
+      const basket = release('woven_basket');
+      const stone = release('sharp_stone');
+      expect(stone.moveToSlotOrRejection(basket.getSlot(codex.slotNames.getId('contents')))).toBeUndefined();
+
+      const changes = changesOf(() => passTurn());
+
+      expect(lungeTargetsByInstance(changes)).toEqual(
+        new Map([[boar.instanceId, [stone.instanceId, basket.instanceId]]]),
+      );
     });
 
     it('逃げた回は突進にならない（動いたのは自分）', () => {
@@ -417,7 +434,7 @@ describe('動物の1手', () => {
       const changes = changesOf(() => passTurn());
 
       expect(rat.parent, '隣の土地へ移っている').toBe(grassland);
-      expect(lungeTargetByInstance(changes).size).toBe(0);
+      expect(lungeTargetsByInstance(changes).size).toBe(0);
     });
 
     it('襲った回も突進にならない（怪我はどこからも動いていない）', () => {
@@ -428,7 +445,7 @@ describe('動物の1手', () => {
       const changes = changesOf(() => passTurn());
 
       expect(injuriesOf(player)).not.toEqual([]);
-      expect(lungeTargetByInstance(changes).size).toBe(0);
+      expect(lungeTargetsByInstance(changes).size).toBe(0);
     });
 
     it('くわえた物を食べた回も突進にならない（相手は自分の中に居る）', () => {
@@ -441,7 +458,7 @@ describe('動物の1手', () => {
       const changes = changesOf(() => passTurn());
 
       expect(spoilsOf(monkey), '食べ終えている').toEqual([]);
-      expect(lungeTargetByInstance(changes).size).toBe(0);
+      expect(lungeTargetsByInstance(changes).size).toBe(0);
     });
   });
 

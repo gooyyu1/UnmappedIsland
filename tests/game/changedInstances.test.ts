@@ -6,7 +6,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import {
   bornInstances,
-  lungeTargetByInstance,
+  lungeTargetsByInstance,
   originInstanceByInstance,
   vanishedInstances,
 } from '../../src/game/view/changedInstances';
@@ -119,11 +119,11 @@ object_defs:
   }
 
   describe('突進（HuntingSystem.md 6.1節）', () => {
-    /** bodyの実行中に起きた変化を、突進した個体と相手へ直す。 */
-    function lungesOf(body: () => void): ReadonlyMap<number, number> {
+    /** bodyの実行中に起きた変化を、突進した個体と相手の候補へ直す。 */
+    function lungesOf(body: () => void): ReadonlyMap<number, readonly number[]> {
       const changes: WorldChange[] = [];
       session.observeChanges((change) => changes.push(change), body);
-      return lungeTargetByInstance(changes);
+      return lungeTargetsByInstance(changes);
     }
 
     it('壊した回は、壊した側から壊された側への突進になる', () => {
@@ -132,7 +132,7 @@ object_defs:
 
       const lunges = lungesOf(() => execute(beast, stone, 'wreck'));
 
-      expect(lunges).toEqual(new Map([[beast.instanceId, stone.instanceId]]));
+      expect(lunges).toEqual(new Map([[beast.instanceId, [stone.instanceId]]]));
     });
 
     it('持ち去った回も突進になる（壊れたかどうかは問わない）', () => {
@@ -141,7 +141,7 @@ object_defs:
 
       const lunges = lungesOf(() => execute(beast, stone, 'grab'));
 
-      expect(lunges).toEqual(new Map([[beast.instanceId, stone.instanceId]]));
+      expect(lunges).toEqual(new Map([[beast.instanceId, [stone.instanceId]]]));
     });
 
     it('生まれた物へは突進しない（どこからも動いていない）', () => {
@@ -169,7 +169,9 @@ object_defs:
       expect(lungesOf(() => execute(beast, placeOnGround('stone'), 'devour')).size).toBe(0);
     });
 
-    it('一度の差し替えで何度も手を出しても、突進は最初の相手だけ', () => {
+    it('一度の差し替えで何度も手を出せば、候補が起きた順に並ぶ', () => {
+      // 見せる突進は1つだが、**どれを相手にするかを決めるのはここではない**——画面に出ている
+      // ものを選べるのは並びを読める側だけなので、選べるように順で渡す。
       const beast = placeOnGround('beast', 'beasts');
       const first = placeOnGround('stone');
       const second = placeOnGround('stone');
@@ -179,7 +181,20 @@ object_defs:
         execute(beast, second, 'wreck');
       });
 
-      expect(lunges).toEqual(new Map([[beast.instanceId, first.instanceId]]));
+      expect(lunges).toEqual(new Map([[beast.instanceId, [first.instanceId, second.instanceId]]]));
+    });
+
+    it('中身のある入れ物を壊すと、こぼれた中身より先に入れ物が並ぶわけではない', () => {
+      // WorldObject.destroyは**自分の消滅を記録する前に中身をこぼす**ので、起きた順の先頭は
+      // こぼれた中身になる。どちらが手を出した相手かは、画面に出ているかで決まる（cardMotionPlan）。
+      const beast = placeOnGround('beast', 'beasts');
+      const basket = placeOnGround('basket');
+      const contents = spawn('stone');
+      expect(contents.moveToSlotOrRejection(basket.getSlot(slot('contents')))).toBeUndefined();
+
+      const lunges = lungesOf(() => execute(beast, basket, 'wreck'));
+
+      expect(lunges).toEqual(new Map([[beast.instanceId, [contents.instanceId, basket.instanceId]]]));
     });
 
     it('2匹が別々に手を出せば、突進も分かれる', () => {
@@ -192,8 +207,8 @@ object_defs:
 
       expect(lunges).toEqual(
         new Map([
-          [beasts[0].instanceId, stones[0].instanceId],
-          [beasts[1].instanceId, stones[1].instanceId],
+          [beasts[0].instanceId, [stones[0].instanceId]],
+          [beasts[1].instanceId, [stones[1].instanceId]],
         ]),
       );
     });

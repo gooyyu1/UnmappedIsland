@@ -373,7 +373,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
           before: [placed('獣', [1], 0), placed('籠', [2], 500)],
           staying: [placed('獣', [1], 0)],
           left: [{ card: '籠', ids: [2] }],
-          lunges: new Map([[1, 2]]),
+          lunges: new Map([[1, [2]]]),
           vanished,
         }),
       );
@@ -394,7 +394,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
           left: [{ card: '籠', ids: [2] }],
           origins: origins([1], 900),
           born: [1],
-          lunges: new Map([[1, 2]]),
+          lunges: new Map([[1, [2]]]),
         }),
       );
 
@@ -431,7 +431,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
         input({
           before: [placed('獣', [1], 0), placed('実', [2, 3], 500)],
           staying: [placed('獣', [1], 0), placed('実', [3], 500)],
-          lunges: new Map([[1, 2]]),
+          lunges: new Map([[1, [2]]]),
         }),
       );
 
@@ -446,7 +446,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
           staying: [placed('火口', [1], 0)],
           left: [{ card: '枝', ids: [2] }],
           released: { ids: [2], rect: 300 },
-          lunges: new Map([[1, 2]]),
+          lunges: new Map([[1, [2]]]),
           vanished: [2],
         }),
       );
@@ -464,11 +464,50 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
           staying: [placed('獣', [1], 0)],
           left: [{ card: '籠', ids: [2] }],
           aloft: [1],
-          lunges: new Map([[1, 2]]),
+          lunges: new Map([[1, [2]]]),
         }),
       );
 
       expect(plan.lunges).toEqual([]);
+    });
+
+    it('手を出した相手は、画面に出ている候補のうち最初のもの', () => {
+      // 中身のある籠を壊した回がこれ。こぼれた中身の移動が籠の消滅より先に記録される（changedInstances）
+      // が、中身は閉じた籠の中に居たので画面に出ていない。
+      const plan = planMotion(
+        input({
+          before: [placed('獣', [1], 0), placed('籠', [2], 500)],
+          staying: [placed('獣', [1], 0)],
+          arriving: [placed('石', [3], 700)],
+          left: [{ card: '籠', ids: [2] }],
+          origins: origins([3], 500),
+          lunges: new Map([[1, [3, 2]]]),
+          vanished: [2],
+        }),
+      );
+
+      expect(plan.lunges[0]).toMatchObject({ to: 500, struck: '籠', raisesDust: true });
+      expect(plan.puffs, '砂埃は突き当たってから').toEqual([]);
+    });
+
+    it('同じ札へ2匹が手を出しても、片付けと砂埃は1回だけ', () => {
+      // 同種2個の束から、2匹がそれぞれ1個ずつ持ち去った回。札は1枚なので、引き取るのも片方だけ。
+      const plan = planMotion(
+        input({
+          before: [placed('獣', [1, 2], 0), placed('実', [3, 4], 500)],
+          staying: [placed('獣', [1, 2], 0)],
+          left: [{ card: '実', ids: [3, 4] }],
+          lunges: new Map([
+            [1, [3]],
+            [2, [4]],
+          ]),
+          vanished: [3, 4],
+        }),
+      );
+
+      expect(plan.lunges.map(({ struck }) => struck)).toEqual(['実', undefined]);
+      expect(plan.lunges.map(({ raisesDust }) => raisesDust)).toEqual([true, false]);
+      expect(plan.discards).toEqual([]);
     });
 
     it('相手が画面に出ていなければ、突き当たる先が無い', () => {
@@ -476,7 +515,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
         input({
           before: [placed('獣', [1], 0)],
           staying: [placed('獣', [1], 0)],
-          lunges: new Map([[1, 2]]),
+          lunges: new Map([[1, [2]]]),
         }),
       );
 
@@ -493,7 +532,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
             { card: '獣', ids: [1] },
             { card: '籠', ids: [2] },
           ],
-          lunges: new Map([[1, 2]]),
+          lunges: new Map([[1, [2]]]),
         }),
       );
 
