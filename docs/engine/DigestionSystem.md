@@ -36,8 +36,6 @@
 
 `satiety` は実体値です。食べたかさぶん増え、tick で減ります。`max` が胃の容量（1,500mL）で、
 素の減りは一定（−16/tick）で、**1 日 1,536mL ＝ 3 食 × 512mL** がちょうど食べる量と釣り合います。
-**練習はこの上へ同じだけ足す**ので、練習を挟んだ日はそのぶん余分に要ります
-（[`SkillSystem.md`](./SkillSystem.md) 3.1.2 節。練習の操作はまだ無い）。
 
 **「これ以上食べられない」もここが持ちます。** 段 `full` を置き、`eat` を
 `not: {subject: agent, prop: satiety, in_stage_or_above: full}` で塞ぎます。水分の `full` と
