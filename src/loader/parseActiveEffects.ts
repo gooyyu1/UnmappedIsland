@@ -116,7 +116,7 @@ const PICK_CANDIDATE_RESERVED_KEYS = ['weight', 'among'] as const;
  * pick（10節）の候補リストを読む。候補の中身は9節の命令と同じで、さらにpickを入れ子にできる。
  *
  * `fieldName`はエラー文が名乗るYAMLのキー名。**常に呼び出し側が言う**——卓を持つのは`pick`だけでは
- * なく、レシピの`surplus`（13.1節）も同じ形の並びを持つ。
+ * なく、レシピの`surplus`（13.6節）も同じ形の並びを持つ。
  */
 export function parsePickList(
   loader: WorldCodexYamlLoader,

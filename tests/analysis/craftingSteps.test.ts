@@ -194,6 +194,42 @@ object_defs:
     expect(lifetime.minutes).toBe(960 * 15);
   });
 
+  it('作る腕は、レシピの所要時間と分岐に現れる', () => {
+    // レシピが名乗る手際と余分の卓（13.6節）は、他の参照と同じく定義から解く。**解いた値を使わずに
+    // 「必ず1つ・宣言どおりの時間」と直書きすると、腕で変わる分を収支表が数えないまま断言する。**
+    const YAML_SKILLED = `
+object_defs:
+  fiber: {tags: [item]}
+  weaver:
+    tags: [character]
+    props:
+      cordage_deftness: {value: 12}
+      cordage_thrift: {value: 25}
+  snare:
+    tags: [item]
+    recipes:
+      knotted:
+        deftness: {subject: agent, prop: cordage_deftness}
+        steps:
+          - requires: [{object: fiber, count: 2, consume: true}]
+            duration: 60
+        surplus:
+          - {weight: 100}
+          - weight: {subject: agent, prop: cordage_thrift}
+            spawn: {object: snare, into: agent}
+`;
+    const skilledCodex = new WorldCodexYamlLoader().load('skilled.yaml', YAML_SKILLED).buildAndReset();
+    const snareId = skilledCodex.objectNames.getId('snare');
+    const [knotted] = craftingStepsOf(skilledCodex, skilledCodex.objects.get(snareId));
+
+    expect(knotted.laborMinutes, '手際の12分ぶん短い').toBe(48);
+    expect(knotted.elapsedMinutes).toBe(48);
+    expect(knotted.hasUnresolvedReferences, '腕は作り手の層から解ける').toBe(false);
+    // 卓は100対25なので、5回に1回は2つ取れる。
+    expect(knotted.outcomes.map((outcome) => outcome.probability)).toEqual([0.8, 0.2]);
+    expect(knotted.outputs).toEqual([{ objectGlobalId: snareId, counts: [1, 2] }]);
+  });
+
   it('レシピは素材・道具が入力、完成品が出力になる', () => {
     const [woven] = stepsOf('basket');
 

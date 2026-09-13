@@ -1,6 +1,7 @@
 import type { WorldObject } from './WorldObject';
 import type { ObjectDef } from './ObjectDef';
 import type { PickEffect } from './PickEffect';
+import type { PropertyRefReading } from './EffectReader';
 import type { TypeMatchRule } from './TypeMatchRule';
 import type { Requirement, Requirements } from './Requirement';
 import { ReferenceContext } from './ReferenceRoot';
@@ -48,13 +49,18 @@ export class RecipeRequirementDef {
 }
 
 /**
- * 手際をいくら積んでも、工程がこれより短くはならない分数（13.1節）。
+ * 手際をいくら積んでも、工程がこれより短くはならない分数（13.6節）。
  *
  * 0分の工程は「押した瞬間に終わる作業」になり、**時間が最も希少な資源である**という前提
  * （SkillSystem.md 7節）がその工程だけで消える。下限を持つのは工程の側で、上乗せの側ではない
  * ——上乗せは1つで所要時間の違う工程すべてに積まれるので、どこまで引いてよいかを知らない。
  */
 const MINIMUM_STEP_MINUTES = 1;
+
+/** 手際をdeftness分引いた後の、その工程に実際にかかる分数（下限で止める）。 */
+function minutesAfterDeftness(step: RecipeStepDef, deftness: number): number {
+  return Math.max(MINIMUM_STEP_MINUTES, step.durationMinutes - deftness);
+}
 
 /** レシピの工程1つ（13.1節）。 */
 export class RecipeStepDef {
@@ -112,7 +118,7 @@ export class RecipeDef {
   readonly deftness: PropertyPath | undefined;
 
   /**
-   * 完成した瞬間に1回だけ引く、余分が取れるかの卓（13.1節）。宣言していなければundefined＝
+   * 完成した瞬間に1回だけ引く、余分が取れるかの卓（13.6節）。宣言していなければundefined＝
    * 何個作っても1つしかできない物。
    */
   readonly surplus: PickEffect | undefined;
@@ -135,17 +141,34 @@ export class RecipeDef {
     this.surplus = surplus;
   }
 
+  /** 手際の宣言（PropertyRefReading参照）。名乗っていなければundefined。 */
+  get deftnessReading(): PropertyRefReading | undefined {
+    return this.deftness === undefined
+      ? undefined
+      : { subject: this.deftness.root, propertyGlobalId: this.deftness.propertyGlobalId };
+  }
+
   /**
    * agentがその工程に実際に費やすゲーム内時間（分）。宣言された仕事の量から、作り手の手際を
-   * 引いた値（13.1節）。手際を名乗っていない、または作り手がそれを持たないなら宣言どおり。
+   * 引いた値（13.6節）。手際を名乗っていない、または作り手がそれを持たないなら宣言どおり。
    *
    * **問うのは「この者にとって何分か」なのでagentは必ず要る**（解放条件`unmetUnlockRequirement`と
    * 同じ形）。誰にとってでもない分数は、工程が宣言した仕事の量（`durationMinutes`）が直接答える。
    */
   minutesFor(step: RecipeStepDef, agent: WorldObject): number {
     // 成果物のインスタンスはまだ無い（作りかけは完成品ではない）ので、selfを持たない文脈で解く。
-    const deftness = this.deftness?.effectiveNumber(ReferenceContext.asking(agent)) ?? 0;
-    return Math.max(MINIMUM_STEP_MINUTES, step.durationMinutes - deftness);
+    return minutesAfterDeftness(step, this.deftness?.effectiveNumber(ReferenceContext.asking(agent)) ?? 0);
+  }
+
+  /**
+   * 手際が`deftness`分の作り手が、全工程を通して実際に費やす分数。
+   *
+   * **手際をいくつとして読むかは呼び出し側が決める**——世界の個体から解く側（`minutesFor`）と、
+   * 定義だけから解く側（`analysis/craftingSteps`）が居る。下限の当て方はどちらも同じでなければ
+   * ならないので、引き算はこちらが持つ。
+   */
+  totalMinutesWithDeftness(deftness: number): number {
+    return this.steps.reduce((sum, step) => sum + minutesAfterDeftness(step, deftness), 0);
   }
 
   /**

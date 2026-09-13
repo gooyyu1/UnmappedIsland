@@ -69,7 +69,8 @@ const ACCESS_BONUSES = [
  * 切れても腕は死なない**——解放は解放条件が担うので、切れると「解放しか効かない腕」へ戻る。
  *
  * 読まれ方もアクセス系と違う（つまみの`base`ではなく、レシピの`deftness`・`surplus`が直に名乗る、
- * GameElementDefinition.md 13.1節）ので、下の`recipeBonusesNamed`が拾う。
+ * GameElementDefinition.md 13.6節）が、**書き方はどちらも`{subject: agent, prop: ...}`**なので、
+ * 読まれているかは下の`propsReadFromAgent`が一緒に拾う。
  */
 const CRAFTING_BONUSES = [
   { skill: 'skill_knapping', bonus: 'knapping_deftness', byStage: [0, 3, 8, 15] },
@@ -186,7 +187,7 @@ function huntingGrantingTypes(): ReadonlySet<string> {
 /**
  * 世界のどこかで `{subject: agent, prop: ...}` として読まれているプロパティ。**読む側の書き方は1つ**
  * なので、レシピの解放条件（docs/engine/SkillSystem.md 4節）も、操作の `conditions` も、`base` の
- * 土台も、レシピの `deftness`・`surplus` の重み（GameElementDefinition.md 13.1節）も、この1本で
+ * 土台も、レシピの `deftness`・`surplus` の重み（GameElementDefinition.md 13.6節）も、この1本で
  * 拾える——**どこで読まれているかではなく、読まれているかだけを問う。**
  */
 function propsReadFromAgent(): ReadonlySet<string> {
@@ -699,7 +700,7 @@ describe('腕前とレシピの解放条件', () => {
 
   it('製作系の腕は、段が上がるほど上乗せを押し上げる', () => {
     // アクセス系（上のテスト）と同じ形。**素は0**で、上の段ほど大きい。手際が正の値なのは、
-    // 符号を持つのが引く側の工程だから（GameElementDefinition.md 13.1節）——「段が上がるほど
+    // 符号を持つのが引く側の工程だから（GameElementDefinition.md 13.6節）——「段が上がるほど
     // 大きい」をアクセス系と同じ向きで読めるようにしてある。
     for (const { skill, bonus, byStage } of CRAFTING_BONUSES) {
       const character = characterWithSkills(0);
