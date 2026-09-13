@@ -429,16 +429,23 @@ function beastSpawningCandidates(): readonly { where: string; missingSkill: bool
  * **候補が出す型を全部その腕の担い手と数えてはいけない。** 候補は複数の型を出すので、そのままだと
  * 腕と関係の無い型（石と一緒に出る小枝）が束に混ざり、**束が島から消えない理由をその型が肩代わり
  * する**——石器の契機を石の出ない土地へ寄せても、どの土地にも在る小枝が残るぶん緑のままになる。
- * 担い手と数えるのは、**その型を出す候補がどれもその腕を配っているとき**だけ。石と一緒にも小枝だけ
- * でも出る型は、どちらの腕の担い手でもない。
+ * 担い手と数えるのは、**その型を出す探索の候補がどれもその腕を配っているとき**だけ。石と一緒にも
+ * 小枝だけでも出る型は、どちらの腕の担い手でもない。
+ *
+ * **数えるのは探索（`explore`）の候補だけ。** 契機を書けるのは操作している人が居る場面に限られ
+ * （`agent` を書けない `on_max`/`on_min` からは腕の持ち主を指せない、docs/engine/TrapSystem.md 8節）、
+ * **契機を持ちようが無い卓**——罠と囲いの抽選（`traps.yaml`・`farming.yaml`）——まで数えると、
+ * そこがネズミを配らないぶんでネズミが交差から落ち、**狩猟の担い手が空になっても素通りする**。
+ * 探索であれば土地の別を問わない（沖の小島も `explorable` な土地で、同じ石を出す）。
  */
 function discoveryGrantTypes(): ReadonlyMap<string, ReadonlySet<string>> {
-  /** 型 → その型を出す候補が**どれも**配っている腕（積集合。undefinedは「まだ1件も見ていない」）。 */
+  /** 型 → その型を出す探索の候補が**どれも**配っている腕（積集合）。 */
   const skillsByType = new Map<string, Set<string>>();
 
-  const walk = (node: unknown): void => {
+  /** 探索1つの `pick`（入れ子も含む）の候補を、出す型と配る腕の組で数え上げる。 */
+  const collectCandidates = (node: unknown): void => {
     if (isSeq(node)) {
-      for (const item of node.items) walk(item);
+      for (const item of node.items) collectCandidates(item);
       return;
     }
     if (!isMap(node)) return;
@@ -459,6 +466,24 @@ function discoveryGrantTypes(): ReadonlyMap<string, ReadonlySet<string>> {
             else for (const skillName of shared) if (!granted.has(skillName)) shared.delete(skillName);
           }
         }
+      collectCandidates(pair.value);
+    }
+  };
+
+  /** `interactions` の下の `explore` だけを探して、その中の候補を数えさせる。 */
+  const walk = (node: unknown): void => {
+    if (isSeq(node)) {
+      for (const item of node.items) walk(item);
+      return;
+    }
+    if (!isMap(node)) return;
+
+    for (const pair of node.items) {
+      if (isScalar(pair.key) && String(pair.key.value) === 'interactions' && isMap(pair.value)) {
+        for (const entry of pair.value.items)
+          if (isScalar(entry.key) && String(entry.key.value) === 'explore') collectCandidates(entry.value);
+        continue;
+      }
       walk(pair.value);
     }
   };
@@ -651,7 +676,18 @@ describe('腕前とレシピの解放条件', () => {
     const indexOfObject = new Map(sources.objects.map((object, index) => [object.name, index]));
     const grants = discoveryGrantTypes();
 
-    expect(grants.size, '発見の契機が1つも無い').toBeGreaterThan(0);
+    // **契機を受け取っている腕は、下の突き合わせにも必ず並ぶ。** 担い手が1つも立たなかった腕は
+    // `grants` から消えるので、そのまま回すと**見られていないことが緑と見分けられない**
+    // ——残りの腕だけで `grants` は非空になり、その腕の契機をどこへ寄せても落ちない。
+    const granted = [...declaredSkillGains()]
+      .filter(([, byRoute]) => byRoute.has('discovery'))
+      .map(([skillName]) => skillName);
+
+    expect(granted.length, '発見の契機が1つも無い').toBeGreaterThan(0);
+    expect(
+      granted.filter((skillName) => (grants.get(skillName)?.size ?? 0) === 0),
+      '契機を配っているのに、担い手の型が1つも立たない腕',
+    ).toEqual([]);
     // 探索で出ない型を契機に据えていれば、下の突き合わせは黙って素通りする（消えたかを問えない）。
     expect(
       [...grants].flatMap(([skill, types]) =>

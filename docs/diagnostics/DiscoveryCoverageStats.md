@@ -62,7 +62,7 @@ YAMLとずれます）。
   [`StartupReachStats.md`](./StartupReachStats.md) が持つ軸です。
 - **どの腕前へ配るかは数えません。** 型と腕前の対応は `locations.yaml` の `pick` の候補にありますが
   （[`SkillSystem.md`](../engine/SkillSystem.md) 3.3節）、ここが数えるのは契機の器が島に在るかだけです。
-  **腕前ごとに契機が丸ごと消える島が無いかは、`tests/world-codex/skillsYaml.test.ts` が同じ数の島を
+  **腕前ごとに契機が丸ごと消える島が無いかは、`tests/world-codex/skillsYaml.test.ts` が自分で島を
   生成して見ます**——この表は書き方を決めるための材料で、線を割ったときに止めるのはテストの役です。
 - 回す種の数は `startup_reach.yaml`・`island_escape_reach.yaml` と同じです（どれも `meta` に
   入っています）。同じ島の配りを別の軸から測る表なので、母数を揃えないと割合を並べて読めません。

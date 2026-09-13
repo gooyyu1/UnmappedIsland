@@ -833,12 +833,19 @@ object_defs:
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
+          # 石を見つけたら石器の腕が伸びる（発見の契機、docs/engine/SkillSystem.md 3.3節）。
+          # **地上の土地と同じ候補には同じ契機を置く**（locations.yaml）——同じ石を見つけて、
+          # ここでだけ伸びないという差は、島の外に居ることとは関わらない。
+          # **錫鉱石には置かない**——採鉱・製錬の契機はこの1つの土地からしか出ず、島の生成には
+          # 現れないので、同3.3節の「どの島にも1つは残る」を満たせない。
           - weight: 25
             spawn: {object: stone, count: 2, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 20
             spawn:
               - {object: thick_branch, into: self}
               - {object: stone, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 20
             spawn: {object: seaweed, count: 2, into: self}
           - weight: 20
