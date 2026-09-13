@@ -262,10 +262,11 @@ generation_scopes:
   ```
   歩く分   = distance_meters × (moveCostA + moveCostB) / 2 / walk_meters_per_hour × 60
   登り下り = |elevationA − elevationB| × metersPerElevationUnit / climb_meters_per_hour × 60
-  travel_minutes = round_to_15( 歩く分 + 登り下り )
+  travel_minutes = round_to_tick( 歩く分 + 登り下り )
   ```
 
-  （15分単位に丸め、`minutes_per_tick` に対して粗すぎない粒度に揃えます。最低15分。）
+  （`minutes_per_tick`（`core.yaml`）単位に丸め、tick 単位の時間経過と噛み合う粒度に揃えます。
+  **最低 1 tick**——どんなに近い土地の間でも 1 刻みはかかります。）
 
   - `move_cost` は**その土地を進む遅さの倍率**です（1.0 が開けた土地＝ `walk_meters_per_hour`
     そのままの速さ、密林 1.6、山頂 2.5）。

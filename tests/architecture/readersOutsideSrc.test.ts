@@ -74,6 +74,7 @@ const READ_ONLY_FROM_OUTSIDE = [
   'src/domain/generation/AxisSampler.ts COASTAL_DISTANCE_AXIS_NAME',
   'src/domain/generation/GenerationScopeDef.ts GenerationScopeParams',
   'src/domain/generation/LocationTypeDef.ts AxisPreference.tolerance',
+  'src/domain/generation/PathNetworkBuilder.ts TRAVEL_MINUTES_STEP',
   'src/domain/wrappers/Location.ts Location.fixtureStacks',
   'src/domain/wrappers/Location.ts Location.itemStacks',
   'src/domain/wrappers/Location.ts Location.receiveItem',
