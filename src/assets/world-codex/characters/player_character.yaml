@@ -690,7 +690,8 @@ traits:
       # 開かないレシピになる（SkillSystem.md 3.2節）。
       # ------------------------------------------------------------------
       # 石を打ち欠く（locations.yamlのknap）。柄付けの刃（tools.yaml）を開ける。
-      # 段が押し上げるのは下のknapping_deftnessで、石斧・突き銛のレシピがそれをdeftnessに名乗る。
+      # 段が押し上げるのは下のknapping_deftnessで、打ち欠く仕事のレシピがそれをdeftnessに名乗る
+      # （docs/world/Skills.md 7.1節）。
       skill_knapping:
         tags: [skill]
         value: 0
@@ -771,7 +772,8 @@ traits:
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
       # 皮を剥ぐ（animals.yamlのbutcher）。なめし革と、それを縫った物（clothing.yaml・voyage.yamlの帆）を開ける。
-      # 段が押し上げるのは下のleatherwork_deftnessで、なめし・縫いのレシピがそれをdeftnessに名乗る。
+      # 段が押し上げるのは下のleatherwork_deftnessで、皮を扱う仕事のレシピがそれをdeftnessに名乗る
+      # （docs/world/Skills.md 7.1節）——**縫わずに羽織るだけの物も名乗る**（clothing.yamlのdraped）。
       skill_leatherwork:
         tags: [skill]
         value: 0
@@ -801,7 +803,9 @@ traits:
           - {name: expert, min: 180}
       # 得た食を保たせる（salt.yamlのcure）。開けるのは燻し小屋（smoking.yamlのsmokehouse）で、
       # 日差しの要らない保存がその先にある（docs/world/SurvivalItems.md 11節）。
-      # 段が押し上げるのは下のpreserving_deftnessで、燻し小屋のレシピがそれをdeftnessに名乗る。
+      # 段が押し上げるのは下のpreserving_deftnessで、保たせる造作のレシピがそれをdeftnessに名乗る
+      # ——**開けるのが燻し小屋だけでも、名乗る側は干し場（drying.yaml）も含む**
+      # （docs/world/Skills.md 7.1節）。
       skill_preserving:
         tags: [skill]
         value: 0
@@ -912,16 +916,20 @@ traits:
       # **腕ごとに1本ずつ持つ。** 1本を全部の腕で共有すると、石を打ち欠いて上げた腕で編み物まで
       # 速くなる。
       # ------------------------------------------------------------------
-      # 打ち欠く手際。石斧・突き銛のレシピ（tools.yaml）が名乗る。
+      #
+      # **どのレシピがどれを名乗るかは、ここには書かない**——名乗るのはレシピの側で、そこへ書き写すと
+      # レシピが増えるたびに嘘になる。どの仕事がどの腕かの決め方は docs/world/Skills.md 7.1節。
+      # ------------------------------------------------------------------
+      # 石を打ち欠く手際。
       knapping_deftness: {value: 0}
-      # 撚る・編む手際。編み籠（containers.yaml）・くくり罠（traps.yaml）・葉の衣類（clothing.yaml）が名乗る。
+      # 繊維を撚る・編む・結ぶ・巻く手際。
       cordage_deftness: {value: 0}
-      # 同じ繊維から余分が取れる重み。くくり罠（traps.yaml）の余分の卓が名乗る。**手際と分けているのは
-      # 桁が違うから**（所要時間は30〜360分、卓の相手は100）。
+      # 同じ繊維から余分が取れる重み。**手際と分けているのは桁が違うから**（所要時間は30〜360分、
+      # 卓の相手は100）。
       cordage_thrift: {value: 0}
-      # 削り出す手際。槍（tools.yaml）と、走り木を削り出すそり（containers.yaml）が名乗る。
+      # 木を削る・縛って組む手際。
       woodwork_deftness: {value: 0}
-      # なめす・縫う手際。なめし革と縫った物（clothing.yaml・voyage.yaml）が名乗る。
+      # 皮をなめす・縫う手際。
       leatherwork_deftness: {value: 0}
-      # 保たせる造作の手際。燻し小屋（smoking.yaml）が名乗る。
+      # 保たせる造作を組む手際。
       preserving_deftness: {value: 0}

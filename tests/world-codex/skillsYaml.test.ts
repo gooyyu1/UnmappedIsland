@@ -510,16 +510,20 @@ describe('腕前とレシピの解放条件', () => {
     return required;
   }
 
-  /** 解放条件を持つレシピすべて（完成品の名前を添える）。 */
-  function gatedRecipes(): readonly { product: string; recipe: RecipeDef }[] {
+  /** 世界じゅうのレシピすべて（完成品の名前を添える）。 */
+  function allRecipes(): readonly { product: string; recipe: RecipeDef }[] {
     const found: { product: string; recipe: RecipeDef }[] = [];
     for (const product of codex.objects) {
       for (const recipe of product.recipesProducingThis)
         // 作りかけの型（レシピの軸を持つ変種）は同じレシピを二度数えさせるので、素の型だけを見る。
-        if (recipe.unlock !== undefined && codex.baseOf(product) === product)
-          found.push({ product: product.name, recipe });
+        if (codex.baseOf(product) === product) found.push({ product: product.name, recipe });
     }
     return found;
+  }
+
+  /** 解放条件を持つレシピすべて（完成品の名前を添える）。 */
+  function gatedRecipes(): readonly { product: string; recipe: RecipeDef }[] {
+    return allRecipes().filter(({ recipe }) => recipe.unlock !== undefined);
   }
 
   it('プレイヤーキャラクタは、Skills.md 2節の11本を腕前のタグ付きで持つ', () => {
@@ -731,7 +735,8 @@ describe('腕前とレシピの解放条件', () => {
     // エンジンの積み方で、世界が宣言した刻みの符号は読んでいない。
     const novice = characterWithSkills(STAGES[0].min);
     const expert = characterWithSkills(STAGES.at(-1)!.min);
-    const named = gatedRecipes().filter(({ recipe }) => recipe.deftness !== undefined);
+    // **解放を要求しないレシピも名乗る**（Skills.md 7.1節）ので、見るのは世界じゅうのレシピ。
+    const named = allRecipes().filter(({ recipe }) => recipe.deftness !== undefined);
     expect(named.length, '手際を名乗るレシピが1つも無い').toBeGreaterThan(0);
 
     for (const { product, recipe } of named)
@@ -760,6 +765,61 @@ describe('腕前とレシピの解放条件', () => {
         skillOfBonus.get(bonus),
       );
     }
+  });
+
+  it('手際を名乗らないレシピは、名乗らないと決めた分だけ', () => {
+    // **解放条件を持たないレシピも名乗る**（docs/world/Skills.md 7.1節）ので、名乗っていないことは
+    // 「腕の要らない仕事だと決めた」の印になる。決めた覚えの無いレシピがここへ落ちてくるのを止める
+    // ——**新しいレシピは、名乗るか、ここへ足して理由をYAMLへ書くかのどちらかを選ぶことになる。**
+    //
+    // **どの腕が正しいかは見ない**（それは内容の判断で、拠り所はSkills.md 7.1節と各レシピの
+    // コメント）。見るのは、決めずに素通りできないことだけ。
+    //
+    // 名乗らないと決めたのは、**どの技術の仕事でもない工程**——掘る（畑・落とし穴）、並べる
+    // （塩田）、積む（焚き火・覆い焼きの炉）、広げる（敷物）、粘土を巻き上げる（素焼き前の甕）。
+    // 理由は1件ずつ、そのレシピのコメントに書いてある。
+    const WITHOUT_DEFTNESS = [
+      'bed.spread',
+      'campfire.stacked',
+      'earth_kiln.heaped',
+      'field.tilled',
+      'pitfall.dug',
+      'salt_pan.laid',
+      'unfired_jar.coiled',
+    ];
+
+    expect(
+      allRecipes()
+        .filter(({ recipe }) => recipe.deftness === undefined)
+        .map(({ product, recipe }) => `${product}.${recipe.name}`)
+        .sort(),
+    ).toEqual(WITHOUT_DEFTNESS);
+  });
+
+  it('レシピが名乗る手際は、伸ばす操作を持つ腕のもの', () => {
+    // **上げようのない腕が速さを握らない**（docs/world/Skills.md 7.1節）。伸ばす操作の無い腕
+    // （指物・建築・料理・採鉱・製錬）を名乗ると、そのレシピの工程は誰にも縮められない時間になる
+    // ——腕は宣言だけ先に置かれる（SkillSystem.md 3.2節）ので、名乗る側が先走れてしまう。
+    //
+    // **アクセス系も同じくここで落ちる**（CRAFTING_BONUSESに無いので）。火の腕が決めるのは着火の
+    // 重みだけで、火起こし具を削る速さではない（同5節）。
+    const skillOfBonus = new Map<string, string>(CRAFTING_BONUSES.map((entry) => [entry.bonus, entry.skill]));
+    const gains = declaredSkillGains();
+
+    expect(
+      allRecipes()
+        .filter(({ recipe }) => recipe.deftness !== undefined)
+        .map(({ product, recipe }) => ({
+          where: `${product}.${recipe.name}`,
+          bonus: codex.propertyNames.getName(recipe.deftness!.propertyGlobalId),
+        }))
+        .filter(({ bonus }) => {
+          const skill = skillOfBonus.get(bonus);
+          return skill === undefined || !gains.has(skill);
+        })
+        .map(({ where, bonus }) => `${where}: ${bonus}`),
+      '伸ばしようのない腕を名乗るレシピ',
+    ).toEqual([]);
   });
 
   it('腕を配る操作は、作業の長さに依らず一律の量を配る', () => {

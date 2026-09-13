@@ -489,6 +489,9 @@ object_defs:
       # 腕を要求している——素材チェーンが自分でゲートしている場所には置かない
       # （docs/engine/SkillSystem.md 4.2節）。
       lashed:
+        # **要求しないまま、手際だけを名乗る**（docs/world/Skills.md 7.1節）。丸太を組んで縛る
+        # 仕事なので木材加工——帆（下のsewn）が皮革を名乗るのと、レシピごとに分かれる。
+        deftness: {subject: agent, prop: woodwork_deftness}
         steps:
           # 丸太を並べて桁を渡す。
           - requires:
