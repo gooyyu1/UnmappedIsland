@@ -114,8 +114,8 @@ export class PassiveEffects {
     return this.effects;
   }
 
-  /** すべての効果が持つ影響の辺を書き出す（PassiveEffect.collectInfluences参照）。 */
-  collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {
-    for (const effect of this.effects) effect.collectInfluences(declarer, out);
+  /** すべての効果が持つ影響の辺を書き出す（役を答える文脈も含めてPassiveEffect.collectInfluences参照）。 */
+  collectInfluences(declarer: WorldObject, roles: ReferenceContext, out: InfluenceWriter): void {
+    for (const effect of this.effects) effect.collectInfluences(declarer, roles, out);
   }
 }

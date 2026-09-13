@@ -871,31 +871,47 @@ export class WorldObject {
    * （self・parent・child・ancestor）なら
    * 宣言元は必ず前者に居り、操作の役（agent・instrument・patient）を対象に書いた効果なら必ず後者に
    * 居る——横に並んだ物どうしは、木でも操作でも結ばれていない限り互いに届かない。
+   *
+   * **物のdefを辿るだけでは届かないぶんが1つある**——今効いている操作が宣言した持続効果（11.7節）で、
+   * 宣言しているのは物ではなく操作なので、セッションから引く
+   * （WorldSession.collectRunningInteractionInfluences）。
    */
   readInfluences(propertyGlobalId: PropertyGlobalId): PropertyInfluenceReading {
     const influences = new PropertyInfluences(this, propertyGlobalId);
     this.collectInfluencesRecursively(influences);
     for (let ancestor = this._parent; ancestor !== undefined; ancestor = ancestor._parent)
-      ancestor.def.passives.collectInfluences(ancestor, influences);
+      ancestor.collectDeclaredInfluences(influences);
     for (const participant of this.participantsSharingAnyRelation())
-      participant.def.passives.collectInfluences(participant, influences);
+      participant.collectDeclaredInfluences(influences);
+    this.session.collectRunningInteractionInfluences(influences);
     return influences;
   }
 
   /** 自分と、自分の中に入っている物すべてが宣言する持続効果の辺を書き出す。 */
   private collectInfluencesRecursively(out: InfluenceWriter): void {
-    this.def.passives.collectInfluences(this, out);
+    this.collectDeclaredInfluences(out);
     for (const child of this.children()) child.collectInfluencesRecursively(out);
+  }
+
+  /**
+   * この物のdefが宣言した持続効果の辺を書き出す。**役はそのつど今の参加から解く**——物のdefの宣言が
+   * 見る役は登録の後も参加に追随するので（RegisteredPassiveEffect）、読むときも同じ出どころで解く。
+   */
+  private collectDeclaredInfluences(out: InfluenceWriter): void {
+    this.def.passives.collectInfluences(this, ReferenceContext.forParticipant(this), out);
   }
 
   /**
    * 持続効果の対象（8.1節）を、影響の一覧のために解決する。**childは今入っている子を全部**返す
    * ——相手が1つに定まらない唯一の対象で、寄与も子ごとに1件ずつ登録される（setChildRegistered）。
-   * 操作の役（11.5節）は、今この物が操作に参加していなければ空になる。
+   * 操作の役（11.5節）は、rolesがその役の相手を持っていなければ空になる。
+   *
+   * **rolesが答えるのは役だけで、起点は自分**——役の出どころは宣言によって違う
+   * （PassiveEffect.collectInfluences）が、self・parent・ancestorを辿る先は常にこの物。
    */
-  resolveInfluenceTargets(path: PropertyPath): readonly WorldObject[] {
+  resolveInfluenceTargets(path: PropertyPath, roles: ReferenceContext): readonly WorldObject[] {
     if (path.root === 'child') return [...this.children()];
-    const target = path.owner(ReferenceContext.forParticipant(this));
+    const target = path.owner(roles.withSelf(this));
     return target === undefined ? [] : [target];
   }
 
