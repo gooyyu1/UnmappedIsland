@@ -109,6 +109,7 @@ npm run stats:hunt
 npm run stats:startup
 npm run stats:terrain
 npm run stats:voyage
+npm run stats:voyage-storm
 ```
 
 ## 再生成し忘れると赤くなる
@@ -138,16 +139,19 @@ PRの段では `npm test` が、`main` へ入った後は
 | [開始地点の立ち上がり](../../stats/startup_reach.yaml) | **丸ごと作り直して比べる**（2秒） |
 | [地形生成統計](../../stats/terrain.yaml) | **丸ごと作り直して比べる**（1秒） |
 | [航海](../../stats/voyage.yaml) | **丸ごと作り直して比べる**（2秒） |
+| [荒天の押し流しを入れた航海](../../stats/voyage_storm.yaml) | シミュレーションの入力（`core.yaml`・`voyage.yaml`）の**指紋**をレポートへ書き込み、突き合わせる。押し流しを数えない側の `baseline` 節だけは作り直して比べる |
 
 いずれも、節が消えていないことはキーが在って中身が空でないことで見ます。
 
-指紋を使っているのは気候だけで、それは**再生成に1分強かかる**からです（クラウドのセッションで67秒。
-`npm test` 全体が25秒なので、丸ごと比べると3倍以上になります）。**作り直しが数秒で済むなら丸ごと
-比べます**——指紋は「入力だと決めたファイル」の外を見ないので、そこから外れた入力（解析側が持つ
-定数など）を取りこぼします。
+指紋を使っているのは、**再生成に1分以上かかるもの**だけです（気候はクラウドのセッションで67秒、
+押し流しは75秒。`npm test` 全体が25秒なので、丸ごと比べると3倍以上になります）。**作り直しが数秒で
+済むなら丸ごと比べます**——指紋は「入力だと決めたファイル」の外を見ないので、そこから外れた入力
+（解析側が持つ定数など）を取りこぼします。
 
-指紋が見るのは `core.yaml` だけです。土地や食べ物の変更まで含めると、YAMLを1行直すたびに1分強の
-再生成を要求することになります——**線を引いた位置は読み方の文書に書いてあります。**
+**どこまでを指紋に含めるかは、レポートごとに読み方の文書が書いています**
+（[`ClimateSystemStats.md`](./ClimateSystemStats.md)・[`VoyageStormStats.md`](./VoyageStormStats.md)）。
+土地や食べ物の変更まで含めると、YAMLを1行直すたびに1分以上の再生成を要求することになるので、どちらも
+世界を回す側が読むファイルだけに絞り、**そこから外れた入力は再計算する節で突き合わせます。**
 
 ### `regenerate-stats.yml` ——`main` へ入った後
 
@@ -220,3 +224,9 @@ PRの段では `npm test` が、`main` へ入った後は
   季節の窓が期限として働くかの判定は出さない。
   読み方は [`VoyageStats.md`](./VoyageStats.md)。
   生成元: `tests/diagnostics/voyageStatsReport.test.ts`（計算は `src/analysis/voyageLegs.ts`）
+- [荒天の押し流しを入れた航海](../../stats/voyage_storm.yaml) — 上の針路を、海区と筏を実体化した世界で
+  **実際に渡らせた**もの。出航地点×季節ごとに、渡り切るまでの日数と漕ぎ出した回数、押し流された回数と
+  空振りになった渡り、そして上との差（[`Voyage.md`](../world/Voyage.md) 3.8節参照）。
+  **押し流しだけは定義から解けない**ので、ここだけ世界を回す。季節の窓が期限として働くかの判定は出さない。
+  読み方は [`VoyageStormStats.md`](./VoyageStormStats.md)。
+  生成元: `tests/diagnostics/voyageStormStatsReport.test.ts`（計算は `src/analysis/voyageDrift.ts`）

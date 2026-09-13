@@ -4,7 +4,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/DurationStats.md。
 
 meta:
-  - {unit: days, minimum: 1, durations: 140, longest: 100.00, shortest: 1.00, tool_wears: 14}
+  - {unit: days, minimum: 1, durations: 141, longest: 100.00, shortest: 1.00, tool_wears: 14}
 
 durations:
   - {object: bone_needle, property: durability, unit: days, days: 100.00, shortest_days: 20.00, longest_days: 100.00, repeats: false, destroys: true}
@@ -12,6 +12,7 @@ durations:
   - {object: fishing_harpoon, property: durability, unit: days, days: 100.00, shortest_days: 20.00, longest_days: 100.00, repeats: false, destroys: true}
   - {object: handcart, property: durability, unit: days, days: 100.00, shortest_days: 20.00, longest_days: 100.00, repeats: false, destroys: true}
   - {object: sledge, property: durability, unit: days, days: 100.00, shortest_days: 20.00, longest_days: 100.00, repeats: false, destroys: true}
+  - {object: slung_hammock, property: durability, unit: days, days: 100.00, shortest_days: 20.00, longest_days: 100.00, repeats: false, destroys: true}
   - {object: spear, property: durability, unit: days, days: 100.00, shortest_days: 20.00, longest_days: 100.00, repeats: false, destroys: true}
   - {object: stone_axe, property: durability, unit: days, days: 100.00, shortest_days: 20.00, longest_days: 100.00, repeats: false, destroys: true}
   - {object: tanned_leather_clothing, property: durability, unit: days, days: 100.00, shortest_days: 20.00, longest_days: 100.00, repeats: false, destroys: true}
