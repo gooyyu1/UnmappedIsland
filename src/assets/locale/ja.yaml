@@ -67,6 +67,9 @@ object_texts:
       # 保存加工（salt.yaml）。**加工の名前を前へ置くだけ**にして、加工の種類が増えても書式を
       # 増やさない（「塩漬けの空心菜」「燻製の空心菜」）。
       cure: '{value}の{base}'
+      # 下ごしらえ（foods.yaml）。**加工の名前を前へ置くだけ**なのは保存加工と同じだが、こちらの値は
+      # 「刻んだ」のように連体形で名乗るので「の」を挟まない。
+      prep: '{value}{base}'
       # 製作中オブジェクト（レシピの軸）。**完成品と同じ名前にする。** カード名は枠の中の1行
       # （全角10文字）に収まる長さで書いてあり、そこへ「作りかけの」の5文字を足すと4文字より長い名前は
       # すべてはみ出す。作りかけであることは青い覆いが示す（CardView.md 10節）ので、名前で言い直さない。
@@ -309,7 +312,7 @@ object_texts:
       skill_cooking:
         display_name: 料理
         icon: 🍳
-        description: 食材を調理する腕。今のこの島には、伸ばす手立てがまだ無い（焼くのは火が進める）。
+        description: 食材を調理する腕。下ごしらえをするほど上がる（焼くのは火が進める）。
       skill_preserving:
         display_name: 保存
         icon: 🧂
@@ -358,6 +361,10 @@ object_texts:
         display_name: なめす手際
         icon: ⏱️
         description: 皮革が決める物を作るとき、どの工程にも積まれる時間の上乗せ。皮革の腕が上がるほど深く縮む。
+      cooking_deftness:
+        display_name: 下ごしらえの手際
+        icon: ⏱️
+        description: 食材を下ごしらえするのにかかる時間への上乗せ。料理の腕が上がるほど深く縮む。
       preserving_deftness:
         display_name: 保たせる手際
         icon: ⏱️
@@ -756,6 +763,13 @@ object_texts:
   taro:
     display_name: タロイモ
     description: 太平洋の島々で主食とされてきた塊茎。生のままかじると、口も喉も刺すように痛む。
+    interactions:
+      chop:
+        display_name: 刻む
+        description: 刃を当てて小さく刻む。火の通りが速くなるかわり、切り口から傷むのも速くなる。
+  # prep軸の値（foods.yaml）。変種の名前にだけ出る（上のvariation_names）。
+  chopped:
+    display_name: 刻んだ
   roasted_taro:
     display_name: 焼いたタロイモ
     description: 熾火に埋めて芯まで焼いた芋。ここまでやって、初めて食べられる。出し忘れると焦げる。
@@ -1628,6 +1642,7 @@ reason_texts:
   salt_pan_full: 塩田は海水で満ちている。干し上がるまでは足せない。
   no_seawater: 海に面していない土地では、汲む海水がない。
   already_cured: これはもう塩漬けにしてある。
+  already_prepped: これはもう刻んである。二度刻んでも火の通りは変わらない。
   already_staked: この穴にはもう杭が立っている。
   too_spoiled: もう傷んでいる。塩を打っても、進んだぶんは戻らない。
   too_heavy: 荷が重すぎて歩けない。まず何かを置いていく必要がある。

@@ -23,7 +23,7 @@ export function carriedLightEvOf(codex: WorldCodex, objectName: string): number 
   const def = codex.objects.get(codex.objectNames.getId(objectName));
   const amounts = CARRIED_BRIGHTNESS_PROPERTIES.map((propertyName) => {
     const collector = new ParentModifyCollector(codex.propertyNames.getId(propertyName));
-    def.passives.read(collector);
+    def.passives.readBy(collector);
     return { propertyName, amount: collector.amount };
   });
 

@@ -175,6 +175,27 @@ describe('animals.yamlの動物', () => {
     expect(stone.tryGetProperty(codex.propertyNames.getId('durability'))?.getEffectiveValue()).toBe(960 - 20);
   });
 
+  it('余力が一撃ぶんに満たない武器でも殴れて、当たってから折れる', () => {
+    // 道具の余力を見る線は、その道具にもっと安い使い道が残っている工程にだけ引く
+    // （docs/engine/DurabilitySystem.md 2.1節）。一撃はどの武器にとっても最も安い使い道なので線が
+    // 無く、効果は時間を進めきってから一度に入る（InteractionDef.tryExecute）ので、折れるのは
+    // 当たった後になる。**一撃に線を足すとここが落ちる**——殴る組み合わせが成立しなくなる。
+    const stone = spawnInto('sharp_stone', player, 'hand');
+    // 一撃が食う20に満たない刃。0にはしない——0へ届いた刃はその時点で折れて無くなる。
+    stone.getProperty(codex.propertyNames.getId('durability')).setNumberWithoutEvents(19);
+
+    expect(
+      monkey
+        .combinationsWith(stone, player)
+        .find((combination) => combination.name === 'strike')
+        ?.tryExecute() === true,
+      '一撃ぶんに足りなくても殴れる',
+    ).toBe(true);
+
+    expect(injuriesOf(monkey), '一撃は当たっている').toEqual(['laceration']);
+    expect(stone.parent, '折れた石は残らない').toBeUndefined();
+  });
+
   it('外した回は傷が付かないが、警戒と摩耗はそのまま起きる', () => {
     // 当たり外れによらない分（警戒・摩耗）を各候補が持つ（animals.yaml）ので、外れた側でも
     // 抜けていないことを確かめる。

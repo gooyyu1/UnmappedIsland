@@ -33,7 +33,7 @@ export class PickEffect extends ActiveEffect {
     this.selectWeighted(available, context, session).apply(context, session, sameSlotSpawnSite);
   }
 
-  read(reader: EffectReader): void {
+  readBy(reader: EffectReader): void {
     reader.pick(new PickCandidates(this.candidates));
   }
 
@@ -74,7 +74,7 @@ class PickCandidates implements PickReading {
   }
 
   readEveryCandidate(reader: EffectReader): void {
-    this.forEachCandidate((candidate) => candidate.effect.read(reader));
+    this.forEachCandidate((candidate) => candidate.effect.readBy(reader));
   }
 
   forEachCandidate(visit: (candidate: PickCandidateReading) => void): void {

@@ -7,7 +7,7 @@ import type { PropertyGlobalId, SlotGlobalId } from './GlobalId';
 export type ConditionOp = 'lt' | 'lte' | 'gt' | 'gte' | 'eq' | 'neq' | 'in' | 'not_in';
 
 /**
- * conditions（14節）の木を**何が書かれているか**として読み上げる相手（ConditionNode.read）。
+ * conditions（14節）の木を**何が書かれているか**として読み上げる相手（ConditionNode.readBy）。
  *
  * 葉の種類ごとにメソッドを持つのは、種類を1つ足したときに読み手が黙って取りこぼさないようにするため
  * （効果の読み上げ口（EffectReader）と同じ理由）。**kindごとに使うフィールドが引数で決まる**ので、
@@ -55,7 +55,7 @@ export interface ConditionReader {
  * （docs/CodeStructure.md 5節「読み下せる宣言だけを外へ出す」）。
  */
 export interface ConditionDeclaration {
-  read(reader: ConditionReader): void;
+  readBy(reader: ConditionReader): void;
 }
 
 /** プロパティ比較1つの宣言。valuesとvalueRefはどちらか一方だけを持つ。 */

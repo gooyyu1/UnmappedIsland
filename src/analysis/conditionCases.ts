@@ -65,7 +65,7 @@ const NEGATED: Readonly<Record<ConditionOp, ConditionOp>> = {
 
 function casesOf(declaration: ConditionDeclaration, negated: boolean): readonly ConditionCase[] {
   const collector = new ConditionCaseCollector(negated);
-  declaration.read(collector);
+  declaration.readBy(collector);
   return collector.cases;
 }
 

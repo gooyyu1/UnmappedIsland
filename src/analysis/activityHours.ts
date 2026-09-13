@@ -352,7 +352,7 @@ function hostAmbientOf(codex: WorldCodex, def: ObjectDef, ambientId: PropertyGlo
 /** その型の操作が生みうるオブジェクト（`spawn`、9.4節）。**抽選の枝も分け隔てなく集める。** */
 function spawnedObjectIdsOf(def: ObjectDef): ReadonlySet<ObjectGlobalId> {
   const collector = new SpawnCollector();
-  for (const trigger of def.triggers) trigger.interaction.read(collector);
+  for (const trigger of def.triggers) trigger.interaction.readBy(collector);
   return collector.objectGlobalIds;
 }
 

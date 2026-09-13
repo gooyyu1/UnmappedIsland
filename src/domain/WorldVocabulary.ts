@@ -33,10 +33,12 @@ export const VOLUME_PROPERTY = 'volume';
  * ような対応は読む側（cardLooks）に残る——ここが答えるのは「その語をYAMLから消したら何が壊れるか」
  * だけで、消えた結果どう見えるかは知らない。
  *
- * **結果と対でしか意味を持たない名前は載せない**（cardLooks の `cooking_progress`・`treatment` など）。
- * あれらは「その値が進んでいたら覆いを出す」という規則の一部で、名前だけを引き剥がすと規則が
- * 2箇所に割れる。種別を言うタグ（item・animal など）はそうではなく、**この世界に何が居るかを言う語**
- * なので、他の規約プロパティと同じくここに並ぶ。
+ * **1箇所でしか読まれず、結果と対でしか意味を持たない名前は載せない**（cardLooks の
+ * `cooking_progress`・`treatment` など）。あれらは「その値が進んでいたら覆いを出す」という規則の一部で、
+ * 名前だけを引き剥がすと規則が2箇所に割れる。**読む側が複数あるなら逆で、ここへ集める**
+ * （`unconsciousStage`）——規則は側ごとに違っても、綴りは全部で一致していなければならないので、
+ * 散らせば次に変えた誰かが他の側を黙って壊す。種別を言うタグ（item・animal など）はそもそも規則と
+ * 対になっておらず、**この世界に何が居るかを言う語**なので、他の規約プロパティと同じくここに並ぶ。
  *
  * **実測値の表の鍵も載せない**（analysis/seasonalRain の季節名・天候の名前）。あれらは
  * シミュレーションで測った数値に付いた行名で、名前と数値で1つ。世界を変えたときに古くなるのは
@@ -97,10 +99,11 @@ export class EngineVocabulary {
  * この世界のルールが依存する単語（`src/assets/world-codex`）。エンジンの語と違い、**別の世界を書けば
  * 変わりうる**——変わったときに何が動かなくなるかが、この一覧の中身そのもの。
  *
- * 使い手は `domain/wrappers`・`domain/generation`・`analysis` と、`WorldObject` の抵抗の判定
- * （`resists`、GameElementDefinition.md 7.13節）、`Slot` の装備の排他（同7.5節。**どの枠が
- * 「身につける枠」かは枠の宣言から導けない**）。いずれも名前を「値や集合を引く鍵」としてだけ使っていて、
- * どの名前かに他の判断が依存しない。
+ * 使い手は `domain/wrappers`・`domain/generation`・`analysis`・`game/view` と、`WorldObject` の抵抗の判定
+ * （`resists`、GameElementDefinition.md 7.13節）と手番の配り（`runTickActions`、VitalsSystem.md 6節）、
+ * `Slot` の装備の排他（GameElementDefinition.md 7.5節。**どの枠が「身につける枠」かは枠の宣言から
+ * 導けない**）。ほとんどは名前を「値や集合を引く鍵」としてだけ使っていて、どの名前かに他の判断が
+ * 依存しない——**例外は `unconsciousStage`** で、そこだけは綴りそのものが判断を決める（下の注釈）。
  */
 export class WorldRuleVocabulary {
   // ---- 時間と気候（ClimateSystem.md、wrappers/World） ----
@@ -111,6 +114,20 @@ export class WorldRuleVocabulary {
   readonly weatherId: PropertyGlobalId;
   readonly ambientBrightnessId: PropertyGlobalId;
   readonly ambientTemperatureId: PropertyGlobalId;
+
+  // ---- 生命と意識（VitalsSystem.md、WorldObject.runTickActions・cardLooks・analysis/huntEncounter） ----
+
+  /**
+   * 意識と、そこに落ちたら手番が回らなくなる段の名前（VitalsSystem.md 6節）。**値の名前だけでなく
+   * 段の名前まで載せる**——しきい値を宣言しているのはワールドの側だけで、読む側は名前しか知らない。
+   *
+   * **どの名前かに判断が依存する**点で、この一覧の他の語とは違う（他は値や集合を引く鍵でしかない）。
+   * それでも1箇所へ集めるのは、**読む側が分かれていて、どれもこの綴りで一致していなければならない**
+   * ため——手番を飛ばす側・覆いを出す側・決着を数える側（上の使い手）。散らすと、綴りが変わったときに
+   * 黙って効かなくなるものが出る。
+   */
+  readonly consciousnessId: PropertyGlobalId;
+  readonly unconsciousStage = 'unconscious';
 
   // ---- キャラクタ（docs/world/Characters.md、wrappers/PlayerCharacter） ----
   readonly handSlotId: SlotGlobalId;
@@ -177,6 +194,8 @@ export class WorldRuleVocabulary {
     this.weatherId = propertyNames.intern('weather');
     this.ambientBrightnessId = propertyNames.intern('ambient_brightness');
     this.ambientTemperatureId = propertyNames.intern('ambient_temperature');
+
+    this.consciousnessId = propertyNames.intern('consciousness');
 
     this.handSlotId = slotNames.intern('hand');
     this.equipmentSlotId = slotNames.intern('equipment');

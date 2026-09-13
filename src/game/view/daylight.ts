@@ -111,7 +111,7 @@ function sunDeltasOf(
   hourId: PropertyGlobalId,
 ): ReadonlyMap<string, number> {
   const collector = new HourModifyCollector(ambientId, hourId);
-  world.passives.read(collector);
+  world.passives.readBy(collector);
   return collector.deltas;
 }
 

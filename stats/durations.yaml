@@ -4,7 +4,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/DurationStats.md。
 
 meta:
-  - {unit: days, minimum: 1, durations: 147, longest: 100.00, shortest: 1.00, tool_wears: 14}
+  - {unit: days, minimum: 1, durations: 142, longest: 100.00, shortest: 1.00, tool_wears: 14}
 
 durations:
   - {object: bone_needle, property: durability, unit: days, days: 100.00, shortest_days: 20.00, longest_days: 100.00, repeats: false, destroys: true}
@@ -26,9 +26,6 @@ durations:
   - {object: banana__cure_dried, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: banana__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: banana__cure_smoked, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
-  - {object: berry__cure_dried, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
-  - {object: berry__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
-  - {object: berry__cure_smoked, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: bird_egg, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: coconut, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: coconut_crab__cure_dried, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
@@ -82,13 +79,13 @@ durations:
   - {object: woven_leaf_clothing, property: durability, unit: days, days: 10.00, shortest_days: 5.00, longest_days: 10.00, repeats: false, destroys: true}
   - {object: gore_wound, property: severity, unit: days, days: 7.50, shortest_days: 7.50, longest_days: 7.50, repeats: false, destroys: true}
   - {object: puncture_wound, property: severity, unit: days, days: 7.50, shortest_days: 7.50, longest_days: 7.50, repeats: false, destroys: true}
+  - {object: taro__prep_chopped, property: durability, unit: days, days: 6.67, shortest_days: 4.00, longest_days: 6.67, repeats: false, destroys: true}
   - {object: bite_wound, property: infection, unit: days, days: 5.21, shortest_days: 3.47, longest_days: 5.21, repeats: false, destroys: false}
   - {object: gore_wound, property: infection, unit: days, days: 5.21, shortest_days: 3.47, longest_days: 5.21, repeats: false, destroys: false}
   - {object: laceration, property: infection, unit: days, days: 5.21, shortest_days: 3.47, longest_days: 5.21, repeats: false, destroys: false}
   - {object: puncture_wound, property: infection, unit: days, days: 5.21, shortest_days: 3.47, longest_days: 5.21, repeats: false, destroys: false}
   - {object: snare_laceration, property: infection, unit: days, days: 5.21, shortest_days: 3.47, longest_days: 5.21, repeats: false, destroys: false}
   - {object: banana, property: durability, unit: days, days: 5.00, shortest_days: 3.33, longest_days: 5.00, repeats: false, destroys: true}
-  - {object: berry, property: durability, unit: days, days: 5.00, shortest_days: 3.33, longest_days: 5.00, repeats: false, destroys: true}
   - {object: coconut_half, property: durability, unit: days, days: 5.00, shortest_days: 3.33, longest_days: 5.00, repeats: false, destroys: true}
   - {object: coconut_jelly, property: durability, unit: days, days: 5.00, shortest_days: 3.33, longest_days: 5.00, repeats: false, destroys: true}
   - {object: coconut_meat, property: durability, unit: days, days: 5.00, shortest_days: 3.33, longest_days: 5.00, repeats: false, destroys: true}
@@ -105,7 +102,6 @@ durations:
   - {object: monkey, property: hydration, unit: days, days: 3.50, shortest_days: 3.50, longest_days: 3.50, repeats: false, destroys: true}
   - {object: rat, property: hydration, unit: days, days: 3.50, shortest_days: 3.50, longest_days: 3.50, repeats: false, destroys: true}
   - {object: wild_boar, property: hydration, unit: days, days: 3.50, shortest_days: 3.50, longest_days: 3.50, repeats: false, destroys: true}
-  - {object: berry_bush, property: ripening_remaining, unit: days, days: 3.00, shortest_days: 3.00, longest_days: 3.00, repeats: true, destroys: false}
   - {object: jar__content_water_liquid, property: fill, unit: days, days: 2.98, shortest_days: 0.52, longest_days: 2.98, repeats: false, destroys: false}
   - {object: captain, property: hydration, unit: days, days: 2.63, shortest_days: 2.63, longest_days: 2.63, repeats: false, destroys: true}
   - {object: coconut_crab, property: durability, unit: days, days: 2.50, shortest_days: 2.00, longest_days: 2.50, repeats: false, destroys: true}
@@ -138,7 +134,6 @@ durations:
   - {object: farmer, property: lipid, unit: days, days: 1.25, shortest_days: 1.25, longest_days: 1.25, repeats: false, destroys: false}
   - {object: medic, property: lipid, unit: days, days: 1.25, shortest_days: 1.25, longest_days: 1.25, repeats: false, destroys: false}
   - {object: banana, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
-  - {object: berry, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
   - {object: coconut_crab, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
   - {object: coconut_jelly, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
   - {object: coconut_meat, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
