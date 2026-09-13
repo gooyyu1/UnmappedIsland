@@ -10,6 +10,7 @@ import {
 import { describePassive } from '../../src/codex-viewer/describe/describePassive';
 import { describeInteraction } from '../../src/codex-viewer/describe/describeInteraction';
 import { describeProperty } from '../../src/codex-viewer/describe/describeProperty';
+import { describeRecipe } from '../../src/codex-viewer/describe/describeRecipe';
 import { describeAccept } from '../../src/codex-viewer/describe/describeSlot';
 import type { DefNames } from '../../src/codex-viewer/describe/Description';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
@@ -98,11 +99,17 @@ object_defs:
       volume: {value: 100}
     recipes:
       carved:
+        # 作る腕が効く先（13.6節）。手際は負の上乗せなので、図鑑が出す向きは「積む」。
+        deftness: {subject: agent, prop: woodwork_deftness}
         steps:
           - requires:
               - {object: coconut_half, count: 1, consume: true}
               - {object: sharp_stone, count: 1, consume: false}
             duration: 30
+        surplus:
+          - {weight: 100}
+          - weight: {subject: agent, prop: woodwork_thrift}
+            spawn: {object: bowl, into: agent}
 
   wild_boar:
     tags: [item]
@@ -347,6 +354,28 @@ describe('プロパティの逆引き（describeInfluencesOn）', () => {
     expect(influences('world', 'world', 'hour')).toBe('');
     // 繰り上げ先（day）から見れば、hourのon_maxは立派な影響元。
     expect(influences('world', 'world', 'day')).toContain('add day +1');
+  });
+});
+
+describe('レシピの自己記述（describeRecipe）', () => {
+  const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset();
+  const names = defNamesOf(codex);
+  const recipeOfBowl = codex.objects.get(codex.objectNames.getId('bowl')).recipesProducingThis[0];
+  const lines = (): readonly string[] =>
+    describeToText(codex, (out) => describeRecipe(recipeOfBowl, names, out)).split('\n');
+
+  it('手際は、向きを「積む」と書いて出す', () => {
+    // **手際は負の上乗せ**（docs/world/Skills.md 7節）で、この行が右に出すのは在り処だけ。
+    // 「引く」と書くと、読み手は自分の -8 を引いて工程が伸びると読む——**向きが逆になる**。
+    // 一度そう書いて差し戻されたので、戻したら落ちるものをここへ置く。
+    expect(lines()).toContain('手際（各工程の時間へ積む）: woodwork_deftness');
+  });
+
+  it('余分の卓は、いつ引くかを見出しで断ってから中身を出す', () => {
+    // 工程の行と同じ形で並ぶので、見出しが無いとどの工程の効果かと読める（13.6節）。
+    const text = lines();
+    expect(text).toContain('余分の卓（完成時に1回）:');
+    expect(text.some((line) => line.includes('spawn bowl'))).toBe(true);
   });
 });
 

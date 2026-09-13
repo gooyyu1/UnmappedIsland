@@ -76,6 +76,12 @@ export interface HuntEncounterSetup {
   /** 獣の警戒の初期値。undefinedなら定義のまま。 */
   readonly startingWariness?: number;
   /**
+   * 獣の意識の初期値。undefinedなら定義のまま（満たされた状態）。**押し下げている当人は問わない**
+   * ——痛み・失血・衝撃はどれも意識へ合流する（docs/engine/VitalsSystem.md 2節）ので、合流した後の
+   * 値を置けば、何が濁らせたかによらない1手の顔ぶれ（HuntingSystem.md 5.5節）が出る。
+   */
+  readonly startingConsciousness?: number;
+  /**
    * この手数を殴ったら、殴る側は道の通っていない土地へ退く。**退いた後は逃げられても終わらない**
    * ので、手負いの獣が世界に残る手数——追跡の窓（HuntingSystem.md 5.6節）——がそのまま`turns`に出る。
    */
@@ -164,6 +170,9 @@ class Encounter {
     this.animal = this.spawnInto(setup.animalName, this.jungle, 'items');
     const wariness = this.animal.getProperty(this.warinessId);
     if (setup.startingWariness !== undefined) wariness.setNumberWithoutEvents(setup.startingWariness);
+    if (setup.startingConsciousness !== undefined) {
+      this.animal.getProperty(this.consciousnessId).setNumberWithoutEvents(setup.startingConsciousness);
+    }
     this.warinessAtStart = wariness.getEffectiveValue();
     this.warinessStageAtStart = wariness.stage?.name;
   }

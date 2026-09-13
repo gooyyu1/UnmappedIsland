@@ -123,8 +123,8 @@ interactions:
   `max/3` tick を下回るためです。満タンから練習だけを続けたとき**覚醒度が体力より先に尽きる**ことは
   `tests/world-codex/charactersYaml.test.ts` が見張ります。
 - **そのぶん、体力が練習を縛るのは、荷や怪我で既に削られている日だけです。** 一晩の眠りが空身で
-  戻すのは +90（[`Characters.md`](../world/Characters.md) 休息節）で、1 日ぶんの練習で減る分より
-  大きいので、空身なら翌朝には満タンへ戻ります。
+  戻すのは、いちばん薄い敷物だけの寝床でも +48（[`Bedding.md`](../world/Bedding.md) 4 節）で、
+  1 日ぶんの練習で減る分より大きいので、空身なら翌朝には満タンへ戻ります。
 - **満腹度は倍の速さで減ります。** 素の減りが 1 日で 1,536 mL なので、4 時間練習した日に余分に要る
   食べ物は 256 mL——その日のおよそ 1/6 です。食べ直せる値なので、押し上げるのは続けられる長さでは
   なく**要る食料の量**のほうです。
@@ -192,7 +192,7 @@ interactions:
 **0.00%**<!-- stats: discovery_coverage.yaml island_missing_tag tag=animal share -->
 です。**束が 1 つの型しか持たない札は、型ごとに書いたのと同じだけ消えます**（`artifact` は
 `golden_chalice` だけなので
-**4%**<!-- stats: discovery_coverage.yaml island_missing_tag tag=artifact share ±1 -->）——札にしたこと
+**3%**<!-- stats: discovery_coverage.yaml island_missing_tag tag=artifact share ±1 -->）——札にしたこと
 自体は何も守りません。
 
 どの型がどれだけ消えるかは [`stats/discovery_coverage.yaml`](../../stats/discovery_coverage.yaml) に

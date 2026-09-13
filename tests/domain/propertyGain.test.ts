@@ -27,6 +27,10 @@ traits:
       density: {value: 1}
   weary:
     tags: [weary]
+    props:
+      # 疲れ切って初めて持つ痛み。becomeするまでsurvivorは持たないので、tickの手前では名乗る先が
+      # まだ生えていない。
+      soreness: {value: 0, range: {min: 0, max: 100}}
   water_liquid:
     interactions:
       drink:
@@ -91,6 +95,12 @@ object_defs:
         duration: 60
         passives:
           - add: {self: {hydration: 5}}
+      # 経過の間ずっと揉み解す（11.7節）。足す先のsorenessは、becomeして初めて生える。
+      rub:
+        trigger: menu
+        duration: 60
+        passives:
+          - add: {self: {soreness: 5}}
       wait:
         trigger: menu
         duration: 15
@@ -251,6 +261,21 @@ object_defs:
 
     expect(player.def.name, '1 tick目の積分の途中で型が変わっている').not.toBe('survivor');
     expect(amounts.get('hydration'), '型が変わったtickも含めた4 tickぶん').toBe(20);
+  });
+
+  it('経過の途中のbecomeで生えたプロパティも、生えたtickから数える', () => {
+    // 1 tick目の積分で覚醒度が尽き、そこで型が変わってsorenessが生える。数え先は積分の手前で
+    // 名乗るので、名乗る時点で持っていることを条件にすると、生えたtickぶんだけが漏れる。
+    drain('wakefulness', 1);
+    const sorenessId = codex.propertyNames.getId('soreness');
+    expect(player.tryGetProperty(sorenessId), '始めは持っていない').toBeUndefined();
+
+    const { amounts } = gainsDuring(() => {
+      expect(player.tryGetAction('rub', player)?.tryExecute() === true).toBe(true);
+    });
+
+    expect(player.tryGetProperty(sorenessId)?.number, '生えた後の4 tickぶんが積まれている').toBe(20);
+    expect(amounts.get('soreness'), '生えたtickぶんも数える').toBe(20);
   });
 
   it('経過の間ずっと効く宣言も、上限で押し戻された分は数えない', () => {

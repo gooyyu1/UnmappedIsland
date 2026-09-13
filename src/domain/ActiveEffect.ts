@@ -395,6 +395,9 @@ export class TransferEffect extends ActiveEffect {
    *
    * linked_add（9.5節）は実際に出した量に比例（amount * actual_moved / Amount）してスケール適用する。
    * from/toが解決できない・対象がそのプロパティを持たない場合は何もしない。
+   *
+   * **受け取る側は、出した後に辿り直す。** 出す側の`on_min`からbecome（9.9.1節）が走ると受け取る側の
+   * プロパティは作り直されるので、先に掴んだ個体へ入れると、出した分が現物のどこにも残らない。
    */
   apply(context: ReferenceContext): void {
     const fromValue: PropertyValue | undefined = this.from.propertyValue(context);
@@ -409,7 +412,7 @@ export class TransferEffect extends ActiveEffect {
     if (taken <= 0) return;
 
     fromValue.add(-taken);
-    toValue.add((taken * this.toAmount) / this.amount);
+    this.to.propertyValue(context)?.add((taken * this.toAmount) / this.amount);
 
     for (const linked of this.linkedAdd) linked.applyScaled(context, taken, this.amount);
   }
