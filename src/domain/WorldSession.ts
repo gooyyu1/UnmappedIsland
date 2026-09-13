@@ -14,7 +14,7 @@ import type { ReferenceContext } from './ReferenceRoot';
 import { WorldObject } from './WorldObject';
 import { EffectiveValueReading } from './EffectiveValueReading';
 import { Scoped } from '../util/scoped';
-import type { ObjectGlobalId } from './GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId } from './GlobalId';
 
 /**
  * 稼ぎ1件が指す先（どの個体のどのプロパティか）。
@@ -23,9 +23,12 @@ import type { ObjectGlobalId } from './GlobalId';
  * ので、値を運んでいる先は同じでも個体は別物になる。instanceIdとプロパティのグローバルIDは型が
  * 変わっても続くので、tickの手前で名乗った先と、tickが実際に動かした先とが同じものだと言えるのは
  * こちらだけ。
+ *
+ * **まだ生えていないプロパティも指せる。** 受け取るのが個体とグローバルIDだけなので、
+ * becomeで初めて生えるものもtickの手前で名乗れる（countTickMovementAsGain）。
  */
-function gainTargetKey(property: PropertyValue): string {
-  return `${property.owner.instanceId}:${property.def.globalId}`;
+function gainTargetKey(object: WorldObject, propertyGlobalId: PropertyGlobalId): string {
+  return `${object.instanceId}:${propertyGlobalId}`;
 }
 
 /**
@@ -284,11 +287,14 @@ export class WorldSession {
   }
 
   /**
-   * このtickでpropertyが動いたぶんを、今の操作の稼ぎとして数える（PropertyPassiveEffectが、積分の
+   * このtickで指し先が動いたぶんを、今の操作の稼ぎとして数える（PropertyPassiveEffectが、積分の
    * 手前で自分の対象を名乗る）。名乗れるのは今の操作が宣言した持続効果（11.7節）だけ。
+   *
+   * **受け取るのは指し先で、プロパティ値ではない。** 名乗る時点でその物がまだ持っていなくてよい
+   * ——このtickの積分の途中でbecomeが走れば、新しい型にしか無いプロパティはそこで生える（9.9.1節）。
    */
-  countTickMovementAsGain(property: PropertyValue): void {
-    this.tickGainTargets.current?.add(gainTargetKey(property));
+  countTickMovementAsGain(object: WorldObject, propertyGlobalId: PropertyGlobalId): void {
+    this.tickGainTargets.current?.add(gainTargetKey(object, propertyGlobalId));
   }
 
   /**
@@ -300,7 +306,8 @@ export class WorldSession {
    * 動いた量で、荷や痛みが同じtickで削ったぶんはそこから引かれている。
    */
   recordTickMovement(property: PropertyValue, delta: number): void {
-    if (this.tickGainTargets.current?.has(gainTargetKey(property)) !== true) return;
+    const key = gainTargetKey(property.owner, property.def.globalId);
+    if (this.tickGainTargets.current?.has(key) !== true) return;
     this.gather(property, delta);
   }
 
@@ -308,7 +315,7 @@ export class WorldSession {
     const gathered = this.gainsBeingGathered.current;
     if (gathered === undefined) return;
 
-    const key = gainTargetKey(property);
+    const key = gainTargetKey(property.owner, property.def.globalId);
     const found = gathered.get(key);
     gathered.set(key, {
       object: property.owner,
