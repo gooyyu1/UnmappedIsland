@@ -62,10 +62,10 @@ island_missing_object:
   - {object: coconut_crab, unit: percent, share: 0.00}
   - {object: driftwood_trunk, unit: percent, share: 0.00}
   - {object: dry_grass, unit: percent, share: 0.10}
-  - {object: golden_chalice, unit: percent, share: 3.85}
+  - {object: golden_chalice, unit: percent, share: 2.75}
   - {object: junglefowl, unit: percent, share: 0.20}
   - {object: monkey, unit: percent, share: 0.00}
-  - {object: palm_tree, unit: percent, share: 1.30}
+  - {object: palm_tree, unit: percent, share: 11.90}
   - {object: rat, unit: percent, share: 0.00}
   - {object: sapling, unit: percent, share: 0.30}
   - {object: shallow_cave, unit: percent, share: 0.00}
@@ -76,16 +76,16 @@ island_missing_object:
   - {object: twig, unit: percent, share: 0.00}
   - {object: water_spinach, unit: percent, share: 0.20}
   - {object: wild_boar, unit: percent, share: 0.30}
-  - {object: woven_basket, unit: percent, share: 1.80}
+  - {object: woven_basket, unit: percent, share: 19.95}
 
 island_missing_tag:
   - {tag: animal, unit: percent, share: 0.00}
-  - {tag: artifact, unit: percent, share: 3.85}
-  - {tag: container, unit: percent, share: 1.80}
+  - {tag: artifact, unit: percent, share: 2.75}
+  - {tag: container, unit: percent, share: 19.95}
   - {tag: dryable, unit: percent, share: 0.00}
   - {tag: fixture, unit: percent, share: 0.00}
   - {tag: food, unit: percent, share: 0.20}
-  - {tag: fragile, unit: percent, share: 1.80}
+  - {tag: fragile, unit: percent, share: 19.95}
   - {tag: fuel, unit: percent, share: 0.00}
   - {tag: item, unit: percent, share: 0.00}
   - {tag: location, unit: percent, share: 0.00}

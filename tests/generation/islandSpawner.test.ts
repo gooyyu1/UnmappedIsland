@@ -91,6 +91,28 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     }
   });
 
+  // 「最初の道は、道の本数にも土地の型にもよらず2回目の探索で出る」（ExplorationSystem.md 3.2節）
+  // ことの見張り。**道が多い土地ほど1本目が遅れる**ような割り当てへ変えると赤くなる。土地に居る
+  // 時間としての実測はstats/terrain.yamlのpath_discovery。
+  it('最初の道は、道の本数によらず同じ進捗で見つかる', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 5, seededRng(99));
+    const hiddenSlotId = codex.slotNames.getId('undiscovered_fixtures');
+
+    const firstProgressByPathCount = new Map<number, number>();
+    for (const { land } of game.island.lands) {
+      const progresses = land
+        .tryGetSlot(hiddenSlotId)!
+        .contents.map((instance) => new Path(instance, codex).requiredProgress);
+      if (progresses.length === 0) continue;
+      firstProgressByPathCount.set(progresses.length, Math.min(...progresses));
+    }
+
+    expect(firstProgressByPathCount.size, '道の本数が違う土地が揃った島で確かめる').toBeGreaterThan(1);
+    expect(new Set(firstProgressByPathCount.values()), '本数が違っても最初の道は同じ進捗').toEqual(
+      new Set([2]),
+    );
+  });
+
   it('辺の両端の道は互いをreturn_path_idで指す', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 5, seededRng(99));
     const hiddenSlotId = codex.slotNames.getId('undiscovered_fixtures');

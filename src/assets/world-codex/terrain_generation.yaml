@@ -77,7 +77,9 @@ axes:
 #   priorityが最も高いfallbackが選ばれる。
 # - 海岸過多の防止: 海岸3種はhard_limits(coastal_distance.max=coast_band)で海岸帯にしか出ず、
 #   内陸型はmin=coast_band+1で海岸帯に出ない。海岸帯のサイト数自体を絞るのはサイト配置側
-#   （generation_scopes.island.interior_bias と hull_coast）。
+#   （SitePlacerの外周リングの個数と、内陸枠の最大半径）。
+# - 砂浜と岸壁を分ける高さ: 砂浜はelevationの上限、岸壁は下限で、同じ高さには出ない
+#   （TerrainGeneration.md 3.5.3節）。岩海岸は高さを名乗らないので、どちらの線も掛からない。
 # ------------------------------------------------------------------
 location_types:
   sandy_beach:
@@ -96,6 +98,8 @@ location_types:
       ruggedness: {ideal: 15, tolerance: 30, weight: 100}
     hard_limits:
       coastal_distance: {max: 15}
+      # 砂浜は海抜20m（軸5）まで。これより高ければ浜ではない（3.5.3節）。
+      elevation: {max: 5}
 
   rocky_coast:
     object_def: rocky_coast
@@ -131,6 +135,8 @@ location_types:
       elevation:  {ideal: 16, tolerance: 5, weight: 80}
     hard_limits:
       coastal_distance: {max: 15}
+      # 岸壁は海抜24m（軸6）から。砂浜の上限の1つ上で、同じ高さには出ない（3.5.3節）。
+      elevation: {min: 6}
 
   grassland:
     object_def: grassland
@@ -288,17 +294,24 @@ generation_scopes:
     # 外周リング（島を囲む海岸候補の配置枠、SitePlacer参照）のサイトのcoastal_distanceを
     # 海岸帯へクランプし、島が必ず海岸で囲まれることを保証する。
     hull_coast: true
-    # サイト配置の内陸バイアス（0=一様、100=最大）。島の縁に張り付くサイトを減らし、
-    # 海岸が多くなりすぎないようにする（普通に円盤へ一様散布すると面積比で外周が多数になるため）。
+    # サイト配置の内陸バイアス（0=一様、1=最大）。内陸の枠の中で、サイトをどれだけ中心へ寄せるか。
+    # **海岸の数には効かない**——内陸の枠は外周リングの内側で閉じている（SitePlacer）ので、
+    # 島が海岸で囲まれることも海岸が多くなりすぎないことも、リングの個数と枠の分離が保証する。
+    # 動かしても島はほとんど変わらない（TerrainGeneration.md 3.5.1節）。
     interior_bias: 0.6
-    # MST以外のDelaunay辺を復活させる迂回率の閾値（%）。現グラフでの2点間最短距離が
-    # 直結距離のこの割合を超えるなら、その辺を近道として復活させる。上げるほど道は減る
-    # （下限は全土地を繋ぐMSTの平均次数≒1.9）。200で平均次数2.5・行き止まり15%ほど。
-    # 変えたら stats/terrain.yaml を再生成する（npm run stats:terrain）。
+    # MST以外のDelaunay辺を復活させる迂回率の閾値（倍率）。現グラフでの2点間最短距離が
+    # 直結距離のこの倍を超えるなら、その辺を近道として復活させる。上げるほど道は減る
+    # （下限は全土地を繋ぐMSTの平均次数≒1.9）。**上下から挟まれて2に決まっている**
+    # ——下げると行き止まりが消えてどの島も同じ網目になり、上げると端まで日帰りで届かない島が
+    # 出る（TerrainGeneration.md 3.5.2節）。変えたら stats/terrain.yaml を再生成する
+    # （npm run stats:terrain）。
     extra_edge_detour_factor: 2
     # 同じ土地を何個まで置いてよいか（0で無制限）。同じ地形は環境も発見物も見た目も同じなので、
-    # 並べても島は広くならない。海岸帯のサイトは最大7個で海岸型は3種類、内陸は最大13個で内陸型は
-    # 7種類あるので、3なら数の上で必ず収まる（実測は stats/terrain.yaml）。
+    # 並べても島は広くならない。**海岸帯では数の上で収まらないことがある**——高さの線
+    # （TerrainGeneration.md 3.5.3節）で、1つのサイトが選べる海岸型は砂浜か岸壁のどちらかと
+    # 岩海岸の2つになるので、海岸帯のサイトが7個並ぶと3では足りない。そこは上限を外す側へ倒れる
+    # （同3.4節。実測と、外れる島の割合は stats/terrain.yaml）。内陸は最大13個に対して型が7つあり、
+    # 3で収まる。
     max_sites_per_type: 3
     # 同じ型が1個増えるごとにマッチング距離へ乗せる割増（%）。上限に当たる前から他の型へ譲らせ、
     # 「上限で打ち切られた」島ばかりにならないようにする。

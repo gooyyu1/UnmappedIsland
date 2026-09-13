@@ -237,6 +237,23 @@ object_defs:
 100%到達後も探索は続けられますが（2 節）、進捗は `max` に張り付くため、新たに条件を満たす道はもう
 現れません。「探索率100%＝この土地の道は出尽くした」という保証は、この割り当てが与えています。
 
+#### 道の本数が3本以上でも、割り当てはこのままとする
+
+「最初の道が見つかるまで」が長すぎないかを測って決めたもので、覆すのに人間の判断は要りません。
+
+**最初の道は、道の本数にも土地の型にもよらず、必ず2回目の探索で出ます**（30 分<!-- stats: terrain.yaml path_discovery metric=first_path mean -->）。
+割り当ての下端が `K` に依らないためで、その土地を探索率100%まで開くのにかかる
+185 分<!-- stats: terrain.yaml path_discovery metric=full_exploration mean -->に対してごく手前です。
+**「長すぎる」は起こりえないので、調整する先がありません。**
+
+本数が効くのは間隔のほうで、道が増えるほど詰まります（実測は
+[`stats/terrain.yaml`](../../stats/terrain.yaml) の `path_discovery_by_degree`）。**詰まる側は
+止める理由がありません**——道が多い土地ほど次の行き先が早く揃うのは、道が多いことの意味そのものです。
+
+**その土地に居続けた時間だけを数えています**（通う移動は含みません）。読み方は
+[`TerrainStats.md`](../diagnostics/TerrainStats.md)、破れたときに落ちるのは
+`tests/generation/islandSpawner.test.ts` の「最初の道は、道の本数によらず同じ進捗で見つかる」です。
+
 ## 4. エンジン拡張（`duration`・`move`）
 
 `duration`・`move` は地形・探索専用ではなく、どんな `interactions`/`pick` からも使える汎用の
@@ -275,5 +292,3 @@ explore(agent: WorldObject | undefined, session: WorldSession): boolean {
   `ContainerSystem.md` の液体表現の実装とあわせて今後の課題です。
 - **発見物の `volume`/`weight`**: 探索で見つかるアイテム・設置物は、コンテナ容量（`ContainerSystem.md`）に
   関わる `volume`/`weight` プロパティをまだ持たせていません。
-- **同じ土地への道が3本以上ある場合の分布**: 現在の等間隔割り当ては K 本すべてに対して機械的に働きますが、
-  「最初の道が見つかるまでが長すぎる／短すぎる」といった体験上の調整は今後の課題です。

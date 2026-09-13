@@ -71,6 +71,7 @@ const READ_ONLY_FROM_OUTSIDE = [
   'src/domain/PropertyValue.ts PropertyValue.registeredContributions',
   'src/domain/SlotDef.ts SlotDef.acceptsAtMostOne',
   'src/domain/SlotDef.ts SlotDef.hasPutInDuration',
+  'src/domain/generation/AxisSampler.ts COASTAL_DISTANCE_AXIS_NAME',
   'src/domain/generation/GenerationScopeDef.ts GenerationScopeParams',
   'src/domain/generation/LocationTypeDef.ts AxisPreference.tolerance',
   'src/domain/wrappers/Location.ts Location.fixtureStacks',

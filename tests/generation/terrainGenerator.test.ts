@@ -1,9 +1,18 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { activityHoursOf } from '../../src/analysis/activityHours';
+import { buildBalanceTables } from '../../src/analysis/balanceTables';
+import {
+  dailyBudgetOf,
+  dailyPhasesOf,
+  locationTypeDaysOf,
+  OUTDOOR_WINDOW_MINUTES,
+} from '../../src/analysis/dailyPhases';
+import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import type { IslandEdge, IslandMap } from '../../src/domain/generation/IslandMap';
 import type { GenerationScopeDef } from '../../src/domain/generation/GenerationScopeDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { bundledCodex } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { placeSites } from '../../src/domain/generation/SitePlacer';
 import { Pcg32 } from '../../src/domain/Pcg32';
 
@@ -190,6 +199,56 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
           ).toBeLessThan(100);
   });
 
+  // 砂浜と岸壁を分ける高さ（TerrainGeneration.md 3.5.3節）が効いていることの見張り。**同じ高さに
+  // 出ないことを見る**ので、どちらかのhard_limitsを外しても、線を重ねても赤くなる。型ごとの海抜の
+  // 分布はstats/terrain.yamlのsite_elevation_by_location。
+  it('砂浜と岸壁は、同じ高さには出ない', () => {
+    const island = scope();
+    const metersPerElevationUnit = codex.generation!.metersPerElevationUnit(island);
+    const metersOf = (name: string): number[] =>
+      [...islands.values()].flatMap((map) =>
+        map.sites
+          .filter((site) => site.type!.name === name)
+          .map((site) => site.axisValues.get(island.elevationAxis)! * metersPerElevationUnit),
+      );
+
+    const beaches = metersOf('sandy_beach');
+    const cliffs = metersOf('cliff_coast');
+    expect(beaches.length, '砂浜が出る島で確かめる').toBeGreaterThan(0);
+    expect(cliffs.length, '岸壁が出る島で確かめる').toBeGreaterThan(0);
+    expect(Math.max(...beaches), '最も高い砂浜は、最も低い岸壁より低い').toBeLessThan(Math.min(...cliffs));
+  });
+
+  // 「今の島は端から端まで日帰りで届く」（ContentSkeleton.md 8.3.1節【確定】、GameEndings.md 9.2節）
+  // ことの見張り。**回り道の量（extra_edge_detour_factor）を上げると最短経路が伸びて破れる**ので、
+  // 生成パラメータを動かしたときにここが赤くなる。実測の分布はstats/terrain.yamlの
+  // base_farthest_round_trip。
+  it('どの島でも、拠点から最も遠い土地まで日帰りで往復できる', () => {
+    const budget = dailyBudgetOf(buildBalanceTables(codex, SAMPLE_CHARACTER));
+    const locationDays = locationTypeDaysOf(
+      codex,
+      activityHoursOf(
+        codex,
+        SEASON_CLIMATE.map((season) => ({
+          seasonName: season.name,
+          durationDays: season.durationDays,
+          hoursByWeather: new Map(Object.entries(season.hoursByWeather)),
+        })),
+      ),
+    );
+    // 往復に使えるのは、屋外の枠から1日を賄う生存の採取を引いた残り（TerrainStats.md「局面ごとの1日」）。
+    const reachMinutes = OUTDOOR_WINDOW_MINUTES - budget.survivalGatheringMinutes;
+
+    // **届かない島は稀にしか出ない**（回り道を3倍へ広げても数百島に1つ）ので、不変条件の検証に使う
+    // SEEDSでは取りこぼす。見張りとして働く数まで回す。
+    for (const seed of Array.from({ length: 500 }, (_, i) => i)) {
+      const base = dailyPhasesOf(generate(seed), locationDays, budget).bestBase;
+      expect(2 * base.farthestOneWayMinutes, `シード${seed}: 最も遠い土地への往復`).toBeLessThanOrEqual(
+        reachMinutes,
+      );
+    }
+  });
+
   // 移動時間が「距離 ÷ 速さ」で出ていること自体を見張る（TerrainGeneration.md 3.5節）。分布は
   // TerrainStats.mdの鮮度が見ているが、そちらは再生成すれば緑に戻るので、**導出の向きが逆に
   // 戻された**ことは捕まえられない。宣言だけから組み直した値と突き合わせる。
@@ -241,16 +300,28 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
     expect(mean(steep), '高低差のある道には、その分の時間が乗る').toBeGreaterThan(5);
   });
 
-  it('同じ地形が並びすぎない（max_sites_per_type）', () => {
-    const max = codex.generation!.scopes.get('island')!.maxSitesPerType;
+  // 上限は置けるかどうかの条件ではなく、hard_limitsを満たす型が全部上限に達したサイトは上限を
+  // 無視して選び直す（TerrainGeneration.md 3.4節）。**その逃げ道が常用されていないこと**まで見る
+  // ——超えるのが普通になれば、上限は何も抑えていない。海岸に高さの線を引いた（3.5.3節）ぶん、
+  // 海岸帯のサイトが選べる型は2つに減っているので、逃げ道は実際に使われる。
+  it('同じ地形が並びすぎず、上限を外れるのは例外に留まる', () => {
+    const max = scope().maxSitesPerType;
     expect(max, '上限を設けたスコープで確かめる').toBeGreaterThan(0);
 
-    for (const [seed, map] of islands) {
+    // 例外の頻度を見るので、不変条件の検証に使うSEEDSより多く回す（生成は1島1ミリ秒に満たない）。
+    const seeds = Array.from({ length: 500 }, (_, i) => i);
+    let overCapIslands = 0;
+    for (const seed of seeds) {
       const counts = new Map<string, number>();
-      for (const site of map.sites) counts.set(site.type!.name, (counts.get(site.type!.name) ?? 0) + 1);
+      for (const site of generate(seed).sites)
+        counts.set(site.type!.name, (counts.get(site.type!.name) ?? 0) + 1);
 
-      for (const [name, count] of counts) expect(count, `シード${seed}: ${name}`).toBeLessThanOrEqual(max);
+      for (const [name, count] of counts)
+        expect(count, `シード${seed}: ${name}は、外れても上限+1まで`).toBeLessThanOrEqual(max + 1);
+      if ([...counts.values()].some((count) => count > max)) overCapIslands++;
     }
+
+    expect(overCapIslands / seeds.length, '上限を外れる島は例外に留まる').toBeLessThan(0.1);
   });
 
   it('上限は島の地形の種類を増やす', () => {

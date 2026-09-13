@@ -31,7 +31,7 @@
 （[issue #860](https://github.com/gooyyu1/UnmappedIsland/issues/860)）。
 
 ```text
-**片道の平均は86.43分**<!-- stats: terrain.yaml base_one_way base=shortest_mean mean -->
+**片道の平均は86.89分**<!-- stats: terrain.yaml base_one_way base=shortest_mean mean -->
 ```
 
 形は `<!-- stats: <ファイル> <節> [<列>=<値> …] <読む列> [±<粗さ>] -->` です。`<列>=<値>` はレコードを
