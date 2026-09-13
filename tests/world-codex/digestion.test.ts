@@ -558,6 +558,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
 
       expect(affected).toEqual([
         'banana',
+        'berry',
         'bird_egg',
         'coconut_jelly',
         'coconut_meat',
