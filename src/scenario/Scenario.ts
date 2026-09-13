@@ -62,7 +62,7 @@ export interface Scenario {
   /** 負った状態で始める怪我（injuries.yaml）。実際に負う契機は確率なので、狙って再現できない。 */
   readonly injuries: SlotContents;
   /**
-   * 開始地点にする土地のobject_def名。省略すると通常の漂着地（砂浜優先、IslandSpawner.placePlayer）。
+   * 開始地点にする土地のobject_def名。省略すると通常の漂着地（選抜が選ぶ。StartSiteSelection）。
    * シードだけでは地形の種類を選べないため、特定の土地から試したいシナリオはこれで指定する。
    */
   readonly locationType: string | undefined;

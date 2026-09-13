@@ -173,9 +173,11 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
   3. 生成した道を「どのサイトからどのサイトへ向かう道か」で引けるように控えておき、`map.edges` を1本ずつ
      辿って両端の道へ互いの `instanceId` を `return_path_id` として書き込みます（発見が両側同時になる、
      [`ExplorationSystem.md`](./ExplorationSystem.md) 3.1 節）。
-- **`placePlayer(session, island, character)`**: 開始地点を `sandy_beach` 優先、無ければ `Site.onCoastRing`、
-  それも無ければサイトの並びの先頭の順で選び、`SpawnedIsland.landOf` でその土地を引いて、`characters`
-  スロットへ `moveToSlotOrRejection` した上で `Location`（`src/domain/wrappers/Location.ts`）を返します。
+- **`placePlayer(session, island, character)`**: 開始地点を `selectStartSite`
+  （`src/domain/generation/StartSiteSelection.ts`）に選ばせ、`SpawnedIsland.landOf` でその土地を引いて、
+  `characters` スロットへ `moveToSlotOrRejection` した上で
+  `Location`（`src/domain/wrappers/Location.ts`）を返します。選ぶ順は
+  [`ContentSkeleton.md`](../world/ContentSkeleton.md) 2.3節。
 
 `SpawnedIsland`（`src/domain/generation/SpawnedIsland.ts`）は、生成結果（`map`）と、そこから湧いた土地の
 `WorldObject` の対応を束ねたものです。**対応は実体化と同時に出来上がる**（コンストラクタがすべての
@@ -256,6 +258,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 | `src/domain/generation/NameAssigner.ts` | 3.6節: 命名 |
 | `src/domain/generation/TerrainGenerator.ts` | 3節全体のオーケストレータ（`generateIsland`） |
 | `src/domain/generation/IslandSpawner.ts` | 4節: 実体化（`spawnIslandIntoWorld`/`placePlayer`/`placePlayerAt`） |
+| `src/domain/generation/StartSiteSelection.ts` | 開始地点の選抜（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 2.3節） |
 | `src/domain/generation/SpawnedIsland.ts` | 4節: 実体化された島（サイトと土地の対応） |
 | `src/domain/generation/NewGame.ts` | ゲーム開始の入口（`startNewGame`）・`StartedGame` |
 | `src/domain/MoveEffect.ts` | 7節: `move` 効果動詞 |

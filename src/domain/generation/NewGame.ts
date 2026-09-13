@@ -8,6 +8,7 @@ import type { Location } from '../wrappers/Location';
 import type { SpawnedIsland } from './SpawnedIsland';
 import { generateIsland } from './TerrainGenerator';
 import { spawnIslandIntoWorld, placePlayer, placePlayerAt } from './IslandSpawner';
+import { selectStartSiteAmong } from './StartSiteSelection';
 import type { ObjectGlobalId } from '../GlobalId';
 
 /** NewGame.startNewGameが組み立てた、開始直後のゲーム一式。 */
@@ -44,11 +45,17 @@ export class StartedGame {
   }
 
   /**
-   * 開始地点を、渡したobject_def（locations.yamlの土地）の土地のうちindex順で最初のものへ移す。
-   * プレイヤーもそこへ移る。その土地が島に1つも無ければfalseで、開始地点は変わらない。
+   * 開始地点を、渡したobject_def（locations.yamlの土地）の土地へ移す。プレイヤーもそこへ移る。
+   * その型が島に複数あるなら、**どれを採るかは選抜が決める**（ContentSkeleton.md 2.3節）——
+   * 型で絞るのはシナリオの事情で、その中での選び方まで変える理由にはならない。
+   * その土地が島に1つも無ければfalseで、開始地点は変わらない。
    */
   startAt(locationDefGlobalId: ObjectGlobalId): boolean {
-    const site = this.island.map.sites.find((s) => s.type!.objectDefGlobalId === locationDefGlobalId);
+    const site = selectStartSiteAmong(
+      this.session.codex,
+      this.island.map,
+      this.island.map.sites.filter((s) => s.type!.objectDefGlobalId === locationDefGlobalId),
+    );
     if (site === undefined) return false;
 
     this._startLocation = placePlayerAt(this.session, this.island, this.player.instance, site);
