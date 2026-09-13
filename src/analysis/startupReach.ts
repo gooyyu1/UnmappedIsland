@@ -3,6 +3,7 @@ import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
 import { craftingStepsOf } from './craftingSteps';
+import { allPathsDiscoveryMinutesOf, pathDiscoverySchedulesOf } from './pathDiscovery';
 
 /**
  * 生成された島を測って、**最初の段（ContentSkeleton.md 2.1節）を越えるのに要るものが、その地点から
@@ -60,9 +61,8 @@ export interface LocationNeedSupply {
   readonly needIndices: ReadonlySet<number>;
 
   /**
-   * **その土地の道が全部出そろうまでの探索時間**（分）。探索の進捗が上限へ達する前にすべての道が
-   * 見つかることが生成の不変条件（IslandSpawner）なので、`exploration_progress`の上限−1回の
-   * 探索で足りる。
+   * **その土地の道が全部出そろうまでの探索時間**（分）。時刻表は`pathDiscovery`が持つ
+   * （`allPathsDiscoveryMinutesOf`）。
    */
   readonly pathDiscoveryMinutes: number;
 }
@@ -146,6 +146,7 @@ export function startupNeedSourcesOf(codex: WorldCodex): StartupNeedSources {
     }),
   );
 
+  const schedules = pathDiscoverySchedulesOf(codex);
   const rows: NeedSourceRow[] = [];
   const byLocationDef = new Map<number, LocationNeedSupply>();
 
@@ -173,7 +174,7 @@ export function startupNeedSourcesOf(codex: WorldCodex): StartupNeedSources {
     byLocationDef.set(locationDef.globalId, {
       locationDefName: locationDef.name,
       needIndices,
-      pathDiscoveryMinutes: pathDiscoveryMinutesOf(codex, locationDef, explore),
+      pathDiscoveryMinutes: allPathsDiscoveryMinutesOf(schedules.get(locationDef.globalId)!),
     });
   }
 
@@ -340,17 +341,6 @@ function exploreStepOf(codex: WorldCodex, locationDef: ObjectDef): CraftingStep 
   );
   if (explore === undefined) throw new Error(`土地 '${locationDef.name}' が探索を宣言していません。`);
   return explore;
-}
-
-/**
- * その土地の道が全部出そろうまでの探索時間（分）。進捗は探索1回につき1進み、上限へ達する前に
- * すべての道が見つかる（IslandSpawnerが保証する生成の不変条件）。
- */
-function pathDiscoveryMinutesOf(codex: WorldCodex, locationDef: ObjectDef, explore: CraftingStep): number {
-  const range = locationDef.tryGetPropertyDef(codex.vocabulary.world.explorationProgressId)?.range;
-  if (range === undefined)
-    throw new Error(`土地 '${locationDef.name}' がexploration_progressのrangeを宣言していません。`);
-  return (range.max - 1) * explore.laborMinutes;
 }
 
 /** 1回の実行で、その型が生まれる期待個数（分岐の確率で重み付けした和）。 */

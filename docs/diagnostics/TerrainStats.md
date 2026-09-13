@@ -30,8 +30,13 @@ YAMLとずれます）。
 | `location_type_counts` | 土地の型ごとの、出現する島の割合と1島あたりの個数 |
 | `site_degree` | 土地1つあたりの次数（全島の全土地をまとめた分布） |
 | `site_degree_histogram` | 同じものの割合（`or_more: true` の行は「その本数以上」） |
+| `site_elevation` | 土地の海抜（`group` が土地の組） |
+| `site_elevation_by_location` | 同じものを土地の型ごとに分けたもの |
+| `path_discovery` | その土地の道が見つかるまでの探索時間 |
+| `path_discovery_by_degree` | 同じものを道の本数ごとに分けたもの |
 | `edge` | 道1本あたりの距離・両端の高低差・移動時間 |
 | `base_one_way` | 拠点から他の土地への片道 |
+| `base_farthest_round_trip` | 拠点から最も遠い土地までの往復 |
 | `daily_budget` | 1日の割り付け（屋外の枠・夜の加工・生存の採取・自由時間） |
 | `work_piles` | 1周回に積む山1つずつの量 |
 | `work_piles_by_system` | 同じものを系統ごとにまとめた合計 |
@@ -69,11 +74,38 @@ YAMLとずれます）。
 （TerrainGeneration.md 3.5節）。距離も高低差も現実の長さで、縮尺と速さは
 `generation_scopes.island` が別々に宣言している。
 
+## 土地の高さ
+
+`site_elevation` の `group` は土地の組で、`all`（全部）・`coast_band`（`coastal_distance` が
+`coast_band` 以下＝海に接する土地）・`inland`（残り）。**`location_type` ではなく軸の値で分ける**
+——砂浜と岸壁を分ける高さ（TerrainGeneration.md 3.5.3節）は、型が決まる前の分布から引いたもの。
+
+`site_elevation_by_location` は同じものを型ごとに分けたもの。海抜は軸の値を
+`elevation_top_meters ÷ 軸の値域` でメートルへ直したもので、島の最低点は必ず0m、最高点は必ず
+`elevation_top_meters`（同3.5節）。
+
+## 道が見つかるまで
+
+`path_discovery` は、**その土地に居続けたときに、道が見つかるまでに費やす探索時間**。通う移動は
+含まない。`first_path`／`last_path` はその土地の最初／最後の道、`gap` は隣り合う道どうしの間隔
+（道が1本だけの土地は標本に入らないので、`n` が2本以上の土地の道の隙間の数）、`full_exploration`
+はその土地を探索率100%まで開くまで——**1本目が早いかどうかを読む物差し**で、道の話ではない。
+
+`path_discovery_by_degree` は同じものを道の本数ごとに分けたもの。**本数の側は出た分だけ行が増える**
+（上限で畳まない）ので、`site_degree_histogram` に出る本数がそのまま並ぶ。
+
+割り当てそのものは ExplorationSystem.md 3.2節で、時刻表を引くのは
+`src/analysis/pathDiscovery.ts`（実体化する側と同じ割り当てを見る）。
+
 ## 島の広さ
 
 `base_one_way` は、拠点から他の土地への片道（最短経路）の平均。**拠点を選ぶと縮む**——プレイヤーは
 拠点を選べるので、1周回で実際に払うのは `base: shortest_mean`（他の土地への片道が平均で最も短い
 土地）のほうで、`base: any` はどの土地を拠点にしてもよいときの分布。
+
+`base_farthest_round_trip` は、同じ2つの拠点の採り方で見た**最も遠い土地への往復**。平均ではなく
+最も遠い1つを見るので、**補給を持たずに出られる範囲が島の広さで決まるか**に答える
+（GameEndings.md 9.2節）。比べる先は `daily_budget` の `outdoor_window` − `survival_gathering`。
 
 ## 1周回に積む山
 

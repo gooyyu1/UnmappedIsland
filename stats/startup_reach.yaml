@@ -43,23 +43,23 @@ location_supplies:
 
 site_reach_by_need:
   - {need: 火口, measure: hops, unit: hops, mean: 1.20, min: 0.00, median: 1.00, p95: 3.00, max: 5.00, sd: 0.93, n: 30021}
-  - {need: 火口, measure: travel, unit: minutes, mean: 46.77, min: 0.00, median: 45.00, p95: 120.00, max: 270.00, sd: 40.69, n: 30021}
-  - {need: 火口, measure: path_discovery, unit: minutes, mean: 214.91, min: 0.00, median: 165.00, p95: 555.00, max: 1020.00, sd: 175.21, n: 30021}
+  - {need: 火口, measure: travel, unit: minutes, mean: 47.24, min: 0.00, median: 45.00, p95: 120.00, max: 285.00, sd: 41.09, n: 30021}
+  - {need: 火口, measure: path_discovery, unit: minutes, mean: 215.41, min: 0.00, median: 165.00, p95: 555.00, max: 1020.00, sd: 175.59, n: 30021}
   - {need: 錐, measure: hops, unit: hops, mean: 0.67, min: 0.00, median: 1.00, p95: 2.00, max: 4.00, sd: 0.65, n: 30042}
-  - {need: 錐, measure: travel, unit: minutes, mean: 26.38, min: 0.00, median: 30.00, p95: 75.00, max: 195.00, sd: 26.90, n: 30042}
-  - {need: 錐, measure: path_discovery, unit: minutes, mean: 102.27, min: 0.00, median: 135.00, p95: 300.00, max: 660.00, sd: 101.57, n: 30042}
+  - {need: 錐, measure: travel, unit: minutes, mean: 26.72, min: 0.00, median: 30.00, p95: 75.00, max: 195.00, sd: 27.26, n: 30042}
+  - {need: 錐, measure: path_discovery, unit: minutes, mean: 102.59, min: 0.00, median: 135.00, p95: 330.00, max: 660.00, sd: 101.89, n: 30042}
   - {need: 軸, measure: hops, unit: hops, mean: 0.90, min: 0.00, median: 1.00, p95: 2.00, max: 3.00, sd: 0.80, n: 30042}
-  - {need: 軸, measure: travel, unit: minutes, mean: 37.31, min: 0.00, median: 45.00, p95: 105.00, max: 195.00, sd: 34.27, n: 30042}
-  - {need: 軸, measure: path_discovery, unit: minutes, mean: 160.98, min: 0.00, median: 165.00, p95: 420.00, max: 675.00, sd: 143.44, n: 30042}
-  - {need: 刃, measure: hops, unit: hops, mean: 0.56, min: 0.00, median: 0.00, p95: 2.00, max: 3.00, sd: 0.67, n: 30042}
-  - {need: 刃, measure: travel, unit: minutes, mean: 21.10, min: 0.00, median: 0.00, p95: 75.00, max: 135.00, sd: 26.48, n: 30042}
-  - {need: 刃, measure: path_discovery, unit: minutes, mean: 101.94, min: 0.00, median: 0.00, p95: 345.00, max: 645.00, sd: 122.18, n: 30042}
-  - {need: 水, measure: hops, unit: hops, mean: 0.64, min: 0.00, median: 1.00, p95: 2.00, max: 4.00, sd: 0.68, n: 30042}
-  - {need: 水, measure: travel, unit: minutes, mean: 25.73, min: 0.00, median: 30.00, p95: 75.00, max: 270.00, sd: 29.49, n: 30042}
-  - {need: 水, measure: path_discovery, unit: minutes, mean: 102.88, min: 0.00, median: 135.00, p95: 300.00, max: 750.00, sd: 110.19, n: 30042}
+  - {need: 軸, measure: travel, unit: minutes, mean: 37.90, min: 0.00, median: 45.00, p95: 105.00, max: 195.00, sd: 34.65, n: 30042}
+  - {need: 軸, measure: path_discovery, unit: minutes, mean: 160.96, min: 0.00, median: 165.00, p95: 420.00, max: 675.00, sd: 143.42, n: 30042}
+  - {need: 刃, measure: hops, unit: hops, mean: 0.49, min: 0.00, median: 0.00, p95: 2.00, max: 3.00, sd: 0.63, n: 30042}
+  - {need: 刃, measure: travel, unit: minutes, mean: 18.05, min: 0.00, median: 0.00, p95: 60.00, max: 135.00, sd: 24.46, n: 30042}
+  - {need: 刃, measure: path_discovery, unit: minutes, mean: 89.84, min: 0.00, median: 0.00, p95: 300.00, max: 645.00, sd: 115.54, n: 30042}
+  - {need: 水, measure: hops, unit: hops, mean: 0.71, min: 0.00, median: 1.00, p95: 2.00, max: 5.00, sd: 0.71, n: 30042}
+  - {need: 水, measure: travel, unit: minutes, mean: 28.71, min: 0.00, median: 30.00, p95: 90.00, max: 270.00, sd: 30.85, n: 30042}
+  - {need: 水, measure: path_discovery, unit: minutes, mean: 113.36, min: 0.00, median: 135.00, p95: 330.00, max: 855.00, sd: 113.66, n: 30042}
   - {need: 道具の要らない食料, measure: hops, unit: hops, mean: 1.42, min: 0.00, median: 1.00, p95: 3.00, max: 6.00, sd: 1.03, n: 30002}
-  - {need: 道具の要らない食料, measure: travel, unit: minutes, mean: 54.88, min: 0.00, median: 45.00, p95: 135.00, max: 300.00, sd: 44.67, n: 30002}
-  - {need: 道具の要らない食料, measure: path_discovery, unit: minutes, mean: 239.51, min: 0.00, median: 210.00, p95: 555.00, max: 1170.00, sd: 179.68, n: 30002}
+  - {need: 道具の要らない食料, measure: travel, unit: minutes, mean: 55.38, min: 0.00, median: 45.00, p95: 150.00, max: 300.00, sd: 45.02, n: 30002}
+  - {need: 道具の要らない食料, measure: path_discovery, unit: minutes, mean: 240.02, min: 0.00, median: 210.00, p95: 555.00, max: 1170.00, sd: 180.06, n: 30002}
 
 site_unreachable_by_need:
   - {need: 火口, unit: percent, share: 0.07}
@@ -70,48 +70,48 @@ site_unreachable_by_need:
   - {need: 道具の要らない食料, unit: percent, share: 0.13}
 
 site_all_needs:
-  - {measure: hops, unit: hops, mean: 2.01, min: 1.00, median: 2.00, p95: 3.00, max: 6.00, sd: 0.78, n: 29991}
-  - {measure: travel, unit: minutes, mean: 80.34, min: 15.00, median: 75.00, p95: 150.00, max: 300.00, sd: 36.27, n: 29991}
-  - {measure: path_discovery, unit: minutes, mean: 345.39, min: 135.00, median: 330.00, p95: 630.00, max: 1170.00, sd: 144.18, n: 29991}
+  - {measure: hops, unit: hops, mean: 1.99, min: 1.00, median: 2.00, p95: 3.00, max: 6.00, sd: 0.78, n: 29991}
+  - {measure: travel, unit: minutes, mean: 80.77, min: 15.00, median: 75.00, p95: 150.00, max: 300.00, sd: 36.67, n: 29991}
+  - {measure: path_discovery, unit: minutes, mean: 343.86, min: 135.00, median: 330.00, p95: 630.00, max: 1170.00, sd: 145.40, n: 29991}
 
 site_all_needs_hops_histogram:
   - {hops: 0, or_more: false, unit: percent, share: 0.00}
-  - {hops: 1, or_more: false, unit: percent, share: 24.75}
-  - {hops: 2, or_more: false, unit: percent, share: 54.87}
-  - {hops: 3, or_more: false, unit: percent, share: 15.97}
+  - {hops: 1, or_more: false, unit: percent, share: 25.70}
+  - {hops: 2, or_more: false, unit: percent, share: 54.11}
+  - {hops: 3, or_more: false, unit: percent, share: 15.79}
   - {hops: 4, or_more: false, unit: percent, share: 3.93}
   - {hops: 5, or_more: false, unit: percent, share: 0.46}
   - {hops: 6, or_more: true, unit: percent, share: 0.01}
 
 site_last_need:
-  - {need: 火口, unit: percent, share: 25.31}
-  - {need: 錐, unit: percent, share: 16.19}
-  - {need: 軸, unit: percent, share: 32.65}
-  - {need: 刃, unit: percent, share: 5.33}
-  - {need: 水, unit: percent, share: 2.66}
-  - {need: 道具の要らない食料, unit: percent, share: 17.86}
+  - {need: 火口, unit: percent, share: 25.86}
+  - {need: 錐, unit: percent, share: 16.63}
+  - {need: 軸, unit: percent, share: 33.51}
+  - {need: 刃, unit: percent, share: 3.45}
+  - {need: 水, unit: percent, share: 3.65}
+  - {need: 道具の要らない食料, unit: percent, share: 16.89}
 
 site_all_needs_hops_by_start_location:
-  - {location: cliff_coast, measure: hops, unit: hops, mean: 2.23, min: 1.00, median: 2.00, p95: 4.00, max: 6.00, sd: 0.91, n: 1279}
-  - {location: forest, measure: hops, unit: hops, mean: 2.00, min: 1.00, median: 2.00, p95: 3.00, max: 5.00, sd: 0.74, n: 4541}
-  - {location: grassland, measure: hops, unit: hops, mean: 1.32, min: 1.00, median: 1.00, p95: 2.00, max: 3.00, sd: 0.48, n: 4366}
-  - {location: jungle, measure: hops, unit: hops, mean: 1.88, min: 1.00, median: 2.00, p95: 3.00, max: 4.00, sd: 0.68, n: 1180}
+  - {location: cliff_coast, measure: hops, unit: hops, mean: 2.23, min: 1.00, median: 2.00, p95: 4.00, max: 6.00, sd: 0.94, n: 2391}
+  - {location: forest, measure: hops, unit: hops, mean: 1.99, min: 1.00, median: 2.00, p95: 3.00, max: 5.00, sd: 0.75, n: 4541}
+  - {location: grassland, measure: hops, unit: hops, mean: 1.31, min: 1.00, median: 1.00, p95: 2.00, max: 3.00, sd: 0.47, n: 4366}
+  - {location: jungle, measure: hops, unit: hops, mean: 1.87, min: 1.00, median: 2.00, p95: 3.00, max: 4.00, sd: 0.68, n: 1180}
   - {location: mountain_peak, measure: hops, unit: hops, mean: 2.15, min: 1.00, median: 2.00, p95: 3.00, max: 4.00, sd: 0.39, n: 2003}
   - {location: mountainside, measure: hops, unit: hops, mean: 2.08, min: 1.00, median: 2.00, p95: 3.00, max: 4.00, sd: 0.46, n: 2367}
-  - {location: rocky_coast, measure: hops, unit: hops, mean: 2.23, min: 1.00, median: 2.00, p95: 4.00, max: 6.00, sd: 0.90, n: 5579}
+  - {location: rocky_coast, measure: hops, unit: hops, mean: 2.22, min: 1.00, median: 2.00, p95: 4.00, max: 6.00, sd: 0.89, n: 5845}
   - {location: rocky_field, measure: hops, unit: hops, mean: 1.99, min: 1.00, median: 2.00, p95: 3.00, max: 4.00, sd: 0.69, n: 2277}
-  - {location: sandy_beach, measure: hops, unit: hops, mean: 2.36, min: 1.00, median: 2.00, p95: 4.00, max: 6.00, sd: 0.80, n: 3860}
+  - {location: sandy_beach, measure: hops, unit: hops, mean: 2.35, min: 1.00, median: 2.00, p95: 4.00, max: 5.00, sd: 0.77, n: 2482}
   - {location: wasteland, measure: hops, unit: hops, mean: 1.94, min: 1.00, median: 2.00, p95: 3.00, max: 5.00, sd: 0.73, n: 2539}
 
 island_best_site:
-  - {measure: hops, unit: hops, mean: 1.01, min: 1.00, median: 1.00, p95: 1.00, max: 2.00, sd: 0.11, n: 1995}
-  - {measure: travel, unit: minutes, mean: 38.05, min: 15.00, median: 30.00, p95: 60.00, max: 120.00, sd: 11.12, n: 1995}
-  - {measure: path_discovery, unit: minutes, mean: 164.26, min: 135.00, median: 165.00, p95: 210.00, max: 465.00, sd: 28.74, n: 1995}
+  - {measure: hops, unit: hops, mean: 1.01, min: 1.00, median: 1.00, p95: 1.00, max: 2.00, sd: 0.09, n: 1995}
+  - {measure: travel, unit: minutes, mean: 37.93, min: 15.00, median: 30.00, p95: 60.00, max: 120.00, sd: 10.68, n: 1995}
+  - {measure: path_discovery, unit: minutes, mean: 163.65, min: 135.00, median: 165.00, p95: 210.00, max: 465.00, sd: 26.80, n: 1995}
 
 island_best_site_hops_histogram:
   - {hops: 0, or_more: false, unit: percent, share: 0.00}
-  - {hops: 1, or_more: false, unit: percent, share: 98.75}
-  - {hops: 2, or_more: false, unit: percent, share: 1.25}
+  - {hops: 1, or_more: false, unit: percent, share: 99.15}
+  - {hops: 2, or_more: false, unit: percent, share: 0.85}
   - {hops: 3, or_more: false, unit: percent, share: 0.00}
   - {hops: 4, or_more: false, unit: percent, share: 0.00}
   - {hops: 5, or_more: false, unit: percent, share: 0.00}
@@ -119,23 +119,23 @@ island_best_site_hops_histogram:
 
 island_best_site_by_need:
   - {need: 火口, measure: hops, unit: hops, mean: 0.35, min: 0.00, median: 0.00, p95: 1.00, max: 2.00, sd: 0.48, n: 1998}
-  - {need: 火口, measure: travel, unit: minutes, mean: 12.31, min: 0.00, median: 0.00, p95: 45.00, max: 75.00, sd: 18.13, n: 1998}
-  - {need: 火口, measure: path_discovery, unit: minutes, mean: 59.62, min: 0.00, median: 0.00, p95: 210.00, max: 375.00, sd: 83.67, n: 1998}
-  - {need: 錐, measure: hops, unit: hops, mean: 0.73, min: 0.00, median: 1.00, p95: 1.00, max: 2.00, sd: 0.45, n: 2000}
-  - {need: 錐, measure: travel, unit: minutes, mean: 24.14, min: 0.00, median: 30.00, p95: 45.00, max: 90.00, sd: 17.41, n: 2000}
-  - {need: 錐, measure: path_discovery, unit: minutes, mean: 117.79, min: 0.00, median: 165.00, p95: 165.00, max: 330.00, sd: 73.34, n: 2000}
-  - {need: 軸, measure: hops, unit: hops, mean: 0.78, min: 0.00, median: 1.00, p95: 1.00, max: 2.00, sd: 0.43, n: 2000}
-  - {need: 軸, measure: travel, unit: minutes, mean: 27.37, min: 0.00, median: 30.00, p95: 45.00, max: 120.00, sd: 17.22, n: 2000}
-  - {need: 軸, measure: path_discovery, unit: minutes, mean: 128.17, min: 0.00, median: 165.00, p95: 210.00, max: 465.00, sd: 73.12, n: 2000}
-  - {need: 刃, measure: hops, unit: hops, mean: 0.65, min: 0.00, median: 1.00, p95: 1.00, max: 2.00, sd: 0.48, n: 2000}
-  - {need: 刃, measure: travel, unit: minutes, mean: 21.48, min: 0.00, median: 30.00, p95: 45.00, max: 90.00, sd: 17.40, n: 2000}
-  - {need: 刃, measure: path_discovery, unit: minutes, mean: 110.40, min: 0.00, median: 165.00, p95: 210.00, max: 345.00, sd: 82.80, n: 2000}
-  - {need: 水, measure: hops, unit: hops, mean: 0.35, min: 0.00, median: 0.00, p95: 1.00, max: 2.00, sd: 0.48, n: 2000}
-  - {need: 水, measure: travel, unit: minutes, mean: 11.71, min: 0.00, median: 0.00, p95: 45.00, max: 105.00, sd: 17.58, n: 2000}
-  - {need: 水, measure: path_discovery, unit: minutes, mean: 52.29, min: 0.00, median: 0.00, p95: 165.00, max: 345.00, sd: 72.38, n: 2000}
+  - {need: 火口, measure: travel, unit: minutes, mean: 12.58, min: 0.00, median: 0.00, p95: 45.00, max: 75.00, sd: 18.44, n: 1998}
+  - {need: 火口, measure: path_discovery, unit: minutes, mean: 59.52, min: 0.00, median: 0.00, p95: 210.00, max: 375.00, sd: 83.41, n: 1998}
+  - {need: 錐, measure: hops, unit: hops, mean: 0.74, min: 0.00, median: 1.00, p95: 1.00, max: 2.00, sd: 0.44, n: 2000}
+  - {need: 錐, measure: travel, unit: minutes, mean: 24.28, min: 0.00, median: 30.00, p95: 45.00, max: 90.00, sd: 17.19, n: 2000}
+  - {need: 錐, measure: path_discovery, unit: minutes, mean: 118.49, min: 0.00, median: 165.00, p95: 165.00, max: 330.00, sd: 72.17, n: 2000}
+  - {need: 軸, measure: hops, unit: hops, mean: 0.77, min: 0.00, median: 1.00, p95: 1.00, max: 2.00, sd: 0.43, n: 2000}
+  - {need: 軸, measure: travel, unit: minutes, mean: 27.18, min: 0.00, median: 30.00, p95: 45.00, max: 120.00, sd: 17.14, n: 2000}
+  - {need: 軸, measure: path_discovery, unit: minutes, mean: 127.45, min: 0.00, median: 165.00, p95: 210.00, max: 465.00, sd: 73.54, n: 2000}
+  - {need: 刃, measure: hops, unit: hops, mean: 0.63, min: 0.00, median: 1.00, p95: 1.00, max: 2.00, sd: 0.49, n: 2000}
+  - {need: 刃, measure: travel, unit: minutes, mean: 20.38, min: 0.00, median: 30.00, p95: 45.00, max: 90.00, sd: 17.20, n: 2000}
+  - {need: 刃, measure: path_discovery, unit: minutes, mean: 107.04, min: 0.00, median: 165.00, p95: 210.00, max: 330.00, sd: 84.31, n: 2000}
+  - {need: 水, measure: hops, unit: hops, mean: 0.37, min: 0.00, median: 0.00, p95: 1.00, max: 2.00, sd: 0.48, n: 2000}
+  - {need: 水, measure: travel, unit: minutes, mean: 12.72, min: 0.00, median: 0.00, p95: 45.00, max: 105.00, sd: 18.01, n: 2000}
+  - {need: 水, measure: path_discovery, unit: minutes, mean: 55.50, min: 0.00, median: 0.00, p95: 165.00, max: 345.00, sd: 72.73, n: 2000}
   - {need: 道具の要らない食料, measure: hops, unit: hops, mean: 0.49, min: 0.00, median: 0.00, p95: 1.00, max: 2.00, sd: 0.51, n: 1996}
-  - {need: 道具の要らない食料, measure: travel, unit: minutes, mean: 16.49, min: 0.00, median: 0.00, p95: 45.00, max: 105.00, sd: 18.82, n: 1996}
-  - {need: 道具の要らない食料, measure: path_discovery, unit: minutes, mean: 77.65, min: 0.00, median: 0.00, p95: 210.00, max: 420.00, sd: 82.06, n: 1996}
+  - {need: 道具の要らない食料, measure: travel, unit: minutes, mean: 16.68, min: 0.00, median: 0.00, p95: 45.00, max: 105.00, sd: 19.07, n: 1996}
+  - {need: 道具の要らない食料, measure: path_discovery, unit: minutes, mean: 77.34, min: 0.00, median: 0.00, p95: 210.00, max: 420.00, sd: 81.94, n: 1996}
 
 island_missing_need:
   - {need: 火口, unit: percent, share: 0.10}
@@ -149,13 +149,13 @@ island_best_site_unreachable:
   - {unit: percent, share: 0.25}
 
 island_best_site_locations:
-  - {location: grassland, unit: percent, share: 49.75}
-  - {location: wasteland, unit: percent, share: 15.25}
-  - {location: rocky_coast, unit: percent, share: 13.35}
-  - {location: forest, unit: percent, share: 7.60}
-  - {location: sandy_beach, unit: percent, share: 6.75}
-  - {location: rocky_field, unit: percent, share: 2.75}
-  - {location: cliff_coast, unit: percent, share: 2.60}
-  - {location: jungle, unit: percent, share: 1.10}
-  - {location: mountainside, unit: percent, share: 0.55}
-  - {location: mountain_peak, unit: percent, share: 0.30}
+  - {location: grassland, unit: percent, share: 50.00}
+  - {location: wasteland, unit: percent, share: 15.00}
+  - {location: rocky_coast, unit: percent, share: 13.85}
+  - {location: forest, unit: percent, share: 7.85}
+  - {location: cliff_coast, unit: percent, share: 5.50}
+  - {location: sandy_beach, unit: percent, share: 3.80}
+  - {location: rocky_field, unit: percent, share: 2.45}
+  - {location: jungle, unit: percent, share: 1.05}
+  - {location: mountain_peak, unit: percent, share: 0.25}
+  - {location: mountainside, unit: percent, share: 0.25}

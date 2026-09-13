@@ -477,7 +477,7 @@
 
 **この差が判断になるのは、筏をその海岸まで運ぶ手が要るからです。** 丸太は 1 本ずつしか運べない（1 節）ので、
 遠い海岸を選ぶことは 6 往復ぶんの島側の仕事を選ぶことでもあります。岸壁は歩きにくく（`move_cost` 1.7）、
-島の半分ほどにしかありません（[`stats/terrain.yaml`](../../stats/terrain.yaml) の
+どの島にもあるとは限りません（[`stats/terrain.yaml`](../../stats/terrain.yaml) の
 `location_type_counts` の `cliff_coast`）。**資材の運搬コストと航海日数を秤に
 かける判断**が、ここに残ります。
 

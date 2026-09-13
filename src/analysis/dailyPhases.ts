@@ -446,6 +446,13 @@ export interface BaseDailyPhases {
   /** 拠点から他の土地への片道（最短経路）の移動時間（分）の平均。島の広さそのもの。 */
   readonly oneWayMinutes: number;
 
+  /**
+   * 拠点から**最も遠い土地**への片道（最短経路）の移動時間（分）。補給を持たずに出られる範囲が
+   * 島の広さで決まるかを読む値（GameEndings.md 9.2節）——往復がその日の屋外の枠に収まるなら、
+   * 島のどこへ行っても泊まる理由は生まれない。
+   */
+  readonly farthestOneWayMinutes: number;
+
   readonly exploration: ExplorationPhase;
 
   /** **日帰りで届かない組を持つ拠点ではundefined**（このファイルのクラスコメント）。 */
@@ -562,6 +569,7 @@ function baseDailyPhasesOf(
   return {
     siteIndex: base,
     oneWayMinutes: others.reduce((sum, site) => sum + distances[base][site], 0) / others.length,
+    farthestOneWayMinutes: others.reduce((far, site) => Math.max(far, distances[base][site]), 0),
     exploration: explorationPhaseOf(distances, days, base, budget),
     steady: steadyPhaseOf(distances, days, base, budget),
   };

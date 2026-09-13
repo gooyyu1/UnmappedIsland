@@ -8,6 +8,23 @@ import { SpawnedIsland } from './SpawnedIsland';
 const FIRST_PATH_PROGRESS = 2;
 
 /**
+ * 土地に繋がる道それぞれが見つかる探索の進捗を、見つかる順に並べたもの。
+ * `[FIRST_PATH_PROGRESS, progressMax − 1]` へ等間隔に置くので、**最初の道は道の本数によらず
+ * 2回目の探索で出て、最後の道は必ず探索率100%の手前で出る**（ExplorationSystem.md 3.2節）。
+ *
+ * **実体化する側と測る側が同じものを見るための1箇所。** 測る側が式を書き写すと、割り当てを
+ * 変えたときに統計だけが古い式のまま緑になる。
+ */
+export function pathRequiredProgresses(pathCount: number, progressMax: number): readonly number[] {
+  const lastPathProgress = progressMax - 1;
+  return Array.from({ length: pathCount }, (_, i) =>
+    pathCount === 1
+      ? FIRST_PATH_PROGRESS
+      : FIRST_PATH_PROGRESS + Math.trunc(((lastPathProgress - FIRST_PATH_PROGRESS) * i) / (pathCount - 1)),
+  );
+}
+
+/**
  * IslandMap（TerrainGeneratorの純粋な計算結果）を、実際の世界（worldツリー）へ実体化し、
  * サイトと湧いた土地の対応を持つSpawnedIslandを返す。
  *
@@ -66,20 +83,17 @@ export function spawnIslandIntoWorld(session: WorldSession, map: IslandMap): Spa
       .sort((x, y) => x.other - y.other);
     if (touching.length === 0) continue;
 
-    const progressMax = land.def.tryGetPropertyDef(progressId)!.range!.max;
-    const lastPathProgress = progressMax - 1;
+    const progresses = pathRequiredProgresses(
+      touching.length,
+      land.def.tryGetPropertyDef(progressId)!.range!.max,
+    );
 
     for (let i = 0; i < touching.length; i++) {
       const { edge, other } = touching[i];
-      const requiredProgress =
-        touching.length === 1
-          ? FIRST_PATH_PROGRESS
-          : FIRST_PATH_PROGRESS +
-            Math.trunc(((lastPathProgress - FIRST_PATH_PROGRESS) * i) / (touching.length - 1));
 
       const path = session.createObject(pathDefId);
       path.getProperty(travelMinutesId).setNumberWithoutEvents(edge.travelMinutes);
-      path.getProperty(requiredProgressId).setNumberWithoutEvents(requiredProgress);
+      path.getProperty(requiredProgressId).setNumberWithoutEvents(progresses[i]);
       path.getProperty(destinationIdId).setNumberWithoutEvents(lands.get(map.sites[other])!.instanceId);
       const error = path.moveToSlotOrRejection(land.getSlot(undiscoveredFixturesSlotId));
       if (error !== undefined) throw new Error(`道を配置できません: ${error}`);
