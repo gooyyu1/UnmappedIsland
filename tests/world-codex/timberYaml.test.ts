@@ -112,7 +112,9 @@ describe('timber.yamlの伐採', () => {
     // 頃は、暗さで塞がれた樹皮剥ぎの理由が伐採の「摩耗」に隠れていた。
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
     const axe = spawnInto('stone_axe', player, 'hand');
-    axe.getProperty(codex.propertyNames.getId('durability')).setNumberWithoutEvents(0);
+    // 1本ぶん（120）を割った刃。**0にはしない**——0へ届いた刃は折れて無くなる（weathering.yaml）
+    // ので、その札は盤面に残らない（docs/engine/DurabilitySystem.md 2.1節）。
+    axe.getProperty(codex.propertyNames.getId('durability')).setNumberWithoutEvents(100);
     makeTooDarkToWork(player, codex);
 
     expect(
@@ -123,6 +125,38 @@ describe('timber.yamlの伐採', () => {
       tree.refusedCombinationsWith(axe, player).map((c) => [c.name, c.unmetRequirement()?.reasonName]),
       '断るのは伐採だけで、理由も斧そのものを指す',
     ).toEqual([['fell', 'too_worn']]);
+  });
+
+  it('1回ぶんの余力を割った斧は断られ、半分で済む玉切りだけが残る', () => {
+    // 線はその1回が食う量と同じところに引く（docs/engine/DurabilitySystem.md 2.1節）——倒し切れない
+    // 仕事を始めさせないため。**閾値がaddの量と食い違えばここが落ちる。**
+    const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
+    const trunk = spawnInto('driftwood_trunk', forest, 'fixtures');
+    const axe = spawnInto('stone_axe', player, 'hand');
+    const durabilityId = codex.propertyNames.getId('durability');
+    const setDurability = (value: number): void =>
+      axe.getProperty(durabilityId).setNumberWithoutEvents(value);
+    const refusal = (target: WorldObject, step: string): string | undefined =>
+      target
+        .refusedCombinationsWith(axe, player)
+        .find((combination) => combination.name === step)
+        ?.unmetRequirement()?.reasonName;
+
+    setDurability(120);
+    expect(
+      tree.combinationsWith(axe, player).map((c) => c.name),
+      '1本ぶんちょうどなら倒せる',
+    ).toEqual(['fell']);
+
+    setDurability(119);
+    expect(refusal(tree, 'fell'), '1足りなければ倒せない').toBe('too_worn');
+    expect(
+      trunk.combinationsWith(axe, player).map((c) => c.name),
+      '倒せなくなっても、半分の60で済む玉切りは残る',
+    ).toEqual(['buck']);
+
+    setDurability(59);
+    expect(refusal(trunk, 'buck'), '玉切りの1回ぶんも割れば、そちらも断る').toBe('too_worn');
   });
 
   it('暗がりで尖った石を当てると、樹皮剥ぎが暗さを理由に断る', () => {
