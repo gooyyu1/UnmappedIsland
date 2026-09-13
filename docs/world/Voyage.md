@@ -230,24 +230,46 @@
 長さまで振ると何が変わったのか読めなくなります。
 
 **この重みが横断時間へ返すものは、1 周回に 1 度の航海では半日に満たない差です。** 砂浜から近道で渡ると、
-乾季なら 5.37 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=dry days -->、
-雨季なら 5.72 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=wet days -->——
+乾季なら 4.71 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=dry days -->、
+雨季なら 5.02 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=wet days -->——
 最も短い岸壁からでも
-3.62 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=dry days -->と
-3.85 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=wet days -->で、
+3.17 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=dry days -->と
+3.38 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=wet days -->で、
 **差は 0.2〜0.4 日です**（[`stats/voyage.yaml`](../../stats/voyage.yaml) の `course_season`）。
+
+**荒天の押し流し（3.8 節）を入れても、倍にしかなりません。** 風下は押し流す先も決めるので、向かい風の
+多い雨季ほど島の側へ戻される回が増えます。海区と筏を実体化して渡らせると
+（[`VoyageStormStats.md`](../diagnostics/VoyageStormStats.md)）、**乾季の航海はほとんど押し流されません**
+——伸びるのは
+0.02 日<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=dry extra_days -->で、
+嵐そのものが乾季にはほとんど立たないからです
+（[`ClimateSystemStats.md`](../diagnostics/ClimateSystemStats.md)）。一方、雨季は
+1.71 区間<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=wet extra_legs -->、
+0.42 日<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=wet extra_days -->伸びます
+——**伸びのほとんどは押し戻された区間ではなく、渡っている最中に流されて空振りになった渡り**です
+（3.8 節）。砂浜から近道で渡ると
+4.73 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=dry mean -->と
+5.43 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet mean -->、最も短い岸壁
+からでも
+3.18 日<!-- stats: voyage_storm.yaml course_storm coast=cliff_coast season=dry mean -->と
+3.79 日<!-- stats: voyage_storm.yaml course_storm coast=cliff_coast season=wet mean -->で、
+**差は 0.6〜0.8 日です。**
 
 **一方、窓を逃したときに待つのは 48〜72 日です。** 季節は
 24<!-- stats: climate.yaml season_duration season=calm min -->〜36<!-- stats: climate.yaml season_duration season=calm max -->
 日で回り、乾季の次の乾季までには穏やかと雨季が挟まるので、乾季を逃せばその 2 季ぶんを待つことになります
 ——引き返して逃した場合も同じで、引き返しの代償（[`GameEndings.md`](../concept/GameEndings.md) 12.5 節）
-にはこれが乗ります。**得る 0.2〜0.4 日に対して待ちが 2 桁大きいので、今の重みでは「窓を待つ」は
-選択になりません**——期限として働かせるなら、動かすのは風向きの重みではなく、季節が航海へ返すものの
-側です。
+にはこれが乗ります。**得る 0.6〜0.8 日に対して待ちが 2 桁大きいので、今の重みでは「窓を待つ」は
+選択になりません**——期限として働かせるなら、動かすのは風向きの重みでも荒天の押し流しでもなく、
+季節が航海へ返すものの側です。
 
-**ここで測ったのは横断時間だけです。** 風下は荒天の押し流す先も決める（3.8 節）ので、向かい風の多い
-雨季に出れば島の側へ押し戻される回が増えますが、**それが何区間ぶんになるかは通してみないと出ません**
-（[`VoyageStats.md`](../diagnostics/VoyageStats.md)）。窓の値打ちの残りはそこにあります。
+**雨季が効くのは、平均ではなく読めなさのほうです。** 砂浜から雨季に出た航海は、20 回に 1 回は
+6.81 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet p95 -->を超え、最も長い
+回は
+8.58 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet max -->かかりました
+——**平均が半日しか動かないのに裾は 3 日以上伸びる**ので、雨季に出ることの代償は日数の期待値ではなく、
+積む量をどれだけ厚くするかに出ます（[`GameEndings.md`](../concept/GameEndings.md) 3.1 節の「読めない
+伸びをどう見込むか」、3.9.3 節）。
 
 **風を読むのは筏ではなく航路です**（3.2 節）。航路が `ancestor` で world まで遡り（海区には風の概念が
 無いので自然に world まで届きます）、自分の辺がどちらへ伸びているかと突き合わせて、渡るのにかかる時間へ
@@ -583,6 +605,16 @@
 （**荒天で押し流されやすい**）です。**顔ぶれの差はこの長さだけ**で、押し流し方そのものはどの海区も
 同じです。
 
+**実際に渡らせると、押し流されるのは雨季だけです**
+（[`VoyageStormStats.md`](../diagnostics/VoyageStormStats.md)）。砂浜から近道で渡った航海 1 回あたり、
+雨季は 0.86 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet backwards -->島の側へ、
+0.42 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet forwards -->本土の側へ流され、
+乾季にはほとんど起きません——嵐そのものが乾季には立たないからです
+（[`ClimateSystemStats.md`](../diagnostics/ClimateSystemStats.md)）。**効くのは戻された区間ではなく、
+渡っている最中に流されて空振りになった渡りのほう**で、雨季は 1 回の航海で
+1.28 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet voided_crossings -->——押し流しは
+ほぼ必ず渡っている最中に来ます（航海に費やす時間の大半が横断だからです）。
+
 風向きの見分けだけは条件ではなく重みにしてあります——`pick` の候補は `conditions` を持てないため、
 風向きが `drift_to_mainland_weight` / `drift_to_island_weight` の片方だけを立て、`on_max` の `pick` が
 それを重みとして引きます。素の値が 0 なので、立った側だけが選ばれます。
@@ -596,25 +628,32 @@
 「補給の無い区間で要るものは、積ませるより現地で獲れるようにする」節と「後から足す手段は、既存の
 手段を残す強さに抑える」節）。
 
-#### 3.9.1 航海は 4〜6 日で、30 日ではない
+#### 3.9.1 航海は 1 週間に届かず、30 日ではない
 
-**3 節の網から出る所要時間は、近道なら素の速さで 4〜6 日、遠回りでも 7 日には届きません。** 各海区で航路が現れるまでの見張り（3 節の表）と、
+**3 節の網から出る所要時間は、近道なら素の速さで 3〜6 日、遠回りでも 7 日には届きません。** 各海区で航路が現れるまでの見張り（3 節の表）と、
 素の横断 360 分（3.2 節）の合計を、島と同じ物差し（1 日ぶんの自由時間
-833 分<!-- stats: voyage.yaml meta daily_free_minutes -->。[`ContentSkeleton.md`](./ContentSkeleton.md)
+949 分<!-- stats: voyage.yaml meta daily_free_minutes -->。[`ContentSkeleton.md`](./ContentSkeleton.md)
 4 節）で割ったものです。**数を出すのは [`stats/voyage.yaml`](../../stats/voyage.yaml) の `courses`**
 （読み方は [`VoyageStats.md`](../diagnostics/VoyageStats.md)）。
 
 | 出航地点 | 針路 | 区間 | 見張り | 見張りの時間 | 横断 | 合計 | 日数 |
 |---|---|--:|--:|--:|--:|--:|--:|
-| 砂浜（島影の海から） | 近道 | 12<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest legs --> | 39<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest lookouts --> 回 | 585 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest lookout_minutes --> | 4,320 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest crossing_minutes --> | 4,905 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest total_minutes --> | 5.9<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest days --> |
-| 砂浜 | 遠回り | 14<!-- stats: voyage.yaml courses coast=sandy_beach course=detour legs --> | 45<!-- stats: voyage.yaml courses coast=sandy_beach course=detour lookouts --> 回 | 675 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour lookout_minutes --> | 5,040 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour crossing_minutes --> | 5,715 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour total_minutes --> | 6.9<!-- stats: voyage.yaml courses coast=sandy_beach course=detour days --> |
-| 岩だらけの海岸（潮目から） | 近道 | 10<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest legs --> | 34<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest total_minutes --> | 4.9<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest days --> |
-| 岩だらけの海岸 | 遠回り | 12<!-- stats: voyage.yaml courses coast=rocky_coast course=detour legs --> | 40<!-- stats: voyage.yaml courses coast=rocky_coast course=detour lookouts --> 回 | 600 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour lookout_minutes --> | 4,320 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour crossing_minutes --> | 4,920 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour total_minutes --> | 5.9<!-- stats: voyage.yaml courses coast=rocky_coast course=detour days --> |
-| 岸壁（海鳥の岩から） | 近道 | 8<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs --> | 28<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookouts --> 回 | 420 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookout_minutes --> | 2,880 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest crossing_minutes --> | 3,300 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest total_minutes --> | 4.0<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest days --> |
-| 岸壁 | 遠回り | 10<!-- stats: voyage.yaml courses coast=cliff_coast course=detour legs --> | 34<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour total_minutes --> | 4.9<!-- stats: voyage.yaml courses coast=cliff_coast course=detour days --> |
+| 砂浜（島影の海から） | 近道 | 12<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest legs --> | 39<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest lookouts --> 回 | 585 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest lookout_minutes --> | 4,320 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest crossing_minutes --> | 4,905 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest total_minutes --> | 5.2<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest days --> |
+| 砂浜 | 遠回り | 14<!-- stats: voyage.yaml courses coast=sandy_beach course=detour legs --> | 45<!-- stats: voyage.yaml courses coast=sandy_beach course=detour lookouts --> 回 | 675 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour lookout_minutes --> | 5,040 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour crossing_minutes --> | 5,715 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour total_minutes --> | 6.0<!-- stats: voyage.yaml courses coast=sandy_beach course=detour days --> |
+| 岩だらけの海岸（潮目から） | 近道 | 10<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest legs --> | 34<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest total_minutes --> | 4.3<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest days --> |
+| 岩だらけの海岸 | 遠回り | 12<!-- stats: voyage.yaml courses coast=rocky_coast course=detour legs --> | 40<!-- stats: voyage.yaml courses coast=rocky_coast course=detour lookouts --> 回 | 600 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour lookout_minutes --> | 4,320 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour crossing_minutes --> | 4,920 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour total_minutes --> | 5.2<!-- stats: voyage.yaml courses coast=rocky_coast course=detour days --> |
+| 岸壁（海鳥の岩から） | 近道 | 8<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs --> | 28<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookouts --> 回 | 420 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookout_minutes --> | 2,880 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest crossing_minutes --> | 3,300 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest total_minutes --> | 3.5<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest days --> |
+| 岸壁 | 遠回り | 10<!-- stats: voyage.yaml courses coast=cliff_coast course=detour legs --> | 34<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour total_minutes --> | 4.3<!-- stats: voyage.yaml courses coast=cliff_coast course=detour days --> |
 
-**遠回りを選ぶと、どの海岸からでも 1 日増えます**（沖の潮目と黒い岩礁の 2 区間で 810 分）。帆と追い風が
+**遠回りを選ぶと、どの海岸からでも 1 日近く増えます**（沖の潮目と黒い岩礁の 2 区間で 810 分）。帆と追い風が
 あれば縮み、荒天の押し流し（3.8 節）と引き返し（3.5 節）が伸ばします。
+
+**表は押し流しを数えていません**（同じ物差しで数えたものは
+[`stats/voyage_storm.yaml`](../../stats/voyage_storm.yaml)）。**乾季と穏やかな季節では、表のままです**
+——押し流されるのは雨季で、平均は
+0.42 日<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=wet extra_days -->しか伸びない
+一方、**20 回に 1 回は 7 日近くかかります**（3.1 節）。**積む「4〜6 日ぶん」（3.9.3 節）は乾季に出た
+場合の話**で、雨季に出るなら積む量はその裾で決めることになります。
 
 **それでも遠回りは、時間では選べません。** 同じ風が続く日で比べると、遠回りは近道より常に長くかかります
 ——砂浜から向かい風で、近道が
@@ -683,14 +722,14 @@
 - **群れに当てられた日は、1 日ぶんに 2 時間。** 30 分で 0.78 切れなので、3 切れに平均 3.8 回です
   （熟達すれば 3.6 回）。
 - **群れの出なかった日は、6 時間釣っても 1 切れに届きません**（0.9。熟達しても 2.4 で、1 日ぶんの
-  3 には届きません）。**丸一日（1 日ぶんの自由時間 833 分<!-- stats: voyage.yaml meta daily_free_minutes -->）
+  3 には届きません）。**丸一日（1 日ぶんの自由時間 949 分<!-- stats: voyage.yaml meta daily_free_minutes -->）
   粘って 2 切れ**（熟達で 5 切れ）ですが、**丸一日釣れば
   その日は 1 海区も進みません**（3 節。横断は 360 分、3.2 節）——熟達した腕で足りるようになるのは、
   進むのをやめた日のぶんだけです。**釣りだけで出れば、群れの無い区間は赤字**です——砂浜から
   **今の網**（3 節）**では**、近道を行く 12 区間のうち群れの立ちうる海区は 4 つで、残る 8 区間がそれにあたります。**岸壁から出る
   8 区間では 1 つだけ**（本土の島影）——**「短い航路ほど補給の当てが無い」**（3.6 節）**は、そのまま
   「短い航路ほど積んで出なければならない」**になります。
-- **だから積むのは 4〜6 日ぶん**（3.9.1 節の日数ぶん）。生肉 12〜18 個で 6〜9 kg なので、**積荷の段が
+- **だから積むのは 4〜6 日ぶん**（3.9.1 節の遠回りの日数ぶん）。生肉 12〜18 個で 6〜9 kg なので、**積荷の段が
   上がる 80 kg**（3.2 節）**には遠く、予定ぶんを積むこと自体は速さを削りません。** 削られるのは、
   それを塩漬けにするまでの島側の時間です。
 
@@ -763,7 +802,8 @@
 #### 3.9.6 水は甕で積み、日数ぶんの甕は下限として読む
 
 **水は海の上で得られないので、日数ぶんを積み切ります。** 甕 1 つは 1.7 日ぶん
-（[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5 節）なので、3.9.1 節の 4〜6 日なら
+（[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5 節）なので、遠回りを見込んだ
+3.9.1 節の 4〜6 日なら
 **3〜4 つ**。**ただしこれは下限です**——下の 2 つが、どちらも同じ向きに押し上げます。
 
 - **蒸発が引きます。** 甕は口を開けたままなので、中身は日なたで 1 日

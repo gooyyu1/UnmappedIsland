@@ -239,8 +239,8 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
     // 往復に使えるのは、屋外の枠から1日を賄う生存の採取を引いた残り（TerrainStats.md「局面ごとの1日」）。
     const reachMinutes = OUTDOOR_WINDOW_MINUTES - budget.survivalGatheringMinutes;
 
-    // **届かない島は稀にしか出ない**（回り道を3倍へ広げても数百島に1つ）ので、不変条件の検証に使う
-    // SEEDSでは取りこぼす。見張りとして働く数まで回す。
+    // **届かない島は稀にしか出ない**（今の枠では回り道を8倍へ広げて500島に1つ）ので、不変条件の
+    // 検証に使うSEEDSでは取りこぼす。見張りとして働く数まで回す。
     for (const seed of Array.from({ length: 500 }, (_, i) => i)) {
       const base = dailyPhasesOf(generate(seed), locationDays, budget).bestBase;
       expect(2 * base.farthestOneWayMinutes, `シード${seed}: 最も遠い土地への往復`).toBeLessThanOrEqual(

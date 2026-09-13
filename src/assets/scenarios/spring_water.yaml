@@ -1,0 +1,20 @@
+# 湧き水から汲むアクション（LiquidContainerSystem.md 10節）を試すための開始状態。
+# 湧き水の湧いた草原で、空の甕を手に持ち、足元にヤシの殻が転がっている状態から始める。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 湧き水と甕
+
+# 3は開始地点が砂浜になるシード。土地は下のtypeで草原へ差し替える。
+seed: 3
+
+player:
+  hand: [jar]
+
+location:
+  # 湧き水が湧くのは草原と森（locations.yamlのspring_find）。
+  type: grassland
+  # 探索を待たずに設置物を並べる。
+  fixtures: [spring]
+  # 入る量は器が決めることを見るための2つ目（甕は4L、ヤシの殻は250mL）。
+  items: [coconut_bowl]
