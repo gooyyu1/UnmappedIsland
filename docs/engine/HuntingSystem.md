@@ -19,8 +19,8 @@
 （`src/assets/world-codex/animals.yaml` の動物と `injuries.yaml`・`tools.yaml` の武器、検証は
 `tests/world-codex/animalsYaml.test.ts`）。6 節の変化の観測と 6.3 節の告知も実装済みです
 （`WorldSession.observeChanges`・`observeSignals`）。6.1 節の突進も実装済みで、観測した変化から
-組み立てています（`changedInstances.lungeTargetByInstance`・`cardMotionPlan`、検証は
-`tests/game/changedInstances.test.ts`・`tests/game/cardMotionPlan.test.ts`）。5 節の動物の1手も実装済みで、時間が経てば
+組み立てています（`changedInstances.lungeTargetsByInstance`・`cardMotionPlan`、検証は
+`tests/game/changedInstances.test.ts`・`tests/game/cardMotionPlan.test.ts`・`tests/world-codex/animalTurn.test.ts`）。5 節の動物の1手も実装済みで、時間が経てば
 2 節が述べる「動物の 6 手」がそのまま現れます（`WorldObject.runTickActions`、検証は
 `tests/world-codex/animalTurn.test.ts`）。4 節の `resists` も実装済みで、どれも `beast` trait で宣言しているため、警戒している間は手にも
 入れ物にも入りません（[`GameElementDefinition.md`](./GameElementDefinition.md) 7.13 節、検証は

@@ -549,7 +549,7 @@ describe('動物の1手', () => {
     it('襲った回も突進にならない（怪我はどこからも動いていない）', () => {
       // 怪我は生まれた物なので、飛ぶのは怪我の側（出どころは襲った動物）。
       open(0.9);
-      release('wild_boar');
+      alarm(release('wild_boar'));
 
       const changes = changesOf(() => passTurn());
 
