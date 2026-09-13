@@ -1,18 +1,57 @@
-# 寝床（docs/world/Bedding.md）。**入っているのは敷物（同2節の段1）だけ**で、骨組み・詰め物・
-# ハンモックはまだ無い。段ごとの回復の上積み（同4節）もまだ書いていない。
+# 寝床（docs/world/Bedding.md）。**入っているのは敷物（同2節の段1）と骨組み（段2）、それに
+# ハンモック**で、詰め物（段3）はまだ無い。
 #
-# 今この1種が担っているのは**眠れる場所であること**で、寝床の在る場所でしか睡眠（sleep）は
-# 押せない（characters/player_character.yaml の休息）。
+# **段ごとの上積みは、ブロックを1つ足すことで届く**（同4節）。量は定数しか書けないので
+# （docs/concept/DesignPrinciples.md「計算式はエンジンに取っておき、宣言へ開かない」）、1箇所へ
+# 集めずに段ごとのブロックへ散らしてある。有効なブロックはすべて重なる（8.5節）。
+#
+# **睡眠（sleep）を配るのは寝床だけ**（docs/world/Bedding.md 4.1節）。地面に直に寝る段0で取れるのは仮眠まで
+# （characters/player_character.yaml の nap）で、寝床の上の nap/sleep はこちらが配る。
 
 object_defs:
-  # 編んだ葉を広げただけの敷物。**敷物は部品ではなく寝床そのもの**なので、差し替える枠を持たない
-  # （docs/world/Bedding.md 1.1節）。骨組みと詰め物を差し込む structure スロットは、上積みを
-  # 書くときに足す。
+  # 編んだ葉を広げただけの敷物に、骨組みを差し込める枠を持たせたもの。**敷物は部品ではなく寝床
+  # そのもの**なので、差し替える枠を持たない（docs/world/Bedding.md 1.1節）。
   bed:
     tags: [fixture, bed]
+    # 差した骨組みは外から見える（7.11節。筏の帆と同じ）。段が上がっているかを札から読めないと、
+    # 差したかどうかを憶えておくことになる。
+    visible_slots: [structure]
     props:
-      # 編んだ葉3枚ぶん（weaving.yaml）。
+      # 編んだ葉3枚ぶん（weaving.yaml）。骨組みを差せば、その重さが子の重さとして乗る
+      # （docs/engine/ContainerSystem.md 1節）。
       weight: {value: 1200}
+    slots:
+      # 下へ差し込む骨組み。**詰め物の枠はまだ置かない**——受け入れる物が世界に1つも無い枠は、
+      # 置いても何も起きない（docs/concept/DesignPrinciples.md「置ける枠を作るかは、置いてほしい
+      # 物ではなく置けてしまう物で決める」）。
+      structure:
+        cells:
+          - {accept: {tag: bed_frame}, max: 1}
+    interactions:
+      # **回復は経過の間ずっと効く宣言が積む**（11.7節。docs/world/Bedding.md 4節）。アクションの
+      # 側に置くのは、キャラクタ自身の休息とまったく同じ形にするため（characters/player_character.yaml）。
+      #
+      # **段ごとに1つの定数なので、寝床のぶんは長さに正比例する。** キャラクタ側が持つ「まとめて休む
+      # ほど得」が効くのは地面の上だけで、寝床の上では nap 2回と sleep 1回がちょうど同じだけ戻る。
+      #
+      # **覚醒度は段で動かない**——sleep で戻るのは段によらず同じで、18時間起きて6時間眠るとちょうど
+      # 元へ戻るという釣り合いを寝床の上でも保つ（docs/world/Characters.md 休息節）。
+      nap:
+        trigger: menu
+        duration: 180
+        passives:
+          - add: {agent: {stamina: 5, wakefulness: 4}}
+          - conditions:
+              - {slot: structure, matches: {tag: bed_frame}}
+            add: {agent: {stamina: 2}}
+      sleep:
+        trigger: menu
+        duration: 360
+        passives:
+          - add: {agent: {stamina: 5, wakefulness: 4}}
+          - conditions:
+              - {slot: structure, matches: {tag: bed_frame}}
+            add: {agent: {stamina: 2}}
     recipes:
       # 編んだ葉を3枚、端を重ねて広げる。道具も紐も要らない。
       spread:
@@ -20,3 +59,79 @@ object_defs:
           - requires:
               - {object: woven_leaf, count: 3, consume: true}
             duration: 20
+
+  # 寝台の骨組み。杭4本を打ち、縦材を渡し、簀の子を縛る。軽いがかさばる。
+  #
+  # **湿気・虫・浸水から一度に離れるのが段2**（docs/world/Bedding.md 2節）で、寝床の段のうち跳躍が
+  # 最も大きい。数字の大小でしか表していないのは、乾きと虫を寝床のプロパティとして持つかが
+  # まだ決まっていないため（同8節）。
+  #
+  # **自分では何も宣言しない。** 差さっていることを見るのは寝床の側のブロックで、部品は
+  # 「そこへ入れる物である」ことをタグで名乗るだけ（同4節）。
+  bed_frame:
+    tags: [item, bed_frame]
+    props:
+      weight: {value: 6600}
+      # ヤシの葉と同じく、籠には入らない嵩にする。
+      volume: {value: 24000}
+    recipes:
+      lashed:
+        steps:
+          - requires:
+              - {object: thick_branch, count: 6, consume: true}
+              - {object: cord, count: 3, consume: true}
+            duration: 180
+
+  # ハンモックの網。紐を編んだだけの物で、木材はゼロ。巻いて持ち歩ける
+  # （docs/world/Bedding.md 6節）。
+  #
+  # **寝台の上位ではなく別系統。** 回復量は骨組みを差した寝台と同じで、差は置ける場所と伸ばしろの
+  # ほうにある——支点の要る土地でしか吊れない代わりに軽く、詰め物を足す先を持たない（同節）。
+  hammock:
+    tags: [item]
+    props:
+      # 紐5本ぶん（fiber.yaml）。骨組みの1/6以下なので、遠出の荷に混ぜられる。
+      weight: {value: 1000}
+      volume: {value: 1250}
+    interactions:
+      # 2本の立ち木の間へ渡して吊る。**支点を持たない土地では吊れない**（docs/world/Bedding.md 6.1節）。
+      # 見るのは今いる土地の宣言で、`ancestor`＝`hanging_anchor`を宣言している最初の祖先
+      # （GameElementDefinition.md 8.6節）なので、手に持っていても足元に置いていても同じに読める。
+      hang:
+        trigger: menu
+        conditions:
+          - reason: no_anchor
+            subject: ancestor
+            prop: hanging_anchor
+            gt: 0
+        duration: 20
+        # 吊った物は設置物なので手持ちの枠に入らず、agentの親＝今いる土地のfixturesへこぼれる
+        # （9.4節）。**網が消えても行き先は決まる**ので、置き換えの既定どおりdestroyを先に書ける
+        # （同節）——湧かせる先がagentで、自分の親を辿らないため。
+        destroy: self
+        spawn: {object: slung_hammock, into: agent}
+    recipes:
+      knotted:
+        steps:
+          - requires:
+              - {object: cord, count: 5, consume: true}
+            duration: 120
+
+  # 吊ったハンモック。**伸ばしろを持たない**ので、寝床と違って段のブロックは1つだけ。
+  slung_hammock:
+    tags: [fixture, bed]
+    props:
+      weight: {value: 1000}
+    interactions:
+      # 背中の下を風が抜けるので、虫にも湿気にも最も強い（docs/world/Bedding.md 6節）。骨組みを
+      # 差した寝台（5+2）と並ぶ量を、段が1つしかないので1行で持つ。
+      nap:
+        trigger: menu
+        duration: 180
+        passives:
+          - add: {agent: {stamina: 7, wakefulness: 4}}
+      sleep:
+        trigger: menu
+        duration: 360
+        passives:
+          - add: {agent: {stamina: 7, wakefulness: 4}}

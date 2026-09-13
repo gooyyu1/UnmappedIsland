@@ -100,8 +100,13 @@ export abstract class PassiveEffect {
   /**
    * この効果が持つ影響の辺（InfluenceEdge）を書き出す。declarerは宣言したオブジェクトで、
    * 対象も原因もそこから辿る。どの一覧へ入るかは書き込み先が決める（PropertyInfluences）。
+   *
+   * **役（11.5節）を答える文脈は受け取る。** 物のdefの宣言なら宣言元の今の参加から解けるが、
+   * 操作が宣言した持続効果（11.7節）の役は、宣言したその操作の関係が答えるもので、宣言元の
+   * 参加からは辿り直せない（WorldSession.whileInteractionPassives）——登録と同じ分かれ方
+   * （setRelationRegistered／setRegisteredInContext）なので、出どころは呼ぶ側が渡す。
    */
-  abstract collectInfluences(declarer: WorldObject, out: InfluenceWriter): void;
+  abstract collectInfluences(declarer: WorldObject, roles: ReferenceContext, out: InfluenceWriter): void;
 
   /**
    * 登録の契機を受け取る関係（8.1節の `target` の起点）と、それを受け取る自分自身。寄与として
@@ -165,9 +170,8 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * 対象へ届く辺を書き出す。**対象がchildのときは今入っている子の数だけ辺を書く**——寄与の登録
    * （setChildRegistered）が子ごとに1件ずつ作られるのと同じで、「どの子か」は1つに決まらない。
    */
-  override collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {
-    const roles = ReferenceContext.forParticipant(declarer);
-    for (const target of declarer.resolveInfluenceTargets(this.target)) {
+  override collectInfluences(declarer: WorldObject, roles: ReferenceContext, out: InfluenceWriter): void {
+    for (const target of declarer.resolveInfluenceTargets(this.target, roles)) {
       // ゲートのself（＝slotBearer）はエッジの子側（setResolvedRelationRegisteredと同じ決まり）。
       const slotBearer = this.target.root === 'child' ? target : declarer;
       out.write({
@@ -371,9 +375,13 @@ export class TransferPassiveEffect extends PassiveEffect {
     this.transfer.apply(roles);
   }
 
-  override collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {
-    const roles = ReferenceContext.forParticipant(declarer);
-    this.transfer.collectTransferInfluences(declarer, this.gate.isSatisfied(declarer, declarer, roles), out);
+  override collectInfluences(declarer: WorldObject, roles: ReferenceContext, out: InfluenceWriter): void {
+    this.transfer.collectTransferInfluences(
+      declarer,
+      roles,
+      this.gate.isSatisfied(declarer, declarer, roles),
+      out,
+    );
   }
 
   read(reader: PassiveReader): void {
