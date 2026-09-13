@@ -22,6 +22,15 @@ const RIPENING_DAYS = 3;
 /** 1回の実りで並ぶ数（同on_minのspawn）。 */
 const BERRIES_PER_HARVEST = 2;
 
+/**
+ * 実った後、そのまま置いて様子を見る日数。
+ *
+ * **屋外に置いた実が腐って消えるまで（3.3日、foods.yamlのspoils_normalと屋外の上乗せ）より短く
+ * 採ること。** 長くすると、枠が空いてタイマーが回り直した後の**別の回の実**を見ることになり、
+ * 「増えていない」と「入れ替わった」が個数では見分けられなくなる。
+ */
+const WATCH_DAYS = 2;
+
 describe('ベリーの茂み', () => {
   let codex: WorldCodex;
   let session: WorldSession;
@@ -112,11 +121,15 @@ describe('ベリーの茂み', () => {
     atBush();
     tick(RIPENING_DAYS * TICKS_PER_DAY);
 
-    tick(RIPENING_DAYS * TICKS_PER_DAY * 3);
+    tick(WATCH_DAYS * TICKS_PER_DAY);
 
     expect(contentsOf(bush, 'crop'), '実りは1回ぶんのまま').toEqual(
       Array<string>(BERRIES_PER_HARVEST).fill('berry'),
     );
+    expect(
+      bush.getProperty(ripeningRemainingId).getEffectiveValue(),
+      '残りは1tickも減っていない（実が残っている間は数えない）',
+    ).toBe(RIPENING_DAYS * TICKS_PER_DAY);
   });
 
   it('摘み残した分が在るうちは、次の実りが始まらない', () => {
@@ -127,7 +140,7 @@ describe('ベリーの茂み', () => {
     const [first] = bush.getSlot(codex.slotNames.getId('crop')).contents;
     expect(first.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
 
-    tick(RIPENING_DAYS * TICKS_PER_DAY);
+    tick(WATCH_DAYS * TICKS_PER_DAY);
 
     expect(bush.getProperty(ripeningRemainingId).getEffectiveValue(), '残りは1tickも減っていない').toBe(
       RIPENING_DAYS * TICKS_PER_DAY,
