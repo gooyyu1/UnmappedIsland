@@ -2,7 +2,7 @@
 
 盤面を回す仕組みを、**機械的な処理だけで回る形**へ作り直す。ここは**決まったことを積む場所**——
 決まった項目から順に節を足し、まだ決まっていないものは末尾の「未決」に並べる。実装が追いついた
-節は、[`parallel-work.md`](parallel-work.md)・各プロンプト・`scripts/agent/**` の側を書き換えて
+節は、[`parallel-work.md`](parallel-work.md)・各プロンプト・`scripts/**` の側を書き換えて
 合わせる。**この文書と実装が食い違ったら、この文書が正。**
 
 **`【確定】` が掛かるのは方針・方式だけで、実装の細部には掛からない**（[`DocumentStyle.md`](../docs/DocumentStyle.md)
@@ -88,14 +88,14 @@
 1.2.1 から導いたもので、覆すのに人間の判断は要らない。
 
 `task-<issue番号>` / `review-<PR番号>` のタグを持つセッションを `list_sessions` から引く。
-盤面（[`board-move.mjs`](../scripts/agent/board-move.mjs)）と新しいタスクを立てる直前が前者を
+盤面（[`board-move.mjs`](../scripts/daemon/board-move.mjs)）と新しいタスクを立てる直前が前者を
 `occupancy.sh --live` で、レビュー・直しの再開を立てる直前が後者を `occupancy.sh --busy` で引く。
 **どの値がこの2つに答えるかは 1.6**——そちらは実測で動く。
 
 畳まれたセッションを起こすのは `unarchive_session` → `send_message`。再レビューで前のセッションを
-起こさずに新しく立てることは [`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) が持つ。
+起こさずに新しく立てることは [`dispatch-review.sh`](../scripts/daemon/dispatch-review.sh) が持つ。
 
-一覧を出す [`live-sessions.sh`](../scripts/agent/live-sessions.sh) は**畳まれていないもの全部を、
+一覧を出す [`live-sessions.sh`](../scripts/daemon/live-sessions.sh) は**畳まれていないもの全部を、
 判定に要る値を添えて**返す。
 
 ### 1.3 ラベルには結論だけを置く【確定】
@@ -152,8 +152,8 @@
 1.4.1 から導いたもので、覆すのに人間の判断は要らない。
 
 引くのは `dispatch-review.sh` / `dispatch-task.sh` で、既に走っていることは終了コードで返す。
-判定は [`occupancy.sh`](../scripts/agent/occupancy.sh)、**立ててよいかを答える口**は
-[`may-dispatch.sh`](../scripts/agent/may-dispatch.sh)（手綱もここで見る）。呼び手が条件を並べずに
+判定は [`occupancy.sh`](../scripts/daemon/occupancy.sh)、**立ててよいかを答える口**は
+[`may-dispatch.sh`](../scripts/daemon/may-dispatch.sh)（手綱もここで見る）。呼び手が条件を並べずに
 1つ訊くだけで済む形にしてある。
 
 ### 1.5 根拠（2026-09-04 に実測）
@@ -245,12 +245,12 @@ issues (#1534–#1536) need go-ahead"`。**busy として読んだせいで、
 
 掛け算の両側を落とす。
 
-- **1周に1回だけ引く。** 引いた結果を [`board-round.mjs`](../scripts/agent/board-round.mjs) が
+- **1周に1回だけ引く。** 引いた結果を [`board-round.mjs`](../scripts/daemon/board-round.mjs) が
   ファイルへ置き、叩くスクリプトへは環境変数（`LIVE_SESSIONS_TSV`）で在り処だけを渡す。要る側は
   1周に4つある（盤面・使用量の割り当て・占有の判定・起こす相手の確認）が、**同じ周の答えは1つ**。
   投入の直前に引き直さないことは 1.4 の排他を弱めない——投入の経路はデーモン1本だから（2.3）。
 - **繰るのは、生きたセッションが尽きるまで。** 生きたセッションが1件も無いページが続いたら止める
-  （[`live-sessions.mjs`](../scripts/agent/live-sessions.mjs)）。実測（2026-09-06）では、生きて
+  （[`live-sessions.mjs`](../scripts/daemon/live-sessions.mjs)）。実測（2026-09-06）では、生きて
   いた3本すべてが1ページ目——**畳まれていないものは新しい側に固まる**。
 
 **取りこぼす側の危険は残る。** 畳まれたセッションが続いた向こうに生きたものが居ると見つからず、
@@ -323,7 +323,7 @@ CIの結果はGitHubへ訊けばいつでも引ける事実なので、ラベル
 
 #### 2.3.1 引けなくなっても、デーモンは止まらない
 
-盤面を続けて引けなくなったら、待つ間隔を落として回り続ける（[`daemon.sh`](../scripts/agent/daemon.sh)
+盤面を続けて引けなくなったら、待つ間隔を落として回り続ける（[`daemon.sh`](../scripts/daemon/daemon.sh)
 の `RETRY_INTERVAL`）。**止めない理由は、いちばん多い原因を自分では直せないこと**——アクセストークンは
 数時間で切れ、切れている間は `list_sessions` が 401 を返すが、**貼り直すのは Claude Code 本体**で、
 デーモンにも [`ccr-meta.sh`](../.claude/ccr-meta.sh)（毎回 `~/.claude/.credentials.json` を読み直す）にもできない。
@@ -337,7 +337,7 @@ CIの結果はGitHubへ訊けばいつでも引ける事実なので、ラベル
 #### 2.3.2 走る版を入れ替えるのも、デーモン自身
 
 **回っている bash は、最初に読んだ版のまま。** 後片付けのたびに本体が `main` へ進む（`SYNCED`）ので、
-隣の道具は次の周から新しい版で動くのに、[`daemon.sh`](../scripts/agent/daemon.sh) だけが古いまま残る
+隣の道具は次の周から新しい版で動くのに、[`daemon.sh`](../scripts/daemon/daemon.sh) だけが古いまま残る
 ——**プロセスが一度しか読まないのはこの1本**で、他は毎周読み直される。
 
 **走るのは複製で、リポジトリの1本ではない。** bash はスクリプトを読み進めながら実行するので、走行中に
@@ -405,10 +405,10 @@ PRを見つけるたびに追随させる」）。`start` が跨ぐのは後片�
 見出しではなく**根から自分までの鎖**で、どれか1つでも外れていれば止まる。**仕組みは増えず、鎖の長さが
 パラメータになる。**
 
-読むのは [`brake.sh`](../scripts/agent/brake.sh)。**節の中を見出しの語で引く**——字下げでは見分けない
+読むのは [`brake.sh`](../scripts/daemon/brake.sh)。**節の中を見出しの語で引く**——字下げでは見分けない
 （人が編集する場所なので崩れる）。**どの鎖を訊くかを決めるのは投入するスクリプト自身**
-（[`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) が `Closes` 先のラベルを見る）で、
-盤面（[`board-move.mjs`](../scripts/agent/board-move.mjs)）は種類を知らない——「立ててよいか」は
+（[`dispatch-review.sh`](../scripts/daemon/dispatch-review.sh) が `Closes` 先のラベルを見る）で、
+盤面（[`board-move.mjs`](../scripts/daemon/board-move.mjs)）は種類を知らない——「立ててよいか」は
 投入する側が持つ不変条件だから（1.4）。手綱で止まった周は、その手が打てずに次の手へ進む。
 
 これは**自前の規約**なので、1節の「基盤が既に持っている状態を使う」に反する形になる。それでも
@@ -459,12 +459,12 @@ PRを見つけるたびに追随させる」）。`start` が跨ぐのは後片�
 **この口も叩ける間隔に上限がある。** 続けて叩くと2回目から `429 rate_limit_error` が返り、通るのは
 **2分に1回ほど**（2026-09-06 に実測）。周ごと（35秒）に叩いていたので、**ログの半分が
 「使用量を引けなかった」で埋まり、本物の失敗が見えなくなっていた**（[issue #1562](https://github.com/gooyyu1/UnmappedIsland/issues/1562)）。
-何秒に1回なら通るかは口の性質なので、間隔を持つのは [`usage.sh`](../scripts/agent/usage.sh) の側。
+何秒に1回なら通るかは口の性質なので、間隔を持つのは [`usage.sh`](../scripts/daemon/usage.sh) の側。
 **間隔が空いていない周は「今は読む番ではない」として終了コード2で返し、呼び手は何も言わずに
 見送る**——失敗（1）と分けないと、待つだけの周まで異常として並ぶ。**粗くしても総和は変わらない**
 ので、詰める理由は無い（2.5.3）。
 
-引くのは [`usage.sh`](../scripts/agent/usage.sh)（読むだけ）。**比較のほうはまだ入っていない**
+引くのは [`usage.sh`](../scripts/daemon/usage.sh)（読むだけ）。**比較のほうはまだ入っていない**
 ——1本あたりの消費の計測が溜まってから `may-dispatch.sh` へ足す。
 
 **`resets_at` は使わない**（2.8）。枠が変わったことは `utilization` の下がりで見る。
@@ -543,7 +543,7 @@ PRを見つけるたびに追随させる」）。`start` が跨ぐのは後片�
 - **`resets_at` は、枠が同じかの判定には使えない**（2026-09-05 に実測）。同じ枠のまま、続けて呼ぶ
   たびに `07:19:59.015` 〜 `07:20:00.994` と揺れる。**揺れの中心がきりのよい境界に乗るので、どの
   粒度で丸めても境界をまたぐ。** → 枠が明けたことは `utilization` の下がりで見る
-  （[`usage-attribute.mjs`](../scripts/agent/usage-attribute.mjs)）。
+  （[`usage-attribute.mjs`](../scripts/daemon/usage-attribute.mjs)）。
 - **ただしセッション単位の消費は引けない。** `list_sessions` にトークンの項目は無く、`get_session` の
   `external_metadata.context_usage`（`used_tokens` / `max_tokens`）は**コンテキスト窓の埋まり具合**で
   あって累計の消費ではない。→ 2.5.3 の割り当てが必要になる。
@@ -586,7 +586,7 @@ PRを見つけるたびに追随させる」）。`start` が跨ぐのは後片�
 だけを見る）は前の周が名乗った版で境界を引き（4.5.2）、4.6（3周で人へ上げる）は
 [`board-labels.yml`](../.github/workflows/board-labels.yml) が同じコメントを数える。
 
-**題を組み立てるのは投入する側**（[`dispatch-session.mjs`](../scripts/agent/dispatch-session.mjs) が
+**題を組み立てるのは投入する側**（[`dispatch-session.mjs`](../scripts/daemon/dispatch-session.mjs) が
 共通の形を持つ）。表の「相談」だけは、立てる人が自分で付ける。
 
 **周期で起きる係の題は、渡すプロンプトの `題:` の行が持つ**（2.17）。投入する側は係の名前しか
@@ -621,7 +621,7 @@ issue**（2.16.2）も、そこはこのワーカーの居場所ではない。*
 盤面は開いている issue の一覧を既に持つ（2.3）ので、**そこに載っていない `task-<番号>` だけ**を
 `gh issue view` で引き直す。打つ数は生きたワーカーの数までで、その大半は一覧の側で当たる。
 
-畳むのは [`archive-session.sh`](../scripts/agent/archive-session.sh) で、**畳んでよいかの最終判定は
+畳むのは [`archive-session.sh`](../scripts/daemon/archive-session.sh) で、**畳んでよいかの最終判定は
 あちらが持つ**（仕事の単位を持たないタグのものや、素性を引けなかったものは畳まない）。畳まなかった
 （`KEPT`）は**同じ指紋のあいだ変わらない答え**なので、指紋を残して次の周からは打たない。
 
@@ -636,7 +636,7 @@ issue**（2.16.2）も、そこはこのワーカーの居場所ではない。*
 #### 2.10.3 レビューのセッションは、この鍵では引けない
 
 レビューは issue を持たないので、`review-<PR番号>` のタグで引く。**合図は「この1本が判定を書いたか」**
-——レビューは使い回さないので（[`dispatch-review.sh`](../scripts/agent/dispatch-review.sh)）、書いた
+——レビューは使い回さないので（[`dispatch-review.sh`](../scripts/daemon/dispatch-review.sh)）、書いた
 時点でもう誰も起こさない。**手が止まっていることはその合図ではない**（1.2）。**そのPRがこの後どう
 流れるかも見ない**——見ると、閉じないPR（`収束せず`・`直し待ち` のまま）のレビューが永久に残る。
 
@@ -647,7 +647,7 @@ issue**（2.16.2）も、そこはこのワーカーの居場所ではない。*
 **判定を書き終えていれば、空くのを待たずに畳む。** 「走り終わった」と「道具の承認を待っている」を
 見分けるために空いたままの長さを見る（2.15.3 の窓）が、**その窓が要るのは終わったかを他に訊けない
 ときだけ。** レビューには訊く先がある——**そのPRで、この周が投入した版を名乗った判定のコメントが、
-投入したときより増えているか**（2.9。見分け方は [`review-verdicts.mjs`](../scripts/agent/review-verdicts.mjs)
+投入したときより増えているか**（2.9。見分け方は [`review-verdicts.mjs`](../scripts/daemon/review-verdicts.mjs)
 が1箇所で持つ）。**台帳の指紋は、投入した版と、そのとき既に在った判定の数の両方を持つ。**
 
 - **版で照合するので、前の差分へ書かれた判定を今の判定と読み違えない。**
@@ -671,7 +671,7 @@ issue**（2.16.2）も、そこはこのワーカーの居場所ではない。*
 ところは畳んだ時点で消える**ので、その1本は差分を読み直すところから始まる。続きを書かせるほうが
 安いので、先に `RESUME … review-stall` を打つ（文面は [`resume-prompt.md`](prompts/resume-prompt.md) の
 `## review-stall`）。**畳むのは、空いたままが窓の2つぶんに達してから**——合図が届くには時間が要る
-（2.15.3 と同じ）。**動き出せば空いた時刻の覚えは消える**ので（[`board-round.mjs`](../scripts/agent/board-round.mjs)
+（2.15.3 と同じ）。**動き出せば空いた時刻の覚えは消える**ので（[`board-round.mjs`](../scripts/daemon/board-round.mjs)
 の `trackIdle`）、そこからまた空いたときは2つぶんを数え直す。
 
 **二度は起こさない。** 指紋は `review-stall:<PR番号>` で、**`stall:` で始めてはいけない**
@@ -693,15 +693,15 @@ issue**（2.16.2）も、そこはこのワーカーの居場所ではない。*
 **ユーザーはPRをGitHubの画面からマージする。コマンドは打たない**（出どころ: ユーザーの指示・
 2026-09-07）。だから**マージと同じ手で後片付けをすると、その回はどれも走らない**——2.10.1 が
 ワーカーを畳む手で避けたのと同じ誤りで、避け方も同じ。**マージ済みのPRを見つけたら打つ**
-（[`board-move.mjs`](../scripts/agent/board-move.mjs) の `TIDY`、打つ先は
-[`tidy-merged-pr.sh`](../scripts/agent/tidy-merged-pr.sh)）ので、誰が入れても同じ1回を通る。
+（[`board-move.mjs`](../scripts/daemon/board-move.mjs) の `TIDY`、打つ先は
+[`tidy-merged-pr.sh`](../scripts/daemon/tidy-merged-pr.sh)）ので、誰が入れても同じ1回を通る。
 
-残りは [`merge-pr.sh`](../scripts/agent/merge-pr.sh) が持つ——関門（2.13.3）とマージだけ。
+残りは [`merge-pr.sh`](../scripts/daemon/merge-pr.sh) が持つ——関門（2.13.3）とマージだけ。
 
 **相手はマージ済みPRの一覧で、窓は `board-read.mjs` の `MERGED_WINDOW_HOURS`**。
 **1回だけにするのは台帳の覚え**（`tidy:<PR番号>`）で、**覚えを失っても壊れない**——打ち直しても
 同じ結果になる形にしてある（下の 2.10.5）。**デーモンが窓より長く止まっていた間に入ったPRは
-後片付けが走らない**ので、立て直すときに本体だけ [`daemon.sh`](../scripts/agent/daemon.sh) が寄せる。
+後片付けが走らない**ので、立て直すときに本体だけ [`daemon.sh`](../scripts/daemon/daemon.sh) が寄せる。
 
 #### 2.10.5 GitHub が肩代わりするもの
 
@@ -862,7 +862,7 @@ PRごとに全コミットを取りに行き、GraphQL のノード数の上限�
 #### 2.13.3 機械が付けるPRの `判断待ち` は導出される事実
 
 **issue の側は違う**（2.15）——返したことを知っているのはワーカーだけなので、あちらは宣言で付く。
-ここはPRの話。`needs-user-review.sh` が差分から出すので、[`merge-pr.sh`](../scripts/agent/merge-pr.sh)
+ここはPRの話。`needs-user-review.sh` が差分から出すので、[`merge-pr.sh`](../scripts/daemon/merge-pr.sh)
 が**マージを試みるたびに付け直す**。だから push で外してよい（1.1）。副作用として、`通してよい` が
 付いたままの push では**盤面がマージを1回試みて `HELD` で跳ね返され、そこで付き直る**——ログに
 `HELD` が1行増えるが、状態を溜めずに毎回導出する側を採る。
@@ -904,20 +904,20 @@ PRごとに全コミットを取りに行き、GraphQL のノード数の上限�
 通る——**これは正しい振る舞い。** 差分が変われば、人へ回す理由も無くなりうる。
 
 **この形も1周として数える**（4.6）。数え方から漏らすと、3周で人へ上げる勘定が狂う。**判定の
-見分け方を持つのは [`review-verdicts.mjs`](../scripts/agent/review-verdicts.mjs)** と、node を持ち
+見分け方を持つのは [`review-verdicts.mjs`](../scripts/daemon/review-verdicts.mjs)** と、node を持ち
 込めない Actions の側（`board-labels.yml`）の2つで、**揃っていることが要る**（2.9）。
 
 #### 2.13.5 外れた瞬間と、`却下` が付く瞬間はずれる
 
 **人がラベルを外してから [`board-labels.yml`](../.github/workflows/board-labels.yml) が `却下` を
 付けるまでには、Actions のキューとランナーの起動ぶんの間がある。** 一方デーモンは既定30秒ごとに
-盤面を引き直す（[`daemon.sh`](../scripts/agent/daemon.sh)）ので、**この窓に周が1つ入るのは例外では
+盤面を引き直す（[`daemon.sh`](../scripts/daemon/daemon.sh)）ので、**この窓に周が1つ入るのは例外では
 ない。** 窓の中の盤面には、そのPRが「止める印が何も無いPR」に見える。
 
 **だから盤面は、結論をラベルだけで読まない。** レビューの判定はコメントに残り、そこには読んだ版が
 書いてある（[`review-prompt.md`](prompts/review-prompt.md)）——**今の版への判定が在るなら、人がラベルを
 外していても判定は消えていない。** ラベルは 1.1 の「外れている状態は書けない」に当たるが、
-**コメントは外されない側**なので、そちらから読む（[`board-move.mjs`](../scripts/agent/board-move.mjs)
+**コメントは外されない側**なので、そちらから読む（[`board-move.mjs`](../scripts/daemon/board-move.mjs)
 の `verdictOn`）。
 
 - **今の版の判定が `通してよい（人の判断が要る）` なら、マージを出さない**（2.13.4）。ここをラベル
@@ -936,7 +936,7 @@ PRごとに全コミットを取りに行き、GraphQL のノード数の上限�
 外した `通してよい` が効かなくなる**——導出してよいのは「止める側」だけ。
 
 **機械の関門（2.13.3）だけは、窓に入った周が `MERGE` を打ちうる。** 打っても
-[`merge-pr.sh`](../scripts/agent/merge-pr.sh) が `HELD` で跳ね返すので**マージはされない**が、
+[`merge-pr.sh`](../scripts/daemon/merge-pr.sh) が `HELD` で跳ね返すので**マージはされない**が、
 そこで `判断待ち` が付き直る。**差し戻しは `却下` が付いた次の周に届く**ので止まりはしない
 ——関門の判定は差分を丸ごと読む仕事なので、盤面が毎周やり直す形にはできない。
 
@@ -957,7 +957,7 @@ PRごとに全コミットを取りに行き、GraphQL のノード数の上限�
 
 **だから盤面は、頼み終えた差し戻しをレビューへ渡す。** `直し待ち` が付いたまま、同じ指紋で一度
 起こした相手が戻ってこないなら、**この版へ打てる手は出し尽くしている**——そこで止めずに、もう1本
-読ませる（[`board-move.mjs`](../scripts/agent/board-move.mjs) の `askedAlready`）。
+読ませる（[`board-move.mjs`](../scripts/daemon/board-move.mjs) の `askedAlready`）。
 
 - **印を外す形にはしない。** 本文を触っただけで直っていないことがあり、**外した事実のほうが嘘に
   なる**（1.3）。読み直させれば、直っていなければまた `直し待ち` が付く。
@@ -988,7 +988,7 @@ PRごとに全コミットを取りに行き、GraphQL のノード数の上限�
   （PR #2120）
 
 **だから盤面は、結論の札を、判定が名乗る `読んだ版` と今の頭で突き合わせて読む**
-（[`board-move.mjs`](../scripts/agent/board-move.mjs) の `wantsMend`・`staleLabels`）。判定はコメントに
+（[`board-move.mjs`](../scripts/daemon/board-move.mjs) の `wantsMend`・`staleLabels`）。判定はコメントに
 残り、**外されない側**にある（2.13.5）。
 
 | 盤面が見た形 | 打つ手 |
@@ -1026,7 +1026,7 @@ PRごとに全コミットを取りに行き、GraphQL のノード数の上限�
 - **落ちるまで頼み続ける。頼んだことを覚えない。** 頼む先も**出来事で動く段**なので、**ここも転ぶ**
   ——1回で覚えて素通りすると、転んだ回にちょうど上の形が残る。同じ手が何度も出ないことは、
   **頼みのコメントで `updatedAt` が動く**ことで足りている（下の窓）。
-- **落ち着くまでは頼まない**（[`board-round.mjs`](../scripts/agent/board-round.mjs) の
+- **落ち着くまでは頼まない**（[`board-round.mjs`](../scripts/daemon/board-round.mjs) の
   `SETTLE_MINUTES`。チェックが1本も登録されないPRを緑と読む窓と同じもの）。push の直後は
   `board-labels.yml` が外している最中で、転んだ回と見分けが付かない。
 - **読ませ直すのは1度だけ。** 2周ぶん判定が書かれても札が付かないなら、付ける側が壊れている
@@ -1107,7 +1107,7 @@ PRごとに全コミットを取りに行き、GraphQL のノード数の上限�
 
 **分類（`kind:`）は動かさない。** 軸が違ううえ（2.17.1）、外すと戻すのに2タップ要り、外した issue は
 未整理として棚卸しへ戻る。人は `判断待ち` を1つ外せば列へ戻せる（2.13.1）。**配らない判定を持つのは投入する側**
-（1.4、[`dispatch-task.sh`](../scripts/agent/dispatch-task.sh)）で、盤面の側にあるのはその写し。
+（1.4、[`dispatch-task.sh`](../scripts/daemon/dispatch-task.sh)）で、盤面の側にあるのはその写し。
 
 **ルールを守らないワーカーは居る。** それはレビュアーについても同じことなので、受け入れる
 （出どころ: ユーザーの指示・2026-09-05）。守らなかったぶんは次の 2.15.3 が拾う。
@@ -1122,7 +1122,7 @@ PRごとに全コミットを取りに行き、GraphQL のノード数の上限�
 - 起こした後も、**同じ長さの窓をもう1つ空けてから返す。** 起こされたセッションが動き出すには時間が
   要るので、次の周（既定30秒）で見限ると、届いた合図が効く前に必ず返すことになる。
 - **動き出したら、空いた時刻の覚えも「起こしたが動かなかった」の記録も捨てる**
-  （[`board-round.mjs`](../scripts/agent/board-round.mjs) の `trackIdle`）。動いた時点でどちらも嘘に
+  （[`board-round.mjs`](../scripts/daemon/board-round.mjs) の `trackIdle`）。動いた時点でどちらも嘘に
   なり、残すと**次に空いた瞬間に、起こす手順を飛ばして人へ返す**。
 - **覚えが無いときは何もしない。** 台帳が消えた直後もそう見えるので、動かない側へ倒す——ここで打つ
   手はどちらも取り返しが付かない。
@@ -1148,7 +1148,7 @@ PRごとに全コミットを取りに行き、GraphQL のノード数の上限�
 ### 2.16 どこで走らせるかは、issue に書いてある
 
 **投入先はクラウドとブリッジで、既定はクラウド。** `env:<値>` のラベルが付いていれば、そこが
-指す先へ投入する（`env:bridge` → [`dispatch-task.sh`](../scripts/agent/dispatch-task.sh) の
+指す先へ投入する（`env:bridge` → [`dispatch-task.sh`](../scripts/daemon/dispatch-task.sh) の
 `--bridge`）。
 
 **触れる範囲では分けない。** クラウドのセッションも `.claude/**` を書き換えられる（2.16.3 のモードで
@@ -1167,7 +1167,7 @@ PRごとに全コミットを取りに行き、GraphQL のノード数の上限�
 
 #### 2.16.1 知らない `env:` は配らない
 
-**盤面が宛先を知っている値の一覧は [`board-move.mjs`](../scripts/agent/board-move.mjs) にある**
+**盤面が宛先を知っている値の一覧は [`board-move.mjs`](../scripts/daemon/board-move.mjs) にある**
 （`DISPATCH_TO`）。**GitHub にラベルが在るかとは別**——人は盤面の知らない `env:*` を作れるので、
 ラベルの存在では「配ってよい」を言えない。
 
@@ -1205,7 +1205,7 @@ PRごとに全コミットを取りに行き、GraphQL のノード数の上限�
 #### 2.16.3 承認モードは環境が決める
 
 **出どころ**: ユーザーの指示・2026-09-06。**投入する側は選ばない。** どちらへ立てるかを決めれば
-一緒に決まるので、置き場は環境IDと同じ [`ccr-env.sh`](../scripts/agent/ccr-env.sh)。
+一緒に決まるので、置き場は環境IDと同じ [`ccr-env.sh`](../scripts/daemon/ccr-env.sh)。
 
 **渡さなければ、投入先ごとに違うモードで立つ。** 書けるのは観測だけで、**そうなる理由は突き止めて
 いない**——`.claude/settings.json`（`defaultMode: bypassPermissions`）はリポジトリに追跡されていて
@@ -1232,13 +1232,13 @@ PR #1567 のレビューが判定を書く前にこれで止まった。
 ### 2.17 周期で起きる係
 
 人が投入しなくても、仕事があれば間隔を空けて自分で立つセッション（出どころ: ユーザーの指示・
-2026-09-06）。**どの係が居るかは表**（[`board-move.mjs`](../scripts/agent/board-move.mjs) の
+2026-09-06）。**どの係が居るかは表**（[`board-move.mjs`](../scripts/daemon/board-move.mjs) の
 `CYCLES`）**が持つ**ので、ここには書き写さない。
 
 **デーモンを起こす係だけは、この枠に載せない**（2.19）——表を回すのがデーモン自身なので、載せると
 落ちたときに立たない。
 
-**特別な手を係ごとに作らない。** 盤面が持つのは表1つ（[`board-move.mjs`](../scripts/agent/board-move.mjs)
+**特別な手を係ごとに作らない。** 盤面が持つのは表1つ（[`board-move.mjs`](../scripts/daemon/board-move.mjs)
 の `CYCLES`）と手1つ（`CHORE`）で、係を足すときに書くのは**表の1行と渡すプロンプト**だけ。
 
 | 持つもの | 何を決めるか |
@@ -1269,7 +1269,7 @@ PR #1567 のレビューが判定を書く前にこれで止まった。
 ことになり、滞留を仕様にしてしまう（2.18）。
 
 **前に立てた時刻は台帳（`taken.json`）の `cycle:<名>` に控える。** 盤面の何かに紐づく指紋ではない
-ので、[`board-round.mjs`](../scripts/agent/board-round.mjs) の掃除からは外れる。**デーモンを別のPCへ
+ので、[`board-round.mjs`](../scripts/daemon/board-round.mjs) の掃除からは外れる。**デーモンを別のPCへ
 移すと覚えごと消える**ので、移した直後は係が一斉に立つ。
 
 #### 2.17.1 棚卸しが出す結論は何と何か、配ってよいかとは別【確定】
@@ -1326,7 +1326,7 @@ issue の本文を書き換えるのは棚卸しだけ（2.17.1）で、周期�
 
 **仕事の在り処はリポジトリの中**（`agent-ops/decisions/` のうち `archive/` に入っていないもの）で、
 issue にもPRにも現れない。**盤面が GitHub と CCR の外を見るのは、ここと分析の記録（2.17.4）の
-2箇所だけ**（[`board-read.mjs`](../scripts/agent/board-read.mjs)）。
+2箇所だけ**（[`board-read.mjs`](../scripts/daemon/board-read.mjs)）。
 
 **二重に起票させない手は2つ要る。** 間隔（`hours`）だけだと、**答えが返らないまま間隔が満ちた週に
 2本目が立つ**——候補が2つ並ぶと、どちらを反映しても残りが嘘になる。もう1つは係自身が持つ
@@ -1393,11 +1393,11 @@ issue にもPRにも現れない。**盤面が GitHub と CCR の外を見るの
   価値観を畳む係（[`policy-cycle-prompt.md`](prompts/policy-cycle-prompt.md)）の仕事で、役が重なる。
 - **次の周の同じ係へ宛てる作法は、記録ではなくひな形が持つ。** 記録は回ごとの観測で、**必ず読まれるのは
   最新の1件まで**なうえ、前の周と同じことを書き直さない決まりなので、作法を置くと1周で消える。
-  **毎周渡るのはひな形の囲みの中身**（[`prompt-body.mjs`](../scripts/agent/prompt-body.mjs)）なので、
+  **毎周渡るのはひな形の囲みの中身**（[`prompt-body.mjs`](../scripts/daemon/prompt-body.mjs)）なので、
   作法を変えるのは、そこへの直しを頼む issue になる——出口は上のまま。
 - **二次の `due` は「二次が最後に書いた日付より後の一次の記録が在るか」。** 一次のファイルに処理済み
   の印を持たせない——持たせると、一次に二次の都合が入る。日付はどちらのファイル名も先頭に持つので、
-  文字列の大小がそのまま前後になる（[`board-read.mjs`](../scripts/agent/board-read.mjs)）。
+  文字列の大小がそのまま前後になる（[`board-read.mjs`](../scripts/daemon/board-read.mjs)）。
 - **帯が連続しているかを見るのも二次。** 一次は自分の回の帯しか見ないので、**前の回との間にPRが
   落ちたことは、回を並べて見る側にしか分からない**（落ちた帯のスメルには 👀 が付かず、誰も読んで
   いない）。一次から過去を読む力を外した以上、この役は二次が持つほかない。
@@ -1417,7 +1417,7 @@ issue にもPRにも現れない。**盤面が GitHub と CCR の外を見るの
 | 値 | 本文のチェック | 機械 |
 |---|---|---|
 | `kind:ask` | 人が付ける**答え**。拾われたら項目ごと消える | `checked-items.sh` が拾い、`## 確定待ち` に出す |
-| `kind:switch` | 人が付ける**設定**。誰も下ろさない | [`brake.sh`](../scripts/agent/brake.sh) が毎周読む |
+| `kind:switch` | 人が付ける**設定**。誰も下ろさない | [`brake.sh`](../scripts/daemon/brake.sh) が毎周読む |
 | `kind:board` | 機械は本文を読まない | 書くほうはある（`kind:board` の #1714 を 2.20 が書き換える） |
 
 **分け目は「誰が書き、誰が読むか」**——2.20 が投入の手綱と盤面を別の issue にしたのと同じ軸で、
@@ -1433,7 +1433,7 @@ issue にもPRにも現れない。**盤面が GitHub と CCR の外を見るの
 無いと、急ぎの1件は人が手で運ぶことになる——**急ぐものは1件ではない**ので、そのたびに運ぶ手が要る。
 
 **`急ぎ` の付いた `kind:task` が先に投入される**（1.3）。**効くのはそこだけ。** 枠
-（[`board-move.mjs`](../scripts/agent/board-move.mjs) の `HELD_TASKS`・`ACTIVE_WORKERS`）は増えず、
+（[`board-move.mjs`](../scripts/daemon/board-move.mjs) の `HELD_TASKS`・`ACTIVE_WORKERS`）は増えず、
 錠（`area:`）も手綱も越えない。**`判断待ち` の issue は `急ぎ` でも配らない**——順を変えることと、配ってよいかを変える
 ことは別（1.3 の「1つのラベルに効き目を1つだけ」）。
 
@@ -1485,7 +1485,7 @@ issue にもPRにも現れない。**盤面が GitHub と CCR の外を見るの
 **誰が書き込んだか**しか答えられず、**向かう先の代理にならない。**
 
 **代わりに、名乗り漏れを見えるようにする。** `kind:task` なのに `goal:` が無い issue は
-**棚卸しの取りこぼし**なので、盤面が `NOTE` で告げる（[`board-move.mjs`](../scripts/agent/board-move.mjs)
+**棚卸しの取りこぼし**なので、盤面が `NOTE` で告げる（[`board-move.mjs`](../scripts/daemon/board-move.mjs)
 の `missingGoal`）。**配るのは止めない**——止めると、取りこぼし1件で盤面が静かに詰まる。整備として
 並ぶあいだに、次の棚卸し（半日以内）が印を付ける。
 
@@ -1499,7 +1499,7 @@ issue にもPRにも現れない。**盤面が GitHub と CCR の外を見るの
 **`急ぎ` はこの軸より強い**（2.18 の「効き目は配る順だけ」をこの軸の上でも保つ）——盤面そのものが
 止まる整備は `急ぎ` で越える。
 
-どちらも [`board-move.mjs`](../scripts/agent/board-move.mjs) の `advancesGame` が持ち、
+どちらも [`board-move.mjs`](../scripts/daemon/board-move.mjs) の `advancesGame` が持ち、
 [`boardMove.test.ts`](../tests/scripts/boardMove.test.ts) が**両方の効き目を別々に**見ている。
 
 ### 2.19 デーモンを起こす係は、デーモンの外から立てる
@@ -1551,7 +1551,7 @@ issue にもPRにも現れない。**盤面が GitHub と CCR の外を見るの
 
 CCR の Routine は**デーモンに依らずに立つ**が、**投入先の環境が登録のときに決まり、後から替えられ
 ない**（`update_trigger` が替えられるのは名前・間隔・止め起こし・本文だけ）。そして**ブリッジの環境
-はPCの再起動で作り直される**（[`ccr-env.sh`](../scripts/agent/ccr-env.sh)「ブリッジのIDは、開き直す
+はPCの再起動で作り直される**（[`ccr-env.sh`](../scripts/daemon/ccr-env.sh)「ブリッジのIDは、開き直す
 たびに変わる」）ので、再起動を跨いだ Routine は**存在しない環境へ発火し続ける。**
 
 **自分では直らない。** Routine を直せるのは Routine で立った係だけで、その係を立てるのが当の
@@ -1579,7 +1579,7 @@ Routine だから——2026-09-11、消えた環境を指したまま丸一日�
 
 | 誰が | 何をするか |
 |---|---|
-| デーモン | 間隔が満ちた周に1回、本文を丸ごと書き換える（[`board-publish.mjs`](../scripts/agent/board-publish.mjs)） |
+| デーモン | 間隔が満ちた周に1回、本文を丸ごと書き換える（[`board-publish.mjs`](../scripts/daemon/board-publish.mjs)） |
 | 人 | 読むだけ。**書いても次の更新で消える** |
 
 **間隔は5分**（`PUBLISH_INTERVAL` で差し替えられる）。周（既定30秒）と同じ速さで書かないのは、
@@ -1588,7 +1588,7 @@ Routine だから——2026-09-11、消えた環境を指したまま丸一日�
 **投入の手綱（2.4）とは別の issue にする。** あちらは人だけが書いて機械が読み、こちらは逆
 （機械だけが書いて人が読む）。1つにすると、機械の書き込みが人のチェックを消す。
 
-**並べる形を持つのは [`board.mjs`](../scripts/agent/board.mjs)** で、突き合わせは端末へ出すのと
+**並べる形を持つのは [`board.mjs`](../scripts/daemon/board.mjs)** で、突き合わせは端末へ出すのと
 **同じ1箇所**。出口ごとに組み直すと、片方だけが古い読み方のまま残る。出るのは、**人の手番で
 止まっているもの**・**配ってよいかで数えた件数**・**`投入済み` の1件ごとの表**（issue の番号・題・
 状態・PR）。
@@ -1598,7 +1598,7 @@ Routine だから——2026-09-11、消えた環境を指したまま丸一日�
 GitHub の通知は鳴らない。端末の盤面にはラベルの列が出るが、**叩けない人が読めるのは本文だけ。**
 出さないでいると、人待ちの1件が錠（`area:`）を握ったまま、同じ錠の task が全部止まる。
 
-**セッションの一覧は、その周に引いたものを使う**（1.7。[`board-round.mjs`](../scripts/agent/board-round.mjs)
+**セッションの一覧は、その周に引いたものを使う**（1.7。[`board-round.mjs`](../scripts/daemon/board-round.mjs)
 が置く `live-sessions.tsv` を渡す）。書き出す側に引き直させない理由は2つ——**引く回数がそのまま
 盤面の回る速さの天井に効く**ことと、**issue に出る表とその周に打った手の根拠が別の一覧になる**こと。
 1ページだけ引いて済ませるのも同じ理由で採らない（**盤面が「居ない」と言う相手をデーモンは掴んで
@@ -1612,7 +1612,7 @@ GitHub の通知は鳴らない。端末の盤面にはラベルの列が出る�
 **状態はラベルの写しではない**（出どころ: ユーザーの指示・#1597）。セッションのタグ
 （`task-<番号>` / `review-<PR番号>`）と、PRのCI・マージ可否から**その周に見えているものを出す**
 ——ラベルは人と `board-labels.yml` が後から付けるので、走っているかどうかを言えない（2.10.3 と
-同じ理由）。語彙は [`board.mjs`](../scripts/agent/board.mjs) の冒頭が持つ。
+同じ理由）。語彙は [`board.mjs`](../scripts/daemon/board.mjs) の冒頭が持つ。
 
 #### 2.20.1 写しを持ってよいのは、いつ時点かを一緒に書くから
 
@@ -1700,7 +1700,7 @@ GitHubが数分沈むたびに盤面ごと止まる。
 
 **係を印で絞らない。** 絞る条件は**既に知っている壊れ方の一覧**でしかなく、次に来る形はそのどれにも
 掛からない。**係は間隔ごとに必ず立ち**、健全なら「異常なし」を記録して終わる
-（[`board-move.mjs`](../scripts/agent/board-move.mjs) の `CYCLES` の `patrol` の `due` が常に真）。
+（[`board-move.mjs`](../scripts/daemon/board-move.mjs) の `CYCLES` の `patrol` の `due` が常に真）。
 
 **絞っていた形が、実際に取りこぼした。** 印が立つのは「転んだ手が在った周」だけだったので、
 **手が1つも出ない周**——錠で全部が待たされる・差し戻す相手を引けない——には決して掛からず、
@@ -1726,12 +1726,12 @@ GitHubが数分沈むたびに盤面ごと止まる。
   いるかで変わる**ので、そこが判断の要る仕事。係へ渡す。
 - **常駐で見張る。** 2.21.1 の「常駐をもう1つ置く」と同じ場所へ落ちる。
 
-**印（[`board-state.mjs`](../scripts/agent/board-state.mjs) の `UNREADABLE`）に残したのは、
+**印（[`board-state.mjs`](../scripts/daemon/board-state.mjs) の `UNREADABLE`）に残したのは、
 盤面を引けなかった周だけ。** 読むのは人で、打てる手は無い（2.21.1）。**引けている周の不調は、
 もう印に立てない**——見るのは係で、材料は `~/daemon.log`（打てた手・打てなかった手とその理由・
 覚え書き）と前回の観測（2.21.4）。**「打てなかった」のうち答えが返っている分**（人が手綱で止めた手・
 `ARCHIVE` の `KEPT`）**は、ログの行にそう書く**——直す相手が居ないので、係が毎回そこを調べに行かない
-ように。**見分けるのは、止めた側の名乗り**（[`brake.sh`](../scripts/agent/brake.sh) が `STOP` の
+ように。**見分けるのは、止めた側の名乗り**（[`brake.sh`](../scripts/daemon/brake.sh) が `STOP` の
 ときだけ終了コード3で終わり、投入のスクリプトがそれをそのまま返す）。**後から状態を見て推し量らない**
 （[`policies.md`](policies.md)「理由の持たせ方」）。
 
@@ -1784,7 +1784,7 @@ GitHubが数分沈むたびに盤面ごと止まる。
 
 **承認モードは上げなくてよい**（2026-09-11 に実測）。ブリッジへ `permission_mode` を渡さずに立てた
 セッション（`create_session` に `environment_id`・`title`・`prompt`・`tags` だけを渡す。
-[`ccr-env.sh`](../scripts/agent/ccr-env.sh) と同じ形）で、`.claude/**` を読む `bash`・編集ツールの
+[`ccr-env.sh`](../scripts/daemon/ccr-env.sh) と同じ形）で、`.claude/**` を読む `bash`・編集ツールの
 `Write`・`git commit`・`git reset --hard` を順に打たせたところ、**6つとも承認を求められずに通った**
 （`session_01QUBbYuVFUiV9fpzaBwKNPQ`。手番の要約は `approval mode check: all 6 commands ran without
 prompts`）。**この係は投入の道具（`dispatch-chore.sh --bridge`）で立つ**ので、同じ経路に乗る。
@@ -1798,7 +1798,7 @@ prompts`）。**この係は投入の道具（`dispatch-chore.sh --bridge`）で
 **置き場は `~/.claude/board-state/patrol.jsonl`**（1行1件のJSON。追記）。**書くのは係のセッションで、
 形を持つのも係のプロンプト**（[`patrol-prompt.md`](prompts/patrol-prompt.md)）
 ——盤面はこの記録を読んで手を決めない。**機械が読むのは `at`・`verdict`・`summary` だけ**
-（[`board-state.mjs`](../scripts/agent/board-state.mjs) の `readLastPatrol`）で、突き合わせに使う
+（[`board-state.mjs`](../scripts/daemon/board-state.mjs) の `readLastPatrol`）で、突き合わせに使う
 `board` の中身は係どうしの取り決め。
 
 **リポジトリへは置かない。** 間隔ごとに1件増えるので、**コミットが記録で埋まる。** デーモンと同じ
@@ -1810,7 +1810,7 @@ PCの外へ出す必要も無い——読むのは次の回の係で、そちら
 
 **走ったこと自体は、人へ届く場所へ出す。** 記録がこのPCにしか無いと、**「異常なし」と「係が立たな
 かった」を人が区別できない**（#1939 の2時間は後者だった）。**常設の issue の本文**（2.20）へ最後の
-1行を出し、**しばらく更新されていなければ断りにする**（[`board.mjs`](../scripts/agent/board.mjs)
+1行を出し、**しばらく更新されていなければ断りにする**（[`board.mjs`](../scripts/daemon/board.mjs)
 の `patrolNote`）。**間隔そのものでは鳴らさない**——1回ぶんの立ち遅れ（手綱で止まっている・投入が
 転んだ・係が長く走っている）は毎日出るので、それで鳴ると読む人がこの行を読まなくなる。**どれだけ
 過ぎたら鳴らすかは実装が持つ**（同 `STALE_PATROL_HOURS`。係の間隔から出すので、間隔を変えても
@@ -1824,10 +1824,10 @@ PCの外へ出す必要も無い——読むのは次の回の係で、そちら
 
 ### 2.22 盤面が動くのに要る値は、死んでも誰も言わない
 
-CCRの環境ID（[`ccr-env.sh`](../scripts/agent/ccr-env.sh)）と、CCR・`gh` の資格情報。**どれが死んでも、
+CCRの環境ID（[`ccr-env.sh`](../scripts/daemon/ccr-env.sh)）と、CCR・`gh` の資格情報。**どれが死んでも、
 分かるのは投入や盤面の読みが落ちたときだけ**で、その失敗は `NOTE` として `~/daemon.log` へ出るだけ
 だった（「未決」）。**値の生死を見回る者を置く**
-（[`check-values.mjs`](../scripts/agent/check-values.mjs)。出どころ: ユーザーの指示・2026-09-06。
+（[`check-values.mjs`](../scripts/daemon/check-values.mjs)。出どころ: ユーザーの指示・2026-09-06。
 「設定する」は自動化できないので、**確かめて報告する**ところまでを機械が持つ）。
 
 **何をどう確かめるかはあちらが持つ**ので、ここには書き写さない。ここに置くのは、コードを読んでも
@@ -1846,7 +1846,7 @@ issue を書く手をそこへ足すと、その土台が消える。**デーモ
 
 #### 2.22.2 死んだと言うまで、死に続けるのを待つ
 
-**CCRのアクセストークンは数時間で切れ、放っておくと直る**（[`daemon.sh`](../scripts/agent/daemon.sh)
+**CCRのアクセストークンは数時間で切れ、放っておくと直る**（[`daemon.sh`](../scripts/daemon/daemon.sh)
 「止めないのは」）。落ちた1回をそのまま死と読むと、**直る途中のものを毎回告げる**ことになり、告げた
 ものが誰にも読まれなくなる。**同じ値が死んだまま猶予（`VALUE_GRACE_HOURS`）を越えてから告げる。**
 
@@ -1903,10 +1903,10 @@ issue を書く手をそこへ足すと、その土台が消える。**デーモ
 | 段 | やること | 危なさ | |
 | --- | --- | --- | --- |
 | 0 | 手綱の issue を1つ作る（2.4） | 無し | 済（[#1515](https://github.com/gooyyu1/UnmappedIsland/issues/1515)） |
-| 1 | 占有と使用量を**読むだけ**の道具を作り、計測を貯め始める | 無し | 道具は済（[`usage-record.sh`](../scripts/agent/usage-record.sh)）。**呼び手が段4** |
+| 1 | 占有と使用量を**読むだけ**の道具を作り、計測を貯め始める | 無し | 道具は済（[`usage-record.sh`](../scripts/daemon/usage-record.sh)）。**呼び手が段4** |
 | 2 | 投入スクリプトへ占有の判定を入れる（1.4） | 小 | 済 |
 | 3 | ラベルの付け外しを Actions へ移す（2.2） | 小 | 済（[`board-labels.yml`](../.github/workflows/board-labels.yml)。下で実測） |
-| 4 | デーモンを立てる。**ただし本数の上限つき** | 中 | 済（[`daemon.sh`](../scripts/agent/daemon.sh)＋[`board-move.mjs`](../scripts/agent/board-move.mjs)） |
+| 4 | デーモンを立てる。**ただし本数の上限つき** | 中 | 済（[`daemon.sh`](../scripts/daemon/daemon.sh)＋[`board-move.mjs`](../scripts/daemon/board-move.mjs)） |
 | 5 | マージを Actions へ移す（PAT） | 大 | **要否を保留**（下） |
 | 6 | 引き継ぎ向けの道具の後片付け | 小 | 済 |
 
@@ -1918,7 +1918,7 @@ issue を書く手をそこへ足すと、その土台が消える。**デーモ
 
 **ただし、計測を貯めるには周期的な呼び手が要る。** 2.5.3 の割り当ては「前回からの増分を、そのとき
 生きているセッションで等分する」形なので、一定の間隔で引き続けないと増分が置き換わらない。1回ぶんの
-割り当て（[`usage-record.sh`](../scripts/agent/usage-record.sh)）は置けたが、**貯め始めはデーモン
+割り当て（[`usage-record.sh`](../scripts/daemon/usage-record.sh)）は置けたが、**貯め始めはデーモン
 （段4）か、それに代わる定時実行が要る。**
 
 **段2だけで PR #1493 の事故は止まる**（1.5）。占有の判定が投入スクリプトの中に入れば、呼ぶ側が
@@ -1937,7 +1937,7 @@ PR #1512 はレビューが3周「直しが要る」を出しているのに `�
 **段4で並列度を1に絞ったのは、衝突を見る仕組みが盤面に無かったから。** **つまりそれは「起動の前提」
 ではなく「並列度を上げるための前提」**で、移行を止めなかった。今は**錠**（`area:` のラベル。
 [`parallel-work.md`](parallel-work.md) 2節）と**本数の上限**が
-[`board-move.mjs`](../scripts/agent/board-move.mjs) に入っている。
+[`board-move.mjs`](../scripts/daemon/board-move.mjs) に入っている。
 
 **ファイルの衝突は投入では見ない。** 盤面にできるのは投入を遅らせることだけで、**重なりを知らせても
 受け取った側は触る先を変えない。** ぶつかったら `mend` で直させ、**どこで・何とぶつかったかを
@@ -1948,7 +1948,7 @@ PR #1512 はレビューが3周「直しが要る」を出しているのに `�
 
 **上限は2つある**——**同時に抱えてよいタスクの数**（`HELD_TASKS`）と、**同時に手が動いてよい作業者の
 数**（`ACTIVE_WORKERS`）。投入するのは、どちらの枠も空いているときだけ（値と出どころは
-[`board-move.mjs`](../scripts/agent/board-move.mjs) の定義に置く）。
+[`board-move.mjs`](../scripts/daemon/board-move.mjs) の定義に置く）。
 
 **1つの数で兼ねない。** 抱えている側が数えるのは担当 issue を持ったまま生きているセッションで、
 **PRを出して人の判断を待っているだけのセッションも入り続ける**——担当はマージまで閉じない。兼ねると、
@@ -2070,7 +2070,7 @@ PRコメントの**行頭に印を置いて**残す。**ラベルは付けない
 
 - **読むのはマージ済みのPRだけ。** 開いているPRのコメントは、次の周のレビューや直しで消えることが
   あり、拾うと二重になる。
-- **窓は本数ではなく期間で持ち、係の間隔より広く取る**（[`board-read.mjs`](../scripts/agent/board-read.mjs)
+- **窓は本数ではなく期間で持ち、係の間隔より広く取る**（[`board-read.mjs`](../scripts/daemon/board-read.mjs)
   の `MERGED_WINDOW_HOURS`）。本数は1本あたりに掛かる時間が変われば覆う期間も変わるので、間隔ぶんに
   入る本数を下回った瞬間、**拾われないまま窓から出るスメル**が出る——30本で1日を覆うつもりだった
   ものが15時間ぶんしかなく、#1659〜#1740 が一度も読まれずに落ちた（2026-09-07 に実測。#1787）。
@@ -2106,7 +2106,7 @@ PRコメントの**行頭に印を置いて**残す。**ラベルは付けない
 #### 4.5.2 境界は、前の周が名乗った版
 
 レビュアーは判定コメントの2行目に `読んだ版: <SHA>` を書く（`review-prompt.md`「読んだ版」）。次の周は
-[`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) がそれを指示へ埋め、**`git diff <前の版>...HEAD`
+[`dispatch-review.sh`](../scripts/daemon/dispatch-review.sh) がそれを指示へ埋め、**`git diff <前の版>...HEAD`
 だけ**を読ませる。境界をモデルの推定に任せると、差分が変わるたびに線が動く。
 
 **盤面の指紋（`taken['review:<PR>']`）では引かない。** あちらは投入するたびに動くので、判定を書かずに

@@ -2,7 +2,7 @@
 # ひな形（`agent-ops/prompts/*-prompt.md`）から、セッションへ渡す本体と題を取り出す。**シェルから `source`
 # して使う。**
 #
-#   # shellcheck source=scripts/agent/prompt-template.sh
+#   # shellcheck source=scripts/daemon/prompt-template.sh
 #   source "$(dirname "${BASH_SOURCE[0]}")/prompt-template.sh"
 #   template_body "$PROMPT" "$WORK/prompt.md"
 #   template_title "$PROMPT" "$WORK/title.txt"

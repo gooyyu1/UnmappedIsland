@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # `dispatch-*.sh` が共有する、投入の段取り。**シェルから `source` して使う。**
 #
-#   # shellcheck source=scripts/agent/dispatch-steps.sh
+#   # shellcheck source=scripts/daemon/dispatch-steps.sh
 #   source "$(dirname "${BASH_SOURCE[0]}")/dispatch-steps.sh"
 #   choose_target "$WHERE"                    # ENV_ID・MODE・SOURCE が決まる
 #   template_body "$TEMPLATE" "$INSTRUCTION"  # ひな形から渡す本体を取り出す
@@ -20,9 +20,9 @@
 # - `WORK` … 作業用の一時ディレクトリ。**抜けるときに消える**
 
 AGENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=scripts/agent/ccr-env.sh
+# shellcheck source=scripts/daemon/ccr-env.sh
 source "$AGENT_DIR/ccr-env.sh"
-# shellcheck source=scripts/agent/prompt-template.sh
+# shellcheck source=scripts/daemon/prompt-template.sh
 source "$AGENT_DIR/prompt-template.sh"
 CCR_META="$AGENT_DIR/../../.claude/ccr-meta.sh"
 WORK="$(mktemp -d)"

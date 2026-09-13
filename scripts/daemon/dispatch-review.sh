@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # PRを1本、レビュー用のCCRセッションへ投入して、届いたことの確認まで済ませる。
 #
-#   bash scripts/agent/dispatch-review.sh 1152
-#   bash scripts/agent/dispatch-review.sh 1152 --bridge   # このPCで走らせる
-#   DRY_RUN=1 bash scripts/agent/dispatch-review.sh 1152     # 渡す引数を見るだけ
-#   DRY_RUN=full bash scripts/agent/dispatch-review.sh 1152  # 指示の本文も切らずに出す
+#   bash scripts/daemon/dispatch-review.sh 1152
+#   bash scripts/daemon/dispatch-review.sh 1152 --bridge   # このPCで走らせる
+#   DRY_RUN=1 bash scripts/daemon/dispatch-review.sh 1152     # 渡す引数を見るだけ
+#   DRY_RUN=full bash scripts/daemon/dispatch-review.sh 1152  # 指示の本文も切らずに出す
 #
 # 指示は [`agent-ops/prompts/review-prompt.md`](../../agent-ops/prompts/review-prompt.md) から読む。**補足は無い**——
 # 見どころはPRごとに変わらないので、投入する側が書き足すものが無い（`dispatch-task.sh` との違いはここ）。
@@ -46,7 +46,7 @@ set -euo pipefail
 PR="${1:?PRの番号を渡す（例: 1152）}"
 WHERE="${2:-}"
 
-# shellcheck source=scripts/agent/dispatch-steps.sh
+# shellcheck source=scripts/daemon/dispatch-steps.sh
 source "$(dirname "${BASH_SOURCE[0]}")/dispatch-steps.sh"
 TEMPLATE="$AGENT_DIR/../../agent-ops/prompts/review-prompt.md"
 

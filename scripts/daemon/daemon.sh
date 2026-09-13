@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # 盤面を回し続ける。**1周を回し、待つ。**
 #
-#   bash scripts/agent/daemon.sh start        # 背景で立てる（ログは $DAEMON_LOG へ追記）
-#   bash scripts/agent/daemon.sh stop         # 止める（錠が外れるまで待つ）
-#   bash scripts/agent/daemon.sh restart      # 直接 push した版や環境変数を、すぐ効かせるとき
-#   bash scripts/agent/daemon.sh status       # 生きているかだけを見る（生きていれば0）
-#   bash scripts/agent/daemon.sh run          # 前に出たまま回す
-#   INTERVAL=300 bash scripts/agent/daemon.sh run
-#   ONCE=1 bash scripts/agent/daemon.sh run              # 1周だけ回して終わる
-#   DRY_RUN=1 ONCE=1 bash scripts/agent/daemon.sh run    # 手を並べるだけで、打たない
+#   bash scripts/daemon/daemon.sh start        # 背景で立てる（ログは $DAEMON_LOG へ追記）
+#   bash scripts/daemon/daemon.sh stop         # 止める（錠が外れるまで待つ）
+#   bash scripts/daemon/daemon.sh restart      # 直接 push した版や環境変数を、すぐ効かせるとき
+#   bash scripts/daemon/daemon.sh status       # 生きているかだけを見る（生きていれば0）
+#   bash scripts/daemon/daemon.sh run          # 前に出たまま回す
+#   INTERVAL=300 bash scripts/daemon/daemon.sh run
+#   ONCE=1 bash scripts/daemon/daemon.sh run              # 1周だけ回して終わる
+#   DRY_RUN=1 ONCE=1 bash scripts/daemon/daemon.sh run    # 手を並べるだけで、打たない
 #
 # 出力は1行1件で、頭に時刻が付く。**そのまま追記のログとして読める**。`run` は前に出したまま流し、
 # `start` は `$DAEMON_LOG`（既定 `~/daemon.log`）へ追記する。
@@ -41,7 +41,7 @@
 #
 # ## 盤面は、人が読める issue へ周期で書き出す
 #
-# 手元で [`board.sh`](board.sh) を叩ける者しか盤面を見られないので、常設の issue の本文へ書き出す
+# 手元で [`board.sh`](../agent/board.sh) を叩ける者しか盤面を見られないので、常設の issue の本文へ書き出す
 # （2.20）。書くのは [`board-publish.mjs`](board-publish.mjs) で、**間隔を持つのはこちら**
 # （`PUBLISH_INTERVAL`）——1周ごとに書くと、読む人が読み切れない速さで issue が書き換わる。
 #
@@ -280,7 +280,7 @@ stop_daemon() {
 # 0で返す。** 道具の言い分（`git`・`npm` が出すもの）は `$DAEMON_LOG` へ流す。
 sync_origin() {
   local common='' main_dir='' before='' head=''
-  # **引けなければ空のまま**（[`daemon-wake-task.sh`](daemon-wake-task.sh) と同じ）。既定値を置くと、
+  # **引けなければ空のまま**（[`daemon-wake-task.sh`](../agent/daemon-wake-task.sh) と同じ）。既定値を置くと、
   # 当てずっぽうの場所を本体として進めにいく。`--path-format=absolute` を明示するのは、既定が相対で
   # 返りうるため。
   common=$(git -C "$ORIGIN" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || common=''

@@ -674,7 +674,7 @@ Qwen Image Edit は1枚90秒〜15分かかるので、**後処理を1行直す�
 
 | 日 | 入れたもの | 出した手数 |
 | --- | --- | --- |
-| **09-05** | [`daemon.sh`](../scripts/agent/daemon.sh)＋[`board-move.mjs`](../scripts/agent/board-move.mjs)（[#1517](https://github.com/gooyyu1/UnmappedIsland/pull/1517)） | **司令塔の機械の部分がシェルになった。** 盤面を受けて手の並びを返すのは純粋な関数なので、単体で試せる。`watch-prs.sh` は同じPRで消えた |
+| **09-05** | [`daemon.sh`](../scripts/daemon/daemon.sh)＋[`board-move.mjs`](../scripts/daemon/board-move.mjs)（[#1517](https://github.com/gooyyu1/UnmappedIsland/pull/1517)） | **司令塔の機械の部分がシェルになった。** 盤面を受けて手の並びを返すのは純粋な関数なので、単体で試せる。`watch-prs.sh` は同じPRで消えた |
 | 09-05 | ラベルの付け外しを GitHub Actions へ（[`board-labels.yml`](../.github/workflows/board-labels.yml)） | **判定は push で自分から消える。** 偽になるべき状態を、自分では消えない場所に置かない |
 | **09-05** | 差し戻す相手を `Claude-Session` のトレーラで引き、名乗り忘れをCIで止める | **誰が書いたPRかを、盤面が本文を読まずに引ける。** 本文の脚注は書き直した拍子に落ちる |
 | 09-05 | レビューが止めるのをブロックだけに絞り、残りは `[スメル] ` として通す | **申し送りを中心が読んで総合判断するのをやめた。** 急がない懸念は置き場を決めて後段が拾う |
@@ -705,7 +705,7 @@ Qwen Image Edit は1枚90秒〜15分かかるので、**後処理を1行直す�
 ### 判断が要らないものだけを、中心に残す
 
 **中心が賢くなるほど、そこは引き継ぎ・文脈・可用性の単一障害点になります。** だから
-[`board-move.mjs`](../scripts/agent/board-move.mjs) は**盤面を受けて手の並びを返すだけ**で、
+[`board-move.mjs`](../scripts/daemon/board-move.mjs) は**盤面を受けて手の並びを返すだけ**で、
 GitHub も CCR も触りません。
 
 **判断が要るものは、全部そこから出してあります。**

@@ -1,7 +1,7 @@
 // デーモンが見ている盤面を、常設の issue の本文へ書き出す（`agent-ops/board-design.md` 2.20）。
 //
-//   node scripts/agent/board-publish.mjs        # 1回書き込む。書けなければ終了コード1
-//   BOARD_ISSUE=1714 node scripts/agent/board-publish.mjs
+//   node scripts/daemon/board-publish.mjs        # 1回書き込む。書けなければ終了コード1
+//   BOARD_ISSUE=1714 node scripts/daemon/board-publish.mjs
 //
 // **並べる形は隣の [`board.mjs`](board.mjs)**（`issueBody`）。ここが持つのは**届け先**だけ。
 //

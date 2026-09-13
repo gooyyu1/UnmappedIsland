@@ -2,8 +2,8 @@
 # CCRのセッションを畳む。**畳んでよいかの判定はここが持つ**——呼び手は「畳んでほしい相手」を
 # 標準入力へ1行1件で渡すだけでよい。
 #
-#   printf '%s\n' session_A session_B | bash scripts/agent/archive-session.sh
-#   printf '%s\n' session_A | bash scripts/agent/archive-session.sh --keep-untagged task-,review-
+#   printf '%s\n' session_A session_B | bash scripts/daemon/archive-session.sh
+#   printf '%s\n' session_A | bash scripts/daemon/archive-session.sh --keep-untagged task-,review-
 #
 # 出力は1行1件。`ARCHIVED <ID>`、触らないと決めたものは `KEPT <ID>`、打って失敗したものは
 # `UNARCHIVED <ID>`。このPCに worktree を持つ相手には後始末の行が続く（`REMOVED <パス>` /

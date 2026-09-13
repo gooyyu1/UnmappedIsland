@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 使用量を引いて行で出す。**読むだけ。**
 #
-#   $ bash scripts/agent/usage.sh
+#   $ bash scripts/daemon/usage.sh
 #   five_hour 9 2026-09-04T20:10:00.441803+00:00 -
 #   seven_day 14 2026-09-10T15:59:59.441827+00:00 -
 #

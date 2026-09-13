@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # 止まったセッションを1本、`send_message` で起こす。
 #
-#   bash scripts/agent/resume-session.sh cse_012ABC mend 1512
-#   bash scripts/agent/resume-session.sh cse_012ABC stall 1400
-#   DRY_RUN=1 bash scripts/agent/resume-session.sh cse_012ABC mend 1512   # 送る本文を見るだけ
+#   bash scripts/daemon/resume-session.sh cse_012ABC mend 1512
+#   bash scripts/daemon/resume-session.sh cse_012ABC stall 1400
+#   DRY_RUN=1 bash scripts/daemon/resume-session.sh cse_012ABC mend 1512   # 送る本文を見るだけ
 #
 # 本文は [`agent-ops/prompts/resume-prompt.md`](../../agent-ops/prompts/resume-prompt.md) の `## <理由>` 節から読む。
 # **書き足すものは無い**——理由は盤面から機械的に決まり（[`board-move.mjs`](board-move.mjs)）、

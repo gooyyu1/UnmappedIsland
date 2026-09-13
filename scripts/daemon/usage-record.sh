@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # 使用量を1回引いて、生きているセッションへ割り当てる。**1周に1回、デーモンから呼ぶ。**
 #
-#   bash scripts/agent/usage-record.sh
-#   BOARD_STATE=/tmp/board bash scripts/agent/usage-record.sh   # 置き場を変える
+#   bash scripts/daemon/usage-record.sh
+#   BOARD_STATE=/tmp/board bash scripts/daemon/usage-record.sh   # 置き場を変える
 #
 # 畳まれたセッションが在った周だけ、その消費を1行1件で出す。**引けなければ何もせず終了コード1。**
 # **叩ける間隔（[`usage.sh`](usage.sh)）が空いていない周は、何も言わずに0で終わる**——待つだけの周は

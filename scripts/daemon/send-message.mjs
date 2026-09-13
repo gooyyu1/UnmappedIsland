@@ -1,6 +1,6 @@
 // 走っているセッションへ本文を1つ送る（`send_message`）。
 //
-//   node scripts/agent/send-message.mjs <セッションID> <本文のファイル>
+//   node scripts/daemon/send-message.mjs <セッションID> <本文のファイル>
 //
 // **本文はファイルから読む。** 危ないのは文字の符号ではなく**シェルの展開**なので、構文ごとに載せて
 // よいかを判断せず、載せないほうを決めておく（[`ccr-meta.sh`](../../.claude/ccr-meta.sh)「指示は

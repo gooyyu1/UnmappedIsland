@@ -6,7 +6,7 @@ import { runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
- * `scripts/agent/may-dispatch.sh`（と、その下の `brake.sh` / `occupancy.sh`）の検査。
+ * `scripts/daemon/may-dispatch.sh`（と、その下の `brake.sh` / `occupancy.sh`）の検査。
  *
  * ここが守るのは**安全側へ倒れること**。誤って止めれば投入が遅れるだけだが、誤って通すと同じ仕事へ
  * 2本立ち、同じPRへ食い違う判定が残る（`agent-ops/board-design.md` 1.5 の PR #1493）。手綱もセッション
@@ -19,7 +19,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
 // 既定の5秒を超えうる。
 vi.setConfig({ testTimeout: 20000 });
 
-const SCRIPT = resolve(__dirname, '../../scripts/agent/may-dispatch.sh');
+const SCRIPT = resolve(__dirname, '../../scripts/daemon/may-dispatch.sh');
 
 /** 手綱の issue の番号。実物の番号は試験に書き写さない。 */
 const BRAKE_ISSUE = '9999';

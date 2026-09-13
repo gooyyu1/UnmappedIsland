@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-import { publish } from '../../scripts/agent/board-publish.mjs';
+import { publish } from '../../scripts/daemon/board-publish.mjs';
 
 /**
- * `scripts/agent/board-publish.mjs` の検査。
+ * `scripts/daemon/board-publish.mjs` の検査。
  *
  * ここが持つのは**届け先**だけ（並べる形は `board.mjs`、周期は `daemon.sh`）。守るのは2つ——
  * 組んだ本文がそのまま issue の本文になること、**引けなかった周は書き込まないこと**

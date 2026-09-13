@@ -1,8 +1,8 @@
 // 盤面が動くのに要る値——CCR の環境ID（`CLOUD_ENV` / `BRIDGE_ENV`）と、CCR・`gh` の資格情報——が
 // 生きているかを見回り、死んでいれば人へ告げる（`agent-ops/board-design.md` 2.22）。
 //
-//   node scripts/agent/check-values.mjs            # 1回見回る
-//   DRY_RUN=1 node scripts/agent/check-values.mjs  # 調べるだけ（issue も台帳も書かない）
+//   node scripts/daemon/check-values.mjs            # 1回見回る
+//   DRY_RUN=1 node scripts/daemon/check-values.mjs  # 調べるだけ（issue も台帳も書かない）
 //
 // **周期を持つのは呼び手**（[`daemon.sh`](daemon.sh) の `CHECK_INTERVAL`）——手で叩いた
 // 1回が「まだ早い」と言って何もしないのは、叩いた側から見て何も起きていないのと同じ
@@ -74,7 +74,7 @@ const cell = (text) => String(text).replace(/\s+/g, ' ').replace(/\|/g, '\\|').t
  * 書き忘れなのかが読む人に見分けられない。
  */
 const ENV_REMEDY = {
-  CLOUD_ENV: '`scripts/agent/ccr-env.sh` の既定値を、今在るクラウドの環境IDへ直す',
+  CLOUD_ENV: '`scripts/daemon/ccr-env.sh` の既定値を、今在るクラウドの環境IDへ直す',
   BRIDGE_ENV: 'このPCで Claude Code の CLI を開き直す（ブリッジの環境はCLIのプロセス1つにつき1つ）',
 };
 
@@ -179,7 +179,7 @@ function deadTable(due) {
 /** issue の本文。**丸ごと書き換わる**ので、人が書き足しても消えることを頭に置く。 */
 function report(due, now) {
   return `${[
-    '**この本文は `scripts/agent/check-values.mjs` が周期で丸ごと書き換えます。**',
+    '**この本文は `scripts/daemon/check-values.mjs` が周期で丸ごと書き換えます。**',
     '人が書いたものは次の見回りで消えます（`agent-ops/board-design.md` 2.22）。',
     '',
     `最終更新 ${stamp(now)}`,
@@ -271,7 +271,7 @@ function closeIssue(gh) {
       'close',
       String(open),
       '--comment',
-      '値が全部生き返ったので閉じます（`scripts/agent/check-values.mjs`）。',
+      '値が全部生き返ったので閉じます（`scripts/daemon/check-values.mjs`）。',
     ]) !== undefined
   );
 }

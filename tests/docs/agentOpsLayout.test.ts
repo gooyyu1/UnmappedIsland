@@ -49,7 +49,10 @@ describe('エージェントを動かすものの置き場', () => {
   it('`agent-ops/` には、実行されるものを置かない', () => {
     const executable = trackedUnder('agent-ops').filter((rel) => !rel.endsWith('.md'));
 
-    expect(executable, '読まれる文書だけを置く。動く道具は `scripts/agent/`').toEqual([]);
+    expect(
+      executable,
+      '読まれる文書だけを置く。動く道具は `scripts/agent/`・`scripts/daemon/`',
+    ).toEqual([]);
   });
 
   it('取り決めとひな形と記録が、`agent-ops/` に在る', () => {
