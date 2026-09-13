@@ -2587,6 +2587,7 @@ crafting_conditions:
 どちらも省略でき、省けばそのレシピに腕は効きません。
 
 ```yaml
+# braided / braided_cord は世界に無い。`surplus` を宣言できるレシピが1つも無いため（下の注記）。
 recipes:
   braided:
     conditions:

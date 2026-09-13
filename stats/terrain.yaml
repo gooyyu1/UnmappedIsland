@@ -143,7 +143,7 @@ work_piles_by_system:
   - {system: 12, piles: 1, days: 1.55, minutes: 1435.7}
 
 work_piles_total:
-  - {piles: 27, days: 66.72, minutes: 61850.1, outdoor_minutes: 41233.4, base_minutes: 20616.7, base_days: 57.27}
+  - {piles: 27, days: 66.72, minutes: 61850.0, outdoor_minutes: 41233.4, base_minutes: 20616.7, base_days: 57.27}
 
 exploration_phase:
   - {base: shortest_mean, metric: exploration_minutes, unit: minutes, mean: 2799.18, min: 1695.00, p5: 1830.00, p95: 3660.00, max: 3885.00, sd: 570.32, n: 500}
