@@ -29,7 +29,7 @@ WHERE="${3:-}"
 
 # shellcheck source=scripts/daemon/dispatch-steps.sh
 source "$(dirname "${BASH_SOURCE[0]}")/dispatch-steps.sh"
-ROOT="$(cd "$AGENT_DIR/../.." && pwd)"
+ROOT="$(cd "$DAEMON_DIR/../.." && pwd)"
 
 # **プロンプトはリポジトリからの相対で受ける。** 盤面が持っているのは `CYCLES` に書いた綴りだけで、
 # デーモンがどこから叩かれるかは知らない。

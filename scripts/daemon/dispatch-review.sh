@@ -48,7 +48,7 @@ WHERE="${2:-}"
 
 # shellcheck source=scripts/daemon/dispatch-steps.sh
 source "$(dirname "${BASH_SOURCE[0]}")/dispatch-steps.sh"
-TEMPLATE="$AGENT_DIR/../../agent-ops/prompts/review-prompt.md"
+TEMPLATE="$DAEMON_DIR/../../agent-ops/prompts/review-prompt.md"
 
 choose_target "$WHERE"
 

@@ -8,11 +8,12 @@ import { describe, expect, it } from 'vitest';
  * （`agent-ops/parallel-work.md`「`scripts/` は呼び手で分かれている」）。
  *
  * **分け目は「誰が起動するか」1つだけ。** デーモンの周回から起こされるものが `scripts/daemon/`、
- * 人かセッションが自分で打つものが `scripts/agent/`。分かれ目が効くのは**直したときに何が要るか**で、
- * `scripts/daemon/` を触ったらデーモンを起こし直すまでが仕事になる。
+ * 人かセッションが自分で打つものが `scripts/agent/`。分かれ目が答えるのは**直したものが、いつ誰の
+ * 手で動き出すか**——前者は `main` へ入った次の周から走っているデーモンが読み直し、後者は次に誰かが
+ * 打つまで動かない。
  *
- * **境界は字面では守られない**——新しい道具は「隣に在るから」で置かれる。片方が肥って、直したのに
- * 効かない道具と、起こし直さなくてよいのに毎回起こし直す道具が混ざる。
+ * **境界は字面では守られない**——新しい道具は「隣に在るから」で置かれる。片方が肥ると、置き場を見ても
+ * 誰が起こすのかが分からなくなる。
  *
  * 見るのは追跡されているファイルだけ。
  */
@@ -41,6 +42,9 @@ const AGENT_SIDE = ['board.sh', 'checked-items.sh', 'daemon-wake-task.sh', 'push
 /**
  * コメントを落とした中身。**起動の形だけを残す**——説明の中の名前まで数えると、互いを引き合う
  * 冒頭のコメントだけで全部が「辿れる」ことになり、この検査は何も見なくなる。
+ *
+ * `//` の手前が `:` のものは落とさない（`https://…`）。**落としすぎると、同じ行の後ろで名指し
+ * している道具を辿れないと読む**——足りないほうへ倒すと、在るものを無いと言う赤になる。
  */
 function code(name: string): string {
   const text = readFileSync(join(ROOT, 'scripts', 'daemon', name), 'utf-8');
@@ -50,7 +54,7 @@ function code(name: string): string {
       .filter((line) => !/^\s*#/.test(line))
       .join('\n');
   }
-  return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
 /**
@@ -82,7 +86,7 @@ describe('盤面を回す道具の置き場', () => {
     const reachable = reachableFromDaemon();
     const orphans = DAEMON_SIDE.filter((name) => !reachable.has(name));
 
-    expect(orphans, 'デーモンが起こさないものは `scripts/agent/` へ').toEqual([]);
+    expect(orphans, 'デーモンが起こさないものを `scripts/daemon/` へ置かない').toEqual([]);
   });
 
   it('`scripts/agent/` に在るのは、人かセッションが自分で打つものだけ', () => {
