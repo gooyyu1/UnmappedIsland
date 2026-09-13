@@ -110,7 +110,7 @@ beast:
   間合いの内側に入ります。**この島で間合いを取れるのは槍（200cm）だけです。**
 - **構えていなければ効きません**（`in_slot: hand` のゲート）。地面に置いた槍も、背負った槍も同じです。
 - **盾ではありません。** 押し引きなので牙は通り、追い詰めたイノシシからでも**1回の遭遇で平均
-  0.69枚**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=0 measure=wounds_taken mean -->の
+  0.71枚**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=0 measure=wounds_taken mean -->の
   傷を負います（石斧なら2.69枚<!-- stats: hunt.yaml encounter animal=wild_boar weapon=stone_axe escape_routes=0 measure=wounds_taken mean -->）。
 
 ### 1.3 逃走は `travel`
@@ -506,7 +506,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 
 **殴り続けた相手からは、気を失わせる手前で手応えが返ります。** それでも**体格に見合わない武器で
 追い詰める代償は残ります**——逃げ道の無い土地で大型に尖った石を振り続けたとき、こちらが負う怪我は
-平均**6.19枚**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=sharp_stone escape_routes=0 measure=wounds_taken mean -->
+平均**6.07枚**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=sharp_stone escape_routes=0 measure=wounds_taken mean -->
 （[`HuntStats.md`](../diagnostics/HuntStats.md) の `encounter` 節。2026-09-13 時点）で、石斧や槍を
 上回ります。**多いのは1手あたりの危なさではなく、決着までの長さです**——衝撃が大型に届かない（1.2 節）
 ぶん、同じ相手に3倍近い手数が要り、その手数だけ突かれます。

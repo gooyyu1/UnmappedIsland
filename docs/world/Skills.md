@@ -91,8 +91,8 @@
 （`src/assets/world-codex/salt.yaml` の `cure`）。
 
 **干し場へ掛けるほうだけを操作にはしません。** 枠へ物を入れる1手には、どの腕も配らないためです
-——伸びる量は作業の長さに依らず一律なので（[`SkillSystem.md`](../engine/SkillSystem.md) 3 節）、1手で
-済む操作へ配ると最も速い伸ばし方になります（`src/assets/world-codex/characters/player_character.yaml`
+——伸びる量はその操作の長さから決まるので（[`SkillSystem.md`](../engine/SkillSystem.md) 3 節）、1手で
+済む操作には配れる量がありません（`src/assets/world-codex/characters/player_character.yaml`
 の腕前の前書き）。掛けるのだけを例外にすれば、同じ干す行為なのに地面へ並べると伸びず干し場へ掛けると
 伸びる、という差も世界に残ります。
 
