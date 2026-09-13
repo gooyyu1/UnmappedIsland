@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { parse } from 'yaml';
+import { STALE_ON_PUSH } from '../../scripts/agent/board-move.mjs';
 import { pathForBash, runScript, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
@@ -343,14 +344,26 @@ esac
  * なので、落とす対象が欠けると、人の手番の印が付いたまま残って盤面が止まる。
  */
 describe('board-labels.yml の synchronized', () => {
-  it('前の差分に付いていた印を、人の手番のぶんまで落とす', () => {
+  /** `synchronized` ジョブの `run:`。 */
+  function synchronized(): string | undefined {
     const workflow = parse(readFileSync(WORKFLOW, 'utf-8')) as {
       jobs: Record<string, { steps: { run?: string }[] }>;
     };
-    const step = workflow.jobs.synchronized.steps.find((s) => s.run !== undefined)?.run;
+    return workflow.jobs.synchronized.steps.find((s) => s.run !== undefined)?.run;
+  }
 
+  it('前の差分に付いていた印を、人の手番のぶんまで落とす', () => {
     for (const name of ['直し待ち', '通してよい', '判断待ち', '収束せず', '却下']) {
-      expect(step).toContain(`--remove-label ${name}`);
+      expect(synchronized()).toContain(`--remove-label ${name}`);
+    }
+  });
+
+  // **同じ札を、盤面も剥がす**（`board-move.mjs` の `STALE_ON_PUSH`。issue #2144）——この段は
+  // 出来事で動くので、**転んだ回は二度と来ない。** 盤面のほうが知らない札をここだけが落とす形に
+  // すると、あの回に限ってその札だけが前の差分のまま残る。
+  it('盤面が剥がす札は、ここが落とす札に含まれる', () => {
+    for (const name of STALE_ON_PUSH) {
+      expect(synchronized()).toContain(`--remove-label ${name}`);
     }
   });
 });

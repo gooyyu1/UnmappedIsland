@@ -1,10 +1,11 @@
 // PRのコメントから、レビューが書いた**判定**を拾う（`agent-ops/board-design.md` 2.9）。
 //
-//   import { verdicts, readVersion, readsVersion, asksUser } from './review-verdicts.mjs';
+//   import { verdicts, readVersion, readsVersion, asksUser, asksMend } from './review-verdicts.mjs';
 //   verdicts(pr.comments)        // → 判定のコメントだけを、古い順に
 //   readVersion(comment)         // → そのコメントが名乗った「読んだ版」（無ければ undefined）
 //   readsVersion(comment, oid)   // → その名乗りが `oid` を指しているか
 //   asksUser(comment)            // → その判定が「人の判断が要る」か
+//   asksMend(comment)            // → その判定が「直しが要る」か
 //
 // **見分け方を持つ場所を1つにする。** 同じコメントを3者が読む——次の周が何回目かを数える
 // [`dispatch-review.sh`](dispatch-review.sh)、そのレビューが書き終えたかを見る
@@ -24,6 +25,9 @@ const VERDICT_LINE = /^\[レビュー\] (通してよい(（人の判断が要�
 
 /** 判定のうち、**通したうえで人へ回す**形（`board-design.md` 2.13.4）。 */
 const ASK_LINE = /^\[レビュー\] 通してよい（人の判断が要る）[ \t]*$/;
+
+/** 判定のうち、**直しを求める**形（`直し待ち` はこの1行から付く）。 */
+const MEND_LINE = /^\[レビュー\] 直しが要る[ \t]*$/;
 
 /** 読んだ版の名乗り（`review-prompt.md`「読んだ版」）。**書き忘れうる**ので、無い場合が要る。 */
 const READ_VERSION = /^読んだ版:[ \t]*([0-9a-fA-F]{7,40})[ \t]*$/m;
@@ -53,4 +57,13 @@ export function readsVersion(comment, oid) {
 /** その判定が**通したうえで人へ回す**形か（`board-design.md` 2.13.4）。 */
 export function asksUser(comment) {
   return ASK_LINE.test(body(comment).split('\n')[0]);
+}
+
+/**
+ * その判定が**直しを求めた**か。**盤面が `直し待ち` を導き直す側から訊く**（`board-design.md`
+ * 2.13.5 の「止める側」）——札を付けるのは `board-labels.yml` で、**転んだ回の出来事は二度と
+ * 来ない**（issue #2144）。
+ */
+export function asksMend(comment) {
+  return MEND_LINE.test(body(comment).split('\n')[0]);
 }

@@ -8,6 +8,9 @@ export function busySession(session: { status: string }): boolean;
 /** 盤面を見回る係の名（`agent-ops/board-design.md` 2.21）。間隔を引く側が綴りをここから取る。 */
 export const PATROL: string;
 
+/** PRの頭が動いたときに落ちる結論の札。剥がす手を打つ側が綴りをここから取る。 */
+export const STALE_ON_PUSH: readonly string[];
+
 /** 周期の係を前に立ててから空ける間隔（時間）。知らない名前には `undefined`。 */
 export function cycleHours(name: string): number | undefined;
 

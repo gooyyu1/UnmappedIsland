@@ -343,6 +343,19 @@ describe('board-round.mjs', () => {
     expect(result.calls).toEqual(['merge-pr.sh 10', 'dispatch-review.sh 20']);
   });
 
+  // **前の差分に付いたまま残った結論の札を剥がす**（`board-move.mjs` の `STALE_ON_PUSH`。
+  // issue #2144）。落とすのは `board-labels.yml` の `synchronized` だが、あの段は出来事で動くので
+  // **転んだ回は二度と来ない。** ここが `gh` を叩かないと、剥がしたのは盤面の中だけになる。
+  it('前の差分に残った結論の札を、gh で剥がして覚える', () => {
+    const stale = { ...passed, comments: [{ body: '[レビュー] 通してよい\n読んだ版: 9990000\n' }] };
+    const result = playRound({ prs: [pr(10, stale)] });
+
+    expect(result.gh).toContain(
+      'pr edit 10 --remove-label 直し待ち --remove-label 通してよい --remove-label 判断待ち --remove-label 収束せず',
+    );
+    expect(result.ledger['unlabel:10']).toBe('aaa111');
+  });
+
   // ここから4件は、**盤面を引けなくなった印**（`board-state.mjs` の `UNREADABLE`）。読むのは人が
   // 読む書き出しだけで、**引ける周の不調はここに立てない**（`agent-ops/board-design.md` 2.21.2）。
   it('盤面を引けなかった周は、印を置く', () => {
@@ -424,6 +437,19 @@ describe('board-round.mjs', () => {
 
     expect(result.ok).toBe(true);
     expect(result.ledger).toEqual({ 'review:10': 'aaa111' });
+  });
+
+  // **札を剥がした覚えも、開いているPRに紐づく**（`board-move.mjs` の `UNLABEL`）。掃除に巻き込むと
+  // **毎周捨たれて、剥がした後の周が「まだ打っていない」に戻る**——一覧が1周ぶん古いだけで、
+  // 剥がし直す手が何度でも出る。
+  it('札を剥がした覚えは、PRが開いているうちは台帳から捨てない', () => {
+    const result = playRound({
+      prs: [pr(10)],
+      ledger: { 'unlabel:10': 'aaa111', 'unlabel:99': 'zzz999' },
+    });
+
+    expect(result.ledger['unlabel:10']).toBe('aaa111');
+    expect(result.ledger['unlabel:99']).toBeUndefined();
   });
 
   // **後片付けの相手は開いているPRの一覧に載らない**ので、載っていないことでは捨てられない

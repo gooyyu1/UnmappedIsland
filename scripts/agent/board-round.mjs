@@ -27,7 +27,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { busySession, moves } from './board-move.mjs';
+import { STALE_ON_PUSH, busySession, moves } from './board-move.mjs';
 import { MERGED_WINDOW_HOURS, readBoard } from './board-read.mjs';
 import { UNREADABLE, boardState, readLedger, writeLedger } from './board-state.mjs';
 import { formatLive, liveSessions } from './live-sessions.mjs';
@@ -160,6 +160,7 @@ export function pruneTaken(taken, board) {
       (key.startsWith('tidy:') && Date.parse(mark) >= tidyFrom) ||
       (key.startsWith('resume:') && ids.has(key.slice('resume:'.length))) ||
       (key.startsWith('review:') && numbers.has(key.slice('review:'.length))) ||
+      (key.startsWith('unlabel:') && numbers.has(key.slice('unlabel:'.length))) ||
       (key.startsWith('archive:') && ids.has(key.slice('archive:'.length))) ||
       (key.startsWith('idle:') && ids.has(key.slice('idle:'.length)));
     if (lives) kept[key] = mark;
@@ -264,6 +265,15 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
       const result = dispatched(runScript('dispatch-review.sh', [a]).status);
       if (result !== PLAYED) return result;
       remember(`review:${a}`, b);
+      return PLAYED;
+    }
+    case 'UNLABEL': {
+      // 前の差分に付いたまま残った結論の札を落とす（`board-move.mjs` の `STALE_ON_PUSH`）。
+      // **`board-labels.yml` の `synchronized` と同じ打ち方**——付いていない札を渡しても
+      // `gh pr edit` は何もしないので、あちらと同じく在るかを確かめずに全部渡す。
+      const remove = STALE_ON_PUSH.flatMap((name) => ['--remove-label', name]);
+      if (gh(['pr', 'edit', a, ...remove]) === undefined) return FAILED;
+      remember(`unlabel:${a}`, b);
       return PLAYED;
     }
     case 'ARCHIVE': {

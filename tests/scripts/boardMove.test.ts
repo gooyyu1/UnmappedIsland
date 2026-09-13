@@ -18,6 +18,11 @@ import { trackIdle } from '../../scripts/agent/board-round.mjs';
 const NOW = '2026-09-05T02:00:00Z';
 /** これより前に更新が止まっているPRは、チェックが0本でも緑と読む。 */
 const SETTLED = '2026-09-05T01:00:00Z';
+/**
+ * **落ち着いたPRの `updatedAt`**（`SETTLED` より前）。`board-labels.yml` が札を付ける・落とすのは
+ * 出来事の直後なので、**落ち着いてもそうなっていない形が、あの段が転んだ回**（issue #2144）。
+ */
+const QUIET = '2026-09-05T00:30:00Z';
 
 interface Board {
   settledBefore?: string;
@@ -615,6 +620,129 @@ describe('board-move.mjs', () => {
       taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
     };
     expect(moves(board)).not.toContain('RESUME session_a mend 10 mend:returned:10:aaa1111');
+  });
+
+  // ## 札が付かなかった回を、盤面が現物から読み直す（issue #2144）
+  //
+  // 結論の札を付けるのは `board-labels.yml` で、**出来事（コメント・push）で動く**——転んだ回の
+  // 出来事は二度と来ないので、やり直す者も気づく者も居ない。2026-09-13、判定が書かれたのに
+  // `直し待ち` が付かず、差し戻しが1時間54分どこへも出なかった（PR #2130）。**判定はコメントに
+  // 残り、読んだ版も名乗ってある**ので、盤面はそちらから読む（2.13.5 の「止める側」）。
+
+  it('直し待ちが付いていなくても、今の版の判定が直しが要るなら差し戻す', () => {
+    const board = {
+      prs: [pr(10, returned('aaa1111'))],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:returned:10:aaa1111']);
+  });
+
+  // **名乗りの無い判定からは導かない。** どの版のものか言えない判定を今の版と読むと、押した後も
+  // 同じ差し戻しが出続けて、その差分が二度と読まれない（2.13.5）。
+  it('版を名乗っていない「直しが要る」からは、差し戻さない', () => {
+    const comments = [{ body: '[レビュー] 直しが要る\n\n- 本文の `## 自己点検` が…\n' }];
+    const board = {
+      prs: [pr(10, { comments })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['REVIEW 10 aaa1111:0']);
+  });
+
+  // 3周目の「直しが要る」では `収束せず` と引き換えに `直し待ち` が外れる（4.6）。**導き直すと、
+  // 人の手番を飛ばして4周目が走る。**
+  it('収束せずが付いていれば、判定が直しが要るでも差し戻さない', () => {
+    const board = {
+      prs: [pr(10, { ...label('収束せず'), ...returned('aaa1111') })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual([]);
+  });
+
+  // **通した判定に札が付かなかったぶんは、マージを導出できない**（2.13.5）ので、もう1周読ませて
+  // 付け直させる。**落ち着くまでは待つ**——判定が書かれてから札が付くまでには間があり、人が
+  // `通してよい` を外した窓（2.13.5）も同じ形に見える。
+  it('落ち着いても結論の札が付かないなら、もう1周読ませる', () => {
+    const board = { prs: [pr(10, { ...verdict('aaa1111'), updatedAt: QUIET })] };
+    expect(moves(board)).toEqual([
+      'REVIEW 10 aaa1111:1',
+      'NOTE PR #10 は判定が書かれても結論のラベルが付かないので、もう1周読ませる',
+    ]);
+  });
+
+  it('札が付くのを待てる間は、読ませ直さない', () => {
+    expect(moves({ prs: [pr(10, verdict('aaa1111'))] })).toEqual([
+      'NOTE PR #10 は今の版の判定が書かれている（結論のラベルが付くのを待っている）',
+    ]);
+  });
+
+  // **2度目は出さない。** 読ませ直しても付かないなら札を付ける側が壊れているので、同じ手を
+  // 繰り返してもレビューのセッションが減るだけ。
+  it('2周ぶん書かれても札が付かないなら、読ませ直さない', () => {
+    const comments = [...verdict('aaa1111').comments, ...verdict('aaa1111').comments];
+    const board = { prs: [pr(10, { comments, updatedAt: QUIET })] };
+    expect(moves(board)).toEqual([
+      'NOTE PR #10 は判定が2周ぶん書かれても結論のラベルが付かない（札を付ける側が壊れている）',
+    ]);
+  });
+
+  // ## 頭が動いた後も残った札は、盤面が剥がす（issue #2144）
+  //
+  // 落とすのは `board-labels.yml` の `synchronized` だが、そこも転ぶ——2026-09-13、PR #2120 は
+  // 新しいコミットが載った回の走りが起動すらせず、`通してよい` が前の差分への判定のまま残った。
+  // **判定が在るのに、そのどれも今の頭を指していないなら、札のほうが古い。**
+
+  it('頭が動いた後も残った結論の札は、盤面が剥がす', () => {
+    const stale = { ...label('通してよい', '判断待ち'), ...verdict('9990000'), updatedAt: QUIET };
+    expect(moves({ prs: [pr(10, stale)] })).toEqual(['UNLABEL 10 aaa1111']);
+  });
+
+  // **剥がす手を打つ前に、読むほうを先に直す。** 前の差分への `通してよい` でマージを打つと
+  // 取り消せない。
+  it('剥がす前でも、前の差分の通してよいではマージしない', () => {
+    const stale = { ...label('通してよい'), ...verdict('9990000') };
+    expect(moves({ prs: [pr(10, stale)] })).toEqual([
+      'NOTE PR #10 は前の差分の札が残っている（外れるのを待っている）',
+    ]);
+  });
+
+  // 同じ理由で、**前の差分への `直し待ち` で書いた本人を起こさない**——直しはもう載っている。
+  it('剥がす前でも、前の差分の直し待ちでは起こさない', () => {
+    const stale = { ...label('直し待ち'), ...returned('9990000'), updatedAt: QUIET };
+    const board = {
+      prs: [pr(10, stale)],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['UNLABEL 10 aaa1111']);
+  });
+
+  // **`却下` は剥がさない**（`STALE_ON_PUSH` に入れていない）。人が止めた印で、外したのがどの差分を
+  // 読んだ後かは盤面に出ない——剥がすと人の停止を消す。**残っても差し戻しが出る**ので、誰の手番でも
+  // ない形にはならない。
+  it('前の差分の判定しか無くても、却下は差し戻す', () => {
+    const stale = { ...label('却下'), ...verdict('9990000'), updatedAt: QUIET };
+    const board = {
+      prs: [pr(10, stale)],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa1111']);
+  });
+
+  // **一度打った頭では止めない。** 剥がし終えた後も一覧が古ければ同じ札が見えるので、止めると
+  // 誰の手番でもなくなる。
+  it('剥がす手を打った後は、札が見えていてもレビューへ出す', () => {
+    const stale = { ...label('通してよい'), ...verdict('9990000'), updatedAt: QUIET };
+    const board = { prs: [pr(10, stale)], taken: { 'unlabel:10': 'aaa1111' } };
+    expect(moves(board)).toEqual(['REVIEW 10 aaa1111:0']);
+  });
+
+  // **判定が1つも無いPRでは、札が古いと言えない**（`直し待ち` は後片付けも付ける。2.10.5）。
+  it('判定が1つも無ければ、札は剥がさない', () => {
+    expect(moves({ prs: [pr(10, { ...label('通してよい'), updatedAt: QUIET })] })).toEqual(['MERGE 10']);
   });
 
   // ## 頼み終えた差し戻しは、レビューへ渡す（2.13.6）
