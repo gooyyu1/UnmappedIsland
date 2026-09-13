@@ -27,7 +27,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { STALE_ON_PUSH, busySession, moves } from './board-move.mjs';
+import { busySession, moves } from './board-move.mjs';
 import { MERGED_WINDOW_HOURS, readBoard } from './board-read.mjs';
 import { UNREADABLE, boardState, readLedger, writeLedger } from './board-state.mjs';
 import { formatLive, liveSessions } from './live-sessions.mjs';
@@ -206,6 +206,31 @@ const returnBody = (session, issue) =>
 `;
 
 /**
+ * **前の差分の札を落としてほしい**とPRへ頼む1行目（`board-move.mjs` の `UNLABEL`。
+ * `agent-ops/board-design.md` 2.13.7）。読んで札を動かすのは
+ * [`board-labels.yml`](../../.github/workflows/board-labels.yml) の `swept`——**外すのはあちらだけ**
+ * （こちらが外すと `却下` になる。下の `play` の `UNLABEL`）。
+ *
+ * **綴りはあちらと揃っていること。** Actions には node を持ち込めないので実装は別で、
+ * 突き合わせは検査が持つ（`tests/scripts/boardLabels.test.ts`）。
+ */
+export const SWEEP_LINE = '[札] 前の差分の結論を落とす';
+
+/**
+ * その頼みの本文。**なぜ落ちるのかを書くのは、読むのが人だから**——札が消えた理由の置き場は
+ * コメントしか無い（ラベルは事実しか持たない。1.3）。
+ */
+const sweepBody = (head) =>
+  `${SWEEP_LINE}
+
+このPRに付いている結論の札は、**前の差分に付いたもの**です。判定のコメントはどれも、今の頭
+（\`${head}\`）とは別の版を名乗っています。push で落ちるはずのものが残っているので、落とし直します
+（[\`board-design.md\`](../agent-ops/board-design.md) 2.13.7）。
+
+**直しが要るかどうかは、これで変わりません**——次の周でレビューが読み直します。
+`;
+
+/**
  * 1手の結果。**「打てなかった」を、直す相手が要る分（`FAILED`）と、答えが返っている分
  * （`SETTLED`）に割る**——人が手綱で止めている・畳んではいけないと分かった、など。
  *
@@ -268,11 +293,18 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
       return PLAYED;
     }
     case 'UNLABEL': {
-      // 前の差分に付いたまま残った結論の札を落とす（`board-move.mjs` の `STALE_ON_PUSH`）。
-      // **`board-labels.yml` の `synchronized` と同じ打ち方**——付いていない札を渡しても
-      // `gh pr edit` は何もしないので、あちらと同じく在るかを確かめずに全部渡す。
-      const remove = STALE_ON_PUSH.flatMap((name) => ['--remove-label', name]);
-      if (gh(['pr', 'edit', a, ...remove]) === undefined) return FAILED;
+      // **札を外すのはワークフローだけ**（`board-labels.yml` の `swept`）。ここが
+      // `gh pr edit --remove-label` を打つと、それが `unlabeled` の出来事になり、
+      // **あちらの `unlabeled_by_hand` が「人が外した」と読んで `却下` を付ける**——見分けは
+      // `sender` で、デーモンの `gh` は人と同じアカウントを使う（2.2.1）。**頼む形で残す。**
+      const work = mkdtempSync(join(tmpdir(), 'board-round-'));
+      try {
+        const body = join(work, 'sweep.md');
+        writeFileSync(body, sweepBody(b));
+        if (gh(['pr', 'comment', a, '--body-file', body]) === undefined) return FAILED;
+      } finally {
+        rmSync(work, { recursive: true, force: true });
+      }
       remember(`unlabel:${a}`, b);
       return PLAYED;
     }

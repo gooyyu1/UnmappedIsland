@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { round } from '../../scripts/agent/board-round.mjs';
+import { SWEEP_LINE, round } from '../../scripts/agent/board-round.mjs';
 import { UNREADABLE } from '../../scripts/agent/board-state.mjs';
 
 /**
@@ -192,7 +192,9 @@ function playRound(world: World = {}): Result {
       ghCalls.push(args.join(' '));
       if (world.ghFails === true) return undefined;
       const [first, second, third] = args;
-      if (first === 'issue' && second === 'comment') {
+      // コメントを置く手は2つ——issue へ返す（`RETURN`）のと、PRへ札を落としてくれと頼む
+      // （`UNLABEL`）の。**本文は消される前に読む**（打ち手が後片付けする）。
+      if ((first === 'issue' || first === 'pr') && second === 'comment') {
         if (world.commentFails === true) return undefined;
         comments.push(readFileSync(args[args.indexOf('--body-file') + 1], 'utf-8'));
         return '';
@@ -343,16 +345,22 @@ describe('board-round.mjs', () => {
     expect(result.calls).toEqual(['merge-pr.sh 10', 'dispatch-review.sh 20']);
   });
 
-  // **前の差分に付いたまま残った結論の札を剥がす**（`board-move.mjs` の `STALE_ON_PUSH`。
+  // **前の差分に付いたまま残った結論の札を、落としてほしいと頼む**（`board-move.mjs` の `UNLABEL`。
   // issue #2144）。落とすのは `board-labels.yml` の `synchronized` だが、あの段は出来事で動くので
-  // **転んだ回は二度と来ない。** ここが `gh` を叩かないと、剥がしたのは盤面の中だけになる。
-  it('前の差分に残った結論の札を、gh で剥がして覚える', () => {
+  // **転んだ回は二度と来ない。**
+  //
+  // **頼むのであって、自分では外さない。** `gh pr edit --remove-label` を打つと、それが `unlabeled`
+  // の出来事になり、`unlabeled_by_hand` が**人が外した**と読んで `却下` を付ける——デーモンの `gh` は
+  // 人と同じアカウントで、`Bot` になるのは Actions の `GITHUB_TOKEN` だけ（`board-design.md` 2.2.1）。
+  it('前の差分に残った結論の札は、コメントで頼んで覚える', () => {
     const stale = { ...passed, comments: [{ body: '[レビュー] 通してよい\n読んだ版: 9990000\n' }] };
     const result = playRound({ prs: [pr(10, stale)] });
 
-    expect(result.gh).toContain(
-      'pr edit 10 --remove-label 直し待ち --remove-label 通してよい --remove-label 判断待ち --remove-label 収束せず',
-    );
+    expect(result.gh.some((call) => call.startsWith('pr comment 10 --body-file'))).toBe(true);
+    expect(result.comments[0]).toContain(SWEEP_LINE);
+    // **今の頭を本文に書く。** 読むのは人で、どの差分に付いた札が落ちるのかはここにしか出ない。
+    expect(result.comments[0]).toContain('aaa111');
+    expect(result.gh.some((call) => call.includes('--remove-label'))).toBe(false);
     expect(result.ledger['unlabel:10']).toBe('aaa111');
   });
 
@@ -440,7 +448,7 @@ describe('board-round.mjs', () => {
   });
 
   // **札を剥がした覚えも、開いているPRに紐づく**（`board-move.mjs` の `UNLABEL`）。掃除に巻き込むと
-  // **毎周捨たれて、剥がした後の周が「まだ打っていない」に戻る**——一覧が1周ぶん古いだけで、
+  // **毎周捨てられて、頼んだ後の周が「まだ打っていない」に戻る**——一覧が1周ぶん古いだけで、
   // 剥がし直す手が何度でも出る。
   it('札を剥がした覚えは、PRが開いているうちは台帳から捨てない', () => {
     const result = playRound({

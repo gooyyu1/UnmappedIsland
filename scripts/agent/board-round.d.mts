@@ -28,6 +28,12 @@ export interface RoundDeps {
 
 export function round(deps?: RoundDeps): boolean;
 
+/**
+ * **前の差分の札を落としてほしい**とPRへ頼む1行目。読んで札を動かすのは `board-labels.yml` の
+ * `swept` で、綴りの突き合わせは検査が持つ。
+ */
+export const SWEEP_LINE: string;
+
 /** 1手の結果。**「打てなかった」を、直す相手が要る分と答えが返っている分に割る**（2.21.2）。 */
 export const PLAYED: 'played';
 export const FAILED: 'failed';
