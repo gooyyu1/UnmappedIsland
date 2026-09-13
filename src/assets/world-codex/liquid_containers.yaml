@@ -55,8 +55,8 @@ traits:
         # 実際に溜まる量は降り方が決めるので、以後はrain_filled_liquidが増やす。
         set: {self: {fill: 1}}
 
-  # 水源（LiquidContainerSystem.md 10節）。**器を持ち込めば汲める設置物が名乗る**——今は湧き水だけ
-  # （locations.yaml）。タグと汲む口をこのtraitで対にしてあるので、traitを名乗れば口が付く。
+  # 水源（LiquidContainerSystem.md 10節）。**器を持ち込めば汲める設置物が名乗る**（湧き水、
+  # locations.yaml）。タグと汲む口をこのtraitで対にしてあるので、traitを名乗れば口が付く。
   # それでもtests/world-codex/purposeTags.test.tsが見張るのは、`tags`へ直に書けば口の無い水源を
   # 作れるため。
   #

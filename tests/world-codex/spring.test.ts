@@ -11,7 +11,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  * （docs/engine/LiquidContainerSystem.md 10節）。
  *
  * 見るのは「空の器へ汲める」「入る量は器が決める」「汲んだ水が飲める」「別の液体の器と暗がりは
- * 断る」の4つ。注ぎ移しと蒸発そのものはtests/world-codex/liquidContainersYaml.test.tsが受け持つ。
+ * 断る」。注ぎ移しと蒸発そのものはtests/world-codex/liquidContainersYaml.test.tsが受け持つ。
  */
 
 /** 湧き水が湧く土地の1つ（locations.yamlのgrasslandのexplore）。 */
