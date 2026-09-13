@@ -127,6 +127,12 @@ describe('文書が書いた「何日ぶん」', () => {
         `${doc} が書いた甕の日数`,
       ).toBeCloseTo(jarDays, 1);
     }
+
+    // 積む数は日数の幅から出るので、**幅の両端で**確かめる。
+    const packing = /3\.9\.1 節の (\d+)〜(\d+) 日なら\s*\*\*(\d+)〜(\d+) つ\*\*/.exec(VOYAGE_DOC);
+    expect(packing, '`Voyage.md` 3.9.6節の積む数が読めない').not.toBeNull();
+    expect(Number(packing![3]), '短い側の甕の数').toBe(Math.ceil(Number(packing![1]) / jarDays));
+    expect(Number(packing![4]), '長い側の甕の数').toBe(Math.ceil(Number(packing![2]) / jarDays));
   });
 
   it('満たした甕の重さとかさが、Voyage.mdの積荷の勘定と合う', () => {
@@ -221,32 +227,47 @@ describe('文書が書いた「何日ぶん」', () => {
     });
   }
 
+  /**
+   * その荷重で通れる者。**幅で書いた主張は両端で確かめる**——片端だけを見ると、もう一方が数から
+   * 外れたことに誰も気づかない（`ContentSkeleton.md` 5節4番で2度そうなった）。
+   */
+  function whoCanWalk(grams: number): readonly string[] {
+    return tooHeavyThresholds()
+      .filter((threshold) => grams < threshold.grams)
+      .map(({ name }) => name);
+  }
+
+  /** 通れなくなるのがいちばん早い者と、いちばん遅い者。 */
+  function weakestAndStrongest(): { weakest: string; strongest: string } {
+    const sorted = [...tooHeavyThresholds()].sort((a, b) => a.grams - b.grams);
+    expect(sorted.length, '`too_heavy` を持つキャラクタが足りない').toBeGreaterThan(1);
+    return { weakest: sorted[0].name, strongest: sorted.at(-1)!.name };
+  }
+
   it('そりが要る理由が、ContentSkeleton.md 5節4番の書きぶりのとおりに出る', () => {
-    const thresholds = tooHeavyThresholds();
-    expect(thresholds.length, '`too_heavy` を持つキャラクタが居ない').toBeGreaterThan(1);
-    expect(
-      SKELETON_DOC,
-      '5節4番の結論が見当たらない（書き換えたなら、この検査も同じ主張を見るよう直す）',
-    ).toContain('線を越えるのはアーティファクトを1つ載せた時点');
-
-    // 水と食料だけでは、短い側でも誰も止まらない——止めるのはアーティファクトを載せた1つ目。
-    const foodOnly = voyageLoadGrams(3, 12, 0);
-    for (const { name, grams } of thresholds) {
-      expect(foodOnly, `水と食料だけ（${foodOnly}g）で ${name} が既に通れない`).toBeLessThan(grams);
+    const { weakest, strongest } = weakestAndStrongest();
+    for (const claim of [
+      '長い側では、水と食料だけで通れるのがいちばん力の',
+      '短い側は水と食料だけなら4人とも',
+      'そこでもいちばん非力な者はアーティファクト1つで線を越えます',
+    ]) {
+      expect(
+        SKELETON_DOC,
+        `5節4番の結論が見当たらない（書き換えたなら、この検査も同じ主張を見るよう直す）: ${claim}`,
+      ).toContain(claim);
     }
 
-    // 短い側（4日ぶん）へアーティファクトを1つ載せると、誰かが線を越える。
-    const short = voyageLoadGrams(3, 12, 1);
-    expect(
-      thresholds.filter(({ grams }) => short >= grams).length,
-      `短い側（${short}g）で通れなくなる者が居ない`,
-    ).toBeGreaterThan(0);
+    // 短い側（4日ぶん）。水と食料だけなら全員通れ、アーティファクト1つでいちばん非力な者が止まる。
+    expect(whoCanWalk(voyageLoadGrams(3, 12, 0)), '短い側・水と食料だけで通れる者').toEqual(
+      tooHeavyThresholds().map(({ name }) => name),
+    );
+    expect(whoCanWalk(voyageLoadGrams(3, 12, 1)), '短い側・アーティファクト1つで通れる者').not.toContain(
+      weakest,
+    );
 
-    // 長い側（6日ぶん）では、同じ1つで4人とも線を越える。
-    const long = voyageLoadGrams(4, 18, 1);
-    for (const { name, grams } of thresholds) {
-      expect(long, `長い側（${long}g）で ${name} が通れてしまう`).toBeGreaterThanOrEqual(grams);
-    }
+    // 長い側（6日ぶん）。水と食料だけで通れるのは最も力のある者だけで、その者も1つで止まる。
+    expect(whoCanWalk(voyageLoadGrams(4, 18, 0)), '長い側・水と食料だけで通れる者').toEqual([strongest]);
+    expect(whoCanWalk(voyageLoadGrams(4, 18, 1)), '長い側・アーティファクト1つで通れる者').toEqual([]);
   });
 
   it('ContentSkeleton.md 5節4番が書いた水の重さが、甕の重さから出る', () => {
