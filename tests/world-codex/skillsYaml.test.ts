@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import type { YAMLMap } from 'yaml';
 import { isMap, isScalar, isSeq, parseDocument } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { discoverySourcesOf, islandDiscoveryCoverageOf } from '../../src/analysis/discoveryCoverage';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import type { RecipeDef } from '../../src/domain/RecipeDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
@@ -60,8 +59,12 @@ const GAIN_BY_ROUTE: Readonly<Record<SkillRoute, number>> = { execution: 2, disc
 
 /**
  * 島を何個生成して発見の契機の行き渡りを見るか。**1つでも取りこぼせば落ちる**ので、必要なのは
- * 「稀にしか起きない取りこぼしが1件は現れる」規模。土地の型が1つも生成されない確率は小さいほうで
- * 0.1%の桁なので、2,000個で1件は出る。
+ * 「稀にしか起きない取りこぼしが1件は現れる」規模。土地の型ごとに、それが1つも生成されなかった島の
+ * 割合は `stats/island_escape_reach.yaml` の `island_missing_location` にあり、稀なものほど多く回さないと
+ * 現れないので、その統計と同じ規模で回す。
+ *
+ * **測った範囲で1件も取りこぼさない土地もある**ので、そこだけに頼った契機はこの検査では捕まらない。
+ * そこを保証するのは土地の生成の側で、ここが見るのは「またいでいるか」だけ。
  */
 const ISLAND_SEED_COUNT = 2000;
 
@@ -421,31 +424,29 @@ function beastSpawningCandidates(): readonly { where: string; missingSkill: bool
 }
 
 /**
- * 発見の契機（SkillSystem.md 3.3節）が配る腕ごとに、**その契機を担っている型**の名前を集める。
+ * 発見の契機（SkillSystem.md 3.3節）が配る腕ごとに、**その契機を持つ探索を宣言している型の名前**を
+ * 集める。
  *
- * **候補は自分の `spawn` と `add` を並べて持つ**ので、見るのは候補1つの中だけ。入れ子の `pick`
- * （山頂の `on_max` など）も、候補として同じように辿る。
+ * **数えるのは「どの型が契機を担うか」ではなく「どこで配られるか」。** 3.3節が置いた線は
+ * 「同じ腕前へ配る型を、土地の型をまたいで置く」で、破れたときに起きるのは**その腕の契機が丸ごと
+ * 無い島が生成されること**。契機が在るかは土地の側で決まるので、出す型を数え上げるより直に引ける
+ * ——候補は複数の型を出すため、型の側から数えると「腕と関わりの無い型（石と一緒に出る小枝）が
+ * どの島にも在るぶんで緑になる」を避ける算段が要る。
  *
- * **候補が出す型を全部その腕の担い手と数えてはいけない。** 候補は複数の型を出すので、そのままだと
- * 腕と関係の無い型（石と一緒に出る小枝）が束に混ざり、**束が島から消えない理由をその型が肩代わり
- * する**——石器の契機を石の出ない土地へ寄せても、どの土地にも在る小枝が残るぶん緑のままになる。
- * 担い手と数えるのは、**その型を出す探索の候補がどれもその腕を配っているとき**だけ。石と一緒にも
- * 小枝だけでも出る型は、どちらの腕の担い手でもない。
+ * **見るのは `explore` の下だけ。** 契機を書けるのは操作している人が居る場面に限られ（`agent` を
+ * 書けない `on_max`/`on_min` からは腕の持ち主を指せない、docs/engine/TrapSystem.md 8節）、罠と囲いの
+ * 抽選は契機を持ちようが無い。入れ子の `pick`（山頂の `on_max` など）も候補として同じように辿る。
  *
- * **数えるのは探索（`explore`）の候補だけ。** 契機を書けるのは操作している人が居る場面に限られ
- * （`agent` を書けない `on_max`/`on_min` からは腕の持ち主を指せない、docs/engine/TrapSystem.md 8節）、
- * **契機を持ちようが無い卓**——罠と囲いの抽選（`traps.yaml`・`farming.yaml`）——まで数えると、
- * そこがネズミを配らないぶんでネズミが交差から落ち、**狩猟の担い手が空になっても素通りする**。
- * 探索であれば土地の別を問わない（沖の小島も `explorable` な土地で、同じ石を出す）。
+ * **島に出ない土地もそのまま並ぶ**（海区・沖の小島）。島の生成に現れないので、突き合わせる側で
+ * 落ちる——渡って行く先は、島に流れ着いた時点での契機にならない。
  */
-function discoveryGrantTypes(): ReadonlyMap<string, ReadonlySet<string>> {
-  /** 型 → その型を出す探索の候補が**どれも**配っている腕（積集合）。 */
-  const skillsByType = new Map<string, Set<string>>();
+function discoveryGrantLocations(): ReadonlyMap<string, ReadonlySet<string>> {
+  const bySkill = new Map<string, Set<string>>();
 
-  /** 探索1つの `pick`（入れ子も含む）の候補を、出す型と配る腕の組で数え上げる。 */
-  const collectCandidates = (node: unknown): void => {
+  /** 探索1つの `pick`（入れ子も含む）の候補が配る腕を、その探索を宣言している型へ結び付ける。 */
+  const collectCandidates = (node: unknown, defName: string): void => {
     if (isSeq(node)) {
-      for (const item of node.items) collectCandidates(item);
+      for (const item of node.items) collectCandidates(item, defName);
       return;
     }
     if (!isMap(node)) return;
@@ -454,49 +455,34 @@ function discoveryGrantTypes(): ReadonlyMap<string, ReadonlySet<string>> {
       if (isScalar(pair.key) && String(pair.key.value) === 'pick' && isSeq(pair.value))
         for (const candidate of pair.value.items) {
           if (!isMap(candidate)) continue;
-          const granted = new Set<string>();
           // 候補から見て `pick` をくぐらないもの＝この候補自身の `add`。入れ子の候補の `add` は
           // `discovery` で届くので、そちらと混ざらない（入れ子は下の再帰が自分で拾う）。
           walkAgentSkillGains(candidate, (skillName, _amount, route) => {
-            if (route === 'execution') granted.add(skillName);
+            if (route !== 'execution') return;
+            const found = bySkill.get(skillName) ?? new Set<string>();
+            bySkill.set(skillName, found);
+            found.add(defName);
           });
-          for (const type of spawnedTypesOf(candidate.get('spawn', true))) {
-            const shared = skillsByType.get(type);
-            if (shared === undefined) skillsByType.set(type, new Set(granted));
-            else for (const skillName of shared) if (!granted.has(skillName)) shared.delete(skillName);
-          }
         }
-      collectCandidates(pair.value);
+      collectCandidates(pair.value, defName);
     }
   };
 
-  /** `interactions` の下の `explore` だけを探して、その中の候補を数えさせる。 */
-  const walk = (node: unknown): void => {
-    if (isSeq(node)) {
-      for (const item of node.items) walk(item);
-      return;
-    }
-    if (!isMap(node)) return;
+  for (const path of worldCodexYamlPaths()) {
+    const root = parseDocument(readFileSync(path, 'utf8')).contents;
+    if (!isMap(root)) continue;
+    for (const section of root.items) {
+      const sectionKey = isScalar(section.key) ? String(section.key.value) : '';
+      if ((sectionKey !== 'traits' && sectionKey !== 'object_defs') || !isMap(section.value)) continue;
 
-    for (const pair of node.items) {
-      if (isScalar(pair.key) && String(pair.key.value) === 'interactions' && isMap(pair.value)) {
-        for (const entry of pair.value.items)
-          if (isScalar(entry.key) && String(entry.key.value) === 'explore') collectCandidates(entry.value);
-        continue;
+      for (const entry of section.value.items) {
+        const defName = isScalar(entry.key) ? String(entry.key.value) : '';
+        const interactions = isMap(entry.value) ? entry.value.get('interactions', true) : undefined;
+        const explore = isMap(interactions) ? interactions.get('explore', true) : undefined;
+        if (explore !== undefined) collectCandidates(explore, defName);
       }
-      walk(pair.value);
     }
-  };
-
-  for (const path of worldCodexYamlPaths()) walk(parseDocument(readFileSync(path, 'utf8')).contents);
-
-  const bySkill = new Map<string, Set<string>>();
-  for (const [type, skillNames] of skillsByType)
-    for (const skillName of skillNames) {
-      const found = bySkill.get(skillName) ?? new Set<string>();
-      bySkill.set(skillName, found);
-      found.add(type);
-    }
+  }
   return bySkill;
 }
 
@@ -667,42 +653,37 @@ describe('腕前とレシピの解放条件', () => {
   });
 
   it('発見の契機は、どの島にも1つは残る（同じ腕へ配る型が土地の型をまたぐ）', () => {
-    // SkillSystem.md 3.3節。契機は型を名指しで書くので、**その型を出す土地が生成されなかった島では
-    // 契機ごと消える**——単独の土地の型からしか出ない型（密林だけのマニラ麻）に頼ると、半分の島で
-    // その腕の発見経路が無くなる。型を土地の型をまたいで並べることでしか防げず、並んでいるかは
-    // locations.yamlを読んでも分からない（どの土地がどの島に出るかは生成が決める）ので、実際に島を
-    // 生成して確かめる。
-    const sources = discoverySourcesOf(codex);
-    const indexOfObject = new Map(sources.objects.map((object, index) => [object.name, index]));
-    const grants = discoveryGrantTypes();
+    // SkillSystem.md 3.3節。契機は土地の探索の候補へ書くので、**その土地が生成されなかった島では
+    // 契機ごと消える**——1つの土地の型に頼ると、その型が出なかった島でその腕の発見経路が無くなる
+    // （密林だけのマニラ麻なら半分の島）。土地の型をまたいで並べることでしか防げず、並んでいるかは
+    // 定義を読んでも分からない（どの土地がどの島に出るかは生成が決める）ので、実際に島を生成する。
+    const grantLocations = discoveryGrantLocations();
 
-    // **契機を受け取っている腕は、下の突き合わせにも必ず並ぶ。** 担い手が1つも立たなかった腕は
-    // `grants` から消えるので、そのまま回すと**見られていないことが緑と見分けられない**
-    // ——残りの腕だけで `grants` は非空になり、その腕の契機をどこへ寄せても落ちない。
+    // **契機を受け取っている腕は、下の突き合わせにも必ず並ぶ。** 契機の在り処が1つも立たなかった腕は
+    // `grantLocations` から消えるので、そのまま回すと**見られていないことが緑と見分けられない**
+    // ——残りの腕だけで非空になり、その腕の契機をどこへ寄せても落ちない。
     const granted = [...declaredSkillGains()]
       .filter(([, byRoute]) => byRoute.has('discovery'))
       .map(([skillName]) => skillName);
 
     expect(granted.length, '発見の契機が1つも無い').toBeGreaterThan(0);
     expect(
-      granted.filter((skillName) => (grants.get(skillName)?.size ?? 0) === 0),
-      '契機を配っているのに、担い手の型が1つも立たない腕',
-    ).toEqual([]);
-    // 探索で出ない型を契機に据えていれば、下の突き合わせは黙って素通りする（消えたかを問えない）。
-    expect(
-      [...grants].flatMap(([skill, types]) =>
-        [...types].filter((type) => !indexOfObject.has(type)).map((type) => `${skill}: ${type}`),
-      ),
-      '探索で見つからない型を契機にしている',
+      granted.filter((skillName) => (grantLocations.get(skillName)?.size ?? 0) === 0),
+      '契機を配っているのに、その在り処が1つも立たない腕',
     ).toEqual([]);
 
     const lost: string[] = [];
     for (let seed = 0; seed < ISLAND_SEED_COUNT; seed++) {
-      const coverage = islandDiscoveryCoverageOf(sources, generateIsland(codex.generation!, 'island', seed));
-      const missing = new Set(coverage.missingObjectIndices);
-      for (const [skill, types] of grants)
-        if ([...types].every((type) => missing.has(indexOfObject.get(type)!)))
-          lost.push(`種${seed}: ${skill}`);
+      // サイトの型は生成の最後までに必ず決まる（LocationTypeMatcherが受け皿へ倒す、
+      // src/analysis/discoveryCoverage.ts）。決まらないまま残ると、その島は「土地が無い」側に
+      // 数えられて下が落ちるので、黙って取りこぼす形にはならない。
+      const present = new Set(
+        generateIsland(codex.generation!, 'island', seed).sites.map((site) =>
+          site.type === undefined ? '' : codex.objects.get(site.type.objectDefGlobalId).name,
+        ),
+      );
+      for (const [skillName, locationNames] of grantLocations)
+        if (![...locationNames].some((name) => present.has(name))) lost.push(`種${seed}: ${skillName}`);
     }
 
     expect(lost.slice(0, 5), `${ISLAND_SEED_COUNT}個の島で、契機が丸ごと消えた腕`).toEqual([]);
