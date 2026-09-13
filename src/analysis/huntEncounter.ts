@@ -151,7 +151,7 @@ class Encounter {
     this.injuriesSlotId = codex.slotNames.getId('injuries');
     this.charactersSlotId = codex.slotNames.getId('characters');
     this.bloodId = codex.propertyNames.getId('blood');
-    this.consciousnessId = codex.propertyNames.getId('consciousness');
+    this.consciousnessId = codex.vocabulary.world.consciousnessId;
     this.warinessId = codex.propertyNames.getId('wariness');
 
     this.session = new WorldSession(codex, undefined, rng);
@@ -246,7 +246,11 @@ class Encounter {
 
   /** 獣が気を失っているか（VitalsSystem.md 5節。決着は死ではなく気絶で付く）。 */
   private isDowned(): boolean {
-    return this.animal.tryGetProperty(this.consciousnessId)?.stage?.name === 'unconscious';
+    return (
+      this.animal
+        .tryGetProperty(this.consciousnessId)
+        ?.isInStage(this.codex.vocabulary.world.unconsciousStage) ?? false
+    );
   }
 
   /**
