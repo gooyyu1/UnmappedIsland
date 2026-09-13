@@ -206,12 +206,18 @@ describe('文書が書いた「何日ぶん」', () => {
    * 航海ぶんを一度に担いだときの重さ（g）。**そりが要る理由がここから出る**ので、
    * `ContentSkeleton.md` 5節4番の結論はこの数と繋がっていなければならない。
    */
-  function voyageLoadGrams(jars: number, meats: number, artifacts: number): number {
+  function voyageLoadGrams(jars: number, meats: number, coconutMeats: number, artifacts: number): number {
     const filled = spawn('jar__content_water_liquid');
     filled.getProperty(fillId).setNumberWithoutEvents(filled.getProperty(fillId).def.range!.max);
     const meat = spawn('raw_meat').getProperty(weightId).getEffectiveValue();
+    const coconutMeat = spawn('coconut_meat').getProperty(weightId).getEffectiveValue();
     const artifact = spawn('golden_chalice').getProperty(weightId).getEffectiveValue();
-    return filled.getProperty(weightId).getEffectiveValue() * jars + meat * meats + artifact * artifacts;
+    return (
+      filled.getProperty(weightId).getEffectiveValue() * jars +
+      meat * meats +
+      coconutMeat * coconutMeats +
+      artifact * artifacts
+    );
   }
 
   /** キャラクタが通れなくなる荷重（`load` の `too_heavy` 段の下端）。 */
@@ -245,11 +251,11 @@ describe('文書が書いた「何日ぶん」', () => {
   }
 
   it('そりが要る理由が、ContentSkeleton.md 5節4番の書きぶりのとおりに出る', () => {
-    const { weakest, strongest } = weakestAndStrongest();
+    const { weakest } = weakestAndStrongest();
     for (const claim of [
-      '長い側では、水と食料だけで通れるのがいちばん力の',
-      '短い側は水と食料だけなら4人とも',
-      'そこでもいちばん非力な者はアーティファクト1つで線を越えます',
+      '長い側では、水と食料だけで4人とも通れません',
+      '短い側は水と食料だけなら通れますが',
+      'いちばん非力な者はアーティファクト1つで線を越えます',
     ]) {
       expect(
         SKELETON_DOC,
@@ -257,24 +263,26 @@ describe('文書が書いた「何日ぶん」', () => {
       ).toContain(claim);
     }
 
+    // 食料は塩漬けの生肉と、脂を切らさないためのヤシの果肉（Voyage.md 3.9.6節）。**果肉も数える**
+    // ——1日ぶんが200gなので、線の際に居る長い側では、積むかどうかが通れるかどうかを分ける。
+
     // 短い側（4日ぶん）。水と食料だけなら全員通れ、アーティファクト1つでいちばん非力な者が止まる。
-    expect(whoCanWalk(voyageLoadGrams(3, 12, 0)), '短い側・水と食料だけで通れる者').toEqual(
+    expect(whoCanWalk(voyageLoadGrams(3, 12, 2, 0)), '短い側・水と食料だけで通れる者').toEqual(
       tooHeavyThresholds().map(({ name }) => name),
     );
-    expect(whoCanWalk(voyageLoadGrams(3, 12, 1)), '短い側・アーティファクト1つで通れる者').not.toContain(
+    expect(whoCanWalk(voyageLoadGrams(3, 12, 2, 1)), '短い側・アーティファクト1つで通れる者').not.toContain(
       weakest,
     );
 
-    // 長い側（6日ぶん）。水と食料だけで通れるのは最も力のある者だけで、その者も1つで止まる。
-    expect(whoCanWalk(voyageLoadGrams(4, 18, 0)), '長い側・水と食料だけで通れる者').toEqual([strongest]);
-    expect(whoCanWalk(voyageLoadGrams(4, 18, 1)), '長い側・アーティファクト1つで通れる者').toEqual([]);
+    // 長い側（6日ぶん）。水と食料だけで4人とも止まる。
+    expect(whoCanWalk(voyageLoadGrams(4, 18, 3, 0)), '長い側・水と食料だけで通れる者').toEqual([]);
   });
 
   it('ContentSkeleton.md 5節4番が書いた水の重さが、甕の重さから出る', () => {
     const range = /甕で運ぶ水は下限でも3〜4つ＝(\d+)〜(\d+)kg/.exec(SKELETON_DOC);
     expect(range, '水の重さの幅が読めない').not.toBeNull();
-    expect(Number(range![1]), '甕3つ').toBeCloseTo(voyageLoadGrams(3, 0, 0) / 1000, 0);
-    expect(Number(range![2]), '甕4つ').toBeCloseTo(voyageLoadGrams(4, 0, 0) / 1000, 0);
+    expect(Number(range![1]), '甕3つ').toBeCloseTo(voyageLoadGrams(3, 0, 0, 0) / 1000, 0);
+    expect(Number(range![2]), '甕4つ').toBeCloseTo(voyageLoadGrams(4, 0, 0, 0) / 1000, 0);
   });
 });
 

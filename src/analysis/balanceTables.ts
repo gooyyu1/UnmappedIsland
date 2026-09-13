@@ -451,9 +451,9 @@ export function objectCostMinutesOf(balance: BalanceTables, objectName: string):
  * （`body_fat`）の減りだけで、三大栄養素はそこへ注ぐ原資（DigestionSystem.md 3節）。
  * 流量を要求量として数えると、必要な何倍もを食べさせることになる。
  *
- * **例外は、尽きた域に段を持つ在庫**（`lipid`）。そこは切らすこと自体に罰が立つ（同7節）ので、
- * 流量がそのまま「1日に運び入れなければならない量」になる。段の有無で引くのは、段を置く理由が
- * 尽きたときの弊害だから——次にどの在庫へ段が生えても、その日から数えられる。
+ * **例外は、段を持つ在庫**（`lipid`）。**在庫へ段を置くのは、尽きたときの弊害を持たせるため**
+ * （同7節）なので、そこは切らすこと自体に罰が立ち、流量がそのまま「1日に運び入れなければ
+ * ならない量」になる。引くのは段の有無で——次にどの在庫へ段が生えても、その日から数えられる。
  */
 export interface DailyNeed {
   readonly propertyGlobalId: PropertyGlobalId;
