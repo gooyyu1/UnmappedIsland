@@ -8,8 +8,9 @@
 # docs/world/Characters.md 幸福度節の表が持ち、書き忘れは tests/world-codex/foodsYaml.test.ts が
 # 全数で見張る。
 #
-# このファイルの操作は食べることだけなので、**明るさの条件はどれも持たない**——口へ運ぶのは手が
-# 覚えている動作（docs/engine/IlluminationSystem.md 5節）。
+# **食べる操作は明るさの条件を持たない**——口へ運ぶのは手が覚えている動作
+# （docs/engine/IlluminationSystem.md 5節）。刃を当てる下ごしらえ（taroのchop）は手元を見る作業なので、
+# そちらだけが条件を持つ。
 #
 # foodタグは「そのカード自身を口に入れると体の値が動く物」に付ける（CardView.md 2.1節）。eatで食べる
 # 物だけでなく、青いヤシの実（coconut.yaml）のようにcombinationで飲む物にも付く。加工すれば食べられる
@@ -107,6 +108,33 @@ traits:
       - conditions:
           - not: {subject: self, matches: {tag: cured}}
         add: {self: {durability: -0.5}}
+
+  # 下ごしらえの済んだ物（docs/world/Skills.md 2.5節）。**料理の腕の入口はこの手**で、火にかける手には
+  # どの腕も配れない——火にかけた後を進めるのは炉であって人ではないため（同節）。
+  #
+  # **払った手間が返るのは火の通り。** 炉が子のcooking_progressを進める（docs/engine/FireSystem.md 7節）
+  # ので、下ごしらえが効ける先はその進みしかない。
+  #
+  # **宣言を持つのは食べ物の側**（干し場の上乗せと同じ向き、drying.yaml）。炉が渡す熱は枠の中の全部へ
+  # 同じだけ渡るので、刻んであるかどうかを炉の側からは見分けられない。
+  #
+  # **prep軸の値が配るtraitはこれ1つ。** 刻む・串に刺す・皮を剥くのどれであっても、返るものは同じ
+  # 火の通りなので、加工の側が名乗るのは名前だけになる（cureと同じ形）。
+  prepped:
+    # prep軸の受け皿（下ごしらえの操作が、ここを名乗る型へだけ相手を変える）。
+    tags: [prepped]
+    passives:
+      # 火にかけているあいだ、炉が渡す熱へ上乗せする。**最もよく効くのは熾火**——加算なので、
+      # 熾火（1/tick）では3倍になり、炎（3/tick）では5/3にしかならない。刻めば弱い火でも芯まで
+      # 通る、という形でそのまま読める（加算から出る偏りは均さない、docs/world/Skills.md 7節）。
+      - conditions:
+          - {subject: parent, prop: heat, in_stage_or_above: coals}
+        add: {self: {cooking_progress: 2}}
+      # 切り口が外気に触れるぶん、腐るのが速くなる。**分類によらず-1**で、量は屋外に置いたぶんの
+      # 上乗せ（上のperishable）から借りている。**門は持たない**——あちらは屋根の下なら成立しない
+      # が、切り口は蓋つきの入れ物の中でも塞がらない。**下ごしらえは火にかける直前**という順序は、
+      # ここが作る——先に刻んで溜めておくと、火にかける前に傷む。
+      - add: {self: {durability: -1}}
 
 object_defs:
   # 空心菜（クウシンサイ）。熱帯の水辺に自生する、採取しやすい葉物野菜。
@@ -229,8 +257,14 @@ object_defs:
       weight: {value: 800}
       plant_bait: {value: 12}
       volume: {value: 800}
+      # 刻むのにかかる時間。素の値は芋が持ち、今刻んでいる人の手際をbaseで継ぐ
+      # （docs/world/Skills.md 7節）。
+      chop_minutes:
+        value: 20
+        base: {subject: agent, prop: cooking_deftness}
+        range: {min: 10, max: 20}
       # **肉より長くかける。** 針状結晶を壊すには芯まで熱を通す必要があり、生焼けでは食べられない。
-      # 炎（3/tick）なら10tick＝2時間30分。
+      # 炎（3/tick）なら10tick＝2時間30分。刻んであれば上乗せが乗る（上のprepped）ので6tick＝1時間30分。
       cooking_progress:
         value: 0
         range: {min: 0, max: 30}
@@ -240,6 +274,47 @@ object_defs:
     # **塩漬けにはできない**（salt.yamlのcure軸を名乗らない）。海鳥の卵・殻の中のヤシの実と同じ線
     # （voyage.yaml・coconut.yaml）で、**上の遅さがそのまま理由**——土の中で眠る塊茎は皮が水を抱えた
     # ままにしているからこの段に居るので、隔てているものが既に塩の仕事をしている。
+    #
+    # **下ごしらえはできる**（下のchop）。**今のところ置けるのはこの芋だけ**で、線は2本重なっている。
+    # **返るのが火の通りなので、置ける先は生のままで火にかける物だけ**（roastableでcooking_progressを
+    # 持つ側）——青いヤシの実も海鳥の卵も、刻んで返るものが無い。**そのうち保存の軸を持たないのが
+    # この芋だけ**で、軸の値の組は1本ずつしか作られない（変種の変種は作らない、
+    # GameElementDefinition.md 3.5.1節）ため、干す・燻す・漬ける先を持つ生肉・死体・ヤシガニを
+    # 刻むと、その先を丸ごと失う。
+    variation_axes:
+      prep: {of: {tag: prepped}}
+    interactions:
+      # 刻む。**料理の腕の入口**（docs/world/Skills.md 2.5節）で、火にかける手ではなくここが伸ばす。
+      #
+      # **要るのはcutting_tool**（tools.yaml）——刃を一線へ入れて断つ手つきなので、柄の先へ頭部を
+      # 据えた石斧でも通る。皮を剥ぐ手（handheld_blade）と分けているのはそちら側の宣言。
+      #
+      # 刃を当てて押し切る手元の作業なので、明るさの条件が要る（docs/engine/IlluminationSystem.md 5節）。
+      chop:
+        trigger: {drag: {tag: cutting_tool}}
+        duration: {prop: chop_minutes}
+        conditions:
+          - reason: too_dark
+            subject: agent
+            prop: hand_brightness
+            in_stage_or_above: bright
+          # **二度は刻めない。** 刻んだ芋にもこの操作は残り、`become`の行き先も自分自身として解ける
+          # ——干した物へ塩を打てないのは行き先が無いからだが（drying.yaml）、同じ軸の同じ値へ移る
+          # ここはそうならない。**塞がないと、1つを刻み直すだけで腕が伸び続ける。**
+          - reason: already_prepped
+            not: {subject: self, matches: {tag: prepped}}
+        # 料理の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
+        # characters/player_character.yaml）。**今のところ料理を伸ばす唯一の操作。**
+        #
+        # **余分の卓は持たない。** 刻んでも芋は1つのままで、増えるのは切り口だけ
+        # （docs/world/Skills.md 7節の、まとめて取れる物ではない側）。
+        add: {agent: {skill_cooking: 1}}
+        become: {prep: chopped}
+
+  # prep軸の値。**traitsだけを宣言する**（3.5.1節）——変種へ配られるのは上のpreppedで、この型自身の
+  # インスタンスは作られない。塩漬け・干物・燻製がcure軸で1つの行き先を分け合うのと同じ形。
+  chopped:
+    traits: [prepped]
 
   # 焼いたタロイモ。芯まで火が通って、初めて食べられる。
   roasted_taro:
