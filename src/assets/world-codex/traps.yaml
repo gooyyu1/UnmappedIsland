@@ -331,21 +331,23 @@ object_defs:
       # 傷はどの個体も敗血症へ届くので、放置した穴の跡に残るのは獲物ではなく死体になる
       # （TrapSystem.md 5.1節）。
       durability:
-        # 尽きると使えなくなるので、満タン側がgood（CardView.md 8節）。
+        # 尽きると使えなくなるので、満タン側がgood（CardView.md 8節）。**上限は種類によらず960**
+        # （DurabilitySystem.md 1節）——長持ちを上限で作らず、減る速さだけで作る。30日なので
+        # 10÷30（同節の式）で、割り切れないぶんは小数で置く。
         gauge: {min: bad, max: good}
-        value: 2880
-        range: {min: 0, max: 2880}
+        value: 960
+        range: {min: 0, max: 960}
         passives:
           - conditions:
               - {in_slot: fixtures}
             add:
               self:
-                durability: -1
+                durability: -0.3333
           - conditions:
               - {slot: catch, matches: {tag: quarry}}
             add:
               self:
-                durability: -10
+                durability: -3.3333
         on_min:
           destroy: self
     passives:
