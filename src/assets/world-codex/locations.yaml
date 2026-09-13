@@ -235,6 +235,11 @@ object_defs:
   #   1回に1つまでにし、数で増えるのはアイテムだけにする。
   # - 生きた獣（animals.yaml）は**単独の候補**にする。収穫ではなく出くわすものなので、他の物と一緒に
   #   見つかると「実り」に混ざってしまう（docs/engine/ExplorationSystem.md 2.1節）。
+  # - 候補が持つ`add: {agent: {skill_*: 1}}`は**発見の契機**（docs/engine/SkillSystem.md 3.3節）。その
+  #   候補が出す型を扱う腕へ配る。**実行経路の+2より小さい+1**で、探索そのものは何も配らない
+  #   （配るのは候補の側）。**同じ腕へ配る型は、土地の型をまたいで置く**——単独の型に頼ると、その型を
+  #   出す土地が生成されなかった島では契機ごと消える。tests/world-codex/skillsYaml.test.tsが島を
+  #   生成して、どの島にも1つは残ることを見張る。
   # - 獣のつまみは、**探索する人の狩猟の腕（quarry_sense）をbaseの土台にする**
   #   （docs/world/Skills.md 5節）。土地が持つのは素の重みで、腕は上乗せだけを持つ——**獣が増える
   #   のではなく、居る獣に気づけるようになる**。積むのは獣のつまみだけで、実りの候補には積まない。
@@ -305,9 +310,11 @@ object_defs:
           # 1個
           - weight: {prop: palm_find}
             spawn: {object: palm_tree, into: self}
+            add: {agent: {skill_cordage: 1}}
           # 打ち上げられた流木の幹（timber.yaml）。どの海岸にも寄る。
           - weight: {prop: driftwood_trunk_find}
             spawn: {object: driftwood_trunk, into: self}
+            add: {agent: {skill_woodwork: 1}}
           - weight: 5
             spawn: {object: woven_basket, into: self}
           - weight: {prop: crab_find}
@@ -315,15 +322,19 @@ object_defs:
           # 出くわす獣（収穫ではないので、単独で出る）
           - weight: {prop: rat_find}
             spawn: {object: rat, into: self}
+            add: {agent: {skill_hunting: 1}}
           - weight: {prop: monkey_find}
             spawn: {object: monkey, into: self}
+            add: {agent: {skill_hunting: 1}}
           # 2個
           - weight: 20
             spawn: {object: coconut, count: 2, into: self}
+            add: {agent: {skill_cordage: 1}}
           - weight: 15
             spawn:
               - {object: coconut, into: self}
               - {object: thick_branch, into: self}
+            add: {agent: {skill_cordage: 1}}
           - weight: 10
             spawn:
               - {object: thick_branch, into: self}
@@ -333,6 +344,7 @@ object_defs:
             spawn:
               - {object: coconut, count: 2, into: self}
               - {object: thick_branch, into: self}
+            add: {agent: {skill_cordage: 1}}
           - weight: {prop: driftwood_find}
             spawn:
               - {object: thick_branch, count: 2, into: self}
@@ -385,36 +397,45 @@ object_defs:
           # 打ち上げられた流木の幹（timber.yaml）。どの海岸にも寄る。
           - weight: {prop: driftwood_trunk_find}
             spawn: {object: driftwood_trunk, into: self}
+            add: {agent: {skill_woodwork: 1}}
           # 出くわす獣（収穫ではないので、単独で出る）
           - weight: {prop: rat_find}
             spawn: {object: rat, into: self}
+            add: {agent: {skill_hunting: 1}}
           - weight: {prop: monkey_find}
             spawn: {object: monkey, into: self}
+            add: {agent: {skill_hunting: 1}}
           # 2個
           # 漂着物。ヤシの実は海を渡って流れ着くので、ヤシの生えない岩場にも寄る。
           - weight: 12
             spawn:
               - {object: coconut, into: self}
               - {object: thick_branch, into: self}
+            add: {agent: {skill_cordage: 1}}
           - weight: 20
             spawn: {object: stone, count: 2, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 15
             spawn:
               - {object: stone, into: self}
               - {object: coconut_crab, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 10
             spawn:
               - {object: stone, into: self}
               - {object: thick_branch, into: self}
+            add: {agent: {skill_knapping: 1}}
           # 3個
           - weight: 18
             spawn:
               - {object: stone, count: 2, into: self}
               - {object: thick_branch, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 12
             spawn:
               - {object: stone, count: 2, into: self}
               - {object: coconut_crab, into: self}
+            add: {agent: {skill_knapping: 1}}
 
   # 岸壁。切り立った崖の海岸。得られるものは少ないが、洞窟が口を開けていることがある。
   cliff_coast:
@@ -464,31 +485,39 @@ object_defs:
             spawn: {object: golden_chalice, into: self}
           - weight: 30
             spawn: {object: stone, into: self}
+            add: {agent: {skill_knapping: 1}}
           # 打ち上げられた流木の幹（timber.yaml）。どの海岸にも寄る。
           - weight: {prop: driftwood_trunk_find}
             spawn: {object: driftwood_trunk, into: self}
+            add: {agent: {skill_woodwork: 1}}
           # 出くわす獣（収穫ではないので、単独で出る）
           - weight: {prop: rat_find}
             spawn: {object: rat, into: self}
+            add: {agent: {skill_hunting: 1}}
           - weight: {prop: monkey_find}
             spawn: {object: monkey, into: self}
+            add: {agent: {skill_hunting: 1}}
           # 2個
           # 漂着物。ヤシの実は海を渡って流れ着くので、ヤシの生えない崖下にも寄る。
           - weight: 12
             spawn:
               - {object: coconut, into: self}
               - {object: thick_branch, into: self}
+            add: {agent: {skill_cordage: 1}}
           - weight: 25
             spawn: {object: stone, count: 2, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 17
             spawn:
               - {object: stone, into: self}
               - {object: thick_branch, into: self}
+            add: {agent: {skill_knapping: 1}}
           # 3個
           - weight: 8
             spawn:
               - {object: stone, count: 2, into: self}
               - {object: thick_branch, into: self}
+            add: {agent: {skill_knapping: 1}}
 
   # 草原。見通しがよく歩きやすい。食べられる野草と水場に恵まれる。
   grassland:
@@ -531,8 +560,10 @@ object_defs:
           # 出くわす獣（収穫ではないので、単独で出る）
           - weight: {prop: rat_find}
             spawn: {object: rat, into: self}
+            add: {agent: {skill_hunting: 1}}
           - weight: {prop: junglefowl_find}
             spawn: {object: junglefowl, into: self}
+            add: {agent: {skill_hunting: 1}}
           # 2個
           - weight: 18
             spawn: {object: water_spinach, count: 2, into: self}
@@ -616,21 +647,26 @@ object_defs:
           # 出くわす獣（収穫ではないので、単独で出る）
           - weight: {prop: rat_find}
             spawn: {object: rat, into: self}
+            add: {agent: {skill_hunting: 1}}
           - weight: {prop: monkey_find}
             spawn: {object: monkey, into: self}
+            add: {agent: {skill_hunting: 1}}
           - weight: {prop: wild_boar_find}
             spawn: {object: wild_boar, into: self}
+            add: {agent: {skill_hunting: 1}}
           # 2個
           - weight: {prop: tree_find}
             spawn:
               - {object: broadleaf_tree, into: self}
               - {object: twig, into: self}
+            add: {agent: {skill_woodwork: 1}}
           # **若木も2個の候補として置く**（広葉樹と同じ形）。1個の候補にすると、1回あたりの平均個数
           # （約2個）がそのぶん下がる。
           - weight: {prop: sapling_find}
             spawn:
               - {object: sapling, into: self}
               - {object: twig, into: self}
+            add: {agent: {skill_woodwork: 1}}
           - weight: 20
             spawn: {object: twig, count: 2, into: self}
           - weight: 15
@@ -645,6 +681,7 @@ object_defs:
             spawn:
               - {object: banana_plant, into: self}
               - {object: twig, into: self}
+            add: {agent: {skill_cordage: 1}}
           # 粘土（pottery.yaml）。草地と同じ扱い。
           - weight: 12
             spawn: {object: clay, count: 2, into: self}
@@ -707,33 +744,42 @@ object_defs:
           # 1個
           - weight: {prop: palm_find}
             spawn: {object: palm_tree, into: self}
+            add: {agent: {skill_cordage: 1}}
           - weight: {prop: taro_find}
             spawn: {object: taro, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
           - weight: {prop: rat_find}
             spawn: {object: rat, into: self}
+            add: {agent: {skill_hunting: 1}}
           - weight: {prop: junglefowl_find}
             spawn: {object: junglefowl, into: self}
+            add: {agent: {skill_hunting: 1}}
           - weight: {prop: monkey_find}
             spawn: {object: monkey, into: self}
+            add: {agent: {skill_hunting: 1}}
           - weight: {prop: wild_boar_find}
             spawn: {object: wild_boar, into: self}
+            add: {agent: {skill_hunting: 1}}
           # 2個
           - weight: {prop: tree_find}
             spawn:
               - {object: broadleaf_tree, into: self}
               - {object: twig, into: self}
+            add: {agent: {skill_woodwork: 1}}
           # 森と同じく2個の候補（森のsapling_find参照）。
           - weight: {prop: sapling_find}
             spawn:
               - {object: sapling, into: self}
               - {object: twig, into: self}
+            add: {agent: {skill_woodwork: 1}}
           - weight: 17
             spawn:
               - {object: twig, into: self}
               - {object: coconut, into: self}
+            add: {agent: {skill_cordage: 1}}
           - weight: 15
             spawn: {object: coconut, count: 2, into: self}
+            add: {agent: {skill_cordage: 1}}
           - weight: 13
             spawn:
               - {object: twig, into: self}
@@ -742,10 +788,12 @@ object_defs:
             spawn:
               - {object: abaca, into: self}
               - {object: twig, into: self}
+            add: {agent: {skill_cordage: 1}}
           - weight: 10
             spawn:
               - {object: banana_plant, into: self}
               - {object: twig, into: self}
+            add: {agent: {skill_cordage: 1}}
           # 粘土（pottery.yaml）。草地と同じ扱い。
           - weight: 10
             spawn: {object: clay, count: 2, into: self}
@@ -755,10 +803,12 @@ object_defs:
               - {object: twig, into: self}
               - {object: coconut, into: self}
               - {object: water_spinach, into: self}
+            add: {agent: {skill_cordage: 1}}
           - weight: 12
             spawn:
               - {object: coconut, count: 2, into: self}
               - {object: taro, into: self}
+            add: {agent: {skill_cordage: 1}}
 
   # 岩場。ごろごろした岩の間に、石材と洞窟が見つかる。
   rocky_field:
@@ -803,13 +853,16 @@ object_defs:
           # 出くわす獣（収穫ではないので、単独で出る）
           - weight: {prop: rat_find}
             spawn: {object: rat, into: self}
+            add: {agent: {skill_hunting: 1}}
           # 2個
           - weight: 22
             spawn: {object: stone, count: 2, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 15
             spawn:
               - {object: stone, into: self}
               - {object: twig, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 8
             spawn: {object: twig, count: 2, into: self}
           # 3個
@@ -817,8 +870,10 @@ object_defs:
             spawn:
               - {object: stone, count: 2, into: self}
               - {object: twig, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 10
             spawn: {object: stone, count: 3, into: self}
+            add: {agent: {skill_knapping: 1}}
 
   # 荒野。乾いてひび割れた不毛の土地。得られるものは少ない。
   wasteland:
@@ -854,18 +909,22 @@ object_defs:
           # 1個
           - weight: {prop: stone_find}
             spawn: {object: stone, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: {prop: wood_find}
             spawn: {object: twig, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
           - weight: {prop: rat_find}
             spawn: {object: rat, into: self}
+            add: {agent: {skill_hunting: 1}}
           # 2個
           - weight: 25
             spawn: {object: stone, count: 2, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 17
             spawn:
               - {object: stone, into: self}
               - {object: twig, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 12
             spawn:
               - {object: dry_grass, into: self}
@@ -875,6 +934,7 @@ object_defs:
             spawn:
               - {object: stone, count: 2, into: self}
               - {object: twig, into: self}
+            add: {agent: {skill_knapping: 1}}
 
   # 山腹。山の中腹の斜面。石と小枝のほか、洞窟の入口が見つかりやすい。
   mountainside:
@@ -922,13 +982,16 @@ object_defs:
           # 出くわす獣（収穫ではないので、単独で出る）
           - weight: {prop: rat_find}
             spawn: {object: rat, into: self}
+            add: {agent: {skill_hunting: 1}}
           # 2個
           - weight: 20
             spawn: {object: stone, count: 2, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 15
             spawn:
               - {object: stone, into: self}
               - {object: twig, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 10
             spawn: {object: twig, count: 2, into: self}
           # 3個
@@ -936,11 +999,13 @@ object_defs:
             spawn:
               - {object: stone, count: 2, into: self}
               - {object: twig, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 12
             spawn:
               - {object: stone, into: self}
               - {object: twig, into: self}
               - {object: berry_bush, into: self}
+            add: {agent: {skill_knapping: 1}}
 
   # 山頂。島で最も高い場所。風が強く得られるものは少ないが、**ここからだけ海図が書ける**
   # （GameEndings.md 9.1節の「山頂からの視認」）。
@@ -987,16 +1052,21 @@ object_defs:
             spawn: {object: shallow_cave, into: self}
           - weight: 25
             spawn: {object: stone, into: self}
+            add: {agent: {skill_knapping: 1}}
           # 出くわす獣（収穫ではないので、単独で出る）
           - weight: {prop: rat_find}
             spawn: {object: rat, into: self}
+            add: {agent: {skill_hunting: 1}}
           # 2個
           - weight: 30
             spawn: {object: stone, count: 2, into: self}
+            add: {agent: {skill_knapping: 1}}
           - weight: 12
             spawn:
               - {object: shallow_cave, into: self}
               - {object: stone, into: self}
+            add: {agent: {skill_knapping: 1}}
           # 3個
           - weight: 8
             spawn: {object: stone, count: 3, into: self}
+            add: {agent: {skill_knapping: 1}}
