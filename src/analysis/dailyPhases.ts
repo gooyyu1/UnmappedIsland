@@ -174,7 +174,7 @@ export const WORK_PILES: readonly WorkPile[] = [
   { system: 6, label: '石鏃の槍', amount: 1 },
   { system: 6, label: '青銅の穂先', amount: 2 },
   { system: 7, label: 'なめし革の背負い袋', amount: 1 },
-  { system: 7, label: 'そり', amount: 2 },
+  { system: 7, label: 'そり', amount: { object: 'sledge' } },
   { system: 8, label: 'なめし革の一式', amount: { object: 'tanned_leather_clothing' } },
   { system: 9, label: '高床の寝台', amount: 1.5 },
   { system: 9, label: '詰め物', amount: 1 },

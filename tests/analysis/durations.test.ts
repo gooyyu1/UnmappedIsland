@@ -230,7 +230,10 @@ object_defs:
     expect(found('salted_fish')).toMatchObject({ days: 20, shortestDays: 960 / 1.5 / 96 });
   });
 
-  it('使うたびに減る値は、日の列には現れない', () => {
+  it('使ってはじめて減る値は、日の列には現れない', () => {
+    // **「道具は日の列に出ない」ではない。** 時間でも減る道具は日の列にも出る（同梱の石斧は屋外で
+    // 100日、docs/engine/DurabilitySystem.md 2節）——出ているのは時間の側の減りで、使うたびの減りが
+    // 日数へ化けたのではない。ここの石斧は時間では1も減らないフィクスチャなので、列に出る理由が無い。
     expect(durationsOf(codex).map((duration) => duration.objectName)).not.toContain('stone_axe');
   });
 });

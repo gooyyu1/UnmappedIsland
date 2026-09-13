@@ -8,7 +8,7 @@ import type { CardLane } from './CardLane';
 import { flightProgress } from '../looks/cardFlight';
 import { SCREEN_DEPTH } from '../looks/screenDepth';
 import { DustPuff } from './DustPuff';
-import type { PlacedCard } from '../view/cardMotionPlan';
+import type { PlacedCard, PlannedLunge } from '../view/cardMotionPlan';
 import { planMotion } from '../view/cardMotionPlan';
 import { REPEAT_MIN_MS } from '../../ui/holdRepeat';
 import type { LaneCell } from './laneCells';
@@ -53,6 +53,12 @@ export interface MotionContext {
    */
   readonly vanished?: readonly number[];
   readonly born?: readonly number[];
+  /**
+   * 突進した個体と、手を出した相手の候補（changedInstances.lungeTargetsByInstance、
+   * HuntingSystem.md 6.1節）。相手を選ぶのも矩形に直すのも計画の側——突き当たる先は差し替え前の
+   * 並びにしか無い。
+   */
+  readonly lunges?: ReadonlyMap<number, readonly number[]>;
 }
 
 /** 飛んでいる途中の便を外から止める手立て（運んでいた札を掴み直したときなど）。 */
@@ -81,6 +87,27 @@ interface Flight {
   /** 飛び立つまで出発点で待つ時間（進み具合の引き方はcardFlight）。 */
   delay: number;
   raisesDust: boolean;
+}
+
+/**
+ * 1つの突進——相手の枠まで行き、突き当たり、自分の枠へ帰る実体の札（HuntingSystem.md 6.1節）。
+ * 帰り先は差し替えのたびに引き直す（landings）ので、往復の途中に世界が変わっても迷子にならない。
+ */
+interface Lunge {
+  readonly card: Card;
+  readonly id: number;
+  /** 帰って合流する枠の札と、その枠。 */
+  into: Card;
+  home: Rect;
+  readonly to: Rect;
+  /** 今の脚の始点。帰り先が引き直されたら、今いる場所から測り直す（便のfromX/fromYと同じ）。 */
+  legFrom: Rect;
+  /** 突き当たるまで出したままにしておく相手の札。 */
+  struck: Card | undefined;
+  readonly raisesDust: boolean;
+  /** 今の脚が帰りかどうかと、その脚が始まってからの経過。 */
+  returning: boolean;
+  elapsed: number;
 }
 
 /** レーンの枠に居ない自由な札（落とした札・時間のかかる操作の間そこに置いたままの札）。 */
@@ -118,6 +145,7 @@ export class CardTable {
 
   private readonly flights: Flight[] = [];
   private readonly freed: FreedCard[] = [];
+  private readonly lunges: Lunge[] = [];
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics) {
     this.scene = scene;
@@ -134,6 +162,11 @@ export class CardTable {
     this.flights.length = 0;
     for (const freed of this.freed) freed.card.destroy();
     this.freed.length = 0;
+    for (const lunge of this.lunges) {
+      lunge.card.destroy();
+      lunge.struck?.destroy();
+    }
+    this.lunges.length = 0;
   }
 
   /** 各レーンの内容を差し替え、出入りするカードを動かす。 */
@@ -146,6 +179,7 @@ export class CardTable {
     const aloft = [
       ...this.flights.flatMap((flight) => flight.ids),
       ...this.freed.flatMap((freed) => freed.ids),
+      ...this.lunges.map((lunge) => lunge.id),
     ];
 
     // 引き直すのはこの時点で既に飛んでいる便だけ。この差し替え自身が立てる便は、この計画が
@@ -177,6 +211,7 @@ export class CardTable {
       aloft,
       vanished: context.vanished,
       born: context.born,
+      lunges: context.lunges,
     });
 
     for (const { card, present, emptied } of plan.shown) card.setPresence(present, emptied);
@@ -200,11 +235,59 @@ export class CardTable {
         raisesDust: flight.raisesDust,
       });
     }
+    for (const planned of plan.lunges) this.beginLunge(planned);
     for (const card of plan.fadeIns) card.appear(firstShow);
     for (const card of plan.discards) card.destroy();
 
     // 飛んでいる途中の便と置いてある札は、行き先を引き直す（世界が変わって帰り先も変わりうる）。
     this.retarget(preexisting, plan.landings, context);
+  }
+
+  /**
+   * 突進を1つ始める。**飛ぶのは実体の札の複製**で、元の枠の札は突進の間その個体を名乗らない
+   * （plan.shown）。突き当たられる相手の札は、レーンから外された姿のまま枠の外へ引き取って、
+   * 着くまでその場に出しておく。
+   */
+  private beginLunge(planned: PlannedLunge<Card, Rect>): void {
+    const card = new Card(this.scene, this.metrics, planned.from.x, planned.from.y, {
+      ...cardFace(planned.into.content),
+      identity: [planned.id],
+    });
+    this.layer.add(card);
+
+    const struck = planned.struck;
+    if (struck !== undefined) {
+      this.layer.add(struck);
+      struck.setPosition(planned.to.x, planned.to.y);
+    }
+
+    this.lunges.push({
+      card,
+      id: planned.id,
+      into: planned.into,
+      home: planned.home,
+      to: planned.to,
+      legFrom: planned.from,
+      struck,
+      raisesDust: planned.raisesDust,
+      returning: false,
+      elapsed: 0,
+    });
+  }
+
+  /**
+   * 突進を終わらせる（帰り着いた枠の札へ合流する）。**突き当たる前に打ち切ったなら、相手の消滅は
+   * その場で見せる**——見せ損ねると、札だけが黙って消える。
+   */
+  private endLunge(lunge: Lunge, arrived: boolean): void {
+    const index = this.lunges.indexOf(lunge);
+    if (index < 0) return;
+
+    this.lunges.splice(index, 1);
+    if (!lunge.returning && lunge.raisesDust) this.dust.burst(lunge.to);
+    lunge.struck?.destroy();
+    if (arrived) lunge.into.absorbReturnedIds([lunge.id]);
+    lunge.card.destroy();
   }
 
   /** 差し替えの結果に合わせて、宙に在る札の行き先を引き直す。 */
@@ -236,6 +319,25 @@ export class CardTable {
       flight.fromX = flight.card.x;
       flight.fromY = flight.card.y;
       flight.elapsed = flight.delay;
+    }
+
+    // 突進している札の帰り先も引き直す。帰る枠が無くなっていれば（自分も世界から出た・別の土地へ
+    // 移った）、そこで打ち切る。
+    for (const lunge of [...this.lunges]) {
+      const landing = landings.get(lunge.id);
+      if (landing === undefined) {
+        this.endLunge(lunge, false);
+        continue;
+      }
+      lunge.into = landing.into;
+      if (landing.to.x === lunge.home.x && landing.to.y === lunge.home.y) continue;
+
+      lunge.home = landing.to;
+      // 帰りの途中で帰り先が動いたら、今いる場所から測り直す（便が向き直るのと同じ、retarget）。
+      if (lunge.returning) {
+        lunge.legFrom = lunge.card.rect;
+        lunge.elapsed = 0;
+      }
     }
 
     for (const freed of [...this.freed]) {
@@ -350,6 +452,31 @@ export class CardTable {
       );
       if (progress >= 1) this.land(flight);
     }
+    for (const lunge of [...this.lunges]) this.stepLunge(lunge, delta);
+  }
+
+  /**
+   * 突進を1コマ進める。行きの脚が着いた時点が「突き当たった」瞬間で、そこで相手の札を片付けて
+   * 砂埃を立て、向きを返す。帰りの脚が着けば元の枠へ合流する。
+   */
+  private stepLunge(lunge: Lunge, delta: number): void {
+    lunge.elapsed += delta;
+    const from = lunge.legFrom;
+    const to = lunge.returning ? lunge.home : lunge.to;
+    const progress = flightProgress(lunge.elapsed, 0);
+    lunge.card.setPosition(from.x + (to.x - from.x) * progress, from.y + (to.y - from.y) * progress);
+    if (progress < 1) return;
+
+    if (lunge.returning) {
+      this.endLunge(lunge, true);
+      return;
+    }
+    lunge.struck?.destroy();
+    lunge.struck = undefined;
+    if (lunge.raisesDust) this.dust.burst(lunge.to);
+    lunge.returning = true;
+    lunge.legFrom = lunge.to;
+    lunge.elapsed = 0;
   }
 
   /** 1つの便を終わらせる（着いた枠の札へ合流し、実体は行き先の札に引き継ぐ）。 */

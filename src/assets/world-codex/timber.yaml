@@ -26,10 +26,13 @@ object_defs:
         trigger: {drag: {tag: chopping_tool}}
         duration: 240
         conditions:
+          # **1本ぶんの余力（下のadd と同じ120）が残っていなければ始められない。** 尽きた刃で
+          # 始めても倒し切れないうえ、0へ届いた刃は折れて無くなる（weathering.yaml の on_min）ので、
+          # 「余力0の斧」という状態はそもそも在れない——線は1回ぶんの手前に引く。
           - reason: too_worn
             subject: instrument
             prop: durability
-            gt: 0
+            gte: 120
           # 受け口を見ながら斧を同じ傷へ入れ続ける屋外の行動なので、見るのは視界の側
           # （docs/engine/IlluminationSystem.md 5節）。倒れる向きも見えていなければ決められない。
           - reason: too_dark
@@ -99,10 +102,13 @@ object_defs:
       buck:
         trigger: {drag: {tag: chopping_tool}}
         conditions:
+          # 1回ぶんの余力（下のadd と同じ60）が残っていなければ始められない（fell と同じ線の引き方）。
+          # **倒せなくなった斧でも玉切りはできる**——要る余力が半分なので、刃の終わりぎわに使い道が
+          # 1つ残る。
           - reason: too_worn
             subject: instrument
             prop: durability
-            gt: 0
+            gte: 60
           # 木目を読みながら刃を同じ傷へ入れ続ける屋外の行動なので、見るのは視界の側
           # （docs/engine/IlluminationSystem.md 5節）。
           - reason: too_dark

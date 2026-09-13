@@ -25,8 +25,12 @@ import type { PropertyGlobalId } from '../domain/GlobalId';
  * 置いておくだけでは起こらない（{@link rangeCyclesOf} に`neighbors`を渡さないことがそのまま線に
  * なる）。これを寿命と呼ぶと、火にかけていない肉まで勝手に焼け落ちることになる。
  *
- * **時間では減らず、使うたびに減る値は日で数えない**（{@link toolWearsOf}）。斧が何日で壊れるかは
- * 振り続けた場合の労働時間でしかなく、肉が腐るまでの10日と同じ軸には置けない。
+ * **使うたびに減る値は日で数えない**（{@link toolWearsOf}）。斧が何回で壊れるかは振り続けた場合の
+ * 労働時間でしかなく、肉が腐るまでの10日と同じ軸には置けない。
+ *
+ * **同じ値が両方の列に出ることはある。** 屋外で朽ちる速さと、振るたびに欠ける量は独立した増減
+ * （`GameElementDefinition.md` 8.4節）で、石斧はどちらでも尽きる——**どちらが先に来るかは使い方が
+ * 決める**ので、片方を落とすと残ったほうが寿命そのものに見える。
  */
 
 /** 日の列に載る下限。これに満たない長さは1日の中で回るものとして落とす。 */
@@ -64,8 +68,11 @@ export interface Duration {
 }
 
 /**
- * 使ってはじめて減る値が尽きるまで1件。減るのは工程1回につき一定量なので、長さは**回数**で出る
+ * 使うたびに減る値が尽きるまで1件。減るのは工程1回につき一定量なので、長さは**回数**で出る
  * ——時間へ直すには「他に何もせず使い続ける」と置くほかなく、それは経過時間ではなく労働時間になる。
+ *
+ * **時間でも減る物を落とさない。** 石斧は屋外で100日かけて朽ちるが、木を8本倒せばその前に壊れる
+ * ——日の列だけを見ると、使い方に依らない寿命が在るように読める。
  */
 export interface ToolWear {
   /** 減る側の型。その工程が消費せずに要求する物＝道具。 */
@@ -115,7 +122,8 @@ export function durationsOf(codex: WorldCodex): readonly Duration[] {
  *
  * 拾うのは、**工程が自分以外の物の値を減らし、その物をその工程が消費しない**場合。消費しないから
  * 道具で、自分以外だから借り物——斧を木へ、槍を獲物へ持って行くときの減りがこれにあたる。
- * 時間でも減る値（罠が地面で朽ちる耐久）は日の列（{@link durationsOf}）が持つので、ここでは飛ばす。
+ * 時間でも減る物も拾う——石斧は屋外で朽ちる日数（{@link durationsOf}）と、振って欠ける回数の
+ * 両方で尽きる。どちらが先に来るかは使い方が決めるので、片方だけを載せることはしない。
  */
 export function toolWearsOf(codex: WorldCodex): readonly ToolWear[] {
   const found: ToolWear[] = [];
@@ -138,9 +146,6 @@ function toolWearsIn(codex: WorldCodex, step: CraftingStep): readonly ToolWear[]
     for (const tool of toolsIn(codex, step)) {
       const propertyDef = tool.tryGetPropertyDef(propertyGlobalId);
       if (propertyDef === undefined) continue;
-
-      // 時間でも減るなら、その物の寿命は使い方に依らない——日の列が答える。
-      if (rangeCyclesOf(tool).some((cycle) => cycle.propertyGlobalId === propertyGlobalId)) continue;
 
       const value = staticValueOf(tool, propertyGlobalId, 'lowest');
       if (value === undefined) continue;
