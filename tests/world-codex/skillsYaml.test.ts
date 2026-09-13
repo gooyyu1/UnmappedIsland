@@ -48,8 +48,26 @@ const STAGES = [
   { name: 'expert', min: 180 },
 ] as const;
 
-/** 1回の作業で伸びる量（SkillSystem.md 3節の実行経路）。作業の長さに依らず一律。 */
-const GAIN_PER_ACTION = 2;
+/**
+ * 1回の作業で伸びる量の刻み（SkillSystem.md 3節の実行経路）。**この分数につき1**を、端数は切り上げて
+ * 配る——一律にすると、同じ量が15分の手にも240分の手にも届く。
+ */
+const MINUTES_PER_GAIN = 30;
+
+/**
+ * 上の刻みが保つ、腕が時間あたりに伸びる速さの幅（SkillSystem.md 3節）。整数で配るので端数は切り上がり、
+ * ちょうど刻みどおりの操作で`min`、短い操作ほど`max`へ寄る。**`max`に当たるのが15分**で、それより短い
+ * 操作へ配ると跳ねる。
+ *
+ * **`shortest`は、手際で縮みきったときの上端**（時間を名乗るプロパティの`range.min`で見る）。手際は
+ * 分の絶対値を引くので**短い手作業ほど比では大きく縮み**、腕が上がるほど時間あたりは上がる
+ * ——このずれを均さないのは docs/world/Skills.md 7節が決めていることなので、消すのではなく上端を置く。
+ *
+ * **`min`だけは単独では破れない**——量が`ceil(分/30)`である限り時間あたりは必ず2以上になるので、量の
+ * 規則を先に破らないとここへ来ない。それでも書くのは、**守りたいのが幅そのもの**で、量の規則はその
+ * 書き方でしかないから（規則を変えたときに、幅が生き残っているかをここが見る）。
+ */
+const GAIN_PER_HOUR = { min: 2, max: 4, shortest: 6 } as const;
 
 /**
  * アクセス系の腕（Skills.md 2節）と、その段が押し上げる上乗せ（同5節）。レシピを開けない腕なので、
@@ -132,16 +150,18 @@ function walkAgentSkillGains(node: unknown, visit: (skillName: string, amount: n
   walk(node, 'none');
 }
 
-/** 定義ファイルが `add` で `agent` の腕前へ配っている量を、腕ごとに集める。 */
-function declaredSkillGains(): ReadonlyMap<string, ReadonlySet<number>> {
-  const gains = new Map<string, Set<number>>();
+/**
+ * 定義ファイルのどこかで `add` が `agent` へ配っている腕の名前。**量はここでは持たない**——量が
+ * 正しいかは操作の長さと突き合わせないと言えないので、操作ごとに引ける側（`InteractionGains.gains`）が
+ * 持つ。
+ */
+function skillsWithGains(): ReadonlySet<string> {
+  const skills = new Set<string>();
   for (const path of worldCodexYamlPaths())
-    walkAgentSkillGains(parseDocument(readFileSync(path, 'utf8')).contents, (skillName, amount) => {
-      const amounts = gains.get(skillName);
-      if (amounts === undefined) gains.set(skillName, new Set([amount]));
-      else amounts.add(amount);
+    walkAgentSkillGains(parseDocument(readFileSync(path, 'utf8')).contents, (skillName) => {
+      skills.add(skillName);
     });
-  return gains;
+  return skills;
 }
 
 /**
@@ -507,10 +527,17 @@ interface InteractionGains {
   /** その操作が`spawn`で出す型の名前（`pick`の候補の中のものも含む）。 */
   readonly products: readonly string[];
   readonly skills: readonly string[];
+  /**
+   * その操作が`agent`の腕前へ配っている量。**`pick`の候補へ埋めたものも数える**（SkillSystem.md
+   * 3.3節の発見の契機はそこへ書く）ので、上の`skills`とは件数が揃わないことがある。
+   */
+  readonly gains: readonly number[];
   /** 相手へ重ねて始まる操作か（`trigger`が`drag`）。 */
   readonly needsInstrument: boolean;
   /** `duration` が読んでいるプロパティの名前。リテラルの分数で書いていればundefined。 */
   readonly durationProp: string | undefined;
+  /** `duration` にリテラルで書いた分数。プロパティを読んでいればundefined。 */
+  readonly durationLiteral: number | undefined;
   /** その操作が `{subject: agent, prop: ...}` で読んでいるもの（余分の卓の重みもここに出る）。 */
   readonly agentReads: readonly string[];
 }
@@ -570,14 +597,18 @@ function declaredInteractions(): readonly InteractionGains[] {
         const durationProp = isMap(duration) ? duration.get('prop', true) : undefined;
 
         const trigger = body.get('trigger', true);
+        const gains: number[] = [];
+        walkAgentSkillGains(body, (_skillName, amount) => gains.push(amount));
 
         found.push({
           owner,
           name: isScalar(entry.key) ? String(entry.key.value) : '',
           products: [...products].sort(),
           skills: skills.sort(),
+          gains,
           needsInstrument: isMap(trigger) && trigger.get('drag', true) !== undefined,
           durationProp: isScalar(durationProp) ? String(durationProp.value) : undefined,
+          durationLiteral: isScalar(duration) ? Number(duration.value) : undefined,
           agentReads: [...agentReads].sort(),
         });
       }
@@ -811,7 +842,7 @@ describe('腕前とレシピの解放条件', () => {
 
   it('解放条件が名指しする腕には、それを伸ばす操作がある（永久に開かないレシピを作らない）', () => {
     // SkillSystem.md 3.2節のブートストラップ。
-    const gains = declaredSkillGains();
+    const gains = skillsWithGains();
 
     for (const { product, recipe } of gatedRecipes())
       for (const skillName of requiredSkills(product, recipe))
@@ -925,7 +956,7 @@ describe('腕前とレシピの解放条件', () => {
     // **アクセス系も同じくここで落ちる**（CRAFTING_BONUSESに無いので）。火の腕が決めるのは着火の
     // 重みだけで、火起こし具を削る速さではない（同5節）。
     const skillOfBonus = new Map<string, string>(CRAFTING_BONUSES.map((entry) => [entry.bonus, entry.skill]));
-    const gains = declaredSkillGains();
+    const gains = skillsWithGains();
 
     expect(
       allRecipes()
@@ -972,6 +1003,25 @@ describe('腕前とレシピの解放条件', () => {
     return interaction.durationProp === undefined
       ? undefined
       : props.get(interaction.owner)?.get(interaction.durationProp);
+  }
+
+  /** 腕前へ配っている操作だけ。 */
+  function gainingInteractions(): readonly InteractionGains[] {
+    return declaredInteractions().filter((interaction) => interaction.gains.length > 0);
+  }
+
+  /**
+   * その操作が宣言している素の分数（読めなければundefined）。**手際で縮む前の値**で、規則
+   * （SkillSystem.md 3節）が量を決める土台はこちら。縮んだ側は`range.min`で別に見る
+   * （GAIN_PER_HOURの注記）。
+   */
+  function declaredMinutes(
+    interaction: InteractionGains,
+    props: ReadonlyMap<string, ReadonlyMap<string, unknown>>,
+  ): number | undefined {
+    if (interaction.durationLiteral !== undefined) return interaction.durationLiteral;
+    const body = durationPropBody(interaction, props);
+    return body === undefined ? undefined : declaredValueOf(body);
   }
 
   /** その手作業を、11本すべてがその値の人が行うときの所要時間（分）。 */
@@ -1080,11 +1130,69 @@ describe('腕前とレシピの解放条件', () => {
     expect(drawn, '余分の卓を引く手作業が1つも無い').toBeGreaterThan(0);
   });
 
-  it('腕を配る操作は、作業の長さに依らず一律の量を配る', () => {
-    // 量を作業ごとに変えると、短い作業を繰り返すのが最も速い伸ばし方になる。繰り返しの稼ぎを
-    // 抑えるのは時間のコストだけ（SkillSystem.md 7節）。
-    for (const [skillName, amounts] of declaredSkillGains())
-      expect([...amounts], `${skillName} が配る量`).toEqual([GAIN_PER_ACTION]);
+  it('腕を配る量は、その操作の長さから決まる（30分につき1、端数は切り上げ）', () => {
+    // SkillSystem.md 3節。**一律にすると、同じ量が15分の手にも240分の手にも届く**ので、短い手を
+    // 繰り返すのが最も速い伸ばし方になり、繰り返しの稼ぎを抑える時間のコスト（同7節）が
+    // そこだけ効かない。長さから決めれば、抑止はどの手にも同じだけ掛かる。
+    //
+    // **見るのは宣言した素の分数**（declaredMinutes）。
+    const props = declaredPropsByDef();
+    let checked = 0;
+
+    for (const interaction of gainingInteractions()) {
+      const where = `${interaction.owner} の ${interaction.name}`;
+      const minutes = declaredMinutes(interaction, props);
+      expect(minutes, `${where}: 所要時間が読めない`).toBeDefined();
+      const expected = Math.ceil(minutes! / MINUTES_PER_GAIN);
+      for (const amount of interaction.gains) {
+        checked += 1;
+        expect(amount, `${where}（${minutes}分）が配る量`).toBe(expected);
+      }
+    }
+
+    expect(checked, '腕を配る操作が1つも無い').toBeGreaterThan(0);
+  });
+
+  it('腕が時間あたりに伸びる速さは、どの操作でも同じ幅に収まる', () => {
+    // 一つ上は**長さとの対応しか見ない**ので、`ceil`が丸め上げるぶんは素通りする——1分の操作へ
+    // 1を配れば規則どおりだが、時間あたりは60になる。**守りたいのは速さのほう**（SkillSystem.md
+    // 3節）なので、そこはここで留める。**操作を数え上げない**ので、次に足された操作も同じ幅を
+    // 要求される。
+    //
+    // **縮みきった側も見る**——手際は分の絶対値を引くので、素の分数だけを見ていると、腕が上がった
+    // 後で短い手作業だけが跳ねるのを見逃す（GAIN_PER_HOUR.shortestの注記）。
+    const props = declaredPropsByDef();
+
+    for (const interaction of gainingInteractions()) {
+      const minutes = declaredMinutes(interaction, props);
+      const shortest = declaredRangeOf(durationPropBody(interaction, props))?.min ?? minutes!;
+      for (const amount of interaction.gains) {
+        const where = `${interaction.owner} の ${interaction.name}（${minutes}分に${amount}）`;
+        const perHour = (amount * 60) / minutes!;
+        expect(perHour, `${where}: 時間あたりが速すぎる`).toBeLessThanOrEqual(GAIN_PER_HOUR.max);
+        expect(perHour, `${where}: 時間あたりが遅すぎる`).toBeGreaterThanOrEqual(GAIN_PER_HOUR.min);
+        expect(
+          (amount * 60) / shortest,
+          `${where}: 手際で${shortest}分まで縮んだとき、時間あたりが速すぎる`,
+        ).toBeLessThanOrEqual(GAIN_PER_HOUR.shortest);
+      }
+    }
+  });
+
+  it('腕を配る `add` は、長さを持つ操作の中にしかない', () => {
+    // 上2つは`interactions`の中しか見ないので、**外へ出た`add`は幅の外側で伸ばせる**——`passives`へ
+    // 置けばtick毎に配れてしまい、3節が「tickごとの自然増加は持たせない」と言っているものになる。
+    // 件数で突き合わせるのは、外に在るものを名指しで数えると数え上げになるため。
+    let total = 0;
+    for (const path of worldCodexYamlPaths())
+      walkAgentSkillGains(parseDocument(readFileSync(path, 'utf8')).contents, () => {
+        total += 1;
+      });
+
+    expect(
+      declaredInteractions().reduce((sum, interaction) => sum + interaction.gains.length, 0),
+      '操作の外で腕前へ配っている `add` がある',
+    ).toBe(total);
   });
 
   it('腕を配る操作は、物を出すか相手を要する（腕だけが伸びる操作を置かない）', () => {
@@ -1123,12 +1231,24 @@ describe('腕前とレシピの解放条件', () => {
 
     const shared = [...byProduct].filter(([, group]) => group.length > 1);
     expect(shared.length, '出す物が同じ操作の組が1つも無い').toBeGreaterThan(0);
+    const props = declaredPropsByDef();
 
     for (const [products, group] of shared) {
       const where = `'${products}' を出す ${group.map((i) => i.name).join('・')}`;
       expect(
         new Set(group.map((interaction) => interaction.skills.join(','))).size,
         `${where} で、配る腕が食い違う`,
+      ).toBe(1);
+      // **1回に配る量は揃わない**——長さで決まるので、長くかかる入口ほど多い（SkillSystem.md 3節）。
+      // 化けないのは**時間あたりが等しい**からで、そこはこの組の中では幅（一つ上の検査）ではなく
+      // 一致を要る。片方だけが刻みの端に乗ると、同じ仕事なのに島で伸びが変わる。
+      expect(
+        new Set(
+          group.map((interaction) =>
+            interaction.gains.map((amount) => (amount * 60) / declaredMinutes(interaction, props)!).join(','),
+          ),
+        ).size,
+        `${where} で、時間あたりの伸びが食い違う`,
       ).toBe(1);
       // **余分の卓も揃える**（docs/world/Skills.md 7節）。片方だけが余分を出すと、配る腕を揃えた
       // のと同じ理由で、どの島に流れ着いたかが歩留まりに化ける。卓は`pick`の重みとして書くので、
@@ -1150,7 +1270,7 @@ describe('腕前とレシピの解放条件', () => {
     //
     // **料理はここに居ない。** 開けるレシピはまだ無いが、伸ばす操作（foods.yamlのchop）が先に
     // 入った——この2つは別の軸で、伸ばす操作が在れば手際の積む先も在る（Skills.md 7節）。
-    const gains = declaredSkillGains();
+    const gains = skillsWithGains();
 
     expect(SKILLS.filter((name) => !gains.has(name))).toEqual([
       'skill_joinery',
@@ -1170,7 +1290,7 @@ describe('腕前とレシピの解放条件', () => {
     //
     // **数えるのは、読まれている上乗せだけ**——宣言しただけで誰も読まないものを数えると、
     // 「動いても何も起きない」をそのまま通してしまう。
-    const gains = declaredSkillGains();
+    const gains = skillsWithGains();
     const read = propsReadFromAgent();
     const effective = new Set<string>([
       ...[...read].filter((name) => name.startsWith(SKILL_PREFIX)),
@@ -1186,7 +1306,7 @@ describe('腕前とレシピの解放条件', () => {
     // 一つ上は「効き先が1つでもあるか」なので、**製作系は解放条件に名前が出るだけで通ってしまう**
     // ——そこを通すと、解放しか効かない腕（Skills.md 6節が【確定】で否定した形）へ黙って戻れる。
     // 上乗せの側が読まれていることは、ここだけが見ている。
-    const gains = declaredSkillGains();
+    const gains = skillsWithGains();
     const read = propsReadFromAgent();
 
     expect(

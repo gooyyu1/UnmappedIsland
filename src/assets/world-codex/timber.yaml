@@ -54,7 +54,7 @@ object_defs:
         # 木材加工は斧より手前から伸び始める。どれも循環しない（同3.2節）。
         add:
           agent:
-            skill_woodwork: 2
+            skill_woodwork: 8
           instrument:
             durability: -120
         # 倒した場所に落ちる。木は中に物を持てないので、`into: self`は必ず親（土地）のアイテム
@@ -131,7 +131,7 @@ object_defs:
         duration: {prop: buck_minutes}
         add:
           agent:
-            skill_woodwork: 2
+            skill_woodwork: 4
           instrument:
             durability: -60
         # **spawnを先に書く**（broadleaf_treeのfellと同じ理由）。

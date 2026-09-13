@@ -91,10 +91,10 @@
 （`src/assets/world-codex/salt.yaml` の `cure`）。
 
 **干し場へ掛けるほうだけを操作にはしません。** 枠へ物を入れる1手には、どの腕も配らないためです
-——伸びる量は作業の長さに依らず一律なので（[`SkillSystem.md`](../engine/SkillSystem.md) 3 節）、1手で
-済む操作へ配ると最も速い伸ばし方になります（`src/assets/world-codex/characters/player_character.yaml`
-の腕前の前書き）。掛けるのだけを例外にすれば、同じ干す行為なのに地面へ並べると伸びず干し場へ掛けると
-伸びる、という差も世界に残ります。
+——伸びる量はその操作の長さから決まるので（[`SkillSystem.md`](../engine/SkillSystem.md) 3 節）、1手で
+済む操作へ配ると時間あたりが跳ね、その規則が保っている幅の外に出ます
+（`src/assets/world-codex/characters/player_character.yaml` の腕前の前書き）。掛けるのだけを例外に
+すれば、同じ干す行為なのに地面へ並べると伸びず干し場へ掛けると伸びる、という差も世界に残ります。
 
 **燻製も同じで、腕を伸ばすのは塩漬けのままです。** 燻し小屋も吊るして待つ設備なので、上の 2 つの
 理由がそのまま当てはまります（[`SurvivalItems.md`](./SurvivalItems.md) 11 節）。**この腕を読むのは

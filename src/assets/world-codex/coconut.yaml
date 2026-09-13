@@ -222,9 +222,10 @@ object_defs:
         trigger: {drag: {object: stone}}
         duration: {prop: ret_minutes}
         # 繊維・編みの腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
-        # characters/player_character.yaml）。**掻き取り（fiber.yamlのstrip）と同じだけ配る**
-        # ——同じ植物繊維を出す2つの入口で、違うのは採れる土地だけ（上のコメント）。
-        add: {agent: {skill_cordage: 2}}
+        # characters/player_character.yaml）。**掻き取り（fiber.yamlのstrip）と時間あたりで揃う**
+        # ——同じ植物繊維を出す2つの入口で、違うのは採れる土地だけ（上のコメント）。1回に配る量は
+        # 長いぶん多いが、かかる時間もそのぶん長いので、**どちらの島でも腕の伸びる速さは同じ**。
+        add: {agent: {skill_cordage: 4}}
         destroy: self
         spawn: {object: plant_fiber, count: 2}
         # 無駄の無さ（docs/world/Skills.md 7節）。**掻き取りと同じ形で同じ刻み**——髄をどこまで叩き

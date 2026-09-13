@@ -57,7 +57,7 @@ object_defs:
         # 燻製も入ったが（drying.yaml・smoking.yaml）、どちらも仕掛けて待つだけで操作を持たないので
         # 腕は伸びない（docs/world/Skills.md 2.4節）。**燻し小屋はこの腕を要求する側**なので、
         # そちらから伸ばして自分を開ける道は無い。
-        add: {agent: {skill_preserving: 2}}
+        add: {agent: {skill_preserving: 1}}
         become: {subject: instrument, cure: salted}
         destroy: self
 

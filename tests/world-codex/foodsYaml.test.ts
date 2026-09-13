@@ -425,19 +425,20 @@ describe('foods.yamlの下ごしらえ', () => {
     expect(chopping(session, player, taro)?.tryExecute(), '尖った石で刻める').toBe(true);
 
     expect(taro.def.name, '同じ個体が刻んだ版になる').toBe('taro__prep_chopped');
-    expect(player.getProperty(skillCookingId).number, '実行経路の+2').toBe(2);
+    expect(player.getProperty(skillCookingId).number, '実行経路の、20分ぶんの+1').toBe(1);
   });
 
   it('二度は刻めない（同じ1つを刻み直して腕を稼げない）', () => {
-    // 伸びる量は作業の長さに依らず一律（SkillSystem.md 3節）なので、ここが開いていると20分の
-    // 刻み直しが最も速い伸ばし方になる。**軸は塞いでくれない**——刻んだ芋にも操作は残り、同じ軸の
-    // 同じ値への`become`は自分自身として解けるので、止めているのはfoods.yamlの条件のほう。
+    // 伸びる量は作業の長さから決まる（SkillSystem.md 3節）が、時間あたりの上端に居る短い操作
+    // なので、ここが開いていると20分の刻み直しが最も速い伸ばし方になる。**軸は塞いでくれない**
+    // ——刻んだ芋にも操作は残り、同じ軸の同じ値への`become`は自分自身として解けるので、
+    // 止めているのはfoods.yamlの条件のほう。
     const { session, land, player } = open();
     const taro = spawnInto(session, 'taro', land, 'items');
     expect(chopping(session, player, taro)?.tryExecute()).toBe(true);
 
     expect(chopping(session, player, taro)?.tryExecute() === true, '二度目は通らない').toBe(false);
-    expect(player.getProperty(skillCookingId).number, '腕は1回ぶんのまま').toBe(2);
+    expect(player.getProperty(skillCookingId).number, '腕は1回ぶんのまま').toBe(1);
   });
 
   it('刻んだ芋は、同じ火にかけても先に焼き上がる', () => {

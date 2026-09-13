@@ -755,7 +755,7 @@ object_defs:
           - reason: too_stormy
             not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 30
-        add: {agent: {skill_hunting: 2}}
+        add: {agent: {skill_hunting: 1}}
         pick:
           # 当たる回。狙いはcatch_chanceのbaseとして積まれている（上）ので、ここは素の参照のまま。
           - weight: {prop: catch_chance}
