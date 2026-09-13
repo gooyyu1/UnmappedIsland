@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { toolWearsOf } from '../../src/analysis/durations';
+import { staticValueOf } from '../../src/analysis/staticValue';
 import type {
   ConditionDeclaration,
   ConditionReader,
@@ -85,16 +86,23 @@ describe('耐久の規約（同梱の定義すべて）', () => {
         toolName: wear.objectName,
         stepName: wear.stepName,
         ownerName: wear.stepOwnerName,
-        cost: capacityOf(wear.objectName) / wear.uses,
+        cost: startingDurabilityOf(wear.objectName) / wear.uses,
         threshold: lineDrawnOn(wear.stepOwnerName, wear.stepName),
       }));
   }
 
-  /** その道具が満タンから使い切るまでの量（上の規約により960）。 */
-  function capacityOf(toolName: string): number {
-    const range = codex.objects.get(codex.objectNames.getId(toolName)).tryGetPropertyDef(durabilityId)?.range;
-    expect(range, `${toolName} が durability を持たない`).toBeDefined();
-    return range!.max;
+  /**
+   * `toolWearsOf` が回数を数え始めた値（その道具が宣言している初期値）。
+   *
+   * **上限（960）ではなくこちらを割る。** 回数は初期値から数えてある（`toolWearsOf`）ので、満タンで
+   * 生まれない道具が1つ入った途端、上限で割った「食う量」は実際の `add` とずれ、線との突き合わせが
+   * 黙って意味を失う。
+   */
+  function startingDurabilityOf(toolName: string): number {
+    const def = codex.objects.get(codex.objectNames.getId(toolName));
+    const value = staticValueOf(def, durabilityId, 'lowest');
+    expect(value, `${toolName} の durability が定義だけから読めない`).toBeDefined();
+    return value!;
   }
 
   /**
