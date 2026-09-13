@@ -406,6 +406,8 @@ interface InteractionGains {
   /** その操作が`spawn`で出す型の名前（`pick`の候補の中のものも含む）。 */
   readonly products: readonly string[];
   readonly skills: readonly string[];
+  /** 相手へ重ねて始まる操作か（`trigger`が`drag`）。 */
+  readonly needsInstrument: boolean;
 }
 
 /** ノードの下にある`spawn`が出す型の名前を、入れ子の`pick`ごと集める。 */
@@ -457,10 +459,13 @@ function declaredInteractions(): readonly InteractionGains[] {
               .filter((name) => name.startsWith(SKILL_PREFIX))
           : [];
 
+        const trigger = body.get('trigger', true);
+
         found.push({
           name: isScalar(entry.key) ? String(entry.key.value) : '',
           products: [...products].sort(),
           skills: skills.sort(),
+          needsInstrument: isMap(trigger) && trigger.get('drag', true) !== undefined,
         });
       }
     }
@@ -767,6 +772,24 @@ describe('腕前とレシピの解放条件', () => {
     // 抑えるのは時間のコストだけ（SkillSystem.md 7節）。
     for (const [skillName, amounts] of declaredSkillGains())
       expect([...amounts], `${skillName} が配る量`).toEqual([GAIN_PER_ACTION]);
+  });
+
+  it('腕を配る操作は、物を出すか相手を要する（腕だけが伸びる操作を置かない）', () => {
+    // SkillSystem.md 3.1節。**練習は専用のアクションではなく、その腕の最も初歩的な行動そのもの**
+    // なので、腕だけが伸びる操作——何も出さず、重ねる相手も要らないもの——は世界に1つも無い。
+    // 腕前ごとに1つ並ぶ専用の練習アクションを足すと、ここで落ちる。
+    //
+    // **見ているのは相手が居ることまでで、何を消費するかまでは見ない**——`become`で相手を変える
+    // だけの操作（塩漬け）も、出す物を持たないまま通る。
+    const gaining = declaredInteractions().filter((interaction) => interaction.skills.length > 0);
+    expect(gaining.length, '腕を配る操作が1つも無い').toBeGreaterThan(0);
+
+    expect(
+      gaining
+        .filter((interaction) => interaction.products.length === 0 && !interaction.needsInstrument)
+        .map((interaction) => interaction.name),
+      '何も出さず、重ねる相手も要らない操作が腕を配っている',
+    ).toEqual([]);
   });
 
   it('出す物がそっくり同じ操作は、同じ腕を配る（同じ仕事の2つ目の入口で片方が抜けない）', () => {
