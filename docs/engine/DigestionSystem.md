@@ -352,10 +352,10 @@
 | 満腹・蓄え | 焼いた肉 0.70<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat" repetitions -->切れ | 16 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat" minutes --> |
 | ビタミン | 空心菜 0.50<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → water_spinach.eat" repetitions -->束 | 16 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → water_spinach.eat" minutes --> |
 
-- **水が安いのは、汲み置きの器と湧き水が揃っているときだけです。** 器を持たずに砂浜で賄うなら、
-  1 日ぶんは青いヤシの実
-  283 分<!-- stats: balance.yaml daily_minimum_menu place=sandy_beach route="palm_tree.pick_green_coconut → green_coconut.bore" minutes -->
-  になります。**器が序盤の生命線である**こと
+- **水が安いのは、器を持って湧き水へ通えるときだけです。** 器を要らない唯一の水は青いヤシの実で、
+  そちらで 1 日ぶんを賄うと
+  152 分<!-- stats: balance.yaml chain_routes place=島全体 property=hydration route="palm_tree.pick_green_coconut → green_coconut.bore" daily_minutes -->
+  かかります（同 `chain_routes`）。**器が序盤の生命線である**こと
   （[`ClimateSystem.md`](./ClimateSystem.md) 3.2 節）が、時間の側からも出ます。器 1 つが何日ぶんに
   なるかは [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 5 節。
 - **ビタミンがいちばん安い**のは、空心菜 1 束が 1 日ぶんを越えて運び（4 節）、採るのが探索だけで
