@@ -202,7 +202,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
      * count tickぶん進める。ビタミンが尽きるまで何日ぶんも回すので、その間に渇きと飢えで死んでしまわないよう
      * （VitalsSystem.md 8節）、命を絶つ値だけは戻しておく。
      *
-     * **脂の在庫も戻す。** 15時間で尽きて別の段が痛みを押し上げる（同7節）ので、そのままでは
+     * **脂の在庫も戻す。** 30時間で尽きて別の段が痛みを押し上げる（同7節）ので、そのままでは
      * ここで見ている痛みが壊血病のものだけではなくなる。
      */
     function endure(count: number): void {
@@ -292,8 +292,8 @@ describe('消化（かさ・栄養素・蓄え）', () => {
    * dehydratedのまま。
    */
   describe('脂が尽きた域', () => {
-    /** 開始時の30単位が0に着くまでのtick数（30 ÷ 0.5）。15時間。 */
-    const DEPLETION_TICKS = 60;
+    /** 開始時の30単位が0に着くまでのtick数（30 ÷ 0.25）。30時間。 */
+    const DEPLETION_TICKS = 120;
     /** 肉を食べ続けている状態として置くたんぱく質の在庫（maxいっぱい）。 */
     const MEAT_FED = 120;
     /** ヤシの果肉1つぶんの脂質（coconut.yaml）。 */
@@ -320,19 +320,19 @@ describe('消化（かさ・栄養素・蓄え）', () => {
       }
     }
 
-    it('脂を絶つと15時間で在庫が尽き、その1 tick手前で段に入る', () => {
-      // 段の境目は1——15分ぶんも残っていなければ尽きたとみなす。0.5/tickで出ていくので、
-      // 割るのは59 tick目。
-      live(DEPLETION_TICKS - 2);
+    it('脂を絶つと30時間で在庫が尽き、その4 tick手前で段に入る', () => {
+      // 段の境目は1——15分ぶんも残っていなければ尽きたとみなす。0.25/tickで出ていくので、
+      // 割るのは117 tick目。
+      live(DEPLETION_TICKS - 4);
       expect(prop('lipid').number).toBe(1);
       expect(prop('lipid').stage?.name, '1はまだ在庫').toBe('stocked');
 
       live(1);
-      expect(prop('lipid').number).toBe(0.5);
+      expect(prop('lipid').number).toBe(0.75);
       expect(prop('lipid').stage?.name).toBe('fat_starved');
 
-      live(1);
-      expect(prop('lipid').number, '15時間で空').toBe(0);
+      live(3);
+      expect(prop('lipid').number, '30時間で空').toBe(0);
     });
 
     it('肉が在庫にある間だけ、水分の減りが倍になる', () => {

@@ -72,11 +72,19 @@
 | --- | --- | --- | --- |
 | `carbohydrate`（糖質） | 2/tick | イモ・穀物・果実 | **固有の弊害は無い** |
 | `protein`（たんぱく質） | 1/tick | 肉・魚・甲殻類 | 筋が落ちる・傷が治らない（未実装。未決事項節） |
-| `lipid`（脂質） | 0.5/tick | ヤシの果肉・脂の乗った肉 | 必須脂肪酸欠乏と、肉だけを食べ続けたときの毒性（7 節） |
+| `lipid`（脂質） | 0.25/tick | ヤシの果肉・脂の乗った肉 | 必須脂肪酸欠乏と、肉だけを食べ続けたときの毒性（7 節） |
 
 **糖質に固有の欠乏症が無いのは、炭水化物が必須栄養素ではないためです。** 体は糖新生でブドウ糖を
 作れるので、肉と脂だけでも生きられます。糖質を残しているのは弊害のためではなく、**栽培で安定して
 大量に得られる**という入手経路の違いと、吸収が速いことのためです。
+
+**`lipid` の速さだけは、1 日に要る量そのものです。** 尽きた域に段を持つのはこの 1 本だけなので
+（7 節）、**在庫を切らさずにいるには「速さ × 1 日」を運び入れなければなりません**——
+1 日 24<!-- stats: balance.yaml daily_needs property=lipid daily_need -->で、
+1 日に燃やすエネルギー 96<!-- stats: balance.yaml daily_needs property=body_fat daily_need -->の
+4 分の 1 にあたります。**この割合が置いてある数**で、現実の目安（脂から摂る分は総エネルギーの
+2〜3 割）から採りました。**残りの 2 本の速さは在庫が何 tick 保つかしか決めません**（5 節）が、
+ここだけは違う——**速さを動かすと、`fat_starved` を抜ける値段が動きます。**
 
 `max` は 3 本とも 120（1.25 日ぶん）。**食べ溜めはできません**——満杯の在庫へ足した分は捨てられます。
 
@@ -127,8 +135,10 @@
 
 **糖質だけで暮らすと、ちょうど釣り合います**——糖質は 2/tick 流れますが、在庫が半分の時間しか
 続かないため、1 日 96 単位（1,536mL のイモ）が基礎代謝 1/tick と釣り合う勘定です。3 本とも在庫が
-あるときは合計 3.5/tick で流れるので、食べた直後は身になるのが速く、尽きれば止まります。
-**流れる総量は速さによらず変わらない**（`transfer` は保存する）ので、速さは timing だけを決めます。
+あるときは合計 3.25/tick で流れるので、食べた直後は身になるのが速く、尽きれば止まります。
+**流れる総量は速さによらず変わらない**（`transfer` は保存する）ので、速さが決めるのは timing だけです
+——**段を持つ `lipid` を除いて**（3 節）。あちらは在庫が尽きた域そのものに寄与があるので、
+速さが「切らさずにいるのに要る量」になります。
 
 ## 6. 食中毒は、抽選ではなく全身の菌量で決まる
 
@@ -328,7 +338,17 @@
 | `protein` を `-2/tick` 余計に削る | 捨てられる分は身にならない。**食べても蓄えが増えない** | 同上 |
 | `pain` を 30 押し上げる | 必須脂肪酸の欠乏（肌が荒れ、傷が治らない） | 無し（脂が尽きている間ずっと） |
 
-水の削りは `-1/tick` が `-2/tick` になる形で、**水分の保ちがちょうど半分**になります。
+水の削りは `-1/tick` が `-2/tick` になる形で、**水分の保ちがちょうど半分**になります。**倍より重くは
+しません**——読みやすい形が崩れるうえ、抜けるのに払うのは下のとおり果肉 1 つなので、**払うほうを
+選ばせるのにこれ以上は要りません。**
+
+**抜けるのに払うのは、ヤシの果肉 1 つで 1 日ぶんです。** 1 日に要るのは 24（3 節）で、果肉 1 つが
+運ぶのは 26。**壊血病に対する葉物と同じ形**で、1 つ食べれば 1 日ぶんを越えて運ぶので、要るのは
+値段ではなく忘れないことのほうです。**放置した分だけ支払う量が増えることもありません**——`lipid` は
+0 で止まり、段を抜けるのに要るのは常に 1 だけで、壊血病（4 節）のように底まで戻す必要がありません。
+
+**この段は、いちばん安い暮らし方の既定ではありません。** 最小の献立がその 1 日ぶんを運んでいる
+ことは、次節の表が持ちます。
 
 ## 9. 1 日ぶんの値は、島が 1 日に返す量と釣り合っている
 
@@ -336,34 +356,39 @@
 突き合わせられます（[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum` と
 `daily_minimum_menu`。読み方は [`BalanceStats.md`](../diagnostics/BalanceStats.md)）。
 
-**1 日を賄う最小労働は 607 分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->**
+**1 日を賄う最小労働は 627 分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->**
 （島じゅうを渡り歩ける前提。移動時間は数えていません）**で、うち
 360 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="palm_tree.pick_frond → palm_frond.split_and_weave → bed.spread → bed.nap" minutes -->は眠るぶんなので、
 採って食べるのに払うのは
-247 分<!-- stats: terrain.yaml daily_budget survival_gathering -->です。** これが
+267 分<!-- stats: terrain.yaml daily_budget survival_gathering -->です。** これが
 [`ContentSkeleton.md`](../world/ContentSkeleton.md) 8 節の自由時間
-833 分<!-- stats: terrain.yaml daily_budget surplus -->を出している引き算の相手で、**1 周回の日数の
+813 分<!-- stats: terrain.yaml daily_budget surplus -->を出している引き算の相手で、**1 周回の日数の
 見積もりはこの値の上に立っています**——速さを動かせば、そちらが動きます。
 
 | 賄うもの | 献立 | 1 日 |
 | --- | --- | --- |
-| 水 | 青いヤシの実 4.80<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="palm_tree.pick_green_coconut → green_coconut.bore" repetitions -->個 | 152 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="palm_tree.pick_green_coconut → green_coconut.bore" minutes --> |
+| 水 | 青いヤシの実 4.66<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="palm_tree.pick_green_coconut → green_coconut.bore" repetitions -->個 | 148 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="palm_tree.pick_green_coconut → green_coconut.bore" minutes --> |
 | 満腹・蓄え | 生肉 3.07<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.eat" repetitions -->切れ | 70 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.eat" minutes --> |
-| 満腹・蓄え | 焼いた肉 0.39<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat" repetitions -->切れ | 9 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat" minutes --> |
-| ビタミン | 空心菜 0.50<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → water_spinach.eat" repetitions -->束 | 16 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → water_spinach.eat" minutes --> |
+| 脂 | ヤシの果肉 0.45<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat" repetitions -->個 | 35 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat" minutes --> |
+| ビタミン | 空心菜 0.47<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → water_spinach.eat" repetitions -->束 | 15 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → water_spinach.eat" minutes --> |
 
 - **水がいちばん高いのは、汲み置きの器が無い間だけです。** 甕で雨を受け始めれば労働は要らなくなる
-  （同 `chain_untimed_routes`）ので、152 分がまるごと空きます。**器が序盤の生命線である**こと
+  （同 `chain_untimed_routes`）ので、148 分がまるごと空きます。**器が序盤の生命線である**こと
   （[`ClimateSystem.md`](./ClimateSystem.md) 3.2 節）が、時間の側からも出ます。器 1 つが何日ぶんに
   なるかは [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 5 節。
 - **ビタミンがいちばん安い**のは、空心菜 1 束が 1 日ぶんを越えて運び（4 節）、採るのが探索だけで
   済むからです。**壊血病は、手当ての値段ではなく忘れることで起きます。**
-- **3 本の速さ（2/1/0.5）は、釣り合いに効きません。** `transfer` は保存するので、速さが決めるのは
-  在庫が何 tick 保つかだけです（5 節）。**効き目を持つのは段のある `lipid` だけ**で、そこは値段の
-  問いとして残っています（未決事項節）。
-- **607 分に、段が余計に削るぶんは入っていません。** 収支表の `daily_needs` が数えるのは常時の減り
-  だけなので、`fat_starved` が水を倍の速さで削るぶん（8 節）は表の外です。**上の未決が決まるまで、
-  247 分は下限として読みます。**
+- **脂もそちら側です。** 献立に入る果肉は 1 つに満たず、値段は葉物と同じ桁に収まります。**肉に
+  偏った献立でも `fat_starved` は既定になりません**——表が運ぶ脂が 1 日ぶんに届いています
+  （見張るのは `tests/diagnostics/waterAndBloodPace.test.ts`）。果肉を剥く鎖が長いぶん葉物より
+  高いのは、**脂が探索だけでは採れない**（皮をはぎ、割り、掻き出す）ことがそのまま出たものです。
+- **3 本の速さ（2/1/0.25）のうち、釣り合いに効くのは `lipid` だけです。** `transfer` は保存するので、
+  他の 2 本では速さが在庫の保ちしか決めません（5 節）。**段のある `lipid` では、速さがそのまま
+  1 日に運び入れる量になります**（3 節）。
+- **627 分に、段が余計に削るぶんは入っていません。** 収支表の `daily_needs` が数えるのは常時の減り
+  だけなので、`fat_starved` が水を倍の速さで削るぶん（8 節）は表の外です。**表が数えるのは段を
+  立てない暮らし方なので、立てた日はここから外れます**——脂を切らした日に余分に要る水は、この
+  267 分の外側です。
 
 ## 未決事項・今後の検討課題
 
@@ -375,10 +400,5 @@
   決まっていない——**行動力（`stamina`）が素直**で、荷重の段が削る先例もある
   （[`Characters.md`](../world/Characters.md) 荷重の効き方節）。**同じ 1 本を 2 つの理由が削ってよいか**が
   残る問い
-- 脂の値段（7・8 節）。入手量が出た（9 節）ので秤に乗ったが、**最小の献立が運ぶ脂は、`0.5/tick` の
-  輸送が 1 日に流せる量の半分にも届かない**——`fat_starved` が 1 日の大半で立つ側が既定になっている。
-  抜けるにはヤシの果肉を足すことになるが、**その手間は葉物で壊血病を防ぐのより桁が重い**。段の側を
-  軽くするか、脂の側を安くするかは決まっていない。8 節の配分（`hydration` の `-1`）が、脂を切らして
-  から死ぬまでの長さとして妥当かも、同じ秤の上にある
 - 満腹感が行動へ与える影響。今は画面に出るだけで、空腹でも同じように動ける
 - 睡眠中の消化。今の模型は起きている間と同じ速さで進む

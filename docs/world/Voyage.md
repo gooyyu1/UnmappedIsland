@@ -230,11 +230,11 @@
 長さまで振ると何が変わったのか読めなくなります。
 
 **この重みが横断時間へ返すものは、1 周回に 1 度の航海では半日に満たない差です。** 砂浜から近道で渡ると、
-乾季なら 5.37 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=dry days -->、
-雨季なら 5.72 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=wet days -->——
+乾季なら 5.50 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=dry days -->、
+雨季なら 5.86 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=wet days -->——
 最も短い岸壁からでも
-3.62 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=dry days -->と
-3.85 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=wet days -->で、
+3.70 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=dry days -->と
+3.94 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=wet days -->で、
 **差は 0.2〜0.4 日です**（[`stats/voyage.yaml`](../../stats/voyage.yaml) の `course_season`）。
 
 **一方、窓を逃したときに待つのは 48〜72 日です。** 季節は
@@ -600,18 +600,18 @@
 
 **3 節の網から出る所要時間は、近道なら素の速さで 4〜6 日、遠回りでも 7 日には届きません。** 各海区で航路が現れるまでの見張り（3 節の表）と、
 素の横断 360 分（3.2 節）の合計を、島と同じ物差し（1 日ぶんの自由時間
-833 分<!-- stats: voyage.yaml meta daily_free_minutes -->。[`ContentSkeleton.md`](./ContentSkeleton.md)
+813 分<!-- stats: voyage.yaml meta daily_free_minutes -->。[`ContentSkeleton.md`](./ContentSkeleton.md)
 4 節）で割ったものです。**数を出すのは [`stats/voyage.yaml`](../../stats/voyage.yaml) の `courses`**
 （読み方は [`VoyageStats.md`](../diagnostics/VoyageStats.md)）。
 
 | 出航地点 | 針路 | 区間 | 見張り | 見張りの時間 | 横断 | 合計 | 日数 |
 |---|---|--:|--:|--:|--:|--:|--:|
-| 砂浜（島影の海から） | 近道 | 12<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest legs --> | 39<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest lookouts --> 回 | 585 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest lookout_minutes --> | 4,320 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest crossing_minutes --> | 4,905 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest total_minutes --> | 5.9<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest days --> |
-| 砂浜 | 遠回り | 14<!-- stats: voyage.yaml courses coast=sandy_beach course=detour legs --> | 45<!-- stats: voyage.yaml courses coast=sandy_beach course=detour lookouts --> 回 | 675 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour lookout_minutes --> | 5,040 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour crossing_minutes --> | 5,715 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour total_minutes --> | 6.9<!-- stats: voyage.yaml courses coast=sandy_beach course=detour days --> |
-| 岩だらけの海岸（潮目から） | 近道 | 10<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest legs --> | 34<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest total_minutes --> | 4.9<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest days --> |
-| 岩だらけの海岸 | 遠回り | 12<!-- stats: voyage.yaml courses coast=rocky_coast course=detour legs --> | 40<!-- stats: voyage.yaml courses coast=rocky_coast course=detour lookouts --> 回 | 600 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour lookout_minutes --> | 4,320 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour crossing_minutes --> | 4,920 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour total_minutes --> | 5.9<!-- stats: voyage.yaml courses coast=rocky_coast course=detour days --> |
-| 岸壁（海鳥の岩から） | 近道 | 8<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs --> | 28<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookouts --> 回 | 420 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookout_minutes --> | 2,880 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest crossing_minutes --> | 3,300 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest total_minutes --> | 4.0<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest days --> |
-| 岸壁 | 遠回り | 10<!-- stats: voyage.yaml courses coast=cliff_coast course=detour legs --> | 34<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour total_minutes --> | 4.9<!-- stats: voyage.yaml courses coast=cliff_coast course=detour days --> |
+| 砂浜（島影の海から） | 近道 | 12<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest legs --> | 39<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest lookouts --> 回 | 585 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest lookout_minutes --> | 4,320 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest crossing_minutes --> | 4,905 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest total_minutes --> | 6.0<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest days --> |
+| 砂浜 | 遠回り | 14<!-- stats: voyage.yaml courses coast=sandy_beach course=detour legs --> | 45<!-- stats: voyage.yaml courses coast=sandy_beach course=detour lookouts --> 回 | 675 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour lookout_minutes --> | 5,040 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour crossing_minutes --> | 5,715 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour total_minutes --> | 7.0<!-- stats: voyage.yaml courses coast=sandy_beach course=detour days --> |
+| 岩だらけの海岸（潮目から） | 近道 | 10<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest legs --> | 34<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest total_minutes --> | 5.1<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest days --> |
+| 岩だらけの海岸 | 遠回り | 12<!-- stats: voyage.yaml courses coast=rocky_coast course=detour legs --> | 40<!-- stats: voyage.yaml courses coast=rocky_coast course=detour lookouts --> 回 | 600 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour lookout_minutes --> | 4,320 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour crossing_minutes --> | 4,920 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour total_minutes --> | 6.0<!-- stats: voyage.yaml courses coast=rocky_coast course=detour days --> |
+| 岸壁（海鳥の岩から） | 近道 | 8<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs --> | 28<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookouts --> 回 | 420 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookout_minutes --> | 2,880 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest crossing_minutes --> | 3,300 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest total_minutes --> | 4.1<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest days --> |
+| 岸壁 | 遠回り | 10<!-- stats: voyage.yaml courses coast=cliff_coast course=detour legs --> | 34<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour total_minutes --> | 5.1<!-- stats: voyage.yaml courses coast=cliff_coast course=detour days --> |
 
 **遠回りを選ぶと、どの海岸からでも 1 日増えます**（沖の潮目と黒い岩礁の 2 区間で 810 分）。帆と追い風が
 あれば縮み、荒天の押し流し（3.8 節）と引き返し（3.5 節）が伸ばします。
@@ -683,7 +683,7 @@
 - **群れに当てられた日は、1 日ぶんに 2 時間。** 30 分で 0.78 切れなので、3 切れに平均 3.8 回です
   （熟達すれば 3.6 回）。
 - **群れの出なかった日は、6 時間釣っても 1 切れに届きません**（0.9。熟達しても 2.4 で、1 日ぶんの
-  3 には届きません）。**丸一日（1 日ぶんの自由時間 833 分<!-- stats: voyage.yaml meta daily_free_minutes -->）
+  3 には届きません）。**丸一日（1 日ぶんの自由時間 813 分<!-- stats: voyage.yaml meta daily_free_minutes -->）
   粘って 2 切れ**（熟達で 5 切れ）ですが、**丸一日釣れば
   その日は 1 海区も進みません**（3 節。横断は 360 分、3.2 節）——熟達した腕で足りるようになるのは、
   進むのをやめた日のぶんだけです。**釣りだけで出れば、群れの無い区間は赤字**です——砂浜から
@@ -728,6 +728,10 @@
 **削ったまま出るか、荒天と引き返しで伸びれば入ります**——予定が狂ったときに要るのは、満腹を埋める釣り
 だけではありません。
 
+**脂も同じ形で足りません**——1 日に要る 24 に対して、生肉 3 つが運ぶのは 12 です
+（[`DigestionSystem.md`](../engine/DigestionSystem.md) 3 節）。**ただしこちらは釣りではなく積む側で
+埋まります**（3.9.6 節）。
+
 #### 3.9.4 道具は突き銛で、失っても海の上で作り直せる
 
 **釣りに要るのは `fishing_tool` タグを持つ物で、今それを名乗るのは突き銛（`fishing_harpoon`）だけです。**
@@ -764,7 +768,7 @@
 
 **水は海の上で得られないので、日数ぶんを積み切ります。** 甕 1 つは 1.7 日ぶん
 （[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5 節）なので、3.9.1 節の 4〜6 日なら
-**3〜4 つ**。**ただしこれは下限です**——下の 2 つが、どちらも同じ向きに押し上げます。
+**3〜4 つ**。**ただしこれは下限です**——蒸発が必ず押し上げ、積む物を誤れば食い方の側からも押し上がります。
 
 - **蒸発が引きます。** 甕は口を開けたままなので、中身は日なたで 1 日
   273mL<!-- stats: balance.yaml rain_water container=jar season=dry evaporation_ml_per_day -->
@@ -773,10 +777,12 @@
   寄せる手もありません。**飲んでいる甕だけでなく、順番を待っている甕も同じだけ失う**ので、**積む数が
   増えるほど 1 つあたりの取り分は減ります**——最後に開ける甕は、それまでの日数ぶんを失った状態で開く
   ことになります。**空になった甕は減りません**（中身の軸ごと落ちる、同 1 節）。
-- **脂を切らせば、保ちが半分になります。** 航海の献立は生肉に寄る（3.9.3 節）ので、`fat_starved` の段が
-  立ち、`hydration` の削りが倍になります（[`DigestionSystem.md`](../engine/DigestionSystem.md) 8 節）。
-  **段が 1 日のどれだけ立つかは、脂の値段が決まってからです**（同 未決事項節）——**そこが決まるまで、
-  上限の側の数は出せません。**
+- **肉だけを積むと、保ちが半分になります。** 航海の献立は生肉に寄る（3.9.3 節）ので、そのままでは
+  `fat_starved` の段が立ち、`hydration` の削りが倍になります
+  （[`DigestionSystem.md`](../engine/DigestionSystem.md) 8 節）。**1 日ぶんの生肉 3 切れが運ぶ脂は、
+  1 日に要る量の半分にしかなりません**（同 3 節）——避けるには**ヤシの果肉を 2 日に 1 つ**積みます
+  （果肉 1 つが 26、1 日に要るのが 24）。生肉と同じく塩漬け・天日干し・燻しが効くので、
+  日数ぶんを積んで出られます。
 
 **重さとかさは、どちらも効きません。** 満たした甕は 5.2kg（器 1.2kg ＋ 水 4kg）なので、5 つでも
 26kg——**積荷の段が上がる 80 kg**（3.2 節）**には、生肉 12〜18 個**（6〜9kg、3.9.3 節）**と合わせても

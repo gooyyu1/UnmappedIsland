@@ -20,7 +20,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  *
  * - 器1つが何日ぶんか（`LiquidContainerSystem.md` 5節・`Voyage.md` 3.9.6節・`GameEndings.md` 9.2節）
  * - 牙の傷1つが奪う量と、戻るのにかかる日数（`VitalsSystem.md` 3節・3.3節）
- * - 3.3節と`DigestionSystem.md` 9節・未決事項節が最小の献立について言っていること
+ * - 3.3節と`DigestionSystem.md` 3節・9節が最小の献立について言っていること
  */
 
 const ROOT = join(__dirname, '..', '..');
@@ -291,6 +291,7 @@ describe('最小の献立について文書が言っていること', () => {
   }
 
   const balance = parse(readFileSync(join(ROOT, 'stats', 'balance.yaml'), 'utf-8')) as {
+    daily_needs: readonly { property: string; daily_need: number }[];
     daily_minimum: readonly { place: string; unmet: readonly string[] }[];
     daily_minimum_menu: readonly MenuRow[];
     chain_routes: readonly ChainRow[];
@@ -313,19 +314,34 @@ describe('最小の献立について文書が言っていること', () => {
     expect(numberIn(VITALS_DOC, /\*\*([\d.]+) 日に 1 頭\*\*/, '獲物の間隔')).toBeCloseTo(1 / row!.per_day, 1);
   });
 
-  it('最小の献立が運ぶ脂が、1日ぶんの輸送の半分に届かない（DigestionSystem.md 未決事項節）', () => {
+  /** 脂が1日に体脂肪へ出ていく量。**これがそのまま「1日に運び入れる量」**（DigestionSystem.md 3節）。 */
+  function lipidPerDay(): number {
     const codex = bundledCodex();
     const character = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER));
-    const lipid = character.tryGetPropertyDef(codex.propertyNames.getId('lipid'));
-    expect(lipid, 'lipid を持たないキャラクタ').toBeDefined();
-    const body = new WorldObject(1, character, new WorldSession(codex));
     const lipidId = codex.propertyNames.getId('lipid');
+    expect(character.tryGetPropertyDef(lipidId), 'lipid を持たないキャラクタ').toBeDefined();
+    const body = new WorldObject(1, character, new WorldSession(codex));
     const beforeStock = body.getProperty(lipidId).number;
     expect(beforeStock, '在庫が空では輸送の速さを測れない').toBeGreaterThan(0);
     body.tick();
     const perDay = (beforeStock - body.getProperty(lipidId).number) * TICKS_PER_DAY;
     expect(perDay, '脂が体脂肪へ流れていない').toBeGreaterThan(0);
+    return perDay;
+  }
 
+  it('脂の1日ぶんは、1日に燃やすエネルギーの4分の1（DigestionSystem.md 3節）', () => {
+    // 段を持つ在庫は lipid だけなので、**輸送の速さがそのまま fat_starved を抜ける値段になる**。
+    // 速さを「吸収の速さの順位」として動かすと、値段が黙って動く——ここが落ちるのがその合図。
+    const energyPerDay = balance.daily_needs.find((need) => need.property === 'body_fat')?.daily_need;
+    expect(energyPerDay, 'body_fat の1日ぶんが収支表に無い').toBeDefined();
+
+    expect(lipidPerDay() / energyPerDay!, '脂で賄う割合').toBeCloseTo(0.25, 6);
+  });
+
+  it('最小の献立は、脂を1日ぶん運ぶ（DigestionSystem.md 9節）', () => {
+    // fat_starved が「いちばん安い暮らし方の既定」にならないこと（issue #2104）。賄えるかどうかは
+    // 上の unmet が見るので、ここが見るのは**献立が実際に運ぶ量**——賄う対象から脂が外れると、
+    // unmet は空のままここだけが落ちる。
     let supplied = 0;
     for (const entry of balance.daily_minimum_menu) {
       if (entry.place !== WHOLE_ISLAND) continue;
@@ -336,6 +352,8 @@ describe('最小の献立について文書が言っていること', () => {
       supplied += amount * entry.repetitions;
     }
 
-    expect(supplied, `最小の献立が運ぶ脂（1日ぶんの輸送は ${perDay}）`).toBeLessThan(perDay / 2);
+    // 表の回数は小数2桁に丸めてあるので、掛け合わせた合計は真値の周りで1%に満たない幅で揺れる。
+    // 見たいのは「賄う対象から脂が外れていないか」なので、その幅より内側は問わない。
+    expect(supplied, '最小の献立が運ぶ脂').toBeGreaterThan(lipidPerDay() * 0.99);
   });
 });

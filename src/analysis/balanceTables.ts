@@ -449,7 +449,11 @@ export function objectCostMinutesOf(balance: BalanceTables, objectName: string):
  * **輸送で減る値は需要にしない。** `carbohydrate`/`protein`/`lipid` は tick 毎に体脂肪へ流れるが、
  * あの速さは在庫がある間の流量であって、要る量ではない——体が実際に燃やすのは受け皿側
  * （`body_fat`）の減りだけで、三大栄養素はそこへ注ぐ原資（DigestionSystem.md 3節）。
- * 流量を要求量として数えると、必要な3.5倍を食べさせることになる。
+ * 流量を要求量として数えると、必要な何倍もを食べさせることになる。
+ *
+ * **例外は、尽きた域に段を持つ在庫**（`lipid`）。そこは切らすこと自体に罰が立つ（同7節）ので、
+ * 流量がそのまま「1日に運び入れなければならない量」になる。段の有無で引くのは、段を置く理由が
+ * 尽きたときの弊害だから——次にどの在庫へ段が生えても、その日から数えられる。
  */
 export interface DailyNeed {
   readonly propertyGlobalId: PropertyGlobalId;
@@ -473,6 +477,8 @@ export interface DailyNeed {
  *
  * **増える側が悪い値（`pathogen`）は、減っても賄う対象ではない。** そこが減るのは体が菌を片付けて
  * いるからで、外から集めてくる量ではない（docs/engine/DigestionSystem.md 6節）。
+ *
+ * **輸送で減る在庫は、段を持つものだけを数える**（{@link DailyNeed}）。
  */
 function dailyNeedsOf(codex: WorldCodex, character: ObjectDef): readonly DailyNeed[] {
   const deltas = tickDeltasOf(character).filter((delta) => delta.target === 'self');
@@ -483,8 +489,10 @@ function dailyNeedsOf(codex: WorldCodex, character: ObjectDef): readonly DailyNe
 
   const perTick = new Map<PropertyGlobalId, number>();
   for (const delta of deltas) {
-    if (delta.capped || delta.gate.conditional || delta.amount >= 0) continue;
-    if (character.tryGetPropertyDef(delta.propertyGlobalId)?.worsensUpward === true) continue;
+    if (delta.gate.conditional || delta.amount >= 0) continue;
+    const propertyDef = character.tryGetPropertyDef(delta.propertyGlobalId);
+    if (delta.capped && propertyDef?.hasStages !== true) continue;
+    if (propertyDef?.worsensUpward === true) continue;
     if (delta.gate.stage !== undefined && !inInitialStage(character, delta)) continue;
     perTick.set(delta.propertyGlobalId, (perTick.get(delta.propertyGlobalId) ?? 0) + delta.amount);
   }
@@ -902,7 +910,7 @@ function greedyMenu(dailyNeeds: readonly DailyNeed[], routes: readonly ChainRout
   // （水20を返す青い実で、満腹1536を賄う類）。
   for (const dailyNeed of dailyNeeds) {
     const left = remaining.get(dailyNeed.propertyGlobalId) ?? 0;
-    if (left <= 0) continue;
+    if (!stillShort(left, dailyNeed)) continue;
 
     let best: ChainRoute | undefined;
     let bestMinutes = Number.POSITIVE_INFINITY;
@@ -941,7 +949,7 @@ export function menuFor(
   for (const dailyNeed of dailyNeeds) {
     const route = chosen.get(dailyNeed.propertyGlobalId);
     const left = remaining.get(dailyNeed.propertyGlobalId) ?? 0;
-    if (route === undefined || left <= 0) continue;
+    if (route === undefined || !stillShort(left, dailyNeed)) continue;
 
     const gain = route.fills.get(dailyNeed.propertyGlobalId) ?? 0;
     if (gain <= 0) continue;
@@ -956,10 +964,22 @@ export function menuFor(
     entries,
     totalMinutes: entries.reduce((sum, entry) => sum + entry.minutes, 0),
     unmet: dailyNeeds
-      .filter((dailyNeed) => (remaining.get(dailyNeed.propertyGlobalId) ?? 0) > 0)
+      .filter((dailyNeed) => stillShort(remaining.get(dailyNeed.propertyGlobalId) ?? 0, dailyNeed))
       .map((dailyNeed) => dailyNeed.name),
     chosen,
   };
+}
+
+/**
+ * その需要がまだ足りていないか。**0 と比べない**——回数は `left / gain` の割り算で出しているので、
+ * 掛け戻した残りは 0 ちょうどにならず、需要の 1e-14 の桁で正に残りうる。そこを足りないと読むと、
+ * **賄えている土地が賄えないと出る**（ジャングルの水が、脂の刻みを変えただけで unmet に立った）。
+ *
+ * 刻みは需要に対する相対で置く——単位が値ごとに違う（mL・mg・tick）ので、絶対値では比べられない。
+ * 本当に足りない分はこれより何桁も大きいので、取りこぼさない。
+ */
+function stillShort(remaining: number, dailyNeed: DailyNeed): boolean {
+  return remaining > dailyNeed.amount * 1e-9;
 }
 
 /** 同じ経路が複数回選ばれたら1行にまとめる（献立として読むとき、同じ料理は1行で足りる）。 */
