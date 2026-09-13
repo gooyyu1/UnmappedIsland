@@ -837,9 +837,10 @@ describe('腕前とレシピの解放条件', () => {
 
   /** その手作業を、11本すべてがその値の人が行うときの所要時間（分）。 */
   function handworkMinutes(interaction: InteractionGains, skillValue: number): number {
-    const session = new WorldSession(codex);
-    const agent = session.createObject(codex.objectNames.getId('medic'));
-    for (const id of skillIds) agent.getProperty(id).setNumberWithoutEvents(skillValue);
+    // **相手は作業者と同じ世界に作る**——役（11.5節）は1つの関係の中でしか結べないので、
+    // 別のセッションに居ると手際の土台が辿り着かない。
+    const agent = characterWithSkills(skillValue);
+    const session = agent.session;
     const self = session.createObject(codex.objectNames.getId(interaction.owner));
 
     const action = self.tryGetAction(interaction.name, agent);
