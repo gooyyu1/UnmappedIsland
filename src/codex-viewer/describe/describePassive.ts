@@ -19,7 +19,7 @@ export function describePassive(
   names: DefNames,
   out: DescriptionWriter,
 ): void {
-  declaration.read(new PassiveDescriber(names, out));
+  declaration.readBy(new PassiveDescriber(names, out));
 }
 
 /**

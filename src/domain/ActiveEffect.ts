@@ -19,7 +19,7 @@ import type { ObjectGlobalId } from './GlobalId';
 /**
  * 「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。**対象の解決と適用まで自分で
  * 行う**ので、呼び手は起こすことだけを頼み、何をどこへ適用するかは知らない。子として他の効果を持つ具象が
- * あるため、apply・readは1つの効果から再帰しうる。
+ * あるため、apply・readByは1つの効果から再帰しうる。
  *
  * sameSlotSpawnSiteは、適用の入口（WorldObject.applyActiveEffect）で捕捉した「selfが今占めている位置」の
  * スナップショット。same_slot spawnだけがこれを使い、self破棄後でも「その位置がまだ同種を保持しているか」を
@@ -36,13 +36,13 @@ export abstract class ActiveEffect {
    * この効果が何を宣言しているかを読み上げる（EffectReader参照）。**抽象なのは取りこぼしを防ぐため**
    * ——既定を持たせると、動詞を1つ足したときに読み手が黙って何も受け取らなくなる。
    */
-  abstract read(reader: EffectReader): void;
+  abstract readBy(reader: EffectReader): void;
 
   /**
    * まとめて実行するとき、回数の上限を決める器がいくつあるか（`allow_multiple`、12.4節）。
    * undefinedは「繰り返すと意味が変わるので数えられない」。
    *
-   * **既定は0＝数に影響しない。** 取りこぼしても「まとめられない」に倒れるだけで安全側なので、readと
+   * **既定は0＝数に影響しない。** 取りこぼしても「まとめられない」に倒れるだけで安全側なので、readByと
    * 違い抽象にしない。数を決められるのは、単調に埋まる器へ入れる効果だけ。
    */
   repeatLimitingVesselCount(): number | undefined {
@@ -94,8 +94,8 @@ export class ActiveEffectSequence extends ActiveEffect {
       operation.apply(context, session, sameSlotSpawnSite);
   }
 
-  read(reader: EffectReader): void {
-    for (const operation of this.effectsInDeclarationOrder) operation.read(reader);
+  readBy(reader: EffectReader): void {
+    for (const operation of this.effectsInDeclarationOrder) operation.readBy(reader);
   }
 
   /** 1つでも成立しない子があれば、合成も成立しない（並べた命令はすべて起こる約束のため）。 */
@@ -156,7 +156,7 @@ export class ConditionalEffect extends ActiveEffect {
    * 読み手には**排他な二択のまま**渡す（EffectReader.conditional参照）。今どちらへ倒れるかは渡さない
    * ——満たすかは実行時の世界で決まる。
    */
-  read(reader: EffectReader): void {
+  readBy(reader: EffectReader): void {
     reader.conditional(new ConditionalBranches(this.condition, this.whenMet, this.otherwise));
   }
 }
@@ -181,7 +181,7 @@ class ConditionalBranches implements ConditionalReading {
   }
 
   readEveryBranch(reader: EffectReader): void {
-    this.forEachBranch((branch) => branch.effect.read(reader));
+    this.forEachBranch((branch) => branch.effect.readBy(reader));
   }
 
   forEachBranch(visit: (branch: ConditionalBranch) => void): void {
@@ -213,7 +213,7 @@ export class SetEffect extends ActiveEffect {
     this.target.propertyValue(context)?.setNumber(value);
   }
 
-  read(reader: EffectReader): void {
+  readBy(reader: EffectReader): void {
     reader.set(this.target.root, this.target.propertyGlobalId, this.reading);
   }
 
@@ -248,7 +248,7 @@ export class AddEffect extends ActiveEffect {
     this.target.propertyValue(context)?.add(scaled);
   }
 
-  read(reader: EffectReader): void {
+  readBy(reader: EffectReader): void {
     reader.add(this.reading);
   }
 
@@ -285,7 +285,7 @@ export class DestroyEffect extends ActiveEffect {
     this.target.resolve(context)?.destroy(this.reason);
   }
 
-  read(reader: EffectReader): void {
+  readBy(reader: EffectReader): void {
     reader.destroy(this.target.reading, this.reason);
   }
 }
@@ -347,7 +347,7 @@ export class SpawnEffect extends ActiveEffect {
       context.self?.executeSpawn(this.objectGlobalId, this.into, context, sameSlotSpawnSite);
   }
 
-  read(reader: EffectReader): void {
+  readBy(reader: EffectReader): void {
     reader.spawn(this.objectGlobalId, this.count);
   }
 }
@@ -468,7 +468,7 @@ export class TransferEffect extends ActiveEffect {
     return count;
   }
 
-  read(reader: EffectReader): void {
+  readBy(reader: EffectReader): void {
     reader.transfer(this.reading);
   }
 

@@ -31,14 +31,14 @@ import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId } from '../../domai
  *
  * **書き出しも読み手の1つ**にしてある。効果クラスごとに`describe`を持たせると、動詞を1つ足すたびに
  * 「書き出す」「どのプロパティを動かすか」「何を生むか」のそれぞれへ同じ木を辿るコードが増える。
- * 読み上げ口（`read`）を1つに絞れば、増えるのは動詞1つぶんの受け口だけで済む。
+ * 読み上げ口（`readBy`）を1つに絞れば、増えるのは動詞1つぶんの受け口だけで済む。
  */
 export function describeEffect(
   declaration: EffectDeclaration,
   names: DefNames,
   out: DescriptionWriter,
 ): void {
-  declaration.read(new EffectDescriber(names, out));
+  declaration.readBy(new EffectDescriber(names, out));
 }
 
 /**

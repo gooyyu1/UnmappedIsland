@@ -195,6 +195,8 @@ type FileMember = { readonly file: string; readonly name: string };
 const NAME_THEN_FILE = /`([^`]+)`\s*[（(]\s*`([\w./-]+\.ts)`\s*[）)]/g;
 /** ファイルに続けて中身を挙げる括弧。並んでいる名前は、括弧の中のもの。 */
 const FILE_THEN_NAMES = /`([\w./-]+\.ts)`\s*[（(]([^）)]*)[）)]/g;
+/** 括弧を使わず「の」で続ける書き方（`Card.ts` の `PAPER_INSET`）。並んでいる名前は、その直後のもの。 */
+const FILE_THEN_NAME = /`([\w./-]+\.ts)`\s*の\s*`([^`]+)`/g;
 /** 図の1行の末尾に、空白で切り離して置かれたファイル。並んでいる名前は、その行が呼んでいるもの。 */
 const CALL_THEN_FILE = /^(.*?\S)\s\s+([\w./-]+\.ts)\b/;
 const QUOTED = /`([^`]+)`/g;
@@ -230,8 +232,9 @@ function cellFile(cell: string): string | null {
 }
 
 /**
- * その行がファイルと名前を並べて書いている組。並べ方は、括弧で注釈する（散文・見出し）・表の同じ行に
- * 置く（索引の表）・図の行末に添える（呼び出し関係の図）の3つ。
+ * その行がファイルと名前を並べて書いている組。並べ方は、括弧で注釈する（散文・見出し）・「の」で
+ * 続ける（`Card.ts` の `PAPER_INSET`）・表の同じ行に置く（索引の表）・図の行末に添える
+ * （呼び出し関係の図）。
  */
 function fileMembersOn(text: string, insideFence: boolean): FileMember[] {
   const found: FileMember[] = [];
@@ -251,6 +254,9 @@ function fileMembersOn(text: string, insideFence: boolean): FileMember[] {
   for (const match of text.matchAll(FILE_THEN_NAMES)) {
     const file = tsFileOf(match[1]);
     for (const quoted of match[2].matchAll(QUOTED)) add(file, quotedName(quoted[1]));
+  }
+  for (const match of text.matchAll(FILE_THEN_NAME)) {
+    add(tsFileOf(match[1]), quotedName(match[2]));
   }
 
   if (!text.trim().startsWith('|')) return found;

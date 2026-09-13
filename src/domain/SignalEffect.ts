@@ -34,7 +34,7 @@ export class SignalEffect extends ActiveEffect {
     if (resolved !== undefined) session.recordSignal(resolved, this.name);
   }
 
-  read(reader: EffectReader): void {
+  readBy(reader: EffectReader): void {
     reader.signal(this.name);
   }
 }

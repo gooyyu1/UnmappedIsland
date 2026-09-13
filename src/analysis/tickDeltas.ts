@@ -80,7 +80,7 @@ export class TickGate {
 
   constructor(gate: GateReading, def: ObjectDef) {
     const collector = new GateConditionCollector();
-    gate.conditions?.read(collector);
+    gate.conditions?.readBy(collector);
 
     this.stage = gate.stage;
     this.conditions = gate.conditions;
@@ -212,7 +212,7 @@ export interface AncestorCondition {
  */
 export function tickDeltasOf(def: ObjectDef): readonly TickDelta[] {
   const collector = new TickDeltaCollector(def);
-  def.passives.read(collector);
+  def.passives.readBy(collector);
   return collector.deltas;
 }
 
@@ -373,7 +373,7 @@ class GateConditionCollector implements ConditionReader {
       this.any(children);
       return;
     }
-    for (const child of children) child.read(this);
+    for (const child of children) child.readBy(this);
   }
 
   /**
@@ -387,7 +387,7 @@ class GateConditionCollector implements ConditionReader {
 
     const outer = this.required;
     this.required = false;
-    for (const child of children) child.read(this);
+    for (const child of children) child.readBy(this);
     this.required = outer;
   }
 
@@ -400,7 +400,7 @@ class GateConditionCollector implements ConditionReader {
   not(child: ConditionDeclaration): void {
     const outer = this.negated;
     this.negated = !this.negated;
-    child.read(this);
+    child.readBy(this);
     this.negated = outer;
   }
 }

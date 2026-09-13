@@ -257,8 +257,7 @@ export class PlayScreenLayout {
       };
     } else {
       const barHeight = u(BAR_THICKNESS);
-      // フィールドエリアは1080uを上限に、ダッシュボード列の最小高を割り込む分だけ縮める
-      // （9:16より縦長の端末では余剰の高さをダッシュボード列＝キャラクターエリアが吸収する）。
+      // フィールドエリアは1080uを上限に、ダッシュボードの最小高を割り込む分だけ縮める。
       const fieldHeight = Math.max(
         0,
         Math.min(u(1080), height - barHeight * 2 - u(DASHBOARD_MIN_HEIGHT_PORTRAIT)),
