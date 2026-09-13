@@ -340,6 +340,9 @@ object_texts:
       afloat:
         display_name: 浮いている
         description: 水に浮かんでいるか。帆のような部品は、浮いている間だけ効く。
+      hanging_anchor:
+        display_name: 吊る支点
+        description: ハンモックを渡せる立ち木の組が、この土地に在るか。
       fuel:
         display_name: 薪
         description: 炉に載っている燃えるもの。尽きれば火は弱っていく。
@@ -388,10 +391,13 @@ object_texts:
         description: 腰を下ろして休む。まとめて休むほど、同じ時間でも体力の戻りは大きい。
       nap:
         display_name: 仮眠
-        description: 短く眠る。体力に加えて眠気も引くが、通しで眠るほどには戻らない。
+        description: 短く眠る。体力に加えて眠気も引く。地面に直に寝ても、これは取れる。
       sleep:
         display_name: 睡眠
-        description: 通しで眠る。最も効率よく体力と眠気が戻るが、それでも一晩では眠気は戻り切らない。
+        description: 通しで眠る。寝床の上でしか取れず、それでも一晩では眠気は戻り切らない。
+      hang:
+        display_name: 吊る
+        description: 2本の立ち木の間へ渡して吊る。支点を持たない土地では吊れない。
       collapse:
         display_name: 倒れ込む
         description: 体力が尽きて倒れ込む。プレイヤーが起こすものではなく、手が出せないまま時間が過ぎる。
@@ -814,6 +820,23 @@ object_texts:
       spread:
         display_name: 敷く
         description: 編んだ葉を3枚、端を重ねて広げる。道具も紐も要らない。
+  bed_frame:
+    display_name: 寝台の骨組み
+    description: 杭を打ち、縦材を渡して簀の子を縛った台。寝床の下へ差せば、湿気と虫と浸水から一度に離れる。
+    recipes:
+      lashed:
+        display_name: 組む
+        description: 太い枝6本を紐で縛り、寝床の下へ差せる高さの台に組む。
+  hammock:
+    display_name: ハンモック
+    description: 紐を編んだ網。巻けば遠出の荷に混ぜられるが、吊るには立ち木の支点が要る。
+    recipes:
+      knotted:
+        display_name: 編む
+        description: 紐5本を網目に結ぶ。木材は要らない。
+  slung_hammock:
+    display_name: 吊ったハンモック
+    description: 立ち木の間へ渡したハンモック。背中の下を風が抜けるので、虫にも湿気にも最も強い。
 
   # 里心を抑える設え（furnishings.yaml）。
   log_stool:
@@ -1571,7 +1594,7 @@ reason_texts:
   no_fuel: 燃やす物が入っていない。火種だけでは燃え続けない。
   too_dark: 暗すぎて手が付けられない。明かりが要る。
   too_stormy: 風雨が強すぎて、屋外では手が付けられない。収まるのを待つしかない。
-  no_bed: 地面に直に寝ても、まとまっては眠れない。ここには寝床がない。
+  no_anchor: 渡せる立ち木が無い。ハンモックは支点の要る寝床で、吊る先が要る。
   # レシピの解放条件（docs/engine/SkillSystem.md 4節）。**足りない腕と、それを伸ばす行動**を書く
   # ——出る先は札を押している間の吹き出しで（docs/ui/Windows.md 9.3節）、そこから次にやることへ
   # 辿れる。**どの段が要るかは書かない**——文言は理由の名前に1つで、要る段の違う条件が同じ理由を
