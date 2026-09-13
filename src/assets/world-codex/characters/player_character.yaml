@@ -692,15 +692,15 @@ traits:
           - name: basic
             min: 20
             passives:
-              - modify: {self: {knapping_deftness: 3}}
+              - modify: {self: {knapping_deftness: -3}}
           - name: skilled
             min: 60
             passives:
-              - modify: {self: {knapping_deftness: 8}}
+              - modify: {self: {knapping_deftness: -8}}
           - name: expert
             min: 180
             passives:
-              - modify: {self: {knapping_deftness: 15}}
+              - modify: {self: {knapping_deftness: -15}}
       # 掻き取る・撚る・編む（fiber.yaml・weaving.yaml）。編み籠・くくり罠・葉の衣類と、柄付けの紐を開ける。
       #
       # **上乗せは2本**——手際（cordage_deftness）と、無駄の無さ（cordage_thrift）。**桁が違うので
@@ -715,15 +715,15 @@ traits:
           - name: basic
             min: 20
             passives:
-              - modify: {self: {cordage_deftness: 3, cordage_thrift: 10}}
+              - modify: {self: {cordage_deftness: -3, cordage_thrift: 10}}
           - name: skilled
             min: 60
             passives:
-              - modify: {self: {cordage_deftness: 8, cordage_thrift: 25}}
+              - modify: {self: {cordage_deftness: -8, cordage_thrift: 25}}
           - name: expert
             min: 180
             passives:
-              - modify: {self: {cordage_deftness: 15, cordage_thrift: 60}}
+              - modify: {self: {cordage_deftness: -15, cordage_thrift: 60}}
       # 削る・伐る（timber.yamlのfell/buck/cut_pole、animals.yamlのwhittle）。長い棒から軸を削り出す
       # 槍（tools.yaml）を開ける——木の箱・そり・板（Skills.md 2節）はまだ世界に無い。
       skill_woodwork:
@@ -734,15 +734,15 @@ traits:
           - name: basic
             min: 20
             passives:
-              - modify: {self: {woodwork_deftness: 3}}
+              - modify: {self: {woodwork_deftness: -3}}
           - name: skilled
             min: 60
             passives:
-              - modify: {self: {woodwork_deftness: 8}}
+              - modify: {self: {woodwork_deftness: -8}}
           - name: expert
             min: 180
             passives:
-              - modify: {self: {woodwork_deftness: 15}}
+              - modify: {self: {woodwork_deftness: -15}}
       # 削り合わせて組む。伸ばす行動も開けるレシピもまだ無い——里心を抑える設え（furnishings.yaml）は
       # 縛りと削り出しで、ほぞで組む物ではない（docs/world/Skills.md 2.1節）。
       skill_joinery:
@@ -772,15 +772,15 @@ traits:
           - name: basic
             min: 20
             passives:
-              - modify: {self: {leatherwork_deftness: 3}}
+              - modify: {self: {leatherwork_deftness: -3}}
           - name: skilled
             min: 60
             passives:
-              - modify: {self: {leatherwork_deftness: 8}}
+              - modify: {self: {leatherwork_deftness: -8}}
           - name: expert
             min: 180
             passives:
-              - modify: {self: {leatherwork_deftness: 15}}
+              - modify: {self: {leatherwork_deftness: -15}}
       # 調理する。伸ばす行動がまだ無い——焼くのは炉が子のcooking_progressを進めるだけで
       # （docs/engine/FireSystem.md 7節）、人が行う操作になっていない。
       skill_cooking:
@@ -802,15 +802,15 @@ traits:
           - name: basic
             min: 20
             passives:
-              - modify: {self: {preserving_deftness: 3}}
+              - modify: {self: {preserving_deftness: -3}}
           - name: skilled
             min: 60
             passives:
-              - modify: {self: {preserving_deftness: 8}}
+              - modify: {self: {preserving_deftness: -8}}
           - name: expert
             min: 180
             passives:
-              - modify: {self: {preserving_deftness: 15}}
+              - modify: {self: {preserving_deftness: -15}}
       # 火を起こす（fire.yamlのlight）。**レシピは開けない**——効き先は着火の重みだけ
       # （docs/engine/FireSystem.md 10節）。段が押し上げるのは下のignition_easeで、火口の
       # ignition_chanceがそれをbaseの土台にする（fire.yaml）。
@@ -895,9 +895,11 @@ traits:
       # （GameElementDefinition.md 13.6節）。**作りかけは成果物の素の値を持たない**ので、土台に
       # できる相手がそこに居ない。
       #
-      # **手際は引かれる側**（工程の所要時間から、この値ぶん短くなる）。値そのものは正で、段が
-      # 上がるほど大きい——符号を持つのは引く側の工程で、上乗せではない。加算なので**短い工程ほど
-      # よく効き、長い工程には埋もれる**が、そのずれは残す（Skills.md 7節）。
+      # **手際は負の上乗せ**（積むと所要時間が縮む）。合成の器（`base`・`modify`）はどちらも加算なので、
+      # 時間を縮める上乗せは**縮める側が負の値を持つしかない**——荷が重いほど道が遠くなる travel_delay と、
+      # 向きが違うだけの同じ1本。**正にすると、この1本を読めるのは引き算を持つレシピの工程だけになり、
+      # 手作業の`duration`（base経由）が同じ腕を使えなくなる。** 加算なので**短い工程ほどよく効き、
+      # 長い工程には埋もれる**が、そのずれは残す（Skills.md 7節）。
       #
       # **腕ごとに1本ずつ持つ。** 1本を全部の腕で共有すると、石を打ち欠いて上げた腕で編み物まで
       # 速くなる。

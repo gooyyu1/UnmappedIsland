@@ -73,12 +73,12 @@ const ACCESS_BONUSES = [
  * 読まれているかは下の`propsReadFromAgent`が一緒に拾う。
  */
 const CRAFTING_BONUSES = [
-  { skill: 'skill_knapping', bonus: 'knapping_deftness', byStage: [0, 3, 8, 15] },
-  { skill: 'skill_cordage', bonus: 'cordage_deftness', byStage: [0, 3, 8, 15] },
+  { skill: 'skill_knapping', bonus: 'knapping_deftness', byStage: [0, -3, -8, -15] },
+  { skill: 'skill_cordage', bonus: 'cordage_deftness', byStage: [0, -3, -8, -15] },
   { skill: 'skill_cordage', bonus: 'cordage_thrift', byStage: [0, 10, 25, 60] },
-  { skill: 'skill_woodwork', bonus: 'woodwork_deftness', byStage: [0, 3, 8, 15] },
-  { skill: 'skill_leatherwork', bonus: 'leatherwork_deftness', byStage: [0, 3, 8, 15] },
-  { skill: 'skill_preserving', bonus: 'preserving_deftness', byStage: [0, 3, 8, 15] },
+  { skill: 'skill_woodwork', bonus: 'woodwork_deftness', byStage: [0, -3, -8, -15] },
+  { skill: 'skill_leatherwork', bonus: 'leatherwork_deftness', byStage: [0, -3, -8, -15] },
+  { skill: 'skill_preserving', bonus: 'preserving_deftness', byStage: [0, -3, -8, -15] },
 ] as const;
 
 /**
@@ -698,10 +698,11 @@ describe('腕前とレシピの解放条件', () => {
         );
   });
 
-  it('製作系の腕は、段が上がるほど上乗せを押し上げる', () => {
-    // アクセス系（上のテスト）と同じ形。**素は0**で、上の段ほど大きい。手際が正の値なのは、
-    // 符号を持つのが引く側の工程だから（GameElementDefinition.md 13.6節）——「段が上がるほど
-    // 大きい」をアクセス系と同じ向きで読めるようにしてある。
+  it('製作系の腕は、段が上がるほど上乗せを強くする', () => {
+    // アクセス系（上のテスト）と同じ形。**素は0**で、上の段ほど効きが強い。**向きだけが上乗せで
+    // 違う**——無駄の無さは重みなので足して増え、手際は時間なので負の値で積んで縮める
+    // （docs/world/Skills.md 7節。合成の器はどちらも加算なので、縮める側が負を持つしかない）。
+    // なので見るのは大小ではなく、**符号が揃っていることと、絶対値が段ごとに伸びること**。
     for (const { skill, bonus, byStage } of CRAFTING_BONUSES) {
       const character = characterWithSkills(0);
       const skillProperty = character.getProperty(codex.propertyNames.getId(skill));
@@ -714,7 +715,10 @@ describe('腕前とレシピの解放条件', () => {
         );
       }
       expect(byStage[0], `${bonus} の素`).toBe(0);
-      expect([...byStage], `${bonus} は段が上がるほど大きい`).toEqual([...byStage].sort((a, b) => a - b));
+      expect(new Set(byStage.filter((value) => value !== 0).map(Math.sign)).size, `${bonus} の符号`).toBe(1);
+      const strength = byStage.map(Math.abs);
+      expect(strength, `${bonus} は段が上がるほど効きが強い`).toEqual([...strength].sort((a, b) => a - b));
+      expect(strength.at(-1), `${bonus} は段で動く`).toBeGreaterThan(0);
     }
   });
 

@@ -85,7 +85,7 @@ ui_texts:
     expect(work.reason).toBe('素材が足りない。');
   });
 
-  it('「作業する」に出るのは、押す人の手際を引いた後の分数', () => {
+  it('「作業する」に出るのは、押す人の手際を積んだ後の分数', () => {
     // 工程が宣言した仕事の量をそのまま出すと、腕が上がった人へ実際より長い数字を見せることになる
     // （docs/world/Skills.md 7節）。**画面にだけ出る値**なので、ここが唯一の見張り。
     const mini = miniGame(WORLD, { player: 'weaver' });
@@ -93,7 +93,7 @@ ui_texts:
 
     expect(actionsOn(mini, wip)[1].minutes, '素の腕では宣言どおり').toBe(120);
 
-    mini.player.getProperty(mini.codex.propertyNames.getId('cordage_deftness')).setNumber(15);
+    mini.player.getProperty(mini.codex.propertyNames.getId('cordage_deftness')).setNumber(-15);
     expect(actionsOn(mini, wip)[1].minutes, '手際のぶん短い').toBe(105);
   });
 

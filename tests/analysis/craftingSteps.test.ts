@@ -203,7 +203,7 @@ object_defs:
   weaver:
     tags: [character]
     props:
-      cordage_deftness: {value: 12}
+      cordage_deftness: {value: -12}
       cordage_thrift: {value: 25}
   snare:
     tags: [item]
@@ -222,7 +222,7 @@ object_defs:
     const snareId = skilledCodex.objectNames.getId('snare');
     const [knotted] = craftingStepsOf(skilledCodex, skilledCodex.objects.get(snareId));
 
-    expect(knotted.laborMinutes, '手際の12分ぶん短い').toBe(48);
+    expect(knotted.laborMinutes, '手際の12分ぶん縮む').toBe(48);
     expect(knotted.elapsedMinutes).toBe(48);
     expect(knotted.hasUnresolvedReferences, '腕は作り手の層から解ける').toBe(false);
     // 卓は100対25なので、5回に1回は2つ取れる。

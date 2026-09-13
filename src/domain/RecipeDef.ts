@@ -52,14 +52,21 @@ export class RecipeRequirementDef {
  * 手際をいくら積んでも、工程がこれより短くはならない分数（13.6節）。
  *
  * 0分の工程は「押した瞬間に終わる作業」になり、**時間が最も希少な資源である**という前提
- * （SkillSystem.md 7節）がその工程だけで消える。下限を持つのは工程の側で、上乗せの側ではない
- * ——上乗せは1つで所要時間の違う工程すべてに積まれるので、どこまで引いてよいかを知らない。
+ * （SkillSystem.md 7節）がその工程だけで消える。**下限を持つのは工程の側で、上乗せの側ではない**
+ * ——上乗せは1つで所要時間の違う工程すべてに積まれるので、どこまで縮めてよいかを知らない。
+ * 手作業（`interactions`）の側では、時間を名乗るプロパティ自身の`range`が同じ役をする。
  */
 const MINIMUM_STEP_MINUTES = 1;
 
-/** 手際をdeftness分引いた後の、その工程に実際にかかる分数（下限で止める）。 */
+/**
+ * 手際を積んだ後の、その工程に実際にかかる分数（下限で止める）。
+ *
+ * **手際は負の上乗せなので、ここは足し算**（docs/world/Skills.md 7節）。合成の器（`base`・`modify`）は
+ * どちらも加算なので、時間を縮める上乗せを他の読み手（手作業の`duration`）と分け合うには、縮める側が
+ * 負の値を持つしかない——荷が重いほど道が遠くなる`travel_delay`と、向きが違うだけの同じ1本。
+ */
 function minutesAfterDeftness(step: RecipeStepDef, deftness: number): number {
-  return Math.max(MINIMUM_STEP_MINUTES, step.durationMinutes - deftness);
+  return Math.max(MINIMUM_STEP_MINUTES, step.durationMinutes + deftness);
 }
 
 /** レシピの工程1つ（13.1節）。 */
@@ -149,8 +156,8 @@ export class RecipeDef {
   }
 
   /**
-   * agentがその工程に実際に費やすゲーム内時間（分）。宣言された仕事の量から、作り手の手際を
-   * 引いた値（13.6節）。手際を名乗っていない、または作り手がそれを持たないなら宣言どおり。
+   * agentがその工程に実際に費やすゲーム内時間（分）。宣言された仕事の量へ、作り手の手際（負の
+   * 上乗せ）を積んだ値（13.6節）。手際を名乗っていない、または作り手がそれを持たないなら宣言どおり。
    *
    * **問うのは「この者にとって何分か」なのでagentは必ず要る**（解放条件`unmetUnlockRequirement`と
    * 同じ形）。誰にとってでもない分数は、工程が宣言した仕事の量（`durationMinutes`）が直接答える。
@@ -165,7 +172,7 @@ export class RecipeDef {
    *
    * **手際をいくつとして読むかは呼び出し側が決める**——世界の個体から解く側（`minutesFor`）と、
    * 定義だけから解く側（`analysis/craftingSteps`）が居る。下限の当て方はどちらも同じでなければ
-   * ならないので、引き算はこちらが持つ。
+   * ならないので、積む側はこちらが持つ。
    */
   totalMinutesWithDeftness(deftness: number): number {
     return this.steps.reduce((sum, step) => sum + minutesAfterDeftness(step, deftness), 0);

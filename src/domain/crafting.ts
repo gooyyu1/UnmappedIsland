@@ -142,7 +142,7 @@ export function stepIsSupplied(inProgress: WorldObject, step: RecipeStepDef): bo
 }
 
 /**
- * 工程を1つ進める。**作り手の手際を引いた後の分数**ぶんゲーム内時間を進め、**工程が宣言した
+ * 工程を1つ進める。**作り手の手際を積んだ後の分数**ぶんゲーム内時間を進め、**工程が宣言した
  * 仕事の量**ぶん進捗を進め、素材（`consume: true`）を要求数だけ消費する。道具（`consume: false`）は
  * 減らさない。最後の工程を終えたら、余分の卓（`RecipeDef.surplus`）を1回引く。
  *
@@ -183,7 +183,7 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
     // （ActionSystem.md 2節）。素材は作業のあいだ材料スロットに在り、無くなるのは作業を終えた
     // 時点で、完成品もその時刻に生まれる。
     //
-    // **経過するのは作り手の手際を引いた後の分数**（RecipeDef.minutesFor）で、進捗が受け取るのは
+    // **経過するのは作り手の手際を積んだ後の分数**（RecipeDef.minutesFor）で、進捗が受け取るのは
     // 工程が宣言した仕事の量そのもの。腕が変えるのは仕事にかかる時間で、仕事の量ではない。
     //
     // 生存を見るのは製作中オブジェクトだけ（actionsのselfにあたる）。これを失うと進捗の行き先も

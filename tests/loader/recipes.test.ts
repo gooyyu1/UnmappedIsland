@@ -230,8 +230,8 @@ object_defs:
     expect(recipe.surplus, '余分の卓を持つ').toBeDefined();
     expect(recipe.minutesFor(recipe.steps[0], agent), '上乗せが素なら宣言どおり').toBe(30);
 
-    agent.getProperty(codex.propertyNames.getId('cordage_deftness')).setNumber(12);
-    expect(recipe.minutesFor(recipe.steps[0], agent), '手際のぶん短くなる').toBe(18);
+    agent.getProperty(codex.propertyNames.getId('cordage_deftness')).setNumber(-12);
+    expect(recipe.minutesFor(recipe.steps[0], agent), '手際のぶん縮む').toBe(18);
   });
 
   it('deftnessもsurplusも省ける（腕が効かないレシピ）', () => {

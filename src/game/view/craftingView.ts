@@ -80,7 +80,7 @@ export function craftingActions(
     {
       name: locale.uiText('crafting_work'),
       description: locale.uiText('crafting_work_detail'),
-      // **押す人の手際を引いた後の分数**（RecipeDef.minutesFor）。工程が宣言した仕事の量をそのまま
+      // **押す人の手際を積んだ後の分数**（RecipeDef.minutesFor）。工程が宣言した仕事の量をそのまま
       // 出すと、腕が上がった人へ実際より長い数字を見せることになる。
       minutes: step === undefined ? 0 : recipe.minutesFor(step, game.player.instance),
       enabled: supplied && unmetCrafting === undefined,

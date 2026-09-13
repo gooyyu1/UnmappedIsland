@@ -300,9 +300,9 @@ object_defs:
       const carving = startCarving('bowl');
       const before = session.world!.totalMinutes;
 
-      expect(tryAdvanceCrafting(carving, handyCrafter(20))).toBe(true);
+      expect(tryAdvanceCrafting(carving, handyCrafter(-20))).toBe(true);
 
-      expect(session.world!.totalMinutes - before, '30分の工程が20分ぶん短くなる').toBe(10);
+      expect(session.world!.totalMinutes - before, '30分の工程が20分ぶん縮む').toBe(10);
     });
 
     it('手際は進捗を動かさない（片付いた仕事の量は腕によらない）', () => {
@@ -313,17 +313,17 @@ object_defs:
       session.createObject(idOf('wood')).moveToSlotOrRejection(benchWip.getSlot(materialsId()));
       const before = session.world!.totalMinutes;
 
-      expect(tryAdvanceCrafting(benchWip, handyCrafter(20))).toBe(true);
+      expect(tryAdvanceCrafting(benchWip, handyCrafter(-20))).toBe(true);
 
-      expect(session.world!.totalMinutes - before, '経過するのは手際を引いた後').toBe(10);
+      expect(session.world!.totalMinutes - before, '経過するのは手際を積んだ後').toBe(10);
       expect(benchWip.tryGetProperty(progressId())?.number ?? 0, '進捗は宣言どおり').toBe(30);
     });
 
-    it('手際を積んでも、工程は1分より短くならない', () => {
+    it('手際をいくら積んでも、工程は1分より短くならない', () => {
       const carving = startCarving('peg');
       const before = session.world!.totalMinutes;
 
-      expect(tryAdvanceCrafting(carving, handyCrafter(1000))).toBe(true);
+      expect(tryAdvanceCrafting(carving, handyCrafter(-1000))).toBe(true);
 
       expect(session.world!.totalMinutes - before, '10分の工程でも1分は掛かる').toBe(1);
     });
