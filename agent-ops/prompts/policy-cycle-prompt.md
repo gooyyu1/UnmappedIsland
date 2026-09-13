@@ -1,9 +1,9 @@
 # 価値観を畳む係のプロンプト
 
 `agent-ops/decisions/` に溜まった判断の履歴を読み、一般則へ畳む候補を並べた issue を1本起票する係の
-本文。投入するのは盤面（[`board-move.mjs`](../../scripts/agent/board-move.mjs) の `CYCLES`）で、
+本文。投入するのは盤面（[`board-move.mjs`](../../scripts/daemon/board-move.mjs) の `CYCLES`）で、
 `archive/` に入っていない履歴が1件でもあれば週に一度立つ。渡し方は
-[`dispatch-chore.sh`](../../scripts/agent/dispatch-chore.sh)。
+[`dispatch-chore.sh`](../../scripts/daemon/dispatch-chore.sh)。
 
 **畳む手順そのものは [`policy-review` skill](../../.claude/skills/policy-review/SKILL.md) が持つ**——束ね方も、
 一般則の書式も、行き先も、総量の上限もそちらが唯一の定義。ここに書くのは、**周期の係だけが持つ

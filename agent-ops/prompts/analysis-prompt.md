@@ -3,8 +3,8 @@
 **PRのコメントに残ったスメル**——`[スメル] ` で始まる行
 （[`board-design.md`](../board-design.md) 4.4）——を拾い、手を打つべきものは issue へ、そこまでではないが
 繰り返し現れている形は記録へ落とす係の本文。投入するのは盤面
-（[`board-move.mjs`](../../scripts/agent/board-move.mjs) の `CYCLES`）で、読まれていないスメルが1件でも
-あれば立つ。渡し方は [`dispatch-chore.sh`](../../scripts/agent/dispatch-chore.sh)。
+（[`board-move.mjs`](../../scripts/daemon/board-move.mjs) の `CYCLES`）で、読まれていないスメルが1件でも
+あれば立つ。渡し方は [`dispatch-chore.sh`](../../scripts/daemon/dispatch-chore.sh)。
 
 **この係が見るのは、その回の帯だけ。過去の回の記録で傾向を探さない**（出どころ: ユーザーの指示・
 2026-09-07。[`board-design.md`](../board-design.md) 2.17.4）。**回をまたいで同じ形を探すのは二次の係**
@@ -47,7 +47,7 @@
 **読んだコメントには 👀 が付いています。** これが処理済みの印なので、**付いていないコメントだけ**が
 今回の対象です。
 
-**さかのぼるのは本数ではなく期間です**——`scripts/agent/board-read.mjs` の `MERGED_WINDOW_HOURS`
+**さかのぼるのは本数ではなく期間です**——`scripts/daemon/board-read.mjs` の `MERGED_WINDOW_HOURS`
 が、盤面が「立てろ」を決めるときに見ている幅（時間）で、**そこから今までにマージされたPRを
 全部**読んでください。**盤面の窓を下回ると、盤面が見つけた未読のスメルが係の窓の外に落ち**、印が
 付かないので**毎日立って毎日同じ空振りを繰り返します。** 多く読むぶんには構いません。
@@ -57,7 +57,7 @@
 
 **道具は `agent-ops/github-access.md`「PR を読む・書く」に従ってください。** マージ済みのPRを引き、
 そのそれぞれのコメントを読みます。`<窓の始まり>` は「今から `MERGED_WINDOW_HOURS` 時間前」を
-`2026-09-05T12:00:00Z` の形で書いたもの、`<上限>` は `scripts/agent/board-read.mjs` の
+`2026-09-05T12:00:00Z` の形で書いたもの、`<上限>` は `scripts/daemon/board-read.mjs` の
 `CAPS.mergedPrs`（盤面が使うのと同じ値）です。
 
 **栓に当たったら、窓を取り切れていません。** 引けた本数が `CAPS.mergedPrs` に達していたら、

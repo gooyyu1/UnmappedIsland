@@ -21,7 +21,14 @@ import {
   workTotalOf,
   WORK_SHARES,
 } from '../../src/analysis/dailyPhases';
+import type { PathDiscoverySchedule } from '../../src/analysis/pathDiscovery';
+import {
+  discoveryMinutesOf,
+  fullExplorationMinutesOf,
+  pathDiscoverySchedulesOf,
+} from '../../src/analysis/pathDiscovery';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
+import { COASTAL_DISTANCE_AXIS_NAME } from '../../src/domain/generation/AxisSampler';
 import type { IslandMap, Site } from '../../src/domain/generation/IslandMap';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
@@ -62,6 +69,12 @@ const statRecord = statRecordWith('p5');
 const MAX_LISTED_DEGREE = 7;
 
 /**
+ * 標高を分けて出す土地の組の呼び名。**海に接する土地だけを取り出す**ことがこの節の要点で、
+ * 砂浜と岸壁を分ける高さはこの組の中から引く（TerrainGeneration.md 3.5.3節）。
+ */
+const ELEVATION_GROUPS = ['all', 'coast_band', 'inland'] as const;
+
+/**
  * 拠点の選び方の呼び名のうち、他の土地への片道が平均で最も短い土地を指すもの。局面ごとの1日は
  * どの節も島ごとにこの拠点1つだけを標本にするので、そのレコードは全部これを鍵として持つ。
  */
@@ -84,6 +97,18 @@ interface TerrainStats {
 
   /** 土地1つあたり: 次数。全島の全土地をまとめた分布。 */
   readonly degree: Stat;
+
+  /** 土地1つあたり: 海抜（m）。全土地・海岸帯・内陸の3つと、型ごと。 */
+  readonly elevationMeters: ReadonlyMap<string, Stat>;
+  readonly elevationMetersByType: ReadonlyMap<string, Stat>;
+
+  /**
+   * 土地1つあたり: 道が見つかるまでの探索時間（分）と、道の本数ごとの内訳。**本数の側は出た分だけ
+   * 増える**——上限で畳むと、畳んだ先の行が何本の土地のものか読めなくなる。
+   */
+  readonly pathDiscovery: PathDiscoveryStats;
+  readonly pathDiscoveryByDegree: Map<number, PathDiscoveryStats>;
+
   /** 道1本あたり: 距離（m）・両端の高低差（m）・移動時間（分）。 */
   readonly distanceMeters: Stat;
   readonly climbMeters: Stat;
@@ -93,6 +118,10 @@ interface TerrainStats {
   readonly chosenBaseOneWayMinutes: Stat;
   /** 土地1つあたり: その土地を拠点にしたときの片道（分）。 */
   readonly anyBaseOneWayMinutes: Stat;
+
+  /** 同じ2つの拠点の採り方で見た、最も遠い土地への往復（分）。 */
+  readonly chosenBaseFarthestRoundTripMinutes: Stat;
+  readonly anyBaseFarthestRoundTripMinutes: Stat;
 
   /** 島1つあたり: 最も条件の良い拠点から見た、局面ごとの1日。 */
   readonly exploration: ExplorationPhaseStats;
@@ -141,6 +170,20 @@ interface CyclePhaseStats {
   readonly totalDays: Stat;
 }
 
+/**
+ * 道が見つかるまでの探索時間の分布。**その土地に居続けたときの時間**で、そこへ通う移動は含まない
+ * （`src/analysis/pathDiscovery.ts`）。
+ */
+interface PathDiscoveryStats {
+  /** 1本目・最後の1本が見つかるまで。 */
+  readonly firstPathMinutes: Stat;
+  readonly lastPathMinutes: Stat;
+  /** 隣り合う道どうしの間隔。道が1本だけの土地は標本に入らない。 */
+  readonly gapMinutes: Stat;
+  /** その土地を探索率100%まで開くまで。1本目の早さを読む物差し。 */
+  readonly fullExplorationMinutes: Stat;
+}
+
 /** 山の配分1つの分布。`dayShare`は、その組へ費やす日数が定常の局面に占める割合。 */
 interface ShareStats {
   readonly roundTripMinutes: Stat;
@@ -179,6 +222,15 @@ function addDailyPhases(stats: TerrainStats, base: BaseDailyPhases, work: WorkTo
   }
 }
 
+function createPathDiscoveryStats(): PathDiscoveryStats {
+  return {
+    firstPathMinutes: new Stat(),
+    lastPathMinutes: new Stat(),
+    gapMinutes: new Stat(),
+    fullExplorationMinutes: new Stat(),
+  };
+}
+
 function createStats(typeNames: readonly string[]): TerrainStats {
   return {
     siteCount: new Stat(),
@@ -190,11 +242,17 @@ function createStats(typeNames: readonly string[]): TerrainStats {
     typesPerIsland: new Stat(),
     countByType: new Map(typeNames.map((name) => [name, new Stat()])),
     degree: new Stat(),
+    elevationMeters: new Map(ELEVATION_GROUPS.map((group) => [group, new Stat()])),
+    elevationMetersByType: new Map(typeNames.map((name) => [name, new Stat()])),
+    pathDiscovery: createPathDiscoveryStats(),
+    pathDiscoveryByDegree: new Map(),
     distanceMeters: new Stat(),
     climbMeters: new Stat(),
     travelMinutes: new Stat(),
     chosenBaseOneWayMinutes: new Stat(),
     anyBaseOneWayMinutes: new Stat(),
+    chosenBaseFarthestRoundTripMinutes: new Stat(),
+    anyBaseFarthestRoundTripMinutes: new Stat(),
     exploration: {
       explorationMinutes: new Stat(),
       dayTripDays: new Stat(),
@@ -220,15 +278,21 @@ function createStats(typeNames: readonly string[]): TerrainStats {
   };
 }
 
-/** `elevationMetersOf`は土地の海抜（m）。島をまたいで変わらないので、呼び手が1度だけ組む。 */
-function collect(
-  stats: TerrainStats,
-  map: IslandMap,
-  elevationMetersOf: (site: Site) => number,
-  locationDays: ReadonlyMap<number, LocationTypeDay>,
-  budget: DailyBudget,
-  work: WorkTotal,
-): void {
+/** 島をまたいで変わらない、測るのに要るもの。呼び手が1度だけ組む。 */
+interface IslandMeasures {
+  /** 土地の海抜（m）。 */
+  readonly elevationMetersOf: (site: Site) => number;
+  /** その土地が海に接しているか（`coastal_distance`が海岸帯の中）。 */
+  readonly isCoastBand: (site: Site) => boolean;
+  /** 土地の型（object_defのグローバルID）ごとの、道が見つかる時刻表。 */
+  readonly schedules: ReadonlyMap<number, PathDiscoverySchedule>;
+  readonly locationDays: ReadonlyMap<number, LocationTypeDay>;
+  readonly budget: DailyBudget;
+  readonly work: WorkTotal;
+}
+
+function collect(stats: TerrainStats, map: IslandMap, measures: IslandMeasures): void {
+  const { elevationMetersOf, isCoastBand, schedules, locationDays, budget, work } = measures;
   const n = map.sites.length;
   const degrees = new Array<number>(n).fill(0);
   for (const edge of map.edges) {
@@ -247,6 +311,16 @@ function collect(
     perIsland.add(degree);
   }
 
+  for (const site of map.sites) {
+    const elevation = elevationMetersOf(site);
+    stats.elevationMeters.get('all')!.add(elevation);
+    stats.elevationMeters.get(isCoastBand(site) ? 'coast_band' : 'inland')!.add(elevation);
+    stats.elevationMetersByType.get(site.type!.name)!.add(elevation);
+
+    const degree = degrees[site.index];
+    if (degree > 0) addPathDiscovery(stats, schedules.get(site.type!.objectDefGlobalId)!, degree);
+  }
+
   stats.siteCount.add(n);
   stats.edgeCount.add(map.edges.length);
   stats.meanDegree.add(perIsland.mean);
@@ -262,8 +336,31 @@ function collect(
 
   const phases = dailyPhasesOf(map, locationDays, budget);
   stats.chosenBaseOneWayMinutes.add(phases.bestBase.oneWayMinutes);
-  for (const base of phases.bases) stats.anyBaseOneWayMinutes.add(base.oneWayMinutes);
+  stats.chosenBaseFarthestRoundTripMinutes.add(2 * phases.bestBase.farthestOneWayMinutes);
+  for (const base of phases.bases) {
+    stats.anyBaseOneWayMinutes.add(base.oneWayMinutes);
+    stats.anyBaseFarthestRoundTripMinutes.add(2 * base.farthestOneWayMinutes);
+  }
   addDailyPhases(stats, phases.bestBase, work);
+}
+
+/** 道が`degree`本ある土地1つぶんを、全体と本数ごとの両方へ数える。 */
+function addPathDiscovery(stats: TerrainStats, schedule: PathDiscoverySchedule, degree: number): void {
+  const minutes = discoveryMinutesOf(schedule, degree);
+  const full = fullExplorationMinutesOf(schedule);
+
+  let byDegree = stats.pathDiscoveryByDegree.get(degree);
+  if (byDegree === undefined) {
+    byDegree = createPathDiscoveryStats();
+    stats.pathDiscoveryByDegree.set(degree, byDegree);
+  }
+
+  for (const target of [stats.pathDiscovery, byDegree]) {
+    target.firstPathMinutes.add(minutes[0]);
+    target.lastPathMinutes.add(minutes[minutes.length - 1]);
+    target.fullExplorationMinutes.add(full);
+    for (let i = 1; i < minutes.length; i++) target.gapMinutes.add(minutes[i] - minutes[i - 1]);
+  }
 }
 
 /** 測った項目1つぶんの、名前と単位と分布。 */
@@ -272,6 +369,19 @@ type Metric = readonly [metric: string, unit: string, stat: Stat];
 /** `keys`は、測った項目より前に置く鍵（どの拠点の値か、など）。 */
 function metricRecords(metrics: readonly Metric[], keys: YamlRecord = {}): YamlRecord[] {
   return metrics.map(([metric, unit, stat]) => statRecord({ ...keys, metric, unit }, stat));
+}
+
+/** 道が見つかるまでの探索時間の分布を、測った項目ごとに1行ずつ。 */
+function pathDiscoveryRecords(stats: PathDiscoveryStats, keys: YamlRecord = {}): YamlRecord[] {
+  return metricRecords(
+    [
+      ['first_path', 'minutes', stats.firstPathMinutes],
+      ['last_path', 'minutes', stats.lastPathMinutes],
+      ['gap', 'minutes', stats.gapMinutes],
+      ['full_exploration', 'minutes', stats.fullExplorationMinutes],
+    ],
+    keys,
+  );
 }
 
 function degreeHistogramRecords(degree: Stat): YamlRecord[] {
@@ -350,6 +460,26 @@ function buildSections(
     { key: 'site_degree', records: [statRecord({ unit: 'edges' }, stats.degree)] },
     { key: 'site_degree_histogram', records: degreeHistogramRecords(stats.degree) },
     {
+      key: 'site_elevation',
+      records: [...stats.elevationMeters].map(([group, stat]) => statRecord({ group, unit: 'meters' }, stat)),
+    },
+    {
+      key: 'site_elevation_by_location',
+      records: [...stats.elevationMetersByType].map(([location, stat]) =>
+        statRecord({ location, unit: 'meters' }, stat),
+      ),
+    },
+    {
+      key: 'path_discovery',
+      records: pathDiscoveryRecords(stats.pathDiscovery),
+    },
+    {
+      key: 'path_discovery_by_degree',
+      records: [...stats.pathDiscoveryByDegree.keys()]
+        .sort((a, b) => a - b)
+        .flatMap((degree) => pathDiscoveryRecords(stats.pathDiscoveryByDegree.get(degree)!, { degree })),
+    },
+    {
       key: 'edge',
       records: metricRecords([
         ['distance', 'meters', stats.distanceMeters],
@@ -362,6 +492,13 @@ function buildSections(
       records: [
         statRecord({ base: SHORTEST_MEAN_BASE, unit: 'minutes' }, stats.chosenBaseOneWayMinutes),
         statRecord({ base: 'any', unit: 'minutes' }, stats.anyBaseOneWayMinutes),
+      ],
+    },
+    {
+      key: 'base_farthest_round_trip',
+      records: [
+        statRecord({ base: SHORTEST_MEAN_BASE, unit: 'minutes' }, stats.chosenBaseFarthestRoundTripMinutes),
+        statRecord({ base: 'any', unit: 'minutes' }, stats.anyBaseFarthestRoundTripMinutes),
       ],
     },
     {
@@ -509,10 +646,18 @@ function buildReportFromDefinitions(): string {
     ),
   );
 
+  const measures: IslandMeasures = {
+    elevationMetersOf,
+    isCoastBand: (site) => site.axisValues.get(COASTAL_DISTANCE_AXIS_NAME)! <= scope.coastBandMaxDistance,
+    schedules: pathDiscoverySchedulesOf(codex),
+    locationDays,
+    budget: solved.budget,
+    work: solved.work,
+  };
+
   const stats = createStats(generation.locationTypes.map((type) => type.name));
   for (let seed = 0; seed < SEED_COUNT; seed++) {
-    const map = generateIsland(generation, SCOPE_NAME, seed);
-    collect(stats, map, elevationMetersOf, locationDays, solved.budget, solved.work);
+    collect(stats, generateIsland(generation, SCOPE_NAME, seed), measures);
   }
 
   return formatYamlReport(

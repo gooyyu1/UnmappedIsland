@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { pathForBash, spawnScript } from '../support/runScript';
 
 /**
- * `scripts/agent/prompt-template.sh`——ひな形から、セッションへ渡す本体と題を取り出す段——の検査。
+ * `scripts/daemon/prompt-template.sh`——ひな形から、セッションへ渡す本体と題を取り出す段——の検査。
  *
  * ここが守るのは**渡すものが、ひな形の書いたとおりであること**。取り出しに失敗しても
  * `create_session` は通ってしまい、**中身の薄い指示を持ったセッションが立つ**——投入した側には
@@ -20,7 +20,7 @@ import { pathForBash, spawnScript } from '../support/runScript';
 // 超えうる。
 vi.setConfig({ testTimeout: 20000 });
 
-const TEMPLATE_SH = pathForBash(resolve(__dirname, '../../scripts/agent/prompt-template.sh'));
+const TEMPLATE_SH = pathForBash(resolve(__dirname, '../../scripts/daemon/prompt-template.sh'));
 
 interface Taken {
   readonly code: number;

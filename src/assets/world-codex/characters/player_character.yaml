@@ -20,22 +20,27 @@ traits:
     #
     # 身体の仕組みなので個体差を持たせず、この trait が配る（痛み・血と同じ扱い）。回復量は
     # 一律なので、体力のmaxが大きいキャラクタほど1回の休息で戻る割合は小さい。
+    #
+    # **体力の割は、荷が削る量から逆算してある**（docs/world/Characters.md 休息節）。地面の上の1日は
+    # 16時間起きて8時間（32tick）仮眠なので、heavy（-1/tick）をその16時間担ぎ通した -64 を返すには
+    # 2/tick が要る——**仮眠はそこへ届かない**。地面の上で重い荷の日を続けられないことが、寝床を敷き
+    # 骨組みを差す理由になる（docs/world/Bedding.md 4節）。
     interactions:
       wait:
         trigger: menu
         duration: 15
         passives:
-          - add: {self: {stamina: 2}}
+          - add: {self: {stamina: 0.75}}
       rest:
         trigger: menu
         duration: 60
         passives:
-          - add: {self: {stamina: 2.5}}
+          - add: {self: {stamina: 1}}
       nap:
         trigger: menu
         duration: 180
         passives:
-          - add: {self: {stamina: 3, wakefulness: 3}}
+          - add: {self: {stamina: 1.25, wakefulness: 3}}
       # 限界に達した値が起こす、強制的な時間経過（docs/world/Characters.md 限界節）。どれも上の休息と
       # 同じ形で、**違うのは見る値・長さ・戻る量だけ**。プレイヤーが押す機会は無い
       # （trigger: tick、11.1節）ので、手が出せないまま時間だけが過ぎる。
@@ -50,12 +55,13 @@ traits:
       # `signal` では過ぎ切ってからになり、眠り込みでは6時間後に理由を聞くことになる。
       #
       # **戻る割に、まとめて休んだ割増しは付けない。どの値についても。** どれも休み方を選んだことに
-      # ならないためで、体力と幸福度は rest の割（2.5/tick）。眠気を戻せるのは眠る休息だけで、どれも
+      # ならないためで、体力は rest の割（1/tick）。幸福度には自発の休息が無いので割の比べようがなく、
+      # 120分で危険域（maxの20%）をちょうど抜ける量を置く。眠気を戻せるのは眠る休息だけで、どれも
       # 割増しを持っているので、そのうちいちばん薄い nap の割（3/tick）を使う。
       #
       # **眠り込みが戻すのは眠気だけではないので、体力もこの割に従う。** 寝床の上の sleep と同じ割に
       # すると、寝床の無い場所で体力を戻す最良の手が眠り込みになる——寝床を要らない休息のうち最も
-      # 割のよい nap（3/tick）を上回ってしまう。
+      # 割のよい nap（体力は 1.25/tick）を上回ってしまう。
       #
       # **休息と同じく毎tickで戻す**（11.7節）ので、下限に居ても減りは同じ足し算の中で相殺され、
       # クランプが吸うぶんだけ得をすることはない。荷を担いだままの倒れ込みは、担いだぶんだけ薄い。
@@ -69,7 +75,7 @@ traits:
         announce: exhausted
         duration: 120
         passives:
-          - add: {self: {stamina: 2.5}}
+          - add: {self: {stamina: 1}}
       fall_asleep:
         trigger: tick
         conditions:
@@ -77,7 +83,7 @@ traits:
         announce: dozed_off
         duration: 360
         passives:
-          - add: {self: {stamina: 2.5, wakefulness: 3}}
+          - add: {self: {stamina: 1, wakefulness: 3}}
       despair:
         trigger: tick
         conditions:
@@ -297,7 +303,8 @@ traits:
             add: {self: {warmth: 8}}
       # 寒さの入口（docs/engine/VitalsSystem.md 8.4節）。これを下回る気温の場所に居る間だけ、
       # 上のwarmthが削られる。
-      # 素は16℃で、衣服・寝床が入ればそれらがmodifyで押し下げる。
+      # 素は16℃で、身につけた衣類がmodifyで押し下げる（clothing.yaml）。寝ている間に寝床が押し下げる側は
+      # まだ無い（docs/engine/VitalsSystem.md 8.3節）。
       #
       # **押し下げる側が良いので、向きを自分で名乗る**（6.8節）。歩みの遅れと同じくバーにも段にも
       # しないので、名乗らなければ既定の「減ると悪い」になる。
@@ -683,23 +690,47 @@ traits:
       # 開かないレシピになる（SkillSystem.md 3.2節）。
       # ------------------------------------------------------------------
       # 石を打ち欠く（locations.yamlのknap）。柄付けの刃（tools.yaml）を開ける。
+      # 段が押し上げるのは下のknapping_deftnessで、石斧・突き銛のレシピがそれをdeftnessに名乗る。
       skill_knapping:
         tags: [skill]
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {knapping_deftness: -3}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {knapping_deftness: -8}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {knapping_deftness: -15}}
       # 掻き取る・撚る・編む（fiber.yaml・weaving.yaml）。編み籠・くくり罠・葉の衣類と、柄付けの紐を開ける。
+      #
+      # **上乗せは2本**——手際（cordage_deftness）と、無駄の無さ（cordage_thrift）。**桁が違うので
+      # 分けている**（工程の所要時間は30〜360分、余分の卓の重みは100が相手）。くくり罠（traps.yaml）が
+      # 余分の卓を持つ唯一のレシピで、同じ繊維から2つ結べるのは小さく数の要る物だけ
+      # （docs/world/Skills.md 7節）。
       skill_cordage:
         tags: [skill]
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {cordage_deftness: -3, cordage_thrift: 10}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {cordage_deftness: -8, cordage_thrift: 25}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {cordage_deftness: -15, cordage_thrift: 60}}
       # 削る・伐る（timber.yamlのfell/buck/cut_pole、animals.yamlのwhittle）。長い棒から軸を削り出す
       # 槍（tools.yaml、basic）と、走り木を削り出すそり（containers.yaml、skilled）を開ける
       # ——木の箱・板（Skills.md 2節）はまだ世界に無い。
@@ -708,9 +739,18 @@ traits:
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {woodwork_deftness: -3}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {woodwork_deftness: -8}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {woodwork_deftness: -15}}
       # 削り合わせて組む。伸ばす行動も開けるレシピもまだ無い——里心を抑える設え（furnishings.yaml）は
       # 縛りと削り出しで、ほぞで組む物ではない（docs/world/Skills.md 2.1節）。
       skill_joinery:
@@ -731,14 +771,24 @@ traits:
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
       # 皮を剥ぐ（animals.yamlのbutcher）。なめし革と、それを縫った物（clothing.yaml・voyage.yamlの帆）を開ける。
+      # 段が押し上げるのは下のleatherwork_deftnessで、なめし・縫いのレシピがそれをdeftnessに名乗る。
       skill_leatherwork:
         tags: [skill]
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {leatherwork_deftness: -3}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {leatherwork_deftness: -8}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {leatherwork_deftness: -15}}
       # 調理する。伸ばす行動がまだ無い——焼くのは炉が子のcooking_progressを進めるだけで
       # （docs/engine/FireSystem.md 7節）、人が行う操作になっていない。
       skill_cooking:
@@ -751,14 +801,24 @@ traits:
           - {name: expert, min: 180}
       # 得た食を保たせる（salt.yamlのcure）。開けるのは燻し小屋（smoking.yamlのsmokehouse）で、
       # 日差しの要らない保存がその先にある（docs/world/SurvivalItems.md 11節）。
+      # 段が押し上げるのは下のpreserving_deftnessで、燻し小屋のレシピがそれをdeftnessに名乗る。
       skill_preserving:
         tags: [skill]
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {preserving_deftness: -3}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {preserving_deftness: -8}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {preserving_deftness: -15}}
       # 火を起こす（fire.yamlのlight）。**レシピは開けない**——効き先は着火の重みだけ
       # （docs/engine/FireSystem.md 10節）。段が押し上げるのは下のignition_easeで、火口の
       # ignition_chanceがそれをbaseの土台にする（fire.yaml）。
@@ -836,3 +896,32 @@ traits:
       # 狙いの確かさ。武器の当たり所の重み（tools.yaml）と、突き漁のcatch_chance（voyage.yaml）が、
       # 打ちかかっている間これを土台にする。**上と分けているのは桁が違うから**（上の注記）。
       hunting_aim: {value: 0}
+      # ------------------------------------------------------------------
+      # 製作系の腕が押し上げる上乗せ（刻みとその理由は docs/world/Skills.md 7節）。素が0で、段が
+      # modifyで押し上げるのは上と同じだが、**読み方が違う**——アクセス系はつまみの`base`の土台に
+      # なるのに対し、こちらはレシピが`deftness`・`surplus`で直に名乗る
+      # （GameElementDefinition.md 13.6節）。**作りかけは成果物の素の値を持たない**ので、土台に
+      # できる相手がそこに居ない。
+      #
+      # **手際は負の上乗せ**（積むと所要時間が縮む）。合成の器（`base`・`modify`）はどちらも加算なので、
+      # 時間を縮める上乗せは**縮める側が負の値を持つしかない**——荷が重いほど道が遠くなる travel_delay と、
+      # 向きが違うだけの同じ1本。**正にすると、この1本を読めるのは引き算を持つレシピの工程だけになり、
+      # 手作業の`duration`（base経由）が同じ腕を使えなくなる。** 加算なので**短い工程ほどよく効き、
+      # 長い工程には埋もれる**が、そのずれは残す（Skills.md 7節）。
+      #
+      # **腕ごとに1本ずつ持つ。** 1本を全部の腕で共有すると、石を打ち欠いて上げた腕で編み物まで
+      # 速くなる。
+      # ------------------------------------------------------------------
+      # 打ち欠く手際。石斧・突き銛のレシピ（tools.yaml）が名乗る。
+      knapping_deftness: {value: 0}
+      # 撚る・編む手際。編み籠（containers.yaml）・くくり罠（traps.yaml）・葉の衣類（clothing.yaml）が名乗る。
+      cordage_deftness: {value: 0}
+      # 同じ繊維から余分が取れる重み。くくり罠（traps.yaml）の余分の卓が名乗る。**手際と分けているのは
+      # 桁が違うから**（所要時間は30〜360分、卓の相手は100）。
+      cordage_thrift: {value: 0}
+      # 削り出す手際。槍（tools.yaml）と、走り木を削り出すそり（containers.yaml）が名乗る。
+      woodwork_deftness: {value: 0}
+      # なめす・縫う手際。なめし革と縫った物（clothing.yaml・voyage.yaml）が名乗る。
+      leatherwork_deftness: {value: 0}
+      # 保たせる造作の手際。燻し小屋（smoking.yaml）が名乗る。
+      preserving_deftness: {value: 0}

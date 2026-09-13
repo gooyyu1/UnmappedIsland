@@ -219,10 +219,19 @@ object_defs:
         # 材料は植物繊維だけで、素材の側は初日から揃う（docs/engine/SkillSystem.md 4.2節）。
         conditions:
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
+        # 結ぶ速さも歩留まりも繊維・編みが決める（docs/world/Skills.md 7節）。
+        deftness: {subject: agent, prop: cordage_deftness}
         steps:
           - requires:
               - {object: plant_fiber, count: 2, consume: true}
             duration: 30
+        # **同じ繊維から2つ結べる。** 罠は小さく、数を仕掛けるほど当たる物（TrapSystem.md 1節）なので、
+        # 無駄の無さがそのまま仕掛けられる数になる。素の値（取れない側）は100で、取れる側の重みは
+        # 作り手の腕そのもの——素人（0）は必ず1つしか作れない。
+        surplus:
+          - {weight: 100}
+          - weight: {subject: agent, prop: cordage_thrift}
+            spawn: {object: snare, into: agent}
 
   # 落とし穴。掘った穴そのものなので、**据え置きの設置物（fixture）になる**（TrapSystem.md 1節）。
   # 持ち歩ける罠が仕掛け直せる代わりに小さいのに対し、掘る罠は大きい代わりに仕掛けた土地が

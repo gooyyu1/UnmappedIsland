@@ -37,24 +37,29 @@ object_defs:
       # **段ごとに1つの定数なので、寝床のぶんは長さに正比例する。** キャラクタ側が持つ「まとめて休む
       # ほど得」が効くのは地面の上だけで、寝床の上では nap 2回と sleep 1回がちょうど同じだけ戻る。
       #
+      # **量は1日に削られる体力から逆算してある**（docs/world/Bedding.md 4節）。骨組みを差した 3/tick が、
+      # 一晩（24tick）で heavy を担ぎ通した1日ぶん（-72）をちょうど返す位置で、敷物だけの 2/tick は
+      # そこへ届かない。**どの段の一晩も、いちばん薄い体力の上限を下回る**ので（characters/engineer.yaml
+      # の90）、段の差は通しの睡眠にそのまま出る。
+      #
       # **覚醒度は段で動かない**——sleep で戻るのは段によらず同じで、18時間起きて6時間眠るとちょうど
       # 元へ戻るという釣り合いを寝床の上でも保つ（docs/world/Characters.md 休息節）。
       nap:
         trigger: menu
         duration: 180
         passives:
-          - add: {agent: {stamina: 5, wakefulness: 4}}
+          - add: {agent: {stamina: 2, wakefulness: 4}}
           - conditions:
               - {slot: structure, matches: {tag: bed_frame}}
-            add: {agent: {stamina: 2}}
+            add: {agent: {stamina: 1}}
       sleep:
         trigger: menu
         duration: 360
         passives:
-          - add: {agent: {stamina: 5, wakefulness: 4}}
+          - add: {agent: {stamina: 2, wakefulness: 4}}
           - conditions:
               - {slot: structure, matches: {tag: bed_frame}}
-            add: {agent: {stamina: 2}}
+            add: {agent: {stamina: 1}}
     recipes:
       # 編んだ葉を3枚、端を重ねて広げる。道具も紐も要らない。
       spread:
@@ -131,14 +136,14 @@ object_defs:
       weight: {value: 1000}
     interactions:
       # 背中の下を風が抜けるので、虫にも湿気にも最も強い（docs/world/Bedding.md 6節）。骨組みを
-      # 差した寝台（5+2）と並ぶ量を、段が1つしかないので1行で持つ。
+      # 差した寝台（2+1）と並ぶ量を、段が1つしかないので1行で持つ。
       nap:
         trigger: menu
         duration: 180
         passives:
-          - add: {agent: {stamina: 7, wakefulness: 4}}
+          - add: {agent: {stamina: 3, wakefulness: 4}}
       sleep:
         trigger: menu
         duration: 360
         passives:
-          - add: {agent: {stamina: 7, wakefulness: 4}}
+          - add: {agent: {stamina: 3, wakefulness: 4}}

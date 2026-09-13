@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { promptBody } from '../../scripts/agent/prompt-body.mjs';
+import { promptBody } from '../../scripts/daemon/prompt-body.mjs';
 import {
   isAnalysisRecord,
   isVerbatimRecord,
@@ -279,7 +279,7 @@ const MARK_RULE_FILES = REF_TARGETS.filter(
   (rel) => !isVerbatimRecord(rel) && !isAnalysisRecord(rel),
 );
 
-/** ひな形。セッションへ渡す本体を囲みに入れて持つ（`scripts/agent/prompt-body.mjs`）。 */
+/** ひな形。セッションへ渡す本体を囲みに入れて持つ（`scripts/daemon/prompt-body.mjs`）。 */
 function isPromptTemplate(rel: string): boolean {
   return rel.startsWith(join('agent-ops', 'prompts') + sep) && rel.endsWith('-prompt.md');
 }
@@ -288,7 +288,7 @@ function isPromptTemplate(rel: string): boolean {
  * その文書が持つ、**名前・番号で引ける節**の見出し。
  *
  * ひな形は囲みの中が本体なので、そこの見出しも節として引ける。取り出しは渡す側と同じ1つを呼ぶ
- * （`scripts/agent/prompt-body.mjs`）——別に持つと、**渡る本文と、節を引ける範囲がずれる。**
+ * （`scripts/daemon/prompt-body.mjs`）——別に持つと、**渡る本文と、節を引ける範囲がずれる。**
  * 本体の中のさらなる囲みは今までどおり例示で、{@link headingsOf} が落とす。
  */
 function namedSectionsOf(rel: string, markdown: string): string[] {

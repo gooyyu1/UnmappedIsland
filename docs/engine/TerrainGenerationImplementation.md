@@ -164,9 +164,11 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
      その `props` を `getProperty(...).setNumberWithoutEvents` で書き込んでから、`world.locations` スロットへ
      `moveToSlotOrRejection`。
   2. `map.sites` を1つずつ、その `Site` に接続する `map.edges` を集め（`filter`/`map`）、
-     `ObjectDef.tryGetPropertyDef(progressId).range.max` から探索率100%の進捗 `progressMax` を読み、道の本数に
-     応じて `required_progress` を `[FIRST_PATH_PROGRESS(=2), progressMax - 1]` へ等間隔割当てする式
-     （`FIRST_PATH_PROGRESS + (lastPathProgress - FIRST_PATH_PROGRESS) * i / (touching.length - 1)`）で計算します。
+     `ObjectDef.tryGetPropertyDef(progressId).range.max` から探索率100%の進捗 `progressMax` を読み、
+     **`pathRequiredProgresses(道の本数, progressMax)`** で `required_progress` の並びを受け取ります。
+     **割り当ての式はこの関数が1箇所で持ちます**——同じ割り当てを測る側
+     （`src/analysis/pathDiscovery.ts`、`stats/terrain.yaml` の `path_discovery`）も同じ関数を通るので、
+     式を変えても統計だけが古いまま残ることがありません。
      `path` を `session.createObject` し、`getProperty(...).setNumberWithoutEvents` で
      `travel_minutes`/`required_progress`/`destination_id`（接続相手の `instanceId`）を書き込み、
      `undiscovered_fixtures` スロットへ `moveToSlotOrRejection` します。

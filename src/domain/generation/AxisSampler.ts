@@ -11,10 +11,16 @@ import { ISLAND_RADIUS } from './SitePlacer';
  * 島全体のサンプルを[0,1]いっぱいへ引き伸ばす。
  */
 
-/** 海岸帯の判定（generation_scopesのcoast_band・hull_coast）が対象にする、
+/**
+ * 海岸帯の判定（generation_scopesのcoast_band・hull_coast）が対象にする、
  * 生成側が規約として知っている軸名（WorldVocabularyの"volume"・"weight"と同じ立ち位置）。
- * この名前の軸が定義されていなければ、海岸帯クランプは単に何もしない。 */
-const COASTAL_DISTANCE_AXIS_NAME = 'coastal_distance';
+ * この名前の軸が定義されていなければ、海岸帯クランプは単に何もしない。
+ *
+ * **公開しているのは、外から「この土地は海に接しているか」を引くため。** 生成の入口
+ * （`generateIsland`）が返すのは軸値を持つ`Site`までで、**どの軸が海岸帯を決めるかは入口の側に
+ * 現れない**ので、規約を字面で書き写す以外に外から同じ判定を組む道が無い。
+ */
+export const COASTAL_DISTANCE_AXIS_NAME = 'coastal_distance';
 
 export function assignAxisValues(
   axes: ReadonlyMap<string, AxisDef>,

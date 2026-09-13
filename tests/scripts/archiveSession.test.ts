@@ -7,7 +7,7 @@ import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
- * `scripts/agent/archive-session.sh` の、**戻せない操作**だけを見る検査。
+ * `scripts/daemon/archive-session.sh` の、**戻せない操作**だけを見る検査。
  *
  * セッションを畳むのは打ち直せるが、worktree を消すのは戻せない。`git` は本物を使い、一時
  * ディレクトリに本物のリポジトリと worktree を作って走らせる——スタブにすると「消したつもり」で
@@ -18,7 +18,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
 // 既定の5秒を超えうる。
 vi.setConfig({ testTimeout: 20000 });
 
-const SCRIPT = resolve(__dirname, '../../scripts/agent/archive-session.sh');
+const SCRIPT = resolve(__dirname, '../../scripts/daemon/archive-session.sh');
 
 const SESSION = 'session_01TESTTESTTESTTESTTEST';
 /** worktree の名前は、IDから接頭辞を落として作る（スクリプトと同じ規約）。 */

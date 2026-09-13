@@ -54,7 +54,7 @@ const EXCUSE = 'ERROR: アクセスが拒否されました。';
  * そのディレクトリを、**bash が呼ぶ名前**で答える。
  *
  * XMLへ入るのは `cd … && pwd` が出した綴りで、**MSYS2 の bash はそこで `/c/…` を返す**（`C:/…` では
- * ない。[`ccr-env.sh`](../../scripts/agent/ccr-env.sh) が同じ往復を記録している）。Node が組んだ綴りと
+ * ない。[`ccr-env.sh`](../../scripts/daemon/ccr-env.sh) が同じ往復を記録している）。Node が組んだ綴りと
  * 直に突き合わせると、**Windowsで `npm test` を打った者にだけ赤くなり**、`schtasks` の無いCIでは
  * 気づけない。
  */
@@ -188,7 +188,7 @@ describe('daemon-wake-task.sh', () => {
     const run = register();
 
     // `&` はXMLでは書けないので、繋ぎは `&amp;&amp;`。**`cd` が転んだら打たない。**
-    expect(handedXml(run)).toContain('&amp;&amp; bash scripts/agent/daemon.sh start"</Arguments>');
+    expect(handedXml(run)).toContain('&amp;&amp; bash scripts/daemon/daemon.sh start"</Arguments>');
     expect(handedXml(run).match(/<Exec>/g)).toHaveLength(1);
   });
 

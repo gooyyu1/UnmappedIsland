@@ -1,9 +1,9 @@
 # 棚卸しのプロンプト
 
 **未整理の issue**——棚卸しの結論（`kind:` と `goal:`）が揃っていないもの——を分類し、投入できる形へ
-翻訳する係の本文。投入するのは盤面（[`board-move.mjs`](../../scripts/agent/board-move.mjs) の `CYCLES`）で、
+翻訳する係の本文。投入するのは盤面（[`board-move.mjs`](../../scripts/daemon/board-move.mjs) の `CYCLES`）で、
 未整理が1件でもあれば立つ。渡し方は
-[`dispatch-chore.sh`](../../scripts/agent/dispatch-chore.sh)。
+[`dispatch-chore.sh`](../../scripts/daemon/dispatch-chore.sh)。
 
 **未整理の全件をまとめて1セッションに渡す。** 1件ずつ配ると、この係にしかできない仕事が全部落ちる
 ——**別々に立った issue が同じ原因であること**（#1042・#1043・#1044 はどれもカードの移動
@@ -151,7 +151,7 @@ issue には、例外なく**付けてください。
   全部に付けば、無いのと同じ「古いものから」に戻ります。
 - **`area:art`** — 画像を生成する。GPUを専有するので同時に1本しか走れません。
 - **`area:daemon`** — 走らせながらは書き換えられないデーモンの仕組み
-  （`scripts/agent/**`・`.github/workflows/board-labels.yml`）。
+  （`scripts/**`・`.github/workflows/board-labels.yml`）。
 
 分類している issue に付けるのは `kind:` から下だけです。**出どころの印は動かしません**——立てた側が
 起票のときに名乗るもので、後から見分けられる者は居ません。`origin:agent` を渡すのは (c) で新しく

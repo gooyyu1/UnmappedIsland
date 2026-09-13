@@ -72,6 +72,19 @@ object_defs:
       state: {of: {tag: burnt}}
   burnt_ember:
     traits: [burnt]
+  # 輸送の途中で自分の型が変わる炉。1本目でfuelが尽きてon_minからbecomeが走り、2本目はその後ろに
+  # 宣言してある（2本目が動かすashは、型が変わっても同じ名前で引き継がれる）。
+  kiln:
+    props:
+      fuel: {value: 1, range: {min: 0, max: 10}, on_min: {become: {state: burnt_ember}}}
+      heat: {value: 0, range: {min: 0, max: 10}}
+      ash: {value: 5, range: {min: 0, max: 10}}
+      soot: {value: 0, range: {min: 0, max: 10}}
+    passives:
+      - transfer: {from_prop: fuel, to_prop: heat, amount: 1}
+      - transfer: {from_prop: ash, to_prop: soot, amount: 1}
+    variation_axes:
+      state: {of: {tag: burnt}}
   # 作りかけと名前の重なるスロットを持たない完成品。中身は行き場を失う。
   torch:
     tags: [item]
@@ -241,5 +254,37 @@ object_defs:
       ember.tryGetProperty(progressId)?.number,
       '済ませたprogressは、作り直されても二度は積まれない',
     ).toBe(1);
+  });
+
+  /**
+   * 輸送も宣言順に走る（8.4.1節）。型が変われば、宣言順で後ろの輸送は「もうその型でない物」への
+   * 宣言になるので、そこで打ち切る（9.9.1節）。
+   */
+  /**
+   * 出す側の`on_min`からbecomeが走ると、受け取る側のプロパティは作り直される。掴んだままの個体へ
+   * 入れると、出した分が現物のどこにも残らない（9.9.1節）。
+   */
+  it('出した分でbecomeが走っても、受け取る側は作り直された後のプロパティが受け取る', () => {
+    const kiln = session.createObject(idOf('kiln'));
+    const fuelId = codex.propertyNames.getId('fuel');
+    const heatId = codex.propertyNames.getId('heat');
+
+    kiln.tick();
+
+    expect(kiln.def.name, '出した側が尽きて、その場で型が変わっている').not.toBe('kiln');
+    expect(kiln.tryGetProperty(fuelId)?.number, '出した側は尽きている').toBe(0);
+    expect(kiln.tryGetProperty(heatId)?.number, '出した分は受け取る側に残っている').toBe(1);
+  });
+
+  it('輸送の途中で型が変わったら、宣言順で後ろの輸送はそのtickには走らない', () => {
+    const kiln = session.createObject(idOf('kiln'));
+    const ashId = codex.propertyNames.getId('ash');
+    const sootId = codex.propertyNames.getId('soot');
+
+    kiln.tick();
+
+    expect(kiln.def.name, '1本目の輸送でfuelが尽き、on_minから型が変わっている').not.toBe('kiln');
+    expect(kiln.tryGetProperty(ashId)?.number, '2本目の輸送は走らないので、出どころは減らない').toBe(5);
+    expect(kiln.tryGetProperty(sootId)?.number, '受け先も動かない').toBe(0);
   });
 });

@@ -50,6 +50,16 @@ const WARINESS_CASES = [
   { stage: 'enraged', value: 85 },
 ] as const;
 
+/**
+ * 同じく、体調が押し下げた後の意識（`animals.yaml`のbeast trait）。**気を失った段は入れない**
+ * ——この押し引きは意識が濁っている間のもので、気を失った相手では警戒が消えたぶんが別に効く。
+ */
+const CONSCIOUSNESS_CASES = [
+  { stage: 'clear', value: 100 },
+  { stage: 'foggy', value: 70 },
+  { stage: 'dazed', value: 40 },
+] as const;
+
 const ENCOUNTER_SEEDS = 150;
 const MOVE_SEEDS = 500;
 const TRACKING_SEEDS = 12;
@@ -169,7 +179,7 @@ function encounterRecords(codex: WorldCodex): { measures: YamlRecord[]; endings:
 }
 
 /**
- * 1手の顔ぶれ（獣×警戒×間合い）。**手番を1つだけ回して数える**——2手目からはその1手が変えた
+ * 1手の顔ぶれ（獣×警戒×意識×間合い）。**手番を1つだけ回して数える**——2手目からはその1手が変えた
  * 世界（くわえた物・逃げた先）を見ることになり、素の配分ではなくなる。
  *
  * 足元には持ち去りの相手（ヤシの実）と体当たりの相手（編み籠）を1つずつ置く。置かないと、
@@ -181,31 +191,35 @@ function beastMoveRecords(codex: WorldCodex): YamlRecord[] {
   for (const animalName of ANIMALS) {
     for (const braced of [false, true]) {
       for (const wariness of WARINESS_CASES) {
-        const counts = new Map<string, number>();
-        const setup: HuntEncounterSetup = {
-          animalName,
-          escapeRoutes: 1,
-          groundItems: ['coconut', 'woven_basket'],
-          startingWariness: wariness.value,
-          turnLimit: 1,
-        };
+        for (const consciousness of CONSCIOUSNESS_CASES) {
+          const counts = new Map<string, number>();
+          const setup: HuntEncounterSetup = {
+            animalName,
+            escapeRoutes: 1,
+            groundItems: ['coconut', 'woven_basket'],
+            startingWariness: wariness.value,
+            startingConsciousness: consciousness.value,
+            turnLimit: 1,
+          };
 
-        for (let seed = 0; seed < MOVE_SEEDS; seed++) {
-          const encounter = runHuntEncounter(codex, braced ? withBracedReach(setup) : setup, seed);
-          for (const [move, count] of beastMoveCountsOf(encounter)) {
-            counts.set(move, (counts.get(move) ?? 0) + count);
+          for (let seed = 0; seed < MOVE_SEEDS; seed++) {
+            const encounter = runHuntEncounter(codex, braced ? withBracedReach(setup) : setup, seed);
+            for (const [move, count] of beastMoveCountsOf(encounter)) {
+              counts.set(move, (counts.get(move) ?? 0) + count);
+            }
           }
-        }
 
-        records.push({
-          animal: animalName,
-          wariness: wariness.stage,
-          braced_reach: braced,
-          unit: 'percent',
-          moves: sortedByName(counts)
-            .filter(([, count]) => count > 0)
-            .map(([move, count]) => ({ move, share: rounded((count / MOVE_SEEDS) * 100, 2) })),
-        });
+          records.push({
+            animal: animalName,
+            wariness: wariness.stage,
+            consciousness: consciousness.stage,
+            braced_reach: braced,
+            unit: 'percent',
+            moves: sortedByName(counts)
+              .filter(([, count]) => count > 0)
+              .map(([move, count]) => ({ move, share: rounded((count / MOVE_SEEDS) * 100, 2) })),
+          });
+        }
       }
     }
   }

@@ -1,9 +1,9 @@
 # 掘り起こしのプロンプト
 
 **完成の定義に照らして、まだ issue になっていない残りを数える**係の本文。投入するのは盤面
-（[`board-move.mjs`](../../scripts/agent/board-move.mjs) の `CYCLES`）で、**配れる `goal:game` の
+（[`board-move.mjs`](../../scripts/daemon/board-move.mjs) の `CYCLES`）で、**配れる `goal:game` の
 `kind:task` が無くなった周**に立つ。渡し方は
-[`dispatch-chore.sh`](../../scripts/agent/dispatch-chore.sh)。
+[`dispatch-chore.sh`](../../scripts/daemon/dispatch-chore.sh)。
 
 **在庫の数では立たない**（[`board-design.md`](../board-design.md) 2.18.1）。スメルを拾う係の入力は
 PRが出るたびに生えるので、「配れる task が尽きた」を条件にしていた間、**整備の issue が在庫を

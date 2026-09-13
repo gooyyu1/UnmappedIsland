@@ -3,16 +3,16 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { formatLive, liveSessions } from '../../scripts/agent/live-sessions.mjs';
+import { formatLive, liveSessions } from '../../scripts/daemon/live-sessions.mjs';
 
 /**
- * `scripts/agent/live-sessions.mjs` の検査。
+ * `scripts/daemon/live-sessions.mjs` の検査。
  *
  * ここが守るのは**「畳まれていない」の定義が1箇所に留まること**と、**どこで走っているかを
  * 取り違えないこと**（`agent-ops/board-design.md` 2.16.2）。後者を誤ると、盤面が正しく走っている
  * ワーカーを「場所が違う」と読んで畳む。
  *
- * 環境IDの既定値を持つのは [`ccr-env.sh`](../../scripts/agent/ccr-env.sh) なので、**そこを叩いて
+ * 環境IDの既定値を持つのは [`ccr-env.sh`](../../scripts/daemon/ccr-env.sh) なので、**そこを叩いて
  * 読めること自体も見る**——書き写せば済む話にしてあると、あちらを直したときにここが黙って古いIDを
  * 見続ける。
  */
