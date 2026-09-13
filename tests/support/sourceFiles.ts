@@ -5,18 +5,19 @@ import { join, resolve } from 'node:path';
 export const ROOT = resolve(__dirname, '../..');
 
 /**
- * そのディレクトリ以下の.tsファイル（リポジトリ相対）。
+ * そのディレクトリ以下のソース（リポジトリ相対）。既定では`.ts`だけを拾い、`extensions`を渡すと
+ * その種類を拾う（`scripts`・`.claude`には`.mjs`で書かれたものが在る）。
  *
  * **ファイル1つを名指しされたら、それを1件だけ返す**——検査の対象には置き場だけでなく、層の外の
  * 1ファイル（`src/game/errorReport.ts`・`src/game/launchSeed.ts`）も並ぶため。
  */
-export function sourcesIn(dir: string): string[] {
-  if (dir.endsWith('.ts')) return [dir];
+export function sourcesIn(dir: string, extensions: readonly string[] = ['.ts']): string[] {
+  if (extensions.some((extension) => dir.endsWith(extension))) return [dir];
   const found: string[] = [];
   for (const entry of readdirSync(join(ROOT, dir))) {
     const rel = `${dir}/${entry}`;
-    if (statSync(join(ROOT, rel)).isDirectory()) found.push(...sourcesIn(rel));
-    else if (entry.endsWith('.ts')) found.push(rel);
+    if (statSync(join(ROOT, rel)).isDirectory()) found.push(...sourcesIn(rel, extensions));
+    else if (extensions.some((extension) => entry.endsWith(extension))) found.push(rel);
   }
   return found;
 }

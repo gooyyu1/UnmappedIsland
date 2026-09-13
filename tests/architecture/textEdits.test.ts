@@ -1,7 +1,7 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ROOT } from '../support/sourceFiles';
+import { ROOT, sourcesIn } from '../support/sourceFiles';
 
 /**
  * 字面の差し替えの書き方の検査。
@@ -15,15 +15,20 @@ import { ROOT } from '../support/sourceFiles';
  * しかも試験は「主張を破った入力」ではなく健全な入力を見たまま落ちるので、赤の理由も読めない
  * （issue #2125）。字面で見張る以外に、書いた時点で気づく手立てが無い。
  *
- * **取りこぼすのは、字面リテラルの形で書かれていない差し替え**——`'a' + '\n'` のように組み立てた
- * ものや、変数に入れてから渡したものは当たらない。見えている形から倒す。
+ * **取りこぼすのは2種類。** 改行を含まない差し替え——それは作業ツリーの改行コードに依らないので、
+ * 当たった数を確かめる規則（`docs/CodingConventions.md`）だけが掛かる——と、字面リテラルの形で
+ * 書かれていない差し替え（`'a' + '\n'` のように組み立てたもの、変数に入れてから渡したもの）。
+ * 見えている形から倒す。
  */
 
 /** 改行コードに依らない差し替えの入口（試験）。 */
 const DOOR = 'tests/support/textEdit.ts';
 
-/** 字面を読む置き場。ここだけを見る（生成物や同梱の定義は差し替えの主体にならない）。 */
-const SCANNED = ['tests', 'src', 'scripts'];
+/** 手で書いたソースの置き場。リポジトリのソースはすべてここに在る。 */
+const SCANNED = ['tests', 'src', 'scripts', '.claude'];
+
+/** 見るソースの種類。 */
+const SOURCE_EXTENSIONS = ['.ts', '.mts', '.mjs'];
 
 /**
  * `replace`/`replaceAll` の第1引数の字面リテラル。引数が行をまたいで折れても当たるよう、字間は
@@ -31,12 +36,7 @@ const SCANNED = ['tests', 'src', 'scripts'];
  */
 const EDIT_WITH_LITERAL = /\.replace(?:All)?\(\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/g;
 
-/** その置き場以下の、字面を持つソース（リポジトリ相対・`/`区切り）。 */
-function sourcesUnder(dir: string): string[] {
-  return readdirSync(join(ROOT, dir), { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile() && /\.(?:ts|mts|mjs)$/.test(entry.name))
-    .map((entry) => relative(ROOT, join(entry.parentPath, entry.name)).split(sep).join('/'));
-}
+const sourcesUnder = (dir: string): string[] => sourcesIn(dir, SOURCE_EXTENSIONS);
 
 const read = (rel: string): string => readFileSync(join(ROOT, rel), 'utf-8');
 
@@ -62,7 +62,7 @@ describe('字面の差し替えの書き方', () => {
     expect(
       offenders,
       `読んだ側で改行をLFへ均し、差し替えは ${DOOR} の replaceAllOrFail を通す` +
-        '（`src`・`scripts` では `\\r?\\n` を受ける正規表現で書く）',
+        '（試験の外からは入口を使えないので、`\\r?\\n` を受ける正規表現で書く）',
     ).toEqual([]);
   });
 

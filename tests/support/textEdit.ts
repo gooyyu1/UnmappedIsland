@@ -6,8 +6,9 @@
  * 通る**か、破れていないのに赤くなるかのどちらかになる。当たった数を呼び手に名乗らせて、
  * 食い違ったらそこで落とす。
  *
- * 差し替え先の字面が動いたら数が変わるので、**数は「今いくつ在るか」ではなく「いくつに当てるつもりか」**
- * として読む。狙いより多い側でも落ちるのは、増えた分が主張の外から来ているため。
+ * **狙いより多い側でも落ちる。** 増えた分にも当てるつもりが在ったかは、その試験の主張を知っている
+ * 呼び手にしか決められない——同梱の定義を数えて書いた数なら、定義が増えた回にここで止まり、
+ * 増えた側も差し替えるべきかを確かめる機会になる。
  */
 
 /** 1回の差し替え。 */
@@ -21,7 +22,8 @@ export interface TextEdit {
 /**
  * `from` の**すべて**を `to` へ差し替えた文字列。当たった数が `edit.occurrences` と違えば投げる。
  *
- * 数えるのは差し替える前の字面なので、`to` が `from` を含んでいても数は膨らまない。
+ * 数えるのは差し替える前の字面なので、`to` が `from` を含んでいても数は膨らまない。`to` は**字面
+ * そのもの**が入る（`$&` などの置換パターンとしては読まない）。
  */
 export function replaceAllOrFail(text: string, edit: TextEdit): string {
   if (edit.from === '') throw new Error('差し替える字面が空。どこにでも当たるので数を確かめられない');
@@ -32,5 +34,7 @@ export function replaceAllOrFail(text: string, edit: TextEdit): string {
       `字面の差し替えが${edit.occurrences}箇所のはずが${found}箇所に当たった: ${JSON.stringify(edit.from)}`,
     );
 
-  return text.replaceAll(edit.from, edit.to);
+  // 差し替え先を関数で渡すのは、`$&`・`$1` を置換パターンとして解釈させないため。字面を渡すと、
+  // 数の検査は通ったうえで狙ったのとは別の入力が黙って渡る。
+  return text.replaceAll(edit.from, () => edit.to);
 }

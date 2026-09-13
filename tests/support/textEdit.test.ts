@@ -40,4 +40,10 @@ describe('字面の差し替え', () => {
   it('差し替え先が元の字面を含んでいても、数は膨らまない', () => {
     expect(replaceAllOrFail('a', { from: 'a', to: 'aa', occurrences: 1 })).toBe('aa');
   });
+
+  it('差し替え先の `$` は、置換パターンではなく字面として入る', () => {
+    // `$&` を解釈されると、数の検査は通ったうえで狙ったのとは別の入力が黙って渡る——この入口が
+    // 潰している失敗の形そのもの。
+    expect(replaceAllOrFail('cost: x', { from: 'x', to: '$&5', occurrences: 1 })).toBe('cost: $&5');
+  });
 });

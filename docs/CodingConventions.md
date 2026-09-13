@@ -133,7 +133,9 @@ Codexを持たずに組み立てだけを見る）。`as <種類>GlobalId` を g
 - **字面を差し替えて入力を作るときは、当たった数を確かめる**
   （[`tests/support/textEdit.ts`](../tests/support/textEdit.ts) の `replaceAllOrFail`）。当たらない
   差し替えは黙って元の文字列を返すので、確かめたい主張とは別の面を見たまま緑になる。
-  `tests/architecture/textEdits.test.ts` が見張る。
+  **このうち機械で止まるのは、改行を含む字面で差し替える形だけ**
+  （`tests/architecture/textEdits.test.ts`。作業ツリーの改行コードで結果が変わるため、字面で見分けば
+  足りる）。改行を含まない差し替えは規則だけで、破っても落ちるものは無い。
 
 `export` は「この名前は外から使う」という宣言なので、どこからも輸入されない `const`・`function` は
 `tests/architecture/exports.test.ts` が見張る（型とクラスは、輸入されなくても署名で名乗るために公開する
