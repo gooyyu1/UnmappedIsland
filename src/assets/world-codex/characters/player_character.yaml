@@ -912,7 +912,7 @@ traits:
       # 同じ繊維から余分が取れる重み。くくり罠（traps.yaml）の余分の卓が名乗る。**手際と分けているのは
       # 桁が違うから**（所要時間は30〜360分、卓の相手は100）。
       cordage_thrift: {value: 0}
-      # 削り出す手際。槍のレシピ（tools.yaml）が名乗る。
+      # 削り出す手際。槍（tools.yaml）と、走り木を削り出すそり（containers.yaml）が名乗る。
       woodwork_deftness: {value: 0}
       # なめす・縫う手際。なめし革と縫った物（clothing.yaml・voyage.yaml）が名乗る。
       leatherwork_deftness: {value: 0}

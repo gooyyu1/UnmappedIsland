@@ -722,6 +722,26 @@ describe('腕前とレシピの解放条件', () => {
     }
   });
 
+  it('腕を上げると、その腕を名乗るレシピの工程は短くなる', () => {
+    // **「手際は負の上乗せ」（Skills.md 7節）を実データで押さえるのはここだけ。** 一つ上の検査は
+    // 符号が1種に揃っていることしか見ないので、`CRAFTING_BONUSES` と世界を**揃って正へ倒すと緑のまま
+    // 通る**——そのとき腕が上がるほど工程は長くなる。向きは、実際に分数を引き比べないと出ない。
+    //
+    // 合成YAMLに手で値を入れる側（tests/domain/crafting.test.ts）では代われない。あちらが見るのは
+    // エンジンの積み方で、世界が宣言した刻みの符号は読んでいない。
+    const novice = characterWithSkills(STAGES[0].min);
+    const expert = characterWithSkills(STAGES.at(-1)!.min);
+    const named = gatedRecipes().filter(({ recipe }) => recipe.deftness !== undefined);
+    expect(named.length, '手際を名乗るレシピが1つも無い').toBeGreaterThan(0);
+
+    for (const { product, recipe } of named)
+      for (const [index, step] of recipe.steps.entries())
+        expect(
+          recipe.minutesFor(step, expert),
+          `'${product}' の工程${index + 1}: 熟達しても短くならない`,
+        ).toBeLessThan(recipe.minutesFor(step, novice));
+  });
+
   it('腕を要求するレシピは、要求している腕の手際を名乗る', () => {
     // **名乗りは解放条件から導けない**（連言なので1つに定まらない、docs/world/Skills.md 7節）ので、
     // レシピごとに書く。書き忘れると、その1本だけ腕を上げても速くならないレシピになる——目視では

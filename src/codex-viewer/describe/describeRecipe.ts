@@ -14,8 +14,10 @@ export function describeRecipe(recipe: RecipeDef, names: DefNames, out: Descript
 
   const deftness = recipe.deftness;
   if (deftness !== undefined)
+    // **「積む」と書く。** 手際は負の上乗せ（docs/world/Skills.md 7節）で、この行の右に出るのは在り処
+    // だけなので、「引く」と書くと読み手は自分の -8 を引いて工程が伸びると読む——向きが逆になる。
     out.write(
-      text('手際（工程から引く）: '),
+      text('手際（各工程の時間へ積む）: '),
       propertyPathRef(names.propertyName(deftness.propertyGlobalId), deftness.root),
     );
 

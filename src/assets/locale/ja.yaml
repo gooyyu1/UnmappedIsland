@@ -340,11 +340,11 @@ object_texts:
       knapping_deftness:
         display_name: 打ち欠く手際
         icon: ⏱️
-        description: 石の刃を据える工程が縮む分数。石器の腕が上がるほど深く縮む。
+        description: 石の刃を据える工程の時間への上乗せ。石器の腕が上がるほど深く縮む。
       cordage_deftness:
         display_name: 編む手際
         icon: ⏱️
-        description: 撚り、編み、結ぶ工程が縮む分数。繊維・編みの腕が上がるほど深く縮む。
+        description: 撚り、編み、結ぶ工程の時間への上乗せ。繊維・編みの腕が上がるほど深く縮む。
       cordage_thrift:
         display_name: 繊維の無駄の無さ
         icon: ♻️
@@ -352,15 +352,15 @@ object_texts:
       woodwork_deftness:
         display_name: 削る手際
         icon: ⏱️
-        description: 木を削り出す工程が縮む分数。木材加工の腕が上がるほど深く縮む。
+        description: 木を削り出す工程の時間への上乗せ。木材加工の腕が上がるほど深く縮む。
       leatherwork_deftness:
         display_name: なめす手際
         icon: ⏱️
-        description: 革をなめし、縫う工程が縮む分数。皮革の腕が上がるほど深く縮む。
+        description: 革をなめし、縫う工程の時間への上乗せ。皮革の腕が上がるほど深く縮む。
       preserving_deftness:
         display_name: 保たせる手際
         icon: ⏱️
-        description: 保存の造作を組む工程が縮む分数。保存の腕が上がるほど深く縮む。
+        description: 保存の造作を組む工程の時間への上乗せ。保存の腕が上がるほど深く縮む。
       afloat:
         display_name: 浮いている
         description: 水に浮かんでいるか。帆のような部品は、浮いている間だけ効く。
