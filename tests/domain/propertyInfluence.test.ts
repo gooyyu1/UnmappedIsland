@@ -21,6 +21,50 @@ describe('PropertyInfluence(プロパティが交わしている影響)', () => 
     return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
+  /** 時間が進む世界。tickが回るのは、ここの`stuff`枠から下に繋がっている物だけ。 */
+  const WORLD_YAML = `
+object_defs:
+  world:
+    singleton: true
+    props:
+      minutes_per_tick: {value: 15}
+      minute:
+        value: 0
+        range: {min: 0, max: 60}
+        on_max:
+          add: {self: {minute: -60, hour: 1}}
+      hour: {value: 0, range: {min: 0, max: 24}}
+      day: {value: 1}
+    slots:
+      stuff: {}
+`;
+
+  /** WORLD_YAMLの世界を組み、その`stuff`枠へ型を置ける場面。時間を進める操作を回す試験が使う。 */
+  function loadWithWorld(yaml: string): {
+    codex: WorldCodex;
+    session: WorldSession;
+    place: (objectName: string) => WorldObject;
+  } {
+    const codex = new WorldCodexYamlLoader()
+      .load('world.yaml', WORLD_YAML)
+      .load('extra.yaml', yaml)
+      .buildAndReset();
+    const worldDef = codex.objects.get(codex.objectNames.getId('world'));
+    const world = new World(new WorldObject(nextInstanceId++, worldDef, new WorldSession(codex)), codex);
+    const session = new WorldSession(codex, world);
+    const stuff = world.instance.getSlot(codex.slotNames.getId('stuff'));
+
+    return {
+      codex,
+      session,
+      place: (objectName) => {
+        const object = spawn(codex, objectName, session);
+        expect(object.moveToSlotOrRejection(stuff)).toBeUndefined();
+        return object;
+      },
+    };
+  }
+
   function spawn(codex: WorldCodex, objectName: string, session = new WorldSession(codex)): WorldObject {
     const def = codex.objects.get(codex.objectNames.getId(objectName));
     return new WorldObject(nextInstanceId++, def, session);
@@ -273,29 +317,7 @@ object_defs:
   it('役を対象にした影響は、その操作が続いている間だけ相手の一覧に並ぶ', () => {
     // 道が「今歩いている人の速さを下げる」を持つ形（GameElementDefinition.md 11.5節）。宣言元（道）は
     // 歩く人から見て木の上に居ないので、集める範囲が木だけだと歩いている最中でも一覧に出ない。
-    const codex = new WorldCodexYamlLoader()
-      .load(
-        'world.yaml',
-        `
-object_defs:
-  world:
-    singleton: true
-    props:
-      minutes_per_tick: {value: 15}
-      minute:
-        value: 0
-        range: {min: 0, max: 60}
-        on_max:
-          add: {self: {minute: -60, hour: 1}}
-      hour: {value: 0, range: {min: 0, max: 24}}
-      day: {value: 1}
-    slots:
-      stuff: {}
-`,
-      )
-      .load(
-        'extra.yaml',
-        `
+    const { codex, session, place } = loadWithWorld(`
 object_defs:
   walker:
     props:
@@ -307,16 +329,9 @@ object_defs:
       travel:
         trigger: menu
         duration: 30
-`,
-      )
-      .buildAndReset();
-    const worldDef = codex.objects.get(codex.objectNames.getId('world'));
-    const world = new World(new WorldObject(nextInstanceId++, worldDef, new WorldSession(codex)), codex);
-    const session = new WorldSession(codex, world);
-    const stuff = world.instance.getSlot(codex.slotNames.getId('stuff'));
-    const path = spawn(codex, 'path', session);
-    const walker = spawn(codex, 'walker', session);
-    for (const object of [path, walker]) expect(object.moveToSlotOrRejection(stuff)).toBeUndefined();
+`);
+    const path = place('path');
+    const walker = place('walker');
 
     const speedId = codex.propertyNames.getId('speed');
     const receivedSpeed = () => shown(codex, walker.readInfluences(speedId).received);
@@ -335,6 +350,122 @@ object_defs:
 
     expect(whileWalking, '歩いている間は、道を影響元として並ぶ').toEqual(['path▼']);
     expect(receivedSpeed(), '歩き終えれば消える').toEqual([]);
+  });
+
+  it('操作が宣言した持続効果も、その操作が続いている間だけ相手の一覧に並ぶ', () => {
+    // 窯が「焼いている間だけ焼く者の力を削ぐ」を操作の下に書いた形
+    // （GameElementDefinition.md 11.7節）。宣言を持っているのは物ではなく操作なので、物のdefを
+    // 辿るだけでは、効いている最中でも見つからない。
+    const { codex, session, place } = loadWithWorld(`
+object_defs:
+  baker:
+    props:
+      strength: {value: 10, range: {min: 0, max: 100}}
+  kiln:
+    interactions:
+      bake:
+        trigger: menu
+        duration: 30
+        passives:
+          - modify: {agent: {strength: -5}}
+`);
+    const kiln = place('kiln');
+    const baker = place('baker');
+
+    const strengthId = codex.propertyNames.getId('strength');
+    const receivedStrength = () => shown(codex, baker.readInfluences(strengthId).received);
+    expect(receivedStrength(), '焼いていない間は、窯は力へ届いていない').toEqual([]);
+
+    let whileBaking: readonly string[] = [];
+    session.observeTicks(
+      () => {
+        whileBaking = receivedStrength();
+      },
+      () => {
+        expect(kiln.tryGetAction('bake', baker)?.tryExecute()).toBe(true);
+      },
+    );
+
+    expect(whileBaking, '焼いている間は、窯を影響元として並ぶ').toEqual(['kiln▼']);
+    expect(receivedStrength(), '焼き終えれば消える').toEqual([]);
+  });
+
+  it('操作が宣言元自身へ書いた持続効果は、その値が自分から受けている影響になる', () => {
+    // 休憩が「休んでいる間だけ体力を戻す」を持つ形（characters/）。宣言元と相手は同じ物なので木の
+    // 上には居るが、宣言が物のdefではなく操作にあるので、こちらも同じく見つからない。
+    const { codex, session, place } = loadWithWorld(`
+object_defs:
+  survivor:
+    props:
+      stamina: {value: 50, range: {min: 0, max: 100}}
+    interactions:
+      rest:
+        trigger: menu
+        duration: 30
+        passives:
+          - add: {self: {stamina: 2.5}}
+`);
+    const survivor = place('survivor');
+
+    const staminaId = codex.propertyNames.getId('stamina');
+    const receivedStamina = () => shown(codex, survivor.readInfluences(staminaId).received);
+    expect(receivedStamina(), '休んでいない間は、体力を戻すものが居ない').toEqual([]);
+
+    let whileResting: readonly string[] = [];
+    session.observeTicks(
+      () => {
+        whileResting = receivedStamina();
+      },
+      () => {
+        expect(survivor.tryGetAction('rest', survivor)?.tryExecute()).toBe(true);
+      },
+    );
+
+    expect(whileResting, '休んでいる間は、体力が戻っていることが読める').toEqual(['stamina+']);
+    expect(receivedStamina(), '休み終えれば消える').toEqual([]);
+  });
+
+  it('操作が宣言した持続効果の相手は、その操作に加わっていない物のこともある', () => {
+    // 操作の下に書ける対象は役だけではない（GameElementDefinition.md 11.7節。`child`以外は書ける）
+    // ので、焼いている間だけ据えた先を温める窯は、その操作に加わっていない小屋を動かす。
+    const { codex, session, place } = loadWithWorld(`
+object_defs:
+  baker: {}
+  hut:
+    props:
+      heat: {value: 0, range: {min: 0, max: 100}}
+    slots:
+      fixtures: {cell: {accept: {tag: fixture}}}
+  oven:
+    tags: [fixture]
+    interactions:
+      bake:
+        trigger: menu
+        duration: 30
+        passives:
+          - add: {parent: {heat: 1}}
+`);
+    const hut = place('hut');
+    const baker = place('baker');
+    const oven = spawn(codex, 'oven', session);
+    expect(oven.moveToSlotOrRejection(hut.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+
+    const heatId = codex.propertyNames.getId('heat');
+    const receivedHeat = () => shown(codex, hut.readInfluences(heatId).received);
+    expect(receivedHeat(), '焼いていない間は、小屋を温めるものが居ない').toEqual([]);
+
+    let whileBaking: readonly string[] = [];
+    session.observeTicks(
+      () => {
+        whileBaking = receivedHeat();
+      },
+      () => {
+        expect(oven.tryGetAction('bake', baker)?.tryExecute()).toBe(true);
+      },
+    );
+
+    expect(whileBaking, '焼いている間は、加わっていない小屋にも窯が影響元として並ぶ').toEqual(['oven+']);
+    expect(receivedHeat(), '焼き終えれば消える').toEqual([]);
   });
 
   it('怪我が外れれば、その影響も一覧から消える', () => {
