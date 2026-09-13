@@ -130,6 +130,10 @@ Codexを持たずに組み立てだけを見る）。`as <種類>GlobalId` を g
   （`it('rangeの下限に達するとon_minが発火する', …)`）。
 - 乱数に依存する挙動のテストは、実装のシード列に依存させず、意図した値列を返すスタブ `Rng` を渡して
   シナリオを明示する。「同じシード→同じ結果」の再現性だけを確認するテストはシード付き実装を使ってよい。
+- **字面を差し替えて入力を作るときは、当たった数を確かめる**
+  （[`tests/support/textEdit.ts`](../tests/support/textEdit.ts) の `replaceAllOrFail`）。当たらない
+  差し替えは黙って元の文字列を返すので、確かめたい主張とは別の面を見たまま緑になる。
+  `tests/architecture/textEdits.test.ts` が見張る。
 
 `export` は「この名前は外から使う」という宣言なので、どこからも輸入されない `const`・`function` は
 `tests/architecture/exports.test.ts` が見張る（型とクラスは、輸入されなくても署名で名乗るために公開する
