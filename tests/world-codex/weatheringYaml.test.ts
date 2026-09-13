@@ -46,6 +46,7 @@ const MATERIALS: Readonly<Record<string, Material>> = {
   woven_leaf_clothing: 'short_lived',
   tanned_leather_clothing: 'long_lived',
   bed: 'short_lived',
+  slung_hammock: 'long_lived',
 };
 
 /** 表の対象になるタグ。道具・入れ物・身につける物・寝床（DurabilitySystem.md 2節）。 */
