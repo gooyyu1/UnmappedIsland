@@ -4,6 +4,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { AGENT_YAML, createAgent } from '../support/agent';
+import { replaceAllOrFail } from '../support/textEdit';
 
 /**
  * spawnのcount（GameElementDefinition.md 9.4節）の検証。同じ宣言を並べるのと同じ意味なので、
@@ -48,12 +49,16 @@ object_defs:
     expect(itemsOnGround(YAML)).toEqual(['stone', 'stone', 'stone']);
   });
 
+  /** countの宣言を差し替えたYAML。当たらなければ投げる（`replaceAllOrFail`）。 */
+  const withCount = (from: string, to: string): string =>
+    replaceAllOrFail(YAML, { from, to, occurrences: 1 });
+
   it('省略すると1個（従来どおり）', () => {
-    expect(itemsOnGround(YAML.replace(', count: 3', ''))).toEqual(['stone']);
+    expect(itemsOnGround(withCount(', count: 3', ''))).toEqual(['stone']);
   });
 
   it('0以下・小数はロード時に弾く', () => {
-    expect(() => itemsOnGround(YAML.replace('count: 3', 'count: 0'))).toThrow(YamlLoadError);
-    expect(() => itemsOnGround(YAML.replace('count: 3', 'count: 1.5'))).toThrow(YamlLoadError);
+    expect(() => itemsOnGround(withCount('count: 3', 'count: 0'))).toThrow(YamlLoadError);
+    expect(() => itemsOnGround(withCount('count: 3', 'count: 1.5'))).toThrow(YamlLoadError);
   });
 });

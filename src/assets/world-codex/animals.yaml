@@ -613,6 +613,12 @@ object_defs:
     props:
       weight: {value: 5000}
       volume: {value: 12000}
+      # 解体にかかる時間。素の値は死体が持ち、今捌いている人の手際をbaseで継ぐ
+      # （docs/world/Skills.md 7節。他の獣の死体も同じ形で、素の値だけが違う）。
+      butcher_minutes:
+        value: 60
+        base: {subject: agent, prop: leatherwork_deftness}
+        range: {min: 30, max: 60}
     # 塩漬けにできる（salt.yaml）。**解体して出る生肉は漬かっていない**——spawnは新しい個体を
     # 作るので、塩は掛けた個体にしか残らない。丸のまま漬けるのは、解体する時間を後へ回すため
     # （他の獣の死体も同じ）。
@@ -636,11 +642,14 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
-        duration: 60
+        duration: {prop: butcher_minutes}
         # 皮革の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。**なめしへ移るのは獣に刃を入れて分ける手つき**（腕を
         # 切る軸は素材ではなく転移する技術、Skills.md 1節）なので、獣の大小によらず、生皮の採れない
         # 獲物の解体でも同じだけ伸ばす。
+        #
+        # **余分の卓は持たない**（他の獣の死体も同じ）。出る物の数は上の内訳が決めていて、腕で増やすと
+        # 体より多く取れる（docs/world/Skills.md 7節）。
         add: {agent: {skill_leatherwork: 2}}
         destroy: self
         spawn:
@@ -928,6 +937,10 @@ object_defs:
     props:
       weight: {value: 60000}
       volume: {value: 144000}
+      butcher_minutes:
+        value: 240
+        base: {subject: agent, prop: leatherwork_deftness}
+        range: {min: 120, max: 240}
     variation_axes:
       cure: {of: {tag: cured}}
     interactions:
@@ -940,7 +953,7 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
-        duration: 240
+        duration: {prop: butcher_minutes}
         add: {agent: {skill_leatherwork: 2}}
         destroy: self
         spawn:
@@ -959,6 +972,10 @@ object_defs:
     props:
       weight: {value: 1000}
       volume: {value: 2400}
+      butcher_minutes:
+        value: 20
+        base: {subject: agent, prop: leatherwork_deftness}
+        range: {min: 10, max: 20}
     variation_axes:
       cure: {of: {tag: cured}}
     interactions:
@@ -969,7 +986,7 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
-        duration: 20
+        duration: {prop: butcher_minutes}
         add: {agent: {skill_leatherwork: 2}}
         destroy: self
         spawn:
@@ -1057,6 +1074,12 @@ object_defs:
     props:
       weight: {value: 10}
       volume: {value: 15}
+      # 削り出すのにかかる時間。素の値は骨が持ち、今削っている人の手際をbaseで継ぐ
+      # （docs/world/Skills.md 7節）。
+      whittle_minutes:
+        value: 40
+        base: {subject: agent, prop: woodwork_deftness}
+        range: {min: 20, max: 40}
     interactions:
       # 削って針にする（tools.yamlのbone_needle）。**要るのは握りの刃**（handheld_blade、tools.yaml）
       # ——骨を握って刃を面へ沿わせ、少しずつ削ぎ落とす手つきなので、石斧では細らせられない。
@@ -1070,7 +1093,7 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
-        duration: 40
+        duration: {prop: whittle_minutes}
         # **伸びるのは木材加工**（docs/engine/SkillSystem.md 3節の実行経路）。スキルを分ける軸は素材
         # ではなく技術（docs/world/Skills.md 1節）で、刃を当てて削り出す手つきは、太い枝を削る
         # 木材加工の最初の一歩と同じもの——骨であることは転移の向きを変えない。

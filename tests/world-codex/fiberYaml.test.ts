@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import type { Rng } from '../../src/domain/Rng';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -27,20 +28,28 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
   });
 
   beforeEach(() => {
+    buildWorld(fixedRng(0));
+  });
+
+  /**
+   * 土地1つと作業者1人だけの世界を組む。**引く先を名指ししたいテストが引数で乱数源を渡す**
+   * ——余分の卓（無駄の無さ）は同じ引きでも腕で結果が変わるので、引きを固定しないと差が読めない。
+   */
+  function buildWorld(rng: Rng): void {
     const worldInstance = new WorldObject(
       0,
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
     worldView = new World(worldInstance, codex);
-    session = new WorldSession(codex, worldView, fixedRng(0));
+    session = new WorldSession(codex, worldView, rng);
 
     jungle = spawnInto('jungle', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');
     // 刈るのも掻き取るのも撚るのも明るさを要求する（IlluminationSystem.md 5節）。ここで見たいのは
     // 繊維の連鎖なので、時刻や光源を組み立てずに作業者の側で明るさを満たす。
     makeBrightEnoughForAnyAction(player, codex);
-  });
+  }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.createObject(codex.objectNames.getId(objectName));
@@ -133,6 +142,31 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
     ]);
     expect(weightsOn(jungle), '茎3000gのうち、繊維として残るのは60g×2だけ').toEqual([60, 60]);
     expect(worldView.minute, 'durationの30分が経つ').toBe(30);
+  });
+
+  it('掻き取りの腕が上がると、同じ茎からもう1束落ちる', () => {
+    // 無駄の無さ（docs/world/Skills.md 7節）。取れない側の重み（100）は茎が持ち、取れる側の重みが
+    // 作り手の上乗せなので、**素人では2つ目の候補が卓に無いのと同じ**。引きを固定してあるので、
+    // 結果が変わったのは卓が腕を読んでいるからだと言える。
+    const skillId = codex.propertyNames.getId('skill_cordage');
+
+    /** その腕前の作業者に1本掻き取らせて、土地に残った物を返す。 */
+    const strippedBy = (skillValue: number): string[] => {
+      // 取れる側（上乗せ60）へ落ちる引き。素人では卓の合計が100なので、同じ引きが取れない側に留まる。
+      buildWorld(fixedRng(0.9));
+      player.getProperty(skillId).setNumberWithoutEvents(skillValue);
+      const stem = spawnInto('banana_stem', jungle, 'items');
+      expect(
+        stem
+          .combinationsWith(armPlayer(), player)
+          .find((c) => c.name === 'strip')
+          ?.tryExecute() === true,
+      ).toBe(true);
+      return itemsOn(jungle);
+    };
+
+    expect(strippedBy(0), '素人は2束のまま').toEqual(['plant_fiber', 'plant_fiber']);
+    expect(strippedBy(180), '熟達すると余分が1束').toEqual(['plant_fiber', 'plant_fiber', 'plant_fiber']);
   });
 
   it('繊維2束を撚ると糸が1本できる（道具は要らない）', () => {

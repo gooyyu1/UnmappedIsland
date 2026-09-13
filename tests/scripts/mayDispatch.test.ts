@@ -4,6 +4,7 @@ import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
+import { replaceAllOrFail } from '../support/textEdit';
 
 /**
  * `scripts/daemon/may-dispatch.sh`（と、その下の `brake.sh` / `occupancy.sh`）の検査。
@@ -128,7 +129,7 @@ echo '${JSON.stringify(page)}'
 
 /** チェックの外れた手綱を作る。 */
 function off(heading: string): string {
-  return ALL_ON.replace(`- [x] ${heading}`, `- [ ] ${heading}`);
+  return replaceAllOrFail(ALL_ON, { from: `- [x] ${heading}`, to: `- [ ] ${heading}`, occurrences: 1 });
 }
 
 const working = (tag: string): Session => ({
