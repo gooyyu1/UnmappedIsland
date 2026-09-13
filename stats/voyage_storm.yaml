@@ -1,0 +1,64 @@
+# 荒天の押し流しを入れて、出航地点から本土まで実際に渡らせた実測。
+# 生成物。手で書き換えず、npm run stats:voyage-storm で作り直す。
+# 何を測ったか・引いた線・数えていないものは docs/diagnostics/VoyageStormStats.md。
+
+meta:
+  - {seeds: 6, voyages_per_seed: 100}
+
+input_fingerprint:
+  - {sources: [core.yaml, voyage.yaml], sha256_prefix: '28822fb2fd76b8e5'}
+
+baseline:
+  - {coast: sandy_beach, season: calm, legs: 12, days: 5.54}
+  - {coast: sandy_beach, season: wet, legs: 12, days: 5.72}
+  - {coast: sandy_beach, season: dry, legs: 12, days: 5.37}
+  - {coast: rocky_coast, season: calm, legs: 10, days: 4.65}
+  - {coast: rocky_coast, season: wet, legs: 10, days: 4.79}
+  - {coast: rocky_coast, season: dry, legs: 10, days: 4.50}
+  - {coast: cliff_coast, season: calm, legs: 8, days: 3.73}
+  - {coast: cliff_coast, season: wet, legs: 8, days: 3.85}
+  - {coast: cliff_coast, season: dry, legs: 8, days: 3.62}
+
+course_storm:
+  - {coast: sandy_beach, season: calm, unit: days, mean: 5.58, min: 5.21, median: 5.53, p95: 5.90, max: 7.10, sd: 0.25, n: 223}
+  - {coast: sandy_beach, season: wet, unit: days, mean: 6.15, min: 5.03, median: 5.82, p95: 7.86, max: 9.11, sd: 0.80, n: 181}
+  - {coast: sandy_beach, season: dry, unit: days, mean: 5.38, min: 4.76, median: 5.35, p95: 5.60, max: 5.78, sd: 0.14, n: 196}
+  - {coast: rocky_coast, season: calm, unit: days, mean: 4.68, min: 4.36, median: 4.66, p95: 4.98, max: 8.15, sd: 0.30, n: 231}
+  - {coast: rocky_coast, season: wet, unit: days, mean: 5.32, min: 3.82, median: 4.94, p95: 7.05, max: 10.67, sd: 0.94, n: 176}
+  - {coast: rocky_coast, season: dry, unit: days, mean: 4.51, min: 4.22, median: 4.51, p95: 4.72, max: 5.44, sd: 0.14, n: 193}
+  - {coast: cliff_coast, season: calm, unit: days, mean: 3.75, min: 3.46, median: 3.72, p95: 3.93, max: 5.27, sd: 0.20, n: 227}
+  - {coast: cliff_coast, season: wet, unit: days, mean: 4.22, min: 3.13, median: 3.90, p95: 5.53, max: 8.08, sd: 0.76, n: 170}
+  - {coast: cliff_coast, season: dry, unit: days, mean: 3.62, min: 2.93, median: 3.60, p95: 3.82, max: 4.43, sd: 0.13, n: 203}
+
+course_crossings:
+  - {coast: sandy_beach, season: calm, unit: legs, mean: 12.10, min: 12.00, median: 12.00, p95: 12.00, max: 16.00, sd: 0.54, n: 223}
+  - {coast: sandy_beach, season: wet, unit: legs, mean: 13.67, min: 12.00, median: 12.00, p95: 18.00, max: 22.00, sd: 2.27, n: 181}
+  - {coast: sandy_beach, season: dry, unit: legs, mean: 12.00, min: 12.00, median: 12.00, p95: 12.00, max: 12.00, sd: 0.00, n: 196}
+  - {coast: rocky_coast, season: calm, unit: legs, mean: 10.10, min: 10.00, median: 10.00, p95: 10.00, max: 20.00, sd: 0.75, n: 231}
+  - {coast: rocky_coast, season: wet, unit: legs, mean: 11.86, min: 10.00, median: 10.00, p95: 18.00, max: 30.00, sd: 2.76, n: 176}
+  - {coast: rocky_coast, season: dry, unit: legs, mean: 10.01, min: 10.00, median: 10.00, p95: 10.00, max: 12.00, sd: 0.14, n: 193}
+  - {coast: cliff_coast, season: calm, unit: legs, mean: 8.06, min: 8.00, median: 8.00, p95: 8.00, max: 12.00, sd: 0.44, n: 227}
+  - {coast: cliff_coast, season: wet, unit: legs, mean: 9.27, min: 8.00, median: 8.00, p95: 12.00, max: 20.00, sd: 2.25, n: 170}
+  - {coast: cliff_coast, season: dry, unit: legs, mean: 8.01, min: 8.00, median: 8.00, p95: 8.00, max: 10.00, sd: 0.14, n: 203}
+
+sweeps:
+  - {coast: sandy_beach, season: calm, unit: times_per_voyage, backwards: 0.05, forwards: 0.01, voided_crossings: 0.06}
+  - {coast: sandy_beach, season: wet, unit: times_per_voyage, backwards: 0.83, forwards: 0.51, voided_crossings: 1.35}
+  - {coast: sandy_beach, season: dry, unit: times_per_voyage, backwards: 0.00, forwards: 0.01, voided_crossings: 0.01}
+  - {coast: rocky_coast, season: calm, unit: times_per_voyage, backwards: 0.05, forwards: 0.01, voided_crossings: 0.06}
+  - {coast: rocky_coast, season: wet, unit: times_per_voyage, backwards: 0.93, forwards: 0.43, voided_crossings: 1.36}
+  - {coast: rocky_coast, season: dry, unit: times_per_voyage, backwards: 0.01, forwards: 0.01, voided_crossings: 0.01}
+  - {coast: cliff_coast, season: calm, unit: times_per_voyage, backwards: 0.03, forwards: 0.00, voided_crossings: 0.03}
+  - {coast: cliff_coast, season: wet, unit: times_per_voyage, backwards: 0.64, forwards: 0.23, voided_crossings: 0.86}
+  - {coast: cliff_coast, season: dry, unit: times_per_voyage, backwards: 0.00, forwards: 0.01, voided_crossings: 0.02}
+
+storm_cost:
+  - {coast: sandy_beach, season: calm, extra_days: 0.04, extra_legs: 0.10}
+  - {coast: sandy_beach, season: wet, extra_days: 0.43, extra_legs: 1.67}
+  - {coast: sandy_beach, season: dry, extra_days: 0.01, extra_legs: 0.00}
+  - {coast: rocky_coast, season: calm, extra_days: 0.04, extra_legs: 0.10}
+  - {coast: rocky_coast, season: wet, extra_days: 0.53, extra_legs: 1.86}
+  - {coast: rocky_coast, season: dry, extra_days: 0.01, extra_legs: 0.01}
+  - {coast: cliff_coast, season: calm, extra_days: 0.02, extra_legs: 0.06}
+  - {coast: cliff_coast, season: wet, extra_days: 0.37, extra_legs: 1.27}
+  - {coast: cliff_coast, season: dry, extra_days: 0.00, extra_legs: 0.01}
