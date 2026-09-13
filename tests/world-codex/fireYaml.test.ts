@@ -248,7 +248,7 @@ describe('fire.yamlの火の連鎖', () => {
     expect(signalsOf(lightDryGrass), 'expertは同じ引きで火を得る').toEqual(['dry_grass: lit']);
   });
 
-  /** 世界じゅうの火口（ignitableを名乗る型）。3つのファイルに散らばっている。 */
+  /** 世界じゅうの火口（tinderタグを名乗る型）。宣言は、それを産する物のファイルの側に散らばっている。 */
   function tinderNames(): string[] {
     const tinder = codex.tagNames.getId('tinder');
     return [...codex.objects].filter((def) => def.tags.includes(tinder)).map((def) => def.name);
@@ -261,9 +261,11 @@ describe('fire.yamlの火の連鎖', () => {
     return stages.map((stage) => stage.min ?? 0);
   }
 
-  /** その火口へ火起こし具を重ねる。火が付いたらtrue（火口はどちらの回も失われる）。 */
-  function lightTinder(tinderName: string): boolean {
-    const tinder = spawnInto(tinderName, land, 'items');
+  /**
+   * 今の世界でその火口へ火起こし具を重ねる。火が付いたらtrue（火口はどちらの回も失われる）。
+   * 湿りを持たせたいときは、呼ぶ前に湧かせた個体へ入れておく（下のlightChanceOf）。
+   */
+  function lightTinder(tinderName: string, tinder = spawnInto(tinderName, land, 'items')): boolean {
     const drill = spawnInto('fire_drill', player, 'hand');
     const lit = signalsOf(() => {
       expect(
@@ -277,13 +279,37 @@ describe('fire.yamlの火の連鎖', () => {
     return lit.includes(`${tinderName}: lit`);
   }
 
+  /**
+   * その湿りから始めた火口に火が付く割合。**pickは「引き×重みの合計」を累積と比べる**（fixedRng）
+   * ので、**付くかどうかが切り替わる引きが、そのまま成功率**になる。それを二分で挟んで出す。
+   *
+   * **割合を定義から計算せずに測るのは、火起こしの30分＝2tickのあいだにも水が抜けるから**
+   * ——引きを決める時点の湿りは、始めた値と乾く速さの両方で決まる。
+   */
+  function lightChanceOf(tinderName: string, moisture: number): number {
+    const moistureId = codex.propertyNames.getId('moisture');
+    let lights = 0;
+    let misses = 1;
+
+    // 0.0005まで挟む（段の押し下げが作る差はこれよりずっと大きい）。
+    for (let i = 0; i < 11; i++) {
+      const roll = (lights + misses) / 2;
+      open(roll);
+      const tinder = spawnInto(tinderName, land, 'items');
+      tinder.getProperty(moistureId).setNumberWithoutEvents(moisture);
+      if (lightTinder(tinderName, tinder)) lights = roll;
+      else misses = roll;
+    }
+    return lights;
+  }
+
   it('乾いた火口は、どの火口・どの腕でも85%以上で火が付く', () => {
     // **この節の水準そのもの**（docs/engine/FireSystem.md 10節）。pickは「引き×重みの合計」を
     // 累積と比べる（fixedRng）ので、**引き0.85でどれも火が付くことが「成功率が85%を上回る」
     // ことそのもの**になる。外れの重みを緩めても、火口の素の値を下げても、腕の刻みを削っても、
     // ここが赤くなる。
     //
-    // 火口は3つのファイルに散らばっている（fire.yaml・fiber.yaml・coconut.yaml）ので、
+    // 火口の宣言は、それを産する物のファイルの側に散らばっている（docs/engine/FireSystem.md 概要）ので、
     // 名指しではなくtinderタグを名乗る全型を回す——後から足した火口も同じ水準を要求される。
     const FLOOR = 0.85;
     const names = tinderNames();
@@ -303,31 +329,20 @@ describe('fire.yamlの火の連鎖', () => {
     expect(missed, `引き${FLOOR}で外す組み合わせ`).toEqual([]);
   });
 
-  it('湿った火口は、乾いていれば付く引きでも外す', () => {
+  it('濡らした火口は、乾いた火口より火が付きにくい', () => {
     // 成功率が火口の種類だけでなく乾き具合でも動くこと（docs/engine/FireSystem.md 3.2.1節）。
-    // 引きは両方とも0.6で、動かしているのは湿りだけ——乾いた枯れ草は85.7%なので付き、
-    // 最も湿った段（-50）は60対10が10対10で50%になるので外す。
-    const BETWEEN = 0.6;
-    const moistureId = codex.propertyNames.getId('moisture');
+    // **動かしているのは湿りだけ**で、腕も天気も同じ。
+    const names = tinderNames();
+    const unchanged: string[] = [];
 
-    open(BETWEEN);
-    expect(signalsOf(lightDryGrass), '乾いていれば付く').toEqual(['dry_grass: lit']);
+    for (const name of names) {
+      const dry = lightChanceOf(name, 0);
+      const soaked = lightChanceOf(name, soakedMoistureOf(name));
+      if (soaked >= dry) unchanged.push(`${name}（乾いて${dry}、濡れて${soaked}）`);
+    }
 
-    open(BETWEEN);
-    const grass = spawnInto('dry_grass', land, 'items');
-    const drill = spawnInto('fire_drill', player, 'hand');
-    // **びしょ濡れから始める。** 火起こしは30分＝2tickかかり、そのあいだも水は抜けていくので、
-    // 段のいちばん下ちょうどから始めると、引きを決める頃には1つ上の段へ戻っている。
-    grass.getProperty(moistureId).setNumberWithoutEvents(soakedMoistureOf('dry_grass'));
-    expect(
-      signalsOf(() => {
-        grass
-          .combinationsWith(drill, player)
-          .find((c) => c.name === 'light')
-          ?.tryExecute();
-      }),
-      '濡れていれば同じ引きで外す',
-    ).toEqual(['dry_grass: not_lit']);
+    expect(names.length, '火口が1つも無い').toBeGreaterThan(0);
+    expect(unchanged, '濡らしても付きやすさが変わらない火口').toEqual([]);
   });
 
   /** その火口のmoistureの最上段（最も湿った段）のいちばん下の値。 */

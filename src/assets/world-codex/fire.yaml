@@ -63,6 +63,11 @@ traits:
       # **ignition_chanceにバーを出す道は無い**：ゲージはrangeを要求し（同8.1節）、rangeは実効値を
       # クランプする（GameElementDefinition.md 8.3節）ので、腕の上乗せ（expertで+120）が
       # 頭打ちになる。
+      #
+      # **火口は束ねられるままにしてある**（burning_tinderのようにstackable: falseへ倒さない）。
+      # 束ねた札が映すのは代表1つの湿りなので、乾いた束へ濡れた1つを混ぜると下に埋まるが、これは
+      # 干している食べ物（drying.yamlのdrying_remaining）が既に持っている形と同じ。1枚ずつの札に
+      # 割ると、束で拾う火口が枠を食い尽くす。
       moisture:
         value: 0
         # 野ざらしの雨（下のpassives、実質+3/tick）で2時間、日に広げれば（-4/tick）1時間半。
