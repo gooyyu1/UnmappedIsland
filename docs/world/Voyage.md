@@ -241,18 +241,18 @@
 多い雨季ほど島の側へ戻される回が増えます。海区と筏を実体化して渡らせると
 （[`VoyageStormStats.md`](../diagnostics/VoyageStormStats.md)）、**乾季の航海はほとんど押し流されません**
 ——伸びるのは
-0.01 日<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=dry extra_days -->で、
+0.02 日<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=dry extra_days -->で、
 嵐そのものが乾季にはほとんど立たないからです
 （[`ClimateSystemStats.md`](../diagnostics/ClimateSystemStats.md)）。一方、雨季は
-1.67 区間<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=wet extra_legs -->、
-0.43 日<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=wet extra_days -->伸びます
+1.71 区間<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=wet extra_legs -->、
+0.42 日<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=wet extra_days -->伸びます
 ——**伸びのほとんどは押し戻された区間ではなく、渡っている最中に流されて空振りになった渡り**です
 （3.8 節）。砂浜から近道で渡ると
-5.38 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=dry mean -->と
-6.15 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet mean -->、最も短い岸壁
+4.73 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=dry mean -->と
+5.43 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet mean -->、最も短い岸壁
 からでも
-3.62 日<!-- stats: voyage_storm.yaml course_storm coast=cliff_coast season=dry mean -->と
-4.22 日<!-- stats: voyage_storm.yaml course_storm coast=cliff_coast season=wet mean -->で、
+3.18 日<!-- stats: voyage_storm.yaml course_storm coast=cliff_coast season=dry mean -->と
+3.79 日<!-- stats: voyage_storm.yaml course_storm coast=cliff_coast season=wet mean -->で、
 **差は 0.6〜0.8 日です。**
 
 **一方、窓を逃したときに待つのは 48〜72 日です。** 季節は
@@ -264,9 +264,9 @@
 季節が航海へ返すものの側です。
 
 **雨季が効くのは、平均ではなく読めなさのほうです。** 砂浜から雨季に出た航海は、20 回に 1 回は
-7.86 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet p95 -->を超え、最も長い
+6.81 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet p95 -->を超え、最も長い
 回は
-9.11 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet max -->かかりました
+8.58 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet max -->かかりました
 ——**平均が半日しか動かないのに裾は 3 日以上伸びる**ので、雨季に出ることの代償は日数の期待値ではなく、
 積む量をどれだけ厚くするかに出ます（[`GameEndings.md`](../concept/GameEndings.md) 3.1 節の「読めない
 伸びをどう見込むか」、3.9.3 節）。
@@ -607,12 +607,12 @@
 
 **実際に渡らせると、押し流されるのは雨季だけです**
 （[`VoyageStormStats.md`](../diagnostics/VoyageStormStats.md)）。砂浜から近道で渡った航海 1 回あたり、
-雨季は 0.83 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet backwards -->島の側へ、
-0.51 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet forwards -->本土の側へ流され、
+雨季は 0.86 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet backwards -->島の側へ、
+0.42 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet forwards -->本土の側へ流され、
 乾季にはほとんど起きません——嵐そのものが乾季には立たないからです
 （[`ClimateSystemStats.md`](../diagnostics/ClimateSystemStats.md)）。**効くのは戻された区間ではなく、
 渡っている最中に流されて空振りになった渡りのほう**で、雨季は 1 回の航海で
-1.35 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet voided_crossings -->——押し流しは
+1.28 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet voided_crossings -->——押し流しは
 ほぼ必ず渡っている最中に来ます（航海に費やす時間の大半が横断だからです）。
 
 風向きの見分けだけは条件ではなく重みにしてあります——`pick` の候補は `conditions` を持てないため、
@@ -651,9 +651,9 @@
 **表は押し流しを数えていません**（同じ物差しで数えたものは
 [`stats/voyage_storm.yaml`](../../stats/voyage_storm.yaml)）。**乾季と穏やかな季節では、表のままです**
 ——押し流されるのは雨季で、平均は
-0.43 日<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=wet extra_days -->しか伸びない
-一方、**20 回に 1 回は 8 日近くかかります**（3.1 節）。**「4〜6 日」は乾季に出た場合の話**で、雨季に
-出るなら積む量はその裾で決めることになります（3.9.3 節）。
+0.42 日<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=wet extra_days -->しか伸びない
+一方、**20 回に 1 回は 7 日近くかかります**（3.1 節）。**積む「4〜6 日ぶん」（3.9.3 節）は乾季に出た
+場合の話**で、雨季に出るなら積む量はその裾で決めることになります。
 
 **それでも遠回りは、時間では選べません。** 同じ風が続く日で比べると、遠回りは近道より常に長くかかります
 ——砂浜から向かい風で、近道が
