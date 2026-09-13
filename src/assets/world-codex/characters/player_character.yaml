@@ -20,22 +20,27 @@ traits:
     #
     # 身体の仕組みなので個体差を持たせず、この trait が配る（痛み・血と同じ扱い）。回復量は
     # 一律なので、体力のmaxが大きいキャラクタほど1回の休息で戻る割合は小さい。
+    #
+    # **体力の割は、荷が削る量から逆算してある**（docs/world/Characters.md 休息節）。地面の上の1日は
+    # 16時間起きて8時間（32tick）仮眠なので、heavy（-1/tick）をその16時間担ぎ通した -64 を返すには
+    # 2/tick が要る——**仮眠はそこへ届かない**。地面の上で重い荷の日を続けられないことが、寝床を敷き
+    # 骨組みを差す理由になる（docs/world/Bedding.md 4節）。
     interactions:
       wait:
         trigger: menu
         duration: 15
         passives:
-          - add: {self: {stamina: 2}}
+          - add: {self: {stamina: 0.75}}
       rest:
         trigger: menu
         duration: 60
         passives:
-          - add: {self: {stamina: 2.5}}
+          - add: {self: {stamina: 1}}
       nap:
         trigger: menu
         duration: 180
         passives:
-          - add: {self: {stamina: 3, wakefulness: 3}}
+          - add: {self: {stamina: 1.25, wakefulness: 3}}
       # 限界に達した値が起こす、強制的な時間経過（docs/world/Characters.md 限界節）。どれも上の休息と
       # 同じ形で、**違うのは見る値・長さ・戻る量だけ**。プレイヤーが押す機会は無い
       # （trigger: tick、11.1節）ので、手が出せないまま時間だけが過ぎる。
@@ -50,12 +55,13 @@ traits:
       # `signal` では過ぎ切ってからになり、眠り込みでは6時間後に理由を聞くことになる。
       #
       # **戻る割に、まとめて休んだ割増しは付けない。どの値についても。** どれも休み方を選んだことに
-      # ならないためで、体力と幸福度は rest の割（2.5/tick）。眠気を戻せるのは眠る休息だけで、どれも
+      # ならないためで、体力は rest の割（1/tick）。幸福度には自発の休息が無いので割の比べようがなく、
+      # 120分で危険域（maxの20%）をちょうど抜ける量を置く。眠気を戻せるのは眠る休息だけで、どれも
       # 割増しを持っているので、そのうちいちばん薄い nap の割（3/tick）を使う。
       #
       # **眠り込みが戻すのは眠気だけではないので、体力もこの割に従う。** 寝床の上の sleep と同じ割に
       # すると、寝床の無い場所で体力を戻す最良の手が眠り込みになる——寝床を要らない休息のうち最も
-      # 割のよい nap（3/tick）を上回ってしまう。
+      # 割のよい nap（体力は 1.25/tick）を上回ってしまう。
       #
       # **休息と同じく毎tickで戻す**（11.7節）ので、下限に居ても減りは同じ足し算の中で相殺され、
       # クランプが吸うぶんだけ得をすることはない。荷を担いだままの倒れ込みは、担いだぶんだけ薄い。
@@ -69,7 +75,7 @@ traits:
         announce: exhausted
         duration: 120
         passives:
-          - add: {self: {stamina: 2.5}}
+          - add: {self: {stamina: 1}}
       fall_asleep:
         trigger: tick
         conditions:
@@ -77,7 +83,7 @@ traits:
         announce: dozed_off
         duration: 360
         passives:
-          - add: {self: {stamina: 2.5, wakefulness: 3}}
+          - add: {self: {stamina: 1, wakefulness: 3}}
       despair:
         trigger: tick
         conditions:
