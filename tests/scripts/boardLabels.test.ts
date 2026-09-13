@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { parse } from 'yaml';
+import { STALE_ON_PUSH } from '../../scripts/agent/board-move.mjs';
+import { SWEEP_LINE } from '../../scripts/agent/board-round.mjs';
 import { pathForBash, runScript, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
@@ -24,6 +26,11 @@ vi.setConfig({ testTimeout: 20000 });
 const WORKFLOW = resolve(__dirname, '../../.github/workflows/board-labels.yml');
 
 const PR = '1527';
+
+/** `gh pr edit` へ渡された `--remove-label` の札を、出てきた順に。 */
+function removedLabels(text: string): string[] {
+  return [...text.matchAll(/--remove-label (\S+)/g)].map((found) => found[1]);
+}
 
 interface Comment {
   readonly body: string;
@@ -343,15 +350,106 @@ esac
  * なので、落とす対象が欠けると、人の手番の印が付いたまま残って盤面が止まる。
  */
 describe('board-labels.yml の synchronized', () => {
-  it('前の差分に付いていた印を、人の手番のぶんまで落とす', () => {
+  /** `synchronized` ジョブの `run:`。 */
+  function synchronized(): string | undefined {
     const workflow = parse(readFileSync(WORKFLOW, 'utf-8')) as {
       jobs: Record<string, { steps: { run?: string }[] }>;
     };
-    const step = workflow.jobs.synchronized.steps.find((s) => s.run !== undefined)?.run;
+    return workflow.jobs.synchronized.steps.find((s) => s.run !== undefined)?.run;
+  }
 
-    for (const name of ['直し待ち', '通してよい', '判断待ち', '収束せず', '却下']) {
-      expect(step).toContain(`--remove-label ${name}`);
+  // **落ちる札の顔ぶれを、丸ごと留める。** 「これが含まれている」だけで見ると、**ここへ札を1つ
+  // 足したときに何も落ちない**——盤面が読む集合（`board-move.mjs` の `STALE_ON_PUSH`。issue #2144）へ
+  // 足し忘れても、足したのが落とすべきでない札でも、どちらも緑のまま。
+  //
+  // **盤面が読まない2つは、ここで名指しする。** どちらも**今の頭への判定が無くても付きうる**ので、
+  // 判定と突き合わせても古いと言えない——`直し待ち` は後片付けも付け（2.10.5）、`却下` は人が止めた
+  // 印（2.13.1）。**push で落ちることと、盤面が古いと言えることは別。**
+  it('落とすのは、盤面が前の差分のものと読む札と、判定によらず付く2つ', () => {
+    expect(removedLabels(synchronized() ?? '').sort()).toEqual([...STALE_ON_PUSH, '直し待ち', '却下'].sort());
+  });
+});
+
+/**
+ * 盤面から頼まれて、前の差分に付いたままの札を落とす段（`board-design.md` 2.13.7）。**ここが
+ * 唯一の外し直しの口**——上の `synchronized` は出来事で動くので、転んだ回は二度と来ない。
+ *
+ * **盤面は自分で外せない**（`unlabeled` が `却下` になる。下の `unlabeled_by_hand`）ので、ここが
+ * 落とさない札は誰にも落とされない。
+ */
+describe('board-labels.yml の swept', () => {
+  const PR = '2120';
+
+  /** 頼みの本文を渡して走らせ、`gh pr edit` に渡された引数を返す。 */
+  function runSwept(body: string): string[] {
+    const work = mkdtempSync(join(tmpdir(), 'unmapped-island-swept-'));
+    const dir = pathForBash(work);
+    try {
+      const gh = join(work, 'gh');
+      writeFileSync(
+        gh,
+        `${STUB_SHEBANG}
+case "$1 $2" in
+"pr edit")
+  shift 2
+  echo "$*" >>'${dir}/edits.txt'
+  ;;
+*) exit 1 ;;
+esac
+`,
+        'utf-8',
+      );
+      chmodSync(gh, 0o755);
+      writeFileSync(join(work, 'edits.txt'), '', 'utf-8');
+
+      const workflow = parse(readFileSync(WORKFLOW, 'utf-8')) as {
+        jobs: Record<string, { steps: { run?: string }[] }>;
+      };
+      const run = workflow.jobs.swept.steps.find((s) => s.run !== undefined)?.run;
+      if (run === undefined) throw new Error('swept ジョブに run: が無い');
+      const step = join(work, 'step.sh');
+      writeFileSync(step, run, 'utf-8');
+
+      const result = spawnScript(step, [], {
+        stdio: 'pipe',
+        env: {
+          ...process.env,
+          PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
+          GH_TOKEN: 'x',
+          REPO: 'gooyyu1/UnmappedIsland',
+          PR,
+          BODY: body,
+        },
+      });
+      if (result.status !== 0) throw new Error(`swept が ${result.status} で終わった: ${body}`);
+
+      return readFileSync(join(work, 'edits.txt'), 'utf-8')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+    } finally {
+      rmSync(work, { recursive: true, force: true });
     }
+  }
+
+  // **綴りは盤面と揃っていること**（`board-round.mjs` の `SWEEP_LINE`）。Actions には node を
+  // 持ち込めないので実装は別で、揃っていることはここでしか留められない。
+  //
+  // **落とす札は、盤面が前の差分のものと読む集合とちょうど同じ**（`STALE_ON_PUSH`）。多いと、
+  // **盤面が古いと言えない札まで落ちる**（`直し待ち`・`却下`。上の `synchronized` を見よ）。少ないと、
+  // その札だけが前の差分のまま残って、盤面はそれを無いものとして読み続ける。
+  it('盤面が置く行で、盤面が前の差分のものと読む札だけを落とす', () => {
+    const edits = runSwept(`${SWEEP_LINE}\n\nこのPRに付いている結論の札は…\n`);
+
+    expect(removedLabels(edits.join(' ')).sort()).toEqual([...STALE_ON_PUSH].sort());
+  });
+
+  // **前方一致にしない。** 頼むのは盤面だけで文面も1つなので、緩めると、その行を引いて書いた人の
+  // コメントでも札が落ちる。
+  it('頼みの行でなければ、何もしない', () => {
+    expect(runSwept(`${SWEEP_LINE} #2120\n`)).toEqual([]);
+    expect(runSwept('[札] を落とす\n')).toEqual([]);
+    expect(runSwept('前置き\n[札] 前の差分の結論を落とす\n')).toEqual([]);
   });
 });
 

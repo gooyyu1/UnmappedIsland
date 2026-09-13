@@ -202,6 +202,49 @@ jobs:
             --remove-label 直し待ち --remove-label 通してよい \
             --remove-label 判断待ち --remove-label 収束せず --remove-label 却下
 
+  # **盤面から頼まれて、前の差分に付いたままの結論の札を落とす**（[`board-move.mjs`](../../scripts/agent/board-move.mjs)
+  # の `UNLABEL`、[`agent-ops/board-design.md`](../../agent-ops/board-design.md) 2.13.7）。下の
+  # `synchronized` は**出来事**で動くので、転んだ回は二度と来ない——**やり直す口がここに要る。**
+  #
+  # **盤面が自分で外さないのは、それが下の `unlabeled_by_hand` に「人が外した」と読まれるから。**
+  # 見分けは `sender` で、**デーモンの `gh` は人と同じアカウント**を使う（`Bot` になるのは Actions の
+  # `GITHUB_TOKEN` だけ。2.2.1）——自分で外すと、剥がした直後に `却下` が付く。
+  #
+  # **落とすのは、盤面が「前の差分のもの」と読める札だけ**（`board-move.mjs` の `STALE_ON_PUSH`）。
+  # 上の `synchronized` との差は2つで、**どちらも今の頭への判定が無くても付きうる**ので、判定と
+  # 突き合わせても古いと言えない——**落とすと、生きている印が消える。**
+  #
+  # - `直し待ち` … レビューのほかに、**後片付けが base の張り替えへ付ける**（2.10.5）。押し返される
+  #   前のPRにしか付かないので、**今の頭を名乗る判定が無いのが普通**
+  # - `却下` … 人が止めている印。**外したのがどの差分を読んだ後かは盤面に出ない**
+  #
+  # **1行目は綴りちょうどで見る。** 頼むのは盤面だけで、文面も1つ（`board-round.mjs` の
+  # `SWEEP_LINE`）——前方一致にすると、その行を引いて書いた人のコメントでも札が落ちる。
+  swept:
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request != null &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 頼まれた札を落とす
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.issue.number }}
+          BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          # 1行目の取り方は上の `verdict` と同じ（`head` へ流さない理由もあちら）。
+          head=${BODY%%$'\n'*}
+          head=$(printf '%s' "$head" | tr -d '\r' | sed 's/[[:space:]]*$//')
+          [ "$head" = '[札] 前の差分の結論を落とす' ] || {
+            echo "札を落とす頼みではない: $head"
+            exit 0
+          }
+          gh pr edit "$PR" --repo "$REPO" \
+            --remove-label 通してよい --remove-label 判断待ち --remove-label 収束せず
+
   # **人がPRのラベルを外したこと**を、差し戻しへ訳す（[`agent-ops/board-design.md`](../../agent-ops/board-design.md)
   # 2.13.1）。人がすることは2つだけ——**外す＝書いた本人に直してもらう**、**マージする＝それでよい**。
   # だから外れたPRに残る仕事は差し戻しの1つで、`却下` はその事実を持つ。

@@ -16,6 +16,7 @@
 //   RESUME  <セッションID> review-stall <PR番号> <指紋>  … 判定を書かずに止まったレビューに続きを書かせる
 //   RETURN  <issue番号> <セッションID> <指紋>  … 起こしても動かないワーカーの仕事を人へ返す
 //   REVIEW  <PR番号> <指紋>
+//   UNLABEL <PR番号> <指紋>                  … 前の差分に付いたまま残っている結論の札を剥がす
 //   TASK    <issue番号> [<投入先の引数>]     … 引数が無ければクラウド（2.16）
 //   CHORE   <名> <プロンプト> <指紋> [<投入先の引数>]  … 周期で起きる係を立てる（2.17）
 //   NOTE    <人へ向けた1行>                  … 打つ手が無いことの説明。呼び手は記録するだけ
@@ -57,7 +58,7 @@
 // **片方だけで書くと、再レビューが永久に止まるか、手が空いた上へ2本目が立つ。**
 // どの値がどちらに答えるかは 1.6。
 
-import { asksUser, readVersion, readsVersion, verdicts } from './review-verdicts.mjs';
+import { asksMend, asksUser, readVersion, readsVersion, verdicts } from './review-verdicts.mjs';
 
 /**
  * 今その差分へ手が動いているか（1.6）。**言うのは `session_status` だけ**——`status_bucket` は
@@ -130,6 +131,29 @@ const URGENT = '急ぎ';
  * （同 `askedAlready`）が同じ綴りを見る**ので、ここから出す。
  */
 const RETURNED = 'mend:returned';
+
+/**
+ * **今の頭への判定が無ければ付きようがない札。** 盤面はこれを、前の差分のものと分かった時点で
+ * 無いものとして読み、落としてほしいと頼む（`UNLABEL`）——落とすのは push の
+ * [`board-labels.yml`](../../.github/workflows/board-labels.yml) だが、あの段は**出来事**で動くので、
+ * 転んだ回は二度と来ず、前の差分への結論が今の差分の顔として残り続ける（issue #2144）。
+ *
+ * **落とすのもワークフロー**（同 `swept`）。**盤面が自分で外すと `却下` になる**（`board-round.mjs`
+ * の `UNLABEL`）ので、ここに在るのは**読むための集合**で、外す綴りはあちらが持つ。
+ *
+ * **push で落ちる札のうち、ここに入れないものが2つある**——**どちらも、今の頭への判定が無くても
+ * 付きうる**ので、判定と突き合わせても古いと言えない。
+ *
+ * - `直し待ち` … レビューのほかに、**後片付けが base の張り替えへ付ける**（2.10.5）。あちらは
+ *   押し返される前のPRにしか付けないので、**今の頭を名乗る判定が無いのが普通。** 落とすと、
+ *   載せ直しの依頼が消えて、混ざった差分がレビューへ出る
+ * - `却下` … 人がPRを止めている印を外したことの写し。**外したのがどの差分を読んだ後かは盤面に
+ *   出ない**ので、落とすと人の停止を消す
+ *
+ * **どちらも、残っても差し戻し（`mend`・`reject`）が出る**ので、誰の手番でもない形にはならない。
+ * `直し待ち` は次の `通してよい` で外れる（`board-labels.yml` の `verdict`）。
+ */
+export const STALE_ON_PUSH = ['通してよい', '判断待ち', '収束せず'];
 
 /**
  * その仕事が**何へ向かうか**の印（2.18.1）。**立てた本人が起票のときに付ける**のがいちばん確かで、
@@ -509,6 +533,58 @@ export function moves(input) {
   }
 
   /**
+   * **前の差分に付いたまま残っている結論の札**（`STALE_ON_PUSH` のうち、今のPRに付いているもの）。
+   * 落とすのは `board-labels.yml` の `synchronized` だが、**転んだ回の出来事は二度と来ない**
+   * （issue #2144。2026-09-13、PR #2120 は `通してよい` が新しいコミットの上に残った）。
+   *
+   * **訊くのは最後の判定だけ。** 札はそのつど**上書きされる**（`board-labels.yml` の `verdict` は
+   * 付けると同時に反対側を外す）ので、**今どの差分の顔をしているかを決めているのは、最後に書かれた
+   * 判定1つ**。それが今の頭でない版を名乗っているなら、札はその版のもの——コメントは外されない側
+   * なので、ラベルが嘘になっても名乗りは残っている（2.13.5）。
+   *
+   * **最後の判定が版を名乗っていなければ、古いとは言えない**（名乗りは書き忘れうる。
+   * `review-prompt.md`）。**倒れる先は、落とさないほう。**
+   *
+   * **数えるのを「名乗りの無い判定が1つでも在るか」にしない。** 過去に1件でも名乗り漏れが在ると、
+   * **そのPRでは以後どの頭でも古い札を見つけられなくなる。**
+   */
+  function staleLabels(pr) {
+    const last = verdicts(pr.comments).at(-1);
+    if (last === undefined || readVersion(last) === undefined) return [];
+    if (readsVersion(last, pr.headRefOid)) return [];
+    return names(pr).filter((name) => STALE_ON_PUSH.includes(name));
+  }
+
+  /**
+   * **今の頭を読んだ判定**（古い順）。**頭を名乗る最初の判定から後ろを数える**——名乗りの無い判定は
+   * どの版のものか言えないが、**頭を名乗る判定より後に書かれたなら、その頭より前ではありえない。**
+   *
+   * **その前に在るものは数えない。** 数えると、**過去の名乗り漏れ1件でこの頭の周回数が水増しされ**、
+   * 1周しか読んでいない差分が「2周ぶん読んだ」に見える。
+   */
+  function verdictsSinceHead(pr) {
+    const all = verdicts(pr.comments);
+    const first = all.findIndex((comment) => readsVersion(comment, pr.headRefOid));
+    return first < 0 ? [] : all.slice(first);
+  }
+
+  /**
+   * **直しが要ると分かっているか。** 札（`直し待ち`）だけでは見ない——付けるのは
+   * `board-labels.yml` で、**転んだ回の出来事は二度と来ない**（issue #2144。2026-09-13、PR #2130 は
+   * 判定が書かれてから差し戻しが出るまで1時間54分かかった）。判定はコメントに残るので、**今の頭を
+   * 名乗る判定が「直しが要る」なら、札の有無にかかわらず差し戻す**——2.13.5 が導出を許している
+   * 「止める側」。
+   *
+   * **名乗りの無い判定からは導かない**（`verdictOn` の `false`）。どの版のものか言えない判定を今の
+   * 版と読むと、押した後も同じ差し戻しが出続けて、その差分が二度と読まれない。
+   *
+   * **`収束せず` が付いていれば導かない。** 3周目の「直しが要る」で `直し待ち` と引き換えに付く印
+   * （4.6）なので、導き直すと人の手番を飛ばして4周目が走る。
+   */
+  const wantsMend = (pr, labels) =>
+    labels.includes('直し待ち') || (!labels.includes('収束せず') && asksMend(verdictOn(pr, false)));
+
+  /**
    * レビューを出したときの、**盤面の見え方**（`REVIEW` の指紋）。出した版と、**そのとき既に在った
    * 判定の数**を並べる。
    *
@@ -630,6 +706,7 @@ export function moves(input) {
     tidies.push(`TIDY ${pr.number} ${input.now}`);
   }
   const mends = [];
+  const unlabels = [];
   const stalls = [];
   const returns = [];
   const reviews = [];
@@ -642,7 +719,11 @@ export function moves(input) {
   // なぶん、後から出たPRが毎周先に拾われて古いものが後回しになる。issue 側（下の `ready`）と同じ向き。
   for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
     if (pr.isDraft === true) continue;
-    const labels = names(pr);
+    // **前の差分の札は、無いものとして読む**（`staleLabels`。issue #2144）。剥がす手は下で出すが、
+    // **読むほうを先に直す**——剥がし終わるまでの周に、前の差分への `通してよい` でマージを打つと
+    // 取り消せない。
+    const leftover = staleLabels(pr);
+    const labels = names(pr).filter((name) => !leftover.includes(name));
 
     // **他のPRの上に積まれたPRは、盤面では捌けない。** CIは古い base の上で緑になり、レビューが読む
     // 差分にも下のPRの変更が混ざる（#1508 はこれで2周ぶん無駄にしている）。触らずに書き残すだけに
@@ -669,7 +750,7 @@ export function moves(input) {
       ? ['reject', 'ユーザーが差し戻した', 'reject']
       : missingLook(pr)
         ? ['look', '画面が変わるのに `## 見た目` が無い', 'look']
-        : labels.includes('直し待ち')
+        : wantsMend(pr, labels)
           ? ['mend', '差し戻された', RETURNED]
           : pr.mergeable === 'CONFLICTING'
             ? ['mend', 'コンフリクトしている', 'mend:conflict']
@@ -720,6 +801,25 @@ export function moves(input) {
       continue;
     }
 
+    // **落ちるまで、この先へ進めない**（issue #2144）。落ちる前にレビューへ出すと、**新しい判定が
+    // 載った時点で古いと言えなくなり**（最後の判定が今の頭を名乗るので `staleLabels` が空になる）、
+    // `判断待ち` が付いたまま次の push までマージが止まる。**差し戻しの3つ（`却下`・コンフリクト・
+    // CIの赤）は上で先に出る**——札と関わらない理由なので待たせない。
+    //
+    // **落ちるまで頼み続ける。** 頼む先（`board-labels.yml` の `swept`）も出来事で動く段なので、
+    // **ここも転びうる**——1回頼んだことを覚えて素通りすると、転んだ回に上の形が残る。
+    if (leftover.length > 0) {
+      // **落ち着くまでは頼まない。** push の直後は `board-labels.yml` が外している最中で、転んだ回と
+      // 見分けが付かない——待てば向こうが外す。**頼み直しの間隔もこれで決まる**（頼むとコメントで
+      // `updatedAt` が動くので、次に頼めるのは窓1つぶん後）。
+      if (pr.updatedAt < input.settledBefore) {
+        unlabels.push(`UNLABEL ${pr.number} ${pr.headRefOid}`);
+      } else {
+        notes.push(`PR #${pr.number} は前の差分の札が残っている（落ちるのを待っている）`);
+      }
+      continue;
+    }
+
     if (labels.includes('通してよい')) {
       // PRの `判断待ち` が止めるのはマージだけ（2.13）。**出どころで見分けない**——レビュアーが
       // 付けたものも機械が付けたものも、通すなら人が画面からマージする（2.13.1）。
@@ -746,9 +846,31 @@ export function moves(input) {
     // **頼み終えた差し戻し（上の `asked`）だけは、判定が在っても出す。** `直し待ち` が付いている
     // ことは、その判定が「直しが要る」だったことそのもの——**読み終えたことを理由に止めると、
     // 誰の手番でもないまま残る**（2.13.6）。
+    //
+    // **ただし、待つのは札が付くまで**（issue #2144）。**ここまで来た判定は通した側**——直しを
+    // 求めたぶんは上の `wantsMend` が差し戻しているので、残るのは `通してよい` が付かなかった形
+    // で、**マージは導出できない**（2.13.5）。落ち着いても札が付かないなら、もう1周読ませて
+    // 付け直させる。
     if (!asked && verdictOn(pr, false) !== undefined) {
-      notes.push(`PR #${pr.number} は今の版の判定が書かれている（結論のラベルが付くのを待っている）`);
-      continue;
+      // **2度目は出さない。** 読ませ直しても付かないなら、札を付ける側が壊れている——同じ手を
+      // 繰り返してもレビューのセッションが減るだけで、直せるのは人だけ。
+      //
+      // **数えるのは今の頭を読んだぶんだけ**（`verdictsSinceHead`）。名乗りの無い判定も、頭を名乗る
+      // 判定より後に書かれたものは数える——**読ませ直したレビューが名乗りを書き忘れた周だけ歯止めが
+      // 外れる**のを避けるため。**この訊き手の倒れる先は「出さないほう」。**
+      if (verdictsSinceHead(pr).length > 1) {
+        notes.push(
+          `PR #${pr.number} は判定が2周ぶん書かれても結論のラベルが付かない（札を付ける側が壊れている）`,
+        );
+        continue;
+      }
+      // **落ち着くまでは待つ。** 判定が書かれてから札が付くまでには Actions のキューぶんの間があり、
+      // **人が `通してよい` を外した窓**（2.13.5）も同じ形に見える——待たずに出すと、外した人の手を
+      // 新しい判定が打ち消す。
+      if (pr.updatedAt >= input.settledBefore) {
+        notes.push(`PR #${pr.number} は今の版の判定が書かれている（結論のラベルが付くのを待っている）`);
+        continue;
+      }
     }
 
     if (check !== 'green') continue;
@@ -775,6 +897,8 @@ export function moves(input) {
     // **理由を分けて残す。** `asked` で落ちてきたぶんは判定が書かれていて、出し直しではなく次の周
     // ——同じ文面にすると、ログを読む人が詰まりの場所を取り違える。
     if (asked) notes.push(`PR #${pr.number} は差し戻しを頼み終えて戻ってこないので、もう1周読ませる`);
+    else if (verdictOn(pr, false) !== undefined)
+      notes.push(`PR #${pr.number} は判定が書かれても結論のラベルが付かないので、もう1周読ませる`);
     else if (sent) notes.push(`PR #${pr.number} のレビューは判定を書かずに終わったので、もう一度出す`);
     reviews.push(`REVIEW ${pr.number} ${reviewMark(pr)}`);
   }
@@ -1004,6 +1128,10 @@ export function moves(input) {
     ...merges,
     ...archives,
     ...mends,
+    // **札を剥がすのは差し戻しの次。** 剥がすまでそのPRはレビューへもマージへも進めない
+    // （issue #2144）ので後ろへは回せないが、**差し戻しより先には置かない**——あちらは待っている
+    // のが人で、こちらは盤面の見え方。
+    ...unlabels,
     ...stalls,
     ...returns,
     ...reviews,
