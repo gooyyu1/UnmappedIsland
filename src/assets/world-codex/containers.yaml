@@ -108,6 +108,10 @@ object_defs:
         conditions:
           - {reason: needs_woodwork, subject: agent, prop: skill_woodwork, in_stage_or_above: skilled}
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
+        # **速さを決めるのは連言の2本ではなく、名乗った1本**（docs/world/Skills.md 7節）。槍と同じく
+        # 削り出しが手間の大半で、上の注記どおり**上の段を要求しているのも削るほう**——反りを揃えた
+        # 走り木2本と前木を、同じ寸法で削り出す仕事だから。縛るのは締めるだけ。
+        deftness: {subject: agent, prop: woodwork_deftness}
         steps:
           # 長い棒の先を反らせて削り、走り木を2本と、引き綱を結ぶ前木を1本こしらえる。
           - requires:
