@@ -243,15 +243,14 @@ describe('文書が書いた「何日ぶん」', () => {
       .map(({ name }) => name);
   }
 
-  /** 通れなくなるのがいちばん早い者と、いちばん遅い者。 */
-  function weakestAndStrongest(): { weakest: string; strongest: string } {
+  /** 通れなくなるのがいちばん早い者。 */
+  function weakest(): string {
     const sorted = [...tooHeavyThresholds()].sort((a, b) => a.grams - b.grams);
     expect(sorted.length, '`too_heavy` を持つキャラクタが足りない').toBeGreaterThan(1);
-    return { weakest: sorted[0].name, strongest: sorted.at(-1)!.name };
+    return sorted[0].name;
   }
 
   it('そりが要る理由が、ContentSkeleton.md 5節4番の書きぶりのとおりに出る', () => {
-    const { weakest } = weakestAndStrongest();
     for (const claim of [
       '長い側では、水と食料だけで4人とも通れません',
       '短い側は水と食料だけなら通れますが',
@@ -271,7 +270,7 @@ describe('文書が書いた「何日ぶん」', () => {
       tooHeavyThresholds().map(({ name }) => name),
     );
     expect(whoCanWalk(voyageLoadGrams(3, 12, 2, 1)), '短い側・アーティファクト1つで通れる者').not.toContain(
-      weakest,
+      weakest(),
     );
 
     // 長い側（6日ぶん）。水と食料だけで4人とも止まる。
