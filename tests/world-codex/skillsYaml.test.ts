@@ -94,6 +94,7 @@ const CRAFTING_BONUSES = [
   { skill: 'skill_cordage', bonus: 'cordage_thrift', byStage: [0, 10, 25, 60] },
   { skill: 'skill_woodwork', bonus: 'woodwork_deftness', byStage: [0, -3, -8, -15] },
   { skill: 'skill_leatherwork', bonus: 'leatherwork_deftness', byStage: [0, -3, -8, -15] },
+  { skill: 'skill_cooking', bonus: 'cooking_deftness', byStage: [0, -3, -8, -15] },
   { skill: 'skill_preserving', bonus: 'preserving_deftness', byStage: [0, -3, -8, -15] },
 ] as const;
 
@@ -1143,15 +1144,17 @@ describe('腕前とレシピの解放条件', () => {
     }
   });
 
-  it('伸ばす操作をまだ持たない腕は、開ける物が世界に無い4本だけ', () => {
+  it('伸ばす操作をまだ持たない腕は、開ける物も操作の置き場も世界に無いものだけ', () => {
     // 宣言だけあって動かない本があること自体は、Skills.md 2節の一覧を先に置いているため。
-    // どれが動かないかをここで数え上げておき、開ける物が入ったときに直し忘れないようにする。
+    // どれが動かないかをここで並べておき、伸ばす操作が入ったときに直し忘れないようにする。
+    //
+    // **料理はここに居ない。** 開けるレシピはまだ無いが、伸ばす操作（foods.yamlのchop）が先に
+    // 入った——この2つは別の軸で、伸ばす操作が在れば手際の積む先も在る（Skills.md 7節）。
     const gains = declaredSkillGains();
 
     expect(SKILLS.filter((name) => !gains.has(name))).toEqual([
       'skill_joinery',
       'skill_building',
-      'skill_cooking',
       'skill_smelting',
     ]);
   });
