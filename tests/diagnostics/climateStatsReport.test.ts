@@ -230,9 +230,14 @@ function processCompletedSegment(
   }
 }
 
-/** 値域の端に達しているか。ここでのtickは、レートが値域に食われているので実測から外す。 */
+/**
+ * 値域のどちらかの端に達しているか。ここでのtickは、レートが値域に食われているので実測から外す。
+ *
+ * **端ちょうどを含めるかは値域自身に訊く**（`PropertyRange.hasReached`）——比較の向きをここで組み立て
+ * 直すと、境目の決めが2箇所に立つ。
+ */
 function atEdge(moisture: number, range: PropertyRange): boolean {
-  return moisture <= range.min || moisture >= range.max;
+  return range.hasReached('on_min', moisture) || range.hasReached('on_max', moisture);
 }
 
 /**

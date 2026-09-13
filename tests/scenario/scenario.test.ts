@@ -121,9 +121,12 @@ describe('テスト用シナリオ', () => {
     // weather_remaining（初期20tick）が尽きて選び直されるまで進める。
     game.session.advanceWorldTime(game.world.rawMinutesPerTick * 24);
 
-    expect(['storm', 'heavy_rain', 'light_rain'], '飽和した大気では晴れ系が選ばれない').toContain(
-      game.world.weather,
-    );
+    // 飽和した大気が重みを立てる候補（ClimateSystem.md 4.3節）。**曇りも入る**——`saturated` が
+    // 立てないのは `sunny`/`clear` で、`cloudy` は僅かに残るため、雨の3つだけでは足りない。
+    expect(
+      ['cloudy', 'light_rain', 'heavy_rain', 'storm'],
+      '飽和した大気が重みを立てた候補しか選ばれない',
+    ).toContain(game.world.weather);
   });
 
   it('土地の指定があると、置いたものはその土地に乗る', () => {

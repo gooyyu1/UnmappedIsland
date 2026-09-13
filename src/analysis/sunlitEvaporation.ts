@@ -46,7 +46,10 @@ export interface SunlitEvaporationRow {
   readonly locationName: string;
   readonly seasonName: SeasonName;
 
-  /** 日射の上乗せが1つでも効いている時間（時間/日）。 */
+  /**
+   * 日射の上乗せが1つでも効いている時間（時間/日）。**器の種類では分けない**——いちばん低いしきい値に
+   * 届いている時間そのもので、器ごとの段数を分けても畳みの起きる場面は増えも減りもしない。
+   */
   readonly sunlitHoursPerDay: number;
 
   /**

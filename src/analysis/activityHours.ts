@@ -249,9 +249,9 @@ export function characterStageMinimumOf(codex: WorldCodex, stage: PropertyStageN
 }
 
 /**
- * 世界の環境光から、そこへ届く明るさを出せる場所。**明るさで決まるものを土地ごとに数える側は、
- * どれもこの一覧を通る**——活動できる時間も、日射で進む蒸発（`sunlitEvaporation`）も、見ているのは
- * 同じ「その場所へ届いている照度」で、別々に組むと片方だけが浅い洞窟を落とす。
+ * 世界の環境光から、そこへ届く明るさを出せる場所。活動できる時間（{@link activityHoursOf}）と、日射で
+ * 進む蒸発（`sunlitEvaporation`）が、どちらもここから場所を採る——見ているのは同じ「その場所へ届いて
+ * いる照度」なので、一覧を分ける理由が無い。
  */
 export interface LitPlace {
   readonly name: string;
