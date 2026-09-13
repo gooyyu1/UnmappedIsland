@@ -195,6 +195,9 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
   `pick` で `set` し、`calm`/`wet`/`dry` それぞれの `stages` に、その区分ごとの `conditions` で切り替わる複数の
   `add` ブロックを用意する。新しいエンジン機能は不要。
 
+**この手段は入れないと決めてあります**（3.4 節）。ここに残しているのは、実際に遊んで単調だと感じた
+ときの入れ方で、まだ決まっていない選択肢ではありません。
+
 ### 3.4 季節ごとのレート選び直しは入れない
 
 **3.3 節の追加手段は入れません。** 大気水分量のレートは、季節ごとに固定のままにします。
@@ -203,15 +206,22 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 受け取るのはそこから引かれた天気のほうです。同じ季節に何度入っても同じ天気の並びになるなら単調で、
 回ごとに違うなら、たとえ水分量の軌跡が似ていても単調ではありません。
 
-**実測は「回ごとに違う」側です。** [`stats/climate.yaml`](../../stats/climate.yaml) の `non_rain_streak`・
-`weather_hours` は**季節インスタンス1本を1標本として**測っているので、その散らばりがそのまま「同じ季節が
-毎回どれだけ違うか」になります。`calm` の連続未降雨時間は、短いほうの 5% が
-0.42 日<!-- stats: climate.yaml non_rain_streak season=calm segment=overall p5 -->、
-長いほうの 5% が 4.21 日<!-- stats: climate.yaml non_rain_streak season=calm segment=overall p95 -->
-——半日で次が降る回もあれば、4 日待たされる回もあります。小雨だった時間も、
-43 時間<!-- stats: climate.yaml weather_hours season=calm weather=light_rain segment=overall p5 -->の回から
-76 時間<!-- stats: climate.yaml weather_hours season=calm weather=light_rain segment=overall p95 -->の回まで
-散っています。
+**実測は「回ごとに違う」側です。** 見るのは [`stats/climate.yaml`](../../stats/climate.yaml) の
+`weather_hours` です。**この節だけが、季節インスタンス1本を1標本として測っています**——標本数が
+`season_duration`（季節インスタンスの本数）と一致するのがその印で、散らばりがそのまま「同じ季節が毎回
+どれだけ違うか」になります。`calm` で小雨だった時間は、少ないほうの 5% が
+43 時間<!-- stats: climate.yaml weather_hours season=calm weather=light_rain segment=overall p5 -->の回、
+多いほうの 5% が 76 時間<!-- stats: climate.yaml weather_hours season=calm weather=light_rain segment=overall p95 -->の回。
+`wet` の嵐はもっと開いていて、34 時間<!-- stats: climate.yaml weather_hours season=wet weather=storm segment=overall p5 -->の
+回から 128 時間<!-- stats: climate.yaml weather_hours season=wet weather=storm segment=overall p95 -->の回まであります。
+
+**季節の中でも、雨は規則正しくは降りません。** `non_rain_streak` は雨の止んでいた区間 1 本を 1 標本として
+測ったもので（標本数が季節インスタンスの本数より桁で多いのがその印）、`calm` では
+0.42 日<!-- stats: climate.yaml non_rain_streak season=calm segment=overall p5 -->の区間から
+4.21 日<!-- stats: climate.yaml non_rain_streak season=calm segment=overall p95 -->の区間まで散っています。
+**こちらは季節どうしの違いではありません**——同じ `calm` の中で、半日で次が降ることも 4 日待たされることも
+あるという話です。上の「毎回違う」を支えるのは `weather_hours` のほうだけで、この節はその中身が
+規則的に並んでいないことを言い添えるものです。
 
 レートを季節ごとに引き直しても、**既に散っているものへ2つ目の乱数を重ねるだけ**です。宣言が増えるぶんだけ、
 どちらの乱数が今の天気を作ったのかが読めなくなります。実際に遊んで「どの `calm` も同じに見える」となった

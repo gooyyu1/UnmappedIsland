@@ -560,6 +560,25 @@ describe('climate.yamlの鮮度', () => {
     }
   });
 
+  /**
+   * `ClimateSystem.md` 3.4節が、`weather_hours` の散らばりを「同じ季節へ入るたびにどれだけ違うか」の
+   * 根拠に使っている。**標本が季節インスタンスより細かくなると、その散らばりには季節の中の変動が
+   * 混ざり、根拠として読めなくなる**（`non_rain_streak` はそちら側で、標本は区間1本ごと）。
+   */
+  it('天候の出現時間が、季節インスタンス1本を1標本として測られている', () => {
+    const stored = storedReport();
+    const seasonSamples = new Map(stored.season_duration.map((record) => [String(record.season), record.n]));
+    const rows = stored.weather_hours.filter((record) => record.segment === 'overall');
+
+    expect(rows, '天候の出現時間の行が1つも無い').not.toHaveLength(0);
+    for (const record of rows)
+      expect(
+        record.n,
+        `${String(record.season)} / ${String(record.weather)} の標本数。` +
+          'ClimateSystem.md 3.4節が、この節を季節インスタンス単位として読んでいる',
+      ).toBe(seasonSamples.get(String(record.season)));
+  });
+
   it('外した土地の節が、今の定義で外れるものと過不足なく一致する', () => {
     const excluded = islandLocationsOf(bundledCodex()).excludedSea;
 
