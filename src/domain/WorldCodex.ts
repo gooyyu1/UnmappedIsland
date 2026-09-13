@@ -403,4 +403,35 @@ export class WorldCodex {
       (objectDef) => !objectDef.boundToOwner && slotDef.acceptsAnywhere(objectDef),
     );
   }
+
+  /**
+   * 枠ごとに、その枠が空いているときに薄く敷いて見せる型（[`CardView.md`](../../docs/ui/CardView.md) 11節）。
+   * 枠数を宣言していないスロットでは空の並びを返す。
+   *
+   * **どの枠も同じ受け入れを宣言しているスロットでは空。** そこへ何が入るかはその場所そのものが
+   * 既に言っているので、枠が言っても二度目の答えになる——手持ちの空き枠に持ち物の絵を順に送っても、
+   * 何も絞られない。**枠によって宣言が違うスロット**（炉の火の中と石の上、`FireSystem.md` 1.1節）
+   * でだけ、どの枠がどちらなのかを枠自身が名乗る。
+   *
+   * **単独で在れない型（`bound_to_owner`、7.9節）は挙げない。** 探してくる先が無いので、
+   * 「これを持ってくればよい」の絵にならない。当てはまる型がまだ1つも無い枠も空になる。
+   * **絵にできない受け入れ（TypeMatchRule.canBePictured）も空。**
+   */
+  typesShownInEmptyCells(slotDef: SlotDef): readonly (readonly ObjectGlobalId[])[] {
+    const reading = slotDef.cellsReading;
+    if (reading.kind === 'uniform') return [];
+
+    // 何でも受ける枠（accept無し）は、undefinedのまま1つの宣言として数える。
+    const declarations = new Set(reading.cells.map((cell) => cell.accept?.key));
+    if (declarations.size < 2) return [];
+
+    return reading.cells.map((cell) => {
+      const accept = cell.accept;
+      if (accept === undefined || !accept.canBePictured) return [];
+      return accept
+        .matchingDefs(this.objects)
+        .filter((objectDef) => !objectDef.boundToOwner)
+        .map((objectDef) => objectDef.globalId);
+    });
+  }
 }

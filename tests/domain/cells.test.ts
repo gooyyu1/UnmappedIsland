@@ -107,4 +107,102 @@ object_defs:
       expect(errors[2], '3個目は枠が無い').toBeDefined();
     });
   });
+
+  /**
+   * 空き枠が画面へ名乗る型（`typesShownInEmptyCells`、docs/ui/CardView.md 11節）。**名乗るのは、
+   * 同じ並びの中で枠によって受け入れの宣言が違うときだけ**——どの枠も同じなら、そこへ何が入るかは
+   * その場所そのものが既に言っている。
+   */
+  describe('空き枠が名乗る型', () => {
+    const names = (codex: WorldCodex, ownerName: string, slotName: string): readonly string[][] => {
+      const owner = codex.objects.get(codex.objectNames.getId(ownerName));
+      const slotDef = owner.tryGetSlotDef(codex.slotNames.getId(slotName))!;
+      return codex
+        .typesShownInEmptyCells(slotDef)
+        .map((types) => types.map((id) => codex.objects.get(id).name));
+    };
+
+    // 炉の火床（docs/engine/FireSystem.md 1.1節）。火の中の枠は焼く物だけ、石の上の枠は器だけを受ける。
+    const hearth = build(`
+object_defs:
+  three_stone_hearth:
+    slots:
+      fire:
+        cells:
+          - {accept: {tag: roastable}}
+          - {accept: {tag: cookware}}
+  raw_meat: {tags: [roastable]}
+  taro: {tags: [roastable]}
+  clay_pot: {tags: [cookware]}
+`);
+
+    it('枠によって受け入れの宣言が違えば、その枠が受ける型を名乗る', () => {
+      expect(names(hearth, 'three_stone_hearth', 'fire')).toEqual([['raw_meat', 'taro'], ['clay_pot']]);
+    });
+
+    it('絵にならない受け入れは名乗らない', () => {
+      // 何でも受ける枠と、否定で書かれた枠。どちらも「当てはまる型すべて」が世界の札とほぼ同じに
+      // なるので、順に送っても何も絞られない。
+      const bench = build(`
+object_defs:
+  bench:
+    slots:
+      things:
+        cells:
+          - {}
+          - {accept: {not: {tag: quarry}}}
+          - {accept: {tag: gear}}
+  boar: {tags: [quarry]}
+  helmet: {tags: [gear]}
+`);
+
+      expect(names(bench, 'bench', 'things')).toEqual([[], [], ['helmet']]);
+    });
+
+    it('どの枠も同じものを受けるなら、何も名乗らない', () => {
+      // 焚き火の火床。枠は2つあるが、どちらも焼く物を受けるので、枠が言えることは並びと同じ。
+      const campfire = build(`
+object_defs:
+  campfire:
+    slots:
+      fire:
+        cells:
+          - {accept: {tag: roastable}}
+          - {accept: {tag: roastable}}
+  raw_meat: {tags: [roastable]}
+`);
+
+      expect(names(campfire, 'campfire', 'fire')).toEqual([]);
+    });
+
+    it('枠数を宣言していないスロットは、枠ごとの違いを持てないので何も名乗らない', () => {
+      const ground = build(`
+object_defs:
+  ground:
+    slots:
+      items:
+        cell: {accept: {tag: item}}
+  stone: {tags: [item]}
+`);
+
+      expect(names(ground, 'ground', 'items')).toEqual([]);
+    });
+
+    it('単独で在れない型は、探してくる先が無いので名乗らない', () => {
+      const body = build(`
+object_defs:
+  body:
+    slots:
+      parts:
+        cells:
+          - {accept: {tag: organ}}
+          - {accept: {tag: gear}}
+  heart: {tags: [organ], bound_to_owner: true}
+  prosthetic: {tags: [organ]}
+  helmet: {tags: [gear]}
+`);
+
+      expect(names(body, 'body', 'parts'), '心臓は挙がらない').toEqual([['prosthetic'], ['helmet']]);
+    });
+  });
 });
