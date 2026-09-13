@@ -415,7 +415,7 @@ export class WorldCodex {
    *
    * **単独で在れない型（`bound_to_owner`、7.9節）は挙げない。** 探してくる先が無いので、
    * 「これを持ってくればよい」の絵にならない。当てはまる型がまだ1つも無い枠も空になる。
-   * **否定で書かれた受け入れ（`not`、4.1節）も空**——「そのタグを持たない型すべて」は絵にならない。
+   * **絵にできない受け入れ（TypeMatchRule.canBePictured）も空。**
    */
   typesShownInEmptyCells(slotDef: SlotDef): readonly (readonly ObjectGlobalId[])[] {
     const reading = slotDef.cellsReading;
@@ -427,7 +427,7 @@ export class WorldCodex {
 
     return reading.cells.map((cell) => {
       const accept = cell.accept;
-      if (accept === undefined || accept.reading.kind === 'not') return [];
+      if (accept === undefined || !accept.canBePictured) return [];
       return accept
         .matchingDefs(this.objects)
         .filter((objectDef) => !objectDef.boundToOwner)
