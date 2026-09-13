@@ -126,14 +126,25 @@ describe('開始地点の選抜', () => {
     expect(differed, '並び順の先頭とは違う砂浜を選んだ島が1つも無い').toBeGreaterThan(0);
   });
 
+  /** 内陸のサイトだけの島（生成では作れない形）。 */
+  function inlandOnlyIsland(): IslandMap {
+    const inland = new Site(0, 0, 0, false);
+    inland.type = codex.generation!.locationTypes.find((type) => type.name === 'mountain_peak');
+    return new IslandMap('island', 0, [inland], []);
+  }
+
   it('海岸が1つも無い島は、内陸から始めずに投げる', () => {
     // 外周リングは必ず4つ以上置かれる（SitePlacer）ので、生成が壊れない限り起きない。**黙って
     // 内陸から始めると、漂着したはずの主人公が山の中に居る島が誰にも気づかれずに配られる。**
-    const inland = new Site(0, 0, 0, false);
-    inland.type = codex.generation!.locationTypes.find((type) => type.name === 'mountain_peak');
-    const map = new IslandMap('island', 0, [inland], []);
+    expect(() => selectStartSite(codex, inlandOnlyIsland())).toThrow('海岸のサイト');
+  });
 
-    expect(() => islandStartupReachOf(startupNeedSuppliersOf(codex), map)).toThrow('海岸のサイト');
+  it('候補を渡した側は、漂着地の条件に縛られない', () => {
+    // 測るのと選ぶのは別（IslandStartupReach）。シナリオは自分で候補を持っているので、
+    // 岸が在るかどうかはその答えに関わらない。
+    const map = inlandOnlyIsland();
+
+    expect(selectStartSiteAmong(codex, map, map.sites)?.index).toBe(0);
   });
 
   it('その型の土地が島に無ければ、開始地点は決まらない', () => {

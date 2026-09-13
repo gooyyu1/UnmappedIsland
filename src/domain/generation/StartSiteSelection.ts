@@ -89,16 +89,16 @@ export interface SiteStartupReach {
   readonly farthestNeedIndex: number | undefined;
 }
 
-/** 島1つ。 */
+/**
+ * 島1つを測ったもの。**選抜そのものは持たない**——どこを候補にするかは問う側の事情で決まるので
+ * （漂着なら岸、シナリオなら指定された型）、測る側が決めると候補を渡した呼び手まで岸の有無に縛られる。
+ */
 export interface IslandStartupReach {
   readonly seed: number;
   readonly sites: readonly SiteStartupReach[];
 
   /** 島のどの土地でも採れなかった要るもの（STARTUP_NEEDSの添字）。 */
   readonly missingNeedIndices: readonly number[];
-
-  /** 選抜が選んだ開始地点（{@link selectStartSite} が返すサイトのもの）。 */
-  readonly startSite: SiteStartupReach;
 }
 
 /**
@@ -143,12 +143,12 @@ export function startupNeedSuppliersOf(codex: WorldCodex): StartupNeedSuppliers 
 /**
  * プレイヤーが漂着する地点を選ぶ（ContentSkeleton.md 2.3節）。
  *
- * 候補は砂浜で、無ければ外周リング（海岸）、それも無ければ全サイト。**その中を並び順ではなく
- * 歩数で選ぶ**——届かない要るものが少ない順、次に全部が揃うまでの歩数、次にその移動時間。
+ * 候補は砂浜で、無ければ外周リング（海岸）。**その中を並び順ではなく歩数で選ぶ**——届かない要るものが
+ * 少ない順、次に全部が揃うまでの歩数、次にその移動時間、次にサイトのindex。
  */
 export function selectStartSite(codex: WorldCodex, map: IslandMap): Site {
   const reach = islandStartupReachOf(startupNeedSuppliersOf(codex), map);
-  return map.sites[reach.startSite.siteIndex];
+  return map.sites[landfallStartSiteOf(reach, map).siteIndex];
 }
 
 /**
@@ -156,6 +156,7 @@ export function selectStartSite(codex: WorldCodex, map: IslandMap): Site {
  *
  * 絞るのは、**漂着ではない事情で開始地点を決める側**——特定の土地から試したいシナリオ
  * （`src/scenario/Scenario.ts` の `location.type`）。絞った先でも並び順では採らない。
+ * **漂着地の条件は見ない**ので、岸から遠い型を指定しても、岸の無い島でも答えが返る。
  */
 export function selectStartSiteAmong(
   codex: WorldCodex,
@@ -165,11 +166,18 @@ export function selectStartSiteAmong(
   if (candidates.length === 0) return undefined;
 
   const reach = islandStartupReachOf(startupNeedSuppliersOf(codex), map);
-  const best = bestCandidateOf(candidates.map((site) => reach.sites[site.index]));
-  return map.sites[best.siteIndex];
+  return map.sites[bestCandidateOf(candidates.map((site) => reach.sites[site.index])).siteIndex];
 }
 
-/** 生成された島1つを、全サイトについて測る。 */
+/**
+ * 測った島から、漂着地として選ばれるサイトを引く。測るのと選ぶのを分けてあるのは、**候補を自分で
+ * 持っている呼び手（シナリオ）を、岸の有無に縛らないため**。
+ */
+export function landfallStartSiteOf(reach: IslandStartupReach, map: IslandMap): SiteStartupReach {
+  return bestCandidateOf(landfallCandidatesOf(map).map((site) => reach.sites[site.index]));
+}
+
+/** 生成された島1つを、全サイトについて測る。**選抜はしない**（IslandStartupReach参照）。 */
 export function islandStartupReachOf(suppliers: StartupNeedSuppliers, map: IslandMap): IslandStartupReach {
   const supplies = map.sites.map((site) => supplyOf(suppliers, site));
   const providers = supplies.map((supply) => supply.needIndices);
@@ -188,8 +196,7 @@ export function islandStartupReachOf(suppliers: StartupNeedSuppliers, map: Islan
     providers.every((needIndices) => !needIndices.has(needIndex)),
   );
 
-  const candidates = landfallCandidatesOf(map).map((site) => sites[site.index]);
-  return { seed: map.seed, sites, missingNeedIndices, startSite: bestCandidateOf(candidates) };
+  return { seed: map.seed, sites, missingNeedIndices };
 }
 
 /**

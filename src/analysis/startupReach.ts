@@ -6,6 +6,7 @@ import type {
 } from '../domain/generation/StartSiteSelection';
 import {
   islandStartupReachOf,
+  landfallStartSiteOf,
   STARTUP_NEEDS,
   startupNeedSuppliersOf,
 } from '../domain/generation/StartSiteSelection';
@@ -162,7 +163,7 @@ export function islandReachOf(sources: StartupNeedSources, map: IslandMap): Isla
     seed: reach.seed,
     sites,
     missingNeedIndices: reach.missingNeedIndices,
-    startSite: sites[reach.startSite.siteIndex],
+    startSite: sites[landfallStartSiteOf(reach, map).siteIndex],
   };
 }
 
