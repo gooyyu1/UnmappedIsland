@@ -6,7 +6,7 @@ import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
- * `scripts/agent/dispatch-review.sh` が組み立てるタイトルの検査。
+ * `scripts/daemon/dispatch-review.sh` が組み立てるタイトルの検査。
  *
  * ここが守るのは**一覧を人が読めること**（`agent-ops/board-design.md` 2.9）。とくに「何回目の判定に
  * なるはずか」は数えて出す値なので、数え方がずれても**それらしい番号が付いたまま**気づけない。
@@ -18,7 +18,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
 // だけで既定の5秒を超えうる。
 vi.setConfig({ testTimeout: 20000 });
 
-const SCRIPT = resolve(__dirname, '../../scripts/agent/dispatch-review.sh');
+const SCRIPT = resolve(__dirname, '../../scripts/daemon/dispatch-review.sh');
 
 interface World {
   /** PRの `state`。既定は開いている。 */

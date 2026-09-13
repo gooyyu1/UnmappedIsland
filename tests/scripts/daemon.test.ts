@@ -15,24 +15,24 @@ import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
- * `scripts/agent/daemon.sh` の検査。
+ * `scripts/daemon/daemon.sh` の検査。
  *
- * 1周の中身（引く・決める・打つ）は [`board-round.mjs`](../../scripts/agent/board-round.mjs)
+ * 1周の中身（引く・決める・打つ）は [`board-round.mjs`](../../scripts/daemon/board-round.mjs)
  * （検査は `boardRound.test.ts`）なので、ここが守るのは**回し続けること**——二本目を立てないこと・
  * 落ちた跡の錠を取り上げること・立てて確かめて止められること・引けない周を数えて諦めること。
  *
  * デーモンを一時ディレクトリへ写し、隣の `board-round.mjs` と `board-publish.mjs` を**走ったことだけを
  * 記録する身代わり**へ差し替える（`$HERE` は `BASH_SOURCE` から決まるので、写した先の隣が呼ばれる）。
  *
- * `git` もPATHの先頭で身代わりへ差し替える。**手元のリポジトリを触らせないため**——`start` は本体の
- * チェックアウトを `origin/main` へ寄せてから立てる。
+ * `git` もPATHの先頭で身代わりへ差し替える。**手元のリポジトリを触らせないため**——本体の
+ * チェックアウトを `origin/main` へ寄せるのは、`start` のときと、回っている周の終わり。
  */
 
 // 実プロセス（bash + node）を起こすため、`npm test` 全体を並行実行したときのCPU競合だけで
 // 既定の5秒を超えうる。
 vi.setConfig({ testTimeout: 20000 });
 
-const AGENT = resolve(__dirname, '../../scripts/agent');
+const DAEMON = resolve(__dirname, '../../scripts/daemon');
 
 interface World {
   /** 1周が非0で終わるか（＝盤面を引けない周）。 */
@@ -45,6 +45,8 @@ interface World {
   readonly heartbeat?: string;
   /** 周ごとに、`daemon.sh` を書き換える中身（`null` を置いた周は書き換えない）。 */
   readonly swap?: readonly (string | null)[];
+  /** 複製元の `daemon.sh` を消す周（1始まり。`0` はどの周でも消さない）。**移された複製元**を作る。 */
+  readonly removeSource?: number;
   /** 本体に未コミットの変更（追跡済み）があるか。 */
   readonly mainDirty?: boolean;
   /** `git` が答えないか（＝リポジトリの外・`git` が無い）。 */
@@ -53,6 +55,10 @@ interface World {
   readonly fromWorktree?: boolean;
   /** 寄せたことで `package-lock.json` が動いたか。 */
   readonly lockChanged?: boolean;
+  /** 寄せたことで本体の先頭が動いたか（既定は動く）。**動いた周だけログへ1行出る。** */
+  readonly mainMoved?: boolean;
+  /** 周の途中で `stop` に撃たれるか（1周を回す身代わりが、錠の中のPIDへ `SIGTERM` を送る）。 */
+  readonly stopMidRound?: boolean;
   /** 本体を寄せる `checkout` が `daemon.sh` に置く中身。**走っている `start` の足元が入れ替わる。** */
   readonly checkoutSwap?: string;
   readonly env?: Record<string, string>;
@@ -90,9 +96,9 @@ interface Result {
 function daemon(world: World = {}): Result {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-daemon-'));
   try {
-    const here = join(work, 'agent');
+    const here = join(work, 'daemon');
     mkdirSync(here);
-    copyFileSync(join(AGENT, 'daemon.sh'), join(here, 'daemon.sh'));
+    copyFileSync(join(DAEMON, 'daemon.sh'), join(here, 'daemon.sh'));
 
     const rounds = join(work, 'rounds.txt');
     writeFileSync(rounds, '', 'utf-8');
@@ -100,12 +106,19 @@ function daemon(world: World = {}): Result {
     // `daemon.sh` が新しい版へ差し替わる瞬間は、走っている周の中から起きる。
     writeFileSync(
       join(here, 'board-round.mjs'),
-      `import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';\n` +
+      `import { appendFileSync, readFileSync, rmSync, writeFileSync } from 'node:fs';\n` +
         `const rounds = ${JSON.stringify(rounds)};\n` +
         `appendFileSync(rounds, '1\\n');\n` +
         `const round = readFileSync(rounds, 'utf-8').split('\\n').filter(Boolean).length;\n` +
+        `const source = ${JSON.stringify(join(here, 'daemon.sh'))};\n` +
         `const swap = ${JSON.stringify(world.swap ?? [])}[round - 1];\n` +
-        `if (typeof swap === 'string') writeFileSync(${JSON.stringify(join(here, 'daemon.sh'))}, swap, 'utf-8');\n` +
+        `if (round === ${world.removeSource ?? 0}) rmSync(source, { force: true });\n` +
+        `else if (typeof swap === 'string') writeFileSync(source, swap, 'utf-8');\n` +
+        // **周の途中で撃つ口。** 錠の中のPIDが撃つ相手（`daemon.sh`「止めるのも自分の仕事」）。
+        // bash は前の子が終わるまで signal を握るので、この周を終えたところで止まりに入る。
+        `if (${world.stopMidRound === true}) process.kill(Number(readFileSync(${JSON.stringify(
+          join(work, 'state', 'lock', 'pid'),
+        )}, 'utf-8').trim()), 'SIGTERM');\n` +
         `process.exit(${world.roundFails === true ? 1 : 0});\n`,
       'utf-8',
     );
@@ -141,7 +154,8 @@ function daemon(world: World = {}): Result {
     if (world.checkoutSwap !== undefined) {
       writeFileSync(join(work, 'swap.sh'), world.checkoutSwap, 'utf-8');
     }
-    // `HEAD:package-lock.json` の中身は、`checkout` を境に変わる（寄せた先で依存が動いた場合）。
+    // `HEAD:package-lock.json` と `HEAD` の中身は、`checkout` を境に変わる（寄せた先で依存が
+    // 動いた場合／寄せた先が別のコミットだった場合）。
     const git = join(work, 'git');
     writeFileSync(
       git,
@@ -154,6 +168,9 @@ case "$*" in
   *'HEAD:package-lock.json'*)
     if [ -e '${dir}/checked-out' ]; then printf '%s' '${world.lockChanged === true ? 'bbb222' : 'aaa111'}'
     else printf '%s' 'aaa111'; fi ;;
+  *'rev-parse HEAD'*)
+    if [ -e '${dir}/checked-out' ]; then printf '%s' '${world.mainMoved === false ? 'head000' : 'head111'}'
+    else printf '%s' 'head000'; fi ;;
   *checkout*)
     touch '${dir}/checked-out'
     ${world.checkoutSwap === undefined ? ':' : `cp '${dir}/swap.sh' '${pathForBash(here)}/daemon.sh'`} ;;
@@ -244,7 +261,7 @@ describe('daemon.sh', () => {
   it('走るのは複製で、リポジトリの1本ではない', () => {
     const result = daemon();
 
-    expect(result.copy).toBe(readFileSync(join(AGENT, 'daemon.sh'), 'utf-8'));
+    expect(result.copy).toBe(readFileSync(join(DAEMON, 'daemon.sh'), 'utf-8'));
   });
 
   // 起こす側に「もう走っているか」を確かめさせない（`pgrep` はブリッジの bash に無い）。
@@ -432,11 +449,83 @@ describe('daemon.sh', () => {
     expect(result.daemonLog).toContain('寄せた先が立った');
   });
 
+  // **`start` だけが寄せる形では、人がGitHubの画面から入れたぶんが届かない**
+  // （`agent-ops/board-design.md` 2.3.2）。走っている間に `main` が進むのは盤面が自分でマージを
+  // 打った周だけになり、次のマージまで隣の道具もひな形も古い版で読まれ続ける。
+  it('回っている周の終わりにも、本体を `origin/main` へ寄せる', () => {
+    const result = daemon();
+
+    expect(result.git.some((call) => call.includes('fetch --quiet origin main'))).toBe(true);
+    expect(result.git.some((call) => call.includes('checkout --quiet --detach origin/main'))).toBe(true);
+    expect(result.log).toContain('本体は deadbee');
+  });
+
+  // **ログへ出すのは動いた周だけ。** 毎周書くと同じ1行が周期ぶん溜まり、動いたことが埋もれる。
+  it('本体が動かなかった周は、ログへ出さない', () => {
+    const result = daemon({ mainMoved: false });
+
+    expect(result.git.some((call) => call.includes('fetch --quiet origin main'))).toBe(true);
+    expect(result.log).not.toContain('本体は');
+  });
+
+  // **これが、この追従の眼目**——寄せたことで `daemon.sh` が入れ替わったぶんを、同じ周の終わりの
+  // 見比べが拾う。拾えなければ、新しい道具を古い呼び手が叩く周が続く（2.3.2）。
+  it('周の終わりに寄せて版が入れ替わったら、新しい版で回り直す', () => {
+    const result = daemon({
+      checkoutSwap: `${STUB_SHEBANG}\necho "新しい版が回り出した"\n`,
+      // `ONCE` を空にして、周を終えた先まで進ませる。入れ替わった先が立ったところで止まる。
+      env: { ONCE: '', INTERVAL: '1' },
+    });
+
+    expect(result.rounds).toBe(1);
+    expect(result.log).toContain('自分の版が入れ替わったので、新しい版で回り直す');
+    expect(result.log).toContain('新しい版が回り出した');
+  });
+
+  // 本体は作業ツリーの共有先なので、手が入っているところへ `checkout` を打たない。**寄せられない
+  // 周もデーモンは止まらない。**
+  it('本体に未コミットの変更があれば、周の終わりでも触らない', () => {
+    const result = daemon({ mainDirty: true });
+
+    expect(result.git.some((call) => call.includes('checkout'))).toBe(false);
+    expect(result.code).toBe(0);
+    expect(result.rounds).toBe(1);
+  });
+
+  // 作業ツリーは本体の `node_modules` を遡って共有するので、**進めた側が入れ直す**。
+  it('周の終わりに寄せて依存が動いていれば、入れ直す', () => {
+    const result = daemon({ lockChanged: true });
+
+    expect(result.installed).toBe(true);
+    expect(result.log).toContain('依存も入れ直した');
+  });
+
+  // **畳む周では寄せない。** 使う周がもう無いうえ、依存の入れ直しが `STOP_WAIT` を越えると `stop`
+  // 自身が「止まらなかった」と答える。
+  it('周の途中で撃たれたら、寄せずに畳む', () => {
+    // `INTERVAL` を詰めるのは、**畳まない版に当たったときに待たされないため**——寝てから止まる形に
+    // 戻っても、次の周へ入る前に止まる。
+    const result = daemon({ stopMidRound: true, env: { ONCE: '', INTERVAL: '1' } });
+
+    expect(result.rounds).toBe(1);
+    expect(result.git.some((call) => call.includes('checkout'))).toBe(false);
+    expect(result.log).toContain('止めろと言われたので畳む');
+  });
+
+  // **`DRY_RUN` は手を並べるだけの周**（冒頭の使い方）。打たないつもりで叩いた1周が、人の手元の
+  // 本体の `HEAD` を動かしてしまう。
+  it('`DRY_RUN` の周は、本体を寄せない', () => {
+    const result = daemon({ env: { DRY_RUN: '1' } });
+
+    expect(result.rounds).toBe(1);
+    expect(result.git.some((call) => call.includes('checkout'))).toBe(false);
+  });
+
   // **回っている bash は、最初に読んだ版のまま。** 隣の道具は毎周読み直されるので、`SYNCED` で版が
   // 食い違うのはこの1本だけ——古い呼び手が新しい道具を叩き、手を1つも出さない周が続いた
   // （2026-09-05）。
   it('自分の版が入れ替わったら、新しい版で回り直す', () => {
-    const real = readFileSync(join(AGENT, 'daemon.sh'), 'utf-8');
+    const real = readFileSync(join(DAEMON, 'daemon.sh'), 'utf-8');
     const result = daemon({
       // `ONCE` を空にして周をまたがせる。入れ替わってなお回り続けることが見たいので、1周では足りない。
       env: { ONCE: '', INTERVAL: '1' },
@@ -456,6 +545,25 @@ describe('daemon.sh', () => {
     // （＝3周目が回らない）。
     expect(result.log).not.toContain('既に走っている');
     expect(result.log).toContain('入れ替わった先が立った');
+  });
+
+  // **複製元が読めない周に、読み取りそのものがデーモンを殺していた**——`$(<…)` の失敗は非対話シェルを
+  // その場で終わらせるので、ログ行も残らずに落ちる。走っているのは複製なので、複製元が要るのは
+  // 入れ替えるときだけで、読めない間も今の版のまま回り続けられる。
+  it('複製元が消えても、今の版のまま回り続ける', () => {
+    const result = daemon({
+      env: { ONCE: '', INTERVAL: '1' },
+      // 1周目の途中で複製元を消す（＝別の場所へ移された周）。
+      removeSource: 1,
+      // 2周目に戻ってきた複製元で、入れ替えが再び働くことまで見る。立ったことを1行残して終わる版に
+      // しておくと、そこで回るのが止まるので撃たずに済む。
+      swap: [null, `${STUB_SHEBANG}\necho "戻った先が立った"\n`],
+    });
+
+    expect(result.code).toBe(0);
+    expect(result.rounds).toBe(2);
+    expect(result.log).toContain('読めないので、今の版のまま回り続ける');
+    expect(result.log).toContain('戻った先が立った');
   });
 
   // 盤面を読む先はスマホなので、周（既定30秒）と同じ速さで書き換えても読み切れない

@@ -4,7 +4,7 @@
 //   await checkPrompt(session, sentPath)   // → 一致したか
 //
 // **シェルからの入口は隣の [`ccr-check-prompt.sh`](./ccr-check-prompt.sh)。** 呼び方と出る行はそちら。
-// **投入する側はここを関数として呼ぶ**（[`dispatch-session.mjs`](../scripts/agent/dispatch-session.mjs)）
+// **投入する側はここを関数として呼ぶ**（[`dispatch-session.mjs`](../scripts/daemon/dispatch-session.mjs)）
 // ——入口を通すと node がもう1つ起きる（[`ccr-meta.mjs`](./ccr-meta.mjs)「node から呼ぶ側は」）。
 //
 // 見るのは `inbound_origin` が `mcp_create_session` の user イベント1つだけ。**`send_message` で

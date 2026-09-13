@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { SunlightHours } from '../../src/game/view/daylight';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { replaceAllOrFail } from '../support/textEdit';
 
 /**
  * 日の出・日の入りの境目をまたいだかの判定（`src/game/view/daylight.ts`）の試験。
@@ -146,7 +147,10 @@ describe('SunlightHours（太陽の光だけで手元の作業ができる時刻
 
   it('雲が陽を遮っても境目は動かない', () => {
     // 嵐（-10）は正午の明るさを16から6へ落とすが、それは太陽の位置ではないので日の入りではない。
-    const stormy = sunlightHoursOf(YAML.replace('value: clear', 'value: storm'), 'hero');
+    const stormy = sunlightHoursOf(
+      replaceAllOrFail(YAML, { from: 'value: clear', to: 'value: storm', occurrences: 1 }),
+      'hero',
+    );
     expect(stormy.handworkLitAt(6)).toBe(true);
     expect(stormy.handworkLitAt(5)).toBe(false);
   });

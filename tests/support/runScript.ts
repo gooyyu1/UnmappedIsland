@@ -13,7 +13,7 @@ import {
  *
  * 直す先は、走らせるスクリプト自身だけではない——身代わりのスクリプトへ書き込むパスも読むのは bash。
  *
- * 本番の経路は `scripts/agent/spawn.mjs` の `posix` が同じ約束を持つ。
+ * 本番の経路は `scripts/daemon/spawn.mjs` の `posix` が同じ約束を持つ。
  */
 export function pathForBash(path: string): string {
   return path.replace(/\\/g, '/');

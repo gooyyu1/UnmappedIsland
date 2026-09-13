@@ -12,8 +12,12 @@
 # ## 打つのは `daemon.sh start` の1行だけ
 #
 # **二重に立たない・落ちた跡の錠を取り上げる・本体を `origin/main` へ寄せる**は、全部あちらが持って
-# いる（[`daemon.sh`](daemon.sh)「二重に起こさない」「立てるときは」）。ここに条件を書くと、同じ
-# 判断が2箇所になる。
+# いる（[`daemon.sh`](../daemon/daemon.sh)「二重に起こさない」「本体を `origin/main` へ寄せるのは」）。
+# ここに条件を書くと、
+# 同じ判断が2箇所になる。
+#
+# **これ自身がデーモンの側に無いのは、打つのが人だから**（`agent-ops/parallel-work.md`
+# 「`scripts/` は呼び手で分かれている」）。登録の1回はデーモンが回り始める前に在る。
 #
 # ## 起こす口は、ログオンと毎時の2つ
 #
@@ -91,7 +95,7 @@ cat >"$WORK/task.xml" <<XML
   <Actions Context="Author">
     <Exec>
       <Command>$BASH_EXE</Command>
-      <Arguments>-lc "cd '$ROOT' &amp;&amp; bash scripts/agent/daemon.sh start"</Arguments>
+      <Arguments>-lc "cd '$ROOT' &amp;&amp; bash scripts/daemon/daemon.sh start"</Arguments>
     </Exec>
   </Actions>
 </Task>

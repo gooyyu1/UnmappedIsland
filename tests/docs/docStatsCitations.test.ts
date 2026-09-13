@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
+import { replaceAllOrFail } from '../support/textEdit';
 
 /**
  * 文書が `stats/*.yaml` から書き写した数値が、出どころとずれていないかの検査。
@@ -277,11 +278,13 @@ describe('レコードを選ぶ条件', () => {
   });
 
   it('囲まなければ、値の中の空白がトークンの切れ目になる', () => {
-    expect(cellOfMark(MARK.replaceAll('"', ''))).toBe('条件に当てはまるレコードが0件（1件に絞る）');
+    expect(cellOfMark(replaceAllOrFail(MARK, { from: '"', to: '', occurrences: 2 }))).toBe(
+      '条件に当てはまるレコードが0件（1件に絞る）',
+    );
   });
 
   it('閉じない引用符は、印ごと読めないものとして赤くする', () => {
-    expect(parseMark(MARK.replace('robust"', 'robust'))).toBeNull();
+    expect(parseMark(replaceAllOrFail(MARK, { from: 'robust"', to: 'robust', occurrences: 1 }))).toBeNull();
   });
 
   it('`=` で列と値に切れないトークンは、印ごと読めないものとして赤くする', () => {

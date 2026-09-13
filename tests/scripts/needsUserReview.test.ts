@@ -6,7 +6,7 @@ import { pathForBash, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
- * `scripts/agent/needs-user-review.sh` が引く線。
+ * `scripts/daemon/needs-user-review.sh` が引く線。
  *
  * この判定は**ユーザーへ回すかどうか**を決める関門で、誤りはどちらへ転んでも見えない。緩すぎれば
  * 誰が決めたのか分からない確定が人の目に触れないまま `main` へ入り、厳しすぎれば判断の中身が無いPRが
@@ -16,7 +16,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * `gh` と `git` を PATH の先頭に置いて差し替え、実際にスクリプトを走らせる。
  */
 
-const SCRIPT = resolve(__dirname, '../../scripts/agent/needs-user-review.sh');
+const SCRIPT = resolve(__dirname, '../../scripts/daemon/needs-user-review.sh');
 
 interface Result {
   readonly lines: string[];

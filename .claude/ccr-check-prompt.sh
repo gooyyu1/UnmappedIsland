@@ -13,7 +13,7 @@
 #
 # **中身は隣の [`ccr-check-prompt.mjs`](./ccr-check-prompt.mjs)。ここは入口だけ。** 何を見るか・
 # なぜ待つかはそちらの冒頭にある。**投入する側はこの入口を通らず、あちらを関数として呼ぶ**
-# （[`dispatch-session.mjs`](../scripts/agent/dispatch-session.mjs)）——1回の投入で起きる node の数が
+# （[`dispatch-session.mjs`](../scripts/daemon/dispatch-session.mjs)）——1回の投入で起きる node の数が
 # そのまま常時の固定費になるため。ここが残っているのは、手で叩く側のため。
 
 set -euo pipefail

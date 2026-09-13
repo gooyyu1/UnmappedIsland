@@ -196,7 +196,7 @@
 
   **この行は、印を足したPRがユーザーへ回されるかどうかも決めます。** issue の番号を指す出どころの
   ある印はそのままマージされ、出どころの無い印は「誰が決めたのか」を訊きに止まります
-  （[`needs-user-review.sh`](../scripts/agent/needs-user-review.sh)）。**`ユーザーの指示` と書いた印も
+  （[`needs-user-review.sh`](../scripts/daemon/needs-user-review.sh)）。**`ユーザーの指示` と書いた印も
   止まります**——チェックという確かめられる跡が無いので、ユーザーに見せるのが正しい扱いです。
   **ただし止まるのは `docs/` 配下の印だけです**（同スクリプトの射程。
   [`ParallelAgents.md`](./ParallelAgents.md) 2節）——`docs/` の外の印も上の検査には掛かりますが、

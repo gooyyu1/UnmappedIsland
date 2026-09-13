@@ -2,9 +2,9 @@
 
 一次の分析係（[`analysis-prompt.md`](analysis-prompt.md)）が回ごとに書いた `## 傾向` を**横断して
 読み、複数の回に現れている形に根本的な対策を打つべきかを決める**係の本文（出どころ: ユーザーの指示・
-2026-09-07）。投入するのは盤面（[`board-move.mjs`](../../scripts/agent/board-move.mjs) の `CYCLES`）で、
+2026-09-07）。投入するのは盤面（[`board-move.mjs`](../../scripts/daemon/board-move.mjs) の `CYCLES`）で、
 前の周より後に書かれた一次の記録があれば週に一度立つ。渡し方は
-[`dispatch-chore.sh`](../../scripts/agent/dispatch-chore.sh)。
+[`dispatch-chore.sh`](../../scripts/daemon/dispatch-chore.sh)。
 
 **一次と二次を分けるのは、回をまたぐ数を一次が畳んでしまわないため。** 一次は1つの帯しか見ないので
 「この形が何回の帯にまたがって出たか」を原理的に知らない。**同じ形が別々の回に独立して現れたこと

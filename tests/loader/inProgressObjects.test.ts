@@ -4,6 +4,7 @@ import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
+import { replaceAllOrFail } from '../support/textEdit';
 
 /**
  * レシピから自動生成される製作中オブジェクト（RecipeSystem.md 1節）の検証。
@@ -50,7 +51,7 @@ object_defs:
   it('in_progress_tagsを宣言しない世界では、どのタグも引き継がない', () => {
     // 引き継ぐタグは**その世界が挙げる**（RecipeSystem.md 5節）。挙げていない世界で勝手に引き継ぐと、
     // 置き場所を言うタグと働きを言うタグの区別が付かないまま全部が付く。
-    const codex = load(AXE.replace('in_progress_tags: [item]\n', ''));
+    const codex = load(replaceAllOrFail(AXE, { from: 'in_progress_tags: [item]\n', to: '', occurrences: 1 }));
     const def = codex.objects.get(codex.objectNames.getId(inProgressObjectName('axe', 'basic')));
 
     expect(def.tags.map((id) => codex.tagNames.getName(id))).toEqual(['wip']);
