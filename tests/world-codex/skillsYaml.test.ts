@@ -535,6 +535,8 @@ interface InteractionGains {
   /** その操作が`spawn`で出す型の名前（`pick`の候補の中のものも含む）。 */
   readonly products: readonly string[];
   readonly skills: readonly string[];
+  /** 相手へ重ねて始まる操作か（`trigger`が`drag`）。 */
+  readonly needsInstrument: boolean;
   /** `duration` が読んでいるプロパティの名前。リテラルの分数で書いていればundefined。 */
   readonly durationProp: string | undefined;
   /** その操作が `{subject: agent, prop: ...}` で読んでいるもの（余分の卓の重みもここに出る）。 */
@@ -595,11 +597,14 @@ function declaredInteractions(): readonly InteractionGains[] {
         const duration = body.get('duration', true);
         const durationProp = isMap(duration) ? duration.get('prop', true) : undefined;
 
+        const trigger = body.get('trigger', true);
+
         found.push({
           owner,
           name: isScalar(entry.key) ? String(entry.key.value) : '',
           products: [...products].sort(),
           skills: skills.sort(),
+          needsInstrument: isMap(trigger) && trigger.get('drag', true) !== undefined,
           durationProp: isScalar(durationProp) ? String(durationProp.value) : undefined,
           agentReads: [...agentReads].sort(),
         });
@@ -1095,6 +1100,24 @@ describe('腕前とレシピの解放条件', () => {
     for (const [skillName, byRoute] of declaredSkillGains())
       for (const [route, amounts] of byRoute)
         expect([...amounts], `${skillName} が ${route} で配る量`).toEqual([GAIN_BY_ROUTE[route]]);
+  });
+
+  it('腕を配る操作は、物を出すか相手を要する（腕だけが伸びる操作を置かない）', () => {
+    // SkillSystem.md 3.1節。**練習は専用のアクションではなく、その腕の最も初歩的な行動そのもの**
+    // なので、腕だけが伸びる操作——何も出さず、重ねる相手も要らないもの——は世界に1つも無い。
+    // 腕前ごとに1つ並ぶ専用の練習アクションを足すと、ここで落ちる。
+    //
+    // **見ているのは相手が居ることまでで、何を消費するかまでは見ない**——`become`で相手を変える
+    // だけの操作（塩漬け）も、出す物を持たないまま通る。
+    const gaining = declaredInteractions().filter((interaction) => interaction.skills.length > 0);
+    expect(gaining.length, '腕を配る操作が1つも無い').toBeGreaterThan(0);
+
+    expect(
+      gaining
+        .filter((interaction) => interaction.products.length === 0 && !interaction.needsInstrument)
+        .map((interaction) => interaction.name),
+      '何も出さず、重ねる相手も要らない操作が腕を配っている',
+    ).toEqual([]);
   });
 
   it('出す物がそっくり同じ操作は、同じ腕を配る（同じ仕事の2つ目の入口で片方が抜けない）', () => {
