@@ -759,9 +759,6 @@ object_texts:
   taro:
     display_name: タロイモ
     description: 太平洋の島々で主食とされてきた塊茎。生のままかじると、口も喉も刺すように痛む。
-    props:
-      chop_minutes:
-        display_name: 刻む手間
     interactions:
       chop:
         display_name: 刻む
