@@ -683,23 +683,47 @@ traits:
       # 開かないレシピになる（SkillSystem.md 3.2節）。
       # ------------------------------------------------------------------
       # 石を打ち欠く（locations.yamlのknap）。柄付けの刃（tools.yaml）を開ける。
+      # 段が押し上げるのは下のknapping_deftnessで、石斧・突き銛のレシピがそれをdeftnessに名乗る。
       skill_knapping:
         tags: [skill]
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {knapping_deftness: 3}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {knapping_deftness: 8}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {knapping_deftness: 15}}
       # 掻き取る・撚る・編む（fiber.yaml・weaving.yaml）。編み籠・くくり罠・葉の衣類と、柄付けの紐を開ける。
+      #
+      # **上乗せは2本**——手際（cordage_deftness）と、無駄の無さ（cordage_thrift）。**桁が違うので
+      # 分けている**（工程の所要時間は30〜360分、余分の卓の重みは100が相手）。くくり罠（traps.yaml）が
+      # 余分の卓を持つ唯一のレシピで、同じ繊維から2つ結べるのは小さく数の要る物だけ
+      # （docs/world/Skills.md 7節）。
       skill_cordage:
         tags: [skill]
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {cordage_deftness: 3, cordage_thrift: 10}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {cordage_deftness: 8, cordage_thrift: 25}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {cordage_deftness: 15, cordage_thrift: 60}}
       # 削る・伐る（timber.yamlのfell/buck/cut_pole、animals.yamlのwhittle）。長い棒から軸を削り出す
       # 槍（tools.yaml）を開ける——木の箱・そり・板（Skills.md 2節）はまだ世界に無い。
       skill_woodwork:
@@ -707,9 +731,18 @@ traits:
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {woodwork_deftness: 3}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {woodwork_deftness: 8}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {woodwork_deftness: 15}}
       # 削り合わせて組む。伸ばす行動も開けるレシピもまだ無い——里心を抑える設え（furnishings.yaml）は
       # 縛りと削り出しで、ほぞで組む物ではない（docs/world/Skills.md 2.1節）。
       skill_joinery:
@@ -730,14 +763,24 @@ traits:
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
       # 皮を剥ぐ（animals.yamlのbutcher）。なめし革と、それを縫った物（clothing.yaml・voyage.yamlの帆）を開ける。
+      # 段が押し上げるのは下のleatherwork_deftnessで、なめし・縫いのレシピがそれをdeftnessに名乗る。
       skill_leatherwork:
         tags: [skill]
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {leatherwork_deftness: 3}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {leatherwork_deftness: 8}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {leatherwork_deftness: 15}}
       # 調理する。伸ばす行動がまだ無い——焼くのは炉が子のcooking_progressを進めるだけで
       # （docs/engine/FireSystem.md 7節）、人が行う操作になっていない。
       skill_cooking:
@@ -750,14 +793,24 @@ traits:
           - {name: expert, min: 180}
       # 得た食を保たせる（salt.yamlのcure）。開けるのは燻し小屋（smoking.yamlのsmokehouse）で、
       # 日差しの要らない保存がその先にある（docs/world/SurvivalItems.md 11節）。
+      # 段が押し上げるのは下のpreserving_deftnessで、燻し小屋のレシピがそれをdeftnessに名乗る。
       skill_preserving:
         tags: [skill]
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {preserving_deftness: 3}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {preserving_deftness: 8}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {preserving_deftness: 15}}
       # 火を起こす（fire.yamlのlight）。**レシピは開けない**——効き先は着火の重みだけ
       # （docs/engine/FireSystem.md 10節）。段が押し上げるのは下のignition_easeで、火口の
       # ignition_chanceがそれをbaseの土台にする（fire.yaml）。
@@ -835,3 +888,30 @@ traits:
       # 狙いの確かさ。武器の当たり所の重み（tools.yaml）と、突き漁のcatch_chance（voyage.yaml）が、
       # 打ちかかっている間これを土台にする。**上と分けているのは桁が違うから**（上の注記）。
       hunting_aim: {value: 0}
+      # ------------------------------------------------------------------
+      # 製作系の腕が押し上げる上乗せ（刻みとその理由は docs/world/Skills.md 7節）。素が0で、段が
+      # modifyで押し上げるのは上と同じだが、**読み方が違う**——アクセス系はつまみの`base`の土台に
+      # なるのに対し、こちらはレシピが`deftness`・`surplus`で直に名乗る
+      # （GameElementDefinition.md 13.6節）。**作りかけは成果物の素の値を持たない**ので、土台に
+      # できる相手がそこに居ない。
+      #
+      # **手際は引かれる側**（工程の所要時間から、この値ぶん短くなる）。値そのものは正で、段が
+      # 上がるほど大きい——符号を持つのは引く側の工程で、上乗せではない。加算なので**短い工程ほど
+      # よく効き、長い工程には埋もれる**が、そのずれは残す（Skills.md 7節）。
+      #
+      # **腕ごとに1本ずつ持つ。** 1本を全部の腕で共有すると、石を打ち欠いて上げた腕で編み物まで
+      # 速くなる。
+      # ------------------------------------------------------------------
+      # 打ち欠く手際。石斧・突き銛のレシピ（tools.yaml）が名乗る。
+      knapping_deftness: {value: 0}
+      # 撚る・編む手際。編み籠（containers.yaml）・くくり罠（traps.yaml）・葉の衣類（clothing.yaml）が名乗る。
+      cordage_deftness: {value: 0}
+      # 同じ繊維から余分が取れる重み。くくり罠（traps.yaml）の余分の卓が名乗る。**手際と分けているのは
+      # 桁が違うから**（所要時間は30〜360分、卓の相手は100）。
+      cordage_thrift: {value: 0}
+      # 削り出す手際。槍のレシピ（tools.yaml）が名乗る。
+      woodwork_deftness: {value: 0}
+      # なめす・縫う手際。なめし革と縫った物（clothing.yaml・voyage.yaml）が名乗る。
+      leatherwork_deftness: {value: 0}
+      # 保たせる造作の手際。燻し小屋（smoking.yaml）が名乗る。
+      preserving_deftness: {value: 0}

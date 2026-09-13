@@ -337,6 +337,30 @@ object_texts:
         display_name: 狙いの確かさ
         icon: 🎯
         description: 打ちかかった一撃が当たる重みと、突き漁で獲れる重みへの上乗せ。狩猟の腕が上がるほど大きくなる。
+      knapping_deftness:
+        display_name: 打ち欠く手際
+        icon: ⏱️
+        description: 石の刃を据える工程が短くなる分数。石器の腕が上がるほど大きくなる。
+      cordage_deftness:
+        display_name: 編む手際
+        icon: ⏱️
+        description: 撚り、編み、結ぶ工程が短くなる分数。繊維・編みの腕が上がるほど大きくなる。
+      cordage_thrift:
+        display_name: 繊維の無駄の無さ
+        icon: ♻️
+        description: 同じ繊維から余分が取れる重み。繊維・編みの腕が上がるほど大きくなる。
+      woodwork_deftness:
+        display_name: 削る手際
+        icon: ⏱️
+        description: 木を削り出す工程が短くなる分数。木材加工の腕が上がるほど大きくなる。
+      leatherwork_deftness:
+        display_name: なめす手際
+        icon: ⏱️
+        description: 革をなめし、縫う工程が短くなる分数。皮革の腕が上がるほど大きくなる。
+      preserving_deftness:
+        display_name: 保たせる手際
+        icon: ⏱️
+        description: 保存の造作を組む工程が短くなる分数。保存の腕が上がるほど大きくなる。
       afloat:
         display_name: 浮いている
         description: 水に浮かんでいるか。帆のような部品は、浮いている間だけ効く。

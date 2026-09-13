@@ -1,8 +1,11 @@
 import type { WorldObject } from './WorldObject';
 import type { ObjectDef } from './ObjectDef';
+import type { PickEffect } from './PickEffect';
+import type { PropertyRefReading } from './EffectReader';
 import type { TypeMatchRule } from './TypeMatchRule';
 import type { Requirement, Requirements } from './Requirement';
 import { ReferenceContext } from './ReferenceRoot';
+import type { PropertyPath } from './ReferenceRoot';
 
 /**
  * 製作中オブジェクト（RecipeSystem.md 1節）を生成するときの軸名（GameElementDefinition.md 3.5節）。
@@ -45,11 +48,31 @@ export class RecipeRequirementDef {
   }
 }
 
+/**
+ * 手際をいくら積んでも、工程がこれより短くはならない分数（13.6節）。
+ *
+ * 0分の工程は「押した瞬間に終わる作業」になり、**時間が最も希少な資源である**という前提
+ * （SkillSystem.md 7節）がその工程だけで消える。下限を持つのは工程の側で、上乗せの側ではない
+ * ——上乗せは1つで所要時間の違う工程すべてに積まれるので、どこまで引いてよいかを知らない。
+ */
+const MINIMUM_STEP_MINUTES = 1;
+
+/** 手際をdeftness分引いた後の、その工程に実際にかかる分数（下限で止める）。 */
+function minutesAfterDeftness(step: RecipeStepDef, deftness: number): number {
+  return Math.max(MINIMUM_STEP_MINUTES, step.durationMinutes - deftness);
+}
+
 /** レシピの工程1つ（13.1節）。 */
 export class RecipeStepDef {
   readonly requirements: readonly RecipeRequirementDef[];
 
-  /** この工程にかかるゲーム内時間（分）。 */
+  /**
+   * この工程が宣言した仕事の量を、ゲーム内時間（分）で表したもの。
+   *
+   * **作り手が実際に費やす時間とは別**（作り手の手際ぶん短くなる、`RecipeDef.minutesFor`）。進捗が
+   * 数えるのはこちら——片付いた仕事の量は腕によらないので、進捗の上限（RecipeSystem.md 1節）は
+   * ロード時に決まったままでいられる。
+   */
   readonly durationMinutes: number;
 
   constructor(requirements: readonly RecipeRequirementDef[], durationMinutes: number) {
@@ -85,11 +108,28 @@ export class RecipeDef {
   /** 解放条件（SkillSystem.md 4節）。undefinedなら最初から解放されている。 */
   readonly unlock: Requirements | undefined;
 
+  /**
+   * 作り手の手際（docs/world/Skills.md 7節）が置いてある場所。名乗っていなければundefined＝腕は
+   * 速さに効かない。
+   *
+   * **名乗れるのは1つだけ。** 上位のレシピは複数の腕を連言で要求する（SkillSystem.md 4.1節）が、
+   * そこからはどの腕が速さを決めるか1つに定まらないので、作る側が名乗る。
+   */
+  readonly deftness: PropertyPath | undefined;
+
+  /**
+   * 完成した瞬間に1回だけ引く、余分が取れるかの卓（13.6節）。宣言していなければundefined＝
+   * 何個作っても1つしかできない物。
+   */
+  readonly surplus: PickEffect | undefined;
+
   constructor(
     name: string,
     steps: readonly RecipeStepDef[],
     icon: string | undefined,
     unlock: Requirements | undefined,
+    deftness: PropertyPath | undefined,
+    surplus: PickEffect | undefined,
   ) {
     if (steps.length === 0) throw new Error(`レシピ'${name}': stepsは1件以上必要です。`);
 
@@ -97,9 +137,46 @@ export class RecipeDef {
     this.steps = steps;
     this.icon = icon;
     this.unlock = unlock;
+    this.deftness = deftness;
+    this.surplus = surplus;
   }
 
-  /** 全工程を通した所要時間（分）。完成までの進捗の上限そのもの。 */
+  /** 手際の宣言（PropertyRefReading参照）。名乗っていなければundefined。 */
+  get deftnessReading(): PropertyRefReading | undefined {
+    return this.deftness === undefined
+      ? undefined
+      : { subject: this.deftness.root, propertyGlobalId: this.deftness.propertyGlobalId };
+  }
+
+  /**
+   * agentがその工程に実際に費やすゲーム内時間（分）。宣言された仕事の量から、作り手の手際を
+   * 引いた値（13.6節）。手際を名乗っていない、または作り手がそれを持たないなら宣言どおり。
+   *
+   * **問うのは「この者にとって何分か」なのでagentは必ず要る**（解放条件`unmetUnlockRequirement`と
+   * 同じ形）。誰にとってでもない分数は、工程が宣言した仕事の量（`durationMinutes`）が直接答える。
+   */
+  minutesFor(step: RecipeStepDef, agent: WorldObject): number {
+    // 成果物のインスタンスはまだ無い（作りかけは完成品ではない）ので、selfを持たない文脈で解く。
+    return minutesAfterDeftness(step, this.deftness?.effectiveNumber(ReferenceContext.asking(agent)) ?? 0);
+  }
+
+  /**
+   * 手際が`deftness`分の作り手が、全工程を通して実際に費やす分数。
+   *
+   * **手際をいくつとして読むかは呼び出し側が決める**——世界の個体から解く側（`minutesFor`）と、
+   * 定義だけから解く側（`analysis/craftingSteps`）が居る。下限の当て方はどちらも同じでなければ
+   * ならないので、引き算はこちらが持つ。
+   */
+  totalMinutesWithDeftness(deftness: number): number {
+    return this.steps.reduce((sum, step) => sum + minutesAfterDeftness(step, deftness), 0);
+  }
+
+  /**
+   * 全工程が宣言した仕事の量の合計（分）。完成までの進捗の上限そのもの。
+   *
+   * **作り手が費やす時間の合計ではない**（手際のぶん短くなる、`minutesFor`）。上限が誰にとっても
+   * 同じでなければ、作りかけの進捗が作り手ごとに違う意味を持つことになる。
+   */
   get totalMinutes(): number {
     return this.steps.reduce((sum, step) => sum + step.durationMinutes, 0);
   }

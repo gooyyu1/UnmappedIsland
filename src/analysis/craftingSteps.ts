@@ -64,7 +64,7 @@ export function craftingStepsOf(
         withTriggeredRangeEvents(codex, interactionStep(codex, def, trigger, instrument, context), context),
       );
     }
-  for (const recipe of def.recipesProducingThis) steps.push(recipeStep(def, recipe));
+  for (const recipe of def.recipesProducingThis) steps.push(recipeStep(codex, def, recipe, context));
   return steps;
 }
 
@@ -310,10 +310,27 @@ class PassiveDeltaCollector implements PassiveReader {
  * レシピ1つを工程として見たもの。工程（steps）の別は畳む——「何を使って何ができるか」の問いには、
  * レシピ全体でひとつの答えで足りる。所要時間も同じ理由で全工程の和にする。
  *
- * レシピは分岐も所要時間の参照も持たないので、確率1の1分岐で、数値は常に確定する。
+ * **作る腕（13.6節）はここにも効く。** 手際は工程の時間を縮め、余分の卓は完成のあとで分岐を作る。
+ * どちらも他の参照と同じく`trackingResolverOf`が解く——腕の上乗せは素の0で宣言されているので、
+ * ここで出るのは**素人の数字**になる（analysisContextOf の注記）。
  */
-function recipeStep(def: ObjectDef, recipe: RecipeDef): CraftingStep {
-  const outcomes: readonly StepOutcome[] = [
+function recipeStep(
+  codex: WorldCodex,
+  def: ObjectDef,
+  recipe: RecipeDef,
+  outer: StaticValueResolver | undefined,
+): CraftingStep {
+  const tracking = trackingResolverOf(def, 'lowest', outer);
+  const deftnessReading = recipe.deftnessReading;
+  const deftness =
+    deftnessReading === undefined
+      ? 0
+      : (resolveDeclaredNumber({ kind: 'property', ...deftnessReading }, tracking.resolve) ?? 0);
+  const minutes = recipe.totalMinutesWithDeftness(deftness);
+
+  // 完成品が1つ出るのは、進捗が上限へ届いた瞬間のbecomeが起こすこと（RecipeSystem.md 1節）なので、
+  // 卓を引く前から決まっている。余分の卓はそのあとに続く分岐。
+  const finished: readonly StepOutcome[] = [
     {
       probability: 1,
       spawns: [{ objectGlobalId: def.globalId, count: 1 }],
@@ -321,6 +338,13 @@ function recipeStep(def: ObjectDef, recipe: RecipeDef): CraftingStep {
       assignments: [],
     },
   ];
+  const surplus =
+    recipe.surplus === undefined
+      ? UNCHANGED_OUTCOMES
+      : readEffect(recipe.surplus, tracking.resolve, becomeDestinationResolverOf(codex, def, undefined))
+          .outcomes;
+  const outcomes = combineOutcomes(finished, surplus, 'declared');
+
   return {
     kind: 'recipe',
     // レシピは工程を進める操作でしか進まない（RecipeSystem.md 2節）ので、常にプレイヤーが起こす。
@@ -333,10 +357,10 @@ function recipeStep(def: ObjectDef, recipe: RecipeDef): CraftingStep {
         .filter((input): input is CraftingInput => input !== undefined),
     ),
     outputs: collectOutputs(outcomes),
-    laborMinutes: recipe.totalMinutes,
-    elapsedMinutes: recipe.totalMinutes,
+    laborMinutes: minutes,
+    elapsedMinutes: minutes,
     outcomes,
-    hasUnresolvedReferences: false,
+    hasUnresolvedReferences: tracking.hitUnresolvedReference,
   };
 }
 

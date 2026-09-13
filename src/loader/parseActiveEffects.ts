@@ -94,7 +94,9 @@ export function parseActiveEffectBody(
         operations.push(...parseSignals(keyContext, valueNode, scope));
         break;
       case 'pick':
-        operations.push(new PickEffect(parsePickList(loader, context, asSeq(valueNode, keyContext), scope)));
+        operations.push(
+          new PickEffect(parsePickList(loader, context, asSeq(valueNode, keyContext), scope, 'pick')),
+        );
         break;
       default:
         if (reservedKeys === undefined || !reservedKeys.includes(key)) unknownKeys.push(key);
@@ -110,18 +112,24 @@ export function parseActiveEffectBody(
 /** pick候補が持つ、効果以外の兄弟キー。 */
 const PICK_CANDIDATE_RESERVED_KEYS = ['weight', 'among'] as const;
 
-/** pick（10節）の候補リストを読む。候補の中身は9節の命令と同じで、さらにpickを入れ子にできる。 */
-function parsePickList(
+/**
+ * pick（10節）の候補リストを読む。候補の中身は9節の命令と同じで、さらにpickを入れ子にできる。
+ *
+ * `fieldName`はエラー文が名乗るYAMLのキー名。**常に呼び出し側が言う**——卓を持つのは`pick`だけでは
+ * なく、レシピの`surplus`（13.6節）も同じ形の並びを持つ。
+ */
+export function parsePickList(
   loader: WorldCodexYamlLoader,
   context: string,
   pickNode: YAMLSeq,
   scope: ReferenceScope,
+  fieldName: string,
 ): PickCandidateDef[] {
   const result: PickCandidateDef[] = [];
 
   for (const node of pickNode.items as YamlNode[]) {
     const map = asMap(node, context);
-    const candidateContext = `${context}.pick[${result.length}]`;
+    const candidateContext = `${context}.${fieldName}[${result.length}]`;
 
     const weightNode = tryGetNode(map, 'weight');
     if (weightNode === undefined) throw new YamlLoadError(`${candidateContext}: 'weight'は必須です。`);

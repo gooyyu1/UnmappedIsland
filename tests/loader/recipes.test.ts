@@ -202,6 +202,76 @@ object_defs:
     expect(() => load(yaml)).toThrowError(/self/);
   });
 
+  it('deftnessとsurplusを読める（作る腕が効く先、docs/world/Skills.md 7節）', () => {
+    const codex = load(`
+object_defs:
+  fiber: {}
+  character:
+    props:
+      cordage_deftness: {value: 0}
+      cordage_thrift: {value: 0}
+  snare:
+    recipes:
+      knotted:
+        deftness: {subject: agent, prop: cordage_deftness}
+        steps:
+          - requires: [{object: fiber, count: 2, consume: true}]
+            duration: 30
+        surplus:
+          - {weight: 100}
+          - weight: {subject: agent, prop: cordage_thrift}
+            spawn: {object: snare, into: agent}
+`);
+
+    const session = new WorldSession(codex);
+    const agent = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
+    const recipe = recipesOf(codex, 'snare')[0];
+
+    expect(recipe.surplus, '余分の卓を持つ').toBeDefined();
+    expect(recipe.minutesFor(recipe.steps[0], agent), '上乗せが素なら宣言どおり').toBe(30);
+
+    agent.getProperty(codex.propertyNames.getId('cordage_deftness')).setNumber(12);
+    expect(recipe.minutesFor(recipe.steps[0], agent), '手際のぶん短くなる').toBe(18);
+  });
+
+  it('deftnessもsurplusも省ける（腕が効かないレシピ）', () => {
+    const codex = load(`
+object_defs:
+  fiber: {}
+  character: {}
+  stick:
+    recipes:
+      basic:
+        steps:
+          - requires: [{object: fiber, consume: true}]
+            duration: 5
+`);
+
+    const session = new WorldSession(codex);
+    const agent = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
+    const recipe = recipesOf(codex, 'stick')[0];
+
+    expect(recipe.deftness).toBeUndefined();
+    expect(recipe.surplus).toBeUndefined();
+    expect(recipe.minutesFor(recipe.steps[0], agent)).toBe(5);
+  });
+
+  it('deftnessにselfを使うとエラーになる（読むときに居るのは作りかけで、成果物ではない）', () => {
+    const yaml = `
+object_defs:
+  fiber: {}
+  basket:
+    recipes:
+      woven:
+        deftness: {subject: self, prop: quality}
+        steps:
+          - requires: [{object: fiber, consume: true}]
+            duration: 60
+`;
+    expect(() => load(yaml)).toThrow(YamlLoadError);
+    expect(() => load(yaml)).toThrowError(/self/);
+  });
+
   it('recipesをtraitに書くとエラーになる', () => {
     const yaml = `
 traits:

@@ -1,6 +1,7 @@
 import type { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../../domain/RecipeDef';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { text } from './Description';
+import { propertyPathRef, text } from './Description';
+import { describeEffect } from './describeEffect';
 import { describeRequirements } from './describeRequirement';
 import { typeMatchTokens } from './typeMatchTokens';
 
@@ -10,10 +11,29 @@ export function describeRecipe(recipe: RecipeDef, names: DefNames, out: Descript
     out.write(text('解放条件:'));
     out.indented(() => describeRequirements(recipe.unlock!.declarations, names, out));
   }
+
+  const deftness = recipe.deftness;
+  if (deftness !== undefined)
+    out.write(
+      text('手際（工程から引く）: '),
+      propertyPathRef(names.propertyName(deftness.propertyGlobalId), deftness.root),
+    );
+
   for (const [index, step] of recipe.steps.entries()) describeRecipeStep(step, index + 1, names, out);
+
+  if (recipe.surplus !== undefined) {
+    // 引くのは完成した瞬間の1回だけなので、工程の後ろへ置いて、効果の行と同じ形で出す（13.6節）。
+    out.write(text('余分の卓（完成時に1回）:'));
+    out.indented(() => describeEffect(recipe.surplus!, names, out));
+  }
 }
 
-/** 工程1つ（13.1節）を書き出す。stepNumberは1始まりの見出し用の番号。 */
+/**
+ * 工程1つ（13.1節）を書き出す。stepNumberは1始まりの見出し用の番号。
+ *
+ * **出すのは工程が宣言した仕事の量**で、誰かが実際に費やす時間ではない（手際のぶん短くなる）。
+ * 図鑑は誰が作るかを決めないので、ここで出せるのは腕によらない側だけ。
+ */
 function describeRecipeStep(
   step: RecipeStepDef,
   stepNumber: number,
