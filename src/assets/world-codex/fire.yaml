@@ -162,8 +162,8 @@ traits:
             min: 5
             art: lit
             passives:
-              # 子へ渡す熱は次のとおり。料理は進み（cooking_progress、7節）として受け、石は蓄熱
-              # （heat_soak、9.1節）として受ける。持たない側では黙って捨てられる。
+              # 子へ渡す熱は次のとおり。料理は進み（cooking_progress、FireSystem.md 7節）として受け、
+              # 石は蓄熱（heat_soak、同9.1節）として受ける。持たない側では黙って捨てられる。
               - add:
                   self: {fuel: -0.5}
                   child: {cooking_progress: 1, heat_soak: 1}

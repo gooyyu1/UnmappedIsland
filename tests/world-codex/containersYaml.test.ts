@@ -59,7 +59,7 @@ describe('固形物のかさと入れ物の容量', () => {
   });
 
   it('編み籠は自分の容量より大きいので、籠の中へ籠は入らない', () => {
-    // 入れ子を禁じるエンジン側の規則は自己包含だけ（GameElementDefinition.md 7.1節）。
+    // エンジンが構造として断るのは、輪になる配置だけ（GameElementDefinition.md 7.1節）。
     // 「別の籠なら入る」を止めているのはかさと容量で、そこに専用の禁止規則は要らない。
     const basket = codex.objects.get(codex.objectNames.getId('woven_basket'));
     const session = new WorldSession(codex);

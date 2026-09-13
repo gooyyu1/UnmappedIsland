@@ -39,6 +39,11 @@ traits:
       # 空を切る。リーチのある物ほど太い。**ここへは積まない**——外すのは腕の問題だが、押すのは
       # 当たる側だけにして、卓が増えるぶんで外れの割合が落ちる形にしている（Skills.md 5節）。
       whiff: {}
+      # 穂先・刃先が握り手からどれだけ離れているか（cm）。**当たり所の重みとは別の働きをする**
+      # ——構えている間、獣が踏み込む手が細る（下のpassives、docs/engine/HuntingSystem.md 1.2節）。
+      #
+      # どれも値を持たないので、**宣言し忘れた武器はロードで落ちる**（5節）。
+      reach: {}
       # 刃こぼれするまでの余力。上限は種類によらず960で統一する（DurabilitySystem.md 1節）。
       # 減らすのは殴ったときだけで、屋外に置いた劣化はまだ扱わない（同5節の未決事項）。
       durability:
@@ -46,6 +51,21 @@ traits:
         gauge: {min: bad, max: good}
         value: 960
         range: {min: 0, max: 960}
+    passives:
+      # 構えている間、その土地に「間合いが構えられている」ことを立てる（core.yamlのbraced_reach）。
+      # 押すのは据えた設え・囲いと同じancestor（8.6節）で、獣はそこから読むだけ——**武器はどんな獣が
+      # 居るかを知らず、獣はどんな武器が在るかを知らない**（HuntingSystem.md 1.2節）。
+      #
+      # **手に持っている間だけ**。地面に置いた槍も、背負った槍も、誰も構えていない。
+      #
+      # **線は150cm。** 獣が踏み込む一歩の外へ穂先を置けるのはここからで、70cmの柄（石斧）は
+      # 牙の届く間合いの内側に入る。値そのものは各武器が名乗る（下のobject_defs）。
+      - conditions:
+          - {in_slot: hand}
+          - {prop: reach, gte: 150}
+        modify:
+          ancestor:
+            braced_reach: 1
 
 object_defs:
   # 尖った石。石同士を打ち合わせて作る最初の刃物（locations.yamlのstone.combinations.knap）。
@@ -79,6 +99,8 @@ object_defs:
       light_blow: {value: 70, base: {subject: agent, prop: hunting_aim}}
       thrust: {value: 0}
       whiff: {value: 30}
+      # 握った拳の先。**間合いは取れない**（trait のpassives）ので、殴る側も牙の届く所に立つ。
+      reach: {value: 20}
 
   # 石斧。石の頭部を太い枝へ紐で縛った物（docs/world/SurvivalItems.md 1節）。
   #
@@ -104,6 +126,9 @@ object_defs:
       light_blow: {value: 15}
       thrust: {value: 0}
       whiff: {value: 25}
+      # 70cmの柄。**振り回すには長いが、間合いを取るには短い**（trait のpassives）——遠心力を乗せる
+      # ために踏み込む道具なので、長さがそのまま安全には変わらない。
+      reach: {value: 70}
     recipes:
       hafted:
         # 柄付けはスキルにしない（docs/world/Skills.md 3節）。「刃を作れて、紐も作れるようになったら
@@ -157,6 +182,9 @@ object_defs:
       light_blow: {value: 0}
       thrust: {value: 55, base: {subject: agent, prop: hunting_aim}}
       whiff: {value: 45}
+      # 2mの軸の先に穂先がある。**この島で唯一、獣の踏み込みの外に立てる長さ**（trait のpassives）
+      # ——外す回が多いことの見返りが、当たり所ではなく立ち位置に出る。
+      reach: {value: 200}
     recipes:
       hafted:
         # **軸を拾ってこられない唯一の柄付け。** 石斧・突き銛は拾った太い枝（70cm）をそのまま柄に

@@ -825,8 +825,8 @@ describe('ドキュメントの参照', () => {
   });
 
   it('`docs/` の外で印を使う文書も、条件の対象に入っている', () => {
-    // 対象が `docs/` だけだった頃、`agent-ops/board-design.md` には出どころの無い確定節が長く
-    // 残った（#1878）。`docs/` の確定節だけで数は足りるので、外側が落ちても上の土台は緑になる。
+    // 対象を `docs/` だけにすると、`agent-ops/board-design.md` の出どころの無い確定節が残り続ける
+    // （#1878）。`docs/` の確定節だけで数は足りるので、外側が落ちても上の土台は緑になる。
     const outside = confirmedSections.filter(({ doc }) => !doc.startsWith(`docs${sep}`));
     expect(
       outside.map(({ doc }) => doc),
@@ -835,7 +835,7 @@ describe('ドキュメントの参照', () => {
   });
 
   it('追跡しているMarkdownが、記録を除いて全部リンクの検査に入っている', () => {
-    // 射程を在り処の一覧で持っていた頃、`review/**` も `.github/**` も誰も見ていなかった（#1948）。
+    // 射程を在り処の一覧で持つと、`review/**` も `.github/**` も誰も見ない（#1948）。
     // 一覧は足した日にしか更新されないので、**フォルダを1つ作ると黙って射程の外が増える。**
     const covered = new Set(LINK_CHECKED_FILES);
     const uncovered = everyTrackedMarkdown().filter((rel) => !isVerbatimRecord(rel) && !covered.has(rel));
@@ -862,8 +862,8 @@ describe('ドキュメントの参照', () => {
   });
 
   it('裸の「N節」が、`docs/` の外の文書でも自文書へ解決する', () => {
-    // 自文書の判定が `docs/` に閉じていた頃、`agent-ops/**` の裸の参照は自分の節へ届かず、直前に
-    // 名を挙げた文書か GameElementDefinition.md へ流れていた（届いてしまえば誤った指し先で緑）。
+    // 自文書の判定を `docs/` に閉じると、`agent-ops/**` の裸の参照は自分の節へ届かず、直前に
+    // 名を挙げた文書か GameElementDefinition.md へ流れる（届いてしまえば誤った指し先で緑）。
     const rel = join('agent-ops', 'board-design.md');
     const grammar = join('docs', 'GameElementDefinition.md');
     const ownOnly = (namedSectionsByPath.get(rel) ?? [])
@@ -875,8 +875,8 @@ describe('ドキュメントの参照', () => {
   });
 
   it('文書の裸の「N節」が、GameElementDefinition.md へは落ちない', () => {
-    // 落とし込みが文書にも効いていた頃、SlotSystem.md の「7.2節」「9.9節」は自分の節と同じ形で
-    // 文法書を指していた（読み手には見分けが付かないまま緑）。
+    // 落とし込みが文書にも効くと、SlotSystem.md の「7.2節」「9.9節」は自分の節と同じ形で
+    // 文法書を指す（読み手には見分けが付かないまま緑）。
     const rel = join('docs', 'engine', 'SlotSystem.md');
     const grammar = join('docs', 'engine', 'GameElementDefinition.md');
     const grammarOnly = (namedSectionsByPath.get(grammar) ?? [])
@@ -984,7 +984,7 @@ describe('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節�
     // 当たらなくなっても違反ゼロと同じ緑になるので、当たる側と外す側を既知の入力で確かめる。
     expect(ITEM_NUMBER.test('**出どころ**: #656 の 21')).toBe(true);
     expect(ITEM_NUMBER.test('**出どころ**: [#656](https://x/issues/656) の 9・10')).toBe(true);
-    // 2件目を受ける `同 <番号>`。#1841 がこの綴りで、`の <番号>` だけを見ていた頃は素通りした。
+    // 2件目を受ける `同 <番号>`。#1841 がこの綴りで、`の <番号>` だけを見ると素通りする。
     expect(ITEM_NUMBER.test('**出どころ**: #656（難易度の線）と、同 13（3段目の呼び名）')).toBe(true);
     expect(ITEM_NUMBER.test('**出どころ**: #656 の項目18')).toBe(true);
     expect(ITEM_NUMBER.test('**出どころ**: #656（難易度の3段目を「熟練者」に改める）')).toBe(false);

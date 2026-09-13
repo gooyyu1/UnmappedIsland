@@ -83,7 +83,7 @@ const REFERENCE = /\b([A-Z][A-Za-z0-9]*)\.([A-Za-z][A-Za-z0-9_]*)\b\.?/g;
 const SOURCES = [...filesIn('src', '.ts'), ...filesIn('tests', '.ts')];
 
 /**
- * 名前を挙げている文書。**射程は `docs/` に閉じない**——`.claude/**` の係の本文もルートの
+ * 名前を挙げている文書。**射程は `docs/` に閉じない**——`agent-ops/**` の係の本文もルートの
  * `CLAUDE.md` も `Xxx.yyy` の形で実装を指しており、畳めば同じように嘘になる。**どこまで掛かるかを
  * 決めるのは [`docScope.mjs`](../../scripts/docScope.mjs)**——同じ規約（`DocumentStyle.md` 5節）を
  * 課す `docReferences.test.ts` と同じ1つ。
@@ -317,8 +317,8 @@ describe('説明の参照', () => {
   });
 
   it('`docs/` の外の文書も、走査に入っている', () => {
-    // 走査が `docs/` だけだった頃、`.claude/**` の係の本文が挙げる名前は誰も見ていなかった
-    // （#1948）。`docs/` の文書だけで数は足りるので、外側が落ちても上の検査は緑になる。
+    // 走査を `docs/` だけにすると、`agent-ops/**` の係の本文が挙げる名前を誰も見ない（#1948）。
+    // `docs/` の文書だけで数は足りるので、外側が落ちても上の検査は緑になる。
     const outside = DOCUMENTS.filter((rel) => !rel.startsWith(`docs${sep}`));
     expect(outside, '走査が `docs/` の中だけへ戻っている').not.toEqual([]);
   });

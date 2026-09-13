@@ -1,0 +1,99 @@
+# 探索で見つかる物が、生成された島にどれだけ行き渡るか。
+# 定義（src/assets/world-codex/*.yaml）と生成された島だけから計算した。
+# 生成物。手で書き換えず、npm run stats:discovery で作り直す。
+# 何を測ったか・引いた線・数えていないものは docs/diagnostics/DiscoveryCoverageStats.md。
+
+meta:
+  - {seeds: 2000, islands: 2000, objects: 24, tags: 18}
+
+object_sources:
+  - {object: abaca, tags: [fixture], locations: [jungle]}
+  - {object: banana_plant, tags: [fixture], locations: [forest, jungle]}
+  - {object: berry_bush, tags: [fixture], locations: [forest, grassland, mountainside]}
+  - {object: broadleaf_tree, tags: [fixture], locations: [forest, jungle]}
+  - {object: clay, tags: [item], locations: [forest, grassland, jungle]}
+  - {object: coconut, tags: [perishable, item], locations: [cliff_coast, jungle, rocky_coast, sandy_beach]}
+  - {object: coconut_crab, tags: [perishable, dryable, smokable, item, meat_bait, roastable], locations: [rocky_coast, sandy_beach]}
+  - {object: driftwood_trunk, tags: [fixture], locations: [cliff_coast, rocky_coast, sandy_beach]}
+  - {object: dry_grass, tags: [tinder, item], locations: [grassland, wasteland]}
+  - {object: golden_chalice, tags: [item, artifact], locations: [cliff_coast, mountainside, rocky_field]}
+  - {object: junglefowl, tags: [item, animal, quarry], locations: [grassland, jungle]}
+  - {object: monkey, tags: [item, animal, quarry], locations: [cliff_coast, forest, jungle, rocky_coast, sandy_beach]}
+  - {object: palm_tree, tags: [fixture], locations: [jungle, sandy_beach]}
+  - {object: rat, tags: [item, animal, quarry], locations: [cliff_coast, forest, grassland, jungle, mountain_peak, mountainside, rocky_coast, rocky_field, sandy_beach, wasteland]}
+  - {object: sapling, tags: [fixture], locations: [forest, jungle]}
+  - {object: shallow_cave, tags: [location, fixture, shelter], locations: [cliff_coast, mountain_peak, mountainside, rocky_coast, rocky_field]}
+  - {object: spring, tags: [fixture], locations: [forest, grassland]}
+  - {object: stone, tags: [roastable, item], locations: [cliff_coast, mountain_peak, mountainside, rocky_coast, rocky_field, wasteland]}
+  - {object: taro, tags: [perishable, item, plant_bait, roastable], locations: [forest, grassland, jungle]}
+  - {object: thick_branch, tags: [fuel, item], locations: [cliff_coast, rocky_coast, sandy_beach]}
+  - {object: twig, tags: [fuel, item], locations: [forest, jungle, mountainside, rocky_field, wasteland]}
+  - {object: water_spinach, tags: [perishable, dryable, smokable, item, food, plant_bait], locations: [grassland, jungle]}
+  - {object: wild_boar, tags: [item, animal, quarry], locations: [forest, jungle]}
+  - {object: woven_basket, tags: [container, item, fixture, fragile], locations: [sandy_beach]}
+
+tag_sources:
+  - {tag: animal, objects: [junglefowl, monkey, rat, wild_boar]}
+  - {tag: artifact, objects: [golden_chalice]}
+  - {tag: container, objects: [woven_basket]}
+  - {tag: dryable, objects: [coconut_crab, water_spinach]}
+  - {tag: fixture, objects: [abaca, banana_plant, berry_bush, broadleaf_tree, driftwood_trunk, palm_tree, sapling, shallow_cave, spring, woven_basket]}
+  - {tag: food, objects: [water_spinach]}
+  - {tag: fragile, objects: [woven_basket]}
+  - {tag: fuel, objects: [thick_branch, twig]}
+  - {tag: item, objects: [clay, coconut, coconut_crab, dry_grass, golden_chalice, junglefowl, monkey, rat, stone, taro, thick_branch, twig, water_spinach, wild_boar, woven_basket]}
+  - {tag: location, objects: [shallow_cave]}
+  - {tag: meat_bait, objects: [coconut_crab]}
+  - {tag: perishable, objects: [coconut, coconut_crab, taro, water_spinach]}
+  - {tag: plant_bait, objects: [taro, water_spinach]}
+  - {tag: quarry, objects: [junglefowl, monkey, rat, wild_boar]}
+  - {tag: roastable, objects: [coconut_crab, stone, taro]}
+  - {tag: shelter, objects: [shallow_cave]}
+  - {tag: smokable, objects: [coconut_crab, water_spinach]}
+  - {tag: tinder, objects: [dry_grass]}
+
+island_missing_object:
+  - {object: abaca, unit: percent, share: 51.95}
+  - {object: banana_plant, unit: percent, share: 0.30}
+  - {object: berry_bush, unit: percent, share: 0.00}
+  - {object: broadleaf_tree, unit: percent, share: 0.30}
+  - {object: clay, unit: percent, share: 0.00}
+  - {object: coconut, unit: percent, share: 0.00}
+  - {object: coconut_crab, unit: percent, share: 0.00}
+  - {object: driftwood_trunk, unit: percent, share: 0.00}
+  - {object: dry_grass, unit: percent, share: 0.10}
+  - {object: golden_chalice, unit: percent, share: 3.85}
+  - {object: junglefowl, unit: percent, share: 0.20}
+  - {object: monkey, unit: percent, share: 0.00}
+  - {object: palm_tree, unit: percent, share: 1.30}
+  - {object: rat, unit: percent, share: 0.00}
+  - {object: sapling, unit: percent, share: 0.30}
+  - {object: shallow_cave, unit: percent, share: 0.00}
+  - {object: spring, unit: percent, share: 0.00}
+  - {object: stone, unit: percent, share: 0.00}
+  - {object: taro, unit: percent, share: 0.00}
+  - {object: thick_branch, unit: percent, share: 0.00}
+  - {object: twig, unit: percent, share: 0.00}
+  - {object: water_spinach, unit: percent, share: 0.20}
+  - {object: wild_boar, unit: percent, share: 0.30}
+  - {object: woven_basket, unit: percent, share: 1.80}
+
+island_missing_tag:
+  - {tag: animal, unit: percent, share: 0.00}
+  - {tag: artifact, unit: percent, share: 3.85}
+  - {tag: container, unit: percent, share: 1.80}
+  - {tag: dryable, unit: percent, share: 0.00}
+  - {tag: fixture, unit: percent, share: 0.00}
+  - {tag: food, unit: percent, share: 0.20}
+  - {tag: fragile, unit: percent, share: 1.80}
+  - {tag: fuel, unit: percent, share: 0.00}
+  - {tag: item, unit: percent, share: 0.00}
+  - {tag: location, unit: percent, share: 0.00}
+  - {tag: meat_bait, unit: percent, share: 0.00}
+  - {tag: perishable, unit: percent, share: 0.00}
+  - {tag: plant_bait, unit: percent, share: 0.00}
+  - {tag: quarry, unit: percent, share: 0.00}
+  - {tag: roastable, unit: percent, share: 0.00}
+  - {tag: shelter, unit: percent, share: 0.00}
+  - {tag: smokable, unit: percent, share: 0.00}
+  - {tag: tinder, unit: percent, share: 0.10}

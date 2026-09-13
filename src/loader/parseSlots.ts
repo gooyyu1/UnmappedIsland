@@ -26,7 +26,7 @@ const RETIRED_KEYS: readonly (readonly [string, string])[] = [
   ['auto_placement', "誰が入れてよいかを並べる'placement'（7.7節）"],
 ];
 
-/** スロットの宣言（7.1節）で書けるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。 */
+/** スロットの宣言（7節）で書けるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。 */
 const KNOWN_SLOT_KEYS = ['cell', 'cells', 'cell_count', 'capacity', 'placement', 'put_in'];
 
 /** slots.'slotName'エントリを1つ読む。trait合成済みのノードを渡すこと。 */

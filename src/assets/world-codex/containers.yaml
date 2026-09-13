@@ -9,9 +9,9 @@ traits:
   # （液体の容器はliquid_containerタグ、liquid_containers.yaml）。
   item_container:
     tags: [container]
-    # かごを代表する物のスロット（7.8節）。カードを押すとここの中身が並び、カードへ重ねた物は
-    # ここへ入る（CardInteraction.md 2節 カードのドラッグ＆ドロップ）。投入のcombinationは要らない。
-    # 外から見えるもの（7.11節）。かごは中身が見える器で、それがこの型の存在意義そのもの。
+    # 外から見えるもの（7.11節）。カードを押すとここの中身が並ぶ——かごは中身が見える器で、それが
+    # この型の存在意義そのもの。カードへ重ねた物がここへ入るのは、受け取れる枠だから
+    # （GameElementDefinition.md 7.8節）。投入のcombinationは要らない。
     visible_slots: [contents]
     # 物を溜める入れ物（7.12節）。上限つきのスロットの詰まり具合をカードのバーに出す。
     storage: true

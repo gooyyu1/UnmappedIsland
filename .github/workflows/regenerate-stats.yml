@@ -55,6 +55,7 @@ jobs:
           npm run stats:escape
           npm run stats:escape-islands
           npm run stats:durations
+          npm run stats:hunt
           npm run stats:voyage
           npm run stats:climate
 
