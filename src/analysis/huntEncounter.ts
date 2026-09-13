@@ -246,7 +246,11 @@ class Encounter {
 
   /** 獣が気を失っているか（VitalsSystem.md 5節。決着は死ではなく気絶で付く）。 */
   private isDowned(): boolean {
-    return this.animal.tryGetProperty(this.consciousnessId)?.stage?.name === 'unconscious';
+    return (
+      this.animal
+        .tryGetProperty(this.consciousnessId)
+        ?.isInStage(this.codex.vocabulary.world.unconsciousStage) ?? false
+    );
   }
 
   /**

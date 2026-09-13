@@ -1039,10 +1039,26 @@ export class WorldObject {
     for (const agent of pending) {
       // 手番の途中で消えた個体は飛ばす——世界から外れると、辿り着く根が変わる。
       if (agent.findRoot() !== this) continue;
+      // 気を失っている個体も飛ばす（VitalsSystem.md 6節）。**集めた時点ではなく配る直前に見る**
+      // ——同じtickの中で誰かの手番が意識を奪いうるので、集めた時の段では古い。
+      if (agent.isUnconscious) continue;
       // **時間が配るのは手番で、動くのはその物自身**（11.1節）。自分に対する行動なので、agentも
       // patientも同じ個体になる（11.5節「再帰的な操作」）。
       for (const trigger of agent.def.tickTriggers) new Action(trigger, agent, agent).takeTurn();
     }
+  }
+
+  /**
+   * 気を失っているか（意識が `unconscious` の段に居る、VitalsSystem.md 6節）。**意識を持たない物は
+   * 倒れようがない**ので常に偽——語彙のIDは誰も宣言していなくても引ける（`WorldVocabulary`）ので、
+   * 「持っているか」を分岐に使わずに済む。
+   *
+   * 「意識が無いと何もできない」は**手番が回るかどうかの1つの判断**で、操作ごとの条件ではない
+   * （同節）。だから判定はここ1箇所に在り、`trigger: tick` を足すたびに書き足すものは無い。
+   */
+  private get isUnconscious(): boolean {
+    const world = this.session.codex.vocabulary.world;
+    return this.tryGetProperty(world.consciousnessId)?.isInStage(world.unconsciousStage) ?? false;
   }
 
   private collectTickAgents(into: WorldObject[]): void {

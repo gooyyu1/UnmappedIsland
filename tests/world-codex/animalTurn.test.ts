@@ -416,6 +416,49 @@ describe('動物の1手', () => {
     expect(consciousness.stage?.name, '2つ目でfoggyを跨いでdazedへ').toBe('dazed');
   });
 
+  it('気を失った獣には、手番が回らない', () => {
+    // 気絶は配分の押し引きではなく、手番が回るかどうかの1つの判断（VitalsSystem.md 6節）。
+    // 警戒を消すだけでは、警戒を見ていない手——持ち去り・体当たり・盗み食い——が素の配分のまま
+    // 抽選に残る。**引きは持ち去りを引くroll**で、起きていればくわえる場面を選んでいる。
+    open(0.5);
+    const monkey = release('monkey');
+    const coconut = release('coconut');
+    monkey.getProperty(codex.propertyNames.getId('shock')).setNumberWithoutEvents(100);
+
+    passTurn();
+
+    expect(
+      monkey.getProperty(codex.propertyNames.getId('consciousness')).stage?.name,
+      '満タンの衝撃で意識が底を打つ',
+    ).toBe('unconscious');
+    expect(spoilsOf(monkey), '足元の物へ手を出さない').toEqual([]);
+    expect(coconut.parent, 'ヤシの実は地面に残る').toBe(jungle);
+  });
+
+  it('目を覚ました獣は、また手番を受け取る', () => {
+    // 気絶が手番を奪うのは段に居る間だけ（VitalsSystem.md 2節。意識は原因が消えれば戻る実効値）。
+    // 衝撃は自分で引いていく（同 2.1節）ので、覚めるのに回復処理は要らない。
+    // 覚めた後の候補は様子見45（20＋濁りの25）と持ち去り35。合計80のうち末尾の35を引くrollを渡す。
+    open(0.9);
+    const monkey = release('monkey');
+    const coconut = release('coconut');
+    monkey.getProperty(warinessId).setNumberWithoutEvents(0);
+    monkey.getProperty(codex.propertyNames.getId('shock')).setNumberWithoutEvents(100);
+
+    // 満タンから-4/tickで引くので、reeling（衝撃70以上、意識-80）に居るのは7手目まで。
+    passTurn(7);
+    expect(spoilsOf(monkey), '気を失っている間は何もしない').toEqual([]);
+
+    passTurn();
+
+    expect(
+      monkey.getProperty(codex.propertyNames.getId('consciousness')).stage?.name,
+      '衝撃が引けば意識も戻る',
+    ).not.toBe('unconscious');
+    expect(spoilsOf(monkey), '覚めれば足元の物をくわえる').toEqual(['coconut']);
+    expect(coconut.parent, '地面からは無くなる').toBe(monkey);
+  });
+
   it('槍を構えられていても、追い詰められた朦朧の獣は襲ってくる', () => {
     // **意識の押し引きは間合いの押し引きと重なる**（HuntingSystem.md 5.5節）。意識の側も手を
     // 細らせる形にすると、イノシシの牙（素の30）が構えの-20と重なって抽選から落ち、5.3節の
