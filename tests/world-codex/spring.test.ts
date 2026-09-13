@@ -10,8 +10,9 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  * 湧き水（locations.yamlのspring）から器へ水を汲めることの検証
  * （docs/engine/LiquidContainerSystem.md 10節）。
  *
- * 見るのは「空の器へ汲める」「入る量は器が決める」「汲んだ水が飲める」「別の液体の器と暗がりは
- * 断る」。注ぎ移しと蒸発そのものはtests/world-codex/liquidContainersYaml.test.tsが受け持つ。
+ * 見るのは「空の器へ汲める」「入る量は器が決める」「汲んだ水が飲める」「残っている器へ汲み足せる」
+ * 「別の液体の器と暗がりは断る」。注ぎ移しと蒸発そのものは
+ * tests/world-codex/liquidContainersYaml.test.tsが受け持つ。
  */
 
 /** 湧き水が湧く土地の1つ（locations.yamlのgrasslandのexplore）。 */
