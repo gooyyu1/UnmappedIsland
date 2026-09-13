@@ -2,7 +2,7 @@ import { pathRequiredProgresses } from '../domain/generation/IslandSpawner';
 import type { ObjectGlobalId } from '../domain/GlobalId';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
-import { craftingStepsOf } from './craftingSteps';
+import { exploreStepOf } from './craftingSteps';
 
 /**
  * 土地の型1つの、**道が見つかる時刻表**。探索の進捗は1回の探索につき1進むので、進捗の値へ
@@ -12,8 +12,6 @@ import { craftingStepsOf } from './craftingSteps';
  * 数えない（引きの運）。
  */
 export interface PathDiscoverySchedule {
-  readonly locationDefName: string;
-
   /** 探索1回にかかる時間（分）。 */
   readonly exploreMinutes: number;
 
@@ -35,8 +33,7 @@ export function pathDiscoverySchedulesOf(
     if (schedules.has(locationDef.globalId)) continue;
 
     schedules.set(locationDef.globalId, {
-      locationDefName: locationDef.name,
-      exploreMinutes: exploreMinutesOf(codex, locationDef),
+      exploreMinutes: exploreStepOf(codex, locationDef).laborMinutes,
       exploresToFull: exploresToFullOf(codex, locationDef),
     });
   }
@@ -64,14 +61,6 @@ export function allPathsDiscoveryMinutesOf(schedule: PathDiscoverySchedule): num
 /** その土地を探索率100%まで開くのに要る探索時間（分）。1本目の早さを読む物差しになる。 */
 export function fullExplorationMinutesOf(schedule: PathDiscoverySchedule): number {
   return schedule.exploresToFull * schedule.exploreMinutes;
-}
-
-function exploreMinutesOf(codex: WorldCodex, locationDef: ObjectDef): number {
-  const explore = craftingStepsOf(codex, locationDef).find(
-    (step) => step.kind === 'interaction' && step.name === codex.vocabulary.world.exploreAction,
-  );
-  if (explore === undefined) throw new Error(`土地 '${locationDef.name}' が探索を宣言していません。`);
-  return explore.laborMinutes;
 }
 
 function exploresToFullOf(codex: WorldCodex, locationDef: ObjectDef): number {

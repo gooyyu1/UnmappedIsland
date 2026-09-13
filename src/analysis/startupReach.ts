@@ -10,10 +10,9 @@ import {
   STARTUP_NEEDS,
   startupNeedSuppliersOf,
 } from '../domain/generation/StartSiteSelection';
-import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
-import { craftingStepsOf } from './craftingSteps';
+import { exploreStepOf } from './craftingSteps';
 import { allPathsDiscoveryMinutesOf, pathDiscoverySchedulesOf } from './pathDiscovery';
 
 /**
@@ -186,15 +185,6 @@ function pathDiscoveryOf(
   if (route === undefined) return undefined;
   const minutes = route.sites.slice(0, -1).reduce((sum, siteIndex) => sum + departureMinutes[siteIndex], 0);
   return { ...route, pathDiscoveryMinutes: minutes };
-}
-
-/** その土地の探索1回を工程として見たもの。探索を宣言していない土地は投げる（土地は必ず探索できる）。 */
-function exploreStepOf(codex: WorldCodex, locationDef: ObjectDef): CraftingStep {
-  const explore = craftingStepsOf(codex, locationDef).find(
-    (step) => step.kind === 'interaction' && step.name === codex.vocabulary.world.exploreAction,
-  );
-  if (explore === undefined) throw new Error(`土地 '${locationDef.name}' が探索を宣言していません。`);
-  return explore;
 }
 
 /** 1回の実行で、その型が生まれる期待個数（分岐の確率で重み付けした和）。 */

@@ -69,6 +69,18 @@ export function craftingStepsOf(
 }
 
 /**
+ * その土地の探索1回を工程として見たもの。**土地は必ず探索できる**ので、宣言していなければ投げる
+ * ——黙って読み飛ばすと、その土地を数えない表が出来上がる。
+ */
+export function exploreStepOf(codex: WorldCodex, locationDef: ObjectDef): CraftingStep {
+  const explore = craftingStepsOf(codex, locationDef).find(
+    (step) => step.kind === 'interaction' && step.name === codex.vocabulary.world.exploreAction,
+  );
+  if (explore === undefined) throw new Error(`土地 '${locationDef.name}' が探索を宣言していません。`);
+  return explore;
+}
+
+/**
  * 定義だけから値を解く文脈を作る唯一の入口。**行っている人（agent、11.5節）の層は必ずここが入れる**
  * ——足し忘れると、腕を土台にした重みが解けず、その候補は起こらないものとして数えられる。
  * **呼び出し側が覚えておく手順にしない**ため、層を渡す口をここ1つに絞ってある。
