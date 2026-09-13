@@ -27,6 +27,21 @@ traits:
     props:
       fuel: {}
 
+  # 炎から火を移せる、持ち歩ける明かり（docs/engine/IlluminationSystem.md 3節）。灯っているかを
+  # 持つのはここで、灯ったときに明るさをいくつ足すかは物ごとに違うので持たない
+  # （docs/world/ContentSkeleton.md 8.1.1.2節）。
+  #
+  # **火口（ignitable）とは別のもの。** あちらは摩擦の熾を受け止める側で、火起こし具が要る。
+  # こちらは既に在る炎から火を分けてもらう側で、燃えている炉があれば火起こしはやり直さない
+  # （hearthのlight_from_flame、docs/engine/FireSystem.md 3.1.2節）。
+  lightable:
+    tags: [lightable]
+    props:
+      # 灯っているか。火を移すと立ち、燃え尽きると物ごと消えるので0へは戻らない。
+      lit:
+        value: 0
+        range: {min: 0, max: 1}
+
   # 火起こし具で火が付けられる物。摩擦で得られるのは米粒ほどの熾なので、受け止められるのは
   # ほぐした繊維・綿状のものだけ（docs/engine/FireSystem.md 3.2節）。
   ignitable:
@@ -235,6 +250,21 @@ traits:
           - {reason: no_fuel, prop: fuel, gt: 0}
         destroy: instrument
         set: {self: {heat: 1}}
+      # 燃えている炉から、持ち歩ける明かり（lightable）へ火を移す。**炉が生きていれば火起こしは
+      # やり直さない**——火種は火の無いところに火を立てるためのもので、既に在る炎を分けるのに
+      # 摩擦発火を通す理由が無い（docs/engine/FireSystem.md 3.1.2節）。
+      #
+      # 炉は何も失わない。分けた炎は薪を余分に食わないので、火力にも薪にも触れない。
+      #
+      # **灯っている物は断る。** setの差分は0でも操作は成立するので、断らなければ
+      # 「重ねても何も起きない」になる（docs/ui/CardInteraction.md 2.1節）。
+      light_from_flame:
+        trigger: {drag: {tag: lightable}}
+        duration: 1
+        conditions:
+          - {reason: fire_out, prop: heat, gt: 0}
+          - {reason: already_lit, subject: instrument, prop: lit, eq: 0}
+        set: {instrument: {lit: 1}}
 
 object_defs:
   # きりもみ式の火起こし具。拾った木だけで作れるので、道具も紐も要らない
@@ -292,15 +322,12 @@ object_defs:
   # 燃料タグは持たない。炉へ重ねるとくべられてしまい、明かりとして持ち出す物ではなくなる。
   torch:
     tags: [item]
+    traits: [lightable]
     # 燃え残りが個体ごとに違うので束ねない。
     stackable: false
     props:
       weight: {value: 1100}
       volume: {value: 1400}
-      # 灯っているか。火種を移すと立ち、燃え尽きると物ごと消えるので0へは戻らない。
-      lit:
-        value: 0
-        range: {min: 0, max: 1}
       # 燃え残り（tick）。灯している間だけ減り、2時間で燃え尽きる。
       life:
         value: 8

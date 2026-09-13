@@ -419,6 +419,47 @@ describe('fire.yamlの火の連鎖', () => {
     expect(itemsOn(land), '2つ目の火種は失われない').toEqual(['burning_tinder']);
   });
 
+  it('燃えている炉からも松明を灯せる。炉の火は減らない', () => {
+    const hearth = litCampfire();
+    const heatBefore = effectiveNumberOf(hearth, 'heat');
+    const fuelBefore = effectiveNumberOf(hearth, 'fuel');
+    const torch = spawnInto('torch', player, 'hand');
+
+    expect(
+      hearth
+        .combinationsWith(torch, player)
+        .find((c) => c.name === 'light_from_flame')
+        ?.tryExecute() === true,
+    ).toBe(true);
+    expect(effectiveNumberOf(torch, 'lit'), '灯った').toBe(1);
+    expect(effectiveNumberOf(hearth, 'heat'), '炉の火力は変わらない').toBe(heatBefore);
+    expect(effectiveNumberOf(hearth, 'fuel'), '炉の薪も減らない').toBe(fuelBefore);
+  });
+
+  it('灯っている松明は火を分けてもらえない', () => {
+    const hearth = litCampfire();
+    const torch = spawnInto('torch', player, 'hand');
+    torch.getProperty(codex.propertyNames.getId('lit')).setNumberWithoutEvents(1);
+
+    expect(
+      hearth.combinationsWith(torch, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
+    expect(
+      hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
+    ).toEqual(['already_lit']);
+  });
+
+  it('消えている炉は、分けられる炎が無いことを名乗る', () => {
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    const torch = spawnInto('torch', player, 'hand');
+
+    expect(
+      hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
+    ).toEqual(['fire_out']);
+    expect(effectiveNumberOf(torch, 'lit'), '灯らない').toBe(0);
+  });
+
   it('着火が置くのは種火だけで、そこから薪が火を育てる', () => {
     const hearth = litCampfire();
 
