@@ -271,8 +271,9 @@ describe('fire.yamlの火の連鎖', () => {
   });
 
   it('雨の日でも、洞窟で起こした火種を外の炉へ運んで灯せる', () => {
-    // 洞窟と外は同じ土地の中なので、1tickで燃え尽きる火種でも届く（3.1節）。この道は塞がない
-    // ——「雨の日に火を戻すには洞窟が要る」という形が、そのまま洞窟の価値になっている。
+    // 洞窟と外は同じ土地の中なので、1tickで燃え尽きる火種でも届く（3.1節）。**島から火が絶えた
+    // ときに雨の中で火を戻せるのはこの道だけ**で、そこが洞窟の価値になっている——生きた炉がどこかに
+    // 在るなら、雨でも松明を運べばよい（下の「雨の屋外でも…」）。
     const cave = spawnInto('shallow_cave', land, 'fixtures');
     const hearth = spawnInto('campfire', land, 'fixtures');
     stoke(hearth, 'thick_branch');
@@ -532,6 +533,26 @@ describe('fire.yamlの火の連鎖', () => {
     ).toBe(true);
     expect(heatIs(cold, 'ember'), '向こうの炉に種火が立つ').toBe(true);
     expect(effectiveNumberOf(torch, 'lit'), '松明は灯ったまま——火の在る側は何も失わない').toBe(1);
+  });
+
+  it('雨の屋外でも、灯った松明から炉へ火を戻せる', () => {
+    // 雨が閉じるのは着火の1点だけ（FireSystem.md 3.1.1節）。**この向きは摩擦発火を通らない**ので、
+    // 雨の条件を持たない——生きた炉がどこかに在れば、雨の日でも火は戻る（同3.1節）。
+    // 屋根の下でしか起こせないこと（上の「雨の日は屋外で火が起こせない」）と対で読む。
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    stoke(hearth, 'thick_branch');
+    const torch = spawnInto('torch', player, 'hand');
+    torch.getProperty(codex.propertyNames.getId('lit')).setNumberWithoutEvents(1);
+    setWeather('heavy_rain');
+
+    expect(
+      hearth
+        .combinationsWith(torch, player)
+        .find((c) => c.name === 'ignite_from_flame')
+        ?.tryExecute() === true,
+      '大雨の屋外でも通る',
+    ).toBe(true);
+    expect(heatIs(hearth, 'ember'), '雨の中の炉に種火が立つ').toBe(true);
   });
 
   it('灯っていない松明では、炉に火を点けられない', () => {
