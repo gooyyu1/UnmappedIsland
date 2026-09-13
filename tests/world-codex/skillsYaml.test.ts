@@ -73,6 +73,21 @@ const ACCESS_BONUSES = [
  * つまみの`base`にするの、GameElementDefinition.md 13.6節と11.3節）が、**書き方はどちらも
  * `{subject: agent, prop: ...}`**なので、読まれているかは下の`propsReadFromAgent`が一緒に拾う。
  */
+/**
+ * 手際を名乗らないと決めたレシピ（`<完成品>.<レシピ>`）。**どれもどの技術の仕事でもない**——
+ * 理由は1件ずつ、そのレシピのコメントに書いてある（docs/world/Skills.md 7.1節。書いてあることは
+ * 下の検査が見張る）。
+ */
+const RECIPES_WITHOUT_DEFTNESS = [
+  'bed.spread',
+  'campfire.stacked',
+  'earth_kiln.heaped',
+  'field.tilled',
+  'pitfall.dug',
+  'salt_pan.laid',
+  'unfired_jar.coiled',
+];
+
 const CRAFTING_BONUSES = [
   { skill: 'skill_knapping', bonus: 'knapping_deftness', byStage: [0, -3, -8, -15] },
   { skill: 'skill_cordage', bonus: 'cordage_deftness', byStage: [0, -3, -8, -15] },
@@ -230,6 +245,61 @@ function standsOnBonus(propBody: unknown, bonusName: string): boolean {
     isScalar(prop) &&
     String(prop.value) === bonusName
   );
+}
+
+/**
+ * そのノードの手前に書いてあるコメント（無ければ空文字）。
+ *
+ * **並びの最初の要素に付けたコメントは、要素ではなく入れ物のほうに付く**（yamlの構文木の作り）ので、
+ * 拾う側はキーと値の両方を見る。
+ */
+function commentBeforeOf(node: unknown): string {
+  return typeof (node as { commentBefore?: unknown } | undefined)?.commentBefore === 'string'
+    ? (node as { commentBefore: string }).commentBefore
+    : '';
+}
+
+/**
+ * レシピの手前に書いてあるコメントを、`<完成品>.<レシピ>` ごとに集める。拾うのは **`recipes` の直上と
+ * レシピ自身の直上だけ**——型の側のコメントまで拾うと、**別の話で同じ語を使っている型**へレシピを
+ * 足したときに、理由を書かないまま通ってしまう。
+ *
+ * ロード後の`RecipeDef`はコメントを持たない（読み捨てられる）ので、構文木を辿る。
+ */
+function commentsAboveRecipes(): ReadonlyMap<string, string> {
+  const found = new Map<string, string>();
+
+  for (const path of worldCodexYamlPaths()) {
+    const root = parseDocument(readFileSync(path, 'utf8')).contents;
+    if (!isMap(root)) continue;
+
+    for (const section of root.items) {
+      const sectionKey = isScalar(section.key) ? String(section.key.value) : '';
+      if ((sectionKey !== 'traits' && sectionKey !== 'object_defs') || !isMap(section.value)) continue;
+
+      for (const entry of section.value.items) {
+        const defName = isScalar(entry.key) ? String(entry.key.value) : '';
+        if (!isMap(entry.value)) continue;
+        const recipes = entry.value.items.find(
+          (pair) => isScalar(pair.key) && String(pair.key.value) === 'recipes',
+        );
+        if (recipes === undefined || !isMap(recipes.value)) continue;
+
+        const aboveRecipes = commentBeforeOf(recipes.key);
+        for (const [index, recipe] of recipes.value.items.entries())
+          found.set(
+            `${defName}.${isScalar(recipe.key) ? String(recipe.key.value) : ''}`,
+            [
+              aboveRecipes,
+              // 最初のレシピの手前のコメントは、レシピではなく`recipes`の値のほうに付く。
+              index === 0 ? commentBeforeOf(recipes.value) : '',
+              commentBeforeOf(recipe.key),
+            ].join('\n'),
+          );
+      }
+    }
+  }
+  return found;
 }
 
 /** 世界じゅうのプロパティ宣言を「どこの・どの名前の」の形で並べる（traitのpropsも型のpropsも）。 */
@@ -557,16 +627,20 @@ describe('腕前とレシピの解放条件', () => {
     return required;
   }
 
-  /** 解放条件を持つレシピすべて（完成品の名前を添える）。 */
-  function gatedRecipes(): readonly { product: string; recipe: RecipeDef }[] {
+  /** 世界じゅうのレシピすべて（完成品の名前を添える）。 */
+  function allRecipes(): readonly { product: string; recipe: RecipeDef }[] {
     const found: { product: string; recipe: RecipeDef }[] = [];
     for (const product of codex.objects) {
       for (const recipe of product.recipesProducingThis)
         // 作りかけの型（レシピの軸を持つ変種）は同じレシピを二度数えさせるので、素の型だけを見る。
-        if (recipe.unlock !== undefined && codex.baseOf(product) === product)
-          found.push({ product: product.name, recipe });
+        if (codex.baseOf(product) === product) found.push({ product: product.name, recipe });
     }
     return found;
+  }
+
+  /** 解放条件を持つレシピすべて（完成品の名前を添える）。 */
+  function gatedRecipes(): readonly { product: string; recipe: RecipeDef }[] {
+    return allRecipes().filter(({ recipe }) => recipe.unlock !== undefined);
   }
 
   it('プレイヤーキャラクタは、Skills.md 2節の11本を腕前のタグ付きで持つ', () => {
@@ -778,7 +852,8 @@ describe('腕前とレシピの解放条件', () => {
     // エンジンの積み方で、世界が宣言した刻みの符号は読んでいない。
     const novice = characterWithSkills(STAGES[0].min);
     const expert = characterWithSkills(STAGES.at(-1)!.min);
-    const named = gatedRecipes().filter(({ recipe }) => recipe.deftness !== undefined);
+    // **解放を要求しないレシピも名乗る**（Skills.md 7.1節）ので、見るのは世界じゅうのレシピ。
+    const named = allRecipes().filter(({ recipe }) => recipe.deftness !== undefined);
     expect(named.length, '手際を名乗るレシピが1つも無い').toBeGreaterThan(0);
 
     for (const { product, recipe } of named)
@@ -807,6 +882,64 @@ describe('腕前とレシピの解放条件', () => {
         skillOfBonus.get(bonus),
       );
     }
+  });
+
+  it('手際を名乗らないレシピは、名乗らないと決めた分だけ', () => {
+    // **解放条件を持たないレシピも名乗る**（docs/world/Skills.md 7.1節）ので、名乗っていないことは
+    // 「どの技術の仕事でもないと決めた」の印になる。決めた覚えの無いレシピがここへ落ちてくるのを
+    // 止める——**新しいレシピは、名乗るか、ここへ足すかのどちらかを選ぶことになる。**
+    //
+    // **どの腕が正しいかは見ない**（それは内容の判断で、拠り所はSkills.md 7.1節と各レシピの
+    // コメント）。見るのは、決めずに素通りできないことだけ。
+    expect(
+      allRecipes()
+        .filter(({ recipe }) => recipe.deftness === undefined)
+        .map(({ product, recipe }) => `${product}.${recipe.name}`)
+        .sort(),
+    ).toEqual(RECIPES_WITHOUT_DEFTNESS);
+  });
+
+  it('手際を名乗らないと決めたレシピは、その理由がコメントに書いてある', () => {
+    // 一つ上の数え上げは、**足せば黙って通せる**——理由を書かせるのはここ。Skills.md 7.1節が
+    // 「名乗らないと決めた側は、そのレシピのコメントに理由を書きます」と言っている以上、それが
+    // 破れたときに落ちるものが要る（書いてあるかを見るだけで、中身の当否は人が読む）。
+    //
+    // **語を2つとも求める**——どちらか1つなら、手際と関わりのない文でも当たってしまう。
+    const comments = commentsAboveRecipes();
+
+    expect(
+      RECIPES_WITHOUT_DEFTNESS.filter((where) => {
+        const comment = comments.get(where) ?? '';
+        return !comment.includes('手際') || !comment.includes('名乗らない');
+      }),
+      '名乗らない理由が書いていないレシピ',
+    ).toEqual([]);
+  });
+
+  it('レシピが名乗る手際は、伸ばす操作を持つ腕のもの', () => {
+    // **上げようのない腕が速さを握らない**（docs/world/Skills.md 7.1節）。伸ばす操作をまだ持たない
+    // 腕を名乗ると、そのレシピの工程は誰にも縮められない時間になる——腕は宣言だけ先に置かれる
+    // （SkillSystem.md 3.2節）ので、名乗る側が先走れてしまう。
+    //
+    // **アクセス系も同じくここで落ちる**（CRAFTING_BONUSESに無いので）。火の腕が決めるのは着火の
+    // 重みだけで、火起こし具を削る速さではない（同5節）。
+    const skillOfBonus = new Map<string, string>(CRAFTING_BONUSES.map((entry) => [entry.bonus, entry.skill]));
+    const gains = declaredSkillGains();
+
+    expect(
+      allRecipes()
+        .filter(({ recipe }) => recipe.deftness !== undefined)
+        .map(({ product, recipe }) => ({
+          where: `${product}.${recipe.name}`,
+          bonus: codex.propertyNames.getName(recipe.deftness!.propertyGlobalId),
+        }))
+        .filter(({ bonus }) => {
+          const skill = skillOfBonus.get(bonus);
+          return skill === undefined || !gains.has(skill);
+        })
+        .map(({ where, bonus }) => `${where}: ${bonus}`),
+      '伸ばしようのない腕を名乗るレシピ',
+    ).toEqual([]);
   });
 
   /**

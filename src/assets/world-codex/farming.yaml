@@ -112,6 +112,9 @@ object_defs:
     recipes:
       # 掘り返して均すだけで、土は元からそこにある。**掘削具はまだ無い**（TrapSystem.md 8節の
       # 落とし穴と同じ空白）ので、掘り棒にする太い枝を1本折り込む形で置いてある。
+      #
+      # **手際も名乗らない**（docs/world/Skills.md 7.1節）。掘るだけで、削る工程も縛る工程も
+      # 持たない——土を起こす腕は一覧（同2節）に無いので、名乗れる先がそもそも無い。
       tilled:
         steps:
           - requires:
@@ -328,8 +331,10 @@ object_defs:
     # 腕を要求している（docs/engine/SkillSystem.md 4.2節、筏と同じ）。
     recipes:
       # 丸太を並べて縄で結ぶ。**生かして扱う設備は常に高くつく**（TrapSystem.md 1.2節）という線の
-      # 上に乗っていて、大型で最も開く差がこれ。
+      # 上に乗っていて、大型で最も開く差がこれ。**解放は要求しないまま、手際だけを名乗る**
+      # ——木を縛って組む仕事なので木材加工（docs/world/Skills.md 7.1節）。
       fenced:
+        deftness: {subject: agent, prop: woodwork_deftness}
         steps:
           - requires:
               - {object: log, count: 4, consume: true}

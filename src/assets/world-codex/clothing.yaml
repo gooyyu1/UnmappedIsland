@@ -74,7 +74,11 @@ object_defs:
     recipes:
       # **解放条件を持たない。** 束ねるだけで編む工程が無く、刃物も火も無いうちから作れることが
       # この1着の存在意義（上のコメント）。腕を求めると、最初に着られる物が無くなる。
+      #
+      # **手際は名乗る**（docs/world/Skills.md 7.1節）。葉を束ねて繊維で結ぶ仕事なので、速さを
+      # 決めるのは繊維・編み——腕が0でも作れることは解放条件の側が守るので、最初の1着は塞がれない。
       bundled:
+        deftness: {subject: agent, prop: cordage_deftness}
         steps:
           - requires:
               - {object: palm_frond, count: 1, consume: true}
@@ -100,7 +104,11 @@ object_defs:
     recipes:
       # **解放条件を持たない。** 剥いだ皮を羽織るだけで縫わないので、皮革の腕が開ける物の一覧
       # （docs/world/Skills.md 2節）にも入っていない——腕の要らない一着として残す。
+      #
+      # **手際は名乗る**（同7.1節）。縫わなくても皮を扱う仕事なので、穴を開けて形を取る速さは
+      # 皮革が決める——開ける腕と速さを決める腕は別の宣言で、こちらは腕が0でも作れる。
       draped:
+        deftness: {subject: agent, prop: leatherwork_deftness}
         steps:
           - requires:
               - {object: rawhide, count: 2, consume: true}
