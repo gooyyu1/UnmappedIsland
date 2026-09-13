@@ -261,6 +261,33 @@ describe('行動の所要時間はtickの格子に乗る', () => {
     expect(moved, '刻みに乗っていないのに動かされる所要時間').toEqual([]);
   });
 
+  it('縮めきっても、所要時間は0分にならない', () => {
+    // **0分は格子に乗っている**ので、上の検査はどれも「腕で0分まで縮む手作業」を通してしまう。
+    // 0分は「1 tickに何度でもできる」を意味する（ActionSystem.md 6.2節）ので、**そこへ落ちてよいのは
+    // 繰り返しても得をしない操作だけ**——腕を上げた者だけがその状態になる形は、その線の外側にある。
+    //
+    // 見るのは**素と、自分を縮める宣言だけで分数が決まるプロパティ**。土台（`base`）を持つものは
+    // 継ぐ相手ぶんが足され、`range`を持つものはその下端が止めるので、ここでは答えが出ない。
+    //
+    // **縮める分はその宣言の中から拾う**——同じ名前が複数の型に在る（死体ごとの`butcher_minutes`）
+    // ので、名前で世界じゅうから集めると、別の型の宣言まで1つの素へ積むことになる。
+    const emptied: string[] = [];
+    let checked = 0;
+    for (const [name, bodies] of minutePropBodies())
+      for (const body of bodies) {
+        const value = declaredValueOf(body);
+        if (value === undefined || baseNameOf(body) !== undefined || rangeOf(body) !== undefined) continue;
+        checked += 1;
+        const own = new Map<string, number[]>();
+        amountsMovingMinutes(body, own);
+        const shortest = (own.get(name) ?? []).reduce((left, amount) => left + Math.min(amount, 0), value);
+        if (shortest <= 0) emptied.push(`${name}: 素 ${value}分 → 縮めきると ${shortest}分`);
+      }
+    expect(checked, '素と縮める宣言だけで決まる所要時間が1つも無い').toBeGreaterThan(0);
+
+    expect(emptied, '縮めきると0分以下になる所要時間').toEqual([]);
+  });
+
   it('所要時間のrangeの両端も格子に乗る', () => {
     // `range`は合計をその中へ収める（GameElementDefinition.md 6.3節）ので、**端が格子から外れて
     // いれば、そこで止まった分数がそのまま外れる。**
