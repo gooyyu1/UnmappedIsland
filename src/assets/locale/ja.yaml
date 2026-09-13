@@ -847,6 +847,19 @@ object_texts:
         display_name: 柄を付ける
         description: 枝を削って柄をこしらえ、穂先を溝へ据えて紐で締め上げる。
 
+  # 打ちかかる腕の的（hunting_practice.yaml）。
+  practice_target:
+    display_name: 打ち込みの的
+    description: 枝の骨へヤシの葉を厚く巻いた的。生きた獣を待たずに、打ちかかる手を動かせる。
+    interactions:
+      strike:
+        display_name: 打ち込む
+        description: 手にした武器で的へ打ち込む。当たり所も傷も無いので、残るのは振った手の覚えだけ。
+    recipes:
+      lashed:
+        display_name: 組んで巻く
+        description: 太い枝を組んで骨にし、裂いた小葉で葉を厚く巻きつける。紐も道具も要らない。
+
   # 葉を編む連鎖（weaving.yaml）。
   palm_frond:
     display_name: ヤシの葉

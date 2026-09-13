@@ -41,10 +41,12 @@ card_filters:
   - id: filter_fire
     icon: 🔥
     tags: [fuel, tinder, hearth]
-  # 刃物・打撃（系統4）と狩りの道具（系統6）。餌は罠の材料なので同じボタンに出る。
+  # 刃物・打撃（系統4）と狩りの道具（系統6）。餌は罠の材料なので同じボタンに出る。**打ちかかる的
+  # （strike_target、hunting_practice.yaml）も同じボタン**——重ねる武器と的が同時に見えていないと
+  # 打ち込めない（炉と材料が食のボタンに揃うのと同じ、docs/ui/ScreenLayout.md 8.1.1節）。
   - id: filter_tool
     icon: 🔨
-    tags: [tool, weapon, trap, meat_bait, plant_bait]
+    tags: [tool, weapon, trap, meat_bait, plant_bait, strike_target]
   # 運ぶ入れ物（系統7）。
   - id: filter_container
     icon: 🧺
