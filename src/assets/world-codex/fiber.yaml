@@ -112,6 +112,12 @@ object_defs:
       # 重さのほとんどは水。この重さのまま拠点へ運ぶより、その場で掻き取ったほうが軽い。
       weight: {value: 3000}
       volume: {value: 6000}
+      # 掻き取るのにかかる時間。素の値は株が持ち、今掻き取っている人の手際をbaseで継ぐ
+      # （docs/world/Skills.md 7節）。
+      strip_minutes:
+        value: 30
+        base: {subject: agent, prop: cordage_deftness}
+        range: {min: 15, max: 30}
     interactions:
       # 葉鞘を1枚ずつ剥ぎ、刃を立てて引き抜いて肉を落とす。残る髄と水はその場に捨てる。
       #
@@ -127,12 +133,21 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
-        duration: 30
+        duration: {prop: strip_minutes}
         # 繊維・編みの腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。撚る・編むと同じ1本で、掻き取りもその腕を使う。
         add: {agent: {skill_cordage: 2}}
         destroy: self
         spawn: {object: plant_fiber, count: 2}
+        # 無駄の無さ（docs/world/Skills.md 7節）。**取れる束の数は葉鞘の作りで決まっていない**ので、
+        # 刃の送りが上手いほど同じ株からもう1束落ちる。**取れない側の重みを持つのは株**で、取れる側に
+        # 作り手の上乗せを置く（素は0なので、腕が無ければ何も起きない）。
+        # **叩き解し（coconut.yamlのret）と揃える**——同じ物を出す2つ目の入口なので、片方だけが
+        # 余分を持つと、どの島に流れ着いたかが歩留まりに化ける。
+        pick:
+          - weight: 100
+          - weight: {subject: agent, prop: cordage_thrift}
+            spawn: {object: plant_fiber}
 
   # 掻き取って干した繊維のひと束。1本ずつを物として扱うことはしないので、束で1つと数える。
   plant_fiber:
@@ -144,6 +159,12 @@ object_defs:
       weight: {value: 60}
       # ばらけた繊維は詰めても縮まないので、嵩そのままで見る。
       volume: {value: 800}
+      # 撚るのにかかる時間。素の値は繊維が持ち、今撚っている人の手際をbaseで継ぐ
+      # （docs/world/Skills.md 7節）。
+      spin_minutes:
+        value: 20
+        base: {subject: agent, prop: cordage_deftness}
+        range: {min: 10, max: 20}
     interactions:
       # 2束を手のひらで転がして1本に撚る。撚りに入りきらない短い屑は落ちる。
       spin:
@@ -153,7 +174,7 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
-        duration: 20
+        duration: {prop: spin_minutes}
         add: {agent: {skill_cordage: 2}}
         destroy: [self, instrument]
         spawn: {object: yarn}
@@ -164,6 +185,12 @@ object_defs:
     props:
       weight: {value: 100}
       volume: {value: 150}
+      # 撚り合わせるのにかかる時間。素の値は糸が持ち、今撚り合わせている人の手際をbaseで継ぐ
+      # （docs/world/Skills.md 7節）。
+      ply_minutes:
+        value: 20
+        base: {subject: agent, prop: cordage_deftness}
+        range: {min: 10, max: 20}
     interactions:
       # 2本を撚りとは逆向きに撚り合わせる。互いの撚りが噛んで解けなくなり、太さと強さが出る。
       ply:
@@ -173,7 +200,7 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
-        duration: 20
+        duration: {prop: ply_minutes}
         add: {agent: {skill_cordage: 2}}
         destroy: [self, instrument]
         spawn: {object: cord}

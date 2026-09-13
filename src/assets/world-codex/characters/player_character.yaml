@@ -690,8 +690,8 @@ traits:
       # 開かないレシピになる（SkillSystem.md 3.2節）。
       # ------------------------------------------------------------------
       # 石を打ち欠く（locations.yamlのknap）。柄付けの刃（tools.yaml）を開ける。
-      # 段が押し上げるのは下のknapping_deftnessで、打ち欠く仕事のレシピがそれをdeftnessに名乗る
-      # （docs/world/Skills.md 7.1節）。
+      # 段が押し上げるのは下のknapping_deftnessで、読むのは打ち欠く仕事の側——レシピは`deftness`で
+      # 名乗り、手作業は自分の時間の土台にする（どの仕事がどの腕かは docs/world/Skills.md 7.1節）。
       skill_knapping:
         tags: [skill]
         value: 0
@@ -714,7 +714,8 @@ traits:
       # **上乗せは2本**——手際（cordage_deftness）と、無駄の無さ（cordage_thrift）。**桁が違うので
       # 分けている**（工程の所要時間は30〜360分、余分の卓の重みは100が相手）。くくり罠（traps.yaml）が
       # 余分の卓を持つ唯一のレシピで、同じ繊維から2つ結べるのは小さく数の要る物だけ
-      # （docs/world/Skills.md 7節）。
+      # （docs/world/Skills.md 7節）。**手作業の側で卓を持つのは、繊維を採る入口**
+      # （fiber.yamlのstrip・coconut.yamlのret）——取れる束の数が材料の作りで決まっていないのはそこだけ。
       skill_cordage:
         tags: [skill]
         value: 0
@@ -772,8 +773,8 @@ traits:
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
       # 皮を剥ぐ（animals.yamlのbutcher）。なめし革と、それを縫った物（clothing.yaml・voyage.yamlの帆）を開ける。
-      # 段が押し上げるのは下のleatherwork_deftnessで、皮を扱う仕事のレシピがそれをdeftnessに名乗る
-      # ——**縫わずに羽織るだけの物も名乗る**（開ける腕と速さを決める腕は別、docs/world/Skills.md 7.1節）。
+      # 段が押し上げるのは下のleatherwork_deftnessで、読むのは皮を扱う仕事の側——**縫わずに羽織る
+      # だけの物も名乗る**（開ける腕と速さを決める腕は別、docs/world/Skills.md 7.1節）。
       skill_leatherwork:
         tags: [skill]
         value: 0
@@ -803,8 +804,8 @@ traits:
           - {name: expert, min: 180}
       # 得た食を保たせる（salt.yamlのcure）。開けるのは燻し小屋（smoking.yamlのsmokehouse）で、
       # 日差しの要らない保存がその先にある（docs/world/SurvivalItems.md 11節）。
-      # 段が押し上げるのは下のpreserving_deftnessで、保たせる造作のレシピがそれをdeftnessに名乗る
-      # ——**開ける側より名乗る側のほうが広い**（保たせる設備は、解放を要求しないものも名乗る、
+      # 段が押し上げるのは下のpreserving_deftnessで、読むのは保たせる仕事の側——**開ける側より
+      # 名乗る側のほうが広い**（保たせる設備は、解放を要求しないものも名乗る、
       # docs/world/Skills.md 7.1節）。
       skill_preserving:
         tags: [skill]
@@ -902,10 +903,16 @@ traits:
       hunting_aim: {value: 0}
       # ------------------------------------------------------------------
       # 製作系の腕が押し上げる上乗せ（刻みとその理由は docs/world/Skills.md 7節）。素が0で、段が
-      # modifyで押し上げるのは上と同じだが、**読み方が違う**——アクセス系はつまみの`base`の土台に
-      # なるのに対し、こちらはレシピが`deftness`・`surplus`で直に名乗る
-      # （GameElementDefinition.md 13.6節）。**作りかけは成果物の素の値を持たない**ので、土台に
-      # できる相手がそこに居ない。
+      # modifyで押し上げるのは上と同じ。**読まれ方は2通りある**——レシピは`deftness`・`surplus`で
+      # 直に名乗り（GameElementDefinition.md 13.6節）、**手で作る操作は相手の時間の`base`の土台にする**
+      # （<操作名>_minutes。アクセス系のつまみと同じ形）。レシピだけが名乗る形になっているのは、
+      # **作りかけが成果物の素の値を持たない**ため——土台にできる相手がそこに居ない。
+      #
+      # **どちらも同じ1本を読む**ので、腕ごとに上乗せは1本のまま。手で石を打ち欠く時間と、その刃を
+      # 柄へ据えるレシピの工程は、同じknapping_deftnessで縮む。
+      #
+      # **手で作る操作の側は、下限を相手の`range`が持つ**（素の半分。docs/world/Skills.md 7節）
+      # ——上乗せ1つが所要時間の違う相手すべてに積まれるので、どこまで縮めてよいかを上乗せは知らない。
       #
       # **手際は負の上乗せ**（積むと所要時間が縮む）。合成の器（`base`・`modify`）はどちらも加算なので、
       # 時間を縮める上乗せは**縮める側が負の値を持つしかない**——荷が重いほど道が遠くなる travel_delay と、
@@ -917,8 +924,9 @@ traits:
       # 速くなる。
       # ------------------------------------------------------------------
       #
-      # **どのレシピがどれを名乗るかは、ここには書かない**——名乗るのはレシピの側で、そこへ書き写すと
-      # レシピが増えるたびに嘘になる。どの仕事がどの腕かの決め方は docs/world/Skills.md 7.1節。
+      # **誰が読むかは、ここには書かない**——読むのはレシピ（`deftness`）と手作業の時間（`base`）の
+      # 側で、そこへ書き写すと読み手が増えるたびに嘘になる。どの仕事がどの腕かの決め方は
+      # docs/world/Skills.md 7.1節。
       # ------------------------------------------------------------------
       # 石を打ち欠く手際。
       knapping_deftness: {value: 0}

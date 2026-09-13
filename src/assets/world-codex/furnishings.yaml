@@ -119,7 +119,8 @@ object_defs:
             comfort: 24
     recipes:
       hollowed:
-        # くり抜きも皮張りも同じ1つの手際で縮む（名乗れるのは1つ、13.6節）。**丸太を刻む工程の
+        # くり抜きも皮張りも同じ1つの手際で縮む（名乗れるのは1つ、
+        # docs/engine/GameElementDefinition.md 13.6節）。**丸太を刻む工程の
         # ほうが長い**ので、木材加工を名乗る。
         deftness: {subject: agent, prop: woodwork_deftness}
         steps:

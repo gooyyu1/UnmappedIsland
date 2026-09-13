@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import type { YAMLMap } from 'yaml';
 import { isMap, isScalar, isSeq, parseDocument } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { Combination } from '../../src/domain/Interaction';
 import type { RecipeDef } from '../../src/domain/RecipeDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
@@ -68,9 +69,9 @@ const ACCESS_BONUSES = [
  * 製作系の腕（Skills.md 2節）と、その段が押し上げる上乗せ（同7節）。**アクセス系と違って、これが
  * 切れても腕は死なない**——解放は解放条件が担うので、切れると「解放しか効かない腕」へ戻る。
  *
- * 読まれ方もアクセス系と違う（つまみの`base`ではなく、レシピの`deftness`・`surplus`が直に名乗る、
- * GameElementDefinition.md 13.6節）が、**書き方はどちらも`{subject: agent, prop: ...}`**なので、
- * 読まれているかは下の`propsReadFromAgent`が一緒に拾う。
+ * 読まれ方は2通りある（レシピの`deftness`・`surplus`が直に名乗るのと、手で作る操作の所要時間が
+ * つまみの`base`にするの、GameElementDefinition.md 13.6節と11.3節）が、**書き方はどちらも
+ * `{subject: agent, prop: ...}`**なので、読まれているかは下の`propsReadFromAgent`が一緒に拾う。
  */
 /**
  * 手際を名乗らないと決めたレシピ（`<完成品>.<レシピ>`）。**どれもどの技術の仕事でもない**——
@@ -95,6 +96,12 @@ const CRAFTING_BONUSES = [
   { skill: 'skill_leatherwork', bonus: 'leatherwork_deftness', byStage: [0, -3, -8, -15] },
   { skill: 'skill_preserving', bonus: 'preserving_deftness', byStage: [0, -3, -8, -15] },
 ] as const;
+
+/** 手際の上乗せの名前の尻尾（docs/world/Skills.md 7節の`<腕>_deftness`）。 */
+const DEFTNESS_SUFFIX = '_deftness';
+
+/** 無駄の無さの上乗せの名前の尻尾（同じく`<腕>_thrift`）。 */
+const THRIFT_SUFFIX = '_thrift';
 
 /**
  * その節の下にある `add: {agent: {<腕>: n}}` を、腕の名前と量の組で1件ずつ渡す。効果はロード後には
@@ -207,23 +214,23 @@ function huntingGrantingTypes(): ReadonlySet<string> {
  */
 function propsReadFromAgent(): ReadonlySet<string> {
   const found = new Set<string>();
-
-  const walk = (node: unknown): void => {
-    if (isSeq(node)) {
-      for (const item of node.items) walk(item);
-      return;
-    }
-    if (!isMap(node)) return;
-
-    const subject = node.get('subject', true);
-    const prop = node.get('prop', true);
-    if (isScalar(subject) && String(subject.value) === 'agent' && isScalar(prop))
-      found.add(String(prop.value));
-    for (const pair of node.items) walk(pair.value);
-  };
-
-  for (const path of worldCodexYamlPaths()) walk(parseDocument(readFileSync(path, 'utf8')).contents);
+  for (const path of worldCodexYamlPaths())
+    agentReadsUnder(parseDocument(readFileSync(path, 'utf8')).contents, found);
   return found;
+}
+
+/** その節の下で `{subject: agent, prop: ...}` として読まれているプロパティを集める。 */
+function agentReadsUnder(node: unknown, found: Set<string>): void {
+  if (isSeq(node)) {
+    for (const item of node.items) agentReadsUnder(item, found);
+    return;
+  }
+  if (!isMap(node)) return;
+
+  const subject = node.get('subject', true);
+  const prop = node.get('prop', true);
+  if (isScalar(subject) && String(subject.value) === 'agent' && isScalar(prop)) found.add(String(prop.value));
+  for (const pair of node.items) agentReadsUnder(pair.value, found);
 }
 
 /** そのpropの宣言が、その上乗せを `base` の土台にしているか（土台は操作をしている人＝`agent`）。 */
@@ -253,9 +260,9 @@ function commentBeforeOf(node: unknown): string {
 }
 
 /**
- * レシピの手前に書いてあるコメントを、`<完成品>.<レシピ>` ごとに集める。**型・`recipes`・レシピ自身の
- * どのキーに付いていても拾う**——決めた理由は、そのレシピだけの話なら直上に、型ぜんぶに掛かるなら
- * 型の側に書かれるので、置き場所を1つに縛ると書き方のほうが歪む。
+ * レシピの手前に書いてあるコメントを、`<完成品>.<レシピ>` ごとに集める。拾うのは **`recipes` の直上と
+ * レシピ自身の直上だけ**——型の側のコメントまで拾うと、**別の話で同じ語を使っている型**へレシピを
+ * 足したときに、理由を書かないまま通ってしまう。
  *
  * ロード後の`RecipeDef`はコメントを持たない（読み捨てられる）ので、構文木を辿る。
  */
@@ -278,12 +285,12 @@ function commentsAboveRecipes(): ReadonlyMap<string, string> {
         );
         if (recipes === undefined || !isMap(recipes.value)) continue;
 
-        const aboveDef = [commentBeforeOf(entry.key), commentBeforeOf(recipes.key)].join('\n');
+        const aboveRecipes = commentBeforeOf(recipes.key);
         for (const [index, recipe] of recipes.value.items.entries())
           found.set(
             `${defName}.${isScalar(recipe.key) ? String(recipe.key.value) : ''}`,
             [
-              aboveDef,
+              aboveRecipes,
               // 最初のレシピの手前のコメントは、レシピではなく`recipes`の値のほうに付く。
               index === 0 ? commentBeforeOf(recipes.value) : '',
               commentBeforeOf(recipe.key),
@@ -296,8 +303,8 @@ function commentsAboveRecipes(): ReadonlyMap<string, string> {
 }
 
 /** 世界じゅうのプロパティ宣言を「どこの・どの名前の」の形で並べる（traitのpropsも型のpropsも）。 */
-function declaredProps(): readonly { where: string; name: string; body: unknown }[] {
-  const found: { where: string; name: string; body: unknown }[] = [];
+function declaredProps(): readonly { where: string; def: string; name: string; body: unknown }[] {
+  const found: { where: string; def: string; name: string; body: unknown }[] = [];
 
   for (const path of worldCodexYamlPaths()) {
     const file = path.slice(path.lastIndexOf('/') + 1);
@@ -315,6 +322,7 @@ function declaredProps(): readonly { where: string; name: string; body: unknown 
         for (const prop of props.items)
           found.push({
             where: `${file} の ${defName}`,
+            def: defName,
             name: isScalar(prop.key) ? String(prop.key.value) : '',
             body: prop.value,
           });
@@ -328,6 +336,26 @@ function declaredProps(): readonly { where: string; name: string; body: unknown 
 function declaredValueOf(propBody: unknown): number {
   const value = isMap(propBody) ? propBody.get('value', true) : undefined;
   return isScalar(value) ? Number(value.value) : 0;
+}
+
+/** そのpropの宣言が持つ`range`（6.3節）。書いていなければundefined。 */
+function declaredRangeOf(propBody: unknown): { readonly min: number; readonly max: number } | undefined {
+  const range = isMap(propBody) ? propBody.get('range', true) : undefined;
+  if (!isMap(range)) return undefined;
+  const min = range.get('min', true);
+  const max = range.get('max', true);
+  return isScalar(min) && isScalar(max) ? { min: Number(min.value), max: Number(max.value) } : undefined;
+}
+
+/** 世界じゅうのプロパティ宣言を、型の名前 → プロパティの名前 で引けるようにしたもの。 */
+function declaredPropsByDef(): ReadonlyMap<string, ReadonlyMap<string, unknown>> {
+  const byDef = new Map<string, Map<string, unknown>>();
+  for (const { def, name, body } of declaredProps()) {
+    const props = byDef.get(def) ?? new Map<string, unknown>();
+    byDef.set(def, props);
+    props.set(name, body);
+  }
+  return byDef;
 }
 
 /**
@@ -472,10 +500,16 @@ function beastSpawningCandidates(): readonly { where: string; missingSkill: bool
 
 /** 操作1つ分の、出す物と配る腕。 */
 interface InteractionGains {
+  /** この操作を宣言している型（`interactions` を持つ節の名前）。 */
+  readonly owner: string;
   readonly name: string;
   /** その操作が`spawn`で出す型の名前（`pick`の候補の中のものも含む）。 */
   readonly products: readonly string[];
   readonly skills: readonly string[];
+  /** `duration` が読んでいるプロパティの名前。リテラルの分数で書いていればundefined。 */
+  readonly durationProp: string | undefined;
+  /** その操作が `{subject: agent, prop: ...}` で読んでいるもの（余分の卓の重みもここに出る）。 */
+  readonly agentReads: readonly string[];
 }
 
 /** ノードの下にある`spawn`が出す型の名前を、入れ子の`pick`ごと集める。 */
@@ -500,9 +534,10 @@ function productsUnder(node: unknown, found: Set<string>): void {
 function declaredInteractions(): readonly InteractionGains[] {
   const found: InteractionGains[] = [];
 
-  const walk = (node: unknown): void => {
+  /** ownerは、今辿っている節を持つキー（`interactions`へ着いたとき、それを宣言している型の名前）。 */
+  const walk = (node: unknown, owner: string): void => {
     if (isSeq(node)) {
-      for (const item of node.items) walk(item);
+      for (const item of node.items) walk(item, owner);
       return;
     }
     if (!isMap(node)) return;
@@ -510,7 +545,7 @@ function declaredInteractions(): readonly InteractionGains[] {
     for (const pair of node.items) {
       const key = isScalar(pair.key) ? String(pair.key.value) : '';
       if (key !== 'interactions' || !isMap(pair.value)) {
-        walk(pair.value);
+        walk(pair.value, key);
         continue;
       }
       for (const entry of pair.value.items) {
@@ -518,6 +553,8 @@ function declaredInteractions(): readonly InteractionGains[] {
         if (!isMap(body)) continue;
         const products = new Set<string>();
         productsUnder(body, products);
+        const agentReads = new Set<string>();
+        agentReadsUnder(body, agentReads);
 
         const add = body.get('add', true);
         const agent = isMap(add) ? add.get('agent', true) : undefined;
@@ -526,17 +563,22 @@ function declaredInteractions(): readonly InteractionGains[] {
               .map((item) => (isScalar(item.key) ? String(item.key.value) : ''))
               .filter((name) => name.startsWith(SKILL_PREFIX))
           : [];
+        const duration = body.get('duration', true);
+        const durationProp = isMap(duration) ? duration.get('prop', true) : undefined;
 
         found.push({
+          owner,
           name: isScalar(entry.key) ? String(entry.key.value) : '',
           products: [...products].sort(),
           skills: skills.sort(),
+          durationProp: isScalar(durationProp) ? String(durationProp.value) : undefined,
+          agentReads: [...agentReads].sort(),
         });
       }
     }
   };
 
-  for (const path of worldCodexYamlPaths()) walk(parseDocument(readFileSync(path, 'utf8')).contents);
+  for (const path of worldCodexYamlPaths()) walk(parseDocument(readFileSync(path, 'utf8')).contents, '');
   return found;
 }
 
@@ -856,10 +898,15 @@ describe('腕前とレシピの解放条件', () => {
     // 一つ上の数え上げは、**足せば黙って通せる**——理由を書かせるのはここ。Skills.md 7.1節が
     // 「名乗らないと決めた側は、そのレシピのコメントに理由を書きます」と言っている以上、それが
     // 破れたときに落ちるものが要る（書いてあるかを見るだけで、中身の当否は人が読む）。
+    //
+    // **語を2つとも求める**——どちらか1つなら、手際と関わりのない文でも当たってしまう。
     const comments = commentsAboveRecipes();
 
     expect(
-      RECIPES_WITHOUT_DEFTNESS.filter((where) => !(comments.get(where) ?? '').includes('名乗らない')),
+      RECIPES_WITHOUT_DEFTNESS.filter((where) => {
+        const comment = comments.get(where) ?? '';
+        return !comment.includes('手際') || !comment.includes('名乗らない');
+      }),
       '名乗らない理由が書いていないレシピ',
     ).toEqual([]);
   });
@@ -890,6 +937,143 @@ describe('腕前とレシピの解放条件', () => {
     ).toEqual([]);
   });
 
+  /**
+   * 手際を継ぐはずの手作業——**製作系の腕を配る操作**（docs/world/Skills.md 7節）と、そのとき継ぐ上乗せ。
+   * 伸びる場面と速くなる場面を揃えるので、**引き当ては配る腕から出す**。アクセス系（火・狩猟）を配る
+   * 操作は手際の上乗せを持たないので、ここには現れない。
+   */
+  function handworkWithDeftness(): readonly { interaction: InteractionGains; bonus: string }[] {
+    const deftnessOf = new Map<string, string>(
+      CRAFTING_BONUSES.filter((entry) => entry.bonus.endsWith(DEFTNESS_SUFFIX)).map((entry) => [
+        entry.skill,
+        entry.bonus,
+      ]),
+    );
+    const found: { interaction: InteractionGains; bonus: string }[] = [];
+    for (const interaction of declaredInteractions())
+      for (const skill of interaction.skills) {
+        const bonus = deftnessOf.get(skill);
+        if (bonus !== undefined) found.push({ interaction, bonus });
+      }
+    return found;
+  }
+
+  /** その手作業が所要時間として読んでいるプロパティの宣言（読んでいなければundefined）。 */
+  function durationPropBody(
+    interaction: InteractionGains,
+    props: ReadonlyMap<string, ReadonlyMap<string, unknown>>,
+  ): unknown {
+    return interaction.durationProp === undefined
+      ? undefined
+      : props.get(interaction.owner)?.get(interaction.durationProp);
+  }
+
+  /** その手作業を、11本すべてがその値の人が行うときの所要時間（分）。 */
+  function handworkMinutes(interaction: InteractionGains, skillValue: number): number {
+    // **相手は作業者と同じ世界に作る**——役（11.5節）は1つの関係の中でしか結べないので、
+    // 別のセッションに居ると手際の土台が辿り着かない。
+    const agent = characterWithSkills(skillValue);
+    const session = agent.session;
+    const self = session.createObject(codex.objectNames.getId(interaction.owner));
+
+    const action = self.tryGetAction(interaction.name, agent);
+    if (action !== undefined) return action.executionMinutes();
+
+    // 重ねて起こす操作（12節）。**instrumentは何でもよい**——見るのは所要時間で、そこが読む土台は
+    // agentの側だけを指している。
+    const trigger = self.def.dragTriggers.find(
+      (candidate) => candidate.interaction.name === interaction.name,
+    );
+    expect(trigger, `${interaction.owner} の ${interaction.name} が引けない`).toBeDefined();
+    const instrumentDef = [...codex.objects].find((def) => trigger!.acceptsInstrument(def));
+    expect(instrumentDef, `${interaction.owner} の ${interaction.name} に重ねられる型が無い`).toBeDefined();
+    return new Combination(
+      trigger!,
+      self,
+      agent,
+      session.createObject(instrumentDef!.globalId),
+    ).executionMinutes();
+  }
+
+  it('製作系の腕を配る手作業は、その腕の手際を継ぐ時間を名乗る', () => {
+    // レシピの`deftness`（一つ上の検査）と対になるもの。**手で作る側は、作る相手が自分の時間を持ち、
+    // その`base`に作り手の手際を置く**（docs/world/Skills.md 7節）。見るのは**配る腕と継ぐ腕が同じ
+    // であること**——揃っていないと、伸ばしたのとは別の腕を上げないと速くならない手作業になる。
+    // 書き忘れればその1つだけが腕で縮まないまま残るが、宣言は世界じゅうに散っていて目視では分からない。
+    const props = declaredPropsByDef();
+    const handwork = handworkWithDeftness();
+    expect(handwork.length, '製作系の腕を配る操作が1つも無い').toBeGreaterThan(0);
+
+    for (const { interaction, bonus } of handwork) {
+      const where = `${interaction.owner} の ${interaction.name}`;
+      expect(interaction.durationProp, `${where}: 所要時間がプロパティを読んでいない`).toBeDefined();
+      const body = durationPropBody(interaction, props);
+      expect(body, `${where}: ${interaction.durationProp} を自分のpropsで宣言していない`).toBeDefined();
+      expect(standsOnBonus(body, bonus), `${where}: 所要時間が ${bonus} を土台にしていない`).toBe(true);
+    }
+  });
+
+  it('手際を継ぐ時間は、素の半分を下限に持つ（腕が上がっても手数そのものは消えない）', () => {
+    // 下限を持つのは時間の側で、上乗せの側ではない（docs/world/Skills.md 7節）——上乗せ1つが所要時間の
+    // 違う相手すべてに積まれるので、どこまで縮めてよいかを上乗せは知らない。**素の半分**という1つの
+    // 規則で全部を置いているが、置き場は相手ごとに散っているので、揃っているかはここでしか出ない。
+    const props = declaredPropsByDef();
+
+    for (const { interaction } of handworkWithDeftness()) {
+      const where = `${interaction.owner} の ${interaction.name}`;
+      const body = durationPropBody(interaction, props);
+      const range = declaredRangeOf(body);
+      expect(range, `${where}: 所要時間がrangeを持たない`).toBeDefined();
+      expect(range!.max, `${where}: rangeの上端が素の値と違う`).toBe(declaredValueOf(body));
+      expect(range!.min * 2, `${where}: rangeの下端が素の半分ではない`).toBe(declaredValueOf(body));
+    }
+  });
+
+  it('腕を上げると、その腕を配る手作業は実際に短くなる', () => {
+    // 上2つは宣言の形しか見ないので、**継ぐ向きが逆でも通る**（正の上乗せを積めば腕が上がるほど
+    // 長くなる）。向きは、実際に分数を引き比べないと出ない——レシピ側の同じ検査と対。
+    //
+    // **素人の分数が宣言どおりであることも一緒に見る。** 参照が解けなければ所要時間は0分になるが
+    // （GameElementDefinition.md 10.2節）、「短くなった」だけでは0分と見分けが付かない。
+    const props = declaredPropsByDef();
+
+    for (const { interaction } of handworkWithDeftness()) {
+      const where = `${interaction.owner} の ${interaction.name}`;
+      const novice = handworkMinutes(interaction, STAGES[0].min);
+      expect(novice, `${where}: 素人の所要時間が宣言と違う`).toBe(
+        declaredValueOf(durationPropBody(interaction, props)),
+      );
+      expect(
+        handworkMinutes(interaction, STAGES.at(-1)!.min),
+        `${where}: 熟達しても短くならない`,
+      ).toBeLessThan(novice);
+    }
+  });
+
+  it('手作業が引く余分の卓は、その手作業が配る腕の無駄の無さを読む', () => {
+    // レシピの`surplus`と違い、手作業は効く腕を名乗らない（配る腕がそのまま効く腕、
+    // docs/world/Skills.md 7節）。**別の腕の卓を引いてしまうと、伸ばしたのとは違う腕で歩留まりが
+    // 変わる**——`pick`の重みは他のどの重みとも同じ書き方なので、読み違えても形は整って見える。
+    const skillOfThrift = new Map<string, string>(
+      CRAFTING_BONUSES.filter((entry) => entry.bonus.endsWith(THRIFT_SUFFIX)).map((entry) => [
+        entry.bonus,
+        entry.skill,
+      ]),
+    );
+    let drawn = 0;
+
+    for (const interaction of declaredInteractions())
+      for (const bonus of interaction.agentReads.filter((name) => name.endsWith(THRIFT_SUFFIX))) {
+        drawn += 1;
+        expect(
+          interaction.skills,
+          `${interaction.owner} の ${interaction.name}: ${bonus} は、この手が配る腕のものではない`,
+        ).toContain(skillOfThrift.get(bonus));
+      }
+
+    expect(drawn, '余分の卓を引く手作業が1つも無い').toBeGreaterThan(0);
+  });
+
   it('腕を配る操作は、作業の長さに依らず一律の量を配る', () => {
     // 量を作業ごとに変えると、短い作業を繰り返すのが最も速い伸ばし方になる。繰り返しの稼ぎを
     // 抑えるのは時間のコストだけ（SkillSystem.md 7節）。
@@ -916,11 +1100,24 @@ describe('腕前とレシピの解放条件', () => {
     const shared = [...byProduct].filter(([, group]) => group.length > 1);
     expect(shared.length, '出す物が同じ操作の組が1つも無い').toBeGreaterThan(0);
 
-    for (const [products, group] of shared)
+    for (const [products, group] of shared) {
+      const where = `'${products}' を出す ${group.map((i) => i.name).join('・')}`;
       expect(
         new Set(group.map((interaction) => interaction.skills.join(','))).size,
-        `'${products}' を出す ${group.map((i) => i.name).join('・')} で、配る腕が食い違う`,
+        `${where} で、配る腕が食い違う`,
       ).toBe(1);
+      // **余分の卓も揃える**（docs/world/Skills.md 7節）。片方だけが余分を出すと、配る腕を揃えた
+      // のと同じ理由で、どの島に流れ着いたかが歩留まりに化ける。卓は`pick`の重みとして書くので、
+      // 出す物の一覧には現れず、上の検査では捕まらない。
+      expect(
+        new Set(
+          group.map((interaction) =>
+            interaction.agentReads.filter((name) => name.endsWith(THRIFT_SUFFIX)).join(','),
+          ),
+        ).size,
+        `${where} で、余分の卓が食い違う`,
+      ).toBe(1);
+    }
   });
 
   it('伸ばす操作をまだ持たない腕は、開ける物が世界に無い4本だけ', () => {
