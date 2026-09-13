@@ -40,8 +40,8 @@ object_defs:
       volume: {value: 29000}
     slots:
       contents:
-        # 何種類入るか。手持ちの6枠を必ず上回る（docs/world/Containers.md 1節）——籠を持つと手が
-        # 1枠塞がるので、超えていなければ入れ物を持つ意味が出ない。
+        # 何種類入るか。どのキャラクタの手持ちよりも多い（docs/world/Containers.md 1節）——籠を持つと
+        # 手が1枠塞がるので、超えていなければ入れ物を持つ意味が出ない。
         cell_count: 10
         # 中身のかさの合計の上限（7.3節）。手に提げる籠の内容積そのままで20L。
         capacity: 20000

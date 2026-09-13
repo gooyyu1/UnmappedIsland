@@ -84,9 +84,37 @@ describe('固形物のかさと入れ物の容量', () => {
     expect(put(), '6個目は容量を超える').toContain('容量');
   });
 
+  it('どの入れ物の枠数も、どのキャラクタの手持ちより多い', () => {
+    // 携行する入れ物は手を1枠使うので、手持ちを上回っていなければ持つ意味が出ない
+    // （docs/world/Containers.md 1節）。**枠数はキャラクタごとに決まる**（characters/*.yaml、
+    // engineerだけ7枠）ので、線は数ではなく「いちばん多いキャラクタ」から引く。
+    const contentsId = codex.slotNames.getId('contents');
+    const handId = codex.slotNames.getId('hand');
+    const characterTagId = codex.vocabulary.world.characterTagId;
+
+    const handCells = [...codex.objects]
+      .filter((def) => def.hasTag(characterTagId))
+      .map((def) => def.tryGetSlotDef(handId)?.cellCount ?? 0);
+    const widestHand = Math.max(...handCells);
+
+    expect(widestHand, '手持ちを持つキャラクタが居る').toBeGreaterThan(0);
+
+    const containerTagId = codex.tagNames.getId('container');
+    const containers = [...codex.objects].filter(
+      (def) => def.tags.includes(containerTagId) && !codex.isGenerated(def),
+    );
+
+    expect(containers.length, '入れ物が1つも無い').toBeGreaterThan(0);
+    for (const def of containers)
+      expect(
+        def.tryGetSlotDef(contentsId)?.cellCount ?? 0,
+        `${def.name} の枠数（いちばん多い手持ちは${widestHand}枠）`,
+      ).toBeGreaterThan(widestHand);
+  });
+
   it('編み籠には10種類まで入り、11種類目は入らない', () => {
-    // 入れ物の枠数は手持ちの6枠を上回る（docs/world/Containers.md 1節）。かさの合計は5.3Lで
-    // 容量（20L）に届かないので、ここで効いているのは枠数だけ。
+    // かさの合計は5.3Lで容量（20L）に届かないので、ここで効いているのは枠数だけ。
+    // 手持ちとの大小は上の試験が全数で見る。
     const kinds = [
       'stone',
       'sharp_stone',
@@ -105,7 +133,6 @@ describe('固形物のかさと入れ物の容量', () => {
     const put = (name: string): string | undefined =>
       session.createObject(codex.objectNames.getId(name)).moveToSlotOrRejection(basket.getSlot(contentsId));
 
-    expect(kinds.length, '手持ちの6枠を上回る').toBeGreaterThan(6);
     for (const name of kinds) expect(put(name), name).toBeUndefined();
 
     expect(put('water_spinach'), '11種類目は枠が無い').toBeDefined();

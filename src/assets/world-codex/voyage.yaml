@@ -623,7 +623,8 @@ object_defs:
               - {object: thick_branch, count: 2, consume: true}
               - {object: rope, count: 2, consume: true}
             duration: 120
-          # 生皮を糸で縫い合わせ、枠へ張る。骨針は道具なので減らない。
+          # 生皮を糸で縫い合わせ、枠へ張る。骨針は道具なので**縫っても**減らない
+          # （減るのは屋外に置いた間だけ、weathering.yaml）。
           - requires:
               - {object: rawhide, count: 6, consume: true}
               - {object: yarn, count: 10, consume: true}

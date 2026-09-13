@@ -915,12 +915,12 @@ props:
 object_defs:
   sledge:
     props:
-      weight: {value: 10000}
+      weight: {value: 8000}
       load_rate:
         value: 1
         passives:
           - conditions: [{in_slot: hand}]
-            modify: {self: {load_rate: -0.9}}   # 引きずるので体感は1割
+            modify: {self: {load_rate: -0.45}}  # 引きずるので体感は55%
 
   character:
     props:
@@ -928,8 +928,8 @@ object_defs:
       load: {value: 0}
 ```
 
-石（`weight` 100）を載せたそり（自重 1000）を手で引くと、そりの `weight` は 1100、キャラクターの `weight` は
-自重込みの 71100、`load` は 1100 × 0.1 = 110 になります。
+石（`weight` 1000）を載せたそり（自重 8000）を手で引くと、そりの `weight` は 9000、キャラクターの `weight` は
+自重込みの 79000、`load` は 9000 × 0.55 = 4950 になります。
 
 ### 7.5 装備の排他制御（covers / layer）
 
