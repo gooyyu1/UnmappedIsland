@@ -63,7 +63,7 @@
 #
 # ## 走るのは複製。入れ替わったら、新しい版で回り直す
 #
-# **回っている bash は、最初に読んだ版のまま。** `TIDY` を打つと本体が `main` へ進む（`SYNCED`）ので、
+# **回っている bash は、最初に読んだ版のまま。** 本体が `main` へ進むと（下の「本体を寄せるのは」）、
 # 隣の道具は次の周から新しい版で動くのに、この1本だけが古いまま残る。**古い呼び手が新しい道具を叩くと、
 # 噛み合わないまま黙って何もしない周が続く**——単体では走らなくなった `board-move.mjs` を旧 `daemon.sh`
 # が叩き、手を1つも出さないまま8分止まった（2026-09-05）。周の終わりに複製元と見比べて、変わって
@@ -79,12 +79,25 @@
 # 入れ替えた先が壊れていればそこで終わる。**古い版で黙って回り続けるよりは、止まったほうが後から
 # 追える**——心拍が腐れば `status` が「止まっている」と答える。
 #
-# ## 立てるときは、本体を `origin/main` へ寄せてから
+# ## 本体を `origin/main` へ寄せるのは、立てるときと、周の終わり
 #
 # **立て直しは、古い版で回り出す機会でもある。** 落ちた跡から起こすのは起こす係（2.19）で、打つのは
 # `start` だけ——寄せる者がここに居ないと、落ちた時点の版が次のマージまで回り続ける。**寄せるのは
 # `start` が持ち、起こす係には持たせない**（出どころ: ユーザーの指示・2026-09-06）。同じ更新をする
 # 仕組みを2つ置くと、どちらが進めたのかが読めなくなる。
+#
+# **回り続けている間も、周の終わりに寄せる**（2.3.2）。`start` だけが寄せる形では、走っている間に
+# 本体が進むのは**盤面が自分でマージを打った周**（`tidy-merged-pr.sh` の `SYNCED`）しか無く、
+# **人がGitHubの画面から入れたぶん**と `main` への直接 push が届かない——次に盤面がマージを打つまで、
+# 隣の道具もひな形も古い版で読まれ続ける。**誰がマージしたかで追従の仕方を分けない**（出どころ:
+# ユーザーの指示・2026-09-07）。寄せるのは `start` と同じ関数なので、判定も入れ直しも1箇所のまま。
+#
+# **`git fetch` は毎周打つ。** 動いていない参照の取得は1往復で済み、周（既定30秒）に元から入っている
+# `gh` の往復に対して増える分は小さい。間隔を別に持たせると、**古い版で回る窓をその間隔ぶん開ける**
+# ことになり、塞ぎたかった穴が小さくなるだけで残る。
+#
+# **ログへ出すのは、本体が動いた周だけ。** 毎周書くと同じ1行が周期ぶん溜まり、動いたことが埋もれる。
+# 寄せられなかったときの言い分は、`git` 自身が `$DAEMON_LOG` へ流している。
 #
 # 寄せる先は `tidy-merged-pr.sh` が `TIDY` のたびに進めるのと同じ本体で、未コミットの変更が
 # あるときは触らない（あちらの `DIRTY` と同じ判定）。**進めたら依存も入れ直す**——作業ツリーが共有して
@@ -275,37 +288,49 @@ stop_daemon() {
   echo "止めた（$pid）"
 }
 
-# 本体のチェックアウトを `origin/main` へ寄せる（上の「立てるときは」）。**返すのは結果を表す短い
-# 1語句だけ**で、呼び手が自分の1行へ畳んで載せる。**寄せられなくても立てられるように、失敗はすべて
-# 0で返す。** 道具の言い分（`git`・`npm` が出すもの）は `$DAEMON_LOG` へ流す。
+# 直前の `sync_origin` の結果を表す短い1語句。呼び手が自分の1行へ畳んで載せる。
+synced_said=''
+# 直前の `sync_origin` で本体の `HEAD` が動いたか。**語句と別に持つのは、読む側が2つあるため**
+# ——`start` は動いたかによらず結果を1行へ載せ、周の側は動いた周だけログへ出す（上の「ログへ出すのは」）。
+synced_moved=''
+
+# 本体のチェックアウトを `origin/main` へ寄せる（上の「本体を寄せるのは」）。**答えは標準出力では
+# なく上の2つへ置く**——`$(sync_origin)` は子シェルなので、そこで立てた印は呼び手へ戻らない。
+# **寄せられなくても立てられるように、失敗はすべて0で返す。** 道具の言い分（`git`・`npm` が出す
+# もの）は `$DAEMON_LOG` へ流す。
 sync_origin() {
-  local common='' main_dir='' before='' head=''
+  local common='' main_dir='' before='' was='' head=''
+  synced_said=''
+  synced_moved=''
   # **引けなければ空のまま**（[`daemon-wake-task.sh`](../agent/daemon-wake-task.sh) と同じ）。既定値を置くと、
   # 当てずっぽうの場所を本体として進めにいく。`--path-format=absolute` を明示するのは、既定が相対で
   # 返りうるため。
   common=$(git -C "$ORIGIN" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || common=''
   [ -z "$common" ] || main_dir=$(dirname "$common")
   if [ -z "$main_dir" ]; then
-    echo "本体が見つからない"
+    synced_said='本体が見つからない'
     return 0
   fi
   # **寄せる先と立てる先が同じでなければ、何も進めない。** 立てるのは `$SOURCE`（＝`$ORIGIN` の側）
   # なので、作業ツリーから打つと、進めた本体は走らず、走る1本は古いまま残る。
   if [ "$(git -C "$ORIGIN" rev-parse --path-format=absolute --show-toplevel 2>/dev/null)" != "$main_dir" ]; then
-    echo "本体の外から立てている"
+    synced_said='本体の外から立てている'
     return 0
   fi
   # 未追跡は見ない（`tidy-merged-pr.sh` と同じ）。本体を進める妨げになるなら、`checkout` が失敗して分かる。
   if [ -n "$(git -C "$main_dir" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
-    echo "本体に未コミットの変更がある"
+    synced_said='本体に未コミットの変更がある'
     return 0
   fi
   before=$(git -C "$main_dir" rev-parse HEAD:package-lock.json 2>/dev/null) || before=''
+  # **寄せる前の先頭も控える。** 周の側はこれと寄せた後を見比べて、動いた周だけログへ出す。
+  was=$(git -C "$main_dir" rev-parse HEAD 2>/dev/null) || was=''
   if ! git -C "$main_dir" fetch --quiet origin main >>"$DAEMON_LOG" 2>&1 ||
     ! git -C "$main_dir" checkout --quiet --detach origin/main >>"$DAEMON_LOG" 2>&1; then
-    echo "本体を寄せられなかった"
+    synced_said='本体を寄せられなかった'
     return 0
   fi
+  [ "$was" = "$(git -C "$main_dir" rev-parse HEAD 2>/dev/null)" ] || synced_moved=1
   head=$(git -C "$main_dir" rev-parse --short HEAD 2>/dev/null)
   # **進めた側が依存も入れ直す**（`tidy-merged-pr.sh`「本体を追随させるのは」）。作業ツリーは本体の
   # `node_modules` を遡って共有するので、古いままだと**古い版が解決されて一部だけ壊れる**。ここが
@@ -315,13 +340,13 @@ sync_origin() {
   # 自分が跨いだ差に依存の更新が混じっていたときだけ打つ。**元から入っていないぶんは見ない**
   # ——寄せたことで嘘になった木を直すのがここの役目で、一度も入れていない本体はここの落ち度ではない。
   if [ "$before" = "$(git -C "$main_dir" rev-parse HEAD:package-lock.json 2>/dev/null)" ]; then
-    echo "本体は $head"
+    synced_said="本体は $head"
     return 0
   fi
   if (cd "$main_dir" && npm install --no-fund --no-audit) >>"$DAEMON_LOG" 2>&1; then
-    echo "本体は $head・依存も入れ直した"
+    synced_said="本体は $head・依存も入れ直した"
   else
-    echo "本体は $head・依存を入れ直せなかった"
+    synced_said="本体は $head・依存を入れ直せなかった"
   fi
 }
 
@@ -333,18 +358,18 @@ start_daemon() {
   fi
   # **寄せてから読ませる。** `nohup` が `$SOURCE` を開くのは寄せ終わった後なので、寄せられたなら
   # 立つのは新しい版。
-  local synced waited=0
-  synced=$(sync_origin)
+  local waited=0
+  sync_origin
   nohup bash "$SOURCE" run >>"$DAEMON_LOG" 2>&1 &
   while [ "$waited" -lt "$START_WAIT" ]; do
     if running; then
-      echo "立てた（$synced。ログは $DAEMON_LOG）"
+      echo "立てた（$synced_said。ログは $DAEMON_LOG）"
       return 0
     fi
     sleep 1
     waited=$((waited + 1))
   done
-  echo "${START_WAIT}秒待っても心拍が出なかった（$synced。$DAEMON_LOG を見る）" >&2
+  echo "${START_WAIT}秒待っても心拍が出なかった（$synced_said。$DAEMON_LOG を見る）" >&2
   return 1
 }
 
@@ -433,6 +458,10 @@ while true; do
       log "${FAILURE_LIMIT}回続けて失敗したので、${RETRY_INTERVAL}秒おきへ落とす（認証切れか通信断。直れば自分で戻る）"
   fi
   check_values
+  # **本体を寄せるのは周の終わり**（上の「本体を寄せるのは」）。**入れ替わりの見比べより手前に置く**
+  # ——ここで `daemon.sh` が新しくなったぶんを、下の `exec` が同じ周のうちに拾う。
+  sync_origin
+  [ -z "$synced_moved" ] || log "$synced_said"
   [ -z "${ONCE:-}" ] || break
   [ -z "$stopping" ] || break
   # 寝る前に見るのは、**古い版のまま `INTERVAL` ぶん待たせない**ため（上の「走るのは複製」）。複製元へ

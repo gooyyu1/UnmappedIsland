@@ -327,7 +327,7 @@ open な `blockedBy` が無く、open なPRが `Closes` で指していないも
 **一定時間ごとに自分を起こして掃除する形は採らない**（`send_later`）。自動承認ができないので、掃除
 1回ごとにユーザーのタップが要る——放っておいても壊れないものに、それは高すぎる。
 
-### 本体のチェックアウトは、マージ済みのPRを見つけるたびに追随させる
+### 本体のチェックアウトは、`main` が動いたら追随させる
 
 作業ツリーは `<repo>/.claude/worktrees/` に置かれる。**リポジトリの中なので、Node も npm も親を
 遡って本体の `node_modules` を共有する。** 作業ツリーごとに `npm install` を打つ必要は無い。
@@ -340,7 +340,9 @@ open な `blockedBy` が無く、open なPRが `Closes` で指していないも
 そこで [`tidy-merged-pr.sh`](../scripts/daemon/tidy-merged-pr.sh) が、後片付けの1回で本体を
 `origin/main` へ進める（`SYNCED`）。`package-lock.json` が動いたときだけ `npm install` も打つ
 （`INSTALLED`）。**マージした手には繋いでいない**——繋ぐと、ユーザーが画面からマージした回は一度も
-走らない（[`board-design.md`](board-design.md) 2.10.4）。**本体はブランチを持たない（detached HEAD）**——`main` は同時に2箇所へチェックアウト
+走らない（[`board-design.md`](board-design.md) 2.10.4）。**マージ以外で `main` が動いたぶんも追随する**
+——[`daemon.sh`](../scripts/daemon/daemon.sh) が同じ判定で周の終わりにも寄せるので、人が画面から入れた
+ぶんも `main` への直接 push も、次の周には本体へ届く（同 2.3.2）。**本体はブランチを持たない（detached HEAD）**——`main` は同時に2箇所へチェックアウト
 できず、本体が握ると作業ツリーが作れなくなる。detached は「固定」ではなく、指す先を毎回新しい `main`
 へ付け替える形。本体に未コミットの変更があるときは触らず `DIRTY` を出す（未追跡は見ない）。
 
