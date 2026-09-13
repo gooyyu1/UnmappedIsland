@@ -2243,7 +2243,7 @@ interactions:
     announce: exhausted      # 倒れ込む120分は、これを告げてから過ぎる
     duration: 120
     passives:
-      - add: {self: {stamina: 2.5}}
+      - add: {self: {stamina: 1}}
 ```
 
 **`signal` との違いは告げる時点だけです。** 操作の中に書いた `signal` は効果なので、その操作の時間が
@@ -2274,7 +2274,7 @@ interactions:
     trigger: menu
     duration: 60
     passives:
-      - add: {self: {stamina: 2.5}}
+      - add: {self: {stamina: 1}}
 ```
 
 **「一度きりか tick 毎かは置き場所が決める」の線をそのまま伸ばしたものです**（8.4 節）。
