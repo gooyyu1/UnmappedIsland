@@ -3,6 +3,8 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { startNewGame } from '../../src/domain/generation/NewGame';
 import { heatHazeFor } from '../../src/game/looks/heatHaze';
 import { skyTintFor } from '../../src/game/looks/skyTint';
+import { fromGameSession } from '../../src/game/view/PlayScreenView';
+import { parseLocale } from '../../src/locale/Localization';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 
@@ -66,5 +68,21 @@ describe('空の演出（世界→意匠 通し）', () => {
       heatHazeFor(skyWith('scorching', 11, MILD).temperature),
       '暑い季節でなければ立たない',
     ).toBeUndefined();
+  });
+
+  it('陽炎が受け取るのは空の気温で、居る土地の差は乗らない', () => {
+    // `heatHaze.ts` と ScreenLayout.md 7.5.4節が、そう書いている。土地は海抜ぶんだけ空より低い
+    // （ClimateSystem.md 1.1節）ので、読み先を居場所の側へ移せば値が変わる——**その但し書きが
+    // 現物と合っているかを見るのはここだけ**で、意匠の側は渡された数しか知らない。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
+    const temperature = game.startLocation.instance.getProperty(
+      codex.propertyNames.getId('ambient_temperature'),
+    );
+    temperature.setNumber(-7);
+
+    const view = fromGameSession(game, parseLocale('ja.yaml', 'object_texts: {}\n'));
+
+    expect(view.ambientTemperature, '空の気温そのまま').toBe(game.world.ambientTemperature);
+    expect(temperature.getEffectiveValue(), '居る土地の気温とは違う').not.toBe(view.ambientTemperature);
   });
 });

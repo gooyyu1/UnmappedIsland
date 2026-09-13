@@ -566,7 +566,8 @@ pathogen:
 土地が持つ海抜ぶんの差**（同 1.1 節）で、**守る側の 1 段ごとに、ちょうど釣り合う土地があります。**
 **最も深い衣服が海沿いの 12℃ とちょうど釣り合う**のは、炉の暖（+8）が最も寒い夜をちょうど平年へ戻すのと
 同じ置き方です（[`FireSystem.md`](./FireSystem.md) 9.2 節）——**釣り合うだけなので、山の夜には届きません**
-（同 1.1 節）。深さそのものは [`SurvivalItems.md`](../world/SurvivalItems.md) 5.1 節が持ちます。
+（[`ClimateSystem.md`](./ClimateSystem.md) 1.1 節）。深さそのものは
+[`SurvivalItems.md`](../world/SurvivalItems.md) 5.1 節が持ちます。
 
 削る速さは `-2/tick`、雨に打たれている間は `-6/tick`、境目より上に居る間の戻りは `+8/tick` です。
 濡れた一晩（48 tick）で失う 288 kcal は、火のそばの 9 時間で戻ります。
