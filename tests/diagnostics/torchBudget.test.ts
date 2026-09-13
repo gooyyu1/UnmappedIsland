@@ -114,20 +114,44 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
   });
 
   it('1段下げると手元の作業だけが閉じる——+11 はそこでしか置けない', () => {
-    const dimmer = activityHoursOf(codex, everyWeatherEqually(codex), torchEv - 1);
+    const seasons = everyWeatherEqually(codex);
+    const lit = activityHoursOf(codex, seasons, torchEv);
+    const dimmer = activityHoursOf(codex, seasons, torchEv - 1);
 
+    // 「手元の作業だけ」を言うには、残り3つが動いていないことを1つ残らず見る必要がある
+    // ——採取のしきい値（+3）だけを動かしても、そちらを見ていなければ緑のまま主張が嘘になる。
+    for (const [index, row] of dimmer.entries()) {
+      const where = `${row.locationName}`;
+      expect(row.travelHoursPerDay, `${where}: 移動`).toBeCloseTo(lit[index].travelHoursPerDay, 6);
+      expect(row.gatheringHoursPerDay, `${where}: 屋外の採取`).toBeCloseTo(
+        lit[index].gatheringHoursPerDay,
+        6,
+      );
+      expect(row.explorationHoursPerDay, `${where}: 探索`).toBeCloseTo(lit[index].explorationHoursPerDay, 6);
+    }
     expect(
-      dimmer.every((row) => row.travelHoursPerDay > 24 - 1e-6),
-      '移動は1段下げても開いたまま',
-    ).toBe(true);
-    expect(
-      dimmer.every((row) => row.explorationHoursPerDay > 24 - 1e-6),
-      '探索は1段下げても開いたまま',
-    ).toBe(true);
-    expect(
-      dimmer.some((row) => row.handworkHoursPerDay < 24 - 1e-6),
+      dimmer.some((row, index) => row.handworkHoursPerDay < lit[index].handworkHoursPerDay - 1e-6),
       '1段下げても手元の作業が閉じない土地が1つも無い',
     ).toBe(true);
+  });
+
+  it('キャラクタ側の明るさはrangeを持たない——持つと、足した光源が頭打ちになる', () => {
+    for (const def of codex.objects) {
+      if (!def.hasTag(codex.vocabulary.world.characterTagId)) continue;
+      for (const propertyName of ['hand_brightness', 'looking_brightness']) {
+        const propertyDef = def.tryGetPropertyDef(codex.propertyNames.getId(propertyName));
+        expect(propertyDef?.range, `${def.name} の ${propertyName} がrangeを持っている`).toBeUndefined();
+      }
+    }
+  });
+
+  it('火種から灯すと、1本の手間が燃える時間を超える', () => {
+    const tinderCostMinutes = cell(balance, 'object_costs', { object: 'burning_tinder' }, 'total_minutes');
+    const written = numberIn(SKELETON_DOC, /合わせて([\d.]+)分/, '火種から灯した1本の手間');
+
+    expect(torchCostMinutes + tinderCostMinutes).toBeCloseTo(written, 1);
+    expect(written, '火種から灯す道だけなら、燃える時間より長い').toBeGreaterThan(burnMinutes);
+    expect(torchCostMinutes, '炉から分けてもらえば、燃える時間より短い').toBeLessThan(burnMinutes);
   });
 
   it('燃えるのは2時間で、文書もそう書いている', () => {

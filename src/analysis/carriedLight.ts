@@ -11,7 +11,7 @@ import type { WorldCodex } from '../domain/WorldCodex';
  * 測り直した数も一緒に動く。
  */
 
-/** 手に持つ光源が届く先（IlluminationSystem.md 2節）。手元と視界の両方へ、同じ量が届く。 */
+/** 手に持つ光源が届く先（IlluminationSystem.md 2節・3節）。手元と視界の両方へ、同じ量が届く。 */
 const CARRIED_BRIGHTNESS_PROPERTIES = ['hand_brightness', 'looking_brightness'] as const;
 
 /**
