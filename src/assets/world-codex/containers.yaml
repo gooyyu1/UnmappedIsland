@@ -31,15 +31,17 @@ object_defs:
     tags: [item, fixture, fragile]
     # 中身が個体ごとに違うので束ねない。束ねると代表の中身しか開けなくなる（SlotSystem.md 4節）。
     stackable: false
-    traits: [item_container]
+    # 編んだ葉は短命な素材（weathering.yaml）。屋外に出しっぱなしなら10日、雨に打たせれば5日で
+    # 朽ちる——**しまい込めば止まる**ので、拠点へ置いて使う分には作り直しが要らない。
+    traits: [item_container, short_lived_material]
     props:
       weight: {value: 800}
       # 自分の容量（20L）より大きいので、籠の入れ子は物理的に成立しない。
       volume: {value: 29000}
     slots:
       contents:
-        # 何種類入るか。手持ちの6枠を必ず上回る（docs/world/Containers.md 1節）——籠を持つと手が
-        # 1枠塞がるので、超えていなければ入れ物を持つ意味が出ない。
+        # 何種類入るか。どのキャラクタの手持ちよりも多い（docs/world/Containers.md 1節）——籠を持つと
+        # 手が1枠塞がるので、超えていなければ入れ物を持つ意味が出ない。
         cell_count: 10
         # 中身のかさの合計の上限（7.3節）。手に提げる籠の内容積そのままで20L。
         capacity: 20000
@@ -55,4 +57,107 @@ object_defs:
         steps:
           - requires:
               - {object: woven_leaf, count: 6, consume: true}
+            duration: 120
+
+  # そり。長い棒の走り木へ太い枝の横木を渡し、縄で締めた引き具（docs/world/Containers.md 2節）。
+  #
+  # **籠と競合しない。** 運ぶのは重さとかさで、種類は籠が受け持つ——枠数は籠（10）より少なく、
+  # かさは籠の7倍を取る。丸太も石も、担げないぶんだけ引いて運ぶ道具。
+  #
+  # **軽い荷では籠のほうが楽。** 引きやすさ（load_rate）は自分の8kgにもかかるので、積載が
+  # 8kgを超えるまでは、8kgのそりを引くほうが800gの籠を提げるより重い（ContainerSystem.md 2節の
+  # 逆転点の式）。**そりが籠の上位互換にならないのは、この自重と、材料の量による。**
+  #
+  # **斧を待たない。** 走り木の長い棒は若木を刃物で断って採れる（timber.yaml）ので、丸太を使う
+  # 台車（下）と違って序盤から手が届く。
+  sledge:
+    # 中身が個体ごとに違うので束ねない（籠と同じ）。
+    stackable: false
+    # 木材は長持ちする素材（weathering.yaml）。縛った縄が先に緩んでも締め直せば済むので、
+    # 名乗るのは目方の大半を占める走り木と横木のほう。
+    traits: [item_container, long_lived_material]
+    tags: [item, fixture]
+    props:
+      # 走り木1800＋横木6000＋縄600＝8400gのうち、削り落とす400gを引いた値。
+      weight: {value: 8000}
+      # 1.8m×0.7m×0.25mの枠組み。**中身の入る空きは実体ではない**ので、ばらけた材料と同じく
+      # 嵩そのままで見る（ContainerSystem.md 7節）——これで、そりが他の入れ物へ入ることもなくなる。
+      volume: {value: 315000}
+      # 引きずるので、自重も荷も55%しか感じない（ContainerSystem.md 2節）。**率を高くしすぎると
+      # 自重の枷が打ち消される**ので、籠との逆転点を8kgに置く値を逆算して置いている。
+      load_rate:
+        value: 1
+        passives:
+          - conditions: [{in_slot: hand}]
+            modify: {self: {load_rate: -0.45}}
+    slots:
+      contents:
+        # どのキャラクタの手持ちより多いが、籠（10）には及ばない（docs/world/Containers.md 2節）。
+        cell_count: 8
+        # 丸太（35L）が4本積めるかさ。**実際には重さが先に尽きる**——代表のキャラクタなら42kgで
+        # 通れない段（too_heavy）へ入るので、丸太は2本までになる（characters/medic.yaml の load）。
+        capacity: 150000
+    recipes:
+      lashed:
+        # 走り木を削るので木材加工、縛るので繊維（docs/engine/SkillSystem.md 4.1節が名指しで挙げる
+        # 連言そのもの）。**軸を1本削るだけの槍より上の段を要求する**——反りを揃えた走り木2本と
+        # 前木を、同じ寸法で削り出す仕事だから。どちらの腕も斧は要らない。
+        conditions:
+          - {reason: needs_woodwork, subject: agent, prop: skill_woodwork, in_stage_or_above: skilled}
+          - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
+        steps:
+          # 長い棒の先を反らせて削り、走り木を2本と、引き綱を結ぶ前木を1本こしらえる。
+          - requires:
+              - {object: long_pole, count: 3, consume: true}
+            duration: 180
+          # 横木を渡して縄で締め上げる。
+          - requires:
+              - {object: thick_branch, count: 6, consume: true}
+              - {object: rope, count: 1, consume: true}
+            duration: 180
+
+  # 台車。そりへ丸太の輪切りを車軸で通した引き具（docs/world/Containers.md 2節）。
+  #
+  # **そりを材料に取る強化のレシピ**（編み籠→背負い籠と同じ形）。車輪を削り出すのに斧が要るので、
+  # 丸太を採れるようになってから初めて手が届く。
+  #
+  # **そりの上位互換ではない。** 引きやすさはそりを上回るが、車輪のぶん自重が4kg増えるので、
+  # 積載10kgを下回る荷ではそりのほうが軽く感じる（ContainerSystem.md 2節）。
+  handcart:
+    stackable: false
+    traits: [item_container, long_lived_material]
+    tags: [item, fixture]
+    props:
+      # そり8000＋車輪2枚4000。
+      weight: {value: 12000}
+      # 1.8m×0.8m×0.5m。車輪の径のぶん、そりより高くかさばる。
+      volume: {value: 720000}
+      # 転がるので、そり（0.55）よりさらに感じない。**そりとの逆転点を10kgに置く値**
+      # （ContainerSystem.md 2節）。
+      load_rate:
+        value: 1
+        passives:
+          - conditions: [{in_slot: hand}]
+            modify: {self: {load_rate: -0.55}}
+    slots:
+      contents:
+        cell_count: 10
+        capacity: 200000
+    recipes:
+      wheeled:
+        # **解放条件を持たない**（docs/engine/SkillSystem.md 4.2節）。そりを材料に取る時点でその
+        # 解放条件を通っており、そのうえ丸太と斧を要求するので、ここへ腕を重ねると二重になる。
+        #
+        # **車輪は丸太の輪切りを削り出したもので、ほぞで組んだ物ではない**——指物・接合
+        # （docs/world/Skills.md 2.1節）の担当にはならない。
+        steps:
+          # 丸太を輪切りにし、車輪を2枚削り出して軸穴を開ける。**斧が要るのはここだけ**。
+          - requires:
+              - {object: log, count: 1, consume: true}
+              - {tag: chopping_tool, count: 1, consume: false}
+            duration: 240
+          # そりの走り木へ車軸を通し、車輪を留める。
+          - requires:
+              - {object: sledge, count: 1, consume: true}
+              - {object: cord, count: 1, consume: true}
             duration: 120

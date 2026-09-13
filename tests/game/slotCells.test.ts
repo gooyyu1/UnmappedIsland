@@ -4,7 +4,7 @@ import { COLOR } from '../../src/game/looks/theme';
 import type { CardContent } from '../../src/game/ui/Card';
 import type { CraftingMaterial } from '../../src/game/view/craftingView';
 import type { ObjectCardStack, SlotView } from '../../src/game/view/PlayScreenView';
-import { slotCells } from '../../src/game/view/slotCells';
+import { cellsCycleWithBeat, slotCells } from '../../src/game/view/slotCells';
 
 const card = (name: string): CardContent => ({ icon: '🪵', name });
 
@@ -20,6 +20,7 @@ const slot = (options: Partial<SlotView> = {}): SlotView => ({
   acceptsCards: true,
   background: undefined,
   materials: undefined,
+  typesShownInEmptyCells: [],
   ...options,
 });
 
@@ -47,13 +48,13 @@ const stack = (objectGlobalId: ObjectGlobalId): ObjectCardStack =>
 
 /**
  * 材料の要求を持たないスロットの枠。**枠を並べる入口はslotCellsだけ**なので、材料の枠しか使わない
- * 引数（入っている物・拍・型の札）はここで埋める。
+ * 引数（入っている物）はここで埋める。拍は呼び出し側が渡せる——枠ごとの受け入れも拍で送るため。
  */
-const plainCells = (slot: SlotView, cards: readonly (CardContent | undefined)[]) =>
-  slotCells(slot, [], cards, 0, cardOfType);
+const plainCells = (slot: SlotView, cards: readonly (CardContent | undefined)[], cycle = 0) =>
+  slotCells(slot, [], cards, cycle, cardOfType);
 
 /**
- * その場所に並べる枠（slotCells）の自動テスト。**枠ごとの飾りを持つのは材料スロットだけ**で、
+ * その場所に並べる枠（slotCells）の自動テスト。**縁の色と重ねる文字を持つのは材料スロットだけ**で、
  * 他はスロットの宣言（空けておく枠・受け入れの可否）をそのまま形にする。
  */
 describe('スロットの枠', () => {
@@ -116,6 +117,48 @@ describe('クセの無い枠', () => {
 
   it('枠数を超えて入っていても、空枠は増えない', () => {
     expect(emptyCells(plainCells(slot({ cells: 1 }), [card('丸太'), card('石'), card('葉')]))).toBe(0);
+  });
+
+  it('枠が名乗る型は、空き枠のうちに薄く敷いて見せる', () => {
+    // 炉の火床。火の中の枠（焼く物）と石の上の枠（器）で、受けるものが違う。
+    const hearth = slot({ cells: 2, typesShownInEmptyCells: [[typeId(1)], [typeId(2)]] });
+
+    expect(plainCells(hearth, []).map((cell) => cell.accepts?.name)).toEqual(['type#1', 'type#2']);
+  });
+
+  it('名乗る型を持たない枠は、何も敷かない', () => {
+    // 手持ちのように、どの枠も同じものを受ける場所（typesShownInEmptyCellsが空）。
+    expect(plainCells(slot({ cells: 2 }), []).map((cell) => cell.accepts)).toEqual([undefined, undefined]);
+  });
+
+  it('埋まっている枠には敷かない', () => {
+    const hearth = slot({ cells: 2, typesShownInEmptyCells: [[typeId(1)], [typeId(2)]] });
+    const cells = plainCells(hearth, [card('焼けた肉'), undefined]);
+
+    expect(
+      cells.map((cell) => cell.accepts?.name),
+      '札の下に透かしは要らない',
+    ).toEqual([undefined, 'type#2']);
+  });
+
+  it('当てはまる型が複数ある枠は、拍ごとに順に出す', () => {
+    // どれか1つを選んで出すと、その型でなければ入らないように見えてしまう。
+    const hearth = slot({ cells: 1, typesShownInEmptyCells: [[typeId(1), typeId(2)]] });
+    const shownAt = (cycle: number) => plainCells(hearth, [], cycle)[0].accepts?.name;
+
+    expect([shownAt(0), shownAt(1), shownAt(2)]).toEqual(['type#1', 'type#2', 'type#1']);
+  });
+
+  it('拍で出し替わる枠があるかを、引き直す側へ答える', () => {
+    // 出す型が1つしかないなら、拍を進めても見た目は変わらない（PlayScene.advanceEmptyCellCycle）。
+    expect(cellsCycleWithBeat(slot({ typesShownInEmptyCells: [[typeId(1)]] })), '1つなら要らない').toBe(
+      false,
+    );
+    expect(cellsCycleWithBeat(slot({ typesShownInEmptyCells: [[], [typeId(1), typeId(2)]] }))).toBe(true);
+    expect(
+      cellsCycleWithBeat(slot({ materials: [material({ objectGlobalIds: [typeId(1), typeId(2)] })] })),
+      '材料の枠も同じ拍で動く',
+    ).toBe(true);
   });
 });
 

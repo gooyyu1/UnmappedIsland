@@ -186,7 +186,9 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
       const dragTree = spawnInto('broadleaf_tree', jungle, 'fixtures');
       const menuTree = spawnInto('broadleaf_tree_as_menu', jungle, 'fixtures');
       const axe = spawnInto('stone_axe', player, 'hand');
-      axe.getProperty(codex.propertyNames.getId('durability')).setNumber(0);
+      // 1本倒すのに要る120を割った刃。**0にはしない**——0へ届いた刃は折れて無くなる
+      // （weathering.yaml の on_min）ので、尽きた斧という札は残らない。
+      axe.getProperty(codex.propertyNames.getId('durability')).setNumber(100);
 
       expect(
         dragFell(dragTree, axe)?.unmetRequirement()?.reasonName,
@@ -210,11 +212,15 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
     it('倒しても斧が減らない', () => {
       const menuTree = spawnInto('broadleaf_tree_as_menu', jungle, 'fixtures');
       const axe = spawnInto('stone_axe', player, 'hand');
-      const before = durabilityOf(axe);
+      // **屋外に在るだけで進む劣化（weathering.yaml）は、倒した斧にも置いた斧にも同じだけ掛かる。**
+      // 突き合わせる相手を置くことで、倒したこと自体が減らしていないかだけを見る。
+      const idle = spawnInto('stone_axe', jungle, 'items');
 
       expect(menuFell(menuTree).tryExecute()).toBe(true);
 
-      expect(durabilityOf(axe), '刃を減らす効果はinstrumentを指すので、写す先が無い').toBe(before);
+      expect(durabilityOf(axe), '刃を減らす効果はinstrumentを指すので、写す先が無い').toBe(
+        durabilityOf(idle),
+      );
     });
 
     it('ドラッグ型のままなら、同じ1回で斧が減る', () => {

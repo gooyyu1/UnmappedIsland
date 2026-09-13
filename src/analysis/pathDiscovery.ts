@@ -51,8 +51,13 @@ export function discoveryMinutesOf(schedule: PathDiscoverySchedule, pathCount: n
 }
 
 /**
- * 道の本数を問わず、その土地の道が全部出そろっているといえる探索時間（分）。
- * **いちばん遅く出る道の時刻**——道が1本だけの土地はもっと早く出る。
+ * その土地の道が全部出そろっているといえる探索時間（分）。**いちばん遅く出る道の時刻**で、道が
+ * 1本だけの土地はもっと早く出る。
+ *
+ * **本数を渡さずに済むのは、割り当ての上端が本数によらないから**——`[最初, 上限−1]` へ等間隔に
+ * 置くので、2本でも8本でも最後の道は同じ時刻に出る（ExplorationSystem.md 3.2節）。ここはその
+ * 性質に寄りかかっているので、2本ぶんの時刻表から採っている。**寄りかかりが外れたら落ちる**のは
+ * `tests/analysis/pathDiscovery.test.ts`。
  */
 export function allPathsDiscoveryMinutesOf(schedule: PathDiscoverySchedule): number {
   return Math.max(...discoveryMinutesOf(schedule, 2));

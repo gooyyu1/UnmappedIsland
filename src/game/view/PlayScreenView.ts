@@ -205,6 +205,13 @@ export interface SlotView {
    * 並びは要求の順で、**もう要求されない型は挙げません**（craftingMaterials）。
    */
   readonly materials: readonly CraftingMaterial[] | undefined;
+
+  /**
+   * 枠ごとに、その枠が空いているときに薄く敷く型（`typesShownInEmptyCells`、CardView.md 11節）。
+   * 位置で引くのは、**同じ並びの中で枠によって受け入れの宣言が違うスロットがある**ため（炉の火の中と
+   * 石の上）。敷かない枠は空で、どの枠も同じ宣言を持つスロットではこの並び自体が空になります。
+   */
+  readonly typesShownInEmptyCells: readonly (readonly ObjectGlobalId[])[];
 }
 
 /**
@@ -515,6 +522,7 @@ export function fromGameSession(
       acceptsCards: slotDef !== undefined && codex.anyTypeCanBeBroughtInto(slotDef),
       background: slotDef === undefined ? undefined : { owner: place.owner.def.name, slot: slotDef.name },
       materials: craftingMaterials(place.owner),
+      typesShownInEmptyCells: slotDef === undefined ? [] : codex.typesShownInEmptyCells(slotDef),
     };
   };
 

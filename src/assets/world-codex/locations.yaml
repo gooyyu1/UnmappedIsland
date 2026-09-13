@@ -254,6 +254,10 @@ object_defs:
       # 遮るものが無く、乾いた砂がよく返す。**島で最も明るい地面**で、上限+17の根拠でもある
       # （IlluminationSystem.md 4節）。
       ambient_brightness: {value: 1}
+      # ハンモックを渡せる支点が在る（docs/world/Bedding.md 6節）。汀に沿ってヤシが並ぶ浜なので、
+      # 間を渡せる木の組は必ずある。**探索で見つけた木の本数とは別物**——支点が在るかは土地の
+      # 性質で、木の札が出ているかで変わらない。
+      hanging_anchor: {value: 1}
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}
@@ -552,6 +556,8 @@ object_defs:
     props:
       # 樹冠が通すのは5%（-4）、落ち葉の地面は返さない（-1）。
       ambient_brightness: {value: -5}
+      # ハンモックを渡せる支点が在る（docs/world/Bedding.md 6節。砂浜の hanging_anchor と同じ）。
+      hanging_anchor: {value: 1}
       exploration_progress:
         value: 0
         range: {min: 0, max: 15}
@@ -646,6 +652,8 @@ object_defs:
       # 樹冠が通すのは1%（-7）、暗い林床はほとんど返さない（-2）。**島で最も暗い土地**で、
       # 陽が高い数時間しか採りに入れない。
       ambient_brightness: {value: -9}
+      # ハンモックを渡せる支点が在る（docs/world/Bedding.md 6節。砂浜の hanging_anchor と同じ）。
+      hanging_anchor: {value: 1}
       exploration_progress:
         value: 0
         range: {min: 0, max: 18}

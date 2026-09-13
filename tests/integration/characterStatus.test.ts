@@ -85,6 +85,41 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
     ).toBe(true);
   });
 
+  it('休んでいる最中は、体力を戻しているものが体力の詳細に並ぶ', () => {
+    // Windows.md 8.4節: 休憩は経過の間だけ戻す宣言（characters/の`rest`）を持つので、戻っている
+    // 最中はそれが影響として読める。**宣言を持っているのは物ではなく操作**なので、物の型を辿る
+    // だけでは、値が増えていく理由だけが画面のどこにも無いことになる。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
+    const player = game.player.instance;
+    // 満タンのままでは戻す先が無い（クランプが押し戻す）ので、先に減らしておく。
+    player.tryGetProperty(codex.propertyNames.getId('stamina'))?.setNumber(50);
+
+    const restoringStamina = (): readonly string[] =>
+      (
+        fromGameSession(game, locale)
+          .propertyCategories.flatMap((tab) => tab.entries)
+          .find((entry) => entry.key === 'stamina')?.detail?.received ?? []
+      )
+        .filter((influence) => influence.increases)
+        .map((influence) => `${influence.key ?? influence.name}${influence.active ? '' : '(休)'}`);
+
+    expect(restoringStamina(), '休んでいない間は、体力を戻すものが居ない').toEqual([]);
+
+    // 休憩の60分の途中（tick）を覗く。宣言が効いているのはこの間だけ。
+    let whileResting: readonly string[] = [];
+    game.session.observeTicks(
+      () => {
+        whileResting = restoringStamina();
+      },
+      () => {
+        expect(player.tryGetAction('rest', player)?.tryExecute()).toBe(true);
+      },
+    );
+
+    expect(whileResting, '休んでいる間は、体力自身を指す枠が「戻している」として並ぶ').toEqual(['stamina']);
+    expect(restoringStamina(), '休み終えれば消える').toEqual([]);
+  });
+
   it('荷が重すぎると移動のアクションが押せなくなり、理由の文言が付く', () => {
     // ContainerSystem.md 5節: 危険域（too_heavy）に入ると道のtravelのconditionsが落ちる。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));

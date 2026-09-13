@@ -755,8 +755,9 @@ function routeCandidates(
 }
 
 /**
- * その工程がキャラクタへ返す値。**宣言元がキャラクタ自身なら `self` も数える**——休息
- * （`wait`/`rest`/`nap`/`sleep`）は自分の値を自分で戻す工程で、他の工程のように `agent` を持たない。
+ * その工程がキャラクタへ返す値。**宣言元がキャラクタ自身なら `self` も数える**——キャラクタ自身が
+ * 持つ休息（`wait`/`rest`/`nap`）は自分の値を自分で戻す工程で、他の工程のように `agent` を持たない
+ * （寝床が配る睡眠はそちらが宣言元なので、普通に `agent` を持つ）。
  */
 function gainsOf(codex: WorldCodex, ref: StepRef): ReadonlyMap<PropertyGlobalId, number> {
   const agent = expectedDeltas(ref.step, 'agent');
@@ -1434,7 +1435,7 @@ class Acquisition {
 
   /**
    * この工程を実行するのに要る、消費されない入力（道具・採取ポイント）。**土地とキャラクタ自身は
-   * 除く**——どこかの土地には必ず立っているし、休息（`sleep`）の入力である自分は用意する物ではない。
+   * 除く**——どこかの土地には必ず立っているし、休息（`nap`）の入力である自分は用意する物ではない。
    */
   prerequisites(ref: StepRef): readonly Prerequisite[] {
     const found: Prerequisite[] = [];

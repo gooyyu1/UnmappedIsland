@@ -180,8 +180,8 @@ PRの段では `npm test` が、`main` へ入った後は
   生成元: `tests/diagnostics/discoveryCoverageStatsReport.test.ts`（計算は `src/analysis/discoveryCoverage.ts`）
 - [日をまたぐ長さ](../../stats/durations.yaml) — 怪我が治るまで・食べ物が腐るまで・季節が変わるまで・
   渇きや飢えで倒れるまでといった、**1日以上かかる長さを種類を問わず1本の列**にしたもの。並びの狂い
-  （軽い傷のほうが治りが遅い、など）を見つけるための表なので、種類では分けない。あわせて、時間では
-  減らず**使うたびに減る**値（道具の耐久）が尽きるまでの回数。
+  （軽い傷のほうが治りが遅い、など）を見つけるための表なので、種類では分けない。あわせて、
+  **使うたびに減る**値（道具の耐久）が尽きるまでの回数。
   読み方は [`DurationStats.md`](./DurationStats.md)。
   生成元: `tests/diagnostics/durationStatsReport.test.ts`（計算は `src/analysis/durations.ts`）
 - [島を出るまでの工程数](../../stats/escape_reach.yaml) — 島を出るのに要るもの（`boat`・`sail`・

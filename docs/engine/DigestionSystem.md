@@ -338,7 +338,7 @@
 
 **1 日を賄う最小労働は 607 分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->**
 （島じゅうを渡り歩ける前提。移動時間は数えていません）**で、うち
-360 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route=medic.sleep minutes -->は睡眠なので、
+360 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="palm_tree.pick_frond → palm_frond.split_and_weave → bed.spread → bed.nap" minutes -->は眠るぶんなので、
 採って食べるのに払うのは
 247 分<!-- stats: terrain.yaml daily_budget survival_gathering -->です。** これが
 [`ContentSkeleton.md`](../world/ContentSkeleton.md) 8 節の自由時間

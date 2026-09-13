@@ -321,7 +321,9 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
       if ([...counts.values()].some((count) => count > max)) overCapIslands++;
     }
 
-    expect(overCapIslands / seeds.length, '上限を外れる島は例外に留まる').toBeLessThan(0.1);
+    // 線は実測（1.8%）の倍で引く。500島での抽選のぶれ（標準偏差0.6ポイント弱）では届かないので、
+    // 赤くなるのは**逃げ道が使われる形が増えたとき**だけになる。
+    expect(overCapIslands / seeds.length, '上限を外れる島は例外に留まる').toBeLessThan(0.04);
   });
 
   it('上限は島の地形の種類を増やす', () => {

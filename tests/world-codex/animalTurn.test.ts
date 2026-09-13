@@ -6,6 +6,8 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
+import type { WorldChange } from '../../src/domain/WorldChange';
+import { lungeTargetsByInstance, vanishedInstances } from '../../src/game/view/changedInstances';
 
 /**
  * 動物の1手（docs/engine/HuntingSystem.md 5節）を、実ファイルの定義だけで検証する。
@@ -482,6 +484,91 @@ describe('動物の1手', () => {
     expect(meat.parent, '食べられて世界から消える').toBeUndefined();
     expect(spoilsOf(monkey)).toEqual([]);
     expect(itemsIn(jungle), '地面にも戻らない').toEqual(['monkey']);
+  });
+
+  describe('UIは、1手を「誰が何をしたか」として読める（HuntingSystem.md 6節）', () => {
+    /** bodyの実行中に起きた変化。 */
+    function changesOf(body: () => void): readonly WorldChange[] {
+      const changes: WorldChange[] = [];
+      session.observeChanges((change) => changes.push(change), body);
+      return changes;
+    }
+
+    it('持ち去った回は、その動物から持ち去られた物への突進になる', () => {
+      open(0.5);
+      const monkey = release('monkey');
+      monkey.getProperty(warinessId).setNumberWithoutEvents(0);
+      const coconut = release('coconut');
+
+      const changes = changesOf(() => passTurn());
+
+      expect(lungeTargetsByInstance(changes)).toEqual(new Map([[monkey.instanceId, [coconut.instanceId]]]));
+    });
+
+    it('壊した回も同じ形で読め、壊された物は世界から出たものとして挙がる', () => {
+      // 突進が着いてから砂埃を立てるのに要る（cardMotionPlan）。
+      open(0.5);
+      const boar = release('wild_boar');
+      boar.getProperty(warinessId).setNumberWithoutEvents(0);
+      const basket = release('woven_basket');
+
+      const changes = changesOf(() => passTurn());
+
+      expect(lungeTargetsByInstance(changes)).toEqual(new Map([[boar.instanceId, [basket.instanceId]]]));
+      expect(vanishedInstances(changes)).toContain(basket.instanceId);
+    });
+
+    it('中身のある入れ物を壊した回は、こぼれた中身も候補に挙がる（先に記録されるのは中身）', () => {
+      // WorldObject.destroyは中身をこぼしてから自分の消滅を記録するので、**起きた順の先頭は
+      // 手を出した相手ではない**。どちらを相手にするかは、画面に出ているかで決まる（cardMotionPlan）。
+      open(0.5);
+      const boar = release('wild_boar');
+      boar.getProperty(warinessId).setNumberWithoutEvents(0);
+      const basket = release('woven_basket');
+      const stone = release('sharp_stone');
+      expect(stone.moveToSlotOrRejection(basket.getSlot(codex.slotNames.getId('contents')))).toBeUndefined();
+
+      const changes = changesOf(() => passTurn());
+
+      expect(lungeTargetsByInstance(changes)).toEqual(
+        new Map([[boar.instanceId, [stone.instanceId, basket.instanceId]]]),
+      );
+    });
+
+    it('逃げた回は突進にならない（動いたのは自分）', () => {
+      open(0.5);
+      openPath();
+      const rat = release('rat');
+
+      const changes = changesOf(() => passTurn());
+
+      expect(rat.parent, '隣の土地へ移っている').toBe(grassland);
+      expect(lungeTargetsByInstance(changes).size).toBe(0);
+    });
+
+    it('襲った回も突進にならない（怪我はどこからも動いていない）', () => {
+      // 怪我は生まれた物なので、飛ぶのは怪我の側（出どころは襲った動物）。
+      open(0.9);
+      alarm(release('wild_boar'));
+
+      const changes = changesOf(() => passTurn());
+
+      expect(injuriesOf(player)).not.toEqual([]);
+      expect(lungeTargetsByInstance(changes).size).toBe(0);
+    });
+
+    it('くわえた物を食べた回も突進にならない（相手は自分の中に居る）', () => {
+      open(0.7);
+      const monkey = release('monkey');
+      monkey.getProperty(warinessId).setNumberWithoutEvents(0);
+      release('raw_meat');
+      passTurn();
+
+      const changes = changesOf(() => passTurn());
+
+      expect(spoilsOf(monkey), '食べ終えている').toEqual([]);
+      expect(lungeTargetsByInstance(changes).size).toBe(0);
+    });
   });
 
   /**

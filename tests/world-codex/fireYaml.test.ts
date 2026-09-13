@@ -419,6 +419,47 @@ describe('fire.yamlの火の連鎖', () => {
     expect(itemsOn(land), '2つ目の火種は失われない').toEqual(['burning_tinder']);
   });
 
+  it('燃えている炉からも松明を灯せる。炉の火は減らない', () => {
+    const hearth = litCampfire();
+    const heatBefore = effectiveNumberOf(hearth, 'heat');
+    const fuelBefore = effectiveNumberOf(hearth, 'fuel');
+    const torch = spawnInto('torch', player, 'hand');
+
+    expect(
+      hearth
+        .combinationsWith(torch, player)
+        .find((c) => c.name === 'light_from_flame')
+        ?.tryExecute() === true,
+    ).toBe(true);
+    expect(effectiveNumberOf(torch, 'lit'), '灯った').toBe(1);
+    expect(effectiveNumberOf(hearth, 'heat'), '炉の火力は変わらない').toBe(heatBefore);
+    expect(effectiveNumberOf(hearth, 'fuel'), '炉の薪も減らない').toBe(fuelBefore);
+  });
+
+  it('灯っている松明は火を分けてもらえない', () => {
+    const hearth = litCampfire();
+    const torch = spawnInto('torch', player, 'hand');
+    torch.getProperty(codex.propertyNames.getId('lit')).setNumberWithoutEvents(1);
+
+    expect(
+      hearth.combinationsWith(torch, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
+    expect(
+      hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
+    ).toEqual(['already_lit']);
+  });
+
+  it('消えている炉は、分けられる炎が無いことを名乗る', () => {
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    const torch = spawnInto('torch', player, 'hand');
+
+    expect(
+      hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
+    ).toEqual(['fire_out']);
+    expect(effectiveNumberOf(torch, 'lit'), '灯らない').toBe(0);
+  });
+
   it('着火が置くのは種火だけで、そこから薪が火を育てる', () => {
     const hearth = litCampfire();
 
@@ -766,5 +807,63 @@ describe('fire.yamlの火の連鎖', () => {
 
     session.advanceWorldTime(15);
     expect(bowl.def.name, '抜け切れば水').toBe('coconut_bowl__content_water_liquid');
+  });
+});
+
+/**
+ * 炉の火床の枠が、空いているうちに何を名乗るか（docs/engine/FireSystem.md 1.1節、
+ * docs/ui/CardView.md 11節）。**火の中の枠と石の上の枠が違うものを受ける**のが炉の段の実体なので、
+ * どちらがどちらかは枠自身が言う。
+ */
+describe('炉の火床の枠が名乗る型', () => {
+  const codex = bundledCodex();
+
+  /** 器を載せる枠を持つ炉（docs/engine/FireSystem.md 6節の段の表）。 */
+  const COOKWARE_HEARTHS = ['three_stone_hearth', 'stone_hearth'];
+
+  const fireCells = (hearthName: string): readonly (readonly string[])[] => {
+    const hearth = codex.objects.get(codex.objectNames.getId(hearthName));
+    const slotDef = hearth.tryGetSlotDef(codex.slotNames.getId('fire'));
+    if (slotDef === undefined) throw new Error(`${hearthName} が fire スロットを持ちません。`);
+    return codex.typesShownInEmptyCells(slotDef).map((types, index) =>
+      types.map((id) => {
+        const def = codex.objects.get(id);
+        if (!slotDef.cellAt(index).accepts(def))
+          throw new Error(`${hearthName} の${index}番目の枠が受けない型（${def.name}）を名乗っています。`);
+        return def.name;
+      }),
+    );
+  };
+
+  it('器を載せられる炉は、火の中の枠が焼ける物を名乗る', () => {
+    for (const hearthName of COOKWARE_HEARTHS) {
+      expect(fireCells(hearthName)[0].length, `${hearthName} の火の中の枠`).toBeGreaterThan(0);
+    }
+  });
+
+  it('石の上の枠は、載せられる器が世界に入るまで紙のまま', () => {
+    // **docs/engine/FireSystem.md 1.1節がそう書いている。** 器が入れば枠は名乗り始めるので、
+    // そのとき同節を書き直すためにここで落とす（煮炊きのレシピは同11節の未決事項）。
+    expect(
+      codex.objectDefNamesWithTag(codex.tagNames.getId('cookware')),
+      'cookwareを名乗る型が入った。FireSystem.md 1.1節の「今は紙のまま」を書き直す',
+    ).toEqual([]);
+
+    for (const hearthName of COOKWARE_HEARTHS) {
+      const cells = fireCells(hearthName);
+      expect(cells[cells.length - 1], `${hearthName} の石の上の枠`).toEqual([]);
+    }
+  });
+
+  it('器を載せられない炉は、枠が言えることを並びが既に言っているので名乗らない', () => {
+    // 焚き火の火床はどちらの枠も焼く物を受ける（fire.yaml）。覆い焼きの炉も同じで、4枠とも土器。
+    expect(
+      fireCells('campfire').every((types) => types.length === 0),
+      '焚き火',
+    ).toBe(true);
+    expect(
+      fireCells('earth_kiln').every((types) => types.length === 0),
+      '覆い焼きの炉',
+    ).toBe(true);
   });
 });

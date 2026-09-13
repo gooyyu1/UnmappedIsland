@@ -12,8 +12,10 @@ import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
  *
  * **表の数値を書き写さず、段そのものを読む。** hourとweatherがambient_brightnessをmodifyする量は
  * `core.yaml`のstages passivesから読み取り、太陽高度・天気の透過率の値をこのファイルは持たない。
- * 据え付けの光源（松明・炉）は数えない——入れると「焚き火があれば24時間活動できる」になり、
- * この表の意味が消える（IlluminationSystem.md 3節）。
+ * 光源は既定では数えない——入れると「焚き火があれば24時間活動できる」になり、この表の意味が消える
+ * （IlluminationSystem.md 3節）。**手に持つ光源だけは呼び出し側が段数を渡せる**（`carriedLightEv`）
+ * ——「松明を持てば何が開くか」は表の外側の補集合で、同じ切り方で測らないと差が出せない。
+ * `stats/climate.yaml`の`activity_hours`は既定（0）のまま出す。
  *
  * **「屋外で採れる」と「手元の細かい作業」は別々の列。** 要求する段の名前はどちらもbrightだが、
  * 見る値が違い（採る側はlooking_brightness、作る側はhand_brightness）、境目も違う（同5節）。
@@ -170,10 +172,17 @@ function worldWindSpeedOf(codex: WorldCodex): (weatherName: string) => number {
   };
 }
 
-/** 土地×季節ごとの活動時間表を、定義と天候の実測値から組み立てる。 */
+/**
+ * 土地×季節ごとの活動時間表を、定義と天候の実測値から組み立てる。
+ *
+ * `carriedLightEv` は手に持っている光源が明るさへ足す段数（EV）。手持ちの光源は手元にも視界にも
+ * 同じだけ届き（IlluminationSystem.md 3節）、キャラクタ側の明るさにはrangeが無いので、場所の
+ * 環境光を底で均した後へそのまま足す。既定の0が「光源を持たない」で、表はこちらで出す。
+ */
 export function activityHoursOf(
   codex: WorldCodex,
   seasons: readonly SeasonWeatherHours[],
+  carriedLightEv = 0,
 ): readonly ActivityHoursRow[] {
   const worldAmbientAt = worldAmbientBrightnessOf(codex);
   const worldWindAt = worldWindSpeedOf(codex);
@@ -184,7 +193,7 @@ export function activityHoursOf(
   const galeThreshold = characterStageMinimumOf(codex, GALE_STAGE);
 
   const rows: ActivityHoursRow[] = [];
-  for (const place of activityPlacesOf(codex)) {
+  for (const place of litPlacesOf(codex)) {
     for (const season of seasons) {
       let travelHoursPerDay = 0;
       let gatheringHoursPerDay = 0;
@@ -194,7 +203,7 @@ export function activityHoursOf(
       for (let hour = 0; hour < 24; hour++) {
         for (const [weatherName, hoursInSeason] of season.hoursByWeather) {
           const fraction = hoursInSeason / (season.durationDays * 24);
-          const brightness = place.brightnessAt(worldAmbientAt(hour, weatherName));
+          const brightness = place.brightnessAt(worldAmbientAt(hour, weatherName)) + carriedLightEv;
           const gale = !place.sheltered && worldWindAt(weatherName) >= galeThreshold;
           const opens = (column: ActivityColumn, threshold: number): boolean =>
             brightness >= threshold && !(column.stoppedByWind && gale);
@@ -248,8 +257,12 @@ export function characterStageMinimumOf(codex: WorldCodex, stage: PropertyStageN
   return minimum;
 }
 
-/** 表の1行を出す場所。世界の環境光から、そこへ届く明るさを出せる。 */
-interface ActivityPlace {
+/**
+ * 世界の環境光から、そこへ届く明るさを出せる場所。活動できる時間（{@link activityHoursOf}）と、日射で
+ * 進む蒸発（`sunlitEvaporation`）が、どちらもここから場所を採る——見ているのは同じ「その場所へ届いて
+ * いる照度」なので、一覧を分ける理由が無い。
+ */
+export interface LitPlace {
   readonly name: string;
 
   /** 世界の環境光（`worldAmbientBrightnessOf`）から、その場所の明るさ。 */
@@ -260,11 +273,11 @@ interface ActivityPlace {
 }
 
 /**
- * 表に出す場所。島の土地（`islandLocations`）に、浅い洞窟（`shallow_cave`）を続けて並べる。浅い洞窟は
- * 土地ではなく設置物だが、この表が数えたい「その中で活動できる時間」を持つため加える
+ * 明るさを解ける場所。島の土地（`islandLocations`）に、浅い洞窟（`shallow_cave`）を続けて並べる。
+ * 浅い洞窟は土地ではなく設置物だが、その中で活動もできれば器も置けるため加える
  * （`Dwellings.md` 5.1節）。
  */
-function activityPlacesOf(codex: WorldCodex): readonly ActivityPlace[] {
+export function litPlacesOf(codex: WorldCodex): readonly LitPlace[] {
   const ambientId = codex.vocabulary.world.ambientBrightnessId;
   const shelteredId = codex.propertyNames.getId(SHELTERED_PROPERTY);
   // 守られていると数える境目も、キャラクタの段の宣言から読む（境目を書き写す箇所を作らない）。
@@ -272,7 +285,7 @@ function activityPlacesOf(codex: WorldCodex): readonly ActivityPlace[] {
   const isSheltered = (def: ObjectDef): boolean =>
     (def.tryGetPropertyDef(shelteredId)?.initialValueWithoutRoll ?? 0) >= shelteredMinimum;
 
-  const places: ActivityPlace[] = [];
+  const places: LitPlace[] = [];
   for (const def of islandLocationsOf(codex).island) {
     const place = placeOf(def, ambientId, 0, isSheltered(def));
     if (place !== undefined) places.push(place);
@@ -297,7 +310,7 @@ function placeOf(
   ambientId: PropertyGlobalId,
   hostAmbient: number,
   sheltered: boolean,
-): ActivityPlace | undefined {
+): LitPlace | undefined {
   const ambientDef = def.tryGetPropertyDef(ambientId);
   if (ambientDef === undefined) return undefined;
 

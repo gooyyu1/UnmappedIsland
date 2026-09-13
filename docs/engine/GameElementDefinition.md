@@ -895,7 +895,7 @@ props:
 
 - **`weight`**: 物の重さ。自分の値に、**中身の `weight` をそのまま足します**（率はかけません）。中身入りの
   容器（[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 1 節）は `fill × density` が加わります
-  （`density` は単位量あたりの重さ = g/mL、水は 1）。そりを台車に積めば、台車の重さはそりの重さをそのまま
+  （`density` は単位量あたりの重さ = g/mL、水は 1）。籠をそりへ積めば、そりの重さは籠と中身をそのまま
   加えたものです。
 - **`load`**: 担いだ人が感じる負荷。**直接の子**の `weight` に、その子の `load_rate`（担いだときに感じる
   割合）を掛けた分の合計です。持つのはキャラクターだけで、他のオブジェクトは定義しません。宣言しなければ
@@ -915,12 +915,12 @@ props:
 object_defs:
   sledge:
     props:
-      weight: {value: 10000}
+      weight: {value: 8000}
       load_rate:
         value: 1
         passives:
           - conditions: [{in_slot: hand}]
-            modify: {self: {load_rate: -0.9}}   # 引きずるので体感は1割
+            modify: {self: {load_rate: -0.45}}  # 引きずるので体感は55%
 
   character:
     props:
@@ -928,8 +928,8 @@ object_defs:
       load: {value: 0}
 ```
 
-石（`weight` 100）を載せたそり（自重 1000）を手で引くと、そりの `weight` は 1100、キャラクターの `weight` は
-自重込みの 71100、`load` は 1100 × 0.1 = 110 になります。
+石（`weight` 1000）を載せたそり（自重 8000）を手で引くと、そりの `weight` は 9000、キャラクターの `weight` は
+自重込みの 79000、`load` は 9000 × 0.55 = 4950 になります。
 
 ### 7.5 装備の排他制御（covers / layer）
 

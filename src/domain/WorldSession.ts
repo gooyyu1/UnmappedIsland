@@ -5,6 +5,7 @@ import type { World } from './wrappers/World';
 import type { PropertyValue } from './PropertyValue';
 import type { InteractionGains, PropertyGain } from './PropertyGain';
 import type { PassiveEffects } from './PassiveEffects';
+import type { InfluenceWriter } from './PropertyInfluence';
 import type { Slot } from './Slot';
 import type { WorldChange } from './WorldChange';
 import type { WorldSignal } from './WorldSignal';
@@ -254,6 +255,23 @@ export class WorldSession {
   setInteractionPassivesRegistered(declarer: WorldObject, register: boolean): void {
     for (const running of this.runningInteractionPassives)
       if (running.owner === declarer) running.passives.setAllRegistered(declarer, running.context, register);
+  }
+
+  /**
+   * 今効いている、操作が宣言した持続効果（11.7節）が持つ影響の辺を書き出す
+   * （[`Windows.md`](../../docs/ui/Windows.md) 8.4節）。**登録と同じく、辿れるのはここだけ**
+   * （setInteractionPassivesRegistered）。**役も同じく憶えた文脈が答える**
+   * （runningInteractionPassives）。
+   *
+   * **効いているものを、視点で絞らずまるごと書き出す。** どの辺がその視点に届くかを決めるのは
+   * 書き込み先（PropertyInfluences）——辺の両端のどちらでもない物には1件も当たらない——なので、
+   * ここで手前から絞ると、同じ判定を2箇所が持つことになる。**加わっている操作だけに絞ることも
+   * できない**：対象に書けるのは役だけではなく（`self`・`parent`・`ancestor`も書ける、11.7節）、
+   * その相手はその操作に加わっていない。
+   */
+  collectRunningInteractionInfluences(out: InfluenceWriter): void {
+    for (const running of this.runningInteractionPassives)
+      running.passives.collectInfluences(running.owner, running.context, out);
   }
 
   /**

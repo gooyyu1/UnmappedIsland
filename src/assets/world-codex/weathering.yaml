@@ -1,0 +1,71 @@
+# 素材の屋外劣化（docs/engine/DurabilitySystem.md 2節）。**物はここの trait をちょうど1つ名乗り、
+# それが耐久値そのものと、屋外で傷む速さの両方を決める。**
+#
+# **分けているのは速さ1つだけ。** 「傷まない」も速さ0としてこの仕組みに乗せてあり、石や金属だけを
+# 仕組みの外に置くことはしない——外に置くと、耐久値をどこから受け取るかが物ごとに分かれる。
+#
+# **どれを名乗るかは、その物の形の大半を占める素材で決まる。** 柄付けの紐や縫い糸が先に緩んでも、
+# 結び直せば済む——作り直しになるのは本体が朽ちたときなので、重さで最も多い材料を見る。
+# **どの物がどれを名乗るかは tests/world-codex/weatheringYaml.test.ts の表が見張る。**
+#
+# 食べ物はここを名乗らない（foods.yaml の perishable）。あちらは保存温度で腐る別の軸で、屋外の
+# 上乗せまで自前で持っている。罠（traps.yaml）も名乗らない——仕掛けている間だけ傷む別の軸
+# （docs/engine/TrapSystem.md 6.1節）で、上限も960ではない。
+
+traits:
+  # 短命な素材（葉・草・植物繊維・生皮）。屋外で10日、雨なら5日。
+  short_lived_material:
+    props:
+      # すり減るまでの余力。上限は種類によらず960（DurabilitySystem.md 1節）。
+      # 尽きると使えなくなるので、満タン側がgood（CardView.md 8節）。
+      durability:
+        gauge: {min: bad, max: good}
+        value: 960
+        range: {min: 0, max: 960}
+        # 朽ちた物は残らない。**名乗らずに消す**——消え方の名前（9.3節）を出す先がまだ無いのは
+        # 腐りきった食べ物（foods.yaml）と同じ。
+        on_min:
+          destroy: self
+    passives:
+      # 屋根も蓋も無い所に在る間だけ傷む（sheltered、ContainerSystem.md 6節）。**しまい込めば
+      # 止まる**ので、守られた場所へ置くことに値打ちが出る。**今その場所は浅い洞窟だけ**
+      # （sheltered を名乗る唯一の物、locations.yaml）——蓋つきの入れ物は仕組みとしては同じ口に
+      # 乗るが、物としてはまだ無い（docs/world/Containers.md 2節）。
+      - conditions:
+          - {subject: ancestor, prop: sheltered, eq: 0}
+        add: {self: {durability: -1}}
+      # 雨に打たれている間の上乗せ。晴れのぶんと加算的に重なって-2になる（8.4節）。
+      # 天候の概念を持たない祖先の下では成立しない書き方で揃える（player_character.yamlのwarmth）。
+      - conditions:
+          - {subject: ancestor, prop: sheltered, eq: 0}
+          - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
+        add: {self: {durability: -1}}
+
+  # 長持ちする素材（木材・なめし革・獣骨）。屋外で100日、雨なら20日。
+  long_lived_material:
+    props:
+      durability:
+        gauge: {min: bad, max: good}
+        value: 960
+        range: {min: 0, max: 960}
+        on_min:
+          destroy: self
+    passives:
+      - conditions:
+          - {subject: ancestor, prop: sheltered, eq: 0}
+        add: {self: {durability: -0.1}}
+      - conditions:
+          - {subject: ancestor, prop: sheltered, eq: 0}
+          - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
+        add: {self: {durability: -0.4}}
+
+  # 傷まない素材（石材・金属）。時間では1も減らない——石は雨で減るのではなく、打ち合わせて欠ける。
+  # **耐久値そのものは持つ**ので、使って減らす側（animals.yamlのinstrument）はここへ届く。
+  weatherproof_material:
+    props:
+      durability:
+        gauge: {min: bad, max: good}
+        value: 960
+        range: {min: 0, max: 960}
+        on_min:
+          destroy: self
