@@ -32,8 +32,9 @@ traits:
   # （docs/world/ContentSkeleton.md 8.1.1.2節）。
   #
   # **火口（ignitable）とは別のもの。** あちらは摩擦の熾を受け止める側で、火起こし具が要る。
-  # こちらは既に在る炎から火を分けてもらう側で、燃えている炉があれば火起こしはやり直さない
-  # （hearthのlight_from_flame、docs/engine/FireSystem.md 3.1.2節）。
+  # こちらは**炎を受け取りも渡しもする側**で、燃えている炉があれば火起こしはやり直さず、灯った後は
+  # 消えた炉へ種火を立てられる（hearthのlight_from_flame・ignite_from_flame、
+  # docs/engine/FireSystem.md 3.1.2節）。
   lightable:
     tags: [lightable]
     props:
@@ -250,11 +251,32 @@ traits:
           - {reason: no_fuel, prop: fuel, gt: 0}
         destroy: instrument
         set: {self: {heat: 1}}
-      # 燃えている炉から、持ち歩ける明かり（lightable）へ火を移す。**炉が生きていれば火起こしは
-      # やり直さない**——火種は火の無いところに火を立てるためのもので、既に在る炎を分けるのに
-      # 摩擦発火を通す理由が無い（docs/engine/FireSystem.md 3.1.2節）。
+      # 灯った明かり（lightable）から炉へ火を移す。置くのは火種と同じ種火1つで、断る条件も上のigniteと
+      # 同じ——運び手が火種か炎かで、炉の受け方は変わらない（docs/engine/FireSystem.md 3.1.2節）。
+      # 炉が失う物も無い。分けた炎は薪を余分に食わないので、火力にも薪にも触れない。
       #
-      # 炉は何も失わない。分けた炎は薪を余分に食わないので、火力にも薪にも触れない。
+      # **これが開いていることで火が土地を越える。** 越えられないのは火種のほうだけ（下のburning_tinder）。
+      #
+      # **下のlight_from_flameより先に宣言する。** 同じ相手（lightable）を受ける2つが同時に断ると、
+      # プレイヤーへ届くのは宣言順で先頭の理由だけ（docs/ui/CardInteraction.md 2.1節）。後ろに置くと、
+      # 灯った松明を薪の無い炉へ重ねたときに届くのが「この炉は消えている」になり、**火を持って来た側から
+      # 見て逆向きの説明**になる。
+      #
+      # **灯っていない明かりは断る。** 移す火が無いまま成立させると、断るだけでは
+      # 「重ねても何も起きない」になる（同2.1節）。
+      ignite_from_flame:
+        trigger: {drag: {tag: lightable}}
+        duration: 1
+        conditions:
+          # **運んできた側を先に見る。** 灯っていない明かりでは、炉がどうであれこの操作は成り立たない。
+          - {reason: not_lit, subject: instrument, prop: lit, gt: 0}
+          - {reason: already_lit, prop: heat, eq: 0}
+          - {reason: no_fuel, prop: fuel, gt: 0}
+        set: {self: {heat: 1}}
+      # 燃えている炉から、持ち歩ける明かり（lightable）へ火を移す。上のignite_from_flameと**同じ1つの
+      # 受け渡しを逆向きに見たもの**で、**どちらの向きも火の在る側は何も失わない**。**炉が生きていれば
+      # 火起こしはやり直さない**——火種は火の無いところに火を立てるためのもので、既に在る炎を分けるのに
+      # 摩擦発火を通す理由が無い（docs/engine/FireSystem.md 3.1.2節）。
       #
       # **灯っている物は断る。** setの差分は0でも操作は成立するので、断らなければ
       # 「重ねても何も起きない」になる（docs/ui/CardInteraction.md 2.1節）。
@@ -265,24 +287,6 @@ traits:
           - {reason: fire_out, prop: heat, gt: 0}
           - {reason: already_lit, subject: instrument, prop: lit, eq: 0}
         set: {instrument: {lit: 1}}
-      # 灯った明かりから炉へ火を移す。上のlight_from_flameと**同じ1つの受け渡しを逆向きに見たもの**で、
-      # 置くのは火種と同じ種火1つ（上のignite）。**どちらの向きも、火の在る側は何も失わない**
-      # ——松明は灯ったままで、炉は火力も薪も減らない（docs/engine/FireSystem.md 3.1.2節）。
-      #
-      # 松明は2時間もつので、**これが開いていることで火が土地を越える**。越えられないのは火種のほうだけ
-      # （下のburning_tinder）。
-      #
-      # **灯っていない明かりは断る。** 移す火が無いまま成立させると、断るだけでは
-      # 「重ねても何も起きない」になる（docs/ui/CardInteraction.md 2.1節）。
-      ignite_from_flame:
-        trigger: {drag: {tag: lightable}}
-        duration: 1
-        conditions:
-          # **運んできた側を先に見る。** 灯っていない明かりでは、炉がどうであれこの操作は成り立たない。
-          - {reason: not_lit, subject: instrument, prop: lit, gt: 0}
-          - {reason: already_lit, prop: heat, eq: 0}
-          - {reason: no_fuel, prop: fuel, gt: 0}
-        set: {self: {heat: 1}}
 
 object_defs:
   # きりもみ式の火起こし具。拾った木だけで作れるので、道具も紐も要らない

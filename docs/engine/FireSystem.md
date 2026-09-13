@@ -19,7 +19,7 @@
 
 | 種別 | 名前 |
 |---|---|
-| タグ | `hearth`（炉）・`fuel`（燃料）・`tinder`（火口）・`lightable`（炎から火を分けてもらえる明かり）・`roastable`（直火に入れられる物）・`cookware`（火にかける器） |
+| タグ | `hearth`（炉）・`fuel`（燃料）・`tinder`（火口）・`lightable`（炎を受け取りも渡しもする明かり）・`roastable`（直火に入れられる物）・`cookware`（火にかける器） |
 | スロット | `fire`（火にかけているもの） |
 | プロパティ | `fuel`（くべた薪。燃料の側では「くべると増える量」）・`heat`（火力。一番下の段が種火）・`lit`（明かりが灯っているか）・`stones`（積んだ石）・`heat_soak`（石の蓄熱。湯の側では残っている熱）・`cooking_progress`（加熱の進み） |
 | 型 | `campfire`（焚き火）・`three_stone_hearth`（三石のかまど）・`stone_hearth`（石囲いの炉）・`fire_drill`（火起こし具）・`burning_tinder`（火種）・`hot_stone`（焼け石）・`hot_water_liquid`（湯） |
@@ -411,13 +411,6 @@ interactions:
 ```yaml
 # どちらも炉の側が宣言する。向きが違うだけで、置くのは炉の着火（3.1 節）と同じ種火 1 つ
 interactions:
-  light_from_flame:
-    trigger: {drag: {tag: lightable}}
-    duration: 1
-    conditions:
-      - {reason: fire_out, prop: heat, gt: 0}
-      - {reason: already_lit, subject: instrument, prop: lit, eq: 0}
-    set: {instrument: {lit: 1}}
   ignite_from_flame:
     trigger: {drag: {tag: lightable}}
     duration: 1
@@ -426,12 +419,23 @@ interactions:
       - {reason: already_lit, prop: heat, eq: 0}
       - {reason: no_fuel, prop: fuel, gt: 0}
     set: {self: {heat: 1}}
+  light_from_flame:
+    trigger: {drag: {tag: lightable}}
+    duration: 1
+    conditions:
+      - {reason: fire_out, prop: heat, gt: 0}
+      - {reason: already_lit, subject: instrument, prop: lit, eq: 0}
+    set: {instrument: {lit: 1}}
 ```
 
-**両方が灯っていても、両方が消えていても断ります**、それぞれの向きの理由を名乗って
-（[`CardInteraction.md`](../ui/CardInteraction.md) 2.1 節）。**炉を灯す向きも、薪の入っていない炉は
-断ります**——火を育てるのは薪で、種火だけでは残らないからです（2.2 節）。火種を落とすとき（3.1 節）と
-同じ条件で、同じ理由を名乗ります。
+**炉を灯す向きも、薪の入っていない炉は断ります**——火を育てるのは薪で、種火だけでは残らないからです
+（2.2 節）。火種を落とすとき（3.1 節）と同じ条件です。
+
+**どちらの向きも断るとき、プレイヤーへ届くのは 1 つだけです**——同じ相手を受ける組み合わせが複数
+落ちたら、画面は宣言順で先頭の理由を出します（[`CardInteraction.md`](../ui/CardInteraction.md) 2.1 節）。
+**だから炉を灯す向きを先に宣言します。** 後ろに置くと、灯った松明を薪の無い炉へ重ねたときに届くのが
+「この炉は消えている」になり、**火を持って来た側から見て逆向きの説明**になります。先に置けば、
+灯っていない明かりには「灯っていない」、薪の無い炉には「燃やす物が入っていない」が届きます。
 
 **火起こしをやり直させないのは、そうすると松明が割に合わないからです。** 灯すたびに火口と火起こし具を
 通すと、**松明1本にかかる手間が、その1本が燃える時間を超えます**

@@ -485,11 +485,12 @@ describe('fire.yamlの火の連鎖', () => {
     const hearth = spawnInto('campfire', land, 'fixtures');
     const torch = spawnInto('torch', player, 'hand');
 
-    // 画面へ出るのは宣言順で最初のほう（14.6節のunmetRequirement）。どちらも真だが、
-    // 先に言うのは炉の側が空だということ。
+    // **プレイヤーへ届くのは先頭の1つだけ**（GameElementDefinition.md 14.6節のunmetRequirement、
+    // docs/ui/CardInteraction.md 2.1節）。どちらの向きの理由も真だが、運んできた側に火が無いことを
+    // 先に言う——火を持って来たつもりの手には、そちらが答えになる。
     expect(
       hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
-    ).toEqual(['fire_out', 'not_lit']);
+    ).toEqual(['not_lit', 'fire_out']);
     expect(effectiveNumberOf(torch, 'lit'), '灯らない').toBe(0);
     expect(heatIs(hearth, 'out'), '炉も消えたまま').toBe(true);
   });
@@ -544,9 +545,29 @@ describe('fire.yamlの火の連鎖', () => {
     ).toEqual([]);
     expect(
       hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
-      '運んできた側に火が無いことを名乗る（炉の側はどちらの向きも塞いでいない）',
-    ).toEqual(['fire_out', 'not_lit']);
+      '先頭が画面へ出る。運んできた側に火が無いことを先に言う',
+    ).toEqual(['not_lit', 'fire_out']);
     expect(heatIs(hearth, 'out'), '炉は消えたまま').toBe(true);
+  });
+
+  it('薪の無い炉は、灯った松明も断る——火を育てるのは薪で、種火だけでは残らない', () => {
+    // 火種を落とすとき（上の「薪の無い炉は、火種を断る理由を名乗る」）と同じ条件で断る。
+    // **宣言順がここに効く**——炉を灯す向きを後ろへ回すと、火を持って来た手に届くのが
+    // 「この炉は消えている」になり、やりたいことと逆向きの説明になる。
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    const torch = spawnInto('torch', player, 'hand');
+    torch.getProperty(codex.propertyNames.getId('lit')).setNumberWithoutEvents(1);
+
+    expect(
+      hearth.combinationsWith(torch, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
+    expect(
+      hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
+      '先頭が画面へ出る。薪が入っていないことを先に言う',
+    ).toEqual(['no_fuel', 'fire_out']);
+    expect(heatIs(hearth, 'out'), '炉は消えたまま').toBe(true);
+    expect(effectiveNumberOf(torch, 'lit'), '松明も灯ったまま失われない').toBe(1);
   });
 
   it('着火が置くのは種火だけで、そこから薪が火を育てる', () => {
