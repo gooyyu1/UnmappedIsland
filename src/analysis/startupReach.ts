@@ -1,4 +1,15 @@
-import type { IslandMap, Site } from '../domain/generation/IslandMap';
+import type { IslandMap } from '../domain/generation/IslandMap';
+import type {
+  NeedRoute,
+  SiteStartupReach,
+  StartupNeedSuppliers,
+} from '../domain/generation/StartSiteSelection';
+import {
+  islandStartupReachOf,
+  landfallStartSiteOf,
+  STARTUP_NEEDS,
+  startupNeedSuppliersOf,
+} from '../domain/generation/StartSiteSelection';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
@@ -9,39 +20,15 @@ import { allPathsDiscoveryMinutesOf, pathDiscoverySchedulesOf } from './pathDisc
  * 生成された島を測って、**最初の段（ContentSkeleton.md 2.1節）を越えるのに要るものが、その地点から
  * 何歩先にあるか**を出す。
  *
- * 返すのは数値と識別子だけで、判定（この地点は初心者向けか・この散らばりは広すぎるか）は持たない。
- * しきい値を決めるのはこの数字が出てからで（同2.3.2節・2.3.3節）、道具の側が先に決めてしまうと、
- * 決める材料が道具の判定に汚染される。
+ * **歩数と移動時間はドメインが出す**（`src/domain/generation/StartSiteSelection.ts`）——開始地点の
+ * 選抜が見ているのと同じ数でなければ、測ったものが遊びの現物とずれる。ここが足すのは**近似でしか
+ * 出ない数**だけ——1回の探索あたり何個採れるか（抽選の重みを確率と見なす）と、道を見つけるのに
+ * 要る時間（探索1回の所要時間）。近似をドメインへ置かないのはCodeStructure.md 5節。
  *
- * 引く線は次のとおり。**道は未発見でも数える**——判定するのは島の作りであってプレイヤーの進み具合では
- * ないので、道を見つけるのに要る探索時間は別の数として添える。**実行時にしか決まらないものは
- * 解かない**——探索の抽選は`pick`の期待値まで読み、どの回に何を引くかは数えない。
+ * 返すのは数値と識別子だけで、判定（この散らばりは広すぎるか）は持たない。しきい値を決めるのは
+ * この数字が出てからで（ContentSkeleton.md 2.3.3節）、道具の側が先に決めてしまうと、決める材料が
+ * 道具の判定に汚染される。
  */
-
-/** 最初の段を越えるのに要るもの1つ（ContentSkeleton.md 2.3節の表の1行）。 */
-export interface StartupNeed {
-  /** レポートの見出しになる呼び名。 */
-  readonly label: string;
-
-  /**
-   * これを満たす発見物の識別子。**どれか1つ採れれば満たす**——水はヤシの木でも湧き水でもよい。
-   * どの土地でそれが採れるかは宣言せず、locations.yamlの`explore`から実測する。
-   */
-  readonly sourceObjectNames: readonly string[];
-}
-
-/**
- * 測る対象（ContentSkeleton.md 2.3節）。**1つの土地では揃わない**ことがこの表の要点で、
- * 荒野は火口・錐・刃を持つが軸が無く、砂浜は軸しか持たない。
- */
-export const STARTUP_NEEDS: readonly StartupNeed[] = [
-  { label: '火口', sourceObjectNames: ['dry_grass'] },
-  { label: '錐', sourceObjectNames: ['twig'] },
-  { label: '軸', sourceObjectNames: ['thick_branch'] },
-  { label: '刃', sourceObjectNames: ['stone'] },
-  { label: '水', sourceObjectNames: ['palm_tree', 'spring'] },
-  { label: '道具の要らない食料', sourceObjectNames: ['water_spinach'] },
-];
 
 /** 要るもの1つが、ある土地の型で採れること。1回の探索あたりの期待個数を添える。 */
 export interface NeedSourceRow {
@@ -77,16 +64,13 @@ export interface StartupNeedSources {
 
   /** object_defのグローバルID → その土地の型の実測。 */
   readonly byLocationDef: ReadonlyMap<number, LocationNeedSupply>;
+
+  /** 歩数を出すためにドメインへ渡すもの。 */
+  readonly suppliers: StartupNeedSuppliers;
 }
 
 /** サイト1つから、要るもの1つへ届くまで。 */
-export interface NeedReach {
-  /** 歩数（たどる道の本数）。0はその土地自身で採れること。 */
-  readonly hops: number;
-
-  /** その経路の移動時間（分）。 */
-  readonly travelMinutes: number;
-
+export interface NeedReach extends NeedRoute {
   /**
    * その経路の道を見つけるのに要る探索時間（分）。**着いた先の探索は含まない**——ここが数えるのは
    * 道を見つける時間だけで、着いた先で目当ての物を引くまでの回数は数えない（引きの運）。
@@ -95,20 +79,9 @@ export interface NeedReach {
 }
 
 /** サイト1つの立ち上がりやすさ。needsの並びはSTARTUP_NEEDSと同じで、届かないものはundefined。 */
-export interface SiteReach {
-  readonly siteIndex: number;
-  readonly locationDefName: string;
+export interface SiteReach extends Omit<SiteStartupReach, 'needs' | 'farthestNeed'> {
   readonly needs: readonly (NeedReach | undefined)[];
-
-  /** 島のどこをたどっても届かなかった要るものの数。 */
-  readonly unreachableNeedCount: number;
-
-  /**
-   * 届いたものの中で**最も遠い**要るもの（歩数、同歩数なら移動時間で比べる）と、その添字。
-   * 全部が揃うまでを1本の経路として表す数で、1つも届かないサイトではundefined。
-   */
   readonly farthestNeed: NeedReach | undefined;
-  readonly farthestNeedIndex: number | undefined;
 }
 
 /** 島1つ。 */
@@ -120,218 +93,99 @@ export interface IslandReach {
   readonly missingNeedIndices: readonly number[];
 
   /**
-   * **最も条件の良いサイト**。島は引き直さないので（ContentSkeleton.md 2.3.1節）、これがその周回の
-   * 実際の立ち上がりになる。比べる順は「届かない数 → 最も遠い要るものの歩数 → その移動時間 →
-   * その探索時間 → サイトのindex」で、良し悪しの判定ではなく順序の定義。
+   * **選抜が選んだ開始地点**（ContentSkeleton.md 2.3節）。島は引き直さないので（同2.3.1節）、
+   * これがその周回の実際の立ち上がりになる。
    */
-  readonly bestSite: SiteReach;
+  readonly startSite: SiteReach;
 }
 
 /**
  * 要るものの出どころを、探索できる土地の型すべてについて実測する。
  *
- * 宣言した発見物がどの土地でも採れなければ投げる——出どころ表（ContentSkeleton.md 2.3節）と
- * locations.yamlが食い違ったまま数字だけが出ると、その数字は別の物を測っていることになる。
+ * 採れると宣言している土地の期待個数が0なら投げる——選抜は宣言を見て「ここで採れる」と決めるので、
+ * 実際には引けない土地をそこに数えていたら、選んだ地点は成り立たない道順で選ばれたことになる。
  */
 export function startupNeedSourcesOf(codex: WorldCodex): StartupNeedSources {
-  const generation = codex.generation;
-  if (generation === undefined)
-    throw new Error('地形生成の定義（terrain_generation.yaml）がロードされていません。');
+  const suppliers = startupNeedSuppliersOf(codex);
 
   const sourceObjectIds = STARTUP_NEEDS.map((need) =>
-    need.sourceObjectNames.map((name) => {
-      const id = codex.objectNames.tryGetId(name);
-      if (id === undefined) throw new Error(`要るものの出どころ '${name}' の型が定義されていません。`);
-      return id;
-    }),
+    need.sourceObjectNames.map((name) => codex.objectNames.getId(name)),
   );
 
   const schedules = pathDiscoverySchedulesOf(codex);
   const rows: NeedSourceRow[] = [];
   const byLocationDef = new Map<number, LocationNeedSupply>();
 
-  for (const locationType of generation.locationTypes) {
-    const locationDef = codex.objects.get(locationType.objectDefGlobalId);
-    if (byLocationDef.has(locationDef.globalId)) continue;
-
+  for (const [locationDefGlobalId, supply] of suppliers) {
+    const locationDef = codex.objects.get(locationDefGlobalId);
     const explore = exploreStepOf(codex, locationDef);
     const expected = expectedSpawnsOf(explore);
-    const needIndices = new Set<number>();
-    for (const [needIndex, objectIds] of sourceObjectIds.entries())
-      for (const [objectIndex, objectId] of objectIds.entries()) {
+
+    for (const needIndex of [...supply.needIndices].sort((a, b) => a - b)) {
+      const before = rows.length;
+      for (const [objectIndex, objectId] of sourceObjectIds[needIndex].entries()) {
         const expectedPerExplore = expected.get(objectId) ?? 0;
         if (expectedPerExplore <= 0) continue;
 
-        needIndices.add(needIndex);
         rows.push({
           needIndex,
-          locationDefName: locationDef.name,
+          locationDefName: supply.locationDefName,
           objectName: STARTUP_NEEDS[needIndex].sourceObjectNames[objectIndex],
           expectedPerExplore,
         });
       }
+      if (rows.length === before)
+        throw new Error(
+          `土地 '${supply.locationDefName}' の探索は '${STARTUP_NEEDS[needIndex].label}' を` +
+            '生むと宣言していますが、1回あたりの期待個数が0です。',
+        );
+    }
 
-    byLocationDef.set(locationDef.globalId, {
-      locationDefName: locationDef.name,
-      needIndices,
-      pathDiscoveryMinutes: allPathsDiscoveryMinutesOf(schedules.get(locationDef.globalId)!),
+    byLocationDef.set(locationDefGlobalId, {
+      locationDefName: supply.locationDefName,
+      needIndices: supply.needIndices,
+      pathDiscoveryMinutes: allPathsDiscoveryMinutesOf(schedules.get(locationDefGlobalId)!),
     });
   }
 
-  for (const [needIndex, need] of STARTUP_NEEDS.entries())
-    if (!rows.some((row) => row.needIndex === needIndex))
-      throw new Error(`要るもの '${need.label}' を採れる土地が1つもありません。`);
-
   rows.sort((a, b) => a.needIndex - b.needIndex);
-  return { rows, byLocationDef };
+  return { rows, byLocationDef, suppliers };
 }
 
 /** 生成された島1つを測る。 */
 export function islandReachOf(sources: StartupNeedSources, map: IslandMap): IslandReach {
-  const supplies = map.sites.map((site) => supplyOf(sources, site));
-  const providers = supplies.map((supply) => supply.needIndices);
-  const departureMinutes = supplies.map((supply) => supply.pathDiscoveryMinutes);
-
-  const neighbors: { other: number; travelMinutes: number }[][] = map.sites.map(() => []);
-  for (const edge of map.edges) {
-    neighbors[edge.a].push({ other: edge.b, travelMinutes: edge.travelMinutes });
-    neighbors[edge.b].push({ other: edge.a, travelMinutes: edge.travelMinutes });
-  }
-
-  const sites = map.sites.map((site) =>
-    siteReachOf(site.index, supplies[site.index].locationDefName, providers, departureMinutes, neighbors),
+  const reach = islandStartupReachOf(sources.suppliers, map);
+  const departureMinutes = map.sites.map(
+    (site) => sources.byLocationDef.get(site.type!.objectDefGlobalId)!.pathDiscoveryMinutes,
   );
 
-  const missingNeedIndices = STARTUP_NEEDS.map((_, needIndex) => needIndex).filter((needIndex) =>
-    providers.every((needIndices) => !needIndices.has(needIndex)),
-  );
-
-  return { seed: map.seed, sites, missingNeedIndices, bestSite: bestSiteOf(sites) };
-}
-
-function supplyOf(sources: StartupNeedSources, site: Site): LocationNeedSupply {
-  const supply = sources.byLocationDef.get(site.type!.objectDefGlobalId);
-  if (supply === undefined)
-    throw new Error(`サイト ${site.index} の土地の型が、出どころ表に載っていません。`);
-  return supply;
-}
-
-/** サイト1つから見た、要るものそれぞれへの最短。 */
-function siteReachOf(
-  from: number,
-  locationDefName: string,
-  providers: readonly ReadonlySet<number>[],
-  departureMinutes: readonly number[],
-  neighbors: readonly { other: number; travelMinutes: number }[][],
-): SiteReach {
-  const byHops = routeCostsByHopsFrom(from, departureMinutes, neighbors);
-  const needs = STARTUP_NEEDS.map((_, needIndex) => nearestProvider(byHops, providers, needIndex));
-
-  let farthest: NeedReach | undefined;
-  let farthestNeedIndex: number | undefined;
-  for (const [needIndex, need] of needs.entries())
-    if (need !== undefined && (farthest === undefined || isFarther(need, farthest))) {
-      farthest = need;
-      farthestNeedIndex = needIndex;
-    }
-
+  const sites = reach.sites.map((site) => withPathDiscovery(site, departureMinutes));
   return {
-    siteIndex: from,
-    locationDefName,
-    needs,
-    unreachableNeedCount: needs.filter((need) => need === undefined).length,
-    farthestNeed: farthest,
-    farthestNeedIndex,
+    seed: reach.seed,
+    sites,
+    missingNeedIndices: reach.missingNeedIndices,
+    startSite: sites[landfallStartSiteOf(reach, map).siteIndex],
   };
 }
 
-/** 経路1本の重み。歩数はこの型の外（byHopsの添字）が持つ。 */
-interface RouteCost {
-  readonly travelMinutes: number;
-  readonly pathDiscoveryMinutes: number;
+/** ドメインが出した経路に、その経路を見つけるのに要る探索時間を添える。 */
+function withPathDiscovery(site: SiteStartupReach, departureMinutes: readonly number[]): SiteReach {
+  const needs = site.needs.map((need) => pathDiscoveryOf(need, departureMinutes));
+  return {
+    ...site,
+    needs,
+    farthestNeed: site.farthestNeedIndex === undefined ? undefined : needs[site.farthestNeedIndex],
+  };
 }
 
-/**
- * fromから「ちょうどh歩」で各サイトへ届く経路のうち最も安いものを、h=0から順に並べたもの。
- * 同じ土地を通り直す経路は移動時間が伸びるだけなので、歩数ごとに安い方で置き換えるだけで最短が残る。
- */
-function routeCostsByHopsFrom(
-  from: number,
+/** 通る土地それぞれで、道が全部出そろうまでの探索時間。**着いた先では探索しない**ので最後は数えない。 */
+function pathDiscoveryOf(
+  route: NeedRoute | undefined,
   departureMinutes: readonly number[],
-  neighbors: readonly { other: number; travelMinutes: number }[][],
-): readonly (RouteCost | undefined)[][] {
-  const siteCount = neighbors.length;
-  const byHops: (RouteCost | undefined)[][] = [];
-
-  let current = new Array<RouteCost | undefined>(siteCount).fill(undefined);
-  current[from] = { travelMinutes: 0, pathDiscoveryMinutes: 0 };
-  byHops.push(current);
-
-  for (let hops = 1; hops < siteCount; hops++) {
-    const next = new Array<RouteCost | undefined>(siteCount).fill(undefined);
-    for (const [site, cost] of current.entries()) {
-      if (cost === undefined) continue;
-      for (const { other, travelMinutes } of neighbors[site]) {
-        const candidate: RouteCost = {
-          travelMinutes: cost.travelMinutes + travelMinutes,
-          pathDiscoveryMinutes: cost.pathDiscoveryMinutes + departureMinutes[site],
-        };
-        const incumbent = next[other];
-        if (incumbent === undefined || isCheaper(candidate, incumbent)) next[other] = candidate;
-      }
-    }
-    byHops.push(next);
-    current = next;
-  }
-  return byHops;
-}
-
-/** その要るものを採れるサイトのうち、最も歩数が少ないもの（同歩数なら安い方）。 */
-function nearestProvider(
-  byHops: readonly (RouteCost | undefined)[][],
-  providers: readonly ReadonlySet<number>[],
-  needIndex: number,
 ): NeedReach | undefined {
-  for (const [hops, costs] of byHops.entries()) {
-    let best: RouteCost | undefined;
-    for (const [site, cost] of costs.entries())
-      if (
-        cost !== undefined &&
-        providers[site].has(needIndex) &&
-        (best === undefined || isCheaper(cost, best))
-      )
-        best = cost;
-    if (best !== undefined) return { hops, ...best };
-  }
-  return undefined;
-}
-
-function isCheaper(candidate: RouteCost, incumbent: RouteCost): boolean {
-  return candidate.travelMinutes !== incumbent.travelMinutes
-    ? candidate.travelMinutes < incumbent.travelMinutes
-    : candidate.pathDiscoveryMinutes < incumbent.pathDiscoveryMinutes;
-}
-
-function isFarther(candidate: NeedReach, incumbent: NeedReach): boolean {
-  return candidate.hops !== incumbent.hops
-    ? candidate.hops > incumbent.hops
-    : candidate.travelMinutes > incumbent.travelMinutes;
-}
-
-function bestSiteOf(sites: readonly SiteReach[]): SiteReach {
-  return sites.reduce((best, site) => (isBetterStart(site, best) ? site : best));
-}
-
-function isBetterStart(candidate: SiteReach, incumbent: SiteReach): boolean {
-  if (candidate.unreachableNeedCount !== incumbent.unreachableNeedCount)
-    return candidate.unreachableNeedCount < incumbent.unreachableNeedCount;
-
-  const a = candidate.farthestNeed;
-  const b = incumbent.farthestNeed;
-  if (a === undefined || b === undefined) return a !== undefined;
-  if (a.hops !== b.hops) return a.hops < b.hops;
-  if (a.travelMinutes !== b.travelMinutes) return a.travelMinutes < b.travelMinutes;
-  return a.pathDiscoveryMinutes < b.pathDiscoveryMinutes;
+  if (route === undefined) return undefined;
+  const minutes = route.sites.slice(0, -1).reduce((sum, siteIndex) => sum + departureMinutes[siteIndex], 0);
+  return { ...route, pathDiscoveryMinutes: minutes };
 }
 
 /** その土地の探索1回を工程として見たもの。探索を宣言していない土地は投げる（土地は必ず探索できる）。 */

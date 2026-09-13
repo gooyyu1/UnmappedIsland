@@ -3,6 +3,7 @@ import type { WorldSession } from '../WorldSession';
 import { Location } from '../wrappers/Location';
 import type { IslandMap, Site } from './IslandMap';
 import { SpawnedIsland } from './SpawnedIsland';
+import { selectStartSite } from './StartSiteSelection';
 
 /** 最初の道が見つかる進捗。1回目の探索でいきなり道が出ないようにする最低値。 */
 const FIRST_PATH_PROGRESS = 2;
@@ -122,15 +123,10 @@ function endsKey(from: number, to: number): string {
 
 /**
  * プレイヤーキャラクタを開始地点の土地（漂着地）へ配置し、その土地のビューを返す。
- * 開始地点は砂浜を優先し、無ければ外周リング（海岸）、それも無ければ最初のサイト
- * （いずれもindex順で決定的）。
+ * どこから始めるかは選抜（`selectStartSite`、ContentSkeleton.md 2.3節）が決める。
  */
 export function placePlayer(session: WorldSession, island: SpawnedIsland, character: WorldObject): Location {
-  const sites = island.map.sites;
-  const start: Site =
-    sites.find((s) => s.type!.name === 'sandy_beach') ?? sites.find((s) => s.onCoastRing) ?? sites[0];
-
-  return placePlayerAt(session, island, character, start);
+  return placePlayerAt(session, island, character, selectStartSite(session.codex, island.map));
 }
 
 /** 指定したサイトの土地へプレイヤーキャラクタを移し、その土地のビューを返す。 */
