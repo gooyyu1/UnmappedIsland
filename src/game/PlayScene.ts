@@ -43,7 +43,7 @@ import type { CardSpot, ShownDrop } from './view/ShownCards';
 import { ShownCards } from './view/ShownCards';
 import type { RecordedView, Recording } from './view/recording';
 import { runAndRecordChange } from './view/recording';
-import { slotCells } from './view/slotCells';
+import { cellsCycleWithBeat, slotCells } from './view/slotCells';
 import { noteOperation, setStateReporter } from './errorReport';
 import { ShownStatuses } from './view/ShownStatuses';
 import type { ElapseFrame } from './view/elapsePlayback';
@@ -136,11 +136,11 @@ function realMsFor(minutes: number): number {
 }
 
 /**
- * タグで書かれた要求の空き枠に、当てはまる型を出し替える間隔（ms）。
+ * タグで書かれた受け入れ・要求の空き枠に、当てはまる型を出し替える間隔（ms）。
  *
  * **速すぎると読めず、遅すぎると1つの型に見える。** 1秒は、札の名前を読み終えて次が来る間隔。
  */
-const MATERIAL_CYCLE_MS = 1000;
+const EMPTY_CELL_CYCLE_MS = 1000;
 
 /**
  * 満タンぶんの増加を何粒で表すか（CardInteraction.md 10.2節）。**比例ではなく平方根**なので、
@@ -484,8 +484,8 @@ export class PlayScene extends ResponsiveScene {
     return isMidAction(this.activity);
   }
 
-  /** タグの要求の空き枠に出している型の番号（materialCells）。1秒ごとに1つ進む。 */
-  private materialCycle = 0;
+  /** 空き枠に出している型の番号（slotCells）。1秒ごとに1つ進む。 */
+  private emptyCellCycle = 0;
 
   /**
    * 演出中は何もしないようにした操作を返す。演出中の画面は、経過中の過去の時点を再現していたり
@@ -697,11 +697,11 @@ export class PlayScene extends ResponsiveScene {
     );
     // 飛んでいるカードの層はフィールドエリアの作り直しでは捨てないので、そちらには含めない。
     this.cardTable = new CardTable(this, this.metrics);
-    // タグで書かれた要求の空き枠に、当てはまる型を順に出すための拍（materialCells）。
+    // タグで書かれた受け入れ・要求の空き枠に、当てはまる型を順に出すための拍（slotCells）。
     this.time.addEvent({
-      delay: MATERIAL_CYCLE_MS,
+      delay: EMPTY_CELL_CYCLE_MS,
       loop: true,
-      callback: () => this.advanceMaterialCycle(),
+      callback: () => this.advanceEmptyCellCycle(),
     });
     this.buildFilterBar(layout.filterBar);
     // 横型のオプションバーはフィールドエリアの隣（右サイドバー）なので、フィルターバーと同じく
@@ -937,7 +937,7 @@ export class PlayScene extends ResponsiveScene {
       slot,
       stacks,
       this.laneCardsWithEdgeActions(stacks),
-      this.materialCycle,
+      this.emptyCellCycle,
       (objectGlobalId) => this.view.cardOfType(objectGlobalId),
     );
     return hiddenCountCells(cells, this.shown.hiddenAt(place));
@@ -1247,16 +1247,15 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * タグの要求の空き枠に出す型を1つ進める（1秒ごと）。**出す型が1つしかないなら引き直さない**
-   * ——見た目が変わらない差し替えを毎秒走らせる理由が無い。
+   * タグで書かれた受け入れ・要求の空き枠に出す型を1つ進める（1秒ごと）。**出す型が1つしかないなら
+   * 引き直さない**——見た目が変わらない差し替えを毎秒走らせる理由が無い。
    */
-  private advanceMaterialCycle(): void {
+  private advanceEmptyCellCycle(): void {
     if (this.busy) return;
     const place = this.childWindowPlace;
-    const materials = place === undefined ? undefined : this.view.slotViewOf(place).materials;
-    if (materials?.some((material) => material.objectGlobalIds.length >= 2) !== true) return;
+    if (place === undefined || !cellsCycleWithBeat(this.view.slotViewOf(place))) return;
 
-    this.materialCycle += 1;
+    this.emptyCellCycle += 1;
     this.showView();
   }
 

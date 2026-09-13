@@ -262,8 +262,8 @@ export class WorldObject {
 
   /**
    * 自分の直接の親から遡り、指定したプロパティを定義している最初の祖先を探す（無ければundefined）。
-   * 呼び手はReferenceContext.ownerOfPropertyだけで、`ancestor`起点の参照はどこに書かれたものも
-   * そこを通る（どの文法から来たかは、この時点で区別されていない）。
+   * `ancestor`起点の参照は、どこに書かれたものもReferenceContext.ownerOfPropertyを通ってここへ来る
+   * （どの文法から来たかは、この時点で区別されていない）。
    */
   findAncestorWithProperty(propertyGlobalId: PropertyGlobalId): WorldObject | undefined {
     let current = this._parent;
