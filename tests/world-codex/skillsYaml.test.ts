@@ -72,6 +72,21 @@ const ACCESS_BONUSES = [
  * GameElementDefinition.md 13.6節）が、**書き方はどちらも`{subject: agent, prop: ...}`**なので、
  * 読まれているかは下の`propsReadFromAgent`が一緒に拾う。
  */
+/**
+ * 手際を名乗らないと決めたレシピ（`<完成品>.<レシピ>`）。**どれもどの技術の仕事でもない**——
+ * 理由は1件ずつ、そのレシピのコメントに書いてある（docs/world/Skills.md 7.1節。書いてあることは
+ * 下の検査が見張る）。
+ */
+const RECIPES_WITHOUT_DEFTNESS = [
+  'bed.spread',
+  'campfire.stacked',
+  'earth_kiln.heaped',
+  'field.tilled',
+  'pitfall.dug',
+  'salt_pan.laid',
+  'unfired_jar.coiled',
+];
+
 const CRAFTING_BONUSES = [
   { skill: 'skill_knapping', bonus: 'knapping_deftness', byStage: [0, -3, -8, -15] },
   { skill: 'skill_cordage', bonus: 'cordage_deftness', byStage: [0, -3, -8, -15] },
@@ -223,6 +238,61 @@ function standsOnBonus(propBody: unknown, bonusName: string): boolean {
     isScalar(prop) &&
     String(prop.value) === bonusName
   );
+}
+
+/**
+ * そのノードの手前に書いてあるコメント（無ければ空文字）。
+ *
+ * **並びの最初の要素に付けたコメントは、要素ではなく入れ物のほうに付く**（yamlの構文木の作り）ので、
+ * 拾う側はキーと値の両方を見る。
+ */
+function commentBeforeOf(node: unknown): string {
+  return typeof (node as { commentBefore?: unknown } | undefined)?.commentBefore === 'string'
+    ? (node as { commentBefore: string }).commentBefore
+    : '';
+}
+
+/**
+ * レシピの手前に書いてあるコメントを、`<完成品>.<レシピ>` ごとに集める。**型・`recipes`・レシピ自身の
+ * どのキーに付いていても拾う**——決めた理由は、そのレシピだけの話なら直上に、型ぜんぶに掛かるなら
+ * 型の側に書かれるので、置き場所を1つに縛ると書き方のほうが歪む。
+ *
+ * ロード後の`RecipeDef`はコメントを持たない（読み捨てられる）ので、構文木を辿る。
+ */
+function commentsAboveRecipes(): ReadonlyMap<string, string> {
+  const found = new Map<string, string>();
+
+  for (const path of worldCodexYamlPaths()) {
+    const root = parseDocument(readFileSync(path, 'utf8')).contents;
+    if (!isMap(root)) continue;
+
+    for (const section of root.items) {
+      const sectionKey = isScalar(section.key) ? String(section.key.value) : '';
+      if ((sectionKey !== 'traits' && sectionKey !== 'object_defs') || !isMap(section.value)) continue;
+
+      for (const entry of section.value.items) {
+        const defName = isScalar(entry.key) ? String(entry.key.value) : '';
+        if (!isMap(entry.value)) continue;
+        const recipes = entry.value.items.find(
+          (pair) => isScalar(pair.key) && String(pair.key.value) === 'recipes',
+        );
+        if (recipes === undefined || !isMap(recipes.value)) continue;
+
+        const aboveDef = [commentBeforeOf(entry.key), commentBeforeOf(recipes.key)].join('\n');
+        for (const [index, recipe] of recipes.value.items.entries())
+          found.set(
+            `${defName}.${isScalar(recipe.key) ? String(recipe.key.value) : ''}`,
+            [
+              aboveDef,
+              // 最初のレシピの手前のコメントは、レシピではなく`recipes`の値のほうに付く。
+              index === 0 ? commentBeforeOf(recipes.value) : '',
+              commentBeforeOf(recipe.key),
+            ].join('\n'),
+          );
+      }
+    }
+  }
+  return found;
 }
 
 /** 世界じゅうのプロパティ宣言を「どこの・どの名前の」の形で並べる（traitのpropsも型のpropsも）。 */
@@ -769,37 +839,35 @@ describe('腕前とレシピの解放条件', () => {
 
   it('手際を名乗らないレシピは、名乗らないと決めた分だけ', () => {
     // **解放条件を持たないレシピも名乗る**（docs/world/Skills.md 7.1節）ので、名乗っていないことは
-    // 「腕の要らない仕事だと決めた」の印になる。決めた覚えの無いレシピがここへ落ちてくるのを止める
-    // ——**新しいレシピは、名乗るか、ここへ足して理由をYAMLへ書くかのどちらかを選ぶことになる。**
+    // 「どの技術の仕事でもないと決めた」の印になる。決めた覚えの無いレシピがここへ落ちてくるのを
+    // 止める——**新しいレシピは、名乗るか、ここへ足すかのどちらかを選ぶことになる。**
     //
     // **どの腕が正しいかは見ない**（それは内容の判断で、拠り所はSkills.md 7.1節と各レシピの
     // コメント）。見るのは、決めずに素通りできないことだけ。
-    //
-    // 名乗らないと決めたのは、**どの技術の仕事でもない工程**——掘る（畑・落とし穴）、並べる
-    // （塩田）、積む（焚き火・覆い焼きの炉）、広げる（敷物）、粘土を巻き上げる（素焼き前の甕）。
-    // 理由は1件ずつ、そのレシピのコメントに書いてある。
-    const WITHOUT_DEFTNESS = [
-      'bed.spread',
-      'campfire.stacked',
-      'earth_kiln.heaped',
-      'field.tilled',
-      'pitfall.dug',
-      'salt_pan.laid',
-      'unfired_jar.coiled',
-    ];
-
     expect(
       allRecipes()
         .filter(({ recipe }) => recipe.deftness === undefined)
         .map(({ product, recipe }) => `${product}.${recipe.name}`)
         .sort(),
-    ).toEqual(WITHOUT_DEFTNESS);
+    ).toEqual(RECIPES_WITHOUT_DEFTNESS);
+  });
+
+  it('手際を名乗らないと決めたレシピは、その理由がコメントに書いてある', () => {
+    // 一つ上の数え上げは、**足せば黙って通せる**——理由を書かせるのはここ。Skills.md 7.1節が
+    // 「名乗らないと決めた側は、そのレシピのコメントに理由を書きます」と言っている以上、それが
+    // 破れたときに落ちるものが要る（書いてあるかを見るだけで、中身の当否は人が読む）。
+    const comments = commentsAboveRecipes();
+
+    expect(
+      RECIPES_WITHOUT_DEFTNESS.filter((where) => !(comments.get(where) ?? '').includes('名乗らない')),
+      '名乗らない理由が書いていないレシピ',
+    ).toEqual([]);
   });
 
   it('レシピが名乗る手際は、伸ばす操作を持つ腕のもの', () => {
-    // **上げようのない腕が速さを握らない**（docs/world/Skills.md 7.1節）。伸ばす操作の無い腕
-    // （指物・建築・料理・採鉱・製錬）を名乗ると、そのレシピの工程は誰にも縮められない時間になる
-    // ——腕は宣言だけ先に置かれる（SkillSystem.md 3.2節）ので、名乗る側が先走れてしまう。
+    // **上げようのない腕が速さを握らない**（docs/world/Skills.md 7.1節）。伸ばす操作をまだ持たない
+    // 腕を名乗ると、そのレシピの工程は誰にも縮められない時間になる——腕は宣言だけ先に置かれる
+    // （SkillSystem.md 3.2節）ので、名乗る側が先走れてしまう。
     //
     // **アクセス系も同じくここで落ちる**（CRAFTING_BONUSESに無いので）。火の腕が決めるのは着火の
     // 重みだけで、火起こし具を削る速さではない（同5節）。

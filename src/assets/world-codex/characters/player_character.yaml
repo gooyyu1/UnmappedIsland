@@ -773,7 +773,7 @@ traits:
           - {name: expert, min: 180}
       # 皮を剥ぐ（animals.yamlのbutcher）。なめし革と、それを縫った物（clothing.yaml・voyage.yamlの帆）を開ける。
       # 段が押し上げるのは下のleatherwork_deftnessで、皮を扱う仕事のレシピがそれをdeftnessに名乗る
-      # （docs/world/Skills.md 7.1節）——**縫わずに羽織るだけの物も名乗る**（clothing.yamlのdraped）。
+      # ——**縫わずに羽織るだけの物も名乗る**（開ける腕と速さを決める腕は別、docs/world/Skills.md 7.1節）。
       skill_leatherwork:
         tags: [skill]
         value: 0
@@ -804,8 +804,8 @@ traits:
       # 得た食を保たせる（salt.yamlのcure）。開けるのは燻し小屋（smoking.yamlのsmokehouse）で、
       # 日差しの要らない保存がその先にある（docs/world/SurvivalItems.md 11節）。
       # 段が押し上げるのは下のpreserving_deftnessで、保たせる造作のレシピがそれをdeftnessに名乗る
-      # ——**開けるのが燻し小屋だけでも、名乗る側は干し場（drying.yaml）も含む**
-      # （docs/world/Skills.md 7.1節）。
+      # ——**開ける側より名乗る側のほうが広い**（保たせる設備は、解放を要求しないものも名乗る、
+      # docs/world/Skills.md 7.1節）。
       skill_preserving:
         tags: [skill]
         value: 0
