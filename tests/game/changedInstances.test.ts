@@ -6,6 +6,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import {
   bornInstances,
+  lungeTargetByInstance,
   originInstanceByInstance,
   vanishedInstances,
 } from '../../src/game/view/changedInstances';
@@ -39,6 +40,11 @@ object_defs:
       undiscovered: {cell: {accept: {tag: item}}}
   stone:
     tags: [item]
+    interactions:
+      # 自分で獣の中へ転がり込む（動いた物と主体が同じ回）。
+      roll:
+        trigger: {drag: {tag: beast}}
+        move: {subject: self, to: instrument}
   basket:
     tags: [item]
     slots:
@@ -46,12 +52,27 @@ object_defs:
   # 重ねた物を自分のlootへ取り上げる獣。
   beast:
     tags: [beast]
+    props:
+      appetite: {value: 1}
     slots:
       loot: {cell: {accept: {tag: item}}}
     interactions:
       grab:
         trigger: {drag: {tag: item}}
         move: {subject: instrument, to: self}
+      wreck:
+        trigger: {drag: {tag: item}}
+        destroy: instrument
+      shed:
+        trigger: {drag: {tag: item}}
+        spawn: {object: stone, into: parent}
+      # くわえている物を食べる（自分の中の物なので、どこへも行かない）。
+      devour:
+        trigger: {drag: {tag: item}}
+        pick:
+          - weight: {prop: appetite}
+            among: {slot: loot, matches: {tag: item}}
+            destroy: picked
 `;
 
   let codex: WorldCodex;
@@ -86,6 +107,108 @@ object_defs:
     session.observeChanges((change) => changes.push(change), body);
     return originInstanceByInstance(changes);
   }
+
+  /** 重ねた側（instrument）を相手に、獣のその操作を実行する。 */
+  function execute(beast: WorldObject, instrument: WorldObject, name: string): void {
+    expect(
+      beast
+        .combinationsWith(instrument, spawn('agent'))
+        .find((c) => c.name === name)
+        ?.tryExecute() === true,
+    ).toBe(true);
+  }
+
+  describe('突進（HuntingSystem.md 6.1節）', () => {
+    /** bodyの実行中に起きた変化を、突進した個体と相手へ直す。 */
+    function lungesOf(body: () => void): ReadonlyMap<number, number> {
+      const changes: WorldChange[] = [];
+      session.observeChanges((change) => changes.push(change), body);
+      return lungeTargetByInstance(changes);
+    }
+
+    it('壊した回は、壊した側から壊された側への突進になる', () => {
+      const beast = placeOnGround('beast', 'beasts');
+      const stone = placeOnGround('stone');
+
+      const lunges = lungesOf(() => execute(beast, stone, 'wreck'));
+
+      expect(lunges).toEqual(new Map([[beast.instanceId, stone.instanceId]]));
+    });
+
+    it('持ち去った回も突進になる（壊れたかどうかは問わない）', () => {
+      const beast = placeOnGround('beast', 'beasts');
+      const stone = placeOnGround('stone');
+
+      const lunges = lungesOf(() => execute(beast, stone, 'grab'));
+
+      expect(lunges).toEqual(new Map([[beast.instanceId, stone.instanceId]]));
+    });
+
+    it('生まれた物へは突進しない（どこからも動いていない）', () => {
+      const beast = placeOnGround('beast', 'beasts');
+      const stone = placeOnGround('stone');
+
+      // 生んだ物の出どころは主体の札だが、それは飛びであって突進ではない。
+      expect(lungesOf(() => execute(beast, stone, 'shed')).size).toBe(0);
+    });
+
+    it('自分が動いた回は突進にならない（逃げた回）', () => {
+      const beast = placeOnGround('beast', 'beasts');
+      const stone = placeOnGround('stone');
+
+      // 石が自分で獣の中へ入る。動いた物と主体が同じなので、札そのものがレーンから消えるだけ。
+      expect(lungesOf(() => execute(stone, beast, 'roll')).size).toBe(0);
+    });
+
+    it('自分が抱えている物を動かした回は突進にならない（くわえた物を食べた回）', () => {
+      const beast = placeOnGround('beast', 'beasts');
+      const stone = placeOnGround('stone');
+      execute(beast, stone, 'grab');
+
+      // 相手は自分の中に居るので、主体はどこへも行かない。
+      expect(lungesOf(() => execute(beast, placeOnGround('stone'), 'devour')).size).toBe(0);
+    });
+
+    it('一度の差し替えで何度も手を出しても、突進は最初の相手だけ', () => {
+      const beast = placeOnGround('beast', 'beasts');
+      const first = placeOnGround('stone');
+      const second = placeOnGround('stone');
+
+      const lunges = lungesOf(() => {
+        execute(beast, first, 'wreck');
+        execute(beast, second, 'wreck');
+      });
+
+      expect(lunges).toEqual(new Map([[beast.instanceId, first.instanceId]]));
+    });
+
+    it('2匹が別々に手を出せば、突進も分かれる', () => {
+      const beasts = [placeOnGround('beast', 'beasts'), placeOnGround('beast', 'beasts')];
+      const stones = [placeOnGround('stone'), placeOnGround('stone')];
+
+      const lunges = lungesOf(() => {
+        for (const [index, beast] of beasts.entries()) execute(beast, stones[index], 'wreck');
+      });
+
+      expect(lunges).toEqual(
+        new Map([
+          [beasts[0].instanceId, stones[0].instanceId],
+          [beasts[1].instanceId, stones[1].instanceId],
+        ]),
+      );
+    });
+
+    it('プレイヤーが直に動かした物へは、突進する主体が居ない', () => {
+      const basket = placeOnGround('basket');
+      const stone = placeOnGround('stone');
+
+      const lunges = lungesOf(() => {
+        expect(stone.moveToSlotOrRejection(basket.getSlot(slot('contents')))).toBeUndefined();
+      });
+
+      expect(lunges.size).toBe(0);
+    });
+  });
 
   it('効果が動かした物は、その効果を宣言していた側の札から飛ぶ', () => {
     // 獣が石を取り上げたら、石は獣の札から飛ぶ。UIは「取り上げた」という分岐名を知らない。

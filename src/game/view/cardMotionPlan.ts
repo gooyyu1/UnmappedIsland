@@ -18,6 +18,9 @@
  *
  * 砂埃（6.1節）を立てる場所もここが決める。**立つのは世界の出入りだけ**で、レーンから居なくなった
  * ことでも現れたことでもない（vanished / born）。
+ *
+ * 突進（HuntingSystem.md 6.1節）もここが組み立てる。**突き当たる先は、差し替え前の並び（before）が
+ * 持っている**——相手の札は差し替えで消えるので、その手前でしか矩形を引けない。
  */
 
 /** 計画に映る1枚のカード。実体が何か（Card）も矩形が何か（Rect）も実行側だけが知る。 */
@@ -63,6 +66,11 @@ export interface MotionInput<C, R> {
   readonly vanished?: readonly number[];
   /** 世界に生まれたインスタンス。こちらもbeforeに居ないだけでは区別できない（移ってきた物と同じ）。 */
   readonly born?: readonly number[];
+  /**
+   * 突進した個体と、その相手（changedInstances.lungeTargetByInstance）。どちらも差し替え前の並びに
+   * 居なければ、行き先も出発点も無いので突進は立たない。
+   */
+  readonly lunges?: ReadonlyMap<number, number>;
 }
 
 /** 札1枚の飛行。 */
@@ -76,6 +84,33 @@ export interface PlannedFlight<C, R> {
   /** 飛び立ちを遅らせる段数（1段＝送りの最短間隔。実時間にするのは実行側）。 */
   readonly delaySteps: number;
   /** 着いた時点で砂埃を立てるか（生まれたインスタンスを運ぶ便）。 */
+  readonly raisesDust: boolean;
+}
+
+/**
+ * 1件の突進——主体の札が、手を出した相手の枠まで行って、突き当たり、自分の枠へ帰る
+ * （HuntingSystem.md 6.1節）。**行って帰るまでの間、その個体はどの枠にも居ない**（便・置いたままの札に
+ * 続く3つ目の、宙に在る札）。
+ */
+export interface PlannedLunge<C, R> {
+  /** 突進するインスタンス。帰り着いた枠で合流する。 */
+  readonly id: number;
+  /** 帰って合流する枠の札と、その枠（差し替え後の位置）。 */
+  readonly into: C;
+  readonly home: R;
+  /**
+   * 駆け出す場所。**その個体が差し替えの前に居た所**なので、探索で出くわしたその手番に手を出した
+   * 個体は出どころ（origins）から駆け出す——居なかった物の「元の枠」は画面のどこにも無い。
+   */
+  readonly from: R;
+  /** 突き当たる先——相手が差し替え前に居た枠。 */
+  readonly to: R;
+  /**
+   * 突き当たられて枠から居なくなる札。**片付けるのは着いてから**なので、それまで相手の枠に
+   * 出したままにする。束の一部だけを持ち去られた札はその場に残るので、持たない。
+   */
+  readonly struck: C | undefined;
+  /** 突き当たった時点で砂埃を立てるか（相手が世界から出た回）。 */
   readonly raisesDust: boolean;
 }
 
@@ -93,6 +128,8 @@ export interface ShownCard<C> {
 
 export interface MotionPlan<C, R> {
   readonly flights: readonly PlannedFlight<C, R>[];
+  /** この差し替えで始まる突進。 */
+  readonly lunges: readonly PlannedLunge<C, R>[];
   /** 差し替えの直後の各札の見せ方（レーンに並ぶカード全部ぶん）。 */
   readonly shown: readonly ShownCard<C>[];
   /** 出どころが分からず、その場で浮かび上がらせるカード。 */
@@ -122,13 +159,49 @@ export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
   // 現れたものは差し替え全体で通し番号を取り、1枚ずつ間を置いて飛び立つ。
   let appeared = 0;
 
+  const bornIds = new Set(input.born ?? []);
+  const vanishedIds = new Set(input.vanished ?? []);
+
+  // 差し替え後の居場所。突進した個体が帰るのは、この差し替えで決まった枠。
+  const after = new Map<number, PlacedCard<C, R>>();
+  for (const placed of [...input.arriving, ...input.staying])
+    for (const id of placed.ids) after.set(id, placed);
+  const leftCards = new Set(input.left.map(({ card }) => card));
+
+  const lunges: PlannedLunge<C, R>[] = [];
+  // 突き当たられた側。砂埃も片付けも突進が着いてからなので、この差し替えでは何も立てない。
+  const struckIds = new Set<number>();
+  const struckCards = new Set<C>();
+  for (const [id, targetId] of input.lunges ?? []) {
+    // 指が運んだ物へは突進しない——その動きは指が既に見せている（released）。
+    if (aloft.has(id) || input.released?.ids.includes(targetId) === true) continue;
+
+    const target = before.get(targetId);
+    const home = after.get(id);
+    if (target === undefined || home === undefined || target.card === home.card) continue;
+
+    const struck = leftCards.has(target.card) ? target.card : undefined;
+    lunges.push({
+      id,
+      into: home.card,
+      home: home.rect,
+      from: before.get(id)?.rect ?? input.origins?.get(id) ?? home.rect,
+      to: target.rect,
+      struck,
+      raisesDust: vanishedIds.has(targetId),
+    });
+    // 突進している間、その個体はどの枠にも居ない。引き算は運びの最中の札と同じ。
+    aloft.add(id);
+    struckIds.add(targetId);
+    if (struck !== undefined) struckCards.add(struck);
+  }
+
   // 消えた札は、差し替え前に居た枠で砂埃を立てる。**1枚の札につき1回**——3個の束が丸ごと
   // 消えても、居なくなった札は1枚だから。画面に出ていなかったものは枠を持たず、何も立たない。
   const dusted = new Set<C>();
-  const bornIds = new Set(input.born ?? []);
-  for (const id of input.vanished ?? []) {
+  for (const id of vanishedIds) {
     const placed = before.get(id);
-    if (placed === undefined || dusted.has(placed.card)) continue;
+    if (placed === undefined || dusted.has(placed.card) || struckIds.has(id)) continue;
     dusted.add(placed.card);
     puffs.push(placed.rect);
   }
@@ -204,12 +277,14 @@ export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
 
   return {
     flights,
+    lunges,
     shown,
     fadeIns,
     // 居なくなったカードは飛ばさず即座に消える。残ったインスタンスの移動は行き先の側の便が
     // 見せているし、どこにも残らなかったのなら破棄（その場で消える。薄れさせると、掴んで
-    // 離したカードが即座に消えるのと食い違って見える）。
-    discards: input.left.map(({ card }) => card),
+    // 離したカードが即座に消えるのと食い違って見える）。突き当たられた札だけは、突進が着くまで
+    // 残る（PlannedLunge.struck）。
+    discards: input.left.map(({ card }) => card).filter((card) => !struckCards.has(card)),
     puffs,
     landings,
   };

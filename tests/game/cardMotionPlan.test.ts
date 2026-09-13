@@ -364,4 +364,141 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
       expect(plan.puffs).toEqual([500]);
     });
   });
+
+  describe('突進（HuntingSystem.md 6.1節）', () => {
+    /** 獣が、地面の籠へ手を出した回。壊した回ならvanishedに籠が挙がる。 */
+    function raid(vanished: readonly number[]) {
+      return planMotion(
+        input({
+          before: [placed('獣', [1], 0), placed('籠', [2], 500)],
+          staying: [placed('獣', [1], 0)],
+          left: [{ card: '籠', ids: [2] }],
+          lunges: new Map([[1, 2]]),
+          vanished,
+        }),
+      );
+    }
+
+    it('突進は、主体の札が相手の枠まで行って自分の枠へ帰る', () => {
+      expect(raid([2]).lunges).toEqual([
+        { id: 1, into: '獣', home: 0, from: 0, to: 500, struck: '籠', raisesDust: true },
+      ]);
+    });
+
+    it('その手番に現れた個体は、出どころから駆け出す（元の枠は画面のどこにも無い）', () => {
+      // 探索で出くわしたその回に足元の物をくわえたサルがこれ。
+      const plan = planMotion(
+        input({
+          before: [placed('籠', [2], 500)],
+          arriving: [placed('獣', [1], 0)],
+          left: [{ card: '籠', ids: [2] }],
+          origins: origins([1], 900),
+          born: [1],
+          lunges: new Map([[1, 2]]),
+        }),
+      );
+
+      expect(plan.lunges[0]).toMatchObject({ from: 900, to: 500, home: 0 });
+      // 突進が運ぶので、現れた分の便は立たない。
+      expect(plan.flights).toEqual([]);
+    });
+
+    it('突進している個体は、行って帰るまで自分の枠に居ない', () => {
+      // 便・置いたままの札と同じ引き算。帰ってくる枠なので印は残る。
+      expect(raid([2]).shown).toEqual([{ card: '獣', present: [], emptied: true }]);
+    });
+
+    it('突き当たられた札は、突進が着くまで片付けない', () => {
+      const plan = raid([2]);
+      expect(plan.discards).toEqual([]);
+      expect(plan.lunges[0].struck).toBe('籠');
+    });
+
+    it('壊された相手の砂埃は、突き当たってから立つ', () => {
+      const plan = raid([2]);
+      expect(plan.puffs).toEqual([]);
+      expect(plan.lunges[0].raisesDust).toBe(true);
+    });
+
+    it('持ち去られただけの相手では、砂埃は立たない', () => {
+      const plan = raid([]);
+      expect(plan.puffs).toEqual([]);
+      expect(plan.lunges[0].raisesDust).toBe(false);
+    });
+
+    it('束の一部だけを持ち去られた札はその場に残るので、突進が片付けるものは無い', () => {
+      const plan = planMotion(
+        input({
+          before: [placed('獣', [1], 0), placed('実', [2, 3], 500)],
+          staying: [placed('獣', [1], 0), placed('実', [3], 500)],
+          lunges: new Map([[1, 2]]),
+        }),
+      );
+
+      expect(plan.lunges[0]).toMatchObject({ to: 500, struck: undefined });
+    });
+
+    it('指が放した物へは突進しない（その動きは指が見せている）', () => {
+      // 重ねた道具を使い切る操作がこれ。宣言している側の札が、手を離した位置へ飛びかかって見える。
+      const plan = planMotion(
+        input({
+          before: [placed('火口', [1], 0), placed('枝', [2], 500)],
+          staying: [placed('火口', [1], 0)],
+          left: [{ card: '枝', ids: [2] }],
+          released: { ids: [2], rect: 300 },
+          lunges: new Map([[1, 2]]),
+          vanished: [2],
+        }),
+      );
+
+      expect(plan.lunges).toEqual([]);
+      // 突進が引き取らないので、砂埃も片付けも普段どおり即座に。
+      expect(plan.puffs).toEqual([500]);
+      expect(plan.discards).toEqual(['枝']);
+    });
+
+    it('既に突進している個体には、二重に立てない', () => {
+      const plan = planMotion(
+        input({
+          before: [placed('獣', [1], 0), placed('籠', [2], 500)],
+          staying: [placed('獣', [1], 0)],
+          left: [{ card: '籠', ids: [2] }],
+          aloft: [1],
+          lunges: new Map([[1, 2]]),
+        }),
+      );
+
+      expect(plan.lunges).toEqual([]);
+    });
+
+    it('相手が画面に出ていなければ、突き当たる先が無い', () => {
+      const plan = planMotion(
+        input({
+          before: [placed('獣', [1], 0)],
+          staying: [placed('獣', [1], 0)],
+          lunges: new Map([[1, 2]]),
+        }),
+      );
+
+      expect(plan.lunges).toEqual([]);
+      expect(plan.shown).toEqual([{ card: '獣', present: [1], emptied: true }]);
+    });
+
+    it('主体の札が枠から居なくなっていれば、帰る先が無いので突進しない', () => {
+      // 手を出した直後に自分も別の土地へ移った回。札はレーンから消えるだけになる。
+      const plan = planMotion(
+        input({
+          before: [placed('獣', [1], 0), placed('籠', [2], 500)],
+          left: [
+            { card: '獣', ids: [1] },
+            { card: '籠', ids: [2] },
+          ],
+          lunges: new Map([[1, 2]]),
+        }),
+      );
+
+      expect(plan.lunges).toEqual([]);
+      expect(plan.discards).toEqual(['獣', '籠']);
+    });
+  });
 });

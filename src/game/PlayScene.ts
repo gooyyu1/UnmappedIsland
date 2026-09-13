@@ -70,7 +70,12 @@ import { laneBackgroundTexture } from '../art/backgroundArt';
 import { SEPARATOR_TEXTURE } from '../art/separatorArt';
 import type { MotionContext } from './ui/CardTable';
 import { CardTable } from './ui/CardTable';
-import { bornInstances, originInstanceByInstance, vanishedInstances } from './view/changedInstances';
+import {
+  bornInstances,
+  lungeTargetByInstance,
+  originInstanceByInstance,
+  vanishedInstances,
+} from './view/changedInstances';
 import { floatSignalLabel } from './ui/signalLabel';
 import type { MapPlacement } from './ui/MapWindow';
 import { MapWindow } from './ui/MapWindow';
@@ -1111,6 +1116,7 @@ export class PlayScene extends ResponsiveScene {
       origins: this.originRectsOf(changes),
       vanished: vanishedInstances(changes),
       born: bornInstances(changes),
+      lunges: lungeTargetByInstance(changes),
     };
   }
 
