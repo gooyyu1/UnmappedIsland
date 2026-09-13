@@ -13,7 +13,7 @@
 # （docs/engine/TrapSystem.md 6.1節）で、上限も960ではない。
 
 traits:
-  # 短命な素材（葉・草・植物繊維・生皮）。屋外で10日、雨なら5日。
+  # 短命な素材（どの素材がこれかは DurabilitySystem.md 2節の表）。屋外で10日、雨なら5日。
   short_lived_material:
     props:
       # すり減るまでの余力。上限は種類によらず960（DurabilitySystem.md 1節）。
@@ -41,7 +41,7 @@ traits:
           - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
         add: {self: {durability: -1}}
 
-  # 長持ちする素材（木材・なめし革・獣骨）。屋外で100日、雨なら20日。
+  # 長持ちする素材（同節の表）。屋外で100日、雨なら20日。
   long_lived_material:
     props:
       durability:
@@ -59,7 +59,7 @@ traits:
           - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
         add: {self: {durability: -0.4}}
 
-  # 傷まない素材（石材・金属）。時間では1も減らない——石は雨で減るのではなく、打ち合わせて欠ける。
+  # 傷まない素材（同節の表）。時間では1も減らない——石は雨で減るのではなく、打ち合わせて欠ける。
   # **耐久値そのものは持つ**ので、使って減らす側（animals.yamlのinstrument）はここへ届く。
   weatherproof_material:
     props:

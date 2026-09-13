@@ -122,6 +122,10 @@ object_defs:
 
   # 吊ったハンモック。**伸ばしろを持たない**ので、寝床と違って段のブロックは1つだけ。
   slung_hammock:
+    # 網は紐だけでできているので、綯った紐＝長持ちする素材（weathering.yaml。形の大半を占める
+    # 素材で決まる）。眠る側が湿気と虫から離れることと、網そのものが屋外で傷むことは別
+    # （docs/world/Bedding.md 6節）。
+    traits: [long_lived_material]
     tags: [fixture, bed]
     props:
       weight: {value: 1000}
