@@ -55,9 +55,17 @@ export class PassiveEffects {
    * **宣言順にそのまま適用し、互いの結果を見る**（activeの命令と同じ、9節）。だから同じ値から出す
    * 輸送を並べても在庫が二重に動くことはなく、直列に繋いだ輸送の緩衝は**速度の差**が作る
    * （上流を速くすれば、その差が中間に溜まる。8.4.1節）。
+   *
+   * **走らせている最中にownerの型が変わったら、そこで打ち切る**（9.9.1節）。輸送はrangeイベントを
+   * 起こすので、その先でbecomeが走りうる。
    */
   applyTickTransfers(owner: WorldObject): void {
-    for (const transfer of this.transfers) transfer.applyTick(owner);
+    for (const transfer of this.transfers) {
+      // この一式を宣言しているのが、もうownerの型ではない＝becomeが走った（PassiveEffectsはObjectDef
+      // ごとに1つ）。残りは、その型でない物への宣言になる。
+      if (owner.def.passives !== this) return;
+      transfer.applyTick(owner);
+    }
   }
 
   /** 相手がownerから一意に辿れる関係が変わった契機を、その関係を宣言している効果へ伝える
