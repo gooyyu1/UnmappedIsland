@@ -3,7 +3,7 @@ import { dirname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { promptBody } from '../../scripts/daemon/prompt-body.mjs';
 import {
-  isAnalysisRecord,
+  isMarkRuleDoc,
   isVerbatimRecord,
   trackedDocs,
   trackedFiles,
@@ -271,13 +271,14 @@ const LINK_CHECKED_FILES = REF_TARGETS.filter((rel) => !isVerbatimRecord(rel));
  * ——印の意味は置き場で変わらない（どこの確定節も「覆すには人間の判断が要る」）ので、条件も同じ1つ。
  * **どこまで掛かるかは同 10節**が持つ。
  *
- * **日付ごとの記録は入らない**（{@link isVerbatimRecord}・{@link isAnalysisRecord}）。印はそこでは
+ * **日付ごとの記録は入らない**（`isVerbatimRecord`・`isAnalysisRecord`）。印はそこでは
  * **題材として**現れる（見出しに「`【確定】` の印の射程が変わる」と書く）ので、課すと印を論じた行が
  * 印として読まれる。
+ *
+ * **絞りは [`docScope.mjs`](../../scripts/docScope.mjs) が持つ1つ**（{@link isMarkRuleDoc}）——同じ
+ * 射程を関門（`scripts/daemon/needs-user-review.sh`）も読むので、別々に持つと片方だけが取り残される。
  */
-const MARK_RULE_FILES = REF_TARGETS.filter(
-  (rel) => !isVerbatimRecord(rel) && !isAnalysisRecord(rel),
-);
+const MARK_RULE_FILES = REF_TARGETS.filter(isMarkRuleDoc);
 
 /** ひな形。セッションへ渡す本体を囲みに入れて持つ（`scripts/daemon/prompt-body.mjs`）。 */
 function isPromptTemplate(rel: string): boolean {

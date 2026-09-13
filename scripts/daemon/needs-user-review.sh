@@ -53,6 +53,22 @@
 # `【確定】` は「覆すには人間の判断が要る」という宣言なので、その射程への変更も同じ扱い。
 # **見出しの行だけでなく、節の本文への変更も見る**——印は見出しに付くが、囲っているのは本文。
 #
+# ### 掛け先は、印の条件が掛かる文書と同じ1つ
+#
+# **見るファイルを自分で決めない。** [`docScope.mjs`](../docScope.mjs) の `isMarkRuleDoc` へ渡して
+# 絞る——印の条件を課す検査（`tests/docs/docReferences.test.ts`）が読むのと同じ1つで、
+# **`docs/` の中かでは絞らない**（印の意味は置き場で変わらないため。
+# [`DocumentStyle.md`](../../docs/DocumentStyle.md) 10 節）。外れるのは、印が**題材として**現れる
+# 記録（`agent-ops/decisions/`・`agent-ops/analysis/`・`review/<日付>`）だけ。
+#
+# **ここでパターンを書き写すと、射程が2つになる。** 実際そうなっていて、掛け先が `docs/` に
+# 取り残されている間、[`board-design.md`](../../agent-ops/board-design.md) の確定節は**印を足す変更
+# ごと素通りしていた**（#1800）。
+#
+# **`main` へ直接 push できる配下では、通る差分と通らない差分が並ぶ。** `agent-ops/**` がそれで
+# （[`parallel-work.md`](../../agent-ops/parallel-work.md)「盤面を回す仕組みの手入れは `main` へ直接
+# push する」）、**関門はPRになった差分しか見ない。** 掛け先を広げても、この抜けは残る。
+#
 # ### 文書単位の宣言も同じ1つの印として数える
 #
 # 全節が確定に当たる文書は、節ごとの印ではなく題名の直後で1回宣言する
@@ -94,6 +110,10 @@
 # 申告するだけで確定を増やせる。ユーザーに見せて止めるのが正しい扱い。
 
 set -euo pipefail
+
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+HERE="$(cd "$HERE" && pwd)"
 
 PR="${1:?PRの番号を渡す（例: 1152）}"
 
@@ -143,12 +163,10 @@ shas=$(gh pr view "$PR" --json headRefOid,baseRefOid --jq '"\(.headRefOid) \(.ba
 read -r head_sha base_sha <<<"$shas"
 git fetch -q origin "pull/$PR/head" || exit 2
 
-while IFS= read -r path; do
-  case "$path" in
-  docs/*.md | docs/*/*.md | docs/*/*/*.md) ;;
-  *) continue ;;
-  esac
+# 見るのは、確定度の印の条件が掛かる文書だけ（上の「掛け先は、印の条件が掛かる文書と同じ1つ」）。
+node "$HERE/../docScope.mjs" <"$WORK/files" >"$WORK/targets" || exit 2
 
+while IFS= read -r path; do
   git show "$head_sha:$path" >"$WORK/doc.md" 2>/dev/null || continue
   git show "$base_sha:$path" >"$WORK/base-doc.md" 2>/dev/null || : >"$WORK/base-doc.md"
 
@@ -257,6 +275,6 @@ while IFS= read -r path; do
       esac
     fi
   done <"$WORK/ranges"
-done <"$WORK/files"
+done <"$WORK/targets"
 
 [ "$blocking" -eq 1 ]
