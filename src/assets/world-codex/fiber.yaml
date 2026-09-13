@@ -138,10 +138,12 @@ object_defs:
         # characters/player_character.yaml）。撚る・編むと同じ1本で、掻き取りもその腕を使う。
         add: {agent: {skill_cordage: 2}}
         destroy: self
-        spawn: {object: plant_fiber, count: 2}
+        spawn: {object: plant_fiber, count: 3}
         # 無駄の無さ（docs/world/Skills.md 7節）。**取れる束の数は葉鞘の作りで決まっていない**ので、
         # 刃の送りが上手いほど同じ株からもう1束落ちる。**取れない側の重みを持つのは株**で、取れる側に
         # 作り手の上乗せを置く（素は0なので、腕が無ければ何も起きない）。
+        # **素が3束なのは、余分1束を上限（もとの1/3）に収めるため**——束は割れないので、素が2なら
+        # 1束足すだけで+50%になる（同7.2節）。
         # **叩き解し（coconut.yamlのret）と揃える**——同じ物を出す2つ目の入口なので、片方だけが
         # 余分を持つと、どの島に流れ着いたかが歩留まりに化ける。
         pick:
