@@ -383,6 +383,12 @@ object_texts:
       collect_rain:
         display_name: 雨を貯める
         description: 空のまま置いて、降っている雨を受ける。降り続くかぎり、雨の強さのぶんだけ溜まっていく。
+      draw_into_empty:
+        display_name: 汲む
+        description: 空の器を沈めて、口まで水を満たす。入る量は器が決める。
+      draw_into_filled:
+        display_name: 汲み足す
+        description: 水の残っている器へ、口まで汲み足す。
       wait:
         display_name: 待機
         description: 手を止めて時が過ぎるのを待つ。息が整うぶんだけ体力が戻る。

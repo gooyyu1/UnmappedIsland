@@ -892,3 +892,131 @@ object_defs:
     expect(tables.sampleCharacterName).toBe('medic');
   });
 });
+
+/**
+ * 労働0の工程が、時間を払えば通る経路を隠さないこと。
+ *
+ * ある型を生む工程のうち最も安い1つだけを上流として辿るので、労働0の工程（雨を受けて溜める）が
+ * 最安として選ばれると、経路まるごとが「時間を数えられない」側へ落ちる——**献立はそこを数えられない
+ * ので、時間を払えば通る経路（湧き水から汲む）が在っても土地は「賄えない」になる。**
+ *
+ * 労働0の工程を外して解き直した経路を2本目の候補として並べることで、両方が表に出る。
+ */
+describe('労働0の工程に隠れる経路', () => {
+  const YAML = `
+traits:
+  liquid:
+    tags: [liquid]
+
+  water_content:
+    tags: [water]
+    interactions:
+      drink:
+        trigger: menu
+        duration: 3
+        destroy: self
+        add: {agent: {hydration: 96}}
+
+  tea_content:
+    tags: [tea]
+    interactions:
+      # 道具（消費されない入力）を要求する。道具の入手が労働0でしか解けないので、絞り込んだ側では
+      # 前提が解けなくなる——それを島の穴として数えないことを見る。
+      drink_tea:
+        trigger: {drag: {object: dipper}}
+        duration: 3
+        destroy: self
+        add: {agent: {hydration: 48}}
+
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      hydration:
+        value: 96
+        range: {min: 0, max: 96}
+        passives:
+          - add: {self: {hydration: -1}}
+
+  grassland:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 15
+        pick:
+          - weight: 1
+            spawn: {object: bowl, into: self}
+          - weight: 1
+            spawn: {object: spring, into: self}
+      # 労働0でしか手に入らない道具。
+      pluck:
+        trigger: menu
+        spawn: {object: dipper, into: self}
+
+  dipper:
+    tags: [item]
+
+  spring:
+    tags: [fixture]
+    interactions:
+      draw:
+        trigger: {drag: {object: bowl}}
+        duration: 5
+        become: {subject: instrument, content: water_content}
+      draw_tea:
+        trigger: {drag: {object: bowl}}
+        duration: 5
+        become: {subject: instrument, content: tea_content}
+
+  bowl:
+    tags: [item]
+    interactions:
+      # 労働0で中身が入る（雨を受けて溜める側）。
+      collect_rain:
+        trigger: menu
+        become: {content: water_content}
+      brew:
+        trigger: menu
+        become: {content: tea_content}
+    variation_axes:
+      content: {of: {tag: liquid}}
+
+  water_content:
+    traits: [liquid, water_content]
+
+  tea_content:
+    traits: [liquid, tea_content]
+`;
+
+  const tables = buildBalanceTables(
+    new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset(),
+    'medic',
+  );
+
+  const grassland = tables.places.find((place) => place.name === 'grassland')!;
+  const hydrationRoutes = grassland.properties.find((chains) => chains.propertyName === 'hydration')!.routes;
+  const routesThrough = (stepName: string): readonly PropertyRoute[] =>
+    hydrationRoutes.filter((route) => route.route.steps.some((step) => step.stepName === stepName));
+
+  it('労働0の工程を通る経路は、時間を数えられない側に残る', () => {
+    expect(routesThrough('collect_rain').map((route) => route.route.untimed)).toEqual([true]);
+  });
+
+  it('時間を払えば通る経路が、同じ終端へもう1本並ぶ', () => {
+    expect(routesThrough('draw').map((route) => route.route.untimed)).toEqual([false]);
+  });
+
+  it('その経路が在るので、土地は賄えないと数えられない', () => {
+    expect(grassland.menu.unmet).toEqual([]);
+  });
+
+  it('絞り込んだ側で前提が解けないことは、島の穴にならない', () => {
+    // 茶を飲むのに要る道具は労働0でしか手に入らないので、解き直した側では前提が解けない。
+    // それを穴として数えると、労働0で手に入る道具が「島のどこにも入手経路が無いもの」になる。
+    expect(routesThrough('draw_tea')).toEqual([]);
+    expect(tables.gaps).toEqual([]);
+  });
+});
