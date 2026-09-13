@@ -133,6 +133,9 @@ object_defs:
         # 循環もしない（同3.2節、docs/world/Skills.md 2.4節）。
         conditions:
           - {reason: needs_preserving, subject: agent, prop: skill_preserving, in_stage_or_above: basic}
+        # 組み上げる速さも保存が決める（docs/world/Skills.md 7節）。囲いの寸法も煙の抜きも、
+        # 保たせる造作を知っている者ほど早く決まる。
+        deftness: {subject: agent, prop: preserving_deftness}
         steps:
           - requires:
               - {object: thick_branch, count: 6, consume: true}

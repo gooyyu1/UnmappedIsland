@@ -73,10 +73,13 @@ object_defs:
     props:
       seen_progress: {value: 0, base: {subject: patient, prop: progress}}
   # 2工程ともtick境界を跨ぐ長さ。1工程目を終えた状態で2工程目の最中を覗くために使う。
+  # 手際も名乗る——**工程が残っている間に進捗を読める唯一のレシピ**なので、経過した時間と進捗が
+  # 食い違うことを見るのはここ。
   bench:
     tags: [item]
     recipes:
       basic:
+        deftness: {subject: agent, prop: carving_deftness}
         steps:
           - requires:
               - {object: wood, count: 1, consume: true}
@@ -84,6 +87,39 @@ object_defs:
           - requires:
               - {object: wood, count: 1, consume: true}
             duration: 30
+  # 作る腕の上乗せ（docs/world/Skills.md 7節）を持つ作り手。段は持たず、試験の側で値を入れる。
+  handy_crafter:
+    tags: [item]
+    props:
+      carving_deftness: {value: 0}
+      carving_thrift: {value: 0}
+  # 手際と、余分の卓の両方を名乗るレシピ。
+  #
+  # **卓の「取れない側」の重みが0**なのは、引き結果を試験から決めるため。全候補の重みが0なら先頭が
+  # 選ばれる規約（10節）で素人は必ず1つ、無駄の無さが正なら必ず2つになる。
+  bowl:
+    tags: [item]
+    recipes:
+      carved:
+        deftness: {subject: agent, prop: carving_deftness}
+        steps:
+          - requires:
+              - {object: wood, count: 1, consume: true}
+            duration: 30
+        surplus:
+          - {weight: 0}
+          - weight: {subject: agent, prop: carving_thrift}
+            spawn: {object: bowl, into: agent}
+  # 手際が引き切れないほど短い工程。下限（MINIMUM_STEP_MINUTES）を確かめるために置く。
+  peg:
+    tags: [item]
+    recipes:
+      carved:
+        deftness: {subject: agent, prop: carving_deftness}
+        steps:
+          - requires:
+              - {object: wood, count: 1, consume: true}
+            duration: 10
   # 2つの工程が同じ型を要求する。枠の上限は合計（3）なので、1工程目の要求（1）より多く入りうる。
   raft:
     tags: [item]
@@ -237,6 +273,90 @@ object_defs:
     tryAdvanceCrafting(wip, worker());
 
     expect(session.world!.totalMinutes - before).toBe(30);
+  });
+
+  /**
+   * 作る腕の上乗せ（docs/world/Skills.md 7節）。**壊して赤くなるのを見る先はここ**——手際を0にすれば
+   * 短くならず、余分の重みを0にすれば2つ目が出ない。
+   */
+  describe('作り手の腕', () => {
+    /** 手際と無駄の無さを持つ作り手を、床へ置いて返す。 */
+    function handyCrafter(deftness: number, thrift = 0): WorldObject {
+      const crafter = putOnGround('handy_crafter');
+      crafter.getProperty(codex.propertyNames.getId('carving_deftness')).setNumberWithoutEvents(deftness);
+      crafter.getProperty(codex.propertyNames.getId('carving_thrift')).setNumberWithoutEvents(thrift);
+      return crafter;
+    }
+
+    /** 作りかけを床へ置いて、材料を1つ入れて返す。 */
+    function startCarving(productName: string): WorldObject {
+      const carving = session.createObject(idOf(inProgressObjectName(productName, 'carved')));
+      carving.moveToSlotOrRejection(ground.getSlot(codex.slotNames.getId('items')));
+      session.createObject(idOf('wood')).moveToSlotOrRejection(carving.getSlot(materialsId()));
+      return carving;
+    }
+
+    it('手際のぶんだけ、経過するゲーム内時間が短くなる', () => {
+      const carving = startCarving('bowl');
+      const before = session.world!.totalMinutes;
+
+      expect(tryAdvanceCrafting(carving, handyCrafter(20))).toBe(true);
+
+      expect(session.world!.totalMinutes - before, '30分の工程が20分ぶん短くなる').toBe(10);
+    });
+
+    it('手際は進捗を動かさない（片付いた仕事の量は腕によらない）', () => {
+      // 進捗の上限は宣言された仕事の量の合計（RecipeSystem.md 1節）で、ロード時に決まっている。
+      // 手際が進捗まで動かすと、腕の高い者は上限へ届かないまま工程を使い切る。
+      const benchWip = session.createObject(idOf(inProgressObjectName('bench', 'basic')));
+      benchWip.moveToSlotOrRejection(ground.getSlot(codex.slotNames.getId('items')));
+      session.createObject(idOf('wood')).moveToSlotOrRejection(benchWip.getSlot(materialsId()));
+      const before = session.world!.totalMinutes;
+
+      expect(tryAdvanceCrafting(benchWip, handyCrafter(20))).toBe(true);
+
+      expect(session.world!.totalMinutes - before, '経過するのは手際を引いた後').toBe(10);
+      expect(benchWip.tryGetProperty(progressId())?.number ?? 0, '進捗は宣言どおり').toBe(30);
+    });
+
+    it('手際を積んでも、工程は1分より短くならない', () => {
+      const carving = startCarving('peg');
+      const before = session.world!.totalMinutes;
+
+      expect(tryAdvanceCrafting(carving, handyCrafter(1000))).toBe(true);
+
+      expect(session.world!.totalMinutes - before, '10分の工程でも1分は掛かる').toBe(1);
+    });
+
+    it('余分の卓は、完成した瞬間に1回だけ引かれる', () => {
+      const carving = startCarving('bowl');
+
+      expect(tryAdvanceCrafting(carving, handyCrafter(0, 5))).toBe(true);
+
+      expect(
+        onGround().filter((name) => name === 'bowl').length,
+        '取れる側の重みだけが正なので、余分が1つ出る',
+      ).toBe(2);
+    });
+
+    it('無駄の無さが素（0）なら、余分は出ない', () => {
+      const carving = startCarving('bowl');
+
+      expect(tryAdvanceCrafting(carving, handyCrafter(0, 0))).toBe(true);
+
+      expect(onGround().filter((name) => name === 'bowl').length, '出来るのは1つだけ').toBe(1);
+    });
+
+    it('腕を持たない者が作っても、宣言どおりの時間で1つできる', () => {
+      // 上乗せを持たない作り手では参照が解決せず、寄与は0になる（6.5節と同じ扱い）。
+      const carving = startCarving('bowl');
+      const before = session.world!.totalMinutes;
+
+      expect(tryAdvanceCrafting(carving, worker())).toBe(true);
+
+      expect(session.world!.totalMinutes - before).toBe(30);
+      expect(onGround().filter((name) => name === 'bowl').length).toBe(1);
+    });
   });
 
   it('素材が消えるのは経過し切ってから（経過中の各tickではまだ箱に在る）', () => {

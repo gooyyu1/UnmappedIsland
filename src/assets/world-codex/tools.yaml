@@ -137,6 +137,10 @@ object_defs:
         conditions:
           - {reason: needs_knapping, subject: agent, prop: skill_knapping, in_stage_or_above: basic}
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
+        # **速さを決めるのは連言の2本ではなく、名乗った1本**（docs/world/Skills.md 7節）。溝を刻み、
+        # 刃の座りを見て据えるのが手間の大半で、紐は締めるだけ。**余分の卓は持たない**——斧は1本しか
+        # できない。
+        deftness: {subject: agent, prop: knapping_deftness}
         steps:
           # 柄をこしらえる。枝の先を割り、刃を落とし込む溝を作る。
           - requires:
@@ -204,6 +208,10 @@ object_defs:
           - {reason: needs_woodwork, subject: agent, prop: skill_woodwork, in_stage_or_above: basic}
           - {reason: needs_knapping, subject: agent, prop: skill_knapping, in_stage_or_above: basic}
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
+        # **速さを決めるのは連言の3本ではなく、名乗った1本**（docs/world/Skills.md 7節）。**石斧と
+        # 違って木材加工が名乗る**のは、手間の大半が2mの軸を削り出す工程にあるから——上の注記の
+        # とおり、軸だけが腕を要求する入力。
+        deftness: {subject: agent, prop: woodwork_deftness}
         steps:
           # 長い棒の皮を剥ぎ、2mの軸に削る。先には穂先を落とし込む溝を切る。**道具を要求しない**
           # ——柄をこしらえる工程が道具を名乗らないのは石斧・突き銛と同じで、削る刃はこの後の工程で
@@ -234,10 +242,12 @@ object_defs:
       volume: {value: 1800}
     recipes:
       hafted:
-        # 材料も工程も石斧と同じ柄付けなので、解放条件も同じ2本の連言になる。
+        # 材料も工程も石斧と同じ柄付けなので、解放条件も、速さを決める1本（docs/world/Skills.md 7節）も
+        # 石斧と同じになる。
         conditions:
           - {reason: needs_knapping, subject: agent, prop: skill_knapping, in_stage_or_above: basic}
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
+        deftness: {subject: agent, prop: knapping_deftness}
         steps:
           # 柄をこしらえる。枝の先を割り、穂先を落とし込む溝を作る。
           - requires:

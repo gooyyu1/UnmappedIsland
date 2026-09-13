@@ -7,17 +7,20 @@ import {
   requireNumber,
   tryGetBool,
   tryGetInt,
+  tryGetMap,
   tryGetScalar,
   tryGetSeq,
 } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { parseRequirementList } from './parseConditions';
-import { withYamlContext, parseTypeMatchRule } from './parseCommon';
+import { withYamlContext, parsePropertyRef, parseTypeMatchRule } from './parseCommon';
+import { parsePickList } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../domain/RecipeDef';
+import { PickEffect } from '../domain/PickEffect';
 import { ReferenceScope } from '../domain/ReferenceRoot';
 
-const RECIPE_KEYS = ['icon', 'steps', 'conditions'];
+const RECIPE_KEYS = ['icon', 'steps', 'conditions', 'deftness', 'surplus'];
 const STEP_KEYS = ['requires', 'duration'];
 const REQUIREMENT_KEYS = ['object', 'tag', 'count', 'consume'];
 
@@ -63,6 +66,10 @@ function parseStep(loader: WorldCodexYamlLoader, context: string, node: YamlNode
  * `conditions`（SkillSystem.md 4節）は**このレシピを知っているか**の判定で、素材の充足を見る
  * `steps.requires`とは別物。判定する時点では成果物のインスタンスがまだ無いので、そこを起点に辿る
  * 参照は解決先を持たない（何を書けるかは下のReferenceScope.acting.withoutSelfが決める）。
+ *
+ * **`deftness`（手際）も同じ場所で解く**——読むのは工程を進める最中で、そこに居るのはまだ作りかけ
+ * であって成果物ではない。一方**`surplus`（余分の卓）はselfが居る**——引くのは完成した瞬間で、
+ * 同じ個体が既に成果物になっている（9.9節の`become`）。
  */
 export function parseRecipes(
   loader: WorldCodexYamlLoader,
@@ -89,7 +96,27 @@ export function parseRecipes(
       'conditions',
     );
 
-    result.push(new RecipeDef(name, steps, tryGetScalar(map, 'icon', context), unlock));
+    const deftnessNode = tryGetMap(map, 'deftness', context);
+    const deftness =
+      deftnessNode === undefined
+        ? undefined
+        : withYamlContext(`${context}.deftness`, () => {
+            requireKnownKeys(deftnessNode, ['subject', 'prop'], `${context}.deftness`);
+            return parsePropertyRef(
+              loader,
+              `${context}.deftness`,
+              deftnessNode,
+              ReferenceScope.acting.withoutSelf,
+            );
+          });
+
+    const surplusNode = tryGetSeq(map, 'surplus', context);
+    const surplus =
+      surplusNode === undefined
+        ? undefined
+        : new PickEffect(parsePickList(loader, context, surplusNode, ReferenceScope.acting, 'surplus'));
+
+    result.push(new RecipeDef(name, steps, tryGetScalar(map, 'icon', context), unlock, deftness, surplus));
   }
 
   return result;

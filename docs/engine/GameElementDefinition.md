@@ -2463,6 +2463,7 @@ object_defs:
         icon: axe_wip.png
         conditions:
           - {subject: agent, prop: skill_knapping, in_stage_or_above: basic}
+        deftness: {subject: agent, prop: knapping_deftness}
         steps:
           - requires:
               - {object: wood, count: 2, consume: true}
@@ -2478,7 +2479,10 @@ object_defs:
 - レシピは 1 つ以上の**工程（`steps`）**からなります。
 - 各工程は 1 つ以上の**素材または道具**を要求します（`requires`）。素材（`consume: true`）は消費され、道具
   （`consume: false`）は消耗しますが消費はされません。
-- 各工程には所要**時間（`duration`）**が定義されます。
+- 各工程には**仕事の量（`duration`）**が、それを素人が片付けるのにかかるゲーム内時間（分）として定義されます。
+  **リテラル数値だけ**で、`{prop: ...}` 参照は書けません——進捗の上限がこの合計なので（`RecipeSystem.md` 1 節）、
+  誰が作っても同じ値でなければ、作りかけの進み具合が作り手ごとに違う意味を持ちます。
+  **実際に経過する時間は作り手の手際ぶん短くなります**（13.6 節）。
 - 最後の工程まで完了すると、目的のアイテムが生成されます。
 
 **要求する相手は、型そのものでもタグでも指せます**（`{object: ...}` / `{tag: ...}` のいずれか一方、
@@ -2557,6 +2561,40 @@ crafting_conditions:
 - 判定するのは `crafting.tryAdvanceCrafting` です。
 - `interactions` として宣言されている手作業は、この一律の条件には掛かりません——それぞれが自分の
   `conditions` に書きます。
+
+### 13.6 deftness / surplus（作り手の腕が効く先）
+
+**作る速さと歩留まりを決める腕を、レシピが名乗ります**（設計は [`Skills.md`](../world/Skills.md) 7 節）。
+どちらも省略でき、省けばそのレシピに腕は効きません。
+
+```yaml
+recipes:
+  knotted:
+    conditions:
+      - {subject: agent, prop: skill_cordage, in_stage_or_above: basic}
+    deftness: {subject: agent, prop: cordage_deftness}
+    steps:
+      - requires: [{object: plant_fiber, count: 2, consume: true}]
+        duration: 30
+    surplus:
+      - {weight: 100}
+      - weight: {subject: agent, prop: cordage_thrift}
+        spawn: {object: snare, into: agent}
+```
+
+- **`deftness`（手際）** は、工程1つにかかる時間から引く上乗せの在り処です。書き方は `{subject, prop}`
+  （10.2 節と同じ参照1つ）。**引く側が符号を持つ**ので、上乗せ自身の値は正で、腕が上がるほど大きくなります
+  ——押し上げ方をアクセス系の上乗せ（同 5 節）と同じ向きで読めるようにするためです。**0 分にはなりません**
+  （下限は工程の側が持ちます。上乗せは所要時間の違う工程すべてに積まれるので、どこまで引いてよいかを
+  知りません）。
+- **`surplus`（無駄の無さ）** は、**最後の工程を終えた瞬間に1回だけ引く卓**です。書き方は `pick`（10 節）と
+  同じ並びで、「取れない側」の重みを作る相手が名乗り、「取れる側」の重みに作り手の上乗せを置きます
+  （素は 0 なので、腕が無ければ何も起きません）。
+- **`conditions` から導かず、別に名乗ります。** 上位のレシピは複数の腕を連言で要求する（[`SkillSystem.md`](./SkillSystem.md)
+  4.1 節）ので、解放条件からはどの腕が速さを決めるか 1 つに定まりません。
+- **書ける主語が 2 つで違います。** `deftness` を読むのは工程を進める最中で、そこに居るのはまだ作りかけ
+  なので、`conditions` と同じく宣言元の個体が居ません（13.3 節）。`surplus` を引くのは完成した後で、同じ個体が
+  既に成果物になっている（9.9 節の `become`）ので、そちらでは `self` が成果物を指します。
 
 ## 14. conditions（条件式）
 

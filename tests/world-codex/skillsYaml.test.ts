@@ -65,6 +65,22 @@ const ACCESS_BONUSES = [
 ] as const;
 
 /**
+ * 製作系の腕（Skills.md 2節）と、その段が押し上げる上乗せ（同7節）。**アクセス系と違って、これが
+ * 切れても腕は死なない**——解放は解放条件が担うので、切れると「解放しか効かない腕」へ戻る。
+ *
+ * 読まれ方もアクセス系と違う（つまみの`base`ではなく、レシピの`deftness`・`surplus`が直に名乗る、
+ * GameElementDefinition.md 13.1節）ので、下の`recipeBonusesNamed`が拾う。
+ */
+const CRAFTING_BONUSES = [
+  { skill: 'skill_knapping', bonus: 'knapping_deftness', byStage: [0, 3, 8, 15] },
+  { skill: 'skill_cordage', bonus: 'cordage_deftness', byStage: [0, 3, 8, 15] },
+  { skill: 'skill_cordage', bonus: 'cordage_thrift', byStage: [0, 10, 25, 60] },
+  { skill: 'skill_woodwork', bonus: 'woodwork_deftness', byStage: [0, 3, 8, 15] },
+  { skill: 'skill_leatherwork', bonus: 'leatherwork_deftness', byStage: [0, 3, 8, 15] },
+  { skill: 'skill_preserving', bonus: 'preserving_deftness', byStage: [0, 3, 8, 15] },
+] as const;
+
+/**
  * その節の下にある `add: {agent: {<腕>: n}}` を、腕の名前と量の組で1件ずつ渡す。効果はロード後には
  * 木へ畳まれていて列挙できないため、理由（reason）を集める bundledLocale.test.ts と同じく構文木を辿る。
  *
@@ -168,11 +184,12 @@ function huntingGrantingTypes(): ReadonlySet<string> {
 }
 
 /**
- * 世界のどこかで `{subject: agent, prop: <腕>}` として読まれている腕。**読む側の書き方は1つ**なので、
- * レシピの解放条件（docs/engine/SkillSystem.md 4節）も、操作の `conditions` も、`base` の土台も、
- * この1本で拾える——**どこで読まれているかではなく、読まれているかだけを問う。**
+ * 世界のどこかで `{subject: agent, prop: ...}` として読まれているプロパティ。**読む側の書き方は1つ**
+ * なので、レシピの解放条件（docs/engine/SkillSystem.md 4節）も、操作の `conditions` も、`base` の
+ * 土台も、レシピの `deftness`・`surplus` の重み（GameElementDefinition.md 13.1節）も、この1本で
+ * 拾える——**どこで読まれているかではなく、読まれているかだけを問う。**
  */
-function skillsReadFromAgent(): ReadonlySet<string> {
+function propsReadFromAgent(): ReadonlySet<string> {
   const found = new Set<string>();
 
   const walk = (node: unknown): void => {
@@ -184,12 +201,7 @@ function skillsReadFromAgent(): ReadonlySet<string> {
 
     const subject = node.get('subject', true);
     const prop = node.get('prop', true);
-    if (
-      isScalar(subject) &&
-      String(subject.value) === 'agent' &&
-      isScalar(prop) &&
-      String(prop.value).startsWith(SKILL_PREFIX)
-    )
+    if (isScalar(subject) && String(subject.value) === 'agent' && isScalar(prop))
       found.add(String(prop.value));
     for (const pair of node.items) walk(pair.value);
   };
@@ -473,6 +485,30 @@ describe('腕前とレシピの解放条件', () => {
     return character;
   }
 
+  /**
+   * そのレシピの解放条件が要求している腕。**条件木は畳まれていて読めない**ので、全部を熟達させた
+   * 状態から1本ずつ素人へ落として、条件が落ちるかで割り出す。
+   *
+   * **割り出しを1本にまとめてある**——要求している腕を問う側は複数あり、落とし方が2つあると、
+   * 片方だけが連言の2本目を数え落としても気付けない。
+   */
+  function requiredSkills(product: string, recipe: RecipeDef): ReadonlySet<string> {
+    // 落とす前が開いていなければ、落ちたことが「その腕を要求している」の証拠にならない。開かない
+    // レシピは「解放条件は、腕が上がった後も満たされ続ける」が捕まえるので、ここは前提だけを確かめる。
+    expect(
+      recipe.unmetUnlockRequirement(characterWithSkills(STAGES.at(-1)!.min)),
+      `'${product}': 熟達しても開かない`,
+    ).toBeUndefined();
+
+    const required = new Set<string>();
+    for (const [index, skillName] of SKILLS.entries()) {
+      const character = characterWithSkills(STAGES.at(-1)!.min);
+      character.getProperty(skillIds[index]).setNumberWithoutEvents(0);
+      if (recipe.unmetUnlockRequirement(character) !== undefined) required.add(skillName);
+    }
+    return required;
+  }
+
   /** 解放条件を持つレシピすべて（完成品の名前を添える）。 */
   function gatedRecipes(): readonly { product: string; recipe: RecipeDef }[] {
     const found: { product: string; recipe: RecipeDef }[] = [];
@@ -651,27 +687,53 @@ describe('腕前とレシピの解放条件', () => {
   });
 
   it('解放条件が名指しする腕には、それを伸ばす操作がある（永久に開かないレシピを作らない）', () => {
-    // SkillSystem.md 3.2節のブートストラップ。要求している腕は、全部を熟達させた状態から1本ずつ
-    // 素人へ落として、条件が落ちるかで割り出す（条件木は畳まれていて読めない）。
+    // SkillSystem.md 3.2節のブートストラップ。
     const gains = declaredSkillGains();
 
-    for (const { product, recipe } of gatedRecipes()) {
-      // 落とす前が開いていなければ、落ちたことが「その腕を要求している」の証拠にならない。
-      // 開かないレシピは上のテストが捕まえるので、ここでは割り出しの前提だけを確かめる。
-      expect(
-        recipe.unmetUnlockRequirement(characterWithSkills(STAGES.at(-1)!.min)),
-        `'${product}': 熟達しても開かない`,
-      ).toBeUndefined();
-
-      for (const [index, skillName] of SKILLS.entries()) {
-        const character = characterWithSkills(STAGES.at(-1)!.min);
-        character.getProperty(skillIds[index]).setNumberWithoutEvents(0);
-        if (recipe.unmetUnlockRequirement(character) === undefined) continue;
-
+    for (const { product, recipe } of gatedRecipes())
+      for (const skillName of requiredSkills(product, recipe))
         expect(gains.has(skillName), `'${product}' が要求する ${skillName} を伸ばす操作が世界に無い`).toBe(
           true,
         );
+  });
+
+  it('製作系の腕は、段が上がるほど上乗せを押し上げる', () => {
+    // アクセス系（上のテスト）と同じ形。**素は0**で、上の段ほど大きい。手際が正の値なのは、
+    // 符号を持つのが引く側の工程だから（GameElementDefinition.md 13.1節）——「段が上がるほど
+    // 大きい」をアクセス系と同じ向きで読めるようにしてある。
+    for (const { skill, bonus, byStage } of CRAFTING_BONUSES) {
+      const character = characterWithSkills(0);
+      const skillProperty = character.getProperty(codex.propertyNames.getId(skill));
+      const bonusProperty = character.getProperty(codex.propertyNames.getId(bonus));
+
+      for (const [index, stage] of STAGES.entries()) {
+        skillProperty.setNumberWithoutEvents(stage.min);
+        expect(bonusProperty.getEffectiveValue(), `${skill} が ${stage.name} のときの ${bonus}`).toBe(
+          byStage[index],
+        );
       }
+      expect(byStage[0], `${bonus} の素`).toBe(0);
+      expect([...byStage], `${bonus} は段が上がるほど大きい`).toEqual([...byStage].sort((a, b) => a - b));
+    }
+  });
+
+  it('腕を要求するレシピは、要求している腕の手際を名乗る', () => {
+    // **名乗りは解放条件から導けない**（連言なので1つに定まらない、docs/world/Skills.md 7節）ので、
+    // レシピごとに書く。書き忘れると、その1本だけ腕を上げても速くならないレシピになる——目視では
+    // 揃っているか分からないので、ここで塞ぐ。**要求していない腕を名乗るのも誤り**で、作れるように
+    // なった腕とは別の腕を上げないと速くならない形になる。
+    const skillOfBonus = new Map<string, string>(CRAFTING_BONUSES.map((entry) => [entry.bonus, entry.skill]));
+    const recipes = gatedRecipes();
+    expect(recipes.length, '腕を要求するレシピが1つも無い').toBeGreaterThan(0);
+
+    for (const { product, recipe } of recipes) {
+      const bonusId = recipe.deftness?.propertyGlobalId;
+      expect(bonusId, `'${product}': 速さを決める腕を名乗っていない`).toBeDefined();
+
+      const bonus = codex.propertyNames.getName(bonusId!);
+      expect([...requiredSkills(product, recipe)], `'${product}' が名乗る ${bonus} の腕`).toContain(
+        skillOfBonus.get(bonus),
+      );
     }
   });
 
@@ -726,17 +788,36 @@ describe('腕前とレシピの解放条件', () => {
     // 何も起きないバーが画面に並ぶ（docs/ui/StatusArea.md 9節）。伸ばす操作を先に入れて効き先を
     // 後から入れる順で世界が育つので、その間が空いたままにならないよう、ここで塞ぐ。
     //
-    // 効き先は系統で分かれる（Skills.md 2節）。**製作系は誰かがその腕を読むこと**（レシピの解放
-    // 条件・操作の条件）、**アクセス系は重みへの上乗せ**（同5節）で、アクセス系はレシピを開けない
-    // ので読まれる側には現れない。**製作系も速さと歩留まりへ効く**ことは決まっている（同6節）。
-    // そこへ上乗せを積むという積み方は仮決めで（同7節）、レシピの工程がそれを受け取る文法もまだ
-    // 無いので、ここが数えるのは読まれる側だけ。
+    // 効き先は2通りある（Skills.md 2節）。**腕そのものが読まれる**（レシピの解放条件・操作の
+    // 条件）か、**段が押し上げる上乗せが読まれる**（アクセス系は同5節、製作系は同7節）か。
+    // アクセス系はレシピを開けないので前者には現れず、製作系は解放も速さも歩留まりも持つ。
+    //
+    // **数えるのは、読まれている上乗せだけ**——宣言しただけで誰も読まないものを数えると、
+    // 「動いても何も起きない」をそのまま通してしまう。
     const gains = declaredSkillGains();
+    const read = propsReadFromAgent();
     const effective = new Set<string>([
-      ...skillsReadFromAgent(),
-      ...ACCESS_BONUSES.map((entry) => entry.skill),
+      ...[...read].filter((name) => name.startsWith(SKILL_PREFIX)),
+      ...[...ACCESS_BONUSES, ...CRAFTING_BONUSES]
+        .filter((entry) => read.has(entry.bonus))
+        .map((entry) => entry.skill),
     ]);
 
     expect(SKILLS.filter((name) => gains.has(name) && !effective.has(name))).toEqual([]);
+  });
+
+  it('製作系は、解放だけでなく上乗せも読まれている', () => {
+    // 一つ上は「効き先が1つでもあるか」なので、**製作系は解放条件に名前が出るだけで通ってしまう**
+    // ——そこを通すと、解放しか効かない腕（Skills.md 6節が【確定】で否定した形）へ黙って戻れる。
+    // 上乗せの側が読まれていることは、ここだけが見ている。
+    const gains = declaredSkillGains();
+    const read = propsReadFromAgent();
+
+    expect(
+      CRAFTING_BONUSES.filter((entry) => gains.has(entry.skill) && !read.has(entry.bonus)).map(
+        (entry) => entry.bonus,
+      ),
+      '宣言しただけで誰も読まない上乗せ',
+    ).toEqual([]);
   });
 });

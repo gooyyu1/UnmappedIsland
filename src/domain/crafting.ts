@@ -32,8 +32,9 @@ export function materialsSlotOf(inProgress: WorldObject): Slot | undefined {
 /**
  * 製作中オブジェクトで、今取り掛かっている工程（RecipeSystem.md 1節）。
  *
- * 進捗は工程の所要時間を積み上げた値なので、**進捗が入る区間**がそのまま工程を指す。
- * 全工程を終えていればundefined（完成はprogressのon_maxが起こす）。
+ * 進捗は工程が宣言した仕事の量を積み上げた値なので、**進捗が入る区間**がそのまま工程を指す。
+ * 作り手の手際で動くのは経過する時間だけなので、この区切りは誰が作っていても同じ
+ * （RecipeDef.minutesFor）。全工程を終えていればundefined（完成はprogressのon_maxが起こす）。
  */
 export function currentStep(recipe: RecipeDef, progress: number): RecipeStepDef | undefined {
   let consumed = 0;
@@ -141,8 +142,9 @@ export function stepIsSupplied(inProgress: WorldObject, step: RecipeStepDef): bo
 }
 
 /**
- * 工程を1つ進める。その工程の所要時間ぶんゲーム内時間と進捗を進め、素材（`consume: true`）を
- * 要求数だけ消費する。道具（`consume: false`）は減らさない。
+ * 工程を1つ進める。**作り手の手際を引いた後の分数**ぶんゲーム内時間を進め、**工程が宣言した
+ * 仕事の量**ぶん進捗を進め、素材（`consume: true`）を要求数だけ消費する。道具（`consume: false`）は
+ * 減らさない。最後の工程を終えたら、余分の卓（`RecipeDef.surplus`）を1回引く。
  *
  * 「在庫を確認し、指定数量だけ消費し、足りなければ何もしない」という複合動作はYAMLの語彙では
  * 表せないため、ここに置く（RecipeSystem.md 2節・4節）。**時間と効果の順序はactions/combinationsと
@@ -171,7 +173,7 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
   // 素材も道具も運ばれてきた側ではなく、既に材料スロットの中身だから（運び入れる操作は7.10節で、
   // そちらでは入れる物がinstrument）。実行なので動作主も主張する（whileActing）——経過中に配られて
   // 待たされた手番は、工程を進め終えたこの切れ目で起きる。
-  return new InteractionRelation(inProgress, agent, undefined).whileActing(() => {
+  return new InteractionRelation(inProgress, agent, undefined).whileActing((context) => {
     const progressGlobalId = codex.vocabulary.engine.progressId;
     const step = currentStep(recipe, inProgress.tryGetProperty(progressGlobalId)?.number ?? 0);
     if (step === undefined) return false;
@@ -181,10 +183,14 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
     // （ActionSystem.md 2節）。素材は作業のあいだ材料スロットに在り、無くなるのは作業を終えた
     // 時点で、完成品もその時刻に生まれる。
     //
+    // **経過するのは作り手の手際を引いた後の分数**（RecipeDef.minutesFor）で、進捗が受け取るのは
+    // 工程が宣言した仕事の量そのもの。腕が変えるのは仕事にかかる時間で、仕事の量ではない。
+    //
     // 生存を見るのは製作中オブジェクトだけ（actionsのselfにあたる）。これを失うと進捗の行き先も
     // 完成品の生まれる場所も無くなり、黙って何も起きない結果になる。素材は違う——経過中に失われても
     // 打ち切らない。それは開始時に済ませた在庫確認（stepIsSupplied）の再判定にあたる（同6.1節）。
-    if (!spendDurationAndReportParticipantsAlive(step.durationMinutes, session, [inProgress])) return false;
+    if (!spendDurationAndReportParticipantsAlive(recipe.minutesFor(step, agent), session, [inProgress]))
+      return false;
 
     // 消費が進捗より先なのは、進捗が上限を超えた瞬間に完成し、残っている物は親へこぼれてしまうため。
     const allocated = allocateContentsToRequirements(materialsSlotOf(inProgress)?.contents ?? [], step);
@@ -198,6 +204,12 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
     // 工程の進捗バー（CardView.md 10.1節、inProgressObjects.FINISHED_STEPS_PROPERTY）が読む純粋な
     // 回数。工程が1つのレシピにはそもそも宣言が無いので、持っていなければ何も起きない。
     inProgress.tryGetProperty(codex.vocabulary.engine.finishedStepsId)?.add(1);
+
+    // 最後の工程を終えていれば、上のaddが上限へ届いて完成している（progressのon_maxがbecomeを
+    // 起こす、RecipeSystem.md 1節）ので、**もうレシピの軸を名乗っていない**。余分の卓を引くのは
+    // ここ——同じ個体が既に成果物になっているので、卓は自分と同じ物を1つ増やす形で書ける。
+    if (recipeOf(inProgress) === undefined && recipe.surplus !== undefined)
+      inProgress.applyActiveEffect(recipe.surplus, context);
 
     spillUnneeded(inProgress, recipe);
     return true;
