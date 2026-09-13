@@ -412,7 +412,7 @@ describe('動物の1手', () => {
     wound(boar);
     passTurn();
 
-    expect(afterOne, '傷1つでは、痛みはclearの下端に留まる').toBe('clear');
+    expect(afterOne, '傷1つでは、痛みの押し下げがclearの下端までしか届かない').toBe('clear');
     expect(consciousness.stage?.name, '2つ目でfoggyを跨いでdazedへ').toBe('dazed');
   });
 
