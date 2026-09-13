@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import type { YAMLMap } from 'yaml';
 import { isMap, isScalar, isSeq, parseDocument } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { discoverySourcesOf, islandDiscoveryCoverageOf } from '../../src/analysis/discoveryCoverage';
+import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import type { RecipeDef } from '../../src/domain/RecipeDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
@@ -47,8 +49,17 @@ const STAGES = [
   { name: 'expert', min: 180 },
 ] as const;
 
-/** 1回の作業で伸びる量（SkillSystem.md 3節の実行経路）。作業の長さに依らず一律。 */
-const GAIN_PER_ACTION = 2;
+/**
+ * 腕が伸びる経路（SkillSystem.md 3節の表）。**書かれている場所で決まる**——操作の直下の `add` が実行、
+ * `pick` の候補に埋めた `add` が発見（同3.3節）。練習はまだ世界に無い。
+ */
+type SkillRoute = 'execution' | 'discovery';
+
+/** 1回で伸びる量（SkillSystem.md 3節の表の「中」と「小」）。どちらも作業の長さに依らず一律。 */
+const GAIN_BY_ROUTE: Readonly<Record<SkillRoute, number>> = { execution: 2, discovery: 1 };
+
+/** 島を何個生成して発見の契機の行き渡りを見るか。**stats/discovery_coverage.yaml と同じ数**に揃える。 */
+const ISLAND_SEED_COUNT = 2000;
 
 /**
  * アクセス系の腕（Skills.md 2節）と、その段が押し上げる上乗せ（同5節）。レシピを開けない腕なので、
@@ -65,17 +76,24 @@ const ACCESS_BONUSES = [
 ] as const;
 
 /**
- * その節の下にある `add: {agent: {<腕>: n}}` を、腕の名前と量の組で1件ずつ渡す。効果はロード後には
+ * その節の下にある `add: {agent: {<腕>: n}}` を、腕の名前・量・経路の組で1件ずつ渡す。効果はロード後には
  * 木へ畳まれていて列挙できないため、理由（reason）を集める bundledLocale.test.ts と同じく構文木を辿る。
  *
  * **配っている量を集めるのも、配っているかを問うのも、この1本を通す。** 同じ状態機械
  * （`add` の何段目に居るか）を2つ持つと、片方だけが `agent` 以外の役を数え始めても気付けない。
+ *
+ * **経路は `pick` をくぐったかで決まる。** 候補に埋めた `add` が発見で、操作の直下のものが実行
+ * （SkillSystem.md 3.3節）——この2つを一緒に数えると、量の違い（+1と+2）が「作業ごとに違う量」に
+ * 見えてしまう。
  */
-function walkAgentSkillGains(node: unknown, visit: (skillName: string, amount: number) => void): void {
+function walkAgentSkillGains(
+  node: unknown,
+  visit: (skillName: string, amount: number, route: SkillRoute) => void,
+): void {
   /** stateは、この節の直下のキーが `add` の何段目に居るか。 */
-  const walk = (current: unknown, state: 'none' | 'add' | 'add_agent'): void => {
+  const walk = (current: unknown, state: 'none' | 'add' | 'add_agent', route: SkillRoute): void => {
     if (isSeq(current)) {
-      for (const item of current.items) walk(item, state);
+      for (const item of current.items) walk(item, state, route);
       return;
     }
     if (!isMap(current)) return;
@@ -83,23 +101,34 @@ function walkAgentSkillGains(node: unknown, visit: (skillName: string, amount: n
     for (const pair of current.items) {
       const key = isScalar(pair.key) ? String(pair.key.value) : '';
       if (state === 'add_agent' && key.startsWith(SKILL_PREFIX)) {
-        visit(key, isScalar(pair.value) ? Number(pair.value.value) : Number.NaN);
+        visit(key, isScalar(pair.value) ? Number(pair.value.value) : Number.NaN, route);
         continue;
       }
-      walk(pair.value, state === 'add' && key === 'agent' ? 'add_agent' : key === 'add' ? 'add' : 'none');
+      walk(
+        pair.value,
+        state === 'add' && key === 'agent' ? 'add_agent' : key === 'add' ? 'add' : 'none',
+        key === 'pick' ? 'discovery' : route,
+      );
     }
   };
-  walk(node, 'none');
+  walk(node, 'none', 'execution');
 }
 
-/** 定義ファイルが `add` で `agent` の腕前へ配っている量を、腕ごとに集める。 */
-function declaredSkillGains(): ReadonlyMap<string, ReadonlySet<number>> {
-  const gains = new Map<string, Set<number>>();
+/**
+ * 定義ファイルが `add` で `agent` の腕前へ配っている量を、腕ごと・経路ごとに集める。
+ *
+ * 腕が引けること自体が「その腕には伸ばす経路がある」で、経路の別は問わない——発見だけで伸びる腕も、
+ * 解放条件に書いてよい（SkillSystem.md 3.2節のブートストラップ）。
+ */
+function declaredSkillGains(): ReadonlyMap<string, ReadonlyMap<SkillRoute, ReadonlySet<number>>> {
+  const gains = new Map<string, Map<SkillRoute, Set<number>>>();
   for (const path of worldCodexYamlPaths())
-    walkAgentSkillGains(parseDocument(readFileSync(path, 'utf8')).contents, (skillName, amount) => {
-      const amounts = gains.get(skillName);
-      if (amounts === undefined) gains.set(skillName, new Set([amount]));
-      else amounts.add(amount);
+    walkAgentSkillGains(parseDocument(readFileSync(path, 'utf8')).contents, (skillName, amount, route) => {
+      const byRoute = gains.get(skillName) ?? new Map<SkillRoute, Set<number>>();
+      gains.set(skillName, byRoute);
+      const amounts = byRoute.get(route) ?? new Set<number>();
+      byRoute.set(route, amounts);
+      amounts.add(amount);
     });
   return gains;
 }
@@ -387,6 +416,44 @@ function beastSpawningCandidates(): readonly { where: string; missingSkill: bool
   return found;
 }
 
+/**
+ * 発見の契機（SkillSystem.md 3.3節）が配る腕ごとに、その契機を出す型の名前を集める。
+ *
+ * **候補は自分の `spawn` と `add` を並べて持つ**ので、見るのは候補1つの中だけ。入れ子の `pick`
+ * （山頂の `on_max` など）も、候補として同じように辿る。
+ */
+function discoveryGrantTypes(): ReadonlyMap<string, ReadonlySet<string>> {
+  const bySkill = new Map<string, Set<string>>();
+
+  const walk = (node: unknown): void => {
+    if (isSeq(node)) {
+      for (const item of node.items) walk(item);
+      return;
+    }
+    if (!isMap(node)) return;
+
+    for (const pair of node.items) {
+      if (isScalar(pair.key) && String(pair.key.value) === 'pick' && isSeq(pair.value))
+        for (const candidate of pair.value.items) {
+          if (!isMap(candidate)) continue;
+          const types = spawnedTypesOf(candidate.get('spawn', true));
+          // 候補から見て `pick` をくぐらないもの＝この候補自身の `add`。入れ子の候補の `add` は
+          // `discovery` で届くので、そちらの型と混ざらない（入れ子は下の再帰が自分で拾う）。
+          walkAgentSkillGains(candidate, (skillName, _amount, route) => {
+            if (route !== 'execution') return;
+            const found = bySkill.get(skillName) ?? new Set<string>();
+            bySkill.set(skillName, found);
+            for (const type of types) found.add(type);
+          });
+        }
+      walk(pair.value);
+    }
+  };
+
+  for (const path of worldCodexYamlPaths()) walk(parseDocument(readFileSync(path, 'utf8')).contents);
+  return bySkill;
+}
+
 /** 操作1つ分の、出す物と配る腕。 */
 interface InteractionGains {
   readonly name: string;
@@ -553,6 +620,37 @@ describe('腕前とレシピの解放条件', () => {
     }
   });
 
+  it('発見の契機は、どの島にも1つは残る（同じ腕へ配る型が土地の型をまたぐ）', () => {
+    // SkillSystem.md 3.3節。契機は型を名指しで書くので、**その型を出す土地が生成されなかった島では
+    // 契機ごと消える**——単独の土地の型からしか出ない型（密林だけのマニラ麻）に頼ると、半分の島で
+    // その腕の発見経路が無くなる。型を土地の型をまたいで並べることでしか防げず、並んでいるかは
+    // locations.yamlを読んでも分からない（どの土地がどの島に出るかは生成が決める）ので、実際に島を
+    // 生成して確かめる。
+    const sources = discoverySourcesOf(codex);
+    const indexOfObject = new Map(sources.objects.map((object, index) => [object.name, index]));
+    const grants = discoveryGrantTypes();
+
+    expect(grants.size, '発見の契機が1つも無い').toBeGreaterThan(0);
+    // 探索で出ない型を契機に据えていれば、下の突き合わせは黙って素通りする（消えたかを問えない）。
+    expect(
+      [...grants].flatMap(([skill, types]) =>
+        [...types].filter((type) => !indexOfObject.has(type)).map((type) => `${skill}: ${type}`),
+      ),
+      '探索で見つからない型を契機にしている',
+    ).toEqual([]);
+
+    const lost: string[] = [];
+    for (let seed = 0; seed < ISLAND_SEED_COUNT; seed++) {
+      const coverage = islandDiscoveryCoverageOf(sources, generateIsland(codex.generation!, 'island', seed));
+      const missing = new Set(coverage.missingObjectIndices);
+      for (const [skill, types] of grants)
+        if ([...types].every((type) => missing.has(indexOfObject.get(type)!)))
+          lost.push(`種${seed}: ${skill}`);
+    }
+
+    expect(lost.slice(0, 5), `${ISLAND_SEED_COUNT}個の島で、契機が丸ごと消えた腕`).toEqual([]);
+  });
+
   it('狩猟の腕を配る相手を湧かせる候補は、腕を土台にしたつまみを読む', () => {
     // 「出くわす機会」は探索の`pick`が湧かせる（Skills.md 5節）。**宣言の場所が散らばっているので、
     // 目視では揃っているか分からない**——地上の獣は`beast` traitの`strike`が腕を配り、海の群れは
@@ -675,11 +773,13 @@ describe('腕前とレシピの解放条件', () => {
     }
   });
 
-  it('腕を配る操作は、作業の長さに依らず一律の量を配る', () => {
+  it('腕を配る操作は、経路ごとに一律の量を配る（作業の長さでは変えない）', () => {
     // 量を作業ごとに変えると、短い作業を繰り返すのが最も速い伸ばし方になる。繰り返しの稼ぎを
-    // 抑えるのは時間のコストだけ（SkillSystem.md 7節）。
-    for (const [skillName, amounts] of declaredSkillGains())
-      expect([...amounts], `${skillName} が配る量`).toEqual([GAIN_PER_ACTION]);
+    // 抑えるのは時間のコストだけ（SkillSystem.md 7節）。**経路の間でだけ差を置く**——発見は実行より
+    // 小さい（同3節の表）ので、同じ+2で並べると探索が仕事と同じ重みの入口になる。
+    for (const [skillName, byRoute] of declaredSkillGains())
+      for (const [route, amounts] of byRoute)
+        expect([...amounts], `${skillName} が ${route} で配る量`).toEqual([GAIN_BY_ROUTE[route]]);
   });
 
   it('出す物がそっくり同じ操作は、同じ腕を配る（同じ仕事の2つ目の入口で片方が抜けない）', () => {
