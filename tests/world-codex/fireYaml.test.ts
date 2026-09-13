@@ -768,3 +768,53 @@ describe('fire.yamlの火の連鎖', () => {
     expect(bowl.def.name, '抜け切れば水').toBe('coconut_bowl__content_water_liquid');
   });
 });
+
+/**
+ * 炉の火床の枠が、空いているうちに何を名乗るか（docs/engine/FireSystem.md 1.1節、
+ * docs/ui/CardView.md 11節）。**火の中の枠と石の上の枠が違うものを受ける**のが炉の段の実体なので、
+ * どちらがどちらかは枠自身が言う。
+ */
+describe('炉の火床の枠が名乗る型', () => {
+  const codex = bundledCodex();
+
+  const fireCells = (hearthName: string): readonly (readonly string[])[] => {
+    const hearth = codex.objects.get(codex.objectNames.getId(hearthName));
+    const slotDef = hearth.tryGetSlotDef(codex.slotNames.getId('fire'));
+    if (slotDef === undefined) throw new Error(`${hearthName} が fire スロットを持ちません。`);
+    return codex.typesShownInEmptyCells(slotDef).map((types, index) =>
+      types.map((id) => {
+        const def = codex.objects.get(id);
+        if (!slotDef.cellAt(index).accepts(def))
+          throw new Error(`${hearthName} の${index}番目の枠が受けない型（${def.name}）を名乗っています。`);
+        return def.name;
+      }),
+    );
+  };
+
+  it('器を載せられる炉は、火の中の枠と石の上の枠で違う型を名乗る', () => {
+    // 石の上の枠が名乗る型は、cookwareを持つ型が世界に入るまで空（煮炊きは11節の未決事項）。
+    for (const hearthName of ['three_stone_hearth', 'stone_hearth']) {
+      const cells = fireCells(hearthName);
+      const inFire = cells[0];
+      const onStones = cells[cells.length - 1];
+
+      expect(inFire.length, `${hearthName} の火の中の枠は、焼ける物を名乗る`).toBeGreaterThan(0);
+      expect(
+        onStones.some((name) => inFire.includes(name)),
+        `${hearthName} の石の上の枠に、火の中へ入れる物が混ざっている`,
+      ).toBe(false);
+    }
+  });
+
+  it('器を載せられない炉は、枠が言えることを並びが既に言っているので名乗らない', () => {
+    // 焚き火の火床はどちらの枠も焼く物を受ける（fire.yaml）。覆い焼きの炉も同じで、4枠とも土器。
+    expect(
+      fireCells('campfire').every((types) => types.length === 0),
+      '焚き火',
+    ).toBe(true);
+    expect(
+      fireCells('earth_kiln').every((types) => types.length === 0),
+      '覆い焼きの炉',
+    ).toBe(true);
+  });
+});

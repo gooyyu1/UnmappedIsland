@@ -7,10 +7,10 @@ import type { ObjectGlobalId } from '../../domain/GlobalId';
 
 /**
  * その場所を映すレーン（3つのレーンも子ウィンドウのタブも）に並べる枠（CardView.md 11節）。
- * **枠ごとの飾りを持つのは製作中オブジェクトの材料スロットだけ**で（materialCells）、他はスロットの
- * 宣言をそのまま形にする（plainCells）。
+ * **縁の色と重ねる文字を持つのは製作中オブジェクトの材料スロットだけ**で（materialCells）、他は
+ * スロットの宣言をそのまま形にする（plainCells）。
  *
- * cardsはstacksと同じ並びの札（空き枠はundefined）。cycleとcardOfTypeは材料の枠だけが使う。
+ * cardsはstacksと同じ並びの札（空き枠はundefined）。stacksは材料の枠だけが使う。
  */
 export function slotCells(
   slot: SlotView,
@@ -20,26 +20,41 @@ export function slotCells(
   cardOfType: (objectGlobalId: ObjectGlobalId) => CardContent,
 ): readonly LaneCell[] {
   return slot.materials === undefined
-    ? plainCells(slot, cards)
+    ? plainCells(slot, cards, cycle, cardOfType)
     : materialCells(slot.materials, stacks, cards, cycle, cardOfType);
 }
 
 /**
- * スロットの宣言（空けておく枠・受け入れの可否）をそのまま枠の並びにする。渡された枠をその位置の
- * まま並べ、足りない分だけ空枠を足す。**クセの無い枠だけ**——縁の色も重ねる文字も持たない。
+ * スロットの宣言（空けておく枠・受け入れの可否・枠ごとの受け入れ）をそのまま枠の並びにする。
+ * 渡された枠をその位置のまま並べ、足りない分だけ空枠を足す。**縁の色も重ねる文字も持たない。**
  *
  * - **枠数の決まったスロットは、埋まるまで常にその数だけ枠を見せる。** 1枠しか無い治療具の並びに
  *   2枠目が出ると「もう1つ当てられる」と誤って伝わる。
  * - **落とせば枠が増えるスロット（`cells: 'grows'`）は、末尾に1枠だけ添える。** 一度に増える枠は
  *   1つなので、見せる先も1つ。
  * - **受け入れないスロット（怪我）には添えない。** 出せば「落とせる」と誤って伝えることになる。
+ * - **空き枠には、その枠が受け入れる型を薄く敷く**（`accepts`、材料の枠と同じ形）。何を入れる枠
+ *   なのかを枠自身が言うのは、同じ並びの中で枠によって受け入れの宣言が違うときだけ
+ *   （typesShownInEmptyCells）。
  */
-function plainCells(slot: SlotView, cards: readonly (CardContent | undefined)[]): readonly LaneCell[] {
-  const cells: LaneCell[] = cards.map((card) => ({ card }));
+function plainCells(
+  slot: SlotView,
+  cards: readonly (CardContent | undefined)[],
+  cycle: number,
+  cardOfType: (objectGlobalId: ObjectGlobalId) => CardContent,
+): readonly LaneCell[] {
+  const acceptsOf = (index: number): CardContent | undefined => {
+    const types = slot.typesShownInEmptyCells[index] ?? [];
+    return types.length === 0 ? undefined : cardOfType(cyclingType(types, cycle));
+  };
+
+  const cells: LaneCell[] = cards.map((card, index) =>
+    card === undefined ? { accepts: acceptsOf(index) } : { card },
+  );
   if (!slot.acceptsCards) return cells;
 
   const empties = slot.cells === 'grows' ? 1 : Math.max(0, slot.cells - cards.length);
-  for (let i = 0; i < empties; i++) cells.push({});
+  for (let i = 0; i < empties; i++) cells.push({ accepts: acceptsOf(cards.length + i) });
   return cells;
 }
 
@@ -75,7 +90,7 @@ function materialCells(
     if (material === undefined) return {};
     return {
       // 空き枠のうちに何を入れる枠なのかを見せる（EmptyCard）。
-      accepts: cardOfType(cyclingType(material, cycle)),
+      accepts: cardOfType(cyclingType(material.objectGlobalIds, cycle)),
       borderColor: material.inCurrentStep ? COLOR.cellCurrentStep : COLOR.cellLaterStep,
       // 1つしか要らない枠に数を出しても、枠そのものが既に言っていることの繰り返しにしかならない。
       overlay: material.needed >= 2 ? `${material.held}/${material.needed}` : undefined,
@@ -97,10 +112,24 @@ function materialCells(
 }
 
 /**
- * その要求の空き枠に、今出す型。**タグの要求は当てはまる型を順に出す**——どれか1つを選んで出すと、
- * その型でなければ入らないように見えてしまう。
+ * その空き枠に、今出す型。**タグで書かれた受け入れは当てはまる型を順に出す**——どれか1つを選んで
+ * 出すと、その型でなければ入らないように見えてしまう。
  */
-function cyclingType(material: CraftingMaterial, cycle: number): ObjectGlobalId {
-  const candidates = material.objectGlobalIds;
+function cyclingType(candidates: readonly ObjectGlobalId[], cycle: number): ObjectGlobalId {
   return candidates[cycle % candidates.length] ?? candidates[0];
+}
+
+/**
+ * その場所の枠に、拍ごとに出し替わる透かしがあるか。**出す型が1つしかない枠しか無いなら、拍を
+ * 進めても見た目は変わらない**ので、引き直す理由が無い（PlayScene.advanceEmptyCellCycle）。
+ *
+ * **入っているかは見ない。** 透かしが出るのは空き枠だけだが、埋まっている枠も次の拍までに空きうる
+ * ので、見ても外れるのは「1拍ぶん余分に引き直す」側にしかならない。
+ */
+export function cellsCycleWithBeat(slot: SlotView): boolean {
+  const cycles = (candidates: readonly ObjectGlobalId[]): boolean => candidates.length >= 2;
+  return (
+    slot.typesShownInEmptyCells.some(cycles) ||
+    (slot.materials ?? []).some((material) => cycles(material.objectGlobalIds))
+  );
 }
