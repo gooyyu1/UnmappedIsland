@@ -260,6 +260,22 @@ object_defs:
    * 輸送も宣言順に走る（8.4.1節）。型が変われば、宣言順で後ろの輸送は「もうその型でない物」への
    * 宣言になるので、そこで打ち切る（9.9.1節）。
    */
+  /**
+   * 出す側の`on_min`からbecomeが走ると、受け取る側のプロパティは作り直される。掴んだままの個体へ
+   * 入れると、出した分が現物のどこにも残らない（9.9.1節）。
+   */
+  it('出した分でbecomeが走っても、受け取る側は作り直された後のプロパティが受け取る', () => {
+    const kiln = session.createObject(idOf('kiln'));
+    const fuelId = codex.propertyNames.getId('fuel');
+    const heatId = codex.propertyNames.getId('heat');
+
+    kiln.tick();
+
+    expect(kiln.def.name, '出した側が尽きて、その場で型が変わっている').not.toBe('kiln');
+    expect(kiln.tryGetProperty(fuelId)?.number, '出した側は尽きている').toBe(0);
+    expect(kiln.tryGetProperty(heatId)?.number, '出した分は受け取る側に残っている').toBe(1);
+  });
+
   it('輸送の途中で型が変わったら、宣言順で後ろの輸送はそのtickには走らない', () => {
     const kiln = session.createObject(idOf('kiln'));
     const ashId = codex.propertyNames.getId('ash');
