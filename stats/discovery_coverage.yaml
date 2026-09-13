@@ -4,7 +4,7 @@
 # 何を測ったか・引いた線・数えていないものは docs/diagnostics/DiscoveryCoverageStats.md。
 
 meta:
-  - {seeds: 2000, islands: 2000, objects: 24, tags: 18}
+  - {seeds: 2000, islands: 2000, objects: 24, tags: 19}
 
 object_sources:
   - {object: abaca, tags: [fixture], locations: [jungle]}
@@ -23,7 +23,7 @@ object_sources:
   - {object: rat, tags: [item, animal, quarry], locations: [cliff_coast, forest, grassland, jungle, mountain_peak, mountainside, rocky_coast, rocky_field, sandy_beach, wasteland]}
   - {object: sapling, tags: [fixture], locations: [forest, jungle]}
   - {object: shallow_cave, tags: [location, fixture, shelter], locations: [cliff_coast, mountain_peak, mountainside, rocky_coast, rocky_field]}
-  - {object: spring, tags: [fixture], locations: [forest, grassland]}
+  - {object: spring, tags: [water_source, fixture], locations: [forest, grassland]}
   - {object: stone, tags: [roastable, item], locations: [cliff_coast, mountain_peak, mountainside, rocky_coast, rocky_field, wasteland]}
   - {object: taro, tags: [perishable, item, plant_bait, roastable], locations: [forest, grassland, jungle]}
   - {object: thick_branch, tags: [fuel, item], locations: [cliff_coast, rocky_coast, sandy_beach]}
@@ -51,6 +51,7 @@ tag_sources:
   - {tag: shelter, objects: [shallow_cave]}
   - {tag: smokable, objects: [coconut_crab, water_spinach]}
   - {tag: tinder, objects: [dry_grass]}
+  - {tag: water_source, objects: [spring]}
 
 island_missing_object:
   - {object: abaca, unit: percent, share: 51.95}
@@ -97,3 +98,4 @@ island_missing_tag:
   - {tag: shelter, unit: percent, share: 0.00}
   - {tag: smokable, unit: percent, share: 0.00}
   - {tag: tinder, unit: percent, share: 0.10}
+  - {tag: water_source, unit: percent, share: 0.00}

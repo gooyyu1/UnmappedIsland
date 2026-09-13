@@ -33,10 +33,10 @@ card_filters:
   - id: filter_food
     icon: 🍖
     tags: [food, roastable, hearth, preservative]
-  # 水（系統1）。汲む器も一緒に残す。
+  # 水（系統1）。汲む器と、汲む先の水源も一緒に残す。
   - id: filter_water
     icon: 💧
-    tags: [water, hot_water, liquid_container]
+    tags: [water, hot_water, liquid_container, water_source]
   # 火（系統5）。
   - id: filter_fire
     icon: 🔥

@@ -1,14 +1,16 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { craftingStepsOf } from '../../src/analysis/craftingSteps';
 import { writesToProperty } from '../../src/codex-viewer/describe/effectQueries';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
- * 用途のタグ（food・container・liquid_container・tool）が、物の現実と食い違っていないかの自動テスト。
+ * 用途のタグが、物の現実と食い違っていないかの自動テスト。**食い違いは両向きに起きる**——名乗って
+ * いないのにそう振る舞う物と、名乗っただけで何もできない物の両方をここで捕まえる。
  *
- * **付け忘れは画面を見ても気付けない**——タグの無い物はエラーにならず、素材と同じ既定の枠で静かに
- * 出るだけなので、食べられるのに食事のタグを持たない物をここで捕まえる（CardView.md 2.1節）。
+ * **どちらも画面を見ても気付けない**——タグの無い物はエラーにならず、素材と同じ既定の枠で静かに
+ * 出るだけで（CardView.md 2.1節）、名乗りだけの物は操作が1つ出ないだけだから。
  */
 describe('用途のタグ', () => {
   let codex: WorldCodex;
@@ -69,5 +71,24 @@ describe('用途のタグ', () => {
     expect(
       containers.filter((def) => !def.tags.includes(liquidContainerTagId)).map((def) => def.name),
     ).toEqual([]);
+  });
+
+  it('水源のタグを持つ物には、器へ水を渡す口が1つはある', () => {
+    // **名乗るだけの水源を捕まえる**——見つかっても何も返さない設置物は、探索の当たりとして出て
+    // しまう（湧き水がそうだった。docs/engine/LiquidContainerSystem.md 10節）。
+    //
+    // 口かどうかは工程の産物で見る。ドラッグで相手を変える操作（become）は、行き先の型を生む工程
+    // として読まれる（CraftingStep）ので、器の型を名指ししていなくても産物から分かる。
+    const waterSourceTagId = codex.tagNames.getId('water_source');
+    const waterTagId = codex.tagNames.getId('water');
+    const sources = defs.filter((def) => def.tags.includes(waterSourceTagId));
+
+    const yieldsWater = (def: ObjectDef): boolean =>
+      craftingStepsOf(codex, def).some((step) =>
+        step.outputs.some((output) => codex.objects.get(output.objectGlobalId).hasTag(waterTagId)),
+      );
+
+    expect(sources.length).toBeGreaterThan(0);
+    expect(sources.filter((def) => !yieldsWater(def)).map((def) => def.name)).toEqual([]);
   });
 });

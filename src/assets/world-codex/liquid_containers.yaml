@@ -55,6 +55,54 @@ traits:
         # 実際に溜まる量は降り方が決めるので、以後はrain_filled_liquidが増やす。
         set: {self: {fill: 1}}
 
+  # 水源（LiquidContainerSystem.md 10節）。**器を持ち込めば汲める設置物が名乗る**——今は湧き水だけ
+  # （locations.yaml）。タグと汲む口をこのtraitで対にしてあるので、traitを名乗れば口が付く。
+  # それでもtests/world-codex/purposeTags.test.tsが見張るのは、`tags`へ直に書けば口の無い水源を
+  # 作れるため。
+  #
+  # **汲める器の型は名指ししない。** 液体を受ける器であることだけを見るので、器が増えても水源は
+  # 変わらない。
+  water_source:
+    tags: [water_source]
+    interactions:
+      # 汲み足す。**下のdraw_into_emptyより先に書く。** 水入りの器はliquid_containerでもあるので、
+      # どちらも断る場面——満水の器を持ち込んだとき——では両方が理由付きで残る。画面が出すのは
+      # 宣言順の先頭（docs/ui/CardInteraction.md 2節）なので、狭いほうを後ろに置くと、こちらの理由は
+      # 一度も出ないまま「中身が入っている」だけが出る（水のpour_into_filledと同じ）。
+      draw_into_filled:
+        trigger: {drag: {tag: water}}
+        conditions:
+          # 屈んで器を沈める屋外の採取なので、明るさと風雨をそろって要求する
+          # （docs/engine/IlluminationSystem.md 5節、docs/world/ContentSkeleton.md 8.1.4節）。
+          # **嵐の日は雨受け（上のcollect_rain）の側が効く。**
+          - reason: too_dark
+            subject: agent
+            prop: looking_brightness
+            in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
+          - reason: container_full
+            not: {subject: instrument, prop: fill, in_stage: full}
+        duration: 5
+        add: {instrument: {fill: 999999}}
+      # 空の器へ汲む。**別の液体が入った器は断る**（水と混ざらない、4節）——上のタグに合致しないので、
+      # 断る理由が出るのはこちらだけになる。
+      draw_into_empty:
+        trigger: {drag: {tag: liquid_container}}
+        conditions:
+          - reason: too_dark
+            subject: agent
+            prop: looking_brightness
+            in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
+          - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
+        duration: 5
+        become: {subject: instrument, content: water_liquid}
+        # 口まで満たす。**入る量は器が決める**ので、器ごとの容量をここへ書かずに済む——溢れる分を
+        # 捨てるのはエンジン側の不変条件（GameElementDefinition.md 9.2節）。
+        add: {instrument: {fill: 999999}}
+
   water_liquid:
     # この液体を保持していることを表すタグ。注ぎ移しの相手を種類ごとに指す（pour_in）。
     #

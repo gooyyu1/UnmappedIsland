@@ -221,11 +221,11 @@
 長さまで振ると何が変わったのか読めなくなります。
 
 **この重みが横断時間へ返すものは、1 周回に 1 度の航海では半日に満たない差です。** 砂浜から近道で渡ると、
-乾季なら 5.37 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=dry days -->、
-雨季なら 5.72 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=wet days -->——
+乾季なら 4.71 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=dry days -->、
+雨季なら 5.02 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=wet days -->——
 最も短い岸壁からでも
-3.62 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=dry days -->と
-3.85 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=wet days -->で、
+3.17 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=dry days -->と
+3.38 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=wet days -->で、
 **差は 0.2〜0.4 日です**（[`stats/voyage.yaml`](../../stats/voyage.yaml) の `course_season`）。
 
 **一方、窓を逃したときに待つのは 48〜72 日です。** 季節は
@@ -591,20 +591,20 @@
 
 **3 節の網から出る所要時間は、近道なら素の速さで 4〜6 日、遠回りでも 7 日には届きません。** 各海区で航路が現れるまでの見張り（3 節の表）と、
 素の横断 360 分（3.2 節）の合計を、島と同じ物差し（1 日ぶんの自由時間
-833 分<!-- stats: voyage.yaml meta daily_free_minutes -->。[`ContentSkeleton.md`](./ContentSkeleton.md)
+949 分<!-- stats: voyage.yaml meta daily_free_minutes -->。[`ContentSkeleton.md`](./ContentSkeleton.md)
 4 節）で割ったものです。**数を出すのは [`stats/voyage.yaml`](../../stats/voyage.yaml) の `courses`**
 （読み方は [`VoyageStats.md`](../diagnostics/VoyageStats.md)）。
 
 | 出航地点 | 針路 | 区間 | 見張り | 見張りの時間 | 横断 | 合計 | 日数 |
 |---|---|--:|--:|--:|--:|--:|--:|
-| 砂浜（島影の海から） | 近道 | 12<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest legs --> | 39<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest lookouts --> 回 | 585 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest lookout_minutes --> | 4,320 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest crossing_minutes --> | 4,905 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest total_minutes --> | 5.9<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest days --> |
-| 砂浜 | 遠回り | 14<!-- stats: voyage.yaml courses coast=sandy_beach course=detour legs --> | 45<!-- stats: voyage.yaml courses coast=sandy_beach course=detour lookouts --> 回 | 675 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour lookout_minutes --> | 5,040 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour crossing_minutes --> | 5,715 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour total_minutes --> | 6.9<!-- stats: voyage.yaml courses coast=sandy_beach course=detour days --> |
-| 岩だらけの海岸（潮目から） | 近道 | 10<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest legs --> | 34<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest total_minutes --> | 4.9<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest days --> |
-| 岩だらけの海岸 | 遠回り | 12<!-- stats: voyage.yaml courses coast=rocky_coast course=detour legs --> | 40<!-- stats: voyage.yaml courses coast=rocky_coast course=detour lookouts --> 回 | 600 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour lookout_minutes --> | 4,320 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour crossing_minutes --> | 4,920 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour total_minutes --> | 5.9<!-- stats: voyage.yaml courses coast=rocky_coast course=detour days --> |
-| 岸壁（海鳥の岩から） | 近道 | 8<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs --> | 28<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookouts --> 回 | 420 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookout_minutes --> | 2,880 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest crossing_minutes --> | 3,300 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest total_minutes --> | 4.0<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest days --> |
-| 岸壁 | 遠回り | 10<!-- stats: voyage.yaml courses coast=cliff_coast course=detour legs --> | 34<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour total_minutes --> | 4.9<!-- stats: voyage.yaml courses coast=cliff_coast course=detour days --> |
+| 砂浜（島影の海から） | 近道 | 12<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest legs --> | 39<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest lookouts --> 回 | 585 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest lookout_minutes --> | 4,320 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest crossing_minutes --> | 4,905 分<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest total_minutes --> | 5.2<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest days --> |
+| 砂浜 | 遠回り | 14<!-- stats: voyage.yaml courses coast=sandy_beach course=detour legs --> | 45<!-- stats: voyage.yaml courses coast=sandy_beach course=detour lookouts --> 回 | 675 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour lookout_minutes --> | 5,040 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour crossing_minutes --> | 5,715 分<!-- stats: voyage.yaml courses coast=sandy_beach course=detour total_minutes --> | 6.0<!-- stats: voyage.yaml courses coast=sandy_beach course=detour days --> |
+| 岩だらけの海岸（潮目から） | 近道 | 10<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest legs --> | 34<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest total_minutes --> | 4.3<!-- stats: voyage.yaml courses coast=rocky_coast course=shortest days --> |
+| 岩だらけの海岸 | 遠回り | 12<!-- stats: voyage.yaml courses coast=rocky_coast course=detour legs --> | 40<!-- stats: voyage.yaml courses coast=rocky_coast course=detour lookouts --> 回 | 600 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour lookout_minutes --> | 4,320 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour crossing_minutes --> | 4,920 分<!-- stats: voyage.yaml courses coast=rocky_coast course=detour total_minutes --> | 5.2<!-- stats: voyage.yaml courses coast=rocky_coast course=detour days --> |
+| 岸壁（海鳥の岩から） | 近道 | 8<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs --> | 28<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookouts --> 回 | 420 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookout_minutes --> | 2,880 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest crossing_minutes --> | 3,300 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest total_minutes --> | 3.5<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest days --> |
+| 岸壁 | 遠回り | 10<!-- stats: voyage.yaml courses coast=cliff_coast course=detour legs --> | 34<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour total_minutes --> | 4.3<!-- stats: voyage.yaml courses coast=cliff_coast course=detour days --> |
 
-**遠回りを選ぶと、どの海岸からでも 1 日増えます**（沖の潮目と黒い岩礁の 2 区間で 810 分）。帆と追い風が
+**遠回りを選ぶと、どの海岸からでも 1 日近く増えます**（沖の潮目と黒い岩礁の 2 区間で 810 分）。帆と追い風が
 あれば縮み、荒天の押し流し（3.8 節）と引き返し（3.5 節）が伸ばします。
 
 **それでも遠回りは、時間では選べません。** 同じ風が続く日で比べると、遠回りは近道より常に長くかかります
@@ -674,7 +674,7 @@
 - **群れに当てられた日は、1 日ぶんに 2 時間。** 30 分で 0.78 切れなので、3 切れに平均 3.8 回です
   （熟達すれば 3.6 回）。
 - **群れの出なかった日は、6 時間釣っても 1 切れに届きません**（0.9。熟達しても 2.4 で、1 日ぶんの
-  3 には届きません）。**丸一日（1 日ぶんの自由時間 833 分<!-- stats: voyage.yaml meta daily_free_minutes -->）
+  3 には届きません）。**丸一日（1 日ぶんの自由時間 949 分<!-- stats: voyage.yaml meta daily_free_minutes -->）
   粘って 2 切れ**（熟達で 5 切れ）ですが、**丸一日釣れば
   その日は 1 海区も進みません**（3 節。横断は 360 分、3.2 節）——熟達した腕で足りるようになるのは、
   進むのをやめた日のぶんだけです。**釣りだけで出れば、群れの無い区間は赤字**です——砂浜から
