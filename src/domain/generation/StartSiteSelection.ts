@@ -151,6 +151,24 @@ export function selectStartSite(codex: WorldCodex, map: IslandMap): Site {
   return map.sites[reach.startSite.siteIndex];
 }
 
+/**
+ * 候補を絞って開始地点を選ぶ（ContentSkeleton.md 2.3節の順はそのまま）。候補が空ならundefined。
+ *
+ * 絞るのは、**漂着ではない事情で開始地点を決める側**——特定の土地から試したいシナリオ
+ * （`src/scenario/Scenario.ts` の `location.type`）。絞った先でも並び順では採らない。
+ */
+export function selectStartSiteAmong(
+  codex: WorldCodex,
+  map: IslandMap,
+  candidates: readonly Site[],
+): Site | undefined {
+  if (candidates.length === 0) return undefined;
+
+  const reach = islandStartupReachOf(startupNeedSuppliersOf(codex), map);
+  const best = bestCandidateOf(candidates.map((site) => reach.sites[site.index]));
+  return map.sites[best.siteIndex];
+}
+
 /** 生成された島1つを、全サイトについて測る。 */
 export function islandStartupReachOf(suppliers: StartupNeedSuppliers, map: IslandMap): IslandStartupReach {
   const supplies = map.sites.map((site) => supplyOf(suppliers, site));

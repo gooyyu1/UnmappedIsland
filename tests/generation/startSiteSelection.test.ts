@@ -7,6 +7,7 @@ import type { SiteStartupReach } from '../../src/domain/generation/StartSiteSele
 import {
   islandStartupReachOf,
   selectStartSite,
+  selectStartSiteAmong,
   startupNeedSuppliersOf,
 } from '../../src/domain/generation/StartSiteSelection';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
@@ -102,6 +103,32 @@ describe('開始地点の選抜', () => {
 
     const start = selectStartSite(codex, islandOf(seed!));
     expect(start.onCoastRing, `種${seed}: 漂着地は海岸の土地`).toBe(true);
+  });
+
+  it('型で絞っても、その中を並び順ではなく歩数で選ぶ', () => {
+    // シナリオが `location.type` で開始地点を指定する経路（NewGame.startAt）。型で絞るのは
+    // シナリオの事情で、絞った先での選び方まで変える理由にはならない。
+    let differed = 0;
+    let compared = 0;
+
+    for (let seed = 0; seed < SEED_COUNT; seed++) {
+      const map = islandOf(seed);
+      const beaches = beachesOf(map);
+      if (beaches.length < 2) continue;
+
+      compared++;
+      const chosen = selectStartSiteAmong(codex, map, beaches);
+      expect(chosen, `種${seed}: 候補が在るなら1つ返る`).toBeDefined();
+      if (chosen!.index !== beaches[0].index) differed++;
+    }
+
+    expect(compared, '砂浜が2つ以上ある島が比べる対象になる').toBeGreaterThan(0);
+    expect(differed, '並び順の先頭とは違う砂浜を選んだ島が1つも無い').toBeGreaterThan(0);
+  });
+
+  it('その型の土地が島に無ければ、開始地点は決まらない', () => {
+    const map = islandOf(0);
+    expect(selectStartSiteAmong(codex, map, [])).toBeUndefined();
   });
 
   it('実体化したゲームのプレイヤーは、選抜が選んだ土地に居る', () => {
