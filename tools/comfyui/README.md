@@ -78,7 +78,7 @@ python build.py recipes/medic.json
 
 ### 名前の板に隠れる上端（`--below-plate`）
 
-**絵の上端 65px は名前の板が覆います**（`Card.ts` の `FRAME_INSET + FRAME_SIDE + FRAME_HEAD` ＝
+**絵の上端 65px は名前の板が覆います**（`Card.ts` の `PAPER_INSET + FRAME_SIDE_WIDTH + FRAME_HEAD_HEIGHT` ＝
 32.5u）。板は不透明なので、そこに描かれたものはカードでは見えません。地形の絵は空が入るだけなので
 気になりませんが、**ポートレートは頭が絵の上端の近くに来るため、板が頭を切ります**。
 

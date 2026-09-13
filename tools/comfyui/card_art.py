@@ -68,14 +68,14 @@ from scipy.sparse.csgraph import dijkstra
 
 from postprocess import oilify
 
-# カードの絵の寸法と、その中で紙が占める範囲（Card.ts の CARD_ART_WIDTH / FRAME_INSET /
-# FRAME_RADIUS と同じもの）。410x640は、カードの寸法205u x 320uのちょうど2倍。4K（u=2px）で等倍に
+# カードの絵の寸法と、その中で紙が占める範囲（Card.ts の CARD_ART_WIDTH / PAPER_INSET /
+# PAPER_RADIUS と同じもの）。410x640は、カードの寸法205u x 320uのちょうど2倍。4K（u=2px）で等倍に
 # なる大きさで、これ以上はどの画面でも縮小されるだけの無駄になる。
 CARD_WIDTH = 410
 CARD_HEIGHT = 640
 PAPER_MARGIN = 5
 PAPER_RADIUS = 20
-# 名前の板の下端（Card.ts の FRAME_INSET + FRAME_SIDE + FRAME_HEAD = 32.5u）。板は不透明なので、
+# 名前の板の下端（Card.ts の PAPER_INSET + FRAME_SIDE_WIDTH + FRAME_HEAD_HEIGHT = 32.5u）。板は不透明なので、
 # ここより上に描かれたものはカードでは見えない（--below-plate）。
 PLATE_BOTTOM = 65
 # 角丸を滑らかにするための倍率。この倍で描いてから縮める（card_frame.py の SUPERSAMPLE と同じ）。

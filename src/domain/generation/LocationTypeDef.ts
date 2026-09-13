@@ -92,8 +92,8 @@ export class LocationTypeDef {
    */
   readonly variants: readonly LocationVariantDef[];
 
-  /** この型が適用される生成スコープ名（3.7節）。空なら全スコープに適用される。 */
-  readonly applicableScopes: readonly string[];
+  /** 宣言に書かれた生成スコープ名（`applicable_scopes`、3.7節）。 */
+  private readonly declaredScopes: readonly string[];
 
   /** 移動コストの倍率（1=等倍）。道のtravel_minutesの係数になる。 */
   readonly moveCost: number;
@@ -111,7 +111,7 @@ export class LocationTypeDef {
     name: string,
     objectDefGlobalId: ObjectGlobalId,
     variants: readonly LocationVariantDef[],
-    applicableScopes: readonly string[],
+    declaredScopes: readonly string[],
     moveCost: number,
     isFallback: boolean,
     fallbackPriority: number,
@@ -128,7 +128,7 @@ export class LocationTypeDef {
     this.name = name;
     this.objectDefGlobalId = objectDefGlobalId;
     this.variants = variants;
-    this.applicableScopes = applicableScopes;
+    this.declaredScopes = declaredScopes;
     this.moveCost = moveCost;
     this.isFallback = isFallback;
     this.fallbackPriority = fallbackPriority;
@@ -136,9 +136,13 @@ export class LocationTypeDef {
     this.hardLimits = hardLimits;
   }
 
+  /**
+   * この型をそのスコープ（3.7節）へ置けるか。**スコープを1つも宣言していない型は、どのスコープへも
+   * 置ける**——絞りたい型だけが名指しする。
+   */
   appliesTo(scopeName: string): boolean {
-    if (this.applicableScopes.length === 0) return true;
-    return this.applicableScopes.some((scope) => scope === scopeName);
+    if (this.declaredScopes.length === 0) return true;
+    return this.declaredScopes.some((scope) => scope === scopeName);
   }
 
   /** hard_limitsをすべて満たすか。1つでも外れていればその地点には置けない。 */

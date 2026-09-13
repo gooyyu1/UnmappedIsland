@@ -127,7 +127,7 @@ function phraseOf<T>(
   negated: boolean,
 ): ConditionPhrase<T> {
   const writer = new ConditionWordWriter(make, negated);
-  condition.read(writer);
+  condition.readBy(writer);
   return writer;
 }
 

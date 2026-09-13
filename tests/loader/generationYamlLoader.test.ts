@@ -88,7 +88,9 @@ generation_scopes:
     expect(meadow.hardLimits[0].allows(61)).toBe(false);
 
     const peak = generation.locationTypes[1];
-    expect(peak.appliesTo('island')).toBe(true); // applicable_scopes省略時は全スコープに適用される
+    // applicable_scopes省略時は全スコープに適用される（名指しした型と違い、どのスコープでも真）。
+    expect(peak.appliesTo('island')).toBe(true);
+    expect(peak.appliesTo('structure_interior')).toBe(true);
     expect(peak.preferences[0].weight).toBe(100); // weight省略時は100(等倍)
 
     const island = generation.scopes.get('island');

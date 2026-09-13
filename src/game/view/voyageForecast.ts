@@ -64,7 +64,7 @@ class ModifySum implements PassiveReader {
 /** その型が宣言している`modify`のうち、条件に合うものの量の合計。 */
 function sumModify(def: ObjectDef, accepts: (reading: PassivePropertyReading) => boolean): number {
   const sum = new ModifySum(accepts);
-  def.passives.read(sum);
+  def.passives.readBy(sum);
   return sum.total;
 }
 
@@ -127,7 +127,7 @@ class DepartureCandidates implements EffectReader {
   pick(reading: PickReading): void {
     reading.forEachCandidate((candidate) => {
       const moves = new SelfMoveDestinations();
-      candidate.effect.read(moves);
+      candidate.effect.readBy(moves);
       for (const destinationGlobalId of moves.destinations)
         this.candidates.push({ weight: candidate.weight, destinationGlobalId });
     });
@@ -196,7 +196,7 @@ export function voyageForecastOf(
   /** 今の海岸から漕ぎ出したときに立ちうる海区。重みが0の候補＝面していない海区は挙がらない。 */
   const departureZones = (raft: WorldObject): readonly WorldObject[] => {
     const reader = new DepartureCandidates();
-    for (const trigger of raft.def.menuTriggers) trigger.interaction.read(reader);
+    for (const trigger of raft.def.menuTriggers) trigger.interaction.readBy(reader);
 
     const zones: WorldObject[] = [];
     for (const candidate of reader.candidates) {

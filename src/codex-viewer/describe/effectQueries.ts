@@ -15,7 +15,7 @@ import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId } from '../../domai
 /**
  * 効果の宣言に対する逆引き（「このプロパティを書き換えるのは誰か」「これを生むのは誰か」）。
  *
- * どれも読み上げ口（`read`）越しに答える。**問いごとに効果クラスへメソッドを生やさない**——
+ * どれも読み上げ口（`readBy`）越しに答える。**問いごとに効果クラスへメソッドを生やさない**——
  * 型11 × 問いの数だけ交差点が増え、動詞を1つ足したときの書き忘れが黙って通るため。
  */
 
@@ -31,7 +31,7 @@ export function writesToProperty(
   ownedByDeclarer: boolean,
 ): boolean {
   const reader = new PropertyWriterFinder(propertyGlobalId, ownedByDeclarer);
-  declaration.read(reader);
+  declaration.readBy(reader);
   return reader.found;
 }
 
@@ -42,14 +42,14 @@ export function passiveWritesToProperty(
   ownedByDeclarer: boolean,
 ): boolean {
   const reader = new PassivePropertyWriterFinder(propertyGlobalId, ownedByDeclarer);
-  declaration.read(reader);
+  declaration.readBy(reader);
   return reader.found;
 }
 
 /** この宣言がobjectGlobalIdの型を生み出しうるか。生むのは`spawn`（9.4節）だけ。 */
 export function spawnsObject(declaration: EffectDeclaration, objectGlobalId: ObjectGlobalId): boolean {
   const reader = new SpawnFinder(objectGlobalId);
-  declaration.read(reader);
+  declaration.readBy(reader);
   return reader.found;
 }
 

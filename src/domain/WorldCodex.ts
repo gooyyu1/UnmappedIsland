@@ -235,7 +235,7 @@ export class WorldCodex {
         accumulate: () => {},
         transfer: () => {},
       };
-      objectDef.passives.read(reader);
+      objectDef.passives.readBy(reader);
     }
 
     for (const objectDef of this.objects)
