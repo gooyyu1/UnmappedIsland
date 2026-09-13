@@ -14,6 +14,7 @@ import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { seededRng } from '../../src/domain/Rng';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { replaceAllOrFail } from '../support/textEdit';
 import {
   bundledCodex,
   SAMPLE_CHARACTER,
@@ -193,21 +194,42 @@ describe('開始地点の選抜', () => {
  * 何個か）を見ており、どちらか片方だけが食い違うことがありうる。
  */
 describe('要るものの出どころ', () => {
-  /** locations.yamlの字面だけを差し替えたコーデックス。 */
-  function codexWithLocations(edit: (text: string) => string): WorldCodex {
+  /**
+   * locations.yamlの字面だけを差し替えたコーデックス。
+   *
+   * **読んだ字面の改行はここでLFへ均す。** CRLFの作業ツリー——`.prettierrc` の `endOfLine: auto` が
+   * 想定している状態（CLAUDE.md）——では、改行を含む字面がどれも当たらない。差し替える側に均させると、
+   * 差し替えが増えるたびに同じ穴が空く。
+   *
+   * 読み元を差せるのは、**均していることを確かめる検査のためだけ**（下の「CRLFの作業ツリーで〜」）。
+   */
+  function codexWithLocations(
+    edit: (text: string) => string,
+    rawText: (path: string) => string = (path) => readFileSync(path, 'utf8'),
+  ): WorldCodex {
     const locations = worldCodexPath('locations.yaml');
     const loader = new WorldCodexYamlLoader();
     for (const path of worldCodexYamlPaths()) {
-      const text = readFileSync(path, 'utf8');
+      const text = rawText(path).replace(/\r\n/g, '\n');
       loader.load(path, path === locations ? edit(text) : text);
     }
     return loader.buildAndReset();
   }
 
+  /** 湧き水を採れる土地の期待個数を0へ落とす。宣言（採れる）は残る。 */
+  const zeroSpringFind = (text: string): string =>
+    replaceAllOrFail(text, {
+      from: '      spring_find:\n        value: 10',
+      to: '      spring_find:\n        value: 0',
+      occurrences: 2,
+    });
+
   it('採れる土地が1つも無ければ、島を測る前に投げる', () => {
     // 選抜は「ここで採れる」を宣言から読むので、宣言が消えたことに気づかないまま別の物を見て
     // 選ぶことになる。
-    const codex = codexWithLocations((text) => text.replaceAll('object: dry_grass', 'object: twig'));
+    const codex = codexWithLocations((text) =>
+      replaceAllOrFail(text, { from: 'object: dry_grass', to: 'object: twig', occurrences: 2 }),
+    );
 
     expect(() => startupNeedSuppliersOf(codex)).toThrow('火口');
   });
@@ -216,10 +238,13 @@ describe('要るものの出どころ', () => {
     // 宣言は残っているので選抜はそこを数えるが、実際には引けない。**宣言と重みが食い違ったことに
     // 気づけるのは、両方を見ている解析側だけ**（重みを確率へ直すのは近似なので、ドメインには
     // 置けない。CodeStructure.md 5節）。
-    const codex = codexWithLocations((text) =>
-      text.replace('      spring_find:\n        value: 10', '      spring_find:\n        value: 0'),
-    );
+    expect(() => startupNeedSourcesOf(codexWithLocations(zeroSpringFind))).toThrow('期待個数が0');
+  });
 
-    expect(() => startupNeedSourcesOf(codex)).toThrow('期待個数が0');
+  it('CRLFの作業ツリーで読んでも、同じ差し替えが当たる', () => {
+    // 当たらないまま渡ると健全なコーデックスが渡り、上の検査は主張の面を見ないまま赤くなる。
+    const crlf = (path: string): string => readFileSync(path, 'utf8').replace(/\r?\n/g, '\r\n');
+
+    expect(() => startupNeedSourcesOf(codexWithLocations(zeroSpringFind, crlf))).toThrow('期待個数が0');
   });
 });

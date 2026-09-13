@@ -3,6 +3,7 @@ import type { DailyLabour } from '../../src/analysis/balanceTables';
 import type { VoyageCourse, VoyageLegs } from '../../src/analysis/voyageLegs';
 import { voyageLegsOf } from '../../src/analysis/voyageLegs';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { replaceAllOrFail } from '../support/textEdit';
 
 /**
  * 航海の区間の測り方（`src/analysis/voyageLegs.ts`）の検証。**引いた線がそのまま検証項目**で、
@@ -326,12 +327,13 @@ object_defs:
   it('寄与を宣言していない風でも、区間ぶんの素の横断時間は落とさない', () => {
     // 横風の寄与を消す。その風では素のまま渡るだけで、**区間が合計から消えてはいけない。**
     const withoutCrosswind = legsFrom(
-      YAML.replace(
-        `      - conditions:
+      replaceAllOrFail(YAML, {
+        from: `      - conditions:
           - {subject: ancestor, prop: wind, eq: crosswind}
         modify: {self: {crossing_minutes: -10}}\n`,
-        '',
-      ),
+        to: '',
+        occurrences: 1,
+      }),
     );
     const shortest = withoutCrosswind.courses.find((c) => c.coastName === 'sandy_beach' && !c.detour);
 
@@ -344,10 +346,11 @@ object_defs:
   it('航路の range が、寄与の重なった横断時間の底になる', () => {
     // 底を素の横断時間より上へ持ち上げると、追い風で縮めた分がそこで止まる。
     const withFloor = legsFrom(
-      YAML.replace(
-        'base: {subject: parent, prop: crossing_minutes}\n        range: {min: 60, max: 900}',
-        'base: {subject: parent, prop: crossing_minutes}\n        range: {min: 290, max: 900}',
-      ),
+      replaceAllOrFail(YAML, {
+        from: 'base: {subject: parent, prop: crossing_minutes}\n        range: {min: 60, max: 900}',
+        to: 'base: {subject: parent, prop: crossing_minutes}\n        range: {min: 290, max: 900}',
+        occurrences: 1,
+      }),
     );
     const shortest = withFloor.courses.find((c) => c.coastName === 'sandy_beach' && !c.detour);
 
@@ -356,19 +359,21 @@ object_defs:
   });
 
   it('針路が3本以上になったら投げる', () => {
-    const threeWays = YAML.replace(
-      '            - {object: route_to_outer_waters, into: self}',
-      '            - {object: route_to_outer_waters, into: self}\n            - {object: route_to_mainland, into: self}',
-    );
+    const threeWays = replaceAllOrFail(YAML, {
+      from: '            - {object: route_to_outer_waters, into: self}',
+      to: '            - {object: route_to_outer_waters, into: self}\n            - {object: route_to_mainland, into: self}',
+      occurrences: 1,
+    });
 
     expect(() => legsFrom(threeWays)).toThrowError(/針路が3本/);
   });
 
   it('風の寄与に読めない条件が付いていたら投げる', () => {
-    const unreadable = YAML.replace(
-      '    passives:\n      - conditions:\n          - {subject: ancestor, prop: wind, eq: crosswind}',
-      '    passives:\n      - conditions:\n          - {prop: destination_zones_to_mainland, gte: 1}\n        modify: {self: {crossing_minutes: -5}}\n      - conditions:\n          - {subject: ancestor, prop: wind, eq: crosswind}',
-    );
+    const unreadable = replaceAllOrFail(YAML, {
+      from: '    passives:\n      - conditions:\n          - {subject: ancestor, prop: wind, eq: crosswind}',
+      to: '    passives:\n      - conditions:\n          - {prop: destination_zones_to_mainland, gte: 1}\n        modify: {self: {crossing_minutes: -5}}\n      - conditions:\n          - {subject: ancestor, prop: wind, eq: crosswind}',
+      occurrences: 1,
+    });
 
     expect(() => legsFrom(unreadable)).toThrowError(/読めない条件/);
   });
