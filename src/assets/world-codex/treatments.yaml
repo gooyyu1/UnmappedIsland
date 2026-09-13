@@ -69,7 +69,7 @@ object_defs:
         # **要求しないまま、手際だけを名乗る**（docs/world/Skills.md 7.1節）。削る工程を持たず、
         # 拾った枝を当てて紐で巻き留める仕事なので、速さを決めるのは繊維・編み（松明と同じ手つき、
         # fire.yaml）。**腕が0でも巻ける**ので、上の「折れてから作れない」は起きない。
-        deftness: {subject: agent, prop: cordage_deftness}
+        deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
         steps:
           # 拾った枝と撚った紐だけで、削る工程も組み立ての道具も要らない。骨折を出すのは大型の獣
           # （docs/engine/InjurySystem.md 5節）——ここより後ろにある段なので、折れてから材料を

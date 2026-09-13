@@ -36,7 +36,7 @@ object_defs:
           - {reason: needs_leatherwork, subject: agent, prop: skill_leatherwork, in_stage_or_above: basic}
         # 掻き落としも漬け込みも皮革の手仕事なので、速さを決めるのはその1本
         # （docs/world/Skills.md 7節）。**余分の卓は持たない**——皮1枚からは革1枚しか出ない。
-        deftness: {subject: agent, prop: leatherwork_deftness}
+        deftness: {skill: skill_leatherwork, from_stage: skilled, minutes: -15}
         # 合計480分は、同梱の世界で最も長い1つの作業（farming.yamlの畑を起こす480分）に並べた値。
         # 実際のなめしは日をまたぐ漬け込みだが、途中で止められない工程として持つ以上これ以上は
         # 伸ばさない（GameElementDefinition.md 11.3節）。工程を2つに割ってあるのも同じ理由。
@@ -78,7 +78,7 @@ object_defs:
       # **手際は名乗る**（docs/world/Skills.md 7.1節）。葉を束ねて繊維で結ぶ仕事なので、速さを
       # 決めるのは繊維・編み——腕が0でも作れることは解放条件の側が守るので、最初の1着は塞がれない。
       bundled:
-        deftness: {subject: agent, prop: cordage_deftness}
+        deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
         steps:
           - requires:
               - {object: palm_frond, count: 1, consume: true}
@@ -108,7 +108,7 @@ object_defs:
       # **手際は名乗る**（同7.1節）。縫わなくても皮を扱う仕事なので、穴を開けて形を取る速さは
       # 皮革が決める——開ける腕と速さを決める腕は別の宣言で、こちらは腕が0でも作れる。
       draped:
-        deftness: {subject: agent, prop: leatherwork_deftness}
+        deftness: {skill: skill_leatherwork, from_stage: skilled, minutes: -15}
         steps:
           - requires:
               - {object: rawhide, count: 2, consume: true}
@@ -137,7 +137,7 @@ object_defs:
         conditions:
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         # 綴じ合わせる手は繊維・編み（docs/world/Skills.md 7節）。
-        deftness: {subject: agent, prop: cordage_deftness}
+        deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
         steps:
           - requires:
               - {object: woven_leaf, count: 3, consume: true}
@@ -171,7 +171,7 @@ object_defs:
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         # **速さを決めるのは連言の2本ではなく、名乗った1本**（docs/world/Skills.md 7節）。裁って縫うのは
         # 革の仕事で、糸は先に撚ってある物として入ってくる。
-        deftness: {subject: agent, prop: leatherwork_deftness}
+        deftness: {skill: skill_leatherwork, from_stage: expert, minutes: -15}
         steps:
           - requires:
               - {object: tanned_leather, count: 2, consume: true}
