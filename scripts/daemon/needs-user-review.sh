@@ -57,9 +57,9 @@
 #
 # **見るファイルを自分で決めない。** [`docScope.mjs`](../docScope.mjs) の `isMarkRuleDoc` へ渡して
 # 絞る——印の条件を課す検査（`tests/docs/docReferences.test.ts`）が読むのと同じ1つで、
-# **`docs/` の中かでは絞らない**（印の意味は置き場で変わらないため。
-# [`DocumentStyle.md`](../../docs/DocumentStyle.md) 10 節）。外れるのは、印が**題材として**現れる
-# 記録（`agent-ops/decisions/`・`agent-ops/analysis/`・`review/<日付>`）だけ。
+# **`docs/` の中かでは絞らない**（印の意味は置き場で変わらないため）。**外れる記録がどれかと、
+# その理由は [`DocumentStyle.md`](../../docs/DocumentStyle.md) 10 節**が持つ——ここへ書き写すと、
+# 写しだけが古くなる先が増える。
 #
 # **ここでパターンを書き写すと、射程が2つになる。** 実際そうなっていて、掛け先が `docs/` に
 # 取り残されている間、[`board-design.md`](../../agent-ops/board-design.md) の確定節は**印を足す変更

@@ -64,13 +64,14 @@ export function isVerbatimRecord(rel) {
  *
  * @param {string} rel 根からの相対パス
  */
-export function isAnalysisRecord(rel) {
+function isAnalysisRecord(rel) {
   return rel.startsWith(join('agent-ops', 'analysis') + sep);
 }
 
 /**
  * 確定度の印の条件（`docs/DocumentStyle.md` 6節）が掛かる文書か。**印の意味は置き場で変わらない**
- * ので、`docs/` の中かでは絞らない。外れるのは、印が題材として現れる記録だけ。
+ * ので、`docs/` の中かでは絞らない。外れるのは記録の2種——どの規約も課さないもの
+ * （{@link isVerbatimRecord}）と、印が**題材として**現れるその回の観測（{@link isAnalysisRecord}）。
  *
  * @param {string} rel 根からの相対パス
  */

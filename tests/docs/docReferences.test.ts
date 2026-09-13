@@ -271,7 +271,7 @@ const LINK_CHECKED_FILES = REF_TARGETS.filter((rel) => !isVerbatimRecord(rel));
  * ——印の意味は置き場で変わらない（どこの確定節も「覆すには人間の判断が要る」）ので、条件も同じ1つ。
  * **どこまで掛かるかは同 10節**が持つ。
  *
- * **日付ごとの記録は入らない**（`isVerbatimRecord`・`isAnalysisRecord`）。印はそこでは
+ * **日付ごとの記録は入らない**（{@link isVerbatimRecord} と、その回の観測）。印はそこでは
  * **題材として**現れる（見出しに「`【確定】` の印の射程が変わる」と書く）ので、課すと印を論じた行が
  * 印として読まれる。
  *
