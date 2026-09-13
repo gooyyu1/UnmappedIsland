@@ -186,9 +186,25 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     expect(dragged.moved, '通れる').toBe(true);
   });
 
-  it('丸太2本はそりでだけ運べる', () => {
+  it('丸太2本は、代表の担ぎ手ならそりで運べる', () => {
     // そりの値打ちは「担げない重さを運べる」ことに出る（docs/world/Containers.md 2節）。
     // 丸太は1本20kgなので、2本＝40kgは担いでも籠でも通れない段に入る。
+    //
+    // **通れるかは担ぎ手で分かれる。** 段の境目は個体差そのもの（docs/world/Characters.md 荷重の
+    // 効き方節）で、そりで積めるのは33〜46kg——40kgはその幅の中にある。ここが見ているのは代表
+    // （SAMPLE_CHARACTER）1人ぶんなので、**境目の数は書かず段の名前で見る。**
+    const stageOf = (container: string): string | undefined => {
+      const { session: s, character } = setUpTrek();
+      const carrier = s.createObject(codex.objectNames.getId(container));
+      expect(carrier.moveToSlotOrRejection(character.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+      const contents = carrier.getSlot(codex.slotNames.getId('contents'));
+      for (let i = 0; i < 2; i++)
+        expect(
+          s.createObject(codex.objectNames.getId('log')).moveToSlotOrRejection(contents),
+          `${container} へ${i + 1}本目`,
+        ).toBeUndefined();
+      return character.tryGetProperty(propertyId('load'))?.stage?.name;
+    };
     const loadOf = (container: string): number => {
       const { session: s, character } = setUpTrek();
       const carrier = s.createObject(codex.objectNames.getId(container));
@@ -204,7 +220,7 @@ describe('荷重が歩みの遅れと体力に効く', () => {
 
     // 籠（20L）には丸太（35L）が1本も入らないので、比べる相手は素手。
     expect(trek(40).stage, '40kgを担げば動けない').toBe('too_heavy');
-    expect(loadOf('sledge'), 'そりなら通れない段（27500g）の内側').toBeLessThan(27500);
+    expect(stageOf('sledge'), 'そりなら通れる段まで下がる').not.toBe('too_heavy');
     expect(loadOf('handcart'), '台車はさらに軽い').toBeLessThan(loadOf('sledge'));
   });
 
