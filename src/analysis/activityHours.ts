@@ -184,7 +184,7 @@ export function activityHoursOf(
   const galeThreshold = characterStageMinimumOf(codex, GALE_STAGE);
 
   const rows: ActivityHoursRow[] = [];
-  for (const place of activityPlacesOf(codex)) {
+  for (const place of litPlacesOf(codex)) {
     for (const season of seasons) {
       let travelHoursPerDay = 0;
       let gatheringHoursPerDay = 0;
@@ -248,8 +248,12 @@ export function characterStageMinimumOf(codex: WorldCodex, stage: PropertyStageN
   return minimum;
 }
 
-/** 表の1行を出す場所。世界の環境光から、そこへ届く明るさを出せる。 */
-interface ActivityPlace {
+/**
+ * 世界の環境光から、そこへ届く明るさを出せる場所。**明るさで決まるものを土地ごとに数える側は、
+ * どれもこの一覧を通る**——活動できる時間も、日射で進む蒸発（`sunlitEvaporation`）も、見ているのは
+ * 同じ「その場所へ届いている照度」で、別々に組むと片方だけが浅い洞窟を落とす。
+ */
+export interface LitPlace {
   readonly name: string;
 
   /** 世界の環境光（`worldAmbientBrightnessOf`）から、その場所の明るさ。 */
@@ -260,11 +264,11 @@ interface ActivityPlace {
 }
 
 /**
- * 表に出す場所。島の土地（`islandLocations`）に、浅い洞窟（`shallow_cave`）を続けて並べる。浅い洞窟は
- * 土地ではなく設置物だが、この表が数えたい「その中で活動できる時間」を持つため加える
+ * 明るさを解ける場所。島の土地（`islandLocations`）に、浅い洞窟（`shallow_cave`）を続けて並べる。
+ * 浅い洞窟は土地ではなく設置物だが、その中で活動もできれば器も置けるため加える
  * （`Dwellings.md` 5.1節）。
  */
-function activityPlacesOf(codex: WorldCodex): readonly ActivityPlace[] {
+export function litPlacesOf(codex: WorldCodex): readonly LitPlace[] {
   const ambientId = codex.vocabulary.world.ambientBrightnessId;
   const shelteredId = codex.propertyNames.getId(SHELTERED_PROPERTY);
   // 守られていると数える境目も、キャラクタの段の宣言から読む（境目を書き写す箇所を作らない）。
@@ -272,7 +276,7 @@ function activityPlacesOf(codex: WorldCodex): readonly ActivityPlace[] {
   const isSheltered = (def: ObjectDef): boolean =>
     (def.tryGetPropertyDef(shelteredId)?.initialValueWithoutRoll ?? 0) >= shelteredMinimum;
 
-  const places: ActivityPlace[] = [];
+  const places: LitPlace[] = [];
   for (const def of islandLocationsOf(codex).island) {
     const place = placeOf(def, ambientId, 0, isSheltered(def));
     if (place !== undefined) places.push(place);
@@ -297,7 +301,7 @@ function placeOf(
   ambientId: PropertyGlobalId,
   hostAmbient: number,
   sheltered: boolean,
-): ActivityPlace | undefined {
+): LitPlace | undefined {
   const ambientDef = def.tryGetPropertyDef(ambientId);
   if (ambientDef === undefined) return undefined;
 

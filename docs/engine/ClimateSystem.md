@@ -35,7 +35,8 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 （[`FireSystem.md`](./FireSystem.md) 9.2 節）が積まれます。本書が扱うのは `world` 側だけです。
 
 **この値を読む側に、体から熱が奪われる速さが加わります**（[`VitalsSystem.md`](./VitalsSystem.md) 8.3 節）。
-夜の寒さは既に日射の段が気温へ載せており（`ambient_brightness` の `night` が −3）、雨は気温ではなく
+夜の寒さは既に日射の段が気温へ載せており（`ambient_brightness` の `dark` 段。
+[`IlluminationSystem.md`](./IlluminationSystem.md) 9 節）、雨は気温ではなく
 **濡れることの側**から効きます——本書は寒さを 1 つも新しく作らず、気温と天気を渡すだけです。
 
 ## 2. 季節: worldプロパティとしての巡回
@@ -187,13 +188,48 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 移ってくるのではありません。[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 7 節）。
 **ここでは量の側を豊かにする道がありません**。そのため「同じ季節に入るたびに、大気水分量が毎回ほぼ
 同じ軌跡をたどる」という単調さが生じえます。現時点の実装は、
-天気遷移そのもののランダム性だけでこの単調さを崩しており、統計テストでも雨の間隔・回数に十分な分散が
-出ています（3.2 節）。将来単調さが気になった場合の追加手段が、既存の語彙の範囲にあります（採否は
-7 節の未決事項）。**変えられるのは量ではなくブロックの選ばれ方**です。
+天気遷移そのもののランダム性だけでこの単調さを崩しています。将来単調さが気になった場合の追加手段が、
+既存の語彙の範囲にあります。**変えられるのは量ではなくブロックの選ばれ方**です。
 
 - **季節開始ごとのレート選び直し**: 季節の遷移（2.3 節の `on_min`）で「今回のレート区分」を表す専用プロパティを
   `pick` で `set` し、`calm`/`wet`/`dry` それぞれの `stages` に、その区分ごとの `conditions` で切り替わる複数の
   `add` ブロックを用意する。新しいエンジン機能は不要。
+
+### 3.4 季節ごとのレート選び直しは入れない
+
+**3.3 節の追加手段は入れません。** 大気水分量のレートは、季節ごとに固定のままにします。
+
+**単調さは、軌跡ではなく天気で測ります。** 大気水分量は抽選の重みを作るための内部の値で、プレイヤーが
+受け取るのはそこから引かれた天気のほうです。同じ季節に何度入っても同じ天気の並びになるなら単調で、
+回ごとに違うなら、たとえ水分量の軌跡が似ていても単調ではありません。
+
+**実測は「回ごとに違う」側です。** [`stats/climate.yaml`](../../stats/climate.yaml) の `non_rain_streak`・
+`weather_hours` は**季節インスタンス1本を1標本として**測っているので、その散らばりがそのまま「同じ季節が
+毎回どれだけ違うか」になります。`calm` の連続未降雨時間は、短いほうの 5% が
+0.42 日<!-- stats: climate.yaml non_rain_streak season=calm segment=overall p5 -->、
+長いほうの 5% が 4.21 日<!-- stats: climate.yaml non_rain_streak season=calm segment=overall p95 -->
+——半日で次が降る回もあれば、4 日待たされる回もあります。小雨だった時間も、
+43 時間<!-- stats: climate.yaml weather_hours season=calm weather=light_rain segment=overall p5 -->の回から
+76 時間<!-- stats: climate.yaml weather_hours season=calm weather=light_rain segment=overall p95 -->の回まで
+散っています。
+
+レートを季節ごとに引き直しても、**既に散っているものへ2つ目の乱数を重ねるだけ**です。宣言が増えるぶんだけ、
+どちらの乱数が今の天気を作ったのかが読めなくなります。実際に遊んで「どの `calm` も同じに見える」となった
+ときに、3.3 節の形で足せます。
+
+### 3.5 レート・閾値・重みは、この値で据え置く
+
+**3 節のレート・貯水池の閾値・4.3 節の重みは、いま宣言されている値のままにします。**
+
+狙いとして書いてあることに、実測が届いているためです。`calm` の連続未降雨時間は「長くしすぎない」
+（3.2 節）が狙いで、3.2 節がレートから見積もった 1.7〜2.5 日の帯に対し、実測の平均は
+2.17 日<!-- stats: climate.yaml non_rain_streak season=calm segment=overall mean -->。季節ごとの天気の
+対比も、`weather_hours` を季節で並べれば雨の時間が段違いに出ています。
+
+**これ以上動かす根拠は、シミュレーションからは出ません。** 残っているのは「遊んでみて渇きすぎるか、
+だれるか」という体感の側の問いで、それは測る道具の答えられる問いではありません。**測って出てこないものを、
+測る前に動かさない**——値を動かした後に狙いを満たし続けているかは
+`tests/world-codex/climateSystem.test.ts` が見るので、体感から動かす番が来たときの回帰は既に張ってあります。
 
 ## 4. 天気: worldプロパティとしての短期変動
 
@@ -251,7 +287,7 @@ weather_remaining:
             set:
               self: {weather: sunny, weather_remaining: 24}
       - weight: {prop: cloudy_weight}
-        # ... 以下、light_rain/heavy_rain/stormも同じ形（core.yaml参照）
+        # ... 以下、残りの候補も同じ形（core.yaml参照）
 ```
 
 `*_weight` プロパティ自身の値は、`atmospheric_moisture` の `stages`（数値の半開区間。GameElementDefinition.md
@@ -280,7 +316,7 @@ atmospheric_moisture:
               clear_weight: 30
               cloudy_weight: 25
               light_rain_weight: 20
-    - name: humid          # 60〜84.9: 雨が優勢になり、大雨・嵐も現れ始める（晴れ系はclearのみ、僅かに）
+    - name: humid          # 60〜84.9: 雨が優勢になり、大雨・嵐も現れ始める（降らないのはclear/cloudyだけ、僅かに）
       min: 60
       passives:
         - modify:
@@ -290,7 +326,7 @@ atmospheric_moisture:
               light_rain_weight: 40
               heavy_rain_weight: 30
               storm_weight: 3
-    - name: saturated      # 85〜: まず晴れない（晴れ系の重みを立てない=0）。嵐・大雨が中心
+    - name: saturated      # 85〜: まず晴れない（sunny/clearの重みを立てない=0）。嵐・大雨が中心
       min: 85
       passives:
         - modify:
@@ -303,7 +339,8 @@ atmospheric_moisture:
 
 晴れ系（`sunny`/`clear`/`cloudy`）の重みも雨系と同じく `atmospheric_moisture` の段階に連動させ、固定の
 重み定数にはしません。固定にすると「大気水分量がどれだけ高くても晴れが一定確率で残り続ける」下限が
-原理的に外れなくなるためです。上の実装では `saturated` 段階が晴れ系の重みを立てない（＝0 のまま）ことで
+原理的に外れなくなるためです。上の実装では `saturated` 段階が `sunny_weight`/`clear_weight` を立てない
+（＝0 のまま。降らない候補として残るのは `cloudy` だけ）ことで
 「まず晴れない」を、対称に `dry`/`moderate` 段階が `heavy_rain_weight`/`storm_weight` を立てないことで
 「乾いている間・穏やかな季節の小雨は大雨・嵐にならない」（3.2 節の保証）を表現しています。晴れ系の中では、
 どの段階でも `clear` の重みを最も大きくし、この島の標準的な天気にしています。
@@ -392,7 +429,7 @@ early_rain_calibration:
       passives:
         - add:
             self:
-              atmospheric_moisture: 60
+              atmospheric_moisture: 0.6
     - name: done
       min: 192    # 3日目の開始でオフに戻る
 ```
@@ -422,7 +459,7 @@ first_dry_rain_calibration:
       passives:
         - add:
             self:
-              atmospheric_moisture: 200
+              atmospheric_moisture: 2
     - name: done
       min: 6816   # 72日目の開始でオフに戻る
 ```
@@ -471,9 +508,6 @@ first_dry_rain_calibration:
 
 ## 7. 未決事項・今後の検討課題
 
-- 各レート・閾値・重みの数値は統計テストを満たす初期値であり、実プレイでの体感に基づくバランス調整は今後の
-  課題（数値を変えたら `tests/world-codex/climateSystem.test.ts` が要件を満たし続けるかで回帰を検知できる）
-- 3.3 節で挙げた単調さ対策（季節開始ごとのレート選び直し）を採用するかどうか
 - 5.2 節の `6720`/`6816` という tick 数は 2.3 節の「初回サイクル固定 30 日」に依存する導出値であり、2.3 節の
   前提が変わった場合はこの節も再計算が必要
 - scorching への「特別な対策が必要な極端な天候」としてのゲームプレイ上の意味づけ（現状は天気の値が

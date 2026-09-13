@@ -7,6 +7,7 @@ import type { SeasonWeatherHours } from '../../src/analysis/activityHours';
 import { activityHoursOf } from '../../src/analysis/activityHours';
 import { islandLocationsOf } from '../../src/analysis/islandLocations';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
+import type { PropertyRange } from '../../src/domain/PropertyDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
@@ -142,7 +143,13 @@ function createClimateStats(
   return stats;
 }
 
-/** 1つの季節インスタンス分のtick列（segTemps/segWeathers/segMoistures）を集計へ反映する。 */
+/**
+ * 1つの季節インスタンス分のtick列（segTemps/segWeathers/segMoistures）を集計へ反映する。
+ *
+ * `moistureRange` は `atmospheric_moisture` の値域で、**端に張り付いたtickをレートの集計から外す**ために
+ * 要る（下の「大気水分量レート・自己減算の実測」）。**定義から渡す**——ここへ数を書き写すと、値域を
+ * 動かしたときに除外がずれたまま緑になる。
+ */
 function processCompletedSegment(
   stats: ClimateStats,
   weatherKinds: readonly SymbolGlobalId[],
@@ -151,6 +158,7 @@ function processCompletedSegment(
   temps: readonly number[],
   weathers: readonly SymbolGlobalId[],
   moistures: readonly number[],
+  moistureRange: PropertyRange,
 ): void {
   const len = temps.length;
   if (len === 0) return;
@@ -205,12 +213,12 @@ function processCompletedSegment(
   }
 
   // 大気水分量レート・自己減算の実測: tickごとの変化量を、直前tickの天気（そのtickの間ずっと効いていた天気）で
-  // 仕分ける。境界でのクランプ（0/10000への張り付き）は変化量を真の値より小さく見せてしまうため、前後どちらかが
-  // クランプ値に達しているtickは除外する。
+  // 仕分ける。値域の端への張り付きは変化量を真の値より小さく見せてしまうため、前後どちらかが端に達している
+  // tickは除外する。
   for (let i = 1; i < len; i++) {
     const prev = moistures[i - 1];
     const curr = moistures[i];
-    if (prev <= 0 || prev >= 10000 || curr <= 0 || curr >= 10000) continue;
+    if (atEdge(prev, moistureRange) || atEdge(curr, moistureRange)) continue;
 
     const delta = curr - prev;
     const governingWeather = weathers[i - 1];
@@ -220,6 +228,11 @@ function processCompletedSegment(
       getStat(stats.seasonMoistureRate, seasonSymbolId).add(delta);
     }
   }
+}
+
+/** 値域の端に達しているか。ここでのtickは、レートが値域に食われているので実測から外す。 */
+function atEdge(moisture: number, range: PropertyRange): boolean {
+  return moisture <= range.min || moisture >= range.max;
 }
 
 /**
@@ -403,6 +416,8 @@ async function buildReportFromDefinitions(): Promise<string> {
   const stats = createClimateStats(seasonKinds, weatherKinds, rainWeatherKinds);
 
   const worldDef = codex.objects.get(codex.objectNames.getId('world'));
+  const moistureRange = worldDef.tryGetPropertyDef(moistureId)?.range;
+  if (moistureRange === undefined) throw new Error('world の atmospheric_moisture に値域がありません。');
   const totalTicks = SIM_DAYS * TICKS_PER_DAY;
 
   for (let seed = 1; seed <= SEED_COUNT; seed++) {
@@ -430,6 +445,7 @@ async function buildReportFromDefinitions(): Promise<string> {
           segTemps,
           segWeathers,
           segMoistures,
+          moistureRange,
         );
       }
       segTemps = [];

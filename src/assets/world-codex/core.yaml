@@ -554,8 +554,9 @@ object_defs:
       # 大気水分量（ClimateSystem.md 3節の貯水池）。季節レート＋降雨中の自己減算（weather参照）で駆動。
       # 基準レート（1/tick、GameElementDefinition.md 6.0節）は雨季の上昇。湿度が上がる季節を基準に置き、
       # calm/dryはその微変動として扱う。
-      # stagesは天気候補ごとの重み（*_weight）をmodifyで駆動する（ClimateSystem.md 4.3節）: saturatedでは晴れ系の重みなし、dryでは
-      # heavy_rain/stormの重み0。晴れ系の中ではclearを最も重くする。moderateまでの雨は必ずlight_rain
+      # stagesは天気候補ごとの重み（*_weight）をmodifyで駆動する（ClimateSystem.md 4.3節）:
+      # saturatedではsunny/clearの重みなし（降らない候補として残るのはcloudyだけ）、
+      # dryではheavy_rain/stormの重み0。晴れ系の中ではclearを最も重くする。moderateまでの雨は必ずlight_rain
       # （序盤の「軽めの雨」要件、3.2節）。scorching_weightのみthermal_levelのhot stageが駆動する。
       atmospheric_moisture:
         value: 0
