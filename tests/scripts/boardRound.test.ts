@@ -352,7 +352,7 @@ describe('board-round.mjs', () => {
   // **頼むのであって、自分では外さない。** `gh pr edit --remove-label` を打つと、それが `unlabeled`
   // の出来事になり、`unlabeled_by_hand` が**人が外した**と読んで `却下` を付ける——デーモンの `gh` は
   // 人と同じアカウントで、`Bot` になるのは Actions の `GITHUB_TOKEN` だけ（`board-design.md` 2.2.1）。
-  it('前の差分に残った結論の札は、コメントで頼んで覚える', () => {
+  it('前の差分に残った結論の札は、コメントで頼む。頼んだことは覚えない', () => {
     const stale = { ...passed, comments: [{ body: '[レビュー] 通してよい\n読んだ版: 9990000\n' }] };
     const result = playRound({ prs: [pr(10, stale)] });
 
@@ -361,7 +361,9 @@ describe('board-round.mjs', () => {
     // **今の頭を本文に書く。** 読むのは人で、どの差分に付いた札が落ちるのかはここにしか出ない。
     expect(result.comments[0]).toContain('aaa111');
     expect(result.gh.some((call) => call.includes('--remove-label'))).toBe(false);
-    expect(result.ledger['unlabel:10']).toBe('aaa111');
+    // **頼んだことは覚えない。** 覚えて二度目を出さないようにすると、**頼む先（`swept`）が転んだ回に
+    // 札が残ったまま素通りする**——同じ issue #2144 の形が、新しい段の転びとして残る。
+    expect(result.ledger).toEqual({});
   });
 
   // ここから4件は、**盤面を引けなくなった印**（`board-state.mjs` の `UNREADABLE`）。読むのは人が
@@ -445,19 +447,6 @@ describe('board-round.mjs', () => {
 
     expect(result.ok).toBe(true);
     expect(result.ledger).toEqual({ 'review:10': 'aaa111' });
-  });
-
-  // **札を剥がした覚えも、開いているPRに紐づく**（`board-move.mjs` の `UNLABEL`）。掃除に巻き込むと
-  // **毎周捨てられて、頼んだ後の周が「まだ打っていない」に戻る**——一覧が1周ぶん古いだけで、
-  // 剥がし直す手が何度でも出る。
-  it('札を剥がした覚えは、PRが開いているうちは台帳から捨てない', () => {
-    const result = playRound({
-      prs: [pr(10)],
-      ledger: { 'unlabel:10': 'aaa111', 'unlabel:99': 'zzz999' },
-    });
-
-    expect(result.ledger['unlabel:10']).toBe('aaa111');
-    expect(result.ledger['unlabel:99']).toBeUndefined();
   });
 
   // **後片付けの相手は開いているPRの一覧に載らない**ので、載っていないことでは捨てられない

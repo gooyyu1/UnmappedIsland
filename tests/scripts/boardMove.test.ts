@@ -691,6 +691,20 @@ describe('board-move.mjs', () => {
     ]);
   });
 
+  // **数えるのは今の頭を読んだぶんだけ。** 過去の名乗り漏れを数えると、**1周しか読んでいない差分が
+  // 「2周ぶん読んだ」に見え**、読ませ直しの手が出ないまま止まる。
+  it('前に名乗り漏れの判定が在っても、今の頭が1周目なら読ませ直す', () => {
+    const comments = [
+      { body: '[レビュー] 通してよい\n\n直しは要らない。\n' },
+      ...verdict('aaa1111').comments,
+    ];
+    const board = { prs: [pr(10, { comments, updatedAt: QUIET })] };
+    expect(moves(board)).toEqual([
+      'REVIEW 10 aaa1111:1',
+      'NOTE PR #10 は判定が書かれても結論のラベルが付かないので、もう1周読ませる',
+    ]);
+  });
+
   // **歯止めは、名乗りの無い判定も数える。** 数えないと、**読ませ直したレビューが `読んだ版` を
   // 書き忘れた周だけ歯止めが外れ**、落ち着くたびにレビューが1本立ち続ける（2.13.7）。
   it('読ませ直したレビューが版を名乗らなくても、3周目は出さない', () => {
@@ -720,19 +734,21 @@ describe('board-move.mjs', () => {
   it('落ちる前でも、前の差分の通してよいではマージしない', () => {
     const stale = { ...label('通してよい'), ...verdict('9990000') };
     expect(moves({ prs: [pr(10, stale)] })).toEqual([
-      'NOTE PR #10 は前の差分の札が残っている（外れるのを待っている）',
+      'NOTE PR #10 は前の差分の札が残っている（落ちるのを待っている）',
     ]);
   });
 
-  // 同じ理由で、**前の差分への `直し待ち` で書いた本人を起こさない**——直しはもう載っている。
-  it('落ちる前でも、前の差分の直し待ちでは起こさない', () => {
+  // **`直し待ち` は落とさせない**（`STALE_ON_PUSH` に入れていない）。レビューのほかに**後片付けが
+  // base の張り替えへ付ける**（2.10.5）——あちらは押し返される前のPRにしか付けないので、**今の頭を
+  // 名乗る判定が無いのが普通。** 落とすと、載せ直しの依頼が消えて混ざった差分がレビューへ出る。
+  it('前の差分の判定しか無くても、直し待ちは差し戻す', () => {
     const stale = { ...label('直し待ち'), ...returned('9990000'), updatedAt: QUIET };
     const board = {
       prs: [pr(10, stale)],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['UNLABEL 10 aaa1111']);
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:returned:10:aaa1111']);
   });
 
   // **`却下` は落とさせない**（`STALE_ON_PUSH` に入れていない）。人が止めた印で、外したのがどの差分を
@@ -748,12 +764,36 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa1111']);
   });
 
-  // **一度打った頭では止めない。** 落ち終えた後も一覧が古ければ同じ札が見えるので、止めると
-  // 誰の手番でもなくなる。
-  it('頼む手を打った後は、札が見えていてもレビューへ出す', () => {
-    const stale = { ...label('通してよい'), ...verdict('9990000'), updatedAt: QUIET };
+  // **落ちるまで頼み続ける。** 頼む先（`board-labels.yml` の `swept`）も出来事で動く段なので、
+  // **ここも転びうる**——1回頼んだことを覚えて素通りすると、転んだ回に札が残ったままレビューへ出て、
+  // **新しい判定が載った時点で古いと言えなくなる**（`判断待ち` が次の push まで外れない）。
+  it('頼んだ後も落ちていなければ、落ち着くたびに頼み直す', () => {
+    const stale = { ...label('通してよい', '判断待ち'), ...verdict('9990000'), updatedAt: QUIET };
     const board = { prs: [pr(10, stale)], taken: { 'unlabel:10': 'aaa1111' } };
-    expect(moves(board)).toEqual(['REVIEW 10 aaa1111:0']);
+    expect(moves(board)).toEqual(['UNLABEL 10 aaa1111']);
+  });
+
+  // **過去の名乗り漏れで、この仕組みが止まらない。** 「名乗りの無い判定が1つでも在れば古いと
+  // 言えない」で見ると、**そのPRでは以後どの頭でも古い札を見つけられなくなる**（名乗りは書き忘れ
+  // うる）。訊くのは**最後の判定**だけ。
+  it('前に名乗り漏れの判定が在っても、最後の判定が古ければ落としてもらう', () => {
+    const comments = [
+      { body: '[レビュー] 直しが要る\n\n- 本文の `## 自己点検` が…\n' },
+      ...verdict('9990000').comments,
+    ];
+    const stale = { ...label('通してよい'), comments, updatedAt: QUIET };
+    expect(moves({ prs: [pr(10, stale)] })).toEqual(['UNLABEL 10 aaa1111']);
+  });
+
+  // 逆に、**最後の判定が版を名乗っていなければ古いとは言えない**（名乗りは書き忘れうる）。
+  // 倒れる先は落とさないほう。
+  it('最後の判定が版を名乗っていなければ、札には手を出さない', () => {
+    const comments = [
+      ...verdict('9990000').comments,
+      { body: '[レビュー] 通してよい\n\n直しは要らない。\n' },
+    ];
+    const board = { prs: [pr(10, { ...label('通してよい'), comments, updatedAt: QUIET })] };
+    expect(moves(board)).toEqual(['MERGE 10']);
   });
 
   // **判定が1つも無いPRでは、札が古いと言えない**（`直し待ち` は後片付けも付ける。2.10.5）。

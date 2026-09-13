@@ -160,7 +160,6 @@ export function pruneTaken(taken, board) {
       (key.startsWith('tidy:') && Date.parse(mark) >= tidyFrom) ||
       (key.startsWith('resume:') && ids.has(key.slice('resume:'.length))) ||
       (key.startsWith('review:') && numbers.has(key.slice('review:'.length))) ||
-      (key.startsWith('unlabel:') && numbers.has(key.slice('unlabel:'.length))) ||
       (key.startsWith('archive:') && ids.has(key.slice('archive:'.length))) ||
       (key.startsWith('idle:') && ids.has(key.slice('idle:'.length)));
     if (lives) kept[key] = mark;
@@ -305,7 +304,9 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
       } finally {
         rmSync(work, { recursive: true, force: true });
       }
-      remember(`unlabel:${a}`, b);
+      // **指紋を残さない。** 頼んだことを覚えて二度目を出さないようにすると、**頼む先が転んだ回に
+      // 札が残ったまま素通りする**（`board-move.mjs` の `UNLABEL`）。同じ手が何度も出ないことは、
+      // **頼みのコメントで `updatedAt` が動く**ことで足りている（あちらの「落ち着くまでは頼まない」）。
       return PLAYED;
     }
     case 'ARCHIVE': {

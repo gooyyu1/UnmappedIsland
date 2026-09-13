@@ -27,6 +27,11 @@ const WORKFLOW = resolve(__dirname, '../../.github/workflows/board-labels.yml');
 
 const PR = '1527';
 
+/** `gh pr edit` へ渡された `--remove-label` の札を、出てきた順に。 */
+function removedLabels(text: string): string[] {
+  return [...text.matchAll(/--remove-label (\S+)/g)].map((found) => found[1]);
+}
+
 interface Comment {
   readonly body: string;
   /** 既定は書き込み権のある投稿者。 */
@@ -353,19 +358,15 @@ describe('board-labels.yml の synchronized', () => {
     return workflow.jobs.synchronized.steps.find((s) => s.run !== undefined)?.run;
   }
 
-  it('前の差分に付いていた印を、人の手番のぶんまで落とす', () => {
-    for (const name of ['直し待ち', '通してよい', '判断待ち', '収束せず', '却下']) {
-      expect(synchronized()).toContain(`--remove-label ${name}`);
-    }
-  });
-
-  // **盤面が「前の差分のもの」と読む札は、ここで落ちるものでなければならない**（`board-move.mjs` の
-  // `STALE_ON_PUSH`。issue #2144）。ここが落とさない札を盤面が無いものとして読むと、**push のたびに
-  // 効き目だけが消えて、札は誰にも外されないまま残る。**
-  it('盤面が前の差分のものと読む札は、ここが落とす', () => {
-    for (const name of STALE_ON_PUSH) {
-      expect(synchronized()).toContain(`--remove-label ${name}`);
-    }
+  // **落ちる札の顔ぶれを、丸ごと留める。** 「これが含まれている」だけで見ると、**ここへ札を1つ
+  // 足したときに何も落ちない**——盤面が読む集合（`board-move.mjs` の `STALE_ON_PUSH`。issue #2144）へ
+  // 足し忘れても、足したのが落とすべきでない札でも、どちらも緑のまま。
+  //
+  // **盤面が読まない2つは、ここで名指しする。** どちらも**今の頭への判定が無くても付きうる**ので、
+  // 判定と突き合わせても古いと言えない——`直し待ち` は後片付けも付け（2.10.5）、`却下` は人が止めた
+  // 印（2.13.1）。**push で落ちることと、盤面が古いと言えることは別。**
+  it('落とすのは、盤面が前の差分のものと読む札と、判定によらず付く2つ', () => {
+    expect(removedLabels(synchronized() ?? '').sort()).toEqual([...STALE_ON_PUSH, '直し待ち', '却下'].sort());
   });
 });
 
@@ -433,18 +434,14 @@ esac
 
   // **綴りは盤面と揃っていること**（`board-round.mjs` の `SWEEP_LINE`）。Actions には node を
   // 持ち込めないので実装は別で、揃っていることはここでしか留められない。
-  it('盤面が置く行で、盤面が前の差分のものと読む札を落とす', () => {
-    const edits = runSwept(`${SWEEP_LINE}\n\nこのPRに付いている結論の札は…\n`).join(' ');
+  //
+  // **落とす札は、盤面が前の差分のものと読む集合とちょうど同じ**（`STALE_ON_PUSH`）。多いと、
+  // **盤面が古いと言えない札まで落ちる**（`直し待ち`・`却下`。上の `synchronized` を見よ）。少ないと、
+  // その札だけが前の差分のまま残って、盤面はそれを無いものとして読み続ける。
+  it('盤面が置く行で、盤面が前の差分のものと読む札だけを落とす', () => {
+    const edits = runSwept(`${SWEEP_LINE}\n\nこのPRに付いている結論の札は…\n`);
 
-    for (const name of STALE_ON_PUSH) {
-      expect(edits).toContain(`--remove-label ${name}`);
-    }
-  });
-
-  // **`却下` は落とさない**（`synchronized` との違いはそこだけ）。人が止めている印で、外したのが
-  // どの差分を読んだ後かは盤面に出ないので、落とすと人の停止が消える。
-  it('却下 は落とさない', () => {
-    expect(runSwept(`${SWEEP_LINE}\n`).join(' ')).not.toContain('却下');
+    expect(removedLabels(edits.join(' ')).sort()).toEqual([...STALE_ON_PUSH].sort());
   });
 
   // **前方一致にしない。** 頼むのは盤面だけで文面も1つなので、緩めると、その行を引いて書いた人の
