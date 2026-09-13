@@ -11,9 +11,10 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 /**
  * bedding.yamlの寝床とハンモックを、実ファイルの定義だけで検証する。
  *
- * 見たいのは3つ。**差した部品が回復量を動かすこと**（docs/world/Bedding.md 4節。段ごとのブロックが
+ * 見たいのは、**差した部品が回復量を動かすこと**（docs/world/Bedding.md 4節。段ごとのブロックが
  * 重なる形）と、**その差が頭打ちに呑まれずに観測できること**（同節。一晩ぶんが体力の上限を下回る
- * 位置に置いてある）、それに**支点を持たない土地ではハンモックを吊れないこと**（同6.1節）。
+ * 位置に置いてある）、**支点を持たない土地ではハンモックを吊れないこと**（同6.1節）、それに
+ * **吊ったハンモックを畳んで次の土地へ持ち出せること**（同6.2節）。
  *
  * **部品を差す前後を同じ物差しで測る。** 差しても量が動かない書き方——上積みのブロックを落とす・
  * ゲートが枠の中身を見ない——なら、2つの数が並ぶ。
@@ -47,7 +48,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
     const land = spawnInto(session, landName, worldInstance, 'locations');
     const player = spawnInto(session, characterName, land, 'characters');
     makeBrightEnoughForAnyAction(player, codex);
-    return { session, land, player };
+    return { session, world: worldInstance, land, player };
   }
 
   function spawnInto(
@@ -220,7 +221,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
 
   it('吊ったハンモックは、骨組みを差した寝台と同じだけ戻す', () => {
     // 同6節。**寝台の上位ではなく別系統**なので、回復量では上に立たない。差は置ける場所
-    // （支点が要る）と伸ばしろ（詰め物を足す先が無い）のほう。
+    // （支点が要る）・伸ばしろ（詰め物を足す先が無い）・持ち出し（畳んで次の土地へ運べる）のほう。
     const hammock = open('sandy_beach');
     const framed = bedOnBeach(true);
     const slung = spawnInto(hammock.session, 'slung_hammock', hammock.land, 'fixtures');
@@ -251,4 +252,49 @@ describe('bedding.yamlの寝床とハンモック', () => {
     expect(fixtures.map((fixture) => fixture.def.name)).toContain('slung_hammock');
     expect(player.getSlot(codex.slotNames.getId('hand')).contents, '網は手元から消える').toHaveLength(0);
   });
+
+  it('吊ったハンモックを畳むと、網が手元に戻る', () => {
+    // 同6.2節。**吊る一度きりでは「遠出へ持っていける寝床」にならない**——この経路が消えると、
+    // 置ける場所でも伸ばしろでも寝台に劣るだけの寝床になる（同6節の表）。
+    const { session, land, player } = open('forest');
+    const slung = spawnInto(session, 'slung_hammock', land, 'fixtures');
+
+    expect(slung.tryGetAction('take_down', player)?.tryExecute()).toBe(true);
+
+    expect(heldNames(player), '網は手元へ返る').toContain('hammock');
+    expect(land.getSlot(codex.slotNames.getId('fixtures')).contents, '吊ったものは残らない').toHaveLength(0);
+  });
+
+  it('畳んだ網は、次の土地で吊り直せる', () => {
+    // 同6.2節。**持ち出せることがハンモックの取り分**なので、吊った先から回収して別の土地で
+    // もう一度吊れなければ、ja.yamlの「巻けば遠出の荷に混ぜられる」が嘘になる。
+    const { session, world, land, player } = open('forest');
+    const hammock = spawnInto(session, 'hammock', player, 'hand');
+    expect(hammock.tryGetAction('hang', player)?.tryExecute()).toBe(true);
+    expect(slungIn(land)?.tryGetAction('take_down', player)?.tryExecute()).toBe(true);
+
+    // 網を担いだまま、支点のある別の土地へ移る。
+    const next = spawnInto(session, 'forest', world, 'locations');
+    expect(player.moveToSlotOrRejection(next.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
+
+    expect(heldHammock(player)?.tryGetAction('hang', player)?.tryExecute()).toBe(true);
+    expect(slungIn(next)?.def.name).toBe('slung_hammock');
+  });
+
+  /** その土地に吊ってあるハンモック。 */
+  function slungIn(land: WorldObject): WorldObject | undefined {
+    return land
+      .getSlot(codex.slotNames.getId('fixtures'))
+      .contents.find((fixture) => fixture.def.name === 'slung_hammock');
+  }
+
+  /** 手に持っている物の型名。 */
+  function heldNames(player: WorldObject): string[] {
+    return player.getSlot(codex.slotNames.getId('hand')).contents.map((held) => held.def.name);
+  }
+
+  /** 手に持っている、巻いたままのハンモック。 */
+  function heldHammock(player: WorldObject): WorldObject | undefined {
+    return player.getSlot(codex.slotNames.getId('hand')).contents.find((held) => held.def.name === 'hammock');
+  }
 });

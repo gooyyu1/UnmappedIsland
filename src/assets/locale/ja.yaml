@@ -428,6 +428,9 @@ object_texts:
       hang:
         display_name: 吊る
         description: 2本の立ち木の間へ渡して吊る。支点を持たない土地では吊れない。
+      take_down:
+        display_name: 畳む
+        description: 結び目を解いて網を巻き取る。手元の荷に戻るので、次の土地へ持っていける。
       collapse:
         display_name: 倒れ込む
         description: 体力が尽きて倒れ込む。プレイヤーが起こすものではなく、手が出せないまま時間が過ぎる。
@@ -872,7 +875,7 @@ object_texts:
         description: 紐5本を網目に結ぶ。木材は要らない。
   slung_hammock:
     display_name: 吊ったハンモック
-    description: 立ち木の間へ渡したハンモック。背中の下を風が抜けるので、虫にも湿気にも最も強い。
+    description: 立ち木の間へ渡したハンモック。背中の下を風が抜けるので、虫にも湿気にも最も強い。畳めば網に戻る。
 
   # 里心を抑える設え（furnishings.yaml）。
   log_stool:
