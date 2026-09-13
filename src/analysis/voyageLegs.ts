@@ -95,6 +95,12 @@ export interface SeaZoneReading {
   readonly lookouts: number;
   readonly lookoutMinutes: number;
 
+  /**
+   * 見張り1回にかかる時間（分。`explore` の `duration`）。**見張りを1回ずつ数える側はここから採る**
+   * ——tickの長さで代用すると、宣言のほうを動かした日に黙って食い違う（`voyageDrift.ts`）。
+   */
+  readonly minutesPerLookout: number;
+
   /** 素の横断時間（分）。筏の側の事情も風も乗せていない。 */
   readonly crossingMinutes: number;
 
@@ -328,6 +334,7 @@ function zoneReadingOf(
     zonesToMainland,
     lookouts,
     lookoutMinutes: lookouts * explore.laborMinutes,
+    minutesPerLookout: explore.laborMinutes,
     crossingMinutes,
     stormDriftTicks: rangeMaxOf(def, ids.stormDriftId),
     ...yields,

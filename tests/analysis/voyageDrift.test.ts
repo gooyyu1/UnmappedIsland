@@ -241,16 +241,23 @@ object_defs:
 
   const sweptOf = (run: VoyageDriftRun): number => run.sweptBackwards + run.sweptForwards;
 
-  it('荒天の無い海では、静的に解いた側と同じ区間数・同じ物差しの日数で終わる', () => {
-    const { course, runs } = sailIn('clear', 'wet', 5);
+  it('荒天の無い海では、静的に解いた側と同じ区間数・同じ日数で終わる', () => {
+    // **横風しか吹かない季節（calm）に置く。** 風向きが変われば1区間の時間も変わるので、風の混ざる
+    // 季節では静的な期待値としか比べられず、**見張り1回を何分と数えているか**のような食い違いが
+    // 平均の中に紛れる。
+    const { course, runs } = sailIn('clear', 'calm', 5);
+
+    const expected = course.bySeason.get('calm');
+    if (expected === undefined) throw new Error('穏やかな季節の合計がありません。');
 
     for (const run of runs) {
       expect(sweptOf(run), '押し流された回数').toBe(0);
       expect(run.crossings, '漕ぎ出した回数').toBe(course.legs);
       expect(run.voidedCrossings, '空振りになった渡り').toBe(0);
+      expect(run.workMinutes, '見張りと横断へ充てた分').toBe(expected.totalMinutes);
       // 日数の分母は島側の労働と同じ（`VoyageStats.md`「日数の分母」）。ここがずれると、押し流しを
       // 入れた日数と入れない日数が別の物差しで並ぶ。
-      expect(run.days, '実日数').toBeCloseTo(run.workMinutes / LABOUR.surplusMinutes, 1);
+      expect(run.days, '実日数').toBeCloseTo(expected.days, 1);
     }
   });
 

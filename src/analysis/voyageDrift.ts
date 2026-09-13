@@ -50,7 +50,11 @@ export interface VoyageDriftRun {
   /** 押し流されて、本土までの残り海区数が減った回数。 */
   readonly sweptForwards: number;
 
-  /** 見張りと横断に費やした分。漂ったまま過ぎた時間は入らない。 */
+  /**
+   * 見張りと横断へ充てた分。漂ったまま過ぎた時間は入らない一方、**押し流しで空振りになった渡りは
+   * 漕ぎ出したときの分がそのまま入る**——途中まで漕いだ分だけを差し引くと、空振りが「安く済んだ渡り」
+   * として出る。
+   */
   readonly workMinutes: number;
 
   /** 出航から到達までの実日数。 */
@@ -154,7 +158,7 @@ export class VoyageDriftSimulation {
         let cost: number;
         if (done < zone.lookouts) {
           sightedLookouts.set(zone.name, done + 1);
-          cost = MINUTES_PER_TICK;
+          cost = zone.minutesPerLookout;
         } else {
           crossingTo = this.legTowardMainland(zone);
           const minutes = crossingTo.crossingMinutesByWind.get(this.currentWindName());
