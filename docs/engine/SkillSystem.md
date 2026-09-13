@@ -192,7 +192,7 @@ interactions:
 **0.00%**<!-- stats: discovery_coverage.yaml island_missing_tag tag=animal share -->
 です。**束が 1 つの型しか持たない札は、型ごとに書いたのと同じだけ消えます**（`artifact` は
 `golden_chalice` だけなので
-**4%**<!-- stats: discovery_coverage.yaml island_missing_tag tag=artifact share ±1 -->）——札にしたこと
+**3%**<!-- stats: discovery_coverage.yaml island_missing_tag tag=artifact share ±1 -->）——札にしたこと
 自体は何も守りません。
 
 どの型がどれだけ消えるかは [`stats/discovery_coverage.yaml`](../../stats/discovery_coverage.yaml) に

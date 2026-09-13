@@ -689,20 +689,25 @@ describe('筏と航海', () => {
   });
 
   it('引き返して着くのは、出航したその海岸', () => {
-    // **島で最初の砂浜ではない。** 行き先を型で指すと、どの海岸から出ても木を深さ優先で辿った
-    // 最初の砂浜へ着く——積んだ物を降ろす場所と拠点がずれる。
+    // **島で最初の同じ型の海岸ではない。** 行き先を型で指すと、どの海岸から出ても木を深さ優先で
+    // 辿った最初の1つへ着く——積んだ物を降ろす場所と拠点がずれる。**同じ型が2つ以上ある海岸で
+    // 確かめる**ので、どの型が並ぶかは島に任せる（砂浜を名指しすると、砂浜が1つの島で試験が消える）。
     const { game, raft } = ready();
-    const beaches = coasts(game).filter((coast) => coast.def.name === 'sandy_beach');
-    expect(beaches.length, 'シード3の島には砂浜が複数ある').toBeGreaterThan(1);
+    const byType = new Map<string, WorldObject[]>();
+    for (const coast of coasts(game))
+      byType.set(coast.def.name, [...(byType.get(coast.def.name) ?? []), coast]);
+    const sameType = [...byType.values()].find((group) => group.length > 1);
+    expect(sameType, '同じ型の海岸が2つ以上ある島で確かめる').toBeDefined();
 
-    const departure = beaches[beaches.length - 1];
-    expect(sailAndTurnBack(game, raft, departure).instanceId, '出た砂浜へ戻り着く').toBe(
+    const departure = sameType![sameType!.length - 1];
+    expect(sailAndTurnBack(game, raft, departure).instanceId, '出た海岸へ戻り着く').toBe(
       departure.instanceId,
     );
   });
 
   it('砂浜でない海岸から出ても、その海岸へ戻れる', () => {
-    // 出航は `{tag: coast}` なので岩の海岸からもできる。**砂浜が1つも無い島（60シードに1つ）でも
+    // 出航は `{tag: coast}` なので岩の海岸からもできる。**砂浜が1つも無い島（5島に1つ、
+    // stats/terrain.yamlのlocation_type_counts）でも
     // 戻れる**のは、行き先が砂浜という型ではなく、出た当の海岸だから。
     const { game, raft } = ready();
     const departure = coasts(game).find((coast) => coast.def.name !== 'sandy_beach');
