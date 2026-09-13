@@ -31,7 +31,7 @@
 - [スロットシステム設計](./SlotSystem.md) — 固定位置・受け入れ制約・スタックのまとまりと並び順
 - [コンテナの容量・重さ・保護](./ContainerSystem.md) — 重さの純粋な合算と、担ぎ方で変わる負荷（load）。持てるか・運べるかをどちらで決めるか
 - [液体容器システム設計](./LiquidContainerSystem.md) — 量・飲用・注ぎ移し・蒸発・降雨の実現方法
-- [耐久値システム設計](./DurabilitySystem.md) — 素材の屋外劣化と食料の腐敗を単一の durability で表す場合の減少量の目安
+- [耐久値システム設計](./DurabilitySystem.md) — 素材の屋外劣化と食料の腐敗を単一の durability で表すときの減少量。素材ごとの寿命日数もここ
 - [アクションシステム設計](./ActionSystem.md) — actions / combinations の実行時の仕組み
 - [気候システム設計](./ClimateSystem.md) — 季節・天気を world のプロパティと貯水池モデルで駆動する方法
 - [明るさシステム設計](./IlluminationSystem.md) — 明るさをEVスケールで持ち、手元・視界と、それを

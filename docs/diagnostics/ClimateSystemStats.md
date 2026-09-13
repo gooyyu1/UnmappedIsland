@@ -67,7 +67,9 @@ YAMLとずれます）。
 
 ## 大気水分量のレート・自己減算
 
-`core.yaml`の設定値の実測値（範囲端0/10,000に達したtickは除外）。
+`core.yaml`の設定値の実測値。**`atmospheric_moisture`の値域の端に達したtickは除外します**——端では
+レートが値域に食われ、宣言した量より小さく見えるためです。端がいくつかは定義から読むので、値域を
+動かしても除外はついてきます。
 
 `rain_weather_moisture_decrement` の `estimated`（推定自己減算）は「その天気の間の正味変化量 −
 その季節のレート」を、季節ごとの標本数で重み付け平均したもの。天気自身の自己減算は季節に依らない
@@ -82,7 +84,8 @@ YAMLとずれます）。
 `src/analysis/activityHours.ts`が、`core.yaml`の`hour`・`weather`の段（太陽高度と天気の透過率が
 ambient_brightnessへ与える寄与）・土地ごとのambient_brightness・上の天候の出現時間（平均）から
 数える（[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 5節のしきい値: 移動 −5・
-屋外の採取 +3・手元の作業 +5）。据え付けの光源（松明・炉）は含まない。
+屋外の採取 +3・手元の作業 +5）。光源は含まない——据えた炉も、手に持つ松明もこの表には入らない
+（松明1本が何を開くかは[`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.1.1.4節）。
 
 列は行動のクラスと1対1で、`travel`（土地の間を移動する）・`gathering`（屋外で採る）・`exploration`
 （探索する）・`handwork`（手元の細かい作業）。**`gathering`が`handwork`より長いのは、しきい値だけの差**
