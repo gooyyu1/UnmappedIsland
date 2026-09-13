@@ -357,6 +357,77 @@ describe('動物の1手', () => {
     expect(weightOf(boar, 'gore'), '石斧を構えても間合いは取れない').toBe(30);
   });
 
+  it('意識が濁るほど、踏み込む手が細る', () => {
+    // 体調（痛み・失血・衝撃）はどれも意識へ合流してから配分を押す（HuntingSystem.md 5.5節）。
+    // 押し引きは合流した後の段に1箇所だけ置くので、**何が濁らせたかによらず同じだけ鈍る**
+    // ——ここでは意識そのものを置いて、原因を問わない効きを読む。
+    //
+    // 重みを読む段取りは「深手を負うほど、逃走の重みが太くなる」と同じ（手番を1つ回した後に読む）。
+    open(0.0);
+    openPath();
+    const boar = alarm(release('wild_boar'));
+    const consciousness = boar.getProperty(codex.propertyNames.getId('consciousness'));
+
+    passTurn();
+    const clear = {
+      gore: weightOf(boar, 'gore'),
+      crush: weightOf(boar, 'crush'),
+      flee: weightOf(boar, 'flee'),
+    };
+
+    consciousness.setNumberWithoutEvents(70);
+    passTurn();
+    const foggyStage = consciousness.stage?.name;
+    const foggy = { gore: weightOf(boar, 'gore'), crush: weightOf(boar, 'crush') };
+
+    consciousness.setNumberWithoutEvents(40);
+    passTurn();
+
+    expect(foggyStage, '濁り始めた段').toBe('foggy');
+    expect(consciousness.stage?.name, '朦朧とした段').toBe('dazed');
+    expect(clear.gore, '素の配分（animals.yamlのwild_boar）').toBe(30);
+    expect(foggy.gore, '濁れば細る').toBeLessThan(clear.gore);
+    expect(weightOf(boar, 'gore'), '朦朧ならさらに細る').toBeLessThan(foggy.gore);
+    expect(clear.crush, '澄んでいれば圧し掛かれる').toBeGreaterThan(0);
+    expect(foggy.crush, '圧し掛かりは濁った時点で間合いの外へ出る').toBeLessThanOrEqual(0);
+    expect(weightOf(boar, 'flee'), '鈍るのは踏み込む手だけで、逃げ足は変わらない').toBe(clear.flee);
+  });
+
+  it('傷1つでは手は鈍らず、2つ目から鈍る', () => {
+    // 痛みがhurtingで押し下げるぶんは、ちょうどclearの下端に留まる（HuntingSystem.md 5.5節）。
+    // **1発当てただけでは反撃は細らない**——細らせるには2つ目の傷か、失血か、殴られた揺れが要る。
+    open(0.0);
+    const boar = alarm(release('wild_boar'));
+    const consciousness = boar.getProperty(codex.propertyNames.getId('consciousness'));
+
+    wound(boar);
+    passTurn();
+    const afterOne = { stage: consciousness.stage?.name, gore: weightOf(boar, 'gore') };
+
+    wound(boar);
+    passTurn();
+
+    expect(afterOne.stage, '傷1つでは濁らない').toBe('clear');
+    expect(afterOne.gore, '素の配分のまま').toBe(30);
+    expect(consciousness.stage?.name, '2つ目で朦朧とする').toBe('dazed');
+    expect(weightOf(boar, 'gore'), 'そこから鈍る').toBeLessThan(afterOne.gore);
+  });
+
+  it('朦朧としていても、追い詰められた獣は襲ってくる', () => {
+    // **押し引きであって打ち消しではない**（HuntingSystem.md 5.5節）。打ち消しにすると、傷を2つ
+    // 入れた時点で牙まで抽選から落ち、5.3節の「追い詰められた動物は逃げずに襲う」が成立しない。
+    //
+    // 逃げ道も足元の物も無い密林では、残る候補は様子見35（15＋朦朧の20）と牙10。合計45のうち
+    // 末尾の10を引くrollを渡す。
+    open(0.9);
+    const boar = alarm(release('wild_boar'));
+    boar.getProperty(codex.propertyNames.getId('consciousness')).setNumberWithoutEvents(40);
+
+    passTurn();
+
+    expect(injuriesOf(player), '朦朧とした獣の牙も、抽選には残っている').toEqual(['gore_wound']);
+  });
+
   it('深手を負った獣は立ち去らず、傷が癒えるより先に膿んで倒れる', () => {
     // 立ち去りが先に来ると、逃げた獲物は傷があと何百手も残っている時点で消える（HuntingSystem.md
     // 5.6節、issue #1994で測った）。止めた結果、**追跡の窓を閉じるのは立ち去りではなく化膿**に
