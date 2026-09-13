@@ -669,7 +669,8 @@ traits:
       #
       # **配るのは、Skills.md 2節がその腕の技術として挙げている作業だけ。** 打ち欠く（knap）、繊維を
       # 採って撚って編む（strip・ret・spin・ply・weave）、刃で木を断って削り出す（fell・buck・whittle）、
-      # 皮を剥ぐ（butcher）、獲物を獲る（strike・spear_*・catch_seabird）、火を起こす（light）、
+      # 皮を剥ぐ（butcher）、打ちかかる（strike——獣にも、据えた的にも。hunting_practice.yaml）、
+      # 獲物を突く・捕る（spear_*・catch_seabird）、火を起こす（light）、
       # 保たせる加工（cure）で全部。
       #
       # **出す物がそっくり同じ操作は、同じ腕を同じだけ配る。** 同じ仕事に入口が2つあるということなので
@@ -846,7 +847,9 @@ traits:
             min: 180
             passives:
               - modify: {self: {ignition_ease: 120}}
-      # 獣を狩る（animals.yamlのstrike）。**レシピは開けない**——開けるのは素材と機会で（Skills.md 2節）、
+      # 獣を狩る（animals.yamlのstrike）。**据えた的への打ち込みも同じ1本を伸ばす**
+      # （hunting_practice.yaml——生きた獣を待たない入口、docs/engine/SkillSystem.md 3.1節）。
+      # **レシピは開けない**——開けるのは素材と機会で（Skills.md 2節）、
       # 罠を作るのは繊維・編みの腕（同節のくくり罠）。段が押し上げるのは下のquarry_senseで、
       # 土地の<動物>_find・海区のshoal_find/seabird_find（探索で出くわす機会）がそれをbaseの
       # 土台にする（locations.yaml・voyage.yaml）。

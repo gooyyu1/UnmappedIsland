@@ -8,7 +8,9 @@
 # **使っても無くならない**物（CardView.md 2.1節）。注ぎ込む水のように指名されても移ってしまう物は付けない。
 
 traits:
-  # 動物へ重ねて殴れる物（animals.yamlのstrikeがweaponタグで探す、docs/engine/HuntingSystem.md 1.2節）。
+  # 打ちかかる相手へ重ねて殴れる物（docs/engine/HuntingSystem.md 1.2節）。weaponタグで探す側は2つ
+  # ——獣（animals.yamlのstrike）と、据えた的（hunting_practice.yamlのstrike）。**的の側は下の当たり所を
+  # 読まない**（揺れる体も裂ける皮も無いので候補が立たない）ので、配分を足しても変わるのは獣の卓だけ。
   #
   # **武器が宣言するのは威力ではなく、一撃がどこへ入るかの重み配分。** 殴った結果（衝撃の量・付く傷）は
   # 動物の側が候補として持ち、武器はそのどれを引きやすいかだけを言う——`add`の量はリテラルしか書けない
