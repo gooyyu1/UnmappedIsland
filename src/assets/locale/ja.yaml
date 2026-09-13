@@ -35,7 +35,8 @@ slot_texts:
     display_name: 怪我
   spoils:
     display_name: くわえた物
-  # 畑に実ったもの（farming.yaml）。撒くのは畑のカードへ重ねる操作なので、枠へ入れる口は持たない。
+  # 畑とベリーの茂みに実ったもの（farming.yaml・locations.yaml）。撒くのは畑のカードへ重ねる操作、
+  # 茂みは勝手に実るので、どちらも枠へ入れる口は持たない。
   crop:
     display_name: 実り
   # 罠に掛かった獣と、囲いの中の獣（traps.yaml・farming.yaml）。**檻と家畜の囲いは1つの型**
@@ -750,6 +751,9 @@ object_texts:
   water_spinach:
     display_name: 空心菜
     description: 水辺に生える葉野菜。茎は空洞で、火を通さずそのまま食べられる。
+  berry:
+    display_name: ベリー
+    description: 茂みから摘んだ小さな実をひと掴み。甘酸っぱく、そのまま口へ放り込める。
   coconut_crab:
     display_name: ヤシガニ
     description: 陸に住む大型の甲殻類。道具が無くても捕まえられるが、殻ごと火にかけないと食べられない。
@@ -1093,7 +1097,10 @@ object_texts:
   # 探索で見つかる設置物（locations.yaml）。
   berry_bush:
     display_name: ベリーの茂み
-    description: 小さな実を付ける低木の茂み。
+    description: 小さな実を付ける低木の茂み。採っても株は残り、日を置けばまた実る。
+    props:
+      ripening_remaining:
+        display_name: 次の実り
   shallow_cave:
     display_name: 浅い洞窟
     description: 岩肌が少しだけえぐれた空洞。奥へは続いていないが、雨をしのいで寝起きできる。
