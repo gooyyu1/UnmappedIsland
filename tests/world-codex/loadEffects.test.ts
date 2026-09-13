@@ -6,9 +6,8 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Path } from '../../src/domain/wrappers/Path';
 import { World } from '../../src/domain/wrappers/World';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -18,25 +17,10 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
  * 遅れは道の `travel_minutes` が `base` で担ぎ手の `travel_delay` を継いで**足される**
  * （GameElementDefinition.md 6.5節）。ここが見ているのは、その足し算が実データを通して効くこと。
  *
- * 率を下げる道具（そり）はまだ実データに無いので、ここだけで足す。担ぎ手・道・積み荷は実データの
- * ものを使う——段の境目も遅れも削りも、確かめたいのは定義ファイルに書いた値そのもの。
+ * **入れ物も担ぎ手も道も実データのもの**を使う——段の境目も遅れも削りも、確かめたいのは定義
+ * ファイルに書いた値そのもの。引く道具の率を決めた逆転点（docs/world/Containers.md 2節）も、
+ * ここで担ぎ手に担がせて確かめる。
  */
-const SLED_YAML = `
-object_defs:
-  sled:
-    tags: [item]
-    props:
-      weight: {value: 8000}
-      volume: {value: 200000}
-      load_rate:
-        value: 1
-        passives:
-          - conditions: [{in_slot: hand}]
-            modify: {self: {load_rate: -0.9}}
-    slots:
-      cargo:
-        cell: {accept: {tag: item}}
-`;
 
 /** 道の長さ。実データの素の道（locations.yaml）と同じ長さにする。 */
 const TRAVEL_MINUTES = 60;
@@ -45,9 +29,7 @@ describe('荷重が歩みの遅れと体力に効く', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR)
-      .load('sled.yaml', SLED_YAML)
-      .buildAndReset();
+    codex = bundledCodex();
   });
 
   function def(name: string): ObjectDef {
@@ -110,17 +92,22 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     readonly ticks: number;
     readonly staminaLost: number;
     readonly stage: string | undefined;
+    /** 道へ出る前に担ぎ手が感じていた荷（g）。段の名前より細かい比較に使う。 */
+    readonly load: number;
   }
 
-  /** 石をstoneCount個担いで（sled: trueならそりに載せて引いて）、道を1本渡る。 */
-  function trek(stoneCount: number, options: { sled: boolean } = { sled: false }): Trek {
+  /**
+   * 石をstoneCount個担いで、道を1本渡る。`container` を渡すとその入れ物を手に持ち、石はそちらへ
+   * 積む（入れ物はどれも `contents` スロットを持つ、containers.yaml）。
+   */
+  function trek(stoneCount: number, container?: string): Trek {
     const { session, world, worldInstance, character, path, forest } = setUpTrek();
     const arrived = (): boolean => character.parent === forest;
 
-    if (options.sled) {
-      const sled = session.createObject(codex.objectNames.getId('sled'));
-      expect(sled.moveToSlotOrRejection(character.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
-      loadStones(session, sled, 'cargo', stoneCount);
+    if (container !== undefined) {
+      const carrier = session.createObject(codex.objectNames.getId(container));
+      expect(carrier.moveToSlotOrRejection(character.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+      loadStones(session, carrier, 'contents', stoneCount);
     } else {
       loadStones(session, character, 'hand', stoneCount);
     }
@@ -131,6 +118,7 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     const ticksBefore = worldInstance.getProperty(tickId).number;
     const staminaBefore = character.getProperty(staminaId).number;
     const stage = character.tryGetProperty(propertyId('load'))?.stage?.name;
+    const load = character.getProperty(propertyId('load')).getEffectiveValue();
 
     const moved = new Path(path, codex).travel(character);
     expect(arrived(), '成立したときだけ移動先の土地へ移る').toBe(moved);
@@ -141,6 +129,7 @@ describe('荷重が歩みの遅れと体力に効く', () => {
       ticks: worldInstance.getProperty(tickId).number - ticksBefore,
       staminaLost: staminaBefore - character.getProperty(staminaId).number,
       stage,
+      load,
     };
   }
 
@@ -184,15 +173,70 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     expect(trip.minutes, '成立しなかった操作は時間を消費しない').toBe(0);
   });
 
-  it('そりに載せれば、通れる・速い・疲れないの3つが同時に戻る', () => {
-    // 同じ28個（28kg）でも、引きずるそりなら体感は1割（8000 + 28000 の 0.1 ＝ 3600g）でlightに収まる。
+  it('そりに載せれば、担ぎきれない荷でも道に出られる', () => {
+    // 同じ28個（28kg）でも、引きずるそりなら体感は55%（(8000 + 28000) × 0.55 ＝ 19800g）で、
+    // 通れない段（27500g）の内側に収まる。**遅れも削りも消えはしない**——そりが戻すのは
+    // 通れることだけで、heavyの段はそのまま効く。
     const carried = trek(28);
-    const instrument = trek(28, { sled: true });
+    const dragged = trek(28, 'sledge');
 
     expect(carried.stage, '担げば動けない').toBe('too_heavy');
-    expect(instrument.stage, '引けば空身と同じ段').toBe('light');
-    expect(instrument.moved, '通れる').toBe(true);
-    expect(instrument.minutes, '遅れも消える').toBe(TRAVEL_MINUTES);
-    expect(instrument.staminaLost, '疲れもしない').toBe(0);
+    expect(carried.moved).toBe(false);
+    expect(dragged.stage, '引けば通れる段まで下がる').toBe('heavy');
+    expect(dragged.moved, '通れる').toBe(true);
+  });
+
+  it('丸太2本は、代表の担ぎ手ならそりで運べる', () => {
+    // そりの値打ちは「担げない重さを運べる」ことに出る（docs/world/Containers.md 2節）。
+    // 丸太は1本20kgなので、2本＝40kgは担いでも籠でも通れない段に入る。
+    //
+    // **通れるかは担ぎ手で分かれる。** 段の境目は個体差そのもの（docs/world/Characters.md 荷重の
+    // 効き方節）で、そりで積めるのは33〜46kg——40kgはその幅の中にある。ここが見ているのは代表
+    // （SAMPLE_CHARACTER）1人ぶんなので、**境目の数は書かず段の名前で見る。**
+    const stageOf = (container: string): string | undefined => {
+      const { session: s, character } = setUpTrek();
+      const carrier = s.createObject(codex.objectNames.getId(container));
+      expect(carrier.moveToSlotOrRejection(character.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+      const contents = carrier.getSlot(codex.slotNames.getId('contents'));
+      for (let i = 0; i < 2; i++)
+        expect(
+          s.createObject(codex.objectNames.getId('log')).moveToSlotOrRejection(contents),
+          `${container} へ${i + 1}本目`,
+        ).toBeUndefined();
+      return character.tryGetProperty(propertyId('load'))?.stage?.name;
+    };
+    const loadOf = (container: string): number => {
+      const { session: s, character } = setUpTrek();
+      const carrier = s.createObject(codex.objectNames.getId(container));
+      expect(carrier.moveToSlotOrRejection(character.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+      const contents = carrier.getSlot(codex.slotNames.getId('contents'));
+      for (let i = 0; i < 2; i++)
+        expect(
+          s.createObject(codex.objectNames.getId('log')).moveToSlotOrRejection(contents),
+          `${container} へ${i + 1}本目`,
+        ).toBeUndefined();
+      return character.getProperty(propertyId('load')).getEffectiveValue();
+    };
+
+    // 籠（20L）には丸太（35L）が1本も入らないので、比べる相手は素手。
+    expect(trek(40).stage, '40kgを担げば動けない').toBe('too_heavy');
+    expect(stageOf('sledge'), 'そりなら通れる段まで下がる').not.toBe('too_heavy');
+    expect(loadOf('handcart'), '台車はさらに軽い').toBeLessThan(loadOf('sledge'));
+  });
+
+  it('引く道具へ乗り換える積載は、Containers.mdが置いた線のとおり', () => {
+    // 率は逆転点から逆算してある（docs/world/Containers.md 2節）ので、**線が動けばここが落ちる**。
+    // 石は1個1kgなので、個数がそのまま積載（kg）になる。
+    const basketAt = (stones: number): number => trek(stones, 'woven_basket').load;
+    const sledgeAt = (stones: number): number => trek(stones, 'sledge').load;
+    const handcartAt = (stones: number): number => trek(stones, 'handcart').load;
+
+    expect(basketAt(8), '編み籠とそりは8kgで並ぶ').toBeCloseTo(sledgeAt(8), 6);
+    expect(basketAt(7), '7kgでは籠のほうが軽い').toBeLessThan(sledgeAt(7));
+    expect(basketAt(9), '9kgではそりのほうが軽い').toBeGreaterThan(sledgeAt(9));
+
+    expect(sledgeAt(10), 'そりと台車は10kgで並ぶ').toBeCloseTo(handcartAt(10), 6);
+    expect(sledgeAt(9), '9kgではそりのほうが軽い').toBeLessThan(handcartAt(9));
+    expect(sledgeAt(11), '11kgでは台車のほうが軽い').toBeGreaterThan(handcartAt(11));
   });
 });

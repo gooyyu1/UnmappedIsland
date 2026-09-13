@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { toolWearsOf } from '../../src/analysis/durations';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -112,7 +113,9 @@ describe('timber.yamlの伐採', () => {
     // 頃は、暗さで塞がれた樹皮剥ぎの理由が伐採の「摩耗」に隠れていた。
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
     const axe = spawnInto('stone_axe', player, 'hand');
-    axe.getProperty(codex.propertyNames.getId('durability')).setNumberWithoutEvents(0);
+    // 1本ぶん（120）を割った刃。**0にはしない**——0へ届いた刃は折れて無くなる（weathering.yaml）
+    // ので、その札は盤面に残らない（docs/engine/DurabilitySystem.md 2.1節）。
+    axe.getProperty(codex.propertyNames.getId('durability')).setNumberWithoutEvents(100);
     makeTooDarkToWork(player, codex);
 
     expect(
@@ -123,6 +126,61 @@ describe('timber.yamlの伐採', () => {
       tree.refusedCombinationsWith(axe, player).map((c) => [c.name, c.unmetRequirement()?.reasonName]),
       '断るのは伐採だけで、理由も斧そのものを指す',
     ).toEqual([['fell', 'too_worn']]);
+  });
+
+  it('斧を断る線は、その工程が食う量と一致している', () => {
+    // 線はその1回が食う量と同じところに引く（docs/engine/DurabilitySystem.md 2.1節）——倒し切れない
+    // 仕事を始めさせないため。
+    //
+    // **食う量は宣言から読む。** 直値で書くと閾値の側しか見ないことになり、`add` を動かしても緑の
+    // ままになる（CLAUDE.md「置いた主張は、破れたときに落ちるものと対で置く」の「その主張の面を
+    // 見ている」）。toolWearsOf の uses は満タンから尽きるまでの回数なので、満タンを割れば1回ぶん。
+    const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
+    const trunk = spawnInto('driftwood_trunk', forest, 'fixtures');
+    const axe = spawnInto('stone_axe', player, 'hand');
+    const durabilityId = codex.propertyNames.getId('durability');
+    const fullDurability = axe.getProperty(durabilityId).number;
+    const costPerUse = (stepName: string): number => {
+      const wear = toolWearsOf(codex).find(
+        (row) => row.objectName === 'stone_axe' && row.stepName === stepName,
+      );
+      expect(wear, `${stepName} が斧を減らす宣言`).toBeDefined();
+      return fullDurability / wear!.uses;
+    };
+    const setDurability = (value: number): void =>
+      axe.getProperty(durabilityId).setNumberWithoutEvents(value);
+    const refusal = (target: WorldObject, step: string): string | undefined =>
+      target
+        .refusedCombinationsWith(axe, player)
+        .find((combination) => combination.name === step)
+        ?.unmetRequirement()?.reasonName;
+
+    const fellCost = costPerUse('fell');
+    const buckCost = costPerUse('buck');
+
+    expect(buckCost, '玉切りは伐採より安い').toBeLessThan(fellCost);
+
+    setDurability(fellCost);
+    expect(
+      tree.combinationsWith(axe, player).map((c) => c.name),
+      '1本ぶんちょうどなら倒せる',
+    ).toEqual(['fell']);
+
+    setDurability(fellCost - 1);
+    expect(refusal(tree, 'fell'), '1足りなければ倒せない').toBe('too_worn');
+    expect(
+      trunk.combinationsWith(axe, player).map((c) => c.name),
+      '倒せなくなっても、安く済む玉切りは残る',
+    ).toEqual(['buck']);
+
+    setDurability(buckCost);
+    expect(
+      trunk.combinationsWith(axe, player).map((c) => c.name),
+      '1回ぶんちょうどなら玉切れる',
+    ).toEqual(['buck']);
+
+    setDurability(buckCost - 1);
+    expect(refusal(trunk, 'buck'), '玉切りの1回ぶんも割れば、そちらも断る').toBe('too_worn');
   });
 
   it('暗がりで尖った石を当てると、樹皮剥ぎが暗さを理由に断る', () => {
