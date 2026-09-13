@@ -17,12 +17,19 @@ import { makeBrightEnoughForAnyAction } from '../support/illumination';
  * 火の育ちと衰えはtick駆動（docs/engine/FireSystem.md 2.2節）なので、時間を進めて観測する。
  */
 describe('fire.yamlの火の連鎖', () => {
-  // lightの候補は宣言順に「成功（火口のignition_chance）・失敗（40）」。枯れ草は60:40なので、
-  // 0.8を引けば外れる。
+  // lightの候補は宣言順に「成功（火口のignition_chance）・失敗（10）」。乾いた枯れ草は60:10なので、
+  // 0.95を引けば外れる。
   /** 火起こしに成功する引き。 */
   const LIGHTS = 0;
   /** 火起こしを外す引き。 */
-  const FAILS = 0.8;
+  const FAILS = 0.95;
+
+  /** 日の差さない時刻と、日差しが最も強い時刻（core.yamlのhour）。 */
+  const NIGHT_HOUR = 0;
+  const NOON_HOUR = 12;
+
+  /** 強い日差しの境目（salt.yaml・drying.yamlのdrying_remainingと同じEV、IlluminationSystem.md 1節）。 */
+  const STRONG_SUNLIGHT = 14;
 
   let codex: WorldCodex;
   let session: WorldSession;
@@ -228,9 +235,9 @@ describe('fire.yamlの火の連鎖', () => {
   }
 
   it('火の腕が上がると火が付きやすくなる（noviceが外す引きでも、expertは火を得る）', () => {
-    // 枯れ草の素の重みは60対40でnoviceは6割、expertは上乗せ+120が積まれて180対40
-    // （docs/world/Skills.md 5節）。引きは両方とも0.7で、動かしているのは腕だけ。
-    const BETWEEN = 0.7;
+    // 乾いた枯れ草の素の重みは60対10でnoviceは85.7%、expertは上乗せ+120が積まれて180対10で94.7%
+    // （docs/world/Skills.md 5節）。引きは両方とも0.9で、動かしているのは腕だけ。
+    const BETWEEN = 0.9;
     const firecraftId = codex.propertyNames.getId('skill_firecraft');
 
     open(BETWEEN);
@@ -240,6 +247,179 @@ describe('fire.yamlの火の連鎖', () => {
     player.getProperty(firecraftId).setNumberWithoutEvents(180);
     expect(signalsOf(lightDryGrass), 'expertは同じ引きで火を得る').toEqual(['dry_grass: lit']);
   });
+
+  /** 世界じゅうの火口（tinderタグを名乗る型）。宣言は、それを産する物のファイルの側に散らばっている。 */
+  function tinderNames(): string[] {
+    const tinder = codex.tagNames.getId('tinder');
+    return [...codex.objects].filter((def) => def.tags.includes(tinder)).map((def) => def.name);
+  }
+
+  /** 火の腕の各段のいちばん下の値（player_character.yamlのskill_firecraftのstages）。 */
+  function firecraftStageFloors(): number[] {
+    const character = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER));
+    const stages = character.tryGetPropertyDef(codex.propertyNames.getId('skill_firecraft'))?.stages ?? [];
+    return stages.map((stage) => stage.min ?? 0);
+  }
+
+  /**
+   * 今の世界でその火口へ火起こし具を重ねる。火が付いたらtrue（火口はどちらの回も失われる）。
+   * 湿りを持たせたいときは、呼ぶ前に湧かせた個体へ入れておく（下のlightChanceOf）。
+   */
+  function lightTinder(tinderName: string, tinder = spawnInto(tinderName, land, 'items')): boolean {
+    const drill = spawnInto('fire_drill', player, 'hand');
+    const lit = signalsOf(() => {
+      expect(
+        tinder
+          .combinationsWith(drill, player)
+          .find((c) => c.name === 'light')
+          ?.tryExecute() === true,
+        `${tinderName}へ火起こし具を重ねられる`,
+      ).toBe(true);
+    });
+    return lit.includes(`${tinderName}: lit`);
+  }
+
+  /**
+   * その湿りから始めた火口に火が付く割合。**pickは「引き×重みの合計」を累積と比べる**（fixedRng）
+   * ので、**付くかどうかが切り替わる引きが、そのまま成功率**になる。それを二分で挟んで出す。
+   *
+   * **割合を定義から計算せずに測るのは、火起こしの30分＝2tickのあいだにも水が抜けるから**
+   * ——引きを決める時点の湿りは、始めた値と乾く速さの両方で決まる。
+   */
+  function lightChanceOf(tinderName: string, moisture: number): number {
+    const moistureId = codex.propertyNames.getId('moisture');
+    let lights = 0;
+    let misses = 1;
+
+    // 0.0005まで挟む（段の押し下げが作る差はこれよりずっと大きい）。
+    for (let i = 0; i < 11; i++) {
+      const roll = (lights + misses) / 2;
+      open(roll);
+      const tinder = spawnInto(tinderName, land, 'items');
+      tinder.getProperty(moistureId).setNumberWithoutEvents(moisture);
+      if (lightTinder(tinderName, tinder)) lights = roll;
+      else misses = roll;
+    }
+    return lights;
+  }
+
+  it('乾いた火口は、どの火口・どの腕でも85%以上で火が付く', () => {
+    // **この節の水準そのもの**（docs/engine/FireSystem.md 10節）。pickは「引き×重みの合計」を
+    // 累積と比べる（fixedRng）ので、**引き0.85でどれも火が付くことが「成功率が85%を上回る」
+    // ことそのもの**になる。外れの重みを緩めても、火口の素の値を下げても、腕の刻みを削っても、
+    // ここが赤くなる。
+    //
+    // 火口の宣言は、それを産する物のファイルの側に散らばっている（docs/engine/FireSystem.md 概要）ので、
+    // 名指しではなくtinderタグを名乗る全型を回す——後から足した火口も同じ水準を要求される。
+    const FLOOR = 0.85;
+    const names = tinderNames();
+    const floors = firecraftStageFloors();
+    const missed: string[] = [];
+
+    expect(names.length, '火口が1つも無い').toBeGreaterThan(0);
+    expect(floors.length, '火の腕の段が1つも無い').toBeGreaterThan(0);
+
+    for (const name of names)
+      for (const floor of floors) {
+        open(FLOOR);
+        player.getProperty(codex.propertyNames.getId('skill_firecraft')).setNumberWithoutEvents(floor);
+        if (!lightTinder(name)) missed.push(`${name}（腕${floor}）`);
+      }
+
+    expect(missed, `引き${FLOOR}で外す組み合わせ`).toEqual([]);
+  });
+
+  it('濡らした火口は、乾いた火口より火が付きにくい', () => {
+    // 成功率が火口の種類だけでなく乾き具合でも動くこと（docs/engine/FireSystem.md 3.2.1節）。
+    // **動かしているのは湿りだけ**で、腕も天気も同じ。
+    const names = tinderNames();
+    const unchanged: string[] = [];
+
+    for (const name of names) {
+      const dry = lightChanceOf(name, 0);
+      const soaked = lightChanceOf(name, soakedMoistureOf(name));
+      if (soaked >= dry) unchanged.push(`${name}（乾いて${dry}、濡れて${soaked}）`);
+    }
+
+    expect(names.length, '火口が1つも無い').toBeGreaterThan(0);
+    expect(unchanged, '濡らしても付きやすさが変わらない火口').toEqual([]);
+  });
+
+  /** その火口のmoistureの最上段（最も湿った段）のいちばん下の値。 */
+  function soddenMoistureOf(tinderName: string): number {
+    const def = codex.objects.get(codex.objectNames.getId(tinderName));
+    const stages = def.tryGetPropertyDef(codex.propertyNames.getId('moisture'))?.stages ?? [];
+    return stages[stages.length - 1]?.min ?? 0;
+  }
+
+  /** その火口のmoistureが取りうる最大（吸い切った状態）。 */
+  function soakedMoistureOf(tinderName: string): number {
+    const def = codex.objects.get(codex.objectNames.getId(tinderName));
+    return def.tryGetPropertyDef(codex.propertyNames.getId('moisture'))?.range?.max ?? 0;
+  }
+
+  it('どの火口も、湿り具合をカードのバーとして名乗る', () => {
+    // **プレイヤーが備えるには、今その火口が付きやすいかを読めなければならない。** アイテムの札で
+    // それを言えるのはゲージのバーだけで（docs/ui/CardView.md 8節、段もalertもアイテムの札には
+    // 出ない）、バーが出るかは`gauge`の宣言が決める（同8.1節、tests/game/cardGauges.test.tsが
+    // 宣言とバーの対応そのものを見る）。ここが見るのは、**全火口がその宣言を持っていること**。
+    const moistureId = codex.propertyNames.getId('moisture');
+    const silent: string[] = [];
+
+    for (const name of tinderNames()) {
+      const def = codex.objects.get(codex.objectNames.getId(name));
+      if (def.tryGetPropertyDef(moistureId)?.gauge === undefined) silent.push(name);
+    }
+
+    expect(silent, '湿りを画面へ出さない火口').toEqual([]);
+  });
+
+  it('どの火口も、最も湿った段でまだ火が付く余地を残す', () => {
+    // 押し下げは火口によらず同じ量なので、素の値の小さい火口を足すと重みが0以下へ潰れうる
+    // （重みが0以下の候補は選ばれない、GameElementDefinition.md 10.2節）。潰れた火口は、
+    // 乾かしても腕を上げても**その段では絶対に付かない**——濡れているだけのはずが可否の線になる。
+    const moistureId = codex.propertyNames.getId('moisture');
+    const chanceId = codex.propertyNames.getId('ignition_chance');
+    const dead: string[] = [];
+
+    for (const name of tinderNames()) {
+      const tinder = spawnInto(name, land, 'items');
+      tinder.getProperty(moistureId).setNumberWithoutEvents(soddenMoistureOf(name));
+      if (tinder.getProperty(chanceId).getEffectiveValue() <= 0) dead.push(name);
+    }
+
+    expect(dead, '最も湿った段で重みが残らない火口').toEqual([]);
+  });
+
+  it('野ざらしの火口は雨で湿り、日に広げれば乾く', () => {
+    // **湿った火口を戻す手が世界に在ること**（issue #2181の完了の条件）。濡れるのも日で速く乾くのも
+    // 地面に出しているあいだだけで、日差しの境目は塩田・干し場と同じ（salt.yamlのdrying_remaining）。
+    const moistureId = codex.propertyNames.getId('moisture');
+    const grass = spawnInto('dry_grass', land, 'items');
+    const moisture = grass.getProperty(moistureId);
+    const HOURS = 3;
+
+    expect(moisture.number, '拾ったばかりの火口は乾いている').toBe(0);
+
+    setHour(NIGHT_HOUR);
+    setWeather('heavy_rain');
+    session.advanceWorldTime(60 * HOURS);
+    expect(moisture.isInStage('sodden'), '雨に打たれれば濡れる').toBe(true);
+
+    setHour(NOON_HOUR);
+    setWeather('clear');
+    expect(
+      land.getProperty(codex.propertyNames.getId('ambient_brightness')).getEffectiveValue(),
+      '晴れた真昼は強い日差しの側',
+    ).toBeGreaterThanOrEqual(STRONG_SUNLIGHT);
+    session.advanceWorldTime(60 * HOURS);
+    expect(moisture.isInStage('dry'), '日に広げれば押し下げの無い段まで戻る').toBe(true);
+  });
+
+  /** 世界の時刻を変える（core.yamlのhour）。日差しの強さはここから決まる。 */
+  function setHour(hour: number): void {
+    land.parent!.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);
+  }
 
   it('雨の日は屋外で火が起こせない', () => {
     // 確率が下がるのではなく、できない側に線が引かれる（docs/engine/FireSystem.md 3.1.1節）。

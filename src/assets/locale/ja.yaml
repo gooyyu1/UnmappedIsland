@@ -383,6 +383,10 @@ object_texts:
         description: 火の中で溜め込んだ熱。火から離せば抜けていき、抜け切れば元の姿に戻る。
       ignition_chance:
         display_name: 火の付きやすさ
+      # 含んでいる水。**何を意味するかは物ごとに違う**（火口では火の移りやすさ、素焼き前の壺では
+      # 焼いたときに割れるかどうか）ので、ここに置くのは名前だけにして、説明は言える型が自分で言う。
+      moisture:
+        display_name: 湿り
       life:
         display_name: 残り
     interactions:
