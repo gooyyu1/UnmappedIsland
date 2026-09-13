@@ -1,9 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import type { CraftingStep } from '../../src/analysis/CraftingStep';
-import { craftingStepsOf } from '../../src/analysis/craftingSteps';
-import { rangeCyclesOf } from '../../src/analysis/rangeCycles';
 import { SHORTEST_TRAVEL_MINUTES } from '../../src/domain/generation/PathNetworkBuilder';
-import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -478,24 +474,29 @@ describe('fire.yamlの火の連鎖', () => {
       hearth.combinationsWith(torch, player).map((c) => c.name),
       '成立する組み合わせは無い',
     ).toEqual([]);
+    // どちらの向きも、同じ「もう火が付いている」で落ちる——分けてもらう先は灯っていて、
+    // 分けてやる先は燃えている。
     expect(
       hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
-    ).toEqual(['already_lit']);
+    ).toEqual(['already_lit', 'already_lit']);
   });
 
-  it('消えている炉は、分けられる炎が無いことを名乗る', () => {
+  it('消えている炉と灯っていない松明の間では、どちらの向きにも火が動かない', () => {
     const hearth = spawnInto('campfire', land, 'fixtures');
     const torch = spawnInto('torch', player, 'hand');
 
+    // 画面へ出るのは宣言順で最初のほう（14.6節のunmetRequirement）。どちらも真だが、
+    // 先に言うのは炉の側が空だということ。
     expect(
       hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
-    ).toEqual(['fire_out']);
+    ).toEqual(['fire_out', 'not_lit']);
     expect(effectiveNumberOf(torch, 'lit'), '灯らない').toBe(0);
+    expect(heatIs(hearth, 'out'), '炉も消えたまま').toBe(true);
   });
 
   it('火種は、いちばん短い道でも渡り切れない', () => {
-    // 火が土地を越えないことの根拠（FireSystem.md 3.1節）。**いちばん短い道で見る**——長い道で
-    // 消えることは、短い道で消えることを言わない。
+    // 火種で火を運べるのは同じ土地の中まで（FireSystem.md 3.1節）。**いちばん短い道で見る**
+    // ——長い道で消えることは、短い道で消えることを言わない。
     const road = roadToAnotherLand();
 
     spawnInto('burning_tinder', player, 'hand');
@@ -504,8 +505,9 @@ describe('fire.yamlの火の連鎖', () => {
     expect(carried(), '火種は道の上で燃え尽きる').toEqual([]);
   });
 
-  it('灯った松明を別の土地へ運んでも、そこの炉には火を点けられない', () => {
-    // 火は土地を越えない（FireSystem.md 3.1節）。分けてもらう向き（3.1.2節）だけが開いている。
+  it('灯った松明は火を別の土地へ運び、向こうの炉に種火を立てる', () => {
+    // 火が土地を越える唯一の道（FireSystem.md 3.1.2節）。**炉から分けてもらって運ぶところまで**を
+    // ひと続きで見る——松明を持っていることではなく、火が渡ることがこの道の中身。
     const torch = spawnInto('torch', player, 'hand');
     expect(
       smallFire()
@@ -516,21 +518,35 @@ describe('fire.yamlの火の連鎖', () => {
 
     const road = roadToAnotherLand();
     const cold = spawnInto('campfire', road.destination, 'fixtures');
-    // 薪が無いことが断る理由にならないようにしておく（それでは火種も落とせない、上のignite）。
-    cold.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(20);
+    stoke(cold, 'thick_branch');
     road.walk();
 
     expect(carried(), '松明は渡り切る').toEqual(['torch']);
     expect(effectiveNumberOf(torch, 'lit'), '灯ったまま').toBe(1);
     expect(
-      cold.combinationsWith(torch, player).map((c) => c.name),
-      '向こうの炉へ火を点ける操作は無い',
+      cold
+        .combinationsWith(torch, player)
+        .find((c) => c.name === 'ignite_from_flame')
+        ?.tryExecute() === true,
+    ).toBe(true);
+    expect(heatIs(cold, 'ember'), '向こうの炉に種火が立つ').toBe(true);
+    expect(effectiveNumberOf(torch, 'lit'), '松明は灯ったまま——火の在る側は何も失わない').toBe(1);
+  });
+
+  it('灯っていない松明では、炉に火を点けられない', () => {
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    stoke(hearth, 'thick_branch');
+    const torch = spawnInto('torch', player, 'hand');
+
+    expect(
+      hearth.combinationsWith(torch, player).map((c) => c.name),
+      '成立する組み合わせは無い',
     ).toEqual([]);
     expect(
-      cold.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
-      '重ねて言えるのは、この炉に分けられる炎が無いことだけ',
-    ).toEqual(['fire_out']);
-    expect(heatIs(cold, 'out'), '向こうの炉は消えたまま').toBe(true);
+      hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
+      '運んできた側に火が無いことを名乗る（炉の側はどちらの向きも塞いでいない）',
+    ).toEqual(['fire_out', 'not_lit']);
+    expect(heatIs(hearth, 'out'), '炉は消えたまま').toBe(true);
   });
 
   it('着火が置くのは種火だけで、そこから薪が火を育てる', () => {
@@ -938,123 +954,5 @@ describe('炉の火床の枠が名乗る型', () => {
       fireCells('earth_kiln').every((types) => types.length === 0),
       '覆い焼きの炉',
     ).toBe(true);
-  });
-});
-
-/**
- * 炉に火を点ける物が土地を越えられないこと（docs/engine/FireSystem.md 3.1節）を、宣言の全数から見る。
- *
- * **炉も操作も名前では拾わない**——火力（`heat`）を上へ動かす工程を効き目で拾い、その工程で**火を
- * 運んでいる側**を運び手とみなす。宣言が炉に乗っていれば運び手は重ねた相手、相手のほうに乗っていれば
- * 運び手は宣言している型そのもの（12.3節はどちらへ書くかしか決めない）。
- *
- * **拾えないのは、火の点いた炉を`spawn`・`become`で置き換える形**——そちらは火を運ぶのではなく、
- * 火の無いところに火を作る形で、越えるかどうかとは別の問い。
- *
- * 上の連鎖のテストが実際に運んで見せるのは松明1本ぶんで、**次に「持ち運べる明かり」が増えたときに
- * そちらは緑のまま通る。** 越えられる物を1つも受けていないことは、全数を数えるここが言う。
- */
-describe('炉に火を点けられる物', () => {
-  const codex = bundledCodex();
-  const heatId = codex.propertyNames.getId('heat');
-
-  /** 火力を立ち上げる工程1つと、その工程で火を運んでいる側の型1つ。 */
-  interface LightingRoute {
-    readonly owner: string;
-    readonly step: string;
-    readonly carrier: string;
-  }
-
-  /** その工程が、そこを土台にした火力を上へ動かすか。**代入先が実行時に決まる場合も動かしうると見る。** */
-  function raisesHeatOn(step: CraftingStep, target: 'self' | 'instrument'): boolean {
-    return step.outcomes.some(
-      (outcome) =>
-        outcome.deltas.some(
-          (delta) => delta.target === target && delta.propertyGlobalId === heatId && delta.amount > 0,
-        ) ||
-        outcome.assignments.some(
-          (assignment) =>
-            assignment.target === target &&
-            assignment.propertyGlobalId === heatId &&
-            (assignment.value === undefined || assignment.value > 0),
-        ),
-    );
-  }
-
-  /** その工程が相手として受け取りうる型の名前。タグで受けているならそのタグを持つ型すべて。 */
-  function instrumentNamesOf(step: CraftingStep, owner: ObjectDef): string[] {
-    return step.inputs
-      .filter((input) => !(input.kind === 'object' && input.objectGlobalId === owner.globalId))
-      .flatMap((input) =>
-        input.kind === 'object'
-          ? [codex.objects.get(input.objectGlobalId).name]
-          : [...codex.objects].filter((def) => def.hasTag(input.tagGlobalId)).map((def) => def.name),
-      );
-  }
-
-  function lightingRoutes(): readonly LightingRoute[] {
-    return [...codex.objects].flatMap((owner) =>
-      craftingStepsOf(codex, owner).flatMap((step) => {
-        // 炉の側に乗った宣言では相手が火を運んでいて、相手の側に乗った宣言では宣言した型が運んでいる。
-        const carriers = [
-          ...(raisesHeatOn(step, 'self') ? instrumentNamesOf(step, owner) : []),
-          ...(raisesHeatOn(step, 'instrument') ? [owner.name] : []),
-        ];
-        return carriers.map((carrier) => ({ owner: owner.name, step: step.name, carrier }));
-      }),
-    );
-  }
-
-  /**
-   * その型を置いておくだけで、自分から消えるまでの分数。**条件つきでしか消えない物**——灯している
-   * あいだだけ燃え減る松明——と、消えない物はundefined。
-   *
-   * **いちばん長生きする見方を採る。** 端へ最も遅く届く条件の組み合わせ（minutes）と、生成時のロールが
-   * 端から遠い側に出た回（longestMinutes）の両方で、長いほう——**一度でも渡り切れるなら越えられる**
-   * ので、短いほうで見ると振り幅を持った物を取りこぼす。時計が複数あるなら、先に尽きるほうが寿命。
-   */
-  function minutesUntilGoneOnItsOwn(objectName: string): number | undefined {
-    const clocks = rangeCyclesOf(codex.objects.get(codex.objectNames.getId(objectName)))
-      .filter(
-        (cycle) =>
-          cycle.destroysSelf &&
-          !cycle.repeats &&
-          cycle.gatedBy.some((combination) => combination.length === 0),
-      )
-      .map((cycle) => Math.max(cycle.minutes, cycle.longestMinutes));
-    return clocks.length === 0 ? undefined : Math.min(...clocks);
-  }
-
-  it('火力を立ち上げる工程は、どれも着火（ignite）', () => {
-    // 名前で拾っていないので、別の名前の口を足せばここへ出る。**相手を伴わない口**（メニューで点く炉）
-    // も出る——運び手が居ないぶん下のテストは何も言わないので、口の側を数えるここが受け持つ。
-    const steps = [...codex.objects].flatMap((owner) =>
-      craftingStepsOf(codex, owner)
-        .filter((step) => raisesHeatOn(step, 'self') || raisesHeatOn(step, 'instrument'))
-        .map((step) => `${owner.name}: ${step.name}`),
-    );
-
-    expect(
-      steps.length,
-      '火力を立ち上げる工程が1つも見つからない（この走査は何も見ていない）',
-    ).toBeGreaterThan(0);
-    expect(
-      steps.filter((step) => !step.endsWith(': ignite')),
-      '着火のほかに火力を立ち上げる工程が在る',
-    ).toEqual([]);
-  });
-
-  it('火を運べるのは、道1本ぶんの時間より先に自分から消える物だけ', () => {
-    // 越えられる物で炉に火が立つと、別の土地で起こした火で点けられる（FireSystem.md 3.1節）。火種の
-    // 寿命を延ばしても、立ち上げる口をタグ（lightable）へ広げても、ここが落ちる。
-    const routes = lightingRoutes();
-    expect(routes.length, '火を運ぶ道が1つも見つからない').toBeGreaterThan(0);
-
-    expect(
-      routes.filter(
-        (route) => (minutesUntilGoneOnItsOwn(route.carrier) ?? Infinity) > SHORTEST_TRAVEL_MINUTES,
-      ),
-      '土地を越えられる物で炉に火を点けられる',
-    ).toEqual([]);
   });
 });

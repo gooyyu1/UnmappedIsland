@@ -240,10 +240,6 @@ traits:
         destroy: instrument
       # 火種を落として着火する。置くのは種火1つぶんだけで、そこから先は薪が育てる。
       #
-      # **火力を0から立ち上げる口はこれだけで、受けるのは火種だけ**——1tickで燃え尽きる物しか炉に
-      # 火を立てられないので、火は別の土地から持って来られない（docs/engine/FireSystem.md 3.1節）。
-      # 灯った松明（lightable）はここでは受けない。
-      #
       # **火が生きている炉は断る**（生きているかは火力が0より大きいこと、上のheat）。setが置くのは
       # 種火の1だけなので、燃えている炉へ重ねると火種を失ったうえに火力がそこまで落ちる。理由を
       # 名乗るのは、断るだけでは「重ねても何も起きない」になるため（docs/ui/CardInteraction.md 2.1節）。
@@ -269,6 +265,24 @@ traits:
           - {reason: fire_out, prop: heat, gt: 0}
           - {reason: already_lit, subject: instrument, prop: lit, eq: 0}
         set: {instrument: {lit: 1}}
+      # 灯った明かりから炉へ火を移す。上のlight_from_flameと**同じ1つの受け渡しを逆向きに見たもの**で、
+      # 置くのは火種と同じ種火1つ（上のignite）。**どちらの向きも、火の在る側は何も失わない**
+      # ——松明は灯ったままで、炉は火力も薪も減らない（docs/engine/FireSystem.md 3.1.2節）。
+      #
+      # 松明は2時間もつので、**これが開いていることで火が土地を越える**。越えられないのは火種のほうだけ
+      # （下のburning_tinder）。
+      #
+      # **灯っていない明かりは断る。** 移す火が無いまま成立させると、断るだけでは
+      # 「重ねても何も起きない」になる（docs/ui/CardInteraction.md 2.1節）。
+      ignite_from_flame:
+        trigger: {drag: {tag: lightable}}
+        duration: 1
+        conditions:
+          # **運んできた側を先に見る。** 灯っていない明かりでは、炉がどうであれこの操作は成り立たない。
+          - {reason: not_lit, subject: instrument, prop: lit, gt: 0}
+          - {reason: already_lit, prop: heat, eq: 0}
+          - {reason: no_fuel, prop: fuel, gt: 0}
+        set: {self: {heat: 1}}
 
 object_defs:
   # きりもみ式の火起こし具。拾った木だけで作れるので、道具も紐も要らない
@@ -312,9 +326,9 @@ object_defs:
     props:
       weight: {value: 50}
       volume: {value: 500}
-      # 1tickで燃え尽きる。運べるのは同じ土地の中までで、**それが火を別の土地から持って来られない
-      # ことの根拠**（道1本には最低1tickかかる、docs/engine/FireSystem.md 3.1節）。延ばすと、別の
-      # 土地で起こした火で炉に火を点けられるようになる。
+      # 1tickで燃え尽きる。**運べるのは同じ土地の中まで**で、火起こしからの火をその土地で使い切らせて
+      # いるのがこの短さ（道1本には最低1tickかかる、docs/engine/FireSystem.md 3.1節）。火を土地の外へ
+      # 運ぶのは燃え尽きない側の入れ物——灯した明かり（同3.1.2節）。
       life:
         value: 1
         range: {min: 0, max: 1}
