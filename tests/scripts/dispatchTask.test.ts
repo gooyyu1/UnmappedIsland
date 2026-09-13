@@ -6,10 +6,10 @@ import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
- * `scripts/agent/dispatch-task.sh` の**投入する前の関門**の検査。
+ * `scripts/daemon/dispatch-task.sh` の**投入する前の関門**の検査。
  *
  * ここが守るのは**同じ仕事へ2本立てないこと**。生きているセッションは
- * [`may-dispatch.sh`](../../scripts/agent/may-dispatch.sh) が塞ぐが、畳まれた後にPRだけ残っている
+ * [`may-dispatch.sh`](../../scripts/daemon/may-dispatch.sh) が塞ぐが、畳まれた後にPRだけ残っている
  * 場合はそこを素通りする（#1415 は同じ issue が2本へ渡り、push の瞬間まで誰も気づかなかった）。
  *
  * `DRY_RUN=1` で叩くので、セッションは立たない——関門は全部その手前にある。`gh` は PATH の先頭で
@@ -20,7 +20,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
 // だけで既定の5秒を超えうる。
 vi.setConfig({ testTimeout: 20000 });
 
-const SCRIPT = resolve(__dirname, '../../scripts/agent/dispatch-task.sh');
+const SCRIPT = resolve(__dirname, '../../scripts/daemon/dispatch-task.sh');
 
 interface World {
   /** issue の `state`。既定は開いている。 */

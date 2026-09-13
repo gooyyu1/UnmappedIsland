@@ -4,16 +4,16 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-import { cycleHours } from '../../scripts/agent/board-move.mjs';
+import { cycleHours } from '../../scripts/daemon/board-move.mjs';
 import {
   MERGED_CAP,
   MERGED_WINDOW_HOURS,
   countUnsummarizedAnalyses,
   readBoard,
-} from '../../scripts/agent/board-read.mjs';
+} from '../../scripts/daemon/board-read.mjs';
 
 /**
- * `scripts/agent/board-read.mjs` の検査。
+ * `scripts/daemon/board-read.mjs` の検査。
  *
  * 盤面を組み立てる手のうち、**GitHub と CCR の外を見る分**——判断の履歴と、分析の記録の数え方
  * ——と、**スメルを拾う係が読む窓の取り方**をここで見る。手を決める分は `boardMove.test.ts`、

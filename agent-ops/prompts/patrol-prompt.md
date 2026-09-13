@@ -1,8 +1,8 @@
 # 盤面を見回る係のプロンプト
 
 **デーモンは生きている。その盤面が健全かを、毎回確かめる係**の本文。投入するのは盤面
-（[`board-move.mjs`](../../scripts/agent/board-move.mjs) の `CYCLES` の `patrol`）で、**間隔が満ちれば
-盤面の見え方に関わらず立つ**。渡し方は [`dispatch-chore.sh`](../../scripts/agent/dispatch-chore.sh)。
+（[`board-move.mjs`](../../scripts/daemon/board-move.mjs) の `CYCLES` の `patrol`）で、**間隔が満ちれば
+盤面の見え方に関わらず立つ**。渡し方は [`dispatch-chore.sh`](../../scripts/daemon/dispatch-chore.sh)。
 
 **印で絞らないのは、印に掛からない壊れ方を拾うため**（[`board-design.md`](../board-design.md) 2.21.2）。
 **大半の回は「異常なし」で終わる。** それでよい——**走ったことが残らないと、異常が無かったのか
@@ -48,7 +48,7 @@
 - **`main` は緑である。** 赤い間、盤面はレビューもマージも差し戻しも出さない（2.14.1）ので、
   **1本の赤で盤面ごと止まる**。赤いことが出る先は `~/daemon.log` の覚え書きだけで、**緑へ戻す役は
   盤面の中に居ない**——見に行かないかぎり誰の手番にもならない。直せる範囲（`agent-ops/**`・
-  `.claude/**`・`scripts/agent/**`）なら自分で直し、外なら人へ上げる
+  `.claude/**`・`scripts/**`）なら自分で直し、外なら人へ上げる
 - **生きているセッションは、何かを進めている**
 - **差し戻しは、必ず誰かへ届く**
 - **手を打たない周は、打たない理由を言える**
@@ -97,7 +97,7 @@
 盤面が読む先がずれて、常設の issue に「記録がありません」が出続けます。**
 
 ```
-PATROL=$(node -e "import('./scripts/agent/board-state.mjs').then((m) => console.log(m.patrolPath(m.boardState())))")
+PATROL=$(node -e "import('./scripts/daemon/board-state.mjs').then((m) => console.log(m.patrolPath(m.boardState())))")
 tail -3 "$PATROL"
 ```
 
@@ -108,7 +108,7 @@ tail -3 "$PATROL"
 ```
 
 - `at` … **時刻として読めること。** 読めない行は、走らなかったのと同じに扱われます
-  （`scripts/agent/board-state.mjs` の `readLastPatrol`）。
+  （`scripts/daemon/board-state.mjs` の `readLastPatrol`）。
 - `verdict` と `summary` … **常設の盤面 issue（2.20）へそのまま出ます。** 読むのはスマホの人間なので、
   リポジトリを開かずに読める1行にしてください。
 - `board` … **次の回のあなたが「同じものが同じ場所で止まったままだ」と言えるだけのもの。** 形は
@@ -125,7 +125,7 @@ tail -3 "$PATROL"
 | 何が転んだか | 同（`打てなかった:` と `盤面を引けなかった` の行。`（転んだのではない）` が付く行は手綱などで、直す相手が居ません） |
 | 打たない理由 | 同（`覚え書き:` の行。**毎周同じ覚え書きだけが出ているなら、盤面は動いていません**） |
 | 今の盤面 | `bash scripts/agent/board.sh` |
-| デーモンの生死 | `bash scripts/agent/daemon.sh status` |
+| デーモンの生死 | `bash scripts/daemon/daemon.sh status` |
 | 盤面を引けていないか | デーモンの台帳（記録と同じ置き場の `taken.json`）の `unreadable:since` |
 | 控えた手の理由が消えていないか | 同じ台帳の `resume:*`。`mend:conflict`・`mend:red` は**PRの版が動かないまま `main` が動いて生まれる**ので、`main` が緑へ戻ると理由だけが消える。控えた指紋のPRを `gh pr view <番号> --json mergeable,statusCheckRollup` で引き直す |
 | 誰の手番でもない跡 | 本体のチェックアウトの `git status`（issue でもPRでもセッションでもないので、盤面には映りません） |
@@ -142,10 +142,10 @@ tail -3 "$PATROL"
 理由はそのスクリプトの標準エラーにしか出ていません。`DRY_RUN=1` を付ければ立てずに引数だけ見られます。
 
 ```
-DRY_RUN=1 node scripts/agent/board-round.mjs
-DRY_RUN=1 bash scripts/agent/dispatch-task.sh <番号> /dev/null
-bash scripts/agent/may-dispatch.sh new-task task-<番号>
-bash scripts/agent/brake.sh new-task
+DRY_RUN=1 node scripts/daemon/board-round.mjs
+DRY_RUN=1 bash scripts/daemon/dispatch-task.sh <番号> /dev/null
+bash scripts/daemon/may-dispatch.sh new-task task-<番号>
+bash scripts/daemon/brake.sh new-task
 ```
 
 ## 直す
@@ -155,7 +155,7 @@ bash scripts/agent/brake.sh new-task
 
 **変更は `main` へ直接 push してください**（出どころ: ユーザーの指示・2026-09-06。
 `agent-ops/decisions/2026-09-06-daemon-watchdog-commits-straight-to-main.md`）。**PRにすると、盤面が
-詰まっている間はマージされないので直しが届きません。** 直せるのは `agent-ops/**`・`.claude/**`・`scripts/agent/**`
+詰まっている間はマージされないので直しが届きません。** 直せるのは `agent-ops/**`・`.claude/**`・`scripts/**`
 の範囲です。
 
 - **コミットには自分のセッションIDを名乗ってください**（`CLAUDE.md`「コミットには自分の
@@ -166,7 +166,7 @@ bash scripts/agent/brake.sh new-task
   `bash scripts/agent/board.sh` の `## 走行` で確かめ、**居るなら差分を最小にして、そのことを報告に
   書いてください。** 相手のPRとぶつかっても、盤面が `mend` で直させます。
 - **デーモンを止めないでください。** 走っているデーモンは、`main` が動けば次の周に自分で新しい版へ
-  入れ替わります（2.3.2）。どうしても要るときだけ `bash scripts/agent/daemon.sh restart` を打ち、
+  入れ替わります（2.3.2）。どうしても要るときだけ `bash scripts/daemon/daemon.sh restart` を打ち、
   打ったことを報告に書いてください。
 - **セッションを立て直さないでください。** 投入するのは盤面で、原因が消えれば次の周に自分で打ちます。
   あなたが立てると、同じ仕事に2本立ちます。

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # **畳まれていないセッション**を1行1件で出す。
 #
-#   $ bash scripts/agent/live-sessions.sh
+#   $ bash scripts/daemon/live-sessions.sh
 #   cse_abc123<TAB>SESSION_STATUS_RUNNING<TAB>SESSION_STATUS_BUCKET_WORKING<TAB>task-1234
 #
 # **中身は隣の [`live-sessions.mjs`](live-sessions.mjs)。ここは入口だけ。** 出す形・何を落とすか・

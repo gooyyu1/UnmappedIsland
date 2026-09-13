@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { parse } from 'yaml';
-import { STALE_ON_PUSH } from '../../scripts/agent/board-move.mjs';
-import { SWEEP_LINE } from '../../scripts/agent/board-round.mjs';
+import { STALE_ON_PUSH } from '../../scripts/daemon/board-move.mjs';
+import { SWEEP_LINE } from '../../scripts/daemon/board-round.mjs';
 import { pathForBash, runScript, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 

@@ -7,7 +7,7 @@ import { pathForBash, runScript } from './runScript';
 import { STUB_SHEBANG } from './stubShebang';
 
 /**
- * `scripts/agent/tidy-merged-pr.sh` を実際に走らせるための世界。
+ * `scripts/daemon/tidy-merged-pr.sh` を実際に走らせるための世界。
  *
  * `gh`・`git`・`npm` を PATH の先頭に置く。本体（`git` が差す先）も作業用の一時ディレクトリに作るので、
  * 手元のリポジトリは動かない。
@@ -26,7 +26,7 @@ import { STUB_SHEBANG } from './stubShebang';
 // ことを知っているのはこちらで、叩く側は毎回それを覚えていなくてよい。
 vi.setConfig({ testTimeout: 20000 });
 
-const SCRIPT = resolve(__dirname, '../../scripts/agent/tidy-merged-pr.sh');
+const SCRIPT = resolve(__dirname, '../../scripts/daemon/tidy-merged-pr.sh');
 
 /** 後片付けするPRのブランチ。積まれていたPRの `oldBase` はこれと突き合わされる。 */
 export const HEAD = 'claude/issue-999';

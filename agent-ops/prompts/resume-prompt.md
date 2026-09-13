@@ -1,7 +1,7 @@
 # 止まったセッションを起こすときの本文のひな形
 
 デーモンが `send_message` へ渡す本文。**組み立てるのは
-[`resume-session.sh`](../../scripts/agent/resume-session.sh)** で、下の ``` の中を読んで `<番号>` を
+[`resume-session.sh`](../../scripts/daemon/resume-session.sh)** で、下の ``` の中を読んで `<番号>` を
 埋める。**書き足すものは無い**——起こす理由は盤面から機械的に決まり（`board-move.mjs`）、
 そのPRで何が起きているかは、起こされた本人がPRを見れば分かる。
 

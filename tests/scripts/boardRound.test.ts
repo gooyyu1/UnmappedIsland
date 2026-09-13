@@ -3,13 +3,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { SWEEP_LINE, round } from '../../scripts/agent/board-round.mjs';
-import { UNREADABLE } from '../../scripts/agent/board-state.mjs';
+import { SWEEP_LINE, round } from '../../scripts/daemon/board-round.mjs';
+import { UNREADABLE } from '../../scripts/daemon/board-state.mjs';
 
 /**
- * `scripts/agent/board-round.mjs` の検査。
+ * `scripts/daemon/board-round.mjs` の検査。
  *
- * 手を決めるのは [`board-move.mjs`](../../scripts/agent/board-move.mjs)（検査は `boardMove.test.ts`）
+ * 手を決めるのは [`board-move.mjs`](../../scripts/daemon/board-move.mjs)（検査は `boardMove.test.ts`）
  * なので、ここが守るのは**引くことと打つこと**——盤面を組み立てられること・1周に1手しか打たないこと・
  * 打てなかった手で周ごと止まらないこと・台帳が育っても回り続けること。
  *

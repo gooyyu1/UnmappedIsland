@@ -15,9 +15,9 @@ import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
- * `scripts/agent/daemon.sh` の検査。
+ * `scripts/daemon/daemon.sh` の検査。
  *
- * 1周の中身（引く・決める・打つ）は [`board-round.mjs`](../../scripts/agent/board-round.mjs)
+ * 1周の中身（引く・決める・打つ）は [`board-round.mjs`](../../scripts/daemon/board-round.mjs)
  * （検査は `boardRound.test.ts`）なので、ここが守るのは**回し続けること**——二本目を立てないこと・
  * 落ちた跡の錠を取り上げること・立てて確かめて止められること・引けない周を数えて諦めること。
  *
@@ -32,7 +32,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
 // 既定の5秒を超えうる。
 vi.setConfig({ testTimeout: 20000 });
 
-const AGENT = resolve(__dirname, '../../scripts/agent');
+const DAEMON = resolve(__dirname, '../../scripts/daemon');
 
 interface World {
   /** 1周が非0で終わるか（＝盤面を引けない周）。 */
@@ -90,9 +90,9 @@ interface Result {
 function daemon(world: World = {}): Result {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-daemon-'));
   try {
-    const here = join(work, 'agent');
+    const here = join(work, 'daemon');
     mkdirSync(here);
-    copyFileSync(join(AGENT, 'daemon.sh'), join(here, 'daemon.sh'));
+    copyFileSync(join(DAEMON, 'daemon.sh'), join(here, 'daemon.sh'));
 
     const rounds = join(work, 'rounds.txt');
     writeFileSync(rounds, '', 'utf-8');
@@ -244,7 +244,7 @@ describe('daemon.sh', () => {
   it('走るのは複製で、リポジトリの1本ではない', () => {
     const result = daemon();
 
-    expect(result.copy).toBe(readFileSync(join(AGENT, 'daemon.sh'), 'utf-8'));
+    expect(result.copy).toBe(readFileSync(join(DAEMON, 'daemon.sh'), 'utf-8'));
   });
 
   // 起こす側に「もう走っているか」を確かめさせない（`pgrep` はブリッジの bash に無い）。
@@ -436,7 +436,7 @@ describe('daemon.sh', () => {
   // 食い違うのはこの1本だけ——古い呼び手が新しい道具を叩き、手を1つも出さない周が続いた
   // （2026-09-05）。
   it('自分の版が入れ替わったら、新しい版で回り直す', () => {
-    const real = readFileSync(join(AGENT, 'daemon.sh'), 'utf-8');
+    const real = readFileSync(join(DAEMON, 'daemon.sh'), 'utf-8');
     const result = daemon({
       // `ONCE` を空にして周をまたがせる。入れ替わってなお回り続けることが見たいので、1周では足りない。
       env: { ONCE: '', INTERVAL: '1' },

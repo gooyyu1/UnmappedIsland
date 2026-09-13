@@ -2,8 +2,8 @@
 // [`daemon.sh`](daemon.sh)、盤面を組むのは [`board-read.mjs`](board-read.mjs)、手を決めるのは
 // [`board-move.mjs`](board-move.mjs)。ここがやるのは**打つこと**と、その記録だけ。
 //
-//   node scripts/agent/board-round.mjs         # 1周。引けなければ終了コード1
-//   DRY_RUN=1 node scripts/agent/board-round.mjs
+//   node scripts/daemon/board-round.mjs         # 1周。引けなければ終了コード1
+//   DRY_RUN=1 node scripts/daemon/board-round.mjs
 //
 // ## 打つのは1周に1手
 //

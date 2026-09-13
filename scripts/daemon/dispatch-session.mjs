@@ -1,6 +1,6 @@
 // セッションを1本立てて、届いたことを確かめるところまでを、1つの node の中で済ませる。
 //
-//   node scripts/agent/dispatch-session.mjs task --env env_… --tag task-1029 \
+//   node scripts/daemon/dispatch-session.mjs task --env env_… --tag task-1029 \
 //     --issue 1029 --issue-json <gh の出力> --prompt <送る本文>
 //
 // **入口は [`dispatch-steps.sh`](dispatch-steps.sh) の `dispatch_session`。** 呼び方・出る行・

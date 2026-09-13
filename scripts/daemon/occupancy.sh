@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # タグの指す仕事が、今セッションに占有されていないかを見る。**答えるのは「立ててよいか」。**
 #
-#   bash scripts/agent/occupancy.sh --live task-1234
-#   bash scripts/agent/occupancy.sh --busy review-1500 task-1415
+#   bash scripts/daemon/occupancy.sh --live task-1234
+#   bash scripts/daemon/occupancy.sh --busy review-1500 task-1415
 #
 # **タグは複数渡せる。1つでも占有されていれば立ててはいけない。** レビューを立てる前に見るのは
 # 「前のレビューが走っていないか」だけではなく「**そのPRを直しているセッションが居ないか**」でもある

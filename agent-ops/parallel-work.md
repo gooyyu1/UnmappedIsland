@@ -74,7 +74,7 @@ bash .claude/ccr-meta.sh create_session < args.json
 ```
 
 セッションはエージェントが立てられるので、ユーザーの手数は「issue に答える」だけ。**`permission_mode`
-は立てる先から決まる**ので、[`ccr-env.sh`](../scripts/agent/ccr-env.sh) から取る——ブリッジへは渡さず、
+は立てる先から決まる**ので、[`ccr-env.sh`](../scripts/daemon/ccr-env.sh) から取る——ブリッジへは渡さず、
 クラウドへは `auto`。**省いてクラウドへ立てると、`.claude/**` を読むだけで降りない承認を待つ。**
 
 **`title` は定型に従う**（[`board-design.md`](board-design.md) 2.9.1 の表）。一覧を読むのは人間で、
@@ -94,13 +94,13 @@ bash .claude/ccr-check-prompt.sh <セッションID> <送った指示のファ�
 bash .claude/ccr-meta.sh archive_session <<<'{"session_id": "cse_..."}'
 ```
 
-**ただし投入は [`dispatch-task.sh`](../scripts/agent/dispatch-task.sh) から呼ぶ。** 上の3行は入口の説明で、
+**ただし投入は [`dispatch-task.sh`](../scripts/daemon/dispatch-task.sh) から呼ぶ。** 上の3行は入口の説明で、
 投入のたびに手で組むものではない——引数の組み立て・立てた中身の確認・照合まで含めて1回で済む。
 
 ```bash
-bash scripts/agent/dispatch-task.sh 1029 "$LOCALAPPDATA/Temp/ui-1029.md"
-bash scripts/agent/dispatch-task.sh 1029 <指示ファイル> --bridge   # 画像生成など
-DRY_RUN=1 bash scripts/agent/dispatch-task.sh 1029 <指示ファイル>  # 渡す引数を見るだけ
+bash scripts/daemon/dispatch-task.sh 1029 "$LOCALAPPDATA/Temp/ui-1029.md"
+bash scripts/daemon/dispatch-task.sh 1029 <指示ファイル> --bridge   # 画像生成など
+DRY_RUN=1 bash scripts/daemon/dispatch-task.sh 1029 <指示ファイル>  # 渡す引数を見るだけ
 ```
 
 **盤面が配るときは、投入先を issue の `env:` から決める**（[`board-design.md`](board-design.md)
@@ -125,7 +125,7 @@ DRY_RUN=1 bash scripts/agent/dispatch-task.sh 1029 <指示ファイル>  # 渡�
 
 ### 盤面を回す仕組みを止めたままにしない
 
-**指示なしで盤面を回し続けるのは [`daemon.sh`](../scripts/agent/daemon.sh)。** レビューの投入・
+**指示なしで盤面を回し続けるのは [`daemon.sh`](../scripts/daemon/daemon.sh)。** レビューの投入・
 直しの再開・マージ・新しいタスクの投入は、**モデルのセッションが1本も起きていなくても進む**。
 **これが止まっている間、盤面は1ミリも動かない。**
 
@@ -139,10 +139,10 @@ DRY_RUN=1 bash scripts/agent/dispatch-task.sh 1029 <指示ファイル>  # 渡�
 居ない**（同 2.19.3）。
 
 ```
-bash scripts/agent/daemon.sh start     # 背景で立てる。ログは ~/daemon.log へ追記
-bash scripts/agent/daemon.sh status    # 生死だけを見る（生きていれば0）
-bash scripts/agent/daemon.sh stop
-bash scripts/agent/daemon.sh restart   # 直接 push した版や環境変数を、すぐ効かせるとき
+bash scripts/daemon/daemon.sh start     # 背景で立てる。ログは ~/daemon.log へ追記
+bash scripts/daemon/daemon.sh status    # 生死だけを見る（生きていれば0）
+bash scripts/daemon/daemon.sh stop
+bash scripts/daemon/daemon.sh restart   # 直接 push した版や環境変数を、すぐ効かせるとき
 ```
 
 **走っているかを確かめてから `start` を打ってよい。** 二本目は自分で引き返す（`daemon.sh`「二重に
@@ -161,7 +161,7 @@ bash scripts/agent/daemon.sh restart   # 直接 push した版や環境変数を
 **打った手はログに残る。** `tail ~/daemon.log` が、いつ何を打ったか・打てなかった理由
 （`覚え書き:` の行）をそのまま見せる。
 
-**止めるのは手綱の issue のチェックを外すこと。** [`brake.sh`](../scripts/agent/brake.sh) を毎回
+**止めるのは手綱の issue のチェックを外すこと。** [`brake.sh`](../scripts/daemon/brake.sh) を毎回
 読むので、外れている間はその種類の手だけが打たれない。**デーモン自体は止めない**——止めると
 レビューもマージも一緒に止まる。止める場面は6節「ユーザーが投入を止めると告げたら、入口だけを
 一律に止める」。
@@ -209,11 +209,11 @@ bash scripts/agent/daemon.sh restart   # 直接 push した版や環境変数を
   | 何をするとき | 打つもの |
   |---|---|
   | 盤面を見る | [`board.sh`](../scripts/agent/board.sh)（開いているPR・`kind:task` の issue・畳んでいないセッションを1つの表に） |
-  | 投入する | [`dispatch-task.sh`](../scripts/agent/dispatch-task.sh)（`<issue番号>` と指示ファイル） |
-  | マージする | [`merge-pr.sh`](../scripts/agent/merge-pr.sh)（`<PR番号>`） |
-  | マージ済みのPRを片付ける | [`tidy-merged-pr.sh`](../scripts/agent/tidy-merged-pr.sh)（`<PR番号>`） |
+  | 投入する | [`dispatch-task.sh`](../scripts/daemon/dispatch-task.sh)（`<issue番号>` と指示ファイル） |
+  | マージする | [`merge-pr.sh`](../scripts/daemon/merge-pr.sh)（`<PR番号>`） |
+  | マージ済みのPRを片付ける | [`tidy-merged-pr.sh`](../scripts/daemon/tidy-merged-pr.sh)（`<PR番号>`） |
 
-  **投入とマージはもう [`daemon.sh`](../scripts/agent/daemon.sh) が打っている。** 手で打つのは、
+  **投入とマージはもう [`daemon.sh`](../scripts/daemon/daemon.sh) が打っている。** 手で打つのは、
   デーモンが手を出さないものを捌くときだけ。
 
   **畳んだのは往復だけではない。** 手で叩くと省かれていた確認——`blockedBy`・`tags`・投入前の
@@ -229,13 +229,13 @@ gh pr view <番号> --json body --jq .body | tr -d '\r' |
 ```
 
 **`tr -d '\r'` を省かない。** 節の名前を `$` で留めているので、CRが乗った本文ではどの節とも一致せず
-**何も出ない**（盤面の道具も同じ用途では落としている。[`brake.sh`](../scripts/agent/brake.sh)）。
+**何も出ない**（盤面の道具も同じ用途では落としている。[`brake.sh`](../scripts/daemon/brake.sh)）。
 
 **文脈へ入れたものの費用は「その大きさ×残りのターン数」**で、1回の読み込みでは終わらない。
 
 ### 投入する直前に、その issue が開いているかを見る
 
-[`dispatch-task.sh`](../scripts/agent/dispatch-task.sh) は、題を引くのと同じ `gh issue view` で `state` も
+[`dispatch-task.sh`](../scripts/daemon/dispatch-task.sh) は、題を引くのと同じ `gh issue view` で `state` も
 見て、開いていなければ立てずに終わる。**前に一覧で見たときの状態は当てにならない**——ユーザーは
 issue をいつでも閉じる（取り下げ・却下・別のPRが `Closes` で閉じた）。
 
@@ -244,13 +244,13 @@ issue をいつでも閉じる（取り下げ・却下・別のPRが `Closes` �
 読み続ける。2026-08-25 に、却下されて閉じた issue へその16分後にセッションを立てた。
 
 **立てた後にユーザーが閉じることもある。** そちらは
-[`board-move.mjs`](../scripts/agent/board-move.mjs) の側で消える——閉じた issue は盤面に出てこない
+[`board-move.mjs`](../scripts/daemon/board-move.mjs) の側で消える——閉じた issue は盤面に出てこない
 ので、`stall` の手も出ない。残ったセッションは下の「終わったセッションは、issue を鍵にして畳む」で
 畳む。
 
 ### 終わったセッションは、issue を鍵にして畳む
 
-仕事をしたセッションは、[`dispatch-task.sh`](../scripts/agent/dispatch-task.sh) が付ける
+仕事をしたセッションは、[`dispatch-task.sh`](../scripts/daemon/dispatch-task.sh) が付ける
 `task-<番号>` のタグで引く（盤面が `stall` の相手を引くのと同じタグ）。**PRが出たかは見ない**
 ——PRをマージしたかとワーカーを畳んでよいかは別の問いで、繋ぐと人が画面からマージしたときに畳む手が
 走らない（[`board-design.md`](board-design.md) 2.10）。畳む条件は次のとおり。
@@ -261,7 +261,7 @@ issue をいつでも閉じる（取り下げ・却下・別のPRが `Closes` �
 - **自分が立てたセッション。** **ユーザーが立てたものには触らない**——走っている作業を止めること
   になる。あちらは `task-` のタグを持たないので `KEPT` に落ちる。**ブリッジで立てたものも同じ
   条件で畳む**——違うのはこのPCに worktree を持つことだけで、それは畳んだ後に何を片付けるかの話
-  （[`archive-session.sh`](../scripts/agent/archive-session.sh)）。
+  （[`archive-session.sh`](../scripts/daemon/archive-session.sh)）。
 - **素性を引けなかったものも `KEPT`。** `get_session` が引けないと全部のキーが空に落ち、何も持たない
   ものとして扱われる。**知らないことを「違う」として読まない**——畳んで消えたコメントも、消した
   worktree も戻せないので、引けなかったものは残す。
@@ -284,7 +284,7 @@ issue をいつでも閉じる（取り下げ・却下・別のPRが `Closes` �
 #### レビューのセッションは、判定を書いたかを見て畳む
 
 レビューは issue を持たないので、上の鍵では引けない。手掛かりは
-[`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) が付ける `review-<PR番号>` のタグだけ。
+[`dispatch-review.sh`](../scripts/daemon/dispatch-review.sh) が付ける `review-<PR番号>` のタグだけ。
 **合図はそのPRの判定のコメントが投入したときより増えたかで、そのPRがこの後どう流れるかは見ない**
 ——レビューは使い回さないので、書いた時点でもう誰も起こさない。**在るかでは見ない**——`直し待ち` の
 ままもう1周読ませる経路（[`board-design.md`](board-design.md) 2.13.6）では同じ版へ2本目が立つので、
@@ -299,7 +299,7 @@ issue をいつでも閉じる（取り下げ・却下・別のPRが `Closes` �
 
 #### 配れる `kind:task` は、盤面から毎周引き直す
 
-[`board-move.mjs`](../scripts/agent/board-move.mjs) は、**`kind:task` の付いた open な issue のうち、
+[`board-move.mjs`](../scripts/daemon/board-move.mjs) は、**`kind:task` の付いた open な issue のうち、
 open な `blockedBy` が無く、open なPRが `Closes` で指していないもの**を `TASK <番号>` として出す。
 落ちる3つは、どれも**投入する先が無いか、既に誰かの手元にある**もの——`kind:task` の無い issue
 （確認の置き場・ユーザーの答え待ち・まだ棚卸しが見ていないもの）は仕事の単位ではなく、依存が
@@ -337,7 +337,7 @@ open な `blockedBy` が無く、open なPRが `Closes` で指していないも
 `ajv` 8 を持たず eslint 由来の 6 だけ在ったとき、`require` は通ったままテストが1本落ちた。踏んだ側は
 自分の変更を疑う。
 
-そこで [`tidy-merged-pr.sh`](../scripts/agent/tidy-merged-pr.sh) が、後片付けの1回で本体を
+そこで [`tidy-merged-pr.sh`](../scripts/daemon/tidy-merged-pr.sh) が、後片付けの1回で本体を
 `origin/main` へ進める（`SYNCED`）。`package-lock.json` が動いたときだけ `npm install` も打つ
 （`INSTALLED`）。**マージした手には繋いでいない**——繋ぐと、ユーザーが画面からマージした回は一度も
 走らない（[`board-design.md`](board-design.md) 2.10.4）。**本体はブランチを持たない（detached HEAD）**——`main` は同時に2箇所へチェックアウト
@@ -359,7 +359,7 @@ open な `blockedBy` が無く、open なPRが `Closes` で指していないも
 気づいたのは、別の用事で `list_sessions` を打ったとき——PRを5秒ごとに見張っていたが、
 一度も知らせていない。
 
-[`board-move.mjs`](../scripts/agent/board-move.mjs) は、**手が動いておらず、その `task-<番号>` を
+[`board-move.mjs`](../scripts/daemon/board-move.mjs) は、**手が動いておらず、その `task-<番号>` を
 `Closes` で指す open なPRも無い**セッションへ `RESUME <ID> stall <番号>` を出す。渡す文は
 [`resume-prompt.md`](prompts/resume-prompt.md) の `## stall`。
 
@@ -430,7 +430,7 @@ open な `blockedBy` が無く、open なPRが `Closes` で指していないも
 知っているのは人で、盤面はラベルを読むだけ。棚卸しが分類するときに、担当から明らかなものを付ける
 （[`triage-prompt.md`](prompts/triage-prompt.md)）。
 
-**錠は [`board-move.mjs`](../scripts/agent/board-move.mjs) が投入の前に見る。** 走っている
+**錠は [`board-move.mjs`](../scripts/daemon/board-move.mjs) が投入の前に見る。** 走っている
 セッションの担当 issue と同じ錠を持つ issue は出さない。**素性を引けなかった相手の後ろでも出さない**
 ——同じ錠を持っていないことを確かめられないので、資源を2本で取り合う形が通ってしまう。
 
@@ -443,9 +443,9 @@ open な `blockedBy` が無く、open なPRが `Closes` で指していないも
 同じファイルを2本が書くことを止めない代わりに、**実際にぶつかった組を帳面へ残す**。`area:` の錠を
 足すべき資源を、**起きた衝突から決める**ため（上の「錠は地図ではない」）。
 
-[`board-round.mjs`](../scripts/agent/board-round.mjs) が周ごとに、コンフリクトしているPRを
+[`board-round.mjs`](../scripts/daemon/board-round.mjs) が周ごとに、コンフリクトしているPRを
 `~/.claude/board-state/conflicts.jsonl` へ1行1件で書く。中身は
-[`describe-conflict.sh`](../scripts/agent/describe-conflict.sh) が出す**衝突したファイル**と、
+[`describe-conflict.sh`](../scripts/daemon/describe-conflict.sh) が出す**衝突したファイル**と、
 **分岐点から後にそのファイルを `main` へ入れたPR**。押し返されるまで同じ差分は一度しか書かない。
 
 **投入するとき、重なっている相手を名指ししない。** 盤面が書けるのはファイル名だけで、**受け取った側は
@@ -715,7 +715,7 @@ issue が渡すのは**起票の時点で分かっていること**——ユー�
 ### 順序は issue の本文で申告し、棚卸しが決める
 
 **先に片付いていないと着手できない issue があるなら、GitHub の依存（`blockedBy`）で結ぶ。** 本文に
-「#123 の後」と書いても機械は読めず、[`board-move.mjs`](../scripts/agent/board-move.mjs) はそれを
+「#123 の後」と書いても機械は読めず、[`board-move.mjs`](../scripts/daemon/board-move.mjs) はそれを
 ready として配る。**判断する側と張れる側が別なので、間を申告でつなぐ。**
 
 - **順序の理由を持つのは issue を立てた本人。** なぜその順序かを知っているのは、その問題を見つけた
@@ -768,7 +768,7 @@ ready として配る。**判断する側と張れる側が別なので、間を
 「PR の型」）。行き先は2つだけ。
 
 - **やる必要があること → issue を立てさせる。** issue が在れば棚卸しが分類し、盤面が配る。範囲外だと
-  判断したものも、仕組みそのものへの直し（`agent-ops/**`・`.claude/**`・`scripts/agent/**`・`CLAUDE.md`）も同じ。
+  判断したものも、仕組みそのものへの直し（`agent-ops/**`・`.claude/**`・`scripts/**`・`CLAUDE.md`）も同じ。
   **分類（`kind:`）は付けさせない**——付けるのは棚卸しで、付いていない
   issue はそちらへ回る（[`board-design.md`](board-design.md) 2.17.1）。**番号をPR本文へ書き写させない**
   ——写しは、読む者が居なければ何も起こさない。順序が要るなら、その issue の本文の `## 順序` 節へ
@@ -816,7 +816,7 @@ PR本文の節は次のとおり。**必ず置くのは `## 仮決め` と `## �
 だけ）で、残りは無ければ節ごと省く。
 
 **節は表の綴りちょうどで書く。** 節を読む側はどこも名前を `$` で留める（盤面が `## 見た目` の
-有無を見る形。[`board-move.mjs`](../scripts/agent/board-move.mjs)）ので、
+有無を見る形。[`board-move.mjs`](../scripts/daemon/board-move.mjs)）ので、
 `## 仮決め（3周目）` のように語を足すと**その節だけ誰にも届かない**。周回番号や
 補足は、節の中へ書く。
 
@@ -858,7 +858,7 @@ PR本文の節は次のとおり。**必ず置くのは `## 仮決め` と `## �
 関門**になり、本当に判断が要るものが埋もれる。
 
 **線を引くのは、機械とレビュアーで分かれる。** 機械
-（[`needs-user-review.sh`](../scripts/agent/needs-user-review.sh)）が引くのは**確定の宣言の増減**
+（[`needs-user-review.sh`](../scripts/daemon/needs-user-review.sh)）が引くのは**確定の宣言の増減**
 だけ——節の `【確定】` と、文書まるごとを土台と宣言する形（`**本書は全体が確定です。**`）を同じ1つの
 印として数える。**残りは差分を読むレビュアーが引く**（宣言文法・スキーマ・ゲームコンセプト・確定節に
 抵触するか。[`review-criteria.md`](review-criteria.md)「人の判断へ回す」）——触ったファイルは機械で
@@ -925,7 +925,7 @@ PRの本文しか無い。** ここに書かれなければ、その問いは誰
 
 ### 差分を読むのはレビューのセッション
 
-`bash scripts/agent/dispatch-review.sh <PR番号>` で1本立てる。指示は
+`bash scripts/daemon/dispatch-review.sh <PR番号>` で1本立てる。指示は
 [`review-prompt.md`](prompts/review-prompt.md)、補足は無い（見どころはPRごとに変わらない）。**結果はPRの
 コメントとして返り**、その1行目を [`board-labels.yml`](../.github/workflows/board-labels.yml) が
 `通してよい`／`直し待ち` のラベルへ変える。**盤面が読むのは、PRに残るもの**——ラベルと、判定の
@@ -1084,7 +1084,7 @@ for n in $(gh pr list --state open --json number --jq '.[].number'); do gh pr up
 **タスクのセッションに自分のPRを見張らせない。** `send_later`・`delete_trigger`（自分を起こすための
 予約と、その取り消し）と `subscribe_pr_activity` は**自動承認ができない**ので、見張らせた分がそのまま
 ユーザーのタップになる。見張るのは
-[`daemon.sh`](../scripts/agent/daemon.sh) の仕事。
+[`daemon.sh`](../scripts/daemon/daemon.sh) の仕事。
 
 **禁止は2箇所に置いてある。** どちらも消さないこと——2026-08-27 に、この節にしか無かったせいで
 3セッションが見張りを始めた。
@@ -1097,15 +1097,15 @@ for n in $(gh pr list --state open --json number --jq '.[].number'); do gh pr up
 禁止された状態に読め、**セッションは自分で見張るほうへ倒れる**（実際に倒れた）。直しの依頼は
 向こうから来る、までを1つの文にする。
 
-[`daemon.sh`](../scripts/agent/daemon.sh) が毎周1手だけ打つ。順は
-[`board-move.mjs`](../scripts/agent/board-move.mjs) が決める。
+[`daemon.sh`](../scripts/daemon/daemon.sh) が毎周1手だけ打つ。順は
+[`board-move.mjs`](../scripts/daemon/board-move.mjs) が決める。
 
 - **今の版の判定がまだ無く、緑** → `dispatch-review.sh <番号>`。マージの前に必ずここを通る。
 - **`通してよい` があり、緑で、コンフリクトも無く、人の手番で止まっていない** → `merge-pr.sh`。**後片付けは別の手**
   （`tidy-merged-pr.sh`）で、マージ済みのPRを見つけた周に打つ——`Closes` の issue が閉じたことの
   確認と、本体のチェックアウトの追随はそちら。
 - **`直し待ち`・CIが赤・コンフリクト** → **そのPRの `task-<番号>` のセッションを起こして直させる**
-  （[`resume-session.sh`](../scripts/agent/resume-session.sh)。渡す文は
+  （[`resume-session.sh`](../scripts/daemon/resume-session.sh)。渡す文は
   [`resume-prompt.md`](prompts/resume-prompt.md) の `## mend`）。**起こすほうが既定**——PRの文脈を持って
   いるのはそのセッションで、新しく立てると読み直しから始まる。
 
@@ -1180,7 +1180,7 @@ prompt・`send_message` の本文・PRへのコメントの全部。GitHubへは
 `TASK` に出るものは、依存の上では**今すぐ着手してよい**。
 
 - **資源の衝突は錠で避ける**（2節）。走っている issue と `area:` を取り合わないかは
-  [`board-move.mjs`](../scripts/agent/board-move.mjs) が見る。
+  [`board-move.mjs`](../scripts/daemon/board-move.mjs) が見る。
 - **次の段のゲートを閉じるかどうかだけが、人に残る。** 段を進めてよいという判断は渡さない。
 
 **印から issue の文面を起こす作業を、盤面を見る手番の中でやらない。** `【未実装】` を数えて issue に
@@ -1247,8 +1247,8 @@ GitHubから毎回引き直す——走っているセッション・PRとその
 
 `agent-ops/` 配下（このファイル・[`policies.md`](./policies.md)・ひな形・判断と分析の記録）、
 `.claude/` 配下（フック・`settings.json`・メタMCPの入口・`skills/`）、
-[`scripts/agent/`](../scripts/agent)（盤面を回す道具・シェルの検査）、`.github/extensions/`（Copilot CLI の
-フック）の変更は、PRを作らずに `main` へ直接 push してよい。**盤面を回す仕組みは、それ自身が
+[`scripts/daemon/`](../scripts/daemon)・[`scripts/agent/`](../scripts/agent)（盤面を回す道具・シェルの
+検査）、`.github/extensions/`（Copilot CLI のフック）の変更は、PRを作らずに `main` へ直接 push してよい。**盤面を回す仕組みは、それ自身が
 止まっているときにも直す**ので、PRにすると**マージする側（デーモン）が止まっている間、その直しが
 入らない**（出どころ: ユーザーの指示・2026-09-06）。`main` に保護は掛かっていないので、この道は
 開いている。
@@ -1268,8 +1268,8 @@ GitHubから毎回引き直す——走っているセッション・PRとその
 同じ性質——**タスクのセッションも必要なら直しに来るが、重なりを避ける必要は無い**（同じファイルを
 2本が書くことは止めない。2節）。
 
-**盤面のスクリプトの試験（`tests/scripts/tidyMergedPr.test.ts` のような、`scripts/agent/` の
-1本に張り付いた試験）も同じ扱い。** 分けると、スクリプトだけが先に `main` へ入って CI が赤くなる。
+**盤面のスクリプトの試験（`tests/scripts/tidyMergedPr.test.ts` のような、`scripts/` の道具1本に
+張り付いた試験）も同じ扱い。** 分けると、スクリプトだけが先に `main` へ入って CI が赤くなる。
 
 `src/` `docs/` `tests/` を触る変更は今までどおりPR。**盤面が止まっている間は入らなくてよいもの**なので、
 レビューとマージの列に載せる——載せたぶんだけ、外のレビュアーが差分を読む
@@ -1286,15 +1286,42 @@ GitHubから毎回引き直す——走っているセッション・PRとその
 判断と分析の記録（`agent-ops/decisions/`・`agent-ops/analysis/`）。**Copilot CLI の
 [`session-bootstrap`](../.github/extensions/session-bootstrap) もここを読む。**
 
-[`daemon.sh`](../scripts/agent/daemon.sh) と [`board-move.mjs`](../scripts/agent/board-move.mjs) は
+[`daemon.sh`](../scripts/daemon/daemon.sh) と [`board-move.mjs`](../scripts/daemon/board-move.mjs) は
 `gh`・`jq`・`node` だけで動き、どのエージェントが起動しても同じに振る舞う（**エージェントが1本も
-起きていなくても動く**）ので `scripts/agent/` に置く。**`agent-ops/` に実行されるものは置かない**
+起きていなくても動く**）ので `scripts/` の下に置く。**`agent-ops/` に実行されるものは置かない**
 ——あそこが持つのは、読まれる文書だけ。
 
 `.claude/skills/` は動かさない。**Copilot CLI もこの場所を読む**ので、移すと両方から見えなくなる。
 
 **どちらへ置いたかは [`agentOpsLayout.test.ts`](../tests/docs/agentOpsLayout.test.ts) が見ている。**
 `.claude/` 直下へ何か足したら、そこが赤くなる。
+
+### `scripts/` は呼び手で分かれている
+
+**`scripts/` の下で盤面を回す道具は、誰が起動するかで2つに分かれる。**
+
+| 置き場 | 起動するもの |
+|---|---|
+| `scripts/daemon/` | デーモンの周回（[`daemon.sh`](../scripts/daemon/daemon.sh) から辿れるもの全部） |
+| `scripts/agent/` | 人かセッションが自分で打つもの |
+
+**割る基準はこれ1つで、ファイルの種類や大きさでは割らない。** 分かれ目が答えるのは**直したものが、
+いつ誰の手で動き出すか**——`scripts/daemon/` は `main` へ入った次の周から、走っているデーモンが自分で
+読み直して動かす（[`board-design.md`](board-design.md) 2.3.2。`daemon.sh` 自身も `exec` で入れ替わる）。
+`scripts/agent/` は、次に誰かが打つまで何も動かない。**手元で直しただけで効くものは、どちらにも無い。**
+
+**中身ではなく置き場を動かしたときだけは、起こし直しが要る。** 走っている `daemon.sh` は立ったときの
+パス（`$ORIGIN`）を握っているので、そこが消えると自分では入れ替われない。**起こす係の登録
+（[`daemon-wake-task.sh`](../scripts/agent/daemon-wake-task.sh)）もパスを焼き込んである**ので、移すなら
+そちらも打ち直す。
+
+**どちらからも呼ばれるものは `scripts/daemon/` へ寄せる。** 止まって困るのは自動で回る側だから
+——[`board.sh`](../scripts/agent/board.sh)（人が打つ）と
+[`board-publish.mjs`](../scripts/daemon/board-publish.mjs)（デーモンが打つ）が同じ
+[`board.mjs`](../scripts/daemon/board.mjs) を読むのがこの形で、**入口だけが `scripts/agent/` に残る。**
+
+**どちらへ置いたかは [`scriptsByCaller.test.ts`](../tests/scripts/scriptsByCaller.test.ts) が見ている。**
+`scripts/daemon/` へデーモンが辿れないものを置いたら、そこが赤くなる。
 
 ### 承認の要る未実装を、勝手に流さない
 
@@ -1338,7 +1365,7 @@ GitHubから毎回引き直す——走っているセッション・PRとその
 
 ### 仕組みの変更は、本人の具体案が届くまで着手しない
 
-`agent-ops/**`・`.claude/**`・`scripts/agent/**`・`CLAUDE.md` について、ユーザーが構想を告げたが具体案がまだ本人の
+`agent-ops/**`・`.claude/**`・`scripts/**`・`CLAUDE.md` について、ユーザーが構想を告げたが具体案がまだ本人の
 中にしかないとき、**自分の見立てで着手しない。** ここを推測で動かすと、本人の構想と食い違った土台の
 上に本人の案を継ぎ足すことになる。案が届く前に催促もしない——判断はユーザー本人の手番。
 

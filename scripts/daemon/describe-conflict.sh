@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # コンフリクトしているPRが、**どのファイルで・何とぶつかったか**を出す。
 #
-#   bash scripts/agent/describe-conflict.sh 1573
+#   bash scripts/daemon/describe-conflict.sh 1573
 #
 #   FILE <パス>       … `main` との併合で解決できなかったファイル
 #   WITH <PR番号>     … 分岐点から後、そのファイルを `main` へ入れたPR

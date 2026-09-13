@@ -1,7 +1,7 @@
 // 使用量の増分を、そのとき動いていたセッションへ割り当てる（`agent-ops/board-design.md` 2.5）。
 //
 //   echo '{"utilization":12,"now":"...","live":[{"id":"cse_a","tags":["task-1"],"working":true}]}' \
-//     | node scripts/agent/usage-attribute.mjs <状態のファイル> <記録のファイル>
+//     | node scripts/daemon/usage-attribute.mjs <状態のファイル> <記録のファイル>
 //
 // 状態のファイルを読み書きし、**畳まれたセッションぶんだけ**を記録のファイルへ1行1件で足す。
 // 足した行は標準出力にも出す（呼び手が見えるように）。行は

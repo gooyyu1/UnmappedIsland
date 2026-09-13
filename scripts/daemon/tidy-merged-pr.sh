@@ -4,7 +4,7 @@
 # 同じ1回が走る。打つのは盤面で、**マージ済みのPRを見つけた周に1回だけ**
 # （[`board-move.mjs`](board-move.mjs) の `TIDY`）。
 #
-#   bash scripts/agent/tidy-merged-pr.sh 1036
+#   bash scripts/daemon/tidy-merged-pr.sh 1036
 #
 # 出力は1行1件。
 #   MENDED    <PR番号>              … 積まれていたPRを、理由を残して書いた本人へ差し戻した
@@ -88,7 +88,7 @@
 #   （下の `Closes` の番号を拾う形と、[`dispatch-review.sh`](dispatch-review.sh) の同じ形）。
 #
 # **落とし方は、値が変数へ入っているなら `${var//$'\r'/}`。** 外部の `tr` を起こす必要は無い。
-# パイプを流れているものだけが `| tr -d '\r' |` を要る（[`checked-items.sh`](checked-items.sh)）。
+# パイプを流れているものだけが `| tr -d '\r' |` を要る（[`checked-items.sh`](../agent/checked-items.sh)）。
 #
 # ## セッションを畳むのは、ここではない
 #

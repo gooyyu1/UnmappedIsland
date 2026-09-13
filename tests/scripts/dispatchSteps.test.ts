@@ -6,7 +6,7 @@ import { runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
- * `scripts/agent/dispatch-steps.sh` の `dispatch_session` が、**関門の終了コードをそのまま呼び手の
+ * `scripts/daemon/dispatch-steps.sh` の `dispatch_session` が、**関門の終了コードをそのまま呼び手の
  * 終了コードにする**ことの検査（`agent-ops/board-design.md` 2.21.2）。
  *
  * **人が手綱で止めている周（3）と、それ以外で転んだ周（1）を、1周を回す側が見分けられなくなると、
@@ -15,7 +15,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * **投入するスクリプトを実際に走らせて**見る。
  *
  * `gh` は PATH の先頭で差し替え、セッションの一覧はこの周のぶんの写しを渡す
- * （[`live-sessions.mjs`](../../scripts/agent/live-sessions.mjs)）。**写しに同じタグの1本を置くのは
+ * （[`live-sessions.mjs`](../../scripts/daemon/live-sessions.mjs)）。**写しに同じタグの1本を置くのは
  * 安全のため**——関門が壊れて手綱を素通りしても、占有が止めるので本物のセッションは立たない。
  */
 
@@ -23,7 +23,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
 // だけで既定の5秒を超えうる。
 vi.setConfig({ testTimeout: 20000 });
 
-const SCRIPT = resolve(__dirname, '../../scripts/agent/dispatch-chore.sh');
+const SCRIPT = resolve(__dirname, '../../scripts/daemon/dispatch-chore.sh');
 
 /** 手綱の issue の番号。実物の番号は試験に書き写さない。 */
 const BRAKE_ISSUE = '9999';

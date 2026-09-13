@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # 手綱の issue を読んで、その種類を流してよいかを答える。**答えるのは「立ててよいか」。**
 #
-#   bash scripts/agent/brake.sh new-task
-#   bash scripts/agent/brake.sh review
-#   bash scripts/agent/brake.sh review-untasked   # `Closes` 先に `kind:task` が無いPRのレビュー
-#   bash scripts/agent/brake.sh resume
-#   bash scripts/agent/brake.sh other
+#   bash scripts/daemon/brake.sh new-task
+#   bash scripts/daemon/brake.sh review
+#   bash scripts/daemon/brake.sh review-untasked   # `Closes` 先に `kind:task` が無いPRのレビュー
+#   bash scripts/daemon/brake.sh resume
+#   bash scripts/daemon/brake.sh other
 #
 # 出力は次のどれか。**終了コードが0なのは `GO` のときだけ**（[`occupancy.sh`](occupancy.sh) と
 # 同じ向き。読めなかったときに止まる側へ倒すのを、呼び手ではなくここが引き受ける）。
@@ -34,7 +34,7 @@
 #
 # **ここのチェックは設定で、答えではない**（分類は `kind:switch`。
 # [`board-design.md`](../../agent-ops/board-design.md) 2.17.5）。だから
-# [`checked-items.sh`](checked-items.sh) は拾わない——拾うと、誰も下ろさない項目が `## 確定待ち` に
+# [`checked-items.sh`](../agent/checked-items.sh) は拾わない——拾うと、誰も下ろさない項目が `## 確定待ち` に
 # 居座る。
 #
 # 見るのは `## 手綱` 節の中だけ。**種類は、根から自分までの見出しの鎖に対応する**——どれか1つでも

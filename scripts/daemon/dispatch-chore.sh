@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # 周期で起きる係を1本、CCRのセッションへ投入する（`agent-ops/board-design.md` 2.17）。
 #
-#   bash scripts/agent/dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md
-#   bash scripts/agent/dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md --bridge  # このPCで走らせる
-#   DRY_RUN=1 bash scripts/agent/dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md
-#   DRY_RUN=full bash scripts/agent/dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md  # 本文も切らない
+#   bash scripts/daemon/dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md
+#   bash scripts/daemon/dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md --bridge  # このPCで走らせる
+#   DRY_RUN=1 bash scripts/daemon/dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md
+#   DRY_RUN=full bash scripts/daemon/dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md  # 本文も切らない
 #
 # 出す行は [`dispatch-steps.sh`](dispatch-steps.sh) の `dispatch_session`。終了コードの
 # 読み方は [`dispatch-task.sh`](dispatch-task.sh) と同じ。
@@ -27,9 +27,9 @@ NAME="${1:?係の名前を渡す（例: triage）}"
 PROMPT="${2:?プロンプトのファイルを渡す（例: agent-ops/prompts/triage-prompt.md）}"
 WHERE="${3:-}"
 
-# shellcheck source=scripts/agent/dispatch-steps.sh
+# shellcheck source=scripts/daemon/dispatch-steps.sh
 source "$(dirname "${BASH_SOURCE[0]}")/dispatch-steps.sh"
-ROOT="$(cd "$AGENT_DIR/../.." && pwd)"
+ROOT="$(cd "$DAEMON_DIR/../.." && pwd)"
 
 # **プロンプトはリポジトリからの相対で受ける。** 盤面が持っているのは `CYCLES` に書いた綴りだけで、
 # デーモンがどこから叩かれるかは知らない。

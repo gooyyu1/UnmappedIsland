@@ -15,7 +15,7 @@ import { spawnScript } from '../support/runScript';
 // 実プロセス（bash）を起こす。
 vi.setConfig({ testTimeout: 20000 });
 
-const AGENT = resolve(__dirname, '../../scripts/agent');
+const DAEMON = resolve(__dirname, '../../scripts/daemon');
 
 let stateDir: string;
 
@@ -33,7 +33,7 @@ function polledJustNow() {
 }
 
 function run(script: string) {
-  const call = spawnScript(join(AGENT, script), [], {
+  const call = spawnScript(join(DAEMON, script), [], {
     env: { ...process.env, BOARD_STATE: stateDir },
   });
   return { code: call.status ?? -1, stdout: call.stdout, stderr: call.stderr };

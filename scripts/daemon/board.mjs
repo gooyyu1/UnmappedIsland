@@ -4,7 +4,7 @@
 // 出口は2つある。**突き合わせるのは1箇所**（`survey`）で、違うのは並べ方だけ——片方だけが違う
 // 盤面を見せることにならない。
 //
-//   [`board.sh`](board.sh)               … 端末へ1回。1行1件（読むのは、セッションを立てられる者）
+//   [`board.sh`](../agent/board.sh)               … 端末へ1回。1行1件（読むのは、セッションを立てられる者）
 //   [`board-publish.mjs`](board-publish.mjs) … 常設の issue の本文へ周期で（読むのはスマホの人間。
 //                                             `agent-ops/board-design.md` 2.20）
 //
@@ -34,7 +34,7 @@
 // ## `確定待ち` を盤面に出すのは、訊きに来る側にしか届かないから
 //
 // ユーザーの答えは `kind:ask` の issue の本文にチェックとして付き、**拾われるまでそこに残る。**
-// 判定は [`checked-items.sh`](checked-items.sh) が持つ。**常設の盤が全部その対象ではない**
+// 判定は [`checked-items.sh`](../agent/checked-items.sh) が持つ。**常設の盤が全部その対象ではない**
 // ——チェックが設定である盤も、機械が本文を書く盤も、拾えば下ろされない項目が居座る（同）。
 //
 // **[`daemon.sh`](daemon.sh) はここを読まない**（判断が要るので、届ける口はまだ無い）。だから
@@ -204,7 +204,7 @@ function survey({ gh, sessions, warn }) {
   return { issuesRaw, issues, prs, tasks, unsorted, live, sessionsKnown };
 }
 
-/** 端末へ1行1件で出す形（[`board.sh`](board.sh)）。引けなければ `undefined`。 */
+/** 端末へ1行1件で出す形（[`board.sh`](../agent/board.sh)）。引けなければ `undefined`。 */
 export function board({ gh = runGh, sessions = liveSessions, checkedItems = runCheckedItems, warn }) {
   const found = survey({ gh, sessions, warn });
   if (found === undefined) return undefined;
@@ -421,9 +421,18 @@ export function issueBody({
   return `${lines.join('\n')}\n`;
 }
 
-/** チェックの付いた項目の判定は [`checked-items.sh`](checked-items.sh) が持つ。 */
+/**
+ * チェックの付いた項目の判定は [`checked-items.sh`](../agent/checked-items.sh) が持つ。
+ *
+ * **起こすのは `board()` の側だけ**なので、あちらは `scripts/agent/` に在る——起こす1回は
+ * [`board.sh`](../agent/board.sh) を打った人のもので、デーモンは通らない
+ * （`agent-ops/parallel-work.md`「`scripts/` は呼び手で分かれている」）。
+ */
 function runCheckedItems(issuesJson) {
-  return runBash(join(HERE, 'checked-items.sh'), [], { input: issuesJson, capture: true }).stdout;
+  return runBash(join(HERE, '..', 'agent', 'checked-items.sh'), [], {
+    input: issuesJson,
+    capture: true,
+  }).stdout;
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

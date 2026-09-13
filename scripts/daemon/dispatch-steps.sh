@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # `dispatch-*.sh` が共有する、投入の段取り。**シェルから `source` して使う。**
 #
-#   # shellcheck source=scripts/agent/dispatch-steps.sh
+#   # shellcheck source=scripts/daemon/dispatch-steps.sh
 #   source "$(dirname "${BASH_SOURCE[0]}")/dispatch-steps.sh"
 #   choose_target "$WHERE"                    # ENV_ID・MODE・SOURCE が決まる
 #   template_body "$TEMPLATE" "$INSTRUCTION"  # ひな形から渡す本体を取り出す
@@ -15,16 +15,16 @@
 # `source` した側は、次も受け取る。
 #
 # - ひな形の読み方（[`prompt-template.sh`](prompt-template.sh) の `template_body`・`template_title`）
-# - `AGENT_DIR` … このファイルの在り処。隣のスクリプト（`may-dispatch.sh` など）はここから引く
+# - `DAEMON_DIR` … このファイルの在り処。隣のスクリプト（`may-dispatch.sh` など）はここから引く
 # - `CCR_META` … メタMCPの入口（[`.claude/ccr-meta.sh`](../../.claude/ccr-meta.sh)）
 # - `WORK` … 作業用の一時ディレクトリ。**抜けるときに消える**
 
-AGENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=scripts/agent/ccr-env.sh
-source "$AGENT_DIR/ccr-env.sh"
-# shellcheck source=scripts/agent/prompt-template.sh
-source "$AGENT_DIR/prompt-template.sh"
-CCR_META="$AGENT_DIR/../../.claude/ccr-meta.sh"
+DAEMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/daemon/ccr-env.sh
+source "$DAEMON_DIR/ccr-env.sh"
+# shellcheck source=scripts/daemon/prompt-template.sh
+source "$DAEMON_DIR/prompt-template.sh"
+CCR_META="$DAEMON_DIR/../../.claude/ccr-meta.sh"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
@@ -90,10 +90,10 @@ dispatch_session() {
   # 邪魔になる。**`DRY_RUN=full` なら切らない**（埋めた値は本文の途中に出るので、そこを確かめる側は
   # こちらを使う）。
   if [ -n "${DRY_RUN:-}" ]; then
-    node "$AGENT_DIR/dispatch-session.mjs" "$@" "${where[@]}" --dry-run "$DRY_RUN"
+    node "$DAEMON_DIR/dispatch-session.mjs" "$@" "${where[@]}" --dry-run "$DRY_RUN"
     return
   fi
 
-  CCR_META="$CCR_META" bash "$AGENT_DIR/may-dispatch.sh" "${gate[@]}"
-  node "$AGENT_DIR/dispatch-session.mjs" "$@" "${where[@]}"
+  CCR_META="$CCR_META" bash "$DAEMON_DIR/may-dispatch.sh" "${gate[@]}"
+  node "$DAEMON_DIR/dispatch-session.mjs" "$@" "${where[@]}"
 }

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # **セッションを1本立ててよいかを、ここ1つで答える。**
 #
-#   bash scripts/agent/may-dispatch.sh new-task task-1234
-#   bash scripts/agent/may-dispatch.sh review   review-1500 task-1415
+#   bash scripts/daemon/may-dispatch.sh new-task task-1234
+#   bash scripts/daemon/may-dispatch.sh review   review-1500 task-1415
 #
 # 終了コードが0なら立ててよい。**立ててはいけないときは理由を標準エラーへ出して非0**で終わる。
 # **3は「人が手綱で止めている」**（[`brake.sh`](brake.sh)）、1はそれ以外。

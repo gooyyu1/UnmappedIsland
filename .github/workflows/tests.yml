@@ -73,7 +73,7 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          # **盤面と同じ1つを、同じ取り方で読む**（`scripts/agent/board-read.mjs` の `prSessions`）
+          # **盤面と同じ1つを、同じ取り方で読む**（`scripts/daemon/board-read.mjs` の `prSessions`）
           # ——トレーラを持つ**最後の**コミットの、行を `/` で切った末尾がセッションID。
           # **在ることだけを見ると、引けない名乗りが通る**——`bridge-cse_<ID>` の切り出しを誤った
           # `session_cse_…` が通り抜け、PRに付いた却下が作者へ二度と届かなかった（2026-09-11、PR #1922）。

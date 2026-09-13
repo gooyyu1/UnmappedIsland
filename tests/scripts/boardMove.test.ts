@@ -2,13 +2,13 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { moves as decide } from '../../scripts/agent/board-move.mjs';
+import { moves as decide } from '../../scripts/daemon/board-move.mjs';
 // 打った手の覚えを消す側（`trackIdle`）。**盤面が選ぶ指紋が、あちらの消去に当たらないこと**を
 // 下で留める。
-import { trackIdle } from '../../scripts/agent/board-round.mjs';
+import { trackIdle } from '../../scripts/daemon/board-round.mjs';
 
 /**
- * `scripts/agent/board-move.mjs` の検査。
+ * `scripts/daemon/board-move.mjs` の検査。
  *
  * ここが守るのは**盤面から出る手が1つに決まること**。デーモンは出た手をそのまま打つので
  * （`agent-ops/board-design.md` 2.3）、判定を間違えると走っているセッションへ二重に投げるか、

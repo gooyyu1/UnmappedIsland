@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = resolve(__dirname, '../..');
 const DOC = join(ROOT, 'docs', 'ParallelAgents.md');
-const ROUND = join(ROOT, 'scripts', 'agent', 'board-round.mjs');
+const ROUND = join(ROOT, 'scripts', 'daemon', 'board-round.mjs');
 const RESUME_PROMPT = join(ROOT, 'agent-ops', 'prompts', 'resume-prompt.md');
 
 /** 手の表の見出しの行。表そのものは節の中に1つしか無いので、これで在り処が決まる。 */
@@ -38,7 +38,7 @@ function playableHands(): readonly string[] {
 
 /**
  * `RESUME` に渡せる理由。**本文のひな形が節を持つものだけが渡せる**
- * （[`resume-session.sh`](../../scripts/agent/resume-session.sh) が `## <理由>` から読む）。
+ * （[`resume-session.sh`](../../scripts/daemon/resume-session.sh) が `## <理由>` から読む）。
  */
 function resumeKinds(): readonly string[] {
   const headings = [...readFileSync(RESUME_PROMPT, 'utf-8').matchAll(/^## ([a-z-]+) /gm)];
