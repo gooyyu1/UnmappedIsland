@@ -57,6 +57,8 @@ interface World {
   readonly lockChanged?: boolean;
   /** 寄せたことで本体の先頭が動いたか（既定は動く）。**動いた周だけログへ1行出る。** */
   readonly mainMoved?: boolean;
+  /** 周の途中で `stop` に撃たれるか（1周を回す身代わりが、錠の中のPIDへ `SIGTERM` を送る）。 */
+  readonly stopMidRound?: boolean;
   /** 本体を寄せる `checkout` が `daemon.sh` に置く中身。**走っている `start` の足元が入れ替わる。** */
   readonly checkoutSwap?: string;
   readonly env?: Record<string, string>;
@@ -112,6 +114,11 @@ function daemon(world: World = {}): Result {
         `const swap = ${JSON.stringify(world.swap ?? [])}[round - 1];\n` +
         `if (round === ${world.removeSource ?? 0}) rmSync(source, { force: true });\n` +
         `else if (typeof swap === 'string') writeFileSync(source, swap, 'utf-8');\n` +
+        // **周の途中で撃つ口。** 錠の中のPIDが撃つ相手（`daemon.sh`「止めるのも自分の仕事」）。
+        // bash は前の子が終わるまで signal を握るので、この周を終えたところで止まりに入る。
+        `if (${world.stopMidRound === true}) process.kill(Number(readFileSync(${JSON.stringify(
+          join(work, 'state', 'lock', 'pid'),
+        )}, 'utf-8').trim()), 'SIGTERM');\n` +
         `process.exit(${world.roundFails === true ? 1 : 0});\n`,
       'utf-8',
     );
@@ -491,6 +498,27 @@ describe('daemon.sh', () => {
 
     expect(result.installed).toBe(true);
     expect(result.log).toContain('依存も入れ直した');
+  });
+
+  // **畳む周では寄せない。** 使う周がもう無いうえ、依存の入れ直しが `STOP_WAIT` を越えると `stop`
+  // 自身が「止まらなかった」と答える。
+  it('周の途中で撃たれたら、寄せずに畳む', () => {
+    // `INTERVAL` を詰めるのは、**畳まない版に当たったときに待たされないため**——寝てから止まる形に
+    // 戻っても、次の周へ入る前に止まる。
+    const result = daemon({ stopMidRound: true, env: { ONCE: '', INTERVAL: '1' } });
+
+    expect(result.rounds).toBe(1);
+    expect(result.git.some((call) => call.includes('checkout'))).toBe(false);
+    expect(result.log).toContain('止めろと言われたので畳む');
+  });
+
+  // **`DRY_RUN` は手を並べるだけの周**（冒頭の使い方）。打たないつもりで叩いた1周が、人の手元の
+  // 本体の `HEAD` を動かしてしまう。
+  it('`DRY_RUN` の周は、本体を寄せない', () => {
+    const result = daemon({ env: { DRY_RUN: '1' } });
+
+    expect(result.rounds).toBe(1);
+    expect(result.git.some((call) => call.includes('checkout'))).toBe(false);
   });
 
   // **回っている bash は、最初に読んだ版のまま。** 隣の道具は毎周読み直されるので、`SYNCED` で版が
