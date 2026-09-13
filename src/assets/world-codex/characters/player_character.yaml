@@ -716,7 +716,8 @@ traits:
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
       # 削る・伐る（timber.yamlのfell/buck/cut_pole、animals.yamlのwhittle）。長い棒から軸を削り出す
-      # 槍（tools.yaml）を開ける——木の箱・そり・板（Skills.md 2節）はまだ世界に無い。
+      # 槍（tools.yaml、basic）と、走り木を削り出すそり（containers.yaml、skilled）を開ける
+      # ——木の箱・板（Skills.md 2節）はまだ世界に無い。
       skill_woodwork:
         tags: [skill]
         value: 0

@@ -99,9 +99,11 @@ object_defs:
         capacity: 150000
     recipes:
       lashed:
-        # 走り木を削るので木材加工、縛るので繊維。槍と同じ2本の連言で、どちらも斧を要求しない。
+        # 走り木を削るので木材加工、縛るので繊維（docs/engine/SkillSystem.md 4.1節が名指しで挙げる
+        # 連言そのもの）。**軸を1本削るだけの槍より上の段を要求する**——反りを揃えた走り木2本と
+        # 前木を、同じ寸法で削り出す仕事だから。どちらの腕も斧は要らない。
         conditions:
-          - {reason: needs_woodwork, subject: agent, prop: skill_woodwork, in_stage_or_above: basic}
+          - {reason: needs_woodwork, subject: agent, prop: skill_woodwork, in_stage_or_above: skilled}
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         steps:
           # 長い棒の先を反らせて削り、走り木を2本と、引き綱を結ぶ前木を1本こしらえる。
@@ -143,10 +145,11 @@ object_defs:
         capacity: 200000
     recipes:
       wheeled:
-        # 車輪は丸太を輪切りにして削り出すので、木材加工はそりより上の段。縛りはそりで済ませて
-        # あるので、ここで要るのは車軸を通す紐だけ。
-        conditions:
-          - {reason: needs_woodwork, subject: agent, prop: skill_woodwork, in_stage_or_above: skilled}
+        # **解放条件を持たない**（docs/engine/SkillSystem.md 4.2節）。そりを材料に取る時点でその
+        # 解放条件を通っており、そのうえ丸太と斧を要求するので、ここへ腕を重ねると二重になる。
+        #
+        # **車輪は丸太の輪切りを削り出したもので、ほぞで組んだ物ではない**——指物・接合
+        # （docs/world/Skills.md 2.1節）の担当にはならない。
         steps:
           # 丸太を輪切りにし、車輪を2枚削り出して軸穴を開ける。**斧が要るのはここだけ**。
           - requires:

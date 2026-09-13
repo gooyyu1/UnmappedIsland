@@ -122,7 +122,8 @@ export function durationsOf(codex: WorldCodex): readonly Duration[] {
  *
  * 拾うのは、**工程が自分以外の物の値を減らし、その物をその工程が消費しない**場合。消費しないから
  * 道具で、自分以外だから借り物——斧を木へ、槍を獲物へ持って行くときの減りがこれにあたる。
- * 時間でも減る値（罠が地面で朽ちる耐久）は日の列（{@link durationsOf}）が持つので、ここでは飛ばす。
+ * 時間でも減る物も拾う——石斧は屋外で朽ちる日数（{@link durationsOf}）と、振って欠ける回数の
+ * 両方で尽きる。どちらが先に来るかは使い方が決めるので、片方だけを載せることはしない。
  */
 export function toolWearsOf(codex: WorldCodex): readonly ToolWear[] {
   const found: ToolWear[] = [];
