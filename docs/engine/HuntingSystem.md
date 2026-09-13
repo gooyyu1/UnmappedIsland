@@ -110,8 +110,8 @@ beast:
   間合いの内側に入ります。**この島で間合いを取れるのは槍（200cm）だけです。**
 - **構えていなければ効きません**（`in_slot: hand` のゲート）。地面に置いた槍も、背負った槍も同じです。
 - **盾ではありません。** 押し引きなので牙は通り、追い詰めたイノシシからでも**1回の遭遇で平均
-  0.53枚**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=0 measure=wounds_taken mean -->の
-  傷を負います（石斧なら2.18枚<!-- stats: hunt.yaml encounter animal=wild_boar weapon=stone_axe escape_routes=0 measure=wounds_taken mean -->）。
+  0.69枚**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=0 measure=wounds_taken mean -->の
+  傷を負います（石斧なら2.69枚<!-- stats: hunt.yaml encounter animal=wild_boar weapon=stone_axe escape_routes=0 measure=wounds_taken mean -->）。
 
 ### 1.3 逃走は `travel`
 
@@ -420,8 +420,8 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 
 **この1点が、狩りが最後まで通るかどうかを決めます。** 道が1本でも通っていれば、どの獣も1〜2手で
 居なくなります——追い詰めたイノシシは槍で**100%**<!-- stats: hunt.yaml ending animal=wild_boar weapon=spear escape_routes=0 ending=felled share -->
-倒れるのに、同じ相手が道のある土地では**14.00%**<!-- stats: hunt.yaml ending animal=wild_boar weapon=spear escape_routes=1 ending=felled share -->
-しか倒れず、残りは平均**2.86手**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=1 measure=turns mean -->で
+倒れるのに、同じ相手が道のある土地では**16.00%**<!-- stats: hunt.yaml ending animal=wild_boar weapon=spear escape_routes=1 ending=felled share -->
+しか倒れず、残りは平均**2.90手**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=1 measure=turns mean -->で
 逃げていきます（[`HuntStats.md`](../diagnostics/HuntStats.md) の `ending` 節。2026-09-13 時点）。
 **開けた土地で獲れるのは、一撃で沈められる相手だけです**——大型は、道の無い土地へ追い詰めるか、
 深手を負わせて追う（5.6 節）かのどちらかになります。
@@ -446,7 +446,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 なければ何でもよく、**取り返しの付く被害だからこそ大事な道具を持っていける**（4.1 節）——同じ卓にすると、
 どちらかが現実と食い違います。
 
-### 5.5 顔ぶれを変えるのは警戒、太らせるのは傷、鈍らせるのは意識
+### 5.5 顔ぶれを変えるのは警戒、逃げに転じさせるのは傷、立ち尽くさせるのは意識
 
 **動物ごとの配分は素の性分で、その場の事情は `modify` が押し引きします**（8.3 節）。押し引きは `beast` trait
 の1箇所にまとまり、動物ごとには書きません。
@@ -463,8 +463,8 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 | くわえた食べ物が無い | 盗み食いを打ち消す（食べ物でない物は食べない） |
 | 逃げ道が無い | 逃走を打ち消す（5.3 節） |
 | 痛みの段（`sore`/`hurting`/`unbearable`） | 逃走を +25／+60／+120 |
-| 意識が濁っている（`consciousness` が `foggy`） | 噛みつき・牙・圧し掛かりを -10、様子見を +10 |
-| 朦朧としている（同 `dazed`） | 同じ手を -20、様子見を +20 |
+| 意識が濁っている（`consciousness` が `foggy`） | 様子見を +25 |
+| 朦朧としている（同 `dazed`） | 様子見を +60 |
 | 間合いのある武器が構えられている（1.2 節） | 噛みつき・牙・圧し掛かりを -20、様子見を +20 |
 
 これで**警戒しているかどうかで1手の顔ぶれが変わります**。落ち着いた動物は様子をうかがうか足元の物へ手を
@@ -486,19 +486,24 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
   なり、そちらへ持たせると同じ押し引きを獣の数だけ書くことになります
 - **プレイヤーが読めるのも意識だけです。** 血にも衝撃にもバーが無い（同 9 節）ので、鈍らせている
   当人が画面に出ているのは意識のバー1本になります
-- **打ち消しではなく押し引きです。** 朦朧とした獣も踏み込んできます——打ち消しにすると、傷を2つ
-  入れた時点で牙まで抽選から落ち、5.3 節の「追い詰められた動物は逃げずに襲う」が成立しなくなります
 
-**朦朧とした獣は、槍を構えられているのと同じだけ踏み込めません**（どちらも20）。**傷1つでは鈍りません**
-——痛みが `hurting` で押し下げるぶんは、ちょうど `clear` の下端に留まります。そこから先は、2つ目の傷で
-痛みが最も深い段に届くか、血を失うか、殴られて揺れるかのどれかが意識を濁らせます。
+**太らせるのは様子見だけで、手を細らせはしません。** 濁った獣は立ち尽くす回数が増え、そのぶんどの手も
+出にくくなります。**細らせる形を採らないのは、押し引きが重なるからです**——上の間合いと同じ手を引けば、
+素の配分で最も太い牙まで抽選から落ち、**槍を構えて追い詰めた相手が何もしてこなくなります。** 5.3 節の
+「追い詰められた動物は逃げずに襲う」が、大型を追い詰めるときにいちばん使う武器の側だけ成立しない、という
+形になります。太らせる形なら、いくつ重なっても手は消えません。
+
+**`foggy` は狩りの最中にはまず立ちません。** こちらが付けられる傷はどれも痛みが `hurting` 以上
+（-20）で、そこへ失血か衝撃（どちらも -30）が重なれば `dazed` まで落ちるためです。**立つのは、傷が
+癒えても血が戻っていない個体**——血の戻りは桁違いに遅い（[`VitalsSystem.md`](./VitalsSystem.md) 3 節）ので、
+**追いついた獲物がこの段に居ます。**
 
 **殴り続けた相手からは、気を失わせる手前で手応えが返ります。** それでも**体格に見合わない武器で
 追い詰める代償は残ります**——逃げ道の無い土地で大型に尖った石を振り続けたとき、こちらが負う怪我は
-平均**4.71枚**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=sharp_stone escape_routes=0 measure=wounds_taken mean -->
-（[`HuntStats.md`](../diagnostics/HuntStats.md) の `encounter` 節。2026-09-13 時点）で、間合いの取れる槍や
-衝撃の溜まる石斧（1.2 節）を上回ります。尖った石では体格ぶんの衝撃が溜まらず、意識を濁らせるのが
-失血と痛みだけになるからです。
+平均**6.19枚**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=sharp_stone escape_routes=0 measure=wounds_taken mean -->
+（[`HuntStats.md`](../diagnostics/HuntStats.md) の `encounter` 節。2026-09-13 時点）で、石斧や槍を
+上回ります。**多いのは1手あたりの危なさではなく、決着までの長さです**——衝撃が大型に届かない（1.2 節）
+ぶん、同じ相手に3倍近い手数が要り、その手数だけ突かれます。
 
 **空腹は配分に触れません。** 野生の個体では `body_fat` が動かない——渇きと同じゲートで、罠や囲いの枠へ
 閉じ込めている間しか減りません（[`TrapSystem.md`](./TrapSystem.md) 5.4 節）。押し引きを置いても野生の

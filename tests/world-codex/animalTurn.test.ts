@@ -357,71 +357,79 @@ describe('動物の1手', () => {
     expect(weightOf(boar, 'gore'), '石斧を構えても間合いは取れない').toBe(30);
   });
 
-  it('意識が濁るほど、踏み込む手が細る', () => {
+  it('意識が濁るほど、立ち尽くす手が太る', () => {
     // 体調（痛み・失血・衝撃）はどれも意識へ合流してから配分を押す（HuntingSystem.md 5.5節）。
-    // 押し引きは合流した後の段に1箇所だけ置くので、**何が濁らせたかによらず同じだけ鈍る**
+    // 押し引きは合流した後の段に1箇所だけ置くので、**何が濁らせたかによらず同じだけ効く**
     // ——ここでは意識そのものを置いて、原因を問わない効きを読む。
+    //
+    // **太らせるのは様子見だけで、手は1つも細らせない。** 細らせる形にすると、構えられた間合いの
+    // 押し引きと同じ手へ重なって、素の配分で最も太い牙まで抽選から落ちる（下の「槍を構えられていても」）。
     //
     // 重みを読む段取りは「深手を負うほど、逃走の重みが太くなる」と同じ（手番を1つ回した後に読む）。
     open(0.0);
     openPath();
     const boar = alarm(release('wild_boar'));
     const consciousness = boar.getProperty(codex.propertyNames.getId('consciousness'));
+    const moves = ['lurk', 'gore', 'crush', 'flee'] as const;
+    const weights = (): Record<string, number> =>
+      Object.fromEntries(moves.map((move) => [move, weightOf(boar, move)]));
 
     passTurn();
-    const clear = {
-      gore: weightOf(boar, 'gore'),
-      crush: weightOf(boar, 'crush'),
-      flee: weightOf(boar, 'flee'),
-    };
+    const clear = weights();
 
     consciousness.setNumberWithoutEvents(70);
     passTurn();
     const foggyStage = consciousness.stage?.name;
-    const foggy = { gore: weightOf(boar, 'gore'), crush: weightOf(boar, 'crush') };
+    const foggy = weights();
 
     consciousness.setNumberWithoutEvents(40);
     passTurn();
+    const dazed = weights();
 
     expect(foggyStage, '濁り始めた段').toBe('foggy');
     expect(consciousness.stage?.name, '朦朧とした段').toBe('dazed');
-    expect(clear.gore, '素の配分（animals.yamlのwild_boar）').toBe(30);
-    expect(foggy.gore, '濁れば細る').toBeLessThan(clear.gore);
-    expect(weightOf(boar, 'gore'), '朦朧ならさらに細る').toBeLessThan(foggy.gore);
-    expect(clear.crush, '澄んでいれば圧し掛かれる').toBeGreaterThan(0);
-    expect(foggy.crush, '圧し掛かりは濁った時点で間合いの外へ出る').toBeLessThanOrEqual(0);
-    expect(weightOf(boar, 'flee'), '鈍るのは踏み込む手だけで、逃げ足は変わらない').toBe(clear.flee);
+    expect(clear.lurk, '素の配分（animals.yamlのwild_boar）').toBe(15);
+    expect(foggy.lurk, '濁れば立ち尽くす手が太る').toBeGreaterThan(clear.lurk);
+    expect(dazed.lurk, '朦朧ならさらに太る').toBeGreaterThan(foggy.lurk);
+    for (const move of ['gore', 'crush', 'flee'] as const) {
+      expect(foggy[move], `濁っても${move}は細らない`).toBe(clear[move]);
+      expect(dazed[move], `朦朧でも${move}は細らない`).toBe(clear[move]);
+    }
   });
 
-  it('傷1つでは手は鈍らず、2つ目から鈍る', () => {
-    // 痛みがhurtingで押し下げるぶんは、ちょうどclearの下端に留まる（HuntingSystem.md 5.5節）。
-    // **1発当てただけでは反撃は細らない**——細らせるには2つ目の傷か、失血か、殴られた揺れが要る。
+  it('傷を負った獣は、濁り始めの段を飛ばして朦朧へ落ちる', () => {
+    // **foggyは狩りの最中にはまず立たない**（HuntingSystem.md 5.5節）。こちらが付けられる傷はどれも
+    // 痛みがhurting以上（-20）で、そこへ失血か衝撃（どちらも-30）が重なればdazedまで落ちるため。
+    // 立つのは、傷が癒えても血が戻っていない個体——追いついた獲物がこの段に居る。
     open(0.0);
     const boar = alarm(release('wild_boar'));
     const consciousness = boar.getProperty(codex.propertyNames.getId('consciousness'));
 
     wound(boar);
     passTurn();
-    const afterOne = { stage: consciousness.stage?.name, gore: weightOf(boar, 'gore') };
+    const afterOne = consciousness.stage?.name;
 
     wound(boar);
     passTurn();
 
-    expect(afterOne.stage, '傷1つでは濁らない').toBe('clear');
-    expect(afterOne.gore, '素の配分のまま').toBe(30);
-    expect(consciousness.stage?.name, '2つ目で朦朧とする').toBe('dazed');
-    expect(weightOf(boar, 'gore'), 'そこから鈍る').toBeLessThan(afterOne.gore);
+    expect(afterOne, '傷1つでは、痛みはclearの下端に留まる').toBe('clear');
+    expect(consciousness.stage?.name, '2つ目でfoggyを跨いでdazedへ').toBe('dazed');
   });
 
-  it('朦朧としていても、追い詰められた獣は襲ってくる', () => {
-    // **押し引きであって打ち消しではない**（HuntingSystem.md 5.5節）。打ち消しにすると、傷を2つ
-    // 入れた時点で牙まで抽選から落ち、5.3節の「追い詰められた動物は逃げずに襲う」が成立しない。
+  it('槍を構えられていても、追い詰められた朦朧の獣は襲ってくる', () => {
+    // **意識の押し引きは間合いの押し引きと重なる**（HuntingSystem.md 5.5節）。意識の側も手を
+    // 細らせる形にすると、イノシシの牙（素の30）が構えの-20と重なって抽選から落ち、5.3節の
+    // 「追い詰められた動物は逃げずに襲う」が、**大型を追い詰めるときにいちばん使う武器の側だけ**
+    // 成立しなくなる。
     //
-    // 逃げ道も足元の物も無い密林では、残る候補は様子見35（15＋朦朧の20）と牙10。合計45のうち
-    // 末尾の10を引くrollを渡す。
-    open(0.9);
+    // 逃げ道も足元の物も無い密林で残る候補は、様子見95（15＋構えの20＋朦朧の60）と牙10
+    // （30－構えの20）。圧し掛かりは構えだけで間合いの外へ出る。合計105のうち末尾の10を引く
+    // rollを渡す——細らせる形に戻すと、ここが様子見か圧し掛かりに化ける。
+    open(0.95);
     const boar = alarm(release('wild_boar'));
     boar.getProperty(codex.propertyNames.getId('consciousness')).setNumberWithoutEvents(40);
+    const spear = release('spear');
+    expect(spear.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     passTurn();
 
