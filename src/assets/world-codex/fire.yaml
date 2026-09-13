@@ -255,7 +255,7 @@ traits:
       # 同じ——運び手が火種か炎かで、炉の受け方は変わらない（docs/engine/FireSystem.md 3.1.2節）。
       # 炉が失う物も無い。分けた炎は薪を余分に食わないので、火力にも薪にも触れない。
       #
-      # **これが開いていることで火が土地を越える。** 越えられないのは火種のほうだけ（下のburning_tinder）。
+      # **これが開いていることで火が土地を越える**（火種の側は渡り切れない、下のburning_tinder）。
       #
       # **下のlight_from_flameより先に宣言する。** 同じ相手（lightable）を受ける2つが同時に断ると、
       # プレイヤーへ届くのは宣言順で先頭の理由だけ（docs/ui/CardInteraction.md 2.1節）。後ろに置くと、
@@ -269,7 +269,9 @@ traits:
         duration: 1
         conditions:
           # **運んできた側を先に見る。** 灯っていない明かりでは、炉がどうであれこの操作は成り立たない。
-          - {reason: not_lit, subject: instrument, prop: lit, gt: 0}
+          # **理由の名前は火起こしの signal（上のignitableのnot_lit）と分ける**——同じfire.yamlの中で
+          # 同じ語が別のことを指すと、拾う側は名前空間まで見ないと見分けられない。
+          - {reason: no_flame_carried, subject: instrument, prop: lit, gt: 0}
           - {reason: already_lit, prop: heat, eq: 0}
           - {reason: no_fuel, prop: fuel, gt: 0}
         set: {self: {heat: 1}}

@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SHORTEST_TRAVEL_MINUTES } from '../../src/domain/generation/PathNetworkBuilder';
+import { TRAVEL_MINUTES_STEP } from '../../src/domain/generation/PathNetworkBuilder';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -74,8 +74,9 @@ describe('fire.yamlの火の連鎖', () => {
   }
 
   /**
-   * もう1つの土地と、そこへ歩く道を1本。**道1本の最短**（SHORTEST_TRAVEL_MINUTES）に縮めるのは、
-   * 火が土地を越えられないことを言うには、いちばん短い道で見る必要があるため。
+   * もう1つの土地と、そこへ歩く道を1本。**刻み1つぶん**（TRAVEL_MINUTES_STEP）＝生成されうる
+   * いちばん短い道に縮めるのは、何が渡れて何が渡れないかを言うには、いちばん短い道で見る必要が
+   * あるため——長い道で燃え尽きることは、短い道で燃え尽きることを言わない。
    */
   function roadToAnotherLand(): { destination: WorldObject; walk: () => void } {
     const destination = spawnInto('grassland', land.parent!, 'locations');
@@ -83,9 +84,7 @@ describe('fire.yamlの火の連鎖', () => {
     path
       .getProperty(codex.propertyNames.getId('destination_id'))
       .setNumberWithoutEvents(destination.instanceId);
-    path
-      .getProperty(codex.propertyNames.getId('travel_minutes'))
-      .setNumberWithoutEvents(SHORTEST_TRAVEL_MINUTES);
+    path.getProperty(codex.propertyNames.getId('travel_minutes')).setNumberWithoutEvents(TRAVEL_MINUTES_STEP);
 
     return {
       destination,
@@ -491,7 +490,7 @@ describe('fire.yamlの火の連鎖', () => {
     // 先に言う——火を持って来たつもりの手には、そちらが答えになる。
     expect(
       hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
-    ).toEqual(['not_lit', 'fire_out']);
+    ).toEqual(['no_flame_carried', 'fire_out']);
     expect(effectiveNumberOf(torch, 'lit'), '灯らない').toBe(0);
     expect(heatIs(hearth, 'out'), '炉も消えたまま').toBe(true);
   });
@@ -508,7 +507,7 @@ describe('fire.yamlの火の連鎖', () => {
   });
 
   it('灯った松明は火を別の土地へ運び、向こうの炉に種火を立てる', () => {
-    // 火が土地を越える唯一の道（FireSystem.md 3.1.2節）。**炉から分けてもらって運ぶところまで**を
+    // 火が土地を越える道（FireSystem.md 3.1.2節）。**炉から分けてもらって運ぶところまで**を
     // ひと続きで見る——松明を持っていることではなく、火が渡ることがこの道の中身。
     const torch = spawnInto('torch', player, 'hand');
     expect(
@@ -567,7 +566,7 @@ describe('fire.yamlの火の連鎖', () => {
     expect(
       hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
       '先頭が画面へ出る。運んできた側に火が無いことを先に言う',
-    ).toEqual(['not_lit', 'fire_out']);
+    ).toEqual(['no_flame_carried', 'fire_out']);
     expect(heatIs(hearth, 'out'), '炉は消えたまま').toBe(true);
   });
 
