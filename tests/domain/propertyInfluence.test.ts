@@ -425,6 +425,49 @@ object_defs:
     expect(receivedStamina(), '休み終えれば消える').toEqual([]);
   });
 
+  it('操作が宣言した持続効果の相手は、その操作に加わっていない物のこともある', () => {
+    // 操作の下に書ける対象は役だけではない（GameElementDefinition.md 11.7節。`child`以外は書ける）
+    // ので、焼いている間だけ据えた先を温める窯は、その操作に加わっていない小屋を動かす。
+    const { codex, session, place } = loadWithWorld(`
+object_defs:
+  baker: {}
+  hut:
+    props:
+      heat: {value: 0, range: {min: 0, max: 100}}
+    slots:
+      fixtures: {cell: {accept: {tag: fixture}}}
+  oven:
+    tags: [fixture]
+    interactions:
+      bake:
+        trigger: menu
+        duration: 30
+        passives:
+          - add: {parent: {heat: 1}}
+`);
+    const hut = place('hut');
+    const baker = place('baker');
+    const oven = spawn(codex, 'oven', session);
+    expect(oven.moveToSlotOrRejection(hut.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+
+    const heatId = codex.propertyNames.getId('heat');
+    const receivedHeat = () => shown(codex, hut.readInfluences(heatId).received);
+    expect(receivedHeat(), '焼いていない間は、小屋を温めるものが居ない').toEqual([]);
+
+    let whileBaking: readonly string[] = [];
+    session.observeTicks(
+      () => {
+        whileBaking = receivedHeat();
+      },
+      () => {
+        expect(oven.tryGetAction('bake', baker)?.tryExecute()).toBe(true);
+      },
+    );
+
+    expect(whileBaking, '焼いている間は、加わっていない小屋にも窯が影響元として並ぶ').toEqual(['oven+']);
+    expect(receivedHeat(), '焼き終えれば消える').toEqual([]);
+  });
+
   it('怪我が外れれば、その影響も一覧から消える', () => {
     const codex = load(`
 object_defs:

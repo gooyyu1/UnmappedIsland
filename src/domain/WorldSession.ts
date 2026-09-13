@@ -263,9 +263,11 @@ export class WorldSession {
    * （setInteractionPassivesRegistered）。**役も同じく憶えた文脈が答える**
    * （runningInteractionPassives）。
    *
-   * **効いているものを、視点で絞らずまるごと書き出す。** どれがその視点に届くかを決めるのは
-   * 書き込み先（PropertyInfluences）で、役を指せるのは参加者からだけなので、宣言元も相手も同じ
-   * 操作に居る——読んでいる物が加わっていない操作の辺は、どちらの端にも当たらず落ちる。
+   * **効いているものを、視点で絞らずまるごと書き出す。** どの辺がその視点に届くかを決めるのは
+   * 書き込み先（PropertyInfluences）——辺の両端のどちらでもない物には1件も当たらない——なので、
+   * ここで手前から絞ると、同じ判定を2箇所が持つことになる。**加わっている操作だけに絞ることも
+   * できない**：対象に書けるのは役だけではなく（`self`・`parent`・`ancestor`も書ける、11.7節）、
+   * その相手はその操作に加わっていない。
    */
   collectRunningInteractionInfluences(out: InfluenceWriter): void {
     for (const running of this.runningInteractionPassives)
