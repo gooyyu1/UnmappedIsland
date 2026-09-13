@@ -4,7 +4,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/DurationStats.md。
 
 meta:
-  - {unit: days, minimum: 1, durations: 137, longest: 100.00, shortest: 1.00, tool_wears: 14}
+  - {unit: days, minimum: 1, durations: 141, longest: 100.00, shortest: 1.00, tool_wears: 14}
 
 durations:
   - {object: bone_needle, property: durability, unit: days, days: 100.00, shortest_days: 20.00, longest_days: 100.00, repeats: false, destroys: true}
@@ -65,10 +65,10 @@ durations:
   - {object: engineer, property: vitamin, unit: days, days: 18.75, shortest_days: 18.75, longest_days: 18.75, repeats: false, destroys: false}
   - {object: farmer, property: vitamin, unit: days, days: 18.75, shortest_days: 18.75, longest_days: 18.75, repeats: false, destroys: false}
   - {object: medic, property: vitamin, unit: days, days: 18.75, shortest_days: 18.75, longest_days: 18.75, repeats: false, destroys: false}
-  - {object: farmer, property: body_fat, unit: days, days: 14.46, shortest_days: 14.46, longest_days: 14.46, repeats: false, destroys: false}
-  - {object: medic, property: body_fat, unit: days, days: 12.86, shortest_days: 12.86, longest_days: 12.86, repeats: false, destroys: false}
-  - {object: captain, property: body_fat, unit: days, days: 11.79, shortest_days: 11.79, longest_days: 11.79, repeats: false, destroys: false}
-  - {object: engineer, property: body_fat, unit: days, days: 10.71, shortest_days: 10.71, longest_days: 10.71, repeats: false, destroys: false}
+  - {object: farmer, property: body_fat, unit: days, days: 15.58, shortest_days: 15.58, longest_days: 15.58, repeats: false, destroys: false}
+  - {object: medic, property: body_fat, unit: days, days: 13.85, shortest_days: 13.85, longest_days: 13.85, repeats: false, destroys: false}
+  - {object: captain, property: body_fat, unit: days, days: 12.69, shortest_days: 12.69, longest_days: 12.69, repeats: false, destroys: false}
+  - {object: engineer, property: body_fat, unit: days, days: 11.54, shortest_days: 11.54, longest_days: 11.54, repeats: false, destroys: false}
   - {object: fracture, property: severity, unit: days, days: 10.50, shortest_days: 10.50, longest_days: 14.00, repeats: false, destroys: true}
   - {object: bed, property: durability, unit: days, days: 10.00, shortest_days: 5.00, longest_days: 10.00, repeats: false, destroys: true}
   - {object: bundled_leaf_clothing, property: durability, unit: days, days: 10.00, shortest_days: 5.00, longest_days: 10.00, repeats: false, destroys: true}
@@ -128,6 +128,10 @@ durations:
   - {object: farmer, property: immunity, unit: days, days: 1.67, shortest_days: 1.67, longest_days: 1.67, repeats: false, destroys: false}
   - {object: medic, property: immunity, unit: days, days: 1.67, shortest_days: 1.67, longest_days: 1.67, repeats: false, destroys: false}
   - {object: bruise, property: severity, unit: days, days: 1.25, shortest_days: 1.25, longest_days: 2.50, repeats: false, destroys: true}
+  - {object: captain, property: lipid, unit: days, days: 1.25, shortest_days: 1.25, longest_days: 1.25, repeats: false, destroys: false}
+  - {object: engineer, property: lipid, unit: days, days: 1.25, shortest_days: 1.25, longest_days: 1.25, repeats: false, destroys: false}
+  - {object: farmer, property: lipid, unit: days, days: 1.25, shortest_days: 1.25, longest_days: 1.25, repeats: false, destroys: false}
+  - {object: medic, property: lipid, unit: days, days: 1.25, shortest_days: 1.25, longest_days: 1.25, repeats: false, destroys: false}
   - {object: banana, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
   - {object: coconut_crab, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
   - {object: coconut_jelly, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}

@@ -99,7 +99,7 @@ describe('foods.yamlの食料定義', () => {
     for (const [name, expectedRate] of [
       ['carbohydrate', 2],
       ['protein', 1],
-      ['lipid', 0.5],
+      ['lipid', 0.25],
     ] as const) {
       const id = codex.propertyNames.getId(name);
       expect(instance.tryGetProperty(id)?.number ?? 0, `${name}の初期値`).toBeGreaterThan(0);
