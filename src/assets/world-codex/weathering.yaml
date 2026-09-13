@@ -10,7 +10,8 @@
 #
 # 食べ物はここを名乗らない（foods.yaml の perishable）。あちらは保存温度で腐る別の軸で、屋外の
 # 上乗せまで自前で持っている。罠（traps.yaml）も名乗らない——仕掛けている間だけ傷む別の軸
-# （docs/engine/TrapSystem.md 6.1節）で、上限も960ではない。
+# （docs/engine/TrapSystem.md 6.1節）だから。**分かれるのは減らす軸だけで、目盛りは分けない**
+# ——上限960はどこも同じ（DurabilitySystem.md 1節）。
 
 traits:
   # 短命な素材（どの素材がこれかは DurabilitySystem.md 2節の表）。屋外で10日、雨なら5日。
