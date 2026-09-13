@@ -1,4 +1,9 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import type { CraftingStep } from '../../src/analysis/CraftingStep';
+import { craftingStepsOf } from '../../src/analysis/craftingSteps';
+import { rangeCyclesOf } from '../../src/analysis/rangeCycles';
+import { SHORTEST_TRAVEL_MINUTES } from '../../src/domain/generation/PathNetworkBuilder';
+import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -65,6 +70,34 @@ describe('fire.yamlの火の連鎖', () => {
 
   function itemsOn(location: WorldObject): string[] {
     return new Location(location, codex).items.map((object) => object.def.name);
+  }
+
+  /** プレイヤーが手に持っている物。 */
+  function carried(): string[] {
+    return player.getSlot(codex.slotNames.getId('hand')).contents.map((object) => object.def.name);
+  }
+
+  /**
+   * もう1つの土地と、そこへ歩く道を1本。**道1本の最短**（SHORTEST_TRAVEL_MINUTES）に縮めるのは、
+   * 火が土地を越えられないことを言うには、いちばん短い道で見る必要があるため。
+   */
+  function roadToAnotherLand(): { destination: WorldObject; walk: () => void } {
+    const destination = spawnInto('grassland', land.parent!, 'locations');
+    const path = spawnInto('path', land, 'fixtures');
+    path
+      .getProperty(codex.propertyNames.getId('destination_id'))
+      .setNumberWithoutEvents(destination.instanceId);
+    path
+      .getProperty(codex.propertyNames.getId('travel_minutes'))
+      .setNumberWithoutEvents(SHORTEST_TRAVEL_MINUTES);
+
+    return {
+      destination,
+      walk: (): void => {
+        expect(path.tryGetAction('travel', player)?.tryExecute(), '道を歩く').toBe(true);
+        expect(player.parent, '向こうの土地へ着いた').toBe(destination);
+      },
+    };
   }
 
   function effectiveNumberOf(object: WorldObject, propertyName: string): number {
@@ -458,6 +491,46 @@ describe('fire.yamlの火の連鎖', () => {
       hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
     ).toEqual(['fire_out']);
     expect(effectiveNumberOf(torch, 'lit'), '灯らない').toBe(0);
+  });
+
+  it('火種は、いちばん短い道でも渡り切れない', () => {
+    // 火が土地を越えないことの根拠（FireSystem.md 3.1節）。**いちばん短い道で見る**——長い道で
+    // 消えることは、短い道で消えることを言わない。
+    const road = roadToAnotherLand();
+
+    spawnInto('burning_tinder', player, 'hand');
+    road.walk();
+
+    expect(carried(), '火種は道の上で燃え尽きる').toEqual([]);
+  });
+
+  it('灯った松明を別の土地へ運んでも、そこの炉には火を点けられない', () => {
+    // 火は土地を越えない（FireSystem.md 3.1節）。分けてもらう向き（3.1.2節）だけが開いている。
+    const torch = spawnInto('torch', player, 'hand');
+    expect(
+      smallFire()
+        .combinationsWith(torch, player)
+        .find((c) => c.name === 'light_from_flame')
+        ?.tryExecute() === true,
+    ).toBe(true);
+
+    const road = roadToAnotherLand();
+    const cold = spawnInto('campfire', road.destination, 'fixtures');
+    // 薪が無いことが断る理由にならないようにしておく（それでは火種も落とせない、上のignite）。
+    cold.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(20);
+    road.walk();
+
+    expect(carried(), '松明は渡り切る').toEqual(['torch']);
+    expect(effectiveNumberOf(torch, 'lit'), '灯ったまま').toBe(1);
+    expect(
+      cold.combinationsWith(torch, player).map((c) => c.name),
+      '向こうの炉へ火を点ける操作は無い',
+    ).toEqual([]);
+    expect(
+      cold.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
+      '重ねて言えるのは、この炉に分けられる炎が無いことだけ',
+    ).toEqual(['fire_out']);
+    expect(heatIs(cold, 'out'), '向こうの炉は消えたまま').toBe(true);
   });
 
   it('着火が置くのは種火だけで、そこから薪が火を育てる', () => {
@@ -865,5 +938,118 @@ describe('炉の火床の枠が名乗る型', () => {
       fireCells('earth_kiln').every((types) => types.length === 0),
       '覆い焼きの炉',
     ).toBe(true);
+  });
+});
+
+/**
+ * 火が土地を越えないこと（docs/engine/FireSystem.md 3.1節）を、宣言の全数から見る。
+ *
+ * **炉も操作も名前では拾わない**——火力（`heat`）を持つ型を炉とみなし、その火力を上へ動かす工程を
+ * 効き目で拾う。名前を変えても、別の炉へ同じ口を足しても、新しい口を作っても、ここへ出る。
+ *
+ * 上の連鎖のテストが実際に運んで見せるのは松明1本ぶんで、**次に「持ち運べる明かり」が増えたときに
+ * そちらは緑のまま通る。** 越えられる物を1つも受けていないことは、全数を数えるここが言う。
+ */
+describe('炉の火を立ち上げられる相手', () => {
+  const codex = bundledCodex();
+  const heatId = codex.propertyNames.getId('heat');
+
+  /** 炉1つの、火力を立ち上げる工程1つと、その相手として受け取りうる型1つ。 */
+  interface LightingRoute {
+    readonly hearth: string;
+    readonly step: string;
+    readonly instrument: string;
+  }
+
+  /** 火力（heat）を持つ型＝炉（fire.yamlのhearth trait・pottery.yaml・smoking.yaml）。 */
+  function hearthDefs(): readonly ObjectDef[] {
+    return [...codex.objects].filter((def) => def.tryGetPropertyDef(heatId) !== undefined);
+  }
+
+  /** その工程が自分の火力を上へ動かすか。**代入先が実行時に決まる場合も上へ動かしうると見る。** */
+  function raisesOwnHeat(step: CraftingStep): boolean {
+    return step.outcomes.some(
+      (outcome) =>
+        outcome.deltas.some(
+          (delta) => delta.target === 'self' && delta.propertyGlobalId === heatId && delta.amount > 0,
+        ) ||
+        outcome.assignments.some(
+          (assignment) =>
+            assignment.target === 'self' &&
+            assignment.propertyGlobalId === heatId &&
+            (assignment.value === undefined || assignment.value > 0),
+        ),
+    );
+  }
+
+  /** その工程が相手として受け取りうる型の名前。タグで受けているならそのタグを持つ型すべて。 */
+  function instrumentNamesOf(step: CraftingStep, hearth: ObjectDef): string[] {
+    return step.inputs
+      .filter((input) => !(input.kind === 'object' && input.objectGlobalId === hearth.globalId))
+      .flatMap((input) =>
+        input.kind === 'object'
+          ? [codex.objects.get(input.objectGlobalId).name]
+          : [...codex.objects].filter((def) => def.hasTag(input.tagGlobalId)).map((def) => def.name),
+      );
+  }
+
+  function lightingRoutes(): readonly LightingRoute[] {
+    return hearthDefs().flatMap((hearth) =>
+      craftingStepsOf(codex, hearth)
+        .filter(raisesOwnHeat)
+        .flatMap((step) =>
+          instrumentNamesOf(step, hearth).map((instrument) => ({
+            hearth: hearth.name,
+            step: step.name,
+            instrument,
+          })),
+        ),
+    );
+  }
+
+  /**
+   * その型を置いておくだけで、自分から消えるまでの分数。**条件つきでしか消えない物**——灯している
+   * あいだだけ燃え減る松明——と、消えない物はundefined。
+   */
+  function minutesUntilGoneOnItsOwn(objectName: string): number | undefined {
+    const clocks = rangeCyclesOf(codex.objects.get(codex.objectNames.getId(objectName)))
+      .filter(
+        (cycle) =>
+          cycle.destroysSelf &&
+          !cycle.repeats &&
+          cycle.gatedBy.some((combination) => combination.length === 0),
+      )
+      // 端へいちばん遅く届く見方（minutes）の中で、先に尽きる時計がその物の寿命。
+      .map((cycle) => cycle.minutes);
+    return clocks.length === 0 ? undefined : Math.min(...clocks);
+  }
+
+  it('火力を立ち上げる工程は、どの炉にもちょうど1つ在る（ignite）', () => {
+    // 立ち上げる口が炉ごとに増えれば、下のテストが見る相手も増える。**口の側も数える**ので、
+    // 相手を伴わない口（メニューで点く炉）を足してもここが落ちる。
+    const byHearth = new Map(hearthDefs().map((hearth) => [hearth.name, new Set<string>()]));
+    for (const hearth of hearthDefs())
+      for (const step of craftingStepsOf(codex, hearth).filter(raisesOwnHeat))
+        byHearth.get(hearth.name)!.add(step.name);
+
+    expect(byHearth.size, '火力を持つ型が1つも無い（この走査は何も見ていない）').toBeGreaterThan(0);
+    expect(
+      [...byHearth].map(([hearth, steps]) => `${hearth}: ${[...steps].join(',')}`),
+      '炉ごとの、火力を立ち上げる工程',
+    ).toEqual([...byHearth.keys()].map((hearth) => `${hearth}: ignite`));
+  });
+
+  it('受け取るのは、道1本ぶんの時間より先に自分から消える物だけ', () => {
+    // 越えられる物で炉に火が立つと、火が島を移動する（FireSystem.md 3.1節）。火種の寿命を延ばしても、
+    // 立ち上げる口をタグ（lightable）へ広げても、ここが落ちる。
+    const routes = lightingRoutes();
+    expect(routes.length, '火を立ち上げる道が1つも見つからない').toBeGreaterThan(0);
+
+    expect(
+      routes.filter(
+        (route) => (minutesUntilGoneOnItsOwn(route.instrument) ?? Infinity) > SHORTEST_TRAVEL_MINUTES,
+      ),
+      '土地を越えられる物で炉の火を立ち上げられる',
+    ).toEqual([]);
   });
 });

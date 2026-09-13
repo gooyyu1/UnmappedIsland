@@ -73,6 +73,7 @@ const READ_ONLY_FROM_OUTSIDE = [
   'src/domain/SlotDef.ts SlotDef.hasPutInDuration',
   'src/domain/generation/GenerationScopeDef.ts GenerationScopeParams',
   'src/domain/generation/LocationTypeDef.ts AxisPreference.tolerance',
+  'src/domain/generation/PathNetworkBuilder.ts SHORTEST_TRAVEL_MINUTES',
   'src/domain/wrappers/Location.ts Location.fixtureStacks',
   'src/domain/wrappers/Location.ts Location.itemStacks',
   'src/domain/wrappers/Location.ts Location.receiveItem',
