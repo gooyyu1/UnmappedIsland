@@ -221,7 +221,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
 
   it('吊ったハンモックは、骨組みを差した寝台と同じだけ戻す', () => {
     // 同6節。**寝台の上位ではなく別系統**なので、回復量では上に立たない。差は置ける場所
-    // （支点が要る）と伸ばしろ（詰め物を足す先が無い）のほう。
+    // （支点が要る）・伸ばしろ（詰め物を足す先が無い）・持ち出し（畳んで次の土地へ運べる）のほう。
     const hammock = open('sandy_beach');
     const framed = bedOnBeach(true);
     const slung = spawnInto(hammock.session, 'slung_hammock', hammock.land, 'fixtures');
