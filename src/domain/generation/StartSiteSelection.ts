@@ -9,8 +9,8 @@ import type { IslandMap, Site } from './IslandMap';
  * ネットワークからしか出ないので、島が出来上がってから選ぶ。
  *
  * 選ぶ材料は「最初の段（同2.1節）を越えるのに要るものが、その地点から何歩先にあるか」だけで、
- * 難易度もそこで切る（同2.3.2節）。**島は引き直さない**ので、どの候補も条件を満たさない島では
- * その中で最も近いものを返す（同2.3.1節）。
+ * 難易度もそこで切る（同2.3.2節）。**しきい値で候補を落とすことはしない**——島は引き直さないので、
+ * 引きの厳しい島でも、その中で最も近いものを返す（同2.3.1節）。
  *
  * **数えるのは宣言だけ。** どの土地で何が採れるかは`explore`が生みうる型で決め、1回あたり何個
  * 採れるか（抽選の重み）は見ない——重みを確率へ直すのは近似なので、解析側の仕事
@@ -195,13 +195,18 @@ export function islandStartupReachOf(suppliers: StartupNeedSuppliers, map: Islan
 /**
  * 漂着しうるサイト。**選抜が並べ替えるのはこの中だけ**——主人公は海から流れ着くので
  * （GameConcept.md 概要）、島の内陸から始まることはない。
+ *
+ * 海岸が1つも無ければ投げる。**内陸へ落とす道は置かない**——外周リングは必ず4つ以上置かれるので
+ * （SitePlacer）、そうなっているなら生成の方が壊れている。黙って内陸から始めると、漂着したはずの
+ * 主人公が山の中に居る島が、誰にも気づかれずに配られる。
  */
 function landfallCandidatesOf(map: IslandMap): readonly Site[] {
   const beaches = map.sites.filter((site) => site.type!.name === LANDFALL_LOCATION_TYPE);
   if (beaches.length > 0) return beaches;
 
   const coast = map.sites.filter((site) => site.onCoastRing);
-  return coast.length > 0 ? coast : map.sites;
+  if (coast.length === 0) throw new Error(`島（種 ${map.seed}）に海岸のサイトが1つもありません。`);
+  return coast;
 }
 
 function supplyOf(suppliers: StartupNeedSuppliers, site: Site): StartupNeedSupply {

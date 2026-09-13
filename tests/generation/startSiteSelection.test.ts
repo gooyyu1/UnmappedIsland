@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { startupNeedSourcesOf } from '../../src/analysis/startupReach';
-import type { IslandMap, Site } from '../../src/domain/generation/IslandMap';
+import { IslandMap, Site } from '../../src/domain/generation/IslandMap';
 import { startNewGame } from '../../src/domain/generation/NewGame';
 import type { SiteStartupReach } from '../../src/domain/generation/StartSiteSelection';
 import {
@@ -126,9 +126,42 @@ describe('開始地点の選抜', () => {
     expect(differed, '並び順の先頭とは違う砂浜を選んだ島が1つも無い').toBeGreaterThan(0);
   });
 
+  it('海岸が1つも無い島は、内陸から始めずに投げる', () => {
+    // 外周リングは必ず4つ以上置かれる（SitePlacer）ので、生成が壊れない限り起きない。**黙って
+    // 内陸から始めると、漂着したはずの主人公が山の中に居る島が誰にも気づかれずに配られる。**
+    const inland = new Site(0, 0, 0, false);
+    inland.type = codex.generation!.locationTypes.find((type) => type.name === 'mountain_peak');
+    const map = new IslandMap('island', 0, [inland], []);
+
+    expect(() => islandStartupReachOf(startupNeedSuppliersOf(codex), map)).toThrow('海岸のサイト');
+  });
+
   it('その型の土地が島に無ければ、開始地点は決まらない', () => {
     const map = islandOf(0);
     expect(selectStartSiteAmong(codex, map, [])).toBeUndefined();
+  });
+
+  it('シナリオが型で指定しても、選抜を通った土地へ移る', () => {
+    // **startAt を並び順へ戻すとここが落ちる。** 上の検査は selectStartSiteAmong しか呼んで
+    // いないので、startAt がそれを使わなくなっても気づかない。
+    const seed = Array.from({ length: SEED_COUNT }, (_, i) => i).find((candidate) => {
+      const beaches = beachesOf(islandOf(candidate));
+      return (
+        beaches.length >= 2 &&
+        selectStartSiteAmong(codex, islandOf(candidate), beaches)?.index !== beaches[0].index
+      );
+    });
+    expect(seed, '並び順の先頭と選抜の答えが違う島が標本に無い（この検査が何も見ていない）').toBeDefined();
+
+    const game = startNewGame(codex, SAMPLE_CHARACTER, seed!, seededRng(99));
+    const beaches = beachesOf(game.island.map);
+    expect(game.startAt(beaches[0].type!.objectDefGlobalId), '砂浜は島に在る').toBe(true);
+
+    const moved = game.island.siteOf(game.startLocation.instance.instanceId);
+    expect(moved?.index, `種${seed}: 型で絞った中も選抜が選ぶ`).toBe(
+      selectStartSiteAmong(codex, game.island.map, beaches)!.index,
+    );
+    expect(moved?.index, `種${seed}: 並び順の先頭ではない`).not.toBe(beaches[0].index);
   });
 
   it('実体化したゲームのプレイヤーは、選抜が選んだ土地に居る', () => {
