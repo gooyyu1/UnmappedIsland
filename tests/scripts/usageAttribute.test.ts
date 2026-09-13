@@ -5,14 +5,14 @@ import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * `scripts/agent/usage-attribute.mjs` の検査。
+ * `scripts/daemon/usage-attribute.mjs` の検査。
  *
  * ここが守るのは**積んだ値が消費として読めること**。APIはセッション単位の消費を返さないので
  * （`agent-ops/board-design.md` 2.8）、割り当てを間違えると 2.5 の自動の手綱がしきい値ごと狂う。
  * 負の消費が積まれないこと（枠が変わった周）と、手が空いているセッションが分母に入らないことを見る。
  */
 
-const SCRIPT = resolve(__dirname, '../../scripts/agent/usage-attribute.mjs');
+const SCRIPT = resolve(__dirname, '../../scripts/daemon/usage-attribute.mjs');
 
 interface Live {
   readonly id: string;

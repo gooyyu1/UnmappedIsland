@@ -81,8 +81,8 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 **開始直後の段が終わるのは、主要な資源へ手が届き、数日死なない量の水と食料を確保した時点です。**
 
-- **アクセスの確保** — 石・繊維・木・水源・食料が採れる土地への道が見つかっていること。開始地点は砂浜で
-  （選抜の候補が砂浜。2.3節）、**砂浜には石も小枝も枯れ草もありません。**
+- **アクセスの確保** — 石・繊維・木・水源・食料が採れる土地への道が見つかっていること。開始地点は砂浜、
+  砂浜の無い島では他の海岸です（選抜の候補。2.3節）。**砂浜には石も小枝も枯れ草もありません。**
   最初の仕事は、隣に何があるかを知ることです。
 - **数日分の備え** — 最悪を想定しなくてよくなる量。
 
@@ -142,7 +142,10 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 ための鍵で、良し悪しの判定ではありません。
 
 **候補を海岸全体まで広げていません。** 広げるとどの島もほぼ2歩以内に収まり、2.3.2節の段が1つに
-潰れます。砂浜に留めれば、島の引きがそのまま難易度の散らばりになります。
+潰れます。砂浜に留めれば、島の引きがそのまま難易度の散らばりになります。**砂浜の無い島でだけ海岸へ
+落ちます**（そこから始まる島の割合は [`stats/startup_reach.yaml`](../../stats/startup_reach.yaml) の
+`island_start_site_locations`）。落ちても段は潰れていません——分布は
+`island_start_site_hops_histogram` にあり、2.3.2節の線はどれも空になっていません。
 
 #### 2.3.1 引きの厳しい島でも、引き直さない
 
@@ -531,7 +534,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 **探索は分では軽く、日数では重いものです。** 島の土地は10〜20（`terrain_generation.yaml` の
 `site_count`）、探索率100%までは土地ごとに10〜20回で1回15分
-（[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 2節）なので、**全島を100%にしても2,795分<!-- stats: terrain.yaml exploration_phase metric=exploration_minutes mean -->**
+（[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 2節）なので、**全島を100%にしても2,799分<!-- stats: terrain.yaml exploration_phase metric=exploration_minutes mean -->**
 ——山の合計の4%です。ところが**日数では15.2日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->**（1周回の14%）になります。1日に探索できる時間が土地の
 明るさで切られ、しかも1つの土地を開き切るまでそこに居る必要があるためで、この差が出るのが8.3節の
 「探索の局面」です。なお**最初の段の中では探索がほぼ全部**で、そこでの探索は時間を埋めているのでは
@@ -689,7 +692,7 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 炉端の360分<!-- stats: terrain.yaml daily_budget night_craft -->と睡眠の360分<!-- stats: terrain.yaml daily_budget sleep -->で
 既に埋まっているので、**開けた土地では松明を足しても入る先がありません**。
 
-**効くのは、夜の道と、樹冠の深い土地です。** 拠点から平均的な土地への片道は86.43分<!-- stats: terrain.yaml base_one_way base=shortest_mean mean -->
+**効くのは、夜の道と、樹冠の深い土地です。** 拠点から平均的な土地への片道は86.89分<!-- stats: terrain.yaml base_one_way base=shortest_mean mean -->
 なので、**日が暮れてから往復するなら2本**——1本の2時間では帰り着けません。密林の雨季に採れるのは
 1日1.3時間<!-- stats: climate.yaml activity_hours location=jungle season=wet gathering -->なので、
 そこは1本ごとに採れる時間が2時間ずつ増える土地になります。
@@ -938,8 +941,8 @@ ambient_brightnessをそのまま土台にするためです
 
 | 局面 | 1日の移動 | 1日に進む分 | 消化するもの | 日数 |
 | --- | --: | --: | --: | --: |
-| **探索**（島を開き切るまで） | 162分<!-- stats: terrain.yaml exploration_phase metric=day_trip_travel_per_day mean --> | 探索 184分<!-- stats: terrain.yaml exploration_phase metric=day_trip_exploration_per_day mean --> | 全土地を探索率100%まで（2,795分<!-- stats: terrain.yaml exploration_phase metric=exploration_minutes mean -->） | **15.2日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->** |
-| **定常**（開き切った後） | 62分<!-- stats: terrain.yaml steady_phase metric=travel_per_day mean --> | 山 476分<!-- stats: terrain.yaml steady_phase metric=work_per_day mean --> | 屋外の山（約42,700分<!-- stats: terrain.yaml work_piles_total outdoor_minutes ±100 -->） | **90.8日**<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean --> |
+| **探索**（島を開き切るまで） | 162分<!-- stats: terrain.yaml exploration_phase metric=day_trip_travel_per_day mean --> | 探索 184分<!-- stats: terrain.yaml exploration_phase metric=day_trip_exploration_per_day mean --> | 全土地を探索率100%まで（2,799分<!-- stats: terrain.yaml exploration_phase metric=exploration_minutes mean -->） | **15.2日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->** |
+| **定常**（開き切った後） | 62分<!-- stats: terrain.yaml steady_phase metric=travel_per_day mean --> | 山 475分<!-- stats: terrain.yaml steady_phase metric=work_per_day mean --> | 屋外の山（約42,700分<!-- stats: terrain.yaml work_piles_total outdoor_minutes ±100 -->） | **90.8日**<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean --> |
 | 合計 | | | | **106.0日**<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean --> |
 
 27個<!-- stats: terrain.yaml work_piles_total piles -->の山（約64,100分<!-- stats: terrain.yaml work_piles_total minutes ±100 -->）のうち、屋外での採取・伐採・運搬を2/3
@@ -975,7 +978,7 @@ ambient_brightnessをそのまま土台にするためです
 15.2日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->に山を1分も乗せていない**こと
 ——1日の枠405分<!-- stats: terrain.yaml exploration_phase metric=day_trip_window_per_day mean -->に対して探索は
 184分<!-- stats: terrain.yaml exploration_phase metric=day_trip_exploration_per_day mean -->しか進まないので、
-余る221分<!-- stats: terrain.yaml exploration_phase metric=day_trip_spare_per_day mean -->×15.2日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->は山へ回せます。
+余る220分<!-- stats: terrain.yaml exploration_phase metric=day_trip_spare_per_day mean -->×15.2日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->は山へ回せます。
 
 **「1周回は約480日」という前の結論は取り下げます。** 480日は、密林のような暗い土地でも生存の採取を
 丸ごと引いていた（そこでは1日に働ける時間がそれに足りないのに）ことと、移動を「一様に選んだ行き先へ
@@ -1001,6 +1004,17 @@ ambient_brightnessをそのまま土台にするためです
 土地ごとに日帰りと泊まりの安いほうを採っても15.14日<!-- stats: terrain.yaml exploration_phase metric=mixed_days mean -->で、**日帰りだけの15.20日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->とほとんど変わりません**。
 500島<!-- stats: terrain.yaml exploration_day_trip_islands islands -->のうち100.0%<!-- stats: terrain.yaml exploration_day_trip_islands share -->が、日帰りだけで全土地を開き切ります。縮尺（#797）が入って、往復が屋外の枠720分<!-- stats: terrain.yaml daily_budget outdoor_window -->から
 生存の採取153分<!-- stats: terrain.yaml daily_budget survival_gathering -->を引いた残りを使い切らなくなったためです。
+
+**端まで届くことも同じ枠で出ます。** 拠点から最も遠い土地への往復は、最も広い島でも
+420分<!-- stats: terrain.yaml base_farthest_round_trip base=shortest_mean max -->で、**上と同じ残り**
+——屋外の枠から生存の採取を引いたぶん——に収まります（同 `base_farthest_round_trip`）。**補給を持ち出す理由が島の広さからは生まれない**という
+ことでもあり、そちらは[`GameEndings.md`](../concept/GameEndings.md) 9.2節が扱います。
+
+**「端から端まで」は拠点を選んだ側の話です。** どの土地を拠点にしてもよいなら端まで届かない島は
+あります（同 `base_farthest_round_trip` の `base: any`）。プレイヤーは拠点を選べるので1周回で実際に
+払うのは選んだ側のほうで、8.3.1節の確定もこの範囲を指しています——**条件の悪い土地に住めば届かない**
+のは、島が広いからではありません。**どの土地がそうかは、この節からは出ません**（`base: any` は
+拠点ごとの値を1本にまとめた分布で、土地の型を持ちません）。
 
 **これで移動の距離を安くする段が2つ落ちます**——泊まりの行程（2日）と、遠い場所へ置く前線（4日）です。
 残る段が無くなったので、移動の距離は系統から外れました（3.1節）。そりは落ちません。積む量が4〜6日ぶんへ

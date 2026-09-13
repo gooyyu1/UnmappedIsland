@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { ISSUE_CAP } from '../../scripts/agent/board-read.mjs';
-import { board, issueBody } from '../../scripts/agent/board.mjs';
+import { ISSUE_CAP } from '../../scripts/daemon/board-read.mjs';
+import { board, issueBody } from '../../scripts/daemon/board.mjs';
 
 /**
- * `scripts/agent/board.mjs` の検査。
+ * `scripts/daemon/board.mjs` の検査。
  *
  * ここが守るのは**突き合わせ**——`kind:task` の issue に「もう投入したか」「何に塞がれているか」が
  * 正しく付くこと、棚卸しの済んでいない issue だけが `未整理` に出ること。並べ方を間違えると、
@@ -26,7 +26,7 @@ interface World {
   readonly prs?: readonly Record<string, unknown>[];
   readonly issues?: readonly Record<string, unknown>[];
   readonly sessions?: readonly LiveSession[];
-  /** 一覧を引けない（[`live-sessions.mjs`](../../scripts/agent/live-sessions.mjs) は投げる）。 */
+  /** 一覧を引けない（[`live-sessions.mjs`](../../scripts/daemon/live-sessions.mjs) は投げる）。 */
   readonly sessionsFail?: boolean;
   readonly checked?: string;
   /** 盤面を引けなくなった時刻（デーモンの台帳。`board-state.mjs` の `UNREADABLE`）。 */

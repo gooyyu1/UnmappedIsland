@@ -216,6 +216,10 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * **名乗るのは先だけで、量は言わない。** 数えられるのはそのプロパティがこのtickで実際に動いた量
    * （PropertyValue.tick）で、同じtickの他の寄与も端のクランプも既に引かれている。
    *
+   * **相手がまだそのプロパティを持っていなくても名乗る。** このtickの積分の途中でbecomeが走れば、
+   * 新しい型にしか無いプロパティはそこで生える（9.9.1節）ので、持っているかを名乗りの条件にすると
+   * 生えたtickぶんだけが稼ぎから漏れる。
+   *
    * **今tick何も足さないなら名乗らない。** ゲートが閉じている効果の対象を数え先にすると、物が
    * 自分で宣言した増減まで操作の稼ぎになる。
    */
@@ -227,8 +231,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
     if (this.reversible || this.activeAmount(owner, owner, context) === 0) return;
 
     const target = this.target.owner(context);
-    const property = target?.tryGetProperty(this.target.propertyGlobalId);
-    if (property !== undefined) session.countTickMovementAsGain(property);
+    if (target !== undefined) session.countTickMovementAsGain(target, this.target.propertyGlobalId);
   }
 
   /**

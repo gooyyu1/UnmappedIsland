@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 /**
  * 周期の係の間隔と、スメルを拾う窓が、**値を持つ側の外へ書き写されていないか**の検査。
  *
- * 間隔は [`board-move.mjs`](../../scripts/agent/board-move.mjs) の `CYCLES`、窓は
- * [`board-read.mjs`](../../scripts/agent/board-read.mjs) の `MERGED_WINDOW_HOURS` が持つ。文書へ
+ * 間隔は [`board-move.mjs`](../../scripts/daemon/board-move.mjs) の `CYCLES`、窓は
+ * [`board-read.mjs`](../../scripts/daemon/board-read.mjs) の `MERGED_WINDOW_HOURS` が持つ。文書へ
  * 数字や頻度の語で書き写すと、**値を1つ動かすたびに写した全部の書き換えが要り、漏れがそのまま嘘に
  * なる**（#1943・#1883 が実際にその書き換えを1本ずつ払っている）。読み手へは在り処だけを指させる。
  *
@@ -17,8 +17,8 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = resolve(__dirname, '../..');
 
-const MOVE = join(ROOT, 'scripts', 'agent', 'board-move.mjs');
-const READ = join(ROOT, 'scripts', 'agent', 'board-read.mjs');
+const MOVE = join(ROOT, 'scripts', 'daemon', 'board-move.mjs');
+const READ = join(ROOT, 'scripts', 'daemon', 'board-read.mjs');
 
 /** 間隔と窓を説明する文書。ここが在り処を指すか、値を写すかの分かれ目になる。 */
 const WATCHED = [

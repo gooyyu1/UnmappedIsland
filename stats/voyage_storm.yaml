@@ -6,7 +6,7 @@ meta:
   - {seeds: 6, voyages_per_seed: 100}
 
 input_fingerprint:
-  - {sources: [core.yaml, voyage.yaml], sha256_prefix: cdd1e0de1cf207b4}
+  - {sources: [core.yaml, voyage.yaml], sha256_prefix: db94264678eade0d}
 
 baseline:
   - {coast: sandy_beach, season: calm, legs: 12, days: 4.98}

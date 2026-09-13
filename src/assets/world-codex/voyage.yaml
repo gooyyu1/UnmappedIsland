@@ -613,10 +613,12 @@ object_defs:
         modify: {parent: {sail_speed: 2}}
     recipes:
       sewn:
-        # なめし革の衣類と同じ縫製の大物（clothing.yaml）なので、解放条件も同じ形にする。
+        # なめし革の衣類と同じ縫製の大物（clothing.yaml）なので、解放条件も、速さを決める1本
+        # （docs/world/Skills.md 7節）も同じ形にする。
         conditions:
           - {reason: needs_leatherwork, subject: agent, prop: skill_leatherwork, in_stage_or_above: skilled}
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
+        deftness: {subject: agent, prop: leatherwork_deftness}
         steps:
           # 帆柱と帆桁を組んで縛る。
           - requires:

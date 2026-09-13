@@ -1,7 +1,7 @@
 # PRのレビューを1本投入するときの指示
 
 `create_session` へ渡す本文。**組み立てるのは
-[`dispatch-review.sh`](../../scripts/agent/dispatch-review.sh)** で、下の ``` の中を読んで `<番号>` と
+[`dispatch-review.sh`](../../scripts/daemon/dispatch-review.sh)** で、下の ``` の中を読んで `<番号>` と
 `<前の版>` を埋める。補足はそれだけ——レビューの見どころはPRごとに変わらないので、書き足すものは無い。
 
 
@@ -16,7 +16,7 @@
 0本だった。読み切れていない。読むこと自体はセッション1つを立てれば済み、**盤面へ返るのは判定の
 1行から起こしたラベルだけ**でよい（下の「結果は…」）。理由の数行を読むのは直す側。
 
-**機械で引ける線は [`needs-user-review.sh`](../../scripts/agent/needs-user-review.sh) が引く。**
+**機械で引ける線は [`needs-user-review.sh`](../../scripts/daemon/needs-user-review.sh) が引く。**
 こちらが見るのは、機械に引けないほうだけ。
 
 ## 結果はPRのコメントとして残す

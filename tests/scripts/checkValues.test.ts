@@ -3,10 +3,10 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { TITLE, checkValues, surveyValues } from '../../scripts/agent/check-values.mjs';
+import { TITLE, checkValues, surveyValues } from '../../scripts/daemon/check-values.mjs';
 
 /**
- * `scripts/agent/check-values.mjs` の検査（`agent-ops/board-design.md` 2.22）。
+ * `scripts/daemon/check-values.mjs` の検査（`agent-ops/board-design.md` 2.22）。
  *
  * **告げられない見張りは、値が生きているのと同じ顔をする。** 環境IDも資格情報も、死んだことに誰も
  * 気づかないのがこの係の出どころなので、**告げ損ねても盤面はただ静かに止まる**——緑であることでは
@@ -168,7 +168,7 @@ describe('check-values.mjs の見立て', () => {
   // **直し方の表の鍵は `ccr-env.sh` が出す名前の写し**で、突き合わせるものが無いと、あちらで名前を
   // 変えた瞬間に直し方が黙って「分からない」へ落ちる（`判断待ち` の issue から直し方だけが消える）。
   it('`ccr-env.sh` が出しうる名前には、どれも直し方が在る', async () => {
-    const source = readFileSync(resolve(import.meta.dirname, '../../scripts/agent/ccr-env.sh'), 'utf-8');
+    const source = readFileSync(resolve(import.meta.dirname, '../../scripts/daemon/ccr-env.sh'), 'utf-8');
     const names = [...source.matchAll(/printf '([A-Z_]+)=%s/g)].map((hit) => hit[1]);
     expect(names.length).toBeGreaterThan(0);
 

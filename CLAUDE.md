@@ -32,9 +32,10 @@ TypeScriptのコーディング規約は [`docs/CodingConventions.md`](docs/Codi
 
 **それ以外は `agent-ops/` へ置く。** どのエージェントが読んでも同じ意味を持つもの——セッションへ渡す
 指示のひな形（`agent-ops/prompts/`）・盤面と進め方の取り決め・判断と分析の記録がここで、Copilot CLI も
-同じものを読む。**実行されるものは置かない**（盤面を回す道具は `scripts/agent/`）。詳細は
+同じものを読む。**実行されるものは置かない**（動く道具は `scripts/` の下で、**呼び手で分かれている**
+——デーモンが回すものが `scripts/daemon/`、人やセッションが自分で打つものが `scripts/agent/`）。詳細は
 [`agent-ops/parallel-work.md`](agent-ops/parallel-work.md)「エージェントを選ばない道具は `.claude/` に
-置かない」。
+置かない」と「`scripts/` は呼び手で分かれている」。
 
 ## Phaserの画面をスクリーンショットで確認する
 
@@ -352,7 +353,7 @@ Claude Code 本体が入れているもので、リポジトリの設定では�
 `kind:task` ラベルの issue 1件が1つのセッションの仕事。**他のタスクが同時に走っている**ので、次を守る。
 
 - **issue の `## 担当` は、調べ始める場所の手がかりであって、触ってよい範囲ではない。** 直すのに
-  必要だと判断したファイルは、挙がっていなくても変更してよい（`agent-ops/**`・`.claude/**`・`scripts/agent/**`・
+  必要だと判断したファイルは、挙がっていなくても変更してよい（`agent-ops/**`・`.claude/**`・`scripts/**`・
   `CLAUDE.md` も同じ。**走っている場所でも切らない**——
   [`agent-ops/board-design.md`](agent-ops/board-design.md) 2.16）。**自分の変更が他の記述・コードを
   事実でなくしたなら、必ず同じPRで直す**（issue へ回さない）。一方、**この issue の仕事ではないと

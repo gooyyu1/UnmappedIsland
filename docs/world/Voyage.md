@@ -253,13 +253,13 @@
 からでも
 3.26 日<!-- stats: voyage_storm.yaml course_storm coast=cliff_coast season=dry mean -->と
 3.76 日<!-- stats: voyage_storm.yaml course_storm coast=cliff_coast season=wet mean -->で、
-**差は 0.6〜0.8 日です。**
+**差は 0.5〜0.7 日です。**
 
 **一方、窓を逃したときに待つのは 48〜72 日です。** 季節は
 24<!-- stats: climate.yaml season_duration season=calm min -->〜36<!-- stats: climate.yaml season_duration season=calm max -->
 日で回り、乾季の次の乾季までには穏やかと雨季が挟まるので、乾季を逃せばその 2 季ぶんを待つことになります
 ——引き返して逃した場合も同じで、引き返しの代償（[`GameEndings.md`](../concept/GameEndings.md) 12.5 節）
-にはこれが乗ります。**得る 0.7〜0.8 日に対して待ちが 2 桁大きいので、今の重みでは「窓を待つ」は
+にはこれが乗ります。**得る 0.5〜0.7 日に対して待ちが 2 桁大きいので、今の重みでは「窓を待つ」は
 選択になりません**——期限として働かせるなら、動かすのは風向きの重みでも荒天の押し流しでもなく、
 季節が航海へ返すものの側です。
 
@@ -508,7 +508,7 @@
 
 **この差が判断になるのは、筏をその海岸まで運ぶ手が要るからです。** 丸太は 1 本ずつしか運べない（1 節）ので、
 遠い海岸を選ぶことは 6 往復ぶんの島側の仕事を選ぶことでもあります。岸壁は歩きにくく（`move_cost` 1.7）、
-島の半分ほどにしかありません（[`stats/terrain.yaml`](../../stats/terrain.yaml) の
+どの島にもあるとは限りません（[`stats/terrain.yaml`](../../stats/terrain.yaml) の
 `location_type_counts` の `cliff_coast`）。**資材の運搬コストと航海日数を秤に
 かける判断**が、ここに残ります。
 

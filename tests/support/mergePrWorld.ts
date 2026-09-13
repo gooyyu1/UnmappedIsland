@@ -7,7 +7,7 @@ import { pathForBash, runScript } from './runScript';
 import { STUB_SHEBANG } from './stubShebang';
 
 /**
- * `scripts/agent/merge-pr.sh` を実際に走らせるための世界。
+ * `scripts/daemon/merge-pr.sh` を実際に走らせるための世界。
  *
  * `gh` を PATH の先頭に、関門を `NEEDS_USER_REVIEW` で差し替える。
  *
@@ -25,7 +25,7 @@ import { STUB_SHEBANG } from './stubShebang';
 // ことを知っているのはこちらで、叩く側は毎回それを覚えていなくてよい。
 vi.setConfig({ testTimeout: 20000 });
 
-const SCRIPT = resolve(__dirname, '../../scripts/agent/merge-pr.sh');
+const SCRIPT = resolve(__dirname, '../../scripts/daemon/merge-pr.sh');
 
 export interface World {
   readonly mergeable?: string;
