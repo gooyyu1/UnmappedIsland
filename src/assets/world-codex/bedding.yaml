@@ -62,6 +62,9 @@ object_defs:
             add: {agent: {stamina: 1}}
     recipes:
       # 編んだ葉を3枚、端を重ねて広げる。道具も紐も要らない。
+      #
+      # **手際も名乗らない**（docs/world/Skills.md 7.1節）。広げるだけで、撚る工程も組む工程も
+      # 持たない——編む仕事は素材の側（weaving.yamlのweave）で既に済んでいる。
       spread:
         steps:
           - requires:
@@ -83,7 +86,11 @@ object_defs:
       # ヤシの葉と同じく、籠には入らない嵩にする。
       volume: {value: 24000}
     recipes:
+      # 杭を打ち、縦材を渡し、簀の子を縛る。**解放は要求しないが、手際は名乗る**
+      # （docs/world/Skills.md 7.1節）。木を縛って組む物は木材加工の側（同2.1節、そりと同じ
+      # containers.yaml）で、腕が0でも組めて、上げた者だけが速くなる。
       lashed:
+        deftness: {subject: agent, prop: woodwork_deftness}
         steps:
           - requires:
               - {object: thick_branch, count: 6, consume: true}
@@ -119,7 +126,10 @@ object_defs:
         destroy: self
         spawn: {object: slung_hammock, into: agent}
     recipes:
+      # 紐を結んで網にする。くくり罠（traps.yaml）と同じ結ぶ仕事なので、**解放は要求しないまま
+      # 手際だけを名乗る**（docs/world/Skills.md 7.1節）。
       knotted:
+        deftness: {subject: agent, prop: cordage_deftness}
         steps:
           - requires:
               - {object: cord, count: 5, consume: true}

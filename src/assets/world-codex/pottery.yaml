@@ -91,7 +91,8 @@ object_defs:
               destroy: self
               spawn: {object: jar}
     # **解放条件を持たない。** 器を挽く腕を担うスキルが一覧（docs/world/Skills.md 2節）に無い。
-    # 火が担うのは本焼きの温度だけで、成形はどの本にも属していない。
+    # 火が担うのは本焼きの温度だけで、成形はどの本にも属していない。**手際も同じ理由で名乗らない**
+    # （同7.1節）——名乗れる先がそもそも無い。
     recipes:
       coiled:
         steps:
@@ -110,7 +111,8 @@ object_defs:
     traits: [hearth]
     # **解放条件を持たない。** 火の腕が効くのは着火の重みだけで、火力にも炉の作り方にも効かない
     # （docs/engine/FireSystem.md 10節）。本焼きに要る高温を分けているのは、この型のheatとfireスロット
-    # そのもの（上）。
+    # そのもの（上）。**手際も名乗らない**（docs/world/Skills.md 7.1節）——器と薪を積んで粘土を
+    # かぶせるだけで、削る工程も縛る工程も持たない。
     recipes:
       heaped:
         steps:

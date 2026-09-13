@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { TRAVEL_MINUTES_STEP } from '../../src/domain/generation/PathNetworkBuilder';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -65,6 +66,33 @@ describe('fire.yamlの火の連鎖', () => {
 
   function itemsOn(location: WorldObject): string[] {
     return new Location(location, codex).items.map((object) => object.def.name);
+  }
+
+  /** プレイヤーが手に持っている物。 */
+  function carried(): string[] {
+    return player.getSlot(codex.slotNames.getId('hand')).contents.map((object) => object.def.name);
+  }
+
+  /**
+   * もう1つの土地と、そこへ歩く道を1本。**刻み1つぶん**（TRAVEL_MINUTES_STEP）＝生成されうる
+   * いちばん短い道に縮めるのは、何が渡れて何が渡れないかを言うには、いちばん短い道で見る必要が
+   * あるため——長い道で燃え尽きることは、短い道で燃え尽きることを言わない。
+   */
+  function roadToAnotherLand(): { destination: WorldObject; walk: () => void } {
+    const destination = spawnInto('grassland', land.parent!, 'locations');
+    const path = spawnInto('path', land, 'fixtures');
+    path
+      .getProperty(codex.propertyNames.getId('destination_id'))
+      .setNumberWithoutEvents(destination.instanceId);
+    path.getProperty(codex.propertyNames.getId('travel_minutes')).setNumberWithoutEvents(TRAVEL_MINUTES_STEP);
+
+    return {
+      destination,
+      walk: (): void => {
+        expect(path.tryGetAction('travel', player)?.tryExecute(), '道を歩く').toBe(true);
+        expect(player.parent, '向こうの土地へ着いた').toBe(destination);
+      },
+    };
   }
 
   function effectiveNumberOf(object: WorldObject, propertyName: string): number {
@@ -242,8 +270,9 @@ describe('fire.yamlの火の連鎖', () => {
   });
 
   it('雨の日でも、洞窟で起こした火種を外の炉へ運んで灯せる', () => {
-    // 洞窟と外は同じ土地の中なので、1tickで燃え尽きる火種でも届く（3.1節）。この道は塞がない
-    // ——「雨の日に火を戻すには洞窟が要る」という形が、そのまま洞窟の価値になっている。
+    // 洞窟と外は同じ土地の中なので、1tickで燃え尽きる火種でも届く（3.1節）。**島から火が絶えた
+    // ときに雨の中で火を戻せるのはこの道だけ**で、そこが洞窟の価値になっている——生きた炉がどこかに
+    // 在るなら、雨でも松明を運べばよい（下の「雨の屋外でも…」）。
     const cave = spawnInto('shallow_cave', land, 'fixtures');
     const hearth = spawnInto('campfire', land, 'fixtures');
     stoke(hearth, 'thick_branch');
@@ -445,19 +474,120 @@ describe('fire.yamlの火の連鎖', () => {
       hearth.combinationsWith(torch, player).map((c) => c.name),
       '成立する組み合わせは無い',
     ).toEqual([]);
+    // どちらの向きも、同じ「もう火が付いている」で落ちる——分けてもらう先は灯っていて、
+    // 分けてやる先は燃えている。
     expect(
       hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
-    ).toEqual(['already_lit']);
+    ).toEqual(['already_lit', 'already_lit']);
   });
 
-  it('消えている炉は、分けられる炎が無いことを名乗る', () => {
+  it('消えている炉と灯っていない松明の間では、どちらの向きにも火が動かない', () => {
     const hearth = spawnInto('campfire', land, 'fixtures');
     const torch = spawnInto('torch', player, 'hand');
 
+    // **プレイヤーへ届くのは先頭の1つだけ**（GameElementDefinition.md 14.6節のunmetRequirement、
+    // docs/ui/CardInteraction.md 2.1節）。どちらの向きの理由も真だが、運んできた側に火が無いことを
+    // 先に言う——火を持って来たつもりの手には、そちらが答えになる。
     expect(
       hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
-    ).toEqual(['fire_out']);
+    ).toEqual(['no_flame_carried', 'fire_out']);
     expect(effectiveNumberOf(torch, 'lit'), '灯らない').toBe(0);
+    expect(heatIs(hearth, 'out'), '炉も消えたまま').toBe(true);
+  });
+
+  it('火種は、いちばん短い道でも渡り切れない', () => {
+    // 火種で火を運べるのは同じ土地の中まで（FireSystem.md 3.1節）。**いちばん短い道で見る**
+    // ——長い道で消えることは、短い道で消えることを言わない。
+    const road = roadToAnotherLand();
+
+    spawnInto('burning_tinder', player, 'hand');
+    road.walk();
+
+    expect(carried(), '火種は道の上で燃え尽きる').toEqual([]);
+  });
+
+  it('灯った松明は火を別の土地へ運び、向こうの炉に種火を立てる', () => {
+    // 火が土地を越える道（FireSystem.md 3.1.2節）。**炉から分けてもらって運ぶところまで**を
+    // ひと続きで見る——松明を持っていることではなく、火が渡ることがこの道の中身。
+    const torch = spawnInto('torch', player, 'hand');
+    expect(
+      smallFire()
+        .combinationsWith(torch, player)
+        .find((c) => c.name === 'light_from_flame')
+        ?.tryExecute() === true,
+    ).toBe(true);
+
+    const road = roadToAnotherLand();
+    const cold = spawnInto('campfire', road.destination, 'fixtures');
+    stoke(cold, 'thick_branch');
+    road.walk();
+
+    expect(carried(), '松明は渡り切る').toEqual(['torch']);
+    expect(effectiveNumberOf(torch, 'lit'), '灯ったまま').toBe(1);
+    expect(
+      cold
+        .combinationsWith(torch, player)
+        .find((c) => c.name === 'ignite_from_flame')
+        ?.tryExecute() === true,
+    ).toBe(true);
+    expect(heatIs(cold, 'ember'), '向こうの炉に種火が立つ').toBe(true);
+    expect(effectiveNumberOf(torch, 'lit'), '松明は灯ったまま——火の在る側は何も失わない').toBe(1);
+  });
+
+  it('雨の屋外でも、灯った松明から炉へ火を戻せる', () => {
+    // 雨が閉じるのは着火の1点だけ（FireSystem.md 3.1.1節）。**この向きは摩擦発火を通らない**ので、
+    // 雨の条件を持たない——生きた炉がどこかに在れば、雨の日でも火は戻る（同3.1節）。
+    // 屋根の下でしか起こせないこと（上の「雨の日は屋外で火が起こせない」）と対で読む。
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    stoke(hearth, 'thick_branch');
+    const torch = spawnInto('torch', player, 'hand');
+    torch.getProperty(codex.propertyNames.getId('lit')).setNumberWithoutEvents(1);
+    setWeather('heavy_rain');
+
+    expect(
+      hearth
+        .combinationsWith(torch, player)
+        .find((c) => c.name === 'ignite_from_flame')
+        ?.tryExecute() === true,
+      '大雨の屋外でも通る',
+    ).toBe(true);
+    expect(heatIs(hearth, 'ember'), '雨の中の炉に種火が立つ').toBe(true);
+  });
+
+  it('灯っていない松明では、炉に火を点けられない', () => {
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    stoke(hearth, 'thick_branch');
+    const torch = spawnInto('torch', player, 'hand');
+
+    expect(
+      hearth.combinationsWith(torch, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
+    expect(
+      hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
+      '先頭が画面へ出る。運んできた側に火が無いことを先に言う',
+    ).toEqual(['no_flame_carried', 'fire_out']);
+    expect(heatIs(hearth, 'out'), '炉は消えたまま').toBe(true);
+  });
+
+  it('薪の無い炉は、灯った松明も断る——火を育てるのは薪で、種火だけでは残らない', () => {
+    // 火種を落とすとき（上の「薪の無い炉は、火種を断る理由を名乗る」）と同じ条件で断る。
+    // **宣言順がここに効く**——炉を灯す向きを後ろへ回すと、火を持って来た手に届くのが
+    // 「この炉は消えている」になり、やりたいことと逆向きの説明になる。
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    const torch = spawnInto('torch', player, 'hand');
+    torch.getProperty(codex.propertyNames.getId('lit')).setNumberWithoutEvents(1);
+
+    expect(
+      hearth.combinationsWith(torch, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
+    expect(
+      hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
+      '先頭が画面へ出る。薪が入っていないことを先に言う',
+    ).toEqual(['no_fuel', 'fire_out']);
+    expect(heatIs(hearth, 'out'), '炉は消えたまま').toBe(true);
+    expect(effectiveNumberOf(torch, 'lit'), '松明も灯ったまま失われない').toBe(1);
   });
 
   it('着火が置くのは種火だけで、そこから薪が火を育てる', () => {

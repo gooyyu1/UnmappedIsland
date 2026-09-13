@@ -452,6 +452,9 @@ object_texts:
       light_from_flame:
         display_name: 火を分ける
         description: 燃えている火から明かりへ炎を移す。炉の火は減らないので、火起こしはやり直さない。
+      ignite_from_flame:
+        display_name: 火を移す
+        description: 灯った明かりから炉へ種火を立てる。明かりは灯ったままで、火起こしは要らない。
       add_stone:
         display_name: 石を積む
         description: 炉のまわりへ石を据える。必要な数が揃うと、炉が組み直される。
@@ -1638,8 +1641,9 @@ reason_texts:
   too_worn: この道具はもう使いものにならない。
   not_hot_enough: 石の熱が足りない。湯は沸かせない。
   raining: 雨に濡れて火が移らない。屋根の下でなければ起こせない。
-  no_fuel: 燃やす物が入っていない。火種だけでは燃え続けない。
+  no_fuel: 燃やす物が入っていない。種火だけでは燃え続けない。
   fire_out: この炉は消えている。分けられる炎がない。
+  no_flame_carried: この明かりは灯っていない。炉へ移せる火がない。
   too_dark: 暗すぎて手が付けられない。明かりが要る。
   too_stormy: 風雨が強すぎて、屋外では手が付けられない。収まるのを待つしかない。
   no_anchor: 渡せる立ち木が無い。ハンモックは支点の要る寝床で、吊る先が要る。

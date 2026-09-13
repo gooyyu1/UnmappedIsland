@@ -20,7 +20,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  *
  * - 器1つが何日ぶんか（`LiquidContainerSystem.md` 5節・`Voyage.md` 3.9.6節・`GameEndings.md` 9.2節）
  * - 牙の傷1つが奪う量と、戻るのにかかる日数（`VitalsSystem.md` 3節・3.3節）
- * - 3.3節と`DigestionSystem.md` 9節・未決事項節が最小の献立について言っていること
+ * - 3.3節と`DigestionSystem.md` 3節・9節が最小の献立について言っていること
  */
 
 const ROOT = join(__dirname, '..', '..');
@@ -206,12 +206,18 @@ describe('文書が書いた「何日ぶん」', () => {
    * 航海ぶんを一度に担いだときの重さ（g）。**そりが要る理由がここから出る**ので、
    * `ContentSkeleton.md` 5節4番の結論はこの数と繋がっていなければならない。
    */
-  function voyageLoadGrams(jars: number, meats: number, artifacts: number): number {
+  function voyageLoadGrams(jars: number, meats: number, coconutMeats: number, artifacts: number): number {
     const filled = spawn('jar__content_water_liquid');
     filled.getProperty(fillId).setNumberWithoutEvents(filled.getProperty(fillId).def.range!.max);
     const meat = spawn('raw_meat').getProperty(weightId).getEffectiveValue();
+    const coconutMeat = spawn('coconut_meat').getProperty(weightId).getEffectiveValue();
     const artifact = spawn('golden_chalice').getProperty(weightId).getEffectiveValue();
-    return filled.getProperty(weightId).getEffectiveValue() * jars + meat * meats + artifact * artifacts;
+    return (
+      filled.getProperty(weightId).getEffectiveValue() * jars +
+      meat * meats +
+      coconutMeat * coconutMeats +
+      artifact * artifacts
+    );
   }
 
   /** キャラクタが通れなくなる荷重（`load` の `too_heavy` 段の下端）。 */
@@ -237,19 +243,18 @@ describe('文書が書いた「何日ぶん」', () => {
       .map(({ name }) => name);
   }
 
-  /** 通れなくなるのがいちばん早い者と、いちばん遅い者。 */
-  function weakestAndStrongest(): { weakest: string; strongest: string } {
+  /** 通れなくなるのがいちばん早い者。 */
+  function weakest(): string {
     const sorted = [...tooHeavyThresholds()].sort((a, b) => a.grams - b.grams);
     expect(sorted.length, '`too_heavy` を持つキャラクタが足りない').toBeGreaterThan(1);
-    return { weakest: sorted[0].name, strongest: sorted.at(-1)!.name };
+    return sorted[0].name;
   }
 
   it('そりが要る理由が、ContentSkeleton.md 5節4番の書きぶりのとおりに出る', () => {
-    const { weakest, strongest } = weakestAndStrongest();
     for (const claim of [
-      '長い側では、水と食料だけで通れるのがいちばん力の',
-      '短い側は水と食料だけなら4人とも',
-      'そこでもいちばん非力な者はアーティファクト1つで線を越えます',
+      '長い側では、水と食料だけで4人とも通れません',
+      '短い側は水と食料だけなら通れますが',
+      'いちばん非力な者はアーティファクト1つで線を越えます',
     ]) {
       expect(
         SKELETON_DOC,
@@ -257,24 +262,26 @@ describe('文書が書いた「何日ぶん」', () => {
       ).toContain(claim);
     }
 
+    // 食料は塩漬けの生肉と、脂を切らさないためのヤシの果肉（Voyage.md 3.9.6節）。**果肉も数える**
+    // ——1日ぶんが200gなので、線の際に居る長い側では、積むかどうかが通れるかどうかを分ける。
+
     // 短い側（4日ぶん）。水と食料だけなら全員通れ、アーティファクト1つでいちばん非力な者が止まる。
-    expect(whoCanWalk(voyageLoadGrams(3, 12, 0)), '短い側・水と食料だけで通れる者').toEqual(
+    expect(whoCanWalk(voyageLoadGrams(3, 12, 2, 0)), '短い側・水と食料だけで通れる者').toEqual(
       tooHeavyThresholds().map(({ name }) => name),
     );
-    expect(whoCanWalk(voyageLoadGrams(3, 12, 1)), '短い側・アーティファクト1つで通れる者').not.toContain(
-      weakest,
+    expect(whoCanWalk(voyageLoadGrams(3, 12, 2, 1)), '短い側・アーティファクト1つで通れる者').not.toContain(
+      weakest(),
     );
 
-    // 長い側（6日ぶん）。水と食料だけで通れるのは最も力のある者だけで、その者も1つで止まる。
-    expect(whoCanWalk(voyageLoadGrams(4, 18, 0)), '長い側・水と食料だけで通れる者').toEqual([strongest]);
-    expect(whoCanWalk(voyageLoadGrams(4, 18, 1)), '長い側・アーティファクト1つで通れる者').toEqual([]);
+    // 長い側（6日ぶん）。水と食料だけで4人とも止まる。
+    expect(whoCanWalk(voyageLoadGrams(4, 18, 3, 0)), '長い側・水と食料だけで通れる者').toEqual([]);
   });
 
   it('ContentSkeleton.md 5節4番が書いた水の重さが、甕の重さから出る', () => {
     const range = /甕で運ぶ水は下限でも3〜4つ＝(\d+)〜(\d+)kg/.exec(SKELETON_DOC);
     expect(range, '水の重さの幅が読めない').not.toBeNull();
-    expect(Number(range![1]), '甕3つ').toBeCloseTo(voyageLoadGrams(3, 0, 0) / 1000, 0);
-    expect(Number(range![2]), '甕4つ').toBeCloseTo(voyageLoadGrams(4, 0, 0) / 1000, 0);
+    expect(Number(range![1]), '甕3つ').toBeCloseTo(voyageLoadGrams(3, 0, 0, 0) / 1000, 0);
+    expect(Number(range![2]), '甕4つ').toBeCloseTo(voyageLoadGrams(4, 0, 0, 0) / 1000, 0);
   });
 });
 
@@ -291,6 +298,7 @@ describe('最小の献立について文書が言っていること', () => {
   }
 
   const balance = parse(readFileSync(join(ROOT, 'stats', 'balance.yaml'), 'utf-8')) as {
+    daily_needs: readonly { property: string; daily_need: number }[];
     daily_minimum: readonly { place: string; unmet: readonly string[] }[];
     daily_minimum_menu: readonly MenuRow[];
     chain_routes: readonly ChainRow[];
@@ -313,19 +321,34 @@ describe('最小の献立について文書が言っていること', () => {
     expect(numberIn(VITALS_DOC, /\*\*([\d.]+) 日に 1 頭\*\*/, '獲物の間隔')).toBeCloseTo(1 / row!.per_day, 1);
   });
 
-  it('最小の献立が運ぶ脂が、1日ぶんの輸送の半分に届かない（DigestionSystem.md 未決事項節）', () => {
+  /** 脂が1日に体脂肪へ出ていく量。**これがそのまま「1日に運び入れる量」**（DigestionSystem.md 3節）。 */
+  function lipidPerDay(): number {
     const codex = bundledCodex();
     const character = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER));
-    const lipid = character.tryGetPropertyDef(codex.propertyNames.getId('lipid'));
-    expect(lipid, 'lipid を持たないキャラクタ').toBeDefined();
-    const body = new WorldObject(1, character, new WorldSession(codex));
     const lipidId = codex.propertyNames.getId('lipid');
+    expect(character.tryGetPropertyDef(lipidId), 'lipid を持たないキャラクタ').toBeDefined();
+    const body = new WorldObject(1, character, new WorldSession(codex));
     const beforeStock = body.getProperty(lipidId).number;
     expect(beforeStock, '在庫が空では輸送の速さを測れない').toBeGreaterThan(0);
     body.tick();
     const perDay = (beforeStock - body.getProperty(lipidId).number) * TICKS_PER_DAY;
     expect(perDay, '脂が体脂肪へ流れていない').toBeGreaterThan(0);
+    return perDay;
+  }
 
+  it('脂の1日ぶんは、1日に燃やすエネルギーの4分の1（DigestionSystem.md 3節）', () => {
+    // 段を持つ在庫は lipid だけなので、**輸送の速さがそのまま fat_starved を抜ける値段になる**。
+    // 速さを「吸収の速さの順位」として動かすと、値段が黙って動く——ここが落ちるのがその合図。
+    const energyPerDay = balance.daily_needs.find((need) => need.property === 'body_fat')?.daily_need;
+    expect(energyPerDay, 'body_fat の1日ぶんが収支表に無い').toBeDefined();
+
+    expect(lipidPerDay() / energyPerDay!, '脂で賄う割合').toBeCloseTo(0.25, 6);
+  });
+
+  it('最小の献立は、脂を1日ぶん運ぶ（DigestionSystem.md 9節）', () => {
+    // fat_starved が「いちばん安い暮らし方の既定」にならないこと（issue #2104）。賄えるかどうかは
+    // 上の unmet が見るので、ここが見るのは**献立が実際に運ぶ量**——賄う対象から脂が外れると、
+    // unmet は空のままここだけが落ちる。
     let supplied = 0;
     for (const entry of balance.daily_minimum_menu) {
       if (entry.place !== WHOLE_ISLAND) continue;
@@ -336,6 +359,8 @@ describe('最小の献立について文書が言っていること', () => {
       supplied += amount * entry.repetitions;
     }
 
-    expect(supplied, `最小の献立が運ぶ脂（1日ぶんの輸送は ${perDay}）`).toBeLessThan(perDay / 2);
+    // 表の回数は小数2桁に丸めてあるので、掛け合わせた合計は真値の周りで1%に満たない幅で揺れる。
+    // 見たいのは「賄う対象から脂が外れていないか」なので、その幅より内側は問わない。
+    expect(supplied, '最小の献立が運ぶ脂').toBeGreaterThan(lipidPerDay() * 0.99);
   });
 });

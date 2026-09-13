@@ -130,7 +130,12 @@ object_defs:
     recipes:
       # 枝を立てて縄を張るだけ。**掘削具も刃物も要らない**——太い枝は拾える物なので、保存の系統の
       # 最初の山も、腕の入口と同じ前半に来る（docs/world/Skills.md 4節）。
+      #
+      # **解放は要求しないまま、手際だけを名乗る**（同7.1節）。掛け方も間の取り方も保たせる造作の
+      # 勘どころなので、燻し小屋（smoking.yaml）と同じ腕が速さを決める——**同じ仕事の2つ目の設備で
+      # 腕が食い違わない**。要求しないのは上のとおりで、腕が0でも組める。
       lashed:
+        deftness: {subject: agent, prop: preserving_deftness}
         steps:
           - requires:
               - {object: thick_branch, count: 6, consume: true}

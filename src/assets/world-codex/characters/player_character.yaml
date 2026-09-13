@@ -363,7 +363,7 @@ traits:
         range: {min: 0, max: 120}
         stages:
           # 脂の在庫が尽きた域。境目の1は「15分ぶんも残っていなければ尽きたとみなす」で、
-          # 輸送の刻み（0.5）に依らずに読める。壊血病（同4節）と同じ形で、内側の不調を原因の値の段が持つ。
+          # 輸送の刻み（0.25）に依らずに読める。壊血病（同4節）と同じ形で、内側の不調を原因の値の段が持つ。
           # **死に方は増えない**——削るのは既にあるhydrationとbody_fatで、終わり方は脱水と餓死のまま
           # （VitalsSystem.md 8節）。statusタグを持たないので、画面に行も増えない。
           - name: fat_starved
@@ -379,7 +379,10 @@ traits:
               - modify: {self: {pain: 30}}
           - {name: stocked, min: 1}
         passives:
-          - transfer: {from_prop: lipid, to_prop: body_fat, amount: 0.5}
+          # **3本のうち、ここだけは速さが1日に要る量そのものになる**（同3節）。段を持つのがこの1本
+          # だけなので、切らさずにいるには1日96 tickぶんの4分の1＝24を運び入れることが要求になる。
+          # 0.25は「1日のエネルギーのうち脂で賄う割合」で、現実の目安（総エネルギーの2〜3割）から。
+          - transfer: {from_prop: lipid, to_prop: body_fat, amount: 0.25}
       # 体内のビタミン（同4節）。**単位はmg——ビタミンC相当**で、エネルギーの3本とは物差しが違う。
       # 葉物はエネルギーをほとんど持たないので、エネルギーの在庫にすると常に0に張り付き、
       # 「食べていない」と区別が付かない。だから量を別に持つ。
@@ -690,7 +693,8 @@ traits:
       # 開かないレシピになる（SkillSystem.md 3.2節）。
       # ------------------------------------------------------------------
       # 石を打ち欠く（locations.yamlのknap）。柄付けの刃（tools.yaml）を開ける。
-      # 段が押し上げるのは下のknapping_deftnessで、読む相手はその宣言が挙げる。
+      # 段が押し上げるのは下のknapping_deftnessで、読むのは打ち欠く仕事の側——レシピは`deftness`で
+      # 名乗り、手作業は自分の時間の土台にする（どの仕事がどの腕かは docs/world/Skills.md 7.1節）。
       skill_knapping:
         tags: [skill]
         value: 0
@@ -772,7 +776,8 @@ traits:
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
       # 皮を剥ぐ（animals.yamlのbutcher）。なめし革と、それを縫った物（clothing.yaml・voyage.yamlの帆）を開ける。
-      # 段が押し上げるのは下のleatherwork_deftnessで、読む相手はその宣言が挙げる。
+      # 段が押し上げるのは下のleatherwork_deftnessで、読むのは皮を扱う仕事の側——**縫わずに羽織る
+      # だけの物も名乗る**（開ける腕と速さを決める腕は別、docs/world/Skills.md 7.1節）。
       skill_leatherwork:
         tags: [skill]
         value: 0
@@ -802,7 +807,9 @@ traits:
           - {name: expert, min: 180}
       # 得た食を保たせる（salt.yamlのcure）。開けるのは燻し小屋（smoking.yamlのsmokehouse）で、
       # 日差しの要らない保存がその先にある（docs/world/SurvivalItems.md 11節）。
-      # 段が押し上げるのは下のpreserving_deftnessで、読む相手はその宣言が挙げる。
+      # 段が押し上げるのは下のpreserving_deftnessで、読むのは保たせる仕事の側——**開ける側より
+      # 名乗る側のほうが広い**（保たせる設備は、解放を要求しないものも名乗る、
+      # docs/world/Skills.md 7.1節）。
       skill_preserving:
         tags: [skill]
         value: 0
@@ -919,23 +926,21 @@ traits:
       # **腕ごとに1本ずつ持つ。** 1本を全部の腕で共有すると、石を打ち欠いて上げた腕で編み物まで
       # 速くなる。
       # ------------------------------------------------------------------
-      # 打ち欠く手際。石斧・突き銛のレシピ（tools.yaml）が名乗り、打ち欠く手（locations.yamlのknap）が
-      # 自分の時間の土台にする。
+      #
+      # **誰が読むかは、ここには書かない**——読むのはレシピ（`deftness`）と手作業の時間（`base`）の
+      # 側で、そこへ書き写すと読み手が増えるたびに嘘になる。どの仕事がどの腕かの決め方は
+      # docs/world/Skills.md 7.1節。
+      # ------------------------------------------------------------------
+      # 石を打ち欠く手際。
       knapping_deftness: {value: 0}
-      # 撚る・編む手際。編み籠（containers.yaml）・くくり罠（traps.yaml）・葉の衣類（clothing.yaml）が
-      # 名乗り、掻き取り・叩き解し・撚り・編み（fiber.yaml・coconut.yaml・weaving.yaml）が自分の時間の
-      # 土台にする。
+      # 繊維を撚る・編む・結ぶ・巻く手際。
       cordage_deftness: {value: 0}
-      # 同じ繊維から余分が取れる重み。くくり罠（traps.yaml）の余分の卓と、繊維を採る2つの入口
-      # （fiber.yamlのstrip・coconut.yamlのret）の卓が名乗る。**手際と分けているのは
-      # 桁が違うから**（所要時間は30〜360分、卓の相手は100）。
+      # 同じ繊維から余分が取れる重み。**手際と分けているのは桁が違うから**（所要時間は30〜360分、
+      # 卓の相手は100）。
       cordage_thrift: {value: 0}
-      # 削り出す手際。槍（tools.yaml）と、走り木を削り出すそり（containers.yaml）が名乗り、刃で木を断つ手と
-      # 骨を削る手（timber.yamlのfell・buck・cut_pole、animals.yamlのwhittle）が自分の時間の土台にする。
+      # 木を削る・縛って組む手際。
       woodwork_deftness: {value: 0}
-      # なめす・縫う手際。なめし革と縫った物（clothing.yaml・voyage.yaml）が名乗り、解体
-      # （animals.yamlのbutcher）が自分の時間の土台にする。
+      # 皮をなめす・縫う手際。
       leatherwork_deftness: {value: 0}
-      # 保たせる造作の手際。燻し小屋（smoking.yaml）が名乗り、塩をすり込む手（salt.yamlのcure）が
-      # 自分の時間の土台にする。
+      # 保たせる造作を組む手際。
       preserving_deftness: {value: 0}

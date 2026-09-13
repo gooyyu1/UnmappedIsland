@@ -14,6 +14,7 @@ import type { GenerationScopeDef } from '../../src/domain/generation/GenerationS
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { placeSites } from '../../src/domain/generation/SitePlacer';
+import { TRAVEL_MINUTES_STEP } from '../../src/domain/generation/PathNetworkBuilder';
 import { Pcg32 } from '../../src/domain/Pcg32';
 
 /** 不変条件の検証に使うシード群。特別な意味は無く、多様なレイアウトを試すための個数。 */
@@ -159,11 +160,11 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
     }
   });
 
-  it('移動時間は15分刻みの正の値になる', () => {
+  it('移動時間は、刻みの正の倍数になる（最短も1刻み）', () => {
     for (const [seed, map] of islands)
       for (const edge of map.edges) {
-        expect(edge.travelMinutes, `シード${seed}`).toBeGreaterThanOrEqual(15);
-        expect(edge.travelMinutes % 15, `シード${seed}: 移動時間は15分刻み`).toBe(0);
+        expect(edge.travelMinutes, `シード${seed}`).toBeGreaterThanOrEqual(TRAVEL_MINUTES_STEP);
+        expect(edge.travelMinutes % TRAVEL_MINUTES_STEP, `シード${seed}: 移動時間の刻み`).toBe(0);
       }
   });
 

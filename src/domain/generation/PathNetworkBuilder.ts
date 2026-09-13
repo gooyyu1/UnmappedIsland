@@ -2,14 +2,20 @@ import type { GenerationDefs } from './GenerationDefs';
 import type { GenerationScopeDef } from './GenerationScopeDef';
 import { IslandEdge } from './IslandMap';
 import type { Site } from './IslandMap';
+import { MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../worldTime';
 
 type WeightedEdge = { readonly a: number; readonly b: number; readonly distanceMeters: number };
 
-/** 移動時間の刻み（分）＝ minutes_per_tick（core.yaml）。tick単位の粗い時間経過と噛み合う粒度に揃え、
- * どんなに近い土地の間でも最低1刻みはかかるものとする。 */
-const TRAVEL_MINUTES_STEP = 15;
-
-const MINUTES_PER_HOUR = 60;
+/**
+ * 移動時間の刻み（分）。tick単位の粗い時間経過と噛み合う粒度に揃える。**道1本にかかる分数は必ず
+ * これの倍数で、最短もこれ**——`travelMinutes`が`Math.max(1, steps)`で刻みを1つは必ず課すので、
+ * 刻みと最短は同じ1つの値になる（別々に持つと、片方だけ動かせるように読める）。
+ *
+ * **これは測った値ではなく保証なので、`src`の外へ開いてある。** 生成した島の辺を数えると出るのは
+ * 「その島に実際に出た最短」でしかなく、保証そのものは出ない——1tickで燃え尽きる物が土地を越え
+ * られないこと（`docs/engine/FireSystem.md` 3.1節）は、この保証のほうに乗っている。
+ */
+export const TRAVEL_MINUTES_STEP = MINUTES_PER_TICK;
 
 /**
  * パスネットワークの確定（TerrainGeneration.md 3.5節）。Delaunay辺を土台に、
