@@ -271,8 +271,6 @@ explore(agent: WorldObject | undefined, session: WorldSession): boolean {
 
 ## 6. 未決事項・今後の検討課題
 
-- **`spring`（湧き水）の給水アクション**: 発見されるだけのプレースホルダで、`drink` 的なアクションは
-  `ContainerSystem.md` の液体表現の実装とあわせて今後の課題です。
 - **発見物の `volume`/`weight`**: 探索で見つかるアイテム・設置物は、コンテナ容量（`ContainerSystem.md`）に
   関わる `volume`/`weight` プロパティをまだ持たせていません。
 - **同じ土地への道が3本以上ある場合の分布**: 現在の等間隔割り当ては K 本すべてに対して機械的に働きますが、

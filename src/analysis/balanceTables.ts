@@ -622,13 +622,19 @@ function placeBalances(
   const islandLocations = islandLocationsOf(codex);
 
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
-  const islandWide = new Acquisition(codex, reachableSteps(allSteps(codex, islandLocations)));
+  const islandSteps = reachableSteps(allSteps(codex, islandLocations));
+  const islandWide = new Acquisition(codex, islandSteps);
+  const islandWideScheduled = new Acquisition(codex, schedulableSteps(islandSteps));
 
   let islandRoutes: readonly ChainRoute[] = [];
   const places = [undefined, ...islandLocations.island].map((location) => {
     const steps = reachableSteps(allSteps(codex, islandLocations, location));
     const acquisition = location === undefined ? islandWide : new Acquisition(codex, steps, islandWide);
-    const routes = routeCandidates(codex, character, acquisition, steps, dailyNeeds, location);
+    const scheduled =
+      location === undefined
+        ? islandWideScheduled
+        : new Acquisition(codex, schedulableSteps(steps), islandWideScheduled);
+    const routes = routeCandidates(codex, character, acquisition, scheduled, steps, dailyNeeds, location);
 
     if (location === undefined) islandRoutes = routes;
 
@@ -713,11 +719,16 @@ function gapsOf(islandRoutes: readonly ChainRoute[]): readonly Gap[] {
 /**
  * 需要のどれかを埋める経路をすべて挙げる。**プロパティごとではなく経路ごとに1件**——1回の実行で
  * 複数の値が返るので、献立（greedyMenu）はまとめて見ないと同時に返る分を差し引けない。
+ *
+ * **同じ終端へ2本挙げることがある**——最安の上流が労働0なら、時間を払って通る上流（scheduled）も
+ * 併せて挙げる。最安だけを挙げると、**数えられない経路が、数えられる経路を隠す**（雨で溜まる水が、
+ * 湧き水から汲む手を隠していた）。
  */
 function routeCandidates(
   codex: WorldCodex,
   character: ObjectDef,
   acquisition: Acquisition,
+  scheduled: Acquisition,
   steps: readonly StepRef[],
   dailyNeeds: readonly DailyNeed[],
   place: ObjectDef | undefined,
@@ -749,9 +760,30 @@ function routeCandidates(
     if (fills.size === 0) continue;
 
     const route = [ref, ...acquisition.routeOf(ref.def.globalId)];
-    candidates.push(buildRoute(codex, acquisition, route, resolved, deltas, fills, place));
+    const cheapest = buildRoute(codex, acquisition, route, resolved, deltas, fills, place);
+    candidates.push(cheapest);
+
+    if (!cheapest.untimed) continue;
+    const scheduledCost = scheduled.stepCost(ref);
+    if (scheduledCost === undefined) continue;
+    const scheduledRoute = [ref, ...scheduled.routeOf(ref.def.globalId)];
+    const payable = buildRoute(codex, scheduled, scheduledRoute, scheduledCost, deltas, fills, place);
+    // 絞り込んだ側で前提が解けないことは、島にその前提が無いことではない（穴の一覧へ出さない）。
+    if (!payable.untimed && !payable.blocked) candidates.push(payable);
   }
   return candidates;
+}
+
+/**
+ * 献立に載せられる工程だけを残す。**労働0の工程は起こす時機を選べない**（雨を待って器へ溜める）
+ * ので、それを含む経路は貪欲解から落ちる（buildRouteのuntimed）。時間で回る工程（罠・焼き上がり）は
+ * 労働0でよい——待つ間に他のことができるだけで、数え落としではない。
+ *
+ * **この絞り込みで解いた値段は、最安ではない。** 使うのは、最安が労働0だったときの2本目の候補を
+ * 組むときだけ（routeCandidates）。
+ */
+function schedulableSteps(steps: readonly StepRef[]): readonly StepRef[] {
+  return steps.filter((ref) => ref.cycle !== undefined || ref.step.laborMinutes > 0);
 }
 
 /**

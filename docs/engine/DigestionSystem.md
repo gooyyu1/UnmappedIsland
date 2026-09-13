@@ -336,24 +336,26 @@
 突き合わせられます（[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum` と
 `daily_minimum_menu`。読み方は [`BalanceStats.md`](../diagnostics/BalanceStats.md)）。
 
-**1 日を賄う最小労働は 607 分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->**
+**1 日を賄う最小労働は 491 分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->**
 （島じゅうを渡り歩ける前提。移動時間は数えていません）**で、うち
 360 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="palm_tree.pick_frond → palm_frond.split_and_weave → bed.spread → bed.nap" minutes -->は眠るぶんなので、
 採って食べるのに払うのは
-247 分<!-- stats: terrain.yaml daily_budget survival_gathering -->です。** これが
+131 分<!-- stats: terrain.yaml daily_budget survival_gathering -->です。** これが
 [`ContentSkeleton.md`](../world/ContentSkeleton.md) 8 節の自由時間
-833 分<!-- stats: terrain.yaml daily_budget surplus -->を出している引き算の相手で、**1 周回の日数の
+949 分<!-- stats: terrain.yaml daily_budget surplus -->を出している引き算の相手で、**1 周回の日数の
 見積もりはこの値の上に立っています**——速さを動かせば、そちらが動きます。
 
 | 賄うもの | 献立 | 1 日 |
 | --- | --- | --- |
-| 水 | 青いヤシの実 4.80<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="palm_tree.pick_green_coconut → green_coconut.bore" repetitions -->個 | 152 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="palm_tree.pick_green_coconut → green_coconut.bore" minutes --> |
+| 水 | 湧き水から汲んだ水 9.60<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → spring.draw_into_empty → jar__content_water_liquid.drink" repetitions -->杯 | 29 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → spring.draw_into_empty → jar__content_water_liquid.drink" minutes --> |
 | 満腹・蓄え | 生肉 3.07<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.eat" repetitions -->切れ | 70 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.eat" minutes --> |
-| 満腹・蓄え | 焼いた肉 0.39<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat" repetitions -->切れ | 9 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat" minutes --> |
+| 満腹・蓄え | 焼いた肉 0.70<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat" repetitions -->切れ | 16 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat" minutes --> |
 | ビタミン | 空心菜 0.50<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → water_spinach.eat" repetitions -->束 | 16 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → water_spinach.eat" minutes --> |
 
-- **水がいちばん高いのは、汲み置きの器が無い間だけです。** 甕で雨を受け始めれば労働は要らなくなる
-  （同 `chain_untimed_routes`）ので、152 分がまるごと空きます。**器が序盤の生命線である**こと
+- **水が安いのは、汲み置きの器と湧き水が揃っているときだけです。** 器を持たずに砂浜で賄うなら、
+  1 日ぶんは青いヤシの実
+  283 分<!-- stats: balance.yaml daily_minimum_menu place=sandy_beach route="palm_tree.pick_green_coconut → green_coconut.bore" minutes -->
+  になります。**器が序盤の生命線である**こと
   （[`ClimateSystem.md`](./ClimateSystem.md) 3.2 節）が、時間の側からも出ます。器 1 つが何日ぶんに
   なるかは [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 5 節。
 - **ビタミンがいちばん安い**のは、空心菜 1 束が 1 日ぶんを越えて運び（4 節）、採るのが探索だけで
@@ -361,9 +363,9 @@
 - **3 本の速さ（2/1/0.5）は、釣り合いに効きません。** `transfer` は保存するので、速さが決めるのは
   在庫が何 tick 保つかだけです（5 節）。**効き目を持つのは段のある `lipid` だけ**で、そこは値段の
   問いとして残っています（未決事項節）。
-- **607 分に、段が余計に削るぶんは入っていません。** 収支表の `daily_needs` が数えるのは常時の減り
+- **491 分に、段が余計に削るぶんは入っていません。** 収支表の `daily_needs` が数えるのは常時の減り
   だけなので、`fat_starved` が水を倍の速さで削るぶん（8 節）は表の外です。**上の未決が決まるまで、
-  247 分は下限として読みます。**
+  131 分は下限として読みます。**
 
 ## 未決事項・今後の検討課題
 

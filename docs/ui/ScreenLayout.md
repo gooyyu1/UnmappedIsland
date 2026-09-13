@@ -842,7 +842,7 @@ card_filters:
     tags: [food, roastable, hearth, preservative]
   - id: filter_water
     icon: 💧
-    tags: [water, hot_water, liquid_container]
+    tags: [water, hot_water, liquid_container, water_source]
 ```
 
 - **`id` がそのままアイコンの名前です**（`src/assets/icons/<id>.png`）。型が自分の絵の名前を名乗る
