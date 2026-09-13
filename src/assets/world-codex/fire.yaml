@@ -240,6 +240,8 @@ object_defs:
   # きりもみ式の火起こし具。拾った木だけで作れるので、道具も紐も要らない
   # （docs/world/SurvivalItems.md 1.1節）。使っても無くならないのでtoolタグを持つ。
   fire_drill:
+    # 小枝の錐と太い枝の火きり板。どちらも木材なので長持ちする素材（weathering.yaml）。
+    traits: [long_lived_material]
     tags: [item, tool]
     props:
       weight: {value: 900}

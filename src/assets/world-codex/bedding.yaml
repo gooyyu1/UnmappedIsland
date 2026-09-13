@@ -9,6 +9,9 @@ object_defs:
   # （docs/world/Bedding.md 1.1節）。骨組みと詰め物を差し込む structure スロットは、上積みを
   # 書くときに足す。
   bed:
+    # 編んだ葉は短命な素材（weathering.yaml）。**屋根の下へ敷けば止まる**ので、浅い洞窟に寝床を
+    # 置く値打ちが、眠れること以外にも出る。
+    traits: [short_lived_material]
     tags: [fixture, bed]
     props:
       # 編んだ葉3枚ぶん（weaving.yaml）。

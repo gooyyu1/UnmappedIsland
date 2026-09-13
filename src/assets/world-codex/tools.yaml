@@ -44,13 +44,8 @@ traits:
       #
       # どれも値を持たないので、**宣言し忘れた武器はロードで落ちる**（5節）。
       reach: {}
-      # 刃こぼれするまでの余力。上限は種類によらず960で統一する（DurabilitySystem.md 1節）。
-      # 減らすのは殴ったときだけで、屋外に置いた劣化はまだ扱わない（同5節の未決事項）。
-      durability:
-        # 尽きると使えなくなるので、満タン側がgood（CardView.md 8節）。
-        gauge: {min: bad, max: good}
-        value: 960
-        range: {min: 0, max: 960}
+      # **刃こぼれの余力（durability）はここに無い。** 配るのは素材の trait（weathering.yaml）で、
+      # 殴れるかどうかとは別——殴らない突き銛も骨針も同じ値を持ち、屋外で傷む速さも素材が決める。
     passives:
       # 構えている間、その土地に「間合いが構えられている」ことを立てる（core.yamlのbraced_reach）。
       # 押すのは据えた設え・囲いと同じancestor（8.6節）で、獣はそこから読むだけ——**武器はどんな獣が
@@ -90,7 +85,9 @@ object_defs:
   # **どちらで受けているかは tests/world-codex/toolsYaml.test.ts の表が見張る。** 表に載っていない
   # 宣言が在ればそこが落ちるので、刃物を要求する宣言を足したら表にも足すことになる。
   sharp_stone:
-    traits: [weapon]
+    # 石そのものなので、置きっぱなしにしても傷まない（weathering.yaml）。減るのは打ち合わせたとき
+    # だけで、欠け切れば割れて無くなる。
+    traits: [weapon, weatherproof_material]
     tags: [item, tool, cutting_tool, handheld_blade]
     props:
       weight: {value: 400}
@@ -116,7 +113,9 @@ object_defs:
   # **材料より軽い。** 頭部400＋柄600＋紐200＝1200gで、太い枝1000gのうち400gは削り落とす木屑。
   # 撚る工程（fiber.yaml）が重さを保つのと違い、削る工程では減る。
   stone_axe:
-    traits: [weapon]
+    # 頭部は石だが、目方の大半は柄の太い枝（600g）なので長持ちする素材で名乗る（weathering.yaml）
+    # ——紐が緩んでも縛り直せば済み、作り直しになるのは柄が朽ちたとき。
+    traits: [weapon, long_lived_material]
     tags: [item, tool, cutting_tool, chopping_tool]
     props:
       weight: {value: 1200}
@@ -156,6 +155,8 @@ object_defs:
   # 武器にはならない（weapon traitを持たない）。獣骨（animal_bone）と違って荷重のかかる頭部に
   # できない細い骨から作るので、刺すための物ではあっても殴るための物ではない。
   bone_needle:
+    # 獣骨は長持ちする素材（weathering.yaml）。縫っても減らないので、減るのは屋外に置いた間だけ。
+    traits: [long_lived_material]
     tags: [item, tool, sewing_tool]
     props:
       weight: {value: 5}
@@ -173,7 +174,9 @@ object_defs:
   # 2mの棒なので、重さのわりにかさばる（同0節 長さの違いはかさで効かせる）。穂先400＋軸300＋紐200＝
   # 900gで、長い棒600gのうち軸に残るのは300g——石斧と同じく、削る工程では重さが減る。
   spear:
-    traits: [weapon]
+    # 目方の大半は2mの軸（300g）で、穂先の石は400gだが形を保っているのは軸のほう
+    # （weathering.yaml）。
+    traits: [weapon, long_lived_material]
     tags: [item, tool]
     props:
       weight: {value: 900}
@@ -228,6 +231,8 @@ object_defs:
   #
   # 武器にはならない（weapon traitを持たない）。獣を突く道具ではない。
   fishing_harpoon:
+    # 材料も工程も石斧と同じなので、名乗る素材も同じ（weathering.yaml）。
+    traits: [long_lived_material]
     tags: [item, tool, fishing_tool]
     props:
       weight: {value: 1200}

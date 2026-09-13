@@ -965,6 +965,20 @@ object_texts:
   woven_basket:
     display_name: 編み籠
     description: 編んだ葉を綴じ合わせた入れ物。中に入れた物をまとめて持ち運べる。
+  sledge:
+    display_name: そり
+    description: 長い棒の走り木に横木を渡して縄で締めた引き具。引きずるので、担げない重さも運べる。
+    recipes:
+      lashed:
+        display_name: そりを組む
+        description: 長い棒の先を反らせて走り木を削り出し、横木を渡して縄で締め上げる。
+  handcart:
+    display_name: 台車
+    description: そりに丸太の輪切りを車軸で通した引き具。転がるぶん、そりよりさらに軽く引ける。
+    recipes:
+      wheeled:
+        display_name: 車輪を付ける
+        description: 丸太を輪切りにして車輪を削り出し、そりの走り木へ車軸を通して留める。
 
   # 衣類（clothing.yaml）。
   tanned_leather:

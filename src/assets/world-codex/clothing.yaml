@@ -50,6 +50,8 @@ object_defs:
   # 束ねた葉の衣類。ヤシの葉の小葉を中軸から外し、繊維で腰へ束ねただけの腰蓑。
   # 加工がほとんど要らないので、刃物も火も無いうちから作れる。
   bundled_leaf_clothing:
+    # 束ねただけの葉は短命な素材（weathering.yaml）。
+    traits: [short_lived_material]
     tags: [item, equippable]
     covers: [body]
     layer: base
@@ -71,6 +73,9 @@ object_defs:
   # 生皮の衣類。剥いだ皮に頭と腕を通す穴を開け、そのまま羽織る。縫わないので早いが、
   # 生皮のまま乾いた革は固く、濡らせば傷む（animals.yamlのrawhide）。
   rawhide_clothing:
+    # なめしていない皮は短命な素材（weathering.yaml）。なめせば長持ちする素材へ移る（下のsewn）
+    # ——手間をかける値打ちが、保つ日数としてそのまま出る。
+    traits: [short_lived_material]
     tags: [item, equippable]
     covers: [body]
     layer: base
@@ -89,6 +94,8 @@ object_defs:
   # 編んだ葉の衣類。編んだパネルを繊維で綴じ合わせる。束ねた葉より手はかかるが、
   # 編んである分だけ形が保たれる。
   woven_leaf_clothing:
+    # 編んであっても素材は葉のままなので、短命な素材（weathering.yaml）。
+    traits: [short_lived_material]
     tags: [item, equippable]
     covers: [body]
     layer: base
@@ -110,6 +117,9 @@ object_defs:
   # なめし革の衣類。裁った革を糸で縫い合わせる。骨針は道具なので減らない
   # （tools.yamlのbone_needle、voyage.yamlの帆と同じ要求の書き方）。
   tanned_leather_clothing:
+    # なめし革は長持ちする素材（weathering.yaml）。**同じ1着でも生皮の10倍保つ**ので、なめしに
+    # かけた手間は着心地ではなく寿命として返る。
+    traits: [long_lived_material]
     tags: [item, equippable]
     covers: [body]
     layer: base

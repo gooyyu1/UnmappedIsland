@@ -235,10 +235,6 @@
 
 ## 8. 未決事項
 
-- 各アイテムの具体的な効果値（防御力・耐久値・サイズなど）は未定義。`GameElementDefinition.md` の
-  `props`/`passive`（6節・8節）・`ContainerSystem.md` のサンプルに準じて別途定義する。
-  重さ（`weight`、単位はg）だけは、既にゲームへ登場しているアイテムには実物の目安で入れてある
-- `RecipeSystem.md` の `steps`（工程分割）・`duration`（所要時間）を、本書のどのアイテムにどう割り当てるか
 - 青銅という中間素材が、`RecipeSystem.md` の「成果物の `object_defs` にレシピを埋め込む」設計上、
   それ自体を1つの完成品（`object_defs`）として扱ってよいか。**なめし革では確認済み**——中間素材を
   ただの `object_defs` として置き、そこにレシピを埋めるだけで、材料としても成果物としても通った
@@ -419,3 +415,47 @@
 
 **実装済みです**（`src/assets/world-codex/smoking.yaml`。`tests/world-codex/smokingYaml.test.ts` が
 上の線を全部確かめます）。
+
+## 12. 効果値と工程の時間は、1日の余剰から逆算する
+
+**物の値は、1日の余剰——生存に要る労働を払って残る時間——のうち、その物が食う割合で決めます。**
+余剰は833分<!-- stats: terrain.yaml daily_budget surplus -->で、[`stats/balance.yaml`](../../stats/balance.yaml)
+の `object_costs` がその分母で日数を出します（[`../diagnostics/BalanceStats.md`](../diagnostics/BalanceStats.md)）。
+
+### 12.1 持ち物1つの維持は、1日の余剰の5%まで
+
+**寿命は素材が決め**（[`../engine/DurabilitySystem.md`](../engine/DurabilitySystem.md) 2節）、
+**手間はレシピが決める**ので、この2つを割れば「その物を持ち続けるのに1日いくら払うか」が出ます。
+
+```
+1日あたりの維持 = 総コスト（object_costs.total_minutes） ÷ 寿命日数
+```
+
+**線は1つにつき余剰の5%（42分）です。** 手持ちは6枠なので、全部を傷む物で埋めても3割で収まります。
+
+**この線は測って出しました。** 編み籠は総コスト333分<!-- stats: balance.yaml object_costs object=woven_basket total_minutes ±5% -->で
+寿命10日、1日あたり33分——余剰の4%です。**この線を引いた時点（2026年9月）で最も高くついた持ち物が
+編み籠**だったので、そこへ2割の余裕を足したところに線を置いています。
+
+**逆向きにも使えます。** 素材で寿命が決まっている物では、`42分 × 寿命日数` がレシピに許される総コストの
+上限になります——短命な素材で作る物ほど安くなければならない、という形で、素材と手間が噛み合います。
+
+**線を越えていないことは `tests/world-codex/weatheringYaml.test.ts` が全数で見ます。** 傷む物を足した人も、
+レシピの材料を増やした人も、越えればそこで落ちます。
+
+### 12.2 1つの工程は、1日の余剰の6割まで
+
+**工程は途中で止められない**（[`../engine/GameElementDefinition.md`](../engine/GameElementDefinition.md)
+11.3節）ので、1つが長いほど「その日は他に何もできない」に近づきます。**線は余剰の6割（500分）**で、
+これを超えるなら工程を割ります——実際になめしは120分と360分の2つに割ってあります（5節）。
+
+**現に最も長い工程は480分**（落とし穴を掘る・畑を起こす）で、線の内側です。
+`tests/world-codex/weatheringYaml.test.ts` が全数を見ます。
+
+### 12.3 防御力は置きません
+
+**受け取る仕組みがまだ無いためです。** 怪我は獣の側が候補として持ち（[`../engine/HuntingSystem.md`](../engine/HuntingSystem.md)）、
+着ている物は一切読まれません。**読む側が入るまで、身につける物の値打ちは寿命と重さだけで表します**
+（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md) の「画面に出す形が決まっていない値は、
+まだ入れない」節）。保温（`chill_point` を押し下げる側）も同じ理由でまだ書いていません
+（`clothing.yaml`）。
