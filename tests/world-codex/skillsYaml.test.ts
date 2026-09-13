@@ -56,10 +56,14 @@ const MINUTES_PER_GAIN = 30;
 
 /**
  * 上の刻みが保つ、腕が時間あたりに伸びる速さの幅（SkillSystem.md 3節）。整数で配るので端数は切り上がり、
- * ちょうど刻みどおりの操作で下端、短い操作ほど上端へ寄る。**上端に当たるのが15分**で、それより短い
+ * ちょうど刻みどおりの操作で`min`、短い操作ほど`max`へ寄る。**`max`に当たるのが15分**で、それより短い
  * 操作へ配ると跳ねる。
+ *
+ * **`shortest`は、手際で縮みきったときの上端**（時間を名乗るプロパティの`range.min`で見る）。手際は
+ * 分の絶対値を引くので**短い手作業ほど比では大きく縮み**、腕が上がるほど時間あたりは上がる
+ * ——このずれを均さないのは docs/world/Skills.md 7節が決めていることなので、消すのではなく上端を置く。
  */
-const GAIN_PER_HOUR = { min: 2, max: 4 } as const;
+const GAIN_PER_HOUR = { min: 2, max: 4, shortest: 6 } as const;
 
 /**
  * アクセス系の腕（Skills.md 2節）と、その段が押し上げる上乗せ（同5節）。レシピを開けない腕なので、
@@ -141,16 +145,18 @@ function walkAgentSkillGains(node: unknown, visit: (skillName: string, amount: n
   walk(node, 'none');
 }
 
-/** 定義ファイルが `add` で `agent` の腕前へ配っている量を、腕ごとに集める。 */
-function declaredSkillGains(): ReadonlyMap<string, ReadonlySet<number>> {
-  const gains = new Map<string, Set<number>>();
+/**
+ * 定義ファイルのどこかで `add` が `agent` へ配っている腕の名前。**量はここでは持たない**——量が
+ * 正しいかは操作の長さと突き合わせないと言えないので、操作ごとに引ける側（`InteractionGains.gains`）が
+ * 持つ。
+ */
+function skillsWithGains(): ReadonlySet<string> {
+  const skills = new Set<string>();
   for (const path of worldCodexYamlPaths())
-    walkAgentSkillGains(parseDocument(readFileSync(path, 'utf8')).contents, (skillName, amount) => {
-      const amounts = gains.get(skillName);
-      if (amounts === undefined) gains.set(skillName, new Set([amount]));
-      else amounts.add(amount);
+    walkAgentSkillGains(parseDocument(readFileSync(path, 'utf8')).contents, (skillName) => {
+      skills.add(skillName);
     });
-  return gains;
+  return skills;
 }
 
 /**
@@ -831,7 +837,7 @@ describe('腕前とレシピの解放条件', () => {
 
   it('解放条件が名指しする腕には、それを伸ばす操作がある（永久に開かないレシピを作らない）', () => {
     // SkillSystem.md 3.2節のブートストラップ。
-    const gains = declaredSkillGains();
+    const gains = skillsWithGains();
 
     for (const { product, recipe } of gatedRecipes())
       for (const skillName of requiredSkills(product, recipe))
@@ -945,7 +951,7 @@ describe('腕前とレシピの解放条件', () => {
     // **アクセス系も同じくここで落ちる**（CRAFTING_BONUSESに無いので）。火の腕が決めるのは着火の
     // 重みだけで、火起こし具を削る速さではない（同5節）。
     const skillOfBonus = new Map<string, string>(CRAFTING_BONUSES.map((entry) => [entry.bonus, entry.skill]));
-    const gains = declaredSkillGains();
+    const gains = skillsWithGains();
 
     expect(
       allRecipes()
@@ -1000,9 +1006,9 @@ describe('腕前とレシピの解放条件', () => {
   }
 
   /**
-   * その操作が宣言している素の分数（読めなければundefined）。**手際で縮む前の値を見る**
-   * ——縮む分は同じ腕を配る操作のあいだで揃っており（docs/world/Skills.md 7節）、操作どうしの
-   * 比べ合いは素の側で決まる。
+   * その操作が宣言している素の分数（読めなければundefined）。**手際で縮む前の値**で、規則
+   * （SkillSystem.md 3節）が量を決める土台はこちら。縮んだ側は`range.min`で別に見る
+   * （GAIN_PER_HOURの注記）。
    */
   function declaredMinutes(
     interaction: InteractionGains,
@@ -1147,15 +1153,23 @@ describe('腕前とレシピの解放条件', () => {
     // 1を配れば規則どおりだが、時間あたりは60になる。**守りたいのは速さのほう**（SkillSystem.md
     // 3節）なので、そこはここで留める。**操作を数え上げない**ので、次に足された操作も同じ幅を
     // 要求される。
+    //
+    // **縮みきった側も見る**——手際は分の絶対値を引くので、素の分数だけを見ていると、腕が上がった
+    // 後で短い手作業だけが跳ねるのを見逃す（GAIN_PER_HOUR.shortestの注記）。
     const props = declaredPropsByDef();
 
     for (const interaction of gainingInteractions()) {
       const minutes = declaredMinutes(interaction, props);
+      const shortest = declaredRangeOf(durationPropBody(interaction, props))?.min ?? minutes!;
       for (const amount of interaction.gains) {
-        const perHour = (amount * 60) / minutes!;
         const where = `${interaction.owner} の ${interaction.name}（${minutes}分に${amount}）`;
+        const perHour = (amount * 60) / minutes!;
         expect(perHour, `${where}: 時間あたりが速すぎる`).toBeLessThanOrEqual(GAIN_PER_HOUR.max);
         expect(perHour, `${where}: 時間あたりが遅すぎる`).toBeGreaterThanOrEqual(GAIN_PER_HOUR.min);
+        expect(
+          (amount * 60) / shortest,
+          `${where}: 手際で${shortest}分まで縮んだとき、時間あたりが速すぎる`,
+        ).toBeLessThanOrEqual(GAIN_PER_HOUR.shortest);
       }
     }
   });
@@ -1212,12 +1226,24 @@ describe('腕前とレシピの解放条件', () => {
 
     const shared = [...byProduct].filter(([, group]) => group.length > 1);
     expect(shared.length, '出す物が同じ操作の組が1つも無い').toBeGreaterThan(0);
+    const props = declaredPropsByDef();
 
     for (const [products, group] of shared) {
       const where = `'${products}' を出す ${group.map((i) => i.name).join('・')}`;
       expect(
         new Set(group.map((interaction) => interaction.skills.join(','))).size,
         `${where} で、配る腕が食い違う`,
+      ).toBe(1);
+      // **1回に配る量は揃わない**——長さで決まるので、長くかかる入口ほど多い（SkillSystem.md 3節）。
+      // 化けないのは**時間あたりが等しい**からで、そこはこの組の中では幅（一つ上の検査）ではなく
+      // 一致を要る。片方だけが刻みの端に乗ると、同じ仕事なのに島で伸びが変わる。
+      expect(
+        new Set(
+          group.map((interaction) =>
+            interaction.gains.map((amount) => (amount * 60) / declaredMinutes(interaction, props)!).join(','),
+          ),
+        ).size,
+        `${where} で、時間あたりの伸びが食い違う`,
       ).toBe(1);
       // **余分の卓も揃える**（docs/world/Skills.md 7節）。片方だけが余分を出すと、配る腕を揃えた
       // のと同じ理由で、どの島に流れ着いたかが歩留まりに化ける。卓は`pick`の重みとして書くので、
@@ -1236,7 +1262,7 @@ describe('腕前とレシピの解放条件', () => {
   it('伸ばす操作をまだ持たない腕は、開ける物が世界に無い4本だけ', () => {
     // 宣言だけあって動かない本があること自体は、Skills.md 2節の一覧を先に置いているため。
     // どれが動かないかをここで数え上げておき、開ける物が入ったときに直し忘れないようにする。
-    const gains = declaredSkillGains();
+    const gains = skillsWithGains();
 
     expect(SKILLS.filter((name) => !gains.has(name))).toEqual([
       'skill_joinery',
@@ -1257,7 +1283,7 @@ describe('腕前とレシピの解放条件', () => {
     //
     // **数えるのは、読まれている上乗せだけ**——宣言しただけで誰も読まないものを数えると、
     // 「動いても何も起きない」をそのまま通してしまう。
-    const gains = declaredSkillGains();
+    const gains = skillsWithGains();
     const read = propsReadFromAgent();
     const effective = new Set<string>([
       ...[...read].filter((name) => name.startsWith(SKILL_PREFIX)),
@@ -1273,7 +1299,7 @@ describe('腕前とレシピの解放条件', () => {
     // 一つ上は「効き先が1つでもあるか」なので、**製作系は解放条件に名前が出るだけで通ってしまう**
     // ——そこを通すと、解放しか効かない腕（Skills.md 6節が【確定】で否定した形）へ黙って戻れる。
     // 上乗せの側が読まれていることは、ここだけが見ている。
-    const gains = declaredSkillGains();
+    const gains = skillsWithGains();
     const read = propsReadFromAgent();
 
     expect(
