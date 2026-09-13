@@ -4,8 +4,8 @@ import type { CardPlace } from './cardPlaces';
 
 /**
  * 世界に起きた変化（WorldChange）を、カードの動きの言葉へ直す——どこから飛び立つか
- * （originInstanceByInstance）、どのインスタンスが世界に出入りしたか（bornInstances /
- * vanishedInstances）、そしてどれが探索の発見物か（foundObjects）。
+ * （originInstanceByInstance）、誰がどこまで突進したか（lungeTargetsByInstance）、どのインスタンスが
+ * 世界に出入りしたか（bornInstances / vanishedInstances）、そしてどれが探索の発見物か（foundObjects）。
  *
  * **世界の出入りは、画面の出入りでは代われない。** 別のレーンへ移っただけのカードも、レーンから
  * 見れば消えて現れる。壊れた・生まれたことを知っているのは変化のログだけ。
@@ -34,6 +34,36 @@ export function originInstanceByInstance(changes: readonly WorldChange[]): Reado
     if (!origins.has(id)) origins.set(id, origin.instanceId);
   }
   return origins;
+}
+
+/**
+ * 「そのインスタンスは、どのインスタンスの居る所まで突進したか」の候補（HuntingSystem.md 6.1節）。
+ * 出どころと同じく、矩形に直すのは並びを読める側（cardMotionPlan）。
+ *
+ * 突進として読めるのは、**主体が、自分の外に在った物を、その物の居場所から動かした**回。6節の表の
+ * 残りはここに挙がらない——生まれた物（from === undefined）はどこからも動いていないので出どころが
+ * 答え、自分が動いた回（逃げた回）は主体と動いた物が同じで、自分が抱えている物を動かした回
+ * （くわえた物を食べた回）は主体がどこへも行っていない。
+ *
+ * **相手を1つに決めるのはここではない。** 見せる突進は主体1つにつき1回だが、**起きた順の先頭が
+ * 手を出した相手とは限らない**——中身のある入れ物を壊すと、こぼれた中身の移動が入れ物の消滅より
+ * 先に記録される（`WorldObject.destroy`）。画面に出ている相手を選べるのは並びを読める側だけなので、
+ * ここは起きた順に候補を並べるところまでを持つ。
+ */
+export function lungeTargetsByInstance(
+  changes: readonly WorldChange[],
+): ReadonlyMap<number, readonly number[]> {
+  const targets = new Map<number, number[]>();
+  for (const change of changes) {
+    const subject = change.subject;
+    if (subject === undefined || change.from === undefined) continue;
+    if (subject === change.object || change.from.owner === subject) continue;
+
+    const found = targets.get(subject.instanceId);
+    if (found === undefined) targets.set(subject.instanceId, [change.object.instanceId]);
+    else if (!found.includes(change.object.instanceId)) found.push(change.object.instanceId);
+  }
+  return targets;
 }
 
 /**
