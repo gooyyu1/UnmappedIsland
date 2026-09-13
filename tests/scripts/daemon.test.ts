@@ -45,6 +45,8 @@ interface World {
   readonly heartbeat?: string;
   /** 周ごとに、`daemon.sh` を書き換える中身（`null` を置いた周は書き換えない）。 */
   readonly swap?: readonly (string | null)[];
+  /** 複製元の `daemon.sh` を消す周（1始まり。`0` はどの周でも消さない）。**移された複製元**を作る。 */
+  readonly removeSource?: number;
   /** 本体に未コミットの変更（追跡済み）があるか。 */
   readonly mainDirty?: boolean;
   /** `git` が答えないか（＝リポジトリの外・`git` が無い）。 */
@@ -100,12 +102,14 @@ function daemon(world: World = {}): Result {
     // `daemon.sh` が新しい版へ差し替わる瞬間は、走っている周の中から起きる。
     writeFileSync(
       join(here, 'board-round.mjs'),
-      `import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';\n` +
+      `import { appendFileSync, readFileSync, rmSync, writeFileSync } from 'node:fs';\n` +
         `const rounds = ${JSON.stringify(rounds)};\n` +
         `appendFileSync(rounds, '1\\n');\n` +
         `const round = readFileSync(rounds, 'utf-8').split('\\n').filter(Boolean).length;\n` +
+        `const source = ${JSON.stringify(join(here, 'daemon.sh'))};\n` +
         `const swap = ${JSON.stringify(world.swap ?? [])}[round - 1];\n` +
-        `if (typeof swap === 'string') writeFileSync(${JSON.stringify(join(here, 'daemon.sh'))}, swap, 'utf-8');\n` +
+        `if (round === ${world.removeSource ?? 0}) rmSync(source, { force: true });\n` +
+        `else if (typeof swap === 'string') writeFileSync(source, swap, 'utf-8');\n` +
         `process.exit(${world.roundFails === true ? 1 : 0});\n`,
       'utf-8',
     );
@@ -456,6 +460,25 @@ describe('daemon.sh', () => {
     // （＝3周目が回らない）。
     expect(result.log).not.toContain('既に走っている');
     expect(result.log).toContain('入れ替わった先が立った');
+  });
+
+  // **複製元が読めない周に、読み取りそのものがデーモンを殺していた**——`$(<…)` の失敗は非対話シェルを
+  // その場で終わらせるので、ログ行も残らずに落ちる。走っているのは複製なので、複製元が要るのは
+  // 入れ替えるときだけで、読めない間も今の版のまま回り続けられる。
+  it('複製元が消えても、今の版のまま回り続ける', () => {
+    const result = daemon({
+      env: { ONCE: '', INTERVAL: '1' },
+      // 1周目の途中で複製元を消す（＝別の場所へ移された周）。
+      removeSource: 1,
+      // 2周目に戻ってきた複製元で、入れ替えが再び働くことまで見る。立ったことを1行残して終わる版に
+      // しておくと、そこで回るのが止まるので撃たずに済む。
+      swap: [null, `${STUB_SHEBANG}\necho "戻った先が立った"\n`],
+    });
+
+    expect(result.code).toBe(0);
+    expect(result.rounds).toBe(2);
+    expect(result.log).toContain('読めないので、今の版のまま回り続ける');
+    expect(result.log).toContain('戻った先が立った');
   });
 
   // 盤面を読む先はスマホなので、周（既定30秒）と同じ速さで書き換えても読み切れない
