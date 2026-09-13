@@ -83,7 +83,7 @@
 `4,201` へ丸まります）。
 
 ```text
-4桁の労働がかかるのは筏（約4,200分<!-- stats: balance.yaml object_costs object=raft total_minutes ±5% -->）
+4桁の労働がかかるのは筏（約3,700分<!-- stats: balance.yaml object_costs object=raft total_minutes ±5% -->）
 ```
 
 **幅は、その一文の主張が壊れない広さにします。** 上の主張は「4桁の労働がかかる」なので、3桁や5桁へ
