@@ -153,7 +153,7 @@ object_defs:
 
   # ------------------------------------------------------------------
   # 探索で見つかる設置物。fixtureタグによって土地のfixturesスロットへ振り分けられる。
-  # ベリーの茂みと湧き水は発見されるだけのプレースホルダ（採取の振る舞いは今後の課題）。
+  # ベリーの茂みは発見されるだけのプレースホルダ（採取の振る舞いは今後の課題）。
   # exploreが湧かせるヤシの木（palm_tree）はcoconut.yamlが定義する。
   # ------------------------------------------------------------------
 
@@ -206,9 +206,12 @@ object_defs:
         duration: 5
         move: {subject: agent, to: parent}
 
-  # 湧き水。飲用・補水ポイントになる想定。
+  # 湧き水。島でただ一つの真水の水源で、器を持ち込めば汲める
+  # （liquid_containers.yamlのwater_source、docs/engine/LiquidContainerSystem.md 10節）。
+  # **湧く量は持たない**——汲んでも涸れないので、汲める回数を数える値が要らない。
   spring:
     tags: [fixture]
+    traits: [water_source]
     props:
       weight: {value: 0}
 
