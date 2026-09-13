@@ -5,7 +5,7 @@ import type { ReferenceRoot } from './ReferenceRoot';
 import type { PropertyGlobalId } from './GlobalId';
 
 /**
- * 持続効果（8節）が**何を宣言しているか**を読み上げる相手（PassiveEffect.read）。
+ * 持続効果（8節）が**何を宣言しているか**を読み上げる相手（PassiveEffect.readBy）。
  *
  * 一時的な効果の読み上げ口（EffectReader）と別なのは、**ゲートを必ず伴う**ため——tick毎に効く宣言は
  * 「いつ効くか」と切り離せない。動詞がわずかしかないのも持続効果の性質そのもので、可逆な寄与（`modify`）・
@@ -44,5 +44,5 @@ export interface GateReading {
 
 /** 自分が何を宣言しているかを読み上げられる持続効果。 */
 export interface PassiveDeclaration {
-  read(reader: PassiveReader): void;
+  readBy(reader: PassiveReader): void;
 }

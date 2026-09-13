@@ -62,7 +62,7 @@ export function readEffect(
   resolveBecomeDestination?: BecomeDestinationResolver,
 ): EffectReading {
   const reader = new OutcomeReader(resolve, resolveBecomeDestination);
-  declaration.read(reader);
+  declaration.readBy(reader);
   return reader;
 }
 
