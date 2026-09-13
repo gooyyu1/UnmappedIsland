@@ -12,8 +12,10 @@ import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
  *
  * **表の数値を書き写さず、段そのものを読む。** hourとweatherがambient_brightnessをmodifyする量は
  * `core.yaml`のstages passivesから読み取り、太陽高度・天気の透過率の値をこのファイルは持たない。
- * 据え付けの光源（松明・炉）は数えない——入れると「焚き火があれば24時間活動できる」になり、
- * この表の意味が消える（IlluminationSystem.md 3節）。
+ * 光源は既定では数えない——入れると「焚き火があれば24時間活動できる」になり、この表の意味が消える
+ * （IlluminationSystem.md 3節）。**手に持つ光源だけは呼び出し側が段数を渡せる**（`carriedLightEv`）
+ * ——「松明を持てば何が開くか」は表の外側の補集合で、同じ切り方で測らないと差が出せない。
+ * `stats/climate.yaml`の`activity_hours`は既定（0）のまま出す。
  *
  * **「屋外で採れる」と「手元の細かい作業」は別々の列。** 要求する段の名前はどちらもbrightだが、
  * 見る値が違い（採る側はlooking_brightness、作る側はhand_brightness）、境目も違う（同5節）。
@@ -170,10 +172,17 @@ function worldWindSpeedOf(codex: WorldCodex): (weatherName: string) => number {
   };
 }
 
-/** 土地×季節ごとの活動時間表を、定義と天候の実測値から組み立てる。 */
+/**
+ * 土地×季節ごとの活動時間表を、定義と天候の実測値から組み立てる。
+ *
+ * `carriedLightEv` は手に持っている光源が明るさへ足す段数（EV）。手持ちの光源は手元にも視界にも
+ * 同じだけ届き（IlluminationSystem.md 3節）、キャラクタ側の明るさにはrangeが無いので、場所の
+ * 環境光を底で均した後へそのまま足す。既定の0が「光源を持たない」で、表はこちらで出す。
+ */
 export function activityHoursOf(
   codex: WorldCodex,
   seasons: readonly SeasonWeatherHours[],
+  carriedLightEv = 0,
 ): readonly ActivityHoursRow[] {
   const worldAmbientAt = worldAmbientBrightnessOf(codex);
   const worldWindAt = worldWindSpeedOf(codex);
@@ -194,7 +203,7 @@ export function activityHoursOf(
       for (let hour = 0; hour < 24; hour++) {
         for (const [weatherName, hoursInSeason] of season.hoursByWeather) {
           const fraction = hoursInSeason / (season.durationDays * 24);
-          const brightness = place.brightnessAt(worldAmbientAt(hour, weatherName));
+          const brightness = place.brightnessAt(worldAmbientAt(hour, weatherName)) + carriedLightEv;
           const gale = !place.sheltered && worldWindAt(weatherName) >= galeThreshold;
           const opens = (column: ActivityColumn, threshold: number): boolean =>
             brightness >= threshold && !(column.stoppedByWind && gale);
