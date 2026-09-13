@@ -201,11 +201,12 @@ PRの段では `npm test` が、`main` へ入った後は
   読み方は [`HuntStats.md`](./HuntStats.md)。
   生成元: `tests/diagnostics/huntStatsReport.test.ts`（遭遇の組み方は `src/analysis/huntEncounter.ts`）
 - [開始地点の立ち上がり](../../stats/startup_reach.yaml) — 最初の段を越えるのに要るものが、
-  各サイトから何歩先にあるか（移動時間・道を見つける探索時間つき）と、島ごとに最も条件の良い
-  サイトの値の分布（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 2.3節参照）。
-  定義と生成された島だけから計算した値で、選抜やしきい値の判定は出さない。
+  各サイトから何歩先にあるか（移動時間・道を見つける探索時間つき）と、島ごとに選抜が選んだ
+  開始地点の値の分布（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 2.3節参照）。
+  定義と生成された島だけから計算した値で、しきい値の判定は出さない。
   読み方は [`StartupReachStats.md`](./StartupReachStats.md)。
-  生成元: `tests/diagnostics/startupReachStatsReport.test.ts`（計算は `src/analysis/startupReach.ts`）
+  生成元: `tests/diagnostics/startupReachStatsReport.test.ts`（計算は `src/analysis/startupReach.ts`。
+  選抜そのものは `src/domain/generation/StartSiteSelection.ts`）
 - [地形生成統計](../../stats/terrain.yaml) — 土地1つあたりの道の本数（連結数）と余分な道の本数の
   分布、次数の分布、道の移動時間
   （[`TerrainGeneration.md`](../engine/TerrainGeneration.md) 3.5節参照）。あわせて**局面ごとの1日**

@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import type { IslandReach, NeedReach, StartupNeedSources } from '../../src/analysis/startupReach';
-import { islandReachOf, STARTUP_NEEDS, startupNeedSourcesOf } from '../../src/analysis/startupReach';
+import { islandReachOf, startupNeedSourcesOf } from '../../src/analysis/startupReach';
+import { STARTUP_NEEDS } from '../../src/domain/generation/StartSiteSelection';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
 import {
@@ -64,19 +65,19 @@ interface StartupReachStats {
   /** 土地の型ごと: そこから始めた場合の、全部が揃うまでの歩数。並びは出現順。 */
   readonly farthestHopsByLocation: Map<string, Stat>;
 
-  /** 島ごと: 最も条件の良いサイトの、全部が揃うまで。 */
-  readonly best: NeedStats;
+  /** 島ごと: 選抜が選んだ開始地点の、全部が揃うまで。 */
+  readonly start: NeedStats;
 
-  /** 島ごと: 最も条件の良いサイトの、要るものごと（並びはSTARTUP_NEEDSと同じ）。 */
-  readonly bestPerNeed: readonly NeedStats[];
+  /** 島ごと: 選抜が選んだ開始地点の、要るものごと（並びはSTARTUP_NEEDSと同じ）。 */
+  readonly startPerNeed: readonly NeedStats[];
 
-  /** 島ごと: 最も条件の良いサイトの土地の型の回数。 */
-  readonly bestLocationCounts: Map<string, number>;
+  /** 島ごと: 選抜が選んだ開始地点の土地の型の回数。 */
+  readonly startLocationCounts: Map<string, number>;
 
   /** 島ごと: その要るものが島のどこでも採れなかった島の数（並びはSTARTUP_NEEDSと同じ）。 */
   readonly missingIslandCounts: number[];
 
-  /** 島ごと: 最も条件の良いサイトからでも届かない要るものがある島の数。 */
+  /** 島ごと: 選抜が選んだ開始地点からでも届かない要るものがある島の数。 */
   islandsWithUnreachableCount: number;
 
   islandCount: number;
@@ -98,9 +99,9 @@ function createStats(): StartupReachStats {
     farthest: createNeedStats(),
     farthestNeedCounts: STARTUP_NEEDS.map(() => 0),
     farthestHopsByLocation: new Map(),
-    best: createNeedStats(),
-    bestPerNeed: STARTUP_NEEDS.map(() => createNeedStats()),
-    bestLocationCounts: new Map(),
+    start: createNeedStats(),
+    startPerNeed: STARTUP_NEEDS.map(() => createNeedStats()),
+    startLocationCounts: new Map(),
     missingIslandCounts: STARTUP_NEEDS.map(() => 0),
     islandsWithUnreachableCount: 0,
     islandCount: 0,
@@ -130,19 +131,19 @@ function collect(stats: StartupReachStats, reach: IslandReach): void {
     stats.farthestHopsByLocation.set(site.locationDefName, byLocation);
   }
 
-  const best = reach.bestSite;
-  stats.bestLocationCounts.set(
-    best.locationDefName,
-    (stats.bestLocationCounts.get(best.locationDefName) ?? 0) + 1,
+  const start = reach.startSite;
+  stats.startLocationCounts.set(
+    start.locationDefName,
+    (stats.startLocationCounts.get(start.locationDefName) ?? 0) + 1,
   );
-  for (const [needIndex, need] of best.needs.entries()) addReach(stats.bestPerNeed[needIndex], need);
+  for (const [needIndex, need] of start.needs.entries()) addReach(stats.startPerNeed[needIndex], need);
 
-  if (best.unreachableNeedCount > 0 || best.farthestNeed === undefined) {
+  if (start.unreachableNeedCount > 0 || start.farthestNeed === undefined) {
     stats.islandsWithUnreachableCount++;
-    stats.best.unreachableSiteCount++;
+    stats.start.unreachableSiteCount++;
     return;
   }
-  addReach(stats.best, best.farthestNeed);
+  addReach(stats.start, start.farthestNeed);
 }
 
 /** 届いていれば3つの数を、届いていなければ届かなかった回数を数える。 */
@@ -239,12 +240,12 @@ function buildSections(sources: StartupNeedSources, stats: StartupReachStats): r
         .sort((a, b) => a[0].localeCompare(b[0]))
         .map(([location, stat]) => statRecord({ location, measure: 'hops', unit: 'hops' }, stat)),
     },
-    { key: 'island_best_site', records: statRecords({}, stats.best) },
-    { key: 'island_best_site_hops_histogram', records: hopsHistogramRecords(stats.best.hops) },
+    { key: 'island_start_site', records: statRecords({}, stats.start) },
+    { key: 'island_start_site_hops_histogram', records: hopsHistogramRecords(stats.start.hops) },
     {
-      key: 'island_best_site_by_need',
+      key: 'island_start_site_by_need',
       records: STARTUP_NEEDS.flatMap((need, index) =>
-        statRecords({ need: need.label }, stats.bestPerNeed[index]),
+        statRecords({ need: need.label }, stats.startPerNeed[index]),
       ),
     },
     {
@@ -254,12 +255,12 @@ function buildSections(sources: StartupNeedSources, stats: StartupReachStats): r
       ),
     },
     {
-      key: 'island_best_site_unreachable',
+      key: 'island_start_site_unreachable',
       records: [shareRecord({}, stats.islandsWithUnreachableCount / stats.islandCount)],
     },
     {
-      key: 'island_best_site_locations',
-      records: [...stats.bestLocationCounts]
+      key: 'island_start_site_locations',
+      records: [...stats.startLocationCounts]
         .sort((a, b) => b[1] - a[1])
         .map(([location, count]) => shareRecord({ location }, count / stats.islandCount)),
     },
