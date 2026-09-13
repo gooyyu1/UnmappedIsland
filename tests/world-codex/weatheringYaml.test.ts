@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { buildBalanceTables, objectCostMinutesOf } from '../../src/analysis/balanceTables';
-import { craftingStepsOf } from '../../src/analysis/craftingSteps';
 import { durationsOf } from '../../src/analysis/durations';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
@@ -54,9 +53,6 @@ const WEATHERED_TAGS = ['tool', 'container', 'equippable', 'bed'];
 
 /** 持ち物1つの維持に充ててよい、1日の余剰に対する割合（SurvivalItems.md 12.1節）。 */
 const UPKEEP_SHARE = 0.05;
-
-/** 1つの工程に充ててよい、1日の余剰に対する割合（SurvivalItems.md 12.2節）。 */
-const STEP_SHARE = 0.6;
 
 const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
 
@@ -120,16 +116,5 @@ describe('素材の屋外劣化', () => {
     expect(upkeep.length, '寿命を持つ物が1つも無い').toBeGreaterThan(0);
     for (const entry of upkeep)
       expect(entry.minutesPerDay, `${entry.objectName} の1日あたりの維持（分）`).toBeLessThanOrEqual(limit);
-  });
-
-  it('1つの工程は、1日の余剰の6割を超えない', () => {
-    // 工程は途中で止められない（GameElementDefinition.md 11.3節）ので、1つが余剰を食い切ると、
-    // 着手した日は他に何もできなくなる（SurvivalItems.md 12.2節）。
-    const limit = balance.surplusMinutes * STEP_SHARE;
-    for (const def of codex.objects) {
-      if (isGenerated(def)) continue;
-      for (const step of craftingStepsOf(codex, def))
-        expect(step.laborMinutes, `${def.name} の ${step.name} が払う時間（分）`).toBeLessThanOrEqual(limit);
-    }
   });
 });

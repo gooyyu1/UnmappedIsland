@@ -28,7 +28,9 @@ traits:
           destroy: self
     passives:
       # 屋根も蓋も無い所に在る間だけ傷む（sheltered、ContainerSystem.md 6節）。**しまい込めば
-      # 止まる**ので、蓋つきの入れ物と洞窟の奥は、そこへ置く値打ちをそのまま持つ。
+      # 止まる**ので、守られた場所へ置くことに値打ちが出る。**今その場所は浅い洞窟だけ**
+      # （sheltered を名乗る唯一の物、locations.yaml）——蓋つきの入れ物は仕組みとしては同じ口に
+      # 乗るが、物としてはまだ無い（docs/world/Containers.md 2節）。
       - conditions:
           - {subject: ancestor, prop: sheltered, eq: 0}
         add: {self: {durability: -1}}

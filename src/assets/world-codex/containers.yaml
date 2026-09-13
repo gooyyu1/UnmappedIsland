@@ -92,7 +92,7 @@ object_defs:
             modify: {self: {load_rate: -0.45}}
     slots:
       contents:
-        # 手持ちの6枠は上回るが、籠（10）には及ばない（docs/world/Containers.md 2節）。
+        # どのキャラクタの手持ちより多いが、籠（10）には及ばない（docs/world/Containers.md 2節）。
         cell_count: 8
         # 丸太（35L）が4本積めるかさ。**実際には重さが先に尽きる**——代表のキャラクタなら42kgで
         # 通れない段（too_heavy）へ入るので、丸太は2本までになる（characters/medic.yaml の load）。
