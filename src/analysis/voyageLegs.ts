@@ -35,7 +35,8 @@ import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId, TagGlobalId } from
  *   ここが出すのは素の横断時間だけ。**風は乗せる**——風は筏ではなく航路が持ち（3.2節）、積み方に
  *   よらないので、同じ航海の幅としてそのまま出せる。
  * - **荒天の押し流しと引き返しは数えない。** どちらも何区間ぶん動くかが実行時にしか決まらない
- *   （3.8節・3.5節）ので、ここが出すのはそれらが起きなかった場合の下限になる。
+ *   （3.8節・3.5節）ので、ここが出すのはそれらが起きなかった場合の下限になる。押し流しのほうは、
+ *   ここが出した辺と時間の上で実際に渡らせて測る（`voyageDrift.ts`）。
  * - **釣りや拾い物に費やす時間は数えない。** 渡るのに要る時間と、渡りながら何が返るかは別の問いで、
  *   後者は見張り1回あたりの割合として出す。
  * - **読み方が定義とずれたら投げる。** 宣言の形（航路が行き先を型で書く・風の受け方が向きと風向きの
@@ -71,6 +72,16 @@ export interface SeaLeg {
   /** 行き先が名乗る「本土まであと何海区か」（航路の `destination_zones_to_mainland`）。 */
   readonly destinationZonesToMainland: number;
   readonly direction: LegDirection;
+
+  /**
+   * 風ごとの、この辺を漕ぎ出すのにかかる時間（分）。素の横断時間へ風の受け方を乗せ、航路の `range` で
+   * 底を打ったもので、**筏の側の事情は乗っていない**。
+   *
+   * **1本の辺を何分で渡るかを出す場所はここだけ。** 針路の合計（{@link VoyageCourse}）も、押し流しを
+   * 入れて渡らせる側（`voyageDrift.ts`）も同じ値を読む——別々に組み立てると、底を打つのを片方が
+   * 忘れても緑のままになる。
+   */
+  readonly crossingMinutesByWind: ReadonlyMap<string, number>;
 }
 
 /** 海区1つ。 */
@@ -188,16 +199,15 @@ const DESTINATION_ZONES_TO_MAINLAND_PROPERTY = 'destination_zones_to_mainland';
 export function voyageLegsOf(codex: WorldCodex, labour: DailyLabour): VoyageLegs {
   const ids = idsOf(codex);
   const routes = routeDestinationsOf(codex, ids);
-  const zones = zoneReadingsOf(codex, ids, routes);
   const winds = windDrawOf(codex, ids);
   const crossings = crossingsByRouteOf(codex, ids, routes, winds);
+  const zones = zoneReadingsOf(codex, ids, routes, crossings, winds);
 
   return {
     zones,
     windLegs: windLegsOf(winds, crossings),
     courses: coursesOf(codex, ids, {
       zones: new Map(zones.map((zone) => [zone.name, zone])),
-      crossings,
       winds,
       seasonShares: seasonWindSharesOf(codex, ids, winds),
       labour,
@@ -278,12 +288,14 @@ function zoneReadingsOf(
   codex: WorldCodex,
   ids: VoyageIds,
   routes: ReadonlyMap<ObjectGlobalId, RouteReading>,
+  crossings: ReadonlyMap<string, RouteCrossing>,
+  winds: readonly WindDraw[],
 ): readonly SeaZoneReading[] {
   const zones: SeaZoneReading[] = [];
   for (const def of codex.objects) {
     const progress = def.tryGetPropertyDef(ids.explorationProgressId);
     if (!def.hasTag(ids.seaTagId) || progress === undefined) continue;
-    zones.push(zoneReadingOf(codex, ids, routes, def, progress));
+    zones.push(zoneReadingOf(codex, ids, routes, crossings, winds, def, progress));
   }
   if (zones.length === 0) throw new Error('見張れる海区が1つもありません。');
   return zones;
@@ -293,6 +305,8 @@ function zoneReadingOf(
   codex: WorldCodex,
   ids: VoyageIds,
   routes: ReadonlyMap<ObjectGlobalId, RouteReading>,
+  crossings: ReadonlyMap<string, RouteCrossing>,
+  winds: readonly WindDraw[],
   def: ObjectDef,
   progress: PropertyDef,
 ): SeaZoneReading {
@@ -307,17 +321,18 @@ function zoneReadingOf(
   const zonesToMainland = declaredValueOf(def, ids.zonesToMainlandId);
   const yields = yieldsOf(codex, ids, explore.outcomes);
   const lookouts = range.max;
+  const crossingMinutes = declaredValueOf(def, ids.crossingMinutesId);
 
   return {
     name: def.name,
     zonesToMainland,
     lookouts,
     lookoutMinutes: lookouts * explore.laborMinutes,
-    crossingMinutes: declaredValueOf(def, ids.crossingMinutesId),
+    crossingMinutes,
     stormDriftTicks: rangeMaxOf(def, ids.stormDriftId),
     ...yields,
     spawnedBySighting: 1 - (1 - yields.spawnedShare) ** lookouts,
-    legs: legsOf(routes, def, progress, zonesToMainland),
+    legs: legsOf(routes, crossings, winds, def, progress, zonesToMainland, crossingMinutes),
   };
 }
 
@@ -378,9 +393,12 @@ function yieldsOf(codex: WorldCodex, ids: VoyageIds, outcomes: readonly StepOutc
  */
 function legsOf(
   routes: ReadonlyMap<ObjectGlobalId, RouteReading>,
+  crossings: ReadonlyMap<string, RouteCrossing>,
+  winds: readonly WindDraw[],
   def: ObjectDef,
   progress: PropertyDef,
   zonesToMainland: number,
+  crossingMinutes: number,
 ): readonly SeaLeg[] {
   const legs: SeaLeg[] = [];
   const seen = new Set<ObjectGlobalId>();
@@ -392,12 +410,24 @@ function legsOf(
         if (route === undefined || route.destinationName === def.name) continue;
         if (seen.has(spawn.objectGlobalId)) continue;
         seen.add(spawn.objectGlobalId);
+
+        const crossing = crossings.get(route.def.name);
+        if (crossing === undefined) throw new Error(`航路 '${route.def.name}' の風の受け方が読めません。`);
+
+        const direction =
+          route.destinationZonesToMainland < zonesToMainland ? 'toward_mainland' : 'toward_offshore';
         legs.push({
           routeName: route.def.name,
           destinationName: route.destinationName,
           destinationZonesToMainland: route.destinationZonesToMainland,
-          direction:
-            route.destinationZonesToMainland < zonesToMainland ? 'toward_mainland' : 'toward_offshore',
+          direction,
+          crossingMinutesByWind: new Map(
+            winds.map(({ wind }) => {
+              // 航路の range が底（`voyage.yaml`「寄与がどれだけ重なっても横断時間が消えないための底」）。
+              const raw = crossingMinutes + (crossing.windMinutes.get(windKey(wind, direction)) ?? 0);
+              return [wind, crossing.range?.clamp(raw) ?? raw];
+            }),
+          ),
         });
       }
   }
@@ -548,7 +578,6 @@ function departuresOf(codex: WorldCodex, ids: VoyageIds): readonly Departure[] {
 /** 針路を1本組むのに要るもの。出航地点ごとに変わらないので、まとめて渡す。 */
 interface CourseContext {
   readonly zones: ReadonlyMap<string, SeaZoneReading>;
-  readonly crossings: ReadonlyMap<string, RouteCrossing>;
 
   /** 風向きの一覧。**寄与を宣言していない風もここに居る**——その風では素のまま渡る。 */
   readonly winds: readonly WindDraw[];
@@ -600,7 +629,7 @@ function courseOf(
   departure: Departure,
   zoneNames: readonly string[],
   detour: boolean,
-  { zones, crossings, winds, seasonShares, labour }: CourseContext,
+  { zones, winds, seasonShares, labour }: CourseContext,
 ): VoyageCourse {
   let lookouts = 0;
   let lookoutMinutes = 0;
@@ -626,13 +655,11 @@ function courseOf(
     );
     if (leg === undefined) throw new Error(`海区 '${name}' から先へ出る辺が読めません。`);
 
-    const crossing = crossings.get(leg.routeName);
-    if (crossing === undefined) throw new Error(`航路 '${leg.routeName}' の風の受け方が読めません。`);
-
     for (const { wind } of winds) {
-      // 航路の range が底（`voyage.yaml`「寄与がどれだけ重なっても横断時間が消えないための底」）。
-      const raw = zone.crossingMinutes + (crossing.windMinutes.get(windKey(wind, leg.direction)) ?? 0);
-      crossingByWind.set(wind, (crossingByWind.get(wind) ?? 0) + (crossing.range?.clamp(raw) ?? raw));
+      const minutes = leg.crossingMinutesByWind.get(wind);
+      if (minutes === undefined)
+        throw new Error(`航路 '${leg.routeName}' に風 '${wind}' で渡る時間がありません。`);
+      crossingByWind.set(wind, (crossingByWind.get(wind) ?? 0) + minutes);
     }
   }
 
