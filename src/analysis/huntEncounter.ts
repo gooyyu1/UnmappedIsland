@@ -151,7 +151,7 @@ class Encounter {
     this.injuriesSlotId = codex.slotNames.getId('injuries');
     this.charactersSlotId = codex.slotNames.getId('characters');
     this.bloodId = codex.propertyNames.getId('blood');
-    this.consciousnessId = codex.propertyNames.getId('consciousness');
+    this.consciousnessId = codex.vocabulary.world.consciousnessId;
     this.warinessId = codex.propertyNames.getId('wariness');
 
     this.session = new WorldSession(codex, undefined, rng);
