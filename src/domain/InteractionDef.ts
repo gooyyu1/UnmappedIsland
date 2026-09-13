@@ -69,7 +69,7 @@ export class InteractionDef {
    * （PassiveReader参照）。一式をまるごと読む相手はこちらを呼ぶ。
    */
   readPassives(reader: PassiveReader): void {
-    this.passives.read(reader);
+    this.passives.readBy(reader);
   }
 
   /** 経過の間だけ効く持続効果（11.7節）の宣言。1つも宣言していなければ空。
@@ -94,8 +94,8 @@ export class InteractionDef {
   }
 
   /** この操作が何を起こすと宣言しているかを読み上げる（EffectReader参照）。 */
-  read(reader: EffectReader): void {
-    this.effect.read(reader);
+  readBy(reader: EffectReader): void {
+    this.effect.readBy(reader);
   }
 
   /**

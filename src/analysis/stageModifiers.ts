@@ -21,7 +21,7 @@ export function stageModifyDeltasOf(
   gateByPropertyGlobalId: PropertyGlobalId,
 ): ReadonlyMap<string, number> {
   const collector = new StageModifyCollector(propertyGlobalId, gateByPropertyGlobalId);
-  def.passives.read(collector);
+  def.passives.readBy(collector);
   return collector.deltas;
 }
 

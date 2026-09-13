@@ -541,7 +541,12 @@ describe('traps.yamlの落とし穴', () => {
     // becomeは同じ個体のまま型を差し替える（9.9節）ので、杭が変えるのは刺す怪我だけ
     // （TrapSystem.md 1.2節）——掘り直しにはならない。
     open(CATCHES_BOAR);
-    tick(3);
+    tick(2);
+    // 埋まる速さは**宣言から読む**。直値で書くと、レートを動かしたときにここだけが古い数を主張する
+    // ——見たいのは杭が引き継ぐことであって、1tickにいくら埋まるかではない。
+    const beforeIdleTick = pitfall.tryGetProperty(durabilityId)!.getEffectiveValue();
+    tick(1);
+    const idleRate = beforeIdleTick - pitfall.tryGetProperty(durabilityId)!.getEffectiveValue();
     const before = {
       remaining: pitfall.tryGetProperty(catchRemainingId)!.getEffectiveValue(),
       durability: pitfall.tryGetProperty(durabilityId)!.getEffectiveValue(),
@@ -551,13 +556,14 @@ describe('traps.yamlの落とし穴', () => {
     expect(pitfall.def.name, '杭を打った版へ変わる').not.toBe('pitfall');
     expect(pitfall.parent, '掘った土地に据わったまま').toBe(forest);
     // 打っている1時間（4 tick）ぶんは待ちも耐久も普段どおり進む。引き継ぐとは、そこから続く
-    // ということ——生まれ直した罠なら、どちらも振り出し（16と2,880）へ戻る。
+    // ということ——生まれ直した罠なら、どちらも振り出し（16と満タン）へ戻る。
     const STAKING_TICKS = 4;
     expect(pitfall.tryGetProperty(catchRemainingId)!.getEffectiveValue(), '待ちは引き継ぐ').toBe(
       before.remaining - STAKING_TICKS,
     );
-    expect(pitfall.tryGetProperty(durabilityId)!.getEffectiveValue(), '掘った穴も引き継ぐ').toBe(
-      before.durability - STAKING_TICKS,
+    expect(pitfall.tryGetProperty(durabilityId)!.getEffectiveValue(), '掘った穴も引き継ぐ').toBeCloseTo(
+      before.durability - idleRate * STAKING_TICKS,
+      6,
     );
     expect(tickUntilCaught().def.name, '掛かる相手も変わらない').toBe('wild_boar');
   });

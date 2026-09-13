@@ -403,10 +403,16 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 （`WorldSession.advanceWorldTime` → `WorldObject.runTickActions`）。値の積分（`WorldObject.tick`）を終えて
 から配るので、動物が動くのは「そのtickの値が出そろった後」になります。
 
-**配る先を絞りません。** 動物はプレイヤーを見ているわけではないので、目を離した拠点の物も持ち去られます。
+**居場所では絞りません。** 動物はプレイヤーを見ているわけではないので、目を離した拠点の物も持ち去られます。
 罠の中や入れ物の中に居ても手番は回りますが、周りに相手が居なければ候補が全部外れて様子見になるだけです
 ——**何ができるかを決めるのは世界の側**（5.1 節の `among`）で、エンジンは「地面に居る動物だけ」のような
 絞り込みを持ちません。
+
+**絞らないのは居場所だけで、状態は別です。** 気を失っている個体には手番そのものが回りません
+（[`VitalsSystem.md`](./VitalsSystem.md) 6 節）——**そこだけは候補の重みでは表せないから**です。気絶は
+警戒を落としますが、警戒が打ち消すのは踏み込む手と逃走までで（5.5 節）、警戒を見ていない手は素の配分の
+まま抽選に残ります。**倒した獣が足元の物をくわえるのを止めるには、配分ではなく手番の側を止めるしか
+ありません。** 止める側が読むのは段の名前だけで、しきい値も、何がそこまで奪ったのかも知りません。
 
 **配る前に集めます。** 手番は物を増減させ、逃げれば別の土地へ移るので、走査しながら配ると同じ個体へ
 二度回りえます。集めてから配れば1 tickに1手だけになり、手番の途中で消えた個体は飛ばされます。
@@ -421,7 +427,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 **この1点が、狩りが最後まで通るかどうかを決めます。** 道が1本でも通っていれば、どの獣も1〜2手で
 居なくなります——追い詰めたイノシシは槍で**100%**<!-- stats: hunt.yaml ending animal=wild_boar weapon=spear escape_routes=0 ending=felled share -->
 倒れるのに、同じ相手が道のある土地では**16.00%**<!-- stats: hunt.yaml ending animal=wild_boar weapon=spear escape_routes=1 ending=felled share -->
-しか倒れず、残りは平均**2.90手**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=1 measure=turns mean -->で
+しか倒れず、残りは平均**2.91手**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=1 measure=turns mean -->で
 逃げていきます（[`HuntStats.md`](../diagnostics/HuntStats.md) の `ending` 節。2026-09-13 時点）。
 **開けた土地で獲れるのは、一撃で沈められる相手だけです**——大型は、道の無い土地へ追い詰めるか、
 深手を負わせて追う（5.6 節）かのどちらかになります。

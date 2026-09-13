@@ -156,7 +156,7 @@ export class ConditionNode {
    * この条件が何を書いているかを読み上げる（ConditionReader参照）。**kindごとに使うフィールドだけを
    * 引数で渡す**ので、読み手はこのクラスの持ち方（単一クラス+kind）を知らなくてよい。
    */
-  read(reader: ConditionReader): void {
+  readBy(reader: ConditionReader): void {
     switch (this.kind) {
       case 'property':
         return reader.property({

@@ -54,13 +54,6 @@ const BUILTIN_GAUGE_KEYS = { fill: '@fill', capacity: '@capacity', material: '@m
 const NEUTRAL_ENDS = { atMin: 'neutral', atMax: 'neutral', worsensUpward: false } as const;
 
 /**
- * 気を失っていることを言う覆い（overlayOf、CardView.md 9.1節・VitalsSystem.md 6節）を判定するために
- * 読むプロパティの名前。意識のバー自体は`gauge`宣言経由で汎用に出るが、覆いを出すかどうかは
- * `unconscious`という段の名前（UNCONSCIOUS_STAGE）と対で決まる仕組みなので、こちらは名前を直読みする。
- */
-const CONSCIOUSNESS_PROPERTY = 'consciousness';
-
-/**
  * カードの輪郭を明滅させるかを決めるプロパティの名前（animals.yaml・CardView.md 3節）。安全域を外れている間だけ明滅する。
  *
  * UI側は「この名前のプロパティが安全域を外れたら明滅する」とだけ知っていて、何がどれだけ危ないかは
@@ -118,14 +111,6 @@ const TREATED_MARK = '🩹';
  */
 const BLEEDING_PROPERTY = 'bleeding';
 const BLEEDING_MARK = '🩸';
-
-/**
- * 気を失っていることを言う覆いと、それを決める段の名前（VitalsSystem.md 6節）。
- *
- * UI側は「意識がこの名前の段に居たら覆いを出す」とだけ知っていて、何がどれだけ意識を奪ったかは
- * 知らない。段の名前を宣言しているのはワールドの側だけ（`load`の`too_heavy`と同じ分担）。
- */
-const UNCONSCIOUS_STAGE = 'unconscious';
 
 /**
  * 札の見た目（CardView.md）。**ワールドの今の状態だけから決まる**——誰が操作するのかも、今どこに
@@ -193,12 +178,18 @@ export function cardLooksOf(
       ];
     });
 
-  const consciousnessPropertyId = codex.propertyNames.tryGetId(CONSCIOUSNESS_PROPERTY);
-  /** 気を失っているカードへ出す覆い（CardView.md 9.1節）。意識を持たない物・起きている物はundefined。 */
+  /**
+   * 気を失っているカードへ出す覆い（CardView.md 9.1節）。意識を持たない物・起きている物はundefined。
+   *
+   * 意識のバー自体は`gauge`宣言経由で汎用に出るが、覆いを出すかどうかは`unconscious`という段の名前と
+   * 対で決まる。**その綴りはここで決めない**——手番を飛ばす側と一致していなければならないので、
+   * 語彙の側が1つだけ持つ（`WorldVocabulary`・VitalsSystem.md 6節）。UI側が知るのは「意識がこの段に
+   * 居たら覆いを出す」だけで、何がどれだけ意識を奪ったかは知らない。
+   */
+  const { consciousnessId, unconsciousStage } = codex.vocabulary.world;
   const overlayOf = (object: WorldObject): string | undefined =>
-    consciousnessPropertyId !== undefined &&
-    (object.tryGetProperty(consciousnessPropertyId)?.isInStage(UNCONSCIOUS_STAGE) ?? false)
-      ? locale.stage(UNCONSCIOUS_STAGE)
+    (object.tryGetProperty(consciousnessId)?.isInStage(unconsciousStage) ?? false)
+      ? locale.stage(unconsciousStage)
       : undefined;
 
   const warinessPropertyId = codex.propertyNames.tryGetId(WARINESS_PROPERTY);

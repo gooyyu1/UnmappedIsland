@@ -29,8 +29,17 @@ interface Doc {
   readonly head?: string;
 }
 
-/** 差し替えた `gh`・`git` で判定を1回走らせる。`files` は差分のファイル、`diff` は `gh pr diff` の出力。 */
-function judge(files: readonly string[], diff: string, docs: Readonly<Record<string, Doc>> = {}): Result {
+/**
+ * 差し替えた `gh`・`git` で判定を1回走らせる。`files` は差分のファイル、`diff` は `gh pr diff` の出力。
+ * `issues` は `gh issue view` が返す issue のラベル——**並べなかった番号は「引けない」**（実在しない
+ * 番号を指した出どころと同じ）。
+ */
+function judge(
+  files: readonly string[],
+  diff: string,
+  docs: Readonly<Record<string, Doc>> = {},
+  issues: Readonly<Record<string, readonly string[]>> = {},
+): Result {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-needs-user-review-'));
   try {
     const dir = pathForBash(work);
@@ -48,6 +57,12 @@ function judge(files: readonly string[], diff: string, docs: Readonly<Record<str
       }
     }
 
+    mkdirSync(join(work, 'issue'));
+    for (const [number, labels] of Object.entries(issues)) {
+      const json = JSON.stringify({ labels: labels.map((name) => ({ name })) });
+      writeFileSync(join(work, 'issue', number), json, 'utf-8');
+    }
+
     const gh = join(work, 'gh');
     writeFileSync(
       gh,
@@ -57,6 +72,12 @@ function judge(files: readonly string[], diff: string, docs: Readonly<Record<str
         // 式を変えればここも一緒に動く。スタブが取り出し方を真似ると、式だけ変えても緑のまま通る。
         `if [[ "$*" == *RefOid* ]]; then\n` +
         `  printf '%s' '{"headRefOid":"head0000","baseRefOid":"base0000"}' | jq -r "\${@: -1}"\n` +
+        `  exit 0\nfi\n` +
+        // `gh issue view <番号> --json labels --jq <式>`。本物と同じく、無い番号では失敗する。
+        `if [ "$1" = issue ]; then\n` +
+        `  f='${dir}/issue'/"$3"\n` +
+        `  [ -f "$f" ] || exit 1\n` +
+        `  jq -r "\${@: -1}" <"$f"\n` +
         `  exit 0\nfi\n` +
         `cat '${dir}/files'\n`,
       'utf-8',
@@ -153,7 +174,7 @@ describe('needs-user-review.sh の MARK と SOURCED', () => {
   const HEADING = '## 9.3 未解放レシピの理由は押している間だけ出す';
   const doc = (heading: string, body: readonly string[]): string => `${heading}\n\n${body.join('\n')}\n`;
 
-  it('出どころの1行があるなら、印が増えても止めない', () => {
+  it('出どころの1行があり、その issue が答えを待っていないなら、印が増えても止めない', () => {
     const result = judge(
       [PATH],
       hunk(PATH, ['-## 9.3 未解放レシピの理由は押している間だけ出す', `+${HEADING}【確定】`]),
@@ -167,6 +188,7 @@ describe('needs-user-review.sh の MARK と SOURCED', () => {
           ]),
         },
       },
+      { 656: ['kind:ask'] },
     );
 
     expect(result.lines).toEqual([`SOURCED ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】`]);
@@ -190,10 +212,61 @@ describe('needs-user-review.sh の MARK と SOURCED', () => {
           ]),
         },
       },
+      { 1970: ['kind:task', 'origin:agent'] },
     );
 
     expect(result.lines).toEqual([`SOURCED ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】`]);
     expect(result.code).toBe(1);
+  });
+
+  // 出どころは申告なので、嘘は書ける。**答えたという合図は `判断待ち` を外すこと**
+  // （`parallel-work.md`「チェックだけでは、機械は拾わない」）なので、ラベルが残っている issue を
+  // 指した印は、**まだ誰も決めていない確定**。緩めると、訊いておきさえすれば確定を増やせる。
+  it('出どころが指す issue が、まだ `判断待ち` なら止める', () => {
+    const result = judge(
+      [PATH],
+      hunk(PATH, ['-## 9.3 未解放レシピの理由は押している間だけ出す', `+${HEADING}【確定】`]),
+      {
+        [PATH]: {
+          base: doc(HEADING, ['押している間だけ吹き出しで出す。']),
+          head: doc(`${HEADING}【確定】`, [
+            '**出どころ**: [#1970](https://github.com/gooyyu1/UnmappedIsland/issues/1970)（押している間の吹き出しで出す）',
+            '',
+            '押している間だけ出す。',
+          ]),
+        },
+      },
+      { 1970: ['kind:task', '判断待ち'] },
+    );
+
+    expect(result.lines).toEqual([
+      `UNANSWERED ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】 … #1970 は答えを待ったまま`,
+    ]);
+    expect(result.code).toBe(0);
+  });
+
+  // 実在しない番号を指した出どころも、答えの在処が読めない点では同じ。**引けなかったことを
+  // 「答えが出ている」の側へ倒さない**——倒すと、`gh` が失敗した回だけ確定が素通りする。
+  it('出どころが指す issue を引けなければ止める', () => {
+    const result = judge(
+      [PATH],
+      hunk(PATH, ['-## 9.3 未解放レシピの理由は押している間だけ出す', `+${HEADING}【確定】`]),
+      {
+        [PATH]: {
+          base: doc(HEADING, ['押している間だけ吹き出しで出す。']),
+          head: doc(`${HEADING}【確定】`, [
+            '**出どころ**: #99999（押している間の吹き出しで出す）',
+            '',
+            '押している間だけ出す。',
+          ]),
+        },
+      },
+    );
+
+    expect(result.lines).toEqual([
+      `UNANSWERED ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】 … #99999 を引けなかった`,
+    ]);
+    expect(result.code).toBe(0);
   });
 
   // `ユーザーの指示` は、issue を通らず対話の中で決まったもの（`DocumentStyle.md` 6.1節）。

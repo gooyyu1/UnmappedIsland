@@ -240,7 +240,7 @@ export function staticConditionTruth(
   subject: StaticSubjectReader,
 ): boolean | undefined {
   const reader = new ConditionTruthReader(subject);
-  condition.read(reader);
+  condition.readBy(reader);
   return reader.truth;
 }
 

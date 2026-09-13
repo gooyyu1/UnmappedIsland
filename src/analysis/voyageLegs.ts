@@ -458,7 +458,7 @@ function windDrawOf(codex: WorldCodex, ids: VoyageIds): readonly WindDraw[] {
 
   const draws: WindDraw[] = [];
   for (const [, effect] of remaining.rangeEvents())
-    for (const candidate of pickCandidatesOf((reader) => effect.read(reader))) {
+    for (const candidate of pickCandidatesOf((reader) => effect.readBy(reader))) {
       const assigned = candidate.setValues.get(ids.windId);
       if (candidate.weightPropertyGlobalId === undefined || assigned === undefined) continue;
 
@@ -497,7 +497,7 @@ function crossingsByRouteOf(
   const byRoute = new Map<string, RouteCrossing>();
   for (const route of routes.values()) {
     const collector = new WindModifyCollector(codex, ids, winds);
-    route.def.passives.read(collector);
+    route.def.passives.readBy(collector);
     byRoute.set(route.def.name, {
       windMinutes: collector.minutes,
       range: route.def.tryGetPropertyDef(ids.crossingMinutesId)?.range,
@@ -564,7 +564,7 @@ function departuresOf(codex: WorldCodex, ids: VoyageIds): readonly Departure[] {
   if (trigger === undefined) throw new Error(`${SET_SAIL} の宣言が読めません。`);
 
   const zoneByWeight = new Map<PropertyGlobalId, string>();
-  for (const candidate of pickCandidatesOf((reader) => trigger.interaction.read(reader))) {
+  for (const candidate of pickCandidatesOf((reader) => trigger.interaction.readBy(reader))) {
     const zone = candidate.movedToObjectGlobalIds.at(0);
     if (candidate.weightPropertyGlobalId === undefined || zone === undefined) continue;
     zoneByWeight.set(candidate.weightPropertyGlobalId, codex.objects.get(zone).name);
@@ -719,9 +719,9 @@ interface PickCandidateSummary {
   readonly setValues: ReadonlyMap<PropertyGlobalId, number>;
 }
 
-function pickCandidatesOf(read: (reader: EffectReader) => void): readonly PickCandidateSummary[] {
+function pickCandidatesOf(readBy: (reader: EffectReader) => void): readonly PickCandidateSummary[] {
   const reader = new EffectSummaryReader();
-  read(reader);
+  readBy(reader);
   return reader.candidates;
 }
 
@@ -747,7 +747,7 @@ class EffectSummaryReader implements EffectReader {
   pick(reading: PickReading): void {
     reading.forEachCandidate((candidate) => {
       const inner = new EffectSummaryReader();
-      candidate.effect.read(inner);
+      candidate.effect.readBy(inner);
       this.candidates.push({
         weightPropertyGlobalId: weightPropertyOf(candidate.weight),
         movedToObjectGlobalIds: inner.movedToObjectGlobalIds,
@@ -824,7 +824,7 @@ function windGateOf(
   if (conditions === undefined) return { wind: undefined, directions: LEG_DIRECTIONS };
 
   const reader = new WindGateReader(codex, ids);
-  conditions.read(reader);
+  conditions.readBy(reader);
   if (reader.unreadable) throw new Error('航路の横断時間への寄与に、読めない条件が付いています。');
   return {
     wind: reader.wind,
@@ -866,7 +866,7 @@ class WindGateReader implements ConditionReader {
   }
 
   all(children: readonly ConditionDeclaration[]): void {
-    for (const child of children) child.read(this);
+    for (const child of children) child.readBy(this);
   }
 
   any(): void {

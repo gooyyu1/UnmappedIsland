@@ -9,18 +9,18 @@ import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId } from './GlobalId'
  * この形で渡す（docs/CodeStructure.md 5節「読み下せる宣言だけを外へ出す」）。
  */
 export interface EffectDeclaration {
-  read(reader: EffectReader): void;
+  readBy(reader: EffectReader): void;
 }
 
 /**
- * 一時的な効果（9・10節）が**何を宣言しているか**を読み上げる相手（ActiveEffect.read）。
+ * 一時的な効果（9・10節）が**何を宣言しているか**を読み上げる相手（ActiveEffect.readBy）。
  *
  * 効果の木そのものは外へ出さない。出すのは「setがある」「pickの候補が3つあって重みはこれ」という
  * 宣言の読み上げだけで、**それをどう解釈するか（重みを確率へ直す・期待値を取る・値域の端を割ったと
  * みなす）は読み手の裁量**——定義から数値を導く近似は、ドメインではなく解析側（`src/analysis`）に置く。
  *
  * 動詞ごとにメソッドを持つのは、効果を1つ足したときに読み手が黙って取りこぼさないようにするため
- * （`read`は抽象なので、実装を書かない効果はコンパイルが通らない）。
+ * （`readBy`は抽象なので、実装を書かない効果はコンパイルが通らない）。
  */
 export interface EffectReader {
   /** `set`（9.2節）。絶対値を代入する。 */
@@ -167,7 +167,7 @@ export interface PickReading {
 export interface PickCandidateReading {
   readonly weight: DeclaredNumberReading;
 
-  /** この候補が起こすこと。`read`でさらに読み下げる。 */
+  /** この候補が起こすこと。`readBy`でさらに読み下げる。 */
   readonly effect: EffectDeclaration;
 
   /**

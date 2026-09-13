@@ -346,7 +346,7 @@ function exploreSpawnsOf(codex: WorldCodex, locationDef: ObjectDef): ReadonlySet
   if (explore === undefined) throw new Error(`土地 '${locationDef.name}' が探索を宣言していません。`);
 
   const collector = new SpawnCollector();
-  explore.interaction.read(collector);
+  explore.interaction.readBy(collector);
   return collector.objectGlobalIds;
 }
 

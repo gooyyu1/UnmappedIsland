@@ -324,7 +324,7 @@ export function cheapestStackOf(
 /** その型が、据えた先（祖先）のプロパティを常時いくつ押し上げるか。段や条件で縛られた寄与は数えない。 */
 function ancestorLiftOf(def: ObjectDef, propertyGlobalId: PropertyGlobalId): number {
   const collector = new AncestorLiftCollector(propertyGlobalId);
-  def.passives.read(collector);
+  def.passives.readBy(collector);
   return collector.lift;
 }
 

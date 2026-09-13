@@ -27,10 +27,11 @@ const MAX_DIM = 0.42;
 const MAX_GLOW = 0.14;
 
 /**
- * 翳りの効き方。1未満だと、明るさが下がり始めた側で速く濃くなる。**暗さは、光が少し減っただけで
- * 大きく効く**（正午の嵐と曇りの差は明るさでは5段だが、目にはそれ以上に暗く映る）。
+ * 底からの深さを翳りの濃さへ変える累乗の指数。1未満だと、明るさが下がり始めた側で速く濃くなる
+ * ——**暗さは、光が少し減っただけで大きく効く**（正午の嵐と曇りの差は明るさでは5段だが、目には
+ * それ以上に暗く映る）。
  */
-const DIM_CURVE = 0.5;
+const DIM_EXPONENT = 0.5;
 
 /**
  * その明るさのときにフィールドエリアへかぶせる色。かぶせるものが無ければundefined。
@@ -43,7 +44,7 @@ export function skyTintFor(ambientBrightness: number | undefined): SkyTint | und
   if (ambientBrightness < NEUTRAL_BRIGHTNESS) {
     const depth =
       (NEUTRAL_BRIGHTNESS - Math.max(DARKEST, ambientBrightness)) / (NEUTRAL_BRIGHTNESS - DARKEST);
-    return { color: COLOR.skyShade, alpha: MAX_DIM * depth ** DIM_CURVE, additive: false };
+    return { color: COLOR.skyShade, alpha: MAX_DIM * depth ** DIM_EXPONENT, additive: false };
   }
 
   const height =

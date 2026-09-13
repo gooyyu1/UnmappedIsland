@@ -36,7 +36,7 @@ export class BecomeEffect extends ActiveEffect {
     return target !== undefined && !target.canBecomeAlong(this.axisValues);
   }
 
-  read(reader: EffectReader): void {
+  readBy(reader: EffectReader): void {
     reader.become(this.subject.reading, this.axisValues);
   }
 }
