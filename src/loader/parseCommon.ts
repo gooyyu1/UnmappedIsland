@@ -211,7 +211,7 @@ export function parseDeclaredNumber(
 }
 
 /** `{subject, prop}`（10.2節）の1つ分。`subject`を省けば`self`。 */
-export function parsePropertyRef(
+function parsePropertyRef(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YAMLMap,

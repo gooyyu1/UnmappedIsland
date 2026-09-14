@@ -5,6 +5,7 @@ import {
   entriesInOrder,
   requireKnownKeys,
   requireNumber,
+  requireScalar,
   tryGetBool,
   tryGetInt,
   tryGetMap,
@@ -13,15 +14,16 @@ import {
 } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { parseRequirementList } from './parseConditions';
-import { withYamlContext, parsePropertyRef, parseTypeMatchRule } from './parseCommon';
+import { withYamlContext, parseTypeMatchRule } from './parseCommon';
 import { parsePickList } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../domain/RecipeDef';
+import { RecipeDef, RecipeDeftnessDef, RecipeRequirementDef, RecipeStepDef } from '../domain/RecipeDef';
 import { PickEffect } from '../domain/PickEffect';
 import { ReferenceScope } from '../domain/ReferenceRoot';
 
 const RECIPE_KEYS = ['icon', 'steps', 'conditions', 'deftness', 'surplus'];
 const STEP_KEYS = ['requires', 'duration'];
+const DEFTNESS_KEYS = ['skill', 'from_stage', 'minutes'];
 const REQUIREMENT_KEYS = ['object', 'tag', 'count', 'consume'];
 
 function parseRequirement(
@@ -67,9 +69,9 @@ function parseStep(loader: WorldCodexYamlLoader, context: string, node: YamlNode
  * `steps.requires`とは別物。判定する時点では成果物のインスタンスがまだ無いので、そこを起点に辿る
  * 参照は解決先を持たない（何を書けるかは下のReferenceScope.acting.withoutSelfが決める）。
  *
- * **`deftness`（手際）も同じ場所で解く**——読むのは工程を進める最中で、そこに居るのはまだ作りかけ
- * であって成果物ではない。一方**`surplus`（余分の卓）はselfが居る**——引くのは完成した瞬間で、
- * 同じ個体が既に成果物になっている（9.9節の`become`）。
+ * **`deftness`（手際）は参照を持たない**——見るのは作り手の腕の段だけで、そこを読むのは工程を進める
+ * 最中だから（RecipeDeftnessDef）。一方**`surplus`（余分の卓）はselfが居る**——引くのは完成した
+ * 瞬間で、同じ個体が既に成果物になっている（9.9節の`become`）。
  */
 export function parseRecipes(
   loader: WorldCodexYamlLoader,
@@ -101,12 +103,12 @@ export function parseRecipes(
       deftnessNode === undefined
         ? undefined
         : withYamlContext(`${context}.deftness`, () => {
-            requireKnownKeys(deftnessNode, ['subject', 'prop'], `${context}.deftness`);
-            return parsePropertyRef(
-              loader,
-              `${context}.deftness`,
-              deftnessNode,
-              ReferenceScope.acting.withoutSelf,
+            const deftnessContext = `${context}.deftness`;
+            requireKnownKeys(deftnessNode, DEFTNESS_KEYS, deftnessContext);
+            return new RecipeDeftnessDef(
+              loader.propertyNames.intern(requireScalar(deftnessNode, 'skill', deftnessContext)),
+              requireScalar(deftnessNode, 'from_stage', deftnessContext),
+              requireNumber(deftnessNode, 'minutes', deftnessContext),
             );
           });
 

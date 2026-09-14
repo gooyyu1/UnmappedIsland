@@ -357,7 +357,7 @@
   ありません。
 
 **1基で段に届きます**——縄が1本要るためで、囲いが丸太4本と縄2本で1つでも段になるのと同じ理由です
-（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の1.04日<!-- stats: terrain.yaml work_piles pile=干し場 days -->は、この1基ぶんです。**
+（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の1.16日<!-- stats: terrain.yaml work_piles pile=干し場 days -->は、この1基ぶんです。**
 
 **素手の天日干しは、干し場が建っても残ります**（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md)
 の「後から足す手段は、既存の手段を残す強さに抑える」節）。空心菜・バナナ・ヤシの果肉とゼリーは
@@ -438,7 +438,7 @@
 どれも同じ1つの軸（`cure`）の上に並びます。
 
 **1基で段に届きます**——編んだ葉6枚と縄2本が要るためで、干し場が縄1本で段に届くのと同じ理由です
-（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の2.16日<!-- stats: terrain.yaml work_piles pile=燻し小屋 days -->は、この1基ぶんです。**
+（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の2.38日<!-- stats: terrain.yaml work_piles pile=燻し小屋 days -->は、この1基ぶんです。**
 
 **実装済みです**（`src/assets/world-codex/smoking.yaml`。`tests/world-codex/smokingYaml.test.ts` が
 上の線を全部確かめます）。
@@ -446,7 +446,7 @@
 ## 12. 効果値と工程の時間は、1日の余剰から逆算する
 
 **物の値は、1日の余剰——生存に要る労働を払って残る時間——のうち、その物が食う割合で決めます。**
-余剰は927分<!-- stats: terrain.yaml daily_budget surplus -->で、[`stats/balance.yaml`](../../stats/balance.yaml)
+余剰は909分<!-- stats: terrain.yaml daily_budget surplus -->で、[`stats/balance.yaml`](../../stats/balance.yaml)
 の `object_costs` がその分母で日数を出します（[`../diagnostics/BalanceStats.md`](../diagnostics/BalanceStats.md)）。
 
 ### 12.1 持ち物1つの維持は、1日の余剰の5%まで

@@ -116,12 +116,14 @@ object_defs:
     props:
       weight: {value: 1000}
       volume: {value: 700}
-      # 打ち欠くのにかかる時間。素の値は石が持ち、今打っている人の手際をbaseで継ぐ
-      # （docs/world/Skills.md 7節。上のtravel_minutesと同じ形）。
+      # 打ち欠くのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
+      # （docs/world/Skills.md 7節）。刃は使えば鈍るので打ち直しを繰り返す——届いた段で縮む。
       knap_minutes:
         value: 60
-        base: {subject: agent, prop: knapping_deftness}
-        range: {min: 30, max: 60}
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_knapping, in_stage_or_above: skilled}
+            modify: {self: {knap_minutes: -15}}
       heat_soak:
         on_max:
           destroy: self
