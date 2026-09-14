@@ -246,6 +246,9 @@ object_defs:
   #   **腕を上げた探索は、獣へ寄る**。
   # - ambient_brightnessは樹冠と地面の反射の合計（core.yamlのlocation traitが土台と底を持つ）。
   #   内訳はContentSkeleton.md 8.1.2節の表で、ここに書くのは合計だけ。
+  # - ambient_temperatureは海抜ぶんの気温差（docs/engine/ClimateSystem.md 1.1節）。平均海抜へ
+  #   気温減率を掛けて1℃へ丸めた1つの値で、**丸めて0になる海沿いの土地は宣言しない**
+  #   （core.yamlのlocation traitが既定の0を持つ）。導き方と表は同節。
   # - exploreは視界の明るさを要求する（IlluminationSystem.md 5節）。据え付けの光源は視界に効かない
   #   ため、**夜の採取は光源を持って出るしかない**。
   # - durationは1回の探索にかかる時間（分）。全土地で1tick（minutes_per_tick、core.yaml）に揃える。
@@ -498,6 +501,7 @@ object_defs:
     props:
       # 遮るものが無く、地面は基準の明るさ。
       ambient_brightness: {value: 0}
+      ambient_temperature: {value: -1}
       exploration_progress:
         value: 0
         range: {min: 0, max: 12}
@@ -569,6 +573,7 @@ object_defs:
     props:
       # 樹冠が通すのは5%（-4）、落ち葉の地面は返さない（-1）。
       ambient_brightness: {value: -5}
+      ambient_temperature: {value: -1}
       # ハンモックを渡せる支点が在る（docs/world/Bedding.md 6節。砂浜の hanging_anchor と同じ）。
       hanging_anchor: {value: 1}
       exploration_progress:
@@ -665,6 +670,7 @@ object_defs:
       # 樹冠が通すのは1%（-7）、暗い林床はほとんど返さない（-2）。**島で最も暗い土地**で、
       # 陽が高い数時間しか採りに入れない。
       ambient_brightness: {value: -9}
+      ambient_temperature: {value: -1}
       # ハンモックを渡せる支点が在る（docs/world/Bedding.md 6節。砂浜の hanging_anchor と同じ）。
       hanging_anchor: {value: 1}
       exploration_progress:
@@ -768,6 +774,7 @@ object_defs:
     props:
       # 遮るものが無く、地面は基準の明るさ。
       ambient_brightness: {value: 0}
+      ambient_temperature: {value: -1}
       exploration_progress:
         value: 0
         range: {min: 0, max: 12}
@@ -828,6 +835,7 @@ object_defs:
     props:
       # 遮るものが無く、地面は基準の明るさ。
       ambient_brightness: {value: 0}
+      ambient_temperature: {value: -1}
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}
@@ -884,6 +892,7 @@ object_defs:
     props:
       # 遮るものが無く、地面は基準の明るさ。
       ambient_brightness: {value: 0}
+      ambient_temperature: {value: -2}
       exploration_progress:
         value: 0
         range: {min: 0, max: 15}
@@ -951,6 +960,8 @@ object_defs:
     props:
       # 遮るものが無く、地面は基準の明るさ。
       ambient_brightness: {value: 0}
+      # **島で唯一、涼しい季節には素のままで熱が戻らない土地**（docs/engine/ClimateSystem.md 1.1節）。
+      ambient_temperature: {value: -3}
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}

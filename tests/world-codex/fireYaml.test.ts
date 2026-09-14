@@ -917,6 +917,9 @@ describe('fire.yamlの火の連鎖', () => {
     const world = land.parent!;
     const neighbor = spawnInto('grassland', world, 'locations');
     const outside = temperatureOf(neighbor);
+    // **空の気温は土地の気温と同じではない**——土地は海抜ぶんだけ低い（ClimateSystem.md 1.1節）ので、
+    // 動かないことは隣の土地の値ではなく、火を点ける前の空の値と比べる。
+    const sky = worldView.ambientTemperature;
 
     // 火の点いていない炉は暖めない。組んだだけの炉を隣へ置いて、暖の出どころが「炉が在ること」では
     // なく「火が生きていること」であることまで見る。
@@ -925,7 +928,7 @@ describe('fire.yamlの火の連鎖', () => {
 
     expect(temperatureOf(land), '火のある土地は+8').toBe(outside + 8);
     expect(temperatureOf(neighbor), '隣の土地は動かない（組んだだけの炉は暖めない）').toBe(outside);
-    expect(worldView.ambientTemperature, '世界も動かない').toBe(outside);
+    expect(worldView.ambientTemperature, '世界も動かない').toBe(sky);
   });
 
   it('沸かした湯は放っておくと冷めて水に戻る', () => {
