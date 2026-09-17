@@ -1,5 +1,7 @@
 import { execSync } from 'node:child_process';
-import { join, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * 文書の規約がどこまで掛かるかを決める1つ（`docs/DocumentStyle.md` 10節）。
@@ -8,6 +10,9 @@ import { join, sep } from 'node:path';
  * 同じ規約を別々の検査が課しているので（参照の解決を見る `tests/docs/docReferences.test.ts`、
  * 説明が挙げる名前を見る `tests/docs/docMemberReferences.test.ts`）、**射程を別々に持つと片方だけが
  * `docs/` に取り残される。**
+ *
+ * **印の射程は、検査だけでなく関門も読む**（[`needs-user-review.sh`](daemon/needs-user-review.sh)）
+ * ので、シェルから呼ぶ口を下に持つ。
  */
 
 /**
@@ -59,6 +64,36 @@ export function isVerbatimRecord(rel) {
  *
  * @param {string} rel 根からの相対パス
  */
-export function isAnalysisRecord(rel) {
+function isAnalysisRecord(rel) {
   return rel.startsWith(join('agent-ops', 'analysis') + sep);
 }
+
+/**
+ * 確定度の印の条件（`docs/DocumentStyle.md` 6節）が掛かる文書か。**印の意味は置き場で変わらない**
+ * ので、`docs/` の中かでは絞らない。外れるのは記録の2種——どの規約も課さないもの
+ * （{@link isVerbatimRecord}）と、印が**題材として**現れるその回の観測（{@link isAnalysisRecord}）。
+ *
+ * @param {string} rel 根からの相対パス
+ */
+export function isMarkRuleDoc(rel) {
+  return rel.endsWith('.md') && !isVerbatimRecord(rel) && !isAnalysisRecord(rel);
+}
+
+/**
+ * シェルから {@link isMarkRuleDoc} を引く口。標準入力の1行1パス（区切りは `/`。`gh pr view --json
+ * files` が返す形）のうち、印の条件が掛かるものだけをそのまま出す。
+ *
+ * **ここを通さずにシェル側でパターンを書き写すと、射程が2つになる**——関門
+ * （[`needs-user-review.sh`](daemon/needs-user-review.sh)）の掛け先が `docs/` に取り残されていたのが
+ * その形で、`agent-ops/board-design.md` の確定節が印ごと素通りしていた（#1800）。
+ */
+function printMarkRuleDocs() {
+  const kept = readFileSync(0, 'utf-8')
+    .split('\n')
+    .filter((line) => line !== '')
+    .filter((line) => isMarkRuleDoc(line.split('/').join(sep)));
+  process.stdout.write(kept.map((line) => `${line}\n`).join(''));
+}
+
+if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url))
+  printMarkRuleDocs();

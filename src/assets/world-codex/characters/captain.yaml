@@ -117,13 +117,13 @@ object_defs:
             alert: watch
             passives:
               - add: {self: {stamina: -0.3}}
-              - modify: {self: {travel_delay: 10}}
+              - modify: {self: {travel_delay: 15}}
           - name: heavy
             min: 15000
             alert: caution
             passives:
               - add: {self: {stamina: -1}}
-              - modify: {self: {travel_delay: 25}}
+              - modify: {self: {travel_delay: 30}}
           # 通れない段なので歩みの遅れは押し上げない。立っているだけで削られる。
           - name: too_heavy
             min: 25000

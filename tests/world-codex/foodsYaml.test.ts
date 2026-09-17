@@ -9,6 +9,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
+import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 describe('foods.yamlの食料定義', () => {
@@ -337,6 +338,173 @@ describe('食べ物が配る幸福度', () => {
     expect(food.tryGetAction('eat', character)?.tryExecute() === true).toBe(true);
 
     expect(character.getProperty(happinessId).number).toBe(expectedGain);
+  });
+});
+
+/**
+ * 下ごしらえ（foods.yamlのtaroのchop）。**料理の腕の入口**（docs/world/Skills.md 2.5節）で、火にかける
+ * 手には腕を配れない——火にかけた後を進めるのは炉であって人ではないため。
+ *
+ * 見るのは、**払った手間が返ること**（火の通りが速くなる）と、**同じ1つを刻み直しても稼げないこと**。
+ * 前者が無ければ誰も刻まないので腕も伸びず、後者が抜けると20分の繰り返しが最も速い伸ばし方になる。
+ */
+describe('foods.yamlの下ごしらえ', () => {
+  /** 1 tick（core.yamlの15分）。 */
+  const ONE_TICK = 15;
+  /** 炎の段（fire.yamlのheat）の下端。焚き火の上限は30なので、ここへ置けば炎のまま燃え続ける。 */
+  const FLAME_HEAT = 20;
+  /** 浅い洞窟が湧く土地（locations.yamlのrocky_fieldのexplore）。屋根のある場所はここにしか無い。 */
+  const CAVE_LAND = 'rocky_field';
+
+  let codex: WorldCodex;
+  let cookingProgressId: PropertyGlobalId;
+  let skillCookingId: PropertyGlobalId;
+  let durabilityId: PropertyGlobalId;
+
+  beforeAll(() => {
+    codex = bundledCodex();
+    cookingProgressId = codex.propertyNames.getId('cooking_progress');
+    skillCookingId = codex.propertyNames.getId('skill_cooking');
+    durabilityId = codex.propertyNames.getId('durability');
+  });
+
+  /** 草地にプレイヤーが立っている世界。 */
+  function open(landName = 'grassland') {
+    const worldInstance = new WorldObject(
+      0,
+      codex.objects.get(codex.objectNames.getId('world')),
+      new WorldSession(codex),
+    );
+    const session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(0));
+    const land = spawnInto(session, landName, worldInstance, 'locations');
+    const player = spawnInto(session, SAMPLE_CHARACTER, land, 'characters');
+    // 刃を当てる手元の作業なので明るさを要求する（foods.yaml）。ここで見たいのは下ごしらえの側なので、
+    // 時刻を作らずに満たす。
+    makeBrightEnoughForAnyAction(player, codex);
+    return { session, land, player };
+  }
+
+  function spawnInto(
+    session: WorldSession,
+    objectName: string,
+    parent: WorldObject,
+    slotName: string,
+  ): WorldObject {
+    const spawned = session.createObject(codex.objectNames.getId(objectName));
+    expect(spawned.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+    return spawned;
+  }
+
+  /** 炎で燃えている焚き火。薪はこの検査のあいだ尽きない。 */
+  function litCampfire(session: WorldSession, land: WorldObject): WorldObject {
+    const hearth = spawnInto(session, 'campfire', land, 'fixtures');
+    hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(30);
+    hearth.getProperty(codex.propertyNames.getId('heat')).setNumberWithoutEvents(FLAME_HEAT);
+    return hearth;
+  }
+
+  /** 尖った石を重ねて刻む組み合わせ（相手として名乗り出なければundefined）。 */
+  function chopping(session: WorldSession, player: WorldObject, taro: WorldObject) {
+    const blade = spawnInto(session, 'sharp_stone', player, 'hand');
+    return taro.combinationsWith(blade, player).find((combination) => combination.name === 'chop');
+  }
+
+  /** その炉に今かかっている物の型名。 */
+  function childNames(hearth: WorldObject): string[] {
+    const slot = hearth.tryGetSlot(codex.slotNames.getId('fire'));
+    return (slot?.contents ?? []).map((object) => object.def.name).sort();
+  }
+
+  it('刻むと、同じ個体が刻んだ版になって料理の腕が伸びる', () => {
+    // **料理を伸ばす唯一の操作**（characters/player_character.yamlの腕前）。別の型は作らず同じ個体を
+    // 作り変える（become）ので、傷み具合はそのまま引き継がれる。
+    const { session, land, player } = open();
+    const taro = spawnInto(session, 'taro', land, 'items');
+    player.getProperty(skillCookingId).setNumberWithoutEvents(0);
+
+    expect(chopping(session, player, taro)?.tryExecute(), '尖った石で刻める').toBe(true);
+
+    expect(taro.def.name, '同じ個体が刻んだ版になる').toBe('taro__prep_chopped');
+    expect(player.getProperty(skillCookingId).number, '実行経路の+2').toBe(2);
+  });
+
+  it('二度は刻めない（同じ1つを刻み直して腕を稼げない）', () => {
+    // 伸びる量は作業の長さに依らず一律（SkillSystem.md 3節）なので、ここが開いていると20分の
+    // 刻み直しが最も速い伸ばし方になる。**軸は塞いでくれない**——刻んだ芋にも操作は残り、同じ軸の
+    // 同じ値への`become`は自分自身として解けるので、止めているのはfoods.yamlの条件のほう。
+    const { session, land, player } = open();
+    const taro = spawnInto(session, 'taro', land, 'items');
+    expect(chopping(session, player, taro)?.tryExecute()).toBe(true);
+
+    expect(chopping(session, player, taro)?.tryExecute() === true, '二度目は通らない').toBe(false);
+    expect(player.getProperty(skillCookingId).number, '腕は1回ぶんのまま').toBe(2);
+  });
+
+  it('刻んだ芋は、同じ火にかけても先に焼き上がる', () => {
+    // **払った手間が返るのはここ**（foods.yamlのprepped）。炉が渡す熱（炎なら3/tick）へ2が上乗せ
+    // されるので、30の道のりが10tickから6tickへ縮む。
+    const { session, land, player } = open();
+    const whole = spawnInto(session, 'taro', land, 'items');
+    const chopped = spawnInto(session, 'taro', land, 'items');
+    expect(chopping(session, player, chopped)?.tryExecute()).toBe(true);
+
+    const hearth = litCampfire(session, land);
+    for (const food of [whole, chopped])
+      expect(food.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
+
+    expect(whole.tryGetProperty(cookingProgressId)?.ticksUntilMax(), '丸のままは3/tick').toBe(10);
+    expect(chopped.tryGetProperty(cookingProgressId)?.ticksUntilMax(), '刻んであれば5/tick').toBe(6);
+
+    session.advanceWorldTime(ONE_TICK * 6);
+    expect(childNames(hearth), '刻んだほうだけが焼き上がっている').toEqual(['roasted_taro', 'taro']);
+  });
+
+  it('刻んだ芋は、切り口のぶん腐るのが速い', () => {
+    // **下ごしらえは火にかける直前**という順序を作る上乗せ（foods.yamlのprepped）。分類によらず-1で、
+    // 量は屋外に置いたぶんの上乗せから借りているが、**門は持たない**——屋根の下でも切り口は塞がらない。
+    const { session, land, player } = open();
+    const whole = spawnInto(session, 'taro', land, 'items');
+    const chopped = spawnInto(session, 'taro', land, 'items');
+    expect(chopping(session, player, chopped)?.tryExecute()).toBe(true);
+
+    const before = [whole, chopped].map((food) => food.getProperty(durabilityId).number);
+    session.advanceWorldTime(ONE_TICK);
+
+    expect(before[0] - whole.getProperty(durabilityId).number, '丸のままは芋の速さ＋屋外').toBe(1.5);
+    expect(before[1] - chopped.getProperty(durabilityId).number, '刻むと-1が重なる').toBe(2.5);
+  });
+
+  it('切り口は、屋根の下へ入れても塞がらない', () => {
+    // 一つ上と対。**屋外だけを見ていると、門を足されても緑のまま**——量を借りた先（屋外の上乗せ）は
+    // `sheltered` の門を通しているので、そこごと写されると蓋つきの入れ物で切り口が止まる別の挙動に
+    // なる。守るのは浅い洞窟が守れるものだけ（docs/engine/ContainerSystem.md 6節）。
+    const { session, land, player } = open(CAVE_LAND);
+    const cave = spawnInto(session, 'shallow_cave', land, 'fixtures');
+    const whole = spawnInto(session, 'taro', land, 'items');
+    const chopped = spawnInto(session, 'taro', land, 'items');
+    expect(chopping(session, player, chopped)?.tryExecute()).toBe(true);
+    for (const food of [whole, chopped])
+      expect(food.moveToSlotOrRejection(cave.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
+
+    const before = [whole, chopped].map((food) => food.getProperty(durabilityId).number);
+    session.advanceWorldTime(ONE_TICK);
+
+    expect(before[0] - whole.getProperty(durabilityId).number, '丸のままは屋外の-1が落ちる').toBe(0.5);
+    expect(before[1] - chopped.getProperty(durabilityId).number, '刻んだぶんの-1は残る').toBe(1.5);
+  });
+
+  it('下ごしらえできる食べ物は、今のところタロイモだけ', () => {
+    // **「この芋だけ」と書いた主張が、破れたときに落ちる先。** 置ける先が生のままで火にかける物に
+    // 限られること・保存の軸と両立しないことは docs/world/Skills.md 2.5節とfoods.yamlのtaroが
+    // 理由ごと書いているが、2つ目が生えても、腕が伸びる操作を数えるだけの検査
+    // （skillsYaml.test.ts）は緑のまま通る。**ここが落ちたら、その2箇所も一緒に直す。**
+    const prepped: string[] = [];
+    for (const def of codex.objects) {
+      const baseGlobalId = codex.generatedTypes.baseGlobalIdIfVariantOn(def, 'prep');
+      if (baseGlobalId !== undefined) prepped.push(codex.objects.get(baseGlobalId).name);
+    }
+
+    expect(prepped, '増えたなら、Skills.md 2.5節とfoods.yamlのtaroの理由も書き直す').toEqual(['taro']);
   });
 });
 

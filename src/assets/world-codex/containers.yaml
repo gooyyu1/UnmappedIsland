@@ -56,7 +56,7 @@ object_defs:
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         # 編み上げる速さも繊維・編みが決める（docs/world/Skills.md 7節）。**余分の卓は持たない**
         # ——6枚のパネルは籠1つぶんの面で、余らせて2つ目にはならない。
-        deftness: {subject: agent, prop: cordage_deftness}
+        deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
         steps:
           - requires:
               - {object: woven_leaf, count: 6, consume: true}
@@ -111,7 +111,7 @@ object_defs:
         # **速さを決めるのは連言の2本ではなく、名乗った1本**（docs/world/Skills.md 7節）。槍と同じく
         # 削り出しが手間の大半で、上の注記どおり**上の段を要求しているのも削るほう**——反りを揃えた
         # 走り木2本と前木を、同じ寸法で削り出す仕事だから。縛るのは締めるだけ。
-        deftness: {subject: agent, prop: woodwork_deftness}
+        deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         steps:
           # 長い棒の先を反らせて削り、走り木を2本と、引き綱を結ぶ前木を1本こしらえる。
           - requires:
@@ -158,7 +158,7 @@ object_defs:
         # **車輪は丸太の輪切りを削り出したもので、ほぞで組んだ物ではない**——指物・接合
         # （docs/world/Skills.md 2.1節）の担当にはならない。**削り出す仕事なので、速さを決めるのは
         # 材料のそり（上）と同じ木材加工**（同7.1節）。
-        deftness: {subject: agent, prop: woodwork_deftness}
+        deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         steps:
           # 丸太を輪切りにし、車輪を2枚削り出して軸穴を開ける。**斧が要るのはここだけ**。
           - requires:

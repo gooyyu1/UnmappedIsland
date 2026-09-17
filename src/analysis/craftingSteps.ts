@@ -322,9 +322,9 @@ class PassiveDeltaCollector implements PassiveReader {
  * レシピ1つを工程として見たもの。工程（steps）の別は畳む——「何を使って何ができるか」の問いには、
  * レシピ全体でひとつの答えで足りる。所要時間も同じ理由で全工程の和にする。
  *
- * **作る腕（13.6節）はここにも効く。** 手際は工程の時間を縮め、余分の卓は完成のあとで分岐を作る。
- * どちらも他の参照と同じく`trackingResolverOf`が解く——腕の上乗せは素の0で宣言されているので、
- * ここで出るのは**素人の数字**になる（analysisContextOf の注記）。
+ * **作る腕（13.6節）のうち、ここに出るのは余分の卓だけ。** 卓は他の参照と同じく`trackingResolverOf`が
+ * 解き、腕の上乗せは素の0で宣言されているので**素人の数字**になる（analysisContextOf の注記）。
+ * 手際は段に届いた者にしか効かず、誰が作るかを決めない図鑑・収支表では宣言どおりの分数が答え。
  */
 function recipeStep(
   codex: WorldCodex,
@@ -333,12 +333,9 @@ function recipeStep(
   outer: StaticValueResolver | undefined,
 ): CraftingStep {
   const tracking = trackingResolverOf(def, 'lowest', outer);
-  const deftnessReading = recipe.deftnessReading;
-  const deftness =
-    deftnessReading === undefined
-      ? 0
-      : (resolveDeclaredNumber({ kind: 'property', ...deftnessReading }, tracking.resolve) ?? 0);
-  const minutes = recipe.totalMinutesWithDeftness(deftness);
+  // **出るのは素人の数字**（analysisContextOf の注記）。腕が縮める分は段に届いた者にしか効かないが、
+  // 定義だけを見るここには誰が作るかが無いので、宣言どおりの仕事の量をそのまま採る。
+  const minutes = recipe.totalMinutes;
 
   // 完成品が1つ出るのは、進捗が上限へ届いた瞬間のbecomeが起こすこと（RecipeSystem.md 1節）なので、
   // 卓を引く前から決まっている。余分の卓はそのあとに続く分岐。

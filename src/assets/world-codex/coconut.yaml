@@ -203,12 +203,15 @@ object_defs:
       weight: {value: 600}
       # ばらけた繊維は詰めても縮まないので、嵩そのままで見る。
       volume: {value: 4000}
-      # 叩き解すのにかかる時間。素の値は皮が持ち、今叩いている人の手際をbaseで継ぐ
-      # （docs/world/Skills.md 7節）。
+      # 叩き解すのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
+      # （docs/world/Skills.md 7節）。**繊維を採るもう1つの入口なので、掻き取り（fiber.yamlのstrip）と
+      # 同じ段から効く**——どちらの島に流れ着いたかで腕の値打ちが変わらないように。
       ret_minutes:
         value: 120
-        base: {subject: agent, prop: cordage_deftness}
-        range: {min: 60, max: 120}
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_cordage, in_stage_or_above: skilled}
+            modify: {self: {ret_minutes: -15}}
     interactions:
       # 水に漬けて柔らかくし、石で叩いて繊維を解す（コイア）。**植物繊維の2つ目の入口**で、
       # 違うのは道具ではなく採れる土地——バショウ属の草（fiber.yaml）が生えない島でも、ヤシの実さえ

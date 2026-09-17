@@ -330,3 +330,41 @@ describe('needs-user-review.sh の MARK と SOURCED', () => {
     expect(result.code).toBe(1);
   });
 });
+
+/**
+ * 掛け先（`scripts/docScope.mjs` の `isMarkRuleDoc`）。**印の意味は置き場で変わらない**ので、
+ * `docs/` の中かでは絞らない（`docs/DocumentStyle.md` 10節）。
+ *
+ * 掛け先が `docs/` に絞られていた間、[`board-design.md`](../../agent-ops/board-design.md) の確定節は
+ * **印を足す変更ごと素通りしていた**（#1800）——`merge-pr.sh` は `判断待ち` を付けず、誰も決めて
+ * いない確定がそのまま `main` へ入る。**止めると決めてある唯一の入口が、あのファイルには無かった。**
+ */
+describe('needs-user-review.sh の掛け先', () => {
+  const BOARD = 'agent-ops/board-design.md';
+  const HEADING = '### 2.7 中心にモデルのセッションを置かない';
+
+  it('`docs/` の外でも、印が増えれば止める', () => {
+    const result = judge([BOARD], hunk(BOARD, [`-${HEADING}`, `+${HEADING}【確定】`]), {
+      [BOARD]: {
+        base: `${HEADING}\n\n判断も配りもデーモンが持つ。\n`,
+        head: `${HEADING}【確定】\n\n判断も配りもデーモンが持つ。\n`,
+      },
+    });
+
+    expect(result.lines).toEqual([`MARK ${BOARD} 2.7 中心にモデルのセッションを置かない【確定】`]);
+    expect(result.code).toBe(0);
+  });
+
+  // 記録では印が**題材として**現れる（見出しに「`【確定】` の印の射程が変わる」と書く）ので、
+  // 掛けると、印を論じた見出しが印として読まれる。
+  it('その回の観測の記録では、印を論じた見出しを足しても出さない', () => {
+    const path = 'agent-ops/analysis/2026-09-07.md';
+    const heading = '### 【確定】の印の射程が、印を動かさないまま変わる';
+    const result = judge([path], hunk(path, ['+### 【確定】の印の射程が、印を動かさないまま変わる']), {
+      [path]: { base: '# 2026-09-07\n', head: `# 2026-09-07\n\n${heading}\n\n帯 #1741〜#1786、2本。\n` },
+    });
+
+    expect(result.lines).toEqual([]);
+    expect(result.code).toBe(1);
+  });
+});

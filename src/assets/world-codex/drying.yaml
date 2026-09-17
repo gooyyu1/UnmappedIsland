@@ -135,7 +135,7 @@ object_defs:
       # 勘どころなので、燻し小屋（smoking.yaml）と同じ腕が速さを決める——**同じ仕事の2つ目の設備で
       # 腕が食い違わない**。要求しないのは上のとおりで、腕が0でも組める。
       lashed:
-        deftness: {subject: agent, prop: preserving_deftness}
+        deftness: {skill: skill_preserving, from_stage: expert, minutes: -15}
         steps:
           - requires:
               - {object: thick_branch, count: 6, consume: true}

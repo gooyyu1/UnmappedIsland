@@ -50,7 +50,8 @@ object_defs:
     recipes:
       # 斧で割り、座面を削る。
       hewn:
-        deftness: {subject: agent, prop: woodwork_deftness}
+        # **1つ据えれば済む設えなので、効き始めるのは最上段**（docs/world/Skills.md 7節）。
+        deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         steps:
           - requires:
               - {object: log, count: 1, consume: true}
@@ -72,7 +73,7 @@ object_defs:
             comfort: 15
     recipes:
       lashed:
-        deftness: {subject: agent, prop: woodwork_deftness}
+        deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         steps:
           - requires:
               - {object: thick_branch, count: 6, consume: true}
@@ -94,7 +95,7 @@ object_defs:
             comfort: 8
     recipes:
       whittled:
-        deftness: {subject: agent, prop: woodwork_deftness}
+        deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         steps:
           # **要るのは握りの刃**（handheld_blade、tools.yaml）——枝を押さえて刃を面へ沿わせ、像の形が
           # 出るまで削ぎ続ける手つきで、骨針の削り出し（animals.yamlのwhittle）と同じ持ち方。下の
@@ -122,7 +123,7 @@ object_defs:
         # くり抜きも皮張りも同じ1つの手際で縮む（名乗れるのは1つ、
         # docs/engine/GameElementDefinition.md 13.6節）。**丸太を刻む工程の
         # ほうが長い**ので、木材加工を名乗る。
-        deftness: {subject: agent, prop: woodwork_deftness}
+        deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         steps:
           # 丸太の芯をくり抜く。**刃物なら何でもよい**（cutting_tool）——刃を打ち込んでは屑を起こす
           # 手つきで、面へ沿わせる必要が無いので石斧でも通る（分け方は tools.yaml の sharp_stone）。
