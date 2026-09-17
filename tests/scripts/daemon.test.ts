@@ -106,8 +106,10 @@ function daemon(world: World = {}): Result {
     // `daemon.sh` が新しい版へ差し替わる瞬間は、走っている周の中から起きる。
     writeFileSync(
       join(here, 'board-round.mjs'),
-      `import { execFileSync } from 'node:child_process';\n` +
-        `import { appendFileSync, readFileSync, rmSync, writeFileSync } from 'node:fs';\n` +
+      `import { appendFileSync, readFileSync, rmSync, writeFileSync } from 'node:fs';\n` +
+        // 撃つ世界にだけ要る（下の「周の途中で撃つ口」）。読む相手が居ない周まで書くと、身代わりに
+        // 呼び手の無い宣言が残る。
+        (world.stopMidRound === true ? `import { execFileSync } from 'node:child_process';\n` : '') +
         `const rounds = ${JSON.stringify(rounds)};\n` +
         `appendFileSync(rounds, '1\\n');\n` +
         `const round = readFileSync(rounds, 'utf-8').split('\\n').filter(Boolean).length;\n` +
