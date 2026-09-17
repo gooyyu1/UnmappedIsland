@@ -7,13 +7,16 @@ import { STUB_SHEBANG } from '../support/stubShebang';
 import { replaceAllOrFail } from '../support/textEdit';
 
 /**
- * `scripts/daemon/may-dispatch.sh`（と、その下の `brake.sh` / `occupancy.sh`）の検査。
+ * `scripts/daemon/may-dispatch.sh`（と、その下の `brake.sh` / `headroom.sh` / `occupancy.sh`）の検査。
  *
  * ここが守るのは**安全側へ倒れること**。誤って止めれば投入が遅れるだけだが、誤って通すと同じ仕事へ
- * 2本立ち、同じPRへ食い違う判定が残る（`agent-ops/board-design.md` 1.5 の PR #1493）。手綱もセッション
- * 一覧も**引けなかったときは止まる**ことを、実際にスクリプトを走らせて見る。
+ * 2本立ち、同じPRへ食い違う判定が残る（`agent-ops/board-design.md` 1.5 の PR #1493）。手綱も使用量も
+ * セッション一覧も**引けなかったときは止まる**ことを、実際にスクリプトを走らせて見る。
  *
- * `gh` を PATH の先頭に、`ccr-meta.sh` を `CCR_META` で差し替える。
+ * **止まった理由が終了コードで見分けられること**も、ここが守る（2.5.2）——人が止めた3と、余力で
+ * 止まった4は、**打つ手が違う**（前者は人が外すまで戻らず、後者は枠が明ければひとりでに戻る）。
+ *
+ * `gh` を PATH の先頭に、`ccr-meta.sh` を `CCR_META` で、使用量の控えを `BOARD_STATE` で差し替える。
  */
 
 // 実プロセス（bash + gh のスタブ）を起こすため、`npm test` 全体を並行実行したときのCPU競合だけで
@@ -59,6 +62,12 @@ interface World {
   readonly sessions?: readonly Session[];
   /** セッションの一覧を引けなくする。 */
   readonly ccrFails?: boolean;
+  /** 控えてある `five_hour` の `utilization`。既定は余力たっぷり。 */
+  readonly fiveHour?: number;
+  /** 控えてある `seven_day` の `utilization`。既定は余力たっぷり。 */
+  readonly sevenDay?: number;
+  /** 使用量の控えを置かない（一度も引けていない周）。 */
+  readonly noUsage?: boolean;
 }
 
 interface Run {
@@ -107,6 +116,19 @@ echo '${JSON.stringify(page)}'
     );
     chmodSync(meta, 0o755);
 
+    // 使用量の控え（`usage.sh --last` が読む形）。**1行目は引けた時刻。** 口は叩かせない。
+    if (world.noUsage !== true) {
+      const lines = [
+        `five_hour ${world.fiveHour ?? 5} 2026-09-05T01:00:00Z -`,
+        `seven_day ${world.sevenDay ?? 5} 2026-09-10T01:00:00Z -`,
+      ];
+      writeFileSync(
+        join(work, 'usage-latest'),
+        `${Math.floor(Date.now() / 1000)}\n${lines.join('\n')}\n`,
+        'utf-8',
+      );
+    }
+
     try {
       runScript(SCRIPT, [kind, ...tags], {
         stdio: 'pipe',
@@ -114,6 +136,7 @@ echo '${JSON.stringify(page)}'
           ...process.env,
           PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
           CCR_META: meta,
+          BOARD_STATE: work,
           BRAKE_ISSUE,
         },
       });
@@ -276,6 +299,48 @@ describe('may-dispatch.sh', () => {
 
   it('セッションの一覧を引けなければ止まる', () => {
     expect(run('new-task', 'task-1234', { ccrFails: true }).code).toBe(1);
+  });
+
+  // **当たったのは週次の枠**（issue #2209。5時間の枠には余力が在った）。片方しか見ないと、
+  // そのときと同じ形で通り続ける。
+  it('週次の余力が足りなければ止まる', () => {
+    const result = run('new-task', 'task-1234', { sevenDay: 99 });
+
+    expect(result.code).toBe(4);
+    expect(result.stderr).toContain('seven_day');
+  });
+
+  it('5時間の余力が足りなければ止まる', () => {
+    expect(run('new-task', 'task-1234', { fiveHour: 95 }).code).toBe(4);
+  });
+
+  // **「制限中だった」という状態を持たない**（board-design 2.5.1）。毎回引いて比べるだけなので、
+  // 止まった次の呼び出しでも、値が戻っていればそのまま通る。
+  it('枠が明けた周は、何もしなくても投入が戻る', () => {
+    expect(run('new-task', 'task-1234', { sevenDay: 99 }).code).toBe(4);
+    expect(run('new-task', 'task-1234', { sevenDay: 20 }).code).toBe(0);
+  });
+
+  // **見回る係は終了コードで打つ手を選ぶ**（2.21.2）。同じ3にすると、枠が明ければ戻るものを
+  // 「人が止めている」と読む。
+  it('余力で止まった周は、人が手綱で止めた周と終了コードが違う', () => {
+    const held = run('new-task', 'task-1234', { sevenDay: 99 });
+    const braked = run('new-task', 'task-1234', { brake: off('新しいタスク') });
+
+    expect(held.code).toBe(4);
+    expect(braked.code).toBe(3);
+    expect(held.stderr).not.toContain('手綱で止まっている');
+  });
+
+  // 手綱（人間）と余力（自動）の AND（2.5.2）。人が止めている周は、余力の話をする前に止まる。
+  it('手綱が外れていれば、余力が在っても止まる', () => {
+    const result = run('new-task', 'task-1234', { brake: off('新しいタスク'), fiveHour: 0 });
+
+    expect(result.code).toBe(3);
+  });
+
+  it('使用量を一度も引けていなければ止まる', () => {
+    expect(run('new-task', 'task-1234', { noUsage: true }).code).toBe(1);
   });
 
   it('知らない種類は止まる', () => {

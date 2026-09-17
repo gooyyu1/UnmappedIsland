@@ -1,16 +1,20 @@
 // 使用量の増分を、そのとき動いていたセッションへ割り当てる（`agent-ops/board-design.md` 2.5）。
 //
-//   echo '{"utilization":12,"now":"...","live":[{"id":"cse_a","tags":["task-1"],"working":true}]}' \
+//   echo '{"usage":"five_hour 12 - -\nseven_day 3 - -","now":"...","live":[…]}' \
 //     | node scripts/daemon/usage-attribute.mjs <状態のファイル> <記録のファイル>
 //
 // 状態のファイルを読み書きし、**畳まれたセッションぶんだけ**を記録のファイルへ1行1件で足す。
 // 足した行は標準出力にも出す（呼び手が見えるように）。行は
-// `<時刻>\t<種類>\t<消費>\t<セッションID>` のTSV。
+// `<時刻>\t<種類>\t<枠ごとの消費…>\t<セッションID>` のTSV で、**枠の並びは
+// [`usage-windows.mjs`](usage-windows.mjs) の `WINDOWS`。**
 //
 // ## セッション単位の消費は引けないので、割り当てる
 //
 // APIが返すのは全体の `utilization` だけ（2.8）。**前回からの増分を、そのとき動いていたセッション
 // で等分する。**
+//
+// **枠ごとに別々に積む。** 投入を止めるかは枠ごとに比べる（2.5.2）ので、1本あたりの消費も**その枠
+// の単位**で要る——`five_hour` の百分率を `seven_day` の残りと比べても、数の意味が違う。
 //
 // **分母は「動いていたもの」だけ。** 畳まれていないセッションには、手が空いて次の指示を待っている
 // ものが混ざる（1.2）。待っている本数で割ると、待っているほど消費したことになる。
@@ -34,6 +38,7 @@
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { WINDOWS, parseUsage } from './usage-windows.mjs';
 
 /** タグから投入の種類を決める（2.3）。タグの無いセッションはユーザー自身の対話。 */
 function kindOf(tags) {
@@ -44,8 +49,12 @@ function kindOf(tags) {
   return tags.length > 0 ? 'other' : 'untagged';
 }
 
+/**
+ * 前の周の状態。**枠ごとに持つ形より前の版は、枠の名前で引けないので「初めての周」と同じ**
+ * ——取りこぼすのは1周ぶんの増分だけで、次の周から普通に積まれる。
+ */
 function readState(path) {
-  if (!existsSync(path)) return { utilization: null, sessions: {} };
+  if (!existsSync(path)) return { utilization: {}, sessions: {} };
   return JSON.parse(readFileSync(path, 'utf8'));
 }
 
@@ -56,33 +65,52 @@ if (statePath === undefined || spentPath === undefined) {
 }
 
 const input = JSON.parse(readFileSync(0, 'utf8'));
+const usage = parseUsage(input.usage);
+if (usage === undefined) {
+  process.stderr.write(`使用量の行を読めなかった: ${JSON.stringify(input.usage)}\n`);
+  process.exit(1);
+}
 const previous = readState(statePath);
-
-const rose = typeof previous.utilization === 'number' && input.utilization >= previous.utilization;
-const delta = rose ? input.utilization - previous.utilization : 0;
 
 // 上の「分母は『動いていたもの』だけ」。1本も動いていなければ、この周の増分は誰にも積まない。
 const working = input.live.filter((session) => session.working);
-const share = working.length > 0 ? delta / working.length : 0;
+
+const share = {};
+for (const name of WINDOWS) {
+  const before = previous.utilization?.[name];
+  const rose = typeof before === 'number' && usage[name].utilization >= before;
+  const delta = rose ? usage[name].utilization - before : 0;
+  share[name] = working.length > 0 ? delta / working.length : 0;
+}
 
 const sessions = {};
 for (const session of input.live) {
-  const carried = previous.sessions?.[session.id]?.spent ?? 0;
-  sessions[session.id] = {
-    kind: kindOf(session.tags),
-    spent: carried + (session.working ? share : 0),
-  };
+  const carried = previous.sessions?.[session.id]?.spent;
+  const spent = {};
+  for (const name of WINDOWS) {
+    spent[name] = (carried?.[name] ?? 0) + (session.working ? share[name] : 0);
+  }
+  sessions[session.id] = { kind: kindOf(session.tags), spent };
 }
 
 // 生きている一覧から消えたセッション＝畳まれた。積み上がった値がそのセッションの消費。
 const finished = Object.entries(previous.sessions ?? {})
   .filter(([id]) => sessions[id] === undefined)
-  .map(([id, { kind, spent }]) => `${input.now}\t${kind}\t${spent.toFixed(4)}\t${id}`);
+  .map(([id, { kind, spent }]) =>
+    [input.now, kind, ...WINDOWS.map((name) => (spent?.[name] ?? 0).toFixed(4)), id].join('\t'),
+  );
 
 mkdirSync(dirname(statePath), { recursive: true });
 writeFileSync(
   statePath,
-  `${JSON.stringify({ utilization: input.utilization, sessions }, null, 2)}\n`,
+  `${JSON.stringify(
+    {
+      utilization: Object.fromEntries(WINDOWS.map((name) => [name, usage[name].utilization])),
+      sessions,
+    },
+    null,
+    2,
+  )}\n`,
   'utf8',
 );
 if (finished.length > 0) {

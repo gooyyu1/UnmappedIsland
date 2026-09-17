@@ -4,6 +4,7 @@
 // すべてそちらの冒頭にある。ここに書くのは、中身の側でしか読めない制約だけ。
 
 import { readFileSync } from 'node:fs';
+import { WINDOWS } from './usage-windows.mjs';
 
 const ENDPOINT = 'https://api.anthropic.com/api/oauth/usage';
 
@@ -29,7 +30,7 @@ if (!response.ok) {
 const usage = JSON.parse(raw);
 
 const lines = [];
-for (const key of ['five_hour', 'seven_day']) {
+for (const key of WINDOWS) {
   const quota = usage[key];
   if (!quota || typeof quota.utilization !== 'number') {
     console.error(`失敗: ${key} が無い ${raw}`);
