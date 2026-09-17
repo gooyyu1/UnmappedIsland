@@ -3,6 +3,7 @@ import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
+import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -53,20 +54,24 @@ object_defs:
         destroy: self
         spawn: {object: banana_stem, count: 5, into: agent}
 
-  # timber.yamlのbroadleaf_treeのchopを同じ形へ写したもの。**元の宣言が持っていた2つを落としている**
+  # timber.yamlのbroadleaf_treeのfellを同じ形へ写したもの。**元の宣言が持っていた2つを落としている**
   # ——刃の余力を見る要件（subject: instrument）と、刃を減らす効果（add: instrument）。どちらも
   # メニュー型には書けないので、写した先に残す手段が無い。
+  #
+  # **受け口を刻む手（chop）は写していない。** 落ちる2つはどちらも倒す手の側に在るので、
+  # 比べるのに要るのはこちらだけ。
   broadleaf_tree_as_menu:
     tags: [fixture]
     art: broadleaf_tree
     props:
       weight: {value: 150000}
-      trunk_integrity: {value: 4, range: {min: 1, max: 4}}
+      trunk_integrity: {value: 1, range: {min: 1, max: 4}}
     interactions:
-      chop:
+      fell:
         trigger: menu
         duration: 60
         conditions:
+          - {prop: trunk_integrity, lte: 1}
           - reason: no_axe
             subject: agent
             slot: hand
@@ -78,10 +83,12 @@ object_defs:
           - reason: too_stormy
             not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         add:
-          self:
-            trunk_integrity: -1
           agent:
             skill_woodwork: 2
+        spawn:
+          - {object: log, count: 2, into: self}
+          - {object: thick_branch, count: 3, into: self}
+        destroy: self
 `;
 
 describe('ドラッグ型をメニュー型へ書き換えると何が変わるか', () => {
@@ -116,6 +123,10 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
     return spawned;
   }
 
+  function itemsOn(location: WorldObject): string[] {
+    return new Location(location, codex).items.map((object) => object.def.name);
+  }
+
   function carriedBy(character: WorldObject): string[] {
     return new PlayerCharacter(character, codex).handStacks.flatMap((stack) =>
       stack.map((object) => object.def.name),
@@ -138,13 +149,6 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
 
   const dragFell = (plant: WorldObject, tool: WorldObject) => dragAction(plant, tool, 'fell');
   const menuFell = (plant: WorldObject) => menuAction(plant, 'fell');
-  const dragChop = (tree: WorldObject, tool: WorldObject) => dragAction(tree, tool, 'chop');
-  const menuChop = (tree: WorldObject) => menuAction(tree, 'chop');
-
-  /** まだ断ち切れずに残っている幹（timber.yamlのtrunk_integrity）。 */
-  function trunkIntegrityOf(tree: WorldObject): number {
-    return tree.getProperty(codex.propertyNames.getId('trunk_integrity')).number;
-  }
 
   /** 刃の余力。**無ければ落とす**——既定値で埋めると「減らない」が測れないまま緑になる。 */
   function durabilityOf(tool: WorldObject): number {
@@ -186,36 +190,51 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
   });
 
   describe('道具を見て道具を減らす宣言（広葉樹）は、書き換えると別の操作になる', () => {
+    /**
+     * 倒す手が立つところまで刻んだ木。**1回では倒れない**（docs/engine/ActionSystem.md 6.3節）ので、
+     * 落ちる2つ（刃の余力を見る要件と刃を減らす効果）を持つ手はここから先にしか現れない。
+     */
+    function treeReadyToFell(): WorldObject {
+      const tree = spawnInto('broadleaf_tree', jungle, 'fixtures');
+      tree.getProperty(codex.propertyNames.getId('trunk_integrity')).setNumberWithoutEvents(1);
+      return tree;
+    }
+
     it('刃の尽きた斧を、ドラッグ型は断り、メニュー型は通してしまう', () => {
-      const dragTree = spawnInto('broadleaf_tree', jungle, 'fixtures');
+      const dragTree = treeReadyToFell();
       const menuTree = spawnInto('broadleaf_tree_as_menu', jungle, 'fixtures');
       const axe = spawnInto('stone_axe', player, 'hand');
-      // 1回ぶん（30）を割った刃。**0にはしない**——0へ届いた刃は折れて無くなる
+      // 1本ぶん（120）を割った刃。**0にはしない**——0へ届いた刃は折れて無くなる
       // （weathering.yaml の on_min）ので、尽きた斧という札は残らない。
-      axe.getProperty(codex.propertyNames.getId('durability')).setNumber(20);
+      axe.getProperty(codex.propertyNames.getId('durability')).setNumber(100);
 
       expect(
-        dragChop(dragTree, axe)?.unmetRequirement()?.reasonName,
+        dragFell(dragTree, axe)?.unmetRequirement()?.reasonName,
         '刃の余力を見る要件はinstrumentを指すので、ドラッグ型にしか書けない',
       ).toBe('too_worn');
       expect(
-        menuChop(menuTree).unmetRequirement(),
+        menuFell(menuTree).unmetRequirement(),
         '書き換えた側はその要件を落としているので、尽きた斧でも通る',
       ).toBeUndefined();
 
-      const before = trunkIntegrityOf(menuTree);
-      expect(menuChop(menuTree).tryExecute()).toBe(true);
-      expect(trunkIntegrityOf(menuTree), '尽きた斧で幹が刻めてしまう').toBeLessThan(before);
+      expect(menuFell(menuTree).tryExecute()).toBe(true);
+      expect(itemsOn(jungle), '尽きた斧で丸太が採れてしまう').toEqual([
+        'log',
+        'log',
+        'thick_branch',
+        'thick_branch',
+        'thick_branch',
+      ]);
     });
 
-    it('刻んでも斧が減らない', () => {
+    it('倒しても斧が減らない', () => {
       const menuTree = spawnInto('broadleaf_tree_as_menu', jungle, 'fixtures');
       const axe = spawnInto('stone_axe', player, 'hand');
-      // **屋外に在るだけで進む劣化（weathering.yaml）は、刻んだ斧にも置いた斧にも同じだけ掛かる。**
-      // 突き合わせる相手を置くことで、刻んだこと自体が減らしていないかだけを見る。
+      // **屋外に在るだけで進む劣化（weathering.yaml）は、倒した斧にも置いた斧にも同じだけ掛かる。**
+      // 突き合わせる相手を置くことで、倒したこと自体が減らしていないかだけを見る。
       const idle = spawnInto('stone_axe', jungle, 'items');
 
-      expect(menuChop(menuTree).tryExecute()).toBe(true);
+      expect(menuFell(menuTree).tryExecute()).toBe(true);
 
       expect(durabilityOf(axe), '刃を減らす効果はinstrumentを指すので、写す先が無い').toBe(
         durabilityOf(idle),
@@ -223,13 +242,17 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
     });
 
     it('ドラッグ型のままなら、同じ1回で斧が減る', () => {
-      const dragTree = spawnInto('broadleaf_tree', jungle, 'fixtures');
+      const dragTree = treeReadyToFell();
       const axe = spawnInto('stone_axe', player, 'hand');
       const before = durabilityOf(axe);
+      // **置いた相手と突き合わせる**——屋外の劣化だけでも減るので、差だけを見ると倒したことが
+      // 減らしたのかが言えない。
+      const idle = spawnInto('stone_axe', jungle, 'items');
 
-      expect(dragChop(dragTree, axe)?.tryExecute()).toBe(true);
+      expect(dragFell(dragTree, axe)?.tryExecute()).toBe(true);
 
       expect(durabilityOf(axe)).toBeLessThan(before);
+      expect(durabilityOf(axe), '置いた斧より深く減る（倒したぶん）').toBeLessThan(durabilityOf(idle));
     });
   });
 

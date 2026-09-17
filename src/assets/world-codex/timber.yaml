@@ -50,13 +50,13 @@ object_defs:
           # 残り1つまで削ったら、次はfellの側。**理由を宣言しない**——断っているのではなく、
           # そこから先は別の操作が受け持つ（画面に出るのはfellのほう）。
           - {prop: trunk_integrity, gte: 2}
-          # **1回ぶんの余力（下のadd と同じ30）が残っていなければ始められない。** 尽きた刃で
-          # 始めても刻み切れないうえ、0へ届いた刃は折れて無くなる（weathering.yaml の on_min）ので、
-          # 「余力0の斧」という状態はそもそも在れない——線は1回ぶんの手前に引く。
+          # **倒し切れる余力が無ければ、刻み始められない**（docs/engine/DurabilitySystem.md 2.1節）。
+          # 線は1本ぶん（下のfellが食う120）で、**この手そのものは刃を食わない**——何も返さない手に
+          # 刃を食わせると、倒れないまま斧だけが折れる形ができる。
           - reason: too_worn
             subject: instrument
             prop: durability
-            gte: 30
+            gte: 120
           # 受け口を見ながら斧を同じ傷へ入れ続ける屋外の行動なので、見るのは視界の側
           # （docs/engine/IlluminationSystem.md 5節）。倒れる向きも見えていなければ決められない。
           - reason: too_dark
@@ -71,8 +71,6 @@ object_defs:
         # ——刃物1本で回る伐り（下のsapling）と削り出し（animals.yamlのwhittle）が石器の先にあるので、
         # 木材加工は斧より手前から伸び始める。どれも循環しない（同3.2節）。
         #
-        # **刃の余力は、1本を倒し切るまでの手の数へ割ってある**——刻む回数が増えても、木1本にかかる
-        # 刃の目方は変わらない。
         # **腕の伸びは割らない**——1手あたりの量はどの操作でも一律で（docs/engine/SkillSystem.md 7節）、
         # 繰り返しの稼ぎを抑えるのは時間のコストのほう。
         add:
@@ -80,8 +78,6 @@ object_defs:
             trunk_integrity: -1
           agent:
             skill_woodwork: 2
-          instrument:
-            durability: -30
 
       # 最後の一撃。根元を断ち、倒した幹を運べる長さに玉切りするところまでを1つの作業として扱う。
       fell:
@@ -90,10 +86,11 @@ object_defs:
         conditions:
           # 受け口を刻み切った木にだけ立つ（上のchopと排他）。
           - {prop: trunk_integrity, lte: 1}
+          # **木1本ぶんの刃の目方は、断ち切るこの1回がまとめて食う**（上のchopの注記）。線もその量。
           - reason: too_worn
             subject: instrument
             prop: durability
-            gte: 30
+            gte: 120
           - reason: too_dark
             subject: agent
             prop: looking_brightness
@@ -104,7 +101,7 @@ object_defs:
           agent:
             skill_woodwork: 2
           instrument:
-            durability: -30
+            durability: -120
         # 倒した場所に落ちる。木は中に物を持てないので、`into: self`は必ず親（土地）のアイテム
         # スロットへ伝播する（9.4節）。重いので、運ぶかどうかはその場で決める。
         #
@@ -172,7 +169,9 @@ object_defs:
         trigger: {drag: {tag: chopping_tool}}
         conditions:
           - {prop: trunk_integrity, gte: 2}
-          # 1回ぶんの余力（下のadd と同じ30）が残っていなければ始められない（chop と同じ線の引き方）。
+          # 1回ぶんの余力（下のadd と同じ30）が残っていなければ始められない。**こちらは1回ごとに
+          # 丸太が1本返るので、手ごとに刃を食い、線も1回ぶん**（立ち木のchopと違う理由は
+          # docs/engine/DurabilitySystem.md 2.1節）。**倒せなくなった斧でも玉切りはできる。**
           - reason: too_worn
             subject: instrument
             prop: durability

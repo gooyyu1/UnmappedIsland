@@ -7,6 +7,7 @@ import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
+import { instrumentDurabilityLineOf } from '../support/durabilityLines';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction, makeTooDarkToWork } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
@@ -170,25 +171,30 @@ describe('timber.yamlの伐採', () => {
         .find((combination) => combination.name === step)
         ?.unmetRequirement()?.reasonName;
 
-    const chopCost = costPerUse('chop');
+    const fellCost = costPerUse('fell');
     const buckCost = costPerUse('buck');
-    const trunkIntegrityId = codex.propertyNames.getId('trunk_integrity');
-    const swingsFor = (target: WorldObject): number => target.getProperty(trunkIntegrityId).number;
-
-    expect(chopCost, '1回ぶんの値段は、立ち木も流木も同じ').toBe(buckCost);
+    expect(buckCost, '玉切りは1回ぶんで済むので、倒し切るより安い').toBeLessThan(fellCost);
     expect(
-      swingsFor(trunk) * buckCost,
-      '高くつくのは回数のほう——流木を切り終えるのは、立ち木を倒し切るより安い',
-    ).toBeLessThan(swingsFor(tree) * chopCost);
+      instrumentDurabilityLineOf(codex, 'broadleaf_tree', 'chop'),
+      '刃を食わない手（刻む）の線は、仕事1つぶん——倒し切れない斧では刻み始められない',
+    ).toBe(fellCost);
+    expect(
+      toolWearsOf(codex).find((row) => row.objectName === 'stone_axe' && row.stepName === 'chop'),
+      '刻む手は刃を食わない（食う手は必ず何かを返す）',
+    ).toBeUndefined();
 
-    setDurability(chopCost);
+    setDurability(fellCost);
     expect(
       tree.combinationsWith(axe, player).map((c) => c.name),
-      '1回ぶんちょうどなら刻める',
+      '1本ぶんちょうどなら刻み始められる',
     ).toEqual(['chop']);
 
-    setDurability(chopCost - 1);
-    expect(refusal(tree, 'chop'), '1足りなければ刻めない').toBe('too_worn');
+    setDurability(fellCost - 1);
+    expect(refusal(tree, 'chop'), '1足りなければ刻ませない').toBe('too_worn');
+    expect(
+      trunk.combinationsWith(axe, player).map((c) => c.name),
+      '倒せなくなっても、1回ぶんで済む玉切りは残る',
+    ).toEqual(['buck']);
 
     setDurability(buckCost);
     expect(
