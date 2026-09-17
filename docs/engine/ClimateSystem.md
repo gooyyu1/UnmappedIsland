@@ -8,7 +8,8 @@ tick 駆動・値域による状態決定・「ハードコードしない」「
 本書の設計は `core.yaml` の `world` プロパティとして**実装済み**であり、複数の乱数シードによる統計テスト
 （`tests/world-codex/climateSystem.test.ts`。「calm は概ね 2 日に 1 回軽い雨が降る」「wet はほとんど雨だが
 稀に止み、後半ほど嵐・大雨が増える」「dry はほとんど晴れで雨はごく稀」等の要件を、95% 以上のシードで
-満たすことを検証）で確認されています。本書に載せる具体的な数値は実装と同期した現在の値ですが、バランス調整で
+満たすことを検証）で確認されています。**土地ごとの気温差（1.1 節）だけは在処が違います**——定義は
+`locations.yaml` の各土地、検証は `tests/world-codex/landTemperature.test.ts` です。本書に載せる具体的な数値は実装と同期した現在の値ですが、バランス調整で
 変わりうる初期値であり、確定仕様ではありません。残る未決事項は 7 節に整理しています。
 
 ## 1. 基本方針
@@ -32,12 +33,58 @@ tick 駆動・値域による状態決定・「ハードコードしない」「
 trait。土地・海区・筏・本土）が同名のプロパティを持ち、祖先の値を土台（`base`）に自分の差を足します
 ——明るさと同じ形（[`IlluminationSystem.md`](./IlluminationSystem.md) 2 節・6 節）です。**`world` が持つのは
 空の側の気温**（季節と日射だけで決まる値）で、そこへ土地ごとの差と、据えた炉の暖
-（[`FireSystem.md`](./FireSystem.md) 9.2 節）が積まれます。本書が扱うのは `world` 側だけです。
+（[`FireSystem.md`](./FireSystem.md) 9.2 節）が積まれます。土地ごとの差は次節が持ち、以降の節は
+`world` 側だけを扱います。
 
 **この値を読む側に、体から熱が奪われる速さが加わります**（[`VitalsSystem.md`](./VitalsSystem.md) 8.3 節）。
 夜の寒さは既に日射の段が気温へ載せており（`ambient_brightness` の `dark` 段。
 [`IlluminationSystem.md`](./IlluminationSystem.md) 9 節）、雨は気温ではなく
 **濡れることの側**から効きます——本書は寒さを 1 つも新しく作らず、気温と天気を渡すだけです。
+
+### 1.1 土地の差は、海抜が決める
+
+**土地が空の気温へ足す差は、海抜ぶんの 1 つだけです。** 気温減率（1,000 m 登るごとに 6.5℃ 下がる、
+国際標準大気）を、その型の平均海抜へ掛けて 1℃ へ丸めます。海抜は生成した島の実測
+（[`stats/terrain.yaml`](../../stats/terrain.yaml) の `site_elevation_by_location`。島の最高点が
+海抜 400 m である根拠は [`TerrainGeneration.md`](./TerrainGeneration.md) 3.5 節）です。
+
+| 土地 | 平均海抜 | 減率ぶん | `value` |
+| --- | --: | --: | --: |
+| 砂浜 | 8<!-- stats: terrain.yaml site_elevation_by_location location=sandy_beach mean ±5% --> m | −0.05℃ | — |
+| 岩礁海岸 | 15<!-- stats: terrain.yaml site_elevation_by_location location=rocky_coast mean ±5% --> m | −0.10℃ | — |
+| 断崖海岸 | 37<!-- stats: terrain.yaml site_elevation_by_location location=cliff_coast mean ±5% --> m | −0.24℃ | — |
+| 草原 | 152<!-- stats: terrain.yaml site_elevation_by_location location=grassland mean ±5% --> m | −0.98℃ | **−1** |
+| 森 | 179<!-- stats: terrain.yaml site_elevation_by_location location=forest mean ±5% --> m | −1.16℃ | **−1** |
+| 密林 | 183<!-- stats: terrain.yaml site_elevation_by_location location=jungle mean ±5% --> m | −1.19℃ | **−1** |
+| 荒野 | 201<!-- stats: terrain.yaml site_elevation_by_location location=wasteland mean ±5% --> m | −1.31℃ | **−1** |
+| 岩石地 | 211<!-- stats: terrain.yaml site_elevation_by_location location=rocky_field mean ±5% --> m | −1.37℃ | **−1** |
+| 山腹 | 308<!-- stats: terrain.yaml site_elevation_by_location location=mountainside mean ±5% --> m | −2.00℃ | **−2** |
+| 山頂 | 400<!-- stats: terrain.yaml site_elevation_by_location location=mountain_peak mean ±5% --> m | −2.60℃ | **−3** |
+
+**丸めて 0 になる土地は宣言しません**——`core.yaml` の `location` trait が既定の 0 を持つので、
+「書き忘れ」と「差が無い」が同じ意味になります（明るさと違うのはここで、あちらは場所ごとに必ず
+与えます）。**浅い洞窟・海区・筏も差を持ちません**: 海の上は海抜 0 m で、岩陰は夜の放射冷却を遮る
+一方で昼は日陰になるため、定数 1 つでは向きが決まりません。
+
+**この差が、寒さを防ぐ物の段を見分けさせます。** 空が素の寒さの入口（16℃。
+[`VitalsSystem.md`](./VitalsSystem.md) 8.4 節）を下回るのは涼しい季節の夜と、その薄明・雨天の昼の
+2 つだけで、衣類の段（[`SurvivalItems.md`](../world/SurvivalItems.md) 5.1 節）はそれより細かく
+刻まれています。海抜ぶんの差が重なると、その 2 つが 1℃ ずつに割れます。
+
+| 涼しい季節の空 | 差 ±0 | 差 −1 | 差 −2 | 差 −3 |
+| --- | --: | --: | --: | --: |
+| 晴れた日中 | 18℃ | 17℃ | 16℃ | 15℃ |
+| 薄明・雨天の昼 | 15℃ | 14℃ | 13℃ | 12℃ |
+| 夜 | 12℃ | 11℃ | 10℃ | 9℃ |
+
+**どの一着にも、そこでちょうど釣り合う土地があります**——薄明の行が、素の入口から 1℃ ずつ下がった
+衣類の段とそのまま並びます。
+
+**素のままで越せるかは、山頂だけが変わります。** 戻る速さは削られる速さの 4 倍（`+8`/tick と
+`-2`/tick、[`VitalsSystem.md`](./VitalsSystem.md) 8.4 節）なので、晴れた日中に入口を上回りさえすれば、
+夜に削られたぶんはその日のうちに戻ります。上の表で日中が入口を下回るのは山頂だけで、そこも
+**いちばん安い一着**があれば戻ります（山腹はちょうど入口と釣り合うので、素のままで足ります）。
+**登るほど深い一着が要る**という形で、衣類の段が島の高さに対応します。
 
 ## 2. 季節: worldプロパティとしての巡回
 

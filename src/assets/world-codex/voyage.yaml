@@ -491,7 +491,7 @@ object_defs:
       lashed:
         # **要求しないまま、手際だけを名乗る**（docs/world/Skills.md 7.1節）。丸太を組んで縛る
         # 仕事なので木材加工——帆（下のsewn）が皮革を名乗るのと、レシピごとに分かれる。
-        deftness: {subject: agent, prop: woodwork_deftness}
+        deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         steps:
           # 丸太を並べて桁を渡す。
           - requires:
@@ -621,7 +621,7 @@ object_defs:
         conditions:
           - {reason: needs_leatherwork, subject: agent, prop: skill_leatherwork, in_stage_or_above: skilled}
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
-        deftness: {subject: agent, prop: leatherwork_deftness}
+        deftness: {skill: skill_leatherwork, from_stage: expert, minutes: -15}
         steps:
           # 帆柱と帆桁を組んで縛る。
           - requires:

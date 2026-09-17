@@ -43,7 +43,7 @@ object_defs:
             in_stage_or_above: bright
           - reason: too_stormy
             not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
-        duration: 20
+        duration: 15
         destroy: self
         spawn: {object: banana_stem, count: 5, into: agent}
 
@@ -63,7 +63,7 @@ object_defs:
             in_stage_or_above: bright
           - reason: too_stormy
             not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
-        duration: 20
+        duration: 15
         destroy: self
         spawn:
           - {object: banana, count: 2, into: agent}
@@ -112,12 +112,15 @@ object_defs:
       # 重さのほとんどは水。この重さのまま拠点へ運ぶより、その場で掻き取ったほうが軽い。
       weight: {value: 3000}
       volume: {value: 6000}
-      # 掻き取るのにかかる時間。素の値は株が持ち、今掻き取っている人の手際をbaseで継ぐ
-      # （docs/world/Skills.md 7節）。
+      # 掻き取るのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
+      # （docs/world/Skills.md 7節）。繊維を採る入口は長い連鎖の序盤で何度も繰り返すので、届いた段で
+      # 半分になる。
       strip_minutes:
         value: 30
-        base: {subject: agent, prop: cordage_deftness}
-        range: {min: 15, max: 30}
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_cordage, in_stage_or_above: skilled}
+            modify: {self: {strip_minutes: -15}}
     interactions:
       # 葉鞘を1枚ずつ剥ぎ、刃を立てて引き抜いて肉を落とす。残る髄と水はその場に捨てる。
       #
@@ -159,12 +162,14 @@ object_defs:
       weight: {value: 60}
       # ばらけた繊維は詰めても縮まないので、嵩そのままで見る。
       volume: {value: 800}
-      # 撚るのにかかる時間。素の値は繊維が持ち、今撚っている人の手際をbaseで継ぐ
-      # （docs/world/Skills.md 7節）。
+      # 撚るのにかかる時間。**素がtickの刻み1つ分では腕の効きようが無い**ので、2つ分から始めて
+      # 届いた段で半分になる（docs/world/Skills.md 7節）。撚る仕事は紐にもロープにも要る。
       spin_minutes:
-        value: 20
-        base: {subject: agent, prop: cordage_deftness}
-        range: {min: 10, max: 20}
+        value: 30
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_cordage, in_stage_or_above: skilled}
+            modify: {self: {spin_minutes: -15}}
     interactions:
       # 2束を手のひらで転がして1本に撚る。撚りに入りきらない短い屑は落ちる。
       spin:
@@ -185,12 +190,14 @@ object_defs:
     props:
       weight: {value: 100}
       volume: {value: 150}
-      # 撚り合わせるのにかかる時間。素の値は糸が持ち、今撚り合わせている人の手際をbaseで継ぐ
+      # 撚り合わせるのにかかる時間。**上のspinと同じ仕事なので、素も効き方も揃える**
       # （docs/world/Skills.md 7節）。
       ply_minutes:
-        value: 20
-        base: {subject: agent, prop: cordage_deftness}
-        range: {min: 10, max: 20}
+        value: 30
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_cordage, in_stage_or_above: skilled}
+            modify: {self: {ply_minutes: -15}}
     interactions:
       # 2本を撚りとは逆向きに撚り合わせる。互いの撚りが噛んで解けなくなり、太さと強さが出る。
       ply:
@@ -224,7 +231,7 @@ object_defs:
       twisted:
         # **解放は要求しないが、手際は名乗る**（docs/world/Skills.md 7.1節）。撚る仕事そのものなので、
         # 上のspin・plyと同じ腕が速さを決める——腕が0でも撚れて、上げた者だけが速くなる。
-        deftness: {subject: agent, prop: cordage_deftness}
+        deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
         steps:
           - requires:
               - {object: cord, count: 3, consume: true}

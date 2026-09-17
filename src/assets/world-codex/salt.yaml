@@ -23,12 +23,14 @@ object_defs:
     props:
       weight: {value: 300}
       volume: {value: 200}
-      # すり込むのにかかる時間。素の値は塩が持ち、今すり込んでいる人の手際をbaseで継ぐ
-      # （docs/world/Skills.md 7節）。
+      # すり込むのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
+      # （docs/world/Skills.md 7節）。獲物のたびに繰り返す手なので、届いた段で半分になる。
       cure_minutes:
         value: 30
-        base: {subject: agent, prop: preserving_deftness}
-        range: {min: 15, max: 30}
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_preserving, in_stage_or_above: skilled}
+            modify: {self: {cure_minutes: -15}}
     interactions:
       # 塩蔵する。**宣言はここ1箇所だけで、食べ物の側には1行も要らない**——受け取れるかどうかは
       # 相手がcure軸を宣言しているかが決め、宣言していない型へは操作そのものが現れない
