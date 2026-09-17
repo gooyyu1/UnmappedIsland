@@ -1,6 +1,6 @@
 import type { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../../domain/RecipeDef';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { propertyPathRef, text } from './Description';
+import { propertyPathRef, stageRef, text } from './Description';
 import { describeEffect } from './describeEffect';
 import { describeRequirements } from './describeRequirement';
 import { typeMatchTokens } from './typeMatchTokens';
@@ -14,11 +14,16 @@ export function describeRecipe(recipe: RecipeDef, names: DefNames, out: Descript
 
   const deftness = recipe.deftness;
   if (deftness !== undefined)
-    // **「積む」と書く。** 手際は負の上乗せ（docs/world/Skills.md 7節）で、この行の右に出るのは在り処
-    // だけなので、「引く」と書くと読み手は自分の -8 を引いて工程が伸びると読む——向きが逆になる。
+    // **符号を裏返して「短くなる」と書く。** 宣言が持つのは負の分数（docs/world/Skills.md 7節）なので、
+    // そのまま出すと読み手は「-15分かかる」と読む——向きが逆になる。
+    //
+    // 腕と段は語ではなく参照として出す（他の書き手と同じ形）。作り手が持つものなので起点はagent。
     out.write(
-      text('手際（各工程の時間へ積む）: '),
-      propertyPathRef(names.propertyName(deftness.propertyGlobalId), deftness.root),
+      text('手際: '),
+      propertyPathRef(names.propertyName(deftness.skillGlobalId), 'agent'),
+      text(' が '),
+      stageRef(deftness.fromStage),
+      text(` 以上なら各工程が${-deftness.minutes}分短くなる`),
     );
 
   for (const [index, step] of recipe.steps.entries()) describeRecipeStep(step, index + 1, names, out);

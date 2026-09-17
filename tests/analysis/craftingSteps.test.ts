@@ -194,22 +194,29 @@ object_defs:
     expect(lifetime.minutes).toBe(960 * 15);
   });
 
-  it('作る腕は、レシピの所要時間と分岐に現れる', () => {
-    // レシピが名乗る手際と余分の卓（13.6節）は、他の参照と同じく定義から解く。**解いた値を使わずに
-    // 「必ず1つ・宣言どおりの時間」と直書きすると、腕で変わる分を収支表が数えないまま断言する。**
+  it('作る腕は、レシピの分岐に現れる（時間は宣言どおりのまま）', () => {
+    // 余分の卓（13.6節）は、他の参照と同じく定義から解く。**解いた値を使わずに「必ず1つ」と
+    // 直書きすると、腕で変わる分を収支表が数えないまま断言する。**
+    //
+    // **手際は逆に、ここへ現れない。** 縮むのは宣言した段に届いた作り手にとってだけで、誰が作るかを
+    // 決めない図鑑・収支表では、工程が宣言した仕事の量がそのまま答えになる（docs/world/Skills.md 7節）。
     const YAML_SKILLED = `
 object_defs:
   fiber: {tags: [item]}
   weaver:
     tags: [character]
     props:
-      cordage_deftness: {value: -12}
+      skill_cordage:
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: skilled, min: 60}
       cordage_thrift: {value: 25}
   snare:
     tags: [item]
     recipes:
       knotted:
-        deftness: {subject: agent, prop: cordage_deftness}
+        deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
         steps:
           - requires: [{object: fiber, count: 2, consume: true}]
             duration: 60
@@ -222,9 +229,9 @@ object_defs:
     const snareId = skilledCodex.objectNames.getId('snare');
     const [knotted] = craftingStepsOf(skilledCodex, skilledCodex.objects.get(snareId));
 
-    expect(knotted.laborMinutes, '手際の12分ぶん縮む').toBe(48);
-    expect(knotted.elapsedMinutes).toBe(48);
-    expect(knotted.hasUnresolvedReferences, '腕は作り手の層から解ける').toBe(false);
+    expect(knotted.laborMinutes, '腕は時間を動かさない').toBe(60);
+    expect(knotted.elapsedMinutes).toBe(60);
+    expect(knotted.hasUnresolvedReferences, '卓の重みは作り手の層から解ける').toBe(false);
     // 卓は100対25なので、5回に1回は2つ取れる。
     expect(knotted.outcomes.map((outcome) => outcome.probability)).toEqual([0.8, 0.2]);
     expect(knotted.outputs).toEqual([{ objectGlobalId: snareId, counts: [1, 2] }]);

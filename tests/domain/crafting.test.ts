@@ -79,7 +79,7 @@ object_defs:
     tags: [item]
     recipes:
       basic:
-        deftness: {subject: agent, prop: carving_deftness}
+        deftness: {skill: skill_carving, from_stage: skilled, minutes: -15}
         steps:
           - requires:
               - {object: wood, count: 1, consume: true}
@@ -87,11 +87,15 @@ object_defs:
           - requires:
               - {object: wood, count: 1, consume: true}
             duration: 30
-  # 作る腕の上乗せ（docs/world/Skills.md 7節）を持つ作り手。段は持たず、試験の側で値を入れる。
+  # 作る腕（docs/world/Skills.md 7節）を持つ作り手。段は2つだけ置き、試験の側で値を入れる。
   handy_crafter:
     tags: [item]
     props:
-      carving_deftness: {value: 0}
+      skill_carving:
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: skilled, min: 60}
       carving_thrift: {value: 0}
   # 手際と、余分の卓の両方を名乗るレシピ。
   #
@@ -101,7 +105,7 @@ object_defs:
     tags: [item]
     recipes:
       carved:
-        deftness: {subject: agent, prop: carving_deftness}
+        deftness: {skill: skill_carving, from_stage: skilled, minutes: -15}
         steps:
           - requires:
               - {object: wood, count: 1, consume: true}
@@ -110,16 +114,6 @@ object_defs:
           - {weight: 0}
           - weight: {subject: agent, prop: carving_thrift}
             spawn: {object: bowl, into: agent}
-  # 手際が引き切れないほど短い工程。下限（MINIMUM_STEP_MINUTES）を確かめるために置く。
-  peg:
-    tags: [item]
-    recipes:
-      carved:
-        deftness: {subject: agent, prop: carving_deftness}
-        steps:
-          - requires:
-              - {object: wood, count: 1, consume: true}
-            duration: 10
   # 2つの工程が同じ型を要求する。枠の上限は合計（3）なので、1工程目の要求（1）より多く入りうる。
   raft:
     tags: [item]
@@ -276,14 +270,14 @@ object_defs:
   });
 
   /**
-   * 作る腕の上乗せ（docs/world/Skills.md 7節）。**壊して赤くなるのを見る先はここ**——手際を0にすれば
+   * 作る腕（docs/world/Skills.md 7節）。**壊して赤くなるのを見る先はここ**——腕を素人のままにすれば
    * 短くならず、余分の重みを0にすれば2つ目が出ない。
    */
   describe('作り手の腕', () => {
-    /** 手際と無駄の無さを持つ作り手を、床へ置いて返す。 */
-    function handyCrafter(deftness: number, thrift = 0): WorldObject {
+    /** その腕と無駄の無さを持つ作り手を、床へ置いて返す。skillはskill_carvingの値。 */
+    function handyCrafter(skill: number, thrift = 0): WorldObject {
       const crafter = putOnGround('handy_crafter');
-      crafter.getProperty(codex.propertyNames.getId('carving_deftness')).setNumberWithoutEvents(deftness);
+      crafter.getProperty(codex.propertyNames.getId('skill_carving')).setNumberWithoutEvents(skill);
       crafter.getProperty(codex.propertyNames.getId('carving_thrift')).setNumberWithoutEvents(thrift);
       return crafter;
     }
@@ -296,13 +290,24 @@ object_defs:
       return carving;
     }
 
-    it('手際のぶんだけ、経過するゲーム内時間が短くなる', () => {
+    it('宣言した段に届いた作り手には、宣言した分だけ短くなる', () => {
       const carving = startCarving('bowl');
       const before = session.world!.totalMinutes;
 
-      expect(tryAdvanceCrafting(carving, handyCrafter(-20))).toBe(true);
+      expect(tryAdvanceCrafting(carving, handyCrafter(60))).toBe(true);
 
-      expect(session.world!.totalMinutes - before, '30分の工程が20分ぶん縮む').toBe(10);
+      expect(session.world!.totalMinutes - before, '30分の工程が15分ぶん縮む').toBe(15);
+    });
+
+    it('段に届いていない作り手には、宣言どおりの時間がかかる', () => {
+      // **効き始める段は行動ごとに宣言する**（docs/world/Skills.md 7節）ので、腕を持っていることと
+      // 速くなることは別。届く手前で縮み始めると、宣言した段が意味を失う。
+      const carving = startCarving('bowl');
+      const before = session.world!.totalMinutes;
+
+      expect(tryAdvanceCrafting(carving, handyCrafter(59))).toBe(true);
+
+      expect(session.world!.totalMinutes - before, 'skilledの手前では縮まない').toBe(30);
     });
 
     it('手際は進捗を動かさない（片付いた仕事の量は腕によらない）', () => {
@@ -313,19 +318,10 @@ object_defs:
       session.createObject(idOf('wood')).moveToSlotOrRejection(benchWip.getSlot(materialsId()));
       const before = session.world!.totalMinutes;
 
-      expect(tryAdvanceCrafting(benchWip, handyCrafter(-20))).toBe(true);
+      expect(tryAdvanceCrafting(benchWip, handyCrafter(60))).toBe(true);
 
-      expect(session.world!.totalMinutes - before, '経過するのは手際を積んだ後').toBe(10);
+      expect(session.world!.totalMinutes - before, '経過するのは縮めた後').toBe(15);
       expect(benchWip.tryGetProperty(progressId())?.number ?? 0, '進捗は宣言どおり').toBe(30);
-    });
-
-    it('手際をいくら積んでも、工程は1分より短くならない', () => {
-      const carving = startCarving('peg');
-      const before = session.world!.totalMinutes;
-
-      expect(tryAdvanceCrafting(carving, handyCrafter(-1000))).toBe(true);
-
-      expect(session.world!.totalMinutes - before, '10分の工程でも1分は掛かる').toBe(1);
     });
 
     it('余分の卓は、完成した瞬間に1回だけ引かれる', () => {

@@ -298,12 +298,15 @@ object_defs:
       weight: {value: 800}
       plant_bait: {value: 12}
       volume: {value: 800}
-      # 刻むのにかかる時間。素の値は芋が持ち、今刻んでいる人の手際をbaseで継ぐ
-      # （docs/world/Skills.md 7節）。
+      # 刻むのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
+      # （docs/world/Skills.md 7節）。**素がtickの刻み1つ分では腕の効きようが無い**ので、2つ分から
+      # 始めて届いた段で半分になる——火にかけるたびに繰り返す手なので、撚る・解体すると同じ置き方。
       chop_minutes:
-        value: 20
-        base: {subject: agent, prop: cooking_deftness}
-        range: {min: 10, max: 20}
+        value: 30
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_cooking, in_stage_or_above: skilled}
+            modify: {self: {chop_minutes: -15}}
       # **肉より長くかける。** 針状結晶を壊すには芯まで熱を通す必要があり、生焼けでは食べられない。
       # 炎（3/tick）なら10tick＝2時間30分。刻んであれば上乗せが乗る（上のprepped）ので6tick＝1時間30分。
       cooking_progress:

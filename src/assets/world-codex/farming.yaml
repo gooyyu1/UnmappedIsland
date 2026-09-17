@@ -334,7 +334,7 @@ object_defs:
       # 上に乗っていて、大型で最も開く差がこれ。**解放は要求しないまま、手際だけを名乗る**
       # ——木を縛って組む仕事なので木材加工（docs/world/Skills.md 7.1節）。
       fenced:
-        deftness: {subject: agent, prop: woodwork_deftness}
+        deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         steps:
           - requires:
               - {object: log, count: 4, consume: true}

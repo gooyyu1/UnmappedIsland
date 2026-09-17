@@ -230,9 +230,11 @@ traits:
       # **満杯を拒む条件は炉ごとが足す**（同5節、conditionsだけを重ねると残りはこちらを継ぐ）。
       # 容量だけでも拒めるが、それだと断る理由が届かず「重ねても何も起きない」になる
       # （docs/ui/CardInteraction.md 2.1節）。薪の上限は炉ごとに違うので、ここには書けない。
+      # **時間は課さない**（docs/engine/FireSystem.md 2.4節）。1手の受け渡しで、繰り返しても2回目
+      # 以降は炉のfuelの上限が止める——0分は「1 tickに何度でもできる」を意味するので、繰り返すと
+      # 得をする操作には置けない（docs/engine/ActionSystem.md 6.2節）。
       add_fuel:
         trigger: {drag: {tag: fuel}, allow_multiple: true}
-        duration: 1
         transfer:
           amount: 999
           from: instrument
@@ -264,9 +266,9 @@ traits:
       #
       # **灯っていない明かりは断る。** 移す火が無いまま成立させると、断るだけでは
       # 「重ねても何も起きない」になる（同2.1節）。
+      # **時間は課さない**（上のadd_fuelと同じ1手の受け渡し）。灯った炉へ2度目は条件が断る。
       ignite_from_flame:
         trigger: {drag: {tag: lightable}}
-        duration: 1
         conditions:
           # **運んできた側を先に見る。** 灯っていない明かりでは、炉がどうであれこの操作は成り立たない。
           # **理由の名前は火起こしの signal（上のignitableのnot_lit）と分ける**——同じfire.yamlの中で
@@ -284,7 +286,6 @@ traits:
       # 「重ねても何も起きない」になる（docs/ui/CardInteraction.md 2.1節）。
       light_from_flame:
         trigger: {drag: {tag: lightable}}
-        duration: 1
         conditions:
           - {reason: fire_out, prop: heat, gt: 0}
           - {reason: already_lit, subject: instrument, prop: lit, eq: 0}
@@ -309,7 +310,7 @@ object_defs:
       # **火の腕ではない**——火が決めるのは着火の重みだけ（同5節）。腕が0でも削れるので、上の
       # 立ち上がりは手際を名乗っても崩れない。
       carved:
-        deftness: {subject: agent, prop: woodwork_deftness}
+        deftness: {skill: skill_woodwork, from_stage: skilled, minutes: -15}
         steps:
           - requires:
               - {object: twig, count: 1, consume: true}
@@ -374,10 +375,11 @@ object_defs:
       - conditions: [{prop: lit, eq: 1}]
         modify: {parent: {hand_brightness: 11, looking_brightness: 11}}
     recipes:
-      # 枝へ繊維を巻くだけ。道具も解放条件も要らない。**巻く仕事なので、手際は繊維・編みが名乗る**
-      # （docs/world/Skills.md 7.1節）——腕が0でも巻けることは、解放条件を持たない側が守る。
+      # 枝へ繊維を巻くだけ。道具も解放条件も要らない。
+      #
+      # **手際を名乗らない**——巻く仕事そのものは繊維・編みだが、工程がtickの刻み1つ（15分）で、
+      # そこから縮める先が無い（docs/world/Skills.md 7.1節）。名乗っても誰にも効かない宣言になる。
       wrapped:
-        deftness: {subject: agent, prop: cordage_deftness}
         steps:
           - requires:
               - {object: thick_branch, count: 1, consume: true}
@@ -391,7 +393,6 @@ object_defs:
       # 火種だけを失う。
       light:
         trigger: {drag: {object: burning_tinder}}
-        duration: 1
         conditions:
           - {reason: already_lit, prop: lit, eq: 0}
         destroy: instrument
