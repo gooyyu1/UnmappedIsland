@@ -137,8 +137,18 @@ object_defs:
         # 保たせる造作を知っている者ほど早く決まる。
         deftness: {skill: skill_preserving, from_stage: expert, minutes: -15}
         steps:
+          # 柱を立てて枠を組む。
           - requires:
               - {object: thick_branch, count: 6, consume: true}
-              - {object: woven_leaf, count: 6, consume: true}
+            duration: 60
+          # 編んだ葉で囲いを張る。
+          - requires:
+              - {object: woven_leaf, count: 3, consume: true}
+            duration: 60
+          - requires:
+              - {object: woven_leaf, count: 3, consume: true}
+            duration: 60
+          # 縄で締め、煙の抜きを調える。
+          - requires:
               - {object: rope, count: 2, consume: true}
-            duration: 240
+            duration: 60

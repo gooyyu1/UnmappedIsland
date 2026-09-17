@@ -242,13 +242,21 @@ export const FAILED = 'failed';
 export const SETTLED = 'settled';
 
 /**
- * セッションを立てる・起こすスクリプトが、**人が手綱で止めていることを名乗る**終了コード
- * （[`brake.sh`](brake.sh)。そちらが綴りを持ち、ここはその読み手）。
+ * セッションを立てる・起こすスクリプトが、**打てない理由に答えが返っていることを名乗る**終了コード。
+ * 綴りを持つのは名乗る側で、ここはその読み手。
+ *
+ * - `3` … 人が手綱で止めている（[`brake.sh`](brake.sh)）。人が外すまで戻らない。立てる側も起こす側も出す
+ * - `4` … 使用量の余力が足りない（[`headroom.sh`](headroom.sh)）。枠が明ければひとりでに戻る。
+ *   **出すのは立てる側だけ**——起こす側は関門（[`may-dispatch.sh`](may-dispatch.sh)）を通らない
+ *   （[`resume-session.sh`](resume-session.sh)。掛けるかは未決）
+ *
+ * **どちらも直す相手が居ない**ので `SETTLED`。**打つ手は違うが、それを読むのはログを見る人**で、
+ * 理由の行はそれぞれのスクリプトが標準エラーへ出している。
  */
-const BRAKED_EXIT = 3;
+const ANSWERED_EXITS = new Set([3, 4]);
 
 /** 投入・再開のスクリプトの終了コードを、1手の結果へ読み替える。 */
-const dispatched = (status) => (status === 0 ? PLAYED : status === BRAKED_EXIT ? SETTLED : FAILED);
+const dispatched = (status) => (status === 0 ? PLAYED : ANSWERED_EXITS.has(status) ? SETTLED : FAILED);
 
 /** 1手打つ。打てたら `PLAYED`（呼び手は周を切り上げる）、それ以外は次の手へ進む。 */
 export function play(kind, args, { runScript, gh, remember, log, echo }) {

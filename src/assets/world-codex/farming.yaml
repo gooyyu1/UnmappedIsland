@@ -116,10 +116,17 @@ object_defs:
       # **手際も名乗らない**（docs/world/Skills.md 7.1節）。掘るだけで、削る工程も縛る工程も
       # 持たない——土を起こす腕は一覧（同2節）に無いので、名乗れる先がそもそも無い。
       tilled:
+        # **1回の工程は1時間まで**（docs/engine/ActionSystem.md 6.3節）。掘り棒は最初の工程で
+        # 折り込むので、残りは手を動かす時間だけの工程になる（13.1節）。
         steps:
+          # 掘り棒で土を起こし始める。
           - requires:
               - {object: thick_branch, count: 1, consume: true}
-            duration: 240
+            duration: 60
+          # 掘り返して均す。
+          - duration: 60
+          - duration: 60
+          - duration: 60
 
   # 囲い。丸太を並べて縄で結んだ柵で、**罠の檻（TrapSystem.md 1.2節、大型・生かす）と家畜の囲いが
   # 同じ1つの型**。空いている間は掛かるのを待ち、埋まっている間は置いておく。
@@ -336,7 +343,26 @@ object_defs:
       fenced:
         deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         steps:
+          # 丸太を1本ずつ立てる。
           - requires:
-              - {object: log, count: 4, consume: true}
-              - {object: rope, count: 2, consume: true}
-            duration: 480
+              - {object: log, count: 1, consume: true}
+            duration: 60
+          - requires:
+              - {object: log, count: 1, consume: true}
+            duration: 60
+          - requires:
+              - {object: log, count: 1, consume: true}
+            duration: 60
+          - requires:
+              - {object: log, count: 1, consume: true}
+            duration: 60
+          # 縄で結ぶ。
+          - requires:
+              - {object: rope, count: 1, consume: true}
+            duration: 60
+          - requires:
+              - {object: rope, count: 1, consume: true}
+            duration: 60
+          # 隙間を塞ぎ、獣が押しても動かないところまで締める。
+          - duration: 60
+          - duration: 60

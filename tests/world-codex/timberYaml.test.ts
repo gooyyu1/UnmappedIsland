@@ -7,6 +7,7 @@ import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
+import { instrumentDurabilityLineOf } from '../support/durabilityLines';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction, makeTooDarkToWork } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
@@ -57,16 +58,28 @@ describe('timber.yamlの伐採', () => {
     );
   }
 
-  it('斧で伐り倒すと木が消え、丸太と太い枝が落ちる', () => {
+  /**
+   * 斧を1回入れる。**1回で倒れる木は無い**（docs/engine/ActionSystem.md 6.3節）ので、成立している
+   * ほうの手（受け口を刻むchopか、倒すfell）を引いて実行する。
+   */
+  function swingAxeAt(tree: WorldObject, axe: WorldObject): string {
+    const [combination] = tree.combinationsWith(axe, player);
+    expect(combination, '斧を当てて成立する手').toBeDefined();
+    expect(combination.tryExecute()).toBe(true);
+    return combination.name;
+  }
+
+  it('斧を何度も入れて初めて木が倒れ、丸太と太い枝が落ちる', () => {
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
     const axe = spawnInto('stone_axe', player, 'hand');
+    // 何回で倒れるかは木の宣言が持つ（直値で書くと、宣言を動かしても緑のままになる）。
+    const swings = tree.getProperty(codex.propertyNames.getId('trunk_integrity')).number;
 
-    expect(
-      tree
-        .combinationsWith(axe, player)
-        .find((c) => c.name === 'fell')
-        ?.tryExecute() === true,
-    ).toBe(true);
+    const names: string[] = [];
+    for (let left = swings; left > 0; left -= 1) names.push(swingAxeAt(tree, axe));
+
+    expect(names.at(-1), '最後の1回だけが倒す手').toBe('fell');
+    expect(new Set(names.slice(0, -1)), 'そこまでは受け口を刻むだけ').toEqual(new Set(['chop']));
 
     const items = itemsOn(forest);
     expect(
@@ -100,11 +113,14 @@ describe('timber.yamlの伐採', () => {
   it('石斧を当てて成立するのは伐採だけ（樹皮剥ぎと同時に成立させない）', () => {
     // **画面が出せるのは成立するもの1つだけ**で、複数あれば宣言順の先頭が勝つ
     // （docs/ui/CardInteraction.md 2節、docs/engine/GameElementDefinition.md 12.1節）。石斧が
-    // 樹皮剥ぎにも当たると、先に書かれたfellが必ず勝って剥ぐ道がプレイヤーへ届かなくなる。
+    // 樹皮剥ぎにも当たると、先に書かれた伐採の手が必ず勝って剥ぐ道がプレイヤーへ届かなくなる。
+    //
+    // **伐採の2つの手どうしも同時には成立しない**（同12.1節「条件で分ける」）——受け口を刻む手と
+    // 倒す手は幹の残りで排他なので、立っている木に出るのは刻むほうだけ。
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
     const axe = spawnInto('stone_axe', player, 'hand');
 
-    expect(tree.combinationsWith(axe, player).map((c) => c.name)).toEqual(['fell']);
+    expect(tree.combinationsWith(axe, player).map((c) => c.name)).toEqual(['chop']);
   });
 
   it('摩耗した石斧が暗がりで名乗る理由は、その斧にできる操作のもの', () => {
@@ -115,7 +131,7 @@ describe('timber.yamlの伐採', () => {
     const axe = spawnInto('stone_axe', player, 'hand');
     // 1本ぶん（120）を割った刃。**0にはしない**——0へ届いた刃は折れて無くなる（weathering.yaml）
     // ので、その札は盤面に残らない（docs/engine/DurabilitySystem.md 2.1節）。
-    axe.getProperty(codex.propertyNames.getId('durability')).setNumberWithoutEvents(100);
+    axe.getProperty(codex.propertyNames.getId('durability')).setNumberWithoutEvents(20);
     makeTooDarkToWork(player, codex);
 
     expect(
@@ -125,12 +141,12 @@ describe('timber.yamlの伐採', () => {
     expect(
       tree.refusedCombinationsWith(axe, player).map((c) => [c.name, c.unmetRequirement()?.reasonName]),
       '断るのは伐採だけで、理由も斧そのものを指す',
-    ).toEqual([['fell', 'too_worn']]);
+    ).toEqual([['chop', 'too_worn']]);
   });
 
-  it('斧を断る線は、その工程が食う量と一致している', () => {
-    // 線はその1回が食う量と同じところに引く（docs/engine/DurabilitySystem.md 2.1節）——倒し切れない
-    // 仕事を始めさせないため。
+  it('斧を断る線は、その仕事が食う量と一致している', () => {
+    // 線はその工程が食う量と同じところに引き、**刃を食わない手には仕事1つぶんの線を引く**
+    // （docs/engine/DurabilitySystem.md 2.1節）——倒し切れない仕事を始めさせないため。
     //
     // **食う量は宣言から読む。** 直値で書くと閾値の側しか見ないことになり、`add` を動かしても緑の
     // ままになる（CLAUDE.md「置いた主張は、破れたときに落ちるものと対で置く」の「その主張の面を
@@ -157,20 +173,27 @@ describe('timber.yamlの伐採', () => {
 
     const fellCost = costPerUse('fell');
     const buckCost = costPerUse('buck');
-
-    expect(buckCost, '玉切りは伐採より安い').toBeLessThan(fellCost);
+    expect(buckCost, '玉切りは1回ぶんで済むので、倒し切るより安い').toBeLessThan(fellCost);
+    expect(
+      instrumentDurabilityLineOf(codex, 'broadleaf_tree', 'chop'),
+      '刃を食わない手（刻む）の線は、仕事1つぶん——倒し切れない斧では刻み始められない',
+    ).toBe(fellCost);
+    expect(
+      toolWearsOf(codex).find((row) => row.objectName === 'stone_axe' && row.stepName === 'chop'),
+      '刻む手は刃を食わない（食う手は必ず何かを返す）',
+    ).toBeUndefined();
 
     setDurability(fellCost);
     expect(
       tree.combinationsWith(axe, player).map((c) => c.name),
-      '1本ぶんちょうどなら倒せる',
-    ).toEqual(['fell']);
+      '1本ぶんちょうどなら刻み始められる',
+    ).toEqual(['chop']);
 
     setDurability(fellCost - 1);
-    expect(refusal(tree, 'fell'), '1足りなければ倒せない').toBe('too_worn');
+    expect(refusal(tree, 'chop'), '1足りなければ刻ませない').toBe('too_worn');
     expect(
       trunk.combinationsWith(axe, player).map((c) => c.name),
-      '倒せなくなっても、安く済む玉切りは残る',
+      '倒せなくなっても、1回ぶんで済む玉切りは残る',
     ).toEqual(['buck']);
 
     setDurability(buckCost);

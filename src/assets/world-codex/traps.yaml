@@ -403,10 +403,21 @@ object_defs:
       # **手際も名乗らない**（docs/world/Skills.md 7.1節）。結ぶ工程を持たないので繊維・編みは
       # 効かず（上と同じ理由）、土を起こす腕は一覧（同2節）に無い。
       dug:
+        # **1回の工程は1時間まで**（docs/engine/ActionSystem.md 6.3節）。掘り棒は最初の工程で
+        # 折り込むので、残りは手を動かす時間だけの工程になる（13.1節）。
         steps:
+          # 掘り棒で穴の輪郭を起こす。
           - requires:
               - {object: thick_branch, count: 1, consume: true}
-            duration: 480
+            duration: 60
+          # 獣が落ちる深さまで掘り下げ、掻き出す。
+          - duration: 60
+          - duration: 60
+          - duration: 60
+          - duration: 60
+          - duration: 60
+          - duration: 60
+          - duration: 60
 
   # stake軸の値。**traitsだけを宣言する**（3.5.1節）——変種へ配られるのは上のtraitで、この型自身の
   # インスタンスは作られない。
