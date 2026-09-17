@@ -44,22 +44,34 @@ object_defs:
       #
       # **覚醒度は段で動かない**——sleep で戻るのは段によらず同じで、18時間起きて6時間眠るとちょうど
       # 元へ戻るという釣り合いを寝床の上でも保つ（docs/world/Characters.md 休息節）。
+      #
+      # **同じブロックが、寝ている間だけ寒さの入口（chill_point）も押し下げる**
+      # （docs/engine/VitalsSystem.md 8.3節。深さは docs/world/Bedding.md 4.2節）。押し下げるのは
+      # 眠っている当人なので対象は agent で、効くのは duration を進めている間だけ——「眠っている間か」を
+      # 問うゲートは要らない（11.7節）。**衣類の modify と加算で重なる**（clothing.yaml）。
+      #
+      # **1℃は体の下の乾いた層、もう1℃は地面から離れること**（同4.2節）。敷物が前者を、差した骨組みが
+      # 後者を持つので、回復の上積みと同じブロックへ同居する。
       nap:
         trigger: menu
         duration: 180
         passives:
           - add: {agent: {stamina: 2, wakefulness: 4}}
+            modify: {agent: {chill_point: -1}}
           - conditions:
               - {slot: structure, matches: {tag: bed_frame}}
             add: {agent: {stamina: 1}}
+            modify: {agent: {chill_point: -1}}
       sleep:
         trigger: menu
         duration: 360
         passives:
           - add: {agent: {stamina: 2, wakefulness: 4}}
+            modify: {agent: {chill_point: -1}}
           - conditions:
               - {slot: structure, matches: {tag: bed_frame}}
             add: {agent: {stamina: 1}}
+            modify: {agent: {chill_point: -1}}
     recipes:
       # 編んだ葉を3枚、端を重ねて広げる。道具も紐も要らない。
       #
@@ -110,8 +122,9 @@ object_defs:
   # ハンモックの網。紐を編んだだけの物で、木材はゼロ。巻いて持ち歩ける
   # （docs/world/Bedding.md 6節）。
   #
-  # **寝台の上位ではなく別系統。** 回復量は骨組みを差した寝台と同じで、差は置ける場所と伸ばしろの
-  # ほうにある——支点の要る土地でしか吊れない代わりに軽く、詰め物を足す先を持たない（同節）。
+  # **寝台の上位ではなく別系統。** 回復量は骨組みを差した寝台と同じで、差は置ける場所・保温・伸ばしろの
+  # ほうにある——支点の要る土地でしか吊れない代わりに軽く、寒さの入口を寝台ほど押し下げず
+  # （同4.2節）、詰め物を足す先を持たない（同6節）。
   hammock:
     tags: [item]
     props:
@@ -162,13 +175,20 @@ object_defs:
     interactions:
       # 背中の下を風が抜けるので、虫にも湿気にも最も強い（docs/world/Bedding.md 6節）。骨組みを
       # 差した寝台（2+1）と並ぶ量を、段が1つしかないので1行で持つ。
+      #
+      # **寒さの入口の押し下げだけは、寝台と並ばない**（同4.2節）。地面からは離れるが、網は体重で
+      # 潰れて体の下に層が残らないので、取れるのは2つのうち1つぶん——敷物だけの寝床と同じ1℃で、
+      # 骨組みを差した寝台の2℃には届かない。**虫と湿気に最も強い理由（背中の下を風が抜ける）が、
+      # そのまま保温で並べない理由になる**（同6節）。
       nap:
         trigger: menu
         duration: 180
         passives:
           - add: {agent: {stamina: 3, wakefulness: 4}}
+            modify: {agent: {chill_point: -1}}
       sleep:
         trigger: menu
         duration: 360
         passives:
           - add: {agent: {stamina: 3, wakefulness: 4}}
+            modify: {agent: {chill_point: -1}}
