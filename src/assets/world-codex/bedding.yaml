@@ -69,7 +69,7 @@ object_defs:
         steps:
           - requires:
               - {object: woven_leaf, count: 3, consume: true}
-            duration: 20
+            duration: 15
 
   # 寝台の骨組み。杭4本を打ち、縦材を渡し、簀の子を縛る。軽いがかさばる。
   #
@@ -90,7 +90,7 @@ object_defs:
       # （docs/world/Skills.md 7.1節）。木を縛って組む物は木材加工の側（同2.1節、そりと同じ
       # containers.yaml）で、腕が0でも組めて、上げた者だけが速くなる。
       lashed:
-        deftness: {subject: agent, prop: woodwork_deftness}
+        deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         steps:
           - requires:
               - {object: thick_branch, count: 6, consume: true}
@@ -120,7 +120,7 @@ object_defs:
             subject: ancestor
             prop: hanging_anchor
             gt: 0
-        duration: 20
+        duration: 15
         # 吊った物は設置物なので手持ちの枠に入らず、agentの親＝今いる土地のfixturesへこぼれる
         # （9.4節）。**網が消えても行き先は決まる**ので、置き換えの既定どおりdestroyを先に書ける
         # （同節）——湧かせる先がagentで、自分の親を辿らないため。
@@ -130,7 +130,7 @@ object_defs:
       # 紐を結んで網にする。くくり罠（traps.yaml）と同じ結ぶ仕事なので、**解放は要求しないまま
       # 手際だけを名乗る**（docs/world/Skills.md 7.1節）。
       knotted:
-        deftness: {subject: agent, prop: cordage_deftness}
+        deftness: {skill: skill_cordage, from_stage: expert, minutes: -15}
         steps:
           - requires:
               - {object: cord, count: 5, consume: true}
@@ -163,9 +163,12 @@ object_defs:
       # 寝台に劣るだけの寝床になる（同6節の表）。
       #
       # **条件は要らない。** 吊れた以上そこには支点が在り、外すのに要るものは何も無い。
+      #
+      # 長さは吊るのと同じ1tick。解くほうが結ぶより速いはずだが、**格子の下は飲む専用の5分しか
+      # 無い**（docs/engine/ActionSystem.md 6.2節）ので、そこまでは落とさない。
       take_down:
         trigger: menu
-        duration: 10
+        duration: 15
         # 網は設置物ではなくなるので手持ちの枠へ入り、埋まっていればagentの親＝今いる土地へ
         # こぼれる（9.4節）。**湧かせる先がagentで自分の親を辿らない**ので、hangと同じく
         # destroyを先に書ける（同節）。

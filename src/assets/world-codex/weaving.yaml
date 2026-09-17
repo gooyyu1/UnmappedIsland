@@ -17,17 +17,21 @@ object_defs:
       weight: {value: 4000}
       # かさは編み籠の容量を超える。葉は籠に入れず手で運ぶ。
       volume: {value: 22000}
-      # 編むのにかかる時間。素の値は葉が持ち、今編んでいる人の手際をbaseで継ぐ
-      # （docs/world/Skills.md 7節。道が歩く人の遅れを継ぐlocations.yamlのtravel_minutesと同じ形）。
+      # 編むのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
+      # （docs/world/Skills.md 7節）。編み葉は籠にも衣類にも何枚も要るので、届いた段で縮む。
       weave_minutes:
         value: 90
-        base: {subject: agent, prop: cordage_deftness}
-        range: {min: 45, max: 90}
-      # 割ってから編むほうの時間。同じ葉の別の手順なので、継ぐ手際は上と同じ1本。
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_cordage, in_stage_or_above: skilled}
+            modify: {self: {weave_minutes: -15}}
+      # 割ってから編むほうの時間。同じ葉の別の手順なので、効き方も上と揃える。
       split_and_weave_minutes:
         value: 60
-        base: {subject: agent, prop: cordage_deftness}
-        range: {min: 30, max: 60}
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_cordage, in_stage_or_above: skilled}
+            modify: {self: {split_and_weave_minutes: -15}}
     interactions:
       # 素手で編む。中軸を残したまま左右の小葉を組むので、幅広のパネルが1枚できる。
       #
@@ -40,7 +44,7 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
-        # 編む人の手際はweave_minutesのbaseが継いでいるので、ここはその1つを読むだけ。
+        # 編む人の腕で縮む分はweave_minutes自身のpassivesが持つので、ここはその1つを読むだけ。
         duration: {prop: weave_minutes}
         # **繊維・編みの腕はここから立ち上がる**（docs/engine/SkillSystem.md 3節の実行経路、量の
         # 置き方は characters/player_character.yaml）。**繊維を伸ばす口のうち、道具を1つも要求しない

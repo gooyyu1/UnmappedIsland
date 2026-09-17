@@ -208,12 +208,16 @@ object_defs:
   fiber: {}
   character:
     props:
-      cordage_deftness: {value: 0}
+      skill_cordage:
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: skilled, min: 60}
       cordage_thrift: {value: 0}
   snare:
     recipes:
       knotted:
-        deftness: {subject: agent, prop: cordage_deftness}
+        deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
         steps:
           - requires: [{object: fiber, count: 2, consume: true}]
             duration: 30
@@ -228,10 +232,35 @@ object_defs:
     const recipe = recipesOf(codex, 'snare')[0];
 
     expect(recipe.surplus, '余分の卓を持つ').toBeDefined();
-    expect(recipe.minutesFor(recipe.steps[0], agent), '上乗せが素なら宣言どおり').toBe(30);
+    expect(recipe.minutesFor(recipe.steps[0], agent), '段に届いていなければ宣言どおり').toBe(30);
 
-    agent.getProperty(codex.propertyNames.getId('cordage_deftness')).setNumber(-12);
-    expect(recipe.minutesFor(recipe.steps[0], agent), '手際のぶん縮む').toBe(18);
+    agent.getProperty(codex.propertyNames.getId('skill_cordage')).setNumber(60);
+    expect(recipe.minutesFor(recipe.steps[0], agent), '宣言した分だけ縮む').toBe(15);
+  });
+
+  it('縮めるとtickの刻みを割る工程があるとエラーになる（下限は宣言が守る）', () => {
+    // **黙って下限で止めない**（docs/engine/ActionSystem.md 6.2節）——止めると、格子から外れた宣言が
+    // 「止まっているから平気」として世界に残り、腕を上げた者だけがtickを飛ばす形へ戻れる。
+    const yaml = `
+object_defs:
+  fiber: {}
+  character:
+    props:
+      skill_cordage:
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: skilled, min: 60}
+  cord:
+    recipes:
+      twisted:
+        deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
+        steps:
+          - requires: [{object: fiber, consume: true}]
+            duration: 15
+`;
+    expect(() => load(yaml)).toThrow(YamlLoadError);
+    expect(() => load(yaml)).toThrowError(/15分を割ります/);
   });
 
   it('deftnessもsurplusも省ける（腕が効かないレシピ）', () => {
@@ -256,20 +285,27 @@ object_defs:
     expect(recipe.minutesFor(recipe.steps[0], agent)).toBe(5);
   });
 
-  it('deftnessにselfを使うとエラーになる（読むときに居るのは作りかけで、成果物ではない）', () => {
+  it('deftnessのminutesが正だとエラーになる（縮める側が負を持つ）', () => {
     const yaml = `
 object_defs:
   fiber: {}
+  character:
+    props:
+      skill_cordage:
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: skilled, min: 60}
   basket:
     recipes:
       woven:
-        deftness: {subject: self, prop: quality}
+        deftness: {skill: skill_cordage, from_stage: skilled, minutes: 15}
         steps:
           - requires: [{object: fiber, consume: true}]
             duration: 60
 `;
     expect(() => load(yaml)).toThrow(YamlLoadError);
-    expect(() => load(yaml)).toThrowError(/self/);
+    expect(() => load(yaml)).toThrowError(/負の数/);
   });
 
   it('recipesをtraitに書くとエラーになる', () => {

@@ -162,7 +162,7 @@ traits:
         conditions:
           - reason: not_thirsty
             not: {subject: agent, prop: hydration, in_stage_or_above: full}
-        duration: 3
+        duration: 5
         transfer:
           amount: 250
           to_amount: 10
@@ -197,7 +197,7 @@ traits:
         conditions:
           - reason: not_thirsty
             not: {subject: agent, prop: hydration, in_stage_or_above: full}
-        duration: 3
+        duration: 5
         transfer:
           amount: 250
           to_amount: 10
@@ -238,7 +238,7 @@ traits:
         conditions:
           - reason: not_thirsty
             not: {subject: agent, prop: hydration, in_stage_or_above: full}
-        duration: 3
+        duration: 5
         transfer:
           amount: 250
           to_amount: 10
