@@ -1,8 +1,9 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { delimiter, join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawnScript } from '../support/runScript';
+import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
  * `scripts/daemon/headroom.sh`（と中身の `headroom.mjs`）の検査
@@ -66,9 +67,37 @@ function cacheSpent(rows: readonly { kind: string; five: number; seven: number }
   writeFileSync(join(stateDir, 'spent.tsv'), `${lines.join('\n')}\n`, 'utf-8');
 }
 
-function run(kind: string): { code: number; stdout: string } {
-  const call = spawnScript(SCRIPT, [kind], { env: { ...process.env, BOARD_STATE: stateDir } });
+/**
+ * **控えが無い・古いときは口を叩きに行く**（`headroom.sh`）ので、資格情報の在り処を作業用の
+ * ディレクトリへ向けて**必ず落ちるようにする**——そうしないと、控えの検査が本物の網に触る。
+ */
+function run(kind: string, path?: string): { code: number; stdout: string } {
+  const call = spawnScript(SCRIPT, [kind], {
+    env: {
+      ...process.env,
+      BOARD_STATE: stateDir,
+      HOME: stateDir,
+      USERPROFILE: stateDir,
+      ...(path === undefined ? {} : { PATH: `${path}${delimiter}${process.env.PATH ?? ''}` }),
+    },
+  });
   return { code: call.status ?? -1, stdout: call.stdout };
+}
+
+/**
+ * 口の中身（`usage.mjs`）だけを差し替える `node` を PATH の先頭へ置き、その置き場を返す。
+ * **`headroom.mjs` は本物で走らせる**必要があるので、引数で振り分ける。
+ */
+function stubEndpoint(lines: string): string {
+  const bin = mkdtempSync(join(tmpdir(), 'unmapped-island-headroom-bin-'));
+  const node = join(bin, 'node');
+  writeFileSync(
+    node,
+    `${STUB_SHEBANG}\ncase "$1" in\n*usage.mjs) printf '%s\\n' '${lines}'; exit 0 ;;\nesac\nexec '${process.execPath}' "$@"\n`,
+    'utf-8',
+  );
+  chmodSync(node, 0o755);
+  return bin;
 }
 
 /** 同じ消費の記録を並べる。平均を信じ始める件数より多く置く。 */
@@ -164,18 +193,39 @@ describe('headroom.sh', () => {
     expect(run('new-task').code).toBe(HELD);
   });
 
-  // **古い値で通すと、上限に当たってから気づく**（`usage.sh` の `--last`）。
-  it('控えが古ければ止まる', () => {
-    cacheUsage({ agedSeconds: 60 * 60 * 24 });
+  // **控えが無い・古いのを、そのまま「立てるな」にしない**（`headroom.sh`）。控えを書くのは口を
+  // 叩いた周だけなので、デーモンが回っていない場所で手から投入すると必ずこの形になる。
+  it('控えが無ければ、自分で1回引いてその値で比べる', () => {
+    const bin = stubEndpoint('five_hour 5 - -\nseven_day 99 - -');
+    try {
+      const result = run('new-task', bin);
 
+      expect(result.code).toBe(HELD);
+      expect(result.stdout).toContain('seven_day');
+    } finally {
+      rmSync(bin, { recursive: true, force: true });
+    }
+  });
+
+  // **古い値で通すと、上限に当たってから気づく**（`usage.sh` の `--last`）ので、控えは使わずに
+  // 引き直す。
+  it('控えが古ければ、控えではなく引き直した値で比べる', () => {
+    cacheUsage({ agedSeconds: 60 * 60 * 24, fiveHour: 1, sevenDay: 1 });
+    const bin = stubEndpoint('five_hour 5 - -\nseven_day 99 - -');
+    try {
+      expect(run('new-task', bin).code).toBe(HELD);
+    } finally {
+      rmSync(bin, { recursive: true, force: true });
+    }
+  });
+
+  // 引き直しても駄目なら、通す側へは倒れない。**どこを見ればよいかを、その場で告げる。**
+  it('控えも無く、引き直せもしなければ止まる', () => {
     const result = run('new-task');
 
     expect(result.code).toBe(1);
     expect(result.stdout).toContain('UNKNOWN');
-  });
-
-  it('控えが無ければ止まる', () => {
-    expect(run('new-task').code).toBe(1);
+    expect(result.stdout).toContain('usage.sh');
   });
 
   // **欠けた枠を「余力が在る」として通すと、その枠では手綱が掛からないまま上限に当たる。**

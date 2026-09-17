@@ -49,13 +49,25 @@ function kindOf(tags) {
   return tags.length > 0 ? 'other' : 'untagged';
 }
 
-/**
- * 前の周の状態。**枠ごとに持つ形より前の版は、枠の名前で引けないので「初めての周」と同じ**
- * ——取りこぼすのは1周ぶんの増分だけで、次の周から普通に積まれる。
- */
 function readState(path) {
   if (!existsSync(path)) return { utilization: {}, sessions: {} };
   return JSON.parse(readFileSync(path, 'utf8'));
+}
+
+/**
+ * そのセッションが前の周までに積んでいた、枠ごとの消費。
+ *
+ * **枠ごとに分かれていなかった頃の値は、`five_hour` の増分だけを積んだもの**なので、その枠へ
+ * 引き継ぐ。**捨てると、乗り換えの周に生きていたセッションが実際より小さい消費として記録へ入り、
+ * 0ではないので平均から除かれないまま平均を下へ引く**（[`headroom.mjs`](headroom.mjs)）——このPRが
+ * 塞ごうとしている側と同じ向きに狂う。他の枠は0のまま＝「一度も見なかった」で、あちらが除く。
+ *
+ * **要るのは乗り換えの1回きり。** 乗り換えの時点で生きていたセッションが全部畳まれたら、この分岐は
+ * 二度と通らないので消してよい。
+ */
+function carriedSpent(spent) {
+  if (typeof spent === 'number') return { five_hour: spent };
+  return spent ?? {};
 }
 
 const [statePath, spentPath] = process.argv.slice(2);
@@ -85,10 +97,10 @@ for (const name of WINDOWS) {
 
 const sessions = {};
 for (const session of input.live) {
-  const carried = previous.sessions?.[session.id]?.spent;
+  const carried = carriedSpent(previous.sessions?.[session.id]?.spent);
   const spent = {};
   for (const name of WINDOWS) {
-    spent[name] = (carried?.[name] ?? 0) + (session.working ? share[name] : 0);
+    spent[name] = (carried[name] ?? 0) + (session.working ? share[name] : 0);
   }
   sessions[session.id] = { kind: kindOf(session.tags), spent };
 }
@@ -96,9 +108,10 @@ for (const session of input.live) {
 // 生きている一覧から消えたセッション＝畳まれた。積み上がった値がそのセッションの消費。
 const finished = Object.entries(previous.sessions ?? {})
   .filter(([id]) => sessions[id] === undefined)
-  .map(([id, { kind, spent }]) =>
-    [input.now, kind, ...WINDOWS.map((name) => (spent?.[name] ?? 0).toFixed(4)), id].join('\t'),
-  );
+  .map(([id, { kind, spent }]) => {
+    const carried = carriedSpent(spent);
+    return [input.now, kind, ...WINDOWS.map((name) => (carried[name] ?? 0).toFixed(4)), id].join('\t');
+  });
 
 mkdirSync(dirname(statePath), { recursive: true });
 writeFileSync(

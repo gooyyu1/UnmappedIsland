@@ -1,7 +1,8 @@
 // 使用量の口を1回叩いて、枠ごとに1行で出す。
 //
-// **入口は隣の [`usage.sh`](usage.sh)。** 呼び方・出る行の形・叩ける間隔・なぜこの2つの枠だけかは、
-// すべてそちらの冒頭にある。ここに書くのは、中身の側でしか読めない制約だけ。
+// **入口は隣の [`usage.sh`](usage.sh)。** 呼び方・出る行の形・叩ける間隔・控えはそちらの冒頭、
+// **どの枠を出すか**は [`usage-windows.mjs`](usage-windows.mjs)。ここに書くのは、中身の側でしか
+// 読めない制約だけ。
 
 import { readFileSync } from 'node:fs';
 import { WINDOWS } from './usage-windows.mjs';

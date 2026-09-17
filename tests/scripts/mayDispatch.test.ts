@@ -137,6 +137,10 @@ echo '${JSON.stringify(page)}'
           PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
           CCR_META: meta,
           BOARD_STATE: work,
+          // **控えが無いときは口を叩きに行く**（`headroom.sh`）ので、資格情報の在り処を作業用の
+          // ディレクトリへ向けて必ず落ちるようにする——本物の網に触らせない。
+          HOME: work,
+          USERPROFILE: work,
           BRAKE_ISSUE,
         },
       });

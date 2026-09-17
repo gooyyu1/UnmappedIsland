@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -206,6 +206,31 @@ describe('usage-attribute.mjs', () => {
 
       expect(result.state.sessions.cse_a.spent.five_hour).toBe(0);
       expect(result.state.utilization.five_hour).toBe(3);
+    });
+  });
+
+  // **捨てると、乗り換えの周に生きていたセッションが実際より小さい消費として記録へ入り、0では
+  // ないので平均から除かれないまま平均を下へ引く**（`headroom.mjs`）。
+  it('枠ごとに分かれていなかった頃の積み上がりは、`five_hour` として引き継ぐ', () => {
+    withWork((work) => {
+      writeFileSync(
+        join(work, 'usage.json'),
+        JSON.stringify({ utilization: 10, sessions: { cse_a: { kind: 'new-task', spent: 4 } } }),
+        'utf-8',
+      );
+      const live = [{ id: 'cse_a', tags: ['task-1'], working: true }];
+      const carried = attribute(work, { five: 12, seven: 41, now: '2026-09-05T01:05:00Z', live });
+
+      expect(carried.state.sessions.cse_a.spent).toEqual({ five_hour: 4, seven_day: 0 });
+
+      const result = attribute(work, {
+        five: 12,
+        seven: 41,
+        now: '2026-09-05T01:10:00Z',
+        live: [],
+      });
+
+      expect(result.finished).toBe('2026-09-05T01:10:00Z\tnew-task\t4.0000\t0.0000\tcse_a\n');
     });
   });
 
