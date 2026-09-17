@@ -106,7 +106,8 @@ function daemon(world: World = {}): Result {
     // `daemon.sh` が新しい版へ差し替わる瞬間は、走っている周の中から起きる。
     writeFileSync(
       join(here, 'board-round.mjs'),
-      `import { appendFileSync, readFileSync, rmSync, writeFileSync } from 'node:fs';\n` +
+      `import { execFileSync } from 'node:child_process';\n` +
+        `import { appendFileSync, readFileSync, rmSync, writeFileSync } from 'node:fs';\n` +
         `const rounds = ${JSON.stringify(rounds)};\n` +
         `appendFileSync(rounds, '1\\n');\n` +
         `const round = readFileSync(rounds, 'utf-8').split('\\n').filter(Boolean).length;\n` +
@@ -116,9 +117,18 @@ function daemon(world: World = {}): Result {
         `else if (typeof swap === 'string') writeFileSync(source, swap, 'utf-8');\n` +
         // **周の途中で撃つ口。** 錠の中のPIDが撃つ相手（`daemon.sh`「止めるのも自分の仕事」）。
         // bash は前の子が終わるまで signal を握るので、この周を終えたところで止まりに入る。
-        `if (${world.stopMidRound === true}) process.kill(Number(readFileSync(${JSON.stringify(
+        //
+        // **撃つのは bash から**——錠に入っているのは bash のPID空間の番号で、MSYS2（ブリッジ）では
+        // Windows のPIDと別物（`daemon.sh`「PIDは錠の中」）。Node の `process.kill` は Windows の
+        // PIDを撃つので、届かないか、同じ番号の無関係なプロセスを撃つ。**実運用の `stop` と同じ
+        // 撃ち方**にすれば、この検査の成否は撃つ側のOSで変わらない。
+        //
+        // 届かなければ `kill` が非0で終わり、`execFileSync` が投げてこの周ごと落ちる。**畳まないまま
+        // 回り続けて時間切れになるより手前で、撃てなかったことが分かる。**
+        `if (${world.stopMidRound === true})\n` +
+        `  execFileSync('bash', ['-c', 'kill "$1"', 'kill', readFileSync(${JSON.stringify(
           join(work, 'state', 'lock', 'pid'),
-        )}, 'utf-8').trim()), 'SIGTERM');\n` +
+        )}, 'utf-8').trim()]);\n` +
         `process.exit(${world.roundFails === true ? 1 : 0});\n`,
       'utf-8',
     );
