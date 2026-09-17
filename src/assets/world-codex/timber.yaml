@@ -20,12 +20,14 @@ object_defs:
     props:
       # 立ち木1本ぶん。倒して採れるのは丸太2本と太枝3本（43kg）で、残りは根と梢と枝葉。
       weight: {value: 150000}
-      # 倒して玉切りするのにかかる時間。素の値は木が持ち、今斧を入れている人の手際をbaseで継ぐ
-      # （docs/world/Skills.md 7節）。
+      # 倒して玉切りするのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で
+      # 宣言する**（docs/world/Skills.md 7節）。丸太を要る物は数えるほどなので、効き始めるのは最上段。
       fell_minutes:
         value: 240
-        base: {subject: agent, prop: woodwork_deftness}
-        range: {min: 120, max: 240}
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_woodwork, in_stage_or_above: expert}
+            modify: {self: {fell_minutes: -15}}
     interactions:
       # 根元を斧で断つ。倒した幹を運べる長さに玉切りするところまでを1つの作業として扱う。
       fell:
@@ -106,8 +108,10 @@ object_defs:
       # 玉切りするのにかかる時間（上のfell_minutesと同じ形）。既に倒れているぶん素の値が半分。
       buck_minutes:
         value: 120
-        base: {subject: agent, prop: woodwork_deftness}
-        range: {min: 60, max: 120}
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_woodwork, in_stage_or_above: expert}
+            modify: {self: {buck_minutes: -15}}
     interactions:
       # 運べる長さに玉切りする。既に倒れているので、立ち木を倒すより半分の手間で済む。
       buck:
@@ -149,12 +153,14 @@ object_defs:
       # 細い木1本ぶん。幹（3.5mほど、根元で3cm）に枝葉を足した重さで、採れる2m（長い棒600g）は
       # そのおよそ半分。残りは根と梢と枝葉になる。
       weight: {value: 1200}
-      # 断って棒に切るのにかかる時間。素の値は若木が持ち、今切っている人の手際をbaseで継ぐ
-      # （docs/world/Skills.md 7節）。
+      # 断って棒に切るのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で
+      # 宣言する**（docs/world/Skills.md 7節）。長い棒は槍にもそりにも要るので、届いた段で縮む。
       cut_pole_minutes:
         value: 60
-        base: {subject: agent, prop: woodwork_deftness}
-        range: {min: 30, max: 60}
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_woodwork, in_stage_or_above: skilled}
+            modify: {self: {cut_pole_minutes: -15}}
     interactions:
       # 根元を刃物で断ち、枝を払って2mの棒に切る。斧は要らない（ファイル冒頭）。
       cut_pole:

@@ -250,8 +250,11 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 
 ### 2.4 くべるのに時間は課さない
 
-**`add_fuel` の `duration` は 1 分のままにします。** 火の番は毎日何度も来る操作なので、ここへ課した
-時間はそのままプレイヤーの 1 日から引かれる定額になります。
+**`add_fuel` は `duration` を持ちません。** 火の番は毎日何度も来る操作なので、ここへ課した
+時間はそのままプレイヤーの 1 日から引かれる定額になります。**課せる最小の長さが 1 tick（15 分）**
+——行動の長さは tick の格子に乗る（[`ActionSystem.md`](./ActionSystem.md) 6.2 節）ので、それより短い
+定額は置けません。**0 分にしてよいのは、繰り返しても得をしない操作だけ**（同節）で、くべ足しは炉の
+`fuel` の上限が 2 回目以降を止めます。
 
 **満タンの薪が保つのは、最も忙しい炉で 5 時間。くべ直すのは 1 日に 4.8 回です**
 （`tests/diagnostics/fireTendingPace.test.ts` が、薪の上限を段ごとの減りで割って数え、この 2 つを
@@ -260,7 +263,7 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 間遠になります。
 
 ここへ 1 tick（15 分）を課すと、火の番だけで 1 日 1 時間以上になります。生存の採取に要る 1 日
-153 分<!-- stats: terrain.yaml daily_budget survival_gathering -->（[`ContentSkeleton.md`](../world/ContentSkeleton.md)
+171 分<!-- stats: terrain.yaml daily_budget survival_gathering -->（[`ContentSkeleton.md`](../world/ContentSkeleton.md)
 8.2 節）へ、**判断を伴わない同じ操作が 4 割近くを上乗せする**ことになります。束ねた薪はまとめて
 くべられる（2 節の `allow_multiple`）ので、回数のほうは既に絞り切っています。
 
