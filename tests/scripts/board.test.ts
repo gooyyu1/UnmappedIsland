@@ -19,6 +19,8 @@ interface LiveSession {
   readonly status: string;
   readonly bucket: string;
   readonly env: string;
+  /** 走る者が一度でも付いたか（`live-sessions.mjs` の `served`）。 */
+  readonly served: boolean;
   readonly tags: readonly string[];
 }
 
@@ -92,6 +94,7 @@ const session = (id: string, tags: readonly string[] = []): LiveSession => ({
   status: 'SESSION_STATUS_RUNNING',
   bucket: 'SESSION_STATUS_BUCKET_WORKING',
   env: 'cloud',
+  served: true,
   tags,
 });
 

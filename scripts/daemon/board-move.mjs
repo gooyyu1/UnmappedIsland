@@ -70,6 +70,18 @@ import { asksMend, asksUser, readVersion, readsVersion, verdicts } from './revie
 export const busySession = (session) => session.status === 'SESSION_STATUS_RUNNING';
 
 /**
+ * 走る者が一度も付かなかったか（[`live-sessions.mjs`](live-sessions.mjs) の `served`。2.15.3）。
+ * **そのセッションは止まったのではなく、始まっていない。**
+ *
+ * 分けるのは、**停滞に打つ手がどちらもここでは空を打つから**——`send_message` は届いた先に走る者が
+ * 居て初めて効き、`RETURN` は「起こしても手が動かなかった」と書いて人の手番にする手なので、
+ * **一度も動いていないセッションに使うと、環境の不調が issue の側の罰になる**（issue #2206）。
+ *
+ * **知らなければ `false`。** 一覧に列が無い写しを読んだ周に、働いているセッションを畳まない側。
+ */
+const neverRan = (session) => session.served === false;
+
+/**
  * 手が空いたままこれだけ続いたら、停滞と読む（2.15.3）。**「手が空いている」ことそのものは停滞
  * ではない**——ワーカーは手番の切れ目ごとに空き、下請けのレビューを待つ間も空いて見える（1.6）。
  * **1度見ただけで停滞と読むと、押し切る寸前の作業を人へ返して畳む**（2026-09-06、issue #1506 の
@@ -934,7 +946,11 @@ export function moves(input) {
       const wrote = judged(spent);
       if (!wrote && idle < STALL_MINUTES) continue;
       // **起こせるのはレビューだけ**——周期の係には渡す文面が無い（`resume-prompt.md`）。
-      if (!wrote && spent.startsWith('review-')) {
+      //
+      // **走る者が一度も付かなかった1本も起こさない**（`neverRan`）。届く先が無いので、打った手は
+      // 空振りと見分けが付かないまま窓をもう1つ食う。**ワーカーと違って返す先は無い**ので、
+      // ここはそのまま畳む側へ落ちる——次の周に新しい1本が立つ（2.12.4）。
+      if (!wrote && !neverRan(session) && spent.startsWith('review-')) {
         const number = spent.slice('review-'.length);
         const head = input.prs.find((item) => item.number === Number(number))?.headRefOid;
         // **読んだ差分が動いていたら起こさない。** 書かせても前の差分への判定で、それが今の頭へ
@@ -986,6 +1002,19 @@ export function moves(input) {
       // **空いていることではなく、空いたままであることが入口**（`STALL_MINUTES`）。
       const idle = idleMinutes(session);
       if (idle < STALL_MINUTES) continue;
+
+      // **走る者が一度も付かなかったなら、起こす相手も返す本人も居ない**（`neverRan`）。畳めば
+      // 枠が空き、issue は `判断待ち` が付かないまま列に残っているので、**次の周がそのまま投入し
+      // 直す**——環境が直った周に、盤面が自力で戻れる唯一の道。
+      //
+      // **窓は同じものを通す。** 立った直後のセッションは必ずこの形なので、飛ばすと投入した端から
+      // 畳むことになる。
+      if (neverRan(session)) {
+        const gone = `unserved:${issue}`;
+        if (taken[`archive:${session.id}`] !== gone) archives.push(`ARCHIVE ${session.id} ${gone}`);
+        break;
+      }
+
       const woke = taken[`resume:${session.id}`];
       if (woke === `returned:${issue}`) continue;
       if (woke === `stall:${issue}`) {

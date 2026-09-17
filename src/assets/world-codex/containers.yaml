@@ -58,9 +58,14 @@ object_defs:
         # ——6枚のパネルは籠1つぶんの面で、余らせて2つ目にはならない。
         deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
         steps:
+          # 底を編む。
           - requires:
-              - {object: woven_leaf, count: 6, consume: true}
-            duration: 120
+              - {object: woven_leaf, count: 3, consume: true}
+            duration: 60
+          # 側を立ち上げ、縁を巻く。
+          - requires:
+              - {object: woven_leaf, count: 3, consume: true}
+            duration: 60
 
   # そり。長い棒の走り木へ太い枝の横木を渡し、縄で締めた引き具（docs/world/Containers.md 2節）。
   #
@@ -113,15 +118,28 @@ object_defs:
         # 走り木2本と前木を、同じ寸法で削り出す仕事だから。縛るのは締めるだけ。
         deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         steps:
-          # 長い棒の先を反らせて削り、走り木を2本と、引き綱を結ぶ前木を1本こしらえる。
+          # 長い棒の先を反らせて削り、走り木を2本と、引き綱を結ぶ前木を1本こしらえる。**1本ずつ
+          # 削り出す**ので、工程も棒1本に1つ（docs/engine/ActionSystem.md 6.3節）。
           - requires:
-              - {object: long_pole, count: 3, consume: true}
-            duration: 180
-          # 横木を渡して縄で締め上げる。
+              - {object: long_pole, count: 1, consume: true}
+            duration: 60
           - requires:
-              - {object: thick_branch, count: 6, consume: true}
+              - {object: long_pole, count: 1, consume: true}
+            duration: 60
+          - requires:
+              - {object: long_pole, count: 1, consume: true}
+            duration: 60
+          # 横木を渡す。
+          - requires:
+              - {object: thick_branch, count: 3, consume: true}
+            duration: 60
+          - requires:
+              - {object: thick_branch, count: 3, consume: true}
+            duration: 60
+          # 縄で締め上げる。
+          - requires:
               - {object: rope, count: 1, consume: true}
-            duration: 180
+            duration: 60
 
   # 台車。そりへ丸太の輪切りを車軸で通した引き具（docs/world/Containers.md 2節）。
   #
@@ -160,13 +178,28 @@ object_defs:
         # 材料のそり（上）と同じ木材加工**（同7.1節）。
         deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         steps:
-          # 丸太を輪切りにし、車輪を2枚削り出して軸穴を開ける。**斧が要るのはここだけ**。
+          # 丸太を輪切りにする。**斧が要るのは車輪を出すまでの4工程だけ**で、同じ1本が通る
+          # （consume: falseは工程を跨いで数えない、crafting.remainingRequirements）。
           - requires:
               - {object: log, count: 1, consume: true}
               - {tag: chopping_tool, count: 1, consume: false}
-            duration: 240
-          # そりの走り木へ車軸を通し、車輪を留める。
+            duration: 60
+          # 輪切りから車輪を1枚ずつ削り出す。
+          - requires:
+              - {tag: chopping_tool, count: 1, consume: false}
+            duration: 60
+          - requires:
+              - {tag: chopping_tool, count: 1, consume: false}
+            duration: 60
+          # 軸穴を開ける。
+          - requires:
+              - {tag: chopping_tool, count: 1, consume: false}
+            duration: 60
+          # そりの走り木へ車軸を通す。
           - requires:
               - {object: sledge, count: 1, consume: true}
+            duration: 60
+          # 車輪を留める。
+          - requires:
               - {object: cord, count: 1, consume: true}
-            duration: 120
+            duration: 60

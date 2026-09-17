@@ -507,9 +507,12 @@ object_texts:
     display_name: ヤシの実の皮
     description: はぎ取った繊維の塊。硬く、ほぐれば長い繊維になる。
     interactions:
+      soak:
+        display_name: 水に漬ける
+        description: 繊維の間の髄がふやけるまで漬けておく。漬からないうちは叩いても解けない。
       ret:
         display_name: 叩いて繊維を採る
-        description: 水に漬けて柔らかくし、石で叩いて繊維を解す。漬けておくぶん、時間がかかる。
+        description: 漬けて柔らかくなった皮を石で叩き、長い繊維を解し出す。
   husked_coconut:
     display_name: 皮を剥いだヤシの実
     description: 皮を落として殻がむき出しになった実。殻は硬いが、叩くかこじれば二つに割れる。
@@ -585,9 +588,18 @@ object_texts:
     variation_names:
       cure: '{value}のイノシシ'
     interactions:
-      butcher:
-        display_name: 解体する
-        description: 皮を剥ぎ、肉を外し、骨を落とす。半日仕事だが、取れる量も桁が違う。
+      gut:
+        display_name: 腹を開く
+        description: 内臓を出して、肉が傷む前に冷ます。ここを済ませないと先へ進めない。
+      skin:
+        display_name: 皮を剥ぐ
+        description: 刃を寝かせて皮と肉の間を走らせ、1頭ぶんの生皮を外す。
+      quarter:
+        display_name: 四つ割りにする
+        description: 関節を探って刃を入れ、半身ぶんの肉と骨を落とす。
+      strip_meat:
+        display_name: 骨から削ぎ落とす
+        description: 残った肉を骨から外す。捨てるものだけが残るので、死体はここで無くなる。
   rat_carcass:
     display_name: ネズミの死体
     description: 仕留めたネズミ。肉を外すには小さすぎるので、丸ごと火にかける。
@@ -1116,9 +1128,12 @@ object_texts:
     display_name: 広葉樹
     description: 幹の太い木。斧があれば倒して丸太にでき、手に握る刃物があれば立ったまま樹皮を剥げる。
     interactions:
+      chop:
+        display_name: 受け口を刻む
+        description: 倒す向きへ斧を入れ続ける。1回では倒れないので、刻み切るまで何度か通う。
       fell:
         display_name: 伐り倒す
-        description: 根元を斧で断ち、倒した幹を運べる長さに切り分ける。半日がかりの仕事になる。
+        description: 刻み切った幹を断ち、倒した幹を運べる長さに切り分ける。
       strip_bark:
         display_name: 樹皮を剥ぐ
         description: 幹に縦の切れ目を入れ、内樹皮ごと帯で剥がす。木は立ったまま残る。
@@ -1128,7 +1143,10 @@ object_texts:
     interactions:
       buck:
         display_name: 玉切りにする
-        description: 運べる長さに斧で切り分ける。倒す手間が無いぶん、伐り倒すより早い。
+        description: 運べる長さに斧で切り分け、丸太を1本外す。倒す手間が無いぶん、伐り倒すより早い。
+      buck_last:
+        display_name: 残りを玉切る
+        description: 最後の1本を切り離す。幹はここで無くなる。
   sapling:
     display_name: 若木
     description: 幹がまだ細い木。斧が無くても刃物で切り倒せて、まっすぐな根元から長い棒が採れる。

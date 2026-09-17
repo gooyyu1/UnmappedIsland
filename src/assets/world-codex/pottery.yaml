@@ -97,9 +97,13 @@ object_defs:
       coiled:
         steps:
           # 粘土の紐を巻き上げて壺の形にする。乾燥はここに含めない（moisture参照）。
+          # **底と胴で工程を分けてある**（1回は1時間まで、docs/engine/ActionSystem.md 6.3節）。
           - requires:
-              - {object: clay, count: 2, consume: true}
-            duration: 90
+              - {object: clay, count: 1, consume: true}
+            duration: 45
+          - requires:
+              - {object: clay, count: 1, consume: true}
+            duration: 45
 
   # 覆い焼きの炉。器と燃料を濡れた土で覆っただけの、一度きりの焼成設備。
   #
@@ -116,10 +120,14 @@ object_defs:
     recipes:
       heaped:
         steps:
-          # 器と薪を積み、練った粘土をかぶせて空気穴を突く。
+          # 器と薪を積み、練った粘土をかぶせる。
           - requires:
-              - {object: clay, count: 3, consume: true}
-            duration: 90
+              - {object: clay, count: 2, consume: true}
+            duration: 45
+          # 目張りして空気穴を突く。
+          - requires:
+              - {object: clay, count: 1, consume: true}
+            duration: 45
     props:
       # かぶせた粘土3個ぶん（800×3）。
       weight: {value: 2400}

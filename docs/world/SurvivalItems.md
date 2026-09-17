@@ -125,8 +125,8 @@
 ——**構えている間は牙も噛みつきも細るので、槍が買っているのは当たり所だけではありません。**
 
 **石の斧はレシピも入りました**——
-太い枝を削って柄をこしらえ、尖った石を紐で締め上げる2工程で、上の表の「石 + 木 + 植物繊維」がそのまま
-工程になっています。**槍のレシピも入りました**——軸は若木を切って採った長い棒（0 節）で、皮を剥いで2mの軸へ
+太い枝を削って柄をこしらえ、尖った石を溝へ据え、紐で締め上げる並びで、上の表の「石 + 木 + 植物繊維」が
+そのまま工程になっています。**槍のレシピも入りました**——軸は若木を切って採った長い棒（0 節）で、皮を剥いで2mの軸へ
 削る工程が先頭に付きます（`spear`）。
 
 **槍は刃物の後ろに並びます。** 軸になる長い棒は刃物で採れるので斧は要らず、削り出す手つきそのものが
@@ -194,9 +194,10 @@
 
 **なめし革を作る工程も入りました**（`clothing.yaml` の `tanned_leather`）。広葉樹から**立ったまま樹皮を
 剥ぎ**（握りの刃が要る。柄付きの斧では帯に剥がせない。`timber.yaml`）、毛と肉を落とした生皮1枚を樹皮
-3巻きの渋に漬けると、なめし革1枚になります。**ひと剥ぎが革1枚ぶん**で、木は剥いでも残ります。所要は2工程で計480分——同梱の世界で最も長い
-1つの作業（畑を起こす480分）に並べた値で、実際のなめしは日をまたぐ漬け込みですが、途中で止められない
-工程として持つ以上は伸ばしていません。
+3巻きの渋に漬けると、なめし革1枚になります。**ひと剥ぎが革1枚ぶん**で、木は剥いでも残ります。所要は計480分——同梱の世界で最も手間の
+かかる仕事（落とし穴を掘る・囲いを組む）に並べた値で、実際のなめしは日をまたぐ漬け込みですが、
+**1つの工程が1時間を超えられない**（[`../engine/ActionSystem.md`](../engine/ActionSystem.md) 6.3節）ので、
+その長さは工程の数で持っています。
 
 ### 5.1 保温は、手のかかる一着ほど深く寒さの入口を押し下げる
 
@@ -206,7 +207,7 @@
 | アイテム | 押し下げ | 総コスト | 何が層を薄くしているか |
 |---|---|---|---|
 | 束ねた葉の衣類 | −1℃ | 79分<!-- stats: balance.yaml object_costs object=bundled_leaf_clothing total_minutes ±5% --> | 束ねただけの小葉は隙間だらけで、風がそのまま通る |
-| 生皮の衣類 | −2℃ | 163分<!-- stats: balance.yaml object_costs object=rawhide_clothing total_minutes ±5% --> | 皮は風を通さないが、乾いた生皮は固く体から浮く |
+| 生皮の衣類 | −2℃ | 123分<!-- stats: balance.yaml object_costs object=rawhide_clothing total_minutes ±5% --> | 皮は風を通さないが、乾いた生皮は固く体から浮く |
 | 編んだ葉の衣類 | −3℃ | 303分<!-- stats: balance.yaml object_costs object=woven_leaf_clothing total_minutes ±5% --> | 編んだ面は形を保って沿うが、素材は葉のまま |
 | なめし革の衣類 | −4℃ | 1,652分<!-- stats: balance.yaml object_costs object=tanned_leather_clothing total_minutes ±5% --> | 裁って縫った革は体に沿い、隙間が残らない |
 
@@ -357,7 +358,7 @@
   ありません。
 
 **1基で段に届きます**——縄が1本要るためで、囲いが丸太4本と縄2本で1つでも段になるのと同じ理由です
-（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の1.16日<!-- stats: terrain.yaml work_piles pile=干し場 days -->は、この1基ぶんです。**
+（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の1.18日<!-- stats: terrain.yaml work_piles pile=干し場 days -->は、この1基ぶんです。**
 
 **素手の天日干しは、干し場が建っても残ります**（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md)
 の「後から足す手段は、既存の手段を残す強さに抑える」節）。空心菜・バナナ・ベリー・ヤシの果肉とゼリーは
@@ -438,7 +439,7 @@
 どれも同じ1つの軸（`cure`）の上に並びます。
 
 **1基で段に届きます**——編んだ葉6枚と縄2本が要るためで、干し場が縄1本で段に届くのと同じ理由です
-（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の2.38日<!-- stats: terrain.yaml work_piles pile=燻し小屋 days -->は、この1基ぶんです。**
+（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の2.43日<!-- stats: terrain.yaml work_piles pile=燻し小屋 days -->は、この1基ぶんです。**
 
 **実装済みです**（`src/assets/world-codex/smoking.yaml`。`tests/world-codex/smokingYaml.test.ts` が
 上の線を全部確かめます）。
@@ -446,7 +447,7 @@
 ## 12. 効果値と工程の時間は、1日の余剰から逆算する
 
 **物の値は、1日の余剰——生存に要る労働を払って残る時間——のうち、その物が食う割合で決めます。**
-余剰は909分<!-- stats: terrain.yaml daily_budget surplus -->で、[`stats/balance.yaml`](../../stats/balance.yaml)
+余剰は893分<!-- stats: terrain.yaml daily_budget surplus -->で、[`stats/balance.yaml`](../../stats/balance.yaml)
 の `object_costs` がその分母で日数を出します（[`../diagnostics/BalanceStats.md`](../diagnostics/BalanceStats.md)）。
 
 ### 12.1 持ち物1つの維持は、1日の余剰の5%まで
@@ -471,14 +472,15 @@
 **線を越えていないことは `tests/world-codex/weatheringYaml.test.ts` が全数で見ます。** 傷む物を足した人も、
 レシピの材料を増やした人も、越えればそこで落ちます。
 
-### 12.2 1つの工程は、1日の余剰の6割まで
+### 12.2 工程の長さは、ここでは決めません
 
-**工程は途中で止められない**（[`../engine/GameElementDefinition.md`](../engine/GameElementDefinition.md)
-11.3節）ので、1つが長いほど「その日は他に何もできない」に近づきます。**線は余剰の6割（500分）**で、
-これを超えるなら工程を割ります——実際になめしは120分と360分の2つに割ってあります（5節）。
+**1つの工程が払わせてよい時間の線は、余剰から逆算しません。** 工程は途中で止められない
+（[`../engine/GameElementDefinition.md`](../engine/GameElementDefinition.md) 11.3節）ので、線を決めるのは
+「その日の余剰のうちどれだけを食うか」ではなく「**プレイヤーの手がどれだけ止まるか**」です。線は1時間
+（[`../engine/ActionSystem.md`](../engine/ActionSystem.md) 6.3節）で、そちらが余剰のどんな割合よりも
+ずっと手前に在るので、ここで別の線を引いても働きません。
 
-**現に最も長い工程は480分**（落とし穴を掘る・畑を起こす）で、線の内側です。
-`tests/world-codex/craftingStepLength.test.ts` が全数を見ます。
+長い仕事は工程の数で表します——なめしは、毛と肉を落とす手から揉んで乾かす手までの並びになっています（5節）。
 
 ### 12.3 防御力は置きません
 

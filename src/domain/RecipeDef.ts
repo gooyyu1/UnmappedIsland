@@ -95,6 +95,11 @@ export class RecipeDeftnessDef {
 
 /** レシピの工程1つ（13.1節）。 */
 export class RecipeStepDef {
+  /**
+   * この工程が要求する素材と道具（13.1節）。**1つも要求しない工程が在りうる**——1回の工程が1時間を
+   * 超えられない（docs/engine/ActionSystem.md 6.3節）ので、長い仕事は素材を使い切った後も工程が
+   * 続く。要求を無理に散らすと、その工程で実際に使う物とずれる。
+   */
   readonly requirements: readonly RecipeRequirementDef[];
 
   /**
@@ -107,7 +112,6 @@ export class RecipeStepDef {
   readonly durationMinutes: number;
 
   constructor(requirements: readonly RecipeRequirementDef[], durationMinutes: number) {
-    if (requirements.length === 0) throw new Error('工程のrequiresは1件以上必要です。');
     if (durationMinutes <= 0)
       throw new Error(`工程の所要時間は正の数である必要があります（値: ${durationMinutes}）。`);
 

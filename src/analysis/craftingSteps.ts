@@ -1,4 +1,16 @@
-import type { EffectDeclaration } from '../domain/EffectReader';
+import type {
+  AddReading,
+  ConditionalReading,
+  EffectDeclaration,
+  EffectReader,
+  PickReading,
+} from '../domain/EffectReader';
+import type {
+  ConditionDeclaration,
+  ConditionOp,
+  ConditionReader,
+  PropertyConditionReading,
+} from '../domain/ConditionReader';
 import type { InteractionDef } from '../domain/InteractionDef';
 import type { InteractionTrigger } from '../domain/InteractionTrigger';
 import type { ObjectDef } from '../domain/ObjectDef';
@@ -254,6 +266,9 @@ function interactionStep(
   const minutes = minutesOf(interaction, tracking.resolve);
   // 経過の間ずっと効くもの（11.7節）は、経過し終えてから効くもの（effect）より先に起きる。
   const outcomes = combineOutcomes(passiveOutcomes(interaction, minutes), reading.outcomes, 'declared');
+  // **同じ物の上で先に済ませておく手の分**（preparationMinutesOf）。1回が1時間を超えられない
+  // （docs/engine/ActionSystem.md 6.3節）ので、大きな仕事は同じ物への何回かの手に分かれている。
+  const preparation = preparationMinutesOf(codex, def, trigger, outer);
   return {
     kind: 'interaction',
     startedByPlayer: trigger.startedByPlayer,
@@ -263,18 +278,220 @@ function interactionStep(
       {
         kind: 'object',
         objectGlobalId: def.globalId,
-        consumed: consumesRoot(reading, 'self'),
+        consumed: consumesRoot(reading, 'self') || partOfChainConsumingSelf(codex, def, trigger),
         count: 1,
       },
       ...instrumentInputOf(trigger, instrument, reading),
     ],
     outputs: collectOutputs(reading.outcomes),
     // プレイヤーが手を止めている間に時間が進むので、払う時間と経過する時間は等しい。
-    laborMinutes: minutes,
-    elapsedMinutes: minutes,
+    laborMinutes: minutes + preparation,
+    elapsedMinutes: minutes + preparation,
     outcomes,
     hasUnresolvedReferences: tracking.hitUnresolvedReference,
   };
+}
+
+/**
+ * その操作を起こせる状態にするまでに、**同じ物の上で先に払う時間**（分）。先に払うものが無ければ0。
+ *
+ * **1回の操作は1時間を超えられない**（[`ActionSystem.md`](../../docs/engine/ActionSystem.md) 6.3節）
+ * ので、大きな仕事は同じ物への何回かの手に分かれ、**後ろの手は自分の番が来る状態を条件で名乗る**
+ * ——倒す手は幹を刻み切った木にしか立たず、骨を外す手は肉を削ぎ終えた死体にしか立たない。
+ * その手前の手を数えないと、**最後の1回ぶんだけで産物が採れることになる**（丸太2本が1時間で採れる）。
+ *
+ * 数え方は「素の値からその条件を満たすところまで、同じ物の他の手が何回で運ぶか」。運ぶ手が複数
+ * あれば最も安いものを採る。**運ぶ手が1つも無ければ0**——条件が満たされるのは操作ではなく世界の側の
+ * 都合（天気・明るさ・時刻）で、そこには払う手間が無い。
+ */
+function preparationMinutesOf(
+  codex: WorldCodex,
+  def: ObjectDef,
+  trigger: InteractionTrigger,
+  outer: StaticValueResolver | undefined,
+): number {
+  const resolve = staticResolverOf(def, 'lowest', outer);
+  let total = 0;
+  for (const requirement of trigger.interaction.requirementDeclarations) {
+    const reader = new SelfPropertyConditionReader();
+    requirement.condition.readBy(reader);
+    for (const condition of reader.conditions) {
+      const from = staticValueOf(def, condition.propertyGlobalId, 'lowest', outer);
+      if (from === undefined) continue;
+      const distance = distanceToSatisfy(from, condition);
+      if (distance <= 0) continue;
+      total += cheapestPushMinutes(codex, def, trigger, condition.propertyGlobalId, distance, resolve);
+    }
+  }
+  return total;
+}
+
+/**
+ * その操作が、**自分を使い切る一続きの手の一部**か。1回が1時間を超えられない
+ * （[`ActionSystem.md`](../../docs/engine/ActionSystem.md) 6.3節）ので、1つの物を使い切る仕事は
+ * 同じ物への何回かの手に分かれ、**消える宣言（`destroy: self`）は最後の1つだけが持つ**。
+ *
+ * 手前の手も自分を使い切る側に数えないと、**元手をただで何度でも使えることになる**——皮を剥ぐ手が
+ * 死体を消さないからといって、1頭から何枚も剥げるわけではない。
+ *
+ * 見分けるのは**同じ値を挟んで繋がっているか**——手前の手が押している自分の値を、消える手が条件で
+ * 読んでいるなら、その2つは1つの仕事。樹皮を剥ぐ手のように、倒す手と値を共有しない手は含まれない
+ * （剥いでも木は立ったまま）。
+ *
+ * **数えるのは丸ごと1つぶん**（分け前にしない）。同じ物から出る物を全部採るときは元手を重複して
+ * 数えることになるが、**足りない側へ倒す誤りは、ただになる側へ倒す誤りより安い。**
+ */
+function partOfChainConsumingSelf(codex: WorldCodex, def: ObjectDef, trigger: InteractionTrigger): boolean {
+  const pushed = new SelfAddCollector();
+  trigger.interaction.readBy(pushed);
+  const advanced = pushed.movedProperties;
+  if (advanced.size === 0) return false;
+
+  return def.triggers.some((candidate) => {
+    if (candidate === trigger || !candidate.startedByPlayer) return false;
+    const effect = readEffect(
+      candidate.interaction,
+      () => undefined,
+      () => undefined,
+    );
+    if (!destroysRoot(effect, 'self')) return false;
+
+    return candidate.interaction.requirementDeclarations.some((requirement) => {
+      const reader = new SelfPropertyConditionReader();
+      requirement.condition.readBy(reader);
+      return reader.conditions.some((condition) => advanced.has(condition.propertyGlobalId));
+    });
+  });
+}
+
+/** 自分（self）のプロパティをリテラルと比べる条件1つ。 */
+interface SelfPropertyCondition {
+  readonly propertyGlobalId: PropertyGlobalId;
+  readonly op: ConditionOp;
+  readonly value: number;
+}
+
+/**
+ * 条件の木から、**自分のプロパティをリテラルと比べる葉**だけを拾う読み手。
+ *
+ * **論理積の下だけを見る**（`any`・`not` の下は読まない）——どちらへ倒れてもよい条件や否定は、
+ * 「満たすためにどれだけ動かすか」を1つに決められない。
+ */
+class SelfPropertyConditionReader implements ConditionReader {
+  readonly conditions: SelfPropertyCondition[] = [];
+
+  property(reading: PropertyConditionReading): void {
+    if (reading.root !== 'self' || reading.valueRef !== undefined) return;
+    // 相手が1つの比較だけを読む。並び（`in`・`not_in`）は、どこへ動かせば満たすかが1つに決まらない。
+    const values = reading.values;
+    if (values === undefined || values.length !== 1) return;
+    this.conditions.push({ propertyGlobalId: reading.propertyGlobalId, op: reading.op, value: values[0] });
+  }
+
+  all(children: readonly ConditionDeclaration[]): void {
+    for (const child of children) child.readBy(this);
+  }
+
+  propertyStage(): void {}
+
+  slotPosition(): void {}
+
+  slotContent(): void {}
+
+  objectMatches(): void {}
+
+  any(): void {}
+
+  not(): void {}
+}
+
+/** 素の値からその条件を満たすまでに、値をいくつ動かす必要があるか（満たしていれば0以下）。 */
+function distanceToSatisfy(from: number, condition: SelfPropertyCondition): number {
+  switch (condition.op) {
+    case 'gte':
+      return condition.value - from;
+    case 'gt':
+      return condition.value + 1 - from;
+    case 'lte':
+      return from - condition.value;
+    case 'lt':
+      return from - (condition.value - 1);
+    case 'eq':
+      return Math.abs(from - condition.value);
+    default:
+      // neq・in・not_in は「どこへ動かせば満たすか」が1つに決まらない。
+      return 0;
+  }
+}
+
+/**
+ * 同じ物の他の手が、そのプロパティをdistanceだけ動かすのにかかる最も安い時間（分）。
+ * 動かす手が1つも無ければ0。
+ */
+function cheapestPushMinutes(
+  codex: WorldCodex,
+  def: ObjectDef,
+  asking: InteractionTrigger,
+  propertyGlobalId: PropertyGlobalId,
+  distance: number,
+  resolve: EndBoundValueResolver,
+): number {
+  let cheapest: number | undefined;
+  for (const trigger of def.triggers) {
+    // **自分は数えない**——自分の番が来る状態へ運ぶのは、必ず別の手（自分は条件で止まっている）。
+    // **プレイヤーが起こさない手も数えない**——時間が運ぶものに払う手間は無い。
+    if (trigger === asking || !trigger.startedByPlayer) continue;
+
+    const collector = new SelfAddCollector(propertyGlobalId);
+    trigger.interaction.readBy(collector);
+    if (collector.amount === undefined || Math.abs(collector.amount) === 0) continue;
+
+    const times = Math.ceil(distance / Math.abs(collector.amount));
+    const minutes = times * minutesOf(trigger.interaction, resolve);
+    if (cheapest === undefined || minutes < cheapest) cheapest = minutes;
+  }
+  return cheapest ?? 0;
+}
+
+/** その操作が自分（self）のそのプロパティへ積む量を1つに畳んだもの（積まなければundefined）。 */
+class SelfAddCollector implements EffectReader {
+  /** 動かした量（その名前を訊いた場合）。1つも積んでいなければundefined。 */
+  amount: number | undefined;
+
+  /** 自分のどのプロパティを動かしたか。名前を訊かずに、押している先だけを知りたい読み手が読む。 */
+  readonly movedProperties = new Set<PropertyGlobalId>();
+
+  /** 名前を渡さなければ、どのプロパティも読み上げる（`movedProperties`だけが埋まる）。 */
+  constructor(private readonly propertyGlobalId?: PropertyGlobalId) {}
+
+  add(reading: AddReading): void {
+    if (reading.target !== 'self' || reading.amount === 0) return;
+    this.movedProperties.add(reading.propertyGlobalId);
+    if (reading.propertyGlobalId !== this.propertyGlobalId) return;
+    this.amount = (this.amount ?? 0) + reading.amount;
+  }
+
+  set(): void {}
+
+  spawn(): void {}
+
+  destroy(): void {}
+
+  become(): void {}
+
+  transfer(): void {}
+
+  move(): void {}
+
+  signal(): void {}
+
+  pick(reading: PickReading): void {
+    reading.readEveryCandidate(this);
+  }
+
+  conditional(reading: ConditionalReading): void {
+    reading.readEveryBranch(this);
+  }
 }
 
 /**
