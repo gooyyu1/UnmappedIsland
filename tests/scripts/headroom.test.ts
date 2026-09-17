@@ -228,6 +228,19 @@ describe('headroom.sh', () => {
     expect(result.stdout).toContain('usage.sh');
   });
 
+  // **口が落ちているのか順番待ちなのかを、同じ顔にしない**（`usage.sh` の2と1）。デーモンが
+  // 回っている場所で `UNKNOWN` になる主な形はこちらで、案内どおり打ち直しても2は何も出さずに返る。
+  it('叩ける間隔がまだ空いていない周は、引けなかったのと別に名乗る', () => {
+    cacheUsage({ agedSeconds: 60 * 60 * 24 });
+    writeFileSync(join(stateDir, 'usage-polled'), `${Math.floor(Date.now() / 1000)}\n`, 'utf-8');
+
+    const result = run('new-task');
+
+    expect(result.code).toBe(1);
+    expect(result.stdout).toContain('間隔');
+    expect(result.stdout).not.toContain('usage.sh');
+  });
+
   // **欠けた枠を「余力が在る」として通すと、その枠では手綱が掛からないまま上限に当たる。**
   it('枠が1つでも欠けた控えなら止まる', () => {
     writeFileSync(
