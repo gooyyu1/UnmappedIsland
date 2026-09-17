@@ -18,10 +18,10 @@ object_defs:
   # characters/player_character.yaml）。据えた土地へ戻って打つ物で、遠征の先では打てない。
   #
   # **打っても減らない。** 減らすなら、打たれた回数で減る軸をこの型が自分で持つことになる——屋外劣化の
-  # trait（weathering.yaml）を名乗っているのは手に持つ物・身につける物・入れ物・寝床で
-  # （docs/engine/DurabilitySystem.md 2節）、据えた物で時間が減らすのは、罠が自分で持つ「仕掛けている
-  # 間だけ傷む」軸だけ（traps.yaml）。**その軸を的へ置くかは決まっていない**（据えた物の劣化は同5節の
-  # 未決事項）ので、ここでは置かない。**練習が払うのは時間と刃の摩耗だけ。**
+  # trait（weathering.yaml）の名乗り先に据えた物は入っていないので（名乗り先を持つのは
+  # docs/engine/DurabilitySystem.md 2節）、乗せる先が無い。**その軸を置くかは決まっていない**（据えた物の
+  # 劣化は同5節の未決事項。据えた物が時間で減る形は、罠が自分で持つ「仕掛けている間だけ傷む」軸が先例
+  # ——traps.yaml）ので、ここでは置かない。**練習が払うのは時間と刃の摩耗だけ。**
   #
   # **strike_target は「打ちかかる相手である」ことを言うタグ**（docs/ui/ScreenLayout.md 8.1.2節）。
   # 読む仕組みはまだ無い——打ちかかる口を持つのは的自身なので、探す側が居ない——が、道具のボタンが
@@ -67,8 +67,9 @@ object_defs:
       # 待たずに据えられる。
       lashed:
         # 骨組みを組む仕事なので木材加工（docs/world/Skills.md 7.1節。枝を縛って組む枝の卓と同じで、
-        # ほぞは1つも要らない）。
-        deftness: {subject: agent, prop: woodwork_deftness}
+        # ほぞは1つも要らない）。**効き始めるのは最上段**（同7節）——打っても減らない的は据え直す物
+        # ではないので、数えるほどしか動かさない手の側になる（里心の設えと同じ、furnishings.yaml）。
+        deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         # **解放条件を持たない。** 狩猟の腕を要求すれば、その腕を伸ばす手そのものが腕で閉じて循環する
         # （docs/engine/SkillSystem.md 3.2節）。**道具も要求しない**——枝は地面で拾い、葉は幹を登って
         # 引き落とせる（coconut.yamlのpick_frond）。

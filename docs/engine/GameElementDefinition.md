@@ -2085,6 +2085,23 @@ interactions:
 `base`（6.5 節）で相手の値を土台にすれば、合成は既にそこで済んでいます——道は自分の長さに歩く人の遅れを継ぎ、
 `duration` はその 1 つを読むだけです（11.5 節の例）。
 
+**行っている人の腕で縮む時間も、同じ場所が持ちます。** 参照先のプロパティが自分の `passives`（8 節）に
+「その腕がこの段以上なら自分を N 分縮める」を書き、`duration` はその 1 つを読むだけです。`passives` の
+`conditions` には `agent` を書けるので（11.5 節）、**どの腕が・どの段から・何分縮めるかは、その操作の側の
+宣言 1 つに収まります**（設計は [`../world/Skills.md`](../world/Skills.md) 6 節）。
+
+```yaml
+props:
+  spin_minutes:
+    value: 30
+    passives:
+      - conditions:
+          - {subject: agent, prop: skill_cordage, in_stage_or_above: skilled}
+        modify: {self: {spin_minutes: -15}}
+```
+
+**素の分数も、縮めた先も、tick の格子に乗せます**（[`ActionSystem.md`](./ActionSystem.md) 6.2 節）。
+
 条件（`conditions`）が不成立で操作自体が実行されなかった場合、`duration`は消費されません。時間の消費は
 **実行結果が適用される前**に行われます（行動してから結果が出る順序であり、作ったもの・見つけたものが
 自分の制作時間・探索時間ぶんのtickを浴びずに済むため）。
@@ -2170,10 +2187,10 @@ interactions:
   いる者で、`instrument` は居ません——素材も道具も運ばれてきた側ではなく、既に材料スロットの中身だからです
   （運び入れるほうが `put_in` の操作で、そちらでは入れる物が `instrument`）。**工程そのものに役を書ける欄は
   ありません**——書けるのは要求と所要時間のリテラルだけ（13.1 節）。レシピが役を書けるのは、工程の外に置く
-  `deftness` と `surplus`（13.6 節、上の表の行）だけで、**解かれ方は 2 つで違います**——`surplus` はこの関係の
-  中で（引くのは工程を進め終えた時点）、`deftness` は解放条件と同じく**問う側が `agent` を渡す**形で解きます
-  （13.3 節）。後者が関係の外なのは、押す前に分数を見せる画面が関係を張らずに同じ数を出せなければ
-  ならないためです。関係が効くのはほかに、参加者の `props` の行（工程の最中の tick で役が解ける）と、
+  `surplus`（13.6 節、上の表の行）だけです。**`deftness` は役を書きません**——見るのは作り手の腕の段だけで、
+  解放条件と同じく**問う側が `agent` を渡す**形で解きます（13.3 節）。関係の外で解くのは、押す前に分数を
+  見せる画面が関係を張らずに同じ数を出せなければならないためです。一方 `surplus` はこの関係の中で解きます
+  （引くのは工程を進め終えた時点）。関係が効くのはほかに、参加者の `props` の行（工程の最中の tick で役が解ける）と、
   下の `agent` の一意性です。
   **`crafting_conditions` はこの関係の外で問います**——操作ではない（1 つ上の行）ので関係を張らず、画面が
   「作業する」の可否を出すときと同じ問いになります。内側で問うと、押す前に見せた可否と実際の可否がずれます。
@@ -2482,7 +2499,7 @@ object_defs:
         icon: axe_wip.png
         conditions:
           - {subject: agent, prop: skill_knapping, in_stage_or_above: basic}
-        deftness: {subject: agent, prop: knapping_deftness}
+        deftness: {skill: skill_knapping, from_stage: skilled, minutes: -15}
         steps:
           - requires:
               - {object: wood, count: 2, consume: true}
@@ -2490,7 +2507,7 @@ object_defs:
             duration: 30
           - requires:
               - {object: rope, count: 1, consume: true}
-            duration: 10
+            duration: 30
 ```
 
 ### 13.1 steps / requires
@@ -2591,7 +2608,7 @@ recipes:
   knotted:
     conditions:
       - {subject: agent, prop: skill_cordage, in_stage_or_above: basic}
-    deftness: {subject: agent, prop: cordage_deftness}
+    deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
     steps:
       - requires: [{object: plant_fiber, count: 2, consume: true}]
         duration: 30
@@ -2601,19 +2618,22 @@ recipes:
         spawn: {object: snare, into: agent}
 ```
 
-- **`deftness`（手際）** は、工程1つにかかる時間へ積む上乗せの在り処です。書き方は `{subject, prop}`
-  （10.2 節と同じ参照1つ）。**上乗せ自身が負の値を持ちます**——合成の器はどちらも加算なので、時間を縮める
-  上乗せは負でなければ、`base` で継ぐ側（手作業の `duration`、11.3 節）と同じ 1 本を分け合えません。
-  **0 分にはなりません**（下限は工程の側が持ちます。上乗せは所要時間の違う工程すべてに積まれるので、
-  どこまで縮めてよいかを知りません）。
+- **`deftness`（手際）** は、**どの腕が・どの段から・何分縮めるか**の宣言です。作り手の `skill` が
+  `from_stage` 以上なら、工程1つの分数から `minutes` ぶんが引かれます。**`minutes` は負の値**
+  ——手作業の側（所要時間の `passives` が `modify` で積む量、11.3 節）と向きを揃えます。**どの行動をどれだけ速くするかを行動の側が
+  持つ理由は [`../world/Skills.md`](../world/Skills.md) 6 節**——腕の数は増減しにくく、行動の数は
+  増減するので、組み合わせを宣言するのは増減する側です。
+  **縮めた先が tick の刻み（15 分）を割る宣言はロード時に弾きます**（[`ActionSystem.md`](./ActionSystem.md)
+  6.2 節）——黙って下限で止めると、格子から外れた宣言がそのまま世界に残ります。
 - **`surplus`（無駄の無さ）** は、**最後の工程を終えた瞬間に1回だけ引く卓**です。書き方は `pick`（10 節）と
   同じ並びで、「取れない側」の重みを作る相手が名乗り、「取れる側」の重みに作り手の上乗せを置きます
   （素は 0 なので、腕が無ければ何も起きません）。
 - **`conditions` から導かず、別に名乗ります。** 上位のレシピは複数の腕を連言で要求する（[`SkillSystem.md`](./SkillSystem.md)
   4.1 節）ので、解放条件からはどの腕が速さを決めるか 1 つに定まりません。
-- **書ける主語が 2 つで違います。** `deftness` を読むのは工程を進める最中で、そこに居るのはまだ作りかけ
-  なので、`conditions` と同じく宣言元の個体が居ません（13.3 節）。`surplus` を引くのは完成した後で、同じ個体が
-  既に成果物になっている（9.9 節の `become`）ので、そちらでは `self` が成果物を指します。
+- **`deftness` は参照を書きません。** 見るのは作り手の腕の段だけで、読むのは工程を進める最中——そこに
+  居るのはまだ作りかけなので、宣言元の個体を起点に辿る参照は解決先を持ちません（13.3 節）。`surplus` を
+  引くのは完成した後で、同じ個体が既に成果物になっている（9.9 節の `become`）ので、そちらは `pick` と同じ
+  参照が書けて、`self` は成果物を指します。
 
 ## 14. conditions（条件式）
 

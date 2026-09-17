@@ -613,12 +613,15 @@ object_defs:
     props:
       weight: {value: 5000}
       volume: {value: 12000}
-      # 解体にかかる時間。素の値は死体が持ち、今捌いている人の手際をbaseで継ぐ
-      # （docs/world/Skills.md 7節。他の獣の死体も同じ形で、素の値だけが違う）。
+      # 解体にかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
+      # （docs/world/Skills.md 7節）。**獲物のたびに繰り返す手なので、どの死体も届いた段で15分縮む**
+      # ——素の値だけが獣ごとに違う（他の獣の死体も同じ形）。
       butcher_minutes:
         value: 60
-        base: {subject: agent, prop: leatherwork_deftness}
-        range: {min: 30, max: 60}
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_leatherwork, in_stage_or_above: skilled}
+            modify: {self: {butcher_minutes: -15}}
     # 塩漬けにできる（salt.yaml）。**解体して出る生肉は漬かっていない**——spawnは新しい個体を
     # 作るので、塩は掛けた個体にしか残らない。丸のまま漬けるのは、解体する時間を後へ回すため
     # （他の獣の死体も同じ）。
@@ -939,8 +942,10 @@ object_defs:
       volume: {value: 144000}
       butcher_minutes:
         value: 240
-        base: {subject: agent, prop: leatherwork_deftness}
-        range: {min: 120, max: 240}
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_leatherwork, in_stage_or_above: skilled}
+            modify: {self: {butcher_minutes: -15}}
     variation_axes:
       cure: {of: {tag: cured}}
     interactions:
@@ -972,10 +977,13 @@ object_defs:
     props:
       weight: {value: 1000}
       volume: {value: 2400}
+      # **素がtickの刻み1つ分では腕の効きようが無い**ので、2つ分から始めて届いた段で半分になる。
       butcher_minutes:
-        value: 20
-        base: {subject: agent, prop: leatherwork_deftness}
-        range: {min: 10, max: 20}
+        value: 30
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_leatherwork, in_stage_or_above: skilled}
+            modify: {self: {butcher_minutes: -15}}
     variation_axes:
       cure: {of: {tag: cured}}
     interactions:
@@ -1074,12 +1082,14 @@ object_defs:
     props:
       weight: {value: 10}
       volume: {value: 15}
-      # 削り出すのにかかる時間。素の値は骨が持ち、今削っている人の手際をbaseで継ぐ
-      # （docs/world/Skills.md 7節）。
+      # 削り出すのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
+      # （docs/world/Skills.md 7節）。針は折れれば削り直すので、届いた段で縮む。
       whittle_minutes:
-        value: 40
-        base: {subject: agent, prop: woodwork_deftness}
-        range: {min: 20, max: 40}
+        value: 45
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_woodwork, in_stage_or_above: skilled}
+            modify: {self: {whittle_minutes: -15}}
     interactions:
       # 削って針にする（tools.yamlのbone_needle）。**要るのは握りの刃**（handheld_blade、tools.yaml）
       # ——骨を握って刃を面へ沿わせ、少しずつ削ぎ落とす手つきなので、石斧では細らせられない。

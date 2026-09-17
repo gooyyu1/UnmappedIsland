@@ -218,15 +218,15 @@
 **両端は、空が作る気温の刻みへ合わせてあります**（[`../engine/VitalsSystem.md`](../engine/VitalsSystem.md)
 8.4 節）。素の入口は16℃で、空がそれを下回るのは涼しい季節の夜（12℃）と、その薄明・雨天の昼（15℃）です。
 
-- **いちばん安い一着が、薄明と雨天の昼（15℃）とちょうど釣り合います。** 雨天の昼は屋根の無い所で
+- **いちばん安い一着が、海沿いの薄明と雨天の昼（15℃）とちょうど釣り合います。** 雨天の昼は屋根の無い所で
   `warmth` を最も速く削る場面（`-6/tick`）なので、**一着も持たずに雨季を歩くかどうか**がここで分かれます。
-- **いちばん高い一着が、最も寒い夜（12℃）とちょうど釣り合います。** 釣り合うだけなので、**土地ごとの
-  気温差**（[`../engine/ClimateSystem.md`](../engine/ClimateSystem.md) 1 節。まだどの土地も宣言していない）
-  が入れば足りなくなります。
+- **いちばん高い一着が、海沿いの最も寒い夜（12℃）とちょうど釣り合います。** 釣り合うだけなので、**登れば
+  足りなくなります**——土地は海抜ぶんだけ寒く（[`../engine/ClimateSystem.md`](../engine/ClimateSystem.md)
+  1.1 節）、山の夜はここより下です。
 
-**両端に挟まれた分は、総コストの順に1℃ずつです。** 空の刻みが粗いので、**そこの差が今の世界で結果を
-変える場面はまだありません**——`-2` と `-3` が跨ぐ刻みは同じで、変わるのは着ているかどうかだけです。
-刻みを増やすのは別の仕事です（[`../engine/VitalsSystem.md`](../engine/VitalsSystem.md) 8.4 節）。
+**両端に挟まれた分は、総コストの順に1℃ずつです。** その土地ごとの気温差が空の刻みを1℃ずつに割るので、
+**どの一着にも、そこでちょうど釣り合う土地があります**（同 1.1 節の表）——手をかけた一着ほど、島の
+高い所で越せます。
 
 **火を置き換えはしません。** 炉の暖（+8℃）は最も寒い夜を平年へ戻す（[`../engine/FireSystem.md`](../engine/FireSystem.md)
 9.2 節）ので、いちばん高い一着と届く先は同じですが、そこへ着くのに1日の余剰（12 節）を上回る総コストと、
@@ -362,7 +362,7 @@
   ありません。
 
 **1基で段に届きます**——縄が1本要るためで、囲いが丸太4本と縄2本で1つでも段になるのと同じ理由です
-（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の1.04日<!-- stats: terrain.yaml work_piles pile=干し場 days -->は、この1基ぶんです。**
+（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の1.16日<!-- stats: terrain.yaml work_piles pile=干し場 days -->は、この1基ぶんです。**
 
 **素手の天日干しは、干し場が建っても残ります**（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md)
 の「後から足す手段は、既存の手段を残す強さに抑える」節）。空心菜・バナナ・ヤシの果肉とゼリーは
@@ -443,7 +443,7 @@
 どれも同じ1つの軸（`cure`）の上に並びます。
 
 **1基で段に届きます**——編んだ葉6枚と縄2本が要るためで、干し場が縄1本で段に届くのと同じ理由です
-（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の2.16日<!-- stats: terrain.yaml work_piles pile=燻し小屋 days -->は、この1基ぶんです。**
+（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の2.38日<!-- stats: terrain.yaml work_piles pile=燻し小屋 days -->は、この1基ぶんです。**
 
 **実装済みです**（`src/assets/world-codex/smoking.yaml`。`tests/world-codex/smokingYaml.test.ts` が
 上の線を全部確かめます）。
@@ -451,7 +451,7 @@
 ## 12. 効果値と工程の時間は、1日の余剰から逆算する
 
 **物の値は、1日の余剰——生存に要る労働を払って残る時間——のうち、その物が食う割合で決めます。**
-余剰は927分<!-- stats: terrain.yaml daily_budget surplus -->で、[`stats/balance.yaml`](../../stats/balance.yaml)
+余剰は909分<!-- stats: terrain.yaml daily_budget surplus -->で、[`stats/balance.yaml`](../../stats/balance.yaml)
 の `object_costs` がその分母で日数を出します（[`../diagnostics/BalanceStats.md`](../diagnostics/BalanceStats.md)）。
 
 ### 12.1 持ち物1つの維持は、1日の余剰の5%まで
