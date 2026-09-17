@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { craftingStepsOf } from '../../src/analysis/craftingSteps';
 import { toolWearsOf } from '../../src/analysis/durations';
 import { staticValueOf } from '../../src/analysis/staticValue';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
@@ -57,6 +58,22 @@ describe('耐久の規約（同梱の定義すべて）', () => {
         }),
       ),
     );
+  });
+
+  it('刃を食う手は、どれも物を返す', () => {
+    // 2.1節。**進みや腕しか返さない手は刃を食わない**——1つの仕事が何回かの手に分かれたとき
+    // （ActionSystem.md 6.3節）、途中の手にも刃を食わせると、返るものが無いまま道具だけが折れる
+    // 形ができる。**型を1つも名指ししない**ので、別の物に同じ形を足せばここで落ちる。
+    const barren: string[] = [];
+    for (const wear of toolWearsOf(codex)) {
+      if (wear.propertyName !== 'durability') continue;
+      const owner = codex.objects.get(codex.objectNames.getId(wear.stepOwnerName));
+      const step = craftingStepsOf(codex, owner).find((candidate) => candidate.name === wear.stepName);
+      if (step === undefined || step.outputs.length === 0)
+        barren.push(`${wear.stepOwnerName}.${wear.stepName} が ${wear.objectName} を削る`);
+    }
+
+    expect(barren, '物を返さないのに刃を食う手').toEqual([]);
   });
 
   /** その道具の使い道1つ。costはその工程1回が削る量、thresholdは引かれている線（無ければundefined）。 */

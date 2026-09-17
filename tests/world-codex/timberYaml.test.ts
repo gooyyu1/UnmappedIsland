@@ -129,7 +129,7 @@ describe('timber.yamlの伐採', () => {
     // 頃は、暗さで塞がれた樹皮剥ぎの理由が伐採の「摩耗」に隠れていた。
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
     const axe = spawnInto('stone_axe', player, 'hand');
-    // 1回ぶん（30）を割った刃。**0にはしない**——0へ届いた刃は折れて無くなる（weathering.yaml）
+    // 1本ぶん（120）を割った刃。**0にはしない**——0へ届いた刃は折れて無くなる（weathering.yaml）
     // ので、その札は盤面に残らない（docs/engine/DurabilitySystem.md 2.1節）。
     axe.getProperty(codex.propertyNames.getId('durability')).setNumberWithoutEvents(20);
     makeTooDarkToWork(player, codex);
@@ -144,9 +144,9 @@ describe('timber.yamlの伐採', () => {
     ).toEqual([['chop', 'too_worn']]);
   });
 
-  it('斧を断る線は、その工程が食う量と一致している', () => {
-    // 線はその1回が食う量と同じところに引く（docs/engine/DurabilitySystem.md 2.1節）——倒し切れない
-    // 仕事を始めさせないため。
+  it('斧を断る線は、その仕事が食う量と一致している', () => {
+    // 線はその工程が食う量と同じところに引き、**刃を食わない手には仕事1つぶんの線を引く**
+    // （docs/engine/DurabilitySystem.md 2.1節）——倒し切れない仕事を始めさせないため。
     //
     // **食う量は宣言から読む。** 直値で書くと閾値の側しか見ないことになり、`add` を動かしても緑の
     // ままになる（CLAUDE.md「置いた主張は、破れたときに落ちるものと対で置く」の「その主張の面を
