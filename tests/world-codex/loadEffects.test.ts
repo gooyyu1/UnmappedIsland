@@ -147,18 +147,18 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     const trip = trek(9);
 
     expect(trip.stage).toBe('laden');
-    expect(trip.minutes, '60分 + 遅れ10分').toBe(TRAVEL_MINUTES + 10);
+    expect(trip.minutes, '60分 + 遅れ15分').toBe(TRAVEL_MINUTES + 15);
     expect(trip.staminaLost, '-0.3/tick').toBeCloseTo(0.3 * trip.ticks, 6);
     expect(trip.ticks, '削られる量は渡っている時間で決まる').toBeGreaterThan(0);
   });
 
   it('重い荷ほど遅れが大きく、削りも大きい', () => {
-    // medicのheavyは16500gから。同じ道の遅れが25分に開き、削りは3倍以上になる。
+    // medicのheavyは16500gから。同じ道の遅れが30分に開き、削りは3倍以上になる。
     const laden = trek(9);
     const heavy = trek(17);
 
     expect(heavy.stage).toBe('heavy');
-    expect(heavy.minutes, '60分 + 遅れ25分').toBe(TRAVEL_MINUTES + 25);
+    expect(heavy.minutes, '60分 + 遅れ30分').toBe(TRAVEL_MINUTES + 30);
     expect(heavy.minutes).toBeGreaterThan(laden.minutes);
     expect(heavy.staminaLost, '-1/tick').toBeCloseTo(heavy.ticks, 6);
     expect(heavy.staminaLost).toBeGreaterThan(laden.staminaLost);

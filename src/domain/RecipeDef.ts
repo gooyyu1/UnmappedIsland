@@ -1,11 +1,11 @@
 import type { WorldObject } from './WorldObject';
 import type { ObjectDef } from './ObjectDef';
 import type { PickEffect } from './PickEffect';
-import type { PropertyRefReading } from './EffectReader';
 import type { TypeMatchRule } from './TypeMatchRule';
 import type { Requirement, Requirements } from './Requirement';
 import { ReferenceContext } from './ReferenceRoot';
-import type { PropertyPath } from './ReferenceRoot';
+import type { PropertyGlobalId } from './GlobalId';
+import { MINUTES_PER_TICK } from './worldTime';
 
 /**
  * 製作中オブジェクト（RecipeSystem.md 1節）を生成するときの軸名（GameElementDefinition.md 3.5節）。
@@ -49,24 +49,48 @@ export class RecipeRequirementDef {
 }
 
 /**
- * 手際をいくら積んでも、工程がこれより短くはならない分数（13.6節）。
+ * 短縮しきった後も工程が下回れない分数（13.6節）。**tickの刻みそのもの**
+ * （[`worldTime.ts`](./worldTime.ts) の `MINUTES_PER_TICK`）で、これより短い工程は、開始時刻によって
+ * 跨ぐtickの数が変わる（docs/engine/ActionSystem.md 6.2節）。
  *
- * 0分の工程は「押した瞬間に終わる作業」になり、**時間が最も希少な資源である**という前提
- * （SkillSystem.md 7節）がその工程だけで消える。**下限を持つのは工程の側で、上乗せの側ではない**
- * ——上乗せは1つで所要時間の違う工程すべてに積まれるので、どこまで縮めてよいかを知らない。
- * 手作業（`interactions`）の側では、時間を名乗るプロパティ自身の`range`が同じ役をする。
+ * **これは下限で止める値ではなく、宣言が守るべき下限**——短縮後にここを割る `deftness` はロード時に
+ * 弾く（RecipeDeftnessDef）。黙って止めると、格子から外れた宣言が「止まっているから平気」として
+ * 残り続ける。
  */
-const MINIMUM_STEP_MINUTES = 1;
+const MINIMUM_STEP_MINUTES = MINUTES_PER_TICK;
 
 /**
- * 手際を積んだ後の、その工程に実際にかかる分数（下限で止める）。
+ * その腕がその段に届いている作り手にとって、工程1つが何分縮むか（13.6節）。
  *
- * **手際は負の上乗せなので、ここは足し算**（docs/world/Skills.md 7節）。合成の器（`base`・`modify`）は
- * どちらも加算なので、時間を縮める上乗せを他の読み手（手作業の`duration`）と分け合うには、縮める側が
- * 負の値を持つしかない——荷が重いほど道が遠くなる`travel_delay`と、向きが違うだけの同じ1本。
+ * **どの腕が・どの段から・何分縮めるかは、レシピごとに宣言する**（docs/world/Skills.md 7節）。
+ * 腕の数は増減しにくく、行動の数は増減するので、**組み合わせを宣言するのは増減する側**——全レシピが
+ * 読む共通の上乗せを1つ置くと、そこを触るたびに世界じゅうの工程の分数が動く。
  */
-function minutesAfterDeftness(step: RecipeStepDef, deftness: number): number {
-  return Math.max(MINIMUM_STEP_MINUTES, step.durationMinutes + deftness);
+export class RecipeDeftnessDef {
+  /** 速さを決める腕（`skill_*`、SkillSystem.md 3節）。作り手（agent）が持つ。 */
+  readonly skillGlobalId: PropertyGlobalId;
+
+  /** 効き始める段の名前（6.4節）。この段以上で縮む。 */
+  readonly fromStage: string;
+
+  /**
+   * 縮む分数。**負の値**——手作業の側（`<操作名>_minutes`の`passives`が`modify`で積む量）と向きを
+   * 揃える（docs/world/Skills.md 7節）。
+   */
+  readonly minutes: number;
+
+  constructor(skillGlobalId: PropertyGlobalId, fromStage: string, minutes: number) {
+    if (minutes >= 0) throw new Error(`deftnessのminutesは負の数である必要があります（値: ${minutes}）。`);
+
+    this.skillGlobalId = skillGlobalId;
+    this.fromStage = fromStage;
+    this.minutes = minutes;
+  }
+
+  /** agentがこの段に届いているか。届いていなければ工程は宣言どおりの分数。 */
+  appliesTo(agent: WorldObject): boolean {
+    return agent.tryGetProperty(this.skillGlobalId)?.isInStage(this.fromStage, 'or_above') === true;
+  }
 }
 
 /** レシピの工程1つ（13.1節）。 */
@@ -116,13 +140,13 @@ export class RecipeDef {
   readonly unlock: Requirements | undefined;
 
   /**
-   * 作り手の手際（docs/world/Skills.md 7節）が置いてある場所。名乗っていなければundefined＝腕は
+   * 作り手の腕が工程の時間へ効く宣言（docs/world/Skills.md 7節）。名乗っていなければundefined＝腕は
    * 速さに効かない。
    *
    * **名乗れるのは1つだけ。** 上位のレシピは複数の腕を連言で要求する（SkillSystem.md 4.1節）が、
    * そこからはどの腕が速さを決めるか1つに定まらないので、作る側が名乗る。
    */
-  readonly deftness: PropertyPath | undefined;
+  readonly deftness: RecipeDeftnessDef | undefined;
 
   /**
    * 完成した瞬間に1回だけ引く、余分が取れるかの卓（13.6節）。宣言していなければundefined＝
@@ -135,10 +159,19 @@ export class RecipeDef {
     steps: readonly RecipeStepDef[],
     icon: string | undefined,
     unlock: Requirements | undefined,
-    deftness: PropertyPath | undefined,
+    deftness: RecipeDeftnessDef | undefined,
     surplus: PickEffect | undefined,
   ) {
     if (steps.length === 0) throw new Error(`レシピ'${name}': stepsは1件以上必要です。`);
+    // **縮めきった後の分数も、tickの刻みを割らない**（docs/engine/ActionSystem.md 6.2節）。止めるのは
+    // ここ——黙って下限で止めると、格子から外れた宣言が世界に残り、腕を上げた者だけがtickを飛ばす。
+    if (deftness !== undefined)
+      for (const step of steps)
+        if (step.durationMinutes + deftness.minutes < MINIMUM_STEP_MINUTES)
+          throw new Error(
+            `レシピ'${name}': ${step.durationMinutes}分の工程をdeftnessが${-deftness.minutes}分縮めると` +
+              `${MINIMUM_STEP_MINUTES}分を割ります。`,
+          );
 
     this.name = name;
     this.steps = steps;
@@ -148,34 +181,19 @@ export class RecipeDef {
     this.surplus = surplus;
   }
 
-  /** 手際の宣言（PropertyRefReading参照）。名乗っていなければundefined。 */
-  get deftnessReading(): PropertyRefReading | undefined {
-    return this.deftness === undefined
-      ? undefined
-      : { subject: this.deftness.root, propertyGlobalId: this.deftness.propertyGlobalId };
-  }
-
   /**
-   * agentがその工程に実際に費やすゲーム内時間（分）。宣言された仕事の量へ、作り手の手際（負の
-   * 上乗せ）を積んだ値（13.6節）。手際を名乗っていない、または作り手がそれを持たないなら宣言どおり。
+   * agentがその工程に実際に費やすゲーム内時間（分）。宣言された仕事の量から、作り手の腕が届いて
+   * いれば宣言された分だけ縮めた値（13.6節）。腕を名乗っていない、または作り手がその段に届いて
+   * いないなら宣言どおり。
    *
    * **問うのは「この者にとって何分か」なのでagentは必ず要る**（解放条件`unmetUnlockRequirement`と
    * 同じ形）。誰にとってでもない分数は、工程が宣言した仕事の量（`durationMinutes`）が直接答える。
    */
   minutesFor(step: RecipeStepDef, agent: WorldObject): number {
-    // 成果物のインスタンスはまだ無い（作りかけは完成品ではない）ので、selfを持たない文脈で解く。
-    return minutesAfterDeftness(step, this.deftness?.effectiveNumber(ReferenceContext.asking(agent)) ?? 0);
-  }
-
-  /**
-   * 手際が`deftness`分の作り手が、全工程を通して実際に費やす分数。
-   *
-   * **手際をいくつとして読むかは呼び出し側が決める**——世界の個体から解く側（`minutesFor`）と、
-   * 定義だけから解く側（`analysis/craftingSteps`）が居る。下限の当て方はどちらも同じでなければ
-   * ならないので、積む側はこちらが持つ。
-   */
-  totalMinutesWithDeftness(deftness: number): number {
-    return this.steps.reduce((sum, step) => sum + minutesAfterDeftness(step, deftness), 0);
+    const deftness = this.deftness;
+    return deftness !== undefined && deftness.appliesTo(agent)
+      ? step.durationMinutes + deftness.minutes
+      : step.durationMinutes;
   }
 
   /**

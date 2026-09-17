@@ -188,9 +188,10 @@ object_defs:
     interactions:
       # 餌を仕掛ける（TrapSystem.md 4節）。炉へ薪をくべるのとまったく同じ形（FireSystem.md 2節）で、
       # 移る量は餌の側が1箇所で持つ。草の餌と肉の餌で1つずつ。
+      #
+      # **時間は課さない**——くべるのと同じ1手の受け渡しで、満杯を拒む条件が繰り返しを止める。
       add_plant_bait:
         trigger: {drag: {tag: plant_bait}}
-        duration: 1
         conditions:
           - {reason: trap_baited, prop: plant_bait, lt: 24}
         transfer:
@@ -203,7 +204,6 @@ object_defs:
         destroy: instrument
       add_meat_bait:
         trigger: {drag: {tag: meat_bait}}
-        duration: 1
         conditions:
           - {reason: trap_baited, prop: meat_bait, lt: 24}
         transfer:
@@ -220,7 +220,7 @@ object_defs:
         conditions:
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         # 結ぶ速さも歩留まりも繊維・編みが決める（docs/world/Skills.md 7節）。
-        deftness: {subject: agent, prop: cordage_deftness}
+        deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
         steps:
           - requires:
               - {object: plant_fiber, count: 2, consume: true}
@@ -331,21 +331,23 @@ object_defs:
       # 傷はどの個体も敗血症へ届くので、放置した穴の跡に残るのは獲物ではなく死体になる
       # （TrapSystem.md 5.1節）。
       durability:
-        # 尽きると使えなくなるので、満タン側がgood（CardView.md 8節）。
+        # 尽きると使えなくなるので、満タン側がgood（CardView.md 8節）。**上限は種類によらず960**
+        # （DurabilitySystem.md 1節）——長持ちを上限で作らず、減る速さだけで作る。30日なので
+        # 10÷30（同節の式）で、割り切れないぶんは小数で置く。
         gauge: {min: bad, max: good}
-        value: 2880
-        range: {min: 0, max: 2880}
+        value: 960
+        range: {min: 0, max: 960}
         passives:
           - conditions:
               - {in_slot: fixtures}
             add:
               self:
-                durability: -1
+                durability: -0.3333
           - conditions:
               - {slot: catch, matches: {tag: quarry}}
             add:
               self:
-                durability: -10
+                durability: -3.3333
         on_min:
           destroy: self
     passives:
@@ -366,7 +368,6 @@ object_defs:
       # 餌を仕掛ける（くくり罠とまったく同じ形、TrapSystem.md 4節）。移る量は餌の側が1箇所で持つ。
       add_plant_bait:
         trigger: {drag: {tag: plant_bait}}
-        duration: 1
         conditions:
           - {reason: trap_baited, prop: plant_bait, lt: 24}
         transfer:

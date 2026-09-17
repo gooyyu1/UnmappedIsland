@@ -99,8 +99,8 @@ object_defs:
       volume: {value: 100}
     recipes:
       carved:
-        # 作る腕が効く先（13.6節）。手際は負の上乗せなので、図鑑が出す向きは「積む」。
-        deftness: {subject: agent, prop: woodwork_deftness}
+        # 作る腕が効く先（13.6節）。宣言は負の分数なので、図鑑は符号を裏返して「短くなる」と出す。
+        deftness: {skill: skill_woodwork, from_stage: skilled, minutes: -15}
         steps:
           - requires:
               - {object: coconut_half, count: 1, consume: true}
@@ -364,11 +364,11 @@ describe('レシピの自己記述（describeRecipe）', () => {
   const lines = (): readonly string[] =>
     describeToText(codex, (out) => describeRecipe(recipeOfBowl, names, out)).split('\n');
 
-  it('手際は、向きを「積む」と書いて出す', () => {
-    // **手際は負の上乗せ**（docs/world/Skills.md 7節）で、この行が右に出すのは在り処だけ。
-    // 「引く」と書くと、読み手は自分の -8 を引いて工程が伸びると読む——**向きが逆になる**。
-    // 一度そう書いて差し戻されたので、戻したら落ちるものをここへ置く。
-    expect(lines()).toContain('手際（各工程の時間へ積む）: woodwork_deftness');
+  it('手際は、どの腕がどの段から何分縮めるかを出す', () => {
+    // **宣言が持つのは負の分数**（docs/world/Skills.md 7節）なので、そのまま出すと読み手は
+    // 「-15分かかる」と読む。**符号を裏返して「短くなる」と書く**ことでだけ向きが正しく届く。
+    // 一度「積む」と書いて差し戻されたので、戻したら落ちるものをここへ置く。
+    expect(lines()).toContain('手際: skill_woodwork が skilled 以上なら各工程が15分短くなる');
   });
 
   it('余分の卓は、いつ引くかを見出しで断ってから中身を出す', () => {

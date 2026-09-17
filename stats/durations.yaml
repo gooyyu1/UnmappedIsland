@@ -4,7 +4,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/DurationStats.md。
 
 meta:
-  - {unit: days, minimum: 1, durations: 141, longest: 100.00, shortest: 1.00, tool_wears: 14}
+  - {unit: days, minimum: 1, durations: 142, longest: 100.00, shortest: 1.00, tool_wears: 14}
 
 durations:
   - {object: bone_needle, property: durability, unit: days, days: 100.00, shortest_days: 20.00, longest_days: 100.00, repeats: false, destroys: true}
@@ -79,6 +79,7 @@ durations:
   - {object: woven_leaf_clothing, property: durability, unit: days, days: 10.00, shortest_days: 5.00, longest_days: 10.00, repeats: false, destroys: true}
   - {object: gore_wound, property: severity, unit: days, days: 7.50, shortest_days: 7.50, longest_days: 7.50, repeats: false, destroys: true}
   - {object: puncture_wound, property: severity, unit: days, days: 7.50, shortest_days: 7.50, longest_days: 7.50, repeats: false, destroys: true}
+  - {object: taro__prep_chopped, property: durability, unit: days, days: 6.67, shortest_days: 4.00, longest_days: 6.67, repeats: false, destroys: true}
   - {object: bite_wound, property: infection, unit: days, days: 5.21, shortest_days: 3.47, longest_days: 5.21, repeats: false, destroys: false}
   - {object: gore_wound, property: infection, unit: days, days: 5.21, shortest_days: 3.47, longest_days: 5.21, repeats: false, destroys: false}
   - {object: laceration, property: infection, unit: days, days: 5.21, shortest_days: 3.47, longest_days: 5.21, repeats: false, destroys: false}

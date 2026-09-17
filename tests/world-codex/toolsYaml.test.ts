@@ -311,6 +311,7 @@ const BLADE_DECLARATIONS = [
   { owner: 'green_coconut', step: 'bore', recipe: false, handheldOnly: false },
   { owner: 'drained_green_coconut', step: 'split', recipe: false, handheldOnly: false },
   { owner: 'husked_coconut', step: 'pry_open', recipe: false, handheldOnly: false },
+  { owner: 'taro', step: 'chop', recipe: false, handheldOnly: false },
   { owner: 'log_drum', step: 'hollowed', recipe: true, handheldOnly: false },
 ] as const;
 

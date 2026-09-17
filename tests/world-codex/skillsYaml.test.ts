@@ -40,6 +40,21 @@ const SKILLS = [
   'skill_smelting',
 ] as const;
 
+/**
+ * 製作系の腕（Skills.md 2節）。**アクセス系と分かれるのは、レシピを開けるかと速さへ効くか**
+ * ——こちらは解放も速さも歩留まりも持つ（同6節【確定】）。
+ */
+const CRAFTING_SKILLS = [
+  'skill_knapping',
+  'skill_cordage',
+  'skill_woodwork',
+  'skill_joinery',
+  'skill_building',
+  'skill_leatherwork',
+  'skill_cooking',
+  'skill_preserving',
+] as const;
+
 /** 11本で共通の段（SkillSystem.md 6節の目安そのままの4段・比3）。 */
 const STAGES = [
   { name: 'novice', min: 0 },
@@ -66,17 +81,9 @@ const ACCESS_BONUSES = [
 ] as const;
 
 /**
- * 製作系の腕（Skills.md 2節）と、その段が押し上げる上乗せ（同7節）。**アクセス系と違って、これが
- * 切れても腕は死なない**——解放は解放条件が担うので、切れると「解放しか効かない腕」へ戻る。
- *
- * 読まれ方は2通りある（レシピの`deftness`・`surplus`が直に名乗るのと、手で作る操作の所要時間が
- * つまみの`base`にするの、GameElementDefinition.md 13.6節と11.3節）が、**書き方はどちらも
- * `{subject: agent, prop: ...}`**なので、読まれているかは下の`propsReadFromAgent`が一緒に拾う。
- */
-/**
- * 手際を名乗らないと決めたレシピ（`<完成品>.<レシピ>`）。**どれもどの技術の仕事でもない**——
- * 理由は1件ずつ、そのレシピのコメントに書いてある（docs/world/Skills.md 7.1節。書いてあることは
- * 下の検査が見張る）。
+ * 手際を名乗らないと決めたレシピ（`<完成品>.<レシピ>`）。**名乗れない理由は2通り**——どの技術の
+ * 仕事でもないものと、工程がtickの刻み1つ（15分）でそこから縮める先が無いもの。理由は1件ずつ、
+ * そのレシピのコメントに書いてある（docs/world/Skills.md 7.1節。書いてあることは下の検査が見張る）。
  */
 const RECIPES_WITHOUT_DEFTNESS = [
   'bed.spread',
@@ -85,22 +92,20 @@ const RECIPES_WITHOUT_DEFTNESS = [
   'field.tilled',
   'pitfall.dug',
   'salt_pan.laid',
+  'torch.wrapped',
   'unfired_jar.coiled',
 ];
 
+/**
+ * 製作系の腕（Skills.md 2節）と、その段が押し上げる上乗せ（同7節）。**速さの上乗せはここに無い**
+ * ——どの腕がどの行動をどれだけ速くするかは行動の側が個別に宣言するので、腕の側に読まれる値が
+ * 立たない（同7節。速さの側を見張るのは下の`skillsShorteningTime`を使う検査）。
+ */
 const CRAFTING_BONUSES = [
-  { skill: 'skill_knapping', bonus: 'knapping_deftness', byStage: [0, -3, -8, -15] },
-  { skill: 'skill_cordage', bonus: 'cordage_deftness', byStage: [0, -3, -8, -15] },
   { skill: 'skill_cordage', bonus: 'cordage_thrift', byStage: [0, 10, 25, 60] },
-  { skill: 'skill_woodwork', bonus: 'woodwork_deftness', byStage: [0, -3, -8, -15] },
-  { skill: 'skill_leatherwork', bonus: 'leatherwork_deftness', byStage: [0, -3, -8, -15] },
-  { skill: 'skill_preserving', bonus: 'preserving_deftness', byStage: [0, -3, -8, -15] },
 ] as const;
 
-/** 手際の上乗せの名前の尻尾（docs/world/Skills.md 7節の`<腕>_deftness`）。 */
-const DEFTNESS_SUFFIX = '_deftness';
-
-/** 無駄の無さの上乗せの名前の尻尾（同じく`<腕>_thrift`）。 */
+/** 無駄の無さの上乗せの名前の尻尾（docs/world/Skills.md 7節の`<腕>_thrift`）。 */
 const THRIFT_SUFFIX = '_thrift';
 
 /**
@@ -248,6 +253,35 @@ function standsOnBonus(propBody: unknown, bonusName: string): boolean {
 }
 
 /**
+ * そのpropの宣言の`passives`が、その腕の段を条件にして自分を縮めているか（docs/world/Skills.md 7節）。
+ *
+ * **見るのは条件が名指した腕だけ**——縮む分数と効き始める段は行動ごとに選んでよいので、揃っている
+ * ことを求めるものではない。**主語はagent**（今その操作をしている人）で、そこが `self` になると
+ * 相手の腕で縮む宣言になる。
+ */
+function shortensWithSkill(propBody: unknown, skillName: string): boolean {
+  const passives = isMap(propBody) ? propBody.get('passives', true) : undefined;
+  if (!isSeq(passives)) return false;
+
+  return passives.items.some((passive) => {
+    if (!isMap(passive)) return false;
+    const conditions = passive.get('conditions', true);
+    if (!isSeq(conditions)) return false;
+    return conditions.items.some((condition) => {
+      if (!isMap(condition)) return false;
+      const subject = condition.get('subject', true);
+      const prop = condition.get('prop', true);
+      return (
+        isScalar(subject) &&
+        String(subject.value) === 'agent' &&
+        isScalar(prop) &&
+        String(prop.value) === skillName
+      );
+    });
+  });
+}
+
+/**
  * そのノードの手前に書いてあるコメント（無ければ空文字）。
  *
  * **並びの最初の要素に付けたコメントは、要素ではなく入れ物のほうに付く**（yamlの構文木の作り）ので、
@@ -336,15 +370,6 @@ function declaredProps(): readonly { where: string; def: string; name: string; b
 function declaredValueOf(propBody: unknown): number {
   const value = isMap(propBody) ? propBody.get('value', true) : undefined;
   return isScalar(value) ? Number(value.value) : 0;
-}
-
-/** そのpropの宣言が持つ`range`（6.3節）。書いていなければundefined。 */
-function declaredRangeOf(propBody: unknown): { readonly min: number; readonly max: number } | undefined {
-  const range = isMap(propBody) ? propBody.get('range', true) : undefined;
-  if (!isMap(range)) return undefined;
-  const min = range.get('min', true);
-  const max = range.get('max', true);
-  return isScalar(min) && isScalar(max) ? { min: Number(min.value), max: Number(max.value) } : undefined;
 }
 
 /** 世界じゅうのプロパティ宣言を、型の名前 → プロパティの名前 で引けるようにしたもの。 */
@@ -643,6 +668,23 @@ describe('腕前とレシピの解放条件', () => {
     return allRecipes().filter(({ recipe }) => recipe.unlock !== undefined);
   }
 
+  /**
+   * 世界のどこかで、行動の時間を縮めている腕（docs/world/Skills.md 7節）。
+   *
+   * **宣言は行動の側に散っている**——レシピは`deftness`で名乗り、手作業は所要時間の`passives`で
+   * 段を読む。**どちらか片方だけを見ると、もう片方でしか効いていない腕を「効いていない」と数える。**
+   */
+  function skillsShorteningTime(): ReadonlySet<string> {
+    const found = new Set<string>();
+    for (const { recipe } of allRecipes())
+      if (recipe.deftness !== undefined)
+        found.add(codex.propertyNames.getName(recipe.deftness.skillGlobalId));
+    for (const props of declaredPropsByDef().values())
+      for (const body of props.values())
+        for (const skill of SKILLS) if (shortensWithSkill(body, skill)) found.add(skill);
+    return found;
+  }
+
   it('プレイヤーキャラクタは、Skills.md 2節の11本を腕前のタグ付きで持つ', () => {
     // タブに並ぶ順は宣言順（GameElementDefinition.md 6.7節）なので、集合ではなく並びで見る。
     const skillTagId = codex.propertyTagNames.getId('skill');
@@ -820,10 +862,10 @@ describe('腕前とレシピの解放条件', () => {
   });
 
   it('製作系の腕は、段が上がるほど上乗せを強くする', () => {
-    // アクセス系（上のテスト）と同じ形。**素は0**で、上の段ほど効きが強い。**向きだけが上乗せで
-    // 違う**——無駄の無さは重みなので足して増え、手際は時間なので負の値で積んで縮める
-    // （docs/world/Skills.md 7節。合成の器はどちらも加算なので、縮める側が負を持つしかない）。
-    // なので見るのは大小ではなく、**符号が揃っていることと、絶対値が段ごとに伸びること**。
+    // アクセス系（上のテスト）と同じ形。**素は0**で、上の段ほど効きが強い。**ここに並ぶのは
+    // 歩留まりだけ**——速さは腕の側に読まれる値を立てず、行動ごとに宣言する
+    // （docs/world/Skills.md 6節）ので、上乗せとして数えられるものが無い。
+    // 見るのは大小ではなく、**符号が揃っていることと、絶対値が段ごとに伸びること**。
     for (const { skill, bonus, byStage } of CRAFTING_BONUSES) {
       const character = characterWithSkills(0);
       const skillProperty = character.getProperty(codex.propertyNames.getId(skill));
@@ -844,12 +886,12 @@ describe('腕前とレシピの解放条件', () => {
   });
 
   it('腕を上げると、その腕を名乗るレシピの工程は短くなる', () => {
-    // **「手際は負の上乗せ」（Skills.md 7節）を実データで押さえるのはここだけ。** 一つ上の検査は
-    // 符号が1種に揃っていることしか見ないので、`CRAFTING_BONUSES` と世界を**揃って正へ倒すと緑のまま
-    // 通る**——そのとき腕が上がるほど工程は長くなる。向きは、実際に分数を引き比べないと出ない。
+    // **名乗った腕が実際にその工程へ届いていることを、実データで押さえるのはここだけ。** 宣言の形
+    // （符号・刻み）はロード時が弾くが、**名指した腕を作り手が持っていなければ黙って効かない**
+    // ——`skill` の綴り違いも、伸ばす操作を持たない腕を名乗った場合も、そこでは何も落ちない。
     //
     // 合成YAMLに手で値を入れる側（tests/domain/crafting.test.ts）では代われない。あちらが見るのは
-    // エンジンの積み方で、世界が宣言した刻みの符号は読んでいない。
+    // エンジンの積み方で、世界が名指した腕を誰が持っているかは読んでいない。
     const novice = characterWithSkills(STAGES[0].min);
     const expert = characterWithSkills(STAGES.at(-1)!.min);
     // **解放を要求しないレシピも名乗る**（Skills.md 7.1節）ので、見るのは世界じゅうのレシピ。
@@ -869,18 +911,15 @@ describe('腕前とレシピの解放条件', () => {
     // レシピごとに書く。書き忘れると、その1本だけ腕を上げても速くならないレシピになる——目視では
     // 揃っているか分からないので、ここで塞ぐ。**要求していない腕を名乗るのも誤り**で、作れるように
     // なった腕とは別の腕を上げないと速くならない形になる。
-    const skillOfBonus = new Map<string, string>(CRAFTING_BONUSES.map((entry) => [entry.bonus, entry.skill]));
     const recipes = gatedRecipes();
     expect(recipes.length, '腕を要求するレシピが1つも無い').toBeGreaterThan(0);
 
     for (const { product, recipe } of recipes) {
-      const bonusId = recipe.deftness?.propertyGlobalId;
-      expect(bonusId, `'${product}': 速さを決める腕を名乗っていない`).toBeDefined();
+      const deftness = recipe.deftness;
+      expect(deftness, `'${product}': 速さを決める腕を名乗っていない`).toBeDefined();
 
-      const bonus = codex.propertyNames.getName(bonusId!);
-      expect([...requiredSkills(product, recipe)], `'${product}' が名乗る ${bonus} の腕`).toContain(
-        skillOfBonus.get(bonus),
-      );
+      const skill = codex.propertyNames.getName(deftness!.skillGlobalId);
+      expect([...requiredSkills(product, recipe)], `'${product}' が名乗る ${skill}`).toContain(skill);
     }
   });
 
@@ -921,9 +960,8 @@ describe('腕前とレシピの解放条件', () => {
     // 腕を名乗ると、そのレシピの工程は誰にも縮められない時間になる——腕は宣言だけ先に置かれる
     // （SkillSystem.md 3.2節）ので、名乗る側が先走れてしまう。
     //
-    // **アクセス系も同じくここで落ちる**（CRAFTING_BONUSESに無いので）。火の腕が決めるのは着火の
+    // **アクセス系も同じくここで落ちる**（それを配る操作は無いので）。火の腕が決めるのは着火の
     // 重みだけで、火起こし具を削る速さではない（同5節）。
-    const skillOfBonus = new Map<string, string>(CRAFTING_BONUSES.map((entry) => [entry.bonus, entry.skill]));
     const gains = declaredSkillGains();
 
     expect(
@@ -931,35 +969,24 @@ describe('腕前とレシピの解放条件', () => {
         .filter(({ recipe }) => recipe.deftness !== undefined)
         .map(({ product, recipe }) => ({
           where: `${product}.${recipe.name}`,
-          bonus: codex.propertyNames.getName(recipe.deftness!.propertyGlobalId),
+          skill: codex.propertyNames.getName(recipe.deftness!.skillGlobalId),
         }))
-        .filter(({ bonus }) => {
-          const skill = skillOfBonus.get(bonus);
-          return skill === undefined || !gains.has(skill);
-        })
-        .map(({ where, bonus }) => `${where}: ${bonus}`),
+        .filter(({ skill }) => !gains.has(skill))
+        .map(({ where, skill }) => `${where}: ${skill}`),
       '伸ばしようのない腕を名乗るレシピ',
     ).toEqual([]);
   });
 
   /**
-   * 手際を継ぐはずの手作業——**製作系の腕を配る操作**（docs/world/Skills.md 7節）と、そのとき継ぐ上乗せ。
+   * 腕で縮むはずの手作業——**製作系の腕を配る操作**（docs/world/Skills.md 7節）と、配っている腕。
    * 伸びる場面と速くなる場面を揃えるので、**引き当ては配る腕から出す**。アクセス系（火・狩猟）を配る
-   * 操作は手際の上乗せを持たないので、ここには現れない。
+   * 操作は速さを持たないので、ここには現れない。
    */
-  function handworkWithDeftness(): readonly { interaction: InteractionGains; bonus: string }[] {
-    const deftnessOf = new Map<string, string>(
-      CRAFTING_BONUSES.filter((entry) => entry.bonus.endsWith(DEFTNESS_SUFFIX)).map((entry) => [
-        entry.skill,
-        entry.bonus,
-      ]),
-    );
-    const found: { interaction: InteractionGains; bonus: string }[] = [];
+  function handworkShortenedBySkill(): readonly { interaction: InteractionGains; skill: string }[] {
+    const crafting = new Set<string>(CRAFTING_SKILLS);
+    const found: { interaction: InteractionGains; skill: string }[] = [];
     for (const interaction of declaredInteractions())
-      for (const skill of interaction.skills) {
-        const bonus = deftnessOf.get(skill);
-        if (bonus !== undefined) found.push({ interaction, bonus });
-      }
+      for (const skill of interaction.skills) if (crafting.has(skill)) found.push({ interaction, skill });
     return found;
   }
 
@@ -1000,49 +1027,33 @@ describe('腕前とレシピの解放条件', () => {
     ).executionMinutes();
   }
 
-  it('製作系の腕を配る手作業は、その腕の手際を継ぐ時間を名乗る', () => {
+  it('製作系の腕を配る手作業は、その腕で縮む時間を名乗る', () => {
     // レシピの`deftness`（一つ上の検査）と対になるもの。**手で作る側は、作る相手が自分の時間を持ち、
-    // その`base`に作り手の手際を置く**（docs/world/Skills.md 7節）。見るのは**配る腕と継ぐ腕が同じ
-    // であること**——揃っていないと、伸ばしたのとは別の腕を上げないと速くならない手作業になる。
+    // その`passives`で作り手の腕の段を読む**（docs/world/Skills.md 7節）。見るのは**配る腕と縮める腕が
+    // 同じであること**——揃っていないと、伸ばしたのとは別の腕を上げないと速くならない手作業になる。
     // 書き忘れればその1つだけが腕で縮まないまま残るが、宣言は世界じゅうに散っていて目視では分からない。
     const props = declaredPropsByDef();
-    const handwork = handworkWithDeftness();
+    const handwork = handworkShortenedBySkill();
     expect(handwork.length, '製作系の腕を配る操作が1つも無い').toBeGreaterThan(0);
 
-    for (const { interaction, bonus } of handwork) {
+    for (const { interaction, skill } of handwork) {
       const where = `${interaction.owner} の ${interaction.name}`;
       expect(interaction.durationProp, `${where}: 所要時間がプロパティを読んでいない`).toBeDefined();
       const body = durationPropBody(interaction, props);
       expect(body, `${where}: ${interaction.durationProp} を自分のpropsで宣言していない`).toBeDefined();
-      expect(standsOnBonus(body, bonus), `${where}: 所要時間が ${bonus} を土台にしていない`).toBe(true);
-    }
-  });
-
-  it('手際を継ぐ時間は、素の半分を下限に持つ（腕が上がっても手数そのものは消えない）', () => {
-    // 下限を持つのは時間の側で、上乗せの側ではない（docs/world/Skills.md 7節）——上乗せ1つが所要時間の
-    // 違う相手すべてに積まれるので、どこまで縮めてよいかを上乗せは知らない。**素の半分**という1つの
-    // 規則で全部を置いているが、置き場は相手ごとに散っているので、揃っているかはここでしか出ない。
-    const props = declaredPropsByDef();
-
-    for (const { interaction } of handworkWithDeftness()) {
-      const where = `${interaction.owner} の ${interaction.name}`;
-      const body = durationPropBody(interaction, props);
-      const range = declaredRangeOf(body);
-      expect(range, `${where}: 所要時間がrangeを持たない`).toBeDefined();
-      expect(range!.max, `${where}: rangeの上端が素の値と違う`).toBe(declaredValueOf(body));
-      expect(range!.min * 2, `${where}: rangeの下端が素の半分ではない`).toBe(declaredValueOf(body));
+      expect(shortensWithSkill(body, skill), `${where}: 所要時間が ${skill} の段を読んでいない`).toBe(true);
     }
   });
 
   it('腕を上げると、その腕を配る手作業は実際に短くなる', () => {
-    // 上2つは宣言の形しか見ないので、**継ぐ向きが逆でも通る**（正の上乗せを積めば腕が上がるほど
+    // 一つ上は宣言の形しか見ないので、**縮める向きが逆でも通る**（正の量をmodifyすれば腕が上がるほど
     // 長くなる）。向きは、実際に分数を引き比べないと出ない——レシピ側の同じ検査と対。
     //
     // **素人の分数が宣言どおりであることも一緒に見る。** 参照が解けなければ所要時間は0分になるが
     // （GameElementDefinition.md 10.2節）、「短くなった」だけでは0分と見分けが付かない。
     const props = declaredPropsByDef();
 
-    for (const { interaction } of handworkWithDeftness()) {
+    for (const { interaction } of handworkShortenedBySkill()) {
       const where = `${interaction.owner} の ${interaction.name}`;
       const novice = handworkMinutes(interaction, STAGES[0].min);
       expect(novice, `${where}: 素人の所要時間が宣言と違う`).toBe(
@@ -1143,15 +1154,17 @@ describe('腕前とレシピの解放条件', () => {
     }
   });
 
-  it('伸ばす操作をまだ持たない腕は、開ける物が世界に無い4本だけ', () => {
+  it('伸ばす操作をまだ持たない腕は、開ける物も操作の置き場も世界に無いものだけ', () => {
     // 宣言だけあって動かない本があること自体は、Skills.md 2節の一覧を先に置いているため。
-    // どれが動かないかをここで数え上げておき、開ける物が入ったときに直し忘れないようにする。
+    // どれが動かないかをここで並べておき、伸ばす操作が入ったときに直し忘れないようにする。
+    //
+    // **料理はここに居ない。** 開けるレシピはまだ無いが、伸ばす操作（foods.yamlのchop）が先に
+    // 入った——この2つは別の軸で、伸ばす操作が在れば手際の積む先も在る（Skills.md 7節）。
     const gains = declaredSkillGains();
 
     expect(SKILLS.filter((name) => !gains.has(name))).toEqual([
       'skill_joinery',
       'skill_building',
-      'skill_cooking',
       'skill_smelting',
     ]);
   });
@@ -1174,23 +1187,25 @@ describe('腕前とレシピの解放条件', () => {
       ...[...ACCESS_BONUSES, ...CRAFTING_BONUSES]
         .filter((entry) => read.has(entry.bonus))
         .map((entry) => entry.skill),
+      ...skillsShorteningTime(),
     ]);
 
     expect(SKILLS.filter((name) => gains.has(name) && !effective.has(name))).toEqual([]);
   });
 
-  it('製作系は、解放だけでなく上乗せも読まれている', () => {
+  it('製作系は、解放だけでなく速さにも効いている', () => {
     // 一つ上は「効き先が1つでもあるか」なので、**製作系は解放条件に名前が出るだけで通ってしまう**
     // ——そこを通すと、解放しか効かない腕（Skills.md 6節が【確定】で否定した形）へ黙って戻れる。
-    // 上乗せの側が読まれていることは、ここだけが見ている。
+    // 速さへ効いていることは、ここだけが見ている。
+    //
+    // **速さの宣言は行動の側に散っている**（同7節）ので、腕の側を見ても分からない——集めるのは
+    // レシピの`deftness`と手作業の所要時間の`passives`の両方から。
     const gains = declaredSkillGains();
-    const read = propsReadFromAgent();
+    const shortening = skillsShorteningTime();
 
     expect(
-      CRAFTING_BONUSES.filter((entry) => gains.has(entry.skill) && !read.has(entry.bonus)).map(
-        (entry) => entry.bonus,
-      ),
-      '宣言しただけで誰も読まない上乗せ',
+      CRAFTING_SKILLS.filter((skill) => gains.has(skill) && !shortening.has(skill)),
+      '伸ばせるのに、どの行動も速くしない腕',
     ).toEqual([]);
   });
 });

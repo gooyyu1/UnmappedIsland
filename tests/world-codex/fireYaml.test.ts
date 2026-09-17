@@ -416,6 +416,28 @@ describe('fire.yamlの火の連鎖', () => {
     expect(moisture.isInStage('dry'), '日に広げれば押し下げの無い段まで戻る').toBe(true);
   });
 
+  it('手に持った火口は雨で濡れず、それでも水は抜けていく', () => {
+    // **この2つが、湿りを詰みにしない**（docs/engine/FireSystem.md 3.2.1節）。濡れるのを地面に
+    // 出しているあいだだけに限らないと、雨の中を歩くだけで手持ちが全部湿り、屋根の下へ逃げ込んでも
+    // そこには日が差さないので戻せない。抜けていく側を日差しだけに絞っても同じ行き止まりになる。
+    const moistureId = codex.propertyNames.getId('moisture');
+    const grass = spawnInto('dry_grass', player, 'hand');
+    const moisture = grass.getProperty(moistureId);
+    const HOURS = 3;
+
+    setHour(NIGHT_HOUR);
+    setWeather('heavy_rain');
+    session.advanceWorldTime(60 * HOURS);
+    expect(moisture.number, '持っていれば雨に打たれない').toBe(0);
+
+    // 日の差さない夜のまま、抜けていく側だけを見る。
+    moisture.setNumber(soakedMoistureOf('dry_grass'));
+    setWeather('clear');
+    const soaked = moisture.number;
+    session.advanceWorldTime(60 * HOURS);
+    expect(moisture.number, '日が無くても抜けていく').toBeLessThan(soaked);
+  });
+
   /** 世界の時刻を変える（core.yamlのhour）。日差しの強さはここから決まる。 */
   function setHour(hour: number): void {
     land.parent!.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);
@@ -1097,6 +1119,9 @@ describe('fire.yamlの火の連鎖', () => {
     const world = land.parent!;
     const neighbor = spawnInto('grassland', world, 'locations');
     const outside = temperatureOf(neighbor);
+    // **空の気温は土地の気温と同じではない**——土地は海抜ぶんだけ低い（ClimateSystem.md 1.1節）ので、
+    // 動かないことは隣の土地の値ではなく、火を点ける前の空の値と比べる。
+    const sky = worldView.ambientTemperature;
 
     // 火の点いていない炉は暖めない。組んだだけの炉を隣へ置いて、暖の出どころが「炉が在ること」では
     // なく「火が生きていること」であることまで見る。
@@ -1105,7 +1130,7 @@ describe('fire.yamlの火の連鎖', () => {
 
     expect(temperatureOf(land), '火のある土地は+8').toBe(outside + 8);
     expect(temperatureOf(neighbor), '隣の土地は動かない（組んだだけの炉は暖めない）').toBe(outside);
-    expect(worldView.ambientTemperature, '世界も動かない').toBe(outside);
+    expect(worldView.ambientTemperature, '世界も動かない').toBe(sky);
   });
 
   it('沸かした湯は放っておくと冷めて水に戻る', () => {
