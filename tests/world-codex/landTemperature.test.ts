@@ -254,8 +254,14 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
     const warmth = property(player, 'warmth');
     warmth.setNumber((warmth.def.range?.max ?? 0) / 2);
     const before = warmth.number;
+    const celsius = temperatureAt(landName);
 
     expect(bed.tryGetAction('nap', player)?.tryExecute(), landName).toBe(true);
+
+    // **眠っている間に気温が動いていないことを確かめる。** 動いていれば、測った熱は据えた気温での
+    // 増減ではなく混ざりもので、釣り合いを見たことにならない（涼しい季節の下限へ張り付けているので
+    // 季節の段は動かず、夜の帯は翌6時まで続く）。
+    expect(temperatureAt(landName), `眠っている間、${landName}は${celsius}℃のまま`).toBe(celsius);
 
     return warmth.number - before;
   }

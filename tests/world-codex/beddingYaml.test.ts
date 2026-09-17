@@ -310,12 +310,18 @@ describe('bedding.yamlの寝床とハンモック', () => {
     }
 
     /**
-     * 時刻を、通しの睡眠を終えるまで日射の帯が変わらない位置へ置く。**帯が変わると気温が動く**
-     * （core.yamlのambient_brightnessの段）ので、跨ぐと眠っている途中で境目との大小が入れ替わる。
-     * 18時から24時までが1つの帯なので、20時から6時間眠っても跨がない。
+     * 気温へ寄与する段を、通しの睡眠を終えるまで乗り換わらない位置へ置く（core.yaml）。**跨ぐと
+     * 眠っている途中で気温が動いて、据えた大小が入れ替わる。**
+     *
+     * 動く段は2つ。**日射の帯**（`ambient_brightness`）は夜が18時から翌6時まで続くので、20時から
+     * 6時間眠っても出ない。**季節の貯水池**（`thermal_level`）は`calm`で毎tick下がり、既定値から
+     * 睡眠2回ぶんで`mild`の下限を割るので、**下限へ張り付ける**——`cool`の底なら減っても
+     * クランプで動かず、乾季の向きへ振れても1季節ぶん登るまで帯を出ない。
      */
-    function setNightHour(world: WorldObject): void {
+    function setNightSky(world: WorldObject): void {
       world.getProperty(codex.propertyNames.getId('hour')).setNumber(20);
+      const thermalLevel = world.getProperty(codex.propertyNames.getId('thermal_level'));
+      thermalLevel.setNumber(thermalLevel.def.range?.min ?? 0);
       expect(
         world.getProperty(codex.propertyNames.getId('ambient_brightness')).isInStage('dark'),
         '20時の空が夜の帯にある',
@@ -325,9 +331,12 @@ describe('bedding.yamlの寝床とハンモック', () => {
     /**
      * 空の気温をその摂氏へ据える。**実体値ではなく実効値で合わせる**——worldのambient_temperatureには
      * 日射と季節の段がmodifyで乗る（core.yaml）ので、書いた値がそのまま気温になるとは限らない。
+     *
+     * **合わせるのは据えた時点の実効値だけ**なので、寄与する段が乗り換わらないことは`setNightSky`が
+     * 先に担保する。
      */
     function setSkyTemperature(world: WorldObject, celsius: number): void {
-      setNightHour(world);
+      setNightSky(world);
       const temperature = world.getProperty(codex.propertyNames.getId('ambient_temperature'));
       temperature.setNumber(celsius);
       temperature.setNumber(celsius - (temperature.getEffectiveValue() - celsius));
@@ -341,11 +350,26 @@ describe('bedding.yamlの寝床とハンモック', () => {
       return warmth.number;
     }
 
-    /** その休息を1回取る間に動いた熱（kcal）。押し下げが効くのはこの間だけ。 */
-    function warmthWhileResting(bed: WorldObject, player: WorldObject, actionName: string): number {
+    /**
+     * その休息を1回取る間に動いた熱（kcal）。押し下げが効くのはこの間だけ。
+     *
+     * **経過の前後で気温が動いていないことを確かめる。** 動いていれば、測った熱は「据えた気温での
+     * 増減」ではなく途中で気温が変わったものの混ざりもので、釣り合いを見たことにならない
+     * （`setNightSky` が担保している側）。
+     */
+    function warmthWhileResting(
+      world: WorldObject,
+      bed: WorldObject,
+      player: WorldObject,
+      actionName: string,
+    ): number {
+      const temperature = world.getProperty(codex.propertyNames.getId('ambient_temperature'));
+      const celsius = temperature.getEffectiveValue();
       const before = halveWarmth(player);
 
       expect(bed.tryGetAction(actionName, player)?.tryExecute(), actionName).toBe(true);
+
+      expect(temperature.getEffectiveValue(), `${actionName}の間、空は${celsius}℃のまま`).toBe(celsius);
 
       return player.getProperty(warmthId).number - before;
     }
@@ -370,24 +394,32 @@ describe('bedding.yamlの寝床とハンモック', () => {
       expect(warmthWhileAwake(player), `${balanced}℃では起きていると削られる`).toBeLessThan(0);
 
       // 眠っている間は乗るので、ちょうど釣り合って戻る（境目以上は戻り、VitalsSystem.md 8.4節）。
-      expect(warmthWhileResting(bed, player, 'sleep'), `${balanced}℃では眠れば戻る`).toBeGreaterThan(0);
+      expect(warmthWhileResting(world, bed, player, 'sleep'), `${balanced}℃では眠れば戻る`).toBeGreaterThan(
+        0,
+      );
 
       // 1℃下は押し下げた先の下なので、眠っても削られる。深さを増やせばここが落ちる。
       setSkyTemperature(world, balanced - 1);
-      expect(warmthWhileResting(bed, player, 'sleep'), `${balanced - 1}℃では眠っても削られる`).toBeLessThan(
-        0,
-      );
+      expect(
+        warmthWhileResting(world, bed, player, 'sleep'),
+        `${balanced - 1}℃では眠っても削られる`,
+      ).toBeLessThan(0);
     });
 
     it.each(TIERS)('$label は、仮眠でも通しの睡眠と同じだけ押し下げる', (tier) => {
-      // docs/world/Bedding.md 4.2節。**押し下げは境目への寄与なので、長さに比例しない**——同じ夜で仮眠と睡眠の
-      // どちらを取っても、削られるか戻るかは同じに決まる。
+      // docs/world/Bedding.md 4.2節。**押し下げは境目への寄与なので、長さに比例しない**——同じ夜で
+      // 仮眠と睡眠のどちらを取っても、削られるか戻るかは同じに決まる。
+      //
+      // **両側を見る。** 釣り合う気温で戻ることだけを見ると、仮眠の側を深くしても落ちない。
       const { session, world, bed, player } = layDown(tier);
       wearDeepestGarment(session, player);
+      const balanced = balancedTemperature(tier);
 
-      setSkyTemperature(world, balancedTemperature(tier));
+      setSkyTemperature(world, balanced);
+      expect(warmthWhileResting(world, bed, player, 'nap'), `${balanced}℃では戻る`).toBeGreaterThan(0);
 
-      expect(warmthWhileResting(bed, player, 'nap')).toBeGreaterThan(0);
+      setSkyTemperature(world, balanced - 1);
+      expect(warmthWhileResting(world, bed, player, 'nap'), `${balanced - 1}℃では削られる`).toBeLessThan(0);
     });
 
     it('いちばん深い段でも、いちばん深い一着より浅い', () => {
@@ -405,10 +437,9 @@ describe('bedding.yamlの寝床とハンモック', () => {
 
       // 涼しい季節の夜。**気温は書き写さずにcore.yamlから引く**ので、季節や日射の寄与を動かせば
       // ここを読む側が落ちる。
-      world.getProperty(codex.propertyNames.getId('thermal_level')).setNumber(0);
-      setNightHour(world);
+      setNightSky(world);
 
-      expect(warmthWhileResting(bed, player, 'sleep')).toBeLessThan(0);
+      expect(warmthWhileResting(world, bed, player, 'sleep')).toBeLessThan(0);
     });
   });
 
