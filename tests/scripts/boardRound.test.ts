@@ -24,6 +24,8 @@ interface Session {
   readonly tags: readonly string[];
   /** どこで走っているか（`cloud` / `bridge`）。この周の一覧へそのまま載る。 */
   readonly env?: string;
+  /** 走る者が一度でも付いたか（`live-sessions.mjs` の `served`）。同じく一覧へ載る。 */
+  readonly served?: boolean;
 }
 
 interface World {
@@ -774,11 +776,12 @@ describe('board-round.mjs', () => {
             bucket: 'B',
             tags: ['task-1', 'review-2'],
             env: 'cloud',
+            served: true,
           },
         ],
       });
 
-      expect(result.liveTsv).toBe('session_a\tSESSION_STATUS_RUNNING\tB\ttask-1,review-2\tcloud\n');
+      expect(result.liveTsv).toBe('session_a\tSESSION_STATUS_RUNNING\tB\ttask-1,review-2\tcloud\tserved\n');
       for (const env of result.envs) expect(env?.LIVE_SESSIONS_TSV).toMatch(/live-sessions\.tsv$/);
     });
 

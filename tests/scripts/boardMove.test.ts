@@ -47,6 +47,8 @@ interface Board {
     bucket: string;
     /** どこで走っているか（`cloud` / `bridge`、引けなければ `-`）。省いた盤面は環境を見ない。 */
     env?: string;
+    /** 走る者が一度でも付いたか。省いた盤面は付いた側（`live-sessions.mjs` の `served`）。 */
+    served?: boolean;
     tags: readonly string[];
   }[];
   /** 生きたワーカーの担当 issue のうち、開いている一覧に載っていなかったものの `state`。 */
@@ -512,6 +514,16 @@ describe('board-move.mjs', () => {
     it('読んだ差分がもう頭でなければ、起こさずに畳む', () => {
       const board = stalling({ 'review:10': '9990000:0' });
       expect(moves(board)).toEqual(['ARCHIVE session_r done:review-10', 'REVIEW 10 aaa1111:0']);
+    });
+
+    // **走る者が一度も付かなかった1本も起こさない**（issue #2206）。届く先が無いので、起こす手は
+    // 空振りと見分けが付かないまま窓をもう1つ食う——畳めば次の周に新しい1本が立つ（2.12.4）。
+    it('走る者が一度も付かなかったレビューは、起こさずに畳む', () => {
+      const board = {
+        ...stalling({}),
+        sessions: [{ ...idle('session_r', 'review-10'), served: false }],
+      };
+      expect(moves(board)).toEqual(['ARCHIVE session_r done:review-10', READING]);
     });
 
     /**
@@ -1387,6 +1399,61 @@ describe('board-move.mjs', () => {
     expect(
       moves({ ...board, taken: { 'idle:session_a': LONG_IDLE, 'resume:session_a': 'returned:8' } }),
     ).toEqual([]);
+  });
+
+  /**
+   * **走る者が一度も付かなかったセッションは、止まったのではなく始まっていない**（2.15.3）。
+   *
+   * 2026-09-14〜09-17、投入だけが通って走る者が付かない区間が3日続いた。盤面はこれを1件ずつの
+   * 「手が動かなかった」として処理し、**投入した task が例外なく返った**（`~/daemon.log` の
+   * `打てた:` で `TASK` と `RETURN` が同数）。返ったぶんには `判断待ち` が付き、外せるのは人だけ
+   * なので、**環境が直っても盤面は自力で戻れない**（issue #2206）。
+   */
+  describe('走る者が一度も付かなかったセッション', () => {
+    /** 立てられただけで、一度も働かなかったセッション（`live-sessions.mjs` の `served`）。 */
+    const unserved = (id: string, ...tags: string[]) => ({ ...idle(id, ...tags), served: false });
+    const board = {
+      issues: [{ number: 8, ...label('kind:task'), blockedBy: { nodes: [] } }],
+      sessions: [unserved('session_a', 'task-8')],
+    };
+
+    // **起こす先が無い。** `send_message` は届いた先に走る者が居て初めて効くので、ここへ打つ手は
+    // 空振りと見分けが付かないまま窓を1つ食う。
+    it('起こさない', () => {
+      expect(moves(board)).not.toContain('RESUME session_a stall 8 stall:8');
+    });
+
+    // **返す本人が居ない。** 返却は「起こしても手が動かなかった」と書いて人の手番にするものなので、
+    // 一度も動いていないセッションの担当を返すと、**環境の不調が issue の側の罰になる。**
+    it('人へ返さず、畳んで枠を空ける', () => {
+      expect(moves(board)).toEqual(['ARCHIVE session_a unserved:8']);
+      // 畳む手は二度は出ない（指紋の枠は1つ）。
+      expect(moves({ ...board, taken: { 'archive:session_a': 'unserved:8' } })).toEqual([]);
+    });
+
+    // **ここまで見て初めて「返さずに投入し直した」と言える。** 畳んだだけでは枠が空くだけで、
+    // 同じ issue がもう一度配られるとは限らない。
+    it('畳んだ次の周に、同じ issue がもう一度投入される', () => {
+      expect(moves({ ...board, sessions: [] })).toEqual(['TASK 8']);
+    });
+
+    // 空いたばかりのセッションは、まだ走り出していないだけかもしれない（立った直後は必ずこの形）。
+    // **同じ窓を通す**——ここを飛ばすと、投入した端から畳むことになる。
+    it('空いたばかりなら、まだ畳まない', () => {
+      // NOW の1分前。
+      const taken = { 'idle:session_a': '2026-09-05T01:59:00Z' };
+      expect(moves({ ...board, taken })).toEqual([]);
+    });
+
+    // **一度でも働いたセッションは、今までどおり起こして返す。** ここが効かないと、本物の停滞が
+    // 誰の手番にもならないまま畳まれ、止まった理由が人へ届かなくなる。
+    it('一度でも働いたセッションは、今までどおり起こして返す', () => {
+      const served = { ...board, sessions: [{ ...idle('session_a', 'task-8'), served: true }] };
+      expect(moves(served)).toEqual(['RESUME session_a stall 8 stall:8']);
+      expect(
+        moves({ ...served, taken: { 'idle:session_a': LONG_IDLE, 'resume:session_a': 'stall:8' } }),
+      ).toEqual(['RETURN 8 session_a returned:8']);
+    });
   });
 
   /**

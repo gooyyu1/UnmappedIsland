@@ -47,6 +47,8 @@ interface World {
   readonly openIssue?: number;
   /** `gh issue list` が転ぶか（＝開いている issue を引けない周）。 */
   readonly listFails?: boolean;
+  /** 畳まれていないセッション。省くと1本も立てていない形。 */
+  readonly sessions?: readonly { readonly env: string; readonly served: boolean }[];
 }
 
 interface Run {
@@ -102,6 +104,7 @@ async function check(world: World = {}): Promise<Run> {
           { name: 'BRIDGE_ENV', id: BRIDGE },
         ]),
       ],
+      sessions: () => [...(world.sessions ?? [])],
       stateDir: work,
       now: NOW,
       dryRun: false,
@@ -121,6 +124,12 @@ async function check(world: World = {}): Promise<Run> {
   }
 }
 
+/**
+ * セッションを1本も立てていない形。**外を触る手はすべて差し替える**ので、省くと本物の
+ * `list_sessions` が起きる。
+ */
+const NO_SESSIONS = () => [];
+
 /** `gh` のその手。打っていなければ `undefined`。 */
 const ran = (run: Run, ...head: string[]) =>
   run.gh.find((args) => head.every((word, at) => args[at] === word));
@@ -130,6 +139,7 @@ describe('check-values.mjs の見立て', () => {
     const survey = await surveyValues({
       call: async () => JSON.stringify({ environments: [{ environment_id: CLOUD }] }),
       gh: () => '',
+      sessions: NO_SESSIONS,
       envs: () => [
         { name: 'CLOUD_ENV', id: CLOUD },
         { name: 'BRIDGE_ENV', id: BRIDGE },
@@ -147,6 +157,7 @@ describe('check-values.mjs の見立て', () => {
         throw new Error('失敗: HTTP 401');
       },
       gh: () => '',
+      sessions: NO_SESSIONS,
       envs: () => [{ name: 'CLOUD_ENV', id: CLOUD }],
     });
 
@@ -159,6 +170,7 @@ describe('check-values.mjs の見立て', () => {
     const survey = await surveyValues({
       call: async () => JSON.stringify({ environments: [] }),
       gh: () => '',
+      sessions: NO_SESSIONS,
       envs: () => [{ name: 'CLOUD_ENV', id: CLOUD }],
     });
 
@@ -175,18 +187,113 @@ describe('check-values.mjs の見立て', () => {
     const survey = await surveyValues({
       call: async () => JSON.stringify({ environments: [] }),
       gh: () => '',
+      sessions: NO_SESSIONS,
       envs: () => names.map((name) => ({ name, id: 'env_whatever' })),
     });
 
     for (const name of names) {
       expect(survey.find((value) => value.key === name)?.remedy).not.toContain('直し方は分からない');
+      expect(survey.find((value) => value.key === `${name}:workers`)?.remedy).not.toContain(
+        '直し方は分からない',
+      );
     }
+  });
+
+  /**
+   * **環境IDが一覧に在ることは、そこへ立てたセッションが働くことではない**（2.22.4）。
+   * 2026-09-14 から3日、環境は一覧に居るのに走る者が1本も付かず、見回りは最後まで
+   * `告げることは無い` を出し続けた（issue #2206）。
+   */
+  describe('立てたセッションが働いているか', () => {
+    const survey = (
+      sessions: readonly { env: string; served: boolean }[],
+      envs = [{ name: 'CLOUD_ENV', id: CLOUD }],
+    ) =>
+      surveyValues({
+        call: async () => JSON.stringify({ environments: envs.map(({ id }) => ({ environment_id: id })) }),
+        gh: () => '',
+        envs: () => envs,
+        sessions: () => sessions,
+      });
+
+    it('働いた跡が1本も無ければ、死んでいると読む', async () => {
+      const found = await survey([
+        { env: 'cloud', served: false },
+        { env: 'cloud', served: false },
+      ]);
+
+      expect(found.find((value) => value.key === 'CLOUD_ENV')?.state).toBe('alive');
+      expect(found.find((value) => value.key === 'CLOUD_ENV:workers')?.state).toBe('dead');
+    });
+
+    it('1本でも働いていれば、生きていると読む', async () => {
+      const found = await survey([
+        { env: 'cloud', served: false },
+        { env: 'cloud', served: true },
+      ]);
+
+      expect(found.find((value) => value.key === 'CLOUD_ENV:workers')?.state).toBe('alive');
+    });
+
+    // **投入していない周が、働かない周に見えてはいけない。** 死と数えると、静かな夜が明けるたびに
+    // 猶予が積まれて、いつか嘘が告げられる。
+    it('その環境のセッションが1本も無ければ、確かめられなかったと読む', async () => {
+      const found = await survey([{ env: 'bridge', served: false }]);
+
+      expect(found.find((value) => value.key === 'CLOUD_ENV:workers')?.state).toBe('unknown');
+    });
+
+    // **環境ごとに数える。** 片方が働いていることで、もう片方の死が隠れない。
+    it('環境ごとに別々に数える', async () => {
+      const found = await survey(
+        [
+          { env: 'cloud', served: true },
+          { env: 'bridge', served: false },
+        ],
+        [
+          { name: 'CLOUD_ENV', id: CLOUD },
+          { name: 'BRIDGE_ENV', id: BRIDGE },
+        ],
+      );
+
+      expect(found.find((value) => value.key === 'CLOUD_ENV:workers')?.state).toBe('alive');
+      expect(found.find((value) => value.key === 'BRIDGE_ENV:workers')?.state).toBe('dead');
+    });
+
+    // **1つの不調を2行にしない。** 環境IDが一覧に居ない周は、そこへ立てたものが働くかは
+    // その死の裏に隠れている——別に数えると、読む人には直す先が2つ在るように見える。
+    it('環境IDが一覧に居ない周は、働くかを数えない', async () => {
+      const found = await surveyValues({
+        call: async () => JSON.stringify({ environments: [] }),
+        gh: () => '',
+        envs: () => [{ name: 'CLOUD_ENV', id: CLOUD }],
+        sessions: () => [{ env: 'cloud', served: false }],
+      });
+
+      expect(found.find((value) => value.key === 'CLOUD_ENV')?.state).toBe('dead');
+      expect(found.find((value) => value.key === 'CLOUD_ENV:workers')?.state).toBe('unknown');
+    });
+
+    // **引けなかったことは、死んだことではない**（2.22.1）。
+    it('一覧を引けなければ、確かめられなかったと読む', async () => {
+      const found = await surveyValues({
+        call: async () => JSON.stringify({ environments: [{ environment_id: CLOUD }] }),
+        gh: () => '',
+        envs: () => [{ name: 'CLOUD_ENV', id: CLOUD }],
+        sessions: () => {
+          throw new Error('セッションの一覧を引けなかった');
+        },
+      });
+
+      expect(found.find((value) => value.key === 'CLOUD_ENV:workers')?.state).toBe('unknown');
+    });
   });
 
   it('`gh auth status` が非0で終われば、`gh` の資格情報が死んでいると読む', async () => {
     const survey = await surveyValues({
       call: async () => JSON.stringify({ environments: [CLOUD].map((id) => ({ environment_id: id })) }),
       gh: () => undefined,
+      sessions: NO_SESSIONS,
       envs: () => [{ name: 'CLOUD_ENV', id: CLOUD }],
     });
 
@@ -226,6 +333,28 @@ describe('check-values.mjs の告げ方', () => {
     expect(run.body).toContain(BRIDGE);
     expect(run.body).toContain(LONG_AGO);
     expect(run.body).toContain('CLI を開き直す');
+  });
+
+  /**
+   * **立てたセッションが働かない区間で、人へ届くのはここ**（issue #2206）。ここが黙ると、盤面は
+   * それを1件ずつの停滞として処理し、担当の task を片端から人へ返す——返ったぶんを戻せるのは
+   * 人だけなので、**環境が直っても盤面は自力で戻れない。**
+   */
+  it('立てたセッションが働かないまま猶予を越えたら、環境の側として告げる', async () => {
+    const run = await check({
+      sessions: [
+        { env: 'cloud', served: false },
+        { env: 'bridge', served: true },
+      ],
+      ledger: { 'CLOUD_ENV:workers': { since: LONG_AGO } },
+    });
+
+    expect(run.told).toBe(true);
+    expect(run.body).toContain('CLOUD_ENV へ立てたセッション');
+    expect(run.body).toContain('走る者が付かない');
+    expect(run.body).toContain('claude.ai/code');
+    // 働いている側は告げない。
+    expect(run.body).not.toContain('BRIDGE_ENV へ立てたセッション');
   });
 
   // **鍵は題だけ。** 台帳が失われても2本目は立たない（2.22.3）。

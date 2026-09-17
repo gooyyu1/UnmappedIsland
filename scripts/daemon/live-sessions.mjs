@@ -4,8 +4,9 @@
 //   liveSessions()   // → [{ id, status, bucket, env, tags: [] }]
 //
 // コマンドとして呼ぶと1行1件のTSVを出す（入口は [`live-sessions.sh`](live-sessions.sh)）。
-// 1行が `<セッションID>\t<session_status>\t<status_bucket>\t<タグをカンマで繋いだもの>\t<環境>`。1本も
-// 無ければ**何も出さずに終了コード0**。**引けなかったときは終了コード1**で、呼び手は止まる側へ
+// 1行が
+// `<セッションID>\t<session_status>\t<status_bucket>\t<タグをカンマで繋いだもの>\t<環境>\t<働いたか>`。
+// 1本も無ければ**何も出さずに終了コード0**。**引けなかったときは終了コード1**で、呼び手は止まる側へ
 // 倒せる。
 //
 // ## なぜ切り出したか
@@ -23,6 +24,15 @@
 //
 // **`session_status` と `status_bucket` は両方そのまま出す。** どちらで何を読むかは呼び手が決める
 // （1.6）。条件をこちらへ持つと、どちらの呼び手にも合わない定義が1つできる。
+//
+// ## 立てられたことと、働いたことは別
+//
+// **投入が通っても、その先に走る者が付くとは限らない。** 環境ごと立ち上がらない区間では、セッション
+// だけが作られて中身が空のまま残り、**呼び手には「手が空いている」としか映らない**（1.6 のどの値も
+// これには答えない）——盤面はそれを停滞と読み、担当の issue を片端から人へ返した（issue #2206）。
+//
+// **区別は呼び手ではなくここが持つ**（`CLAUDE.md`「自分のことは自分でする」）。読む側が
+// `external_metadata` の中身を知っていると、**見るべき区別を知らない呼び手だけが黙って取り違える。**
 //
 // 判定に **`updated_at` は使わない**（1.6）——走行中でも動かないことを 2026-09-05 に実測している。
 //
@@ -88,9 +98,16 @@ export function environmentIds() {
  * を `-` へ落とし、**配り直しの仕組みがどこにも跡を残さずに死ぬ**——`-` は「食い違いを見ない」側
  * なので、赤くも遅くもならない。
  */
+/**
+ * `ccr-env.sh` が出す名前から、一覧に載る綴りへ（`LiveSession` の `env`）。**訳を持つのはここ
+ * 1箇所**——環境ごとにセッションを数える側（[`check-values.mjs`](check-values.mjs)）も同じ訳で
+ * 引くので、書き写すと片方だけが直る。
+ */
+export const envKind = (name) => (name === 'BRIDGE_ENV' ? 'bridge' : 'cloud');
+
 function environments() {
   const found = {};
-  for (const { name, id } of environmentIds()) found[id] = name === 'BRIDGE_ENV' ? 'bridge' : 'cloud';
+  for (const { name, id } of environmentIds()) found[id] = envKind(name);
   return found;
 }
 
@@ -119,18 +136,63 @@ export class LiveSessionsError extends Error {
   }
 }
 
-/** 1件をTSVの1行へ。**列の並びを持つのはここ**（読む側は `occupancy.sh`・`usage-record.sh`）。 */
-export const formatLive = (session) =>
-  `${session.id}\t${session.status}\t${session.bucket}\t${session.tags.join(',')}\t${session.env}`;
+/**
+ * 走る者が一度でも付いたか（上の「立てられたことと、働いたことは別」）。
+ *
+ * **見るのは `external_metadata.last_served_model`**——手番を1つでも供したセッションだけがこれを
+ * 持つ（2026-09-17 に実測。立てただけで一度も走っていない1本の `external_metadata` は
+ * `container_cc_version` と `cross_session_inbound` だけで、この鍵が無かった）。
+ *
+ * **`status_bucket` では言えない。** 走る者が付かなかった周は `..._FAILED` で並ぶが、同じ値は
+ * 働いたあとに手番が転んだセッションにも付く（1.5 の `01Wcy9XLj85X`）——**始まらなかったことと、
+ * 始まってから転んだことが同じ顔になる。**
+ *
+ * **引けなければ「付いた」側へ倒す。** 呼び手はこの値で畳む手を打つので、知らないことを
+ * 「付かなかった」と読むと、**働いているセッションを畳む。**
+ */
+const servedOnce = (session) =>
+  typeof session.external_metadata?.last_served_model === 'string' &&
+  session.external_metadata.last_served_model !== '';
 
-/** TSVを読み戻す。`formatLive` の逆。 */
+/**
+ * 1件をTSVの1行へ。**列の並びを持つのはここ**（読む側は `occupancy.sh`・`usage-record.sh`）。
+ *
+ * **足すのは末尾。** 読む側は前から数えた位置で引くので（`usage-record.sh` の `jq`、
+ * `occupancy.sh` の `read`）、間へ入れると**タグの列がずれて、どの占有にも一致しなくなる。**
+ *
+ * **働いたかを知らない1件は `served` と書く。** 読み戻す側の既定（下の `parseLive`）と同じ向きへ
+ * 倒しておかないと、**書いて読むだけで「働かなかった」へ化ける。**
+ */
+export const formatLive = (session) =>
+  [
+    session.id,
+    session.status,
+    session.bucket,
+    session.tags.join(','),
+    session.env,
+    session.served === false ? 'unserved' : 'served',
+  ].join('\t');
+
+/**
+ * TSVを読み戻す。`formatLive` の逆。
+ *
+ * **列が無ければ「働いた」側**（上の `servedOnce` と同じ理由）。古い写しを読んだ周に、働いている
+ * セッションが畳まれない側へ倒す。
+ */
 export function parseLive(text) {
   return text
     .split(/\r?\n/)
     .filter((line) => line.trim() !== '')
     .map((line) => {
-      const [id = '', status = '-', bucket = '-', tags = '', env = '-'] = line.split('\t');
-      return { id, status, bucket, env, tags: tags.split(',').filter((tag) => tag !== '') };
+      const [id = '', status = '-', bucket = '-', tags = '', env = '-', served = 'served'] = line.split('\t');
+      return {
+        id,
+        status,
+        bucket,
+        env,
+        served: served !== 'unserved',
+        tags: tags.split(',').filter((tag) => tag !== ''),
+      };
     });
 }
 
@@ -176,6 +238,7 @@ export function liveSessions({
         status: session.session_status ?? '-',
         bucket: session.status_bucket ?? '-',
         env: known[session.environment_id] ?? '-',
+        served: servedOnce(session),
         tags: [...(session.tags ?? [])],
       });
     }

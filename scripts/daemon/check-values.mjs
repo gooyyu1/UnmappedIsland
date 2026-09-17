@@ -1,5 +1,6 @@
-// 盤面が動くのに要る値——CCR の環境ID（`CLOUD_ENV` / `BRIDGE_ENV`）と、CCR・`gh` の資格情報——が
-// 生きているかを見回り、死んでいれば人へ告げる（`agent-ops/board-design.md` 2.22）。
+// 盤面が動くのに要る値——CCR の環境ID（`CLOUD_ENV` / `BRIDGE_ENV`）、そこへ立てたセッションに走る者が
+// 付くこと、CCR・`gh` の資格情報——が生きているかを見回り、死んでいれば人へ告げる
+// （`agent-ops/board-design.md` 2.22）。
 //
 //   node scripts/daemon/check-values.mjs            # 1回見回る
 //   DRY_RUN=1 node scripts/daemon/check-values.mjs  # 調べるだけ（issue も台帳も書かない）
@@ -15,6 +16,18 @@
 // 誰にも読まれなくなる。**同じ値が死んだまま `VALUE_GRACE_HOURS` 経ってから告げる。**
 //
 // **生き返ったら、いつから死んでいたかは捨てる。** 途切れ途切れの死は、そのつど数え直す。
+//
+// ## 立てられることと、働くことは別に見る
+//
+// 環境IDが一覧に在っても、**そこへ立てたセッションに走る者が付くとは限らない**（2.22.4）。盤面には
+// 「手が空いている」としか映らないので、**停滞として1件ずつ処理され、担当の issue が片端から人へ
+// 返る**——返ったぶんを戻せるのは人だけなので、環境が直っても盤面は自力で戻れない（issue #2206）。
+// **この形を告げるのはここ**で、盤面の側は返さずに畳んで投入し直す（`board-move.mjs` の `neverRan`）。
+//
+// **セッションの一覧はここで引き直す。** 1周を回す側の写し（`LIVE_SESSIONS_TSV`）は渡さない
+// ——見回りの周期（`CHECK_INTERVAL`、既定1時間）は1周の周期（既定30秒）と別なので、渡すと
+// **最後に盤面を引けた周の写し**を今の姿として読むことになる。引く回数の天井（1.7）に対しては、
+// 1時間に1回の走査が増えるだけ。
 //
 // ## 確かめられなかったことは、死んだことではない
 //
@@ -39,7 +52,7 @@ import { fileURLToPath } from 'node:url';
 
 import { callMeta, metaJson } from '../../.claude/ccr-meta.mjs';
 import { boardState } from './board-state.mjs';
-import { environmentIds } from './live-sessions.mjs';
+import { envKind, environmentIds, liveSessions } from './live-sessions.mjs';
 import { gh as runGh } from './spawn.mjs';
 
 /** 告げ先の題。**2本目を作らない鍵はこれだけ**——台帳が失われても、題が合えば書き換えになる。 */
@@ -79,6 +92,17 @@ const ENV_REMEDY = {
 };
 
 /**
+ * 環境IDごとの、**立てたセッションが働かない**ときの直し方。上の `ENV_REMEDY` とは別の値なので
+ * 別の表で持つ——**環境IDが生きていることと、そこへ立てたセッションが働くことは違う**（下の
+ * `workingEnvironment`）。
+ */
+const WORKER_REMEDY = {
+  CLOUD_ENV:
+    '`claude.ai/code` でセッションを1本開いて走るか確かめる（走らなければクラウドの側の不調で、直るまで待つほかに手は無い）',
+  BRIDGE_ENV: 'このPCで Claude Code の CLI を開き直す（走る者はCLIのプロセスが配る）',
+};
+
+/**
  * `list_environments` で、今在る環境IDを引く。**CCR の資格情報が生きているかは、これが返ったこと
  * そのもの**（`agent-ops/board-design.md` 2.22）——別の口を作ると、確かめる対象が2つになる。
  *
@@ -91,13 +115,48 @@ async function livingEnvironments(call) {
 }
 
 /**
+ * その環境へ立てたセッションが、現に働いているか（2.22.4）。
+ *
+ * **環境IDが生きている一覧に在ることでは言えない。** 2026-09-14 から3日、環境は一覧に居るのに
+ * **立てたセッションに走る者が1本も付かない**区間が続き、見回りは最後まで `告げることは無い` を
+ * 出し続けた（issue #2206）。
+ *
+ * - **その環境のセッションが1本も無ければ `unknown`。** 何も投入していない周がそう見えるだけで、
+ *   働かないことの証拠ではない。
+ * - **1本でも働いた跡があれば `alive`。** 走る者は配られている。
+ * - **1本以上在って、どれにも跡が無ければ `dead`。**
+ *
+ * 一覧を引けなかったら `undefined`（呼び手が `unknown` へ倒す）。
+ */
+function workingEnvironment(live, name) {
+  if (live === undefined) return undefined;
+  const mine = live.filter((session) => session.env === envKind(name));
+  if (mine.length === 0) return undefined;
+  return mine.some((session) => session.served) ? 'alive' : 'dead';
+}
+
+/**
  * 値ごとの見え方を並べる。`state` は `alive` / `dead` / `unknown` の3つで、**`unknown` は確かめ
  * られなかったこと**（上の「確かめられなかったことは」）。
  *
  * 差し替え口は試験のため（`tests/scripts/checkValues.test.ts`）。
  */
-export async function surveyValues({ call = callMeta, gh = runGh, envs = environmentIds } = {}) {
+export async function surveyValues({
+  call = callMeta,
+  gh = runGh,
+  envs = environmentIds,
+  sessions = liveSessions,
+} = {}) {
   const found = [];
+
+  // **引けなかった周は、働いているかを確かめようがない**（上の「確かめられなかったことは」）。
+  // 引けない理由そのものは `ccr` の側が告げるので、ここは黙って `unknown` へ倒す。
+  let live;
+  try {
+    live = sessions();
+  } catch {
+    live = undefined;
+  }
 
   let living;
   let unreachable;
@@ -119,12 +178,22 @@ export async function surveyValues({ call = callMeta, gh = runGh, envs = environ
   // **`ccr-env.sh` が出さなかった側は見ない。** ブリッジのIDはCLIが開いていなければ空で、それは
   // 死ではなく「今は無い」（あちらの「開いていなければ空」）。
   for (const { name, id } of envs()) {
+    const listed = living === undefined ? 'unknown' : living.has(id) ? 'alive' : 'dead';
     found.push({
       key: name,
       label: `${name}（\`${id}\`）`,
-      state: living === undefined ? 'unknown' : living.has(id) ? 'alive' : 'dead',
+      state: listed,
       seen: '`list_environments` の一覧に居ない',
       remedy: ENV_REMEDY[name] ?? '直し方は分からない（`check-values.mjs` の `ENV_REMEDY` に無い名前）',
+    });
+    // **一覧に居ない環境の「働くか」は、その死の裏に隠れている。** 別に数えると、1つの不調が
+    // 2行になって、読む人には直す先が2つ在るように見える。
+    found.push({
+      key: `${name}:workers`,
+      label: `${name} へ立てたセッション`,
+      state: listed === 'alive' ? (workingEnvironment(live, name) ?? 'unknown') : 'unknown',
+      seen: '立てたセッションに走る者が付かない（働いた跡のあるものが1本も無い）',
+      remedy: WORKER_REMEDY[name] ?? '直し方は分からない（`check-values.mjs` の `WORKER_REMEDY` に無い名前）',
     });
   }
 
@@ -285,13 +354,14 @@ export async function checkValues({
   call = callMeta,
   gh = runGh,
   envs = environmentIds,
+  sessions = liveSessions,
   stateDir = boardState(),
   now = new Date(),
   grace = graceHours(),
   dryRun = process.env.DRY_RUN !== undefined && process.env.DRY_RUN !== '',
   say = console.log,
 } = {}) {
-  const survey = await surveyValues({ call, gh, envs });
+  const survey = await surveyValues({ call, gh, envs, sessions });
   const previous = readLedger(stateDir);
   const dead = trackDead(previous, survey, now);
 
