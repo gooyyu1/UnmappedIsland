@@ -528,15 +528,23 @@ describe('animals.yamlの動物', () => {
       return jungle.tryGetSlot(codex.slotNames.getId('items'))!.contents[0];
     }
 
-    /** 刃物を手に取り、死体へ重ねて解体する。 */
+    /**
+     * 刃物を手に取り、死体を捌き切る。
+     *
+     * **大型は1回では捌き切れない**（皮を剥ぐ → 肉を削ぐ → 骨を外す、
+     * docs/engine/ActionSystem.md 6.3節）ので、死体が無くなるまで刃を重ね続ける。1回で済む
+     * 小さな獲物では1周で終わる。
+     */
     function butcher(carcass: WorldObject): WorldObject {
       const knife = spawnInto('sharp_stone', player, 'hand');
-      expect(
-        carcass
-          .combinationsWith(knife, player)
-          .find((c) => c.name === 'butcher')
-          ?.tryExecute() === true,
-      ).toBe(true);
+      // 無限に回らないための頭打ち。**捌き切る手数そのものではない**ので、宣言を動かしても
+      // ここは動かない。
+      for (let left = 10; carcass.parent !== undefined; left -= 1) {
+        expect(left, '捌き切るまでの手数').toBeGreaterThan(0);
+        const [combination] = carcass.combinationsWith(knife, player);
+        expect(combination, '死体へ刃物を重ねて成立する手').toBeDefined();
+        expect(combination.tryExecute()).toBe(true);
+      }
       return knife;
     }
 

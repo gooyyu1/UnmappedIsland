@@ -116,14 +116,19 @@ object_defs:
 高床への変更は、壁を一度外さなければ行えないものとします。現実の手間を再現しつつ、住居という場所は
 消えないため、中の物とプレイヤーはその場に残ります。
 
+**手間は1回では払えません**（1回の操作は1時間まで、[`../engine/ActionSystem.md`](../engine/ActionSystem.md)
+6.3節）。半日がかりの工事は、住居の側が進み具合を持ち、手を何度か入れる形になります。
+
 ```yaml
 interactions:
-  install_raised_floor:
+  raise_floor:
     trigger: menu
-    duration: 480
+    duration: 60
     conditions:
       - not:
           - {slot: structure, matches: {tag: wall}}
+      - {prop: raising_progress, lt: 8}
+    add: {self: {raising_progress: 1}}
 ```
 
 ## 4. 工法ごとの得意分野

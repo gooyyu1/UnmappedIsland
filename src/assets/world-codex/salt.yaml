@@ -173,7 +173,17 @@ object_defs:
       # ——**保存の行にも当たらない**: 保たせる造作は食べ物を掛けて保たせる設備（干し場・燻し小屋）で、
       # 塩田が出すのは塩そのもの。保たせるのは、その塩を打つ側（上のcure）。
       laid:
+        # 石を1つ据えるごとに1工程（1回は1時間まで、docs/engine/ActionSystem.md 6.3節）。
         steps:
           - requires:
-              - {object: stone, count: 4, consume: true}
-            duration: 240
+              - {object: stone, count: 1, consume: true}
+            duration: 60
+          - requires:
+              - {object: stone, count: 1, consume: true}
+            duration: 60
+          - requires:
+              - {object: stone, count: 1, consume: true}
+            duration: 60
+          - requires:
+              - {object: stone, count: 1, consume: true}
+            duration: 60
