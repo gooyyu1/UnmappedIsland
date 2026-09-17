@@ -354,20 +354,20 @@
 突き合わせられます（[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum` と
 `daily_minimum_menu`。読み方は [`BalanceStats.md`](../diagnostics/BalanceStats.md)）。
 
-**1 日を賄う最小労働は 531 分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->**
+**1 日を賄う最小労働は 547 分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->**
 （島じゅうを渡り歩ける前提。移動時間は数えていません）**で、うち
 360 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="palm_tree.pick_frond → palm_frond.split_and_weave → bed.spread → bed.nap" minutes -->は眠るぶんなので、
 採って食べるのに払うのは
-171 分<!-- stats: terrain.yaml daily_budget survival_gathering -->です。** これが
+187 分<!-- stats: terrain.yaml daily_budget survival_gathering -->です。** これが
 [`ContentSkeleton.md`](../world/ContentSkeleton.md) 8 節の自由時間
-909 分<!-- stats: terrain.yaml daily_budget surplus -->を出している引き算の相手で、**1 周回の日数の
+893 分<!-- stats: terrain.yaml daily_budget surplus -->を出している引き算の相手で、**1 周回の日数の
 見積もりはこの値の上に立っています**——速さを動かせば、そちらが動きます。
 
 | 賄うもの | 献立 | 1 日 |
 | --- | --- | --- |
 | 水 | 湧き水から汲んだ水 9.33<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → spring.draw_into_empty → jar__content_water_liquid.drink" repetitions -->杯 | 47 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → spring.draw_into_empty → jar__content_water_liquid.drink" minutes --> |
-| 満腹・蓄え | 生肉 3.07<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.eat" repetitions -->切れ | 70 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.eat" minutes --> |
-| 満腹・蓄え | 焼いた肉 0.22<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat" repetitions -->切れ | 5 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat" minutes --> |
+| 満腹・蓄え | 生肉 3.07<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.quarter → raw_meat.eat" repetitions -->切れ | 85 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.quarter → raw_meat.eat" minutes --> |
+| 満腹・蓄え | 焼いた芋 0.14<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → taro.cooking_progress.on_max → roasted_taro.eat" repetitions -->個 | 6 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → taro.cooking_progress.on_max → roasted_taro.eat" minutes --> |
 | 脂 | ヤシの果肉 0.45<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat" repetitions -->個 | 35 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat" minutes --> |
 | ビタミン | 空心菜 0.47<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → water_spinach.eat" repetitions -->束 | 15 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → water_spinach.eat" minutes --> |
 

@@ -89,7 +89,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
 
     expect(itemsOn(beach)).toEqual(['woven_leaf']);
     expect(weightsOn(beach), '重さの大半を占める中軸を捨てるので、葉4000gより軽くなる').toEqual([400]);
-    expect(elapsedMinutes(), '素手は時間がかかる（90分）').toBe(90);
+    expect(elapsedMinutes(), '編むのは1時間（ActionSystem.md 6.3節の線）').toBe(60);
   });
 
   it('刃物を当てて割って編むと、同じ葉から2枚とれる', () => {
@@ -106,7 +106,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
     expect(itemsOn(beach), '元の葉が居た場所へ2枚が並んで置き換わる').toEqual(['woven_leaf', 'woven_leaf']);
     expect(weightsOn(beach), '2枚に増えても1枚ぶんの重さは変わらない').toEqual([400, 400]);
     expect(knife.parent, '刃物は消費されない').toBe(player);
-    expect(elapsedMinutes(), '割って編むほうが1枚あたりは速い（60分で2枚）').toBe(60);
+    expect(elapsedMinutes(), '同じ1時間で2枚とれる（刃物が変えるのは枚数のほう）').toBe(60);
   });
 
   it('編み籠のレシピは編んだ葉を6枚要求し、繊維・編みの腕を要求する', () => {
@@ -114,13 +114,15 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
 
     expect(basket.recipesProducingThis).toHaveLength(1);
 
+    // **工程は1時間ずつに割ってある**（docs/engine/ActionSystem.md 6.3節）ので、6枚は工程を
+    // またいで要求される。要るのは合計のほう。
     const recipe = basket.recipesProducingThis[0];
-    expect(recipe.steps).toHaveLength(1);
+    const requirements = recipe.steps.flatMap((step) => step.requirements);
+    const wovenLeaf = codex.objects.get(codex.objectNames.getId('woven_leaf'));
 
-    const [requirement] = recipe.steps[0].requirements;
-    expect(requirement.requires(codex.objects.get(codex.objectNames.getId('woven_leaf')))).toBe(true);
-    expect(requirement.count).toBe(6);
-    expect(requirement.consume).toBe(true);
+    expect(requirements.every((requirement) => requirement.requires(wovenLeaf))).toBe(true);
+    expect(requirements.reduce((total, requirement) => total + requirement.count, 0)).toBe(6);
+    expect(requirements.every((requirement) => requirement.consume)).toBe(true);
 
     // 素材はヤシの葉だけで初日から揃うので、開けるのは編んだ数のほう（SkillSystem.md 4.2節）。
     // 腕を持たない者では落ちる——段ごとの通り抜けは tests/world-codex/skillsYaml.test.ts が見る。

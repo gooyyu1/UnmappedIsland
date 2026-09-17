@@ -302,15 +302,18 @@ describe('drying.yamlの天日干しと干し場', () => {
   });
 
   it('干し場は太い枝6本と縄1本から作れる', () => {
+    // **工程は1時間ずつに割ってある**（docs/engine/ActionSystem.md 6.3節）ので、要るのは工程を
+    // またいだ合計のほう。
     const def = codex.objects.get(codex.objectNames.getId('drying_rack'));
     const [recipe] = def.recipesProducingThis;
-    const [step] = recipe!.steps;
+    const requirements = recipe!.steps.flatMap((step) => step.requirements);
+    const countOf = (name: string): number =>
+      requirements
+        .filter((requirement) => requirement.requires(codex.objects.get(codex.objectNames.getId(name))))
+        .reduce((total, requirement) => total + requirement.count, 0);
 
-    expect(step!.requirements).toHaveLength(2);
-    expect(step!.requirements[0].requires(codex.objects.get(codex.objectNames.getId('thick_branch')))).toBe(
-      true,
-    );
-    expect(step!.requirements[1].requires(codex.objects.get(codex.objectNames.getId('rope')))).toBe(true);
+    expect(countOf('thick_branch')).toBe(6);
+    expect(countOf('rope')).toBe(1);
   });
 
   it('据えた干し場は、持ち歩けない', () => {
