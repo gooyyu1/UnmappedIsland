@@ -1,7 +1,7 @@
 // **畳まれていないセッション**を引く。「畳まれていない」の定義はここ1箇所だけが持つ。
 //
 //   import { liveSessions } from './live-sessions.mjs';
-//   liveSessions()   // → [{ id, status, bucket, env, tags: [] }]
+//   liveSessions()   // → [{ id, status, bucket, env, served, tags: [] }]
 //
 // コマンドとして呼ぶと1行1件のTSVを出す（入口は [`live-sessions.sh`](live-sessions.sh)）。
 // 1行が
@@ -27,7 +27,7 @@
 //
 // ## 立てられたことと、働いたことは別
 //
-// **投入が通っても、その先に走る者が付くとは限らない。** 環境ごと立ち上がらない区間では、セッション
+// **投入が通っても、その先に走る者が付くとは限らない。** 走る者の配られない区間では、セッション
 // だけが作られて中身が空のまま残り、**呼び手には「手が空いている」としか映らない**（1.6 のどの値も
 // これには答えない）——盤面はそれを停滞と読み、担当の issue を片端から人へ返した（issue #2206）。
 //
@@ -89,6 +89,13 @@ export function environmentIds() {
 }
 
 /**
+ * `ccr-env.sh` が出す名前から、一覧に載る綴りへ（`LiveSession` の `env`）。**訳を持つのはここ
+ * 1箇所**——環境ごとにセッションを数える側（[`check-values.mjs`](check-values.mjs)）も同じ訳で
+ * 引くので、書き写すと片方だけが直る。
+ */
+export const envKind = (name) => (name === 'BRIDGE_ENV' ? 'bridge' : 'cloud');
+
+/**
  * どこで走っているか（`board-design.md` 2.16）。
  *
  * **知らない環境は `-`。** `cloud` に寄せない——盤面はこの値で「間違った場所に居るワーカー」を
@@ -98,13 +105,6 @@ export function environmentIds() {
  * を `-` へ落とし、**配り直しの仕組みがどこにも跡を残さずに死ぬ**——`-` は「食い違いを見ない」側
  * なので、赤くも遅くもならない。
  */
-/**
- * `ccr-env.sh` が出す名前から、一覧に載る綴りへ（`LiveSession` の `env`）。**訳を持つのはここ
- * 1箇所**——環境ごとにセッションを数える側（[`check-values.mjs`](check-values.mjs)）も同じ訳で
- * 引くので、書き写すと片方だけが直る。
- */
-export const envKind = (name) => (name === 'BRIDGE_ENV' ? 'bridge' : 'cloud');
-
 function environments() {
   const found = {};
   for (const { name, id } of environmentIds()) found[id] = envKind(name);

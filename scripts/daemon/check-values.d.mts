@@ -16,8 +16,18 @@ export interface SurveyValuesDeps {
   gh?: (args: readonly string[], options?: { allowFail?: boolean }) => string | undefined;
   envs?: () => readonly { readonly name: string; readonly id: string }[];
   /** 畳まれていないセッション（[`live-sessions.mjs`](live-sessions.mjs)）。引けなければ投げる。 */
-  sessions?: () => readonly { readonly env: string; readonly served: boolean }[];
+  sessions?: () => readonly {
+    readonly env: string;
+    readonly served: boolean;
+    readonly tags: readonly string[];
+  }[];
 }
+
+/**
+ * 盤面が立てたセッションのタグの頭。**綴りの出どころは投入の側**で、ここはその写し
+ * （[`check-values.mjs`](check-values.mjs)）。
+ */
+export const DISPATCH_TAGS: readonly string[];
 
 export interface CheckValuesDeps extends SurveyValuesDeps {
   /** 台帳の置き場。省くと [`board-state.mjs`](board-state.mjs) の既定。 */

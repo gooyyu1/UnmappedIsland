@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { TITLE, checkValues, surveyValues } from '../../scripts/daemon/check-values.mjs';
+import { DISPATCH_TAGS, TITLE, checkValues, surveyValues } from '../../scripts/daemon/check-values.mjs';
 
 /**
  * `scripts/daemon/check-values.mjs` の検査（`agent-ops/board-design.md` 2.22）。
@@ -48,7 +48,11 @@ interface World {
   /** `gh issue list` が転ぶか（＝開いている issue を引けない周）。 */
   readonly listFails?: boolean;
   /** 畳まれていないセッション。省くと1本も立てていない形。 */
-  readonly sessions?: readonly { readonly env: string; readonly served: boolean }[];
+  readonly sessions?: readonly {
+    readonly env: string;
+    readonly served: boolean;
+    readonly tags: readonly string[];
+  }[];
 }
 
 interface Run {
@@ -205,8 +209,11 @@ describe('check-values.mjs の見立て', () => {
    * `告げることは無い` を出し続けた（issue #2206）。
    */
   describe('立てたセッションが働いているか', () => {
+    /** 盤面が立てたセッション（タグの頭で見分ける）。 */
+    const board = (env: string, served: boolean) => ({ env, served, tags: ['task-8'] });
+
     const survey = (
-      sessions: readonly { env: string; served: boolean }[],
+      sessions: readonly { env: string; served: boolean; tags: readonly string[] }[],
       envs = [{ name: 'CLOUD_ENV', id: CLOUD }],
     ) =>
       surveyValues({
@@ -217,20 +224,14 @@ describe('check-values.mjs の見立て', () => {
       });
 
     it('働いた跡が1本も無ければ、死んでいると読む', async () => {
-      const found = await survey([
-        { env: 'cloud', served: false },
-        { env: 'cloud', served: false },
-      ]);
+      const found = await survey([board('cloud', false), board('cloud', false)]);
 
       expect(found.find((value) => value.key === 'CLOUD_ENV')?.state).toBe('alive');
       expect(found.find((value) => value.key === 'CLOUD_ENV:workers')?.state).toBe('dead');
     });
 
     it('1本でも働いていれば、生きていると読む', async () => {
-      const found = await survey([
-        { env: 'cloud', served: false },
-        { env: 'cloud', served: true },
-      ]);
+      const found = await survey([board('cloud', false), board('cloud', true)]);
 
       expect(found.find((value) => value.key === 'CLOUD_ENV:workers')?.state).toBe('alive');
     });
@@ -238,7 +239,7 @@ describe('check-values.mjs の見立て', () => {
     // **投入していない周が、働かない周に見えてはいけない。** 死と数えると、静かな夜が明けるたびに
     // 猶予が積まれて、いつか嘘が告げられる。
     it('その環境のセッションが1本も無ければ、確かめられなかったと読む', async () => {
-      const found = await survey([{ env: 'bridge', served: false }]);
+      const found = await survey([board('bridge', false)]);
 
       expect(found.find((value) => value.key === 'CLOUD_ENV:workers')?.state).toBe('unknown');
     });
@@ -246,10 +247,7 @@ describe('check-values.mjs の見立て', () => {
     // **環境ごとに数える。** 片方が働いていることで、もう片方の死が隠れない。
     it('環境ごとに別々に数える', async () => {
       const found = await survey(
-        [
-          { env: 'cloud', served: true },
-          { env: 'bridge', served: false },
-        ],
+        [board('cloud', true), board('bridge', false)],
         [
           { name: 'CLOUD_ENV', id: CLOUD },
           { name: 'BRIDGE_ENV', id: BRIDGE },
@@ -267,7 +265,7 @@ describe('check-values.mjs の見立て', () => {
         call: async () => JSON.stringify({ environments: [] }),
         gh: () => '',
         envs: () => [{ name: 'CLOUD_ENV', id: CLOUD }],
-        sessions: () => [{ env: 'cloud', served: false }],
+        sessions: () => [board('cloud', false)],
       });
 
       expect(found.find((value) => value.key === 'CLOUD_ENV')?.state).toBe('dead');
@@ -286,6 +284,45 @@ describe('check-values.mjs の見立て', () => {
       });
 
       expect(found.find((value) => value.key === 'CLOUD_ENV:workers')?.state).toBe('unknown');
+    });
+
+    /**
+     * **ユーザー自身の Claude Code を数えない。** あれは同じ環境に居るが、盤面のタグを持たず、
+     * **走る者が付かないまま一覧に居続けるのが正常**（ブリッジでは CLI が開いているかぎり畳まれ
+     * ない。2026-09-17 に実測: `tags: ["config:auto-create-pr:ready", "remote-control-cli"]` で
+     * `last_served_model` が無い）。数えると、**盤面のセッションが1本も生きていない瞬間に、
+     * 健全な環境が死んで見える。**
+     */
+    it('盤面が立てていないセッションは数えない', async () => {
+      const found = await survey([
+        { env: 'cloud', served: false, tags: ['config:auto-create-pr:ready', 'remote-control-cli'] },
+      ]);
+
+      expect(found.find((value) => value.key === 'CLOUD_ENV:workers')?.state).toBe('unknown');
+    });
+
+    it('盤面のセッションが1本でも働いていれば、隣に立つ CLI の1本は効かない', async () => {
+      const found = await survey([
+        { env: 'cloud', served: false, tags: ['remote-control-cli'] },
+        board('cloud', true),
+      ]);
+
+      expect(found.find((value) => value.key === 'CLOUD_ENV:workers')?.state).toBe('alive');
+    });
+
+    /**
+     * **タグの頭の出どころは投入の側。** 書き写してあるので、あちらに種類が増えると**黙って
+     * 数え落とす**——その種類しか生きていない周は、働いていても `unknown` になる。
+     */
+    it('投入の側が付けるタグの頭を、1つ残らず数える', () => {
+      const heads = ['dispatch-task.sh', 'dispatch-review.sh', 'dispatch-chore.sh'].map((name) => {
+        const source = readFileSync(resolve(import.meta.dirname, `../../scripts/daemon/${name}`), 'utf-8');
+        const hit = /^TAG="([a-z]+-)/m.exec(source);
+        expect(hit, `${name} の TAG= が読めない`).not.toBeNull();
+        return hit?.[1];
+      });
+
+      expect([...DISPATCH_TAGS].sort()).toEqual([...new Set(heads)].sort());
     });
   });
 
@@ -338,23 +375,23 @@ describe('check-values.mjs の告げ方', () => {
   /**
    * **立てたセッションが働かない区間で、人へ届くのはここ**（issue #2206）。ここが黙ると、盤面は
    * それを1件ずつの停滞として処理し、担当の task を片端から人へ返す——返ったぶんを戻せるのは
-   * 人だけなので、**環境が直っても盤面は自力で戻れない。**
+   * 人だけなので、**塞がりが明けても盤面は自力で戻れない。**
    */
   it('立てたセッションが働かないまま猶予を越えたら、環境の側として告げる', async () => {
     const run = await check({
       sessions: [
-        { env: 'cloud', served: false },
-        { env: 'bridge', served: true },
+        { env: 'cloud', served: false, tags: ['task-8'] },
+        { env: 'bridge', served: true, tags: ['chore-patrol'] },
       ],
       ledger: { 'CLOUD_ENV:workers': { since: LONG_AGO } },
     });
 
     expect(run.told).toBe(true);
-    expect(run.body).toContain('CLOUD_ENV へ立てたセッション');
+    expect(run.body).toContain('CLOUD_ENV へ盤面が立てたセッション');
     expect(run.body).toContain('走る者が付かない');
     expect(run.body).toContain('claude.ai/code');
     // 働いている側は告げない。
-    expect(run.body).not.toContain('BRIDGE_ENV へ立てたセッション');
+    expect(run.body).not.toContain('BRIDGE_ENV へ盤面が立てたセッション');
   });
 
   // **鍵は題だけ。** 台帳が失われても2本目は立たない（2.22.3）。
