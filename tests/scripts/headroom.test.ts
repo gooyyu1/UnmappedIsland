@@ -219,26 +219,25 @@ describe('headroom.sh', () => {
     }
   });
 
-  // 引き直しても駄目なら、通す側へは倒れない。**どこを見ればよいかを、その場で告げる。**
-  it('控えも無く、引き直せもしなければ止まる', () => {
-    const result = run('new-task');
+  // 引き直しても駄目なら、通す側へは倒れない。**告げるのは、その場で打てば本当に答えが出る1行**
+  // ——ただの `usage.sh` は間隔が空くまで何も出さずに2で返るので、案内にならない
+  // （その打ち方が実際に通ることは `usagePoll.test.ts` が留める）。
+  //
+  // **口が落ちた（1）のか順番待ち（2）なのかで名乗りを分けない。** 印は叩いた回に、控えは引けた回
+  // だけに書かれるので、**口が落ちているときほど2の側へ落ちる**——分けると「順番待ち」と読ませる。
+  it('引き直せなければ、どちらの落ち方でも同じ1行で止まる', () => {
+    const noCache = run('new-task');
 
-    expect(result.code).toBe(1);
-    expect(result.stdout).toContain('UNKNOWN');
-    expect(result.stdout).toContain('usage.sh');
-  });
-
-  // **口が落ちているのか順番待ちなのかを、同じ顔にしない**（`usage.sh` の2と1）。デーモンが
-  // 回っている場所で `UNKNOWN` になる主な形はこちらで、案内どおり打ち直しても2は何も出さずに返る。
-  it('叩ける間隔がまだ空いていない周は、引けなかったのと別に名乗る', () => {
     cacheUsage({ agedSeconds: 60 * 60 * 24 });
     writeFileSync(join(stateDir, 'usage-polled'), `${Math.floor(Date.now() / 1000)}\n`, 'utf-8');
+    const notMyTurn = run('new-task');
 
-    const result = run('new-task');
-
-    expect(result.code).toBe(1);
-    expect(result.stdout).toContain('間隔');
-    expect(result.stdout).not.toContain('usage.sh');
+    for (const result of [noCache, notMyTurn]) {
+      expect(result.code).toBe(1);
+      expect(result.stdout).toContain('UNKNOWN');
+      expect(result.stdout).toContain('USAGE_MIN_SECONDS=0');
+    }
+    expect(notMyTurn.stdout).toBe(noCache.stdout);
   });
 
   // **欠けた枠を「余力が在る」として通すと、その枠では手綱が掛からないまま上限に当たる。**

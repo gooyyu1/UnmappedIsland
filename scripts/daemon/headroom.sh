@@ -28,8 +28,8 @@
 # （[`policies.md`](../../agent-ops/policies.md)「仕組みの作り方」）——デーモンが回っている間は、
 # 割り当ての側が周の先頭で叩いて控えを新しくしているので、ここは通らない。
 #
-# **引き直せなかったときだけ `UNKNOWN`。** そこも、口が落ちているのか順番待ちなのかで名乗りを分ける
-# （下）——見るのはログを読む人で、同じ顔にすると打ち直して確かめるしかなくなる。
+# **引き直せなかったときだけ `UNKNOWN`。** その行には、**その場で打てば本当に答えが出る1行**を
+# 添える（下）——見るのはログを読む人で、打っても何も出ない案内は無いのと同じ。
 #
 # 比べ方は隣の [`headroom.mjs`](headroom.mjs)。ここは在り処と入口だけ。
 
@@ -44,22 +44,16 @@ if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
 STATE_DIR="${BOARD_STATE:-$HOME/.claude/board-state}"
 
 if ! usage=$(bash "$HERE/usage.sh" --last); then
-  # **引き直せなかった理由は、名乗り分ける**（[`usage.sh`](usage.sh)。2は「今は読む番ではない」で、
-  # 1は「引けなかった」）。デーモンが回っている場所でここへ来る主な形は2のほうで、**同じ顔にすると、
-  # 口が落ちているのか順番待ちなのかがログから読めない**——打ち直しても2は何も出さずに返る。
-  fresh=0
-  usage=$(bash "$HERE/usage.sh") || fresh=$?
-  case "$fresh" in
-  0) ;;
-  2)
-    echo "UNKNOWN 控えが古く、口を叩ける間隔もまだ空いていない"
+  # **引き直せなかった理由（[`usage.sh`](usage.sh) の1と2）では名乗りを分けない。** 印
+  # （`usage-polled`）は叩いた回に書かれ、控えは**引けた回だけ**に書かれるので、**口が落ちている
+  # ときほど2（今は読む番ではない）の側へ落ちる**——分けると「順番待ち」と読ませることになる。
+  #
+  # **告げるのは、その場で打てば本当に答えが出る1行。** ただの `usage.sh` は間隔が空くまで何も
+  # 出さずに2で返るので、案内にならない。
+  if ! usage=$(bash "$HERE/usage.sh"); then
+    echo "UNKNOWN 使用量を引けていない（\`USAGE_MIN_SECONDS=0 bash scripts/daemon/usage.sh\` で確かめる）"
     exit 1
-    ;;
-  *)
-    echo "UNKNOWN 使用量を引けなかった（\`bash scripts/daemon/usage.sh\` が通るか見る）"
-    exit 1
-    ;;
-  esac
+  fi
 fi
 
 printf '%s\n' "$usage" | node "$HERE/headroom.mjs" "$KIND" "$STATE_DIR/spent.tsv"

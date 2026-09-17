@@ -87,6 +87,28 @@ describe('使用量の口を叩く間隔', () => {
     expect(call.stdout).toBe('');
     expect(call.stderr).not.toContain('使用量を引けなかった');
   });
+
+  // **間隔を跨いで叩き直す打ち方が在ること。** 引けなかった周に `headroom.sh` が告げるのはこの形で、
+  // **打っても何も出ない案内は無いのと同じ**——口が落ちているのか順番待ちなのかを、人がここで見る。
+  it('間隔を0にすれば、叩いた直後でも口まで通る', () => {
+    polledJustNow();
+    const bin = stubEndpoint(`printf '%s\\n' '${LINES}'`);
+    try {
+      const call = spawnScript(join(DAEMON, 'usage.sh'), [], {
+        env: {
+          ...process.env,
+          BOARD_STATE: stateDir,
+          USAGE_MIN_SECONDS: '0',
+          PATH: `${bin}${delimiter}${process.env.PATH ?? ''}`,
+        },
+      });
+
+      expect(call.status).toBe(0);
+      expect(call.stdout).toContain('five_hour');
+    } finally {
+      rmSync(bin, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('引けた行の控え', () => {
