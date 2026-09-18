@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { commentsOnly } from '../../scripts/codeComments.mjs';
 import { promptBodies, promptBody } from '../../scripts/daemon/prompt-body.mjs';
 import {
   isMarkRuleDoc,
@@ -19,6 +20,9 @@ import { linesOutsideFence } from '../../scripts/markdownFences.mjs';
  * リンクでも引き合っており、そちらの節やファイルを畳んだときに同じように嘘になる。走査する側
  * （{@link REF_FILES}・{@link LINK_CHECKED_FILES}）も指し先（{@link REF_TARGETS}）もそこから絞る。
  * 確定度の印の条件も同じで、印を使う文書なら `docs/` の外でも課す（{@link MARK_RULE_FILES}）。
+ *
+ * **リンクはソースのコメントにも在る**ので、そちらも同じ規約で見る（{@link COMMENTED_SOURCES}）
+ * ——TypeDoc が `/reference/` を作るときに読む側なので、切れたままだと公開の頁のリンクが死ぬ。
  *
  * **外すのは、当時の現物をそのまま残す記録だけ**（{@link isVerbatimRecord}。DocumentStyle.md 10節）。
  * 実装状況の印（4節・4.1節）だけは `docs/` に閉じており、理由は {@link docByPath}。
@@ -128,15 +132,37 @@ function isOperationalDoc(rel: string): boolean {
   return rel.startsWith(`agent-ops${sep}`) || rel.startsWith(`.claude${sep}`);
 }
 
-/** 参照を検査する対象。ドキュメント自身と、節番号でドキュメントを指すコード・データ。 */
-const REF_FILES = [
-  ...TRACKED_DOCS,
-  ...listFiles('.claude', ['.sh']),
-  ...listFiles('scripts', ['.sh', '.mjs']),
-  ...listFiles('src', ['.ts', '.yaml']),
-  ...listFiles('tests', ['.ts']),
-  ...listFiles('tools', ['.json']),
-].filter(
+/**
+ * コメントの印（`//` か `#` か）を {@link commentsOnly} が知っている形式。**ここに挙がっていない
+ * 形式は、コメントを持っていても読めない。** 綴りが外れても他の形式で緑になるので、実在は
+ * 検査で留める。
+ */
+const COMMENTED_EXTENSIONS = ['.ts', '.mts', '.mjs', '.js', '.sh', '.py', '.yaml', '.yml'];
+
+/**
+ * コメントを書ける形式の、追跡しているソース全部。**節番号の参照（{@link REF_FILES}）も、
+ * コメントのMarkdownリンクも、ここから絞って作る。**
+ *
+ * **在り処を列挙せず、形式で絞る**（{@link TRACKED_DOCS} と同じ理由）——フォルダと拡張子を
+ * 数え上げると、**足した日にしか更新されない一覧**が射程を決めることになり、新しい置き場も
+ * 新しい綴りも黙って外に出る（`.github/**` のワークフロー・`scripts/**` の `.d.mts` がその形）。
+ *
+ * リンクを読むのは**コメントだけ**（{@link commentsOnly}）——コードの `](` は、正規表現の
+ * リテラルやジェネレータの宣言（`*[Symbol.iterator]()`）と字面で見分けられない。**そのぶん、
+ * 節番号の参照が `tests/docs/**` を外しているのはリンクには要らない**——あそこで外している例は、
+ * どれも文字列リテラルに在る。
+ */
+const COMMENTED_SOURCES = trackedFiles(ROOT).filter((rel) =>
+  COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)),
+);
+
+/**
+ * 参照を検査する対象。ドキュメント自身と、節番号でドキュメントを指すコード・データ。
+ *
+ * `tools/**` の JSON はコメントを持たない（{@link COMMENTED_SOURCES} に入らない）が、宣言の値が
+ * 節番号で仕様を指すので、ここには要る。
+ */
+const REF_FILES = [...TRACKED_DOCS, ...COMMENTED_SOURCES, ...listFiles('tools', ['.json'])].filter(
   (rel) =>
     !rel.startsWith(join('tests', 'docs')) && // 本テスト自身の例・正規表現は対象外
     !isVerbatimRecord(rel),
@@ -174,8 +200,15 @@ function withoutCode(markdown: string): string {
 }
 
 /**
- * リンクの指し先が、実在のパスではなく**書式そのもの**を見せている箇所か
- * （docs/DocumentStyle.md 5節。`docStatsCitations` が出どころの書式を `<ファイル>` と書くのと同じ規約）。
+ * リンクの指し先が、**指し先として読める形**か（docs/DocumentStyle.md 5節）。読めないものは、
+ * 実在のパスではなく**書式そのもの**を見せている（`docStatsCitations` が出どころの書式を
+ * `<ファイル>` と書くのと同じ規約）。
+ *
+ * **外す形を数え上げず、読める形のほうを書く。** 外すものを挙げていくと、次に生えた例示の形が
+ * 漏れて**例示が赤くなる**——コードのコメントは正規表現（`['"]([^'"]+)['"]`）も省略の `…` も
+ * そのまま引くので、形は増え続ける。ASCIIのパスの字だけでできていて、点だけではないものが
+ * 指し先で、それ以外は全部例示。**非ASCIIを入れない**のは、省略の `…` がそこに居るため——
+ * 日本語のファイル名を足すなら、`…` を外す手を別に持つことになる。
  *
  * **判定が要るのはリンクだけ。** 節番号・節名の参照は `文書名.md N節` のように書けば
  * {@link brokenNumberedRefsIn} の `tokenPattern` が最初から拾わない（ファイル名の先頭に
@@ -183,8 +216,18 @@ function withoutCode(markdown: string): string {
  *
  * **囲み（インラインコード・コードフェンス）は、どちらの側でも逃げ道にならない。**
  */
-function isPlaceholder(text: string): boolean {
-  return text.includes('<') || text.includes('>');
+function isPathTarget(target: string): boolean {
+  return /^[A-Za-z0-9._~%/-]+$/.test(target) && !/^\.+$/.test(target);
+}
+
+/**
+ * アンカーが、実在の見出しではなく**書式そのもの**を見せている箇所か（同 5節）。
+ *
+ * 指し先（{@link isPathTarget}）と違って、読める形のほうは書けない——アンカーは日本語の見出しから
+ * 振るので、**パスに使える字では書けない**。穴埋めの `<...>` だけを外す。
+ */
+function isPlaceholderAnchor(anchor: string): boolean {
+  return anchor.includes('<') || anchor.includes('>');
 }
 
 function read(rel: string): string {
@@ -261,8 +304,7 @@ const REF_TARGETS = TRACKED_DOCS;
  * 走査する側と指し先を1つの集合から出すのは、**片側にしか居ない文書を作らない**ため。走査だけの
  * 文書を足すと、そこの `#見出し` は指し先の一覧に無いので誤って赤くなる。
  *
- * コード（`.ts`・`.mjs`・`.sh`）は入らない。あちらにも**本物のリンクは在る**が、正規表現
- * （`['"]([^'"]+)['"]`）や画面へ出す書式の例示と字面で見分けられないので、見分けの仕組みが要る。
+ * ソースのコメントに在るリンクは {@link COMMENTED_SOURCES} が持つ。
  */
 const LINK_CHECKED_FILES = REF_TARGETS.filter((rel) => !isVerbatimRecord(rel));
 
@@ -435,7 +477,7 @@ function brokenLinkFilesIn(rel: string, source: string): string[] {
   for (const match of source.matchAll(/\]\(([^)#\s]+)(#[^)\s]*)?\)/g)) {
     const target = match[1];
     if (/^[a-z]+:/.test(target)) continue; // http(s):等
-    if (isPlaceholder(target)) continue;
+    if (!isPathTarget(target)) continue;
     if (!existsSync(resolve(ROOT, dirname(rel), target))) broken.push(`${rel}: ${target}`);
   }
   return broken;
@@ -447,7 +489,8 @@ function brokenLinkAnchorsIn(rel: string, source: string): string[] {
   for (const match of source.matchAll(/\]\(([^)#\s]*)#([^)\s]+)\)/g)) {
     const [, file, anchor] = match;
     if (/^[a-z]+:/.test(file)) continue;
-    if (isPlaceholder(file) || isPlaceholder(anchor)) continue;
+    if (file !== '' && !isPathTarget(file)) continue;
+    if (isPlaceholderAnchor(anchor)) continue;
     let targetRel = rel;
     if (file !== '') {
       if (!file.endsWith('.md')) continue; // HTML等のアンカーは対象外
@@ -575,12 +618,18 @@ function unimplementedHeadingLines(): string[] {
 
 describe('ドキュメントの参照', () => {
   it('Markdownリンクの先のファイルが存在する', () => {
-    const broken = LINK_CHECKED_FILES.flatMap((rel) => brokenLinkFilesIn(rel, read(rel)));
+    const broken = [
+      ...LINK_CHECKED_FILES.flatMap((rel) => brokenLinkFilesIn(rel, read(rel))),
+      ...COMMENTED_SOURCES.flatMap((rel) => brokenLinkFilesIn(rel, commentsOnly(read(rel), rel))),
+    ];
     expect(broken, `リンク切れ:\n${broken.join('\n')}`).toEqual([]);
   });
 
   it('Markdownリンクのアンカーが、リンク先の見出しに解決する', () => {
-    const broken = LINK_CHECKED_FILES.flatMap((rel) => brokenLinkAnchorsIn(rel, read(rel)));
+    const broken = [
+      ...LINK_CHECKED_FILES.flatMap((rel) => brokenLinkAnchorsIn(rel, read(rel))),
+      ...COMMENTED_SOURCES.flatMap((rel) => brokenLinkAnchorsIn(rel, commentsOnly(read(rel), rel))),
+    ];
     expect(broken, `アンカー切れ:\n${broken.join('\n')}`).toEqual([]);
   });
 
@@ -754,7 +803,7 @@ describe('ドキュメントの参照', () => {
 
   it('書式の例示は指し先として読めない形で外し、囲みでは外れない（DocumentStyle.md 5節）', () => {
     const probe = join('docs', 'DocumentStyle.md');
-    // 外れる形。リンクは `isPlaceholder` が、節の参照は `tokenPattern` が拾わないことで外れる。
+    // 外れる形。リンクは `isPathTarget` が、節の参照は `tokenPattern` が拾わないことで外れる。
     expect(brokenLinkFilesIn(probe, '[<表示名>](<パス>)')).toHaveLength(0);
     expect(brokenLinkAnchorsIn(probe, '[<表示名>](#<アンカー>)')).toHaveLength(0);
     expect(brokenNumberedRefsIn(probe, '文書名.md N節')).toHaveLength(0);
@@ -763,6 +812,75 @@ describe('ドキュメントの参照', () => {
     expect(brokenNumberedRefsIn(probe, '`GameElementDefinition.md 999節`')).toHaveLength(1);
     // 節の参照に `<...>` は効かない（リンクと同じ形で書けると読まれないよう、ここで固定する）。
     expect(brokenNumberedRefsIn(probe, '<GameElementDefinition.md> 999節')).toHaveLength(1);
+  });
+
+  it('コメントの見分けが、行コメントとブロックの両方に効く', () => {
+    // コードを拾うと、リンクではない `](` が赤くなる（正規表現のリテラル・ジェネレータの宣言）。
+    // 行コメントだけを見ると、`src/**` のdocコメントに在る本物のリンクが1本も見られない。
+    const ts = join('src', 'probe.ts');
+    expect(commentsOnly('const p = /[\'"]([^\'"]+)[\'"]/;\n', ts)).toBe('\n');
+    expect(commentsOnly('  *[Symbol.iterator](): void {}\n', ts)).toBe('\n');
+    expect(commentsOnly('// [表示名](./x.ts)\n', ts)).toBe('// [表示名](./x.ts)\n');
+    expect(commentsOnly('/**\n * [表示名](./x.ts)\n */\nconst a = 1;\n', ts)).toBe(
+      '/**\n * [表示名](./x.ts)\n \n\n',
+    );
+    // 行の途中から始まるコメントは落とす（文字列・正規表現の中の `//` と見分けられない）。
+    expect(commentsOnly('const a = 1; // [表示名](./x.ts)\n', ts)).toBe('\n');
+    // `#` で見る側。ブロックは無い。
+    const sh = join('scripts', 'probe.sh');
+    expect(commentsOnly('# [表示名](./x.sh)\necho "](y)"\n', sh)).toBe('# [表示名](./x.sh)\n\n');
+    // 落とした行は空行にして、原文と行番号を揃える。
+    expect(commentsOnly('const a = 1;\nconst b = 2;\n// 印\n', ts).split('\n')[2]).toBe('// 印');
+  });
+
+  it('コードのコメントのリンクが、指し先を突き合わされる（DocumentStyle.md 5節）', () => {
+    const mjs = join('scripts', 'probe.mjs');
+    const sh = join('scripts', 'daemon', 'probe.sh');
+    const comment = (rel: string, body: string): string => commentsOnly(`// ${body}\n`, rel);
+
+    // 実在しない指し先は赤くなる。実在するものは通る（「解決しない」と「1つも拾えていない」は
+    // 同じ0件になるので、両向きを見る）。
+    expect(brokenLinkFilesIn(mjs, comment(mjs, '[表示名](./NoSuchFile.mjs)'))).toHaveLength(1);
+    expect(brokenLinkFilesIn(mjs, comment(mjs, '[表示名](./lineChart.mjs)'))).toHaveLength(0);
+    expect(brokenLinkFilesIn(sh, commentsOnly('# [表示名](./NoSuchFile.sh)\n', sh))).toHaveLength(1);
+    expect(brokenLinkFilesIn(sh, commentsOnly('# [表示名](./brake.sh)\n', sh))).toHaveLength(0);
+    // コメントが引いた書式の例示は、指し先として読めないので外れる（issue #2019 で挙がった形）。
+    expect(brokenLinkFilesIn(mjs, comment(mjs, '`![](...)` から参照される'))).toEqual([]);
+    expect(brokenLinkFilesIn(mjs, comment(mjs, '生（`#1970`）とリンク（`[#1970](…)`）'))).toEqual([]);
+    expect(brokenLinkFilesIn(mjs, comment(mjs, '`[\'"]([^\'"]+)[\'"]` を引く'))).toEqual([]);
+  });
+
+  it('コードのコメントから、実際にリンクを拾えている', () => {
+    // 拾えていない状態は、切れが1件も無い状態と同じ緑になる。**指し先を実在しないものへ
+    // すり替えた本文**を通せば、拾えている限り赤が出る——0件なら、コメントの見分けか
+    // 走査の一覧のどちらかが、コードを1行も渡していない。
+    const found = COMMENTED_SOURCES.flatMap((rel) =>
+      brokenLinkFilesIn(rel, commentsOnly(read(rel), rel).split('](').join('](NoSuchDir/')),
+    );
+
+    expect(found.length).toBeGreaterThan(0);
+  });
+
+  it('その形式のソースが、1つ残らずリンクの検査に入っている', () => {
+    // 上の土台は1本でも拾えていれば緑なので、**射程が縮んだことはそこでは見えない**——在り処の
+    // 一覧へ戻した途端に `.github/**` も `.d.mts` も落ちる。**射程を出しているのと同じ経路で
+    // 数えない**（`everyTrackedMarkdown` と同じ理由）ので、形式ごとに git の pathspec で引く。
+    const covered = new Set(COMMENTED_SOURCES);
+    const uncovered = COMMENTED_EXTENSIONS.flatMap((ext) => trackedFiles(ROOT, `*${ext}`)).filter(
+      (rel) => !covered.has(rel),
+    );
+
+    expect(uncovered, `リンクの検査に入っていないソース:\n${uncovered.join('\n')}`).toEqual([]);
+  });
+
+  it('コメントを読む形式の一覧に、リポジトリに無いものが挙がっていない', () => {
+    // 綴りが外れていても、他の形式が拾えている限り上の土台は緑のまま（`.mts` を `.dmts` と
+    // 書いた形）。**在り処ではなく形式で絞る**ぶん、一覧が正しいことはここでしか確かめられない。
+    const missing = COMMENTED_EXTENSIONS.filter(
+      (ext) => !COMMENTED_SOURCES.some((rel) => rel.endsWith(ext)),
+    );
+
+    expect(missing, `この形式のファイルが1つも無い:\n${missing.join('\n')}`).toEqual([]);
   });
 
   it('ひな形の囲みの中の見出しが、その文書の節として引ける', () => {
