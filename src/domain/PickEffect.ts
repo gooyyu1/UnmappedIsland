@@ -55,7 +55,7 @@ export class PickEffect extends ActiveEffect {
   ): PickCandidateDef {
     const chosen = pickWeighted(
       available,
-      (candidate) => candidate.weight.resolveOrZero(context),
+      (candidate) => candidate.weight.resolveOrZero(context.valueResolver),
       session.rng,
     );
     return chosen ?? available[0];

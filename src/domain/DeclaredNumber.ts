@@ -1,5 +1,5 @@
 import type { DeclaredNumberReading } from './EffectReader';
-import type { PropertyPath, ReferenceContext } from './ReferenceRoot';
+import type { PropertyPath, ReferenceValueResolver } from './ReferenceRoot';
 
 /**
  * 宣言に書かれた1つの数値（GameElementDefinition.md 10.2節）。リテラル定数か、既存propsへのパス参照の
@@ -28,9 +28,14 @@ export class DeclaredNumber {
     return new DeclaredNumber(path);
   }
 
-  /** 参照が解決できなければ0（宣言はされているので、値が無いこととは区別しない）。 */
-  resolveOrZero(context: ReferenceContext): number {
-    return typeof this.declared === 'number' ? this.declared : (this.declared.effectiveNumber(context) ?? 0);
+  /**
+   * resolveが答える値。参照が解決できなければ0（宣言はされているので、値が無いこととは区別しない）。
+   *
+   * **誰が答えるかは問わない**（ReferenceValueResolver）——世界が在る場面の実効値でも、定義から
+   * 導いた近似でも、この宣言の読み方は変わらない。
+   */
+  resolveOrZero(resolve: ReferenceValueResolver): number {
+    return resolveDeclaredNumber(this.reading, resolve) ?? 0;
   }
 
   /** この値の宣言そのもの（DeclaredNumberReading参照）。数値へ解くのは、文脈を知っている読み手の側。 */
@@ -43,4 +48,17 @@ export class DeclaredNumber {
           propertyGlobalId: this.declared.propertyGlobalId,
         };
   }
+}
+
+/**
+ * 読み上げられた宣言（DeclaredNumberReading）1つを数値へ解く。参照が解けなければundefined。
+ *
+ * **宣言そのものを持たない読み手のための口。** 読み上げだけを受け取る側（解析・ビューア）も、
+ * 宣言を持つ側（DeclaredNumber.resolveOrZero）と同じ読み方をここで引く。
+ */
+export function resolveDeclaredNumber(
+  reading: DeclaredNumberReading,
+  resolve: ReferenceValueResolver,
+): number | undefined {
+  return reading.kind === 'literal' ? reading.value : resolve(reading.subject, reading.propertyGlobalId);
 }

@@ -60,7 +60,7 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
 
   /** 実行にかかるゲーム内時間（分）。durationを省いていれば0。実行前に見せる用途にも使う。 */
   executionMinutes(): number {
-    return this.relation.during((context) => this.def.minutesFor(context));
+    return this.relation.during((context) => this.def.minutesFor(context.valueResolver));
   }
 
   /** 今実行できない理由（最初に落ちた要件、14節）。実行できるならundefined。 */
