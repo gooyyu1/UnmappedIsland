@@ -122,7 +122,8 @@ traits:
       # **下のpour_into_emptyより先に書く。** 相手のタグ（water）はあちらのタグ（liquid_container）に
       # 必ず含まれるので、どちらも断る場面——満水の器同士——では両方が理由付きで残る。画面が出すのは
       # 宣言順の先頭（docs/ui/CardInteraction.md 2節）なので、狭いほうを後ろに置くと、こちらの理由は
-      # 一度も出ないまま「中身が入っている」だけが出る。
+      # 一度も出ないまま「中身が入っている」だけが出る。**液体を増やしたときも同じ**で、順は
+      # tests/world-codex/liquidContainersYaml.test.tsが全数で見張る（draw_into_filledも同じ対）。
       pour_into_filled:
         trigger: {drag: {tag: water}}
         conditions:
