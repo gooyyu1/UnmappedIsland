@@ -45,7 +45,7 @@ describe('pottery.yamlの土器の連鎖', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const worldView = new World(worldInstance, codex);
+    const worldView = new World(worldInstance);
     session = new WorldSession(codex, worldView, fixedRng(roll));
 
     land = session.createObject(codex.objectNames.getId('grassland'));
@@ -61,11 +61,11 @@ describe('pottery.yamlの土器の連鎖', () => {
   }
 
   function itemsOn(location: WorldObject): string[] {
-    return new Location(location, codex).items.map((object) => object.def.name);
+    return new Location(location).items.map((object) => object.def.name);
   }
 
   function fixturesOn(location: WorldObject): string[] {
-    return new Location(location, codex).fixtures.map((object) => object.def.name);
+    return new Location(location).fixtures.map((object) => object.def.name);
   }
 
   function childNames(parent: WorldObject): string[] {
@@ -148,7 +148,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     craft('unfired_jar', 'coiled', [['clay'], ['clay']]);
 
     expect(itemsOn(land), '作りかけが壺そのものへ置き換わる').toEqual(['unfired_jar']);
-    const [greenware] = new Location(land, codex).items;
+    const [greenware] = new Location(land).items;
     expect(greenware.tryGetProperty(codex.propertyNames.getId('moisture'))?.number ?? 0, '練り土の水').toBe(
       96,
     );

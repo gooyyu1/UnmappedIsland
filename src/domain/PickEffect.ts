@@ -1,7 +1,6 @@
 import { pickWeighted } from './Rng';
 import type { AmongSpec } from './AmongSpec';
 import type { SameSlotSpawnSite } from './SameSlotSpawnSite';
-import type { WorldSession } from './WorldSession';
 import { ActiveEffect } from './ActiveEffect';
 import type { EffectReader, PickCandidateReading, PickReading } from './EffectReader';
 import type { ReferenceContext } from './ReferenceRoot';
@@ -23,14 +22,10 @@ export class PickEffect extends ActiveEffect {
    * **相手が居ない候補は抽選に出ない**（`among`、10.3節）ので、著者は「相手が居なければ起こらない」を
    * 書かなくてよい。全部外れれば何も起きない。
    */
-  apply(
-    context: ReferenceContext,
-    session: WorldSession,
-    sameSlotSpawnSite: SameSlotSpawnSite | undefined,
-  ): void {
+  apply(context: ReferenceContext, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
     const available = this.candidates.filter((candidate) => candidate.isAvailable(context));
     if (available.length === 0) return;
-    this.selectWeighted(available, context, session).apply(context, session, sameSlotSpawnSite);
+    this.selectWeighted(available, context).apply(context, sameSlotSpawnSite);
   }
 
   readBy(reader: EffectReader): void {
@@ -51,12 +46,11 @@ export class PickEffect extends ActiveEffect {
   private selectWeighted(
     available: readonly PickCandidateDef[],
     context: ReferenceContext,
-    session: WorldSession,
   ): PickCandidateDef {
     const chosen = pickWeighted(
       available,
       (candidate) => candidate.weight.resolveOrZero(context.valueResolver),
-      session.rng,
+      context.session.rng,
     );
     return chosen ?? available[0];
   }
@@ -110,20 +104,16 @@ export class PickCandidateDef {
   }
 
   /** この候補が選ばれたときに起こす。`among`を書いていれば、選んだ相手をpickedにした文脈で当てる。 */
-  apply(
-    context: ReferenceContext,
-    session: WorldSession,
-    sameSlotSpawnSite: SameSlotSpawnSite | undefined,
-  ): void {
+  apply(context: ReferenceContext, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
     if (this.among === undefined) {
-      this.effect.apply(context, session, sameSlotSpawnSite);
+      this.effect.apply(context, sameSlotSpawnSite);
       return;
     }
 
-    const picked = this.among.select(context, session.rng);
+    const picked = this.among.select(context, context.session.rng);
     // isAvailableで相手が居ることを確かめてから選ぶので、ここでundefinedにはならない。
     if (picked === undefined) return;
-    this.effect.apply(context.withPicked(picked), session, sameSlotSpawnSite);
+    this.effect.apply(context.withPicked(picked), sameSlotSpawnSite);
   }
 
   /** この候補の宣言（PickCandidateReading参照）。PickCandidatesが読み手へ渡す。 */

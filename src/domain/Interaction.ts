@@ -69,7 +69,7 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
   }
 
   tryExecute(): boolean {
-    return this.relation.whileActing((context) => this.def.tryExecute(context, this.self.session));
+    return this.relation.whileActing((context) => this.def.tryExecute(context));
   }
 }
 

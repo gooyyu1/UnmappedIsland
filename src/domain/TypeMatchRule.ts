@@ -68,7 +68,7 @@ export class TypeMatchRule {
 
   /**
    * 同じ指定どうしをまとめるための鍵。タグとobject_defはIDの空間が別なので、種類を混ぜて比べない
-   * ようにここで前置きを付ける（レシピの要求を型ごとに畳むのに使う、crafting.remainingRequirements）。
+   * ようにここで前置きを付ける（レシピの要求を型ごとに畳むのに使う、crafting.remainingRequirementsOf）。
    */
   get key(): string {
     return keyOf(this.reading);

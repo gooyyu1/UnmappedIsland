@@ -5,7 +5,7 @@
 # 普通のチャットの文章で訊く。
 set -euo pipefail
 
-cat <<'JSON'
+mapfile -t deny <<'JSON'
 {
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
@@ -14,3 +14,4 @@ cat <<'JSON'
   }
 }
 JSON
+printf '%s\n' "${deny[@]}"

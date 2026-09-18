@@ -41,7 +41,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    worldView = new World(worldInstance, codex);
+    worldView = new World(worldInstance);
     session = new WorldSession(codex, worldView, rng);
 
     jungle = spawnInto('jungle', worldInstance, 'locations');
@@ -58,11 +58,11 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
   }
 
   function itemsOn(location: WorldObject): string[] {
-    return new Location(location, codex).items.map((object) => object.def.name);
+    return new Location(location).items.map((object) => object.def.name);
   }
 
   function carriedBy(character: WorldObject): string[] {
-    return new PlayerCharacter(character, codex).handStacks.flatMap((stack) =>
+    return new PlayerCharacter(character).handStacks.flatMap((stack) =>
       stack.map((object) => object.def.name),
     );
   }
@@ -70,7 +70,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
   /** 土地のitemsスロットに並ぶ物の重さ（g）。 */
   function weightsOn(location: WorldObject): number[] {
     const weightId = codex.propertyNames.getId('weight');
-    return new Location(location, codex).items.map((object) => object.tryGetProperty(weightId)?.number ?? 0);
+    return new Location(location).items.map((object) => object.tryGetProperty(weightId)?.number ?? 0);
   }
 
   /** 刃物を1本持たせる。 */

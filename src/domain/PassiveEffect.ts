@@ -9,7 +9,6 @@ import type { ReferenceRoot } from './ReferenceRoot';
 import { ReferenceContext } from './ReferenceRoot';
 import type { PropertyPath } from './ReferenceRoot';
 import type { PassiveAmount } from './PassiveAmount';
-import type { WorldSession } from './WorldSession';
 import type { PropertyGlobalId } from './GlobalId';
 
 /**
@@ -132,7 +131,7 @@ export abstract class PassiveEffect {
    * **既定は何もしない。** 呼ばれるのは操作が宣言した一式だけで（11.7節）、そこに書けるのは
    * 実体値へ積む`add`と、実体値を動かさない`modify`しかない——輸送は書けない（8.4.1節）。
    */
-  countTickMovementAsGain(_owner: WorldObject, _context: ReferenceContext, _session: WorldSession): void {}
+  countTickMovementAsGain(_owner: WorldObject, _context: ReferenceContext): void {}
 }
 
 /**
@@ -223,15 +222,11 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * **今tick何も足さないなら名乗らない。** ゲートが閉じている効果の対象を数え先にすると、物が
    * 自分で宣言した増減まで操作の稼ぎになる。
    */
-  override countTickMovementAsGain(
-    owner: WorldObject,
-    context: ReferenceContext,
-    session: WorldSession,
-  ): void {
+  override countTickMovementAsGain(owner: WorldObject, context: ReferenceContext): void {
     if (this.reversible || this.activeAmount(owner, owner, context) === 0) return;
 
     const target = this.target.owner(context);
-    if (target !== undefined) session.countTickMovementAsGain(target, this.target.propertyGlobalId);
+    if (target !== undefined) owner.session.countTickMovementAsGain(target, this.target.propertyGlobalId);
   }
 
   /**
@@ -374,17 +369,21 @@ export class TransferPassiveEffect extends PassiveEffect {
   /** ゲートが開いている間、1 tick分の輸送を走らせる（activeの輸送と同じ経路をそのまま通る）。 */
   applyTick(owner: WorldObject): void {
     const roles = ReferenceContext.forParticipant(owner);
-    if (!this.gate.isSatisfied(owner, owner, roles)) return;
+    if (!this.gateIsOpen(owner, roles)) return;
     this.transfer.apply(roles);
   }
 
   override collectInfluences(declarer: WorldObject, roles: ReferenceContext, out: InfluenceWriter): void {
-    this.transfer.collectTransferInfluences(
-      declarer,
-      roles,
-      this.gate.isSatisfied(declarer, declarer, roles),
-      out,
-    );
+    this.transfer.collectTransferInfluences(declarer, roles, this.gateIsOpen(declarer, roles), out);
+  }
+
+  /**
+   * この宣言のゲートが開いているか。**conditionsのselfは常に宣言元自身**——辺の子側（slotBearer）が
+   * 宣言元と分かれるのは対象プロパティへ登録される寄与だけで（PropertyPassiveEffect）、輸送は登録を
+   * 持たず宣言元のtickで走るため。同じ物を2度渡す形を呼び出し側に書かせない。
+   */
+  private gateIsOpen(declarer: WorldObject, roles: ReferenceContext): boolean {
+    return this.gate.isSatisfied(declarer, declarer, roles);
   }
 
   readBy(reader: PassiveReader): void {

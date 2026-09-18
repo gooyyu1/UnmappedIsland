@@ -772,7 +772,7 @@ export class Card extends Phaser.GameObjects.Container {
     const margin = this.metrics.px(MARK_MARGIN);
     this.showMark(content, inner, margin);
     this.showOverlay(content, inner, margin);
-    this.showCooking(content, rail, showChange, content.midAction === true);
+    this.showCooking(content, rail, showChange);
     this.inProgressVeil.setVisible(content.inProgress === true);
   }
 
@@ -783,7 +783,7 @@ export class Card extends Phaser.GameObjects.Container {
    * 残り時間とバーは窓の中央へ縦に積む。**桟の高さで窓の下端が動く**ので、置き場所は印（showMark）と
    * 同じく差し替えのたびに決め直す。入り切らない文字は幅に合わせて縮める（showOverlayと同じ）。
    */
-  private showCooking(content: CardContent, rail: RailMetrics, showChange: boolean, hold: boolean): void {
+  private showCooking(content: CardContent, rail: RailMetrics, showChange: boolean): void {
     const cooking = content.cooking;
     this.cookingVeil.setVisible(cooking !== undefined);
     this.cookingText.setVisible(cooking !== undefined);
@@ -807,7 +807,7 @@ export class Card extends Phaser.GameObjects.Container {
     this.cookingText.setPosition(inner.x + inner.width / 2, top + textHeight / 2);
     this.cookingBar.setY(top + textHeight + gap);
     // 値を先に差し替える。現れたばかりのバーへ帯を出さない判断はバー自身が持つ（setRatio）。
-    this.cookingBar.setRatio(cooking.ratio, { showChange, hold });
+    this.cookingBar.setRatio(cooking.ratio, { showChange, hold: content.midAction === true });
     this.cookingBar.setVisible(true);
   }
 

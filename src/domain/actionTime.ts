@@ -1,5 +1,4 @@
 import type { WorldObject } from './WorldObject';
-import type { WorldSession } from './WorldSession';
 
 /**
  * 行動にかかるゲーム内時間を進める（ActionSystem.md 実行の順序）。
@@ -15,19 +14,24 @@ import type { WorldSession } from './WorldSession';
  *
  * 戻り値は「このまま効果を適用してよいか」。falseでも時間は既に経過している（1時間かけて道具が
  * 壊れ、何も得られなかった、という結果になる）。
+ *
+ * **どの世界の時間を進めるかはselfが答える。** 操作が乗っている側（11.5節）は必ず居るので、
+ * ここだけを名前付きの引数で受けて時計の出どころにする。役に就いていないことがありうる道具・動作主は
+ * othersで、生存を見る対象として同じに扱う——**時計を答えるかどうかだけが違う**。
  */
 export function spendDurationAndReportParticipantsAlive(
   minutes: number,
-  session: WorldSession,
-  participants: readonly (WorldObject | undefined)[],
+  self: WorldObject,
+  others: readonly (WorldObject | undefined)[] = [],
 ): boolean {
   // Worldを持たないセッション（時間の概念が無い単体テスト等）では時間を進めない。
+  const session = self.session;
   const world = session.world;
   if (minutes <= 0 || world === undefined) return true;
 
   // 見るのは「経過前に世界に居たのに、経過後は居ない」ものだけ。もともと世界の木に繋がっていない
   // オブジェクト（時間を持たない文脈で作った一時的なもの等）は、失われたわけではない。
-  const present = participants.filter(
+  const present = [self, ...others].filter(
     (participant): participant is WorldObject =>
       participant !== undefined && world.instance.containsOrIs(participant),
   );

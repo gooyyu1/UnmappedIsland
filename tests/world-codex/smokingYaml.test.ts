@@ -66,7 +66,7 @@ describe('smoking.yamlの燻製と燻し小屋', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(0.9));
+    const session = new WorldSession(codex, new World(worldInstance), fixedRng(0.9));
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);
     worldInstance
       .getProperty(codex.propertyNames.getId('weather'))
@@ -338,7 +338,7 @@ describe('smoking.yamlの燻製と燻し小屋', () => {
     spawnInto(session, 'smokehouse', land, 'fixtures');
 
     expect(
-      new Location(land, codex).fixtureStacks.map((stack) => stack.length),
+      new Location(land).fixtureStacks.map((stack) => stack.length),
       '2つの枠に1基ずつ並ぶ',
     ).toEqual([1, 1]);
   });

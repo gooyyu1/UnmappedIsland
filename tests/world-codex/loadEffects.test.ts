@@ -51,7 +51,7 @@ describe('荷重が歩みの遅れと体力に効く', () => {
   } {
     const session = new WorldSession(codex, undefined, seededRng(42));
     const worldInstance = new WorldObject(0, def('world'), session);
-    const world = new World(worldInstance, codex);
+    const world = new World(worldInstance);
     session.adoptWorld(world);
 
     const locationsSlotId = codex.slotNames.getId('locations');
@@ -120,7 +120,7 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     const stage = character.tryGetProperty(propertyId('load'))?.stage?.name;
     const load = character.getProperty(propertyId('load')).getEffectiveValue();
 
-    const moved = new Path(path, codex).travel(character);
+    const moved = new Path(path).travel(character);
     expect(arrived(), '成立したときだけ移動先の土地へ移る').toBe(moved);
 
     return {

@@ -226,7 +226,7 @@ export function cardOperationsOf(game: StartedGame, locale: Localization): CardO
         // 時間のかかる枠（手当てなど）はここで時間を進める。どの経路で入れても同じ値段になる。
         execute: () => {
           carried.forEach((item, index) =>
-            putIntoSlot(item, place, game.player.instance, game.session, () => put(item, index === 0)),
+            putIntoSlot(item, place, game.player.instance, () => put(item, index === 0)),
           );
         },
         // 入れられない相手にはそもそもこの答えを返さない（rejectionForMoveTo）ので、断る理由は無い。

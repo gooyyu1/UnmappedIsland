@@ -1,5 +1,5 @@
 import type { SlotCell } from './CellLayout';
-import { materialsSlotOf } from './crafting';
+import { materialsSlotOf, remainingRequirementsOf } from './crafting';
 import type { RecipeRequirementDef } from './RecipeDef';
 import type { WorldObject } from './WorldObject';
 
@@ -22,8 +22,6 @@ import type { WorldObject } from './WorldObject';
 export function autoFillMaterials(
   inProgress: WorldObject,
   sources: readonly (readonly WorldObject[])[],
-  /** 残りの工程が要求するもの（crafting.remainingRequirements）。省略すると全ての枠を埋める。 */
-  stillNeeded?: readonly RecipeRequirementDef[],
 ): number {
   const slot = materialsSlotOf(inProgress);
   if (slot === undefined) return 0;
@@ -31,6 +29,9 @@ export function autoFillMaterials(
   // 材料スロットは要求ごとの枠を持つ（inProgressObjects）ので、枠数は必ず決まっている。
   if (slot.def.cellCountPolicy === 'grows') return 0;
 
+  // 何がまだ要るかは製作中オブジェクト自身から決まる（crafting.remainingRequirementsOf）ので、
+  // 外から渡させない。別の進み具合の一覧を渡されても型は通り、済んだ工程の枠へ入れてしまう。
+  const stillNeeded = remainingRequirementsOf(inProgress);
   const available = sources.flat();
   let moved = 0;
 
@@ -54,12 +55,7 @@ export function autoFillMaterials(
  * （inProgressObjects.requirementCells）ので、同じ指定の要求が残っていなければその枠の出番は
  * 終わっている。要求から作られていない枠（`accept`を持たない枠）は対応する要求を持たない。
  */
-function hasRemainingRequirement(
-  cell: SlotCell,
-  stillNeeded: readonly RecipeRequirementDef[] | undefined,
-): boolean {
-  if (stillNeeded === undefined) return true;
-
+function hasRemainingRequirement(cell: SlotCell, stillNeeded: readonly RecipeRequirementDef[]): boolean {
   const accept = cell.def.accept;
   return accept !== undefined && stillNeeded.some((requirement) => requirement.match.key === accept.key);
 }

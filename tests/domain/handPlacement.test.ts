@@ -54,7 +54,7 @@ object_defs:
   beforeEach(() => {
     codex = new WorldCodexYamlLoader().load('core.yaml', YAML).buildAndReset();
     session = new WorldSession(codex);
-    player = new PlayerCharacter(session.createObject(codex.objectNames.getId('character')), codex);
+    player = new PlayerCharacter(session.createObject(codex.objectNames.getId('character')));
   });
 
   it('gapIndexを省略すると最初の空き枠へ入る', () => {

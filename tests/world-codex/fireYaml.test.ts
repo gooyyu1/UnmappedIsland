@@ -55,7 +55,7 @@ describe('fire.yamlの火の連鎖', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    worldView = new World(worldInstance, codex);
+    worldView = new World(worldInstance);
     session = new WorldSession(codex, worldView, fixedRng(roll));
 
     land = spawnInto('grassland', worldInstance, 'locations');
@@ -72,7 +72,7 @@ describe('fire.yamlの火の連鎖', () => {
   }
 
   function itemsOn(location: WorldObject): string[] {
-    return new Location(location, codex).items.map((object) => object.def.name);
+    return new Location(location).items.map((object) => object.def.name);
   }
 
   /** プレイヤーが手に持っている物。 */
@@ -117,7 +117,7 @@ describe('fire.yamlの火の連鎖', () => {
     stoke(hearth, 'thick_branch');
     lightDryGrass();
 
-    const tinder = new Location(land, codex).items.find((o) => o.def.name === 'burning_tinder');
+    const tinder = new Location(land).items.find((o) => o.def.name === 'burning_tinder');
     expect(tinder, '火起こしに成功している').toBeDefined();
     expect(
       hearth
@@ -492,7 +492,7 @@ describe('fire.yamlの火の連鎖', () => {
       '中では起こせる',
     ).toBe(true);
 
-    const tinder = new Location(cave, codex).items.find((o) => o.def.name === 'burning_tinder');
+    const tinder = new Location(cave).items.find((o) => o.def.name === 'burning_tinder');
     expect(tinder, '火種ができている').toBeDefined();
     expect(tinder!.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     expect(cave.tryGetAction('leave', player)?.tryExecute(), '火種を持って外へ出る').toBe(true);
@@ -570,7 +570,7 @@ describe('fire.yamlの火の連鎖', () => {
     // 「薪が先」（FireSystem.md 3.1節）の根拠。断る→時間が経つ→失う、をひと続きで見る。
     const hearth = spawnInto('campfire', land, 'fixtures');
     lightDryGrass();
-    const tinder = new Location(land, codex).items.find((o) => o.def.name === 'burning_tinder');
+    const tinder = new Location(land).items.find((o) => o.def.name === 'burning_tinder');
     expect(tinder, '火起こしに成功している').toBeDefined();
     expect(
       hearth.combinationsWith(tinder!, player).map((c) => c.name),
@@ -938,7 +938,7 @@ describe('fire.yamlの火の連鎖', () => {
     expect(meat.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
 
     session.advanceWorldTime(60 * 3);
-    expect(new Location(land, codex).fixtures[0].def.name).toBe('campfire');
+    expect(new Location(land).fixtures[0].def.name).toBe('campfire');
     expect(childNames(hearth), '焼き上がりは同じ枠に残る').toEqual(['roasted_meat']);
 
     session.advanceWorldTime(60 * 3);
@@ -983,7 +983,7 @@ describe('fire.yamlの火の連鎖', () => {
           ?.tryExecute() === true,
       ).toBe(true);
     }
-    hearth = new Location(land, codex).fixtures[0];
+    hearth = new Location(land).fixtures[0];
     expect(hearth.def.name).toBe('three_stone_hearth');
 
     for (let i = 0; i < 8; i++) {
@@ -995,7 +995,7 @@ describe('fire.yamlの火の連鎖', () => {
           ?.tryExecute() === true,
       ).toBe(true);
     }
-    expect(new Location(land, codex).fixtures[0].def.name).toBe('stone_hearth');
+    expect(new Location(land).fixtures[0].def.name).toBe('stone_hearth');
   });
 
   it('炉の段が上がるほど、火にかけられる枠が増える', () => {

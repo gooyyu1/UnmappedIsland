@@ -320,7 +320,7 @@ beast:
 荒ぶっている動物を手持ちや入れ物へ入れることはできず、飼いならした後の小動物はかごへ、大型は台車へ
 入れられるようにします。
 
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)
+**出どころ**: ユーザーの指示（荒ぶる相手は入れ物へ入らず、飼いならせば入る。[#2026](https://github.com/gooyyu1/UnmappedIsland/issues/2026)）
 
 ## 5. 1手は、動物ごとの重み配分1つで決まる
 

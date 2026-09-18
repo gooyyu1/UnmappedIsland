@@ -3,11 +3,11 @@ import type { WorldObject } from '../../domain/WorldObject';
 import { autoFillMaterials } from '../../domain/autoFill';
 import {
   tryAdvanceCrafting,
-  currentStep,
+  currentStepIsSupplied,
+  currentStepOf,
   materialsSlotOf,
   recipeOf,
-  remainingRequirements,
-  stepIsSupplied,
+  remainingRequirementsOf,
 } from '../../domain/crafting';
 import type { Requirement } from '../../domain/Requirement';
 import type { Localization } from '../../locale/Localization';
@@ -51,8 +51,8 @@ export function craftingActions(
   const recipe = recipeOf(object);
   if (recipe === undefined) return [];
 
-  const step = currentStep(recipe, progressOf(object));
-  const supplied = step !== undefined && stepIsSupplied(object, step);
+  const step = currentStepOf(object);
+  const supplied = currentStepIsSupplied(object);
   // 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.3節）。素材より先に見るのは、
   // 満たしていなければ素材が揃っていても手が付けられないため。
   const unmetCrafting = codex.unmetCraftingRequirement(game.player.instance);
@@ -68,14 +68,10 @@ export function craftingActions(
       execute: () => {
         // 探す順は手持ち → 足元。入れ物（かご）の中までは探さない——探すと、しまった物が勝手に
         // 出ていくことになり、しまうという操作の意味が無くなる。
-        autoFillMaterials(
-          object,
-          [
-            game.player.instance.tryGetSlot(codex.vocabulary.world.handSlotId)?.contents ?? [],
-            game.player.location?.items ?? [],
-          ],
-          remainingRequirements(recipe, progressOf(object)),
-        );
+        autoFillMaterials(object, [
+          game.player.instance.tryGetSlot(codex.vocabulary.world.handSlotId)?.contents ?? [],
+          game.player.location?.items ?? [],
+        ]);
       },
     },
     {
@@ -113,23 +109,17 @@ export function craftingActions(
  */
 export function craftingMaterials(container: WorldObject): readonly CraftingMaterial[] | undefined {
   const codex = container.session.codex;
-  const recipe = recipeOf(container);
-  if (recipe === undefined) return undefined;
+  if (recipeOf(container) === undefined) return undefined;
 
-  const progress = progressOf(container);
-  const inStep = new Set(currentStep(recipe, progress)?.requirements.map((r) => r.match.key));
+  const inStep = new Set(currentStepOf(container)?.requirements.map((r) => r.match.key));
   const contents = materialsSlotOf(container)?.contents ?? [];
 
-  return remainingRequirements(recipe, progress).map((requirement) => ({
+  return remainingRequirementsOf(container).map((requirement) => ({
     objectGlobalIds: requirement.match.matchingDefs(codex.objects).map((def) => def.globalId),
     needed: requirement.count,
     held: contents.filter((object) => requirement.requires(object.def)).length,
     inCurrentStep: inStep.has(requirement.match.key),
   }));
-}
-
-function progressOf(object: WorldObject): number {
-  return object.tryGetProperty(object.session.codex.vocabulary.engine.progressId)?.number ?? 0;
 }
 
 /**

@@ -166,7 +166,7 @@ function declaredVolume(
  * `max`にする（枠は「置ける場所」なので、上限は要求の合計で足りる）。
  *
  * **道具（`consume: false`）は足し合わせない**——工程を跨いで同じ1つが働くので、要求する工程が
- * いくつあっても置ける数は1つで足りる（crafting.remainingRequirements と同じ数え方）。
+ * いくつあっても置ける数は1つで足りる（crafting.remainingRequirementsOf と同じ数え方）。
  */
 function requirementCells(
   recipe: ObjectDef['recipesProducingThis'][number],

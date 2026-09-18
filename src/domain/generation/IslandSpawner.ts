@@ -125,22 +125,17 @@ function endsKey(from: number, to: number): string {
  * プレイヤーキャラクタを開始地点の土地（漂着地）へ配置し、その土地のビューを返す。
  * どこから始めるかは選抜（`selectStartSite`、ContentSkeleton.md 2.3節）が決める。
  */
-export function placePlayer(session: WorldSession, island: SpawnedIsland, character: WorldObject): Location {
-  return placePlayerAt(session, island, character, selectStartSite(session.codex, island.map));
+export function placePlayer(island: SpawnedIsland, character: WorldObject): Location {
+  return placePlayerAt(island, character, selectStartSite(character.session.codex, island.map));
 }
 
 /** 指定したサイトの土地へプレイヤーキャラクタを移し、その土地のビューを返す。 */
-export function placePlayerAt(
-  session: WorldSession,
-  island: SpawnedIsland,
-  character: WorldObject,
-  site: Site,
-): Location {
-  const codex = session.codex;
+export function placePlayerAt(island: SpawnedIsland, character: WorldObject, site: Site): Location {
+  const codex = character.session.codex;
   const land = island.landOf(site);
 
   const error = character.moveToSlotOrRejection(land.getSlot(codex.vocabulary.world.charactersSlotId));
   if (error !== undefined) throw new Error(`プレイヤーを開始地点へ配置できません: ${error}`);
 
-  return new Location(land, codex);
+  return new Location(land);
 }

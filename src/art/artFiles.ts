@@ -40,9 +40,16 @@ export function locationArtFiles(codex: WorldCodex, location: string): readonly 
   return files;
 }
 
-/** どの土地にも紐づかない、起動時に読み切る絵（キャラクター・アイテム・共通の背景）。 */
-export function commonArtFiles(codex: WorldCodex, locations: readonly string[]): readonly ArtFile[] {
-  const locationKeys = new Set(locations.flatMap((l) => locationArtFiles(codex, l).map((file) => file.key)));
+/**
+ * どの土地にも紐づかない、起動時に読み切る絵（キャラクター・アイテム・共通の背景）。
+ *
+ * **どの土地を遅延にするかはCodexだけから決まる**（locationNamesWithBackgroundArt）ので、呼び出し側に
+ * 引かせない。別の一覧を渡されても型は通り、土地の絵が起動時の分にも混ざって二重にロードされる。
+ */
+export function commonArtFiles(codex: WorldCodex): readonly ArtFile[] {
+  const locationKeys = new Set(
+    locationNamesWithBackgroundArt(codex).flatMap((l) => locationArtFiles(codex, l).map((file) => file.key)),
+  );
   const files: ArtFile[] = [];
   for (const [name, url] of ART_BY_NAME) {
     const key = objectTexture(name);
@@ -61,6 +68,10 @@ export function commonArtFiles(codex: WorldCodex, locations: readonly string[]):
  *
  * 遅延にする理由は常駐量——1つの土地が背景を何枚も持ち、それが土地の数だけ在ることにある。
  * **背景を持たない場所は遅らせる意味が無い**ので、そこで線を引く。
+ *
+ * **起動時に読む側（commonArtFiles）が中で引くので、`src` にはもう他の呼び手が居ない。** それでも
+ * 公開のままなのは、遅延と起動時の2つが**重複せず漏れなく全アセットを覆う**ことを確かめるには、
+ * 遅延にする側を1つずつ数えるほかに手が無いため（tests/art/artFiles.test.ts）。
  */
 export function locationNamesWithBackgroundArt(codex: WorldCodex): readonly string[] {
   return codex

@@ -167,7 +167,7 @@ describe('clothing.yamlの衣類', () => {
     /** 砂浜に立たせたキャラクタ。熱の削りは祖先の気温を読むので、居場所が要る。 */
     function stand(): { player: WorldObject; world: WorldObject } {
       const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
-      session.adoptWorld(new World(worldInstance, codex));
+      session.adoptWorld(new World(worldInstance));
       const beach = spawn('sandy_beach');
       expect(
         beach.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),

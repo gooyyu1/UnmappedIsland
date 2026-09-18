@@ -47,7 +47,7 @@ object_defs:
   beforeEach(() => {
     codex = new WorldCodexYamlLoader().load('core.yaml', YAML).buildAndReset();
     session = new WorldSession(codex);
-    location = new Location(session.createObject(codex.objectNames.getId('clearing')), codex);
+    location = new Location(session.createObject(codex.objectNames.getId('clearing')));
   });
 
   it('同種のアイテムは1つのスタックにまとまる', () => {

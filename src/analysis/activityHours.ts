@@ -287,7 +287,7 @@ export function litPlacesOf(codex: WorldCodex): readonly LitPlace[] {
 
   const places: LitPlace[] = [];
   for (const def of islandLocationsOf(codex).island) {
-    const place = placeOf(def, ambientId, 0, isSheltered(def));
+    const place = placeOf(def, ambientId, 0, isSheltered);
     if (place !== undefined) places.push(place);
   }
 
@@ -295,21 +295,21 @@ export function litPlacesOf(codex: WorldCodex): readonly LitPlace[] {
   const shallowCave = shallowCaveId === undefined ? undefined : codex.objects.tryGet(shallowCaveId);
   if (shallowCave === undefined) return places;
 
-  const cave = placeOf(
-    shallowCave,
-    ambientId,
-    hostAmbientOf(codex, shallowCave, ambientId),
-    isSheltered(shallowCave),
-  );
+  const cave = placeOf(shallowCave, ambientId, hostAmbientOf(codex, shallowCave, ambientId), isSheltered);
   return cave === undefined ? places : [...places, cave];
 }
 
-/** ambient_brightnessを宣言していれば、その場所。宣言していなければundefined（表に出さない）。 */
+/**
+ * ambient_brightnessを宣言していれば、その場所。宣言していなければundefined（表に出さない）。
+ *
+ * 守られているかは**その型から決まる**ので、判定そのもの（isSheltered）を受け取って中で当てる
+ * ——外で当てさせると、別の型の答えを渡しても型は通り、風雨の届く場所が守られていることになる。
+ */
 function placeOf(
   def: ObjectDef,
   ambientId: PropertyGlobalId,
   hostAmbient: number,
-  sheltered: boolean,
+  isSheltered: (def: ObjectDef) => boolean,
 ): LitPlace | undefined {
   const ambientDef = def.tryGetPropertyDef(ambientId);
   if (ambientDef === undefined) return undefined;
@@ -320,7 +320,7 @@ function placeOf(
     name: def.name,
     brightnessAt: (worldAmbient) =>
       range === undefined ? worldAmbient + offset : range.clamp(worldAmbient + offset),
-    sheltered,
+    sheltered: isSheltered(def),
   };
 }
 

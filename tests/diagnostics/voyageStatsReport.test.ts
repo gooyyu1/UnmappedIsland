@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 import type { CourseTotal, VoyageCourse, VoyageLegs } from '../../src/analysis/voyageLegs';
-import { voyageLegsOf } from '../../src/analysis/voyageLegs';
+import { lookoutMinutesOf, voyageLegsOf } from '../../src/analysis/voyageLegs';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
 import {
   describeDocumentedSections,
@@ -63,7 +63,7 @@ function buildSections(legs: VoyageLegs): readonly YamlReportSection[] {
         zone: zone.name,
         to_mainland: zone.zonesToMainland,
         lookouts: zone.lookouts,
-        lookout_minutes: rounded(zone.lookoutMinutes, MINUTE_DECIMALS),
+        lookout_minutes: rounded(lookoutMinutesOf(zone), MINUTE_DECIMALS),
         crossing_minutes: rounded(zone.crossingMinutes, MINUTE_DECIMALS),
         storm_drift_minutes: rounded(zone.stormDriftTicks * MINUTES_PER_TICK, MINUTE_DECIMALS),
         legs: zone.legs.map((leg) => leg.destinationName),
