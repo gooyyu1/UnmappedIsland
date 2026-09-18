@@ -159,6 +159,7 @@ export class Location extends ObjectWrapper {
    */
   private reveal(fixture: WorldObject): void {
     this.revealInOwnLocation(fixture);
+    if (!fixture.def.hasTag(this.words.pathTagId)) return;
 
     const returnPath = new Path(fixture).returnPath;
     if (returnPath !== undefined) this.revealInOwnLocation(returnPath);

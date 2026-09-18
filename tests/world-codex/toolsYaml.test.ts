@@ -142,7 +142,7 @@ describe('tools.yamlの道具定義', () => {
   });
 
   it('石へ石をドラッグすると、割られた側が尖った石になり、1時間が経つ', () => {
-    const session = new WorldSession(codex, undefined);
+    const session = new WorldSession(codex);
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     const worldView = new World(worldInstance);
     session.adoptWorld(worldView);
@@ -194,7 +194,7 @@ describe('石斧を作る', () => {
 
   /** 岩場を1つ置いた世界。時間を進めるのでWorldを持つセッションを使う。 */
   function rockyField(): { session: WorldSession; field: WorldObject } {
-    const session = new WorldSession(codex, undefined);
+    const session = new WorldSession(codex);
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     const worldView = new World(worldInstance);
     session.adoptWorld(worldView);

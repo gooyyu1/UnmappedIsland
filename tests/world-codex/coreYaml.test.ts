@@ -102,7 +102,7 @@ describe('core.yamlのworld定義', () => {
     const hourId = codex.propertyNames.getId('hour');
     const dayId = codex.propertyNames.getId('day');
 
-    const session = new WorldSession(codex, undefined);
+    const session = new WorldSession(codex);
     const worldInstance = session.createObject(world.globalId);
     const worldView = new World(worldInstance);
     session.adoptWorld(worldView);

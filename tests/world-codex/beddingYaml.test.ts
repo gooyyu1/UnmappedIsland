@@ -42,7 +42,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
 
   /** その土地にプレイヤーが立っている世界。 */
   function open(landName: string, characterName: string = SAMPLE_CHARACTER) {
-    const session = new WorldSession(codex, undefined);
+    const session = new WorldSession(codex);
     const world = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(world));
     const land = spawnInto(session, landName, world, 'locations');

@@ -18,7 +18,7 @@ export class Path extends ObjectWrapper {
     return this.effectiveNumberOf(this.words.requiredProgressId);
   }
 
-  /** 移動先LocationのインスタンスID。生成が書き込む前は`NO_INSTANCE`（WorldObject）。 */
+  /** 移動先LocationのインスタンスID。生成が書き込む前は`NO_INSTANCE`（`WorldObject.ts`）。 */
   get destinationInstanceId(): number {
     return this.effectiveNumberOf(this.words.destinationIdId);
   }
@@ -28,7 +28,7 @@ export class Path extends ObjectWrapper {
    * 呼び出し側はインスタンスIDから実体を辿る手順を知らなくてよい。
    *
    * **行き先がツリーに居なければundefined。行き先を書き込まれていない道も同じ**
-   * ——`NO_INSTANCE`（WorldObject）はどの個体も持たないので、既定値のまま引けば「該当なし」になる。
+   * ——`NO_INSTANCE`（`WorldObject.ts`）はどの個体も持たないので、既定値のまま引けば「該当なし」になる。
    */
   get destination(): WorldObject | undefined {
     return this.instance.findRoot().findSelfOrDescendantByInstanceId(this.destinationInstanceId);
