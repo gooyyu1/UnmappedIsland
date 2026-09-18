@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -27,7 +27,7 @@ const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'site', 'worktrees', 
 const RECORDS = new Set([
   join(ROOT, 'agent-ops', 'analysis'),
   join(ROOT, 'agent-ops', 'decisions'),
-  join(ROOT, 'docs', 'engine', 'DesignNotes.md'),
+  join(ROOT, 'docs', 'DesignNotes.md'),
   __filename,
 ]);
 
@@ -66,6 +66,14 @@ function lines(): readonly (readonly [string, number, string])[] {
       .map((line, index) => [relative(ROOT, path), index + 1, line] as const),
   );
 }
+
+describe('見ない先が、現物を指している', () => {
+  // 綴りが現物とずれても、除外が当たらなくなるだけで走査は通る——**赤くなるのは、その文書が
+  // たまたま起点の綴りを含むときだけ**。見ない先を動かしたときに、ここが落ちる。
+  it.each([...RECORDS])('%s が在る', (path) => {
+    expect(existsSync(path)).toBe(true);
+  });
+});
 
 describe('差分の起点', () => {
   it('手順書もスクリプトも、ローカルの `main` を起点にしない', () => {

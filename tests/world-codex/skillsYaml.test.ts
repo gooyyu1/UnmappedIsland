@@ -114,6 +114,7 @@ const RECIPES_WITHOUT_DEFTNESS = [
   'salt_pan.laid',
   'torch.wrapped',
   'unfired_jar.coiled',
+  'unfired_jar_lid.pressed',
 ];
 
 /**

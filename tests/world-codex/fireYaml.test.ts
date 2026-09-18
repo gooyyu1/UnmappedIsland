@@ -1203,3 +1203,24 @@ describe('炉の火床の枠が名乗る型', () => {
     ).toBe(true);
   });
 });
+
+describe('炉が火にかける場所', () => {
+  const codex = bundledCodex();
+
+  it('hearthを名乗る設備は、どれもfireスロット1つだけで受ける', () => {
+    // **docs/engine/FireSystem.md 1.1節がそう書いている。** 火にかける場所を2つ目のスロットへ分けると、
+    // 炉を開いたときに火の中と石の上が別のタブへ分かれる（docs/ui/Windows.md 1.2節）。置き場所の違いは
+    // スロットではなくcellsの並びが持つ。
+    const hearthNames = codex.objectDefNamesWithTag(codex.tagNames.getId('hearth'));
+    expect(hearthNames, 'hearthを名乗る設備が1つも無い').not.toEqual([]);
+    for (const hearthName of hearthNames) {
+      expect(
+        codex.objects
+          .get(codex.objectNames.getId(hearthName))
+          .enumerateSlotDefs()
+          .map((slotDef) => slotDef.name),
+        hearthName,
+      ).toEqual(['fire']);
+    }
+  });
+});

@@ -15,8 +15,9 @@ title: 土器を焼く
 seed: 3
 
 player:
-  # 成形済みの壺2つと、もう1つ作れるだけの粘土。炉はこの場で築く。
-  hand: [unfired_jar, unfired_jar, clay, clay]
+  # 成形済みの壺2つと蓋1枚、もう1つ作れるだけの粘土。炉はこの場で築く。壺と蓋は同じ炉へ並べて
+  # 一度に焼ける（どちらもpotteryタグを名乗る）。
+  hand: [unfired_jar, unfired_jar, unfired_jar_lid, clay, clay]
 
 location:
   type: sandy_beach
