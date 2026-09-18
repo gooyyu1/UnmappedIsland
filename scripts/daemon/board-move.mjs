@@ -95,9 +95,16 @@ const STALL_MINUTES = Number(process.env.STALL_MINUTES || 15);
 /**
  * `env:<値>` が指す投入先（[`dispatch-task.sh`](dispatch-task.sh) へ渡す引数。2.16）。**盤面が
  * 宛先を知っている値の一覧はここだけ**——GitHub のラベルが在るかとは別で、人は盤面の知らない
- * `env:*` を作れる。ラベルの無い issue は `cloud` として引くので、既定も同じ表に載っている。
+ * `env:*` を作れる。投入先を名乗らないものは `DEFAULT_ENV` として引くので、既定も同じ表に載っている。
  */
 const DISPATCH_TO = { cloud: '', bridge: '--bridge' };
+
+/**
+ * **投入先を名乗らなかったときの送り先**（2.16「既定はクラウド」）。issue の `env:` ラベルと
+ * 周期の係（下の `CYCLES`）で別々に持たないのは、**どちらも同じ1つの決めごとだから**——2箇所に
+ * 置くと、既定を動かしたときに片方だけが動く。
+ */
+const DEFAULT_ENV = 'cloud';
 
 /**
  * 同時に**抱えてよいタスク**の数（3.1。値の出どころ: ユーザーの指示・2026-09-07）。数えるのは担当
@@ -253,7 +260,9 @@ export const PATROL = 'patrol';
  * - `hours` … 前に立ててから空ける間隔。**溜めてからまとめて捌く係と、来たそばから捌く係が
  *   同じ表に載る**ので、係ごとに持つ。件数のしきい値は置かない——「そこまでは残ってよい」を
  *   宣言することになり、滞留を仕様にする（`agent-ops/board-design.md` 2.18節）。
- * - `env` … 投入先（`DISPATCH_TO` の値）。
+ * - `env` … 投入先（`DISPATCH_TO` の値）。**省いたら `DEFAULT_ENV`。** 名乗るのは、**見るものが
+ *   デーモンと同じPCにしか無い係**だけ（下の `patrol`）——それ以外は、issue も自分のPRも
+ *   クラウドの箱から書けるので、係ごとに何が書けるかを数え上げても同じ答えにしかならない。
  * - `prompt` … 渡す本文の在り処（リポジトリからの相対）。
  * - `urgent` … **待たせてよいか。** 既定（省略）は待たせてよい＝最後尾で、根拠は「間隔が満ちて
  *   いる限り次の周でも同じ手が出る」こと。**その根拠が言えない係だけが立てる**（下の `patrol`。
@@ -273,9 +282,6 @@ const CYCLES = [
     // **1日2回**（出どころ: ユーザーの指示・2026-09-11）。**未整理の issue は配れないまま止まる**
     // ので、溜めてから捌く利が無い——待たせた分がそのまま、着手できる仕事の目減りになる。
     hours: 12,
-    // クラウドで足りる。**既存 issue の本文もラベルも、用意された道具で書き換えられる**
-    // ——番号を保ったまま書き換えるのが棚卸しの中心（2.17.3）。
-    env: 'cloud',
     prompt: 'agent-ops/prompts/triage-prompt.md',
     // **未整理は、棚卸しの結論が揃っていないこと**（2.17.1）——`kind:` が無いか、`kind:task` なのに
     // `goal:` が無いか。**`kind:` の有無だけを入口にすると、`kind:` が付いた時点で issue が棚卸しの
@@ -285,9 +291,6 @@ const CYCLES = [
   {
     name: 'analysis',
     hours: 24,
-    // クラウドで足りる。**既存 issue の本文は書き換えない**——切るのは新しい issue で、記録は
-    // 自分のPRに載せる（2.17・4.4）。
-    env: 'cloud',
     prompt: 'agent-ops/prompts/analysis-prompt.md',
     due: (board) => hasUnreadSmell(board.mergedPrs ?? []),
   },
@@ -296,9 +299,6 @@ const CYCLES = [
     // **週1回。** 一次は1日1回なので、1本で7回ぶんが読める。**回をまたいで同じ形が出たか**を見る
     // 係なので、溜まっていないと仕事にならない（`agent-ops/prompts/analysis-trend-prompt.md`）。
     hours: 168,
-    // クラウドで足りる。**既存 issue の本文は書き換えない**——切るのは新しい issue で、記録は
-    // 自分のPRに載せる（2.17・2.17.4）。
-    env: 'cloud',
     prompt: 'agent-ops/prompts/analysis-trend-prompt.md',
     due: (board) => (board.unsummarizedAnalyses ?? 0) > 0,
   },
@@ -307,10 +307,6 @@ const CYCLES = [
     // **週1回。** 履歴が増えるのはユーザーと直接話したときだけで、**束ねるには溜まっている必要が
     // ある**（`.claude/skills/policy-review/SKILL.md`「棚卸しの手順」——孤立した1件は抽出しない）。
     hours: 168,
-    // クラウドで足りる。**既存 issue の本文は書き換えない**——出すのは新しい issue 1本と、諾否が
-    // 二重に立っていた周のコメント1つだけで、リポジトリへは1行も書かない
-    // （`agent-ops/prompts/policy-cycle-prompt.md`）。
-    env: 'cloud',
     prompt: 'agent-ops/prompts/policy-cycle-prompt.md',
     due: (board) => (board.pendingDecisions ?? 0) > 0,
   },
@@ -319,8 +315,6 @@ const CYCLES = [
     // **見つからない周が続いても1日1本に収める。** 下の `due` が真である状態は、次の1本が入るまで
     // 続く——間隔を置かないと、そのあいだずっとこの係だけが立ち続ける。
     hours: 24,
-    // クラウドで足りる。**リポジトリへは1行も書かない**（`agent-ops/prompts/dig-prompt.md`）。
-    env: 'cloud',
     prompt: 'agent-ops/prompts/dig-prompt.md',
     // **配れる「完成へ近づける仕事」が尽きた周がこの係の出番**（2.18.1）。枠（`HELD_TASKS`・
     // `ACTIVE_WORKERS`）や錠で**待たされているだけの周は立てない**——順番待ちの task は
@@ -421,7 +415,7 @@ const locks = (issue) =>
 function wantedEnv(issue) {
   const marks = (issue.labels ?? []).map((label) => label.name).filter((name) => name.startsWith('env:'));
   if (marks.length > 1) return undefined;
-  return marks.length === 0 ? 'cloud' : marks[0].slice('env:'.length);
+  return marks.length === 0 ? DEFAULT_ENV : marks[0].slice('env:'.length);
 }
 
 const names = (item) => (item.labels ?? []).map((label) => label.name);
@@ -1140,7 +1134,7 @@ export function moves(input) {
     if (!Number.isNaN(since) && at - since < cycle.hours * 3_600_000) {
       continue;
     }
-    const flag = DISPATCH_TO[cycle.env];
+    const flag = DISPATCH_TO[cycle.env ?? DEFAULT_ENV];
     const move = `CHORE ${cycle.name} ${cycle.prompt} ${input.now}${flag === '' ? '' : ` ${flag}`}`;
     (cycle.urgent === true ? urgentChores : chores).push(move);
   }
