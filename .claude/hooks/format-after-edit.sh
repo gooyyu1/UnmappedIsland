@@ -8,7 +8,9 @@
 # 冪等・非対話。prettierが扱えない拡張子と.prettierignore対象は黙って飛ばす。
 set -euo pipefail
 
-REPO_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+REPO_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$HERE/../.." && pwd)}"
 
 # フックの入力はstdinのJSON。Write/Editの書き込み先を取り出す。
 file=$(jq -r '.tool_response.filePath // .tool_input.file_path // empty')

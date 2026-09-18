@@ -9,9 +9,11 @@
 #
 # 「判断を含む発言か」の判定は機械では当たらない（キーワード照合は取りこぼしと誤検知が同時に出て、
 # どちらも見えない）。機械は促すことだけを担い、判定と記録はモデルが行う。
+#
+# **プロンプトのたびに走る。** 出すのは定数なので、`cat` を起こさず組み込みだけで出す。
 set -euo pipefail
 
-cat <<'JSON'
+mapfile -t context <<'JSON'
 {
   "hookSpecificOutput": {
     "hookEventName": "UserPromptSubmit",
@@ -19,3 +21,4 @@ cat <<'JSON'
   }
 }
 JSON
+printf '%s\n' "${context[@]}"

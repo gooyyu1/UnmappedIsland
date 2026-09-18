@@ -21,6 +21,15 @@ export function pathForBash(path: string): string {
 }
 
 /**
+ * 走らせる bash の在り処。**名前ではなく在り処で起動する**——`PATH` を絞って走らせる試験
+ * （[`onlyTheseCommands`](onlyTheseCommands.ts)）では `bash` 自身も絞りの外に出るので、名前では
+ * 見つからない。かといって `/bin/bash` と決め打つと、bash がそこに無い環境で壊れる。
+ *
+ * 引くのは1回だけ。**身代わりの先頭の1行も同じものを使う**（[`stubShebang`](stubShebang.ts)）。
+ */
+export const BASH = execFileSync('bash', ['-c', 'command -v bash'], { encoding: 'utf-8' }).trim();
+
+/**
  * `.sh` を1本走らせて標準出力を返す。**走らせるスクリプトの在り処を直す約束をここが持つ**ので、
  * 叩く側は「走らせてほしい」と頼むだけでよく、直す手順を覚えていなくてよい。`args` に載せるものは
  * パスとは限らないので触らない——引数がパスなら、叩く側が `pathForBash` を通す。
@@ -34,7 +43,7 @@ export function runScript(
   args: readonly string[],
   options: Omit<ExecFileSyncOptionsWithStringEncoding, 'encoding'>,
 ): string {
-  return execFileSync('bash', [pathForBash(script), ...args], { ...options, encoding: 'utf-8' });
+  return execFileSync(BASH, [pathForBash(script), ...args], { ...options, encoding: 'utf-8' });
 }
 
 /**
@@ -46,7 +55,7 @@ export function spawnScript(
   args: readonly string[],
   options: Omit<SpawnSyncOptionsWithStringEncoding, 'encoding'>,
 ): SpawnSyncReturns<string> {
-  return spawnSync('bash', [pathForBash(script), ...args], { ...options, encoding: 'utf-8' });
+  return spawnSync(BASH, [pathForBash(script), ...args], { ...options, encoding: 'utf-8' });
 }
 
 /** `.sh` を1本走らせた結果。**非0で終わることも結果の一部**なので、投げずに返す。 */
@@ -68,7 +77,7 @@ export function spawnScriptAsync(
   args: readonly string[],
   options: { env?: NodeJS.ProcessEnv; cwd?: string } = {},
 ): Promise<ScriptRun> {
-  const child = spawn('bash', [pathForBash(script), ...args], options);
+  const child = spawn(BASH, [pathForBash(script), ...args], options);
 
   let stdout = '';
   let stderr = '';
