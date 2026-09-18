@@ -246,8 +246,11 @@ object_defs:
           - {prop: retting_progress, gte: 1}
         duration: {prop: ret_minutes}
         # 繊維・編みの腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
-        # characters/player_character.yaml）。**掻き取り（fiber.yamlのstrip）と同じだけ配る**
-        # ——同じ植物繊維を出す2つの入口で、違うのは採れる土地だけ（上のコメント）。
+        # characters/player_character.yaml）。**掻き取り（fiber.yamlのstrip）と時間あたりで揃う**
+        # ——同じ植物繊維を出す2つの入口で、違うのは採れる土地だけ（上のコメント）。**素の分数で
+        # 見た時間あたりが等しい**ので、どちらの島に流れ着いても伸びる速さは同じところから始まる。
+        # **腕が上がると揃わなくなる**——縮むのは分の絶対値（docs/world/Skills.md 7節）なので、短い
+        # 掻き取りのほうが速くなる。**この開きを許すかは決まっていない**（SkillSystem.md 3節）。
         add: {agent: {skill_cordage: 2}}
         destroy: self
         spawn: {object: plant_fiber, count: 3}

@@ -99,10 +99,10 @@
 （`src/assets/world-codex/salt.yaml` の `cure`）。
 
 **干し場へ掛けるほうだけを操作にはしません。** 枠へ物を入れる1手には、どの腕も配らないためです
-——伸びる量は作業の長さに依らず一律なので（[`SkillSystem.md`](../engine/SkillSystem.md) 3 節）、1手で
-済む操作へ配ると最も速い伸ばし方になります（`src/assets/world-codex/characters/player_character.yaml`
-の腕前の前書き）。掛けるのだけを例外にすれば、同じ干す行為なのに地面へ並べると伸びず干し場へ掛けると
-伸びる、という差も世界に残ります。
+——伸びる量はその操作の長さから決まるので（[`SkillSystem.md`](../engine/SkillSystem.md) 3 節）、1手で
+済む操作へ配ると時間あたりが跳ね、その規則が保っている幅の外に出ます
+（`src/assets/world-codex/characters/player_character.yaml` の腕前の前書き）。掛けるのだけを例外に
+すれば、同じ干す行為なのに地面へ並べると伸びず干し場へ掛けると伸びる、という差も世界に残ります。
 
 **燻製も同じで、腕を伸ばすのは塩漬けのままです。** 燻し小屋も吊るして待つ設備なので、上の 2 つの
 理由がそのまま当てはまります（[`SurvivalItems.md`](./SurvivalItems.md) 11 節）。**この腕を読むのは
@@ -244,7 +244,9 @@
 `catch_seabird` は `pick` そのものを持たず（必ず獲れる）、積む先がありません。**据えた的へ打ち込む手も
 `pick` を持ちません**（[`SkillSystem.md`](../engine/SkillSystem.md) 3.1 節の的）——当たり所を決めるのは
 相手の体で、揺れる体も裂ける皮も無い的には卓が立ちません。**それでも伸びる量は獣を殴るのと同じ**です
-（実行経路は一律、[`SkillSystem.md`](../engine/SkillSystem.md) 3 節）。
+——**どちらも同じ長さの手だから**で、実行経路が配る量はその手の長さから決まります
+（[`SkillSystem.md`](../engine/SkillSystem.md) 3 節）。長さが揃っていることは
+`tests/world-codex/skillsYaml.test.ts` が打ちかかる相手すべてで見ます。
 
 **積むのは、その卓で最も太い当たり方 1 つだけです。** 当たり方の数だけ積むと、2 つ名乗る石斧だけが
 倍受け取り、**配分の合計を 100 に揃えた意味**（[`HuntingSystem.md`](../engine/HuntingSystem.md) 1.2 節）
