@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { delimiter, join, resolve } from 'node:path';
+import { delimiter, dirname, join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeMetaServer, writeFakeCredentials } from '../support/fakeMetaServer';
 import { runScript, spawnScriptAsync } from '../support/runScript';
@@ -74,11 +74,13 @@ esac
   );
   chmodSync(gh, 0o755);
 
-  // 同じ仕事を既に持っている1本。**手綱を通ってしまった回は、ここで止まる。**
+  // 見回る係の仕事を既に持っている1本。**手綱を通ってしまった回は、ここで止まる。**
+  // **告げに行く側（`chore-values`）は入れない**——あちらは手綱を通り抜けるのが正しいので、
+  // ここで塞ぐと「通れたこと」を見る側が占有で落ちる。立てに行った先は身代わりのCCR。
   const live = join(work, 'live.tsv');
   writeFileSync(
     live,
-    'session_busy\tSESSION_STATUS_RUNNING\tSESSION_STATUS_BUCKET_WORKING\tchore-patrol,chore-values\tbridge\n',
+    'session_busy\tSESSION_STATUS_RUNNING\tSESSION_STATUS_BUCKET_WORKING\tchore-patrol\tbridge\n',
     'utf-8',
   );
 
@@ -89,6 +91,34 @@ esac
     BRAKE_ISSUE,
     CLOUD_ENV: 'env_TEST_CLOUD',
   };
+}
+
+/** 盤面が控えを置く場所（`BOARD_STATE`）。**渡す側の家とは別に名指しする**——本物を読ませない。 */
+const stateDir = (home: string) => join(home, '.claude', 'board-state');
+
+/** 余力の控えの置き場（[`usage.sh`](../../scripts/daemon/usage.sh) の `--last`）。 */
+const cachedUsage = (home: string) => join(stateDir(home), 'usage-latest');
+
+/**
+ * 余力が在ることにする。**告げに行く投入も余力へは訊く**ので、控えが無いとそこで止まる
+ * （下の「余力の控えが無ければ」）——控えの1行目は引けた時刻で、そこから `USAGE_MAX_AGE_SECONDS`
+ * を越えると古い扱いになる。
+ *
+ * **叩いた印も一緒に置く。** 控えが無い周に `headroom.sh` は自分で1回引きに行くので、印が無いと
+ * **試験が本物の口を叩く。**
+ */
+function seedHeadroom(home: string): void {
+  const now = Math.floor(Date.now() / 1000);
+  const file = cachedUsage(home);
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(
+    file,
+    [`${now}`, 'five_hour 5 2026-01-01T00:00:00+00:00 -', 'seven_day 5 2026-01-01T00:00:00+00:00 -', ''].join(
+      '\n',
+    ),
+    'utf-8',
+  );
+  writeFileSync(join(dirname(file), 'usage-polled'), `${now}\n`, 'utf-8');
 }
 
 /** `dispatch-chore.sh` を1本叩く。返すのは終了コード。 */
@@ -133,8 +163,9 @@ describe('dispatch-chore.sh の `--gate values`', () => {
   beforeEach(async () => {
     endpoint = await server.listen();
     server.received.length = 0;
-    work = mkdtempSync(join(tmpdir(), 'unmapped-island-ungated-'));
+    work = mkdtempSync(join(tmpdir(), 'unmapped-island-gate-values-'));
     writeFakeCredentials(work);
+    seedHeadroom(work);
   });
 
   afterEach(async () => {
@@ -155,6 +186,7 @@ describe('dispatch-chore.sh の `--gate values`', () => {
         CCR_META_ENDPOINT: endpoint,
         HOME: work,
         USERPROFILE: work,
+        BOARD_STATE: stateDir(work),
       },
     });
 
@@ -189,6 +221,20 @@ describe('dispatch-chore.sh の `--gate values`', () => {
     const done = await run(['--gate', 'other']);
 
     expect(done.stderr).toContain('投入の手綱で止まっている');
+    expect(created()).toBeUndefined();
+  });
+
+  /**
+   * **流れるのは手綱だけ。** 余力（`headroom.sh`）も占有も、他の種類と同じものを通る
+   * （`agent-ops/board-design.md` 2.5.1 は **【確定】**）。**控えを消すだけで止まる**ことで、
+   * 上の「立てに行く」が余力を素通りして通っているのではないことまで見る。
+   */
+  it('余力の控えが無ければ、手綱を流した周でも止まる', async () => {
+    rmSync(cachedUsage(work));
+
+    const done = await run(['--gate', 'values']);
+
+    expect(done.stderr).toContain('使用量の余力で止まっている');
     expect(created()).toBeUndefined();
   });
 
