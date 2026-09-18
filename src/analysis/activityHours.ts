@@ -22,8 +22,9 @@ import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
  * 据え付けの光源を数えない前提では、どちらも土地のambient_brightnessをそのまま土台にするだけなので
  * （同2節）、**同じ明るさを別々のしきい値で切ったもの**になる。
  *
- * **「屋外で採れる」と「探索できる」も別々の列。** 明るさの要求は同じだが、**嵐が止めるのは採取だけ**
- * （ContentSkeleton.md 8.1.4節）なので、採る側だけが嵐の時間を引く。嵐かどうかは天気の名前ではなく、
+ * **「屋外で採れる」と「探索できる」も別々の列。** 明るさの要求は同じだが、**今止まるのは採取だけ**
+ * （ContentSkeleton.md 8.1.4節は屋外の行動をすべて止めると決めており、広げるのはこれから）なので、
+ * 採る側だけが嵐の時間を引く。嵐かどうかは天気の名前ではなく、
  * `core.yaml`のweatherがwind_speedへ与える風速と、キャラクタが宣言する段の境目の比較で決める
  * ——ここでも数字を書き写す箇所は無い。**屋根や岩陰に守られた場所（浅い洞窟）には風雨が届かない**
  * ので、そこでは嵐を引かない（player_character.yamlのshelteredの段が風雨を落とす分）。
@@ -69,7 +70,7 @@ const GATHERING_COLUMN: ActivityColumn = {
   stoppedByWind: true,
 };
 
-/** 探索する（同 5節）。採取と同じ明るさを要求するが、嵐では止まらない。 */
+/** 探索する（同 5節）。採取と同じ明るさを要求し、嵐では今のところ止まらない。 */
 const EXPLORATION_COLUMN: ActivityColumn = {
   propertyName: 'looking_brightness',
   stageName: 'bright',
@@ -113,7 +114,7 @@ export interface ActivityHoursRow {
   /** 屋外で採れる時間（時間/日）。嵐の時間を引いたもの（ContentSkeleton.md 8.1.4節）。 */
   readonly gatheringHoursPerDay: number;
 
-  /** 探索できる時間（時間/日）。明るさは採取と同じ要求で、嵐では止まらない。 */
+  /** 探索できる時間（時間/日）。明るさは採取と同じ要求で、嵐では今のところ止まらない。 */
   readonly explorationHoursPerDay: number;
 
   /** 手元の細かい作業ができる時間（時間/日）。 */

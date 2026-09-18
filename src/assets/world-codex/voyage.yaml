@@ -238,8 +238,8 @@ traits:
       # 湧かせる側の仕事で、ここには条件を置かない（各海区の on_max 参照）。
       #
       # **見えている海面しか見張れない**（docs/engine/IlluminationSystem.md 5節。地上の探索・小島の
-      # 探索と同じ条件）。**風雨は要らない**——嵐が止めるのは採取だけで、探索は止まらない
-      # （docs/world/ContentSkeleton.md 8.1.4節）。
+      # 探索と同じ条件）。**風雨は今のところ要らない**——嵐が止めているのは採取の操作だけで、探索へ
+      # 広げるのはこれから（docs/world/ContentSkeleton.md 8.1.4節・8.1.5節）。
       explore:
         trigger: menu
         conditions:
