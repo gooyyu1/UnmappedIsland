@@ -35,11 +35,19 @@ function decision(): Decision {
   return (parsed as { hookSpecificOutput?: Decision }).hookSpecificOutput ?? {};
 }
 
-/** 入口（`.claude/ccr-meta.sh`）のコメントが持つ節の見出し。 */
+/**
+ * 入口（`.claude/ccr-meta.sh`）の冒頭のコメント。**行頭の `#` を落としてから繋ぐ**——残すと、写しの
+ * 判定が入口側の**行折り返しの位置**に依る（折り返しをまたぐ写しが `#` で断ち切られて抜ける）。
+ */
+function entryComment(): string {
+  return readFileSync(ENTRY, 'utf-8').replace(/^#+ ?/gm, '');
+}
+
+/** 入口のコメントが持つ節の見出し。 */
 function entrySections(): string[] {
-  return readFileSync(ENTRY, 'utf-8')
+  return entryComment()
     .split(/\r?\n/)
-    .flatMap((line) => /^#\s*#{2,6}\s+(\S.*?)\s*$/.exec(line)?.[1] ?? []);
+    .flatMap((line) => /^#{2,6}\s+(\S.*?)\s*$/.exec(line)?.[1] ?? []);
 }
 
 /** 引く側と引かれる側で揃わない記号を落として突き合わせる形にする。 */
@@ -61,10 +69,11 @@ function reasonProse(): string {
 }
 
 /**
- * 案内が入口と続けて同じ字面を持ってよい長さ。**入口の在り処を名指しするぶんで足りる**
- * （2026-09-18 の実測で19字）。理由の一文を写し戻すと48字になるので、ここで分かれる。
+ * 案内が入口と続けて同じ字面を持ってよい長さ。**入口の在り処と、そこで何が呼べるかを名指しする
+ * ぶんで足りる**（2026-09-18 の実測で、正しい状態の最長は21字）。理由の一文を写し戻すと54字に
+ * なるので、どちらからも離れたところで分ける。
  */
-const COPY_RUN = 24;
+const COPY_RUN = 32;
 
 function preToolUse(): readonly Matcher[] {
   const settings: unknown = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
@@ -84,24 +93,26 @@ describe('deny-ccr-meta-mcp.sh', () => {
 
   /**
    * **なぜシェルへ載せると壊れるかを持つのは入口の節ひとつ**で、ここはそこを名指しするだけ
-   * （`CLAUDE.md`「同じ説明を複数箇所に書かない」）。写しを置くと片方だけが古くなる——実際に、
-   * 止めたい対象が挙げている理由より狭い「バッククォートだけ」のまま残っていた（issue #1979）。
+   * （`CLAUDE.md`「同じ説明を複数箇所に書かない」）。写しを置くと、片方だけが古くなる。
+   *
+   * **鉤括弧は全部見る。** 案内が引くのは入口の節だけなので、節でないものを引いたらそれも赤くする
+   * ——「どれが節の名前か」を字面で見分ける仕組みは、ここには無い。
    */
-  it('理由を抱えず、責務を持つ節を名指しで指す', () => {
+  it('入口の節を名指しで指し、その節が実在する', () => {
     const reason = decision().permissionDecisionReason ?? '';
-    const named = /`\.claude\/ccr-meta\.sh`[^「]*「([^」]+)」/.exec(reason)?.[1];
+    const quoted = [...reason.matchAll(/「([^」]+)」/g)].map((match) => match[1]);
+    const sections = entrySections().map(normalize);
+    const missing = quoted.filter((name) => !sections.some((heading) => heading.includes(normalize(name))));
 
     // 節を指していなければ、読み手は冒頭のどこを読めばよいか分からない。
-    expect(named, `理由を持つ節を名指ししていない:\n${reason}`).toBeDefined();
+    expect(quoted, `理由を持つ節を名指ししていない:\n${reason}`).not.toHaveLength(0);
     // 畳まれた節を指したままでは、案内が行き止まりになる。
-    expect(entrySections().map(normalize)).toContainEqual(
-      expect.stringContaining(normalize(named as string)),
-    );
+    expect(missing, `入口に無い節を指している:\n${missing.join('\n')}`).toEqual([]);
   });
 
   it('要旨だけを書き、入口の文面を写さない', () => {
     const prose = reasonProse();
-    const entry = normalize(readFileSync(ENTRY, 'utf-8'));
+    const entry = normalize(entryComment());
     const copied = [...Array(Math.max(prose.length - COPY_RUN + 1, 0)).keys()]
       .map((start) => prose.slice(start, start + COPY_RUN))
       .filter((run) => entry.includes(run));
