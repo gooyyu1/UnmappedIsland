@@ -861,7 +861,7 @@ object_defs:
 
 **レシピが要求する個数も、素材か道具か（`consume`）も、ここには書きません**（13.1 節の `requires`）。枠は
 「置ける場所」であって「作るのに要る量」ではないため、両方に数を書くと二重管理になります（数を枠へ
-戻さないと決めた経緯は [`DesignNotes.md`](./DesignNotes.md)）。
+戻さないと決めた経緯は [`DesignNotes.md`](../DesignNotes.md)）。
 
 ### 7.3 capacity（合計サイズの制約）
 

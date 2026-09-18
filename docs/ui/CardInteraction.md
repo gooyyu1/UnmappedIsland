@@ -166,7 +166,7 @@
 [GameElementDefinition.md](../engine/GameElementDefinition.md) 12.4 節）。許していなければ 1 枚だけです。
 条件は世界のどこでも参照でき、1 回実行するたびに世界が変わるので、**2 回目が成立するかを実行前に
 言えるのは、値域を持つプロパティのように単調に埋まる器へ入れる宣言だけ**——炉へ薪をくべる操作が
-そうで、`fuel` の残りが何本ぶんかを数えられます（[DesignNotes.md](../engine/DesignNotes.md)
+そうで、`fuel` の残りが何本ぶんかを数えられます（[DesignNotes.md](../DesignNotes.md)
 「まとめて入れる」節）。
 
 ## 6. カードの移動アニメーション

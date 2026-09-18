@@ -22,7 +22,7 @@ description: >-
 
 - 座標・寸法・はみ出し・重なり順（レイアウト、リサイズ）
 - テクスチャと描画API（`setTint`のようにCanvasレンダラで無言で効かないもの、
-  [`DesignNotes.md`](../../../docs/engine/DesignNotes.md)）
+  [`DesignNotes.md`](../../../docs/DesignNotes.md)）
 - 入力の当たり判定、ドラッグ
 - アニメーションと時間の見え方（経過の再現、幕）
 - 同梱データを実際に積んだときの絵（土地の背景、カードの絵）

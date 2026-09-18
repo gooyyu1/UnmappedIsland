@@ -293,7 +293,7 @@
 
 | 文書 | 主題 |
 |---|---|
-| [`engine/DesignNotes.md`](./engine/DesignNotes.md) | 繰り返さないために残す価値のある、過去の失敗・不採用の決定 |
+| [`DesignNotes.md`](./DesignNotes.md) | 繰り返さないために残す価値のある、過去の失敗・不採用の決定 |
 | [`HowWeGotHere.md`](./HowWeGotHere.md) | 作り方そのものをどう変えてきたか |
 
 **表に無い文書に、過去の姿を語り出す語が生えていないかは自動テスト
