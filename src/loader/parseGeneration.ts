@@ -65,6 +65,7 @@ function parseAxis(name: string, raw: YamlNode): AxisDef {
 
   const rangeNode = tryGetMap(node, 'range', context);
   if (rangeNode === undefined) throw new YamlLoadError(`${context}: 'range'は必須です。`);
+  requireKnownKeys(rangeNode, ['min', 'max'], `${context}.range`);
   const range = new PropertyRange(
     requireInt(rangeNode, 'min', context),
     requireInt(rangeNode, 'max', context),
@@ -252,6 +253,7 @@ function parseGenerationScope(name: string, raw: YamlNode): GenerationScopeDef {
 
   const siteCountNode = tryGetMap(node, 'site_count', context);
   if (siteCountNode === undefined) throw new YamlLoadError(`${context}: 'site_count'は必須です。`);
+  requireKnownKeys(siteCountNode, ['min', 'max'], `${context}.site_count`);
   const siteCountMin = requireInt(siteCountNode, 'min', context);
   const siteCountMax = requireInt(siteCountNode, 'max', context);
 
