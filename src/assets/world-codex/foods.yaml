@@ -139,7 +139,7 @@ traits:
 object_defs:
   # 空心菜（クウシンサイ）。熱帯の水辺に自生する、採取しやすい葉物野菜。
   #
-  # **ここだけが生で食べられる。** 東南アジアでは実際に生のまま和えて食べる。危ないのは植物では
+  # **火を通さずに食べられる。** 東南アジアでは実際に生のまま和えて食べる。危ないのは植物では
   # なく育った水のほう（寄生虫）なので、物としては生食に向く。ヤシガニとタロイモは違う（各項参照）。
   water_spinach:
     tags: [item, food, plant_bait]
@@ -166,6 +166,47 @@ object_defs:
             carbohydrate: 1
             vitamin: 83
             happiness: 2
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {agent: {satiety: 0}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
+        destroy: self
+
+  # ベリー。木苺の熟した実をひと掴みぶん摘み取ったもの（locations.yamlのberry_bush）。
+  #
+  # **バナナ（fiber.yaml）と同じ、生でうまい果実。** 採り方だけが違う——あちらは一度実った茎が二度と
+  # 実らないので株ごと切り倒すが、こちらは摘んでも株が残り、また実る。
+  #
+  # **餌にはならない**（plant_baitを持たない）。果実がそうでないのはバナナと同じ線で、罠と囲いの卓を
+  # 押すのは芋と葉物（上のwater_spinach・下のtaro）に留める。
+  berry:
+    tags: [item, food]
+    traits: [perishable, spoils_normal, dryable, smokable]
+    props:
+      # ひと掴みぶん。
+      weight: {value: 250}
+      # 粒の間に隙間が残るので、目方より嵩が勝つ。
+      volume: {value: 350}
+    # 塩漬けにできる（salt.yaml）。剥き身の段に居る点も、皮という境目を持たない点もバナナと同じ。
+    variation_axes:
+      cure: {of: {tag: cured}}
+    interactions:
+      eat:
+        trigger: menu
+        conditions:
+          - reason: too_full
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
+        duration: 15
+        add:
+          agent:
+            satiety: 250
+            # 甘いが粒が小さく、身になる量はバナナ1本に届かない。ビタミンCはそのぶん濃い。
+            carbohydrate: 2
+            vitamin: 65
+            happiness: 4
         pick:
           - weight: 100
           - weight: {prop: spoilage}
