@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ISSUE_CAP } from '../../scripts/daemon/board-read.mjs';
+import { FIRST_ISSUE_PULL } from '../../scripts/daemon/board-read.mjs';
 import { board, issueBody } from '../../scripts/daemon/board.mjs';
 
 /**
@@ -40,8 +40,13 @@ interface World {
 }
 
 const deps = (world: World, warn: (line: string) => void) => ({
-  gh: (args: readonly string[]) =>
-    args[0] === 'pr' ? JSON.stringify(world.prs ?? []) : JSON.stringify(world.issues ?? []),
+  // **`--limit` を実際に守る。** 守らない `gh` を渡すと、切られる形そのものが検査に出ない
+  // ——いくつ渡しても全部が返るので、上限を固定へ戻しても緑のまま。
+  gh: (args: readonly string[]) => {
+    if (args[0] === 'pr') return JSON.stringify(world.prs ?? []);
+    const limit = Number(args[args.indexOf('--limit') + 1]);
+    return JSON.stringify((world.issues ?? []).slice(0, limit));
+  },
   sessions: () => {
     if (world.sessionsFail === true) throw new Error('セッションの一覧を引けなかった');
     return world.sessions ?? [];
@@ -104,15 +109,18 @@ describe('board.mjs', () => {
   });
 
   // 切られるのは古い側なので、**黙って切ると「そんな issue は無い」と同じ形**になる。担当の居る
-  // task が消えた実績がある（2026-09-11、#1722）。
-  it('開いている issue が上限に達したら、そう言う', () => {
-    const many = Array.from({ length: ISSUE_CAP }, (_, index) => ({
-      number: index + 1,
-      title: `見出し${index + 1}`,
-      labels: [{ name: 'kind:task' }],
-    }));
-    expect(show({ issues: many }).warnings.join('\n')).toContain(`上限（${ISSUE_CAP}件）`);
-    expect(show({ issues: many.slice(1) }).warnings).toEqual([]);
+  // task が消えた実績がある（2026-09-11、#1722）。**人の読む窓もデーモンと同じ手で引く**ので、
+  // ここが切られると、盤面には載っているのに人からだけ消える帯ができる。
+  it('1回で引きにいく数を超えて開いていても、1件も落ちない', () => {
+    // **並びは本物と同じ作成の新しい順**（番号の大きい側が先）。逆に並べると、切られるのが
+    // いちばん新しい issue になり、**現に起きた壊れ方とは別のものを見る検査**になる。
+    const count = FIRST_ISSUE_PULL + 2;
+    const many = Array.from({ length: count }, (_, index) => issue(count - index, `見出し${count - index}`));
+    const tasks = show({ issues: many }).lines.filter((line) => line.startsWith('TASK '));
+    expect(tasks).toHaveLength(count);
+    // **いちばん古い側が残っていることを名指しで見る。** 件数だけだと、切られた側がどこかを
+    // 取り違えたまま緑になりうる。
+    expect(tasks.at(-1)).toContain('TASK 1 ');
   });
 
   it('節は、中身が無くても出る', () => {

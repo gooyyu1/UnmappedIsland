@@ -5,9 +5,9 @@ import type { CardContent } from './Card';
 import { Card, CellHighlight, CellOverlay, EmptyCard } from './Card';
 import type { LaneCell } from './laneCells';
 import { ScrollArea } from '../../ui/scrollArea';
-import { COLOR, SIZE } from '../looks/theme';
+import { COLOR, SCROLL_BAR_LOOK, SIZE } from '../looks/theme';
 import { addInputBlockingPanel, addInputBlockingTiledPanel } from '../../ui/shapes';
-import { ScrollIndicator } from './ScrollIndicator';
+import { ScrollIndicator } from '../../ui/ScrollIndicator';
 import type { HazeSurface, HazeTarget } from './LaneHaze';
 import type { ScreenDepth } from '../looks/screenDepth';
 
@@ -222,6 +222,7 @@ export class CardLane {
       stripX,
       cardY + this.cardHeight + metrics.px(SIZE.scrollBarGap),
       this.stripWidth,
+      SCROLL_BAR_LOOK,
     );
     this.ownedObjects.push(this.scrollIndicator);
 

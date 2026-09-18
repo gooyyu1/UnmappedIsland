@@ -1,4 +1,5 @@
 import type Phaser from 'phaser';
+import type { FontScale } from './UnitScale';
 import { cssColor } from '../util/cssColor';
 import { wrapByCharacter } from './textLayout';
 
@@ -20,12 +21,6 @@ export interface LabelStyle {
   readonly lineGap?: number;
 }
 
-/** u単位の長さをピクセルへ直せる相手（ScreenMetrics）。 */
-export interface UnitScale {
-  px(units: number): number;
-  fontPx(units: number): number;
-}
-
 /** 書体と文字色の既定。 */
 export interface LabelDefaults {
   readonly fontFamily: string;
@@ -45,7 +40,7 @@ export function setLabelDefaults(next: LabelDefaults): void {
 /** 画面共通のフォント設定でテキストを置く。原点の指定は呼び出し側で行う。 */
 export function addLabel(
   scene: Phaser.Scene,
-  metrics: UnitScale,
+  metrics: FontScale,
   x: number,
   y: number,
   content: string,

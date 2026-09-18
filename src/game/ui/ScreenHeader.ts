@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import { Button } from './Button';
+import { Button } from '../../ui/Button';
 import { addLabel } from '../../ui/labels';
 import { addInputBlockingPanel } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';

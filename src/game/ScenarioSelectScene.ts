@@ -1,7 +1,7 @@
 import { ResponsiveScene } from './ResponsiveScene';
 import { bundledScenario, scenarioNames } from '../scenario/Scenario';
 import { scenarioPlayData } from './PlayScene';
-import { Button } from './ui/Button';
+import { Button } from '../ui/Button';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { addLabel } from '../ui/labels';
 import { uiText } from '../locale/uiTexts';

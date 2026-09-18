@@ -1,24 +1,21 @@
 import Phaser from 'phaser';
-import type { Rect } from '../../ui/Rect';
-import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import { noteOperation } from '../errorReport';
-import { uiText } from '../../locale/uiTexts';
-import { addLabel } from '../../ui/labels';
-import type { BoxStyle } from '../../ui/shapes';
-import { drawBox } from '../../ui/shapes';
-import { onPressRelease } from '../../ui/tap';
-import { COLOR, SIZE } from '../looks/theme';
-import type { HoldHandlers } from '../../ui/holdRepeat';
-import { Hold } from '../../ui/holdRepeat';
+import type { Rect } from './Rect';
+import type { BoxStyle } from './shapes';
+import { drawBox } from './shapes';
+import { onPressRelease } from './tap';
+import type { HoldHandlers } from './holdRepeat';
+import { Hold } from './holdRepeat';
 
 /**
- * 押下中の沈み込み表現。**暗い覆いを重ねる**（黒のこの濃さ）。
+ * 押下中の沈み込み表現。**黒をこの濃さで重ねる**。
  *
  * ボタン自体を透かす形は使わない——**下地が明るいと逆に明るく見える**（本のページの上に置いた
  * くすんだ色のボタンでは、透かすほど紙の色が透けて浮き上がる）。重ねる向きを暗い側へ固定すれば、
- * 地の色にも下地にもよらず「沈んだ」と読める。
+ * 地の色にも下地にもよらず「沈んだ」と読める。**色を呼び出し側から受け取らないのもこのため**で、
+ * 選べるようにすると、固定したはずの向きが呼び出し側ごとに戻る（shapes.drawBoxの落ち影と同じ）。
  */
-const PRESSED_SHADE = 0.18;
+const PRESSED_SHADE_COLOR = 0x000000;
+const PRESSED_SHADE_ALPHA = 0.18;
 
 /** 中央へ置ける中身（位置と原点を持つ表示物、Button.addCentered）。 */
 type CenteredContent = Phaser.GameObjects.GameObject &
@@ -55,11 +52,11 @@ export class Button extends Phaser.GameObjects.Container {
       this.shade,
       { x: 0, y: 0, width: rect.width, height: rect.height },
       {
-        fillColor: COLOR.pressedShade,
+        fillColor: PRESSED_SHADE_COLOR,
         radius: style.radius,
       },
     );
-    this.shade.setAlpha(PRESSED_SHADE).setVisible(false);
+    this.shade.setAlpha(PRESSED_SHADE_ALPHA).setVisible(false);
     this.add(this.shade);
 
     // Containerのdisplay originはwidth/heightの半分に固定されている（読み取り専用）。
@@ -111,80 +108,4 @@ export class Button extends Phaser.GameObjects.Container {
     child.setOrigin(0.5);
     this.add(child);
   }
-}
-
-/** ラベル1つを中央に置いたボタンの見た目。枠線・文字色は省略すると画面共通の色になる。 */
-export interface TextButtonStyle {
-  readonly fill: number;
-  readonly border?: number;
-  readonly textColor?: number;
-}
-
-/**
- * 文字のボタンの台紙（addTextButtonが敷くのと同じ形）。**選んだ/選んでいないで塗り替える側も
- * これを通す**——生のBoxStyleを組み直すと、縁の色も角の丸みも呼び出し側ごとに散る。
- */
-export function textButtonBoxStyle(metrics: ScreenMetrics, style: TextButtonStyle): BoxStyle {
-  return {
-    fillColor: style.fill,
-    borderColor: style.border ?? COLOR.buttonBorder,
-    borderWidth: metrics.linePx(2),
-    radius: metrics.px(SIZE.radius),
-  };
-}
-
-/** 選ばれているかで塗りを変える、タブの台紙（子ウィンドウのタブ・プロパティのカテゴリ）。 */
-function tabBoxStyle(metrics: ScreenMetrics, active: boolean): BoxStyle {
-  return textButtonBoxStyle(metrics, { fill: active ? COLOR.buttonActive : COLOR.button });
-}
-
-/**
- * ちょうど1つが選ばれているボタンの並び（子ウィンドウのタブ、プロパティのカテゴリ）。
- *
- * **選び直したときに並び全部を塗り替えるのはここの仕事**で、呼び出し側は「何番目を選ぶか」を
- * 言うだけ。どれが選ばれているかは呼び出し側が持つ——タブの意味（開いている面・並べる行）は
- * 並びの外にあり、ここは見た目だけを揃える。
- */
-export class TabButtons {
-  private readonly metrics: ScreenMetrics;
-  private readonly buttons: Button[] = [];
-
-  constructor(metrics: ScreenMetrics) {
-    this.metrics = metrics;
-  }
-
-  /** 並びの末尾へ足す。並べ方（位置と幅）は呼び出し側が決める。 */
-  add(button: Button): void {
-    this.buttons.push(button);
-  }
-
-  /** 何番目を選ぶか。**選ばれた1つだけ**が選択中の見た目になる。 */
-  select(index: number): void {
-    this.buttons.forEach((button, i) => button.setBoxStyle(tabBoxStyle(this.metrics, i === index)));
-  }
-}
-
-/** ラベルを中央に置いた押しボタン。ダイアログ・子ウィンドウの操作ボタンはこの形で揃える。 */
-export function addTextButton(
-  scene: Phaser.Scene,
-  metrics: ScreenMetrics,
-  rect: Rect,
-  label: string,
-  style: TextButtonStyle,
-  onTap: () => void,
-  hold?: HoldHandlers,
-): Button {
-  const button = new Button(
-    scene,
-    rect,
-    textButtonBoxStyle(metrics, style),
-    () => {
-      // ラベルがそのまま「何を押したか」になる（errorReport参照）。絵だけのボタンは押した結果の側で控える。
-      noteOperation(uiText('log_button_tapped', { label }));
-      onTap();
-    },
-    hold,
-  );
-  button.addCentered(addLabel(scene, metrics, 0, 0, label, { size: 26, bold: true, color: style.textColor }));
-  return button;
 }

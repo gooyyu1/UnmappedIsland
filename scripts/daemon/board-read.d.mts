@@ -33,8 +33,18 @@ export const MERGED_WINDOW_HOURS: number;
 /** 1周で引くマージ済みPRの上限。窓の幅ではなく、引きすぎを止める栓。 */
 export const MERGED_CAP: number;
 
-/** 1回で引く開いている issue の上限。常設の盤を書く側も同じ値で引く。 */
-export const ISSUE_CAP: number;
+/** 開いている issue を1回で引きにいく数。上限ではない（届いた回は広げて引き直す）。 */
+export const FIRST_ISSUE_PULL: number;
+
+/**
+ * 開いている issue を全部引く。上限に届いた回は広げて引き直すので、切られない。引けなかった周と
+ * 応答が読めなかった周は `undefined`（「1件も無い」とは別）。常設の盤と値の見張りもここを通す。
+ */
+export function allOpenIssues(
+  gh: (args: readonly string[], options?: { allowFail?: boolean }) => string | undefined,
+  fields: string,
+  options?: { allowFail?: boolean },
+): Record<string, unknown>[] | undefined;
 
 /**
  * まだ二次が読んでいない、一次の分析の記録の件数（`agent-ops/board-design.md` 2.17.4）。
