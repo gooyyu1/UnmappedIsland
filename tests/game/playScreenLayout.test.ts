@@ -367,7 +367,7 @@ describe('PlayScreenLayout(ScreenLayout.md 9〜11節 エリア構成)', () => {
       const along = (bar: { width: number; height: number }): number =>
         layout.metrics.isLandscape ? bar.height : bar.width;
 
-      expect(layout.optionsBarIcons(4).length, `${label}: オプション4個`).toBeLessThanOrEqual(
+      expect(layout.optionsBarIcons().length, `${label}: オプションバーの並び`).toBeLessThanOrEqual(
         along(layout.optionsBar),
       );
       if (!layout.metrics.isLandscape) {

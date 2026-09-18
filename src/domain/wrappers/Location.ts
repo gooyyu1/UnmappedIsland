@@ -53,7 +53,8 @@ export class Location extends ObjectWrapper {
    *
    * **どの枠へ入れるかを知っているのはこの包みなので、呼び出し側はスロットを引く手順を持たない**
    * （PlayerCharacter.takeと対）。同じことは`instance.getSlot`と`moveToSlotOrRejection`でも書けるが、
-   * それは包みが消した手順を呼び手へ戻す。**`src`の呼び手はまだ無い。**
+   * それは包みが消した手順を呼び手へ戻す。**今の呼び手が`src`に居るかは
+   * tests/architecture/readersOutsideSrc.test.tsの一覧が持つ。**
    */
   receiveItem(item: WorldObject, at?: SlotPosition): boolean {
     return item.moveToSlotOrRejection(this.instance.getSlot(this.itemsSlotId), at) === undefined;
