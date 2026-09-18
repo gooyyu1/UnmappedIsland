@@ -65,27 +65,46 @@ const LIVE_ELSEWHERE = RETIRED.filter((key) => appearsIn(CODE, key));
  * 廃止だと断っている印。**その綴りがもう書けないことを指すのが語の意味であるものだけ**を挙げる
  * （`docHistory.test.ts` の印と同じ選び方）。単なる否定（「書きません」）は現役のキーへの制約にも
  * 使うので、印にしない。
+ *
+ * **`旧` は語の一部にも当たる**（`復旧`・`新旧`）ので、その語を含む段は断ったものとして通る。
+ * 免除が広がる向きの紛れなので、見逃しはここでは増えず、断り漏れを1つ見落とすだけで済む。
  */
 const RETIREMENT_MARKERS = ['廃止', '旧', 'かつて', '当時'];
 
 /** 説明が書かれている行と、原文での行番号。 */
 type ProseLine = { readonly line: number; readonly text: string };
 
-/** その行がコメントの一部か（ブロックの途中も含む）。データの中の語まで見ないための線。 */
-function isComment(line: string): boolean {
-  const trimmed = line.trim();
-  return trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*');
-}
+/** どの行が説明か。行をまたぐ形（ブロックコメント）を見るので、1行ずつでは決められない。 */
+type ProseMask = (lines: readonly string[]) => boolean[];
+
+/** `.md` は全体が説明。 */
+const ALL_LINES: ProseMask = (lines) => lines.map(() => true);
+
+/**
+ * `.ts` で説明が書かれているのはコメントの行だけ。**ブロックの中は `*` を置かない行も本文**
+ * ——1行ずつ行頭だけで決めると、そこに書いた説明が丸ごと走査から外れる。
+ */
+const COMMENT_LINES: ProseMask = (lines) => {
+  let inBlock = false;
+  return lines.map((raw) => {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('/*')) inBlock = true;
+    const comment = inBlock || trimmed.startsWith('//') || trimmed.startsWith('*');
+    if (trimmed.includes('*/')) inBlock = false;
+    return comment;
+  });
+};
 
 /**
  * 説明が書かれている行だけを、行番号を付けて返す。**空行と、説明でない行は落とす**——落とした跡が
  * 行番号の飛びになり、{@link paragraphs} がそこで段を切る。
  */
-function proseLines(text: string, lookAt: (line: string) => boolean): ProseLine[] {
-  return text
-    .split('\n')
+function proseLines(text: string, prose: ProseMask): ProseLine[] {
+  const lines = text.split('\n');
+  const keep = prose(lines);
+  return lines
     .map((raw, index) => ({ line: index + 1, text: raw }))
-    .filter(({ text: raw }) => raw.trim() !== '' && lookAt(raw));
+    .filter(({ text: raw }, index) => raw.trim() !== '' && keep[index]);
 }
 
 /** 行番号が続いている塊。読み手が1つのまとまりとして読む範囲で、断りが効く範囲でもある。 */
@@ -179,9 +198,9 @@ const DOCUMENTS = trackedDocs(ROOT).filter((rel) => !isVerbatimRecord(rel));
  * ——あちらには廃止済みの綴りが入力の例として並ぶので、生きている証拠にはならない。
  */
 const PROSE_FILES = [
-  ...DOCUMENTS.map((rel) => ({ rel, lookAt: () => true })),
-  ...SOURCES.map((rel) => ({ rel, lookAt: isComment })),
-  ...trackedFiles(ROOT, 'tests/*.ts').map((rel) => ({ rel, lookAt: isComment })),
+  ...DOCUMENTS.map((rel) => ({ rel, prose: ALL_LINES })),
+  ...SOURCES.map((rel) => ({ rel, prose: COMMENT_LINES })),
+  ...trackedFiles(ROOT, 'tests/*.ts').map((rel) => ({ rel, prose: COMMENT_LINES })),
 ];
 
 describe('廃止したスロットの宣言キー', () => {
@@ -194,8 +213,8 @@ describe('廃止したスロットの宣言キー', () => {
   });
 
   it('今どこも指していない綴りを、廃止と断らずに書いていない', () => {
-    const undeclared = PROSE_FILES.flatMap(({ rel, lookAt }) =>
-      mentionsWithoutNotice(proseLines(read(rel), lookAt), DEAD).map((hit) => `${rel}:${hit}`),
+    const undeclared = PROSE_FILES.flatMap(({ rel, prose }) =>
+      mentionsWithoutNotice(proseLines(read(rel), prose), DEAD).map((hit) => `${rel}:${hit}`),
     );
 
     expect(
@@ -227,7 +246,7 @@ describe('廃止したスロットの宣言キー', () => {
     // 綴りは廃止の一覧から引く。書き写すと、この検査だけが古い綴りを見張ることになる。
     const dead = DEAD[0];
     const live = LIVE_ELSEWHERE[0];
-    const prose = (text: string): ProseLine[] => proseLines(text, () => true);
+    const prose = (text: string): ProseLine[] => proseLines(text, ALL_LINES);
 
     expect(mentionsWithoutNotice(prose(`枠には \`${dead}\` を書きます。`), DEAD)).toEqual([
       `1 ${dead}`,

@@ -22,6 +22,9 @@ import { ReferenceScope } from '../domain/ReferenceRoot';
  *
  * **文書がこの綴りを現役のキーとして書いていないかも、ここから引いて検査する**
  * （`tests/docs/retiredSlotKeys.test.ts`）——YAML を止めるだけでは、読んで書く側の手前に何も無い。
+ *
+ * **そのために公開している。** ロードの入口（{@link parseSlot}）は綴りを1つずつ受け取って断るだけで、
+ * 何を断るかを並べて返さないので、検査の側は**綴りを書き写すしか無くなる**。
  */
 export const RETIRED_SLOT_KEYS: readonly (readonly [string, string])[] = [
   ['accepts', "枠ごとの'cell'/'cells'の'accept'"],

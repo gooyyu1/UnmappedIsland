@@ -89,6 +89,7 @@ const READ_ONLY_FROM_OUTSIDE = [
   'src/game/view/ShownCards.ts ShownCards.edgeTargets',
   'src/game/view/cardMotionPlan.ts MotionInput',
   'src/game/view/daylight.ts SunlightHours.handworkLitAt',
+  'src/loader/parseSlots.ts RETIRED_SLOT_KEYS',
   'src/locale/Localization.ts bundledLocaleText',
   'src/locale/Localization.ts parseLocale',
   'src/locale/uiTexts.ts UI_TEXT_NAMES',
