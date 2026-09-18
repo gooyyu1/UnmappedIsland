@@ -115,6 +115,16 @@ const RECIPES_WITHOUT_DEFTNESS = [
 ];
 
 /**
+ * 入口（実行経路で腕を配る操作、SkillSystem.md 3節）が1本だけの腕。**1本でよいと決めた分だけ**が
+ * 並ぶ——理由は1本ずつ、その入口のコメントに書いてある（同3.2.1節。書いてあることは下の検査が見張る）。
+ *
+ * **並べるのは「担う手がその1つだけ」と決めた腕で、理由の種類は問わない**——火と保存は担う手そのものが
+ * 1つ、料理は置ける相手が1つ（docs/world/Skills.md 2.2・2.4・2.5・2.6節）。どちらであるかは内容の
+ * 判断なので、ここが見るのは決めずに素通りできないことだけ。
+ */
+const SKILLS_WITH_ONE_ENTRY = ['skill_cooking', 'skill_firecraft', 'skill_knapping', 'skill_preserving'];
+
+/**
  * 製作系の腕（Skills.md 2節）と、その段が押し上げる上乗せ（同7節）。**速さの上乗せはここに無い**
  * ——どの腕がどの行動をどれだけ速くするかは行動の側が個別に宣言するので、腕の側に読まれる値が
  * 立たない（同7節。速さの側を見張るのは下の`skillsShorteningTime`を使う検査）。
@@ -636,6 +646,12 @@ interface InteractionGains {
   readonly durationProp: string | undefined;
   /** その操作が `{subject: agent, prop: ...}` で読んでいるもの（余分の卓の重みもここに出る）。 */
   readonly agentReads: readonly string[];
+  /**
+   * その操作の手前に書いてあるコメント。**拾うのは操作自身の直上だけ**で、`interactions` の
+   * 直上（型の側の話）までは拾わない——拾うと、別の話で同じ語を使っている型へ操作を足したときに
+   * 理由を書かないまま通ってしまう（`commentsAboveRecipes` と同じ線）。
+   */
+  readonly comment: string;
 }
 
 /** ノードの下にある`spawn`が出す型の名前を、入れ子の`pick`ごと集める。 */
@@ -674,7 +690,7 @@ function declaredInteractions(): readonly InteractionGains[] {
         walk(pair.value, key);
         continue;
       }
-      for (const entry of pair.value.items) {
+      for (const [index, entry] of pair.value.items.entries()) {
         const body = entry.value;
         if (!isMap(body)) continue;
         const products = new Set<string>();
@@ -702,6 +718,8 @@ function declaredInteractions(): readonly InteractionGains[] {
           needsInstrument: isMap(trigger) && trigger.get('drag', true) !== undefined,
           durationProp: isScalar(durationProp) ? String(durationProp.value) : undefined,
           agentReads: [...agentReads].sort(),
+          // 最初の操作の手前のコメントは、操作ではなく`interactions`の値のほうに付く。
+          comment: [index === 0 ? commentBeforeOf(pair.value) : '', commentBeforeOf(entry.key)].join('\n'),
         });
       }
     }
@@ -789,6 +807,25 @@ function declaredSurplusBranches(): readonly SurplusBranch[] {
 
   for (const path of worldCodexYamlPaths()) walk(parseDocument(readFileSync(path, 'utf8')).contents, '');
   return found;
+}
+
+/**
+ * 腕ごとの入口——実行経路でその腕を配る操作（SkillSystem.md 3節）を、腕の名前で引けるようにしたもの。
+ *
+ * **発見の契機は入らない。** `declaredInteractions`が数える`skills`は操作の直下の`add`だけで、`pick`の
+ * 候補に埋めたものは拾わない（同3.3節）——**時間を投じて繰り返せる手はこちらだけ**で、探索の契機は
+ * 何に出くわしたかが決めるので、投じ先として選べない。
+ */
+function entriesBySkill(): ReadonlyMap<string, readonly InteractionGains[]> {
+  const bySkill = new Map<string, InteractionGains[]>();
+
+  for (const interaction of declaredInteractions())
+    for (const skill of interaction.skills) {
+      const entries = bySkill.get(skill) ?? [];
+      bySkill.set(skill, entries);
+      entries.push(interaction);
+    }
+  return bySkill;
 }
 
 describe('腕前とレシピの解放条件', () => {
@@ -1418,6 +1455,36 @@ describe('腕前とレシピの解放条件', () => {
       'skill_building',
       'skill_smelting',
     ]);
+  });
+
+  it('入口が1本しか無い腕は、1本と決めた分だけ', () => {
+    // SkillSystem.md 3.2.1節。**一つ上が数えるのは0本の腕**だが、1本の腕も素通りしてよいわけでは
+    // ない——3.2節の「最低1つ」は立ち上がりの条件で、足りているかの条件ではなく、**1本しか無い腕では
+    // 段へ届くまでその1手を繰り返すことになる。**
+    //
+    // 決めた覚えの無い腕がここへ落ちてくるのを止める——**新しい腕も、入口が減った腕も、口を足すか、
+    // 数え上げへ足すかを選ぶことになる。** 1本でよいかは内容の判断（拠り所はdocs/world/Skills.mdが
+    // 腕ごとに持つ）で、見るのは決めずに素通りできないことだけ。
+    const entries = entriesBySkill();
+
+    expect(SKILLS.filter((name) => entries.get(name)?.length === 1).sort()).toEqual(SKILLS_WITH_ONE_ENTRY);
+  });
+
+  it('入口が1本と決めた腕は、その理由がその入口のコメントに書いてある', () => {
+    // 一つ上の数え上げは、**足せば黙って通せる**——理由を書かせるのはここ。SkillSystem.md 3.2.1節が
+    // 「1本と決めたら、その理由をその入口のコメントへ書きます」と言っている以上、それが破れたときに
+    // 落ちるものが要る（書いてあるかを見るだけで、中身の当否は人が読む）。
+    //
+    // **語を2つとも求める**——どちらか1つなら、本数と関わりのない文でも当たってしまう。
+    const entries = entriesBySkill();
+
+    expect(
+      SKILLS_WITH_ONE_ENTRY.filter((name) => {
+        const comment = entries.get(name)?.[0]?.comment ?? '';
+        return !comment.includes('入口') || !comment.includes('1本');
+      }),
+      '入口が1本である理由が書いていない腕',
+    ).toEqual([]);
   });
 
   it('伸ばす操作を持つ腕は、どれも効き先を持つ', () => {

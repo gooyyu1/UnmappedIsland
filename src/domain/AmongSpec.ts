@@ -74,7 +74,7 @@ export class AmongSpec {
     const weightOf =
       this.weight === undefined
         ? () => 1
-        : (item: WorldObject) => this.weight!.resolveOrZero(context.withPicked(item));
+        : (item: WorldObject) => this.weight!.resolveOrZero(context.withPicked(item).valueResolver);
     return pickWeighted(candidates, weightOf, rng) ?? candidates.at(0);
   }
 

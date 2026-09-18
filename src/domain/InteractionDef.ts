@@ -2,7 +2,7 @@ import type { WorldSession } from './WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
 import type { EffectReader, DeclaredNumberReading } from './EffectReader';
 import type { DeclaredNumber } from './DeclaredNumber';
-import type { ReferenceContext } from './ReferenceRoot';
+import type { ReferenceContext, ReferenceValueResolver } from './ReferenceRoot';
 import type { WorldObject } from './WorldObject';
 import type { Requirement, Requirements } from './Requirement';
 import type { SignalEffect } from './SignalEffect';
@@ -83,9 +83,13 @@ export class InteractionDef {
    *
    * 「今のself（とinstrument）の状態から見て、どれだけかかるか」なので、時間を進める前に解決する
    * （切れ味の悪い刃物ほど時間がかかる、が書けるように）。実行前に画面へ見せる用途にも使う。
+   *
+   * **参照を誰が解くかは問わない**（ReferenceValueResolver）。世界を動かさずに分数を知りたい側
+   * （src/analysis）も、定義から導いた近似を渡してここを引く——**分数の読み方（端数は切り捨て、
+   * 宣言が無ければ0、解けなければ0）は宣言を持つこちらの側が1つだけ持つ。**
    */
-  minutesFor(context: ReferenceContext): number {
-    return this.duration === undefined ? 0 : Math.trunc(this.duration.resolveOrZero(context));
+  minutesFor(resolve: ReferenceValueResolver): number {
+    return this.duration === undefined ? 0 : Math.trunc(this.duration.resolveOrZero(resolve));
   }
 
   /** 実行に必要な要件（14節）を宣言順に。conditionsを省いていれば空。 */
@@ -157,7 +161,7 @@ export class InteractionDef {
       for (const announcement of this.announcements) announcement.apply(context, session);
 
       const involved = [self, context.agent, context.instrument];
-      const minutes = this.minutesFor(context);
+      const minutes = this.minutesFor(context.valueResolver);
       const alive = session.whileInteractionPassives(self, context, this.passives, () =>
         spendDurationAndReportParticipantsAlive(minutes, session, involved),
       );

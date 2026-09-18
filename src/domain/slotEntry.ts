@@ -29,7 +29,7 @@ export function putIntoSlot(
     // 入らないと分かっているなら時間も取らない。時間だけ取られて何も入らない、が起きないようにする。
     if (item.rejectionForMoveTo(slot) !== undefined) return;
 
-    const minutes = slot.def.putInMinutes(context);
+    const minutes = slot.def.putInMinutes(context.valueResolver);
     if (!spendDurationAndReportParticipantsAlive(minutes, session, [item, slot.owner, agent])) return;
 
     place();

@@ -1,7 +1,7 @@
 import type { ObjectDef } from './ObjectDef';
 import type { DeclaredNumberReading } from './EffectReader';
 import type { DeclaredNumber } from './DeclaredNumber';
-import type { ReferenceContext } from './ReferenceRoot';
+import type { ReferenceValueResolver } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
 import type { SlotGlobalId } from './GlobalId';
 
@@ -151,10 +151,12 @@ export class SlotDef {
    * このスロットへ入れるのにかかる分数（宣言が無ければ0）。**関係を張るのは呼び出し側**
    * （Slot.putInRelation）——押す前の問い合わせは張るだけ、入れる実行は動作主も主張する、と張り方が
    * 分かれるので、ここでは決められない。
+   *
+   * 参照を誰が解くかは問わない（InteractionDef.minutesForと同じ形）。
    */
-  putInMinutes(context: ReferenceContext): number {
+  putInMinutes(resolve: ReferenceValueResolver): number {
     const duration = this.putInDuration;
-    return duration === undefined ? 0 : Math.trunc(duration.resolveOrZero(context));
+    return duration === undefined ? 0 : Math.trunc(duration.resolveOrZero(resolve));
   }
 
   /**
