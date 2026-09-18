@@ -23,6 +23,11 @@
 # 溢れるより止まるほうが軽い、という向きは [`board-design.md`](../../agent-ops/board-design.md) 2.4 と
 # 同じ。余分に立ったセッションは、同じPRへ食い違う判定を残す（1.5）。
 #
+# **外の道具が転んだ `UNKNOWN` には、その標準エラーを同じ行へ載せる**
+# （[`archive-session.sh`](archive-session.sh) の `DIRTY` と同じ形）。「引けなかった」だけでは、
+# 資格情報が切れたのか通信が落ちたのかへ辿り着けず、読んだ側は同じコマンドを手で打ち直すところから
+# 始めることになる。**出力は1行**なので、改行は空白へ畳む。
+#
 # ## 答える問いは、呼び手が選ぶ
 #
 # 一覧は [`live-sessions.sh`](live-sessions.sh) が持ち、**畳まれていないセッションを全部**返す。
@@ -60,10 +65,15 @@ HERE="${BASH_SOURCE[0]%/*}"
 if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
 HERE="$(cd "$HERE" && pwd)"
 
-if ! live=$(bash "$HERE/live-sessions.sh" 2>/dev/null); then
-  echo "UNKNOWN セッションの一覧を引けなかった"
+# 引けなかった理由は標準エラーに在るが、一覧は**標準出力が値**なので、混ぜずに受ける。
+stderr=$(mktemp)
+if ! live=$(bash "$HERE/live-sessions.sh" 2>"$stderr"); then
+  err=$(cat "$stderr")
+  rm -f "$stderr"
+  echo "UNKNOWN セッションの一覧を引けなかった: ${err//$'\n'/ }"
   exit 1
 fi
+rm -f "$stderr"
 
 # **最後の変数は残りの列を全部飲む**ので、一覧に列が増えたらここも増やす——足りないと、増えた分が
 # タグに混ざって**どのタグにも一致しなくなり、占有が黙って外れる。**

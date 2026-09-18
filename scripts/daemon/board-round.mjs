@@ -330,10 +330,9 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
 
       const verdicts = out.stdout.split(/\r?\n/);
       if (verdicts.includes(`ARCHIVED ${a}`)) return PLAYED;
-      // `KEPT` は「畳んではいけない」という**安定した答え**（接頭辞に当たるタグを持たないもの・
-      // 素性を引けなかったもの）。
-      // 指紋を残さないと、**1周1手のうちの1手がこれで埋まり続ける。** `UNARCHIVED` は失敗なので残さず、
-      // 次の周にもう一度試す。
+      // `KEPT` は「畳んではいけない」という**安定した答え**（接頭辞に当たるタグを持たないもの）。
+      // 指紋を残さないと、**1周1手のうちの1手がこれで埋まり続ける。** `UNARCHIVED`（打って失敗）と
+      // `UNKNOWN`（素性を引けなかった）は答えではないので残さず、次の周にもう一度試す。
       if (verdicts.includes(`KEPT ${a}`)) {
         remember(`archive:${a}`, b);
         return SETTLED;

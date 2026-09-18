@@ -49,6 +49,7 @@ export const PUSHED = '2026-09-10T11:00:00Z';
  */
 export const REFUSALS = {
   stacked: 'gh: Something went wrong while executing your query. (HTTP 502)\nTry again later.',
+  issue: 'gh: Could not resolve to an Issue with the number of 1033. (NOT_FOUND)\nCheck the number.',
   note: 'gh: Unable to create comment. Issue is locked. (HTTP 403)',
   sendBack: 'gh: Resource not accessible by integration (HTTP 403)',
   checkout:
@@ -79,6 +80,8 @@ export interface World {
   readonly state?: string;
   /** issue番号ごとの `state`。 */
   readonly issues?: Record<number, string>;
+  /** `Closes` の issue を引く `gh issue view` が失敗するか（＝閉じたかどうかが分からない）。 */
+  readonly issueUnknown?: boolean;
   /** 本体に未コミットの変更（追跡済み）があるか。 */
   readonly mainDirty?: boolean;
   /** 本体を進める `git checkout` が失敗するか（未追跡のものが妨げになった場合など）。 */
@@ -189,6 +192,7 @@ if [ "$1" = pr ] && [ "$2" = comment ]; then
   exit 0
 fi
 if [ "$1" = issue ] && [ "$2" = view ]; then
+  ${refuse(world.issueUnknown, REFUSALS.issue)}
   case "$3" in
 ${branches(world.issues ?? {})}
   esac
