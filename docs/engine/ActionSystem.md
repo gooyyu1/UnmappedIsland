@@ -28,9 +28,10 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
   （動物の1手、[`HuntingSystem.md`](./HuntingSystem.md) 5 節）。ボタンには出ず、名前で指して実行される。
 - **ドラッグ型（`trigger: {drag: ...}`、`DragTrigger`）**: カードを別のカードへ
   ドラッグ＆ドロップする操作。組み合わせを宣言している側が `self`、相手が `instrument` で、
-  きっかけ `{drag: ...}`（タグかobject_defのidで書く型の指定、`GameElementDefinition.md` 12.1節）が
-  `instrument` とのマッチング条件になる。宣言は**素材の側**に1つだけ置き（同 12.3節）、どちらの札を
-  どちらへ運んでも同じ宣言が実行される——**どちらを `self` として試すかの順序は
+  きっかけ `{drag: ...}`（タグかobject_defのidで書く型の指定、
+  [`GameElementDefinition.md`](./GameElementDefinition.md) 12.1節）が `instrument` とのマッチング条件になる。
+  宣言は**素材の側**に1つだけ置き（同 12.3節）、どちらの札をどちらへ運んでも同じ宣言が実行される
+  ——**どちらを `self` として試すかの順序は
   UI層が決める**（[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
 
 **違うのはきっかけだけなので、差はきっかけの側に集める。** 宣言はYAML上も1つの節（`interactions`）で、
@@ -59,14 +60,16 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
   宣言順に列挙する。相手のマッチング（1）だけでなく `conditions`（2）まで見る——**実行できないものを
   黙って落とし先にすると、落とせるのに何も起きない**という形になるため。
 - `refusedCombinationsWith(instrument, agent)` — 逆に、`conditions` で成立せず、**断る理由**
-  （`reason`、`GameElementDefinition.md` 14.6節）を宣言しているものだけを列挙する。画面がこちらを
+  （`reason`、[`GameElementDefinition.md`](./GameElementDefinition.md)
+  14.6節）を宣言しているものだけを列挙する。画面がこちらを
   **理由を言うためだけの落とし先**として出すのは、成立するものが1つも無いときだけ
   （[`../ui/CardInteraction.md`](../ui/CardInteraction.md)
   2.1 節）。上の「黙って」がここに掛かる——**理由が出るなら、実行できない落とし先を出してよい。**
 
 どちらの列挙も、相手のマッチングのほかに**行き先の型**（`blocksOperation`。`become` の行き先に型が
-居ない、`GameElementDefinition.md` 9.9節）で先に絞る。**ここで落ちたものは `reason` を宣言していても
-どちらにも入らない**＝理由が出ない。「なぜ理由が出ないのか」を追うときは、まずここを見る。
+居ない、[`GameElementDefinition.md`](./GameElementDefinition.md) 9.9節）で先に絞る。**ここで落ちたものは
+`reason` を宣言していてもどちらにも入らない**＝理由が出ない。「なぜ理由が出ないのか」を追うときは、
+まずここを見る。
 
 **容量**（`acceptedCountIncludingSelf` が0の相手）はこの門ではなく、`combinationsWith` の側の条件
 （`Combination.canExecute`）。0は「何個受け取れるか」の答え＝**断る理由**であって、候補になるかどうかの
@@ -77,7 +80,8 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 成立しないなら落とされた側）と、複数マッチした場合にどれを実行するかの解決はUI層に委ねる
 （[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節、`cardOperations.combinationBetween`）。
 
-まとめて重ねる操作（`allow_multiple`、`GameElementDefinition.md` 12.4節）も `Combination` が持つ。
+まとめて重ねる操作（`allow_multiple`、[`GameElementDefinition.md`](./GameElementDefinition.md) 12.4節）も
+`Combination` が持つ。
 `acceptedCountIncludingSelf(followers)` が落とす前に、掴んだ1枚を含めて何枚落ちるかを答え、
 `executeWithFollowers(followers)` がその繰り返しを行う——**1つ実行するたびに世界が変わる**ので、
 都度まだ成立するかを見直し、成立しなくなった時点で止める。
@@ -322,9 +326,10 @@ tick が回るのは**絶対時刻が15分の倍数になる瞬間**なので、
 - **進み具合は対象のプロパティが持ち、札の桟のバーに出す**（`gauge`、[`../ui/CardView.md`](../ui/CardView.md)
   8節）。木は幹の残り（`trunk_integrity`）、死体は捌けたところまで（`butchering_progress`）。
   **見えないと、途中で止めて戻ってくることができない。**
-- **後ろの手は、自分の番が来る状態を条件で名乗る**（`GameElementDefinition.md` 12.1 節「条件で分ける」）。
-  同じ道具を重ねても、今の状態に当たる手だけが成立する。**その条件に `reason` は書かない**
-  ——断っているのではなく、そこから先は別の手が受け持つので、画面に出るのはその手のほう。
+- **後ろの手は、自分の番が来る状態を条件で名乗る**（[`GameElementDefinition.md`](./GameElementDefinition.md)
+  12.1 節「条件で分ける」）。同じ道具を重ねても、今の状態に当たる手だけが成立する。**その条件に
+  `reason` は書かない**——断っているのではなく、そこから先は別の手が受け持つので、画面に出るのは
+  その手のほう。
 - **レシピは工程を割ればそのまま切れ目になる。** 進捗と材料スロットの仕組みが既にあり、工程の区切りで
   余った材料がこぼれる（`crafting.spillUnneeded`）。**材料の要求は、その工程で実際に使うものへ割り
   当てる**——足りなければ**何も要求しない工程**でよい（[`GameElementDefinition.md`](./GameElementDefinition.md)
