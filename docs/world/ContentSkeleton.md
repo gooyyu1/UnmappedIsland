@@ -1040,8 +1040,9 @@ ambient_brightnessをそのまま土台にするためです（同 2節）。
 **夜**は、睡眠360分<!-- stats: terrain.yaml daily_budget sleep -->と、焚き火のそばでの加工360分<!-- stats: terrain.yaml daily_budget night_craft -->。
 **律速は屋外です**——拠点での加工は約20500分<!-- stats: terrain.yaml work_piles_total base_minutes ±100 -->で、夜の枠に対して
 57日ぶん<!-- stats: terrain.yaml work_piles_total base_days -->なので、約108日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->の中に余裕で収まります。**夜が足りなくなることはなく、
-足りないのは昼です。** ただし**この360分は嵐の夜のぶんを引いていない**（8.2節の割り切り）ので、
-夜の余裕はここに出るより狭くなります。
+足りないのは昼です。** **この360分は嵐の夜のぶんを引いていない**（8.2節の割り切り）ので、引いても
+収まることは別に見張ります（`tests/diagnostics/nightCraftBudget.test.ts`）——**言い切りが崩れるのは
+嵐が夜を食う割合が膨らんだときで、その境目はそこが持ちます。**
 
 **この約108日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->は上限としても下限としても読めません。** 上へ振れる材料は、4節の山の多く
 ——なめし革の背負い袋（1日<!-- stats: terrain.yaml work_piles pile=なめし革の背負い袋 days -->）のように `objects` が空の行——に
