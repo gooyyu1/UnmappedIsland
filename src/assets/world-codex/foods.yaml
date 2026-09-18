@@ -357,7 +357,7 @@ object_defs:
         #
         # **余分の卓は持たない。** 刻んでも芋は1つのままで、増えるのは切り口だけ
         # （docs/world/Skills.md 7節の、まとめて取れる物ではない側）。
-        add: {agent: {skill_cooking: 2}}
+        add: {agent: {skill_cooking: 1}}
         become: {prep: chopped}
 
   # prep軸の値。**traitsだけを宣言する**（3.5.1節）——変種へ配られるのは上のpreppedで、この型自身の

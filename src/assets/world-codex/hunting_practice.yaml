@@ -50,9 +50,9 @@ object_defs:
         trigger: {drag: {tag: weapon}}
         duration: 15
         # 狩猟の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
-        # characters/player_character.yaml）。**獣を殴るのと同じ量**——初歩の行動がそのまま練習を
-        # 兼ねるので、練習の側だけ薄く配る理由が無い（量が一律であることは
-        # tests/world-codex/skillsYaml.test.ts が見張る）。
+        # characters/player_character.yaml）。**獣を殴るのと同じ量**になるのは、同じ長さだから
+        # ——量はその手の長さから決まる（30分につき1、端数は切り上げ）ので、練習の側だけ薄く配る
+        # 余地がそもそも無い（tests/world-codex/skillsYaml.test.ts が見張る）。
         #
         # **繰り返しの稼ぎを抑えるのは時間のコストだけ**（docs/engine/SkillSystem.md 7節）。打った
         # 回数を数える値も、1日に打てる回数の線も持たない。
@@ -62,7 +62,7 @@ object_defs:
         # **線が引かれているのは手の単位で、当たり外れではない**——獣を殴る手は物を返す手なので、
         # 外した回（whiff）も同じだけ食う（animals.yamlのstrike）。
         add:
-          agent: {skill_hunting: 2}
+          agent: {skill_hunting: 1}
         # 告げるのは獣へ当てたときと同じ手応え（localeのsignal_texts）。**当たり所が無いので告げ方も
         # 1つ**——浅手も外しも仕留めも、的には起こらない。
         signal: hit

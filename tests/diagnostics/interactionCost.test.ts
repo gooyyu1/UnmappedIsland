@@ -177,7 +177,7 @@ describe('貯め込まずに毎回導出することの値段', () => {
    * ——相手として受け入れる宣言を持たない札は、型のタグを照らし合わせたところで候補が空になり、
    * 要件を一度も評価しない。届いたのに断る理由を宣言していない札は数から漏れるので、これは下限。
    */
-  function cardsReachingConditions(
+  function cardsReturningCombinations(
     cards: readonly WorldObject[],
     dragged: WorldObject,
     agent: WorldObject,
@@ -198,8 +198,9 @@ describe('貯め込まずに毎回導出することの値段', () => {
    *
    * **掴むのは、いちばん多くの札と噛み合う物。** 何を掴むかで要件が評価される札の数が変わるので、
    * 並びの先頭のような暗黙の選び方では、噛み合う宣言を1つも持たない物を掴んで**タグの照合だけを
-   * 測る**ことになる。掴む物はその場で選び直し、**要件まで届いた札の数を併せて確かめる**——世界の
-   * 宣言が変わって届かなくなったら、測っている面が抜けたことが赤で出る。
+   * 測る**ことになる。掴む物はその場で選び直し、**組み合わせを返した札の数を併せて確かめる**
+   * （要件まで届いた札の下限）——世界の宣言が変わって届かなくなったら、測っている面が抜けたことが
+   * 赤で出る。
    *
    * ここが見るのは**問われた側の判定だけ**で、走査を回す画面側の値段ではない。そちらは
    * [issue #2255](https://github.com/gooyyu1/UnmappedIsland/issues/2255) が持つ。
@@ -210,10 +211,10 @@ describe('貯め込まずに毎回導出することの値段', () => {
     expect(cards.length, '並べた札').toBe(CARDS);
 
     const agent = game.player.instance;
-    const [{ dragged, reaching }] = cards
-      .map((dragged) => ({ dragged, reaching: cardsReachingConditions(cards, dragged, agent) }))
-      .sort((a, b) => b.reaching - a.reaching);
-    expect(reaching, `要件まで届いた札（掴んだのは'${dragged.def.name}'）`).toBeGreaterThan(40);
+    const [{ dragged, returning }] = cards
+      .map((dragged) => ({ dragged, returning: cardsReturningCombinations(cards, dragged, agent) }))
+      .sort((a, b) => b.returning - a.returning);
+    expect(returning, `組み合わせを返した札（掴んだのは'${dragged.def.name}'）`).toBeGreaterThan(40);
 
     // **問う札は同じままで、周りの枚数だけ倍にする。** 足したぶんまで問うと、足した札が噛み合うかで
     // 時間が動いてしまい、伸びたのが枚数のせいだと言えない。1枚あたりの判定が周りの枚数を見て
