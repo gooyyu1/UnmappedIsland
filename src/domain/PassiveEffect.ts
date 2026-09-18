@@ -9,7 +9,6 @@ import type { ReferenceRoot } from './ReferenceRoot';
 import { ReferenceContext } from './ReferenceRoot';
 import type { PropertyPath } from './ReferenceRoot';
 import type { PassiveAmount } from './PassiveAmount';
-import type { WorldSession } from './WorldSession';
 import type { PropertyGlobalId } from './GlobalId';
 
 /**
@@ -132,7 +131,7 @@ export abstract class PassiveEffect {
    * **既定は何もしない。** 呼ばれるのは操作が宣言した一式だけで（11.7節）、そこに書けるのは
    * 実体値へ積む`add`と、実体値を動かさない`modify`しかない——輸送は書けない（8.4.1節）。
    */
-  countTickMovementAsGain(_owner: WorldObject, _context: ReferenceContext, _session: WorldSession): void {}
+  countTickMovementAsGain(_owner: WorldObject, _context: ReferenceContext): void {}
 }
 
 /**
@@ -223,15 +222,11 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * **今tick何も足さないなら名乗らない。** ゲートが閉じている効果の対象を数え先にすると、物が
    * 自分で宣言した増減まで操作の稼ぎになる。
    */
-  override countTickMovementAsGain(
-    owner: WorldObject,
-    context: ReferenceContext,
-    session: WorldSession,
-  ): void {
+  override countTickMovementAsGain(owner: WorldObject, context: ReferenceContext): void {
     if (this.reversible || this.activeAmount(owner, owner, context) === 0) return;
 
     const target = this.target.owner(context);
-    if (target !== undefined) session.countTickMovementAsGain(target, this.target.propertyGlobalId);
+    if (target !== undefined) owner.session.countTickMovementAsGain(target, this.target.propertyGlobalId);
   }
 
   /**

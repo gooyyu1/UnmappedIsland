@@ -90,14 +90,14 @@ function stand(character: string): {
 } {
   const session = new WorldSession(codex);
   const worldInstance = new WorldObject(0, def('world'), session);
-  session.adoptWorld(new World(worldInstance, codex));
+  session.adoptWorld(new World(worldInstance));
   const beach = session.createObject(codex.objectNames.getId('sandy_beach'));
   expect(
     beach.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
   ).toBeUndefined();
   const instance = session.createObject(codex.objectNames.getId(character));
   expect(instance.moveToSlotOrRejection(beach.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
-  return { player: new PlayerCharacter(instance, codex), session, world: worldInstance, land: beach };
+  return { player: new PlayerCharacter(instance), session, world: worldInstance, land: beach };
 }
 
 /** 寒さの入口（`chill_point`）の素の値（VitalsSystem.md 8.4節）。 */

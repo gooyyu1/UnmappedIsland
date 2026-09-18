@@ -147,7 +147,7 @@ describe('探索で見つかる物', () => {
   ): ExploreTrial[] {
     const session = new WorldSession(codex);
     const worldInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), session);
-    const worldView = new World(worldInstance, codex);
+    const worldView = new World(worldInstance);
     const explorer = new WorldSession(codex, worldView, seededRng(20250801));
 
     const instance = explorer.createObject(codex.objectNames.getId(landName));
@@ -156,7 +156,7 @@ describe('探索で見つかる物', () => {
     expect(
       instance.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
     ).toBeUndefined();
-    const location = new Location(instance, codex);
+    const location = new Location(instance);
     // 探索には視界の明るさが要る（IlluminationSystem.md 5節）。ここで見たいのは抽選卓なので、
     // 時刻を作らずに探索者の側で明るさを満たす。
     const agent = createBrightEnoughAgent(explorer);

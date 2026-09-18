@@ -430,7 +430,7 @@ async function buildReportFromDefinitions(): Promise<string> {
 
     const session = new WorldSession(codex, undefined, seededRng(seed));
     const worldInstance = new WorldObject(1, worldDef, session);
-    session.adoptWorld(new World(worldInstance, codex));
+    session.adoptWorld(new World(worldInstance));
 
     // 現在進行中のセグメント（季節が変わるまでの一区間）のバッファ
     // 季節も天気もシンボル型（6.6節）なので、値はsymbolNamesのID。

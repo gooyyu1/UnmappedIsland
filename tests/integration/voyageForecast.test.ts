@@ -51,7 +51,7 @@ describe('推定日数', () => {
   function forecastIn(
     game: StartedGame,
   ): (object: WorldObject) => ReturnType<ReturnType<typeof voyageForecastOf>> {
-    return voyageForecastOf(codex, game.world);
+    return voyageForecastOf(game.world);
   }
 
   /** 筏の積荷の枠へ物を1つ積む。 */
@@ -304,7 +304,7 @@ describe('推定日数', () => {
 
   it('筏の札の桟に、その文字が乗る', () => {
     const { game, raft } = ready();
-    const looks = cardLooksOf(codex, parseLocale('ja.yaml', ''), game.world, () => undefined);
+    const looks = cardLooksOf(parseLocale('ja.yaml', ''), game.world, () => undefined);
     const forecast = forecastIn(game)(raft)!;
 
     const days = voyageDaysText(forecast.minDays, forecast.maxDays);

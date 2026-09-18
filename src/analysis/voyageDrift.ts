@@ -104,7 +104,7 @@ export class VoyageDriftSimulation {
     const worldDef = codex.objects.get(codex.objectNames.getId(codex.vocabulary.world.worldObject));
     // world だけが instanceId 0。以降は WorldSession が 1 から配る（`NewGame.ts` と同じ取り決め）。
     this.worldInstance = new WorldObject(0, worldDef, this.session);
-    this.session.adoptWorld(new World(this.worldInstance, codex));
+    this.session.adoptWorld(new World(this.worldInstance));
 
     // 海区も本土も singleton なので、world が受け取れるものを全部入れれば網がそのまま立つ。
     // **隣が世界に居ないと押し流しは何も起きない回になる**ので、名指しで選ばずまとめて置く。

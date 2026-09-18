@@ -32,7 +32,7 @@ describe('timber.yamlの伐採', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const worldView = new World(worldInstance, codex);
+    const worldView = new World(worldInstance);
     session = new WorldSession(codex, worldView, fixedRng(0));
 
     forest = spawnInto('forest', worldInstance, 'locations');
@@ -49,11 +49,11 @@ describe('timber.yamlの伐採', () => {
   }
 
   function itemsOn(location: WorldObject): string[] {
-    return new Location(location, codex).items.map((object) => object.def.name);
+    return new Location(location).items.map((object) => object.def.name);
   }
 
   function carriedBy(character: WorldObject): string[] {
-    return new PlayerCharacter(character, codex).handStacks.flatMap((stack) =>
+    return new PlayerCharacter(character).handStacks.flatMap((stack) =>
       stack.map((object) => object.def.name),
     );
   }

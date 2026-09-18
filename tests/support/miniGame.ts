@@ -92,7 +92,7 @@ export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
   // NewGame.startNewGameと同じ順序で組み立てる（worldインスタンスもセッションに属させるため）。
   const session = new WorldSession(codex, undefined, options.rng);
   const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
-  const world = new World(worldInstance, codex);
+  const world = new World(worldInstance);
   session.adoptWorld(world);
 
   const landInstance = session.createObject(codex.objectNames.getId('land'));
@@ -110,10 +110,9 @@ export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
     throw new Error('playerをlandへ置けませんでした。');
 
   const game = new StartedGame(
-    session,
     world,
-    new PlayerCharacter(playerInstance, codex),
-    new Location(landInstance, codex),
+    new PlayerCharacter(playerInstance),
+    new Location(landInstance),
     // 生成を通さないので島は空（サイトが無いので土地も無い）。
     new SpawnedIsland(new IslandMap('test', 0, [], []), new Map()),
   );

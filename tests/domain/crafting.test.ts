@@ -146,7 +146,7 @@ object_defs:
 
     session = new WorldSession(codex);
     const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), session);
-    session.adoptWorld(new World(worldInstance, codex));
+    session.adoptWorld(new World(worldInstance));
     ground = session.createObject(idOf('crafting_ground'));
     ground.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations')));
     wip = session.createObject(idOf(inProgressObjectName('axe', 'basic')));
@@ -500,7 +500,7 @@ object_defs:
 
     session = new WorldSession(codex);
     const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), session);
-    session.adoptWorld(new World(worldInstance, codex));
+    session.adoptWorld(new World(worldInstance));
     ground = session.createObject(idOf('crafting_ground'));
     ground.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations')));
   });

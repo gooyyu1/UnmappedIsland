@@ -1089,8 +1089,7 @@ export class WorldObject {
     // selfを消した後でも、spawnはこのアンカーと配置時のスロットの状態から置き換え位置を決められる（SameSlotSpawnSite
     // 参照）。
     const sameSlotSpawnSite = this.captureSameSlotSpawnSite();
-    const session = this.session;
-    session.withSubject(this, () => effect.apply(context, session, sameSlotSpawnSite));
+    this.session.withSubject(this, () => effect.apply(context, sameSlotSpawnSite));
   }
 
   /** same_slotの置き換えのために、selfが今占めている位置を捕捉する。「これから消えるか」の予測は織り込まず、置き換え位置の判断は配置時にSameSlotSpawnSite自身が行う。parentが無ければ位置が無いのでundefined。 */
