@@ -12,6 +12,8 @@ import type { WorldObject } from '../../domain/WorldObject';
 import type { World } from '../../domain/wrappers/World';
 import type { ObjectGlobalId } from '../../domain/GlobalId';
 import { MINUTES_PER_DAY } from '../../domain/worldTime';
+import { resolveDeclaredNumber } from '../../domain/DeclaredNumber';
+import { ReferenceContext } from '../../domain/ReferenceRoot';
 
 /**
  * 見積もりを丸める刻み（日）。**半日**にするのは、積み下ろしのたびに動く細かさが要る一方、
@@ -185,13 +187,14 @@ export function voyageForecastOf(
   /** 海区か。**型の名前もタグも見ない**——渡るのにかかる時間を持つ場所が海区（Voyage.md 3.2節）。 */
   const isZone = (place: WorldObject): boolean => place.tryGetProperty(crossingId) !== undefined;
 
-  /** 出航の卓が引く重み。海岸が名乗る「この海区に面しているか」（同3.6節）はここで読む。 */
-  const weightOf = (reading: DeclaredNumberReading, raft: WorldObject): number => {
-    if (reading.kind === 'literal') return reading.value;
-    const subject =
-      reading.subject === 'self' ? raft : reading.subject === 'parent' ? raft.parent : undefined;
-    return subject?.tryGetProperty(reading.propertyGlobalId)?.getEffectiveValue() ?? 0;
-  };
+  /**
+   * 出航の卓が引く重み。海岸が名乗る「この海区に面しているか」（同3.6節）はここで読む。
+   *
+   * **起点は筏だけ**——誰がいつ漕ぎ出すかを決めずに引く見積もりなので、操作の役は解決先を持たない
+   * （ReferenceContext.forSelf）。読み方そのものは実行時の抽選と同じ（resolveDeclaredNumber）。
+   */
+  const weightOf = (reading: DeclaredNumberReading, raft: WorldObject): number =>
+    resolveDeclaredNumber(reading, ReferenceContext.forSelf(raft).valueResolver) ?? 0;
 
   /** 今の海岸から漕ぎ出したときに立ちうる海区。重みが0の候補＝面していない海区は挙がらない。 */
   const departureZones = (raft: WorldObject): readonly WorldObject[] => {
