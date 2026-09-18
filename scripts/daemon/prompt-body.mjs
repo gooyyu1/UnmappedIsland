@@ -29,9 +29,11 @@ function headsSection(line, section) {
  * 本体**として、しかも空ではないので呼び手の関門（[`prompt-template.sh`](prompt-template.sh)）にも
  * 掛からずに渡る。
  *
- * **`section` を渡すと、その見出しより後だけを見る**（[`resume-session.sh`](resume-session.sh) が
- * `## <理由>` ごとに本文を持つ）。見出しに当たるまでの囲みは、綴りに関わらず丸ごと読み飛ばす
- * ——前の節の本体の中に同じ形の行が在っても、節の見つけ方が変わらないようにする。
+ * **`section` を渡すと、その見出しより後だけを見る**（理由ごとに本文を持つひな形
+ * [`resume-prompt.md`](../../agent-ops/prompts/resume-prompt.md) が在る）。見出しに当たるまでの
+ * 囲みは、綴りに関わらず丸ごと読み飛ばす——前の節の本体の中に同じ形の行が在っても、節の見つけ方が
+ * 変わらないようにする。**その節が囲みを持たないまま次の見出しに当たったら、そこで終わる**
+ * ——続けると、**後ろの節の本文がその節のものとして黙って渡る。**
  *
  * **どこまでが本体かを決めるのはここ1つ。** 渡す本文として読む側
  * （[`prompt-template.sh`](prompt-template.sh)）と、名前で引ける節の範囲として読む側
@@ -54,6 +56,8 @@ export function promptBody(markdown, section = null) {
   let skipping = null;
   /** まだ見つけていない節の名前。渡されていないか、見つけた後は null。 */
   let seeking = section;
+  /** 節を渡されたか。見つけた後、次の見出しで終わるかの判定に要る。 */
+  const bounded = section !== null;
   for (const line of markdown.split(/\r?\n/)) {
     if (fence !== null) {
       if (line === fence) {
@@ -68,12 +72,32 @@ export function promptBody(markdown, section = null) {
       if (opened !== null) {
         if (seeking !== null || opened[0] !== line) skipping = opened[0];
         else fence = line;
-      } else if (seeking !== null && headsSection(line, seeking)) {
-        seeking = null;
+      } else if (seeking !== null) {
+        if (headsSection(line, seeking)) seeking = null;
+      } else if (bounded && /^##\s/.test(line)) {
+        break;
       }
     }
   }
   return closed ? body.map((line) => `${line}\n`).join('') : null;
+}
+
+/**
+ * そのひな形が**渡しうる本体すべて**。先頭の囲みと、`## <名前>` の節ごとの囲みを集める。
+ *
+ * **先頭の囲みだけでは足りない。** 理由ごとに本文を持つひな形
+ * （[`resume-prompt.md`](../../agent-ops/prompts/resume-prompt.md)）は節を指定して読まれるので、
+ * 先頭だけを本体と呼ぶと、**セッションへは渡るのに節としては引けない本文**ができる。
+ *
+ * 節を持たないひな形では先頭と節ごとの取り出しが同じものを返すので、重なりは畳む。
+ *
+ * @param {string} markdown ひな形の中身
+ * @returns {string[]} 本体の中身。1つも無ければ空
+ */
+export function promptBodies(markdown) {
+  const bodies = [promptBody(markdown)];
+  for (const found of markdown.matchAll(/^##\s+(\S+)/gm)) bodies.push(promptBody(markdown, found[1]));
+  return [...new Set(bodies)].filter((body) => body !== null);
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

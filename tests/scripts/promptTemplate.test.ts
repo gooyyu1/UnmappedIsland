@@ -185,6 +185,19 @@ describe('template_body に節を渡す', () => {
     expect(taken.text).toBe('');
     expect(taken.stderr).toContain('## mend');
   });
+
+  // 「節が無い」の兄弟。節は在るが囲みを書き忘れた、という形で、**次の節の本文がその節のものとして
+  // 渡る。** 節を見つけた後も次の見出しで止まらないと、どちらも空にならないまま通る。
+  it('節に囲みが無ければ、後ろの節の本文を渡さない', () => {
+    const taken = take(
+      'template_body',
+      [MEND, '囲みを書き忘れた', STALL, FENCE, 'stall の本文', FENCE],
+      'mend',
+    );
+
+    expect(taken.code).not.toBe(0);
+    expect(taken.text).toBe('');
+  });
 });
 
 describe('template_title', () => {
