@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseDocument } from 'yaml';
 import { AssetPack } from '../../src/asset-pack/AssetPack';
 import { LoadReport } from '../../src/loader/LoadReport';
-import { loadWorldCodex } from '../../src/loader/loadWorldCodex';
+import { loadWorldCodex, WORLD_CODEX_TEXTS } from '../../src/loader/loadWorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
@@ -87,5 +87,39 @@ describe('同梱ぶんのパース結果の控え', () => {
     new WorldCodexYamlLoader().loadDocument('patched.yaml', doc).buildAndReset();
 
     expect(String(doc)).toBe(before);
+  });
+
+  /**
+   * 「渡したDocumentは書き換えない」は**ローダー全体の契約**（WorldCodexYamlLoader.loadDocument）で、
+   * patchはその一部でしかない。上の2本はpatchの経路しか通らないので、宣言を読むだけのparse関数が
+   * ノードを書き換えても落ちない。
+   *
+   * **型では塞げない。** `yaml`のDocumentは読む口と書き換える口が同じ型に在り、`Readonly`を被せても
+   * `Node.set`・`Node.delete`は通る。ので、同梱ぶんを丸ごと通して字面で見る。
+   *
+   * **通るのは同梱ぶんが使っているルートキーだけ。** patch（`patch_object_defs`）は同梱ぶんに1つも
+   * 無いので、そちらは上の2本が受け持つ。同梱ぶんを素材に使うのは、**新しい節が同梱ぶんで使われた
+   * 時点でここの範囲も一緒に広がる**から——自前の宣言を書くと、新しいparse関数はそこを通らない。
+   *
+   * **同梱ぶんを読んでもYAMLの中身には依らない**（見るのは通す前と後の字面の差だけ）ので、定義を
+   * 直してこの試験が赤くなることはない。
+   */
+  it('同梱ぶんを丸ごと読んでも、渡したDocumentは1つも書き換わらない', () => {
+    const files = [...WORLD_CODEX_TEXTS.keys()];
+    const docs = files.map((file) => parseDocument(WORLD_CODEX_TEXTS.get(file)!));
+    const before = docs.map((doc) => String(doc));
+
+    expect(files.length, '同梱の定義YAMLが1つも無い').toBeGreaterThan(0);
+
+    const loader = new WorldCodexYamlLoader();
+    files.forEach((file, index) => loader.loadDocument(file, docs[index]));
+    // 読み込みが黙って何もしなくなったら「書き換えていない」は自明に成り立つので、組み上がった
+    // ものが空でないことも見る。
+    expect([...loader.buildAndReset().objects].length, '読み込みが何も読めていない').toBeGreaterThan(0);
+
+    expect(
+      files.filter((_, index) => String(docs[index]) !== before[index]),
+      '読み込みが書き換えたファイル',
+    ).toEqual([]);
   });
 });
