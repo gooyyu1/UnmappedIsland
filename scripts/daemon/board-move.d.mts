@@ -11,6 +11,9 @@ export const PATROL: string;
 /** PRの頭が動いたときに落ちる結論の札。剥がす手を打つ側が綴りをここから取る。 */
 export const STALE_ON_PUSH: readonly string[];
 
+/** PRを人の手番へ移す印（`agent-ops/board-design.md` 2.13.8）。人へ見せる側が綴りをここから取る。 */
+export const HUMAN_TURN: readonly string[];
+
 /** 周期の係を前に立ててから空ける間隔（時間）。知らない名前には `undefined`。 */
 export function cycleHours(name: string): number | undefined;
 

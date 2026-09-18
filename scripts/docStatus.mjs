@@ -1,24 +1,30 @@
-// docs/配下の節を数え、確定度と実装状況の一覧を出す（docs/DocumentStyle.md 4節・6節）。
+// 確定度の印（docs/DocumentStyle.md 6節）が掛かる文書の節を数え、確定度と実装状況（同 4節）の
+// 一覧を出す。**走査先を決めているのは 6節のほう**で、4節の印は数えて見せるだけ。
 //
 // 確定の印を付けられるのは人間だけなので、**どこへ注意を向けるかを1画面で選べる**ことが要る。
-// 14,000行を通しで読む代わりにこの表を読む。Markdownで出すのは、スマホのGitHub上でそのまま
+// 対象の全文を通しで読む代わりにこの表を読む。Markdownで出すのは、スマホのGitHub上でそのまま
 // 読める形にするため。
+//
+// 数える先は**印の条件が掛かる文書すべて**で、`docs/` には閉じない（docs/DocumentStyle.md 10節）。
+// 絞りは [`docScope.mjs`](docScope.mjs) が持つ1つを呼ぶ——条件を課す側と数える側で別々に持つと、
+// 条件は掛かっているのに表には一度も載らない文書ができる（`agent-ops/board-design.md` がその形
+// だった。issue #2067）。
 //
 // 数えるのは印の有無だけで、中身の正しさは見ない。【確定】は「覆すには人間の判断が要る」という
 // 変更権限の宣言であって、内容が正しいという主張ではない（6節）。
 //
 // 使い方:
-//   node scripts/docStatus.mjs            フォルダ別の表
+//   node scripts/docStatus.mjs            文書ごとの表
 //   node scripts/docStatus.mjs --json     JSON（他のスクリプトから読む用）
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { isMarkRuleDoc, trackedDocs } from './docScope.mjs';
 import { linesOutsideFence } from './markdownFences.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DOCS = 'docs';
 
 /** 節とみなす見出しの最も浅い深さ。`#`は文書題名なので数えない。 */
 const SHALLOWEST_SECTION_DEPTH = 2;
@@ -36,16 +42,6 @@ export const WHOLE_DOCUMENT_CONFIRMED = '**本書は全体が確定です。**';
  */
 export function declaresWholeDocument(markdown) {
   return linesOutsideFence(markdown).some(({ raw }) => raw.startsWith(WHOLE_DOCUMENT_CONFIRMED));
-}
-
-function markdownFilesIn(dir) {
-  const found = [];
-  for (const entry of readdirSync(path.join(ROOT, dir))) {
-    const rel = path.join(dir, entry);
-    if (statSync(path.join(ROOT, rel)).isDirectory()) found.push(...markdownFilesIn(rel));
-    else if (entry.endsWith('.md')) found.push(rel);
-  }
-  return found;
 }
 
 /** コードフェンスの外の見出し行（`#`を除いた本文）。 */
@@ -87,7 +83,8 @@ function statusOf(rel) {
 }
 
 function printDocuments() {
-  const documents = markdownFilesIn(DOCS)
+  const documents = trackedDocs(ROOT)
+    .filter(isMarkRuleDoc)
     .map(statusOf)
     .sort((a, b) => a.path.localeCompare(b.path));
 
@@ -113,7 +110,8 @@ function printDocuments() {
     `全 ${documents.length} 文書 / ${total.lines} 行 / ${total.sections} 節。` +
       `**確定 ${total.confirmed} 節**、未実装 ${total.unimplemented} 節。` +
       '印の無い節は暫定（docs/DocumentStyle.md 6節）。' +
-      `ほかに全体が確定の文書が ${wholeDocuments} 件あり、確定欄を \`全\` と出す（同 6.2節）。\n`,
+      `ほかに全体が確定の文書が ${wholeDocuments} 件あり、確定欄を \`全\` と出す（同 6.2節）。\n\n` +
+      '並ぶのは**確定度の印の条件が掛かる文書すべて**で、`docs/` の外も入る（同 10節）。\n',
   );
   console.log('| 文書 | 節 | 確定 | 未実装 | 未決事項節 | 行 |');
   console.log('| --- | --: | --: | --: | :-: | --: |');

@@ -93,6 +93,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  HUMAN_TURN,
   PATROL,
   STRANDS,
   busySession,
@@ -316,7 +317,20 @@ function patrolNote(patrol, now) {
 }
 
 /**
- * 人の手番で止まっているもの（`判断待ち`。2.13）。**届く先はここしか無い**——ラベルを付けるのは
+ * そのPRが止まっていることと、**画面のマージが今すぐ押せるか**（2.13.8）。人の手番で止まっている
+ * 間は `main` の動きで直しを頼まないので、**待つほど衝突とCIの赤がそのまま残る**——押せないことを
+ * 書かないと、読んだ人は「通す」を選んだつもりでボタンの前に着く。
+ */
+function pendingMerge(pr) {
+  const blocked = [
+    pr.mergeable === 'CONFLICTING' ? '衝突' : undefined,
+    checks(pr) === '赤' ? 'CIが赤い' : undefined,
+  ].filter((reason) => reason !== undefined);
+  return blocked.length === 0 ? 'マージされない' : `マージされない（${blocked.join('・')}。取り込みが要る）`;
+}
+
+/**
+ * 人の手番で止まっているもの（`HUMAN_TURN`。2.13）。**届く先はここしか無い**——ラベルを付けるのは
  * 機械かレビュアーで、PRを出すのも issue を返すのも人と同じアカウントなので、GitHub の通知は
  * 鳴らない。端末の盤面にはラベルの列が出るが（`board`）、**叩けない人が読めるのは本文だけ。**
  *
@@ -327,15 +341,23 @@ function patrolNote(patrol, now) {
  */
 function humanTurn(found) {
   const held = [
-    ...found.prs.map((pr) => ({ item: pr, what: `PR #${pr.number}`, stops: 'マージされない' })),
+    ...found.prs.map((pr) => ({ item: pr, what: `PR #${pr.number}`, stops: pendingMerge(pr) })),
     ...found.issues.map((issue) => ({ item: issue, what: `#${issue.number}`, stops: '配られない' })),
-  ].filter(({ item }) => names(item).includes('判断待ち'));
+  ].filter(({ item }) => names(item).some((name) => HUMAN_TURN.includes(name)));
   if (held.length === 0) return [];
+  // **取り込みが要るPRが1本も無い周には書かない。** 毎周出る断りは、当たっている周も読み飛ばされる。
+  const stale = held.some(({ stops }) => stops.includes('取り込みが要る'))
+    ? [
+        '',
+        '**`取り込みが要る` と出たPRは、画面のマージが押せません。** 通すなら「通してよい。`main` を取り込んで」と書いてラベルを外してください——書いた本人が1回で取り込み直し、緑になったらここへ戻ります（2.13.8）。',
+      ]
+    : [];
   return [
     '',
     '## 人の手番',
     '',
-    '**`判断待ち` が外れるまで、下は進みません。** 通すならPRを画面からマージ、通さないならラベルを外す（2.13.1）。',
+    '**この印が外れるまで、下は進みません。** 通すならPRを画面からマージ、通さないならラベルを外す（2.13.1）。',
+    ...stale,
     '',
     '| どれ | 外れないと | 題 |',
     '|---|---|---|',

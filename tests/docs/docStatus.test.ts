@@ -1,16 +1,19 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { isMarkRuleDoc, trackedDocs } from '../../scripts/docScope.mjs';
 import { statusOfMarkdown } from '../../scripts/docStatus.mjs';
 
 /**
  * `npm run stats:docs`（`scripts/docStatus.mjs`）が数え落としていないかの検査。
  *
- * この表は「14,000行を通しで読む代わりに、どこへ注意を向けるかを選ぶ」道具（`docs/README.md`）
+ * この表は「通しで読む代わりに、どこへ注意を向けるかを選ぶ」道具（`scripts/docStatus.mjs` の冒頭）
  * なので、**全部0になっても、印が1つ落ちても、表の形は保たれ、壊れたことが表から読み取れない**。
  * CRLFの作業ツリーで見出しが1つも拾えなくなっていたのが前者（issue #867）、深さ4の見出しに付いた
- * `【確定】` が落ちていたのが後者（issue #869）。
+ * `【確定】` が落ちていたのが後者（issue #869）。**文書が丸ごと表に載らないのも同じ形で見えない**
+ * ——`docs/` だけを数えていた間、`agent-ops/board-design.md` の確定節は表に一度も出なかった
+ * （issue #2067）。
  *
  * 見るのは**数え方の当たり外れではなく、空になっていないことと、印が落ちていないこと**。値の
  * 妥当性は見ない——重ねて見ると、赤くなったときにどちらの意味か決まらなくなる。
@@ -18,15 +21,13 @@ import { statusOfMarkdown } from '../../scripts/docStatus.mjs';
 
 const ROOT = resolve(__dirname, '../..');
 
-function listMarkdown(dir: string): string[] {
-  const found: string[] = [];
-  for (const entry of readdirSync(join(ROOT, dir))) {
-    const rel = join(dir, entry);
-    if (statSync(join(ROOT, rel)).isDirectory()) found.push(...listMarkdown(rel));
-    else if (entry.endsWith('.md')) found.push(rel);
-  }
-  return found;
-}
+/**
+ * 表に並ぶべき文書。**確定度の印の条件が掛かるものすべて**で、`docs/` には閉じない
+ * （`docs/DocumentStyle.md` 10節）。絞りは条件を課す側と同じ
+ * [`docScope.mjs`](../../scripts/docScope.mjs) の1つを呼ぶ——別々に持つと、条件は掛かっているのに
+ * 表には載らない文書ができる。
+ */
+const MARK_RULE_DOCS = trackedDocs(ROOT).filter(isMarkRuleDoc);
 
 interface DocumentStatus {
   readonly path: string;
@@ -51,28 +52,39 @@ function sumOf(key: 'sections' | 'confirmed' | 'unimplemented'): number {
 
 /**
  * その印の付いた見出し行。**`docStatus.mjs` の数え方は使わない**——同じ関数で数えると、両方が
- * 同じように落ちたときに気づけない。
+ * 同じように落ちたときに気づけない。採る形は**手前に在るフェンス行の数の偶奇**で決める。
  *
- * 見出しかどうかは行頭の`#`だけで決める。コードフェンスを追わないのは、`docs/`のフェンスに現れる
- * `#`がYAMLのコメント（深さ1）で、節の深さ（2以上）と重ならないため。
+ * フェンスの中を外すのは、走査先に `agent-ops/prompts/**` が入ったため——あそこはセッションへ
+ * 渡す本体を囲みに入れて持つので、**囲みの中にも深さ2の見出しが並ぶ**。表も印の条件（6節）も
+ * 囲みの中は見ないので、外さないと、渡す文面の見出しに印が現れた時点で表と食い違う。
  */
 function headingLinesWith(mark: string): string[] {
   const found: string[] = [];
-  for (const rel of listMarkdown('docs')) {
-    readFileSync(join(ROOT, rel), 'utf-8')
-      .split(/\r?\n/)
-      .forEach((line, index) => {
-        if (/^#{2,6}\s/.test(line) && line.includes(mark)) found.push(`${rel}:${index + 1} ${line}`);
-      });
+  for (const rel of MARK_RULE_DOCS) {
+    const lines = readFileSync(join(ROOT, rel), 'utf-8').split(/\r?\n/);
+    const fenceAt = lines.flatMap((line, index) => (/^\s*```/.test(line) ? [index] : []));
+    lines.forEach((line, index) => {
+      const insideFence = fenceAt.filter((at) => at < index).length % 2 === 1;
+      if (!insideFence && /^#{2,6}\s/.test(line) && line.includes(mark))
+        found.push(`${rel}:${index + 1} ${line}`);
+    });
   }
   return found;
 }
 
-describe('docs/ の確定度と実装状況の表', () => {
+describe('確定度と実装状況の表', () => {
   it('節と【確定】を数えられている', () => {
     expect(REPORTED.length, '文書が1つも見つかっていない').toBeGreaterThan(0);
     expect(sumOf('sections'), '節が1つも拾えていない').toBeGreaterThan(0);
     expect(sumOf('confirmed'), '【確定】が1つも拾えていない').toBeGreaterThan(0);
+  });
+
+  it('印の条件が掛かる文書を、1つ残らず並べている（DocumentStyle.md 10節）', () => {
+    // 表に載らない文書は、印を1つも持たない文書と見分けが付かない——`docs/` だけを数えていた
+    // 間、`agent-ops/board-design.md` の確定節はどの表にも出なかった（issue #2067）。
+    expect(REPORTED.map((doc) => doc.path).sort()).toEqual(
+      MARK_RULE_DOCS.map((rel) => rel.split(/[\\/]/).join('/')).sort(),
+    );
   });
 
   it('見出しに付いた印を、1つも数え落としていない', () => {
@@ -94,7 +106,7 @@ describe('docs/ の確定度と実装状況の表', () => {
     // 文書と見分けが付かない。**`docStatus.mjs` の判定は呼ばない**（上の見出しと同じ理由）ので、
     // フェンスの外を採る形だけを変えて書く——あちらは行を1本ずつ状態機械で追い、こちらは
     // フェンスの行で割って偶数番の断片を採る。
-    const declaring = listMarkdown('docs')
+    const declaring = MARK_RULE_DOCS
       .filter((rel) =>
         readFileSync(join(ROOT, rel), 'utf-8')
           .replace(/\r\n/g, '\n')
@@ -118,7 +130,7 @@ describe('docs/ の確定度と実装状況の表', () => {
     // 作業ツリーの改行は取り出し方（gitの`core.autocrlf`）で変わるので、CRLFで数が変わると
     // **CIだけが緑のまま**になる。
     const differing: string[] = [];
-    for (const rel of listMarkdown('docs')) {
+    for (const rel of MARK_RULE_DOCS) {
       const lf = readFileSync(join(ROOT, rel), 'utf-8').replace(/\r\n/g, '\n');
       const crlf = lf.replace(/\n/g, '\r\n');
       const counted = statusOfMarkdown(lf);

@@ -33,8 +33,8 @@
 ## 2. スキルはキャラクターのプロパティ
 
 スキルはプレイヤーキャラクターの `props` として持たせます。`conditions` の `subject: agent`
-（14.1 節）から直接参照でき、`world` シングルトンを参照する迂回（同節、`subject: world` は未対応）が
-要りません。
+（[`GameElementDefinition.md`](./GameElementDefinition.md) 14.1 節）から直接参照でき、`world` シングルトンを
+参照する迂回（同節、`subject: world` は未対応）が要りません。
 
 ```yaml
 object_defs:
@@ -266,7 +266,8 @@ interactions:
 
 ## 4. 解放条件は段のしきい値
 
-レシピの解放は、`recipes` のエントリに `conditions`（14 節）を書き、`agent` のスキル段を判定する形で
+レシピの解放は、`recipes` のエントリに `conditions`
+（[`GameElementDefinition.md`](./GameElementDefinition.md) 14 節）を書き、`agent` のスキル段を判定する形で
 表します。**「その段以上」を表す `in_stage_or_above` で書きます**——腕前は単調に増えるので、今いる段
 ちょうどを見る `in_stage` で書くと、腕が上がった瞬間にレシピが閉じ直します
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 14.1 節）。
@@ -309,7 +310,8 @@ object_defs:
 
 ### 4.2 素材チェーンが既にゲートしている場所には置かない
 
-`requires` の道具要求（`consume: false`、13.1 節）と、素材そのものの入手難度は、それ自体がゲートです。
+`requires` の道具要求（`consume: false`、[`GameElementDefinition.md`](./GameElementDefinition.md) 13.1 節）と、
+素材そのものの入手難度は、それ自体がゲートです。
 青銅器は採掘と製錬という長い素材チェーンの先にあるため、さらにスキル条件を足すと二重になります。
 
 **スキルによる解放が効くのは、素材チェーンが平坦なのに強力なもの**です。編み籠は植物繊維だけで作れるので、
@@ -332,7 +334,8 @@ object_defs:
 目に見えて進まなくなり、鈍化が体感として残ります。
 
 どちらも `stages` の境界からの純粋な計算なので、**プロパティ自身が導出します**
-（`PropertyDef.stageReadingAt`）。採否が未決の `derived`（17 節）は必要としません。UI 側で数え直さないのは、
+（`PropertyDef.stageReadingAt`）。採否が未決の `derived`
+（[`GameElementDefinition.md`](./GameElementDefinition.md) 17 節）は必要としません。UI 側で数え直さないのは、
 **今いる段の上端と次の段の `min` が同じ 1 つの値**だからです——別々に探すと、段の選び方が 2 箇所に散り、
 片方だけを変えたときに食い違います。見せ方は [`StatusArea.md`](../ui/StatusArea.md) 9 節です。
 
