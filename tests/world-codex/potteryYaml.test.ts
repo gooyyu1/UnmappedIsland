@@ -281,12 +281,20 @@ describe('pottery.yamlの土器の連鎖', () => {
     );
   });
 
-  it('甕と蓋は、同じ炉へ入れて一度に焼ける', () => {
-    // 蓋のぶんで炉を築き直すことにならないよう、同じ枠に並べられることを確かめる
-    // （docs/world/ContentSkeleton.md 5.3節の「蓋を作るかどうかが積み方の選択になる」の前提）。
-    const kiln = fireDriedGreenware(24, ['unfired_jar', 'unfired_jar_lid']);
+  it('航海ぶんの甕と、その数の蓋を、1つの炉で一度に焼ける', () => {
+    // **蓋のために炉を増やさずに済む**（docs/world/ContentSkeleton.md 5.3節）。炉のfire枠は個数の
+    // 上限を書いていないので同種はいくつでも入るが、**上限を書けばここで落ちる**——1つずつしか
+    // 並べない検査では、蓋の代価が炉1つぶん増えても緑のままになる。
+    //
+    // 数は航海へ積む甕の長い側（Voyage.md 3.9.6節の3〜4つ）。
+    const voyageJars = 4;
+    const kiln = fireDriedGreenware(24, [
+      ...Array.from({ length: voyageJars }, () => 'unfired_jar'),
+      ...Array.from({ length: voyageJars }, () => 'unfired_jar_lid'),
+    ]);
 
-    expect(childNames(kiln)).toEqual(['jar', 'jar_lid']);
+    expect(childNames(kiln).filter((name) => name === 'jar')).toHaveLength(voyageJars);
+    expect(childNames(kiln).filter((name) => name === 'jar_lid')).toHaveLength(voyageJars);
   });
 
   it('甕は持ち運べる', () => {

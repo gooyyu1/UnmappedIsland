@@ -445,9 +445,9 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 [`Voyage.md`](./Voyage.md) 3.9.6節）。
 
 **蓋は素焼きで、甕と同じ炉を通ります**（`pottery.yaml`）。粘土1個を平たく伸ばして乾かし、覆い焼きの炉で
-焼くだけなので、成形そのものは壺より短く済みます。**払うのは焼く枠のほう**——炉は枠の数が決まっていて
-一度きりなので、甕と同じ数の蓋を揃えるには炉を築き直すことになります。載せている間は蒸発も雨受けも
-止まり、外せば元どおりです（[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 6.2節）。
+焼くだけで、成形そのものは壺より短く済みます。**炉は増えません**——甕と一緒に並べて一度に焼けるので、
+払うのは粘土と成形の時間だけです。載せている間は蒸発も雨受けも止まり、外せば元どおりです
+（[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 6.2節）。
 
 **出どころ**: [#2055](https://github.com/gooyyu1/UnmappedIsland/issues/2055)（航海の水は甕とヤシの実の両方を置く。2026-09-12に回答）
 
