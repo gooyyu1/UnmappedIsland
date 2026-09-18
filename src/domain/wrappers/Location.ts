@@ -71,11 +71,45 @@ export class Location extends ObjectWrapper {
   }
 
   /**
-   * 未発見の設置物スロットの中身。画面には出さない（locations.yaml参照）が、道の行き先の絵の
-   * 先読み（PlayScene.requestLocationArt）が発見前に行き先を知るために読む。
+   * 未発見の設置物スロットの中身。画面には出さない（locations.yaml参照）ので、外へ出すのは
+   * ここから導いた答え（undiscoveredPathDestinations）だけ。
    */
-  get undiscoveredFixtures(): readonly WorldObject[] {
+  private get undiscoveredFixtures(): readonly WorldObject[] {
     return this.contentsOf(this.words.undiscoveredFixturesSlotId);
+  }
+
+  /**
+   * 発見済みの道が繋がっている先の土地（道を持たない土地では空）。
+   *
+   * **道かどうかも行き先も名乗るのは道自身**なので、呼び出し側は設置物からタグを見分けて
+   * 行き先を辿る手順を持たない。
+   */
+  get discoveredPathDestinations(): readonly WorldObject[] {
+    return this.destinationsOf(this.fixtures);
+  }
+
+  /**
+   * **まだ発見していない**道が繋がっている先の土地。**プレイヤーには見えていない**ので、
+   * 画面に出すものではなく、発見と同時に要るもの——行き先の土地の絵——を先に用意するために読む
+   * （PlayScene.requestLocationArt）。
+   */
+  get undiscoveredPathDestinations(): readonly WorldObject[] {
+    return this.destinationsOf(this.undiscoveredFixtures);
+  }
+
+  /**
+   * 設置物の並びに含まれる道の行き先（道でない設置物は挙げない）。行き先が世界のツリーに居ない道も
+   * 挙げない——指す先が無い道は、絵も名前も引けないため（Path.destination）。
+   */
+  private destinationsOf(fixtures: readonly WorldObject[]): readonly WorldObject[] {
+    const destinations: WorldObject[] = [];
+    for (const fixture of fixtures) {
+      if (!fixture.def.hasTag(this.words.pathTagId)) continue;
+
+      const destination = new Path(fixture, this.codex).destination;
+      if (destination !== undefined) destinations.push(destination);
+    }
+    return destinations;
   }
 
   /** キャラクタスロットの中身。 */
