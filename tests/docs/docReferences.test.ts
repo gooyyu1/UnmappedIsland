@@ -21,7 +21,7 @@ import { linesOutsideFence } from '../../scripts/markdownFences.mjs';
  * （{@link REF_FILES}・{@link LINK_CHECKED_FILES}）も指し先（{@link REF_TARGETS}）もそこから絞る。
  * 確定度の印の条件も同じで、印を使う文書なら `docs/` の外でも課す（{@link MARK_RULE_FILES}）。
  *
- * **リンクはコードのコメントにも在る**ので、そちらも同じ規約で見る（{@link LINK_CHECKED_CODE}）
+ * **リンクはソースのコメントにも在る**ので、そちらも同じ規約で見る（{@link COMMENTED_SOURCES}）
  * ——TypeDoc が `/reference/` を作るときに読む側なので、切れたままだと公開の頁のリンクが死ぬ。
  *
  * **外すのは、当時の現物をそのまま残す記録だけ**（{@link isVerbatimRecord}。DocumentStyle.md 10節）。
@@ -140,12 +140,17 @@ function isOperationalDoc(rel: string): boolean {
 const COMMENTED_EXTENSIONS = ['.ts', '.mts', '.mjs', '.js', '.sh', '.py', '.yaml', '.yml'];
 
 /**
- * コメントを書ける形式の、追跡しているソース全部。**節番号の参照（{@link REF_FILES}）も
- * コメントのリンク（{@link LINK_CHECKED_CODE}）も、ここから絞って作る。**
+ * コメントを書ける形式の、追跡しているソース全部。**節番号の参照（{@link REF_FILES}）も、
+ * コメントのMarkdownリンクも、ここから絞って作る。**
  *
  * **在り処を列挙せず、形式で絞る**（{@link TRACKED_DOCS} と同じ理由）——フォルダと拡張子を
  * 数え上げると、**足した日にしか更新されない一覧**が射程を決めることになり、新しい置き場も
  * 新しい綴りも黙って外に出る（`.github/**` のワークフロー・`scripts/**` の `.d.mts` がその形）。
+ *
+ * リンクを読むのは**コメントだけ**（{@link commentsOnly}）——コードの `](` は、正規表現の
+ * リテラルやジェネレータの宣言（`*[Symbol.iterator]()`）と字面で見分けられない。**そのぶん、
+ * 節番号の参照が `tests/docs/**` を外しているのはリンクには要らない**——あそこで外している例は、
+ * どれも文字列リテラルに在る。
  */
 const COMMENTED_SOURCES = trackedFiles(ROOT).filter((rel) =>
   COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)),
@@ -201,8 +206,9 @@ function withoutCode(markdown: string): string {
  *
  * **外す形を数え上げず、読める形のほうを書く。** 外すものを挙げていくと、次に生えた例示の形が
  * 漏れて**例示が赤くなる**——コードのコメントは正規表現（`['"]([^'"]+)['"]`）も省略の `…` も
- * そのまま引くので、形は増え続ける。パスに使える字だけでできていて、点だけではないものが
- * 指し先で、それ以外は全部例示。
+ * そのまま引くので、形は増え続ける。ASCIIのパスの字だけでできていて、点だけではないものが
+ * 指し先で、それ以外は全部例示。**非ASCIIを入れない**のは、省略の `…` がそこに居るため——
+ * 日本語のファイル名を足すなら、`…` を外す手を別に持つことになる。
  *
  * **判定が要るのはリンクだけ。** 節番号・節名の参照は `文書名.md N節` のように書けば
  * {@link brokenNumberedRefsIn} の `tokenPattern` が最初から拾わない（ファイル名の先頭に
@@ -298,22 +304,9 @@ const REF_TARGETS = TRACKED_DOCS;
  * 走査する側と指し先を1つの集合から出すのは、**片側にしか居ない文書を作らない**ため。走査だけの
  * 文書を足すと、そこの `#見出し` は指し先の一覧に無いので誤って赤くなる。
  *
- * コードのコメントに在るリンクは {@link LINK_CHECKED_CODE} が持つ。
+ * ソースのコメントに在るリンクは {@link COMMENTED_SOURCES} が持つ。
  */
 const LINK_CHECKED_FILES = REF_TARGETS.filter((rel) => !isVerbatimRecord(rel));
-
-/**
- * Markdownリンクを検査する、**コードの側**。文書（{@link LINK_CHECKED_FILES}）と同じ規約が掛かる
- * ——TypeDoc が `/reference/` を作るときに読むので、切れたままだと公開の頁のリンクが死ぬ。
- *
- * **在り処は {@link COMMENTED_SOURCES} が1つ持つ。**
- *
- * 読むのは**コメントだけ**（{@link commentsOnly}）——コードの `](` は、正規表現のリテラルや
- * ジェネレータの宣言（`*[Symbol.iterator]()`）と字面で見分けられない。**そのぶん、節番号の参照が
- * `tests/docs/**` を外しているのはここには要らない**——あそこで外している例は、どれも文字列
- * リテラルに在る。
- */
-const LINK_CHECKED_CODE = COMMENTED_SOURCES;
 
 /**
  * 確定度の印の規約（DocumentStyle.md 6節・6.1節・6.2節）を課す対象。**`docs/` の中だけではない**
@@ -627,7 +620,7 @@ describe('ドキュメントの参照', () => {
   it('Markdownリンクの先のファイルが存在する', () => {
     const broken = [
       ...LINK_CHECKED_FILES.flatMap((rel) => brokenLinkFilesIn(rel, read(rel))),
-      ...LINK_CHECKED_CODE.flatMap((rel) => brokenLinkFilesIn(rel, commentsOnly(read(rel), rel))),
+      ...COMMENTED_SOURCES.flatMap((rel) => brokenLinkFilesIn(rel, commentsOnly(read(rel), rel))),
     ];
     expect(broken, `リンク切れ:\n${broken.join('\n')}`).toEqual([]);
   });
@@ -635,7 +628,7 @@ describe('ドキュメントの参照', () => {
   it('Markdownリンクのアンカーが、リンク先の見出しに解決する', () => {
     const broken = [
       ...LINK_CHECKED_FILES.flatMap((rel) => brokenLinkAnchorsIn(rel, read(rel))),
-      ...LINK_CHECKED_CODE.flatMap((rel) => brokenLinkAnchorsIn(rel, commentsOnly(read(rel), rel))),
+      ...COMMENTED_SOURCES.flatMap((rel) => brokenLinkAnchorsIn(rel, commentsOnly(read(rel), rel))),
     ];
     expect(broken, `アンカー切れ:\n${broken.join('\n')}`).toEqual([]);
   });
@@ -861,11 +854,23 @@ describe('ドキュメントの参照', () => {
     // 拾えていない状態は、切れが1件も無い状態と同じ緑になる。**指し先を実在しないものへ
     // すり替えた本文**を通せば、拾えている限り赤が出る——0件なら、コメントの見分けか
     // 走査の一覧のどちらかが、コードを1行も渡していない。
-    const found = LINK_CHECKED_CODE.flatMap((rel) =>
+    const found = COMMENTED_SOURCES.flatMap((rel) =>
       brokenLinkFilesIn(rel, commentsOnly(read(rel), rel).split('](').join('](NoSuchDir/')),
     );
 
     expect(found.length).toBeGreaterThan(0);
+  });
+
+  it('その形式のソースが、1つ残らずリンクの検査に入っている', () => {
+    // 上の土台は1本でも拾えていれば緑なので、**射程が縮んだことはそこでは見えない**——在り処の
+    // 一覧へ戻した途端に `.github/**` も `.d.mts` も落ちる。**射程を出しているのと同じ経路で
+    // 数えない**（`everyTrackedMarkdown` と同じ理由）ので、形式ごとに git の pathspec で引く。
+    const covered = new Set(COMMENTED_SOURCES);
+    const uncovered = COMMENTED_EXTENSIONS.flatMap((ext) => trackedFiles(ROOT, `*${ext}`)).filter(
+      (rel) => !covered.has(rel),
+    );
+
+    expect(uncovered, `リンクの検査に入っていないソース:\n${uncovered.join('\n')}`).toEqual([]);
   });
 
   it('コメントを読む形式の一覧に、リポジトリに無いものが挙がっていない', () => {
