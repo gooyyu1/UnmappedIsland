@@ -1,1 +1,1 @@
-export function promptBody(markdown: string): string | null;
+export function promptBody(markdown: string, section?: string | null): string | null;

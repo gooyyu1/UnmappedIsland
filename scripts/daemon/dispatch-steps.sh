@@ -37,7 +37,9 @@ trap 'rm -rf "$WORK"' EXIT
 # - `MODE` … 承認モード。**空なら `permission_mode` を渡さない**、が呼び手の約束（`ccr-env.sh`）
 # - `SOURCE` … `source_url` へ渡すリポジトリのURL。ブリッジでは空
 #
-# **渡す文面は投入先で変わらない**（`agent-ops/prompts/dispatch-prompt.md`「走る場所で文面を変えない」）。
+# **渡す文面は投入先で変わらない**（[`board-design.md`](../../agent-ops/board-design.md) 2.16節）。
+# **典拠が盤面の取り決めなのは、ここを通るのがタスクだけではないから**——投入するものの1つに固有の
+# ひな形を指すと、そこから呼ばない経路には当たらない規則になる。
 choose_target() {
   if [ "${1:-}" = "--bridge" ]; then
     ENV_ID="$BRIDGE_ENV"
