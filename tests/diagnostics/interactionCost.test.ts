@@ -13,17 +13,23 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  * （[`ActionSystem.md`](../../docs/engine/ActionSystem.md) 1.3節）。**入れずに済むことを言えるのは、
  * ここが緑であることだけ。**
  *
- * **2つは、規模の頭打ちが在るかで見方が違う。**
+ * **どちらも規模に頭打ちが無い。**
  *
- * - **重さは頭打ちが在る。** 辿るのは担ぎ手が抱えている木で、手の枠の数といちばん大きい入れ物の
- *   かさが上限を決める。そこまで積んだ状態を組んで、**値そのもの**に上限を引く。
- * - **札の枚数に頭打ちは無い。** 束ねない型（`stackable: false`）は個体ごとに1枚の札になるので、
- *   同じ型を並べればいくらでも増える。だから「この枚数で収まった」では何も言えない——**枚数を倍に
- *   しても時間が倍までしか増えないこと**（2乗なら4倍）を見る。伸び方への上限なので、機械の速さにも
- *   将来の型の数にも左右されない。
+ * - **担いだ木の物の数に頭打ちは無い。** 枠（`cell_count`）とかさ（`capacity`）が決めるのは物の数では
+ *   なく、**詰める物1個のかさとの割り算**なので、かさの小さい物で埋めればいくらでも増える。
+ * - **並ぶ札の枚数にも頭打ちは無い。** 束ねない型（`stackable: false`）は個体ごとに1枚の札になるので、
+ *   同じ型を並べればいくらでも増える。
  *
- * **上限は1フレーム（16ms）では引かない。** 今の値との開きが大きすぎて、伸び方が変わっても緑のまま
- * 通る。引くのは**桁の変わった遅さが落ちる幅**で、実際に導出を100倍に重くして両方が赤くなることを
+ * だから「この規模で収まった」だけでは足りない。**規模を決め打ちした状態で値に上限を引き**、札のほうは
+ * さらに**周りの枚数を倍にしても1枚あたりが動かないこと**を見る。後者は伸び方への上限なので、機械の
+ * 速さにも将来の宣言の数にも左右されない。
+ *
+ * **担いだ木の側に伸び方の上限は置いていない。** この木は浅くて広い（入れ物の下に物が並ぶ）ため、
+ * 1物あたりの値段が木の大きさに連れて増える壊れ方を作れず、**落ちるものを置けなかった**。置いたのは
+ * 1物あたりを縛る値の上限だけで、伸び方は測った値の並びが示すスナップショット。
+ *
+ * **値への上限は1フレーム（16ms）では引かない。** 今の値との開きが大きすぎて、伸び方が変わっても
+ * 緑のまま通る。引くのは**桁の変わった遅さが落ちる幅**で、実際に導出を100倍に重くして赤くなることを
  * 見ている。
  *
  * **時間を見る試験なので、採るのは繰り返した中の最小値。** GCも他のプロセスも足すことしかしないので、
@@ -40,8 +46,11 @@ describe('貯め込まずに毎回導出することの値段', () => {
   /** 3は開始地点が砂浜になるシード（同梱シナリオと揃える）。 */
   const SEED = 3;
 
-  /** 札を並べる枚数と、その倍。倍にしても時間が倍までしか増えないことを見る。 */
+  /** 並べる札の枚数（倍にした側も組んで、1枚あたりが動かないことを見る）。 */
   const CARDS = 150;
+
+  /** 担いだ木にぶら下げる物の数。1物あたりの値段を、この規模で縛る。 */
+  const CARRIED = 8000;
 
   function newGame(): StartedGame {
     return startNewGame(codex, SAMPLE_CHARACTER, SEED, seededRng(SEED));
@@ -68,29 +77,30 @@ describe('貯め込まずに毎回導出することの値段', () => {
   }
 
   /**
-   * 担ぎ手の手の枠をすべて、いちばん大きい入れ物（`handcart`）で埋め、その中を籠で、籠の中を石で
-   * 埋める。返すのは担いだ木に居る物の数。**これが1人に載る上限**——枠もかさも宣言が決めていて、
-   * 遊んでこれ以上は積めない。
+   * 担ぎ手に物を`wanted`個ぶら下げ、その数を返す。手に籠を持たせ、かさのいちばん小さい物
+   * （`bone_needle`）で埋めて、埋まったら次の籠を持つ。
+   *
+   * **かさの小さい物で埋めるのは、物の数に頭打ちが無いことを使うため。** 枠（`cell_count`）と
+   * かさ（`capacity`）が決めるのは物の数ではなく**詰める物1個のかさとの割り算**なので、大きい物で
+   * 埋めた数は上限ではない——籠1つ（`capacity: 20000`）に骨針（`volume: 5`）なら4000個入る。
    */
-  function loadEveryHandCell(game: StartedGame): number {
+  function carryObjects(game: StartedGame, wanted: number): number {
     const contentsSlotId = codex.slotNames.getId('contents');
-    let carried = 0;
+    let basket = create(game, 'woven_basket');
+    expect(game.player.take(basket), '籠を手に持てる').toBe(true);
+    let carried = 1;
 
-    for (;;) {
-      const cart = create(game, 'handcart');
-      if (!game.player.take(cart)) return carried;
-      carried++;
-      for (;;) {
-        const basket = create(game, 'woven_basket');
-        if (basket.moveToSlotOrRejection(cart.getSlot(contentsSlotId)) !== undefined) break;
+    while (carried < wanted) {
+      const needle = create(game, 'bone_needle');
+      if (needle.moveToSlotOrRejection(basket.getSlot(contentsSlotId)) === undefined) {
         carried++;
-        for (;;) {
-          const stone = create(game, 'stone');
-          if (stone.moveToSlotOrRejection(basket.getSlot(contentsSlotId)) !== undefined) break;
-          carried++;
-        }
+        continue;
       }
+      basket = create(game, 'woven_basket');
+      expect(game.player.take(basket), `${wanted}個ぶら下げるには手の枠が足りる`).toBe(true);
+      carried++;
     }
+    return carried;
   }
 
   /** bodyをtimes回走らせ、いちばん短かった1回のミリ秒を返す。 */
@@ -126,23 +136,27 @@ describe('貯め込まずに毎回導出することの値段', () => {
    * 担いだ木を辿って出す `weight`/`load` の実効値（`ContainerSystem.md` 4節）。読むたびに部分木を
    * 辿り直す——控えが効くのは1回の読み取りの中だけ（`EffectiveValueReading`）。
    */
-  it('担げるだけ担いだ荷を辿って重さを出すのは、貯め込まなくても2ミリ秒に収まる', () => {
-    const game = newGame();
-    const carried = loadEveryHandCell(game);
-    expect(carried, '手の枠を埋め尽くした木').toBeGreaterThan(500);
-
+  /** 担ぎ手の `weight` と `load` の実効値を1回ずつ読む（読むたびに担いだ木を辿り直す）。 */
+  function readWeightAndLoad(game: StartedGame): () => void {
     const player = game.player.instance;
     const weight = player.tryGetProperty(codex.vocabulary.engine.weightId);
     const load = player.tryGetProperty(codex.vocabulary.engine.loadId);
     expect(weight, '担ぎ手はweightを名乗る').toBeDefined();
     expect(load, '担ぎ手はloadを名乗る').toBeDefined();
 
-    const milliseconds = fastestMilliseconds(200, () => {
+    return () => {
       weight!.getEffectiveValue();
       load!.getEffectiveValue();
-    });
+    };
+  }
 
-    expect(milliseconds, `担いだ木${carried}物ぶんの重さの集計（${milliseconds}ms）`).toBeLessThan(2);
+  it('担いだ荷を辿って重さを出すのは、貯め込まなくても1物あたりが小さい', () => {
+    const game = newGame();
+    expect(carryObjects(game, CARRIED), 'ぶら下げた物').toBe(CARRIED);
+
+    const milliseconds = fastestMilliseconds(200, readWeightAndLoad(game));
+
+    expect(milliseconds, `担いだ木${CARRIED}物ぶんの重さの集計（${milliseconds}ms）`).toBeLessThan(4);
   });
 
   /**
