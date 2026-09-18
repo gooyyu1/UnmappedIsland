@@ -40,6 +40,10 @@ docs/
 [`CodingConventions.md`](./CodingConventions.md) が決めます。どちらもドメインから画面まで全体に
 掛かるので、領域別のフォルダには入れずここに置いています。
 
+**過去の失敗・不採用の決定のうち、繰り返さないために残す価値があるもの**は
+[`DesignNotes.md`](./DesignNotes.md) が1箇所で持ちます。これも領域で閉じません——engine の数値から
+UI の描画、World の設定、コードの置き場、そしてこのフォルダ分類そのものまでが同じ一覧に並びます。
+
 **このゲームは複数のAIエージェントが同時に開発しています。** その仕組みの全体像——誰が何をして、
 人間はどこで決めるのか——は [`ParallelAgents.md`](./ParallelAgents.md)、**そこへ辿り着くまでに作り方を
 どう変えてきたか**は [`HowWeGotHere.md`](./HowWeGotHere.md) にあります。
