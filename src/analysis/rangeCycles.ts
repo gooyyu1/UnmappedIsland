@@ -396,12 +396,22 @@ function totalAmountOf(deltas: readonly TickDelta[]): number {
   return deltas.reduce((total, delta) => total + delta.amount, 0);
 }
 
-/** その組み合わせが起こす押し方。押していない（合計0）か、効いている間が空ならundefined。 */
+/**
+ * その組み合わせが起こす押し方。押していない（合計0）か、開くことの無いゲートを含むか、効いている
+ * 間が空ならundefined。
+ */
 function pushingCaseOf(def: ObjectDef, combination: readonly TickDelta[]): PushingCase | undefined {
   const amount = totalAmountOf(combination);
   if (amount === 0) return undefined;
 
-  const ticksUntilStart = Math.max(...combination.map((delta) => ticksUntilGateRises(def, delta.gate)));
+  const starts: number[] = [];
+  for (const delta of combination) {
+    const ticks = ticksUntilGateRises(def, delta.gate);
+    // 開くことの無いゲートが1つでもあれば、その組み合わせは起こらない。
+    if (ticks === undefined) return undefined;
+    starts.push(ticks);
+  }
+  const ticksUntilStart = Math.max(...starts);
   const stops = combination
     .map((delta) => ticksUntilGateFalls(def, delta.gate))
     .filter((ticks): ticks is number => ticks !== undefined);
@@ -569,7 +579,8 @@ const GATE_WINDOW_ROLL_END: RollEnd = 'lowest';
  * 物差しの上に乗る。
  *
  * **段は上へも下へも抜ける。** 値がどちらへ動くかは定義からは1つに決まらないので、どちらの抜け方も
- * 数える。
+ * 数える。**生まれた時点で段の外に在る値は、どちらへも抜けない**——その段へ入るのはこれからで、
+ * いつ入るかを答えるのはticksUntilGateRises。ここで抜けたことにすると、その押し手が丸ごと消える。
  *
  * 落ちるのは**要るもののどれか1つが外れた時点**なので、最も早いものを採る。
  */
@@ -596,12 +607,13 @@ function ticksUntilValueRunsOut(def: ObjectDef, propertyGlobalId: PropertyGlobal
 
 /**
  * 要求された段を上へ抜けて、条件が外れるまでのtick数。抜ける先が無い、上がっていかない値、
- * 値の並びの上に位置を持たない段（シンボル型、6.6節）ならundefined。
+ * 値の並びの上に位置を持たない段（シンボル型、6.6節）、生まれた時点で上端より上に在る値
+ * （ticksToRiseTo）ならundefined。
  */
 function ticksUntilStageLeftUpward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
   // 速さは**最も速い増減**（fastest）——**効き始めから抜けるまでが最も狭くなる組**で、押し手を
   // 控えめに数える側。
-  return ticksToReach(
+  return ticksToRiseTo(
     staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
     stageUpperBoundOf(def, required),
     paceTowards(tickAmountsOf(def, required.propertyGlobalId).possible, 'on_max')?.fastest.amount,
@@ -616,9 +628,7 @@ function ticksUntilStageLeftUpward(def: ObjectDef, required: SelfStageRequiremen
  * 下端を割れば外れる**ので、抜ける先は同じ。上へ抜けるほう（ticksUntilStageLeftUpward）が
  * `in_stage`だけなのと、ここが違う。
  *
- * **生まれた時点で下端より下に在る値は抜けない**（ticksToFallBelow）——その段へ入るのはこれから
- * で、いつ入るかを答えるのはticksUntilGateRises。ここで抜けたことにすると、その押し手が丸ごと
- * 消える。
+ * 生まれた時点で下端より下に在る値が抜けないのは、上へ抜けるほうと同じ（ticksToFallBelow）。
  */
 function ticksUntilStageLeftDownward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
   // 速さはticksUntilStageLeftUpwardと同じ側——効き始めから抜けるまでが最も狭くなる組で、押し手を
@@ -652,41 +662,62 @@ function stageLowerExitOf(def: ObjectDef, required: SelfStageRequirement): numbe
 
 /**
  * ゲートが自分の段を見ているなら、そこへ自分の増減だけで届くまでのtick数（TickGate参照）。
- * 段を見ていない、届くまでが読めない段なら0＝最初のtickから効く。**炉の火力がこれ**——火は段の
- * 下に置かれた増減（8.2節）で育つが、そこはtickAmountsOfが数から外している。
- *
- * **段は下からも上からも開く**（ticksUntilStageEnteredUpward・ticksUntilStageEnteredDownward）
- * ——上がっていって下端へ届くか、下がっていって上端を割るか。値がどちらへ動くかは定義からは1つに
- * 決まらないので、抜けるほう（ticksUntilGateFalls）と同じく両方を数える。
+ * 段を見ていないなら0＝最初のtickから効く。**要る段のどれかへ入る道が無いならundefined**
+ * ——その段を決して跨がない値に縛られた増減は、起こらない。
  *
  * **要る段が複数あれば最も遅いものに合わせる**——どれか1つでも跨いでいなければ増減は効かない。
  * ゲートが落ちるのは要るもののどれか1つが外れた時点なので、ticksUntilGateFallsとは向きが逆になる。
  */
-function ticksUntilGateRises(def: ObjectDef, gate: TickGate): number {
-  const enters = gate.requiredSelfStages
-    .flatMap((required) => [
-      ticksUntilStageEnteredUpward(def, required),
-      ticksUntilStageEnteredDownward(def, required),
-    ])
-    .filter((ticks): ticks is number => ticks !== undefined);
-  return Math.max(0, ...enters);
+function ticksUntilGateRises(def: ObjectDef, gate: TickGate): number | undefined {
+  let latest = 0;
+  for (const required of gate.requiredSelfStages) {
+    const entered = ticksUntilStageEntered(def, required);
+    if (entered === 'never') return undefined;
+    latest = Math.max(latest, entered);
+  }
+  return latest;
+}
+
+/**
+ * 要求された段へ入るまでのtick数。**入る道が無いなら`'never'`**、届くまでが読めないなら0＝最初の
+ * tickから効く。**炉の火力がこの倒し方**——火は段の下に置かれた増減（8.2節）で育つが、そこは
+ * tickAmountsOfが数から外している。
+ *
+ * **段は下からも上からも開く**（ticksUntilStageEnteredUpward・ticksUntilStageEnteredDownward）
+ * ——上がっていって下端へ届くか、下がっていって上端を割るか。値がどちらへ動くかは定義からは1つに
+ * 決まらないので、抜けるほう（ticksUntilGateFalls）と同じく両方を数え、**入れるほうのうち遅いほう**
+ * に合わせる。上がっては入れない値でも、上から落ちて入る道が読めるならそちらが答えになる。
+ */
+function ticksUntilStageEntered(def: ObjectDef, required: SelfStageRequirement): number | 'never' {
+  const upward = ticksUntilStageEnteredUpward(def, required);
+  const downward = ticksUntilStageEnteredDownward(def, required);
+  const enters = [upward, downward].filter((ticks): ticks is number => typeof ticks === 'number');
+  if (enters.length > 0) return Math.max(...enters);
+  return upward === 'never' ? 'never' : 0;
 }
 
 /**
  * 要求された段へ、値が上がっていって**下端へ届く**までのtick数。上がっていかない値、値の並びの上に
- * 位置を持たない段（シンボル型、6.6節）ならundefined。
+ * 位置を持たない段（シンボル型、6.6節）ならundefined。**既にその段に居るなら0**（ticksToReach）。
  *
- * **既にその段に居るなら0**（ticksToReach）。段より上に在る値も0になるが、そこから上がっていく値は
- * その段を跨がない——落とすのはticksUntilStageLeftUpwardの側で、効き始めと同時に抜けた押し手として
- * 消える。
+ * **上がっていく値が、生まれた時点で上端より上に在るなら`'never'`**——上がるほど段から遠ざかるので、
+ * 入る時は来ない。上がっていくと読めていない値は、段の下に置かれた増減（8.2節）で下りてくることが
+ * あるので、そちらはundefined＝届くまでが読めないの側。
  */
-function ticksUntilStageEnteredUpward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
+function ticksUntilStageEnteredUpward(
+  def: ObjectDef,
+  required: SelfStageRequirement,
+): number | 'never' | undefined {
   // 届くまでを**最も長く**見る側（slowest）。押し手が押せる間を最も短く見る側へ揃える。
-  return ticksToReach(
-    staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
-    required.lowerBound,
-    paceTowards(tickAmountsOf(def, required.propertyGlobalId).possible, 'on_max')?.slowest.amount,
-  );
+  const value = staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END);
+  const perTick = paceTowards(tickAmountsOf(def, required.propertyGlobalId).possible, 'on_max')?.slowest
+    .amount;
+
+  const upperBound = stageUpperBoundOf(def, required);
+  const bornAboveStage = value !== undefined && upperBound !== undefined && value >= upperBound;
+  if (bornAboveStage && perTick !== undefined) return 'never';
+
+  return ticksToReach(value, required.lowerBound, perTick);
 }
 
 /**
@@ -711,7 +742,8 @@ function ticksUntilStageEnteredDownward(def: ObjectDef, required: SelfStageRequi
  *
  * - 押されている値の段を1つも要らない（押し手と関わりなく開いている）
  * - 押しても入れない段が混じっている（向きが逆・段が並びの上に位置を持たない）
- * - 生まれた時点で既にその段に居る（開けたのは押し手ではない）
+ * - 生まれた時点で、押している向きの入り口を既に越えている——その段に居るか、通り過ぎて向こうに
+ *   在るかで、どちらも開けたのは押し手ではない
  *
  * **入り口は押している向きで裏返る**——押し上げるなら段の下端へ届いた時点で入り、押し下げるなら
  * 段の上端を割った時点で入る。「その段以上」（`in_stage_or_above`、14.1節）に上から入ることは
@@ -808,6 +840,27 @@ function ticksToReach(
 ): number | undefined {
   if (value === undefined || target === undefined || perTick === undefined) return undefined;
   return Math.max(0, Math.ceil((target - value) / perTick));
+}
+
+/**
+ * その値がその速さで、その位置**まで上がって抜ける**までのtick数。**その位置ちょうどに着いた時点
+ * で、もう抜けている**（段は下端を含む半開区間、6.4節）ので、下へ割る{@link ticksToFallBelow}と
+ * 違って1 tickを足さない。
+ *
+ * 既に位置以上に在るならundefined——**上がるのはこれからではなく、もう上に在る**。値・位置・速さの
+ * どれかが読めないときも同じ。
+ *
+ * **速さは上向き**（正）でなければならない。上がる向きへ動く場合を選ぶのは呼ぶ側の仕事で、どちらの
+ * 端へ向かう場合かはpaceTowardsが分けてある。
+ */
+function ticksToRiseTo(
+  value: number | undefined,
+  bound: number | undefined,
+  perTick: number | undefined,
+): number | undefined {
+  if (value === undefined || bound === undefined || perTick === undefined) return undefined;
+  if (value >= bound) return undefined;
+  return Math.ceil((bound - value) / perTick);
 }
 
 /**
