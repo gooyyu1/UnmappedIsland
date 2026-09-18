@@ -89,9 +89,18 @@ describe('スタックの並び順が見る値', () => {
     }
   }
 
-  function endValuesOf(propertyDef: PropertyDef, labels: readonly RangeEventLabel[]): ReadonlySet<number> {
-    const range = propertyDef.range;
-    return new Set(range === undefined ? [] : labels.map((label) => range.endValue(label)));
+  /**
+   * 見逃してよい端の値。**並び順の値そのものが自分の端で走らせるイベント**のときだけ、その端の値へ
+   * 倒すぶんを除く。別のプロパティの端で並び順の値を書くものは、書く先がたまたま宣言元の端と同じでも
+   * 1枚だけを動かすので除かない（この世界の軸はどれも0〜100なので、同値は普通に起きる）。
+   */
+  function clampValuesOf(
+    propertyDef: PropertyDef,
+    label: RangeEventLabel,
+    propertyGlobalId: PropertyGlobalId,
+  ): ReadonlySet<number> {
+    const range = propertyDef.globalId === propertyGlobalId ? propertyDef.range : undefined;
+    return new Set(range === undefined ? [] : [range.endValue(label)]);
   }
 
   function rangeEventMovesAwayFromEnd(
@@ -101,7 +110,11 @@ describe('スタックの並び順が見る値', () => {
     propertyGlobalId: PropertyGlobalId,
     ownedByDeclarer: boolean,
   ): boolean {
-    const reader = new MovesAwayFromEnd(propertyGlobalId, ownedByDeclarer, endValuesOf(propertyDef, [label]));
+    const reader = new MovesAwayFromEnd(
+      propertyGlobalId,
+      ownedByDeclarer,
+      clampValuesOf(propertyDef, label, propertyGlobalId),
+    );
     declaration.readBy(reader);
     return reader.found;
   }
@@ -173,6 +186,15 @@ ${writer}
 
   it('端から内側へ戻す宣言は挙げる（クランプを除いたせいで取りこぼさない）', () => {
     expect(probe('        on_min: {set: {self: {freshness: 100}}}')).toEqual(['log: log.freshness.on_min']);
+  });
+
+  it('別のプロパティの端が並び順の値を書くものは、書く先が端と同値でも挙げる', () => {
+    expect(
+      probe(`      wetness:
+        value: 0
+        range: {min: 0, max: 100}
+        on_max: {set: {self: {freshness: 100}}}`),
+    ).toEqual(['log: log.wetness.on_max']);
   });
 
   it('同梱の宣言に、時間経過以外が動かす並び順は無い', () => {
