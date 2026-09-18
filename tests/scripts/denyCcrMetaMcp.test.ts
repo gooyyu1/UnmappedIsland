@@ -1,7 +1,7 @@
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { runWithOnlyTheseCommands } from '../support/onlyTheseCommands';
 import { runScript } from '../support/runScript';
 
 /**
@@ -133,14 +133,14 @@ describe('deny-ccr-meta-mcp.sh', () => {
     }
   });
 
-  // `settings.json` はフックをパスで直に起動するので、POSIX側（クラウドのセッションはLinux）では
-  // 実行ビットが要る。Windowsの作業ツリーでは欠けても動くため、gitのインデックスの側を見る。
-  it('実行ビットが立っている', () => {
-    const listed = execFileSync('git', ['ls-files', '-s', '.claude/hooks/deny-ccr-meta-mcp.sh'], {
-      cwd: REPO,
-      encoding: 'utf-8',
-    });
+  /**
+   * **絞った PATH で走らせる。** 出すのは定数なので、外部コマンドが1つでも生えれば
+   * `command not found` になり、`set -e` の下でフックごと非0で終わる——上の検査が揃って赤くなる。
+   */
+  it('外部プロセスを1つも起こさない', () => {
+    const out = runWithOnlyTheseCommands(HOOK, { input: '{}' });
 
-    expect(listed.startsWith('100755 ')).toBe(true);
+    expect(out.code, out.stderr).toBe(0);
+    expect(out.calls).toEqual([]);
   });
 });

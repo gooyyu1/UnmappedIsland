@@ -10,7 +10,7 @@
 # 仕組みは [`ccr-meta.sh`](../ccr-meta.sh) の冒頭。入口を1つに揃える理由そのものも同じ場所。
 set -euo pipefail
 
-cat <<'JSON'
+mapfile -t deny <<'JSON'
 {
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
@@ -19,3 +19,4 @@ cat <<'JSON'
   }
 }
 JSON
+printf '%s\n' "${deny[@]}"

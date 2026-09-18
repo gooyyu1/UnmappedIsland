@@ -2,6 +2,7 @@ import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { runWithOnlyTheseCommands } from '../support/onlyTheseCommands';
 import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
@@ -130,5 +131,25 @@ describe('session-start.sh（手元の作業ツリー）', () => {
 
   it('作業ツリーが自前の node_modules を持っていれば、共有先は見ない', () => {
     expect(run({ want: { ajv: '8.20.0' }, have: { ajv: null }, own: true })).toBe('');
+  });
+});
+
+/**
+ * **`CLAUDE_PROJECT_DIR` が無い経路。** 根を自分の置き場から引けていないと、依存はセッションの
+ * 作業ディレクトリ（＝どこか分からない場所）へ入る。**`npm` は控えるだけにする**——本物を走らせると
+ * この検査が実際に依存を入れ直す。
+ */
+describe('session-start.sh（自分の置き場から根を引く）', () => {
+  it('CLAUDE_PROJECT_DIR が無くても、リポジトリの根で npm install を走らせる', () => {
+    const out = runWithOnlyTheseCommands(HOOK, {
+      stub: ['npm'],
+      env: { CLAUDE_CODE_REMOTE: 'true', CLAUDE_PROJECT_DIR: '' },
+    });
+
+    expect(out.code, `フックが非0で終わった:\n${out.stderr}`).toBe(0);
+    // 名前を絞ってあるので、ここが `['npm']` でないことは「他の外部プロセスが生えた」と同義。
+    expect(out.calls.map((call) => call.name)).toEqual(['npm']);
+    expect(out.calls[0]?.args[0]).toBe('install');
+    expect(out.calls[0]?.cwd).toBe(pathForBash(resolve(__dirname, '../..')));
   });
 });

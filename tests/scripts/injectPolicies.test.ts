@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
@@ -128,5 +128,22 @@ describe('inject-policies.sh', () => {
     const context = contextOf({ policies: '## 場面', decisions: 1, archived: THRESHOLD });
 
     expect(context).not.toContain('棚卸ししていない');
+  });
+
+  /**
+   * **`CLAUDE_PROJECT_DIR` が無い経路。** 根を自分の置き場から引けていないと、記録も判断基準も
+   * 見つからないまま**何も出さずに 0 で終わる**——価値観が1文字も入らずに走り出したことは、
+   * 出力を見ても分からない。
+   */
+  it('CLAUDE_PROJECT_DIR が無くても、自分の置き場からリポジトリの根を引く', () => {
+    const real = readFileSync(resolve(__dirname, '../../agent-ops/policies.md'), 'utf-8');
+    const parsed: unknown = JSON.parse(
+      runScript(HOOK, [], { env: { ...process.env, CLAUDE_PROJECT_DIR: '' } }),
+    );
+    const context =
+      (parsed as { hookSpecificOutput?: { additionalContext?: string } }).hookSpecificOutput
+        ?.additionalContext ?? '';
+
+    expect(context).toContain(real);
   });
 });
