@@ -408,12 +408,6 @@ object_texts:
       sleep:
         display_name: 睡眠
         description: 通しで眠る。寝床の上でしか取れず、それでも一晩では眠気は戻り切らない。
-      hang:
-        display_name: 吊る
-        description: 2本の立ち木の間へ渡して吊る。支点を持たない土地では吊れない。
-      take_down:
-        display_name: 畳む
-        description: 結び目を解いて網を巻き取る。手元の荷に戻るので、次の土地へ持っていける。
       collapse:
         display_name: 倒れ込む
         description: 体力が尽きて倒れ込む。プレイヤーが起こすものではなく、手が出せないまま時間が過ぎる。
@@ -858,14 +852,11 @@ object_texts:
         description: 太い枝6本を紐で縛り、寝床の下へ差せる高さの台に組む。
   hammock:
     display_name: ハンモック
-    description: 紐を編んだ網。巻けば遠出の荷に混ぜられるが、吊るには立ち木の支点が要る。
+    description: 紐を編んだ網。立ち木の間へ渡せば、背中の下を風が抜けて虫にも湿気にも最も強い寝床になる。持ち上げればそのまま遠出の荷に混ぜられる。
     recipes:
       knotted:
         display_name: 編む
         description: 紐5本を網目に結ぶ。木材は要らない。
-  slung_hammock:
-    display_name: 吊ったハンモック
-    description: 立ち木の間へ渡したハンモック。背中の下を風が抜けるので、虫にも湿気にも最も強い。畳めば網に戻る。
 
   # 里心を抑える設え（furnishings.yaml）。
   log_stool:
@@ -1641,6 +1632,7 @@ reason_texts:
   too_dark: 暗すぎて手が付けられない。明かりが要る。
   too_stormy: 風雨が強すぎて、屋外では手が付けられない。収まるのを待つしかない。
   no_anchor: 渡せる立ち木が無い。ハンモックは支点の要る寝床で、吊る先が要る。
+  not_slung: まだ据えていない。ハンモックは、この土地へ置いて立ち木の間へ渡さないと寝床にならない。
   # レシピの解放条件（docs/engine/SkillSystem.md 4節）。**足りない腕と、それを伸ばす行動**を書く
   # ——出る先は札を押している間の吹き出しで（docs/ui/Windows.md 9.3節）、そこから次にやることへ
   # 辿れる。**どの段が要るかは書かない**——文言は理由の名前に1つで、要る段の違う条件が同じ理由を
