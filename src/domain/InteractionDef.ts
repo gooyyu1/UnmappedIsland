@@ -1,4 +1,3 @@
-import type { WorldSession } from './WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
 import type { EffectReader, DeclaredNumberReading } from './EffectReader';
 import type { DeclaredNumber } from './DeclaredNumber';
@@ -151,19 +150,19 @@ export class InteractionDef {
    * 1つの操作としてまるごと囲う（`InteractionRelation.whileActing`）のは、関係を張る側。ここは
    * 囲まれた中身だけを持つ。
    */
-  tryExecute(context: ReferenceContext, session: WorldSession): boolean {
+  tryExecute(context: ReferenceContext): boolean {
     const self = context.self!;
     if (this.unmetRequirement(context) !== undefined) return false;
 
     // 実行のはじめから囲う。経過中のtickが動かした値は「操作が増やしたもの」に入らないが、この操作
     // 自身が宣言した持続効果が動かす先は、そのtickで動いたぶんが入る（PropertyGain参照）。
+    const session = context.session;
     return session.withInteractionGains(self, () => {
-      for (const announcement of this.announcements) announcement.apply(context, session);
+      for (const announcement of this.announcements) announcement.apply(context);
 
-      const involved = [self, context.agent, context.instrument];
       const minutes = this.minutesFor(context.valueResolver);
       const alive = session.whileInteractionPassives(self, context, this.passives, () =>
-        spendDurationAndReportParticipantsAlive(minutes, session, involved),
+        spendDurationAndReportParticipantsAlive(minutes, self, [context.agent, context.instrument]),
       );
       if (!alive) return false;
 

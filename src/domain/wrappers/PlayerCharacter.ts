@@ -67,13 +67,13 @@ export class PlayerCharacter extends ObjectWrapper {
 
   /** この周回の決着（Ending参照）。 */
   get ending(): Ending {
-    return new Ending(this.instance, this.codex);
+    return new Ending(this.instance);
   }
 
   /** 今いる土地（自分が入っているcharactersスロットの持ち主）。未配置ならundefined。 */
   get location(): Location | undefined {
     const parent = this.instance.parent;
-    return parent === undefined ? undefined : new Location(parent, this.codex);
+    return parent === undefined ? undefined : new Location(parent);
   }
 
   /**

@@ -3,6 +3,7 @@ import type { CardFilter } from '../../src/domain/CardFilter';
 import type { WorldChange } from '../../src/domain/WorldChange';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import type { CardSpot } from '../../src/game/view/ShownCards';
+import type { ShownDrop } from '../../src/game/view/ShownCards';
 import { ShownCards } from '../../src/game/view/ShownCards';
 import type { ObjectCardStack } from '../../src/game/view/PlayScreenView';
 import type { CardCombination } from '../../src/game/view/cardOperations';
@@ -184,6 +185,15 @@ function borrow(shown: ShownCards, borrowed: ObjectCardStack): ObjectCardStack {
   shown.borrow(first.objects[0], first, first);
   return first;
 }
+
+/** fromのi番目の札を、toのj番目の札へ重ねたドロップ。 */
+const onto = (from: CardSpot, fromIndex: number, to: CardSpot, toIndex: number): ShownDrop => ({
+  from,
+  fromIndex,
+  to,
+  target: { kind: 'combine', index: toIndex },
+  count: 1,
+});
 
 /** その場所のi番目の札が名乗っている個体。 */
 const idsAt = (shown: ShownCards, spot: CardSpot, index: number): readonly number[] =>
@@ -499,7 +509,7 @@ describe('ドロップの意味', () => {
     const shown = screen({ hand: [stack(place('hand'), [1])], items: [stack(place('items'), [2])] });
     borrow(shown, stack(place('hand'), [1]));
 
-    expect(shown.combinationAt(place('items'), 0, place('hand'), 0)).toBeUndefined();
+    expect(shown.combinationAt(onto(place('items'), 0, place('hand'), 0))).toBeUndefined();
   });
 
   it('重ねて動くのは、掴んだ札が見せている個体', () => {
@@ -541,7 +551,7 @@ describe('ドロップの意味', () => {
       for (let fromIndex = 0; fromIndex < shown.stacksAt(from).length; fromIndex++) {
         for (const to of spots) {
           for (let toIndex = 0; toIndex < shown.stacksAt(to).length; toIndex++) {
-            const held = shown.combinationAt(from, fromIndex, to, toIndex)?.movedIds.at(0);
+            const held = shown.combinationAt(onto(from, fromIndex, to, toIndex))?.movedIds.at(0);
             if (held === undefined) continue;
 
             expect(
@@ -558,7 +568,10 @@ describe('ドロップの意味', () => {
     const shown = screen({ hand: [stack(place('hand'), [1, 2, 3])] });
     borrow(shown, stack(place('hand'), [1, 2, 3]));
 
-    expect(shown.combinationAt(place('hand'), 0, place('hand'), 0)?.movedIds, '見せている2枚目').toEqual([3]);
+    expect(
+      shown.combinationAt(onto(place('hand'), 0, place('hand'), 0))?.movedIds,
+      '見せている2枚目',
+    ).toEqual([3]);
   });
 
   it('重ねる操作にも、運んできた枚数が伝わる', () => {
@@ -585,7 +598,7 @@ describe('ドロップの意味', () => {
     const shown = screen({ hand: [stack(place('hand'), [1, 2])] });
     borrow(shown, stack(place('hand'), [1, 2]));
 
-    expect(shown.combinationAt(place('hand'), 0, place('hand'), 0)).toBeUndefined();
+    expect(shown.combinationAt(onto(place('hand'), 0, place('hand'), 0))).toBeUndefined();
   });
 
   it('同じ場所の中は並び替え、場所をまたげば移動', () => {

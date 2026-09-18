@@ -14,7 +14,9 @@
 # 揃っていることを保証し、準備前にテストやリンタを走らせてしまう競合を避ける。冪等・非対話。
 set -euo pipefail
 
-cd "${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+cd "${CLAUDE_PROJECT_DIR:-$(cd "$HERE/../.." && pwd)}"
 REPO_DIR="$(pwd)"
 
 # --- Claude Code on the web: 依存を導入する -----------------------------------

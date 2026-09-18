@@ -63,7 +63,7 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
   beforeEach(() => {
     session = new WorldSession(codex);
     world = new WorldObject(0, codex.objects.get(codex.objectNames.getId(SKY)), session);
-    session.adoptWorld(new World(world, codex));
+    session.adoptWorld(new World(world));
 
     lands = new Map();
     for (const name of MEAN_ELEVATION.keys()) {

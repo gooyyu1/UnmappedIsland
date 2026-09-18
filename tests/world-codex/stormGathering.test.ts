@@ -38,7 +38,7 @@ describe('嵐の日は屋外の採取ができない', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(0));
+    const session = new WorldSession(codex, new World(worldInstance), fixedRng(0));
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(NOON_HOUR);
     worldInstance
       .getProperty(codex.propertyNames.getId('weather'))
@@ -107,7 +107,7 @@ describe('嵐の日は屋外の採取ができない', () => {
   // 8.1.4節は屋外の行動をすべて止めると決めているので、探索へ広げたらこの検査は向きが変わる。
   it('探索は嵐でも今は進む', () => {
     const storm = noon('storm');
-    expect(new Location(storm.land, codex).explore(storm.player)).toBe(true);
+    expect(new Location(storm.land).explore(storm.player)).toBe(true);
   });
 
   it('屋根の下では風雨が止む', () => {

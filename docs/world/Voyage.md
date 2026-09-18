@@ -565,7 +565,7 @@
 掛かりません。** あの線は屋根の下へ入れることを前提に引かれていますが、海区に屋根はありません——
 渡りまで止めれば、嵐の海区は待つ以外にすることの無い区間になります
 （[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「時間経過に任せる区間を作らない」節）。
-**海の上で嵐に閉じるのは、見て探す仕事です**（見張りと釣り、3.10 節）。
+**海の上で嵐に閉じるのは、見て探す仕事のほうです**（3.10 節）。
 
 **隣を書く場所は 1 つです。** 海区は辺で繋がった隣を `zone_toward_mainland` / `zone_toward_island` に
 型として持ち（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.9 節）、**見張り切って

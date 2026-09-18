@@ -2,7 +2,6 @@ import type { InfluenceWriter } from './PropertyInfluence';
 import type { PropertyValue } from './PropertyValue';
 import type { SameSlotSpawnSite } from './SameSlotSpawnSite';
 import type { WorldObject } from './WorldObject';
-import type { WorldSession } from './WorldSession';
 import type { ConditionNode } from './ConditionNode';
 import type { ObjectRef } from './ObjectRef';
 import type {
@@ -26,11 +25,7 @@ import type { ObjectGlobalId } from './GlobalId';
  * 配置時に見て置き換え位置を決める（他の効果は無視してよく、destroyが何かを書き込む必要もない）。
  */
 export abstract class ActiveEffect {
-  abstract apply(
-    context: ReferenceContext,
-    session: WorldSession,
-    sameSlotSpawnSite: SameSlotSpawnSite | undefined,
-  ): void;
+  abstract apply(context: ReferenceContext, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void;
 
   /**
    * この効果が何を宣言しているかを読み上げる（EffectReader参照）。**抽象なのは取りこぼしを防ぐため**
@@ -85,13 +80,8 @@ export class ActiveEffectSequence extends ActiveEffect {
     this.effectsInDeclarationOrder = operations;
   }
 
-  apply(
-    context: ReferenceContext,
-    session: WorldSession,
-    sameSlotSpawnSite: SameSlotSpawnSite | undefined,
-  ): void {
-    for (const operation of this.effectsInDeclarationOrder)
-      operation.apply(context, session, sameSlotSpawnSite);
+  apply(context: ReferenceContext, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
+    for (const operation of this.effectsInDeclarationOrder) operation.apply(context, sameSlotSpawnSite);
   }
 
   readBy(reader: EffectReader): void {
@@ -143,13 +133,9 @@ export class ConditionalEffect extends ActiveEffect {
     this.otherwise = otherwise;
   }
 
-  apply(
-    context: ReferenceContext,
-    session: WorldSession,
-    sameSlotSpawnSite: SameSlotSpawnSite | undefined,
-  ): void {
+  apply(context: ReferenceContext, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
     const chosen = this.condition.evaluate(context) ? this.whenMet : this.otherwise;
-    chosen?.apply(context, session, sameSlotSpawnSite);
+    chosen?.apply(context, sameSlotSpawnSite);
   }
 
   /**
@@ -338,11 +324,7 @@ export class SpawnEffect extends ActiveEffect {
     this.count = count;
   }
 
-  apply(
-    context: ReferenceContext,
-    session: WorldSession,
-    sameSlotSpawnSite: SameSlotSpawnSite | undefined,
-  ): void {
+  apply(context: ReferenceContext, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
     for (let i = 0; i < this.count; i++)
       context.self?.executeSpawn(this.objectGlobalId, this.into, context, sameSlotSpawnSite);
   }

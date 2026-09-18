@@ -468,8 +468,7 @@ export class WorldSession {
         // 引かれていない。**このtickを進めているのは一番内側**で、外側は自分のtickをこの中で
         // 回している最中なので、二重に数えない。
         const running = this.runningInteractionPassives.at(-1);
-        if (running !== undefined)
-          running.passives.countTickMovementsAsGains(running.owner, running.context, this);
+        if (running !== undefined) running.passives.countTickMovementsAsGains(running.owner, running.context);
 
         world.instance.tick();
       });

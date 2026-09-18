@@ -46,7 +46,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
         site.type!.objectDefGlobalId,
       );
 
-      const view = new Location(land, codex);
+      const view = new Location(land);
       const degree = map.edges.filter((e) => e.a === site.index || e.b === site.index).length;
       expect(pathsIn(view, codex), '開始直後、発見済みの道は無い').toEqual([]);
 
@@ -75,7 +75,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
       );
 
       for (const pathInstance of hidden.contents) {
-        const path = new Path(pathInstance, codex);
+        const path = new Path(pathInstance);
         expect(neighborInstanceIds, `サイト${site.index}: 道は隣接する土地を指す`).toContain(
           path.destinationInstanceId,
         );
@@ -103,7 +103,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     for (const { land } of game.island.lands) {
       const progresses = land
         .tryGetSlot(hiddenSlotId)!
-        .contents.map((instance) => new Path(instance, codex).requiredProgress);
+        .contents.map((instance) => new Path(instance).requiredProgress);
       if (progresses.length === 0) continue;
       firstProgressByPathCount.set(progresses.length, Math.min(...progresses));
     }
@@ -120,13 +120,13 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
 
     for (const { site, land } of game.island.lands) {
       for (const pathInstance of land.tryGetSlot(hiddenSlotId)!.contents) {
-        const path = new Path(pathInstance, codex);
+        const path = new Path(pathInstance);
         const returnInstance = game.world.instance.findSelfOrDescendantByInstanceId(
           path.returnPathInstanceId,
         );
         expect(returnInstance, `サイト${site.index}: 帰り道が世界に居る`).toBeDefined();
 
-        const back = new Path(returnInstance!, codex);
+        const back = new Path(returnInstance!);
         expect(back.destinationInstanceId, '帰り道はこちらの土地を指す').toBe(land.instanceId);
         expect(back.returnPathInstanceId, '帰り道もこちらの道を指す（相互）').toBe(pathInstance.instanceId);
         expect(returnInstance!.parent?.instanceId, '帰り道は移動先の土地に居る').toBe(
@@ -149,12 +149,12 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
       }
       expect(discovered.length, `シード${seed}: 探索で道が見つかる`).toBeGreaterThan(0);
 
-      const outbound = new Path(discovered[0], codex);
+      const outbound = new Path(discovered[0]);
       expect(outbound.travel(game.player.instance), `シード${seed}: 渡れる`).toBe(true);
 
       const arrived = game.player.location!;
       expect(arrived.explorationProgress, `シード${seed}: 渡った先はまだ未探索`).toBe(0);
-      const back = pathsIn(arrived, codex).map((p) => new Path(p, codex));
+      const back = pathsIn(arrived, codex).map((p) => new Path(p));
       const home = back.find((p) => p.destinationInstanceId === start.instance.instanceId);
       expect(home, `シード${seed}: 未探索でも帰り道は見つかっている`).toBeDefined();
 
@@ -193,15 +193,13 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     expect(pathsIn(start, codex).length, '探索でこの土地のすべての道が見つかる').toBe(degree);
 
     // 見つかった道で移動する。
-    const path = new Path(pathsIn(start, codex)[0], codex);
+    const path = new Path(pathsIn(start, codex)[0]);
     const minutesBefore = game.world.totalMinutes;
 
     expect(path.travel(agent)).toBe(true);
 
     expect(agent.parent!.instanceId, 'プレイヤーは道の行き先の土地へ移る').toBe(path.destinationInstanceId);
-    expect(new Location(agent.parent!, codex).characters, '移動先ではcharactersスロットに入る').toContain(
-      agent,
-    );
+    expect(new Location(agent.parent!).characters, '移動先ではcharactersスロットに入る').toContain(agent);
     expect(game.world.totalMinutes - minutesBefore, '移動時間の分だけゲーム内時間が進む').toBe(
       path.travelMinutes,
     );

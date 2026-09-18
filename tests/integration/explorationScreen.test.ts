@@ -79,7 +79,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     expect(lane(view, game, 'fixtures').map((card) => card.name)).toEqual(
       location.fixtureStacks.map((stack) =>
         stack[0].def.tags.includes(pathTagId)
-          ? locale.locationName(game.island.nameOf(new Path(stack[0], codex).destinationInstanceId)!)
+          ? locale.locationName(game.island.nameOf(new Path(stack[0]).destinationInstanceId)!)
           : locale.object(stack[0].def.name).displayName,
       ),
     );
@@ -90,7 +90,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
     exploreToFull(game);
     const paths = pathsIn(game.startLocation, codex);
-    const destinations = new Set(paths.map((path) => new Path(path, codex).destinationInstanceId));
+    const destinations = new Set(paths.map((path) => new Path(path).destinationInstanceId));
     expect(destinations.size, '行き先の違う道が2本以上ある土地で確かめる').toBeGreaterThan(1);
 
     const view = fromGameSession(game, locale);
@@ -118,7 +118,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     expect(others.length).toBeGreaterThan(0);
 
     expect(paths.map((card) => card.art)).toEqual(
-      paths.map((card) => new Path(card.objects[0], codex).destination?.def.artName),
+      paths.map((card) => new Path(card.objects[0]).destination?.def.artName),
     );
     expect(
       paths.some((card) => card.art !== game.startLocation.instance.def.artName),
@@ -149,7 +149,7 @@ describe('探索と地図（世界→映し 通し）', () => {
   it('道のカードのアクションで、現在地が行き先へ移る', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
     exploreToFull(game);
-    const path = new Path(pathsIn(game.startLocation, codex)[0], codex);
+    const path = new Path(pathsIn(game.startLocation, codex)[0]);
 
     const view = fromGameSession(game, locale);
     const card = lane(view, game, 'fixtures').find((fixture) => fixture.objects[0] === path.instance)!;
@@ -181,7 +181,7 @@ describe('探索と地図（世界→映し 通し）', () => {
 
     const currentSite = game.island.siteOf(game.startLocation.instance.instanceId)!.index;
     const destinations = pathsIn(game.startLocation, codex).map(
-      (path) => game.island.siteOf(new Path(path, codex).destinationInstanceId)!.index,
+      (path) => game.island.siteOf(new Path(path).destinationInstanceId)!.index,
     );
     expect(destinations.length, '道が見つかる土地で確かめる').toBeGreaterThan(0);
 
@@ -222,7 +222,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
     exploreToFull(game);
     const before = fromGameSession(game, locale);
-    const path = new Path(pathsIn(game.startLocation, codex)[0], codex);
+    const path = new Path(pathsIn(game.startLocation, codex)[0]);
     expect(path.travel(game.player.instance)).toBe(true);
 
     const view = fromGameSession(game, locale);
@@ -242,7 +242,7 @@ describe('探索と地図（世界→映し 通し）', () => {
   it('現在地は移動に追従する', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
     exploreToFull(game);
-    const path = new Path(pathsIn(game.startLocation, codex)[0], codex);
+    const path = new Path(pathsIn(game.startLocation, codex)[0]);
     expect(path.travel(game.player.instance)).toBe(true);
 
     const view = fromGameSession(game, locale);
@@ -262,7 +262,7 @@ describe('探索と地図（世界→映し 通し）', () => {
     const view = fromGameSession(game, locale);
     const travel = lane(view, game, 'fixtures').find((card) => card.objects[0] === path)!.actions[0];
 
-    expect(travel.minutes).toBe(new Path(path, codex).travelMinutes);
+    expect(travel.minutes).toBe(new Path(path).travelMinutes);
     expect(travel.minutes, '移動には時間がかかる').toBeGreaterThan(0);
   });
 

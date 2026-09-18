@@ -225,12 +225,12 @@ describe('筏と航海', () => {
 
   /** 今の海区を1回見張る（地上の探索そのもの）。 */
   function keepWatch(game: StartedGame, zone: WorldObject): boolean {
-    return new Location(zone, codex).explore(game.player.instance);
+    return new Location(zone).explore(game.player.instance);
   }
 
   /** その海区に現れている航路（宣言順。まだ見えていなければ空）。 */
   function sightedRoutes(zone: WorldObject): readonly WorldObject[] {
-    return new Location(zone, codex).fixtures.filter((fixture) =>
+    return new Location(zone).fixtures.filter((fixture) =>
       fixture.def.hasTag(codex.tagNames.getId('sea_route')),
     );
   }
@@ -431,7 +431,7 @@ describe('筏と航海', () => {
       '辺の向こう端も1本のまま',
     ).toEqual(['route_to_coastal_waters']);
     expect(propertyOf(first, 'exploration_progress'), '探索率は100%のまま張り付く（地上と同じ）').toBe(
-      new Location(first, codex).explorationProgressMax,
+      new Location(first).explorationProgressMax,
     );
   });
 
@@ -1262,7 +1262,7 @@ describe('筏と航海', () => {
       zone.getProperty(codex.propertyNames.getId('exploration_progress')).setNumberWithoutEvents(0);
 
       expect(keepWatch(game, zone), `${zoneName}: 見張りは成立する`).toBe(true);
-      for (const fixture of new Location(zone, codex).fixtures)
+      for (const fixture of new Location(zone).fixtures)
         if (fixture !== raft && !fixture.def.hasTag(seaRouteTag)) spawned.add(fixture.def.name);
       for (const object of [...raft.descendants()])
         if (!cargoAtStart.has(object.instanceId)) {
@@ -1416,7 +1416,7 @@ describe('筏と航海', () => {
     expect(raft.moveToSlotOrRejection(zone.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
 
     for (let i = 0; i < 20 && keepWatch(game, zone); i++);
-    const islet = new Location(zone, codex).fixtures.find((fixture) => fixture.def.name === 'offshore_islet');
+    const islet = new Location(zone).fixtures.find((fixture) => fixture.def.name === 'offshore_islet');
     expect(islet, '見張りを終えると、航路と一緒に小島が見つかる').toBeDefined();
 
     expect(
@@ -1430,7 +1430,7 @@ describe('筏と航海', () => {
       true,
     );
 
-    expect(new Location(islet!, codex).explore(game.player.instance), '降りれば探索できる').toBe(true);
+    expect(new Location(islet!).explore(game.player.instance), '降りれば探索できる').toBe(true);
 
     expect(islet!.tryGetAction('launch', game.player.instance)?.tryExecute(), '漕ぎ出せる').toBe(true);
     expect(raft.parent?.instanceId, '筏は海区へ戻る').toBe(zone.instanceId);
@@ -1439,7 +1439,7 @@ describe('筏と航海', () => {
 
   /** その海区に立っている小島（見張りを終えていなければundefined）。 */
   function isletIn(zone: WorldObject): WorldObject | undefined {
-    return new Location(zone, codex).fixtures.find((fixture) => fixture.def.name === 'offshore_islet');
+    return new Location(zone).fixtures.find((fixture) => fixture.def.name === 'offshore_islet');
   }
 
   it('小島が立つのは、小島の海と海鳥の岩だけ', () => {
@@ -1466,7 +1466,7 @@ describe('筏と航海', () => {
    * すぐ見つかるが、卓から落ちたときに赤くなる代わりに止まらなくなるのでは、この検査が何も言わない。
    */
   function exploreIsletFor(game: StartedGame, islet: WorldObject, objectName: string): WorldObject {
-    const ashore = new Location(islet, codex);
+    const ashore = new Location(islet);
     for (let i = 0; i < 80; i++) {
       keepAlive(game);
       expect(ashore.explore(game.player.instance), '小島を歩ける').toBe(true);
@@ -1556,7 +1556,7 @@ describe('筏と航海', () => {
 
     for (let i = 0; i < times; i++) {
       keepAlive(game);
-      expect(new Location(summit, codex).explore(game.player.instance), '山頂を見渡せる').toBe(true);
+      expect(new Location(summit).explore(game.player.instance), '山頂を見渡せる').toBe(true);
     }
   }
 

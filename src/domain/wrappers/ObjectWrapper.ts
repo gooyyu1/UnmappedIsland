@@ -17,6 +17,9 @@ import type { PropertyGlobalId, SlotGlobalId } from '../GlobalId';
  *
  * ここへ置いてよいのは、**包みであることに由来する下働き**だけ。オブジェクトに関わるというだけの
  * 操作を集めると、`WorldObject`を分けた意味が失われる。
+ *
+ * **語彙は包む物から引く。** 物はどのセッションに属するかを自分で知っており、セッションは1つの
+ * `WorldCodex`に属するので、包む側が別に渡すと噛み合わない組を渡せてしまう。
  */
 export abstract class ObjectWrapper {
   readonly instance: WorldObject;
@@ -24,10 +27,10 @@ export abstract class ObjectWrapper {
   protected readonly codex: WorldCodex;
   protected readonly words: WorldRuleVocabulary;
 
-  constructor(instance: WorldObject, codex: WorldCodex) {
+  constructor(instance: WorldObject) {
     this.instance = instance;
-    this.codex = codex;
-    this.words = codex.vocabulary.world;
+    this.codex = instance.session.codex;
+    this.words = this.codex.vocabulary.world;
   }
 
   /** 名指しのプロパティの実効値。宣言していなければ0。 */

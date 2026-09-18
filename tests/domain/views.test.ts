@@ -40,7 +40,7 @@ object_defs:
       new WorldSession(codex),
     );
 
-    const world = new World(instance, codex);
+    const world = new World(instance);
 
     expect(world.day).toBe(3);
     expect(world.hour).toBe(8);
@@ -75,7 +75,7 @@ object_defs:
       new WorldSession(codex),
     );
 
-    const world = new World(instance, codex);
+    const world = new World(instance);
 
     expect(world.minute).toBe(40);
     expect(world.weather, '天気の語彙を持たないCodex').toBeUndefined();
@@ -98,7 +98,7 @@ object_defs:
     const stone = session.createObject(codex.objectNames.getId('stone'));
     stone.moveToSlotOrRejection(instance.getSlot(codex.slotNames.getId('hand')));
 
-    const agent = new PlayerCharacter(instance, codex);
+    const agent = new PlayerCharacter(instance);
 
     expect(agent.hand).toEqual([stone, undefined, undefined]);
   });
@@ -123,7 +123,7 @@ object_defs:
     const stone = session.createObject(codex.objectNames.getId('stone'));
     stone.moveToSlotOrRejection(hand);
 
-    const stacks = new PlayerCharacter(instance, codex).handStacks;
+    const stacks = new PlayerCharacter(instance).handStacks;
     session.createObject(codex.objectNames.getId('stone')).moveToSlotOrRejection(hand);
 
     expect(stacks[0], '読んだ後に同じ枠へ合流したものは、写しには現れない').toEqual([stone]);
@@ -141,7 +141,7 @@ object_defs:
       new WorldSession(codex),
     );
 
-    expect(new PlayerCharacter(instance, codex).hand).toEqual([]);
+    expect(new PlayerCharacter(instance).hand).toEqual([]);
   });
 
   it('PlayerCharacterのlocationは自分が入っている土地を返す', () => {
@@ -158,7 +158,7 @@ object_defs:
     const session = new WorldSession(codex);
     const clearing = session.createObject(codex.objectNames.getId('clearing'));
     const instance = session.createObject(codex.objectNames.getId('character'));
-    const agent = new PlayerCharacter(instance, codex);
+    const agent = new PlayerCharacter(instance);
 
     expect(agent.location).toBeUndefined();
 
@@ -191,14 +191,14 @@ object_defs:
     const session = new WorldSession(codex);
     const clearing = session.createObject(codex.objectNames.getId('clearing'));
     const instance = session.createObject(codex.objectNames.getId('character'));
-    const agent = new PlayerCharacter(instance, codex);
+    const agent = new PlayerCharacter(instance);
 
     expect(agent.explore(), '土地に居なければ探索できない').toBe(false);
 
     instance.moveToSlotOrRejection(clearing.getSlot(codex.slotNames.getId('characters')));
 
     expect(agent.explore()).toBe(true);
-    expect(new Location(clearing, codex).explorationProgress, '今いる土地の進捗が進む').toBe(1);
+    expect(new Location(clearing).explorationProgress, '今いる土地の進捗が進む').toBe(1);
   });
 
   it('Locationはどのプロパティも要求せずinstanceをラップする', () => {
@@ -213,7 +213,7 @@ object_defs:
       new WorldSession(codex),
     );
 
-    const location = new Location(instance, codex);
+    const location = new Location(instance);
 
     expect(location.instance).toBe(instance);
   });

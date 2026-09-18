@@ -31,7 +31,7 @@ describe('率の積分の刻みは tick', () => {
   function openWorld(): { session: WorldSession; world: WorldObject } {
     const session = new WorldSession(codex);
     const world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
-    session.adoptWorld(new World(world, codex));
+    session.adoptWorld(new World(world));
     const jungle = spawnInto(session, 'jungle', world, 'locations');
     spawnInto(session, SAMPLE_CHARACTER, jungle, 'characters');
     return { session, world };

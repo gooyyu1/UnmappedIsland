@@ -78,7 +78,7 @@ object_defs:
   function open(roll: number): void {
     session = new WorldSession(codex, undefined, fixedRng(roll));
     const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
-    session.adoptWorld(new World(worldInstance, codex));
+    session.adoptWorld(new World(worldInstance));
     ground = spawn('ground');
     expect(ground.moveToSlotOrRejection(worldInstance.getSlot(slot('locations')))).toBeUndefined();
     changes = [];
@@ -234,10 +234,7 @@ object_defs:
 
   it('worldは1度しか結び付けられない', () => {
     // 2度目には、既にそのworldで動き出したオブジェクトが居るはず（WorldSession.adoptWorld）。
-    const other = new World(
-      new WorldObject(9, codex.objects.get(codex.objectNames.getId('world')), session),
-      codex,
-    );
+    const other = new World(new WorldObject(9, codex.objects.get(codex.objectNames.getId('world')), session));
 
     expect(() => session.adoptWorld(other)).toThrow(/1度/);
   });

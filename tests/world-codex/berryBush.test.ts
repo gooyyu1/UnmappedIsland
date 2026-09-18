@@ -55,7 +55,7 @@ describe('ベリーの茂み', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(0));
+    session = new WorldSession(codex, new World(worldInstance), fixedRng(0));
     land = spawnInto('grassland', worldInstance, 'locations');
     bush = spawnInto('berry_bush', land, 'fixtures');
     bush.getProperty(ripeningRemainingId).setNumberWithoutEvents(RIPENING_DAYS * TICKS_PER_DAY);

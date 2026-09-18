@@ -31,7 +31,7 @@ describe('なめし革の連鎖', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(0));
+    session = new WorldSession(codex, new World(worldInstance), fixedRng(0));
 
     forest = spawnInto('forest', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, forest, 'characters');

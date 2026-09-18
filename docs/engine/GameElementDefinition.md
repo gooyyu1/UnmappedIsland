@@ -943,7 +943,7 @@ object_defs:
 
 **この判定が効くのは身につける枠だけ**です。手持ちや地面では同じ衣類を何着でも並べられます。
 
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)
+**出どころ**: ユーザーの指示（装備の排他は枠の数ではなくアイテムの属性で決める。[#2026](https://github.com/gooyyu1/UnmappedIsland/issues/2026)）
 
 #### 7.5.2 覆う部位と階層の宣言
 

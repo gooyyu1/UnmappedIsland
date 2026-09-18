@@ -179,7 +179,7 @@ object_defs:
         deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         steps:
           # 丸太を輪切りにする。**斧が要るのは車輪を出すまでの4工程だけ**で、同じ1本が通る
-          # （consume: falseは工程を跨いで数えない、crafting.remainingRequirements）。
+          # （consume: falseは工程を跨いで数えない、crafting.remainingRequirementsOf）。
           - requires:
               - {object: log, count: 1, consume: true}
               - {tag: chopping_tool, count: 1, consume: false}

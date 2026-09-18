@@ -1,5 +1,6 @@
 import type { PropertyValue } from './PropertyValue';
 import type { WorldObject } from './WorldObject';
+import type { WorldSession } from './WorldSession';
 import type { PropertyGlobalId } from './GlobalId';
 
 /**
@@ -89,7 +90,7 @@ export class InteractionRelation {
   }
 
   /** selfを起点に、この関係の役を解決する文脈。 */
-  contextFor(self: WorldObject | undefined): ReferenceContext {
+  contextFor(self: WorldObject): ReferenceContext {
     return ReferenceContext.withRoles(self, this.agent, this.instrument, this.patient);
   }
 
@@ -182,13 +183,26 @@ export class ReferenceContext {
   /** `among`が周りから選んだ相手。amongを書いた候補の中でのみ居る（10.3節）。 */
   readonly picked: WorldObject | undefined;
 
+  /**
+   * この文脈が指している世界。**役はどれも欠けうる**——selfの居ない文脈（asking）も、役の解決先を
+   * 持たない文脈（forSelf）もある——ので、どの役から引くかを受け取る側に選ばせず、組み立てた側が
+   * 答える。**組み立てる口はどれも、役に就く物を少なくとも1つ必ず受け取る**ので、ここが空になる
+   * 経路は無い。
+   *
+   * **どの役が答えるかは口ごとに違う**——selfを受け取る口はself、askingはagent、withRolesはpatient。
+   * 1つの文脈の役はすべて同じ世界の物なので、居るものから引けばどれでも同じ。
+   */
+  readonly session: WorldSession;
+
   private constructor(
+    session: WorldSession,
     self: WorldObject | undefined,
     agent: WorldObject | undefined,
     instrument: WorldObject | undefined,
     patient: WorldObject | undefined,
     picked: WorldObject | undefined,
   ) {
+    this.session = session;
     this.self = self;
     this.agent = agent;
     this.instrument = instrument;
@@ -201,8 +215,8 @@ export class ReferenceContext {
    * rangeイベント（6.3節）は操作ではなく値が端に着いた瞬間への反応なので、selfが今どれかの操作に
    * 参加していても役は見えない（11.5節）。
    */
-  static forSelf(self: WorldObject | undefined): ReferenceContext {
-    return new ReferenceContext(self, undefined, undefined, undefined, undefined);
+  static forSelf(self: WorldObject): ReferenceContext {
+    return new ReferenceContext(self.session, self, undefined, undefined, undefined, undefined);
   }
 
   /**
@@ -210,8 +224,8 @@ export class ReferenceContext {
    * 解く関係（世界に刻まれている、InteractionRelation。入れ子なら最も内側、11.5節）から解ける。参加して
    * いなければforSelfと同じで、役はどれも解決先を持たない。
    */
-  static forParticipant(self: WorldObject | undefined): ReferenceContext {
-    const relation = self?.participation;
+  static forParticipant(self: WorldObject): ReferenceContext {
+    const relation = self.participation;
     return relation === undefined ? ReferenceContext.forSelf(self) : relation.contextFor(self);
   }
 
@@ -224,7 +238,7 @@ export class ReferenceContext {
    * 見たいなら、条件を持っているか（`RecipeDef.unlock`）を直接見る。
    */
   static asking(agent: WorldObject): ReferenceContext {
-    return new ReferenceContext(undefined, agent, undefined, undefined, undefined);
+    return new ReferenceContext(agent.session, undefined, agent, undefined, undefined, undefined);
   }
 
   /** 3役が揃った文脈。組み立てられるのは関係を持っている側だけ（InteractionRelation.contextFor）。 */
@@ -234,25 +248,25 @@ export class ReferenceContext {
     instrument: WorldObject | undefined,
     patient: WorldObject,
   ): ReferenceContext {
-    return new ReferenceContext(self, agent, instrument, patient, undefined);
+    return new ReferenceContext(patient.session, self, agent, instrument, patient, undefined);
   }
 
   /**
    * selfだけを差し替えた文脈。**役の出どころは変えずに、起点だけを移す**場面で使う——passivesのゲートは
    * selfが辺の子側（slotBearer）で、役はその宣言の出どころが答える（11.5節。RegisteredPassiveEffect）。
    */
-  withSelf(self: WorldObject | undefined): ReferenceContext {
-    return new ReferenceContext(self, this.agent, this.instrument, this.patient, this.picked);
+  withSelf(self: WorldObject): ReferenceContext {
+    return new ReferenceContext(this.session, self, this.agent, this.instrument, this.patient, this.picked);
   }
 
   /** instrumentだけを差し替えた文脈。同じ操作を候補ごとに引き直す場面で使う（TransferEffect.acceptedCount）。 */
   withInstrument(instrument: WorldObject | undefined): ReferenceContext {
-    return new ReferenceContext(this.self, this.agent, instrument, this.patient, this.picked);
+    return new ReferenceContext(this.session, this.self, this.agent, instrument, this.patient, this.picked);
   }
 
   /** pickedだけを差し替えた文脈。amongが候補ごとに重みを引き、選んだ1つへ効果を当てるときに使う。 */
   withPicked(picked: WorldObject | undefined): ReferenceContext {
-    return new ReferenceContext(this.self, this.agent, this.instrument, this.patient, picked);
+    return new ReferenceContext(this.session, this.self, this.agent, this.instrument, this.patient, picked);
   }
 
   /**

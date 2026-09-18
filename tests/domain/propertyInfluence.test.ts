@@ -50,7 +50,7 @@ object_defs:
       .load('extra.yaml', yaml)
       .buildAndReset();
     const worldDef = codex.objects.get(codex.objectNames.getId('world'));
-    const world = new World(new WorldObject(nextInstanceId++, worldDef, new WorldSession(codex)), codex);
+    const world = new World(new WorldObject(nextInstanceId++, worldDef, new WorldSession(codex)));
     const session = new WorldSession(codex, world);
     const stuff = world.instance.getSlot(codex.slotNames.getId('stuff'));
 

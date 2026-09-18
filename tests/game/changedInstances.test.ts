@@ -86,7 +86,7 @@ object_defs:
       .buildAndReset();
     session = new WorldSession(codex, undefined, fixedRng(0.5));
     const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
-    session.adoptWorld(new World(worldInstance, codex));
+    session.adoptWorld(new World(worldInstance));
     ground = spawn('ground');
     expect(ground.moveToSlotOrRejection(worldInstance.getSlot(slot('locations')))).toBeUndefined();
   });

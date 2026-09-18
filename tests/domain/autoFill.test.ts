@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { autoFillMaterials } from '../../src/domain/autoFill';
-import { remainingRequirements } from '../../src/domain/crafting';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -135,14 +134,14 @@ object_defs:
   describe('残りの工程が要求する枠だけ埋める', () => {
     let torch: WorldObject;
 
-    /** 1つ目の工程（reed×2）が済んだところから、残りの要求だけを渡して自動補充する。 */
+    /** 1つ目の工程（reed×2）を終えたことにしてから自動補充する。 */
     function fillRemaining(): number {
       const recipe = codex.objects.get(idOf('torch')).recipesProducingThis[0];
-      return autoFillMaterials(
-        torch,
-        [player.tryGetSlot(slotOf('hand'))?.contents ?? []],
-        remainingRequirements(recipe, recipe.steps[0].durationMinutes),
-      );
+      // 進捗を直に置く（工程を実際に進めず、済んだ工程の数だけを作る）。
+      torch
+        .getProperty(codex.vocabulary.engine.progressId)
+        .setNumberWithoutEvents(recipe.steps[0].durationMinutes);
+      return autoFillMaterials(torch, [player.tryGetSlot(slotOf('hand'))?.contents ?? []]);
     }
 
     /** 材料スロットの枠ごとの中身を'reed×2'の形で（空き枠はundefined）。 */
@@ -166,7 +165,7 @@ object_defs:
       expect(cells(), 'reedの枠は空のまま、itemの枠に1つ').toEqual([undefined, 'reed×1']);
     });
 
-    it('残りの要求を渡さなければ、全ての枠を埋める', () => {
+    it('着手前は、どの工程の枠も埋める', () => {
       place('reed', 3, player, 'hand');
 
       const moved = autoFillMaterials(torch, [player.tryGetSlot(slotOf('hand'))?.contents ?? []]);
