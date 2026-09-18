@@ -113,6 +113,13 @@ const ISSUE_NUMBER = /#[0-9]+/;
 const ITEM_NUMBER = /(?:の|同)(?:\s+|\s*項目\s*)(?=[0-9])(?![0-9.]*\s*節)/;
 
 /**
+ * 多数の問いをまとめて受けた常設の一覧（`CLAUDE.md`「確認は、1問1 issue で出す」）。**ここだけは、
+ * 番号を指しただけでは何を決めたかを指せない**——他の issue は1問1本なので番号がそのまま問いと答えを
+ * 指すが、この1本は答えの済んだ項目から詰め替わるうえ、**指した先に対応する項目が無いことすらある**。
+ */
+const LIST_ISSUE = /#656\b/;
+
+/**
  * 本文が暫定であることを自白する語（DocumentStyle.md 6.1節）。確定節の射程には現れない——
  * 印は見出しに付くので、但し書きを本文へ添えても印を弱められない。
  *
@@ -363,6 +370,21 @@ const confirmedSections = [...markRuleByPath].flatMap(([doc, text]) =>
 /** ある節が、出どころの1行（DocumentStyle.md 6.1節）を本文に持つか。 */
 function hasSourceLine(section: { readonly body: readonly { readonly text: string }[] }): boolean {
   return section.body.some(({ text }) => text.startsWith(SOURCE_LINE_PREFIX));
+}
+
+/**
+ * 出どころの行が、issue への参照だけで終わっていて、**何を決めたか**を持たないか（DocumentStyle.md
+ * 6.1節）。参照とその区切りを落とした残りに字が無ければ持っていない。
+ *
+ * **渡すのは囲みを落とす前の行**（{@link textLines} の `raw`）。決めたのが宣言そのものなら、何を
+ * 決めたかはインラインコードで書かれる（`` （`crafting_conditions`） ``）ので、落とすと空に見える。
+ */
+function citesNothingDecided(sourceLine: string): boolean {
+  const rest = sourceLine
+    .slice(SOURCE_LINE_PREFIX.length)
+    .replace(/\[#[0-9]+\]\([^)]*\)/g, '')
+    .replace(/#[0-9]+/g, '');
+  return !/[^\s、。・（）()]/.test(rest);
 }
 
 /**
@@ -1129,6 +1151,40 @@ describe('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節�
     expect(ITEM_NUMBER.test('**出どころ**: #656（難易度の3段目を「熟練者」に改める）')).toBe(false);
     expect(ITEM_NUMBER.test('**出どころ**: #656（同 6.4節の照合に使う）')).toBe(false);
     expect(ITEM_NUMBER.test('**出どころ**: #656（同 5 節の火口）')).toBe(false);
+  });
+
+  it('一覧の issue を指す出どころが、何を決めたかを添えている', () => {
+    // 一覧を番号で指しただけの行は、辿り着く先が問いの束なので印の根拠を選べず、**指した先に対応する
+    // 項目が無くても気づけない**。
+    const found: string[] = [];
+    for (const [rel, text] of markRuleByPath) {
+      for (const { line, raw } of textLines(text)) {
+        if (raw.startsWith(SOURCE_LINE_PREFIX) && LIST_ISSUE.test(raw) && citesNothingDecided(raw)) {
+          found.push(`${rel}:${line}: ${raw}`);
+        }
+      }
+    }
+    expect(
+      found,
+      `一覧を番号で指しただけの出どころ（何を決めたかを添える）:\n${found.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('何を決めたかの照合が、参照だけの行と添えてある行を見分ける', () => {
+    // 当たらなくなっても違反ゼロと同じ緑になるので、当たる側と外す側を既知の入力で確かめる。
+    expect(citesNothingDecided('**出どころ**: [#656](https://x/issues/656)')).toBe(true);
+    expect(citesNothingDecided('**出どころ**: #656')).toBe(true);
+    expect(citesNothingDecided('**出どころ**: [#656](https://x/issues/656)。')).toBe(true);
+    // 決めたのが宣言そのものなら、何を決めたかはインラインコードで書かれる。
+    expect(citesNothingDecided('**出どころ**: [#656](https://x/issues/656)（`crafting_conditions`）')).toBe(
+      false,
+    );
+    expect(citesNothingDecided('**出どころ**: [#656](https://x/issues/656)（望遠鏡は置かない）')).toBe(
+      false,
+    );
+    expect(
+      citesNothingDecided('**出どころ**: ユーザーの指示（火が与えるもの。[#2026](https://x/issues/2026)）'),
+    ).toBe(false);
   });
 });
 
