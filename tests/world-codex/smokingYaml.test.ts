@@ -313,15 +313,21 @@ describe('smoking.yamlの燻製と燻し小屋', () => {
   });
 
   it('燻し小屋は太い枝6本・編んだ葉6枚・縄2本から作れる', () => {
+    // **工程は1時間ずつに割ってある**（docs/engine/ActionSystem.md 6.3節）ので、要るのは工程を
+    // またいだ合計のほう。
     const [recipe] = codex.objects.get(codex.objectNames.getId('smokehouse')).recipesProducingThis;
-    const [step] = recipe!.steps;
+    const requirements = recipe!.steps.flatMap((step) => step.requirements);
+    const countOf = (name: string): number =>
+      requirements
+        .filter((requirement) => requirement.requires(codex.objects.get(codex.objectNames.getId(name))))
+        .reduce((total, requirement) => total + requirement.count, 0);
 
-    expect(step!.requirements).toHaveLength(3);
-    for (const [index, name] of ['thick_branch', 'woven_leaf', 'rope'].entries())
-      expect(
-        step!.requirements[index].requires(codex.objects.get(codex.objectNames.getId(name))),
-        `${index}番目は${name}`,
-      ).toBe(true);
+    for (const [name, count] of [
+      ['thick_branch', 6],
+      ['woven_leaf', 6],
+      ['rope', 2],
+    ] as const)
+      expect(countOf(name), name).toBe(count);
   });
 
   it('燻し小屋を2基据えても、1枚のカードに束ならない', () => {

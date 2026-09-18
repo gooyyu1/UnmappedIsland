@@ -145,7 +145,7 @@ describe('pottery.yamlの土器の連鎖', () => {
   });
 
   it('粘土2個から素焼き前の壺ができ、できた直後は濡れている', () => {
-    craft('unfired_jar', 'coiled', [['clay', 'clay']]);
+    craft('unfired_jar', 'coiled', [['clay'], ['clay']]);
 
     expect(itemsOn(land), '作りかけが壺そのものへ置き換わる').toEqual(['unfired_jar']);
     const [greenware] = new Location(land, codex).items;
@@ -167,7 +167,7 @@ describe('pottery.yamlの土器の連鎖', () => {
   });
 
   it('粘土3個から覆い焼きの炉を築ける', () => {
-    craft('earth_kiln', 'heaped', [['clay', 'clay', 'clay']]);
+    craft('earth_kiln', 'heaped', [['clay', 'clay'], ['clay']]);
 
     expect(fixturesOn(land), '設置物として建つ').toEqual(['earth_kiln']);
   });

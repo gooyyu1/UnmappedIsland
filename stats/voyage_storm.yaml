@@ -6,59 +6,59 @@ meta:
   - {seeds: 6, voyages_per_seed: 100}
 
 input_fingerprint:
-  - {sources: [core.yaml, voyage.yaml], sha256_prefix: d5a7d11f069a1c29}
+  - {sources: [core.yaml, voyage.yaml], sha256_prefix: '31d540ed1c34a442'}
 
 baseline:
-  - {coast: sandy_beach, season: calm, legs: 12, days: 5.08}
-  - {coast: sandy_beach, season: wet, legs: 12, days: 5.24}
-  - {coast: sandy_beach, season: dry, legs: 12, days: 4.92}
-  - {coast: rocky_coast, season: calm, legs: 10, days: 4.26}
-  - {coast: rocky_coast, season: wet, legs: 10, days: 4.39}
-  - {coast: rocky_coast, season: dry, legs: 10, days: 4.13}
-  - {coast: cliff_coast, season: calm, legs: 8, days: 3.42}
-  - {coast: cliff_coast, season: wet, legs: 8, days: 3.52}
-  - {coast: cliff_coast, season: dry, legs: 8, days: 3.31}
+  - {coast: sandy_beach, season: calm, legs: 12, days: 5.17}
+  - {coast: sandy_beach, season: wet, legs: 12, days: 5.33}
+  - {coast: sandy_beach, season: dry, legs: 12, days: 5.01}
+  - {coast: rocky_coast, season: calm, legs: 10, days: 4.33}
+  - {coast: rocky_coast, season: wet, legs: 10, days: 4.47}
+  - {coast: rocky_coast, season: dry, legs: 10, days: 4.20}
+  - {coast: cliff_coast, season: calm, legs: 8, days: 3.48}
+  - {coast: cliff_coast, season: wet, legs: 8, days: 3.59}
+  - {coast: cliff_coast, season: dry, legs: 8, days: 3.37}
 
 course_storm:
-  - {coast: sandy_beach, season: calm, unit: days, mean: 5.10, min: 4.77, median: 5.07, p95: 5.36, max: 5.91, sd: 0.17, n: 219}
-  - {coast: sandy_beach, season: wet, unit: days, mean: 5.66, min: 4.34, median: 5.36, p95: 7.25, max: 11.08, sd: 0.83, n: 184}
-  - {coast: sandy_beach, season: dry, unit: days, mean: 4.94, min: 4.60, median: 4.94, p95: 5.17, max: 6.91, sd: 0.19, n: 197}
-  - {coast: rocky_coast, season: calm, unit: days, mean: 4.28, min: 4.00, median: 4.26, p95: 4.49, max: 5.57, sd: 0.17, n: 220}
-  - {coast: rocky_coast, season: wet, unit: days, mean: 4.82, min: 3.95, median: 4.53, p95: 6.26, max: 10.25, sd: 0.79, n: 183}
-  - {coast: rocky_coast, season: dry, unit: days, mean: 4.14, min: 3.94, median: 4.14, p95: 4.33, max: 4.43, sd: 0.11, n: 197}
-  - {coast: cliff_coast, season: calm, unit: days, mean: 3.44, min: 3.14, median: 3.41, p95: 3.60, max: 4.39, sd: 0.15, n: 215}
-  - {coast: cliff_coast, season: wet, unit: days, mean: 3.89, min: 3.00, median: 3.60, p95: 5.03, max: 8.54, sd: 0.70, n: 189}
-  - {coast: cliff_coast, season: dry, unit: days, mean: 3.33, min: 3.10, median: 3.31, p95: 3.50, max: 3.70, sd: 0.10, n: 196}
+  - {coast: sandy_beach, season: calm, unit: days, mean: 5.20, min: 4.82, median: 5.17, p95: 5.50, max: 6.43, sd: 0.21, n: 210}
+  - {coast: sandy_beach, season: wet, unit: days, mean: 5.82, min: 4.60, median: 5.43, p95: 7.70, max: 9.17, sd: 0.89, n: 185}
+  - {coast: sandy_beach, season: dry, unit: days, mean: 5.04, min: 4.79, median: 5.03, p95: 5.26, max: 5.53, sd: 0.13, n: 205}
+  - {coast: rocky_coast, season: calm, unit: days, mean: 4.36, min: 4.07, median: 4.34, p95: 4.54, max: 5.89, sd: 0.20, n: 216}
+  - {coast: rocky_coast, season: wet, unit: days, mean: 4.92, min: 3.73, median: 4.66, p95: 6.24, max: 7.93, sd: 0.72, n: 182}
+  - {coast: rocky_coast, season: dry, unit: days, mean: 4.21, min: 4.00, median: 4.21, p95: 4.41, max: 4.54, sd: 0.11, n: 202}
+  - {coast: cliff_coast, season: calm, unit: days, mean: 3.49, min: 3.26, median: 3.47, p95: 3.67, max: 4.22, sd: 0.12, n: 216}
+  - {coast: cliff_coast, season: wet, unit: days, mean: 3.98, min: 2.85, median: 3.70, p95: 5.35, max: 7.43, sd: 0.74, n: 187}
+  - {coast: cliff_coast, season: dry, unit: days, mean: 3.38, min: 3.17, median: 3.36, p95: 3.56, max: 3.77, sd: 0.10, n: 197}
 
 course_crossings:
-  - {coast: sandy_beach, season: calm, unit: legs, mean: 12.05, min: 12.00, median: 12.00, p95: 12.00, max: 14.00, sd: 0.33, n: 219}
-  - {coast: sandy_beach, season: wet, unit: legs, mean: 13.70, min: 12.00, median: 12.00, p95: 18.00, max: 28.00, sd: 2.55, n: 184}
-  - {coast: sandy_beach, season: dry, unit: legs, mean: 12.04, min: 12.00, median: 12.00, p95: 12.00, max: 18.00, sd: 0.45, n: 197}
-  - {coast: rocky_coast, season: calm, unit: legs, mean: 10.05, min: 10.00, median: 10.00, p95: 10.00, max: 14.00, sd: 0.35, n: 220}
-  - {coast: rocky_coast, season: wet, unit: legs, mean: 11.62, min: 10.00, median: 10.00, p95: 16.00, max: 26.00, sd: 2.45, n: 183}
-  - {coast: rocky_coast, season: dry, unit: legs, mean: 10.00, min: 10.00, median: 10.00, p95: 10.00, max: 10.00, sd: 0.00, n: 197}
-  - {coast: cliff_coast, season: calm, unit: legs, mean: 8.03, min: 8.00, median: 8.00, p95: 8.00, max: 10.00, sd: 0.24, n: 215}
-  - {coast: cliff_coast, season: wet, unit: legs, mean: 9.28, min: 8.00, median: 8.00, p95: 12.00, max: 22.00, sd: 2.08, n: 189}
-  - {coast: cliff_coast, season: dry, unit: legs, mean: 8.00, min: 8.00, median: 8.00, p95: 8.00, max: 8.00, sd: 0.00, n: 196}
+  - {coast: sandy_beach, season: calm, unit: legs, mean: 12.10, min: 12.00, median: 12.00, p95: 12.00, max: 16.00, sd: 0.47, n: 210}
+  - {coast: sandy_beach, season: wet, unit: legs, mean: 13.87, min: 12.00, median: 12.00, p95: 20.00, max: 26.00, sd: 2.79, n: 185}
+  - {coast: sandy_beach, season: dry, unit: legs, mean: 12.00, min: 12.00, median: 12.00, p95: 12.00, max: 12.00, sd: 0.00, n: 205}
+  - {coast: rocky_coast, season: calm, unit: legs, mean: 10.08, min: 10.00, median: 10.00, p95: 10.00, max: 14.00, sd: 0.48, n: 216}
+  - {coast: rocky_coast, season: wet, unit: legs, mean: 11.74, min: 10.00, median: 10.00, p95: 16.00, max: 20.00, sd: 2.20, n: 182}
+  - {coast: rocky_coast, season: dry, unit: legs, mean: 10.00, min: 10.00, median: 10.00, p95: 10.00, max: 10.00, sd: 0.00, n: 202}
+  - {coast: cliff_coast, season: calm, unit: legs, mean: 8.02, min: 8.00, median: 8.00, p95: 8.00, max: 10.00, sd: 0.19, n: 216}
+  - {coast: cliff_coast, season: wet, unit: legs, mean: 9.39, min: 8.00, median: 8.00, p95: 14.00, max: 20.00, sd: 2.28, n: 187}
+  - {coast: cliff_coast, season: dry, unit: legs, mean: 8.00, min: 8.00, median: 8.00, p95: 8.00, max: 8.00, sd: 0.00, n: 197}
 
 sweeps:
-  - {coast: sandy_beach, season: calm, unit: times_per_voyage, backwards: 0.03, forwards: 0.01, voided_crossings: 0.04}
-  - {coast: sandy_beach, season: wet, unit: times_per_voyage, backwards: 0.85, forwards: 0.43, voided_crossings: 1.28}
-  - {coast: sandy_beach, season: dry, unit: times_per_voyage, backwards: 0.02, forwards: 0.01, voided_crossings: 0.03}
-  - {coast: rocky_coast, season: calm, unit: times_per_voyage, backwards: 0.02, forwards: 0.00, voided_crossings: 0.03}
-  - {coast: rocky_coast, season: wet, unit: times_per_voyage, backwards: 0.81, forwards: 0.31, voided_crossings: 1.11}
-  - {coast: rocky_coast, season: dry, unit: times_per_voyage, backwards: 0.00, forwards: 0.01, voided_crossings: 0.01}
+  - {coast: sandy_beach, season: calm, unit: times_per_voyage, backwards: 0.05, forwards: 0.00, voided_crossings: 0.05}
+  - {coast: sandy_beach, season: wet, unit: times_per_voyage, backwards: 0.94, forwards: 0.40, voided_crossings: 1.34}
+  - {coast: sandy_beach, season: dry, unit: times_per_voyage, backwards: 0.00, forwards: 0.00, voided_crossings: 0.00}
+  - {coast: rocky_coast, season: calm, unit: times_per_voyage, backwards: 0.04, forwards: 0.02, voided_crossings: 0.06}
+  - {coast: rocky_coast, season: wet, unit: times_per_voyage, backwards: 0.87, forwards: 0.37, voided_crossings: 1.24}
+  - {coast: rocky_coast, season: dry, unit: times_per_voyage, backwards: 0.00, forwards: 0.00, voided_crossings: 0.00}
   - {coast: cliff_coast, season: calm, unit: times_per_voyage, backwards: 0.01, forwards: 0.00, voided_crossings: 0.01}
-  - {coast: cliff_coast, season: wet, unit: times_per_voyage, backwards: 0.64, forwards: 0.24, voided_crossings: 0.88}
-  - {coast: cliff_coast, season: dry, unit: times_per_voyage, backwards: 0.00, forwards: 0.01, voided_crossings: 0.01}
+  - {coast: cliff_coast, season: wet, unit: times_per_voyage, backwards: 0.70, forwards: 0.24, voided_crossings: 0.94}
+  - {coast: cliff_coast, season: dry, unit: times_per_voyage, backwards: 0.00, forwards: 0.00, voided_crossings: 0.00}
 
 storm_cost:
-  - {coast: sandy_beach, season: calm, extra_days: 0.02, extra_legs: 0.05}
-  - {coast: sandy_beach, season: wet, extra_days: 0.42, extra_legs: 1.70}
-  - {coast: sandy_beach, season: dry, extra_days: 0.02, extra_legs: 0.04}
-  - {coast: rocky_coast, season: calm, extra_days: 0.02, extra_legs: 0.05}
-  - {coast: rocky_coast, season: wet, extra_days: 0.43, extra_legs: 1.62}
+  - {coast: sandy_beach, season: calm, extra_days: 0.03, extra_legs: 0.10}
+  - {coast: sandy_beach, season: wet, extra_days: 0.48, extra_legs: 1.87}
+  - {coast: sandy_beach, season: dry, extra_days: 0.03, extra_legs: 0.00}
+  - {coast: rocky_coast, season: calm, extra_days: 0.02, extra_legs: 0.08}
+  - {coast: rocky_coast, season: wet, extra_days: 0.46, extra_legs: 1.74}
   - {coast: rocky_coast, season: dry, extra_days: 0.02, extra_legs: 0.00}
-  - {coast: cliff_coast, season: calm, extra_days: 0.02, extra_legs: 0.03}
-  - {coast: cliff_coast, season: wet, extra_days: 0.36, extra_legs: 1.28}
-  - {coast: cliff_coast, season: dry, extra_days: 0.02, extra_legs: 0.00}
+  - {coast: cliff_coast, season: calm, extra_days: 0.01, extra_legs: 0.02}
+  - {coast: cliff_coast, season: wet, extra_days: 0.39, extra_legs: 1.39}
+  - {coast: cliff_coast, season: dry, extra_days: 0.00, extra_legs: 0.00}

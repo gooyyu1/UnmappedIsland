@@ -137,7 +137,11 @@ object_defs:
       lashed:
         deftness: {skill: skill_preserving, from_stage: expert, minutes: -15}
         steps:
+          # 枝を立てて組む。
           - requires:
               - {object: thick_branch, count: 6, consume: true}
+            duration: 60
+          # 縄を張って掛け場を作る。
+          - requires:
               - {object: rope, count: 1, consume: true}
-            duration: 120
+            duration: 60
