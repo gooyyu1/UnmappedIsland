@@ -121,17 +121,13 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     for (const { site, land } of game.island.lands) {
       for (const pathInstance of land.tryGetSlot(hiddenSlotId)!.contents) {
         const path = new Path(pathInstance);
-        const returnInstance = game.world.instance.findSelfOrDescendantByInstanceId(
-          path.returnPathInstanceId,
-        );
+        const returnInstance = path.returnPath;
         expect(returnInstance, `サイト${site.index}: 帰り道が世界に居る`).toBeDefined();
 
         const back = new Path(returnInstance!);
-        expect(back.destinationInstanceId, '帰り道はこちらの土地を指す').toBe(land.instanceId);
-        expect(back.returnPathInstanceId, '帰り道もこちらの道を指す（相互）').toBe(pathInstance.instanceId);
-        expect(returnInstance!.parent?.instanceId, '帰り道は移動先の土地に居る').toBe(
-          path.destinationInstanceId,
-        );
+        expect(back.destination, '帰り道はこちらの土地を指す').toBe(land);
+        expect(back.returnPath, '帰り道もこちらの道を指す（相互）').toBe(pathInstance);
+        expect(returnInstance!.parent, '帰り道は移動先の土地に居る').toBe(path.destination);
       }
     }
   });

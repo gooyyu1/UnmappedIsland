@@ -1,7 +1,7 @@
 import type { Rng } from '../../src/domain/Rng';
 import type { Slot } from '../../src/domain/Slot';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
@@ -91,7 +91,7 @@ export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
 
   // NewGame.startNewGameと同じ順序で組み立てる（worldインスタンスもセッションに属させるため）。
   const session = new WorldSession(codex, undefined, options.rng);
-  const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
+  const worldInstance = session.createObject(codex.objectNames.getId('world'));
   const world = new World(worldInstance);
   session.adoptWorld(world);
 

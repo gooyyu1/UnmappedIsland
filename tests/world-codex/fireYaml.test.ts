@@ -1,7 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { TRAVEL_MINUTES_STEP } from '../../src/domain/generation/PathNetworkBuilder';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { World } from '../../src/domain/wrappers/World';
@@ -50,13 +50,10 @@ describe('fire.yamlの火の連鎖', () => {
 
   /** 草地に立つプレイヤーから始める。rollはpickがどの候補を引くかを決める。 */
   function open(roll: number): void {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
+    session = new WorldSession(codex, undefined, fixedRng(roll));
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
     worldView = new World(worldInstance);
-    session = new WorldSession(codex, worldView, fixedRng(roll));
+    session.adoptWorld(worldView);
 
     land = spawnInto('grassland', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, land, 'characters');

@@ -1,5 +1,5 @@
 import type { WorldCodex } from '../WorldCodex';
-import { WorldObject } from '../WorldObject';
+import type { WorldObject } from '../WorldObject';
 import { WorldSession } from '../WorldSession';
 import type { Rng } from '../Rng';
 import { World } from '../wrappers/World';
@@ -96,16 +96,11 @@ export function startNewGame(
   seed: number,
   rng?: Rng,
 ): StartedGame {
-  // worldはinstanceId 0で直接生成する（WorldSession.createObjectの発行IDは1始まりのため衝突しない）。
   // セッションを先に作ってworldを後から結び付けるのは、WorldObjectの生成にsession（初期値ロール文脈）が
   // 必要で、World付きセッション自体がworldインスタンスを必要とするという相互依存を断つため
   // （WorldSession.adoptWorld）。**この順序にすると、worldインスタンスも他の物と同じセッションに属する。**
   const session = new WorldSession(codex, undefined, rng);
-  const worldInstance = new WorldObject(
-    0,
-    codex.objects.get(codex.objectNames.getId(codex.vocabulary.world.worldObject)),
-    session,
-  );
+  const worldInstance = session.createObject(codex.objectNames.getId(codex.vocabulary.world.worldObject));
   const world = new World(worldInstance);
   session.adoptWorld(world);
   world.rollTimeOfDay(START_TIME_EARLIEST_MINUTES, START_TIME_LATEST_MINUTES, session.rng);

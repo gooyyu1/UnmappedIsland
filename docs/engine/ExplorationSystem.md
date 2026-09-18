@@ -204,6 +204,8 @@ object_defs:
   `setNumberWithoutEvents`（`src/domain/generation/IslandSpawner.ts`）で書き込みます——`return_path_id`
   は辺の両端の道が揃ってから、残りはインスタンス生成の直後に。`object_defs`
   レベルの初期値はプレースホルダで、実際に使われるのは常にインスタンスごとの上書き後の値です。
+  **インスタンスIDを運ぶ初期値の `0` は「該当なし」の予約値**（`WorldObject.NO_INSTANCE`）なので、
+  書き込まれる前に引いても、どの個体にも当たりません。
 - **`conditions: [{in_slot: fixtures}]`**（`GameElementDefinition.md` 14.2 節）が「未発見（`undiscovered_fixtures`
   側）の間は移動できない」を表します。1 節の隠しスロット方式と組み合わさり、「発見されていない道は移動も
   できない」が自然に両立します。

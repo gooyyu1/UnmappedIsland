@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
@@ -57,12 +57,9 @@ describe('animals.yamlの動物', () => {
 
   /** 密林に立つプレイヤーと、その足元のサルから始める。rollはpickがどの候補を引くかを決める。 */
   function open(roll: number): void {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
-    session = new WorldSession(codex, new World(worldInstance), fixedRng(roll));
+    session = new WorldSession(codex, undefined, fixedRng(roll));
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
+    session.adoptWorld(new World(worldInstance));
     startMinutes = session.world!.totalMinutes;
     jungle = spawnInto('jungle', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');

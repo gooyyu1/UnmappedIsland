@@ -102,9 +102,10 @@ describe('core.yamlのworld定義', () => {
     const hourId = codex.propertyNames.getId('hour');
     const dayId = codex.propertyNames.getId('day');
 
-    const worldInstance = new WorldSession(codex).createObject(world.globalId);
+    const session = new WorldSession(codex, undefined);
+    const worldInstance = session.createObject(world.globalId);
     const worldView = new World(worldInstance);
-    const session = new WorldSession(codex, worldView);
+    session.adoptWorld(worldView);
     // 見たいのは繰り上がりの連鎖なので、hourの既定値（正午）ではなく0:00から始める。
     worldInstance.getProperty(hourId).setNumberWithoutEvents(0);
 

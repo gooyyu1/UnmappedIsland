@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
-import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { replaceAllOrFail } from '../support/textEdit';
 
@@ -101,7 +100,7 @@ object_defs:
   it('進捗が工程の合計時間を超えると、完成品が生まれて自分は消える', () => {
     const codex = load(AXE);
     const session = new WorldSession(codex);
-    const ground = new WorldObject(0, codex.objects.get(codex.objectNames.getId('ground')), session);
+    const ground = session.createObject(codex.objectNames.getId('ground'));
 
     const wip = session.createObject(codex.objectNames.getId(inProgressObjectName('axe', 'basic')));
     expect(wip.moveToSlotOrRejection(ground.getSlot(codex.slotNames.getId('items')))).toBeUndefined();

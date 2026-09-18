@@ -3,7 +3,7 @@ import { spawnsObject } from '../../src/codex-viewer/describe/effectQueries';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { PropertyValue } from '../../src/domain/PropertyValue';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { fixedRng } from '../support/rng';
@@ -42,12 +42,8 @@ describe('消化（かさ・栄養素・蓄え）', () => {
 
   /** 砂浜に立つプレイヤーから始める。rollはpickがどの候補を引くかを決める（fixedRng）。 */
   function open(roll: number): void {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
     session = new WorldSession(codex, undefined, fixedRng(roll));
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
     const beach = spawn('sandy_beach');
     expect(
       beach.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),

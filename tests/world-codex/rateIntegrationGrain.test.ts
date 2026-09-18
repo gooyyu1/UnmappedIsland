@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
@@ -30,7 +30,7 @@ describe('率の積分の刻みは tick', () => {
   /** 実ファイルの定義だけで組んだ、密林に立つ1人。 */
   function openWorld(): { session: WorldSession; world: WorldObject } {
     const session = new WorldSession(codex);
-    const world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
+    const world = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(world));
     const jungle = spawnInto(session, 'jungle', world, 'locations');
     spawnInto(session, SAMPLE_CHARACTER, jungle, 'characters');

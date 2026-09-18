@@ -7,7 +7,7 @@ import {
   spawnInProgressObject,
 } from '../../src/domain/crafting';
 import { InteractionRelation } from '../../src/domain/ReferenceRoot';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { World } from '../../src/domain/wrappers/World';
@@ -145,7 +145,7 @@ object_defs:
     codex = loader.load('crafting.yaml', YAML).buildAndReset();
 
     session = new WorldSession(codex);
-    const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), session);
+    const worldInstance = session.createObject(idOf('world'));
     session.adoptWorld(new World(worldInstance));
     ground = session.createObject(idOf('crafting_ground'));
     ground.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations')));
@@ -499,7 +499,7 @@ object_defs:
     codex = loader.load('crafting.yaml', YAML).buildAndReset();
 
     session = new WorldSession(codex);
-    const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), session);
+    const worldInstance = session.createObject(idOf('world'));
     session.adoptWorld(new World(worldInstance));
     ground = session.createObject(idOf('crafting_ground'));
     ground.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations')));

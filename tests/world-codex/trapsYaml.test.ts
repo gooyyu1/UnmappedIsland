@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
@@ -57,8 +57,9 @@ describe('traps.yamlのくくり罠', () => {
 
   /** 草原に立つプレイヤーと、その足元へ仕掛けた罠から始める。rollがpickの引きを決める。 */
   function open(roll: number, locationName = 'grassland'): void {
-    world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), new WorldSession(codex));
-    session = new WorldSession(codex, new World(world), fixedRng(roll));
+    session = new WorldSession(codex, undefined, fixedRng(roll));
+    world = session.createObject(codex.objectNames.getId('world'));
+    session.adoptWorld(new World(world));
     grassland = spawnInto(locationName, world, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, grassland, 'characters');
     // 掛かった獲物の解体は明るさを要求する（IlluminationSystem.md 5節）。ここで見たいのは罠なので、
@@ -444,12 +445,9 @@ describe('traps.yamlの落とし穴', () => {
 
   /** 森に掘った落とし穴から始める。イノシシを宣言している土地は森と密林だけ（locations.yaml）。 */
   function open(roll: number): void {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
-    session = new WorldSession(codex, new World(worldInstance), fixedRng(roll));
+    session = new WorldSession(codex, undefined, fixedRng(roll));
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
+    session.adoptWorld(new World(worldInstance));
     forest = spawnInto('forest', worldInstance, 'locations');
     // 掘る手間そのものはレシピが持つ（最後のit）ので、ここでは掘り終えた穴から始める。
     pitfall = spawnInto('pitfall', forest, 'fixtures');
