@@ -93,7 +93,7 @@ export class Slot {
    * **押す前に見せるための問い合わせ**なので、関係は張るだけで動作主は主張しない（during）。
    */
   putInMinutes(agent: WorldObject, item: WorldObject): number {
-    return this.putInRelation(agent, item).during((context) => this.def.putInMinutes(context));
+    return this.putInRelation(agent, item).during((context) => this.def.putInMinutes(context.valueResolver));
   }
 
   /**

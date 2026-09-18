@@ -4,10 +4,9 @@ import type {
   ConditionReader,
   PropertyConditionReading,
 } from '../domain/ConditionReader';
-import type { DeclaredNumberReading } from '../domain/EffectReader';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { RollEnd } from '../domain/PropertyDef';
-import type { ReferenceRoot } from '../domain/ReferenceRoot';
+import type { ReferenceRoot, ReferenceValueResolver } from '../domain/ReferenceRoot';
 import type { TypeMatchReading } from '../domain/TypeMatchRule';
 import type { PropertyGlobalId } from '../domain/GlobalId';
 
@@ -111,24 +110,19 @@ export function highestDeclaredLayer(
 }
 
 /**
- * 端を1つに決めたStaticValueResolver（staticResolverOf）。効果や条件の宣言を読む側は、自分が
- * どちらの端の話をしているかを知らないまま値を引ける。**端を選べるのは、問いを立てた側だけ。**
- */
-export type EndBoundValueResolver = (
-  root: ReferenceRoot,
-  propertyGlobalId: PropertyGlobalId,
-) => number | undefined;
-
-/**
  * defを起点として、定義だけから値を解く手立て。selfは自分のプロパティ宣言が答え、それ以外の起点は
  * outerへ委ねる。生成時のロール（6.2節）はendの端に出たものとして読む——**委ねる先にも同じ端を
  * 渡す**ので、どの起点を辿っても答えは1つの端で揃う。
+ *
+ * **端を1つに決めるのはここまで。** 返すのは宣言を読む側と同じ問いの形（ReferenceValueResolver）で、
+ * 効果や条件の宣言を読む側は、自分がどちらの端の話をしているかを知らないまま値を引ける
+ * ——**端を選べるのは、問いを立てた側だけ。**
  */
 export function staticResolverOf(
   def: ObjectDef,
   end: RollEnd,
   outer: StaticValueResolver | undefined,
-): EndBoundValueResolver {
+): ReferenceValueResolver {
   return (root, propertyGlobalId) => {
     return root === 'self'
       ? staticValueOf(def, propertyGlobalId, end, outer)
@@ -189,16 +183,8 @@ export function trackingResolverOf(
 
 /** 解決器と、そこまでに解けない参照へ当たったかどうか（trackingResolverOf）。 */
 export interface TrackingResolver {
-  readonly resolve: EndBoundValueResolver;
+  readonly resolve: ReferenceValueResolver;
   readonly hitUnresolvedReference: boolean;
-}
-
-/** 宣言に書かれた1つの数値（重み・所要時間）を数値へ解く。参照が解けなければundefined。 */
-export function resolveDeclaredNumber(
-  reading: DeclaredNumberReading,
-  resolve: EndBoundValueResolver,
-): number | undefined {
-  return reading.kind === 'literal' ? reading.value : resolve(reading.subject, reading.propertyGlobalId);
 }
 
 /**
