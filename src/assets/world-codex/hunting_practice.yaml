@@ -21,7 +21,7 @@ object_defs:
   # trait（weathering.yaml）の名乗り先に据えた物は入っていないので（名乗り先を持つのは
   # docs/engine/DurabilitySystem.md 2節）、乗せる先が無い。**その軸を置くかは決まっていない**（据えた物の
   # 劣化は同5節の未決事項。据えた物が時間で減る形は、罠が自分で持つ「仕掛けている間だけ傷む」軸が先例
-  # ——traps.yaml）ので、ここでは置かない。**練習が払うのは時間と刃の摩耗だけ。**
+  # ——traps.yaml）ので、ここでは置かない。**練習が払うのは時間だけ。**
   #
   # **strike_target は「打ちかかる相手である」ことを言うタグ**（docs/ui/ScreenLayout.md 8.1.2節）。
   # 読む仕組みはまだ無い——打ちかかる口を持つのは的自身なので、探す側が居ない——が、道具のボタンが
@@ -56,9 +56,12 @@ object_defs:
         #
         # **繰り返しの稼ぎを抑えるのは時間のコストだけ**（docs/engine/SkillSystem.md 7節）。打った
         # 回数を数える値も、1日に打てる回数の線も持たない。
+        #
+        # **刃は食わない**（docs/engine/DurabilitySystem.md 2.1節）。摩耗を払わせるのは物を返す手
+        # だけで、ここが返すのは腕だけ——食わせると、返るものが無いまま武器だけが折れる形になる。
+        # 獣を殴る手が食うのは、一撃が傷を刺して獲物へ届くから（animals.yamlのstrike）。
         add:
           agent: {skill_hunting: 2}
-          instrument: {durability: -20}
         # 告げるのは獣へ当てたときと同じ手応え（localeのsignal_texts）。**当たり所が無いので告げ方も
         # 1つ**——浅手も外しも仕留めも、的には起こらない。
         signal: hit

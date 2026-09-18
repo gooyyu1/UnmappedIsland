@@ -5,6 +5,11 @@ export interface LiveSession {
   readonly bucket: string;
   /** どこで走っているか（`cloud` / `bridge`。引けなければ `-`）。 */
   readonly env: string;
+  /**
+   * 走る者が一度でも付いたか。**立てられたことと働いたことは別**で、引けなければ「付いた」側
+   * （[`live-sessions.mjs`](live-sessions.mjs) の `servedOnce`）。
+   */
+  readonly served: boolean;
   readonly tags: readonly string[];
 }
 
@@ -26,6 +31,9 @@ export interface EnvironmentId {
 
 /** 今の環境ID。**決まらなかった側は並びに居ない**（[`live-sessions.mjs`](live-sessions.mjs)）。 */
 export function environmentIds(): EnvironmentId[];
+
+/** `ccr-env.sh` の名前から、`LiveSession` の `env` の綴りへ。**訳を持つのはここ1箇所。** */
+export function envKind(name: string): string;
 
 /** TSVの1行へ。列の並びを持つのは [`live-sessions.mjs`](live-sessions.mjs)。 */
 export function formatLive(session: LiveSession): string;

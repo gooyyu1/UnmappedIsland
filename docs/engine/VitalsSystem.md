@@ -41,10 +41,10 @@
 （検証は `tests/world-codex/charactersYaml.test.ts` と `animalsYaml.test.ts`）。8 節が挙げる**新しい死因を
 既存の死に方へ流す道**のうち、**食の偏りは実装済み**（[`DigestionSystem.md`](./DigestionSystem.md) 7 節）で、
 **感染も 8.1 節の 2 経路が入っています**（全身の菌 `pathogen` の段が持ち、膿んだ傷はそこへ流し込む側。
-膿む速さも押し上げる量も仮決めで、[`InjurySystem.md`](./InjurySystem.md) 6 節）。**寒さを防ぐ側は、火と洞窟に加えて衣服が入りました**
-——身につけている間だけ `chill_point` を押し下げます（深さは素材ごとで、
-[`SurvivalItems.md`](../world/SurvivalItems.md) 5.1 節）。**寝床が寝ている間に押し下げる側はまだありません**（8.3 節）。
-未決事項は末尾に整理しています。
+膿む速さも押し上げる量も仮決めで、[`InjurySystem.md`](./InjurySystem.md) 6 節）。**寒さを防ぐ側は、火と洞窟に加えて
+衣服と寝床が入りました**——衣服は身につけている間、寝床は寝ている間、`chill_point` を押し下げます
+（深さは衣服が素材ごと、寝床が段ごとで、[`SurvivalItems.md`](../world/SurvivalItems.md) 5.1 節と
+[`Bedding.md`](../world/Bedding.md) 4.2 節）。未決事項は末尾に整理しています。
 
 ## 1. 意識と血は分ける
 
@@ -281,7 +281,7 @@ blood:
 
 **戻らなくなる境目（3.1 節）も、このままとします。** ゲートが見る水と体脂肪は、**島の暮らしを 1 日ぶん
 賄う献立に丸ごと入っています**——その献立が要求するのは
-1 日 531 分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->（満腹とビタミンも含めた
+1 日 547 分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->（満腹とビタミンも含めた
 全部の合計。うち 360 分は睡眠で、段が余計に削るぶんは入っていない下限。
 [`DigestionSystem.md`](./DigestionSystem.md) 9 節）で、**渡り歩ける島には賄えない値がありません。**
 ゲートが閉じるのは暮らしが崩れているときだけで、深手を負ったこと自体では閉じません。
@@ -558,16 +558,19 @@ pathogen:
 | `warm` | 700 | 安全 | 37℃ |
 
 比べる相手は、居る場所の `ambient_temperature` と、自分の `chill_point`（素は 16℃）で、守る側はそれを
-`modify` で下げます（衣服は `equipment` スロットに入っている間、寝床は寝ている間）。
+`modify` で下げます（衣服は `equipment` スロットに入っている間、寝床は `nap`/`sleep` が時間を進めている
+間）。**どちらも同じ境目への寄与なので、着たまま寝れば加算で重なります。**
 
 **押し下げる深さは、気温の刻みへ端を合わせます。** 空の気温は平年の 20℃ に日射と季節が重なるだけなので
 （[`ClimateSystem.md`](./ClimateSystem.md) 1 節、`core.yaml`）、空だけで素の 16℃ を下回るのは
 **涼しい季節の夜（12℃）と、その薄明・雨天の昼（15℃）** の 2 つです。**その間を 1℃ ずつに割るのは、
 土地が持つ海抜ぶんの差**（同 1.1 節）で、**守る側の 1 段ごとに、ちょうど釣り合う土地があります。**
 **最も深い衣服が海沿いの 12℃ とちょうど釣り合う**のは、炉の暖（+8）が最も寒い夜をちょうど平年へ戻すのと
-同じ置き方です（[`FireSystem.md`](./FireSystem.md) 9.2 節）——**釣り合うだけなので、山の夜には届きません**
-（[`ClimateSystem.md`](./ClimateSystem.md) 1.1 節）。深さそのものは
-[`SurvivalItems.md`](../world/SurvivalItems.md) 5.1 節が持ちます。
+同じ置き方です（[`FireSystem.md`](./FireSystem.md) 9.2 節）——**釣り合うだけなので、衣服だけでは山の夜に
+届きません**（[`ClimateSystem.md`](./ClimateSystem.md) 1.1 節）。**そこから上へ伸ばすのは、寝ている間だけ
+重なる寝床の分**です（[`Bedding.md`](../world/Bedding.md) 4.2 節）。深さそのものは、衣服が
+[`SurvivalItems.md`](../world/SurvivalItems.md) 5.1 節、寝床が [`Bedding.md`](../world/Bedding.md)
+4.2 節です。
 
 削る速さは `-2/tick`、雨に打たれている間は `-6/tick`、境目より上に居る間の戻りは `+8/tick` です。
 濡れた一晩（48 tick）で失う 288 kcal は、火のそばの 9 時間で戻ります。
@@ -616,9 +619,10 @@ pathogen:
 - 感染が上がる速さと、膿んだ傷が全身の菌量を押し上げる量（[`InjurySystem.md`](./InjurySystem.md)
   6.2・6.3 節）。**8.1 節の削りはそれらと対で効く**ので、押し上げ方が仮決めのうちは、こちらの配分
   （-1/-2/-40）も仮のまま
-- `warmth` の配分（8.4 節）——`chill_point` の素の 16℃、削る `-2`/`-6`、戻る `+8`。**衣服の側は決まった**
-  （[`SurvivalItems.md`](../world/SurvivalItems.md) 5.1 節）が、**寝床がどれだけ境目を下げるか**は
-  まだ決まっていない
+- `warmth` の配分（8.4 節）——`chill_point` の素の 16℃、削る `-2`/`-6`、戻る `+8`。**押し下げる側は
+  衣服も寝床も決まった**（[`SurvivalItems.md`](../world/SurvivalItems.md) 5.1 節・
+  [`Bedding.md`](../world/Bedding.md) 4.2 節）が、**削り戻しの速さそのものは測り直していない**
+  ——素の入口を動かすならこの 3 つを一緒に測ることになる
 - 熱中症を、凍死と対称の位置に置くか（8.3 節）。灼熱（[`ClimateSystem.md`](./ClimateSystem.md) 4.3 節）は
   今のところ天気の値が変わるだけで、暑さで死ぬ道は無い。置くなら `warmth` の反対側ではなく、
   **別の「増えるほど悪い」量**になる（[`StatusArea.md`](../ui/StatusArea.md) 8 節）

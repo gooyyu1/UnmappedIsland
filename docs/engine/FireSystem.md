@@ -263,7 +263,7 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 間遠になります。
 
 ここへ 1 tick（15 分）を課すと、火の番だけで 1 日 1 時間以上になります。生存の採取に要る 1 日
-171 分<!-- stats: terrain.yaml daily_budget survival_gathering -->（[`ContentSkeleton.md`](../world/ContentSkeleton.md)
+187 分<!-- stats: terrain.yaml daily_budget survival_gathering -->（[`ContentSkeleton.md`](../world/ContentSkeleton.md)
 8.2 節）へ、**判断を伴わない同じ操作が 4 割近くを上乗せする**ことになります。束ねた薪はまとめて
 くべられる（2 節の `allow_multiple`）ので、回数のほうは既に絞り切っています。
 

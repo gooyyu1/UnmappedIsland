@@ -148,11 +148,14 @@ object_defs:
           - requires:
               - {object: thick_branch, count: 1, consume: true}
             duration: 60
-          # 刃を溝へ据え、紐で締め上げる（柄付け、docs/world/Skills.md 3節）。
+          # 刃を溝へ据える。座りを見て当て直すのが手間の大半。
           - requires:
               - {object: sharp_stone, count: 1, consume: true}
+            duration: 60
+          # 紐で締め上げる（柄付け、docs/world/Skills.md 3節）。
+          - requires:
               - {object: cord, count: 1, consume: true}
-            duration: 120
+            duration: 60
 
   # 骨針。小さな骨を削って穴を開けた縫い針（docs/world/SurvivalItems.md 1.2節）。
   #
@@ -224,12 +227,18 @@ object_defs:
           # 穂先として据える尖った石そのもの。
           - requires:
               - {object: long_pole, count: 1, consume: true}
-            duration: 90
-          # 穂先を軸の先の溝へ据え、紐で締め上げる（柄付け、docs/world/Skills.md 3節）。
+            duration: 45
+          # 先に穂先を落とし込む溝を切る。**何も要求しない工程**（13.1節）——削る刃はこの後の工程で
+          # 穂先として据える尖った石そのもので、軸はもう入れ終えている。
+          - duration: 45
+          # 穂先を軸の先の溝へ据える。
           - requires:
               - {object: sharp_stone, count: 1, consume: true}
+            duration: 60
+          # 紐で締め上げる（柄付け、docs/world/Skills.md 3節）。
+          - requires:
               - {object: cord, count: 1, consume: true}
-            duration: 120
+            duration: 60
 
   # 突き銛。太い枝の先へ石の穂先を紐で締めた漁具（docs/world/Voyage.md 3.9.4節）。
   #
@@ -261,8 +270,11 @@ object_defs:
           - requires:
               - {object: thick_branch, count: 1, consume: true}
             duration: 60
-          # 穂先を溝へ据え、紐で締め上げる（柄付け、docs/world/Skills.md 3節）。
+          # 穂先を溝へ据える。
           - requires:
               - {object: sharp_stone, count: 1, consume: true}
+            duration: 60
+          # 紐で締め上げる（柄付け、docs/world/Skills.md 3節）。
+          - requires:
               - {object: cord, count: 1, consume: true}
-            duration: 120
+            duration: 60

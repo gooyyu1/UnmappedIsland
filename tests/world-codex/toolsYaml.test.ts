@@ -137,7 +137,7 @@ describe('tools.yamlの道具定義', () => {
     expect(materialsOf(harpoon), '石斧と同じ材料').toEqual(materialsOf(axe));
     expect(
       harpoon.steps.map((step) => step.durationMinutes),
-      '柄をこしらえる・穂先を締め上げるの2工程も同じ',
+      '柄をこしらえ、穂先を据え、締め上げるまでの工程も同じ',
     ).toEqual(axe.steps.map((step) => step.durationMinutes));
   });
 
@@ -217,7 +217,7 @@ describe('石斧を作る', () => {
     return spawnInProgressObject(field, codex.objectNames.getId(inProgressObjectName('stone_axe', 'hafted')));
   }
 
-  it('太い枝・尖った石・紐から、2工程で石斧ができる', () => {
+  it('太い枝・尖った石・紐から、工程を追って石斧ができる', () => {
     const { session, field } = rockyField();
     const materialsId = codex.vocabulary.engine.materialsSlotId;
     const wip = startAxe(field);
@@ -232,8 +232,10 @@ describe('石斧を作る', () => {
     expect(tryAdvanceCrafting(wip, smith), '柄を削り出す').toBe(true);
 
     put('sharp_stone');
+    expect(tryAdvanceCrafting(wip, smith), '刃を溝へ据える').toBe(true);
+
     put('cord');
-    expect(tryAdvanceCrafting(wip, smith), '刃を据えて縛る').toBe(true);
+    expect(tryAdvanceCrafting(wip, smith), '紐で締め上げる').toBe(true);
 
     expect(
       new Location(field, codex).items.map((item) => item.def.name),
@@ -295,7 +297,10 @@ const BLADE_DECLARATIONS = [
   // 刃を面へ沿わせて送る操作。剥ぐ・掻き取る・削り出す。
   { owner: 'broadleaf_tree', step: 'strip_bark', recipe: false, handheldOnly: true },
   { owner: 'monkey_carcass', step: 'butcher', recipe: false, handheldOnly: true },
-  { owner: 'wild_boar_carcass', step: 'butcher', recipe: false, handheldOnly: true },
+  { owner: 'wild_boar_carcass', step: 'gut', recipe: false, handheldOnly: true },
+  { owner: 'wild_boar_carcass', step: 'skin', recipe: false, handheldOnly: true },
+  { owner: 'wild_boar_carcass', step: 'quarter', recipe: false, handheldOnly: true },
+  { owner: 'wild_boar_carcass', step: 'strip_meat', recipe: false, handheldOnly: true },
   { owner: 'junglefowl_carcass', step: 'butcher', recipe: false, handheldOnly: true },
   { owner: 'small_bone', step: 'whittle', recipe: false, handheldOnly: true },
   { owner: 'banana_stem', step: 'strip', recipe: false, handheldOnly: true },
@@ -328,19 +333,19 @@ describe('刃物を要求する操作が、石斧で通るかどうか', () => {
   });
 
   /**
-   * その相手にその道具を当てたときに、**相手として名乗り出た**操作の名前。成立したものと、
-   * 条件で断られたものの両方を数える——ここで見たいのは道具のタグが当たるかどうかで、明るさや
-   * 天気で断られるかは別の話だから。
+   * その相手の宣言のうち、その道具を**相手として受け入れる**操作の名前。
+   *
+   * **成立するかどうかは見ない。** ここで見たいのは道具のタグが当たるかどうかで、明るさ・天気・
+   * 相手の状態（どこまで捌けたか）で断られるかは別の話だから。宣言から引くのはそのため——
+   * 個体を立てて引くと、その個体の状態で成立しない手が落ちる。
    */
   function triggeredCombinationNames(targetName: string, toolName: string): string[] {
-    const session = new WorldSession(codex);
-    const agent = createBrightEnoughAgent(session);
-    const target = session.createObject(codex.objectNames.getId(targetName));
-    const tool = session.createObject(codex.objectNames.getId(toolName));
+    const target = codex.objects.get(codex.objectNames.getId(targetName));
+    const tool = codex.objects.get(codex.objectNames.getId(toolName));
 
-    return [...target.combinationsWith(tool, agent), ...target.refusedCombinationsWith(tool, agent)].map(
-      (combination) => combination.name,
-    );
+    return target.dragTriggers
+      .filter((trigger) => trigger.acceptsInstrument(tool))
+      .map((trigger) => trigger.interaction.name);
   }
 
   /** その名前のレシピが、その道具を要求のどれかに当てはめるか。 */

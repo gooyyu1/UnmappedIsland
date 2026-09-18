@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { formatLive, liveSessions } from '../../scripts/daemon/live-sessions.mjs';
+import { formatLive, liveSessions, parseLive } from '../../scripts/daemon/live-sessions.mjs';
 
 /**
  * `scripts/daemon/live-sessions.mjs` の検査。
@@ -98,6 +98,91 @@ describe('live-sessions.mjs', () => {
     }
   });
 
+  /**
+   * **立てられたことと、働いたことは別**（issue #2206）。この区別が落ちると、盤面は走る者が付かな
+   * かったセッションを停滞と読み、担当の issue を片端から人へ返す。
+   */
+  describe('走る者が一度でも付いたか', () => {
+    const session = (id: string, over: Record<string, unknown>) => ({
+      id,
+      session_status: 'SESSION_STATUS_IDLE',
+      environment_id: CLOUD,
+      tags: [],
+      ...over,
+    });
+
+    // 手番を1つでも供したセッションだけが `last_served_model` を持つ（2026-09-17 に実測）。
+    it('手番を供された跡があれば、働いた側', () => {
+      const live = liveSessions({
+        page: page(session('session_a', { external_metadata: { last_served_model: 'claude-opus-5' } })),
+        envs,
+      });
+
+      expect(live[0]?.served).toBe(true);
+    });
+
+    // 立てただけで一度も走っていない1本の `external_metadata` には、この鍵が無い。
+    it('跡が無ければ、働かなかった側', () => {
+      const live = liveSessions({
+        page: page(
+          session('session_a', {
+            external_metadata: { container_cc_version: '2.1.274', cross_session_inbound: 'available' },
+          }),
+          session('session_b', {}),
+        ),
+        envs,
+      });
+
+      expect(live.map((item) => item.served)).toEqual([false, false]);
+    });
+
+    /**
+     * **`status_bucket` では言えない。** 走る者が付かなかった周は `..._FAILED` で並ぶが、同じ値は
+     * 働いたあとに手番が転んだセッションにも付く（`board-design.md` 1.5 の `01Wcy9XLj85X`）。
+     * bucket で読むと、**始まらなかったことと、始まってから転んだことが同じ顔になる。**
+     */
+    it('手番が転んだセッションは、働いた側のまま', () => {
+      const live = liveSessions({
+        page: page(
+          session('session_a', {
+            status_bucket: 'SESSION_STATUS_BUCKET_FAILED',
+            external_metadata: { last_served_model: 'claude-opus-5' },
+          }),
+        ),
+        envs,
+      });
+
+      expect(live[0]?.served).toBe(true);
+    });
+
+    // TSVは写しの受け渡しに使うので（1.7 の「1周に1回だけ引く」）、往復で落ちると**読んだ側だけが
+    // 区別を知らないまま**畳む手を打つ。
+    it('TSVの往復で落ちない', () => {
+      const written = [
+        {
+          id: 'session_a',
+          status: 'SESSION_STATUS_IDLE',
+          bucket: '-',
+          env: 'cloud',
+          served: false,
+          tags: ['task-8'],
+        },
+        { id: 'session_b', status: 'SESSION_STATUS_IDLE', bucket: '-', env: 'cloud', served: true, tags: [] },
+      ];
+
+      expect(parseLive(written.map(formatLive).join('\n'))).toEqual(written);
+    });
+
+    // **列の無い古い写しは「働いた」側。** 知らないことを「付かなかった」と読むと、働いている
+    // セッションが畳まれる。
+    it('列の無い行は、働いた側として読む', () => {
+      const [session] = parseLive('session_a\tSESSION_STATUS_IDLE\t-\ttask-8\tcloud');
+
+      expect(session.served).toBe(true);
+      expect(session.tags).toEqual(['task-8']);
+    });
+  });
+
   // **黙って空の対応表を返させない。** 全セッションが `-`（＝食い違いを見ない側）へ落ちるだけなので、
   // 配り直しの仕組みが赤くも遅くもならずに死ぬ。
   it('ccr-env.sh を起こせなければ止まる', () => {
@@ -173,7 +258,7 @@ describe('live-sessions.mjs', () => {
       const path = join(mkdtempSync(join(tmpdir(), 'live-sessions-')), 'live.tsv');
       writeFileSync(
         path,
-        `${formatLive({ id: 'session_a', status: 'SESSION_STATUS_RUNNING', bucket: 'B', env: 'cloud', tags: ['task-1', 'review-2'] })}\n`,
+        `${formatLive({ id: 'session_a', status: 'SESSION_STATUS_RUNNING', bucket: 'B', env: 'cloud', served: true, tags: ['task-1', 'review-2'] })}\n`,
       );
 
       const live = liveSessions({
@@ -190,6 +275,8 @@ describe('live-sessions.mjs', () => {
           status: 'SESSION_STATUS_RUNNING',
           bucket: 'B',
           env: 'cloud',
+          // 書く側が知らなかったぶんは、読む側も「働いた」側で受ける（`formatLive`）。
+          served: true,
           tags: ['task-1', 'review-2'],
         },
       ]);
