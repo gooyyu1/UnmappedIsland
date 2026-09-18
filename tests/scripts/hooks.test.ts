@@ -39,12 +39,13 @@ describe('.claude/hooks', () => {
       cwd: REPO,
       encoding: 'utf-8',
     });
-    const notExecutable = listed
-      .split('\n')
-      .filter((line) => line.endsWith('.sh'))
-      .filter((line) => !line.startsWith('100755 '));
+    const tracked = listed.split('\n').filter((line) => line.endsWith('.sh'));
+    const notExecutable = tracked.filter((line) => !line.startsWith('100755 '));
 
+    // **数えるのは `git` が返したほうの件数。** 置き場の側だけを数えると、`git ls-files` が1行も
+    // 返さなかったとき（追跡されていない・パスが違う）に、見ていないまま緑になる。
     expect(placed()).not.toHaveLength(0);
+    expect(tracked).toHaveLength(placed().length);
     expect(notExecutable, `実行ビットが無い:\n${notExecutable.join('\n')}`).toEqual([]);
   });
 
