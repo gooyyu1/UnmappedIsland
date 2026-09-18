@@ -47,8 +47,18 @@ interface Run {
   readonly root: string;
 }
 
-/** `schtasks` の言い分。撥ねた理由をそのまま出しているかは、この文字列で追う。 */
+/**
+ * 転んだ道具（`git`・`schtasks`）の言い分。撥ねた理由をそのまま出しているかは、この文字列で追う。
+ * **身代わりにも標準エラーを言わせる**——黙って転ぶ身代わりを相手にすると、理由を捨てる実装が
+ * そのまま緑で通る。
+ */
 const EXCUSE = 'ERROR: アクセスが拒否されました。';
+
+/**
+ * `schtasks` が**標準出力へ流すおしゃべり**。撥ねた理由をここへ流して0で返す口があるので、身代わりも
+ * 黙らせない——黙らせると、**その標準出力をこちらの出力へ漏らす実装が緑で通る**（出すのは1行だけ）。
+ */
+const CHATTER = 'INFO: スケジュール タスク "…" は正常に作成されました。';
 
 /**
  * そのディレクトリを、**bash が呼ぶ名前**で答える。
@@ -78,7 +88,7 @@ function register(world: World = {}): Run {
     writeFileSync(
       git,
       `${STUB_SHEBANG}
-${world.gitFails === true ? 'exit 1' : ''}
+${world.gitFails === true ? `echo '${EXCUSE}' >&2\nexit 1` : ''}
 case "$*" in
   *--git-common-dir*) printf '%s' '${dir}/main/.git' ;;
 esac
@@ -105,11 +115,12 @@ case "$1" in
       if [ "$prev" = '/xml' ]; then cp "$a" '${dir}/handed.xml'; fi
       prev="$a"
     done
-    echo '${EXCUSE}'
-    exit ${world.createFails === true ? 1 : 0}
+    echo '${CHATTER}'
+${world.createFails === true ? `    echo '${EXCUSE}' >&2\n    exit 1` : '    exit 0'}
     ;;
   /query)
-    exit ${world.queryFails === true ? 1 : 0}
+    echo '${CHATTER}'
+${world.queryFails === true ? `    echo '${EXCUSE}' >&2\n    exit 1` : '    exit 0'}
     ;;
 esac
 `,
@@ -228,6 +239,8 @@ describe('daemon-wake-task.sh', () => {
     expect(run.code).toBe(1);
     expect(run.calls).toEqual([]);
     expect(run.err).toContain('本体のチェックアウトが分からない');
+    // 分からなかった理由（リポジトリの外に居るのか、`git` が無いのか）も同じ行へ載せる。
+    expect(run.err).toContain(EXCUSE);
   });
 
   it('登録できなければ、道具が言った理由をそのまま出して1で終わる', () => {
@@ -246,5 +259,11 @@ describe('daemon-wake-task.sh', () => {
     expect(run.code).toBe(1);
     expect(run.err).toContain('登録した直後に引けなかった');
     expect(run.out).not.toContain('REGISTERED');
+  });
+
+  // **同じファイルの中で扱いを割らない**（issue #1864）。立てる側だけが理由を言う形だと、引き直しで
+  // 転んだ回にだけ「名前しか載っていない行」が残り、読んだ側は同じコマンドを手で打ち直す。
+  it('引き直せなかった行にも、道具が言った理由が載る', () => {
+    expect(register({ queryFails: true }).err).toContain(EXCUSE);
   });
 });

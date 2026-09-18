@@ -6,10 +6,18 @@
 #   printf '%s\n' session_A | bash scripts/daemon/archive-session.sh --keep-untagged task-,review-
 #
 # 出力は1行1件。`ARCHIVED <ID>`、触らないと決めたものは `KEPT <ID>`、打って失敗したものは
-# `UNARCHIVED <ID>`。このPCに worktree を持つ相手には後始末の行が続く（`REMOVED <パス>` /
+# `UNARCHIVED <ID>: <理由>`。このPCに worktree を持つ相手には後始末の行が続く（`REMOVED <パス>` /
 # `DIRTY <パス>: <理由>`。既に畳まれているものからも出る）。worktree の無いものが既に畳まれて
 # いたときは何も出さない。
 # **終了コードは常に0**——呼び手（投入・マージ）の本題は別にあるので、後片付けで落とさない。
+#
+# ## 片付かなかった行は、`<タグ> <対象>: <理由>` で出す
+#
+# タグと対象だけを載せると、読んだ側は**失敗した事実しか受け取れない**——権限が足りないのか、相手が
+# もう居ないのか、通信が落ちたのかへ辿り着けず、同じコマンドを手で打ち直すところから始めることに
+# なる。理由を持っているのは打った側（`ccr-meta.sh`・`git`・`rmdir` の標準エラー）なので、捨てずに
+# 同じ行へ載せる（[`tidy-merged-pr.sh`](tidy-merged-pr.sh) の残りの行と同じ形。issue #1557 では、
+# パスだけの行を読んだ側が実際に誤読した）。**出力は1行1件**なので、改行は空白へ畳む。
 #
 # ## 判定を呼び手へ配らない
 #
@@ -70,9 +78,8 @@
 #
 # 出すのは `REMOVED <パス>`。**消えなかったものは `DIRTY <パス>: <理由>` として残す**——`git worktree
 # remove` は未コミットの変更や未追跡のファイルがあると断るので、`--force` は渡さない。**戻せない
-# ものを黙って消すより、残骸が1つ残るほうがよい。** 理由（打った git・`rmdir` の標準エラー）を同じ
-# 行へ載せるのは、パスだけでは**失敗した事実しか運ばない**から——読んだ側は打ったコマンドへ辿り着け
-# ないまま「未コミットの変更が残っている」と読む（実際に誤読した。issue #1557）。
+# ものを黙って消すより、残骸が1つ残るほうがよい。** 理由を同じ行へ載せるのは上の「片付かなかった行
+# は…」のとおりで、パスだけの行は「未コミットの変更が残っている」と読まれた（issue #1557）。
 #
 # ## 引けなかったものは畳まない
 #
@@ -105,10 +112,10 @@ HERE="$(cd "$HERE" && pwd)"
 # 試験は差し替える（パスで呼ぶため PATH では差し替わらない）。
 CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 
-# 消せなかったことを、打った側の言葉で出す（上の「理由を同じ行へ載せる」）。**出力は1行1件**なので
+# 片付かなかったことを、打った側の言葉で出す（上の「片付かなかった行は…」）。**出力は1行1件**なので
 # 改行は空白へ畳む。
-dirty() {
-  echo "DIRTY $1: ${2//$'\n'/ }"
+unfinished() {
+  echo "$1 $2: ${3//$'\n'/ }"
 }
 
 # 畳んだ相手の worktree を外す（上の「worktree は、ここで片付ける」）。
@@ -128,12 +135,12 @@ remove_worktree() {
   if [ "$registered" = true ]; then
     git worktree unlock "$path" >/dev/null 2>&1 || true
     if ! err=$(git worktree remove "$path" 2>&1 >/dev/null); then
-      dirty "$path" "$err"
+      unfinished DIRTY "$path" "$err"
       return 0
     fi
   fi
   if [ -d "$path" ] && ! err=$(rmdir "$path" 2>&1); then
-    dirty "$path" "$err"
+    unfinished DIRTY "$path" "$err"
     return 0
   fi
   echo "REMOVED $path"
@@ -157,10 +164,11 @@ while read -r session; do
        | any(.ccr.tags[]?; . as $t | any($ps[]; . as $p | $t | startswith($p)))' \
       <<<"$info" >/dev/null; }; then
     echo "KEPT $session"
-  elif printf '{"session_id":"%s"}' "$session" | bash "$CCR_META" archive_session >/dev/null; then
+  elif err=$(printf '{"session_id":"%s"}' "$session" |
+    bash "$CCR_META" archive_session 2>&1 >/dev/null); then
     echo "ARCHIVED $session"
     remove_worktree "$session"
   else
-    echo "UNARCHIVED $session"
+    unfinished UNARCHIVED "$session" "$err"
   fi
 done

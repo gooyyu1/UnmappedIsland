@@ -23,6 +23,9 @@ interface Result {
   readonly code: number;
 }
 
+/** issue を引けなかったときに `gh` が言うこと。理由を捨てていないかは、この文字列で追う。 */
+const GH_EXCUSE = 'gh: Could not resolve to an Issue with the number of 99999.';
+
 /** `git show <ref>:<パス>` が返す中身。`base`・`head` を省いたら「そのファイルは無い」。 */
 interface Doc {
   readonly base?: string;
@@ -76,7 +79,8 @@ function judge(
         // `gh issue view <番号> --json labels --jq <式>`。本物と同じく、無い番号では失敗する。
         `if [ "$1" = issue ]; then\n` +
         `  f='${dir}/issue'/"$3"\n` +
-        `  [ -f "$f" ] || exit 1\n` +
+        // **身代わりにも標準エラーを言わせる**——黙って転ぶ身代わりでは、理由を捨てる実装が緑で通る。
+        `  [ -f "$f" ] || { echo '${GH_EXCUSE}' >&2; exit 1; }\n` +
         `  jq -r "\${@: -1}" <"$f"\n` +
         `  exit 0\nfi\n` +
         `cat '${dir}/files'\n`,
@@ -247,6 +251,8 @@ describe('needs-user-review.sh の MARK と SOURCED', () => {
 
   // 実在しない番号を指した出どころも、答えの在処が読めない点では同じ。**引けなかったことを
   // 「答えが出ている」の側へ倒さない**——倒すと、`gh` が失敗した回だけ確定が素通りする。
+  // **引けなかった理由も同じ行へ載せる**（issue #1864）——番号が実在しないのか資格情報が切れたのかで、
+  // 受け取った人の次の手が違う。
   it('出どころが指す issue を引けなければ止める', () => {
     const result = judge(
       [PATH],
@@ -264,7 +270,7 @@ describe('needs-user-review.sh の MARK と SOURCED', () => {
     );
 
     expect(result.lines).toEqual([
-      `UNANSWERED ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】 … #99999 を引けなかった`,
+      `UNANSWERED ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】 … #99999 を引けなかった: ${GH_EXCUSE}`,
     ]);
     expect(result.code).toBe(0);
   });
