@@ -33,8 +33,8 @@
 
 **`Slot` が中身を並びで返す口は、読んだ時点の顔ぶれを写して返す**——これは実装の都合ではなく契約で、
 受け取った側は辿っている途中でそのスロットの中身が出入りしても構わない（時間経過は、中身を辿りながら
-子を消す。`WorldObject.tick`）。**実体を渡すのは `ObjectStack.members` だけ**で、そこから直に読む側
-（`Slot.cells` を辿る経路）は、後で読み返すなら自分で写し取る。写しでなくなれば
+子を消す。`WorldObject.tick`）。**中身の並びの実体を持つのは `ObjectStack`** で、それを直に読む経路
+（`Slot.cells` を辿る側）は、後で読み返すなら自分で写し取る。写しでなくなれば
 `tests/domain/stacking.test.ts` が落ちる。
 
 出入りは唯一の汎用操作 `move_to_slot`（`WorldObject.moveToSlotOrRejection` →
