@@ -6,7 +6,8 @@ import { clampScroll, minScrollFor, stackedLength } from '../../src/ui/scroll';
  *
  * **プロパティの数で窓の寸法は変わらない**ので、タグに何本ぶら下がっても窓に出るのは同じ行数で、
  * 残りは送って見る。ここで数えるのは「送り切ったときに最後の行が窓の中に入るか」——タブごとの
- * 本数（腕前11本・状態9本）は世界の定義で増える一方なので、収まる本数を前提にできない。
+ * 本数は世界の定義で増える一方なので、収まる本数を前提にできない。**下の本数は窓を溢れさせるための
+ * 入力**で、今のタブの本数を写したものではない。
  */
 describe('プロパティのタブの行送り', () => {
   /** 行の高さと行同士の間隔（StatusBarのBAR_HEIGHT・PropertiesPaneのROW_GAP、u=1の画面）。 */
@@ -39,16 +40,16 @@ describe('プロパティのタブの行送り', () => {
     expect(minScrollFor(VIEWPORT, stackedLength(ROW_HEIGHT, ROW_GAP, 0))).toBe(0);
   });
 
-  it('腕前の11本は、送り切ると11本目まで窓の中に入る', () => {
-    // 送る前は先頭の7本（`石器`〜`料理`）だけ。
+  it('窓を4行ぶん溢れるタブは、送り切ると末尾の行まで窓の中に入る', () => {
+    // 送る前は先頭の7本だけ。
     expect(visibleRows(11, 0)).toEqual([0, 1, 2, 3, 4, 5, 6]);
 
     const end = scrolledTo(11, -Infinity);
     expect(end, '4行ぶん送れる').toBe(-4 * (ROW_HEIGHT + ROW_GAP));
-    expect(visibleRows(11, end), '末尾は`採鉱・製錬`まで').toEqual([4, 5, 6, 7, 8, 9, 10]);
+    expect(visibleRows(11, end), '末尾の行まで入る').toEqual([4, 5, 6, 7, 8, 9, 10]);
   });
 
-  it('状態の9本も、送り切ると`荷重`まで窓の中に入る', () => {
+  it('溢れが2行ぶんでも、送り切ると末尾の行まで窓の中に入る', () => {
     expect(visibleRows(9, 0)).toEqual([0, 1, 2, 3, 4, 5, 6]);
     expect(visibleRows(9, scrolledTo(9, -Infinity))).toEqual([2, 3, 4, 5, 6, 7, 8]);
   });

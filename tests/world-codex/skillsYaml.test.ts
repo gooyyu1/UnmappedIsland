@@ -16,7 +16,7 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
  * 自動テスト。
  *
  * 見張るのは、**宣言が世界じゅうに散らばっていて、目視では揃っているか分からないもの**。段の境目は
- * 11本のあいだで、解放条件は段が上がった後も、配る腕は同じ仕事の入口どうしで揃っていなければ
+ * 腕どうしのあいだで、解放条件は段が上がった後も、配る腕は同じ仕事の入口どうしで揃っていなければ
  * ならないが、いずれも1つのファイルを読んでも確かめられない。
  *
  * **どれも「揃っているか」しか見ない。** どの腕を配るのが正しいか・どのレシピに条件を置くべきかは
@@ -26,7 +26,7 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 /** 腕前のプロパティの名前の頭。 */
 const SKILL_PREFIX = 'skill_';
 
-/** docs/world/Skills.md 2節の11本。宣言順（characters/player_character.yaml）で並べる。 */
+/** docs/world/Skills.md 2節が挙げる腕。宣言順（characters/player_character.yaml）で並べる。 */
 const SKILLS = [
   'skill_knapping',
   'skill_cordage',
@@ -56,7 +56,7 @@ const CRAFTING_SKILLS = [
   'skill_preserving',
 ] as const;
 
-/** 11本で共通の段（SkillSystem.md 6節の目安そのままの4段・比3）。 */
+/** どの腕にも共通の段（SkillSystem.md 6節の目安そのままの4段・比3）。 */
 const STAGES = [
   { name: 'novice', min: 0 },
   { name: 'basic', min: 20 },
@@ -757,7 +757,7 @@ describe('腕前とレシピの解放条件', () => {
     skillIds = SKILLS.map((name) => codex.propertyNames.getId(name));
   });
 
-  /** プレイヤーキャラクタを1体作り、11本すべてをその値にする。 */
+  /** プレイヤーキャラクタを1体作り、腕をすべてその値にする。 */
   function characterWithSkills(value: number, characterName = 'medic'): WorldObject {
     const character = new WorldSession(codex).createObject(codex.objectNames.getId(characterName));
     for (const id of skillIds) character.getProperty(id).setNumberWithoutEvents(value);
@@ -821,7 +821,7 @@ describe('腕前とレシピの解放条件', () => {
     return found;
   }
 
-  it('プレイヤーキャラクタは、Skills.md 2節の11本を腕前のタグ付きで持つ', () => {
+  it('プレイヤーキャラクタは、Skills.md 2節の腕を腕前のタグ付きで持つ', () => {
     // タブに並ぶ順は宣言順（GameElementDefinition.md 6.7節）なので、集合ではなく並びで見る。
     const skillTagId = codex.propertyTagNames.getId('skill');
 
@@ -834,7 +834,7 @@ describe('腕前とレシピの解放条件', () => {
     }
   });
 
-  it('11本の段は同じ境目を持つ（本ごとに basic の遠さが変わらない）', () => {
+  it('どの腕も段は同じ境目を持つ（本ごとに basic の遠さが変わらない）', () => {
     const character = characterWithSkills(0);
 
     for (const [index, stage] of STAGES.entries()) {
@@ -849,7 +849,7 @@ describe('腕前とレシピの解放条件', () => {
     }
   });
 
-  it('11本とも、段が下端を名乗っている（受け皿にして進みを消さない）', () => {
+  it('どの腕も、段が下端を名乗っている（受け皿にして進みを消さない）', () => {
     // 腕前はrangeを持たないので、下端を書かない段（受け皿、GameElementDefinition.md 6.4節）は
     // 下端が決まらず、段の中の進みが計算できない。UIは進みの無い段でバーを出さない
     // （StatusArea.md 9節）ので、最下段を受け皿で書くと**全員が通る見習いの間だけ**バーが消える。
@@ -1184,7 +1184,7 @@ describe('腕前とレシピの解放条件', () => {
       : props.get(interaction.owner)?.get(interaction.durationProp);
   }
 
-  /** その手作業を、11本すべてがその値の人が行うときの所要時間（分）。 */
+  /** その手作業を、腕がすべてその値の人が行うときの所要時間（分）。 */
   function handworkMinutes(interaction: InteractionGains, skillValue: number): number {
     // **相手は作業者と同じ世界に作る**——役（11.5節）は1つの関係の中でしか結べないので、
     // 別のセッションに居ると手際の土台が辿り着かない。
