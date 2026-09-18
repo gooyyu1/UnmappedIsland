@@ -789,10 +789,10 @@ looking_brightness:
 | ボタン | 系統 | 指すタグ |
 |---|---|---|
 | 食 | 2 食の調達・3 保存 | `food`・`roastable`・`hearth`・`preservative` |
-| 水 | 1 水 | `water`・`hot_water`・`liquid_container` |
+| 水 | 1 水 | `water`・`hot_water`・`liquid_container`・`container_lid` |
 | 火 | 5 火 | `fuel`・`tinder`・`hearth` |
 | 道具 | 4 刃物・打撃、6 狩りの道具 | `tool`・`weapon`・`trap`・`meat_bait`・`plant_bait`・`strike_target` |
-| 入れ物 | 7 運ぶ入れ物 | `container`・`liquid_container` |
+| 入れ物 | 7 運ぶ入れ物 | `container`・`liquid_container`・`container_lid` |
 | 身につける | 8 衣類 | `equippable` |
 | 住まい | 9 寝床・10 住居・12 家具・娯楽 | `bed`・`shelter`・`furnishing` |
 | 遠出 | 11 船と海図 | `path`・`sea_route`・`boat`・`sail` |
@@ -845,7 +845,7 @@ card_filters:
     tags: [food, roastable, hearth, preservative]
   - id: filter_water
     icon: 💧
-    tags: [water, hot_water, liquid_container, water_source]
+    tags: [water, hot_water, liquid_container, water_source, container_lid]
 ```
 
 - **`id` がそのままアイコンの名前です**（`src/assets/icons/<id>.png`）。型が自分の絵の名前を名乗る

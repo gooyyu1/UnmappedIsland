@@ -1,14 +1,15 @@
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { BRAKE_ALL_ON, BRAKE_ISSUE, brakeOff, writeBrakeGh } from '../support/brakeIssue';
 import { FakeMetaServer, wrappedMetaReply, writeFakeCredentials } from '../support/fakeMetaServer';
 import { spawnScriptAsync } from '../support/runScript';
-import { STUB_SHEBANG } from '../support/stubShebang';
-import { replaceAllOrFail } from '../support/textEdit';
+import { writeUsageCache, writeUsagePolled } from '../support/usageCache';
 
 /**
- * `scripts/daemon/may-dispatch.sh`（と、その下の `brake.sh` / `headroom.sh` / `occupancy.sh`）の検査。
+ * `scripts/daemon/may-dispatch.sh`（と、その下の `may-spend.sh` / `brake.sh` / `headroom.sh` /
+ * `occupancy.sh`）の検査。
  *
  * ここが守るのは**安全側へ倒れること**。誤って止めれば投入が遅れるだけだが、誤って通すと同じ仕事へ
  * 2本立ち、同じPRへ食い違う判定が残る（`agent-ops/board-design.md` 1.5 の PR #1493）。手綱も使用量も
@@ -30,27 +31,6 @@ import { replaceAllOrFail } from '../support/textEdit';
 vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/daemon/may-dispatch.sh');
-
-/** 手綱の issue の番号。実物の番号は試験に書き写さない。 */
-const BRAKE_ISSUE = '9999';
-
-/** 全部チェックが付いた手綱。`## 手綱` 節の外にも書いて、節の中だけを見ていることを確かめる。 */
-const ALL_ON = [
-  '- [ ] ここは節の外なので見ない',
-  '',
-  '## 手綱',
-  '',
-  '- [x] 投入する（これを外すと下は全部止まる）',
-  '  - [x] 新しいタスク',
-  '  - [x] レビュー',
-  '    - [x] task を持たないPRも読む',
-  '  - [x] 直しの再開',
-  '  - [x] その他のエージェント（棚卸し・傾向分析）',
-  '',
-  '## 読み方の決まり',
-  '',
-  '- チェックが付いているときだけ流す。',
-].join('\n');
 
 interface Session {
   readonly id: string;
@@ -106,18 +86,7 @@ async function run(kind: string, tag: string | readonly string[], world: World =
   const tags = typeof tag === 'string' ? [tag] : tag;
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-may-dispatch-'));
   try {
-    const gh = join(work, 'gh');
-    writeFileSync(
-      gh,
-      `${STUB_SHEBANG}
-${world.ghFails === true ? `echo '${GH_EXCUSE}' >&2\nexit 1` : ''}
-cat <<'BODY'
-${world.brake ?? ALL_ON}
-BODY
-`,
-      'utf-8',
-    );
-    chmodSync(gh, 0o755);
+    writeBrakeGh(work, world.brake ?? BRAKE_ALL_ON, world.ghFails === true ? GH_EXCUSE : undefined);
 
     // **引けなかったことは、道具の側の失敗で作る**（`callMeta` が `MetaError` を投げる形）。
     server.status = world.ccrFails === true ? 500 : 200;
@@ -134,23 +103,14 @@ BODY
     });
     writeFakeCredentials(work);
 
-    // 使用量の控え（`usage.sh --last` が読む形）。**1行目は引けた時刻。**
     if (world.noUsage !== true) {
-      const lines = [
-        `five_hour ${world.fiveHour ?? 5} 2026-09-05T01:00:00Z -`,
-        `seven_day ${world.sevenDay ?? 5} 2026-09-10T01:00:00Z -`,
-      ];
-      writeFileSync(
-        join(work, 'usage-latest'),
-        `${Math.floor(Date.now() / 1000)}\n${lines.join('\n')}\n`,
-        'utf-8',
-      );
+      writeUsageCache(work, { fiveHour: world.fiveHour, sevenDay: world.sevenDay });
     }
     // **控えが無いときは口を叩きに行く**（`headroom.sh`）。叩いた印をたった今のことにして、間隔の番で
     // 追い返させる——**本物の網に触らせない**。資格情報は身代わりのMCP用に置いてあるので、
     // 「読めなくて落ちる」には頼れない。**間隔は下で名指しで渡す**（既定に任せると、環境から短い値が
     // 渡った回だけ本物の口へ出る）。
-    writeFileSync(join(work, 'usage-polled'), `${Math.floor(Date.now() / 1000)}\n`, 'utf-8');
+    writeUsagePolled(work);
 
     const result = await spawnScriptAsync(SCRIPT, [kind, ...tags], {
       env: {
@@ -170,11 +130,6 @@ BODY
   }
 }
 
-/** チェックの外れた手綱を作る。 */
-function off(heading: string): string {
-  return replaceAllOrFail(ALL_ON, { from: `- [x] ${heading}`, to: `- [ ] ${heading}`, occurrences: 1 });
-}
-
 const working = (tag: string): Session => ({
   id: 'cse_WORKING',
   status: 'SESSION_STATUS_RUNNING',
@@ -190,14 +145,14 @@ describe('may-dispatch.sh', () => {
   // **人が止めている周は3で名乗る**（`brake.sh`。`agent-ops/board-design.md` 2.21.2）——1周のログを
   // 読む側（盤面を見回る係）が、人の意思で止まっている周を調べに行かないために要る区別。
   it('親の「投入する」が外れていれば、種類に関わらず止まる', async () => {
-    const result = await run('review', 'review-1500', { brake: off('投入する') });
+    const result = await run('review', 'review-1500', { brake: brakeOff('投入する') });
 
     expect(result.code).toBe(3);
     expect(result.stderr).toContain('手綱');
   });
 
   it('その種類だけ外れていれば、その種類だけが止まる', async () => {
-    const brake = off('レビュー');
+    const brake = brakeOff('レビュー');
 
     expect((await run('review', 'review-1500', { brake })).code).toBe(3);
     expect((await run('new-task', 'task-1234', { brake })).code).toBe(0);
@@ -205,14 +160,14 @@ describe('may-dispatch.sh', () => {
 
   // 種類は根から自分までの鎖に対応する（board-design 2.4）。子だけを外して、親のレビューは流す。
   it('子だけ外れていれば、その子の種類だけが止まる', async () => {
-    const brake = off('task を持たないPRも読む');
+    const brake = brakeOff('task を持たないPRも読む');
 
     expect((await run('review-untasked', 'review-1526', { brake })).code).toBe(3);
     expect((await run('review', 'review-1500', { brake })).code).toBe(0);
   });
 
   it('親のレビューが外れていれば、子の種類も止まる', async () => {
-    expect((await run('review-untasked', 'review-1526', { brake: off('レビュー') })).code).toBe(3);
+    expect((await run('review-untasked', 'review-1526', { brake: brakeOff('レビュー') })).code).toBe(3);
   });
 
   // 手綱を読む側と書く側が食い違ったときに、通す側へ倒れないこと。
@@ -360,7 +315,7 @@ describe('may-dispatch.sh', () => {
   // 「人が止めている」と読む。
   it('余力で止まった周は、人が手綱で止めた周と終了コードが違う', async () => {
     const held = await run('new-task', 'task-1234', { sevenDay: 99 });
-    const braked = await run('new-task', 'task-1234', { brake: off('新しいタスク') });
+    const braked = await run('new-task', 'task-1234', { brake: brakeOff('新しいタスク') });
 
     expect(held.code).toBe(4);
     expect(braked.code).toBe(3);
@@ -369,7 +324,7 @@ describe('may-dispatch.sh', () => {
 
   // 手綱（人間）と余力（自動）の AND（2.5.2）。人が止めている周は、余力の話をする前に止まる。
   it('手綱が外れていれば、余力が在っても止まる', async () => {
-    const result = await run('new-task', 'task-1234', { brake: off('新しいタスク'), fiveHour: 0 });
+    const result = await run('new-task', 'task-1234', { brake: brakeOff('新しいタスク'), fiveHour: 0 });
 
     expect(result.code).toBe(3);
   });

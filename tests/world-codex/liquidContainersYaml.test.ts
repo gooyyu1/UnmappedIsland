@@ -23,6 +23,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   let locationsSlotId: SlotGlobalId;
   let fillId: PropertyGlobalId;
   let handBrightnessId: PropertyGlobalId;
+  let lidSlotId: SlotGlobalId;
 
   beforeAll(() => {
     const loader = new WorldCodexYamlLoader();
@@ -73,6 +74,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     locationsSlotId = codex.slotNames.getId('locations');
     fillId = codex.propertyNames.getId('fill');
     handBrightnessId = codex.propertyNames.getId('hand_brightness');
+    lidSlotId = codex.slotNames.getId('lid');
   });
 
   beforeEach(() => {
@@ -132,6 +134,11 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   function placeUnderWorld(container: WorldObject, world: WorldObject, landName?: string): WorldObject {
     expect(container.moveIntoFirstAcceptingSlot(spawnLandUnderWorld(world, landName))).toBe(true);
     return container;
+  }
+
+  /** 蓋を器の枠へ載せる。返すのは断られた理由（載れば undefined）。 */
+  function putLidOn(container: WorldObject): string | undefined {
+    return spawn('jar_lid').moveToSlotOrRejection(container.getSlot(lidSlotId));
   }
 
   function spawnEmptyUnderWorld(containerName: string, world: WorldObject): WorldObject {
@@ -386,6 +393,71 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     jar.tick();
 
     expect(amountIn(jar)).toBe(200 - 4); // 基礎2 + 上乗せ2（開けた土地では基礎2だけ）
+  });
+
+  it('蓋を載せた甕は、雲の無い空の正午でも1mLも蒸発しない', () => {
+    // 蓋は上乗せだけでなく基礎の蒸発も止める（6.2節）。**器を日なたに置いたまま**確かめる
+    // ——日陰へ寄せて確かめると、蓋ではなく置き場所の効き目を測ることになる。
+    const world = spawnWorld('scorching');
+    const jar = spawnContainerUnderWorld('jar', 'water', 200, world);
+
+    expect(putLidOn(jar), '甕の枠は蓋を受ける').toBeUndefined();
+    jar.tick();
+
+    expect(amountIn(jar), '蓋が無ければ8mL減る量').toBe(200);
+  });
+
+  it('蓋を外せば、また蒸発する', () => {
+    // 線を引いたら戻る道を1本開けておく（DesignPrinciples.md）。蓋は載せている間だけ効く。
+    const world = spawnWorld('scorching');
+    const land = spawnLandUnderWorld(world);
+    const jar = spawnContainer('jar', 'water', 200);
+    expect(jar.moveIntoFirstAcceptingSlot(land)).toBe(true);
+    const lid = spawn('jar_lid');
+    expect(lid.moveToSlotOrRejection(jar.getSlot(lidSlotId))).toBeUndefined();
+
+    expect(lid.moveIntoFirstAcceptingSlot(land), '外して地面へ置く').toBe(true);
+    jar.tick();
+
+    expect(amountIn(jar)).toBe(200 - 8);
+  });
+
+  it('蓋を載せた甕は、嵐でも雨を受けない', () => {
+    // 蒸発を止めるゲートと雨受けのゲートが同じ枠を見ている（6.2節）。片方だけを塞ぐと、
+    // 蓋をしたまま水が増える器になる。
+    const world = spawnWorld('storm');
+    const jar = spawnContainerUnderWorld('jar', 'water', 100, world);
+
+    expect(putLidOn(jar)).toBeUndefined();
+    jar.tick();
+
+    expect(amountIn(jar), '蓋が無ければ80mL増える量').toBe(100);
+  });
+
+  it('蓋を載せた空の甕では雨を溜め始められず、理由liddedを返す', () => {
+    const agent = spawn(SAMPLE_CHARACTER);
+    const world = spawnWorld('light_rain');
+    const jar = spawnEmptyUnderWorld('jar', world);
+
+    expect(putLidOn(jar)).toBeUndefined();
+
+    expect(jar.tryGetAction('collect_rain', agent)?.unmetRequirement()?.reasonName).toBe('lidded');
+    expect(jar.tryGetAction('collect_rain', agent)?.tryExecute() === true).toBe(false);
+    expect(contentOf(jar), '空のまま').toBeUndefined();
+  });
+
+  it('蓋の枠を持たないヤシの器は、蓋を載せても蒸発し続ける', () => {
+    // 枠を持たない器には蓋が入らないので、重ねても口は塞がらない（口の広さは器の作りそのもの）。
+    const world = spawnWorld('scorching');
+    const land = spawnLandUnderWorld(world);
+    const bowl = spawnContainer('coconut_bowl', 'water', 100);
+    expect(bowl.moveIntoFirstAcceptingSlot(land)).toBe(true);
+
+    expect(bowl.tryGetSlot(lidSlotId), '蓋の枠を持たない').toBeUndefined();
+    expect(spawn('jar_lid').moveIntoFirstAcceptingSlot(bowl), '載る先が無い').toBe(false);
+    bowl.tick();
+
+    expect(amountIn(bowl)).toBe(100 - 3);
   });
 
   it('据え付けの光源は蒸発を変えない', () => {
