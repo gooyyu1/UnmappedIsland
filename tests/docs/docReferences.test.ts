@@ -366,38 +366,6 @@ function hasSourceLine(section: { readonly body: readonly { readonly text: strin
 }
 
 /**
- * 出どころの行を持たないまま印が付いている節。**印を外すのはユーザーの判断**（DocumentStyle.md
- * 6節）なので、答えが下りるまでの据え置きで、出どころの検査だけを免れる（射程・中身は課す）。
- *
- * ここに在るのは、**その節の結論を決めたユーザーの発言が `agent-ops/decisions/` に見当たらない**節
- * ——書けば、実測や既存の規約からの導出をユーザーの判断として名乗ることになる。答えは
- * [#2024](https://github.com/gooyyu1/UnmappedIsland/issues/2024) で訊いてあり、下りたら印を外すか
- * 出どころを書くかのどちらかで、この一覧は空になる。
- */
-const SOURCE_PENDING_SECTIONS: readonly { readonly doc: string; readonly heading: string }[] = [
-  { doc: join('agent-ops', 'board-design.md'), heading: '1.1 事実と占有を分ける【確定】' },
-  {
-    doc: join('agent-ops', 'board-design.md'),
-    heading: '1.2.1 「居るか」と「手が動いているか」を、1つの占有へ畳まない【確定】',
-  },
-  {
-    doc: join('agent-ops', 'board-design.md'),
-    heading: '1.4.1 不変条件は、投入する側が自分で持つ【確定】',
-  },
-  {
-    doc: join('agent-ops', 'board-design.md'),
-    heading: '2.1 分け目は「CCRの資格情報が要るか」【確定】',
-  },
-];
-
-/** その節が据え置きの一覧に在るか。 */
-function isSourcePending(section: { readonly doc: string; readonly heading: string }): boolean {
-  return SOURCE_PENDING_SECTIONS.some(
-    (pending) => pending.doc === section.doc && pending.heading === section.heading,
-  );
-}
-
-/**
  * 全体が確定であることを宣言した文書（DocumentStyle.md 6.2節の条件を課される対象）。
  *
  * 宣言の判定は `stats:docs` が確定欄を `全` と出すのに使うものと**同じ1つ**を呼ぶ。別々に持つと、
@@ -1078,30 +1046,11 @@ describe('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節�
     // 置き場は縛らない。本文の先頭は結論の1文の場所（DocumentStyle.md 3節）なので、そこを
     // 出どころで取ると、節の書き方の規約が2箇所に割れる。
     const missing = confirmedSections
-      .filter((section) => !hasSourceLine(section) && !isSourcePending(section))
+      .filter((section) => !hasSourceLine(section))
       .map((section) => `${section.doc}:${section.line} ${section.heading}`);
     expect(
       missing,
-      '出どころの無い確定節（人間の判断の在処が節から読めない）。**据え置きの一覧は答えを待っている' +
-        `分で、新しい印の置き場ではない**:\n${missing.join('\n')}`,
-    ).toEqual([]);
-  });
-
-  it('据え置きの一覧に、もう当てはまらない節が残っていない', () => {
-    // 据え置きは答えが来るまでの措置なので、**当てはまらなくなったら落ちる**。印が外れた・出どころが
-    // 書かれた・節の名が変わったのに一覧へ残っていると、次に印を足した者がその行を手本にする。
-    const stale = SOURCE_PENDING_SECTIONS.filter(
-      (pending) =>
-        !confirmedSections.some(
-          (section) =>
-            section.doc === pending.doc &&
-            section.heading === pending.heading &&
-            !hasSourceLine(section),
-        ),
-    ).map(({ doc, heading }) => `${doc} ${heading}`);
-    expect(
-      stale,
-      `据え置きの一覧に、もう出どころの無い確定節ではないものが残っている:\n${stale.join('\n')}`,
+      `出どころの無い確定節（人間の判断の在処が節から読めない）:\n${missing.join('\n')}`,
     ).toEqual([]);
   });
 
