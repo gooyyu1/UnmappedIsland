@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { BASH } from './runScript';
 
 /**
  * 試験がPATHへ置く身代わりのスクリプトの、先頭の1行。
@@ -9,11 +9,9 @@ import { execFileSync } from 'node:child_process';
  * 2026-09 に測ったとき 26.9秒→24.4秒）。
  *
  * かといって `#!/bin/bash` と決め打つと、bash がそこに無い環境で壊れる。**走らせている bash 自身の
- * 在り処を1回だけ引いて、それを書く**——1段減らしても、決め打ちの前提を新しく作らない。
+ * 在り処**（[`BASH`](runScript.ts)）を書く——1段減らしても、決め打ちの前提を新しく作らない。
  *
  * 本物のスクリプト（`scripts/agent/**`・`scripts/daemon/**`）は `#!/usr/bin/env bash` のままでよい。あちらは実行ビットで
  * 直に起動され、置き場も走らせる相手もこちらの管理外にある。
  */
-export const STUB_SHEBANG = `#!${execFileSync('bash', ['-c', 'command -v bash'], {
-  encoding: 'utf-8',
-}).trim()}`;
+export const STUB_SHEBANG = `#!${BASH}`;

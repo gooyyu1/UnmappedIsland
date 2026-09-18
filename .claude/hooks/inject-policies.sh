@@ -13,7 +13,9 @@
 # 登録してある。あちらはwebでしか動かない）。
 set -euo pipefail
 
-REPO_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+HERE="${BASH_SOURCE[0]%/*}"
+if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
+REPO_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$HERE/../.." && pwd)}"
 POLICIES="$REPO_DIR/agent-ops/policies.md"
 PRINCIPLES="$REPO_DIR/docs/concept/DesignPrinciples.md"
 DECISIONS="$REPO_DIR/agent-ops/decisions"
