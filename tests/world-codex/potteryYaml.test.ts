@@ -107,13 +107,17 @@ describe('pottery.yamlの土器の連鎖', () => {
     return kiln;
   }
 
-  /** 壺を1つ、hours時間だけ乾かしてから炉で焼き切る。返すのはその炉。 */
-  function fireDriedGreenware(hours: number): WorldObject {
-    const greenware = spawnInto('unfired_jar', land, 'items');
+  /** 焼く前の器を並べ、hours時間だけ乾かしてから炉で焼き切る。返すのはその炉。 */
+  function fireDriedGreenware(
+    hours: number,
+    greenwareNames: readonly string[] = ['unfired_jar'],
+  ): WorldObject {
+    const greenware = greenwareNames.map((name) => spawnInto(name, land, 'items'));
     session.advanceWorldTime(60 * hours);
 
     const kiln = litKiln();
-    expect(greenware.moveToSlotOrRejection(kiln.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
+    for (const piece of greenware)
+      expect(piece.moveToSlotOrRejection(kiln.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
     // 高温（blaze、5/tick）まで昇ってから24tick。昇温のぶんを足して余裕を見る。
     session.advanceWorldTime(60 * 8);
     return kiln;
@@ -263,6 +267,34 @@ describe('pottery.yamlの土器の連鎖', () => {
 
     expect(fixturesOn(land), '炉は一度きり').toEqual([]);
     expect(itemsOn(land), '甕は土地へこぼれる').toEqual(['jar']);
+  });
+
+  it('粘土1個から素焼き前の蓋ができ、乾かして焼けば甕の蓋になる', () => {
+    // 蓋は壺と同じ土・同じ炉を通る（greenware trait）。違うのは要る粘土と、焼き上がって何になるか
+    // だけで、乾き方も焼成の速さも共有する。
+    craft('unfired_jar_lid', 'pressed', [['clay']]);
+
+    expect(itemsOn(land)).toEqual(['unfired_jar_lid']);
+    const [greenware] = new Location(land).items;
+    expect(greenware.tryGetProperty(codex.propertyNames.getId('moisture'))?.number ?? 0, '練り土の水').toBe(
+      96,
+    );
+  });
+
+  it('航海ぶんの甕と、その数の蓋を、1つの炉で一度に焼ける', () => {
+    // **蓋のために炉を増やさずに済む**（docs/world/ContentSkeleton.md 5.3節）。炉のfire枠は個数の
+    // 上限を書いていないので同種はいくつでも入るが、**上限を書けばここで落ちる**——1つずつしか
+    // 並べない検査では、蓋の代価が炉1つぶん増えても緑のままになる。
+    //
+    // 数は航海へ積む甕の長い側（Voyage.md 3.9.6節の3〜4つ）。
+    const voyageJars = 4;
+    const kiln = fireDriedGreenware(24, [
+      ...Array.from({ length: voyageJars }, () => 'unfired_jar'),
+      ...Array.from({ length: voyageJars }, () => 'unfired_jar_lid'),
+    ]);
+
+    expect(childNames(kiln).filter((name) => name === 'jar')).toHaveLength(voyageJars);
+    expect(childNames(kiln).filter((name) => name === 'jar_lid')).toHaveLength(voyageJars);
   });
 
   it('甕は持ち運べる', () => {
