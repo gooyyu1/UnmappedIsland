@@ -76,6 +76,42 @@ object_defs:
   });
 
   // ------------------------------------------------------------------
+  // Slot.stacks: まとまりの内側まで写しであること
+  // ------------------------------------------------------------------
+
+  it('stacksはまとまりの内側まで写しで、辿っている最中に中身が抜けても顔ぶれが変わらない', () => {
+    const yaml = `
+object_defs:
+  ground_stack_snapshot:
+    slots:
+      pile: {}
+  pebble: {}
+`;
+    const codex = load(yaml);
+    const pileSlotId = codex.slotNames.getId('pile');
+
+    const ground = spawn(codex, 'ground_stack_snapshot');
+    const pile = ground.getSlot(pileSlotId);
+    const pebbles = [spawn(codex, 'pebble'), spawn(codex, 'pebble'), spawn(codex, 'pebble')];
+    for (const pebble of pebbles) pebble.moveToSlotOrRejection(pile);
+
+    const stacks = pile.stacks;
+    expect(stacks, '束ねられる型なので3つとも1つのまとまりに入る').toHaveLength(1);
+
+    // まとまりの内側がObjectStack.members（実体）のままだと、辿りながら消したぶんを飛ばす。
+    const visited: number[] = [];
+    for (const pebble of stacks[0]) {
+      visited.push(pebble.instanceId);
+      pebble.destroy();
+    }
+
+    expect(visited, '写しなので、消したぶんも含めて全部を1回ずつ辿る').toEqual(
+      pebbles.map((p) => p.instanceId),
+    );
+    expect(pile.stacks, '辿り終えた時点のスロットは空').toEqual([]);
+  });
+
+  // ------------------------------------------------------------------
   // ObjectDef.stackOrder: 同種のrun内で「手前に重ねたいものほど末尾」に並ぶこと
   // ------------------------------------------------------------------
 
