@@ -47,7 +47,12 @@ export const OUTDOOR_WINDOW_MINUTES = 720;
 /** 夜の睡眠（分）。1日の割り付け（屋外720・夜の加工360・睡眠360）はContentSkeleton.md 8.3節。 */
 export const SLEEP_MINUTES_PER_DAY = 360;
 
-/** 焚き火のそばでの加工（分/日）。1日の割り付けの残りで、屋外にも睡眠にも入らない分。 */
+/**
+ * 焚き火のそばでの加工（分/日）。1日の割り付けの残りで、屋外にも睡眠にも入らない分。
+ *
+ * **嵐の夜のぶんは引いていない**——屋外の枠と同じ割り切りで（上）、嵐の日に屋根の下でなければ手元の
+ * 作業も止まる（ContentSkeleton.md 8.1.4節）ことは、この360分には現れない。
+ */
 export const NIGHT_CRAFT_MINUTES_PER_DAY = MINUTES_PER_DAY - OUTDOOR_WINDOW_MINUTES - SLEEP_MINUTES_PER_DAY;
 
 /**

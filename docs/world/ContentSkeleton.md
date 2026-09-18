@@ -886,7 +886,7 @@ ambient_brightnessをそのまま土台にするためです（同 2節）。
 
 **「何もできない」の線は、目や手元の精度が要る仕事です**（顔ぶれは 8.1.5節）。暗くても止まらないもの
 ——食べる・飲む・眠る・火をくべる・留守番の設備が返した実りを受け取る——は、風雨でも止まりません。
-**雨受けのように、嵐だからこそ効くものもあります**（[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 6節）。
+**雨受けのように、嵐だからこそ効くものもあります**（[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 7節）。
 
 **止まる日は嵐だけです。** `core.yaml`の`weather`の段のうち屋外を閉ざすのはいちばん荒れた1段で、
 大雨（`heavy_rain`）の日は屋外で動けます。
@@ -924,8 +924,9 @@ ambient_brightnessをそのまま土台にするためです（同 2節）。
 **この段を見ている操作は、明るさの段を見ている操作とちょうど同じ顔ぶれです**
 （[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 5節の一覧）。目や手元の精度が要る仕事は
 暗さでも風雨でも止まり、手が覚えている粗い動作はどちらでも止まりません。**重なっていることは
-`tests/world-codex/stormOutdoors.test.ts`が全数で見張ります**——明るさの1行だけを書いた操作は、
-そこで落ちます。
+`tests/world-codex/stormOutdoors.test.ts`が全数で見張ります**——どちらか一方だけを書いた操作は、
+そこで落ちます。**どちらも書き忘れた操作は拾えません**（その見分けは
+[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 5節が持ちます）。
 
 **海の上で渡ることだけが両方の外です**（[`Voyage.md`](./Voyage.md) 3.10節）。渡る手には明るさも
 風雨も要りません。**海の上で嵐に閉じるのは見て探す仕事**（見張り・釣り・海鳥）で、そちらは上の
@@ -972,6 +973,9 @@ ambient_brightnessをそのまま土台にするためです（同 2節）。
 **往復の移動が嵐に当たる分は勘定に入れていません**。枠を縮めるほうへ寄せると、屋外720分・夜の加工
 360分・睡眠360分の割り付け（8.3節）が1日24時間に揃わなくなります。**日数は短めに出ます**——嵐が
 1周回の日数へどう効くかは、この枠を作り直すまで出ません。
+
+**夜の加工360分も同じで、嵐の夜のぶんを引いていません**（8.1.3節）。屋外の枠と一緒に作り直す分で、
+**割り切りは1日の割り付け全体に掛かります**——嵐に当たる時間を数えていないのは昼だけではありません。
 
 **頭打ちに使うのは採れる時間で、手元の作業ができる時間ではありません。** この式が割っているのは
 屋外の枠であって、手元の作業が当たっているのは夜の360分のほうだからです（8.3節）。
@@ -1024,7 +1028,8 @@ ambient_brightnessをそのまま土台にするためです（同 2節）。
 **夜**は、睡眠360分<!-- stats: terrain.yaml daily_budget sleep -->と、焚き火のそばでの加工360分<!-- stats: terrain.yaml daily_budget night_craft -->。
 **律速は屋外です**——拠点での加工は約20500分<!-- stats: terrain.yaml work_piles_total base_minutes ±100 -->で、夜の枠に対して
 57日ぶん<!-- stats: terrain.yaml work_piles_total base_days -->なので、約108日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->の中に余裕で収まります。**夜が足りなくなることはなく、
-足りないのは昼です。**
+足りないのは昼です。** ただし**この360分は嵐の夜のぶんを引いていない**（8.2節の割り切り）ので、
+夜の余裕はここに出るより狭くなります。
 
 **この約108日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->は上限としても下限としても読めません。** 上へ振れる材料は、4節の山の多く
 ——なめし革の背負い袋（1日<!-- stats: terrain.yaml work_piles pile=なめし革の背負い袋 days -->）のように `objects` が空の行——に
