@@ -6,6 +6,17 @@
 #
 # 出力は1行。返ってきたURLをそのまま `![<名前>](<URL>)` の形でPR本文へ書く。
 #
+# ## 転んだ行には、打った git の標準エラーを載せる
+#
+# 落ちた事実だけを出すと、読んだ側は**競合なのか、権限なのか、通信が落ちたのか**へ辿り着けず、同じ
+# コマンドを手で打ち直すところから始めることになる。理由を持っているのは打った側なので、捨てずに
+# 同じ行へ載せる（[`archive-session.sh`](../daemon/archive-session.sh) の `DIRTY` と同じ形。
+# **1行1件**なので改行は空白へ畳む）。
+#
+# **落ちた理由を、こちらで決めつけない。** 同じブランチへ同時に積めば競合するが、権限も通信も同じ
+# 非0で返る。**「ブランチが動いた」と決めつけた文面で繰り返すと、繰り返しても直らない理由が同じ顔で
+# 何度も出る。** 名乗るのは打った側で、こちらは何回目かだけを言う。
+#
 # ## なぜ専用のブランチが要るのか
 #
 # **GitHubには画像を上げるAPIが無い**（ブラウザのUIからしか投げられない）ので、**画像はgitのどこかに
@@ -62,11 +73,14 @@ export GIT_INDEX_FILE="$work/index"
 blob=$(git hash-object -w "$IMAGE")
 
 for attempt in $(seq "$ATTEMPTS"); do
-  # 既に在れば積み上げ、無ければ空の木から始める（このブランチの1つ目のコミット）。
-  if git fetch --quiet origin "$BRANCH" 2>/dev/null; then
+  # 既に在れば積み上げ、無ければ空の木から始める（このブランチの1つ目のコミット）。**ブランチが
+  # まだ無いのか、引きに行けなかったのかは、打った側しか知らない**ので、理由をそのまま出したうえで
+  # 空の木から始める（積むものが在ったなら、下の push が非fast-forwardで断る）。
+  if err=$(git fetch --quiet origin "$BRANCH" 2>&1 >/dev/null); then
     parent=$(git rev-parse FETCH_HEAD)
     git read-tree "$parent"
   else
+    echo "$BRANCH を引けなかったので、空の木から積む: ${err//$'\n'/ }" >&2
     parent=''
     git read-tree --empty
   fi
@@ -76,12 +90,12 @@ for attempt in $(seq "$ATTEMPTS"); do
   # shellcheck disable=SC2086 # 親が無い1つ目のコミットでは -p ごと落とす
   commit=$(git commit-tree "$tree" ${parent:+-p "$parent"} -m "$path")
 
-  if git push --quiet origin "$commit:refs/heads/$BRANCH" 2>/dev/null; then
+  if err=$(git push --quiet origin "$commit:refs/heads/$BRANCH" 2>&1 >/dev/null); then
     echo "https://raw.githubusercontent.com/$REPO/$BRANCH/$path"
     exit 0
   fi
-  echo "（$BRANCH が動いた。引き直して積み直す: $attempt/$ATTEMPTS）" >&2
+  echo "push できなかった（$attempt/$ATTEMPTS。引き直して積み直す）: ${err//$'\n'/ }" >&2
 done
 
-echo "$ATTEMPTS 回続けて push できなかった" >&2
+echo "$ATTEMPTS 回続けて push できなかった: ${err//$'\n'/ }" >&2
 exit 1

@@ -4,7 +4,10 @@
 #   bash scripts/agent/daemon-wake-task.sh            # 登録する。何度打っても1本のまま
 #   DRY_RUN=1 bash scripts/agent/daemon-wake-task.sh  # 登録せずに、渡すXMLを出す
 #
-# 出すのは1行（`REGISTERED <タスク名>`）。打てなければ理由を stderr へ出して1で終わる。
+# 出すのは1行（`REGISTERED <タスク名>`）。**打てなければ、`schtasks` が言ったことを同じ行へ載せて**
+# stderr へ出し、1で終わる（**1行1件**なので改行は空白へ畳む）——「登録できなかった」だけでは、権限が
+# 足りないのかXMLを読めなかったのかへ辿り着けず、読んだ側は同じコマンドを手で打ち直すところから
+# 始めることになる。**撥ねた理由を標準出力へ流す口があるので、両方まとめて受ける。**
 #
 # **起こす者はデーモンの外に居なければならない**（2.19）。クラウドの cron ではなくこのPCのタスクに
 # 置く理由は 2.19.2。
@@ -42,10 +45,14 @@ NAME="${WAKE_TASK_NAME:-ClaudeCode-BoardDaemonWake}"
 
 # 起こす先は**本体のチェックアウト**。作業ツリーから立てると、進めた本体は走らず、走る1本は古いまま
 # 残る（`daemon.sh`「寄せる先と立てる先が同じでなければ」）。
-common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || {
-  echo "本体のチェックアウトが分からないので、登録する先を決められない" >&2
+stderr=$(mktemp)
+common=$(git rev-parse --path-format=absolute --git-common-dir 2>"$stderr") || {
+  err=$(cat "$stderr")
+  rm -f "$stderr"
+  echo "本体のチェックアウトが分からないので、登録する先を決められない: ${err//$'\n'/ }" >&2
   exit 1
 }
+rm -f "$stderr"
 ROOT=$(cd "$(dirname "$common")" && pwd)
 
 BASH_EXE=$(cygpath -w "$(command -v bash)" 2>/dev/null) || BASH_EXE="$(command -v bash)"
@@ -112,15 +119,15 @@ fi
   iconv -f UTF-8 -t UTF-16LE <"$WORK/task.xml"
 } >"$WORK/task-utf16.xml"
 
-if ! MSYS2_ARG_CONV_EXCL='*' schtasks /create /tn "\\$NAME" /xml "$(cygpath -w "$WORK/task-utf16.xml")" /f \
-  >"$WORK/done.txt" 2>&1; then
-  echo "登録できなかった: $(cat "$WORK/done.txt")" >&2
+if ! err=$(MSYS2_ARG_CONV_EXCL='*' schtasks /create /tn "\\$NAME" \
+  /xml "$(cygpath -w "$WORK/task-utf16.xml")" /f 2>&1); then
+  echo "登録できなかった: ${err//$'\n'/ }" >&2
   exit 1
 fi
 
 # **登録できたかは引き直して見る。** `schtasks` は撥ねた理由を標準出力へ流して0で返すことがある。
-if ! MSYS2_ARG_CONV_EXCL='*' schtasks /query /tn "\\$NAME" >/dev/null 2>&1; then
-  echo "登録した直後に引けなかった: $NAME" >&2
+if ! err=$(MSYS2_ARG_CONV_EXCL='*' schtasks /query /tn "\\$NAME" 2>&1); then
+  echo "登録した直後に引けなかった（$NAME）: ${err//$'\n'/ }" >&2
   exit 1
 fi
 

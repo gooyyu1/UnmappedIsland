@@ -81,6 +81,15 @@ interface Run {
   readonly stderr: string;
 }
 
+/**
+ * 手綱を引けなかったときに `gh` が言うこと。**身代わりにも標準エラーを言わせる**——黙って転ぶ
+ * 身代わりを相手にすると、理由を捨てる実装がそのまま緑で通る。
+ */
+const GH_EXCUSE = 'gh: Bad credentials (HTTP 401)';
+
+/** 一覧を引けなかったときに、身代わりのMCPサーバが返す状態。理由はこの数字で追う。 */
+const CCR_EXCUSE = 'HTTP 500';
+
 let server: FakeMetaServer;
 let endpoint: string;
 
@@ -101,7 +110,7 @@ async function run(kind: string, tag: string | readonly string[], world: World =
     writeFileSync(
       gh,
       `${STUB_SHEBANG}
-${world.ghFails === true ? 'exit 1' : ''}
+${world.ghFails === true ? `echo '${GH_EXCUSE}' >&2\nexit 1` : ''}
 cat <<'BODY'
 ${world.brake ?? ALL_ON}
 BODY
@@ -211,6 +220,14 @@ describe('may-dispatch.sh', () => {
     expect((await run('new-task', 'task-1234', { ghFails: true })).code).toBe(1);
   });
 
+  // **止まった行が、打った `gh` の言い分を運ぶこと**（issue #1864）。「引けなかった」だけでは、
+  // 資格情報なのか相手が居ないのかへ辿り着けず、読んだ側は同じコマンドを手で打ち直す。
+  it('手綱を引けなかった行に、`gh` が言った理由が載る', async () => {
+    const result = await run('new-task', 'task-1234', { ghFails: true });
+
+    expect(result.stderr).toContain(GH_EXCUSE);
+  });
+
   it('手綱に見出しの行が無ければ止まる', async () => {
     expect((await run('new-task', 'task-1234', { brake: '## 手綱\n\n（空）\n' })).code).toBe(1);
   });
@@ -310,6 +327,13 @@ describe('may-dispatch.sh', () => {
 
   it('セッションの一覧を引けなければ止まる', async () => {
     expect((await run('new-task', 'task-1234', { ccrFails: true })).code).toBe(1);
+  });
+
+  // 手綱と同じく、占有を見に行けなかった行も理由を運ぶ（issue #1864）。
+  it('一覧を引けなかった行に、一覧が言った理由が載る', async () => {
+    const result = await run('new-task', 'task-1234', { ccrFails: true });
+
+    expect(result.stderr).toContain(CCR_EXCUSE);
   });
 
   // **当たったのは週次の枠**（issue #2209。5時間の枠には余力が在った）。片方しか見ないと、

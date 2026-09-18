@@ -20,6 +20,9 @@
 # **出どころの issue を引けなかったときは 2 ではなく `UNANSWERED`。** 2 を返すのは、PRそのものを
 # 引けずに**何も判定できない**とき。あちらは節も番号も分かっているので、名指しで出すほうが、
 # 受け取った人が次にどこを見ればよいかを読める（どちらも `merge-pr.sh` は `HELD` にする）。
+# **そのとき、打った `gh` の標準エラーを同じ行へ載せる**（[`archive-session.sh`](archive-session.sh)
+# の「片付かなかった行は…」と同じ形）——番号が実在しないのか、資格情報が切れたのかで受け取った人の
+# 次の手は違う。**出力は1行1件**なので、改行は空白へ畳む。
 #
 # **`MARK` と `UNANSWERED` は、通す前に確かめることが違う。** 前者は「あなたが決めたのか」で、
 # そうなら画面からマージすればよい。後者は**指された issue にまだ答えが無い**ので、先にあちらへ
@@ -139,20 +142,26 @@ declares_whole() {
 # 出どころが指す issue に、ユーザーの答えが在るか（上の「出どころが書いてある印は…」）。
 #   answered … 答えは出ている（`判断待ち` が付いていない）
 #   pending  … まだ答えを待っている
-#   missing  … 引けなかった（番号が実在しない・`gh` が失敗した）
-# 同じ番号を節の数だけ引かないよう、1度引いたら控える。
+#   missing: <理由>  … 引けなかった（番号が実在しない・`gh` が失敗した）。**理由は捨てない**
+#                      （上の「打った `gh` の標準エラーを同じ行へ載せる」）
+# 同じ番号を節の数だけ引かないよう、1度引いたら控える。**理由も控えへ入れる**——引き直さない以上、
+# ここで捨てたものは呼び手からはもう取れない。
 answer_state() {
-  local cache="$WORK/issue-$1" labels
+  local cache="$WORK/issue-$1" labels stderr err
   if [ ! -f "$cache" ]; then
-    if labels=$(gh issue view "$1" --json labels --jq '.labels[].name' 2>/dev/null); then
+    # 引けなかった理由は標準エラーに在るが、この `gh` は**標準出力が値**なので、混ぜずに受ける。
+    stderr=$(mktemp)
+    if labels=$(gh issue view "$1" --json labels --jq '.labels[].name' 2>"$stderr"); then
       if printf '%s\n' "$labels" | grep -qxF '判断待ち'; then
         echo pending >"$cache"
       else
         echo answered >"$cache"
       fi
     else
-      echo missing >"$cache"
+      err=$(cat "$stderr")
+      echo "missing: ${err//$'\n'/ }" >"$cache"
     fi
+    rm -f "$stderr"
   fi
   cat "$cache"
 }
@@ -260,7 +269,8 @@ while IFS= read -r path; do
         blocking=1
         continue
       fi
-      case "$(answer_state "$issue")" in
+      state=$(answer_state "$issue")
+      case "$state" in
       answered)
         echo "SOURCED $path ${heading#\#* }"
         ;;
@@ -269,7 +279,7 @@ while IFS= read -r path; do
         blocking=1
         ;;
       *)
-        echo "UNANSWERED $path ${heading#\#* } … #$issue を引けなかった"
+        echo "UNANSWERED $path ${heading#\#* } … #$issue を引けなかった: ${state#missing: }"
         blocking=1
         ;;
       esac
