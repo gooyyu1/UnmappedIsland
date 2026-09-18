@@ -708,8 +708,8 @@ traits:
       # 掻き取る・撚る・編む（fiber.yaml・weaving.yaml）。編み籠・くくり罠・葉の衣類と、柄付けの紐を開ける。
       #
       # **ここが押し上げるのは無駄の無さ（cordage_thrift）だけ**——速さは仕事の側が宣言する（上の
-      # skill_knapping）。くくり罠（traps.yaml）が余分の卓を持つ唯一のレシピで、同じ繊維から2つ結べるのは
-      # 小さく数の要る物だけ（docs/world/Skills.md 7節）。**手作業の側で卓を持つのは、繊維を採る入口**
+      # skill_knapping）。**卓を持つのは、まとめて取れる物だけ**（docs/world/Skills.md 7節）
+      # ——1つしかできない物は卓を持たず、腕は速さだけに効く。**卓を持つのは繊維を採る入口**
       # （fiber.yamlのstrip・coconut.yamlのret）——取れる束の数が材料の作りで決まっていないのはそこだけ。
       skill_cordage:
         tags: [skill]

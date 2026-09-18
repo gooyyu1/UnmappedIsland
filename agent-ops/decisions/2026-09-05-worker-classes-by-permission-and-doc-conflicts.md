@@ -32,3 +32,7 @@ context: #1551・#1552（速さの改善）を投入した後、作業者の役�
   ので落とした。[[2026-09-06-let-the-cloud-edit-dot-claude-and-keep-the-fallback]]）
 - **所有権の地図は、ソースの衝突は抑えたがドキュメントの衝突は抑えられなかった。**
   分け方を変えるか、ドキュメントの構造を変えるかが要る。
+  **この解釈は翌日に覆っている**——どちらも採らず、
+  [[2026-09-06-drop-the-ownership-map-and-lock-only-resources]] で地図ごと捨て、
+  [[2026-09-06-do-not-block-on-overlap-measure-conflicts-instead]] で衝突は止めずに数えることに
+  なった。

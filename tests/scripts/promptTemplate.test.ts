@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
@@ -24,31 +24,34 @@ const TEMPLATE_SH = pathForBash(resolve(__dirname, '../../scripts/daemon/prompt-
 
 interface Taken {
   readonly code: number;
-  /** 取り出されたもの。止まった回は空。 */
+  /** 出し先に置かれたもの。**止まった回も読む**——空で止まったのか、中身を置いてから止まったのかを
+   * 区別しないと、「中身の違う本体が渡らない」を確かめられない。 */
   readonly text: string;
   readonly stderr: string;
 }
 
-/** ひな形の中身を渡して、`$1` の関数が取り出したものを返す。 */
-function take(fn: 'template_body' | 'template_title', lines: readonly string[]): Taken {
+/** ひな形の中身を渡して、`$1` の関数が取り出したものを返す。`section` は `template_body` の第3引数。 */
+function take(fn: 'template_body' | 'template_title', lines: readonly string[], section?: string): Taken {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-prompt-template-'));
   const dir = pathForBash(work);
   try {
     writeFileSync(join(work, 'template.md'), `${lines.join('\n')}\n`, 'utf-8');
     const harness = join(work, 'harness.sh');
+    const where = section === undefined ? '' : ` '${section}'`;
     writeFileSync(
       harness,
       [
         'set -euo pipefail',
         `source '${TEMPLATE_SH}'`,
-        `${fn} '${dir}/template.md' '${dir}/taken.txt'`,
+        `${fn} '${dir}/template.md' '${dir}/taken.txt'${where}`,
         '',
       ].join('\n'),
       'utf-8',
     );
 
     const run = spawnScript(harness, [], { stdio: 'pipe' });
-    const text = run.status === 0 ? readFileSync(join(work, 'taken.txt'), 'utf-8') : '';
+    const taken = join(work, 'taken.txt');
+    const text = existsSync(taken) ? readFileSync(taken, 'utf-8') : '';
     return { code: run.status ?? -1, text, stderr: run.stderr };
   } finally {
     rmSync(work, { recursive: true, force: true });
@@ -110,6 +113,90 @@ describe('template_body', () => {
 
     expect(taken.code).not.toBe(0);
     expect(taken.stderr).toContain('取り出せない');
+  });
+
+  // 閉じの行に当たるまでを本体として渡すと、**閉じ忘れたひな形の後ろの説明が丸ごと指示になる。**
+  // しかも空にはならないので、呼び手が持つ「空で渡さない」関門にも掛からない。
+  it('閉じないまま尽きた囲みは、本体にしない', () => {
+    const taken = take('template_body', [
+      '前置き',
+      FENCE,
+      '指示の本体',
+      '閉じを書き忘れた',
+      'ここは説明のつもり',
+    ]);
+
+    expect(taken.code).not.toBe(0);
+    expect(taken.text).toBe('');
+    expect(taken.stderr).toContain('閉じていない');
+  });
+});
+
+/**
+ * 節を渡す形（`$3`）。理由ごとに本文を持つひな形
+ * （`agent-ops/prompts/resume-prompt.md`）を、投入と同じ取り出しに乗せるためのもの。
+ */
+describe('template_body に節を渡す', () => {
+  const MEND = '## mend — 直しを待っているPRがある';
+  const STALL = '## stall — PRがまだ出ていない';
+
+  it('その節の中の囲みだけを取る', () => {
+    const taken = take(
+      'template_body',
+      [
+        '前置き',
+        FENCE,
+        '前置きの例',
+        FENCE,
+        MEND,
+        FENCE,
+        'mend の本文',
+        FENCE,
+        STALL,
+        FENCE,
+        'stall の本文',
+        FENCE,
+      ],
+      'mend',
+    );
+
+    expect(taken.code).toBe(0);
+    expect(taken.text).toBe('mend の本文\n');
+  });
+
+  // 節を探している間の囲みを飛ばさないと、**別の節の本文に書かれた見出しの形**が目印に見え、
+  // そこから読んだ中身の違う本体が渡る。
+  it('前の節の本文に在る見出しの形は、目印にしない', () => {
+    const taken = take(
+      'template_body',
+      [STALL, FENCE, '`## mend` と書いてある行', FENCE, MEND, FENCE, 'mend の本文', FENCE],
+      'mend',
+    );
+
+    expect(taken.code).toBe(0);
+    expect(taken.text).toBe('mend の本文\n');
+  });
+
+  // 盤面が出す語に対応する節が無いまま起こすと、別の節の本文が届く。
+  it('節が無ければ止まる', () => {
+    const taken = take('template_body', [STALL, FENCE, 'stall の本文', FENCE], 'mend');
+
+    expect(taken.code).not.toBe(0);
+    expect(taken.text).toBe('');
+    expect(taken.stderr).toContain('## mend');
+  });
+
+  // 「節が無い」の兄弟。節は在るが囲みを書き忘れた、という形で、**次の節の本文がその節のものとして
+  // 渡る。** 節を見つけた後も次の見出しで止まらないと、どちらも空にならないまま通る。
+  it('節に囲みが無ければ、後ろの節の本文を渡さない', () => {
+    const taken = take(
+      'template_body',
+      [MEND, '囲みを書き忘れた', STALL, FENCE, 'stall の本文', FENCE],
+      'mend',
+    );
+
+    expect(taken.code).not.toBe(0);
+    expect(taken.text).toBe('');
   });
 });
 
