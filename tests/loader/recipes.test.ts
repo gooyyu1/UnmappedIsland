@@ -5,7 +5,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 
 /**
- * recipes（GameElementDefinition.md 13節）のロードと、解放条件（同13.3節・SkillSystem.md 4節）の
+ * recipes（GameElementDefinition.md 13節）のロードと、解放条件（同13.2節・SkillSystem.md 4節）の
  * 評価に対する自動テスト。
  */
 describe('recipes', () => {

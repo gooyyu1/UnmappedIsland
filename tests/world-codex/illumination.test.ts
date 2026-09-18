@@ -201,7 +201,7 @@ describe('明るさが行動を制限する', () => {
 
   /**
    * 火起こし具を1工程ぶん進める（fire.yamlのcarved）。**レシピの工程の代表**で、条件は
-   * レシピ側ではなく世界の`crafting_conditions`（GameElementDefinition.md 13.4節）が持つ。
+   * レシピ側ではなく世界の`crafting_conditions`（GameElementDefinition.md 13.3節）が持つ。
    */
   function carvesFireDrill(session: WorldSession, land: WorldObject, player: WorldObject): boolean {
     const materialsSlotId = codex.vocabulary.engine.materialsSlotId;

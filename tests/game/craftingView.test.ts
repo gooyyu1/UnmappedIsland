@@ -53,7 +53,7 @@ object_defs:
   const materialsIn = (mini: MiniGame, wip: WorldObject): readonly WorldObject[] =>
     wip.tryGetSlot(mini.codex.vocabulary.engine.materialsSlotId)?.contents ?? [];
 
-  // この世界はcrafting_conditions（13.4節）を宣言しないので、理由の文言は引かれない。
+  // この世界はcrafting_conditions（13.3節）を宣言しないので、理由の文言は引かれない。
   // 操作の呼び名は画面そのものの語なので、ワールドではなくui_textsから出る（Localization.md）。
   const locale = parseLocale(
     'ja.yaml',

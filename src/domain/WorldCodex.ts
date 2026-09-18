@@ -84,7 +84,7 @@ export class WorldCodex {
   readonly cardFilters: readonly CardFilter[];
 
   /**
-   * 製作の工程を進めるのに満たしていなければならない条件（`crafting_conditions`、13.4節）。
+   * 製作の工程を進めるのに満たしていなければならない条件（`crafting_conditions`、13.3節）。
    * **全レシピ共通の1本**で、宣言が無ければどんな状況でも作業できる。
    */
   private readonly craftingConditions: Requirements | undefined;
@@ -181,7 +181,7 @@ export class WorldCodex {
    *
    * 可否と「なぜできないか」を同じ1回の評価から返すのは、レシピの解放条件
    * （`RecipeDef.unmetUnlockRequirement`）と同じ理由。成果物のインスタンスはまだ無いので、
-   * 参照できるのはagentだけ（13.5節）。**その1つを欠いた問いは無い**ので、agentは必ず要る。
+   * 参照できるのはagentだけ（13.4節）。**その1つを欠いた問いは無い**ので、agentは必ず要る。
    */
   unmetCraftingRequirement(agent: WorldObject): Requirement | undefined {
     return this.craftingConditions?.firstUnmet(ReferenceContext.asking(agent));
