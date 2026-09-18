@@ -4,6 +4,7 @@ import { isMap, isScalar, isSeq, parseDocument } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { Combination } from '../../src/domain/Interaction';
+import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { RecipeDef } from '../../src/domain/RecipeDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
@@ -66,7 +67,8 @@ const STAGES = [
 
 /**
  * 腕が伸びる経路（SkillSystem.md 3節の表）。**書かれている場所で決まる**——操作の直下の `add` が実行、
- * `pick` の候補に埋めた `add` が発見（同3.3節）。練習はまだ世界に無い。
+ * `pick` の候補に埋めた `add` が発見（同3.3節）。**経路はこの2つで全部**——練習は経路ではなく、その腕の
+ * 初歩の行動がそれを兼ねる（同3.1節【確定】。打ちかかる腕なら hunting_practice.yaml の的）。
  */
 type SkillRoute = 'execution' | 'discovery';
 
@@ -267,6 +269,29 @@ function propsReadFromAgent(): ReadonlySet<string> {
   const found = new Set<string>();
   for (const path of worldCodexYamlPaths())
     agentReadsUnder(parseDocument(readFileSync(path, 'utf8')).contents, found);
+  return found;
+}
+
+/**
+ * 型の名前 → それを宣言しているファイルの名前。**獣から出る物はどれも `animals.yaml` が宣言する**
+ * （同ファイルの前書き——死体と、解体して得られる素材もそこが持つ）ので、材料の連鎖に獣が混じって
+ * いるかは、この対応で見られる。
+ */
+function definingFileOf(): ReadonlyMap<string, string> {
+  const found = new Map<string, string>();
+
+  for (const path of worldCodexYamlPaths()) {
+    const root = parseDocument(readFileSync(path, 'utf8')).contents;
+    if (!isMap(root)) continue;
+    const file = path.slice(path.lastIndexOf('/') + 1);
+
+    for (const section of root.items) {
+      if ((isScalar(section.key) ? String(section.key.value) : '') !== 'object_defs') continue;
+      if (!isMap(section.value)) continue;
+      for (const entry of section.value.items)
+        if (isScalar(entry.key)) found.set(String(entry.key.value), file);
+    }
+  }
   return found;
 }
 
@@ -1079,6 +1104,122 @@ describe('腕前とレシピの解放条件', () => {
         .filter((prop) => prop.name === 'whiff' && standsOnBonus(prop.body, 'hunting_aim'))
         .map((prop) => prop.where),
     ).toEqual([]);
+  });
+
+  /** 獣から出る物を宣言しているファイル（definingFileOf の注記）。 */
+  const BEAST_FILE = 'animals.yaml';
+
+  /** 狩猟の腕を配る操作の名前。**獣の側は trait が、的は型自身が宣言する**ので、名前で引く。 */
+  function huntingInteractionNames(): ReadonlySet<string> {
+    return new Set(
+      declaredInteractions()
+        .filter((interaction) => interaction.skills.includes('skill_hunting'))
+        .map((interaction) => interaction.name),
+    );
+  }
+
+  /**
+   * 武器を重ねて打ちかかれて、狩猟の腕を配る相手（docs/engine/HuntingSystem.md 1.2節のドラッグ型の
+   * 操作）。獣も的もここに並ぶ——**どちらも同じ操作**なので、分かれるのは作れるかどうかだけ。
+   */
+  function strikeTargets(): readonly ObjectDef[] {
+    const granting = huntingInteractionNames();
+    const weaponTagId = codex.tagNames.getId('weapon');
+    const weapons = [...codex.objects].filter((def) => def.tags.includes(weaponTagId));
+
+    return [...codex.objects].filter(
+      (def) =>
+        codex.baseOf(def) === def &&
+        def.dragTriggers.some(
+          (trigger) =>
+            granting.has(trigger.interaction.name) &&
+            weapons.some((weapon) => trigger.acceptsInstrument(weapon)),
+        ),
+    );
+  }
+
+  /**
+   * その型が、獣から出る物を1つも通さずに手に入るか。**通るかどうかを見るのは材料の連鎖の全部**で、
+   * レシピを持たない物（拾う・採るで手に入る先端）まで降りる。
+   *
+   * **タグで要求している材料は、受ける型のどれか1つが獣を要さなければ通る**——どれを使うかは
+   * プレイヤーが選ぶので、獣由来の型が候補に混じっていること自体は「獣を要する」ではない。
+   */
+  function obtainableWithoutBeast(
+    def: ObjectDef,
+    files: ReadonlyMap<string, string>,
+    visiting: ReadonlySet<string> = new Set(),
+  ): boolean {
+    if (files.get(def.name) === BEAST_FILE) return false;
+    // 材料が巡っている枝は辿れない側として閉じる（辿れる枝が別に在れば、そちらが通す）。
+    if (visiting.has(def.name)) return false;
+
+    const recipes = def.recipesProducingThis;
+    if (recipes.length === 0) return true;
+    const deeper = new Set(visiting).add(def.name);
+
+    return recipes.some((recipe) =>
+      recipe.steps.every((step) =>
+        step.requirements.every((requirement) =>
+          [...codex.objects].some(
+            (candidate) =>
+              !codex.isGenerated(candidate) &&
+              requirement.requires(candidate) &&
+              obtainableWithoutBeast(candidate, files, deeper),
+          ),
+        ),
+      ),
+    );
+  }
+
+  it('打ちかかれる相手には、獣を1つも要さずに作れるものが在る', () => {
+    // docs/engine/SkillSystem.md 3.1節【確定】が置く的。**狩猟の段は「出くわす重み」と「当てる重み」の
+    // 両方へ積まれる**（docs/world/Skills.md 5節）ので、打ちかかる相手が生きた獣しか居ないと、腕が
+    // 低いほど出くわさず、当たらず、そのぶん伸びない——この腕だけが自分で自分を塞ぐ。**作れる相手が
+    // 1つ在ればそこが切れる**ので、消えればここが落ちる。
+    //
+    // **材料の連鎖まで見る。** 獣から出る物を通る的は「狩らないと狩りの練習ができない」へ戻るので、
+    // 作れることだけでは足りない。
+    const files = definingFileOf();
+    const craftable = strikeTargets().filter((def) => def.recipesProducingThis.length > 0);
+
+    expect(
+      craftable.filter((def) => obtainableWithoutBeast(def, files)).map((def) => def.name),
+      '獣を1つも要さずに作れる相手が無い',
+    ).not.toEqual([]);
+  });
+
+  it('作れる相手へ武器を重ねると、狩猟の腕が実行経路のぶん伸びる', () => {
+    // 一つ上は宣言の形しか見ないので、**重ねられるのに腕を配らない**相手でも通る（`trigger`と`add`は
+    // 別の宣言なので、配る役を`agent`から動かしても形は整って見える）。実際に重ねて引き比べる。
+    const granting = huntingInteractionNames();
+    const weaponTagId = codex.tagNames.getId('weapon');
+    const weapons = [...codex.objects].filter((def) => def.tags.includes(weaponTagId));
+    const targets = strikeTargets().filter((def) => def.recipesProducingThis.length > 0);
+
+    expect(targets.length, '作れる相手が1つも無い').toBeGreaterThan(0);
+
+    for (const def of targets) {
+      const trigger = def.dragTriggers.find(
+        (candidate) =>
+          granting.has(candidate.interaction.name) &&
+          weapons.some((weapon) => candidate.acceptsInstrument(weapon)),
+      )!;
+      const weaponDef = weapons.find((weapon) => trigger.acceptsInstrument(weapon))!;
+      const agent = characterWithSkills(STAGES[0].min);
+      const session = agent.session;
+      const target = session.createObject(def.globalId);
+      const strike = target
+        .combinationsWith(session.createObject(weaponDef.globalId), agent)
+        .find((combination) => combination.name === trigger.interaction.name);
+
+      expect(strike, `${def.name}: ${weaponDef.name} を重ねて打ちかかれない`).toBeDefined();
+      expect(strike!.tryExecute(), `${def.name}: 打ちかかりが成立しない`).toBe(true);
+      expect(
+        agent.getProperty(codex.propertyNames.getId('skill_hunting')).getEffectiveValue(),
+        `${def.name}: 1回の打ちかかりで伸びる量`,
+      ).toBe(GAIN_BY_ROUTE.execution);
+    }
   });
 
   it('腕を土台にしたつまみは、素の値も名乗る（土台だけをtraitへ置かない）', () => {

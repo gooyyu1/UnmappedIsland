@@ -1,0 +1,84 @@
+# 打ちかかる腕の的（docs/engine/SkillSystem.md 3.1節【確定】）。**練習は専用の仕組みでも専用の
+# コマンドでもなく、その腕の最も初歩の行動そのもの**なので、ここに在るのは仕組みではなく**打ちかかる
+# 相手**——生きた獣を待たずに手を動かせるようにする物。
+#
+# **相手を作る必要があるのは狩猟だけ。** 狩猟の段は「獲物に出くわす重み」と「当てる重み」の両方へ
+# 積まれる（docs/world/Skills.md 5節）ので、打ちかかる相手が生きた獣しか居ないと**腕が低いほど
+# 出くわさず、当たらず、そのぶん伸びない**——この腕だけが自分で自分を塞ぐ。他の腕の初歩の行動は、
+# 相手を要さないか、相手が探索で採ってくるだけの物（一覧は docs/world/Skills.md 2節）。
+#
+# **獣を1つも要さずに作れる。** 材料は拾う枝と素手で引き落とせるヤシの葉だけで、獣から出る物
+# （animals.yaml）を1つも通らない——通せば、狩らないと狩りの練習ができない形へ戻る
+# （tests/world-codex/skillsYaml.test.ts が材料の連鎖ごと見張る）。
+
+object_defs:
+  # 打ち込みの的。太い枝を組んで骨にし、ヤシの葉を厚く巻きつけた胴（docs/world/SurvivalItems.md 3節）。
+  #
+  # **据える物なので持ち歩けない**（item タグを兼ねない。受けるのは手持ちの枠が item だけだから、
+  # characters/player_character.yaml）。据えた土地へ戻って打つ物で、遠征の先では打てない。
+  #
+  # **打っても減らない。** 減らすなら、打たれた回数で減る軸をこの型が自分で持つことになる——屋外劣化の
+  # trait（weathering.yaml）の名乗り先に据えた物は入っていないので（名乗り先を持つのは
+  # docs/engine/DurabilitySystem.md 2節）、乗せる先が無い。**その軸を置くかは決まっていない**（据えた物の
+  # 劣化は同5節の未決事項。据えた物が時間で減る形は、罠が自分で持つ「仕掛けている間だけ傷む」軸が先例
+  # ——traps.yaml）ので、ここでは置かない。**練習が払うのは時間だけ。**
+  #
+  # **strike_target は「打ちかかる相手である」ことを言うタグ**（docs/ui/ScreenLayout.md 8.1.2節）。
+  # 読む仕組みはまだ無い——打ちかかる口を持つのは的自身なので、探す側が居ない——が、道具のボタンが
+  # これを指すので、武器を絞り込んだ手でも的が並んだままになる。
+  practice_target:
+    tags: [fixture, strike_target]
+    props:
+      # 太い枝2本（1,000×2）＋葉2枚ぶんの小葉（葉1枚4,000gのうち巻けるのは小葉800gだけで、重さの
+      # 大半を占める中軸は捨てる。weaving.yaml）。
+      weight: {value: 3600}
+    interactions:
+      # 武器を重ねて打ち込む。**獣を殴るのと同じ操作の名前**（animals.yamlのstrike）——初歩の行動が
+      # そのまま練習を兼ねる（docs/engine/SkillSystem.md 3.1節）ので、別の動詞を当てると同じ手が2つの
+      # 名前で並ぶ。
+      #
+      # **候補（pick）を持たない。** 獣の一撃が候補に分かれるのは、当たり所ごとに与える衝撃と残る傷が
+      # 違うから（docs/engine/HuntingSystem.md 1.2節）で、的には揺れる体も裂ける皮も無い。**当たり所の
+      # 重みを読ませても、変わるのは告げる手応えの文言だけ**——世界の形が何も動かない卓は引く意味が
+      # 無い（乱数が配るのは判断する状況、docs/concept/DesignPrinciples.md）。
+      #
+      # **明るさの条件は書かない**（docs/engine/IlluminationSystem.md 5節）。据わっている相手を殴る
+      # 手は、手元の細かい作業でも、目で探して選び取る屋外の行動でもない（同節の表）。**そのぶん的は
+      # 夜でも打てる**——レシピが夜を塞がれている（core.yamlのcrafting_conditions）のに対し、ここは
+      # 開いたままになるが、暗いあいだ手が空くこと自体は塞ぎたい形ではない。
+      strike:
+        trigger: {drag: {tag: weapon}}
+        duration: 15
+        # 狩猟の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
+        # characters/player_character.yaml）。**獣を殴るのと同じ量**——初歩の行動がそのまま練習を
+        # 兼ねるので、練習の側だけ薄く配る理由が無い（量が一律であることは
+        # tests/world-codex/skillsYaml.test.ts が見張る）。
+        #
+        # **繰り返しの稼ぎを抑えるのは時間のコストだけ**（docs/engine/SkillSystem.md 7節）。打った
+        # 回数を数える値も、1日に打てる回数の線も持たない。
+        #
+        # **刃は食わない**（docs/engine/DurabilitySystem.md 2.1節）。摩耗を払わせるのは物を返す手
+        # だけで、ここが返すのは腕だけ——食わせると、返るものが無いまま武器だけが折れる形になる。
+        # **線が引かれているのは手の単位で、当たり外れではない**——獣を殴る手は物を返す手なので、
+        # 外した回（whiff）も同じだけ食う（animals.yamlのstrike）。
+        add:
+          agent: {skill_hunting: 2}
+        # 告げるのは獣へ当てたときと同じ手応え（localeのsignal_texts）。**当たり所が無いので告げ方も
+        # 1つ**——浅手も外しも仕留めも、的には起こらない。
+        signal: hit
+    recipes:
+      # 枝を組んで葉を巻く。**紐は要らない**——裂いた小葉がそのまま結び紐になるので、繊維の連鎖を
+      # 待たずに据えられる。
+      lashed:
+        # 骨組みを組む仕事なので木材加工（docs/world/Skills.md 7.1節。枝を縛って組む枝の卓と同じで、
+        # ほぞは1つも要らない）。**効き始めるのは最上段**（同7節）——打っても減らない的は据え直す物
+        # ではないので、数えるほどしか動かさない手の側になる（里心の設えと同じ、furnishings.yaml）。
+        deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
+        # **解放条件を持たない。** 狩猟の腕を要求すれば、その腕を伸ばす手そのものが腕で閉じて循環する
+        # （docs/engine/SkillSystem.md 3.2節）。**道具も要求しない**——枝は地面で拾い、葉は幹を登って
+        # 引き落とせる（coconut.yamlのpick_frond）。
+        steps:
+          - requires:
+              - {object: thick_branch, count: 2, consume: true}
+              - {object: palm_frond, count: 2, consume: true}
+            duration: 60

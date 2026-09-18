@@ -65,7 +65,7 @@ interface World {
     readonly event?: string;
   }[];
   /** `archive-session.sh` が渡された相手について返す行の頭。既定は畳めた。 */
-  readonly archiveVerdict?: 'ARCHIVED' | 'KEPT' | 'UNARCHIVED';
+  readonly archiveVerdict?: 'ARCHIVED' | 'KEPT' | 'UNARCHIVED' | 'UNKNOWN';
   /** `describe-conflict.sh` が返す、ぶつかったファイルと相手。 */
   readonly conflict?: { readonly files: readonly string[]; readonly with: readonly number[] };
   /** 周が始まる時点で帳面に載っている行。 */
@@ -250,7 +250,10 @@ async function playRound(world: World = {}): Promise<Result> {
       // 畳んでよいかの判定は持たない（それは `archive-session.sh` の仕事）。渡された相手について、
       // 決めた行を1本返すだけ。
       if (name === 'archive-session.sh' && options?.capture === true) {
-        return { status: 0, stdout: `${world.archiveVerdict ?? 'ARCHIVED'} session_a\n` };
+        const verdict = world.archiveVerdict ?? 'ARCHIVED';
+        // 片付かなかった行には理由が続く（`archive-session.sh` の「片付かなかった行は…」）。
+        const reason = verdict === 'ARCHIVED' || verdict === 'KEPT' ? '' : ': 失敗: HTTP 502';
+        return { status: 0, stdout: `${verdict} session_a${reason}\n` };
       }
       if (name === 'describe-conflict.sh') {
         const found = world.conflict ?? { files: [], with: [] };
@@ -545,6 +548,20 @@ describe('board-round.mjs', () => {
 
     expect(result.calls).toEqual(['archive-session.sh --keep-untagged task-,review-,chore-']);
     expect(result.ledger).toEqual({});
+  });
+
+  // **素性を引けなかったのも答えではない。** `KEPT` と同じ扱いにすると、通信が落ちたその周かぎりで
+  // その相手が二度と渡されなくなる（issue #1865）。
+  it('素性を引けずに畳めなかったら、指紋を残さず、理由ごとログへ出す', async () => {
+    const result = await playRound({
+      sessions: [idle('session_a', 'task-8')],
+      issueStates: { 8: 'CLOSED' },
+      archiveVerdict: 'UNKNOWN',
+    });
+
+    expect(result.ledger).toEqual({});
+    // **読む人へ届くところまで見る。** 畳む側が組み立てた行は、ここを通らなければ誰も読まない。
+    expect(result.log).toContain('UNKNOWN session_a: 失敗: HTTP 502');
   });
 
   // 返すのはコメントで、ラベルは `board-labels.yml` が付ける（2.15.3）。**盤面がラベルを直に

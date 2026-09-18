@@ -791,7 +791,7 @@ looking_brightness:
 | 食 | 2 食の調達・3 保存 | `food`・`roastable`・`hearth`・`preservative` |
 | 水 | 1 水 | `water`・`hot_water`・`liquid_container` |
 | 火 | 5 火 | `fuel`・`tinder`・`hearth` |
-| 道具 | 4 刃物・打撃、6 狩りの道具 | `tool`・`weapon`・`trap`・`meat_bait`・`plant_bait` |
+| 道具 | 4 刃物・打撃、6 狩りの道具 | `tool`・`weapon`・`trap`・`meat_bait`・`plant_bait`・`strike_target` |
 | 入れ物 | 7 運ぶ入れ物 | `container`・`liquid_container` |
 | 身につける | 8 衣類 | `equippable` |
 | 住まい | 9 寝床・10 住居・12 家具・娯楽 | `bed`・`shelter`・`furnishing` |
@@ -820,7 +820,8 @@ looking_brightness:
 足したのは、雨風をしのげる住まいであることを言う `shelter`（浅い洞窟）、そこで眠れることを言う
 `bed`（敷物）、得た食を保たせる
 物であることを言う `preservative`（塩）、海を渡る乗り物であることを言う `boat`（筏）、里心を抑える
-ために据える物であることを言う `furnishing`（家具・娯楽）です。いずれも
+ために据える物であることを言う `furnishing`（家具・娯楽）、打ちかかる相手であることを言う
+`strike_target`（的）です。いずれも
 [`ContentSkeleton.md`](../world/ContentSkeleton.md) 3 節の系統に 1 対 1 で対応します。帆（`sail`）と
 航路（`sea_route`）は在っても**船そのものを指す語**は無く、無いままでは遠出のボタンから筏が消えます。
 

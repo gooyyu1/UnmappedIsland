@@ -19,3 +19,6 @@ location:
   # 残りはサルが持ち去る候補になるもの（HuntingSystem.md 5.4節）で、狙われやすさはかさで決まるため、
   # かさの違うものを混ぜてある。
   items: [rat, junglefowl, monkey, wild_boar, coconut, woven_basket, thick_branch]
+  # 打ち込みの的（hunting_practice.yaml）。**獣と並べてある**ので、同じ武器を的へ重ねたときと獣へ
+  # 重ねたときの違い——的には当たり所も傷も無く、伸びる腕だけが同じ——がその場で見える。
+  fixtures: [practice_target]
