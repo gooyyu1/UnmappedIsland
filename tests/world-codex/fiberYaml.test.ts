@@ -136,11 +136,12 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
         ?.tryExecute() === true,
     ).toBe(true);
 
-    expect(itemsOn(jungle), '元の茎が居た場所へ2束が並んで置き換わる').toEqual([
+    expect(itemsOn(jungle), '元の茎が居た場所へ3束が並んで置き換わる').toEqual([
+      'plant_fiber',
       'plant_fiber',
       'plant_fiber',
     ]);
-    expect(weightsOn(jungle), '茎3000gのうち、繊維として残るのは60g×2だけ').toEqual([60, 60]);
+    expect(weightsOn(jungle), '茎3000gのうち、繊維として残るのは60g×3だけ').toEqual([60, 60, 60]);
     expect(worldView.minute, 'durationの30分が経つ').toBe(30);
   });
 
@@ -148,6 +149,9 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
     // 無駄の無さ（docs/world/Skills.md 7節）。取れない側の重み（100）は茎が持ち、取れる側の重みが
     // 作り手の上乗せなので、**素人では2つ目の候補が卓に無いのと同じ**。引きを固定してあるので、
     // 結果が変わったのは卓が腕を読んでいるからだと言える。
+    //
+    // **足す束は1つで、素の3束の1/3に収まる**（同7.2節）。上限そのものは世界じゅうの卓を走査する
+    // skillsYaml.test.ts が見張っていて、ここが見るのは腕を読んでいることのほう。
     const skillId = codex.propertyNames.getId('skill_cordage');
 
     /** その腕前の作業者に1本掻き取らせて、土地に残った物を返す。 */
@@ -165,8 +169,13 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
       return itemsOn(jungle);
     };
 
-    expect(strippedBy(0), '素人は2束のまま').toEqual(['plant_fiber', 'plant_fiber']);
-    expect(strippedBy(180), '熟達すると余分が1束').toEqual(['plant_fiber', 'plant_fiber', 'plant_fiber']);
+    expect(strippedBy(0), '素人は3束のまま').toEqual(['plant_fiber', 'plant_fiber', 'plant_fiber']);
+    expect(strippedBy(180), '熟達すると余分が1束').toEqual([
+      'plant_fiber',
+      'plant_fiber',
+      'plant_fiber',
+      'plant_fiber',
+    ]);
   });
 
   it('繊維2束を撚ると糸が1本できる（道具は要らない）', () => {

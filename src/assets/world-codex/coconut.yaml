@@ -237,7 +237,7 @@ object_defs:
       # あれば繊維へ届く。**刃物の段は飛ばない**（皮を出すのは上のhuskで、そこが握りの刃を要求する）。
       #
       # 漬けと合わせて2時間。掻き取り（30分）より長いのはそのぶん。600gの皮から
-      # 繊維2束（120g）で、残りは叩き落とす髄。
+      # 繊維3束（180g）で、残りは叩き落とす髄。
       #
       # **明るさの条件は書かない**——叩いて解すだけで、暗くて損なう形が無い（crackと同じ理由）。
       ret:
@@ -249,13 +249,14 @@ object_defs:
         # characters/player_character.yaml）。**掻き取り（fiber.yamlのstrip）と時間あたりで揃う**
         # ——同じ植物繊維を出す2つの入口で、違うのは採れる土地だけ（上のコメント）。**素の分数で
         # 見た時間あたりが等しい**ので、どちらの島に流れ着いても伸びる速さは同じところから始まる。
-        # **腕が上がると揃わなくなる**——縮むのは分の絶対値なので、短い掻き取りのほうが速くなる
-        # （SkillSystem.md 3節。加算から出るこの偏りを均さないと決めているのは docs/world/Skills.md 7節）。
+        # **腕が上がると揃わなくなる**——縮むのは分の絶対値（docs/world/Skills.md 7節）なので、短い
+        # 掻き取りのほうが速くなる。**この開きを許すかは決まっていない**（SkillSystem.md 3節）。
         add: {agent: {skill_cordage: 2}}
         destroy: self
-        spawn: {object: plant_fiber, count: 2}
+        spawn: {object: plant_fiber, count: 3}
         # 無駄の無さ（docs/world/Skills.md 7節）。**掻き取りと同じ形で同じ刻み**——髄をどこまで叩き
-        # 落とすかで取れる束が変わるのは、刃を送る側と同じ（fiber.yamlのstripの注記）。
+        # 落とすかで取れる束が変わるのは、刃を送る側と同じ（fiber.yamlのstripの注記）。素が3束なのも
+        # 同じ理由（余分1束を上限に収めるため、同7.2節）。
         pick:
           - weight: 100
           - weight: {subject: agent, prop: cordage_thrift}

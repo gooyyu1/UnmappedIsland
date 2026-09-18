@@ -43,16 +43,17 @@ TEMPLATE="${RESUME_PROMPT:-$HERE/../../agent-ops/prompts/resume-prompt.md}"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
+# **取り出しは投入と同じ1つ**（[`prompt-template.sh`](prompt-template.sh)）。ここで写すと、片方だけ
+# 直したときに、起こす経路だけが黙って別の中身を渡す。埋めるのはここが持つ——`<番号>` は理由の
+# 節ごとではなく、起こす相手ごとに変わる。
+# shellcheck source=scripts/daemon/prompt-template.sh
+source "$HERE/prompt-template.sh"
+
+RAW="$WORK/section.md"
+template_body "$TEMPLATE" "$RAW" "$KIND"
+
 BODY="$WORK/message.md"
-awk -v want="$KIND" '
-  $1 == "##" && $2 == want { found = 1; next }
-  found && /^```$/ { inside = !inside; if (!inside) exit; next }
-  inside { print }
-' "$TEMPLATE" | sed "s/<番号>/$NUMBER/g" >"$BODY"
-[ -s "$BODY" ] || {
-  echo "ひな形に「## $KIND」の節が無い: $TEMPLATE" >&2
-  exit 1
-}
+sed "s/<番号>/$NUMBER/g" "$RAW" >"$BODY"
 
 if [ -n "${DRY_RUN:-}" ]; then
   cat "$BODY"

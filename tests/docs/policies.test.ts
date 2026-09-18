@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -30,6 +30,13 @@ const SECTIONS = ['ユーザーの発言', 'エージェントの解釈'] as con
 
 /** 1項目の行数の上限。3行に収まらないものは、束ね方が粗いか、まだ一般則になっていない。 */
 const MAX_ITEM_LINES = 3;
+
+/**
+ * 記録どうしの相互参照 `[[<拡張子を除いたファイル名>]]`（SKILL.md「覆った解釈には、覆した記録を
+ * 指す」）。**履歴は `docs/DocumentStyle.md` 5節の射程の外**（`scripts/docScope.mjs` の
+ * `isVerbatimRecord`）なので、参照の解決を見ているのはここだけ。
+ */
+const CROSS_REFERENCE = /\[\[([^\]\n]+)\]\]/g;
 
 /**
  * 事例を本文へ書かせないための検査。具体の出典は履歴と `docs/engine/DesignNotes.md` が持つ。
@@ -177,6 +184,23 @@ describe('判断の履歴', () => {
         return inName !== inBody;
       })
       .map(({ rel }) => rel);
+
+    expect(broken).toEqual([]);
+  });
+
+  // 覆った解釈に添える「どこで覆ったか」は、**その記録を指す `[[...]]` だけ**が運んでいる
+  // （SKILL.md「覆った解釈には、覆した記録を指す」）。指し先が消えれば、覆った断りだけが残って
+  // 裏を取る手立てが無くなり、次の棚卸しがその解釈を生きているものとして畳む。
+  //
+  // **見るのは解釈の節だけ。** 原文の側に同じ綴りが現れても、そこは書き換えないと決めてある場所
+  // （`docs/DocumentStyle.md` 10節）なので、赤にすると緑へ戻す手が原文の改変しか無くなる。
+  it('記録どうしの相互参照が、実在の記録を指す', () => {
+    const names = new Set(files.map(({ rel }) => basename(rel, '.md')));
+    const broken = files.flatMap(({ rel, text }) =>
+      [...(text.split(`## ${SECTIONS[1]}`)[1] ?? '').matchAll(CROSS_REFERENCE)]
+        .filter(([, slug]) => !names.has(slug))
+        .map(([, slug]) => `${rel}: [[${slug}]]`),
+    );
 
     expect(broken).toEqual([]);
   });

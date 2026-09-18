@@ -71,7 +71,7 @@ const STAGES = [
 type SkillRoute = 'execution' | 'discovery';
 
 /**
- * 発見が1回で配る量（SkillSystem.md 3節の表の「小」）。**こちらは長さに依らず一律**——契機は候補を
+ * 発見が1回で配る量（SkillSystem.md 3.3節）。**こちらは長さに依らず一律**——契機は候補を
  * 引き当てたことそのもので、`explore` にかけた時間ではない（同3.3節）。
  */
 const DISCOVERY_GAIN = 1;
@@ -766,6 +766,86 @@ function declaredInteractions(): readonly InteractionGains[] {
 }
 
 /**
+ * 余分の卓が1つ引き当てる枝（docs/world/Skills.md 7.2節）。`baseCount`は同じ節が宣言している素の
+ * 産出で、見つからなければundefined——**素が何個かを言わない卓は、上限を満たすとも言えない**。
+ */
+interface SurplusBranch {
+  readonly where: string;
+  readonly object: string | undefined;
+  readonly baseCount: number | undefined;
+  readonly surplusCount: number | undefined;
+}
+
+/** `spawn:`（1件でも並びでも）が出す型と、その個数（`count`を省けば1つ）。 */
+function spawnCountsOf(spawnNode: unknown): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>();
+  for (const entry of isSeq(spawnNode) ? spawnNode.items : [spawnNode]) {
+    if (!isMap(entry)) continue;
+    const object = entry.get('object', true);
+    if (!isScalar(object)) continue;
+    const count = entry.get('count', true);
+    const name = String(object.value);
+    counts.set(name, (counts.get(name) ?? 0) + (isScalar(count) ? Number(count.value) : 1));
+  }
+  return counts;
+}
+
+/** その枝の重みが無駄の無さを読んでいるか（読んでいれば、その枝が「当たり」）。 */
+function readsThriftWeight(branch: unknown): boolean {
+  const weight = isMap(branch) ? branch.get('weight', true) : undefined;
+  const prop = isMap(weight) ? weight.get('prop', true) : undefined;
+  return isScalar(prop) && String(prop.value).endsWith(THRIFT_SUFFIX);
+}
+
+/**
+ * 世界じゅうの余分の卓の「当たり」の枝。**在り処では探さない**——レシピの `surplus` も手作業の
+ * `pick` も同じ並びなので、**重みが無駄の無さを読んでいること**だけで拾う。名指しで数え上げると、
+ * 次に足された卓が素通りする。**無駄の無さと見分けるのは名前の尻尾**（`<腕>_thrift`、
+ * docs/world/Skills.md 7節の表）なので、別の名前で置かれた上乗せは拾えない。
+ *
+ * 素の産出は、`pick` ならその卓と同じ節の `spawn`、`surplus` なら常に1つ——レシピが出す成果物は
+ * 進捗が上限へ届いた瞬間の `become` 1回ぶんだから（docs/engine/RecipeSystem.md 1節）。
+ */
+function declaredSurplusBranches(): readonly SurplusBranch[] {
+  const found: SurplusBranch[] = [];
+
+  const walk = (node: unknown, where: string): void => {
+    if (isSeq(node)) {
+      for (const item of node.items) walk(item, where);
+      return;
+    }
+    if (!isMap(node)) return;
+
+    for (const pair of node.items) {
+      const key = isScalar(pair.key) ? String(pair.key.value) : '';
+      const here = where === '' ? key : `${where}.${key}`;
+      if ((key === 'pick' || key === 'surplus') && isSeq(pair.value)) {
+        const baseCounts = key === 'surplus' ? undefined : spawnCountsOf(node.get('spawn', true));
+        for (const branch of pair.value.items) {
+          if (!readsThriftWeight(branch)) continue;
+          const spawns = spawnCountsOf(isMap(branch) ? branch.get('spawn', true) : undefined);
+          // **物を出さない当たりの枝は、1件として数えてから落とす。** 黙って読み飛ばすと、余分を
+          // `spawn` 以外（`transfer` など）で渡す卓が、走査しても1件も拾われないまま通る。
+          if (spawns.size === 0)
+            found.push({ where: here, object: undefined, baseCount: undefined, surplusCount: undefined });
+          for (const [object, surplusCount] of spawns)
+            found.push({
+              where: here,
+              object,
+              baseCount: baseCounts === undefined ? 1 : baseCounts.get(object),
+              surplusCount,
+            });
+        }
+      }
+      walk(pair.value, here);
+    }
+  };
+
+  for (const path of worldCodexYamlPaths()) walk(parseDocument(readFileSync(path, 'utf8')).contents, '');
+  return found;
+}
+
+/**
  * 腕ごとの入口——実行経路でその腕を配る操作（SkillSystem.md 3節）を、腕の名前で引けるようにしたもの。
  *
  * **発見の契機は入らない。** `declaredInteractions`が数える`skills`は操作の直下の`add`だけで、`pick`の
@@ -1347,6 +1427,28 @@ describe('腕前とレシピの解放条件', () => {
     expect(drawn, '余分の卓を引く手作業が1つも無い').toBeGreaterThan(0);
   });
 
+  it('余分の卓が足すのは、素の産出の1/3まで', () => {
+    // docs/world/Skills.md 7.2節【確定】。**上限は当たったときの増分で置く**ので、刻み
+    // （`<腕>_thrift`）がいくら大きくても、枝を1つしか引かない`pick`では平均もこの水準に収まる。
+    //
+    // **物は割れないので、素が3つ以上ある卓だけが余分を1つ足せる。** 素が2つの卓へ1つ足せば
+    // +50%で、ここで落ちる。
+    const branches = declaredSurplusBranches();
+    expect(branches.length, '余分の卓が世界に1つも無い').toBeGreaterThan(0);
+
+    for (const branch of branches) {
+      const where = `${branch.where} の ${branch.object ?? '当たりの枝'}`;
+      // 出す物を持たない枝は、足す量を数えられない（`spawn` 以外で余分を渡す形は見張れない）。
+      expect(branch.surplusCount, `${where}: 当たっても物を出していない`).toBeDefined();
+      // 素を名乗らない卓は、上限を満たすとも言えない——別の物を出す枝も、ここで落ちる。
+      expect(branch.baseCount, `${where}: 素の産出が同じ節に無い`).toBeDefined();
+      expect(
+        branch.surplusCount! * 3,
+        `${where}: 素の${branch.baseCount}個へ${branch.surplusCount}個を足している`,
+      ).toBeLessThanOrEqual(branch.baseCount!);
+    }
+  });
+
   it('実行が配る量は、その操作の長さから決まる（30分につき1、端数は切り上げ）', () => {
     // SkillSystem.md 3節。**一律にすると、同じ量が15分の手にも1時間の手にも届く**ので、短い手を
     // 繰り返すのが最も速い伸ばし方になり、繰り返しの稼ぎを抑える時間のコスト（同7節）が
@@ -1418,7 +1520,7 @@ describe('腕前とレシピの解放条件', () => {
   });
 
   it('発見が配る量は、どこでも一律（長さでも土地でも変えない）', () => {
-    // SkillSystem.md 3節の表の「小」。**実行と違って長さから決めない**——契機は候補を引き当てた
+    // SkillSystem.md 3.3節。**実行と違って長さから決めない**——契機は候補を引き当てた
     // ことそのもので、`explore` にかけた時間ではない（同3.3節）。土地ごとに変えると、どの島に
     // 流れ着いたかが腕の伸びに化ける。
     let checked = 0;

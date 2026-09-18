@@ -206,10 +206,10 @@
 
 | アイテム | 押し下げ | 総コスト | 何が層を薄くしているか |
 |---|---|---|---|
-| 束ねた葉の衣類 | −1℃ | 79分<!-- stats: balance.yaml object_costs object=bundled_leaf_clothing total_minutes ±5% --> | 束ねただけの小葉は隙間だらけで、風がそのまま通る |
+| 束ねた葉の衣類 | −1℃ | 66分<!-- stats: balance.yaml object_costs object=bundled_leaf_clothing total_minutes ±5% --> | 束ねただけの小葉は隙間だらけで、風がそのまま通る |
 | 生皮の衣類 | −2℃ | 123分<!-- stats: balance.yaml object_costs object=rawhide_clothing total_minutes ±5% --> | 皮は風を通さないが、乾いた生皮は固く体から浮く |
-| 編んだ葉の衣類 | −3℃ | 303分<!-- stats: balance.yaml object_costs object=woven_leaf_clothing total_minutes ±5% --> | 編んだ面は形を保って沿うが、素材は葉のまま |
-| なめし革の衣類 | −4℃ | 1,652分<!-- stats: balance.yaml object_costs object=tanned_leather_clothing total_minutes ±5% --> | 裁って縫った革は体に沿い、隙間が残らない |
+| 編んだ葉の衣類 | −3℃ | 277分<!-- stats: balance.yaml object_costs object=woven_leaf_clothing total_minutes ±5% --> | 編んだ面は形を保って沿うが、素材は葉のまま |
+| なめし革の衣類 | −4℃ | 1,570分<!-- stats: balance.yaml object_costs object=tanned_leather_clothing total_minutes ±5% --> | 裁って縫った革は体に沿い、隙間が残らない |
 
 **両端は、空が作る気温の刻みへ合わせてあります**（[`../engine/VitalsSystem.md`](../engine/VitalsSystem.md)
 8.4 節）。素の入口は16℃で、空がそれを下回るのは涼しい季節の夜（12℃）と、その薄明・雨天の昼（15℃）です。
@@ -359,7 +359,7 @@
   ありません。
 
 **1基で段に届きます**——縄が1本要るためで、囲いが丸太4本と縄2本で1つでも段になるのと同じ理由です
-（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の1.18日<!-- stats: terrain.yaml work_piles pile=干し場 days -->は、この1基ぶんです。**
+（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の1.01日<!-- stats: terrain.yaml work_piles pile=干し場 days -->は、この1基ぶんです。**
 
 **素手の天日干しは、干し場が建っても残ります**（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md)
 の「後から足す手段は、既存の手段を残す強さに抑える」節）。空心菜・バナナ・ベリー・ヤシの果肉とゼリーは
@@ -440,7 +440,7 @@
 どれも同じ1つの軸（`cure`）の上に並びます。
 
 **1基で段に届きます**——編んだ葉6枚と縄2本が要るためで、干し場が縄1本で段に届くのと同じ理由です
-（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の2.43日<!-- stats: terrain.yaml work_piles pile=燻し小屋 days -->は、この1基ぶんです。**
+（[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の2.09日<!-- stats: terrain.yaml work_piles pile=燻し小屋 days -->は、この1基ぶんです。**
 
 **実装済みです**（`src/assets/world-codex/smoking.yaml`。`tests/world-codex/smokingYaml.test.ts` が
 上の線を全部確かめます）。

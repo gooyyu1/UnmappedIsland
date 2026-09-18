@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { promptBody } from '../../scripts/daemon/prompt-body.mjs';
+import { promptBodies, promptBody } from '../../scripts/daemon/prompt-body.mjs';
 import {
   isMarkRuleDoc,
   isVerbatimRecord,
@@ -290,12 +290,13 @@ function isPromptTemplate(rel: string): boolean {
  *
  * ひな形は囲みの中が本体なので、そこの見出しも節として引ける。取り出しは渡す側と同じ1つを呼ぶ
  * （`scripts/daemon/prompt-body.mjs`）——別に持つと、**渡る本文と、節を引ける範囲がずれる。**
+ * **節ごとに本文を持つひな形が在る**ので、集めるのは先頭の囲みだけではない（`promptBodies`）。
  * 本体の中のさらなる囲みは今までどおり例示で、{@link headingsOf} が落とす。
  */
 function namedSectionsOf(rel: string, markdown: string): string[] {
   const headings = headingsOf(markdown);
   if (!isPromptTemplate(rel)) return headings;
-  return [...headings, ...headingsOf(promptBody(markdown) ?? '')];
+  return [...new Set([...headings, ...promptBodies(markdown).flatMap(headingsOf)])];
 }
 
 /**
@@ -776,6 +777,25 @@ describe('ドキュメントの参照', () => {
     expect(namedSectionsOf(rel, template.join('\r\n'))).toEqual(['題名', '本体の節']);
     // ひな形でない文書では、囲みの中は今までどおり例示のまま。
     expect(namedSectionsOf(join('docs', 'DocumentStyle.md'), template.join('\n'))).toEqual(['題名']);
+  });
+
+  it('節ごとに本文を持つひな形は、どの節の中の見出しも引ける', () => {
+    // 先頭の囲みだけを本体と呼ぶと、**セッションへは渡るのに節としては引けない本文**ができる
+    // （渡す側は `## <理由>` を指定して読む。`scripts/daemon/resume-session.sh`）。
+    const template = [
+      '# 題名',
+      '## mend — 直しを待っている',
+      '```',
+      '## 直し方',
+      '```',
+      '## stall — PRが出ていない',
+      '```',
+      '## 返し方',
+      '```',
+    ];
+    const rel = join('agent-ops', 'prompts', 'probe-prompt.md');
+
+    expect(namedSectionsOf(rel, template.join('\n'))).toContain('返し方');
   });
 
   it('ひな形の囲みの中から、実際に節を拾えている', () => {
