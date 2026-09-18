@@ -235,7 +235,7 @@ object_defs:
   it('海区は、見張りの回数・素の横断時間・押し流しまでを宣言から読む', () => {
     expect(legs.zones.map((z) => z.name)).toEqual(['home_waters', 'outer_waters', 'far_waters']);
     expect(zone('home_waters').lookouts).toBe(2);
-    expect(zone('home_waters').lookoutMinutes).toBe(60);
+    expect(zone('home_waters').minutesPerLookout, '見張り1回ぶん（explore の duration）').toBe(30);
 
     // 素の横断時間は海区ごと（far_waters だけ trait の値を上書きしている）。
     expect(zone('home_waters').crossingMinutes).toBe(300);

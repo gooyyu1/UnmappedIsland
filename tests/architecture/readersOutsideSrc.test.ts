@@ -55,6 +55,7 @@ const OUT_OF_SCOPE = ['src/analysis/'];
  * 畳んだものはここから消す。消し忘れると、この検査が「まだ外にしか読み手が居ない」と言い続ける。
  */
 const READ_ONLY_FROM_OUTSIDE = [
+  'src/art/artFiles.ts locationNamesWithBackgroundArt',
   'src/art/iconArt.ts ICON_NAMES',
   'src/asset-pack/install.ts AssetPacks',
   'src/asset-pack/install.ts AssetPacks.matchesSetting',

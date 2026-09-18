@@ -56,7 +56,7 @@ describe('土地の絵の単位分け', () => {
   });
 
   it('起動時の絵と全土地の絵は、重複せず全アセットを覆う', () => {
-    const common = commonArtFiles(codex, locations).map((file) => file.key);
+    const common = commonArtFiles(codex).map((file) => file.key);
     const perLocation = locations.flatMap((l) => locationArtFiles(codex, l).map((file) => file.key));
 
     const all = [...common, ...perLocation];
@@ -72,7 +72,7 @@ describe('土地の絵の単位分け', () => {
   });
 
   it('キャラクターと手持ちレーンの背景は起動時に読まれる', () => {
-    const common = commonArtFiles(codex, locations).map((file) => file.key);
+    const common = commonArtFiles(codex).map((file) => file.key);
     expect(common).toContain('object:medic');
     expect(common).toContain('background:hand_lane');
   });
@@ -113,7 +113,7 @@ object_defs:
     expect(perLocation).toContain(`object:${SHARED_ART}`);
     expect(perLocation).toContain(`background:${LAND}_fixtures_lane`);
 
-    const common = commonArtFiles(codex, [LAND]).map((file) => file.key);
+    const common = commonArtFiles(codex).map((file) => file.key);
     expect(common).not.toContain(`object:${SHARED_ART}`);
   });
 });

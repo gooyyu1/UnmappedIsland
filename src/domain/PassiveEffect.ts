@@ -374,17 +374,21 @@ export class TransferPassiveEffect extends PassiveEffect {
   /** ゲートが開いている間、1 tick分の輸送を走らせる（activeの輸送と同じ経路をそのまま通る）。 */
   applyTick(owner: WorldObject): void {
     const roles = ReferenceContext.forParticipant(owner);
-    if (!this.gate.isSatisfied(owner, owner, roles)) return;
+    if (!this.gateIsOpen(owner, roles)) return;
     this.transfer.apply(roles);
   }
 
   override collectInfluences(declarer: WorldObject, roles: ReferenceContext, out: InfluenceWriter): void {
-    this.transfer.collectTransferInfluences(
-      declarer,
-      roles,
-      this.gate.isSatisfied(declarer, declarer, roles),
-      out,
-    );
+    this.transfer.collectTransferInfluences(declarer, roles, this.gateIsOpen(declarer, roles), out);
+  }
+
+  /**
+   * この宣言のゲートが開いているか。**conditionsのselfは常に宣言元自身**——辺の子側（slotBearer）が
+   * 宣言元と分かれるのは対象プロパティへ登録される寄与だけで（PropertyPassiveEffect）、輸送は登録を
+   * 持たず宣言元のtickで走るため。同じ物を2度渡す形を呼び出し側に書かせない。
+   */
+  private gateIsOpen(declarer: WorldObject, roles: ReferenceContext): boolean {
+    return this.gate.isSatisfied(declarer, declarer, roles);
   }
 
   readBy(reader: PassiveReader): void {

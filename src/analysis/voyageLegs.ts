@@ -91,13 +91,15 @@ export interface SeaZoneReading {
   /** その海区から本土まで、その海区を含めて最短で何区間か。 */
   readonly zonesToMainland: number;
 
-  /** 航路が現れるまでの見張りの回数（`exploration_progress` の上限）と、その合計時間（分）。 */
+  /** 航路が現れるまでの見張りの回数（`exploration_progress` の上限）。 */
   readonly lookouts: number;
-  readonly lookoutMinutes: number;
 
   /**
    * 見張り1回にかかる時間（分。`explore` の `duration`）。**見張りを1回ずつ数える側はここから採る**
    * ——tickの長さで代用すると、宣言のほうを動かした日に黙って食い違う（`voyageDrift.ts`）。
+   *
+   * **合計時間は持たない。** 回数と1回ぶんの積でしかないので、並べて持つと片方だけ書き換えても
+   * 型では止まらない。要る側が掛ける（`lookoutMinutesOf`）。
    */
   readonly minutesPerLookout: number;
 
@@ -117,6 +119,11 @@ export interface SeaZoneReading {
 
   readonly finds: readonly SeaFind[];
   readonly legs: readonly SeaLeg[];
+}
+
+/** その海区で、航路が現れるまでの見張りに費やす合計時間（分）。 */
+export function lookoutMinutesOf(zone: SeaZoneReading): number {
+  return zone.lookouts * zone.minutesPerLookout;
 }
 
 /** 風が1区間へ乗せる量（`sea_route` の passives）。 */
@@ -333,7 +340,6 @@ function zoneReadingOf(
     name: def.name,
     zonesToMainland,
     lookouts,
-    lookoutMinutes: lookouts * explore.laborMinutes,
     minutesPerLookout: explore.laborMinutes,
     crossingMinutes,
     stormDriftTicks: rangeMaxOf(def, ids.stormDriftId),
@@ -653,7 +659,7 @@ function courseOf(
     if (zone === undefined) throw new Error(`海区 '${name}' が読めません。`);
 
     lookouts += zone.lookouts;
-    lookoutMinutes += zone.lookoutMinutes;
+    lookoutMinutes += lookoutMinutesOf(zone);
     crossingMinutes += zone.crossingMinutes;
 
     const next = zoneNames.at(index + 1);
