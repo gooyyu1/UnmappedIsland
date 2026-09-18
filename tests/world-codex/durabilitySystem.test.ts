@@ -30,9 +30,14 @@ describe('耐久の規約（同梱の定義すべて）', () => {
   it('durabilityの上限は、素材・アイテムの種類によらず960', () => {
     // 1節。長持ちを上限で作ると、同じレートが物ごとに違う日数を意味することになり、
     // 「tickあたりの減少量 = 10 ÷ 寿命の日数」が読めなくなる。
+    //
+    // **`range` を書いていない宣言も落とす。** 上限が無いのは「上限が960でない」なので、`undefined`
+    // を黙って外すと、`durability` を持ちながら規約の外に居る型が増えても緑のままになる。
     const offenders = [...codex.objects]
-      .map((def) => ({ name: def.name, max: def.tryGetPropertyDef(durabilityId)?.range?.max }))
-      .filter((row) => row.max !== undefined && row.max !== SCALE);
+      .map((def) => ({ name: def.name, durability: def.tryGetPropertyDef(durabilityId) }))
+      .filter((row) => row.durability !== undefined)
+      .map((row) => ({ name: row.name, max: row.durability?.range?.max }))
+      .filter((row) => row.max !== SCALE);
 
     expect(offenders, `上限が${SCALE}でない宣言が在る`).toEqual([]);
   });

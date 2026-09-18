@@ -20,7 +20,8 @@ import type { PropertyGlobalId } from '../domain/GlobalId';
  *
  * **頭打ちに使うのは、その局面でそこですることができる時間**——探索の局面は探索できる時間
  * （`ActivityHoursRow.explorationHoursPerDay`）、定常の局面は採れる時間（同`gatheringHoursPerDay`）。
- * 2つが違うのは**嵐が採取だけを止める**ためで（ContentSkeleton.md 8.1.4節）、明るさの要求は同じ。
+ * 2つが違うのは**今は嵐が採取だけを止めている**ためで（広げる先はContentSkeleton.md 8.1.4節）、
+ * 明るさの要求は同じ。
  * 手元の細かい作業（`handworkHoursPerDay`）が当たっているのは夜の加工360分のほうで、この式は
  * 1分も数えていない（8.3節の割り付け）。
  *
@@ -72,7 +73,7 @@ export interface LocationTypeDay {
   /** 屋外で採れる時間（分/日）。季節ごとの値の平均。 */
   readonly gatheringMinutesPerDay: number;
 
-  /** 探索できる時間（分/日）。同じく季節ごとの値の平均で、採取と違って嵐を引かない。 */
+  /** 探索できる時間（分/日）。同じく季節ごとの値の平均で、採取と違って今は嵐を引かない。 */
   readonly exploringMinutesPerDay: number;
 }
 

@@ -91,8 +91,9 @@ ambient_brightnessへ与える寄与）・土地ごとのambient_brightness・�
 （探索する）・`handwork`（手元の細かい作業）。**`gathering`が`handwork`より長いのは、しきい値だけの差**
 ——見る値は違う（採る側はlooking_brightness、作る側はhand_brightness）が、据え付けの光源が無ければ
 どちらも土地のambient_brightnessをそのまま土台にするので、同じ明るさを別々のしきい値で切ったものになる。
-**`gathering`だけが`exploration`より短くなるのは、嵐が採取だけを止めるため**
-（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.1.4節）。森・密林では嵐の時間帯がもともと
+**`gathering`だけが`exploration`より短くなるのは、今は嵐が採取だけを止めているため**
+（止める先を屋外の行動すべてへ広げると決めてある。[`ContentSkeleton.md`](../world/ContentSkeleton.md)
+8.1.4節）。森・密林では嵐の時間帯がもともと
 明るさで落ちており、浅い洞窟は岩陰に守られているので、そこでは2つが一致する。
 
 **数えるのは島の土地だけ**で、海区（`voyage.yaml`）は行にしない。海区は

@@ -12,8 +12,9 @@ import { isVerbatimRecord, trackedDocs, trackedFiles } from '../../scripts/docSc
  * 見方は2つあり、どちらが赤くなったかで直す場所が変わるので `it` を分けてある。
  *
  * 1. **`Xxx.yyy`・`Xxx.Yyy` の形**（下の「今は無い名前を指していない」）。見るのは `src`・`tests` の `.ts` の
- *    コメントと、{@link DOCUMENTS} の全文。判定は「**その所有者が**そのメンバーを持っていないなら、
- *    指す先が無い」（hasMember）。読み手が辿れることだけを見るので、公開・非公開は問わない。
+ *    コメントと、{@link DOCUMENTS} の全文。判定は「**その所有者を宣言しているファイルの中に**その語が
+ *    無いなら、指す先が無い」（hasMember）——**型ではなくファイルの単位**で、同居する別の型のメンバー
+ *    でも「在る」になる。読み手が辿れることだけを見るので、公開・非公開は問わない。
  *    この形で書けば今も在るものを指している、と読む——**過去に在ったものを語る箇所での書き方**は
  *    `DocumentStyle.md` 5節「今は無い名前」。
  *    **ファイル名は参照ではない。** `ClimateSystem.md` のような書き方が `docs/` の大半を占めるので、
@@ -130,19 +131,31 @@ function ownedHere(name: string): boolean {
   return FILE_NAMES.has(`${name}.ts`) || new RegExp(`\\b${DECLARES}\\s+${name}\\b`).test(CODE);
 }
 
+const TRACKED = new Set(TRACKED_PATHS);
+
 /**
- * 文書に書かれたファイル参照から、実ファイルの相対パスへ。パス全体でも名前だけでも引ける。
- * 名前が複数のファイルで重なっているものは、どれを指すか決まらないので引けない（`null`）。
+ * 名前（ディレクトリを除いた最後の部分）から、それを持つ唯一のファイルへ。複数のファイルで
+ * 重なっている名前は、どれを指すか決まらないので引けない（`null`）。
+ *
+ * **パスと同じ表に入れない。** 混ぜると、リポジトリ直下のファイルは名前がパスと同じ字面なので、
+ * **自分自身と重なって必ず引けなくなる**（`CLAUDE.md`・`package.json` がその形で落ちていた）。
  */
-const TS_FILE_BY_REFERENCE = new Map<string, string | null>();
-for (const path of TRACKED_PATHS.filter((path) => path.endsWith('.ts'))) {
-  TS_FILE_BY_REFERENCE.set(path, path);
+const FILE_BY_NAME = new Map<string, string | null>();
+for (const path of TRACKED_PATHS) {
   const name = basename(path);
-  TS_FILE_BY_REFERENCE.set(name, TS_FILE_BY_REFERENCE.has(name) ? null : path);
+  FILE_BY_NAME.set(name, FILE_BY_NAME.has(name) ? null : path);
 }
 
-function tsFileOf(reference: string): string | null {
-  return TS_FILE_BY_REFERENCE.get(reference) ?? TS_FILE_BY_REFERENCE.get(basename(reference)) ?? null;
+/**
+ * 文書に書かれたファイル参照から、実ファイルの相対パスへ。パス全体でも名前だけでも引ける。
+ *
+ * **候補を拡張子で絞らない**——追跡しているファイルそのものが候補で、引けたものがファイル参照。
+ * `.ts` だけで組んでいた間、`scripts/**` の `.mjs` を挙げた主張は括弧で名前を並べていても丸ごと
+ * 素通しになっていた（#2077）。**一覧で絞ると、形式が増えた日に誰も気づかないまま同じ穴が開く。**
+ */
+function fileOf(reference: string): string | null {
+  if (TRACKED.has(reference)) return reference;
+  return FILE_BY_NAME.get(basename(reference)) ?? null;
 }
 
 /** ファイルのどの面を見るか。`all` はコメントも含む全部、`code` はコメントを落とした残り。 */
@@ -178,10 +191,15 @@ for (const rel of SOURCES) {
 }
 
 /**
- * **所有者がそのメンバーを持っているか。** 所有者のファイルが決まるなら、その中だけを見る
- * ——コード全体では、別の型が持つ同名のメンバーや、無関係な文字列に同じ語が在るだけで素通りする
+ * **所有者を宣言しているファイルの中に、その語が在るか。** 所有者のファイルが決まるなら、その中だけを
+ * 見る——コード全体では、別の型が持つ同名のメンバーや、無関係な文字列に同じ語が在るだけで素通りする
  * （在りもしない `AxisDef` の `Range` が、別のテストの `describe` に渡した文字列の中の `Range` で
  * 在ることにされていた）。
+ *
+ * **絞り込めるのはファイルまでで、型までではない。** 1つのファイルに複数の型が同居していれば
+ * （`PassiveEffectGate` と `PassiveEffect` が同じ `PassiveEffect.ts`）、**隣の型のメンバーでも
+ * 「在る」になる**。所有者ごとに範囲を切るには宣言の構文を読む必要があり、ここはコメントも含めた
+ * 散文を相手にするので、そこまでは降りない。
  *
  * ファイルは**宣言の在り処**から引き、決まらなければ所有者と同名の `.ts` で引く——型の名前と
  * ファイル名は揃っていないことがあり（`PassiveEffectGate` は `PassiveEffect.ts`）、名前だけで
@@ -193,25 +211,36 @@ for (const rel of SOURCES) {
  * 遅れるので、そこを証拠にすると追随漏れどうしが互いを裏書きする。
  */
 function hasMember(owner: string, member: string): boolean {
-  const file = DECLARING_FILE.get(owner) ?? tsFileOf(`${owner}.ts`);
+  const file = DECLARING_FILE.get(owner) ?? fileOf(`${owner}.ts`);
   return file === null ? appearsInCode(member) : appearsIn(file, member, 'code');
 }
 
 /** 文書がファイルと並べて挙げた名前と、その指す先。 */
 type FileMember = { readonly file: string; readonly name: string };
 
+/**
+ * ファイル参照として読む字面。**拡張子は書かない**——どれが実ファイルかは {@link fileOf} が
+ * 追跡しているファイルと突き合わせて決めるので、ここで綴りを列挙すると射程が二重になる。
+ */
+const FILE_PATH = String.raw`[\w./-]+\.\w+`;
+
 /** ファイルを単独で置いた括弧。並んでいる名前は、括弧の直前に接しているもの。 */
-const NAME_THEN_FILE = /`([^`]+)`\s*[（(]\s*`([\w./-]+\.ts)`\s*[）)]/g;
+const NAME_THEN_FILE = new RegExp(String.raw`\`([^\`]+)\`\s*[（(]\s*\`(${FILE_PATH})\`\s*[）)]`, 'g');
 /** ファイルに続けて中身を挙げる括弧。並んでいる名前は、括弧の中のもの。 */
-const FILE_THEN_NAMES = /`([\w./-]+\.ts)`\s*[（(]([^）)]*)[）)]/g;
+const FILE_THEN_NAMES = new RegExp(String.raw`\`(${FILE_PATH})\`\s*[（(]([^）)]*)[）)]`, 'g');
 /** 括弧を使わず「の」で続ける書き方（`Card.ts` の `PAPER_INSET`）。並んでいる名前は、その直後のもの。 */
-const FILE_THEN_NAME = /`([\w./-]+\.ts)`\s*の\s*`([^`]+)`/g;
+const FILE_THEN_NAME = new RegExp(String.raw`\`(${FILE_PATH})\`\s*の\s*\`([^\`]+)\``, 'g');
 /** 図の1行の末尾に、空白で切り離して置かれたファイル。並んでいる名前は、その行が呼んでいるもの。 */
-const CALL_THEN_FILE = /^(.*?\S)\s\s+([\w./-]+\.ts)\b/;
+const CALL_THEN_FILE = new RegExp(String.raw`^(.*?\S)\s\s+(${FILE_PATH})\b`);
 const QUOTED = /`([^`]+)`/g;
 const NAME = /[A-Za-z_][A-Za-z0-9_]*/;
 
-/** 名前として見るのは最初の識別子だけ（`placeSites(scope)` なら `placeSites`）。 */
+/**
+ * 名前として見るのは最初の識別子だけ（`placeSites(scope)` なら `placeSites`）。引数や添字を指し先へ
+ * 突き合わせないための割り切りで、**囲みの中に式を書いた名指し**（`` `PAPER_INSET + FRAME_SIDE_WIDTH` ``）
+ * も同じ扱いになる——**先頭以外は見張りの外**。どこまでが名指しでどこからが式かを囲みの中身から
+ * 決められない以上、拾う側を広げると引数の名前まで指し先に要求することになる。
+ */
 function nameIn(text: string): string | null {
   return NAME.exec(text)?.[0] ?? null;
 }
@@ -224,7 +253,8 @@ function nameIn(text: string): string | null {
  * 突き合わせることになる**（`npm test`（`Foo.test.ts`）で `npm` が `Foo.test.ts` のメンバーとして
  * 挙がる）。
  *
- * **続くのが英字のときだけ落とす。** 和文を続けた言及（`placeSites を呼ぶ`）は名前を挙げている
+ * **続くのが英字か `-`・`_` のときだけ落とす。** `-` が要るのは、打つコマンドの2語目が旗になる形
+ * （`bash -lc`）を同じ規則で落とすため。和文を続けた言及（`placeSites を呼ぶ`）は名前を挙げている
  * ので残す——落とすと、**指し先が消えても気づけない箇所が言い回しの数だけ増える。** 引数の並びは
  * 空白で切れないので、どちらの規則でも残る。
  */
@@ -235,9 +265,10 @@ function quotedName(quoted: string): string | null {
 }
 
 /** セル全体が1つのファイル参照になっているとき、その実ファイル。 */
+const CELL_IS_FILE = new RegExp(String.raw`^\s*\`(${FILE_PATH})\`\s*$`);
 function cellFile(cell: string): string | null {
-  const only = /^\s*`([\w./-]+\.ts)`\s*$/.exec(cell);
-  return only === null ? null : tsFileOf(only[1]);
+  const only = CELL_IS_FILE.exec(cell);
+  return only === null ? null : fileOf(only[1]);
 }
 
 /**
@@ -253,19 +284,19 @@ function fileMembersOn(text: string, insideFence: boolean): FileMember[] {
 
   if (insideFence) {
     const annotated = CALL_THEN_FILE.exec(text);
-    if (annotated !== null) add(tsFileOf(annotated[2]), nameIn(annotated[1]));
+    if (annotated !== null) add(fileOf(annotated[2]), nameIn(annotated[1]));
     return found;
   }
 
   for (const match of text.matchAll(NAME_THEN_FILE)) {
-    add(tsFileOf(match[2]), quotedName(match[1]));
+    add(fileOf(match[2]), quotedName(match[1]));
   }
   for (const match of text.matchAll(FILE_THEN_NAMES)) {
-    const file = tsFileOf(match[1]);
+    const file = fileOf(match[1]);
     for (const quoted of match[2].matchAll(QUOTED)) add(file, quotedName(quoted[1]));
   }
   for (const match of text.matchAll(FILE_THEN_NAME)) {
-    add(tsFileOf(match[1]), quotedName(match[2]));
+    add(fileOf(match[1]), quotedName(match[2]));
   }
 
   if (!text.trim().startsWith('|')) return found;
@@ -328,6 +359,18 @@ describe('説明の参照', () => {
     expect(
       missing,
       `文書がファイルと並べて挙げた名前が、そのファイルに無い:\n${missing.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('追跡しているファイルは、どれも指し先として引ける', () => {
+    // 指し先の候補を `.ts` で絞っていた間、`scripts/**` の `.mjs` を挙げた主張は、括弧で名前を
+    // 並べていても丸ごと素通しになっていた（#2077）。**引けない先が在っても、そこを挙げた主張が
+    // 壊れる日までは緑のまま**なので、文書の中身ではなく引ける範囲そのものをここで見る。
+    const unresolved = TRACKED_PATHS.filter((path) => fileOf(path) !== path);
+
+    expect(
+      unresolved,
+      `追跡しているのに指し先として引けないファイル:\n${unresolved.join('\n')}`,
     ).toEqual([]);
   });
 
