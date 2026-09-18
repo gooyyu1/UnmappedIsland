@@ -29,7 +29,7 @@ export function describeRecipe(recipe: RecipeDef, names: DefNames, out: Descript
   for (const [index, step] of recipe.steps.entries()) describeRecipeStep(step, index + 1, names, out);
 
   if (recipe.surplus !== undefined) {
-    // 引くのは完成した瞬間の1回だけなので、工程の後ろへ置いて、効果の行と同じ形で出す（13.6節）。
+    // 引くのは完成した瞬間の1回だけなので、工程の後ろへ置いて、効果の行と同じ形で出す（13.5節）。
     out.write(text('余分の卓（完成時に1回）:'));
     out.indented(() => describeEffect(recipe.surplus!, names, out));
   }

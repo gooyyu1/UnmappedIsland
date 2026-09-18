@@ -63,7 +63,7 @@ export class InteractionRelation {
 
   /**
    * この操作で動いている個体（11.5節）。**関係を張るのは誰かが動いているときだけ**なので必ず居る
-   * ——誰も動いていない場面（レシピの解放条件、13.3節）は関係を張らず`ReferenceContext.asking`で問う。
+   * ——誰も動いていない場面（レシピの解放条件、13.2節）は関係を張らず`ReferenceContext.asking`で問う。
    */
   readonly agent: WorldObject;
 
@@ -216,11 +216,11 @@ export class ReferenceContext {
   }
 
   /**
-   * 操作ではないが、問う側がagentを渡す場所（レシピの解放条件・`crafting_conditions`、13.3・13.5節）。
+   * 操作ではないが、問う側がagentを渡す場所（レシピの解放条件・`crafting_conditions`、13.2・13.4節）。
    * **関係は張らない**——「誰にとって解放されているか」を問う判定であって、誰も何にも働きかけていない
    * （11.5節）。成果物のインスタンスがまだ無いのでselfも居ない。
    *
-   * **問いが「誰にとって」なので、agentは必ず居る**（13.3節）。誰かを立てずに条件そのものの有無を
+   * **問いが「誰にとって」なので、agentは必ず居る**（13.2節）。誰かを立てずに条件そのものの有無を
    * 見たいなら、条件を持っているか（`RecipeDef.unlock`）を直接見る。
    */
   static asking(agent: WorldObject): ReferenceContext {
@@ -460,8 +460,8 @@ export class ReferenceScope {
   });
 
   /**
-   * 宣言元の個体が居ない場所（レシピの解放条件13.3節・`crafting_conditions` 13.5節）。居ない理由は
-   * 場所ごとに違うので、13.3・13.5節が各々で述べる。
+   * 宣言元の個体が居ない場所（レシピの解放条件13.2節・`crafting_conditions` 13.4節）。居ない理由は
+   * 場所ごとに違うので、13.2・13.4節が各々で述べる。
    *
    * **selfを外すと、それだけを指していたpatientも道連れで外れる**——`selfIsPatient`な場所（`acting`）
    * では`patient`に独立した名前が無く、`self`の言い換えでしかないため（11.5節）。

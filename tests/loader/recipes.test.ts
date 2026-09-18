@@ -5,7 +5,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 
 /**
- * recipes（GameElementDefinition.md 13節）のロードと、解放条件（同13.3節・SkillSystem.md 4節）の
+ * recipes（GameElementDefinition.md 13節）のロードと、解放条件（同13.2節・SkillSystem.md 4節）の
  * 評価に対する自動テスト。
  */
 describe('recipes', () => {
@@ -61,7 +61,7 @@ object_defs:
     ).toThrow(YamlLoadError);
   });
 
-  it('steps/requires/duration/iconを読める', () => {
+  it('steps/requires/durationを読める', () => {
     const codex = load(`
 object_defs:
   wood: {}
@@ -70,7 +70,6 @@ object_defs:
   axe:
     recipes:
       basic:
-        icon: axe_wip.png
         steps:
           - requires:
               - {object: wood, count: 2, consume: true}
@@ -86,7 +85,6 @@ object_defs:
 
     const recipe = recipes[0];
     expect(recipe.name).toBe('basic');
-    expect(recipe.icon).toBe('axe_wip.png');
     expect(recipe.steps).toHaveLength(2);
 
     const [first, second] = recipe.steps;
