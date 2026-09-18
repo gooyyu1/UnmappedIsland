@@ -68,9 +68,18 @@ function allLines(text: string): ProseLine[] {
   return text.split('\n').map((raw, index) => ({ line: index + 1, text: raw }));
 }
 
-/** コメントを取り除いた本文（文字列リテラルはそのまま残す——名前を文字列で持つ宣言もあるため）。 */
+/**
+ * コメントを取り除いた本文（文字列リテラルはそのまま残す——名前を文字列で持つ宣言もあるため）。
+ *
+ * **モジュールの指定だけは落とす。** パスはそのファイルが何を読むかを言うだけで、**そこに挙がった
+ * 語がメンバーとして在る証拠にはならない**——`PlayScene` が `from './ui/cardEdges'` を読むだけで、
+ * `PlayScene` の `cardEdges` を指す説明が在ることになり、この検査が黙る。
+ */
 function codeOnly(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1')
+    .replace(/\b(?:from|import)\s*\(?\s*'[^']*'/g, ' ');
 }
 
 /**

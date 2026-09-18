@@ -822,7 +822,7 @@ export function fromGameSession(
    *
    * **ワールドが渡してくる並びは、中身が入れ替わり続ける実体（ObjectStack.members）なので、
    * ここで写し取る。** 操作の閉包（dropInto・movedIds等）まで写した並びを見ないと、経過の途中経過
-   * （RecordedView）を再生する頃には実体が空になっていて、端の表示の試し打ち（PlayScene.cardEdges）
+   * （RecordedView）を再生する頃には実体が空になっていて、端の表示の試し打ち（ShownCards.edgeMoveAction）
    * が先頭の無い束を踏む。
    */
   const cardOfStack = (live: readonly WorldObject[]): ObjectCardStack => {

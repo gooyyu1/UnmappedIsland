@@ -25,7 +25,6 @@ import { Shelf } from '../save/Shelf';
 import { currentAssetPacks } from '../save/savedAssetPacks';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
-import { Path } from '../domain/wrappers/Path';
 import type { InteractionGains } from '../domain/PropertyGain';
 import type { WorldChange } from '../domain/WorldChange';
 import type { WorldSignal } from '../domain/WorldSignal';
@@ -53,9 +52,9 @@ import { SunlightHours } from './view/daylight';
 import type { Activity } from './view/operationSteps';
 import { playbackSteps, afterPlaybackSteps, isMidAction, acceptsOperation } from './view/operationSteps';
 import { Button } from '../ui/Button';
-import { SLOT_BUTTON_PAPER_TEXTURE } from '../art/slotButtonArt';
-import { EDGE_DIRECTIONS } from './ui/Card';
-import type { CardContent, CardEdgeAction } from './ui/Card';
+import { PaperButton } from './ui/PaperButton';
+import { buttonIcon } from './ui/buttonIcon';
+import type { CardEdgeAction } from './ui/cardEdges';
 import { borrowedFace } from './ui/cardFace';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
@@ -81,7 +80,9 @@ import type { MapPlacement } from './ui/MapWindow';
 import { MapWindow } from './ui/MapWindow';
 import { ModalDialog } from './ui/ModalDialog';
 import type { ObjectWindowAction } from './ui/ObjectWindow';
-import { DESCRIPTION_TAB, EXPLORATION_TAB, ObjectWindow } from './ui/ObjectWindow';
+import { ObjectWindow } from './ui/ObjectWindow';
+import { EXPLORATION_TAB } from './ui/windowTabs';
+import { initialTab } from './view/initialTab';
 import { RecipeWindow } from './ui/RecipeWindow';
 import { recipeCategories } from './view/recipeList';
 import { spawnInProgressObject } from '../domain/crafting';
@@ -95,7 +96,6 @@ import type { StatusContent } from './ui/StatusBar';
 import { StatusBar } from './ui/StatusBar';
 import { StatusDetailWindow } from './ui/StatusDetailWindow';
 import type { IconName } from '../art/iconArt';
-import { iconTexture } from '../art/iconArt';
 import { WeatherPanel } from './ui/WeatherPanel';
 import { WeatherOverlay } from './ui/WeatherOverlay';
 import { ScreenSkyTint } from './ui/ScreenSkyTint';
@@ -104,14 +104,10 @@ import { LaneHaze } from './ui/LaneHaze';
 import { heatHazeFor } from './looks/heatHaze';
 import { clockParts } from './looks/timeTexts';
 import { interactionTooltip } from './ui/Tooltip';
-import { addLabel } from '../ui/labels';
 import type { BoxStyle } from '../ui/shapes';
 import { addInputBlockingPanel, addTiledImage, addTiledImageVertical, drawBox } from '../ui/shapes';
 import { COLOR, SCROLL_BAR_LOOK, SIZE } from './looks/theme';
 import type { ObjectGlobalId } from '../domain/GlobalId';
-
-/** 紙として置かれるボタン（スロットボタン・バーのアイコンボタン）が落とす影のずらし幅（u単位）。 */
-const PAPER_BUTTON_SHADOW = 1.5;
 
 /**
  * バーのアイコンボタンに載せる絵文字の大きさ（88u角のボタンに対して）。**ボタンの余白より絵が
@@ -345,7 +341,7 @@ export class PlayScene extends ResponsiveScene {
    * 開いたままにするために持つ。**
    *
    * `childWindowPlace`は**今開いているタブが映している場所**（説明のタブではundefined）。中身を
-   * 映している間は、その場所が手持ちの「隣」になる（laneCardsWithEdgeActions・stacksOf参照）。
+   * 映している間は、その場所が手持ちの「隣」になる（ShownCards.edgeTargets・stacksOf参照）。
    */
   private childWindow: ObjectWindow | undefined;
   private childWindowPlace: CardPlace | undefined;
@@ -374,6 +370,18 @@ export class PlayScene extends ResponsiveScene {
     windowPlace: () => this.childWindowPlace,
     places: (...asked) => this.placeOfScreen(...asked),
     filter: () => this.cardFilter,
+    midAction: () => this.midAction,
+    onOpenCard: this.whileIdle((card: ObjectCardStack) => this.openObjectWindow(card)),
+    onEdgeMove: (card, direction, move) => {
+      this.applyToWorld(
+        this.locale.uiText('log_card_edge_tapped', {
+          name: card.name,
+          place: this.placeText(card.place),
+          direction,
+        }),
+        move,
+      );
+    },
   });
 
   /** 今選ばれている絞り込み（「すべて」を選んでいる間はundefined）。 */
@@ -497,9 +505,9 @@ export class PlayScene extends ResponsiveScene {
    * （record）作り直しを暗幕で隠していたり（transit）するため、そこから今のワールドを覗く子ウィンドウを
    * 開かせない——並んでいるカードは既に古い対象を指しており、そのアクションを実行させるわけにいかない。
    */
-  private whileIdle(onTap: () => void): () => void {
-    return () => {
-      if (!this.busy) onTap();
+  private whileIdle<A extends readonly unknown[]>(onTap: (...args: A) => void): (...args: A) => void {
+    return (...args) => {
+      if (!this.busy) onTap(...args);
     };
   }
 
@@ -649,25 +657,14 @@ export class PlayScene extends ResponsiveScene {
     if (location === undefined) return;
 
     // 発見済みの道の行き先は、移動に備えて絵を全部読む。
-    for (const name of this.pathDestinationNames(location.fixtures)) this.artLoader.request(name);
+    for (const destination of location.discoveredPathDestinations) {
+      this.artLoader.request(destination.def.name);
+    }
     // 未発見の道の行き先は、土地カードの絵1枚だけ読んでおく。道は発見と同時に行き先の絵のカードと
     // して現れるため、発見してからでは間に合わない。残りの背景は発見後（上のrequest）が受け持つ。
-    for (const name of this.pathDestinationNames(location.undiscoveredFixtures)) {
-      this.artLoader.requestCardArt(name);
+    for (const destination of location.undiscoveredPathDestinations) {
+      this.artLoader.requestCardArt(destination.def.name);
     }
-  }
-
-  /** 設置物の並びに含まれる道の、行き先の土地のobject_defの識別子。 */
-  private pathDestinationNames(fixtures: readonly WorldObject[]): readonly string[] {
-    const pathTagId = this.codex.vocabulary.world.pathTagId;
-
-    const names: string[] = [];
-    for (const fixture of fixtures) {
-      if (!fixture.def.hasTag(pathTagId)) continue;
-      const destination = new Path(fixture, this.codex).destination;
-      if (destination !== undefined) names.push(destination.def.name);
-    }
-    return names;
   }
 
   protected build(): void {
@@ -896,32 +893,6 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * カードに、隣の場所への操作（端を押しての移動と、掴んでのドラッグ）を付ける。
-   *
-   * 移せないカードにもドラッグは付ける。他のカードへ重ねるcombinationのドラッグ元にはなれるため。
-   *
-   * カードを押すと、そのオブジェクトの子ウィンドウが開く。コンテナのカードだけは中身の子ウィンドウを
-   * 直接開く（中身を見る・出し入れするのがそのカードの主な用途のため）。端の操作エリアは中央より
-   * 手前に居るので、端を押しての移動とは競合しない（Card参照）。
-   */
-  private laneCardsWithEdgeActions(
-    cards: readonly (ObjectCardStack | undefined)[],
-  ): readonly (CardContent | undefined)[] {
-    return cards.map((card) => {
-      if (card === undefined) return undefined;
-
-      return {
-        ...card,
-        draggable: true,
-        onTap: this.whileIdle(() => this.openObjectWindow(card)),
-        edges: this.cardEdges(card),
-        // 経過を見せている間は行動の途中の値。状態バーは減った分の帯を縮めずに溜める（statusContentと同じ）。
-        midAction: this.midAction,
-      };
-    });
-  }
-
-  /**
    * レーンの全面に敷く絵（用意されていなければundefinedで、レーンは単色になる）。
    * どのスロットにどの絵を敷くかは画面側では決めず、絵のファイル名が名乗る（backgroundArt参照）。
    */
@@ -937,35 +908,14 @@ export class PlayScene extends ResponsiveScene {
    */
   private cellsAt(place: CardPlace): readonly LaneCell[] {
     const stacks = this.shown.stacksAt(place);
-    const slot = this.view.slotViewOf(place);
     const cells = slotCells(
-      slot,
+      this.view.slotViewOf(place),
       stacks,
-      this.laneCardsWithEdgeActions(stacks),
+      this.shown.cardsOf(stacks),
       this.emptyCellCycle,
       (objectGlobalId) => this.view.cardOfType(objectGlobalId),
     );
     return hiddenCountCells(cells, this.shown.hiddenAt(place));
-  }
-
-  /**
-   * そのカードが出す端の操作。**そこへ移せるカードだけが矢印を出す**ので、置ける設置物（設置もできる
-   * かご）を足せば、画面を直さずに設置物レーンとアイテムレーンの間を行き来できるようになる。
-   */
-  private cardEdges(card: ObjectCardStack): readonly CardEdgeAction[] {
-    const edges: CardEdgeAction[] = [];
-    for (const direction of EDGE_DIRECTIONS) {
-      const move = this.shown.edgeMoveAction(card, direction);
-      if (move !== undefined) {
-        const label = this.locale.uiText('log_card_edge_tapped', {
-          name: card.name,
-          place: this.placeText(card.place),
-          direction,
-        });
-        edges.push({ direction, onTap: () => this.applyToWorld(label, move) });
-      }
-    }
-    return edges;
   }
 
   /**
@@ -1330,7 +1280,10 @@ export class PlayScene extends ResponsiveScene {
           grows: slot.cells === 'grows',
         };
       }),
-      initialTab: this.initialTab(opened?.opensPlace),
+      initialTab: initialTab(
+        opened?.opensPlace === undefined ? undefined : this.view.slotViewOf(opened.opensPlace).key,
+        this.childWindowDef === undefined ? undefined : this.settings.openedTab(this.childWindowDef),
+      ),
       actions: this.actionButtons(window.actions, window.card.name),
       area: this.layout.slotWindowArea,
       onTabChange: (tab) => this.changeWindowTab(tab),
@@ -1343,24 +1296,8 @@ export class PlayScene extends ResponsiveScene {
     this.childWindowPlace = this.placeOfTab(this.childWindow.openedTab);
     this.rememberTab(this.childWindow.openedTab);
     this.setDragLanes();
-    // 借りた1枚がウィンドウの枠へ移り、手持ちの端が指す先も変わる（laneCardsWithEdgeActions・neighbourOf参照）。
+    // 借りた1枚がウィンドウの枠へ移り、手持ちの端が指す先も変わる（ShownCards.cardsOf・edgeTargets参照）。
     this.showView({ origins });
-  }
-
-  /**
-   * 最初に開きたいタブ。**プログラムの指定 ＞ 型ごとの記憶 ＞ 説明**（Windows.md 1.2節）。
-   *
-   * 指定するのは、開いた文脈がそのスロットを見に来たと分かっている場合だけ——装備・怪我のボタンと、
-   * 作り始めた直後の製作中オブジェクト。それ以外は覚えているものに従う。**覚えているのはスロットの
-   * タブとは限らない**（プロパティ・踏査のタブも同じように覚える）ので、並んでいるかどうかの判定は
-   * ウィンドウに任せる。
-   */
-  private initialTab(opensPlace: CardPlace | undefined): string {
-    const named = opensPlace === undefined ? undefined : this.view.slotViewOf(opensPlace).key;
-    if (named !== undefined) return named;
-    const remembered =
-      this.childWindowDef === undefined ? undefined : this.settings.openedTab(this.childWindowDef);
-    return remembered ?? DESCRIPTION_TAB;
   }
 
   /** タブの識別子が指す場所（説明のタブではundefined）。 */
@@ -2059,7 +1996,9 @@ export class PlayScene extends ResponsiveScene {
           radius: this.metrics.px(SIZE.radius),
         },
       );
-      const icon = this.buttonIcon(
+      const icon = buttonIcon(
+        this,
+        this.metrics,
         { art: situation, icon: SITUATION_ICONS[situation] ?? UNKNOWN_SITUATION_ICON },
         { width: CONDITION_ICON_ART, height: CONDITION_ICON_ART },
         CONDITION_GLYPH_SIZE,
@@ -2119,83 +2058,23 @@ export class PlayScene extends ResponsiveScene {
    * どれも役割が固定なので、絵だけで区別が付く。文字を持たなければ、言語ごとに変わる文字数を
    * ボタンの内側へ収める必要も無い（日時のフリップカードと同じ考え方）。
    *
-   * **紙として置かれるので影を落とす**（drawBoxのshadow）。カードは絵に影が焼いてあり（card_frame.json）、
-   * このボタンだけが本のページに貼り付いて見えていた。立体的な縁は足さない——枠を持たせるとカードと
-   * 同じ格に見えて、画面のメリハリが消える。
+   * **カードは絵に影が焼いてあり**（card_frame.json）、このボタンだけが本のページに貼り付いて
+   * 見えていた。紙として置く見せ方そのものはPaperButtonが持つ。
    */
   private addSlotButton(
     rect: Rect,
     spec: { art: IconName; icon: string; fill: number; onTap: () => void },
     index: number,
   ): void {
-    const radius = this.metrics.px(SIZE.radius);
-    const borderWidth = this.metrics.linePx(2);
-    const button = new Button(this, rect, {
-      fillColor: spec.fill,
-      borderColor: COLOR.paperButtonBorder,
-      borderWidth,
-      radius,
-      shadowOffset: this.metrics.px(PAPER_BUTTON_SHADOW),
+    const button = new PaperButton(this, this.metrics, rect, {
+      fill: spec.fill,
+      icon: spec,
+      iconCanvas: SIZE.slotButtonIcon,
+      // 絵文字は正方形なので、キャンバスの高さがそのまま大きさになる。
+      glyphSize: SIZE.slotButtonIcon.height,
+      paperIndex: index,
     });
-    button.addContent(...this.slotButtonPaper(rect, index, radius, borderWidth));
-    // 絵文字は正方形なので、キャンバスの高さがそのまま大きさになる。
-    button.addCentered(this.buttonIcon(spec, SIZE.slotButtonIcon, SIZE.slotButtonIcon.height));
     button.on('pointerup', this.whileIdle(spec.onTap));
-  }
-
-  /**
-   * ボタンの地。**染めた紙を敷くだけ**——色も角丸も絵に焼いてある
-   * （recipes/slot_button_paper.json、カードの枠と同じ扱い）。実行時に染めて切り抜くと、
-   * どちらもWebGL専用の機能になり、WebGLの無い環境で色も角丸も消える。
-   *
-   * 敷く紙はボタン専用の絵（`SLOT_BUTTON_PAPER_TEXTURE`）で、ボタン1つぶんが1枚。**カードの枠とは
-   * 別の絵**で、同じ紙から切り出してあるだけ。枠線は紙の上へ引き直す（Buttonが描く枠線は紙の下に
-   * なる）。
-   *
-   * 紙が読めなければ何も敷かず、Buttonの平らな塗りがそのまま地になる。
-   */
-  private slotButtonPaper(
-    rect: Rect,
-    index: number,
-    radius: number,
-    borderWidth: number,
-  ): Phaser.GameObjects.GameObject[] {
-    if (!this.textures.exists(SLOT_BUTTON_PAPER_TEXTURE)) return [];
-
-    // ボタンごとに別の1枚を敷く。同じ絵だと同じ染みが並び、模様として目に付く。
-    const sheet = this.textures.get(SLOT_BUTTON_PAPER_TEXTURE);
-    const paper = this.add
-      .image(0, 0, SLOT_BUTTON_PAPER_TEXTURE, index % sheet.frameTotal)
-      .setOrigin(0, 0)
-      .setDisplaySize(rect.width, rect.height);
-
-    const frame = this.add.graphics();
-    frame.lineStyle(borderWidth, COLOR.paperButtonBorder, 1);
-    frame.strokeRoundedRect(0, 0, rect.width, rect.height, radius);
-    return [paper, frame];
-  }
-
-  /**
-   * 絵があればそれを、無ければ絵文字を、ボタンの中央へ置く（iconArt参照）。canvasは絵を敷く寸法、
-   * glyphSizeは絵文字の大きさで、**スロットのボタンと桟のアイコンの違いはこの2値だけ**なので仕組みは
-   * 分けない。
-   *
-   * **どの絵も同じ大きさで敷く。** どれも同じ寸法のキャンバスに、物だけが実物の大小——開いた地図 >
-   * Tシャツ > 巻いた包帯——のとおり描き分けてある（card_art.pyの--canvas）。UIが物の大きさを測って
-   * 揃えると、その差が消えてしまう。周りは透けているので、ボタンの地の色が下に出る。
-   */
-  private buttonIcon(
-    spec: BarIcon,
-    canvas: { width: number; height: number },
-    glyphSize: number,
-  ): Phaser.GameObjects.Image | Phaser.GameObjects.Text {
-    const texture = spec.art === undefined ? undefined : iconTexture(spec.art);
-    if (texture !== undefined && this.textures.exists(texture)) {
-      return this.add
-        .image(0, 0, texture)
-        .setDisplaySize(this.metrics.px(canvas.width), this.metrics.px(canvas.height));
-    }
-    return addLabel(this, this.metrics, 0, 0, spec.icon, { size: glyphSize });
   }
 
   /**
@@ -2532,7 +2411,9 @@ export class PlayScene extends ResponsiveScene {
     // どの絵も同じ大きさで敷く。役割に大小は無いので、物の大きさで差を付ける理由も無い。
     const button = new Button(this, rect, this.iconButtonStyle(active, border), onTap);
     const art = SIZE.iconButtonArt;
-    button.addCentered(this.buttonIcon(spec, { width: art, height: art }, ICON_BUTTON_GLYPH_SIZE));
+    button.addCentered(
+      buttonIcon(this, this.metrics, spec, { width: art, height: art }, ICON_BUTTON_GLYPH_SIZE),
+    );
     return button;
   }
 
@@ -2543,7 +2424,7 @@ export class PlayScene extends ResponsiveScene {
       borderColor: border,
       borderWidth: this.metrics.linePx(2),
       radius: this.metrics.px(SIZE.radius),
-      shadowOffset: this.metrics.px(PAPER_BUTTON_SHADOW),
+      shadowOffset: this.metrics.px(SIZE.paperButtonShadow),
     };
   }
 
