@@ -24,9 +24,17 @@ const SESSION = 'session_01TESTTESTTESTTESTTEST';
 /** worktree の名前は、IDから接頭辞を落として作る（スクリプトと同じ規約）。 */
 const WORKTREE = 'bridge-cse_01TESTTESTTESTTESTTEST';
 
+/**
+ * 畳む口が断ったときの言い分。**2行で言わせる**——**出力は1行1件**なので、改行が空白へ畳まれて
+ * いることもここで見る。
+ */
+const REFUSAL = ['失敗: HTTP 403 Forbidden', '（資格情報を読み直す）'];
+
 interface World {
   /** 既に畳まれているか。 */
   readonly archived?: boolean;
+  /** `archive_session` が理由を標準エラーへ言って非0で終わるか。 */
+  readonly refuses?: boolean;
   /** `session_status` と `status_bucket`。既定は手が空いている。 */
   readonly state?: readonly [string, string];
   /** 畳む相手が名乗るタグ。既定は盤面が立てたワーカー。 */
@@ -88,7 +96,11 @@ function run(world: World = {}): Run {
 payload=$(cat)
 if [ "$1" = archive_session ]; then
   printf '%s' "$payload" | jq -r '.session_id' >> '${dir}/archived'
-  exit 0
+${
+  world.refuses === true
+    ? `  printf '%s\\n' ${REFUSAL.map((line) => `'${line}'`).join(' ')} >&2\n  exit 1`
+    : '  exit 0'
+}
 fi
 echo '<other-session>'
 echo '${JSON.stringify({
@@ -194,6 +206,16 @@ describe('archive-session.sh', () => {
     const result = run({ state });
 
     expect(result.archived).toBe(true);
+  });
+
+  // **タグと対象だけでは、失敗した事実しか運ばない**（issue #1864）。権限が足りないのか相手が
+  // もう居ないのかへ辿り着けないと、読んだ側は同じコマンドを手で打ち直すところから始めることになる。
+  it('畳めなかったら、打った口が言った理由を同じ行へ載せる', () => {
+    const result = run({ refuses: true });
+
+    expect(result.text.trim()).toBe(`UNARCHIVED ${SESSION}: ${REFUSAL.join(' ')}`);
+    // 畳めていないので、worktree にも手を出さない。
+    expect(result.kept).toBe(true);
   });
 
   it('worktree の無いセッションは、畳むだけで終わる', () => {

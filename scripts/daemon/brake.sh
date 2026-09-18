@@ -23,6 +23,11 @@
 # （[`policies.md`](../../agent-ops/policies.md)「理由の持たせ方」）。**読めなかった（`UNKNOWN`）は
 # 直す相手が要る側**——手綱が読めないこと自体が、誰かが直すべき状態だから。
 #
+# **外の道具が転んだ `UNKNOWN` には、その標準エラーを同じ行へ載せる**
+# （[`archive-session.sh`](archive-session.sh) の `DIRTY` と同じ形）。「引けなかった」だけでは、
+# 権限が足りないのか相手が居ないのか通信が落ちたのかへ辿り着けず、読んだ側は同じコマンドを手で
+# 打ち直すところから始めることになる。**出力は1行**なので、改行は空白へ畳む。
+#
 # 掛かるのは**セッションを立てること**だけ。マージやラベルは止めない
 # （[`board-design.md`](../../agent-ops/board-design.md) 2.4）。走っているセッションにも触らない。
 #
@@ -58,10 +63,15 @@ other) chain=('その他のエージェント') ;;
   ;;
 esac
 
-if ! body=$(gh issue view "$ISSUE" --json body -q .body 2>/dev/null); then
-  echo "UNKNOWN 手綱の issue #$ISSUE を引けなかった"
+# 引けなかった理由は標準エラーに在るが、この `gh` は**標準出力が値**なので、混ぜずに受ける。
+stderr=$(mktemp)
+if ! body=$(gh issue view "$ISSUE" --json body -q .body 2>"$stderr"); then
+  err=$(cat "$stderr")
+  rm -f "$stderr"
+  echo "UNKNOWN 手綱の issue #$ISSUE を引けなかった: ${err//$'\n'/ }"
   exit 1
 fi
+rm -f "$stderr"
 
 # `## 手綱` から次の `## ` の手前まで。節の外に書かれたチェックボックスは見ない。
 # **`awk` が `$` で留めるので、行末の `\r` は先に落とす**（[`tidy-merged-pr.sh`](tidy-merged-pr.sh)
