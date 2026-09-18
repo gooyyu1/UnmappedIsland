@@ -53,7 +53,7 @@
 打ち手が違うので、指摘が**どの層の話か**を明示する——ディレクトリ／ファイルの**配置**、クラス／
 モジュールへの**所属**、`public`・`export` である必要があるかの**可視性**。配置の判定は
 [`docs/CodeStructure.md`](../docs/CodeStructure.md) 1節の層を基準にする。移動先の決め方は
-[`docs/engine/DesignNotes.md`](../docs/engine/DesignNotes.md)「定義位置を動かすとき」。
+[`docs/DesignNotes.md`](../docs/DesignNotes.md)「定義位置を動かすとき」。
 
 **判定3は、5段階とは別にもう一段深い問いで見直す。** 「A の private ヘルパーだが、主語は実は B
 （B の機能が足りないから A が代わりに書いている）」という形を、private ヘルパー全件へ問う。
@@ -122,7 +122,7 @@
 
 **その回の明細は、日付を頭に付けたフォルダへ畳む。** 次の回が読むのはこの `README.md` だけで、
 記録は当時の答えとして残す。方針として次も使うものが出たなら、責務を持つ文書
-（`docs/CodingConventions.md`・`docs/CodeStructure.md`・`docs/engine/DesignNotes.md`）か、
+（`docs/CodingConventions.md`・`docs/CodeStructure.md`・`docs/DesignNotes.md`）か、
 この `README.md` へ移してから畳む。
 
 **その回の中では終わらないと書いて先送りしたものは、畳む前に issue にする。** 次の回が記録を開くのは

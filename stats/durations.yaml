@@ -4,7 +4,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/DurationStats.md。
 
 meta:
-  - {unit: days, minimum: 1, durations: 148, longest: 100.00, shortest: 1.00, tool_wears: 15}
+  - {unit: days, minimum: 1, durations: 149, longest: 100.00, shortest: 1.00, tool_wears: 15}
 
 durations:
   - {object: bone_needle, property: durability, unit: days, days: 100.00, shortest_days: 20.00, longest_days: 100.00, repeats: false, destroys: true}
@@ -152,6 +152,7 @@ durations:
   - {object: raw_meat, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
   - {object: seaweed, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
   - {object: unfired_jar, property: moisture, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
+  - {object: unfired_jar_lid, property: moisture, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
   - {object: water_spinach, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}
   - {object: wild_boar, property: stay_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: true}
   - {object: wild_boar_carcass, property: smoking_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: false}

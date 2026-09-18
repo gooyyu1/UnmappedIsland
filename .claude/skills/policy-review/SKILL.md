@@ -34,7 +34,7 @@ description: >-
 | [`DocumentStyle.md`](../../../docs/DocumentStyle.md) | `docs/` の文書の構造（見出し・節番号・確定の表し方）と、何を書き残し何を書かないか | しない |
 | [`CodingConventions.md`](../../../docs/CodingConventions.md) | TypeScript の規約のうち、機械で強制できないもの | しない |
 | [`CodeStructure.md`](../../../docs/CodeStructure.md) | `src/` の置き場と、どこが何を知ってよいか | しない |
-| [`DesignNotes.md`](../../../docs/engine/DesignNotes.md) | 繰り返さないために残す事例 | しない |
+| [`DesignNotes.md`](../../../docs/DesignNotes.md) | 繰り返さないために残す事例 | しない |
 
 **`policies.md` へ入れるのは、行き先が他に無いものだけ。** ここだけが全文を注入するので、
 入れた分だけ全セッションの文脈が減る。**題材の決まっている判断は、その題材の文書が持つ。**
@@ -165,7 +165,7 @@ context: policies.md の書き方の見直し（会話のみ）
 ```
 
 - **事例を本文へ書かない。** 具体のファイル名・節番号・PRやissueの番号は、履歴と
-  [`DesignNotes.md`](../../../docs/engine/DesignNotes.md) が持つ。3行に収まらないなら、束ね方が
+  [`DesignNotes.md`](../../../docs/DesignNotes.md) が持つ。3行に収まらないなら、束ね方が
   粗いか、まだ一般則になっていない。
 - **重視は「何をどう見ているか」を書く。** 「短いから」「速いから」のような表面的な利点は、
   字面の違う場面で逆を向く。
