@@ -24,5 +24,6 @@ context: 棚卸しの設計案（`kind:` は task と meta だけ・無効は `�
 - **`kind:task` を付けるのは棚卸し。** 併せて `判断待ち` も付け、ユーザーは `blockedBy` を
   張ってから `判断待ち` を外す。**この後半は同じ日のうちに覆っている**——
   [[2026-09-06-who-takes-over-each-piece-of-the-users-work]] で `判断待ち` を付けないことになり、
-  [[2026-09-06-register-dependent-tasks-now-with-blocked-by]] で `blockedBy` はセッションが張って
-  よいことになった。人の手番を挟むのは棚卸しが判断したときだけ。
+  `blockedBy` を張るかどうかも棚卸しの判断になった（前段の完了を待たずに今つなぐことは
+  [[2026-09-06-register-dependent-tasks-now-with-blocked-by]]）。人の手番を挟むのは棚卸しが
+  判断したときだけ。
