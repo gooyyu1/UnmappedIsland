@@ -27,7 +27,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { busySession, moves } from './board-move.mjs';
+import { STRANDS, busySession, moves } from './board-move.mjs';
 import { MERGED_WINDOW_HOURS, readBoard } from './board-read.mjs';
 import { UNREADABLE, boardState, readLedger, writeLedger } from './board-state.mjs';
 import { formatLive, liveSessions } from './live-sessions.mjs';
@@ -194,15 +194,33 @@ export function trackIdle(taken, board, now) {
  * 人へ返すときに issue へ置くコメント。**1行目が返却の宣言**で、ここを読んでラベルを動かすのは
  * [`board-labels.yml`](../../.github/workflows/board-labels.yml)——**ワーカーが自分で返すときと同じ道**
  * （`agent-ops/board-design.md` 2.15）。ラベルを盤面から直に触らないので、返す経路が2つに割れない。
+ *
+ * **返す理由ごとに文面を分ける**（2.11.4）。返す形は2つあり、**人がすることが違う**——止まった
+ * ワーカーの仕事は投入し直せば進むが、**宛先の無いPRは、そのPRを直さないかぎり何度投入しても
+ * 同じところで止まる。** 1つの文面に畳むと、**読んだ人が手を入れる先を間違える。**
  */
-const returnBody = (session, issue) =>
-  `[返却] 起こしても手が動かなかった
+function returnBody(session, issue, cause) {
+  const [kind, number] = String(cause ?? '').split(':');
+  const strand = STRANDS[kind];
+  if (strand === undefined)
+    return `[返却] 起こしても手が動かなかった
 
 担当していたセッション（\`${session}\`）は、PRを出さないまま手が空いた状態が続き、盤面が一度
 起こしても何も出てきませんでした。**返却の宣言は届いていません**——止まった理由はここには書けません。
 
 同じ内容でもう一度投入するなら、この issue（#${issue}）から \`判断待ち\` を外してください。
 `;
+  return `[返却] PR #${number} の直しを頼む相手を引けない
+
+この issue のPR（#${number}）は、コミットの \`Claude-Session:\` の名乗りから差し戻す相手を引けません
+——**${strand.why}**。盤面はこのPRをレビューへもマージへも差し戻しへも出せないので、担当していた
+セッション（\`${session}\`）に枠と錠を握らせたままにせず、ここで返します。
+
+**直すには**: ${strand.fix}。
+
+PRが動き出したら、この issue（#${issue}）から \`判断待ち\` を外してください。
+`;
+}
 
 /**
  * **前の差分の札を落としてほしい**とPRへ頼む1行目（`board-move.mjs` の `UNLABEL`。
@@ -285,7 +303,7 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
       const work = mkdtempSync(join(tmpdir(), 'board-round-'));
       try {
         const body = join(work, 'return.md');
-        writeFileSync(body, returnBody(b, a));
+        writeFileSync(body, returnBody(b, a, d));
         if (gh(['issue', 'comment', a, '--body-file', body]) === undefined) return FAILED;
       } finally {
         rmSync(work, { recursive: true, force: true });

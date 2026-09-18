@@ -608,6 +608,29 @@ describe('board-round.mjs', () => {
     expect(result.gh.filter((call) => call.startsWith('issue edit'))).toEqual([]);
   });
 
+  /**
+   * **宛先の無いPRを抱えた担当を返すときは、文面が違う**（2.11.4）。止まったワーカーの仕事は
+   * 投入し直せば進むが、**このPRは直さないかぎり何度投入しても同じところで止まる**——1つの文面に
+   * 畳むと、読んだ人が手を入れる先を間違える。
+   */
+  it('宛先の無いPRを抱えた担当は、直す先の分かる文面で返す', async () => {
+    const result = await playRound({
+      issues: [
+        { number: 9, labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }], blockedBy: { nodes: [] } },
+      ],
+      prs: [pr(10, { body: 'Closes #9\n', labels: [{ name: '直し待ち' }] })],
+      // `bridge-cse_<ID>` から `cse_` を落とし損ねた名乗り（PR #1922）。
+      prSessions: { 10: 'session_cse_014cYXoMLEog6HpsE4m2bUn8' },
+      sessions: [idle('session_holder', 'task-9')],
+    });
+
+    expect(result.comments[0]?.split('\n')[0]).toBe('[返却] PR #10 の直しを頼む相手を引けない');
+    expect(result.comments[0]).toContain('名乗りが実在しないセッションを指している');
+    // **リポジトリを開かずに直せる形で書く**（2.22.3）。
+    expect(result.comments[0]).toContain('英数字22文字');
+    expect(result.ledger['resume:session_holder']).toBe('returned:9');
+  });
+
   it('返せなかったら、指紋を残さない', async () => {
     const result = await playRound({
       issues: [

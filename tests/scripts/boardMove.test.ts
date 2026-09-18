@@ -112,6 +112,10 @@ function moves(board: Board): string[] {
     prs: [],
     issues: [],
     sessions: [],
+    // **既定は「名乗りを引けた周」。** 引けなかった周（`undefined`）のほうが例外なので、そこを
+    // 見る検査だけが `prSessions: undefined` を書く（2.11.4）——既定を引けない側に置くと、
+    // **宛先を見るどの判定も既定の盤面では効かなくなる。**
+    prSessions: {},
     ...board,
     taken: { ...idled, ...tidied, ...DUG_JUST_NOW, ...PATROLLED_JUST_NOW, ...board.taken },
   });
@@ -931,17 +935,100 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual([]);
   });
 
-  it('トレーラの指すセッションが畳まれていたら、打つ手が無いことを書き残す', () => {
-    const board = { prs: [pr(10, label('直し待ち'))], prSessions: { 10: 'session_writer' } };
-    expect(moves(board)).toEqual(['NOTE PR #10 は差し戻されたが、直す相手が畳まれている']);
-  });
+  /**
+   * **差し戻す相手を引けない形は3つあり、人が手を入れる先がそれぞれ違う**（2.11.4）。1つに畳んだ
+   * 盤面は、**実在しないIDを「畳まれている」と言い続けた**——作者のセッションは生きていたのに、
+   * ユーザーがPRへ書いた質問は一度も届かなかった（2026-09-11、PR #1922。issue #1937）。
+   */
+  describe('差し戻す相手を引けないPR', () => {
+    /** 畳まれた実在のセッション（形は `tests.yml` の `名乗り` が見るものと同じ）。 */
+    const GONE = 'session_01TyQngmJGi4rLDAWmfqjG9T';
+    /** `bridge-cse_<ID>` から `cse_` を落とし損ねた名乗り。この形が PR #1922 で通った。 */
+    const BROKEN = 'session_cse_014cYXoMLEog6HpsE4m2bUn8';
 
-  // **名乗っていないPRは差し戻せない。** 規則の破れなので、直すのは人（2.11.2）。畳まれていた
-  // ときと同じ文面にすると、人が手を入れるべき側が読めない。
-  it('名乗っていないPRは、そうと分かる形で書き残す', () => {
-    expect(moves({ prs: [pr(10, label('直し待ち'))] })).toEqual([
-      'NOTE PR #10 は差し戻されたが、書いたセッションが名乗っていない',
-    ]);
+    it('名乗っていなければ、そうと分かる形で書き残す', () => {
+      const board = { prs: [pr(10, label('直し待ち'))], prSessions: {} };
+      expect(moves(board)).toEqual(['NOTE PR #10 は差し戻されたが、書いたセッションが名乗っていない']);
+    });
+
+    // **畳まれた実在のIDと同じ顔をする**ので、在るかどうかだけを見る盤面には見分けられない。
+    it('名乗りがセッションIDの形でなければ、実在しないと書く', () => {
+      const board = { prs: [pr(10, label('直し待ち'))], prSessions: { 10: BROKEN } };
+      expect(moves(board)).toEqual([
+        'NOTE PR #10 は差し戻されたが、名乗りが実在しないセッションを指している',
+      ]);
+    });
+
+    it('形は正しく一覧に居なければ、畳まれていると書く', () => {
+      const board = { prs: [pr(10, label('直し待ち'))], prSessions: { 10: GONE } };
+      expect(moves(board)).toEqual(['NOTE PR #10 は差し戻されたが、名乗っているセッションが畳まれている']);
+    });
+
+    // **一覧に居るほうが強い。** 形の検査を先に置くと、**起こせる相手が居るのに「実在しない」**と
+    // 言うことになる——ここが答えるのは「盤面が起こせるか」。
+    it('形が想定と違っても、一覧に居れば差し戻す', () => {
+      const board = {
+        prs: [pr(10, label('直し待ち'))],
+        prSessions: { 10: BROKEN },
+        sessions: [idle(BROKEN)],
+      };
+      expect(moves(board)).toEqual([`RESUME ${BROKEN} mend 10 mend:returned:10:aaa1111`]);
+    });
+
+    // **引けなかったことを「名乗っていない」と書かない。** 直す先が人だと読めるので、規則を
+    // 守っているPRの書き手が毎周疑われる（`board-read.mjs` の `readPrSessions`）。
+    it('名乗りそのものを引けなかった周は、どれとも言わない', () => {
+      expect(moves({ prs: [pr(10, label('直し待ち'))], prSessions: undefined })).toEqual([
+        'NOTE PR #10 は差し戻されたが、差し戻す相手を引けなかった',
+      ]);
+    });
+
+    /**
+     * **錠を抱えたまま毎周見送られ続けない**（2.11.4）。宛先を引けないPRは盤面が永久に動かせない
+     * ので、**待たせても誰も直さない**——2026-09-11、担当が `area:daemon` を握ったまま、着手できる
+     * 8件が2時間動かなかった。
+     */
+    describe('抱えている担当の錠を解く', () => {
+      const held = (over: Record<string, unknown> = {}) => ({
+        issues: [{ number: 9, ...label('kind:task', 'area:daemon'), blockedBy: { nodes: [] } }],
+        prs: [pr(10, { body: 'Closes #9\n', ...label('直し待ち') })],
+        sessions: [idle('session_holder', 'task-9')],
+        ...over,
+      });
+
+      // **起こさない。** 盤面にはこのワーカーへ渡す文面が無い——差し戻す相手はトレーラで引くと
+      // 決めてある以上、担当のタグからこのPRの書き手だとは言えない（2.11.1）。
+      it('起こさずに人へ返し、返す手が理由を運ぶ', () => {
+        expect(moves(held({ prSessions: { 10: GONE } }))).toEqual([
+          'RETURN 9 session_holder returned:9 archived:10',
+          'NOTE PR #10 は差し戻されたが、名乗っているセッションが畳まれている',
+        ]);
+      });
+
+      // 返した後は同じ手を出さない（指紋の枠は1つ）。
+      it('二度は返さない', () => {
+        const board = held({ prSessions: { 10: GONE } });
+        const taken = { 'idle:session_holder': LONG_IDLE, 'resume:session_holder': 'returned:9' };
+        expect(moves({ ...board, taken }).filter((move) => !move.startsWith('NOTE '))).toEqual([]);
+      });
+
+      // **宛先を引けるPRは、今までどおり担当を外す**（2.16.2）。畳むと、そのPRの直しを頼む相手が
+      // 居なくなる。
+      it('宛先を引けるPRを抱えた担当は、返さない', () => {
+        const board = held({ prSessions: { 10: 'session_writer' } });
+        const live = { ...board, sessions: [...board.sessions, idle('session_writer')] };
+        expect(moves(live).filter((move) => !move.startsWith('NOTE '))).toEqual([
+          'RESUME session_writer mend 10 mend:returned:10:aaa1111',
+        ]);
+      });
+
+      // **引けなかった周に返さない。** 空の対応表で読むと、開いているPRが全部宛先を失ったように
+      // 見え、抱えている担当が片端から人へ返る。
+      it('名乗りを引けなかった周は、返さない', () => {
+        const board = held({ prSessions: undefined });
+        expect(moves(board).filter((move) => !move.startsWith('NOTE '))).toEqual([]);
+      });
+    });
   });
 
   // `..._BLOCKED` は手番を終えて人へ問いを返した状態で、手は空いている（board-design 1.6 の実測）。
@@ -1269,6 +1356,7 @@ describe('board-move.mjs', () => {
         blockedBy: { nodes: [] },
       })),
       prs: holders.map((number) => pending(number)),
+      prSessions: Object.fromEntries(holders.map((number) => [number, `session_${number}`])),
       sessions: holders.map((number) => idle(`session_${number}`, `task-${number}`)),
     };
     expect(moves(board)).toEqual(['TASK 9']);
@@ -1285,6 +1373,7 @@ describe('board-move.mjs', () => {
         blockedBy: { nodes: [] },
       })),
       prs: holders.map((number) => pending(number)),
+      prSessions: Object.fromEntries(holders.map((number) => [number, `session_${number}`])),
       sessions: holders.map((number) => idle(`session_${number}`, `task-${number}`)),
     };
     const who = holders.map((number) => `session_${number}`).join(' ');
@@ -1356,6 +1445,7 @@ describe('board-move.mjs', () => {
     const board = {
       issues: [{ number: 9, ...label('kind:task', 'env:bridge'), blockedBy: { nodes: [] } }],
       prs: [pr(10, label('収束せず'))],
+      prSessions: { 10: 'session_a' },
       sessions: [{ ...idle('session_a', 'task-9'), env: 'cloud' }],
     };
     expect(moves(board)).toEqual([]);
@@ -1807,6 +1897,17 @@ describe('board-move.mjs', () => {
       sessions: [idle('session_c', 'chore-analysis'), working('session_a')],
     };
     expect(moves(board)).toContain('ARCHIVE session_c done:chore-analysis');
+  });
+
+  // **引けなかった周に畳むと、盤面が自分で宛先の無いPRを作る**（2.11.4）——空の対応表では、PRを
+  // 出した係が全部「PRを出していない」に見える。**倒れる先は、畳まないほう。**
+  it('名乗りを引けなかった周は、周期の係を畳まない', () => {
+    const board = {
+      prs: [pr(10)],
+      prSessions: undefined,
+      sessions: [idle('session_c', 'chore-analysis')],
+    };
+    expect(moves(board)).not.toContain('ARCHIVE session_c done:chore-analysis');
   });
 
   // ## 価値観を畳む係（2.17.2）
