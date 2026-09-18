@@ -53,7 +53,7 @@ export function craftingActions(
 
   const step = currentStep(recipe, progressOf(object));
   const supplied = step !== undefined && stepIsSupplied(object, step);
-  // 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.4節）。素材より先に見るのは、
+  // 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.3節）。素材より先に見るのは、
   // 満たしていなければ素材が揃っていても手が付けられないため。
   const unmetCrafting = codex.unmetCraftingRequirement(game.player.instance);
 

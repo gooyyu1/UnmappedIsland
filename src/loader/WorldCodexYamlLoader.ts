@@ -102,7 +102,7 @@ export class WorldCodexYamlLoader {
    */
   private inProgressTagIds = new Set<TagGlobalId>();
 
-  /** 製作の工程を進めるのに要る条件（crafting_conditions、13.4節）。全レシピ共通の1本。 */
+  /** 製作の工程を進めるのに要る条件（crafting_conditions、13.3節）。全レシピ共通の1本。 */
   private craftingConditions: Requirements | undefined;
 
   /**
@@ -245,7 +245,7 @@ export class WorldCodexYamlLoader {
       for (const node of inProgressTags.items as YamlNode[])
         this.inProgressTagIds.add(this._tagNames.intern(asScalarText(node, `${label}.in_progress_tags`)));
 
-    // 製作の工程を進めるのに要る条件（13.4節）。**全レシピに一律で掛かる**ので、後から現れた宣言は
+    // 製作の工程を進めるのに要る条件（13.3節）。**全レシピに一律で掛かる**ので、後から現れた宣言は
     // 合流させず置き換える（同じ約束が2つあると、どちらが効いているのか読めなくなる）。
     const craftingConditions = tryGetSeq(root, 'crafting_conditions', label);
     if (craftingConditions !== undefined)

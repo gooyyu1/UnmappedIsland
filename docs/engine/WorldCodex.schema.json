@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://unmappedisland.example/schema/world-codex.schema.json",
   "title": "WorldCodex",
-  "description": "UnmappedIsland の WorldCodex ファイル（GameElementDefinition.md 3.1節）のスキーマ定義。ファイル自体が1つの WorldCodex であり、専用のルートキーは持たない。terrain 生成のルートキー（axes/location_types/generation_scopes、TerrainGeneration.md）はローダーが受け付ける実在の文法だが、識別子をキーとする既存の規約（3節）とは別系統のスキーマ検討が残っているため、本スキーマでは「キーとして許容するが中身は検証しない」に留めている。",
+  "description": "UnmappedIsland の WorldCodex ファイル（GameElementDefinition.md 3.1節）のスキーマ定義。ファイル自体が1つの WorldCodex であり、専用のルートキーは持たない。terrain 生成のルートキー（axes/location_types/generation_scopes、TerrainGeneration.md）はローダーが受け付ける実在の文法だが、本スキーマでは「キーとして許容するが中身は検証しない」に留めている——綴りの誤りはローダーが全部止めており（tests/world-codex/terrainGenerationUnknownKeys.test.ts）、識別子をキーとする既存の規約（3節）とは別系統のスキーマをここへ写しても、二重に持つだけになるため。",
   "type": "object",
   "properties": {
     "object_defs": {
@@ -88,7 +88,7 @@
     },
     "crafting_conditions": {
       "$ref": "#/$defs/conditions_list",
-      "description": "全レシピの工程を進めるのに一律で掛かる条件（GameElementDefinition.md 13.4節）。要件の並びなので、要素ごとにreasonを書ける（同13.5節・14.6節）。"
+      "description": "全レシピの工程を進めるのに一律で掛かる条件（GameElementDefinition.md 13.3節）。要件の並びなので、要素ごとにreasonを書ける（同13.4節・14.6節）。"
     },
     "patch_object_defs": {
       "description": "既にあるobject_defへの変更（GameElementDefinition.md 3.4節）。",
@@ -1082,16 +1082,12 @@
       "description": "レシピ（GameElementDefinition.md 13節）。成果物のobject_defsに、名前をキーとする辞書として埋め込む。",
       "type": "object",
       "properties": {
-        "icon": {
-          "type": "string",
-          "description": "自動生成される製作中オブジェクトの型へ引き継がれる、完成品ごとのアイコン指定（GameElementDefinition.md 13.2節、内部設計はRecipeSystem.md 1節）。"
-        },
         "conditions": {
           "$ref": "#/$defs/conditions_list",
-          "description": "このレシピを知っているかの解放条件（SkillSystem.md 4節）。ここには成果物のインスタンスがまだ無いので、宣言元の個体が居ない（13.3節）。何を主語に書けるかは数え上げず、この宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。要件の並びなので、要素ごとにreasonを書ける（14.6節）。素材の充足はsteps.requiresが見るので別物。"
+          "description": "このレシピを知っているかの解放条件（SkillSystem.md 4節）。ここには成果物のインスタンスがまだ無いので、宣言元の個体が居ない（13.2節）。何を主語に書けるかは数え上げず、この宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。要件の並びなので、要素ごとにreasonを書ける（14.6節）。素材の充足はsteps.requiresが見るので別物。"
         },
         "deftness": {
-          "description": "作る速さを決める腕と、その効き方（docs/world/Skills.md 7節）。作り手がskillのfrom_stage以上なら、各工程の分数からminutesぶんが引かれる（minutesは負の値。GameElementDefinition.md 13.6節）。どの腕が・どの段から・何分縮めるかはレシピごとに宣言する——腕の数は増減しにくく、行動の数は増減するので、組み合わせを宣言するのは増減する側。名乗れるのは1つだけ——上位のレシピは複数の腕を連言で要求するが、そこからはどれが速さを決めるか定まらない。縮めた後の分数がtickの刻み（15分）を割る宣言はロード時に弾かれる。",
+          "description": "作る速さを決める腕と、その効き方（docs/world/Skills.md 7節）。作り手がskillのfrom_stage以上なら、各工程の分数からminutesぶんが引かれる（minutesは負の値。GameElementDefinition.md 13.5節）。どの腕が・どの段から・何分縮めるかはレシピごとに宣言する——腕の数は増減しにくく、行動の数は増減するので、組み合わせを宣言するのは増減する側。名乗れるのは1つだけ——上位のレシピは複数の腕を連言で要求するが、そこからはどれが速さを決めるか定まらない。縮めた後の分数がtickの刻み（15分）を割る宣言はロード時に弾かれる。",
           "type": "object",
           "properties": {
             "skill": {
@@ -1112,7 +1108,7 @@
           "additionalProperties": false
         },
         "surplus": {
-          "description": "完成した瞬間に1回だけ引く、余分が取れるかの卓（GameElementDefinition.md 13.6節）。文法はpick（10節）と同じで、取れる側の重みに作り手の「無駄の無さ」を置く（素は0なので、腕が無ければ引いても何も起きない）。引く時点では同じ個体が既に成果物になっている（becomeが済んでいる）ので、selfは成果物を指す。",
+          "description": "完成した瞬間に1回だけ引く、余分が取れるかの卓（GameElementDefinition.md 13.5節）。文法はpick（10節）と同じで、取れる側の重みに作り手の「無駄の無さ」を置く（素は0なので、腕が無ければ引いても何も起きない）。引く時点では同じ個体が既に成果物になっている（becomeが済んでいる）ので、selfは成果物を指す。",
           "$ref": "#/$defs/pick_list"
         },
         "steps": {

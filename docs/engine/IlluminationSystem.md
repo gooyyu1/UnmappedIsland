@@ -251,7 +251,7 @@ path:
 5.1節の要求を今の文法へ写したもので、覆すのに人間の判断は要りません。
 
 一式が暗くなる前にしか揃わないのは、火口（枯れ草）が屋外の探索でしか手に入らず、焚き火と覆い焼きの窯が
-レシピなので `crafting_conditions`（[`GameElementDefinition.md`](./GameElementDefinition.md) 13.4節）を
+レシピなので `crafting_conditions`（[`GameElementDefinition.md`](./GameElementDefinition.md) 13.3節）を
 通るからです。戻り道のほうは、**火を熾す操作にだけ明るさの条件を書かない**ことで開いています。
 
 既にある炉へ石を積んで大きくすること（`add_stone`）は、粗い動作なので夜でもできます。**新しく炉を

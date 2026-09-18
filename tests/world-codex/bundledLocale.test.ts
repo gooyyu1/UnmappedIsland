@@ -183,6 +183,18 @@ describe('同梱の表示文字列ファイル', () => {
     }
   });
 
+  it('生成された型の名前は、素の型へ軸ごとの書式を重ねて作る（typeDisplayNameのdocコメントの例示）', () => {
+    // docコメントは書式の重なり方を具体名で説明している。**その名前を出すのは同梱のロケールの
+    // variation_namesなので、書式を変えるとコメントの側が黙って嘘になる**——ここで留める。
+    const nameOf = (name: string) =>
+      typeDisplayName(codex, locale, codex.objects.get(codex.objectNames.getId(name)));
+
+    expect(nameOf('jar__content_water_liquid'), '軸が動けば書式が重なる').toBe('水入りの甕');
+    // 作りかけであることは名前ではなく青い覆いが言う（CardView.md 10節）ので、recipe軸の書式は
+    // 素の型の名前をそのまま返す。
+    expect(nameOf('stone_axe__hafted'), '名前を変えない書式もある').toBe(nameOf('stone_axe'));
+  });
+
   it('宣言されたプロパティタグはすべて表示名を持つ', () => {
     // タブ名として画面に出るため、欠けると識別子（nutrition等）がそのままタブに出る。
     for (const globalId of codex.propertyTagNames.ids) {

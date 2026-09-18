@@ -37,12 +37,29 @@ interface World {
   readonly patrol?: { at: string; verdict: string; summary: string };
   /** 見回りの記録が無い（走っていないか、読めない）。 */
   readonly patrolMissing?: boolean;
+  /**
+   * PR番号 → そのPRが名乗ったセッション（コミットの `Claude-Session:` トレーラ）。**既定は
+   * 「どのPRも名乗っていない」**——`## 宛先の無いPR` を見る検査だけがここを組む。
+   */
+  readonly claims?: Readonly<Record<number, string>>;
+  /** 名乗りを引けない（`board-read.mjs` の `readPrSessions` が `undefined` を返す）。 */
+  readonly claimsFail?: boolean;
 }
 
 const deps = (world: World, warn: (line: string) => void) => ({
   // **`--limit` を実際に守る。** 守らない `gh` を渡すと、切られる形そのものが検査に出ない
   // ——いくつ渡しても全部が返るので、上限を固定へ戻しても緑のまま。
   gh: (args: readonly string[]) => {
+    if (args[0] === 'api') {
+      if (world.claimsFail === true) return undefined;
+      const nodes = Object.entries(world.claims ?? {}).map(([number, id]) => ({
+        number: Number(number),
+        commits: {
+          nodes: [{ commit: { message: `直した理由。\n\nClaude-Session: https://claude.ai/code/${id}` } }],
+        },
+      }));
+      return JSON.stringify({ data: { repository: { pullRequests: { nodes } } } });
+    }
     if (args[0] === 'pr') return JSON.stringify(world.prs ?? []);
     const limit = Number(args[args.indexOf('--limit') + 1]);
     return JSON.stringify((world.issues ?? []).slice(0, limit));
@@ -414,6 +431,71 @@ describe('issueBody', () => {
   // **毎周「（無し）」が出る節は、在る周も同じ見た目のまま読み飛ばされる。**
   it('人の手番が無ければ、節ごと出さない', async () => {
     expect((await body({ issues: [issue(1, '着手可')] })).lines).not.toContain('## 人の手番');
+  });
+
+  /**
+   * ## 宛先の無いPR（2.11.4）
+   *
+   * **盤面は毎周 `~/daemon.log` へ覚え書きを書くが、それを定期的に読む者は居ない**（2.22.3）。
+   * 2026-09-11、PR #1922 の名乗りが引けないまま、ユーザーがPRへ書いた質問は作者へ一度も届かず、
+   * 盤面は2時間手を1つも打たなかった（issue #1937）。**届く先はこの本文しか無い。**
+   */
+  describe('宛先の無いPR', () => {
+    const stuck = (over: Record<string, unknown> = {}) => ({
+      number: 10,
+      title: '名乗りが引けないPR',
+      labels: [],
+      statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'SUCCESS' }],
+      mergeable: 'MERGEABLE',
+      body: '',
+      ...over,
+    });
+
+    it('実在しない名乗りと、畳まれた名乗りを、別のものとして出す', async () => {
+      const { lines } = await body({
+        prs: [stuck(), stuck({ number: 11, title: '畳まれた作者のPR' })],
+        claims: {
+          10: 'session_cse_014cYXoMLEog6HpsE4m2bUn8',
+          11: 'session_01TyQngmJGi4rLDAWmfqjG9T',
+        },
+      });
+
+      expect(lines).toContain('## 宛先の無いPR');
+      expect(lines.find((line) => line.startsWith('| PR #10 |'))).toContain(
+        '名乗りが実在しないセッションを指している',
+      );
+      expect(lines.find((line) => line.startsWith('| PR #11 |'))).toContain(
+        '名乗っているセッションが畳まれている',
+      );
+    });
+
+    it('名乗りが生きたセッションを指していれば、出さない', async () => {
+      const { lines } = await body({
+        prs: [stuck()],
+        claims: { 10: 'session_01TyQngmJGi4rLDAWmfqjG9T' },
+        sessions: [session('session_01TyQngmJGi4rLDAWmfqjG9T')],
+      });
+
+      expect(lines).not.toContain('## 宛先の無いPR');
+    });
+
+    // **片方でも欠けた周に「引けない」と読むと、健全なPRが全部そう見える。**
+    it('名乗りを引けなかった周は、節ごと出さない', async () => {
+      const { lines, warnings } = await body({ prs: [stuck()], claimsFail: true });
+
+      expect(lines).not.toContain('## 宛先の無いPR');
+      expect(warnings).toContain('（差し戻す相手を引けなかった。宛先の無いPRは出せない）');
+    });
+
+    it('セッションの一覧を引けなかった周も、節ごと出さない', async () => {
+      const { lines } = await body({
+        prs: [stuck()],
+        claims: { 10: 'session_01TyQngmJGi4rLDAWmfqjG9T' },
+        sessionsFail: true,
+      });
+
+      expect(lines).not.toContain('## 宛先の無いPR');
+    });
   });
 
   it('配ってよいかで数えた件数を出す', async () => {

@@ -45,7 +45,10 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 
 - **地形生成（`TerrainGeneration.md`）**: ローダーは実装・ロード済み
   （`parseGeneration.ts`、`terrain_generation.yaml`）。本スキーマは `parseGeneration.ts` が読むルートキーを
-  **許容するが中身は検証しない**（`true` スキーマ）。詳細スキーマ化は今後の課題。
+  **許容するが中身は検証しない**（`true` スキーマ）。**綴りの誤りはローダーが全部止める**ので、それで
+  足ります——同梱の宣言のどのmappingへ未知キーを1つ足してもロードが落ちることを
+  `tests/world-codex/terrainGenerationUnknownKeys.test.ts` が見ており、パーサへ新しい入れ子を足して
+  `requireKnownKeys` を置き忘れれば、その入れ子を使う宣言が入った時点で落ちます。
 - **`covers`/`layer`（object_def直下）・`unit`（prop直下）**: 文法として文書化済みでスキーマにも
   含めているが、ローダーは現時点でこれらのキーを解釈しない（読み飛ばす）。
 - **文脈依存の制約**: 参照の起点（`conditions` の `subject`・効果の対象キー）に何を書けるかは、その宣言が
@@ -86,6 +89,5 @@ npx vitest run tests/world-codex/worldCodexSchema.test.ts
 
 ## 5. 未決事項・今後の検討課題
 
-- 地形生成（`axes`/`location_types`/`generation_scopes`）の中身の詳細スキーマ化（2.2節。現在はキーの許容のみ）
 - `GameElementDefinition.md`・`ActionSystem.md`・`RecipeSystem.md`・`ContainerSystem.md` 側の未決事項
   （各ドキュメントの該当節を参照）が確定するたびに、本スキーマも追随して更新する必要がある

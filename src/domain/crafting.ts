@@ -179,7 +179,7 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
   const recipe = recipeOf(inProgress);
   if (recipe === undefined) return false;
 
-  // 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.4節）。画面も同じ問いで
+  // 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.3節）。画面も同じ問いで
   // ボタンの可否と理由を出すが、**止めるのはここ**——画面を通らない経路から進められては困る。
   //
   // 問うのは関係を張る前。crafting_conditionsは操作ではなく（11.5節）、画面も関係を張らずに同じ

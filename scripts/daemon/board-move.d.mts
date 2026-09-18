@@ -16,3 +16,26 @@ export function cycleHours(name: string): number | undefined;
 
 /** 未整理（棚卸しの結論が揃っていない issue。`agent-ops/board-design.md` 2.17.1）。 */
 export function unsorted(issue: { labels?: { name: string }[] }): boolean;
+
+/** 実在するセッションIDの形（`agent-ops/board-design.md` 2.11.3）。CIの `名乗り` と揃っている。 */
+export const SESSION_ID: RegExp;
+
+/** 宛先を引けない名乗りの形と、それぞれ人がすること（`agent-ops/board-design.md` 2.11.4）。 */
+export const STRANDS: Readonly<Record<string, { why: string; fix: string }>>;
+
+/** そのPRの宛先を引けない形（引けるなら `undefined`）。 */
+export function strandOf(
+  pr: { number: number },
+  prSessions: Readonly<Record<string, string>>,
+  sessions: readonly { id: string }[],
+): { kind: string; id: string | undefined } | undefined;
+
+/**
+ * 開いているPRのうち、差し戻す相手を引けないもの。**名乗りを引けなかった周（`undefined`）は
+ * 1件も返さない**——空の対応表と混ぜると、健全なPRが全部宛先を失ったように見える。
+ */
+export function strandedPrs<Pr extends { number: number }>(
+  prs: readonly Pr[],
+  prSessions: Readonly<Record<string, string>> | undefined,
+  sessions: readonly { id: string }[],
+): { pr: Pr; kind: string; id: string | undefined }[];

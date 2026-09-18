@@ -47,6 +47,14 @@ export function allOpenIssues(
 ): Record<string, unknown>[] | undefined;
 
 /**
+ * PR番号 → そのPRを書いたセッション（コミットの `Claude-Session:` トレーラ）。**引けなければ
+ * `undefined`**——空の対応表と混ぜない（`agent-ops/board-design.md` 2.11.4）。
+ */
+export function readPrSessions(
+  gh: (args: readonly string[], options?: { allowFail?: boolean }) => string | undefined,
+): Record<string, string> | undefined;
+
+/**
  * まだ二次が読んでいない、一次の分析の記録の件数（`agent-ops/board-design.md` 2.17.4）。
  * 読めなかったときは0。
  */
