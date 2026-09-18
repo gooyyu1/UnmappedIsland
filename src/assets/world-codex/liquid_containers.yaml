@@ -51,6 +51,10 @@ traits:
             eq: 0
           # 中身のある容器では雨を受け始められない（既にある中身が水に置き換わってしまう）。
           - {reason: not_empty, subject: self, prop: fill, eq: 0}
+          # 蓋を載せたままでは受けられない（LiquidContainerSystem.md 6.2節）。溜まる側
+          # （rain_filled_liquid）と同じ枠を見るので、始められて溜まらない器が出ない。
+          - reason: lidded
+            not: {subject: self, slot: lid, matches: {tag: container_lid}}
         become: {content: water_liquid}
         # 溜め始めた瞬間の量は「まだほとんど無い」を表す最少値（LiquidContainerSystem.md 7節）。
         # 実際に溜まる量は降り方が決めるので、以後はrain_filled_liquidが増やす。
@@ -286,17 +290,23 @@ traits:
   # 量が尽きた変種は空の容器へ戻る（fillのon_min）。
   #
   # **口の開き方は自分自身のタグで見る**——容器と中身が同じ1つのオブジェクトなので、親を辿らない。
+  #
+  # **蓋を載せた容器も蒸発しない**（同6.2節）。口の広さは器の作りそのものなのでタグのまま置き、
+  # 塞がっているかは蓋の枠で見る——どの行にも同じ一文が付くのは、**開いていることと塞いでいないことが
+  # 揃って初めて水が飛ぶ**から。雨受け（rain_filled_liquid）も同じ対で縛る。
   evaporating_liquid:
     passives:
       # 基礎。湿度が未実装のため、雨天は「湿度が高くて乾かない」の代理として除外する。
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
+          - not: {subject: self, slot: lid, matches: {tag: container_lid}}
           - {subject: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
         add:
           self:
             fill: -1
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
+          - not: {subject: self, slot: lid, matches: {tag: container_lid}}
           - {subject: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
         add:
           self:
@@ -308,43 +318,50 @@ traits:
       # LiquidContainerSystem.md 6節。
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
+          - not: {subject: self, slot: lid, matches: {tag: container_lid}}
           - {subject: ancestor, prop: ambient_brightness, gte: 12}
         add:
           self:
             fill: -2
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
+          - not: {subject: self, slot: lid, matches: {tag: container_lid}}
           - {subject: ancestor, prop: ambient_brightness, gte: 14}
         add:
           self:
             fill: -1
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
+          - not: {subject: self, slot: lid, matches: {tag: container_lid}}
           - {subject: ancestor, prop: ambient_brightness, gte: 14}
         add:
           self:
             fill: -2
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
+          - not: {subject: self, slot: lid, matches: {tag: container_lid}}
           - {subject: ancestor, prop: ambient_brightness, gte: 16}
         add:
           self:
             fill: -1
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
+          - not: {subject: self, slot: lid, matches: {tag: container_lid}}
           - {subject: ancestor, prop: ambient_brightness, gte: 16}
         add:
           self:
             fill: -2
 
   # 開いた容器に置かれている間、降っている雨のぶんだけ増える（LiquidContainerSystem.md 7節）。
-  # ゲートは「容器の開き方」「天候」「雨が届く場所か（sheltered、ContainerSystem.md 6節）」。
+  # ゲートは「容器の開き方」「蓋が載っていないこと（6.2節）」「天候」「雨が届く場所か
+  # （sheltered、ContainerSystem.md 6節）」。
   # 雨の強さは3段しかないので、蒸発のような基礎＋上乗せの形は取らず、1行が1つの降り方の量そのものを
   # 表す。満杯を超えた分はrangeが受け止める（fillの上限は容器のcapacity）。
   rain_filled_liquid:
     passives:
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
+          - not: {subject: self, slot: lid, matches: {tag: container_lid}}
           - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: light_rain}
         add:
@@ -352,6 +369,7 @@ traits:
             fill: 10
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
+          - not: {subject: self, slot: lid, matches: {tag: container_lid}}
           - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: heavy_rain}
         add:
@@ -359,6 +377,7 @@ traits:
             fill: 20
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
+          - not: {subject: self, slot: lid, matches: {tag: container_lid}}
           - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: storm}
         add:
@@ -366,6 +385,7 @@ traits:
             fill: 40
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
+          - not: {subject: self, slot: lid, matches: {tag: container_lid}}
           - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: light_rain}
         add:
@@ -373,6 +393,7 @@ traits:
             fill: 20
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
+          - not: {subject: self, slot: lid, matches: {tag: container_lid}}
           - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: heavy_rain}
         add:
@@ -380,6 +401,7 @@ traits:
             fill: 40
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
+          - not: {subject: self, slot: lid, matches: {tag: container_lid}}
           - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: storm}
         add:
@@ -397,6 +419,9 @@ object_defs:
     # （pottery.yaml）。
     tags: [item, fragile, pottery]
     traits: [liquid_container, narrow_open_container, rain_catching_container]
+    # 載せた蓋は外から見える（7.11節）。中身のバーは量しか言わないので、名乗らないと蓋をしたか
+    # どうかが札から読めず、外すこともできない。
+    visible_slots: [lid]
     props:
       # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
       # traitを配られた変種だけ。尽きたら中身の軸を落として空の容器へ戻る
@@ -413,8 +438,33 @@ object_defs:
           become: {content: none}
       weight: {value: 1200}
       volume: {value: 15000}
+    slots:
+      # 載せた蓋（筏が帆を持つのと同じ、組み込んだ部品の枠。voyage.yaml）。載っている間、中身は
+      # 蒸発せず雨も受けない（LiquidContainerSystem.md 6.2節）。
+      #
+      # **受けるのは蓋のタグで、蓋の型は名指ししない**——別の素材の蓋が増えても枠は変わらない。
+      # **手で載せたときだけ入る**（placement）——あふれた物が流れ込む枠にすると、拾った物が
+      # 勝手に口を塞ぐ。
+      lid:
+        cells:
+          - {accept: {tag: container_lid}, max: 1}
+        placement: [manual]
     variation_axes:
       content: {of: {tag: liquid}}
+
+  # 甕の蓋。粘土を焼いて作る（pottery.yaml）。甕のlid枠へ載せている間だけ効き、外せば元どおり
+  # 蒸発する（LiquidContainerSystem.md 6.2節）。
+  #
+  # **宣言はタグ1つ。** 口を塞ぐのは枠に載っていることそのもので、蓋の側に振る舞いは無い
+  # ——見るのは甕の中身のほう（evaporating_liquid・rain_filled_liquid）。
+  #
+  # fragileとpotteryは甕と同じ理由（素焼きは落とせば割れ、焼き上がりが炉の枠に残るためにpotteryが要る）。
+  jar_lid:
+    tags: [item, fragile, pottery, container_lid]
+    props:
+      weight: {value: 400}
+      # 重ねて置けるので、1枚ぶんの外寸より小さく見る（ヤシの殻と同じ）。
+      volume: {value: 300}
 
   # ヤシの殻。割ったヤシの実から果肉を掻き出すと残る（coconut.yaml）。
   coconut_bowl:

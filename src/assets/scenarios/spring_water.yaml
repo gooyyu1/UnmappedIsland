@@ -16,5 +16,6 @@ location:
   type: grassland
   # 探索を待たずに設置物を並べる。
   fixtures: [spring]
-  # 入る量は器が決めることを見るための2つ目（甕は4L、ヤシの殻は250mL）。
-  items: [coconut_bowl]
+  # 入る量は器が決めることを見るための2つ目（甕は4L、ヤシの殻は250mL）。蓋は甕へ載せると
+  # 中身が蒸発しなくなる（LiquidContainerSystem.md 6.2節）——載せた先は甕の札の「蓋」のタブ。
+  items: [coconut_bowl, jar_lid]
