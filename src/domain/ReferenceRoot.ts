@@ -188,6 +188,9 @@ export class ReferenceContext {
    * 持たない文脈（forSelf）もある——ので、どの役から引くかを受け取る側に選ばせず、組み立てた側が
    * 答える。**組み立てる口はどれも、役に就く物を少なくとも1つ必ず受け取る**ので、ここが空になる
    * 経路は無い。
+   *
+   * **どの役が答えるかは口ごとに違う**——selfを受け取る口はself、askingはagent、withRolesはpatient。
+   * 1つの文脈の役はすべて同じ世界の物なので、居るものから引けばどれでも同じ。
    */
   readonly session: WorldSession;
 

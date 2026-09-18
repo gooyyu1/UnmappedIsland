@@ -23,7 +23,8 @@ export function putIntoSlot(item: WorldObject, slot: Slot, agent: WorldObject, p
     if (item.rejectionForMoveTo(slot) !== undefined) return;
 
     const minutes = slot.def.putInMinutes(context.valueResolver);
-    if (!spendDurationAndReportParticipantsAlive(minutes, [item, slot.owner, agent])) return;
+    // selfは枠の持ち主（putInRelationがpatientに据えた側）。入れる物は道具、入れる者は動作主。
+    if (!spendDurationAndReportParticipantsAlive(minutes, slot.owner, [item, agent])) return;
 
     place();
   });
