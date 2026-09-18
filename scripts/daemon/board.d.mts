@@ -4,13 +4,13 @@ import type { LiveSession } from './live-sessions.d.mts';
 export interface BoardDeps {
   gh?: (args: readonly string[], options?: { allowFail?: boolean }) => string | undefined;
   /** 畳んでいないセッション。引けなければ投げる（[`live-sessions.mjs`](live-sessions.mjs)）。 */
-  sessions?: () => readonly LiveSession[];
+  sessions?: () => readonly LiveSession[] | Promise<readonly LiveSession[]>;
   warn: (line: string) => void;
 }
 
 export function board(
   deps: BoardDeps & { checkedItems?: (issuesJson: string) => string },
-): string[] | undefined;
+): Promise<string[] | undefined>;
 
 /**
  * 常設の issue の本文（`agent-ops/board-design.md` 2.20）。`now` は最終更新として本文に出る。
@@ -23,4 +23,4 @@ export function issueBody(
     unreadableSince?: string;
     patrol?: { at: string; verdict: string; summary: string };
   },
-): string | undefined;
+): Promise<string | undefined>;

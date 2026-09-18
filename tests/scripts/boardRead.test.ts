@@ -34,15 +34,17 @@ const DECISIONS = join(ROOT, 'agent-ops', 'decisions');
 const EMPTY_GH = (args: readonly string[]): string | undefined =>
   args[0] === 'api' && args[1] === 'graphql' ? '{"data":{}}' : '[]';
 
-function pendingDecisions(): unknown {
-  return readBoard({
-    gh: EMPTY_GH,
-    sessions: () => [],
-    log: () => {},
-    now: new Date('2026-09-06T00:00:00Z'),
-    settleMinutes: 10,
-    taken: {},
-  })?.pendingDecisions;
+async function pendingDecisions(): Promise<unknown> {
+  return (
+    await readBoard({
+      gh: EMPTY_GH,
+      sessions: () => [],
+      log: () => {},
+      now: new Date('2026-09-06T00:00:00Z'),
+      settleMinutes: 10,
+      taken: {},
+    })
+  )?.pendingDecisions;
 }
 
 describe('board-read.mjs', () => {
@@ -56,14 +58,14 @@ describe('board-read.mjs', () => {
     expect(archived.length).toBeGreaterThan(0);
   });
 
-  it('数えるのは、archive に入っていない履歴だけ', () => {
-    expect(pendingDecisions()).toBe(direct.length);
+  it('数えるのは、archive に入っていない履歴だけ', async () => {
+    expect(await pendingDecisions()).toBe(direct.length);
   });
 
   // `archive` はディレクトリなので `.md` で終わらず、名前での絞りだけでも落ちる。**数え方を
   // `withFileTypes` から名前へ変えても気づけない**ので、入れ子の中身を数えていないことを別に見る。
-  it('archive の中の件数を足していない', () => {
-    expect(pendingDecisions()).toBeLessThan(direct.length + archived.length);
+  it('archive の中の件数を足していない', async () => {
+    expect(await pendingDecisions()).toBeLessThan(direct.length + archived.length);
   });
 });
 
@@ -71,7 +73,7 @@ describe('スメルを拾う係が読む窓（board-design.md 4.4.2）', () => {
   const NOW = new Date('2026-09-07T12:00:00Z');
 
   /** `gh` へ渡った引数を控えながら盤面を1つ組む。`merged` はマージ済みPRの一覧として返る。 */
-  function readWith(merged: readonly unknown[] = []) {
+  async function readWith(merged: readonly unknown[] = []) {
     const calls: string[][] = [];
     const log: string[] = [];
     const gh = (args: readonly string[]): string => {
@@ -82,7 +84,7 @@ describe('スメルを拾う係が読む窓（board-design.md 4.4.2）', () => {
       }
       return '[]';
     };
-    readBoard({
+    await readBoard({
       gh,
       sessions: () => [],
       pendingDecisions: () => 0,
@@ -104,8 +106,8 @@ describe('スメルを拾う係が読む窓（board-design.md 4.4.2）', () => {
 
   // **本数で切らない。** 本数は1本あたりの時間が変われば覆う期間も変わる。**窓の幅そのものは
   // 上の検査が見る**ので、ここは絞り方だけを見る（幅を写すと、幅を動かしただけでここが赤くなる）。
-  it('マージされた時刻で絞って引く', () => {
-    const merged = readWith().merged ?? [];
+  it('マージされた時刻で絞って引く', async () => {
+    const merged = (await readWith()).merged ?? [];
     const start = new Date(NOW.getTime() - MERGED_WINDOW_HOURS * 3_600_000);
     expect(merged[merged.indexOf('--search') + 1]).toBe(
       `merged:>=${start.toISOString().replace(/\.\d{3}Z$/, 'Z')}`,
@@ -113,13 +115,13 @@ describe('スメルを拾う係が読む窓（board-design.md 4.4.2）', () => {
   });
 
   // **黙って切らない。** 切られた側は「1件も無い」と同じ形になり、次の周も同じに読まれる。
-  it('引きすぎの栓に当たった周は、全部を見ていないと言う', () => {
+  it('引きすぎの栓に当たった周は、全部を見ていないと言う', async () => {
     const many = Array.from({ length: MERGED_CAP }, (_, index) => ({ number: index, comments: [] }));
-    expect(readWith(many).log).toContain('マージ済みPRが上限');
+    expect((await readWith(many)).log).toContain('マージ済みPRが上限');
   });
 
-  it('栓に届いていない周は言わない', () => {
-    expect(readWith([{ number: 1, comments: [] }]).log).not.toContain('上限');
+  it('栓に届いていない周は言わない', async () => {
+    expect((await readWith([{ number: 1, comments: [] }])).log).not.toContain('上限');
   });
 });
 
@@ -130,7 +132,7 @@ describe('開いている issue は、上限で切らずに全部引く', () => 
    * になる（この検査が見ている面はそこだけ）。並びは本物と同じ**作成の新しい順**（番号の大きい側が先）
    * にしてあるので、切られるのは番号の小さい側。
    */
-  function readWith(count: number) {
+  async function readWith(count: number) {
     const all = Array.from({ length: count }, (_, index) => ({
       number: count - index,
       labels: [],
@@ -144,7 +146,7 @@ describe('開いている issue は、上限で切らずに全部引く', () => 
       limits.push(limit);
       return JSON.stringify(all.slice(0, limit));
     };
-    const board = readBoard({
+    const board = (await readBoard({
       gh,
       sessions: () => [],
       pendingDecisions: () => 0,
@@ -153,29 +155,29 @@ describe('開いている issue は、上限で切らずに全部引く', () => 
       now: new Date('2026-09-07T12:00:00Z'),
       settleMinutes: 10,
       taken: {},
-    }) as { issues: { number: number }[] } | undefined;
+    })) as { issues: { number: number }[] } | undefined;
     return { issues: board?.issues ?? [], limits };
   }
 
   // 切られるのはいちばん古い issue で、切られたぶんは「1件も無い」と同じ形になる。2026-09-11 に
   // 100件で実際に起き、走っているワーカーが担当していた #1722 が盤面から消えた。
-  it('1回で引きにいく数を超えて開いていても、いちばん古いものまで返る', () => {
-    const { issues } = readWith(FIRST_ISSUE_PULL * 2 + 1);
+  it('1回で引きにいく数を超えて開いていても、いちばん古いものまで返る', async () => {
+    const { issues } = await readWith(FIRST_ISSUE_PULL * 2 + 1);
     expect(issues).toHaveLength(FIRST_ISSUE_PULL * 2 + 1);
     expect(issues.at(-1)?.number).toBe(1);
   });
 
   // **届いた回だけ引き直す。** 毎周2回引くと、1周30秒ぶんの固定費がそのまま倍になる。
-  it('1回で引きにいく数に届かなければ、引き直さない', () => {
-    expect(readWith(FIRST_ISSUE_PULL - 1).limits).toEqual([FIRST_ISSUE_PULL]);
+  it('1回で引きにいく数に届かなければ、引き直さない', async () => {
+    expect((await readWith(FIRST_ISSUE_PULL - 1)).limits).toEqual([FIRST_ISSUE_PULL]);
   });
 
   // **引けなかったことと「1件も無い」を混ぜない。** 空として読むと、値の見張り
   // （`check-values.mjs`）では同じ題の2本目がそのまま立つ。
-  it('応答が読めなかった周は、引けなかった周と同じに読む', () => {
+  it('応答が読めなかった周は、引けなかった周と同じに読む', async () => {
     const gh = (args: readonly string[]): string =>
       args[0] === 'issue' ? '壊れた応答' : args[1] === 'graphql' ? '{"data":{}}' : '[]';
-    const board = readBoard({
+    const board = await readBoard({
       gh,
       sessions: () => [],
       pendingDecisions: () => 0,

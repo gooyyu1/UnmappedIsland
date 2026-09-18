@@ -12,7 +12,7 @@ export interface RoundDeps {
     options?: { input?: string; capture?: boolean; env?: Record<string, string> },
   ) => ScriptResult;
   gh?: (args: readonly string[], options?: { allowFail?: boolean }) => string | undefined;
-  sessions?: () => readonly unknown[];
+  sessions?: () => readonly unknown[] | Promise<readonly unknown[]>;
   /** `archive/` に入っていない判断の履歴の数（`board-read.mjs`）。省くと本物のリポジトリを数える。 */
   pendingDecisions?: () => number;
   /** 二次がまだ読んでいない、一次の分析の記録の数（`board-read.mjs`）。省くと本物のリポジトリを数える。 */
@@ -26,7 +26,7 @@ export interface RoundDeps {
   dryRun?: boolean;
 }
 
-export function round(deps?: RoundDeps): boolean;
+export function round(deps?: RoundDeps): Promise<boolean>;
 
 /**
  * **前の差分の札を落としてほしい**とPRへ頼む1行目。読んで札を動かすのは `board-labels.yml` の

@@ -10,17 +10,20 @@ export interface CheckedValue {
   readonly remedy: string;
 }
 
+/** 値の見張りが見るぶんの `LiveSession`（[`live-sessions.d.mts`](live-sessions.d.mts)）。 */
+export interface LiveValueSession {
+  readonly env: string;
+  readonly served: boolean;
+  readonly tags: readonly string[];
+}
+
 /** 外を触る手。省いたものは本物が入る。 */
 export interface SurveyValuesDeps {
   call?: (tool: string, args?: Record<string, unknown>) => Promise<string>;
   gh?: (args: readonly string[], options?: { allowFail?: boolean }) => string | undefined;
   envs?: () => readonly { readonly name: string; readonly id: string }[];
   /** 畳まれていないセッション（[`live-sessions.mjs`](live-sessions.mjs)）。引けなければ投げる。 */
-  sessions?: () => readonly {
-    readonly env: string;
-    readonly served: boolean;
-    readonly tags: readonly string[];
-  }[];
+  sessions?: () => readonly LiveValueSession[] | Promise<readonly LiveValueSession[]>;
 }
 
 /**
