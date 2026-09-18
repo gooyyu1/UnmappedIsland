@@ -922,7 +922,8 @@ function buildRoute(
     blocked: [...prerequisites.values()].some(isGap),
     needsImport: resolved.imported || [...prerequisites.values()].some(({ imported }) => imported),
     // その土地を起点にする経路か。**持ち込みが1つも要らないなら起点はここ**——他の土地の産物は
-    // 必ず持ち込みとして解かれるため（`allSteps`が他の土地の探索を外している）。休息もここに入る。
+    // 必ず持ち込みとして解かれ（`allSteps`が他の土地の探索を外している）、その土地で揃う産物は
+    // 決して持ち込みとして解かれない（`Acquisition.improvesOn`）ため。休息もここに入る。
     rootedHere:
       place === undefined ||
       route.some((ref) => ref.def.globalId === place.globalId) ||
@@ -1389,9 +1390,10 @@ function analysisContext(codex: WorldCodex, ancestorLocations: readonly ObjectDe
 /**
  * 1つの文脈（土地1つ、または島全体）で、各型を1個手に入れるのに要する時間を求める。
  *
- * 全工程を何度も走査して、入力の値段が下がったら出力の値段も下げる、を変化が止まるまで繰り返す
- * （再帰で辿ると、素材どうしが循環している定義で止まらなくなる）。道具（消費されない入力）の
- * 入手時間は含めない——繰り返し使えるものを1個あたりへ按分するには「何回使うか」の仮定が要る。
+ * 全工程を何度も走査して、より良い答えが出たら差し替える、を変化が止まるまで繰り返す（再帰で辿ると、
+ * 素材どうしが循環している定義で止まらなくなる）。**何を良いとするかは`improvesOn`**——安さだけでは
+ * ない。道具（消費されない入力）の入手時間は含めない——繰り返し使えるものを1個あたりへ按分するには
+ * 「何回使うか」の仮定が要る。
  */
 class Acquisition {
   readonly costByObject = new Map<ObjectGlobalId, Cost>();
@@ -1410,12 +1412,14 @@ class Acquisition {
   readonly obtainableWithoutCost: Set<ObjectGlobalId>;
 
   /**
-   * その型を最も安く手に入れる道筋が、他の土地の産物を含むか。**入手連鎖を伝って残す**——
-   * 熟したヤシの実を持ち込んで加工した果肉は、果肉そのものがこの土地で作れても「持ち込みが要る」。
+   * この文脈で採った道筋が、他の土地の産物を含むか。**入手連鎖を伝って残す**——熟したヤシの実を
+   * 持ち込んで加工した果肉は、果肉そのものがこの土地で作れても「持ち込みが要る」。
+   *
+   * **真になるのは、この土地では揃わないときだけ**（`improvesOn`）。
    */
   private readonly importedByObject = new Map<ObjectGlobalId, boolean>();
 
-  /** その型を最も安く生む工程。連鎖を遡って前提の道具を集めるのに使う。 */
+  /** その型をこの文脈で生む工程（`improvesOn`が選んだほう）。連鎖を遡って前提の道具を集めるのに使う。 */
   private readonly viaStep = new Map<ObjectGlobalId, StepRef>();
 
   private readonly steps: readonly StepRef[];
@@ -1577,7 +1581,10 @@ class Acquisition {
     );
   }
 
-  /** その型を手に入れるまでの連鎖に現れる工程を、最も安い経路だけ遡って挙げる。 */
+  /**
+   * その型を手に入れるまでの連鎖に現れる工程を、この文脈が採った経路（`improvesOn`）だけ遡って挙げる。
+   * **島全体では最も安い経路**だが、土地の文脈では持ち込みの要らない経路がそれより安い経路に勝つ。
+   */
   routeOf(objectGlobalId: ObjectGlobalId, seen = new Set<ObjectGlobalId>()): readonly StepRef[] {
     if (seen.has(objectGlobalId)) return [];
     seen.add(objectGlobalId);
@@ -1769,8 +1776,7 @@ class Acquisition {
         for (const [objectGlobalId, count] of expectedSpawns(ref.step)) {
           if (count <= 0) continue;
           const candidate = scaleCost(resolved.cost, 1 / count);
-          const known = this.costByObject.get(objectGlobalId);
-          if (known !== undefined && totalOf(known) <= totalOf(candidate) + EPSILON) continue;
+          if (!this.improvesOn(objectGlobalId, candidate, resolved.imported)) continue;
           if (this.consumesOwnOutput(ref, objectGlobalId)) continue;
 
           this.costByObject.set(objectGlobalId, candidate);
@@ -1781,5 +1787,28 @@ class Acquisition {
       }
       if (!improved) return;
     }
+    // ここへ来るのは、差し替えの順序が単調でないとき（`improvesOn`）か、連鎖が型の数より深いとき。
+    // どちらであれ、黙って抜けると走査を打ち切った時点の値が答えとして出て、**表が読み手に何も
+    // 言わずにずれる**。
+    throw new Error('入手経路の解決が不動点に達しなかった');
+  }
+
+  /**
+   * その答えを既に在る答えと差し替えるか。**この土地だけで揃う道筋が、持ち込みの要る道筋に勝つ**
+   * ——安いほうだけを採ると、島のどこかに1分安い産地が在るというだけで、その土地で完結する道筋が
+   * 「他の土地の産物が要る」ことになる（`inputSource`は既に土地の側を先に見るが、そちらの値段が
+   * 決まる前に持ち込みで埋まった型では出番が来ない）。土地の表が答えるのは「この土地を起点にすると
+   * 何分か」なので、数えていない移動時間の向こうにある1分は、そもそも安さではない。
+   *
+   * 持ち込みの要否が同じなら安いほうを採る。**持ち込みは要らない側へしか倒れない**ので、
+   * 繰り返しは必ず止まる——止まらなければ`lowerCostsUntilStable`が投げる。
+   */
+  private improvesOn(objectGlobalId: ObjectGlobalId, candidate: Cost, imported: boolean): boolean {
+    const known = this.costByObject.get(objectGlobalId);
+    if (known === undefined) return true;
+
+    const knownImported = this.importedByObject.get(objectGlobalId) === true;
+    if (knownImported !== imported) return knownImported;
+    return totalOf(candidate) < totalOf(known) - EPSILON;
   }
 }
