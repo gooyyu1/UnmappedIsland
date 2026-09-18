@@ -1581,7 +1581,10 @@ class Acquisition {
     );
   }
 
-  /** その型を手に入れるまでの連鎖に現れる工程を、最も安い経路だけ遡って挙げる。 */
+  /**
+   * その型を手に入れるまでの連鎖に現れる工程を、この文脈が採った経路（`improvesOn`）だけ遡って挙げる。
+   * **島全体では最も安い経路**だが、土地の文脈では持ち込みの要らない経路がそれより安い経路に勝つ。
+   */
   routeOf(objectGlobalId: ObjectGlobalId, seen = new Set<ObjectGlobalId>()): readonly StepRef[] {
     if (seen.has(objectGlobalId)) return [];
     seen.add(objectGlobalId);
@@ -1784,8 +1787,9 @@ class Acquisition {
       }
       if (!improved) return;
     }
-    // ここへ来るのは、差し替えの順序が単調でないとき（`improvesOn`）。黙って抜けると、走査を打ち切った
-    // 時点の値が答えとして出てしまい、**表が読み手に何も言わずにずれる**。
+    // ここへ来るのは、差し替えの順序が単調でないとき（`improvesOn`）か、連鎖が型の数より深いとき。
+    // どちらであれ、黙って抜けると走査を打ち切った時点の値が答えとして出て、**表が読み手に何も
+    // 言わずにずれる**。
     throw new Error('入手経路の解決が不動点に達しなかった');
   }
 

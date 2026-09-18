@@ -86,26 +86,36 @@ describe('土地で完結する経路は、土地の表に出る', () => {
 });
 
 /**
- * `unmet`（その土地に留まって賄えなかった値）が、**「その値を返す食べ物が無い」と「在るが、この表が
- * 値段を付けられない」の両方で立つ**こと（BalanceStats.md「1日を賄う最小労働」）。
+ * `unmet`（その土地に留まって賄えなかった値）が、**「その値を返す物がこの土地に無い」を意味しない**
+ * こと（BalanceStats.md「1日を賄う最小労働」）。同梱の定義では、賄えないと出る値はどれも
+ * 「在るが、朽ちない設備の待ち生産なので値段が付かない」側にある。
  *
- * 読み分けるのは `devices` の側なので、片方だけになると読み分けそのものが消える。
+ * 読み分けるのは `devices` の側なので、そこに行が在ることまで見ないと、この読み分けは示せない。
  */
 describe('unmet が意味すること', () => {
   const tables = buildBalanceTables(bundledCodex(), SAMPLE_CHARACTER);
-  const placeNamed = (name: string) => tables.places.find((place) => place.name === name)!;
-  const berryAt = (name: string) => placeNamed(name).devices.find((device) => device.productName === 'berry');
+  const islandWide = tables.places.find((place) => place.name === WHOLE_ISLAND)!;
+  const lands = tables.places.filter((place) => place.name !== WHOLE_ISLAND);
 
-  it('木苺の茂みが湧く土地でも、朽ちないので実のビタミンは献立に載らない', () => {
-    // 山腹は berry_find を宣言していて、その土地から茂みを1つ用意する値段も出る。それでも
-    // 按分の分母（寿命）が無いので、実は値段の付く経路にならない（「待って得る生産の数え方」）。
-    expect(berryAt('mountainside')).toMatchObject({ lifetimeDays: undefined, laborPerUnit: undefined });
-    expect(berryAt('mountainside')!.buildMinutes).toBeGreaterThan(0);
-    expect(placeNamed('mountainside').menu.unmet).toContain('vitamin');
+  it('空心菜のビタミンは、島全体では値段の付く経路になる', () => {
+    // 次の見張りが「畑の空心菜」を `vitamin` の出どころとして数えられる根拠。探索で採れる土地では
+    // 値段が付くので、畑の行が値段を付けられないのは畑が朽ちないからだと言える。
+    const vitamin = islandWide.properties.find((property) => property.propertyName === 'vitamin')!;
+
+    expect(vitamin.routes.map(({ route }) => route.steps.at(-1)?.objectName)).toContain('water_spinach');
   });
 
-  it('茂みの湧かない土地では、同じ unmet が「その値を返す物が無い」を指す', () => {
-    expect(berryAt('rocky_field')?.buildMinutes).toBeUndefined();
-    expect(placeNamed('rocky_field').menu.unmet).toContain('vitamin');
+  it('ビタミンが賄えないと出る土地でも、畑は作れる', () => {
+    // 畑は朽ちないので1周期ぶんを按分できず（「待って得る生産の数え方」）、そこから穫れる空心菜は
+    // 献立に載らない。**つまりこの `unmet` は「ビタミンを返す物が無い」ではない。**
+    const short = lands.filter((land) => land.menu.unmet.includes('vitamin'));
+
+    expect(short.map((land) => land.name).length).toBeGreaterThan(0);
+    for (const land of short) {
+      const unpriced = land.devices.filter(
+        (device) => device.buildMinutes !== undefined && device.laborPerUnit === undefined,
+      );
+      expect(unpriced.map((device) => device.productName)).toContain('water_spinach');
+    }
   });
 });
