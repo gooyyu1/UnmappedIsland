@@ -6,7 +6,7 @@ export interface BoardPublishDeps {
     warn?: (line: string) => void;
     unreadableSince?: string;
     patrol?: { at: string; verdict: string; summary: string };
-  }) => string | undefined;
+  }) => string | undefined | Promise<string | undefined>;
   /** 書き込む先の issue 番号。既定は [`board-publish.mjs`](board-publish.mjs) の定数。 */
   issue?: string;
   warn?: (line: string) => void;
@@ -18,4 +18,4 @@ export interface BoardPublishDeps {
   patrol?: { at: string; verdict: string; summary: string };
 }
 
-export function publish(deps?: BoardPublishDeps): boolean;
+export function publish(deps?: BoardPublishDeps): Promise<boolean>;

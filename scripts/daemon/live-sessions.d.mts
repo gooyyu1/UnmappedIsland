@@ -15,13 +15,15 @@ export interface LiveSession {
 
 /** 外を触る手。省いたものは本物が入る。 */
 export interface LiveSessionsDeps {
-  page?: (request: unknown) => { ccr?: Record<string, unknown> } | undefined;
+  page?: (
+    request: unknown,
+  ) => { ccr?: Record<string, unknown> } | undefined | Promise<{ ccr?: Record<string, unknown> } | undefined>;
   envs?: () => Record<string, string>;
   /** この周のぶんを既に引いてあるファイル。空なら自分で引く。 */
   taken?: string;
 }
 
-export function liveSessions(deps?: LiveSessionsDeps): LiveSession[];
+export function liveSessions(deps?: LiveSessionsDeps): Promise<LiveSession[]>;
 
 /** `ccr-env.sh` が出した環境ID1つ。名前はあちらが出す綴りのまま（`CLOUD_ENV` / `BRIDGE_ENV`）。 */
 export interface EnvironmentId {

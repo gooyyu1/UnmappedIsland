@@ -1,5 +1,6 @@
 import {
   execFileSync,
+  spawn,
   spawnSync,
   type ExecFileSyncOptionsWithStringEncoding,
   type SpawnSyncOptionsWithStringEncoding,
@@ -46,4 +47,37 @@ export function spawnScript(
   options: Omit<SpawnSyncOptionsWithStringEncoding, 'encoding'>,
 ): SpawnSyncReturns<string> {
   return spawnSync('bash', [pathForBash(script), ...args], { ...options, encoding: 'utf-8' });
+}
+
+/** `.sh` を1本走らせた結果。**非0で終わることも結果の一部**なので、投げずに返す。 */
+export interface ScriptRun {
+  readonly code: number;
+  readonly stdout: string;
+  readonly stderr: string;
+}
+
+/**
+ * `.sh` を1本走らせて、終わるのを**待たずに**約束を返す。在り処を直す約束も `args` の扱いも
+ * `runScript` と同じ。
+ *
+ * **叩く先が試験と同じプロセスの何かへ問い合わせるなら、これを使う**——理由は
+ * [`fakeMetaServer`](fakeMetaServer.ts) の冒頭（身代わりのMCPサーバがその形）。
+ */
+export function spawnScriptAsync(
+  script: string,
+  args: readonly string[],
+  options: { env?: NodeJS.ProcessEnv; cwd?: string } = {},
+): Promise<ScriptRun> {
+  const child = spawn('bash', [pathForBash(script), ...args], options);
+
+  let stdout = '';
+  let stderr = '';
+  child.stdout.setEncoding('utf-8');
+  child.stderr.setEncoding('utf-8');
+  child.stdout.on('data', (chunk: string) => (stdout += chunk));
+  child.stderr.on('data', (chunk: string) => (stderr += chunk));
+
+  return new Promise((done) => {
+    child.on('close', (code) => done({ code: code ?? -1, stdout, stderr }));
+  });
 }

@@ -45,7 +45,7 @@ const defaultWarn = (line) => writeSync(2, `${line}\n`);
  * **見回りの記録も同じ理由でここから渡す。** 書くのは係のセッションで、**走ったこと自体が人に
  * 見えるのはこの本文だけ**（2.21.4）。
  */
-export function publish({
+export async function publish({
   gh = runGh,
   body = issueBody,
   issue = ISSUE,
@@ -53,7 +53,7 @@ export function publish({
   unreadableSince = readLedger(boardState())[UNREADABLE],
   patrol = readLastPatrol(boardState()),
 } = {}) {
-  const text = body({ gh, warn, unreadableSince, patrol });
+  const text = await body({ gh, warn, unreadableSince, patrol });
   if (text === undefined) return false;
 
   // 本文は複数行なので、引数ではなくファイルで渡す（`board-round.mjs` の `RETURN` と同じ）。
@@ -68,5 +68,5 @@ export function publish({
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exit(publish() ? 0 : 1);
+  process.exit((await publish()) ? 0 : 1);
 }

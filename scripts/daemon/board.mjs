@@ -131,7 +131,7 @@ const closes = (body) => [...(body ?? '').matchAll(/closes\s+#(\d+)/gi)].map((ma
  * `undefined`**——欠けたまま並べると、消えたPRが「無い」ものとして読まれる（理由は `gh` が自分で
  * 言っている）。
  */
-function survey({ gh, sessions, warn }) {
+async function survey({ gh, sessions, warn }) {
   const prsRaw = gh(['pr', 'list', '--state', 'open', '--limit', '50', '--json', PR_FIELDS]);
   // issue は1回だけ引いて、`kind:task` の付いたもの・まだ分類されていないもの・`kind:ask` の本文の
   // チェックへ分ける。**依存も同じ呼び出しで返る**ので、issue 1件ずつ `gh api` を叩かなくてよい。
@@ -146,7 +146,7 @@ function survey({ gh, sessions, warn }) {
   let live = [];
   let sessionsKnown = true;
   try {
-    live = sessions();
+    live = await sessions();
   } catch {
     sessionsKnown = false;
     warn('（セッションの一覧を引けなかった。投入済みの判定はPRだけで行う）');
@@ -190,8 +190,8 @@ function survey({ gh, sessions, warn }) {
 }
 
 /** 端末へ1行1件で出す形（[`board.sh`](../agent/board.sh)）。引けなければ `undefined`。 */
-export function board({ gh = runGh, sessions = liveSessions, checkedItems = runCheckedItems, warn }) {
-  const found = survey({ gh, sessions, warn });
+export async function board({ gh = runGh, sessions = liveSessions, checkedItems = runCheckedItems, warn }) {
+  const found = await survey({ gh, sessions, warn });
   if (found === undefined) return undefined;
 
   const lines = ['## 確定待ち'];
@@ -337,7 +337,7 @@ function humanTurn(found) {
  *
  * 引けなければ `undefined`（呼び手は書き込まない——**古い本文が残るほうが、欠けた盤面より正しい**）。
  */
-export function issueBody({
+export async function issueBody({
   gh = runGh,
   sessions = liveSessions,
   warn,
@@ -346,7 +346,7 @@ export function issueBody({
   patrol,
 } = {}) {
   const notes = [];
-  const found = survey({
+  const found = await survey({
     gh,
     sessions,
     warn: (line) => {
@@ -421,7 +421,7 @@ function runCheckedItems(issuesJson) {
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const lines = board({ warn: (line) => console.error(line) });
+  const lines = await board({ warn: (line) => console.error(line) });
   if (lines === undefined) process.exit(1);
   process.stdout.write(`${lines.join('\n')}\n`);
 }

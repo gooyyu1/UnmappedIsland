@@ -372,7 +372,7 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
 }
 
 /** 1周。盤面を引けたら `true`、引けなかったら `false`（呼び手はその周を捨てる）。 */
-export function round({
+export async function round({
   runScript = defaultRunScript,
   gh = runGh,
   sessions = liveSessions,
@@ -398,7 +398,7 @@ export function round({
 
   let live;
   try {
-    live = sessions();
+    live = await sessions();
   } catch (error) {
     // **理由を言えるのは投げた側だけ**なので、その言葉をそのまま出す。
     warn(error instanceof Error ? error.message : String(error));
@@ -421,7 +421,7 @@ export function round({
   }
 
   const taken = readLedger(stateDir);
-  const board = readBoard({
+  const board = await readBoard({
     gh,
     sessions: () => live,
     pendingDecisions,
@@ -497,7 +497,7 @@ export function round({
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    process.exit(round() ? 0 : 1);
+    process.exit((await round()) ? 0 : 1);
   } catch (error) {
     // 呼び手（`daemon.sh`）が終了コードから言えるのは「引けなかった」だけ。**引けなかった以外で
     // 落ちたことは、ここで言わないと誰も言わない**——引き続き諦める側へ倒すが、手掛かりは残す。

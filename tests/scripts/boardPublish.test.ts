@@ -17,7 +17,7 @@ interface Call {
   readonly body: string;
 }
 
-function run(
+async function run(
   over: {
     body?: (given: {
       unreadableSince?: string;
@@ -27,12 +27,12 @@ function run(
     unreadableSince?: string;
     patrol?: { at: string; verdict: string; summary: string };
   } = {},
-): {
+): Promise<{
   ok: boolean;
   calls: Call[];
-} {
+}> {
   const calls: Call[] = [];
-  const ok = publish({
+  const ok = await publish({
     gh: (args: readonly string[]) => {
       const at = args.indexOf('--body-file');
       calls.push({ args, body: at < 0 ? '' : readFileSync(args[at + 1] ?? '', 'utf-8') });
@@ -48,8 +48,8 @@ function run(
 }
 
 describe('board-publish.mjs', () => {
-  it('組んだ本文で、issue の本文を丸ごと書き換える', () => {
-    const { ok, calls } = run();
+  it('組んだ本文で、issue の本文を丸ごと書き換える', async () => {
+    const { ok, calls } = await run();
 
     expect(ok).toBe(true);
     expect(calls).toHaveLength(1);
@@ -58,8 +58,8 @@ describe('board-publish.mjs', () => {
   });
 
   // **古いままのほうが、欠けた盤面より正しい。** 読む側は最終更新の時刻で気づける。
-  it('盤面を引けなければ、書き込まない', () => {
-    const { ok, calls } = run({ body: () => undefined });
+  it('盤面を引けなければ、書き込まない', async () => {
+    const { ok, calls } = await run({ body: () => undefined });
 
     expect(ok).toBe(false);
     expect(calls).toEqual([]);
@@ -67,9 +67,9 @@ describe('board-publish.mjs', () => {
 
   // **印と記録を置くのはデーモンの側で、人へ見せるのはここ**（`agent-ops/board-design.md` 2.21）。
   // 渡らなければ、盤面が引けていないことも、見回りが途切れたことも誰にも届かない。
-  it('引けていない印と、最後の見回りを、本文を組む側へ渡す', () => {
+  it('引けていない印と、最後の見回りを、本文を組む側へ渡す', async () => {
     const given: { unreadableSince?: string; patrolAt?: string } = {};
-    run({
+    await run({
       unreadableSince: '2026-09-11T00:39:08Z',
       patrol: { at: '2026-09-11T00:30:00Z', verdict: '異常なし', summary: '' },
       body: (args) => {
@@ -85,8 +85,8 @@ describe('board-publish.mjs', () => {
     });
   });
 
-  it('書き込めなければ、そう答える', () => {
-    const { ok } = run({ ghFails: true });
+  it('書き込めなければ、そう答える', async () => {
+    const { ok } = await run({ ghFails: true });
 
     expect(ok).toBe(false);
   });
