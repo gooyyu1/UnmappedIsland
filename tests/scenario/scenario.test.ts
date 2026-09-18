@@ -207,7 +207,7 @@ describe('テスト用シナリオ', () => {
     expect(() => applyScenario(game, scenario)).toThrow(/rainy/);
   });
 
-  it('hunting_groundは、体格の違う獲物と3つの武器を並べる', () => {
+  it('hunting_groundは、体格の違う獲物と的、3つの武器を並べる', () => {
     // 狩りの釣り合い（HuntingSystem.md 1.2節）を目で確かめるためのシナリオなので、**体格の違う
     // 獲物と、配分の違う武器が同時に手元にある**ことがこのファイルの中身の意味。始めた時点で
     // どれでも殴れて、輪郭が明滅している（＝警戒が安全域を外れている）必要がある。
@@ -240,6 +240,16 @@ describe('テスト用シナリオ', () => {
       monkey.tryGetProperty(codex.propertyNames.getId('wariness'))?.alert,
       '始めた時点で警戒している',
     ).not.toBe('safe');
+
+    // **獣の隣に的が据わっている**（hunting_practice.yaml）。同じ武器で獣と的の両方を殴り比べる
+    // ためのシナリオなので、片方だけ並んでいては中身の意味が崩れる。
+    const target = game.startLocation.fixtures.find((fixture) => fixture.def.name === 'practice_target');
+    expect(target, '打ち込みの的が据わっている').toBeDefined();
+    for (const weapon of weapons)
+      expect(
+        target!.combinationsWith(weapon, game.player.instance).map((c) => c.name),
+        `${weapon.def.name}で的へ打ち込める`,
+      ).toEqual(['strike']);
   });
 
   it('rain_collectingは、雨の中で空のヤシの殻を持たせる', () => {
