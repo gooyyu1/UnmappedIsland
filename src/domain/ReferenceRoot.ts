@@ -286,7 +286,35 @@ export class ReferenceContext {
   ownerOfProperty(root: ReferenceRoot, propertyGlobalId: PropertyGlobalId): WorldObject | undefined {
     return root === 'ancestor' ? this.self?.findAncestorWithProperty(propertyGlobalId) : this.objectAt(root);
   }
+
+  /**
+   * rootが指す相手の、そのプロパティの実効値。相手が居ないか、そのプロパティを持たなければundefined
+   * （0とは区別する）。
+   */
+  effectiveNumberAt(root: ReferenceRoot, propertyGlobalId: PropertyGlobalId): number | undefined {
+    return this.ownerOfProperty(root, propertyGlobalId)
+      ?.tryGetProperty(propertyGlobalId)
+      ?.getEffectiveValue();
+  }
+
+  /** この文脈を、宣言を読む側へ渡す形にしたもの（ReferenceValueResolver）。 */
+  get valueResolver(): ReferenceValueResolver {
+    return (root, propertyGlobalId) => this.effectiveNumberAt(root, propertyGlobalId);
+  }
 }
+
+/**
+ * 宣言が名指した1階層のプロパティ参照（起点＋プロパティ）を、数値1つへ解く手立て。解けなければ
+ * undefined——0を返すと「そう宣言されている」と区別が付かない。
+ *
+ * **問いは1つで、答える側だけが違う。** 世界が在る場面では今の実効値が答え
+ * （`ReferenceContext.valueResolver`）、オブジェクトが1つも無い場面では定義から導いた近似が答える
+ * （`src/analysis`）。だから宣言を読む側——所要時間も抽選の重みも——は、誰が答えるかを知らずに書ける。
+ */
+export type ReferenceValueResolver = (
+  root: ReferenceRoot,
+  propertyGlobalId: PropertyGlobalId,
+) => number | undefined;
 
 /**
  * {subject, prop}が指す、1階層のプロパティ参照（ReferenceRoot＋プロパティのグローバルID）。
@@ -318,7 +346,7 @@ export class PropertyPath {
 
   /** この参照が指すプロパティの実効値。解決できなければundefined（0とは区別する）。 */
   effectiveNumber(context: ReferenceContext): number | undefined {
-    return this.propertyValue(context)?.getEffectiveValue();
+    return context.effectiveNumberAt(this.root, this.propertyGlobalId);
   }
 }
 

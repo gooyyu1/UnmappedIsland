@@ -129,6 +129,9 @@ object_defs:
           destroy: self
           spawn: {object: hot_stone}
     interactions:
+      # 打ち欠く。**石器の腕の入口はこの1本だけ**——打つ手が世界にこれしか無いためで、配り落として
+      # いるのではない（docs/world/Skills.md 2.6節、docs/engine/SkillSystem.md 3.2.1節）。斧の工程が
+      # 受け取るのはもう刃になった石なので（tools.yamlのhafted）、打つ場面はここで終わっている。
       knap:
         trigger: {drag: {object: stone}}
         # 狙った縁を打ち欠く手元の作業（IlluminationSystem.md 5節）。据え付けの光源も効くので、

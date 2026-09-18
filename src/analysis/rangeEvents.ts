@@ -2,7 +2,7 @@ import type { PropertyDef, RangeEventLabel } from '../domain/PropertyDef';
 import { endMovedToward } from '../domain/PropertyDef';
 import type { StepOutcome } from './CraftingStep';
 import { destroysRoot, readEffect } from './effectOutcomes';
-import type { EndBoundValueResolver } from './staticValue';
+import type { ReferenceValueResolver } from '../domain/ReferenceRoot';
 
 /**
  * range系イベント（6.3節）が端で何をするかを、実行時のオブジェクトを使わずに読んだもの。
@@ -35,7 +35,7 @@ export interface PropertyAtValue {
 /** そのプロパティが宣言しているrange系イベントを、端で起こることまで開いて読む。 */
 export function rangeEventReadouts(
   propertyDef: PropertyDef,
-  resolve: EndBoundValueResolver,
+  resolve: ReferenceValueResolver,
 ): readonly RangeEventReadout[] {
   const range = propertyDef.range;
   // 端が無ければ端のイベントも無い——rangeを持たないプロパティのon_max/on_minはPropertyDefが弾き、
@@ -89,7 +89,7 @@ function selfValueAfter(propertyDef: PropertyDef, outcome: StepOutcome, end: num
  */
 export function rangeEventAt(
   { propertyDef, value }: PropertyAtValue,
-  resolve: EndBoundValueResolver,
+  resolve: ReferenceValueResolver,
 ): RangeEventReadout | undefined {
   // どちらの端に達したかはプロパティ自身が答える（PropertyDef.rangeEventLabelsAt）。ここが読むのは、
   // その端で何が起こるかだけ。

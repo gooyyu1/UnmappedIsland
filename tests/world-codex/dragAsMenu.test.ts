@@ -54,11 +54,11 @@ object_defs:
         destroy: self
         spawn: {object: banana_stem, count: 5, into: agent}
 
-  # timber.yamlのbroadleaf_treeのfellを同じ形へ写したもの。**元の宣言が持っていた2つを落としている**
-  # ——刃の余力を見る要件（subject: instrument）と、刃を減らす効果（add: instrument）。どちらも
+  # timber.yamlのbroadleaf_treeのfellを同じ形へ写したもの。**元の宣言が持っていた、刃の余力を見る
+  # 要件（subject: instrument）と刃を減らす効果（add: instrument）を落としている**。どちらも
   # メニュー型には書けないので、写した先に残す手段が無い。
   #
-  # **受け口を刻む手（chop）は写していない。** 落ちる2つはどちらも倒す手の側に在るので、
+  # **受け口を刻む手（chop）は写していない。** 落ちる要件も効果も倒す手の側に在るので、
   # 比べるのに要るのはこちらだけ。
   broadleaf_tree_as_menu:
     tags: [fixture]
@@ -192,7 +192,7 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
   describe('道具を見て道具を減らす宣言（広葉樹）は、書き換えると別の操作になる', () => {
     /**
      * 倒す手が立つところまで刻んだ木。**1回では倒れない**（docs/engine/ActionSystem.md 6.3節）ので、
-     * 落ちる2つ（刃の余力を見る要件と刃を減らす効果）を持つ手はここから先にしか現れない。
+     * 落ちる要件（刃の余力を見る）と効果（刃を減らす）を持つ手はここから先にしか現れない。
      */
     function treeReadyToFell(): WorldObject {
       const tree = spawnInto('broadleaf_tree', jungle, 'fixtures');
@@ -256,7 +256,7 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
     });
   });
 
-  describe('落とした2つは、メニュー型へは書けない', () => {
+  describe('落とした要件と効果は、メニュー型へは書けない', () => {
     /** 書けない理由まで見る——別の綴り間違いで落ちたのを「書けない」と読まないように。 */
     const NO_INSTRUMENT_HERE = /参照ルート 'instrument' は使えません/;
 

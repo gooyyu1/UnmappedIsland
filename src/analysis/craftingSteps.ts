@@ -15,7 +15,7 @@ import type { InteractionDef } from '../domain/InteractionDef';
 import type { InteractionTrigger } from '../domain/InteractionTrigger';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { RecipeDef } from '../domain/RecipeDef';
-import type { ReferenceRoot } from '../domain/ReferenceRoot';
+import type { ReferenceRoot, ReferenceValueResolver } from '../domain/ReferenceRoot';
 import type { TypeMatchReading } from '../domain/TypeMatchRule';
 import { TypeMatchRule } from '../domain/TypeMatchRule';
 import type { WorldCodex } from '../domain/WorldCodex';
@@ -27,7 +27,6 @@ import type { BecomeDestinationResolver, EffectReading } from './effectOutcomes'
 import { consumesRoot, destroysRoot, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
 import type {
-  EndBoundValueResolver,
   StaticSubjectReader,
   StaticValueLayer,
   StaticValueRange,
@@ -36,7 +35,6 @@ import type {
 import {
   highestDeclaredLayer,
   layeredResolver,
-  resolveDeclaredNumber,
   staticConditionTruth,
   staticResolverOf,
   staticValueOf,
@@ -209,7 +207,7 @@ function staticValueRangeOf(
   codex: WorldCodex,
   def: ObjectDef,
   propertyGlobalId: PropertyGlobalId,
-  resolve: EndBoundValueResolver,
+  resolve: ReferenceValueResolver,
 ): StaticValueRange | undefined {
   const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
   const range = propertyDef?.range;
@@ -230,7 +228,7 @@ function leavesThisType(
   codex: WorldCodex,
   def: ObjectDef,
   effect: EffectDeclaration,
-  resolve: EndBoundValueResolver,
+  resolve: ReferenceValueResolver,
 ): boolean {
   const selfDestinations: (number | undefined)[] = [];
   const reading = readEffect(effect, resolve, (subject, axisValues) => {
@@ -263,7 +261,7 @@ function interactionStep(
     tracking.resolve,
     becomeDestinationResolverOf(codex, def, instrument),
   );
-  const minutes = minutesOf(interaction, tracking.resolve);
+  const minutes = interaction.minutesFor(tracking.resolve);
   // 経過の間ずっと効くもの（11.7節）は、経過し終えてから効くもの（effect）より先に起きる。
   const outcomes = combineOutcomes(passiveOutcomes(interaction, minutes), reading.outcomes, 'declared');
   // **同じ物の上で先に済ませておく手の分**（preparationMinutesOf）。1回が1時間を超えられない
@@ -434,7 +432,7 @@ function cheapestPushMinutes(
   asking: InteractionTrigger,
   propertyGlobalId: PropertyGlobalId,
   distance: number,
-  resolve: EndBoundValueResolver,
+  resolve: ReferenceValueResolver,
 ): number {
   let cheapest: number | undefined;
   for (const trigger of def.triggers) {
@@ -447,7 +445,7 @@ function cheapestPushMinutes(
     if (collector.amount === undefined || Math.abs(collector.amount) === 0) continue;
 
     const times = Math.ceil(distance / Math.abs(collector.amount));
-    const minutes = times * minutesOf(trigger.interaction, resolve);
+    const minutes = times * trigger.interaction.minutesFor(resolve);
     if (cheapest === undefined || minutes < cheapest) cheapest = minutes;
   }
   return cheapest ?? 0;
@@ -721,13 +719,4 @@ function inputOf(reading: TypeMatchReading, consumed: boolean, count: number): C
   return reading.kind === 'tag'
     ? { kind: 'tag', tagGlobalId: reading.tagGlobalId, consumed, count }
     : { kind: 'object', objectGlobalId: reading.objectGlobalId, consumed, count };
-}
-
-/**
- * その操作にかかるゲーム内時間（分）。durationを省いていれば0、参照が解けなければ0
- * （工程の側がhasUnresolvedReferencesで印を持つ）。
- */
-function minutesOf(interaction: InteractionDef, resolve: EndBoundValueResolver): number {
-  const reading = interaction.durationReading;
-  return reading === undefined ? 0 : Math.trunc(resolveDeclaredNumber(reading, resolve) ?? 0);
 }

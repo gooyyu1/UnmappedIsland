@@ -30,7 +30,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | `singleton` | `true`（同時に存在するプレイヤーキャラクタは1体） |
 | タグ | `character` |
 | スロット | `hand`（`item` を受け入れる枠が4〜8個）、`equipment`、`injuries` |
-| プロパティ | `weight` / `travel_delay` / `pain` / `blood` / `warmth` / `chill_point` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `loneliness` / `homesickness` / `comfort` / `company` / `happiness` / `pathogen` / `immunity` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` と、腕前の11本（[`Skills.md`](./Skills.md) 2 節）、その段が押し上げる上乗せ `ignition_ease` / `quarry_sense` / `hunting_aim`（同 5 節。重みの `base` の土台になる）（いずれも個体差を持たず `player_character` trait が配る） |
+| プロパティ | `weight` / `travel_delay` / `pain` / `blood` / `warmth` / `chill_point` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `loneliness` / `homesickness` / `comfort` / `company` / `happiness` / `pathogen` / `immunity` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` と、腕前（[`Skills.md`](./Skills.md) 2 節）、その段が押し上げる上乗せ `ignition_ease` / `quarry_sense` / `hunting_aim`（同 5 節。重みの `base` の土台になる）（いずれも個体差を持たず `player_character` trait が配る） |
 | アクション | 休息（`wait` / `rest` / `nap`。下の[休息](#休息)節。睡眠は寝床が配る）と、限界（`collapse` / `fall_asleep` / `despair`。下の[限界](#限界)節）。どちらも `player_character` trait が配る |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterCard.ts`。絵が入るまでの繋ぎ） |
 
@@ -94,7 +94,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   持たせない**——キャラクタが違っても、飲んだ水1mLの意味が変わってはならないため。持ちの差は
   `max`（＝体が抱える水の量）で表す。液体の mL からの換算は飲用側の宣言が持つ（`transfer` の
   `to_amount`、[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5節）。
-  脱水はそのまま死に至るため、致命的域（`fatal`）を持つ唯一のステータス。尽きた段の名前は
+  脱水はそのまま死に至るため、致命的域（`fatal`）を持つ。尽きた段の名前は
   **`dehydrated`**。
   `min: max` の段 **`full`**（満水ちょうど）を持ち、名前を固定する——液体の `drink` がこの名前で
   「もう飲めない」を見る（[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5節）。
@@ -122,8 +122,8 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **`travel_delay`（歩みの遅れ、分）**: 素は 0 で、自分では動かず `load` の段が `modify` で押し上げる
   （下の荷重の効き方節）。道の `travel_minutes` が `base` でここを土台にする。`status` タグは持たない
   ——見せるのは荷重そのもので、遅れはその段から読める。個体差は持たせず trait が配る。
-- **`blood`（血液量、mL）**: `max` が体格そのもの（体重のおよそ1/13）で、満タンから始まる。**唯一、
-  自分で戻るステータス**（`+2/tick` ＝ 1日およそ200mL、赤血球が作られる実際の速さ）。削るのは出血する
+- **`blood`（血液量、mL）**: `max` が体格そのもの（体重のおよそ1/13）で、満タンから始まる。**体が
+  自分で作り直すステータス**（`+2/tick` ＝ 1日およそ200mL、赤血球が作られる実際の速さ）。削るのは出血する
   怪我だけなので、**削られるのは一瞬でも戻るのは桁違いに遅い**——牙の傷1つが奪う600mLに3.1日かかる
 （[`VitalsSystem.md`](../engine/VitalsSystem.md) 3.3 節）。尽きた段の
   名前は **`exsanguinated`**。刻み方は [`VitalsSystem.md`](../engine/VitalsSystem.md) 3 節、これも個体差を

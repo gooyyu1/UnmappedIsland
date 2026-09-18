@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { analysisContextOf } from '../../src/analysis/craftingSteps';
-import { resolveDeclaredNumber, staticResolverOf } from '../../src/analysis/staticValue';
+import { staticResolverOf } from '../../src/analysis/staticValue';
+import { resolveDeclaredNumber } from '../../src/domain/DeclaredNumber';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { InteractionDef } from '../../src/domain/InteractionDef';

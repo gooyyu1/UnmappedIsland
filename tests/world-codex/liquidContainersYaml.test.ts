@@ -5,6 +5,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import {
+  bundledCodex,
   loadYamlDirectory,
   loadYamlFile,
   SAMPLE_CHARACTER,
@@ -677,5 +678,48 @@ describe('liquid_containers.yamlの液体容器定義', () => {
       water.refusedCombinationsWith(tea, agent).at(0)?.unmetRequirement()?.reasonName,
       '画面が出すのは宣言順の先頭',
     ).toBe('not_empty');
+  });
+});
+
+/**
+ * 満ちた器を重ねたときに断る口（`*_into_filled`）と、空でないことを断る口（`*_into_empty`）は、
+ * **同じ場面で両方が理由付きで残る**——前者が名乗る型指定（`water`・`tea`）は後者の
+ * `liquid_container` に必ず含まれるため。画面が出すのは宣言順の先頭
+ * （docs/ui/CardInteraction.md 2節）なので、狭いほうを後ろに置くと `container_full` は一度も出ない
+ * （docs/engine/LiquidContainerSystem.md 4節・10節）。
+ *
+ * **型指定どうしの包含は判定しない**（PR #1721の仮決め）。見るのは口の名前の対と宣言順だけなので、
+ * 同じ形を別の綴りで足した宣言はここに掛からない。1組も掛からなくなったことは下のexpectが落とす。
+ *
+ * 種類ごとの液体はファイルをまたいで足せるので、同梱ぶんを丸ごと読んで見る。
+ */
+describe('満ちた器を断る口の宣言順', () => {
+  const INTO_FILLED = '_into_filled';
+  const INTO_EMPTY = '_into_empty';
+
+  it('満ちた器を断る口は、対になる空でないことを断る口より先に宣言されている', () => {
+    const codex = bundledCodex();
+    const checked: string[] = [];
+    const tooLate: string[] = [];
+
+    for (const def of codex.objects) {
+      // 見るのは重ねて起こす操作の並び（ObjectDef.dragTriggers）。宣言順がそのまま残っており、
+      // 断る口が複数あるときにどれが出るかはこの並びの先頭で決まる——成立するものが両向きに1つも
+      // 無いときだけ断る口が出る（src/game/view/cardOperations.ts の combinationBetween）。
+      const names = def.dragTriggers.map((trigger) => trigger.interaction.name);
+      names.forEach((name, emptyIndex) => {
+        if (!name.endsWith(INTO_EMPTY)) return;
+        const filledIndex = names.indexOf(`${name.slice(0, -INTO_EMPTY.length)}${INTO_FILLED}`);
+        if (filledIndex < 0) return;
+        const pair = `${def.name}.${name.slice(0, -INTO_EMPTY.length)}`;
+        checked.push(pair);
+        if (filledIndex > emptyIndex) tooLate.push(pair);
+      });
+    }
+
+    expect(checked.length, `対になる口が1組も無い（${INTO_FILLED}の綴りが変わっていないか）`).toBeGreaterThan(
+      0,
+    );
+    expect(tooLate, '満ちた器を断る理由が一度も画面へ出ない').toEqual([]);
   });
 });

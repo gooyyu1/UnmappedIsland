@@ -53,7 +53,6 @@ live=$(CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}" bash "$HERE/live-
   exit 1
 }
 
-# TSVをそのままJSONへ。**日本語は載らない**（IDとタグだけ）ので、ここは変数で通してよい。
 printf '%s' "$live" | jq -R -s --arg usage "$raw" \
   --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{
     usage: $usage,

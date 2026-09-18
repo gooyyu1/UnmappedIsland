@@ -177,6 +177,9 @@ export class WorldCodexYamlLoader {
    * パース済みの1つのYAMLを読み込む。**渡したDocumentは書き換えない**ので、同じものを何度でも
    * 渡してよい（loadWorldCodex）。patch（3.4節）が書き換える宣言のノードも、そこへ接ぎ木する値も、
    * 読み込み元から切り離した複製の側にある（RawObjectDef.modifyDeclaration・RawPatch.value）。
+   *
+   * 書き換えれば tests/loader/bundledParseCache.test.ts が落ちる——同梱ぶんを丸ごと通して、渡した
+   * Documentの字面が動いていないかを見ている。**型では塞げない**（同テストの該当itを参照）。
    */
   loadDocument(label: string, doc: Document, from?: PackSource): this {
     const report = from?.report;

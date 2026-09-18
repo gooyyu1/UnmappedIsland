@@ -17,7 +17,7 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
  * 自動テスト。
  *
  * 見張るのは、**宣言が世界じゅうに散らばっていて、目視では揃っているか分からないもの**。段の境目は
- * 11本のあいだで、解放条件は段が上がった後も、配る腕は同じ仕事の入口どうしで揃っていなければ
+ * 腕どうしのあいだで、解放条件は段が上がった後も、配る腕は同じ仕事の入口どうしで揃っていなければ
  * ならないが、いずれも1つのファイルを読んでも確かめられない。
  *
  * **どれも「揃っているか」しか見ない。** どの腕を配るのが正しいか・どのレシピに条件を置くべきかは
@@ -27,7 +27,7 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 /** 腕前のプロパティの名前の頭。 */
 const SKILL_PREFIX = 'skill_';
 
-/** docs/world/Skills.md 2節の11本。宣言順（characters/player_character.yaml）で並べる。 */
+/** docs/world/Skills.md 2節が挙げる腕。宣言順（characters/player_character.yaml）で並べる。 */
 const SKILLS = [
   'skill_knapping',
   'skill_cordage',
@@ -57,7 +57,7 @@ const CRAFTING_SKILLS = [
   'skill_preserving',
 ] as const;
 
-/** 11本で共通の段（SkillSystem.md 6節の目安そのままの4段・比3）。 */
+/** どの腕にも共通の段（SkillSystem.md 6節の目安そのままの4段・比3）。 */
 const STAGES = [
   { name: 'novice', min: 0 },
   { name: 'basic', min: 20 },
@@ -67,7 +67,8 @@ const STAGES = [
 
 /**
  * 腕が伸びる経路（SkillSystem.md 3節の表）。**書かれている場所で決まる**——操作の直下の `add` が実行、
- * `pick` の候補に埋めた `add` が発見（同3.3節）。練習はまだ世界に無い。
+ * `pick` の候補に埋めた `add` が発見（同3.3節）。**経路はこの2つで全部**——練習は経路ではなく、その腕の
+ * 初歩の行動がそれを兼ねる（同3.1節【確定】。打ちかかる腕なら hunting_practice.yaml の的）。
  */
 type SkillRoute = 'execution' | 'discovery';
 
@@ -114,6 +115,16 @@ const RECIPES_WITHOUT_DEFTNESS = [
   'torch.wrapped',
   'unfired_jar.coiled',
 ];
+
+/**
+ * 入口（実行経路で腕を配る操作、SkillSystem.md 3節）が1本だけの腕。**1本でよいと決めた分だけ**が
+ * 並ぶ——理由は1本ずつ、その入口のコメントに書いてある（同3.2.1節。書いてあることは下の検査が見張る）。
+ *
+ * **並べるのは「担う手がその1つだけ」と決めた腕で、理由の種類は問わない**——火と保存は担う手そのものが
+ * 1つ、料理は置ける相手が1つ（docs/world/Skills.md 2.2・2.4・2.5・2.6節）。どちらであるかは内容の
+ * 判断なので、ここが見るのは決めずに素通りできないことだけ。
+ */
+const SKILLS_WITH_ONE_ENTRY = ['skill_cooking', 'skill_firecraft', 'skill_knapping', 'skill_preserving'];
 
 /**
  * 製作系の腕（Skills.md 2節）と、その段が押し上げる上乗せ（同7節）。**速さの上乗せはここに無い**
@@ -660,6 +671,12 @@ interface InteractionGains {
   readonly durationProp: string | undefined;
   /** その操作が `{subject: agent, prop: ...}` で読んでいるもの（余分の卓の重みもここに出る）。 */
   readonly agentReads: readonly string[];
+  /**
+   * その操作の手前に書いてあるコメント。**拾うのは操作自身の直上だけ**で、`interactions` の
+   * 直上（型の側の話）までは拾わない——拾うと、別の話で同じ語を使っている型へ操作を足したときに
+   * 理由を書かないまま通ってしまう（`commentsAboveRecipes` と同じ線）。
+   */
+  readonly comment: string;
 }
 
 /** ノードの下にある`spawn`が出す型の名前を、入れ子の`pick`ごと集める。 */
@@ -698,7 +715,7 @@ function declaredInteractions(): readonly InteractionGains[] {
         walk(pair.value, key);
         continue;
       }
-      for (const entry of pair.value.items) {
+      for (const [index, entry] of pair.value.items.entries()) {
         const body = entry.value;
         if (!isMap(body)) continue;
         const products = new Set<string>();
@@ -726,6 +743,8 @@ function declaredInteractions(): readonly InteractionGains[] {
           needsInstrument: isMap(trigger) && trigger.get('drag', true) !== undefined,
           durationProp: isScalar(durationProp) ? String(durationProp.value) : undefined,
           agentReads: [...agentReads].sort(),
+          // 最初の操作の手前のコメントは、操作ではなく`interactions`の値のほうに付く。
+          comment: [index === 0 ? commentBeforeOf(pair.value) : '', commentBeforeOf(entry.key)].join('\n'),
         });
       }
     }
@@ -733,6 +752,25 @@ function declaredInteractions(): readonly InteractionGains[] {
 
   for (const path of worldCodexYamlPaths()) walk(parseDocument(readFileSync(path, 'utf8')).contents, '');
   return found;
+}
+
+/**
+ * 腕ごとの入口——実行経路でその腕を配る操作（SkillSystem.md 3節）を、腕の名前で引けるようにしたもの。
+ *
+ * **発見の契機は入らない。** `declaredInteractions`が数える`skills`は操作の直下の`add`だけで、`pick`の
+ * 候補に埋めたものは拾わない（同3.3節）——**時間を投じて繰り返せる手はこちらだけ**で、探索の契機は
+ * 何に出くわしたかが決めるので、投じ先として選べない。
+ */
+function entriesBySkill(): ReadonlyMap<string, readonly InteractionGains[]> {
+  const bySkill = new Map<string, InteractionGains[]>();
+
+  for (const interaction of declaredInteractions())
+    for (const skill of interaction.skills) {
+      const entries = bySkill.get(skill) ?? [];
+      bySkill.set(skill, entries);
+      entries.push(interaction);
+    }
+  return bySkill;
 }
 
 describe('腕前とレシピの解放条件', () => {
@@ -744,7 +782,7 @@ describe('腕前とレシピの解放条件', () => {
     skillIds = SKILLS.map((name) => codex.propertyNames.getId(name));
   });
 
-  /** プレイヤーキャラクタを1体作り、11本すべてをその値にする。 */
+  /** プレイヤーキャラクタを1体作り、腕をすべてその値にする。 */
   function characterWithSkills(value: number, characterName = 'medic'): WorldObject {
     const character = new WorldSession(codex).createObject(codex.objectNames.getId(characterName));
     for (const id of skillIds) character.getProperty(id).setNumberWithoutEvents(value);
@@ -808,7 +846,7 @@ describe('腕前とレシピの解放条件', () => {
     return found;
   }
 
-  it('プレイヤーキャラクタは、Skills.md 2節の11本を腕前のタグ付きで持つ', () => {
+  it('プレイヤーキャラクタは、Skills.md 2節の腕を腕前のタグ付きで持つ', () => {
     // タブに並ぶ順は宣言順（GameElementDefinition.md 6.7節）なので、集合ではなく並びで見る。
     const skillTagId = codex.propertyTagNames.getId('skill');
 
@@ -821,7 +859,7 @@ describe('腕前とレシピの解放条件', () => {
     }
   });
 
-  it('11本の段は同じ境目を持つ（本ごとに basic の遠さが変わらない）', () => {
+  it('どの腕も段は同じ境目を持つ（本ごとに basic の遠さが変わらない）', () => {
     const character = characterWithSkills(0);
 
     for (const [index, stage] of STAGES.entries()) {
@@ -836,7 +874,7 @@ describe('腕前とレシピの解放条件', () => {
     }
   });
 
-  it('11本とも、段が下端を名乗っている（受け皿にして進みを消さない）', () => {
+  it('どの腕も、段が下端を名乗っている（受け皿にして進みを消さない）', () => {
     // 腕前はrangeを持たないので、下端を書かない段（受け皿、GameElementDefinition.md 6.4節）は
     // 下端が決まらず、段の中の進みが計算できない。UIは進みの無い段でバーを出さない
     // （StatusArea.md 9節）ので、最下段を受け皿で書くと**全員が通る見習いの間だけ**バーが消える。
@@ -1287,7 +1325,7 @@ describe('腕前とレシピの解放条件', () => {
       : props.get(interaction.owner)?.get(interaction.durationProp);
   }
 
-  /** その手作業を、11本すべてがその値の人が行うときの所要時間（分）。 */
+  /** その手作業を、腕がすべてその値の人が行うときの所要時間（分）。 */
   function handworkMinutes(interaction: InteractionGains, skillValue: number): number {
     // **相手は作業者と同じ世界に作る**——役（11.5節）は1つの関係の中でしか結べないので、
     // 別のセッションに居ると手際の土台が辿り着かない。
@@ -1456,6 +1494,36 @@ describe('腕前とレシピの解放条件', () => {
       'skill_building',
       'skill_smelting',
     ]);
+  });
+
+  it('入口が1本しか無い腕は、1本と決めた分だけ', () => {
+    // SkillSystem.md 3.2.1節。**一つ上が数えるのは0本の腕**だが、1本の腕も素通りしてよいわけでは
+    // ない——3.2節の「最低1つ」は立ち上がりの条件で、足りているかの条件ではなく、**1本しか無い腕では
+    // 段へ届くまでその1手を繰り返すことになる。**
+    //
+    // 決めた覚えの無い腕がここへ落ちてくるのを止める——**新しい腕も、入口が減った腕も、口を足すか、
+    // 数え上げへ足すかを選ぶことになる。** 1本でよいかは内容の判断（拠り所はdocs/world/Skills.mdが
+    // 腕ごとに持つ）で、見るのは決めずに素通りできないことだけ。
+    const entries = entriesBySkill();
+
+    expect(SKILLS.filter((name) => entries.get(name)?.length === 1).sort()).toEqual(SKILLS_WITH_ONE_ENTRY);
+  });
+
+  it('入口が1本と決めた腕は、その理由がその入口のコメントに書いてある', () => {
+    // 一つ上の数え上げは、**足せば黙って通せる**——理由を書かせるのはここ。SkillSystem.md 3.2.1節が
+    // 「1本と決めたら、その理由をその入口のコメントへ書きます」と言っている以上、それが破れたときに
+    // 落ちるものが要る（書いてあるかを見るだけで、中身の当否は人が読む）。
+    //
+    // **語を2つとも求める**——どちらか1つなら、本数と関わりのない文でも当たってしまう。
+    const entries = entriesBySkill();
+
+    expect(
+      SKILLS_WITH_ONE_ENTRY.filter((name) => {
+        const comment = entries.get(name)?.[0]?.comment ?? '';
+        return !comment.includes('入口') || !comment.includes('1本');
+      }),
+      '入口が1本である理由が書いていない腕',
+    ).toEqual([]);
   });
 
   it('伸ばす操作を持つ腕は、どれも効き先を持つ', () => {

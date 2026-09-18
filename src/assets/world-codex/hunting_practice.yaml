@@ -59,7 +59,8 @@ object_defs:
         #
         # **刃は食わない**（docs/engine/DurabilitySystem.md 2.1節）。摩耗を払わせるのは物を返す手
         # だけで、ここが返すのは腕だけ——食わせると、返るものが無いまま武器だけが折れる形になる。
-        # 獣を殴る手が食うのは、一撃が傷を刺して獲物へ届くから（animals.yamlのstrike）。
+        # **線が引かれているのは手の単位で、当たり外れではない**——獣を殴る手は物を返す手なので、
+        # 外した回（whiff）も同じだけ食う（animals.yamlのstrike）。
         add:
           agent: {skill_hunting: 2}
         # 告げるのは獣へ当てたときと同じ手応え（localeのsignal_texts）。**当たり所が無いので告げ方も

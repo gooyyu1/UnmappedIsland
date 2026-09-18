@@ -8,7 +8,8 @@
 
 traits:
   # 液体を入れられること自体のタグ（固形物を入れるcontainerタグと対になる、containers.yaml）。
-  # 空の容器も中身入りの変種もこのタグを持つ。空かどうかはfillの有無で見る（下のpour_in）。
+  # 空の容器も中身入りの変種もこのタグを持つ。空かどうかはfillが0かで見る（下のpour_into_empty）
+  # ——fill自体は空の容器も持つ（LiquidContainerSystem.md 2節）。
   liquid_container:
     tags: [liquid_container]
 
@@ -31,7 +32,7 @@ traits:
     tags: [narrow_open_container]
 
   # 空けたまま置いて雨を受けられる容器（LiquidContainerSystem.md 7節）。溜め始めるのは操作で、
-  # 増えるのは自動（rain_filled_liquid）。中身入りの変種はfillを持つので条件で弾かれ、
+  # 増えるのは自動（rain_filled_liquid）。中身入りの変種はfillが0でないので条件で弾かれ、
   # 空の容器にだけボタンが出る。
   rain_catching_container:
     interactions:
@@ -122,7 +123,8 @@ traits:
       # **下のpour_into_emptyより先に書く。** 相手のタグ（water）はあちらのタグ（liquid_container）に
       # 必ず含まれるので、どちらも断る場面——満水の器同士——では両方が理由付きで残る。画面が出すのは
       # 宣言順の先頭（docs/ui/CardInteraction.md 2節）なので、狭いほうを後ろに置くと、こちらの理由は
-      # 一度も出ないまま「中身が入っている」だけが出る。
+      # 一度も出ないまま「中身が入っている」だけが出る。**液体を増やしたときも同じ**で、順は
+      # tests/world-codex/liquidContainersYaml.test.tsが全数で見張る（draw_into_filledも同じ対）。
       pour_into_filled:
         trigger: {drag: {tag: water}}
         conditions:
