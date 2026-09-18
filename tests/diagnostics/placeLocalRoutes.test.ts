@@ -48,6 +48,19 @@ describe('土地で完結する経路は、土地の表に出る', () => {
     expect(missing).toEqual([]);
   });
 
+  it('朽ちない設備は、獲れる土地でも経路にならない', () => {
+    // 囲いは寿命を持たないので1周期ぶんを按分できず、産物は値段の付かない側になる（BalanceStats.md
+    // 「待って得る生産の数え方」）。**上の見張りが朽ちる設備だけを見ている理由**がこれで、囲いの行が
+    // 経路に出ないのは落ちているのではない。
+    const pens = [islandWide, ...lands].flatMap((place) =>
+      place.devices.filter((device) => device.deviceName === 'pen'),
+    );
+
+    expect(pens.length).toBeGreaterThan(0);
+    expect(pens.filter((pen) => pen.laborPerUnit !== undefined)).toEqual([]);
+    expect([...devicesOnRoutes(islandWide)].filter((key) => key.startsWith('pen.'))).toEqual([]);
+  });
+
   it('その土地の産地のほうが高くても、持ち込みに差し替わらない', () => {
     // くくり罠のネズミは、山腹（rat_catch 4）より草原（同 6）のほうが掛かりやすいので、島のどこかで
     // 獲るほうが安い。安いほうを採ると山腹の経路が持ち込み扱いになって表から落ちる。
