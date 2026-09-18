@@ -17,11 +17,54 @@ vi.setConfig({ testTimeout: 20000 });
 
 const REPO = resolve(__dirname, '../..');
 const HOOK = resolve(REPO, '.claude/hooks/deny-ccr-meta-mcp.sh');
+const ENTRY = resolve(REPO, '.claude/ccr-meta.sh');
 
 interface Matcher {
   readonly matcher?: string;
   readonly hooks?: readonly { readonly command?: string }[];
 }
+
+interface Decision {
+  readonly hookEventName?: string;
+  readonly permissionDecision?: string;
+  readonly permissionDecisionReason?: string;
+}
+
+function decision(): Decision {
+  const parsed: unknown = JSON.parse(runScript(HOOK, [], {}));
+  return (parsed as { hookSpecificOutput?: Decision }).hookSpecificOutput ?? {};
+}
+
+/** 入口（`.claude/ccr-meta.sh`）のコメントが持つ節の見出し。 */
+function entrySections(): string[] {
+  return readFileSync(ENTRY, 'utf-8')
+    .split(/\r?\n/)
+    .flatMap((line) => /^#\s*#{2,6}\s+(\S.*?)\s*$/.exec(line)?.[1] ?? []);
+}
+
+/** 引く側と引かれる側で揃わない記号を落として突き合わせる形にする。 */
+function normalize(text: string): string {
+  return text.replace(/[\s*`「」]/g, '');
+}
+
+/**
+ * 案内の散文。**呼び方の例示（字下げした行）は外す**——あれは入口の使い方そのものなので、入口の
+ * 冒頭と同じ形になるのが正しい。
+ */
+function reasonProse(): string {
+  return normalize(
+    (decision().permissionDecisionReason ?? '')
+      .split('\n')
+      .filter((line) => !line.startsWith('  '))
+      .join('\n'),
+  );
+}
+
+/**
+ * 案内が入口と続けて同じ字面を持ってよい長さ。**入口の在り処を名指しするぶんで足りる**
+ * （2026-09-18 の実測で19字）。理由の一文を写し戻すと48字になるので、ここで分かれる。
+ */
+const COPY_RUN = 24;
 
 function preToolUse(): readonly Matcher[] {
   const settings: unknown = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
@@ -30,22 +73,42 @@ function preToolUse(): readonly Matcher[] {
 
 describe('deny-ccr-meta-mcp.sh', () => {
   it('拒否して、正しい入口の呼び方を理由に書く', () => {
-    const parsed: unknown = JSON.parse(runScript(HOOK, [], {}));
-    const output = (
-      parsed as {
-        hookSpecificOutput?: {
-          hookEventName?: string;
-          permissionDecision?: string;
-          permissionDecisionReason?: string;
-        };
-      }
-    ).hookSpecificOutput;
+    const output = decision();
 
-    expect(output?.hookEventName).toBe('PreToolUse');
-    expect(output?.permissionDecision).toBe('deny');
-    expect(output?.permissionDecisionReason).toContain('.claude/ccr-meta.sh');
+    expect(output.hookEventName).toBe('PreToolUse');
+    expect(output.permissionDecision).toBe('deny');
+    expect(output.permissionDecisionReason).toContain('.claude/ccr-meta.sh');
     // 入口を名指しするだけでは、そこから先が分からず結局止まる。呼び方まで渡す。
-    expect(output?.permissionDecisionReason).toContain('bash .claude/ccr-meta.sh');
+    expect(output.permissionDecisionReason).toContain('bash .claude/ccr-meta.sh');
+  });
+
+  /**
+   * **なぜシェルへ載せると壊れるかを持つのは入口の節ひとつ**で、ここはそこを名指しするだけ
+   * （`CLAUDE.md`「同じ説明を複数箇所に書かない」）。写しを置くと片方だけが古くなる——実際に、
+   * 止めたい対象が挙げている理由より狭い「バッククォートだけ」のまま残っていた（issue #1979）。
+   */
+  it('理由を抱えず、責務を持つ節を名指しで指す', () => {
+    const reason = decision().permissionDecisionReason ?? '';
+    const named = /`\.claude\/ccr-meta\.sh`[^「]*「([^」]+)」/.exec(reason)?.[1];
+
+    // 節を指していなければ、読み手は冒頭のどこを読めばよいか分からない。
+    expect(named, `理由を持つ節を名指ししていない:\n${reason}`).toBeDefined();
+    // 畳まれた節を指したままでは、案内が行き止まりになる。
+    expect(entrySections().map(normalize)).toContainEqual(
+      expect.stringContaining(normalize(named as string)),
+    );
+  });
+
+  it('要旨だけを書き、入口の文面を写さない', () => {
+    const prose = reasonProse();
+    const entry = normalize(readFileSync(ENTRY, 'utf-8'));
+    const copied = [...Array(Math.max(prose.length - COPY_RUN + 1, 0)).keys()]
+      .map((start) => prose.slice(start, start + COPY_RUN))
+      .filter((run) => entry.includes(run));
+
+    // 案内が空でも「写しが無い」で通ってしまうので、拾える長さが在ることを先に見る。
+    expect(prose.length).toBeGreaterThan(COPY_RUN);
+    expect(copied, `入口からの写し:\n${copied.join('\n')}`).toEqual([]);
   });
 
   it('メタMCPの道具名に当たる matcher から呼ばれている', () => {
