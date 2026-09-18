@@ -127,9 +127,16 @@
 ——既定は `~/.claude/board-state/patrol.jsonl` ですが、`BOARD_STATE` で移してあると、**書いた先と
 盤面が読む先がずれて、常設の issue に「記録がありません」が出続けます。**
 
+**読んだ行が最後の行だと、行の並びから言えるようにしてください。** 1行が数十KBあるので、生のまま
+吐かせると出力の途中で切られ、**どれが末尾かが分からなくなります**——切られた先頭を末尾と読むと、
+前回ではなく何時間も前の観測と突き合わせることになり、**その間に起きた停滞が見えないまま「間隔が
+空いている」のような別の異常に見えます。** 先に `at` だけを並べて、どこが末尾かを確かめてから
+中身を開きます。
+
 ```
 PATROL=$(node -e "import('./scripts/daemon/board-state.mjs').then((m) => console.log(m.patrolPath(m.boardState())))")
-tail -3 "$PATROL"
+node -e "const l=require('fs').readFileSync(process.argv[1],'utf-8').trim().split('\n');for(const s of l.slice(-5)){const j=JSON.parse(s);console.log(j.at,j.verdict)}" "$PATROL"
+node -e "const l=require('fs').readFileSync(process.argv[1],'utf-8').trim().split('\n');const j=JSON.parse(l[l.length-1]);console.log(j.at,j.verdict,j.summary);for(const k in j.board)console.log(k,'=',j.board[k])" "$PATROL"
 ```
 
 **最後に、必ずこの `$PATROL` へ1行追記してください**（異常が無くても）。形は次のとおりです。

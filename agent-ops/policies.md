@@ -11,7 +11,9 @@
 [`policy-review` skill](../.claude/skills/policy-review/SKILL.md) に在る。
 
 ゲーム内容の判断は [`DesignPrinciples.md`](../docs/concept/DesignPrinciples.md)、盤面を回す運用の
-取り決めは [`parallel-work.md`](parallel-work.md) が持つ。
+取り決めは [`parallel-work.md`](parallel-work.md)、盤面・デーモンそのものの作りを決める判断は
+[`board-design.md`](board-design.md) が持つ。**行き先はここに挙げたものだけではない**——全部は上の
+skill の「行き先」に在る。
 
 ## 「間違っているが動く」の扱い
 

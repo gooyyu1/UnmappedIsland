@@ -1,6 +1,6 @@
 import { ResponsiveScene } from './ResponsiveScene';
 import { scenarioNames } from '../scenario/Scenario';
-import { Button } from './ui/Button';
+import { Button } from '../ui/Button';
 import { addLabel } from '../ui/labels';
 import { uiText } from '../locale/uiTexts';
 import { COLOR, mixColor } from './looks/theme';

@@ -48,7 +48,7 @@ esac
 # [`usage-windows.mjs`](usage-windows.mjs) で、ここはそれをそのまま下へ渡す——**枠を1つ増やすたびに
 # ここも直す形にすると、直し忘れた枠が黙って落ちる。**
 
-live=$(CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}" bash "$HERE/live-sessions.sh") || {
+live=$(bash "$HERE/live-sessions.sh") || {
   echo "セッションの一覧を引けなかった" >&2
   exit 1
 }

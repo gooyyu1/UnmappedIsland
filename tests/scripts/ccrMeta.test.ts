@@ -1,10 +1,9 @@
 import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { FAKE_TOKEN, FakeMetaServer, writeFakeCredentials } from '../support/fakeMetaServer';
 
 /**
  * `.claude/ccr-meta.mjs` が、標準入力で受けた引数をそのままMCPへ渡すことの検査。
@@ -20,43 +19,6 @@ vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../.claude/ccr-meta.mjs');
 
-const TOKEN = 'test-access-token';
-
-interface Received {
-  readonly body: string;
-  readonly authorization: string | undefined;
-}
-
-/** 身代わりのMCPサーバ。受けた本文をそのまま覚え、`text` を1つ返す。 */
-class FakeMetaServer {
-  private readonly server = createServer((request, response) => {
-    const chunks: Buffer[] = [];
-    request.on('data', (chunk: Buffer) => chunks.push(chunk));
-    request.on('end', () => {
-      this.received.push({
-        body: Buffer.concat(chunks).toString('utf8'),
-        authorization: request.headers.authorization,
-      });
-      response.writeHead(this.status, { 'content-type': 'application/json' });
-      response.end(this.reply);
-    });
-  });
-
-  readonly received: Received[] = [];
-
-  status = 200;
-  reply = JSON.stringify({ jsonrpc: '2.0', id: 1, result: { content: [{ type: 'text', text: 'ok' }] } });
-
-  async listen(): Promise<string> {
-    await new Promise<void>((done) => this.server.listen(0, '127.0.0.1', done));
-    return `http://127.0.0.1:${(this.server.address() as AddressInfo).port}/`;
-  }
-
-  async close(): Promise<void> {
-    await new Promise<void>((done) => this.server.close(() => done()));
-  }
-}
-
 describe('.claude/ccr-meta.mjs', () => {
   let server: FakeMetaServer;
   let endpoint: string;
@@ -66,12 +28,7 @@ describe('.claude/ccr-meta.mjs', () => {
     server = new FakeMetaServer();
     endpoint = await server.listen();
     home = mkdtempSync(join(tmpdir(), 'unmapped-island-ccr-meta-'));
-    mkdirSync(join(home, '.claude'));
-    writeFileSync(
-      join(home, '.claude', '.credentials.json'),
-      JSON.stringify({ claudeAiOauth: { accessToken: TOKEN } }),
-      'utf-8',
-    );
+    writeFakeCredentials(home);
   });
 
   afterEach(async () => {
@@ -80,8 +37,8 @@ describe('.claude/ccr-meta.mjs', () => {
   });
 
   /**
-   * **同期で起こさない。** 身代わりのサーバはこのプロセスに居るので、`execFileSync` などで待つと
-   * イベントループごと止まり、子が投げた要求に誰も応えないまま両方が待ち続ける。
+   * **同期で起こさない**（理由は [`fakeMetaServer`](../support/fakeMetaServer.ts) の冒頭）。標準入力へ
+   * 引数を流すのはここだけなので、`spawnScriptAsync` ではなく自分で起こす。
    */
   function run(tool: string, args: string): Promise<{ stdout: string; stderr: string; code: number }> {
     const child = spawn('node', [SCRIPT, tool], {
@@ -123,7 +80,7 @@ describe('.claude/ccr-meta.mjs', () => {
   it('トークンは、呼ばれたときに置き場から読んで載せる', async () => {
     expect((await run('list_sessions', '{"limit": 1}')).code).toBe(0);
 
-    expect(server.received[0].authorization).toBe(`Bearer ${TOKEN}`);
+    expect(server.received[0].authorization).toBe(`Bearer ${FAKE_TOKEN}`);
   });
 
   it('JSONで返らなかったときは、HTTPの状態と本文を残して失敗する', async () => {

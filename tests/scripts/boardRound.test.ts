@@ -65,7 +65,7 @@ interface World {
     readonly event?: string;
   }[];
   /** `archive-session.sh` が渡された相手について返す行の頭。既定は畳めた。 */
-  readonly archiveVerdict?: 'ARCHIVED' | 'KEPT' | 'UNARCHIVED';
+  readonly archiveVerdict?: 'ARCHIVED' | 'KEPT' | 'UNARCHIVED' | 'UNKNOWN';
   /** `describe-conflict.sh` が返す、ぶつかったファイルと相手。 */
   readonly conflict?: { readonly files: readonly string[]; readonly with: readonly number[] };
   /** 周が始まる時点で帳面に載っている行。 */
@@ -169,7 +169,7 @@ function split(ledger: Record<string, string>) {
   return { ledger: marks, idleMarks, unreadable };
 }
 
-function playRound(world: World = {}): Result {
+async function playRound(world: World = {}): Promise<Result> {
   const stateDir = mkdtempSync(join(tmpdir(), 'unmapped-island-round-'));
   try {
     const idled: Record<string, string> = {};
@@ -250,7 +250,10 @@ function playRound(world: World = {}): Result {
       // 畳んでよいかの判定は持たない（それは `archive-session.sh` の仕事）。渡された相手について、
       // 決めた行を1本返すだけ。
       if (name === 'archive-session.sh' && options?.capture === true) {
-        return { status: 0, stdout: `${world.archiveVerdict ?? 'ARCHIVED'} session_a\n` };
+        const verdict = world.archiveVerdict ?? 'ARCHIVED';
+        // 片付かなかった行には理由が続く（`archive-session.sh` の「片付かなかった行は…」）。
+        const reason = verdict === 'ARCHIVED' || verdict === 'KEPT' ? '' : ': 失敗: HTTP 502';
+        return { status: 0, stdout: `${verdict} session_a${reason}\n` };
       }
       if (name === 'describe-conflict.sh') {
         const found = world.conflict ?? { files: [], with: [] };
@@ -263,7 +266,7 @@ function playRound(world: World = {}): Result {
       return { status: 0, stdout: '' };
     };
 
-    const ok = round({
+    const ok = await round({
       stateDir,
       dryRun: world.dryRun ?? false,
       settleMinutes: 10,
@@ -337,15 +340,15 @@ const working = (id: string, ...tags: string[]): Session => ({
 });
 
 describe('board-round.mjs', () => {
-  it('打つのは1周に1手だけ', () => {
-    const result = playRound({ prs: [pr(10, passed), pr(20, passed)] });
+  it('打つのは1周に1手だけ', async () => {
+    const result = await playRound({ prs: [pr(10, passed), pr(20, passed)] });
 
     expect(result.calls).toEqual(['merge-pr.sh 10']);
   });
 
   // 打てなかった手で周ごと止めると、止まっている種類と関係のない手まで巻き添えになる。
-  it('打てなかった手の次へ進む', () => {
-    const result = playRound({ prs: [pr(10, passed), pr(20)], fails: ['merge-pr.sh'] });
+  it('打てなかった手の次へ進む', async () => {
+    const result = await playRound({ prs: [pr(10, passed), pr(20)], fails: ['merge-pr.sh'] });
 
     expect(result.calls).toEqual(['merge-pr.sh 10', 'dispatch-review.sh 20']);
   });
@@ -357,9 +360,9 @@ describe('board-round.mjs', () => {
   // **頼むのであって、自分では外さない。** `gh pr edit --remove-label` を打つと、それが `unlabeled`
   // の出来事になり、`unlabeled_by_hand` が**人が外した**と読んで `却下` を付ける——デーモンの `gh` は
   // 人と同じアカウントで、`Bot` になるのは Actions の `GITHUB_TOKEN` だけ（`board-design.md` 2.2.1）。
-  it('前の差分に残った結論の札は、コメントで頼む。頼んだことは覚えない', () => {
+  it('前の差分に残った結論の札は、コメントで頼む。頼んだことは覚えない', async () => {
     const stale = { ...passed, comments: [{ body: '[レビュー] 通してよい\n読んだ版: 9990000\n' }] };
-    const result = playRound({ prs: [pr(10, stale)] });
+    const result = await playRound({ prs: [pr(10, stale)] });
 
     expect(result.gh.some((call) => call.startsWith('pr comment 10 --body-file'))).toBe(true);
     expect(result.comments[0]).toContain(SWEEP_LINE);
@@ -373,45 +376,47 @@ describe('board-round.mjs', () => {
 
   // ここから4件は、**盤面を引けなくなった印**（`board-state.mjs` の `UNREADABLE`）。読むのは人が
   // 読む書き出しだけで、**引ける周の不調はここに立てない**（`agent-ops/board-design.md` 2.21.2）。
-  it('盤面を引けなかった周は、印を置く', () => {
-    expect(playRound({ sessionsFail: true }).unreadable).toBe(NOW.toISOString());
-    expect(playRound({ ghFails: true }).unreadable).toBe(NOW.toISOString());
+  it('盤面を引けなかった周は、印を置く', async () => {
+    expect((await playRound({ sessionsFail: true })).unreadable).toBe(NOW.toISOString());
+    expect((await playRound({ ghFails: true })).unreadable).toBe(NOW.toISOString());
   });
 
   // **始まりだけを覚える。** 毎周書き直すと、続いた長さが出せない——読む側が要るのはそれだけ。
-  it('印は、引けるようになるまで最初の時刻のまま', () => {
+  it('印は、引けるようになるまで最初の時刻のまま', async () => {
     const first = '2026-09-05T01:30:00Z';
-    expect(playRound({ sessionsFail: true, ledger: { [UNREADABLE]: first } }).unreadable).toBe(first);
+    expect((await playRound({ sessionsFail: true, ledger: { [UNREADABLE]: first } })).unreadable).toBe(first);
   });
 
   // 残すと、直った後も人へ「引けていない」と出続ける。
-  it('引けた周に、印を消す', () => {
-    expect(playRound({ ledger: { [UNREADABLE]: '2026-09-05T01:30:00Z' } }).unreadable).toBeUndefined();
+  it('引けた周に、印を消す', async () => {
+    expect(
+      (await playRound({ ledger: { [UNREADABLE]: '2026-09-05T01:30:00Z' } })).unreadable,
+    ).toBeUndefined();
   });
 
   // **手が転んだ周は、印を置かない**（2.21.2）。転んだ手を数える形は、**手が1つも出ない周**に
   // 掛からず2時間11分止まった（#1939）。見るのは毎回立つ係で、**材料はこのログ**——直す相手が
   // 居ない手（手綱・`KEPT`）は、そうと分かる形で残す。
-  it('手が転んだ周は、ログに残すだけで印を置かない', () => {
-    const failed = playRound({ prs: [pr(10, passed)], fails: ['merge-pr.sh'] });
+  it('手が転んだ周は、ログに残すだけで印を置かない', async () => {
+    const failed = await playRound({ prs: [pr(10, passed)], fails: ['merge-pr.sh'] });
     expect(failed.log).toContain('打てなかった: MERGE 10');
     expect(failed.unreadable).toBeUndefined();
 
-    const braked = playRound({ prs: [pr(10)], braked: ['dispatch-review.sh'] });
+    const braked = await playRound({ prs: [pr(10)], braked: ['dispatch-review.sh'] });
     expect(braked.log).toContain('打てなかった: REVIEW 10（転んだのではない）');
     expect(braked.unreadable).toBeUndefined();
 
     // **使用量の余力で止まった周も、直す相手が居ない**（`headroom.sh`。2.5.1）——枠が明ければ
     // ひとりでに戻るので、見回る係が調べに行く先ではない。
-    const held = playRound({ prs: [pr(10)], held: ['dispatch-review.sh'] });
+    const held = await playRound({ prs: [pr(10)], held: ['dispatch-review.sh'] });
     expect(held.log).toContain('打てなかった: REVIEW 10（転んだのではない）');
     expect(held.unreadable).toBeUndefined();
   });
 
   // **見回る係は、盤面の見え方によらず立つ**（2.21.2）。打つところまでを1周として留める
   // ——ここが `dispatch-chore.sh` を呼ばないと、立つのは盤面の中だけの話になる。
-  it('間隔が空いていれば、見回る係を立てる', () => {
-    const result = playRound({ ledger: { 'cycle:patrol': '2026-09-05T00:00:00Z' } });
+  it('間隔が空いていれば、見回る係を立てる', async () => {
+    const result = await playRound({ ledger: { 'cycle:patrol': '2026-09-05T00:00:00Z' } });
 
     expect(result.calls).toEqual(['dispatch-chore.sh patrol agent-ops/prompts/patrol-prompt.md --bridge']);
     expect(result.ledger).toEqual({ 'cycle:patrol': NOW.toISOString() });
@@ -419,8 +424,8 @@ describe('board-round.mjs', () => {
 
   // 後片付けはマージした手から切り離してあるので、**マージ済みのPRを見つけた周に打つ**（2.10.4）。
   // 打ったことを台帳へ残さないと、窓に載っているあいだ毎周打ち直す。
-  it('マージ済みのPRを後片付けし、打ったことを台帳へ残す', () => {
-    const result = playRound({ mergedPrs: [{ number: 9, comments: [] }] });
+  it('マージ済みのPRを後片付けし、打ったことを台帳へ残す', async () => {
+    const result = await playRound({ mergedPrs: [{ number: 9, comments: [] }] });
 
     expect(result.calls).toEqual(['tidy-merged-pr.sh 9']);
     expect(result.ledger).toEqual({ 'tidy:9': NOW.toISOString() });
@@ -428,29 +433,32 @@ describe('board-round.mjs', () => {
 
   // 終了コード2は「後片付けに残りがある」。**手は打てている**ので、覚えを残して次の周は別の手へ進む
   // ——残りの多くは打ち直しても同じ結果になる。
-  it('後片付けに残りがあっても、打ったことにする', () => {
-    const result = playRound({ mergedPrs: [{ number: 9, comments: [] }], leftover: true });
+  it('後片付けに残りがあっても、打ったことにする', async () => {
+    const result = await playRound({ mergedPrs: [{ number: 9, comments: [] }], leftover: true });
 
     expect(result.ledger).toEqual({ 'tidy:9': NOW.toISOString() });
   });
 
   // 打てなかった手の覚えを残すと、次の周からその相手は永久に飛ばされる。
-  it('後片付けを打てなかったら、覚えを残さない', () => {
-    const result = playRound({ mergedPrs: [{ number: 9, comments: [] }], fails: ['tidy-merged-pr.sh'] });
+  it('後片付けを打てなかったら、覚えを残さない', async () => {
+    const result = await playRound({
+      mergedPrs: [{ number: 9, comments: [] }],
+      fails: ['tidy-merged-pr.sh'],
+    });
 
     expect(result.ledger).toEqual({});
   });
 
-  it('打った手は、そのときの指紋とともに台帳へ残る', () => {
-    const result = playRound({ prs: [pr(10)] });
+  it('打った手は、そのときの指紋とともに台帳へ残る', async () => {
+    const result = await playRound({ prs: [pr(10)] });
 
     expect(result.calls).toEqual(['dispatch-review.sh 10']);
     expect(result.ledger).toEqual({ 'review:10': 'aaa111:0' });
   });
 
   // 残すと、番号が回り込んだときに古い指紋が効く。
-  it('消えたPRと畳まれたセッションの記録は、台帳から捨てる', () => {
-    const result = playRound({
+  it('消えたPRと畳まれたセッションの記録は、台帳から捨てる', async () => {
+    const result = await playRound({
       prs: [pr(10)],
       sessions: [working('session_a', 'task-9')],
       ledger: { 'review:10': 'aaa111', 'review:99': 'zzz999', 'resume:session_gone': 'stall:5' },
@@ -463,8 +471,8 @@ describe('board-round.mjs', () => {
   // **後片付けの相手は開いているPRの一覧に載らない**ので、載っていないことでは捨てられない
   // ——引けなかった周を「1件も無い」と読むと、その周に全部の覚えが消え、次の周に窓ぶんが丸ごと
   // 打ち直される。捨てるのは窓（`MERGED_WINDOW_HOURS`）を過ぎたものだけ。
-  it('後片付けの覚えは、窓を過ぎたものだけ台帳から捨てる', () => {
-    const result = playRound({
+  it('後片付けの覚えは、窓を過ぎたものだけ台帳から捨てる', async () => {
+    const result = await playRound({
       prs: [pr(10)],
       ledger: { 'tidy:8': '2026-09-04T02:00:00Z', 'tidy:9': '2026-09-01T02:00:00Z' },
     });
@@ -475,8 +483,8 @@ describe('board-round.mjs', () => {
 
   // **`cycle:` は盤面の何かに紐づく指紋ではない**（周期の係を前に立てた時刻。2.17）。掃除に
   // 巻き込むと、次の周に間隔が満ちていない係まで立つ。
-  it('周期の係を立てた時刻は、台帳から捨てない', () => {
-    const result = playRound({
+  it('周期の係を立てた時刻は、台帳から捨てない', async () => {
+    const result = await playRound({
       prs: [pr(10)],
       ledger: { 'cycle:triage': '2026-09-05T01:00:00Z' },
     });
@@ -484,16 +492,16 @@ describe('board-round.mjs', () => {
     expect(result.ledger['cycle:triage']).toBe('2026-09-05T01:00:00Z');
   });
 
-  it('未整理があれば棚卸しを立て、立てた時刻を台帳へ残す', () => {
-    const result = playRound({ issues: [{ number: 9, labels: [], blockedBy: { nodes: [] } }] });
+  it('未整理があれば棚卸しを立て、立てた時刻を台帳へ残す', async () => {
+    const result = await playRound({ issues: [{ number: 9, labels: [], blockedBy: { nodes: [] } }] });
 
     expect(result.calls).toEqual(['dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md']);
     expect(result.ledger).toEqual({ 'cycle:triage': NOW.toISOString() });
   });
 
   // 覚えると、失敗したまま間隔ぶん黙る。
-  it('棚卸しを立てられなかったら、時刻を残さない', () => {
-    const result = playRound({
+  it('棚卸しを立てられなかったら、時刻を残さない', async () => {
+    const result = await playRound({
       issues: [{ number: 9, labels: [], blockedBy: { nodes: [] } }],
       fails: ['dispatch-chore.sh'],
     });
@@ -503,8 +511,8 @@ describe('board-round.mjs', () => {
 
   // 畳む条件は担当の issue が閉じたこと（2.10）。**PRがマージされたかでは決めない**ので、PRが
   // 1本も無くても畳む。
-  it('担当の issue が閉じたワーカーを畳む', () => {
-    const result = playRound({
+  it('担当の issue が閉じたワーカーを畳む', async () => {
+    const result = await playRound({
       sessions: [idle('session_a', 'task-8')],
       issueStates: { 8: 'CLOSED' },
     });
@@ -516,8 +524,8 @@ describe('board-round.mjs', () => {
   });
 
   // `KEPT` は「畳んではいけない」という安定した答え。残さないと、1周1手のうちの1手がこれで埋まり続ける。
-  it('畳めない相手だと分かったら、指紋を残して次の周は打たない', () => {
-    const result = playRound({
+  it('畳めない相手だと分かったら、指紋を残して次の周は打たない', async () => {
+    const result = await playRound({
       sessions: [idle('session_a', 'task-8')],
       issueStates: { 8: 'CLOSED' },
       archiveVerdict: 'KEPT',
@@ -531,8 +539,8 @@ describe('board-round.mjs', () => {
   });
 
   // 失敗は答えではないので、次の周にもう一度試す。
-  it('畳もうとして失敗したら、指紋を残さない', () => {
-    const result = playRound({
+  it('畳もうとして失敗したら、指紋を残さない', async () => {
+    const result = await playRound({
       sessions: [idle('session_a', 'task-8')],
       issueStates: { 8: 'CLOSED' },
       archiveVerdict: 'UNARCHIVED',
@@ -542,12 +550,26 @@ describe('board-round.mjs', () => {
     expect(result.ledger).toEqual({});
   });
 
+  // **素性を引けなかったのも答えではない。** `KEPT` と同じ扱いにすると、通信が落ちたその周かぎりで
+  // その相手が二度と渡されなくなる（issue #1865）。
+  it('素性を引けずに畳めなかったら、指紋を残さず、理由ごとログへ出す', async () => {
+    const result = await playRound({
+      sessions: [idle('session_a', 'task-8')],
+      issueStates: { 8: 'CLOSED' },
+      archiveVerdict: 'UNKNOWN',
+    });
+
+    expect(result.ledger).toEqual({});
+    // **読む人へ届くところまで見る。** 畳む側が組み立てた行は、ここを通らなければ誰も読まない。
+    expect(result.log).toContain('UNKNOWN session_a: 失敗: HTTP 502');
+  });
+
   // 返すのはコメントで、ラベルは `board-labels.yml` が付ける（2.15.3）。**盤面がラベルを直に
   // 触ると、返る道が2つに割れる**——ワーカーが自分で返す道と食い違っても、誰も気づけない。
   // **どの `env:` がどこを指すかは盤面が持つ**（2.16.1）ので、こちらは受け取った引数をそのまま
   // `dispatch-task.sh` の後ろへ足す。補足のファイルは一時的なもので、名前は毎回変わる。
-  it('投入先を寄越された手は、その引数を付けて投入する', () => {
-    const result = playRound({
+  it('投入先を寄越された手は、その引数を付けて投入する', async () => {
+    const result = await playRound({
       issues: [
         {
           number: 9,
@@ -560,8 +582,8 @@ describe('board-round.mjs', () => {
     expect(result.calls[0]).toMatch(/^dispatch-task\.sh 9 \S+ --bridge$/);
   });
 
-  it('投入先が無ければ、引数を足さない', () => {
-    const result = playRound({
+  it('投入先が無ければ、引数を足さない', async () => {
+    const result = await playRound({
       issues: [
         { number: 9, labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }], blockedBy: { nodes: [] } },
       ],
@@ -570,8 +592,8 @@ describe('board-round.mjs', () => {
     expect(result.calls[0]).toMatch(/^dispatch-task\.sh 9 \S+$/);
   });
 
-  it('起こしても動かないワーカーの仕事を、コメントで人へ返す', () => {
-    const result = playRound({
+  it('起こしても動かないワーカーの仕事を、コメントで人へ返す', async () => {
+    const result = await playRound({
       issues: [
         { number: 8, labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }], blockedBy: { nodes: [] } },
       ],
@@ -586,8 +608,8 @@ describe('board-round.mjs', () => {
     expect(result.gh.filter((call) => call.startsWith('issue edit'))).toEqual([]);
   });
 
-  it('返せなかったら、指紋を残さない', () => {
-    const result = playRound({
+  it('返せなかったら、指紋を残さない', async () => {
+    const result = await playRound({
       issues: [
         { number: 8, labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }], blockedBy: { nodes: [] } },
       ],
@@ -602,8 +624,8 @@ describe('board-round.mjs', () => {
 
   // 探すのはワーカーの側から（2.10）。開いている一覧に載っているぶんは既に盤面が持っているので、
   // 引き直さない。
-  it('開いている issue を担当しているワーカーのぶんは、issue を引き直さない', () => {
-    const result = playRound({
+  it('開いている issue を担当しているワーカーのぶんは、issue を引き直さない', async () => {
+    const result = await playRound({
       issues: [
         { number: 8, labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }], blockedBy: { nodes: [] } },
       ],
@@ -615,8 +637,8 @@ describe('board-round.mjs', () => {
 
   // 差し戻す相手はコミットのトレーラで引く（2.11）。`task-` のタグではない——`Closes` は
   // どの issue が閉じるかの印であって、誰が書いたかを指していない。
-  it('差し戻す相手を、コミットのトレーラが指すセッションから引く', () => {
-    const result = playRound({
+  it('差し戻す相手を、コミットのトレーラが指すセッションから引く', async () => {
+    const result = await playRound({
       prs: [pr(10, { statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }] })],
       prSessions: { 10: 'session_writer' },
       sessions: [idle('session_writer'), idle('session_holder', 'task-9')],
@@ -627,8 +649,8 @@ describe('board-round.mjs', () => {
 
   // `main` の色が盤面へ載っていなければ、判定の側は緑と読んで差し戻してしまう（2.14）。
   // **止まることを見るのは、載っていることを見ること。**
-  it('main が赤い周は、直しの手を打たない', () => {
-    const result = playRound({
+  it('main が赤い周は、直しの手を打たない', async () => {
+    const result = await playRound({
       mainChecks: [{ status: 'COMPLETED', conclusion: 'FAILURE' }],
       prs: [pr(10, { statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }] })],
       prSessions: { 10: 'session_writer' },
@@ -641,8 +663,8 @@ describe('board-round.mjs', () => {
   // 札の係は issue へのコメントで立ち、走りは**既定ブランチの先頭の指紋へ結び付く**。木を見ていない
   // ので、転んでもそれを取り込んだPRは赤くならない——ここで `mend` を止めると、2.14.1 の輪が回らない
   // 色で盤面だけが進まなくなる（2026-09-12 に17分）。
-  it('木を見ていない走りが転んでも、main は赤くない', () => {
-    const result = playRound({
+  it('木を見ていない走りが転んでも、main は赤くない', async () => {
+    const result = await playRound({
       mainChecks: [
         { status: 'COMPLETED', conclusion: 'SUCCESS' },
         { status: 'COMPLETED', conclusion: 'FAILURE', event: 'issue_comment' },
@@ -656,8 +678,8 @@ describe('board-round.mjs', () => {
   });
 
   // 引けない日に盤面ごと落とすと、差し戻し以外の手まで止まる。
-  it('トレーラを引けなかった周も、他の手は打つ', () => {
-    const result = playRound({ prs: [pr(10, passed)], prSessionsFail: true });
+  it('トレーラを引けなかった周も、他の手は打つ', async () => {
+    const result = await playRound({ prs: [pr(10, passed)], prSessionsFail: true });
 
     expect(result.ok).toBe(true);
     expect(result.log).toContain('差し戻す相手を引けなかった');
@@ -666,15 +688,15 @@ describe('board-round.mjs', () => {
 
   // 一覧が欠けると**占有が全部「無い」に見えて投入が止まらない**——2026-09-05 に、書くセッションが
   // 6本立った。引けなかった周は、止まる側へ倒す。
-  it('セッションの一覧を引けなかった周は、手を1つも打たない', () => {
-    const result = playRound({ prs: [pr(10, passed)], sessionsFail: true });
+  it('セッションの一覧を引けなかった周は、手を1つも打たない', async () => {
+    const result = await playRound({ prs: [pr(10, passed)], sessionsFail: true });
 
     expect(result.ok).toBe(false);
     expect(result.calls).toEqual([]);
   });
 
-  it('盤面を引けなかった周は、手を1つも打たない', () => {
-    const result = playRound({ prs: [pr(10, passed)], ghFails: true });
+  it('盤面を引けなかった周は、手を1つも打たない', async () => {
+    const result = await playRound({ prs: [pr(10, passed)], ghFails: true });
 
     expect(result.ok).toBe(false);
     expect(result.calls).toEqual([]);
@@ -682,8 +704,8 @@ describe('board-round.mjs', () => {
 
   // **ぶつかった実績を控える**（3.1）。盤面は同じファイルを書く issue を並べて投入するので、
   // 実際にぶつかった組を残しておかないと、`area:` の錠を足すべき資源が後から分からない。
-  it('コンフリクトしたPRを、ぶつかったファイルと相手とともに帳面へ書く', () => {
-    const result = playRound({
+  it('コンフリクトしたPRを、ぶつかったファイルと相手とともに帳面へ書く', async () => {
+    const result = await playRound({
       prs: [pr(10, { mergeable: 'CONFLICTING' })],
       conflict: { files: ['docs/engine/GameElementDefinition.md'], with: [7] },
     });
@@ -703,8 +725,8 @@ describe('board-round.mjs', () => {
 
   // 押し返されるまで盤面は `CONFLICTING` を返し続ける。**同じ差分を毎周書くと、数えたときに
   // 周の回数を数えることになる。**
-  it('同じ差分のコンフリクトは、二度書かない', () => {
-    const result = playRound({
+  it('同じ差分のコンフリクトは、二度書かない', async () => {
+    const result = await playRound({
       prs: [pr(10, { mergeable: 'CONFLICTING' })],
       conflictLog: `${JSON.stringify({ at: '古い', pr: 10, head: 'aaa111', files: [], with: [] })}\n`,
       conflict: { files: ['docs/x.md'], with: [7] },
@@ -717,8 +739,8 @@ describe('board-round.mjs', () => {
   // **併合し直せてしまったものは、空のまま書く。** `mergeable` は `main` が動くたびに古くなるので、
   // `CONFLICTING` と言われた差分が手元では綺麗に併合できることがある。**調べた結果であって失敗では
   // ない**ので、指紋を埋めて次の周から見ない。
-  it('手元では併合できたPRは、空のまま帳面へ書いて、そう言う', () => {
-    const result = playRound({
+  it('手元では併合できたPRは、空のまま帳面へ書いて、そう言う', async () => {
+    const result = await playRound({
       prs: [pr(10, { mergeable: 'CONFLICTING' })],
       conflict: { files: [], with: [] },
     });
@@ -730,8 +752,8 @@ describe('board-round.mjs', () => {
   });
 
   // **見るだけのつもりで測定を消さない。** 指紋を埋めると、その組は本番の周でも二度と記録されない。
-  it('DRY_RUN の周は、ぶつかった実績を控えない', () => {
-    const result = playRound({
+  it('DRY_RUN の周は、ぶつかった実績を控えない', async () => {
+    const result = await playRound({
       prs: [pr(10, { mergeable: 'CONFLICTING' })],
       conflict: { files: ['docs/x.md'], with: [7] },
       dryRun: true,
@@ -742,8 +764,8 @@ describe('board-round.mjs', () => {
   });
 
   // **調べられなかったものは書かない。** 指紋を埋めずに残して、次の周に調べ直す。
-  it('ぶつかった中身を調べられなかった周は、帳面へ書かない', () => {
-    const result = playRound({
+  it('ぶつかった中身を調べられなかった周は、帳面へ書かない', async () => {
+    const result = await playRound({
       prs: [pr(10, { mergeable: 'CONFLICTING' })],
       fails: ['describe-conflict.sh'],
     });
@@ -753,8 +775,8 @@ describe('board-round.mjs', () => {
 
   // 積まれたPRの `CONFLICTING` は、その base との衝突。`main` との衝突を調べる
   // `describe-conflict.sh` とは別物なので数えない。
-  it('他のPRの上に積まれたPRのコンフリクトは数えない', () => {
-    const result = playRound({
+  it('他のPRの上に積まれたPRのコンフリクトは数えない', async () => {
+    const result = await playRound({
       prs: [pr(10, { mergeable: 'CONFLICTING', baseRefName: 'claude/under' })],
       conflict: { files: ['docs/x.md'], with: [7] },
     });
@@ -763,8 +785,8 @@ describe('board-round.mjs', () => {
     expect(result.calls).not.toContain('describe-conflict.sh 10');
   });
 
-  it('DRY_RUN では、手を並べるだけで打たない', () => {
-    const result = playRound({ prs: [pr(10, passed)], dryRun: true });
+  it('DRY_RUN では、手を並べるだけで打たない', async () => {
+    const result = await playRound({ prs: [pr(10, passed)], dryRun: true });
 
     expect(result.calls).toEqual([]);
     expect(result.log).toContain('打たない手: MERGE 10');
@@ -775,8 +797,8 @@ describe('board-round.mjs', () => {
    * `list_sessions` は1000回/時で頭打ちになるので、要る側が別々に引くと盤面の回る速さがそこで決まる。
    */
   describe('この周の一覧を、叩くスクリプトへ渡す', () => {
-    it('引いた一覧をファイルへ置き、在り処を環境変数で渡す', () => {
-      const result = playRound({
+    it('引いた一覧をファイルへ置き、在り処を環境変数で渡す', async () => {
+      const result = await playRound({
         prs: [pr(10, passed)],
         sessions: [
           {
@@ -796,10 +818,10 @@ describe('board-round.mjs', () => {
 
     // **`process.env` は書き換えない。** 同じプロセスで動く他の呼び手にも見えてしまう
     // （渡した覚えの無いところへ効き、試験は並ぶ順で落ちる）。
-    it('自分のプロセスの環境変数は書き換えない', () => {
+    it('自分のプロセスの環境変数は書き換えない', async () => {
       expect(process.env.LIVE_SESSIONS_TSV).toBeUndefined();
 
-      playRound({ prs: [pr(10, passed)] });
+      await playRound({ prs: [pr(10, passed)] });
 
       expect(process.env.LIVE_SESSIONS_TSV).toBeUndefined();
     });
@@ -820,8 +842,8 @@ describe('board-round.mjs', () => {
       { number: 8, labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }], blockedBy: { nodes: [] } },
     ];
 
-    it('空いているセッションの、空いた時刻を残す', () => {
-      const result = playRound({
+    it('空いているセッションの、空いた時刻を残す', async () => {
+      const result = await playRound({
         issues: openTask,
         sessions: [worker('SESSION_STATUS_IDLE')],
         justIdle: true,
@@ -834,8 +856,8 @@ describe('board-round.mjs', () => {
 
     // **動き出したら、覚えも「起こしたが動かなかった」の記録も嘘になる。** 残すと、次に空いた
     // 瞬間に起こす手順を飛ばして人へ返す。
-    it('動き出したら、覚えと起こした記録を捨てる', () => {
-      const result = playRound({
+    it('動き出したら、覚えと起こした記録を捨てる', async () => {
+      const result = await playRound({
         issues: openTask,
         sessions: [worker('SESSION_STATUS_RUNNING')],
         ledger: { 'idle:session_a': LONG_IDLE, 'resume:session_a': 'stall:8' },
@@ -846,8 +868,8 @@ describe('board-round.mjs', () => {
     });
 
     // 人へ返した記録は、動き出しても消さない——返した issue は人が `判断待ち` を外すまで戻らない。
-    it('人へ返した記録は、動き出しても残す', () => {
-      const result = playRound({
+    it('人へ返した記録は、動き出しても残す', async () => {
+      const result = await playRound({
         issues: openTask,
         sessions: [worker('SESSION_STATUS_RUNNING')],
         ledger: { 'resume:session_a': 'returned:8' },

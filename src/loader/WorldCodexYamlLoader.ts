@@ -19,9 +19,9 @@ import type {
   TagGlobalId,
 } from '../domain/GlobalId';
 import { YamlLoadError } from './YamlLoadError';
-import { messageOf } from '../util/errorMessage';
 import { RawObjectDef } from './RawObjectDef';
 import type { LoadReport } from './LoadReport';
+import { LoadOrigin } from './LoadOrigin';
 import type { RawPatch } from './RawPatch';
 import { applyPatches, parsePatch } from './RawPatch';
 import { RawTrait } from './RawTrait';
@@ -182,7 +182,7 @@ export class WorldCodexYamlLoader {
    * Documentの字面が動いていないかを見ている。**型では塞げない**（同テストの該当itを参照）。
    */
   loadDocument(label: string, doc: Document, from?: PackSource): this {
-    const report = from?.report;
+    const origin = new LoadOrigin(label, from?.report);
     if (doc.errors.length > 0) throw new YamlLoadError(`${label}: YAML構文エラー: ${doc.errors[0].message}`);
     if (doc.contents === null) return this;
 
@@ -288,11 +288,10 @@ export class WorldCodexYamlLoader {
     if (patches !== undefined)
       (patches.items as YamlNode[]).forEach((node, index) => {
         try {
-          this.patches.push(parsePatch(node, index, label, report));
+          this.patches.push(parsePatch(node, index, origin));
         } catch (error) {
-          // 書き方そのものの誤りも、報告先があればその1件を捨てて続ける（AssetPack.md 6.1節）。
-          if (report === undefined) throw error;
-          report.addDiscarded(label, `patch_object_defs[${index}]`, messageOf(error));
+          // 書き方そのものの誤りも、当てたときの誤りと同じ扱い（AssetPack.md 6.1節）。
+          origin.discardOrThrow(`patch_object_defs[${index}]`, error);
         }
       });
 

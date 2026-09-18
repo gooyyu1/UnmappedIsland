@@ -822,7 +822,9 @@ traits:
             min: 180
             passives:
               - modify: {self: {ignition_ease: 120}}
-      # 獣を狩る（animals.yamlのstrike）。**レシピは開けない**——開けるのは素材と機会で（Skills.md 2節）、
+      # 獣を狩る（animals.yamlのstrike）。**据えた的への打ち込みも同じ1本を伸ばす**
+      # （hunting_practice.yaml——生きた獣を待たない入口、docs/engine/SkillSystem.md 3.1節）。
+      # **レシピは開けない**——開けるのは素材と機会で（Skills.md 2節）、
       # 罠を作るのは繊維・編みの腕（同節のくくり罠）。段が押し上げるのは下のquarry_senseで、
       # 土地の<動物>_find・海区のshoal_find/seabird_find（探索で出くわす機会）がそれをbaseの
       # 土台にする（locations.yaml・voyage.yaml）。

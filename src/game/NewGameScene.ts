@@ -16,7 +16,7 @@ import {
   randomIslandName,
   randomSeed,
 } from '../save/newGameInput';
-import { Button } from './ui/Button';
+import { Button } from '../ui/Button';
 import { Card } from './ui/Card';
 import { characterCardContent } from './view/characterCard';
 import { ModalDialog } from './ui/ModalDialog';

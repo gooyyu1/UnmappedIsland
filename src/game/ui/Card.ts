@@ -8,6 +8,8 @@ import { drawBox } from '../../ui/shapes';
 import type { SlotRef } from '../../art/backgroundArt';
 import { cardBackgroundTexture } from '../../art/backgroundArt';
 import { CARD_ART_WIDTH, objectMultiplyTexture, objectTexture } from '../../art/objectArt';
+import type { CardEdgeAction, CardEdgeDirection } from './cardEdges';
+import { EDGE_DIRECTIONS } from './cardEdges';
 import { ProgressBar, TRACK_BORDER_WIDTH } from './ProgressBar';
 import type { ProgressBarOptions } from './ProgressBar';
 import type { AlertLevel } from '../../domain/AlertLevel';
@@ -216,21 +218,6 @@ const RAIL_PAD = 4.5;
  */
 const RAIL_TEXT_HEIGHT = 15;
 const RAIL_TEXT_SIZE = 13;
-
-/** 移動先のレーンがカードのどちら側にあるか。 */
-export type CardEdgeDirection = 'up' | 'down';
-
-/** 端の向き（上が先）。カードが出す端はこの順で調べる。 */
-export const EDGE_DIRECTIONS: readonly CardEdgeDirection[] = ['up', 'down'];
-
-/**
- * カードの端（上下1/6）を押したときの操作。1回の呼び出しで束のうち1つが動く。
- * 押し続けている間は繰り返し呼ばれる（addEdge参照）。
- */
-export interface CardEdgeAction {
-  readonly direction: CardEdgeDirection;
-  readonly onTap: () => void;
-}
 
 /**
  * 桟へ積むバー1本の内容（CardView.md 8節）。**カードのバーはすべてこの形**——プロパティが
@@ -1006,7 +993,7 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 端の操作エリア。送れる先があるかどうかで付いたり外れたりする（`PlayScene.cardEdges`）ので、
+   * 端の操作エリア。送れる先があるかどうかで付いたり外れたりする（`ShownCards.cardsOf`）ので、
    * 向きの組み合わせが変わったときだけ中身を入れ直す。押したときに何が起きるかは実行時に
    * `_content`から読む。
    */

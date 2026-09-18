@@ -103,6 +103,32 @@ object_defs:
     expect(agent.hand).toEqual([stone, undefined, undefined]);
   });
 
+  // 枠ごとに分けて返す口も、Slotが並びで返す口と同じく写し（SlotSystem.md 1節）。実体（ObjectStack.members）
+  // をそのまま渡すと、受け取った側が後で読み返したときに顔ぶれが変わっている。
+  it('PlayerCharacterのhandStacksは読んだ時点の写しで、後の出入りに影響されない', () => {
+    const yaml = `
+object_defs:
+  stone:
+    tags: [item]
+  character:
+    slots:
+      hand:
+        cell: {accept: {tag: item}}
+        cell_count: 3
+`;
+    const codex = load(yaml);
+    const session = new WorldSession(codex);
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
+    const hand = instance.getSlot(codex.slotNames.getId('hand'));
+    const stone = session.createObject(codex.objectNames.getId('stone'));
+    stone.moveToSlotOrRejection(hand);
+
+    const stacks = new PlayerCharacter(instance, codex).handStacks;
+    session.createObject(codex.objectNames.getId('stone')).moveToSlotOrRejection(hand);
+
+    expect(stacks[0], '読んだ後に同じ枠へ合流したものは、写しには現れない').toEqual([stone]);
+  });
+
   it('PlayerCharacterのhandはhandスロットを持たないCodexでも空配列を返す', () => {
     const yaml = `
 object_defs:

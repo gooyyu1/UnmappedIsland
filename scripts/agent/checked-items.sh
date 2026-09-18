@@ -2,8 +2,12 @@
 # 確定待ちの盤（`kind:ask` の issue）の本文で、チェックの付いている項目を `<番号> <項目>` の行にする。
 # 標準入力は `gh issue list --json number,labels,body ...` が返す配列。
 #
-#   gh issue list --state open --limit 100 --json number,labels,body |
+#   gh issue list --state open --limit 300 --json number,labels,body |
 #     bash scripts/agent/checked-items.sh
+#
+# **300は1回目に渡す数で、上限ではない。** 渡した数と並んだ件数が返ったら、そこで切られている
+# ので、倍にして引き直す（`agent-ops/github-access.md`「issue を読む・書く」）。切られるのは
+# 古い側なので、黙って切ると答えの付いた盤ごと消える。
 #
 # ## 判定を1つにする
 #

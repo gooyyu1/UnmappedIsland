@@ -43,4 +43,19 @@ object_defs:
     expect(stack.members, '挿入失敗時はメンバーを一切変更しない').toHaveLength(1);
     expect(stack.members).not.toContain(intruder);
   });
+
+  // membersが実体であることは契約（SlotSystem.md 1節）。写しを返すようになると、それを当てにして
+  // 自分で写し取っている読み手（PlayScreenView）の写しが黙って無意味になるので、ここで落とす。
+  it('membersは実体で、読んだ後の出入りがそのまま見える', () => {
+    const codex = load();
+    const session = new WorldSession(codex);
+    const coin = codex.objects.get(codex.objectNames.getId('coin'));
+
+    const stack = new ObjectStack(new WorldObject(1, coin, session));
+    const read = stack.members;
+    const another = new WorldObject(2, coin, session);
+    stack.tryInsert(another);
+
+    expect(read, '読んだ後に合流したものも、同じ並びから見える').toContain(another);
+  });
 });

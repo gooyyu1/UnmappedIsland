@@ -6,10 +6,18 @@
 #   printf '%s\n' session_A | bash scripts/daemon/archive-session.sh --keep-untagged task-,review-
 #
 # 出力は1行1件。`ARCHIVED <ID>`、触らないと決めたものは `KEPT <ID>`、打って失敗したものは
-# `UNARCHIVED <ID>`。このPCに worktree を持つ相手には後始末の行が続く（`REMOVED <パス>` /
-# `DIRTY <パス>: <理由>`。既に畳まれているものからも出る）。worktree の無いものが既に畳まれて
-# いたときは何も出さない。
+# `UNARCHIVED <ID>: <理由>`、素性を引けずに畳んでよいかが分からなかったものは `UNKNOWN <ID>: <理由>`。
+# このPCに worktree を持つ相手には後始末の行が続く（`REMOVED <パス>` / `DIRTY <パス>: <理由>`。
+# 既に畳まれているものからも出る）。worktree の無いものが既に畳まれていたときは何も出さない。
 # **終了コードは常に0**——呼び手（投入・マージ）の本題は別にあるので、後片付けで落とさない。
+#
+# ## 片付かなかった行は、`<タグ> <対象>: <理由>` で出す
+#
+# タグと対象だけを載せると、読んだ側は**失敗した事実しか受け取れない**——権限が足りないのか、相手が
+# もう居ないのか、通信が落ちたのかへ辿り着けず、同じコマンドを手で打ち直すところから始めることに
+# なる。理由を持っているのは打った側（`ccr-meta.sh`・`git`・`rmdir` の標準エラー）なので、捨てずに
+# 同じ行へ載せる（[`tidy-merged-pr.sh`](tidy-merged-pr.sh) の残りの行と同じ形。issue #1557 では、
+# パスだけの行を読んだ側が実際に誤読した）。**出力は1行1件**なので、改行は空白へ畳む。
 #
 # ## 判定を呼び手へ配らない
 #
@@ -70,16 +78,25 @@
 #
 # 出すのは `REMOVED <パス>`。**消えなかったものは `DIRTY <パス>: <理由>` として残す**——`git worktree
 # remove` は未コミットの変更や未追跡のファイルがあると断るので、`--force` は渡さない。**戻せない
-# ものを黙って消すより、残骸が1つ残るほうがよい。** 理由（打った git・`rmdir` の標準エラー）を同じ
-# 行へ載せるのは、パスだけでは**失敗した事実しか運ばない**から——読んだ側は打ったコマンドへ辿り着け
-# ないまま「未コミットの変更が残っている」と読む（実際に誤読した。issue #1557）。
+# ものを黙って消すより、残骸が1つ残るほうがよい。** 理由を同じ行へ載せるのは上の「片付かなかった行
+# は…」のとおりで、パスだけの行は「未コミットの変更が残っている」と読まれた（issue #1557）。
 #
-# ## 引けなかったものは畳まない
+# ## 引けなかったものは畳まない。ただし `KEPT` とは別の行で出す
 #
 # 上の「守る」条件は、どれも**引けた値**で判定する。`get_session` が引けないと全部のキーが空に
 # 落ち、**何も持たないもの**として扱われる——`--keep-untagged` を渡さない呼び手には、それがその
 # まま畳む側へ倒れる。**知らないことを、否定として読んでいる。** 畳んで消えたコメントも、消した
-# worktree も戻せないので、引けなかったものは `KEPT` として出す。守って残ったものは手で畳める。
+# worktree も戻せないので、引けなかったものには手を出さない。
+#
+# **出す行は `UNKNOWN <ID>: <理由>` で、`KEPT` ではない。** `KEPT` は**畳んではいけないと分かった**
+# ことで、盤面はそれを**同じ指紋のあいだ変わらない答え**として残し、次の周からその相手を渡さなく
+# なる（[`board-round.mjs`](board-round.mjs) の `ARCHIVE`）。引けなかった1回をそこへ混ぜると、
+# **通信が落ちたその周かぎりで、その相手が二度と畳まれなくなる。** 引けなかったのは答えではないので、
+# 次の周にもう一度引く。
+#
+# **引けたが読めなかったぶんも、同じ行で出す。** 取り出すのは `grep` が当てた1行なので、JSONとして
+# 完いとは限らない。**`jq` は偽でも読めなくても非0**なので、読めるかを確かめずに `! jq -e` でタグを
+# 判定すると、**読めなかったぶんがそのまま `KEPT` に化ける**——判定を打つ前に1回だけ確かめる。
 
 set -euo pipefail
 
@@ -105,10 +122,10 @@ HERE="$(cd "$HERE" && pwd)"
 # 試験は差し替える（パスで呼ぶため PATH では差し替わらない）。
 CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 
-# 消せなかったことを、打った側の言葉で出す（上の「理由を同じ行へ載せる」）。**出力は1行1件**なので
+# 片付かなかったことを、打った側の言葉で出す（上の「片付かなかった行は…」）。**出力は1行1件**なので
 # 改行は空白へ畳む。
-dirty() {
-  echo "DIRTY $1: ${2//$'\n'/ }"
+unfinished() {
+  echo "$1 $2: ${3//$'\n'/ }"
 }
 
 # 畳んだ相手の worktree を外す（上の「worktree は、ここで片付ける」）。
@@ -128,12 +145,12 @@ remove_worktree() {
   if [ "$registered" = true ]; then
     git worktree unlock "$path" >/dev/null 2>&1 || true
     if ! err=$(git worktree remove "$path" 2>&1 >/dev/null); then
-      dirty "$path" "$err"
+      unfinished DIRTY "$path" "$err"
       return 0
     fi
   fi
   if [ -d "$path" ] && ! err=$(rmdir "$path" 2>&1); then
-    dirty "$path" "$err"
+    unfinished DIRTY "$path" "$err"
     return 0
   fi
   echo "REMOVED $path"
@@ -141,26 +158,49 @@ remove_worktree() {
 
 while read -r session; do
   [ -n "$session" ] || continue
-  # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。引けないときは `grep` が
-  # 1 を返す。`pipefail` があるので、ここで止めずに空として受ける。
+  # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。引けないときは
+  # `ccr-meta.sh` が転ぶか、転ばなくても `grep` が 1 を返す。`pipefail` があるのでどちらもここで
+  # 拾えるが、**理由は標準エラーに在る**——この口は標準出力が値なので、混ぜずに受ける。
+  stderr=$(mktemp)
   info=$(printf '{"session_id":"%s"}' "$session" |
-    bash "$CCR_META" get_session | grep -o '{"ccr".*' || true)
+    bash "$CCR_META" get_session 2>"$stderr" | grep -o '{"ccr".*') || info=''
+  err=$(cat "$stderr")
+  # 引けなかったことは、畳まなかったことと別の行で出す（上の「引けなかったものは畳まない。ただし
+  # `KEPT` とは別の行で出す」）。**何も言わずに返らなかった分も同じ行**——読む側に要るのは、状態が
+  # 分かっていないことと、打った口が言ったことの全部。
+  if [ -z "$info" ]; then
+    unfinished UNKNOWN "$session" "${err:-素性が返らなかった}"
+    rm -f "$stderr"
+    continue
+  fi
+  # **読めることを、下の判定を打つ前に1回だけ確かめる。** 取り出したのは `grep` が当てた1行で、
+  # JSONとして完いとは限らない（応答が整形されて複数行に渡れば途中で切れる）。下はどれも `jq` で
+  # 引くので、読めないまま進むと**転倒が既定値（空文字・偽）に化けて、そのまま状態として読まれる**
+  # ——`.ccr.session_status // ""` は「畳まれていない」へ、`jq -e` は偽と同じ非0なので `KEPT` へ。
+  # ここで止めれば、下の `jq` はどれも「読めたJSONを引いている」と言える。
+  if ! status=$(jq -r '.ccr.session_status // ""' <<<"$info" 2>"$stderr"); then
+    unfinished UNKNOWN "$session" "$(cat "$stderr")"
+    rm -f "$stderr"
+    continue
+  fi
+  rm -f "$stderr"
   # 既に畳まれているものでも、worktree は残っていることがある。畳み直すことは無いが、後始末だけは
   # やる——**畳んだ相手を渡し直せる口はここしか無い。**
-  if [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" = "SESSION_STATUS_ARCHIVED" ]; then
+  if [ "$status" = "SESSION_STATUS_ARCHIVED" ]; then
     remove_worktree "$session"
     continue
   fi
-  if [ -z "$info" ] ||
-    { [ -n "$KEEP_UNTAGGED" ] && ! jq -e --arg prefixes "$KEEP_UNTAGGED" \
-      '($prefixes | split(",")) as $ps
-       | any(.ccr.tags[]?; . as $t | any($ps[]; . as $p | $t | startswith($p)))' \
-      <<<"$info" >/dev/null; }; then
+  # 読めることは上で確かめてあるので、ここの非0は**偽**（どの接頭辞にも当たらなかった）だけ。
+  if [ -n "$KEEP_UNTAGGED" ] && ! jq -e --arg prefixes "$KEEP_UNTAGGED" \
+    '($prefixes | split(",")) as $ps
+     | any(.ccr.tags[]?; . as $t | any($ps[]; . as $p | $t | startswith($p)))' \
+    <<<"$info" >/dev/null; then
     echo "KEPT $session"
-  elif printf '{"session_id":"%s"}' "$session" | bash "$CCR_META" archive_session >/dev/null; then
+  elif err=$(printf '{"session_id":"%s"}' "$session" |
+    bash "$CCR_META" archive_session 2>&1 >/dev/null); then
     echo "ARCHIVED $session"
     remove_worktree "$session"
   else
-    echo "UNARCHIVED $session"
+    unfinished UNARCHIVED "$session" "$err"
   fi
 done

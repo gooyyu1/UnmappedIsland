@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import { TabButtons, addTextButton } from './Button';
+import { TabButtons, addTextButton } from './TextButton';
 import { ScrollArea } from '../../ui/scrollArea';
 import { stackedLength } from '../../ui/scroll';
 import type { ObjectWindowLane, ObjectWindowPane } from './ObjectWindowPane';

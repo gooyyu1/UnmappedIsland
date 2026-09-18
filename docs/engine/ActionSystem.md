@@ -98,6 +98,31 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 この節が言う差は `tests/world-codex/dragAsMenu.test.ts` が留める——実データの宣言を引いた側と、
 それをメニュー型へ写した側を並べて測っている。
 
+## 1.3 問われた側の判定は、貯め込まなくても安い
+
+札を掴むと、受け入れられる札のふちを光らせるために、**並んでいる札1枚ずつへ組み合わせを問います**
+（`CardDragController.showAcceptingCards`）。問うのは両向きで、成立するもの（`combinationsWith`）と
+断るもの（`refusedCombinationsWith`、1.1節）の両方です。
+
+それでも答えを貯め込みません。**大半の札は `conditions` まで届かないから**です——相手として
+受け入れる宣言を持たない札は、型のタグを照らし合わせたところで候補が空になり、要件（3節）は
+一度も評価されません。評価が走るのは、掴んだ物を相手として名指している宣言を持つ札だけです。
+
+現在地に150枚の札を並べ、**いちばん多くの札と噛み合う物**（この時点では `salt`。150枚のうち48枚が
+要件まで届く）を掴んで全部を両向きに問うのに **0.51ミリ秒**でした（2026-09-18 時点、
+Intel Xeon @ 2.10GHz・Node v22 で計測）。
+
+**並ぶ枚数に頭打ちはありません**——束ねない型（`stackable: false`、[`SlotSystem.md`](./SlotSystem.md)
+4節）は個体ごとに1枚の札になるので、同じ型を並べればいくらでも増えます。なので「この枚数で収まった」
+だけでは足りず、**周りの枚数を倍にしても1枚あたりの判定が変わらないこと**も併せて見ています。
+
+**測ったのは、問われた側が答えを出すぶんだけです。** 札を1枚ずつ問いに行く画面側は別の値段を
+抱えていて、そちらは [issue #2255](https://github.com/gooyyu1/UnmappedIsland/issues/2255) が持ちます
+——**この節の値は、札を掴んだときに画面が止まる時間ではありません。**
+
+**どちらも `tests/diagnostics/interactionCost.test.ts` が見ます**——同じ並びを組んで測り、桁の変わった
+遅さでも、枚数に連れて伸びる形でも赤くなります。
+
 ## 2. 実行パイプライン
 
 実行は次の順に進み、途中で失敗すると `false` を返して**世界の形は何も変えずに**終える。順序に意味が
@@ -214,7 +239,8 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
   （`minutesFor`。UI層が実行前に所要時間を見せるため、[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
 - `advanceWorldTime` は分を進めながら、tick 境界（world の `minutes_per_tick` プロパティ、
   現状15分）を跨ぐたびに world ツリー全体の `tick()` を1回実行する。長い `duration` の action は、
-  その間の `add`・rangeイベントをすべて経験する。
+  その間の `add`・rangeイベントをすべて経験する。**跨がなければ、進むのは時計だけ**——率を分へ割る
+  ことはしない（[`GameElementDefinition.md`](./GameElementDefinition.md) 8.4.2 節）。
 
 - **経過している間だけ、その操作の `passives`（[`GameElementDefinition.md`](./GameElementDefinition.md)
   11.7節）を登録する。** 対象の値がその tick に
@@ -388,7 +414,4 @@ UI が演出のために「誰が何をしたか」を要る（[`HuntingSystem.m
 
 ## 8. 未決事項・今後の検討課題
 
-- 同じオブジェクト内で複数のキーが同じ `with` にマッチした場合の解決規則
-  （現状は `combinationsWith` が宣言順に列挙し、選択はUI層に委ねている）
 - `with` で複数タグのAND条件を指定する必要があるか
-- ドラッグ中のハイライトで全カードの `conditions` を評価するコストの抑制

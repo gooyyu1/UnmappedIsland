@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import type { MapLandView, MapRoadView } from '../view/PlayScreenView';
-import { addTextButton } from './Button';
+import { addTextButton } from './TextButton';
 import { Card, PAPER_RADIUS, paperRect } from './Card';
 import { cardFace } from './cardFace';
 import { ACTION_HEIGHT, WINDOW_PADDING, closeRow } from '../looks/childWindowLayout';

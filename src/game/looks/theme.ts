@@ -1,5 +1,6 @@
 import type { AlertLevel } from '../../domain/AlertLevel';
 import type { BoxStyle, ShapeDefaults } from '../../ui/shapes';
+import type { ScrollBarLook } from '../../ui/ScrollIndicator';
 import type { ScreenMetrics } from './ScreenMetrics';
 import { ALERT_LEVELS } from '../../domain/AlertLevel';
 import type { GaugeEnd } from '../../domain/PropertyDef';
@@ -79,6 +80,12 @@ export const SIZE = {
   slotButtonIcon: { width: 145, height: 64 },
   radius: 12,
   /**
+   * 紙として置かれるボタン（スロットボタン・バーのアイコンボタン）が落とす影のずらし幅。
+   * **2箇所が一致していないと壊れる値**なので、利用者が何であれ意匠が持つ
+   * （[`CodeStructure.md`](../../../docs/CodeStructure.md) 3節）。
+   */
+  paperButtonShadow: 1.5,
+  /**
    * スクロールバーの厚みと、送られるカードの下端との間隔（ScreenLayout.md 7.4節 スクロールバー）。
    * レーンではこの位置がカードの下の余白（16u）に収まり、区切りの帯がかぶる3uにも掛からない。
    */
@@ -111,7 +118,7 @@ export const COLOR = {
    * **どのカードにも同じ色をかぶせるので、物の色として読まれない色相を選ぶ。** 木にも石にも
    * 掛かる覆いなので、素材の色（茶・灰・緑）と重なる色相だと「そういう物」に見えてしまう。
    *
-   * **下地より明るい青にする。** 暗い覆いは押下中の陰（pressedShade・cardEdgeOverlay）と同じ
+   * **下地より明るい青にする。** 暗い覆いは押下中の陰（cardEdgeOverlay、ボタンの沈み込み）と同じ
    * 見え方になり、そのカードの性質ではなく今の操作を表しているように読める。
    */
   cardInProgress: 0x6ec1ff,
@@ -176,8 +183,6 @@ export const COLOR = {
   paperButtonBorder: 0x5a4632,
   /** 同じ枠線の、フィルターバー（藤色）用。暖色のままでは地から浮くので、色相だけを地へ寄せる。 */
   filterButtonBorder: 0x4a4258,
-  /** 押下中のボタンへ重ねる覆い。濃さはButtonが持つ（PRESSED_SHADE）。 */
-  pressedShade: 0x000000,
   buttonActive: 0x3a3a3a,
   /** 実行中などで今は押せないボタン。 */
   buttonDisabled: 0xdedede,
@@ -303,6 +308,15 @@ export const COLOR = {
    */
   textShadow: 0x000000,
 } as const;
+
+/**
+ * スクロールバーの意匠（src/ui/ScrollIndicator）。厚みと色は必ず揃って要るので、1組で渡す。
+ */
+export const SCROLL_BAR_LOOK: ScrollBarLook = {
+  trackColor: COLOR.scrollBarTrack,
+  thumbColor: COLOR.scrollBarThumb,
+  thickness: SIZE.scrollBar,
+};
 
 /**
  * 域（GameElementDefinition.md 6.4節のalert）に応じたステータスバーの塗りの色。安全域の緑から、

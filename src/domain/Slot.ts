@@ -31,7 +31,7 @@ export class Slot {
     this.layout = new CellLayout(def);
   }
 
-  /** セルの並びそのもの。位置＝添字。 */
+  /** セルの並びの写しと、実体のセル（CellLayout.cells）。位置＝添字。 */
   get cells(): readonly SlotCell[] {
     return this.layout.cells;
   }
@@ -41,7 +41,10 @@ export class Slot {
     return this.layout.contents;
   }
 
-  /** 中身を、積み重なっているまとまりごとに分けたもの（空セルは含まない。先頭が代表）。 */
+  /**
+   * 中身を、積み重なっているまとまりごとに分けたものの写し（空セルは含まない。先頭が代表。
+   * CellLayout.stacks）。
+   */
   get stacks(): readonly (readonly WorldObject[])[] {
     return this.layout.stacks;
   }
