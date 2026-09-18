@@ -235,8 +235,13 @@ describe('層の境界', () => {
   it('src/ui はこのゲームへ到達しない', () => {
     // 汎用部品だけを置く場所（CodeStructure.md 1節）。ゲームの語彙も意匠も知らないので、ここにある
     // ものはこのゲームを消しても変わらない。
+    //
+    // **型として輸入するのも数える。** Phaserと違って、ここで守っているのは実行時の依存ではなく
+    // 「このゲームを消しても1文字も変わらない」こと——`ScreenMetrics`を引数に取った時点で、その
+    // ファイルはこのゲームの意匠が在ることを前提にする（u単位を直す口だけを名乗る`UnitScale`が
+    // 別に在るのはこのため）。
     expect(
-      routesFrom('src/ui', (target) => target.startsWith('src/game/')),
+      routesFrom('src/ui', (target) => target.startsWith('src/game/'), true),
       'この経路のどこかでゲームを覗いている',
     ).toEqual([]);
   });

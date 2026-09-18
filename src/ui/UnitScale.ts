@@ -1,4 +1,7 @@
-/** u単位の長さをピクセルへ直せる相手（ScreenMetrics）。 */
+/**
+ * u単位の長さをピクセルへ直せる相手。**画面の寸法そのものは受け取らない**——汎用部品が要るのは
+ * 換算だけで、どんな画面に敷かれるかは知らないまま描ける。
+ */
 export interface UnitScale {
   px(units: number): number;
 }
