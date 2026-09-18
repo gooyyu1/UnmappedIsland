@@ -539,3 +539,30 @@ esac
     expect(runUnlabeled('急ぎ')).toEqual([]);
   });
 });
+
+/**
+ * 冒頭の「ここが動かすのは次」の一覧と、実際の job の照合。
+ *
+ * **一覧は job の側に在るものを書き写したもの**なので、片方だけが動くと黙って嘘になる——段を足した
+ * 差分が一覧を置き去りにしても、読む者が数えるまで誰も気づかない。**各行の末尾の job 名がその
+ * 突き合わせの手がかり**で、ここが唯一それを読む。
+ */
+describe('board-labels.yml の冒頭の一覧', () => {
+  /** 冒頭のコメント（`on:` より前）の箇条書きが、末尾で名指ししている job 名。 */
+  function listedJobs(): Set<string> {
+    const header = readFileSync(WORKFLOW, 'utf-8').split(/\r?\n/);
+    const end = header.findIndex((line) => line.startsWith('on:'));
+    if (end < 0) throw new Error('`on:` が見つからない');
+    return new Set(
+      header
+        .slice(0, end)
+        .map((line) => /^# - .*…[ ]*`([A-Za-z_]+)`$/.exec(line)?.[1])
+        .filter((name): name is string => name !== undefined),
+    );
+  }
+
+  it('どの job も、冒頭の一覧に出てくる', () => {
+    const workflow = parse(readFileSync(WORKFLOW, 'utf-8')) as { jobs: Record<string, unknown> };
+    expect([...listedJobs()].sort()).toEqual(Object.keys(workflow.jobs).sort());
+  });
+});
