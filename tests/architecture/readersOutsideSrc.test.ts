@@ -106,7 +106,8 @@ interface Declaration {
   /** `class`・`interface`・`function`など。メンバの所有者がどちらかを見るのに使う。 */
   readonly kind: string;
   readonly visibility: string;
-  readonly referencedOnlyByTests: boolean;
+  /** 読み手が `src` の外（`tests/`・`scripts/`）にしか居ない。 */
+  readonly referencedOnlyOutsideSrc: boolean;
 }
 
 /** モジュール直下の宣言に、インベントリが付ける所属名。 */
@@ -139,7 +140,7 @@ describe('`src` に読み手が居ない公開', () => {
     };
 
     const found = declarations
-      .filter((declaration) => declaration.referencedOnlyByTests)
+      .filter((declaration) => declaration.referencedOnlyOutsideSrc)
       .filter((declaration) => !OUT_OF_SCOPE.some((dir) => declaration.file.startsWith(dir)))
       .filter(visibilityIsAChoice)
       .map(labelOf)

@@ -78,7 +78,7 @@ describe('画面に重ねる層の階梯', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('層に数を直接書いている場所が無い', () => {
+  it('層に数を直接書いている場所が無い（代入の形を見るのは画面の層だけ）', () => {
     // `ScreenDepth` は階梯の値そのものの合併なので、**階梯に在る数を直書きすると型では止まらない**
     // （`depth: 1.2`）。書けてしまえば、階梯の項を動かしたときに置き去りになる数がそこに残る。
     //
@@ -86,7 +86,7 @@ describe('画面に重ねる層の階梯', () => {
     // 絞るのは、**画面の層ではない `depth` が同じ綴りで在る**ため——説明文の字下げ（Description）と
     // 実効値の入れ子（EffectiveValueReading）が、どちらも `depth = 0` で数え始める。
     const offenders = [
-      ...outsideLadder.filter((file) => /\bdepth:\s*-?\d/.test(readSource(file))),
+      ...outsideLadder.filter((file) => /\bdepth\s*:\s*-?\d/.test(readSource(file))),
       ...outsideLadderInGame.filter((file) => /\bdepth\s*=\s*-?\d/.test(readSource(file))),
     ];
 

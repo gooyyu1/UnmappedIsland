@@ -24,7 +24,12 @@ const PALETTE = 'src/game/looks/theme.ts';
  */
 const OUTSIDE_THE_SCREEN = ['src/game/errorReport.ts'];
 
-/** 数値で書いた色。ちょうど6桁だけを数える——8桁は色ではない（`WeatherOverlay`の散らしの種）。 */
+/**
+ * 数値で書いた色。ちょうど6桁だけを数える——8桁は色ではない（`WeatherOverlay`の散らしの種）。
+ *
+ * **桁の揃わない16進は見ない。** `0xfff` まで拾うと、寸法を綴った散文（`410x640px`）が色として
+ * 挙がる。**そのぶん `0xfff` と書いた色は素通りする**——桁を揃えて書く限り拾える、で足りるとする。
+ */
 const HEX_COLOR = /0x[0-9a-fA-F]{6}(?![0-9a-fA-F])/;
 
 /**

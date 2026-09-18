@@ -87,7 +87,11 @@ const SOURCES = [...filesIn('src', '.ts'), ...filesIn('tests', '.ts')].filter(
 
 describe('9.1節の表から引いた文書が、走査した文書と噛み合っている', () => {
   // 噛み合っていないと**除外が1つも当たらない**が、赤くなるのは表の文書がマーカー語を持つときだけ
-  // ——綴りの取り違えもパス区切りのずれも、ここで落ちる。
+  // ——綴りの取り違えはここで落ちる。
+  //
+  // **パス区切りのずれが落ちるのは Windows で打ったときだけ。** `path.join` が `/` を返す
+  // ubuntu（CI）では、{@link repoPath} を素の `join` へ戻しても照合は当たり続ける。**CI の緑は、
+  // 区切りを揃える手立てが在ることの証拠にならない。**
   it.each([...ALLOWED])('%s が `docs/` の走査結果に在る', (doc) => {
     expect(ALL_DOCUMENTS).toContain(doc);
   });
