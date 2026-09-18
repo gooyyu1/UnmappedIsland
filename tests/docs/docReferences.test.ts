@@ -2,7 +2,12 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { commentsOnly } from '../../scripts/codeComments.mjs';
-import { promptBodies, promptBody } from '../../scripts/daemon/prompt-body.mjs';
+import {
+  promptBodies,
+  promptBodiesForSession,
+  promptBody,
+  promptBodyForSession,
+} from '../../scripts/daemon/prompt-body.mjs';
 import {
   COMMENTED_EXTENSIONS,
   isMarkRuleDoc,
@@ -14,6 +19,7 @@ import {
 import { declaresWholeDocument, WHOLE_DOCUMENT_CONFIRMED } from '../../scripts/docStatus.mjs';
 import { githubSlugs } from '../../scripts/githubSlugs.mjs';
 import { linesOutsideFence } from '../../scripts/markdownFences.mjs';
+import { isPathTarget } from '../../scripts/markdownLinks.mjs';
 
 /**
  * ドキュメントの参照が実在の対象へ解決するかの検査（docs/DocumentStyle.md 5節）。
@@ -205,27 +211,6 @@ function withoutCode(markdown: string): string {
   return textLines(markdown)
     .map(({ text }) => text)
     .join('\n');
-}
-
-/**
- * リンクの指し先が、**指し先として読める形**か（docs/DocumentStyle.md 5節）。読めないものは、
- * 実在のパスではなく**書式そのもの**を見せている（`docStatsCitations` が出どころの書式を
- * `<ファイル>` と書くのと同じ規約）。
- *
- * **外す形を数え上げず、読める形のほうを書く。** 外すものを挙げていくと、次に生えた例示の形が
- * 漏れて**例示が赤くなる**——コードのコメントは正規表現（`['"]([^'"]+)['"]`）も省略の `…` も
- * そのまま引くので、形は増え続ける。ASCIIのパスの字だけでできていて、点だけではないものが
- * 指し先で、それ以外は全部例示。**非ASCIIを入れない**のは、省略の `…` がそこに居るため——
- * 日本語のファイル名を足すなら、`…` を外す手を別に持つことになる。
- *
- * **判定が要るのはリンクだけ。** 節番号・節名の参照は `文書名.md N節` のように書けば
- * {@link brokenNumberedRefsIn} の `tokenPattern` が最初から拾わない（ファイル名の先頭に
- * `[A-Za-z]` を要求している）が、リンクの指し先は何が入っていても形が崩れないので、ここで外す。
- *
- * **囲み（インラインコード・コードフェンス）は、どちらの側でも逃げ道にならない。**
- */
-function isPathTarget(target: string): boolean {
-  return /^[A-Za-z0-9._~%/-]+$/.test(target) && !/^\.+$/.test(target);
 }
 
 /**
@@ -910,6 +895,50 @@ describe('ドキュメントの参照', () => {
     expect(brokenLinkAnchorsIn(probe, `[表示名](${probe.split(sep).pop()}#${anchor})`)).toHaveLength(
       1,
     );
+  });
+
+  it('渡す本体は、囲みの中のリンクの起点をリポジトリ直下へ付け替える', () => {
+    // 書き手はどの文書とも同じく自分のファイルからの相対で書く（DocumentStyle.md 5節）。付け替えを
+    // 落とすと、**ひな形の位置からの相対がそのままセッションへ渡り、受け取った側では開けない。**
+    const template = [
+      '# 題名',
+      '```',
+      '[`push-screenshot.sh`](../../scripts/agent/push-screenshot.sh) を打つ',
+      '型は [`parallel-work.md`](../parallel-work.md#pr-の型) が持つ',
+      '答えは [#1102](https://github.com/gooyyu1/UnmappedIsland/issues/1102) へ',
+      '貼り方は `![<名前>](<URL>)`',
+      '```',
+    ].join('\n');
+
+    expect(promptBodyForSession(join('agent-ops', 'prompts', 'probe-prompt.md'), template)).toBe(
+      [
+        '[`push-screenshot.sh`](scripts/agent/push-screenshot.sh) を打つ',
+        '型は [`parallel-work.md`](agent-ops/parallel-work.md#pr-の型) が持つ',
+        '答えは [#1102](https://github.com/gooyyu1/UnmappedIsland/issues/1102) へ',
+        '貼り方は `![<名前>](<URL>)`',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('ひな形の囲みの中のリンクが、渡った先（リポジトリ直下）から開ける', () => {
+    // 上のリンク切れの検査はひな形の位置から解決するので、**そちらが緑でも渡った先で開けるとは
+    // 言えない**（起点が違う。DocumentStyle.md 5節）。
+    const written = REF_TARGETS.filter(isPromptTemplate).flatMap((rel) =>
+      promptBodiesForSession(rel, read(rel)).flatMap((body) =>
+        [...body.matchAll(/\]\(([^)#\s]+)(?:#[^)\s]*)?\)/g)]
+          .map(([, target]) => ({ rel, target }))
+          .filter(({ target }) => !/^[a-z]+:/.test(target) && isPathTarget(target)),
+      ),
+    );
+
+    // 1つも拾えていない状態は、どれも開ける状態と同じ緑になる。
+    expect(written.length).toBeGreaterThan(0);
+    const broken = written.filter(({ target }) => !existsSync(resolve(ROOT, target)));
+    expect(
+      broken.map(({ rel, target }) => `${rel}: ${target}`),
+      '渡った先で開けないリンク',
+    ).toEqual([]);
   });
 
   it('印を探す本文は、コードフェンスの中を落とす（規約が書式を例示する）', () => {

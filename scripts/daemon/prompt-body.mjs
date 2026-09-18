@@ -1,4 +1,5 @@
-// ひな形（`agent-ops/prompts/*-prompt.md`）から、セッションへ渡す本体を取り出す。
+// ひな形（`agent-ops/prompts/*-prompt.md`）から、セッションへ渡す本体を取り出す。**リンクの起点は
+// リポジトリ直下へ揃えて出す**（{@link promptBodyForSession}）。
 //
 //   node scripts/daemon/prompt-body.mjs <ひな形のパス>            本体を標準出力へ
 //   node scripts/daemon/prompt-body.mjs <ひな形のパス> <節の名前>  その節の中の本体だけを見る
@@ -6,8 +7,12 @@
 // 取り出せなければ何も出さない（**空かどうかで判定する側が居る**——`prompt-template.sh`）。
 
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { linksRebasedToRepoRoot } from '../markdownLinks.mjs';
+
+/** このファイルから見たリポジトリ直下。渡す本体の起点を出すのに要る（{@link promptBodyForSession}）。 */
+const REPO_ROOT = resolve(fileURLToPath(import.meta.url), '../../..');
 
 /** `## <節の名前> …` の見出しの行か。名前は `##` の後の最初の語。 */
 function headsSection(line, section) {
@@ -83,11 +88,22 @@ export function promptBody(markdown, section = null) {
 }
 
 /**
- * そのひな形が**渡しうる本体すべて**。先頭の囲みと、`## <名前>` の節ごとの囲みを集める。
+ * そのひな形が渡しうる本体を、**どれも同じ取り出しで拾えるように**並べた読み始めの節。先頭の囲みが
+ * `null`、以降が `## <名前>` の節。
  *
  * **先頭の囲みだけでは足りない。** 理由ごとに本文を持つひな形
  * （[`resume-prompt.md`](../../agent-ops/prompts/resume-prompt.md)）は節を指定して読まれるので、
  * 先頭だけを本体と呼ぶと、**セッションへは渡るのに節としては引けない本文**ができる。
+ *
+ * @param {string} markdown ひな形の中身
+ * @returns {(string | null)[]} 読み始める節の名前
+ */
+function bodySections(markdown) {
+  return [null, ...[...markdown.matchAll(/^##\s+(\S+)/gm)].map((found) => found[1])];
+}
+
+/**
+ * そのひな形が**渡しうる本体すべて**。先頭の囲みと、`## <名前>` の節ごとの囲みを集める。
  *
  * 節を持たないひな形では先頭と節ごとの取り出しが同じものを返すので、重なりは畳む。
  *
@@ -95,8 +111,44 @@ export function promptBody(markdown, section = null) {
  * @returns {string[]} 本体の中身。1つも無ければ空
  */
 export function promptBodies(markdown) {
-  const bodies = [promptBody(markdown)];
-  for (const found of markdown.matchAll(/^##\s+(\S+)/gm)) bodies.push(promptBody(markdown, found[1]));
+  const bodies = bodySections(markdown).map((section) => promptBody(markdown, section));
+  return [...new Set(bodies)].filter((body) => body !== null);
+}
+
+/**
+ * セッションへ渡す形の本体。囲みの中身を取り出したうえで、**リンクの起点をリポジトリ直下へ
+ * 揃える。**
+ *
+ * **起点が2つに割れるのをここで畳む。** 書き手はどの文書とも同じく自分のファイルからの相対で書き
+ * （docs/DocumentStyle.md 5節）、参照の検査もそう読む。一方、囲みの中身を受け取ったセッションは
+ * リポジトリ直下で読むので、ひな形の位置から書いた `../../` はそのままでは開けない。**揃えるのは
+ * ここ1つ**——書き手の側で先回りして揃えると、ひな形の頁から開けないリンクが、検査の緑のまま残る。
+ *
+ * @param {string} templatePath ひな形のパス（相対でも絶対でもよい）
+ * @param {string} markdown ひな形の中身
+ * @param {string | null} [section] 読み始める節の名前。渡さなければひな形の先頭から
+ * @returns {string | null} 渡す本体。囲みが見つからなければ null
+ */
+export function promptBodyForSession(templatePath, markdown, section = null) {
+  const body = promptBody(markdown, section);
+  if (body === null) return null;
+  const dir = dirname(relative(REPO_ROOT, resolve(templatePath)))
+    .split(sep)
+    .join('/');
+  return linksRebasedToRepoRoot(body, dir);
+}
+
+/**
+ * そのひな形が渡しうる本体すべてを、{@link promptBodyForSession 渡す形}で。
+ *
+ * @param {string} templatePath ひな形のパス（相対でも絶対でもよい）
+ * @param {string} markdown ひな形の中身
+ * @returns {string[]} 渡す本体。1つも無ければ空
+ */
+export function promptBodiesForSession(templatePath, markdown) {
+  const bodies = bodySections(markdown).map((section) =>
+    promptBodyForSession(templatePath, markdown, section),
+  );
   return [...new Set(bodies)].filter((body) => body !== null);
 }
 
@@ -106,5 +158,5 @@ if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(
     console.error('ひな形のパスを渡す');
     process.exit(2);
   }
-  process.stdout.write(promptBody(readFileSync(path, 'utf-8'), section ?? null) ?? '');
+  process.stdout.write(promptBodyForSession(path, readFileSync(path, 'utf-8'), section ?? null) ?? '');
 }
