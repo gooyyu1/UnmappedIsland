@@ -9,7 +9,8 @@
 #
 # **身につけている間、寒さの入口（chill_point、characters/player_character.yaml）を押し下げる。**
 # 押し下げるのは着ている側で、気温そのものを上げるのは火——効き方は違うが、合流先は同じ1つの比較
-# （docs/engine/VitalsSystem.md 8.3節）。
+# （docs/engine/VitalsSystem.md 8.3節）。**眠っている間は寝床の押し下げも同じ境目へ重なる**
+# （bedding.yaml。深さは docs/world/Bedding.md 4.2節）ので、着たまま寝れば加算になる。
 #
 # **深さは素材ごとに違い、手のかかる一着ほど深い**（docs/world/SurvivalItems.md 5.1節）。両端は
 # 空が作る気温の刻みへ合わせてある——最も安い一着が海沿いの薄明と雨天の昼に、最も高い一着が海沿いの
