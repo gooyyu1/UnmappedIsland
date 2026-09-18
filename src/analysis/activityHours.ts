@@ -22,11 +22,13 @@ import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
  * 据え付けの光源を数えない前提では、どちらも土地のambient_brightnessをそのまま土台にするだけなので
  * （同2節）、**同じ明るさを別々のしきい値で切ったもの**になる。
  *
- * **「屋外で採れる」と「探索できる」も別々の列。** 明るさの要求は同じだが、**嵐が止めるのは採取だけ**
- * （ContentSkeleton.md 8.1.4節）なので、採る側だけが嵐の時間を引く。嵐かどうかは天気の名前ではなく、
- * `core.yaml`のweatherがwind_speedへ与える風速と、キャラクタが宣言する段の境目の比較で決める
- * ——ここでも数字を書き写す箇所は無い。**屋根や岩陰に守られた場所（浅い洞窟）には風雨が届かない**
- * ので、そこでは嵐を引かない（player_character.yamlのshelteredの段が風雨を落とす分）。
+ * **嵐の時間は、どの列からも引く**（ContentSkeleton.md 8.1.4節）。屋根の下でなければ採るのも歩くのも
+ * 探すのも手元の作業も止まるので、**風雨は列ごとの事情ではなく、その土地・その時刻の事情**になる。
+ * 嵐かどうかは天気の名前ではなく、`core.yaml`のweatherがwind_speedへ与える風速と、キャラクタが宣言する
+ * 段の境目の比較で決める——ここでも数字を書き写す箇所は無い。**屋根や岩陰に守られた場所（浅い洞窟）
+ * には風雨が届かない**ので、そこでは嵐を引かない（player_character.yamlのshelteredの段が風雨を落とす分）。
+ * **建てた屋根は行にならない**（浅い洞窟だけが守られた行）ので、手元の作業の列は「屋根を建てていない
+ * 場合」を出す。据え付けの光源を数えないのと同じ切り方。
  *
  * **浅い洞窟の土台は、生える先の土地から辿る**（`hostAmbientOf`）。岩陰の暗さ（-6）は土地との差
  * なので、生え先が非0の土地へ広がっても数え直しは要らない——ただし生え先どうしで明るさが違うと
@@ -45,43 +47,21 @@ export interface PropertyStageName {
   readonly stageName: string;
 }
 
-/**
- * 表の1列。行動のクラス（IlluminationSystem.md 5節）が見る明るさと、その行動ができる最も暗い段、
- * そして風雨がその行動を止めるか（ContentSkeleton.md 8.1.4節）。
- * **列と行動のクラスは1対1**——1列に2つを畳むと、境目が別々に動いたときにその列の意味が消える。
- */
-interface ActivityColumn extends PropertyStageName {
-  /** 嵐の時間を引くか。引かない列は、明るさだけで切った時間になる。 */
-  readonly stoppedByWind: boolean;
-}
+// 表の列は、行動のクラス（IlluminationSystem.md 5節）が見る明るさと、その行動ができる最も暗い段。
+// **列と行動のクラスは1対1**——1列に2つを畳むと、境目が別々に動いたときにその列の意味が消える。
+// **風雨は列の性質ではない**（どの列も同じだけ引く、上）ので、列が持つのは明るさの段だけ。
 
 /** 土地の間を移動する: 視界が `dim` 以上であること（同 5節）。 */
-const TRAVEL_COLUMN: ActivityColumn = {
-  propertyName: 'looking_brightness',
-  stageName: 'dim',
-  stoppedByWind: false,
-};
+const TRAVEL_COLUMN: PropertyStageName = { propertyName: 'looking_brightness', stageName: 'dim' };
 
-/** 屋外で採る（同 5節）。嵐の日は明るさが足りていても採れない。 */
-const GATHERING_COLUMN: ActivityColumn = {
-  propertyName: 'looking_brightness',
-  stageName: 'bright',
-  stoppedByWind: true,
-};
-
-/** 探索する（同 5節）。採取と同じ明るさを要求するが、嵐では止まらない。 */
-const EXPLORATION_COLUMN: ActivityColumn = {
-  propertyName: 'looking_brightness',
-  stageName: 'bright',
-  stoppedByWind: false,
-};
+/**
+ * 屋外で見て探す仕事——採取と探索（同 5節の1行）。**採取と探索を別の列にしない**のは、見る値も
+ * しきい値も風雨の扱いも1つに揃っているからで、分けても必ず同じ値になる。
+ */
+const OUTDOOR_SEARCH_COLUMN: PropertyStageName = { propertyName: 'looking_brightness', stageName: 'bright' };
 
 /** 手元の細かい作業（同 5節）。 */
-const HANDWORK_COLUMN: ActivityColumn = {
-  propertyName: 'hand_brightness',
-  stageName: 'bright',
-  stoppedByWind: false,
-};
+const HANDWORK_COLUMN: PropertyStageName = { propertyName: 'hand_brightness', stageName: 'bright' };
 
 /** 風雨の強さ（`core.yaml`のworld・`characters/player_character.yaml`）と、嵐と呼ぶ段。 */
 const WIND_PROPERTY = 'wind_speed';
@@ -110,11 +90,8 @@ export interface ActivityHoursRow {
   /** 土地の間を移動できる時間（時間/日）。 */
   readonly travelHoursPerDay: number;
 
-  /** 屋外で採れる時間（時間/日）。嵐の時間を引いたもの（ContentSkeleton.md 8.1.4節）。 */
-  readonly gatheringHoursPerDay: number;
-
-  /** 探索できる時間（時間/日）。明るさは採取と同じ要求で、嵐では止まらない。 */
-  readonly explorationHoursPerDay: number;
+  /** 屋外で見て探す仕事（採取・探索）ができる時間（時間/日）。 */
+  readonly outdoorSearchHoursPerDay: number;
 
   /** 手元の細かい作業ができる時間（時間/日）。 */
   readonly handworkHoursPerDay: number;
@@ -187,8 +164,7 @@ export function activityHoursOf(
   const worldAmbientAt = worldAmbientBrightnessOf(codex);
   const worldWindAt = worldWindSpeedOf(codex);
   const travelThreshold = characterStageMinimumOf(codex, TRAVEL_COLUMN);
-  const gatheringThreshold = characterStageMinimumOf(codex, GATHERING_COLUMN);
-  const explorationThreshold = characterStageMinimumOf(codex, EXPLORATION_COLUMN);
+  const outdoorSearchThreshold = characterStageMinimumOf(codex, OUTDOOR_SEARCH_COLUMN);
   const handworkThreshold = characterStageMinimumOf(codex, HANDWORK_COLUMN);
   const galeThreshold = characterStageMinimumOf(codex, GALE_STAGE);
 
@@ -196,8 +172,7 @@ export function activityHoursOf(
   for (const place of litPlacesOf(codex)) {
     for (const season of seasons) {
       let travelHoursPerDay = 0;
-      let gatheringHoursPerDay = 0;
-      let explorationHoursPerDay = 0;
+      let outdoorSearchHoursPerDay = 0;
       let handworkHoursPerDay = 0;
 
       for (let hour = 0; hour < 24; hour++) {
@@ -205,13 +180,11 @@ export function activityHoursOf(
           const fraction = hoursInSeason / (season.durationDays * 24);
           const brightness = place.brightnessAt(worldAmbientAt(hour, weatherName)) + carriedLightEv;
           const gale = !place.sheltered && worldWindAt(weatherName) >= galeThreshold;
-          const opens = (column: ActivityColumn, threshold: number): boolean =>
-            brightness >= threshold && !(column.stoppedByWind && gale);
+          const opens = (threshold: number): boolean => brightness >= threshold && !gale;
 
-          if (opens(TRAVEL_COLUMN, travelThreshold)) travelHoursPerDay += fraction;
-          if (opens(GATHERING_COLUMN, gatheringThreshold)) gatheringHoursPerDay += fraction;
-          if (opens(EXPLORATION_COLUMN, explorationThreshold)) explorationHoursPerDay += fraction;
-          if (opens(HANDWORK_COLUMN, handworkThreshold)) handworkHoursPerDay += fraction;
+          if (opens(travelThreshold)) travelHoursPerDay += fraction;
+          if (opens(outdoorSearchThreshold)) outdoorSearchHoursPerDay += fraction;
+          if (opens(handworkThreshold)) handworkHoursPerDay += fraction;
         }
       }
 
@@ -219,8 +192,7 @@ export function activityHoursOf(
         locationName: place.name,
         seasonName: season.seasonName,
         travelHoursPerDay,
-        gatheringHoursPerDay,
-        explorationHoursPerDay,
+        outdoorSearchHoursPerDay,
         handworkHoursPerDay,
       });
     }

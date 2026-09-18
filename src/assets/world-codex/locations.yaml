@@ -81,6 +81,11 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage_or_above: dim
+          # 嵐の日は歩けない（docs/world/ContentSkeleton.md 8.1.4節）。**明るさとは別の値を見るので、
+          # 松明では開かない**。上の明るさと同じく見るのは歩く本人の側で、**屋外かどうかは問わない**
+          # ——屋根の下では風雨そのものが0まで落ちる（characters/player_character.yamlのsheltered）。
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         # 担ぎ手の遅れはtravel_minutesのbaseが継いでいるので、ここはその1つを読むだけ。
         duration: {prop: travel_minutes}
         move:
@@ -135,12 +140,15 @@ object_defs:
       knap:
         trigger: {drag: {object: stone}}
         # 狙った縁を打ち欠く手元の作業（IlluminationSystem.md 5節）。据え付けの光源も効くので、
-        # 焚き火のそばなら夜でも打てる。
+        # 焚き火のそばなら夜でも打てる。**風雨は据え付けの光源では埋まらない**——嵐の日は屋根の下で
+        # なければ打てない（docs/world/ContentSkeleton.md 8.1.4節）。
         conditions:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: knap_minutes}
         # 石器の腕はここから立ち上がる（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。道具を要求しないので、何も持たない状態から回る。
@@ -178,9 +186,9 @@ object_defs:
   # ものなので、払うのは通う手間と、下の周期そのものになる。
   #
   # **採る操作を持たない。** 実った物を枠から取り出すのは、畑の作物・塩田の塩・罠の獲物と同じで
-  # いつでもできる。**嵐の日に止まるのは屋外の採取の操作**（docs/world/ContentSkeleton.md 8.1.4節）
-  # で、その線は視界の明るさを要求しているかで引かれている
-  # （tests/world-codex/stormGathering.test.tsが全数で見張る）——留守番の設備が返した物を受け取る
+  # いつでもできる。**嵐の日に止まるのは明るさの条件を持つ操作**（docs/world/ContentSkeleton.md
+  # 8.1.4節）で、その線は明るさを要求しているかで引かれている
+  # （tests/world-codex/stormOutdoors.test.tsが全数で見張る）——留守番の設備が返した物を受け取る
   # ところに条件を置いている型は1つも無いので、茂みもそちらに倣う。
   berry_bush:
     tags: [fixture]
@@ -309,7 +317,8 @@ object_defs:
   #   気温減率を掛けて1℃へ丸めた1つの値で、**丸めて0になる海沿いの土地は宣言しない**
   #   （core.yamlのlocation traitが既定の0を持つ）。導き方と表は同節。
   # - exploreは視界の明るさを要求する（IlluminationSystem.md 5節）。据え付けの光源は視界に効かない
-  #   ため、**夜の採取は光源を持って出るしかない**。
+  #   ため、**夜の採取は光源を持って出るしかない**。**風雨も要求する**——嵐の日は屋根の下でなければ
+  #   探せない（docs/world/ContentSkeleton.md 8.1.4節）。こちらは松明では開かない。
   # - durationは1回の探索にかかる時間（分）。全土地で1tick（minutes_per_tick、core.yaml）に揃える。
   #   土地ごとの探索の重さは、回数（exploration_progress.range.max）だけで表す。
   # - `weight: {prop: ...}`の候補は**発見量のつまみ**。valueが素の重みで、亜種
@@ -363,6 +372,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -445,6 +456,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -533,6 +546,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -609,6 +624,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -697,6 +714,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -800,6 +819,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -902,6 +923,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -967,6 +990,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -1033,6 +1058,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -1111,6 +1138,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:

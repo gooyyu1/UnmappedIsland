@@ -2622,6 +2622,8 @@ crafting_conditions:
     subject: agent
     prop: hand_brightness
     in_stage_or_above: bright
+  - reason: too_stormy
+    not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
 ```
 
 - **工程を進める操作は、レシピから自動生成されます**（`RecipeSystem.md` 4 節）。条件の書き手が成果物も

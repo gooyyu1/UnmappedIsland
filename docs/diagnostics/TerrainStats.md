@@ -153,15 +153,16 @@ ContentSkeleton.md 8.3節の仮置きで、`base_days` は拠点の加工が `da
   = min(outdoor_window − 往復の移動 − survival_gathering, その土地でその仕事ができる時間)
 ```
 
-- **`daily_budget.outdoor_window`** = 屋外の枠。太陽が出ている12時間で、移動のしきい値を
-  満たす時間そのもの。
+- **`daily_budget.outdoor_window`** = 屋外の枠。太陽が出ている12時間で、**明るさの側で**移動のしきい値を
+  満たす時間そのもの。**嵐で移動も止まること（ContentSkeleton.md 8.1.4節）はここから引いていない**
+  ——引くのは下の頭打ちだけで、往復の移動が嵐に当たる分は数えていない（同 8.2節）。
 - **`daily_budget.survival_gathering`** = 1日を賄う生存の採取（BalanceStats.mdの最小労働から
   `sleep` を引いた分）。`surplus` はその最小労働を払って残る自由時間で、**山の量を日数へ直す分母**は
   こちら。`outdoor_window`・`night_craft`・`sleep` が1日の割り付け（ContentSkeleton.md 8.3節）で、
   拠点での加工が当たっているのは `night_craft` の枠。
-- **その土地でその仕事ができる時間** = ClimateSystemStats.md「土地×季節ごとの活動時間」の季節平均で、
-  **局面ごとに見る列が違う**——探索の局面は `exploration`、定常の局面は `gathering`。2つが違うのは
-  嵐が採取だけを止めるためで（ContentSkeleton.md 8.1.4節）、**局面の違いはこの頭打ちにしか現れない。**
+- **その土地でその仕事ができる時間** = ClimateSystemStats.md「土地×季節ごとの活動時間」の
+  `outdoor_search` の季節平均で、**どちらの局面も同じ列を見る**——採取と探索は明るさも風雨も同じ線で
+  閉じるので、頭打ちが局面で分かれることはない（ContentSkeleton.md 8.1.4節）。
   遠さは移動の項として、暗さと風雨は頭打ちとして、同じ1行に入る。
   **`handwork`（手元の細かい作業）の列は見ない**——この式が割っているのは屋外の枠で、手元の作業が
   当たっているのは夜の加工360分のほう（ContentSkeleton.md 8.3節）だから。

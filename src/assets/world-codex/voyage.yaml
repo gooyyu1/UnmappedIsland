@@ -238,8 +238,9 @@ traits:
       # 湧かせる側の仕事で、ここには条件を置かない（各海区の on_max 参照）。
       #
       # **見えている海面しか見張れない**（docs/engine/IlluminationSystem.md 5節。地上の探索・小島の
-      # 探索と同じ条件）。**風雨は要らない**——嵐が止めるのは採取だけで、探索は止まらない
-      # （docs/world/ContentSkeleton.md 8.1.4節）。
+      # 探索と同じ条件）。**嵐でも見張れない**——見て探す仕事は屋根の下でなければ止まり、海区に屋根は
+      # 無い（docs/world/ContentSkeleton.md 8.1.4節・docs/world/Voyage.md 3.10節）。**渡る手だけは
+      # 止まらない**（sea_routeのcross。理由は同 3.8節）。
       explore:
         trigger: menu
         conditions:
@@ -247,6 +248,8 @@ traits:
             subject: agent
             prop: looking_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 15
         add: {self: {exploration_progress: 1}}
         # 見張りが返すもの（GameEndings.md 12.1節）。次の行き先は航路（進捗の on_max）が受け持つので、
@@ -869,6 +872,9 @@ object_defs:
     interactions:
       # 島を歩いて調べる。**降りていないとできない**——筏に乗ったままでは岸から眺めているだけで、
       # 岩の窪みも波打ち際も見られない（筏の中の仕事を岸からできないのと同じ、Voyage.md 2節）。
+      #
+      # **地上の探索と同じ条件**（明るさと風雨。docs/world/ContentSkeleton.md 8.1.4節）。小島は陸地
+      # なので、嵐の日は屋根の下でなければ歩き回れない——小島に屋根は無いので、嵐の間は筏へ戻るだけ。
       explore:
         trigger: menu
         conditions:
@@ -879,6 +885,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:

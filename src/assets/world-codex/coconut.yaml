@@ -183,6 +183,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 30
         destroy: self
         spawn:
@@ -301,6 +303,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 30
         destroy: self
         spawn:

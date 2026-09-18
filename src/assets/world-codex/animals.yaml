@@ -647,6 +647,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: butcher_minutes}
         # 皮革の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。**なめしへ移るのは獣に刃を入れて分ける手つき**（腕を
@@ -977,6 +979,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: butcher_minutes}
         add:
           self:
@@ -993,6 +997,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: butcher_minutes}
         add:
           self:
@@ -1010,6 +1016,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: butcher_minutes}
         add:
           self:
@@ -1029,6 +1037,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: butcher_minutes}
         add: {agent: {skill_leatherwork: 2}}
         destroy: self
@@ -1064,6 +1074,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: butcher_minutes}
         add: {agent: {skill_leatherwork: 2}}
         destroy: self
@@ -1173,6 +1185,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: whittle_minutes}
         # **伸びるのは木材加工**（docs/engine/SkillSystem.md 3節の実行経路）。スキルを分ける軸は素材
         # ではなく技術（docs/world/Skills.md 1節）で、刃を当てて削り出す手つきは、太い枝を削る
