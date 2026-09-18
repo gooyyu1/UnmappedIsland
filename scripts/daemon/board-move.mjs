@@ -671,14 +671,14 @@ export function moves(input) {
     // **配り直す先が無いなら動かさない。** 知らない宛先も `env:` の重なりも、畳んだところで
     // 次の周は投入で止まる——空いた枠を無駄にするだけで、直るのは人が触ったとき。
     if (where === undefined || DISPATCH_TO[where] === undefined) return undefined;
-    // **回すのはクラウドのセッションだけ。** `env:` の付かない issue をブリッジで走らせる形は実在
-    // する（手元からの投入）ので、**既定の `cloud` との食い違いがそのまま当たり**、手元で
-    // 走っているワーカーが片端から畳まれてクラウドへ立て直される。
+    // **回すのは既定の環境で走っているセッションだけ**（2.16.2）。`env:` の付かない issue を
+    // ブリッジで走らせる形は実在する（手元からの投入）ので、**`DEFAULT_ENV` との食い違いがそのまま
+    // 当たり**、手元で走っているワーカーが片端から畳まれて立て直される。
     //
     // **環境を引けなかったもの（`-`）もここで外れる。** 知らないことを「違う」として読むと、
     // 正しく走っているセッションを畳む（`live-sessions.mjs` の「知らない環境は `-`」）。
-    if (session.env !== 'cloud') return undefined;
-    return where === 'cloud' ? undefined : `moved:${issue}`;
+    if (session.env !== DEFAULT_ENV) return undefined;
+    return where === session.env ? undefined : `moved:${issue}`;
   }
 
   /**
