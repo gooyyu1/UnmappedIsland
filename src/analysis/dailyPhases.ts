@@ -172,6 +172,7 @@ export const WORK_PILES: readonly WorkPile[] = [
   { system: 3, label: '製塩', amount: 3 },
   { system: 3, label: '航海ぶんを塩漬けにする', amount: 1 },
   { system: 4, label: '鉱石を掘って製錬', amount: 5 },
+  { system: 5, label: '薪棚', amount: { object: 'firewood_rack' } },
   { system: 6, label: '石鏃の槍', amount: 1 },
   { system: 6, label: '青銅の穂先', amount: 2 },
   { system: 7, label: 'なめし革の背負い袋', amount: 1 },

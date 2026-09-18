@@ -71,19 +71,27 @@ function torchBurnMinutesOf(codex: WorldCodex): number {
  * 等重みにするのは、重み0の組み合わせを作らないため。
  */
 function everyWeatherEqually(codex: WorldCodex): readonly SeasonWeatherHours[] {
-  const world = codex.objects.get(codex.objectNames.getId('world'));
-  const weatherDef = world.tryGetPropertyDef(codex.vocabulary.world.weatherId);
-  expect(weatherDef?.stages.length, 'worldが天気の段を宣言している').toBeGreaterThan(0);
-
-  const names = weatherDef!.stages.map((stage) => stage.name);
-  const durationDays = names.length;
+  const names = weatherNamesOf(codex);
   return [
     {
       seasonName: 'すべての天気',
-      durationDays,
+      durationDays: names.length,
       hoursByWeather: new Map(names.map((name) => [name, 24])),
     },
   ];
+}
+
+/** 宣言されている天気の段の名前。 */
+function weatherNamesOf(codex: WorldCodex): readonly string[] {
+  const world = codex.objects.get(codex.objectNames.getId('world'));
+  const weatherDef = world.tryGetPropertyDef(codex.vocabulary.world.weatherId);
+  expect(weatherDef?.stages.length, 'worldが天気の段を宣言している').toBeGreaterThan(0);
+  return weatherDef!.stages.map((stage) => stage.name);
+}
+
+/** その天気しか出ない季節。**どの天気が閉じているのか**を、1つずつ切り分けて見るために使う。 */
+function onlyThisWeather(weatherName: string): readonly SeasonWeatherHours[] {
+  return [{ seasonName: weatherName, durationDays: 1, hoursByWeather: new Map([[weatherName, 24]]) }];
 }
 
 describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
@@ -103,13 +111,23 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
       expect(row.travelHoursPerDay, `${where}: 移動`).toBeCloseTo(24, 6);
       expect(row.explorationHoursPerDay, `${where}: 探索`).toBeCloseTo(24, 6);
       expect(row.handworkHoursPerDay, `${where}: 手元の作業`).toBeCloseTo(24, 6);
-      // 嵐は明るさではなく風雨が止める（8.1.4節）ので、松明では埋まらない。屋根の下（浅い洞窟）
-      // だけは風雨が届かず、採取も24時間開く。
-      expect(row.gatheringHoursPerDay, `${where}: 屋外の採取`).toBeLessThanOrEqual(24 + 1e-6);
     }
+
+    // 嵐は明るさではなく風雨が止める（8.1.4節）ので、松明では埋まらない。**閉じているのが嵐の
+    // せいだ**と言うには、天気を1つずつ立てて「閉じる天気がそれだけ」を見る必要がある——どこかが
+    // 24を割ったことだけでは、暗さで閉じていても同じ結果になる。
+    const closes = weatherNamesOf(codex).filter((weatherName) =>
+      activityHoursOf(codex, onlyThisWeather(weatherName), torchEv).some(
+        (row) => row.gatheringHoursPerDay < 24 - 1e-6,
+      ),
+    );
+    expect(closes, '屋外の採取を閉じる天気').toEqual(['storm']);
+
+    // 屋根の下（浅い洞窟）だけは風雨が届かず、嵐でも採取が24時間開く。
+    const inStorm = activityHoursOf(codex, onlyThisWeather('storm'), torchEv);
     expect(
-      rows.some((row) => row.gatheringHoursPerDay < 24 - 1e-6),
-      '嵐で採取が閉じる土地が1つも無い（松明が風雨まで埋めている）',
+      inStorm.some((row) => row.gatheringHoursPerDay > 24 - 1e-6),
+      '嵐でも屋外の採取が開く土地が1つも無い（風雨の届かない土地が消えた）',
     ).toBe(true);
   });
 

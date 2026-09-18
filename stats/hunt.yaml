@@ -37,7 +37,7 @@ encounter:
   - {animal: junglefowl, weapon: spear, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
   - {animal: junglefowl, weapon: spear, escape_routes: 1, measure: turns, unit: turns, mean: 1.49, min: 1.00, median: 1.00, p95: 2.00, max: 5.00, sd: 0.68, n: 150}
   - {animal: junglefowl, weapon: spear, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
-  - {animal: monkey, weapon: sharp_stone, escape_routes: 0, measure: turns, unit: turns, mean: 5.43, min: 1.00, median: 5.00, p95: 9.00, max: 13.00, sd: 1.98, n: 150}
+  - {animal: monkey, weapon: sharp_stone, escape_routes: 0, measure: turns, unit: turns, mean: 5.42, min: 1.00, median: 5.00, p95: 9.00, max: 13.00, sd: 1.96, n: 150}
   - {animal: monkey, weapon: sharp_stone, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 1.31, min: 0.00, median: 1.00, p95: 3.00, max: 5.00, sd: 1.06, n: 150}
   - {animal: monkey, weapon: sharp_stone, escape_routes: 1, measure: turns, unit: turns, mean: 1.83, min: 1.00, median: 2.00, p95: 3.00, max: 5.00, sd: 0.85, n: 150}
   - {animal: monkey, weapon: sharp_stone, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.31, min: 0.00, median: 0.00, p95: 1.00, max: 2.00, sd: 0.51, n: 150}
@@ -49,16 +49,16 @@ encounter:
   - {animal: monkey, weapon: spear, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
   - {animal: monkey, weapon: spear, escape_routes: 1, measure: turns, unit: turns, mean: 2.01, min: 1.00, median: 2.00, p95: 4.00, max: 7.00, sd: 1.05, n: 150}
   - {animal: monkey, weapon: spear, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
-  - {animal: wild_boar, weapon: sharp_stone, escape_routes: 0, measure: turns, unit: turns, mean: 23.84, min: 1.00, median: 16.00, p95: 60.00, max: 60.00, sd: 21.58, n: 150}
-  - {animal: wild_boar, weapon: sharp_stone, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 6.19, min: 0.00, median: 5.00, p95: 13.00, max: 16.00, sd: 4.29, n: 150}
+  - {animal: wild_boar, weapon: sharp_stone, escape_routes: 0, measure: turns, unit: turns, mean: 22.88, min: 1.00, median: 15.00, p95: 60.00, max: 60.00, sd: 21.07, n: 150}
+  - {animal: wild_boar, weapon: sharp_stone, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 6.07, min: 0.00, median: 5.00, p95: 13.00, max: 16.00, sd: 4.25, n: 150}
   - {animal: wild_boar, weapon: sharp_stone, escape_routes: 1, measure: turns, unit: turns, mean: 2.88, min: 1.00, median: 3.00, p95: 5.00, max: 8.00, sd: 1.26, n: 150}
   - {animal: wild_boar, weapon: sharp_stone, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.59, min: 0.00, median: 0.00, p95: 2.00, max: 5.00, sd: 0.81, n: 150}
-  - {animal: wild_boar, weapon: stone_axe, escape_routes: 0, measure: turns, unit: turns, mean: 8.21, min: 1.00, median: 8.00, p95: 15.00, max: 19.00, sd: 3.55, n: 150}
+  - {animal: wild_boar, weapon: stone_axe, escape_routes: 0, measure: turns, unit: turns, mean: 8.25, min: 1.00, median: 8.00, p95: 15.00, max: 19.00, sd: 3.63, n: 150}
   - {animal: wild_boar, weapon: stone_axe, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 2.69, min: 0.00, median: 2.00, p95: 6.00, max: 8.00, sd: 1.68, n: 150}
   - {animal: wild_boar, weapon: stone_axe, escape_routes: 1, measure: turns, unit: turns, mean: 2.85, min: 1.00, median: 2.00, p95: 6.00, max: 10.00, sd: 1.35, n: 150}
   - {animal: wild_boar, weapon: stone_axe, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.53, min: 0.00, median: 0.00, p95: 2.00, max: 4.00, sd: 0.77, n: 150}
-  - {animal: wild_boar, weapon: spear, escape_routes: 0, measure: turns, unit: turns, mean: 6.34, min: 1.00, median: 6.00, p95: 10.00, max: 14.00, sd: 2.46, n: 150}
-  - {animal: wild_boar, weapon: spear, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.69, min: 0.00, median: 0.00, p95: 2.00, max: 4.00, sd: 0.84, n: 150}
+  - {animal: wild_boar, weapon: spear, escape_routes: 0, measure: turns, unit: turns, mean: 6.36, min: 1.00, median: 6.00, p95: 10.00, max: 18.00, sd: 2.54, n: 150}
+  - {animal: wild_boar, weapon: spear, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.71, min: 0.00, median: 0.00, p95: 2.00, max: 4.00, sd: 0.87, n: 150}
   - {animal: wild_boar, weapon: spear, escape_routes: 1, measure: turns, unit: turns, mean: 2.91, min: 1.00, median: 2.00, p95: 6.00, max: 9.00, sd: 1.37, n: 150}
   - {animal: wild_boar, weapon: spear, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.22, min: 0.00, median: 0.00, p95: 1.00, max: 3.00, sd: 0.49, n: 150}
 
@@ -90,8 +90,8 @@ ending:
   - {animal: monkey, weapon: spear, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
   - {animal: monkey, weapon: spear, escape_routes: 1, ending: felled, unit: percent, share: 51.33}
   - {animal: monkey, weapon: spear, escape_routes: 1, ending: fled, unit: percent, share: 48.67}
-  - {animal: wild_boar, weapon: sharp_stone, escape_routes: 0, ending: felled, unit: percent, share: 77.33}
-  - {animal: wild_boar, weapon: sharp_stone, escape_routes: 0, ending: undecided, unit: percent, share: 22.67}
+  - {animal: wild_boar, weapon: sharp_stone, escape_routes: 0, ending: felled, unit: percent, share: 79.33}
+  - {animal: wild_boar, weapon: sharp_stone, escape_routes: 0, ending: undecided, unit: percent, share: 20.67}
   - {animal: wild_boar, weapon: sharp_stone, escape_routes: 1, ending: felled, unit: percent, share: 12.00}
   - {animal: wild_boar, weapon: sharp_stone, escape_routes: 1, ending: fled, unit: percent, share: 88.00}
   - {animal: wild_boar, weapon: stone_axe, escape_routes: 0, ending: felled, unit: percent, share: 100.00}

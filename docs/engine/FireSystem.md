@@ -19,15 +19,15 @@
 
 | 種別 | 名前 |
 |---|---|
-| タグ | `hearth`（炉）・`fuel`（燃料）・`tinder`（火口）・`lightable`（炎を受け取りも渡しもする明かり）・`roastable`（直火に入れられる物）・`cookware`（火にかける器） |
-| スロット | `fire`（火にかけているもの） |
-| プロパティ | `fuel`（くべた薪。燃料の側では「くべると増える量」）・`heat`（火力。一番下の段が種火）・`lit`（明かりが灯っているか）・`stones`（積んだ石）・`heat_soak`（石の蓄熱。湯の側では残っている熱）・`cooking_progress`（加熱の進み）・`moisture`（火口が吸った水。名前は素焼き前の壺（`pottery.yaml`）と共有します） |
-| 型 | `campfire`（焚き火）・`three_stone_hearth`（三石のかまど）・`stone_hearth`（石囲いの炉）・`fire_drill`（火起こし具）・`burning_tinder`（火種）・`hot_stone`（焼け石）・`hot_water_liquid`（湯） |
+| タグ | `hearth`（炉）・`fuel`（燃料）・`tinder`（火口）・`lightable`（炎を受け取りも渡しもする明かり）・`roastable`（直火に入れられる物）・`cookware`（火にかける器）・`firewood`（割った薪。生木も乾いたものも） |
+| スロット | `fire`（火にかけているもの）・`woodpile`（薪棚に積んである薪） |
+| プロパティ | `fuel`（くべた薪。燃料の側では「くべると増える量」）・`heat`（火力。一番下の段が種火）・`lit`（明かりが灯っているか）・`stones`（積んだ石）・`heat_soak`（石の蓄熱。湯の側では残っている熱）・`cooking_progress`（加熱の進み）・`moisture`（火口が吸った水。名前は素焼き前の壺（`pottery.yaml`）と共有します）・`seasoning_remaining`（割った薪が乾き切るまでの残り） |
+| 型 | `campfire`（焚き火）・`three_stone_hearth`（三石のかまど）・`stone_hearth`（石囲いの炉）・`fire_drill`（火起こし具）・`burning_tinder`（火種）・`hot_stone`（焼け石）・`hot_water_liquid`（湯）・`green_firewood`（割ったばかりの薪）・`seasoned_firewood`（乾いた薪）・`firewood_rack`（薪棚） |
 
-定義は `src/assets/world-codex/fire.yaml` です。**上の表のタグが1つ増えるだけの物は、その物が元から
-定義されているファイルの側にあります**——産する土地・草木・生き物の定義にタグが付くので、在り処は
-上の表のタグと型の名前で引きます。検証は
-`tests/world-codex/fireYaml.test.ts` です。
+定義は `src/assets/world-codex/fire.yaml` と、薪の3型が `firewood.yaml`（2.5 節）です。**上の表のタグが1つ
+増えるだけの物は、その物が元から定義されているファイルの側にあります**——産する土地・草木・生き物の定義に
+タグが付くので、在り処は上の表のタグと型の名前で引きます。検証は
+`tests/world-codex/fireYaml.test.ts` と `tests/world-codex/firewoodYaml.test.ts` です。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。**本書の設計はすべて実装済み**です。数値は
 いずれも目安で、`tick` = 15 分・1 日 = 96 tick（[`DurabilitySystem.md`](./DurabilitySystem.md) 1 節）を
@@ -242,7 +242,8 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 炎に入れれば割れますが、それは炉が拒むのではなく、器の側の賭けに負けるということです。昇温の途中も
 進むことは、現実の「あぶり焚き」（水を抜きながら焼く）にあたります。
 
-燃料 1 つが持つ `fuel` の目安は次のとおりです。
+燃料 1 つが持つ `fuel` の目安は次のとおりです。**1 つあたりで見るのは、炉が受ける量がこの単位だから**
+——目方あたりに何が出るか（木の燃料の物差し）は 2.5 節が持ちます。
 
 | 燃料 | `fuel` |
 |---|---|
@@ -275,6 +276,42 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 **取り出しは起こりません。** くべた薪は炉の `fuel` へ溶けて物として残らない（2 節）ので、燃料について
 決めるのは投入だけです。枠へ入れるのにかかる時間（`put_in`、`GameElementDefinition.md` 7.10 節）は
 枠を通る物——直火で焼く物と器——への宣言で、燃料はそもそも枠を通りません。
+
+### 2.5 薪は割って乾かすと、木から取り出せる上限まで届く
+
+**燃料の率は目方あたりで見ます。** 木から取り出せるのは、いちばん良くて 20 fuel/kg——拾った太い枝
+（1kg で `fuel` 20、`locations.yaml`）と若木の棒（600g で 12、`timber.yaml`）がこの率です。**その半分に
+留まる物もあり、理由はどちらも「燃え切らない」です**——細すぎる小枝（300g で 3）は一気に燃えて熱を
+渡しきる前に終わり、伐ったばかりの丸太（20kg で 200）は水を含んだうえ、丸太のままでは空気が回りません。
+
+**割って乾かすと、丸太の側の半分が埋まります。** 丸太 1 本は 10 本の割り薪になり（`timber.yaml` の `log`
+の `split`）、薪棚に積んで乾き切ると水が抜けて目方が 4 分の 1 落ち（2.0kg → 1.5kg）、1 本の `fuel` は 20
+から 30 へ上がります（`firewood.yaml`）。10 本で 300、15kg × 20 fuel/kg で、**上限は超えません。**
+
+**割るだけでは熱は増えません。** 増えるのは形のほうです——**炉に入り切ること**（火を焚く炉の `fuel` の
+上限は丸太 1 本の 200 を下回るので、丸太をくべると入りきらない分が失われます。2 節・6 節。乾いた薪 1 本の
+30 は、いちばん小さい焚き火の上限にもそのまま入ります。受け切れるのは土器を焼く覆い焼きの炉だけで、
+そこは土器しか載りません）と、**乾かせること**（丸太のままでは中まで乾きません）。
+
+**乾かすのは棚だけの仕事です。** 薪は乾き切るまでの残り（`seasoning_remaining`）を持つだけで自分では
+進まず、棚が積んである薪を 1 tick に 1 つ進めます——炉が火にかけた物を進めるのと同じ向き（7 節）です。
+**天気も時刻も見ません**——屋根が雨を防ぎ、台が地面から離して風を通すので、日差しの当たった tick を
+数える干し場（`drying.yaml`）とはそこが違います。乾き切るのは 576 tick＝6 日で、現実の 3〜4 週を
+4 分の 1 へ縮めたものです（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md) の
+「長くかかるものだけ、現実の 4 分の 1 へ縮める」節）。
+
+**燃料 1 点あたりの手間は、割った時点で既に枝より安くなっています。** 太い枝は 25.1 分<!-- stats: balance.yaml object_costs object=thick_branch total_minutes -->で
+20（1 点 1.26 分）、割り薪は 23.2 分<!-- stats: balance.yaml object_costs object=green_firewood total_minutes -->で 20（同 1.16 分）
+——**枝の線を跨いでいるのは `split` のほうで、割るのに要るのは既に持っている斧だけ**です。**棚が買うのは
+その先**で、同じ 23.2 分<!-- stats: balance.yaml object_costs object=seasoned_firewood total_minutes -->が 30 になるので
+1 点 0.77 分、**3 分の 1 が落ちます**。**火の系統の山がこれ**です
+（[`../world/ContentSkeleton.md`](../world/ContentSkeleton.md) 4 節）。
+
+**棚 1 基（1.20 日<!-- stats: terrain.yaml work_piles pile=薪棚 days -->）の元が取れるのは、乾いた薪を 90 本ほど
+焚いたところ**です——1 本が浮かせるのは 11.6 分（30 点 ×（1.16 − 0.77））で、棚の 1,068 分をそれで割った
+数。丸太 9 本ぶん、棚は 10 本ずつ乾かすので 9 回ぶんになります。**山が支出を安くする手段だと言えるのは
+この回数までで**、1 周回（約 109 日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->）
+のうちに何度も回せる長さです。率と安さは `tests/world-codex/firewoodYaml.test.ts` が見張ります。
 
 ## 3. 種火は、火力の一番下の段
 
