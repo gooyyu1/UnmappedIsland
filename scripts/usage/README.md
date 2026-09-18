@@ -31,8 +31,11 @@ python agent_kinds.py 2026-08-25 2026-09-01   # -> stats/usage/by_agent_kind.tsv
 |---|---|
 | `by_hour.tsv` | 1時間ごとのコストと4種のトークン |
 | `by_day.tsv` | 1日ごと（UTC） |
-| `by_week.tsv` | 1週ごと。木曜16:00 UTC 始まり（`seven_day` のリセット時刻に合わせた） |
+| `by_week.tsv` | 1週ごと。木曜16:00 UTC 始まり |
 | `by_agent_kind.tsv` | 種別ごとのコスト・turn・サブエージェント按分・文脈の畳み |
+
+週の始まりを木曜16:00 UTC に置いたのは、`scripts/daemon/usage-windows.mjs` の `seven_day` の
+リセット時刻に合わせたため。
 
 種別はセッションのタグの接頭辞で決める（`task-1234` なら task）。ただし `parallel-work` は種別では
 ない——並列作業の枠組みで走った印で、司令塔にも、司令塔が投入した個別のタスクにも付く。

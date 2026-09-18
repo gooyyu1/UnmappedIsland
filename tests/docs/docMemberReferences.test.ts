@@ -133,16 +133,20 @@ function ownedHere(name: string): boolean {
 /**
  * 文書に書かれたファイル参照から、実ファイルの相対パスへ。パス全体でも名前だけでも引ける。
  * 名前が複数のファイルで重なっているものは、どれを指すか決まらないので引けない（`null`）。
+ *
+ * **候補を拡張子で絞らない**——追跡しているファイルそのものが候補で、引けたものがファイル参照。
+ * `.ts` だけで組んでいた間、`scripts/**` の `.mjs` を挙げた主張は括弧で名前を並べていても丸ごと
+ * 素通しになっていた（#2077）。**一覧で絞ると、形式が増えた日に誰も気づかないまま同じ穴が開く。**
  */
-const TS_FILE_BY_REFERENCE = new Map<string, string | null>();
-for (const path of TRACKED_PATHS.filter((path) => path.endsWith('.ts'))) {
-  TS_FILE_BY_REFERENCE.set(path, path);
+const FILE_BY_REFERENCE = new Map<string, string | null>();
+for (const path of TRACKED_PATHS) {
+  FILE_BY_REFERENCE.set(path, path);
   const name = basename(path);
-  TS_FILE_BY_REFERENCE.set(name, TS_FILE_BY_REFERENCE.has(name) ? null : path);
+  FILE_BY_REFERENCE.set(name, FILE_BY_REFERENCE.has(name) ? null : path);
 }
 
-function tsFileOf(reference: string): string | null {
-  return TS_FILE_BY_REFERENCE.get(reference) ?? TS_FILE_BY_REFERENCE.get(basename(reference)) ?? null;
+function fileOf(reference: string): string | null {
+  return FILE_BY_REFERENCE.get(reference) ?? FILE_BY_REFERENCE.get(basename(reference)) ?? null;
 }
 
 /** ファイルのどの面を見るか。`all` はコメントも含む全部、`code` はコメントを落とした残り。 */
@@ -193,21 +197,27 @@ for (const rel of SOURCES) {
  * 遅れるので、そこを証拠にすると追随漏れどうしが互いを裏書きする。
  */
 function hasMember(owner: string, member: string): boolean {
-  const file = DECLARING_FILE.get(owner) ?? tsFileOf(`${owner}.ts`);
+  const file = DECLARING_FILE.get(owner) ?? fileOf(`${owner}.ts`);
   return file === null ? appearsInCode(member) : appearsIn(file, member, 'code');
 }
 
 /** 文書がファイルと並べて挙げた名前と、その指す先。 */
 type FileMember = { readonly file: string; readonly name: string };
 
+/**
+ * ファイル参照として読む字面。**拡張子は書かない**——どれが実ファイルかは {@link fileOf} が
+ * 追跡しているファイルと突き合わせて決めるので、ここで綴りを列挙すると射程が二重になる。
+ */
+const FILE_PATH = String.raw`[\w./-]+\.\w+`;
+
 /** ファイルを単独で置いた括弧。並んでいる名前は、括弧の直前に接しているもの。 */
-const NAME_THEN_FILE = /`([^`]+)`\s*[（(]\s*`([\w./-]+\.ts)`\s*[）)]/g;
+const NAME_THEN_FILE = new RegExp(String.raw`\`([^\`]+)\`\s*[（(]\s*\`(${FILE_PATH})\`\s*[）)]`, 'g');
 /** ファイルに続けて中身を挙げる括弧。並んでいる名前は、括弧の中のもの。 */
-const FILE_THEN_NAMES = /`([\w./-]+\.ts)`\s*[（(]([^）)]*)[）)]/g;
+const FILE_THEN_NAMES = new RegExp(String.raw`\`(${FILE_PATH})\`\s*[（(]([^）)]*)[）)]`, 'g');
 /** 括弧を使わず「の」で続ける書き方（`Card.ts` の `PAPER_INSET`）。並んでいる名前は、その直後のもの。 */
-const FILE_THEN_NAME = /`([\w./-]+\.ts)`\s*の\s*`([^`]+)`/g;
+const FILE_THEN_NAME = new RegExp(String.raw`\`(${FILE_PATH})\`\s*の\s*\`([^\`]+)\``, 'g');
 /** 図の1行の末尾に、空白で切り離して置かれたファイル。並んでいる名前は、その行が呼んでいるもの。 */
-const CALL_THEN_FILE = /^(.*?\S)\s\s+([\w./-]+\.ts)\b/;
+const CALL_THEN_FILE = new RegExp(String.raw`^(.*?\S)\s\s+(${FILE_PATH})\b`);
 const QUOTED = /`([^`]+)`/g;
 const NAME = /[A-Za-z_][A-Za-z0-9_]*/;
 
@@ -235,9 +245,10 @@ function quotedName(quoted: string): string | null {
 }
 
 /** セル全体が1つのファイル参照になっているとき、その実ファイル。 */
+const CELL_IS_FILE = new RegExp(String.raw`^\s*\`(${FILE_PATH})\`\s*$`);
 function cellFile(cell: string): string | null {
-  const only = /^\s*`([\w./-]+\.ts)`\s*$/.exec(cell);
-  return only === null ? null : tsFileOf(only[1]);
+  const only = CELL_IS_FILE.exec(cell);
+  return only === null ? null : fileOf(only[1]);
 }
 
 /**
@@ -253,19 +264,19 @@ function fileMembersOn(text: string, insideFence: boolean): FileMember[] {
 
   if (insideFence) {
     const annotated = CALL_THEN_FILE.exec(text);
-    if (annotated !== null) add(tsFileOf(annotated[2]), nameIn(annotated[1]));
+    if (annotated !== null) add(fileOf(annotated[2]), nameIn(annotated[1]));
     return found;
   }
 
   for (const match of text.matchAll(NAME_THEN_FILE)) {
-    add(tsFileOf(match[2]), quotedName(match[1]));
+    add(fileOf(match[2]), quotedName(match[1]));
   }
   for (const match of text.matchAll(FILE_THEN_NAMES)) {
-    const file = tsFileOf(match[1]);
+    const file = fileOf(match[1]);
     for (const quoted of match[2].matchAll(QUOTED)) add(file, quotedName(quoted[1]));
   }
   for (const match of text.matchAll(FILE_THEN_NAME)) {
-    add(tsFileOf(match[1]), quotedName(match[2]));
+    add(fileOf(match[1]), quotedName(match[2]));
   }
 
   if (!text.trim().startsWith('|')) return found;
@@ -280,6 +291,22 @@ function fileMembersOn(text: string, insideFence: boolean): FileMember[] {
   });
   return found;
 }
+
+/** 文書が並べて書いた組と、その在り処。 */
+type Claim = FileMember & { readonly rel: string; readonly line: number };
+
+const CLAIMS: Claim[] = DOCUMENTS.flatMap((rel) => {
+  const found: Claim[] = [];
+  let insideFence = false;
+  for (const { line, text } of allLines(read(rel))) {
+    if (text.trim().startsWith('```')) {
+      insideFence = !insideFence;
+      continue;
+    }
+    for (const pair of fileMembersOn(text, insideFence)) found.push({ ...pair, rel, line });
+  }
+  return found;
+});
 
 describe('説明の参照', () => {
   it('今は無い名前を指していない', () => {
@@ -307,28 +334,26 @@ describe('説明の参照', () => {
   });
 
   it('ファイルと並べて挙げた名前が、そのファイルに在る', () => {
-    const missing: string[] = [];
-    for (const rel of DOCUMENTS) {
-      let insideFence = false;
-      for (const { line, text } of allLines(read(rel))) {
-        if (text.trim().startsWith('```')) {
-          insideFence = !insideFence;
-          continue;
-        }
-        for (const { file, name } of fileMembersOn(text, insideFence)) {
-          // **コメントも見る**——YAMLのプロパティ名（`ambient_brightness`）はそのファイルを説明する
-          // コメントにしか現れないことがあり、それでも「そのファイルが扱っている」ことに変わりはない。
-          // ここが見たいのは指す先が在るかで、名前がコードの語彙かどうかではない。
-          if (appearsIn(file, name, 'all')) continue;
-          missing.push(`${rel}:${line} ${name}（${file} に無い）`);
-        }
-      }
-    }
+    // **コメントも見る**——YAMLのプロパティ名（`ambient_brightness`）はそのファイルを説明する
+    // コメントにしか現れないことがあり、それでも「そのファイルが扱っている」ことに変わりはない。
+    // ここが見たいのは指す先が在るかで、名前がコードの語彙かどうかではない。
+    const missing = CLAIMS.filter(({ file, name }) => !appearsIn(file, name, 'all')).map(
+      ({ rel, line, file, name }) => `${rel}:${line} ${name}（${file} に無い）`,
+    );
 
     expect(
       missing,
       `文書がファイルと並べて挙げた名前が、そのファイルに無い:\n${missing.join('\n')}`,
     ).toEqual([]);
+  });
+
+  it('指し先が `.ts` だけへ戻っていない', () => {
+    // 指し先の候補を `.ts` で絞っていた間、`scripts/**` の `.mjs` を挙げた主張は、括弧で名前を
+    // 並べていても丸ごと素通しになっていた（#2077）。**戻っても、たまたま壊れた主張が書かれる日
+    // までは緑のまま**なので、候補が今も形式をまたいでいることをここで見る。
+    const extensions = new Set(CLAIMS.map(({ file }) => file.replace(/^.*\./, '')));
+    extensions.delete('ts');
+    expect([...extensions], '指し先として引けるのが `.ts` だけになっている').not.toEqual([]);
   });
 
   it('`docs/` の外の文書も、走査に入っている', () => {
