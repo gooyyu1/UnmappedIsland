@@ -4,10 +4,12 @@ import { describe, expect, it } from 'vitest';
 import { commentsOnly } from '../../scripts/codeComments.mjs';
 import { promptBodies, promptBody } from '../../scripts/daemon/prompt-body.mjs';
 import {
+  COMMENTED_EXTENSIONS,
   isMarkRuleDoc,
   isVerbatimRecord,
   trackedDocs,
   trackedFiles,
+  trackedRefSources,
 } from '../../scripts/docScope.mjs';
 import { declaresWholeDocument, WHOLE_DOCUMENT_CONFIRMED } from '../../scripts/docStatus.mjs';
 import { githubSlugs } from '../../scripts/githubSlugs.mjs';
@@ -144,15 +146,13 @@ function isOperationalDoc(rel: string): boolean {
 }
 
 /**
- * コメントの印（`//` か `#` か）を {@link commentsOnly} が知っている形式。**ここに挙がっていない
- * 形式は、コメントを持っていても読めない。** 綴りが外れても他の形式で緑になるので、実在は
- * 検査で留める。
- */
-const COMMENTED_EXTENSIONS = ['.ts', '.mts', '.mjs', '.js', '.sh', '.py', '.yaml', '.yml'];
-
-/**
- * コメントを書ける形式の、追跡しているソース全部。**節番号の参照（{@link REF_FILES}）も、
- * コメントのMarkdownリンクも、ここから絞って作る。**
+ * コメントを書ける形式の、追跡しているソース全部。**コメントのMarkdownリンクはここから絞って
+ * 作る**（節番号の参照は {@link REF_FILES}——**同じ形式の一覧から、あちらも作られる**）。
+ *
+ * **形式の一覧を持っているのは [`docScope.mjs`](../../scripts/docScope.mjs)**（`COMMENTED_EXTENSIONS`）
+ * ——{@link REF_FILES} を作る側がそこに在るので、別に持つと片方だけが新しい綴りを知らないまま緑になる。
+ * **ここに挙がっていない形式は、コメントを持っていても読めない。** 綴りが外れても他の形式で緑に
+ * なるので、実在は検査で留める。
  *
  * **在り処を列挙せず、形式で絞る**（{@link TRACKED_DOCS} と同じ理由）——フォルダと拡張子を
  * 数え上げると、**足した日にしか更新されない一覧**が射程を決めることになり、新しい置き場も
@@ -170,14 +170,11 @@ const COMMENTED_SOURCES = trackedFiles(ROOT).filter((rel) =>
 /**
  * 参照を検査する対象。ドキュメント自身と、節番号でドキュメントを指すコード・データ。
  *
- * `tools/**` の JSON はコメントを持たない（{@link COMMENTED_SOURCES} に入らない）が、宣言の値が
- * 節番号で仕様を指すので、ここには要る。
+ * **絞りは [`docScope.mjs`](../../scripts/docScope.mjs) が持つ1つ**——**指し先の中身まで読む係**
+ * （[`refAudit.mjs`](../../scripts/refAudit.mjs)）**が同じ集合から範囲を出す**ので、別に持つと、
+ * 実在は見られているのに中身は誰も読んでいない置き場が黙って生える（逆も同じ）。
  */
-const REF_FILES = [...TRACKED_DOCS, ...COMMENTED_SOURCES, ...listFiles('tools', ['.json'])].filter(
-  (rel) =>
-    !rel.startsWith(join('tests', 'docs')) && // 本テスト自身の例・正規表現は対象外
-    !isVerbatimRecord(rel),
-);
+const REF_FILES = trackedRefSources(ROOT);
 
 /**
  * コードフェンスの外の各行と、原文での行番号。`text` はインラインコードも除いた本文

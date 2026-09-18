@@ -40,6 +40,7 @@ flowchart LR
     Worker["⚙️ 作業者"]
     SelfReview["🩺 自己レビュー役"]
     Digger["⛏️ 掘り起こし役"]
+    RefAudit["🔎 参照を検める係"]
     Patrol["🔧 盤面を見回る係"]
 
     Human -->|"新しいセッションを立てて話しかける"| Adviser
@@ -51,10 +52,12 @@ flowchart LR
     Daemon -->|"着手できる kind:task があるとき"| Worker
     Daemon -->|"判定のラベルが無い緑のPRがあるとき"| Reviewer
     Daemon -->|"配れる goal:game が無いとき"| Digger
+    Daemon -->|"まだ検めていない参照があるとき"| RefAudit
     Daemon -->|"健全かどうかによらず"| Patrol
     Worker ==>|"PRを作る前に1本"| SelfReview
     Analysis ==>|"PRを作る前に1本"| SelfReview
     Trend ==>|"PRを作る前に1本"| SelfReview
+    RefAudit ==>|"PRを作る前に1本"| SelfReview
     Adviser ==>|"PRを作る前に1本"| SelfReview
 ```
 
@@ -76,6 +79,7 @@ flowchart LR
 | 📊 **分析係（一次）** | マージ済みPRのコメントに残ったスメル（[`board-design.md`](../agent-ops/board-design.md) 4.4）を拾う——書き手はレビュアーと、PRを書いた側の両方。**見るのはその回の帯だけで、過去の回の記録で傾向を探さない**（その回のスメルが名指した行を確かめるために開くのは別） | **新しい issue**（`kind:` は付けない）と、**記録のPR1本**（`agent-ops/analysis/<日付>.md`）。読んだコメントには 👀 を付ける | デーモンが [`dispatch-chore.sh`](../scripts/daemon/dispatch-chore.sh)。**読まれていないスメルがあれば立つ** | セッション |
 | 📈 **分析係（二次）** | 一次が回ごとに書いた記録を横断して読み、**複数の回に現れている形に根本対策を打つか決める**（[`board-design.md`](../agent-ops/board-design.md) 2.17.4）。PRのコメントも issue も読み直さない | **新しい issue**（`kind:` は付けない）と、**記録のPR1本**（`agent-ops/analysis/summary/<日付>.md`）。方針の文書へは書かない——畳むのは価値観を畳む係 | デーモンが [`dispatch-chore.sh`](../scripts/daemon/dispatch-chore.sh)。**二次がまだ読んでいない一次の記録があれば立つ** | セッション |
 | 🧭 **価値観を畳む係** | `agent-ops/decisions/` に溜まった判断の履歴を読み、**一般則へ畳む候補を並べる。反映はしない** | **`判断待ち` を付けた issue 1本**（リポジトリへは1行も書かない）。**その issue が二重に立っていた周は、候補を出さずにコメント1つだけ**。反映するのは、チェックが埋まった後に配られる別のセッション | デーモンが [`dispatch-chore.sh`](../scripts/daemon/dispatch-chore.sh)。**棚卸ししていない記録があれば立つ** | セッション |
+| 🔎 **参照を検める係** | 節番号の参照（[`DocumentStyle.md`](DocumentStyle.md) 5節）の**指し先に、その参照が支えている話が本当に書いてあるか**を読む。**機械が見ているのは指し先が実在するかだけ**で、中身は誰も読んでいない。**どちらが正しいかまでは決めない** | **新しい issue 1本**（その周ぶんの不一致をまとめる。`kind:` は付けない）と、**どこまで読んだかのPR1本**（[`ref-audit.md`](../agent-ops/ref-audit.md) の2行）。参照元も指し先も書き換えない——直すのは、その issue を配られたセッション | デーモンが [`dispatch-chore.sh`](../scripts/daemon/dispatch-chore.sh)。**まだ検めていない参照か、前の周から変わった参照があれば立つ** | セッション |
 | 🔧 **盤面を見回る係** | **デーモンは生きているのに盤面が進んでいない**形を拾うため、正常の定義（不変条件）に照らして盤面が健全かを毎回確かめ、崩れていれば原因を特定して直す（[`board-design.md`](../agent-ops/board-design.md) 2.21） | **`main` への直接 push**（PRにすると、詰まっている間はマージされないので直しが届かない）と、人にしか直せないときの issue、**見回りの記録**（`~/.claude/board-state/patrol.jsonl`） | デーモンが [`dispatch-chore.sh`](../scripts/daemon/dispatch-chore.sh)。**盤面の見え方によらず立つ**（**印で絞ると、印に掛からない壊れ方を拾えない**）。**このPCでしか調べられない**（`~/daemon.log`） | セッション |
 | ⚙️ **作業者** | task issue を1件実装する | PR1本 ＋ 気づいた別件の新しい issue ＋ 立てるほどではない気づきの `[スメル] ` コメント | デーモンが [`dispatch-task.sh`](../scripts/daemon/dispatch-task.sh) | セッション |
 | 🩺 **自己レビュー役** | **これから出す差分**を、レビュアーと同じ観点で読む。**直さない** | **どこにも書かない。** 指摘を受けた本人が、直すか理由を書くかして PR本文の `## 自己点検` へ載せる | **PRを出す側が誰でも**、**PRを作る前**に1本（立てられない環境では、理由を1行書いて同じ観点を自分で通す） | **PRを出す側のサブエージェント** |
