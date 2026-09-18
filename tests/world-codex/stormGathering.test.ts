@@ -38,7 +38,7 @@ describe('嵐の日は屋外の採取ができない', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(0));
+    const session = new WorldSession(codex, new World(worldInstance), fixedRng(0));
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(NOON_HOUR);
     worldInstance
       .getProperty(codex.propertyNames.getId('weather'))
@@ -106,7 +106,7 @@ describe('嵐の日は屋外の採取ができない', () => {
 
   it('探索は嵐でも進む', () => {
     const storm = noon('storm');
-    expect(new Location(storm.land, codex).explore(storm.player)).toBe(true);
+    expect(new Location(storm.land).explore(storm.player)).toBe(true);
   });
 
   it('屋根の下では風雨が止む', () => {

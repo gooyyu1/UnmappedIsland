@@ -116,7 +116,7 @@ describe('locations.yamlの土地・道定義', () => {
     // 正しく振り分けられることを、探索を回し切って確認する。
     const session = new WorldSession(codex, undefined, seededRng(7));
     const land = session.createObject(codex.objectNames.getId('grassland'));
-    const view = new Location(land, codex);
+    const view = new Location(land);
     const agent = createBrightEnoughAgent(session);
 
     // 100%到達後も探索は続けられるため、回数を数えて探索率100%で止める。
@@ -141,7 +141,7 @@ describe('locations.yamlの土地・道定義', () => {
     const session = new WorldSession(codex, undefined, seededRng(11));
     const land = session.createObject(codex.objectNames.getId('cliff_coast'));
     land.getProperty(codex.propertyNames.getId('chalice_find')).setNumberWithoutEvents(10000);
-    const view = new Location(land, codex);
+    const view = new Location(land);
     const agent = createBrightEnoughAgent(session);
 
     for (let i = 0; i < 30; i++) view.explore(agent);
@@ -158,7 +158,7 @@ describe('locations.yamlの土地・道定義', () => {
     // 実ファイルの定義だけで検証する（地形生成は使わず、道の配線はこのテストが手で行う）。
     const session = new WorldSession(codex, undefined, seededRng(42));
     const worldInstance = new WorldObject(0, def('world'), session);
-    const worldView = new World(worldInstance, codex);
+    const worldView = new World(worldInstance);
     session.adoptWorld(worldView);
     // 経過分は開始時刻（core.yamlのworld.hourの既定値）に依らず、組んだ時点からの差で見る。
     const startMinutes = worldView.totalMinutes;
@@ -187,8 +187,8 @@ describe('locations.yamlの土地・道定義', () => {
       .getProperty(codex.propertyNames.getId('destination_id'))
       .setNumberWithoutEvents(forest.instanceId);
 
-    const grasslandView = new Location(grassland, codex);
-    const pathView = new Path(pathToForest, codex);
+    const grasslandView = new Location(grassland);
+    const pathView = new Path(pathToForest);
 
     // 進捗2までは道は見つからず、未発見の道は移動アクションも成立しない（in_slot: fixtures条件）。
     expect(grasslandView.explore(character)).toBe(true);
@@ -209,7 +209,7 @@ describe('locations.yamlの土地・道定義', () => {
     expect(pathView.travel(character)).toBe(true);
 
     expect(character.parent, '移動で移動先の土地へ移る').toBe(forest);
-    expect(new Location(forest, codex).characters, '移動先ではcharactersスロットに入る').toContain(character);
+    expect(new Location(forest).characters, '移動先ではcharactersスロットに入る').toContain(character);
     expect(worldView.totalMinutes, '移動時間（travel_minutes=90分）が経過する').toBe(minutesBefore + 90);
   });
 });

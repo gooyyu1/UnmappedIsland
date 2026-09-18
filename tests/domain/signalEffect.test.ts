@@ -118,7 +118,7 @@ object_defs:
   function open(roll: number): void {
     session = new WorldSession(codex, undefined, fixedRng(roll));
     const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
-    session.adoptWorld(new World(worldInstance, codex));
+    session.adoptWorld(new World(worldInstance));
     ground = spawn('ground');
     expect(
       ground.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),

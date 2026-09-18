@@ -147,7 +147,7 @@ describe('tools.yamlの道具定義', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const worldView = new World(worldInstance, codex);
+    const worldView = new World(worldInstance);
     const session = new WorldSession(codex, worldView);
     // 経過分は開始時刻（core.yamlのworld.hourの既定値）に依らず、組んだ時点からの差で見る。
     const startMinutes = worldView.totalMinutes;
@@ -174,7 +174,7 @@ describe('tools.yamlの道具定義', () => {
         ?.tryExecute() === true,
     ).toBe(true);
 
-    const view = new Location(beach, codex);
+    const view = new Location(beach);
     expect(
       view.items.map((item) => item.def.name),
       '割られた側が尖った石へ置き換わる（槌は手元に残ったまま）',
@@ -202,7 +202,7 @@ describe('石斧を作る', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const worldView = new World(worldInstance, codex);
+    const worldView = new World(worldInstance);
     const session = new WorldSession(codex, worldView);
 
     const field = session.createObject(codex.objectNames.getId('rocky_field'));
@@ -238,7 +238,7 @@ describe('石斧を作る', () => {
     expect(tryAdvanceCrafting(wip, smith), '紐で締め上げる').toBe(true);
 
     expect(
-      new Location(field, codex).items.map((item) => item.def.name),
+      new Location(field).items.map((item) => item.def.name),
       '作りかけが石斧そのものへ置き換わる',
     ).toEqual(['stone_axe']);
   });

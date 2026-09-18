@@ -52,7 +52,7 @@ describe('道の行き先', () => {
     road(mini, here.getSlot(mini.codex.slotNames.getId('fixtures')), near.instanceId);
     road(mini, here.getSlot(mini.codex.slotNames.getId('undiscovered_fixtures')), far.instanceId);
 
-    const location = new Location(here, mini.codex);
+    const location = new Location(here);
     expect(location.discoveredPathDestinations).toEqual([near]);
     expect(location.undiscoveredPathDestinations).toEqual([far]);
   });
@@ -65,7 +65,7 @@ describe('道の行き先', () => {
     const destination = land(mini);
     road(mini, fixtures, destination.instanceId);
 
-    expect(new Location(here, mini.codex).discoveredPathDestinations).toEqual([destination]);
+    expect(new Location(here).discoveredPathDestinations).toEqual([destination]);
   });
 
   it('指す先が世界に居ない道は挙げない', () => {
@@ -74,6 +74,6 @@ describe('道の行き先', () => {
     // 世界に居ない個体を指す道。絵も名前も引けないので、挙げても呼び出し側にできることが無い。
     road(mini, here.getSlot(mini.codex.slotNames.getId('fixtures')), 9999);
 
-    expect(new Location(here, mini.codex).discoveredPathDestinations).toEqual([]);
+    expect(new Location(here).discoveredPathDestinations).toEqual([]);
   });
 });

@@ -43,7 +43,7 @@ describe('injuries.yamlの怪我', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(roll));
+    session = new WorldSession(codex, new World(worldInstance), fixedRng(roll));
     beach = spawnInto('sandy_beach', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, beach, 'characters');
     // 怪我を負う実採り（coconut.yaml）は明るさを要求する（IlluminationSystem.md 5節）。ここで
@@ -59,14 +59,14 @@ describe('injuries.yamlの怪我', () => {
 
   /** 手持ちに並ぶ物の識別子（同種のスタックは個数ぶん並べる）。 */
   function handOf(character: WorldObject): string[] {
-    return new PlayerCharacter(character, codex).handStacks.flatMap((stack) =>
+    return new PlayerCharacter(character).handStacks.flatMap((stack) =>
       stack.map((object) => object.def.name),
     );
   }
 
   /** 怪我スロットに並ぶ物の識別子（同種のスタックは個数ぶん並べる）。 */
   function injuriesOf(character: WorldObject): string[] {
-    return new PlayerCharacter(character, codex).injuryStacks.flatMap((stack) =>
+    return new PlayerCharacter(character).injuryStacks.flatMap((stack) =>
       stack.map((object) => object.def.name),
     );
   }
@@ -80,7 +80,7 @@ describe('injuries.yamlの怪我', () => {
   /** 治療具を当てる。画面のドロップと同じ経路（枠が時間を課すので、そこを通さないと値段を払わない）。 */
   function treat(injury: WorldObject, treatment: WorldObject): void {
     const slot = injury.getSlot(codex.slotNames.getId('treatment'));
-    putIntoSlot(treatment, slot, player, session, () => {
+    putIntoSlot(treatment, slot, player, () => {
       treatment.moveToSlotOrRejection(slot);
     });
   }
@@ -135,7 +135,7 @@ describe('injuries.yamlの怪我', () => {
     pickCoconut();
 
     expect(injuriesOf(player)).toEqual(['sprained_ankle']);
-    expect(new PlayerCharacter(player, codex).hand.filter((cell) => cell !== undefined)).toEqual([]);
+    expect(new PlayerCharacter(player).hand.filter((cell) => cell !== undefined)).toEqual([]);
   });
 
   it('実採りに成功した回は怪我をしない', () => {
@@ -176,7 +176,7 @@ describe('injuries.yamlの怪我', () => {
     // bound_to_owner（7.9節）。身体から離れた「捻挫」は存在しないので、どこへも移せない
     // ——手持ちや足元がinjuryタグを弾くからではなく、その物がそう在れないから。
     pickCoconut();
-    const injury = new PlayerCharacter(player, codex).injuryStacks[0][0];
+    const injury = new PlayerCharacter(player).injuryStacks[0][0];
 
     expect(injury.moveToSlotOrRejection(beach.getSlot(codex.slotNames.getId('items')))).toContain(
       '離せません',
@@ -189,7 +189,7 @@ describe('injuries.yamlの怪我', () => {
   it('傷の重さは道具の耐久度と別のプロパティで、引くほど軽い域へ移る', () => {
     // 耐久値は多いほど良い量、傷は多いほど悪い量なので、同じ語彙には載せない（InjurySystem.md 2節）。
     pickCoconut();
-    const injury = new PlayerCharacter(player, codex).injuryStacks[0][0];
+    const injury = new PlayerCharacter(player).injuryStacks[0][0];
 
     expect(injury.tryGetProperty(codex.propertyNames.getId('durability'))).toBeUndefined();
 
@@ -277,7 +277,7 @@ describe('injuries.yamlの怪我', () => {
     /** 捻挫を1つ負い、その怪我と、手持ちに持たせた包帯を返す。 */
     function injured(): { injury: WorldObject; bandage: WorldObject } {
       pickCoconut();
-      const injury = new PlayerCharacter(player, codex).injuryStacks[0][0];
+      const injury = new PlayerCharacter(player).injuryStacks[0][0];
       return { injury, bandage: spawnInto('bandage', player, 'hand') };
     }
 
@@ -307,7 +307,7 @@ describe('injuries.yamlの怪我', () => {
       // stackable: false（SlotSystem.md 4節）。束ねてしまうと代表の1つにしか治療具を当てられない。
       const { injury, bandage } = injured();
       pickCoconut();
-      const stacks = new PlayerCharacter(player, codex).injuryStacks;
+      const stacks = new PlayerCharacter(player).injuryStacks;
       expect(
         stacks.map((stack) => stack.length),
         '2つの枠に1つずつ並ぶ',
@@ -769,7 +769,7 @@ describe('injuries.yamlの怪我', () => {
       // 緩める量は押し上げている骨折が持つ（injuries.yaml）。治療具の側に「-9,000」と書いていたら、
       // 荷重を押し上げない捻挫へ当てたときに無傷より軽くなる。
       pickCoconut();
-      const { injury, splint } = splintFor(new PlayerCharacter(player, codex).injuryStacks[0][0]);
+      const { injury, splint } = splintFor(new PlayerCharacter(player).injuryStacks[0][0]);
       const before = player.tryGetProperty(loadId())?.getEffectiveValue() ?? 0;
 
       treat(injury, splint);

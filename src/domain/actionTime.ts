@@ -1,5 +1,4 @@
 import type { WorldObject } from './WorldObject';
-import type { WorldSession } from './WorldSession';
 
 /**
  * 行動にかかるゲーム内時間を進める（ActionSystem.md 実行の順序）。
@@ -15,13 +14,17 @@ import type { WorldSession } from './WorldSession';
  *
  * 戻り値は「このまま効果を適用してよいか」。falseでも時間は既に経過している（1時間かけて道具が
  * 壊れ、何も得られなかった、という結果になる）。
+ *
+ * **どの世界の時間を進めるかは参加者が答える**ので、**先頭の参加者だけは必ず居ることを型で
+ * 要求する**。役に就いていないことがありうるのは2人目以降（操作の道具・動作主、11.5節）で、
+ * 全員がundefinedの一式は、進める時計を指せない。
  */
 export function spendDurationAndReportParticipantsAlive(
   minutes: number,
-  session: WorldSession,
-  participants: readonly (WorldObject | undefined)[],
+  participants: readonly [WorldObject, ...(WorldObject | undefined)[]],
 ): boolean {
   // Worldを持たないセッション（時間の概念が無い単体テスト等）では時間を進めない。
+  const session = participants[0].session;
   const world = session.world;
   if (minutes <= 0 || world === undefined) return true;
 

@@ -105,7 +105,7 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
 
   beforeEach(() => {
     const worldInstance = new WorldObject(0, def('world'), new WorldSession(codex));
-    session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(0));
+    session = new WorldSession(codex, new World(worldInstance), fixedRng(0));
 
     jungle = spawnInto('jungle', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');
@@ -124,11 +124,11 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
   }
 
   function itemsOn(location: WorldObject): string[] {
-    return new Location(location, codex).items.map((object) => object.def.name);
+    return new Location(location).items.map((object) => object.def.name);
   }
 
   function carriedBy(character: WorldObject): string[] {
-    return new PlayerCharacter(character, codex).handStacks.flatMap((stack) =>
+    return new PlayerCharacter(character).handStacks.flatMap((stack) =>
       stack.map((object) => object.def.name),
     );
   }

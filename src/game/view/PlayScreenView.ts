@@ -499,7 +499,7 @@ export function fromGameSession(
     return name === undefined ? undefined : locale.locationName(name);
   };
 
-  const looks = cardLooksOf(codex, locale, game.world, instanceName);
+  const looks = cardLooksOf(locale, game.world, instanceName);
   const operations = cardOperationsOf(game, locale);
 
   /**
@@ -762,7 +762,7 @@ export function fromGameSession(
   ): { icon: string; name: string; art: string | undefined; kind: CardKind; road: true } | undefined => {
     if (!fixture.def.hasTag(pathTagId)) return undefined;
 
-    const path = new Path(fixture, codex);
+    const path = new Path(fixture);
     return {
       icon: LOCATION_ICON,
       name: locationNameOf(path.destinationInstanceId, path.destination?.def.name),
@@ -787,9 +787,9 @@ export function fromGameSession(
 
     const roads = new Map<string, MapRoadView>();
     for (const { site, land } of island.lands) {
-      for (const fixture of new Location(land, codex).fixtures) {
+      for (const fixture of new Location(land).fixtures) {
         if (!fixture.def.hasTag(pathTagId)) continue;
-        const destination = island.siteOf(new Path(fixture, codex).destinationInstanceId);
+        const destination = island.siteOf(new Path(fixture).destinationInstanceId);
         if (destination === undefined) continue;
         known.add(site);
         known.add(destination);
@@ -846,7 +846,7 @@ export function fromGameSession(
    * 「見張り」）で、言い換えていなければ画面の既定語（`ui_texts.exploration`）を出す。
    */
   const explorationOf = (object: WorldObject): ExplorationContent | undefined => {
-    const explorable = new Location(object, codex);
+    const explorable = new Location(object);
     if (!explorable.explorable) return undefined;
 
     const texts = locale.object(object.def.name);
@@ -884,7 +884,7 @@ export function fromGameSession(
   const nestedLocations: readonly NestedLocationView[] = nestedFixturePlacesOf(location).map((fixtures) => ({
     fixtures,
     window: windowOf(fixtures.owner),
-    explore: () => new Location(fixtures.owner, codex).explore(game.player.instance),
+    explore: () => new Location(fixtures.owner).explore(game.player.instance),
   }));
 
   /**

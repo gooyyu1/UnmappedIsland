@@ -207,8 +207,7 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
     // 生存を見るのは製作中オブジェクトだけ（actionsのselfにあたる）。これを失うと進捗の行き先も
     // 完成品の生まれる場所も無くなり、黙って何も起きない結果になる。素材は違う——経過中に失われても
     // 打ち切らない。それは開始時に済ませた在庫確認（stepIsSupplied）の再判定にあたる（同6.1節）。
-    if (!spendDurationAndReportParticipantsAlive(recipe.minutesFor(step, agent), session, [inProgress]))
-      return false;
+    if (!spendDurationAndReportParticipantsAlive(recipe.minutesFor(step, agent), [inProgress])) return false;
 
     // 消費が進捗より先なのは、進捗が上限を超えた瞬間に完成し、残っている物は親へこぼれてしまうため。
     const allocated = allocateContentsToRequirements(materialsSlotOf(inProgress)?.contents ?? [], step);

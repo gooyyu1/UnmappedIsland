@@ -58,7 +58,7 @@ describe('traps.yamlのくくり罠', () => {
   /** 草原に立つプレイヤーと、その足元へ仕掛けた罠から始める。rollがpickの引きを決める。 */
   function open(roll: number, locationName = 'grassland'): void {
     world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), new WorldSession(codex));
-    session = new WorldSession(codex, new World(world, codex), fixedRng(roll));
+    session = new WorldSession(codex, new World(world), fixedRng(roll));
     grassland = spawnInto(locationName, world, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, grassland, 'characters');
     // 掛かった獲物の解体は明るさを要求する（IlluminationSystem.md 5節）。ここで見たいのは罠なので、
@@ -449,7 +449,7 @@ describe('traps.yamlの落とし穴', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(roll));
+    session = new WorldSession(codex, new World(worldInstance), fixedRng(roll));
     forest = spawnInto('forest', worldInstance, 'locations');
     // 掘る手間そのものはレシピが持つ（最後のit）ので、ここでは掘り終えた穴から始める。
     pitfall = spawnInto('pitfall', forest, 'fixtures');

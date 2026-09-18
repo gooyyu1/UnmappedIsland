@@ -58,7 +58,7 @@ interface Island {
 function settle(): Island {
   const session = new WorldSession(codex, undefined, seededRng(1));
   const world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
-  session.adoptWorld(new World(world, codex));
+  session.adoptWorld(new World(world));
 
   const lands = [0, 1].map(() => {
     const land = session.createObject(codex.objectNames.getId('sandy_beach'));

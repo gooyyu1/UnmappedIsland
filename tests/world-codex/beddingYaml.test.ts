@@ -47,7 +47,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const session = new WorldSession(codex, new World(world, codex));
+    const session = new WorldSession(codex, new World(world));
     const land = spawnInto(session, landName, world, 'locations');
     const player = spawnInto(session, characterName, land, 'characters');
     makeBrightEnoughForAnyAction(player, codex);

@@ -156,7 +156,7 @@ class Encounter {
 
     this.session = new WorldSession(codex, undefined, rng);
     const world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), this.session);
-    this.session.adoptWorld(new World(world, codex));
+    this.session.adoptWorld(new World(world));
 
     this.jungle = this.spawnInto('jungle', world, 'locations');
     this.refuge = this.spawnInto('grassland', world, 'locations');

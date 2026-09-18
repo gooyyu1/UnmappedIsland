@@ -25,14 +25,8 @@ export class StartedGame {
    */
   readonly island: SpawnedIsland;
 
-  constructor(
-    session: WorldSession,
-    world: World,
-    player: PlayerCharacter,
-    startLocation: Location,
-    island: SpawnedIsland,
-  ) {
-    this.session = session;
+  constructor(world: World, player: PlayerCharacter, startLocation: Location, island: SpawnedIsland) {
+    this.session = world.instance.session;
     this.world = world;
     this.player = player;
     this._startLocation = startLocation;
@@ -58,7 +52,7 @@ export class StartedGame {
     );
     if (site === undefined) return false;
 
-    this._startLocation = placePlayerAt(this.session, this.island, this.player.instance, site);
+    this._startLocation = placePlayerAt(this.island, this.player.instance, site);
     return true;
   }
 }
@@ -112,18 +106,18 @@ export function startNewGame(
     codex.objects.get(codex.objectNames.getId(codex.vocabulary.world.worldObject)),
     session,
   );
-  const world = new World(worldInstance, codex);
+  const world = new World(worldInstance);
   session.adoptWorld(world);
   world.rollTimeOfDay(START_TIME_EARLIEST_MINUTES, START_TIME_LATEST_MINUTES, session.rng);
 
-  spawnSingletonsAcceptedByWorld(session, worldInstance);
+  spawnSingletonsAcceptedByWorld(worldInstance);
 
   const character = session.createObject(codex.objectNames.getId(characterDefName));
 
   const island = spawnIslandIntoWorld(session, generateIsland(codex.generation, 'island', seed));
-  const startLocation = placePlayer(session, island, character);
+  const startLocation = placePlayer(island, character);
 
-  return new StartedGame(session, world, new PlayerCharacter(character, codex), startLocation, island);
+  return new StartedGame(world, new PlayerCharacter(character), startLocation, island);
 }
 
 /**
@@ -135,7 +129,8 @@ export function startNewGame(
  * 型の名前を1つも知らない。キャラクタもsingletonだが、worldのどのスロットにも入らない（土地の
  * charactersスロットに入る物なので）ため、ここでは湧かない。
  */
-function spawnSingletonsAcceptedByWorld(session: WorldSession, worldInstance: WorldObject): void {
+function spawnSingletonsAcceptedByWorld(worldInstance: WorldObject): void {
+  const session = worldInstance.session;
   for (const globalId of session.codex.singletonGlobalIds()) {
     if (globalId === worldInstance.def.globalId) continue;
 

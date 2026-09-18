@@ -44,7 +44,7 @@ startNewGame(codex, characterDefName, seed, rng)          src/domain/generation/
   │    ├─ 5. buildPathNetwork(sites, delaunayEdges, scope, defs.axes) → IslandEdge[]  PathNetworkBuilder.ts
   │    └─ 6. assignNames(sites, rng)                         → Site.name を確定  NameAssigner.ts
   ├─ spawnIslandIntoWorld(session, map) → SpawnedIsland     → 各SiteをWorldObjectとして生成し、道も生成  IslandSpawner.ts
-  └─ placePlayer(session, island, character)                → 開始地点へキャラクタを配置、Locationを返す  IslandSpawner.ts
+  └─ placePlayer(island, character)                         → 開始地点へキャラクタを配置、Locationを返す  IslandSpawner.ts
 ```
 
 `generateIsland`（`TerrainGenerator.ts`）までは **`WorldObject` に一切触れない純粋な計算**です（`IslandMap`/`Site`/
@@ -175,7 +175,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
   3. 生成した道を「どのサイトからどのサイトへ向かう道か」で引けるように控えておき、`map.edges` を1本ずつ
      辿って両端の道へ互いの `instanceId` を `return_path_id` として書き込みます（発見が両側同時になる、
      [`ExplorationSystem.md`](./ExplorationSystem.md) 3.1 節）。
-- **`placePlayer(session, island, character)`**: 開始地点を `selectStartSite`
+- **`placePlayer(island, character)`**: 開始地点を `selectStartSite`
   （`src/domain/generation/StartSiteSelection.ts`）に選ばせ、`SpawnedIsland.landOf` でその土地を引いて、
   `characters` スロットへ `moveToSlotOrRejection` した上で
   `Location`（`src/domain/wrappers/Location.ts`）を返します。選ぶ順は

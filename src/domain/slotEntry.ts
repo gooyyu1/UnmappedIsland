@@ -1,7 +1,6 @@
 import { spendDurationAndReportParticipantsAlive } from './actionTime';
 import type { Slot } from './Slot';
 import type { WorldObject } from './WorldObject';
-import type { WorldSession } from './WorldSession';
 
 /**
  * プレイヤーの操作としてitemをownerのスロットへ入れる。枠が入れるのに時間を要求していれば
@@ -15,13 +14,7 @@ import type { WorldSession } from './WorldSession';
  * （ActionSystem.md 2節）。placeは入れ方そのもので、位置を指定する入れ方（WorldObject.moveToSlotOrRejectionのat）
  * も同じ扱いになる。
  */
-export function putIntoSlot(
-  item: WorldObject,
-  slot: Slot,
-  agent: WorldObject,
-  session: WorldSession,
-  place: () => void,
-): void {
+export function putIntoSlot(item: WorldObject, slot: Slot, agent: WorldObject, place: () => void): void {
   // 11.5節の表に並ぶ操作の1つなので、判定も分数の問い合わせも時間の経過も入れることそのものも、
   // 同じ関係を張った状態で行う。実行なので動作主も主張する（whileActing）——経過中に配られて
   // 待たされた手番は、入れ終えたこの切れ目で起きる。
@@ -30,7 +23,7 @@ export function putIntoSlot(
     if (item.rejectionForMoveTo(slot) !== undefined) return;
 
     const minutes = slot.def.putInMinutes(context.valueResolver);
-    if (!spendDurationAndReportParticipantsAlive(minutes, session, [item, slot.owner, agent])) return;
+    if (!spendDurationAndReportParticipantsAlive(minutes, [item, slot.owner, agent])) return;
 
     place();
   });

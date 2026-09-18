@@ -7,7 +7,6 @@ import type {
 import type { ObjectRefReading } from '../../domain/ObjectRef';
 import type { ObjectDef } from '../../domain/ObjectDef';
 import type { GateReading, PassivePropertyReading, PassiveReader } from '../../domain/PassiveReader';
-import type { WorldCodex } from '../../domain/WorldCodex';
 import type { WorldObject } from '../../domain/WorldObject';
 import type { World } from '../../domain/wrappers/World';
 import type { ObjectGlobalId } from '../../domain/GlobalId';
@@ -168,10 +167,8 @@ function toDays(minutes: number): number {
  * 見積もりを持たないもの——横断時間を持たない物、海にも海岸にも居ない筏——ではundefined。
  * ワールド側の宣言をひとつも持たないCodexでも、名前が引けなければ黙って見積もりを出さない。
  */
-export function voyageForecastOf(
-  codex: WorldCodex,
-  world: World,
-): (object: WorldObject) => VoyageForecast | undefined {
+export function voyageForecastOf(world: World): (object: WorldObject) => VoyageForecast | undefined {
+  const codex = world.instance.session.codex;
   const crossingId = codex.propertyNames.tryGetId(CROSSING_MINUTES);
   const sailSpeedId = codex.propertyNames.tryGetId(SAIL_SPEED);
   const zonesMinId = codex.propertyNames.tryGetId(ZONES_MIN);

@@ -2,7 +2,6 @@ import type { AlertLevel } from '../../domain/AlertLevel';
 import type { ObjectDef } from '../../domain/ObjectDef';
 import type { PropertyDef } from '../../domain/PropertyDef';
 import type { PropertyValue } from '../../domain/PropertyValue';
-import type { WorldCodex } from '../../domain/WorldCodex';
 import type { WorldObject } from '../../domain/WorldObject';
 import type { World } from '../../domain/wrappers/World';
 import { currentStep, recipeOf, stepSupplyRatio } from '../../domain/crafting';
@@ -150,11 +149,11 @@ export interface CardLooks {
  * 個体ではundefinedを返す。
  */
 export function cardLooksOf(
-  codex: WorldCodex,
   locale: Localization,
   world: World,
   instanceName: (instanceId: number) => string | undefined,
 ): CardLooks {
+  const codex = world.instance.session.codex;
   /**
    * カードの下端に積むゲージ（プロパティの`gauge`宣言、CardView.md 8節）。耐久度・炉の残り薪・
    * 残っている傷・意識・工程の進捗はすべてこの1つの経路を通る——**UI側はプロパティの名前を1つも
@@ -329,7 +328,7 @@ export function cardLooksOf(
       capacityGaugeOf(object),
     ].filter((gauge): gauge is CardGauge => gauge !== undefined);
 
-  const voyageForecast = voyageForecastOf(codex, world);
+  const voyageForecast = voyageForecastOf(world);
   /**
    * 桟へ出す1行の文字（CardView.md 16節）。今のところ出すのは筏の推定日数だけで、見積もりを持たない
    * カード——海にも海岸にも居ない筏、そもそも渡る当人でない物——では何も出ない。

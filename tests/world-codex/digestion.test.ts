@@ -224,7 +224,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
 
     /** 怪我スロットに並ぶ物の識別子（同種のスタックは個数ぶん並べる）。 */
     function injuries(): string[] {
-      return new PlayerCharacter(player, codex).injuryStacks.flatMap((stack) =>
+      return new PlayerCharacter(player).injuryStacks.flatMap((stack) =>
         stack.map((object) => object.def.name),
       );
     }
