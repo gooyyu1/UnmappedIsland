@@ -130,23 +130,31 @@ function ownedHere(name: string): boolean {
   return FILE_NAMES.has(`${name}.ts`) || new RegExp(`\\b${DECLARES}\\s+${name}\\b`).test(CODE);
 }
 
+const TRACKED = new Set(TRACKED_PATHS);
+
+/**
+ * 名前（ディレクトリを除いた最後の部分）から、それを持つ唯一のファイルへ。複数のファイルで
+ * 重なっている名前は、どれを指すか決まらないので引けない（`null`）。
+ *
+ * **パスと同じ表に入れない。** 混ぜると、リポジトリ直下のファイルは名前がパスと同じ字面なので、
+ * **自分自身と重なって必ず引けなくなる**（`CLAUDE.md`・`package.json` がその形で落ちていた）。
+ */
+const FILE_BY_NAME = new Map<string, string | null>();
+for (const path of TRACKED_PATHS) {
+  const name = basename(path);
+  FILE_BY_NAME.set(name, FILE_BY_NAME.has(name) ? null : path);
+}
+
 /**
  * 文書に書かれたファイル参照から、実ファイルの相対パスへ。パス全体でも名前だけでも引ける。
- * 名前が複数のファイルで重なっているものは、どれを指すか決まらないので引けない（`null`）。
  *
  * **候補を拡張子で絞らない**——追跡しているファイルそのものが候補で、引けたものがファイル参照。
  * `.ts` だけで組んでいた間、`scripts/**` の `.mjs` を挙げた主張は括弧で名前を並べていても丸ごと
  * 素通しになっていた（#2077）。**一覧で絞ると、形式が増えた日に誰も気づかないまま同じ穴が開く。**
  */
-const FILE_BY_REFERENCE = new Map<string, string | null>();
-for (const path of TRACKED_PATHS) {
-  FILE_BY_REFERENCE.set(path, path);
-  const name = basename(path);
-  FILE_BY_REFERENCE.set(name, FILE_BY_REFERENCE.has(name) ? null : path);
-}
-
 function fileOf(reference: string): string | null {
-  return FILE_BY_REFERENCE.get(reference) ?? FILE_BY_REFERENCE.get(basename(reference)) ?? null;
+  if (TRACKED.has(reference)) return reference;
+  return FILE_BY_NAME.get(basename(reference)) ?? null;
 }
 
 /** ファイルのどの面を見るか。`all` はコメントも含む全部、`code` はコメントを落とした残り。 */
@@ -292,22 +300,6 @@ function fileMembersOn(text: string, insideFence: boolean): FileMember[] {
   return found;
 }
 
-/** 文書が並べて書いた組と、その在り処。 */
-type Claim = FileMember & { readonly rel: string; readonly line: number };
-
-const CLAIMS: Claim[] = DOCUMENTS.flatMap((rel) => {
-  const found: Claim[] = [];
-  let insideFence = false;
-  for (const { line, text } of allLines(read(rel))) {
-    if (text.trim().startsWith('```')) {
-      insideFence = !insideFence;
-      continue;
-    }
-    for (const pair of fileMembersOn(text, insideFence)) found.push({ ...pair, rel, line });
-  }
-  return found;
-});
-
 describe('説明の参照', () => {
   it('今は無い名前を指していない', () => {
     const dangling: string[] = [];
@@ -334,12 +326,23 @@ describe('説明の参照', () => {
   });
 
   it('ファイルと並べて挙げた名前が、そのファイルに在る', () => {
-    // **コメントも見る**——YAMLのプロパティ名（`ambient_brightness`）はそのファイルを説明する
-    // コメントにしか現れないことがあり、それでも「そのファイルが扱っている」ことに変わりはない。
-    // ここが見たいのは指す先が在るかで、名前がコードの語彙かどうかではない。
-    const missing = CLAIMS.filter(({ file, name }) => !appearsIn(file, name, 'all')).map(
-      ({ rel, line, file, name }) => `${rel}:${line} ${name}（${file} に無い）`,
-    );
+    const missing: string[] = [];
+    for (const rel of DOCUMENTS) {
+      let insideFence = false;
+      for (const { line, text } of allLines(read(rel))) {
+        if (text.trim().startsWith('```')) {
+          insideFence = !insideFence;
+          continue;
+        }
+        for (const { file, name } of fileMembersOn(text, insideFence)) {
+          // **コメントも見る**——YAMLのプロパティ名（`ambient_brightness`）はそのファイルを説明する
+          // コメントにしか現れないことがあり、それでも「そのファイルが扱っている」ことに変わりはない。
+          // ここが見たいのは指す先が在るかで、名前がコードの語彙かどうかではない。
+          if (appearsIn(file, name, 'all')) continue;
+          missing.push(`${rel}:${line} ${name}（${file} に無い）`);
+        }
+      }
+    }
 
     expect(
       missing,
@@ -347,13 +350,16 @@ describe('説明の参照', () => {
     ).toEqual([]);
   });
 
-  it('指し先が `.ts` だけへ戻っていない', () => {
+  it('追跡しているファイルは、どれも指し先として引ける', () => {
     // 指し先の候補を `.ts` で絞っていた間、`scripts/**` の `.mjs` を挙げた主張は、括弧で名前を
-    // 並べていても丸ごと素通しになっていた（#2077）。**戻っても、たまたま壊れた主張が書かれる日
-    // までは緑のまま**なので、候補が今も形式をまたいでいることをここで見る。
-    const extensions = new Set(CLAIMS.map(({ file }) => file.replace(/^.*\./, '')));
-    extensions.delete('ts');
-    expect([...extensions], '指し先として引けるのが `.ts` だけになっている').not.toEqual([]);
+    // 並べていても丸ごと素通しになっていた（#2077）。**引けない先が在っても、そこを挙げた主張が
+    // 壊れる日までは緑のまま**なので、文書の中身ではなく引ける範囲そのものをここで見る。
+    const unresolved = TRACKED_PATHS.filter((path) => fileOf(path) !== path);
+
+    expect(
+      unresolved,
+      `追跡しているのに指し先として引けないファイル:\n${unresolved.join('\n')}`,
+    ).toEqual([]);
   });
 
   it('`docs/` の外の文書も、走査に入っている', () => {
