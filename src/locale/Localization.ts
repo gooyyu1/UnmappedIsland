@@ -25,9 +25,8 @@ const LOCALE_TEXTS = import.meta.glob('../assets/locale/*.yaml', {
  * LOCALE_FILEの中身。
  *
  * **生のテキストのまま返す口を公開しているのは、宣言されている識別子の集合を数える読み手のため。**
- * 節ごとの対応表のうちLocalizationが外へ出しているのはuiTextsだけで、他の節は引く口しか無い。
- * 知らない識別子は識別子のまま返るので、引くだけでは「宣言されていない」と「宣言されている」を
- * 見分けられない。
+ * Localizationは節ごとの対応表を外へ出さず、どの節も引く口しか無い。知らない識別子は識別子のまま
+ * 返るので、引くだけでは「宣言されていない」と「宣言されている」を見分けられない。
  */
 export function bundledLocaleText(): string {
   const text = LOCALE_TEXTS[`../assets/locale/${LANGUAGE}.yaml`];
@@ -40,16 +39,16 @@ export function bundledLocaleText(): string {
  * 重ねる（AssetPack.md 6.2節）。書式の誤りも識別子の重複もYamlLoadErrorのまま呼び出し側へ出す。
  */
 export function loadLocalization(packs: readonly AssetPack[]): Localization {
-  let localization = parseLocale(LOCALE_FILE, bundledLocaleText());
+  let sections = parseSections(LOCALE_FILE, bundledLocaleText());
 
   for (const pack of packs) {
     const packText = pack.localeText(LANGUAGE);
     if (packText === undefined) continue;
 
     const label = packQualifiedName(pack.name, LOCALE_FILE);
-    localization = localization.mergedWith(parseLocale(label, packText), label);
+    sections = mergedSections(sections, parseSections(label, packText), label);
   }
-  return localization;
+  return new Localization(sections);
 }
 
 /**
@@ -316,9 +315,7 @@ export class Localization {
   private readonly signals: ReadonlyMap<string, string>;
   private readonly stages: ReadonlyMap<string, string>;
   private readonly tags: ReadonlyMap<string, string>;
-
-  /** 画面の地の文（`ui_texts`）。読むのはuiText——直に引くのは、注入する側（uiTexts.ts）だけ。 */
-  readonly uiTexts: ReadonlyMap<string, string>;
+  private readonly uiTexts: ReadonlyMap<string, string>;
 
   constructor(sections: LocaleSections) {
     this.objects = sections.objects;
@@ -448,57 +445,51 @@ export class Localization {
   object(objectDefName: string): ObjectTexts {
     return new ObjectTexts(objectDefName, this.objects.get(objectDefName), this.objects.get(DEFAULT_KEY));
   }
+}
 
-  /**
-   * もう1つの対応表を重ねた対応表を返す（アセットパックのぶん、AssetPack.md）。
-   *
-   * **同じ識別子が両方にあればエラー。** 定義YAMLと同じ規則で、後勝ちの上書きは持たない
-   * （どちらの言葉が出るかが読み込み順で決まってしまう）。通し番号の書式は、相手が宣言して
-   * いればそちらを採る（既定のままなら重複ではない）。
-   */
-  mergedWith(other: Localization, label: string): Localization {
-    return new Localization({
-      objects: mergedRejectingDuplicates(this.objects, other.objects, label, 'object_texts'),
-      propertyTags: mergedRejectingDuplicates(
-        this.propertyTags,
-        other.propertyTags,
-        label,
-        'property_tag_texts',
-      ),
-      symbols: mergedRejectingDuplicates(this.symbols, other.symbols, label, 'symbol_texts'),
-      locations: mergedRejectingDuplicates(this.locations, other.locations, label, 'location_texts'),
-      reasons: mergedRejectingDuplicates(this.reasons, other.reasons, label, 'reason_texts'),
-      destroyReasons: mergedRejectingDuplicates(
-        this.destroyReasons,
-        other.destroyReasons,
-        label,
-        'destroy_reason_texts',
-      ),
-      ordinalSuffix:
-        other.ordinalSuffix === DEFAULT_ORDINAL_SUFFIX ? this.ordinalSuffix : other.ordinalSuffix,
-      slots: mergedRejectingDuplicates(this.slots, other.slots, label, 'slot_texts'),
-      signals: mergedRejectingDuplicates(this.signals, other.signals, label, 'signal_texts'),
-      stages: mergedRejectingDuplicates(this.stages, other.stages, label, 'stage_texts'),
-      uiTexts: mergedRejectingDuplicates(this.uiTexts, other.uiTexts, label, 'ui_texts'),
-      tags: mergedRejectingDuplicates(this.tags, other.tags, label, 'tag_texts'),
-    });
-  }
-
-  /** 表示文字列を1つも持たない対応表（表示文字列を必要としないテスト用）。 */
-  static empty(): Localization {
-    return new Localization({ objects: new Map() });
-  }
+/**
+ * 読んだ2枚ぶんの節を重ねる（アセットパックのぶん、AssetPack.md）。
+ *
+ * **同じ識別子が両方にあればエラー。** 定義YAMLと同じ規則で、後勝ちの上書きは持たない
+ * （どちらの言葉が出るかが読み込み順で決まってしまう）。通し番号の書式は、相手が宣言して
+ * いればそちらを採る（宣言が無ければundefinedなので、重ねても重複にはならない）。
+ */
+function mergedSections(base: LocaleSections, added: LocaleSections, label: string): LocaleSections {
+  return {
+    objects: mergedRejectingDuplicates(base.objects, added.objects, label, 'object_texts'),
+    propertyTags: mergedRejectingDuplicates(
+      base.propertyTags,
+      added.propertyTags,
+      label,
+      'property_tag_texts',
+    ),
+    symbols: mergedRejectingDuplicates(base.symbols, added.symbols, label, 'symbol_texts'),
+    locations: mergedRejectingDuplicates(base.locations, added.locations, label, 'location_texts'),
+    reasons: mergedRejectingDuplicates(base.reasons, added.reasons, label, 'reason_texts'),
+    destroyReasons: mergedRejectingDuplicates(
+      base.destroyReasons,
+      added.destroyReasons,
+      label,
+      'destroy_reason_texts',
+    ),
+    ordinalSuffix: added.ordinalSuffix ?? base.ordinalSuffix,
+    slots: mergedRejectingDuplicates(base.slots, added.slots, label, 'slot_texts'),
+    signals: mergedRejectingDuplicates(base.signals, added.signals, label, 'signal_texts'),
+    stages: mergedRejectingDuplicates(base.stages, added.stages, label, 'stage_texts'),
+    uiTexts: mergedRejectingDuplicates(base.uiTexts, added.uiTexts, label, 'ui_texts'),
+    tags: mergedRejectingDuplicates(base.tags, added.tags, label, 'tag_texts'),
+  };
 }
 
 /** 2つの節を重ねる。同じ識別子が両方にあれば、どちらが出るか決められないのでエラー。 */
 function mergedRejectingDuplicates<T>(
-  base: ReadonlyMap<string, T>,
-  added: ReadonlyMap<string, T>,
+  base: ReadonlyMap<string, T> | undefined,
+  added: ReadonlyMap<string, T> | undefined,
   label: string,
   section: string,
 ): ReadonlyMap<string, T> {
   const all = new Map(base);
-  for (const [name, value] of added) {
+  for (const [name, value] of added ?? []) {
     if (all.has(name)) throw new YamlLoadError(`${label}: ${section} の '${name}' は既に宣言されています。`);
     all.set(name, value);
   }
@@ -506,18 +497,26 @@ function mergedRejectingDuplicates<T>(
 }
 
 /**
- * 表示文字列のYAMLを読む（labelはエラーメッセージ用の出所表示）。知らない節・キーは無視するため、
- * 実装が追いつく前に節を足しても壊れない。
+ * 表示文字列のYAMLを読む（labelはエラーメッセージ用の出所表示）。
  *
  * **テキスト1枚ぶんの対応表を返す口を公開しているのは、同梱ぶんを混ぜずに読みたい読み手のため。**
  * loadLocalizationは必ず同梱ぶんから読み始めるので、「宣言していない識別子は識別子のまま返る」の
  * ように**載っていないこと**を確かめたい読み手は、そちらを通れない。
  */
 export function parseLocale(label: string, yamlText: string): Localization {
+  return new Localization(parseSections(label, yamlText));
+}
+
+/**
+ * 表示文字列のYAMLを節ごとに読む。知らない節・キーは無視するため、実装が追いつく前に節を足しても
+ * 壊れない。**通し番号の書式は、書かれていなければundefinedのまま**——重ねるとき（mergedSections）に
+ * 宣言の有無で選ぶので、既定値はLocalizationの組み立てまで入れない。
+ */
+function parseSections(label: string, yamlText: string): LocaleSections {
   const document = parseDocument(yamlText);
   if (document.errors.length > 0)
     throw new YamlLoadError(`${label}: YAML構文エラー: ${document.errors[0].message}`);
-  if (document.contents === null) return Localization.empty();
+  if (document.contents === null) return { objects: new Map() };
 
   const root = asMap(document.contents, label);
 
@@ -564,7 +563,7 @@ export function parseLocale(label: string, yamlText: string): Localization {
     }
 
   const locations = new Map<string, LocationTextsEntry>();
-  let ordinalSuffix = DEFAULT_ORDINAL_SUFFIX;
+  let ordinalSuffix: string | undefined;
   const locationSection = tryGetMap(root, 'location_texts', label);
   if (locationSection !== undefined)
     for (const [name, node] of entriesInOrder(locationSection)) {
@@ -624,7 +623,7 @@ export function parseLocale(label: string, yamlText: string): Localization {
     for (const [name, node] of entriesInOrder(uiTextSection))
       uiTexts.set(name, asScalarText(node, `${label}.ui_texts.'${name}'`));
 
-  return new Localization({
+  return {
     objects,
     propertyTags,
     symbols,
@@ -637,7 +636,7 @@ export function parseLocale(label: string, yamlText: string): Localization {
     stages,
     tags,
     uiTexts,
-  });
+  };
 }
 
 function parseEntry(node: YAMLMap, context: string): ObjectTextsEntry {

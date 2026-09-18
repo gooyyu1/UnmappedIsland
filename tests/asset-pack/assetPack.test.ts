@@ -10,6 +10,7 @@ import { artKeyIn, rebuildArtCatalog } from '../../src/art/packArt';
 import { BACKGROUND_ART } from '../../src/art/backgroundArt';
 import { ART_BY_NAME, artUrl, objectTexture } from '../../src/art/objectArt';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
+import { LocationName } from '../../src/domain/generation/IslandMap';
 import { loadDefinitions } from '../../src/loader/loadDefinitions';
 import { LoadReport } from '../../src/loader/LoadReport';
 import { loadWorldCodex } from '../../src/loader/loadWorldCodex';
@@ -181,6 +182,29 @@ describe('アセットパックを重ねた読み込み', () => {
 
     expect(locale.object('driftwood_totem').displayName).toBe('流木の像');
     expect(locale.object('coconut').displayName).toBe('熟したヤシの実');
+  });
+
+  it('通し番号の書式は、パックが宣言していればそちらを採る', async () => {
+    const locale = loadLocalization([
+      await pack('sample', [
+        { name: 'locale/ja.yaml', content: 'location_texts:\n  default:\n    ordinal_suffix: " [{n}]"\n' },
+      ]),
+    ]);
+
+    expect(locale.locationName(new LocationName('sandy_beach', undefined, 2))).toBe('砂浜 [2]');
+  });
+
+  it('通し番号の書式を宣言しないパックは、同梱の書式を消さない', async () => {
+    const locale = loadLocalization([
+      await pack('sample', [
+        {
+          name: 'locale/ja.yaml',
+          content: 'object_texts:\n  driftwood_totem:\n    display_name: 流木の像\n',
+        },
+      ]),
+    ]);
+
+    expect(locale.locationName(new LocationName('sandy_beach', undefined, 2))).toBe('砂浜（第2）');
   });
 
   it('同梱と同じ識別子の表示文字列を持つパックはエラーになる', async () => {
