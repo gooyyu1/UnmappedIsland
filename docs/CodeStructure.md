@@ -59,8 +59,7 @@ YAML・表示文字列・シナリオはすべて `src/assets/` 以下に置き�
   **値として輸入できるのは、Phaserを持ち込まない契約のモジュールに限ります**——表示物そのものを持つ
   モジュール（`ui/Card.ts`）からは型しか採れず、**値を1つ採った瞬間に
   [`tests/architecture/layers.test.ts`](../tests/architecture/layers.test.ts) が落ちます。**
-  そこから採りたい値が出たら、その契約だけを別のモジュールへ出します（`ui/cardFace.ts`・
-  `ui/cardEdges.ts`）。
+  そこから採りたい値が出たら、その契約だけを別のモジュールへ出します。
 
 ## 2. 依存の向きと、層ではないもの
 

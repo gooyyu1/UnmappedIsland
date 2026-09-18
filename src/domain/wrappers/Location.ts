@@ -89,8 +89,8 @@ export class Location extends ObjectWrapper {
   /**
    * 発見済みの道が繋がっている先の土地（道を持たない土地では空）。
    *
-   * **道かどうかも行き先も名乗るのは道自身**なので、呼び出し側は設置物からタグを見分けて
-   * 行き先を辿る手順を持たない。
+   * **道かどうかも行き先も名乗るのは道自身**（pathタグとPath）。ここへ訊けば、設置物の並びから
+   * それを見分けて辿る手順は要らない。
    */
   get discoveredPathDestinations(): readonly WorldObject[] {
     return this.destinationsOf(this.fixtures);

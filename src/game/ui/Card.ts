@@ -993,7 +993,7 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 端の操作エリア。送れる先があるかどうかで付いたり外れたりする（`PlayScene.cardEdges`）ので、
+   * 端の操作エリア。送れる先があるかどうかで付いたり外れたりする（`ShownCards.cardsOf`）ので、
    * 向きの組み合わせが変わったときだけ中身を入れ直す。押したときに何が起きるかは実行時に
    * `_content`から読む。
    */

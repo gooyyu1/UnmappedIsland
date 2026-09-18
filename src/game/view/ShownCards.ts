@@ -129,16 +129,19 @@ export class ShownCards {
   }
 
   /**
-   * そこに並ぶ札——出ている束（stacksAt）に、**その上で何ができるか**を付けたもの（空き枠は
-   * undefined、並びはstacksAtと同じ）。
+   * その並び（stacksAt）の束に、**その上で何ができるか**を付けた札（空き枠はundefined、並びは
+   * そのまま）。
+   *
+   * **場所ではなく並びを受け取る。** 枠を組む側（slotCells）は束と札を添字で突き合わせるので、
+   * 場所から2度引くと、2つの並びが一致するという規約が呼び出し側に残る。
    *
    * **移せない札にも掴む操作は付く。** 他の札へ重ねるcombinationの元にはなれるため。押したときに
    * 何が開くか・端の移動をいつ実行するかは画面が決める（CardSource.onOpenCard・onEdgeMove）。
    */
-  cardsAt(spot: CardSpot): readonly (CardContent | undefined)[] {
+  cardsOf(stacks: readonly (ObjectCardStack | undefined)[]): readonly (CardContent | undefined)[] {
     // 経過を見せている間は行動の途中の値。並びの中で揃っている値なので、札ごとに引き直さない。
     const midAction = this.source.midAction();
-    return this.stacksAt(spot).map((card) =>
+    return stacks.map((card) =>
       card === undefined
         ? undefined
         : {

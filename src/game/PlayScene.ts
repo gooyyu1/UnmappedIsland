@@ -341,7 +341,7 @@ export class PlayScene extends ResponsiveScene {
    * 開いたままにするために持つ。**
    *
    * `childWindowPlace`は**今開いているタブが映している場所**（説明のタブではundefined）。中身を
-   * 映している間は、その場所が手持ちの「隣」になる（laneCardsWithEdgeActions・stacksOf参照）。
+   * 映している間は、その場所が手持ちの「隣」になる（ShownCards.edgeTargets・stacksOf参照）。
    */
   private childWindow: ObjectWindow | undefined;
   private childWindowPlace: CardPlace | undefined;
@@ -907,10 +907,11 @@ export class PlayScene extends ResponsiveScene {
    * 絞り込みの効かない場所（手持ち・子ウィンドウ）では隠れている枚数が0になり、印も付かない。
    */
   private cellsAt(place: CardPlace): readonly LaneCell[] {
+    const stacks = this.shown.stacksAt(place);
     const cells = slotCells(
       this.view.slotViewOf(place),
-      this.shown.stacksAt(place),
-      this.shown.cardsAt(place),
+      stacks,
+      this.shown.cardsOf(stacks),
       this.emptyCellCycle,
       (objectGlobalId) => this.view.cardOfType(objectGlobalId),
     );
@@ -1295,7 +1296,7 @@ export class PlayScene extends ResponsiveScene {
     this.childWindowPlace = this.placeOfTab(this.childWindow.openedTab);
     this.rememberTab(this.childWindow.openedTab);
     this.setDragLanes();
-    // 借りた1枚がウィンドウの枠へ移り、手持ちの端が指す先も変わる（laneCardsWithEdgeActions・neighbourOf参照）。
+    // 借りた1枚がウィンドウの枠へ移り、手持ちの端が指す先も変わる（ShownCards.cardsOf・edgeTargets参照）。
     this.showView({ origins });
   }
 

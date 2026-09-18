@@ -6,6 +6,7 @@ import type { CardSpot } from '../../src/game/view/ShownCards';
 import { ShownCards } from '../../src/game/view/ShownCards';
 import type { ObjectCardStack } from '../../src/game/view/PlayScreenView';
 import type { CardCombination } from '../../src/game/view/cardOperations';
+import type { CardContent } from '../../src/game/ui/Card';
 import type { CardPlace, CardPlacement, ScreenPlace } from '../../src/game/view/cardPlaces';
 import { planMotion } from '../../src/game/view/cardMotionPlan';
 import type { ObjectGlobalId } from '../../src/domain/GlobalId';
@@ -751,17 +752,21 @@ describe('カードの端の行き先', () => {
   });
 });
 
-describe('札の上でできること（ShownCards.cardsAt）', () => {
+/** そこに並ぶ札（束と札を同じ1つの並びから作る、PlayScene.cellsAtと同じ引き方）。 */
+const cardsAt = (shown: ShownCards, spot: CardSpot): readonly (CardContent | undefined)[] =>
+  shown.cardsOf(shown.stacksAt(spot));
+
+describe('札の上でできること（ShownCards.cardsOf）', () => {
   it('出ている札は掴め、空き枠はそのまま空く', () => {
     const shown = screen({ hand: [stack(place('hand'), [1]), undefined] });
 
-    expect(shown.cardsAt(place('hand')).map((card) => card?.draggable)).toEqual([true, undefined]);
+    expect(cardsAt(shown, place('hand')).map((card) => card?.draggable)).toEqual([true, undefined]);
   });
 
   it('移せない札にも掴む操作は付く（重ねる元にはなれるため）', () => {
     // 持ち出せない設置物（dropIntoを持たない札）。
     const stuck = { ...stack(place('fixtures'), [1]), dropInto: undefined };
-    const card = screen({ fixtures: [stuck] }).cardsAt(place('fixtures'))[0];
+    const card = cardsAt(screen({ fixtures: [stuck] }), place('fixtures'))[0];
 
     expect(card?.draggable, '掴めはする').toBe(true);
     expect(card?.edges, '送り先が無いので矢印は出ない').toEqual([]);
@@ -774,8 +779,8 @@ describe('札の上でできること（ShownCards.cardsAt）', () => {
     });
 
     // 設置物の下はアイテム、手持ちの上はアイテム。どちらも反対側には行き先が無い（edgeTargets）。
-    expect(shown.cardsAt(place('fixtures'))[0]?.edges?.map((edge) => edge.direction)).toEqual(['down']);
-    expect(shown.cardsAt(place('hand'))[0]?.edges?.map((edge) => edge.direction)).toEqual(['up']);
+    expect(cardsAt(shown, place('fixtures'))[0]?.edges?.map((edge) => edge.direction)).toEqual(['down']);
+    expect(cardsAt(shown, place('hand'))[0]?.edges?.map((edge) => edge.direction)).toEqual(['up']);
   });
 
   it('押しても端を押しても、何をするかは画面が決める', () => {
@@ -783,7 +788,7 @@ describe('札の上でできること（ShownCards.cardsAt）', () => {
     const moves: Moved[] = [];
     const shown = screen({ hand: [stack(place('hand'), [1], { moves })] }, { taps });
 
-    const card = shown.cardsAt(place('hand'))[0];
+    const card = cardsAt(shown, place('hand'))[0];
     card?.onTap?.();
     card?.edges?.[0]?.onTap();
 
@@ -796,15 +801,15 @@ describe('札の上でできること（ShownCards.cardsAt）', () => {
   it('経過を見せている間は、札が行動の途中の値だと名乗る', () => {
     const lanes = { hand: [stack(place('hand'), [1])] };
 
-    expect(screen(lanes, { midAction: true }).cardsAt(place('hand'))[0]?.midAction).toBe(true);
-    expect(screen(lanes).cardsAt(place('hand'))[0]?.midAction).toBe(false);
+    expect(cardsAt(screen(lanes, { midAction: true }), place('hand'))[0]?.midAction).toBe(true);
+    expect(cardsAt(screen(lanes), place('hand'))[0]?.midAction).toBe(false);
   });
 
   it('持ち出されている札は、並び（stacksAt）と同じく出ない', () => {
     const shown = screen({ hand: [stack(place('hand'), [1, 2])] });
     borrow(shown, stack(place('hand'), [1, 2]));
 
-    expect(shown.cardsAt(place('hand')).map((card) => card?.identity)).toEqual([[2]]);
+    expect(cardsAt(shown, place('hand')).map((card) => card?.identity)).toEqual([[2]]);
   });
 });
 

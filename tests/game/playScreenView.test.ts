@@ -319,7 +319,7 @@ object_defs:
   });
 
   it('itemとfixtureを兼ねる物は、設置物レーンとアイテムレーンを行き来できる', () => {
-    // 端の▲▼が出るかは「そこへ移せるか」で決まる（PlayScene.cardEdges）ので、両方のタグを持つ
+    // 端の▲▼が出るかは「そこへ移せるか」で決まる（ShownCards.edgeMoveAction）ので、両方のタグを持つ
     // 籠は設置物レーンで▼、アイテムレーンで▲を出す。画面側に場所ごとの決まりは無い。
     const mini = setUp();
     mini.createObject('basket', mini.slot('items', mini.land));
