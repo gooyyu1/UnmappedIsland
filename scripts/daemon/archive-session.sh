@@ -6,9 +6,9 @@
 #   printf '%s\n' session_A | bash scripts/daemon/archive-session.sh --keep-untagged task-,review-
 #
 # 出力は1行1件。`ARCHIVED <ID>`、触らないと決めたものは `KEPT <ID>`、打って失敗したものは
-# `UNARCHIVED <ID>: <理由>`。このPCに worktree を持つ相手には後始末の行が続く（`REMOVED <パス>` /
-# `DIRTY <パス>: <理由>`。既に畳まれているものからも出る）。worktree の無いものが既に畳まれて
-# いたときは何も出さない。
+# `UNARCHIVED <ID>: <理由>`、素性を引けずに畳んでよいかが分からなかったものは `UNKNOWN <ID>: <理由>`。
+# このPCに worktree を持つ相手には後始末の行が続く（`REMOVED <パス>` / `DIRTY <パス>: <理由>`。
+# 既に畳まれているものからも出る）。worktree の無いものが既に畳まれていたときは何も出さない。
 # **終了コードは常に0**——呼び手（投入・マージ）の本題は別にあるので、後片付けで落とさない。
 #
 # ## 片付かなかった行は、`<タグ> <対象>: <理由>` で出す
@@ -81,12 +81,18 @@
 # ものを黙って消すより、残骸が1つ残るほうがよい。** 理由を同じ行へ載せるのは上の「片付かなかった行
 # は…」のとおりで、パスだけの行は「未コミットの変更が残っている」と読まれた（issue #1557）。
 #
-# ## 引けなかったものは畳まない
+# ## 引けなかったものは畳まない。ただし `KEPT` とは別の行で出す
 #
 # 上の「守る」条件は、どれも**引けた値**で判定する。`get_session` が引けないと全部のキーが空に
 # 落ち、**何も持たないもの**として扱われる——`--keep-untagged` を渡さない呼び手には、それがその
 # まま畳む側へ倒れる。**知らないことを、否定として読んでいる。** 畳んで消えたコメントも、消した
-# worktree も戻せないので、引けなかったものは `KEPT` として出す。守って残ったものは手で畳める。
+# worktree も戻せないので、引けなかったものには手を出さない。
+#
+# **出す行は `UNKNOWN <ID>: <理由>` で、`KEPT` ではない。** `KEPT` は**畳んではいけないと分かった**
+# ことで、盤面はそれを**同じ指紋のあいだ変わらない答え**として残し、次の周からその相手を渡さなく
+# なる（[`board-round.mjs`](board-round.mjs) の `ARCHIVE`）。引けなかった1回をそこへ混ぜると、
+# **通信が落ちたその周かぎりで、その相手が二度と畳まれなくなる。** 引けなかったのは答えではないので、
+# 次の周にもう一度引く。
 
 set -euo pipefail
 
@@ -148,21 +154,31 @@ remove_worktree() {
 
 while read -r session; do
   [ -n "$session" ] || continue
-  # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。引けないときは `grep` が
-  # 1 を返す。`pipefail` があるので、ここで止めずに空として受ける。
+  # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。引けないときは
+  # `ccr-meta.sh` が転ぶか、転ばなくても `grep` が 1 を返す。`pipefail` があるのでどちらもここで
+  # 拾えるが、**理由は標準エラーに在る**——この口は標準出力が値なので、混ぜずに受ける。
+  stderr=$(mktemp)
   info=$(printf '{"session_id":"%s"}' "$session" |
-    bash "$CCR_META" get_session | grep -o '{"ccr".*' || true)
+    bash "$CCR_META" get_session 2>"$stderr" | grep -o '{"ccr".*') || info=''
+  err=$(cat "$stderr")
+  rm -f "$stderr"
+  # 引けなかったことは、畳まなかったことと別の行で出す（上の「引けなかったものは畳まない。ただし
+  # `KEPT` とは別の行で出す」）。**何も言わずに返らなかった分も同じ行**——読む側に要るのは、状態が
+  # 分かっていないことと、打った口が言ったことの全部。
+  if [ -z "$info" ]; then
+    unfinished UNKNOWN "$session" "${err:-素性が返らなかった}"
+    continue
+  fi
   # 既に畳まれているものでも、worktree は残っていることがある。畳み直すことは無いが、後始末だけは
   # やる——**畳んだ相手を渡し直せる口はここしか無い。**
   if [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" = "SESSION_STATUS_ARCHIVED" ]; then
     remove_worktree "$session"
     continue
   fi
-  if [ -z "$info" ] ||
-    { [ -n "$KEEP_UNTAGGED" ] && ! jq -e --arg prefixes "$KEEP_UNTAGGED" \
-      '($prefixes | split(",")) as $ps
-       | any(.ccr.tags[]?; . as $t | any($ps[]; . as $p | $t | startswith($p)))' \
-      <<<"$info" >/dev/null; }; then
+  if [ -n "$KEEP_UNTAGGED" ] && ! jq -e --arg prefixes "$KEEP_UNTAGGED" \
+    '($prefixes | split(",")) as $ps
+     | any(.ccr.tags[]?; . as $t | any($ps[]; . as $p | $t | startswith($p)))' \
+    <<<"$info" >/dev/null; then
     echo "KEPT $session"
   elif err=$(printf '{"session_id":"%s"}' "$session" |
     bash "$CCR_META" archive_session 2>&1 >/dev/null); then
