@@ -30,11 +30,18 @@ const WORKTREE = 'bridge-cse_01TESTTESTTESTTESTTEST';
  */
 const REFUSAL = ['失敗: HTTP 403 Forbidden', '（資格情報を読み直す）'];
 
+/** 素性を引く口が届かなかったときの言い分。**こちらも2行**で、畳まれていることを見る。 */
+const UNREACHABLE = ['失敗: fetch failed', '（ECONNRESET）'];
+
 interface World {
   /** 既に畳まれているか。 */
   readonly archived?: boolean;
   /** `archive_session` が理由を標準エラーへ言って非0で終わるか。 */
   readonly refuses?: boolean;
+  /** `get_session` が理由を標準エラーへ言って非0で終わるか（＝素性が引けない）。 */
+  readonly unreachable?: boolean;
+  /** 素性が途中で切れて返るか（＝引けたが、JSONとして読めない）。 */
+  readonly truncated?: boolean;
   /** `session_status` と `status_bucket`。既定は手が空いている。 */
   readonly state?: readonly [string, string];
   /** 畳む相手が名乗るタグ。既定は盤面が立てたワーカー。 */
@@ -102,15 +109,24 @@ ${
     : '  exit 0'
 }
 fi
+${
+  world.unreachable === true
+    ? `printf '%s\\n' ${UNREACHABLE.map((line) => `'${line}'`).join(' ')} >&2\nexit 1`
+    : 'true'
+}
 echo '<other-session>'
-echo '${JSON.stringify({
-        ccr: {
-          session_status:
-            world.archived === true ? 'SESSION_STATUS_ARCHIVED' : (world.state?.[0] ?? 'SESSION_STATUS_IDLE'),
-          status_bucket: world.state?.[1] ?? 'SESSION_STATUS_BUCKET_READY',
-          tags: world.tags ?? ['task-1558'],
-        },
-      })}'
+echo '${((body: string) => (world.truncated === true ? body.slice(0, 20) : body))(
+        JSON.stringify({
+          ccr: {
+            session_status:
+              world.archived === true
+                ? 'SESSION_STATUS_ARCHIVED'
+                : (world.state?.[0] ?? 'SESSION_STATUS_IDLE'),
+            status_bucket: world.state?.[1] ?? 'SESSION_STATUS_BUCKET_READY',
+            tags: world.tags ?? ['task-1558'],
+          },
+        }),
+      )}'
 `,
       'utf-8',
     );
@@ -215,6 +231,31 @@ describe('archive-session.sh', () => {
 
     expect(result.text.trim()).toBe(`UNARCHIVED ${SESSION}: ${REFUSAL.join(' ')}`);
     // 畳めていないので、worktree にも手を出さない。
+    expect(result.kept).toBe(true);
+  });
+
+  // **`KEPT` は「畳んではいけない」という安定した答え**で、盤面は指紋に残して次の周からその相手を
+  // 渡さなくなる。引けなかった1回をそこへ混ぜると、通信が落ちたその周かぎりでその相手が二度と
+  // 畳まれない（issue #1865）。理由も同じ行へ載せる——**1行1件**なので、畳めていなければ理由の
+  // 続きが次の行として現れて落ちる。
+  it('素性を引けなければ、`KEPT` ではなく理由ごと1行の `UNKNOWN` を出す', () => {
+    const result = run({ unreachable: true });
+
+    expect(result.text.trim()).toBe(`UNKNOWN ${SESSION}: ${UNREACHABLE.join(' ')}`);
+    // 畳んでよいかが分からないので、セッションにも worktree にも手を出さない。
+    expect(result.archived).toBe(false);
+    expect(result.kept).toBe(true);
+  });
+
+  // **`jq` は偽でも読めなくても非0。** タグの判定（`! jq -e`）へそのまま渡すと、読めなかったぶんが
+  // 「どの接頭辞にも当たらない」＝ `KEPT` に化け、上と同じ形でその相手が二度と畳まれなくなる。
+  it('素性が途中で切れていたら、`KEPT` でも `ARCHIVED` でもなく `UNKNOWN` を出す', () => {
+    const result = run({ truncated: true, args: ['--keep-untagged', 'task-,review-'] });
+
+    expect(result.text.trim().startsWith(`UNKNOWN ${SESSION}: `)).toBe(true);
+    // 読めなかったのが `jq` であることまで読めること（理由が空の行では、次に打つ手が分からない）。
+    expect(result.text).toContain('jq');
+    expect(result.archived).toBe(false);
     expect(result.kept).toBe(true);
   });
 
