@@ -302,10 +302,11 @@ object_defs:
           - reason: too_stormy
             not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: split_minutes}
-        # **木部を断つので木材加工が伸びる**（docs/engine/SkillSystem.md 3節の実行経路）。
+        # **木部を断つので木材加工が伸びる**（docs/engine/SkillSystem.md 3節の実行経路）。配る量は
+        # split_minutesから決まるので、同じ腕を配る若木のcut_poleとは揃わない。
         add:
           agent:
-            skill_woodwork: 2
+            skill_woodwork: 1
           instrument:
             durability: -20
         # **spawnを先に書く**（broadleaf_treeのfellと同じ理由）。薪は丸太が在った所へ出る。
