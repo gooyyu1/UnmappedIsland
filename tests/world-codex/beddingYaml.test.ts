@@ -13,8 +13,9 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
  *
  * 見たいのは、**差した部品が回復量を動かすこと**（docs/world/Bedding.md 4節。段ごとのブロックが
  * 重なる形）と、**その差が頭打ちに呑まれずに観測できること**（同節。一晩ぶんが体力の上限を下回る
- * 位置に置いてある）、**支点を持たない土地ではハンモックが寝床にならないこと**（同6.1節）、それに
- * **据えたハンモックをそのまま次の土地へ持ち出しても、傷んだぶんが戻らないこと**（同6.2節）。
+ * 位置に置いてある）、**寝ている間だけ寒さの入口が段のぶん下がること**（docs/world/Bedding.md 4.2節）、
+ * **支点を持たない土地ではハンモックが寝床にならないこと**（同6.1節）、それに**据えたハンモックを
+ * そのまま次の土地へ持ち出しても、傷んだぶんが戻らないこと**（同6.2節）。
  *
  * **部品を差す前後を同じ物差しで測る。** 差しても量が動かない書き方——上積みのブロックを落とす・
  * ゲートが枠の中身を見ない——なら、2つの数が並ぶ。
@@ -27,6 +28,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
   let codex: WorldCodex;
   let staminaId: PropertyGlobalId;
   let wakefulnessId: PropertyGlobalId;
+  let warmthId: PropertyGlobalId;
 
   /** 1日のtick数（1 tick = 15分）。 */
   const TICKS_PER_DAY = 96;
@@ -35,20 +37,21 @@ describe('bedding.yamlの寝床とハンモック', () => {
     codex = bundledCodex();
     staminaId = codex.propertyNames.getId('stamina');
     wakefulnessId = codex.propertyNames.getId('wakefulness');
+    warmthId = codex.propertyNames.getId('warmth');
   });
 
   /** その土地にプレイヤーが立っている世界。 */
   function open(landName: string, characterName: string = SAMPLE_CHARACTER) {
-    const worldInstance = new WorldObject(
+    const world = new WorldObject(
       0,
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const session = new WorldSession(codex, new World(worldInstance, codex));
-    const land = spawnInto(session, landName, worldInstance, 'locations');
+    const session = new WorldSession(codex, new World(world, codex));
+    const land = spawnInto(session, landName, world, 'locations');
     const player = spawnInto(session, characterName, land, 'characters');
     makeBrightEnoughForAnyAction(player, codex);
-    return { session, world: worldInstance, land, player };
+    return { session, world, land, player };
   }
 
   function spawnInto(
@@ -229,6 +232,216 @@ describe('bedding.yamlの寝床とハンモック', () => {
     expect(restOn(slung, hammock.player, 'nap').stamina).toBe(
       restOn(framed.bed, framed.player, 'nap').stamina,
     );
+  });
+
+  describe('寝ている間だけ、寒さの入口を押し下げる（docs/world/Bedding.md 4.2節）', () => {
+    /** 何も着ていない素の寒さの入口（℃）と、いちばん深い一着の名前と押し下げ（℃）。 */
+    let bareChillPoint: number;
+    let deepestGarment: { readonly name: string; readonly drop: number };
+
+    beforeAll(() => {
+      // **どちらも書き写さずに実ファイルから引く。** 素の入口は player_character.yaml、一着ごとの
+      // 押し下げは clothing.yaml のものなので、そちらを動かせば下の各テストが落ちる——4.2節が
+      // 「いちばん深い一着より浅い」と衣類を基準に深さを決めているため、基準の側が動けば主張も動く。
+      const probe = new WorldSession(codex);
+      const chillPointId = codex.propertyNames.getId('chill_point');
+      const equippableId = codex.tagNames.getId('equippable');
+
+      /** その一着を着たキャラクタの寒さの入口（℃）。何も着せないなら素の入口。 */
+      const thresholdWearing = (garmentName?: string): number => {
+        const wearer = probe.createObject(codex.objectNames.getId(SAMPLE_CHARACTER));
+        if (garmentName !== undefined)
+          expect(
+            probe
+              .createObject(codex.objectNames.getId(garmentName))
+              .moveToSlotOrRejection(wearer.getSlot(codex.vocabulary.world.equipmentSlotId)),
+            garmentName,
+          ).toBeUndefined();
+        return wearer.getProperty(chillPointId).getEffectiveValue();
+      };
+
+      bareChillPoint = thresholdWearing();
+      deepestGarment = [...codex.objects]
+        .filter((objectDef) => !codex.isGenerated(objectDef) && objectDef.tags.includes(equippableId))
+        .map((objectDef) => ({
+          name: objectDef.name,
+          drop: bareChillPoint - thresholdWearing(objectDef.name),
+        }))
+        .reduce((best, entry) => (entry.drop > best.drop ? entry : best));
+    });
+
+    /** 眠る先の段——据える設置物と、差し込む部品（差さないならundefined）、押し下げ（℃）。 */
+    interface Tier {
+      readonly label: string;
+      readonly fixture: string;
+      readonly part: string | undefined;
+      readonly drop: number;
+    }
+
+    /**
+     * 段ごとの押し下げ。**1℃は体の下の乾いた層、もう1℃は地面から離れること**なので、層だけの敷物と
+     * 離れるだけの据えたハンモックが並び、両方を持つ寝台だけが2℃になる（docs/world/Bedding.md 4.2節）。
+     */
+    const TIERS: readonly Tier[] = [
+      { label: '敷物だけの寝床', fixture: 'bed', part: undefined, drop: 1 },
+      { label: '骨組みを差した寝台', fixture: 'bed', part: 'bed_frame', drop: 2 },
+      { label: '据えたハンモック', fixture: 'hammock', part: undefined, drop: 1 },
+    ];
+
+    /** その段の寝床を砂浜に据える。砂浜は海抜ぶんの差を持たないので、気温は空そのまま。 */
+    function layDown(tier: Tier) {
+      const { session, world, land, player } = open('sandy_beach');
+      const bed = spawnInto(session, tier.fixture, land, 'fixtures');
+      if (tier.part !== undefined) spawnInto(session, tier.part, bed, 'structure');
+      return { session, world, bed, player };
+    }
+
+    /** いちばん深い一着を着せる。寝床の押し下げはこれと加算で重なる（docs/world/Bedding.md 4.2節）。 */
+    function wearDeepestGarment(session: WorldSession, player: WorldObject): void {
+      const garment = session.createObject(codex.objectNames.getId(deepestGarment.name));
+      expect(
+        garment.moveToSlotOrRejection(player.getSlot(codex.vocabulary.world.equipmentSlotId)),
+        deepestGarment.name,
+      ).toBeUndefined();
+    }
+
+    /** その段の寝床で眠っている間、押し下げた先とちょうど釣り合う気温（℃）。 */
+    function balancedTemperature(tier: Tier): number {
+      return bareChillPoint - deepestGarment.drop - tier.drop;
+    }
+
+    /**
+     * 気温へ寄与する段を、通しの睡眠を終えるまで乗り換わらない位置へ置く（core.yaml）。**跨ぐと
+     * 眠っている途中で気温が動いて、据えた大小が入れ替わる。**
+     *
+     * 動く段は2つ。**日射の帯**（`ambient_brightness`）は夜が18時から翌6時まで続くので、20時から
+     * 6時間眠っても出ない。**季節の貯水池**（`thermal_level`）は`calm`で毎tick下がり、既定値から
+     * 睡眠2回ぶんで`mild`の下限を割るので、**下限へ張り付ける**——`cool`の底なら減っても
+     * クランプで動かず、乾季の向きへ振れても1季節ぶん登るまで帯を出ない。
+     */
+    function setNightSky(world: WorldObject): void {
+      world.getProperty(codex.propertyNames.getId('hour')).setNumber(20);
+      const thermalLevel = world.getProperty(codex.propertyNames.getId('thermal_level'));
+      thermalLevel.setNumber(thermalLevel.def.range?.min ?? 0);
+      expect(
+        world.getProperty(codex.propertyNames.getId('ambient_brightness')).isInStage('dark'),
+        '20時の空が夜の帯にある',
+      ).toBe(true);
+    }
+
+    /**
+     * 空の気温をその摂氏へ据える。**実体値ではなく実効値で合わせる**——worldのambient_temperatureには
+     * 日射と季節の段がmodifyで乗る（core.yaml）ので、書いた値がそのまま気温になるとは限らない。
+     *
+     * **合わせるのは据えた時点の実効値だけ**なので、寄与する段が乗り換わらないことは`setNightSky`が
+     * 先に担保する。
+     */
+    function setSkyTemperature(world: WorldObject, celsius: number): void {
+      setNightSky(world);
+      const temperature = world.getProperty(codex.propertyNames.getId('ambient_temperature'));
+      temperature.setNumber(celsius);
+      temperature.setNumber(celsius - (temperature.getEffectiveValue() - celsius));
+      expect(temperature.getEffectiveValue(), `空を${celsius}℃にする`).toBe(celsius);
+    }
+
+    /** 満タンだと戻りが頭打ちに掛かるので、熱を半分にしてから測る。 */
+    function halveWarmth(player: WorldObject): number {
+      const warmth = player.getProperty(warmthId);
+      warmth.setNumber((warmth.def.range?.max ?? 0) / 2);
+      return warmth.number;
+    }
+
+    /**
+     * その休息を1回取る間に動いた熱（kcal）。押し下げが効くのはこの間だけ。
+     *
+     * **経過の前後で気温が動いていないことを確かめる。** 動いていれば、測った熱は「据えた気温での
+     * 増減」ではなく途中で気温が変わったものの混ざりもので、釣り合いを見たことにならない
+     * （`setNightSky` が担保している側）。
+     */
+    function warmthWhileResting(
+      world: WorldObject,
+      bed: WorldObject,
+      player: WorldObject,
+      actionName: string,
+    ): number {
+      const temperature = world.getProperty(codex.propertyNames.getId('ambient_temperature'));
+      const celsius = temperature.getEffectiveValue();
+      const before = halveWarmth(player);
+
+      expect(bed.tryGetAction(actionName, player)?.tryExecute(), actionName).toBe(true);
+
+      expect(temperature.getEffectiveValue(), `${actionName}の間、空は${celsius}℃のまま`).toBe(celsius);
+
+      return player.getProperty(warmthId).number - before;
+    }
+
+    /** 眠らずに1 tick置いたときに動いた熱（kcal）。 */
+    function warmthWhileAwake(player: WorldObject): number {
+      const before = halveWarmth(player);
+
+      player.tick();
+
+      return player.getProperty(warmthId).number - before;
+    }
+
+    it.each(TIERS)('$label で眠っている間だけ、寒さの入口が$drop℃下がる', (tier) => {
+      const { session, world, bed, player } = layDown(tier);
+      wearDeepestGarment(session, player);
+      const balanced = balancedTemperature(tier);
+
+      // 起きている間は寝床の押し下げが乗らないので、押し下げた先の気温で削られる。**据えた寝床の
+      // 傍に立っているだけでは効かない**ことが、ここで分かれる。
+      setSkyTemperature(world, balanced);
+      expect(warmthWhileAwake(player), `${balanced}℃では起きていると削られる`).toBeLessThan(0);
+
+      // 眠っている間は乗るので、ちょうど釣り合って戻る（境目以上は戻り、VitalsSystem.md 8.4節）。
+      expect(warmthWhileResting(world, bed, player, 'sleep'), `${balanced}℃では眠れば戻る`).toBeGreaterThan(
+        0,
+      );
+
+      // 1℃下は押し下げた先の下なので、眠っても削られる。深さを増やせばここが落ちる。
+      setSkyTemperature(world, balanced - 1);
+      expect(
+        warmthWhileResting(world, bed, player, 'sleep'),
+        `${balanced - 1}℃では眠っても削られる`,
+      ).toBeLessThan(0);
+    });
+
+    it.each(TIERS)('$label は、仮眠でも通しの睡眠と同じだけ押し下げる', (tier) => {
+      // docs/world/Bedding.md 4.2節。**押し下げは境目への寄与なので、長さに比例しない**——同じ夜で
+      // 仮眠と睡眠のどちらを取っても、削られるか戻るかは同じに決まる。
+      //
+      // **両側を見る。** 釣り合う気温で戻ることだけを見ると、仮眠の側を深くしても落ちない。
+      const { session, world, bed, player } = layDown(tier);
+      wearDeepestGarment(session, player);
+      const balanced = balancedTemperature(tier);
+
+      setSkyTemperature(world, balanced);
+      expect(warmthWhileResting(world, bed, player, 'nap'), `${balanced}℃では戻る`).toBeGreaterThan(0);
+
+      setSkyTemperature(world, balanced - 1);
+      expect(warmthWhileResting(world, bed, player, 'nap'), `${balanced - 1}℃では削られる`).toBeLessThan(0);
+    });
+
+    it('いちばん深い段でも、いちばん深い一着より浅い', () => {
+      // 同4.2節。**南国の寝床で効く分の大半は保温ではない**（同2節）ので、寝床は保温の主役に
+      // ならない位置に留める——衣類の側を寝床より浅くすれば、ここが落ちる。
+      const deepestTier = TIERS.reduce((best, tier) => (tier.drop > best.drop ? tier : best));
+
+      expect(deepestTier.drop, deepestTier.label).toBeLessThan(deepestGarment.drop);
+    });
+
+    it.each(TIERS)('$label でも、一着も持たずに空がいちばん冷える夜は越せない', (tier) => {
+      // 同4.2節。**押し下げが浅いのは、南国の寝床で効く分の大半が保温ではないため**（同2節）
+      // ——寝床は衣類や火の代わりにはならず、その上へ段のぶんを足すだけ。
+      const { world, bed, player } = layDown(tier);
+
+      // 涼しい季節の夜。**気温は書き写さずにcore.yamlから引く**ので、季節や日射の寄与を動かせば
+      // ここを読む側が落ちる。
+      setNightSky(world);
+
+      expect(warmthWhileResting(world, bed, player, 'sleep')).toBeLessThan(0);
+    });
   });
 
   it('支点の無い土地では、据えても寝床にならない', () => {

@@ -1074,7 +1074,6 @@
         }
       },
       "required": [
-        "requires",
         "duration"
       ],
       "additionalProperties": false

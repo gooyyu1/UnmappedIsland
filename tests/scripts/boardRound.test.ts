@@ -24,6 +24,8 @@ interface Session {
   readonly tags: readonly string[];
   /** どこで走っているか（`cloud` / `bridge`）。この周の一覧へそのまま載る。 */
   readonly env?: string;
+  /** 走る者が一度でも付いたか（`live-sessions.mjs` の `served`）。同じく一覧へ載る。 */
+  readonly served?: boolean;
 }
 
 interface World {
@@ -72,6 +74,8 @@ interface World {
   readonly fails?: readonly string[];
   /** **人が手綱で止めている**として返す打ち手（終了コード3。`brake.sh`）。 */
   readonly braked?: readonly string[];
+  /** **使用量の余力が足りない**として返す打ち手（終了コード4。`headroom.sh`）。 */
+  readonly held?: readonly string[];
   /** 後片付けが終了コード2（残りがある）で返る周。 */
   readonly leftover?: boolean;
   readonly ghFails?: boolean;
@@ -241,6 +245,7 @@ function playRound(world: World = {}): Result {
       calls.push([name, ...args].join(' '));
       if ((world.fails ?? []).includes(name)) return { status: 1, stdout: '' };
       if ((world.braked ?? []).includes(name)) return { status: 3, stdout: '' };
+      if ((world.held ?? []).includes(name)) return { status: 4, stdout: '' };
       if (name === 'tidy-merged-pr.sh' && world.leftover === true) return { status: 2, stdout: '' };
       // 畳んでよいかの判定は持たない（それは `archive-session.sh` の仕事）。渡された相手について、
       // 決めた行を1本返すだけ。
@@ -395,6 +400,12 @@ describe('board-round.mjs', () => {
     const braked = playRound({ prs: [pr(10)], braked: ['dispatch-review.sh'] });
     expect(braked.log).toContain('打てなかった: REVIEW 10（転んだのではない）');
     expect(braked.unreadable).toBeUndefined();
+
+    // **使用量の余力で止まった周も、直す相手が居ない**（`headroom.sh`。2.5.1）——枠が明ければ
+    // ひとりでに戻るので、見回る係が調べに行く先ではない。
+    const held = playRound({ prs: [pr(10)], held: ['dispatch-review.sh'] });
+    expect(held.log).toContain('打てなかった: REVIEW 10（転んだのではない）');
+    expect(held.unreadable).toBeUndefined();
   });
 
   // **見回る係は、盤面の見え方によらず立つ**（2.21.2）。打つところまでを1周として留める
@@ -774,11 +785,12 @@ describe('board-round.mjs', () => {
             bucket: 'B',
             tags: ['task-1', 'review-2'],
             env: 'cloud',
+            served: true,
           },
         ],
       });
 
-      expect(result.liveTsv).toBe('session_a\tSESSION_STATUS_RUNNING\tB\ttask-1,review-2\tcloud\n');
+      expect(result.liveTsv).toBe('session_a\tSESSION_STATUS_RUNNING\tB\ttask-1,review-2\tcloud\tserved\n');
       for (const env of result.envs) expect(env?.LIVE_SESSIONS_TSV).toMatch(/live-sessions\.tsv$/);
     });
 

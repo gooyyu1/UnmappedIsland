@@ -2513,7 +2513,9 @@ object_defs:
 ### 13.1 steps / requires
 
 - レシピは 1 つ以上の**工程（`steps`）**からなります。
-- 各工程は 1 つ以上の**素材または道具**を要求します（`requires`）。素材（`consume: true`）は消費され、道具
+- 各工程は**素材または道具**を要求できます（`requires`）。**1 つも要求しない工程も書けます**——1 つの工程が
+  1 時間を超えられない（[`ActionSystem.md`](./ActionSystem.md) 6.3 節）ので、長い仕事では素材を入れ終えた
+  後も工程が続きます。要求を無理に散らすと、その工程で実際に使う物とずれます。素材（`consume: true`）は消費され、道具
   （`consume: false`）は消耗しますが消費はされません。
 - 各工程には**仕事の量（`duration`）**が、それを素人が片付けるのにかかるゲーム内時間（分）として定義されます。
   **リテラル数値だけ**で、`{prop: ...}` 参照は書けません——進捗の上限がこの合計なので（`RecipeSystem.md` 1 節）、
@@ -2531,9 +2533,9 @@ recipes:
   sewn:
     steps:
       - requires:
-          - {object: rawhide, count: 6, consume: true}
+          - {object: rawhide, count: 2, consume: true}
           - {tag: sewing_tool, consume: false}
-        duration: 300
+        duration: 60
 ```
 
 **1 つの物が 2 つの要求を同時には満たしません。** タグで書くと、1 つの物が複数の要求に当てはまり

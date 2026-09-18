@@ -7,6 +7,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { makeBrightEnoughForAnyAction } from '../support/illumination';
 
 /**
  * 土地が空の気温へ足す海抜ぶんの差（[`docs/engine/ClimateSystem.md`](../../docs/engine/ClimateSystem.md)
@@ -210,6 +211,79 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
       // 次の土地へ移る前に脱ぐ。
       expect(deeper.moveToSlotOrRejection(player.getSlot(handId))).toBeUndefined();
     }
+  });
+
+  /**
+   * いちばん深い一着を着せる（押し下げがいちばん大きい＝入口がいちばん低い一着）。**寝床の押し下げは
+   * これと加算で重なる**（docs/world/Bedding.md 4.2節）ので、寝床が伸ばす先はここから測る。
+   */
+  function wearDeepestGarment(): string {
+    const thresholds = garmentThresholds();
+    const deepest = thresholds[thresholds.length - 1];
+    expect(
+      spawn(deepest.name).moveToSlotOrRejection(player.getSlot(codex.vocabulary.world.equipmentSlotId)),
+      deepest.name,
+    ).toBeUndefined();
+
+    return deepest.name;
+  }
+
+  /**
+   * その土地に骨組みを差した寝台を据え、涼しい季節の夜に1回眠る間に動いた熱（kcal）。満タンだと
+   * 戻りが頭打ちに掛かるので半分から測る。
+   *
+   * **測るのは仮眠。** 通しの睡眠（6時間）は0時から始めると日射の帯を跨いで気温が動く（`core.yaml` の
+   * `ambient_brightness` の段）。押し下げは境目への寄与で長さに比例しないので、削られるか戻るかは
+   * どちらでも同じに決まる（`bedding.yaml` は nap と sleep へ同じ量を書く）。
+   */
+  function warmthWhileSleepingIn(landName: string): number {
+    coolSeasonSky(0, 'dark');
+    standIn(landName);
+    makeBrightEnoughForAnyAction(player, codex);
+
+    const bed = spawn('bed');
+    expect(
+      bed.moveToSlotOrRejection(lands.get(landName)!.getSlot(codex.slotNames.getId('fixtures'))),
+      landName,
+    ).toBeUndefined();
+    expect(
+      spawn('bed_frame').moveToSlotOrRejection(bed.getSlot(codex.slotNames.getId('structure'))),
+      landName,
+    ).toBeUndefined();
+
+    const warmth = property(player, 'warmth');
+    warmth.setNumber((warmth.def.range?.max ?? 0) / 2);
+    const before = warmth.number;
+    const celsius = temperatureAt(landName);
+
+    expect(bed.tryGetAction('nap', player)?.tryExecute(), landName).toBe(true);
+
+    // **眠っている間に気温が動いていないことを確かめる。** 動いていれば、測った熱は据えた気温での
+    // 増減ではなく混ざりもので、釣り合いを見たことにならない（涼しい季節の下限へ張り付けているので
+    // 季節の段は動かず、夜の帯は翌6時まで続く）。
+    expect(temperatureAt(landName), `眠っている間、${landName}は${celsius}℃のまま`).toBe(celsius);
+
+    return warmth.number - before;
+  }
+
+  it('いちばん深い一着と骨組みを差した寝台で越せないのは、最も寒い土地の夜だけ', () => {
+    // docs/world/Bedding.md 4.2節。衣類だけで釣り合うのは海沿いの夜まで（SurvivalItems.md 5.1節）で、
+    // そこから上へ登れるかは寝床の段が決める。**最も寒い土地の夜はどの段でも越せない**——そこに
+    // 残るのは火（FireSystem.md 9.2節の炉の暖）。
+    coolSeasonSky(0, 'dark');
+    const byCold = [...lands.keys()].sort((left, right) => temperatureAt(left) - temperatureAt(right));
+    const coldest = byCold[0];
+    const nextColdest = byCold.find((name) => temperatureAt(name) > temperatureAt(coldest))!;
+    const garment = wearDeepestGarment();
+
+    expect(
+      warmthWhileSleepingIn(nextColdest),
+      `${garment}を着て寝台で眠れば${nextColdest}の夜は越せる`,
+    ).toBeGreaterThan(0);
+    expect(
+      warmthWhileSleepingIn(coldest),
+      `${garment}を着て寝台で眠っても${coldest}の夜は越せない`,
+    ).toBeLessThan(0);
   });
 
   it('素のままでも晴れた日中に熱は戻る——山頂を除く', () => {

@@ -44,12 +44,9 @@ raw=$(bash "$HERE/usage.sh") || case "$?" in
   exit 1
   ;;
 esac
-usage=$(printf '%s\n' "$raw" | grep '^five_hour ') || {
-  echo "使用量を引けなかった" >&2
-  exit 1
-}
-usage="${usage//$'\r'/}"
-read -r _ utilization _ <<<"$usage"
+# **行の読み分けはここでしない。** 枠の名前と読み方を持つのは
+# [`usage-windows.mjs`](usage-windows.mjs) で、ここはそれをそのまま下へ渡す——**枠を1つ増やすたびに
+# ここも直す形にすると、直し忘れた枠が黙って落ちる。**
 
 live=$(CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}" bash "$HERE/live-sessions.sh") || {
   echo "セッションの一覧を引けなかった" >&2
@@ -57,9 +54,9 @@ live=$(CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}" bash "$HERE/live-
 }
 
 # TSVをそのままJSONへ。**日本語は載らない**（IDとタグだけ）ので、ここは変数で通してよい。
-printf '%s' "$live" | jq -R -s --arg u "$utilization" \
+printf '%s' "$live" | jq -R -s --arg usage "$raw" \
   --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{
-    utilization: ($u | tonumber),
+    usage: $usage,
     now: $now,
     live: (split("\n") | map(select(length > 0)) | map(split("\t") | {
       id: .[0],
