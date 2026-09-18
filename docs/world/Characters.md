@@ -94,7 +94,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   持たせない**——キャラクタが違っても、飲んだ水1mLの意味が変わってはならないため。持ちの差は
   `max`（＝体が抱える水の量）で表す。液体の mL からの換算は飲用側の宣言が持つ（`transfer` の
   `to_amount`、[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5節）。
-  脱水はそのまま死に至るため、致命的域（`fatal`）を持つ唯一のステータス。尽きた段の名前は
+  脱水はそのまま死に至るため、致命的域（`fatal`）を持つ。尽きた段の名前は
   **`dehydrated`**。
   `min: max` の段 **`full`**（満水ちょうど）を持ち、名前を固定する——液体の `drink` がこの名前で
   「もう飲めない」を見る（[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5節）。
