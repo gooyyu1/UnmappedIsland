@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# 使用量を引いて行で出す。**読むだけ。**
+# 使用量を引いて行で出す。**この口の外は書き換えない。**
 #
 #   $ bash scripts/daemon/usage.sh
 #   five_hour 9 2026-09-04T20:10:00.441803+00:00 -
 #   seven_day 14 2026-09-10T15:59:59.441827+00:00 -
+#
+#   $ bash scripts/daemon/usage.sh --last   # 最後に引けた行を、口を叩かずに読み直す
 #
 # 1行が `<枠> <utilization> <resets_at> <locked_reason>`。`locked_reason` が無いときは `-`。
 # **引けなかったときは標準出力へ何も出さずに1で終わる**ので、呼び手は終了コードだけで止まる側へ
@@ -22,14 +24,30 @@
 # 見送るのか、報せるのか**を選べるようにするため——分けないと、待つだけの周まで異常として並び、
 # 本物の失敗が埋もれる（35秒ごとに叩いていた頃、ログの半分がこれだった）。
 #
+# ## 毎周値が要る側のために、引けた行を控える（`--last`）
+#
+# **叩ける間隔より短い周期で値が要る呼び手が居る**——投入の関門（[`headroom.sh`](headroom.sh)）は
+# 1周（35秒）のうちに答えなければならない。その呼び手に毎周叩かせると、**2分に1回しか答えが出ない
+# うえ、割り当ての側（[`usage-record.sh`](usage-record.sh)）の番を奪う**（間隔は1つしか無い）。
+# **控えが無い・古い周にあちらが自分で1回叩くのは別の話**——そこは控えが在れば通らない経路で、
+# 判断はあちらが持つ。
+#
+# **控えを持つのはここ。** 「値が何秒で古くなるか」は叩ける間隔から出るので、この口の性質
+# （`CLAUDE.md`「自分のことは自分でする」）。`--last` は控えを出し、**`USAGE_MAX_AGE_SECONDS` より
+# 古ければ何も出さずに1**で終わる——**古い値で投入を通すと、上限に当たってから気づく。**
+# 既定の30分は、引けた回が10回ほど続けて途切れた長さ。
+#
+# **控えるのは引けた行だけで、叩いた印（`usage-polled`）とは別の話。** 引けなかった回に控えを
+# 書き換えると、**「引けなかった」が「余力が在る」として読まれる。**
+#
 # ## `limits[].severity` は出さない
 #
 # 基盤の出す段階は「どれだけ使ったか」を粗く言うだけで、**こちらが知りたい「あと1本投入して
 # よいか」には答えない**（[`board-design.md`](../../agent-ops/board-design.md) 2.5.1）。要るのは残量
 # そのものではなく**残量と1本あたりの消費の比較**なので、比較は呼び手が自分の計測でする。
 #
-# 応答には他にも枠が並ぶ（`seven_day_opus` など）が、**手綱が見るのはこの2つだけ。** 増やすなら
-# 2.5.2 の側を先に決める。
+# 応答には他にも枠が並ぶ（`seven_day_opus` など）。**どの枠を出すかと、行をどう読むかは
+# [`usage-windows.mjs`](usage-windows.mjs) が持つ。**
 #
 # ## トークンは呼ぶたびに読み直す
 #
@@ -41,13 +59,39 @@ set -euo pipefail
 
 STATE_DIR="${BOARD_STATE:-$HOME/.claude/board-state}"
 POLLED="$STATE_DIR/usage-polled"
+# 控えの1行目は引けた時刻（エポック秒）、2行目から枠の行。**時刻を別のファイルにしない**
+# ——2つに分けると、片方だけ書けた回に「新しい印の付いた古い値」ができる。
+LATEST="$STATE_DIR/usage-latest"
 # 実測が2分ほどなので、余裕を1周ぶん足す。**詰めても得は無い**——欲しいのは全体の増分で、
 # 粗く測っても総和は変わらない（`board-design.md` 2.5.3「間隔は粗くてよい」）。
 USAGE_MIN_SECONDS="${USAGE_MIN_SECONDS:-180}"
+USAGE_MAX_AGE_SECONDS="${USAGE_MAX_AGE_SECONDS:-1800}"
 
 # 時刻を取るのも、前に叩いた時刻を読むのも、bash の中で閉じる（`%(…)T` と `$(<…)`）。
 # **見送る周のほうが多い**ので、そこは外部プロセス0個で返る。
 printf -v now '%(%s)T' -1
+
+if [ "${1:-}" = '--last' ]; then
+  if [ ! -f "$LATEST" ]; then
+    echo "使用量をまだ一度も引けていない" >&2
+    exit 1
+  fi
+  mapfile -t cached <"$LATEST"
+  read_at="${cached[0]:-}"
+  # **控えが壊れていたら古いのと同じ扱い。** 読めない値を0として比べると、**0秒前に引けた**ことに
+  # なる書き方（`((now - 読めない))` が0を返す形）へ落ちうる。
+  if [[ ! "$read_at" =~ ^[0-9]+$ ]]; then
+    echo "控えた使用量が読めない: $LATEST" >&2
+    exit 1
+  fi
+  if ((now - read_at > USAGE_MAX_AGE_SECONDS)); then
+    echo "最後に引けた使用量が古い（$((now - read_at))秒前）" >&2
+    exit 1
+  fi
+  printf '%s\n' "${cached[@]:1}"
+  exit 0
+fi
+
 if [ -f "$POLLED" ] && ((now - $(<"$POLLED") < USAGE_MIN_SECONDS)); then exit 2; fi
 
 [ -d "$STATE_DIR" ] || mkdir -p "$STATE_DIR"
@@ -65,4 +109,7 @@ printf '%s\n' "$now" >"$POLLED"
 HERE="${BASH_SOURCE[0]%/*}"
 if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
 
-exec node "$HERE/usage.mjs"
+# **控えを書くのは、引けたときだけ。** `set -e` が効くので、node が落ちればここへ来ない。
+lines=$(node "$HERE/usage.mjs")
+printf '%s\n%s\n' "$now" "$lines" >"$LATEST"
+printf '%s\n' "$lines"

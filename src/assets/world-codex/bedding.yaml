@@ -91,11 +91,21 @@ object_defs:
       # containers.yaml）で、腕が0でも組めて、上げた者だけが速くなる。
       lashed:
         deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
+        # **工程は1時間ずつ**（docs/engine/ActionSystem.md 6.3節）。材料は、その工程で実際に使うものへ
+        # 割り当ててある。
         steps:
+          # 杭を4本打つ。
           - requires:
-              - {object: thick_branch, count: 6, consume: true}
+              - {object: thick_branch, count: 4, consume: true}
+            duration: 60
+          # 縦材を渡す。
+          - requires:
+              - {object: thick_branch, count: 2, consume: true}
+            duration: 60
+          # 簀の子を縛る。
+          - requires:
               - {object: cord, count: 3, consume: true}
-            duration: 180
+            duration: 60
 
   # ハンモックの網。紐を編んだだけの物で、木材はゼロ。巻いて持ち歩ける
   # （docs/world/Bedding.md 6節）。
@@ -131,9 +141,14 @@ object_defs:
       knotted:
         deftness: {skill: skill_cordage, from_stage: expert, minutes: -15}
         steps:
+          # 縦糸を張る。
           - requires:
-              - {object: cord, count: 5, consume: true}
-            duration: 120
+              - {object: cord, count: 3, consume: true}
+            duration: 60
+          # 目を結んでいく。
+          - requires:
+              - {object: cord, count: 2, consume: true}
+            duration: 60
 
   # 吊ったハンモック。**伸ばしろを持たない**ので、寝床と違って段のブロックは1つだけ。
   slung_hammock:

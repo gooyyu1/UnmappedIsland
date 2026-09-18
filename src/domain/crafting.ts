@@ -3,6 +3,7 @@ import type { RecipeDef, RecipeStepDef } from './RecipeDef';
 import { spendDurationAndReportParticipantsAlive } from './actionTime';
 import { InteractionRelation } from './ReferenceRoot';
 import type { Slot } from './Slot';
+import type { TypeMatchRule } from './TypeMatchRule';
 import type { WorldObject } from './WorldObject';
 import type { ObjectGlobalId } from './GlobalId';
 
@@ -52,28 +53,45 @@ export function currentStep(recipe: RecipeDef, progress: number): RecipeStepDef 
  * 「あといくつ要る」も、この表だけで答えられる。
  */
 export function remainingRequirements(recipe: RecipeDef, progress: number): readonly RecipeRequirementDef[] {
-  const remaining = new Map<string, RecipeRequirementDef>();
+  const remaining = new Map<string, MergedRequirement>();
   let consumed = 0;
   for (const step of recipe.steps) {
     consumed += step.durationMinutes;
     if (progress >= consumed) continue;
     for (const requirement of step.requirements) {
-      const merged = remaining.get(requirement.match.key);
-      // 同じ指定を複数の工程が要求するなら、枠は1つで足りるので数だけ足し合わせる。
-      // どれか1つでも消費するなら素材として扱う（枠に残しておく理由が消えないため）。
-      remaining.set(
-        requirement.match.key,
-        merged === undefined
-          ? requirement
-          : new RecipeRequirementDef(
-              requirement.match,
-              merged.count + requirement.count,
-              merged.consume || requirement.consume,
-            ),
-      );
+      // 同じ指定を複数の工程が要求するなら、枠は1つで足りるので数だけまとめる（mergeRequirement）。
+      const merged = remaining.get(requirement.match.key) ?? {
+        match: requirement.match,
+        consumed: 0,
+        held: 0,
+      };
+      remaining.set(requirement.match.key, mergeRequirement(merged, requirement));
     }
   }
-  return [...remaining.values()];
+  return [...remaining.values()].map(
+    (merged) => new RecipeRequirementDef(merged.match, merged.consumed + merged.held, merged.consumed > 0),
+  );
+}
+
+/** 同じ指定への要求を、消費されるぶんと手元に居続けるぶんに分けて数えた途中経過。 */
+interface MergedRequirement {
+  readonly match: TypeMatchRule;
+
+  /** 素材（`consume: true`）として要求されている数の合計。工程ごとに無くなるので足し合わせる。 */
+  readonly consumed: number;
+
+  /**
+   * 道具（`consume: false`）として要求されている数のうち最も多いもの。**足し合わせない**——
+   * 道具は工程を跨いで同じ1つが働くので、いくつの工程が要求しても要る数は増えない。足すと、
+   * 削り続ける工程の数だけ刃物を集めさせることになる（自動補充も同じ数を引き寄せる、autoFill）。
+   */
+  readonly held: number;
+}
+
+function mergeRequirement(merged: MergedRequirement, requirement: RecipeRequirementDef): MergedRequirement {
+  return requirement.consume
+    ? { ...merged, consumed: merged.consumed + requirement.count }
+    : { ...merged, held: Math.max(merged.held, requirement.count) };
 }
 
 /**
