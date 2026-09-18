@@ -461,7 +461,7 @@ traits:
         # 狩猟の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。**pickの外に置く**ので、外した回も同じだけ伸びる
         # ——腕が上がるのは獲物が獲れたからではなく、その場に立って手を出したからなので。
-        add: {agent: {skill_hunting: 2}}
+        add: {agent: {skill_hunting: 1}}
         pick:
           # 打ち砕いた回。柄の遠心力が乗る武器（石斧）だけが引く。当たれば中型はその場で崩れ落ちる
           # （VitalsSystem.md 5節 決着は死ではなく気絶で付く）。
@@ -652,8 +652,9 @@ object_defs:
         duration: {prop: butcher_minutes}
         # 皮革の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。**なめしへ移るのは獣に刃を入れて分ける手つき**（腕を
-        # 切る軸は素材ではなく転移する技術、Skills.md 1節）なので、獣の大小によらず、生皮の採れない
-        # 獲物の解体でも同じだけ伸ばす。
+        # 切る軸は素材ではなく転移する技術、Skills.md 1節）なので、生皮の採れない獲物の解体でも
+        # 同じ腕が伸びる。**量が獣ごとに違うのは大小のためではなく、刃を入れている時間が違うから**
+        # ——どの獣を解体しても、時間あたりの伸びは同じ（SkillSystem.md 3節）。
         #
         # **余分の卓は持たない**（他の獣の死体も同じ）。出る物の数は上の内訳が決めていて、腕で増やすと
         # 体より多く取れる（docs/world/Skills.md 7節）。
@@ -1077,7 +1078,7 @@ object_defs:
           - reason: too_stormy
             not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: butcher_minutes}
-        add: {agent: {skill_leatherwork: 2}}
+        add: {agent: {skill_leatherwork: 1}}
         destroy: self
         spawn:
           - {object: raw_meat}
