@@ -70,7 +70,7 @@ object_defs:
     passives:
       - modify:
           ancestor:
-            comfort: 16
+            comfort: 15
     recipes:
       lashed:
         deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
@@ -134,7 +134,7 @@ object_defs:
     passives:
       - modify:
           ancestor:
-            comfort: 24
+            comfort: 20
     recipes:
       hollowed:
         # くり抜きも皮張りも同じ1つの手際で縮む（名乗れるのは1つ、

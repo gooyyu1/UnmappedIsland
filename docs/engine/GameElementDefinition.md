@@ -2606,8 +2606,9 @@ crafting_conditions:
 どちらも省略でき、省けばそのレシピに腕は効きません。
 
 ```yaml
+# braided / braided_cord は世界に無い。`surplus` を宣言できるレシピが1つも無いため（下の注記）。
 recipes:
-  knotted:
+  braided:
     conditions:
       - {subject: agent, prop: skill_cordage, in_stage_or_above: basic}
     deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
@@ -2617,8 +2618,11 @@ recipes:
     surplus:
       - {weight: 100}
       - weight: {subject: agent, prop: cordage_thrift}
-        spawn: {object: snare, into: agent}
+        spawn: {object: braided_cord, into: agent}
 ```
+
+**`surplus` の例は文法の形だけで、世界に使い手は居ません。** 成果物は 1 つなので、余分を 1 つ足せば
+必ず倍になり、内容の側が置いた上限（[`Skills.md`](../world/Skills.md) 7.2 節）に収まらないためです。
 
 - **`deftness`（手際）** は、**どの腕が・どの段から・何分縮めるか**の宣言です。作り手の `skill` が
   `from_stage` 以上なら、工程1つの分数から `minutes` ぶんが引かれます。**`minutes` は負の値**

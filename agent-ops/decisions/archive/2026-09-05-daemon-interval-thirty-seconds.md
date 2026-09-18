@@ -10,4 +10,4 @@ context: デーモンに `stop`/`start`/`restart` を持たせている最中に
 ## エージェントの解釈
 
 - デーモンの `INTERVAL` の既定を180秒から30秒へ。以前の「人が見ていない処理は分の単位」
-  （[[polling-interval-when-unattended]]）を、この盤面については覆す。
+  （[[2026-09-05-polling-interval-when-unattended]]）を、この盤面については覆す。

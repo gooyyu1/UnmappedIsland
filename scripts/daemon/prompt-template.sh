@@ -5,6 +5,7 @@
 #   # shellcheck source=scripts/daemon/prompt-template.sh
 #   source "$(dirname "${BASH_SOURCE[0]}")/prompt-template.sh"
 #   template_body "$PROMPT" "$WORK/prompt.md"
+#   template_body "$PROMPT" "$WORK/prompt.md" mend   # `## mend` 節の中の囲みだけを見る
 #   template_title "$PROMPT" "$WORK/title.txt"
 #
 # **ひな形は手で書き写さない**——書き写すと必ず何かが落ちる（2026-08-27 に「PRを見張らない」の一文が
@@ -16,13 +17,19 @@
 # （[`.claude/ccr-meta.sh`](../../.claude/ccr-meta.sh)「指示は Write で書く」）。**文字化けは考えなくて
 # よい**（node は argv も環境変数も標準入力もUTF-8で受ける。2026-09-05 にコードページ932のまま実測）。
 
-# ひな形（`$1`）の囲みの中身を `$2` へ取り出す。**どこまでが本体かを決めるのは
-# [`prompt-body.mjs`](prompt-body.mjs)**——ここと、節を引ける範囲を見るドキュメントの検査が、同じ
-# ものを本体と呼ぶ。ここが持つのは、空で渡さないための関門だけ。
+# ひな形（`$1`）の囲みの中身を `$2` へ取り出す。**`$3` に節の名前を渡すと、その `## <名前>` より後
+# だけを見る**——理由ごとに本文を持つひな形（[`resume-prompt.md`](../../agent-ops/prompts/resume-prompt.md)）
+# が、同じ取り出しに乗る。
+#
+# **どこまでが本体かを決めるのは [`prompt-body.mjs`](prompt-body.mjs)**——ここと、節を引ける範囲を
+# 見るドキュメントの検査が、同じものを本体と呼ぶ。ここが持つのは、空で渡さないための関門だけ。
+# **閉じ忘れた囲みも空になって、この関門に掛かる**（あちらが閉じの行を見つけたときしか返さない）。
 template_body() {
-  node "$(dirname "${BASH_SOURCE[0]}")/prompt-body.mjs" "$1" >"$2"
+  local where=''
+  [ "$#" -lt 3 ] || where="の「## $3」節"
+  node "$(dirname "${BASH_SOURCE[0]}")/prompt-body.mjs" "$1" "${@:3}" >"$2"
   [ -s "$2" ] || {
-    echo "ひな形から囲みの中身を取り出せない: $1" >&2
+    echo "ひな形${where}から囲みの中身を取り出せない（囲みが無いか、閉じていない）: $1" >&2
     return 1
   }
 }

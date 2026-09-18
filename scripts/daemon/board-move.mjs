@@ -307,8 +307,9 @@ const CYCLES = [
     // **週1回。** 履歴が増えるのはユーザーと直接話したときだけで、**束ねるには溜まっている必要が
     // ある**（`.claude/skills/policy-review/SKILL.md`「棚卸しの手順」——孤立した1件は抽出しない）。
     hours: 168,
-    // クラウドで足りる。**既存 issue の本文は書き換えない**——出すのは新しい issue 1本だけで、
-    // リポジトリへは1行も書かない（`agent-ops/prompts/policy-cycle-prompt.md`）。
+    // クラウドで足りる。**既存 issue の本文は書き換えない**——出すのは新しい issue 1本と、諾否が
+    // 二重に立っていた周のコメント1つだけで、リポジトリへは1行も書かない
+    // （`agent-ops/prompts/policy-cycle-prompt.md`）。
     env: 'cloud',
     prompt: 'agent-ops/prompts/policy-cycle-prompt.md',
     due: (board) => (board.pendingDecisions ?? 0) > 0,
