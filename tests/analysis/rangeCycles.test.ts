@@ -266,6 +266,70 @@ object_defs:
       - conditions: [{prop: heat, in_stage: hot}]
         add: {parent: {ambient_temperature: 2}}
 
+  # 日向の石。**上向きの組と下向きの組が両方並ぶ**——日差しで温まり、雨で冷める。生まれた時点の熱
+  # （90）は暖める段（warm、40〜70）の上端より上で、そこへ入るのは雨で冷めてからになる。上端より
+  # 上に在る値を「上へ抜けた」と読むと、生まれた瞬間に窓が閉じて、暖める押し手が丸ごと消える
+  # ——その段へ入るのはこれからで、いつ入るかは効き始めの側が答える。
+  sunning_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 90
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 40}
+          - {name: searing, min: 70}
+        passives:
+          - conditions: [{subject: ancestor, prop: ambient_brightness, gte: 14}]
+            add: {self: {heat: 2}}
+          - conditions: [{subject: ancestor, prop: wetness, gte: 1}]
+            add: {self: {heat: -1}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 炉に埋めた石。**上向きの組しか無く、段を決して跨がない値**——焼かれ続けるので熱は上がる一方で、
+  # 生まれた時点で既に暖める段（warm）より上に在る。上がっていくのだからwarmへ入ることは無く、この
+  # 押し手は起こらない。上へ抜けたことにしないだけだと、効き始めが「届くまでが読めない段」の側へ
+  # 倒れて、最初のtickから止まらずに暖める押し手として数えられる。
+  banked_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 90
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 40}
+          - {name: searing, min: 70}
+        passives:
+          - add: {self: {heat: 1}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 灰を被せた石。**上端より上に在るが、動きが読めないだけ**——冷めるのは段の下に置かれた増減
+  # （8.2節）で、そこはtickAmountsOfが数から外している。上がっていくとは読めていないのだから、
+  # warmへ入らないことにしてはならない。炉の火力と同じで、いつ入るかが読めない段は「最初のtickから
+  # 効く」側へ倒す。
+  ashed_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 90
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 40}
+          - name: searing
+            min: 70
+            passives:
+              - add: {self: {heat: -1}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
   # 凍傷。**受け皿の段（6.4節）に居ることを求める押し手**——巡りが鈍っている間、持ち主の熱を奪う。
   # 巡りは落ちる一方だが、受け皿には下端が無いので、下端まで落ちても段は外れない。
   frostbite:
@@ -675,6 +739,30 @@ object_defs:
     // 別々の個体の長さになる。
     expect(externalDeltasOf('kiln_stone', 'ambient_temperature')).toEqual([
       { amounts: [2], ticksUntilStart: 21, ticksUntilStop: 61 },
+    ]);
+  });
+
+  it('生まれた時点で段の上端より上に在る値は、上へ抜けたことにならない', () => {
+    // 上向きの組（日差しの+2）が1つでも在ると、90を「warmの上端70を上へ抜けた」と読んで止まるまでが
+    // 0になり、効き始め（上から落ちて入るまで）に追い越されて押し手が丸ごと消える。実際に起こるのは、
+    // 雨で冷めて上端70を割る21 tick目から、下端40を割る51 tick目まで。
+    expect(externalDeltasOf('sunning_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 21, ticksUntilStop: 51 },
+    ]);
+  });
+
+  it('上がっていく値が段の上端より上に生まれていれば、その段に縛られた押し手は起こらない', () => {
+    // 上へ抜けたことにしないだけだと、効き始めが0＝最初のtickから止まらずに効く押し手になる。
+    // その値はwarmを決して跨がないので、起こるのは押し手が消えることのほう。
+    expect(externalDeltasOf('banked_stone', 'ambient_temperature')).toEqual([]);
+  });
+
+  it('上端より上に在っても、上がっていくと読めていない値は、入らないことにしない', () => {
+    // 冷めるのは段の下に置かれた増減なので、tickAmountsOfはどちらの向きの動きも読めない。炉の火力と
+    // 同じく、届くまでが読めない段は「最初のtickから効く」側へ倒す——ここで入らないことにすると、
+    // 読めない段に縛られた押し手が向きを問わず消える。
+    expect(externalDeltasOf('ashed_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
     ]);
   });
 
