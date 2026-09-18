@@ -66,6 +66,51 @@ const BEAST_FINDS: readonly (readonly [string, string, string])[] = [
 /** 1回の探索で新しく見つかった物（object_def名 → 個数）。 */
 type Finding = ReadonlyMap<string, number>;
 
+/** 1回の探索の結果。見つかった物と、探索した人の腕がその回に伸びた分。 */
+interface ExploreTrial {
+  readonly finding: Finding;
+  readonly skillGain: number;
+}
+
+/**
+ * 発見の契機（docs/engine/SkillSystem.md 3.3節）。その型が見つかった探索でだけ、その腕が伸びる。
+ *
+ * **土地は、その腕の契機を引ける1つを選べばよい**——契機がどの土地にも残ることは
+ * `tests/world-codex/skillsYaml.test.ts` が島を生成して見張る。ここで問うのは、書いた`add`が探索した
+ * 人へ本当に届いているかのほう。
+ */
+const DISCOVERY_GRANTS: readonly {
+  readonly land: string;
+  readonly skill: string;
+  readonly types: readonly string[];
+  /** 獣を止めて数えるか（獣が出くわす相手そのものである狩猟では止められない）。 */
+  readonly silenceBeasts: boolean;
+  readonly trials: number;
+}[] = [
+  { land: 'wasteland', skill: 'skill_knapping', types: ['stone'], silenceBeasts: true, trials: TRIALS },
+  {
+    land: 'jungle',
+    skill: 'skill_cordage',
+    types: ['palm_tree', 'coconut', 'abaca', 'banana_plant'],
+    silenceBeasts: true,
+    trials: TRIALS,
+  },
+  {
+    land: 'jungle',
+    skill: 'skill_woodwork',
+    types: ['broadleaf_tree', 'sapling'],
+    silenceBeasts: true,
+    trials: TRIALS,
+  },
+  {
+    land: 'forest',
+    skill: 'skill_hunting',
+    types: ['rat', 'monkey', 'wild_boar'],
+    silenceBeasts: false,
+    trials: BEAST_TRIALS,
+  },
+];
+
 describe('探索で見つかる物', () => {
   let codex: WorldCodex;
 
@@ -86,6 +131,20 @@ describe('探索で見つかる物', () => {
     trials: number = TRIALS,
     huntingSkill = 0,
   ): Finding[] {
+    return trialsOf(landName, props, trials, huntingSkill).map((trial) => trial.finding);
+  }
+
+  /**
+   * {@link findingsOf} と同じ探索を回し、見つかった物に加えて、探索した人の腕がその回に伸びた分も返す。
+   * `watchedSkill` を渡さない限り伸びは常に0（腕を読まないだけで、探索の回し方は変わらない）。
+   */
+  function trialsOf(
+    landName: string,
+    props: ReadonlyMap<PropertyGlobalId, number> = new Map(),
+    trials: number = TRIALS,
+    huntingSkill = 0,
+    watchedSkill?: string,
+  ): ExploreTrial[] {
     const session = new WorldSession(codex);
     const worldInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), session);
     const worldView = new World(worldInstance, codex);
@@ -106,15 +165,24 @@ describe('探索で見つかる物', () => {
     // **見つかった物は、個数の差ではなく個体で数える**——置かれた物は腐って消える（食べ物の
     // durability、DurabilitySystem.md 3節）ので、消えた数と見つかった数が打ち消し合うと、
     // 見つかっているのに0個に見える。
-    const findings: Finding[] = [];
+    const watched =
+      watchedSkill === undefined ? undefined : agent.getProperty(codex.propertyNames.getId(watchedSkill));
+
+    const results: ExploreTrial[] = [];
     const seen = new Set<WorldObject>();
+    let before = watched?.getEffectiveValue() ?? 0;
     for (let i = 0; i < trials; i++) {
       expect(location.explore(agent), `${landName}: 探索は必ず成立する`).toBe(true);
       const present = [...location.items, ...location.fixtures];
-      findings.push(countByName(present.filter((object) => !seen.has(object))));
+      const after = watched?.getEffectiveValue() ?? 0;
+      results.push({
+        finding: countByName(present.filter((object) => !seen.has(object))),
+        skillGain: after - before,
+      });
+      before = after;
       for (const object of present) seen.add(object);
     }
-    return findings;
+    return results;
   }
 
   /**
@@ -185,6 +253,31 @@ describe('探索で見つかる物', () => {
 
     expect(monkeys, '草地にサルは居ない').toBe(0);
   });
+
+  it.each(DISCOVERY_GRANTS)(
+    '$land の探索は、$types が見つかった回だけ $skill を+1する',
+    ({ land, skill, types, silenceBeasts, trials }) => {
+      // 発見の契機（docs/engine/SkillSystem.md 3.3節）。**候補に埋めた`add`が、探索した人へ届いて
+      // いるかを見る**——skillsYaml.test.tsはYAMLに書いてあることしか見ないので、効果が`agent`へ
+      // 解決されていなくても、あちらは緑のまま。
+      //
+      // 獣を止めるのは、サルが見つけた物をくわえて立ち去るため（HuntingSystem.md 5.4・5.6節）
+      // ——見つけた回と、こちらが数えた回がずれる。狩猟だけは獣が相手なので止められない。
+      const results = trialsOf(land, silenceBeasts ? withoutBeasts(land) : new Map(), trials, 0, skill);
+      const granted = results.filter((trial) => trial.skillGain > 0);
+
+      expect(granted.length, `${land}: ${skill} の契機が1回も引かれない`).toBeGreaterThan(0);
+      expect(
+        results.filter((trial) => types.some((type) => trial.finding.has(type)) !== trial.skillGain > 0)
+          .length,
+        `${land}: 見つかった物と ${skill} の伸びが食い違う回`,
+      ).toBe(0);
+      // 契機は候補1つにつき1回。複数の候補が同時に当たることは無いので、1回の探索で2つ分は伸びない。
+      expect(new Set(granted.map((trial) => trial.skillGain)), `${skill} が1回で伸びる量`).toEqual(
+        new Set([1]),
+      );
+    },
+  );
 
   it.each(BEAST_FINDS)('%s の %s は、獣1匹だけを湧かせる', (landName, findProp, beastName) => {
     // つまみを他の候補より圧倒的に重くすれば、抽選のほとんどがこの候補になる。獣は単独の候補なので

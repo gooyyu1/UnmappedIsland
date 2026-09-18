@@ -48,10 +48,70 @@ traits:
   ignitable:
     tags: [tinder]
     props:
-      # 1回の火起こしが成功する重み。失敗の重み（40）との比が成功率になる。**値を名乗るのは火口の側**
+      # 1回の火起こしが成功する重み。失敗の重み（10）との比が成功率になる。**値を名乗るのは火口の側**
       # で、素の値と一緒に起こす人の腕（ignition_ease）をbaseの土台として積む。**ここには書かない**
       # ——traitに土台だけ置くと、素の値を書き忘れた火口が0＋腕で火が付いてしまう。
+      #
+      # **下の湿り（moisture）の段がここをmodifyで押し下げる。** 押し下げるのは段の側で、ここは
+      # 素の値と腕だけを持つ——押し下げ量は「どれだけ湿っているか」の話なので、湿りを持つ側に置く。
       ignition_chance: {}
+      # 火口が吸った水（docs/engine/FireSystem.md 3.2.1節）。**名前を素焼き前の壺（pottery.yaml）と
+      # 共有する**のは、同じ「含んでいる水が抜けていく」を指すから。**効かせ方は違う**——あちらは
+      # 残った水の値そのものが割れる重みになり、こちらは段ごとの押し下げ。乾き切れば押し下げは無くなる。
+      #
+      # **カードに出るのはこのバー1本**（CardView.md 8節）。火口の素の値は型ごとに固定で、名前と絵が
+      # 既に言っている——今この1枚で動くのは湿りのほうなので、読ませるのもそちらだけにする。
+      # **ignition_chanceにバーを出す道は無い**：ゲージはrangeを要求し（同8.1節）、rangeは実効値を
+      # クランプする（GameElementDefinition.md 8.3節）ので、腕の上乗せ（expertで+120）が
+      # 頭打ちになる。
+      #
+      # **火口は束ねられるままにしてある**（burning_tinderのようにstackable: falseへ倒さない）。
+      # 束ねた札が映すのは代表1つの湿りなので、乾いた束へ濡れた1つを混ぜると下に埋まるが、これは
+      # 干している食べ物（drying.yamlのdrying_remaining）が既に持っている形と同じ。1枚ずつの札に
+      # 割ると、束で拾う火口が枠を食い尽くす。
+      moisture:
+        value: 0
+        # 野ざらしの雨（下のpassives、実質+3/tick）で2時間、日に広げれば（-4/tick）1時間半。
+        range: {min: 0, max: 24}
+        # 濡れているほど火が付かないので、空の側がgood。
+        gauge: {min: good, max: bad}
+        stages:
+          - {name: dry}
+          # 押し下げは、どの火口にも同じ量。**割合で効かせない**——腕の上乗せが加算である
+          # （docs/world/Skills.md 5.2節）のと同じ器に揃える。**素の値の小さい火口ほど深く効く**ので、
+          # 押し下げ切って重みが0以下へ潰れないことを、tests/world-codex/fireYaml.test.tsが全火口で見張る
+          # ——潰れた火口はその段で絶対に付かず、確率のはずが可否の線になる。
+          - name: damp
+            min: 8
+            passives:
+              - modify: {self: {ignition_chance: -30}}
+          - name: sodden
+            min: 16
+            passives:
+              - modify: {self: {ignition_chance: -50}}
+        passives:
+          # どこに在っても抜けていく（pottery.yamlのmoistureと同じ）。**この1行が、湿った火口を
+          # 詰みにしない**——雨宿りした洞窟には日が差さないので、日差しだけを乾かす道にすると、
+          # 雨の日に濡らした火口を戻す手が無くなる。
+          - add: {self: {moisture: -1}}
+          # 日に広げれば速い。境目は塩田・干し場のdrying_remainingと同じ+14
+          # （docs/engine/IlluminationSystem.md 1節のEV）。**地面に出しているあいだだけ**で、
+          # 鞄の中や手の中では上の1行ぶんしか抜けない（drying.yamlと同じ切り分け）。
+          - conditions:
+              - {subject: parent, matches: {tag: location}}
+              - {subject: ancestor, prop: ambient_brightness, gte: 14}
+            add: {self: {moisture: -3}}
+          # 野ざらしの雨に打たれれば湿る。守られた場所なら効かない（sheltered、
+          # docs/engine/ContainerSystem.md 6節）。
+          #
+          # **打たれるのは地面に出している火口だけ**（drying.yamlと同じ門）。持ち歩いている間も
+          # 濡れることにすると、雨の中を歩いただけで手持ちの火口が全部湿り、屋根の下へ入っても
+          # 日が無いので戻せない。
+          - conditions:
+              - {subject: parent, matches: {tag: location}}
+              - {subject: ancestor, prop: sheltered, eq: 0}
+              - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
+            add: {self: {moisture: 4}}
     interactions:
       # 火起こし具を重ねて火を移す。外した回も火口は失われる。
       #
@@ -86,13 +146,15 @@ traits:
         add: {agent: {skill_firecraft: 2}}
         pick:
           # **成功の重み。** 腕は重みの式ではなく、ignition_chanceのbaseとして既に積まれている（上）
-          # ——ここは素の参照のまま（段ごとの確率と、外れの重みを動かさない理由は
+          # ——ここは素の参照のまま（段ごとの確率と外れの重みの決め方は
           # docs/engine/FireSystem.md 10節）。
           - weight: {prop: ignition_chance}
             destroy: self
             spawn: {object: burning_tinder}
             signal: lit
-          - weight: 40
+          # **外れの重み。** 乾いた火口なら、どの火口・どの腕でも85%を超える（同10節）。
+          # 乾いていれば稀にしか外さず、外す回を作っているのは湿りのほう。
+          - weight: 10
             destroy: self
             signal: not_lit
 
