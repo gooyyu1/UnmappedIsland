@@ -93,6 +93,10 @@
 # なる（[`board-round.mjs`](board-round.mjs) の `ARCHIVE`）。引けなかった1回をそこへ混ぜると、
 # **通信が落ちたその周かぎりで、その相手が二度と畳まれなくなる。** 引けなかったのは答えではないので、
 # 次の周にもう一度引く。
+#
+# **引けたが読めなかったぶんも、同じ行で出す。** 取り出すのは `grep` が当てた1行なので、JSONとして
+# 完いとは限らない。**`jq` は偽でも読めなくても非0**なので、読めるかを確かめずに `! jq -e` でタグを
+# 判定すると、**読めなかったぶんがそのまま `KEPT` に化ける**——判定を打つ前に1回だけ確かめる。
 
 set -euo pipefail
 
@@ -161,20 +165,32 @@ while read -r session; do
   info=$(printf '{"session_id":"%s"}' "$session" |
     bash "$CCR_META" get_session 2>"$stderr" | grep -o '{"ccr".*') || info=''
   err=$(cat "$stderr")
-  rm -f "$stderr"
   # 引けなかったことは、畳まなかったことと別の行で出す（上の「引けなかったものは畳まない。ただし
   # `KEPT` とは別の行で出す」）。**何も言わずに返らなかった分も同じ行**——読む側に要るのは、状態が
   # 分かっていないことと、打った口が言ったことの全部。
   if [ -z "$info" ]; then
     unfinished UNKNOWN "$session" "${err:-素性が返らなかった}"
+    rm -f "$stderr"
     continue
   fi
+  # **読めることを、下の判定を打つ前に1回だけ確かめる。** 取り出したのは `grep` が当てた1行で、
+  # JSONとして完いとは限らない（応答が整形されて複数行に渡れば途中で切れる）。下はどれも `jq` で
+  # 引くので、読めないまま進むと**転倒が既定値（空文字・偽）に化けて、そのまま状態として読まれる**
+  # ——`.ccr.session_status // ""` は「畳まれていない」へ、`jq -e` は偽と同じ非0なので `KEPT` へ。
+  # ここで止めれば、下の `jq` はどれも「読めたJSONを引いている」と言える。
+  if ! status=$(jq -r '.ccr.session_status // ""' <<<"$info" 2>"$stderr"); then
+    unfinished UNKNOWN "$session" "$(cat "$stderr")"
+    rm -f "$stderr"
+    continue
+  fi
+  rm -f "$stderr"
   # 既に畳まれているものでも、worktree は残っていることがある。畳み直すことは無いが、後始末だけは
   # やる——**畳んだ相手を渡し直せる口はここしか無い。**
-  if [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" = "SESSION_STATUS_ARCHIVED" ]; then
+  if [ "$status" = "SESSION_STATUS_ARCHIVED" ]; then
     remove_worktree "$session"
     continue
   fi
+  # 読めることは上で確かめてあるので、ここの非0は**偽**（どの接頭辞にも当たらなかった）だけ。
   if [ -n "$KEEP_UNTAGGED" ] && ! jq -e --arg prefixes "$KEEP_UNTAGGED" \
     '($prefixes | split(",")) as $ps
      | any(.ccr.tags[]?; . as $t | any($ps[]; . as $p | $t | startswith($p)))' \
