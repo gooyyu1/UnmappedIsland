@@ -57,16 +57,21 @@ object_defs:
   # timber.yamlのbroadleaf_treeのfellを同じ形へ写したもの。**元の宣言が持っていた2つを落としている**
   # ——刃の余力を見る要件（subject: instrument）と、刃を減らす効果（add: instrument）。どちらも
   # メニュー型には書けないので、写した先に残す手段が無い。
+  #
+  # **受け口を刻む手（chop）は写していない。** 落ちる2つはどちらも倒す手の側に在るので、
+  # 比べるのに要るのはこちらだけ。
   broadleaf_tree_as_menu:
     tags: [fixture]
     art: broadleaf_tree
     props:
       weight: {value: 150000}
+      trunk_integrity: {value: 1, range: {min: 1, max: 4}}
     interactions:
       fell:
         trigger: menu
-        duration: 240
+        duration: 60
         conditions:
+          - {prop: trunk_integrity, lte: 1}
           - reason: no_axe
             subject: agent
             slot: hand
@@ -118,29 +123,32 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
     return spawned;
   }
 
+  function itemsOn(location: WorldObject): string[] {
+    return new Location(location, codex).items.map((object) => object.def.name);
+  }
+
   function carriedBy(character: WorldObject): string[] {
     return new PlayerCharacter(character, codex).handStacks.flatMap((stack) =>
       stack.map((object) => object.def.name),
     );
   }
 
-  function itemsOn(location: WorldObject): string[] {
-    return new Location(location, codex).items.map((object) => object.def.name);
-  }
-
-  /** ドラッグ型の側の `fell`。今成立するものと、理由を告げて断るものの両方から引く。 */
-  function dragFell(plant: WorldObject, tool: WorldObject) {
+  /** ドラッグ型の側のその手。今成立するものと、理由を告げて断るものの両方から引く。 */
+  function dragAction(plant: WorldObject, tool: WorldObject, name: string) {
     return [...plant.combinationsWith(tool, player), ...plant.refusedCombinationsWith(tool, player)].find(
-      (c) => c.name === 'fell',
+      (c) => c.name === name,
     );
   }
 
-  /** メニュー型の側の `fell`。ボタンには常に並ぶので、成立しているかは要件が答える。 */
-  function menuFell(plant: WorldObject) {
-    const action = plant.menuActionsFor(player).find((a) => a.name === 'fell');
+  /** メニュー型の側のその手。ボタンには常に並ぶので、成立しているかは要件が答える。 */
+  function menuAction(plant: WorldObject, name: string) {
+    const action = plant.menuActionsFor(player).find((a) => a.name === name);
     expect(action, 'メニュー型はボタンとして必ず並ぶ').toBeDefined();
     return action!;
   }
+
+  const dragFell = (plant: WorldObject, tool: WorldObject) => dragAction(plant, tool, 'fell');
+  const menuFell = (plant: WorldObject) => menuAction(plant, 'fell');
 
   /** 刃の余力。**無ければ落とす**——既定値で埋めると「減らない」が測れないまま緑になる。 */
   function durabilityOf(tool: WorldObject): number {
@@ -182,11 +190,21 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
   });
 
   describe('道具を見て道具を減らす宣言（広葉樹）は、書き換えると別の操作になる', () => {
+    /**
+     * 倒す手が立つところまで刻んだ木。**1回では倒れない**（docs/engine/ActionSystem.md 6.3節）ので、
+     * 落ちる2つ（刃の余力を見る要件と刃を減らす効果）を持つ手はここから先にしか現れない。
+     */
+    function treeReadyToFell(): WorldObject {
+      const tree = spawnInto('broadleaf_tree', jungle, 'fixtures');
+      tree.getProperty(codex.propertyNames.getId('trunk_integrity')).setNumberWithoutEvents(1);
+      return tree;
+    }
+
     it('刃の尽きた斧を、ドラッグ型は断り、メニュー型は通してしまう', () => {
-      const dragTree = spawnInto('broadleaf_tree', jungle, 'fixtures');
+      const dragTree = treeReadyToFell();
       const menuTree = spawnInto('broadleaf_tree_as_menu', jungle, 'fixtures');
       const axe = spawnInto('stone_axe', player, 'hand');
-      // 1本倒すのに要る120を割った刃。**0にはしない**——0へ届いた刃は折れて無くなる
+      // 1本ぶん（120）を割った刃。**0にはしない**——0へ届いた刃は折れて無くなる
       // （weathering.yaml の on_min）ので、尽きた斧という札は残らない。
       axe.getProperty(codex.propertyNames.getId('durability')).setNumber(100);
 
@@ -224,13 +242,17 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
     });
 
     it('ドラッグ型のままなら、同じ1回で斧が減る', () => {
-      const dragTree = spawnInto('broadleaf_tree', jungle, 'fixtures');
+      const dragTree = treeReadyToFell();
       const axe = spawnInto('stone_axe', player, 'hand');
       const before = durabilityOf(axe);
+      // **置いた相手と突き合わせる**——屋外の劣化だけでも減るので、差だけを見ると倒したことが
+      // 減らしたのかが言えない。
+      const idle = spawnInto('stone_axe', jungle, 'items');
 
       expect(dragFell(dragTree, axe)?.tryExecute()).toBe(true);
 
       expect(durabilityOf(axe)).toBeLessThan(before);
+      expect(durabilityOf(axe), '置いた斧より深く減る（倒したぶん）').toBeLessThan(durabilityOf(idle));
     });
   });
 

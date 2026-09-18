@@ -84,8 +84,12 @@ describe('clothing.yamlの衣類', () => {
   function craft(clothing: (typeof CLOTHING)[number]): WorldObject {
     const wip = startCrafting(clothing, true);
 
-    expect(tryAdvanceCrafting(wip, player), `${clothing.name}の工程`).toBe(true);
-    expect(wip.def.name, `${clothing.name} ができていない`).toBe(clothing.name);
+    // **工程は1時間ずつに割ってある**（docs/engine/ActionSystem.md 6.3節）ので、完成するまで
+    // 繰り返し進める。上限は無限に回らないための頭打ちで、工程の数そのものではない。
+    for (let left = 20; wip.def.name !== clothing.name; left -= 1) {
+      expect(left, `${clothing.name} ができていない`).toBeGreaterThan(0);
+      expect(tryAdvanceCrafting(wip, player), `${clothing.name}の工程`).toBe(true);
+    }
     return wip;
   }
 
@@ -293,9 +297,15 @@ describe('clothing.yamlの衣類', () => {
   it('なめし革の衣類は、骨針が無ければ縫えない', () => {
     // 骨針は消費されない道具（consume: false）だが、無ければ工程は進まない。素材だけで進んで
     // しまうと、縫製が骨針より前に来てしまう（SurvivalItems.md 1.2節の経路が意味を失う）。
+    //
+    // **裁つところまでは針が要らない**（要求はその工程で実際に使うものへ割り当ててある）ので、
+    // 止まるのは縫い始める工程。**そこから先へは一歩も進まない。**
     const sewn = CLOTHING.find((clothing) => clothing.name === 'tanned_leather_clothing')!;
     const wip = startCrafting(sewn, false);
 
-    expect(tryAdvanceCrafting(wip, player)).toBe(false);
+    while (tryAdvanceCrafting(wip, player));
+
+    expect(wip.def.name, '針無しでは縫い上がらない').not.toBe(sewn.name);
+    expect(tryAdvanceCrafting(wip, player), '止まったまま動かない').toBe(false);
   });
 });

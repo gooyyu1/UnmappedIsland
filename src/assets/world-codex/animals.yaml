@@ -613,9 +613,11 @@ object_defs:
     props:
       weight: {value: 5000}
       volume: {value: 12000}
-      # 解体にかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
-      # （docs/world/Skills.md 7節）。**獲物のたびに繰り返す手なので、どの死体も届いた段で15分縮む**
-      # ——素の値だけが獣ごとに違う（他の獣の死体も同じ形）。
+      # 解体1回ぶんにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
+      # （docs/world/Skills.md 7節）。**獲物のたびに繰り返す手なので、どの死体も届いた段で15分縮む。**
+      #
+      # **1回で捌き切れる大きさの獲物は、手を分けない**（docs/engine/ActionSystem.md 6.3節の線に
+      # 収まる）。分かれているのはイノシシだけで、あちらは同じ1回ぶんの手を何度か重ねる形にしてある。
       butcher_minutes:
         value: 60
         passives:
@@ -941,31 +943,99 @@ object_defs:
     props:
       weight: {value: 60000}
       volume: {value: 144000}
+      # **1回ぶんの時間はサル1頭と同じ**（下の手がどれもこれを読む）。大きさの違いは、
+      # 何回で捌き切るかのほうに出る。
       butcher_minutes:
-        value: 240
+        value: 60
         passives:
           - conditions:
               - {subject: agent, prop: skill_leatherwork, in_stage_or_above: skilled}
             modify: {self: {butcher_minutes: -15}}
+      # 捌けたところまで。**1回ごとに違う手が立つ**（腹を開く → 皮を剥ぐ → 四つ割りにする →
+      # 骨から削ぎ落とす）ので、どこまで進んだかを死体の側が持つ
+      # （docs/engine/ActionSystem.md 6.3節）。丸ごと1回で捌かせないのは、押している間プレイヤーの
+      # 手が止まるため——途中で肉だけ運び、後から続きを捌ける。
+      butchering_progress:
+        value: 0
+        range: {min: 0, max: 3}
+        # 札の桟に出す（docs/ui/CardView.md 8節）。**どこまで捌けたかが見えないと、途中で肉だけ
+        # 運んでから戻ってくることができない。** 進むほど捌き終わりに近いので、進む側が良い。
+        gauge: {min: bad, max: good}
     variation_axes:
       cure: {of: {tag: cured}}
     interactions:
-      # 大きいぶん時間がかかるが、1kgあたりで見ればサル（60分/5kg）より速い——同じ手数で
-      # 大きく取れるため。
-      butcher:
+      # **4つの手は進み具合で排他**（12.1節「条件で分ける」）。同じ握りの刃を重ねても、今の
+      # butchering_progress に当たる1つしか成立しない。**理由は宣言しない**——断っているのではなく、
+      # その先は別の手が受け持つ。
+      #
+      # 腹を開いて内臓を出す。**何も採れない**——血と内臓・頭は使い道が無いので捨てる（上の内訳）。
+      # ここを飛ばすと肉が傷むので、捌く手はここからしか始まらない。
+      gut:
         trigger: {drag: {tag: handheld_blade}}
         conditions:
+          - {prop: butchering_progress, lte: 0}
           - reason: too_dark
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
         duration: {prop: butcher_minutes}
-        add: {agent: {skill_leatherwork: 8}}
+        add:
+          self:
+            butchering_progress: 1
+          agent:
+            skill_leatherwork: 2
+
+      # 皮を剥ぐ。1kgあたりで見ればサル（60分/5kg）より速い——同じ手数で大きく取れるため。
+      skin:
+        trigger: {drag: {tag: handheld_blade}}
+        conditions:
+          - {prop: butchering_progress, eq: 1}
+          - reason: too_dark
+            subject: agent
+            prop: hand_brightness
+            in_stage_or_above: bright
+        duration: {prop: butcher_minutes}
+        add:
+          self:
+            butchering_progress: 1
+          agent:
+            skill_leatherwork: 2
+        spawn: {object: rawhide, count: 6}
+
+      # 四つ割りにする。関節を外すので、半身ぶんの肉と骨がここで離れる。
+      quarter:
+        trigger: {drag: {tag: handheld_blade}}
+        conditions:
+          - {prop: butchering_progress, eq: 2}
+          - reason: too_dark
+            subject: agent
+            prop: hand_brightness
+            in_stage_or_above: bright
+        duration: {prop: butcher_minutes}
+        add:
+          self:
+            butchering_progress: 1
+          agent:
+            skill_leatherwork: 2
+        spawn:
+          - {object: raw_meat, count: 20}
+          - {object: animal_bone, count: 3}
+
+      # 残りを骨から削ぎ落とす。捨てるものだけが残るので、死体はここで無くなる。
+      strip_meat:
+        trigger: {drag: {tag: handheld_blade}}
+        conditions:
+          - {prop: butchering_progress, gte: 3}
+          - reason: too_dark
+            subject: agent
+            prop: hand_brightness
+            in_stage_or_above: bright
+        duration: {prop: butcher_minutes}
+        add: {agent: {skill_leatherwork: 2}}
         destroy: self
         spawn:
-          - {object: raw_meat, count: 40}
-          - {object: animal_bone, count: 6}
-          - {object: rawhide, count: 6}
+          - {object: raw_meat, count: 20}
+          - {object: animal_bone, count: 3}
 
   # ヤケイの死体。1000gの内訳: 生肉500g + 羽40g + 小さな骨10g = 550g。残る450gは残りの骨と内臓・血で、
   # 使い道が無いのでカードにしない。値を変えるときはこの内訳を崩さないこと（monkey_carcassと同じ規約）。

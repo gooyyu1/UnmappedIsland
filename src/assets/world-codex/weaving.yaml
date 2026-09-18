@@ -19,8 +19,12 @@ object_defs:
       volume: {value: 22000}
       # 編むのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
       # （docs/world/Skills.md 7節）。編み葉は籠にも衣類にも何枚も要るので、届いた段で縮む。
+      #
+      # **割ってから編むほう（下）と同じ1時間で、刃物が変えるのは採れる枚数だけ**——1枚あたりに直すと
+      # ちょうど倍で、ファイル冒頭の「歩留まりを倍にする」がそのまま時間にも出る。1回を1時間に
+      # 収めているのは docs/engine/ActionSystem.md 6.3節の線。
       weave_minutes:
-        value: 90
+        value: 60
         passives:
           - conditions:
               - {subject: agent, prop: skill_cordage, in_stage_or_above: skilled}
@@ -50,7 +54,7 @@ object_defs:
         # 置き方は characters/player_character.yaml）。**繊維を伸ばす口のうち、道具を1つも要求しない
         # のはここだけ**（掻き取り・葉割りは刃物、叩き解しは殻を出す刃物が先に要る）なので、この1つが
         # 編み籠・くくり罠の解放条件の立ち上がり（同3.2節）を支えている。
-        add: {agent: {skill_cordage: 3}}
+        add: {agent: {skill_cordage: 2}}
         destroy: self
         spawn: {object: woven_leaf}
       # 中軸で割ってから左右をそれぞれ編む。細長いパネルが2枚とれる。屋根を葺くときは

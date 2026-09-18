@@ -112,17 +112,22 @@ describe('なめし革の連鎖', () => {
 
     // 剥ぐのは握りの刃、倒すのは柄付きの斧（timber.yaml）。剥いでも木は残るので、同じ木へ続けて
     // 斧を当てられる。
-    for (const [name, instrument] of [
-      ['strip_bark', knife],
-      ['fell', axe],
-    ] as const)
-      expect(
-        tree
-          .combinationsWith(instrument, player)
-          .find((c) => c.name === name)
-          ?.tryExecute() === true,
-        name,
-      ).toBe(true);
+    expect(
+      tree
+        .combinationsWith(knife, player)
+        .find((c) => c.name === 'strip_bark')
+        ?.tryExecute() === true,
+      'strip_bark',
+    ).toBe(true);
+
+    // **1回で倒れる木は無い**（docs/engine/ActionSystem.md 6.3節）ので、成立しているほうの手を
+    // 引いて、倒れるまで斧を入れ続ける。
+    for (let left = 10; tree.parent !== undefined; left -= 1) {
+      expect(left, '倒れるまでの手数').toBeGreaterThan(0);
+      const [combination] = tree.combinationsWith(axe, player);
+      expect(combination, '斧を当てて成立する手').toBeDefined();
+      expect(combination.tryExecute()).toBe(true);
+    }
 
     expect(tree.parent, '倒した木は残らない').toBeUndefined();
   });
@@ -164,7 +169,10 @@ describe('なめし革の連鎖', () => {
       spawn('sharp_stone').moveToSlotOrRejection(wip.getSlot(codex.vocabulary.engine.materialsSlotId)),
     ).toBeUndefined();
 
+    // 掻き落とす工程は刃だけで通るので、止まるのは渋に漬ける工程。**そこから先へは一歩も
+    // 進まない。**
     expect(tryAdvanceCrafting(wip, player), '毛と肉は落とせる').toBe(true);
+    while (tryAdvanceCrafting(wip, player));
     expect(tryAdvanceCrafting(wip, player), '漬ける樹皮が無い').toBe(false);
     expect(wip.def.name, 'なめし革になっていない').not.toBe('tanned_leather');
   });

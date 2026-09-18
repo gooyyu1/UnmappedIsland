@@ -20,23 +20,39 @@ object_defs:
     props:
       # 立ち木1本ぶん。倒して採れるのは丸太2本と太枝3本（43kg）で、残りは根と梢と枝葉。
       weight: {value: 150000}
-      # 倒して玉切りするのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で
-      # 宣言する**（docs/world/Skills.md 7節）。丸太を要る物は数えるほどなので、効き始めるのは最上段。
+      # 斧を入れる作業1回ぶんにかかる時間（docs/engine/ActionSystem.md 6.3節）。**どの腕がどの段から
+      # どれだけ縮めるかは、この操作が自分で宣言する**（docs/world/Skills.md 7節）。丸太を要る物は
+      # 数えるほどなので、効き始めるのは最上段。
       fell_minutes:
-        value: 240
+        value: 60
         passives:
           - conditions:
               - {subject: agent, prop: skill_woodwork, in_stage_or_above: expert}
             modify: {self: {fell_minutes: -15}}
+      # まだ断ち切れずに残っている幹。**斧を入れるたびに減り、残り1つまで削れば次の一撃で倒れる。**
+      # 1回で倒れる木を置かないのは、押している間プレイヤーの手が止まるため
+      # （docs/engine/ActionSystem.md 6.3節）——途中で止めて別のことをし、後から続きを刻める。
+      trunk_integrity:
+        value: 4
+        range: {min: 1, max: 4}
+        # 札の桟に出す（docs/ui/CardView.md 8節）。**どこまで刻んだかが見えないと、途中で止めて
+        # 戻ってくることができない。** 向きは道具の耐久度と同じで、満ちている側が健全
+        # （weathering.yamlのdurability）。
+        gauge: {min: bad, max: good}
     interactions:
-      # 根元を斧で断つ。倒した幹を運べる長さに玉切りするところまでを1つの作業として扱う。
-      fell:
+      # 受け口を刻む。幹が減るだけで、何も採れない——倒れるのは下のfellで、そちらは残り1つでしか
+      # 立たない。**同じ相手（斧）に対して同時に成立しないのは、この2つが幹の残りで排他だから**
+      # （12.1節「条件で分ける」）。
+      chop:
         trigger: {drag: {tag: chopping_tool}}
         duration: {prop: fell_minutes}
         conditions:
-          # **1本ぶんの余力（下のadd と同じ120）が残っていなければ始められない。** 尽きた刃で
-          # 始めても倒し切れないうえ、0へ届いた刃は折れて無くなる（weathering.yaml の on_min）ので、
-          # 「余力0の斧」という状態はそもそも在れない——線は1回ぶんの手前に引く。
+          # 残り1つまで削ったら、次はfellの側。**理由を宣言しない**——断っているのではなく、
+          # そこから先は別の操作が受け持つ（画面に出るのはfellのほう）。
+          - {prop: trunk_integrity, gte: 2}
+          # **倒し切れる余力が無ければ、刻み始められない**（docs/engine/DurabilitySystem.md 2.1節）。
+          # 線は1本ぶん（下のfellが食う120）で、**この手そのものは刃を食わない**——何も返さない手に
+          # 刃を食わせると、倒れないまま斧だけが折れる形ができる。
           - reason: too_worn
             subject: instrument
             prop: durability
@@ -54,9 +70,37 @@ object_defs:
         # characters/player_character.yaml）。**この口は斧を要求するが、立ち上がりはここではない**
         # ——刃物1本で回る伐り（下のsapling）と削り出し（animals.yamlのwhittle）が石器の先にあるので、
         # 木材加工は斧より手前から伸び始める。どれも循環しない（同3.2節）。
+        #
+        # **腕の伸びは1手ずつ配る**——量はその1手の長さから決まる（30分につき1、端数は切り上げ。
+        # docs/engine/SkillSystem.md 3節）ので、割った手を順に打っても、1回で倒していた頃と
+        # 時間あたりは変わらない。
+        add:
+          self:
+            trunk_integrity: -1
+          agent:
+            skill_woodwork: 2
+
+      # 最後の一撃。根元を断ち、倒した幹を運べる長さに玉切りするところまでを1つの作業として扱う。
+      fell:
+        trigger: {drag: {tag: chopping_tool}}
+        duration: {prop: fell_minutes}
+        conditions:
+          # 受け口を刻み切った木にだけ立つ（上のchopと排他）。
+          - {prop: trunk_integrity, lte: 1}
+          # **木1本ぶんの刃の目方は、断ち切るこの1回がまとめて食う**（上のchopの注記）。線もその量。
+          - reason: too_worn
+            subject: instrument
+            prop: durability
+            gte: 120
+          - reason: too_dark
+            subject: agent
+            prop: looking_brightness
+            in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         add:
           agent:
-            skill_woodwork: 8
+            skill_woodwork: 2
           instrument:
             durability: -120
         # 倒した場所に落ちる。木は中に物を持てないので、`into: self`は必ず親（土地）のアイテム
@@ -105,25 +149,34 @@ object_defs:
     props:
       # 丸太2本（40kg）に、玉切りで落ちる末口と割れた部分を足した重さ。
       weight: {value: 60000}
-      # 玉切りするのにかかる時間（上のfell_minutesと同じ形）。既に倒れているぶん素の値が半分。
+      # 玉切り1回ぶんにかかる時間（上のfell_minutesと同じ形）。**立ち木と同じ1回60分で、違うのは
+      # 回数のほう**——既に倒れているので、受け口を刻む手間（chop）が要らない。
       buck_minutes:
-        value: 120
+        value: 60
         passives:
           - conditions:
               - {subject: agent, prop: skill_woodwork, in_stage_or_above: expert}
             modify: {self: {buck_minutes: -15}}
+      # まだ切り分けていない幹。**1回の玉切りで丸太が1本ずつ採れ、切り終われば幹は残らない**
+      # （立ち木のtrunk_integrityと同じ形。docs/engine/ActionSystem.md 6.3節）。
+      trunk_integrity:
+        value: 2
+        range: {min: 1, max: 2}
+        gauge: {min: bad, max: good}
     interactions:
       # 運べる長さに玉切りする。既に倒れているので、立ち木を倒すより半分の手間で済む。
+      # **残り1本になったら下のbuck_lastへ移る**（12.1節「条件で分ける」）。
       buck:
         trigger: {drag: {tag: chopping_tool}}
         conditions:
-          # 1回ぶんの余力（下のadd と同じ60）が残っていなければ始められない（fell と同じ線の引き方）。
-          # **倒せなくなった斧でも玉切りはできる**——要る余力が半分なので、刃の終わりぎわに使い道が
-          # 1つ残る。
+          - {prop: trunk_integrity, gte: 2}
+          # 1回ぶんの余力（下のadd と同じ30）が残っていなければ始められない。**こちらは1回ごとに
+          # 丸太が1本返るので、手ごとに刃を食い、線も1回ぶん**（立ち木のchopと違う理由は
+          # docs/engine/DurabilitySystem.md 2.1節）。**倒せなくなった斧でも玉切りはできる。**
           - reason: too_worn
             subject: instrument
             prop: durability
-            gte: 60
+            gte: 30
           # 木目を読みながら刃を同じ傷へ入れ続ける屋外の行動なので、見るのは視界の側
           # （docs/engine/IlluminationSystem.md 5節）。
           - reason: too_dark
@@ -134,12 +187,37 @@ object_defs:
             not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: buck_minutes}
         add:
+          self:
+            trunk_integrity: -1
           agent:
-            skill_woodwork: 4
+            skill_woodwork: 2
           instrument:
-            durability: -60
+            durability: -30
+        spawn: {object: log, count: 1, into: self}
+
+      # 最後の1本を切り離す。幹はここで無くなる。
+      buck_last:
+        trigger: {drag: {tag: chopping_tool}}
+        conditions:
+          - {prop: trunk_integrity, lte: 1}
+          - reason: too_worn
+            subject: instrument
+            prop: durability
+            gte: 30
+          - reason: too_dark
+            subject: agent
+            prop: looking_brightness
+            in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
+        duration: {prop: buck_minutes}
+        add:
+          agent:
+            skill_woodwork: 2
+          instrument:
+            durability: -30
         # **spawnを先に書く**（broadleaf_treeのfellと同じ理由）。
-        spawn: {object: log, count: 2, into: self}
+        spawn: {object: log, count: 1, into: self}
         destroy: self
 
   # 若木。幹がまだ細く、刃物で切り倒せる木（docs/world/SurvivalItems.md 0節）。**2mの長い棒の

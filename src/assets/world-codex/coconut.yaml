@@ -203,32 +203,53 @@ object_defs:
       weight: {value: 600}
       # ばらけた繊維は詰めても縮まないので、嵩そのままで見る。
       volume: {value: 4000}
-      # 叩き解すのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
-      # （docs/world/Skills.md 7節）。**繊維を採るもう1つの入口なので、掻き取り（fiber.yamlのstrip）と
-      # 同じ段から効く**——どちらの島に流れ着いたかで腕の値打ちが変わらないように。
+      # 漬ける・叩くのそれぞれ1回ぶんにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が
+      # 自分で宣言する**（docs/world/Skills.md 7節）。**繊維を採るもう1つの入口なので、掻き取り
+      # （fiber.yamlのstrip）と同じ段から効く**——どちらの島に流れ着いたかで腕の値打ちが変わらないように。
       ret_minutes:
-        value: 120
+        value: 60
         passives:
           - conditions:
               - {subject: agent, prop: skill_cordage, in_stage_or_above: skilled}
             modify: {self: {ret_minutes: -15}}
+      # 漬かり具合。**漬けるのと叩くのは別の手**（docs/engine/ActionSystem.md 6.3節）で、漬かって
+      # いない皮は叩いても解けない。漬けておく時間を叩く工程へ畳むと、押している間ずっとプレイヤーの
+      # 手が止まる。
+      retting_progress:
+        value: 0
+        range: {min: 0, max: 1}
+        # 札の桟に出す（docs/ui/CardView.md 8節）。漬けたかどうかが見えないと、叩けない理由が読めない。
+        gauge: {min: bad, max: good}
     interactions:
-      # 水に漬けて柔らかくし、石で叩いて繊維を解す（コイア）。**植物繊維の2つ目の入口**で、
+      # 水に漬けて柔らかくする。**漬け先は問わない**——雨水でも海水でも解けるので、どこで漬けたかを
+      # 持たせる値をまだ置いていない（仮決め）。
+      soak:
+        trigger: menu
+        conditions:
+          - {prop: retting_progress, lte: 0}
+        duration: {prop: ret_minutes}
+        # **腕は配らない**——何も出さず、重ねる相手も要らない手が腕を配ると、それが練習専用の
+        # アクションになる（docs/engine/SkillSystem.md 3.1節）。配るのは下の叩き解すほう。
+        add: {self: {retting_progress: 1}}
+
+      # 石で叩いて繊維を解す（コイア）。**植物繊維の2つ目の入口**で、
       # 違うのは道具ではなく採れる土地——バショウ属の草（fiber.yaml）が生えない島でも、ヤシの実さえ
       # あれば繊維へ届く。**刃物の段は飛ばない**（皮を出すのは上のhuskで、そこが握りの刃を要求する）。
       #
-      # 漬けておく時間はこの1工程へ畳んである。掻き取り（30分）より長いのはそのぶん。600gの皮から
+      # 漬けと合わせて2時間。掻き取り（30分）より長いのはそのぶん。600gの皮から
       # 繊維2束（120g）で、残りは叩き落とす髄。
       #
       # **明るさの条件は書かない**——叩いて解すだけで、暗くて損なう形が無い（crackと同じ理由）。
       ret:
         trigger: {drag: {object: stone}}
+        conditions:
+          - {prop: retting_progress, gte: 1}
         duration: {prop: ret_minutes}
         # 繊維・編みの腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。**掻き取り（fiber.yamlのstrip）と時間あたりで揃う**
         # ——同じ植物繊維を出す2つの入口で、違うのは採れる土地だけ（上のコメント）。1回に配る量は
         # 長いぶん多いが、かかる時間もそのぶん長いので、**どちらの島でも腕の伸びる速さは同じ**。
-        add: {agent: {skill_cordage: 4}}
+        add: {agent: {skill_cordage: 2}}
         destroy: self
         spawn: {object: plant_fiber, count: 2}
         # 無駄の無さ（docs/world/Skills.md 7節）。**掻き取りと同じ形で同じ刻み**——髄をどこまで叩き

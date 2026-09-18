@@ -1,13 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { craftingStepsOf } from '../../src/analysis/craftingSteps';
 import { toolWearsOf } from '../../src/analysis/durations';
 import { staticValueOf } from '../../src/analysis/staticValue';
-import type {
-  ConditionDeclaration,
-  ConditionReader,
-  PropertyConditionReading,
-} from '../../src/domain/ConditionReader';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
+import { instrumentDurabilityLineOf } from '../support/durabilityLines';
 import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
@@ -63,6 +60,22 @@ describe('耐久の規約（同梱の定義すべて）', () => {
     );
   });
 
+  it('刃を食う手は、どれも物を返す', () => {
+    // 2.1節。**進みや腕しか返さない手は刃を食わない**——1つの仕事が何回かの手に分かれたとき
+    // （ActionSystem.md 6.3節）、途中の手にも刃を食わせると、返るものが無いまま道具だけが折れる
+    // 形ができる。**型を1つも名指ししない**ので、別の物に同じ形を足せばここで落ちる。
+    const barren: string[] = [];
+    for (const wear of toolWearsOf(codex)) {
+      if (wear.propertyName !== 'durability') continue;
+      const owner = codex.objects.get(codex.objectNames.getId(wear.stepOwnerName));
+      const step = craftingStepsOf(codex, owner).find((candidate) => candidate.name === wear.stepName);
+      if (step === undefined || step.outputs.length === 0)
+        barren.push(`${wear.stepOwnerName}.${wear.stepName} が ${wear.objectName} を削る`);
+    }
+
+    expect(barren, '物を返さないのに刃を食う手').toEqual([]);
+  });
+
   /** その道具の使い道1つ。costはその工程1回が削る量、thresholdは引かれている線（無ければundefined）。 */
   interface WearLine {
     readonly toolName: string;
@@ -87,7 +100,7 @@ describe('耐久の規約（同梱の定義すべて）', () => {
         stepName: wear.stepName,
         ownerName: wear.stepOwnerName,
         cost: startingDurabilityOf(wear.objectName) / wear.uses,
-        threshold: lineDrawnOn(wear.stepOwnerName, wear.stepName),
+        threshold: instrumentDurabilityLineOf(codex, wear.stepOwnerName, wear.stepName),
       }));
   }
 
@@ -104,64 +117,4 @@ describe('耐久の規約（同梱の定義すべて）', () => {
     expect(value, `${toolName} の durability が定義だけから読めない`).toBeDefined();
     return value!;
   }
-
-  /**
-   * その工程が、使う物（instrument）の余力へ引いている線。引いていなければundefined。
-   *
-   * **複数引かれていれば最も高いものを返す**——線を1本足して緩められないように、当てる側は最も
-   * 厳しい1つを見る。
-   */
-  function lineDrawnOn(ownerName: string, stepName: string): number | undefined {
-    const owner = codex.objects.get(codex.objectNames.getId(ownerName));
-    const thresholds: number[] = [];
-    for (const trigger of owner.triggers) {
-      if (trigger.interaction.name !== stepName) continue;
-      for (const requirement of trigger.interaction.requirementDeclarations) {
-        const reader = new InstrumentDurabilityLines(durabilityId);
-        requirement.condition.readBy(reader);
-        thresholds.push(...reader.thresholds);
-      }
-    }
-    return thresholds.length === 0 ? undefined : Math.max(...thresholds);
-  }
 });
-
-/**
- * 条件の木から「使う物の余力がこれ以上」だけを拾う読み手（ConditionReader参照）。
- *
- * **否定の下へは降りない。** `not` の下の `gte` は「余力が足りないときだけ成立する」で、始めさせない
- * 線とは逆を言っている。
- */
-class InstrumentDurabilityLines implements ConditionReader {
-  readonly thresholds: number[] = [];
-
-  constructor(private readonly durabilityId: PropertyGlobalId) {}
-
-  property(reading: PropertyConditionReading): void {
-    if (reading.root !== 'instrument') return;
-    if (reading.propertyGlobalId !== this.durabilityId) return;
-    if (reading.op !== 'gte') return;
-
-    // gteが比べる相手は常に1つ（ConditionReader）。別のプロパティを見ている比較には値が無い。
-    const values = reading.values ?? [];
-    if (values.length > 0) this.thresholds.push(values[0]);
-  }
-
-  propertyStage(): void {}
-
-  slotPosition(): void {}
-
-  slotContent(): void {}
-
-  objectMatches(): void {}
-
-  all(children: readonly ConditionDeclaration[]): void {
-    for (const child of children) child.readBy(this);
-  }
-
-  any(children: readonly ConditionDeclaration[]): void {
-    for (const child of children) child.readBy(this);
-  }
-
-  not(): void {}
-}

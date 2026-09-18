@@ -303,8 +303,9 @@ traits:
             add: {self: {warmth: 8}}
       # 寒さの入口（docs/engine/VitalsSystem.md 8.4節）。これを下回る気温の場所に居る間だけ、
       # 上のwarmthが削られる。
-      # 素は16℃で、身につけた衣類がmodifyで押し下げる（clothing.yaml）。寝ている間に寝床が押し下げる側は
-      # まだ無い（docs/engine/VitalsSystem.md 8.3節）。
+      # 素は16℃で、身につけた衣類（clothing.yaml）と、眠っている間の寝床（bedding.yaml）がmodifyで
+      # 押し下げる。**どちらも同じ境目への寄与なので、着たまま寝れば加算で重なる**
+      # （docs/engine/VitalsSystem.md 8.4節）。
       #
       # **押し下げる側が良いので、向きを自分で名乗る**（6.8節）。歩みの遅れと同じくバーにも段にも
       # しないので、名乗らなければ既定の「減ると悪い」になる。

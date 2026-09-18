@@ -689,13 +689,18 @@ describe('farming.yamlの畑と囲い', () => {
   it('囲いは丸太と縄から作れる', () => {
     // 罠の檻（TrapSystem.md 1.2節）と同じ材料。**生かして扱う設備は常に高くつく**。
     open();
+    // **工程は1時間ずつに割ってある**（docs/engine/ActionSystem.md 6.3節）ので、要るのは工程を
+    // またいだ合計のほう。
     const def = codex.objects.get(codex.objectNames.getId('pen'));
     const [recipe] = def.recipesProducingThis;
-    const [step] = recipe!.steps;
+    const requirements = recipe!.steps.flatMap((step) => step.requirements);
+    const countOf = (name: string): number =>
+      requirements
+        .filter((requirement) => requirement.requires(codex.objects.get(codex.objectNames.getId(name))))
+        .reduce((total, requirement) => total + requirement.count, 0);
 
-    expect(step!.requirements).toHaveLength(2);
-    expect(step!.requirements[0].requires(codex.objects.get(codex.objectNames.getId('log')))).toBe(true);
-    expect(step!.requirements[1].requires(codex.objects.get(codex.objectNames.getId('rope')))).toBe(true);
+    expect(countOf('log')).toBe(4);
+    expect(countOf('rope')).toBe(2);
   });
 
   it('据えた畑と囲いは、持ち歩けない', () => {
