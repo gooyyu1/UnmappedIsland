@@ -62,7 +62,7 @@ describe('drying.yamlの天日干しと干し場', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(0.9));
+    const session = new WorldSession(codex, new World(worldInstance), fixedRng(0.9));
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);
     worldInstance
       .getProperty(codex.propertyNames.getId('weather'))

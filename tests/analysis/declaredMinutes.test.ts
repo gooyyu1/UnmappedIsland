@@ -43,7 +43,7 @@ const codex = new WorldCodexYamlLoader()
 function runtimeMinutesOf(interactionName: string): number {
   const session = new WorldSession(codex);
   const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
-  session.adoptWorld(new World(worldInstance, codex));
+  session.adoptWorld(new World(worldInstance));
 
   const shoreline = session.createObject(codex.objectNames.getId('shoreline'));
   shoreline.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations')));

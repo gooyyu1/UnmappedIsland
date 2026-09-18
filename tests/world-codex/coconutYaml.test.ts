@@ -37,7 +37,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    worldView = new World(worldInstance, codex);
+    worldView = new World(worldInstance);
     // 実採りは確率で捻挫する（injuries.yaml）。ここは加工の連鎖を見るテストなので、必ず成功する側を引く。
     session = new WorldSession(codex, worldView, fixedRng(0));
     startMinutes = worldView.totalMinutes;
@@ -62,23 +62,23 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
   /** 土地のitemsスロットに並ぶ物の識別子。 */
   function itemsOn(location: WorldObject): string[] {
-    return new Location(location, codex).items.map((object) => object.def.name);
+    return new Location(location).items.map((object) => object.def.name);
   }
 
   /** 土地のitemsスロットに並ぶカードの識別子と、そのカードが束ねている個数。 */
   function itemStacksOn(location: WorldObject): string[] {
-    return new Location(location, codex).itemStacks.map((stack) => `${stack[0].def.name} x${stack.length}`);
+    return new Location(location).itemStacks.map((stack) => `${stack[0].def.name} x${stack.length}`);
   }
 
   /** 土地のitemsスロットに並ぶ物の重さ（g）。 */
   function weightsOn(location: WorldObject): number[] {
     const weightId = codex.propertyNames.getId('weight');
-    return new Location(location, codex).items.map((object) => object.tryGetProperty(weightId)?.number ?? 0);
+    return new Location(location).items.map((object) => object.tryGetProperty(weightId)?.number ?? 0);
   }
 
   /** 手持ちに並ぶ物の識別子（同種のスタックは個数ぶん並べる）。 */
   function handOf(character: WorldObject): string[] {
-    return new PlayerCharacter(character, codex).handStacks.flatMap((stack) =>
+    return new PlayerCharacter(character).handStacks.flatMap((stack) =>
       stack.map((object) => object.def.name),
     );
   }
@@ -113,9 +113,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
     expect(tree.tryGetAction('pick_green_coconut', player)?.tryExecute() === true).toBe(true);
 
-    expect(new PlayerCharacter(player, codex).equipmentStacks, '装備欄は自動配置の対象外（7.7節）').toEqual(
-      [],
-    );
+    expect(new PlayerCharacter(player).equipmentStacks, '装備欄は自動配置の対象外（7.7節）').toEqual([]);
     expect(itemsOn(beach)).toEqual(['green_coconut', 'green_coconut']);
   });
 

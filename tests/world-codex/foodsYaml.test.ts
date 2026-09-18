@@ -192,7 +192,7 @@ describe('食べ物の腐敗', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(0));
+    const session = new WorldSession(codex, new World(worldInstance), fixedRng(0));
     const land = spawnInto(session, CAVE_LAND, worldInstance, 'locations');
     return { session, land, cave: spawnInto(session, 'shallow_cave', land, 'fixtures') };
   }
@@ -375,7 +375,7 @@ describe('foods.yamlの下ごしらえ', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(0));
+    const session = new WorldSession(codex, new World(worldInstance), fixedRng(0));
     const land = spawnInto(session, landName, worldInstance, 'locations');
     const player = spawnInto(session, SAMPLE_CHARACTER, land, 'characters');
     // 刃を当てる手元の作業なので明るさを要求する（foods.yaml）。ここで見たいのは下ごしらえの側なので、

@@ -80,7 +80,7 @@ describe('farming.yamlの畑と囲い', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(roll));
+    session = new WorldSession(codex, new World(worldInstance), fixedRng(roll));
     land = spawnInto(locationName, worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, land, 'characters');
     makeBrightEnoughForAnyAction(player, codex);

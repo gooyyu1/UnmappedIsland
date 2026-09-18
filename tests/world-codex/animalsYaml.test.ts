@@ -62,7 +62,7 @@ describe('animals.yamlの動物', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(roll));
+    session = new WorldSession(codex, new World(worldInstance), fixedRng(roll));
     startMinutes = session.world!.totalMinutes;
     jungle = spawnInto('jungle', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');

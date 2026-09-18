@@ -36,7 +36,7 @@ interface Camp {
 function camp(): Camp {
   const session = new WorldSession(codex);
   const world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
-  session.adoptWorld(new World(world, codex));
+  session.adoptWorld(new World(world));
 
   const land = session.createObject(codex.objectNames.getId('sandy_beach'));
   expect(land.moveToSlotOrRejection(world.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();

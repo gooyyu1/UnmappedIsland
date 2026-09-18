@@ -50,7 +50,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
   function open(): void {
     session = new WorldSession(codex);
     world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
-    session.adoptWorld(new World(world, codex));
+    session.adoptWorld(new World(world));
     jungle = spawnInto('jungle', world, 'locations');
     grassland = spawnInto('grassland', world, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');

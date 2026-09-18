@@ -39,7 +39,7 @@ describe('明るさが行動を制限する', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const worldView = new World(worldInstance, codex);
+    const worldView = new World(worldInstance);
     const session = new WorldSession(codex, worldView, fixedRng(0));
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);
 
@@ -81,10 +81,10 @@ describe('明るさが行動を制限する', () => {
   it('夜は屋外で採れない（昼なら同じ土地で採れる）', () => {
     const night = open(NIGHT_HOUR, 'grassland');
     expect(brightnessOf(night.player, 'looking_brightness'), '夜の草原は底（-6）').toBe(-6);
-    expect(new Location(night.land, codex).explore(night.player), '夜は探索できない').toBe(false);
+    expect(new Location(night.land).explore(night.player), '夜は探索できない').toBe(false);
 
     const noon = open(NOON_HOUR, 'grassland');
-    expect(new Location(noon.land, codex).explore(noon.player), '同じ土地でも昼なら探索できる').toBe(true);
+    expect(new Location(noon.land).explore(noon.player), '同じ土地でも昼なら探索できる').toBe(true);
   });
 
   it('夜でも、松明を持っていれば屋外で採れる', () => {
@@ -92,7 +92,7 @@ describe('明るさが行動を制限する', () => {
     litTorch(session, player, 'hand');
 
     expect(brightnessOf(player, 'looking_brightness'), '底（-6）から松明が+11押し上げる').toBe(5);
-    expect(new Location(land, codex).explore(player)).toBe(true);
+    expect(new Location(land).explore(player)).toBe(true);
   });
 
   it('夜の道は、松明を手に持っているときだけ歩ける', () => {
@@ -154,7 +154,7 @@ describe('明るさが行動を制限する', () => {
       '真っ暗でも火起こしはできる',
     ).toBe(true);
 
-    const tinder = new Location(land, codex).items.find((item) => item.def.name === 'burning_tinder');
+    const tinder = new Location(land).items.find((item) => item.def.name === 'burning_tinder');
     expect(tinder, '火種ができている').toBeDefined();
     expect(
       hearth
@@ -177,8 +177,8 @@ describe('明るさが行動を制限する', () => {
     // 差が線を跨ぐ時間帯があることまで見る。同じ晴れの朝に、草原では採れて密林では採れない。
     const morningJungle = open(MORNING_HOUR, 'jungle');
     const morningGrassland = open(MORNING_HOUR, 'grassland');
-    expect(new Location(morningGrassland.land, codex).explore(morningGrassland.player)).toBe(true);
-    expect(new Location(morningJungle.land, codex).explore(morningJungle.player)).toBe(false);
+    expect(new Location(morningGrassland.land).explore(morningGrassland.player)).toBe(true);
+    expect(new Location(morningJungle.land).explore(morningJungle.player)).toBe(false);
   });
 
   /**
@@ -196,7 +196,7 @@ describe('明るさが行動を制限する', () => {
       .setNumberWithoutEvents(destination.instanceId);
     putLight(session, land, player);
 
-    return new Path(path, codex).travel(player);
+    return new Path(path).travel(player);
   }
 
   /**

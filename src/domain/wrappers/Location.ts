@@ -114,7 +114,7 @@ export class Location extends ObjectWrapper {
     for (const fixture of fixtures) {
       if (!fixture.def.hasTag(this.words.pathTagId)) continue;
 
-      const destination = new Path(fixture, this.codex).destination;
+      const destination = new Path(fixture).destination;
       if (destination !== undefined) destinations.push(destination);
     }
     return destinations;
@@ -148,7 +148,7 @@ export class Location extends ObjectWrapper {
     for (const fixture of hidden.contents) {
       // 要る進捗も帰り道の在り処も名乗るのは道なので（locations.yaml）、生のプロパティではなくPathに
       // 訊く。道でない設置物が混ざっても、宣言していない名前は0として読める（ObjectWrapper）。
-      if (new Path(fixture, this.codex).requiredProgress <= progress) this.reveal(fixture);
+      if (new Path(fixture).requiredProgress <= progress) this.reveal(fixture);
     }
   }
 
@@ -160,7 +160,7 @@ export class Location extends ObjectWrapper {
   private reveal(fixture: WorldObject): void {
     this.revealInOwnLocation(fixture);
 
-    const returnPathId = new Path(fixture, this.codex).returnPathInstanceId;
+    const returnPathId = new Path(fixture).returnPathInstanceId;
     if (returnPathId === 0) return;
 
     const returnPath = fixture.findRoot().findSelfOrDescendantByInstanceId(returnPathId);

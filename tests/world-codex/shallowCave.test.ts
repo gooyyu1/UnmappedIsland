@@ -37,7 +37,7 @@ describe('浅い洞窟', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const worldView = new World(worldInstance, codex);
+    const worldView = new World(worldInstance);
     const session = new WorldSession(codex, worldView, fixedRng(0));
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);
     worldInstance
@@ -164,7 +164,7 @@ describe('浅い洞窟', () => {
     const campfire = spawnInto(session, 'campfire', cave, 'fixtures');
     expect(execute(cave, 'enter', player)).toBe(true);
 
-    const inside = new Location(cave, codex);
+    const inside = new Location(cave);
     expect(inside.items, '置いた物は中に並ぶ').toContain(stone);
     expect(inside.fixtures, '据えた炉も中に並ぶ').toContain(campfire);
     expect(inside.characters, '中に居るのはプレイヤー').toContain(player);

@@ -76,7 +76,6 @@ object_defs:
     const there = new Site(1, 1, 0, false);
     const map = new IslandMap('test', 0, [here, there], []);
     return new StartedGame(
-      mini.game.session,
       mini.game.world,
       mini.game.player,
       mini.game.startLocation,

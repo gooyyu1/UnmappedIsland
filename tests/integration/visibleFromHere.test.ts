@@ -43,7 +43,7 @@ describe('現在地から見える範囲（世界→映し 通し）', () => {
     expect(road, '探索し切れば道が見つかっている').toBeDefined();
     expect(fromGameSession(game, locale).visible(road), '渡る前は現在地の設置物').toBe(true);
 
-    expect(new Path(road, codex).travel(game.player.instance), '道を渡れる').toBe(true);
+    expect(new Path(road).travel(game.player.instance), '道を渡れる').toBe(true);
 
     expect(game.player.location?.instance, '別の土地へ移った').not.toBe(left);
     expect(road.parent, '道は置いてきた土地の設置物のまま世界に在る').toBe(left);

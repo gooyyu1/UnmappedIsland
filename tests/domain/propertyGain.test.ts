@@ -143,7 +143,7 @@ object_defs:
 
     session = new WorldSession(codex, undefined, fixedRng(0));
     const world = spawn('world');
-    session.adoptWorld(new World(world, codex));
+    session.adoptWorld(new World(world));
     const land = spawn('land');
     expect(land.moveToSlotOrRejection(world.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
     player = spawn('survivor');

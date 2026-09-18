@@ -48,7 +48,7 @@ object_defs:
       .buildAndReset();
     const bootstrap = new WorldSession(codex);
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), bootstrap);
-    const world = new World(instance, codex);
+    const world = new World(instance);
     return { codex, session: new WorldSession(codex, world), world };
   }
 
@@ -429,7 +429,7 @@ object_defs:
       const hauler = placeInWorld(codex, world, session.createObject(codex.objectNames.getId('hauler')));
       const slot = crate.getSlot(codex.slotNames.getId('contents'));
       const put = (): void => {
-        putIntoSlot(stone, slot, hauler, session, () => {
+        putIntoSlot(stone, slot, hauler, () => {
           expect(stone.moveToSlotOrRejection(slot)).toBeUndefined();
         });
       };

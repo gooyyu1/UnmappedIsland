@@ -3,7 +3,6 @@ import type { WorldObject } from './WorldObject';
 import type { PassiveEffect, PropertyPassiveEffect, TransferPassiveEffect } from './PassiveEffect';
 import type { PassiveReader } from './PassiveReader';
 import type { ReferenceContext, ReferenceRoot } from './ReferenceRoot';
-import type { WorldSession } from './WorldSession';
 
 /** 1つも宣言していない関係の契機で配る先（毎回空の配列を作らずに済ませる）。 */
 const NO_REGISTRATIONS: readonly PropertyPassiveEffect[] = [];
@@ -94,8 +93,8 @@ export class PassiveEffects {
    * **名乗るのは操作が宣言した一式だけ**（WorldSession.whileInteractionPassives）。物が自分で
    * 宣言した増減は、誰かの操作が増やしたものではない。
    */
-  countTickMovementsAsGains(owner: WorldObject, context: ReferenceContext, session: WorldSession): void {
-    for (const effect of this.effects) effect.countTickMovementAsGain(owner, context, session);
+  countTickMovementsAsGains(owner: WorldObject, context: ReferenceContext): void {
+    for (const effect of this.effects) effect.countTickMovementAsGain(owner, context);
   }
 
   /** childがowner（親）に付く/離れる契機を、target=childの効果へ伝える。 */
