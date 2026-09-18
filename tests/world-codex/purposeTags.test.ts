@@ -1,5 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { craftingStepsOf } from '../../src/analysis/craftingSteps';
+import { discoverySourcesOf } from '../../src/analysis/discoveryCoverage';
+import { rangeCyclesOf } from '../../src/analysis/rangeCycles';
 import { writesToProperty } from '../../src/codex-viewer/describe/effectQueries';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
@@ -90,5 +92,32 @@ describe('用途のタグ', () => {
 
     expect(sources.length).toBeGreaterThan(0);
     expect(sources.filter((def) => !yieldsWater(def)).map((def) => def.name)).toEqual([]);
+  });
+
+  it('探索で見つかる設置物には、物を返す工程か、物を置ける枠が1つはある', () => {
+    // **見つかっても何も返さない設置物を捕まえる**——探索の当たりとして札は出るのに、押せる操作も
+    // 物を置ける枠も無ければ、その土地の実りの割合をそれだけ食いつぶす（ベリーの茂みがそうだった）。
+    //
+    // **上の水源の見張りでは掛からない**——あちらは用途のタグ（水源である）で的を引くので、別の
+    // 用途を名乗る設置物も、何も名乗らない設置物も素通りする。こちらが引くのは**探索の卓に載って
+    // いること**で、fixtureはそこから「見つけても持ち帰れず、その場に札として残る物」を選ぶために
+    // だけ使う——アイテムは拾えばそれ自体が手に入るので、返すものを問う相手ではない。
+    const fixtureTagId = codex.tagNames.getId('fixture');
+    const discovered = discoverySourcesOf(codex)
+      .objects.map((object) => codex.objects.get(codex.objectNames.getId(object.name)))
+      .filter((def) => def.tags.includes(fixtureTagId));
+
+    // 返すものは2通りある。**物を生む工程**と、**物を置ける枠**（浅い洞窟・置いてある籠）
+    // ——後者は生まないが、置き場そのものが返している物なので数える。
+    //
+    // 工程は押して起こすもの（伐る・汲む）だけではない。**時間で回るもの**（ベリーの茂みが実を
+    // 付けるような周期、src/analysis/rangeCycles.ts）も、返している物は同じなので数える。
+    const returnsSomething = (def: ObjectDef): boolean =>
+      [...craftingStepsOf(codex, def), ...rangeCyclesOf(def).map((cycle) => cycle.step)].some(
+        (step) => step.outputs.length > 0,
+      ) || def.placementSlotDefs('manual').length > 0;
+
+    expect(discovered.length).toBeGreaterThan(0);
+    expect(discovered.filter((def) => !returnsSomething(def)).map((def) => def.name)).toEqual([]);
   });
 });
