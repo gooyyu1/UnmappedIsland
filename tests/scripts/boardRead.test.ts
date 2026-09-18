@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import { cycleHours } from '../../scripts/daemon/board-move.mjs';
 import {
+  FIRST_ISSUE_PULL,
   MERGED_CAP,
   MERGED_WINDOW_HOURS,
   countUnsummarizedAnalyses,
@@ -16,8 +17,8 @@ import {
  * `scripts/daemon/board-read.mjs` の検査。
  *
  * 盤面を組み立てる手のうち、**GitHub と CCR の外を見る分**——判断の履歴と、分析の記録の数え方
- * ——と、**スメルを拾う係が読む窓の取り方**をここで見る。手を決める分は `boardMove.test.ts`、
- * 1周を通した形は `boardRound.test.ts` が持つ。
+ * ——と、**一覧の引き方**（スメルを拾う係が読む窓の取り方・開いている issue を切らずに引くこと）を
+ * ここで見る。手を決める分は `boardMove.test.ts`、1周を通した形は `boardRound.test.ts` が持つ。
  *
  * **判断の履歴は、差し替えの口を通さずに実物を通す。** あちらは `pendingDecisions` を渡して数を
  * 決めてしまうので、**既定の経路（`archive/` を除く・`.md` だけ数える）は誰も通らない。**
@@ -119,6 +120,72 @@ describe('スメルを拾う係が読む窓（board-design.md 4.4.2）', () => {
 
   it('栓に届いていない周は言わない', () => {
     expect(readWith([{ number: 1, comments: [] }]).log).not.toContain('上限');
+  });
+});
+
+describe('開いている issue は、上限で切らずに全部引く', () => {
+  /**
+   * 開いている issue を `count` 件だけ置いた世界で盤面を1つ組む。**渡す `gh` は `--limit` を実際に
+   * 守る**——守らない `gh` だと、いくつ渡しても全部が返るので、**上限を固定へ戻しても緑のまま**
+   * になる（この検査が見ている面はそこだけ）。並びは本物と同じ**作成の新しい順**（番号の大きい側が先）
+   * にしてあるので、切られるのは番号の小さい側。
+   */
+  function readWith(count: number) {
+    const all = Array.from({ length: count }, (_, index) => ({
+      number: count - index,
+      labels: [],
+      blockedBy: { nodes: [] },
+    }));
+    const limits: number[] = [];
+    const gh = (args: readonly string[]): string => {
+      if (args[0] === 'api' && args[1] === 'graphql') return '{"data":{}}';
+      if (args[0] !== 'issue') return '[]';
+      const limit = Number(args[args.indexOf('--limit') + 1]);
+      limits.push(limit);
+      return JSON.stringify(all.slice(0, limit));
+    };
+    const board = readBoard({
+      gh,
+      sessions: () => [],
+      pendingDecisions: () => 0,
+      unsummarizedAnalyses: () => 0,
+      log: () => {},
+      now: new Date('2026-09-07T12:00:00Z'),
+      settleMinutes: 10,
+      taken: {},
+    }) as { issues: { number: number }[] } | undefined;
+    return { issues: board?.issues ?? [], limits };
+  }
+
+  // 切られるのはいちばん古い issue で、切られたぶんは「1件も無い」と同じ形になる。2026-09-11 に
+  // 100件で実際に起き、走っているワーカーが担当していた #1722 が盤面から消えた。
+  it('1回で引きにいく数を超えて開いていても、いちばん古いものまで返る', () => {
+    const { issues } = readWith(FIRST_ISSUE_PULL * 2 + 1);
+    expect(issues).toHaveLength(FIRST_ISSUE_PULL * 2 + 1);
+    expect(issues.at(-1)?.number).toBe(1);
+  });
+
+  // **届いた回だけ引き直す。** 毎周2回引くと、1周30秒ぶんの固定費がそのまま倍になる。
+  it('1回で引きにいく数に届かなければ、引き直さない', () => {
+    expect(readWith(FIRST_ISSUE_PULL - 1).limits).toEqual([FIRST_ISSUE_PULL]);
+  });
+
+  // **引けなかったことと「1件も無い」を混ぜない。** 空として読むと、値の見張り
+  // （`check-values.mjs`）では同じ題の2本目がそのまま立つ。
+  it('応答が読めなかった周は、引けなかった周と同じに読む', () => {
+    const gh = (args: readonly string[]): string =>
+      args[0] === 'issue' ? '壊れた応答' : args[1] === 'graphql' ? '{"data":{}}' : '[]';
+    const board = readBoard({
+      gh,
+      sessions: () => [],
+      pendingDecisions: () => 0,
+      unsummarizedAnalyses: () => 0,
+      log: () => {},
+      now: new Date('2026-09-07T12:00:00Z'),
+      settleMinutes: 10,
+      taken: {},
+    });
+    expect(board).toBeUndefined();
   });
 });
 

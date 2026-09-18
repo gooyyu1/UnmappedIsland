@@ -14,8 +14,8 @@ issue とPRを読み書きする手。**ここが持つのは「どちらの道�
 
 | やること | `gh` があるとき | 無いとき |
 | --- | --- | --- |
-| 開いているものを引く | `gh issue list --state open --limit <上限> --json number,title,labels` | `list_issues`（`state: "OPEN"`・`fields: ["number","title","labels"]`） |
-| 題や本文で探す | `gh issue list --state open --limit <上限> --json number,title --search '<検索語>'` | `search_issues`（`owner: "gooyyu1"`・`repo: "UnmappedIsland"`・`query: "<検索語>"`） |
+| 開いているものを引く | `gh issue list --state open --limit <渡す数> --json number,title,labels` | `list_issues`（`state: "OPEN"`・`fields: ["number","title","labels"]`） |
+| 題や本文で探す | `gh issue list --state open --limit <渡す数> --json number,title --search '<検索語>'` | `search_issues`（`owner: "gooyyu1"`・`repo: "UnmappedIsland"`・`query: "<検索語>"`） |
 | 本文を読む | `gh issue view <番号> --json body` | `issue_read`（`method: "get"`） |
 | コメントを読む | `gh issue view <番号> --comments` | `issue_read`（`method: "get_comments"`） |
 | 立てる | `gh issue create --title <題> --body-file <本文のファイル> --label <ラベル>` | `issue_write`（`method: "create"`・`title`・`body`・`labels`） |
@@ -24,8 +24,14 @@ issue とPRを読み書きする手。**ここが持つのは「どちらの道�
 | コメントを置く | `gh issue comment <番号> --body-file <本文のファイル>` | `add_issue_comment`（`issue_number`・`body`） |
 
 **どちらの側も、黙って打ち切る。** `gh issue list` の `--limit` は既定が30件、`list_issues` も
-`perPage` のぶんで止まる。**全部が要るなら、`--limit` に十分な数を渡し、MCP の側は前の応答の
-`endCursor` を `after` へ渡して繰る**（`pageInfo` が続きの有無を持つ）。
+`perPage` のぶんで止まる。**切られるのは古い側**（並びは作成の新しい順）で、切られたぶんは
+「1件も無い」と同じ形になるので、読んだ側には欠けていること自体が見えない。
+
+**「十分な数」を置かない。** 開いている issue は増えるので、どれだけ高く置いても、実数がそこへ届いた
+日に同じ形で欠ける（2026-09-11 に実際に起き、走っているワーカーが担当していた issue が盤面から
+消えた）。**返った件数が渡した `--limit` と並んだら、切られている**——渡す数を倍にして引き直す。
+MCP の側は前の応答の `endCursor` を `after` へ渡して繰る（`pageInfo` が続きの有無を持つ）。
+機械の側の実装は [`board-read.mjs`](../scripts/daemon/board-read.mjs) の `allOpenIssues`。
 
 **`search_issues` は自然言語で照合すると名乗っている**（`is:open` のような修飾が効くかは確かめて
 いない）。返ってきたものが探していたものかは、題を見て確かめる。**取りこぼすと困るとき**
