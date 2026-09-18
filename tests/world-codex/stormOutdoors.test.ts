@@ -167,42 +167,48 @@ describe('嵐の日は屋根の下でなければ何もできない', () => {
 });
 
 /**
- * 明るさの条件を書いた操作が、風雨の条件を書き忘れていないことの検査。
+ * 明るさの条件と風雨の条件が、ちょうど同じ顔ぶれの操作へ書かれていることの検査。
  *
  * **条件を1箇所に集める術が無い**（レシピの `crafting_conditions` にあたるものが操作には無い）ので、
  * 操作それぞれが明るさの1行の隣に風雨の1行を持つ。書き忘れと「嵐でもできると決めた」が字面で
- * 見分けられないため、**明るさを要求する操作は必ず風雨も要求する**という形でここが見張る。
+ * 見分けられないため、**2つが重なっていること**という形でここが見張る。
  *
- * **その2つがちょうど重なる**のが線の引き方そのもの（docs/engine/IlluminationSystem.md 5節）
- * ——目や手元の精度が要る仕事は、暗さでも風雨でも止まる。手が覚えている粗い動作（食べる・くべる・
- * 殴る）と海を渡ることはどちらの条件も持たないので、例外を並べずに済む。
+ * **その2つが重なるのが線の引き方そのもの**（docs/engine/IlluminationSystem.md 5節）——目や手元の
+ * 精度が要る仕事は、暗さでも風雨でも止まる。手が覚えている粗い動作（食べる・くべる・殴る）と海を
+ * 渡ることはどちらの条件も持たないので、例外を並べずに済む。
+ *
+ * **両向きに見る。** 片側（明るさが在るなら風雨も）だけだと、風雨だけを書いた操作と、明るさの1行を
+ * 後から落とされた操作が緑のまま通る。
  */
-describe('明るさを要求する操作は、風雨もそろって要求する', () => {
-  it('明るさの条件を持つ操作が、1つ残らず風雨も要求している', () => {
-    const lit = brightnessGatedConditions();
+describe('明るさの条件と風雨の条件は、ちょうど同じ操作に書かれている', () => {
+  it('どちらか一方だけを持つ条件の並びが1つも無い', () => {
+    const gated = brightnessOrWindGatedConditions();
 
     // 何も拾えていない検査は、緑であることと見ていないことの区別が付かない。**両方の明るさと、
     // 操作ではない`crafting_conditions`を1つずつ確かめる**——片方の綴りが変わって拾えなくなっても、
     // もう片方が在るだけで緑になってしまう。
     for (const kind of ['looking_brightness', 'hand_brightness', 'crafting_conditions'])
       expect(
-        lit.filter((gated) => gated.kinds.includes(kind)).length,
+        gated.filter((one) => one.kinds.includes(kind)).length,
         `${kind}を見ている条件が1つも見つからない`,
       ).toBeGreaterThan(0);
 
     expect(
-      lit.filter((gated) => !gated.requiresWind).map((gated) => `${gated.where}: 風雨の条件を持たない`),
+      gated
+        .filter((one) => one.requiresBrightness !== one.requiresWind)
+        .map((one) => `${one.where}: ${one.requiresWind ? '明るさ' : '風雨'}の条件を持たない`),
     ).toEqual([]);
   });
 });
 
-/** 明るさで閉じている条件の並び1つぶんの読み。 */
-interface BrightnessGatedConditions {
+/** 明るさか風雨で閉じている条件の並び1つぶんの読み。 */
+interface GatedConditions {
   readonly where: string;
 
   /** 見ている明るさのプロパティ名と、操作ではない条件の並びを指す印。 */
   readonly kinds: readonly string[];
 
+  readonly requiresBrightness: boolean;
   readonly requiresWind: boolean;
 }
 
@@ -213,27 +219,26 @@ const BRIGHTNESS_PROPERTIES = ['looking_brightness', 'hand_brightness'];
 const WIND_PROPERTY = 'wind_speed';
 
 /**
- * 同梱の定義YAMLから、明るさの段を要求している条件の並びをすべて拾う。ロード後の ConditionNode は
+ * 同梱の定義YAMLから、明るさか風雨の段を要求している条件の並びをすべて拾う。ロード後の ConditionNode は
  * 木に畳まれていて列挙できないため、定義ファイルの構文木から拾う（`illuminationStages.test.ts` と
  * 同じ理由）。**操作の `conditions` と、ルートキーの `crafting_conditions` の両方を見る**
  * ——後者は全レシピへ一律に掛かる1本（`core.yaml`）。
  */
-function brightnessGatedConditions(): readonly BrightnessGatedConditions[] {
-  const found: BrightnessGatedConditions[] = [];
+function brightnessOrWindGatedConditions(): readonly GatedConditions[] {
+  const found: GatedConditions[] = [];
 
   const read = (where: string, conditions: unknown, extraKinds: readonly string[] = []): void => {
     const required = requiredStages(conditions);
-    const kinds = [
-      ...extraKinds,
-      ...BRIGHTNESS_PROPERTIES.filter((property) =>
-        [...required].some((stage) => stage.startsWith(`${property}/`)),
-      ),
-    ];
-    if (!kinds.some((kind) => BRIGHTNESS_PROPERTIES.includes(kind))) return;
+    const looksAt = (property: string): boolean =>
+      [...required].some((stage) => stage.startsWith(`${property}/`));
+    const brightnessKinds = BRIGHTNESS_PROPERTIES.filter(looksAt);
+    const requiresWind = looksAt(WIND_PROPERTY);
+    if (brightnessKinds.length === 0 && !requiresWind) return;
     found.push({
       where,
-      kinds,
-      requiresWind: [...required].some((stage) => stage.startsWith(`${WIND_PROPERTY}/`)),
+      kinds: [...extraKinds, ...brightnessKinds],
+      requiresBrightness: brightnessKinds.length > 0,
+      requiresWind,
     });
   };
 

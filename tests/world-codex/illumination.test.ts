@@ -32,29 +32,26 @@ describe('明るさが行動を制限する', () => {
     codex = bundledCodex();
   });
 
-  /** 土地の上にプレイヤーが1人立っている世界。時刻だけを引数で変える（天気は既定のclear）。 */
+  /**
+   * 土地の上にプレイヤーが1人立っている世界。時刻だけを引数で変える（天気は既定のclear）。
+   *
+   * **worldインスタンスも他の物と同じセッションに属させる**（WorldSession.adoptWorld）。別のセッションで
+   * 作ると、以降ここから生える物の`session`が世界を知らないほうを指す。
+   */
   function open(hour: number, landName: string) {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
-    const worldView = new World(worldInstance);
-    const session = new WorldSession(codex, worldView, fixedRng(0));
+    const session = new WorldSession(codex, undefined, fixedRng(0));
+    const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
+    session.adoptWorld(new World(worldInstance));
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);
 
-    const land = spawnInto(session, landName, worldInstance, 'locations');
-    const player = spawnInto(session, SAMPLE_CHARACTER, land, 'characters');
-    return { session, worldInstance, land, player };
+    const land = spawnInto(landName, worldInstance, 'locations');
+    const player = spawnInto(SAMPLE_CHARACTER, land, 'characters');
+    return { worldInstance, land, player };
   }
 
-  function spawnInto(
-    session: WorldSession,
-    objectName: string,
-    parent: WorldObject,
-    slotName: string,
-  ): WorldObject {
-    const spawned = session.createObject(codex.objectNames.getId(objectName));
+  /** 生む先の親が属するセッションで生む——どのセッションの物かは親自身が名乗る。 */
+  function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
+    const spawned = parent.session.createObject(codex.objectNames.getId(objectName));
     expect(spawned.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
@@ -65,15 +62,15 @@ describe('明るさが行動を制限する', () => {
   }
 
   /** 灯した松明。lightは火種を要求するので、テストは灯った状態を直接作る。 */
-  function litTorch(session: WorldSession, parent: WorldObject, slotName: string): WorldObject {
-    const torch = spawnInto(session, 'torch', parent, slotName);
+  function litTorch(parent: WorldObject, slotName: string): WorldObject {
+    const torch = spawnInto('torch', parent, slotName);
     torch.getProperty(codex.propertyNames.getId('lit')).setNumberWithoutEvents(1);
     return torch;
   }
 
   /** 燃えている焚き火。火力が0より大きいことが「火が生きている」（FireSystem.md 2節）。 */
-  function litCampfire(session: WorldSession, land: WorldObject): WorldObject {
-    const campfire = spawnInto(session, 'campfire', land, 'fixtures');
+  function litCampfire(land: WorldObject): WorldObject {
+    const campfire = spawnInto('campfire', land, 'fixtures');
     campfire.getProperty(codex.propertyNames.getId('heat')).setNumberWithoutEvents(20);
     return campfire;
   }
@@ -88,8 +85,8 @@ describe('明るさが行動を制限する', () => {
   });
 
   it('夜でも、松明を持っていれば屋外で採れる', () => {
-    const { session, land, player } = open(NIGHT_HOUR, 'grassland');
-    litTorch(session, player, 'hand');
+    const { land, player } = open(NIGHT_HOUR, 'grassland');
+    litTorch(player, 'hand');
 
     expect(brightnessOf(player, 'looking_brightness'), '底（-6）から松明が+11押し上げる').toBe(5);
     expect(new Location(land).explore(player)).toBe(true);
@@ -97,7 +94,7 @@ describe('明るさが行動を制限する', () => {
 
   it('夜の道は、松明を手に持っているときだけ歩ける', () => {
     expect(
-      travelsAtNight((session, land, player) => litTorch(session, player, 'hand')),
+      travelsAtNight((_land, player) => litTorch(player, 'hand')),
       '手に持つ',
     ).toBe(true);
     expect(
@@ -105,46 +102,46 @@ describe('明るさが行動を制限する', () => {
       '明かり無し',
     ).toBe(false);
     expect(
-      travelsAtNight((session, land) => litTorch(session, land, 'items')),
+      travelsAtNight((land) => litTorch(land, 'items')),
       '地面へ置いた松明は、歩き出した本人を照らさない',
     ).toBe(false);
     expect(
-      travelsAtNight((session, land) => litCampfire(session, land)),
+      travelsAtNight((land) => litCampfire(land)),
       '焚き火のそばからも夜の道へは出られない',
     ).toBe(false);
   });
 
   it('夜でも、焚き火のそばなら手元の作業を進められる', () => {
     const dark = open(NIGHT_HOUR, 'grassland');
-    expect(spinsFiber(dark.session, dark.land, dark.player), '明かり無しでは撚れない').toBe(false);
+    expect(spinsFiber(dark.land, dark.player), '明かり無しでは撚れない').toBe(false);
 
     const lit = open(NIGHT_HOUR, 'grassland');
-    litCampfire(lit.session, lit.land);
+    litCampfire(lit.land);
     expect(brightnessOf(lit.player, 'hand_brightness'), '底（-6）から焚き火が+11押し上げる').toBe(5);
     expect(
       brightnessOf(lit.player, 'looking_brightness'),
       '据えた火は視界には届かない（採りには出られない）',
     ).toBe(-6);
-    expect(spinsFiber(lit.session, lit.land, lit.player), '焚き火のそばなら撚れる').toBe(true);
+    expect(spinsFiber(lit.land, lit.player), '焚き火のそばなら撚れる').toBe(true);
   });
 
   it('レシピの工程は、暗ければどれも進まない（焚き火のそばなら進む）', () => {
     const dark = open(NIGHT_HOUR, 'grassland');
-    expect(carvesFireDrill(dark.session, dark.land, dark.player), '夜は火起こし具も作れない').toBe(false);
+    expect(carvesFireDrill(dark.land, dark.player), '夜は火起こし具も作れない').toBe(false);
 
     const lit = open(NIGHT_HOUR, 'grassland');
-    litCampfire(lit.session, lit.land);
-    expect(carvesFireDrill(lit.session, lit.land, lit.player), '焚き火のそばなら作れる').toBe(true);
+    litCampfire(lit.land);
+    expect(carvesFireDrill(lit.land, lit.player), '焚き火のそばなら作れる').toBe(true);
   });
 
   it('火を熾すことだけは夜もできる — これが日暮れ後の唯一の戻り道', () => {
     // 日暮れ前に火起こし具・火口・炉を用意してあれば、真っ暗でも手元を取り戻せる
     // （IlluminationSystem.md 5節）。摩擦発火は手と耳の作業で、熾は自分で光る。
-    const { session, land, player } = open(NIGHT_HOUR, 'grassland');
-    const hearth = spawnInto(session, 'campfire', land, 'fixtures');
+    const { land, player } = open(NIGHT_HOUR, 'grassland');
+    const hearth = spawnInto('campfire', land, 'fixtures');
     hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(20);
-    const grass = spawnInto(session, 'dry_grass', land, 'items');
-    const drill = spawnInto(session, 'fire_drill', player, 'hand');
+    const grass = spawnInto('dry_grass', land, 'items');
+    const drill = spawnInto('fire_drill', player, 'hand');
 
     expect(
       grass
@@ -164,7 +161,7 @@ describe('明るさが行動を制限する', () => {
     ).toBe(true);
 
     expect(brightnessOf(player, 'hand_brightness'), '点いた火が手元を+11押し上げる').toBe(5);
-    expect(carvesFireDrill(session, land, player), '手元が戻ったので工程も進む').toBe(true);
+    expect(carvesFireDrill(land, player), '手元が戻ったので工程も進む').toBe(true);
   });
 
   it('密林の日中は、開けた土地より暗い', () => {
@@ -185,16 +182,14 @@ describe('明るさが行動を制限する', () => {
    * 夜の道を1本置いて、渡れたかを返す。`putLight`が、その世界へ置く明かりを決める
    * （置かないなら何もしない）。
    */
-  function travelsAtNight(
-    putLight: (session: WorldSession, land: WorldObject, player: WorldObject) => unknown,
-  ): boolean {
-    const { session, worldInstance, land, player } = open(NIGHT_HOUR, 'grassland');
-    const destination = spawnInto(session, 'forest', worldInstance, 'locations');
-    const path = spawnInto(session, 'path', land, 'fixtures');
+  function travelsAtNight(putLight: (land: WorldObject, player: WorldObject) => unknown): boolean {
+    const { worldInstance, land, player } = open(NIGHT_HOUR, 'grassland');
+    const destination = spawnInto('forest', worldInstance, 'locations');
+    const path = spawnInto('path', land, 'fixtures');
     path
       .getProperty(codex.propertyNames.getId('destination_id'))
       .setNumberWithoutEvents(destination.instanceId);
-    putLight(session, land, player);
+    putLight(land, player);
 
     return new Path(path).travel(player);
   }
@@ -203,7 +198,7 @@ describe('明るさが行動を制限する', () => {
    * 火起こし具を1工程ぶん進める（fire.yamlのcarved）。**レシピの工程の代表**で、条件は
    * レシピ側ではなく世界の`crafting_conditions`（GameElementDefinition.md 13.3節）が持つ。
    */
-  function carvesFireDrill(session: WorldSession, land: WorldObject, player: WorldObject): boolean {
+  function carvesFireDrill(land: WorldObject, player: WorldObject): boolean {
     const materialsSlotId = codex.vocabulary.engine.materialsSlotId;
     const wip = spawnInProgressObject(
       land,
@@ -211,7 +206,7 @@ describe('明るさが行動を制限する', () => {
     );
     for (const name of ['twig', 'thick_branch'])
       expect(
-        session
+        land.session
           .createObject(codex.objectNames.getId(name))
           .moveToSlotOrRejection(wip.getSlot(materialsSlotId)),
       ).toBeUndefined();
@@ -220,9 +215,9 @@ describe('明るさが行動を制限する', () => {
   }
 
   /** 繊維2束を撚る（fiber.yamlのspin）。手元の明るさを要求する工程の代表。 */
-  function spinsFiber(session: WorldSession, land: WorldObject, player: WorldObject): boolean {
-    const first = spawnInto(session, 'plant_fiber', land, 'items');
-    const second = spawnInto(session, 'plant_fiber', land, 'items');
+  function spinsFiber(land: WorldObject, player: WorldObject): boolean {
+    const first = spawnInto('plant_fiber', land, 'items');
+    const second = spawnInto('plant_fiber', land, 'items');
     return (
       first
         .combinationsWith(second, player)

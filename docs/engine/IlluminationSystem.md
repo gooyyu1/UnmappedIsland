@@ -195,6 +195,8 @@ path:
           subject: agent
           prop: looking_brightness
           in_stage_or_above: dim
+        - reason: too_stormy
+          not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
 ```
 
 - **主語は `agent` です。** 行動が見るのはキャラクタ側の明るさで、キャラクタは操作を実行している本人だから

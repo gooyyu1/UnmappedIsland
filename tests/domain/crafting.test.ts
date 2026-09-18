@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   tryAdvanceCrafting,
-  currentStep,
+  currentStepIsSupplied,
+  currentStepOf,
+  currentStepSupplyRatio,
   spawnInProgressObject,
-  stepIsSupplied,
-  stepSupplyRatio,
 } from '../../src/domain/crafting';
 import { InteractionRelation } from '../../src/domain/ReferenceRoot';
 import { WorldObject } from '../../src/domain/WorldObject';
@@ -175,32 +175,37 @@ object_defs:
   const worker = () => session.createObject(idOf('crafter'));
 
   it('進捗が入る区間から、今の工程が決まる', () => {
-    expect(currentStep(recipe, 0)?.durationMinutes).toBe(30);
-    expect(currentStep(recipe, 30), '1工程目を終えたら2工程目').toBe(recipe.steps[1]);
-    expect(currentStep(recipe, 40), '全部終えていればundefined').toBeUndefined();
+    const progress = wip.getProperty(progressId());
+    expect(currentStepOf(wip)?.durationMinutes).toBe(30);
+
+    // 進捗を直に置く（on_maxのbecomeを起こさずに区間だけを動かす）。
+    progress.setNumberWithoutEvents(30);
+    expect(currentStepOf(wip), '1工程目を終えたら2工程目').toBe(recipe.steps[1]);
+
+    progress.setNumberWithoutEvents(40);
+    expect(currentStepOf(wip), '全部終えていればundefined').toBeUndefined();
   });
 
   it('材料の充足率は、今の工程の要求を素材も道具も数える', () => {
     put('wood', 1);
-    expect(stepSupplyRatio(wip, recipe.steps[0]), '木1/2、刃物0/1').toBeCloseTo(1 / 3);
+    expect(currentStepSupplyRatio(wip), '木1/2、刃物0/1').toBeCloseTo(1 / 3);
 
     put('knife', 1);
-    expect(stepSupplyRatio(wip, recipe.steps[0]), '道具も数に入る').toBeCloseTo(2 / 3);
+    expect(currentStepSupplyRatio(wip), '道具も数に入る').toBeCloseTo(2 / 3);
 
     put('wood', 1);
-    expect(stepSupplyRatio(wip, recipe.steps[0])).toBe(1);
-    expect(stepIsSupplied(wip, recipe.steps[0]), '揃った時点で作業できる').toBe(true);
+    expect(currentStepSupplyRatio(wip)).toBe(1);
+    expect(currentStepIsSupplied(wip), '揃った時点で作業できる').toBe(true);
   });
 
   it('要求数を超えて入っている分は、充足率を進めない', () => {
     // 枠の上限は全工程の合計なので、1工程目の要求を超えて入れられる。
     const raftWip = session.createObject(idOf(inProgressObjectName('raft', 'basic')));
     raftWip.moveToSlotOrRejection(ground.getSlot(codex.slotNames.getId('items')));
-    const raft = codex.objects.get(idOf('raft')).recipesProducingThis[0];
     for (let i = 0; i < 3; i += 1)
       session.createObject(idOf('wood')).moveToSlotOrRejection(raftWip.getSlot(materialsId()));
 
-    expect(stepSupplyRatio(raftWip, raft.steps[0]), '1工程目は1つで足りる').toBe(1);
+    expect(currentStepSupplyRatio(raftWip), '1工程目は1つで足りる').toBe(1);
   });
 
   it('終えた工程の数はfinished_stepsに現れ、割合は終えた工程の数÷全工程数になる', () => {
@@ -243,7 +248,7 @@ object_defs:
     put('wood', 1);
     put('knife', 1);
 
-    expect(stepIsSupplied(wip, recipe.steps[0])).toBe(false);
+    expect(currentStepIsSupplied(wip)).toBe(false);
     expect(tryAdvanceCrafting(wip, worker())).toBe(false);
     expect(wip.tryGetProperty(progressId())?.number ?? 0).toBe(0);
   });

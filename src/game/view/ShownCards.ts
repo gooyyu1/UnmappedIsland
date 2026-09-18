@@ -402,27 +402,27 @@ export class ShownCards {
   // ---- 操作の意味 ----
 
   /**
-   * fromのfromIndexの札をtoのtoIndexの札へ重ねたときの組み合わせ（返すものが無ければundefined）。
-   * **成立するとは限らない**——理由を告げて断るものもenabledがfalseで返る（CardInteraction.md 2.1節）。
-   * 実行されるものだけが要るならdropCombinationを使う。
+   * そのドロップが札へ重ねたときの組み合わせ（返すものが無ければundefined）。**成立するとは限らない**
+   * ——理由を告げて断るものもenabledがfalseで返る（CardInteraction.md 2.1節）。実行されるものだけが
+   * 要るならdropCombinationを使う。
+   *
+   * **受け取るのはドロップ1つ**で、掴んだ場所・重ねた先・枚数をばらして渡させない。ばらすと、噛み
+   * 合わない組（別のドロップの掴み元と重ね先）を渡しても型は通り、起きていない組み合わせを答える。
    *
    * 同じ場所を2度引かないのは、**同じ束へ重ねたことを参照の一致で見分ける**ため（combinationOf）。
    */
-  combinationAt(
-    from: CardSpot,
-    fromIndex: number,
-    to: CardSpot,
-    toIndex: number,
-    count = 1,
-  ): CardCombination | undefined {
-    const fromStacks = this.stacksAt(from);
-    const dragged = fromStacks[fromIndex];
-    const target = (from === to ? fromStacks : this.stacksAt(to))[toIndex];
+  combinationAt(drop: ShownDrop): CardCombination | undefined {
+    // 重ねた相手が居なければ組み合わせも無い（隙間・空き枠へ落としたドロップ）。
+    if (drop.target.kind !== 'combine') return undefined;
+
+    const fromStacks = this.stacksAt(drop.from);
+    const dragged = fromStacks[drop.fromIndex];
+    const target = (drop.from === drop.to ? fromStacks : this.stacksAt(drop.to))[drop.target.index];
     if (dragged === undefined || target === undefined) return undefined;
     // 個体を1つも出していない札（帰りを待つ印）は、掴む相手にも重ねる相手にもならない。
     if (dragged.objects.length === 0 || target.objects.length === 0) return undefined;
 
-    return this.source.combinationOf(dragged, target, count);
+    return this.source.combinationOf(dragged, target, drop.count);
   }
 
   /**
@@ -450,7 +450,7 @@ export class ShownCards {
     const dragged = this.stacksAt(drop.from)[drop.fromIndex];
     if (dragged === undefined) return undefined;
 
-    const combination = this.combinationAt(drop.from, drop.fromIndex, drop.to, drop.target.index, drop.count);
+    const combination = this.combinationAt(drop);
     if (combination?.enabled === true) return { told: combination, combination };
 
     const into = this.contentsUnder(drop);

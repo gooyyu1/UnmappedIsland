@@ -657,7 +657,7 @@ object_defs:
             duration: 60
           # 生皮を糸で縫い合わせる。骨針は道具なので**縫っても**減らない
           # （減るのは屋外に置いた間だけ、weathering.yaml）。同じ1本が縫う工程すべてを通す
-          # （consume: falseは工程を跨いで数えない、crafting.remainingRequirements）。
+          # （consume: falseは工程を跨いで数えない、crafting.remainingRequirementsOf）。
           - requires:
               - {object: rawhide, count: 2, consume: true}
               - {object: yarn, count: 2, consume: true}
