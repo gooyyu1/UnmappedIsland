@@ -40,6 +40,8 @@ interface Board {
   pendingDecisions?: number;
   /** 二次がまだ読んでいない、一次の分析の記録の数。回をまたぐ形を見る係の `due` が読む。 */
   unsummarizedAnalyses?: number;
+  /** 節番号の参照に、この周に読むものが在るか。参照を検める係の `due` が読む。 */
+  pendingRefAudit?: boolean;
   issues?: readonly unknown[];
   sessions?: readonly {
     id: string;
@@ -1704,6 +1706,7 @@ describe('board-move.mjs', () => {
   const ANALYSIS = `CHORE analysis agent-ops/prompts/analysis-prompt.md ${NOW}`;
   const POLICY = `CHORE policy agent-ops/prompts/policy-cycle-prompt.md ${NOW}`;
   const TREND = `CHORE trend agent-ops/prompts/analysis-trend-prompt.md ${NOW}`;
+  const REFS = `CHORE refs agent-ops/prompts/refs-prompt.md ${NOW}`;
   /** 盤面を見回る係（2.21）。**このPCでしか調べられない**ので、宛先が付く。 */
   const PATROL = `CHORE patrol agent-ops/prompts/patrol-prompt.md ${NOW} --bridge`;
 
@@ -1795,7 +1798,7 @@ describe('board-move.mjs', () => {
   // `dispatch-chore.sh` が要る2つを持っていること**。片方でも欠けると、係は毎周立とうとして
   // 毎周失敗する（時刻を残さないので、間隔で黙りもしない）。
   it('周期の係のプロンプトは、題と囲みを持つ', () => {
-    for (const move of [TRIAGE, ANALYSIS, POLICY, DIG, PATROL]) {
+    for (const move of [TRIAGE, ANALYSIS, POLICY, TREND, REFS, DIG, PATROL]) {
       const text = readFileSync(resolve(__dirname, '../..', move.split(' ')[2]), 'utf-8');
       expect(text).toMatch(/^題: \S/m);
       expect(text).toMatch(/^````$/m);
@@ -1987,6 +1990,32 @@ describe('board-move.mjs', () => {
   it('週が明けたら、回をまたぐ形を見る係をもう一度立てる', () => {
     const board = { unsummarizedAnalyses: 3, taken: { 'cycle:trend': '2026-08-29T01:00:00Z' } };
     expect(moves(board)).toEqual([TREND]);
+  });
+
+  // ## 参照を検める係（2.17）
+  //
+  // 仕事の在り処が**リポジトリの中**（どこまで読んだかの台帳と、そこからの差分）にある係。
+  // **在るかどうかを答えるのは `scripts/daemon/refAudit.mjs`** で、見るのは `board-read.mjs`。ここが見るのは
+  // **その答えで立つか立たないか**だけ——答えの出し方はあちらの検査が持つ。
+  it('この周に読む参照があれば、参照を検める係を立てる', () => {
+    expect(moves({ pendingRefAudit: true })).toEqual([REFS]);
+  });
+
+  it('読むものが無ければ、参照を検める係は立てない', () => {
+    expect(moves({ pendingRefAudit: false })).toEqual([]);
+  });
+
+  // **間隔は `CYCLES` の `refs` が持つ**（入力は `main` へ入った差分なので、溜めると1周で読む量が
+  // 増えるだけ）。**他の係と同じ週では立たない**ことまで見る——半日しか空いていない盤面を渡すので、
+  // 間隔を半日へ縮めるとここが赤くなる。
+  it('前に立ててから一日が経つまで、参照を検める係は立てない', () => {
+    const board = { pendingRefAudit: true, taken: { 'cycle:refs': '2026-09-04T14:00:00Z' } };
+    expect(moves(board)).toEqual([]);
+  });
+
+  it('一日が経ったら、参照を検める係をもう一度立てる', () => {
+    const board = { pendingRefAudit: true, taken: { 'cycle:refs': '2026-09-04T01:00:00Z' } };
+    expect(moves(board)).toEqual([REFS]);
   });
 
   // ## 掘り起こす係（2.17）

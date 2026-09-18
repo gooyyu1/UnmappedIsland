@@ -34,6 +34,27 @@ const DECISIONS = join(ROOT, 'agent-ops', 'decisions');
 const EMPTY_GH = (args: readonly string[]): string | undefined =>
   args[0] === 'api' && args[1] === 'graphql' ? '{"data":{}}' : '[]';
 
+/**
+ * 参照を検める係の `due` が読む値を、渡したとおりに盤面へ載せるか。**判定そのものは
+ * `refAudit.test.ts` が持つ**ので、ここが見るのは配線だけ——落ちると、**見た側の答えと関係なく
+ * 係が立つ**（立たない）。
+ */
+async function readRefAudit(pendingRefAudit: () => boolean): Promise<unknown> {
+  return (
+    await readBoard({
+      gh: EMPTY_GH,
+      sessions: () => [],
+      pendingDecisions: () => 0,
+      unsummarizedAnalyses: () => 0,
+      pendingRefAudit,
+      log: () => {},
+      now: new Date('2026-09-06T00:00:00Z'),
+      settleMinutes: 10,
+      taken: {},
+    })
+  )?.pendingRefAudit;
+}
+
 async function pendingDecisions(): Promise<unknown> {
   return (
     await readBoard({
@@ -66,6 +87,11 @@ describe('board-read.mjs', () => {
   // `withFileTypes` から名前へ変えても気づけない**ので、入れ子の中身を数えていないことを別に見る。
   it('archive の中の件数を足していない', async () => {
     expect(await pendingDecisions()).toBeLessThan(direct.length + archived.length);
+  });
+
+  it('参照を検める係の出番は、見た側の答えをそのまま盤面へ載せる', async () => {
+    expect(await readRefAudit(() => true)).toBe(true);
+    expect(await readRefAudit(() => false)).toBe(false);
   });
 });
 
