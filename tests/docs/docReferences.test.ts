@@ -19,7 +19,7 @@ import {
 import { declaresWholeDocument, WHOLE_DOCUMENT_CONFIRMED } from '../../scripts/docStatus.mjs';
 import { githubSlugs } from '../../scripts/githubSlugs.mjs';
 import { linesOutsideFence } from '../../scripts/markdownFences.mjs';
-import { isPathTarget } from '../../scripts/markdownLinks.mjs';
+import { isPathTarget, linksIn, pathTargetsIn } from '../../scripts/markdownLinks.mjs';
 
 /**
  * ドキュメントの参照が実在の対象へ解決するかの検査（docs/DocumentStyle.md 5節）。
@@ -431,22 +431,16 @@ function hasNumberedSection(docRel: string, num: string): boolean {
 
 /** `source` の中で、指し先のファイルが無いMarkdownリンク。`rel` はリンクを解決する起点。 */
 function brokenLinkFilesIn(rel: string, source: string): string[] {
-  const broken: string[] = [];
-  for (const match of source.matchAll(/\]\(([^)#\s]+)(#[^)\s]*)?\)/g)) {
-    const target = match[1];
-    if (/^[a-z]+:/.test(target)) continue; // http(s):等
-    if (!isPathTarget(target)) continue;
-    if (!existsSync(resolve(ROOT, dirname(rel), target))) broken.push(`${rel}: ${target}`);
-  }
-  return broken;
+  return pathTargetsIn(source)
+    .filter((target) => !existsSync(resolve(ROOT, dirname(rel), target)))
+    .map((target) => `${rel}: ${target}`);
 }
 
 /** `source` の中で、リンク先の見出しに解決しないアンカー。`rel` はリンクを解決する起点。 */
 function brokenLinkAnchorsIn(rel: string, source: string): string[] {
   const broken: string[] = [];
-  for (const match of source.matchAll(/\]\(([^)#\s]*)#([^)\s]+)\)/g)) {
-    const [, file, anchor] = match;
-    if (/^[a-z]+:/.test(file)) continue;
+  for (const { file, anchor } of linksIn(source)) {
+    if (anchor === null || anchor === '') continue;
     if (file !== '' && !isPathTarget(file)) continue;
     if (isPlaceholderAnchor(anchor)) continue;
     let targetRel = rel;
@@ -921,14 +915,22 @@ describe('ドキュメントの参照', () => {
     );
   });
 
+  it('リポジトリの外に在るひな形では、囲みの中の指し先を動かさない', () => {
+    // 揃える先の直下が無い（検査が一時フォルダへ書くひな形がこの経路を通る）。測って付け替えると、
+    // **リポジトリを抜けるぶんの `../` が指し先へ付いて、壊れた指し先が黙って出る。**
+    const template = ['```', '[`parallel-work.md`](../parallel-work.md)', '```'].join('\n');
+
+    expect(promptBodyForSession(join(ROOT, '..', 'probe-prompt.md'), template)).toBe(
+      '[`parallel-work.md`](../parallel-work.md)\n',
+    );
+  });
+
   it('ひな形の囲みの中のリンクが、渡った先（リポジトリ直下）から開ける', () => {
     // 上のリンク切れの検査はひな形の位置から解決するので、**そちらが緑でも渡った先で開けるとは
     // 言えない**（起点が違う。DocumentStyle.md 5節）。
     const written = REF_TARGETS.filter(isPromptTemplate).flatMap((rel) =>
       promptBodiesForSession(rel, read(rel)).flatMap((body) =>
-        [...body.matchAll(/\]\(([^)#\s]+)(?:#[^)\s]*)?\)/g)]
-          .map(([, target]) => ({ rel, target }))
-          .filter(({ target }) => !/^[a-z]+:/.test(target) && isPathTarget(target)),
+        pathTargetsIn(body).map((target) => ({ rel, target })),
       ),
     );
 

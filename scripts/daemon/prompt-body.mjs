@@ -7,7 +7,7 @@
 // 取り出せなければ何も出さない（**空かどうかで判定する側が居る**——`prompt-template.sh`）。
 
 import { readFileSync } from 'node:fs';
-import { dirname, relative, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { linksRebasedToRepoRoot } from '../markdownLinks.mjs';
 
@@ -116,6 +116,19 @@ export function promptBodies(markdown) {
 }
 
 /**
+ * そのひな形が在る場所の、リポジトリ直下から見た相対（区切りは `/`）。
+ *
+ * **リポジトリの外に在るひな形（検査が一時フォルダへ書くもの）では空を返す**——揃える先の直下が
+ * 無いので、指し先は動かさないのが正しい。返さずに測ると、リポジトリを抜けるぶんの `../` が指し先へ
+ * 付いて、**壊れた指し先が黙って出る。**
+ */
+function dirFromRepoRoot(templatePath) {
+  const fromRoot = relative(REPO_ROOT, resolve(templatePath));
+  if (fromRoot.startsWith('..') || isAbsolute(fromRoot)) return '';
+  return dirname(fromRoot).split(sep).join('/');
+}
+
+/**
  * セッションへ渡す形の本体。囲みの中身を取り出したうえで、**リンクの起点をリポジトリ直下へ
  * 揃える。**
  *
@@ -124,24 +137,20 @@ export function promptBodies(markdown) {
  * リポジトリ直下で読むので、ひな形の位置から書いた `../../` はそのままでは開けない。**揃えるのは
  * ここ1つ**——書き手の側で先回りして揃えると、ひな形の頁から開けないリンクが、検査の緑のまま残る。
  *
- * @param {string} templatePath ひな形のパス（相対でも絶対でもよい）
+ * @param {string} templatePath ひな形のパス。相対なら今のフォルダから解決する
  * @param {string} markdown ひな形の中身
  * @param {string | null} [section] 読み始める節の名前。渡さなければひな形の先頭から
  * @returns {string | null} 渡す本体。囲みが見つからなければ null
  */
 export function promptBodyForSession(templatePath, markdown, section = null) {
   const body = promptBody(markdown, section);
-  if (body === null) return null;
-  const dir = dirname(relative(REPO_ROOT, resolve(templatePath)))
-    .split(sep)
-    .join('/');
-  return linksRebasedToRepoRoot(body, dir);
+  return body === null ? null : linksRebasedToRepoRoot(body, dirFromRepoRoot(templatePath));
 }
 
 /**
  * そのひな形が渡しうる本体すべてを、{@link promptBodyForSession 渡す形}で。
  *
- * @param {string} templatePath ひな形のパス（相対でも絶対でもよい）
+ * @param {string} templatePath ひな形のパス。相対なら今のフォルダから解決する
  * @param {string} markdown ひな形の中身
  * @returns {string[]} 渡す本体。1つも無ければ空
  */
