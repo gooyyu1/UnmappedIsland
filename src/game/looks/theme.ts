@@ -80,6 +80,12 @@ export const SIZE = {
   slotButtonIcon: { width: 145, height: 64 },
   radius: 12,
   /**
+   * 紙として置かれるボタン（スロットボタン・バーのアイコンボタン）が落とす影のずらし幅。
+   * **2箇所が一致していないと壊れる値**なので、利用者が何であれ意匠が持つ
+   * （[`CodeStructure.md`](../../../docs/CodeStructure.md) 3節）。
+   */
+  paperButtonShadow: 1.5,
+  /**
    * スクロールバーの厚みと、送られるカードの下端との間隔（ScreenLayout.md 7.4節 スクロールバー）。
    * レーンではこの位置がカードの下の余白（16u）に収まり、区切りの帯がかぶる3uにも掛からない。
    */

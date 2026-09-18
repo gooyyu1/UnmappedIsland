@@ -68,14 +68,18 @@ describe('経過の再生', () => {
 
     expect(playback.frameAt(0).due).toEqual([]);
     expect(playback.frameAt(60).clockMinutes, '経過し切った時刻を指す').toBe(60);
-    expect(playback.frameAt(60).ratio).toBe(1);
+    expect(playback.frameAt(60).elapsed.ratio).toBe(1);
   });
 
   it('時間を消費しない経過は、最初から塗り切っている', () => {
     const playback = new ElapsePlayback(0, 0, 15, []);
 
     expect(playback.totalMinutes).toBe(0);
-    expect(playback.frameAt(0)).toMatchObject({ clockMinutes: 0, elapsedMinutes: 0, ratio: 1, due: [] });
+    expect(playback.frameAt(0)).toMatchObject({
+      clockMinutes: 0,
+      elapsed: { minutes: 0, ratio: 1 },
+      due: [],
+    });
   });
 
   it('時計と、輪に出す経過分は、同じ目盛りを指す', () => {
@@ -84,7 +88,7 @@ describe('経過の再生', () => {
 
     for (const elapsed of [0, 3, 5, 12, 20]) {
       const frame = playback.frameAt(elapsed);
-      expect(frame.clockMinutes - frame.elapsedMinutes, `${elapsed}分`).toBe(430);
+      expect(frame.clockMinutes - frame.elapsed.minutes, `${elapsed}分`).toBe(430);
     }
   });
 

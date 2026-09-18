@@ -71,6 +71,10 @@ describe('発見物の枠（世界→映し 通し）', () => {
       places: (screen) => (screen === 'fixtures' ? exploredIn(view()).fixtures : view().places(screen)),
       // ここで見るのは発見物の行き来だけなので、絞り込みは掛けない（ScreenLayout.md 8.1節）。
       filter: () => undefined,
+      // 見るのは並びだけなので、札の上の操作は押されない。
+      midAction: () => false,
+      onOpenCard: () => {},
+      onEdgeMove: () => {},
     });
   }
 

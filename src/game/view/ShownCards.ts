@@ -4,7 +4,9 @@ import type { WorldObject } from '../../domain/WorldObject';
 import type { ObjectCardStack } from './PlayScreenView';
 import type { CardCombination, CardDropEffect } from './cardOperations';
 import type { CardPlace, CardPlacement, ScreenPlaceResolver } from './cardPlaces';
-import type { CardContent, CardEdgeDirection } from '../ui/Card';
+import type { CardContent } from '../ui/Card';
+import type { CardEdgeAction, CardEdgeDirection } from '../ui/cardEdges';
+import { EDGE_DIRECTIONS } from '../ui/cardEdges';
 import { borrowedFace, cardFace } from '../ui/cardFace';
 import { foundObjects } from './changedInstances';
 
@@ -43,6 +45,21 @@ export interface CardSource {
    * 外側の場所を映していれば、上へ送る先もその外側になる（ScreenLayout.md 7.1.1節）。
    */
   readonly places: ScreenPlaceResolver;
+  /**
+   * 行動の途中の値を見せている最中か。札の上の状態バーは、減った分の帯を縮めずに溜める
+   * （ShownStatusesのmidActionと同じ）。
+   */
+  readonly midAction: () => boolean;
+  /**
+   * その札を押した（押した先で何が開くかは画面の仕事）。**演出中に何もしないのも呼び出し側**
+   * ——並んでいる札が古い対象を指していないかは、画面が持つ演出の状態にしか分からない。
+   */
+  readonly onOpenCard: (card: ObjectCardStack) => void;
+  /**
+   * その札の端を押した。moveはその向きへの移動（edgeMoveAction）で、**実行するのは呼び出し側**
+   * ——世界を変えた後に何をどう見せるかは画面の仕事だから。
+   */
+  readonly onEdgeMove: (card: ObjectCardStack, direction: CardEdgeDirection, move: () => void) => void;
 }
 
 /** ドラッグしたカードを落とした先（CardDragControllerのCardDropの、レーンを場所に直した形）。 */
@@ -109,6 +126,32 @@ export class ShownCards {
   /** そこに並ぶ束。持ち出されている札と絞り込みで隠れる札を差し引いた、画面に出ている姿そのもの。 */
   stacksAt(spot: CardSpot): readonly (ObjectCardStack | undefined)[] {
     return this.presentAndShownAt(spot).shown;
+  }
+
+  /**
+   * その並び（stacksAt）の束に、**その上で何ができるか**を付けた札（空き枠はundefined、並びは
+   * そのまま）。
+   *
+   * **場所ではなく並びを受け取る。** 枠を組む側（slotCells）は束と札を添字で突き合わせるので、
+   * 場所から2度引くと、2つの並びが一致するという規約が呼び出し側に残る。
+   *
+   * **移せない札にも掴む操作は付く。** 他の札へ重ねるcombinationの元にはなれるため。押したときに
+   * 何が開くか・端の移動をいつ実行するかは画面が決める（CardSource.onOpenCard・onEdgeMove）。
+   */
+  cardsOf(stacks: readonly (ObjectCardStack | undefined)[]): readonly (CardContent | undefined)[] {
+    // 経過を見せている間は行動の途中の値。並びの中で揃っている値なので、札ごとに引き直さない。
+    const midAction = this.source.midAction();
+    return stacks.map((card) =>
+      card === undefined
+        ? undefined
+        : {
+            ...card,
+            draggable: true,
+            onTap: () => this.source.onOpenCard(card),
+            edges: this.edgesOf(card),
+            midAction,
+          },
+    );
   }
 
   /**
@@ -493,6 +536,21 @@ export class ShownCards {
   }
 
   // ---- カードの端の移動 ----
+
+  /**
+   * その札が出す端の操作。**そこへ移せる札だけが矢印を出す**ので、置ける設置物（設置もできるかご）を
+   * 足せば、画面を直さずに設置物レーンとアイテムレーンの間を行き来できるようになる。
+   */
+  private edgesOf(card: ObjectCardStack): readonly CardEdgeAction[] {
+    const edges: CardEdgeAction[] = [];
+    for (const direction of EDGE_DIRECTIONS) {
+      const move = this.edgeMoveAction(card, direction);
+      if (move !== undefined) {
+        edges.push({ direction, onTap: () => this.source.onEdgeMove(card, direction, move) });
+      }
+    }
+    return edges;
+  }
 
   /** 端を押したときの移動（その向きへ移せないならundefined）。行き先は「空いている場所」なので位置は指定しない。 */
   edgeMoveAction(card: ObjectCardStack, direction: CardEdgeDirection): (() => void) | undefined {

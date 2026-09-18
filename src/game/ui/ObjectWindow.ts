@@ -15,6 +15,7 @@ import { PropertiesPane } from './PropertiesPane';
 import type { ObjectWindowSlot } from './SlotPane';
 import { SlotPane } from './SlotPane';
 import { foundCells } from './laneCells';
+import { DESCRIPTION_TAB, EXPLORATION_TAB, PROPERTIES_TAB } from './windowTabs';
 import {
   ACTION_GAP,
   ACTION_HEIGHT,
@@ -53,13 +54,6 @@ export interface ObjectWindowAction {
   /** 実行できない理由の文言。宣言が無ければundefined（理由を出さない）。 */
   readonly reason?: string | undefined;
 }
-
-/** 説明のタブの識別子（タブの記憶の鍵、Windows.md 1.2節）。スロットのタブはスロット名を名乗る。 */
-export const DESCRIPTION_TAB = 'description';
-
-/** 組み込みのタブの識別子。スロット名と衝突しないよう、スロットに使えない文字を頭に付ける。 */
-const PROPERTIES_TAB = '@properties';
-export const EXPLORATION_TAB = '@exploration';
 
 /** ウィンドウが映しているオブジェクト。 */
 export interface ObjectWindowTarget {

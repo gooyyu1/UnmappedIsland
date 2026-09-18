@@ -427,9 +427,6 @@ function packToFrontIfHidden(place: CardPlace, visibleCells: number): void {
 /** 場所を映す札の仮のアイコン。土地は種別を持たない（物ではない）ので、種別ごとの表とは別に置く。 */
 const LOCATION_ICON = '🗺️';
 
-/** 探索アクションの名前（locations.yaml）。持っているかどうかで、現在地を探索できるかが決まる。 */
-export const EXPLORE_ACTION = 'explore';
-
 /**
  * ステータスエリアへ出す候補になるプロパティに付けるタグ（GameElementDefinition.md 6.7節）。
  * 健康・栄養といったカテゴリのタグと重ねて付ける（満腹度はstatusでありnutritionでもある）。
@@ -825,7 +822,7 @@ export function fromGameSession(
    *
    * **ワールドが渡してくる並びは、中身が入れ替わり続ける実体（ObjectStack.members）なので、
    * ここで写し取る。** 操作の閉包（dropInto・movedIds等）まで写した並びを見ないと、経過の途中経過
-   * （RecordedView）を再生する頃には実体が空になっていて、端の表示の試し打ち（PlayScene.cardEdges）
+   * （RecordedView）を再生する頃には実体が空になっていて、端の表示の試し打ち（ShownCards.edgeMoveAction）
    * が先頭の無い束を踏む。
    */
   const cardOfStack = (live: readonly WorldObject[]): ObjectCardStack => {
@@ -849,17 +846,18 @@ export function fromGameSession(
    * 「見張り」）で、言い換えていなければ画面の既定語（`ui_texts.exploration`）を出す。
    */
   const explorationOf = (object: WorldObject): ExplorationContent | undefined => {
-    if (!object.def.declaresInteraction(EXPLORE_ACTION)) return undefined;
+    const explorable = new Location(object, codex);
+    if (!explorable.explorable) return undefined;
 
     const texts = locale.object(object.def.name);
-    const explorable = new Location(object, codex);
     const ratio =
       explorable.explorationProgressMax === 0
         ? 0
         : explorable.explorationProgress / explorable.explorationProgressMax;
     return {
       ratio,
-      title: texts.renamedInteractionName(EXPLORE_ACTION) ?? locale.uiText('exploration'),
+      title:
+        texts.renamedInteractionName(codex.vocabulary.world.exploreAction) ?? locale.uiText('exploration'),
     };
   };
 
