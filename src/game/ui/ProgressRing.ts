@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
+import type { ElapsedSoFar } from '../view/elapsePlayback';
 import { elapsedText } from '../looks/timeTexts';
 import { cssColor } from '../../util/cssColor';
 import { isAlive } from '../../ui/lifetime';
@@ -58,28 +59,29 @@ export class ProgressRing extends Phaser.GameObjects.Container {
       .setStroke(cssColor(COLOR.progressRingElapsedOutline), metrics.px(ELAPSED_STROKE));
     this.add(this.elapsed);
 
-    this.setRatio(0, 0);
+    this.show({ minutes: 0, ratio: 0 });
 
     scene.add.existing(this);
   }
 
   /**
-   * 塗る割合（0〜1）と、開始からの経過分を差し替える。時間の経過に合わせて毎フレーム呼ばれうる。
+   * 経過の断面（ElapsedSoFar）を受け取り、自分の持つ表示物へ配る。時間の経過に合わせて毎フレーム
+   * 呼ばれうる。
    *
-   * 割合と経過分を1つの操作で受けるのは、輪と数字が同じ瞬間を指していなければならないため
-   * ——別々に渡せるようにすると、呼ぶ側が片方だけ更新できてしまう。
+   * **断面を1つ受け取るので、輪と数字が別々の瞬間を指すことはない。** 割合と経過分を別々の口で
+   * 受けると、呼ぶ側が片方だけ更新できてしまう。
    */
-  setRatio(ratio: number, elapsedMinutes: number): void {
+  show(elapsed: ElapsedSoFar): void {
     if (!isAlive(this)) return;
 
     this.graphics.clear();
 
     const top = -Math.PI / 2;
-    const swept = Phaser.Math.Clamp(ratio, 0, 1) * Math.PI * 2;
+    const swept = Phaser.Math.Clamp(elapsed.ratio, 0, 1) * Math.PI * 2;
     this.fillSector(COLOR.progressRingTrack, TRACK_ALPHA, top + swept, top + Math.PI * 2);
     this.fillSector(COLOR.progressRingFill, FILL_ALPHA, top, top + swept);
 
-    this.elapsed.setText(elapsedText(elapsedMinutes));
+    this.elapsed.setText(elapsedText(elapsed.minutes));
   }
 
   /**

@@ -36,6 +36,10 @@ import { MINUTES_PER_DAY, TICKS_PER_DAY } from '../domain/worldTime';
 /**
  * 資源は土地ごとに分かれているので、1つの土地に閉じると多くの連鎖が「前提が揃わない」で終わる。
  * 島を渡り歩ける前提の見方も要るため、全土地の探索を使える文脈を先頭に1つ置く。
+ *
+ * **`PlaceBalance.name` の値として、土地の識別子と同じ場所に並ぶ**——`stats/balance.yaml` の
+ * `place` と、ビューアの `#/balance/...` が同じ値を鍵にするため。**型ではないので表示名の
+ * 引き当てをしない**のはビューアの側（balancePage.placeLabel）。
  */
 export const WHOLE_ISLAND = '島全体';
 
@@ -52,7 +56,14 @@ export interface Cost {
 export interface ConsumptionRow {
   readonly propertyName: string;
 
-  /** その増減が効く条件（常時・段・ゲートの中身・輸送。conditionLabel参照）。 */
+  /**
+   * その増減が効く条件を言い表した文（常時・段・ゲートの中身・輸送。conditionLabel参照）。
+   *
+   * **文のまま持つのは、これが行の名前そのものだから**——同じプロパティの増減は、この文が一致する
+   * 分だけが1行へ足し合わさる（tickAmountsByName）。`stats/balance.yaml` の値と、文書がセルを名指す
+   * ときの鍵（引用印の`condition=`セレクタ）も同じ文なので、言い回しを変えると生成物と引用印が
+   * 同時に動く（BalanceStats.md「消費表」）。
+   */
   readonly condition: string;
 
   readonly perTickByCharacter: readonly (number | undefined)[];
