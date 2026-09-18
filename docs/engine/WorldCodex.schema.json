@@ -1084,7 +1084,7 @@
       "properties": {
         "icon": {
           "type": "string",
-          "description": "自動生成される製作中オブジェクトの型へ引き継がれる、完成品ごとのアイコン指定（GameElementDefinition.md 13.2節、内部設計はRecipeSystem.md 1節）。"
+          "description": "完成品ごとのアイコン指定（GameElementDefinition.md 13.2節）。読み込むだけで、この絵を出す側はまだ無い。自動生成される型が完成品から引き継ぐ範囲はRecipeSystem.md 5節。"
         },
         "conditions": {
           "$ref": "#/$defs/conditions_list",

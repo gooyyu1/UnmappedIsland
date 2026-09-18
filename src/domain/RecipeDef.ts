@@ -135,7 +135,10 @@ export class RecipeStepDef {
 export class RecipeDef {
   readonly name: string;
 
-  /** 自動生成される製作中オブジェクトへ引き継ぐアイコン（13.2節）。未指定ならundefined。 */
+  /**
+   * 完成品ごとのアイコン指定（13.2節）。未指定ならundefined。**読み込むだけで、この絵を出す側はまだ
+   * 無い**（作りかけのカードが出すのは完成品の絵。RecipeSystem.md 6節）。
+   */
   readonly icon: string | undefined;
 
   readonly steps: readonly RecipeStepDef[];
