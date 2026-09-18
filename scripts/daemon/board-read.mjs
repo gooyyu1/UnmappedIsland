@@ -71,21 +71,52 @@ export const MERGED_WINDOW_HOURS = 48;
  * 実測（2026-09-10）では48時間ぶんが6本、**いちばん流量の多かった48時間**（2026-09-05T12:00Z
  * からの2日）で117本。普段は本数で切っていたころより軽く、混んだ日だけ重い。
  *
- * 開いている issue のぶんは**古い側から消える**——`gh issue list` が並べるのは作成の新しい順なので、
- * 上限に当たると**いちばん古い issue から盤面の外へ出る。** 2026-09-11T17:20Z に100件へ当たり、
- * 走っているワーカーが担当する #1722 が盤面から消えた（常設の盤の「投入済み」からも落ちた）。
- * 繰る・条件で絞るといった形にするのは #1844 の仕事で、ここは**実数が届かない高さ**に置いてある。
+ * **開いている issue はここに居ない。** あちらは切られてよいものが1件も無いので、上限ではなく
+ * 引き直しで持つ（下の `allOpenIssues`）。
  */
-const CAPS = { openPrs: 50, issues: 300, mergedPrs: 200 };
+const CAPS = { openPrs: 50, mergedPrs: 200 };
 
 /** 検査から見える上限（マージ済みPRのぶん）。 */
 export const MERGED_CAP = CAPS.mergedPrs;
 
 /**
- * 開いている issue のぶん。**常設の盤を書く側**（[`board.mjs`](board.mjs)）**も同じ値で引く**
- * ——別々に持つと、盤面には載っているのに人の読む窓からだけ消える帯ができる。
+ * 開いている issue を1回で引きにいく数。**上限ではない**——ここへ届いた回は `allOpenIssues` が
+ * 広げて引き直すので、切られることは無い。実数より上に置いてあるのは、普段を1回で済ませるため
+ * （1周は30秒。[`daemon.sh`](daemon.sh) の `INTERVAL`）。
  */
-export const ISSUE_CAP = CAPS.issues;
+export const FIRST_ISSUE_PULL = 300;
+
+/**
+ * 開いている issue を**全部**引く。返るのは `gh issue list --json <fields>` の配列で、引けなければ
+ * `undefined`。**常設の盤を書く側**（[`board.mjs`](board.mjs)）**もここを通す**——別々に引くと、
+ * 盤面には載っているのに人の読む窓からだけ消える帯ができる。
+ *
+ * **高さで持たない。** `gh issue list` が返すのは `--limit` までで、並びは作成の新しい順なので
+ * **切られるのはいちばん古い側**。切られたぶんは「1件も無い」と同じ形になり、配る手も棚卸しも
+ * 「無い」と読む——2026-09-11T17:20Z に100件で実際に起き、走っているワーカーが担当していた #1722 が
+ * 常設の盤の「投入済み」からも落ちた。**どれだけ高く置き直しても、開いている数がそこへ届いた日に
+ * 同じ形が戻る。**
+ *
+ * **引けた数が渡した数と並んだ回は、その先がまだ在るかを `gh` が言わない**ので、倍にして引き直す。
+ * 開いている issue は有限なので、渡す数が実数を越えた時点で止まる。
+ *
+ * **読めない応答も `undefined`。** 引けなかったことと「1件も無い」を混ぜると、呼び手はどちらも
+ * 空として読む——値の見張り（[`check-values.mjs`](check-values.mjs)）では、それがそのまま同じ題の
+ * 2本目になる。`options` はそのまま `gh` へ渡す（引けないことが答えになる呼び方の `allowFail`）。
+ */
+export function allOpenIssues(gh, fields, options) {
+  for (let limit = FIRST_ISSUE_PULL; ; limit *= 2) {
+    const raw = gh(['issue', 'list', '--state', 'open', '--limit', String(limit), '--json', fields], options);
+    if (raw === undefined) return undefined;
+    let issues;
+    try {
+      issues = JSON.parse(raw);
+    } catch {
+      return undefined;
+    }
+    if (issues.length < limit) return issues;
+  }
+}
 
 /**
  * 上限に当たったら言う。**黙って切ると、切られた側は盤面から消える**——「1件も無い」と同じ形に
@@ -246,17 +277,8 @@ export function readBoard({
 }) {
   const prs = gh(['pr', 'list', '--state', 'open', '--limit', String(CAPS.openPrs), '--json', PR_FIELDS]);
   if (prs === undefined) return undefined;
-  const issues = gh([
-    'issue',
-    'list',
-    '--state',
-    'open',
-    '--limit',
-    String(CAPS.issues),
-    '--json',
-    'number,labels,blockedBy',
-  ]);
-  if (issues === undefined) return undefined;
+  const openIssues = allOpenIssues(gh, 'number,labels,blockedBy');
+  if (openIssues === undefined) return undefined;
   // **引けなくても盤面は捨てない。** 欠けた周は後片付けと周期の係が出ないだけで済む——必須に
   // すると、**マージもレビューも投入も1周まるごと止まる。**
   // **黙って空にしない**（下の差し戻す相手と同じ理由。空は「1件も無い」と同じ形になる）。
@@ -307,7 +329,6 @@ export function readBoard({
   // ここでも受けると、次に足す失敗をどちらへ載せるかが決まらなくなる。
   const live = sessions();
 
-  const openIssues = capped(log, '開いている issue', JSON.parse(issues), CAPS.issues);
   const openPrs = capped(log, '開いているPR', JSON.parse(prs), CAPS.openPrs);
   return {
     // **手が空いてからの長さを測るのに要る**（`board-move.mjs` の `STALL_MINUTES`）。この周の

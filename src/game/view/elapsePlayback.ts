@@ -1,19 +1,30 @@
 import type { RecordedView } from './recording';
 import { TickProgress } from './tickProgress';
 
+/**
+ * 開始からここまで経ったこと、の1瞬間ぶん（CardInteraction.md 7節）。
+ *
+ * **2つで1つ**——塗りと数字は同じ瞬間を指していなければならないので、片方だけ差し替えられる形では
+ * 渡さない（ProgressRing.show）。見せる側がどちらをどう出すかは、こちらは知らない。
+ */
+export interface ElapsedSoFar {
+  /**
+   * 開始からの経過分。**clockMinutesと同じ目盛りから導く**ので、経過の数字と時計が別々の瞬間を
+   * 指すことはない。
+   */
+  readonly minutes: number;
+
+  /** 経過し切るまでのうち、ここまで進んだ割合（0〜1）。 */
+  readonly ratio: number;
+}
+
 /** 経過を見せている、ある瞬間の画面（ElapsePlayback.frameAt）。 */
 export interface ElapseFrame {
   /** 時計に出す時刻（ゲーム内の総経過分）。目盛りに届くまでは手前の目盛りのまま。 */
   readonly clockMinutes: number;
 
-  /**
-   * ドーナツグラフの真ん中に出す、開始からの経過分。**clockMinutesと同じ目盛りから導く**ので、
-   * 輪の数字と時計が別々の瞬間を指すことはない。
-   */
-  readonly elapsedMinutes: number;
-
-  /** ドーナツグラフの塗り（0〜1）。 */
-  readonly ratio: number;
+  /** ドーナツグラフが映す、開始からの経過。 */
+  readonly elapsed: ElapsedSoFar;
 
   /** この瞬間に見せる控え（控えた時刻の順）。まだ目盛りに届いていないものは含まない。 */
   readonly due: readonly RecordedView[];
@@ -59,8 +70,7 @@ export class ElapsePlayback {
     const clockMinutes = this.fromMinutes + stepped;
     return {
       clockMinutes,
-      elapsedMinutes: stepped,
-      ratio: this.progress.ratioAt(elapsedMinutes),
+      elapsed: { minutes: stepped, ratio: this.progress.ratioAt(elapsedMinutes) },
       due: this.dueAt(clockMinutes),
     };
   }

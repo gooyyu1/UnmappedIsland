@@ -36,7 +36,7 @@ import type {
   PlayScreenView,
 } from './view/PlayScreenView';
 import type { CardAction } from './view/cardOperations';
-import { EXPLORE_ACTION, fromGameSession } from './view/PlayScreenView';
+import { fromGameSession } from './view/PlayScreenView';
 import type { CardPlace, ScreenPlace } from './view/cardPlaces';
 import type { CardSpot, ShownDrop } from './view/ShownCards';
 import { ShownCards } from './view/ShownCards';
@@ -1225,17 +1225,13 @@ export class PlayScene extends ResponsiveScene {
       minutes: action.minutes,
       enabled: action.enabled,
       reason: action.reason,
-      // **探索だけは画面が実行を引き受ける。** 見つかったものを現在地の札から発見物の枠へ運び、
-      // その面へ移るところまでが1つの操作なので（Windows.md 5節）、世界を変えるだけでは終わらない。
-      onTap:
-        action.key === EXPLORE_ACTION
-          ? () => this.explore()
-          : () => {
-              this.applyToWorld(
-                this.locale.uiText('log_action', { name: action.name, owner }),
-                action.execute,
-              );
-            },
+      // **探索だけは画面が実行を引き受ける**（CardAction.explores）。見つかったものを現在地の札から
+      // 発見物の枠へ運び、その面へ移るところまでが1つの操作なので（Windows.md 5節）。
+      onTap: action.explores
+        ? () => this.explore()
+        : () => {
+            this.applyToWorld(this.locale.uiText('log_action', { name: action.name, owner }), action.execute);
+          },
     }));
   }
 
@@ -1564,7 +1560,7 @@ export class PlayScene extends ResponsiveScene {
     const clock = { elapsed: 0 };
     const show = (frame: ElapseFrame): void => {
       this.showClock(frame.clockMinutes);
-      ring.setRatio(frame.ratio, frame.elapsedMinutes);
+      ring.show(frame.elapsed);
       for (const recorded of frame.due) this.showRecorded(recorded);
     };
 

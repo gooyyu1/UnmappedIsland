@@ -1,11 +1,10 @@
 import { isMap, isScalar, isSeq, Scalar } from 'yaml';
 import type { YAMLMap, YAMLSeq } from 'yaml';
-import type { LoadReport } from './LoadReport';
+import type { LoadOrigin } from './LoadOrigin';
 import type { RawObjectDef } from './RawObjectDef';
 import { asMap, asScalarText, entriesInOrder, keysOf, tryGetNode } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { messageOf } from '../util/errorMessage';
 
 /**
  * patchの動詞。**動詞がパスの読み方を決める。** `add` のパスは「まだ無いキー」、`append` のパスは
@@ -38,29 +37,26 @@ export class RawPatch {
    */
   readonly where: YamlNode | undefined;
 
-  /** 読み込み元。報告の出所表示に使う。 */
-  readonly source: string;
-
   /**
-   * この操作が行えなかったときの報告先。undefinedなら例外にする——同梱ぶんの誤りは
-   * ゲーム自身のバグで、外して続ける先が無い（AssetPack.md 6.1節）。
+   * 読み込み元（LoadOrigin）。報告の出所表示と、この操作が行えなかったときの扱いを答える。
+   *
+   * **patchは同梱ぶんとパックぶんが1本の並びへ混ざって溜まる**（WorldCodexYamlLoader.patches）ので、
+   * 出どころは1件ずつが持つ。
    */
-  readonly report: LoadReport | undefined;
+  readonly origin: LoadOrigin;
 
   constructor(
     verb: Verb,
     path: string,
     value: YamlNode | undefined,
     where: YamlNode | undefined,
-    source: string,
-    report: LoadReport | undefined,
+    origin: LoadOrigin,
   ) {
     this.verb = verb;
     this.path = path;
     this.value = value?.clone() as YamlNode | undefined;
     this.where = where;
-    this.source = source;
-    this.report = report;
+    this.origin = origin;
   }
 
   /** 報告に出す1行（何をしようとしたか）。 */
@@ -70,12 +66,7 @@ export class RawPatch {
 }
 
 /** `patch_object_defs`の1エントリを読む。 */
-export function parsePatch(
-  node: YamlNode,
-  index: number,
-  source: string,
-  report: LoadReport | undefined,
-): RawPatch {
+export function parsePatch(node: YamlNode, index: number, origin: LoadOrigin): RawPatch {
   const context = `patch_object_defs[${index}]`;
   const map = asMap(node, context);
 
@@ -105,15 +96,15 @@ export function parsePatch(
   if (where !== undefined && verb !== 'set' && verb !== 'remove')
     throw new YamlLoadError(`${context}: 'where'は'set'と'remove'にだけ書けます。`);
 
-  return new RawPatch(verb, path, value, where, source, report);
+  return new RawPatch(verb, path, value, where, origin);
 }
 
 /**
  * 読み込んだ全patchを、object_defの宣言へ順に当てる（trait合成の前）。
  *
- * 行えなかった操作は、報告先があればその1操作だけを捨てて次へ進む。同じ場所を2つのpatchが
- * 差し替えることは許さない——**先に読んだ方が残る**。後勝ちにすると、読み込み順という見えない
- * 要因で結果が変わり、勝った側も自分が上書きしたことを知らないままになる。
+ * 行えなかった操作は、読み込み元が捨てられるものならその1操作だけを捨てて次へ進む（LoadOrigin）。
+ * 同じ場所を2つのpatchが差し替えることは許さない——**先に読んだ方が残る**。後勝ちにすると、
+ * 読み込み順という見えない要因で結果が変わり、勝った側も自分が上書きしたことを知らないままになる。
  */
 export function applyPatches(patches: readonly RawPatch[], defs: ReadonlyMap<string, RawObjectDef>): void {
   const replaced = new Set<string>();
@@ -122,8 +113,7 @@ export function applyPatches(patches: readonly RawPatch[], defs: ReadonlyMap<str
     try {
       applyPatch(patch, defs, replaced);
     } catch (error) {
-      if (patch.report === undefined) throw error;
-      patch.report.addDiscarded(patch.source, patch.description, messageOf(error));
+      patch.origin.discardOrThrow(patch.description, error);
     }
   }
 }

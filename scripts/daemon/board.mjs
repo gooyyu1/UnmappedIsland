@@ -93,7 +93,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { PATROL, busySession, cycleHours, unsorted as unsortedIssue } from './board-move.mjs';
-import { ISSUE_CAP } from './board-read.mjs';
+import { allOpenIssues } from './board-read.mjs';
 import { liveSessions } from './live-sessions.mjs';
 import { gh as runGh, runBash } from './spawn.mjs';
 
@@ -135,25 +135,11 @@ function survey({ gh, sessions, warn }) {
   const prsRaw = gh(['pr', 'list', '--state', 'open', '--limit', '50', '--json', PR_FIELDS]);
   // issue は1回だけ引いて、`kind:task` の付いたもの・まだ分類されていないもの・`kind:ask` の本文の
   // チェックへ分ける。**依存も同じ呼び出しで返る**ので、issue 1件ずつ `gh api` を叩かなくてよい。
-  const issuesRaw = gh([
-    'issue',
-    'list',
-    '--state',
-    'open',
-    '--limit',
-    String(ISSUE_CAP),
-    '--json',
-    'number,title,labels,blockedBy,body',
-  ]);
-  if (prsRaw === undefined || issuesRaw === undefined) return undefined;
+  // **引くのはデーモンと同じ手**（[`board-read.mjs`](board-read.mjs) の `allOpenIssues`）——別々に
+  // 引くと、盤面には載っているのに人の読む窓からだけ消える帯ができる。
+  const issues = allOpenIssues(gh, 'number,title,labels,blockedBy,body');
+  if (prsRaw === undefined || issues === undefined) return undefined;
   const prs = JSON.parse(prsRaw);
-  const issues = JSON.parse(issuesRaw);
-  // **上限に当たったら言う。** `gh issue list` が並べるのは作成の新しい順なので、切られるのは
-  // **いちばん古い issue**。黙って切ると、担当の居る task も人の手番の1件も「無い」と同じ形で消え、
-  // ここを読む人には**欠けていること自体が見えない**（`board-read.mjs` の `capped` と同じ理由）。
-  if (issues.length >= ISSUE_CAP) {
-    warn(`（開いている issue が上限（${ISSUE_CAP}件）に達した。古い側がこの盤面に出ていない）`);
-  }
 
   // 畳んでいないセッション。ここが「もう投入したか」の主な根拠。**引けなければ空のまま進む**
   // ——投入済みの判定はPRだけになるが、PRと issue は並べられる。
@@ -200,8 +186,7 @@ function survey({ gh, sessions, warn }) {
 
   const unsorted = issues.filter(unsortedIssue);
 
-  // `issuesRaw` を返すのは、**`確定待ち` を引くのが端末の側だけ**だから（下の `board`）。
-  return { issuesRaw, issues, prs, tasks, unsorted, live, sessionsKnown };
+  return { issues, prs, tasks, unsorted, live, sessionsKnown };
 }
 
 /** 端末へ1行1件で出す形（[`board.sh`](../agent/board.sh)）。引けなければ `undefined`。 */
@@ -212,7 +197,7 @@ export function board({ gh = runGh, sessions = liveSessions, checkedItems = runC
   const lines = ['## 確定待ち'];
   // **引くのはここだけ。** `checked-items.sh` はプロセスを1つ起こす（[`spawn.mjs`](spawn.mjs)）ので、
   // 出さない側（`issueBody`）のために毎回起こさない。
-  const checked = checkedItems(found.issuesRaw)
+  const checked = checkedItems(JSON.stringify(found.issues))
     .split(/\r?\n/)
     .filter((line) => line !== '')
     .map((line) => `確定待ち ${line}`);
