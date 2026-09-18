@@ -8,7 +8,8 @@
 
 traits:
   # 液体を入れられること自体のタグ（固形物を入れるcontainerタグと対になる、containers.yaml）。
-  # 空の容器も中身入りの変種もこのタグを持つ。空かどうかはfillの有無で見る（下のpour_in）。
+  # 空の容器も中身入りの変種もこのタグを持つ。空かどうかはfillが0かで見る（下のpour_into_empty）
+  # ——fill自体は空の容器も持つ（LiquidContainerSystem.md 2節）。
   liquid_container:
     tags: [liquid_container]
 
@@ -31,7 +32,7 @@ traits:
     tags: [narrow_open_container]
 
   # 空けたまま置いて雨を受けられる容器（LiquidContainerSystem.md 7節）。溜め始めるのは操作で、
-  # 増えるのは自動（rain_filled_liquid）。中身入りの変種はfillを持つので条件で弾かれ、
+  # 増えるのは自動（rain_filled_liquid）。中身入りの変種はfillが0でないので条件で弾かれ、
   # 空の容器にだけボタンが出る。
   rain_catching_container:
     interactions:
