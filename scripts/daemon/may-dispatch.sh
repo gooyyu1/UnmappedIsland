@@ -75,7 +75,7 @@ new-task) question=--live ;;
 *) question=--busy ;;
 esac
 
-if ! held=$(CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}" bash "$HERE/occupancy.sh" "$question" "$@"); then
+if ! held=$(bash "$HERE/occupancy.sh" "$question" "$@"); then
   echo "立てない: $held" >&2
   exit 1
 fi

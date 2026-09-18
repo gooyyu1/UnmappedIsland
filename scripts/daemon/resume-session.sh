@@ -37,7 +37,6 @@ NUMBER="${3:?対象の番号を渡す}"
 HERE="${BASH_SOURCE[0]%/*}"
 if [[ "$HERE" == "${BASH_SOURCE[0]}" ]]; then HERE='.'; fi
 HERE="$(cd "$HERE" && pwd)"
-CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 TEMPLATE="${RESUME_PROMPT:-$HERE/../../agent-ops/prompts/resume-prompt.md}"
 
 WORK="$(mktemp -d)"
@@ -71,7 +70,7 @@ fi
 # 走っている相手へ送ると、仕上げの最中に別の仕事を積むことになる。**手が動いているかを言うのは
 # `session_status` だけ**——`status_bucket` は手番が終わった後の要約から決まるので、どの値も
 # 「処理中」を意味しない（[`board-design.md`](../../agent-ops/board-design.md) 1.6）。
-if ! live=$(CCR_META="$CCR_META" bash "$HERE/live-sessions.sh"); then
+if ! live=$(bash "$HERE/live-sessions.sh"); then
   echo "セッションの一覧を引けなかった" >&2
   exit 1
 fi

@@ -265,7 +265,7 @@ function issueStates(gh, sessions, issues) {
 }
 
 /** 盤面を1つ組み立てる。`gh` が引けなければ `undefined`、一覧が引けなければ投げる。 */
-export function readBoard({
+export async function readBoard({
   gh = runGh,
   sessions = liveSessions,
   log,
@@ -327,7 +327,7 @@ export function readBoard({
 
   // **一覧を引けなかったら投げる**（[`live-sessions.mjs`](live-sessions.mjs)）。受けるのは呼び手で、
   // ここでも受けると、次に足す失敗をどちらへ載せるかが決まらなくなる。
-  const live = sessions();
+  const live = await sessions();
 
   const openPrs = capped(log, '開いているPR', JSON.parse(prs), CAPS.openPrs);
   return {

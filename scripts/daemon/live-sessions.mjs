@@ -1,7 +1,7 @@
 // **畳まれていないセッション**を引く。「畳まれていない」の定義はここ1箇所だけが持つ。
 //
 //   import { liveSessions } from './live-sessions.mjs';
-//   liveSessions()   // → [{ id, status, bucket, env, served, tags: [] }]
+//   await liveSessions()   // → [{ id, status, bucket, env, served, tags: [] }]
 //
 // コマンドとして呼ぶと1行1件のTSVを出す（入口は [`live-sessions.sh`](live-sessions.sh)）。
 // 1行が
@@ -56,11 +56,10 @@ import { readFileSync, writeSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { MetaError, callMeta, metaJson } from '../../.claude/ccr-meta.mjs';
 import { runBash } from './spawn.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-/** 試験は差し替える（パスで呼ぶため PATH では差し替わらない）。 */
-const CCR_META = process.env.CCR_META ?? resolve(HERE, '../../.claude/ccr-meta.sh');
 
 /** 生きたセッションが1件も無いページが、これだけ続いたら繰るのをやめる。 */
 const DRY_PAGES = Number(process.env.LIVE_SESSIONS_DRY_PAGES || 2);
@@ -115,18 +114,24 @@ function environments() {
  * `list_sessions` を1ページ引いて、応答のJSONを返す。引けなければ `undefined`。**引き方を持つのは
  * ここ1箇所**で、繰るのは下の `liveSessions` だけ——1ページで足りる呼び手は1つも無い。
  *
- * 応答は `<other-session>` の包みに入って返る（他のセッションの記録なので）ため、**中の JSON だけを
- * 取り出す**——そのまま `JSON.parse` すると包みの `<` で落ちる（`.claude/ccr-meta.sh` の冒頭）。
+ * **[`ccr-meta.mjs`](../../.claude/ccr-meta.mjs) を直に呼ぶ。** シェルの入口を通すと、1ページごとに
+ * `bash ccr-meta.sh` と `node ccr-meta.mjs` が起きる（あちらの「node から呼ぶ側は、シェルの入口を
+ * 通らない」）。**包みをほどくのも `metaJson` に任せる**——`<other-session>` の綴りを呼び手ごとに
+ * 覚え直さない。
  */
-function listSessions(request) {
-  const call = runBash(CCR_META, ['list_sessions'], { input: JSON.stringify(request), capture: true });
-  const found = call.stdout.split(/\r?\n/).find((line) => line.includes('{"ccr"'));
-  if (call.status === 0 && found !== undefined) return JSON.parse(found.slice(found.indexOf('{"ccr"')));
-  // **道具が言った理由を捨てない。** 上限（`1000 calls per account per hour`）も認証切れも、
-  // ここが黙ると呼び手には「引けなかった」しか残らず、**ログだけでは直しようが無い**。
-  const reason = call.stdout.split(/\r?\n/).find((line) => line.trim() !== '');
-  if (reason !== undefined) writeSync(2, `list_sessions: ${reason.trim()}\n`);
-  return undefined;
+async function listSessions(request) {
+  let text;
+  try {
+    text = await callMeta('list_sessions', request);
+  } catch (error) {
+    // **道具が言った理由を捨てない。** 上限（`1000 calls per account per hour`）も認証切れも、
+    // ここが黙ると呼び手には「引けなかった」しか残らず、**ログだけでは直しようが無い**。
+    writeSync(2, `list_sessions: ${error instanceof MetaError ? error.message : String(error)}\n`);
+    return undefined;
+  }
+  const page = metaJson(text);
+  if (page === undefined) writeSync(2, `list_sessions: 応答からJSONを読めなかった: ${text}\n`);
+  return page;
 }
 
 /** 一覧を引けなかったことを、呼び手が「止まる側へ倒す」ために投げる。 */
@@ -215,7 +220,7 @@ function snapshot(path) {
 }
 
 /** 畳まれていないセッションを、新しい順に返す。 */
-export function liveSessions({
+export async function liveSessions({
   page: fetch = listSessions,
   envs = environments,
   taken = process.env.LIVE_SESSIONS_TSV ?? '',
@@ -227,7 +232,7 @@ export function liveSessions({
   let after = '';
   let dry = 0;
   while (dry < DRY_PAGES) {
-    const page = fetch({ mine: true, limit: 100, ...(after === '' ? {} : { after_id: after }) });
+    const page = await fetch({ mine: true, limit: 100, ...(after === '' ? {} : { after_id: after }) });
     if (page === undefined) throw new LiveSessionsError();
 
     const before = live.length;
@@ -253,7 +258,7 @@ export function liveSessions({
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    const lines = liveSessions().map(formatLive);
+    const lines = (await liveSessions()).map(formatLive);
     if (lines.length > 0) process.stdout.write(`${lines.join('\n')}\n`);
   } catch (error) {
     console.error(error instanceof LiveSessionsError ? error.message : error);

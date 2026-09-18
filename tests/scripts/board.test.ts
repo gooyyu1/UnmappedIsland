@@ -54,9 +54,9 @@ const deps = (world: World, warn: (line: string) => void) => ({
   warn,
 });
 
-function show(world: World = {}): { lines: string[]; warnings: string[] } {
+async function show(world: World = {}): Promise<{ lines: string[]; warnings: string[] }> {
   const warnings: string[] = [];
-  const lines = board({
+  const lines = await board({
     ...deps(world, (line: string) => warnings.push(line)),
     checkedItems: () => world.checked ?? '',
   });
@@ -64,9 +64,9 @@ function show(world: World = {}): { lines: string[]; warnings: string[] } {
 }
 
 /** 常設 issue の本文。行で見たいので分けて返す。 */
-function body(world: World = {}): { lines: string[]; warnings: string[] } {
+async function body(world: World = {}): Promise<{ lines: string[]; warnings: string[] }> {
   const warnings: string[] = [];
-  const text = issueBody({
+  const text = await issueBody({
     ...deps(world, (line: string) => warnings.push(line)),
     now: new Date('2026-09-07T03:04:05.678Z'),
     unreadableSince: world.unreadableSince,
@@ -104,27 +104,27 @@ const session = (id: string, tags: readonly string[] = []): LiveSession => ({
 });
 
 describe('board.mjs', () => {
-  it('引けなければ、何も並べない', () => {
-    expect(board({ gh: () => undefined, sessions: () => [], warn: () => {} })).toBeUndefined();
+  it('引けなければ、何も並べない', async () => {
+    await expect(board({ gh: () => undefined, sessions: () => [], warn: () => {} })).resolves.toBeUndefined();
   });
 
   // 切られるのは古い側なので、**黙って切ると「そんな issue は無い」と同じ形**になる。担当の居る
   // task が消えた実績がある（2026-09-11、#1722）。**人の読む窓もデーモンと同じ手で引く**ので、
   // ここが切られると、盤面には載っているのに人からだけ消える帯ができる。
-  it('1回で引きにいく数を超えて開いていても、1件も落ちない', () => {
+  it('1回で引きにいく数を超えて開いていても、1件も落ちない', async () => {
     // **並びは本物と同じ作成の新しい順**（番号の大きい側が先）。逆に並べると、切られるのが
     // いちばん新しい issue になり、**現に起きた壊れ方とは別のものを見る検査**になる。
     const count = FIRST_ISSUE_PULL + 2;
     const many = Array.from({ length: count }, (_, index) => issue(count - index, `見出し${count - index}`));
-    const tasks = show({ issues: many }).lines.filter((line) => line.startsWith('TASK '));
+    const tasks = (await show({ issues: many })).lines.filter((line) => line.startsWith('TASK '));
     expect(tasks).toHaveLength(count);
     // **いちばん古い側が残っていることを名指しで見る。** 件数だけだと、切られた側がどこかを
     // 取り違えたまま緑になりうる。
     expect(tasks.at(-1)).toContain('TASK 1 ');
   });
 
-  it('節は、中身が無くても出る', () => {
-    expect(show().lines).toEqual([
+  it('節は、中身が無くても出る', async () => {
+    expect((await show()).lines).toEqual([
       '## 確定待ち',
       '（無し）',
       '## PR',
@@ -136,14 +136,14 @@ describe('board.mjs', () => {
     ]);
   });
 
-  it('チェックの付いた項目を、確定待ちとして並べる', () => {
-    const { lines } = show({ checked: '656 世界の広さは 3km 四方\n' });
+  it('チェックの付いた項目を、確定待ちとして並べる', async () => {
+    const { lines } = await show({ checked: '656 世界の広さは 3km 四方\n' });
 
     expect(lines).toContain('確定待ち 656 世界の広さは 3km 四方');
   });
 
-  it('PRは、CIの色とマージ可否とラベルを添えて並べる', () => {
-    const { lines } = show({
+  it('PRは、CIの色とマージ可否とラベルを添えて並べる', async () => {
+    const { lines } = await show({
       prs: [
         {
           number: 10,
@@ -162,16 +162,16 @@ describe('board.mjs', () => {
 
   // チェックが1本も登録されないPRがある（`tests.yml` の `paths` に当たらない差分）。**「緑」とは
   // 言わない**——盤面が緑と読むかは落ち着いてからで、そちらの判定は `board-move.mjs` が持つ。
-  it('チェックが1本も無いPRは、そう書く', () => {
-    const { lines } = show({
+  it('チェックが1本も無いPRは、そう書く', async () => {
+    const { lines } = await show({
       prs: [{ number: 10, title: '題', labels: [], statusCheckRollup: [], mergeable: 'UNKNOWN' }],
     });
 
     expect(lines).toContain('PR 10 チェック無 不明 main - 題');
   });
 
-  it('`task-<番号>` のタグを持つセッションが在れば、投入済みと出す', () => {
-    const { lines } = show({
+  it('`task-<番号>` のタグを持つセッションが在れば、投入済みと出す', async () => {
+    const { lines } = await show({
       issues: [issue(8, '直す')],
       sessions: [session('session_a', ['task-8'])],
     });
@@ -181,8 +181,8 @@ describe('board.mjs', () => {
 
   // 引くのは**その issue のタグ**だけ（1.2）。他の仕事で走っている1本を投入済みと読むと、着手できる
   // 仕事が誰にも配られないまま止まる。
-  it('別の仕事のセッションが走っていても、投入済みにしない', () => {
-    const { lines } = show({
+  it('別の仕事のセッションが走っていても、投入済みにしない', async () => {
+    const { lines } = await show({
       issues: [issue(8, '直す')],
       sessions: [session('session_a', ['task-9']), session('session_b', ['review-10'])],
     });
@@ -190,8 +190,8 @@ describe('board.mjs', () => {
     expect(lines).toContain('TASK 8 着手可 直す');
   });
 
-  it('開いているPRが閉じる issue も、投入済みと出す', () => {
-    const { lines } = show({
+  it('開いているPRが閉じる issue も、投入済みと出す', async () => {
+    const { lines } = await show({
       issues: [issue(8, '直す')],
       prs: [{ number: 10, title: '題', labels: [], statusCheckRollup: [], body: 'Closes #8\n' }],
     });
@@ -201,8 +201,8 @@ describe('board.mjs', () => {
 
   // **`blockedBy` は issue 1件につき1回の `gh api` が要るぶん省かれやすい。** 塞いでいた issue が
   // 閉じても誰も気づかないと、着手できる仕事が止まったままになる。
-  it('開いている依存があれば、待ちとして出す', () => {
-    const { lines } = show({
+  it('開いている依存があれば、待ちとして出す', async () => {
+    const { lines } = await show({
       issues: [
         issue(8, '後', {
           blockedBy: {
@@ -220,8 +220,8 @@ describe('board.mjs', () => {
 
   // 返された issue は `kind:task` が付いたまま残る（`agent-ops/board-design.md` 2.15.2）ので、状態で
   // 見分けが付かないと、人は列に並んでいるものと区別できない。
-  it('人へ返された issue は、返却として出す', () => {
-    const { lines } = show({
+  it('人へ返された issue は、返却として出す', async () => {
+    const { lines } = await show({
       issues: [
         issue(8, '決められない', {
           labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }, { name: '判断待ち' }],
@@ -233,8 +233,8 @@ describe('board.mjs', () => {
   });
 
   // 走らせる先の指定は状態と別の軸（2.16）なので、状態を潰さずに後ろへ並べる。
-  it('走らせる先の指定があれば、状態の後ろに出す', () => {
-    const { lines } = show({
+  it('走らせる先の指定があれば、状態の後ろに出す', async () => {
+    const { lines } = await show({
       issues: [
         issue(8, '盤面を直す', {
           labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }, { name: 'env:bridge' }],
@@ -245,8 +245,8 @@ describe('board.mjs', () => {
     expect(lines).toContain('TASK 8 着手可 env:bridge 盤面を直す');
   });
 
-  it('依存が閉じていれば、着手可として出す', () => {
-    const { lines } = show({
+  it('依存が閉じていれば、着手可として出す', async () => {
+    const { lines } = await show({
       issues: [issue(8, '後', { blockedBy: { nodes: [{ number: 7, state: 'CLOSED' }] } })],
     });
 
@@ -256,8 +256,8 @@ describe('board.mjs', () => {
   // **未整理は棚卸しの結論（`kind:` と `goal:`）が揃っていないことで表す**（2.17.1。否定の列挙では
   // 表さない）。依存が張ってあっても、棚卸しが分類を付けて出るので外す必要は無い。**常設の盤に
   // 向かう先は要らない**——投入する先が無いので。
-  it('未整理に出るのは、棚卸しの結論が揃っていない issue', () => {
-    const { lines } = show({
+  it('未整理に出るのは、棚卸しの結論が揃っていない issue', async () => {
+    const { lines } = await show({
       issues: [
         issue(1, '結論が揃っている'),
         issue(2, '常設の盤', { labels: [{ name: 'kind:board' }] }),
@@ -280,8 +280,8 @@ describe('board.mjs', () => {
 
   // 何をしているかはタグで読む。**畳まれたものを外すのも、繰るのも `live-sessions.mjs`**（検査は
   // `liveSessions.test.ts`）なので、ここが見るのは並べ方だけ。
-  it('走行は、走っている場所とタグを添えて並べる', () => {
-    const { lines } = show({
+  it('走行は、走っている場所とタグを添えて並べる', async () => {
+    const { lines } = await show({
       sessions: [
         session('session_a', ['task-8']),
         { ...session('session_b', []), env: 'bridge', status: 'SESSION_STATUS_IDLE' },
@@ -294,8 +294,8 @@ describe('board.mjs', () => {
     ]);
   });
 
-  it('一覧を引けなければ、投入済みの判定はPRだけで行うと断る', () => {
-    const { lines, warnings } = show({ issues: [issue(8, '直す')], sessionsFail: true });
+  it('一覧を引けなければ、投入済みの判定はPRだけで行うと断る', async () => {
+    const { lines, warnings } = await show({ issues: [issue(8, '直す')], sessionsFail: true });
 
     expect(warnings).toEqual(['（セッションの一覧を引けなかった。投入済みの判定はPRだけで行う）']);
     expect(lines).toContain('TASK 8 着手可 直す');
@@ -308,41 +308,45 @@ describe('board.mjs', () => {
  * 投入した1件ごとに今何が起きているか。
  */
 describe('issueBody', () => {
-  it('引けなければ、本文を作らない', () => {
-    expect(issueBody({ gh: () => undefined, sessions: () => [], warn: () => {} })).toBeUndefined();
+  it('引けなければ、本文を作らない', async () => {
+    await expect(
+      issueBody({ gh: () => undefined, sessions: () => [], warn: () => {} }),
+    ).resolves.toBeUndefined();
   });
 
   // **写しを持ってよいのは、いつ時点かを一緒に書くから**（2.20.1）。時刻が伸びないことが、
   // そのまま「デーモンが動いていない」を告げる。
-  it('最終更新の時刻を書く', () => {
-    expect(body().lines).toContain('最終更新 2026-09-07T03:04:05Z');
+  it('最終更新の時刻を書く', async () => {
+    expect((await body()).lines).toContain('最終更新 2026-09-07T03:04:05Z');
   });
 
   // **盤面を引けない周に、デーモンにできるのはこれだけ**（2.21）。直せるのは Claude Code 本体を
   // 触れる人だけで、`~/daemon.log` を読めるのは手元で叩ける人だけ——**届く先はここしか無い。**
-  it('盤面を引けていなければ、続いた長さを添えて断る', () => {
-    const { lines } = body({ unreadableSince: '2026-09-07T01:19:05Z' });
+  it('盤面を引けていなければ、続いた長さを添えて断る', async () => {
+    const { lines } = await body({ unreadableSince: '2026-09-07T01:19:05Z' });
 
     expect(lines).toContain(
       '⚠ **盤面を引けていません**（2026-09-07T01:19:05Z から 1時間45分）。GitHub か CCR から引けない周が続いています——**直せるのは人だけ**で、この間セッションは1本も立ちません',
     );
   });
 
-  it('引けている盤面には、断りを出さない', () => {
-    expect(body().lines.join('\n')).not.toContain('盤面を引けていません');
+  it('引けている盤面には、断りを出さない', async () => {
+    expect((await body()).lines.join('\n')).not.toContain('盤面を引けていません');
   });
 
   // 出どころは台帳のテキストなので、壊れていることがありうる。**壊れた値で嘘の長さを出さない。**
-  it('読めない時刻なら、断りを出さない', () => {
-    expect(body({ unreadableSince: 'ゆうべ' }).lines.join('\n')).not.toContain('盤面を引けていません');
+  it('読めない時刻なら、断りを出さない', async () => {
+    expect((await body({ unreadableSince: 'ゆうべ' })).lines.join('\n')).not.toContain(
+      '盤面を引けていません',
+    );
   });
 
   // ## 見回りが届いているか（2.21.4）
   //
   // **「異常なし」と「係が立たなかった」を分けるのは、この行だけ。** 記録はこのPCにしか無く、
   // 読む人はスマホから読む——ここに出ないなら、届いていないのと同じ。
-  it('最後の見回りを、判定ごと出す', () => {
-    const { lines } = body({
+  it('最後の見回りを、判定ごと出す', async () => {
+    const { lines } = await body({
       patrol: { at: '2026-09-07T02:30:00Z', verdict: '異常なし', summary: '8件の task は錠待ち' },
     });
 
@@ -351,8 +355,8 @@ describe('issueBody', () => {
 
   // **立たなくなったことは、他のどこにも出ない**（間隔の3倍で断る。`board.mjs` の
   // `STALE_PATROL_HOURS`）。
-  it('見回りが途切れていれば、断りにする', () => {
-    const { lines } = body({
+  it('見回りが途切れていれば、断りにする', async () => {
+    const { lines } = await body({
       patrol: { at: '2026-09-06T20:00:00Z', verdict: '異常なし', summary: '' },
     });
 
@@ -363,8 +367,8 @@ describe('issueBody', () => {
 
   // **記録が無い周も、読めない周も同じ断り。** 人から見れば、走らなかったのと読めないのは同じ
   // だけ危ない（`board-state.mjs` の `readLastPatrol` が、どちらも `undefined` にして渡す）。
-  it('見回りの記録が無ければ、断りにする', () => {
-    expect(body({ patrolMissing: true }).lines).toContain(
+  it('見回りの記録が無ければ、断りにする', async () => {
+    expect((await body({ patrolMissing: true })).lines).toContain(
       '⚠ **盤面を見回る係の記録がありません。** 立っていないか、記録が壊れています（2.21）',
     );
   });
@@ -375,8 +379,8 @@ describe('issueBody', () => {
   // なので、GitHub の通知は鳴らない。端末の盤面にはラベルの列が出るが、**叩けない人が読めるのは
   // 本文だけ**——ここに出ないなら、人は自分の手番であることを知らないまま、錠を握られた task が
   // 全部止まる。
-  it('`判断待ち` のPRを、何が止まるかと一緒に出す', () => {
-    const { lines } = body({
+  it('`判断待ち` のPRを、何が止まるかと一緒に出す', async () => {
+    const { lines } = await body({
       prs: [
         {
           number: 10,
@@ -395,8 +399,8 @@ describe('issueBody', () => {
 
   // **issue の `判断待ち` は、ワーカーが人へ返した印**（2.15）。件数の表には「返却」として数だけ
   // 出るが、**どれを返したかは番号が要る。**
-  it('`判断待ち` の issue を、配られないものとして出す', () => {
-    const { lines } = body({
+  it('`判断待ち` の issue を、配られないものとして出す', async () => {
+    const { lines } = await body({
       issues: [
         issue(8, '決められない', {
           labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }, { name: '判断待ち' }],
@@ -408,12 +412,12 @@ describe('issueBody', () => {
   });
 
   // **毎周「（無し）」が出る節は、在る周も同じ見た目のまま読み飛ばされる。**
-  it('人の手番が無ければ、節ごと出さない', () => {
-    expect(body({ issues: [issue(1, '着手可')] }).lines).not.toContain('## 人の手番');
+  it('人の手番が無ければ、節ごと出さない', async () => {
+    expect((await body({ issues: [issue(1, '着手可')] })).lines).not.toContain('## 人の手番');
   });
 
-  it('配ってよいかで数えた件数を出す', () => {
-    const { lines } = body({
+  it('配ってよいかで数えた件数を出す', async () => {
+    const { lines } = await body({
       issues: [
         issue(1, '着手可'),
         issue(2, '投入済み'),
@@ -438,8 +442,8 @@ describe('issueBody', () => {
 
   // 完了の条件（#1597）。**状態はラベルの写しではない**ので、走っているセッションとPRのCI・
   // マージ可否から出す。
-  it('投入済みの1件ごとに、番号・題・状態・PRを並べる', () => {
-    const { lines } = body({
+  it('投入済みの1件ごとに、番号・題・状態・PRを並べる', async () => {
+    const { lines } = await body({
       issues: [issue(8, '直す')],
       sessions: [session('session_a', ['task-8'])],
       prs: [
@@ -457,8 +461,8 @@ describe('issueBody', () => {
     expect(lines).toContain('| #8 | 直す | 作業中 | #10 緑 マージ可 |');
   });
 
-  it('レビューのセッションが走っていれば、そう出す', () => {
-    const { lines } = body({
+  it('レビューのセッションが走っていれば、そう出す', async () => {
+    const { lines } = await body({
       issues: [issue(8, '直す')],
       sessions: [
         { ...session('session_a', ['task-8']), status: 'SESSION_STATUS_IDLE' },
@@ -480,8 +484,8 @@ describe('issueBody', () => {
   });
 
   // **どちらかへ丸めない。** 起きていることの片方が消えると、読む人は止まっている側を探せない。
-  it('両方走っていれば、両方出す', () => {
-    const { lines } = body({
+  it('両方走っていれば、両方出す', async () => {
+    const { lines } = await body({
       issues: [issue(8, '直す')],
       sessions: [session('session_a', ['task-8']), session('session_b', ['review-10'])],
       prs: [{ number: 10, title: '題', labels: [], statusCheckRollup: [], body: 'Closes #8\n' }],
@@ -490,8 +494,8 @@ describe('issueBody', () => {
     expect(lines).toContain('| #8 | 直す | 作業中・レビュー中 | #10 チェック無 不明 |');
   });
 
-  it('セッションが手を止めていれば、手空きと出す', () => {
-    const { lines } = body({
+  it('セッションが手を止めていれば、手空きと出す', async () => {
+    const { lines } = await body({
       issues: [issue(8, '直す')],
       sessions: [{ ...session('session_a', ['task-8']), status: 'SESSION_STATUS_IDLE' }],
     });
@@ -500,8 +504,8 @@ describe('issueBody', () => {
   });
 
   // PRだけが残っている形（担当が畳まれた）。**差し戻す相手が居ない**ので、人が見て気づく必要がある。
-  it('担当のセッションがもう居なければ、担当無しと出す', () => {
-    const { lines } = body({
+  it('担当のセッションがもう居なければ、担当無しと出す', async () => {
+    const { lines } = await body({
       issues: [issue(8, '直す')],
       prs: [
         {
@@ -518,16 +522,16 @@ describe('issueBody', () => {
     expect(lines).toContain('| #8 | 直す | 担当無し | #10 赤 マージ可 |');
   });
 
-  it('投入済みが1件も無ければ、そう書く', () => {
-    const { lines } = body({ issues: [issue(8, '直す')] });
+  it('投入済みが1件も無ければ、そう書く', async () => {
+    const { lines } = await body({ issues: [issue(8, '直す')] });
 
     expect(lines).toContain('（無し）');
     expect(lines.filter((line) => line.startsWith('| #8'))).toEqual([]);
   });
 
   // 表の升に `|` が入ると、そこで列が割れる。issue の題は人が自由に書く。
-  it('題の `|` を逃がす', () => {
-    const { lines } = body({
+  it('題の `|` を逃がす', async () => {
+    const { lines } = await body({
       issues: [issue(8, 'a | b')],
       sessions: [session('session_a', ['task-8'])],
     });
@@ -536,8 +540,8 @@ describe('issueBody', () => {
   });
 
   // **断りの出し先がログしか無いと、読んでいる人は当てにならない表を正しいものとして読む。**
-  it('セッションの一覧を引けなかったら、本文にも断る', () => {
-    const { lines, warnings } = body({ issues: [issue(8, '直す')], sessionsFail: true });
+  it('セッションの一覧を引けなかったら、本文にも断る', async () => {
+    const { lines, warnings } = await body({ issues: [issue(8, '直す')], sessionsFail: true });
 
     expect(lines).toContain('⚠ （セッションの一覧を引けなかった。投入済みの判定はPRだけで行う）');
     // ログ側にも同じ声が出る（手元で追う側は、ここだけを読む）。
@@ -547,8 +551,8 @@ describe('issueBody', () => {
   // **断りだけでは足りない**（2.20.2）。空の一覧で組むと、投入済みの task が `着手可`・`担当無し`
   // に化けて**在るはずのものが消えた盤面**になり、読んだ人は投入してよいと読む。**表が在れば、
   // 断りより表のほうが読まれる。**
-  it('セッションの一覧を引けなかったら、それを根拠にした行は出さない', () => {
-    const { lines } = body({
+  it('セッションの一覧を引けなかったら、それを根拠にした行は出さない', async () => {
+    const { lines } = await body({
       issues: [issue(8, '直す'), issue(9, 'なにか', { labels: [] })],
       sessionsFail: true,
     });

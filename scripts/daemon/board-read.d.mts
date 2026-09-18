@@ -4,7 +4,7 @@
 /** 外を触る手。省いたものは本物が入る（`log`・`now` 以下は呼び手が必ず渡す）。 */
 export interface ReadDeps {
   gh?: (args: readonly string[], options?: { allowFail?: boolean }) => string | undefined;
-  sessions?: () => readonly unknown[];
+  sessions?: () => readonly unknown[] | Promise<readonly unknown[]>;
   /** `archive/` に入っていない判断の履歴の数。省くと本物のリポジトリを数える。 */
   pendingDecisions?: () => number;
   /** 二次がまだ読んでいない、一次の分析の記録の数。省くと本物のリポジトリを数える。 */
@@ -22,7 +22,7 @@ export interface AnalysisDirs {
 }
 
 /** 盤面を1つ組み立てる。`gh` が引けなければ `undefined`、一覧が引けなければ投げる。 */
-export function readBoard(deps: ReadDeps): Record<string, unknown> | undefined;
+export function readBoard(deps: ReadDeps): Promise<Record<string, unknown> | undefined>;
 
 /**
  * さかのぼるマージ済みPRの幅（時間）。後片付けが追える幅であり、スメルを拾う係が読む窓でもある

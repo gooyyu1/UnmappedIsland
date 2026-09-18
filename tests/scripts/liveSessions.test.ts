@@ -1,9 +1,21 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import type * as childProcess from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { formatLive, liveSessions, parseLive } from '../../scripts/daemon/live-sessions.mjs';
+import { metaReply, writeFakeCredentials } from '../support/fakeMetaServer';
+
+/**
+ * **外部プロセスが起きたことを数えるため**に包む。中身は本物のまま（`ccr-env.sh` を叩く検査が在る）で、
+ * 呼ばれたかどうかだけを見られるようにする。
+ */
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof childProcess>();
+  return { ...actual, spawnSync: vi.fn(actual.spawnSync) };
+});
 
 /**
  * `scripts/daemon/live-sessions.mjs` の検査。
@@ -27,9 +39,17 @@ function page(...sessions: Record<string, unknown>[]) {
 
 const envs = () => ({ [CLOUD]: 'cloud', [BRIDGE]: 'bridge' });
 
+/** 引き方そのものを通す検査（下の「外部プロセスを1つも起こさない」）が受け取る1ページ。 */
+const PAGE = {
+  ccr: {
+    data: [{ id: 'session_a', session_status: 'SESSION_STATUS_IDLE', environment_id: CLOUD, tags: [] }],
+    has_more: false,
+  },
+};
+
 describe('live-sessions.mjs', () => {
-  it('畳まれたセッションは落とす', () => {
-    const live = liveSessions({
+  it('畳まれたセッションは落とす', async () => {
+    const live = await liveSessions({
       page: page(
         { id: 'session_a', session_status: 'SESSION_STATUS_IDLE', environment_id: CLOUD, tags: ['task-1'] },
         { id: 'session_b', session_status: 'SESSION_STATUS_ARCHIVED', environment_id: CLOUD, tags: [] },
@@ -40,8 +60,8 @@ describe('live-sessions.mjs', () => {
     expect(live.map((session) => session.id)).toEqual(['session_a']);
   });
 
-  it('どこで走っているかを、環境IDから訳して載せる', () => {
-    const live = liveSessions({
+  it('どこで走っているかを、環境IDから訳して載せる', async () => {
+    const live = await liveSessions({
       page: page(
         { id: 'session_a', session_status: 'SESSION_STATUS_IDLE', environment_id: CLOUD, tags: [] },
         { id: 'session_b', session_status: 'SESSION_STATUS_IDLE', environment_id: BRIDGE, tags: [] },
@@ -54,8 +74,8 @@ describe('live-sessions.mjs', () => {
 
   // **知らない環境をクラウドへ寄せない**（2.16.2）。寄せると、盤面が正しく走っているセッションを
   // 「場所が違う」と読んで畳む。
-  it('知らない環境は - として出す', () => {
-    const live = liveSessions({
+  it('知らない環境は - として出す', async () => {
+    const live = await liveSessions({
       page: page({
         id: 'session_a',
         session_status: 'SESSION_STATUS_IDLE',
@@ -68,8 +88,8 @@ describe('live-sessions.mjs', () => {
     expect(live[0]?.env).toBe('-');
   });
 
-  it('環境IDを持たないセッションも - として出す', () => {
-    const live = liveSessions({
+  it('環境IDを持たないセッションも - として出す', async () => {
+    const live = await liveSessions({
       page: page({ id: 'session_a', session_status: 'SESSION_STATUS_IDLE', tags: [] }),
       envs,
     });
@@ -80,11 +100,11 @@ describe('live-sessions.mjs', () => {
   // 対応表の実物。**`ccr-env.sh` を叩いて読む**ので、あちらの印字の口が壊れればここが赤くなる
   // ——既定値を書き写す形にしてあると、あちらを直したときに黙って古いIDを見続ける。
   // 値そのものは環境変数で差し替える（`ccr-env.sh` の「試験は環境変数で差し替える」）。
-  it('環境の対応表を ccr-env.sh から読める', () => {
+  it('環境の対応表を ccr-env.sh から読める', async () => {
     process.env.CLOUD_ENV = CLOUD;
     process.env.BRIDGE_ENV = BRIDGE;
     try {
-      const live = liveSessions({
+      const live = await liveSessions({
         page: page(
           { id: 'session_a', session_status: 'SESSION_STATUS_IDLE', environment_id: BRIDGE, tags: [] },
           { id: 'session_b', session_status: 'SESSION_STATUS_IDLE', environment_id: CLOUD, tags: [] },
@@ -112,8 +132,8 @@ describe('live-sessions.mjs', () => {
     });
 
     // 手番を1つでも供したセッションだけが `last_served_model` を持つ（2026-09-17 に実測）。
-    it('手番を供された跡があれば、働いた側', () => {
-      const live = liveSessions({
+    it('手番を供された跡があれば、働いた側', async () => {
+      const live = await liveSessions({
         page: page(session('session_a', { external_metadata: { last_served_model: 'claude-opus-5' } })),
         envs,
       });
@@ -122,8 +142,8 @@ describe('live-sessions.mjs', () => {
     });
 
     // 立てただけで一度も走っていない1本の `external_metadata` には、この鍵が無い。
-    it('跡が無ければ、働かなかった側', () => {
-      const live = liveSessions({
+    it('跡が無ければ、働かなかった側', async () => {
+      const live = await liveSessions({
         page: page(
           session('session_a', {
             external_metadata: { container_cc_version: '2.1.274', cross_session_inbound: 'available' },
@@ -141,8 +161,8 @@ describe('live-sessions.mjs', () => {
      * 働いたあとに手番が転んだセッションにも付く（`board-design.md` 1.5 の `01Wcy9XLj85X`）。
      * bucket で読むと、**始まらなかったことと、始まってから転んだことが同じ顔になる。**
      */
-    it('手番が転んだセッションは、働いた側のまま', () => {
-      const live = liveSessions({
+    it('手番が転んだセッションは、働いた側のまま', async () => {
+      const live = await liveSessions({
         page: page(
           session('session_a', {
             status_bucket: 'SESSION_STATUS_BUCKET_FAILED',
@@ -185,12 +205,57 @@ describe('live-sessions.mjs', () => {
 
   // **黙って空の対応表を返させない。** 全セッションが `-`（＝食い違いを見ない側）へ落ちるだけなので、
   // 配り直しの仕組みが赤くも遅くもならずに死ぬ。
-  it('ccr-env.sh を起こせなければ止まる', () => {
+  it('ccr-env.sh を起こせなければ止まる', async () => {
     process.env.CCR_ENV = resolve(__dirname, 'no-such-ccr-env.sh');
     try {
-      expect(() => liveSessions({ page: page() })).toThrow(/ccr-env\.sh/);
+      await expect(liveSessions({ page: page() })).rejects.toThrow(/ccr-env\.sh/);
     } finally {
       delete process.env.CCR_ENV;
+    }
+  });
+
+  /**
+   * **一覧は `.claude/ccr-meta.mjs` を直に呼んで引く**（あちらの「node から呼ぶ側は、シェルの入口を
+   * 通らない」）。シェルの入口を通すと、**1ページごとに `bash` と `node` が1つずつ起きる**——一覧は
+   * 盤面・使用量の割り当て・占有の判定・起こす相手の確認から引かれるので、そのぶんが常時の固定費に
+   * なる。
+   *
+   * **通信先だけを身代わりへ向けて、引き方は本物のまま通す。** 差し替え口を `page` にすると、
+   * 引き方そのものが検査を通らない。
+   */
+  it('一覧を1ページ引くのに、外部プロセスを1つも起こさない', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'live-sessions-home-'));
+    writeFakeCredentials(home);
+    const before = {
+      CCR_META_ENDPOINT: process.env.CCR_META_ENDPOINT,
+      HOME: process.env.HOME,
+      USERPROFILE: process.env.USERPROFILE,
+    };
+    // **繋がらない先へ向けておく。** シェルの入口が戻ってくれば、起きた子はここで即座に転ぶ
+    // ——**本物の網へ出さず**、身代わりのサーバのように同じプロセスで待ち合って固まることもない。
+    process.env.CCR_META_ENDPOINT = 'http://127.0.0.1:1/';
+    process.env.HOME = home;
+    process.env.USERPROFILE = home;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(metaReply(`<other-session>\n${JSON.stringify(PAGE)}`))),
+    );
+    vi.mocked(spawnSync).mockClear();
+    try {
+      // 環境の対応表は差し替える（`ccr-env.sh` を叩くのは一覧とは別の口で、上の検査が見ている）。
+      // **引けなかったことは受け止めてから数える**——外へ出た子は繋がらずに転ぶので、投げさせると
+      // 「引けなかった」だけが残り、**なぜ引けなかったのかがこの検査から読めなくなる。**
+      const live = await liveSessions({ envs, taken: '' }).catch(() => undefined);
+
+      expect(spawnSync).not.toHaveBeenCalled();
+      expect(live?.map((session) => session.id)).toEqual(['session_a']);
+    } finally {
+      vi.unstubAllGlobals();
+      for (const [name, value] of Object.entries(before)) {
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
+      }
+      rmSync(home, { recursive: true, force: true });
     }
   });
 
@@ -224,7 +289,7 @@ describe('live-sessions.mjs', () => {
       tags: [],
     });
 
-    it('生きたセッションが1件も無いページが続いたら、そこで止める', () => {
+    it('生きたセッションが1件も無いページが続いたら、そこで止める', async () => {
       const { fetch, asked } = pages(
         [alive('session_a')],
         [archived('session_b')],
@@ -232,17 +297,17 @@ describe('live-sessions.mjs', () => {
         [alive('session_d')],
       );
 
-      const live = liveSessions({ page: fetch, envs, taken: '' });
+      const live = await liveSessions({ page: fetch, envs, taken: '' });
 
       expect(live.map((session) => session.id)).toEqual(['session_a']);
       expect(asked).toHaveLength(3);
     });
 
     // **途切れ1枚では諦めない。** 生きたセッションは新しい側に固まるが、間に畳まれたものが挟まる。
-    it('畳まれたページが1枚だけなら、越えて拾う', () => {
+    it('畳まれたページが1枚だけなら、越えて拾う', async () => {
       const { fetch, asked } = pages([alive('session_a')], [archived('session_b')], [alive('session_c')]);
 
-      const live = liveSessions({ page: fetch, envs, taken: '' });
+      const live = await liveSessions({ page: fetch, envs, taken: '' });
 
       expect(live.map((session) => session.id)).toEqual(['session_a', 'session_c']);
       expect(asked).toHaveLength(3);
@@ -254,14 +319,14 @@ describe('live-sessions.mjs', () => {
    * `list_sessions` を叩かない。
    */
   describe('この周のぶんが渡されたら、それを読む', () => {
-    it('渡されたファイルを読み、一覧は叩かない', () => {
+    it('渡されたファイルを読み、一覧は叩かない', async () => {
       const path = join(mkdtempSync(join(tmpdir(), 'live-sessions-')), 'live.tsv');
       writeFileSync(
         path,
         `${formatLive({ id: 'session_a', status: 'SESSION_STATUS_RUNNING', bucket: 'B', env: 'cloud', served: true, tags: ['task-1', 'review-2'] })}\n`,
       );
 
-      const live = liveSessions({
+      const live = await liveSessions({
         page: () => {
           throw new Error('叩いてはいけない');
         },
@@ -283,10 +348,10 @@ describe('live-sessions.mjs', () => {
     });
 
     // **読めなかったら止まる側へ倒す**——黙って引き直すと「同じ周の答え」でなくなる。
-    it('渡されたファイルが読めなければ止まる', () => {
-      expect(() =>
+    it('渡されたファイルが読めなければ止まる', async () => {
+      await expect(
         liveSessions({ page: page(), envs, taken: resolve(__dirname, 'no-such-live.tsv') }),
-      ).toThrow(/セッションの一覧/);
+      ).rejects.toThrow(/セッションの一覧/);
     });
   });
 });

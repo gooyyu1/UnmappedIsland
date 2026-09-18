@@ -187,7 +187,7 @@ export async function surveyValues({
   // 引けない理由そのものは `ccr` の側が告げるので、ここは黙って `unknown` へ倒す。
   let live;
   try {
-    live = sessions();
+    live = await sessions();
   } catch {
     live = undefined;
   }

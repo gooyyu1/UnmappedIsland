@@ -19,8 +19,13 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** 環境変数は、試験が身代わりのサーバへ向けるための差し替え口（`tests/scripts/ccrMeta.test.ts`）。 */
-const ENDPOINT = process.env.CCR_META_ENDPOINT ?? 'https://api.anthropic.com/v1/code/mcp/meta';
+/**
+ * 通信先。環境変数は、試験が身代わりのサーバへ向けるための差し替え口。
+ *
+ * **呼ぶたびに読む。** 読み込みのときに1度だけ見ると、**同じプロセスの中から向け直す試験が効かない**
+ * ——`import` して呼ぶ側（`scripts/daemon/live-sessions.mjs`）の検査はその形になる。
+ */
+const endpoint = () => process.env.CCR_META_ENDPOINT ?? 'https://api.anthropic.com/v1/code/mcp/meta';
 
 function readAccessToken() {
   const home = process.env.USERPROFILE ?? process.env.HOME;
@@ -52,7 +57,7 @@ export class MetaError extends Error {}
  * 切れたときそのプロセスから二度と使えない。
  */
 export async function callMeta(tool, args = {}) {
-  const response = await fetch(ENDPOINT, {
+  const response = await fetch(endpoint(), {
     method: 'POST',
     headers: {
       authorization: `Bearer ${readAccessToken()}`,
