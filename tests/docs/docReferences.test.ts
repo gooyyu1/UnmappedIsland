@@ -113,11 +113,15 @@ const ISSUE_NUMBER = /#[0-9]+/;
 const ITEM_NUMBER = /(?:の|同)(?:\s+|\s*項目\s*)(?=[0-9])(?![0-9.]*\s*節)/;
 
 /**
- * 多数の問いをまとめて受けた常設の一覧（`CLAUDE.md`「確認は、1問1 issue で出す」）。**ここだけは、
- * 番号を指しただけでは何を決めたかを指せない**——他の issue は1問1本なので番号がそのまま問いと答えを
- * 指すが、この1本は答えの済んだ項目から詰め替わるうえ、**指した先に対応する項目が無いことすらある**。
+ * 多数の問いをまとめて受けた一覧の番号。**一覧は、番号を指しただけでは何を決めたかを指せない**
+ * ——1問1 issue（`CLAUDE.md`）なら番号がそのまま問いと答えだが、束ねた1本は答えの済んだ項目から
+ * 詰め替わるうえ、**指した先に対応する項目が無いことすらある**。
+ *
+ * **一覧かどうかは番号から読めない**ので、名指しで持つ。挙げてあるのは常設の #656 だけで、周期の係が
+ * 出す諾否の一覧（`agent-ops/board-design.md` 2.17.2）はその回で閉じるため出どころの指し先にならない
+ * ——**閉じない一覧を新しく作ったなら、ここへ足す**。
  */
-const LIST_ISSUE = /#656\b/;
+const LIST_ISSUES = /#656\b/;
 
 /**
  * 本文が暫定であることを自白する語（DocumentStyle.md 6.1節）。確定節の射程には現れない——
@@ -1159,7 +1163,7 @@ describe('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節�
     const found: string[] = [];
     for (const [rel, text] of markRuleByPath) {
       for (const { line, raw } of textLines(text)) {
-        if (raw.startsWith(SOURCE_LINE_PREFIX) && LIST_ISSUE.test(raw) && citesNothingDecided(raw)) {
+        if (raw.startsWith(SOURCE_LINE_PREFIX) && LIST_ISSUES.test(raw) && citesNothingDecided(raw)) {
           found.push(`${rel}:${line}: ${raw}`);
         }
       }
@@ -1168,6 +1172,16 @@ describe('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節�
       found,
       `一覧を番号で指しただけの出どころ（何を決めたかを添える）:\n${found.join('\n')}`,
     ).toEqual([]);
+  });
+
+  it('一覧の照合が、一覧の番号だけに当たる', () => {
+    // 当たらなくなっても違反ゼロと同じ緑になるので、当たる側と外す側を既知の入力で確かめる。
+    expect(LIST_ISSUES.test('**出どころ**: [#656](https://x/issues/656)')).toBe(true);
+    expect(LIST_ISSUES.test('**出どころ**: #656')).toBe(true);
+    // 1問1本の issue は番号がそのまま問いと答えなので、番号だけで足りる。
+    expect(LIST_ISSUES.test('**出どころ**: [#2185](https://x/issues/2185)')).toBe(false);
+    // 番号の一部として現れる `656`。前方一致で拾うと、無関係な issue まで一覧扱いになる。
+    expect(LIST_ISSUES.test('**出どころ**: [#6561](https://x/issues/6561)')).toBe(false);
   });
 
   it('何を決めたかの照合が、参照だけの行と添えてある行を見分ける', () => {
