@@ -194,6 +194,17 @@ describe('アセットパックを重ねた読み込み', () => {
     expect(locale.locationName(new LocationName('sandy_beach', undefined, 2))).toBe('砂浜 [2]');
   });
 
+  it('通し番号の書式は、パックの宣言が既定と同じ文字列でも宣言として扱う', async () => {
+    const locale = loadLocalization([
+      await pack('sample', [
+        { name: 'locale/ja.yaml', content: 'location_texts:\n  default:\n    ordinal_suffix: " ({n})"\n' },
+      ]),
+    ]);
+
+    // 既定値と一致するかで「宣言していない」を代用すると、ここで同梱ぶんの'（第{n}）'が残る。
+    expect(locale.locationName(new LocationName('sandy_beach', undefined, 2))).toBe('砂浜 (2)');
+  });
+
   it('通し番号の書式を宣言しないパックは、同梱の書式を消さない', async () => {
     const locale = loadLocalization([
       await pack('sample', [

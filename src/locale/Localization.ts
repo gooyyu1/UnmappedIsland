@@ -25,8 +25,8 @@ const LOCALE_TEXTS = import.meta.glob('../assets/locale/*.yaml', {
  * LOCALE_FILEの中身。
  *
  * **生のテキストのまま返す口を公開しているのは、宣言されている識別子の集合を数える読み手のため。**
- * Localizationは節ごとの対応表を外へ出さず、どの節も引く口しか無い。知らない識別子は識別子のまま
- * 返るので、引くだけでは「宣言されていない」と「宣言されている」を見分けられない。
+ * 引く口は知らない識別子を識別子のまま返すので、引くだけでは「宣言されていない」と
+ * 「宣言されている」を見分けられない。
  */
 export function bundledLocaleText(): string {
   const text = LOCALE_TEXTS[`../assets/locale/${LANGUAGE}.yaml`];
