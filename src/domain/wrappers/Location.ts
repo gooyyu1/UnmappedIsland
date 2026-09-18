@@ -20,6 +20,16 @@ export class Location extends ObjectWrapper {
     return this.words.fixturesSlotId;
   }
 
+  /**
+   * 探索できる土地か（exploreアクションを宣言しているか、ExplorationSystem.md 1節）。**今すぐ探索
+   * できるかではない**——条件を満たすかは実行の時点で決まる（explore）。
+   *
+   * **どのアクションが探索かを知っているのはこの包み**なので、呼び出し側はアクションの名前を持たない。
+   */
+  get explorable(): boolean {
+    return this.instance.def.declaresInteraction(this.words.exploreAction);
+  }
+
   /** 現在の探索進捗（実効値）。 */
   get explorationProgress(): number {
     return this.effectiveNumberOf(this.words.explorationProgressId);

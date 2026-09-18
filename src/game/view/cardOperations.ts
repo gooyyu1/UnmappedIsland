@@ -12,11 +12,14 @@ import type { CardPlace, CardPlacement } from './cardPlaces';
  */
 export interface CardAction {
   /**
-   * 宣言の識別子（`actions`のキー）。画面が特定の操作を見分けるためのもので、表示には使わない
-   * ——探索だけは、見つかったものを見せる手順が要るので画面側が実行を引き受ける（PlayScene）。
-   * 画面の都合で足した操作（製作中オブジェクトのもの、craftingView）は持たない。
+   * 現在地の探索か（ExplorationSystem.md 2節）。**これだけは画面が実行を引き受ける**——見つかった
+   * ものを発見物の枠へ運び、その面へ移るところまでが1つの操作なので（Windows.md 5節）、`execute`で
+   * 世界を変えるだけでは終わらない。
+   *
+   * **宣言の識別子ではなく、画面が次に何をするかで答える。** どのアクションが探索かを知っている
+   * のはワールドの語彙を持つこちら側だけなので、受け取る側（PlayScene）に名前を突き合わせさせない。
    */
-  readonly key?: string;
+  readonly explores: boolean;
 
   readonly name: string;
   /** 説明文。localeに書かれていなければundefined。 */
@@ -164,7 +167,7 @@ export function cardOperationsOf(game: StartedGame, locale: Localization): CardO
     const fromDefinition = instance.menuActionsFor(game.player.instance).map((action) => {
       const declared = texts.interaction(action.name);
       return {
-        key: action.name,
+        explores: action.name === game.session.codex.vocabulary.world.exploreAction,
         name: declared.displayName,
         description: declared.description,
         minutes: action.executionMinutes(),

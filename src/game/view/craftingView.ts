@@ -59,6 +59,7 @@ export function craftingActions(
 
   return [
     {
+      explores: false,
       name: locale.uiText('crafting_autofill'),
       description: locale.uiText('crafting_autofill_detail'),
       minutes: 0,
@@ -78,6 +79,7 @@ export function craftingActions(
       },
     },
     {
+      explores: false,
       name: locale.uiText('crafting_work'),
       description: locale.uiText('crafting_work_detail'),
       // **押す人の手際を積んだ後の分数**（RecipeDef.minutesFor）。工程が宣言した仕事の量をそのまま
@@ -90,6 +92,7 @@ export function craftingActions(
       },
     },
     {
+      explores: false,
       name: locale.uiText('crafting_abort'),
       description: locale.uiText('crafting_abort_detail'),
       minutes: 0,
