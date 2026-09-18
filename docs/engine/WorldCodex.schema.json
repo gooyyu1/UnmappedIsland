@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://unmappedisland.example/schema/world-codex.schema.json",
   "title": "WorldCodex",
-  "description": "UnmappedIsland の WorldCodex ファイル（GameElementDefinition.md 3.1節）のスキーマ定義。ファイル自体が1つの WorldCodex であり、専用のルートキーは持たない。terrain 生成のルートキー（axes/location_types/generation_scopes、TerrainGeneration.md）はローダーが受け付ける実在の文法だが、識別子をキーとする既存の規約（3節）とは別系統のスキーマ検討が残っているため、本スキーマでは「キーとして許容するが中身は検証しない」に留めている。",
+  "description": "UnmappedIsland の WorldCodex ファイル（GameElementDefinition.md 3.1節）のスキーマ定義。ファイル自体が1つの WorldCodex であり、専用のルートキーは持たない。terrain 生成のルートキー（axes/location_types/generation_scopes、TerrainGeneration.md）はローダーが受け付ける実在の文法だが、本スキーマでは「キーとして許容するが中身は検証しない」に留めている——綴りの誤りはローダーが全部止めており（tests/world-codex/terrainGenerationUnknownKeys.test.ts）、識別子をキーとする既存の規約（3節）とは別系統のスキーマをここへ写しても、二重に持つだけになるため。",
   "type": "object",
   "properties": {
     "object_defs": {
