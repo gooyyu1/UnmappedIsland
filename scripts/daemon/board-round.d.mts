@@ -17,6 +17,8 @@ export interface RoundDeps {
   pendingDecisions?: () => number;
   /** 二次がまだ読んでいない、一次の分析の記録の数（`board-read.mjs`）。省くと本物のリポジトリを数える。 */
   unsummarizedAnalyses?: () => number;
+  /** 節番号の参照に、この周に読むものが在るか（`board-read.mjs`）。省くと本物のリポジトリを見る。 */
+  pendingRefAudit?: () => boolean;
   log?: (line: string) => void;
   echo?: (text: string) => void;
   warn?: (line: string) => void;

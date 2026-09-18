@@ -28,8 +28,10 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
   （動物の1手、[`HuntingSystem.md`](./HuntingSystem.md) 5 節）。ボタンには出ず、名前で指して実行される。
 - **ドラッグ型（`trigger: {drag: ...}`、`DragTrigger`）**: カードを別のカードへ
   ドラッグ＆ドロップする操作。組み合わせを宣言している側が `self`、相手が `instrument` で、
-  きっかけ `{drag: ...}`（タグかobject_defのidで書く型の指定、12.1節）が `instrument` とのマッチング条件になる。宣言は**素材の側**に1つだけ置き
-  （12.3節）、どちらの札をどちらへ運んでも同じ宣言が実行される——**どちらを `self` として試すかの順序は
+  きっかけ `{drag: ...}`（タグかobject_defのidで書く型の指定、
+  [`GameElementDefinition.md`](./GameElementDefinition.md) 12.1節）が `instrument` とのマッチング条件になる。
+  宣言は**素材の側**に1つだけ置き（同 12.3節）、どちらの札をどちらへ運んでも同じ宣言が実行される
+  ——**どちらを `self` として試すかの順序は
   UI層が決める**（[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
 
 **違うのはきっかけだけなので、差はきっかけの側に集める。** 宣言はYAML上も1つの節（`interactions`）で、
@@ -58,13 +60,16 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
   宣言順に列挙する。相手のマッチング（1）だけでなく `conditions`（2）まで見る——**実行できないものを
   黙って落とし先にすると、落とせるのに何も起きない**という形になるため。
 - `refusedCombinationsWith(instrument, agent)` — 逆に、`conditions` で成立せず、**断る理由**
-  （`reason`、14.6節）を宣言しているものだけを列挙する。画面がこちらを**理由を言うためだけの落とし先**
-  として出すのは、成立するものが1つも無いときだけ（[`../ui/CardInteraction.md`](../ui/CardInteraction.md)
+  （`reason`、[`GameElementDefinition.md`](./GameElementDefinition.md)
+  14.6節）を宣言しているものだけを列挙する。画面がこちらを
+  **理由を言うためだけの落とし先**として出すのは、成立するものが1つも無いときだけ
+  （[`../ui/CardInteraction.md`](../ui/CardInteraction.md)
   2.1 節）。上の「黙って」がここに掛かる——**理由が出るなら、実行できない落とし先を出してよい。**
 
 どちらの列挙も、相手のマッチングのほかに**行き先の型**（`blocksOperation`。`become` の行き先に型が
-居ない、9.9節）で先に絞る。**ここで落ちたものは `reason` を宣言していてもどちらにも入らない**＝理由が
-出ない。「なぜ理由が出ないのか」を追うときは、まずここを見る。
+居ない、[`GameElementDefinition.md`](./GameElementDefinition.md) 9.9節）で先に絞る。**ここで落ちたものは
+`reason` を宣言していてもどちらにも入らない**＝理由が出ない。「なぜ理由が出ないのか」を追うときは、
+まずここを見る。
 
 **容量**（`acceptedCountIncludingSelf` が0の相手）はこの門ではなく、`combinationsWith` の側の条件
 （`Combination.canExecute`）。0は「何個受け取れるか」の答え＝**断る理由**であって、候補になるかどうかの
@@ -75,7 +80,8 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 成立しないなら落とされた側）と、複数マッチした場合にどれを実行するかの解決はUI層に委ねる
 （[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節、`cardOperations.combinationBetween`）。
 
-まとめて重ねる操作（`allow_multiple`、12.4節）も `Combination` が持つ。
+まとめて重ねる操作（`allow_multiple`、[`GameElementDefinition.md`](./GameElementDefinition.md) 12.4節）も
+`Combination` が持つ。
 `acceptedCountIncludingSelf(followers)` が落とす前に、掴んだ1枚を含めて何枚落ちるかを答え、
 `executeWithFollowers(followers)` がその繰り返しを行う——**1つ実行するたびに世界が変わる**ので、
 都度まだ成立するかを見直し、成立しなくなった時点で止める。
@@ -109,7 +115,8 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 一度も評価されません。評価が走るのは、掴んだ物を相手として名指している宣言を持つ札だけです。
 
 現在地に150枚の札を並べ、**いちばん多くの札と噛み合う物**（この時点では `salt`。150枚のうち48枚が
-要件まで届く）を掴んで全部を両向きに問うのに **0.51ミリ秒**でした（2026-09-18 時点、
+組み合わせを返す＝要件まで届いた札の下限）を掴んで全部を両向きに問うのに **0.51ミリ秒**でした
+（2026-09-18 時点、
 Intel Xeon @ 2.10GHz・Node v22 で計測）。
 
 **並ぶ枚数に頭打ちはありません**——束ねない型（`stackable: false`、[`SlotSystem.md`](./SlotSystem.md)
@@ -289,6 +296,8 @@ tick が回るのは**絶対時刻が15分の倍数になる瞬間**なので、
   止めると、格子から外れた宣言が世界に残る。
 - 見張るのは `tests/world-codex/actionMinutesGrid.test.ts`。**今ずれている箇所の数え上げではなく**、
   世界じゅうの行動と、所要時間を動かしうる宣言のすべてを定義から引いて見る。
+  **ただし「縮めきっても0分にならない」だけは、同じ名前を複数の型が名乗っているとき、その宣言の
+  中しか見ない**——どの型の素へ積む分なのかが名前からは決まらないため。
 
 **出どころ**: [#2185](https://github.com/gooyyu1/UnmappedIsland/issues/2185)（行動の所要時間を15分の格子へ戻し、腕の効き方を行動ごとの宣言にする）
 
@@ -320,9 +329,10 @@ tick が回るのは**絶対時刻が15分の倍数になる瞬間**なので、
 - **進み具合は対象のプロパティが持ち、札の桟のバーに出す**（`gauge`、[`../ui/CardView.md`](../ui/CardView.md)
   8節）。木は幹の残り（`trunk_integrity`）、死体は捌けたところまで（`butchering_progress`）。
   **見えないと、途中で止めて戻ってくることができない。**
-- **後ろの手は、自分の番が来る状態を条件で名乗る**（12.1 節「条件で分ける」）。同じ道具を重ねても、
-  今の状態に当たる手だけが成立する。**その条件に `reason` は書かない**——断っているのではなく、
-  そこから先は別の手が受け持つので、画面に出るのはその手のほう。
+- **後ろの手は、自分の番が来る状態を条件で名乗る**（[`GameElementDefinition.md`](./GameElementDefinition.md)
+  12.1 節「条件で分ける」）。同じ道具を重ねても、今の状態に当たる手だけが成立する。**その条件に
+  `reason` は書かない**——断っているのではなく、そこから先は別の手が受け持つので、画面に出るのは
+  その手のほう。
 - **レシピは工程を割ればそのまま切れ目になる。** 進捗と材料スロットの仕組みが既にあり、工程の区切りで
   余った材料がこぼれる（`crafting.spillUnneeded`）。**材料の要求は、その工程で実際に使うものへ割り
   当てる**——足りなければ**何も要求しない工程**でよい（[`GameElementDefinition.md`](./GameElementDefinition.md)

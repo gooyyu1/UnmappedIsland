@@ -40,6 +40,8 @@ interface Board {
   pendingDecisions?: number;
   /** 二次がまだ読んでいない、一次の分析の記録の数。回をまたぐ形を見る係の `due` が読む。 */
   unsummarizedAnalyses?: number;
+  /** 節番号の参照に、この周に読むものが在るか。参照を検める係の `due` が読む。 */
+  pendingRefAudit?: boolean;
   issues?: readonly unknown[];
   sessions?: readonly {
     id: string;
@@ -292,7 +294,8 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['RESUME session_a look 10 look:10:aaa1111']);
   });
 
-  // 人の手番の印は、効き目を1つずつ持つ（2.13.2）。**どちらの下でも差し戻しは出る。**
+  // 人の手番の印は、効き目を1つずつ持つ（2.13.2）。**止めるのはマージだけ**で、レビューも、
+  // 差分そのものへ向いた差し戻しも止めない。
   it('判断待ちのPRは、マージしない', () => {
     expect(moves({ prs: [pr(10, label('通してよい', '判断待ち'))] })).toEqual([]);
   });
@@ -327,20 +330,27 @@ describe('board-move.mjs', () => {
     expect(moves({ prs: [pr(10, { comments })] })).toEqual(['REVIEW 10 aaa1111:0']);
   });
 
-  it('判断待ちでも、コンフリクトは差し戻す', () => {
+  // **人の手番で止まっているPRは、`main` の動きでは起こさない**（2.13.8）。止まった版は緑で
+  // マージできた形なので、後から出た衝突とCIの赤は `main` が動いたぶん——直しても答えは近づかず、
+  // 次に `main` が動けば同じところへ戻る。PR #2193 はこれで5周し、実入りのあった周は2つだけだった。
+  it('判断待ちのPRは、コンフリクトしても起こさない', () => {
     const board = {
       prs: [pr(10, { ...label('判断待ち'), mergeable: 'CONFLICTING' })],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:conflict:10:aaa1111']);
+    expect(moves(board)).toEqual([
+      'NOTE PR #10 はコンフリクトしているが、人の手番で止まっているので直しを頼まない',
+    ]);
   });
 
   it('収束せずのPRは、レビューへ出さない', () => {
     expect(moves({ prs: [pr(10, label('収束せず'))] })).toEqual([]);
   });
 
-  it('収束せずでも、CIが赤ければ差し戻す', () => {
+  // `収束せず` も人の手番（2.13.1 の表は `判断待ち` と同じ行に置いている）。**答えを待つ間に
+  // 腐るのも同じ**なので、`main` の動きで起こす理由も同じだけ無い。
+  it('収束せずのPRは、CIが赤くても起こさない', () => {
     const board = {
       prs: [
         pr(10, {
@@ -351,7 +361,28 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:red:10:aaa1111']);
+    expect(moves(board)).toEqual(['NOTE PR #10 はCIが赤いが、人の手番で止まっているので直しを頼まない']);
+  });
+
+  // **止めるのは `main` の動きから生まれた2つだけ。** レビューが「直しが要る」と書いた差し戻しは、
+  // 人の返事を待たずに直せる——直した push で `収束せず` も外れる（`STALE_ON_PUSH`）。
+  it('人の手番で止まっていても、レビューの差し戻しは起こす', () => {
+    const board = {
+      prs: [pr(10, label('収束せず', '直し待ち'))],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:returned:10:aaa1111']);
+  });
+
+  // **画面の証跡も止めない。** 人が答える手掛かりそのものなので、答えを待って出すと順番が逆になる。
+  it('人の手番で止まっていても、見た目 の欠けは起こす', () => {
+    const board = {
+      prs: [pr(10, { ...label('判断待ち'), files: [{ path: 'src/game/ui/Card.ts' }] })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a look 10 look:10:aaa1111']);
   });
 
   // **`mend` ではなく `reject`。** レビューの指摘に答えるのではなく、ユーザーが何を通さなかったのかを
@@ -366,7 +397,8 @@ describe('board-move.mjs', () => {
   });
 
   // **人が外すのは1つずつ。** `判断待ち` と `収束せず` が並んだPRで片方だけ外せば、残ったほうは
-  // 付いたまま `却下` が付く（2.13.1）。止めるのはマージとレビューで、差し戻しは止めない（2.13.2）。
+  // 付いたまま `却下` が付く（2.13.1）。**`却下` は人の答えそのもの**なので、人の手番で止まって
+  // いても出る（2.13.8）。
   it('判断待ちが付いたままでも、却下は差し戻す', () => {
     const board = {
       prs: [pr(10, label('判断待ち', '却下'))],
@@ -908,7 +940,7 @@ describe('board-move.mjs', () => {
   // ないまま止まった**（2026-09-11、PR #1982。直し待ちで起こした後にコンフリクトした）。
   it('同じ版でも、直しの後に生まれたコンフリクトは差し戻す', () => {
     const board = {
-      prs: [pr(10, { ...label('判断待ち'), mergeable: 'CONFLICTING' })],
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
       taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
@@ -1674,6 +1706,7 @@ describe('board-move.mjs', () => {
   const ANALYSIS = `CHORE analysis agent-ops/prompts/analysis-prompt.md ${NOW}`;
   const POLICY = `CHORE policy agent-ops/prompts/policy-cycle-prompt.md ${NOW}`;
   const TREND = `CHORE trend agent-ops/prompts/analysis-trend-prompt.md ${NOW}`;
+  const REFS = `CHORE refs agent-ops/prompts/refs-prompt.md ${NOW}`;
   /** 盤面を見回る係（2.21）。**このPCでしか調べられない**ので、宛先が付く。 */
   const PATROL = `CHORE patrol agent-ops/prompts/patrol-prompt.md ${NOW} --bridge`;
 
@@ -1765,7 +1798,7 @@ describe('board-move.mjs', () => {
   // `dispatch-chore.sh` が要る2つを持っていること**。片方でも欠けると、係は毎周立とうとして
   // 毎周失敗する（時刻を残さないので、間隔で黙りもしない）。
   it('周期の係のプロンプトは、題と囲みを持つ', () => {
-    for (const move of [TRIAGE, ANALYSIS, POLICY, DIG, PATROL]) {
+    for (const move of [TRIAGE, ANALYSIS, POLICY, TREND, REFS, DIG, PATROL]) {
       const text = readFileSync(resolve(__dirname, '../..', move.split(' ')[2]), 'utf-8');
       expect(text).toMatch(/^題: \S/m);
       expect(text).toMatch(/^````$/m);
@@ -1925,7 +1958,7 @@ describe('board-move.mjs', () => {
   // **間隔は `CYCLES` の `policy` が持つ**（2.17。履歴が増えるのはユーザーと直接話したときだけで、束ねるには溜まって
   // いる必要がある）。**他の係と同じ一日では立たない**ことまで見る——2日空いた盤面を渡すので、
   // 間隔を一日に縮めるとここが赤くなる。
-  it('前に立ててから週が明けるまで、価値観を畳む係は立てない', () => {
+  it('前に立ててから間隔が空くまで、価値観を畳む係は立てない', () => {
     const board = { pendingDecisions: 3, taken: { 'cycle:policy': '2026-09-03T02:00:00Z' } };
     expect(moves(board)).toEqual([]);
   });
@@ -1949,7 +1982,7 @@ describe('board-move.mjs', () => {
 
   // **間隔は `CYCLES` の `trend` が持つ**（2.17.4。一次はこれより短い間隔で立つので、1本で何回ぶんもの記録が読める）。**他の係と同じ一日では
   // 立たない**ことまで見る——2日空いた盤面を渡すので、間隔を一日に縮めるとここが赤くなる。
-  it('前に立ててから週が明けるまで、回をまたぐ形を見る係は立てない', () => {
+  it('前に立ててから間隔が空くまで、回をまたぐ形を見る係は立てない', () => {
     const board = { unsummarizedAnalyses: 3, taken: { 'cycle:trend': '2026-09-03T02:00:00Z' } };
     expect(moves(board)).toEqual([]);
   });
@@ -1957,6 +1990,32 @@ describe('board-move.mjs', () => {
   it('週が明けたら、回をまたぐ形を見る係をもう一度立てる', () => {
     const board = { unsummarizedAnalyses: 3, taken: { 'cycle:trend': '2026-08-29T01:00:00Z' } };
     expect(moves(board)).toEqual([TREND]);
+  });
+
+  // ## 参照を検める係（2.17）
+  //
+  // 仕事の在り処が**リポジトリの中**（どこまで読んだかの台帳と、そこからの差分）にある係。
+  // **在るかどうかを答えるのは `scripts/daemon/refAudit.mjs`** で、見るのは `board-read.mjs`。ここが見るのは
+  // **その答えで立つか立たないか**だけ——答えの出し方はあちらの検査が持つ。
+  it('この周に読む参照があれば、参照を検める係を立てる', () => {
+    expect(moves({ pendingRefAudit: true })).toEqual([REFS]);
+  });
+
+  it('読むものが無ければ、参照を検める係は立てない', () => {
+    expect(moves({ pendingRefAudit: false })).toEqual([]);
+  });
+
+  // **間隔は `CYCLES` の `refs` が持つ**（入力は `main` へ入った差分なので、溜めると1周で読む量が
+  // 増えるだけ）。**他の係と同じ週では立たない**ことまで見る——半日しか空いていない盤面を渡すので、
+  // 間隔を半日へ縮めるとここが赤くなる。
+  it('前に立ててから一日が経つまで、参照を検める係は立てない', () => {
+    const board = { pendingRefAudit: true, taken: { 'cycle:refs': '2026-09-04T14:00:00Z' } };
+    expect(moves(board)).toEqual([]);
+  });
+
+  it('一日が経ったら、参照を検める係をもう一度立てる', () => {
+    const board = { pendingRefAudit: true, taken: { 'cycle:refs': '2026-09-04T01:00:00Z' } };
+    expect(moves(board)).toEqual([REFS]);
   });
 
   // ## 掘り起こす係（2.17）
@@ -1986,8 +2045,8 @@ describe('board-move.mjs', () => {
     expect(moves({ issues: [returned], taken: DUG_YESTERDAY })).toEqual([DIG]);
   });
 
-  // **数えるのは在庫の数ではなく組成**（2.18.1）。ここが在庫の数を見ていた間、スメルを拾う係が毎日
-  // 整備の issue を積んだので、**この係は立てられなくなっていた**——2026-09-11 に配れた46件のうち、
+  // **数えるのは在庫の数ではなく組成**（2.18.1）。ここが在庫の数を見ていた間、スメルを拾う係が
+  // 周のたびに整備の issue を積んだので、**この係は立てられなくなっていた**——2026-09-11 に配れた46件のうち、
   // 完成の定義へ向かうものは7件で、残る39件が「配れる task が在る」を成立させ続けていた。
   it('配れるのが整備の仕事だけなら、掘り起こす係を立てる', () => {
     const chores = [1, 2, 3, 4, 5].map(upkeep);

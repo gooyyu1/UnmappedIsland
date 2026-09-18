@@ -2,16 +2,24 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { commentsOnly } from '../../scripts/codeComments.mjs';
-import { promptBodies, promptBody } from '../../scripts/daemon/prompt-body.mjs';
 import {
+  promptBodies,
+  promptBodiesForSession,
+  promptBody,
+  promptBodyForSession,
+} from '../../scripts/daemon/prompt-body.mjs';
+import {
+  COMMENTED_EXTENSIONS,
   isMarkRuleDoc,
   isVerbatimRecord,
   trackedDocs,
   trackedFiles,
+  trackedRefSources,
 } from '../../scripts/docScope.mjs';
 import { declaresWholeDocument, WHOLE_DOCUMENT_CONFIRMED } from '../../scripts/docStatus.mjs';
 import { githubSlugs } from '../../scripts/githubSlugs.mjs';
 import { linesOutsideFence } from '../../scripts/markdownFences.mjs';
+import { isPathTarget, linksIn, pathTargetsIn } from '../../scripts/markdownLinks.mjs';
 
 /**
  * ドキュメントの参照が実在の対象へ解決するかの検査（docs/DocumentStyle.md 5節）。
@@ -144,15 +152,13 @@ function isOperationalDoc(rel: string): boolean {
 }
 
 /**
- * コメントの印（`//` か `#` か）を {@link commentsOnly} が知っている形式。**ここに挙がっていない
- * 形式は、コメントを持っていても読めない。** 綴りが外れても他の形式で緑になるので、実在は
- * 検査で留める。
- */
-const COMMENTED_EXTENSIONS = ['.ts', '.mts', '.mjs', '.js', '.sh', '.py', '.yaml', '.yml'];
-
-/**
- * コメントを書ける形式の、追跡しているソース全部。**節番号の参照（{@link REF_FILES}）も、
- * コメントのMarkdownリンクも、ここから絞って作る。**
+ * コメントを書ける形式の、追跡しているソース全部。**コメントのMarkdownリンクはここから絞って
+ * 作る**（節番号の参照は {@link REF_FILES}——**同じ形式の一覧から、あちらも作られる**）。
+ *
+ * **形式の一覧を持っているのは [`docScope.mjs`](../../scripts/docScope.mjs)**（`COMMENTED_EXTENSIONS`）
+ * ——{@link REF_FILES} を作る側がそこに在るので、別に持つと片方だけが新しい綴りを知らないまま緑になる。
+ * **ここに挙がっていない形式は、コメントを持っていても読めない。** 綴りが外れても他の形式で緑に
+ * なるので、実在は検査で留める。
  *
  * **在り処を列挙せず、形式で絞る**（{@link TRACKED_DOCS} と同じ理由）——フォルダと拡張子を
  * 数え上げると、**足した日にしか更新されない一覧**が射程を決めることになり、新しい置き場も
@@ -170,14 +176,11 @@ const COMMENTED_SOURCES = trackedFiles(ROOT).filter((rel) =>
 /**
  * 参照を検査する対象。ドキュメント自身と、節番号でドキュメントを指すコード・データ。
  *
- * `tools/**` の JSON はコメントを持たない（{@link COMMENTED_SOURCES} に入らない）が、宣言の値が
- * 節番号で仕様を指すので、ここには要る。
+ * **絞りは [`docScope.mjs`](../../scripts/docScope.mjs) が持つ1つ**——**指し先の中身まで読む係**
+ * （[`refAudit.mjs`](../../scripts/daemon/refAudit.mjs)）**が同じ集合から範囲を出す**ので、別に持つと、
+ * 実在は見られているのに中身は誰も読んでいない置き場が黙って生える（逆も同じ）。
  */
-const REF_FILES = [...TRACKED_DOCS, ...COMMENTED_SOURCES, ...listFiles('tools', ['.json'])].filter(
-  (rel) =>
-    !rel.startsWith(join('tests', 'docs')) && // 本テスト自身の例・正規表現は対象外
-    !isVerbatimRecord(rel),
-);
+const REF_FILES = trackedRefSources(ROOT);
 
 /**
  * コードフェンスの外の各行と、原文での行番号。`text` はインラインコードも除いた本文
@@ -208,27 +211,6 @@ function withoutCode(markdown: string): string {
   return textLines(markdown)
     .map(({ text }) => text)
     .join('\n');
-}
-
-/**
- * リンクの指し先が、**指し先として読める形**か（docs/DocumentStyle.md 5節）。読めないものは、
- * 実在のパスではなく**書式そのもの**を見せている（`docStatsCitations` が出どころの書式を
- * `<ファイル>` と書くのと同じ規約）。
- *
- * **外す形を数え上げず、読める形のほうを書く。** 外すものを挙げていくと、次に生えた例示の形が
- * 漏れて**例示が赤くなる**——コードのコメントは正規表現（`['"]([^'"]+)['"]`）も省略の `…` も
- * そのまま引くので、形は増え続ける。ASCIIのパスの字だけでできていて、点だけではないものが
- * 指し先で、それ以外は全部例示。**非ASCIIを入れない**のは、省略の `…` がそこに居るため——
- * 日本語のファイル名を足すなら、`…` を外す手を別に持つことになる。
- *
- * **判定が要るのはリンクだけ。** 節番号・節名の参照は `文書名.md N節` のように書けば
- * {@link brokenNumberedRefsIn} の `tokenPattern` が最初から拾わない（ファイル名の先頭に
- * `[A-Za-z]` を要求している）が、リンクの指し先は何が入っていても形が崩れないので、ここで外す。
- *
- * **囲み（インラインコード・コードフェンス）は、どちらの側でも逃げ道にならない。**
- */
-function isPathTarget(target: string): boolean {
-  return /^[A-Za-z0-9._~%/-]+$/.test(target) && !/^\.+$/.test(target);
 }
 
 /**
@@ -428,33 +410,15 @@ for (const rel of REF_TARGETS.filter((target) => !isVerbatimRecord(target))) {
 }
 
 /**
- * 裸の「N節」を `GameElementDefinition.md` へ落とし込むのを、まだ許す文書。
+ * 裸の「N節」が `GameElementDefinition.md` まで落ちてよいファイルか。**コード・YAMLだけが落ちる**
+ * （そちらの既定。DocumentStyle.md 5節）。
  *
- * **文書の裸の「N節」は自文書の節**（DocumentStyle.md 5節）で、文書名の言及から離れた場所で他の
- * 文書の節を番号だけで指すことはできない。その落とし込みは**コード・YAMLのための既定**なので、
- * 文書に効かせると「4節」と「7.2節」が同じ形で別の文書を指す（読み手には見分けが付かない）。
- *
- * ここに在るのは、その形がまだ残っている文書。落とし込みを外すと今日ある参照が赤くなるので、
- * 書き直すまでの据え置きで、**新しく生えるほうだけを止める**。書き直しは
- * [#2071](https://github.com/gooyyu1/UnmappedIsland/issues/2071)。
- */
-const GRAMMAR_FALLBACK_PENDING: readonly string[] = [
-  join('agent-ops', 'analysis', '2026-09-06-backfill.md'),
-  join('docs', 'engine', 'ActionSystem.md'),
-  join('docs', 'engine', 'ContainerSystem.md'),
-  join('docs', 'engine', 'ExplorationSystem.md'),
-  join('docs', 'engine', 'HuntingSystem.md'),
-  join('docs', 'engine', 'SkillSystem.md'),
-  join('docs', 'engine', 'TrapSystem.md'),
-  join('docs', 'ui', 'CardView.md'),
-];
-
-/**
- * 裸の「N節」が `GameElementDefinition.md` まで落ちてよいファイルか。**コード・YAMLは常に落ちる**
- * （そちらの既定。DocumentStyle.md 5節）。文書は据え置きのものだけ。
+ * **文書の裸の「N節」は自文書の節**で、文書名の言及から離れた場所で他の文書の節を番号だけで
+ * 指すことはできない。落とし込みを文書へ効かせると「4節」と「7.2節」が同じ形で別の文書を指す
+ * （読み手には見分けが付かない）。
  */
 function fallsBackToGrammar(rel: string): boolean {
-  return !isRefTarget(rel) || GRAMMAR_FALLBACK_PENDING.includes(rel);
+  return !isRefTarget(rel);
 }
 
 /** その文書が番号 `num` の節を持つか。 */
@@ -467,22 +431,16 @@ function hasNumberedSection(docRel: string, num: string): boolean {
 
 /** `source` の中で、指し先のファイルが無いMarkdownリンク。`rel` はリンクを解決する起点。 */
 function brokenLinkFilesIn(rel: string, source: string): string[] {
-  const broken: string[] = [];
-  for (const match of source.matchAll(/\]\(([^)#\s]+)(#[^)\s]*)?\)/g)) {
-    const target = match[1];
-    if (/^[a-z]+:/.test(target)) continue; // http(s):等
-    if (!isPathTarget(target)) continue;
-    if (!existsSync(resolve(ROOT, dirname(rel), target))) broken.push(`${rel}: ${target}`);
-  }
-  return broken;
+  return pathTargetsIn(source)
+    .filter((target) => !existsSync(resolve(ROOT, dirname(rel), target)))
+    .map((target) => `${rel}: ${target}`);
 }
 
 /** `source` の中で、リンク先の見出しに解決しないアンカー。`rel` はリンクを解決する起点。 */
 function brokenLinkAnchorsIn(rel: string, source: string): string[] {
   const broken: string[] = [];
-  for (const match of source.matchAll(/\]\(([^)#\s]*)#([^)\s]+)\)/g)) {
-    const [, file, anchor] = match;
-    if (/^[a-z]+:/.test(file)) continue;
+  for (const { file, anchor } of linksIn(source)) {
+    if (anchor === null || anchor === '') continue;
     if (file !== '' && !isPathTarget(file)) continue;
     if (isPlaceholderAnchor(anchor)) continue;
     let targetRel = rel;
@@ -512,12 +470,9 @@ function brokenLinkAnchorsIn(rel: string, source: string): string[] {
  * **原文をそのまま読む。** 見るのは `.md` 以外も含む（{@link REF_FILES}）ので、Markdownの囲みで
  * 削れない——フェンスの中のYAMLコメントも実在の節を指している。
  */
-function brokenNumberedRefsIn(
-  rel: string,
-  source: string,
-  grammarFallback: boolean = fallsBackToGrammar(rel),
-): string[] {
+function brokenNumberedRefsIn(rel: string, source: string): string[] {
   const broken: string[] = [];
+  const grammarFallback = fallsBackToGrammar(rel);
   const tokenPattern =
     /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?|(同\s*)?(\d+(?:\.\d+)*)(?:\s*[〜～]\s*(\d+(?:\.\d+)*))?\s*節/g;
   const resolves = (base: string, nums: readonly string[]): boolean => {
@@ -936,6 +891,58 @@ describe('ドキュメントの参照', () => {
     );
   });
 
+  it('渡す本体は、囲みの中のリンクの起点をリポジトリ直下へ付け替える', () => {
+    // 書き手はどの文書とも同じく自分のファイルからの相対で書く（DocumentStyle.md 5節）。付け替えを
+    // 落とすと、**ひな形の位置からの相対がそのままセッションへ渡り、受け取った側では開けない。**
+    const template = [
+      '# 題名',
+      '```',
+      '[`push-screenshot.sh`](../../scripts/agent/push-screenshot.sh) を打つ',
+      '型は [`parallel-work.md`](../parallel-work.md#pr-の型) が持つ',
+      '答えは [#1102](https://github.com/gooyyu1/UnmappedIsland/issues/1102) へ',
+      '貼り方は `![<名前>](<URL>)`',
+      '```',
+    ].join('\n');
+
+    expect(promptBodyForSession(join('agent-ops', 'prompts', 'probe-prompt.md'), template)).toBe(
+      [
+        '[`push-screenshot.sh`](scripts/agent/push-screenshot.sh) を打つ',
+        '型は [`parallel-work.md`](agent-ops/parallel-work.md#pr-の型) が持つ',
+        '答えは [#1102](https://github.com/gooyyu1/UnmappedIsland/issues/1102) へ',
+        '貼り方は `![<名前>](<URL>)`',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('リポジトリの外に在るひな形では、囲みの中の指し先を動かさない', () => {
+    // 揃える先の直下が無い（検査が一時フォルダへ書くひな形がこの経路を通る）。測って付け替えると、
+    // **リポジトリを抜けるぶんの `../` が指し先へ付いて、壊れた指し先が黙って出る。**
+    const template = ['```', '[`parallel-work.md`](../parallel-work.md)', '```'].join('\n');
+
+    expect(promptBodyForSession(join(ROOT, '..', 'probe-prompt.md'), template)).toBe(
+      '[`parallel-work.md`](../parallel-work.md)\n',
+    );
+  });
+
+  it('ひな形の囲みの中のリンクが、渡った先（リポジトリ直下）から開ける', () => {
+    // 上のリンク切れの検査はひな形の位置から解決するので、**そちらが緑でも渡った先で開けるとは
+    // 言えない**（起点が違う。DocumentStyle.md 5節）。
+    const written = REF_TARGETS.filter(isPromptTemplate).flatMap((rel) =>
+      promptBodiesForSession(rel, read(rel)).flatMap((body) =>
+        pathTargetsIn(body).map((target) => ({ rel, target })),
+      ),
+    );
+
+    // 1つも拾えていない状態は、どれも開ける状態と同じ緑になる。
+    expect(written.length).toBeGreaterThan(0);
+    const broken = written.filter(({ target }) => !existsSync(resolve(ROOT, target)));
+    expect(
+      broken.map(({ rel, target }) => `${rel}: ${target}`),
+      '渡った先で開けないリンク',
+    ).toEqual([]);
+  });
+
   it('印を探す本文は、コードフェンスの中を落とす（規約が書式を例示する）', () => {
     // 参照と逆の扱い（上）。フェンスの中の `【確定】` は規約が見せている書式そのものなので、
     // 拾うと書式を説明した文書が印を持つ文書になる。
@@ -1020,18 +1027,6 @@ describe('ドキュメントの参照', () => {
     expect(brokenNumberedRefsIn(rel, `${grammarOnly as string}節`)).toHaveLength(1);
     const named = `[\`GameElementDefinition.md\`](./GameElementDefinition.md) ${grammarOnly as string}節`;
     expect(brokenNumberedRefsIn(rel, named)).toEqual([]);
-  });
-
-  it('据え置きの一覧に、もう落とし込みの要らない文書が残っていない', () => {
-    // 据え置きは書き直すまでの措置なので、**要らなくなったら落ちる**。残っていると、次に裸で
-    // 指した者がその行を手本にする。
-    const stale = GRAMMAR_FALLBACK_PENDING.filter(
-      (rel) => brokenNumberedRefsIn(rel, read(rel), false).length === 0,
-    );
-    expect(
-      stale,
-      `据え置きの一覧に、もう文法書への落とし込みが要らない文書が残っている:\n${stale.join('\n')}`,
-    ).toEqual([]);
   });
 
   it('暫定を表す語の照合が、他の語の一部を拾わない', () => {

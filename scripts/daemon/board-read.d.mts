@@ -9,6 +9,8 @@ export interface ReadDeps {
   pendingDecisions?: () => number;
   /** 二次がまだ読んでいない、一次の分析の記録の数。省くと本物のリポジトリを数える。 */
   unsummarizedAnalyses?: () => number;
+  /** 節番号の参照に、この周に読むものが在るか。省くと本物のリポジトリを見る。 */
+  pendingRefAudit?: () => boolean;
   log: (line: string) => void;
   now: Date;
   settleMinutes: number;

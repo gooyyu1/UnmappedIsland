@@ -158,6 +158,11 @@ object_defs:
     // 見張る綴りは GlobalId.ts が持つ別名そのものから作る（ここへ書き写すと、名前空間を1つ足した
     // ぶんだけ見張りに穴が空く）。**拾うのは名前空間の別名だけ**——`NotAGlobalId` のように
     // 「IDではない」と名乗る型は、綴りは似ていても向きが逆で、書いても越境にならない。
+    //
+    // **見るのは `as <別名>` の綴りだけ。** 角括弧の表明（`<PropertyGlobalId>n`）は、型引数
+    // （`NameRegistry<PropertyGlobalId>`）と字面で見分けが付かないので拾わない。`any` を経由して
+    // 別名の型へ入れる形も、`as` が要らないぶん素通りする。**型検査が黙る書き方はここも黙る**
+    // ので、越境を止めているのは綴りの縛りそのものではなく、`as` 以外を書く手間のほうになる。
     const aliases = [...readSource(READERS).matchAll(/export type (\w+) = GlobalId</g)].map(
       (match) => match[1],
     );

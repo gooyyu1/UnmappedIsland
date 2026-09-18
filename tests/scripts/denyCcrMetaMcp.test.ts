@@ -36,11 +36,19 @@ function decision(): Decision {
 }
 
 /**
- * 入口（`.claude/ccr-meta.sh`）の冒頭のコメント。**行頭の `#` を落としてから繋ぐ**——残すと、写しの
- * 判定が入口側の**行折り返しの位置**に依る（折り返しをまたぐ写しが `#` で断ち切られて抜ける）。
+ * 入口（`.claude/ccr-meta.sh`）の冒頭のコメント。**中身が始まる行で切る**——ファイル全体を渡すと、
+ * 処理の途中に書いたコメントの見出しまで「冒頭の節」に数えることになる。
+ *
+ * **行頭の `#` を落としてから繋ぐ**——残すと、写しの判定が入口側の**行折り返しの位置**に依る
+ * （折り返しをまたぐ写しが `#` で断ち切られて抜ける）。
  */
 function entryComment(): string {
-  return readFileSync(ENTRY, 'utf-8').replace(/^#+ ?/gm, '');
+  const lines = readFileSync(ENTRY, 'utf-8').split(/\r?\n/);
+  const body = lines.findIndex((line) => line !== '' && !line.startsWith('#'));
+  return lines
+    .slice(0, body < 0 ? lines.length : body)
+    .join('\n')
+    .replace(/^#+ ?/gm, '');
 }
 
 /** 入口のコメントが持つ節の見出し。 */
