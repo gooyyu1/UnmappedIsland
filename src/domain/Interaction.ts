@@ -120,8 +120,8 @@ export class Action extends Interaction<ActionTrigger, undefined> {
  * `refusedCombinationsWith` は理由を告げて断るもの（14.6節）。どちらなのかは `unmetRequirement` が答える。
  */
 export class Combination extends Interaction<DragTrigger, WorldObject> {
-  // 引数の並びは基底（Interaction・Action）と同じ。どれも WorldObject なので、並びが違うと
-  // instrumentとagentを取り違えても型検査を通り抜ける。
+  // 引数の並びは基底（Interaction・Action）と同じ。self・agent・instrumentはどれも WorldObject な
+  // ので、並びが違うとinstrumentとagentを取り違えても型検査を通り抜ける。
   constructor(trigger: DragTrigger, self: WorldObject, agent: WorldObject, instrument: WorldObject) {
     super(trigger, self, agent, instrument);
   }
