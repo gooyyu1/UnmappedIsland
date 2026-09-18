@@ -92,8 +92,15 @@
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PATROL, busySession, cycleHours, unsorted as unsortedIssue } from './board-move.mjs';
-import { allOpenIssues } from './board-read.mjs';
+import {
+  PATROL,
+  STRANDS,
+  busySession,
+  cycleHours,
+  strandedPrs,
+  unsorted as unsortedIssue,
+} from './board-move.mjs';
+import { allOpenIssues, readPrSessions } from './board-read.mjs';
 import { liveSessions } from './live-sessions.mjs';
 import { gh as runGh, runBash } from './spawn.mjs';
 
@@ -186,7 +193,16 @@ async function survey({ gh, sessions, warn }) {
 
   const unsorted = issues.filter(unsortedIssue);
 
-  return { issues, prs, tasks, unsorted, live, sessionsKnown };
+  // **宛先を引けないPRを言うには、名乗りと生きた一覧の**両方**が要る**（`board-move.mjs` の
+  // `strandedPrs`）。片方でも欠けた周に「引けない」と読むと、**健全なPRが全部そう見える**
+  // ——引けなかったことは断りとして出し、節そのものは出さない。
+  const claimed = sessionsKnown ? readPrSessions(gh) : undefined;
+  if (sessionsKnown && claimed === undefined) {
+    warn('（差し戻す相手を引けなかった。宛先の無いPRは出せない）');
+  }
+  const stranded = strandedPrs(prs, claimed, live);
+
+  return { issues, prs, tasks, unsorted, live, sessionsKnown, stranded };
 }
 
 /** 端末へ1行1件で出す形（[`board.sh`](../agent/board.sh)）。引けなければ `undefined`。 */
@@ -328,6 +344,34 @@ function humanTurn(found) {
 }
 
 /**
+ * **差し戻す相手を引けないPR**（2.11.4）。**届く先はここしか無い**——盤面は毎周 `~/daemon.log` へ
+ * 覚え書きを書くが、**それを定期的に読む者は居ない**（2.22.3）。2026-09-11、PR #1922 の名乗りが
+ * 引けないまま、ユーザーがPRへ書いた質問は作者へ一度も届かず、盤面は2時間手を1つも打たなかった
+ * （issue #1937）。
+ *
+ * **人の手番の節とは分ける。** あちらは「ラベルを外すかマージするか」で答えるものだが、ここは
+ * **PRを直すか閉じるかまで人がやる**——答え方が違うものを1つの表に並べると、読む人は先頭の
+ * 指示に従って外すだけになる。
+ *
+ * **無い周は節ごと出さない**（`humanTurn` と同じ理由）。
+ */
+function strandedNote(found) {
+  if (found.stranded.length === 0) return [];
+  return [
+    '',
+    '## 宛先の無いPR',
+    '',
+    '**盤面からは誰にも回せません。** 直しが要っても差し戻す先が無いので、下は人が動かすまで止まります。',
+    '',
+    '| どれ | なぜ | 直すには |',
+    '|---|---|---|',
+    ...found.stranded.map(
+      ({ pr, kind }) => `| PR #${pr.number} | ${STRANDS[kind].why} | ${STRANDS[kind].fix} |`,
+    ),
+  ];
+}
+
+/**
  * 常設の issue の本文（[`board-publish.mjs`](board-publish.mjs)）。読むのは**スマホの人間**で、
  * 手元でスクリプトを叩けない相手なので、**リポジトリを開かずに読める形**にする。
  *
@@ -372,6 +416,9 @@ export async function issueBody({
   // **人の手番は、状態の表より先。** 断りと同じで、**読んだ人に手を打ってもらうための行**
   // （2.20.2）——件数と表は、その後で読めばよい。
   lines.push(...humanTurn(found));
+  // **人の手番の次。** 同じく手を打ってもらうための節だが、**外れるのを待っている相手が居る
+  // ぶん人の手番が先**——こちらは誰も待っていないので、気づくのが1画面ぶん遅れても止まらない。
+  lines.push(...strandedNote(found));
 
   const tally = new Map(COUNTS.map((name) => [name, 0]));
   for (const task of found.tasks) {

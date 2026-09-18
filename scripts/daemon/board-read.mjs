@@ -221,6 +221,27 @@ function mainChecks(raw) {
   }));
 }
 
+/**
+ * PR番号 → そのPRを書いたセッション。引けなければ `undefined`。**空の対応表と混ぜない**
+ * ——空は「どのPRも名乗っていない」と同じ形なので、読む側は**開いているPRが全部宛先を失った**と
+ * 読む（[`board-move.mjs`](board-move.mjs) の `strandedPrs`）。
+ *
+ * **引くのはここ1箇所。** 人の読む盤面（[`board.mjs`](board.mjs)）も同じ手を通す——別々に引くと、
+ * デーモンが起こせる相手と、人に見えている宛先が食い違う。
+ */
+export function readPrSessions(gh) {
+  const raw = gh(
+    ['api', 'graphql', '-f', `query=${PR_SESSIONS_QUERY}`, '-F', 'owner={owner}', '-F', 'name={repo}'],
+    { allowFail: true },
+  );
+  if (raw === undefined) return undefined;
+  try {
+    return prSessions(raw);
+  } catch {
+    return undefined;
+  }
+}
+
 /** PR番号 → そのPRを書いたセッション。**拾うのは、トレーラを持つ最後のコミット**（手が変われば新しいほうが今の書き手）。 */
 function prSessions(raw) {
   const found = {};
@@ -316,14 +337,12 @@ export async function readBoard({
   const checks = gh(['api', `repos/{owner}/{repo}/actions/runs?event=push&head_sha=${head.trim()}`]);
   if (checks === undefined) return undefined;
 
-  // **引けなかった周は空にして進む。** 差し戻す相手が分からないだけで、他の手は打てる
+  // **引けなかった周も盤面は捨てない。** 差し戻す相手が分からないだけで、他の手は打てる
   // （`board-move.mjs` が覚え書きを出す）。**黙って空にしない**——空は「名乗っていない」と同じ形
-  // なので、この周の覚え書きは名乗り忘れと見分けが付かない。
-  const raw = gh(
-    ['api', 'graphql', '-f', `query=${PR_SESSIONS_QUERY}`, '-F', 'owner={owner}', '-F', 'name={repo}'],
-    { allowFail: true },
-  );
-  if (raw === undefined) log('差し戻す相手を引けなかった（この周の「名乗っていない」は当てにならない）');
+  // なので、**開いているPRが全部宛先を失ったように見え**、抱えている担当が片端から人へ返る
+  // （2.11.4）。`undefined` のまま渡して、読む側に「言えない」を持たせる。
+  const claimed = readPrSessions(gh);
+  if (claimed === undefined) log('差し戻す相手を引けなかった（この周は、宛先のことを何も言えない）');
 
   // **一覧を引けなかったら投げる**（[`live-sessions.mjs`](live-sessions.mjs)）。受けるのは呼び手で、
   // ここでも受けると、次に足す失敗をどちらへ載せるかが決まらなくなる。
@@ -343,7 +362,7 @@ export async function readBoard({
     issues: openIssues,
     taken,
     issueStates: issueStates(gh, live, openIssues),
-    prSessions: raw === undefined ? {} : prSessions(raw),
+    prSessions: claimed,
     sessions: live,
   };
 }

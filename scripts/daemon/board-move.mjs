@@ -14,7 +14,8 @@
 //   RESUME  <セッションID> look   <PR番号>    <指紋>  … 画面を撮って本文へ貼らせる
 //   RESUME  <セッションID> stall  <issue番号> <指紋>
 //   RESUME  <セッションID> review-stall <PR番号> <指紋>  … 判定を書かずに止まったレビューに続きを書かせる
-//   RETURN  <issue番号> <セッションID> <指紋>  … 起こしても動かないワーカーの仕事を人へ返す
+//   RETURN  <issue番号> <セッションID> <指紋> [<返す理由>]  … ワーカーの仕事を人へ返す（既定は
+//                                            「起こしても動かなかった」。理由の綴りは `STRANDS`）
 //   REVIEW  <PR番号> <指紋>
 //   UNLABEL <PR番号> <指紋>                  … 前の差分に付いたまま残っている結論の札を剥がす
 //   TASK    <issue番号> [<投入先の引数>]     … 引数が無ければクラウド（2.16）
@@ -38,7 +39,8 @@
 //                     "bucket": "SESSION_STATUS_BUCKET_…", "env": "cloud | bridge | -",
 //                     "tags": ["task-1"] } ],
 //     "issueStates": { "<issue番号>": "OPEN | CLOSED" },
-//     "prSessions":  { "<PR番号>": "session_…" },
+//     "prSessions":  { "<PR番号>": "session_…" },   … 引けなかった周は `undefined`（空の対応表と
+//                                                    混ぜない。2.11.4）
 //     "taken":    { "<手のキー>": "<前に打ったときの指紋>" } }
 //
 // ## 同じ手を、同じ盤面へ二度打たない
@@ -150,6 +152,72 @@ const URGENT = '急ぎ';
  * （同 `askedAlready`）が同じ綴りを見る**ので、ここから出す。
  */
 const RETURNED = 'mend:returned';
+
+/**
+ * 実在するセッションIDの形（2.11.3）。**名乗りがそもそもIDでないことを見分ける手はこれだけ**
+ * ——形になっていない名乗りはどの一覧を引いても当たらないので、**畳まれた実在のIDと同じ顔をする**
+ * （2026-09-11、PR #1922 の `session_cse_…`）。
+ *
+ * **CIの `名乗り`（[`tests.yml`](../../.github/workflows/tests.yml) の `claimed`）と同じ形。**
+ * Actions には node を持ち込めないので実装は別で、**揃っていることは検査が持つ**
+ * （`tests/scripts/claimedSession.test.ts`）。
+ */
+export const SESSION_ID = /^session_01[0-9A-Za-z]{22}$/;
+
+/**
+ * **宛先を引けない名乗りの形**（2.11.4）。**3つに割るのは、人がすることが形ごとに違うから**
+ * ——1つに畳んだ盤面は、実在しないIDを「畳まれている」と言い続けた（issue #1937）。
+ *
+ * - `why` … 覚え書きと盤面の本文に出す、**何が起きているか**。
+ * - `fix` … 人へ返すときのコメントに出す、**何をすれば動き出すか**（`board-round.mjs` の
+ *   `returnBody`）。**リポジトリを開かずに読める形で書く**（2.22.3）。
+ */
+export const STRANDS = {
+  unclaimed: {
+    why: '書いたセッションが名乗っていない',
+    fix: 'コミットの末尾へ `Claude-Session: https://claude.ai/code/session_<ID>` を足して push し直す',
+  },
+  unreal: {
+    why: '名乗りが実在しないセッションを指している',
+    fix: '名乗りを実在のID（`session_` に続けて `01` で始まる英数字22文字）へ直して push し直す。手元のブリッジは作業ツリーの名前 `bridge-cse_<ID>` の `<ID>` で、`cse_` は入らない',
+  },
+  archived: {
+    why: '名乗っているセッションが畳まれている',
+    fix: '直しを引き取って push するか、PRを閉じる。畳まれたセッションは盤面からは起こせない',
+  },
+};
+
+/**
+ * そのPRの**差し戻す相手を引けない形**（引けるなら `undefined`）。返すのは `STRANDS` の鍵と、
+ * 名乗っていたID。
+ *
+ * **一覧に居るかを先に訊く。** 形の検査を先に置くと、**一覧に居る実在のセッションを、形が想定と
+ * 違うというだけで「実在しない」と言う**——ここが答えるのは「盤面が起こせるか」なので、起こせる
+ * 相手が居ることのほうが強い。
+ */
+export function strandOf(pr, prSessions, sessions) {
+  const id = prSessions[String(pr.number)];
+  if (id === undefined) return { kind: 'unclaimed', id: undefined };
+  if (sessions.some((session) => session.id === id)) return undefined;
+  return { kind: SESSION_ID.test(id) ? 'archived' : 'unreal', id };
+}
+
+/**
+ * 開いているPRのうち、**差し戻す相手を引けないもの**（2.11.4）。**読むのは
+ * [`board.mjs`](board.mjs)**——人の読む盤面へ出す唯一の合図で、盤面の判定と2箇所に書かないために
+ * ここから出す。
+ *
+ * **名乗りを引けなかった周は1件も返さない。** 空の対応表で読むと**開いているPRが全部宛先を失った
+ * ように見える**ので、引けないことと「名乗っていない」を混ぜない（`board-read.mjs` の
+ * `readPrSessions`）。
+ */
+export function strandedPrs(prs, prSessions, sessions) {
+  if (prSessions === undefined) return [];
+  return prs
+    .map((pr) => ({ pr, strand: strandOf(pr, prSessions, sessions) }))
+    .filter(({ strand }) => strand !== undefined)
+    .map(({ pr, strand }) => ({ pr, ...strand }));
+}
 
 /**
  * **今の頭への判定が無ければ付きようがない札。** 盤面はこれを、前の差分のものと分かった時点で
@@ -460,6 +528,14 @@ export function moves(input) {
   /** PRごとの、そのPRを書いたセッション（コミットの `Claude-Session:` トレーラ。2.11）。 */
   const prSessions = input.prSessions ?? {};
 
+  /**
+   * そのPRの宛先を引けない形（2.11.4）。**名乗りを引けなかった周は、どのPRにも `undefined`**
+   * ——引けないことを「宛先が無い」と読むと、**健全なPRが全部そう見え**、抱えている担当が片端から
+   * 人へ返る（`board-read.mjs` の `readPrSessions` が `undefined` を返す周）。
+   */
+  const strand = (pr) =>
+    input.prSessions === undefined ? undefined : strandOf(pr, prSessions, input.sessions);
+
   const alive = (tag) => input.sessions.filter((session) => session.tags.includes(tag));
   const busy = (tag) => alive(tag).some(busySession);
 
@@ -483,8 +559,8 @@ export function moves(input) {
    * いる間も「動いていない」に見える。**空いたままが `STALL_MINUTES` に届くまでは動いている側**
    * で数える。停滞と読む境目（`STALL_MINUTES`）と同じ線を使うのは、**PRをまだ出していない
    * セッションなら、そこを越えたところで起こす手か返す手が出るから**——動いていないと読む側と、
-   * 止まったとして打つ側を1本の線で揃える。**PRを出して待っている側には手が出ない**（下の `stall`
-   * の入口が「PRが出ていない」で切ってある）が、そちらも越えれば `ACTIVE_WORKERS` の側は空ける
+   * 止まったとして打つ側を1本の線で揃える。**宛先を引けるPRを出して待っている側には手が出ない**
+   * （下の `stall` の入口がそこで切ってある。2.11.4）が、そちらも越えれば `ACTIVE_WORKERS` の側は空ける
    * ——止まっているのではなく、続きがレビューとマージの側にあるので、`HELD_TASKS` だけを握って
    * 待つ（3.1）。
    */
@@ -784,12 +860,11 @@ export function moves(input) {
       // 「この仕事は終わった」と判断した側の明示の操作なので、機械では戻さない（1.2）。
       const holders = menders(pr);
       if (holders.length === 0) {
-        // **引けなかった理由を分ける。** 名乗っていないのは規則の破れ（2.11）で、直すのは人。
-        // 畳まれているだけなら、盤面の側にできることは無い。
-        const why =
-          prSessions[String(pr.number)] === undefined
-            ? '書いたセッションが名乗っていない'
-            : '直す相手が畳まれている';
+        // **引けなかった理由を分ける**（2.11.4）。名乗っていないのも、実在しないIDを名乗っているのも
+        // 規則の破れで直すのは人、畳まれているなら盤面の側にできることは無い——**手を入れる側が
+        // 違うので、1つに畳むと直せない。** 名乗りそのものを引けなかった周は、どれとも言えない。
+        const found = strand(pr);
+        const why = found === undefined ? '差し戻す相手を引けなかった' : STRANDS[found.kind].why;
         notes.push(`PR #${pr.number} は${reason}が、${why}`);
         continue;
       }
@@ -936,7 +1011,11 @@ export function moves(input) {
       // **自分のPRが開いているうちは畳まない**（2.17）。周期の係にもPRを出すものが居る
       // （`CYCLES` のうち記録を残すもの）ので、畳むと**指摘とコンフリクトを直す相手が消える**
       // ——差し戻す先はコミットのトレーラで引く1本だけ（2.11）。
-      if (Object.values(prSessions).includes(session.id)) continue;
+      //
+      // **名乗りを引けなかった周は畳まない**（2.11.4）。空の対応表で読むと、**PRを出した係が全部
+      // 「PRを出していない」に見え**、畳んだ先にそのPRが宛先の無いPRとして残る——引けない周に
+      // 盤面が自分でその形を作ることになる。**倒れる先は、畳まないほう。**
+      if (input.prSessions === undefined || Object.values(prSessions).includes(session.id)) continue;
       const idle = idleMinutes(session);
       const wrote = judged(spent);
       if (!wrote && idle < STALL_MINUTES) continue;
@@ -989,11 +1068,17 @@ export function moves(input) {
         break;
       }
 
-      // PRを出さないまま**手が空いたままになった**セッション。**まず1回起こし、それでも何も
-      // 出てこなければ人へ返す**（2.15）。セッションが持つ指紋の枠は1つなので、`stall:` →
-      // `returned:` と進めば、どちらの手も二度は出ない。
+      // 宛先を引けるPRを出さないまま**手が空いたままになった**セッション。**まず1回起こし、
+      // それでも何も出てこなければ人へ返す**（2.15）。セッションが持つ指紋の枠は1つなので、
+      // `stall:` → `returned:` と進めば、どちらの手も二度は出ない。
       if (open === undefined) continue;
-      if (input.prs.some((pr) => closes(pr.body).includes(issue))) continue;
+      /** 担当の issue を閉じる、開いているPR。 */
+      const mine = input.prs.filter((pr) => closes(pr.body).includes(issue));
+      // **このワーカーを停滞の判定から外せるのは、宛先を引けるPRだけ**（2.11.4）。引けないPRは
+      // 盤面がレビューへもマージへも差し戻しへも出せないので、**待たせても誰も直さない**
+      // ——2026-09-11、PR #1922 の名乗りが引けないまま、担当が `area:daemon` の錠を握り続け、
+      // 着手できる8件が2時間動かなかった（issue #1937）。
+      if (mine.some((pr) => strand(pr) === undefined)) continue;
       // **空いていることではなく、空いたままであることが入口**（`STALL_MINUTES`）。
       const idle = idleMinutes(session);
       if (idle < STALL_MINUTES) continue;
@@ -1012,6 +1097,21 @@ export function moves(input) {
 
       const woke = taken[`resume:${session.id}`];
       if (woke === `returned:${issue}`) continue;
+
+      // **宛先の無いPRを抱えた担当は、起こさずに返す**（2.11.4）。起こす手が効くのは「続きを
+      // 書けば進む」ときだけで、ここで止めているのはPRの名乗りのほう——**盤面にはこのワーカーへ
+      // 渡す文面が無い**（差し戻す相手はトレーラで引くと決めてある以上、担当のタグからこのPRの
+      // 書き手だとは言えない。2.11.1）。**返せば `判断待ち` が付いて次の周に畳まれ、錠が空く。**
+      const orphan = mine.find((pr) => strand(pr) !== undefined);
+      if (orphan !== undefined) {
+        // **返す理由を、返す手そのものが運ぶ。** 後から状態を見ても何が起きたかは分からないので、
+        // 人へ置くコメントの文面はここで決まる（`board-round.mjs` の `returnBody`）。
+        returns.push(
+          `RETURN ${issue} ${session.id} returned:${issue} ${strand(orphan).kind}:${orphan.number}`,
+        );
+        continue;
+      }
+
       if (woke === `stall:${issue}`) {
         // 起こしてからも同じだけ空いたまま。**動き出していれば `stall:` は消えている**ので
         // （`board-round.mjs`）、ここへ来るのは合図が効かなかったものだけ。

@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { parse } from 'yaml';
+import { SESSION_ID } from '../../scripts/daemon/board-move.mjs';
 import { pathForBash, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
@@ -132,6 +133,19 @@ describe('tests.yml の claimed', () => {
 
   it('壊れた名乗りの後に名乗り直していれば通す', () => {
     expect(passes([`直した理由。\n\n${BROKEN}`, `名乗り直し。\n\n${CLAIM}`])).toBe(true);
+  });
+
+  /**
+   * **盤面も同じ形を見る**（`board-move.mjs` の `SESSION_ID`）。あちらは、引けない名乗りを
+   * **実在しないID**と**畳まれた実在のID**へ割るのにこれを使う（2.11.4）——**緩いほうだけが、
+   * 実在しないIDを「畳まれている」と言う**ので、揃っていることが要る。
+   *
+   * Actions には node を持ち込めないので実装は別（2.13.4 と同じ形）。突き合わせはここが持つ。
+   */
+  it('CIが見る形は、盤面が見る形と同じ', () => {
+    // 基本正規表現では `{` と `}` を逃がす。それ以外はそのままの綴り。
+    const bre = SESSION_ID.source.replace(/[{}]/g, '\\$&');
+    expect(script()).toContain(`grep -q '${bre}'`);
   });
 
   // 直し方が違う（入れ忘れではなく切り出しの誤り）ので、**同じ案内では直せない。**
