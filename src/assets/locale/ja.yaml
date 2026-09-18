@@ -20,6 +20,9 @@ slot_texts:
   # 押すと開く。
   structure:
     display_name: 部品
+  # 甕に載せた蓋（liquid_containers.yaml）。載せている間だけ中身が蒸発しない。
+  lid:
+    display_name: 蓋
   # 製作中オブジェクトの材料スロット（レシピから自動生成される、inProgressObjects.ts）。
   materials:
     display_name: 材料
@@ -1027,6 +1030,17 @@ object_texts:
       coiled:
         display_name: 壺を成形する
         description: 粘土の紐を底から巻き上げ、口をすぼめて壺の形にする。乾かすのはこのあと。
+  unfired_jar_lid:
+    display_name: 素焼き前の蓋
+    description: 形を作っただけの蓋。まだ土のままで、乾かしてから焼けば甕の蓋になる。
+    props:
+      moisture:
+        display_name: 残った水
+        description: 練り土に残っている水。日陰に置けば抜けていく。濡れたまま焼くと、水蒸気で割れる。
+    recipes:
+      pressed:
+        display_name: 蓋を成形する
+        description: 粘土を平たく伸ばし、甕の口に合わせて縁を立てる。乾かすのはこのあと。
   earth_kiln:
     display_name: 覆い焼きの炉
     description: 器と薪をまとめて土で覆った、一度きりの炉。ここでしか土器は焼けず、料理はできない。
@@ -1119,7 +1133,10 @@ object_texts:
   # 液体容器とその中身（liquid_containers.yaml）。
   jar:
     display_name: 甕
-    description: 口の狭い大きな容器。据え置いて水を溜めておける。
+    description: 口の狭い大きな容器。据え置いて水を溜めておける。蓋をすれば中身は蒸発しない。
+  jar_lid:
+    display_name: 甕の蓋
+    description: 焼き締めた粘土の円板。甕へ載せると中身が蒸発しなくなる代わりに、雨も受けない。
   coconut_bowl:
     display_name: ヤシの殻
     description: 果肉を掻き出したあとの半球の殻。器として使える。口が広いので、中身は日にあたると蒸発する。
@@ -1658,6 +1675,7 @@ reason_texts:
   already_clean: この傷口は汚れていない。洗っても落とすものがない。
   not_raining: 雨は降っていない。溜められる雨がない。
   sheltered: ここには雨が当たらない。溜めるなら外へ出す必要がある。
+  lidded: 蓋が載っている。溜めるならまず外す必要がある。
   not_empty: 中身が入っている。まず空にする必要がある。
   container_full: 器は満ちている。これ以上は注げない。
   too_full: 腹がいっぱいで、これ以上は入らない。

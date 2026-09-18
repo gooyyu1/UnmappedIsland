@@ -1,8 +1,11 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
-import { pathForBash, spawnScript } from '../support/runScript';
+import { delimiter, join, resolve } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { BRAKE_ALL_ON, BRAKE_ISSUE, brakeOff, writeBrakeGh } from '../support/brakeIssue';
+import { FakeMetaServer, metaReply, writeFakeCredentials } from '../support/fakeMetaServer';
+import { pathForBash, spawnScript, spawnScriptAsync } from '../support/runScript';
+import { writeUsageCache, writeUsagePolled } from '../support/usageCache';
 
 /**
  * `scripts/daemon/resume-session.sh`——止まったセッションへ送る本文を組み立てる段——の検査。
@@ -107,5 +110,104 @@ describe('resume-session.sh の本文', () => {
 
     expect(built.code).toBe(0);
     expect(built.text).toBe('PR #1512 を直してください。\n');
+  });
+});
+
+/**
+ * 起こす相手（`live-sessions.sh` が出すTSVの1行）。**畳まれておらず、手は空いている**——ここで
+ * 止まると関門まで辿り着かないので、送るところまで通る形にしておく。
+ */
+const IDLE = [
+  'cse_012ABC',
+  'SESSION_STATUS_IDLE',
+  'SESSION_STATUS_BUCKET_COMPLETED',
+  'task-1512',
+  'cloud',
+  'served',
+].join('\t');
+
+interface Woken {
+  readonly code: number;
+  /** 身代わりのMCPサーバが受けた要求の数。**送ったかはこれでしか言えない。** */
+  readonly calls: number;
+}
+
+interface Gates {
+  /** 手綱の issue の本文。既定は全部チェック済み。 */
+  readonly brake?: string;
+  /** 控えてある `five_hour` の `utilization`。既定は余力たっぷり。 */
+  readonly fiveHour?: number;
+  /** 控えてある `seven_day` の `utilization`。既定は余力たっぷり。 */
+  readonly sevenDay?: number;
+}
+
+let server: FakeMetaServer;
+let endpoint: string;
+
+beforeEach(async () => {
+  server = new FakeMetaServer();
+  server.reply = metaReply('ok');
+  endpoint = await server.listen();
+});
+
+afterEach(async () => {
+  await server.close();
+});
+
+/** 実際に起こさせる。**一覧は控えで差し替える**（`LIVE_SESSIONS_TSV`）ので、引くのは送る1回だけ。 */
+async function wake(gates: Gates = {}): Promise<Woken> {
+  const work = mkdtempSync(join(tmpdir(), 'unmapped-island-resume-gate-'));
+  try {
+    writeBrakeGh(work, gates.brake ?? BRAKE_ALL_ON);
+    writeFakeCredentials(work);
+    writeUsageCache(work, { fiveHour: gates.fiveHour, sevenDay: gates.sevenDay });
+    // **控えが古ければ口を叩きに行く**ので、叩いた印を置いて間隔の番で追い返させる（`headroom.sh`）。
+    writeUsagePolled(work);
+    const live = join(work, 'live.tsv');
+    writeFileSync(live, `${IDLE}\n`, 'utf-8');
+
+    const run = await spawnScriptAsync(RESUME_SH, ['cse_012ABC', 'mend', '1512'], {
+      env: {
+        ...process.env,
+        PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
+        BOARD_STATE: work,
+        HOME: work,
+        USERPROFILE: work,
+        BRAKE_ISSUE,
+        USAGE_MIN_SECONDS: '3600',
+        CCR_META_ENDPOINT: endpoint,
+        LIVE_SESSIONS_TSV: live,
+      },
+    });
+    return { code: run.code, calls: server.received.length };
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
+}
+
+/**
+ * 起こす周も、立てる周と同じ関門を通ること（`agent-ops/board-design.md` 2.5.2）。
+ *
+ * **上限に当たっている間に起こしても、モデルが割り当たらず何も出てこない。** それだけなら空振りで
+ * 済むが、**盤面は起こした印を打てた手にしか残さない**ので、起こせてしまうと次の窓で人へ返るところ
+ * まで進む（2.15.3）——**止めれば印が残らず、枠が明けた周にそのまま起こし直される。**
+ */
+describe('resume-session.sh の関門', () => {
+  it('手綱も余力も在れば送る', async () => {
+    expect(await wake()).toEqual({ code: 0, calls: 1 });
+  });
+
+  // **人が止めている3と別の終了コード**（`headroom.sh`）。枠が明ければひとりでに戻るので、
+  // 見回る係の打つ手が違う（2.21.2）。
+  it('余力が足りなければ、送らずに4で止まる', async () => {
+    expect(await wake({ sevenDay: 99 })).toEqual({ code: 4, calls: 0 });
+  });
+
+  it('5時間の余力が足りなくても、送らずに4で止まる', async () => {
+    expect(await wake({ fiveHour: 95 })).toEqual({ code: 4, calls: 0 });
+  });
+
+  it('人が「直しの再開」を止めていれば、送らずに3で止まる', async () => {
+    expect(await wake({ brake: brakeOff('直しの再開') })).toEqual({ code: 3, calls: 0 });
   });
 });

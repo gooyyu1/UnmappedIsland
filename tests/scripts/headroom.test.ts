@@ -4,6 +4,7 @@ import { delimiter, join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
+import { type CachedUsage, writeUsageCache, writeUsagePolled } from '../support/usageCache';
 
 /**
  * `scripts/daemon/headroom.sh`（と中身の `headroom.mjs`）の検査
@@ -38,24 +39,9 @@ afterEach(() => {
   rmSync(stateDir, { recursive: true, force: true });
 });
 
-interface Usage {
-  readonly fiveHour?: number;
-  readonly sevenDay?: number;
-  /** `locked_reason`。省くと錠は掛かっていない。 */
-  readonly locked?: string;
-  /** 引けてからの経過秒。省くとたった今。 */
-  readonly agedSeconds?: number;
-}
-
-/** 使用量の控えを置く。1行目が引けた時刻（エポック秒）。 */
-function cacheUsage(usage: Usage = {}): void {
-  const locked = usage.locked ?? '-';
-  const at = Math.floor(Date.now() / 1000) - (usage.agedSeconds ?? 0);
-  const lines = [
-    `five_hour ${usage.fiveHour ?? 5} 2026-09-05T01:00:00Z ${locked}`,
-    `seven_day ${usage.sevenDay ?? 5} 2026-09-10T01:00:00Z ${locked}`,
-  ];
-  writeFileSync(join(stateDir, 'usage-latest'), `${at}\n${lines.join('\n')}\n`, 'utf-8');
+/** 使用量の控えを置く。形は `usageCache.ts`。 */
+function cacheUsage(usage: CachedUsage = {}): void {
+  writeUsageCache(stateDir, usage);
 }
 
 /** 畳まれたセッションの記録を置く。並びは `usage-attribute.mjs` の出す形。 */
@@ -185,6 +171,17 @@ describe('headroom.sh', () => {
     expect(run('review-untasked').code).toBe(0);
   });
 
+  // **起こす周を分けて測った値は、記録に永久に0件**（起こされたセッションの消費は、そのセッション
+  // 自身のタグの種類として積まれる）。**新しいタスクが止まる周には、起こす手も止まる**と決めてある
+  // ので（2.5.2）、`other` の側がいくら軽くても通らない。
+  it('`resume` は、`new-task` の記録で比べる', () => {
+    cacheUsage({ fiveHour: 10, sevenDay: 92 });
+    cacheSpent([...samples('new-task', 20, 5), ...samples('other', 1, 0.5)]);
+
+    expect(run('resume').code).toBe(HELD);
+    expect(run('other').code).toBe(0);
+  });
+
   // 計測が薄いうちは既定値。**既定は大きめに置く**ので、記録の無い種類は先に止まる（2.5.3）。
   it('記録が足りない種類は、既定値で比べる', () => {
     cacheUsage({ fiveHour: 10, sevenDay: 97 });
@@ -229,7 +226,7 @@ describe('headroom.sh', () => {
     const noCache = run('new-task');
 
     cacheUsage({ agedSeconds: 60 * 60 * 24 });
-    writeFileSync(join(stateDir, 'usage-polled'), `${Math.floor(Date.now() / 1000)}\n`, 'utf-8');
+    writeUsagePolled(stateDir);
     const notMyTurn = run('new-task');
 
     for (const result of [noCache, notMyTurn]) {

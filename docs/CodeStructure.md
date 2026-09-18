@@ -185,7 +185,7 @@ codex ビューアはゲームの画面を持たない別ページとして層�
 定義は受動的なレコードではなく**世界を引数に取る振る舞い**（`ConditionNode.evaluate`・
 `InteractionDef.tryExecute`）なので、宣言と実行はもともと同居しています——`src/domain/` 直下を宣言と
 実体のフォルダへ分ける形が不採用なのはそのためで、測ったものは
-[`DesignNotes.md`](./engine/DesignNotes.md)「定義と実行時状態」が持ちます。
+[`DesignNotes.md`](./DesignNotes.md)「定義と実行時状態」が持ちます。
 
 そのため**直下に置くサブディレクトリは、1つの話題で閉じたまとまりだけ**です。**どれが在るかは
 [`tests/architecture/layers.test.ts`](../tests/architecture/layers.test.ts) の `DOMAIN_SUBDIRS` が

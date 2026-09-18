@@ -39,7 +39,7 @@ const MAX_ITEM_LINES = 3;
 const CROSS_REFERENCE = /\[\[([^\]\n]+)\]\]/g;
 
 /**
- * 事例を本文へ書かせないための検査。具体の出典は履歴と `docs/engine/DesignNotes.md` が持つ。
+ * 事例を本文へ書かせないための検査。具体の出典は履歴と `docs/DesignNotes.md` が持つ。
  * 引きたくなったら、それは事例であって一般則ではない。
  */
 const CITATIONS: readonly { readonly what: string; readonly pattern: RegExp }[] = [

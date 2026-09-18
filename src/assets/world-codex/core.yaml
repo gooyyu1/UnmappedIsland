@@ -33,10 +33,11 @@ card_filters:
   - id: filter_food
     icon: 🍖
     tags: [food, roastable, hearth, preservative]
-  # 水（系統1）。汲む器と、汲む先の水源も一緒に残す。
+  # 水（系統1）。汲む器と、汲む先の水源も一緒に残す。**器の蓋も残す**——載せるには器と同時に
+  # 見えている必要がある（炉と材料が食のボタンに揃うのと同じ、docs/ui/ScreenLayout.md 8.1.1節）。
   - id: filter_water
     icon: 💧
-    tags: [water, hot_water, liquid_container, water_source]
+    tags: [water, hot_water, liquid_container, water_source, container_lid]
   # 火（系統5）。
   - id: filter_fire
     icon: 🔥
@@ -47,10 +48,10 @@ card_filters:
   - id: filter_tool
     icon: 🔨
     tags: [tool, weapon, trap, meat_bait, plant_bait, strike_target]
-  # 運ぶ入れ物（系統7）。
+  # 運ぶ入れ物（系統7）。器の蓋も同じ理由で残す（水のボタンと同じ）。
   - id: filter_container
     icon: 🧺
-    tags: [container, liquid_container]
+    tags: [container, liquid_container, container_lid]
   # 衣類（系統8）。
   - id: filter_wear
     icon: 👕
