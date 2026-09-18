@@ -56,6 +56,11 @@ interface World {
    */
   readonly unsummarizedAnalyses?: number;
   /**
+   * 節番号の参照に、この周に読むものが在るか（参照を検める係の `due`）。**既定は「無い」**
+   * ——上の2つと同じ理由で、本物のリポジトリを見させるとこの係が全部の周に混ざる。
+   */
+  readonly pendingRefAudit?: boolean;
+  /**
    * `main` の先頭の指紋へ結び付いている走り。既定は緑の `push` 1本。`event` を書かなければ
    * `push`——**木を見ていない走り**（issue へのコメントで立つ札の係など）を混ぜるときだけ書く。
    */
@@ -281,6 +286,7 @@ async function playRound(world: World = {}): Promise<Result> {
       },
       pendingDecisions: () => world.pendingDecisions ?? 0,
       unsummarizedAnalyses: () => world.unsummarizedAnalyses ?? 0,
+      pendingRefAudit: () => world.pendingRefAudit ?? false,
       runScript,
     });
 

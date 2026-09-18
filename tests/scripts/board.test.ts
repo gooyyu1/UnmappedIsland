@@ -414,6 +414,66 @@ describe('issueBody', () => {
     expect(lines).toContain('| PR #10 | マージされない | ラベルを割る |');
   });
 
+  // **人の手番で止まっている間、盤面は `main` の動きで直しを頼まない**（2.13.8）ので、**待つほど
+  // 衝突とCIの赤がそのまま残る。** 書かないと、読んだ人は「通す」を選んだつもりで押せないボタンの
+  // 前に着く——**そこから先に何をすればよいかは、どこにも出ない。**
+  it('取り込みが要るPRには、押せないことと次の手を添える', async () => {
+    const { lines } = await body({
+      prs: [
+        {
+          number: 10,
+          title: 'ラベルを割る',
+          labels: [{ name: '通してよい' }, { name: '判断待ち' }],
+          statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }],
+          mergeable: 'CONFLICTING',
+          body: '',
+        },
+      ],
+    });
+
+    expect(lines).toContain('| PR #10 | マージされない（衝突・CIが赤い。取り込みが要る） | ラベルを割る |');
+    expect(lines).toContain(
+      '**`取り込みが要る` と出たPRは、画面のマージが押せません。** 通すなら「通してよい。`main` を取り込んで」と書いてラベルを外してください——書いた本人が1回で取り込み直し、緑になったらここへ戻ります（2.13.8）。',
+    );
+  });
+
+  // 当たっていない周にも出る断りは、当たっている周も同じ見た目のまま読み飛ばされる。
+  it('押せるPRだけの周には、取り込みの断りを出さない', async () => {
+    const { lines } = await body({
+      prs: [
+        {
+          number: 10,
+          title: 'ラベルを割る',
+          labels: [{ name: '判断待ち' }],
+          statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'SUCCESS' }],
+          mergeable: 'MERGEABLE',
+          body: '',
+        },
+      ],
+    });
+
+    expect(lines.join('\n')).not.toContain('取り込みが要る');
+  });
+
+  // **`収束せず` も人の手番**（2.13.1 の表は `判断待ち` と同じ行に置いている）。出さないと、
+  // `main` の動きで起こさなくなったぶん（2.13.8）が**誰にも見えないまま腐る。**
+  it('`収束せず` のPRも、人の手番として出す', async () => {
+    const { lines } = await body({
+      prs: [
+        {
+          number: 11,
+          title: '往復で決まらない',
+          labels: [{ name: '収束せず' }],
+          statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'SUCCESS' }],
+          mergeable: 'MERGEABLE',
+          body: '',
+        },
+      ],
+    });
+
+    expect(lines).toContain('| PR #11 | マージされない | 往復で決まらない |');
+  });
+
   // **issue の `判断待ち` は、ワーカーが人へ返した印**（2.15）。件数の表には「返却」として数だけ
   // 出るが、**どれを返したかは番号が要る。**
   it('`判断待ち` の issue を、配られないものとして出す', async () => {
