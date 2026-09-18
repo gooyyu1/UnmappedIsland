@@ -106,7 +106,7 @@ object_defs:
           # 太鼓のくり抜きが刃物なら何でもよいのと、そこが違う。
           #
           # **削り続ける工程が並ぶ**（1回は1時間まで、docs/engine/ActionSystem.md 6.3節）。刃は同じ1本が通る
-          # （consume: falseは工程を跨いで数えない、crafting.remainingRequirements）。
+          # （consume: falseは工程を跨いで数えない、crafting.remainingRequirementsOf）。
           - requires:
               - {object: thick_branch, count: 1, consume: true}
               - {tag: handheld_blade, count: 1, consume: false}

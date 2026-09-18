@@ -52,7 +52,7 @@ export class SameSlotSpawnSite {
    */
   placeReplacement(spawned: WorldObject): boolean {
     const slot = this.slot;
-    const placed = spawned.insertSameSlotOrRejection(slot, this.nextPlacement(slot)) === undefined;
+    const placed = spawned.insertSameSlotOrRejection(slot, this.nextPlacement()) === undefined;
 
     // 既存スタックへ合流したもの（findOwnStackがundefined）はセルを消費しないため基準にしない——originの
     // 位置はまだ誰も引き継いでおらず、次の1つのために空けておく。配置に失敗したものも同じ扱いになる。
@@ -63,11 +63,11 @@ export class SameSlotSpawnSite {
   }
 
   /** 次の置き換えオブジェクトの置き場所。基準になるスタックが居れば「その隣」＝同種が残っている場合と同じ扱いになる。 */
-  private nextPlacement(slot: Slot): SameSlotPlacement {
+  private nextPlacement(): SameSlotPlacement {
     if (this.anchorStack !== undefined) {
-      return new SameSlotPlacement(slot.indexOfStack(this.anchorStack), true);
+      return new SameSlotPlacement(this.slot.indexOfStack(this.anchorStack), true);
     }
-    return new SameSlotPlacement(this.originCellIndex(slot), this.originKindRemains);
+    return new SameSlotPlacement(this.originCellIndex, this.originKindRemains);
   }
 
   /**
@@ -81,7 +81,7 @@ export class SameSlotSpawnSite {
   }
 
   /** originが居たセルの位置。同種が残っていればoriginStackの現在位置、消えていれば捕捉時の位置。 */
-  private originCellIndex(slot: Slot): number {
-    return this.originKindRemains ? slot.indexOfStack(this.originStack) : this.stackIndexAtCapture;
+  private get originCellIndex(): number {
+    return this.originKindRemains ? this.slot.indexOfStack(this.originStack) : this.stackIndexAtCapture;
   }
 }

@@ -31,13 +31,28 @@ export function materialsSlotOf(inProgress: WorldObject): Slot | undefined {
 }
 
 /**
+ * その製作中オブジェクトが積み上げた進捗（宣言を持たなければ0）。
+ *
+ * **どこまで進んだかは製作中オブジェクト自身が持つ**ので、呼び出し側に引かせない。引く式が散ると、
+ * 別の物の進捗を渡しても型は通り、今やっていない工程が答えとして返る。
+ */
+function progressOf(inProgress: WorldObject): number {
+  return inProgress.tryGetProperty(inProgress.session.codex.vocabulary.engine.progressId)?.number ?? 0;
+}
+
+/**
  * 製作中オブジェクトで、今取り掛かっている工程（RecipeSystem.md 1節）。
  *
  * 進捗は工程が宣言した仕事の量を積み上げた値なので、**進捗が入る区間**がそのまま工程を指す。
  * 作り手の手際で動くのは経過する時間だけなので、この区切りは誰が作っていても同じ
- * （RecipeDef.minutesFor）。全工程を終えていればundefined（完成はprogressのon_maxが起こす）。
+ * （RecipeDef.minutesFor）。製作中オブジェクトでない物と、全工程を終えた物ではundefined
+ * （完成はprogressのon_maxが起こす）。
  */
-export function currentStep(recipe: RecipeDef, progress: number): RecipeStepDef | undefined {
+export function currentStepOf(inProgress: WorldObject): RecipeStepDef | undefined {
+  const recipe = recipeOf(inProgress);
+  if (recipe === undefined) return undefined;
+
+  const progress = progressOf(inProgress);
   let consumed = 0;
   for (const step of recipe.steps) {
     consumed += step.durationMinutes;
@@ -47,12 +62,16 @@ export function currentStep(recipe: RecipeDef, progress: number): RecipeStepDef 
 }
 
 /**
- * まだ終わっていない工程が要求する型 → 残りの必要数の合計。
+ * まだ終わっていない工程が要求する型 → 残りの必要数の合計（製作中オブジェクトでなければ空）。
  *
  * 枠は型ごとにまとまっている（inProgressObjects.requirementCells）ので、「この型はもう要らない」も
  * 「あといくつ要る」も、この表だけで答えられる。
  */
-export function remainingRequirements(recipe: RecipeDef, progress: number): readonly RecipeRequirementDef[] {
+export function remainingRequirementsOf(inProgress: WorldObject): readonly RecipeRequirementDef[] {
+  const recipe = recipeOf(inProgress);
+  if (recipe === undefined) return [];
+
+  const progress = progressOf(inProgress);
   const remaining = new Map<string, MergedRequirement>();
   let consumed = 0;
   for (const step of recipe.steps) {
@@ -137,12 +156,16 @@ export function spawnInProgressObject(
 }
 
 /**
- * その工程が要求する素材と道具のうち、材料スロットに揃っている割合（0〜1）。
+ * 今の工程（currentStepOf）が要求する素材と道具のうち、材料スロットに揃っている割合（0〜1）。
+ * 進める工程が無ければundefined——揃えるものが無いので、割合そのものが立たない。
  *
  * **道具（`consume: false`）も数に入れる。** 作業を止めるのは素材と同じで、揃っていなければ
  * 工程は進まない。要求を持たない工程は1（揃っている）。
  */
-export function stepSupplyRatio(inProgress: WorldObject, step: RecipeStepDef): number {
+export function currentStepSupplyRatio(inProgress: WorldObject): number | undefined {
+  const step = currentStepOf(inProgress);
+  if (step === undefined) return undefined;
+
   const allocated = allocateContentsToRequirements(materialsSlotOf(inProgress)?.contents ?? [], step);
   let needed = 0;
   let held = 0;
@@ -154,9 +177,9 @@ export function stepSupplyRatio(inProgress: WorldObject, step: RecipeStepDef): n
   return needed === 0 ? 1 : held / needed;
 }
 
-/** その工程が要求する素材と道具が、材料スロットに揃っているか。 */
-export function stepIsSupplied(inProgress: WorldObject, step: RecipeStepDef): boolean {
-  return stepSupplyRatio(inProgress, step) >= 1;
+/** 今の工程が要求する素材と道具が、材料スロットに揃っているか（進める工程が無ければfalse）。 */
+export function currentStepIsSupplied(inProgress: WorldObject): boolean {
+  return (currentStepSupplyRatio(inProgress) ?? 0) >= 1;
 }
 
 /**
@@ -191,10 +214,9 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
   // そちらでは入れる物がinstrument）。実行なので動作主も主張する（whileActing）——経過中に配られて
   // 待たされた手番は、工程を進め終えたこの切れ目で起きる。
   return new InteractionRelation(inProgress, agent, undefined).whileActing((context) => {
-    const progressGlobalId = codex.vocabulary.engine.progressId;
-    const step = currentStep(recipe, inProgress.tryGetProperty(progressGlobalId)?.number ?? 0);
+    const step = currentStepOf(inProgress);
     if (step === undefined) return false;
-    if (!stepIsSupplied(inProgress, step)) return false;
+    if (!currentStepIsSupplied(inProgress)) return false;
 
     // actions/combinationsと同じ順序で、時間を進めてから効果（消費と進捗）を適用する
     // （ActionSystem.md 2節）。素材は作業のあいだ材料スロットに在り、無くなるのは作業を終えた
@@ -205,7 +227,7 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
     //
     // 生存を見るのは製作中オブジェクトだけ（actionsのselfにあたる）。これを失うと進捗の行き先も
     // 完成品の生まれる場所も無くなり、黙って何も起きない結果になる。素材は違う——経過中に失われても
-    // 打ち切らない。それは開始時に済ませた在庫確認（stepIsSupplied）の再判定にあたる（同6.1節）。
+    // 打ち切らない。それは開始時に済ませた在庫確認（currentStepIsSupplied）の再判定にあたる（同6.1節）。
     if (!spendDurationAndReportParticipantsAlive(recipe.minutesFor(step, agent), inProgress)) return false;
 
     // 消費が進捗より先なのは、進捗が上限を超えた瞬間に完成し、残っている物は親へこぼれてしまうため。
@@ -215,7 +237,7 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
       for (const object of allocated.get(requirement) ?? []) object.destroy();
     }
 
-    inProgress.tryGetProperty(progressGlobalId)?.add(step.durationMinutes);
+    inProgress.tryGetProperty(codex.vocabulary.engine.progressId)?.add(step.durationMinutes);
 
     // 工程の進捗バー（CardView.md 10.1節、inProgressObjects.FINISHED_STEPS_PROPERTY）が読む純粋な
     // 回数。工程が1つのレシピにはそもそも宣言が無いので、持っていなければ何も起きない。
@@ -227,7 +249,7 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
     if (recipeOf(inProgress) === undefined && recipe.surplus !== undefined)
       inProgress.applyActiveEffect(recipe.surplus, context);
 
-    spillUnneeded(inProgress, recipe);
+    spillUnneeded(inProgress);
     return true;
   });
 }
@@ -239,16 +261,13 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
  * 隠せなくなる（隠すと取り出せなくなる）。完成時に残りがこぼれるのと同じ扱いを、工程の
  * 区切りへ前倒ししている（RecipeSystem.md 3節）。
  */
-function spillUnneeded(inProgress: WorldObject, recipe: RecipeDef): void {
+function spillUnneeded(inProgress: WorldObject): void {
   const parent = inProgress.parent;
   // こぼす先は、製作中オブジェクト自身が居るスロット（足元なら足元、かごの中ならかごの中）。
   const parentSlot = inProgress.parentSlot?.def;
   if (parent === undefined || parentSlot === undefined) return;
 
-  const stillNeeded = remainingRequirements(
-    recipe,
-    inProgress.tryGetProperty(inProgress.session.codex.vocabulary.engine.progressId)?.number ?? 0,
-  );
+  const stillNeeded = remainingRequirementsOf(inProgress);
   const leftovers = (materialsSlotOf(inProgress)?.contents ?? []).filter(
     (object) => !stillNeeded.some((requirement) => requirement.requires(object.def)),
   );
