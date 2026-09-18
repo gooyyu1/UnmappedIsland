@@ -148,7 +148,7 @@ Codexを持たずに組み立てだけを見る）。`as <種類>GlobalId` を g
 
 | 種類 | 置き場 | 赤の意味 |
 | --- | --- | --- |
-| 層の責務 | 上記以外（`tests/domain`・`tests/game`・`tests/loader` ほか） | その層のコードが壊れた |
+| 層の責務 | 他の行のどれでもない置き場（`tests/domain`・`tests/game`・`tests/loader` ほか） | その層のコードが壊れた |
 | 通し | `tests/integration` | 層の繋ぎ目が壊れた |
 | 同梱の中身 | [`testKinds.test.ts`](../tests/architecture/testKinds.test.ts) の `BUNDLED_CONTENT` が持つ置き場 | 同梱のYAML・絵・対応表を直した副作用 |
 
