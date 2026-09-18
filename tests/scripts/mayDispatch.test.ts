@@ -139,7 +139,8 @@ BODY
     }
     // **控えが無いときは口を叩きに行く**（`headroom.sh`）。叩いた印をたった今のことにして、間隔の番で
     // 追い返させる——**本物の網に触らせない**。資格情報は身代わりのMCP用に置いてあるので、
-    // 「読めなくて落ちる」には頼れない。
+    // 「読めなくて落ちる」には頼れない。**間隔は下で名指しで渡す**（既定に任せると、環境から短い値が
+    // 渡った回だけ本物の口へ出る）。
     writeFileSync(join(work, 'usage-polled'), `${Math.floor(Date.now() / 1000)}\n`, 'utf-8');
 
     const result = await spawnScriptAsync(SCRIPT, [kind, ...tags], {
@@ -151,6 +152,7 @@ BODY
         HOME: work,
         USERPROFILE: work,
         BRAKE_ISSUE,
+        USAGE_MIN_SECONDS: '3600',
       },
     });
     return { code: result.code, stderr: result.stderr };

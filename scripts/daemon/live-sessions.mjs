@@ -130,7 +130,13 @@ async function listSessions(request) {
     return undefined;
   }
   const page = metaJson(text);
-  if (page === undefined) writeSync(2, `list_sessions: 応答からJSONを読めなかった: ${text}\n`);
+  // **`ccr` を持たないJSONは「引けた」にしない。** `metaJson` は最初に読めた行を返すので、別のJSONが
+  // 先に混じると**中身の無いページ**として通り、`data` が空の1枚に見える——それは「生きたセッションは
+  // 居ない」と同じ形で、呼び手は二重に立てる（`occupancy.sh`「読めなかったときに止まる側へ倒す」）。
+  if (page?.ccr === undefined) {
+    writeSync(2, `list_sessions: 応答からセッションの一覧を読めなかった: ${text}\n`);
+    return undefined;
+  }
   return page;
 }
 

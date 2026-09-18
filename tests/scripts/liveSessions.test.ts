@@ -215,15 +215,13 @@ describe('live-sessions.mjs', () => {
   });
 
   /**
-   * **一覧は `.claude/ccr-meta.mjs` を直に呼んで引く**（あちらの「node から呼ぶ側は、シェルの入口を
-   * 通らない」）。シェルの入口を通すと、**1ページごとに `bash` と `node` が1つずつ起きる**——一覧は
-   * 盤面・使用量の割り当て・占有の判定・起こす相手の確認から引かれるので、そのぶんが常時の固定費に
-   * なる。
+   * **引き方そのものを通す。** 差し替え口を `page` にすると、`list_sessions` を呼ぶところが検査を
+   * 通らない——応答を `fetch` の高さで身代わりにして、通信先を組むところから下だけを本物で動かす。
    *
-   * **通信先だけを身代わりへ向けて、引き方は本物のまま通す。** 差し替え口を `page` にすると、
-   * 引き方そのものが検査を通らない。
+   * **通信先は繋がらない番地へ向けておく。** シェルの入口が戻ってくれば、起きた子はここで即座に
+   * 転ぶ——**本物の網へ出さず**、身代わりのサーバのように同じプロセスで待ち合って固まることもない。
    */
-  it('一覧を1ページ引くのに、外部プロセスを1つも起こさない', async () => {
+  async function drawnThrough(reply: string): Promise<{ live?: readonly { id: string }[] }> {
     const home = mkdtempSync(join(tmpdir(), 'live-sessions-home-'));
     writeFakeCredentials(home);
     const before = {
@@ -231,24 +229,18 @@ describe('live-sessions.mjs', () => {
       HOME: process.env.HOME,
       USERPROFILE: process.env.USERPROFILE,
     };
-    // **繋がらない先へ向けておく。** シェルの入口が戻ってくれば、起きた子はここで即座に転ぶ
-    // ——**本物の網へ出さず**、身代わりのサーバのように同じプロセスで待ち合って固まることもない。
     process.env.CCR_META_ENDPOINT = 'http://127.0.0.1:1/';
     process.env.HOME = home;
     process.env.USERPROFILE = home;
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response(metaReply(`<other-session>\n${JSON.stringify(PAGE)}`))),
+      vi.fn(async () => new Response(metaReply(reply))),
     );
     vi.mocked(spawnSync).mockClear();
     try {
       // 環境の対応表は差し替える（`ccr-env.sh` を叩くのは一覧とは別の口で、上の検査が見ている）。
-      // **引けなかったことは受け止めてから数える**——外へ出た子は繋がらずに転ぶので、投げさせると
-      // 「引けなかった」だけが残り、**なぜ引けなかったのかがこの検査から読めなくなる。**
-      const live = await liveSessions({ envs, taken: '' }).catch(() => undefined);
-
-      expect(spawnSync).not.toHaveBeenCalled();
-      expect(live?.map((session) => session.id)).toEqual(['session_a']);
+      // **引けなかったことは受け止めて返す**——投げさせると、叩き手は「引けなかった」しか見られない。
+      return { live: await liveSessions({ envs, taken: '' }).catch(() => undefined) };
     } finally {
       vi.unstubAllGlobals();
       for (const [name, value] of Object.entries(before)) {
@@ -257,6 +249,30 @@ describe('live-sessions.mjs', () => {
       }
       rmSync(home, { recursive: true, force: true });
     }
+  }
+
+  /**
+   * **一覧は `.claude/ccr-meta.mjs` を直に呼んで引く**（あちらの「node から呼ぶ側は、シェルの入口を
+   * 通らない」）。シェルの入口を通すと、**1ページごとに `bash` と `node` が1つずつ起きる**——一覧は
+   * 盤面・使用量の割り当て・占有の判定・起こす相手の確認から引かれるので、そのぶんが常時の固定費に
+   * なる。
+   */
+  it('一覧を1ページ引くのに、外部プロセスを1つも起こさない', async () => {
+    const { live } = await drawnThrough(`<other-session>\n${JSON.stringify(PAGE)}`);
+
+    expect(spawnSync).not.toHaveBeenCalled();
+    expect(live?.map((session) => session.id)).toEqual(['session_a']);
+  });
+
+  /**
+   * **中身の無いページを「引けた」にしない。** 包みをほどく `metaJson` は**最初に読めたJSONの行**を
+   * 返すので、`ccr` を持たない行が先に混じると `data` の空いた1枚に見える——それは「生きたセッションは
+   * 居ない」と同じ形で、**呼び手は二重に立てる**（`occupancy.sh`「読めなかったときに止まる側へ倒す」）。
+   */
+  it('ccr を持たない応答は、引けなかったことにする', async () => {
+    const { live } = await drawnThrough('{"error":"何か別のJSON"}');
+
+    expect(live).toBeUndefined();
   });
 
   /**

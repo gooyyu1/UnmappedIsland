@@ -2,7 +2,7 @@
 // 集めた形を読んで手を決めるのは [`board-move.mjs`](board-move.mjs)（`agent-ops/board-design.md` 2.3）。
 //
 //   import { readBoard } from './board-read.mjs';
-//   readBoard({ log })   // → 盤面（`gh` が引けなければ undefined）
+//   await readBoard({ log })   // → 盤面（`gh` が引けなければ undefined）
 //
 // 出す形は `board-move.mjs` の冒頭にある。
 //
