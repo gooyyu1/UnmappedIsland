@@ -1,5 +1,6 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { join, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -16,9 +17,6 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = resolve(__dirname, '../..');
 
-/** 降りない場所。追跡していないもの・生成物・各セッションのリポジトリ。 */
-const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'site', 'worktrees', 'coverage']);
-
 /**
  * 見ない先。**誤った書き方そのものを引くことが仕事の場所**で、縛ると記録が書けなくなる。
  * `analysis/`・`decisions/` はその時点の記録、`DesignNotes.md` は経緯を主題とする文書、
@@ -32,11 +30,29 @@ const RECORDS = new Set([
 ]);
 
 /**
- * 開く拡張子。**手順を書ける置き場は言語で決まらない**ので、リポジトリで実際に使っている
- * テキストの拡張子を全部並べる（`.py` は `scripts/usage/**`・`tools/comfyui/**`、`.js` は
- * `eslint.config.js`）。ここから漏れた拡張子のファイルは、起点を綴っても見られない。
+ * 開かない拡張子。**外すのは中身が文字でないものだけ**——開く側を並べると、並べ忘れた拡張子に
+ * 書いた手順が黙って見張りの外に落ちる（`.py` も `.js` も、並べる形だった間は外に落ちていた）。
+ * 手順を書ける置き場は言語でも拡張子でも決まらないので、**絞りは「読めるか」だけで掛ける。**
  */
-const EXTS = ['.md', '.sh', '.mjs', '.cjs', '.js', '.ts', '.tsx', '.py', '.yml', '.yaml'] as const;
+const BINARY_EXTS = [
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.ico',
+  '.ttf',
+  '.otf',
+  '.woff',
+  '.woff2',
+  '.mp3',
+  '.ogg',
+  '.wav',
+  '.mp4',
+  '.pdf',
+  '.zip',
+  '.gz',
+] as const;
 
 /**
  * ローカルの `main` を起点に置いた書き方。`origin/main` と、`$main_tip` のような変数名は外す。
@@ -53,19 +69,24 @@ const PATTERNS: readonly { readonly what: string; readonly pattern: RegExp }[] =
   },
 ];
 
-function filesUnder(path: string): readonly string[] {
-  if (RECORDS.has(path)) return [];
-  if (!statSync(path).isDirectory()) {
-    return EXTS.some((ext) => path.endsWith(ext)) ? [path] : [];
-  }
-  return readdirSync(path, { withFileTypes: true })
-    .filter((entry) => !SKIP_DIRS.has(entry.name))
-    .flatMap((entry) => filesUnder(join(path, entry.name)));
+/**
+ * 走査するファイル。**追跡しているもの全部**から、{@link RECORDS} と読めないものだけを外す。
+ * 追跡で引くのは、生成物・各セッションのリポジトリ・`node_modules` が最初から入らないため
+ * ——降りない場所を自分で並べると、置き場が増えるたびに並びのほうが古びる。
+ */
+function trackedFiles(): readonly string[] {
+  const listed = execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf-8' });
+  return listed
+    .split('\0')
+    .filter((rel) => rel !== '')
+    .map((rel) => join(ROOT, ...rel.split('/')))
+    .filter((path) => ![...RECORDS].some((record) => path === record || path.startsWith(record + sep)))
+    .filter((path) => !BINARY_EXTS.some((ext) => path.toLowerCase().endsWith(ext)));
 }
 
-/** 追跡している置き場のうち {@link EXTS} のファイルを、`[path, 行番号, 行]` へ開く。 */
+/** 追跡しているテキストファイルを全部、`[path, 行番号, 行]` へ開く。 */
 function lines(): readonly (readonly [string, number, string])[] {
-  return filesUnder(ROOT).flatMap((path) =>
+  return trackedFiles().flatMap((path) =>
     readFileSync(path, 'utf-8')
       .split('\n')
       .map((line, index) => [relative(ROOT, path), index + 1, line] as const),

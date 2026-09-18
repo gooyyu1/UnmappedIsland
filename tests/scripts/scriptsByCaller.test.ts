@@ -48,7 +48,8 @@ const AGENT_SIDE = ['board.sh', 'checked-items.sh', 'daemon-wake-task.sh', 'push
  *
  * **`.sh` でも行末のコメントを落とす。** 行頭の `#` だけを落としていた間は、コードの行の後ろへ
  * 名前を書けばこの検査が「辿れる」と読んだ——言語で穴の大きさが変わると、どちらの言語で書いたかが
- * 見張りの強さを決めてしまう。`#` は空白に続くものだけを見る（`${#arr}`・`$#` は落とさない）。
+ * 見張りの強さを決めてしまう。落とすのは**行頭の `#` と、空白に続く `#`** から行末まで
+ * （`${#arr}`・`$#` のように語へ続く `#` は落とさない）。
  */
 function code(name: string): string {
   const text = readFileSync(join(ROOT, 'scripts', 'daemon', name), 'utf-8');
