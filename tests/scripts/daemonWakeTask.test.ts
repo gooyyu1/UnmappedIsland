@@ -55,6 +55,12 @@ interface Run {
 const EXCUSE = 'ERROR: アクセスが拒否されました。';
 
 /**
+ * `schtasks` が**標準出力へ流すおしゃべり**。撥ねた理由をここへ流して0で返す口があるので、身代わりも
+ * 黙らせない——黙らせると、**その標準出力をこちらの出力へ漏らす実装が緑で通る**（出すのは1行だけ）。
+ */
+const CHATTER = 'INFO: スケジュール タスク "…" は正常に作成されました。';
+
+/**
  * そのディレクトリを、**bash が呼ぶ名前**で答える。
  *
  * XMLへ入るのは `cd … && pwd` が出した綴りで、**MSYS2 の bash はそこで `/c/…` を返す**（`C:/…` では
@@ -109,9 +115,11 @@ case "$1" in
       if [ "$prev" = '/xml' ]; then cp "$a" '${dir}/handed.xml'; fi
       prev="$a"
     done
+    echo '${CHATTER}'
 ${world.createFails === true ? `    echo '${EXCUSE}' >&2\n    exit 1` : '    exit 0'}
     ;;
   /query)
+    echo '${CHATTER}'
 ${world.queryFails === true ? `    echo '${EXCUSE}' >&2\n    exit 1` : '    exit 0'}
     ;;
 esac
