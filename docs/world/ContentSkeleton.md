@@ -688,8 +688,8 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 **燃えるのは2時間**（`fire.yaml` の `torch` の `life`）。灯すには、燃えている炉から炎を分けてもらうか
 （[`FireSystem.md`](../engine/FireSystem.md) 3.1.2節）、火起こしから作った火種を移します。**火種から
-灯すと、燃える時間より長くかかります**——火種1つが101.4分<!-- stats: balance.yaml object_costs object=burning_tinder total_minutes -->
-なので、下の松明そのものと合わせて179.1分。**炉から分けてもらう道があるのはこのためで**、その道を
+灯すと、燃える時間より長くかかります**——火種1つが76.1分<!-- stats: balance.yaml object_costs object=burning_tinder total_minutes -->
+なので、下の松明そのものと合わせて153.8分。**炉から分けてもらう道があるのはこのためで**、その道を
 通るなら払うのは松明のぶんだけです。
 
 **素材込みの手間は77.7分**<!-- stats: balance.yaml object_costs object=torch total_minutes -->
