@@ -416,9 +416,6 @@ sandy_beach:
   は、必要になった時点で `Domain.Generation.AxisSampler`/`GeneratorLayerType` へ追加する。
 - **Axis の計算コスト**: 軸の数・`Site` 数が増えた際のサンプリングコスト、キャッシュ戦略（現状は
   `Site` 数が高々20のため未検討）。
-- **YAML 定義のマージ・上書き規則**: 同一 id が複数ファイルに存在する場合の挙動（`GameElementDefinition.md`
-  3.3 節で「別途仕様書で定義する」とされている未着手事項。`location_types`/`axes`/`generation_scopes` の
-  重複も、現状は常にエラーとする厳格モードのみ実装済み）。
 - **`generation_scopes.island` 以外の生成スコープのパラメータ**: `island` の値は測って決まりました
   （`interior_bias` は 3.5.1 節、`extra_edge_detour_factor` は 3.5.2 節）が、`structure_interior`
   （3.7 節）のような他のスコープの値は、そのスコープが動くまで決まりません。

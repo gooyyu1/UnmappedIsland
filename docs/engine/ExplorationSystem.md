@@ -11,8 +11,8 @@
 `pick`）と、汎用拡張 `duration`（同 11.3 節）・`move`（同 9.6 節）だけで組み立てており、探索・道専用の
 新しい文法は導入していません。
 
-本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 6 節にまとめています。実際のクラス名・
-メソッド名を使った実装の呼び出し関係（`IslandSpawner`・`MoveEffect`・`Location.explore` 等）は
+本ドキュメントは検討結果であり、確定仕様書ではありません。実際のクラス名・メソッド名を使った実装の
+呼び出し関係（`IslandSpawner`・`MoveEffect`・`Location.explore` 等）は
 [`TerrainGenerationImplementation.md`](./TerrainGenerationImplementation.md) にまとめています。
 
 ## 1. `location` trait と `explorable` trait の役割分担
@@ -285,8 +285,3 @@ explore(agent: WorldObject | undefined, session: WorldSession): boolean {
 `explore` アクション（YAML側）の実行と、後処理の `revealDueFixtures` を呼び出し側（UI等）に分けて呼ばせません
 （`CLAUDE.md` の「自分のことは自分でする」方針）。`revealDueFixtures` 自体は冪等なため、進捗がYAML側の効果
 だけで動いた場合に備えて単独でも呼べるようにしています。
-
-## 6. 未決事項・今後の検討課題
-
-- **発見物の `volume`/`weight`**: 探索で見つかるアイテム・設置物は、コンテナ容量（`ContainerSystem.md`）に
-  関わる `volume`/`weight` プロパティをまだ持たせていません。
