@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -12,78 +12,99 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  * **見ているのは「跨いだ tick の数だけ積まれる」の面**で、総量の正しさではない。分へ割る積分
  * （経過分に比例して積む）は、どれだけ進めても総量は同じところへ着くので、**総量を見る検査では
  * 緑のまま通る**。跨がない経過で動かないことと、端数が量を持たないことだけが、この2つを見分ける。
+ *
+ * **率も刻みの長さも書き写さない。** 端数を含む経過を「跨いだ tick ちょうどの経過」と突き合わせ、
+ * 長さは world の `minutes_per_tick` から引くので、量を変えても率を1つ足しても検査の側は変わらない。
  */
 describe('率の積分の刻みは tick', () => {
-  /** medicの1tickあたりの水分の減り（characters/medic.yaml のプロパティレベルのpassives）。 */
-  const HYDRATION_PER_TICK = -1;
-
   let codex: WorldCodex;
-  let session: WorldSession;
-  let world: WorldObject;
-  let player: WorldObject;
+  /** 1tickぶんの分数。**跨がない長さも端数を含む長さも、ここから出す。** */
+  let tickMinutes: number;
 
   beforeAll(() => {
     codex = bundledCodex();
+    tickMinutes = openWorld().session.world?.rawMinutesPerTick ?? 0;
+    expect(tickMinutes, '1tickは2分以上（跨がない長さを取れる幅が要る）').toBeGreaterThan(1);
   });
 
-  beforeEach(() => {
-    session = new WorldSession(codex);
-    world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
+  /** 実ファイルの定義だけで組んだ、密林に立つ1人。 */
+  function openWorld(): { session: WorldSession; world: WorldObject } {
+    const session = new WorldSession(codex);
+    const world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
     session.adoptWorld(new World(world, codex));
-    const jungle = spawnInto('jungle', world, 'locations');
-    player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');
-  });
+    const jungle = spawnInto(session, 'jungle', world, 'locations');
+    spawnInto(session, SAMPLE_CHARACTER, jungle, 'characters');
+    return { session, world };
+  }
 
-  function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
+  function spawnInto(
+    session: WorldSession,
+    objectName: string,
+    parent: WorldObject,
+    slotName: string,
+  ): WorldObject {
     const spawned = session.createObject(codex.objectNames.getId(objectName));
     expect(spawned.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
 
-  function hydration(): number {
-    return player.getProperty(codex.propertyNames.getId('hydration')).number;
-  }
-
-  /** 世界じゅうの実体値。**プロパティを名指しせずに拾う**ので、率を1つ足しても検査の側は変わらない。 */
-  function allNumbers(): ReadonlyMap<string, number> {
+  /**
+   * 世界じゅうの実体値。**プロパティを名指しせずに拾う。**
+   *
+   * **世界の時計（day/hour/minute）だけは外す**——分ごとに動かしているのは WorldSession
+   * （World.addMinutes）であって、率で積まれた値ではない。
+   */
+  function numbersOf(world: WorldObject): ReadonlyMap<string, number> {
+    const { dayId, hourId, minuteId } = codex.vocabulary.world;
+    const clock = new Set([dayId, hourId, minuteId]);
     const taken = new Map<string, number>();
     for (const object of [world, ...world.descendants()])
       for (const property of object.allProperties())
-        taken.set(`${object.instanceId}.${property.def.name}`, property.number);
+        if (!clock.has(property.def.globalId))
+          taken.set(`${object.instanceId}.${property.def.name}`, property.number);
     return taken;
   }
 
-  function movedSince(before: ReadonlyMap<string, number>): readonly string[] {
-    const moved: string[] = [];
-    for (const [key, value] of allNumbers()) if (before.get(key) !== value) moved.push(key);
-    return moved.sort();
+  /**
+   * 組み立て直した世界を`amount`分だけ進めたときの、時計を除く実体値の動き。`splitInto`を渡すと
+   * その回数に刻んで進める。**動かなかった値は入らない**ので、比べた差はそのまま指摘になる。
+   */
+  function movedBy(amount: number, splitInto = 1): ReadonlyMap<string, number> {
+    const { session, world } = openWorld();
+    const before = numbersOf(world);
+
+    for (let i = 0; i < splitInto; i++) session.advanceWorldTime(amount / splitInto);
+
+    const moved = new Map<string, number>();
+    for (const [key, value] of numbersOf(world)) {
+      const delta = value - (before.get(key) ?? 0);
+      if (delta !== 0) moved.set(key, delta);
+    }
+    return moved;
   }
 
-  it('tick境界を跨がない経過では、時計のほかに動く値が1つも無い', () => {
-    // 開始時刻は0:00＝境界の上なので、次のtickは15分先。
-    const before = allNumbers();
+  it('tick境界を跨がない経過では、時計だけが動き、率で動く値は1つも動かない', () => {
+    const { session, world } = openWorld();
+    const before = numbersOf(world);
+    const startedAt = session.world?.totalMinutes ?? 0;
+    // 新規ゲームの開始時刻は刻みに乗っている（World.rollTimeOfDay）ので、次のtickは1tickぶん先。
+    expect(startedAt % tickMinutes, '開始時刻がtick境界の上にある').toBe(0);
 
-    session.advanceWorldTime(5);
+    session.advanceWorldTime(tickMinutes - 1);
 
-    expect(movedSince(before), '分へ割って積むなら、率で動く値がここへ並ぶ').toEqual([
-      `${world.instanceId}.minute`,
-    ]);
+    expect((session.world?.totalMinutes ?? 0) - startedAt, '経過そのものは起きている').toBe(tickMinutes - 1);
+    expect(numbersOf(world), '分へ割って積むなら、率で動く値がここでずれる').toEqual(before);
   });
 
-  it('端数を含む経過でも、積まれるのは跨いだtickの数ぶんだけ', () => {
-    // 20分＝1tick跨いで5分余る。**端数は持ち越されるのでも捨てられるのでもなく、量を持たない。**
-    const before = hydration();
+  it('端数を含む経過で積まれる量は、跨いだtickちょうどの経過と同じ', () => {
+    // 1tick跨いで1分余る。**端数は持ち越されるのでも捨てられるのでもなく、量を持たない。**
+    const oneTick = movedBy(tickMinutes);
 
-    session.advanceWorldTime(20);
-
-    expect(hydration() - before, '分へ割って積むなら20/15tick分になる').toBe(HYDRATION_PER_TICK);
+    expect(oneTick.size, '1tick分で何かは動く（動かなければ以下は素通りになる）').toBeGreaterThan(0);
+    expect(movedBy(tickMinutes + 1), '分へ割って積むなら端数のぶんだけ多く積まれる').toEqual(oneTick);
   });
 
-  it('跨いだtickの数が同じなら、何回に分けて進めても同じだけ積まれる', () => {
-    const before = hydration();
-
-    for (let i = 0; i < 4; i++) session.advanceWorldTime(5);
-
-    expect(hydration() - before, '20分を4回に刻んでも跨ぐtickは1回').toBe(HYDRATION_PER_TICK);
+  it('刻んで進めても、積まれる量は跨いだtickの数で決まる', () => {
+    expect(movedBy(tickMinutes + 1, 4), '4回に刻んでも跨ぐtickは1回').toEqual(movedBy(tickMinutes));
   });
 });
