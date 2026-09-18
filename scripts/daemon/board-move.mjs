@@ -34,7 +34,7 @@
 //     "mergedPrs":[ gh pr list --state merged --search merged:>=<窓の始まり> --json number,comments ],   … 後片付けの相手と、スメルを拾う係が読む範囲
 //     "pendingDecisions": 12,   … `agent-ops/decisions/` のうち `archive/` に入っていない件数
 //     "unsummarizedAnalyses": 3,   … `agent-ops/analysis/` のうち、二次がまだ読んでいない件数
-//     "pendingRefAudit": true,   … 節番号の参照に、この周に読むものが在るか（`scripts/refAudit.mjs`）
+//     "pendingRefAudit": true,   … 節番号の参照に、この周に読むものが在るか（`scripts/daemon/refAudit.mjs`）
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
 //     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
 //                     "bucket": "SESSION_STATUS_BUCKET_…", "env": "cloud | bridge | -",
@@ -385,7 +385,7 @@ const CYCLES = [
     // 1周で読む量が増えるだけ。
     hours: 24,
     prompt: 'agent-ops/prompts/refs-prompt.md',
-    // **判定を持つのは [`refAudit.mjs`](../refAudit.mjs)**（見るのは `board-read.mjs`）。掃き残しは
+    // **判定を持つのは [`refAudit.mjs`](refAudit.mjs)**（見るのは `board-read.mjs`）。掃き残しは
     // 範囲を出すのと同じ見方だが、**変わった分は中身を開かずに見る**ので、**変わった行に参照が
     // 1つも無い周も立つ**（係は読むものが無かったと書いて終わる）。
     due: (board) => board.pendingRefAudit === true,

@@ -56,7 +56,7 @@ export const COMMENTED_EXTENSIONS = ['.ts', '.mts', '.mjs', '.js', '.sh', '.py',
  * コード・データ。
  *
  * **指し先が実在するかを見る検査（`tests/docs/docReferences.test.ts`）と、指した先にその話が
- * 書いてあるかを読む係（[`refAudit.mjs`](refAudit.mjs)）が、同じ1つを読む。** 別々に持つと、
+ * 書いてあるかを読む係（[`refAudit.mjs`](daemon/refAudit.mjs)）が、同じ1つを読む。** 別々に持つと、
  * 片方だけが新しい置き場を見ないまま緑になる。
  *
  * `tools/**` の JSON はコメントを持たないが、宣言の値が節番号で仕様を指すので入る。**外すのは、
@@ -94,7 +94,7 @@ export function isVerbatimRecord(rel) {
  * その回の観測の記録か（`agent-ops/analysis/**`）。参照は今のリポジトリを指すので規約が掛かり、
  * **確定度の印だけが外れる**——印はそこでは題材として現れる。
  *
- * **指した先の中身を読む係（[`refAudit.mjs`](refAudit.mjs)）も、ここを外す。** 書いてあるのは当時の
+ * **指した先の中身を読む係（[`refAudit.mjs`](daemon/refAudit.mjs)）も、ここを外す。** 書いてあるのは当時の
  * 観測で、**今と食い違っていても直す先ではない**ので、読んでも手の出しようが無い（そう決めて
  * いるのは `agent-ops/prompts/analysis-prompt.md` の、記録の書き方を渡している段）。
  *

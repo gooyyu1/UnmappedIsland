@@ -2,7 +2,7 @@
 
 節番号の参照（[`docs/DocumentStyle.md`](../docs/DocumentStyle.md) 5節）の**指し先にその話が書いて
 あるか**を読む係が、どこまで進んだかを持つ場所。書き換えるのはその係だけで、渡す範囲を決めるのは
-[`refAudit.mjs`](../scripts/refAudit.mjs)、係の本文は [`refs-prompt.md`](prompts/refs-prompt.md)。
+[`refAudit.mjs`](../scripts/daemon/refAudit.mjs)、係の本文は [`refs-prompt.md`](prompts/refs-prompt.md)。
 
 **手で書き換えない。** ここを進めると、進めたぶんが読まれないまま「読んだ」になる。
 

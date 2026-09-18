@@ -171,7 +171,7 @@ const COMMENTED_SOURCES = trackedFiles(ROOT).filter((rel) =>
  * 参照を検査する対象。ドキュメント自身と、節番号でドキュメントを指すコード・データ。
  *
  * **絞りは [`docScope.mjs`](../../scripts/docScope.mjs) が持つ1つ**——**指し先の中身まで読む係**
- * （[`refAudit.mjs`](../../scripts/refAudit.mjs)）**が同じ集合から範囲を出す**ので、別に持つと、
+ * （[`refAudit.mjs`](../../scripts/daemon/refAudit.mjs)）**が同じ集合から範囲を出す**ので、別に持つと、
  * 実在は見られているのに中身は誰も読んでいない置き場が黙って生える（逆も同じ）。
  */
 const REF_FILES = trackedRefSources(ROOT);

@@ -22,19 +22,19 @@
 import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { hasRefAuditWork } from '../refAudit.mjs';
+import { hasRefAuditWork } from './refAudit.mjs';
 import { liveSessions } from './live-sessions.mjs';
 import { gh as runGh } from './spawn.mjs';
 
 /**
- * **盤面が GitHub と CCR の外を見るのは、この2つの置き場だけ。** どちらも、その係の仕事が
- * issue にもPRにも現れず**リポジトリの中にしか無い**ので、ここで数える以外に「仕事があるか」を
+ * **盤面が GitHub と CCR の外を見るのは、下の置き場のためだけ。** どれも、その係の仕事が
+ * issue にもPRにも現れず**リポジトリの中にしか無い**ので、ここで見る以外に「仕事があるか」を
  * 知る手立てが無い。
  *
  * - `DECISIONS` … 判断の履歴（`CLAUDE.md`「価値観の記録」）。読むのは価値観を畳む係の `due`。
  * - `ANALYSES` / `ANALYSIS_SUMMARIES` … 一次の分析係が回ごとに書く記録と、二次が横断してまとめた
  *   記録（`agent-ops/board-design.md` 2.17.4）。読むのは回をまたぐ形を見る係の `due`。
- * - `ROOT` … 節番号の参照をどこまで検めたかの台帳（[`refAudit.mjs`](../refAudit.mjs) の `LEDGER`）と
+ * - `ROOT` … 節番号の参照をどこまで検めたかの台帳（[`refAudit.mjs`](refAudit.mjs) の `LEDGER`）と
  *   git の一覧。読むのは参照を検める係の `due`。
  */
 const DECISIONS = new URL('../../agent-ops/decisions/', import.meta.url);
@@ -161,7 +161,7 @@ function countDecisions(log) {
  * 節番号の参照に、この周に読むものが在るか。**読むのは参照を検める係の `due`**
  * （[`board-move.mjs`](board-move.mjs) の `CYCLES`）。
  *
- * **判定を持つのは [`refAudit.mjs`](../refAudit.mjs)**——掃き残しの見方は、係へ渡す範囲を選ぶのと
+ * **判定を持つのは [`refAudit.mjs`](refAudit.mjs)**——掃き残しの見方は、係へ渡す範囲を選ぶのと
  * 同じ1つを通る。ここで別に持つと、**係が「掃くものが無い」と言う周に盤面が係を立てる**（逆も同じ）。
  * **変わった分のほうは中身を開かない**ので、**読むものが1つも無い周にも立つ**（あちらの注記）。
  *

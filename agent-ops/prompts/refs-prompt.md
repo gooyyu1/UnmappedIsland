@@ -11,7 +11,7 @@
 作り方」——促すだけなら判定はモデルに任せる）。
 
 **どこまで読んだかは [`ref-audit.md`](../ref-audit.md) が持ち、この周に読む範囲は
-[`refAudit.mjs`](../../scripts/refAudit.mjs) が出す。** 範囲の数え方をひな形にも持たせると、係が
+[`refAudit.mjs`](../../scripts/daemon/refAudit.mjs) が出す。** 範囲の数え方をひな形にも持たせると、係が
 読んだ範囲と台帳へ書く到達点がずれる。
 
 題は下の `題:` の行が持つ（[`board-design.md`](../board-design.md) 2.9）。
@@ -30,7 +30,7 @@
 
 次のコマンドが出す一覧だけが対象です。
 
-    node scripts/refAudit.mjs
+    node scripts/daemon/refAudit.mjs
 
 出るのは2つの並びで、どちらも `参照元<TAB>件数<TAB>なぜ読むか<TAB>どこを見るか` の形です。
 

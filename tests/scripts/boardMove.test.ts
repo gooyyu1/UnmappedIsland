@@ -1965,7 +1965,7 @@ describe('board-move.mjs', () => {
   // ## 参照を検める係（2.17）
   //
   // 仕事の在り処が**リポジトリの中**（どこまで読んだかの台帳と、そこからの差分）にある係。
-  // **在るかどうかを答えるのは `scripts/refAudit.mjs`** で、見るのは `board-read.mjs`。ここが見るのは
+  // **在るかどうかを答えるのは `scripts/daemon/refAudit.mjs`** で、見るのは `board-read.mjs`。ここが見るのは
   // **その答えで立つか立たないか**だけ——答えの出し方はあちらの検査が持つ。
   it('この周に読む参照があれば、参照を検める係を立てる', () => {
     expect(moves({ pendingRefAudit: true })).toEqual([REFS]);

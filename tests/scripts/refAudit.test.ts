@@ -1,13 +1,13 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 
-import { LEDGER, UNSET, hasRefAuditWork, refAuditBatch } from '../../scripts/refAudit.mjs';
+import { LEDGER, UNSET, hasRefAuditWork, refAuditBatch } from '../../scripts/daemon/refAudit.mjs';
 
 /**
- * `scripts/refAudit.mjs`——**節番号の参照を、この周はどこまで読むか**を決める段——の検査。
+ * `scripts/daemon/refAudit.mjs`——**節番号の参照を、この周はどこまで読むか**を決める段——の検査。
  *
  * ここが守るのは**読む範囲が漏れも溢れもしないこと**。読むのは係（モデル）なので、範囲を間違えても
  * **緑のまま何も起きない**——広すぎれば予算を食い潰して掃く分が進まず、狭すぎれば書き足された参照が
@@ -276,6 +276,24 @@ describe('refAudit.mjs', () => {
     });
 
     expect(batch(repo).sweep).toEqual(['z.md']);
+  });
+
+  // ## 係が打つ口
+  //
+  // **仕掛けのリポジトリでは、根の決め方を通らない。** 上のどれも根を渡して呼ぶので、`node` で
+  // 直に打ったときだけ効く「自分の在り処から根を数える」段が誰にも通られない——**置き場を1つ
+  // 動かしただけで、係が打つコマンドが実物の台帳を見失う**（実際にそうなった）。ここは実物の
+  // リポジトリで、ひな形が係へ渡しているのと同じコマンドをそのまま打つ。
+  it('ひな形が渡すコマンドが、実物のリポジトリで範囲を出す', () => {
+    const root = resolve(__dirname, '../..');
+    const prompt = readFileSync(join(root, 'agent-ops', 'prompts', 'refs-prompt.md'), 'utf-8');
+    const command = /^\s{4}(node \S+)$/m.exec(prompt);
+    if (command === null) throw new Error('ひな形が打つコマンドの行が見つからない');
+
+    const [, script] = command[1].split(' ');
+    const out = execFileSync('node', [script], { cwd: root, encoding: 'utf-8' });
+
+    expect(out).toContain('## 掃く分');
   });
 
   // 上の検査は、**実物の置き場が変わった日**には「除けている」と「そもそも無い」を区別できない。

@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 import { resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { isAnalysisRecord, trackedDocs, trackedRefSources } from './docScope.mjs';
-import { linesOutsideFence } from './markdownFences.mjs';
+import { isAnalysisRecord, trackedDocs, trackedRefSources } from '../docScope.mjs';
+import { linesOutsideFence } from '../markdownFences.mjs';
 
 /**
  * 節番号の参照を、**この周はどこまで読むか**を決める1つ（`agent-ops/prompts/refs-prompt.md`）。
@@ -276,7 +276,7 @@ export function refAuditBatch(root, { budget = BUDGET, ledger = readLedger(root)
 }
 
 /**
- * この周に読むものが在るか。**読むのは係の `due`**（[`board-move.mjs`](daemon/board-move.mjs) の
+ * この周に読むものが在るか。**読むのは係の `due`**（[`board-move.mjs`](board-move.mjs) の
  * `CYCLES`）。
  *
  * **2つを別の細かさで見る。**
@@ -308,11 +308,11 @@ function total(entries) {
 }
 
 /**
- * 係へ渡す範囲を端末へ出す口（`node scripts/refAudit.mjs`）。**ひな形は範囲を自分で数えない**
+ * 係へ渡す範囲を端末へ出す口（`node scripts/daemon/refAudit.mjs`）。**ひな形は範囲を自分で数えない**
  * ——数え方を2つ持つと、係が読んだ範囲と台帳へ書く到達点がずれる。
  */
 function printBatch() {
-  const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
+  const root = resolve(fileURLToPath(new URL('../..', import.meta.url)));
   const batch = refAuditBatch(root);
   const lines = [`検めた時点: ${batch.ledger.commit ?? UNSET} → 現在: ${batch.head}`];
   lines.push(`到達点: ${batch.ledger.through ?? UNSET}`);

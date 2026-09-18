@@ -1486,8 +1486,8 @@ PR #1567 のレビューが判定を書く前にこれで止まった。
 落とす**（見送った印を付けて。[`policy-review` skill](../.claude/skills/policy-review/SKILL.md) 手順4）。
 落とさないと、次の周が同じ候補をもう一度出す。**この係の仕事の在り処はリポジトリの中**
 （`agent-ops/decisions/` のうち `archive/` に入っていないもの）で、issue にもPRにも現れない。
-**盤面が GitHub と CCR の外を見るのは、ここと分析の記録（2.17.4）の2箇所だけ**
-（[`board-read.mjs`](../scripts/daemon/board-read.mjs)）。
+**盤面が GitHub と CCR の外を見るのは、そういう係のためだけ**——**どの置き場を見るかは
+[`board-read.mjs`](../scripts/daemon/board-read.mjs) が持つ**ので、ここには書き写さない。
 
 **この口は、答えが要る周期の係が共通で使う。** 掘り起こす係（[`dig-prompt.md`](prompts/dig-prompt.md)）が
 「やるかどうかから訊くもの」を出す先も同じで、**他人の issue へは積まない**——既にある
