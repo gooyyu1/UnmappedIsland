@@ -10,9 +10,11 @@
 繊維から紐までの連鎖は既にあり、本書はその出口を1つ足すだけです。スキルの粒度は
 [`Skills.md`](./Skills.md) 2節。
 
-**実現方法。** **文法の新設はありません。** 寝床は土地の `fixtures` スロットに立つ `fixture` 1種で
-（[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 1.1 節のスロット）、骨組みと詰め物を差し込む
-`structure` スロットを持ちます（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 7節）。
+**実現方法。** **文法の新設はありません。** 寝床は土地の `fixtures` スロットに立つ `fixture` で
+（[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 1.1 節のスロット）、敷物（`bed`）は骨組みと
+詰め物を差し込む `structure` スロットを持ちます
+（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 7節）。**ハンモックは伸ばしろを
+持たないのでその枠を持たず、`item` も兼ねて持ち歩けます**（6節）。
 寝床自身が `nap`/`sleep` アクションを持ち、眠っている間の回復はそのアクションの `passives` が毎 tick
 `agent` へ積みます（同 11.7節）。部品の寄与は、その段のブロックを1つ足すことで届きます（4節）。
 導入する語彙は型 `bed`、寝床であることのタグ `bed` と、部品のタグ `bed_frame`・`stuffing` です。
@@ -83,7 +85,7 @@ object_defs:
         steps:
           - requires:
               - {object: woven_leaf, count: 3, consume: true}
-            duration: 20
+            duration: 15
 
   # 寝台の骨組み。杭4本を打ち、縦材を渡し、簀の子を縛る。軽いがかさばる。
   bed_frame:
@@ -305,6 +307,12 @@ object_defs:
 で、手で書いた別々の型のあいだは `become` でも行き来できません、同 9.9節）。**朽ちる寸前の網を据え直す
 だけで新品に戻るのは、寿命そのものを無意味にします**。兼ねる1つの型なら、運んでいるのも据えてあるのも
 同じ個体なので、傷みはそのまま付いて回ります。
+
+**担いでいる間も、据えてあるときと同じだけ傷みます。** 素材を名乗るのは型1つなので、減りを止めるのは
+屋根の下に在ること（`sheltered`）だけで、担いでいるかは見ません
+（[`DurabilitySystem.md`](../engine/DurabilitySystem.md) 2節。籠・道具とまったく同じ扱いです）。
+**持ち出す道が開いたぶん、持ち歩く網には値段が付きます**——そのまま次の土地へ運べますが、運んでいる
+日数も寿命から引かれます。
 
 **持ち出せることがハンモックの取り分です。** 回復量は骨組みを差した寝台と同じ（4節）、寝床になる場所は
 支点の要るぶん狭く、伸ばしろは無く、素材から通した手間はむしろ長い（3節）。
