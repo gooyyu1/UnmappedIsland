@@ -356,7 +356,7 @@ looking_brightness:
   くすませます（`COLOR.mapButton` など）。紙が読めなければ、この色の平らな塗りが地になります。
 - **敷く紙はボタン専用の絵（`slot_button_paper.png`）で、ボタン 1 つぶんが 1 枚です。** カードの枠と
   同じ紙から切り出してありますが（`recipes/slot_button_paper.json`）、それは生成の話で、**実行時に
-  カードのテクスチャを共有はしません**（[`DesignNotes.md`](../engine/DesignNotes.md)）。角丸はボタン側で
+  カードのテクスチャを共有はしません**（[`DesignNotes.md`](../DesignNotes.md)）。角丸はボタン側で
   切り抜き、枠線もその上へ引き直します。1 枚ずつ別の場所から取るのは、同じ場所だと同じ染みが
   並んで模様として目に付くためです。**紙 1 枚に縦へ並べきれない**ので、縦を目一杯に
   散らしたうえで、隣り合う 2 枚の横位置をずらして重なりを減らします。
@@ -638,7 +638,7 @@ looking_brightness:
   必要があるためです。
 - **入力は遮りません。** 翳っている間も、下のカード・ボタンの操作は変わりません。
 - **色の板を1枚重ねるだけで、フィルタは使いません。** 画面全体へ広げても板は1枚のままなので、
-  描画バッファ（[DesignNotes.md](../engine/DesignNotes.md)）は要らず、持つものも増えません。
+  描画バッファ（[DesignNotes.md](../DesignNotes.md)）は要らず、持つものも増えません。
 
 #### 7.5.3 雨
 
@@ -652,7 +652,7 @@ looking_brightness:
 - **入力は遮りません。** 降っている間もカードの操作は変わりません。
 - **雨は敷き詰めた1枚の絵（TileSprite）で描き、フィルタは使いません。** 敷き詰めた絵は自分の矩形の
   外へ描かないので、はみ出しを切り抜く必要がそもそもありません。フィルタで切り抜くと画面サイズの
-  描画バッファを使ってしまいます（[DesignNotes.md](../engine/DesignNotes.md)）。絵は上下左右で
+  描画バッファを使ってしまいます（[DesignNotes.md](../DesignNotes.md)）。絵は上下左右で
   繋がるように描き、縦横それぞれ1周ぶん送っては戻すので、継ぎ目も折り返しも見えません。
 
 #### 7.5.4 陽炎
@@ -669,7 +669,7 @@ looking_brightness:
   通っていきます。
 - **砂だけでは足りません。** まっすぐな輪郭が無く、ゆらいでいることが読み取れないためです。カードの
   縁という直線が一緒に波打って、初めて陽炎に見えます。
-- **ここだけはフィルタを使うので、立っている間は描画バッファを使います**（[DesignNotes.md](../engine/DesignNotes.md)）。
+- **ここだけはフィルタを使うので、立っている間は描画バッファを使います**（[DesignNotes.md](../DesignNotes.md)）。
   歪ませる以上は避けられないコストなので、そのぶん立つ条件を狭く取っています。掛ける対象は多いものの、
   どれもレーンの矩形を写すためバッファは使い回され、**レーンを増やしても消費は増えません**。
 - **カードの名前が読める範囲に留めます。** 大きく歪むと、陽炎ではなく描画の壊れに見えます。
@@ -789,10 +789,10 @@ looking_brightness:
 | ボタン | 系統 | 指すタグ |
 |---|---|---|
 | 食 | 2 食の調達・3 保存 | `food`・`roastable`・`hearth`・`preservative` |
-| 水 | 1 水 | `water`・`hot_water`・`liquid_container` |
+| 水 | 1 水 | `water`・`hot_water`・`liquid_container`・`container_lid` |
 | 火 | 5 火 | `fuel`・`tinder`・`hearth` |
 | 道具 | 4 刃物・打撃、6 狩りの道具 | `tool`・`weapon`・`trap`・`meat_bait`・`plant_bait`・`strike_target` |
-| 入れ物 | 7 運ぶ入れ物 | `container`・`liquid_container` |
+| 入れ物 | 7 運ぶ入れ物 | `container`・`liquid_container`・`container_lid` |
 | 身につける | 8 衣類 | `equippable` |
 | 住まい | 9 寝床・10 住居・12 家具・娯楽 | `bed`・`shelter`・`furnishing` |
 | 遠出 | 11 船と海図 | `path`・`sea_route`・`boat`・`sail` |
@@ -845,7 +845,7 @@ card_filters:
     tags: [food, roastable, hearth, preservative]
   - id: filter_water
     icon: 💧
-    tags: [water, hot_water, liquid_container, water_source]
+    tags: [water, hot_water, liquid_container, water_source, container_lid]
 ```
 
 - **`id` がそのままアイコンの名前です**（`src/assets/icons/<id>.png`）。型が自分の絵の名前を名乗る

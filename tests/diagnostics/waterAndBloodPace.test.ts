@@ -152,6 +152,18 @@ describe('文書が書いた「何日ぶん」', () => {
     expect(numberIn(VOYAGE_DOC, /甕 1 つが (\d+) L/, '甕のかさ')).toBe(
       spawn('jar').getProperty(volumeId).getEffectiveValue() / 1000,
     );
+
+    // 蓋（LiquidContainerSystem.md 6.2節）は甕の数ぶん載るので、段を動かさないことが積荷の勘定に
+    // 要る。**甕と同じ2つの値で見る**——どちらかだけを書くと、もう一方が動いても文書は緑のまま。
+    const lid = spawn('jar_lid');
+    expect(numberIn(VOYAGE_DOC, /蓋 1 枚は\s*([\d.]+)kg/, '蓋の重さ')).toBeCloseTo(
+      lid.getProperty(weightId).getEffectiveValue() / 1000,
+      1,
+    );
+    expect(numberIn(VOYAGE_DOC, /蓋 1 枚は\s*[\d.]+kg・([\d.]+) L/, '蓋のかさ')).toBeCloseTo(
+      lid.getProperty(volumeId).getEffectiveValue() / 1000,
+      1,
+    );
     const raftCargo = codex.objects
       .get(codex.objectNames.getId('raft'))
       .enumerateSlotDefs()

@@ -245,7 +245,8 @@
 `pick` を持ちません**（[`SkillSystem.md`](../engine/SkillSystem.md) 3.1 節の的）——当たり所を決めるのは
 相手の体で、揺れる体も裂ける皮も無い的には卓が立ちません。**それでも伸びる量は獣を殴るのと同じ**です
 ——**どちらも同じ長さの手だから**で、実行経路が配る量はその手の長さから決まります
-（[`SkillSystem.md`](../engine/SkillSystem.md) 3 節）。
+（[`SkillSystem.md`](../engine/SkillSystem.md) 3 節）。長さが揃っていることは
+`tests/world-codex/skillsYaml.test.ts` が打ちかかる相手すべてで見ます。
 
 **積むのは、その卓で最も太い当たり方 1 つだけです。** 当たり方の数だけ積むと、2 つ名乗る石斧だけが
 倍受け取り、**配分の合計を 100 に揃えた意味**（[`HuntingSystem.md`](../engine/HuntingSystem.md) 1.2 節）

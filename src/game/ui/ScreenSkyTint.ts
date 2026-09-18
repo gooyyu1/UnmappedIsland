@@ -11,7 +11,7 @@ import { COLOR } from '../looks/theme';
  * あるため、depthは置く側が与える（PlayScene参照）。
  *
  * **フィルタを使わない。** 薄い色の矩形を1枚重ねるだけなので、画面全体へ広げても持ち物は増えない
- * （[DesignNotes.md](../../../docs/engine/DesignNotes.md)）。
+ * （[DesignNotes.md](../../../docs/DesignNotes.md)）。
  */
 export class ScreenSkyTint extends Phaser.GameObjects.Rectangle {
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, ambientBrightness: number | undefined) {

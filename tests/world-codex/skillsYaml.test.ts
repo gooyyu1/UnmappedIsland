@@ -139,6 +139,7 @@ const RECIPES_WITHOUT_DEFTNESS = [
   'salt_pan.laid',
   'torch.wrapped',
   'unfired_jar.coiled',
+  'unfired_jar_lid.pressed',
 ];
 
 /**
@@ -1259,6 +1260,51 @@ describe('腕前とレシピの解放条件', () => {
         `${def.name}: 1回の打ちかかりで伸びる量`,
       ).toBe(expected);
     }
+  });
+
+  it('打ちかかる相手は、どれも同じ長さの手で打つ（据えた的も、生きた獣も）', () => {
+    // docs/world/Skills.md 5節が「的でも伸びる量は獣を殴るのと同じ」と言えるのは、**どちらも同じ
+    // 長さの手だから**——量はその手の長さから決まる（SkillSystem.md 3節）ので、長さが割れた時点で
+    // 量も割れ、5節がそこで嘘になる。
+    const granting = huntingInteractionNames();
+    const weaponTagId = codex.tagNames.getId('weapon');
+    const weapons = [...codex.objects].filter((def) => def.tags.includes(weaponTagId));
+    const targets = strikeTargets();
+
+    // **両方が並んでいないと、長さが揃っていることを見たことにならない。** 片側が消えれば残った側
+    // だけで揃ってしまう。
+    expect(
+      targets.filter((def) => def.recipesProducingThis.length > 0).length,
+      '据えた的が1つも無い',
+    ).toBeGreaterThan(0);
+    expect(
+      targets.filter((def) => def.recipesProducingThis.length === 0).length,
+      '生きた獣が1つも無い',
+    ).toBeGreaterThan(0);
+
+    const minutes = targets.map((def) => {
+      const trigger = def.dragTriggers.find(
+        (candidate) =>
+          granting.has(candidate.interaction.name) &&
+          weapons.some((weapon) => candidate.acceptsInstrument(weapon)),
+      )!;
+      const weaponDef = weapons.find((weapon) => trigger.acceptsInstrument(weapon))!;
+      const agent = characterWithSkills(STAGES[0].min);
+      const session = agent.session;
+      const strike = session
+        .createObject(def.globalId)
+        .combinationsWith(session.createObject(weaponDef.globalId), agent)
+        .find((combination) => combination.name === trigger.interaction.name);
+
+      expect(strike, `${def.name}: ${weaponDef.name} を重ねて打ちかかれない`).toBeDefined();
+
+      return { name: def.name, minutes: strike!.executionMinutes() };
+    });
+
+    expect(
+      [...new Set(minutes.map((entry) => entry.minutes))],
+      `打ちかかる手の長さが割れている: ${minutes.map((entry) => `${entry.name}=${entry.minutes}`).join('・')}`,
+    ).toHaveLength(1);
   });
 
   it('腕を土台にしたつまみは、素の値も名乗る（土台だけをtraitへ置かない）', () => {

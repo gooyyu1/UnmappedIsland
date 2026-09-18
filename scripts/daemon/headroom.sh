@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 残り余力で、その種類を流してよいかを答える。**答えるのは「立ててよいか」。**
+# 残り余力で、その種類を流してよいかを答える。**答えるのは「モデルを使わせてよいか」**——立てる周も、
+# 止まったセッションを起こす周も、同じこれに訊く（[`may-spend.sh`](may-spend.sh)）。
 #
 #   bash scripts/daemon/headroom.sh new-task
 #   bash scripts/daemon/headroom.sh review
