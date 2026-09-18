@@ -70,6 +70,10 @@ function push(world: World = {}): Run {
     git('commit', '-m', 'x');
     git('branch', '-M', BRANCH);
     git('remote', 'add', 'origin', pathForBash(origin));
+    // **名乗りはこのリポジトリへ置く。** 叩く道具は自分で `git commit-tree` を打つので、`-c` で1回
+    // ずつ渡すこちらの名乗りは届かない——名乗りの無い環境（CIのランナー）でだけ 128 で転ぶ。
+    git('config', 'user.email', 't@example.com');
+    git('config', 'user.name', 't');
 
     const image = join(work, 'shot.png');
     writeFileSync(image, Buffer.from([0x89, 0x50, 0x4e, 0x47]));
