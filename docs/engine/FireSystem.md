@@ -242,7 +242,8 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 炎に入れれば割れますが、それは炉が拒むのではなく、器の側の賭けに負けるということです。昇温の途中も
 進むことは、現実の「あぶり焚き」（水を抜きながら焼く）にあたります。
 
-燃料 1 つが持つ `fuel` の目安は次のとおりです。
+燃料 1 つが持つ `fuel` の目安は次のとおりです。**1 つあたりで見るのは、炉が受ける量がこの単位だから**
+——目方あたりに何が出るか（木の燃料の物差し）は 2.5 節が持ちます。
 
 | 燃料 | `fuel` |
 |---|---|
@@ -299,12 +300,18 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 4 分の 1 へ縮めたものです（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md) の
 「長くかかるものだけ、現実の 4 分の 1 へ縮める」節）。
 
-**これで、燃料 1 点あたりの手間が拾った枝より安くなります。** 太い枝は 25.1 分<!-- stats: balance.yaml object_costs object=thick_branch total_minutes -->で
-20、乾いた薪は 23.2 分<!-- stats: balance.yaml object_costs object=seasoned_firewood total_minutes -->で 30 なので、
-1 点あたり 1.26 分に対して 0.77 分です。**火の系統の山がこれ**で
-（[`../world/ContentSkeleton.md`](../world/ContentSkeleton.md) 4 節）、棚そのものは
-1.20 日<!-- stats: terrain.yaml work_piles pile=薪棚 days -->の手間になります。率と安さの両方は
-`tests/world-codex/firewoodYaml.test.ts` が見張ります。
+**燃料 1 点あたりの手間は、割った時点で既に枝より安くなっています。** 太い枝は 25.1 分<!-- stats: balance.yaml object_costs object=thick_branch total_minutes -->で
+20（1 点 1.26 分）、割り薪は 23.2 分<!-- stats: balance.yaml object_costs object=green_firewood total_minutes -->で 20（同 1.16 分）
+——**枝の線を跨いでいるのは `split` のほうで、割るのに要るのは既に持っている斧だけ**です。**棚が買うのは
+その先**で、同じ 23.2 分<!-- stats: balance.yaml object_costs object=seasoned_firewood total_minutes -->が 30 になるので
+1 点 0.77 分、**3 分の 1 が落ちます**。**火の系統の山がこれ**です
+（[`../world/ContentSkeleton.md`](../world/ContentSkeleton.md) 4 節）。
+
+**棚 1 基（1.20 日<!-- stats: terrain.yaml work_piles pile=薪棚 days -->）の元が取れるのは、乾いた薪を 90 本ほど
+焚いたところ**です——1 本が浮かせるのは 11.6 分（30 点 ×（1.16 − 0.77））で、棚の 1,068 分をそれで割った
+数。丸太 9 本ぶん、棚は 10 本ずつ乾かすので 9 回ぶんになります。**山が支出を安くする手段だと言えるのは
+この回数までで**、1 周回（約 109 日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->）
+のうちに何度も回せる長さです。率と安さは `tests/world-codex/firewoodYaml.test.ts` が見張ります。
 
 ## 3. 種火は、火力の一番下の段
 

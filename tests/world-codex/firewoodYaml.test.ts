@@ -177,20 +177,32 @@ describe('firewood.yamlの薪割りと薪棚', () => {
     expect(onGround.def.name, '型も変わらない').toBe('green_firewood');
   });
 
-  it('乾くと目方が落ちて、出る熱は木から取り出せる上限の率になる', () => {
+  it('木の燃料は、どれも上限の率か、燃え切らない側の半分', () => {
     // 20 fuel/kgが上限（docs/engine/FireSystem.md 2.5節）。**燃え切らない物は半分**で、細すぎる小枝も
     // 生木の丸太もそちら側に居る。**乾かして届くのは上限までで、超えない。**
+    //
+    // **型を名指ししないで、燃料を名乗る型を全部見る**——主張の射程は木の燃料すべてなので、後から
+    // 別の率で足した燃料もここで落ちる。
+    const fuelTagId = codex.tagNames.getId('fuel');
+    // 木でない燃料は枠の外（同2.5節は「木から取り出せる」と限定している）。ヤシの実の皮は繊維の塊で、
+    // 目方あたりでは木の6分の1しか出ない。
+    const notWood = ['coconut_husk'];
     const best = fuelPerKilogram('thick_branch');
-    const rateOf = (objectName: string): string =>
-      `${objectName}: ${(fuelPerKilogram(objectName) / best).toFixed(2)}`;
+    const rates = [...codex.objects]
+      .filter((def) => def.hasTag(fuelTagId) && !notWood.includes(def.name))
+      .map((def) => ({ name: def.name, ratio: (fuelPerKilogram(def.name) / best).toFixed(2) }));
 
-    expect(['long_pole', 'seasoned_firewood', 'twig', 'log', 'green_firewood'].map(rateOf)).toEqual([
-      'long_pole: 1.00',
-      'seasoned_firewood: 1.00',
-      'twig: 0.50',
-      'log: 0.50',
-      'green_firewood: 0.50',
-    ]);
+    expect(rates.length, '燃料を名乗る木の型が拾えていない').toBeGreaterThan(notWood.length);
+    expect(
+      rates.filter((row) => row.ratio !== '1.00' && row.ratio !== '0.50'),
+      '上限でもその半分でもない率の木',
+    ).toEqual([]);
+    expect(
+      rates.map((row) => row.name),
+      '乾いた薪が上限の側に居る',
+    ).toContain('seasoned_firewood');
+    expect(rates.find((row) => row.name === 'seasoned_firewood')?.ratio).toBe('1.00');
+    expect(rates.find((row) => row.name === 'green_firewood')?.ratio, '生木は半分').toBe('0.50');
     expect(declaredNumber('seasoned_firewood', weightId), '乾けば軽くなる').toBeLessThan(
       declaredNumber('green_firewood', weightId),
     );
