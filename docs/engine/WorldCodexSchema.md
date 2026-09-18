@@ -87,7 +87,5 @@ npx vitest run tests/world-codex/worldCodexSchema.test.ts
 ## 5. 未決事項・今後の検討課題
 
 - 地形生成（`axes`/`location_types`/`generation_scopes`）の中身の詳細スキーマ化（2.2節。現在はキーの許容のみ）
-- 本スキーマは単一ファイル内の構造のみを検証するため、「参照している `object_def` や `trait` の id が実在するか」
-  といった、ファイル横断的な整合性チェックは対象外（別途のバリデーションステップ、ロード後の検証に相当）
 - `GameElementDefinition.md`・`ActionSystem.md`・`RecipeSystem.md`・`ContainerSystem.md` 側の未決事項
   （各ドキュメントの該当節を参照）が確定するたびに、本スキーマも追随して更新する必要がある
