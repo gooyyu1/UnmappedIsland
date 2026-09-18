@@ -21,7 +21,7 @@ import { RecipeDef, RecipeDeftnessDef, RecipeRequirementDef, RecipeStepDef } fro
 import { PickEffect } from '../domain/PickEffect';
 import { ReferenceScope } from '../domain/ReferenceRoot';
 
-const RECIPE_KEYS = ['icon', 'steps', 'conditions', 'deftness', 'surplus'];
+const RECIPE_KEYS = ['steps', 'conditions', 'deftness', 'surplus'];
 const STEP_KEYS = ['requires', 'duration'];
 const DEFTNESS_KEYS = ['skill', 'from_stage', 'minutes'];
 const REQUIREMENT_KEYS = ['object', 'tag', 'count', 'consume'];
@@ -118,7 +118,7 @@ export function parseRecipes(
         ? undefined
         : new PickEffect(parsePickList(loader, context, surplusNode, ReferenceScope.acting, 'surplus'));
 
-    result.push(new RecipeDef(name, steps, tryGetScalar(map, 'icon', context), unlock, deftness, surplus));
+    result.push(new RecipeDef(name, steps, unlock, deftness, surplus));
   }
 
   return result;

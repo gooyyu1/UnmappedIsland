@@ -99,7 +99,7 @@ object_defs:
       volume: {value: 100}
     recipes:
       carved:
-        # 作る腕が効く先（13.6節）。宣言は負の分数なので、図鑑は符号を裏返して「短くなる」と出す。
+        # 作る腕が効く先（13.5節）。宣言は負の分数なので、図鑑は符号を裏返して「短くなる」と出す。
         deftness: {skill: skill_woodwork, from_stage: skilled, minutes: -15}
         steps:
           - requires:
@@ -372,7 +372,7 @@ describe('レシピの自己記述（describeRecipe）', () => {
   });
 
   it('余分の卓は、いつ引くかを見出しで断ってから中身を出す', () => {
-    // 工程の行と同じ形で並ぶので、見出しが無いとどの工程の効果かと読める（13.6節）。
+    // 工程の行と同じ形で並ぶので、見出しが無いとどの工程の効果かと読める（13.5節）。
     const text = lines();
     expect(text).toContain('余分の卓（完成時に1回）:');
     expect(text.some((line) => line.includes('spawn bowl'))).toBe(true);

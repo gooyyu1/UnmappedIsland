@@ -260,7 +260,7 @@ function huntingGrantingTypes(): ReadonlySet<string> {
 /**
  * 世界のどこかで `{subject: agent, prop: ...}` として読まれているプロパティ。**読む側の書き方は1つ**
  * なので、レシピの解放条件（docs/engine/SkillSystem.md 4節）も、操作の `conditions` も、`base` の
- * 土台も、レシピの `deftness`・`surplus` の重み（GameElementDefinition.md 13.6節）も、この1本で
+ * 土台も、レシピの `deftness`・`surplus` の重み（GameElementDefinition.md 13.5節）も、この1本で
  * 拾える——**どこで読まれているかではなく、読まれているかだけを問う。**
  */
 function propsReadFromAgent(): ReadonlySet<string> {

@@ -49,7 +49,7 @@ export class RecipeRequirementDef {
 }
 
 /**
- * 短縮しきった後も工程が下回れない分数（13.6節）。**tickの刻みそのもの**
+ * 短縮しきった後も工程が下回れない分数（13.5節）。**tickの刻みそのもの**
  * （[`worldTime.ts`](./worldTime.ts) の `MINUTES_PER_TICK`）で、これより短い工程は、開始時刻によって
  * 跨ぐtickの数が変わる（docs/engine/ActionSystem.md 6.2節）。
  *
@@ -60,7 +60,7 @@ export class RecipeRequirementDef {
 const MINIMUM_STEP_MINUTES = MINUTES_PER_TICK;
 
 /**
- * その腕がその段に届いている作り手にとって、工程1つが何分縮むか（13.6節）。
+ * その腕がその段に届いている作り手にとって、工程1つが何分縮むか（13.5節）。
  *
  * **どの腕が・どの段から・何分縮めるかは、レシピごとに宣言する**（docs/world/Skills.md 7節）。
  * 腕の数は増減しにくく、行動の数は増減するので、**組み合わせを宣言するのは増減する側**——全レシピが
@@ -135,12 +135,6 @@ export class RecipeStepDef {
 export class RecipeDef {
   readonly name: string;
 
-  /**
-   * 完成品ごとのアイコン指定（13.2節）。未指定ならundefined。**読み込むだけで、この絵を出す側はまだ
-   * 無い**（作りかけのカードが出すのは完成品の絵。RecipeSystem.md 6節）。
-   */
-  readonly icon: string | undefined;
-
   readonly steps: readonly RecipeStepDef[];
 
   /** 解放条件（SkillSystem.md 4節）。undefinedなら最初から解放されている。 */
@@ -156,7 +150,7 @@ export class RecipeDef {
   readonly deftness: RecipeDeftnessDef | undefined;
 
   /**
-   * 完成した瞬間に1回だけ引く、余分が取れるかの卓（13.6節）。宣言していなければundefined＝
+   * 完成した瞬間に1回だけ引く、余分が取れるかの卓（13.5節）。宣言していなければundefined＝
    * 何個作っても1つしかできない物。
    */
   readonly surplus: PickEffect | undefined;
@@ -164,7 +158,6 @@ export class RecipeDef {
   constructor(
     name: string,
     steps: readonly RecipeStepDef[],
-    icon: string | undefined,
     unlock: Requirements | undefined,
     deftness: RecipeDeftnessDef | undefined,
     surplus: PickEffect | undefined,
@@ -182,7 +175,6 @@ export class RecipeDef {
 
     this.name = name;
     this.steps = steps;
-    this.icon = icon;
     this.unlock = unlock;
     this.deftness = deftness;
     this.surplus = surplus;
@@ -190,7 +182,7 @@ export class RecipeDef {
 
   /**
    * agentがその工程に実際に費やすゲーム内時間（分）。宣言された仕事の量から、作り手の腕が届いて
-   * いれば宣言された分だけ縮めた値（13.6節）。腕を名乗っていない、または作り手がその段に届いて
+   * いれば宣言された分だけ縮めた値（13.5節）。腕を名乗っていない、または作り手がその段に届いて
    * いないなら宣言どおり。
    *
    * **問うのは「この者にとって何分か」なのでagentは必ず要る**（解放条件`unmetUnlockRequirement`と
@@ -224,11 +216,11 @@ export class RecipeDef {
    * 未解放のレシピも一覧へ出し、そこでなぜ作れないかを言うため、可否と理由を1回の評価から得る
    * （Requirements.firstUnmet と同じ理由）。
    *
-   * **問うのは「この者にとって解放されているか」なので、agentは必ず要る**（13.3節）。誰にとってでも
+   * **問うのは「この者にとって解放されているか」なので、agentは必ず要る**（13.2節）。誰にとってでも
    * ない「解放条件を持つか」は`unlock`が直接答える。
    */
   unmetUnlockRequirement(agent: WorldObject): Requirement | undefined {
-    // まだ成果物のインスタンスが無いので、selfを持たない文脈で評価する（13.3節）——selfを起点に辿る
+    // まだ成果物のインスタンスが無いので、selfを持たない文脈で評価する（13.2節）——selfを起点に辿る
     // 参照はそのまま解決先を持たない。
     return this.unlock?.firstUnmet(ReferenceContext.asking(agent));
   }
