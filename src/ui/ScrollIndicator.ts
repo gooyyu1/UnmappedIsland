@@ -1,12 +1,21 @@
 import Phaser from 'phaser';
-import type { Rect } from '../../ui/Rect';
-import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import { scrollThumbSpan } from '../../ui/scroll';
-import { drawBox } from '../../ui/shapes';
-import { COLOR, SIZE } from '../looks/theme';
+import type { Rect } from './Rect';
+import type { UnitScale } from './UnitScale';
+import { scrollThumbSpan } from './scroll';
+import { drawBox } from './shapes';
 
 /** つまみの最小の長さ（u単位）。中身が長くても、これ以上は痩せさせない。 */
 const MIN_THUMB_LENGTH = 48;
+
+/**
+ * スクロールバーの見た目。**明るい地にも暗い地にも敷かれる**ので、トラックとつまみの明暗を
+ * 離して渡す側が決める。厚みはu単位。
+ */
+export interface ScrollBarLook {
+  readonly trackColor: number;
+  readonly thumbColor: number;
+  readonly thickness: number;
+}
 
 /** トラックとつまみの濃さ。下の絵を潰さない程度に薄く、つまみの縁が読める程度に濃く。 */
 const TRACK_ALPHA = 0.28;
@@ -21,16 +30,16 @@ const FADE_DELAY_MS = 800;
 const FADE_MS = 400;
 
 /**
- * 送れる帯の送り具合を示す、半透明のスクロールバー（ScreenLayout.md 7.4節「スクロールバー」）。
+ * 送れる帯の送り具合を示す、半透明のスクロールバー。
  *
  * 呼び出し側は送り具合を渡すだけでよく、出す・出さないも濃さも気にしない。
  *
- * **横向きにだけ組み、縦に送る場所では呼び出し側が90度回して立てる**（PlayScene.addBarScrollIndicator）。
- * 縦の区切りに横の帯の絵を回して敷くのと同じで（shapes.addTiledImageVertical）、縦向きの実装を
- * 別に持たない。
+ * **横向きにだけ組み、縦に送る場所では呼び出し側が90度回して立てる**。縦の区切りに横の帯の絵を
+ * 回して敷くのと同じで（shapes.addTiledImageVertical）、縦向きの実装を別に持たない。
  */
 export class ScrollIndicator extends Phaser.GameObjects.Container {
   private readonly thumb: Phaser.GameObjects.Graphics;
+  private readonly thumbColor: number;
   private readonly trackWidth: number;
   private readonly barHeight: number;
   private readonly minThumbLength: number;
@@ -40,17 +49,25 @@ export class ScrollIndicator extends Phaser.GameObjects.Container {
 
   private fadeTween: Phaser.Tweens.Tween | undefined;
 
-  /** バーの左端・上端と長さをピクセルで受け取る。厚みは寸法トークン（SIZE.scrollBar）で決まる。 */
-  constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number, width: number) {
+  /** バーの左端・上端と長さをピクセルで受け取る。厚みと色はlookが決める。 */
+  constructor(
+    scene: Phaser.Scene,
+    metrics: UnitScale,
+    x: number,
+    y: number,
+    width: number,
+    look: ScrollBarLook,
+  ) {
     super(scene, x, y);
 
     this.trackWidth = width;
-    this.barHeight = metrics.px(SIZE.scrollBar);
+    this.thumbColor = look.thumbColor;
+    this.barHeight = metrics.px(look.thickness);
     this.minThumbLength = metrics.px(MIN_THUMB_LENGTH);
 
     const track = scene.add.graphics();
     drawBox(track, this.boxOf(width), {
-      fillColor: COLOR.scrollBarTrack,
+      fillColor: look.trackColor,
       fillAlpha: TRACK_ALPHA,
       radius: this.barHeight / 2,
     });
@@ -77,7 +94,7 @@ export class ScrollIndicator extends Phaser.GameObjects.Container {
         this.thumbWidth = span.width;
         this.thumb.clear();
         drawBox(this.thumb, this.boxOf(span.width), {
-          fillColor: COLOR.scrollBarThumb,
+          fillColor: this.thumbColor,
           fillAlpha: THUMB_ALPHA,
           radius: this.barHeight / 2,
         });

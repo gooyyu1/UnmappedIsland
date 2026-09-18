@@ -1,7 +1,7 @@
 import { ResponsiveScene } from './ResponsiveScene';
 import { assetPackInstallMatchesSetting } from '../asset-pack/install';
 import { Settings } from '../save/Settings';
-import { Button } from './ui/Button';
+import { Button } from '../ui/Button';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { noteOperation } from './errorReport';
 import { addLabel } from '../ui/labels';

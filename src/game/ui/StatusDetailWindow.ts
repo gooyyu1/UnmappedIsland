@@ -1,7 +1,8 @@
 import type Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import { Button, addTextButton, textButtonBoxStyle } from './Button';
+import { Button } from '../../ui/Button';
+import { addTextButton, textButtonBoxStyle } from './TextButton';
 import {
   ACTION_HEIGHT,
   CONTENT_GAP,

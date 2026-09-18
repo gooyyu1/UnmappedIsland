@@ -6,7 +6,7 @@ import { currentAssetPacks, opensWithAssetPacks } from '../save/savedAssetPacks'
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { Localization } from '../locale/Localization';
-import { Button } from './ui/Button';
+import { Button } from '../ui/Button';
 import { Card } from './ui/Card';
 import { ModalDialog } from './ui/ModalDialog';
 import { ScreenHeader } from './ui/ScreenHeader';

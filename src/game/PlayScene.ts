@@ -52,7 +52,7 @@ import type { DaylightMoment } from './view/daylight';
 import { SunlightHours } from './view/daylight';
 import type { Activity } from './view/operationSteps';
 import { playbackSteps, afterPlaybackSteps, isMidAction, acceptsOperation } from './view/operationSteps';
-import { Button } from './ui/Button';
+import { Button } from '../ui/Button';
 import { SLOT_BUTTON_PAPER_TEXTURE } from '../art/slotButtonArt';
 import { EDGE_DIRECTIONS } from './ui/Card';
 import type { CardContent, CardEdgeAction } from './ui/Card';
@@ -62,7 +62,7 @@ import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
 import type { LaneCell } from './ui/laneCells';
 import { foundCells, hiddenCountCells } from './ui/laneCells';
-import { Curtain } from './ui/Curtain';
+import { Curtain } from '../ui/Curtain';
 import { LocationArtLoader } from './ui/LocationArtLoader';
 import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX } from '../art/informationArt';
 import { addNineSlice } from '../ui/nineSlice';
@@ -90,7 +90,7 @@ import { ProgressRing } from './ui/ProgressRing';
 import type { PropertyCategory as PropertyTab } from './ui/PropertiesPane';
 import { ScreenAlertFrame } from './ui/ScreenAlertFrame';
 import { ScrollArea } from '../ui/scrollArea';
-import { ScrollIndicator } from './ui/ScrollIndicator';
+import { ScrollIndicator } from '../ui/ScrollIndicator';
 import type { StatusContent } from './ui/StatusBar';
 import { StatusBar } from './ui/StatusBar';
 import { StatusDetailWindow } from './ui/StatusDetailWindow';
@@ -107,7 +107,7 @@ import { interactionTooltip } from './ui/Tooltip';
 import { addLabel } from '../ui/labels';
 import type { BoxStyle } from '../ui/shapes';
 import { addInputBlockingPanel, addTiledImage, addTiledImageVertical, drawBox } from '../ui/shapes';
-import { COLOR, SIZE } from './looks/theme';
+import { COLOR, SCROLL_BAR_LOOK, SIZE } from './looks/theme';
 import type { ObjectGlobalId } from '../domain/GlobalId';
 
 /** 紙として置かれるボタン（スロットボタン・バーのアイコンボタン）が落とす影のずらし幅（u単位）。 */
@@ -765,7 +765,7 @@ export class PlayScene extends ResponsiveScene {
       this.activity = 'idle';
     } else {
       this.activity = 'transiting';
-      const curtain = new Curtain(this, this.layout.fieldArea);
+      const curtain = new Curtain(this, this.layout.fieldArea, COLOR.curtain);
       curtain.darken(0);
       this.revealWhenLocationArtLoaded(curtain);
     }
@@ -1785,7 +1785,7 @@ export class PlayScene extends ResponsiveScene {
     // 移動先・見つかった道の行き先の絵のロードを、経過を見せている間（暗転中）に始める。
     this.requestLocationArt();
     const elapsedMs = realMsFor(this.gameSession.world.totalMinutes - startedAt);
-    const curtain = moved ? new Curtain(this, this.layout.fieldArea) : undefined;
+    const curtain = moved ? new Curtain(this, this.layout.fieldArea, COLOR.curtain) : undefined;
     // 作り直すのは経過し切ってからなので、暗転はそれまでに終わっていなければならない。
     curtain?.darken(Math.min(DARKEN_MS, elapsedMs));
 
@@ -2277,7 +2277,7 @@ export class PlayScene extends ResponsiveScene {
       area: { x: 0, y: 0, width: this.metrics.width, height: this.metrics.height },
       // 影響の枠から相手の詳細へ渡り歩く。開き直しと同じ経路なので、今の窓は入れ替わる。
       onOpenStatus: (target) => this.openStatusDetail(target),
-      // 絵だけのボタンなので、押されたことはここで控える（Button.addTextButton参照）。
+      // 絵だけのボタンなので、押されたことはここで控える（TextButton.addTextButton参照）。
       onTogglePin: () => {
         noteOperation(this.locale.uiText('log_status_pin_toggled'));
         this.status.togglePin(key);
@@ -2455,10 +2455,24 @@ export class PlayScene extends ResponsiveScene {
    */
   private addBarScrollIndicator(bar: Rect, axis: 'x' | 'y'): ScrollIndicator {
     const gap = this.metrics.px(SIZE.scrollBarGap);
-    const thickness = this.metrics.px(SIZE.scrollBar);
+    const thickness = this.metrics.px(SCROLL_BAR_LOOK.thickness);
     return axis === 'y'
-      ? new ScrollIndicator(this, this.metrics, bar.x + bar.width - gap, bar.y, bar.height).setAngle(90)
-      : new ScrollIndicator(this, this.metrics, bar.x, bar.y + bar.height - gap - thickness, bar.width);
+      ? new ScrollIndicator(
+          this,
+          this.metrics,
+          bar.x + bar.width - gap,
+          bar.y,
+          bar.height,
+          SCROLL_BAR_LOOK,
+        ).setAngle(90)
+      : new ScrollIndicator(
+          this,
+          this.metrics,
+          bar.x,
+          bar.y + bar.height - gap - thickness,
+          bar.width,
+          SCROLL_BAR_LOOK,
+        );
   }
 
   /**
