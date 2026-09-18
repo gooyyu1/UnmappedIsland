@@ -270,8 +270,46 @@ object_defs:
     props:
       weight: {value: 20000}
       volume: {value: 35000}
-      # 太い枝（fuel 20）10本ぶん。
+      # 太い枝（fuel 20）10本ぶん。**目方あたりでは枯れ枝の半分**——伐ったばかりで水を含み、丸太の
+      # ままでは空気も回らない（docs/engine/FireSystem.md 2.5節）。割って乾かせば枯れ枝と同じ率へ
+      # 届く（firewood.yaml）。
       fuel: {value: 200}
+      # 割るのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
+      # （docs/world/Skills.md 7節）。薪は火を使う日ごとに割るので、効き始めるのは中ほどの段。
+      split_minutes:
+        value: 30
+        passives:
+          - conditions:
+              - {subject: agent, prop: skill_woodwork, in_stage_or_above: skilled}
+            modify: {self: {split_minutes: -15}}
+    interactions:
+      # 斧を打ち込んで10本の薪に割る（docs/engine/FireSystem.md 2.5節）。**持っている熱はそのまま**
+      # なので、ここで増えるのは熱ではなく、炉に入り切る形と、乾かせる形のほう。
+      split:
+        trigger: {drag: {tag: chopping_tool}}
+        conditions:
+          # **余力を見る線は引かない**（docs/engine/DurabilitySystem.md 2.1節）。1回20は殴る手と並ぶ
+          # いちばん安い使い道で、そこへ線を引くと何にも使えないのに消えもしない斧が残る。**鈍った斧でも
+          # 薪は割れる**——刃で断つのではなく打ち割る仕事なので、刃の終わりぎわに残る使い道が1つ増える。
+          #
+          # 斧を振り下ろす屋外の作業なので、見るのは視界の側（docs/engine/IlluminationSystem.md 5節）。
+          # 嵐の日は明るさが足りていても割れない（docs/world/ContentSkeleton.md 8.1.4節）。
+          - reason: too_dark
+            subject: agent
+            prop: looking_brightness
+            in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
+        duration: {prop: split_minutes}
+        # **木部を断つので木材加工が伸びる**（docs/engine/SkillSystem.md 3節の実行経路）。
+        add:
+          agent:
+            skill_woodwork: 2
+          instrument:
+            durability: -20
+        # **spawnを先に書く**（broadleaf_treeのfellと同じ理由）。薪は丸太が在った所へ出る。
+        spawn: {object: green_firewood, count: 10}
+        destroy: self
 
   # 長い棒。若木を切って採った2mの棒（docs/world/SurvivalItems.md 0節）。槍の軸（tools.yaml）になる。
   long_pole:

@@ -55,6 +55,10 @@ slot_texts:
   # 採れたぶんだけが並ぶ。
   salt:
     display_name: 採れた塩
+  # 薪棚に積んである薪（firewood.yaml）。積むのも降ろすのもプレイヤーの手なので、名前は場所ではなく
+  # 何が積まれているかで名乗る。
+  woodpile:
+    display_name: 積んだ薪
 
 object_texts:
   # 全オブジェクト共通のメンバー。ここにdisplay_name/descriptionを書いても、
@@ -813,6 +817,21 @@ object_texts:
         display_name: 組んで囲う
         description: 枝を立てて編んだ葉を巡らせ、縄で締める。塩を打ち慣れた者にしか、火加減の勘所が分からない。
 
+  # 薪を割って積み、乾かす（firewood.yaml）。
+  green_firewood:
+    display_name: 生木の薪
+    description: 丸太を割ったばかりの薪。まだ水を含んでいて、燃やしても目方のわりに熱が出ない。
+  seasoned_firewood:
+    display_name: 乾いた薪
+    description: 棚で乾き切った薪。軽くなったうえに、拾った枯れ枝と同じだけの熱が目方から出る。
+  firewood_rack:
+    display_name: 薪棚
+    description: 地面から離した台に屋根を掛けた棚。積んだ生木の薪は、雨の日も夜も構わず乾いていく。
+    recipes:
+      built:
+        display_name: 組んで屋根を掛ける
+        description: 枝で台を組み、編んだ葉の屋根を掛けて縄で締める。刃物も掘る物も要らない。
+
   # 道具（tools.yaml）。
   sharp_stone:
     display_name: 尖った石
@@ -1170,6 +1189,10 @@ object_texts:
   log:
     display_name: 丸太
     description: 幹を2mほどに切ったもの。1本でも相当に重いが、水に浮く。
+    interactions:
+      split:
+        display_name: 割って薪にする
+        description: 斧を打ち込んで10本の薪に割る。丸太のままでは炉に入り切らず、出る熱も目方の半分に留まる。
   long_pole:
     display_name: 長い棒
     description: 若木から切り出した2mの棒。軽いが、抱えて歩くにも籠へ入れるにもかさばる。
