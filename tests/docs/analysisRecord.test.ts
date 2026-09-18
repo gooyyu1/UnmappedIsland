@@ -33,6 +33,12 @@ const ROOT = resolve(__dirname, '../..');
 interface Trace {
   /** 番号を挙げる節。 */
   readonly from: string;
+  /**
+   * **その回が読んだ番号**を挙げている節。ここに出ていない番号は、この回のスメルではない
+   * （既に開いている issue や、前の回のPRへの言及）ので、行き先を課さない。**課すと、書く側の逃げ道は
+   * 言及を消すか実体の無い行を足すかになり、見張りが記録を歪める側へ働く。**
+   */
+  readonly within: string;
   /** 行き先として認める節。 */
   readonly into: readonly string[];
 }
@@ -54,7 +60,11 @@ const SERIES: readonly Series[] = [
     name: '一次',
     prompt: join(ROOT, 'agent-ops', 'prompts', 'analysis-prompt.md'),
     dir: join(ROOT, 'agent-ops', 'analysis'),
-    trace: { from: '## 傾向', into: ['## 切った issue', '## 落としたもの'] },
+    trace: {
+      from: '## 傾向',
+      within: '## 読んだ範囲',
+      into: ['## 切った issue', '## 落としたもの'],
+    },
   },
   {
     name: '二次',
@@ -76,8 +86,8 @@ const FIRST_ROUND = /^\*\*検査が掛かる最初の回\*\*: `(\d{4}-\d{2}-\d{2
  * 後から書き換える先ではない（`agent-ops/board-design.md` 2.17.4）。
  *
  * **置く値は本文が持つ**——節を足したPRが同じ差分で動かせる場所に在れば、足し忘れて赤くなるのも
- * その本人のPRになる。**その日付の回が書かれるまで、その係は1件も見ない**ので、置くのは、今在る回が
- * 当時の定めで書かれていて満たしようがないときだけ。
+ * その本人のPRになる。**どこへ動かすかも本文が持つ**（そこが節を足す側の読む場所で、写しをここへ
+ * 置くと2つの決め方が並ぶ）。**上げたぶんの回は検査から外れる**ので、上げ過ぎは緑のまま効かなくなる。
  */
 function firstCheckedRound(prompt: string): string {
   const found = FIRST_ROUND.exec(readFileSync(prompt, 'utf-8'));
@@ -109,9 +119,10 @@ function numbersIn(text: string, heading: string): Set<string> {
 
 /** {@link Trace} の要求を満たしていない番号。 */
 function strandedNumbers(text: string, trace: Trace): string[] {
+  const read = numbersIn(text, trace.within);
   const arrived = new Set(trace.into.flatMap((heading) => [...numbersIn(text, heading)]));
   return [...numbersIn(text, trace.from)]
-    .filter((number) => !arrived.has(number))
+    .filter((number) => read.has(number) && !arrived.has(number))
     .map((number) => `#${number}`);
 }
 
@@ -192,7 +203,7 @@ describe.each(TRACED)('$name の記録が挙げた番号', ({ prompt, dir, trace
   it('行き先の節名が本文に在る', () => {
     const { headings } = recordSections(prompt);
 
-    expect(headings).toEqual(expect.arrayContaining([trace.from, ...trace.into]));
+    expect(headings).toEqual(expect.arrayContaining([trace.from, trace.within, ...trace.into]));
   });
 
   it(`\`${trace.from}\` に挙げた番号が、行き先の節にも現れる`, () => {
@@ -224,9 +235,13 @@ describe('節の照合', () => {
   });
 
   it('行き先が無ければ、その番号を挙げる', () => {
-    const text = '## 傾向\n#11・#22 に出た\n## 落としたもの\n#22 は直る先が無い\n';
+    // `#33` はその回が読んでいない番号なので、行き先が無くても挙がらない。
+    const text =
+      '## 読んだ範囲\n#11・#22 を読んだ\n## 傾向\n#11・#22・#33 に出た\n' +
+      '## 落としたもの\n#22 は直る先が無い\n';
+    const trace = { from: '## 傾向', within: '## 読んだ範囲', into: ['## 落としたもの'] };
 
-    expect(strandedNumbers(text, { from: '## 傾向', into: ['## 落としたもの'] })).toEqual(['#11']);
+    expect(strandedNumbers(text, trace)).toEqual(['#11']);
   });
 
   it('少なくとも1つの係が、記録を実際に見ている', () => {
