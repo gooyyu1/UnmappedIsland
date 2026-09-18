@@ -21,7 +21,7 @@ import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/
 /** 正午。晴れなら世界の明るさは+14、嵐でも+6で、屋外の採取のしきい値（+3）を超える。 */
 const NOON_HOUR = 12;
 
-/** 探索は嵐でも止まらない（8.1.4節が止めると決めているのは採取だけ）。 */
+/** 探索は嵐でも今は止まらない（8.1.4節は屋外の行動をすべて止めると決めており、広げるのはこれから）。 */
 const EXPLORE_ACTION = 'explore';
 
 describe('嵐の日は屋外の採取ができない', () => {
@@ -104,7 +104,8 @@ describe('嵐の日は屋外の採取ができない', () => {
     expect(picksFrond(rain.session, rain.land, rain.player)?.tryExecute()).toBe(true);
   });
 
-  it('探索は嵐でも進む', () => {
+  // 8.1.4節は屋外の行動をすべて止めると決めているので、探索へ広げたらこの検査は向きが変わる。
+  it('探索は嵐でも今は進む', () => {
     const storm = noon('storm');
     expect(new Location(storm.land, codex).explore(storm.player)).toBe(true);
   });
