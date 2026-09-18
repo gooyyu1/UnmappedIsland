@@ -6,11 +6,7 @@ meta:
   - {seeds: 6, voyages_per_seed: 100}
 
 input_fingerprint:
-<<<<<<< HEAD
-  - {sources: [core.yaml, voyage.yaml], sha256_prefix: '9dfcb146dc8db6d7'}
-=======
-  - {sources: [core.yaml, voyage.yaml], sha256_prefix: e003e86270759ad9}
->>>>>>> origin/main
+  - {sources: [core.yaml, voyage.yaml], sha256_prefix: e9a4f50e5a9bb6b1}
 
 baseline:
   - {coast: sandy_beach, season: calm, legs: 12, days: 5.17}
