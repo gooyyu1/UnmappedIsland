@@ -269,8 +269,14 @@ describe('行動の所要時間はtickの格子に乗る', () => {
     // 見るのは**素と、自分を縮める宣言だけで分数が決まるプロパティ**。土台（`base`）を持つものは
     // 継ぐ相手ぶんが足され、`range`を持つものはその下端が止めるので、ここでは答えが出ない。
     //
-    // **縮める分はその宣言の中から拾う**——同じ名前が複数の型に在る（死体ごとの`butcher_minutes`）
-    // ので、名前で世界じゅうから集めると、別の型の宣言まで1つの素へ積むことになる。
+    // **縮める分をどこから拾うかは、その名前を宣言している型の数で決まる。** 1つの型しか名乗って
+    // いない名前なら、世界じゅうのどこがその名前を縮めても行き先はその1つなので、世界じゅうから
+    // 集める——**別の型の`passives`が名前で縮める形**は、宣言の中だけを見ていると射程の外に落ちる。
+    // 同じ名前が複数の型に在る（死体ごとの`butcher_minutes`）ときだけ宣言の中に絞る。そこで世界
+    // じゅうから集めると、別の型の縮める分まで1つの素へ積むことになる。
+    const worldWide = new Map<string, number[]>();
+    for (const root of worldCodexRoots()) amountsMovingMinutes(root, worldWide);
+
     const emptied: string[] = [];
     let checked = 0;
     for (const [name, bodies] of minutePropBodies())
@@ -280,7 +286,8 @@ describe('行動の所要時間はtickの格子に乗る', () => {
         checked += 1;
         const own = new Map<string, number[]>();
         amountsMovingMinutes(body, own);
-        const shortest = (own.get(name) ?? []).reduce((left, amount) => left + Math.min(amount, 0), value);
+        const amounts = (bodies.length === 1 ? worldWide.get(name) : own.get(name)) ?? [];
+        const shortest = amounts.reduce((left, amount) => left + Math.min(amount, 0), value);
         if (shortest <= 0) emptied.push(`${name}: 素 ${value}分 → 縮めきると ${shortest}分`);
       }
     expect(checked, '素と縮める宣言だけで決まる所要時間が1つも無い').toBeGreaterThan(0);

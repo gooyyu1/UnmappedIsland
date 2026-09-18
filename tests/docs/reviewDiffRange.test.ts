@@ -31,7 +31,12 @@ const RECORDS = new Set([
   __filename,
 ]);
 
-const EXTS = ['.md', '.sh', '.mjs', '.cjs', '.ts', '.tsx', '.yml', '.yaml'] as const;
+/**
+ * 開く拡張子。**手順を書ける置き場は言語で決まらない**ので、リポジトリで実際に使っている
+ * テキストの拡張子を全部並べる（`.py` は `scripts/usage/**`・`tools/comfyui/**`、`.js` は
+ * `eslint.config.js`）。ここから漏れた拡張子のファイルは、起点を綴っても見られない。
+ */
+const EXTS = ['.md', '.sh', '.mjs', '.cjs', '.js', '.ts', '.tsx', '.py', '.yml', '.yaml'] as const;
 
 /**
  * ローカルの `main` を起点に置いた書き方。`origin/main` と、`$main_tip` のような変数名は外す。
@@ -58,7 +63,7 @@ function filesUnder(path: string): readonly string[] {
     .flatMap((entry) => filesUnder(join(path, entry.name)));
 }
 
-/** リポジトリ全体を `[path, 行番号, 行]` へ開く。 */
+/** 追跡している置き場のうち {@link EXTS} のファイルを、`[path, 行番号, 行]` へ開く。 */
 function lines(): readonly (readonly [string, number, string])[] {
   return filesUnder(ROOT).flatMap((path) =>
     readFileSync(path, 'utf-8')

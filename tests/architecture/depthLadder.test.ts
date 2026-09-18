@@ -86,7 +86,7 @@ describe('画面に重ねる層の階梯', () => {
     // 絞るのは、**画面の層ではない `depth` が同じ綴りで在る**ため——説明文の字下げ（Description）と
     // 実効値の入れ子（EffectiveValueReading）が、どちらも `depth = 0` で数え始める。
     const offenders = [
-      ...outsideLadder.filter((file) => /\bdepth:\s*-?\d/.test(readSource(file))),
+      ...outsideLadder.filter((file) => /\bdepth\s*:\s*-?\d/.test(readSource(file))),
       ...outsideLadderInGame.filter((file) => /\bdepth\s*=\s*-?\d/.test(readSource(file))),
     ];
 

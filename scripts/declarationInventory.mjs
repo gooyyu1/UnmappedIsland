@@ -6,7 +6,7 @@
 //
 // 参照数は既定では出さない。何かを1つ動かすと無関係な行の数字まで動いて差分が汚れるため、
 // 調べたいときだけ --refs で足す。--refs は tests/ と scripts/ からの参照も数える
-// （src だけで数えると、テストからしか使われていない公開を「未使用」と読み違える）。
+// （src だけで数えると、src の外からしか使われていない公開を「未使用」と読み違える）。
 //
 // 使い方:
 //   node scripts/declarationInventory.mjs            所属・名前順の一覧（差分向き）
@@ -22,7 +22,7 @@ import ts from 'typescript';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/** 参照数を数えるときだけ見る、srcの外の置き場。 */
+/** 参照数を数えるときだけ見る、srcの外の置き場。**試験だけではなく、道具（scripts）も読み手に数える。** */
 const REFERENCE_ROOTS = ['tests', 'scripts'];
 
 /** 1行に載せるシグネチャの上限。これを超えると読み手が追えないので端を落とす。 */
@@ -240,7 +240,9 @@ function withReferences(declarations, occurrences) {
     return {
       ...declaration,
       referencingFiles: elsewhere.length,
-      referencedOnlyByTests: elsewhere.length > 0 && elsewhere.every((file) => !file.startsWith('src/')),
+      // 読み手が src の外にしか居ない。**「テストだけ」ではない**——{@link REFERENCE_ROOTS} には
+      // scripts/ も入るので、道具からしか読まれない宣言もここで真になる。
+      referencedOnlyOutsideSrc: elsewhere.length > 0 && elsewhere.every((file) => !file.startsWith('src/')),
     };
   });
 }
@@ -263,7 +265,7 @@ function printSummary(declarations) {
 
 function referenceNote(declaration) {
   const count = declaration.referencingFiles === 0 ? '参照なし' : `他${declaration.referencingFiles}ファイル`;
-  return declaration.referencedOnlyByTests ? `${count}(テストのみ)` : count;
+  return declaration.referencedOnlyOutsideSrc ? `${count}(srcの外のみ)` : count;
 }
 
 function printListing(declarations, showReferences) {

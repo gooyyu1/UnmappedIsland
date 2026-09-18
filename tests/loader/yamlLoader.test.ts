@@ -548,6 +548,8 @@ object_defs:
     traits: [injury]
   woven_basket:
     traits: [unique]
+  splinter: {traits: [injury], bound_to_owner: false}
+  crate: {traits: [unique], stackable: true}
   stone: {tags: [item]}
 `;
     const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
@@ -557,6 +559,11 @@ object_defs:
     expect(def('woven_basket').stackable, 'trait側のstackable: falseが効く').toBe(false);
     expect(def('stone').boundToOwner, '既定は単独で在れる').toBe(false);
     expect(def('stone').stackable, '既定は束ねる').toBe(true);
+
+    // **食い違う側を渡さないと「どれか1つでも真なら真」は見えない。** 片方しか真でない入力だけでは、
+    // 合成が OR でも「自分自身で上書き」でも同じ答えになる。`stackable` の真は「束ねない」の側。
+    expect(def('splinter').boundToOwner, '自分自身のfalseはtrait由来の真を消さない').toBe(true);
+    expect(def('crate').stackable, '自分自身のtrueはtrait由来の「束ねない」を消さない').toBe(false);
   });
 
   it('art_by_stageが指さないプロパティの段がartを宣言しているとエラーになる', () => {

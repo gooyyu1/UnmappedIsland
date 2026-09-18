@@ -29,6 +29,16 @@ function placed(): string[] {
   return readdirSync(resolve(REPO, '.claude/hooks')).filter((name) => name.endsWith('.sh'));
 }
 
+/**
+ * そのコマンド文字列が名指ししているスクリプトの名前（パスの最後の要素）。
+ *
+ * **名前で突き合わせる。** 文字列の含有で引くと、**名前が別の名前の接尾辞になっているフック**
+ * （`x.sh` と `xx.sh`）が互いを名乗ったことになり、登録されていないほうも「呼ばれている」と読まれる。
+ */
+function scriptNamesIn(command: string): readonly string[] {
+  return [...command.matchAll(/[\w.-]+\.sh/g)].map((match) => match[0]);
+}
+
 describe('.claude/hooks', () => {
   /**
    * `settings.json` はフックをパスで直に起動するので、POSIX側（クラウドのセッションはLinux）では
@@ -54,16 +64,16 @@ describe('.claude/hooks', () => {
    * 効いている」と読まれる（`policies.md`「「間違っているが動く」の扱い」）。
    */
   it('置いてあるフックは、全部 settings.json から呼ばれている', () => {
-    const commands = registered().join('\n');
-    const orphans = placed().filter((name) => !commands.includes(name));
+    const called = new Set(registered().flatMap(scriptNamesIn));
+    const orphans = placed().filter((name) => !called.has(name));
 
     expect(orphans, `settings.json から呼ばれていない:\n${orphans.join('\n')}`).toEqual([]);
   });
 
   /** 逆向き。登録だけが残ると、**フックが1本まるごと走らないのに何も鳴らない。** */
   it('settings.json が指すフックは、全部実在する', () => {
-    const names = placed();
-    const missing = registered().filter((command) => !names.some((name) => command.includes(name)));
+    const names = new Set(placed());
+    const missing = registered().filter((command) => !scriptNamesIn(command).some((name) => names.has(name)));
 
     expect(missing, `置き場に無いフックを指している:\n${missing.join('\n')}`).toEqual([]);
   });
