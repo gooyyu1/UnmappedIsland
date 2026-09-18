@@ -17,8 +17,13 @@ import { CellDef, SlotDef } from '../domain/SlotDef';
 import type { DeclaredNumber } from '../domain/DeclaredNumber';
 import { ReferenceScope } from '../domain/ReferenceRoot';
 
-/** 廃止したキーと、その内容を今どこへ書くか。黙って無視すると、効いているつもりの宣言が通ってしまう。 */
-const RETIRED_KEYS: readonly (readonly [string, string])[] = [
+/**
+ * 廃止したキーと、その内容を今どこへ書くか。黙って無視すると、効いているつもりの宣言が通ってしまう。
+ *
+ * **文書がこの綴りを現役のキーとして書いていないかも、ここから引いて検査する**
+ * （`tests/docs/retiredSlotKeys.test.ts`）——YAML を止めるだけでは、読んで書く側の手前に何も無い。
+ */
+export const RETIRED_SLOT_KEYS: readonly (readonly [string, string])[] = [
   ['accepts', "枠ごとの'cell'/'cells'の'accept'"],
   ['unit_capacity', "枠の数を表す'cell_count'"],
   ['fixed_positions', "枠の数を表す'cell_count'（数を決めれば位置も安定する）"],
@@ -40,7 +45,7 @@ export function parseSlot(
   const slotGlobalId = loader.slotNames.intern(slotName);
 
   // 廃止キーを先に見る。未知キーとして弾くと、その内容を今どこへ書くかを言えない。
-  for (const [key, replacement] of RETIRED_KEYS)
+  for (const [key, replacement] of RETIRED_SLOT_KEYS)
     if (node.has(key))
       throw new YamlLoadError(
         `${context}: '${key}'は廃止されました。${replacement}で表します（SlotSystem.md 2節）。`,
