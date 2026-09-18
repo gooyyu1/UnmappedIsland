@@ -30,6 +30,8 @@ const WATCHED = [
   join('agent-ops', 'prompts', 'analysis-trend-prompt.md'),
   join('agent-ops', 'prompts', 'patrol-prompt.md'),
   join('agent-ops', 'prompts', 'policy-cycle-prompt.md'),
+  join('agent-ops', 'prompts', 'refs-prompt.md'),
+  join('agent-ops', 'ref-audit.md'),
   join('docs', 'ParallelAgents.md'),
   join('tests', 'scripts', 'boardMove.test.ts'),
   join('tests', 'scripts', 'boardRound.test.ts'),

@@ -102,7 +102,7 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
   const terrain = statsReport('terrain.yaml');
   const torchCostMinutes = cell(balance, 'object_costs', { object: 'torch' }, 'total_minutes');
 
-  it('灯っているあいだは、どの土地のどの時刻でも行動が開く（嵐の屋外の採取だけが閉じる）', () => {
+  it('灯っているあいだは、どの土地のどの時刻でも行動が開く（嵐の屋外の採取は今も閉じる）', () => {
     const rows = activityHoursOf(codex, everyWeatherEqually(codex), torchEv);
     expect(rows.length, '土地が1つも出ない').toBeGreaterThan(0);
 

@@ -4,10 +4,12 @@ import { describe, expect, it } from 'vitest';
 import { commentsOnly } from '../../scripts/codeComments.mjs';
 import { promptBodies, promptBody } from '../../scripts/daemon/prompt-body.mjs';
 import {
+  COMMENTED_EXTENSIONS,
   isMarkRuleDoc,
   isVerbatimRecord,
   trackedDocs,
   trackedFiles,
+  trackedRefSources,
 } from '../../scripts/docScope.mjs';
 import { declaresWholeDocument, WHOLE_DOCUMENT_CONFIRMED } from '../../scripts/docStatus.mjs';
 import { githubSlugs } from '../../scripts/githubSlugs.mjs';
@@ -144,15 +146,13 @@ function isOperationalDoc(rel: string): boolean {
 }
 
 /**
- * コメントの印（`//` か `#` か）を {@link commentsOnly} が知っている形式。**ここに挙がっていない
- * 形式は、コメントを持っていても読めない。** 綴りが外れても他の形式で緑になるので、実在は
- * 検査で留める。
- */
-const COMMENTED_EXTENSIONS = ['.ts', '.mts', '.mjs', '.js', '.sh', '.py', '.yaml', '.yml'];
-
-/**
- * コメントを書ける形式の、追跡しているソース全部。**節番号の参照（{@link REF_FILES}）も、
- * コメントのMarkdownリンクも、ここから絞って作る。**
+ * コメントを書ける形式の、追跡しているソース全部。**コメントのMarkdownリンクはここから絞って
+ * 作る**（節番号の参照は {@link REF_FILES}——**同じ形式の一覧から、あちらも作られる**）。
+ *
+ * **形式の一覧を持っているのは [`docScope.mjs`](../../scripts/docScope.mjs)**（`COMMENTED_EXTENSIONS`）
+ * ——{@link REF_FILES} を作る側がそこに在るので、別に持つと片方だけが新しい綴りを知らないまま緑になる。
+ * **ここに挙がっていない形式は、コメントを持っていても読めない。** 綴りが外れても他の形式で緑に
+ * なるので、実在は検査で留める。
  *
  * **在り処を列挙せず、形式で絞る**（{@link TRACKED_DOCS} と同じ理由）——フォルダと拡張子を
  * 数え上げると、**足した日にしか更新されない一覧**が射程を決めることになり、新しい置き場も
@@ -170,14 +170,11 @@ const COMMENTED_SOURCES = trackedFiles(ROOT).filter((rel) =>
 /**
  * 参照を検査する対象。ドキュメント自身と、節番号でドキュメントを指すコード・データ。
  *
- * `tools/**` の JSON はコメントを持たない（{@link COMMENTED_SOURCES} に入らない）が、宣言の値が
- * 節番号で仕様を指すので、ここには要る。
+ * **絞りは [`docScope.mjs`](../../scripts/docScope.mjs) が持つ1つ**——**指し先の中身まで読む係**
+ * （[`refAudit.mjs`](../../scripts/daemon/refAudit.mjs)）**が同じ集合から範囲を出す**ので、別に持つと、
+ * 実在は見られているのに中身は誰も読んでいない置き場が黙って生える（逆も同じ）。
  */
-const REF_FILES = [...TRACKED_DOCS, ...COMMENTED_SOURCES, ...listFiles('tools', ['.json'])].filter(
-  (rel) =>
-    !rel.startsWith(join('tests', 'docs')) && // 本テスト自身の例・正規表現は対象外
-    !isVerbatimRecord(rel),
-);
+const REF_FILES = trackedRefSources(ROOT);
 
 /**
  * コードフェンスの外の各行と、原文での行番号。`text` はインラインコードも除いた本文
@@ -428,33 +425,15 @@ for (const rel of REF_TARGETS.filter((target) => !isVerbatimRecord(target))) {
 }
 
 /**
- * 裸の「N節」を `GameElementDefinition.md` へ落とし込むのを、まだ許す文書。
+ * 裸の「N節」が `GameElementDefinition.md` まで落ちてよいファイルか。**コード・YAMLだけが落ちる**
+ * （そちらの既定。DocumentStyle.md 5節）。
  *
- * **文書の裸の「N節」は自文書の節**（DocumentStyle.md 5節）で、文書名の言及から離れた場所で他の
- * 文書の節を番号だけで指すことはできない。その落とし込みは**コード・YAMLのための既定**なので、
- * 文書に効かせると「4節」と「7.2節」が同じ形で別の文書を指す（読み手には見分けが付かない）。
- *
- * ここに在るのは、その形がまだ残っている文書。落とし込みを外すと今日ある参照が赤くなるので、
- * 書き直すまでの据え置きで、**新しく生えるほうだけを止める**。書き直しは
- * [#2071](https://github.com/gooyyu1/UnmappedIsland/issues/2071)。
- */
-const GRAMMAR_FALLBACK_PENDING: readonly string[] = [
-  join('agent-ops', 'analysis', '2026-09-06-backfill.md'),
-  join('docs', 'engine', 'ActionSystem.md'),
-  join('docs', 'engine', 'ContainerSystem.md'),
-  join('docs', 'engine', 'ExplorationSystem.md'),
-  join('docs', 'engine', 'HuntingSystem.md'),
-  join('docs', 'engine', 'SkillSystem.md'),
-  join('docs', 'engine', 'TrapSystem.md'),
-  join('docs', 'ui', 'CardView.md'),
-];
-
-/**
- * 裸の「N節」が `GameElementDefinition.md` まで落ちてよいファイルか。**コード・YAMLは常に落ちる**
- * （そちらの既定。DocumentStyle.md 5節）。文書は据え置きのものだけ。
+ * **文書の裸の「N節」は自文書の節**で、文書名の言及から離れた場所で他の文書の節を番号だけで
+ * 指すことはできない。落とし込みを文書へ効かせると「4節」と「7.2節」が同じ形で別の文書を指す
+ * （読み手には見分けが付かない）。
  */
 function fallsBackToGrammar(rel: string): boolean {
-  return !isRefTarget(rel) || GRAMMAR_FALLBACK_PENDING.includes(rel);
+  return !isRefTarget(rel);
 }
 
 /** その文書が番号 `num` の節を持つか。 */
@@ -512,12 +491,9 @@ function brokenLinkAnchorsIn(rel: string, source: string): string[] {
  * **原文をそのまま読む。** 見るのは `.md` 以外も含む（{@link REF_FILES}）ので、Markdownの囲みで
  * 削れない——フェンスの中のYAMLコメントも実在の節を指している。
  */
-function brokenNumberedRefsIn(
-  rel: string,
-  source: string,
-  grammarFallback: boolean = fallsBackToGrammar(rel),
-): string[] {
+function brokenNumberedRefsIn(rel: string, source: string): string[] {
   const broken: string[] = [];
+  const grammarFallback = fallsBackToGrammar(rel);
   const tokenPattern =
     /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?|(同\s*)?(\d+(?:\.\d+)*)(?:\s*[〜～]\s*(\d+(?:\.\d+)*))?\s*節/g;
   const resolves = (base: string, nums: readonly string[]): boolean => {
@@ -1020,18 +996,6 @@ describe('ドキュメントの参照', () => {
     expect(brokenNumberedRefsIn(rel, `${grammarOnly as string}節`)).toHaveLength(1);
     const named = `[\`GameElementDefinition.md\`](./GameElementDefinition.md) ${grammarOnly as string}節`;
     expect(brokenNumberedRefsIn(rel, named)).toEqual([]);
-  });
-
-  it('据え置きの一覧に、もう落とし込みの要らない文書が残っていない', () => {
-    // 据え置きは書き直すまでの措置なので、**要らなくなったら落ちる**。残っていると、次に裸で
-    // 指した者がその行を手本にする。
-    const stale = GRAMMAR_FALLBACK_PENDING.filter(
-      (rel) => brokenNumberedRefsIn(rel, read(rel), false).length === 0,
-    );
-    expect(
-      stale,
-      `据え置きの一覧に、もう文法書への落とし込みが要らない文書が残っている:\n${stale.join('\n')}`,
-    ).toEqual([]);
   });
 
   it('暫定を表す語の照合が、他の語の一部を拾わない', () => {
