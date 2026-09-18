@@ -38,12 +38,19 @@ export interface CheckValuesDeps extends SurveyValuesDeps {
   now?: Date;
   /** 死んだまま、これだけ経ってから告げる（時間）。 */
   grace?: number;
+  /** クラウドへ頼み直すまでの間隔（時間）。 */
+  retell?: number;
+  /** クラウドのセッションへ、同じ題・同じ本文で置かせに行く。頼めたら `true`。 */
+  ask?: (body: string) => boolean;
   dryRun?: boolean;
   say?: (line: string) => void;
 }
 
 /** 告げ先の題。**2本目を作らない鍵はこれだけ。** */
 export const TITLE: string;
+
+/** クラウドのセッションへ渡すひな形に、告げる本文を埋めたもの。 */
+export function cloudPrompt(body: string): string;
 
 export function surveyValues(deps?: SurveyValuesDeps): Promise<CheckedValue[]>;
 
