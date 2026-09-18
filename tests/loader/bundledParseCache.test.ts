@@ -95,12 +95,14 @@ describe('同梱ぶんのパース結果の控え', () => {
    * ノードを書き換えても落ちない。
    *
    * **型では塞げない。** `yaml`のDocumentは読む口と書き換える口が同じ型に在り、`Readonly`を被せても
-   * `Node.set`・`Node.delete`は通る。ので、同梱ぶんを丸ごと通して字面で見る——同梱ぶんは
-   * どのルートキーも、どのparse関数も通るので、書き換える関数が入ればここで落ちる。
+   * `Node.set`・`Node.delete`は通る。ので、同梱ぶんを丸ごと通して字面で見る。
+   *
+   * **通るのは同梱ぶんが使っているルートキーだけ。** patch（`patch_object_defs`）は同梱ぶんに1つも
+   * 無いので、そちらは上の2本が受け持つ。同梱ぶんを素材に使うのは、**新しい節が同梱ぶんで使われた
+   * 時点でここの範囲も一緒に広がる**から——自前の宣言を書くと、新しいparse関数はそこを通らない。
    *
    * **同梱ぶんを読んでもYAMLの中身には依らない**（見るのは通す前と後の字面の差だけ）ので、定義を
-   * 直してこの試験が赤くなることはない。素材に同梱ぶんを使うのは、**節が増えたときに一緒に広がる
-   * のがこれだけ**だから——自前の宣言を書くと、新しいparse関数はそこを通らない。
+   * 直してこの試験が赤くなることはない。
    */
   it('同梱ぶんを丸ごと読んでも、渡したDocumentは1つも書き換わらない', () => {
     const files = [...WORLD_CODEX_TEXTS.keys()];
@@ -111,7 +113,9 @@ describe('同梱ぶんのパース結果の控え', () => {
 
     const loader = new WorldCodexYamlLoader();
     files.forEach((file, index) => loader.loadDocument(file, docs[index]));
-    loader.buildAndReset();
+    // 読み込みが黙って何もしなくなったら「書き換えていない」は自明に成り立つので、組み上がった
+    // ものが空でないことも見る。
+    expect([...loader.buildAndReset().objects].length, '読み込みが何も読めていない').toBeGreaterThan(0);
 
     expect(
       files.filter((_, index) => String(docs[index]) !== before[index]),

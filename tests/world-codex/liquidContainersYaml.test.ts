@@ -703,8 +703,9 @@ describe('満ちた器を断る口の宣言順', () => {
     const tooLate: string[] = [];
 
     for (const def of codex.objects) {
-      // 見るのは重ねて起こす操作の並び（ObjectDef.dragTriggers）。どれを画面へ出すかを決めるのは
-      // この並びで、宣言順がそのまま残っている（WorldObject.refusedCombinationsWith）。
+      // 見るのは重ねて起こす操作の並び（ObjectDef.dragTriggers）。宣言順がそのまま残っており、
+      // 断る口が複数あるときにどれが出るかはこの並びの先頭で決まる——成立するものが両向きに1つも
+      // 無いときだけ断る口が出る（src/game/view/cardOperations.ts の combinationBetween）。
       const names = def.dragTriggers.map((trigger) => trigger.interaction.name);
       names.forEach((name, emptyIndex) => {
         if (!name.endsWith(INTO_EMPTY)) return;
