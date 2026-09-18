@@ -552,7 +552,7 @@ describe('board-round.mjs', () => {
 
   // **素性を引けなかったのも答えではない。** `KEPT` と同じ扱いにすると、通信が落ちたその周かぎりで
   // その相手が二度と渡されなくなる（issue #1865）。
-  it('素性を引けずに畳めなかったら、指紋を残さない', async () => {
+  it('素性を引けずに畳めなかったら、指紋を残さず、理由ごとログへ出す', async () => {
     const result = await playRound({
       sessions: [idle('session_a', 'task-8')],
       issueStates: { 8: 'CLOSED' },
@@ -560,6 +560,8 @@ describe('board-round.mjs', () => {
     });
 
     expect(result.ledger).toEqual({});
+    // **読む人へ届くところまで見る。** 畳む側が組み立てた行は、ここを通らなければ誰も読まない。
+    expect(result.log).toContain('UNKNOWN session_a: 失敗: HTTP 502');
   });
 
   // 返すのはコメントで、ラベルは `board-labels.yml` が付ける（2.15.3）。**盤面がラベルを直に
