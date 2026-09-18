@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { passiveWritesToProperty, writesToProperty } from '../../src/codex-viewer/describe/effectQueries';
+import { writesToProperty } from '../../src/codex-viewer/describe/effectQueries';
 import type {
   AddReading,
   ConditionalReading,
@@ -10,6 +10,11 @@ import type {
   TransferReading,
 } from '../../src/domain/EffectReader';
 import type { ObjectRefReading } from '../../src/domain/ObjectRef';
+import type {
+  PassiveDeclaration,
+  PassivePropertyReading,
+  PassiveReader,
+} from '../../src/domain/PassiveReader';
 import type { PropertyDef, RangeEventLabel } from '../../src/domain/PropertyDef';
 import type { ReferenceRoot } from '../../src/domain/ReferenceRoot';
 import type { PropertyGlobalId, SlotGlobalId } from '../../src/domain/GlobalId';
@@ -22,8 +27,9 @@ import { bundledCodex } from '../support/worldCodexFiles';
  * 並べ直さない（`SlotSystem.md` 6節）。それで済むのは「同種は同じ速度で変化する」から——**時間経過が
  * 動かす値なら、束ねた札の相対順は変わらない。**
  *
- * 破るのは、時間経過以外の書き手。操作の効果（`set`/`add`/`transfer`）も、操作の間だけ効く持続効果も、
- * **束の1枚にだけ当たる**ので、当たった札はそこから順序の外れた位置に居座る。`range` の端のイベントは
+ * 破るのは、時間経過以外の書き手。操作の効果（`set`/`add`/`transfer`）も、操作の間だけ効く積み上げも、
+ * **束の1枚にだけ当たる**ので、当たった札はそこから順序の外れた位置に居座る（**可逆な寄与（`modify`）は
+ * 除く**——並び順が読むのは実体値のほうなので、寄与が乗っている間も並びは動かない）。`range` の端のイベントは
  * 端へ倒すだけなら順序を保つ（端に着いた札は元から並びの端に居る）が、**端から内側へ戻す**ものは
  * 1枚だけを列の途中へ跳ばすので同じように破る。ここが赤くなったら、並べ直さない割り切り（同 7節）が
  * その宣言では成り立っていない。
@@ -90,6 +96,52 @@ describe('スタックの並び順が見る値', () => {
   }
 
   /**
+   * 操作の間だけ効く持続効果が、並び順の値の**実体値**を動かすか。`modify`（可逆な寄与）は数えない
+   * ——並び順が読むのは実体値のほう（`StackOrderDef.insertionIndexOf`）なので、寄与が乗っている間も
+   * 並びは動かない。
+   */
+  class MovesRealValueWhileActing implements PassiveReader {
+    found = false;
+
+    private readonly propertyGlobalId: PropertyGlobalId;
+    private readonly ownedByDeclarer: boolean;
+
+    constructor(propertyGlobalId: PropertyGlobalId, ownedByDeclarer: boolean) {
+      this.propertyGlobalId = propertyGlobalId;
+      this.ownedByDeclarer = ownedByDeclarer;
+    }
+
+    modify(): void {}
+
+    accumulate(reading: PassivePropertyReading): void {
+      if (this.writesToOrderingValue(reading.target, reading.propertyGlobalId)) this.found = true;
+    }
+
+    transfer(reading: TransferReading): void {
+      if (
+        this.writesToOrderingValue(reading.from, reading.fromPropertyGlobalId) ||
+        this.writesToOrderingValue(reading.to, reading.toPropertyGlobalId) ||
+        reading.linked.some((linked) => this.writesToOrderingValue(linked.target, linked.propertyGlobalId))
+      )
+        this.found = true;
+    }
+
+    private writesToOrderingValue(target: ReferenceRoot, propertyGlobalId: PropertyGlobalId): boolean {
+      return propertyGlobalId === this.propertyGlobalId && (this.ownedByDeclarer || target !== 'self');
+    }
+  }
+
+  function actingPassiveMovesRealValue(
+    declaration: PassiveDeclaration,
+    propertyGlobalId: PropertyGlobalId,
+    ownedByDeclarer: boolean,
+  ): boolean {
+    const reader = new MovesRealValueWhileActing(propertyGlobalId, ownedByDeclarer);
+    declaration.readBy(reader);
+    return reader.found;
+  }
+
+  /**
    * 見逃してよい端の値。**並び順の値そのものが自分の端で走らせるイベント**のときだけ、その端の値へ
    * 倒すぶんを除く。別のプロパティの端で並び順の値を書くものは、書く先がたまたま宣言元の端と同じでも
    * 1枚だけを動かすので除かない（この世界の軸はどれも0〜100なので、同値は普通に起きる）。
@@ -136,7 +188,7 @@ describe('スタックの並び順が見る値', () => {
           const writes =
             writesToProperty(interaction, propertyGlobalId, ownedByDeclarer) ||
             interaction.passiveDeclarations.some((passive) =>
-              passiveWritesToProperty(passive, propertyGlobalId, ownedByDeclarer),
+              actingPassiveMovesRealValue(passive, propertyGlobalId, ownedByDeclarer),
             );
           if (writes) found.push(`${ordered.name}: ${writer.name}.${interaction.name}`);
         }
@@ -173,6 +225,28 @@ ${writer}
 
   it('時間経過だけが動かす値は挙げない（端の既定のクランプも数えない）', () => {
     expect(probe('')).toEqual([]);
+  });
+
+  it('操作の間だけ効く可逆な寄与は挙げない（実体値が動かないので並びも動かない）', () => {
+    expect(
+      probe(`    interactions:
+      shade:
+        trigger: menu
+        duration: 10
+        passives:
+          - modify: {self: {freshness: 10}}`),
+    ).toEqual([]);
+  });
+
+  it('操作の間だけ効く積み上げは挙げる（実体値が1枚だけ動く）', () => {
+    expect(
+      probe(`    interactions:
+      soak:
+        trigger: menu
+        duration: 10
+        passives:
+          - add: {self: {freshness: -5}}`),
+    ).toEqual(['log: log.soak']);
   });
 
   it('操作が書き換える値は挙げる', () => {

@@ -55,12 +55,7 @@ describe('地形生成の宣言に足した未知キー', () => {
    */
   function passesLoad(generationYaml: string): boolean {
     try {
-      new WorldCodexYamlLoader().load(GENERATION_PATH, generationYaml);
-    } catch (error) {
-      expect(error).toBeInstanceOf(YamlLoadError);
-      return false;
-    }
-    try {
+      // 地形生成を先に読むので、パースで落ちる壊し方はここで終わり、他のファイルの読み込みへ進まない。
       const loader = new WorldCodexYamlLoader().load(GENERATION_PATH, generationYaml);
       for (const [label, document] of otherDocuments()) loader.loadDocument(label, document);
       loader.buildAndReset();
