@@ -191,10 +191,13 @@ describe('判断の履歴', () => {
   // 覆った解釈に添える「どこで覆ったか」は、**その記録を指す `[[...]]` だけ**が運んでいる
   // （SKILL.md「覆った解釈には、覆した記録を指す」）。指し先が消えれば、覆った断りだけが残って
   // 裏を取る手立てが無くなり、次の棚卸しがその解釈を生きているものとして畳む。
+  //
+  // **見るのは解釈の節だけ。** 原文の側に同じ綴りが現れても、そこは書き換えないと決めてある場所
+  // （`docs/DocumentStyle.md` 10節）なので、赤にすると緑へ戻す手が原文の改変しか無くなる。
   it('記録どうしの相互参照が、実在の記録を指す', () => {
     const names = new Set(files.map(({ rel }) => basename(rel, '.md')));
     const broken = files.flatMap(({ rel, text }) =>
-      [...text.matchAll(CROSS_REFERENCE)]
+      [...(text.split(`## ${SECTIONS[1]}`)[1] ?? '').matchAll(CROSS_REFERENCE)]
         .filter(([, slug]) => !names.has(slug))
         .map(([, slug]) => `${rel}: [[${slug}]]`),
     );
