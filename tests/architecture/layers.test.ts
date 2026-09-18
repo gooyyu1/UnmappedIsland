@@ -181,6 +181,37 @@ function structureNames(doc = structureDoc()): readonly string[] {
   return structureRows(doc).map((line) => line.split('|')[1].replaceAll('*', '').trim());
 }
 
+/** 3節の判定のうち、見出しが `label` の項（次の項が始まる手前まで）。 */
+function judgementBullet(label: string, doc = structureDoc()): string {
+  const section = doc.split(/^## /m).find((part) => part.startsWith('3. '));
+  if (section === undefined) throw new Error('CodeStructure.md の3節が見つかりません');
+  const bullet = section.split(/^- /m).find((part) => part.startsWith(`**${label}**`));
+  if (bullet === undefined) throw new Error(`CodeStructure.md 3節に「${label}」の項がありません`);
+  return bullet;
+}
+
+/** そのファイルが意匠（`looks/`）から輸入している名前。型として輸入するものも数える。 */
+function looksImportsOf(rel: string): readonly string[] {
+  const source = readFileSync(join(ROOT, rel), 'utf-8');
+  return [...source.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"][^'"]*looks\/[^'"]*['"]/g)]
+    .flatMap((match) => match[1].split(','))
+    .map((name) =>
+      name
+        .trim()
+        .split(/\s+as\s+/)[0]
+        .trim(),
+    )
+    .filter((name) => name !== '');
+}
+
+/** そのファイルの、名前付き関数1つの本体（宣言から、行頭の `}` まで）。 */
+function functionBodyIn(rel: string, name: string): string {
+  const source = readFileSync(join(ROOT, rel), 'utf-8');
+  const body = new RegExp(`\\bfunction ${name}\\b[\\s\\S]*?\\n\\}`).exec(source);
+  if (body === null) throw new Error(`${rel} に ${name} の宣言が見つかりません`);
+  return body[0];
+}
+
 /**
  * 2節の依存の図が並べるノードのラベル。
  *
@@ -204,8 +235,13 @@ describe('層の境界', () => {
   it('src/ui はこのゲームへ到達しない', () => {
     // 汎用部品だけを置く場所（CodeStructure.md 1節）。ゲームの語彙も意匠も知らないので、ここにある
     // ものはこのゲームを消しても変わらない。
+    //
+    // **型として輸入するのも数える。** Phaserと違って、ここで守っているのは実行時の依存ではなく
+    // 「このゲームを消しても1文字も変わらない」こと——`ScreenMetrics`を引数に取った時点で、その
+    // ファイルはこのゲームの意匠が在ることを前提にする（u単位を直す口だけを名乗る`UnitScale`が
+    // 別に在るのはこのため）。
     expect(
-      routesFrom('src/ui', (target) => target.startsWith('src/game/')),
+      routesFrom('src/ui', (target) => target.startsWith('src/game/'), true),
       'この経路のどこかでゲームを覗いている',
     ).toEqual([]);
   });
@@ -338,6 +374,36 @@ describe('層の境界', () => {
 
     expect([...nodes].sort(), '図のノードと表の行が食い違っている').toEqual([...structureNames()].sort());
     expect(nodes.length).toBeGreaterThan(3);
+  });
+
+  it('汎用部品かどうかの判定例が、現物と合っている', () => {
+    // 3節は現物を指して判定の仕方を教える。**指した先を読む**——意匠を直に引いていると挙げたほうは
+    // 本当に引いており、同じファイルに居るだけだと挙げたほうは、その関数の中で意匠に触れていない。
+    // 例が現物とずれたままだと、読み手はここで判定の仕方を学べない（issue #1961・#1986）。
+    //
+    // **挙げた名前がそのファイルに在ること自体は見ない**——それは文書の規約として
+    // `tests/docs/docMemberReferences.test.ts` が全文へ課しており、ここが足すのは
+    // 「引いている／引いていない」だけ。
+    const bullet = judgementBullet('汎用部品か部品か');
+    const [part, host] = [...bullet.matchAll(/`(src\/[^`]+\.ts)`/g)].map((match) => match[1]);
+    const neighbour = /`src\/[^`]+\.ts`\s*の\s*`(\w+)`/.exec(bullet)?.[1];
+    expect([part, host, neighbour], '判定例がファイルと名前を挙げていない').not.toContain(undefined);
+
+    const drawn = looksImportsOf(part);
+    const quoted = [...bullet.matchAll(/`([A-Z][A-Z_]+)`/g)].map((match) => match[1]);
+    expect(quoted.length, '意匠から引いていると挙げた名前が無い').toBeGreaterThan(0);
+    expect(
+      quoted.filter((name) => !drawn.includes(name)),
+      `${part} は、この名前を意匠から輸入していない`,
+    ).toEqual([]);
+
+    const looks = looksImportsOf(host);
+    expect(looks.length, `${host} が意匠を輸入していない（同居の例にならない）`).toBeGreaterThan(0);
+    const body = functionBodyIn(host, neighbour!);
+    expect(
+      looks.filter((name) => new RegExp(`\\b${name}\\b`).test(body)),
+      `${neighbour} がこの意匠を読んでいる（同居しているだけ、が嘘になる）`,
+    ).toEqual([]);
   });
 
   it('CRLFの作業ツリーでも、表の行と図のノードを同じに読む', () => {

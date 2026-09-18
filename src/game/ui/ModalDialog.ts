@@ -1,8 +1,8 @@
 import type Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import type { Button } from './Button';
-import { addTextButton } from './Button';
+import type { Button } from '../../ui/Button';
+import { addTextButton } from './TextButton';
 import type { CardContent } from './Card';
 import { Card } from './Card';
 import { cardFace } from './cardFace';
