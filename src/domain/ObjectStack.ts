@@ -14,6 +14,12 @@ export class ObjectStack {
   private readonly objectDefGlobalId: ObjectGlobalId;
 
   private readonly _members: WorldObject[];
+
+  /**
+   * このスタックの中身そのもの（写しではない）。**出入りのたびに書き換わる**ので、読んだ後も顔ぶれを
+   * 保ちたい側は自分で写し取る。位置を要さない読み手が写しを欲しいだけなら、写して返す口が
+   * Slot側にある（SlotSystem.md 1節）。
+   */
   get members(): readonly WorldObject[] {
     return this._members;
   }

@@ -205,4 +205,34 @@ object_defs:
       expect(names(body, 'body', 'parts'), '心臓は挙がらない').toEqual([['prosthetic'], ['helmet']]);
     });
   });
+
+  /**
+   * `Slot.cells` が渡すもの（SlotSystem.md 1節）。並びは写し・セルは実体という組み合わせなので、
+   * どちらへ倒しても読み手の見えるものが変わる。
+   */
+  describe('cellsが渡すもの', () => {
+    const codex = build(`
+object_defs:
+  yard:
+    slots:
+      pile: {}
+  stone: {}
+`);
+
+    it('並びは読んだ時点の写しで、セルそのものは実体', () => {
+      const session = new WorldSession(codex);
+      const yard = session.createObject(codex.objectNames.getId('yard'));
+      const pile = yard.getSlot(codex.slotNames.getId('pile'));
+      const stone = session.createObject(codex.objectNames.getId('stone'));
+      stone.moveToSlotOrRejection(pile);
+
+      const cells = pile.cells;
+      // 枠が増えるスロットなので、中身が消えると枠ごと取り除かれる（前詰め）。
+      stone.destroy();
+
+      expect(cells, '写しなので、読んだ後に枠が減っても並びは短くならない').toHaveLength(1);
+      expect(cells[0].isEmpty, 'セルは実体なので、中身が出ていったことはそのまま見える').toBe(true);
+      expect(pile.cells, '今のスロットには枠が残っていない').toHaveLength(0);
+    });
+  });
 });

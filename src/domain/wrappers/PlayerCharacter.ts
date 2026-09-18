@@ -26,15 +26,15 @@ export class PlayerCharacter extends ObjectWrapper {
   }
 
   /**
-   * 手持ちスロットの各セルの中身（空きセルは空配列、先頭が代表）。固定枠スロットのため、
-   * 配列長は常にcellCountと等しく、位置＝添字が安定する（SlotSystem.md 3節）。
+   * 手持ちスロットの各セルの中身の写し（空きセルは空配列、先頭が代表。SlotSystem.md 1節）。固定枠
+   * スロットのため、配列長は常にcellCountと等しく、位置＝添字が安定する（同 3節）。
    * スロット自体を持たないcodexでは空配列。
    *
    * 代表だけを返すhandでは見えない面——同じ枠に何個重なっているかは、こちらでしか数えられない。
    */
   get handStacks(): readonly (readonly WorldObject[])[] {
     const slot = this.instance.tryGetSlot(this.handSlotId);
-    return slot === undefined ? [] : slot.cells.map((cell) => cell.stack?.members ?? []);
+    return slot === undefined ? [] : slot.cells.map((cell) => [...(cell.stack?.members ?? [])]);
   }
 
   /**

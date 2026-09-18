@@ -103,7 +103,11 @@ export class CellLayout {
     return this.def.cellCountPolicy !== 'grows';
   }
 
-  /** セルの並びそのもの。位置＝添字。 */
+  /**
+   * セルの並び。位置＝添字。**並びは読んだ時点の写しだが、セルそのものは実体**——枠が増えても読んだ
+   * 並びは伸びず、セルの中身の出入りはそのまま見える（同じ枠かをセルの同一性で見る読み手が居る。
+   * indexOfStack）。
+   */
   get cells(): readonly SlotCell[] {
     return [...this._cells];
   }
@@ -122,10 +126,14 @@ export class CellLayout {
     return contents;
   }
 
-  /** 中身を、積み重なっているまとまりごとに分けたもの（空セルは含まない。先頭が代表）。 */
+  /**
+   * 中身を、積み重なっているまとまりごとに分けたもの（空セルは含まない。先頭が代表）。**contentsと
+   * 同じく、読んだ時点の顔ぶれを写して返すのは契約**（SlotSystem.md 1節）——まとまりの内側も写す
+   * ので、受け取った側は辿っている途中でスタックの出入りがあっても構わない。
+   */
   get stacks(): readonly (readonly WorldObject[])[] {
     const stacks: (readonly WorldObject[])[] = [];
-    for (const cell of this._cells) if (cell.stack !== undefined) stacks.push(cell.stack.members);
+    for (const cell of this._cells) if (cell.stack !== undefined) stacks.push([...cell.stack.members]);
     return stacks;
   }
 
