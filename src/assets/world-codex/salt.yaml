@@ -37,9 +37,9 @@ object_defs:
       # （行き先の座標に型が居ない組み合わせは候補にならない、9.9節）。生肉のような別ファイルの
       # 食べ物が軸を名乗れば、この操作は1行も変わらずにそちらへも効く。
       #
-      # **保存の腕の入口はこの1本だけ**——保たせる仕事のうち人が手を動かすのがここだけだからで、
-      # 干す手・燻す手を配り落としているのではない（docs/world/Skills.md 2.4節、
-      # docs/engine/SkillSystem.md 3.2.1節）。
+      # **保存の腕の入口はこの1本だけ**——干すのも燻すのも仕掛けて待つ形で、人の側に残るのは枠への
+      # 出し入れと燻し小屋へ薪をくべる手（smoking.yamlのadd_fuel）だけ。そのどれにも腕を配らないので、
+      # 腕を配れる手はここだけになる（docs/world/Skills.md 2.4節、docs/engine/SkillSystem.md 3.2.1節）。
       cure:
         trigger: {drag: {tag: perishable}}
         duration: {prop: cure_minutes}
