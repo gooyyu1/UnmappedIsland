@@ -8,7 +8,8 @@
 
 **カードは紙 → 絵 → 枠の 3 層**（1 節）で、**何を出すかはすべてワールド側の宣言から導きます**——
 状態バーはプロパティの `gauge` 宣言と `capacity`・`fill` から（8 節）、枠の色は種別の
-タグから（2 節）。UI 側の対応表は持ちません。UI 専用の宣言はプロパティの `gauge`（6.8 節）と、
+タグから（2 節）。UI 側の対応表は持ちません。UI 専用の宣言はプロパティの `gauge`
+（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.8 節）と、
 `status` タグ（[`StatusArea.md`](./StatusArea.md)）だけです。
 
 実装は `src/game/ui/Card.ts`（カード）と `src/game/ui/CardLane.ts`・`laneCells.ts`（枠）、色は
