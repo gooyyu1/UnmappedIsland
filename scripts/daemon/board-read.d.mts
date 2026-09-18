@@ -37,12 +37,13 @@ export const MERGED_CAP: number;
 export const FIRST_ISSUE_PULL: number;
 
 /**
- * 開いている issue を全部引く。上限に届いた回は広げて引き直すので、切られない。引けなければ
- * `undefined`。常設の盤を書く側もここを通す。
+ * 開いている issue を全部引く。上限に届いた回は広げて引き直すので、切られない。引けなかった周と
+ * 応答が読めなかった周は `undefined`（「1件も無い」とは別）。常設の盤と値の見張りもここを通す。
  */
 export function allOpenIssues(
   gh: (args: readonly string[], options?: { allowFail?: boolean }) => string | undefined,
   fields: string,
+  options?: { allowFail?: boolean },
 ): Record<string, unknown>[] | undefined;
 
 /**

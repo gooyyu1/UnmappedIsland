@@ -55,6 +55,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { callMeta, metaJson } from '../../.claude/ccr-meta.mjs';
+import { allOpenIssues } from './board-read.mjs';
 import { boardState } from './board-state.mjs';
 import { envKind, environmentIds, liveSessions } from './live-sessions.mjs';
 import { gh as runGh } from './spawn.mjs';
@@ -312,17 +313,15 @@ function deadBrief(due) {
  * **`--search` では引かない。** あちらは索引を引くので、**立てた直後はまだ出てこない**（2026-09-11
  * に実測。立てた issue を続けて検索して0件）——1本に畳む鍵が題なのに、引けない窓があると2本目が
  * 立つ。開いている issue を丸ごと引いて題で照らす。
+ *
+ * **丸ごとは [`board-read.mjs`](board-read.mjs) の `allOpenIssues` に任せる。** 自分で数を渡すと、
+ * 開いている issue がその数へ届いた日に**古い側が切られ**、当の issue がそこに居れば見つからない
+ * ——引けない窓と同じ形で2本目が立つ。
  */
 function openIssue(gh) {
-  const found = gh(['issue', 'list', '--state', 'open', '--limit', '300', '--json', 'number,title'], {
-    allowFail: true,
-  });
+  const found = allOpenIssues(gh, 'number,title', { allowFail: true });
   if (found === undefined) return undefined;
-  try {
-    return JSON.parse(found).find((issue) => issue.title === TITLE)?.number ?? null;
-  } catch {
-    return undefined;
-  }
+  return found.find((issue) => issue.title === TITLE)?.number ?? null;
 }
 
 /**

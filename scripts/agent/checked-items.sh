@@ -5,9 +5,9 @@
 #   gh issue list --state open --limit 300 --json number,labels,body |
 #     bash scripts/agent/checked-items.sh
 #
-# **渡した数と並んだ件数が返ったら、そこで切られている**——倍にして引き直す
-# （`agent-ops/github-access.md`「issue を読む・書く」）。切られるのは古い側なので、黙って切ると
-# 答えの付いた盤ごと消える。
+# **300は1回目に渡す数で、上限ではない。** 渡した数と並んだ件数が返ったら、そこで切られている
+# ので、倍にして引き直す（`agent-ops/github-access.md`「issue を読む・書く」）。切られるのは
+# 古い側なので、黙って切ると答えの付いた盤ごと消える。
 #
 # ## 判定を1つにする
 #

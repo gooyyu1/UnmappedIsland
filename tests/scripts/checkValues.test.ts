@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { FIRST_ISSUE_PULL } from '../../scripts/daemon/board-read.mjs';
 import { DISPATCH_TAGS, TITLE, checkValues, surveyValues } from '../../scripts/daemon/check-values.mjs';
 
 /**
@@ -45,6 +46,11 @@ interface World {
   readonly ledger?: Record<string, { since: string }>;
   /** 題で引ける、開いている issue の番号。 */
   readonly openIssue?: number;
+  /**
+   * 題で引ける issue より**新しい**、関わりのない開いた issue の数。1回で引きにいく数を越えると、
+   * `gh issue list` は古い側から切る——切られた側に居る issue は見つからない。
+   */
+  readonly newerIssues?: number;
   /** `gh issue list` が転ぶか（＝開いている issue を引けない周）。 */
   readonly listFails?: boolean;
   /** 畳まれていないセッション。省くと1本も立てていない形。 */
@@ -82,9 +88,15 @@ async function check(world: World = {}): Promise<Run> {
       if (args[0] === 'auth') return world.ghAuth === false ? undefined : '';
       if (args[0] === 'issue' && args[1] === 'list') {
         if (world.listFails === true) return undefined;
-        return JSON.stringify(
-          world.openIssue === undefined ? [] : [{ number: world.openIssue, title: TITLE }],
-        );
+        // **並びは本物と同じ作成の新しい順**で、`--limit` も実際に守る。守らないと、切られる形が
+        // 検査に出ないまま「題で引けた」だけを見ることになる。
+        const newer = Array.from({ length: world.newerIssues ?? 0 }, (_, index) => ({
+          number: 900_000 + index,
+          title: `関わりのない issue ${index}`,
+        }));
+        const open =
+          world.openIssue === undefined ? [] : [...newer, { number: world.openIssue, title: TITLE }];
+        return JSON.stringify(open.slice(0, Number(args[args.indexOf('--limit') + 1])));
       }
       return '';
     };
@@ -400,6 +412,20 @@ describe('check-values.mjs の告げ方', () => {
       living: [CLOUD],
       ledger: { BRIDGE_ENV: { since: LONG_AGO } },
       openIssue: 4242,
+    });
+
+    expect(ran(run, 'issue', 'edit')?.slice(0, 3)).toEqual(['issue', 'edit', '4242']);
+    expect(ran(run, 'issue', 'create')).toBeUndefined();
+  });
+
+  // **切られるのは古い側**なので、開いている issue が増えるほど、先に立てた告知のほうが先に消える
+  // ——引けない窓と同じ形で2本目が立つ。
+  it('開いている issue が1回で引きにいく数を越えていても、2本目を立てない', async () => {
+    const run = await check({
+      living: [CLOUD],
+      ledger: { BRIDGE_ENV: { since: LONG_AGO } },
+      openIssue: 4242,
+      newerIssues: FIRST_ISSUE_PULL,
     });
 
     expect(ran(run, 'issue', 'edit')?.slice(0, 3)).toEqual(['issue', 'edit', '4242']);

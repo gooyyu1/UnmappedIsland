@@ -99,12 +99,21 @@ export const FIRST_ISSUE_PULL = 300;
  *
  * **引けた数が渡した数と並んだ回は、その先がまだ在るかを `gh` が言わない**ので、倍にして引き直す。
  * 開いている issue は有限なので、渡す数が実数を越えた時点で止まる。
+ *
+ * **読めない応答も `undefined`。** 引けなかったことと「1件も無い」を混ぜると、呼び手はどちらも
+ * 空として読む——値の見張り（[`check-values.mjs`](check-values.mjs)）では、それがそのまま同じ題の
+ * 2本目になる。`options` はそのまま `gh` へ渡す（引けないことが答えになる呼び方の `allowFail`）。
  */
-export function allOpenIssues(gh, fields) {
+export function allOpenIssues(gh, fields, options) {
   for (let limit = FIRST_ISSUE_PULL; ; limit *= 2) {
-    const raw = gh(['issue', 'list', '--state', 'open', '--limit', String(limit), '--json', fields]);
+    const raw = gh(['issue', 'list', '--state', 'open', '--limit', String(limit), '--json', fields], options);
     if (raw === undefined) return undefined;
-    const issues = JSON.parse(raw);
+    let issues;
+    try {
+      issues = JSON.parse(raw);
+    } catch {
+      return undefined;
+    }
     if (issues.length < limit) return issues;
   }
 }

@@ -169,6 +169,24 @@ describe('開いている issue は、上限で切らずに全部引く', () => 
   it('1回で引きにいく数に届かなければ、引き直さない', () => {
     expect(readWith(FIRST_ISSUE_PULL - 1).limits).toEqual([FIRST_ISSUE_PULL]);
   });
+
+  // **引けなかったことと「1件も無い」を混ぜない。** 空として読むと、値の見張り
+  // （`check-values.mjs`）では同じ題の2本目がそのまま立つ。
+  it('応答が読めなかった周は、引けなかった周と同じに読む', () => {
+    const gh = (args: readonly string[]): string =>
+      args[0] === 'issue' ? '壊れた応答' : args[1] === 'graphql' ? '{"data":{}}' : '[]';
+    const board = readBoard({
+      gh,
+      sessions: () => [],
+      pendingDecisions: () => 0,
+      unsummarizedAnalyses: () => 0,
+      log: () => {},
+      now: new Date('2026-09-07T12:00:00Z'),
+      settleMinutes: 10,
+      taken: {},
+    });
+    expect(board).toBeUndefined();
+  });
 });
 
 describe('二次がまだ読んでいない分析の記録を数える（board-design.md 2.17.4）', () => {
