@@ -206,7 +206,7 @@ jobs:
             --remove-label 判断待ち --remove-label 収束せず --remove-label 却下
 
   # **盤面から頼まれて、前の差分に付いたままの結論の札を落とす**（[`board-move.mjs`](../../scripts/daemon/board-move.mjs)
-  # の `UNLABEL`、[`agent-ops/board-design.md`](../../agent-ops/board-design.md) 2.13.7）。下の
+  # の `UNLABEL`、[`agent-ops/board-design.md`](../../agent-ops/board-design.md) 2.13.7）。上の
   # `synchronized` は**出来事**で動くので、転んだ回は二度と来ない——**やり直す口がここに要る。**
   #
   # **盤面が自分で外さないのは、それが下の `unlabeled_by_hand` に「人が外した」と読まれるから。**

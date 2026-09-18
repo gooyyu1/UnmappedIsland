@@ -556,7 +556,9 @@ describe('board-labels.yml の冒頭の一覧', () => {
     return new Set(
       header
         .slice(0, end)
-        .map((line) => /^# - .*…[ ]*`([A-Za-z_]+)`$/.exec(line)?.[1])
+        // job 名に使える字はここで絞らない。絞ると、一覧に正しく書いた job が拾われないまま
+        // 「書き忘れ」として落ち、原因が読めない。
+        .map((line) => /^# - .*…[ ]*`([^`]+)`$/.exec(line)?.[1])
         .filter((name): name is string => name !== undefined),
     );
   }
