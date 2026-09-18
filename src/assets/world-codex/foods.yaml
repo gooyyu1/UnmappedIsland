@@ -330,6 +330,11 @@ object_defs:
     interactions:
       # 刻む。**料理の腕の入口**（docs/world/Skills.md 2.5節）で、火にかける手ではなくここが伸ばす。
       #
+      # **入口が今のところこの1本だけなのは、置ける相手がこの芋しか居ないから**——刻む・串に刺す・
+      # 皮を剥くはどれも料理が担う手なので、**担う手が1つしか無い火や保存とは1本である理由が違う**
+      # （同節、docs/engine/SkillSystem.md 3.2.1節）。上の型のコメントの2本の線を同時に満たす
+      # 食べ物が増えれば、そのぶん入口も増える。
+      #
       # **要るのはcutting_tool**（tools.yaml）——刃を一線へ入れて断つ手つきなので、柄の先へ頭部を
       # 据えた石斧でも通る。皮を剥ぐ手（handheld_blade）と分けているのはそちら側の宣言。
       #
@@ -348,7 +353,7 @@ object_defs:
           - reason: already_prepped
             not: {subject: self, matches: {tag: prepped}}
         # 料理の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
-        # characters/player_character.yaml）。**今のところ料理を伸ばす唯一の操作。**
+        # characters/player_character.yaml）。
         #
         # **余分の卓は持たない。** 刻んでも芋は1つのままで、増えるのは切り口だけ
         # （docs/world/Skills.md 7節の、まとめて取れる物ではない側）。

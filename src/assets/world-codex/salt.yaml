@@ -36,6 +36,10 @@ object_defs:
       # 相手がcure軸を宣言しているかが決め、宣言していない型へは操作そのものが現れない
       # （行き先の座標に型が居ない組み合わせは候補にならない、9.9節）。生肉のような別ファイルの
       # 食べ物が軸を名乗れば、この操作は1行も変わらずにそちらへも効く。
+      #
+      # **保存の腕の入口はこの1本だけ**——保たせる仕事のうち人が手を動かすのがここだけだからで、
+      # 干す手・燻す手を配り落としているのではない（docs/world/Skills.md 2.4節、
+      # docs/engine/SkillSystem.md 3.2.1節）。
       cure:
         trigger: {drag: {tag: perishable}}
         duration: {prop: cure_minutes}
@@ -55,10 +59,9 @@ object_defs:
             prop: durability
             in_stage_or_above: sound
         # 保存の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
-        # characters/player_character.yaml）。**今のところ保存を伸ばす唯一の操作。** 天日干しも
-        # 燻製も入ったが（drying.yaml・smoking.yaml）、どちらも仕掛けて待つだけで操作を持たないので
-        # 腕は伸びない（docs/world/Skills.md 2.4節）。**燻し小屋はこの腕を要求する側**なので、
-        # そちらから伸ばして自分を開ける道は無い。
+        # characters/player_character.yaml）。天日干しも燻製も入ったが（drying.yaml・smoking.yaml）、
+        # どちらも仕掛けて待つだけで操作を持たないので腕は伸びない（docs/world/Skills.md 2.4節）。
+        # **燻し小屋はこの腕を要求する側**なので、そちらから伸ばして自分を開ける道は無い。
         add: {agent: {skill_preserving: 2}}
         become: {subject: instrument, cure: salted}
         destroy: self
