@@ -292,7 +292,8 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['RESUME session_a look 10 look:10:aaa1111']);
   });
 
-  // 人の手番の印は、効き目を1つずつ持つ（2.13.2）。**どちらの下でも差し戻しは出る。**
+  // 人の手番の印は、効き目を1つずつ持つ（2.13.2）。**止めるのはマージだけ**で、レビューも、
+  // 差分そのものへ向いた差し戻しも止めない。
   it('判断待ちのPRは、マージしない', () => {
     expect(moves({ prs: [pr(10, label('通してよい', '判断待ち'))] })).toEqual([]);
   });
@@ -327,20 +328,27 @@ describe('board-move.mjs', () => {
     expect(moves({ prs: [pr(10, { comments })] })).toEqual(['REVIEW 10 aaa1111:0']);
   });
 
-  it('判断待ちでも、コンフリクトは差し戻す', () => {
+  // **人の手番で止まっているPRは、`main` の動きでは起こさない**（2.13.8）。止まった版は緑で
+  // マージできた形なので、後から出た衝突とCIの赤は `main` が動いたぶん——直しても答えは近づかず、
+  // 次に `main` が動けば同じところへ戻る。PR #2193 はこれで5周し、実入りのあった周は2つだけだった。
+  it('判断待ちのPRは、コンフリクトしても起こさない', () => {
     const board = {
       prs: [pr(10, { ...label('判断待ち'), mergeable: 'CONFLICTING' })],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:conflict:10:aaa1111']);
+    expect(moves(board)).toEqual([
+      'NOTE PR #10 はコンフリクトしているが、人の手番で止まっているので直しを頼まない',
+    ]);
   });
 
   it('収束せずのPRは、レビューへ出さない', () => {
     expect(moves({ prs: [pr(10, label('収束せず'))] })).toEqual([]);
   });
 
-  it('収束せずでも、CIが赤ければ差し戻す', () => {
+  // `収束せず` も人の手番（2.13.1 の表は `判断待ち` と同じ行に置いている）。**答えを待つ間に
+  // 腐るのも同じ**なので、`main` の動きで起こす理由も同じだけ無い。
+  it('収束せずのPRは、CIが赤くても起こさない', () => {
     const board = {
       prs: [
         pr(10, {
@@ -351,7 +359,28 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:red:10:aaa1111']);
+    expect(moves(board)).toEqual(['NOTE PR #10 はCIが赤いが、人の手番で止まっているので直しを頼まない']);
+  });
+
+  // **止めるのは `main` の動きから生まれた2つだけ。** レビューが「直しが要る」と書いた差し戻しは、
+  // 人の返事を待たずに直せる——直した push で `収束せず` も外れる（`STALE_ON_PUSH`）。
+  it('人の手番で止まっていても、レビューの差し戻しは起こす', () => {
+    const board = {
+      prs: [pr(10, label('収束せず', '直し待ち'))],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:returned:10:aaa1111']);
+  });
+
+  // **画面の証跡も止めない。** 人が答える手掛かりそのものなので、答えを待って出すと順番が逆になる。
+  it('人の手番で止まっていても、見た目 の欠けは起こす', () => {
+    const board = {
+      prs: [pr(10, { ...label('判断待ち'), files: [{ path: 'src/game/ui/Card.ts' }] })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a look 10 look:10:aaa1111']);
   });
 
   // **`mend` ではなく `reject`。** レビューの指摘に答えるのではなく、ユーザーが何を通さなかったのかを
@@ -366,7 +395,8 @@ describe('board-move.mjs', () => {
   });
 
   // **人が外すのは1つずつ。** `判断待ち` と `収束せず` が並んだPRで片方だけ外せば、残ったほうは
-  // 付いたまま `却下` が付く（2.13.1）。止めるのはマージとレビューで、差し戻しは止めない（2.13.2）。
+  // 付いたまま `却下` が付く（2.13.1）。**`却下` は人の答えそのもの**なので、人の手番で止まって
+  // いても出る（2.13.8）。
   it('判断待ちが付いたままでも、却下は差し戻す', () => {
     const board = {
       prs: [pr(10, label('判断待ち', '却下'))],
@@ -908,7 +938,7 @@ describe('board-move.mjs', () => {
   // ないまま止まった**（2026-09-11、PR #1982。直し待ちで起こした後にコンフリクトした）。
   it('同じ版でも、直しの後に生まれたコンフリクトは差し戻す', () => {
     const board = {
-      prs: [pr(10, { ...label('判断待ち'), mergeable: 'CONFLICTING' })],
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
       taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
