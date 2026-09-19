@@ -139,15 +139,18 @@ object_defs:
         conditions:
           - {reason: needs_knapping, subject: agent, prop: skill_knapping, in_stage_or_above: basic}
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
-        # **速さを決めるのは連言の2本ではなく、名乗った1本**（docs/world/Skills.md 7節）。溝を刻み、
-        # 刃の座りを見て据えるのが手間の大半で、紐は締めるだけ。
-        deftness: {skill: skill_knapping, from_stage: skilled, minutes: -15}
+        # **速さを決めるのは連言の2本ではなく、名乗った1本**（docs/world/Skills.md 7節）。**どの工程も
+        # 同じ長さなので、長さでは決まらない**——決めるのは候補の狭さで（同7.1節）、名乗れる2本のうち
+        # **石を打ち欠く工程は1つも無い**（受け取るのはもう刃になった石、同2.6節）。残るのは紐で
+        # 締め上げる側。**柄を削る工程は木材加工の仕事だが、その腕は要求していない**ので候補に入らない
+        # （拾った太い枝がそのまま柄になるため。同3節）。
+        deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
         steps:
           # 柄をこしらえる。枝の先を割り、刃を落とし込む溝を作る。
           - requires:
               - {object: thick_branch, count: 1, consume: true}
             duration: 60
-          # 刃を溝へ据える。座りを見て当て直すのが手間の大半。
+          # 刃を溝へ据える。座りを見ながら当て直す。
           - requires:
               - {object: sharp_stone, count: 1, consume: true}
             duration: 60
@@ -216,9 +219,9 @@ object_defs:
           - {reason: needs_woodwork, subject: agent, prop: skill_woodwork, in_stage_or_above: basic}
           - {reason: needs_knapping, subject: agent, prop: skill_knapping, in_stage_or_above: basic}
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
-        # **速さを決めるのは連言の3本ではなく、名乗った1本**（docs/world/Skills.md 7節）。**石斧と
-        # 違って木材加工が名乗る**のは、手間の大半が2mの軸を削り出す工程にあるから——上の注記の
-        # とおり、軸だけが腕を要求する入力。
+        # **速さを決めるのは連言の3本ではなく、名乗った1本**（docs/world/Skills.md 7節）。**石斧・突き銛と
+        # 違って木材加工が候補に入る**のは、上の注記のとおり軸だけが腕を要求する入力だから。**その候補の
+        # 中でいちばん長いのも木材加工**——軸を削るのと溝を切るのとで、紐を締める工程より長い（同7.1節）。
         deftness: {skill: skill_woodwork, from_stage: skilled, minutes: -15}
         steps:
           # 長い棒の皮を剥ぎ、2mの軸に削る。先には穂先を落とし込む溝を切る。**道具を要求しない**
@@ -263,7 +266,7 @@ object_defs:
         conditions:
           - {reason: needs_knapping, subject: agent, prop: skill_knapping, in_stage_or_above: basic}
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
-        deftness: {skill: skill_knapping, from_stage: skilled, minutes: -15}
+        deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
         steps:
           # 柄をこしらえる。枝の先を割り、穂先を落とし込む溝を作る。
           - requires:
