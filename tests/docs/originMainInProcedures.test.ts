@@ -90,6 +90,20 @@ const HANDS_ORIGIN_MAIN = /(?<![\w.-])git\s[^\n`]*origin\/main/;
 const FETCHES_ORIGIN_MAIN = /(?<![\w.-])git\s[^\n]*\bfetch\b[^\n]*\borigin\s+main\b/;
 
 /**
+ * `body` の `at` 行目を打つまでに、`origin` から `main` を取り直しているか。
+ *
+ * **遡るのは空行まで**——ファイルのどこかに1つ在れば足りることにすると、**後から別の段へ足された
+ * 手順が、離れた場所の取り直しに守られているふりをして通る。** 取り直しは、渡す手順と地続きで
+ * 書いてあって初めて、順に辿った者の手に入る。
+ */
+function fetchedInParagraph(body: readonly string[], at: number): boolean {
+  for (let index = at; index >= 0 && body[index].trim() !== ''; index -= 1) {
+    if (FETCHES_ORIGIN_MAIN.test(body[index])) return true;
+  }
+  return false;
+}
+
+/**
  * 走査するファイル。**追跡しているもの全部**から、{@link RECORDS} と読めないものだけを外す。
  * 追跡で引くのは、生成物・各セッションのリポジトリ・`node_modules` が最初から入らないため
  * ——降りない場所を自分で並べると、置き場が増えるたびに並びのほうが古びる。
@@ -139,15 +153,13 @@ describe('手順が指す git の版', () => {
     );
   });
 
-  it('`origin/main` を git へ渡す手順は、その手前でその参照を取り直している', () => {
-    const found = files().flatMap(([path, body]) => {
-      // **見るのは最初の取り直しだけ。** それより後ろの行は、どれも手前に1つ持っていることになる。
-      const fetched = body.findIndex((line) => FETCHES_ORIGIN_MAIN.test(line));
-      return body
+  it('`origin/main` を git へ渡す手順は、同じ段の中でその参照を取り直している', () => {
+    const found = files().flatMap(([path, body]) =>
+      body
         .map((line, index) => [index, line] as const)
-        .filter(([index, line]) => HANDS_ORIGIN_MAIN.test(line) && (fetched < 0 || fetched > index))
-        .map(([index]) => `${path}:${index + 1}`);
-    });
+        .filter(([index, line]) => HANDS_ORIGIN_MAIN.test(line) && !fetchedInParagraph(body, index))
+        .map(([index]) => `${path}:${index + 1}`),
+    );
 
     expect(
       found,
