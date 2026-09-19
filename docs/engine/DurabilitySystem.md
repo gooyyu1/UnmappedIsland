@@ -31,8 +31,9 @@ tick あたりの減少量 = 10 ÷ L（寿命の日数）
 小数のレートになります）
 
 **素材の trait（2 節）を名乗らない物も、この規約の内側です。** 食べ物（`foods.yaml`）も罠
-（`traps.yaml`）も 960 から始まり、違うのは減らす軸と速さだけです——落とし穴が空のまま 30 日もつのは
-上限を積んだからではなく、`-0.3333`（= 10 ÷ 30）で減るからです。**長持ちを上限で作ると、同じレートが
+（`traps.yaml`）も 960 から始まり、違うのは減らす軸と速さだけです——落とし穴が空のまま
+30 日<!-- stats: durations.yaml durations object=pitfall property=durability days -->もつのは
+上限を積んだからではなく、`-0.3333`（上の式へその日数を入れて丸めた値）で減るからです。**長持ちを上限で作ると、同じレートが
 物ごとに違う日数を意味することになり、上の式が読めなくなります。**
 
 **同梱の定義がこの上限を破ると [`tests/world-codex/durabilitySystem.test.ts`](../../tests/world-codex/durabilitySystem.test.ts)
