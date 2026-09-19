@@ -13,7 +13,8 @@ import { Site } from './IslandMap';
  * 2. 内陸: 残りのサイトをベストキャンディデート法（Mitchell）で内側（半径75%以内）へ散布する。
  *    Poisson-diskサンプリングは結果の個数が半径から決まり「10〜20個ちょうど」を直接指定
  *    できないため、個数を直接指定できるベストキャンディデート法を使う（TerrainGeneration.md
- *    3.5節の「Poisson-disk等」の実装上の置き換え）。interior_biasが高いほど中心へ寄せる。
+ *    3.5節の「Poisson-disk等」の実装上の置き換え）。候補は内陸の枠へ面積あたり一様に引く
+ *    （中心へ寄せる宣言は持たない。TerrainGeneration.md 3.5.1節）。
  */
 
 /** 島（抽象座標系）の半径。距離・ノイズ座標の正規化の基準。 */
@@ -53,8 +54,6 @@ export function placeSites(scope: GenerationScopeDef, rng: Pcg32): Site[] {
   }
 
   // 2. 内陸: ベストキャンディデート法（既存サイトへの最小距離が最大の候補を採用）。
-  // interior_bias(0〜1)は半径分布の指数を0.5(一様)→1.0(中心寄り)へ動かす。
-  const radiusExponent = 0.5 + scope.interiorBias * 0.5;
   const interiorCount = total - coastCount;
   for (let i = 0; i < interiorCount; i++) {
     let bestX = 0;
@@ -62,7 +61,8 @@ export function placeSites(scope: GenerationScopeDef, rng: Pcg32): Site[] {
     let bestScore = -1;
     for (let candidate = 0; candidate < CANDIDATES_PER_SITE; candidate++) {
       const angle = rng.nextDouble() * 2 * Math.PI;
-      const radius = ISLAND_RADIUS * INTERIOR_MAX_RADIUS * Math.pow(rng.nextDouble(), radiusExponent);
+      // sqrtは円盤へ面積あたり一様に引くための逆関数。半径へそのまま引くと中心へ寄る。
+      const radius = ISLAND_RADIUS * INTERIOR_MAX_RADIUS * Math.sqrt(rng.nextDouble());
       const x = radius * Math.cos(angle);
       const y = radius * Math.sin(angle);
 
