@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { runWithOnlyTheseCommands } from '../support/onlyTheseCommands';
 
@@ -12,10 +12,6 @@ import { runWithOnlyTheseCommands } from '../support/onlyTheseCommands';
  * **Bash 呼び出しのたびに走る**ので、ここで起きる外部プロセスは常時の固定費になる。**`jq` 1つだけ**
  * であることも、破れたら落ちる形で見張る（下の「絞った PATH」）。
  */
-
-// 実プロセス（bash と jq）を起こすので、`npm test` 全体を並行実行したときのCPU競合だけで既定の
-// 5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const HOOK = resolve(__dirname, '../../.claude/hooks/require-bash-description.sh');
 

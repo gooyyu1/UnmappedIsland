@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { BRAKE_ALL_ON, BRAKE_ISSUE, brakeOff, writeBrakeGh } from '../support/brakeIssue';
 import { FakeMetaServer, metaReply, writeFakeCredentials } from '../support/fakeMetaServer';
 import { pathForBash, spawnScript, spawnScriptAsync } from '../support/runScript';
@@ -18,10 +18,6 @@ import { writeUsageCache, writeUsagePolled } from '../support/usageCache';
  * 決め方・前置きのラベル付きの囲み・閉じ忘れの扱いは、投入とここで揃う。写しに戻ったら、下の
  * 「前置きのラベル付きの囲み」と「閉じないまま尽きた囲み」が落ちる。
  */
-
-// 実プロセス（bash と node）を起こすため、`npm test` 全体を並行実行したときのCPU競合だけで既定の
-// 5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const RESUME_SH = resolve(__dirname, '../../scripts/daemon/resume-session.sh');
 const FENCE = '```';

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { runWithOnlyTheseCommands } from '../support/onlyTheseCommands';
 import { runScript } from '../support/runScript';
 
@@ -11,9 +11,6 @@ import { runScript } from '../support/runScript';
  * 当たらなければフックは呼ばれず、拒否もされないまま素通りする——そのとき起きるのは「使えなくて
  * 諦める」で、これは何も鳴らずに終わる（`policies.md`「仕組みの作り方」の、塞ぐより案内板にする）。
  */
-
-// 実プロセス（bash）を起こすので、既定の5秒では足りないことがある。
-vi.setConfig({ testTimeout: 20000 });
 
 const REPO = resolve(__dirname, '../..');
 const HOOK = resolve(REPO, '.claude/hooks/deny-ccr-meta-mcp.sh');

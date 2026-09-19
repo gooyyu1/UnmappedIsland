@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
@@ -13,10 +13,6 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * ディレクトリに本物のリポジトリと worktree を作って走らせる——スタブにすると「消したつもり」で
  * 緑になり、この検査が守るものが無くなる。`ccr-meta.sh` だけ `CCR_META` で差し替える。
  */
-
-// 実際にgitでworktreeまで作る重いテストなので、`npm test` 全体を並行実行したときのCPU競合だけで
-// 既定の5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/daemon/archive-session.sh');
 
