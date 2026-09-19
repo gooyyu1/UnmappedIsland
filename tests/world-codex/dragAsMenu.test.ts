@@ -1,7 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
@@ -104,8 +104,9 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
   });
 
   beforeEach(() => {
-    const worldInstance = new WorldObject(0, def('world'), new WorldSession(codex));
-    session = new WorldSession(codex, new World(worldInstance), fixedRng(0));
+    session = new WorldSession(codex, undefined, fixedRng(0));
+    const worldInstance = session.createObject(def('world').globalId);
+    session.adoptWorld(new World(worldInstance));
 
     jungle = spawnInto('jungle', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');

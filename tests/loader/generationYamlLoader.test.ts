@@ -40,7 +40,6 @@ generation_scopes:
     site_count: {min: 10, max: 20}
     coast_band: 15
     hull_coast: true
-    interior_bias: 0.6
     extra_edge_detour_factor: 1.8
     diameter_meters: 6700
     walk_meters_per_hour: 4000
@@ -103,7 +102,6 @@ generation_scopes:
     expect(island.siteCountMax).toBe(20);
     expect(island.coastBandMaxDistance).toBe(15);
     expect(island.clampsHullSitesToCoast).toBe(true);
-    expect(island.interiorBias).toBe(0.6);
     expect(island.extraEdgeDetourThreshold).toBe(1.8);
     expect(island.diameterMeters).toBe(6700);
     expect(island.walkMetersPerHour).toBe(4000);

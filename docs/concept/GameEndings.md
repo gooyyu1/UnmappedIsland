@@ -224,8 +224,8 @@
 昼でも光源が要るので、持ち出す量を決める場面が水と食料のほかにもう1つ増えます（同 3 節）。
 
 **島の広さでは作れないことは、数字で出ています。** 拠点から最も遠い土地までの往復は平均
-311 分<!-- stats: terrain.yaml base_farthest_round_trip base=shortest_mean mean -->、最も広い島でも
-420 分<!-- stats: terrain.yaml base_farthest_round_trip base=shortest_mean max -->で、屋外の枠
+324 分<!-- stats: terrain.yaml base_farthest_round_trip base=shortest_mean mean -->、最も広い島でも
+450 分<!-- stats: terrain.yaml base_farthest_round_trip base=shortest_mean max -->で、屋外の枠
 720 分<!-- stats: terrain.yaml daily_budget outdoor_window -->から1日を賄う採取
 189 分<!-- stats: terrain.yaml daily_budget survival_gathering -->を引いた残りに、**どの島でも収まります**。
 島のいちばん遠い隅へ行って帰っても、水も食料も持ち出す必要がありません。**補給のない行程は、島を

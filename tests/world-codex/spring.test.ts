@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
@@ -31,13 +31,10 @@ describe('湧き水', () => {
 
   /** 草原に湧き水が1つあり、その傍らにプレイヤーが立っている世界。 */
   function atSpring(hour = NOON_HOUR) {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
+    const session = new WorldSession(codex, undefined, fixedRng(0));
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
     const worldView = new World(worldInstance);
-    const session = new WorldSession(codex, worldView, fixedRng(0));
+    session.adoptWorld(worldView);
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);
     worldInstance
       .getProperty(codex.propertyNames.getId('weather'))

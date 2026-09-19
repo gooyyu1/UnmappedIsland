@@ -77,7 +77,7 @@ object_defs:
   /** 土地1つだけの世界から始める。rollはpickがどの候補を引くかを決める（fixedRng）。 */
   function open(roll: number): void {
     session = new WorldSession(codex, undefined, fixedRng(roll));
-    const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     ground = spawn('ground');
     expect(ground.moveToSlotOrRejection(worldInstance.getSlot(slot('locations')))).toBeUndefined();

@@ -11,7 +11,7 @@ import type { WorldChange } from './WorldChange';
 import type { WorldSignal } from './WorldSignal';
 import type { Action } from './Interaction';
 import type { ReferenceContext } from './ReferenceRoot';
-import { WorldObject } from './WorldObject';
+import { NO_INSTANCE, WorldObject } from './WorldObject';
 import { EffectiveValueReading } from './EffectiveValueReading';
 import { Scoped } from '../util/scoped';
 import type { ObjectGlobalId, PropertyGlobalId } from './GlobalId';
@@ -55,7 +55,15 @@ export class WorldSession {
   /** pick（10節）の重み付き抽選に使う乱数源。テストで決定的に振る舞わせられるよう、コンストラクタで差し替え可能。 */
   readonly rng: Rng;
 
-  private nextInstanceId = 1;
+  /**
+   * 次に配るinstanceId。**1から始まるのは{@link NO_INSTANCE}を空けておくため。** worldも例外ではなく
+   * ここから受け取る（`NewGame.startNewGame`）。
+   *
+   * **一意であることまでは、ここだけでは保証しない**——番号を直に名乗って`WorldObject`を組む道が
+   * 残っている（試験の足場）。予約値を名乗らないことだけは、`WorldObject`のコンストラクタが
+   * どの道でも守る。
+   */
+  private nextInstanceId = NO_INSTANCE + 1;
 
   /**
    * 実効値（8.3節）の読み取りの区切り。世界の状態ではなく計算の途中を区切るものなので、使うのも
