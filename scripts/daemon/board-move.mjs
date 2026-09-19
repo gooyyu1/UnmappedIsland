@@ -96,6 +96,37 @@ const neverRan = (session) => session.served === false;
 const STALL_MINUTES = Number(process.env.STALL_MINUTES || 15);
 
 /**
+ * 手が空いてから経った分（`STALL_MINUTES` の説明）。空いた時刻を覚えるのは呼び手
+ * （[`board-round.mjs`](board-round.mjs)）で、**動き出せばその記録は消える**。
+ *
+ * **覚えが無ければ0**——この周に空いたばかりか、まだ一度も見ていないかのどちらかで、どちらも
+ * 「続いている」とは言えない。**引けなかったときに動かない側へ倒す**のは、ここで打つ手が
+ * どちらも取り返しの付かないもの（人へ返す・畳む）だから。
+ */
+function idleMinutesOf(input, session) {
+  const since = Date.parse((input.taken ?? {})[`idle:${session.id}`] ?? '');
+  const at = Date.parse(input.now ?? '');
+  return Number.isNaN(since) || Number.isNaN(at) ? 0 : (at - since) / 60_000;
+}
+
+/**
+ * まだ手が動いていると読む範囲。**`busySession` だけでは足りない**——あれは手番の切れ目ごとに
+ * 落ちるので（1.6）、立てた直後のまだ走り出していないセッションも、下請けのレビューを待って
+ * いる間も「動いていない」に見える。**空いたままが `STALL_MINUTES` に届くまでは動いている側**
+ * で数える。停滞と読む境目（`STALL_MINUTES`）と同じ線を使うのは、**PRをまだ出していない
+ * セッションなら、そこを越えたところで起こす手か返す手が出るから**——動いていないと読む側と、
+ * 止まったとして打つ側を1本の線で揃える。**宛先を引けるPRを出して待っている側には手が出ない**
+ * （下の `stall` の入口がそこで切ってある。2.11.4）が、そちらも越えれば `ACTIVE_WORKERS` の側は空ける
+ * ——止まっているのではなく、続きがレビューとマージの側にあるので、`HELD_TASKS` だけを握って
+ * 待つ（3.1）。
+ *
+ * **供給を数える側（`gameSupply`）も同じ線を引く。** 2つ置くと、片方だけが直る。
+ */
+function stillWorking(input, session) {
+  return busySession(session) || idleMinutesOf(input, session) < STALL_MINUTES;
+}
+
+/**
  * `env:<値>` が指す投入先（[`dispatch-task.sh`](dispatch-task.sh) へ渡す引数。2.16）。**盤面が
  * 宛先を知っている値の一覧はここだけ**——GitHub のラベルが在るかとは別で、人は盤面の知らない
  * `env:*` を作れる。投入先を名乗らないものは `DEFAULT_ENV` として引くので、既定も同じ表に載っている。
@@ -129,6 +160,20 @@ const HELD_TASKS = 10;
  * いなくても投入が止まる。
  */
 const ACTIVE_WORKERS = 3;
+
+/**
+ * そのうち、**整備**（完成へ近づけると名乗っていない `kind:task`）へ回してよい数
+ * （2.18.2。出どころ: ユーザーの指示・2026-09-19）。`ACTIVE_WORKERS` の内数で、越えるのは `急ぎ` だけ。
+ *
+ * **配る順だけでは、整備は減らない。** 完成へ近づける仕事を先頭へ並べても（`readyTasks`）、
+ * **配れる `goal:game` が枠の数に満たない周は、残りの枠が必ず整備で埋まる**——ゲームの仕事の供給は
+ * 人の答えで律速され、整備の仕事はPRが出るたびにスメルから生えるので、その差がそのまま作業者の
+ * 割り当てになる（2026-09-19 の実測: 開いていた `kind:task` 96件のうち、完成へ近づけるものは6件）。
+ *
+ * **空いた枠を整備で埋めない。** 空けたままにしておくと、下の `CYCLES` の `dig` が立って
+ * ゲームの仕事が供給される。埋めると、**その合図が二度と出ない。**
+ */
+const UPKEEP_WORKERS = 1;
 
 /**
  * 棚卸しが付ける**分類**の接頭辞（2.17.1）。**「これを1つも持たないこと」で分類がまだかを表す**——
@@ -285,6 +330,12 @@ const GOAL_GAME = `${GOAL}game`;
 const advancesGame = (issue) => names(issue).includes(GOAL_GAME);
 
 /**
+ * **先に配ってほしいと名乗っているか**（2.18）。`readyTasks` の並べ替えと、整備の枠
+ * （`UPKEEP_WORKERS`）を越える判定が**同じものを見る**ように、ここから出す。
+ */
+const rushed = (issue) => names(issue).includes(URGENT);
+
+/**
  * **棚卸しの取りこぼし**——配れる形（`kind:task`）なのに、向かう先を名乗っていない issue（2.18.1）。
  *
  * **配るのは止めない。** 止めると、取りこぼし1件で盤面が静かに詰まる。整備として並ぶあいだに、
@@ -415,15 +466,39 @@ const CYCLES = [
     // 続く——間隔を置かないと、そのあいだずっとこの係だけが立ち続ける。
     hours: 24,
     prompt: 'agent-ops/prompts/dig-prompt.md',
-    // **配れる「完成へ近づける仕事」が尽きた周がこの係の出番**（2.18.1）。枠（`HELD_TASKS`・
+    // **配れる「完成へ近づける仕事」が枠を満たせない周がこの係の出番**（2.18.3）。枠（`HELD_TASKS`・
     // `ACTIVE_WORKERS`）や錠で**待たされているだけの周は立てない**——順番待ちの task は
-    // `readyTasks` に残るので、この数は0にならない。掘り起こしても配れる先が増えないため。
+    // `readyTasks` に残るので、この数は減らない。掘り起こしても配れる先が増えないため。
     //
     // **数えるのは在庫の数ではなく組成。** スメルを拾う係は**PRが出るたびに生える入力**から毎日
     // issue を作るので、「配れる task が尽きた」で見ると、**仕組みが自分で作った整備の仕事が在庫を
     // 満たし続けるかぎり、この係は二度と立たない**（実測: 2026-09-11 に配れる46件のうち、完成の
     // 定義へ向かうものは7件だった）。
-    due: (board) => readyTasks(board).filter(advancesGame).length === 0,
+    //
+    // **尽きてからでは遅い**（出どころ: ユーザーの指示・2026-09-19）。0で見ていた間、在庫は少数の
+    // まま滞留してこの係は一度も立たず、**空いた枠は整備で埋まり続けた**（2026-09-19 の実測: 配れる
+    // `goal:game` は4件、作業者の枠は `ACTIVE_WORKERS`）。**比べる先を枠の数にする**——枠を全部
+    // ゲームの仕事で埋められない周は、供給が足りていない周。
+    //
+    // **数える側は `gameSupply`**（配れるぶん＋手が動いているぶん）。配れるぶんだけで見ると、
+    // 全員がゲームの仕事を握っている周にいちばん小さくなる。
+    due: (board) => gameSupply(board) < ACTIVE_WORKERS,
+  },
+  {
+    name: 'payoff',
+    // **週1回**（出どころ: ユーザーの指示・2026-09-19）。見るのは**週をまたいだ増え方**なので、
+    // 1日では動く量が雑音に埋まる。**間隔がそのまま、仕組みを変えてよい速さの上限**でもある
+    // ——同じ週に二度変えると、どちらが効いたのかを次の回が言えない。
+    hours: 168,
+    // **このPCでしか測れない。** 履歴を全部持っているクローンが要る（[`payoffMetrics.mjs`](../payoffMetrics.mjs)
+    // は浅いクローンでは止まる）うえ、開いている issue の組成を引くのに `gh` が要る
+    // （`agent-ops/board-design.md` 2.23）。
+    env: 'bridge',
+    prompt: 'agent-ops/prompts/payoff-prompt.md',
+    // **盤面の見え方で絞らない**（見回る係と同じ理由）。**割に合っていないことは、盤面のどの印にも
+    // 現れない**——issue は捌かれ、PRはマージされ、CIは緑のまま、ゲームだけが増えない。
+    // 絞る条件を置けるなら、その条件こそがこの係の出す結論なので、置いた時点で係が要らなくなる。
+    due: () => true,
   },
   {
     name: PATROL,
@@ -473,7 +548,7 @@ function readyTasks(input) {
     [...input.issues]
       .sort(
         (a, b) =>
-          Number(names(b).includes(URGENT)) - Number(names(a).includes(URGENT)) ||
+          Number(rushed(b)) - Number(rushed(a)) ||
           Number(advancesGame(b)) - Number(advancesGame(a)) ||
           a.number - b.number,
       )
@@ -487,6 +562,30 @@ function readyTasks(input) {
       // 既にセッションが持っている issue は配り直さない（「投入済みか」は生死で見る。1.2）。
       .filter((issue) => !input.sessions.some((session) => session.tags.includes(`task-${issue.number}`)))
   );
+}
+
+/**
+ * **ゲームの仕事の供給**——今すぐ配れる `goal:game` と、**いま手が動いている `goal:game`** の合計
+ * （2.18.3）。掘り起こす係（`CYCLES` の `dig`）が、枠（`ACTIVE_WORKERS`）と比べる側。
+ *
+ * **配れる数だけでは、枠が満ちた周に必ず足りなくなる。** 配った先から `readyTasks` を出ていくので、
+ * 作業者が全員ゲームの仕事を握っている周こそ数が小さくなり、**いちばん掘る必要の無い周に掘る**。
+ *
+ * **手が止まっているものは数えない**（`stillWorking`）。PRを出してマージを待っているだけの担当まで
+ * 数えると、**人の手番で止まった `goal:game` が枠のぶんあるかぎり、この係は二度と立たない**——0で
+ * 見ていた形と同じ詰まりを、別の数で作り直すことになる。
+ *
+ * **線は `stillWorking` で引く**（`busySession` ではない）。あれは手番の切れ目ごとに落ちるので、
+ * **作業者が全員 `goal:game` を握っていても、たまたま全員が切れ目に居る周は供給が0に見える。**
+ */
+function gameSupply(input) {
+  const inFlight = input.sessions.filter((session) => {
+    if (!stillWorking(input, session)) return false;
+    const number = heldIssue(session);
+    const issue = input.issues.find((candidate) => candidate.number === number);
+    return issue !== undefined && advancesGame(issue);
+  }).length;
+  return readyTasks(input).filter(advancesGame).length + inFlight;
 }
 
 /** `task-<番号>` のタグから担当の issue 番号を引く。持っていなければ `undefined`。 */
@@ -569,33 +668,6 @@ export function moves(input) {
 
   const alive = (tag) => input.sessions.filter((session) => session.tags.includes(tag));
   const busy = (tag) => alive(tag).some(busySession);
-
-  /**
-   * 手が空いてから経った分（`STALL_MINUTES` の説明）。空いた時刻を覚えるのは呼び手
-   * （[`board-round.mjs`](board-round.mjs)）で、**動き出せばその記録は消える**。
-   *
-   * **覚えが無ければ0**——この周に空いたばかりか、まだ一度も見ていないかのどちらかで、どちらも
-   * 「続いている」とは言えない。**引けなかったときに動かない側へ倒す**のは、ここで打つ手が
-   * どちらも取り返しの付かないもの（人へ返す・畳む）だから。
-   */
-  function idleMinutes(session) {
-    const since = Date.parse(taken[`idle:${session.id}`] ?? '');
-    const at = Date.parse(input.now ?? '');
-    return Number.isNaN(since) || Number.isNaN(at) ? 0 : (at - since) / 60_000;
-  }
-
-  /**
-   * まだ手が動いていると読む範囲。**`busySession` だけでは足りない**——あれは手番の切れ目ごとに
-   * 落ちるので（1.6）、立てた直後のまだ走り出していないセッションも、下請けのレビューを待って
-   * いる間も「動いていない」に見える。**空いたままが `STALL_MINUTES` に届くまでは動いている側**
-   * で数える。停滞と読む境目（`STALL_MINUTES`）と同じ線を使うのは、**PRをまだ出していない
-   * セッションなら、そこを越えたところで起こす手か返す手が出るから**——動いていないと読む側と、
-   * 止まったとして打つ側を1本の線で揃える。**宛先を引けるPRを出して待っている側には手が出ない**
-   * （下の `stall` の入口がそこで切ってある。2.11.4）が、そちらも越えれば `ACTIVE_WORKERS` の側は空ける
-   * ——止まっているのではなく、続きがレビューとマージの側にあるので、`HELD_TASKS` だけを握って
-   * 待つ（3.1）。
-   */
-  const stillWorking = (session) => busySession(session) || idleMinutes(session) < STALL_MINUTES;
 
   /**
    * そのレビューが判定を書き終えたか（2.10.3）。**訊くのはコメントそのもの**——投入したときの版を
@@ -754,7 +826,7 @@ export function moves(input) {
     return (
       holders.length > 0 &&
       holders.every(
-        (holder) => !stillWorking(holder) && taken[`resume:${holder.id}`] === mendMark(RETURNED, pr),
+        (holder) => !stillWorking(input, holder) && taken[`resume:${holder.id}`] === mendMark(RETURNED, pr),
       )
     );
   }
@@ -1055,7 +1127,7 @@ export function moves(input) {
       // 「PRを出していない」に見え**、畳んだ先にそのPRが宛先の無いPRとして残る——引けない周に
       // 盤面が自分でその形を作ることになる。**倒れる先は、畳まないほう。**
       if (input.prSessions === undefined || Object.values(prSessions).includes(session.id)) continue;
-      const idle = idleMinutes(session);
+      const idle = idleMinutesOf(input, session);
       const wrote = judged(spent);
       if (!wrote && idle < STALL_MINUTES) continue;
       // **起こせるのはレビューだけ**——周期の係には渡す文面が無い（`resume-prompt.md`）。
@@ -1119,7 +1191,7 @@ export function moves(input) {
       // 着手できる8件が2時間動かなかった（issue #1937）。
       if (mine.some((pr) => strand(pr) === undefined)) continue;
       // **空いていることではなく、空いたままであることが入口**（`STALL_MINUTES`）。
-      const idle = idleMinutes(session);
+      const idle = idleMinutesOf(input, session);
       if (idle < STALL_MINUTES) continue;
 
       // **走る者が一度も付かなかったなら、起こす相手も返す本人も居ない**（`neverRan`）。畳めば
@@ -1224,7 +1296,7 @@ export function moves(input) {
   // 見分けが付かない。**打つのは1周に1手**なので、書くのは先頭が待っている理由でよい。
   const waiting = [];
   /** 抱えているうち、まだ手が動いているもの（`ACTIVE_WORKERS` が数える側）。 */
-  const moving = held.filter((holder) => stillWorking(holder.session));
+  const moving = held.filter((holder) => stillWorking(input, holder.session));
   /** 投入を止めている枠（どちらも空いていれば `undefined`）。 */
   const full =
     held.length >= HELD_TASKS
@@ -1241,7 +1313,26 @@ export function moves(input) {
       notes.push(`${ready.length}件の task が、${full.what}の枠（${who}）の空きを待っている`);
     }
   } else {
+    /**
+     * 整備の枠（`UPKEEP_WORKERS`）を握っている相手。**数えるのは手が動いているものだけ**で、
+     * `急ぎ` は数えない——あれは枠ごと越える印（2.18.2）。
+     *
+     * **担当を引けない相手は数える。** 閉じている担当は上の `held` で落ちているので、ここに残って
+     * 引けないのは**開いているのに読めなかった**相手——`goal:` を確かめられないので、**枠を握って
+     * いない側へ倒すと、読めない担当が1本在る周だけ枠が1つ増える**（同じ場面で `waitingFor` も
+     * 止める側へ倒している）。
+     */
+    const upkeepHolders = moving.filter(
+      (holder) => holder.issue === undefined || (!advancesGame(holder.issue) && !rushed(holder.issue)),
+    );
+    /** 整備の枠が満ちていて出さなかった task の数。**出さなかったことを毎周書く**ため数える。 */
+    let heldBack = 0;
     for (const issue of ready) {
+      // **整備は枠ぶんしか出さない**（2.18.2）。`急ぎ` と、完成へ近づける仕事は越える。
+      if (!advancesGame(issue) && !rushed(issue) && upkeepHolders.length >= UPKEEP_WORKERS) {
+        heldBack += 1;
+        continue;
+      }
       const why = waitingFor(issue);
       if (why !== undefined) {
         waiting.push(why);
@@ -1250,6 +1341,13 @@ export function moves(input) {
       const flag = destination(issue);
       if (flag === undefined) continue;
       tasks.push(flag === '' ? `TASK ${issue.number}` : `TASK ${issue.number} ${flag}`);
+    }
+    if (heldBack > 0) {
+      // **空いた枠を整備で埋めないことは、詰まりと見分けが付かない。** 枠を握っている相手を添えて、
+      // 意図した空きであることを読めるようにする。**番号は並べない**——毎周出る行なので、
+      // 整備の在庫がそのままログの行の長さになる。
+      const who = upkeepHolders.map((holder) => holder.session.id).join(' ');
+      notes.push(`${heldBack}件の整備の task が、整備の枠（${who}）の空きを待っている`);
     }
     if (tasks.length === 0 && waiting.length > 0) {
       notes.push(`${waiting.length}件の task が待っている。先頭は ${waiting[0]}`);
@@ -1264,7 +1362,7 @@ export function moves(input) {
     //
     // **「生きているか」では見ない。** 畳む手は次の周まで出ないので、生きているかで見ると
     // **終わった1本が、畳まれるまでのあいだ次の周期を塞ぐ。**
-    if (alive(`chore-${cycle.name}`).some(stillWorking)) continue;
+    if (alive(`chore-${cycle.name}`).some((session) => stillWorking(input, session))) continue;
     if (!cycle.due(input)) continue;
     // **前に立ててからの間隔**。覚えが無ければ「まだ一度も立てていない」なので、そのまま立てる。
     // **デーモンを別のPCへ移すと覚えごと消える**ので、移した直後は係が一斉に立つ。

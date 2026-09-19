@@ -1,13 +1,16 @@
 # 掘り起こしのプロンプト
 
 **完成の定義に照らして、まだ issue になっていない残りを数える**係の本文。投入するのは盤面
-（[`board-move.mjs`](../../scripts/daemon/board-move.mjs) の `CYCLES`）で、**配れる `goal:game` の
-`kind:task` が無くなった周**に立つ。渡し方は
-[`dispatch-chore.sh`](../../scripts/daemon/dispatch-chore.sh)。
+（[`board-move.mjs`](../../scripts/daemon/board-move.mjs) の `CYCLES`）で、**`goal:game` の供給が
+作業者の枠に満たない周**に立つ。数えるのは配れる `goal:game` に、いま手が動いている `goal:game` を
+足したもの。渡し方は [`dispatch-chore.sh`](../../scripts/daemon/dispatch-chore.sh)。
 
 **在庫の数では立たない**（[`board-design.md`](../board-design.md) 2.18.1）。スメルを拾う係の入力は
 PRが出るたびに生えるので、「配れる task が尽きた」を条件にしていた間、**整備の issue が在庫を
 満たし続け、この係は立てられなくなっていた。**
+
+**尽きてからでも遅い**（同 2.18.3）。「配れる `goal:game` が0」で見ていた間、在庫は少数のまま
+滞留して**この係は一度も立たず、空いた枠は整備で埋まり続けた。**
 
 **「仕事を探せ」とは言わない**（[`docs/ParallelAgents.md`](../../docs/ParallelAgents.md)「⛏️ 掘り起こし役
 — 探すのではなく、数える」）。そう言われたエージェントは必ず何か見つけるので、出力の質が観点の質と
@@ -26,7 +29,8 @@ PRが出るたびに生えるので、「配れる task が尽きた」を条件
 ---
 
 ````
-[デーモン] 配れる「完成へ近づける仕事」が尽きました。完成の定義に照らして、残りを数えてください。
+[デーモン]「完成へ近づける仕事」の供給が、作業者の枠に足りていません。完成の定義に照らして、
+残りを数えてください。
 
 まず `CLAUDE.md` と `agent-ops/parallel-work.md` を読んでください。
 
