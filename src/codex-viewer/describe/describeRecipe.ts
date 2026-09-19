@@ -1,7 +1,6 @@
 import type { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../../domain/RecipeDef';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { propertyPathRef, stageRef, text } from './Description';
-import { describeEffect } from './describeEffect';
 import { describeRequirements } from './describeRequirement';
 import { typeMatchTokens } from './typeMatchTokens';
 
@@ -27,12 +26,6 @@ export function describeRecipe(recipe: RecipeDef, names: DefNames, out: Descript
     );
 
   for (const [index, step] of recipe.steps.entries()) describeRecipeStep(step, index + 1, names, out);
-
-  if (recipe.surplus !== undefined) {
-    // 引くのは完成した瞬間の1回だけなので、工程の後ろへ置いて、効果の行と同じ形で出す（13.5節）。
-    out.write(text('余分の卓（完成時に1回）:'));
-    out.indented(() => describeEffect(recipe.surplus!, names, out));
-  }
 }
 
 /**
