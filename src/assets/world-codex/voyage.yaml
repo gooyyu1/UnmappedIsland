@@ -1057,7 +1057,8 @@ object_defs:
             - {object: route_to_tide_rip, into: self}
             - {object: route_to_kelp_belt, into_object: {prop: zone_toward_mainland}}
 
-  # 潮目。流れのぶつかる帯で、波と鳥の集まりが目印になる。**補給が当てになる唯一の海区**。
+  # 潮目。流れのぶつかる帯で、波と鳥の集まりが目印になる。**返るのは魚だけの海区**——空振りの
+  # 少なさは沿岸と並ぶが、獲るには銛が要る。
   tide_rip:
     singleton: true
     traits: [location, explorable, sea_zone]

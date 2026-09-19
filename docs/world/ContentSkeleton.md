@@ -93,9 +93,9 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 **刃物と火は仕組みの上では本物の前提ですが、プレイヤーが追う目的としては置きません。**
 
-前提としては外せません——水の経路はどれも刃物を要求し（`cutting_tool`、あるいはその一部で柄に固定
+前提としては外せません——水の経路の大半は刃物を要求し（`cutting_tool`、あるいはその一部で柄に固定
 されていない刃だけを指す `handheld_blade`。[`stats/balance.yaml`](../../stats/balance.yaml)
-の `chain_routes` の `property: hydration`）、タロイモもヤシガニも火が要ります（[`Animals.md`](./Animals.md) 1節）。外すと組み立てが
+の `chain_routes` の `property: hydration`。**刃物を通らないのは、粘土と炉だけで甕を焼く道**です）、タロイモもヤシガニも火が要ります（[`Animals.md`](./Animals.md) 1節）。外すと組み立てが
 崩れます。
 
 目的にしない理由は、目的にした瞬間、まだ何も知らないプレイヤーへ「石を探せ」という指示を出すことに
@@ -509,7 +509,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 海区 | 拾えるもの | 湧くもの | 実り | 役割 |
 | --- | --- | --- | --- | --- |
 | 沿岸（島影が見える） | 流木・海藻 | 魚 | 濃い | 沿岸航海の場。出航地点ごとに顔ぶれが違う |
-| 潮目 | — | 魚の群れ | 濃い | 補給が当てになる唯一の海区 |
+| 潮目 | — | 魚の群れ | 濃い | 返るのは魚だけ。空振りの少なさは沿岸と並ぶが、獲るには銛が要る |
 | 海藻の帯 | 海藻（食料・繊維） | — | 中 | 湧くものが無く、拾える海藻だけが返る |
 | 岩礁 | 漂流物 | 貝 | 中 | 荒天で押し流されやすい |
 | 海鳥の岩 | 卵・羽 | 海鳥 | 中 | 小島を伴う |
@@ -732,7 +732,11 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 **効くのは、夜の道と、樹冠の深い土地です。** 拠点から平均的な土地への片道は91.61分<!-- stats: terrain.yaml base_one_way base=shortest_mean mean -->
 なので、**日が暮れてから往復するなら2本**——1本の2時間では帰り着けません。密林の雨季に採れるのは
 1日1.3時間<!-- stats: climate.yaml activity_hours location=jungle season=wet outdoor_search -->なので、
-そこは1本ごとに採れる時間が2時間ずつ増える土地になります。
+そこは1本ごとに採れる時間が増える土地になります。**ただし1本の2時間がまるまる乗るわけではありません**
+——嵐の日の屋外は松明でも開かない（上）ので、雨季の嵐
+（季節1本あたり78.75時間<!-- stats: climate.yaml weather_hours season=wet weather=storm segment=overall mean -->、
+季節の長さは29.91日<!-- stats: climate.yaml season_duration season=wet mean -->）のぶんが落ち、増えるのは
+1本あたり約1.8時間です。
 
 #### 8.1.2 土地は「樹冠」と「地面の反射」を持つ
 
