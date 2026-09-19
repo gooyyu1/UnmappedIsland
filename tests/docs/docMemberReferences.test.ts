@@ -16,7 +16,8 @@ import {
  * lintにも掛からない。初回の全数調査では、既に無いメソッドを指す説明がコメントに8件・
  * `docs/` に10件見つかった。
  *
- * **読む先はどちらの見方も {@link PROSE} の1つ**——コメントを書ける形式のソース全部と、文書の全文。
+ * **読む先はどちらの見方も {@link PROSE} の1つ**——コメントを書ける形式のソース・宣言の値へ散文を
+ * 置いているデータ・文書。
  * 見方は2つあり、どちらが赤くなったかで直す場所が変わるので `it` を分けてある。
  *
  * 1. **`Xxx.yyy`・`Xxx.Yyy` の形**（下の「今は無い名前を指していない」）。判定は
@@ -95,13 +96,11 @@ const TYPED_SOURCES = [...filesIn('src', '.ts'), ...filesIn('tests', '.ts')];
 
 /**
  * 説明が書かれているソース。**コメントを書ける形式なら、追跡しているものは全部入る**
- * ——`tools/**` の Python が `Card.ts` の定数を名指ししていても、`.ts` だけを見ていた間は
- * 指し先が消えても赤くならなかった（#2190）。
+ * ——`tools/**` の Python も `Card.ts` の定数を名指ししており、`.ts` だけを見ていると指し先が
+ * 消えても赤くならない（#2190）。
  *
- * **形式の一覧を持っているのは [`docScope.mjs`](../../scripts/docScope.mjs)**（`COMMENTED_EXTENSIONS`）
- * ——コメントのリンクを見る `docReferences.test.ts` も同じ1つから作る。別に持つと、片方だけが
- * 新しい綴りを知らないまま緑になる。**在り処では絞らない**——フォルダを数え上げると、足した日にしか
- * 更新されない一覧が射程を決めることになる。
+ * 形式で絞る理由も、一覧を [`docScope.mjs`](../../scripts/docScope.mjs) が1つだけ持つ理由も、
+ * コメントのリンクを見る `docReferences.test.ts` の `COMMENTED_SOURCES` と同じ。
  */
 const COMMENTED_SOURCES = trackedFiles(ROOT).filter((rel) =>
   COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)),
@@ -142,6 +141,13 @@ const PROSE: readonly {
   { files: PROSE_DATA, proseOf: (rel) => allLines(read(rel)), fenced: false },
   { files: DOCUMENTS, proseOf: (rel) => allLines(read(rel)), fenced: true },
 ];
+
+/**
+ * 実際に走査へ入っているファイル。**射程が戻っていないかは、集合の定数ではなくここで見る**
+ * ——定数をそのままに {@link PROSE} から要素を落とせば、定数が空でないことを見ている検査は
+ * 緑のまま、そこへ書いた主張だけが誰にも読まれなくなる。
+ */
+const SCANNED = PROSE.flatMap(({ files }) => [...files]);
 
 const CODE = TYPED_SOURCES.map((rel) => codeOnly(read(rel))).join('\n');
 const foundInCode = new Map<string, boolean>();
@@ -455,7 +461,7 @@ describe('説明の参照', () => {
   it('`docs/` の外の文書も、走査に入っている', () => {
     // 走査を `docs/` だけにすると、`agent-ops/**` の係の本文が挙げる名前を誰も見ない（#1948）。
     // `docs/` の文書だけで数は足りるので、外側が落ちても上の検査は緑になる。
-    const outside = DOCUMENTS.filter((rel) => !rel.startsWith(`docs${sep}`));
+    const outside = SCANNED.filter((rel) => rel.endsWith('.md') && !rel.startsWith(`docs${sep}`));
     expect(outside, '走査が `docs/` の中だけへ戻っている').not.toEqual([]);
   });
 
@@ -463,9 +469,13 @@ describe('説明の参照', () => {
     // `.ts` と `.md` だけを見ていた間、`tools/comfyui/**` が `Card.ts` の定数を名指ししていても、
     // 指し先が消えたことは誰も見ていなかった（#2190）。`.ts` と `.md` の主張だけで数は足りるので、
     // 他の置き場が落ちても上の検査は緑になる。
-    const others = COMMENTED_SOURCES.filter((rel) => !rel.endsWith('.ts'));
-    expect(others, '走査が `.ts` の中だけへ戻っている').not.toEqual([]);
-    expect(PROSE_DATA, '宣言の値へ書いた散文が、走査から落ちている').not.toEqual([]);
+    const others = SCANNED.filter(
+      (rel) => !rel.endsWith('.ts') && !rel.endsWith('.md') && !isProseData(rel),
+    );
+    expect(others, '走査が `.ts` と `.md` だけへ戻っている').not.toEqual([]);
+    expect(SCANNED.filter(isProseData), '宣言の値へ書いた散文が、走査から落ちている').not.toEqual(
+      [],
+    );
   });
 
   it('囲みが無くても、ファイルと並んだ名前を採る', () => {
