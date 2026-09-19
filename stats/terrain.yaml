@@ -98,7 +98,7 @@ base_farthest_round_trip:
   - {base: any, unit: minutes, mean: 379.69, min: 240.00, p5: 270.00, p95: 480.00, max: 600.00, sd: 62.91, n: 7568}
 
 daily_budget:
-  - {unit: minutes, outdoor_window: 720, night_craft: 360, sleep: 360, survival_gathering: 189, surplus: 891}
+  - {unit: minutes, outdoor_window: 720, night_craft: 360, sleep: 360, survival_gathering: 189, day_trip_one_way: 265.5, surplus: 891}
 
 work_piles:
   - {system: 1, pile: 雨受けと貯水を据える, objects: null, days: 2.00, minutes: 1782.0}

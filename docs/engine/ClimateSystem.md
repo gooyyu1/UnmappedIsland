@@ -48,18 +48,18 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 （[`stats/terrain.yaml`](../../stats/terrain.yaml) の `site_elevation_by_location`。島の最高点が
 海抜 400 m である根拠は [`TerrainGeneration.md`](./TerrainGeneration.md) 3.5 節）です。
 
-| 土地 | 平均海抜 | 減率ぶん | `value` |
-| --- | --: | --: | --: |
-| 砂浜 | 8<!-- stats: terrain.yaml site_elevation_by_location location=sandy_beach mean ±5% --> m | −0.05℃ | — |
-| 岩礁海岸 | 15<!-- stats: terrain.yaml site_elevation_by_location location=rocky_coast mean ±5% --> m | −0.10℃ | — |
-| 断崖海岸 | 37<!-- stats: terrain.yaml site_elevation_by_location location=cliff_coast mean ±5% --> m | −0.24℃ | — |
-| 草原 | 152<!-- stats: terrain.yaml site_elevation_by_location location=grassland mean ±5% --> m | −0.98℃ | **−1** |
-| 森 | 179<!-- stats: terrain.yaml site_elevation_by_location location=forest mean ±5% --> m | −1.16℃ | **−1** |
-| 密林 | 183<!-- stats: terrain.yaml site_elevation_by_location location=jungle mean ±5% --> m | −1.19℃ | **−1** |
-| 荒野 | 201<!-- stats: terrain.yaml site_elevation_by_location location=wasteland mean ±5% --> m | −1.31℃ | **−1** |
-| 岩石地 | 211<!-- stats: terrain.yaml site_elevation_by_location location=rocky_field mean ±5% --> m | −1.37℃ | **−1** |
-| 山腹 | 308<!-- stats: terrain.yaml site_elevation_by_location location=mountainside mean ±5% --> m | −2.00℃ | **−2** |
-| 山頂 | 400<!-- stats: terrain.yaml site_elevation_by_location location=mountain_peak mean ±5% --> m | −2.60℃ | **−3** |
+| 土地 | 平均海抜 | `value` |
+| --- | --: | --: |
+| 砂浜 | 8<!-- stats: terrain.yaml site_elevation_by_location location=sandy_beach mean ±5% --> m | — |
+| 岩礁海岸 | 15<!-- stats: terrain.yaml site_elevation_by_location location=rocky_coast mean ±5% --> m | — |
+| 断崖海岸 | 37<!-- stats: terrain.yaml site_elevation_by_location location=cliff_coast mean ±5% --> m | — |
+| 草原 | 152<!-- stats: terrain.yaml site_elevation_by_location location=grassland mean ±5% --> m | **−1** |
+| 森 | 179<!-- stats: terrain.yaml site_elevation_by_location location=forest mean ±5% --> m | **−1** |
+| 密林 | 183<!-- stats: terrain.yaml site_elevation_by_location location=jungle mean ±5% --> m | **−1** |
+| 荒野 | 201<!-- stats: terrain.yaml site_elevation_by_location location=wasteland mean ±5% --> m | **−1** |
+| 岩石地 | 211<!-- stats: terrain.yaml site_elevation_by_location location=rocky_field mean ±5% --> m | **−1** |
+| 山腹 | 308<!-- stats: terrain.yaml site_elevation_by_location location=mountainside mean ±5% --> m | **−2** |
+| 山頂 | 400<!-- stats: terrain.yaml site_elevation_by_location location=mountain_peak mean ±5% --> m | **−3** |
 
 **丸めて 0 になる土地は宣言しません**——`core.yaml` の `location` trait が既定の 0 を持つので、
 「書き忘れ」と「差が無い」が同じ意味になります（明るさと違うのはここで、あちらは場所ごとに必ず
