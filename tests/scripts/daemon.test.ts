@@ -10,7 +10,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
@@ -32,10 +32,6 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * それより細かい」）。**どの世界にも置くと、周の寝がそれに当たって起こしても起きなくなる**——理由は
  * 身代わりを書いているところ。
  */
-
-// 実プロセス（bash + node）を起こすため、`npm test` 全体を並行実行したときのCPU競合だけで
-// 既定の5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const DAEMON = resolve(__dirname, '../../scripts/daemon');
 

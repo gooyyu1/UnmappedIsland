@@ -1,7 +1,7 @@
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { SESSION_ID } from '../../scripts/daemon/board-move.mjs';
 import { pathForBash, spawnScript } from '../support/runScript';
@@ -17,10 +17,6 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * ワークフローは Actions でしか動かないので、`run:` の中身を YAML から取り出して bash で走らせる。
  * `gh` は PATH の先頭で差し替え、`--jq` は本物の `jq` で評価する（フィルタの誤りを見逃さない）。
  */
-
-// 実プロセス（bash + jq のスタブ）を起こすため、`npm test` 全体を並行実行したときのCPU競合だけで
-// 既定の5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const WORKFLOW = resolve(__dirname, '../../.github/workflows/tests.yml');
 

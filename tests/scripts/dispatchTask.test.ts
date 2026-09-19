@@ -1,7 +1,7 @@
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
@@ -15,10 +15,6 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * `DRY_RUN=1` で叩くので、セッションは立たない——関門は全部その手前にある。`gh` は PATH の先頭で
  * 差し替え、環境IDは `ccr-env.sh` へ環境変数で渡す。
  */
-
-// 実プロセス（bash + node + gh のスタブ）を起こすため、`npm test` 全体を並行実行したときのCPU競合
-// だけで既定の5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/daemon/dispatch-task.sh');
 

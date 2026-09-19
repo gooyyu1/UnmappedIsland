@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, join, resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FakeMetaServer, writeFakeCredentials } from '../support/fakeMetaServer';
 import { runScript, spawnScriptAsync } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
@@ -25,10 +25,6 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * 安全のため**——関門が壊れて手綱を素通りしても、占有が止めるので本物のセッションは立たない。
  * **手綱を流す側は、CCRの通信先を身代わりへ向けて止める**（[`fakeMetaServer`](../support/fakeMetaServer.ts)）。
  */
-
-// 実プロセス（bash + node + gh のスタブ）を起こすため、`npm test` 全体を並行実行したときのCPU競合
-// だけで既定の5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/daemon/dispatch-chore.sh');
 
