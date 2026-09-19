@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { islandLocationsOf } from '../../src/analysis/islandLocations';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
@@ -11,19 +12,21 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent, makeBrightEnoughForAnyAction } from '../support/illumination';
 import { seededRng } from '../../src/domain/Rng';
 
-/** locations.yamlが定義する全土地。 */
-const LAND_NAMES = [
-  'sandy_beach',
-  'rocky_coast',
-  'cliff_coast',
-  'grassland',
-  'forest',
-  'jungle',
-  'rocky_field',
-  'wasteland',
-  'mountainside',
-  'mountain_peak',
-] as const;
+/**
+ * locations.yamlが定義する全土地。**地形生成が島へ置く土地型から数え上げる**
+ * （terrain_generation.yamlの`location_types`）。手で並べると、土地が増えてもこの一覧は同じ顔ぶれの
+ * まま通り、新しい土地は下の検査すべての外へ黙って出る。
+ *
+ * **タグではなく生成の宣言から引く**——`location`タグで数えると、下の「すべての土地はlocationタグを
+ * 持つ」が自分で集めた集合へ同じことを問うだけになり、タグを付け忘れた土地は一覧ごと欠けて素通しに
+ * なる。生成の宣言は`object_def`のidで土地を指すので、タグとは独立に数えられる。
+ *
+ * 逆向き（タグを持つのに生成されない土地）は、下の「島の土地と、地形生成が島へ置く土地は一致する」
+ * が見る。
+ */
+const LAND_NAMES = bundledCodex().generation!.locationTypes.map(
+  (type) => bundledCodex().objects.get(type.objectDefGlobalId).name,
+);
 
 describe('locations.yamlの土地・道定義', () => {
   let codex: WorldCodex;
@@ -42,6 +45,21 @@ describe('locations.yamlの土地・道定義', () => {
     const locationTag = codex.tagNames.getId('location');
     for (const name of LAND_NAMES)
       expect(def(name).tags, `${name} はlocationタグ（location trait）を持つ`).toContain(locationTag);
+  });
+
+  it('島の土地と、地形生成が島へ置く土地は一致する', () => {
+    // 上のLAND_NAMESは生成の宣言から数えるので、**そこへ載せずに足した土地**——locationタグと
+    // exploration_progressだけ持ち、どの土地型も実体化しない型——はこの一覧に現れない。
+    // `islandLocationsOf`がタグの側から数えた集合と突き合わせて、その片側落ちを捕まえる。
+    //
+    // **見るのは顔ぶれだけ**なので、並べ直してから比べる。2つの並びは出どころが無関係
+    // （locations.yamlの宣言順と、terrain_generation.yamlの`location_types`の並び）なので、
+    // 順序まで求めると、どちらかを並べ替えただけで顔ぶれは同じまま赤くなる。
+    expect(
+      islandLocationsOf(codex)
+        .island.map((land) => land.name)
+        .sort(),
+    ).toEqual([...LAND_NAMES].sort());
   });
 
   it('すべての土地は期待されるスロットを持ち、キャラクタスロットは固定・単数である', () => {

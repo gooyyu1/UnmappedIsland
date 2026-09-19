@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { CraftingStep, StepOutcome } from '../../src/analysis/CraftingStep';
-import { craftingStepsOf } from '../../src/analysis/craftingSteps';
+import { analysisContextOf, craftingStepsOf } from '../../src/analysis/craftingSteps';
 import { externalTickDeltasOf, rangeCyclesOf } from '../../src/analysis/rangeCycles';
 import { buildCraftingNetwork } from '../../src/codex-viewer/craftingGraph';
+import type { ObjectDef } from '../../src/domain/ObjectDef';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
@@ -534,6 +536,15 @@ object_defs:
         conditions:
           - {subject: self, prop: fill, gt: 4000}
         set: {self: {fill: 0}}
+      unlid:
+        trigger: menu
+        conditions:
+          - {subject: self, prop: lid_seal, eq: 0}
+
+  crate:
+    tags: [item]
+    props:
+      lid_seal: {value: 1}
 
   water_liquid:
     traits: [liquid, water_liquid]
@@ -559,6 +570,87 @@ object_defs:
     it('同じ条件でも、その端に留まれる型では立つ', () => {
       // 空の容器のon_minは自分自身へ戻るだけなので、fillが0のままでいられる。
       expect(stepNamesOf('jar')).toContain('collect_rain');
+    });
+
+    it('自分が宣言していないプロパティを見る操作は立たない', () => {
+      // 実行時は解決先が無く、どの演算子でも偽になる（ConditionNode.evaluateProperty）。0として
+      // 読むのでも素通しにするのでもないので、`eq: 0`でも成立しない。
+      expect(stepNamesOf('jar')).not.toContain('unlid');
+    });
+  });
+
+  /**
+   * 祖先（`{subject: ancestor, ...}`、8.6節）を見る条件の判定（issue #2119）。土地ごとの解析は
+   * 立っている土地を知っているので、**そこへ置いた場合に成立しない操作は立てない**。
+   *
+   * 祖先は「そのプロパティを宣言している最初の祖先」なので、言い切れるのは**そのプロパティを土地
+   * しか宣言していないとき**だけ——間に挟まる容れ物が宣言していれば、遡り着く先は定義からは決まらない。
+   */
+  describe('祖先を見る条件', () => {
+    const YAML_ANCESTOR = `
+object_defs:
+  grove:
+    tags: [location]
+    props:
+      hanging_anchor: {value: 1}
+
+  barren:
+    tags: [location]
+
+  moor:
+    tags: [location]
+
+  hammock:
+    tags: [item]
+    interactions:
+      nap:
+        trigger: menu
+        duration: 180
+        conditions:
+          - {subject: ancestor, prop: hanging_anchor, gt: 0}
+`;
+    /** 支点を、土地ではない型（担いで回れる骨組み）も宣言している世界。 */
+    const YAML_CARRIED_ANCHOR = `${YAML_ANCESTOR}
+  frame:
+    tags: [item]
+    props:
+      hanging_anchor: {value: 1}
+`;
+
+    const codexOf = (yaml: string): WorldCodex =>
+      new WorldCodexYamlLoader().load('ancestor.yaml', yaml).buildAndReset();
+    const ancestorCodex = codexOf(YAML_ANCESTOR);
+
+    /** その土地の候補に立ったときの、ハンモックの工程名。 */
+    function napStepsAt(codex: WorldCodex, ...locationNames: readonly string[]): readonly string[] {
+      const defOf = (name: string): ObjectDef => codex.objects.get(codex.objectNames.getId(name));
+      const context = analysisContextOf(codex, { ancestorLocations: locationNames.map(defOf) });
+      return craftingStepsOf(codex, defOf('hammock'), context).map((step) => step.name);
+    }
+
+    it('宣言していない土地に立っていると、その土地では立たない', () => {
+      expect(napStepsAt(ancestorCodex, 'barren')).not.toContain('nap');
+    });
+
+    it('宣言している土地に立っていると立つ', () => {
+      expect(napStepsAt(ancestorCodex, 'grove')).toContain('nap');
+    });
+
+    it('候補のどれかで成立するなら落とさない', () => {
+      // 島全体の文脈。実行時に祖先へ就くのは候補のうち1つなので、成立する土地が在れば残す。
+      expect(napStepsAt(ancestorCodex, 'grove', 'barren')).toContain('nap');
+    });
+
+    it('どの候補でも成立しないなら、候補が複数でも落ちる', () => {
+      expect(napStepsAt(ancestorCodex, 'barren', 'moor')).not.toContain('nap');
+    });
+
+    it('土地の候補が無ければ素通しする', () => {
+      expect(napStepsAt(ancestorCodex)).toContain('nap');
+    });
+
+    it('土地でない型も宣言しているなら、祖先が土地とは限らないので落とさない', () => {
+      expect(napStepsAt(codexOf(YAML_CARRIED_ANCHOR), 'barren')).toContain('nap');
     });
   });
 

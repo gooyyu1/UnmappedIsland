@@ -1380,6 +1380,22 @@ describe('筏と航海', () => {
     }
   });
 
+  it('顔ぶれの表は、盤面の海区を1つ残らず配っている', () => {
+    // **顔ぶれは型でもタグでもない**ので、どの海区がどの顔ぶれかは表にしか無い。表に無い海区が
+    // 盤面へ増えても、顔ぶれを見る検査は残りだけを見て緑のまま通る——航路の宣言から組み立てた
+    // 海区の網（SEA_CHART）と突き合わせて、その取りこぼしを止める。
+    expect([...FACES.values()].flat().sort()).toEqual([...SEA_CHART.zones].sort());
+  });
+
+  it('見張りの表は、顔ぶれを1つ残らず代表している', () => {
+    // YIELDSは**顔ぶれ1つにつき1つの海区**を見る表。顔ぶれが増えたときに行を足し忘れると、その
+    // 顔ぶれの見張りは誰も見ないまま通る。
+    const represented = YIELDS.map(([zoneName]) => zoneName);
+    for (const [face, zones] of FACES)
+      expect(represented.filter((zoneName) => zones.includes(zoneName)).length, `${face} の代表`).toBe(1);
+    expect(represented.length, '顔ぶれに属さない海区を代表にしていない').toBe(FACES.size);
+  });
+
   it('同じ顔ぶれの海区は、同じつまみの配り方を持つ', () => {
     // **顔ぶれは型でもタグでもなく、つまみの配り方そのもの**（voyage.yamlのsea_zone）。同じ顔ぶれの
     // 海区が別の配り方を持ち始めたら、それは表に無い9種類目ができたということ。
@@ -1445,8 +1461,10 @@ describe('筏と航海', () => {
   it('小島が立つのは、小島の海と海鳥の岩だけ', () => {
     // **小島は顔ぶれの一部**（ContentSkeleton.md 7節）。どの海区に立つかを持つのは on_max の spawn
     // だけなので、顔ぶれの表とずれても他のどの検査も赤くならない。
+    // **歩くのは盤面の海区すべて**（SEA_CHART）。顔ぶれの表を走査元にすると、表から漏れた海区は
+    // 見に行かれないまま「小島は立っていない」側へ倒れる。
     const found: string[] = [];
-    for (const zoneName of [...FACES.values()].flat()) {
+    for (const zoneName of SEA_CHART.zones) {
       const { game, raft } = ready();
       raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
       const zone = singletonPlace(game, zoneName);
