@@ -133,8 +133,8 @@ const LONG_IDLE = '2026-09-04T02:00:00Z';
 
 /**
  * 掘り起こす係（`board-move.mjs` の `CYCLES` の `dig`）は、既定で**間隔の中に居る**ことにする。
- * あの係の `due` は**配れる「完成へ近づける仕事」が無いこと**（`agent-ops/board-design.md` 2.18.1）
- * なので、**そういう task を置かなかった世界には全部当たる**——既定のままだと、掘り起こしと
+ * あの係の `due` は**「完成へ近づける仕事」の供給が枠に満たないこと**（`agent-ops/board-design.md`
+ * 2.18.3）なので、**そういう task を枠のぶん置かなかった世界には全部当たる**——既定のままだと、掘り起こしと
  * 関わりのない検査の1手ぶんがこれに埋まる。
  *
  * **`NOW` にしないのは、周が立てたときに残す時刻がそれだから。** 同じ値にすると、この足場と
@@ -150,14 +150,24 @@ const DUG_RECENTLY = { 'cycle:dig': '2026-09-05T01:00:00Z' };
 const PATROLLED_RECENTLY = { 'cycle:patrol': '2026-09-05T01:30:00Z' };
 
 /**
+ * 割に合っているかを見る係（`board-move.mjs` の `CYCLES` の `payoff`）も、既定で**間隔の中に居る**
+ * ことにする。あの係の `due` も**常に真**（2.23.1）なので、`PATROLLED_RECENTLY` と同じ理由で足場が要る。
+ */
+const PAID_OFF_RECENTLY = { 'cycle:payoff': '2026-09-05T01:45:00Z' };
+
+/**
  * 台帳を、打った手の指紋と、手が空いた時刻の覚えと、**盤面を引けなくなった印**（`board-state.mjs`
- * の `UNREADABLE`）に分ける。**上で置いた足場（`DUG_RECENTLY`・`PATROLLED_RECENTLY`）はどれにも
+ * の `UNREADABLE`）に分ける。**上で置いた足場（`DUG_RECENTLY`・`PATROLLED_RECENTLY`・`PAID_OFF_RECENTLY`）はどれにも
  * 入れない**——周が書いたものではなく、こちらが置いたものなので、**周が何を残したか**を見る検査に
  * 混ぜると全部の期待値が太る。**周が書き換えたなら値が変わる**ので、そのときはそのまま指紋の側へ出る。
  *
  * **引けない印を分けるのも同じ理由。** あれは打った手の指紋ではなく、**引けなかったことの覚え**。
  */
-const SCAFFOLD: Record<string, string> = { ...DUG_RECENTLY, ...PATROLLED_RECENTLY };
+const SCAFFOLD: Record<string, string> = {
+  ...DUG_RECENTLY,
+  ...PATROLLED_RECENTLY,
+  ...PAID_OFF_RECENTLY,
+};
 
 function split(ledger: Record<string, string>) {
   const marks: Record<string, string> = {};
@@ -185,7 +195,13 @@ async function playRound(world: World = {}): Promise<Result> {
     }
     writeFileSync(
       join(stateDir, 'taken.json'),
-      JSON.stringify({ ...idled, ...DUG_RECENTLY, ...PATROLLED_RECENTLY, ...world.ledger }),
+      JSON.stringify({
+        ...idled,
+        ...DUG_RECENTLY,
+        ...PATROLLED_RECENTLY,
+        ...PAID_OFF_RECENTLY,
+        ...world.ledger,
+      }),
       'utf-8',
     );
     if (world.conflictLog !== undefined) {

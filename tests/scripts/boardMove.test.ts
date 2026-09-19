@@ -69,8 +69,8 @@ const LONG_IDLE = '2026-09-04T02:00:00Z';
 
 /**
  * 掘り起こす係（`board-move.mjs` の `CYCLES` の `dig`）は、既定で**たった今立てた**ことにする。
- * あの係の `due` は**配れる「完成へ近づける仕事」が無いこと**（2.18.1）なので、**そういう task を
- * 置かなかった盤面には全部当たる**——既定のままだと、掘り起こしと関わりのない検査の期待値へ一律に
+ * あの係の `due` は**「完成へ近づける仕事」の供給が枠に満たないこと**（2.18.3）なので、**そういう
+ * task を枠のぶん置かなかった盤面には全部当たる**——既定のままだと、掘り起こしと関わりのない検査の期待値へ一律に
  * 1手増え、**その検査が何を見ているのかが読めなくなる。** 立つところを見る検査は、`taken` の
  * `cycle:dig` を古い時刻で上書きする。
  */
@@ -1233,7 +1233,7 @@ describe('board-move.mjs', () => {
     expect(moves({ issues: [game(9), rush] })).toEqual(['TASK 40', 'TASK 9']);
   });
 
-  // ## 整備の枠（2.18.1）
+  // ## 整備の枠（2.18.2）
   //
   // **配る順だけでは整備は減らない。** 完成へ近づける仕事を先頭へ並べても、配れる `goal:game` が
   // 枠の数に満たない周は、残りの枠が必ず整備で埋まる。**枠のほうで切る。**
@@ -1242,7 +1242,7 @@ describe('board-move.mjs', () => {
       issues: [upkeep(9), upkeep(20)],
       sessions: [working('session_a', 'task-9')],
     };
-    expect(moves(board)).toEqual(['NOTE 整備の task が、整備の枠（session_a）の空きを待っている: #20']);
+    expect(moves(board)).toEqual(['NOTE 1件の整備の task が、整備の枠（session_a）の空きを待っている']);
   });
 
   // **止めるのは整備だけ。** 空けた枠は、掘り起こす係が供給する `goal:game` のために在る。
@@ -1253,7 +1253,7 @@ describe('board-move.mjs', () => {
     };
     expect(moves(board)).toEqual([
       'TASK 30',
-      'NOTE 整備の task が、整備の枠（session_a）の空きを待っている: #20',
+      'NOTE 1件の整備の task が、整備の枠（session_a）の空きを待っている',
     ]);
   });
 
@@ -2123,7 +2123,7 @@ describe('board-move.mjs', () => {
     expect(moves({ issues: [returned], taken: DUG_YESTERDAY })).toEqual([DIG]);
   });
 
-  // **数えるのは在庫の数ではなく組成**（2.18.1）。ここが在庫の数を見ていた間、スメルを拾う係が
+  // **数えるのは在庫の数ではなく組成**（2.18.3）。ここが在庫の数を見ていた間、スメルを拾う係が
   // 周のたびに整備の issue を積んだので、**この係は立てられなくなっていた**——2026-09-11 に配れた46件のうち、
   // 完成の定義へ向かうものは7件で、残る39件が「配れる task が在る」を成立させ続けていた。
   it('配れるのが整備の仕事だけなら、掘り起こす係を立てる', () => {
@@ -2131,7 +2131,7 @@ describe('board-move.mjs', () => {
     expect(moves({ issues: chores, taken: DUG_YESTERDAY })).toContain(DIG);
   });
 
-  // **尽きてからでは遅い**（2.18.1。出どころ: ユーザーの指示・2026-09-19）。0で見ていた間、在庫は
+  // **尽きてからでは遅い**（2.18.3。出どころ: ユーザーの指示・2026-09-19）。0で見ていた間、在庫は
   // 少数のまま滞留して係は一度も立たず、空いた枠は整備で埋まり続けた。**比べる先は枠の数**
   // （`ACTIVE_WORKERS`）で、枠を全部ゲームの仕事で埋められない周は供給が足りていない周。
   it('配れる goal:game が枠の数に満たなければ、掘り起こす係を立てる', () => {
@@ -2156,9 +2156,20 @@ describe('board-move.mjs', () => {
     const board = {
       issues: [game(1), game(2), game(10)],
       sessions: [idle('a', 'task-1'), idle('b', 'task-2')],
-      taken: { ...DUG_YESTERDAY, 'idle:a': NOW, 'idle:b': NOW },
+      taken: DUG_YESTERDAY,
     };
     expect(moves(board)).toContain(DIG);
+  });
+
+  // **線は `stillWorking` で引く**（`busySession` ではない）。ワーカーは手番の切れ目ごとに空くので、
+  // 空いた瞬間を止まったと読むと、**全員がゲームの仕事を握っている周でも供給が0に落ちる。**
+  it('手番の切れ目で空いただけの担当は、供給に数える', () => {
+    const board = {
+      issues: [game(1), game(2), game(10)],
+      sessions: [idle('a', 'task-1'), idle('b', 'task-2')],
+      taken: { ...DUG_YESTERDAY, 'idle:a': NOW, 'idle:b': NOW },
+    };
+    expect(moves(board)).not.toContain(DIG);
   });
 
   // **棚卸しの取りこぼしは、掘り起こす係を止めない**（2.18.1）。`goal:game` を名乗るものだけが
