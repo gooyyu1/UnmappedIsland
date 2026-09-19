@@ -314,14 +314,18 @@ describe('動物の1手', () => {
     // **初期値がそのまま「掴めるようになるまでの手数」**で、そこから19を引いたものが
     // 「近寄れる（落ち着く）までの手数」になる——減り方は獣によらず-1/tickだから。
     open(0.5);
+    // **獣は定義から数え上げる**（`beast` traitが配る`animal`タグ）。手で並べると、獣を1つ足しても
+    // ここは元の顔ぶれだけを見て緑のまま通り、その獣だけが現れ方の検査の外へ出る。
+    const beasts = codex.objectDefNamesWithTag(codex.vocabulary.world.animalTagId);
     const wariness = new Map(
-      ['rat', 'junglefowl', 'monkey', 'wild_boar'].map((name) => {
+      beasts.map((name) => {
         const property = release(name).getProperty(warinessId);
         return [name, { value: property.number, stage: property.stage?.name }] as const;
       }),
     );
     const values = [...wariness.values()].map((seen) => seen.value);
 
+    expect(beasts.length, '獣が1頭も居なければ、この見張りは何も見ていない').toBeGreaterThan(0);
     expect(new Set(values).size, 'どの2種も同じ値では現れない').toBe(values.length);
     expect(
       [...wariness].filter(([, seen]) => seen.stage === 'calm').map(([name]) => name),

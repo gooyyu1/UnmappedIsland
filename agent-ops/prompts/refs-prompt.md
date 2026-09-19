@@ -78,6 +78,8 @@
 
 道具は `agent-ops/github-access.md`「issue を読む・書く」に従ってください。
 
+- **直し方に見当が付いているなら、`docs/DesignNotes.md` で不採用済みでないかを確かめてから書く**
+  （`agent-ops/parallel-work.md`「立てる前に、不採用の記録と突き合わせる」）。
 - **ラベルは `origin:agent` と `goal:upkeep`。** `kind:` は付けないでください（分類は棚卸しです）。
 - 題は `参照の検め: 指し先と中身が食い違っている箇所（<日付>）` の形。
 - 本文は `agent-ops/parallel-work.md` 3節の**タスク issue の型**に従う（`## 担当`・`## 完了の条件`）。

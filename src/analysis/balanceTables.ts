@@ -9,6 +9,7 @@ import type { TickDelta } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
+import type { AnalysisContext } from './craftingSteps';
 import { analysisContextOf, craftingStepsOf } from './craftingSteps';
 import type { IslandLocations } from './islandLocations';
 import { islandLocationsOf } from './islandLocations';
@@ -17,8 +18,7 @@ import { rangeCyclesOf } from './rangeCycles';
 import { rangeEventReadouts } from './rangeEvents';
 import type { RainWaterRow } from './seasonalRain';
 import { rainWaterRows } from './seasonalRain';
-import type { StaticValueResolver } from './staticValue';
-import { highestDeclaredLayer, staticValueOf } from './staticValue';
+import { staticValueOf } from './staticValue';
 import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 import { MINUTES_PER_DAY, TICKS_PER_DAY } from '../domain/worldTime';
 
@@ -786,9 +786,12 @@ function routeCandidates(
     const scheduledCost = scheduled.stepCost(ref);
     if (scheduledCost === undefined) continue;
     const scheduledRoute = [ref, ...scheduled.routeOf(ref.def.globalId)];
-    const payable = buildRoute(codex, scheduled, scheduledRoute, scheduledCost, deltas, fills, place);
-    // 絞り込んだ側で前提が解けないことは、島にその前提が無いことではない（穴の一覧へ出さない）。
-    if (!payable.untimed && !payable.blocked) candidates.push(payable);
+    // **前提（道具）が解けるかは、絞り込んでいない側が答える。** 道具の時間は経路へ按分しない（#550）
+    // ので、要るのは「島のどこかで手に入るか」だけで、労働0の工程を外したこの解き直しとは関わりが
+    // ない。絞り込んだ側で答えさせると、労働0でしか手に入らない道具を使う経路が、道具の側の理由で
+    // 表から消える（issue #2150）。
+    const payable = buildRoute(codex, acquisition, scheduledRoute, scheduledCost, deltas, fills, place);
+    if (!payable.untimed) candidates.push(payable);
   }
   return candidates;
 }
@@ -1330,7 +1333,7 @@ function allSteps(
   return defs.flatMap((def) => {
     if (axisValues.has(def.globalId) || islandLocations.seaOnly.has(def.globalId)) return [];
     if (standingAt !== undefined && isLocation(codex, def) && def.globalId !== standingAt.globalId) return [];
-    const cycles = rangeCyclesOf(def, outer, defs);
+    const cycles = rangeCyclesOf(def, outer.resolve, defs);
     const lifetime = decayLifetimeOf(cycles);
     return [
       ...craftingStepsOf(codex, def, outer).map((step) => ({ def, step, cycle: undefined })),
@@ -1370,21 +1373,13 @@ function decayLifetimeOf(cycles: readonly RangeCycle[]): DecayLifetime | undefin
 }
 
 /**
- * この表が使う文脈。**使う物と祖先の層**（11.5節）を足す——行っている人の層はanalysisContextOfが
- * 必ず入れる。`base` が層をまたいで別の起点を指すので、層どうしを直に繋がない（layeredResolver）。
+ * この表が使う文脈。**使う物の候補は全型**——どの型を相手にした場合の値かは工程ごとに決まらないので、
+ * 絞ると相手の値を見る重みが解けなくなる（AnalysisCandidates.instruments）。
  *
- * 祖先の候補（ancestorLocations）は、置く先が決まっているならその土地1つ、どの土地に置いてもよい
- * 前提なら島の土地すべて。**宣言していない土地では寄与0**（highestDeclaredLayerの`zero`）。
- *
- * 使う物の候補は全型。これが無いと、相手の値を見る重み——一撃がどう入るかは武器が決める
- * （HuntingSystem.md 1.2節）——が全て解けず、宣言順で最初の候補だけが起こることになる
- * （PickEffect.selectWeighted）。
+ * 祖先の候補は、置く先が決まっているならその土地1つ、どの土地に置いてもよい前提なら島の土地すべて。
  */
-function analysisContext(codex: WorldCodex, ancestorLocations: readonly ObjectDef[]): StaticValueResolver {
-  return analysisContextOf(codex, [
-    highestDeclaredLayer('instrument', [...codex.objects], 'unresolved'),
-    highestDeclaredLayer('ancestor', ancestorLocations, 'zero'),
-  ]);
+function analysisContext(codex: WorldCodex, ancestorLocations: readonly ObjectDef[]): AnalysisContext {
+  return analysisContextOf(codex, { ancestorLocations, instruments: [...codex.objects] });
 }
 
 /**
@@ -1494,10 +1489,34 @@ class Acquisition {
       const resolved = this.inputSource(input);
       if (resolved === undefined) return undefined;
       // **要る個数を掛ける。** 筏は丸太を6本使うので、1本ぶんで数えると桁が変わる。
-      cost = addCost(cost, scaleCost(resolved.cost, input.count));
+      cost = addCost(cost, scaleCost(this.netCostOf(input, resolved.cost), input.count));
       imported ||= resolved.imported;
     }
     return { cost, imported };
+  }
+
+  /**
+   * 入力1つを使って正味で失う時間。**空になって手元へ残る器のぶんは差し引く**
+   * （CraftingInput.emptiedInto）——甕は16杯ぶんを抱えているが、飲み干しても甕として残るので、
+   * 1杯が食うのは中身を用意した時間だけ。器そのものは繰り返し使えるので1回あたりへ按分しない
+   * （#550）。**`prerequisites`（道具）としても並ばない**——中身ごと消費される入力なので、
+   * 器を用意する工程は経路（`routeOf`）の上流にそのまま現れる。
+   *
+   * 戻る先の値段が出ない文脈では差し引かない——引けないぶんを0と読むと、器が丸ごと消えたことになる。
+   */
+  private netCostOf(input: CraftingStep['inputs'][number], cost: Cost): Cost {
+    const emptied = input.emptiedInto === undefined ? undefined : this.costOf(input.emptiedInto);
+    if (emptied === undefined) return cost;
+
+    return {
+      exploreMinutes: Math.max(0, cost.exploreMinutes - emptied.exploreMinutes),
+      craftMinutes: Math.max(0, cost.craftMinutes - emptied.craftMinutes),
+    };
+  }
+
+  /** その型の値段。この文脈で出なければ島全体の値段（持ち込み）。どちらにも無ければundefined。 */
+  private costOf(objectGlobalId: ObjectGlobalId): Cost | undefined {
+    return this.costByObject.get(objectGlobalId) ?? this.islandWide?.costByObject.get(objectGlobalId);
   }
 
   /**
