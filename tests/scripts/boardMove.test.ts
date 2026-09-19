@@ -1281,6 +1281,18 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['TASK 20']);
   });
 
+  // **担当を読めない相手は、枠を握っている側へ倒す。** 閉じた担当は数える手前で落ちるので、
+  // ここに残って読めないのは**開いているのに引けなかった**もの。握っていない側へ倒すと、
+  // **読めない担当が1本在る周だけ、整備の枠が1つ増える。**
+  it('担当を読めないまま手が動いている相手は、整備の枠を握る', () => {
+    const board = {
+      issues: [upkeep(20)],
+      sessions: [working('session_a', 'task-9')],
+      issueStates: { '9': 'OPEN' },
+    };
+    expect(moves(board)).toEqual(['NOTE 1件の整備の task が、整備の枠（session_a）の空きを待っている']);
+  });
+
   // **枠を握るのは手が動いているぶんだけ**（`moving`。`held` ではない）。握ったままにすると、
   // PRを出して人の判断を待っている1本で、整備が丸ごと止まる。
   it('担当を握ったまま手が止まっている整備は、枠を握らない', () => {
@@ -1395,10 +1407,10 @@ describe('board-move.mjs', () => {
   });
 
   // 掴んでいる issue が開いている一覧に無ければ、錠が読めない。**知らないことを「取り合わない」
-  // として読まない。**
+  // として読まない。**（`goal:game` なのは、整備の枠が手前で止めると錠の判定まで届かないため。）
   it('走っているセッションの担当が読めなければ、錠を持つ issue は投入しない', () => {
     const board = {
-      issues: [{ number: 9, ...label('kind:task', 'area:art'), blockedBy: { nodes: [] } }],
+      issues: [{ number: 9, ...label('kind:task', 'goal:game', 'area:art'), blockedBy: { nodes: [] } }],
       sessions: [working('session_a', 'task-8')],
       issueStates: { 8: 'OPEN' },
     };

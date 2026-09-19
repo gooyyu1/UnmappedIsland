@@ -1317,11 +1317,13 @@ export function moves(input) {
      * 整備の枠（`UPKEEP_WORKERS`）を握っている相手。**数えるのは手が動いているものだけ**で、
      * `急ぎ` は数えない——あれは枠ごと越える印（2.18.2）。
      *
-     * **担当を引けない相手は数えない。** 引けないのは担当が閉じているときで（上の `held`）、
-     * そのセッションは仕事を終えている。
+     * **担当を引けない相手は数える。** 閉じている担当は上の `held` で落ちているので、ここに残って
+     * 引けないのは**開いているのに読めなかった**相手——`goal:` を確かめられないので、**枠を握って
+     * いない側へ倒すと、読めない担当が1本在る周だけ枠が1つ増える**（同じ場面で `waitingFor` も
+     * 止める側へ倒している）。
      */
     const upkeepHolders = moving.filter(
-      (holder) => holder.issue !== undefined && !advancesGame(holder.issue) && !rushed(holder.issue),
+      (holder) => holder.issue === undefined || (!advancesGame(holder.issue) && !rushed(holder.issue)),
     );
     /** 整備の枠が満ちていて出さなかった task の数。**出さなかったことを毎周書く**ため数える。 */
     let heldBack = 0;

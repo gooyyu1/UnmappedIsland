@@ -36,8 +36,10 @@
 //
 // ## 仕組みが自分で作った仕事
 //
-// スメルを拾う係の記録（`agent-ops/analysis/<日付>.md`）の `## 切った issue` に挙がった番号を数える。
-// **PRが出るたびに生える入力から、1日に何件の仕事が生まれたか**がこの列。
+// スメルを拾う係の記録（一次は `agent-ops/analysis/<日付>.md`、二次は `summary/<日付>.md`）の
+// `## 切った issue` に挙がった番号を数える。**PRが出るたびに生える入力から、1回に何件の仕事が
+// 生まれたか**がこの列。**二次も数える**——整備の issue を切れるのはそちらだけ
+// （`agent-ops/board-design.md` 4.4.3）なので、一次だけを見ると大半が落ちる。
 // **`## 読んだ範囲` の行数は読まない**——あそこの書き方は回ごとに揺れており（「40件、行は85本」
 // 「行**100件**」「コメントは**108件**」）、数として引くと揺れが値の動きに見える。**節の名前だけは
 // `tests/docs/analysisRecord.test.ts` が本文と突き合わせている**ので、そこを鍵にする。
@@ -68,8 +70,17 @@ const CODEX = new RegExp(
 /** 数えるキーを持つ節。 */
 const OBJECT_DEFS = 'object_defs:';
 
-/** スメルを拾う係の記録の置き場と、番号を挙げる節。 */
-const ANALYSIS_DIR = join(ROOT, 'agent-ops', 'analysis');
+/**
+ * スメルを拾う係の記録の置き場。**一次と二次の両方を数える**——整備の issue を切れるのは二次だけ
+ * （`agent-ops/board-design.md` 4.4.3）なので、一次の側だけを見ると、**仕組みが自分で作った仕事の
+ * 大半がどこにも現れない。**
+ */
+const ANALYSIS_SERIES = [
+  { name: '一次', dir: join(ROOT, 'agent-ops', 'analysis') },
+  { name: '二次', dir: join(ROOT, 'agent-ops', 'analysis', 'summary') },
+];
+
+/** 番号を挙げる節。一次も二次も同じ名前で置く。 */
 const CUT_ISSUES = '## 切った issue';
 
 /**
@@ -262,15 +273,16 @@ function report() {
   out.push('');
   out.push('## 仕組みが自分で作った仕事');
   out.push('');
-  out.push('| 分析の回 | 切った issue |');
-  out.push('| --- | ---: |');
-  const records = readdirSync(ANALYSIS_DIR)
-    .filter((file) => file.endsWith('.md'))
-    .sort();
-  for (const file of records) {
-    const cut = countCutIssues(readFileSync(join(ANALYSIS_DIR, file), 'utf-8'));
-    if (cut === undefined) continue;
-    out.push(`| ${file.replace(/\.md$/, '')} | ${cut} |`);
+  out.push('| 係 | 回 | 切った issue |');
+  out.push('| --- | --- | ---: |');
+  for (const { name, dir } of ANALYSIS_SERIES) {
+    for (const file of readdirSync(dir)
+      .filter((entry) => entry.endsWith('.md'))
+      .sort()) {
+      const cut = countCutIssues(readFileSync(join(dir, file), 'utf-8'));
+      if (cut === undefined) continue;
+      out.push(`| ${name} | ${file.replace(/\.md$/, '')} | ${cut} |`);
+    }
   }
 
   process.stdout.write(`${out.join('\n')}\n`);

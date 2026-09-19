@@ -186,7 +186,7 @@ flowchart TB
     Human -->|"チェックを外す＝投入を止める"| Brake
     Human -->|"PRを止めている印を外す＝書き直させる"| PR
     Brake -.->|"毎周読む"| Daemon
-    Daemon -->|"配れる goal:game が無ければ立てる"| Digger
+    Daemon -->|"goal:game の供給が枠に満たなければ立てる"| Digger
     Digger -->|"やると決まっているものを立てる"| New
     Digger -->|"やるかどうかから訊くものを、チェックの一覧にして立てる"| New
     Adviser -->|"合意できた分を書く"| PR
