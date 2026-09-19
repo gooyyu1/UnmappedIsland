@@ -7,6 +7,10 @@
  *
  * 宣言との一致は `tests/world-codex/coreYaml.test.ts` が見る（rangeと宣言された値から数え直して
  * 突き合わせる）。
+ *
+ * **ここの値を字で書いた文章——tickの数を人に読める長さへ言い換えた記述——の書き方は
+ * [`docs/DocumentStyle.md`](../../docs/DocumentStyle.md) 11節が持つ**（`tests/docs/tickReadings.test.ts`
+ * が、並べた数をここから計算し直して照合する）。
  */
 
 export const HOURS_PER_DAY = 24;

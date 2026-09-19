@@ -188,7 +188,7 @@ object_defs:
       },
     ]);
 
-    // 値が戻らず自分が消える側は寿命（960 tick = 10日）。
+    // 値が戻らず自分が消える側は寿命で、960 tick（10日）。
     expect(lifetime.repeats).toBe(false);
     expect(lifetime.destroysSelf).toBe(true);
     expect(lifetime.minutes).toBe(960 * 15);

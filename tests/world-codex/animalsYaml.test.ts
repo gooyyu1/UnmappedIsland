@@ -170,7 +170,7 @@ describe('animals.yamlの動物', () => {
 
     const stone = strikeWithSharpStone();
 
-    // 上げるのは25だが、殴るのに15分＝1tickかかるぶんの落ち着き（-1/tick）が同時に起きる。
+    // 上げるのは25だが、殴るのに1 tick（15分）かかるぶんの落ち着き（-1/tick）が同時に起きる。
     expect((monkey.tryGetProperty(warinessId)?.number ?? 0) - before).toBe(25 - 1);
     expect(stone.tryGetProperty(codex.propertyNames.getId('durability'))?.getEffectiveValue()).toBe(960 - 20);
   });
@@ -223,7 +223,7 @@ describe('animals.yamlの動物', () => {
     open(LANDS);
     expect(signalsOf(() => strikeWith('spear'))).toEqual(['monkey: pierced']);
 
-    // 殴るのに15分＝1tickかかるので、同じ回にサルの1手も入る（同2節）。手番は効果より先に回る
+    // 殴るのに1 tick（15分）かかるので、同じ回にサルの1手も入る（同2節）。手番は効果より先に回る
     // （時間を進めてから効果を適用する、ActionSystem.md 2節）ので、告げられる順も1手が先になる。
     open(WHIFFS);
     expect(signalsOf(() => strikeWith('sharp_stone'))).toEqual(['monkey: bit', 'monkey: missed']);
@@ -236,7 +236,7 @@ describe('animals.yamlの動物', () => {
     // 1つも動いていない。**
     const LANDS_ONLY_WHEN_SKILLED = 0.7;
 
-    // 殴るのに15分＝1tickかかるので、どちらの回もサルの1手（噛みつき）が先に入る。
+    // 殴るのに1 tick（15分）かかるので、どちらの回もサルの1手（噛みつき）が先に入る。
     open(LANDS_ONLY_WHEN_SKILLED);
     expect(
       signalsOf(() => strikeWith('sharp_stone')),

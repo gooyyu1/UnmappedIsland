@@ -172,7 +172,7 @@ object_defs:
     const sand = place('sand');
 
     expect(sand.tryGetAction('harden', createAgent(session))?.tryExecute()).toBe(true);
-    expect(heat(sand), '30分＝2 tickぶん').toBe(2);
+    expect(heat(sand), '2 tick（30分）ぶん').toBe(2);
 
     session.advanceWorldTime(60);
     expect(heat(sand), '経過を終えれば外れるので、その後の時間では積まれない').toBe(2);

@@ -34,7 +34,7 @@ object_defs:
     tags: [item]
   rope:
     tags: [item]
-  # tickごとにすり減り、0になった時点で壊れる木（30分＝2tickで壊れる）。
+  # tickごとにすり減り、0になった時点で壊れる木。2 tick（30分）で壊れる。
   crumbling_wood:
     tags: [item]
     props:
@@ -370,7 +370,7 @@ object_defs:
       () => tryAdvanceCrafting(wip, worker()),
     );
 
-    expect(duringTicks.length, '30分＝2tick').toBe(2);
+    expect(duringTicks.length, '2 tick（30分）').toBe(2);
     for (const contents of duringTicks) expect(contents).toEqual(['knife', 'wood', 'wood']);
     expect(boxContents(), '経過し切った時点で消える').toEqual([]);
   });
@@ -418,7 +418,7 @@ object_defs:
       () => tryAdvanceCrafting(wip, crafter),
     );
 
-    expect(checked, '30分＝2tick、どちらの最中も主張されている').toBe(2);
+    expect(checked, '2 tick（30分）、どちらの最中も主張されている').toBe(2);
     expect(startAnotherAction, '工程を抜ければ主張は外れる').not.toThrow();
   });
 
