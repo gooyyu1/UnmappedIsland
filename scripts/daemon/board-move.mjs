@@ -30,6 +30,7 @@
 //   { "now": "<この周の時刻>",
 //     "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
 //     "mainChecks": [ { "status": "COMPLETED", "conclusion": "SUCCESS" } ],   … `main` の先頭のCI
+//     "mainHead": "<`main` の先頭の指紋>",   … 差し戻しの指紋に入れる（2.14.2 の `mendMark`）
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments ],
 //     "mergedPrs":[ gh pr list --state merged --search merged:>=<窓の始まり> --json number,comments ],   … 後片付けの相手と、スメルを拾う係が読む範囲
 //     "pendingDecisions": 12,   … `agent-ops/decisions/` のうち `archive/` に入っていない件数
@@ -195,9 +196,42 @@ const URGENT = '急ぎ';
 
 /**
  * `直し待ち` で差し戻すときの、指紋の頭（`moves` の `cause`）。**打つ側と、頼み終えたかを見る側
- * （同 `askedAlready`）が同じ綴りを見る**ので、ここから出す。
+ * （同 `askedMender`）が同じ綴りを見る**ので、ここから出す。
  */
 const RETURNED = 'mend:returned';
+
+/**
+ * **差し戻す理由**（`moves` の `cause`）と、そこから決まるもの。**綴りを持つのはここだけ**
+ * ——打つ側（`moves`）・頼み終えたかを見る側（同 `askedMender`）・**人へ返す文面を書く側**
+ * （[`board-round.mjs`](board-round.mjs) の `returnBody`）が、同じ表を読む。
+ *
+ * - `kind` … **起こされた側がやること**（1.3）。盤面から見た効き目（どれも「書いた本人を起こす」）
+ *   では束ねない——渡す文面が1つになって作業が読めなくなる。**`mend` の3つは作業が同じ**なので
+ *   束ねるが、**指紋は理由ごとに分ける**（下の `mendMark`）。
+ * - `why` … 覚え書きと、人へ返すコメントに出す**何が起きているか**。**リポジトリを開かずに読める
+ *   形で書く**（2.22.3）。
+ */
+export const MENDS = {
+  reject: { kind: 'reject', why: 'ユーザーが差し戻した' },
+  look: { kind: 'look', why: '画面が変わるのに `## 見た目` が無い' },
+  [RETURNED]: { kind: 'mend', why: 'レビューから差し戻された' },
+  'mend:conflict': { kind: 'mend', why: 'コンフリクトしている' },
+  'mend:red': { kind: 'mend', why: 'CIが赤い' },
+};
+
+/**
+ * 頼み終えた差し戻しを人へ返すとき、**人がすること**（2.13.6。読むのは
+ * [`board-round.mjs`](board-round.mjs) の `returnBody`）。**リポジトリを開かずに読める形で書く**（2.22.3）。
+ *
+ * **引くのは `MENDS` の `kind`**（起こされた側がやること）——返すのは**その相手が戻ってこなかった
+ * ぶんを人が引き取る**ことなので、軸が同じ。理由ごとに書き分けると、`mend` の3つへ同じ文が3つ並ぶ。
+ */
+export const TAKEOVER = {
+  mend: 'PRを見て、直しを引き取って push してください（**新しいコミットが載れば指紋が動く**ので、盤面はそこからまた差し戻しを頼めます）。引き取らないなら、PRを閉じてください',
+  reject:
+    'PRのコメントに書いた「直してほしいこと」を引き取って push してください（**新しいコミットが載れば `却下` も外れます**）。通す気が無いなら、PRを閉じてください',
+  look: 'PR本文へ `## 見た目` の節を足してください——画面を撮って貼るか、「不要」とその理由の1行（撮り方は `.claude/skills/run/SKILL.md`、貼り方は `bash scripts/agent/push-screenshot.sh <画像> <名前>`）。**コミットは要りません。** 引き取らないなら、PRを閉じてください',
+};
 
 /**
  * 実在するセッションIDの形（2.11.3）。**名乗りがそもそもIDでないことを見分ける手はこれだけ**
@@ -803,33 +837,76 @@ export function moves(input) {
   }
 
   /**
+   * そのPRの事情が、**`main` の動きで生まれても消えてもいるか**（2.14.2）。衝突とCIの赤は**PRの版が
+   * 変わらないまま `main` が動いて生まれる**ので、裏返すと**`main` が次に動けば理由のほうが消える
+   * ことがある**——取り込み直せば緑になるPRが、これに当たる。
+   *
+   * **見るのは理由ではなく、今そうなっているか。** `直し待ち` で頼んだ後に赤くなったPRは理由が
+   * `RETURNED` のままなので（下の `cause` の順）、理由で引くと**その版へ二度と手が出ない**
+   * （issue #2045。2026-09-19 に PR #2340 と #2374 が同時にこの形で止まった）。
+   */
+  const mainBound = (pr) => pr.mergeable === 'CONFLICTING' || checks(pr) === 'red';
+
+  /**
    * 差し戻しの指紋。**理由ごとに分ける**（下の `cause`）——セッションは枠を1つしか持たないので、
    * 同じ差分で別の理由の手を打つときに前の指紋と一致すると、後から来たほうが黙って落ちる。
    *
-   * **打つ側と、頼み終えたかを見る側（`askedAlready`）が同じ綴りを見る**ので、ここから出す。
+   * **`main` の動きに繋がった事情が在るなら、そのとき見た `main` の指紋も入れる**（上の `mainBound`）。
+   * **入れないと、`main` が動いて理由が消えても「もう打った」と読み続ける**——#2136 は `main` が
+   * 緑へ戻った後も2時間25分、取り込めば直る赤のまま誰の手番でもなかった。**`mend` の理由だけに
+   * 掛ける**のは、`reject` と `look` が `main` の色と関わらないから（2.14.2 と同じ線）。
+   *
+   * **打つ側と、頼み終えたかを見る側（`askedMender`）が同じ綴りを見る**ので、ここから出す。
    */
-  const mendMark = (cause, pr) => `${cause}:${pr.number}:${pr.headRefOid}`;
+  const mendMark = (cause, pr) =>
+    `${cause}:${pr.number}:${pr.headRefOid}` +
+    (MENDS[cause].kind === 'mend' && mainBound(pr) && input.mainHead ? `:${input.mainHead}` : '');
 
   /**
-   * `直し待ち` の差し戻しを**頼み終えた**か（2.13.6）。頼む相手が全員、同じ指紋で一度起こされた
-   * あと、手が空いたまま戻ってこない形——**盤面がこの版へ打てる手は出し尽くしていて、相手も
-   * 動いていない。**
+   * 差し戻しを**頼み終えた相手**（頼み終えていなければ `undefined`）。頼む相手が全員、同じ指紋で
+   * 一度起こされたあと、手が空いたまま戻ってこない形——**盤面がこの版へ打てる手は出し尽くしていて、
+   * 相手も動いていない。**
+   *
+   * **真偽ではなく相手を返す。** 次の段は人へ返す手（下の `stage`）で、**宛先が要る**——真偽にすると
+   * 受け取った側が同じ一覧をもう一度引いて「居るはず」に乗ることになり、**その読みが破れても落ちる
+   * ものが無い。**
    *
    * **本文だけを直した周がこれ。** 直しがコミットにならないと指紋が動かないので、同じ差し戻しは
    * 二度と出ず、印も外れない（issue #2014、PR #1982）。
    *
+   * **理由では絞らない。** `直し待ち` だけを見ていた間、`却下`・衝突・CIの赤で頼み終えたPRは
+   * **次の段を持たないまま黙って止まった**（issue #2045）——止まる形は理由によらず同じ1つなので、
+   * 出口も1つでよい（下の `stage`）。
+   *
    * **`busySession` では足りない**（1.6）。手番の切れ目ごとに落ちるので、直している最中の
    * セッションが毎周この形に見える——`stillWorking` と同じ線で、戻ってこないことのほうを見る。
    */
-  function askedAlready(pr) {
+  function askedMender(cause, pr) {
     const holders = menders(pr);
-    return (
-      holders.length > 0 &&
-      holders.every(
-        (holder) => !stillWorking(input, holder) && taken[`resume:${holder.id}`] === mendMark(RETURNED, pr),
-      )
-    );
+    if (holders.length === 0) return undefined;
+    const done = (holder) =>
+      !stillWorking(input, holder) && taken[`resume:${holder.id}`] === mendMark(cause, pr);
+    return holders.every(done) ? holders[0] : undefined;
   }
+
+  /**
+   * そのPRの仕事が、**もう人の手番に在る**か（2.15）。盤面が返した後（下の `RETURN`）と、ワーカーが
+   * 自分で返した後（2.15.2）の両方がこれ。
+   *
+   * **ラベルと台帳の両方を見る。** どちらか片方では窓が開く。
+   *
+   * - **ラベルだけでは、返した直後の周が抜ける。** `判断待ち` を付けるのは名乗りを読む段
+   *   （`board-labels.yml` の `declared`）で、**出来事で動くので遅れるうえ転びうる**（2.13.7）
+   *   ——その窓で差し戻しを打つと、**返したばかりの相手へ指示が飛び、覚えが上書きされて
+   *   `[返却]` が2通目から積まる。**
+   * - **台帳だけでは、ワーカーが自分で返した形が抜ける**（2.15.2）。あれは盤面の覚えに出ない。
+   */
+  const handedOver = (pr) =>
+    closes(pr.body).some(
+      (issue) =>
+        names(input.issues.find((item) => item.number === issue) ?? {}).includes('判断待ち') ||
+        menders(pr).some((holder) => taken[`resume:${holder.id}`] === `returned:${issue}`),
+    );
 
   /**
    * その仕事がワーカーの手を離れた形（2.10.2）。まだ持っているなら `undefined`。**呼ぶのは手が
@@ -931,42 +1008,96 @@ export function moves(input) {
     // **人の手番で止まっているPRでも、差し戻しそのものは出る**（`reject`・`look`・`直し待ち`）。
     // 止まるのは `main` が動いて生まれた2つだけで、その線引きは下の `MAIN_MOVED`（2.13.8）。
     //
-    // **束ねるのは渡す文面だけで、指紋は理由ごとに分ける**（下の `cause`）。
-    const [kind, reason, cause] = labels.includes('却下')
-      ? ['reject', 'ユーザーが差し戻した', 'reject']
+    // **束ねるのは渡す文面だけで、指紋は理由ごとに分ける**（`MENDS`）。
+    const cause = labels.includes('却下')
+      ? 'reject'
       : missingLook(pr)
-        ? ['look', '画面が変わるのに `## 見た目` が無い', 'look']
+        ? 'look'
         : wantsMend(pr, labels)
-          ? ['mend', '差し戻された', RETURNED]
+          ? RETURNED
           : pr.mergeable === 'CONFLICTING'
-            ? ['mend', 'コンフリクトしている', 'mend:conflict']
+            ? 'mend:conflict'
             : check === 'red'
-              ? ['mend', 'CIが赤い', 'mend:red']
-              : [null, null, null];
+              ? 'mend:red'
+              : undefined;
+    const { kind = null, why: reason = null } = cause === undefined ? {} : MENDS[cause];
 
-    // **頼み終えた差し戻しは、レビューへ渡す**（2.13.6）。`直し待ち` が付いたまま、同じ版で起こした
-    // 相手が戻ってこない形は、**盤面がこの版へ打てる手を出し尽くしている**——ここで止めると、
-    // 書いた本人は「直した」と思って手を止め、盤面は「頼み終えた」と読み、**どちらも次の手を
-    // 持たない**（issue #2014）。差し戻しを打ち直しても指紋が同じで落ちるだけなので、**止めずに
-    // 下のレビューの入口へ落とす。**
-    const asked = cause === RETURNED && askedAlready(pr);
+    // **頼み終えた差し戻しには、次の段がある**（2.13.6）。同じ指紋で一度起こした相手が戻って
+    // こない形は、**盤面がこの版へ打てる手を出し尽くしている**——ここで止めると、書いた本人は
+    // 「直した」と思って手を止め、盤面は「頼み終えた」と読み、**どちらも次の手を持たない**
+    // （issue #2014・#2045）。差し戻しを打ち直しても指紋が同じで落ちるだけなので、**止めずに下の
+    // 段へ落とす。**
+    const asked = cause === undefined ? undefined : askedMender(cause, pr);
 
-    if (kind !== null && !asked) {
-      // **人の手番で止まっているPRは、`main` の動きでは起こさない**（2.13.8）。止まった版は緑で
-      // マージできた形（盤面がマージもレビューも緑としか出さない）なので、後から出た衝突とCIの赤は
-      // **`main` が動いたぶん**——直しても答えは近づかず、次に `main` が動けば同じところへ戻る。
-      // **取り込むのは、答えが付いた周の1回だけ。**
-      if (MAIN_MOVED.includes(cause) && labels.some((name) => HUMAN_TURN.includes(name))) {
-        notes.push(`PR #${pr.number} は${reason}が、人の手番で止まっているので直しを頼まない`);
-        continue;
-      }
-      // **`main` が赤い間は直しを頼まない**（2.14）。頼む先が居るかを調べる手前で止める——相手が
-      // 誰であっても、直せないことは変わらない。`reject` と `look` は**出た理由が `main` の色と
-      // 関わらない**ので、そのまま出す（待たせても変わらず、押し返されても印は付き直らない）。
-      if (kind === 'mend' && mainCheck === 'red') {
-        notes.push(`PR #${pr.number} は${reason}が、\`main\` が赤いので直しを頼まない`);
-        continue;
-      }
+    /**
+     * 頼み終えた差し戻しの**次の段**（2.13.6）。頼み終えていなければ `undefined`。
+     *
+     * **3値で持つ。** 「レビューへ渡せる」「渡せない」のほかに**「まだ言えない」**が在る——
+     * `main` が動くたびに開いているPRの `mergeable` は全部 `UNKNOWN` へ落ち、CIが走り直している
+     * 最中の色は `running`（2.12.2）。**返す手は取り消せない**（issue へ `[返却]` が載って `判断待ち`
+     * が付き、次の周にワーカーが畳まれてそのPRは宛先の無いPRになる）ので、**次の周には決まる値で
+     * 打たない**——言えない周は何も打たずに待つ。
+     *
+     * **`直し待ち` 以外は、色を見るまでもなく渡せない。** `却下` は push でしか外れず、`look` は
+     * 本文の話で、衝突とCIの赤はその理由そのものが入口を閉じている。
+     */
+    const stage =
+      asked === undefined
+        ? undefined
+        : cause !== RETURNED
+          ? 'return'
+          : check === 'green' && pr.mergeable === 'MERGEABLE'
+            ? 'review'
+            : check === 'red' || pr.mergeable === 'CONFLICTING'
+              ? 'return'
+              : undefined;
+
+    // **担当の issue が人の手番に在るPRへは、直しを頼まない**（2.15）。返された仕事のワーカーは
+    // 次の周に畳まれる（2.10.2）ので、頼んでも届く先が消える——**返した周の次に打つ手が、返したことを
+    // 打ち消す形にもなる。** 返し終えているぶんも、ここで二度目を止める（`handedOver`）。
+    //
+    // **PRの側の `判断待ち` とは別**（下の `HUMAN_TURN`）。あちらはそのPRを通すかの答え待ちなので
+    // `却下`・`look`・`直し待ち` は出るが、**こちらは仕事そのものが人の手に在る。**
+    //
+    // **この断りも下の2つも、レビューへ渡す段（`stage`）は止めない。** どれも「**直しを頼めない・
+    // 返しても直る先が無い**」ことの断りで、**もう1周読ませる手はそのどちらでもない**——止めると、
+    // `main` が赤い周や担当が人の手番に在る周に、**緑でマージできる `直し待ち` のPRが 2.13.6 の
+    // 経路ごと消える。**
+    if (kind !== null && stage !== 'review' && handedOver(pr)) {
+      notes.push(`PR #${pr.number} は${reason}が、担当の issue が人の手番で止まっている`);
+      continue;
+    }
+
+    // **人の手番で止まっているPRは、`main` の動きでは起こさない**（2.13.8）。止まった版は緑で
+    // マージできた形（盤面がマージもレビューも緑としか出さない）なので、後から出た衝突とCIの赤は
+    // **`main` が動いたぶん**——直しても答えは近づかず、次に `main` が動けば同じところへ戻る。
+    // **取り込むのは、答えが付いた周の1回だけ。**
+    //
+    // **頼み終えていても同じ。** 下の段（人へ返す）へ落とすと、**答えを待っているだけのPRから
+    // 差し戻す相手を奪う**——返せばワーカーが畳まれ、そのPRは宛先の無いPRになる（2.11.4）。
+    // 待っているのは人の答えで、届けば `却下` かマージがそのまま次の手になる。
+    if (
+      kind !== null &&
+      stage !== 'review' &&
+      MAIN_MOVED.includes(cause) &&
+      labels.some((name) => HUMAN_TURN.includes(name))
+    ) {
+      notes.push(`PR #${pr.number} は${reason}が、人の手番で止まっているので直しを頼まない`);
+      continue;
+    }
+
+    // **`main` が赤い間は直しを頼まない**（2.14）。頼む先が居るかを調べる手前で止める——相手が
+    // 誰であっても、直せないことは変わらない。`reject` と `look` は**出た理由が `main` の色と
+    // 関わらない**ので、そのまま出す（待たせても変わらず、押し返されても印は付き直らない）。
+    //
+    // **頼み終えていても同じ。** そのPRが赤いのは `main` が赤いからで、**人へ返しても直せる者は
+    // 増えない**——`main` を緑へ戻す役は盤面の中にも人の手番にも無く、赤を直すPRが入れば消える。
+    if (kind === 'mend' && stage !== 'review' && mainCheck === 'red') {
+      notes.push(`PR #${pr.number} は${reason}が、\`main\` が赤いので直しを頼まない`);
+      continue;
+    }
+
+    if (kind !== null && asked === undefined) {
       // 直す相手は、そのPRを書いたセッション。**畳まれていれば起こせない**——畳むのは
       // 「この仕事は終わった」と判断した側の明示の操作なので、機械では戻さない（1.2）。
       const holders = menders(pr);
@@ -991,6 +1122,28 @@ export function moves(input) {
         if (taken[`resume:${holder.id}`] === mark) continue;
         mends.push(`RESUME ${holder.id} ${kind} ${pr.number} ${mark}`);
       }
+      continue;
+    }
+
+    // **レビューへ渡せない差し戻しは、人へ返す**（2.13.6 の `stage`）。渡せないものを黙って落として
+    // いたので、`却下`・衝突・CIの赤は誰の手番でもないまま止まっていた（issue #2045。2026-09-17 には
+    // コンフリクトした7本が、09-19 には赤い2本が同時にこの形だった）。
+    if (stage === 'return') {
+      // 返す先は**担当の issue**。`判断待ち` を付けるのは名乗りを読む段（`board-labels.yml` の
+      // `declared`）で、**あれが見るのは issue のコメントだけ**——`Closes` の無いPRには返す口が無い。
+      const [issue] = closes(pr.body);
+      if (issue === undefined) {
+        notes.push(
+          `PR #${pr.number} は${reason}が、頼み終えて戻ってこない（閉じる issue が無いので返せない）`,
+        );
+        continue;
+      }
+      // **返す理由は手そのものが運ぶ**（2.15.3）。後から状態を見ても、頼んだのに戻ってこなかった
+      // ことは分からない——人へ置くコメントの文面はここで決まる（`board-round.mjs` の `returnBody`）。
+      //
+      // **宛先は `asked` が運んでくる**（`askedMender`）。返すのは issue 1件へのコメント1つなので、
+      // 名乗りが同じ相手が一覧に重なって居ても手は1つ（宛先の無いPRを返す側も同じ形。下の `RETURN`）。
+      returns.push(`RETURN ${issue} ${asked.id} returned:${issue} ${cause}:${pr.number}`);
       continue;
     }
 
@@ -1044,7 +1197,7 @@ export function moves(input) {
     // 求めたぶんは上の `wantsMend` が差し戻しているので、残るのは `通してよい` が付かなかった形
     // で、**マージは導出できない**（2.13.5）。落ち着いても札が付かないなら、もう1周読ませて
     // 付け直させる。
-    if (!asked && verdictOn(pr, false) !== undefined) {
+    if (asked === undefined && verdictOn(pr, false) !== undefined) {
       // **2度目は出さない。** 読ませ直しても付かないなら、札を付ける側が壊れている——同じ手を
       // 繰り返してもレビューのセッションが減るだけで、直せるのは人だけ。
       //

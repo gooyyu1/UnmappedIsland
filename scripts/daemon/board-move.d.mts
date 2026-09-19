@@ -26,6 +26,18 @@ export const SESSION_ID: RegExp;
 /** 宛先を引けない名乗りの形と、それぞれ人がすること（`agent-ops/board-design.md` 2.11.4）。 */
 export const STRANDS: Readonly<Record<string, { why: string; fix: string }>>;
 
+/**
+ * 差し戻す理由と、そこから決まるもの（`agent-ops/board-design.md` 2.13.6）。人へ返す文面を書く側が
+ * `why` をここから取る。
+ */
+export const MENDS: Readonly<Record<string, { kind: string; why: string }>>;
+
+/**
+ * 頼み終えた差し戻しを人へ返すときに、人がすること（`agent-ops/board-design.md` 2.13.6）。鍵は
+ * `MENDS` の `kind`。
+ */
+export const TAKEOVER: Readonly<Record<string, string>>;
+
 /** そのPRの宛先を引けない形（引けるなら `undefined`）。 */
 export function strandOf(
   pr: { number: number },

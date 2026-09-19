@@ -27,7 +27,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { STRANDS, busySession, moves } from './board-move.mjs';
+import { MENDS, STRANDS, TAKEOVER, busySession, moves } from './board-move.mjs';
 import { MERGED_WINDOW_HOURS, readBoard } from './board-read.mjs';
 import {
   NOTE_PREFIX,
@@ -273,12 +273,32 @@ export function trackIdle(taken, board, now) {
  * [`board-labels.yml`](../../.github/workflows/board-labels.yml)——**ワーカーが自分で返すときと同じ道**
  * （`agent-ops/board-design.md` 2.15）。ラベルを盤面から直に触らないので、返す経路が2つに割れない。
  *
- * **返す理由ごとに文面を分ける**（2.11.4）。返す形は2つあり、**人がすることが違う**——止まった
- * ワーカーの仕事は投入し直せば進むが、**宛先の無いPRは、そのPRを直さないかぎり何度投入しても
- * 同じところで止まる。** 1つの文面に畳むと、**読んだ人が手を入れる先を間違える。**
+ * **返す理由ごとに文面を分ける**（2.11.4）。**人がすることが返す形ごとに違う**ので、1つの文面に
+ * 畳むと**読んだ人が手を入れる先を間違える。**
+ *
+ * - **起こしても動かなかったワーカー**（2.15.3）… 投入し直せば進む
+ * - **宛先の無いPRを抱えた担当**（2.11.4）… そのPRを直さないかぎり、何度投入しても同じところで止まる
+ * - **頼み終えた差し戻しが戻ってこないPR**（2.13.6）… 宛先は居るが動かない。**直しを引き取るか、
+ *   PRを閉じるまで、そのPRの版は動かない**
  */
 function returnBody(session, issue, cause) {
-  const [kind, number] = String(cause ?? '').split(':');
+  // **綴りは最後の `:` で割る。** 差し戻しの理由（`board-move.mjs` の `MENDS`）は綴りそのものに
+  // `:` を持つ（`mend:red`）ので、頭から割ると理由が切れる。
+  const at = String(cause ?? '').lastIndexOf(':');
+  const kind = at < 0 ? '' : String(cause).slice(0, at);
+  const number = at < 0 ? '' : String(cause).slice(at + 1);
+  const mend = MENDS[kind];
+  if (mend !== undefined)
+    return `[返却] PR #${number} の直しを頼んでも、戻ってこない
+
+この issue のPR（#${number}）は**${mend.why}**ので、盤面は書いた本人のセッション（\`${session}\`）へ
+直しを頼みました。**それから手が動かないまま、そのPRも変わっていません**——**盤面がこの版へ打てる手は
+尽きました**（\`agent-ops/board-design.md\` 2.13.6）。
+
+**直すには**: ${TAKEOVER[mend.kind]}。
+
+手が動き出したら、この issue（#${issue}）から \`判断待ち\` を外してください。
+`;
   const strand = STRANDS[kind];
   if (strand === undefined)
     return `[返却] 起こしても手が動かなかった
