@@ -26,12 +26,7 @@ import { MINUTES_PER_TICK } from '../domain/worldTime';
 import type { BecomeDestinationResolver, EffectReading } from './effectOutcomes';
 import { consumesRoot, destroysRoot, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
-import type {
-  StaticSubjectReader,
-  StaticValueLayer,
-  StaticValueRange,
-  StaticValueResolver,
-} from './staticValue';
+import type { StaticPropertyReading, StaticSubjectReader, StaticValueResolver } from './staticValue';
 import {
   highestDeclaredLayer,
   layeredResolver,
@@ -56,25 +51,26 @@ import type { PropertyGlobalId } from '../domain/GlobalId';
  * 終端の工程として数える）。ただし**条件（14節）が定義だけから偽と分かる操作は挙げない**
  * （conditionsNeverMet）。
  *
- * outerは、self以外の起点（祖先が入れる値・使う物の値）を定義だけから解く手立て。省くと、
+ * outerは、self以外の起点（祖先が置かれている土地・使う物）を定義だけから読む文脈。省くと、
  * それらを参照する工程に「確定しない」印が付く（CraftingStep.hasUnresolvedReferences）。
  * **作るのはanalysisContextOfだけ**なので、渡された文脈には必ず行っている人（agent）の層が入る。
  */
 export function craftingStepsOf(
   codex: WorldCodex,
   def: ObjectDef,
-  outer?: StaticValueResolver,
+  outer?: AnalysisContext,
 ): readonly CraftingStep[] {
-  const context = outer ?? analysisContextOf(codex, []);
+  const context = outer ?? analysisContextOf(codex);
+  const resolve = context.resolve;
   const steps: CraftingStep[] = [];
   for (const trigger of def.triggers)
     for (const instrument of instrumentTypesOf(codex, trigger)) {
       if (conditionsNeverMet(codex, def, instrument, trigger.interaction, context)) continue;
       steps.push(
-        withTriggeredRangeEvents(codex, interactionStep(codex, def, trigger, instrument, context), context),
+        withTriggeredRangeEvents(codex, interactionStep(codex, def, trigger, instrument, resolve), resolve),
       );
     }
-  for (const recipe of def.recipesProducingThis) steps.push(recipeStep(codex, def, recipe, context));
+  for (const recipe of def.recipesProducingThis) steps.push(recipeStep(codex, def, recipe, resolve));
   return steps;
 }
 
@@ -91,9 +87,50 @@ export function exploreStepOf(codex: WorldCodex, locationDef: ObjectDef): Crafti
 }
 
 /**
+ * 定義だけから解く文脈。**値を解く手立てと、祖先に就く土地を1つに持つ**——同じ土地から出る2つの
+ * 答え（祖先が入れる値と、祖先の型で決まる条件の真偽）なので、別々に渡すと片方だけずれる。
+ */
+export interface AnalysisContext {
+  /** ReferenceRootが指すプロパティの値を、定義だけから解く手立て。 */
+  readonly resolve: StaticValueResolver;
+
+  /**
+   * 祖先（8.6節）に就く土地の候補。**空なら定まらない**——その起点を見る条件は素通しになる
+   * （conditionsNeverMet）。
+   */
+  readonly ancestorLocations: readonly ObjectDef[];
+}
+
+/**
+ * 実行時にしか就く相手が決まらない起点の、候補（analysisContextOf）。**受け取るのは候補だけで、
+ * 層はここで組む**——起点ごとの読み方（UndeclaredReading）を呼び出し側が選べると、同じ起点が文脈に
+ * よって違う埋まり方をする。
+ *
+ * 行っている人（agent）はここに無い。**どの文脈でも候補が同じ**（操作するのは常にキャラクタ）なので、
+ * 渡させる意味が無い。
+ */
+export interface AnalysisCandidates {
+  /**
+   * 祖先（8.6節）に就く土地。置く先が決まっているならその土地1つ、どの土地に置いてもよい前提なら
+   * 島の土地すべて。**宣言していない土地では寄与0**（highestDeclaredLayerの`zero`）。
+   */
+  readonly ancestorLocations?: readonly ObjectDef[];
+
+  /**
+   * 使う物（instrument、11.5節）に就きうる型。これが無いと、相手の値を見る重み——一撃がどう入るかは
+   * 武器が決める（HuntingSystem.md 1.2節）——が解けず、宣言順で最初の候補だけが起こることになる
+   * （PickEffect.selectWeighted）。
+   */
+  readonly instruments?: readonly ObjectDef[];
+}
+
+/**
  * 定義だけから値を解く文脈を作る唯一の入口。**行っている人（agent、11.5節）の層は必ずここが入れる**
  * ——足し忘れると、腕を土台にした重みが解けず、その候補は起こらないものとして数えられる。
- * **呼び出し側が覚えておく手順にしない**ため、層を渡す口をここ1つに絞ってある。
+ * **呼び出し側が覚えておく手順にしない**ため、層を組む口をここ1つに絞ってある。
+ *
+ * **祖先の土地も同じ理由でここが受け取る。** 値を埋める層（highestDeclaredLayer）と、条件を判定する
+ * 土地（AnalysisContext.ancestorLocations）を別々に渡させると、2箇所が暗黙に一致すべき規約になる。
  *
  * 行っている人の候補は全キャラクタ（highestDeclaredLayer）なので、水分のように個体で分かれる値も
  * 最も高く宣言している1人に決まる。腕前の上乗せ（docs/world/Skills.md 5節）は素の0、荷重が
@@ -104,12 +141,17 @@ export function exploreStepOf(codex: WorldCodex, locationDef: ObjectDef): Crafti
  * 重み——着火の成否・探索で獣に出くわす確率・打った一撃の当たり所——が解けず、その候補は起こらない
  * ものとして数えられる。
  */
-export function analysisContextOf(
-  codex: WorldCodex,
-  layers: readonly StaticValueLayer[],
-): StaticValueResolver {
+export function analysisContextOf(codex: WorldCodex, candidates: AnalysisCandidates = {}): AnalysisContext {
   const characters = [...codex.objects].filter((def) => def.hasTag(codex.vocabulary.world.characterTagId));
-  return layeredResolver([highestDeclaredLayer('agent', characters, 'unresolved'), ...layers]);
+  const ancestorLocations = candidates.ancestorLocations ?? [];
+  return {
+    resolve: layeredResolver([
+      highestDeclaredLayer('agent', characters, 'unresolved'),
+      highestDeclaredLayer('ancestor', ancestorLocations, 'zero'),
+      highestDeclaredLayer('instrument', candidates.instruments ?? [], 'unresolved'),
+    ]),
+    ancestorLocations,
+  };
 }
 
 /**
@@ -162,62 +204,111 @@ function instrumentBecomeAxesOf(interaction: InteractionDef): ReadonlyMap<string
 
 /**
  * その操作の条件（14節）に、定義だけから偽と分かるものがあるか。**分からない条件は素通しにする**
- * ——祖先の天候のように実行時にしか決まらないものまで解こうとすると、収支を定義だけから出すという
- * 目的が壊れる（BalanceStats.md「この表が数えていないもの」）。
+ * ——スロットの中身のように実行時にしか決まらないものまで解こうとすると、収支を定義だけから出す
+ * という目的が壊れる（BalanceStats.md「この表が数えていないもの」）。
  *
  * 相手の型が定まっているなら、相手に課された条件も同じように読む——**空の容器へ注ぐ操作は、中身の
  * ある容器を相手には起こせない**（`{subject: instrument, prop: fill, eq: 0}`）。**型そのものへの
  * 指定も同じ**（`{subject: instrument, matches: {tag: cured}}`）——既に塩漬けの変種は、塩蔵の相手に
  * ならない。
+ *
+ * **祖先は土地の候補ごとに読み直す**（AnalysisContext.ancestorLocations）。実行時に祖先へ就くのは
+ * そのうちの1つなので、**どの候補でも満たせないときだけ**落とせる——支点の無い土地に立っている表
+ * からハンモックを吊る操作が消え、島全体（候補が全土地）の表には残る。
  */
 function conditionsNeverMet(
   codex: WorldCodex,
   def: ObjectDef,
   instrument: ObjectDef | undefined,
   interaction: InteractionDef,
-  outer: StaticValueResolver | undefined,
+  context: AnalysisContext,
 ): boolean {
-  const subject: StaticSubjectReader = {
-    rangeOf: (root, propertyGlobalId) => {
+  const ancestors: readonly (ObjectDef | undefined)[] =
+    context.ancestorLocations.length === 0 ? [undefined] : context.ancestorLocations;
+  return ancestors.every((ancestor) => {
+    const subject = staticSubjectOf(codex, def, instrument, ancestor, context.resolve);
+    return interaction.requirementDeclarations.some(
+      (requirement) => staticConditionTruth(requirement.condition, subject) === false,
+    );
+  });
+}
+
+/**
+ * 条件の葉が名指した起点を、この工程の型へ解く読み手（StaticSubjectReader）。ancestorは、その土地へ
+ * 置いた場合の読み（ancestorPropertyOf）。
+ */
+function staticSubjectOf(
+  codex: WorldCodex,
+  def: ObjectDef,
+  instrument: ObjectDef | undefined,
+  ancestor: ObjectDef | undefined,
+  outer: StaticValueResolver | undefined,
+): StaticSubjectReader {
+  return {
+    propertyOf: (root, propertyGlobalId) => {
+      if (root === 'ancestor') return ancestorPropertyOf(codex, ancestor, propertyGlobalId, outer);
       const subjectDef = rootTypeOf(def, instrument, root);
       return subjectDef === undefined
         ? undefined
-        : staticValueRangeOf(
-            codex,
-            subjectDef,
-            propertyGlobalId,
-            staticResolverOf(subjectDef, 'lowest', outer),
-          );
+        : staticPropertyOf(codex, subjectDef, propertyGlobalId, outer);
     },
     matchesType: (root, match) => {
+      // ancestorはプロパティ名で祖先を探すので、型そのものを指す葉には書けない（ReferenceScope）。
       const subjectDef = rootTypeOf(def, instrument, root);
       return subjectDef === undefined ? undefined : TypeMatchRule.readingMatches(match, subjectDef);
     },
   };
-  return interaction.requirementDeclarations.some(
-    (requirement) => staticConditionTruth(requirement.condition, subject) === false,
+}
+
+/**
+ * その土地へ置いた場合の、祖先（8.6節）のプロパティの読み。祖先は「そのプロパティを宣言している
+ * 最初の祖先」なので、**間に挟まる容れ物がそれを宣言していれば、土地までは遡らない**。
+ *
+ * だから言い切れるのは、**そのプロパティを宣言している型が土地しか無いとき**だけ——持ち物も器も
+ * 世界も宣言していないなら、遡り着く先はその土地1つに決まる（土地は入れ子にならない）。宣言して
+ * いる型が他に在れば、どれが祖先になるかは定義の側から決まらないのでundefinedを返す。
+ */
+function ancestorPropertyOf(
+  codex: WorldCodex,
+  ancestor: ObjectDef | undefined,
+  propertyGlobalId: PropertyGlobalId,
+  outer: StaticValueResolver | undefined,
+): StaticPropertyReading | undefined {
+  if (ancestor === undefined || declaredOutsideLocations(codex, propertyGlobalId)) return undefined;
+  return staticPropertyOf(codex, ancestor, propertyGlobalId, outer);
+}
+
+/** そのプロパティを、土地でない型が宣言しているか（祖先に挟まりうる＝土地まで遡るとは限らない）。 */
+function declaredOutsideLocations(codex: WorldCodex, propertyGlobalId: PropertyGlobalId): boolean {
+  return [...codex.objects].some(
+    (def) =>
+      !def.hasTag(codex.vocabulary.world.locationTagId) &&
+      def.tryGetPropertyDef(propertyGlobalId) !== undefined,
   );
 }
 
 /**
- * defがそのプロパティに取りうる値の範囲（StaticValueRange）。rangeを宣言していなければundefined
- * ——上下限が無ければ、どの値も取りうる。
+ * defにおける、そのプロパティの在り方（StaticPropertyReading）。宣言していなければ`absent`
+ * ——実行時は解決先が無く、どの比較も偽になる。rangeを宣言していなければundefined（上下限が
+ * 無ければ、どの値も取りうる）。
  */
-function staticValueRangeOf(
+function staticPropertyOf(
   codex: WorldCodex,
   def: ObjectDef,
   propertyGlobalId: PropertyGlobalId,
-  resolve: ReferenceValueResolver,
-): StaticValueRange | undefined {
+  outer: StaticValueResolver | undefined,
+): StaticPropertyReading | undefined {
   const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
-  const range = propertyDef?.range;
-  if (propertyDef === undefined || range === undefined) return undefined;
+  if (propertyDef === undefined) return { kind: 'absent' };
+  const range = propertyDef.range;
+  if (range === undefined) return undefined;
 
+  const resolve: ReferenceValueResolver = staticResolverOf(def, 'lowest', outer);
   const endsLeavingThisType: number[] = [];
   for (const [label, effect] of propertyDef.rangeEvents())
     if (leavesThisType(codex, def, effect, resolve)) endsLeavingThisType.push(range.endValue(label));
 
-  return { min: range.min, max: range.max, endsLeavingThisType };
+  return { kind: 'range', range: { min: range.min, max: range.max, endsLeavingThisType } };
 }
 
 /**
