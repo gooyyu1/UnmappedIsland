@@ -91,6 +91,32 @@ export function isVerbatimRecord(rel) {
 }
 
 /**
+ * 経緯そのものを主題とする文書（`docs/DocumentStyle.md` 9.1節の表）。
+ *
+ * **当時の名前・置き場をそのまま残す側**なので、改名や移動で綴りを一括して直す検査はここを外す
+ * （同節。今の綴りへ直すと、その日にその名前の物ができたことになる）。
+ *
+ * **表からだけ引く。** 写すと、表を増やしたときに2箇所がずれる——**読む側は1つではない**
+ * （過去の姿を語る語を見る `tests/docs/docHistory.test.ts` と、パスの綴りを見る
+ * `tests/docs/docReferences.test.ts`）。
+ *
+ * @param {string} root リポジトリの根
+ * @returns {Set<string>} 根からの相対パス（区切りはそのプラットフォームのもの）
+ */
+export function historyDocs(root) {
+  const styleDoc = join('docs', 'DocumentStyle.md');
+  const text = readFileSync(join(root, styleDoc), 'utf-8');
+  const section = /\n### 9\.1 [^\n]*\n([\s\S]*?)(?=\n#{2,3} |$)/.exec(text);
+  if (section === null) throw new Error(`${styleDoc} に 9.1 節が無い`);
+  const docs = new Set();
+  for (const [, target] of section[1].matchAll(/^\| \[[^\]]+\]\(([^)\s]+)\)/gm)) {
+    docs.add(join('docs', ...target.split('#')[0].split('/')));
+  }
+  if (docs.size === 0) throw new Error(`${styleDoc} 9.1 節の表から文書を引けない`);
+  return docs;
+}
+
+/**
  * その回の観測の記録か（`agent-ops/analysis/**`）。参照は今のリポジトリを指すので規約が掛かり、
  * **確定度の印だけが外れる**——印はそこでは題材として現れる。
  *

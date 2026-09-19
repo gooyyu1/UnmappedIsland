@@ -10,6 +10,7 @@ import {
 } from '../../scripts/daemon/prompt-body.mjs';
 import {
   COMMENTED_EXTENSIONS,
+  historyDocs,
   isAnalysisRecord,
   isMarkRuleDoc,
   isVerbatimRecord,
@@ -34,8 +35,8 @@ import { isPathTarget, linksIn, pathTargetsIn } from '../../scripts/markdownLink
  * ——TypeDoc が `/reference/` を作るときに読む側なので、切れたままだと公開の頁のリンクが死ぬ。
  *
  * **外すのは、当時の現物をそのまま残す記録**（{@link isVerbatimRecord}。DocumentStyle.md 10節）
- * **と、パスの綴りだけはその回の観測も**（{@link PATH_CHECKED_FILES}）。実装状況の印（4節・4.1節）
- * だけは `docs/` に閉じており、理由は {@link docByPath}。
+ * **と、パスの綴りだけは当時の在り処を残す側も**（{@link PATH_CHECKED_FILES}）。実装状況の印
+ * （4節・4.1節）だけは `docs/` に閉じており、理由は {@link docByPath}。
  *
  * - Markdownリンク（ファイル・アンカー）が実在すること
  * - 地の文・囲みに書いたリポジトリ直下からのパスが実在すること（{@link repoPathsIn}）
@@ -186,14 +187,19 @@ const COMMENTED_SOURCES = trackedFiles(ROOT).filter((rel) =>
 const REF_FILES = trackedRefSources(ROOT);
 
 /**
- * パスの綴り（{@link repoPathsIn}）を課す側。**{@link REF_FILES} から、その回の観測
- * （{@link isAnalysisRecord}）だけをさらに外す。**
+ * パスの綴り（{@link repoPathsIn}）を課す側。**{@link REF_FILES} から、当時の置き場をそのまま残す
+ * 側をさらに外す**——経緯を主題とする文書（{@link historyDocs}。DocumentStyle.md 9.1節が「改名や
+ * 移動で参照を一括して直すときは、この表の文書を対象から外してください」と決めている）と、その回の
+ * 観測（{@link isAnalysisRecord}）。
  *
- * あそこが書いているのは**当時の置き場**で、引っ越した先を指し直すと観測そのものが書き換わる
- * （行番号で互いを引き合っているので、直した行を後の回が「旧の置き場を指している」と名指したまま
- * 残る）。節番号や節名の参照とは、そこが違う——**綴りは在り処で、在り処は当時の事実**。
+ * **どちらも、綴りが指しているのは当時の在り処**で、今の綴りへ直すとその日にその名前の物ができた
+ * ことになる。記録のほうは互いを行番号で引き合ってもいるので、直した行を後の回が「旧の置き場を
+ * 指している」と名指したまま残る。節番号や節名の参照とは、そこが違う。
  */
-const PATH_CHECKED_FILES = REF_FILES.filter((rel) => !isAnalysisRecord(rel));
+const HISTORY_DOCS = historyDocs(ROOT);
+const PATH_CHECKED_FILES = REF_FILES.filter(
+  (rel) => !isAnalysisRecord(rel) && !HISTORY_DOCS.has(rel),
+);
 
 /**
  * 追跡しているパス全部——ファイルと、その親フォルダ。
