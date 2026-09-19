@@ -827,6 +827,19 @@ describe('fire.yamlの火の連鎖', () => {
     expect(heatIs(inTheRain, 'out'), '大雨の-4は薪の育ちを上回る').toBe(true);
   });
 
+  it('雨の野ざらしでも、太い枝1本ぶんの薪があれば種火は残って育つ', () => {
+    // FireSystem.md 3.1節。**戻した種火が残るかは薪の段しだい**——雨の-4を上回るのはsomeの段
+    // （fuel 10以上。太い枝1本が20）からで、fewの育ち+2では上の検査のとおり消える。
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    stoke(hearth, 'thick_branch');
+    hearth.getProperty(codex.propertyNames.getId('heat')).setNumber(1);
+    setWeather('heavy_rain');
+
+    session.advanceWorldTime(15);
+
+    expect(effectiveNumberOf(hearth, 'heat'), 'someの+6が雨の-4を上回る').toBe(3);
+  });
+
   it('焚き火は薪を積めるだけ積んでも高温には届かない', () => {
     const hearth = litCampfire();
     stoke(hearth, 'thick_branch'); // 上限の30まで積む
@@ -1133,6 +1146,34 @@ describe('fire.yamlの火の連鎖', () => {
     expect(temperatureOf(neighbor), '隣の土地は動かない（組んだだけの炉は暖めない）').toBe(outside);
     expect(temperatureOf(world), '世界も動かない').toBe(sky);
   });
+
+  it('炉の暖が戻す先は土地で変わり、山頂は平年へ戻らない', () => {
+    // FireSystem.md 9.2節。+8は**空が**最も冷えるとき（涼しい季節-5＋夜-3＝12℃）を平年の20℃へ
+    // 戻す量で、**土地の海抜ぶんの差はその上に乗る**（ClimateSystem.md 1.1節）。山頂は戻り切らず、
+    // それでも素のchill_pointは上回る——この2つが揃って初めて「火のそばなら冷えない」が言える。
+    const world = land.parent!;
+    setHour(NIGHT_HOUR);
+    world.getProperty(codex.propertyNames.getId('thermal_level')).setNumberWithoutEvents(0);
+    expect(temperatureOf(world), '空が最も冷えるとき').toBe(12);
+
+    const beach = spawnInto('sandy_beach', world, 'locations');
+    const peak = spawnInto('mountain_peak', world, 'locations');
+    litHearthOn(beach);
+    litHearthOn(peak);
+
+    expect(temperatureOf(beach), '海抜ぶんの差を持たない土地はちょうど平年へ戻る').toBe(20);
+    expect(temperatureOf(peak), '山頂は3℃ぶん戻り切らない').toBe(17);
+    const chillPoint = player.getProperty(codex.propertyNames.getId('chill_point')).getEffectiveValue();
+    expect(temperatureOf(peak), '戻り切らなくても寒さの入口は上回る').toBeGreaterThan(chillPoint);
+  });
+
+  /** その土地に、火の生きている炉を1つ置く（着火の連鎖は通さず、火力だけを立てる）。 */
+  function litHearthOn(location: WorldObject): WorldObject {
+    const hearth = spawnInto('campfire', location, 'fixtures');
+    hearth.getProperty(codex.propertyNames.getId('fuel')).setNumber(20);
+    hearth.getProperty(codex.propertyNames.getId('heat')).setNumber(1);
+    return hearth;
+  }
 
   it('沸かした湯は放っておくと冷めて水に戻る', () => {
     const bowl = filledBowl('hot_water_liquid');
