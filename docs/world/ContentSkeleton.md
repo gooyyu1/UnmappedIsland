@@ -200,7 +200,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 足元にあっても、残る1つが3歩なら3歩です（[`StartupReachStats.md`](../diagnostics/StartupReachStats.md)
 計測方法節）。
 
-**選抜（2.3節）を通した今の島は、8割超が初心者、1割強が経験者、残りが熟練者です**
+**選抜（2.3節）を通した今の島は、大半が初心者で、次に多いのが経験者、熟練者はごくわずかです**
 （[`stats/startup_reach.yaml`](../../stats/startup_reach.yaml) の
 `island_start_site_hops_histogram`。2歩以内・3歩・4歩以上をそれぞれ足したもの）。選抜を通さずに
 砂浜から始めた場合の平均歩数は同 `site_all_needs_hops_by_start_location` の砂浜の行にあり、選抜は
