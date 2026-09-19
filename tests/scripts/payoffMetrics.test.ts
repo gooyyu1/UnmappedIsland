@@ -159,7 +159,7 @@ describe('npm run stats:payoff', () => {
   });
 
   // **0でないことを見る。** 表の形は全部0でも保たれるので、形だけ見ていると数え方が壊れたことに
-  // 気づけない（`countLines.mjs` の issue #867 と同じ形）。
+  // 気づけない（`countLines.mjs` で挙がった issue #867 と同じ形）。
   it.runIf(shallow !== 'true')('オブジェクト定義の数も、入ったPRの数も0ではない', () => {
     const result = run();
     expect(result.status).toBe(0);

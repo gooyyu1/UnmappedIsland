@@ -1,7 +1,14 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { isVerbatimRecord, trackedDocs, trackedFiles } from '../../scripts/docScope.mjs';
+import { commentsOnly } from '../../scripts/codeComments.mjs';
+import {
+  COMMENTED_EXTENSIONS,
+  isProseData,
+  isVerbatimRecord,
+  trackedDocs,
+  trackedFiles,
+} from '../../scripts/docScope.mjs';
 
 /**
  * 説明が挙げる名前が、今も在るものを指しているかの検査。**説明だけが古い名前で取り残される**
@@ -9,10 +16,11 @@ import { isVerbatimRecord, trackedDocs, trackedFiles } from '../../scripts/docSc
  * lintにも掛からない。初回の全数調査では、既に無いメソッドを指す説明がコメントに8件・
  * `docs/` に10件見つかった。
  *
+ * **読む先はどちらの見方も {@link PROSE} の1つ**——コメントを書ける形式のソース全部と、文書の全文。
  * 見方は2つあり、どちらが赤くなったかで直す場所が変わるので `it` を分けてある。
  *
- * 1. **`Xxx.yyy`・`Xxx.Yyy` の形**（下の「今は無い名前を指していない」）。見るのは `src`・`tests` の `.ts` の
- *    コメントと、{@link DOCUMENTS} の全文。判定は「**その所有者を宣言しているファイルの中に**その語が
+ * 1. **`Xxx.yyy`・`Xxx.Yyy` の形**（下の「今は無い名前を指していない」）。判定は
+ *    「**その所有者を宣言しているファイルの中に**その語が
  *    無いなら、指す先が無い」（hasMember）——**型ではなくファイルの単位**で、同居する別の型のメンバー
  *    でも「在る」になる。読み手が辿れることだけを見るので、公開・非公開は問わない。
  *    この形で書けば今も在るものを指している、と読む——**過去に在ったものを語る箇所での書き方**は
@@ -27,8 +35,10 @@ import { isVerbatimRecord, trackedDocs, trackedFiles } from '../../scripts/docSc
  *    参照として読まれた。
  * 2. **ファイルと名前が並んでいる形**（下の「ファイルと並べて挙げた名前が、そのファイルに在る」）。
  *    1 は所有者の無い裸の名前（`start`・`build`）を見られない——`docs/` の散文にいくらでも出てくる
- *    普通の英単語なので、一律に見ると誤検知になる。ただし文書が `Foo.ts` とその中身を並べて書いて
+ *    普通の英単語なので、一律に見ると誤検知になる。ただし説明が `Foo.ts` とその中身を並べて書いて
  *    いる箇所なら、**指す先のファイルが決まっている**ので裸のままでも判定できる。
+ *    **名前でないものを「の」で続けると、この形に読める**（`Foo.mjs` の issue #867）——そこは
+ *    並びを崩して書く（`DocumentStyle.md` 5節）。
  */
 
 const ROOT = resolve(__dirname, '../..');
@@ -49,20 +59,6 @@ function read(rel: string): string {
 
 /** 説明が書かれている行と、原文での行番号。 */
 type ProseLine = { readonly line: number; readonly text: string };
-
-/** `.ts` で説明が書かれているのはコメントの行だけ。 */
-function commentLines(text: string): ProseLine[] {
-  const kept: ProseLine[] = [];
-  let inBlock = false;
-  text.split('\n').forEach((raw, index) => {
-    const trimmed = raw.trim();
-    if (trimmed.startsWith('/*')) inBlock = true;
-    const isComment = inBlock || trimmed.startsWith('//') || trimmed.startsWith('*');
-    if (trimmed.includes('*/')) inBlock = false;
-    if (isComment) kept.push({ line: index + 1, text: raw });
-  });
-  return kept;
-}
 
 /** `.md` は全体が説明。コードフェンスの中の例も、実在の名前を指しているなら同じに見る。 */
 function allLines(text: string): ProseLine[] {
@@ -90,7 +86,33 @@ function codeOnly(text: string): string {
  */
 const REFERENCE = /\b([A-Z][A-Za-z0-9]*)\.([A-Za-z][A-Za-z0-9_]*)\b\.?/g;
 
-const SOURCES = [...filesIn('src', '.ts'), ...filesIn('tests', '.ts')];
+/**
+ * 宣言を読む側。**所有者がこのリポジトリのものか**（{@link ownedHere}）と**その所有者がそのメンバーを
+ * 持つか**（{@link hasMember}）は、ここに在る宣言だけで決まる——答えられるのは型を読める形式だけで、
+ * 説明を書ける形式はもっと広い（{@link COMMENTED_SOURCES}）。
+ */
+const TYPED_SOURCES = [...filesIn('src', '.ts'), ...filesIn('tests', '.ts')];
+
+/**
+ * 説明が書かれているソース。**コメントを書ける形式なら、追跡しているものは全部入る**
+ * ——`tools/**` の Python が `Card.ts` の定数を名指ししていても、`.ts` だけを見ていた間は
+ * 指し先が消えても赤くならなかった（#2190）。
+ *
+ * **形式の一覧を持っているのは [`docScope.mjs`](../../scripts/docScope.mjs)**（`COMMENTED_EXTENSIONS`）
+ * ——コメントのリンクを見る `docReferences.test.ts` も同じ1つから作る。別に持つと、片方だけが
+ * 新しい綴りを知らないまま緑になる。**在り処では絞らない**——フォルダを数え上げると、足した日にしか
+ * 更新されない一覧が射程を決めることになる。
+ */
+const COMMENTED_SOURCES = trackedFiles(ROOT).filter((rel) =>
+  COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)),
+);
+
+/**
+ * 宣言の値へ散文を置いているデータ（{@link isProseData}）。**コメントを書けない形式なので、
+ * 落ちるのは「コメントを書ける形式」で絞った側**だが、書いてある主張は同じ
+ * ——`tools/comfyui/recipes/*.json` は、生成の寸法を合わせる相手として `Card.ts` の定数を挙げている。
+ */
+const PROSE_DATA = trackedFiles(ROOT).filter(isProseData);
 
 /**
  * 名前を挙げている文書。**射程は `docs/` に閉じない**——`agent-ops/**` の係の本文もルートの
@@ -99,12 +121,29 @@ const SOURCES = [...filesIn('src', '.ts'), ...filesIn('tests', '.ts')];
  * 課す `docReferences.test.ts` と同じ1つ。
  */
 const DOCUMENTS = trackedDocs(ROOT).filter((rel) => !isVerbatimRecord(rel));
-const TARGETS = [
-  { files: SOURCES, proseOf: commentLines },
-  { files: DOCUMENTS, proseOf: allLines },
+
+/**
+ * 説明を読む先。**どちらの見方も同じここを読む**——片方だけが狭いと、そこへ書いた主張は形を
+ * 満たしていても誰も見ていない。
+ *
+ * `fenced` は、コードフェンスで囲みの中と外が切り替わる形式か。**Markdownだけ**——コメントの中の
+ * 行は、囲みの中に在っても説明の一部として書かれている。
+ */
+const PROSE: readonly {
+  readonly files: readonly string[];
+  readonly proseOf: (rel: string) => ProseLine[];
+  readonly fenced: boolean;
+}[] = [
+  {
+    files: COMMENTED_SOURCES,
+    proseOf: (rel) => allLines(commentsOnly(read(rel), rel)),
+    fenced: false,
+  },
+  { files: PROSE_DATA, proseOf: (rel) => allLines(read(rel)), fenced: false },
+  { files: DOCUMENTS, proseOf: (rel) => allLines(read(rel)), fenced: true },
 ];
 
-const CODE = SOURCES.map((rel) => codeOnly(read(rel))).join('\n');
+const CODE = TYPED_SOURCES.map((rel) => codeOnly(read(rel))).join('\n');
 const foundInCode = new Map<string, boolean>();
 function appearsInCode(name: string): boolean {
   const cached = foundInCode.get(name);
@@ -184,7 +223,7 @@ function appearsIn(file: string, name: string, face: Face): boolean {
  */
 const DECLARING_FILE = new Map<string, string | null>();
 const DECLARATION = new RegExp(`\\b${DECLARES}\\s+([A-Z][A-Za-z0-9]*)\\b`, 'g');
-for (const rel of SOURCES) {
+for (const rel of TYPED_SOURCES) {
   for (const [, name] of contentOf(rel, 'code').matchAll(DECLARATION)) {
     DECLARING_FILE.set(name, !DECLARING_FILE.has(name) || DECLARING_FILE.get(name) === rel ? rel : null);
   }
@@ -224,12 +263,39 @@ type FileMember = { readonly file: string; readonly name: string };
  */
 const FILE_PATH = String.raw`[\w./-]+\.\w+`;
 
+/**
+ * ファイル参照が始まってよい位置。**途中から切り出さない**——パスを構成する字が前に在るなら、
+ * そこはもっと長い綴りの一部で、切り出した先頭はその綴りが指すファイルではない
+ * （`~/.claude/settings.json` の末尾だけを見ると、このリポジトリの `.claude/settings.json` に
+ * すり替わる）。
+ */
+const FILE_STARTS = String.raw`(?<![\w~./-])`;
+
 /** ファイルを単独で置いた括弧。並んでいる名前は、括弧の直前に接しているもの。 */
 const NAME_THEN_FILE = new RegExp(String.raw`\`([^\`]+)\`\s*[（(]\s*\`(${FILE_PATH})\`\s*[）)]`, 'g');
 /** ファイルに続けて中身を挙げる括弧。並んでいる名前は、括弧の中のもの。 */
 const FILE_THEN_NAMES = new RegExp(String.raw`\`(${FILE_PATH})\`\s*[（(]([^）)]*)[）)]`, 'g');
-/** 括弧を使わず「の」で続ける書き方（`Card.ts` の `PAPER_INSET`）。並んでいる名前は、その直後のもの。 */
-const FILE_THEN_NAME = new RegExp(String.raw`\`(${FILE_PATH})\`\s*の\s*\`([^\`]+)\``, 'g');
+/**
+ * 名前として並ぶ字面。**囲みの有無は問わない**——囲みは「これは識別子だ」を表す記法にすぎず、
+ * 付いていなくても**ファイルと並べた名前は同じ主張**になる。囲みを条件にすると、素の字面で書いた
+ * 名指しがまとめて見張りの外へ落ち、しかも**落ちていることが緑と見分けられない**。囲みを要求して
+ * 書き手に直させる道も無い——囲みは主張の一部ではないので、無いことを咎める根拠が検査に無い。
+ */
+const LISTED_NAME = String.raw`\`[^\`]+\`|[A-Za-z_][A-Za-z0-9_]*`;
+
+/**
+ * 括弧を使わず「の」で続ける書き方（`Card.ts` の `PAPER_INSET`）。並んでいる名前は、その直後のもの。
+ *
+ * **区切りの記号だけで続けた並びは、どれも同じファイルのもの**（`Card.ts` の `PAPER_INSET` /
+ * `PAPER_RADIUS`）。先頭だけを採ると、**1つの主張のうち2つ目から先が見張りの外**になる
+ * ——寸法を揃える相手を挙げる場所は、揃える定数が複数あるのが普通。語（`と`・`や`）を挟んだ先は
+ * 別の所有者の話でありうるので、採るのは記号で続く間だけ。
+ */
+const FILE_OF_NAMES = new RegExp(
+  String.raw`${FILE_STARTS}\`?(${FILE_PATH})\`?\s*の\s*((?:${LISTED_NAME})(?:\s*[/・、]\s*(?:${LISTED_NAME}))*)`,
+  'g',
+);
+const LISTED_NAMES = new RegExp(LISTED_NAME, 'g');
 /** 図の1行の末尾に、空白で切り離して置かれたファイル。並んでいる名前は、その行が呼んでいるもの。 */
 const CALL_THEN_FILE = new RegExp(String.raw`^(.*?\S)\s\s+(${FILE_PATH})\b`);
 const QUOTED = /`([^`]+)`/g;
@@ -264,6 +330,14 @@ function quotedName(quoted: string): string | null {
   return nameIn(quoted);
 }
 
+/**
+ * 並びの1つが挙げている名前。**囲んであれば囲みの規則で読み**（{@link quotedName}）、素の字面なら
+ * それ自体が識別子——打つコマンドも引数の並びも、囲みが無ければ区切りの記号で切れている。
+ */
+function listedName(token: string): string | null {
+  return token.startsWith('`') ? quotedName(token.slice(1, -1)) : token;
+}
+
 /** セル全体が1つのファイル参照になっているとき、その実ファイル。 */
 const CELL_IS_FILE = new RegExp(String.raw`^\s*\`(${FILE_PATH})\`\s*$`);
 function cellFile(cell: string): string | null {
@@ -295,8 +369,9 @@ function fileMembersOn(text: string, insideFence: boolean): FileMember[] {
     const file = fileOf(match[1]);
     for (const quoted of match[2].matchAll(QUOTED)) add(file, quotedName(quoted[1]));
   }
-  for (const match of text.matchAll(FILE_THEN_NAME)) {
-    add(fileOf(match[1]), quotedName(match[2]));
+  for (const match of text.matchAll(FILE_OF_NAMES)) {
+    const file = fileOf(match[1]);
+    for (const token of match[2].matchAll(LISTED_NAMES)) add(file, listedName(token[0]));
   }
 
   if (!text.trim().startsWith('|')) return found;
@@ -315,9 +390,9 @@ function fileMembersOn(text: string, insideFence: boolean): FileMember[] {
 describe('説明の参照', () => {
   it('今は無い名前を指していない', () => {
     const dangling: string[] = [];
-    for (const { files, proseOf } of TARGETS) {
+    for (const { files, proseOf } of PROSE) {
       for (const rel of files) {
-        for (const { line, text } of proseOf(read(rel))) {
+        for (const { line, text } of proseOf(rel)) {
           for (const match of text.matchAll(REFERENCE)) {
             // `WorldCodex.schema.json`のように後ろが続くものはファイル名で、コードの中の名前ではない。
             if (match[0].endsWith('.')) continue;
@@ -339,26 +414,29 @@ describe('説明の参照', () => {
 
   it('ファイルと並べて挙げた名前が、そのファイルに在る', () => {
     const missing: string[] = [];
-    for (const rel of DOCUMENTS) {
-      let insideFence = false;
-      for (const { line, text } of allLines(read(rel))) {
-        if (text.trim().startsWith('```')) {
-          insideFence = !insideFence;
-          continue;
-        }
-        for (const { file, name } of fileMembersOn(text, insideFence)) {
-          // **コメントも見る**——YAMLのプロパティ名（`ambient_brightness`）はそのファイルを説明する
-          // コメントにしか現れないことがあり、それでも「そのファイルが扱っている」ことに変わりはない。
-          // ここが見たいのは指す先が在るかで、名前がコードの語彙かどうかではない。
-          if (appearsIn(file, name, 'all')) continue;
-          missing.push(`${rel}:${line} ${name}（${file} に無い）`);
+    for (const { files, proseOf, fenced } of PROSE) {
+      for (const rel of files) {
+        let insideFence = false;
+        for (const { line, text } of proseOf(rel)) {
+          if (fenced && text.trim().startsWith('```')) {
+            insideFence = !insideFence;
+            continue;
+          }
+          for (const { file, name } of fileMembersOn(text, insideFence)) {
+            // **コメントも見る**——YAMLのプロパティ名（`ambient_brightness`）はそのファイルを説明する
+            // コメントにしか現れないことがあり、それでも「そのファイルが扱っている」ことに変わりはない。
+            // ここが見たいのは指す先が在るかで、名前がコードの語彙かどうかではない。
+            if (appearsIn(file, name, 'all')) continue;
+            missing.push(`${rel}:${line} ${name}（${file} に無い）`);
+          }
         }
       }
     }
 
     expect(
       missing,
-      `文書がファイルと並べて挙げた名前が、そのファイルに無い:\n${missing.join('\n')}`,
+      '説明がファイルと並べて挙げた名前が、そのファイルに無い（名前を挙げているつもりが無いなら、' +
+        `並びを崩して主張に読めなくする——DocumentStyle.md 5節）:\n${missing.join('\n')}`,
     ).toEqual([]);
   });
 
@@ -379,6 +457,41 @@ describe('説明の参照', () => {
     // `docs/` の文書だけで数は足りるので、外側が落ちても上の検査は緑になる。
     const outside = DOCUMENTS.filter((rel) => !rel.startsWith(`docs${sep}`));
     expect(outside, '走査が `docs/` の中だけへ戻っている').not.toEqual([]);
+  });
+
+  it('`.ts` 以外のコメントも、宣言へ書いた散文も、走査に入っている', () => {
+    // `.ts` と `.md` だけを見ていた間、`tools/comfyui/**` が `Card.ts` の定数を名指ししていても、
+    // 指し先が消えたことは誰も見ていなかった（#2190）。`.ts` と `.md` の主張だけで数は足りるので、
+    // 他の置き場が落ちても上の検査は緑になる。
+    const others = COMMENTED_SOURCES.filter((rel) => !rel.endsWith('.ts'));
+    expect(others, '走査が `.ts` の中だけへ戻っている').not.toEqual([]);
+    expect(PROSE_DATA, '宣言の値へ書いた散文が、走査から落ちている').not.toEqual([]);
+  });
+
+  it('囲みが無くても、ファイルと並んだ名前を採る', () => {
+    // 囲みは「これは識別子だ」を表す記法で、主張の一部ではない。要求すると、素の字面で書いた
+    // 名指しが見張りの外に落ちたまま緑になる。
+    const named = (text: string) => fileMembersOn(text, false).map(({ name }) => name);
+
+    expect(named('SitePlacer.ts の placeSites')).toEqual(['placeSites']);
+    expect(named('`SitePlacer.ts` の `placeSites` / `ISLAND_RADIUS`')).toEqual([
+      'placeSites',
+      'ISLAND_RADIUS',
+    ]);
+    expect(named('SitePlacer.ts の placeSites / ISLAND_RADIUS')).toEqual([
+      'placeSites',
+      'ISLAND_RADIUS',
+    ]);
+    // 区切りの記号で続く間だけが同じファイルのもの。語を挟んだ先は別の所有者の話でありうる。
+    expect(named('SitePlacer.ts の placeSites と ISLAND_RADIUS')).toEqual(['placeSites']);
+  });
+
+  it('パスの途中から切り出したものは、ファイル参照ではない', () => {
+    // 末尾だけを見ると、リポジトリの外を指す綴りが同じ名前のファイルへすり替わる。
+    const named = (text: string) => fileMembersOn(text, false).map(({ name }) => name);
+
+    expect(named('`.claude/settings.json` の `autoCompactWindow`')).toEqual(['autoCompactWindow']);
+    expect(named('`~/.claude/settings.json` の `autoCompactWindow`')).toEqual([]);
   });
 
   it('囲みの中が名前か句かで、ファイルと並んだ組を採る／採らない', () => {
