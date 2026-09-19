@@ -20,7 +20,7 @@ export interface LiveValueSession {
 /** 外を触る手。省いたものは本物が入る。 */
 export interface SurveyValuesDeps {
   call?: (tool: string, args?: Record<string, unknown>) => Promise<string>;
-  gh?: (args: readonly string[], options?: { allowFail?: boolean }) => string | undefined;
+  gh?: (args: readonly string[], options?: { sayWhyNot?: (line: string) => void }) => string | undefined;
   envs?: () => readonly { readonly name: string; readonly id: string }[];
   /** 畳まれていないセッション（[`live-sessions.mjs`](live-sessions.mjs)）。引けなければ投げる。 */
   sessions?: () => readonly LiveValueSession[] | Promise<readonly LiveValueSession[]>;
@@ -38,12 +38,19 @@ export interface CheckValuesDeps extends SurveyValuesDeps {
   now?: Date;
   /** 死んだまま、これだけ経ってから告げる（時間）。 */
   grace?: number;
+  /** クラウドへ頼み直すまでの間隔（時間）。 */
+  retell?: number;
+  /** クラウドのセッションへ、同じ題・同じ本文で置かせに行く。頼めたら `true`。 */
+  ask?: (body: string) => boolean;
   dryRun?: boolean;
   say?: (line: string) => void;
 }
 
 /** 告げ先の題。**2本目を作らない鍵はこれだけ。** */
 export const TITLE: string;
+
+/** クラウドのセッションへ渡すひな形に、告げる本文を埋めたもの。 */
+export function cloudPrompt(body: string): string;
 
 export function surveyValues(deps?: SurveyValuesDeps): Promise<CheckedValue[]>;
 

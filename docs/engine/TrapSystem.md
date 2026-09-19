@@ -306,14 +306,12 @@ props:
 interactions:
   add_plant_bait:
     trigger: {drag: {tag: plant_bait}}
-    duration: 1
     conditions:
       - {reason: trap_baited, prop: plant_bait, lt: 24}
     transfer: {amount: 999, from: instrument, from_prop: plant_bait, to_prop: plant_bait}
     destroy: instrument
   add_meat_bait:
     trigger: {drag: {tag: meat_bait}}
-    duration: 1
     conditions:
       - {reason: trap_baited, prop: meat_bait, lt: 24}
     transfer: {amount: 999, from: instrument, from_prop: meat_bait, to_prop: meat_bait}

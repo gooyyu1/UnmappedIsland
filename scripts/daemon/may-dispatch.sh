@@ -17,7 +17,7 @@
 # 増やしたとき片方の呼び手にだけ入る**（`CLAUDE.md`「自分のことは自分でする」）。条件は次。
 #
 # - **モデルを使わせてよいか**（[`may-spend.sh`](may-spend.sh)。人の手綱と使用量の余力。
-#   [`board-design.md`](../../agent-ops/board-design.md) 2.5.2）
+#   [`board-design.md`](../../agent-ops/board-design.md) 2.5.2節）
 # - **占有**（[`occupancy.sh`](occupancy.sh)。同じ仕事に既にセッションが立っている）
 #
 # **前者は起こす経路（[`resume-session.sh`](resume-session.sh)）と同じものを通る**——モデルを食うのは
@@ -34,7 +34,7 @@
 
 set -euo pipefail
 
-KIND="${1:?種類を渡す（new-task / review / review-untasked / resume / other）}"
+KIND="${1:?種類を渡す（綴りは `brake.sh` が持つ）}"
 shift
 [ "$#" -gt 0 ] || {
   echo "タグを1つ以上渡す（例: task-1234 / review-1500）" >&2
@@ -48,7 +48,7 @@ HERE="$(cd "$HERE" && pwd)"
 
 bash "$HERE/may-spend.sh" "$KIND"
 
-# **種類ごとに、占有へ訊く問いが違う**（[`occupancy.sh`](occupancy.sh)・`board-design.md` 1.2）。
+# **種類ごとに、占有へ訊く問いが違う**（[`occupancy.sh`](occupancy.sh)・`board-design.md` 1.2節）。
 # 新しいタスクは**もう配ったか**を訊く——手が空いたセッションが持っていても、その issue は配られて
 # いる。残りは**今その差分へ手が動いているか**で、書き終えたセッションは通す（通さないと、再レビューも
 # 直しの再開も二度と出ない）。

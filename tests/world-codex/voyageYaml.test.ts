@@ -204,7 +204,7 @@ describe('筏と航海', () => {
    * 割合**そのもの（Voyage.md 3.3節「実りの濃淡は、この候補の重みの高さで表します」）で、卓を
    * 引かずに宣言から出る。重みを1つも持たない海区は何も返さないので0。
    *
-   * **見張る人の狩猟の腕は入らない**——顔ぶれの表の「実り」は `novice` のもの（同節）で、腕を
+   * **見張る人の狩猟の腕は入らない**——顔ぶれの表の「空振り」は `novice` のもの（同節）で、腕を
    * 土台にするつまみ（shoal_find・seabird_find）は抽選する人が居て初めて積まれる。
    */
   function yieldRateOf(zone: WorldObject): number {
@@ -706,8 +706,8 @@ describe('筏と航海', () => {
   });
 
   it('砂浜でない海岸から出ても、その海岸へ戻れる', () => {
-    // 出航は `{tag: coast}` なので岩の海岸からもできる。**砂浜が1つも無い島（5島に1つ、
-    // stats/terrain.yamlのlocation_type_counts）でも
+    // 出航は `{tag: coast}` なので岩の海岸からもできる。**砂浜が1つも無い島（珍しくはない。
+    // 割合は stats/terrain.yaml の location_type_counts）でも
     // 戻れる**のは、行き先が砂浜という型ではなく、出た当の海岸だから。
     const { game, raft } = ready();
     const departure = coasts(game).find((coast) => coast.def.name !== 'sandy_beach');

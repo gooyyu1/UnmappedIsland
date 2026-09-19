@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FAKE_TOKEN, FakeMetaServer, writeFakeCredentials } from '../support/fakeMetaServer';
 
 /**
@@ -13,9 +13,6 @@ import { FAKE_TOKEN, FakeMetaServer, writeFakeCredentials } from '../support/fak
  * 通信先は `CCR_META_ENDPOINT` で身代わりのHTTPサーバへ向ける。トークンの置き場は `USERPROFILE` /
  * `HOME` を差し替えて用意する——本物の `~/.claude/.credentials.json` はCIには無い。
  */
-
-// 実プロセス（node）を起こしてHTTPを往復させるので、既定の5秒では足りないことがある。
-vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../.claude/ccr-meta.mjs');
 

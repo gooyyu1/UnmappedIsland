@@ -70,7 +70,7 @@ export function craftingStepsOf(
         withTriggeredRangeEvents(codex, interactionStep(codex, def, trigger, instrument, resolve), resolve),
       );
     }
-  for (const recipe of def.recipesProducingThis) steps.push(recipeStep(codex, def, recipe, resolve));
+  for (const recipe of def.recipesProducingThis) steps.push(recipeStep(def, recipe));
   return steps;
 }
 
@@ -635,24 +635,17 @@ class PassiveDeltaCollector implements PassiveReader {
  * レシピ1つを工程として見たもの。工程（steps）の別は畳む——「何を使って何ができるか」の問いには、
  * レシピ全体でひとつの答えで足りる。所要時間も同じ理由で全工程の和にする。
  *
- * **作る腕（13.5節）のうち、ここに出るのは余分の卓だけ。** 卓は他の参照と同じく`trackingResolverOf`が
- * 解き、腕の上乗せは素の0で宣言されているので**素人の数字**になる（analysisContextOf の注記）。
- * 手際は段に届いた者にしか効かず、誰が作るかを決めない図鑑・収支表では宣言どおりの分数が答え。
+ * **作る腕（13.5節）はここに出ない。** 手際は段に届いた者にしか効かず、誰が作るかを決めない図鑑・
+ * 収支表では宣言どおりの分数が答え。
  */
-function recipeStep(
-  codex: WorldCodex,
-  def: ObjectDef,
-  recipe: RecipeDef,
-  outer: StaticValueResolver | undefined,
-): CraftingStep {
-  const tracking = trackingResolverOf(def, 'lowest', outer);
+function recipeStep(def: ObjectDef, recipe: RecipeDef): CraftingStep {
   // **出るのは素人の数字**（analysisContextOf の注記）。腕が縮める分は段に届いた者にしか効かないが、
   // 定義だけを見るここには誰が作るかが無いので、宣言どおりの仕事の量をそのまま採る。
   const minutes = recipe.totalMinutes;
 
-  // 完成品が1つ出るのは、進捗が上限へ届いた瞬間のbecomeが起こすこと（RecipeSystem.md 1節）なので、
-  // 卓を引く前から決まっている。余分の卓はそのあとに続く分岐。
-  const finished: readonly StepOutcome[] = [
+  // **結果はこの1本だけ。** 完成品が1つ出るのは、進捗が上限へ届いた瞬間のbecomeが起こすこと
+  // （RecipeSystem.md 1節）で、レシピの宣言には分岐も参照も無い（13.5節）。
+  const outcomes: readonly StepOutcome[] = [
     {
       probability: 1,
       spawns: [{ objectGlobalId: def.globalId, count: 1 }],
@@ -660,12 +653,6 @@ function recipeStep(
       assignments: [],
     },
   ];
-  const surplus =
-    recipe.surplus === undefined
-      ? UNCHANGED_OUTCOMES
-      : readEffect(recipe.surplus, tracking.resolve, becomeDestinationResolverOf(codex, def, undefined))
-          .outcomes;
-  const outcomes = combineOutcomes(finished, surplus, 'declared');
 
   return {
     kind: 'recipe',
@@ -687,7 +674,7 @@ function recipeStep(
     laborMinutes: minutes,
     elapsedMinutes: minutes,
     outcomes,
-    hasUnresolvedReferences: tracking.hitUnresolvedReference,
+    hasUnresolvedReferences: false,
   };
 }
 

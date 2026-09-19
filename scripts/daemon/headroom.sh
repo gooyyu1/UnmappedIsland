@@ -13,7 +13,7 @@
 #   UNKNOWN <理由> … 終了コード 1
 #
 # **人が止めた `STOP`（3）と別の終了コードを持つ。** 同じ顔にすると、**盤面を見回る係が「人が
-# 止めている」と読む**（[`board-design.md`](../../agent-ops/board-design.md) 2.21.2）——手綱は人が
+# 止めている」と読む**（[`board-design.md`](../../agent-ops/board-design.md) 2.21.2節）——手綱は人が
 # 外すまで戻らないが、こちらは枠が明ければひとりでに戻るので、**打つ手がまるきり違う。**
 #
 # ## まず控えを読み、無ければ自分で1回引く
@@ -36,7 +36,7 @@
 
 set -euo pipefail
 
-KIND="${1:?種類を渡す（new-task / review / review-untasked / resume / other）}"
+KIND="${1:?種類を渡す（綴りは `brake.sh` が持つ）}"
 
 # `%/*` は区切りが無いと文字列をそのまま返す。
 HERE="${BASH_SOURCE[0]%/*}"

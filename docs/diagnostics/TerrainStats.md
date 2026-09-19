@@ -37,7 +37,7 @@ YAMLとずれます）。
 | `edge` | 道1本あたりの距離・両端の高低差・移動時間 |
 | `base_one_way` | 拠点から他の土地への片道 |
 | `base_farthest_round_trip` | 拠点から最も遠い土地までの往復 |
-| `daily_budget` | 1日の割り付け（屋外の枠・夜の加工・生存の採取・自由時間） |
+| `daily_budget` | 1日の枠の割り付けと、そこから出る日帰りの上限 |
 | `work_piles` | 1周回に積む山1つずつの量 |
 | `work_piles_by_system` | 同じものを系統ごとにまとめた合計 |
 | `work_piles_total` | 山の合計と、屋外・拠点への割り |
@@ -105,7 +105,7 @@ YAMLとずれます）。
 
 `base_farthest_round_trip` は、同じ2つの拠点の採り方で見た**最も遠い土地への往復**。平均ではなく
 最も遠い1つを見るので、**補給を持たずに出られる範囲が島の広さで決まるか**に答える
-（GameEndings.md 9.2節）。比べる先は `daily_budget` の `outdoor_window` − `survival_gathering`。
+（GameEndings.md 9.2節）。比べる先は `daily_budget` の `day_trip_one_way` の往復ぶん。
 
 ## 1周回に積む山
 
@@ -210,11 +210,10 @@ GameEndings.md 9.2節）。1日に進む探索がその土地で探索できる�
 `steady_phase`・`steady_phase_by_work_share` の標本に入らず**、残った島数の割合が
 `steady_phase_islands`。
 
-**これは島の不具合ではない。** 往復で枠が尽きるのは片道265.5分（`outdoor_window`
-720分<!-- stats: terrain.yaml daily_budget outdoor_window --> − `survival_gathering`
-189分<!-- stats: terrain.yaml daily_budget survival_gathering --> の半分）からで、条件の悪い土地に
-住めば届かない組が出る。**どの土地がそうかは、この節からは出ない**（`base: any` は拠点ごとの値を
-1本にまとめた分布で、土地の型を持たない。同 `base_farthest_round_trip`）。数えていないのは
+**これは島の不具合ではない。** 往復で枠が尽きるのは片道が `daily_budget` の `day_trip_one_way` を
+超えたときで、条件の悪い土地に住めば届かない組が出る。**どの土地がそうかは、この節からは出ない**
+（`base: any` は拠点ごとの値を1本にまとめた分布で、土地の型を持たない。同
+`base_farthest_round_trip`）。数えていないのは
 「その拠点から日帰りで回す1日」であって島そのものではないので、`steady_phase` の標本から落ちるのは
 **最も条件の良い拠点（`base: shortest_mean`）でさえ届かない島だけ**。
 

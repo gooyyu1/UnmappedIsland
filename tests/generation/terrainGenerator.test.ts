@@ -4,8 +4,8 @@ import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import {
   dailyBudgetOf,
   dailyPhasesOf,
+  dayTripOneWayLimitMinutesOf,
   locationTypeDaysOf,
-  OUTDOOR_WINDOW_MINUTES,
 } from '../../src/analysis/dailyPhases';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
@@ -191,7 +191,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
 
   // 「海に接する土地が海面近くにある」も、両端が出ることとは別に崩れうる（両端だけなら、いちばん低い
   // 1つが0mでも残りの海岸が高いままでありうる）。線は分布の調整値ではなく「海岸と呼べる高さか」で、
-  // 実測（500シード）の上限68mに対して余裕を持たせてある。
+  // 実測（500シード）の上限76mに対して余裕を持たせてある。
   it('海岸帯の土地は海面近くに出る', () => {
     const island = scope();
     const metersPerElevationUnit = codex.generation!.metersPerElevationUnit(island);
@@ -242,14 +242,15 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
         })),
       ),
     );
-    // 往復に使えるのは、屋外の枠から1日を賄う生存の採取を引いた残り（TerrainStats.md「局面ごとの1日」）。
-    const reachMinutes = OUTDOOR_WINDOW_MINUTES - budget.survivalGatheringMinutes;
+    // 届く範囲は、日帰りで回せる片道の上限（TerrainStats.md「局面ごとの1日」）。
+    const reachMinutes = dayTripOneWayLimitMinutesOf(budget);
 
-    // **届かない島は稀にしか出ない**（今の枠では回り道を8倍へ広げて500島に1つ）ので、不変条件の
-    // 検証に使うSEEDSでは取りこぼす。見張りとして働く数まで回す。
+    // **届かない島は、今の枠では500島に1つも出ない**——回り道（extra_edge_detour_factor）を広げて
+    // いくとようやく現れる（4倍で500島に数個）ので、不変条件の検証に使うSEEDSでは取りこぼす。
+    // 見張りとして働く数まで回す。
     for (const seed of Array.from({ length: 500 }, (_, i) => i)) {
       const base = dailyPhasesOf(generate(seed), locationDays, budget).bestBase;
-      expect(2 * base.farthestOneWayMinutes, `シード${seed}: 最も遠い土地への往復`).toBeLessThanOrEqual(
+      expect(base.farthestOneWayMinutes, `シード${seed}: 最も遠い土地への片道`).toBeLessThanOrEqual(
         reachMinutes,
       );
     }
@@ -327,7 +328,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
       if ([...counts.values()].some((count) => count > max)) overCapIslands++;
     }
 
-    // 線は実測（1.8%）の倍で引く。500島での抽選のぶれ（標準偏差0.6ポイント弱）では届かないので、
+    // 線は、実測（500島で2.2%）に抽選のぶれ（標準偏差0.7ポイント弱）を重ねても届かない位置に引く。
     // 赤くなるのは**逃げ道が使われる形が増えたとき**だけになる。
     expect(overCapIslands / seeds.length, '上限を外れる島は例外に留まる').toBeLessThan(0.04);
   });

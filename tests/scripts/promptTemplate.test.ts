@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { pathForBash, spawnScript } from '../support/runScript';
 
 /**
@@ -15,10 +15,6 @@ import { pathForBash, spawnScript } from '../support/runScript';
  * ように、指示の中でコードブロックを見せるもの）が書けない。**綴りはひな形が決める**ので、
  * その判定をここで押さえる。
  */
-
-// 実プロセス（bash）を起こすため、`npm test` 全体を並行実行したときのCPU競合だけで既定の5秒を
-// 超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const TEMPLATE_SH = pathForBash(resolve(__dirname, '../../scripts/daemon/prompt-template.sh'));
 

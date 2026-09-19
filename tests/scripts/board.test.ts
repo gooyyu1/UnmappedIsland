@@ -10,7 +10,7 @@ import { board, issueBody } from '../../scripts/daemon/board.mjs';
  * 正しく付くこと、棚卸しの済んでいない issue だけが `未整理` に出ること。並べ方を間違えると、
  * 盤面を読んだ側は同じ issue を二重に投入するか、着手できる仕事を待ちだと読んで止める。
  *
- * 出口は端末（`board`）と常設 issue の本文（`issueBody`。`agent-ops/board-design.md` 2.20）の2つで、
+ * 出口は端末（`board`）と常設 issue の本文（`issueBody`。`agent-ops/board-design.md` 2.20節）の2つで、
  * **突き合わせは1箇所**。どちらの検査も同じ世界を渡して、同じ事実が両方に出ることを見る。
  */
 
@@ -31,8 +31,14 @@ interface World {
   /** 一覧を引けない（[`live-sessions.mjs`](../../scripts/daemon/live-sessions.mjs) は投げる）。 */
   readonly sessionsFail?: boolean;
   readonly checked?: string;
-  /** 盤面を引けなくなった時刻（デーモンの台帳。`board-state.mjs` の `UNREADABLE`）。 */
-  readonly unreadableSince?: string;
+  /** 盤面を引けていない区間（デーモンの台帳。`board-state.mjs` の `readUnreadable`）。 */
+  readonly unreadable?: { since: string; until: string; rounds: number; reason: string };
+  /** 今その周に出ている、配れない理由と、出始めた時刻（同 `readNotes`）。 */
+  readonly blockedNotes?: readonly { text: string; since: string }[];
+  /** 今その周の盤面が欠けている理由（同 `readPartialNotes`）。 */
+  readonly partialNotes?: readonly string[];
+  /** 周の出来事の帳面（同 `readRounds`）。 */
+  readonly events?: readonly Record<string, unknown>[];
   /** 最後の見回り（デーモンの記録。`board-state.mjs` の `readLastPatrol`）。 */
   readonly patrol?: { at: string; verdict: string; summary: string };
   /** 見回りの記録が無い（走っていないか、読めない）。 */
@@ -49,9 +55,13 @@ interface World {
 const deps = (world: World, warn: (line: string) => void) => ({
   // **`--limit` を実際に守る。** 守らない `gh` を渡すと、切られる形そのものが検査に出ない
   // ——いくつ渡しても全部が返るので、上限を固定へ戻しても緑のまま。
-  gh: (args: readonly string[]) => {
+  gh: (args: readonly string[], options?: { sayWhyNot?: (line: string) => void }) => {
     if (args[0] === 'api') {
-      if (world.claimsFail === true) return undefined;
+      if (world.claimsFail === true) {
+        // **道具が言った理由は呼び手へ渡る**（`spawn.mjs` の `sayWhyNot`）。本物と同じ形で返す。
+        options?.sayWhyNot?.('gh api graphql: 引けない');
+        return undefined;
+      }
       const nodes = Object.entries(world.claims ?? {}).map(([number, id]) => ({
         number: Number(number),
         commits: {
@@ -86,7 +96,10 @@ async function body(world: World = {}): Promise<{ lines: string[]; warnings: str
   const text = await issueBody({
     ...deps(world, (line: string) => warnings.push(line)),
     now: new Date('2026-09-07T03:04:05.678Z'),
-    unreadableSince: world.unreadableSince,
+    unreadable: world.unreadable,
+    blockedNotes: world.blockedNotes,
+    partialNotes: world.partialNotes,
+    events: world.events,
     // **見回りは、既定でたった今届いたことにする。** 断りは出る側なので、既定のままだと
     // 見回りと関わりのない検査の本文へ一律に1行増える。
     patrol:
@@ -100,7 +113,7 @@ async function body(world: World = {}): Promise<{ lines: string[]; warnings: str
 const issue = (number: number, title: string, over: Record<string, unknown> = {}) => ({
   number,
   title,
-  // **棚卸しを通った issue は向かう先を持つ**（`agent-ops/board-design.md` 2.17.1）ので、足場も
+  // **棚卸しを通った issue は向かう先を持つ**（`agent-ops/board-design.md` 2.17.1節）ので、足場も
   // その形にする。足さないと、向かう先と関わりのない検査の `## 未整理` に issue が並ぶ。
   labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }],
   blockedBy: { nodes: [] },
@@ -109,7 +122,7 @@ const issue = (number: number, title: string, over: Record<string, unknown> = {}
 
 /**
  * 畳まれていないセッション1件（`live-sessions.mjs` が返す形）。**何をしているかはタグで引く**
- * （`agent-ops/board-design.md` 1.2）——題は一覧に含まれない。
+ * （`agent-ops/board-design.md` 1.2節）——題は一覧に含まれない。
  */
 const session = (id: string, tags: readonly string[] = []): LiveSession => ({
   id,
@@ -235,7 +248,7 @@ describe('board.mjs', () => {
     expect(lines).toContain('TASK 8 待ち:#9 後');
   });
 
-  // 返された issue は `kind:task` が付いたまま残る（`agent-ops/board-design.md` 2.15.2）ので、状態で
+  // 返された issue は `kind:task` が付いたまま残る（`agent-ops/board-design.md` 2.15.2節）ので、状態で
   // 見分けが付かないと、人は列に並んでいるものと区別できない。
   it('人へ返された issue は、返却として出す', async () => {
     const { lines } = await show({
@@ -320,7 +333,7 @@ describe('board.mjs', () => {
 });
 
 /**
- * 常設 issue の本文（`agent-ops/board-design.md` 2.20）。**読むのはスマホの人間**で、リポジトリも
+ * 常設 issue の本文（`agent-ops/board-design.md` 2.20節）。**読むのはスマホの人間**で、リポジトリも
  * ログも開かないので、ここが守るのは**本文だけで読み切れること**——いつ時点か・何件あるか・
  * 投入した1件ごとに今何が起きているか。
  */
@@ -339,11 +352,18 @@ describe('issueBody', () => {
 
   // **盤面を引けない周に、デーモンにできるのはこれだけ**（2.21）。直せるのは Claude Code 本体を
   // 触れる人だけで、`~/daemon.log` を読めるのは手元で叩ける人だけ——**届く先はここしか無い。**
-  it('盤面を引けていなければ、続いた長さを添えて断る', async () => {
-    const { lines } = await body({ unreadableSince: '2026-09-07T01:19:05Z' });
+  it('盤面を引けていなければ、続いた長さと周の数と、道具が言った理由を添えて断る', async () => {
+    const { lines } = await body({
+      unreadable: {
+        since: '2026-09-07T01:19:05Z',
+        until: '2026-09-07T03:04:00Z',
+        rounds: 51,
+        reason: 'list_sessions: 失敗: HTTP 401 OAuth access token has expired.',
+      },
+    });
 
     expect(lines).toContain(
-      '⚠ **盤面を引けていません**（2026-09-07T01:19:05Z から 1時間45分）。GitHub か CCR から引けない周が続いています——**直せるのは人だけ**で、この間セッションは1本も立ちません',
+      '⚠ **盤面を引けていません**（2026-09-07T01:19:05Z から 1時間45分・51周）。GitHub か CCR から引けない周が続いています——**直せるのは人だけ**で、この間セッションは1本も立ちません。道具が言った理由: list_sessions: 失敗: HTTP 401 OAuth access token has expired.',
     );
   });
 
@@ -353,9 +373,95 @@ describe('issueBody', () => {
 
   // 出どころは台帳のテキストなので、壊れていることがありうる。**壊れた値で嘘の長さを出さない。**
   it('読めない時刻なら、断りを出さない', async () => {
-    expect((await body({ unreadableSince: 'ゆうべ' })).lines.join('\n')).not.toContain(
-      '盤面を引けていません',
+    const broken = { since: 'ゆうべ', until: 'ゆうべ', rounds: 1, reason: '' };
+
+    expect((await body({ unreadable: broken })).lines.join('\n')).not.toContain('盤面を引けていません');
+  });
+
+  // ## 周の出来事（2.20.3）
+  //
+  // **届く先はここしか無い。** 1周を回す側が書くのは `~/daemon.log` で、**それを定期的に読む者は
+  // 居ない**——2026-09-12 には、盤面が20分以上まったく同じ覚え書きを出し続けたのに、常設の盤には
+  // 1文字も出なかった。
+
+  it('配れない理由を、続いている長さとともに出す', async () => {
+    const { lines } = await body({
+      blockedNotes: [
+        {
+          text: 'PR #2063 はコンフリクトしているが、main が赤いので直しを頼まない',
+          since: '2026-09-07T02:44:05Z',
+        },
+      ],
+    });
+
+    expect(lines).toContain('## 周の出来事');
+    expect(lines).toContain('| PR #2063 はコンフリクトしているが、main が赤いので直しを頼まない | 20分 |');
+  });
+
+  // **盤面が欠けた周は、そのぶん出ない手がある。** ここに出ないと、**後片付けも係も出ないまま
+  // 何時間も回り続ける**ことが誰にも見えない。
+  it('この周の盤面が欠けている理由を、別の表で出す', async () => {
+    const { lines } = await body({
+      blockedNotes: [{ text: '3件の task が錠待ち', since: '2026-09-07T02:44:05Z' }],
+      partialNotes: ['マージ済みPRを引けなかった（この周は、後片付けもスメルを拾う係も出ない）'],
+    });
+
+    expect(lines).toContain('**この周の盤面が欠けています**（そのぶん、出ない手があります）');
+    expect(lines).toContain('| マージ済みPRを引けなかった（この周は、後片付けもスメルを拾う係も出ない） |');
+    // **配れない理由の表とは分ける**（読む人がすることが違う。`board-state.mjs` の `PARTIAL_PREFIX`）。
+    expect(lines).toContain('| 3件の task が錠待ち | 20分 |');
+  });
+
+  // **件数そのものが合図になる手がある**（`RETURN` が一度に何件出たか）。1件ずつは issue の側に
+  // 出るが、**その回に何件返ったかは、ここに出るまで誰も数えない。**
+  it('打った手を、結果ごとに数えて出す', async () => {
+    const { lines } = await body({
+      events: [
+        { at: '2026-09-07T02:00:00Z', kind: 'move', move: 'RETURN', target: '1950', result: 'played' },
+        { at: '2026-09-07T02:10:00Z', kind: 'move', move: 'RETURN', target: '1951', result: 'played' },
+        { at: '2026-09-07T02:20:00Z', kind: 'move', move: 'MERGE', target: '2063', result: 'failed' },
+      ],
+    });
+
+    expect(lines).toContain('| RETURN 打てた | 2 |');
+    expect(lines).toContain('| MERGE 打てなかった | 1 |');
+  });
+
+  // **直った周に台帳の印は消える**ので、閉じた区間が帳面に残っていないと、**後から見た者には
+  // 在ったことすら分からない**（2026-09-18 に実測。同じ日に331分止まっていた）。
+  it('閉じた「盤面を引けなかった区間」を、何周と理由ごと出す', async () => {
+    const { lines } = await body({
+      events: [
+        {
+          at: '2026-09-07T02:00:00Z',
+          kind: 'gap',
+          from: '2026-09-07T00:24:00Z',
+          until: '2026-09-07T01:59:30Z',
+          rounds: 23,
+          reason: 'list_sessions: 失敗: HTTP 401',
+        },
+      ],
+    });
+
+    expect(lines).toContain(
+      '| 2026-09-07T00:24:00Z | 2026-09-07T01:59:30Z | 23 | list_sessions: 失敗: HTTP 401 |',
     );
+  });
+
+  // **窓の外の出来事は出さない。** 直った詰まりが今の詰まりと並ぶと、読む人はどちらが今かを
+  // 読めない（`board.mjs` の `EVENT_WINDOW_HOURS`）。
+  it('窓より古い出来事は出さない', async () => {
+    const { lines } = await body({
+      events: [{ at: '2026-09-06T03:00:00Z', kind: 'move', move: 'MERGE', target: '9', result: 'played' }],
+    });
+
+    expect(lines.join('\n')).not.toContain('## 周の出来事');
+  });
+
+  // **無い周は節ごと出さない**（`## 人の手番` と同じ理由）——毎周出る節は、当たっている周も
+  // 読み飛ばされる。
+  it('出来事が1つも無ければ、節ごと出さない', async () => {
+    expect((await body()).lines.join('\n')).not.toContain('## 周の出来事');
   });
 
   // ## 見回りが届いているか（2.21.4）
@@ -496,9 +602,9 @@ describe('issueBody', () => {
   /**
    * ## 宛先の無いPR（2.11.4）
    *
-   * **盤面は毎周 `~/daemon.log` へ覚え書きを書くが、それを定期的に読む者は居ない**（2.22.3）。
    * 2026-09-11、PR #1922 の名乗りが引けないまま、ユーザーがPRへ書いた質問は作者へ一度も届かず、
-   * 盤面は2時間手を1つも打たなかった（issue #1937）。**届く先はこの本文しか無い。**
+   * 盤面は2時間手を1つも打たなかった（issue #1937）。**直す先が出るのはこの節しか無い**——周の
+   * 出来事（2.20.3）が渡すのは「何が止めているか」までで、直し方は載らない。
    */
   describe('宛先の無いPR', () => {
     const stuck = (over: Record<string, unknown> = {}) => ({
@@ -544,7 +650,10 @@ describe('issueBody', () => {
       const { lines, warnings } = await body({ prs: [stuck()], claimsFail: true });
 
       expect(lines).not.toContain('## 宛先の無いPR');
-      expect(warnings).toContain('（差し戻す相手を引けなかった。宛先の無いPRは出せない）');
+      // **道具が言った理由まで載せる**（1.7）。断りだけでは、読む人に直す先が渡らない。
+      expect(warnings).toContain(
+        '（差し戻す相手を引けなかった。宛先の無いPRは出せない）: gh api graphql: 引けない',
+      );
     });
 
     it('セッションの一覧を引けなかった周も、節ごと出さない', async () => {

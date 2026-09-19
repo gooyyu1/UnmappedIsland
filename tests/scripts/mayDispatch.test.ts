@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { BRAKE_ALL_ON, BRAKE_ISSUE, brakeOff, writeBrakeGh } from '../support/brakeIssue';
 import { FakeMetaServer, wrappedMetaReply, writeFakeCredentials } from '../support/fakeMetaServer';
 import { spawnScriptAsync } from '../support/runScript';
@@ -12,7 +12,7 @@ import { writeUsageCache, writeUsagePolled } from '../support/usageCache';
  * `occupancy.sh`）の検査。
  *
  * ここが守るのは**安全側へ倒れること**。誤って止めれば投入が遅れるだけだが、誤って通すと同じ仕事へ
- * 2本立ち、同じPRへ食い違う判定が残る（`agent-ops/board-design.md` 1.5 の PR #1493）。手綱も使用量も
+ * 2本立ち、同じPRへ食い違う判定が残る（`agent-ops/board-design.md` 1.5節 の PR #1493）。手綱も使用量も
  * セッション一覧も**引けなかったときは止まる**ことを、実際にスクリプトを走らせて見る。
  *
  * **止まった理由が終了コードで見分けられること**も、ここが守る（2.5.2）——人が止めた3と、余力で
@@ -25,10 +25,6 @@ import { writeUsageCache, writeUsagePolled } from '../support/usageCache';
  * **身代わりは試験と同じプロセスに居る**ので、叩く側は `spawnScriptAsync` で待つ——同期で待つと
  * イベントループごと止まり、子の要求に誰も応えないまま両方が待ち続ける。
  */
-
-// 実プロセス（bash + gh のスタブ）を起こすため、`npm test` 全体を並行実行したときのCPU競合だけで
-// 既定の5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/daemon/may-dispatch.sh');
 
@@ -142,7 +138,7 @@ describe('may-dispatch.sh', () => {
     expect(await run('new-task', 'task-1234')).toEqual({ code: 0, stderr: '' });
   });
 
-  // **人が止めている周は3で名乗る**（`brake.sh`。`agent-ops/board-design.md` 2.21.2）——1周のログを
+  // **人が止めている周は3で名乗る**（`brake.sh`。`agent-ops/board-design.md` 2.21.2節）——1周のログを
   // 読む側（盤面を見回る係）が、人の意思で止まっている周を調べに行かないために要る区別。
   it('親の「投入する」が外れていれば、種類に関わらず止まる', async () => {
     const result = await run('review', 'review-1500', { brake: brakeOff('投入する') });

@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { putIntoSlot } from '../../src/domain/slotEntry';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
@@ -38,12 +38,9 @@ describe('injuries.yamlの怪我', () => {
 
   /** 砂浜に立つプレイヤーから始める。rollはpickがどの候補を引くかを決める（fixedRng）。 */
   function open(roll: number): void {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
-    session = new WorldSession(codex, new World(worldInstance), fixedRng(roll));
+    session = new WorldSession(codex, undefined, fixedRng(roll));
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
+    session.adoptWorld(new World(worldInstance));
     beach = spawnInto('sandy_beach', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, beach, 'characters');
     // 怪我を負う実採り（coconut.yaml）は明るさを要求する（IlluminationSystem.md 5節）。ここで

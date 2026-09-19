@@ -1,7 +1,7 @@
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { STALE_ON_PUSH } from '../../scripts/daemon/board-move.mjs';
 import { SWEEP_LINE } from '../../scripts/daemon/board-round.mjs';
@@ -11,17 +11,13 @@ import { STUB_SHEBANG } from '../support/stubShebang';
 /**
  * `.github/workflows/board-labels.yml` の、結論をラベルへ変える段の検査。
  *
- * ここが守るのは**レビューの上限**（`agent-ops/board-design.md` 4.6）。上限をレビュアーへの指示に
+ * ここが守るのは**レビューの上限**（`agent-ops/board-design.md` 4.6節）。上限をレビュアーへの指示に
  * だけ書いていたときは、書き忘れれば誰も止めず、PR #1527 で4周目が走った。**止めるのは機械の側**
  * になったので、ここが壊れると同じことが黙って起きる。
  *
  * ワークフローは Actions でしか動かないので、`run:` の中身を YAML から取り出して bash で走らせる。
  * `gh` は PATH の先頭で差し替え、`--jq` は本物の `jq` で評価する（フィルタの誤りを見逃さない）。
  */
-
-// 実プロセス（bash + jq のスタブ）を起こすため、`npm test` 全体を並行実行したときのCPU競合だけで
-// 既定の5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const WORKFLOW = resolve(__dirname, '../../.github/workflows/board-labels.yml');
 
@@ -143,7 +139,7 @@ describe('board-labels.yml の verdict', () => {
     ]);
   });
 
-  // 差分を読まないと判定できないものはレビュアーが引き取った（`board-design.md` 2.13.4）。
+  // 差分を読まないと判定できないものはレビュアーが引き取った（`board-design.md` 2.13.4節）。
   // **通したうえで人へ回す**ので、`通してよい` と `判断待ち` の両方が付く。
   it('「通してよい（人の判断が要る）」で 通してよい と 判断待ち を付ける', () => {
     const result = run(PASS_ASK, past(PASS_ASK));
@@ -224,7 +220,7 @@ describe('board-labels.yml の verdict', () => {
 });
 
 /**
- * セッションの名乗りを盤面へ移す段（`agent-ops/board-design.md` 2.15.2・2.16.2・2.17.3）。**ここが
+ * セッションの名乗りを盤面へ移す段（`agent-ops/board-design.md` 2.15.2・2.16.2・2.17.3節）。**ここが
  * 動かないと、返したことがラベルにならない**——issue は `kind:task` が付いたままなので、盤面は
  * そのまま次のセッションへ配り直し、返した意味が消える。**順序（`blockedBy`）はここが唯一の
  * 経路**なので、動かなければ張られないまま配られる。
@@ -346,7 +342,7 @@ esac
 });
 
 /**
- * push で前の差分の印を落とす段。**人が外す作業を作らないための要**（`board-design.md` 2.13.1）
+ * push で前の差分の印を落とす段。**人が外す作業を作らないための要**（`board-design.md` 2.13.1節）
  * なので、落とす対象が欠けると、人の手番の印が付いたまま残って盤面が止まる。
  */
 describe('board-labels.yml の synchronized', () => {
@@ -371,7 +367,7 @@ describe('board-labels.yml の synchronized', () => {
 });
 
 /**
- * 盤面から頼まれて、前の差分に付いたままの札を落とす段（`board-design.md` 2.13.7）。**ここが
+ * 盤面から頼まれて、前の差分に付いたままの札を落とす段（`board-design.md` 2.13.7節）。**ここが
  * 唯一の外し直しの口**——上の `synchronized` は出来事で動くので、転んだ回は二度と来ない。
  *
  * **盤面は自分で外せない**（`unlabeled` が `却下` になる。下の `unlabeled_by_hand`）ので、ここが
@@ -454,7 +450,7 @@ esac
 });
 
 /**
- * 人がPRのラベルを外したことを、差し戻しへ訳す段（`agent-ops/board-design.md` 2.13.1）。
+ * 人がPRのラベルを外したことを、差し戻しへ訳す段（`agent-ops/board-design.md` 2.13.1節）。
  *
  * **ここが「外したのは誰か」を取り違えると、盤面が回らなくなる。** 上の `synchronized` は push の
  * たびに同じラベルを外すので、機械のぶんまで差し戻しに読むと、**直して push した本人がその push で

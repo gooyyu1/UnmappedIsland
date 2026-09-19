@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
-import { join, resolve, sep } from 'node:path';
+import { join, resolve } from 'node:path';
 import { parse } from 'yaml';
 import { describe, expect, it } from 'vitest';
-import { trackedDocs } from '../../scripts/docScope.mjs';
+import { specDocs } from '../../scripts/docScope.mjs';
 import { bundledLocaleText } from '../../src/locale/Localization';
 
 /**
@@ -42,9 +42,9 @@ function placeholdersInBundledLocale(): Set<string> {
   return found;
 }
 
-/** `docs/` の文書。追跡しているものだけを見る（`site/` のような生成物は初めから入らない）。 */
+/** `docs/` の文書（射程は {@link specDocs} が1箇所で持つ）。 */
 function documents(): string[] {
-  return trackedDocs(ROOT).filter((rel) => rel.startsWith(`docs${sep}`));
+  return specDocs(ROOT);
 }
 
 /** その本文が名指しする差し込みを、行番号付きで返す。 */

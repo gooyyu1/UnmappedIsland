@@ -3,7 +3,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { tryAdvanceCrafting, spawnInProgressObject } from '../../src/domain/crafting';
 import type { RecipeDef } from '../../src/domain/RecipeDef';
 import type { TypeMatchReading } from '../../src/domain/TypeMatchRule';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { World } from '../../src/domain/wrappers/World';
@@ -142,13 +142,10 @@ describe('tools.yamlの道具定義', () => {
   });
 
   it('石へ石をドラッグすると、割られた側が尖った石になり、1時間が経つ', () => {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
+    const session = new WorldSession(codex);
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
     const worldView = new World(worldInstance);
-    const session = new WorldSession(codex, worldView);
+    session.adoptWorld(worldView);
     // 経過分は開始時刻（core.yamlのworld.hourの既定値）に依らず、組んだ時点からの差で見る。
     const startMinutes = worldView.totalMinutes;
 
@@ -197,13 +194,10 @@ describe('石斧を作る', () => {
 
   /** 岩場を1つ置いた世界。時間を進めるのでWorldを持つセッションを使う。 */
   function rockyField(): { session: WorldSession; field: WorldObject } {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
+    const session = new WorldSession(codex);
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
     const worldView = new World(worldInstance);
-    const session = new WorldSession(codex, worldView);
+    session.adoptWorld(worldView);
 
     const field = session.createObject(codex.objectNames.getId('rocky_field'));
     expect(

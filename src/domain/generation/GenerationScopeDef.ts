@@ -50,9 +50,6 @@ export class GenerationScopeDef {
   /** 凸包上（外周）のサイトのcoastal_distanceを海岸帯へクランプするか（島が必ず海岸で囲まれることの保証）。 */
   readonly clampsHullSitesToCoast: boolean;
 
-  /** サイト配置の内陸バイアス（0=一様、1=最大。範囲はparseGenerationが検証する）。外周に張り付くサイトを減らし、海岸が多くなりすぎないようにする。 */
-  readonly interiorBias: number;
-
   /** MST以外のDelaunay辺を復活させる迂回率の閾値（倍率）。現グラフでの2点間最短距離が
    * 直結距離のこの倍を超えるなら、その辺を近道として復活させる。 */
   readonly extraEdgeDetourThreshold: number;
@@ -90,8 +87,6 @@ export class GenerationScopeDef {
     const { name } = params;
     if (params.siteCountMin < 1 || params.siteCountMax < params.siteCountMin)
       throw new Error(`'${name}': site_countは1 <= min <= maxである必要があります。`);
-    if (params.interiorBias < 0 || params.interiorBias > 1)
-      throw new Error(`'${name}': interior_biasは0〜1である必要があります。`);
     if (params.maxSitesPerType < 0)
       throw new Error(`'${name}': max_sites_per_typeは0以上である必要があります（0で無制限）。`);
     if (params.crowdingPenaltyPerDuplicate < 0)
@@ -110,7 +105,6 @@ export class GenerationScopeDef {
     this.siteCountMax = params.siteCountMax;
     this.coastBandMaxDistance = params.coastBandMaxDistance;
     this.clampsHullSitesToCoast = params.clampsHullSitesToCoast;
-    this.interiorBias = params.interiorBias;
     this.extraEdgeDetourThreshold = params.extraEdgeDetourThreshold;
     this.diameterMeters = params.diameterMeters;
     this.walkMetersPerHour = params.walkMetersPerHour;

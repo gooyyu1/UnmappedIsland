@@ -54,8 +54,7 @@ object_defs:
         # 「basic以上」を`in_stage_or_above`で書く形は characters/player_character.yaml が持つ。
         conditions:
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
-        # 編み上げる速さも繊維・編みが決める（docs/world/Skills.md 7節）。**余分の卓は持たない**
-        # ——6枚のパネルは籠1つぶんの面で、余らせて2つ目にはならない。
+        # 編み上げる速さも繊維・編みが決める（docs/world/Skills.md 7節）。
         deftness: {skill: skill_cordage, from_stage: skilled, minutes: -15}
         steps:
           # 底を編む。

@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
@@ -49,7 +49,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
   /** 道1本で繋いだ2つの土地と、密林に立つプレイヤー。 */
   function open(): void {
     session = new WorldSession(codex);
-    world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
+    world = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(world));
     jungle = spawnInto('jungle', world, 'locations');
     grassland = spawnInto('grassland', world, 'locations');
@@ -208,32 +208,66 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
    */
   describe('強制の間の減りは、戻しから引かれる', () => {
     /**
-     * 石9つ（1,000g×9。束ねられるので枠は1つ）。医師の laden（8,250g）に入るので、体力が
-     * -0.3/tickで削られる。
-     *
-     * **測りに使う `rest`（+1/tick、player_character.yaml）の正味が0より上になる段で測る。**
-     * `heavy`（-1/tick）以上では正味が0以下になり、下限のクランプに吸われて自発と強制の区別が
-     * 付かなくなる——見たいのは「同じ正味になること」なので、両方が動く段を採る。
+     * 石9つ（1,000g×9。束ねられるので枠は1つ）で届く、医師の laden（8,250g）。
+     * **体力を削る段のうち、戻しの正味が0より上に残るのはこれだけ**なので、自発と強制の量を
+     * 比べられるのもここだけ。
      */
-    function carryLoad(): void {
+    const LADEN = { stage: 'laden', stones: 9, drain: 0.3 } as const;
+
+    /**
+     * 体力を削る荷の段（characters/medic.yaml の load）と、その段へ届く石の数。
+     *
+     * **戻し（+1/tick）を削りが食い切る段まで並べる。** `heavy` から先は正味が0以下で、下限に
+     * 張り付いた値の減りは既定のクランプが吸う——**吸われたぶんが戻しに化けていないかは、その段を
+     * 通さなければ見えない**（元の不具合が出ていたのもそこ、issue #2217）。
+     */
+    const LOADS = [
+      LADEN,
+      { stage: 'heavy', stones: 17, drain: 1 },
+      { stage: 'too_heavy', stones: 28, drain: 2 },
+    ] as const;
+
+    /** 休息（rest）が戻す割（player_character.yaml）。倒れ込みもこの割に合わせてある。 */
+    const RECOVERY_PER_TICK = 1;
+
+    /** 1 tickの長さ（分。core.yaml の minutes_per_tick）。 */
+    const MINUTES_PER_TICK = 15;
+
+    /** 倒れ込みが強制する120分（player_character.yaml の collapse）の間に回るtickの数。 */
+    const COLLAPSE_TICKS = 120 / MINUTES_PER_TICK;
+
+    /** 荷を担いだまま1 tick休んだときの正味（`rest` の +1/tick から `laden` の -0.3/tick を引く）。 */
+    const NET_PER_TICK = RECOVERY_PER_TICK - LADEN.drain;
+
+    function carryLoad(load: (typeof LOADS)[number]): void {
       const hand = player.getSlot(codex.slotNames.getId('hand'));
-      for (let i = 0; i < 9; i++)
+      for (let i = 0; i < load.stones; i++)
         expect(
           session.createObject(codex.objectNames.getId('stone')).moveToSlotOrRejection(hand),
         ).toBeUndefined();
-      expect(player.getProperty(codex.propertyNames.getId('load')).isInStage('laden')).toBe(true);
+      expect(player.getProperty(codex.propertyNames.getId('load')).isInStage(load.stage)).toBe(true);
     }
 
-    /** 荷を担いだまま1 tick休んだときの正味（`rest` の +1/tick から `laden` の -0.3/tick を引く）。 */
-    const NET_PER_TICK = 0.7;
+    /**
+     * その荷を担いだまま倒れ込んだとき、120分で実際に戻る量。**正味が0以下なら1つも戻らない**
+     * ——下限に居る値の減りはクランプが吸うが、吸われたぶんは戻しに化けない。
+     */
+    function collapseRecovery(load: (typeof LOADS)[number]): number {
+      return Math.max(0, (RECOVERY_PER_TICK - load.drain) * COLLAPSE_TICKS);
+    }
 
     /** 押して休む（自発の休息）。 */
     function rest(): void {
       expect(player.tryGetAction('rest', player)?.tryExecute()).toBe(true);
     }
 
+    /** 1 tickぶんだけ時間を進める。**限界に居れば、その切れ目で手番が起きる**（強制の時間はこの中で過ぎる）。 */
+    function advanceOneTick(): void {
+      session.advanceWorldTime(MINUTES_PER_TICK);
+    }
+
     it('荷を担いだまま倒れ込んでも、同じ2時間を rest で休むより得にならない', () => {
-      carryLoad();
+      carryLoad(LADEN);
 
       // 自発の休息は、休んでいる間も荷が削るので、2時間（8 tick）で戻るのは正味のぶん。
       player.getProperty(codex.propertyNames.getId('stamina')).setNumber(50);
@@ -245,9 +279,29 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
 
       // 倒れ込みも同じ形。時間だけを進めれば、その切れ目で手番が起きる。
       drain('stamina');
-      session.advanceWorldTime(15);
+      advanceOneTick();
 
       expect(valueOf('stamina'), '倒れ込みで戻る量').toBeCloseTo(byResting, 6);
+    });
+
+    /**
+     * **正味が0以下になる段でも、減りは戻しから引かれる**（issue #2217）。上の比べ方はここでは
+     * 使えない——自発の休息も倒れ込みも下限から動かないので、同じ量になったことが何も言わない。
+     * 見るのは戻った量そのもので、引かずに経過し終えてから足していたころは、どの段でも宣言どおりの
+     * +8 が残っていた。
+     *
+     * **食われたことをそのまま見せるのは `heavy`**——正味がちょうど0なのでクランプが1度も働かず、
+     * 0のままなのは相殺されたからだと言える。`too_heavy` では減りをクランプが吸うため、0のままで
+     * あることは「相殺された」と「そもそも減らなかった」を分けない——**が、吸われたぶんが戻しへ
+     * 化ければ0から離れる**ので、元の不具合が出ていたこの段も同じ式で押さえる。
+     */
+    it.each(LOADS)('$stage を担いだままの倒れ込みは、削りを引いた正味だけ戻る', (load) => {
+      carryLoad(load);
+      drain('stamina');
+
+      advanceOneTick();
+
+      expect(valueOf('stamina')).toBeCloseTo(collapseRecovery(load), 6);
     });
 
     it('痛みが深いほど、打ちひしがれても戻らない', () => {
@@ -256,7 +310,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
       expect(player.getProperty(codex.propertyNames.getId('pain')).isInStage('unbearable')).toBe(true);
 
       drain('happiness');
-      session.advanceWorldTime(15);
+      advanceOneTick();
 
       // 宣言（+2.5/tick）から痛みの削り（-0.5/tick）を引いた +2/tick が、2時間ぶん。
       expect(valueOf('happiness'), '痛みの無いときの +20 より薄い').toBe(16);
@@ -278,18 +332,18 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
         return amounts;
       }
 
-      it('荷が削っている間の倒れ込みは、引いたぶんの粒を出す', () => {
-        carryLoad();
+      it.each(LOADS)('$stage を担いだままの倒れ込みは、引いたぶんの粒を出す', (load) => {
+        carryLoad(load);
         drain('stamina');
 
-        const amounts = gainsDuring(() => session.advanceWorldTime(15));
+        const amounts = gainsDuring(advanceOneTick);
 
-        expect(valueOf('stamina'), '倒れ込みで実際に戻った量').toBeCloseTo(NET_PER_TICK * 8, 6);
-        expect(amounts.get('stamina'), '粒もその量').toBeCloseTo(NET_PER_TICK * 8, 6);
+        // 量が0以下の粒は流れてこない（WorldSession.withInteractionGains）ので、出なかったのは0と読む。
+        expect(amounts.get('stamina') ?? 0, '粒も、削りを引いた正味').toBeCloseTo(collapseRecovery(load), 6);
       });
 
       it('荷が削っている間の休息は、引いたぶんの粒を出す', () => {
-        carryLoad();
+        carryLoad(LADEN);
         player.getProperty(codex.propertyNames.getId('stamina')).setNumber(50);
 
         const amounts = gainsDuring(rest);
@@ -313,7 +367,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
           deepen();
           drain('happiness');
 
-          const amounts = gainsDuring(() => session.advanceWorldTime(15));
+          const amounts = gainsDuring(advanceOneTick);
 
           expect(valueOf('happiness'), '打ちひしがれで実際に戻った量').toBe(16);
           expect(amounts.get('happiness'), '粒もその量').toBe(16);
@@ -325,7 +379,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
         // +3/tick から引いた +2/tick が、6時間ぶん。
         drain('wakefulness');
 
-        const amounts = gainsDuring(() => session.advanceWorldTime(15));
+        const amounts = gainsDuring(advanceOneTick);
 
         expect(valueOf('wakefulness'), '眠り込みで実際に戻った量').toBe(48);
         expect(amounts.get('wakefulness'), '粒もその量').toBe(48);

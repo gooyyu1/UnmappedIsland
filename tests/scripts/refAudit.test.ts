@@ -26,6 +26,11 @@ function cite(...numbers: readonly string[]): string {
   return numbers.map((number) => `${number}節`).join('・');
 }
 
+/** 同じ参照を、**末尾の「節」が並び全体に掛かる**形で書いたもの（`docs/DocumentStyle.md` 5節）。 */
+function citeRun(...numbers: readonly string[]): string {
+  return `${numbers.join('・')}節`;
+}
+
 const REPOS: string[] = [];
 
 afterAll(() => {
@@ -181,6 +186,21 @@ describe('refAudit.mjs', () => {
     expect(batch(repo).changed).toEqual(['cites.md']);
   });
 
+  // 末尾の「節」は並び全体に掛かる（`docs/DocumentStyle.md` 5節）。番号ごとに「節」を書いた形しか
+  // 読まないと、**列挙の先頭側で指した参照が黙って外れる**——動いた節を指していても引かれない。
+  it('列挙の末尾にだけ「節」を書いた参照も、先頭側の番号で引く', () => {
+    const repo = makeRepo({
+      [LEDGER]: ledgerText('zzz', UNSET),
+      'spec.md': '# spec\n\n## 1. あ\n\n## 2. い\n\n## 3. う\n',
+      'cites.md': `\`spec.md\` ${citeRun('3', '1')}のとおり。\n`,
+    });
+    const before = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf-8' }).trim();
+    commit(repo, { 'spec.md': '# spec\n\n## 1. あ\n\n## 2. う\n' });
+    writeFileSync(join(repo, LEDGER), ledgerText('zzz', before), 'utf-8');
+
+    expect(batch(repo).changed).toEqual(['cites.md']);
+  });
+
   it('本文だけが変わった文書は、指している側を引かない', () => {
     const repo = makeRepo({
       [LEDGER]: ledgerText('zzz', UNSET),
@@ -267,7 +287,7 @@ describe('refAudit.mjs', () => {
   // ## 射程
   //
   // **その回の観測の記録は読まない**——書いてあるのは当時の観測で、今と食い違っていても直す先では
-  // ない（そう決めているのは `agent-ops/prompts/analysis-prompt.md` の、記録の書き方を渡している段）。
+  // ない（そう決めているのは `agent-ops/board-design.md` 2.17.4節）。
   it('その回の観測の記録は、掃く分に出さない', () => {
     const repo = makeRepo({
       [LEDGER]: ledgerText(UNSET, UNSET),

@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
@@ -75,12 +75,9 @@ describe('farming.yamlの畑と囲い', () => {
    * 草原はヤケイだけを宣言し、森と密林はイノシシも宣言する。
    */
   function open(roll = ROLL, locationName = 'grassland'): void {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
-    session = new WorldSession(codex, new World(worldInstance), fixedRng(roll));
+    session = new WorldSession(codex, undefined, fixedRng(roll));
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
+    session.adoptWorld(new World(worldInstance));
     land = spawnInto(locationName, worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, land, 'characters');
     makeBrightEnoughForAnyAction(player, codex);

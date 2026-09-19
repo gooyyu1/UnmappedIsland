@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "src/assets/objects/green_firewood.png を作り直すためのレシピ。build.py が読む。",
+    "丸太を玉切って割った、まだ水を含んでいる薪1本（src/assets/world-codex/firewood.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: firewood）。** 素の生成では薪にならず（4枚とも木口の接写。",
+    "prompts/objects.json の green_firewood 参照）、**丸太（log.json）から Qwen に割らせる手も",
+    "効かない**——「縦に割って半分だけ残せ」と頼むと、割らずに樹皮を剥いだ丸太が返った。",
+    "丸太・太い枝と分かれるのは「面の半分が割り口であること」の1点だけなので、そこを下絵で決める。",
+    "",
+    "**挽いた角材にしない。** 樹皮の残る背が丸いことが、割った物であることの手掛かり。下絵でも",
+    "下端をふくらませ、編集の指示でも「挽いた板でも角材でもない」と言う。",
+    "",
+    "**乾いた薪（seasoned_firewood）はこの絵から派生する。** 乾きでも輪郭は動かないので、同じ1本が",
+    "乾いた姿として繋がる（面の上で何が変わるかは向こうの _comment）。",
+    "",
+    "段は320。丸太（400）を10本に割った1本なので一回り小さい。丸太と同じく対角線へ寝かせる",
+    "（diagonal）——下絵では横に置いてあるので、ここで寝かせて札の対角線いっぱいに伸ばす。"
+  ],
+  "output": "src/assets/objects/green_firewood.png",
+  "sketch": "firewood",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout and the same sizes: one split billet of firewood lying on the ground, its long broad face turned up towards us where the wood was split open, pale damp cream with a straight torn grain running the whole length of it, and rough furrowed brown bark left only on the rounded back below, curving away underneath it. At the near end the wood shows where it was cut across the grain, its rings pale. The wood is freshly split and still wet: there are no cracks, no open splits and no grey weathering anywhere on it. It is a piece of a tree, not a sawn plank and not a squared beam: the back is round and the bark is real bark. Everything is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow beneath the billet. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "320",
+    "mode": "background",
+    "diagonal": true,
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

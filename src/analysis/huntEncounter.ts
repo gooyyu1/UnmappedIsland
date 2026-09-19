@@ -3,7 +3,7 @@ import type { Combination } from '../domain/Interaction';
 import type { Rng } from '../domain/Rng';
 import { seededRng } from '../domain/Rng';
 import type { WorldCodex } from '../domain/WorldCodex';
-import { WorldObject } from '../domain/WorldObject';
+import type { WorldObject } from '../domain/WorldObject';
 import { WorldSession } from '../domain/WorldSession';
 import { World } from '../domain/wrappers/World';
 
@@ -155,7 +155,7 @@ class Encounter {
     this.warinessId = codex.propertyNames.getId('wariness');
 
     this.session = new WorldSession(codex, undefined, rng);
-    const world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), this.session);
+    const world = this.session.createObject(codex.objectNames.getId('world'));
     this.session.adoptWorld(new World(world));
 
     this.jungle = this.spawnInto('jungle', world, 'locations');

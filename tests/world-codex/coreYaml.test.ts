@@ -63,6 +63,19 @@ describe('core.yamlのworld定義', () => {
     expect(hour.range?.max, '24時で1日へ繰り上がる').toBe(24);
   });
 
+  it('dayは折り返さず、年も持たない', () => {
+    // docs/engine/GameElementDefinition.md 15.1節【確定】。dayにrangeを生やすとon_maxが付いて
+    // 折り返せるようになり、yearを足すと日付の出し方も季節の巡りも「年をまたいだとき」を持つ。
+    const world = codex.objects.get(codex.objectNames.getId('world'));
+    const yearId = codex.propertyNames.tryGetId('year');
+
+    expect(propOf(world, 'day').range, 'dayは上限を持たない').toBeUndefined();
+    expect(
+      yearId === undefined ? undefined : world.tryGetPropertyDef(yearId),
+      'worldは年を持たない',
+    ).toBeUndefined();
+  });
+
   it('コードが持つ1日の長さ・1tickの長さは、この宣言から数え直したものと一致する', () => {
     // 時計の表示も航海の日数の見積もりも収支の表も、実体化された世界を持たずにこの2つを使う
     // （src/domain/worldTime.ts）。宣言だけを変えると、世界は新しい暦で回るのにコードは古い
@@ -102,9 +115,10 @@ describe('core.yamlのworld定義', () => {
     const hourId = codex.propertyNames.getId('hour');
     const dayId = codex.propertyNames.getId('day');
 
-    const worldInstance = new WorldSession(codex).createObject(world.globalId);
+    const session = new WorldSession(codex);
+    const worldInstance = session.createObject(world.globalId);
     const worldView = new World(worldInstance);
-    const session = new WorldSession(codex, worldView);
+    session.adoptWorld(worldView);
     // 見たいのは繰り上がりの連鎖なので、hourの既定値（正午）ではなく0:00から始める。
     worldInstance.getProperty(hourId).setNumberWithoutEvents(0);
 

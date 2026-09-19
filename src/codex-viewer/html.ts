@@ -1,6 +1,6 @@
 import { artUrl } from '../art/objectArt';
 
-/** 中身が1つも無いことを表すHTML。節ごと省くかの判断（pages.tsのsection）もこれを目印にする。 */
+/** 中身が1つも無いことを表すHTML。節ごと省くかの判断（pages.ts の sectionHtmlOrEmpty）もこれを目印にする。 */
 export const EMPTY_HTML = '<p class="muted">（なし）</p>';
 
 /** HTMLへ文字列を埋め込む前の実体参照化。 */

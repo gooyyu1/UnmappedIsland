@@ -12,7 +12,7 @@
 // ## なぜ切り出したか
 //
 // 一覧を要る側は1つではない（呼び手は `live-sessions` で検索すれば出る。
-// [`board-design.md`](../../agent-ops/board-design.md) 2.5.3）。**同じ条件を複数箇所へ書くと、
+// [`board-design.md`](../../agent-ops/board-design.md) 2.5.3節）。**同じ条件を複数箇所へ書くと、
 // 片方だけが直る。**
 //
 // ## 絞るのは `SESSION_STATUS_ARCHIVED` だけ
@@ -45,7 +45,7 @@
 // **ただし履歴の末尾までは繰らない。** `list_sessions` には**1000回/時**の上限があり、末尾まで繰ると
 // 1回の走査に要る回数が**これまでに作ったセッションの総数に比例して増え続ける**。上限に当たると
 // 一覧が引けず、盤面はその周を捨てる——**進みが止まったまま、日が経つほど戻りにくくなる**
-// （`board-design.md` 1.7）。生きたセッションが1件も無いページが `DRY_PAGES` 枚続いたら、そこで
+// （`board-design.md` 1.7節）。生きたセッションが1件も無いページが `DRY_PAGES` 枚続いたら、そこで
 // 止める。
 //
 // **`DRY_PAGES` は「間に何件の畳まれたセッションが挟まっても見つけるか」**（1枚 = 100件）。
@@ -65,7 +65,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const DRY_PAGES = Number(process.env.LIVE_SESSIONS_DRY_PAGES || 2);
 
 /**
- * 今の環境ID（`board-design.md` 2.16）。**既定のIDを持つのは [`ccr-env.sh`](ccr-env.sh) 1箇所**
+ * 今の環境ID（`board-design.md` 2.16節）。**既定のIDを持つのは [`ccr-env.sh`](ccr-env.sh) 1箇所**
  * なので、直接叩いて読む——書き写すと、あちらを直したときにここが黙って古いIDを見続ける。
  *
  * 返すのは `{ name, id }` の並びで、**名前は `ccr-env.sh` が出す綴りのまま**（`CLOUD_ENV` /
@@ -95,7 +95,7 @@ export function environmentIds() {
 export const envKind = (name) => (name === 'BRIDGE_ENV' ? 'bridge' : 'cloud');
 
 /**
- * どこで走っているか（`board-design.md` 2.16）。
+ * どこで走っているか（`board-design.md` 2.16節）。
  *
  * **知らない環境は `-`。** `cloud` に寄せない——盤面はこの値で「間違った場所に居るワーカー」を
  * 畳むので、知らないものを既定へ落とすと、正しく走っているセッションを畳みうる。

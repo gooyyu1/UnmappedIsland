@@ -1,14 +1,14 @@
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 import { type CachedUsage, writeUsageCache, writeUsagePolled } from '../support/usageCache';
 
 /**
  * `scripts/daemon/headroom.sh`（と中身の `headroom.mjs`）の検査
- * （`agent-ops/board-design.md` 2.5.2）。
+ * （`agent-ops/board-design.md` 2.5.2節）。
  *
  * ここが守るのは**比べているものが「残量」ではなく「あと1本入るか」であること**。
  *
@@ -20,9 +20,6 @@ import { type CachedUsage, writeUsageCache, writeUsagePolled } from '../support/
  * 使用量の控え（`usage.sh --last` が読む）と記録（`spent.tsv`）を `BOARD_STATE` で差し替える。
  * **口は叩かない**ので、この検査は網に触らない。
  */
-
-// 実プロセス（bash + node）を起こす。
-vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/daemon/headroom.sh');
 

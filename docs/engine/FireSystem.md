@@ -104,9 +104,8 @@ slots:
 # 炉の側が宣言する
 interactions:
   add_fuel:
-    trigger: {drag: {tag: fuel}}
-    duration: 1
-    allow_multiple: true     # 束ねた薪はまとめてくべられる（GameElementDefinition.md 12.4節）
+    # 束ねた薪はまとめてくべられる（GameElementDefinition.md 12.4節）
+    trigger: {drag: {tag: fuel}, allow_multiple: true}
     transfer:
       amount: 999            # 入るだけ入れる
       from: instrument
@@ -310,7 +309,7 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 **棚 1 基（1.20 日<!-- stats: terrain.yaml work_piles pile=薪棚 days -->）の元が取れるのは、乾いた薪を 90 本ほど
 焚いたところ**です——1 本が浮かせるのは 11.6 分（30 点 ×（1.16 − 0.77））で、棚の 1,068 分をそれで割った
 数。丸太 9 本ぶん、棚は 10 本ずつ乾かすので 9 回ぶんになります。**山が支出を安くする手段だと言えるのは
-この回数までで**、1 周回（約 109 日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->）
+この回数までで**、1 周回（約 110 日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->）
 のうちに何度も回せる長さです。率と安さは `tests/world-codex/firewoodYaml.test.ts` が見張ります。
 
 ## 3. 種火は、火力の一番下の段
@@ -467,7 +466,6 @@ interactions:
 interactions:
   ignite_from_flame:
     trigger: {drag: {tag: lightable}}
-    duration: 1
     conditions:
       - {reason: no_flame_carried, subject: instrument, prop: lit, gt: 0}
       - {reason: already_lit, prop: heat, eq: 0}
@@ -475,7 +473,6 @@ interactions:
     set: {self: {heat: 1}}
   light_from_flame:
     trigger: {drag: {tag: lightable}}
-    duration: 1
     conditions:
       - {reason: fire_out, prop: heat, gt: 0}
       - {reason: already_lit, subject: instrument, prop: lit, eq: 0}

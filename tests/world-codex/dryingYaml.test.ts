@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
@@ -57,12 +57,9 @@ describe('drying.yamlの天日干しと干し場', () => {
    * 日をまたぐ検査では「晴れが続けば」の側を見られなくなる。
    */
   function open(hour = SUNRISE_HOUR, weather = 'clear', landName = 'sandy_beach') {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
-    const session = new WorldSession(codex, new World(worldInstance), fixedRng(0.9));
+    const session = new WorldSession(codex, undefined, fixedRng(0.9));
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
+    session.adoptWorld(new World(worldInstance));
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);
     worldInstance
       .getProperty(codex.propertyNames.getId('weather'))

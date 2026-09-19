@@ -10,7 +10,7 @@
 # 見どころはPRごとに変わらないので、投入する側が書き足すものが無い（`dispatch-task.sh` との違いはここ）。
 #
 # **前のレビューを畳むのはここではない**——盤面が毎周見て打つ
-# （[`board-move.mjs`](board-move.mjs)、`board-design.md` 2.10.3）。
+# （[`board-move.mjs`](board-move.mjs)、`board-design.md` 2.10.3節）。
 #
 # 出す行は [`dispatch-steps.sh`](dispatch-steps.sh) の `dispatch_session`。`SOURCES` が出す
 # リビジョンは、下の「`main` ではなくPRのブランチで起動する」のとおりPRのブランチ。
@@ -76,14 +76,14 @@ state=$(jq -r '.state' "$WORK/pr.json")
 #
 # 見るのは前のレビューだけではない。**そのPRを直しているセッションが走っていたら立てない。**
 # `直し待ち` のラベルは「直しが要る」しか言わず、**直している最中か誰も居ないかを区別しない**
-# （[`board-design.md`](../../agent-ops/board-design.md) 1.3）。区別は占有の側にしか無いので、
+# （[`board-design.md`](../../agent-ops/board-design.md) 1.3節）。区別は占有の側にしか無いので、
 # `Closes #N` から直す側のタグ（`task-N`）を起こして一緒に渡す。
 # 脚注のセッションIDではなくタグで引くのは、**同じ issue へ2回投入されていても両方が同じタグを
 # 持つ**ため。生きているほうを取り逃がさない。
 #
 # **同じ `Closes` から、手綱に訊く種類も決まる。** `kind:task` の issue を閉じるPRはデーモンが
 # 配った仕事で、そうでないPR（人と直接話した結果のもの）は別の系統。**読ませるかを別々に
-# 切り替えられるようにする**ため、種類を分けて渡す（`board-design.md` 2.4）。
+# 切り替えられるようにする**ため、種類を分けて渡す（`board-design.md` 2.4節）。
 # `Closes` を書き忘れたPRも「task を持たない」側に入る——**盤面には出るが誰も読まない**ので、
 # 子の手綱を外すなら本文の `Closes` が要る。
 #
@@ -102,6 +102,6 @@ done < <(jq -r '.body // ""' "$WORK/pr.json" |
   grep -oiE 'closes[[:space:]]+#[0-9]+' | grep -oE '[0-9]+' | sort -u || true)
 
 # 手綱と占有。**再レビューは止まらない**——判定に使うのは走行中かどうかで、判定を書き終えた
-# レビューは占有していない（[`board-design.md`](../../agent-ops/board-design.md) 1.2）。
+# レビューは占有していない（[`board-design.md`](../../agent-ops/board-design.md) 1.2節）。
 dispatch_session "$kind" "${review_tags[@]}" -- \
   review --tag "$TAG" --pr "$PR" --pr-json "$WORK/pr.json" --template "$RAW" --prompt "$INSTRUCTION"

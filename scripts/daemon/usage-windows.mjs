@@ -9,7 +9,7 @@
  * 手綱が見る枠。**この並びが、積んだ記録（`spent.tsv`）の列の並びでもある。**
  *
  * 応答には他にも枠が並ぶ（`seven_day_opus` など）が、増やすなら
- * [`board-design.md`](../../agent-ops/board-design.md) 2.5.2 の側を先に決める。
+ * [`board-design.md`](../../agent-ops/board-design.md) 2.5.2節 の側を先に決める。
  */
 export const WINDOWS = ['five_hour', 'seven_day'];
 
@@ -18,7 +18,7 @@ export const WINDOWS = ['five_hour', 'seven_day'];
  * 「余力が在る」として通すと、その枠では手綱が掛からないまま上限に当たる。
  *
  * **`resets_at`（3つ目の欄）は読まない。** 同じ枠でも呼び出しごとに揺れるので判定に使えない
- * （[`board-design.md`](../../agent-ops/board-design.md) 2.8）。
+ * （[`board-design.md`](../../agent-ops/board-design.md) 2.8節）。
  */
 export function parseUsage(text) {
   if (typeof text !== 'string') return undefined;

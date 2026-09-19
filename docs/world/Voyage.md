@@ -137,22 +137,22 @@
 残り——渡るのにかかる時間・海流・浮いていることの配布・見張りそのもの・海図の幅・荒天にさらされた時間と
 押し流し方——は `sea_zone` trait が 1 箇所で持ちます。
 
-| 顔ぶれ | 海区 | 見張り | 拾えるもの | 湧くもの | 実り |
+| 顔ぶれ | 海区 | 見張り | 拾えるもの | 湧くもの | 空振り |
 |---|---|--:|---|---|--:|
-| 沿岸 | 島影の海・本土の島影 | 2 | 流木・海藻 | 魚の群れ | 0.8 |
-| 潮目 | 潮目・沖の潮目 | 3 | — | 魚の群れ | 0.8 |
-| 海藻の帯 | 海藻の帯・流れ藻の海 | 3 | 海藻 | — | 0.55 |
-| 岩礁 | 岩礁の海・黒い岩礁 | 3 | 漂流物 | 魚の群れ | 0.55 |
-| 海鳥の岩 | 海鳥の岩・白い岩 | 3 | 卵・羽 | 海鳥の群れ | 0.55 |
-| 沈船の海 | 沈船の海 | 4 | 漂流物・アーティファクト | — | 0.2 |
-| 小島のある海区 | 小島の海 | 3 | — | — | 0 |
-| 空の海 | 空の海・うねりの海 | 5 | — | — | 0 |
+| 沿岸 | 島影の海・本土の島影 | 2<!-- stats: voyage.yaml zones zone=coastal_waters lookouts --><!-- stats: voyage.yaml zones zone=mainland_shallows lookouts --> | 流木・海藻 | 魚の群れ | 20%<!-- stats: voyage.yaml zone_yields zone=coastal_waters barren --><!-- stats: voyage.yaml zone_yields zone=mainland_shallows barren --> |
+| 潮目 | 潮目・沖の潮目 | 3<!-- stats: voyage.yaml zones zone=tide_rip lookouts --><!-- stats: voyage.yaml zones zone=outer_tide_rip lookouts --> | — | 魚の群れ | 20%<!-- stats: voyage.yaml zone_yields zone=tide_rip barren --><!-- stats: voyage.yaml zone_yields zone=outer_tide_rip barren --> |
+| 海藻の帯 | 海藻の帯・流れ藻の海 | 3<!-- stats: voyage.yaml zones zone=kelp_belt lookouts --><!-- stats: voyage.yaml zones zone=drifting_kelp lookouts --> | 海藻 | — | 45%<!-- stats: voyage.yaml zone_yields zone=kelp_belt barren --><!-- stats: voyage.yaml zone_yields zone=drifting_kelp barren --> |
+| 岩礁 | 岩礁の海・黒い岩礁 | 3<!-- stats: voyage.yaml zones zone=reef_shallows lookouts --><!-- stats: voyage.yaml zones zone=black_reef lookouts --> | 漂流物 | 魚の群れ | 45%<!-- stats: voyage.yaml zone_yields zone=reef_shallows barren --><!-- stats: voyage.yaml zone_yields zone=black_reef barren --> |
+| 海鳥の岩 | 海鳥の岩・白い岩 | 3<!-- stats: voyage.yaml zones zone=gull_rock lookouts --><!-- stats: voyage.yaml zones zone=white_rock lookouts --> | 卵・羽 | 海鳥の群れ | 45%<!-- stats: voyage.yaml zone_yields zone=gull_rock barren --><!-- stats: voyage.yaml zone_yields zone=white_rock barren --> |
+| 沈船の海 | 沈船の海 | 4<!-- stats: voyage.yaml zones zone=wreck_waters lookouts --> | 漂流物・アーティファクト | — | 80%<!-- stats: voyage.yaml zone_yields zone=wreck_waters barren --> |
+| 小島のある海区 | 小島の海 | 3<!-- stats: voyage.yaml zones zone=islet_waters lookouts --> | — | — | 100%<!-- stats: voyage.yaml zone_yields zone=islet_waters barren --> |
+| 空の海 | 空の海・うねりの海 | 5<!-- stats: voyage.yaml zones zone=open_water lookouts --><!-- stats: voyage.yaml zones zone=long_swell lookouts --> | — | — | 100%<!-- stats: voyage.yaml zone_yields zone=open_water barren --><!-- stats: voyage.yaml zone_yields zone=long_swell barren --> |
 
 **小島（3.4 節）が立つのは、小島の海と海鳥の岩の顔ぶれです**
 （[`ContentSkeleton.md`](./ContentSkeleton.md) 7 節）。海鳥の岩は、鳥が巣を作るその岩が上陸できる小島
 そのものなので、海面の見張りが返す卵・羽とは別に、降りて歩けば島の産物が採れます。
 
-「実り」は、1 回の見張りで何かが返る割合です。**名前はどれも見れば分かるものから採っています**
+「空振り」は、1 回の見張りが何も返さない割合です（残りが実り）。**名前はどれも見れば分かるものから採っています**
 （[`GameEndings.md`](../concept/GameEndings.md) 12.2 節）。
 
 **島と繋がっているのは島側の端だけではありません。** 出航はどの海岸からでもでき、立つ海区は海岸ごとに
@@ -235,9 +235,12 @@
 最も短い岸壁からでも
 3.38 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=dry days -->と
 3.60 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=wet days -->で、
-**差は 0.2〜0.4 日です**（[`stats/voyage.yaml`](../../stats/voyage.yaml) の `course_season`）。
+**季節のあいだで最も開いても、砂浜で
+0.3 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest days 幅 ±0.1 -->、岸壁で
+0.2 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest days 幅 ±0.1 -->です**
+（[`stats/voyage.yaml`](../../stats/voyage.yaml) の `course_season`）。
 
-**荒天の押し流し（3.8 節）を入れても、倍にしかなりません。** 風下は押し流す先も決めるので、向かい風の
+**荒天の押し流し（3.8 節）を入れても、この差は 1 日に届きません。** 風下は押し流す先も決めるので、向かい風の
 多い雨季ほど島の側へ戻される回が増えます。海区と筏を実体化して渡らせると
 （[`VoyageStormStats.md`](../diagnostics/VoyageStormStats.md)）、**乾季の航海はほとんど押し流されません**
 ——伸びるのは
@@ -253,13 +256,15 @@
 からでも
 3.39 日<!-- stats: voyage_storm.yaml course_storm coast=cliff_coast season=dry mean -->と
 4.00 日<!-- stats: voyage_storm.yaml course_storm coast=cliff_coast season=wet mean -->で、
-**差は 0.5〜0.7 日です。**
+**季節のあいだで最も開いても、砂浜で
+0.8 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach mean 幅 ±0.1 -->、岸壁で
+0.6 日<!-- stats: voyage_storm.yaml course_storm coast=cliff_coast mean 幅 ±0.1 -->です。**
 
-**一方、窓を逃したときに待つのは 48〜72 日です。** 季節は
-24<!-- stats: climate.yaml season_duration season=calm min -->〜36<!-- stats: climate.yaml season_duration season=calm max -->
+**一方、窓を逃したときに待つのは季節 2 つぶんです。** 季節はどれも
+24<!-- stats: climate.yaml season_duration min 最小 --><!-- stats: climate.yaml season_duration min 最大 -->〜36<!-- stats: climate.yaml season_duration max 最小 --><!-- stats: climate.yaml season_duration max 最大 -->
 日で回り、乾季の次の乾季までには穏やかと雨季が挟まるので、乾季を逃せばその 2 季ぶんを待つことになります
 ——引き返して逃した場合も同じで、引き返しの代償（[`GameEndings.md`](../concept/GameEndings.md) 12.5 節）
-にはこれが乗ります。**得る 0.5〜0.7 日に対して待ちが 2 桁大きいので、今の重みでは「窓を待つ」は
+にはこれが乗ります。**得る 1 日足らずに対して待ちが 2 桁大きいので、今の重みでは「窓を待つ」は
 選択になりません**——期限として働かせるなら、動かすのは風向きの重みでも荒天の押し流しでもなく、
 季節が航海へ返すものの側です。
 
@@ -397,7 +402,7 @@
 
 **湧くもののつまみは、見張る人の狩猟の腕を `base` の土台にします**
 （[`Skills.md`](./Skills.md) 5 節）。地上の探索で獣のつまみへ積んでいるのと同じ「出くわす機会」で、
-**拾えるものには積みません**。上の表の「実り」は `novice` のもので、腕が上がるとその海区は
+**拾えるものには積みません**。上の表の「空振り」は `novice` のもので、腕が上がるとその海区は
 魚と鳥の側へ寄ります。
 
 **実りの濃淡を表すのは、この重みだけです。** 素の横断時間はどの海区も同じ（3.2 節）なので、
@@ -495,7 +500,9 @@
 
 **地点差を持たせる仕組みはありません。** 海岸が持つのは「自分はどの海区に面しているか」の 1 点だけで、
 距離は本土までの残り海区数、危険度は通ることになる海区の顔ぶれとして出ます。砂浜からの航路は最も長い
-代わりに、序盤に島影の海（実り 0.8）・海藻の帯・潮目（同 0.8。**補給が当てになる唯一の海区**）が続きます。
+代わりに、序盤に島影の海（空振り
+20%<!-- stats: voyage.yaml zone_yields zone=coastal_waters barren -->）・海藻の帯・潮目（同
+20%<!-- stats: voyage.yaml zone_yields zone=tide_rip barren -->。**補給が当てになる唯一の海区**）が続きます。
 岸壁からは 4 区間を跨いで最も短く着きますが、その先は小島の海・空の海・沈船の海・うねりの海と、返すものの
 無い海区が並びます。**短い航路ほど補給の当てが無い**——これが「危険度」の中身です。**魚の群れが立つのは
 沿岸・潮目・岩礁の 3 顔ぶれだけ**なので、この差はそのまま食料の差になります（3.9 節）。**小島だけは例外で、
@@ -647,7 +654,8 @@
 
 #### 3.9.1 航海は 1 週間に届かず、30 日ではない
 
-**3 節の網から出る所要時間は、近道なら素の速さで 3〜6 日、遠回りでも 7 日には届きません。** 各海区で航路が現れるまでの見張り（3 節の表）と、
+**3 節の網から出る所要時間は、最も長い出航地点と針路でも素の速さで
+6.4 日<!-- stats: voyage.yaml courses days 最大 -->で、1 週間には届きません。** 各海区で航路が現れるまでの見張り（3 節の表）と、
 素の横断 360 分（3.2 節）の合計を、島と同じ物差し（1 日ぶんの自由時間
 891 分<!-- stats: voyage.yaml meta daily_free_minutes -->。[`ContentSkeleton.md`](./ContentSkeleton.md)
 4 節）で割ったものです。**数を出すのは [`stats/voyage.yaml`](../../stats/voyage.yaml) の `courses`**
@@ -662,7 +670,8 @@
 | 岸壁（海鳥の岩から） | 近道 | 8<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs --> | 28<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookouts --> 回 | 420 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookout_minutes --> | 2,880 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest crossing_minutes --> | 3,300 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest total_minutes --> | 3.7<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest days --> |
 | 岸壁 | 遠回り | 10<!-- stats: voyage.yaml courses coast=cliff_coast course=detour legs --> | 34<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour total_minutes --> | 4.6<!-- stats: voyage.yaml courses coast=cliff_coast course=detour days --> |
 
-**遠回りを選ぶと、どの海岸からでも 1 日近く増えます**（沖の潮目と黒い岩礁の 2 区間で 810 分）。帆と追い風が
+**遠回りを選ぶと、どの海岸からでも 1 日近く増えます**（沖の潮目と黒い岩礁の 2 区間で
+810 分<!-- stats: voyage.yaml courses coast=sandy_beach total_minutes 幅 --><!-- stats: voyage.yaml courses coast=rocky_coast total_minutes 幅 --><!-- stats: voyage.yaml courses coast=cliff_coast total_minutes 幅 -->）。帆と追い風が
 あれば縮み、荒天の押し流し（3.8 節）と引き返し（3.5 節）が伸ばします。
 
 **表は押し流しを数えていません**（同じ物差しで数えたものは

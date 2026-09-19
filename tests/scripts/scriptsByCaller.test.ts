@@ -50,16 +50,27 @@ const AGENT_SIDE = ['board.sh', 'checked-items.sh', 'daemon-wake-task.sh', 'push
  * 名前を書けばこの検査が「辿れる」と読んだ——言語で穴の大きさが変わると、どちらの言語で書いたかが
  * 見張りの強さを決めてしまう。落とすのは**行頭の `#` と、空白に続く `#`** から行末まで
  * （`${#arr}`・`$#` のように語へ続く `#` は落とさない）。
+ *
  */
 function code(name: string): string {
   const text = readFileSync(join(ROOT, 'scripts', 'daemon', name), 'utf-8');
-  if (name.endsWith('.sh')) {
-    return text
-      .split('\n')
-      .map((line) => line.replace(/(^|\s)#.*$/, '$1'))
-      .join('\n');
-  }
+  if (name.endsWith('.sh')) return withoutShellComments(text);
   return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
+/**
+ * シェルのコメントを落とした中身。
+ *
+ * **行末の `\r` は自分で落とす。** `m` の無い `$` は `\r` を越えられないので、残したままだと
+ * コメントが1つも落ちず、**説明の中の名前だけで「辿れる」になる**（偽の緑。issue #2171）。
+ * 今は `.gitattributes` が `*.sh` を LF に固定しているので `\r` は届かないが、**均す責務を
+ * 取り出し方の側へ預けない**——預けると、固定の射程が動いた日に、ここが黙って何も見なくなる。
+ */
+function withoutShellComments(text: string): string {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.replace(/(^|\s)#.*$/, '$1'))
+    .join('\n');
 }
 
 /**
@@ -96,5 +107,13 @@ describe('盤面を回す道具の置き場', () => {
 
   it('`scripts/agent/` に在るのは、人かセッションが自分で打つものだけ', () => {
     expect([...trackedUnder('scripts/agent')].sort()).toEqual([...AGENT_SIDE].sort());
+  });
+
+  it('コメントの落ち方が、改行コードで変わらない', () => {
+    const lf = 'node "$HERE/board.mjs" # live-sessions.mjs は呼ばない\n';
+
+    // 一致だけでは、両方が同じに壊れていても緑になる。落ちていることを先に見る。
+    expect(withoutShellComments(lf), 'コメントが落ちている').not.toContain('live-sessions.mjs');
+    expect(withoutShellComments(lf.replace(/\n/g, '\r\n'))).toBe(withoutShellComments(lf));
   });
 });

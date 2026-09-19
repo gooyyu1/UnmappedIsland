@@ -16,6 +16,12 @@ in_progress_tags: [item]
 traits:
   burnt:
     tags: [burnt]
+  # 変種にだけプロパティを配るtrait。素の型はcharを持たないので、becomeの後ろの命令が当たったのが
+  # 変化後の型かどうかを、charが動いたかで見分けられる。
+  charred:
+    tags: [charred]
+    props:
+      char: {value: 0, range: {min: 0, max: 10}}
 object_defs:
   ground:
     tags: [location]
@@ -85,6 +91,19 @@ object_defs:
       - transfer: {from_prop: ash, to_prop: soot, amount: 1}
     variation_axes:
       state: {of: {tag: burnt}}
+  # 命令列の途中で自分の型が変わる灯心。on_minにbecomeと、その後ろのaddを並べてある。
+  wick:
+    props:
+      wax:
+        value: 1
+        range: {min: 0, max: 10}
+        on_min:
+          become: {state: charred_wick}
+          add: {self: {char: 1}}
+    variation_axes:
+      state: {of: {tag: charred}}
+  charred_wick:
+    traits: [charred]
   # 作りかけと名前の重なるスロットを持たない完成品。中身は行き場を失う。
   torch:
     tags: [item]
@@ -257,10 +276,6 @@ object_defs:
   });
 
   /**
-   * 輸送も宣言順に走る（8.4.1節）。型が変われば、宣言順で後ろの輸送は「もうその型でない物」への
-   * 宣言になるので、そこで打ち切る（9.9.1節）。
-   */
-  /**
    * 出す側の`on_min`からbecomeが走ると、受け取る側のプロパティは作り直される。掴んだままの個体へ
    * 入れると、出した分が現物のどこにも残らない（9.9.1節）。
    */
@@ -276,6 +291,10 @@ object_defs:
     expect(kiln.tryGetProperty(heatId)?.number, '出した分は受け取る側に残っている').toBe(1);
   });
 
+  /**
+   * 輸送も宣言順に走る（8.4.1節）。型が変われば、宣言順で後ろの輸送は「もうその型でない物」への
+   * 宣言になるので、そこで打ち切る（9.9.1節）。
+   */
   it('輸送の途中で型が変わったら、宣言順で後ろの輸送はそのtickには走らない', () => {
     const kiln = session.createObject(idOf('kiln'));
     const ashId = codex.propertyNames.getId('ash');
@@ -286,5 +305,20 @@ object_defs:
     expect(kiln.def.name, '1本目の輸送でfuelが尽き、on_minから型が変わっている').not.toBe('kiln');
     expect(kiln.tryGetProperty(ashId)?.number, '2本目の輸送は走らないので、出どころは減らない').toBe(5);
     expect(kiln.tryGetProperty(sootId)?.number, '受け先も動かない').toBe(0);
+  });
+
+  /**
+   * 命令列は輸送と逆で、型が変わっても打ち切らない（9.9.1節）。当たる先が変化後の型であることを、
+   * 変種にしか無いcharで見る——打ち切れば0のまま、変化前の型へ当たっていても行き先が無い。
+   */
+  it('命令列の途中で型が変わっても、後ろの命令は変化後の型の物へ当たる', () => {
+    const wick = session.createObject(idOf('wick'));
+    const charId = codex.propertyNames.getId('char');
+    expect(wick.tryGetProperty(charId), '素の型はcharを持たない').toBeUndefined();
+
+    wick.getProperty(codex.propertyNames.getId('wax')).add(-1);
+
+    expect(wick.def.name, 'on_minに並べた1つ目のbecomeで型が変わっている').not.toBe('wick');
+    expect(wick.tryGetProperty(charId)?.number, '後ろのaddは、変化後の型に生えたcharへ当たる').toBe(1);
   });
 });

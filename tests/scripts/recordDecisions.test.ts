@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { runWithOnlyTheseCommands } from '../support/onlyTheseCommands';
 
@@ -9,10 +9,6 @@ import { runWithOnlyTheseCommands } from '../support/onlyTheseCommands';
  * このフックの仕事は**プロンプトのたびに、記録を促す文をセッションへ渡す**こと。**落ちても
  * 気づけない**——促しが1文字も入らないまま会話が進むだけなので、ここが鳴らないことだけが手立て。
  */
-
-// 実プロセス（bash）を起こすので、`npm test` 全体を並行実行したときのCPU競合だけで既定の5秒を
-// 超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const HOOK = resolve(__dirname, '../../.claude/hooks/record-decisions.sh');
 

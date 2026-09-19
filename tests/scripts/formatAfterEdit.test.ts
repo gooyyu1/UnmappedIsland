@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { runWithOnlyTheseCommands, type CommandCall } from '../support/onlyTheseCommands';
 import { pathForBash } from '../support/runScript';
@@ -14,10 +14,6 @@ import { pathForBash } from '../support/runScript';
  * 置き場から根を引く経路も走らせる——そこが外れると、**全部が「外」に見えて何も整形されないまま
  * 黙って通る。**
  */
-
-// 実プロセス（bash と jq）を起こすので、`npm test` 全体を並行実行したときのCPU競合だけで既定の
-// 5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const REPO = resolve(__dirname, '../..');
 const HOOK = resolve(REPO, '.claude/hooks/format-after-edit.sh');

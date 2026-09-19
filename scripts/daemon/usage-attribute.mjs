@@ -1,4 +1,4 @@
-// 使用量の増分を、そのとき動いていたセッションへ割り当てる（`agent-ops/board-design.md` 2.5）。
+// 使用量の増分を、そのとき動いていたセッションへ割り当てる（`agent-ops/board-design.md` 2.5節）。
 //
 //   echo '{"usage":"five_hour 12 - -\nseven_day 3 - -","now":"...","live":[…]}' \
 //     | node scripts/daemon/usage-attribute.mjs <状態のファイル> <記録のファイル>
