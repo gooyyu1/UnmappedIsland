@@ -69,12 +69,23 @@ export const COMMENTED_EXTENSIONS = ['.ts', '.mts', '.mjs', '.js', '.sh', '.py',
 export function trackedRefSources(root) {
   return trackedFiles(root).filter(
     (rel) =>
-      (rel.endsWith('.md') ||
-        COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)) ||
-        (rel.startsWith(join('tools') + sep) && rel.endsWith('.json'))) &&
+      (rel.endsWith('.md') || COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)) || isProseData(rel)) &&
       !rel.startsWith(join('tests', 'docs') + sep) &&
       !isVerbatimRecord(rel),
   );
+}
+
+/**
+ * **コメントを書けないのに、宣言の値へ散文を置いているデータ**（`tools/**` の JSON の `_comment`）。
+ * 節番号で仕様を指し、ファイルと並べて名前も挙げるので、文書と同じに読む側が要る。
+ *
+ * **読む側は1つではない**（節番号の参照を見る {@link trackedRefSources} と、名前の並びを見る
+ * `tests/docs/docMemberReferences.test.ts`）ので、綴りを写さずここから引く。
+ *
+ * @param {string} rel 根からの相対パス
+ */
+export function isProseData(rel) {
+  return rel.startsWith(join('tools') + sep) && rel.endsWith('.json');
 }
 
 /**
