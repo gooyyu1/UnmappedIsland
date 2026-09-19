@@ -4,8 +4,10 @@ import { join, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * 手順書が git の範囲を指すとき、起点が `origin/main` であることの検査
- * （[issue #1900](https://github.com/gooyyu1/UnmappedIsland/issues/1900)）。
+ * 手順書が git へ渡す版を `origin/main` と名指すときの検査。**縛りは2つ**——起点がローカルの
+ * `main` でないこと（[issue #1900](https://github.com/gooyyu1/UnmappedIsland/issues/1900)）と、
+ * 渡す手前でその参照を取り直していること
+ * （[issue #2092](https://github.com/gooyyu1/UnmappedIsland/issues/2092)）。
  *
  * 作業ブランチは `git checkout -B <枝> origin/main` で切るので、**ローカルの `main` は一度も
  * 動かない**。クローンしたままのクラウドのセッションでは、`main` を起点にした範囲の merge-base が
@@ -13,6 +15,11 @@ import { describe, expect, it } from 'vitest';
  *
  * **混ざっても差分は出るので、受け取った側は自分の差分だと思って読む。** 気づけるかどうかを
  * 読み手任せにしないために、起点の綴りを手順の側で縛る。
+ *
+ * その `origin/main` は、**クラウドのクローンには参照そのものが無いことがある**（実測: PR #2033 の
+ * レビューのセッションで `git fetch origin main` が `* [new branch]` を出した）。取り直す手が手順に
+ * 無いと、**順に辿った者は1番で `unknown revision` に当たって止まる**。起点を名指した以上、その
+ * 起点を手に入れる手も同じ手順に要る。
  */
 
 const ROOT = resolve(__dirname, '../..');
@@ -70,6 +77,19 @@ const PATTERNS: readonly { readonly what: string; readonly pattern: RegExp }[] =
 ];
 
 /**
+ * `origin/main` を git へ渡している行。**拾う範囲を1つの ` ` の中へ閉じる**（`[^\n`]*`）——
+ * 地の文で `git` と `origin/main` が別々の ` ` に在るだけの行は打つ手順ではないので、跨いで拾わない。
+ * 先頭の否定は `result.git.some(...)` のようなプロパティを外すためで、打つ形は必ず `git ` で始まる。
+ */
+const HANDS_ORIGIN_MAIN = /(?<![\w.-])git\s[^\n`]*origin\/main/;
+
+/**
+ * `origin` から `main` を取り直している行。`git -C <本体> fetch --quiet origin main` のように
+ * 語の間へ何が挟まっても同じなので、順だけを見る。
+ */
+const FETCHES_ORIGIN_MAIN = /(?<![\w.-])git\s[^\n]*\bfetch\b[^\n]*\borigin\s+main\b/;
+
+/**
  * 走査するファイル。**追跡しているもの全部**から、{@link RECORDS} と読めないものだけを外す。
  * 追跡で引くのは、生成物・各セッションのリポジトリ・`node_modules` が最初から入らないため
  * ——降りない場所を自分で並べると、置き場が増えるたびに並びのほうが古びる。
@@ -84,12 +104,17 @@ function trackedFiles(): readonly string[] {
     .filter((path) => !BINARY_EXTS.some((ext) => path.toLowerCase().endsWith(ext)));
 }
 
-/** 追跡しているテキストファイルを全部、`[path, 行番号, 行]` へ開く。 */
+/** 追跡しているテキストファイルを全部、`[path, 各行]` へ開く。 */
+function files(): readonly (readonly [string, readonly string[]])[] {
+  return trackedFiles().map(
+    (path) => [relative(ROOT, path), readFileSync(path, 'utf-8').split('\n')] as const,
+  );
+}
+
+/** {@link files} を `[path, 行番号, 行]` へ均す。 */
 function lines(): readonly (readonly [string, number, string])[] {
-  return trackedFiles().flatMap((path) =>
-    readFileSync(path, 'utf-8')
-      .split('\n')
-      .map((line, index) => [relative(ROOT, path), index + 1, line] as const),
+  return files().flatMap(([path, body]) =>
+    body.map((line, index) => [path, index + 1, line] as const),
   );
 }
 
@@ -101,7 +126,7 @@ describe('見ない先が、現物を指している', () => {
   });
 });
 
-describe('差分の起点', () => {
+describe('手順が指す git の版', () => {
   it('手順書もスクリプトも、ローカルの `main` を起点にしない', () => {
     const found = lines().flatMap(([path, no, line]) =>
       PATTERNS.filter(({ pattern }) => pattern.test(line)).map(
@@ -112,5 +137,21 @@ describe('差分の起点', () => {
     expect(found, 'ローカルの `main` はクローンしたまま動かない。`origin/main` を起点にする').toEqual(
       [],
     );
+  });
+
+  it('`origin/main` を git へ渡す手順は、その手前でその参照を取り直している', () => {
+    const found = files().flatMap(([path, body]) => {
+      // **見るのは最初の取り直しだけ。** それより後ろの行は、どれも手前に1つ持っていることになる。
+      const fetched = body.findIndex((line) => FETCHES_ORIGIN_MAIN.test(line));
+      return body
+        .map((line, index) => [index, line] as const)
+        .filter(([index, line]) => HANDS_ORIGIN_MAIN.test(line) && (fetched < 0 || fetched > index))
+        .map(([index]) => `${path}:${index + 1}`);
+    });
+
+    expect(
+      found,
+      '`origin/main` はクラウドのクローンに無いことがある。渡す手前で `git fetch origin main` を打つ',
+    ).toEqual([]);
   });
 });
