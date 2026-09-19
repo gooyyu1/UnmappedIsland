@@ -1027,14 +1027,26 @@ export function moves(input) {
     const asked = cause !== undefined && askedAlready(cause, pr);
 
     /**
-     * 頼み終えた差し戻しを、**レビューへ渡せる**か（2.13.6）。渡せるのは `直し待ち` で緑でマージ
-     * できる形だけ——`却下` は push でしか外れず、衝突とCIの赤はレビューの入口が先に閉じる。
+     * 頼み終えた差し戻しの**次の段**（2.13.6）。頼み終えていなければ `undefined`。
      *
-     * **下の3つの断りは、これが真なら通す。** どれも「**直しを頼めない・返しても直る先が無い**」
-     * ことの断りで、**レビューを渡す手はそのどちらでもない**——混ぜると、`main` が赤い周や担当が
-     * 人の手番に在る周に、**緑でマージできる `直し待ち` のPRが 2.13.6 の経路ごと消える。**
+     * **3値で持つ。** 「レビューへ渡せる」「渡せない」のほかに**「まだ言えない」**が在る——
+     * `main` が動くたびに開いているPRの `mergeable` は全部 `UNKNOWN` へ落ち、CIが走り直している
+     * 最中の色は `running`（2.12.2）。**返す手は取り消せない**（issue へ `[返却]` が載って `判断待ち`
+     * が付き、次の周にワーカーが畳まれてそのPRは宛先の無いPRになる）ので、**次の周には決まる値で
+     * 打たない**——言えない周は何も打たずに待つ。
+     *
+     * **`直し待ち` 以外は、色を見るまでもなく渡せない。** `却下` は push でしか外れず、`look` は
+     * 本文の話で、衝突とCIの赤はその理由そのものが入口を閉じている。
      */
-    const toReview = asked && cause === RETURNED && check === 'green' && pr.mergeable === 'MERGEABLE';
+    const stage = !asked
+      ? undefined
+      : cause !== RETURNED
+        ? 'return'
+        : check === 'green' && pr.mergeable === 'MERGEABLE'
+          ? 'review'
+          : check === 'red' || pr.mergeable === 'CONFLICTING'
+            ? 'return'
+            : undefined;
 
     // **担当の issue が人の手番に在るPRへは、直しを頼まない**（2.15）。返された仕事のワーカーは
     // 次の周に畳まれる（2.10.2）ので、頼んでも届く先が消える——**返した周の次に打つ手が、返したことを
@@ -1042,7 +1054,12 @@ export function moves(input) {
     //
     // **PRの側の `判断待ち` とは別**（下の `HUMAN_TURN`）。あちらはそのPRを通すかの答え待ちなので
     // `却下`・`look`・`直し待ち` は出るが、**こちらは仕事そのものが人の手に在る。**
-    if (kind !== null && !toReview && handedOver(pr)) {
+    //
+    // **この断りも下の2つも、レビューへ渡す段（`stage`）は止めない。** どれも「**直しを頼めない・
+    // 返しても直る先が無い**」ことの断りで、**もう1周読ませる手はそのどちらでもない**——止めると、
+    // `main` が赤い周や担当が人の手番に在る周に、**緑でマージできる `直し待ち` のPRが 2.13.6 の
+    // 経路ごと消える。**
+    if (kind !== null && stage !== 'review' && handedOver(pr)) {
       notes.push(`PR #${pr.number} は${reason}が、担当の issue が人の手番で止まっている`);
       continue;
     }
@@ -1057,7 +1074,7 @@ export function moves(input) {
     // 待っているのは人の答えで、届けば `却下` かマージがそのまま次の手になる。
     if (
       kind !== null &&
-      !toReview &&
+      stage !== 'review' &&
       MAIN_MOVED.includes(cause) &&
       labels.some((name) => HUMAN_TURN.includes(name))
     ) {
@@ -1071,7 +1088,7 @@ export function moves(input) {
     //
     // **頼み終えていても同じ。** そのPRが赤いのは `main` が赤いからで、**人へ返しても直せる者は
     // 増えない**——`main` を緑へ戻す役は盤面の中にも人の手番にも無く、赤を直すPRが入れば消える。
-    if (kind === 'mend' && !toReview && mainCheck === 'red') {
+    if (kind === 'mend' && stage !== 'review' && mainCheck === 'red') {
       notes.push(`PR #${pr.number} は${reason}が、\`main\` が赤いので直しを頼まない`);
       continue;
     }
@@ -1104,12 +1121,10 @@ export function moves(input) {
       continue;
     }
 
-    // **頼み終えた差し戻しの次の段は、レビューか人**（2.13.6）。もう1周読ませて解けるのは
-    // `直し待ち` を緑でマージできる形で抱えているPRだけ——**`却下` は push でしか外れず**、衝突と
-    // CIの赤は**レビューの入口（緑・マージ可能）が先に閉じる。** 渡せないものを黙って落として
-    // いたので、この3つは誰の手番でもないまま止まっていた（issue #2045。2026-09-17 には
+    // **レビューへ渡せない差し戻しは、人へ返す**（2.13.6 の `stage`）。渡せないものを黙って落として
+    // いたので、`却下`・衝突・CIの赤は誰の手番でもないまま止まっていた（issue #2045。2026-09-17 には
     // コンフリクトした7本が、09-19 には赤い2本が同時にこの形だった）。
-    if (asked && !toReview) {
+    if (stage === 'return') {
       // 返す先は**担当の issue**。`判断待ち` を付けるのは名乗りを読む段（`board-labels.yml` の
       // `declared`）で、**あれが見るのは issue のコメントだけ**——`Closes` の無いPRには返す口が無い。
       const [issue] = closes(pr.body);
@@ -1121,9 +1136,11 @@ export function moves(input) {
       }
       // **返す理由は手そのものが運ぶ**（2.15.3）。後から状態を見ても、頼んだのに戻ってこなかった
       // ことは分からない——人へ置くコメントの文面はここで決まる（`board-round.mjs` の `returnBody`）。
-      for (const holder of menders(pr)) {
-        returns.push(`RETURN ${issue} ${holder.id} returned:${issue} ${cause}:${pr.number}`);
-      }
+      //
+      // **1本だけ積む。** 返すのは issue 1件へのコメント1つなので、名乗りが同じ相手が一覧に重なって
+      // 居ても手は1つ（宛先の無いPRを返す側も同じ形。下の `RETURN`）。**空にはならない**
+      // ——`stage` が `return` なのは頼み終えた形だけで、`askedAlready` が相手が居ることを見ている。
+      returns.push(`RETURN ${issue} ${menders(pr)[0].id} returned:${issue} ${cause}:${pr.number}`);
       continue;
     }
 
