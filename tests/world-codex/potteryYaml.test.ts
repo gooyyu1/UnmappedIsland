@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { spawnsObject } from '../../src/codex-viewer/describe/effectQueries';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { tryAdvanceCrafting, spawnInProgressObject } from '../../src/domain/crafting';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { World } from '../../src/domain/wrappers/World';
@@ -40,13 +40,10 @@ describe('pottery.yamlの土器の連鎖', () => {
 
   /** 草地を1つ置いた世界。rollは焼き上がりのpickがどの候補を引くかを決める。 */
   function open(roll: number): void {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
+    session = new WorldSession(codex, undefined, fixedRng(roll));
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
     const worldView = new World(worldInstance);
-    session = new WorldSession(codex, worldView, fixedRng(roll));
+    session.adoptWorld(worldView);
 
     land = session.createObject(codex.objectNames.getId('grassland'));
     expect(

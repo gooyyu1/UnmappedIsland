@@ -89,7 +89,7 @@ function stand(character: string): {
   land: WorldObject;
 } {
   const session = new WorldSession(codex);
-  const worldInstance = new WorldObject(0, def('world'), session);
+  const worldInstance = session.createObject(def('world').globalId);
   session.adoptWorld(new World(worldInstance));
   const beach = session.createObject(codex.objectNames.getId('sandy_beach'));
   expect(

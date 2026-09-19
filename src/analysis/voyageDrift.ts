@@ -2,7 +2,7 @@ import type { PropertyGlobalId, SlotGlobalId } from '../domain/GlobalId';
 import { symbolGlobalIdOfPropertyValue } from '../domain/GlobalId';
 import { seededRng } from '../domain/Rng';
 import type { WorldCodex } from '../domain/WorldCodex';
-import { WorldObject } from '../domain/WorldObject';
+import type { WorldObject } from '../domain/WorldObject';
 import { WorldSession } from '../domain/WorldSession';
 import { World } from '../domain/wrappers/World';
 import { MINUTES_PER_DAY, MINUTES_PER_TICK, TICKS_PER_DAY } from '../domain/worldTime';
@@ -103,8 +103,7 @@ export class VoyageDriftSimulation {
 
     this.session = new WorldSession(codex, undefined, seededRng(seed));
     const worldDef = codex.objects.get(codex.objectNames.getId(codex.vocabulary.world.worldObject));
-    // world だけが instanceId 0。以降は WorldSession が 1 から配る（`NewGame.ts` と同じ取り決め）。
-    this.worldInstance = new WorldObject(0, worldDef, this.session);
+    this.worldInstance = this.session.createObject(worldDef.globalId);
     this.session.adoptWorld(new World(this.worldInstance));
 
     // 海区も本土も singleton なので、world が受け取れるものを全部入れれば網がそのまま立つ。

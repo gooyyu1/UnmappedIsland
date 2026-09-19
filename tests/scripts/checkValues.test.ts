@@ -14,7 +14,7 @@ import {
 import { promptBody } from '../../scripts/daemon/prompt-body.mjs';
 
 /**
- * `scripts/daemon/check-values.mjs` の検査（`agent-ops/board-design.md` 2.22）。
+ * `scripts/daemon/check-values.mjs` の検査（`agent-ops/board-design.md` 2.22節）。
  *
  * **告げられない見張りは、値が生きているのと同じ顔をする。** 環境IDも資格情報も、死んだことに誰も
  * 気づかないのがこの係の出どころなので、**告げ損ねても盤面はただ静かに止まる**——緑であることでは
@@ -533,7 +533,7 @@ describe('check-values.mjs の告げ方', () => {
 });
 
 /**
- * `gh` が死んでいる周（`agent-ops/board-design.md` 2.22.3）。**手元から issue を書く手が、その値
+ * `gh` が死んでいる周（`agent-ops/board-design.md` 2.22.3節）。**手元から issue を書く手が、その値
  * そのもの**なので打てば転ぶ——残っている口はクラウドのセッションだけ。ここで守るのは4つ。
  *
  * - **手元では打たないこと**（転んだ結果を成功と読むと、嘘が混ざる）

@@ -8,7 +8,7 @@ import { Combination } from '../../src/domain/Interaction';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { RecipeDef, RecipeStepDef } from '../../src/domain/RecipeDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { materialsSlotOf, spawnInProgressObject, tryAdvanceCrafting } from '../../src/domain/crafting';
 import { World } from '../../src/domain/wrappers/World';
@@ -306,8 +306,8 @@ function huntingGrantingTypes(): ReadonlySet<string> {
 /**
  * 世界のどこかで `{subject: agent, prop: ...}` として読まれているプロパティ。**読む側の書き方は1つ**
  * なので、レシピの解放条件（docs/engine/SkillSystem.md 4節）も、操作の `conditions` も、`base` の
- * 土台も、レシピの `deftness`・`surplus` の重み（GameElementDefinition.md 13.5節）も、この1本で
- * 拾える——**どこで読まれているかではなく、読まれているかだけを問う。**
+ * 土台も、卓の枝の重み（GameElementDefinition.md 10節）も、この1本で拾える——**どこで読まれて
+ * いるかではなく、読まれているかだけを問う。**
  */
 function propsReadFromAgent(): ReadonlySet<string> {
   const found = new Set<string>();
@@ -842,13 +842,12 @@ function readsThriftWeight(branch: unknown): boolean {
 }
 
 /**
- * 世界じゅうの余分の卓の「当たり」の枝。**在り処では探さない**——レシピの `surplus` も手作業の
- * `pick` も同じ並びなので、**重みが無駄の無さを読んでいること**だけで拾う。名指しで数え上げると、
- * 次に足された卓が素通りする。**無駄の無さと見分けるのは名前の尻尾**（`<腕>_thrift`、
- * docs/world/Skills.md 7節の表）なので、別の名前で置かれた上乗せは拾えない。
+ * 世界じゅうの余分の卓の「当たり」の枝。**在り処では探さない**——卓はどの操作の下にも入れ子にできる
+ * ので、**重みが無駄の無さを読んでいること**だけで拾う。名指しで数え上げると、次に足された卓が
+ * 素通りする。**無駄の無さと見分けるのは名前の尻尾**（`<腕>_thrift`、docs/world/Skills.md 7節の表）
+ * なので、別の名前で置かれた上乗せは拾えない。
  *
- * 素の産出は、`pick` ならその卓と同じ節の `spawn`、`surplus` なら常に1つ——レシピが出す成果物は
- * 進捗が上限へ届いた瞬間の `become` 1回ぶんだから（docs/engine/RecipeSystem.md 1節）。
+ * 素の産出は、その卓と同じ節の `spawn`。
  */
 function declaredSurplusBranches(): readonly SurplusBranch[] {
   const found: SurplusBranch[] = [];
@@ -863,8 +862,8 @@ function declaredSurplusBranches(): readonly SurplusBranch[] {
     for (const pair of node.items) {
       const key = isScalar(pair.key) ? String(pair.key.value) : '';
       const here = where === '' ? key : `${where}.${key}`;
-      if ((key === 'pick' || key === 'surplus') && isSeq(pair.value)) {
-        const baseCounts = key === 'surplus' ? undefined : spawnCountsOf(node.get('spawn', true));
+      if (key === 'pick' && isSeq(pair.value)) {
+        const baseCounts = spawnCountsOf(node.get('spawn', true));
         for (const branch of pair.value.items) {
           if (!readsThriftWeight(branch)) continue;
           const spawns = spawnCountsOf(isMap(branch) ? branch.get('spawn', true) : undefined);
@@ -876,7 +875,7 @@ function declaredSurplusBranches(): readonly SurplusBranch[] {
             found.push({
               where: here,
               object,
-              baseCount: baseCounts === undefined ? 1 : baseCounts.get(object),
+              baseCount: baseCounts.get(object),
               surplusCount,
             });
         }
@@ -1537,12 +1536,10 @@ describe('腕前とレシピの解放条件', () => {
     product: string,
     recipe: RecipeDef,
   ): { session: WorldSession; inProgress: WorldObject; maker: WorldObject } {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
-    const session = new WorldSession(codex, new World(worldInstance));
+    const session = new WorldSession(codex);
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
+    session.adoptWorld(new World(worldInstance));
+
     const field = session.createObject(codex.objectNames.getId('rocky_field'));
     expect(
       field.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
@@ -1779,7 +1776,7 @@ describe('腕前とレシピの解放条件', () => {
   });
 
   it('手作業が引く余分の卓は、その手作業が配る腕の無駄の無さを読む', () => {
-    // レシピの`surplus`と違い、手作業は効く腕を名乗らない（配る腕がそのまま効く腕、
+    // レシピの`deftness`と違い、手作業は効く腕を名乗らない（配る腕がそのまま効く腕、
     // docs/world/Skills.md 7節）。**別の腕の卓を引いてしまうと、伸ばしたのとは違う腕で歩留まりが
     // 変わる**——`pick`の重みは他のどの重みとも同じ書き方なので、読み違えても形は整って見える。
     const skillOfThrift = new Map<string, string>(

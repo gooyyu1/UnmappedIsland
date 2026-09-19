@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
+import { NO_INSTANCE } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
@@ -192,6 +193,22 @@ object_defs:
 
     expect(path.tryGetAction('sail_nowhere', character)?.tryExecute() === true).toBe(true);
     expect(character.parent, '解決できなければ何も起きない').toBe(meadow);
+  });
+
+  it('移動先を書き込まれていない場合は何もしない', () => {
+    // destination_idの既定値はNO_INSTANCE。**どの個体も名乗らない値**なので、生成が書き込む前の道を
+    // 通っても行き先は決まらない——ここが個体を引き当てると、所属ツリーの根（world）へ飛ぶ。
+    const { codex, meadow, world, character, path } = build();
+    expect(
+      path.getProperty(codex.propertyNames.getId('destination_id')).number,
+      'destination_idは宣言の既定値のまま',
+    ).toBe(NO_INSTANCE);
+
+    expect(path.tryGetAction('travel', character)?.tryExecute() === true, 'アクション自体は成立する').toBe(
+      true,
+    );
+    expect(character.parent, '行き先が決まっていなければ何も起きない').toBe(meadow);
+    expect(character.parent, 'worldを掴まない').not.toBe(world);
   });
 
   it('移動先が解決できない場合は何もしない', () => {

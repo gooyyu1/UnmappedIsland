@@ -81,6 +81,12 @@ export function addTextButton(
     },
     hold,
   );
-  button.addCentered(addLabel(scene, metrics, 0, 0, label, { size: 26, bold: true, color: style.textColor }));
+  button.addCentered(
+    addLabel(scene, metrics, 0, 0, label, {
+      size: SIZE.textButtonLabel,
+      bold: true,
+      color: style.textColor,
+    }),
+  );
   return button;
 }

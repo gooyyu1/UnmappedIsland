@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // ヘッドレスChromiumでURLを開き、ページ実行時エラー・コンソールエラーを収集しつつ
 // スクリーンショットを1枚保存する。playwright-coreはプロジェクトの依存ではないため、
 // --module-dir でインストール先（例: スクラッチパッドのnode_modules）を明示する。

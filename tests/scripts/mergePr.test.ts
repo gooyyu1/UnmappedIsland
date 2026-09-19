@@ -13,6 +13,14 @@ import { run } from '../support/mergePrWorld';
  * 世界の組み方と、ファイルを分けてある理由は `tests/support/mergePrWorld.ts`。
  */
 
+/**
+ * 関門（`needs-user-review.sh`）が返す `MARK` の行。**見出しの字面をそのまま載せる**ので番号に
+ * 「節」は付かない——文書の綴りを直に埋めると節番号の参照として読まれるため、パスは分けて持つ
+ * （`docs/DocumentStyle.md` 5節）。
+ */
+const MARKED_DOC = 'docs/ui/Windows.md';
+const GATE_MARK = `MARK ${MARKED_DOC} 9.3 未解放レシピの理由【確定】`;
+
 describe('merge-pr.sh', () => {
   it('マージして、番号を出す', () => {
     const result = run({});
@@ -40,12 +48,12 @@ describe('merge-pr.sh', () => {
   });
 
   // **越える道はこの道具に無い。** ここで止まったPRは、ユーザーが画面からマージするか、ラベルを
-  // 外して差し戻すかのどちらかへ行く（`board-design.md` 2.13.1）。
+  // 外して差し戻すかのどちらかへ行く（`board-design.md` 2.13.1節）。
   it('関門に掛かったPRはマージせず、判断待ちを付けて理由ごと HELD で返す', () => {
-    const result = run({ gate: ['MARK docs/ui/Windows.md 9.3 未解放レシピの理由【確定】'] });
+    const result = run({ gate: [GATE_MARK] });
 
     expect(result.merged).toBe(false);
-    expect(result.lines).toEqual(['HELD 1000', '    MARK docs/ui/Windows.md 9.3 未解放レシピの理由【確定】']);
+    expect(result.lines).toEqual(['HELD 1000', `    ${GATE_MARK}`]);
     expect(result.labels).toEqual(['--add-label 判断待ち']);
     expect(result.status).toBe(1);
   });
@@ -60,10 +68,10 @@ describe('merge-pr.sh', () => {
   });
 
   // **関門を越える引数を持たない。** 許可を渡して叩き直す口があると、ユーザーが覚える操作が
-  // 「外す・マージする」の2つから増える（`board-design.md` 2.13.1）。
+  // 「外す・マージする」の2つから増える（`board-design.md` 2.13.1節）。
   it('引数を足しても、関門に掛かったPRはマージしない', () => {
     const result = run({
-      gate: ['MARK docs/ui/Windows.md 9.3 未解放レシピの理由【確定】'],
+      gate: [GATE_MARK],
       extra: ['--user-ok'],
     });
 

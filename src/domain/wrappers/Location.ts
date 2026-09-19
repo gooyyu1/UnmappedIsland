@@ -21,6 +21,14 @@ export class Location extends ObjectWrapper {
   }
 
   /**
+   * この場所の今の気温（ClimateSystem.md 1.1節）。空の気温を土台に、海抜ぶんの差と、据えた炉の暖
+   * （FireSystem.md 9.2節）が積まれた実効値。気温を持たない場所ではundefined。
+   */
+  get ambientTemperature(): number | undefined {
+    return this.tryEffectiveNumberOf(this.words.ambientTemperatureId);
+  }
+
+  /**
    * 探索できる土地か（exploreアクションを宣言しているか、ExplorationSystem.md 2節）。**今すぐ探索
    * できるかではない**——条件を満たすかは実行の時点で決まる（explore）。探索の面を出すかの判断に使う。
    */
@@ -159,11 +167,9 @@ export class Location extends ObjectWrapper {
    */
   private reveal(fixture: WorldObject): void {
     this.revealInOwnLocation(fixture);
+    if (!fixture.def.hasTag(this.words.pathTagId)) return;
 
-    const returnPathId = new Path(fixture).returnPathInstanceId;
-    if (returnPathId === 0) return;
-
-    const returnPath = fixture.findRoot().findSelfOrDescendantByInstanceId(returnPathId);
+    const returnPath = new Path(fixture).returnPath;
     if (returnPath !== undefined) this.revealInOwnLocation(returnPath);
   }
 

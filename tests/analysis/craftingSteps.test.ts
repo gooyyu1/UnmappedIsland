@@ -196,12 +196,12 @@ object_defs:
     expect(lifetime.minutes).toBe(960 * 15);
   });
 
-  it('作る腕は、レシピの分岐に現れる（時間は宣言どおりのまま）', () => {
-    // 余分の卓（13.5節）は、他の参照と同じく定義から解く。**解いた値を使わずに「必ず1つ」と
-    // 直書きすると、腕で変わる分を収支表が数えないまま断言する。**
-    //
-    // **手際は逆に、ここへ現れない。** 縮むのは宣言した段に届いた作り手にとってだけで、誰が作るかを
+  it('作る腕は、レシピの時間にも結果にも現れない', () => {
+    // **手際はここへ現れない。** 縮むのは宣言した段に届いた作り手にとってだけで、誰が作るかを
     // 決めない図鑑・収支表では、工程が宣言した仕事の量がそのまま答えになる（docs/world/Skills.md 7節）。
+    //
+    // **歩留まりも現れない。** レシピは余分の卓を持てない（同7.2節【確定】）ので、結果は常に1本
+    // ——完成品が1つ出るのは進捗が上限へ届いた瞬間のbecomeが起こすこと（RecipeSystem.md 1節）。
     const YAML_SKILLED = `
 object_defs:
   fiber: {tags: [item]}
@@ -213,7 +213,6 @@ object_defs:
         stages:
           - {name: novice, min: 0}
           - {name: skilled, min: 60}
-      cordage_thrift: {value: 25}
   snare:
     tags: [item]
     recipes:
@@ -222,10 +221,6 @@ object_defs:
         steps:
           - requires: [{object: fiber, count: 2, consume: true}]
             duration: 60
-        surplus:
-          - {weight: 100}
-          - weight: {subject: agent, prop: cordage_thrift}
-            spawn: {object: snare, into: agent}
 `;
     const skilledCodex = new WorldCodexYamlLoader().load('skilled.yaml', YAML_SKILLED).buildAndReset();
     const snareId = skilledCodex.objectNames.getId('snare');
@@ -233,10 +228,11 @@ object_defs:
 
     expect(knotted.laborMinutes, '腕は時間を動かさない').toBe(60);
     expect(knotted.elapsedMinutes).toBe(60);
-    expect(knotted.hasUnresolvedReferences, '卓の重みは作り手の層から解ける').toBe(false);
-    // 卓は100対25なので、5回に1回は2つ取れる。
-    expect(knotted.outcomes.map((outcome) => outcome.probability)).toEqual([0.8, 0.2]);
-    expect(knotted.outputs).toEqual([{ objectGlobalId: snareId, counts: [1, 2] }]);
+    expect(
+      knotted.outcomes.map((outcome) => outcome.probability),
+      '分岐しない',
+    ).toEqual([1]);
+    expect(knotted.outputs).toEqual([{ objectGlobalId: snareId, counts: [1] }]);
   });
 
   it('レシピは素材・道具が入力、完成品が出力になる', () => {
@@ -386,7 +382,11 @@ object_defs:
       // 100 ÷ 25 = 4 tick で固まるので、奪えるのは -15/tick で4 tickぶんの60mL。
       expect(drivers('wound', 'parent')).toEqual([
         {
-          sourceGlobalId: huntId('wound'),
+          source: defOf('wound'),
+          // 持ち主の内側から押すので、親でも祖先でもない。
+          sourceIsAt: 'child',
+          // 押している間に居ると分かっている段は無い（縛っているのは血の残量）。
+          sourceStagesByCase: [[]],
           propertyGlobalId: expect.any(Number),
           amounts: [-15],
           ticksUntilStart: 0,

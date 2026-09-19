@@ -25,6 +25,16 @@ import type {
 type MemberKind = 'プロパティ' | 'スロット';
 
 /**
+ * **どの個体も持たないinstanceId。**「指し先がまだ決まっていない／該当なし」を表す予約値で、
+ * instanceIdを値として運ぶプロパティ（9.2節の`set`が個体を書き込む先）の既定値がこれ。
+ *
+ * 予約はWorldObjectが守る——コンストラクタがこの値を拒み、発行はWorldSessionが1から行う。
+ * **守られている限り、この値でinstanceIdを引いた結果は必ず「該当なし」になる**ので、
+ * 引く側に「既定値なら引かない」という手順は要らない。
+ */
+export const NO_INSTANCE = 0;
+
+/**
  * 実行時のオブジェクト実体（ObjectDefのインスタンス）。
  *
  * プロパティの現在値・スロットの中身は、Def側のローカルIDをそのままindexとする密配列として保持する。
@@ -107,6 +117,11 @@ export class WorldObject {
 
   /** sessionは必須（value:{min,max}を持つプロパティの初期値ランダム化にsession.rngを使う）。 */
   constructor(instanceId: number, def: ObjectDef, session: WorldSession) {
+    if (instanceId === NO_INSTANCE)
+      throw new Error(
+        `instanceId ${NO_INSTANCE}（NO_INSTANCE）は「該当なし」の予約値なので、個体には配れません。` +
+          'WorldSession.createObjectで発行してください。',
+      );
     this.instanceId = instanceId;
     this._def = def;
     this.session = session;
@@ -292,6 +307,8 @@ export class WorldObject {
    * 自分自身を含む子孫から、指定したinstanceIdを持つWorldObjectを探す（深さ優先、無ければundefined）。
    * 「世界に存在する＝worldツリーに繋がっている」という前提（7.1節）のもと、別途のインスタンス一覧を持たず
    * ツリー走査だけで解決する。
+   *
+   * {@link NO_INSTANCE}を渡すと必ずundefined——その値を持つ個体は存在しない。
    */
   findSelfOrDescendantByInstanceId(instanceId: number): WorldObject | undefined {
     if (this.instanceId === instanceId) return this;

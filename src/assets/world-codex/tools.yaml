@@ -140,8 +140,7 @@ object_defs:
           - {reason: needs_knapping, subject: agent, prop: skill_knapping, in_stage_or_above: basic}
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         # **速さを決めるのは連言の2本ではなく、名乗った1本**（docs/world/Skills.md 7節）。溝を刻み、
-        # 刃の座りを見て据えるのが手間の大半で、紐は締めるだけ。**余分の卓は持たない**——斧は1本しか
-        # できない。
+        # 刃の座りを見て据えるのが手間の大半で、紐は締めるだけ。
         deftness: {skill: skill_knapping, from_stage: skilled, minutes: -15}
         steps:
           # 柄をこしらえる。枝の先を割り、刃を落とし込む溝を作る。

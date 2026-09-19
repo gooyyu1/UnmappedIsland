@@ -706,8 +706,8 @@ describe('筏と航海', () => {
   });
 
   it('砂浜でない海岸から出ても、その海岸へ戻れる', () => {
-    // 出航は `{tag: coast}` なので岩の海岸からもできる。**砂浜が1つも無い島（5島に1つ、
-    // stats/terrain.yamlのlocation_type_counts）でも
+    // 出航は `{tag: coast}` なので岩の海岸からもできる。**砂浜が1つも無い島（珍しくはない。
+    // 割合は stats/terrain.yaml の location_type_counts）でも
     // 戻れる**のは、行き先が砂浜という型ではなく、出た当の海岸だから。
     const { game, raft } = ready();
     const departure = coasts(game).find((coast) => coast.def.name !== 'sandy_beach');

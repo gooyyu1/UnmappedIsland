@@ -257,7 +257,7 @@ export function currentStepIsSupplied(inProgress: WorldObject): boolean {
 /**
  * 工程を1つ進める。**作り手の手際を積んだ後の分数**ぶんゲーム内時間を進め、**工程が宣言した
  * 仕事の量**ぶん進捗を進め、素材（`consume: true`）を要求数だけ消費する。道具（`consume: false`）は
- * 減らさない。最後の工程を終えたら、余分の卓（`RecipeDef.surplus`）を1回引く。
+ * 減らさない。
  *
  * 「在庫を確認し、指定数量だけ消費し、足りなければ何もしない」という複合動作はYAMLの語彙では
  * 表せないため、ここに置く（RecipeSystem.md 2節・4節）。**時間と効果の順序はactions/combinationsと
@@ -285,7 +285,7 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
   // 素材も道具も運ばれてきた側ではなく、既に材料スロットの中身だから（運び入れる操作は7.10節で、
   // そちらでは入れる物がinstrument）。実行なので動作主も主張する（whileActing）——経過中に配られて
   // 待たされた手番は、工程を進め終えたこの切れ目で起きる。
-  return new InteractionRelation(inProgress, agent, undefined).whileActing((context) => {
+  return new InteractionRelation(inProgress, agent, undefined).whileActing(() => {
     const step = currentStepOf(inProgress);
     if (step === undefined) return false;
     if (!currentStepIsSupplied(inProgress)) return false;
@@ -321,12 +321,6 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
     // 手を動かした1工程ぶん、作り手の腕が伸びる（SkillSystem.md 3.4節）。**どの腕へ何を配るかは
     // レシピ自身が決める**ので、ここは「1工程終えた」ことだけを伝える。
     recipe.advanceSkillOf(agent, step);
-
-    // 最後の工程を終えていれば、上のaddが上限へ届いて完成している（progressのon_maxがbecomeを
-    // 起こす、RecipeSystem.md 1節）ので、**もうレシピの軸を名乗っていない**。余分の卓を引くのは
-    // ここ——同じ個体が既に成果物になっているので、卓は自分と同じ物を1つ増やす形で書ける。
-    if (recipeOf(inProgress) === undefined && recipe.surplus !== undefined)
-      inProgress.applyActiveEffect(recipe.surplus, context);
 
     spillUnneeded(inProgress);
     return true;

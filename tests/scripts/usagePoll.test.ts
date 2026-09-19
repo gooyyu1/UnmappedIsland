@@ -1,12 +1,12 @@
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
- * 使用量の口を叩く間隔と、**引けた行の控え**の検査（`agent-ops/board-design.md` 2.5.2）。
+ * 使用量の口を叩く間隔と、**引けた行の控え**の検査（`agent-ops/board-design.md` 2.5.2節）。
  *
  * **この口は2分に1回ほどしか通らない**ので、盤面の周（35秒）ごとに叩くと大半が `429` で返り、
  * ログが失敗で埋まって本物の失敗が見えなくなる。ここが守るのは**間隔が空いていない周は、外へ
@@ -16,9 +16,6 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  *
  * 口を叩く回は `node` を PATH の先頭で差し替えるので、この検査も網に触らない。
  */
-
-// 実プロセス（bash）を起こす。
-vi.setConfig({ testTimeout: 20000 });
 
 const DAEMON = resolve(__dirname, '../../scripts/daemon');
 

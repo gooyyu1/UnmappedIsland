@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "src/assets/objects/drying_rack.png を作り直すためのレシピ。build.py が読む。",
+    "太い枝を立てて縄を1本張り、切り分けた食べ物を掛ける棚（src/assets/world-codex/drying.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: drying_rack）。** 生成では枠にならない（4枚とも枯れ枝の茂み。",
+    "prompts/objects.json の drying_rack 参照）。",
+    "",
+    "**掛けてある物は描かない**（枠の中身。薪棚と同じ）。残るのは枝と縄だけなので、**張った縄が",
+    "この設備の唯一の手掛かり**になる。",
+    "",
+    "**薪棚（firewood_rack）と姿勢で分ける。** どちらも枝と縄で組んだ空の枠なので、札の上で",
+    "見分けが付かなくなる（docs/concept/DesignPrinciples.md「見分けの付かない場所を作らない」）。",
+    "こちらは背の高い三脚2つ、あちらは屋根の載った低い台。",
+    "",
+    "**穴を埋めない（keepHoles）。** 三脚の枝が囲む三角も、縄と枝が囲む面も紙のほう。",
+    "",
+    "段は400。炉・燻し小屋と同じ据え置きの設備。"
+  ],
+  "output": "src/assets/objects/drying_rack.png",
+  "sketch": "drying_rack",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout and the same sizes: one empty drying rack standing on the ground, two tripods standing apart from each other, each made of three stout branches that cross near the top and are bound there with many tight turns of rough twisted plant fibre cord, their snapped ends sticking up above the binding, and one single rope of twisted plant fibre strung from one crossing to the other and sagging a little in the middle. Paint the branches as real branches with rough brown bark and pale broken ends, and paint the rope as rough twisted plant fibre, warm tan with its strands showing. Everything is clearly darker than the white page. Nothing hangs from the rope and nothing rests on the frame: there is no food, no fish, no meat, no cloth, no laundry and no washing anywhere in the picture. The frame is open, so the plain white page shows between the branches, and there is no roof, no wall, no mat and no panel on it. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow at the foot of each tripod. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "keepHoles": true,
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

@@ -290,8 +290,12 @@ export interface PlayScreenView {
    */
   readonly weather: string | undefined;
   readonly ambientBrightness: number | undefined;
-  /** 陽炎が立つかを決める気温（ClimateSystem.md）。語彙を持たないCodexではundefined。 */
-  readonly ambientTemperature: number | undefined;
+  /**
+   * 陽炎が立つかを決める、**現在地の**気温（ClimateSystem.md 1.1節）。陽炎が歪ませるのはレーン＝
+   * 今居る土地の地面（ScreenLayout.md 7.5.4節）なので、空ではなく足元を読む。語彙を持たないCodexでは
+   * undefined。
+   */
+  readonly currentLocationTemperature: number | undefined;
   /**
    * 状況エリアの窓に出す天気の名前（Localizationのsymbol_texts節）。絵だけでは晴天どうしを
    * 区別できないため、名前は必ず出す（ScreenLayout.md 5節）。天気の語彙を持たないCodexではundefined。
@@ -905,13 +909,13 @@ export function fromGameSession(
     statuses: entriesWithTag(game.player.instance, codex.propertyTagNames.tryGetId(STATUS_TAG)),
     propertyCategories,
     properties: everyRowOf(game.player.instance),
-    // dayは1始まり（GameElementDefinition.md 17節）なので、生存日数は0始まりへ直す。
+    // dayは1始まりで上限を持たない（GameElementDefinition.md 15.1節）ので、生存日数は0始まりへ直す。
     elapsedDays: game.world.day - 1,
     hour: game.world.hour,
     minute: game.world.minute,
     weather: game.world.weather,
     ambientBrightness: game.world.ambientBrightness,
-    ambientTemperature: game.world.ambientTemperature,
+    currentLocationTemperature: location.ambientTemperature,
     weatherLabel:
       game.world.weather === undefined ? undefined : locale.symbol(game.world.weather).displayName,
     currentLocationCard: nestedLocations[0].window.card,

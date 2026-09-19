@@ -1,7 +1,7 @@
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { runWithOnlyTheseCommands } from '../support/onlyTheseCommands';
 import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
@@ -15,10 +15,6 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  *
  * 本体も作業ツリーも一時ディレクトリに作り、`git` を PATH の先頭で差し替えて走らせる。
  */
-
-// 実際にworktreeまで作る重いテストなので、`npm test` 全体を並行実行したときのCPU競合だけで
-// 既定の5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const HOOK = resolve(__dirname, '../../.claude/hooks/session-start.sh');
 

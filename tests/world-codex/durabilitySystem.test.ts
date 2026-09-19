@@ -3,8 +3,9 @@ import { craftingStepsOf } from '../../src/analysis/craftingSteps';
 import { toolWearsOf } from '../../src/analysis/durations';
 import { staticValueOf } from '../../src/analysis/staticValue';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
+import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { instrumentDurabilityLineOf } from '../support/durabilityLines';
+import { instrumentDurabilityLineOf, stepStandsAt } from '../support/durabilityLines';
 import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
@@ -48,6 +49,8 @@ describe('耐久の規約（同梱の定義すべて）', () => {
     //
     // **食う量は宣言から読む**（timberYaml.test.tsと同じ理由）。直値で書くと線の側しか見ないことに
     // なり、`add` を動かしても緑のままになる。
+    //
+    // **何も返さない手を挟んだ先の手は、線が無くてよい**（下の「払ったぶんが取り残される値」）。
     const lines = wearLines();
     expect(lines.length, '道具として減る宣言が1つも拾えていない').toBeGreaterThan(0);
 
@@ -56,17 +59,97 @@ describe('耐久の規約（同梱の定義すべて）', () => {
       cheapest.set(line.toolName, Math.min(cheapest.get(line.toolName) ?? Infinity, line.cost));
 
     expect(lines.map(describeLine)).toEqual(
-      lines.map((line) =>
-        describeLine({
-          ...line,
-          threshold: line.cost === cheapest.get(line.toolName) ? undefined : line.cost,
-        }),
-      ),
+      lines.map((line) => {
+        if (line.cost === cheapest.get(line.toolName)) return describeLine({ ...line, threshold: undefined });
+        // **無いことを許すだけで、無いことは求めない**——払ったぶんが取り残されない書き方（流木の
+        // 玉切りのように手ごとに物が返る形）なら、続きの手にも線を引ける。
+        if (line.threshold === undefined && !standsBeforeAnyBarrenHand(line.ownerName, line.stepName))
+          return describeLine(line);
+        return describeLine({ ...line, threshold: line.cost });
+      }),
     );
   });
 
+  it('何も返さない手を挟んだ先では、余力の線が断る側へ回らない', () => {
+    // DurabilitySystem.md 2.1節。余力は待つ間も減る（`weathering.yaml`）ので、線が言えるのは
+    // 「今この手を始められるか」までで、**後の手が成り立つことは約束できない**。1つの仕事が何回かの
+    // 手に分かれ、途中の手が進みだけを進めて何も返さないとき（ActionSystem.md 6.3節）、その先で線が
+    // 断る側へ回ると、そこまでに払った時間が相手に取り残される——issue #2304 は、ちょうど1本ぶんの
+    // 余力で刻み始めた斧が2回目の一撃で断られ、受け口だけの幹が残った形。
+    //
+    // **型を1つも名指ししない**ので、別の物に同じ形を足せばここで落ちる。**線をどう書いたかも見ない**
+    // ——進みの値ごとに「余力が届いていなければ断るか」を引き比べる（stepStandsAt）ので、`any` で
+    // 包んでも、条件を分けても、断る側へ回れば挙がる。
+    const offenders: string[] = [];
+    for (const def of codex.objects) {
+      const spans = barrenProgressOf(def);
+      if (spans.size === 0) continue;
+      for (const stepName of new Set(def.triggers.map((trigger) => trigger.interaction.name)))
+        for (const [propertyGlobalId, span] of spans)
+          for (const value of span.progressed) {
+            const progress = new Map([[propertyGlobalId, value]]);
+            if (
+              stepStandsAt(codex, def.name, stepName, progress, true) &&
+              !stepStandsAt(codex, def.name, stepName, progress, false)
+            )
+              offenders.push(
+                `${def.name}.${stepName}（${codex.propertyNames.getName(propertyGlobalId)}=${value}）`,
+              );
+          }
+    }
+
+    expect(offenders, '払ったぶんが取り残される値で、余力が断っている').toEqual([]);
+  });
+
+  /**
+   * その手が、**何も返さない手が動かす前の相手**に立つか。何も返さない手を持たない相手では常に真
+   * ——取り残されるものが無いので、どの手にも線を引ける。
+   */
+  function standsBeforeAnyBarrenHand(ownerName: string, stepName: string): boolean {
+    const def = codex.objects.get(codex.objectNames.getId(ownerName));
+    const untouched = new Map(
+      [...barrenProgressOf(def)].map(([propertyGlobalId, span]) => [propertyGlobalId, span.initial]),
+    );
+    return stepStandsAt(codex, ownerName, stepName, untouched, true);
+  }
+
+  /**
+   * **何も返さない手が動かす値**（進み）と、それが取りうる値。
+   *
+   * 繋がりを進みのプロパティで見るのは、**どの手が同じ仕事なのかを宣言が名乗らない**ため——排他の
+   * 条件が見ている値だけが、手どうしを1つの仕事へ繋いでいる（`timber.yaml` の `trunk_integrity`、
+   * `animals.yaml` の `butchering_progress`）。**初期値そのものは挙げない**——そこはまだ誰も何も
+   * 払っていない、線を引いてよい側。
+   */
+  function barrenProgressOf(def: ObjectDef): ReadonlyMap<PropertyGlobalId, ProgressSpan> {
+    const moved = new Set<PropertyGlobalId>();
+    for (const step of craftingStepsOf(codex, def)) {
+      if (step.outputs.length > 0) continue;
+      for (const outcome of step.outcomes)
+        for (const delta of outcome.deltas) if (delta.target === 'self') moved.add(delta.propertyGlobalId);
+    }
+
+    const spans = new Map<PropertyGlobalId, ProgressSpan>();
+    for (const propertyGlobalId of moved) {
+      const range = def.tryGetPropertyDef(propertyGlobalId)?.range;
+      const initial = staticValueOf(def, propertyGlobalId, 'lowest');
+      if (range === undefined || initial === undefined) continue;
+      const progressed: number[] = [];
+      for (let value = range.min; value <= range.max; value += 1)
+        if (value !== initial) progressed.push(value);
+      spans.set(propertyGlobalId, { initial, progressed });
+    }
+    return spans;
+  }
+
+  /** 進みが取りうる値。progressedは**初期値を除いた並び**——誰かが手を付けた後の状態。 */
+  interface ProgressSpan {
+    readonly initial: number;
+    readonly progressed: readonly number[];
+  }
+
   it('刃を食う手は、どれも物を返す', () => {
-    // 2.1節。**進みや腕しか返さない手は刃を食わない**——1つの仕事が何回かの手に分かれたとき
+    // DurabilitySystem.md 2.1節。**進みや腕しか返さない手は刃を食わない**——1つの仕事が何回かの手に分かれたとき
     // （ActionSystem.md 6.3節）、途中の手にも刃を食わせると、返るものが無いまま道具だけが折れる
     // 形ができる。**型を1つも名指ししない**ので、別の物に同じ形を足せばここで落ちる。
     const barren: string[] = [];

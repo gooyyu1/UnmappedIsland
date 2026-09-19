@@ -18,22 +18,31 @@ export class Path extends ObjectWrapper {
     return this.effectiveNumberOf(this.words.requiredProgressId);
   }
 
-  /** 移動先LocationのインスタンスID。 */
+  /** 移動先LocationのインスタンスID。生成が書き込む前は`NO_INSTANCE`（`WorldObject.ts`）。 */
   get destinationInstanceId(): number {
     return this.effectiveNumberOf(this.words.destinationIdId);
   }
 
   /**
    * 移動先のLocation。世界のツリーから引く（MoveEffectの移動先の解決と同じ引き方）ので、
-   * 呼び出し側はインスタンスIDから実体を辿る手順を知らなくてよい。行き先がツリーに居なければundefined。
+   * 呼び出し側はインスタンスIDから実体を辿る手順を知らなくてよい。
+   *
+   * **行き先がツリーに居なければundefined。行き先を書き込まれていない道も同じ**
+   * ——`NO_INSTANCE`（`WorldObject.ts`）はどの個体も持たないので、既定値のまま引けば「該当なし」になる。
    */
   get destination(): WorldObject | undefined {
     return this.instance.findRoot().findSelfOrDescendantByInstanceId(this.destinationInstanceId);
   }
 
-  /** 移動先の土地にある、こちらへ戻る道のインスタンスID（辺の両端の道は互いを指す）。 */
-  get returnPathInstanceId(): number {
-    return this.effectiveNumberOf(this.words.returnPathIdId);
+  /**
+   * 移動先の土地にある、こちらへ戻る道（辺の両端の道は互いを指す。{@link destination}と同じ引き方）。
+   * **両端を一緒に公開する側（Location.reveal）が、インスタンスIDから実体を辿る手順を
+   * 持たなくて済むように置く。** 指す先がツリーに居ない道・書き込まれていない道ではundefined。
+   */
+  get returnPath(): WorldObject | undefined {
+    return this.instance
+      .findRoot()
+      .findSelfOrDescendantByInstanceId(this.effectiveNumberOf(this.words.returnPathIdId));
   }
 
   /**

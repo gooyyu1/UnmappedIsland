@@ -1,6 +1,6 @@
 // 盤面が動くのに要る値——CCR の環境ID（`CLOUD_ENV` / `BRIDGE_ENV`）、そこへ立てたセッションに走る者が
 // 付くこと、CCR・`gh` の資格情報——が生きているかを見回り、死んでいれば人へ告げる
-// （`agent-ops/board-design.md` 2.22）。
+// （`agent-ops/board-design.md` 2.22節）。
 //
 //   node scripts/daemon/check-values.mjs            # 1回見回る
 //   DRY_RUN=1 node scripts/daemon/check-values.mjs  # 調べるだけ（issue も台帳も書かず、セッションも立てない）
@@ -47,7 +47,7 @@
 //
 // **`gh` が死んでいる周は、手元からその issue を書けない。** 書く手がその値そのものだから——
 // 代わりに**クラウドのセッションへ、同じ題・同じ本文で置かせに行く**（`agent-ops/board-design.md`
-// 2.22.3）。畳む鍵は向こうでも題だけで、**閉じるのは手元の見回りのまま**。頼めなければ
+// 2.22.3節）。畳む鍵は向こうでも題だけで、**閉じるのは手元の見回りのまま**。頼めなければ
 // `~/daemon.log` へ残すが、**読む者が居ないので告げたことにはならない。**
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -147,7 +147,7 @@ const WORKER_REMEDY = {
 
 /**
  * `list_environments` で、今在る環境IDを引く。**CCR の資格情報が生きているかは、これが返ったこと
- * そのもの**（`agent-ops/board-design.md` 2.22）——別の口を作ると、確かめる対象が2つになる。
+ * そのもの**（`agent-ops/board-design.md` 2.22節）——別の口を作ると、確かめる対象が2つになる。
  *
  * 返すのは環境IDの集合。届かなければ、道具が言った理由をそのまま投げる。
  */
@@ -264,11 +264,15 @@ export async function surveyValues({
     });
   }
 
+  // **道具が言った理由をそのまま升へ載せる**（`agent-ops/board-design.md` 1.7節）。読むのはスマホの人で、
+  // **「非0で終わる」だけでは、打ち直せばよいのか別の不調かが読めない。**
+  let ghWhyNot = '';
   found.push({
     key: 'gh',
     label: '`gh` の資格情報',
-    state: gh(['auth', 'status'], { allowFail: true }) === undefined ? 'dead' : 'alive',
-    seen: '`gh auth status` が非0で終わる',
+    state:
+      gh(['auth', 'status'], { sayWhyNot: (line) => (ghWhyNot = line) }) === undefined ? 'dead' : 'alive',
+    seen: `\`gh auth status\` が非0で終わる（${ghWhyNot}）`,
     remedy: 'このPCで `gh auth login` を打ち直す',
   });
 
@@ -329,7 +333,7 @@ function deadTable(due) {
 function report(due, now) {
   return `${[
     '**この本文は `scripts/daemon/check-values.mjs` が周期で丸ごと書き換えます。**',
-    '人が書いたものは次の見回りで消えます（`agent-ops/board-design.md` 2.22）。',
+    '人が書いたものは次の見回りで消えます（`agent-ops/board-design.md` 2.22節）。',
     '',
     `最終更新 ${stamp(now)}`,
     '',
@@ -339,7 +343,7 @@ function report(due, now) {
     ...deadTable(due),
     '',
     '**直れば、次の見回りが閉じます**——`gh` が死んでいる間は、この本文をクラウドのセッションが' +
-      '代わりに置きます（`agent-ops/board-design.md` 2.22.3）。',
+      '代わりに置きます（`agent-ops/board-design.md` 2.22.3節）。',
   ].join('\n')}\n`;
 }
 
@@ -364,7 +368,7 @@ export function cloudPrompt(body) {
 }
 
 /**
- * クラウドのセッションへ、同じ題・同じ本文で置かせに行く（`agent-ops/board-design.md` 2.22.3）。
+ * クラウドのセッションへ、同じ題・同じ本文で置かせに行く（`agent-ops/board-design.md` 2.22.3節）。
  * **頼めたら `true`。**
  *
  * **関門は通る。** 手綱へ訊く種類だけ `values` にする（`--gate`）——読める周は他の周期の係と同じ
@@ -402,9 +406,12 @@ function askCloud(body, run = runBash) {
  * **丸ごとは [`board-read.mjs`](board-read.mjs) の `allOpenIssues` に任せる。** 自分で数を渡すと、
  * 開いている issue がその数へ届いた日に**古い側が切られ**、当の issue がそこに居れば見つからない
  * ——引けない窓と同じ形で2本目が立つ。
+ *
+ * **引けなかった理由は `sayWhyNot` へ渡す**（1.7）。**告げる手が丸ごと1周飛ぶ**ので、落とすと、告げて
+ * いないことの理由がどこにも残らない。
  */
-function openIssue(gh) {
-  const found = allOpenIssues(gh, 'number,title', { allowFail: true });
+function openIssue(gh, sayWhyNot) {
+  const found = allOpenIssues(gh, 'number,title', { sayWhyNot });
   if (found === undefined) return undefined;
   return found.find((issue) => issue.title === TITLE)?.number ?? null;
 }
@@ -415,32 +422,40 @@ function openIssue(gh) {
  *
  * **一覧を引けなかった周は、何も書かない。** 書くと同じ題の2本目が立つ——**告げるのが1周ぶん
  * 遅れるほうが軽い。**
+ *
+ * **書けなかった理由は `sayWhyNot` へ渡す**（1.7）。告げられなかった周は、**告げる先が丸ごと1周黙る**
+ * ので、呼び手が出す行に理由が載らないと、読む人には「書けなかった」しか残らない。
  */
-function tellByIssue(gh, body) {
-  const open = openIssue(gh);
+function tellByIssue(gh, body, sayWhyNot) {
+  const open = openIssue(gh, sayWhyNot);
   if (open === undefined) return false;
   const work = mkdtempSync(join(tmpdir(), 'check-values-'));
   try {
     const file = join(work, 'body.md');
     writeFileSync(file, body);
-    if (open !== null) return gh(['issue', 'edit', String(open), '--body-file', file]) !== undefined;
+    if (open !== null) {
+      return gh(['issue', 'edit', String(open), '--body-file', file], { sayWhyNot }) !== undefined;
+    }
     return (
-      gh([
-        'issue',
-        'create',
-        '--title',
-        TITLE,
-        '--body-file',
-        file,
-        '--label',
-        '判断待ち',
-        '--label',
-        'origin:agent',
-        // **人が `判断待ち` を外した後に効く**（`agent-ops/board-design.md` 2.18.1）。名乗らなくても
-        // 整備として並ぶだけだが、そのぶん未整理として毎周拾われるので、ここで名乗る。
-        '--label',
-        'goal:upkeep',
-      ]) !== undefined
+      gh(
+        [
+          'issue',
+          'create',
+          '--title',
+          TITLE,
+          '--body-file',
+          file,
+          '--label',
+          '判断待ち',
+          '--label',
+          'origin:agent',
+          // **人が `判断待ち` を外した後に効く**（`agent-ops/board-design.md` 2.18.1節）。名乗らなくても
+          // 整備として並ぶだけだが、そのぶん未整理として毎周拾われるので、ここで名乗る。
+          '--label',
+          'goal:upkeep',
+        ],
+        { sayWhyNot },
+      ) !== undefined
     );
   } finally {
     rmSync(work, { recursive: true, force: true });
@@ -551,9 +566,11 @@ export async function checkValues({
     return false;
   }
 
-  const told = tellByIssue(gh, body);
+  // **書けなかった理由は、道具が言ったものをそのまま出す**（1.7）。
+  let tellWhyNot = '';
+  const told = tellByIssue(gh, body, (line) => (tellWhyNot = line));
   say(
-    `値の見回り: ${due.map((value) => value.key).join(' ')} を issue へ${told ? '書いた' : '書けなかった'}`,
+    `値の見回り: ${due.map((value) => value.key).join(' ')} を issue へ${told ? '書いた' : `書けなかった（${tellWhyNot}）`}`,
   );
   write();
   return told;
