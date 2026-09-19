@@ -12,7 +12,8 @@ import { describe, expect, it } from 'vitest';
  *
  * 写しが増えうるのは係のプロンプトだけではないので、`agent-ops/**`・`.claude/**`・`scripts/**` まで
  * 降りる。
- * ただし `analysis/`・`decisions/` はその時点の記録で、後から事実を書き換える先ではないので除く。
+ * ただし `analysis/`・`decisions/` はその時点の記録で、後から事実を書き換える先ではないので除く
+ * （決めているのは `agent-ops/board-design.md` 2.17.4）。
  */
 
 const ROOT = resolve(__dirname, '../..');
