@@ -22,15 +22,26 @@ import { ReferenceContext } from './ReferenceRoot';
 import type { WorldObject } from './WorldObject';
 
 /**
- * 行き先を型で指した宣言1件（`move`の`to_object`・`spawn`の`into_object`、9.4節・9.6節）。**型の名前を
- * その場に書いたか、型を値に持つプロパティ（6.9節）から引いたか**の2通りで、どちらも「その型の
- * インスタンスを1つ指す」同じ宣言なので、正しく指せているかの検査も1箇所で受ける。
+ * ある宣言が、別の宣言を名前で名指しした1件。**名指しはどれも「書いた時点で分かる誤り」を持ちうる**
+ * ——指した先が無い・在っても指せる形ではない——ので、種類が違っても貯める先と検める場所は1つ。
+ *
+ * - `destination_object`／`destination_property`: 行き先を型で指した宣言（`move`の`to_object`・
+ *   `spawn`の`into_object`、9.4節・9.6節）。**型の名前をその場に書いたか、型を値に持つプロパティ
+ *   （6.9節）から引いたか**の2通りで、どちらも「その型のインスタンスを1つ指す」同じ宣言。
+ * - `property`: 他所で宣言されたプロパティを名前で引いた宣言（条件の`prop`・`deftness`の`skill`など）。
+ * - `property_stage`: そのプロパティの段（6.4節）を名前で指した宣言（`in_stage`・`from_stage`など）。
  *
  * contextはその宣言が書かれた場所で、指した先が正しくなかったときのエラーメッセージに使う。
  */
-export type ObjectDefDestination = { readonly context: string } & (
-  | { readonly kind: 'object'; readonly objectGlobalId: ObjectGlobalId }
+export type DeclarationReference = { readonly context: string } & (
+  | { readonly kind: 'destination_object'; readonly objectGlobalId: ObjectGlobalId }
+  | { readonly kind: 'destination_property'; readonly propertyGlobalId: PropertyGlobalId }
   | { readonly kind: 'property'; readonly propertyGlobalId: PropertyGlobalId }
+  | {
+      readonly kind: 'property_stage';
+      readonly propertyGlobalId: PropertyGlobalId;
+      readonly stageName: string;
+    }
 );
 
 /**
@@ -103,7 +114,7 @@ export class WorldCodex {
     recipeCategoryTagIdsByPriority: readonly TagGlobalId[] = [],
     requiredPropsByTag: ReadonlyMap<TagGlobalId, readonly PropertyGlobalId[]> = new Map(),
     craftingConditions?: Requirements,
-    objectDefDestinations: readonly ObjectDefDestination[] = [],
+    declarationReferences: readonly DeclarationReference[] = [],
     cardFilters: readonly CardFilter[] = [],
   ) {
     this.craftingConditions = craftingConditions;
@@ -122,23 +133,99 @@ export class WorldCodex {
 
     this.requireRangeEventsOnUnmodifiedProperties();
     this.requirePropsRequiredByTags(requiredPropsByTag);
-    this.requireValidObjectDefDestinations(objectDefDestinations);
+    this.requireValidDeclarationReferences(declarationReferences);
   }
 
   /**
-   * 行き先を型で指した宣言（`move`の`to_object`・`spawn`の`into_object`、9.4節・9.6節）が、実際に
-   * 1つの型を指せているか。**型の名前を書いた側とプロパティから引く側で見るものは違う**が、どちらも
-   * 「書いた時点で分かる誤り」なので、遊んで気づくのではなくロード時に落とす。
+   * 宣言が名指しした別の宣言（{@link DeclarationReference}）を、実際に指せているか。**名指しの種類ごとに
+   * 見るものは違う**が、どれも「書いた時点で分かる誤り」なので、遊んで気づくのではなくロード時に落とす。
    *
    * 指した先の型もプロパティの宣言も自分より後で読まれうる（複数ファイル・`patch_object_defs`）ので、
    * 全部が揃ったここで見る。
    */
-  private requireValidObjectDefDestinations(destinations: readonly ObjectDefDestination[]): void {
-    for (const destination of destinations)
-      if (destination.kind === 'object')
-        this.requireSingletonObjectDef(destination.objectGlobalId, destination.context);
-      else this.requireObjectDefValuedProperty(destination.propertyGlobalId, destination.context);
+  private requireValidDeclarationReferences(references: readonly DeclarationReference[]): void {
+    for (const reference of references)
+      switch (reference.kind) {
+        case 'destination_object':
+          this.requireSingletonObjectDef(reference.objectGlobalId, reference.context);
+          break;
+        case 'destination_property':
+          this.requireObjectDefValuedProperty(reference.propertyGlobalId, reference.context);
+          break;
+        case 'property':
+          this.requireDeclaredProperty(reference.propertyGlobalId, reference.context);
+          break;
+        case 'property_stage':
+          this.requireDeclaredStage(reference.propertyGlobalId, reference.stageName, reference.context);
+          break;
+      }
   }
+
+  /**
+   * 名前で引いたプロパティが、どこかの型で宣言されているか。**名前を作る口（`props`のキー）と
+   * 名指しする口が同じ`intern`だと、綴りを間違えた宣言はその場で新しい名前を作って通ってしまう**
+   * ——引く先が無いプロパティは実行時にただ「持っていない」と読まれるので、遊んでも何も起きない。
+   *
+   * 「どこかの型が宣言していればよい」までしか見ないのは、**誰を見るかが実行時にしか決まらない**ため
+   * （条件の`subject`も`deftness`の作り手も、指す相手は状況で変わる）。持っていない個体を引く宣言は
+   * 正しい書き方（「その腕を持つ者だけ速い」）なので、そこまでは踏み込めない。
+   */
+  private requireDeclaredProperty(propertyGlobalId: PropertyGlobalId, context: string): void {
+    if (this.stageNamesByProperty.has(propertyGlobalId)) return;
+
+    throw new Error(
+      `${context}: '${this.propertyNames.getName(propertyGlobalId)}'というプロパティは、` +
+        'どの型も宣言していません（綴りを確かめてください）。',
+    );
+  }
+
+  /**
+   * 名指しした段（6.4節）が、そのプロパティのどこかの宣言に在るか。**段は型ごとのPropertyDefが持つ**
+   * ので、「どの型が持つか」ではなく「その名前の段を宣言した型が1つでも在るか」までを見る
+   * （{@link requireDeclaredProperty}と同じ理由）。
+   *
+   * 綴りを間違えた段名は{@link PropertyDef.isInStage}が偽を返すだけなので、宣言は落ちずに一度も効かない。
+   */
+  private requireDeclaredStage(propertyGlobalId: PropertyGlobalId, stageName: string, context: string): void {
+    const stageNames = this.stageNamesByProperty.get(propertyGlobalId);
+    if (stageNames === undefined) {
+      this.requireDeclaredProperty(propertyGlobalId, context);
+      return;
+    }
+    if (stageNames.has(stageName)) return;
+
+    const propertyName = this.propertyNames.getName(propertyGlobalId);
+    const declared =
+      stageNames.size === 0
+        ? 'そのプロパティはstagesを1つも宣言していません'
+        : `宣言されている段: ${[...stageNames].join('・')}`;
+    throw new Error(
+      `${context}: プロパティ'${propertyName}'に'${stageName}'という段はありません（${declared}）。`,
+    );
+  }
+
+  /**
+   * 型が宣言したプロパティと、その宣言が持つ段（6.4節）の名前。**プロパティを引けること自体が
+   * キーの有無**なので、段を持たないプロパティは空の集合を持つ。
+   */
+  private get stageNamesByProperty(): ReadonlyMap<PropertyGlobalId, ReadonlySet<string>> {
+    if (this.stageNamesByPropertyId === undefined) {
+      const found = new Map<PropertyGlobalId, Set<string>>();
+      for (const objectDef of this.objects)
+        for (const propertyDef of objectDef.enumeratePropertyDefs()) {
+          let names = found.get(propertyDef.globalId);
+          if (names === undefined) {
+            names = new Set<string>();
+            found.set(propertyDef.globalId, names);
+          }
+          for (const stage of propertyDef.stages) names.add(stage.name);
+        }
+      this.stageNamesByPropertyId = found;
+    }
+    return this.stageNamesByPropertyId;
+  }
+
+  private stageNamesByPropertyId: ReadonlyMap<PropertyGlobalId, ReadonlySet<string>> | undefined;
 
   /**
    * 型の名前で行き先を指せるのは、**世界にただ1つ在る型**（`singleton`、15節）だけ。

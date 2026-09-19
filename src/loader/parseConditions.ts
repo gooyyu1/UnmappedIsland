@@ -190,7 +190,7 @@ function parseConditionLeaf(
   const nodes: ConditionNode[] = [];
 
   if (propName !== undefined) {
-    const propertyGlobalId = loader.propertyNames.intern(propName);
+    const propertyGlobalId = loader.referToProperty(propName, context);
 
     for (const op of PROPERTY_OPS) {
       const valueNode = tryGetNode(map, op);
@@ -203,6 +203,7 @@ function parseConditionLeaf(
       const stageName = tryGetScalar(map, key, context);
       if (stageName === undefined) continue;
       used.add(key);
+      loader.referToPropertyStage(propertyGlobalId, stageName, `${context}.${key}`);
       nodes.push(ConditionNode.propertyStage(root, propertyGlobalId, stageName, bound));
     }
   } else if (slotName !== undefined) {
@@ -264,7 +265,7 @@ function parsePropertyComparison(
 
     requireKnownKeys(valueNode, ['subject', 'prop'], `${context}.${op}`);
 
-    const valueRef = new PropertyPath(refRoot, loader.propertyNames.intern(refPropName));
+    const valueRef = new PropertyPath(refRoot, loader.referToProperty(refPropName, `${context}.${op}`));
     return ConditionNode.property(root, propertyGlobalId, op, undefined, valueRef);
   }
 

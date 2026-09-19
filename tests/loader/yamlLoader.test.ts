@@ -1534,11 +1534,6 @@ object_defs:
         conditions:
           - {prop: skill, in_stage_or_above: basic}
         destroy: self
-      typo:
-        trigger: menu
-        conditions:
-          - {prop: skill, in_stage_or_above: bacis}
-        destroy: self
 `;
     const codex = new WorldCodexYamlLoader()
       .load('core.yaml', yaml)
@@ -1558,9 +1553,6 @@ object_defs:
     expect(canAt('use', 20), '名指した段の下端で真').toBe(true);
     expect(canAt('use', 60), '1つ上の段でも真のまま').toBe(true);
     expect(canAt('use', 180), '最上段でも真のまま').toBe(true);
-
-    // 宣言に無い名前は、in_stageと同じく常に偽（綴り間違いはロード時には捕まらない）。
-    expect(canAt('typo', 180), '綴り違いは最上段でも偽').toBe(false);
   });
 
   it('in_stage_or_aboveは、下端を持たない段では常に真、完全一致で決まる段では常に偽になる', () => {
@@ -2264,6 +2256,9 @@ object_defs:
         range: {min: 0, max: 60}
         on_max:
           add: {parent: {hour: 1}}
+  tower:
+    props:
+      hour: {value: 0}
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).not.toThrow();
   });

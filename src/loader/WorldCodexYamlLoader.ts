@@ -27,6 +27,7 @@ import { applyPatches, parsePatch } from './RawPatch';
 import { RawTrait } from './RawTrait';
 import { buildGenerationDefs, loadGenerationSections, resetGeneration } from './parseGeneration';
 import { CardFilter } from '../domain/CardFilter';
+import type { NameLookup } from '../domain/NameRegistry';
 import { NameRegistry } from '../domain/NameRegistry';
 import type { ObjectDef } from '../domain/ObjectDef';
 import { ObjectDefTable } from '../domain/ObjectDef';
@@ -35,7 +36,7 @@ import { IN_PROGRESS_SOURCE, inProgressObjectsYaml } from './inProgressObjects';
 import type { GeneratedObjectDefs } from './generatedObjectDefs';
 import { GeneratedTypes } from '../domain/GeneratedTypes';
 import { AXIS_VARIANT_SOURCE, axisVariantsYaml } from './axisVariants';
-import type { ObjectDefDestination } from '../domain/WorldCodex';
+import type { DeclarationReference } from '../domain/WorldCodex';
 import { WorldCodex } from '../domain/WorldCodex';
 import type { AxisDef } from '../domain/generation/AxisDef';
 import type { GenerationScopeDef } from '../domain/generation/GenerationScopeDef';
@@ -106,11 +107,10 @@ export class WorldCodexYamlLoader {
   private craftingConditions: Requirements | undefined;
 
   /**
-   * 行き先を型で指した宣言（`to_object`/`into_object`、9.4節・9.6節）。指した先がsingletonかどうかも、
-   * 引くプロパティが型を値に持つと宣言されているかも、相手の宣言を読み終えるまで分からないので、
-   * 判定はWorldCodexへ渡してそちらで行う。
+   * 別の宣言を名前で名指しした箇所（DeclarationReference）。指した先が在るかも、在っても指せる形かも、
+   * 相手の宣言を読み終えるまで分からないので、判定はWorldCodexへ渡してそちらで行う。
    */
-  private objectDefDestinations: ObjectDefDestination[] = [];
+  private declarationReferences: DeclarationReference[] = [];
 
   private _objectNames = new NameRegistry<ObjectGlobalId>();
   private _propertyNames = new NameRegistry<PropertyGlobalId>();
@@ -134,7 +134,13 @@ export class WorldCodexYamlLoader {
   get objectNames(): NameRegistry<ObjectGlobalId> {
     return this._objectNames;
   }
-  get propertyNames(): NameRegistry<PropertyGlobalId> {
+
+  /**
+   * プロパティの名前空間。**引くだけの窓（NameLookup）を配るので、ここから名前は作れない**
+   * ——プロパティだけは「名前を作る口」と「名指しする口」を分けてあり、作るのは
+   * {@link definePropertyName}、名指しは{@link referToProperty}が受ける。
+   */
+  get propertyNames(): NameLookup<PropertyGlobalId> {
     return this._propertyNames;
   }
   get slotNames(): NameRegistry<SlotGlobalId> {
@@ -152,12 +158,42 @@ export class WorldCodexYamlLoader {
 
   /** 型の名前で行き先を指した宣言を1件覚える（parseDestinationRefから）。 */
   noteObjectDefDestination(objectGlobalId: ObjectGlobalId, context: string): void {
-    this.objectDefDestinations.push({ kind: 'object', objectGlobalId, context });
+    this.declarationReferences.push({ kind: 'destination_object', objectGlobalId, context });
   }
 
   /** 型を値に持つプロパティ（6.9節）から行き先を引いた宣言を1件覚える（parseDestinationRefから）。 */
   noteObjectDefPropertyDestination(propertyGlobalId: PropertyGlobalId, context: string): void {
-    this.objectDefDestinations.push({ kind: 'property', propertyGlobalId, context });
+    this.declarationReferences.push({ kind: 'destination_property', propertyGlobalId, context });
+  }
+
+  /**
+   * プロパティの名前を**作る**（`props`のキー、6節）。その宣言こそが名前の出どころなので、
+   * 綴りを照らし合わせる相手は無い。他所の宣言を名指しする側は{@link referToProperty}を通る。
+   */
+  definePropertyName(propName: string): PropertyGlobalId {
+    return this._propertyNames.intern(propName);
+  }
+
+  /**
+   * 他所で宣言されたプロパティを名前で**名指しする**（条件の`prop`・`deftness`の`skill`など）。
+   * IDを配ると同時に、綴りが実在するかの判定をWorldCodexへ持ち越す。
+   *
+   * **作る口と分けてあるのは、`intern`が綴り違いをその場で新しい名前にしてしまうから**——引く先の
+   * 無いプロパティは実行時にただ「持っていない」と読まれるので、宣言は落ちずに一度も効かない。
+   */
+  referToProperty(propName: string, context: string): PropertyGlobalId {
+    const propertyGlobalId = this._propertyNames.intern(propName);
+    this.declarationReferences.push({ kind: 'property', propertyGlobalId, context });
+    return propertyGlobalId;
+  }
+
+  /**
+   * プロパティの段（6.4節）を名前で名指しした宣言を1件覚える（`in_stage`・`from_stage`など）。
+   * **段はinternしない**——段の名前空間は型ごとのPropertyDefの中にあり、世界で1つではないため
+   * （ConditionNode）。プロパティ自身の名指しは呼び出し側が{@link referToProperty}で済ませている。
+   */
+  referToPropertyStage(propertyGlobalId: PropertyGlobalId, stageName: string, context: string): void {
+    this.declarationReferences.push({ kind: 'property_stage', propertyGlobalId, stageName, context });
   }
 
   /** load系メソッドで蓄積した地形生成定義。parseGeneration.tsの関数群だけが読み書きする。 */
@@ -232,6 +268,9 @@ export class WorldCodexYamlLoader {
         const tagId = this._tagNames.intern(tagName);
         const required = this.requiredPropsByTag.get(tagId) ?? [];
         for (const node of (tryGetSeq(requiredProps, tagName, context)?.items ?? []) as YamlNode[]) {
+          // ここは名指しとして数えない（referToPropertyを通さない）——約束を果たす側が1つも読み込まれて
+          // いない世界は在りうる（同梱のcore.yamlだけを土台にする試験）ので、「どの型も宣言していない」が
+          // そのまま綴り違いにはならない。綴りを間違えた要求はrequirePropsRequiredByTagsが落とす。
           const propertyId = this._propertyNames.intern(asScalarText(node, context));
           if (!required.includes(propertyId)) required.push(propertyId);
         }
@@ -323,7 +362,7 @@ export class WorldCodexYamlLoader {
         this.inProgressTagIds,
         this.tagNames,
         this.objectNames,
-        this.propertyNames,
+        this._propertyNames,
       ),
       objectDefsByGlobalId,
       generatedTypes,
@@ -343,7 +382,7 @@ export class WorldCodexYamlLoader {
     const defsByGlobalId = new Array<ObjectDef | undefined>(this.objectNames.count);
     for (const [globalId, def] of objectDefsByGlobalId) defsByGlobalId[globalId] = def;
 
-    const vocabulary = new WorldVocabulary(this.propertyNames, this.slotNames, this.tagNames);
+    const vocabulary = new WorldVocabulary(this._propertyNames, this.slotNames, this.tagNames);
     const generation = buildGenerationDefs(this, objectDefsByGlobalId);
     // 世界全体を見て初めて言える矛盾（型をまたぐ宣言どうしの噛み合わせ）は、両方を持つWorldCodexが見る。
     const codex = withYamlContext(
@@ -351,7 +390,7 @@ export class WorldCodexYamlLoader {
       () =>
         new WorldCodex(
           this.objectNames,
-          this.propertyNames,
+          this._propertyNames,
           this.slotNames,
           this.tagNames,
           this.propertyTagNames,
@@ -363,7 +402,7 @@ export class WorldCodexYamlLoader {
           this.recipeCategoryTagIdsByPriority,
           this.requiredPropsByTag,
           this.craftingConditions,
-          this.objectDefDestinations,
+          this.declarationReferences,
           this.buildCardFilters(),
         ),
     );
@@ -426,7 +465,7 @@ export class WorldCodexYamlLoader {
     this.requiredPropsByTag = new Map();
     this.inProgressTagIds = new Set();
     this.craftingConditions = undefined;
-    this.objectDefDestinations = [];
+    this.declarationReferences = [];
     resetGeneration(this);
     this._objectNames = new NameRegistry<ObjectGlobalId>();
     this._propertyNames = new NameRegistry<PropertyGlobalId>();

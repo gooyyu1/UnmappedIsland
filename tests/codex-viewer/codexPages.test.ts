@@ -621,6 +621,8 @@ object_defs:
     singleton: true
     props:
       ambient_brightness: {value: 0, range: {min: -6, max: 17}}
+      # rain_bowlのpassivesが名指しする天気（名指しの相手はどこかの型が宣言していなければならない）。
+      weather: {value: clear}
       hour:
         value: 0
         range: {min: 0, max: 24}
@@ -677,7 +679,11 @@ object_defs:
         on_min:
           destroy: self
 
-  fiber: {tags: [item]}
+  # meshは、繊維の側だけが宣言している（sipの所要時間はこれを飲む人から引くので解けない）。
+  fiber:
+    tags: [item]
+    props:
+      mesh: {value: 4}
 
   # 載せた物を外から乾かす設備。乾きが進むのは載っている間だけなので、**その周期は載せた側ではなく
   # 押し手が決める**（SupplyRow.driverName）。
@@ -706,16 +712,18 @@ object_defs:
         duration: 5
         destroy: self
         add: {agent: {hydration: 96}}
-      # 繊維を噛ませて漉しながら、飲み干さずにひと口だけ。かかる時間は漉す繊維の目の細かさで
-      # 決まるが、**その値を宣言している型が世界に1つも無い**ので、定義だけでは決まらない
-      # （SupplyRow.hasUnresolvedReferences）。
+      # 繊維を噛ませて漉しながら、飲み干さずにひと口だけ。かかる時間は漉す目の細かさで決まるが、
+      # **meshを宣言しているのは繊維の側で、飲む人（agent）の型は誰も宣言していない**ので、定義
+      # だけでは決まらない（SupplyRow.hasUnresolvedReferences）。agentの層が見るのはキャラクタ
+      # だけなので、道具が宣言していても解けない（highestDeclaredLayer）。
       sip:
         trigger: {drag: {object: fiber}}
-        duration: {subject: instrument, prop: mesh}
+        duration: {subject: agent, prop: mesh}
         add: {agent: {hydration: 8}}
 
   # 入手経路が無い道具。これを要るレシピが「道具が無くて作れないもの」になる（ObjectCost.blockedByTool）。
   flint_blade: {tags: [item, cutting_tool]}
+
 
   # 材料は揃うが、切る道具が手に入らないもの。
   fiber_rope:

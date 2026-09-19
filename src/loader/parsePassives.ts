@@ -17,6 +17,7 @@ import { PropertyPath, ReferenceScope } from '../domain/ReferenceRoot';
 import type { PassiveAmount } from '../domain/PassiveAmount';
 import { FixedAmount } from '../domain/PassiveAmount';
 import type { ConditionNode } from '../domain/ConditionNode';
+import type { PropertyGlobalId } from '../domain/GlobalId';
 import {
   AccumulateEffect,
   ModifyEffect,
@@ -37,13 +38,12 @@ export function parsePassiveInto(
   passives: PassiveEffect[],
   objectDefName: string,
   passiveMap: YAMLMap,
-  forcedStageProperty: string | undefined,
+  forcedStageProperty: PropertyGlobalId | undefined,
   forcedStageName: string | undefined,
 ): void {
   const context = `'${objectDefName}'.passives`;
   const scope = ReferenceScope.participantProps;
   const gate = buildGate(
-    loader,
     parseConditions(loader, context, passiveMap, scope),
     forcedStageProperty,
     forcedStageName,
@@ -66,7 +66,7 @@ export function parseInteractionPassiveInto(
   passiveMap: YAMLMap,
   scope: ReferenceScope,
 ): void {
-  const gate = buildGate(loader, parseConditions(loader, context, passiveMap, scope), undefined, undefined);
+  const gate = buildGate(parseConditions(loader, context, passiveMap, scope), undefined, undefined);
 
   parsePassiveBlockInto(loader, passives, context, passiveMap, scope, gate, false);
 }
@@ -145,21 +145,23 @@ function parsePassiveBlockInto(
 }
 
 /**
- * ゲートを組み立てる。stagePropertyNameとconditionsの両方が指定されていれば、両方を満たす間
+ * ゲートを組み立てる。段とconditionsの両方が指定されていれば、両方を満たす間
  * だけ有効になる（PassiveEffect.activeAmount参照）。ゲートはグローバルIDのまま持ち、評価時に
  * ローカルIDへ変換する（WorldObject.tryGetProperty参照）。
+ *
+ * **段は名前ではなくIDで受け取る**——stages内のpassivesを読んでいる呼び出し元は、囲っている
+ * プロパティの宣言そのものを読んでいる最中なので、名指しではない（綴りを照らす相手が自分になる）。
  */
 function buildGate(
-  loader: WorldCodexYamlLoader,
   conditions: ConditionNode | undefined,
-  stagePropertyName: string | undefined,
+  stagePropertyGlobalId: PropertyGlobalId | undefined,
   stageName: string | undefined,
 ): PassiveEffectGate {
-  // プロパティと段の名前は組で1つ（どちらか片方だけでは段を指せない）。
+  // プロパティと段は組で1つ（どちらか片方だけでは段を指せない）。
   const stage =
-    stagePropertyName === undefined || stageName === undefined
+    stagePropertyGlobalId === undefined || stageName === undefined
       ? undefined
-      : { propertyGlobalId: loader.propertyNames.intern(stagePropertyName), name: stageName };
+      : { propertyGlobalId: stagePropertyGlobalId, name: stageName };
 
   return new PassiveEffectGate(conditions, stage);
 }
@@ -190,7 +192,7 @@ function parsePassiveOperationInto(
     for (const [propName, amountNode] of entriesInOrder(body))
       passives.push(
         makeEffect(
-          new PropertyPath(target, loader.propertyNames.intern(propName)),
+          new PropertyPath(target, loader.referToProperty(propName, `${context}.${operationKey}`)),
           new FixedAmount(parseNumberLiteral(context, asScalarText(amountNode, context))),
           gate,
         ),
