@@ -32,7 +32,7 @@ interface Trace {
  * シミュレーションを行い、95%以上のシードで要件を満たせば合格とする（決定的な構造要件
  * （季節の巡回順・初回サイクル30日固定など）は全シードで成立を要求する）。
  *
- * シミュレーションはworld.instance.tick()を直接呼ぶ（1tick=15分、1日=96tick）。minute/hourは
+ * シミュレーションはworld.instance.tick()を直接呼ぶ（1 tick（15分）・96 tick（1日））。minute/hourは
  * tick駆動ではない（WorldSessionの担当）ため進まないが、気候システムはhourに依存しないため
  * 検証には影響しない（ambient_brightnessが夜間相当で固定される分は気温比較の両辺に等しく効く）。
  *

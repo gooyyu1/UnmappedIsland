@@ -234,7 +234,7 @@ object_defs:
       weight: {value: 2000}
       meat_bait: {value: 12}
       volume: {value: 1900}
-      # 2kgを殻ごと焼くので、生肉（500gで24）より長くかかる。炎（3/tick）なら12tick＝3時間。
+      # 2kgを殻ごと焼くので、生肉（500gで24）より長くかかる。炎（3/tick）なら12 tick（3時間）。
       cooking_progress:
         value: 0
         range: {min: 0, max: 36}
@@ -254,7 +254,7 @@ object_defs:
       # 水が飛んだぶん軽くなる。
       weight: {value: 1700}
       volume: {value: 1800}
-      # 焦げるまでの猶予は生から焼きより短い。炎なら6tick＝1時間30分。
+      # 焦げるまでの猶予は生から焼きより短い。炎なら6 tick（1時間30分）。
       cooking_progress:
         value: 0
         range: {min: 0, max: 18}
@@ -308,7 +308,7 @@ object_defs:
               - {subject: agent, prop: skill_cooking, in_stage_or_above: skilled}
             modify: {self: {chop_minutes: -15}}
       # **肉より長くかける。** 針状結晶を壊すには芯まで熱を通す必要があり、生焼けでは食べられない。
-      # 炎（3/tick）なら10tick＝2時間30分。刻んであれば上乗せが乗る（上のprepped）ので6tick＝1時間30分。
+      # 炎（3/tick）なら10 tick（2時間30分）。刻んであれば上乗せが乗る（上のprepped）ので6 tick（1時間30分）。
       cooking_progress:
         value: 0
         range: {min: 0, max: 30}
@@ -377,7 +377,7 @@ object_defs:
       # 水が飛んだぶん軽くなる。
       weight: {value: 600}
       volume: {value: 700}
-      # 焦げるまでの猶予は生から焼きより短い。炎なら5tick＝1時間15分。
+      # 焦げるまでの猶予は生から焼きより短い。炎なら5 tick（1時間15分）。
       cooking_progress:
         value: 0
         range: {min: 0, max: 15}

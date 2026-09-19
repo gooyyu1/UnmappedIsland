@@ -66,8 +66,8 @@
   初期値ロール・開始時刻用）にも同じシードから作った決定的な実装（`seededRng`、
   `src/domain/Rng.ts`）を渡すため、開始状態は地形レイアウトを含めてシードだけで決まる。
   地形生成とは別の列（`Pcg32.forPurpose(seed, 'play')`）を使うので、pick抽選の消費順序は地形に影響しない。
-- **開始時刻**: ゲーム内の開始時刻は 8:00〜12:00（両端を含む）の中から tick 刻み
-  （`minutes_per_tick` = 15分）で1つ選ぶ（`World.rollTimeOfDay`）。日没までの猶予をゲームごとに
+- **開始時刻**: ゲーム内の開始時刻は 8:00〜12:00（両端を含む）の中から
+  `minutes_per_tick` の 1 tick（15分）刻みで1つ選ぶ（`World.rollTimeOfDay`）。日没までの猶予をゲームごとに
   変えるための抽選で、`WorldSession.rng` が引くためシードから決まる。
 - **キャラクター選択**: 選択肢は `character` タグを持つ `object_def` をそのまま並べたもので、
   選んだ識別子が `characterId` になる（[`Characters.md`](../world/Characters.md)）。読み込み時に
