@@ -449,8 +449,9 @@ describe('foods.yamlの下ごしらえ', () => {
   }
 
   it('刻むと、同じ個体が刻んだ版になって料理の腕が伸びる', () => {
-    // **料理を伸ばす唯一の操作**（characters/player_character.yamlの腕前）。別の型は作らず同じ個体を
-    // 作り変える（become）ので、傷み具合はそのまま引き継がれる。
+    // 料理の腕の入口（foods.yamlのchop。入口が1本であることは
+    // tests/world-codex/skillsYaml.test.tsが見張る）。別の型は作らず同じ個体を作り変える（become）
+    // ので、傷み具合はそのまま引き継がれる。
     const { session, land, player } = open();
     const taro = spawnInto(session, 'taro', land, 'items');
     player.getProperty(skillCookingId).setNumberWithoutEvents(0);

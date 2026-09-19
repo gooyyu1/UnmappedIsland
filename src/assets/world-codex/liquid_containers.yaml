@@ -32,8 +32,9 @@ traits:
     tags: [narrow_open_container]
 
   # 空けたまま置いて雨を受けられる容器（LiquidContainerSystem.md 7節）。溜め始めるのは操作で、
-  # 増えるのは自動（rain_filled_liquid）。中身入りの変種はfillが0でないので条件で弾かれ、
-  # 空の容器にだけボタンが出る。
+  # 増えるのは自動（rain_filled_liquid）。中身入りの変種はfillが0でないので条件で弾かれ、空の容器
+  # でしか実行できない。**メニュー型なのでボタンは出たまま押せない見た目になり**（docs/ui/Windows.md
+  # 4節）、理由（not_empty）が読める。
   rain_catching_container:
     interactions:
       collect_rain:
@@ -142,7 +143,8 @@ traits:
           to_prop: fill
       # 空の容器へ注ぐ。**宣言はこちら側（中身入り）にしか無いので、どちらの札をどちらへ重ねても
       # selfは中身入り・instrumentは空になる**（12.3節）。相手を水入りの変種にしてから移すので、
-      # becomeをtransferより先に書く（transferは相手がfillを持たないと何もしない）。
+      # becomeをtransferより先に書く。**becomeが要るのは移した先を中身入りとして名乗らせるためで、
+      # transferを通すためではない**——空の容器もfillを持つ（このファイル冒頭）。
       #
       # 断る理由が出るのは、相手が**別の液体**を抱えているとき（上のpour_into_filledのタグに
       # 合致しないので、こちらだけが残る）。

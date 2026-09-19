@@ -514,8 +514,17 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 追い詰める代償は残ります**——逃げ道の無い土地で大型に尖った石を振り続けたとき、こちらが負う怪我は
 平均**6.07枚**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=sharp_stone escape_routes=0 measure=wounds_taken mean -->
 （[`HuntStats.md`](../diagnostics/HuntStats.md) の `encounter` 節。2026-09-13 時点）で、石斧や槍を
-上回ります。**多いのは1手あたりの危なさではなく、決着までの長さです**——衝撃が大型に届かない（1.2 節）
-ぶん、同じ相手に3倍近い手数が要り、その手数だけ突かれます。
+上回ります。**石斧を上回るぶんを作っているのは、1手あたりの危なさではなく決着までの長さです**
+——衝撃が大型に届かない（1.2 節）ぶん、石斧の
+8.25 手<!-- stats: hunt.yaml encounter animal=wild_boar weapon=stone_axe escape_routes=0 measure=turns mean -->に対して
+22.88 手<!-- stats: hunt.yaml encounter animal=wild_boar weapon=sharp_stone escape_routes=0 measure=turns mean -->が
+要り、その手数だけ突かれます（石斧が負うのは
+2.69 枚<!-- stats: hunt.yaml encounter animal=wild_boar weapon=stone_axe escape_routes=0 measure=wounds_taken mean -->なので、
+1 手あたりでは尖った石のほうがむしろ低い）。**槍との差は長さだけでは説明が付きません**——手数は
+6.36 手<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=0 measure=turns mean -->と
+3 倍台の開きですが、負う怪我は
+0.71 枚<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=0 measure=wounds_taken mean -->で
+8 倍以上開きます。**残りを作るのは間合いの押し引きです**（1.2 節）。
 
 **空腹は配分に触れません。** 野生の個体では `body_fat` が動かない——渇きと同じゲートで、罠や囲いの枠へ
 閉じ込めている間しか減りません（[`TrapSystem.md`](./TrapSystem.md) 5.4 節）。押し引きを置いても野生の
