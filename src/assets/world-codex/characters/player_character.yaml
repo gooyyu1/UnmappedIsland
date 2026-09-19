@@ -692,7 +692,10 @@ traits:
       # 長さの側でも配れない**——15分より短いと時間あたりが規則の幅から出る。5分の`add_fuel`がそれで、
       # 15分の`draw_seawater`は長さは足りているが上の線で外れる。SkillSystem.md 3節）。素材を採るだけ
       # の操作（草を刈るfell・葉を採るpick_frond・樹皮を剥ぐstrip_bark・実を割るcrack）。土地を調べる
-      # explore自身（**配るのはexplore自身ではなくpickの候補の側**——SkillSystem.md 3.3節）。
+      # explore自身（**配るのはexplore自身ではなくpickの候補の側**——SkillSystem.md 3.3節）。レシピの工程
+      # （**`deftness`を名乗っていても配らない**——1手が1つの技術である手作業と違い、工程が何の技術かは
+      # 宣言に現れないので、名乗った1本へ積むと別の技術に費やした時間がその腕の練習になる。石斧なら紐を
+      # 締めた時間で石器が伸びる。SkillSystem.md 3.4節）。
       #
       # **伸ばす行動をまだ持たない本がある**（どれかはtests/world-codex/skillsYaml.test.tsの
       # 「伸ばす操作をまだ持たない腕は…」が持つ）。開ける物が世界に

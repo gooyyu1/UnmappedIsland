@@ -5,11 +5,15 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { Combination } from '../../src/domain/Interaction';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
-import type { RecipeDef } from '../../src/domain/RecipeDef';
+import type { RecipeDef, RecipeStepDef } from '../../src/domain/RecipeDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import type { WorldObject } from '../../src/domain/WorldObject';
+import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
+import { materialsSlotOf, spawnInProgressObject, tryAdvanceCrafting } from '../../src/domain/crafting';
+import { World } from '../../src/domain/wrappers/World';
+import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
+import { createBrightEnoughAgent } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -1471,6 +1475,103 @@ describe('腕前とレシピの解放条件', () => {
         .map(({ where, skill }) => `${where}: ${skill}`),
       '伸ばしようのない腕を名乗るレシピ',
     ).toEqual([]);
+  });
+
+  /**
+   * そのレシピの作りかけを1つ据えた世界と、明るさに引っかからない作り手。
+   *
+   * **時間を進めるのでWorldを持つセッションが要る**（工程は分数を消費する）。据える土地は何でもよく、
+   * 見ているのは作り手の腕前だけなので、土地の側の条件は関わらない。
+   */
+  function startCrafting(
+    product: string,
+    recipe: RecipeDef,
+  ): { session: WorldSession; inProgress: WorldObject; maker: WorldObject } {
+    const worldInstance = new WorldObject(
+      0,
+      codex.objects.get(codex.objectNames.getId('world')),
+      new WorldSession(codex),
+    );
+    const session = new WorldSession(codex, new World(worldInstance));
+    const field = session.createObject(codex.objectNames.getId('rocky_field'));
+    expect(
+      field.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
+      `'${product}.${recipe.name}': 土地を世界へ置けない`,
+    ).toBeUndefined();
+
+    return {
+      session,
+      inProgress: spawnInProgressObject(
+        field,
+        codex.objectNames.getId(inProgressObjectName(product, recipe.name)),
+      ),
+      maker: createBrightEnoughAgent(session),
+    };
+  }
+
+  /**
+   * その工程が要求する物を、作りかけの材料枠へ足りないぶんだけ入れる。
+   *
+   * **足りないぶんだけ**——道具（`consume: false`）は前の工程から残るので、毎回入れ直すと枠が溢れる。
+   * どの型を入れるかは、要求に当てはまる素の型を名前順で1つ選ぶ（**当てはまればどれでもよい**
+   * ——見ているのは腕前で、成果物の中身ではない）。
+   */
+  function supplyStep(inProgress: WorldObject, session: WorldSession, step: RecipeStepDef): void {
+    const slot = materialsSlotOf(inProgress);
+    expect(slot, '作りかけが材料枠を持たない').toBeDefined();
+
+    for (const requirement of step.requirements) {
+      const candidate = [...codex.objects]
+        .filter((def) => requirement.requires(def) && codex.baseOf(def) === def)
+        .map((def) => def.name)
+        .sort()[0];
+      expect(candidate, '要求に当てはまる型が世界に無い').toBeDefined();
+
+      const already = slot!.contents.filter((item) => requirement.requires(item.def)).length;
+      for (let n = already; n < requirement.count; n += 1)
+        expect(
+          session.createObject(codex.objectNames.getId(candidate)).moveToSlotOrRejection(slot!),
+          `'${candidate}' を材料枠へ入れられない`,
+        ).toBeUndefined();
+    }
+  }
+
+  it('レシピの工程を最後まで進めても、作り手の腕前は1つも動かない', () => {
+    // SkillSystem.md 3.4節。**レシピは速くなる側にしか居ない**——工程が何の技術かは宣言に現れない
+    // （要求と仕事の量しか持たない）ので、`deftness`が名乗った1本へ伸びまで積むと、別の技術に費やした
+    // 時間がその腕の練習として数えられる（石斧なら、紐を締めた1時間で石器が伸びる）。
+    //
+    // **宣言で配る形は、下の「腕を配る `add` は、長さを持つ操作の中にしかない」が止める**（`surplus`の
+    // 枝へ`add`を置いても、操作の外の`add`として数が合わなくなる）。**ここが見るのはエンジンの側**
+    // （crafting.tryAdvanceCrafting）で、そちらは宣言を読むだけでは見えない——**だから実際に工程を回す。**
+    //
+    // **名乗っているレシピだけを見ない。** 名乗っていないレシピへ配る実装も同じ線を破るので、世界の
+    // レシピを全部回す。**工程が進んだことも一緒に見る**のは、素材を入れ損ねて「進まないから動かない」
+    // が緑になるのを防ぐため。
+    const recipes = allRecipes();
+    expect(recipes.length, 'レシピが世界に1つも無い').toBeGreaterThan(0);
+
+    for (const { product, recipe } of recipes) {
+      const { session, inProgress, maker } = startCrafting(product, recipe);
+      // 熟達させてから回す——素人の段でも名乗りは読まれるが（RecipeDef.minutesFor）、実際に縮む枝は
+      // 通らない。腕が効いている側で見ておかないと、縮める枝の隣へ置かれた加算を素通りする。
+      const expected = STAGES.at(-1)!.min;
+      for (const id of skillIds) maker.getProperty(id).setNumberWithoutEvents(expected);
+
+      for (const [index, step] of recipe.steps.entries()) {
+        supplyStep(inProgress, session, step);
+        expect(
+          tryAdvanceCrafting(inProgress, maker),
+          `'${product}.${recipe.name}' の工程${index + 1}が進まない`,
+        ).toBe(true);
+      }
+
+      for (const [index, id] of skillIds.entries())
+        expect(
+          maker.getProperty(id).number,
+          `'${product}.${recipe.name}' を作ったら ${SKILLS[index]} が動いた`,
+        ).toBe(expected);
+    }
   });
 
   /**
