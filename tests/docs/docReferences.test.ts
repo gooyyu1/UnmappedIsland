@@ -477,15 +477,18 @@ const BOLD_RUN = /\*\*(?=\S)([^*]+?)(?<=\S)\*\*/g;
  *
  * 太字を対にするのは**段落の中だけ**。Markdownの強調は空行を跨がないので、跨いで対にすると、
  * 閉じ損ねた `**` が段落をまたいだ地の文を1つの名前にしてしまう。
+ *
+ * **この2つの絞りを外すと、地の文が名前として拾われる**（`引ける名前が、地の文まで飲み込まない`）
+ * ——外れても参照側は解決する側が増えるだけなので、リポジトリ全体を見る検査は緑のまま。
  */
-function quotableNamesOf(rel: string): string[] {
+function quotableNamesOf(rel: string, source: string): string[] {
   const names: string[] = [];
   let paragraph: string[] = [];
   const flushParagraph = (): void => {
     for (const [, bold] of paragraph.join(' ').matchAll(BOLD_RUN)) names.push(bold);
     paragraph = [];
   };
-  for (const line of commentsOnly(read(rel), rel).split('\n')) {
+  for (const line of commentsOnly(source, rel).split('\n')) {
     const body = line.trim() === '' ? '' : line.replace(COMMENT_MARKER, '');
     const heading = /^#{1,6}\s+(.*)$/.exec(body.trim());
     if (heading !== null) {
@@ -512,7 +515,7 @@ for (const rel of trackedFiles(ROOT).filter((path) =>
   const base = rel.split(sep).pop() as string;
   quotableNamesByScript.set(base, [
     ...(quotableNamesByScript.get(base) ?? []),
-    ...quotableNamesOf(rel),
+    ...quotableNamesOf(rel, read(rel)),
   ]);
 }
 
@@ -947,6 +950,27 @@ describe('ドキュメントの参照', () => {
     expect(brokenScriptNameRefsIn(probe, '`daemon.sh`\n// 「そんな見出しは無い」')).toHaveLength(1);
     expect(brokenScriptNameRefsIn(probe, '[`daemon.sh`](daemon.sh) の「PIDは錠の中」')).toEqual([]);
     expect(brokenScriptNameRefsIn(probe, '`no-such-script.sh`「〇〇」')).toHaveLength(1);
+  });
+
+  // 引ける名前の側の絞り（{@link BOLD_RUN} の `\S` と、段落ごとの対付け）は、**外しても参照側は
+  // 解決する側が増えるだけ**なので、リポジトリ全体を見る上の検査は緑のまま。直に試す。
+  it('引ける名前が、地の文まで飲み込まない', () => {
+    const script = join('scripts', 'probe.sh');
+    // 開きの直後に字が無ければ開きではない（グロブの `**` がこの形）
+    expect(quotableNamesOf(script, '# 前 ** 中** 後 **本物**')).toEqual(['本物']);
+    // 閉じの直前に字が無ければ閉じではない
+    expect(quotableNamesOf(script, '# **中 ** 後 **本物**')).toEqual(['本物']);
+    // 閉じ損ねた `**` は、空行を跨いで対にならない
+    expect(quotableNamesOf(script, '# **閉じ損ね\n#\n# 次の段落。**本物**')).toEqual(['本物']);
+    // 見出しも段落の切れ目
+    expect(quotableNamesOf(script, '# **閉じ損ね\n# ## 見出し\n# 地の文。**本物**')).toEqual([
+      '見出し',
+      '本物',
+    ]);
+    // ブロックコメントの行頭の `*` も落とす（落とさないと、その行の見出しが見出しに見えない）
+    expect(quotableNamesOf(join('scripts', 'probe.mjs'), '/**\n * ## 見出し\n * **本物**\n */')).toEqual(
+      ['見出し', '本物'],
+    );
   });
 
   it('【未実装: 識別子】ラベルの識別子が、実装に現れていない（剥がし忘れ検知）', () => {
