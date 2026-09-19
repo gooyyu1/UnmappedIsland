@@ -9,7 +9,7 @@
 [`../CodeStructure.md`](../CodeStructure.md) が持ちます。
 
 石・斧・防具・容器など、「実際にこのゲームに登場する具体的なモノ」は含みません。そちらは
-[`../World/`](../world/README.md) を参照してください。
+[`../world/`](../world/README.md) を参照してください。
 
 ## 収録ドキュメント
 
@@ -51,6 +51,8 @@
 
 - [コードの構造](../CodeStructure.md) — `src/` の構成要素と置き場の一覧、依存の向き、新しいファイルを
   どこへ置くか、それぞれが何を知ってよいか（このフォルダの外）
+- [TypeScriptコーディング規約](../CodingConventions.md) — Prettier・ESLint・`tsc` では強制できない
+  書き方の取り決め（このフォルダの外）
 - [地形生成 実装ガイド](./TerrainGenerationImplementation.md) — 実際のクラス名・メソッド名でたどる、
   ロードから島の実体化までの呼び出し関係
 - [ソースリファレンス](https://gooyyu1.github.io/UnmappedIsland/reference/) — `src/` のクラス・型・JSDocから
