@@ -44,6 +44,9 @@ export type DeclarationReference = { readonly context: string } & (
     }
 );
 
+/** プロパティのグローバルID → その名前で宣言されている段（6.4節）の名前（WorldCodex.stageNamesByProperty）。 */
+type StageNamesByProperty = ReadonlyMap<PropertyGlobalId, ReadonlySet<string>>;
+
 /**
  * ロードされたYAMLファイル全体を表す集約オブジェクト（GameElementDefinition.md 3.1節）。
  * 本体データ（ObjectDefTable）、独立した名前空間（object/property/slot/tag/property_tag/symbol）の
@@ -144,6 +147,9 @@ export class WorldCodex {
    * 全部が揃ったここで見る。
    */
   private requireValidDeclarationReferences(references: readonly DeclarationReference[]): void {
+    if (references.length === 0) return;
+
+    const stageNames = WorldCodex.stageNamesByProperty(this.objects);
     for (const reference of references)
       switch (reference.kind) {
         case 'destination_object':
@@ -153,10 +159,15 @@ export class WorldCodex {
           this.requireObjectDefValuedProperty(reference.propertyGlobalId, reference.context);
           break;
         case 'property':
-          this.requireDeclaredProperty(reference.propertyGlobalId, reference.context);
+          this.requireDeclaredProperty(stageNames, reference.propertyGlobalId, reference.context);
           break;
         case 'property_stage':
-          this.requireDeclaredStage(reference.propertyGlobalId, reference.stageName, reference.context);
+          this.requireDeclaredStage(
+            stageNames,
+            reference.propertyGlobalId,
+            reference.stageName,
+            reference.context,
+          );
           break;
       }
   }
@@ -170,8 +181,12 @@ export class WorldCodex {
    * （条件の`subject`も`deftness`の作り手も、指す相手は状況で変わる）。持っていない個体を引く宣言は
    * 正しい書き方（「その腕を持つ者だけ速い」）なので、そこまでは踏み込めない。
    */
-  private requireDeclaredProperty(propertyGlobalId: PropertyGlobalId, context: string): void {
-    if (this.stageNamesByProperty.has(propertyGlobalId)) return;
+  private requireDeclaredProperty(
+    stageNames: StageNamesByProperty,
+    propertyGlobalId: PropertyGlobalId,
+    context: string,
+  ): void {
+    if (stageNames.has(propertyGlobalId)) return;
 
     throw new Error(
       `${context}: '${this.propertyNames.getName(propertyGlobalId)}'というプロパティは、` +
@@ -186,19 +201,24 @@ export class WorldCodex {
    *
    * 綴りを間違えた段名は{@link PropertyDef.isInStage}が偽を返すだけなので、宣言は落ちずに一度も効かない。
    */
-  private requireDeclaredStage(propertyGlobalId: PropertyGlobalId, stageName: string, context: string): void {
-    const stageNames = this.stageNamesByProperty.get(propertyGlobalId);
-    if (stageNames === undefined) {
-      this.requireDeclaredProperty(propertyGlobalId, context);
+  private requireDeclaredStage(
+    stageNames: StageNamesByProperty,
+    propertyGlobalId: PropertyGlobalId,
+    stageName: string,
+    context: string,
+  ): void {
+    const declaredStages = stageNames.get(propertyGlobalId);
+    if (declaredStages === undefined) {
+      this.requireDeclaredProperty(stageNames, propertyGlobalId, context);
       return;
     }
-    if (stageNames.has(stageName)) return;
+    if (declaredStages.has(stageName)) return;
 
     const propertyName = this.propertyNames.getName(propertyGlobalId);
     const declared =
-      stageNames.size === 0
+      declaredStages.size === 0
         ? 'そのプロパティはstagesを1つも宣言していません'
-        : `宣言されている段: ${[...stageNames].join('・')}`;
+        : `宣言されている段: ${[...declaredStages].join('・')}`;
     throw new Error(
       `${context}: プロパティ'${propertyName}'に'${stageName}'という段はありません（${declared}）。`,
     );
@@ -208,24 +228,19 @@ export class WorldCodex {
    * 型が宣言したプロパティと、その宣言が持つ段（6.4節）の名前。**プロパティを引けること自体が
    * キーの有無**なので、段を持たないプロパティは空の集合を持つ。
    */
-  private get stageNamesByProperty(): ReadonlyMap<PropertyGlobalId, ReadonlySet<string>> {
-    if (this.stageNamesByPropertyId === undefined) {
-      const found = new Map<PropertyGlobalId, Set<string>>();
-      for (const objectDef of this.objects)
-        for (const propertyDef of objectDef.enumeratePropertyDefs()) {
-          let names = found.get(propertyDef.globalId);
-          if (names === undefined) {
-            names = new Set<string>();
-            found.set(propertyDef.globalId, names);
-          }
-          for (const stage of propertyDef.stages) names.add(stage.name);
+  private static stageNamesByProperty(objects: ObjectDefTable): StageNamesByProperty {
+    const found = new Map<PropertyGlobalId, Set<string>>();
+    for (const objectDef of objects)
+      for (const propertyDef of objectDef.enumeratePropertyDefs()) {
+        let names = found.get(propertyDef.globalId);
+        if (names === undefined) {
+          names = new Set<string>();
+          found.set(propertyDef.globalId, names);
         }
-      this.stageNamesByPropertyId = found;
-    }
-    return this.stageNamesByPropertyId;
+        for (const stage of propertyDef.stages) names.add(stage.name);
+      }
+    return found;
   }
-
-  private stageNamesByPropertyId: ReadonlyMap<PropertyGlobalId, ReadonlySet<string>> | undefined;
 
   /**
    * 型の名前で行き先を指せるのは、**世界にただ1つ在る型**（`singleton`、15節）だけ。

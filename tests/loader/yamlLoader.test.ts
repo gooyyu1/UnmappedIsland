@@ -879,6 +879,10 @@ required_props:
 required_props:
   item: [weight]
 object_defs:
+  # weightの宣言元。itemタグを名乗らないので、この型も何も要求されない。
+  stone:
+    props:
+      weight: {value: 1000}
   cloud:
     props:
       height: {value: 1000}

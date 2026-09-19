@@ -268,10 +268,7 @@ export class WorldCodexYamlLoader {
         const tagId = this._tagNames.intern(tagName);
         const required = this.requiredPropsByTag.get(tagId) ?? [];
         for (const node of (tryGetSeq(requiredProps, tagName, context)?.items ?? []) as YamlNode[]) {
-          // ここは名指しとして数えない（referToPropertyを通さない）——約束を果たす側が1つも読み込まれて
-          // いない世界は在りうる（同梱のcore.yamlだけを土台にする試験）ので、「どの型も宣言していない」が
-          // そのまま綴り違いにはならない。綴りを間違えた要求はrequirePropsRequiredByTagsが落とす。
-          const propertyId = this._propertyNames.intern(asScalarText(node, context));
+          const propertyId = this.referToProperty(asScalarText(node, context), context);
           if (!required.includes(propertyId)) required.push(propertyId);
         }
         this.requiredPropsByTag.set(tagId, required);

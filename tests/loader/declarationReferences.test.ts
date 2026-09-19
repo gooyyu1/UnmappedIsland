@@ -98,6 +98,19 @@ object_defs:${CRAFTER}
     ).not.toThrow();
   });
 
+  it('名指しの側から名前は作れない（型で止まる）', () => {
+    // **`@ts-expect-error` の行がこの検査の本体**（tests/architecture/globalId.test.ts と同じ形）。
+    // propertyNamesの窓がNameRegistryへ戻れば、ここは型で止まらなくなり、`@ts-expect-error` の
+    // ほうが余ったものとして `npm run typecheck` が赤くなる——名指しの口がまた素通りする道は、
+    // 検査を書き足さなくてもこれで塞がる。
+    const loader = new WorldCodexYamlLoader();
+
+    // @ts-expect-error 名前を作るのはdefinePropertyNameだけで、名指しはreferToPropertyを通る。
+    loader.propertyNames.intern('skill_cordage');
+
+    expect(loader.definePropertyName('skill_cordage')).toBe(loader.referToProperty('skill_cordage', 'test'));
+  });
+
   it('エラーは、名指しが書かれた場所を名乗る', () => {
     expect(() => load(ropeWith('{skill: skill_codage, from_stage: skilled, minutes: -15}'))).toThrowError(
       /'rope'\.recipes\.'twisted'\.deftness\.skill/,

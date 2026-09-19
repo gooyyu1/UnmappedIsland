@@ -724,7 +724,6 @@ object_defs:
   # 入手経路が無い道具。これを要るレシピが「道具が無くて作れないもの」になる（ObjectCost.blockedByTool）。
   flint_blade: {tags: [item, cutting_tool]}
 
-
   # 材料は揃うが、切る道具が手に入らないもの。
   fiber_rope:
     tags: [item]
