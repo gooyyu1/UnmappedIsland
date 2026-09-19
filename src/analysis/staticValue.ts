@@ -93,6 +93,10 @@ export type UndeclaredReading = 'zero' | 'unresolved';
  * 答えるのは宣言値なので、**段が押し上げる分は入らない**（段は実行時にしか決まらない）。
  *
  * 起点ごとに違うのは、候補の集まりと、誰も宣言していないときの読み方（UndeclaredReading）だけ。
+ *
+ * **候補が1つも無い層は何も答えない**（UndeclaredReadingによらない）——「候補は在るがどれも宣言して
+ * いない」と「誰が就くか分からない」は別で、後者を0として読むと、その起点を見る宣言が土地の在る
+ * 文脈と無い文脈とで同じ値を返す。
  */
 export function highestDeclaredLayer(
   root: ReferenceRoot,
@@ -100,7 +104,7 @@ export function highestDeclaredLayer(
   undeclared: UndeclaredReading,
 ): StaticValueLayer {
   return (context) => (asked, propertyGlobalId, end) => {
-    if (asked !== root) return undefined;
+    if (asked !== root || candidates.length === 0) return undefined;
     const declared = candidates
       .map((candidate) => staticValueOf(candidate, propertyGlobalId, end, context))
       .filter((value): value is number => value !== undefined);
@@ -202,13 +206,26 @@ export interface StaticValueRange {
 }
 
 /**
+ * 起点が指す相手の、そのプロパティの在り方（StaticSubjectReader.propertyOf）。**分からなければ
+ * undefined**——型が定まらない起点も、上下限を宣言していないプロパティもそちらへ倒れる。
+ */
+export type StaticPropertyReading =
+  /** その型が取りうる値の範囲（StaticValueRange）。 */
+  | { readonly kind: 'range'; readonly range: StaticValueRange }
+  /**
+   * そのプロパティを持つ相手が居ない。**0として読まれるのではなく、どの比較も偽になる**
+   * （ConditionNode.evaluateProperty。解決できない葉は偽で、否定したければnotで包む）。
+   */
+  | { readonly kind: 'absent' };
+
+/**
  * 条件（14節）の葉が名指した起点について、**定義だけから答えられること**。型が定まらない起点
- * ——祖先も、実行時にしか決まらない相手も、どの型が来るかを定義の側は知らない——では
- * どちらもundefinedを返す。
+ * ——実行時にしか決まらない相手も、どの土地に置かれるかが決まっていない祖先も、どの型が来るかを
+ * 定義の側は知らない——ではどちらもundefinedを返す。
  */
 export interface StaticSubjectReader {
-  /** その起点が指す型が、そのプロパティに取りうる値の範囲（StaticValueRange）。 */
-  rangeOf(root: ReferenceRoot, propertyGlobalId: PropertyGlobalId): StaticValueRange | undefined;
+  /** その起点が指す型における、そのプロパティの在り方（StaticPropertyReading）。 */
+  propertyOf(root: ReferenceRoot, propertyGlobalId: PropertyGlobalId): StaticPropertyReading | undefined;
 
   /** その起点が指す型そのものが、その指定（4.1節）に当てはまるか。 */
   matchesType(root: ReferenceRoot, match: TypeMatchReading): boolean | undefined;
@@ -217,8 +234,8 @@ export interface StaticSubjectReader {
 /**
  * 条件（14節）が、定義だけから真と分かるか・偽と分かるか。**どちらとも言えなければundefined。**
  *
- * 読めるのは**型が定まっている起点**のプロパティ比較と型の合致だけで、他の葉——祖先の天候・相手の
- * 持ち物・スロットの中身・段の刻み——は判定せずに素通しにする。解析の側にゲームの実行を作り込むと、
+ * 読めるのは**型が定まっている起点**のプロパティ比較と型の合致だけで、他の葉——相手の持ち物・
+ * スロットの中身・段の刻み——は判定せずに素通しにする。解析の側にゲームの実行を作り込むと、
  * 同じ規則の実装が2つになって食い違い始めるため。どの起点の型が定まるかはsubjectが答える。
  */
 export function staticConditionTruth(
@@ -243,8 +260,10 @@ class ConditionTruthReader implements ConditionReader {
 
   property(reading: PropertyConditionReading): void {
     if (reading.values === undefined || reading.valueRef !== undefined) return;
-    const range = this.subject.rangeOf(reading.root, reading.propertyGlobalId);
-    if (range !== undefined) this.truth = comparisonTruth(range, reading.op, reading.values);
+    const property = this.subject.propertyOf(reading.root, reading.propertyGlobalId);
+    if (property === undefined) return;
+    this.truth =
+      property.kind === 'absent' ? false : comparisonTruth(property.range, reading.op, reading.values);
   }
 
   /** 型そのものへの指定は、起点の型が定まっていれば定義だけで決まる。 */

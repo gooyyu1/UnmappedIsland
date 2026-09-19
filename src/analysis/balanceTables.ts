@@ -9,6 +9,7 @@ import type { TickDelta } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
+import type { AnalysisContext } from './craftingSteps';
 import { analysisContextOf, craftingStepsOf } from './craftingSteps';
 import type { IslandLocations } from './islandLocations';
 import { islandLocationsOf } from './islandLocations';
@@ -17,7 +18,6 @@ import { rangeCyclesOf } from './rangeCycles';
 import { rangeEventReadouts } from './rangeEvents';
 import type { RainWaterRow } from './seasonalRain';
 import { rainWaterRows } from './seasonalRain';
-import type { StaticValueResolver } from './staticValue';
 import { highestDeclaredLayer, staticValueOf } from './staticValue';
 import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 import { MINUTES_PER_DAY, TICKS_PER_DAY } from '../domain/worldTime';
@@ -1330,7 +1330,7 @@ function allSteps(
   return defs.flatMap((def) => {
     if (axisValues.has(def.globalId) || islandLocations.seaOnly.has(def.globalId)) return [];
     if (standingAt !== undefined && isLocation(codex, def) && def.globalId !== standingAt.globalId) return [];
-    const cycles = rangeCyclesOf(def, outer, defs);
+    const cycles = rangeCyclesOf(def, outer.resolve, defs);
     const lifetime = decayLifetimeOf(cycles);
     return [
       ...craftingStepsOf(codex, def, outer).map((step) => ({ def, step, cycle: undefined })),
@@ -1370,20 +1370,19 @@ function decayLifetimeOf(cycles: readonly RangeCycle[]): DecayLifetime | undefin
 }
 
 /**
- * この表が使う文脈。**使う物と祖先の層**（11.5節）を足す——行っている人の層はanalysisContextOfが
+ * この表が使う文脈。**使う物の層**（11.5節）を足す——行っている人と祖先の層はanalysisContextOfが
  * 必ず入れる。`base` が層をまたいで別の起点を指すので、層どうしを直に繋がない（layeredResolver）。
  *
  * 祖先の候補（ancestorLocations）は、置く先が決まっているならその土地1つ、どの土地に置いてもよい
- * 前提なら島の土地すべて。**宣言していない土地では寄与0**（highestDeclaredLayerの`zero`）。
+ * 前提なら島の土地すべて。
  *
  * 使う物の候補は全型。これが無いと、相手の値を見る重み——一撃がどう入るかは武器が決める
  * （HuntingSystem.md 1.2節）——が全て解けず、宣言順で最初の候補だけが起こることになる
  * （PickEffect.selectWeighted）。
  */
-function analysisContext(codex: WorldCodex, ancestorLocations: readonly ObjectDef[]): StaticValueResolver {
-  return analysisContextOf(codex, [
+function analysisContext(codex: WorldCodex, ancestorLocations: readonly ObjectDef[]): AnalysisContext {
+  return analysisContextOf(codex, ancestorLocations, [
     highestDeclaredLayer('instrument', [...codex.objects], 'unresolved'),
-    highestDeclaredLayer('ancestor', ancestorLocations, 'zero'),
   ]);
 }
 
