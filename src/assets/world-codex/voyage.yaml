@@ -228,7 +228,7 @@ traits:
                 - {subject: ancestor, prop: weather, eq: storm}
         add: {self: {storm_drift: -1}}
     interactions:
-      # 見張り。**地上の探索そのもの**（ExplorationSystem.md 2節）で、1回15分＝1tick、進捗が1つ進む。
+      # 見張り。**地上の探索そのもの**（ExplorationSystem.md 2節）で、1回1 tick（15分）、進捗が1つ進む。
       # 進捗が上限に達した瞬間、その海区から出る航路が現れる（exploration_progress の on_max）。
       # 現れるのは**辺1本の両端**——この海区に立つ「次の海区への航路」と、次の海区に立つ
       # 「この海区への航路」（GameEndings.md 12.5節）。どちらも同じ sea_route で、違うのは行き先だけ。

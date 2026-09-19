@@ -283,7 +283,7 @@ describe('fire.yamlの火の連鎖', () => {
    * その湿りから始めた火口に火が付く割合。**pickは「引き×重みの合計」を累積と比べる**（fixedRng）
    * ので、**付くかどうかが切り替わる引きが、そのまま成功率**になる。それを二分で挟んで出す。
    *
-   * **割合を定義から計算せずに測るのは、火起こしの30分＝2tickのあいだにも水が抜けるから**
+   * **割合を定義から計算せずに測るのは、火起こしの2 tick（30分）のあいだにも水が抜けるから**
    * ——引きを決める時点の湿りは、始めた値と乾く速さの両方で決まる。
    */
   function lightChanceOf(tinderName: string, moisture: number): number {
@@ -1137,7 +1137,7 @@ describe('fire.yamlの火の連鎖', () => {
   it('沸かした湯は放っておくと冷めて水に戻る', () => {
     const bowl = filledBowl('hot_water_liquid');
 
-    // 湯は-1/tick。12tick＝3時間で抜け切る。
+    // 湯は-1/tick。12 tick（3時間）で抜け切る。
     session.advanceWorldTime(15 * 11);
     expect(bowl.def.name, '11tickではまだ湯').toBe('coconut_bowl__content_hot_water_liquid');
 

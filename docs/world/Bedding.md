@@ -135,8 +135,8 @@ object_defs:
 ## 4. 休息へどう効かせるか
 
 **寝床が自分で `nap`/`sleep` を持ち、キャラクタ側の `nap` が基準線になります**
-（[`Characters.md`](./Characters.md) 休息節）。**回復は寝床のアクションが宣言した `passives` が毎 tick
-（15分）積みます**（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 11.7節）
+（[`Characters.md`](./Characters.md) 休息節）。**回復は寝床のアクションが宣言した `passives` が
+1 tick（15分）ごとに積みます**（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 11.7節）
 ——キャラクタ側の休息とまったく同じ形で、違うのは量だけです。
 
 **寝床の上で押すのは寝床の手番なので、下の表の量はキャラクタ側の量に足すのではなく、置き換えます。**

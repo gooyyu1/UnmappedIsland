@@ -303,7 +303,7 @@
 [`../engine/ActionSystem.md`](../engine/ActionSystem.md) 6.3 節）**より外に置いてある**ので、線の内側の
 行動はどれも等速のまま見えます。
 
-**目盛りは「実際に tick が回る瞬間」に置きます。** すなわち絶対時刻が `minutes_per_tick`（15 分）の
+**目盛りは「実際に tick が回る瞬間」に置きます。** すなわち絶対時刻が 1 tick（15 分）の
 倍数になる瞬間で、`WorldSession.advanceWorldTime` が tick を回すタイミングそのものです。そのため
 区切りの長さは一定とは限りません。
 

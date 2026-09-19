@@ -174,7 +174,7 @@ describe('foods.yamlの食料定義', () => {
 describe('食べ物の腐敗', () => {
   /** 洞窟が湧く土地（locations.yamlのrocky_fieldのexplore）。屋根のある場所はここにしか無い。 */
   const CAVE_LAND = 'rocky_field';
-  /** 1 tick（core.yamlの15分）。 */
+  /** core.yamlが宣言する1 tick（15分）。 */
   const ONE_TICK = 15;
 
   let codex: WorldCodex;
@@ -349,7 +349,7 @@ describe('食べ物が配る幸福度', () => {
  * 前者が無ければ誰も刻まないので腕も伸びず、後者が抜けると20分の繰り返しが最も速い伸ばし方になる。
  */
 describe('foods.yamlの下ごしらえ', () => {
-  /** 1 tick（core.yamlの15分）。 */
+  /** core.yamlが宣言する1 tick（15分）。 */
   const ONE_TICK = 15;
   /** 炎の段（fire.yamlのheat）の下端。焚き火の上限は30なので、ここへ置けば炎のまま燃え続ける。 */
   const FLAME_HEAT = 20;
