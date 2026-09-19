@@ -419,6 +419,9 @@ export async function readBoard({
     now: now.toISOString(),
     settledBefore: settledBefore(now, settleMinutes),
     mainChecks: mainChecks(checks),
+    // **差し戻しの指紋に入れる**（`board-move.mjs` の `mendMark`、2.14.2）。**`main` が動けば
+    // 理由のほうが消えることがある**ので、入れないと盤面は「もう打った」と読み続ける。
+    mainHead: head.trim(),
     prs: openPrs,
     mergedPrs,
     pendingDecisions: pendingDecisions(),
