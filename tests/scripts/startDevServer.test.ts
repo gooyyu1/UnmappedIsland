@@ -21,8 +21,15 @@ vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../.claude/skills/run/scripts/start-dev-server.sh');
 
+/**
+ * 身代わりの `npx` が名乗るまでの間（秒）。**0にしない**——親が最初に見に行く前に子が書き終えて
+ * いるかは、どちらのプロセス生成が先に済むかで決まるだけなので、**この検査の成否が機械で変わる。**
+ * 間を置けば、どんな機械でも「まだ名乗っていない状態を見て、名乗るまで待つ」側を通る。
+ */
+const SAYS_AFTER = 0.2;
+
 interface World {
-  /** 身代わりの `npx` がログへ書く中身。**名乗らない世界は `undefined`。** */
+  /** 身代わりの `npx` が `SAYS_AFTER` の後にログへ書く中身。**名乗らない世界は `undefined`。** */
   readonly says?: string;
   /** 起動を待つ上限（秒）。 */
   readonly readyWait: string;
@@ -41,10 +48,14 @@ interface Result {
 function startDevServer(world: World): Result {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-dev-server-'));
   try {
+    // 間を置くのは本物の `sleep` で。**下の身代わりを通すと、待ち合わせの刻みと混ざって読めなくなる。**
     const npx = join(work, 'npx');
     writeFileSync(
       npx,
-      `${STUB_SHEBANG}\n${world.says === undefined ? ':' : `echo ${JSON.stringify(world.says)}`}\n`,
+      `${STUB_SHEBANG}\n` +
+        (world.says === undefined
+          ? ':\n'
+          : `"$(command -pv sleep)" ${SAYS_AFTER}\necho ${JSON.stringify(world.says)}\n`),
       'utf-8',
     );
     chmodSync(npx, 0o755);
@@ -92,14 +103,16 @@ function readSleeps(calls: string): readonly number[] {
 }
 
 describe('start-dev-server.sh', () => {
-  // **もう名乗っているなら、一度も寝ない。** 寝てから見に行く形だと、起動が終わっている回にも
-  // 刻みぶん払う——画面を撮るたびに通る道なので、そのぶんがそのまま毎回の待ちになる。
-  it('もう名乗っていれば、寝ずに返す', () => {
+  // **名乗るまで待って、名乗ったら返す。** 刻みが1秒だと、`SAYS_AFTER` で名乗り終えている相手にも
+  // 1秒を払う——画面を撮るたびに通る道なので、そのぶんがそのまま毎回の待ちになる。
+  //
+  // **見るのは寝た長さだけで、寝た回数は見ない。** 何回で名乗りに追いつくかは機械の速さで変わる。
+  it('名乗るまで待って、名乗ったら0で返る', () => {
     const result = startDevServer({ says: 'ready in 42 ms', readyWait: '10' });
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain('起動確認OK: http://localhost:5173/');
-    expect(result.sleeps).toEqual([]);
+    expect(Math.max(...result.sleeps)).toBeLessThan(1);
   });
 
   // **上限は秒で、刻みはそれより細かい。** 刻みの回数で数えていると、刻みを細かくしたぶんだけ上限が

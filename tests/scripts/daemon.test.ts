@@ -482,7 +482,7 @@ describe('daemon.sh', () => {
     const result = daemon({
       checkoutSwap: `${STUB_SHEBANG}\necho "寄せた先が立った"\n`,
       args: ['start'],
-      // 寄せた先は心拍を書かないので、`start` は待ちきって非0で終わる。**短く待たせる。**
+      // 寄せた先は畳む備えまで進まないので、`start` は待ちきって非0で終わる。**短く待たせる。**
       env: { ONCE: '', START_WAIT: '2' },
     });
 
@@ -513,12 +513,12 @@ describe('daemon.sh', () => {
   // 1秒を足して返すので、`start` と `stop` を打つ検査の所要時間が**相手の速さではなく刻みで
   // 決まる**——それが既定の待ち時間を食い潰し、丸ごと走らせた回にだけ落ちていた（#2159）。
   //
-  // 心拍を書かない版を立てて、**待ちきる側**を見る。立った瞬間に返る側では、刻みが何回入ったのかを
-  // 確かめられない。
+  // 畳む備えまで進まない版を立てて、**待ちきる側**を見る。立った瞬間に返る側では、刻みが何回
+  // 入ったのかを確かめられない。
   it('待ち合わせの上限は秒で、刻みはそれより細かい', () => {
     const started = Date.now();
     const result = daemon({
-      checkoutSwap: `${STUB_SHEBANG}\necho "心拍を書かない版"\n`,
+      checkoutSwap: `${STUB_SHEBANG}\necho "立ち上がらない版"\n`,
       args: ['start'],
       env: { ONCE: '', START_WAIT: '1' },
     });
