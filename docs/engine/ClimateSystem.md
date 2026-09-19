@@ -58,7 +58,7 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 | 密林 | 183<!-- stats: terrain.yaml site_elevation_by_location location=jungle mean ±5% --> m | **−1** |
 | 荒野 | 212<!-- stats: terrain.yaml site_elevation_by_location location=wasteland mean ±5% --> m | **−1** |
 | 岩石地 | 211<!-- stats: terrain.yaml site_elevation_by_location location=rocky_field mean ±5% --> m | **−1** |
-| 山腹 | 308<!-- stats: terrain.yaml site_elevation_by_location location=mountainside mean ±5% --> m | **−2** |
+| 山腹 | 322<!-- stats: terrain.yaml site_elevation_by_location location=mountainside mean ±5% --> m | **−2** |
 | 山頂 | 400<!-- stats: terrain.yaml site_elevation_by_location location=mountain_peak mean ±5% --> m | **−3** |
 
 **丸めて 0 になる土地は宣言しません**——`core.yaml` の `location` trait が既定の 0 を持つので、

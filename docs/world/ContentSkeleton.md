@@ -1054,7 +1054,7 @@ ambient_brightnessをそのまま土台にするためです（同 2節）。
 15.5日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->に山を1分も乗せていない**こと
 ——1日の枠356分<!-- stats: terrain.yaml exploration_phase metric=day_trip_window_per_day mean -->に対して探索は
 181分<!-- stats: terrain.yaml exploration_phase metric=day_trip_exploration_per_day mean -->しか進まないので、
-余る176分<!-- stats: terrain.yaml exploration_phase metric=day_trip_spare_per_day mean -->×15.5日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->は山へ回せます。
+余る175分<!-- stats: terrain.yaml exploration_phase metric=day_trip_spare_per_day mean ±1 -->×15.5日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->は山へ回せます。
 
 **「1周回は約480日」という前の結論は取り下げます。** 480日は、密林のような暗い土地でも生存の採取を
 丸ごと引いていた（そこでは1日に働ける時間がそれに足りないのに）ことと、移動を「一様に選んだ行き先へ
