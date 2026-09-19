@@ -125,9 +125,12 @@ describe('fire.yamlの火の連鎖', () => {
     return hearth;
   }
 
-  /** その場の気温（core.yamlのlocation trait）。世界の気温を土台に、炉の暖が積まれた実効値。 */
-  function temperatureOf(location: WorldObject): number {
-    return location.getProperty(codex.propertyNames.getId('ambient_temperature')).getEffectiveValue();
+  /**
+   * その物のambient_temperatureの実効値。土地（core.yamlのlocation trait）なら世界の気温を土台に
+   * 炉の暖が積まれた値、worldそのものなら空の気温。
+   */
+  function temperatureOf(object: WorldObject): number {
+    return object.getProperty(codex.propertyNames.getId('ambient_temperature')).getEffectiveValue();
   }
 
   /** 世界の天気を変える（core.yamlのweather）。シンボル型なので名前をIDへ直して入れる。 */
@@ -1119,7 +1122,7 @@ describe('fire.yamlの火の連鎖', () => {
     const outside = temperatureOf(neighbor);
     // **空の気温は土地の気温と同じではない**——土地は海抜ぶんだけ低い（ClimateSystem.md 1.1節）ので、
     // 動かないことは隣の土地の値ではなく、火を点ける前の空の値と比べる。
-    const sky = worldView.ambientTemperature;
+    const sky = temperatureOf(world);
 
     // 火の点いていない炉は暖めない。組んだだけの炉を隣へ置いて、暖の出どころが「炉が在ること」では
     // なく「火が生きていること」であることまで見る。
@@ -1128,7 +1131,7 @@ describe('fire.yamlの火の連鎖', () => {
 
     expect(temperatureOf(land), '火のある土地は+8').toBe(outside + 8);
     expect(temperatureOf(neighbor), '隣の土地は動かない（組んだだけの炉は暖めない）').toBe(outside);
-    expect(worldView.ambientTemperature, '世界も動かない').toBe(sky);
+    expect(temperatureOf(world), '世界も動かない').toBe(sky);
   });
 
   it('沸かした湯は放っておくと冷めて水に戻る', () => {

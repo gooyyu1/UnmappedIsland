@@ -102,11 +102,11 @@ describe('テスト用シナリオ', () => {
 
     applyScenario(game, scenario);
 
-    expect(heatHazeFor(game.world.ambientTemperature), '開始時点で陽炎が立つ').toBeDefined();
+    expect(heatHazeFor(game.player.location?.ambientTemperature), '開始時点で陽炎が立つ').toBeDefined();
 
     game.session.advanceWorldTime(game.world.rawMinutesPerTick * 4);
 
-    expect(heatHazeFor(game.world.ambientTemperature), '数tick経っても立ったまま').toBeDefined();
+    expect(heatHazeFor(game.player.location?.ambientTemperature), '数tick経っても立ったまま').toBeDefined();
   });
 
   it('stormは嵐から始まり、天気が選び直されても雨系のままになる', () => {
