@@ -178,7 +178,7 @@ node -e "const l=require('fs').readFileSync(process.argv[1],'utf-8').trim().spli
 | 周期の係の刻 | 同じ台帳の `cycle:*`。間隔を持つのは `scripts/daemon/board-move.mjs` の `CYCLES` なので、刻に足して次がいつかを出します。**打たれた手の側からは言えません**——立たない係は手を1つも残しません |
 | 控えた手の理由が消えていないか | 同じ台帳の `resume:*`。`mend:conflict`・`mend:red` は**PRの版が動かないまま `main` が動いて生まれる**ので、`main` が緑へ戻ると理由だけが消える。控えた指紋のPRを `gh pr view <番号> --json mergeable,statusCheckRollup` で引き直す |
 | 誰の手番でもない跡 | 本体のチェックアウトの `git status`（issue でもPRでもセッションでもないので、盤面には映りません） |
-| `main` の色 | `gh api 'repos/{owner}/{repo}/actions/runs?event=push&head_sha=<origin/main の指紋>'`（2.14.2。**枝の名前で引くと、push の直後は1つ前の色が返ります**） |
+| `main` の色 | `git fetch origin main && git rev-parse origin/main` で指紋を出し、`gh api 'repos/{owner}/{repo}/actions/runs?event=push&head_sha=<指紋>'`（2.14.2。**枝の名前で引くと、push の直後は1つ前の色が返ります**。**`fetch` を落とすと、このクローンの `origin/main` が古いか無いかのまま引くことになります**） |
 | 機械が付ける印が欠けていないか | `gh run list --workflow board-labels.yml --limit 100`（`failure`・`startup_failure`・`queued` のまま動かないもの。**転んだ回の出来事は二度と来ません**） |
 | 色が付かないPRが居ないか | `gh api 'repos/{owner}/{repo}/actions/runs?status=queued'`（**楔になった走りは `gh run cancel` も `gh run rerun` も拒みます**。新しいコミットが載るまで、そのPRに色は付きません） |
 

@@ -176,8 +176,8 @@ if stacked=$(gh api graphql -f "query=$STACKED_QUERY" -F owner='{owner}' -F name
     echo 'squash マージでは下のコミットが `main` の履歴に入らないので、**張り替わっただけでは差分に'
     echo '下のぶんが混ざったまま**で、CIも古い base で得た緑のままです。'
     echo
-    echo '`origin/main` の上へ載せ直して push してください。push すれば判定のラベルが外れ、CIも'
-    echo '走り直します。'
+    echo '`git fetch origin main` してから `origin/main` の上へ載せ直して push してください。'
+    echo 'push すれば判定のラベルが外れ、CIも走り直します。'
   } >"$note"
   while read -r other; do
     [ -n "$other" ] || continue
