@@ -39,6 +39,12 @@ describe('操作の行に並ぶ数と名前', () => {
    */
   const ACTION_ROW_CAPACITY = 6;
 
+  /**
+   * 上限まで並べたときに、1つの箱へ入る名前の長さ（全角の文字数。Windows.md 4節が書いている数）。
+   * **4節はこの数を書いているだけで導いてはいない**ので、幾何の側が動いたらここで赤くする。
+   */
+  const NAME_BUDGET_AT_CAPACITY = 3;
+
   /** 島の生成と時刻の引きを固定する種。並びの数はどの島でも変わらないので、値そのものに意味は無い。 */
   const SEED = 12345;
 
@@ -83,6 +89,10 @@ describe('操作の行に並ぶ数と名前', () => {
   it('上限は、最小タップ領域を割らない最後の数', () => {
     expect(widthOf(ACTION_ROW_CAPACITY), `${ACTION_ROW_CAPACITY}個`).toBeGreaterThanOrEqual(SIZE.iconButton);
     expect(widthOf(ACTION_ROW_CAPACITY + 1), `${ACTION_ROW_CAPACITY + 1}個`).toBeLessThan(SIZE.iconButton);
+  });
+
+  it('上限まで並べた箱に入る名前の長さが、4節の書いている数と合っている', () => {
+    expect(Math.floor(widthOf(ACTION_ROW_CAPACITY) / SIZE.textButtonLabel)).toBe(NAME_BUDGET_AT_CAPACITY);
   });
 
   it('1つのオブジェクトに並ぶ操作は、1行に入る数を超えない', () => {

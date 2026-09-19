@@ -52,7 +52,7 @@ export function windowContentWidth(metrics: ScreenMetrics, windowWidth: number):
 export function closeRow(metrics: ScreenMetrics, window: Rect): Rect {
   const padding = metrics.px(WINDOW_PADDING);
   const height = metrics.px(ACTION_HEIGHT);
-  const width = Math.min(metrics.px(ACTION_MAX_WIDTH), window.width - padding * 2);
+  const width = Math.min(metrics.px(ACTION_MAX_WIDTH), windowContentWidth(metrics, window.width));
   return {
     x: window.x + (window.width - width) / 2,
     y: window.y + window.height - padding - height,
