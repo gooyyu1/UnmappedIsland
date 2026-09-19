@@ -69,7 +69,7 @@ YAMLとずれます）。
 ## 要るものの出どころ
 
 `need_sources`は`locations.yaml`の`explore`の実測。**1つの土地では揃わない**ことがこの節の要点で、
-荒野は火口・錐・刃を持つが軸が無く、砂浜は軸と水しか持たない（ContentSkeleton.md 2.3節）。
+どの土地が何を持つかは`location_supplies`の`needs`が持つ（ContentSkeleton.md 2.3節）。
 
 `location_supplies`の`path_discovery`は、その土地の道が全部出そろうまでの分数（上の「計測方法」参照）。
 
