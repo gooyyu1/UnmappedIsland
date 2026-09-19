@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { isMap, isScalar, isSeq, LineCounter, parseDocument } from 'yaml';
 import { describe, expect, it } from 'vitest';
+import { PROPERTY_OPS } from '../../src/loader/parseConditions';
 import { worldCodexYamlPaths } from '../support/worldCodexFiles';
 
 /**
@@ -23,8 +24,12 @@ import { worldCodexYamlPaths } from '../support/worldCodexFiles';
 /** 段でしか見てはいけない明るさ（IlluminationSystem.md 5節の表が見る2つ）。 */
 const STAGED_BRIGHTNESS = new Set(['hand_brightness', 'looking_brightness']);
 
-/** 実効値を数と直接比べる演算子キー（GameElementDefinition.md 14.1節）。 */
-const COMPARISON_KEYS = new Set(['lt', 'lte', 'gt', 'gte', 'eq', 'neq', 'in', 'not_in']);
+/**
+ * 実効値を数と直接比べる演算子キー（GameElementDefinition.md 14.1節）。**読む側ではなく、宣言を
+ * 解く側の一覧をそのまま使う**——書き写すと、演算子が1つ増えたときにその演算子で書いた条件だけが
+ * 検査をすり抜ける。
+ */
+const COMPARISON_KEYS = new Set<string>(PROPERTY_OPS);
 
 /** 条件1つの読み。`prop` を主語にした葉から、その葉が使っている演算子キーを拾う。 */
 interface BrightnessCondition {

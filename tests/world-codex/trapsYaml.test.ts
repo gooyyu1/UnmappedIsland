@@ -645,11 +645,17 @@ describe('traps.yamlの落とし穴', () => {
       return recipes[0]!;
     }
 
-    /** そのレシピが素材として名指ししている物を、宣言の並びのまま返す。 */
+    /**
+     * そのレシピが素材として名指ししている物を、名前の昇順で返す。
+     *
+     * **世界の型を1つ残らず当てて数え上げる。** 候補を手で並べると、その一覧に無い材料がレシピへ
+     * 増えても「開いている差は材料だけ」は緑のまま通る。
+     */
     function requiredNames(recipe: RecipeDef): string[] {
-      return ['thick_branch', 'log', 'rope', 'long_pole'].filter((name) =>
-        recipe.requires(codex.objects.get(codex.objectNames.getId(name))),
-      );
+      return [...codex.objects]
+        .filter((def) => !codex.isGenerated(def) && recipe.requires(def))
+        .map((def) => def.name)
+        .sort();
     }
 
     const digging = recipeOf('pitfall');

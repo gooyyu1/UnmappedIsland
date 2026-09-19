@@ -1,4 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { islandLocationsOf } from '../../src/analysis/islandLocations';
+import type { ConditionalReading, EffectReader, PickReading } from '../../src/domain/EffectReader';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -7,7 +9,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { bundledCodex } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent } from '../support/illumination';
 import { seededRng } from '../../src/domain/Rng';
-import type { PropertyGlobalId } from '../../src/domain/GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 探索1回で見つかる物（locations.yamlのexploreのpickテーブル）を、実際に探索を繰り返して検証する。
@@ -26,7 +28,12 @@ const TRIALS = 300;
  */
 const BEAST_TRIALS = 80;
 
-/** 土地ごとに期待する平均個数の範囲。実りの多い土地は約2個、乏しい土地は約1.6個。 */
+/**
+ * 土地ごとに期待する平均個数の範囲。実りの多い土地は約2個、乏しい土地は約1.6個。
+ *
+ * **幅そのものは期待値なので手で書く**が、**鍵の顔ぶれは数え上げと突き合わせる**（下の「期待値の表は
+ * 探索できる土地を1つ残らず挙げている」）——書き漏らした土地は、ここに無いだけで検査の外へ黙って出る。
+ */
 const EXPECTED_MEAN: ReadonlyMap<string, readonly [number, number]> = new Map([
   ['sandy_beach', [1.9, 2.2]],
   ['rocky_coast', [1.9, 2.2]],
@@ -40,28 +47,104 @@ const EXPECTED_MEAN: ReadonlyMap<string, readonly [number, number]> = new Map([
   ['mountain_peak', [1.4, 1.8]],
 ]);
 
-/** 土地ごとの、出くわす獣とそのつまみ（docs/world/Animals.md 8節）。ネズミはどの土地にも居る。 */
-const BEAST_FINDS: readonly (readonly [string, string, string])[] = [
-  ['sandy_beach', 'rat_find', 'rat'],
-  ['sandy_beach', 'monkey_find', 'monkey'],
-  ['rocky_coast', 'rat_find', 'rat'],
-  ['rocky_coast', 'monkey_find', 'monkey'],
-  ['cliff_coast', 'rat_find', 'rat'],
-  ['cliff_coast', 'monkey_find', 'monkey'],
-  ['grassland', 'rat_find', 'rat'],
-  ['grassland', 'junglefowl_find', 'junglefowl'],
-  ['forest', 'rat_find', 'rat'],
-  ['forest', 'monkey_find', 'monkey'],
-  ['forest', 'wild_boar_find', 'wild_boar'],
-  ['jungle', 'rat_find', 'rat'],
-  ['jungle', 'junglefowl_find', 'junglefowl'],
-  ['jungle', 'monkey_find', 'monkey'],
-  ['jungle', 'wild_boar_find', 'wild_boar'],
-  ['rocky_field', 'rat_find', 'rat'],
-  ['wasteland', 'rat_find', 'rat'],
-  ['mountainside', 'rat_find', 'rat'],
-  ['mountain_peak', 'rat_find', 'rat'],
-];
+/**
+ * 探索できる土地すべての、獣の候補（土地名・重みが指すつまみ・湧く獣）。
+ *
+ * 拾うのは**獣1匹だけを湧かせる候補**で、重みをプロパティで宣言しているもの——獣は収穫ではないので
+ * 単独で出る（docs/engine/ExplorationSystem.md 2.1節）。「獣かどうか」は`animal`タグで見る
+ * （`animals.yaml`の`beast` traitが配る）。
+ */
+function beastFindsOf(codex: WorldCodex): readonly (readonly [string, string, string])[] {
+  const rows: (readonly [string, string, string])[] = [];
+  for (const land of islandLocationsOf(codex).island) {
+    const explore = land.triggers.find(({ interaction }) => interaction.name === 'explore')?.interaction;
+    if (explore === undefined) continue;
+
+    const collector = new BeastFindCollector(codex);
+    explore.readBy(collector);
+    for (const [knobId, beastGlobalId] of collector.finds)
+      rows.push([land.name, codex.propertyNames.getName(knobId), codex.objects.get(beastGlobalId).name]);
+  }
+  return rows;
+}
+
+/**
+ * 動詞を1つも見ない読み手の土台。探し物を持つ具象が、要る受け口だけを上書きする。
+ *
+ * 既定では**入れ子の奥まで降りる**（pickの候補も二択の枝も）——問うているのは「起こりうるか」なので、
+ * どちらへ倒れる回かは関わらない。
+ */
+abstract class QuietEffectReader implements EffectReader {
+  set(): void {}
+  add(): void {}
+  spawn(_objectGlobalId: ObjectGlobalId, _count: number): void {}
+  destroy(): void {}
+  become(): void {}
+  transfer(): void {}
+  move(): void {}
+  signal(): void {}
+
+  pick(reading: PickReading): void {
+    reading.readEveryCandidate(this);
+  }
+
+  conditional(reading: ConditionalReading): void {
+    reading.readEveryBranch(this);
+  }
+}
+
+/**
+ * 抽選卓（`pick`、10節）の候補のうち、獣を湧かせるものを拾う読み手。
+ *
+ * **「獣1匹だけ」まで絞り込まない。** 絞ると、獣を何かと一緒に湧かせる候補が拾われず、その獣は
+ * `withoutBeasts`で止まらないまま平均に混ざる——**単独で出ていることは下の検査が見る**ので、
+ * ここで落とすと、規約を破った候補だけが検査の外へ出ることになる。
+ *
+ * **入れ子の候補までは降りない**——獣の候補は卓の直下に並ぶ1段で、降りると「別の候補の奥で湧く獣」
+ * まで土地のつまみとして数えてしまう。
+ */
+class BeastFindCollector extends QuietEffectReader {
+  /** 見つけた候補（重みが指すつまみ → 湧く獣）。1つの候補が2種を湧かせるなら、獣ごとに1つ。 */
+  readonly finds: [PropertyGlobalId, ObjectGlobalId][] = [];
+
+  private readonly codex: WorldCodex;
+
+  constructor(codex: WorldCodex) {
+    super();
+    this.codex = codex;
+  }
+
+  override pick(reading: PickReading): void {
+    reading.forEachCandidate((candidate) => {
+      if (candidate.weight.kind !== 'property') return;
+      const spawns = new SpawnCollector();
+      candidate.effect.readBy(spawns);
+
+      for (const objectGlobalId of new Set(spawns.spawned))
+        if (this.codex.objects.get(objectGlobalId).hasTag(this.codex.vocabulary.world.animalTagId))
+          this.finds.push([candidate.weight.propertyGlobalId, objectGlobalId]);
+    });
+  }
+}
+
+/** 1つの候補が湧かせる型（`spawn`、9.4節）。個数が2以上なら、その回数ぶん並ぶ。 */
+class SpawnCollector extends QuietEffectReader {
+  readonly spawned: ObjectGlobalId[] = [];
+
+  override spawn(objectGlobalId: ObjectGlobalId, count: number): void {
+    for (let i = 0; i < count; i++) this.spawned.push(objectGlobalId);
+  }
+}
+
+/**
+ * 土地ごとの、出くわす獣とそのつまみ（docs/world/Animals.md 8節）。**探索の抽選卓から数え上げる**
+ * ——獣1匹だけを湧かせる候補と、その重みが指すつまみを、土地ごとに拾う。
+ *
+ * **手で並べてはいけない一覧。** ここは検査の入力であると同時に、下の`withoutBeasts`が「0にする
+ * つまみ」を引く出所でもある。土地が獣のつまみを1つ増やしたのに表へ書き足されないと、その獣は
+ * 止まらないまま湧き、平均個数の検査が静かにずれる（獣が増えた分だけ数えてしまう）。
+ */
+const BEAST_FINDS: readonly (readonly [string, string, string])[] = beastFindsOf(bundledCodex());
 
 /** 1回の探索で新しく見つかった物（object_def名 → 個数）。 */
 type Finding = ReadonlyMap<string, number>;
@@ -198,6 +281,16 @@ describe('探索で見つかる物', () => {
       ]),
     );
   }
+
+  it('期待値の表は、探索できる土地を1つ残らず挙げている', () => {
+    // 幅は手で書くしかない（何個見つかるべきかが期待値そのもの）ので、**顔ぶれだけを数え上げと
+    // 突き合わせる**。書き漏らした土地は、下の`it.each`が回さないまま緑で通る。
+    expect([...EXPECTED_MEAN.keys()].sort()).toEqual(
+      islandLocationsOf(codex)
+        .island.map((land) => land.name)
+        .sort(),
+    );
+  });
 
   it.each([...EXPECTED_MEAN.keys()])('%s の探索はハズレが無く、1〜3個が見つかる', (landName) => {
     const counts = findingsOf(landName, withoutBeasts(landName)).map(total);

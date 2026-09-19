@@ -7,36 +7,12 @@ meta:
   - {hunter: medic, animals: 4, weapons: 3, encounter_seeds: 150, move_seeds: 500, tracking_seeds: 12, unit: turns, encounter_turn_limit: 60, tracking_turn_limit: 1000}
 
 wariness:
-  - {animal: rat, appears_at: 56, appears_in: wary, unit: turns, until_calm: 37, until_unguarded: 56}
-  - {animal: junglefowl, appears_at: 24, appears_in: wary, unit: turns, until_calm: 5, until_unguarded: 24}
   - {animal: monkey, appears_at: 32, appears_in: wary, unit: turns, until_calm: 13, until_unguarded: 32}
+  - {animal: junglefowl, appears_at: 24, appears_in: wary, unit: turns, until_calm: 5, until_unguarded: 24}
+  - {animal: rat, appears_at: 56, appears_in: wary, unit: turns, until_calm: 37, until_unguarded: 56}
   - {animal: wild_boar, appears_at: 16, appears_in: calm, unit: turns, until_calm: 0, until_unguarded: 16}
 
 encounter:
-  - {animal: rat, weapon: sharp_stone, escape_routes: 0, measure: turns, unit: turns, mean: 2.35, min: 1.00, median: 2.00, p95: 4.00, max: 6.00, sd: 0.73, n: 150}
-  - {animal: rat, weapon: sharp_stone, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.35, min: 0.00, median: 0.00, p95: 1.00, max: 3.00, sd: 0.53, n: 150}
-  - {animal: rat, weapon: sharp_stone, escape_routes: 1, measure: turns, unit: turns, mean: 1.18, min: 1.00, median: 1.00, p95: 2.00, max: 2.00, sd: 0.39, n: 150}
-  - {animal: rat, weapon: sharp_stone, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.05, min: 0.00, median: 0.00, p95: 1.00, max: 1.00, sd: 0.23, n: 150}
-  - {animal: rat, weapon: stone_axe, escape_routes: 0, measure: turns, unit: turns, mean: 2.27, min: 1.00, median: 2.00, p95: 3.00, max: 5.00, sd: 0.60, n: 150}
-  - {animal: rat, weapon: stone_axe, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.33, min: 0.00, median: 0.00, p95: 1.00, max: 3.00, sd: 0.52, n: 150}
-  - {animal: rat, weapon: stone_axe, escape_routes: 1, measure: turns, unit: turns, mean: 1.18, min: 1.00, median: 1.00, p95: 2.00, max: 2.00, sd: 0.39, n: 150}
-  - {animal: rat, weapon: stone_axe, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.05, min: 0.00, median: 0.00, p95: 1.00, max: 1.00, sd: 0.23, n: 150}
-  - {animal: rat, weapon: spear, escape_routes: 0, measure: turns, unit: turns, mean: 2.73, min: 1.00, median: 2.00, p95: 6.00, max: 8.00, sd: 1.21, n: 150}
-  - {animal: rat, weapon: spear, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
-  - {animal: rat, weapon: spear, escape_routes: 1, measure: turns, unit: turns, mean: 1.36, min: 1.00, median: 1.00, p95: 2.00, max: 4.00, sd: 0.58, n: 150}
-  - {animal: rat, weapon: spear, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
-  - {animal: junglefowl, weapon: sharp_stone, escape_routes: 0, measure: turns, unit: turns, mean: 2.77, min: 1.00, median: 3.00, p95: 5.00, max: 6.00, sd: 0.98, n: 150}
-  - {animal: junglefowl, weapon: sharp_stone, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
-  - {animal: junglefowl, weapon: sharp_stone, escape_routes: 1, measure: turns, unit: turns, mean: 1.36, min: 1.00, median: 1.00, p95: 3.00, max: 4.00, sd: 0.68, n: 150}
-  - {animal: junglefowl, weapon: sharp_stone, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
-  - {animal: junglefowl, weapon: stone_axe, escape_routes: 0, measure: turns, unit: turns, mean: 2.74, min: 1.00, median: 3.00, p95: 5.00, max: 6.00, sd: 0.97, n: 150}
-  - {animal: junglefowl, weapon: stone_axe, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
-  - {animal: junglefowl, weapon: stone_axe, escape_routes: 1, measure: turns, unit: turns, mean: 1.36, min: 1.00, median: 1.00, p95: 3.00, max: 4.00, sd: 0.68, n: 150}
-  - {animal: junglefowl, weapon: stone_axe, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
-  - {animal: junglefowl, weapon: spear, escape_routes: 0, measure: turns, unit: turns, mean: 2.77, min: 1.00, median: 2.00, p95: 5.00, max: 8.00, sd: 1.23, n: 150}
-  - {animal: junglefowl, weapon: spear, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
-  - {animal: junglefowl, weapon: spear, escape_routes: 1, measure: turns, unit: turns, mean: 1.49, min: 1.00, median: 1.00, p95: 2.00, max: 5.00, sd: 0.68, n: 150}
-  - {animal: junglefowl, weapon: spear, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
   - {animal: monkey, weapon: sharp_stone, escape_routes: 0, measure: turns, unit: turns, mean: 5.42, min: 1.00, median: 5.00, p95: 9.00, max: 13.00, sd: 1.96, n: 150}
   - {animal: monkey, weapon: sharp_stone, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 1.31, min: 0.00, median: 1.00, p95: 3.00, max: 5.00, sd: 1.06, n: 150}
   - {animal: monkey, weapon: sharp_stone, escape_routes: 1, measure: turns, unit: turns, mean: 1.83, min: 1.00, median: 2.00, p95: 3.00, max: 5.00, sd: 0.85, n: 150}
@@ -49,6 +25,30 @@ encounter:
   - {animal: monkey, weapon: spear, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
   - {animal: monkey, weapon: spear, escape_routes: 1, measure: turns, unit: turns, mean: 2.01, min: 1.00, median: 2.00, p95: 4.00, max: 7.00, sd: 1.05, n: 150}
   - {animal: monkey, weapon: spear, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
+  - {animal: junglefowl, weapon: sharp_stone, escape_routes: 0, measure: turns, unit: turns, mean: 2.77, min: 1.00, median: 3.00, p95: 5.00, max: 6.00, sd: 0.98, n: 150}
+  - {animal: junglefowl, weapon: sharp_stone, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
+  - {animal: junglefowl, weapon: sharp_stone, escape_routes: 1, measure: turns, unit: turns, mean: 1.36, min: 1.00, median: 1.00, p95: 3.00, max: 4.00, sd: 0.68, n: 150}
+  - {animal: junglefowl, weapon: sharp_stone, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
+  - {animal: junglefowl, weapon: stone_axe, escape_routes: 0, measure: turns, unit: turns, mean: 2.74, min: 1.00, median: 3.00, p95: 5.00, max: 6.00, sd: 0.97, n: 150}
+  - {animal: junglefowl, weapon: stone_axe, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
+  - {animal: junglefowl, weapon: stone_axe, escape_routes: 1, measure: turns, unit: turns, mean: 1.36, min: 1.00, median: 1.00, p95: 3.00, max: 4.00, sd: 0.68, n: 150}
+  - {animal: junglefowl, weapon: stone_axe, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
+  - {animal: junglefowl, weapon: spear, escape_routes: 0, measure: turns, unit: turns, mean: 2.77, min: 1.00, median: 2.00, p95: 5.00, max: 8.00, sd: 1.23, n: 150}
+  - {animal: junglefowl, weapon: spear, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
+  - {animal: junglefowl, weapon: spear, escape_routes: 1, measure: turns, unit: turns, mean: 1.49, min: 1.00, median: 1.00, p95: 2.00, max: 5.00, sd: 0.68, n: 150}
+  - {animal: junglefowl, weapon: spear, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
+  - {animal: rat, weapon: sharp_stone, escape_routes: 0, measure: turns, unit: turns, mean: 2.35, min: 1.00, median: 2.00, p95: 4.00, max: 6.00, sd: 0.73, n: 150}
+  - {animal: rat, weapon: sharp_stone, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.35, min: 0.00, median: 0.00, p95: 1.00, max: 3.00, sd: 0.53, n: 150}
+  - {animal: rat, weapon: sharp_stone, escape_routes: 1, measure: turns, unit: turns, mean: 1.18, min: 1.00, median: 1.00, p95: 2.00, max: 2.00, sd: 0.39, n: 150}
+  - {animal: rat, weapon: sharp_stone, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.05, min: 0.00, median: 0.00, p95: 1.00, max: 1.00, sd: 0.23, n: 150}
+  - {animal: rat, weapon: stone_axe, escape_routes: 0, measure: turns, unit: turns, mean: 2.27, min: 1.00, median: 2.00, p95: 3.00, max: 5.00, sd: 0.60, n: 150}
+  - {animal: rat, weapon: stone_axe, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.33, min: 0.00, median: 0.00, p95: 1.00, max: 3.00, sd: 0.52, n: 150}
+  - {animal: rat, weapon: stone_axe, escape_routes: 1, measure: turns, unit: turns, mean: 1.18, min: 1.00, median: 1.00, p95: 2.00, max: 2.00, sd: 0.39, n: 150}
+  - {animal: rat, weapon: stone_axe, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.05, min: 0.00, median: 0.00, p95: 1.00, max: 1.00, sd: 0.23, n: 150}
+  - {animal: rat, weapon: spear, escape_routes: 0, measure: turns, unit: turns, mean: 2.73, min: 1.00, median: 2.00, p95: 6.00, max: 8.00, sd: 1.21, n: 150}
+  - {animal: rat, weapon: spear, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
+  - {animal: rat, weapon: spear, escape_routes: 1, measure: turns, unit: turns, mean: 1.36, min: 1.00, median: 1.00, p95: 2.00, max: 4.00, sd: 0.58, n: 150}
+  - {animal: rat, weapon: spear, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.00, min: 0.00, median: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 150}
   - {animal: wild_boar, weapon: sharp_stone, escape_routes: 0, measure: turns, unit: turns, mean: 22.88, min: 1.00, median: 15.00, p95: 60.00, max: 60.00, sd: 21.07, n: 150}
   - {animal: wild_boar, weapon: sharp_stone, escape_routes: 0, measure: wounds_taken, unit: wounds, mean: 6.07, min: 0.00, median: 5.00, p95: 13.00, max: 16.00, sd: 4.25, n: 150}
   - {animal: wild_boar, weapon: sharp_stone, escape_routes: 1, measure: turns, unit: turns, mean: 2.88, min: 1.00, median: 3.00, p95: 5.00, max: 8.00, sd: 1.26, n: 150}
@@ -63,24 +63,6 @@ encounter:
   - {animal: wild_boar, weapon: spear, escape_routes: 1, measure: wounds_taken, unit: wounds, mean: 0.22, min: 0.00, median: 0.00, p95: 1.00, max: 3.00, sd: 0.49, n: 150}
 
 ending:
-  - {animal: rat, weapon: sharp_stone, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
-  - {animal: rat, weapon: sharp_stone, escape_routes: 1, ending: felled, unit: percent, share: 18.67}
-  - {animal: rat, weapon: sharp_stone, escape_routes: 1, ending: fled, unit: percent, share: 81.33}
-  - {animal: rat, weapon: stone_axe, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
-  - {animal: rat, weapon: stone_axe, escape_routes: 1, ending: felled, unit: percent, share: 18.67}
-  - {animal: rat, weapon: stone_axe, escape_routes: 1, ending: fled, unit: percent, share: 81.33}
-  - {animal: rat, weapon: spear, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
-  - {animal: rat, weapon: spear, escape_routes: 1, ending: felled, unit: percent, share: 23.33}
-  - {animal: rat, weapon: spear, escape_routes: 1, ending: fled, unit: percent, share: 76.67}
-  - {animal: junglefowl, weapon: sharp_stone, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
-  - {animal: junglefowl, weapon: sharp_stone, escape_routes: 1, ending: felled, unit: percent, share: 22.67}
-  - {animal: junglefowl, weapon: sharp_stone, escape_routes: 1, ending: fled, unit: percent, share: 77.33}
-  - {animal: junglefowl, weapon: stone_axe, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
-  - {animal: junglefowl, weapon: stone_axe, escape_routes: 1, ending: felled, unit: percent, share: 24.00}
-  - {animal: junglefowl, weapon: stone_axe, escape_routes: 1, ending: fled, unit: percent, share: 76.00}
-  - {animal: junglefowl, weapon: spear, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
-  - {animal: junglefowl, weapon: spear, escape_routes: 1, ending: felled, unit: percent, share: 31.33}
-  - {animal: junglefowl, weapon: spear, escape_routes: 1, ending: fled, unit: percent, share: 68.67}
   - {animal: monkey, weapon: sharp_stone, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
   - {animal: monkey, weapon: sharp_stone, escape_routes: 1, ending: felled, unit: percent, share: 7.33}
   - {animal: monkey, weapon: sharp_stone, escape_routes: 1, ending: fled, unit: percent, share: 92.67}
@@ -90,6 +72,24 @@ ending:
   - {animal: monkey, weapon: spear, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
   - {animal: monkey, weapon: spear, escape_routes: 1, ending: felled, unit: percent, share: 51.33}
   - {animal: monkey, weapon: spear, escape_routes: 1, ending: fled, unit: percent, share: 48.67}
+  - {animal: junglefowl, weapon: sharp_stone, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
+  - {animal: junglefowl, weapon: sharp_stone, escape_routes: 1, ending: felled, unit: percent, share: 22.67}
+  - {animal: junglefowl, weapon: sharp_stone, escape_routes: 1, ending: fled, unit: percent, share: 77.33}
+  - {animal: junglefowl, weapon: stone_axe, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
+  - {animal: junglefowl, weapon: stone_axe, escape_routes: 1, ending: felled, unit: percent, share: 24.00}
+  - {animal: junglefowl, weapon: stone_axe, escape_routes: 1, ending: fled, unit: percent, share: 76.00}
+  - {animal: junglefowl, weapon: spear, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
+  - {animal: junglefowl, weapon: spear, escape_routes: 1, ending: felled, unit: percent, share: 31.33}
+  - {animal: junglefowl, weapon: spear, escape_routes: 1, ending: fled, unit: percent, share: 68.67}
+  - {animal: rat, weapon: sharp_stone, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
+  - {animal: rat, weapon: sharp_stone, escape_routes: 1, ending: felled, unit: percent, share: 18.67}
+  - {animal: rat, weapon: sharp_stone, escape_routes: 1, ending: fled, unit: percent, share: 81.33}
+  - {animal: rat, weapon: stone_axe, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
+  - {animal: rat, weapon: stone_axe, escape_routes: 1, ending: felled, unit: percent, share: 18.67}
+  - {animal: rat, weapon: stone_axe, escape_routes: 1, ending: fled, unit: percent, share: 81.33}
+  - {animal: rat, weapon: spear, escape_routes: 0, ending: felled, unit: percent, share: 100.00}
+  - {animal: rat, weapon: spear, escape_routes: 1, ending: felled, unit: percent, share: 23.33}
+  - {animal: rat, weapon: spear, escape_routes: 1, ending: fled, unit: percent, share: 76.67}
   - {animal: wild_boar, weapon: sharp_stone, escape_routes: 0, ending: felled, unit: percent, share: 79.33}
   - {animal: wild_boar, weapon: sharp_stone, escape_routes: 0, ending: undecided, unit: percent, share: 20.67}
   - {animal: wild_boar, weapon: sharp_stone, escape_routes: 1, ending: felled, unit: percent, share: 12.00}
@@ -102,42 +102,6 @@ ending:
   - {animal: wild_boar, weapon: spear, escape_routes: 1, ending: fled, unit: percent, share: 84.00}
 
 beast_move:
-  - {animal: rat, wariness: calm, consciousness: clear, braced_reach: false, unit: percent, moves: [{move: lurk, share: 100.00}]}
-  - {animal: rat, wariness: calm, consciousness: foggy, braced_reach: false, unit: percent, moves: [{move: lurk, share: 100.00}]}
-  - {animal: rat, wariness: calm, consciousness: dazed, braced_reach: false, unit: percent, moves: [{move: lurk, share: 100.00}]}
-  - {animal: rat, wariness: wary, consciousness: clear, braced_reach: false, unit: percent, moves: [{move: bit, share: 4.80}, {move: fled, share: 78.80}, {move: lurk, share: 16.40}]}
-  - {animal: rat, wariness: wary, consciousness: foggy, braced_reach: false, unit: percent, moves: [{move: bit, share: 4.00}, {move: fled, share: 63.40}, {move: lurk, share: 32.60}]}
-  - {animal: rat, wariness: wary, consciousness: dazed, braced_reach: false, unit: percent, moves: [{move: bit, share: 4.40}, {move: fled, share: 48.20}, {move: lurk, share: 47.40}]}
-  - {animal: rat, wariness: enraged, consciousness: clear, braced_reach: false, unit: percent, moves: [{move: bit, share: 4.80}, {move: fled, share: 78.80}, {move: lurk, share: 16.40}]}
-  - {animal: rat, wariness: enraged, consciousness: foggy, braced_reach: false, unit: percent, moves: [{move: bit, share: 4.00}, {move: fled, share: 63.40}, {move: lurk, share: 32.60}]}
-  - {animal: rat, wariness: enraged, consciousness: dazed, braced_reach: false, unit: percent, moves: [{move: bit, share: 4.40}, {move: fled, share: 48.20}, {move: lurk, share: 47.40}]}
-  - {animal: rat, wariness: calm, consciousness: clear, braced_reach: true, unit: percent, moves: [{move: lurk, share: 100.00}]}
-  - {animal: rat, wariness: calm, consciousness: foggy, braced_reach: true, unit: percent, moves: [{move: lurk, share: 100.00}]}
-  - {animal: rat, wariness: calm, consciousness: dazed, braced_reach: true, unit: percent, moves: [{move: lurk, share: 100.00}]}
-  - {animal: rat, wariness: wary, consciousness: clear, braced_reach: true, unit: percent, moves: [{move: fled, share: 69.00}, {move: lurk, share: 31.00}]}
-  - {animal: rat, wariness: wary, consciousness: foggy, braced_reach: true, unit: percent, moves: [{move: fled, share: 57.40}, {move: lurk, share: 42.60}]}
-  - {animal: rat, wariness: wary, consciousness: dazed, braced_reach: true, unit: percent, moves: [{move: fled, share: 43.80}, {move: lurk, share: 56.20}]}
-  - {animal: rat, wariness: enraged, consciousness: clear, braced_reach: true, unit: percent, moves: [{move: fled, share: 69.00}, {move: lurk, share: 31.00}]}
-  - {animal: rat, wariness: enraged, consciousness: foggy, braced_reach: true, unit: percent, moves: [{move: fled, share: 57.40}, {move: lurk, share: 42.60}]}
-  - {animal: rat, wariness: enraged, consciousness: dazed, braced_reach: true, unit: percent, moves: [{move: fled, share: 43.80}, {move: lurk, share: 56.20}]}
-  - {animal: junglefowl, wariness: calm, consciousness: clear, braced_reach: false, unit: percent, moves: [{move: lurk, share: 100.00}]}
-  - {animal: junglefowl, wariness: calm, consciousness: foggy, braced_reach: false, unit: percent, moves: [{move: lurk, share: 100.00}]}
-  - {animal: junglefowl, wariness: calm, consciousness: dazed, braced_reach: false, unit: percent, moves: [{move: lurk, share: 100.00}]}
-  - {animal: junglefowl, wariness: wary, consciousness: clear, braced_reach: false, unit: percent, moves: [{move: fled, share: 73.20}, {move: lurk, share: 26.80}]}
-  - {animal: junglefowl, wariness: wary, consciousness: foggy, braced_reach: false, unit: percent, moves: [{move: fled, share: 58.40}, {move: lurk, share: 41.60}]}
-  - {animal: junglefowl, wariness: wary, consciousness: dazed, braced_reach: false, unit: percent, moves: [{move: fled, share: 47.80}, {move: lurk, share: 52.20}]}
-  - {animal: junglefowl, wariness: enraged, consciousness: clear, braced_reach: false, unit: percent, moves: [{move: fled, share: 73.20}, {move: lurk, share: 26.80}]}
-  - {animal: junglefowl, wariness: enraged, consciousness: foggy, braced_reach: false, unit: percent, moves: [{move: fled, share: 58.40}, {move: lurk, share: 41.60}]}
-  - {animal: junglefowl, wariness: enraged, consciousness: dazed, braced_reach: false, unit: percent, moves: [{move: fled, share: 47.80}, {move: lurk, share: 52.20}]}
-  - {animal: junglefowl, wariness: calm, consciousness: clear, braced_reach: true, unit: percent, moves: [{move: lurk, share: 100.00}]}
-  - {animal: junglefowl, wariness: calm, consciousness: foggy, braced_reach: true, unit: percent, moves: [{move: lurk, share: 100.00}]}
-  - {animal: junglefowl, wariness: calm, consciousness: dazed, braced_reach: true, unit: percent, moves: [{move: lurk, share: 100.00}]}
-  - {animal: junglefowl, wariness: wary, consciousness: clear, braced_reach: true, unit: percent, moves: [{move: fled, share: 59.60}, {move: lurk, share: 40.40}]}
-  - {animal: junglefowl, wariness: wary, consciousness: foggy, braced_reach: true, unit: percent, moves: [{move: fled, share: 52.40}, {move: lurk, share: 47.60}]}
-  - {animal: junglefowl, wariness: wary, consciousness: dazed, braced_reach: true, unit: percent, moves: [{move: fled, share: 43.00}, {move: lurk, share: 57.00}]}
-  - {animal: junglefowl, wariness: enraged, consciousness: clear, braced_reach: true, unit: percent, moves: [{move: fled, share: 59.60}, {move: lurk, share: 40.40}]}
-  - {animal: junglefowl, wariness: enraged, consciousness: foggy, braced_reach: true, unit: percent, moves: [{move: fled, share: 52.40}, {move: lurk, share: 47.60}]}
-  - {animal: junglefowl, wariness: enraged, consciousness: dazed, braced_reach: true, unit: percent, moves: [{move: fled, share: 43.00}, {move: lurk, share: 57.00}]}
   - {animal: monkey, wariness: calm, consciousness: clear, braced_reach: false, unit: percent, moves: [{move: lurk, share: 36.80}, {move: snatched, share: 63.20}]}
   - {animal: monkey, wariness: calm, consciousness: foggy, braced_reach: false, unit: percent, moves: [{move: lurk, share: 58.40}, {move: snatched, share: 41.60}]}
   - {animal: monkey, wariness: calm, consciousness: dazed, braced_reach: false, unit: percent, moves: [{move: lurk, share: 70.20}, {move: snatched, share: 29.80}]}
@@ -156,6 +120,42 @@ beast_move:
   - {animal: monkey, wariness: enraged, consciousness: clear, braced_reach: true, unit: percent, moves: [{move: fled, share: 33.40}, {move: lurk, share: 66.60}]}
   - {animal: monkey, wariness: enraged, consciousness: foggy, braced_reach: true, unit: percent, moves: [{move: fled, share: 24.60}, {move: lurk, share: 75.40}]}
   - {animal: monkey, wariness: enraged, consciousness: dazed, braced_reach: true, unit: percent, moves: [{move: fled, share: 18.00}, {move: lurk, share: 82.00}]}
+  - {animal: junglefowl, wariness: calm, consciousness: clear, braced_reach: false, unit: percent, moves: [{move: lurk, share: 100.00}]}
+  - {animal: junglefowl, wariness: calm, consciousness: foggy, braced_reach: false, unit: percent, moves: [{move: lurk, share: 100.00}]}
+  - {animal: junglefowl, wariness: calm, consciousness: dazed, braced_reach: false, unit: percent, moves: [{move: lurk, share: 100.00}]}
+  - {animal: junglefowl, wariness: wary, consciousness: clear, braced_reach: false, unit: percent, moves: [{move: fled, share: 73.20}, {move: lurk, share: 26.80}]}
+  - {animal: junglefowl, wariness: wary, consciousness: foggy, braced_reach: false, unit: percent, moves: [{move: fled, share: 58.40}, {move: lurk, share: 41.60}]}
+  - {animal: junglefowl, wariness: wary, consciousness: dazed, braced_reach: false, unit: percent, moves: [{move: fled, share: 47.80}, {move: lurk, share: 52.20}]}
+  - {animal: junglefowl, wariness: enraged, consciousness: clear, braced_reach: false, unit: percent, moves: [{move: fled, share: 73.20}, {move: lurk, share: 26.80}]}
+  - {animal: junglefowl, wariness: enraged, consciousness: foggy, braced_reach: false, unit: percent, moves: [{move: fled, share: 58.40}, {move: lurk, share: 41.60}]}
+  - {animal: junglefowl, wariness: enraged, consciousness: dazed, braced_reach: false, unit: percent, moves: [{move: fled, share: 47.80}, {move: lurk, share: 52.20}]}
+  - {animal: junglefowl, wariness: calm, consciousness: clear, braced_reach: true, unit: percent, moves: [{move: lurk, share: 100.00}]}
+  - {animal: junglefowl, wariness: calm, consciousness: foggy, braced_reach: true, unit: percent, moves: [{move: lurk, share: 100.00}]}
+  - {animal: junglefowl, wariness: calm, consciousness: dazed, braced_reach: true, unit: percent, moves: [{move: lurk, share: 100.00}]}
+  - {animal: junglefowl, wariness: wary, consciousness: clear, braced_reach: true, unit: percent, moves: [{move: fled, share: 59.60}, {move: lurk, share: 40.40}]}
+  - {animal: junglefowl, wariness: wary, consciousness: foggy, braced_reach: true, unit: percent, moves: [{move: fled, share: 52.40}, {move: lurk, share: 47.60}]}
+  - {animal: junglefowl, wariness: wary, consciousness: dazed, braced_reach: true, unit: percent, moves: [{move: fled, share: 43.00}, {move: lurk, share: 57.00}]}
+  - {animal: junglefowl, wariness: enraged, consciousness: clear, braced_reach: true, unit: percent, moves: [{move: fled, share: 59.60}, {move: lurk, share: 40.40}]}
+  - {animal: junglefowl, wariness: enraged, consciousness: foggy, braced_reach: true, unit: percent, moves: [{move: fled, share: 52.40}, {move: lurk, share: 47.60}]}
+  - {animal: junglefowl, wariness: enraged, consciousness: dazed, braced_reach: true, unit: percent, moves: [{move: fled, share: 43.00}, {move: lurk, share: 57.00}]}
+  - {animal: rat, wariness: calm, consciousness: clear, braced_reach: false, unit: percent, moves: [{move: lurk, share: 100.00}]}
+  - {animal: rat, wariness: calm, consciousness: foggy, braced_reach: false, unit: percent, moves: [{move: lurk, share: 100.00}]}
+  - {animal: rat, wariness: calm, consciousness: dazed, braced_reach: false, unit: percent, moves: [{move: lurk, share: 100.00}]}
+  - {animal: rat, wariness: wary, consciousness: clear, braced_reach: false, unit: percent, moves: [{move: bit, share: 4.80}, {move: fled, share: 78.80}, {move: lurk, share: 16.40}]}
+  - {animal: rat, wariness: wary, consciousness: foggy, braced_reach: false, unit: percent, moves: [{move: bit, share: 4.00}, {move: fled, share: 63.40}, {move: lurk, share: 32.60}]}
+  - {animal: rat, wariness: wary, consciousness: dazed, braced_reach: false, unit: percent, moves: [{move: bit, share: 4.40}, {move: fled, share: 48.20}, {move: lurk, share: 47.40}]}
+  - {animal: rat, wariness: enraged, consciousness: clear, braced_reach: false, unit: percent, moves: [{move: bit, share: 4.80}, {move: fled, share: 78.80}, {move: lurk, share: 16.40}]}
+  - {animal: rat, wariness: enraged, consciousness: foggy, braced_reach: false, unit: percent, moves: [{move: bit, share: 4.00}, {move: fled, share: 63.40}, {move: lurk, share: 32.60}]}
+  - {animal: rat, wariness: enraged, consciousness: dazed, braced_reach: false, unit: percent, moves: [{move: bit, share: 4.40}, {move: fled, share: 48.20}, {move: lurk, share: 47.40}]}
+  - {animal: rat, wariness: calm, consciousness: clear, braced_reach: true, unit: percent, moves: [{move: lurk, share: 100.00}]}
+  - {animal: rat, wariness: calm, consciousness: foggy, braced_reach: true, unit: percent, moves: [{move: lurk, share: 100.00}]}
+  - {animal: rat, wariness: calm, consciousness: dazed, braced_reach: true, unit: percent, moves: [{move: lurk, share: 100.00}]}
+  - {animal: rat, wariness: wary, consciousness: clear, braced_reach: true, unit: percent, moves: [{move: fled, share: 69.00}, {move: lurk, share: 31.00}]}
+  - {animal: rat, wariness: wary, consciousness: foggy, braced_reach: true, unit: percent, moves: [{move: fled, share: 57.40}, {move: lurk, share: 42.60}]}
+  - {animal: rat, wariness: wary, consciousness: dazed, braced_reach: true, unit: percent, moves: [{move: fled, share: 43.80}, {move: lurk, share: 56.20}]}
+  - {animal: rat, wariness: enraged, consciousness: clear, braced_reach: true, unit: percent, moves: [{move: fled, share: 69.00}, {move: lurk, share: 31.00}]}
+  - {animal: rat, wariness: enraged, consciousness: foggy, braced_reach: true, unit: percent, moves: [{move: fled, share: 57.40}, {move: lurk, share: 42.60}]}
+  - {animal: rat, wariness: enraged, consciousness: dazed, braced_reach: true, unit: percent, moves: [{move: fled, share: 43.80}, {move: lurk, share: 56.20}]}
   - {animal: wild_boar, wariness: calm, consciousness: clear, braced_reach: false, unit: percent, moves: [{move: lurk, share: 37.80}, {move: smashed, share: 62.20}]}
   - {animal: wild_boar, wariness: calm, consciousness: foggy, braced_reach: false, unit: percent, moves: [{move: lurk, share: 62.80}, {move: smashed, share: 37.20}]}
   - {animal: wild_boar, wariness: calm, consciousness: dazed, braced_reach: false, unit: percent, moves: [{move: lurk, share: 74.80}, {move: smashed, share: 25.20}]}
@@ -176,15 +176,15 @@ beast_move:
   - {animal: wild_boar, wariness: enraged, consciousness: dazed, braced_reach: true, unit: percent, moves: [{move: fled, share: 18.00}, {move: gored, share: 7.00}, {move: lurk, share: 75.00}]}
 
 tracking:
-  - {animal: rat, weapon: sharp_stone, unit: turns, mean: 9.92, min: 2.00, median: 2.00, p95: 97.00, max: 97.00, sd: 27.42, n: 12, endings: [{ending: felled, share: 91.67}, {ending: left, share: 8.33}]}
-  - {animal: rat, weapon: stone_axe, unit: turns, mean: 9.92, min: 2.00, median: 2.00, p95: 97.00, max: 97.00, sd: 27.42, n: 12, endings: [{ending: felled, share: 91.67}, {ending: left, share: 8.33}]}
-  - {animal: rat, weapon: spear, unit: turns, mean: 49.50, min: 2.00, median: 2.00, p95: 97.00, max: 97.00, sd: 49.61, n: 12, endings: [{ending: felled, share: 50.00}, {ending: left, share: 50.00}]}
-  - {animal: junglefowl, weapon: sharp_stone, unit: turns, mean: 283.67, min: 97.00, median: 321.00, p95: 321.00, max: 321.00, sd: 87.19, n: 12, endings: [{ending: felled, share: 83.33}, {ending: left, share: 16.67}]}
-  - {animal: junglefowl, weapon: stone_axe, unit: turns, mean: 283.67, min: 97.00, median: 321.00, p95: 321.00, max: 321.00, sd: 87.19, n: 12, endings: [{ending: felled, share: 83.33}, {ending: left, share: 16.67}]}
-  - {animal: junglefowl, weapon: spear, unit: turns, mean: 49.50, min: 2.00, median: 2.00, p95: 97.00, max: 97.00, sd: 49.61, n: 12, endings: [{ending: felled, share: 50.00}, {ending: left, share: 50.00}]}
   - {animal: monkey, weapon: sharp_stone, unit: turns, mean: 271.75, min: 97.00, median: 330.00, p95: 330.00, max: 330.00, sd: 105.38, n: 12, endings: [{ending: felled, share: 75.00}, {ending: left, share: 25.00}]}
   - {animal: monkey, weapon: stone_axe, unit: turns, mean: 271.75, min: 97.00, median: 330.00, p95: 330.00, max: 330.00, sd: 105.38, n: 12, endings: [{ending: felled, share: 75.00}, {ending: left, share: 25.00}]}
   - {animal: monkey, weapon: spear, unit: turns, mean: 42.00, min: 1.00, median: 3.00, p95: 97.00, max: 97.00, sd: 48.55, n: 12, endings: [{ending: felled, share: 58.33}, {ending: left, share: 41.67}]}
+  - {animal: junglefowl, weapon: sharp_stone, unit: turns, mean: 283.67, min: 97.00, median: 321.00, p95: 321.00, max: 321.00, sd: 87.19, n: 12, endings: [{ending: felled, share: 83.33}, {ending: left, share: 16.67}]}
+  - {animal: junglefowl, weapon: stone_axe, unit: turns, mean: 283.67, min: 97.00, median: 321.00, p95: 321.00, max: 321.00, sd: 87.19, n: 12, endings: [{ending: felled, share: 83.33}, {ending: left, share: 16.67}]}
+  - {animal: junglefowl, weapon: spear, unit: turns, mean: 49.50, min: 2.00, median: 2.00, p95: 97.00, max: 97.00, sd: 49.61, n: 12, endings: [{ending: felled, share: 50.00}, {ending: left, share: 50.00}]}
+  - {animal: rat, weapon: sharp_stone, unit: turns, mean: 9.92, min: 2.00, median: 2.00, p95: 97.00, max: 97.00, sd: 27.42, n: 12, endings: [{ending: felled, share: 91.67}, {ending: left, share: 8.33}]}
+  - {animal: rat, weapon: stone_axe, unit: turns, mean: 9.92, min: 2.00, median: 2.00, p95: 97.00, max: 97.00, sd: 27.42, n: 12, endings: [{ending: felled, share: 91.67}, {ending: left, share: 8.33}]}
+  - {animal: rat, weapon: spear, unit: turns, mean: 49.50, min: 2.00, median: 2.00, p95: 97.00, max: 97.00, sd: 49.61, n: 12, endings: [{ending: felled, share: 50.00}, {ending: left, share: 50.00}]}
   - {animal: wild_boar, weapon: sharp_stone, unit: turns, mean: 289.67, min: 1.00, median: 441.00, p95: 441.00, max: 441.00, sd: 188.81, n: 12, endings: [{ending: felled, share: 66.67}, {ending: left, share: 33.33}]}
   - {animal: wild_boar, weapon: stone_axe, unit: turns, mean: 318.33, min: 1.00, median: 441.00, p95: 441.00, max: 441.00, sd: 182.92, n: 12, endings: [{ending: felled, share: 75.00}, {ending: left, share: 25.00}]}
   - {animal: wild_boar, weapon: spear, unit: turns, mean: 228.17, min: 1.00, median: 97.00, p95: 431.00, max: 431.00, sd: 181.04, n: 12, endings: [{ending: felled, share: 50.00}, {ending: left, share: 50.00}]}
