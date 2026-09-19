@@ -34,8 +34,8 @@ export interface StartupNeed {
 }
 
 /**
- * 測る対象（ContentSkeleton.md 2.3節）。**1つの土地では揃わない**ことがこの表の要点で、
- * 荒野は火口・錐・刃を持つが軸が無く、砂浜は軸と水しか持たない。
+ * 測る対象（ContentSkeleton.md 2.3節）。**1つの土地では揃わない**ことがこの表の要点で、どの土地が
+ * 何を持つかは`stats/startup_reach.yaml`の`location_supplies`の`needs`が出す。
  */
 export const STARTUP_NEEDS: readonly StartupNeed[] = [
   { label: '火口', sourceObjectNames: ['dry_grass'] },
