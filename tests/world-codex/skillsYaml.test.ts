@@ -148,16 +148,16 @@ const RECIPES_WITHOUT_DEFTNESS = [
 ];
 
 /**
- * 入口（実行経路で腕を配る操作、SkillSystem.md 3節）が1本だけの腕。**1本でよいと決めた分だけ**が
+ * 入口（実行経路で腕を配る口、SkillSystem.md 3節）が1本だけの腕。**1本でよいと決めた分だけ**が
  * 並ぶ——理由は1本ずつ、その入口のコメントに書いてある（同3.2.1節。**コメントが本数に触れている
  * ところまで**を下の検査が見張る）。
  *
- * **並べるのは「入口は1本でよい」と決めた腕で、1本で足りる理由の種類は問わない**——火と保存は担う手
- * そのものが1つ、料理は担う手が複数あっても置ける相手が1つ（docs/world/Skills.md
- * 2.2・2.4・2.5・2.6節）。どれであるかは内容の判断なので、ここが見るのは決めずに素通りできない
- * ことだけ。
+ * **口は手作業だけではない**——手際を名乗るレシピの工程も伸ばす（同3.4節）ので、そちらを持つ腕は
+ * ここに並ばない。残っているのは、名乗るレシピを1つも持たない腕だけ：火はアクセス系なので名乗れず
+ * （docs/world/Skills.md 2.2節）、料理は開けるレシピも名乗るレシピもまだ無い（同2.5節）。
+ * どちらであるかは内容の判断なので、ここが見るのは決めずに素通りできないことだけ。
  */
-const SKILLS_WITH_ONE_ENTRY = ['skill_cooking', 'skill_firecraft', 'skill_knapping', 'skill_preserving'];
+const SKILLS_WITH_ONE_ENTRY = ['skill_cooking', 'skill_firecraft'];
 
 /**
  * 製作系の腕（Skills.md 2節）と、その段が押し上げる上乗せ（同7節）。**速さの上乗せはここに無い**
@@ -879,21 +879,33 @@ function declaredSurplusBranches(): readonly SurplusBranch[] {
 }
 
 /**
- * 腕ごとの入口——実行経路でその腕を配る操作（SkillSystem.md 3節）を、腕の名前で引けるようにしたもの。
+ * 腕ごとの入口——実行経路でその腕を配る口（SkillSystem.md 3節）を、腕の名前で引けるようにしたもの。
+ * **手作業とレシピの両方が並ぶ**（レシピの工程も実行経路、同3.4節）。
+ *
+ * **レシピの名乗りはロードしないと読めない**ので、`<完成品>.<レシピ>` と腕の組を呼び手が渡す。
+ * コメントはどちらも構文木から引く（手作業は操作の直上、レシピは`commentsAboveRecipes`）。
  *
  * **発見の契機は入らない。** `declaredInteractions`が数える`skills`は操作の直下の`add`だけで、`pick`の
  * 候補に埋めたものは拾わない（同3.3節）——**時間を投じて繰り返せる手はこちらだけ**で、探索の契機は
  * 何に出くわしたかが決めるので、投じ先として選べない。
  */
-function entriesBySkill(): ReadonlyMap<string, readonly InteractionGains[]> {
-  const bySkill = new Map<string, InteractionGains[]>();
+function entriesBySkill(
+  namedRecipes: readonly { where: string; skill: string }[],
+): ReadonlyMap<string, readonly { where: string; comment: string }[]> {
+  const bySkill = new Map<string, { where: string; comment: string }[]>();
+  const push = (skill: string, entry: { where: string; comment: string }): void => {
+    const entries = bySkill.get(skill) ?? [];
+    bySkill.set(skill, entries);
+    entries.push(entry);
+  };
 
   for (const interaction of declaredInteractions())
-    for (const skill of interaction.skills) {
-      const entries = bySkill.get(skill) ?? [];
-      bySkill.set(skill, entries);
-      entries.push(interaction);
-    }
+    for (const skill of interaction.skills)
+      push(skill, { where: interaction.name, comment: interaction.comment });
+
+  const comments = commentsAboveRecipes();
+  for (const { where, skill } of namedRecipes) push(skill, { where, comment: comments.get(where) ?? '' });
+
   return bySkill;
 }
 
@@ -951,6 +963,21 @@ describe('腕前とレシピの解放条件', () => {
   /** 解放条件を持つレシピすべて（完成品の名前を添える）。 */
   function gatedRecipes(): readonly { product: string; recipe: RecipeDef }[] {
     return allRecipes().filter(({ recipe }) => recipe.unlock !== undefined);
+  }
+
+  /**
+   * 手際を名乗っているレシピ——`<完成品>.<レシピ>` と、名乗った腕の名前。**名乗りは速さと伸びの
+   * 両方を決める**（SkillSystem.md 3.4節）ので、入口を数える側も量を見る側もこの1本から引く。
+   */
+  function namedRecipes(): readonly { where: string; skill: string; product: string; recipe: RecipeDef }[] {
+    return allRecipes()
+      .filter(({ recipe }) => recipe.deftness !== undefined)
+      .map(({ product, recipe }) => ({
+        where: `${product}.${recipe.name}`,
+        skill: codex.propertyNames.getName(recipe.deftness!.skillGlobalId),
+        product,
+        recipe,
+      }));
   }
 
   /**
@@ -1455,12 +1482,13 @@ describe('腕前とレシピの解放条件', () => {
     ).toEqual([]);
   });
 
-  it('レシピが名乗る手際は、伸ばす操作を持つ腕のもの', () => {
-    // **上げようのない腕が速さを握らない**（docs/world/Skills.md 7.1節）。伸ばす操作をまだ持たない
-    // 腕を名乗ると、そのレシピの工程は誰にも縮められない時間になる——腕は宣言だけ先に置かれる
-    // （SkillSystem.md 3.2節）ので、名乗る側が先走れてしまう。
+  it('レシピが名乗る手際は、レシピの外にも伸ばす口を持つ腕のもの', () => {
+    // **名乗りがその腕の唯一の口にならない**（docs/world/Skills.md 7.1節）。名乗ったレシピの工程は
+    // その腕を伸ばすが（SkillSystem.md 3.4節）、**解放を要求した瞬間に自分で自分を塞ぐ**ので、
+    // 立ち上がりは宣言の側（手作業か発見）が担っていなければならない（同3.2節）。腕は宣言だけ先に
+    // 置かれるため、名乗る側が先走れてしまう。
     //
-    // **アクセス系も同じくここで落ちる**（それを配る操作は無いので）。火の腕が決めるのは着火の
+    // **アクセス系も同じくここで落ちる**（それを配る宣言は無いので）。火の腕が決めるのは着火の
     // 重みだけで、火起こし具を削る速さではない（同5節）。
     const gains = declaredSkillGains();
 
@@ -1536,27 +1564,55 @@ describe('腕前とレシピの解放条件', () => {
     }
   }
 
-  it('レシピの工程を最後まで進めても、作り手の腕前は1つも動かない', () => {
-    // SkillSystem.md 3.4節。**レシピは速くなる側にしか居ない**——工程が何の技術かは宣言に現れない
-    // （要求と仕事の量しか持たない）ので、`deftness`が名乗った1本へ伸びまで積むと、別の技術に費やした
-    // 時間がその腕の練習として数えられる（石斧なら、紐を締めた1時間で石器が伸びる）。
+  it('レシピの工程を進めると、名乗った腕だけが、その工程の長さぶん伸びる', () => {
+    // SkillSystem.md 3.4節。**レシピの工程も実行経路**で、配る腕を決めるのは`deftness`の名乗り1本。
     //
-    // **宣言で配る形は、下の「腕を配る `add` は、長さを持つ操作の中にしかない」が止める**（`surplus`の
-    // 枝へ`add`を置いても、操作の外の`add`として数が合わなくなる）。**ここが見るのはエンジンの側**
-    // （crafting.tryAdvanceCrafting）で、そちらは宣言を読むだけでは見えない——**だから実際に工程を回す。**
+    // **宣言を読むだけでは見えない。** 工程には`add`を書ける場所が無く、配っているのはengine
+    // （crafting.tryAdvanceCrafting）なので、**実際に工程を回して腕前を引き比べる**しかない。
     //
-    // **名乗っているレシピだけを見ない。** 名乗っていないレシピへ配る実装も同じ線を破るので、世界の
-    // レシピを全部回す。**工程が進んだことも一緒に見る**のは、素材を入れ損ねて「進まないから動かない」
-    // が緑になるのを防ぐため。
-    const recipes = allRecipes();
-    expect(recipes.length, 'レシピが世界に1つも無い').toBeGreaterThan(0);
+    // **量は規則の側から組み直す**（MINUTES_PER_GAINで割って切り上げ）——engineの定数を引いてくると
+    // 同じ式を2度書くだけになり、規則から外れても緑のままになる。
+    //
+    // **名乗っていない腕が動かないことも同じ回で見る**——名乗りとは別の腕へ配る実装は、伸びる側だけを
+    // 見ていると素通りする。
+    const named = namedRecipes();
+    expect(named.length, '手際を名乗るレシピが1つも無い').toBeGreaterThan(0);
 
-    for (const { product, recipe } of recipes) {
+    for (const { where, skill, product, recipe } of named) {
       const { session, inProgress, maker } = startCrafting(product, recipe);
-      // 熟達させてから回す——素人の段でも名乗りは読まれるが（RecipeDef.minutesFor）、実際に縮む枝は
-      // 通らない。腕が効いている側で見ておかないと、縮める枝の隣へ置かれた加算を素通りする。
-      const expected = STAGES.at(-1)!.min;
-      for (const id of skillIds) maker.getProperty(id).setNumberWithoutEvents(expected);
+      // **熟達させてから回す**——素人の段でも名乗りは読まれるが（RecipeDef.minutesFor）、実際に縮む枝は
+      // 通らない。腕が効いている側で見ておかないと、縮める枝の隣へ置かれた配り方を素通りする。
+      const start = STAGES.at(-1)!.min;
+      for (const id of skillIds) maker.getProperty(id).setNumberWithoutEvents(start);
+      const namedSkillId = codex.propertyNames.getId(skill);
+      let expected = start;
+
+      for (const [index, step] of recipe.steps.entries()) {
+        supplyStep(inProgress, session, step);
+        expect(tryAdvanceCrafting(inProgress, maker), `'${where}' の工程${index + 1}が進まない`).toBe(true);
+        expected += Math.ceil(step.durationMinutes / MINUTES_PER_GAIN);
+        expect(
+          maker.getProperty(namedSkillId).number,
+          `'${where}' の工程${index + 1}（${step.durationMinutes}分）を終えた後の ${skill}`,
+        ).toBe(expected);
+      }
+
+      for (const [index, id] of skillIds.entries())
+        if (SKILLS[index] !== skill)
+          expect(maker.getProperty(id).number, `'${where}' を作ったら ${SKILLS[index]} が動いた`).toBe(start);
+    }
+  });
+
+  it('手際を名乗らないレシピは、どの腕も伸ばさない', () => {
+    // 一つ上と対。**名乗らないことが「どの腕の仕事でもない」と決めた印**（docs/world/Skills.md 7.1節）
+    // なので、名乗りを見ずに配る実装——工程の長さだけから適当な腕へ配るような——をここで止める。
+    const unnamed = allRecipes().filter(({ recipe }) => recipe.deftness === undefined);
+    expect(unnamed.length, '手際を名乗らないレシピが1つも無い').toBeGreaterThan(0);
+
+    for (const { product, recipe } of unnamed) {
+      const { session, inProgress, maker } = startCrafting(product, recipe);
+      const start = STAGES.at(-1)!.min;
+      for (const id of skillIds) maker.getProperty(id).setNumberWithoutEvents(start);
 
       for (const [index, step] of recipe.steps.entries()) {
         supplyStep(inProgress, session, step);
@@ -1570,7 +1626,7 @@ describe('腕前とレシピの解放条件', () => {
         expect(
           maker.getProperty(id).number,
           `'${product}.${recipe.name}' を作ったら ${SKILLS[index]} が動いた`,
-        ).toBe(expected);
+        ).toBe(start);
     }
   });
 
@@ -1772,7 +1828,7 @@ describe('腕前とレシピの解放条件', () => {
     expect(checked, '実行で腕を配る操作が1つも無い').toBeGreaterThan(0);
   });
 
-  it('実行で腕が時間あたりに伸びる速さは、どの操作でも同じ幅に収まる', () => {
+  it('実行で腕が時間あたりに伸びる速さは、どの口でも同じ幅に収まる', () => {
     // 一つ上は**長さとの対応しか見ない**ので、`ceil`が丸め上げるぶんは素通りする——1分の操作へ
     // 1を配れば規則どおりだが、時間あたりは60になる。**守りたいのは速さのほう**（SkillSystem.md
     // 3節）なので、そこはここで留める。**操作を数え上げない**ので、次に足された操作も同じ幅を
@@ -1798,6 +1854,25 @@ describe('腕前とレシピの解放条件', () => {
         ).toBeLessThanOrEqual(GAIN_PER_HOUR.max);
       }
     }
+
+    // **レシピの工程も同じ幅に入る**（SkillSystem.md 3.4節）。**手作業と違って配らない選択肢が無い**
+    // ので、刻み1つより短い工程を名乗るレシピへ置くと、ここでだけ止まる。
+    const expert = characterWithSkills(STAGES.at(-1)!.min);
+    for (const { where, recipe } of namedRecipes())
+      for (const [index, step] of recipe.steps.entries()) {
+        const minutes = step.durationMinutes;
+        const amount = Math.ceil(minutes / MINUTES_PER_GAIN);
+        const at = `${where} の工程${index + 1}（${minutes}分に${amount}）`;
+        expect((amount * 60) / minutes, `${at}: 時間あたりが速すぎる`).toBeLessThanOrEqual(GAIN_PER_HOUR.max);
+        expect((amount * 60) / minutes, `${at}: 時間あたりが遅すぎる`).toBeGreaterThanOrEqual(
+          GAIN_PER_HOUR.min,
+        );
+        const shortest = recipe.minutesFor(step, expert);
+        expect(
+          (amount * 60) / shortest,
+          `${at}: 腕で${shortest}分まで縮んだとき、時間あたりが速すぎる`,
+        ).toBeLessThanOrEqual(GAIN_PER_HOUR.max);
+      }
   });
 
   it('腕を配る `add` は、長さを持つ操作の中にしかない', () => {
@@ -1929,7 +2004,7 @@ describe('腕前とレシピの解放条件', () => {
     // 決めた覚えの無い腕がここへ落ちてくるのを止める——**新しい腕も、入口が減った腕も、口を足すか、
     // 数え上げへ足すかを選ぶことになる。** 1本でよいかは内容の判断（拠り所はdocs/world/Skills.mdが
     // 腕ごとに持つ）で、見るのは決めずに素通りできないことだけ。
-    const entries = entriesBySkill();
+    const entries = entriesBySkill(namedRecipes());
 
     expect(SKILLS.filter((name) => entries.get(name)?.length === 1).sort()).toEqual(SKILLS_WITH_ONE_ENTRY);
   });
@@ -1943,7 +2018,7 @@ describe('腕前とレシピの解放条件', () => {
     // **落ちるのはコメントごと忘れたときだけ**——理由として読めるかは人が読む。
     //
     // **語を2つとも求める**——どちらか1つなら、本数と関わりのない文でも当たってしまう。
-    const entries = entriesBySkill();
+    const entries = entriesBySkill(namedRecipes());
 
     expect(
       SKILLS_WITH_ONE_ENTRY.filter((name) => {

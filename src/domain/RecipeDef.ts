@@ -60,6 +60,19 @@ export class RecipeRequirementDef {
 const MINIMUM_STEP_MINUTES = MINUTES_PER_TICK;
 
 /**
+ * 実行経路が腕前へ1を配るごとの分数（docs/engine/SkillSystem.md 3節）。端数は切り上げるので、
+ * 30分までの手が+1、1時間の手が+2になる。
+ *
+ * **手作業はこの値をYAMLへ書き下す**（`add`の量。揃っているかは
+ * tests/world-codex/skillsYaml.test.tsが見張る）。**レシピの工程は書ける場所が無い**ので
+ * （工程が持つのは要求と仕事の量だけ、13.1節）、ここで同じ規則を引く。
+ *
+ * **exportしない。** 検査の側は規則から組み直した値で引き比べる（同ファイル）ので、ここを引かせると
+ * 同じ式を2度書くだけになり、規則から外れても緑のままになる。
+ */
+const MINUTES_PER_SKILL_GAIN = 30;
+
+/**
  * その腕がその段に届いている作り手にとって、工程1つが何分縮むか（13.5節）。
  *
  * **どの腕が・どの段から・何分縮めるかは、レシピごとに宣言する**（docs/world/Skills.md 7節）。
@@ -193,6 +206,24 @@ export class RecipeDef {
     return deftness !== undefined && deftness.appliesTo(agent)
       ? step.durationMinutes + deftness.minutes
       : step.durationMinutes;
+  }
+
+  /**
+   * 工程を1つ終えた作り手の腕前を、実行経路のぶんだけ伸ばす（docs/engine/SkillSystem.md 3.4節）。
+   *
+   * **伸ばす腕を決めるのは`deftness`の名乗り**（13.5節）——どのレシピがどの腕の仕事かを言う宣言は
+   * これしか無いので、速さと伸びは同じ1本が決める。名乗っていないレシピは、どの腕の仕事でもないと
+   * 決めた印なので何もしない。
+   *
+   * **量は工程が宣言した仕事の量から決まり、手際で縮んだ時間からではない**——縮んだぶんは同じ量が
+   * 短い時間で届く形になり、手作業で腕が上がったときと揃う（同3節）。
+   */
+  advanceSkillOf(agent: WorldObject, step: RecipeStepDef): void {
+    const deftness = this.deftness;
+    if (deftness === undefined) return;
+    agent
+      .tryGetProperty(deftness.skillGlobalId)
+      ?.add(Math.ceil(step.durationMinutes / MINUTES_PER_SKILL_GAIN));
   }
 
   /**
