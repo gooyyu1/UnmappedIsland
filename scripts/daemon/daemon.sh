@@ -154,8 +154,12 @@ STATE_DIR="${BOARD_STATE:-$HOME/.claude/board-state}"
 DAEMON_LOG="${DAEMON_LOG:-$HOME/daemon.log}"
 # `stop` が、撃った相手の錠が外れるのを待つ上限。周の途中で受けたぶんは、その周を終えてから止まる。
 STOP_WAIT="${STOP_WAIT:-90}"
-# `start` が、立てた相手の心拍を待つ上限。
+# `start` が、立てた相手が畳む備えまで進むのを待つ上限（下の `READYFILE`）。
 START_WAIT="${START_WAIT:-30}"
+# 待ち合わせで見に行く刻み。**上の2つとは別のこと**——あちらは「どこまで待つか」、こちらは
+# 「どれくらい細かく見に行くか」。1秒刻みで見ると、ミリ秒で終わった起動・停止にもまるまる1秒を
+# 足して返すので、**待った時間が相手の速さではなく刻みで決まる。**
+POLL_SECONDS=0.05
 
 # 走る実体。**錠の外に置く**——錠より長生きで、`stop` して `start` し直しても同じ場所を使う。
 COPY="$STATE_DIR/daemon-running.sh"
@@ -174,6 +178,10 @@ CHECKED="$STATE_DIR/checked"
 # **入るのは bash のPID空間の番号で、撃つのも bash から。** MSYS2（ブリッジ）ではこれが Windows の
 # PIDと別物なので、Windows のプロセスとして撃つと、届かないか無関係なプロセスに当たる。
 PIDFILE="$LOCK/pid"
+# **畳む備えができたと名乗る印。錠の中に、名乗った者のPIDを置く。** `start` はこれが自分の立てた
+# PIDになるまで待つ（下の「背景で立てて」）。**PIDファイルでは代われない**——あちらは錠を取った
+# 直後、まだ `trap` を張る前に書くので、撃たれたら錠を残したまま死ぬ地点でも既に在る。
+READYFILE="$LOCK/ready"
 # 1周が掛かってよい上限。心拍は周の頭にしか書かないので、**時間の掛かる手（マージ）の最中に錠を
 # 取り上げられない**だけの幅が要る。**`INTERVAL` の倍数では表さない**——待つ間隔を詰めると、周に
 # 許す時間まで一緒に縮んでしまう。この2つは別のことを測っている。
@@ -199,6 +207,31 @@ beating() {
 # 走っているか。**錠と心拍の両方を見る**——心拍は錠の外にあるので、綺麗に止めた直後もしばらく
 # 新しいままで、心拍だけでは「止めた」と「動いている」が同じに見える。
 running() { [ -d "$LOCK" ] && beating; }
+
+# 錠が外れていれば0。**`running` の裏ではない**——`running` は心拍も見るが、`stop` が待っているのは
+# 錠が外れることそのもの（心拍は錠の外なので、綺麗に止めた直後もしばらく新しいまま）。
+lock_gone() { [ ! -d "$LOCK" ]; }
+
+# `$1` で立てたものが、畳む備えまで進んだか。**`running` では答えられない**——心拍は錠の外なので
+# `stop` した直後もしばらく新しいままで、`running` は「錠が在る」だけに縮む。錠を作るのは立ち上がり
+# の頭なので、立てたばかりの相手が**まだ `trap` を張っていない地点**でも真になってしまう。
+ready_as() { [ "$(cat "$READYFILE" 2>/dev/null)" = "$1" ]; }
+
+# `$1` 秒を上限に、残りの引数が表すコマンドが0で終わるまで待つ。待ちきったら非0。
+#
+#   wait_for "$STOP_WAIT" lock_gone
+#
+# **上限は時計で測り、刻みの回数では数えない。** 数えると `$1` の意味が「秒」から「見に行く回数」へ
+# 変わるので、刻みを細かくしたぶんだけ上限が縮み、負荷で刻みが伸びたぶんは上限に乗らない。
+wait_for() {
+  local deadline_ms
+  deadline_ms=$(($(date -u +%s%3N) + $1 * 1000))
+  shift
+  while ! "$@"; do
+    [ "$(date -u +%s%3N)" -lt "$deadline_ms" ] || return 1
+    sleep "$POLL_SECONDS"
+  done
+}
 
 # 周とは別の間隔で叩くものの、時計。**満ちていれば0を返し、叩いた時刻を控える。**
 #
@@ -270,7 +303,7 @@ stop_daemon() {
     echo "走っていない"
     return 0
   fi
-  local pid='' waited=0
+  local pid=''
   [ ! -f "$PIDFILE" ] || pid=$(cat "$PIDFILE")
   # 撃つ相手が居ないのに待っても、錠は永久に外れない。**落ちた跡はここで片付ける**——次の `start`
   # まで残すと、心拍が腐るまでの間だけ「走っている」と答え続ける。
@@ -280,11 +313,7 @@ stop_daemon() {
     return 0
   fi
   kill "$pid" 2>/dev/null || true
-  while [ -d "$LOCK" ] && [ "$waited" -lt "$STOP_WAIT" ]; do
-    sleep 1
-    waited=$((waited + 1))
-  done
-  if [ -d "$LOCK" ]; then
+  if ! wait_for "$STOP_WAIT" lock_gone; then
     echo "${STOP_WAIT}秒待っても止まらなかった（$pid）" >&2
     return 1
   fi
@@ -353,7 +382,10 @@ sync_origin() {
   fi
 }
 
-# 背景で立てて、心拍が出るまで待つ。**立ったことを確かめてから返す**ので、呼び手は待たない。
+# 背景で立てて、**立てたものが畳む備えまで進むのを待つ**。確かめてから返すので、呼び手は待たない。
+#
+# **待つ相手は「誰かが走っていること」ではなく「自分が立てたものが立ったこと」。** `restart` のように
+# 直前まで別のものが走っていた場では、前の心拍が残っているので前者は当てにならない。
 start_daemon() {
   if running; then
     echo "既に走っている（最終 $(cat "$HEARTBEAT")）"
@@ -361,18 +393,14 @@ start_daemon() {
   fi
   # **寄せてから読ませる。** `nohup` が `$SOURCE` を開くのは寄せ終わった後なので、寄せられたなら
   # 立つのは新しい版。
-  local waited=0
   sync_origin
   nohup bash "$SOURCE" run >>"$DAEMON_LOG" 2>&1 &
-  while [ "$waited" -lt "$START_WAIT" ]; do
-    if running; then
-      echo "立てた（$synced_said。ログは $DAEMON_LOG）"
-      return 0
-    fi
-    sleep 1
-    waited=$((waited + 1))
-  done
-  echo "${START_WAIT}秒待っても心拍が出なかった（$synced_said。$DAEMON_LOG を見る）" >&2
+  # **立てたもののPIDで待つ。** `exec` はPIDを持ち越すので、複製へ移った先が名乗るのも同じ番号。
+  if wait_for "$START_WAIT" ready_as "$!"; then
+    echo "立てた（$synced_said。ログは $DAEMON_LOG）"
+    return 0
+  fi
+  echo "${START_WAIT}秒待っても立ち上がらなかった（$synced_said。$DAEMON_LOG を見る）" >&2
   return 1
 }
 
@@ -441,6 +469,11 @@ napping=''
 unreadable=''
 trap 'stopping=1; [ -z "$napping" ] || kill "$napping" 2>/dev/null || true' TERM INT
 
+# **畳む備えができたと名乗るのはここ**（上の `READYFILE`）——撃たれても錠を残さずに終われる地点。
+# **`trap` を張る前に名乗らない。** 複製へ移る `exec` は trap を落としていくので、そこから張り直す
+# までの間に撃たれると、錠だけが残って `stop` が待ちきることになる。
+echo $$ >"$READYFILE"
+
 # **回っている版そのもの**（＝走っている複製の中身）。周の終わりに、複製元をここと見比べる。
 loaded=$(<"$COPY")
 
@@ -495,8 +528,22 @@ while true; do
   # `INTERVAL` ぶん止まらない。
   nap="$INTERVAL"
   [ "$failures" -lt "$FAILURE_LIMIT" ] || nap="$RETRY_INTERVAL"
+  # **撃たれていたら、寝床を作らずに出る。** 上の `trap` は控えたものしか撃てないので、**控える前に
+  # 受けたぶんは誰も起こしに来ない**——`stopping` が立っているのに寝入って、次に見るのが寝終わった後に
+  # なる（周の終わりに撃たれると `INTERVAL`、引けずにいれば `RETRY_INTERVAL` ぶん）。
+  [ -z "$stopping" ] || break
   sleep "$nap" &
   napping=$!
+  # **控えた後にもう一度見る。** 上の判定からここまでの間に受けたぶんは、まだ誰も起こしに来ていない。
+  #
+  # **起こしたら、寝床が畳まれるのを待たずに出る。** 起こしの合図は、寝床が `sleep` へ `exec` で
+  # 入れ替わる手前に届くと落ちる——受け取ったのは入れ替わる前のプロセスで、入れ替わった先はそれを
+  # 知らない。**待つと、届かなかった一回のために寝一回ぶん止まる。** 残った `sleep` を待つ者はもう
+  # 居ないので、放って出てよい。
+  if [ -n "$stopping" ]; then
+    kill "$napping" 2>/dev/null || true
+    break
+  fi
   wait "$napping" || true
   napping=''
   [ -z "$stopping" ] || break
