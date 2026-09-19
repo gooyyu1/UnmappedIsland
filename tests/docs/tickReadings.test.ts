@@ -45,8 +45,10 @@ const QUANTITY = String.raw`(${NUMBER})(?:〜(${NUMBER}))?\s*(tick|${UNIT})`;
 const TICK_AT_END = new RegExp(String.raw`(${NUMBER})(?:〜(${NUMBER}))?\s*tick\s*$`);
 /** 丸括弧の中がtickの数そのもの。 */
 const TICK_ALONE = new RegExp(String.raw`^\s*(${NUMBER})(?:〜(${NUMBER}))?\s*tick\s*$`);
-/** 人の単位の数量が末尾にある（`54時間`・`1時間15分`・`2.5〜5日`）。 */
-const HUMAN_AT_END = new RegExp(String.raw`(?:(?:${NUMBER})(?:〜(?:${NUMBER}))?\s*(?:${UNIT})\s*)+$`);
+/** 人の単位を連ねた1つ（`54時間`・`1時間15分`）。 */
+const COMPOSITION = String.raw`(?:${NUMBER}\s*(?:${UNIT})\s*)+`;
+/** 人の単位の数量が末尾にある（`54時間`・`2.5〜5日`・`30 分〜1 時間`）。 */
+const HUMAN_AT_END = new RegExp(String.raw`(?:(?:${COMPOSITION}|${NUMBER}\s*)〜)?${COMPOSITION}$`);
 /** `＝` の手前で、間に別の数を挟まずに最も近い数量。 */
 const QUANTITY_BEFORE = new RegExp(String.raw`${QUANTITY}[^\d]*$`);
 /** `＝` の後ろで、間に別の数を挟まずに最も近い数量。 */
@@ -68,22 +70,42 @@ function minutesOf(low: string, high: string | undefined, unit: string): [number
   return [valueOf(low) * perUnit, valueOf(high ?? low) * perUnit];
 }
 
-/** 人の単位だけで組み立てた文字列（`1時間15分`）を分の幅へ直す。組み立てられなければundefined。 */
-function humanMinutes(text: string): [number, number] | undefined {
-  const part = new RegExp(String.raw`^\s*(${NUMBER})(?:〜(${NUMBER}))?\s*(${UNIT})`);
+/** 人の単位だけを連ねた文字列（`1時間15分`）を分へ直す。連ねきれなければundefined。 */
+function composedMinutes(text: string): number | undefined {
+  const part = new RegExp(String.raw`^\s*(${NUMBER})\s*(${UNIT})`);
   let rest = text.trim();
-  let low = 0;
-  let high = 0;
+  let minutes = 0;
   if (rest.length === 0) return undefined;
   while (rest.length > 0) {
     const matched = part.exec(rest);
     if (matched === null) return undefined;
-    const [lowMinutes, highMinutes] = minutesOf(matched[1], matched[2], matched[3]);
-    low += lowMinutes;
-    high += highMinutes;
+    minutes += minutesOf(matched[1], undefined, matched[2])[0];
     rest = rest.slice(matched[0].length).trim();
   }
-  return [low, high];
+  return minutes;
+}
+
+/**
+ * 人の単位で書いた文字列を分の幅へ直す。組み立てられなければundefined。
+ *
+ * **幅の両端は、単位が違っていてもよい**（`30 分〜1 時間`）。11節は「幅を持つなら両側とも `〜` で
+ * 書きます」としか言っていないので、片側だけ数で書いた形（`2.5〜5日`）と同じに読めないと、
+ * 11節に従って書いた記述が照合から静かに外れる。
+ */
+function humanMinutes(text: string): [number, number] | undefined {
+  const ends = text.split('〜');
+  if (ends.length === 1) {
+    const only = composedMinutes(ends[0]);
+    return only === undefined ? undefined : [only, only];
+  }
+  if (ends.length !== 2) return undefined;
+  const high = composedMinutes(ends[1]);
+  if (high === undefined) return undefined;
+  const low =
+    composedMinutes(ends[0]) ??
+    // 単位を書かない側は、もう一方の先頭の単位を借りる（`2.5〜5日`）。
+    composedMinutes(`${ends[0].trim()}${new RegExp(UNIT).exec(ends[1])?.[0] ?? ''}`);
+  return low === undefined ? undefined : [low, high];
 }
 
 /**
