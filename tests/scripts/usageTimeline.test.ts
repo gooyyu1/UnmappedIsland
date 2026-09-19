@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -25,6 +26,12 @@ const PYTHON = ['python3', 'python'].find((name) => {
     return false;
   }
 });
+
+// **CIでは飛ばさない。** 飛んだことは緑と区別が付かないので、飛ばしてよいのは「手元に道具が無い」
+// ぶんだけで、走る場所を1つも持たない検査にしてはならない（CLAUDE.md「置いた主張は、破れたときに
+// 落ちるものと対で置く」の「必ず走る」）。
+if (PYTHON === undefined && process.env.CI !== undefined)
+  throw new Error('python3 が見つかりません。scripts/usage/timeline.py の検査はCIでは飛ばせません。');
 
 interface Event {
   readonly ts: string;

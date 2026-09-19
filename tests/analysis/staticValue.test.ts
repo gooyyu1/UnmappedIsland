@@ -145,4 +145,12 @@ object_defs:
 
     expect(context('ancestor', codex.propertyNames.getId('warmth'), 'lowest')).toBeUndefined();
   });
+
+  // 候補が無いのは「どれも宣言していない」ではなく「誰が就くか分からない」なので、`zero`でも0を
+  // 答えない——答えると、土地の在る文脈と無い文脈が同じ値を返す（highestDeclaredLayer）。
+  it('候補が1つも無い層は、読み方によらず答えない', () => {
+    const context = layeredResolver([highestDeclaredLayer('ancestor', [], 'zero')]);
+
+    expect(context('ancestor', codex.propertyNames.getId('warmth'), 'lowest')).toBeUndefined();
+  });
 });

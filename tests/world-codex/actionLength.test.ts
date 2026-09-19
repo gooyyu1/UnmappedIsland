@@ -94,7 +94,7 @@ function handsResultAtTheEnd(interaction: InteractionDef): boolean {
 /** その宣言が解ける分数（解けなければundefined）。ロールは長いほうの端で見る。 */
 function minutesOf(def: ObjectDef, reading: DeclaredNumberReading | undefined): number | undefined {
   if (reading === undefined) return 0;
-  const resolve = staticResolverOf(def, 'highest', analysisContextOf(codex, []));
+  const resolve = staticResolverOf(def, 'highest', analysisContextOf(codex).resolve);
   return resolveDeclaredNumber(reading, resolve);
 }
 

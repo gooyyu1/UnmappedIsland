@@ -1,4 +1,3 @@
-import process from 'node:process';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -36,12 +35,11 @@ interface Trace {
  * tick駆動ではない（WorldSessionの担当）ため進まないが、気候システムはhourに依存しないため
  * 検証には影響しない（ambient_brightnessが夜間相当で固定される分は気温比較の両辺に等しく効く）。
  *
- * 通常のテストスイート（`npm test`）には含めない: 30シード×170日のシミュレーションはスイートの中で
- * 突出して重い（単独で約4秒、他の全ファイルの合計に匹敵する）一方、検査対象はcore.yamlの気候の設定値
- * というバランスの領域で、コードの変更で日々壊れるものではない。設定値を触ったら明示的に実行する:
- * `npm run test:climate`
+ * 30シード×170日のシミュレーションはスイートの中では重い部類だが、`npm test` に入れる。環境変数で
+ * 囲うと、値を触った人が自分で思い出すことだけが見張りになり、「通った」と「走っていない」が緑では
+ * 区別できない（CLAUDE.md「置いた主張は、破れたときに落ちるものと対で置く」）。
  */
-describe.runIf(process.env.RUN_CLIMATE_TESTS === '1')('気候システム(ClimateSystem.md)', () => {
+describe('気候システム(ClimateSystem.md)', () => {
   let calmId: number, wetId: number, dryId: number;
   let sunnyId: number, cloudyId: number, clearId: number, lightRainId: number;
   let heavyRainId: number, stormId: number, scorchingId: number;
