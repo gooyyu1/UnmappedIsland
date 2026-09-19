@@ -1,7 +1,7 @@
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
@@ -14,10 +14,6 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * `npx` をPATHの先頭で身代わりへ差し替える。**本物の Vite を起こさないため**——起こすと、この検査
  * そのものが機械の速さで決まる。`sleep` は控えてから本物へ渡す身代わりにして、刻みを読む。
  */
-
-// 実プロセス（bash）を起こすため、`npm test` 全体を並行実行したときのCPU競合だけで既定の5秒を
-// 超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../.claude/skills/run/scripts/start-dev-server.sh');
 

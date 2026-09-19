@@ -1,4 +1,4 @@
-// 盤面から、次に打つ手を優先順に並べる（`agent-ops/board-design.md` 2.3）。
+// 盤面から、次に打つ手を優先順に並べる（`agent-ops/board-design.md` 2.3節）。
 //
 //   import { moves } from './board-move.mjs';
 //   moves(盤面)   // → 1要素1手の文字列の配列
@@ -419,7 +419,7 @@ function hasUnreadSmell(mergedPrs) {
 /**
  * 盤面を見回る係の名（下の `CYCLES`）。**綴りを合わせる相手が居るので、ここから出す**
  * ——[`board.mjs`](board.mjs) が、見回りが途切れたと言うまでの長さをこの係の間隔から引く
- * （`agent-ops/board-design.md` 2.21.4）。
+ * （`agent-ops/board-design.md` 2.21.4節）。
  */
 export const PATROL = 'patrol';
 
@@ -429,7 +429,7 @@ export const PATROL = 'patrol';
  * - `due` … 今この係に仕事があるか。**無ければ間隔が満ちても立てない。** 渡すのは盤面ごと
  *   ——仕事の在り処は係ごとに違う（issue の側に在る係と、マージ済みPRの側に在る係が同じ表に載る）。
  *   **盤面の見え方で絞らない係は `() => true`**——**盤面が健全であることを確かめるのが仕事**なら、
- *   仕事はいつでも在る（下の `patrol`。`agent-ops/board-design.md` 2.21.2）。
+ *   仕事はいつでも在る（下の `patrol`。`agent-ops/board-design.md` 2.21.2節）。
  * - `hours` … 前に立ててから空ける間隔。**溜めてからまとめて捌く係と、来たそばから捌く係が
  *   同じ表に載る**ので、係ごとに持つ。件数のしきい値は置かない——「そこまでは残ってよい」を
  *   宣言することになり、滞留を仕様にする（`agent-ops/board-design.md` 2.18節）。
@@ -439,11 +439,11 @@ export const PATROL = 'patrol';
  * - `prompt` … 渡す本文の在り処（リポジトリからの相対）。
  * - `urgent` … **待たせてよいか。** 既定（省略）は待たせてよい＝最後尾で、根拠は「間隔が満ちて
  *   いる限り次の周でも同じ手が出る」こと。**その根拠が言えない係だけが立てる**（下の `patrol`。
- *   `agent-ops/board-design.md` 2.21.3）。
+ *   `agent-ops/board-design.md` 2.21.3節）。
  *
  * **係は錠を取らない。** 資源を取り合うのは担当の issue を持つセッションどうしだけ（`area:` の錠。
  * 3.1）で、**間隔で立つ係を、その取り合いに混ぜない**——待たされる先が、まさにその係に見てほしい
- * 詰まりであることがある（`agent-ops/board-design.md` 2.21.3）。
+ * 詰まりであることがある（`agent-ops/board-design.md` 2.21.3節）。
  *
  * **PRを出す係が居ても、作業者の枠（`HELD_TASKS`・`ACTIVE_WORKERS`）には数えない。** 間隔を空けて
  * 立つ係の、記録だけの差分で、マージの列を詰まらせないため。数えると、書く側の並列度がその分だけ
@@ -526,7 +526,7 @@ const CYCLES = [
     hours: 168,
     // **このPCでしか測れない。** 履歴を全部持っているクローンが要る（[`payoffMetrics.mjs`](../payoffMetrics.mjs)
     // は浅いクローンでは止まる）うえ、開いている issue の組成を引くのに `gh` が要る
-    // （`agent-ops/board-design.md` 2.23）。
+    // （`agent-ops/board-design.md` 2.23節）。
     env: 'bridge',
     prompt: 'agent-ops/prompts/payoff-prompt.md',
     // **盤面の見え方で絞らない**（見回る係と同じ理由）。**割に合っていないことは、盤面のどの印にも
@@ -537,10 +537,10 @@ const CYCLES = [
   {
     name: PATROL,
     // **間隔は「盤面が止まったまま放っておいてよい長さ」。** 健全な周にも立つので費用はこの数で
-    // 決まるが、短くするほど気づくのが早い（`agent-ops/board-design.md` 2.21.2）。
+    // 決まるが、短くするほど気づくのが早い（`agent-ops/board-design.md` 2.21.2節）。
     hours: 1,
     // **このPCでしか調べられない。** 何が転んだかが残っているのは `~/daemon.log` と
-    // `~/.claude/board-state` で、どちらもクラウドの箱には無い（`agent-ops/board-design.md` 2.21）。
+    // `~/.claude/board-state` で、どちらもクラウドの箱には無い（`agent-ops/board-design.md` 2.21節）。
     env: 'bridge',
     prompt: 'agent-ops/prompts/patrol-prompt.md',
     // **盤面の見え方で絞らない。** 絞る条件は既に知っている壊れ方の一覧でしかなく、**未知の形は
@@ -558,7 +558,7 @@ const CYCLES = [
  *
  * **公開しているのは、係の窓を持つ側がここより広いことを言えるようにするため**——スメルを拾う係の
  * 窓（[`board-read.mjs`](board-read.mjs) の `MERGED_WINDOW_HOURS`）がこの間隔を下回ると、間に入った
- * ぶんが誰にも読まれないまま落ちる（`agent-ops/board-design.md` 4.4.2）。
+ * ぶんが誰にも読まれないまま落ちる（`agent-ops/board-design.md` 4.4.2節）。
  */
 export function cycleHours(name) {
   return CYCLES.find((cycle) => cycle.name === name)?.hours;
@@ -1534,7 +1534,7 @@ export function moves(input) {
   return [
     // **`urgent` の係だけが先頭。** 待たせてよい根拠は「間隔が満ちている限り次の周でも同じ手が
     // 出るので、いつか手番が回る」ことで、**打てる手が在る周にも立つ係にはそれが言えない**
-    // （`agent-ops/board-design.md` 2.21.3）。
+    // （`agent-ops/board-design.md` 2.21.3節）。
     ...urgentChores,
     // **後片付けはマージより先。** 本体のチェックアウトは作業ツリー全部の共有先なので、片付けを
     // 後ろへ回すと、**入る本数だけ古いまま**になる（マージできるPRが並んでいる周は、片付く前に次が入る）。

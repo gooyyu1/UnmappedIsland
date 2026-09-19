@@ -96,11 +96,7 @@ object_defs:
         stages:
           - {name: novice, min: 0}
           - {name: skilled, min: 60}
-      carving_thrift: {value: 0}
-  # 手際と、余分の卓の両方を名乗るレシピ。
-  #
-  # **卓の「取れない側」の重みが0**なのは、引き結果を試験から決めるため。全候補の重みが0なら先頭が
-  # 選ばれる規約（10節）で素人は必ず1つ、無駄の無さが正なら必ず2つになる。
+  # 手際を名乗るレシピ。
   bowl:
     tags: [item]
     recipes:
@@ -110,10 +106,6 @@ object_defs:
           - requires:
               - {object: wood, count: 1, consume: true}
             duration: 30
-        surplus:
-          - {weight: 0}
-          - weight: {subject: agent, prop: carving_thrift}
-            spawn: {object: bowl, into: agent}
   # 尖った石は刃物としても使える——**同じ物がタグ要求にも型要求にも当てはまる**（13.1節）。
   sharp_stone:
     tags: [item, cutting_tool]
@@ -296,15 +288,14 @@ object_defs:
   });
 
   /**
-   * 作る腕（docs/world/Skills.md 7節）。**壊して赤くなるのを見る先はここ**——腕を素人のままにすれば
-   * 短くならず、余分の重みを0にすれば2つ目が出ない。
+   * 作る腕（docs/world/Skills.md 7節）。**腕が効くのは速さだけ**——レシピは歩留まりの卓を持てない
+   * （同7.2節【確定】）ので、何個作っても出来るのは1つ。
    */
   describe('作り手の腕', () => {
-    /** その腕と無駄の無さを持つ作り手を、床へ置いて返す。skillはskill_carvingの値。 */
-    function handyCrafter(skill: number, thrift = 0): WorldObject {
+    /** その腕を持つ作り手を、床へ置いて返す。skillはskill_carvingの値。 */
+    function handyCrafter(skill: number): WorldObject {
       const crafter = putOnGround('handy_crafter');
       crafter.getProperty(codex.propertyNames.getId('skill_carving')).setNumberWithoutEvents(skill);
-      crafter.getProperty(codex.propertyNames.getId('carving_thrift')).setNumberWithoutEvents(thrift);
       return crafter;
     }
 
@@ -350,21 +341,11 @@ object_defs:
       expect(benchWip.tryGetProperty(progressId())?.number ?? 0, '進捗は宣言どおり').toBe(30);
     });
 
-    it('余分の卓は、完成した瞬間に1回だけ引かれる', () => {
+    it('腕が届いていても、出来るのは1つだけ', () => {
+      // レシピは余分の卓を持てない（docs/world/Skills.md 7.2節【確定】）ので、腕は速さにしか効かない。
       const carving = startCarving('bowl');
 
-      expect(tryAdvanceCrafting(carving, handyCrafter(0, 5))).toBe(true);
-
-      expect(
-        onGround().filter((name) => name === 'bowl').length,
-        '取れる側の重みだけが正なので、余分が1つ出る',
-      ).toBe(2);
-    });
-
-    it('無駄の無さが素（0）なら、余分は出ない', () => {
-      const carving = startCarving('bowl');
-
-      expect(tryAdvanceCrafting(carving, handyCrafter(0, 0))).toBe(true);
+      expect(tryAdvanceCrafting(carving, handyCrafter(60))).toBe(true);
 
       expect(onGround().filter((name) => name === 'bowl').length, '出来るのは1つだけ').toBe(1);
     });

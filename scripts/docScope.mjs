@@ -46,6 +46,20 @@ export function trackedDocs(root) {
 }
 
 /**
+ * `docs/` に在る追跡下のMarkdown。**同梱の中身と突き合わせる検査が掛かる先**で、生成物の `site/` は
+ * 追跡していないので初めから入らない。
+ *
+ * **射程を呼び手ごとに書き写さない**（{@link trackedRefSources} と同じ理由）——`docs/` の外へ
+ * 文書が出た日に、書き写した側だけが取り残される。
+ *
+ * @param {string} root リポジトリの根
+ * @returns {string[]} 根からの相対パス（区切りはそのプラットフォームのもの）
+ */
+export function specDocs(root) {
+  return trackedDocs(root).filter((rel) => rel.startsWith(`docs${sep}`));
+}
+
+/**
  * コメントの印（`//` か `#` か）を [`commentsOnly`](codeComments.mjs) が知っている形式。**ここに
  * 挙がっていない形式は、コメントを持っていても読めない。**
  */
@@ -69,12 +83,23 @@ export const COMMENTED_EXTENSIONS = ['.ts', '.mts', '.mjs', '.js', '.sh', '.py',
 export function trackedRefSources(root) {
   return trackedFiles(root).filter(
     (rel) =>
-      (rel.endsWith('.md') ||
-        COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)) ||
-        (rel.startsWith(join('tools') + sep) && rel.endsWith('.json'))) &&
+      (rel.endsWith('.md') || COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)) || isProseData(rel)) &&
       !rel.startsWith(join('tests', 'docs') + sep) &&
       !isVerbatimRecord(rel),
   );
+}
+
+/**
+ * **コメントを書けないのに、宣言の値へ散文を置いているデータ**（`tools/**` の JSON の `_comment`）。
+ * 節番号で仕様を指し、ファイルと並べて名前も挙げるので、文書と同じに読む側が要る。
+ *
+ * **読む側は1つではない**（節番号の参照を見る {@link trackedRefSources} と、名前の並びを見る
+ * `tests/docs/docMemberReferences.test.ts`）ので、綴りを写さずここから引く。
+ *
+ * @param {string} rel 根からの相対パス
+ */
+export function isProseData(rel) {
+  return rel.startsWith(join('tools') + sep) && rel.endsWith('.json');
 }
 
 /**
@@ -122,7 +147,7 @@ export function historyDocs(root) {
  *
  * **指した先の中身を読む係（[`refAudit.mjs`](daemon/refAudit.mjs)）も、ここを外す。** 書いてあるのは当時の
  * 観測で、**今と食い違っていても直す先ではない**ので、読んでも手の出しようが無い（そう決めて
- * いるのは `agent-ops/board-design.md` 2.17.4）。
+ * いるのは `agent-ops/board-design.md` 2.17.4節）。
  *
  * @param {string} rel 根からの相対パス
  */

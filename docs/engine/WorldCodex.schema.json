@@ -1107,10 +1107,6 @@
           "required": ["skill", "from_stage", "minutes"],
           "additionalProperties": false
         },
-        "surplus": {
-          "description": "完成した瞬間に1回だけ引く、余分が取れるかの卓（GameElementDefinition.md 13.5節）。文法はpick（10節）と同じで、取れる側の重みに作り手の「無駄の無さ」を置く（素は0なので、腕が無ければ引いても何も起きない）。引く時点では同じ個体が既に成果物になっている（becomeが済んでいる）ので、selfは成果物を指す。",
-          "$ref": "#/$defs/pick_list"
-        },
         "steps": {
           "type": "array",
           "items": {

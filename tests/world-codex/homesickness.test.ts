@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
@@ -21,10 +21,6 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
  * 全キャラクタを走査するのはcharactersYaml.test.tsの受け持ち（そちらが宣言の欠落を見る）。
  */
 const codex = bundledCodex();
-
-// 1件で95日ぶんの暮らしを3本まで生きるものがあり、単独で走らせても3.5秒かかる。既定の5秒だと
-// `npm test` 全体を並行実行したときのCPU競合だけで時間切れになる（tidyMergedPr.test.tsと同じ）。
-vi.setConfig({ testTimeout: 20000 });
 
 function propertyId(name: string): PropertyGlobalId {
   return codex.propertyNames.getId(name);
@@ -268,7 +264,10 @@ function firstDayReaching(values: readonly number[], threshold: number): number 
   return values.findIndex((value) => value >= threshold) + 1;
 }
 
-describe('ホームシック(docs/world/Characters.md ホームシック節)', () => {
+// **CIの混み合った回に `vite.config.ts` の予算を越えた**（issue #2376）。手元では3秒台に収まるが、
+// 1件が95日ぶんの暮らしを3本まで生きるので、回ごとの振れがその差を埋める。**名乗る値は実測のすぐ上に
+// 置かない**——置くと、また混んだ回にだけ越えて、本物の赤と見分けの付かない赤になる。
+describe('ホームシック(docs/world/Characters.md ホームシック節)', { timeout: 30_000 }, () => {
   it('漂着した最初のひと月は溜まらない', () => {
     // 生き延びるだけで手一杯の29日は、孤独がoccupied段に留まる。
     const trace = live(29);

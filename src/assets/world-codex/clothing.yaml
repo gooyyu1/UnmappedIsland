@@ -38,7 +38,7 @@ object_defs:
         conditions:
           - {reason: needs_leatherwork, subject: agent, prop: skill_leatherwork, in_stage_or_above: basic}
         # 掻き落としも漬け込みも皮革の手仕事なので、速さを決めるのはその1本
-        # （docs/world/Skills.md 7節）。**余分の卓は持たない**——皮1枚からは革1枚しか出ない。
+        # （docs/world/Skills.md 7節）。
         deftness: {skill: skill_leatherwork, from_stage: skilled, minutes: -15}
         # 合計480分は、同梱の世界で最も手間のかかる仕事（traps.yamlの落とし穴・farming.yamlの囲い）に
         # 並べた値。実際のなめしは日をまたぐ漬け込みだが、**1回の工程が1時間を超えられない**

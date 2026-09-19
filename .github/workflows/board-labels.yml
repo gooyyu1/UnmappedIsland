@@ -1,7 +1,7 @@
 name: Board labels
 
 # 盤面のラベルと依存を付け外しする。**モデルのセッションが手で付けていたぶん**を引き取る
-# （[`agent-ops/board-design.md`](../../agent-ops/board-design.md) 2.2.1・段3）。
+# （[`agent-ops/board-design.md`](../../agent-ops/board-design.md) 2.2.1節・段3）。
 #
 # 付け外しするものは、どれも**事実**しか持たない——ラベルは結論だけを置き（1.3）、依存は棚卸しが
 # 張ると決めたものだけを持つ（2.17.3）。ここが動かすのは次で、**末尾の job 名が
@@ -69,7 +69,7 @@ jobs:
           # 書き終えたかの判定に使う）。ここに node は持ち込めないので実装は別だが、**緩めた
           # ほうだけが余計なコメントを判定と読む**ので、下の文字列は向こうと揃っていること。
           #
-          # **`通してよい（人の判断が要る）` は、通したうえで人へ回す形**（`board-design.md` 2.13.4）。
+          # **`通してよい（人の判断が要る）` は、通したうえで人へ回す形**（`board-design.md` 2.13.4節）。
           # 差分を読まないと判定できないもの——宣言文法・スキーマ・ゲームコンセプト・確定節に抵触するか
           # ——をレビュアーが引き取ったので、`判断待ち` を付ける口がここに要る。
           case "$verdict" in
@@ -94,7 +94,7 @@ jobs:
           for label in "${add[@]}"; do adds+=(--add-label "$label"); done
           gh pr edit "$PR" --repo "$REPO" "${adds[@]}" --remove-label "$remove"
 
-          # **3周目の判定が「直しが要る」なら、そこで人へ上げる**（`agent-ops/board-design.md` 4.6）。
+          # **3周目の判定が「直しが要る」なら、そこで人へ上げる**（`agent-ops/board-design.md` 4.6節）。
           # **上限を持つのはここ。** レビュアーへの指示にしか書いていなかったので、書き忘れれば
           # 誰も止めず、実際に PR #1527 で4周目が走った。
           #
@@ -118,7 +118,7 @@ jobs:
           fi
 
   # セッションが自分の行き先や、張ると決めた順序を名乗ったことを、issue のコメントの1行目から読む
-  # （[`agent-ops/board-design.md`](../../agent-ops/board-design.md) 2.15・2.16・2.17.3）。**PRではなく
+  # （[`agent-ops/board-design.md`](../../agent-ops/board-design.md) 2.15・2.16・2.17.3節）。**PRではなく
   # issue の側**——名乗るのはPRを出す手前で詰まったときなので、そこにはまだPRが無い。
   #
   # **ラベルを直に付けさせず、名乗りを訳すのは、理由の置き場がコメントにしか無いから**——ラベルは
@@ -207,7 +207,7 @@ jobs:
             --remove-label 判断待ち --remove-label 収束せず --remove-label 却下
 
   # **盤面から頼まれて、前の差分に付いたままの結論の札を落とす**（[`board-move.mjs`](../../scripts/daemon/board-move.mjs)
-  # の `UNLABEL`、[`agent-ops/board-design.md`](../../agent-ops/board-design.md) 2.13.7）。上の
+  # の `UNLABEL`、[`agent-ops/board-design.md`](../../agent-ops/board-design.md) 2.13.7節）。上の
   # `synchronized` は**出来事**で動くので、転んだ回は二度と来ない——**やり直す口がここに要る。**
   #
   # **盤面が自分で外さないのは、それが下の `unlabeled_by_hand` に「人が外した」と読まれるから。**
@@ -250,7 +250,7 @@ jobs:
             --remove-label 通してよい --remove-label 判断待ち --remove-label 収束せず
 
   # **人がPRのラベルを外したこと**を、差し戻しへ訳す（[`agent-ops/board-design.md`](../../agent-ops/board-design.md)
-  # 2.13.1）。人がすることは2つだけ——**外す＝書いた本人に直してもらう**、**マージする＝それでよい**。
+  # 2.13.1節）。人がすることは2つだけ——**外す＝書いた本人に直してもらう**、**マージする＝それでよい**。
   # だから外れたPRに残る仕事は差し戻しの1つで、`却下` はその事実を持つ。
   #
   # **「外れている状態」では書けない**（外れていることと、最初から付いていないことが同じに見える。

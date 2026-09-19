@@ -11,7 +11,7 @@
 // **見回りの記録を書くのは係のセッション**（[`patrol-prompt.md`](../../agent-ops/prompts/patrol-prompt.md)）で、
 // 読むのは次の回の係と、人への書き出し（`board.mjs`）。
 //
-// **周の出来事を書くのも1周を回す側で、読むのは書き出す側**（`agent-ops/board-design.md` 2.20.3）。
+// **周の出来事を書くのも1周を回す側で、読むのは書き出す側**（`agent-ops/board-design.md` 2.20.3節）。
 // 周（既定30秒）と書き出し（既定5分）は別の周期で走る別のプロセスなので、**周の出来事が人の見に来る
 // 場所へ届く道は、ここを通るものしか無い。**
 
@@ -30,7 +30,7 @@ import { join } from 'node:path';
  * **盤面を引けなくなった時刻**（ISO。引けているあいだは台帳に無い）。
  *
  * **読む側は人だけ。** 引けない周にデーモンが打てる手は無い——CCRが落ちていればセッションは1本も
- * 立たないので、直せるのは Claude Code 本体を触れる人だけ（`agent-ops/board-design.md` 2.21.1）。
+ * 立たないので、直せるのは Claude Code 本体を触れる人だけ（`agent-ops/board-design.md` 2.21.1節）。
  * 常設の issue の本文へ出す（2.20）。
  *
  * **引けている周の不調はここに入らない。** 手が転んでいる・手が1つも出ない、といった形を見るのは
@@ -61,7 +61,7 @@ export const UNREADABLE_REASON = 'unreadable:reason';
  *
  * **始まりだけを覚えるのは `UNREADABLE` と同じ理由**——毎周書き直すと、同じ理由が何分続いているかが
  * 出せない。**読む人が知りたいのはそこ**で、1周ぶんの覚え書きは「今はやることが無い」と見分けが
- * 付かない（`agent-ops/board-design.md` 2.20.3）。
+ * 付かない（`agent-ops/board-design.md` 2.20.3節）。
  */
 export const NOTE_PREFIX = 'note:';
 
@@ -97,7 +97,7 @@ export function writeLedger(stateDir, taken) {
 }
 
 /**
- * 見回りの記録（1行1件のJSON。`agent-ops/board-design.md` 2.21.4）。**書くのは係のセッション**で、
+ * 見回りの記録（1行1件のJSON。`agent-ops/board-design.md` 2.21.4節）。**書くのは係のセッション**で、
  * 綴りを持つのは [`patrol-prompt.md`](../../agent-ops/prompts/patrol-prompt.md)。
  *
  * **追記で持つのは、前回と突き合わせるため**——進んでいないことは1枚の写真には写らない。
@@ -176,7 +176,7 @@ export function readUnreadable(stateDir) {
 }
 
 /**
- * **周の出来事の帳面**（1行1件のJSON。`agent-ops/board-design.md` 2.20.3）。**書くのは1周を回す
+ * **周の出来事の帳面**（1行1件のJSON。`agent-ops/board-design.md` 2.20.3節）。**書くのは1周を回す
  * 側**で、読むのは人への書き出し（`board.mjs`）と、盤面を見回る係。
  *
  * 載るのは2種類——**打った手とその結果**（`{ at, kind: 'move', move, target, result }`）と、

@@ -11,7 +11,7 @@
 # ## 使うのが「立てる」か「起こす」かで、条件を分けない
 #
 # モデルの使用量を食うのは**セッションを立てる周と、止まったセッションを起こす周**の両方
-# （[`board-design.md`](../../agent-ops/board-design.md) 2.5.2）。**条件を呼び手ごとに書くと、
+# （[`board-design.md`](../../agent-ops/board-design.md) 2.5.2節）。**条件を呼び手ごとに書くと、
 # 増やしたとき片方にだけ入る**——余力の手綱が立てる側（[`may-dispatch.sh`](may-dispatch.sh)）にだけ
 # 入り、起こす側（[`resume-session.sh`](resume-session.sh)）が人の手綱だけを写していたのが
 # その形（[issue #2220](https://github.com/gooyyu1/UnmappedIsland/issues/2220)）。**条件は呼び手が

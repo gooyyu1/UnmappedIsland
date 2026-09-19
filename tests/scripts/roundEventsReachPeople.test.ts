@@ -9,7 +9,7 @@ import { JOURNAL_TAIL_BYTES, journalPath, readRounds } from '../../scripts/daemo
 import { EVENT_WINDOW_HOURS, MOVE_RESULTS, issueBody } from '../../scripts/daemon/board.mjs';
 
 /**
- * **周の出来事が、`~/daemon.log` の外へ届くこと**の検査（`agent-ops/board-design.md` 2.20.3）。
+ * **周の出来事が、`~/daemon.log` の外へ届くこと**の検査（`agent-ops/board-design.md` 2.20.3節）。
  *
  * 1周を回す側（`board-round.mjs`）と書き出す側（`board-publish.mjs`）は**別の周期で走る別の
  * プロセス**なので、**デーモンの台帳と帳面を通す以外に、周の出来事が人の見に来る場所へ届く道は

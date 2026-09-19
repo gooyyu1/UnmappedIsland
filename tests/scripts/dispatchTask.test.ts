@@ -1,7 +1,7 @@
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
@@ -15,10 +15,6 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * `DRY_RUN=1` で叩くので、セッションは立たない——関門は全部その手前にある。`gh` は PATH の先頭で
  * 差し替え、環境IDは `ccr-env.sh` へ環境変数で渡す。
  */
-
-// 実プロセス（bash + node + gh のスタブ）を起こすため、`npm test` 全体を並行実行したときのCPU競合
-// だけで既定の5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/daemon/dispatch-task.sh');
 
@@ -144,7 +140,7 @@ describe('dispatch-task.sh', () => {
     expect(run(1415, { state: 'CLOSED' }).code).toBe(1);
   });
 
-  // 返された issue は `kind:task` が付いたまま残る（`agent-ops/board-design.md` 2.15.2）ので、**ここで
+  // 返された issue は `kind:task` が付いたまま残る（`agent-ops/board-design.md` 2.15.2節）ので、**ここで
   // 見なければ次の周にそのまま投入し直される。** 不変条件を持つのは投入する側（1.4）。
   it('人へ返された issue へは投入しない', () => {
     const result = run(1376, { labels: ['kind:task', '判断待ち'] });
@@ -166,7 +162,7 @@ describe('dispatch-task.sh', () => {
     expect(prompt(1415)).not.toContain('<このタスク固有の補足');
   });
 
-  // **モードは環境が決める**（`board-design.md` 2.16.3）。渡さないと未設定のまま立ち、`.claude/**`
+  // **モードは環境が決める**（`board-design.md` 2.16.3節）。渡さないと未設定のまま立ち、`.claude/**`
   // を読むだけの `bash` が「機微なファイルの編集」と判定されて承認を待つ。その承認は降りない。
   it('クラウドへは auto を渡す', () => {
     const built = args(1415);

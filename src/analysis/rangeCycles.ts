@@ -1,7 +1,7 @@
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { PropertyDef, RangeEventLabel, RollEnd } from '../domain/PropertyDef';
 import { movesTowardEnd, RANGE_EVENT_LABELS, rollEndAwayFrom, ROLL_ENDS } from '../domain/PropertyDef';
-import type { SelfStageRequirement, TickDelta, TickGate } from './tickDeltas';
+import type { PushingSituation, SelfStageRequirement, TickDelta, TickGate } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 import type { CraftingStep } from './CraftingStep';
 import { collectOutputs } from './CraftingStep';
@@ -15,11 +15,11 @@ import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
  * 外から与えられるtick毎の増減。**焼くのも失血も、自分では動かない値を隣の物が動かす**——炉が
  * 火にかけた物の加熱を進め、刺さった傷が持ち主の血を奪う。誰が誰の隣に居るかは型だけでは決まらない
  * ので、文脈を知っている側（収支レポート）が組み立てて渡す。
+ *
+ * **押している間どういう場面に居るか**（PushingSituation）も一緒に名乗る。押される側の条件つきの
+ * 増減のうち、押されている間ずっと成立しているものは、押し手の場面と照らして初めて見分けられる。
  */
-export interface ExternalTickDelta {
-  /** その増減を与える型。その周期を回すのに要る物（炉・刺さった傷）として工程の入力に並ぶ。 */
-  readonly sourceGlobalId: ObjectGlobalId;
-
+export interface ExternalTickDelta extends PushingSituation {
   readonly propertyGlobalId: PropertyGlobalId;
 
   /**
@@ -91,8 +91,9 @@ export interface RangeCycle {
    * 片方だけで足りるときの相方も残らない——周期を決めた組み合わせとは別物（issue #1433）。
    *
    * 空の組み合わせ1つだけ（`[[]]`）なら、条件が1つも成立しなくても向かう。**押し手のある周期
-   * （drivenBy）は必ずこの形**——totalsWithDriverが自分の条件つきを数から落とすので、条件は押し手が
-   * 傍に在ることのほうで、それはdrivenByが持つ。
+   * （drivenBy）は必ずこの形**——totalsWithDriverは、押されている間ずっと成立していると言い切れない
+   * 条件つきを数から落とし、言い切れるもの（刻んだ芋の上乗せ）は押し手が傍に在ることの言い換えなので
+   * 条件として並べない。どちらにせよ要るのは押し手が傍に在ることだけで、それはdrivenByが持つ。
    */
   readonly gatedBy: readonly (readonly TickDelta[])[];
 
@@ -179,7 +180,7 @@ export function rangeCyclesOf(
           repeats,
           destroysSelf: readout.destroysSelf,
           gatedBy: pace.gatedBy,
-          drivenBy: driver?.sourceGlobalId,
+          drivenBy: driver?.source.globalId,
           step: {
             kind: 'periodic',
             // 時間で回る工程なので押せない。経路に並ぶのは、押し手が要るもの（火にかけた肉）だけで、
@@ -196,7 +197,7 @@ export function rangeCyclesOf(
                 : [
                     {
                       kind: 'object' as const,
-                      objectGlobalId: driver.sourceGlobalId,
+                      objectGlobalId: driver.source.globalId,
                       consumed: false,
                       count: 1,
                     },
@@ -232,8 +233,9 @@ export function rangeCyclesOf(
  * どちらの向きへ押しているかは押し手ごとに1つに決まらない（取りうる量が向きを跨ぐ）ので、
  * rangeCyclesOfが両端のイベントを別々に見るのと同じく、ここでも両方の向きを見る。
  *
- * 返す増減の与え手（sourceGlobalId）は押し手のまま。段を開けたのは押し手なので、その周期に要る物は
- * 押し手が傍に在ることで変わらない。
+ * 返す増減の与え手（source）と、押している間の場面（PushingSituation）は押し手のまま。段を開けたのは
+ * 押し手なので、その周期に要る物も、押している間ずっと成立している条件も、押し手が傍に在ることで
+ * 変わらない。
  */
 function relayedTickDeltasOf(def: ObjectDef, driver: ExternalTickDelta): readonly ExternalTickDelta[] {
   const byWindow = new Map<string, ExternalTickDelta>();
@@ -243,8 +245,10 @@ function relayedTickDeltasOf(def: ObjectDef, driver: ExternalTickDelta): readonl
       if (delta.target !== 'self' || delta.amount === 0) continue;
       if (delta.propertyGlobalId === driver.propertyGlobalId) continue;
       // 段のほかにも縛りがあるなら、それが押されている間に成立するかは定義からは決まらない
-      // （totalsWithDriverが自分の条件つきを数えないのと同じ理由）。
-      if (!delta.gate.gatedOnlyBySelfStages) continue;
+      // （押されている間ずっと成立していると言い切れない条件つきを数えない、totalsWithDriverと同じ
+      // 理由）。**押し手が押している間ずっと成立している外側の段は、縛りとして数えない**——そこも
+      // totalsWithDriverと同じ見方（TickGate）。
+      if (!delta.gate.gatedOnlyBySelfStagesUnder(driver)) continue;
 
       const untilStage = ticksUntilDrivenStage(def, driver, delta.gate, pushedToward);
       if (untilStage === undefined) continue;
@@ -271,7 +275,9 @@ function relayedTickDeltasOf(def: ObjectDef, driver: ExternalTickDelta): readonl
       const key = `${pushedToward}:${delta.propertyGlobalId}:${ticksUntilStart}:${ticksUntilStop}`;
       const known = byWindow.get(key);
       byWindow.set(key, {
-        sourceGlobalId: driver.sourceGlobalId,
+        source: driver.source,
+        sourceIsAt: driver.sourceIsAt,
+        sourceStagesByCase: driver.sourceStagesByCase,
         propertyGlobalId: delta.propertyGlobalId,
         amounts: [(known?.amounts[0] ?? 0) + delta.amount],
         ticksUntilStart,
@@ -301,8 +307,9 @@ function sortedTicksToRangeEnd(
 }
 
 /**
- * その型が、隣の物のtick毎の値を動かす分（ExternalTickDelta参照）。rootは相手から見た自分の位置——
- * 親が子を焼くなら`child`、刺さった傷が持ち主の血を奪うなら`parent`。
+ * その型が、隣の物のtick毎の値を動かす分（ExternalTickDelta参照）。rootは自分から見た相手の位置——
+ * 親が子を焼くなら`child`、刺さった傷が持ち主の血を奪うなら`parent`。押される側から見た自分の
+ * 居場所（sourceIsAt）はその裏返しになる。
  *
  * **誰の隣に立てるかは答えない**（枠の受け入れを見る側の仕事）。答えるのは、隣に立てたとして
  * どれだけ速く、いつまで動かせるか。
@@ -335,7 +342,12 @@ export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): 
       const key = `${pushing.ticksUntilStart}:${pushing.ticksUntilStop}`;
       const known = byWindow.get(key);
       byWindow.set(key, {
-        sourceGlobalId: def.globalId,
+        source: def,
+        sourceIsAt: root === 'child' ? 'parent' : 'child',
+        // **量を畳んでも、押し方ごとの段は畳まない。** 押されている間ずっと成立していると言えるのは
+        // どの押し方でも成立することだけなので（PushingSituation）、1つへ束ねると、ある火力でだけ
+        // 成立する条件が全部の火力で成立することになる。
+        sourceStagesByCase: [...(known?.sourceStagesByCase ?? []), pushing.sourceStages],
         propertyGlobalId,
         amounts: [...new Set([...(known?.amounts ?? []), pushing.amount])],
         ticksUntilStart: pushing.ticksUntilStart,
@@ -352,6 +364,12 @@ interface PushingCase {
   readonly amount: number;
   readonly ticksUntilStart: number;
   readonly ticksUntilStop: number | undefined;
+
+  /**
+   * この押し方が効いている間、押し手自身が居ると分かっている段
+   * （PushingSituation.sourceStagesByCase）。段で縛られていない押し方では空。
+   */
+  readonly sourceStages: readonly SelfStageRequirement[];
 }
 
 /**
@@ -418,7 +436,12 @@ function pushingCaseOf(def: ObjectDef, combination: readonly TickDelta[]): Pushi
   const ticksUntilStop = stops.length === 0 ? undefined : Math.min(...stops);
   if (ticksUntilStop !== undefined && ticksUntilStop <= ticksUntilStart) return undefined;
 
-  return { amount, ticksUntilStart, ticksUntilStop };
+  return {
+    amount,
+    ticksUntilStart,
+    ticksUntilStop,
+    sourceStages: combination.flatMap((delta) => delta.gate.requiredSelfStages),
+  };
 }
 
 /**
@@ -442,6 +465,12 @@ function externalTickDeltasOn(def: ObjectDef, defs: readonly ObjectDef[]): reado
 interface TickAmounts {
   /** 常時効く分だけの合計。条件つきの増減（8.2節）を含まない。 */
   readonly unconditional: number;
+
+  /**
+   * 条件つきの増減（8.2節）を宣言順に。**合計へ畳まずに宣言のまま持つ**のは、押し手が居る場面では
+   * そのうち成立していると言い切れるものだけを数え直すため（totalsWithDriver）。
+   */
+  readonly conditional: readonly TickDelta[];
 
   /** 同時に成立しうる組み合わせごとの合計。常時効く分を含み、量が同じでも組み合わせごとに並ぶ。 */
   readonly possible: readonly TickTotal[];
@@ -479,7 +508,11 @@ function tickAmountsOf(def: ObjectDef, propertyGlobalId: PropertyGlobalId): Tick
     if (delta.gate.stage !== undefined) continue;
     (delta.gate.conditional ? conditional : always).push(delta);
   }
-  return { unconditional: totalAmountOf(always), possible: possibleTotalsOf(always, conditional) };
+  return {
+    unconditional: totalAmountOf(always),
+    conditional,
+    possible: possibleTotalsOf(always, conditional),
+  };
 }
 
 /**
@@ -552,10 +585,21 @@ function leastCombinationsOf(
  * **押されている間、自分の条件つきの増減（8.2節）は数えない。** その条件が成立する場面と押されて
  * いる場面が同時に来るかは定義からは決まらず、石が冷めるのは炉の外に居る間の宣言（祖先の火力を
  * `not` で見る）なので、足し合わせると押し手の向き——熱を溜める——を打ち消して周期そのものが消える。
+ *
+ * **押されている間ずっと成立していると言い切れるものだけは別**（TickGate.heldThroughoutPush）——
+ * 刻んだ芋が自分で足す加熱は「親の火力が熾火以上」を要るが、押している炉はまさにその段に居る。
+ * 数えても「同時に成立しうる組み合わせ」の枠から出ないので、押し手の量へそのまま重ねる。
+ *
+ * 重ねた分を条件（TickTotal.conditional）として残さないのは、**それが条件ではなくなっている**から
+ * ——成立するかを分けるのは押し手が傍に在ることだけで、そこはRangeCycle.drivenByが持つ。
  */
 function totalsWithDriver(own: TickAmounts, driver: ExternalTickDelta | undefined): readonly TickTotal[] {
   if (driver === undefined) return own.possible;
-  return driver.amounts.map((amount) => ({ amount: own.unconditional + amount, conditional: [] }));
+  const alongside = totalAmountOf(own.conditional.filter((delta) => delta.gate.heldThroughoutPush(driver)));
+  return driver.amounts.map((amount) => ({
+    amount: own.unconditional + alongside + amount,
+    conditional: [],
+  }));
 }
 
 /**

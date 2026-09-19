@@ -2,28 +2,28 @@
 // 受け口は `unknown` のままにする。
 export function moves(board: unknown): string[];
 
-/** 今その差分へ手が動いているか（`agent-ops/board-design.md` 1.6）。 */
+/** 今その差分へ手が動いているか（`agent-ops/board-design.md` 1.6節）。 */
 export function busySession(session: { status: string }): boolean;
 
-/** 盤面を見回る係の名（`agent-ops/board-design.md` 2.21）。間隔を引く側が綴りをここから取る。 */
+/** 盤面を見回る係の名（`agent-ops/board-design.md` 2.21節）。間隔を引く側が綴りをここから取る。 */
 export const PATROL: string;
 
 /** PRの頭が動いたときに落ちる結論の札。剥がす手を打つ側が綴りをここから取る。 */
 export const STALE_ON_PUSH: readonly string[];
 
-/** PRを人の手番へ移す印（`agent-ops/board-design.md` 2.13.8）。人へ見せる側が綴りをここから取る。 */
+/** PRを人の手番へ移す印（`agent-ops/board-design.md` 2.13.8節）。人へ見せる側が綴りをここから取る。 */
 export const HUMAN_TURN: readonly string[];
 
 /** 周期の係を前に立ててから空ける間隔（時間）。知らない名前には `undefined`。 */
 export function cycleHours(name: string): number | undefined;
 
-/** 未整理（棚卸しの結論が揃っていない issue。`agent-ops/board-design.md` 2.17.1）。 */
+/** 未整理（棚卸しの結論が揃っていない issue。`agent-ops/board-design.md` 2.17.1節）。 */
 export function unsorted(issue: { labels?: { name: string }[] }): boolean;
 
-/** 実在するセッションIDの形（`agent-ops/board-design.md` 2.11.3）。CIの `名乗り` と揃っている。 */
+/** 実在するセッションIDの形（`agent-ops/board-design.md` 2.11.3節）。CIの `名乗り` と揃っている。 */
 export const SESSION_ID: RegExp;
 
-/** 宛先を引けない名乗りの形と、それぞれ人がすること（`agent-ops/board-design.md` 2.11.4）。 */
+/** 宛先を引けない名乗りの形と、それぞれ人がすること（`agent-ops/board-design.md` 2.11.4節）。 */
 export const STRANDS: Readonly<Record<string, { why: string; fix: string }>>;
 
 /**

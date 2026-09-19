@@ -388,6 +388,260 @@ object_defs:
     props:
       cooking_progress: {value: 0, range: {min: 0, max: 40}}
 
+  # 火力が2段の炉（fire.yamlのhearth）。**押し方ごとに居る段が違う**ので、火にかけた物が自分で足す
+  # 分が押されている間ずっと効くかは、どの押し方でもその段を満たすかで決まる。
+  two_stage_firepit:
+    tags: [fixture]
+    props:
+      # 押し手が名乗らない、段つきのもう1つのプロパティ。
+      fuel:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: none}
+          - {name: stocked, min: 1}
+      heat:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: out}
+          - name: embers
+            min: 5
+            passives:
+              - add: {child: {cooking_progress: 1}}
+          - name: flame
+            min: 20
+            passives:
+              - add: {child: {cooking_progress: 3}}
+    slots:
+      fire:
+        cell_count: 1
+        cell: {accept: {tag: roastable}}
+
+  # 刻んだ具（foods.yamlのprepped）。**火にかけている間だけ自分で加熱を足す**。押し手が成立する場面
+  # ——親が燃えている炉であること——と、この条件が成立する場面は同じなので、押されている間は必ず効く。
+  chopped_chunk:
+    tags: [item, roastable]
+    props:
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_chunk}
+        passives:
+          - conditions: [{subject: parent, prop: heat, in_stage_or_above: embers}]
+            add: {self: {cooking_progress: 2}}
+
+  # 祖先の火力で見る上乗せ。**親と祖先は分けない**——祖先はそのプロパティを持つ最初の親から遡った先
+  # なので、親がそれを持っていれば親そのもの。押し手がその段を名乗っている時点で、持っていることは
+  # 決まっている。
+  ancestor_seen_chunk:
+    tags: [item, roastable]
+    props:
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_chunk}
+        passives:
+          - conditions: [{subject: ancestor, prop: heat, in_stage_or_above: embers}]
+            add: {self: {cooking_progress: 2}}
+
+  # 押し手が名乗っていない段を要る上乗せ。**薪が残っているかは、押していることでは決まらない。**
+  fuel_gated_chunk:
+    tags: [item, roastable]
+    props:
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_chunk}
+        passives:
+          - conditions: [{subject: parent, prop: fuel, in_stage_or_above: stocked}]
+            add: {self: {cooking_progress: 2}}
+
+  # 値の並びの上に位置を持たない段を要る上乗せ。**綴りが宣言のどれとも合わない**ので、押し手の居る段
+  # とどちらが上かを言えない。
+  misnamed_chunk:
+    tags: [item, roastable]
+    props:
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_chunk}
+        passives:
+          - conditions: [{subject: parent, prop: heat, in_stage_or_above: embres}]
+            add: {self: {cooking_progress: 2}}
+
+  # 「その段以上」でしか押し手が居場所を名乗らない炉。**どの段に居るかは1つに決まらない**ので、
+  # ちょうどその段を要る上乗せは成立しない。
+  or_above_firepit:
+    tags: [fixture]
+    props:
+      heat:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: out}
+          - {name: embers, min: 5}
+          - {name: flame, min: 20}
+    passives:
+      - conditions: [{prop: heat, in_stage_or_above: embers}]
+        add: {child: {cooking_progress: 1}}
+    slots:
+      fire:
+        cell_count: 1
+        cell: {accept: {tag: roastable}}
+
+  # 炎でしか乗らない上乗せ。**弱い火では成立しない**ので、押されている間ずっと効くとは言えない。
+  seared_chunk:
+    tags: [item, roastable]
+    props:
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_chunk}
+        passives:
+          - conditions: [{subject: parent, prop: heat, in_stage_or_above: flame}]
+            add: {self: {cooking_progress: 2}}
+
+  # 炉の外に居る間だけ冷める具（fire.yamlのheat_soaking）。**押し手を打ち消す向きの条件つき**で、
+  # 押し手が居る場面をそもそも名乗っていない。
+  cooling_chunk:
+    tags: [item, roastable]
+    props:
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_chunk}
+        passives:
+          - conditions:
+              - not: {subject: ancestor, prop: heat, gt: 0}
+            add: {self: {cooking_progress: -2}}
+
+  # 熾火でだけ乗る上乗せ（ちょうどその段）。**炎では成立しない**ので、押されている間ずっと効くとは
+  # 言えない——「その段以上」と違い、上の段へ移れば外れる。
+  ember_only_chunk:
+    tags: [item, roastable]
+    props:
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_chunk}
+        passives:
+          - conditions: [{subject: parent, prop: heat, in_stage: embers}]
+            add: {self: {cooking_progress: 2}}
+
+  # 上乗せに、外側の段のほかの縛りが重なった具。**外側の段だけでは決まらない**ので、押されている間
+  # ずっと効くとは言えない——水気が残っているかは、押し手が傍に在ることでは決まらない。
+  damp_chunk:
+    tags: [item, roastable]
+    props:
+      moisture: {value: 10, range: {min: 0, max: 10}}
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_chunk}
+        passives:
+          - conditions:
+              - {subject: parent, prop: heat, in_stage_or_above: embers}
+              - {prop: moisture, eq: 0}
+            add: {self: {cooking_progress: 2}}
+
+  # 上乗せに、自分の段が重なった具。**自分の段へいつ入るかは押し手が答えない**（答えるのは、押し手が
+  # 押している値の段だけ。relayedTickDeltasOf）ので、押されている間ずっと効くとは言えない。
+  core_warmed_chunk:
+    tags: [item, roastable]
+    props:
+      core:
+        value: 0
+        range: {min: 0, max: 10}
+        stages:
+          - {name: raw_core}
+          - {name: warmed, min: 5}
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_chunk}
+        passives:
+          - conditions:
+              - {subject: parent, prop: heat, in_stage_or_above: embers}
+              - {prop: core, in_stage_or_above: warmed}
+            add: {self: {cooking_progress: 2}}
+
+  # 焦げが出る具。**炉が進めた加熱が開ける段**の下で焦げるが、その増減には「置かれた場所の火力」と
+  # いう外側の段も重なっている——押し手が居ることで必ず成立するので、縛りとして数えない。
+  crusting_chunk:
+    tags: [item, roastable]
+    props:
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        stages:
+          - {name: raw}
+          - {name: seared, min: 12}
+      crust:
+        value: 0
+        range: {min: 0, max: 8}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_chunk}
+        passives:
+          - conditions:
+              - {prop: cooking_progress, in_stage_or_above: seared}
+              - {subject: parent, prop: heat, in_stage_or_above: embers}
+            add: {self: {crust: 1}}
+
+  # 具に差し込む火串。**押し手が内側に居る**——持ち主の枠に挿さって、そこから加熱を進める。
+  skewer:
+    tags: [skewer]
+    props:
+      heat:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: out}
+          - name: embers
+            min: 5
+            passives:
+              - add: {parent: {cooking_progress: 1}}
+
+  # 串を挿した具。上乗せが要るのは**置かれた場所**の火力なので、内側の串がembersに居ることでは
+  # 成立しない——熱いのは刺さっている物のほうで、置かれた場所のことは何も言っていない。
+  skewered_chunk:
+    tags: [item, roastable]
+    slots:
+      skewer:
+        cell_count: 1
+        cell: {accept: {tag: skewer}}
+    props:
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_chunk}
+        passives:
+          - conditions: [{subject: parent, prop: heat, in_stage_or_above: embers}]
+            add: {self: {cooking_progress: 2}}
+
+  roasted_chunk: {tags: [item]}
+
   # 刺さったままの棘。抜けない痛みで常に血がにじみ、雨に打たれている間はさらに裂ける。どちらも
   # 止まらず負った瞬間から効くので、起こるのは-1と-5——**-4だけになる場面は無い**。
   thorn:
@@ -780,6 +1034,105 @@ object_defs:
     // なって消える——その段へ入るのはこれからで、いつ入るかは効き始めの側が答える。
     expect(externalDeltasOf('firepit', 'cooking_progress', 'child')).toEqual([
       { amounts: [1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  /** その押し手に押された、その型の加熱の周期。 */
+  function cookedCyclesOf(objectName: string, driverName = 'two_stage_firepit') {
+    const propertyGlobalId = codex.propertyNames.getId('cooking_progress');
+    return rangeCyclesOf(defOf(objectName), undefined, [defOf(driverName)])
+      .filter((cycle) => cycle.drivenBy !== undefined && cycle.propertyGlobalId === propertyGlobalId)
+      .map(({ minutes, shortestMinutes, gatedBy }) => ({ minutes, shortestMinutes, gatedBy }));
+  }
+
+  it('押し手が押している間ずっと成立している条件つきは、押し手の量へ重ねる', () => {
+    // 刻んだ具が自分で足す+2は「親の火力がembers以上」を要るが、押している炉はまさにその段に居る。
+    // 落とすと、刻んでいない具と同じ時間を名乗る——ゲームの側は速く、報告だけが遅いまま。
+    // 24を熾火（1+2）で8 tick、炎（3+2）で4.8 tick。
+    expect(cookedCyclesOf('chopped_chunk')).toEqual([
+      // **要るのは押し手が傍に在ることだけ。** 重ねた分は、押し手が居れば必ず成立するのだから
+      // 条件ではない。
+      { minutes: 8 * 15, shortestMinutes: 4.8 * 15, gatedBy: [[]] },
+    ]);
+
+    // 祖先で見ていても同じ。親がその火力を持っているから押しているのであって、そこを分けると、
+    // 同じことを書いた2通りのうち片方だけが数に乗る。
+    expect(cookedCyclesOf('ancestor_seen_chunk')).toEqual([
+      { minutes: 8 * 15, shortestMinutes: 4.8 * 15, gatedBy: [[]] },
+    ]);
+  });
+
+  it('押し方によっては成立しない条件つきは、どの押し方にも重ねない', () => {
+    // 炎でしか乗らない上乗せは、熾火で押されている間は効かない。押し方ごとの段を1つに束ねると、
+    // 熾火の側にまで乗って、弱い火でも速く焼き上がることになる。24を熾火で24 tick、炎で8 tick。
+    expect(cookedCyclesOf('seared_chunk')).toEqual([
+      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+    ]);
+
+    // ちょうどその段（`in_stage`）は、上の段へ移れば外れる。「その段以上」と同じに扱うと、炎で
+    // 押されている間も乗ることになる。
+    expect(cookedCyclesOf('ember_only_chunk')).toEqual([
+      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+    ]);
+
+    // 押し手が「その段以上」でしか居場所を名乗っていないなら、ちょうどその段に居るとは言えない
+    // ——上の段に居るかもしれない。24を押し手の+1だけで24 tick。
+    expect(cookedCyclesOf('ember_only_chunk', 'or_above_firepit')).toEqual([
+      { minutes: 24 * 15, shortestMinutes: 24 * 15, gatedBy: [[]] },
+    ]);
+  });
+
+  it('押し手が名乗っていない段と、位置を持たない段は、満たされたことにしない', () => {
+    // 薪が残っているかは、炉が押していることでは決まらない。要る段をプロパティで照らし合わせないと、
+    // 押し手が別のプロパティで名乗った段が、そのまま答えになる。
+    expect(cookedCyclesOf('fuel_gated_chunk')).toEqual([
+      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+    ]);
+
+    // 綴りが宣言のどれとも合わない段は、値の並びの上に位置を持たない。読めないものを満たされたことに
+    // すると、押し手が居るだけで成立しない条件まで数に入る。
+    expect(cookedCyclesOf('misnamed_chunk')).toEqual([
+      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+    ]);
+  });
+
+  it('外側の段のほかにも縛りのある条件つきは、押し手の量へ重ねない', () => {
+    // 水気が残っているかも、芯が温まったかも、押し手が傍に在ることでは決まらない。外側の段だけを
+    // 見て重ねると、成立するとは限らない上乗せが押されている間ずっと効くものとして数えられる。
+    expect(cookedCyclesOf('damp_chunk')).toEqual([
+      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+    ]);
+    expect(cookedCyclesOf('core_warmed_chunk')).toEqual([
+      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+    ]);
+  });
+
+  it('内側から押す押し手は、外側の段を名指した条件を保証しない', () => {
+    // 串は具の中に居るので、embersに居るのは串のほう。置かれた場所の火力を要る上乗せは、同じ名前の
+    // 段を名乗っていても成立しない。押し手の居場所を見ないと、刺さっている物の熱を場所の熱として
+    // 読むことになる。24を串の+1だけで24 tick。
+    expect(cookedCyclesOf('skewered_chunk', 'skewer')).toEqual([
+      { minutes: 24 * 15, shortestMinutes: 24 * 15, gatedBy: [[]] },
+    ]);
+  });
+
+  it('押し手が開けた段の下の増減でも、外側の段は押し手が保証していれば縛りに数えない', () => {
+    // 焦げが進むのは加熱が段（seared）へ届いてからだが、その増減は置かれた場所の火力も要る。外側の
+    // 段を縛りとして数えると、押し手が居れば必ず成立するものを理由に、焦げる周期が丸ごと消える。
+    // 熾火（+1）で12へ届くまで12 tick、そこから焦げ8を+1で8 tick。
+    const propertyGlobalId = codex.propertyNames.getId('crust');
+    expect(
+      rangeCyclesOf(defOf('crusting_chunk'), undefined, [defOf('two_stage_firepit')])
+        .filter((cycle) => cycle.drivenBy !== undefined && cycle.propertyGlobalId === propertyGlobalId)
+        .map(({ minutes, gatedBy }) => ({ minutes, gatedBy })),
+    ).toEqual([{ minutes: (12 + 8) * 15, gatedBy: [[]] }]);
+  });
+
+  it('押し手を打ち消す向きの条件つきは、落としたままで周期も消えない', () => {
+    // 冷めるのは炉の外に居る間の宣言なので、押されている間に成立するとは言えない。足し合わせると
+    // 熾火（1-2）が下端へ向かい、焼き上がる周期そのものが立たなくなる。
+    expect(cookedCyclesOf('cooling_chunk')).toEqual([
+      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
     ]);
   });
 

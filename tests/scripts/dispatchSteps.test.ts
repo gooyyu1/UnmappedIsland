@@ -2,14 +2,14 @@ import { execFileSync } from 'node:child_process';
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, join, resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FakeMetaServer, writeFakeCredentials } from '../support/fakeMetaServer';
 import { runScript, spawnScriptAsync } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
  * `scripts/daemon/dispatch-steps.sh` の `dispatch_session` が、**関門の終了コードをそのまま呼び手の
- * 終了コードにする**ことの検査（`agent-ops/board-design.md` 2.21.2）。
+ * 終了コードにする**ことの検査（`agent-ops/board-design.md` 2.21.2節）。
  *
  * **人が手綱で止めている周（3）と、それ以外で転んだ周（1）を、1周を回す側が見分けられなくなると、
  * ログがどちらも「転んだ」と言う**——それを毎回読む盤面を見回る係が、人の意思で止まっている周を
@@ -25,10 +25,6 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * 安全のため**——関門が壊れて手綱を素通りしても、占有が止めるので本物のセッションは立たない。
  * **手綱を流す側は、CCRの通信先を身代わりへ向けて止める**（[`fakeMetaServer`](../support/fakeMetaServer.ts)）。
  */
-
-// 実プロセス（bash + node + gh のスタブ）を起こすため、`npm test` 全体を並行実行したときのCPU競合
-// だけで既定の5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/daemon/dispatch-chore.sh');
 
@@ -150,7 +146,7 @@ describe('dispatch-steps.sh', () => {
 });
 
 /**
- * `gh` が死んだ周に、クラウドへ告げに行く投入（`agent-ops/board-design.md` 2.22.3）。
+ * `gh` が死んだ周に、クラウドへ告げに行く投入（`agent-ops/board-design.md` 2.22.3節）。
  *
  * **CCRへ何が届いたかで見る。** 終了コードは、関門で止まっても身代わりの応答で止まっても同じ1に
  * なるので、区別が付かない。
@@ -226,7 +222,7 @@ describe('dispatch-chore.sh の `--gate values`', () => {
 
   /**
    * **流れるのは手綱だけ。** 余力（`headroom.sh`）も占有も、他の種類と同じものを通る
-   * （`agent-ops/board-design.md` 2.5.1 は **【確定】**）。**控えを消すだけで止まる**ことで、
+   * （`agent-ops/board-design.md` 2.5.1節 は **【確定】**）。**控えを消すだけで止まる**ことで、
    * 上の「立てに行く」が余力を素通りして通っているのではないことまで見る。
    */
   it('余力の控えが無ければ、手綱を流した周でも止まる', async () => {
@@ -250,7 +246,7 @@ describe('dispatch-chore.sh の `--gate values`', () => {
    * **この種類は、手綱が読めない周に止まらない。** 増えても出るのは立ったセッションだけなので、
    * **人が止めているつもりの周に走り続けていても、誰にも見えない**（手綱を外したことは、読めない
    * 周には誰にも見えない）。名乗ってよいのは、その手綱を読む値そのものが死んでいる周に立つ1つだけ
-   * （`agent-ops/board-design.md` 2.22.3）。
+   * （`agent-ops/board-design.md` 2.22.3節）。
    */
   it('この種類を名乗るのは、値の見回りだけ', () => {
     // 見るのは**打つもの**だけ。文書が語形を引くのは呼び出しではない。

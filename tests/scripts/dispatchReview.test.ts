@@ -1,22 +1,18 @@
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
  * `scripts/daemon/dispatch-review.sh` が組み立てるタイトルの検査。
  *
- * ここが守るのは**一覧を人が読めること**（`agent-ops/board-design.md` 2.9）。とくに「何回目の判定に
+ * ここが守るのは**一覧を人が読めること**（`agent-ops/board-design.md` 2.9節）。とくに「何回目の判定に
  * なるはずか」は数えて出す値なので、数え方がずれても**それらしい番号が付いたまま**気づけない。
  *
  * `DRY_RUN` で叩くので、セッションは立たない。`gh` は PATH の先頭で差し替える。
  */
-
-// 実プロセス（bash + node + gh のスタブ）を起こすため、`npm test` 全体を並行実行したときのCPU競合
-// だけで既定の5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/daemon/dispatch-review.sh');
 
@@ -146,7 +142,7 @@ describe('dispatch-review.sh', () => {
     expect(args(1524, { comments }).prompt).toContain('それは `なし` です');
   });
 
-  // **モードは環境が決める**（`board-design.md` 2.16.3）。渡さないと未設定のまま立ち、差分に
+  // **モードは環境が決める**（`board-design.md` 2.16.3節）。渡さないと未設定のまま立ち、差分に
   // `.claude/**` が含まれるPRを読もうとした時点で承認を待って止まる（#1567、2026-09-05）。
   it('クラウドへは auto を渡す', () => {
     const built = args(1524);

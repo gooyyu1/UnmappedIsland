@@ -200,7 +200,7 @@ object_defs:
     expect(() => load(yaml)).toThrowError(/self/);
   });
 
-  it('deftnessとsurplusを読める（作る腕が効く先、docs/world/Skills.md 7節）', () => {
+  it('deftnessを読める（作る腕が効く先、docs/world/Skills.md 7節）', () => {
     const codex = load(`
 object_defs:
   fiber: {}
@@ -211,7 +211,6 @@ object_defs:
         stages:
           - {name: novice, min: 0}
           - {name: skilled, min: 60}
-      cordage_thrift: {value: 0}
   snare:
     recipes:
       knotted:
@@ -219,17 +218,12 @@ object_defs:
         steps:
           - requires: [{object: fiber, count: 2, consume: true}]
             duration: 30
-        surplus:
-          - {weight: 100}
-          - weight: {subject: agent, prop: cordage_thrift}
-            spawn: {object: snare, into: agent}
 `);
 
     const session = new WorldSession(codex);
     const agent = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
     const recipe = recipesOf(codex, 'snare')[0];
 
-    expect(recipe.surplus, '余分の卓を持つ').toBeDefined();
     expect(recipe.minutesFor(recipe.steps[0], agent), '段に届いていなければ宣言どおり').toBe(30);
 
     agent.getProperty(codex.propertyNames.getId('skill_cordage')).setNumber(60);
@@ -261,7 +255,7 @@ object_defs:
     expect(() => load(yaml)).toThrowError(/15分を割ります/);
   });
 
-  it('deftnessもsurplusも省ける（腕が効かないレシピ）', () => {
+  it('deftnessは省ける（腕が効かないレシピ）', () => {
     const codex = load(`
 object_defs:
   fiber: {}
@@ -279,7 +273,6 @@ object_defs:
     const recipe = recipesOf(codex, 'stick')[0];
 
     expect(recipe.deftness).toBeUndefined();
-    expect(recipe.surplus).toBeUndefined();
     expect(recipe.minutesFor(recipe.steps[0], agent)).toBe(5);
   });
 
@@ -345,6 +338,31 @@ object_defs:
         steps: []
 `;
     expect(() => load(yaml)).toThrowError(/steps/);
+  });
+
+  it('レシピは余分の卓を持てない（docs/world/Skills.md 7.2節【確定】）', () => {
+    // 成果物は進捗が上限へ届いた瞬間のbecome1回ぶんで常に1つ（docs/engine/RecipeSystem.md 1節）
+    // なので、余分を1つ足せば必ず倍になり、内容の側が置いた上限に収まらない。**文法を置かない**
+    // 形で守っているので、卓を書けば未知のキーとして落ちる。
+    const yaml = `
+object_defs:
+  fiber: {}
+  character:
+    props:
+      cordage_thrift: {value: 0}
+  snare:
+    recipes:
+      knotted:
+        steps:
+          - requires: [{object: fiber, count: 2, consume: true}]
+            duration: 30
+        pick:
+          - {weight: 100}
+          - weight: {subject: agent, prop: cordage_thrift}
+            spawn: {object: snare, into: agent}
+`;
+    expect(() => load(yaml)).toThrow(YamlLoadError);
+    expect(() => load(yaml)).toThrowError(/pick/);
   });
 
   it('レシピの未知のキーはエラーになる', () => {

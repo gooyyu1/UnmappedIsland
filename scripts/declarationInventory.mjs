@@ -4,6 +4,10 @@
 // 既定の並びは所属と名前で、行番号では並べない——行番号で並べると、1つ移動させただけで後続が
 // すべてずれて差分が読めなくなる。所属と名前で並べておけば、移動は1行の変化として出る。
 //
+// 棚卸しで今のままでよいと決めた宣言（review/settled.md）には、どの問いで決着したかの印を付ける。
+// **次の回が採点するのはこの一覧そのもの**なので、印がここに載っていれば、既出を除外させるのに
+// 人が覚えている必要が無い。
+//
 // 参照数は既定では出さない。何かを1つ動かすと無関係な行の数字まで動いて差分が汚れるため、
 // 調べたいときだけ --refs で足す。--refs は tests/ と scripts/ からの参照も数える
 // （src だけで数えると、src の外からしか使われていない公開を「未使用」と読み違える）。
@@ -19,6 +23,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
+import { settledDeclarations } from './settledDeclarations.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -248,6 +253,26 @@ function withReferences(declarations, occurrences) {
   });
 }
 
+/**
+ * 決着した宣言へ、どの問いで決着したかを載せる。**同じ名前を複数の問いで決着させることがある**ので、
+ * 印は1つではなく並びで持つ。
+ *
+ * 突き合わせるのは在り処と名前だけ——所属は一覧の側では読み手のためのもの
+ * （{@link settledDeclarations}）。**在り処と名前だけでは決まらない宣言**（同じファイルに同じ名前が
+ * 並ぶ）が一覧に挙がっていないことは、`tests/docs/reviewSettled.test.ts` が見る。
+ */
+function withSettlements(declarations) {
+  const questions = new Map();
+  for (const { question, file, name } of settledDeclarations(ROOT)) {
+    const key = `${file}\t${name}`;
+    questions.set(key, [...(questions.get(key) ?? []), question]);
+  }
+  return declarations.map((declaration) => {
+    const settled = questions.get(`${declaration.file}\t${declaration.name}`);
+    return settled === undefined ? declaration : { ...declaration, settled };
+  });
+}
+
 function sortKey(declaration) {
   return `${declaration.owner} ${declaration.name} ${declaration.file}`;
 }
@@ -273,10 +298,12 @@ function printListing(declarations, showReferences) {
   const separator = '\t';
   for (const declaration of declarations) {
     const flags = declaration.modifiers.length > 0 ? ` [${declaration.modifiers.join(',')}]` : '';
+    // 決着の印は種別の欄へ入れる。欄そのものを増やすと、印の付かない大多数の行に空の欄が並ぶ。
+    const settled = declaration.settled === undefined ? '' : ` 決着済み(${declaration.settled.join(',')})`;
     const columns = [
       `${declaration.owner}::${declaration.name}`,
       declaration.file,
-      `${declaration.kind}${flags}`,
+      `${declaration.kind}${flags}${settled}`,
       ...(showReferences ? [referenceNote(declaration)] : []),
       declaration.signature,
     ];
@@ -288,7 +315,7 @@ const options = new Set(process.argv.slice(2));
 const sources = listSources('src', ['.ts']);
 const showReferences = options.has('--refs') || options.has('--json');
 
-let declarations = sources.flatMap(collect);
+let declarations = withSettlements(sources.flatMap(collect));
 if (showReferences) {
   const outside = REFERENCE_ROOTS.flatMap((dir) => listSources(dir, ['.ts', '.mts']));
   declarations = withReferences(declarations, buildOccurrenceIndex([...sources, ...outside]));
