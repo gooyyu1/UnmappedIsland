@@ -2,9 +2,17 @@
 // 集めた形を読んで手を決めるのは [`board-move.mjs`](board-move.mjs)（`agent-ops/board-design.md` 2.3）。
 //
 //   import { readBoard } from './board-read.mjs';
-//   await readBoard({ log })   // → 盤面（`gh` が引けなければ undefined）
+//   await readBoard({ sayIncomplete })   // → 盤面（`gh` が引けなければ undefined）
 //
 // 出す形は `board-move.mjs` の冒頭にある。
+//
+// ## ここが言うのは、「この周の盤面が欠けている」ことだけ
+//
+// `sayIncomplete` へ渡す行は、**どれも「この周はこれが引けていない／全部を見ていない」**
+// ——だから打てない手が出る、まで1行で言い切る。**呼び手はこれを丸ごと人の読む盤面へ載せる**
+// （[`board-round.mjs`](board-round.mjs) → `agent-ops/board-design.md` 2.20.3）ので、**別の種類の
+// 行をここへ混ぜると、欠けていない周にも欠けているように出る。**
+
 //
 // ## 引けなかったら、欠けたまま返さない
 //
@@ -107,7 +115,7 @@ export const FIRST_ISSUE_PULL = 300;
  *
  * **読めない応答も `undefined`。** 引けなかったことと「1件も無い」を混ぜると、呼び手はどちらも
  * 空として読む——値の見張り（[`check-values.mjs`](check-values.mjs)）では、それがそのまま同じ題の
- * 2本目になる。`options` はそのまま `gh` へ渡す（引けないことが答えになる呼び方の `allowFail`）。
+ * 2本目になる。`options` はそのまま `gh` へ渡す（引けなかった理由の受け口 `sayWhyNot`）。
  */
 export function allOpenIssues(gh, fields, options) {
   for (let limit = FIRST_ISSUE_PULL; ; limit *= 2) {
@@ -127,8 +135,9 @@ export function allOpenIssues(gh, fields, options) {
  * 上限に当たったら言う。**黙って切ると、切られた側は盤面から消える**——「1件も無い」と同じ形に
  * なるので、次の周も、その次の周も同じに読む。
  */
-function capped(log, what, items, cap) {
-  if (items.length >= cap) log(`${what}が上限（${cap}件）に達した（この周の盤面は全部を見ていない）`);
+function capped(sayIncomplete, what, items, cap) {
+  if (items.length >= cap)
+    sayIncomplete(`${what}が上限（${cap}件）に達した（この周の盤面は全部を見ていない）`);
   return items;
 }
 
@@ -148,11 +157,11 @@ const PR_SESSIONS_QUERY =
  *
  * **読めなかった周は0にして進む。** その周に係が立たないだけで、他の手は打てる。
  */
-function countDecisions(log) {
+function countDecisions(sayIncomplete) {
   try {
     return readdirSync(DECISIONS).filter((name) => name.endsWith('.md')).length;
   } catch {
-    log('判断の履歴を数えられなかった（この周は、価値観を畳む係を立てない）');
+    sayIncomplete('判断の履歴を数えられなかった（この周は、価値観を畳む係を立てない）');
     return 0;
   }
 }
@@ -167,11 +176,11 @@ function countDecisions(log) {
  *
  * **読めなかった周は「無い」にして進む。** その周に係が立たないだけで、他の手は打てる。
  */
-function refAuditWork(log) {
+function refAuditWork(sayIncomplete) {
   try {
     return hasRefAuditWork(ROOT);
   } catch {
-    log('参照の台帳を読めなかった（この周は、参照を検める係を立てない）');
+    sayIncomplete('参照の台帳を読めなかった（この周は、参照を検める係を立てない）');
     return false;
   }
 }
@@ -195,7 +204,10 @@ function refAuditWork(log) {
  * 「二次がまだ一度も書いていない」の分岐を持つので、**実物のディレクトリの今の中身で通すと、
  * 二次が1回書いた日から検査の意味が変わる。**
  */
-export function countUnsummarizedAnalyses(log, { analyses = ANALYSES, summaries = ANALYSIS_SUMMARIES } = {}) {
+export function countUnsummarizedAnalyses(
+  sayIncomplete,
+  { analyses = ANALYSES, summaries = ANALYSIS_SUMMARIES } = {},
+) {
   const days = (dir) => {
     const named = /^(\d{4}-\d{2}-\d{2})/;
     return readdirSync(dir)
@@ -207,7 +219,7 @@ export function countUnsummarizedAnalyses(log, { analyses = ANALYSES, summaries 
   try {
     written = days(analyses);
   } catch {
-    log('分析の記録を数えられなかった（この周は、回をまたぐ形を見る係を立てない）');
+    sayIncomplete('分析の記録を数えられなかった（この周は、回をまたぐ形を見る係を立てない）');
     return 0;
   }
   // **二次がまだ一度も書いていない周は、置き場そのものが無い。** そこを読めない扱いにすると係が
@@ -252,11 +264,14 @@ function mainChecks(raw) {
  *
  * **引くのはここ1箇所。** 人の読む盤面（[`board.mjs`](board.mjs)）も同じ手を通す——別々に引くと、
  * デーモンが起こせる相手と、人に見えている宛先が食い違う。
+ *
+ * **引けなかった理由は `sayWhyNot` へ渡す**（1.7）。**呼び手は2つとも人へ断りを出す側**なので、ここで
+ * 落とすと、読む人には「引けなかった」しか届かない。
  */
-export function readPrSessions(gh) {
+export function readPrSessions(gh, sayWhyNot) {
   const raw = gh(
     ['api', 'graphql', '-f', `query=${PR_SESSIONS_QUERY}`, '-F', 'owner={owner}', '-F', 'name={repo}'],
-    { allowFail: true },
+    { sayWhyNot },
   );
   if (raw === undefined) return undefined;
   try {
@@ -289,9 +304,11 @@ function prSessions(raw) {
  * 開いている一覧の側に載っているので、そちらのラベルで見る（2.10.2）。
  *
  * 引けなかったものは書かない。**知らないことを「閉じた」として読まない**——畳んだ判定は戻せる
- * とはいえ、次の周にもう一度引ける。
+ * とはいえ、次の周にもう一度引ける。**そのときの理由はログへ残す**（1.7）——引けない番号が続くと、
+ * その担当は畳まれないまま枠を握り続けるので、**引けなかったのか閉じていないのかが読めないと、
+ * 見回る係はそこを毎回調べ直す。**
  */
-function issueStates(gh, sessions, issues) {
+function issueStates(gh, sessions, issues, sayIncomplete) {
   const open = new Set(issues.map((issue) => issue.number));
   const held = new Set();
   for (const session of sessions) {
@@ -303,7 +320,9 @@ function issueStates(gh, sessions, issues) {
 
   const states = {};
   for (const number of [...held].sort()) {
-    const state = gh(['issue', 'view', number, '--json', 'state', '--jq', '.state'], { allowFail: true });
+    const state = gh(['issue', 'view', number, '--json', 'state', '--jq', '.state'], {
+      sayWhyNot: (line) => sayIncomplete(`issue #${number} の素性を引けなかった: ${line}`),
+    });
     if (state !== undefined) states[number] = state.trim();
   }
   return states;
@@ -313,10 +332,10 @@ function issueStates(gh, sessions, issues) {
 export async function readBoard({
   gh = runGh,
   sessions = liveSessions,
-  log,
-  pendingDecisions = () => countDecisions(log),
-  unsummarizedAnalyses = () => countUnsummarizedAnalyses(log),
-  pendingRefAudit = () => refAuditWork(log),
+  sayIncomplete,
+  pendingDecisions = () => countDecisions(sayIncomplete),
+  unsummarizedAnalyses = () => countUnsummarizedAnalyses(sayIncomplete),
+  pendingRefAudit = () => refAuditWork(sayIncomplete),
   now,
   settleMinutes,
   taken,
@@ -328,6 +347,7 @@ export async function readBoard({
   // **引けなくても盤面は捨てない。** 欠けた周は後片付けと周期の係が出ないだけで済む——必須に
   // すると、**マージもレビューも投入も1周まるごと止まる。**
   // **黙って空にしない**（下の差し戻す相手と同じ理由。空は「1件も無い」と同じ形になる）。
+  let mergedWhyNot = '';
   const mergedRaw = gh(
     [
       'pr',
@@ -344,13 +364,17 @@ export async function readBoard({
       '--json',
       MERGED_PR_FIELDS,
     ],
-    { allowFail: true },
+    // **理由は道具から受け取って、自分の断りへ載せる**（1.7）。落とすと、呼び手にも人にも
+    // 「引けなかった」しか残らない。
+    { sayWhyNot: (line) => (mergedWhyNot = line) },
   );
   if (mergedRaw === undefined) {
-    log('マージ済みPRを引けなかった（この周は、後片付けもスメルを拾う係も出ない）');
+    sayIncomplete(
+      `マージ済みPRを引けなかった（この周は、後片付けもスメルを拾う係も出ない）: ${mergedWhyNot}`,
+    );
   }
   const mergedPrs = capped(
-    log,
+    sayIncomplete,
     'マージ済みPR',
     mergedRaw === undefined ? [] : JSON.parse(mergedRaw),
     CAPS.mergedPrs,
@@ -366,14 +390,17 @@ export async function readBoard({
   // （`board-move.mjs` が覚え書きを出す）。**黙って空にしない**——空は「名乗っていない」と同じ形
   // なので、**開いているPRが全部宛先を失ったように見え**、抱えている担当が片端から人へ返る
   // （2.11.4）。`undefined` のまま渡して、読む側に「言えない」を持たせる。
-  const claimed = readPrSessions(gh);
-  if (claimed === undefined) log('差し戻す相手を引けなかった（この周は、宛先のことを何も言えない）');
+  let claimWhyNot = '';
+  const claimed = readPrSessions(gh, (line) => (claimWhyNot = line));
+  if (claimed === undefined) {
+    sayIncomplete(`差し戻す相手を引けなかった（この周は、宛先のことを何も言えない）: ${claimWhyNot}`);
+  }
 
   // **一覧を引けなかったら投げる**（[`live-sessions.mjs`](live-sessions.mjs)）。受けるのは呼び手で、
   // ここでも受けると、次に足す失敗をどちらへ載せるかが決まらなくなる。
   const live = await sessions();
 
-  const openPrs = capped(log, '開いているPR', JSON.parse(prs), CAPS.openPrs);
+  const openPrs = capped(sayIncomplete, '開いているPR', JSON.parse(prs), CAPS.openPrs);
   return {
     // **手が空いてからの長さを測るのに要る**（`board-move.mjs` の `STALL_MINUTES`）。この周の
     // 時刻は1つで、比べる相手（台帳の `idle:`）も同じ形で書く。
@@ -387,7 +414,7 @@ export async function readBoard({
     pendingRefAudit: pendingRefAudit(),
     issues: openIssues,
     taken,
-    issueStates: issueStates(gh, live, openIssues),
+    issueStates: issueStates(gh, live, openIssues, sayIncomplete),
     prSessions: claimed,
     sessions: live,
   };
