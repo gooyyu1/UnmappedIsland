@@ -95,6 +95,15 @@ function objectDefinitions(revision) {
 export const KEY_LINES = '^([A-Za-z_][A-Za-z0-9_]*:|  [A-Za-z_][A-Za-z0-9_]*:)';
 
 /**
+ * `git grep -n <rev>` が返す1行——`<rev>:<パス>:<行番号>:<中身>`。
+ *
+ * **区切りの `:` の数では割れない。** パスにも中身にも `:` が入りうるので、前から数えると列がずれる。
+ * **パスの終わりは拡張子で決める**（引いているのは `.yaml` だけ）——そこを起点にすれば、リビジョンの
+ * 綴りにも中身にも依らない。
+ */
+const HIT = /^[^:]*:(.*\.yaml):\d+:([\s\S]*)$/;
+
+/**
  * `git grep -n <KEY_LINES> <rev>` の出力から、`object_defs` の直下キーを数える。
  *
  * **ファイルが変わるたびに節から出る。** `git grep` はファイルごとに並べて返すが、前のファイルが
@@ -106,9 +115,9 @@ export function countObjectDefs(stdout) {
   let current = '';
   for (const line of stdout.split('\n')) {
     if (line === '') continue;
-    // `<rev>:<path>:<行番号>:<中身>`。**パスにも中身にも `:` が入る**ので、前から3つだけ割る。
-    const [, path, , ...rest] = line.split(':');
-    const text = rest.join(':');
+    const found = HIT.exec(line);
+    if (found === null) continue;
+    const [, path, text] = found;
     if (!CODEX.test(path)) continue;
     if (path !== current) {
       current = path;
@@ -200,8 +209,12 @@ function boundaries(argv) {
   return days;
 }
 
-function ratio(top, bottom) {
-  return bottom === 0 ? '—' : (top / bottom).toFixed(1);
+/**
+ * 1オブジェクトあたりの費やした量。**増えていない区間は割を出さない**——定義が減った区間で負の値を
+ * 出すと、**払った量が多いほど小さく（良く）見える**列になる。
+ */
+export function ratio(top, bottom) {
+  return bottom <= 0 ? '—' : (top / bottom).toFixed(1);
 }
 
 /** 表を組み立てて標準出力へ書く。**呼ばれたときだけ走る**ので、上の関数は検査から素で引ける。 */

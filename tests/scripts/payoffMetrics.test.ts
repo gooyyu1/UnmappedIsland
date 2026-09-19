@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { resolve, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { KEY_LINES, countCutIssues, countObjectDefs } from '../../scripts/payoffMetrics.mjs';
+import { KEY_LINES, countCutIssues, countObjectDefs, ratio } from '../../scripts/payoffMetrics.mjs';
 
 /**
  * `npm run stats:payoff`（`scripts/payoffMetrics.mjs`）の検査。
@@ -65,10 +65,34 @@ describe('countObjectDefs', () => {
     expect(countObjectDefs(stdout)).toBe(1);
   });
 
+  // **区切りの `:` の数では割れない。** パスにも中身にも `:` は入りうるので、前から数えて割ると
+  // 列がずれ、**置き場で絞る側が当たらなくなって、その行が黙って数から落ちる。**
+  it('パスに `:` が入っていても、置き場で絞る側が当たる', () => {
+    const stdout = [
+      hit('src/assets/world-codex/a:b.yaml', 1, 'object_defs:'),
+      hit('src/assets/world-codex/a:b.yaml', 2, '  stone_axe:'),
+      hit('src/assets/world-codex/a:b.yaml', 3, '  note: x:y:z'),
+    ].join('\n');
+    expect(countObjectDefs(stdout)).toBe(2);
+  });
+
   // **引く式と数える側は対で効く。** 式が2段目のインデントまで引くようになったら、`  ` で始まる行を
   // 直下キーとして数えているここが嘘になる。
   it('引く式が見るのは、トップレベルのキーとその直下だけ', () => {
     expect(KEY_LINES).toBe('^([A-Za-z_][A-Za-z0-9_]*:|  [A-Za-z_][A-Za-z0-9_]*:)');
+  });
+});
+
+describe('ratio', () => {
+  it('増えた区間は、1オブジェクトあたりの本数を出す', () => {
+    expect(ratio(24, 3)).toBe('8.0');
+  });
+
+  // **増えていない区間に割は無い。** 負のまま出すと、**払った量が多いほど値が小さく（良く）見える**
+  // 列になり、定義を減らした週がいちばん割の良い週として並ぶ。
+  it('定義が減った区間は、割を出さない', () => {
+    expect(ratio(30, -2)).toBe('—');
+    expect(ratio(30, 0)).toBe('—');
   });
 });
 
@@ -147,9 +171,11 @@ describe('npm run stats:payoff', () => {
       .filter((line) => /^\| \d{4}-\d{2}-\d{2} \|/.test(line))
       .map((line) => line.split('|').map((cell) => cell.trim()));
     expect(rows.length).toBeGreaterThan(1);
-    // 先頭の行は区間の始まりなので、費やした量の列が `—` になる。数を見るのは最後の行。
-    const last = rows[rows.length - 1];
-    expect(Number(last[2])).toBeGreaterThan(0);
-    expect(Number(last[4])).toBeGreaterThan(0);
+    // 今の定義の数は、最後の行がそのまま持っている。
+    expect(Number(rows[rows.length - 1][2])).toBeGreaterThan(0);
+    // **PRの本数は区間を通して見る。** 最後の区間は**今日まで**なので、マージが1本も無い週に
+    // 当たると、数え方が壊れていなくても0になる。先頭の行は区間の始まりで `—` が入るので外す。
+    const spent = rows.slice(1).reduce((sum, row) => sum + Number(row[4]), 0);
+    expect(spent).toBeGreaterThan(0);
   });
 });
