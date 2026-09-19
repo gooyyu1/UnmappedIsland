@@ -105,9 +105,15 @@ export function parseRecipes(
         : withYamlContext(`${context}.deftness`, () => {
             const deftnessContext = `${context}.deftness`;
             requireKnownKeys(deftnessNode, DEFTNESS_KEYS, deftnessContext);
+            const skillGlobalId = loader.referToProperty(
+              requireScalar(deftnessNode, 'skill', deftnessContext),
+              `${deftnessContext}.skill`,
+            );
+            const fromStage = requireScalar(deftnessNode, 'from_stage', deftnessContext);
+            loader.referToPropertyStage(skillGlobalId, fromStage, `${deftnessContext}.from_stage`);
             return new RecipeDeftnessDef(
-              loader.propertyNames.intern(requireScalar(deftnessNode, 'skill', deftnessContext)),
-              requireScalar(deftnessNode, 'from_stage', deftnessContext),
+              skillGlobalId,
+              fromStage,
               requireNumber(deftnessNode, 'minutes', deftnessContext),
             );
           });

@@ -132,6 +132,19 @@ object_defs:
     props:
       weight: {value: 100}
 
+  # agentが持つ前提で名指しされているプロパティの宣言。名指しの相手はどこかの型が宣言していなければ
+  # ならない（WorldCodexの名指し検査）ので、書き出しの検査には出てこないこの型が引き受ける。
+  survivor:
+    props:
+      satiety: {value: 0}
+      travel_delay: {value: 0}
+      woodwork_thrift: {value: 0}
+      skill_woodwork:
+        value: 0
+        stages:
+          - {name: novice}
+          - {name: skilled, min: 30}
+
   # 効果の全動詞を1つずつ通すための型。書き出しの取りこぼしを検査するためだけに置く。
   gourd:
     tags: [item]

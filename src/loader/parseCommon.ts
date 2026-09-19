@@ -219,5 +219,5 @@ function parsePropertyRef(
 ): PropertyPath {
   const subjectName = tryGetScalar(node, 'subject', context);
   const root = subjectName !== undefined ? parseReferenceRoot(context, subjectName, scope) : 'self';
-  return new PropertyPath(root, loader.propertyNames.intern(requireScalar(node, 'prop', context)));
+  return new PropertyPath(root, loader.referToProperty(requireScalar(node, 'prop', context), context));
 }

@@ -14,6 +14,12 @@ describe("amongのsubjectと'picked'", () => {
 
   const withTurn = (pickBody: string): string => `
 object_defs:
+  # 重みが名指すvolumeの宣言元（名指しの相手はどこかの型が宣言していなければならない）。
+  spoil:
+    tags: [item]
+    props:
+      volume: {value: 1}
+
   monkey:
     slots:
       spoils: {cell: {accept: {tag: item}}}

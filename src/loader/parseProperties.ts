@@ -60,7 +60,7 @@ export function parsePropAppendingPassives(
   passives: PassiveEffect[],
 ): PropertyDef {
   const context = `'${objectDefName}'.props.'${propName}'`;
-  const propertyGlobalId = loader.propertyNames.intern(propName);
+  const propertyGlobalId = loader.definePropertyName(propName);
 
   requireKnownKeys(node, KNOWN_PROP_KEYS, context);
 
@@ -117,7 +117,7 @@ export function parsePropAppendingPassives(
         parseStageAppendingPassives(
           loader,
           objectDefName,
-          propName,
+          propertyGlobalId,
           context,
           isSymbolProperty,
           passives,
@@ -204,7 +204,7 @@ function parseBase(
     return new PropertyPath(root, propertyGlobalId);
   }
 
-  return new PropertyPath(root, loader.propertyNames.intern(basePropName));
+  return new PropertyPath(root, loader.referToProperty(basePropName, baseContext));
 }
 
 /**
@@ -255,7 +255,7 @@ function parsePropertyTags(
 function parseStageAppendingPassives(
   loader: WorldCodexYamlLoader,
   objectDefName: string,
-  propName: string,
+  propertyGlobalId: PropertyGlobalId,
   context: string,
   isSymbolProperty: boolean,
   passives: PassiveEffect[],
@@ -280,7 +280,14 @@ function parseStageAppendingPassives(
   const stagePassives = tryGetSeq(stageMap, 'passives', context);
   if (stagePassives !== undefined)
     for (const passiveNode of stagePassives.items as YamlNode[])
-      parsePassiveInto(loader, passives, objectDefName, asMap(passiveNode, context), propName, stageName);
+      parsePassiveInto(
+        loader,
+        passives,
+        objectDefName,
+        asMap(passiveNode, context),
+        propertyGlobalId,
+        stageName,
+      );
 
   return stage;
 }

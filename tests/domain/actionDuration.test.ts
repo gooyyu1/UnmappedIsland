@@ -144,6 +144,11 @@ object_defs:
 object_defs:
   # travel_delayを持たない担ぎ手。土台が辿り着かない。
   ghost: {}
+  # travel_delayの宣言元（名指しの相手はどこかの型が宣言していなければならない）。担ぎ手が
+  # 持っていないことと、世界のどこにも宣言が無いことは別。
+  hiker:
+    props:
+      travel_delay: {value: 20}
   trail:
     props:
       travel_minutes:

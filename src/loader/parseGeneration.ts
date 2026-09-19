@@ -148,7 +148,7 @@ function parseVariants(loader: WorldCodexYamlLoader, context: string, node: YAML
         const value = Number(asScalarText(valueNode, propContext));
         if (!Number.isInteger(value))
           throw new YamlLoadError(`${propContext}: 亜種が上書きする値は整数である必要があります。`);
-        props.set(loader.propertyNames.intern(propName), value);
+        props.set(loader.referToProperty(propName, propContext), value);
       }
 
     requireKnownKeys(map, ['id', 'props'], variantContext);
