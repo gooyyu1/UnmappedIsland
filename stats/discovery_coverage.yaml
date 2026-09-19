@@ -4,7 +4,7 @@
 # 何を測ったか・引いた線・数えていないものは docs/diagnostics/DiscoveryCoverageStats.md。
 
 meta:
-  - {seeds: 2000, islands: 2000, objects: 24, tags: 19}
+  - {seeds: 2000, islands: 2000, objects: 25, tags: 19}
 
 object_sources:
   - {object: abaca, tags: [fixture], locations: [jungle]}
@@ -22,6 +22,7 @@ object_sources:
   - {object: palm_tree, tags: [fixture], locations: [jungle, sandy_beach]}
   - {object: rat, tags: [item, animal, quarry], locations: [cliff_coast, forest, grassland, jungle, mountain_peak, mountainside, rocky_coast, rocky_field, sandy_beach, wasteland]}
   - {object: sapling, tags: [fixture], locations: [forest, jungle]}
+  - {object: seaweed, tags: [perishable, dryable, smokable, item, food], locations: [cliff_coast, rocky_coast]}
   - {object: shallow_cave, tags: [location, fixture, shelter], locations: [cliff_coast, mountain_peak, mountainside, rocky_coast, rocky_field]}
   - {object: spring, tags: [water_source, fixture], locations: [forest, grassland]}
   - {object: stone, tags: [roastable, item], locations: [cliff_coast, mountain_peak, mountainside, rocky_coast, rocky_field, wasteland]}
@@ -36,20 +37,20 @@ tag_sources:
   - {tag: animal, objects: [junglefowl, monkey, rat, wild_boar]}
   - {tag: artifact, objects: [golden_chalice]}
   - {tag: container, objects: [woven_basket]}
-  - {tag: dryable, objects: [coconut_crab, water_spinach]}
+  - {tag: dryable, objects: [coconut_crab, seaweed, water_spinach]}
   - {tag: fixture, objects: [abaca, banana_plant, berry_bush, broadleaf_tree, driftwood_trunk, palm_tree, sapling, shallow_cave, spring, woven_basket]}
-  - {tag: food, objects: [water_spinach]}
+  - {tag: food, objects: [seaweed, water_spinach]}
   - {tag: fragile, objects: [woven_basket]}
   - {tag: fuel, objects: [thick_branch, twig]}
-  - {tag: item, objects: [clay, coconut, coconut_crab, dry_grass, golden_chalice, junglefowl, monkey, rat, stone, taro, thick_branch, twig, water_spinach, wild_boar, woven_basket]}
+  - {tag: item, objects: [clay, coconut, coconut_crab, dry_grass, golden_chalice, junglefowl, monkey, rat, seaweed, stone, taro, thick_branch, twig, water_spinach, wild_boar, woven_basket]}
   - {tag: location, objects: [shallow_cave]}
   - {tag: meat_bait, objects: [coconut_crab]}
-  - {tag: perishable, objects: [coconut, coconut_crab, taro, water_spinach]}
+  - {tag: perishable, objects: [coconut, coconut_crab, seaweed, taro, water_spinach]}
   - {tag: plant_bait, objects: [taro, water_spinach]}
   - {tag: quarry, objects: [junglefowl, monkey, rat, wild_boar]}
   - {tag: roastable, objects: [coconut_crab, stone, taro]}
   - {tag: shelter, objects: [shallow_cave]}
-  - {tag: smokable, objects: [coconut_crab, water_spinach]}
+  - {tag: smokable, objects: [coconut_crab, seaweed, water_spinach]}
   - {tag: tinder, objects: [dry_grass]}
   - {tag: water_source, objects: [spring]}
 
@@ -69,6 +70,7 @@ island_missing_object:
   - {object: palm_tree, unit: percent, share: 13.85}
   - {object: rat, unit: percent, share: 0.00}
   - {object: sapling, unit: percent, share: 1.00}
+  - {object: seaweed, unit: percent, share: 0.00}
   - {object: shallow_cave, unit: percent, share: 0.00}
   - {object: spring, unit: percent, share: 0.00}
   - {object: stone, unit: percent, share: 0.00}
@@ -85,7 +87,7 @@ island_missing_tag:
   - {tag: container, unit: percent, share: 23.30}
   - {tag: dryable, unit: percent, share: 0.00}
   - {tag: fixture, unit: percent, share: 0.00}
-  - {tag: food, unit: percent, share: 0.55}
+  - {tag: food, unit: percent, share: 0.00}
   - {tag: fragile, unit: percent, share: 23.30}
   - {tag: fuel, unit: percent, share: 0.00}
   - {tag: item, unit: percent, share: 0.00}

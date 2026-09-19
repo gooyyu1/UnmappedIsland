@@ -1262,7 +1262,7 @@ object_texts:
   # 海で採れるもの（voyage.yaml）。
   seaweed:
     display_name: 海藻
-    description: 海面を漂う藻を掬い上げたもの。生のまま食べられる。
+    description: 海面を漂う藻や、岩場へ打ち上げられたもの。生のまま食べられる。
   bird_egg:
     display_name: 海鳥の卵
     description: 岩の窪みから採った卵。殻を割ればそのまま飲める。

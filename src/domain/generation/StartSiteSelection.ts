@@ -43,7 +43,7 @@ export const STARTUP_NEEDS: readonly StartupNeed[] = [
   { label: '軸', sourceObjectNames: ['thick_branch'] },
   { label: '刃', sourceObjectNames: ['stone'] },
   { label: '水', sourceObjectNames: ['palm_tree', 'spring'] },
-  { label: '道具の要らない食料', sourceObjectNames: ['water_spinach'] },
+  { label: '道具の要らない食料', sourceObjectNames: ['water_spinach', 'seaweed'] },
 ];
 
 /** 土地の型1つが、要るものに対して持っているもの。 */

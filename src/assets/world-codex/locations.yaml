@@ -484,6 +484,11 @@ object_defs:
               - {object: coconut, into: self}
               - {object: thick_branch, into: self}
             add: {agent: {skill_cordage: 1}}
+          # 打ち上げられた海藻（voyage.yaml）。流木やヤシの実と同じく海が寄せるもので、岩がその帯を
+          # 引っ掛ける。**草も木の実も生えない海岸で、vitaminを返すのはこの経路**——無いと、1日ぶんを
+          # 漂着のヤシの実だけから集めることになる（issue #2403）。
+          - weight: 12
+            spawn: {object: seaweed, count: 2, into: self}
           - weight: 20
             spawn: {object: stone, count: 2, into: self}
             add: {agent: {skill_knapping: 1}}
@@ -578,6 +583,10 @@ object_defs:
               - {object: coconut, into: self}
               - {object: thick_branch, into: self}
             add: {agent: {skill_cordage: 1}}
+          # 打ち上げられた海藻（voyage.yaml）。岩の海岸と同じく、波が崖の根へ寄せたものを拾う
+          # ——**草も木の実も生えない海岸で、vitaminを返すのはこの経路**（issue #2403）。
+          - weight: 12
+            spawn: {object: seaweed, count: 2, into: self}
           - weight: 25
             spawn: {object: stone, count: 2, into: self}
             add: {agent: {skill_knapping: 1}}
