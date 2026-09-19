@@ -6,6 +6,7 @@ import type { Localization } from '../../src/locale/Localization';
 import { bundledLocaleText, loadLocalization } from '../../src/locale/Localization';
 import { UI_TEXT_NAMES } from '../../src/locale/uiTexts';
 import { typeDisplayName } from '../../src/locale/typeDisplayName';
+import { nameWidth } from '../support/labelWidth';
 import { bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
 
 /**
@@ -18,14 +19,6 @@ import { bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
 
 /** カードのタイトルの板に収まる幅（全角の文字数ぶん。CardView.md 1節 カードの枠）。 */
 const NAME_MAX_WIDTH = 10;
-
-/**
- * 名前の幅を全角の文字数として近似する（半角は0.5、それ以外は1.0）。
- * 実測より大きめに出るので、これで収まれば実物も収まる。
- */
-function nameWidth(label: string): number {
-  return [...label].reduce((total, char) => total + (/[ -~｡-ﾟ]/.test(char) ? 0.5 : 1), 0);
-}
 
 /**
  * `reason`が書ける2箇所（GameElementDefinition.md 14.6節と9.3節）。**同じ綴りの別の名前空間**なので、
@@ -321,12 +314,7 @@ describe('同梱の表示文字列ファイル', () => {
 
   it('カードの名前は枠のタイトルの板に1行で収まる', () => {
     // 板は高さ22uの固定で、名前は16uの1行（CardView.md 1節 カードの枠）。使える幅172uに対して
-    // 全角なら10文字ぶんにあたる。
-    //
-    // **幅はフォントを使わず近似で測る。** Nodeには文字の描画幅を測る手段が無く、そのために
-    // フォントを依存に加えたくない。全角1.0・半角0.5で数えると、実測（Noto Sans JP）に対して
-    // 常に大きめに出る——16uでの英字の平均は0.50字ぶんで、最も細い並び（illi…）は0.19字ぶん。
-    // つまり**この検査を通れば実物は必ず収まる**。
+    // 全角なら10文字ぶんにあたる。幅の測り方（近似で、通れば実物は必ず収まる）はnameWidth。
     for (const def of codex.objects) {
       const name = def.name;
       const label = typeDisplayName(codex, locale, def);

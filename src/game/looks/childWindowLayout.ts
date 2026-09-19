@@ -22,8 +22,28 @@ export const CONTENT_GAP = 24;
 
 /** 操作ボタンの高さ（アイコンボタンと同じ最小タップ領域）と、幅の上限・間隔。 */
 export const ACTION_HEIGHT = SIZE.iconButton;
-export const ACTION_MAX_WIDTH = 420;
+const ACTION_MAX_WIDTH = 420;
 export const ACTION_GAP = 24;
+
+/**
+ * 操作の行へcount個を等分して置いたときの、1つの幅（rowWidthと同じ単位で答える）。
+ *
+ * **数が増えるほど細くなり、下限は無い。** ラベルは縮まず折り返しもしないので、**並べられる数の
+ * 上限はこの幅が決める**（[`Windows.md`](../../../docs/ui/Windows.md) 4節）。数が少ないときに
+ * 間延びしないよう上限で頭打ちにする。
+ */
+export function actionButtonWidth(metrics: ScreenMetrics, rowWidth: number, count: number): number {
+  const gap = metrics.px(ACTION_GAP);
+  return Math.min(metrics.px(ACTION_MAX_WIDTH), (rowWidth - gap * (count - 1)) / count);
+}
+
+/**
+ * ウィンドウの内側の幅（`windowWidth`と同じ単位で答える）。中段も操作の行もこの幅で、
+ * **最も狭いウィンドウ**（{@link MIN_WINDOW_WIDTH}）のときが、並べられる操作の数の上限を決める。
+ */
+export function windowContentWidth(metrics: ScreenMetrics, windowWidth: number): number {
+  return windowWidth - metrics.px(WINDOW_PADDING) * 2;
+}
 
 /**
  * 最下段の「閉じる」の行。**窓の下端に置き、幅は上限つきで中央寄せ**——どの子ウィンドウでも同じ
@@ -32,7 +52,7 @@ export const ACTION_GAP = 24;
 export function closeRow(metrics: ScreenMetrics, window: Rect): Rect {
   const padding = metrics.px(WINDOW_PADDING);
   const height = metrics.px(ACTION_HEIGHT);
-  const width = Math.min(metrics.px(ACTION_MAX_WIDTH), window.width - padding * 2);
+  const width = Math.min(metrics.px(ACTION_MAX_WIDTH), windowContentWidth(metrics, window.width));
   return {
     x: window.x + (window.width - width) / 2,
     y: window.y + window.height - padding - height,
