@@ -1933,6 +1933,9 @@ describe('腕前とレシピの解放条件', () => {
     //
     // **見ているのは相手が居ることまでで、何を消費するかまでは見ない**——`become`で相手を変える
     // だけの操作（塩漬け）も、出す物を持たないまま通る。
+    //
+    // **見るのは手作業だけで、レシピの工程は入らない**（同3.2節がその理由を持つ）。射程をレシピへ
+    // 広げるなら、あちらの1文も一緒に書き換えること——**広げたことに気づけるのはここを触る者だけ。**
     const gaining = declaredInteractions().filter((interaction) => interaction.skills.length > 0);
     expect(gaining.length, '腕を配る操作が1つも無い').toBeGreaterThan(0);
 
