@@ -76,6 +76,11 @@ issueに書かれた1箇所だけを直して、同じ原因の残りを放置�
 issue の側でそれを止める書き方は
 [`agent-ops/parallel-work.md`](agent-ops/parallel-work.md)「タスク issue の型」。
 
+**issue を立てる前に、[`docs/DesignNotes.md`](docs/DesignNotes.md) と突き合わせる**——書こうとして
+いる打ち手がそこで不採用済みなら、その案は書かない（症状のほうが生きているなら、不採用の項目を
+`## 拠り所` に引いて立てる）。**掛かるのは issue を立てる者すべて**で、詳細は
+[`agent-ops/parallel-work.md`](agent-ops/parallel-work.md)「立てる前に、不採用の記録と突き合わせる」。
+
 **自分で立てた issue には `origin:agent` と `goal:`（向かう先）を付ける**（起票のときに一緒に渡す）。
 前者は人が立てた issue と見分けるための印で、人とエージェントは同じアカウントで書き込むため
 **付けられるのは立てた本人だけ**。後者は**盤面が配る順と、発掘係を立てるかを決める印**で、

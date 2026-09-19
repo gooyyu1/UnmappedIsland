@@ -85,6 +85,9 @@
 
 **打つべきだと判断したら、issue を1件切ります。**
 
+- **打ち手が `docs/DesignNotes.md` で不採用済みでないかを、立てる手前で確かめてください**
+  （`agent-ops/parallel-work.md`「立てる前に、不採用の記録と突き合わせる」）。**この係が打つのは
+  根本的な対策**なので、同じ形が過去に不採用になっていることは十分あります。
 - `kind:` のラベルは付けないでください（分類するのは棚卸しです。`agent-ops/board-design.md` 2.17.1）。
 - **`origin:agent` は起票のときに一緒に渡してください**（`agent-ops/parallel-work.md`「自分で立てた
   issue には `origin:agent` を付ける」）。
