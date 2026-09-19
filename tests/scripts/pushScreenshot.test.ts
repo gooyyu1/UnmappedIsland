@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { pathForBash, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
@@ -17,10 +17,6 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * **断る側の言い分は `pre-receive` に言わせる**——git の言葉は環境の言語で変わるので、照合できる
  * 文字列をこちらから置く。
  */
-
-// 実プロセス（bash と git）を何本も起こすため、`npm test` 全体を並行実行したときのCPU競合だけで
-// 既定の5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/agent/push-screenshot.sh');
 

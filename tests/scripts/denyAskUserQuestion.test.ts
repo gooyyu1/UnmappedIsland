@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { runWithOnlyTheseCommands } from '../support/onlyTheseCommands';
 
@@ -10,10 +10,6 @@ import { runWithOnlyTheseCommands } from '../support/onlyTheseCommands';
  * チャットで訊く」）。**拒否の理由に代わりの訊き方まで書いてあるか**を見る——理由が「使うな」だけ
  * だと、受け取った側は訊くこと自体をやめる。
  */
-
-// 実プロセス（bash）を起こすので、`npm test` 全体を並行実行したときのCPU競合だけで既定の5秒を
-// 超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const HOOK = resolve(__dirname, '../../.claude/hooks/deny-ask-user-question.sh');
 
