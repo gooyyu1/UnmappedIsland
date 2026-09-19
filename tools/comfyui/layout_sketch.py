@@ -42,6 +42,9 @@ CLAY_FACE = (152, 124, 94)
 TARO = (124, 92, 64)
 TARO_DARK = (86, 62, 42)
 TARO_RING = (170, 142, 110)
+SAND = (196, 176, 140)
+# 縁に残った塩。**白にしない**——紙と同じ明るさだと card_art.py が背景として抜く。
+SALT = (206, 204, 196)
 PAGE = (255, 255, 255)
 
 
@@ -623,17 +626,280 @@ def draw_harpoon(draw: ImageDraw.ImageDraw) -> None:
     draw_hafted(draw, (880, 780), (350, 300), 44, (150, 40, 38, 9), 150, across=False)
 
 
+def draw_firewood(draw: ImageDraw.ImageDraw) -> None:
+    """割り薪1本。縦に割った半割りで、樹皮は丸い背にだけ残り、広い割り口が上を向く。
+
+    **生成では割り薪にならない**（4枚とも木口の接写。prompts/objects.json の green_firewood 参照）。
+    **丸太から Qwen に割らせるのも効かない**——「縦に割って半分だけ残せ」と頼むと、割らずに樹皮を
+    剥いだ丸太が返った。割れているかどうかは形の話なので、ここで決める。
+
+    **丸太（draw_log）と分かれるのは、面の半分が割り口であること。** 姿勢は切り出しが対角線へ
+    寝かせる（recipes/green_firewood.json の diagonal）ので、ここでは横へ置く。
+    """
+    # 割り口。上を向いた広い面で、奥へ向かってわずかに細る。
+    face = [(240.0, 420.0), (908.0, 392.0), (920.0, 470.0), (252.0, 506.0)]
+    draw.polygon(face, fill=FACE, outline=OUTLINE, width=4)
+    # 割り裂いた木目。割り口であることは、この筋が長手方向に通っていることで読める。
+    for ratio in (0.25, 0.5, 0.75):
+        draw.line(
+            [(240 + (252 - 240) * ratio, 420 + (506 - 420) * ratio),
+             (908 + (920 - 908) * ratio, 392 + (470 - 392) * ratio)],
+            fill=FACE_LINE,
+            width=5,
+        )
+    # 樹皮の残る背。**下端をふくらませる**——真っ直ぐに引くと、割り薪ではなく挽いた角材に見える。
+    belly = [
+        (912 - (912 - 258) * index / 12,
+         520 + (562 - 520) * index / 12 + 18 * math.sin(math.pi * index / 12))
+        for index in range(13)
+    ]
+    draw.polygon([(252.0, 506.0), (920.0, 470.0), *belly], fill=BARK, outline=OUTLINE, width=4)
+    draw.line(belly, fill=BARK_DARK, width=14, joint="curve")
+    # 手前の木口。割った半分なので、上が平らなD字になる。
+    draw.polygon([(240.0, 420.0), (252.0, 506.0), (258.0, 562.0), (206.0, 536.0), (196.0, 456.0)],
+                 fill=FACE, outline=OUTLINE, width=4)
+    for ring in (0.62, 0.32):
+        draw.ellipse(
+            [225 - 30 * ring, 490 - 72 * ring, 225 + 30 * ring, 490 + 72 * ring],
+            outline=FACE_LINE,
+            width=3,
+        )
+
+
+def draw_firewood_rack(draw: ImageDraw.ImageDraw) -> None:
+    """薪棚。脚で持ち上げた桁の上に、編んだ葉の屋根を掛ける。
+
+    **生成では棚にならない**（4枚とも藁で編んだ巣かハンモック。prompts/objects.json の
+    firewood_rack 参照）。
+
+    **干し場（draw_drying_rack）と分けているのは姿勢**——屋根が載った低い台であることと、
+    桁の下が空いていることをここで決める。**薪は描かない**（枠の中身なので、押せば札で並ぶ）。
+    """
+    ground, front_top, back_top = 800.0, 470.0, 436.0
+    # 脚4本。左右の端に手前・奥の2本ずつ立てる。
+    for foot_x, lean, depth, top in (
+        (392.0, 0.06, -34.0, back_top),
+        (912.0, -0.06, -34.0, back_top),
+        (300.0, 0.10, 0.0, front_top),
+        (820.0, -0.10, 0.0, front_top),
+    ):
+        draw_branch(draw, (foot_x, ground + depth), (lean, -1.0), ground + depth - top, 40)
+    # 桁2本。積んだ薪を受ける面で、**地面から離れていることがこの棚の働き**（firewood.yaml）。
+    for left, right, y, thickness in ((312.0, 928.0, 616.0, 40), (270.0, 886.0, 650.0, 44)):
+        draw.line([(left, y), (right, y)], fill=BARK, width=thickness, joint="curve")
+        draw.line([(left, y + thickness * 0.3), (right, y + thickness * 0.3)], fill=BARK_DARK,
+                  width=thickness // 3)
+        for x in (left, right):
+            draw_end_grain(draw, (x, y), thickness / 2)
+    # 脚と桁の縛り。
+    for x in (346.0, 410.0, 802.0, 898.0):
+        draw.line([(x - 34, 628.0), (x + 34, 620.0)], fill=CORD, width=13)
+
+    # 屋根。編んだ葉3枚を、奥から手前へ下がる面として葺く。脚の頭を覆うので後から描く。
+    back_left, back_right, back_y = 380.0, 900.0, 414.0
+    front_left, front_right, front_y = 280.0, 940.0, 506.0
+    draw.polygon(
+        [(back_left, back_y), (back_right, back_y), (front_right, front_y), (front_left, front_y)],
+        fill=LEAF,
+        outline=OUTLINE,
+        width=4,
+    )
+    # 編み目。段ごとに傾きを返して、互い違いに組んだ短冊に見せる（燻し小屋と同じ）。
+    rows = 7
+    for row in range(rows):
+        ratio = (row + 0.5) / rows
+        y = back_y + (front_y - back_y) * ratio
+        left = back_left + (front_left - back_left) * ratio
+        right = back_right + (front_right - back_right) * ratio
+        lean = 20 if row % 2 == 0 else -20
+        x = left + 14
+        while x < right - 14:
+            draw.line([(x, y - 7), (x + lean, y + 7)], fill=LEAF_DARK, width=6)
+            x += 44
+    # 葉3枚の継ぎ目。2本で3枚に割れる（材料がそのまま読める）。
+    for ratio in (1 / 3, 2 / 3):
+        draw.line(
+            [(back_left + (back_right - back_left) * ratio, back_y),
+             (front_left + (front_right - front_left) * ratio, front_y)],
+            fill=LEAF_DARK,
+            width=8,
+        )
+    # 屋根を脚へ締める縄。
+    for x in (400.0, 860.0):
+        draw.line([(x - 12, back_y + 8), (x + 12, front_y - 8)], fill=CORD_DARK, width=12)
+
+
+def draw_drying_rack(draw: ImageDraw.ImageDraw) -> None:
+    """干し場。枝を三脚2つに組んで立て、頭のあいだへ縄を1本張る。
+
+    **生成では枠にならない**（4枚とも枯れ枝の茂み。prompts/objects.json の drying_rack 参照）。
+
+    **縄が張ってあることだけが干し場の手掛かり。** 掛けてある物は描かない（枠の中身）ので、
+    縄が無ければただの枝の三脚になる。薪棚と分けるため、屋根も面も持たせない。
+    """
+    for apex, feet in (
+        ((352.0, 340.0), ((188.0, 800.0), (356.0, 820.0), (474.0, 772.0))),
+        ((830.0, 340.0), ((712.0, 772.0), (828.0, 820.0), (992.0, 800.0))),
+    ):
+        for foot in feet:
+            dx, dy = apex[0] - foot[0], apex[1] - foot[1]
+            span = math.hypot(dx, dy)
+            # 頭より70px先まで伸ばす。交わった先が突き出ていないと、束ねた三脚に見えない。
+            draw_branch(draw, foot, (dx / span, dy / span), span + 70, 38)
+        # 頭の縛り。
+        for offset in (0, 24):
+            draw.line(
+                [(apex[0] - 54, apex[1] + 6 + offset), (apex[0] + 54, apex[1] - 2 + offset)],
+                fill=CORD,
+                width=12,
+            )
+    # 張った縄。**たるませる**——張り切った線は枝の横木に見える。
+    sag = [
+        (352 + (830 - 352) * index / 20, 352 + 46 * math.sin(math.pi * index / 20))
+        for index in range(21)
+    ]
+    draw.line(sag, fill=CORD, width=13, joint="curve")
+
+
+def draw_pen(draw: ImageDraw.ImageDraw) -> None:
+    """家畜の囲い。丸太4本を四角に組み、角を縄で締める。
+
+    **生成では囲いにならない**（4枚とも縄で編んだ枠か、立った柱の林。prompts/objects.json の
+    pen 参照）。
+
+    **中は空ける。** 中の獣は枠の中身で、床を塗ると筏（draw_raft）と見分けが付かなくなる。
+    囲まれているのは物の内側ではなく紙なので、切り出しでは穴を埋めない（recipes/pen.json）。
+
+    **奥行きを強く付け、丸太に上下を描く。** 正面から見た四角に近いと、Qwen が壁へ掛けた額縁として
+    描き直す（最初の1枚がそうなった）。奥の辺を短く・手前の辺を長くし、丸太ごとに明るい上面と暗い
+    下面を足して、地面に寝ていることを形で出す。
+    """
+    back_left, back_right = (436.0, 430.0), (736.0, 430.0)
+    front_right, front_left = (982.0, 622.0), (176.0, 622.0)
+    # 奥から手前の順に描く。手前の丸太が奥の丸太の上に乗って、角の重なりが読める。
+    for start, end, thickness in (
+        (back_left, back_right, 40),
+        (front_left, back_left, 48),
+        (back_right, front_right, 48),
+        (front_right, front_left, 62),
+    ):
+        draw.line([start, end], fill=BARK, width=thickness, joint="curve")
+        dx, dy = end[0] - start[0], end[1] - start[1]
+        span = math.hypot(dx, dy)
+        nx, ny = -dy / span, dx / span
+        # 上面の側を明るく、下面の側を暗く。丸太が地面に寝ていることは、この上下で出る。
+        draw.line(
+            [(start[0] - nx * thickness * 0.3, start[1] - ny * thickness * 0.3),
+             (end[0] - nx * thickness * 0.3, end[1] - ny * thickness * 0.3)],
+            fill=FACE_LINE,
+            width=thickness // 4,
+        )
+        draw.line(
+            [(start[0] + nx * thickness * 0.34, start[1] + ny * thickness * 0.34),
+             (end[0] + nx * thickness * 0.34, end[1] + ny * thickness * 0.34)],
+            fill=BARK_DARK,
+            width=thickness // 3,
+        )
+        for point in (start, end):
+            draw_end_grain(draw, point, thickness / 2)
+    # 角の縄。4隅とも締める（材料は縄2本だが、丸太4本の組み方が読めることを優先する）。
+    for corner in (back_left, back_right, front_right, front_left):
+        for offset in (-16, 16):
+            draw.line(
+                [(corner[0] - 44, corner[1] + offset), (corner[0] + 44, corner[1] + offset)],
+                fill=CORD,
+                width=11,
+            )
+
+
+def draw_salt_pan(draw: ImageDraw.ImageDraw) -> None:
+    """塩田。平たい石4枚で縁を作り、内側を砂の床にする。
+
+    **生成では石にならない**（盤の形は出るが、材質が白い漆喰の箱になる。白いものは紙と同じ
+    明るさで切り出せない。prompts/objects.json の salt_pan 参照）。
+
+    **石が4枚に割れて見えることが、材料（石4つ）の手掛かり。** 外周の角と内周の角を結ぶ継ぎ目で
+    割る。**張った海水も採れた塩も描かない**（どちらも枠と数の中身）。
+    """
+    outer = [(322.0, 396.0), (830.0, 396.0), (1002.0, 660.0), (150.0, 660.0)]
+    inner = [(404.0, 462.0), (748.0, 462.0), (856.0, 596.0), (296.0, 596.0)]
+    draw.polygon(outer, fill=STONE, outline=OUTLINE, width=4)
+    # 手前の石は陰。盤が低く、内側が掘れていることが出る。
+    draw.polygon([outer[2], outer[3], inner[3], inner[2]], fill=STONE_DARK, outline=OUTLINE, width=4)
+    # 石4枚の継ぎ目。
+    for corner_out, corner_in in zip(outer, inner):
+        draw.line([corner_out, corner_in], fill=OUTLINE, width=4)
+    # 盤の床。砂を敷いて水が抜けないようにした面。
+    draw.polygon(inner, fill=SAND, outline=OUTLINE, width=4)
+    # 縁に残った塩。**白で置かない**——紙と同じ明るさになり、切り出しで縁ごと食われる。
+    draw.line([*inner, inner[0]], fill=SALT, width=14, joint="curve")
+
+
+def draw_field(draw: ImageDraw.ImageDraw) -> None:
+    """畑。掘り返した土の区画に、畝を3本通す。
+
+    **生成では区画にならない**（4枚ともひび割れた大地の風景か、めくれた紙。prompts/objects.json の
+    field 参照）。
+
+    **四辺が紙で終わること**が、風景ではなく1枚の畑であることの手掛かり。**作物は描かない**
+    （実ったものは枠の中身）。
+
+    **縁を不揃いにし、面へ規則的な模様を置かない。** 最初は輪郭を直線で引き、土の塊を楕円で
+    並べたら、等間隔の丸い窪みが空いた板——チョコレートの塊のような物——になった。土であることは
+    塗りの仕事なので、ここでは区画の輪郭と畝の向きだけを決める。
+    """
+    back_left, back_right = 356.0, 812.0
+    front_left, front_right = 140.0, 1012.0
+    back_y, front_y = 372.0, 690.0
+
+    def edge(start: tuple[float, float], end: tuple[float, float], phase: float) -> list[tuple[float, float]]:
+        """掘り返した土の縁。直線で引くと、切り出した板に見える。
+
+        揺らぎは向きによらず同じ幅で置く。辺の長さや傾きに比例させると、長い辺だけが大きく波打って
+        区画が土の山に見える。
+        """
+        return [
+            (start[0] + (end[0] - start[0]) * index / 10 + 12 * math.sin(index * 1.7 + phase),
+             start[1] + (end[1] - start[1]) * index / 10 + 9 * math.sin(index * 2.3 + phase * 1.7))
+            for index in range(10)
+        ]
+
+    corners = [
+        (back_left, back_y), (back_right, back_y), (front_right, front_y), (front_left, front_y)
+    ]
+    outline = [
+        point
+        for index, corner in enumerate(corners)
+        for point in edge(corner, corners[(index + 1) % 4], index * 1.3)
+    ]
+    draw.polygon(outline, fill=EARTH, outline=OUTLINE, width=4)
+    # 畝。手前へ向かって間隔が開く（同じ幅の畝を、奥行きのある区画に通したときの見え方）。
+    for ratio in (0.25, 0.5, 0.75):
+        draw.line(
+            [(back_left + (back_right - back_left) * ratio, back_y + 12),
+             (front_left + (front_right - front_left) * ratio, front_y - 12)],
+            fill=EARTH_DARK,
+            width=14,
+        )
+
+
 LAYS = {
     "axe": draw_axe,
     "clay": draw_clay,
+    "drying_rack": draw_drying_rack,
+    "field": draw_field,
+    "firewood": draw_firewood,
+    "firewood_rack": draw_firewood_rack,
     "harpoon": draw_harpoon,
     "kiln": draw_kiln,
     "fan": draw_fan,
     "log": draw_log,
     "needle": draw_needle,
+    "pen": draw_pen,
     "pole": draw_pole,
     "raft": draw_raft,
     "sail": draw_sail,
+    "salt_pan": draw_salt_pan,
     "smokehouse": draw_smokehouse,
     "snare": draw_snare,
     "spear": draw_spear,
