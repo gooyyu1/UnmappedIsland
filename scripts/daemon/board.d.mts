@@ -20,6 +20,12 @@ export interface Unreadable {
   reason: string;
 }
 
+/**
+ * 周の出来事を遡る幅（時間）。**帳面の末尾から読む量**（`board-state.mjs` の `JOURNAL_TAIL_BYTES`）
+ * **がこの幅を覆えること**は検査が持つ（`tests/scripts/roundEventsReachPeople.test.ts`）。
+ */
+export const EVENT_WINDOW_HOURS: number;
+
 /** 周の出来事（`board-state.mjs` の `readRounds`）。打った手と、閉じた「引けなかった区間」。 */
 export type RoundEvent = Record<string, unknown>;
 

@@ -4,8 +4,9 @@
 //   import { boardState, readLedger, writeLedger, UNREADABLE, readLastPatrol } from './board-state.mjs';
 //
 // **台帳を書くのは1周を回す側**（[`board-round.mjs`](board-round.mjs)）**だけ**で、ここは在り処と
-// 形を持つ。**読む側が2つある**（[`board-publish.mjs`](board-publish.mjs) が `UNREADABLE` を人へ
-// 見せる）ので、置き場の綴りを両方に書き写さないために分けてある。
+// 形を持つ。**読む側は書く側とは別に居る**（[`board-publish.mjs`](board-publish.mjs) が
+// `readUnreadable`・`readNotes`・`readPartialNotes` を通して人へ見せる）ので、置き場の綴りを
+// 両方に書き写さないために分けてある。
 //
 // **見回りの記録を書くのは係のセッション**（[`patrol-prompt.md`](../../agent-ops/prompts/patrol-prompt.md)）で、
 // 読むのは次の回の係と、人への書き出し（`board.mjs`）。
@@ -189,9 +190,11 @@ export const journalPath = (stateDir) => join(stateDir, 'rounds.jsonl');
 
 /**
  * 末尾から読む量。**窓（`board.mjs` の `EVENT_WINDOW_HOURS`）のぶんが必ず入る大きさ**にしてある
- * ——1件はおよそ100バイトで、周（既定30秒）が毎回1件書いても1日で30万バイトに届かない。
+ * ——1件はおよそ100バイトで、周（[`daemon.sh`](daemon.sh) の `INTERVAL`、既定30秒）が毎回1件書いても
+ * 1日で30万バイトに届かない。**窓を広げるか周を速くしたら、ここも見直す**——突き合わせは検査が持つ
+ * （`tests/scripts/roundEventsReachPeople.test.ts`）。
  */
-const JOURNAL_TAIL_BYTES = 1024 * 1024;
+export const JOURNAL_TAIL_BYTES = 1024 * 1024;
 
 /** 周の出来事を1件書く。**書けなくても周は止めない**——落ちるのは届け先であって、打つ手ではない。 */
 export function appendRound(stateDir, record) {

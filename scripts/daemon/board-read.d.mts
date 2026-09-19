@@ -12,6 +12,8 @@ export interface ReadDeps {
   /** 節番号の参照に、この周に読むものが在るか。省くと本物のリポジトリを見る。 */
   pendingRefAudit?: () => boolean;
   sayIncomplete: (line: string) => void;
+  /** 盤面を諦めたときに、道具が言った理由を受け取る口（`agent-ops/board-design.md` 1.7）。 */
+  sayWhyNot?: (line: string) => void;
   now: Date;
   settleMinutes: number;
   taken: Readonly<Record<string, string>>;

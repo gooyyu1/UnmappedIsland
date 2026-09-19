@@ -1,11 +1,12 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { publish } from '../../scripts/daemon/board-publish.mjs';
 import { FAILED, PLAYED, SETTLED, round } from '../../scripts/daemon/board-round.mjs';
-import { MOVE_RESULTS, issueBody } from '../../scripts/daemon/board.mjs';
+import { JOURNAL_TAIL_BYTES, journalPath, readRounds } from '../../scripts/daemon/board-state.mjs';
+import { EVENT_WINDOW_HOURS, MOVE_RESULTS, issueBody } from '../../scripts/daemon/board.mjs';
 
 /**
  * **周の出来事が、`~/daemon.log` の外へ届くこと**の検査（`agent-ops/board-design.md` 2.20.3）。
@@ -139,7 +140,6 @@ async function roundThenPublish(world: World = {}): Promise<string> {
 
 /** 台帳の足場を先に置いてから回す。 */
 async function withLedger(ledger: Record<string, string>, world: World = {}): Promise<string> {
-  const { writeFileSync } = await import('node:fs');
   writeFileSync(join(stateDir, 'taken.json'), JSON.stringify({ ...SCAFFOLD, ...ledger }), 'utf-8');
   return roundThenPublish(world);
 }
@@ -196,6 +196,35 @@ describe('周の出来事は、人の見に来る場所へ届く', () => {
   // 英語のまま出る**——打った側と見せる側で綴りが1つずれたことに、誰も気づけない。
   it('手の結果は、どれも人へ見せる語を持つ', () => {
     expect(new Set(Object.keys(MOVE_RESULTS))).toEqual(new Set([PLAYED, FAILED, SETTLED]));
+  });
+
+  // **窓のぶんが、末尾から読む量に収まっている。** 収まらないと、**窓の中の出来事が本文から静かに
+  // 落ちる**——落ちたことは、出来事が1つも無い周と見分けが付かない。窓を広げるか周を速くしたら、
+  // `JOURNAL_TAIL_BYTES` も見直す、をここで留める。
+  it('窓のぶんの出来事は、末尾から読む量に収まる', () => {
+    // 周の間隔は [`daemon.sh`](../../scripts/daemon/daemon.sh) が持つ。**写さずに引く**
+    // ——写すと、向こうを速くした日にここだけ古い値で通る。
+    const daemon = readFileSync(join(import.meta.dirname, '../../scripts/daemon/daemon.sh'), 'utf-8');
+    const interval = Number(/INTERVAL="\$\{INTERVAL:-(\d+)\}"/.exec(daemon)?.[1]);
+    expect(interval).toBeGreaterThan(0);
+
+    const rounds = Math.ceil((EVENT_WINDOW_HOURS * 3600) / interval);
+    const lines = Array.from(
+      { length: rounds },
+      (_, index) =>
+        `${JSON.stringify({
+          at: new Date(NOW.getTime() - index * interval * 1000).toISOString(),
+          kind: 'move',
+          move: 'RESUME',
+          target: 'session_0123456789abcdefghijklmn',
+          result: 'played',
+        })}\n`,
+    );
+    writeFileSync(journalPath(stateDir), lines.join(''), 'utf-8');
+
+    // **末尾から読んだぶんに、窓のいちばん古い1件が残っている。**
+    expect(readRounds(stateDir)).toHaveLength(rounds);
+    expect(lines.join('').length).toBeLessThanOrEqual(JOURNAL_TAIL_BYTES);
   });
 
   // **直った周に台帳の印は消える。** 帳面へ閉じていないと、2026-09-18 のように同じ日に331分

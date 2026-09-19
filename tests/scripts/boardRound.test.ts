@@ -227,7 +227,11 @@ async function playRound(world: World = {}): Promise<Result> {
       options?: { sayWhyNot?: (line: string) => void },
     ): string | undefined => {
       ghCalls.push(args.join(' '));
-      if (world.ghFails === true) return undefined;
+      if (world.ghFails === true) {
+        // **道具が言った理由は呼び手へ渡る**（`spawn.mjs` の `sayWhyNot`）。本物と同じ形で返す。
+        options?.sayWhyNot?.('gh pr list …: 失敗: HTTP 401');
+        return undefined;
+      }
       const [first, second, third] = args;
       // コメントを置く手は2つ——issue へ返す（`RETURN`）のと、PRへ札を落としてくれと頼む
       // （`UNLABEL`）の。**本文は消される前に読む**（打ち手が後片付けする）。
@@ -1033,6 +1037,11 @@ describe('board-round.mjs', () => {
         'unreadable:rounds': '1',
         'unreadable:reason': 'セッションの一覧を引けなかった',
       });
+
+      // **盤面を諦めた側から受け取る**（`board-read.mjs` の `sayWhyNot`）。呼び手が `gh` を包んで
+      // 最後の理由を盗み見る形にすると、諦めた理由と別の失敗が入れ替わりうる。
+      const dry = await playRound({ ghFails: true });
+      expect(dry.unreadableMarks['unreadable:reason']).toBe('gh pr list …: 失敗: HTTP 401');
 
       const second = await playRound({
         sessionsFail: true,

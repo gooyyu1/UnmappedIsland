@@ -12,7 +12,6 @@
 // ——だから打てない手が出る、まで1行で言い切る。**呼び手はこれを丸ごと人の読む盤面へ載せる**
 // （[`board-round.mjs`](board-round.mjs) → `agent-ops/board-design.md` 2.20.3）ので、**別の種類の
 // 行をここへ混ぜると、欠けていない周にも欠けているように出る。**
-
 //
 // ## 引けなかったら、欠けたまま返さない
 //
@@ -125,6 +124,9 @@ export function allOpenIssues(gh, fields, options) {
     try {
       issues = JSON.parse(raw);
     } catch {
+      // **道具は転んでいないので、言えるのはここだけ。** 黙ると、呼び手には理由の無い
+      // 「引けなかった」だけが残る（1.7）。
+      options?.sayWhyNot?.('gh issue list: 応答が JSON として読めない');
       return undefined;
     }
     if (issues.length < limit) return issues;
@@ -328,11 +330,17 @@ function issueStates(gh, sessions, issues, sayIncomplete) {
   return states;
 }
 
-/** 盤面を1つ組み立てる。`gh` が引けなければ `undefined`、一覧が引けなければ投げる。 */
+/**
+ * 盤面を1つ組み立てる。`gh` が引けなければ `undefined`、一覧が引けなければ投げる。
+ *
+ * **諦めた理由は `sayWhyNot` へ渡す**（1.7）。**その周は丸ごと捨てられる**ので、理由が呼び手へ
+ * 渡らないと、人へ出る断りが「引けなかった」だけになる（2.20.3）。
+ */
 export async function readBoard({
   gh = runGh,
   sessions = liveSessions,
   sayIncomplete,
+  sayWhyNot,
   pendingDecisions = () => countDecisions(sayIncomplete),
   unsummarizedAnalyses = () => countUnsummarizedAnalyses(sayIncomplete),
   pendingRefAudit = () => refAuditWork(sayIncomplete),
@@ -340,9 +348,11 @@ export async function readBoard({
   settleMinutes,
   taken,
 }) {
-  const prs = gh(['pr', 'list', '--state', 'open', '--limit', String(CAPS.openPrs), '--json', PR_FIELDS]);
+  const prs = gh(['pr', 'list', '--state', 'open', '--limit', String(CAPS.openPrs), '--json', PR_FIELDS], {
+    sayWhyNot,
+  });
   if (prs === undefined) return undefined;
-  const openIssues = allOpenIssues(gh, 'number,labels,blockedBy');
+  const openIssues = allOpenIssues(gh, 'number,labels,blockedBy', { sayWhyNot });
   if (openIssues === undefined) return undefined;
   // **引けなくても盤面は捨てない。** 欠けた周は後片付けと周期の係が出ないだけで済む——必須に
   // すると、**マージもレビューも投入も1周まるごと止まる。**
@@ -381,9 +391,11 @@ export async function readBoard({
   );
   // **先頭の指紋で絞る**（2.14.2）。ブランチの名前だけで引くと、`main` へ push が入った直後の
   // 数十秒は**1つ前のコミットの色**が返り、赤くなった `main` を緑と読む。
-  const head = gh(['api', 'repos/{owner}/{repo}/commits/main', '--jq', '.sha']);
+  const head = gh(['api', 'repos/{owner}/{repo}/commits/main', '--jq', '.sha'], { sayWhyNot });
   if (head === undefined) return undefined;
-  const checks = gh(['api', `repos/{owner}/{repo}/actions/runs?event=push&head_sha=${head.trim()}`]);
+  const checks = gh(['api', `repos/{owner}/{repo}/actions/runs?event=push&head_sha=${head.trim()}`], {
+    sayWhyNot,
+  });
   if (checks === undefined) return undefined;
 
   // **引けなかった周も盤面は捨てない。** 差し戻す相手が分からないだけで、他の手は打てる

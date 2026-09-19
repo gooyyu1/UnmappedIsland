@@ -42,6 +42,9 @@ export function readUnreadable(
   stateDir: string,
 ): { since: string; until: string; rounds: number; reason: string } | undefined;
 
+/** 帳面の末尾から読む量。窓（`board.mjs` の `EVENT_WINDOW_HOURS`）のぶんが入る大きさ。 */
+export const JOURNAL_TAIL_BYTES: number;
+
 /** 周の出来事の帳面の在り処（`agent-ops/board-design.md` 2.20.3）。書くのは1周を回す側。 */
 export function journalPath(stateDir: string): string;
 

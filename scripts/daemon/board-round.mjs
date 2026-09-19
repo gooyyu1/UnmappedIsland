@@ -93,6 +93,10 @@ function markUnreadable(stateDir, at, reason) {
  * すら分からない**（2026-09-18 に実測。同じ日に331分ぶん止まっていたのに、印は1つも残っていな
  * かった）。**猶予（2.22.2）を詰める材料もこれ**——値の見回りが告げる手前で直る停止は、ここに
  * 残さないとどこにも数が出ない。
+ *
+ * **`DRY_RUN` の周も書く。** ぶつかった実績の帳面（下の `newConflicts`）が `DRY_RUN` で書かないのは、
+ * **指紋を埋めると本番の周でも二度と記録されない**から。こちらは逆で、**`DRY_RUN` の周も印は消える**
+ * （台帳はこの下で書き直される）ので、書かないほうが測定を消すことになる。
  */
 function closeUnreadable(stateDir, taken, at) {
   const since = taken[UNREADABLE];
@@ -484,18 +488,13 @@ export async function round({
   // **この周の時刻は1つ**（比べる相手も、引けていない印も同じ形で書く）。
   const at = now();
 
-  // **引けなかった理由は、道具が言ったものをそのまま控える**（1.7）。`gh` は理由を `sayWhyNot` へ
-  // 渡すので、この周の最後の1つを覚えておく——**引けなかった周に人へ届くのはこれだけ**で、
-  // 「引けなかった」だけでは、資格情報の切れと通信の断ちが同じ顔になる（2.20.3）。
-  let lastWhyNot = '';
-  const ghHere = (args, options = {}) =>
-    gh(args, {
-      ...options,
-      sayWhyNot: (line) => {
-        lastWhyNot = line;
-        (options.sayWhyNot ?? warn)(line);
-      },
-    });
+  // **引けなかった理由は、諦めた側から受け取る**（1.7）。**引けなかった周に人へ届くのはこれだけ**
+  // で、「引けなかった」だけでは、資格情報の切れと通信の断ちが同じ顔になる（2.20.3）。
+  let whyUnreadable = '';
+  const sayWhyNot = (line) => {
+    whyUnreadable = line;
+    warn(line);
+  };
 
   let live;
   try {
@@ -533,7 +532,8 @@ export async function round({
 
   const taken = readLedger(stateDir);
   const board = await readBoard({
-    gh: ghHere,
+    gh,
+    sayWhyNot,
     sessions: () => live,
     pendingDecisions,
     unsummarizedAnalyses,
@@ -544,7 +544,7 @@ export async function round({
     taken,
   });
   if (board === undefined) {
-    if (!dryRun) markUnreadable(stateDir, at.toISOString(), lastWhyNot);
+    if (!dryRun) markUnreadable(stateDir, at.toISOString(), whyUnreadable);
     return false;
   }
 
@@ -610,7 +610,7 @@ export async function round({
     const [kind, ...args] = line.split(' ');
     const [a = '', b = '', c = ''] = args;
     log(`打つ: ${kind} ${a} ${b} ${c}`);
-    const result = play(kind, args, { runScript: runScriptHere, gh: ghHere, remember, log, echo });
+    const result = play(kind, args, { runScript: runScriptHere, gh, remember, log, echo });
     appendRound(stateDir, { at: at.toISOString(), kind: 'move', move: kind, target: a, result });
     if (result === PLAYED) {
       log(`打てた: ${kind} ${a}`);
