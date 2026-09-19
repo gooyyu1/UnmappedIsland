@@ -3,7 +3,6 @@ import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -58,15 +57,39 @@ object_defs:
   # 要件（subject: instrument）と刃を減らす効果（add: instrument）を落としている**。どちらも
   # メニュー型には書けないので、写した先に残す手段が無い。
   #
-  # **受け口を刻む手（chop）は写していない。** 落ちる要件も効果も倒す手の側に在るので、
-  # 比べるのに要るのはこちらだけ。
+  # **受け口を刻む手（chop）も写す。** 落ちる要件（刃の余力）は刻む手に、落ちる効果（刃を減らす）は
+  # 倒す手に在る（docs/engine/DurabilitySystem.md 2.1節）ので、比べるには両方が要る。
   broadleaf_tree_as_menu:
     tags: [fixture]
     art: broadleaf_tree
     props:
       weight: {value: 150000}
-      trunk_integrity: {value: 1, range: {min: 1, max: 4}}
+      trunk_integrity: {value: 4, range: {min: 1, max: 4}}
     interactions:
+      # 元のchopが持っていた、刃の余力を見る要件を落としている。**枝を1つ残す形にもできない**
+      # ——anyのもう一方は「刻み始めた木なら通す」の側なので、残すと、まだ刃を入れていない木を
+      # 断る、元とは逆の宣言になる。
+      chop:
+        trigger: menu
+        duration: 60
+        conditions:
+          - {prop: trunk_integrity, gte: 2}
+          - reason: no_axe
+            subject: agent
+            slot: hand
+            matches: {tag: chopping_tool}
+          - reason: too_dark
+            subject: agent
+            prop: looking_brightness
+            in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
+        add:
+          self:
+            trunk_integrity: -1
+          agent:
+            skill_woodwork: 2
+
       fell:
         trigger: menu
         duration: 60
@@ -123,10 +146,6 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
     return spawned;
   }
 
-  function itemsOn(location: WorldObject): string[] {
-    return new Location(location).items.map((object) => object.def.name);
-  }
-
   function carriedBy(character: WorldObject): string[] {
     return new PlayerCharacter(character).handStacks.flatMap((stack) =>
       stack.map((object) => object.def.name),
@@ -149,6 +168,8 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
 
   const dragFell = (plant: WorldObject, tool: WorldObject) => dragAction(plant, tool, 'fell');
   const menuFell = (plant: WorldObject) => menuAction(plant, 'fell');
+  const dragChop = (plant: WorldObject, tool: WorldObject) => dragAction(plant, tool, 'chop');
+  const menuChop = (plant: WorldObject) => menuAction(plant, 'chop');
 
   /** 刃の余力。**無ければ落とす**——既定値で埋めると「減らない」が測れないまま緑になる。 */
   function durabilityOf(tool: WorldObject): number {
@@ -192,16 +213,19 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
   describe('道具を見て道具を減らす宣言（広葉樹）は、書き換えると別の操作になる', () => {
     /**
      * 倒す手が立つところまで刻んだ木。**1回では倒れない**（docs/engine/ActionSystem.md 6.3節）ので、
-     * 落ちる要件（刃の余力を見る）と効果（刃を減らす）を持つ手はここから先にしか現れない。
+     * 落ちる効果（刃を減らす）を持つ手はここから先にしか現れない。
      */
-    function treeReadyToFell(): WorldObject {
-      const tree = spawnInto('broadleaf_tree', jungle, 'fixtures');
+    function treeReadyToFell(objectName: string): WorldObject {
+      const tree = spawnInto(objectName, jungle, 'fixtures');
       tree.getProperty(codex.propertyNames.getId('trunk_integrity')).setNumberWithoutEvents(1);
       return tree;
     }
 
     it('刃の尽きた斧を、ドラッグ型は断り、メニュー型は通してしまう', () => {
-      const dragTree = treeReadyToFell();
+      // **刃の余力を見る要件が在るのは、まだ刃を入れていない木を刻む手**
+      // （docs/engine/DurabilitySystem.md 2.1節）。倒す手はそこで余力を見ないので、比べる相手は
+      // 立っている木のほう。
+      const dragTree = spawnInto('broadleaf_tree', jungle, 'fixtures');
       const menuTree = spawnInto('broadleaf_tree_as_menu', jungle, 'fixtures');
       const axe = spawnInto('stone_axe', player, 'hand');
       // 1本ぶん（120）を割った刃。**0にはしない**——0へ届いた刃は折れて無くなる
@@ -209,26 +233,24 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
       axe.getProperty(codex.propertyNames.getId('durability')).setNumber(100);
 
       expect(
-        dragFell(dragTree, axe)?.unmetRequirement()?.reasonName,
+        dragChop(dragTree, axe)?.unmetRequirement()?.reasonName,
         '刃の余力を見る要件はinstrumentを指すので、ドラッグ型にしか書けない',
       ).toBe('too_worn');
       expect(
-        menuFell(menuTree).unmetRequirement(),
+        menuChop(menuTree).unmetRequirement(),
         '書き換えた側はその要件を落としているので、尽きた斧でも通る',
       ).toBeUndefined();
 
-      expect(menuFell(menuTree).tryExecute()).toBe(true);
-      expect(itemsOn(jungle), '尽きた斧で丸太が採れてしまう').toEqual([
-        'log',
-        'log',
-        'thick_branch',
-        'thick_branch',
-        'thick_branch',
-      ]);
+      expect(menuChop(menuTree).tryExecute()).toBe(true);
+      const trunkIntegrityId = codex.propertyNames.getId('trunk_integrity');
+      expect(
+        menuTree.getProperty(trunkIntegrityId).number,
+        '尽きた斧で受け口が刻めてしまう（倒し切れない仕事を始められる）',
+      ).toBeLessThan(dragTree.getProperty(trunkIntegrityId).number);
     });
 
     it('倒しても斧が減らない', () => {
-      const menuTree = spawnInto('broadleaf_tree_as_menu', jungle, 'fixtures');
+      const menuTree = treeReadyToFell('broadleaf_tree_as_menu');
       const axe = spawnInto('stone_axe', player, 'hand');
       // **屋外に在るだけで進む劣化（weathering.yaml）は、倒した斧にも置いた斧にも同じだけ掛かる。**
       // 突き合わせる相手を置くことで、倒したこと自体が減らしていないかだけを見る。
@@ -242,7 +264,7 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
     });
 
     it('ドラッグ型のままなら、同じ1回で斧が減る', () => {
-      const dragTree = treeReadyToFell();
+      const dragTree = treeReadyToFell('broadleaf_tree');
       const axe = spawnInto('stone_axe', player, 'hand');
       const before = durabilityOf(axe);
       // **置いた相手と突き合わせる**——屋外の劣化だけでも減るので、差だけを見ると倒したことが

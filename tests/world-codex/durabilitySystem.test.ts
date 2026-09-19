@@ -4,7 +4,7 @@ import { toolWearsOf } from '../../src/analysis/durations';
 import { staticValueOf } from '../../src/analysis/staticValue';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { instrumentDurabilityLineOf } from '../support/durabilityLines';
+import { instrumentDurabilityLineOf, selfPropertiesWatchedBy } from '../support/durabilityLines';
 import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
@@ -48,6 +48,8 @@ describe('耐久の規約（同梱の定義すべて）', () => {
     //
     // **食う量は宣言から読む**（timberYaml.test.tsと同じ理由）。直値で書くと線の側しか見ないことに
     // なり、`add` を動かしても緑のままになる。
+    //
+    // **始まっている仕事の続きの手は、線が無くてよい**（下の「何も返さない手に繋がれた手」）。
     const lines = wearLines();
     expect(lines.length, '道具として減る宣言が1つも拾えていない').toBeGreaterThan(0);
 
@@ -59,14 +61,58 @@ describe('耐久の規約（同梱の定義すべて）', () => {
       lines.map((line) =>
         describeLine({
           ...line,
-          threshold: line.cost === cheapest.get(line.toolName) ? undefined : line.cost,
+          threshold:
+            line.cost === cheapest.get(line.toolName) || tiedToBarrenProgress(line.ownerName, line.stepName)
+              ? undefined
+              : line.cost,
         }),
       ),
     );
   });
 
+  it('何も返さない手に繋がれた手には、余力の線を引かない', () => {
+    // DurabilitySystem.md 2.1節。余力は待つ間も減る（`weathering.yaml`）ので、線が言えるのは
+    // 「今この手を始められるか」までで、**後の手が成り立つことは約束できない**。1つの仕事が
+    // 何回かの手に分かれ、途中の手が
+    // 進みだけを進めて何も返さないとき（ActionSystem.md 6.3節）、その進みに繋がれた手で線を引き
+    // 直すと、そこまでに払った時間が相手に取り残されたまま断られる——issue #2304 は、ちょうど
+    // 1本ぶんの余力で刻み始めた斧が2回目の一撃で断られ、受け口だけの幹が残った形。
+    //
+    // **型を1つも名指ししない**ので、別の物に同じ形を足せばここで落ちる。まだ何も払っていない
+    // 相手にだけ余力を見る線（`any` で包んだ枝）は、線として数えない（instrumentDurabilityLineOf）。
+    const offenders: string[] = [];
+    for (const def of codex.objects)
+      for (const stepName of new Set(def.triggers.map((trigger) => trigger.interaction.name)))
+        if (
+          instrumentDurabilityLineOf(codex, def.name, stepName) !== undefined &&
+          tiedToBarrenProgress(def.name, stepName)
+        )
+          offenders.push(`${def.name}.${stepName}`);
+
+    expect(offenders, '払ったぶんが取り残される手で、余力の線を引き直している').toEqual([]);
+  });
+
+  /**
+   * その手が、**何も返さない手が進める値**（進み）を見て立つか。
+   *
+   * 何も返さない手を挟んだ先で断ると、そこまでに払った時間が相手に取り残される。繋がりを進みの
+   * プロパティで見るのは、**どの手が同じ仕事なのかを宣言が名乗らない**ため——排他の条件が見ている
+   * 値だけが、手どうしを1つの仕事へ繋いでいる（`timber.yaml` の `trunk_integrity`、`animals.yaml` の
+   * `butchering_progress`）。
+   */
+  function tiedToBarrenProgress(ownerName: string, stepName: string): boolean {
+    const owner = codex.objects.get(codex.objectNames.getId(ownerName));
+    const progress = new Set<PropertyGlobalId>();
+    for (const step of craftingStepsOf(codex, owner)) {
+      if (step.outputs.length > 0) continue;
+      for (const outcome of step.outcomes)
+        for (const delta of outcome.deltas) if (delta.target === 'self') progress.add(delta.propertyGlobalId);
+    }
+    return selfPropertiesWatchedBy(codex, ownerName, stepName).some((id) => progress.has(id));
+  }
+
   it('刃を食う手は、どれも物を返す', () => {
-    // 2.1節。**進みや腕しか返さない手は刃を食わない**——1つの仕事が何回かの手に分かれたとき
+    // DurabilitySystem.md 2.1節。**進みや腕しか返さない手は刃を食わない**——1つの仕事が何回かの手に分かれたとき
     // （ActionSystem.md 6.3節）、途中の手にも刃を食わせると、返るものが無いまま道具だけが折れる
     // 形ができる。**型を1つも名指ししない**ので、別の物に同じ形を足せばここで落ちる。
     const barren: string[] = [];

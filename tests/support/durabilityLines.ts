@@ -4,6 +4,7 @@ import type {
   PropertyConditionReading,
 } from '../../src/domain/ConditionReader';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
+import type { ReferenceRoot } from '../../src/domain/ReferenceRoot';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 
 /**
@@ -37,10 +38,69 @@ export function instrumentDurabilityLineOf(
 }
 
 /**
+ * その工程の条件が見ている、相手自身（`self`）のプロパティ。
+ *
+ * **進み（`trunk_integrity`・`butchering_progress`）を見て立つ手を引くための口**——1つの仕事が何回かの
+ * 手に分かれているとき、どの手が同じ進みに繋がれているかは、条件が見ている値でしか分からない。
+ *
+ * **枝の中も数える。** `any`・`not` の下に在っても、その手がその進みに繋がれていることは変わらない
+ * （数えないと、条件を1つ包むだけで繋がりが消える）。
+ */
+export function selfPropertiesWatchedBy(
+  codex: WorldCodex,
+  ownerName: string,
+  stepName: string,
+): readonly PropertyGlobalId[] {
+  const owner = codex.objects.get(codex.objectNames.getId(ownerName));
+  const reader = new SelfPropertiesWatched();
+  for (const trigger of owner.triggers) {
+    if (trigger.interaction.name !== stepName) continue;
+    for (const requirement of trigger.interaction.requirementDeclarations)
+      requirement.condition.readBy(reader);
+  }
+  return [...reader.propertyGlobalIds];
+}
+
+/** 条件の木から、相手自身を主語にした比較のプロパティだけを拾う読み手（ConditionReader参照）。 */
+class SelfPropertiesWatched implements ConditionReader {
+  readonly propertyGlobalIds = new Set<PropertyGlobalId>();
+
+  property(reading: PropertyConditionReading): void {
+    if (reading.root === 'self') this.propertyGlobalIds.add(reading.propertyGlobalId);
+  }
+
+  propertyStage(root: ReferenceRoot, propertyGlobalId: PropertyGlobalId): void {
+    if (root === 'self') this.propertyGlobalIds.add(propertyGlobalId);
+  }
+
+  slotPosition(): void {}
+
+  slotContent(): void {}
+
+  objectMatches(): void {}
+
+  all(children: readonly ConditionDeclaration[]): void {
+    for (const child of children) child.readBy(this);
+  }
+
+  any(children: readonly ConditionDeclaration[]): void {
+    for (const child of children) child.readBy(this);
+  }
+
+  not(child: ConditionDeclaration): void {
+    child.readBy(this);
+  }
+}
+
+/**
  * 条件の木から「使う物の余力がこれ以上」だけを拾う読み手（ConditionReader参照）。
  *
  * **否定の下へは降りない。** `not` の下の `gte` は「余力が足りないときだけ成立する」で、始めさせない
  * 線とは逆を言っている。
+ *
+ * **`any` の下へも降りない。** どちらか一方で足りる枝に在る閾値は、もう一方が成り立てば見られない
+ * ——「必ず余力を見る」線ではないので、線として数えると読み違える（`timber.yaml` の `chop` は、
+ * まだ手を付けていない木にだけ余力を見る。[`DurabilitySystem.md`](../../docs/engine/DurabilitySystem.md) 2.1節）。
  */
 class InstrumentDurabilityLines implements ConditionReader {
   readonly thresholds: number[] = [];
@@ -69,9 +129,7 @@ class InstrumentDurabilityLines implements ConditionReader {
     for (const child of children) child.readBy(this);
   }
 
-  any(children: readonly ConditionDeclaration[]): void {
-    for (const child of children) child.readBy(this);
-  }
+  any(): void {}
 
   not(): void {}
 }
