@@ -37,9 +37,11 @@ object_defs:
       # （行き先の座標に型が居ない組み合わせは候補にならない、9.9節）。生肉のような別ファイルの
       # 食べ物が軸を名乗れば、この操作は1行も変わらずにそちらへも効く。
       #
-      # **保存の腕の入口はこの1本だけ**——干すのも燻すのも仕掛けて待つ形で、人の側に残るのは枠への
+      # **保存を配る手作業はこれだけ**——干すのも燻すのも仕掛けて待つ形で、人の側に残るのは枠への
       # 出し入れと燻し小屋へ薪をくべる手（smoking.yamlのadd_fuel）だけ。そのどれにも腕を配らないので、
-      # 腕を配れる手はここだけになる（docs/world/Skills.md 2.4節、docs/engine/SkillSystem.md 3.2.1節）。
+      # 腕を配れる手はここだけになる（docs/world/Skills.md 2.4節）。**設備を組む側は別**——干し場と
+      # 燻し小屋は保存を名乗るレシピなので、その工程も伸ばす（docs/engine/SkillSystem.md 3.4節）。
+      # **繰り返せる入口はここだけ**で、設備は建ててしまえば作り直す理由が無い。
       cure:
         trigger: {drag: {tag: perishable}}
         duration: {prop: cure_minutes}
@@ -62,7 +64,9 @@ object_defs:
             in_stage_or_above: sound
         # 保存の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。天日干しも燻製も入ったが（drying.yaml・smoking.yaml）、
-        # どちらも仕掛けて待つだけで操作を持たないので腕は伸びない（docs/world/Skills.md 2.4節）。
+        # どちらも仕掛けて待つだけで操作を持たないので、干す・燻す行為そのものからは伸びない
+        # （docs/world/Skills.md 2.4節）。**設備を組むレシピの側は伸ばす**
+        # （docs/engine/SkillSystem.md 3.4節）。
         # **燻し小屋はこの腕を要求する側**なので、そちらから伸ばして自分を開ける道は無い。
         add: {agent: {skill_preserving: 1}}
         become: {subject: instrument, cure: salted}
@@ -166,9 +170,10 @@ object_defs:
             subject: parent
             matches: {tag: coast}
         add: {self: {brine: 1}}
-    # **解放条件を持たない。** 保存の腕を求めると循環する（docs/engine/SkillSystem.md 3.2節）——
-    # 今その腕を伸ばす唯一の操作は塩漬け（上のcure）で、塩はこの塩田からしか採れない。天日干し
-    # （drying.yaml）は操作を持たないので、腕の入口はまだこちらにしか無い。
+    # **解放条件を持たない。** 保存の腕を求めると、**繰り返せる唯一の入口が自分の後ろへ下がる**
+    # （docs/engine/SkillSystem.md 3.2節）——塩漬け（上のcure）に要る塩はこの塩田からしか採れない。
+    # 干し場（drying.yaml）を組んでも腕は伸びるが（同3.4節）、設備は建ててしまえば作り直す理由が
+    # 無いので、そちらは1回きりの口にしかならない。
     recipes:
       # 砂を掻き分け、平たい石を並べて底を張る。**掘削具は要らない**——畑（240分）と同じ手間で、
       # 掘り返すのではなく並べるだけなので、掘り棒にする太い枝も折り込んでいない。
