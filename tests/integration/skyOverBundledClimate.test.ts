@@ -114,15 +114,18 @@ describe('空の演出（世界→意匠 通し）', () => {
     );
   });
 
-  it('居る土地で炉が燃えていれば、暑い季節でなくても陽炎が最も強く立つ', () => {
-    // 土地の気温には据えた炉の暖（+8、FireSystem.md 9.2節）も積まれる。読む先を空から土地へ移した
-    // ことで陽炎の立つ場面が広がった——**どこまで広がったかをここで留める**（ScreenLayout.md
-    // 7.5.4節「涼しくない季節の日中なら、炉の暖だけで最も強いところまで」）ので、狭めるなら
-    // 同節ごと決め直すことになる。
-    const game = gameWith('clear', 11, MILD);
+  /**
+   * その空の下で炉を焚いた土地の陽炎。**土地の差は0へ均す**（skyWithと同じ理由）ので、空と炉の
+   * ぶんだけが残る。
+   */
+  function hazeWithLitHearth(weather: string, hour: number, thermalLevel: number) {
+    const game = gameWith(weather, hour, thermalLevel);
     landDifference(game).setNumber(0);
     const land = game.player.location!;
-    expect(heatHazeFor(land.ambientTemperature), '炉が無ければ立たない').toBeUndefined();
+    expect(
+      heatHazeFor(land.ambientTemperature),
+      `${weather}/${hour}時: 炉が無ければ立たない`,
+    ).toBeUndefined();
 
     const campfire = game.session.createObject(codex.objectNames.getId('campfire'));
     expect(
@@ -131,9 +134,20 @@ describe('空の演出（世界→意匠 通し）', () => {
     ).toBeUndefined();
     campfire.getProperty(codex.propertyNames.getId('heat')).setNumber(20);
 
-    // 頭打ちより十分に暑い気温を渡したときと同じ強さ＝しきい値の上端まで届いている。
-    expect(heatHazeFor(land.ambientTemperature)?.strength, '炉の暖だけで最も強いところまで').toBe(
-      heatHazeFor(45)!.strength,
-    );
+    return heatHazeFor(land.ambientTemperature);
+  }
+
+  it('炉が燃えていれば、暑い季節でなくても陽炎は立ち、日射が重なる時間だけ上端まで届く', () => {
+    // 土地の気温には据えた炉の暖（+8、FireSystem.md 9.2節）も積まれる。読む先を空から土地へ移した
+    // ことで陽炎の立つ場面が広がった——**どこまで広がったかをここで留める**（ScreenLayout.md
+    // 7.5.4節）ので、狭めるなら同節ごと決め直すことになる。
+    // 頭打ちより十分に暑い気温を渡したときの強さが、しきい値の上端。
+    const strongest = heatHazeFor(45)!.strength;
+
+    expect(hazeWithLitHearth('clear', 11, MILD)?.strength, '日射の重なる昼は上端まで').toBe(strongest);
+
+    const atDawn = hazeWithLitHearth('clear', 6, MILD);
+    expect(atDawn, '日射が気温を動かさない朝でも立つ').toBeDefined();
+    expect(atDawn!.strength, 'ただし上端までは届かない').toBeLessThan(strongest);
   });
 });
