@@ -80,6 +80,11 @@ export class ActiveEffectSequence extends ActiveEffect {
     this.effectsInDeclarationOrder = operations;
   }
 
+  /**
+   * **途中で`become`が走っても打ち切らない**（9.9.1節）。後ろの命令は変化後の型の物へ当たる
+   * ——並べた命令がすべて起こることはこの場所の約束で、blocksOperationもその前提で畳んでいる。
+   * tick毎の輸送（PassiveEffects.applyTickTransfers）が逆なのは、あちらが型の側の宣言だから。
+   */
   apply(context: ReferenceContext, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
     for (const operation of this.effectsInDeclarationOrder) operation.apply(context, sameSlotSpawnSite);
   }
