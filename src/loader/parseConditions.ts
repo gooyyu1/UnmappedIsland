@@ -125,8 +125,14 @@ function parseCombinatorChildren(
   return children;
 }
 
-/** プロパティを主語にできる演算子キー。値が比較の相手になる。 */
-const PROPERTY_OPS: readonly ConditionOp[] = ['lt', 'lte', 'gt', 'gte', 'eq', 'neq', 'in', 'not_in'];
+/**
+ * プロパティを主語にできる演算子キー。値が比較の相手になる。
+ *
+ * **外へ出しているのは、実効値を数と直接比べる形を探す側がここを読むため**
+ * （`tests/world-codex/illuminationStages.test.ts`）——同じ並びを書き写すと、演算子を1つ足したときに
+ * その演算子で書いた条件だけが検査をすり抜ける。
+ */
+export const PROPERTY_OPS: readonly ConditionOp[] = ['lt', 'lte', 'gt', 'gte', 'eq', 'neq', 'in', 'not_in'];
 
 /**
  * 段の判定（6.4節）の演算子キーと、それが見る範囲（PropertyDef.isInStage）。値はどちらも段の名前。

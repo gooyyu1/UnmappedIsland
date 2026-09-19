@@ -14,7 +14,7 @@ description: >-
 後処理の設定はすべてリポジトリに入っている**。既存の絵を作り直すだけなら、レシピを渡すだけで済む。
 
 ```bash
-python tools/comfyui/build.py tools/comfyui/recipes/rocky_field_fixture.json
+python tools/comfyui/build.py tools/comfyui/recipes/rocky_field_fixtures_lane.json
 ```
 
 ## 先に知っておくべき落とし穴

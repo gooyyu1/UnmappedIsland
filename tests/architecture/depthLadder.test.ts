@@ -13,7 +13,7 @@ import { SCREEN_DEPTH } from '../../src/game/looks/screenDepth';
  * **規約をもう1箇所へ書く**（copy-paste）。
  *
  * 最後のものを字面で見張るのは、**それが実際に壊れた形だから**——「表示順は生成順で決まる」という
- * 同じ一文が、部品のファイルへ複製されていた（issue #1958）。`.claude/policies.md`「仕組みの作り方」の
+ * 同じ一文が、部品のファイルへ複製されていた（issue #1958）。`agent-ops/policies.md`「仕組みの作り方」の
  * 「既に壊した実績のある操作は機械で止める」に当たる。
  *
  * どの2つの層を入れ替えてはいけないかは、ここではなく tests/game/screenDepth.test.ts が持つ。

@@ -98,62 +98,62 @@ base_farthest_round_trip:
   - {base: any, unit: minutes, mean: 379.69, min: 240.00, p5: 270.00, p95: 480.00, max: 600.00, sd: 62.91, n: 7568}
 
 daily_budget:
-  - {unit: minutes, outdoor_window: 720, night_craft: 360, sleep: 360, survival_gathering: 187, surplus: 893}
+  - {unit: minutes, outdoor_window: 720, night_craft: 360, sleep: 360, survival_gathering: 189, surplus: 891}
 
 work_piles:
-  - {system: 1, pile: 雨受けと貯水を据える, objects: null, days: 2.00, minutes: 1786.0}
-  - {system: 1, pile: 甕を10個焼く, objects: null, days: 3.20, minutes: 2857.6}
-  - {system: 1, pile: 航海ぶんの水を積む, objects: null, days: 1.00, minutes: 893.0}
-  - {system: 2, pile: 畑を拓いて回す, objects: null, days: 4.00, minutes: 3572.0}
+  - {system: 1, pile: 雨受けと貯水を据える, objects: null, days: 2.00, minutes: 1782.0}
+  - {system: 1, pile: 甕を10個焼く, objects: null, days: 3.20, minutes: 2851.2}
+  - {system: 1, pile: 航海ぶんの水を積む, objects: null, days: 1.00, minutes: 891.0}
+  - {system: 2, pile: 畑を拓いて回す, objects: null, days: 4.00, minutes: 3564.0}
   - {system: 2, pile: 家畜の囲い, objects: [pen], days: 2.86, minutes: 2550.0}
-  - {system: 2, pile: 大型の狩り, objects: null, days: 2.00, minutes: 1786.0}
+  - {system: 2, pile: 大型の狩り, objects: null, days: 2.00, minutes: 1782.0}
   - {system: 3, pile: 干し場, objects: [drying_rack], days: 1.01, minutes: 901.4}
   - {system: 3, pile: 燻し小屋, objects: [smokehouse], days: 2.09, minutes: 1865.8}
-  - {system: 3, pile: 製塩, objects: null, days: 3.00, minutes: 2679.0}
-  - {system: 3, pile: 航海ぶんを塩漬けにする, objects: null, days: 1.00, minutes: 893.0}
-  - {system: 4, pile: 鉱石を掘って製錬, objects: null, days: 5.00, minutes: 4465.0}
+  - {system: 3, pile: 製塩, objects: null, days: 3.00, minutes: 2673.0}
+  - {system: 3, pile: 航海ぶんを塩漬けにする, objects: null, days: 1.00, minutes: 891.0}
+  - {system: 4, pile: 鉱石を掘って製錬, objects: null, days: 5.00, minutes: 4455.0}
   - {system: 5, pile: 薪棚, objects: [firewood_rack], days: 1.20, minutes: 1068.1}
-  - {system: 6, pile: 石鏃の槍, objects: null, days: 1.00, minutes: 893.0}
-  - {system: 6, pile: 青銅の穂先, objects: null, days: 2.00, minutes: 1786.0}
-  - {system: 7, pile: なめし革の背負い袋, objects: null, days: 1.00, minutes: 893.0}
-  - {system: 7, pile: そり, objects: [sledge], days: 2.03, minutes: 1813.4}
-  - {system: 8, pile: なめし革の一式, objects: [tanned_leather_clothing], days: 1.75, minutes: 1563.9}
-  - {system: 9, pile: 高床の寝台, objects: null, days: 1.50, minutes: 1339.5}
-  - {system: 9, pile: 詰め物, objects: null, days: 1.00, minutes: 893.0}
-  - {system: 10, pile: 葉の小屋, objects: null, days: 3.00, minutes: 2679.0}
-  - {system: 10, pile: 高床, objects: null, days: 4.00, minutes: 3572.0}
-  - {system: 10, pile: 板の壁・床, objects: null, days: 5.00, minutes: 4465.0}
-  - {system: 11, pile: 筏, objects: [raft], days: 4.65, minutes: 4156.0}
-  - {system: 11, pile: 帆, objects: [rawhide_sail], days: 3.05, minutes: 2724.0}
-  - {system: 11, pile: 櫂と舵, objects: null, days: 2.00, minutes: 1786.0}
-  - {system: 11, pile: 沿岸航海, objects: null, days: 3.00, minutes: 2679.0}
-  - {system: 11, pile: 海図を仕上げる, objects: null, days: 5.00, minutes: 4465.0}
+  - {system: 6, pile: 石鏃の槍, objects: null, days: 1.00, minutes: 891.0}
+  - {system: 6, pile: 青銅の穂先, objects: null, days: 2.00, minutes: 1782.0}
+  - {system: 7, pile: なめし革の背負い袋, objects: null, days: 1.00, minutes: 891.0}
+  - {system: 7, pile: そり, objects: [sledge], days: 2.04, minutes: 1813.4}
+  - {system: 8, pile: なめし革の一式, objects: [tanned_leather_clothing], days: 1.76, minutes: 1563.9}
+  - {system: 9, pile: 高床の寝台, objects: null, days: 1.50, minutes: 1336.5}
+  - {system: 9, pile: 詰め物, objects: null, days: 1.00, minutes: 891.0}
+  - {system: 10, pile: 葉の小屋, objects: null, days: 3.00, minutes: 2673.0}
+  - {system: 10, pile: 高床, objects: null, days: 4.00, minutes: 3564.0}
+  - {system: 10, pile: 板の壁・床, objects: null, days: 5.00, minutes: 4455.0}
+  - {system: 11, pile: 筏, objects: [raft], days: 4.66, minutes: 4156.0}
+  - {system: 11, pile: 帆, objects: [rawhide_sail], days: 3.06, minutes: 2724.0}
+  - {system: 11, pile: 櫂と舵, objects: null, days: 2.00, minutes: 1782.0}
+  - {system: 11, pile: 沿岸航海, objects: null, days: 3.00, minutes: 2673.0}
+  - {system: 11, pile: 海図を仕上げる, objects: null, days: 5.00, minutes: 4455.0}
   - {system: 12, pile: 設えを積んで里心を止める, objects: [branch_table, branch_table, log_drum], days: 1.78, minutes: 1585.6}
 
 work_piles_by_system:
-  - {system: 1, piles: 3, days: 6.20, minutes: 5536.6}
-  - {system: 2, piles: 3, days: 8.86, minutes: 7908.0}
-  - {system: 3, piles: 4, days: 7.10, minutes: 6339.2}
-  - {system: 4, piles: 1, days: 5.00, minutes: 4465.0}
+  - {system: 1, piles: 3, days: 6.20, minutes: 5524.2}
+  - {system: 2, piles: 3, days: 8.86, minutes: 7896.0}
+  - {system: 3, piles: 4, days: 7.11, minutes: 6331.2}
+  - {system: 4, piles: 1, days: 5.00, minutes: 4455.0}
   - {system: 5, piles: 1, days: 1.20, minutes: 1068.1}
-  - {system: 6, piles: 2, days: 3.00, minutes: 2679.0}
-  - {system: 7, piles: 2, days: 3.03, minutes: 2706.4}
-  - {system: 8, piles: 1, days: 1.75, minutes: 1563.9}
-  - {system: 9, piles: 2, days: 2.50, minutes: 2232.5}
-  - {system: 10, piles: 3, days: 12.00, minutes: 10716.0}
-  - {system: 11, piles: 5, days: 17.70, minutes: 15810.0}
+  - {system: 6, piles: 2, days: 3.00, minutes: 2673.0}
+  - {system: 7, piles: 2, days: 3.04, minutes: 2704.4}
+  - {system: 8, piles: 1, days: 1.76, minutes: 1563.9}
+  - {system: 9, piles: 2, days: 2.50, minutes: 2227.5}
+  - {system: 10, piles: 3, days: 12.00, minutes: 10692.0}
+  - {system: 11, piles: 5, days: 17.72, minutes: 15790.0}
   - {system: 12, piles: 1, days: 1.78, minutes: 1585.6}
 
 work_piles_total:
-  - {piles: 28, days: 70.11, minutes: 62610.3, outdoor_minutes: 41740.2, base_minutes: 20870.1, base_days: 57.97}
+  - {piles: 28, days: 70.16, minutes: 62510.9, outdoor_minutes: 41673.9, base_minutes: 20837.0, base_days: 57.88}
 
 exploration_phase:
   - {base: shortest_mean, metric: exploration_minutes, unit: minutes, mean: 2799.18, min: 1695.00, p5: 1830.00, p95: 3660.00, max: 3885.00, sd: 570.32, n: 500}
   - {base: shortest_mean, metric: day_trip_days, unit: days, mean: 15.37, min: 10.00, p5: 10.00, p95: 20.00, max: 22.00, sd: 3.08, n: 500}
   - {base: shortest_mean, metric: day_trip_travel_per_day, unit: minutes, mean: 164.43, min: 120.00, p5: 137.37, p95: 191.54, max: 222.27, sd: 16.25, n: 500}
   - {base: shortest_mean, metric: day_trip_exploration_per_day, unit: minutes, mean: 182.07, min: 156.82, p5: 167.73, p95: 192.35, max: 205.00, sd: 7.42, n: 500}
-  - {base: shortest_mean, metric: day_trip_window_per_day, unit: minutes, mean: 368.57, min: 310.73, p5: 341.00, p95: 395.63, max: 413.00, sd: 16.25, n: 500}
-  - {base: shortest_mean, metric: day_trip_spare_per_day, unit: minutes, mean: 186.50, min: 137.55, p5: 162.41, p95: 212.64, max: 225.50, sd: 15.52, n: 500}
+  - {base: shortest_mean, metric: day_trip_window_per_day, unit: minutes, mean: 366.57, min: 308.73, p5: 339.00, p95: 393.63, max: 411.00, sd: 16.25, n: 500}
+  - {base: shortest_mean, metric: day_trip_spare_per_day, unit: minutes, mean: 184.50, min: 135.55, p5: 160.41, p95: 210.64, max: 223.50, sd: 15.52, n: 500}
   - {base: shortest_mean, metric: mixed_days, unit: days, mean: 15.14, min: 10.00, p5: 10.00, p95: 20.00, max: 20.00, sd: 3.07, n: 500}
   - {base: shortest_mean, metric: stay_over_sites, unit: sites, mean: 0.24, min: 0.00, p5: 0.00, p95: 1.00, max: 3.00, sd: 0.50, n: 500}
   - {base: shortest_mean, metric: day_trip_impossible_sites, unit: sites, mean: 0.00, min: 0.00, p5: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 500}
@@ -162,17 +162,17 @@ exploration_day_trip_islands:
   - {base: shortest_mean, unit: percent, share: 100.0, islands: 500, seeds: 500}
 
 steady_phase:
-  - {base: shortest_mean, metric: travel_per_day, unit: minutes, mean: 62.16, min: 0.00, p5: 20.38, p95: 125.33, max: 198.38, sd: 34.50, n: 500}
-  - {base: shortest_mean, metric: work_per_day, unit: minutes, mean: 448.81, min: 334.62, p5: 390.11, p95: 511.38, max: 533.00, sd: 44.66, n: 500}
+  - {base: shortest_mean, metric: travel_per_day, unit: minutes, mean: 62.16, min: 0.00, p5: 20.38, p95: 125.55, max: 198.98, sd: 34.52, n: 500}
+  - {base: shortest_mean, metric: work_per_day, unit: minutes, mean: 447.22, min: 332.02, p5: 388.95, p95: 509.37, max: 531.00, sd: 44.34, n: 500}
 
 steady_phase_islands:
   - {base: shortest_mean, unit: percent, share: 100.0, islands: 500, seeds: 500}
 
 steady_phase_by_work_share:
-  - {base: shortest_mean, share: 開けた土地, work_percent: 50, round_trip_minutes: 11.34, work_minutes_per_day: 521.66, day_percent: 50.6, islands_percent: 100.0}
-  - {base: shortest_mean, share: 森, work_percent: 25, round_trip_minutes: 89.22, work_minutes_per_day: 443.78, day_percent: 30.3, islands_percent: 99.8}
-  - {base: shortest_mean, share: 密林, work_percent: 25, round_trip_minutes: 137.13, work_minutes_per_day: 279.89, day_percent: 36.8, islands_percent: 52.2}
+  - {base: shortest_mean, share: 開けた土地, work_percent: 50, round_trip_minutes: 11.34, work_minutes_per_day: 519.66, day_percent: 50.6, islands_percent: 100.0}
+  - {base: shortest_mean, share: 森, work_percent: 25, round_trip_minutes: 89.22, work_minutes_per_day: 441.78, day_percent: 30.3, islands_percent: 99.8}
+  - {base: shortest_mean, share: 密林, work_percent: 25, round_trip_minutes: 137.13, work_minutes_per_day: 279.72, day_percent: 36.8, islands_percent: 52.2}
 
 cycle:
-  - {base: shortest_mean, metric: steady_days, unit: days, mean: 93.93, min: 78.31, p5: 81.43, p95: 106.27, max: 124.74, sd: 9.36, n: 500}
-  - {base: shortest_mean, metric: total_days, unit: days, mean: 109.30, min: 88.31, p5: 93.87, p95: 123.29, max: 138.74, sd: 10.17, n: 500}
+  - {base: shortest_mean, metric: steady_days, unit: days, mean: 94.11, min: 78.48, p5: 81.62, p95: 106.50, max: 125.52, sd: 9.36, n: 500}
+  - {base: shortest_mean, metric: total_days, unit: days, mean: 109.48, min: 88.48, p5: 94.05, p95: 123.46, max: 139.52, sd: 10.16, n: 500}

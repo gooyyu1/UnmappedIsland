@@ -308,7 +308,8 @@ export function cardOperationsOf(game: StartedGame, locale: Localization): CardO
       ...offeredCombinations(dropped, carried, carried, count),
       ...offeredCombinations(held, [dropped], [held], 1),
     ];
-    // **理由を告げて断るのは、どちらの向きにも成立するものが1つも無いときだけ**（同2.1節）。
+    // **理由を告げて断るのは、どちらの向きにも成立するものが1つも無いときだけ**（同2.1節）。断るものが
+    // 複数並んでも、出すのは上と同じ順の先頭（同2節）。
     return offered.find((combination) => combination.enabled) ?? offered.at(0);
   };
 

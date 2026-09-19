@@ -237,7 +237,7 @@ object_defs:
   it('経過の間ずっと効く宣言が足した分は、その操作のものとして出る', () => {
     drain('stamina', 50);
 
-    // 60分＝4 tickぶん、tick毎に+2.5。**同じ経過の中で他の値も動く**（覚醒度は減り、炭水化物が
+    // 4 tick（60分）ぶん、tick毎に+2.5。**同じ経過の中で他の値も動く**（覚醒度は減り、炭水化物が
     // 体脂肪へ回る）が、それはこの操作が足したものではない。
     const { source, amounts } = gainsDuring(() => {
       expect(player.tryGetAction('doze', player)?.tryExecute() === true).toBe(true);

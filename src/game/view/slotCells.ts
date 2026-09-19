@@ -79,7 +79,12 @@ function materialCells(
   cardOfType: (objectGlobalId: ObjectGlobalId) => CardContent,
 ): readonly LaneCell[] {
   // 枠に入っている物から、それがどの要求のものかを引く。**タグの要求は当てはまる型が複数ある**ので、
-  // 型からの逆引きは1対1にならない（先に書いた要求を採る、craftingのallocateと同じ順）。
+  // 型からの逆引きは1対1にならず、ここでは先に書いた要求を採る。
+  //
+  // **これは近似で、割り当ての答え（crafting.allocateContentsToRequirements）とは食い違いうる。**
+  // 当てる先は成立する組み合わせを探して振り替えられるので、要求が重なる工程では、実際に消える物と
+  // 縁の色・数の出る枠がずれる。ここへ本当の割り当てを渡すには、個体ごとの割り当て先を映しの側まで
+  // 運ぶ必要がある（今は型しか届かない）。
   const materialOf = (objectGlobalId: ObjectGlobalId | undefined): CraftingMaterial | undefined =>
     objectGlobalId === undefined
       ? undefined

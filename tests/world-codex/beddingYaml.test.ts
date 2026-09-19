@@ -7,6 +7,7 @@ import { characterDefNames } from '../../src/domain/generation/NewGame';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * bedding.yamlの寝床とハンモックを、実ファイルの定義だけで検証する。
@@ -29,9 +30,6 @@ describe('bedding.yamlの寝床とハンモック', () => {
   let staminaId: PropertyGlobalId;
   let wakefulnessId: PropertyGlobalId;
   let warmthId: PropertyGlobalId;
-
-  /** 1日のtick数（1 tick = 15分）。 */
-  const TICKS_PER_DAY = 96;
 
   beforeAll(() => {
     codex = bundledCodex();

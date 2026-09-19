@@ -30,7 +30,7 @@
 `tests/world-codex/fireYaml.test.ts` と `tests/world-codex/firewoodYaml.test.ts` です。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。**本書の設計はすべて実装済み**です。数値は
-いずれも目安で、`tick` = 15 分・1 日 = 96 tick（[`DurabilitySystem.md`](./DurabilitySystem.md) 1 節）を
+いずれも目安で、1 tick（15 分）・96 tick（1 日）（[`DurabilitySystem.md`](./DurabilitySystem.md) 1 節）を
 前提とします。未決事項は 11 節に整理しています。
 
 ## 1. 火は炉のプロパティで、「火」という物は作らない
@@ -269,7 +269,7 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 間遠になります。
 
 ここへ 1 tick（15 分）を課すと、火の番だけで 1 日 1 時間以上になります。生存の採取に要る 1 日
-187 分<!-- stats: terrain.yaml daily_budget survival_gathering -->（[`ContentSkeleton.md`](../world/ContentSkeleton.md)
+189 分<!-- stats: terrain.yaml daily_budget survival_gathering -->（[`ContentSkeleton.md`](../world/ContentSkeleton.md)
 8.2 節）へ、**判断を伴わない同じ操作が 4 割近くを上乗せする**ことになります。束ねた薪はまとめて
 くべられる（2 節の `allow_multiple`）ので、回数のほうは既に絞り切っています。
 
@@ -296,7 +296,7 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 **乾かすのは棚だけの仕事です。** 薪は乾き切るまでの残り（`seasoning_remaining`）を持つだけで自分では
 進まず、棚が積んである薪を 1 tick に 1 つ進めます——炉が火にかけた物を進めるのと同じ向き（7 節）です。
 **天気も時刻も見ません**——屋根が雨を防ぎ、台が地面から離して風を通すので、日差しの当たった tick を
-数える干し場（`drying.yaml`）とはそこが違います。乾き切るのは 576 tick＝6 日で、現実の 3〜4 週を
+数える干し場（`drying.yaml`）とはそこが違います。乾き切るのは 576 tick（6 日）で、現実の 3〜4 週を
 4 分の 1 へ縮めたものです（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md) の
 「長くかかるものだけ、現実の 4 分の 1 へ縮める」節）。
 
@@ -832,10 +832,10 @@ passives:
 
 | | 値 | 意味 |
 |---|--:|---|
-| `heat_soak` の上限 | 12 | 炎（3/tick）で 4 tick ＝ 1 時間、熾火（1/tick）で 3 時間 |
-| 炉の外での減り | -3/tick | 火から離して 4 tick ＝ 1 時間で常温 |
+| `heat_soak` の上限 | 12 | 炎（3/tick）で 4 tick（1 時間）、熾火（1/tick）で 3 時間 |
+| 炉の外での減り | -3/tick | 火から離して 4 tick（1 時間）で常温 |
 | 湯を沸かせる下限 | 6 | 溜め切った石の半分。炉から出して 30 分が持ち時間 |
-| 湯が冷める速さ | -1/tick | 12 tick ＝ 3 時間で水に戻る |
+| 湯が冷める速さ | -1/tick | 12 tick（3 時間）で水に戻る |
 
 **炉から出したかどうかを、石は問いません。** 減るのは「祖先に燃えている炉が居ないとき」で、炉に
 入れたまま火が消えた場合も同じ 1 行で冷めます。

@@ -106,7 +106,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
   });
 
   it('満腹感はかさで、1食が8時間もつ', () => {
-    // 512mL（1食）を16mL/tickで空にすると32 tick＝8時間（DigestionSystem.md 2節）。
+    // 512mL（1食）を16mL/tickで空にすると32 tick（8時間）かかる（DigestionSystem.md 2節）。
     player.getProperty(satietyId).setNumberWithoutEvents(512);
 
     tick(31);

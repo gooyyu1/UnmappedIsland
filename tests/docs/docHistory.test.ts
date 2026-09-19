@@ -1,20 +1,19 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { historyDocs } from '../../scripts/docScope.mjs';
 
 /**
  * 経緯を主題としない文書とコメントに、過去の姿を語る記述が生えていないかの検査
  * （[`docs/DocumentStyle.md`](../../docs/DocumentStyle.md) 9.1節、
  * [`CLAUDE.md`](../../CLAUDE.md)「ドキュメント・コメントのスタイル」）。
  *
- * **書いてよい文書の別は、9.1節の表からだけ引く。** ここへ写すと、表を増やしたときに2箇所が
- * ずれる。表に無い文書やコメントで過去の姿から書き始めた記述は、旧仕様を知らない読み手には
+ * **書いてよい文書の別は、9.1節の表からだけ引く**（{@link historyDocs}）。写すと、表を増やした
+ * ときにずれる。表に無い文書やコメントで過去の姿から書き始めた記述は、旧仕様を知らない読み手には
  * 要らないものになる（issue #1936）。
  */
 
 const ROOT = resolve(__dirname, '../..');
-
-const DOCUMENT_STYLE = 'docs/DocumentStyle.md';
 
 /**
  * リポジトリルートからの相対パスを `/` 区切りで持つ。**この検査でパスを組むのは、どこもここを通す**
@@ -36,18 +35,6 @@ const SELF = repoPath(relative(ROOT, __filename));
  */
 const MARKERS = ['かつて', '以前は', 'ていた頃', 'だった頃', '時期があ'];
 
-/** 9.1節の表が挙げる文書を、リポジトリルートからの相対パスで返す。 */
-function documentsAllowedToTellHistory(): Set<string> {
-  const text = readFileSync(join(ROOT, DOCUMENT_STYLE), 'utf-8');
-  const section = /\n### 9\.1 [^\n]*\n([\s\S]*?)(?=\n#{2,3} |$)/.exec(text);
-  if (section === null) throw new Error(`${DOCUMENT_STYLE} に 9.1 節が無い`);
-  const allowed = new Set<string>();
-  for (const [, target] of section[1].matchAll(/^\| \[[^\]]+\]\(([^)\s]+)\)/gm)) {
-    allowed.add(repoPath('docs', target.split('#')[0]));
-  }
-  if (allowed.size === 0) throw new Error(`${DOCUMENT_STYLE} 9.1 節の表から文書を引けない`);
-  return allowed;
-}
 
 function filesIn(dir: string, extension: string): string[] {
   const found: string[] = [];
@@ -78,7 +65,7 @@ function historyIn(file: string, lookAt: (line: string) => boolean): string[] {
   return found;
 }
 
-const ALLOWED = documentsAllowedToTellHistory();
+const ALLOWED = new Set([...historyDocs(ROOT)].map((doc) => repoPath(doc)));
 const ALL_DOCUMENTS = filesIn('docs', '.md');
 const DOCUMENTS = ALL_DOCUMENTS.filter((doc) => !ALLOWED.has(doc));
 const SOURCES = [...filesIn('src', '.ts'), ...filesIn('tests', '.ts')].filter(

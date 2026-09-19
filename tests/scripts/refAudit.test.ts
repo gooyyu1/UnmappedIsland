@@ -267,7 +267,7 @@ describe('refAudit.mjs', () => {
   // ## 射程
   //
   // **その回の観測の記録は読まない**——書いてあるのは当時の観測で、今と食い違っていても直す先では
-  // ない（そう決めているのは `agent-ops/prompts/analysis-prompt.md` の、記録の書き方を渡している段）。
+  // ない（そう決めているのは `agent-ops/board-design.md` 2.17.4）。
   it('その回の観測の記録は、掃く分に出さない', () => {
     const repo = makeRepo({
       [LEDGER]: ledgerText(UNSET, UNSET),

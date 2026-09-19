@@ -280,7 +280,7 @@ describe('fire.yamlの火の連鎖', () => {
    * その湿りから始めた火口に火が付く割合。**pickは「引き×重みの合計」を累積と比べる**（fixedRng）
    * ので、**付くかどうかが切り替わる引きが、そのまま成功率**になる。それを二分で挟んで出す。
    *
-   * **割合を定義から計算せずに測るのは、火起こしの30分＝2tickのあいだにも水が抜けるから**
+   * **割合を定義から計算せずに測るのは、火起こしの2 tick（30分）のあいだにも水が抜けるから**
    * ——引きを決める時点の湿りは、始めた値と乾く速さの両方で決まる。
    */
   function lightChanceOf(tinderName: string, moisture: number): number {
@@ -1134,7 +1134,7 @@ describe('fire.yamlの火の連鎖', () => {
   it('沸かした湯は放っておくと冷めて水に戻る', () => {
     const bowl = filledBowl('hot_water_liquid');
 
-    // 湯は-1/tick。12tick＝3時間で抜け切る。
+    // 湯は-1/tick。12 tick（3時間）で抜け切る。
     session.advanceWorldTime(15 * 11);
     expect(bowl.def.name, '11tickではまだ湯').toBe('coconut_bowl__content_hot_water_liquid');
 
@@ -1153,6 +1153,22 @@ describe('炉の火床の枠が名乗る型', () => {
 
   /** 器を載せる枠を持つ炉（docs/engine/FireSystem.md 6節の段の表）。 */
   const COOKWARE_HEARTHS = ['three_stone_hearth', 'stone_hearth'];
+
+  /**
+   * 器を載せる枠を持たない炉。**下の検査はこの2組で炉を二分する**ので、余りの側も名乗らせる。
+   *
+   * 燻し小屋（smoking.yaml）は枠が6つとも同じ物（`smokable`）を受けるので、焚き火・覆い焼きの炉と
+   * 同じくどの枠も型を名乗らない。
+   */
+  const PLAIN_HEARTHS = ['campfire', 'earth_kiln', 'smokehouse'];
+
+  it('この検査は、炉を1つ残らずどちらか一方へ振り分けている', () => {
+    // どちらの一覧にも載らない炉は、下のどの検査にも回されないまま緑で通る。段の表（同6節）は
+    // データに無いので一覧は手で持つしかないが、**覆っていることは`hearth`タグと突き合わせられる。**
+    expect([...COOKWARE_HEARTHS, ...PLAIN_HEARTHS].sort()).toEqual(
+      [...codex.objectDefNamesWithTag(codex.tagNames.getId('hearth'))].sort(),
+    );
+  });
 
   const fireCells = (hearthName: string): readonly (readonly string[])[] => {
     const hearth = codex.objects.get(codex.objectNames.getId(hearthName));
@@ -1190,14 +1206,11 @@ describe('炉の火床の枠が名乗る型', () => {
 
   it('器を載せられない炉は、枠が言えることを並びが既に言っているので名乗らない', () => {
     // 焚き火の火床はどちらの枠も焼く物を受ける（fire.yaml）。覆い焼きの炉も同じで、4枠とも土器。
-    expect(
-      fireCells('campfire').every((types) => types.length === 0),
-      '焚き火',
-    ).toBe(true);
-    expect(
-      fireCells('earth_kiln').every((types) => types.length === 0),
-      '覆い焼きの炉',
-    ).toBe(true);
+    for (const hearthName of PLAIN_HEARTHS)
+      expect(
+        fireCells(hearthName).every((types) => types.length === 0),
+        hearthName,
+      ).toBe(true);
   });
 });
 

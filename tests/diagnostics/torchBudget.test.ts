@@ -102,15 +102,16 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
   const terrain = statsReport('terrain.yaml');
   const torchCostMinutes = cell(balance, 'object_costs', { object: 'torch' }, 'total_minutes');
 
-  it('灯っているあいだは、どの土地のどの時刻でも行動が開く（嵐の屋外の採取は今も閉じる）', () => {
+  it('灯っているあいだ、閉じているのは嵐の屋外だけ（そこはどの行動も閉じる）', () => {
     const rows = activityHoursOf(codex, everyWeatherEqually(codex), torchEv);
     expect(rows.length, '土地が1つも出ない').toBeGreaterThan(0);
 
+    // 明るさのほうは松明が埋め切るので、**列の間に残る差は風雨だけ**——行動のクラスごとの
+    // しきい値の差は1つも表に出ない。だから以下は移動の列1つを代表として見れば足りる。
     for (const row of rows) {
       const where = `${row.locationName}`;
-      expect(row.travelHoursPerDay, `${where}: 移動`).toBeCloseTo(24, 6);
-      expect(row.explorationHoursPerDay, `${where}: 探索`).toBeCloseTo(24, 6);
-      expect(row.handworkHoursPerDay, `${where}: 手元の作業`).toBeCloseTo(24, 6);
+      expect(row.outdoorSearchHoursPerDay, `${where}: 屋外で見て探す`).toBeCloseTo(row.travelHoursPerDay, 6);
+      expect(row.handworkHoursPerDay, `${where}: 手元の作業`).toBeCloseTo(row.travelHoursPerDay, 6);
     }
 
     // 嵐は明るさではなく風雨が止める（8.1.4節）ので、松明では埋まらない。**閉じているのが嵐の
@@ -118,16 +119,20 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
     // 24を割ったことだけでは、暗さで閉じていても同じ結果になる。
     const closes = weatherNamesOf(codex).filter((weatherName) =>
       activityHoursOf(codex, onlyThisWeather(weatherName), torchEv).some(
-        (row) => row.gatheringHoursPerDay < 24 - 1e-6,
+        (row) => row.travelHoursPerDay < 24 - 1e-6,
       ),
     );
-    expect(closes, '屋外の採取を閉じる天気').toEqual(['storm']);
+    expect(closes, '屋外を閉じる天気').toEqual(['storm']);
 
-    // 屋根の下（浅い洞窟）だけは風雨が届かず、嵐でも採取が24時間開く。
+    // 屋根の下（浅い洞窟）だけは風雨が届かず、嵐でも24時間開く。
     const inStorm = activityHoursOf(codex, onlyThisWeather('storm'), torchEv);
     expect(
-      inStorm.some((row) => row.gatheringHoursPerDay > 24 - 1e-6),
-      '嵐でも屋外の採取が開く土地が1つも無い（風雨の届かない土地が消えた）',
+      inStorm.some((row) => row.travelHoursPerDay > 24 - 1e-6),
+      '嵐でも開く土地が1つも無い（風雨の届かない土地が消えた）',
+    ).toBe(true);
+    expect(
+      inStorm.some((row) => row.travelHoursPerDay <= 24 - 1e-6),
+      '嵐で閉じる土地が1つも無い（松明が風雨まで埋めている）',
     ).toBe(true);
   });
 
@@ -136,16 +141,15 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
     const lit = activityHoursOf(codex, seasons, torchEv);
     const dimmer = activityHoursOf(codex, seasons, torchEv - 1);
 
-    // 「手元の作業だけ」を言うには、残り3つが動いていないことを1つ残らず見る必要がある
+    // 「手元の作業だけ」を言うには、残りが動いていないことを1つ残らず見る必要がある
     // ——採取のしきい値（+3）だけを動かしても、そちらを見ていなければ緑のまま主張が嘘になる。
     for (const [index, row] of dimmer.entries()) {
       const where = `${row.locationName}`;
       expect(row.travelHoursPerDay, `${where}: 移動`).toBeCloseTo(lit[index].travelHoursPerDay, 6);
-      expect(row.gatheringHoursPerDay, `${where}: 屋外の採取`).toBeCloseTo(
-        lit[index].gatheringHoursPerDay,
+      expect(row.outdoorSearchHoursPerDay, `${where}: 屋外で見て探す`).toBeCloseTo(
+        lit[index].outdoorSearchHoursPerDay,
         6,
       );
-      expect(row.explorationHoursPerDay, `${where}: 探索`).toBeCloseTo(lit[index].explorationHoursPerDay, 6);
     }
     expect(
       dimmer.some((row, index) => row.handworkHoursPerDay < lit[index].handworkHoursPerDay - 1e-6),

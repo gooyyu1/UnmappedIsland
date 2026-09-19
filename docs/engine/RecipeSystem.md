@@ -49,8 +49,9 @@
 ### 2.1 工程を進めてよいかは、世界が1箇所で決める
 
 **素材が揃っているかとは別に、「今その作業ができる状況か」を世界が1本の条件で持ちます**
-（`crafting_conditions`、`GameElementDefinition.md` 13.3 節）。同梱の世界が書いているのは手元の明るさで、
-**暗ければどのレシピも進みません**（[`IlluminationSystem.md`](./IlluminationSystem.md) 5 節）。
+（`crafting_conditions`、`GameElementDefinition.md` 13.3 節）。同梱の世界が書いているのは手元の明るさと
+風雨で、**暗ければどのレシピも進みません**（[`IlluminationSystem.md`](./IlluminationSystem.md) 5 節）。
+**嵐の日、屋根の下でなければ進まないのも同じ1本**です（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.1.4 節）。
 
 **工程ごとにも、レシピごとにも書きません。** レシピという形が既に「3 つ以上の物を組み合わせる複雑な
 作業」を言っているので、書き分けると、条件の無いレシピが「暗くてもできると決めた」のか「書き忘れた」のか

@@ -243,7 +243,7 @@
 
 **上がるのは感染している間だけ**（`+0.25/tick`）。これが「感染が免疫を上げる」（獲得免疫）と
 「免疫が反応するまでの時間差」の**両方**で、別の仕組みは作りません——**潜伏期は、免疫が段を 1 つ上げるのに
-要る tick 数そのもの**です（`weakened` の下端 25 から `robust` の 40 まで 60 tick ＝ 15 時間）。
+要る tick 数そのもの**です——`weakened` の下端 25 から `robust` の 40 まで 60 tick（15 時間）。
 **引き戻すのはいちばん上の段だけ**（`-0.05/tick`）なので、**罹って治った体は素の 60 より高い所（70 の少し下）で
 止まります**。それが獲得免疫で、**押し下げ `-30` までは段を保てる**余力になります（素のままなら `-20` まで）。
 
@@ -354,18 +354,18 @@
 突き合わせられます（[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum` と
 `daily_minimum_menu`。読み方は [`BalanceStats.md`](../diagnostics/BalanceStats.md)）。
 
-**1 日を賄う最小労働は 547 分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->**
+**1 日を賄う最小労働は 549 分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->**
 （島じゅうを渡り歩ける前提。移動時間は数えていません）**で、うち
 360 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="palm_tree.pick_frond → palm_frond.split_and_weave → bed.spread → bed.nap" minutes -->は眠るぶんなので、
 採って食べるのに払うのは
-187 分<!-- stats: terrain.yaml daily_budget survival_gathering -->です。** これが
+189 分<!-- stats: terrain.yaml daily_budget survival_gathering -->です。** これが
 [`ContentSkeleton.md`](../world/ContentSkeleton.md) 8 節の自由時間
-893 分<!-- stats: terrain.yaml daily_budget surplus -->を出している引き算の相手で、**1 周回の日数の
+891 分<!-- stats: terrain.yaml daily_budget surplus -->を出している引き算の相手で、**1 周回の日数の
 見積もりはこの値の上に立っています**——速さを動かせば、そちらが動きます。
 
 | 賄うもの | 献立 | 1 日 |
 | --- | --- | --- |
-| 水 | 湧き水から汲んだ水 9.33<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → spring.draw_into_empty → jar__content_water_liquid.drink" repetitions -->杯 | 47 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → spring.draw_into_empty → jar__content_water_liquid.drink" minutes --> |
+| 水 | 湧き水から汲んだ水 9.33<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → spring.draw_into_empty → jar__content_water_liquid.drink" repetitions -->杯 | 50 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → spring.draw_into_empty → jar__content_water_liquid.drink" minutes --> |
 | 満腹・蓄え | 生肉 3.07<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.quarter → raw_meat.eat" repetitions -->切れ | 85 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="pitfall.catch_remaining.on_min → wild_boar.blood.on_min → wild_boar_carcass.quarter → raw_meat.eat" minutes --> |
 | 満腹・蓄え | 焼いた芋 0.14<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → taro.cooking_progress.on_max → roasted_taro.eat" repetitions -->個 | 6 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → taro.cooking_progress.on_max → roasted_taro.eat" minutes --> |
 | 脂 | ヤシの果肉 0.45<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat" repetitions -->個 | 35 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat" minutes --> |

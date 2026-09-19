@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { CraftingStep, StepOutcome } from '../../src/analysis/CraftingStep';
-import { craftingStepsOf } from '../../src/analysis/craftingSteps';
+import { analysisContextOf, craftingStepsOf } from '../../src/analysis/craftingSteps';
 import { externalTickDeltasOf, rangeCyclesOf } from '../../src/analysis/rangeCycles';
 import { buildCraftingNetwork } from '../../src/codex-viewer/craftingGraph';
+import type { ObjectDef } from '../../src/domain/ObjectDef';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
@@ -188,7 +190,7 @@ object_defs:
       },
     ]);
 
-    // 値が戻らず自分が消える側は寿命（960 tick = 10日）。
+    // 値が戻らず自分が消える側は寿命で、960 tick（10日）。
     expect(lifetime.repeats).toBe(false);
     expect(lifetime.destroysSelf).toBe(true);
     expect(lifetime.minutes).toBe(960 * 15);
@@ -534,6 +536,15 @@ object_defs:
         conditions:
           - {subject: self, prop: fill, gt: 4000}
         set: {self: {fill: 0}}
+      unlid:
+        trigger: menu
+        conditions:
+          - {subject: self, prop: lid_seal, eq: 0}
+
+  crate:
+    tags: [item]
+    props:
+      lid_seal: {value: 1}
 
   water_liquid:
     traits: [liquid, water_liquid]
@@ -559,6 +570,87 @@ object_defs:
     it('同じ条件でも、その端に留まれる型では立つ', () => {
       // 空の容器のon_minは自分自身へ戻るだけなので、fillが0のままでいられる。
       expect(stepNamesOf('jar')).toContain('collect_rain');
+    });
+
+    it('自分が宣言していないプロパティを見る操作は立たない', () => {
+      // 実行時は解決先が無く、どの演算子でも偽になる（ConditionNode.evaluateProperty）。0として
+      // 読むのでも素通しにするのでもないので、`eq: 0`でも成立しない。
+      expect(stepNamesOf('jar')).not.toContain('unlid');
+    });
+  });
+
+  /**
+   * 祖先（`{subject: ancestor, ...}`、8.6節）を見る条件の判定（issue #2119）。土地ごとの解析は
+   * 立っている土地を知っているので、**そこへ置いた場合に成立しない操作は立てない**。
+   *
+   * 祖先は「そのプロパティを宣言している最初の祖先」なので、言い切れるのは**そのプロパティを土地
+   * しか宣言していないとき**だけ——間に挟まる容れ物が宣言していれば、遡り着く先は定義からは決まらない。
+   */
+  describe('祖先を見る条件', () => {
+    const YAML_ANCESTOR = `
+object_defs:
+  grove:
+    tags: [location]
+    props:
+      hanging_anchor: {value: 1}
+
+  barren:
+    tags: [location]
+
+  moor:
+    tags: [location]
+
+  hammock:
+    tags: [item]
+    interactions:
+      nap:
+        trigger: menu
+        duration: 180
+        conditions:
+          - {subject: ancestor, prop: hanging_anchor, gt: 0}
+`;
+    /** 支点を、土地ではない型（担いで回れる骨組み）も宣言している世界。 */
+    const YAML_CARRIED_ANCHOR = `${YAML_ANCESTOR}
+  frame:
+    tags: [item]
+    props:
+      hanging_anchor: {value: 1}
+`;
+
+    const codexOf = (yaml: string): WorldCodex =>
+      new WorldCodexYamlLoader().load('ancestor.yaml', yaml).buildAndReset();
+    const ancestorCodex = codexOf(YAML_ANCESTOR);
+
+    /** その土地の候補に立ったときの、ハンモックの工程名。 */
+    function napStepsAt(codex: WorldCodex, ...locationNames: readonly string[]): readonly string[] {
+      const defOf = (name: string): ObjectDef => codex.objects.get(codex.objectNames.getId(name));
+      const context = analysisContextOf(codex, { ancestorLocations: locationNames.map(defOf) });
+      return craftingStepsOf(codex, defOf('hammock'), context).map((step) => step.name);
+    }
+
+    it('宣言していない土地に立っていると、その土地では立たない', () => {
+      expect(napStepsAt(ancestorCodex, 'barren')).not.toContain('nap');
+    });
+
+    it('宣言している土地に立っていると立つ', () => {
+      expect(napStepsAt(ancestorCodex, 'grove')).toContain('nap');
+    });
+
+    it('候補のどれかで成立するなら落とさない', () => {
+      // 島全体の文脈。実行時に祖先へ就くのは候補のうち1つなので、成立する土地が在れば残す。
+      expect(napStepsAt(ancestorCodex, 'grove', 'barren')).toContain('nap');
+    });
+
+    it('どの候補でも成立しないなら、候補が複数でも落ちる', () => {
+      expect(napStepsAt(ancestorCodex, 'barren', 'moor')).not.toContain('nap');
+    });
+
+    it('土地の候補が無ければ素通しする', () => {
+      expect(napStepsAt(ancestorCodex)).toContain('nap');
+    });
+
+    it('土地でない型も宣言しているなら、祖先が土地とは限らないので落とさない', () => {
+      expect(napStepsAt(codexOf(YAML_CARRIED_ANCHOR), 'barren')).toContain('nap');
     });
   });
 
@@ -727,5 +819,122 @@ object_defs:
         { kind: 'object', objectGlobalId: instrumentId('raw_meat'), consumed: true, count: 1 },
       ]);
     });
+  });
+});
+
+/**
+ * 中身を外へ移す工程が、その入力を「使えば減るもの」として読むこと（issue #2150）。
+ *
+ * 器は`transfer`で中身が減るだけで消えないので、消えるかだけを問うと**繰り返し使える道具**になり、
+ * 中身を用意する時間が単位あたりの時間から丸ごと落ちる。同梱の定義で効いていることの検査は
+ * `tests/diagnostics/containerContentCost.test.ts`。
+ */
+describe('中身を持ち出す入力（craftingSteps）', () => {
+  const YAML = `
+traits:
+  liquid:
+    tags: [liquid]
+
+  water_content:
+    tags: [water]
+    interactions:
+      # 自分の中身から1杯ぶんを飲む。器は消えない。
+      drink:
+        trigger: menu
+        duration: 5
+        transfer: {amount: 25, from_prop: fill, to: agent, to_prop: hydration}
+      # 相手（タグ指定）の中身を空にする。**どの器が来ても足りる量**で数えるので、最も小さい器に合わせる。
+      water_plant:
+        trigger: {drag: {tag: water}}
+        duration: 5
+        transfer: {amount: 50, from: instrument, from_prop: fill, to: self, to_prop: fill}
+
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      hydration: {value: 96, range: {min: 0, max: 96}}
+
+  jug:
+    tags: [item]
+    props:
+      fill:
+        value: 0
+        range: {min: 0, max: 100}
+        on_min:
+          become: {content: none}
+      weight: {value: 500}
+      # 使えば傷むが、外へは何も出ていない値。
+      durability: {value: 200, range: {min: 0, max: 200}}
+    interactions:
+      # 磨くと刃こぼれならぬ器の傷みが進む。減るが、物としては何も出ていない。
+      scrub:
+        trigger: menu
+        duration: 5
+        add: {self: {durability: -50}}
+    variation_axes:
+      content: {of: {tag: liquid}}
+
+  cup:
+    tags: [item]
+    props:
+      weight: {value: 100}
+      fill:
+        value: 0
+        range: {min: 0, max: 25}
+        on_min:
+          become: {content: none}
+    variation_axes:
+      content: {of: {tag: liquid}}
+
+  water_content:
+    traits: [liquid, water_content]
+`;
+
+  const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset();
+  const id = (name: string) => codex.objectNames.getId(name);
+  const stepOf = (objectName: string, stepName: string): CraftingStep =>
+    craftingStepsOf(codex, codex.objects.get(id(objectName))).find((step) => step.name === stepName)!;
+
+  it('1回で持ち出す量が、器1つぶんの何割かになる', () => {
+    // 100抱えた器から25を出すので4分の1。飲み干した先は中身を落とした空の器。
+    expect(stepOf('jug__content_water_content', 'drink').inputs).toEqual([
+      {
+        kind: 'object',
+        objectGlobalId: id('jug__content_water_content'),
+        consumed: true,
+        count: 0.25,
+        emptiedInto: id('jug'),
+      },
+    ]);
+  });
+
+  it('1杯ぶんしか抱えない器は、1回で1個まるごと減る', () => {
+    expect(stepOf('cup__content_water_content', 'drink').inputs[0]).toEqual({
+      kind: 'object',
+      objectGlobalId: id('cup__content_water_content'),
+      consumed: true,
+      count: 1,
+      emptiedInto: id('cup'),
+    });
+  });
+
+  it('相手をタグで指した入力は、最も少ない在庫に合わせる', () => {
+    // 50を出す相手は、100抱える器なら半分だが、25しか抱えない器では1個まるごと。どちらが来ても
+    // 足りるのは後者の数え方。空になる先は候補ごとに違うので添えない。
+    expect(stepOf('jug__content_water_content', 'water_plant').inputs[1]).toEqual({
+      kind: 'tag',
+      tagGlobalId: codex.tagNames.getId('water'),
+      consumed: true,
+      count: 1,
+    });
+  });
+
+  it('使って傷むだけの値は、持ち出しに数えない', () => {
+    // 200のうち50を削る工程。割合で数えると4分の1を消費したことになるが、物としては何も出ていない
+    // ので、器は道具のまま（何回使えるかはdurationsが別に出す）。
+    expect(stepOf('jug', 'scrub').inputs).toEqual([
+      { kind: 'object', objectGlobalId: id('jug'), consumed: false, count: 1 },
+    ]);
   });
 });

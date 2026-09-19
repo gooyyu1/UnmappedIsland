@@ -12,24 +12,35 @@ import type { ObjectGlobalId, PropertyGlobalId, TagGlobalId } from '../domain/Gl
 /** 工程への入力1つ。型そのもの（object）か、タグで指した相手（tag）のどちらか。 */
 export type CraftingInput =
   /**
-   * consumedは、この工程がその入力を消す（destroy・レシピのconsume）か。道具は消えないので偽。
+   * consumedは、この工程がその入力を使い切るか——消す（destroy・レシピのconsume）か、抱えていた
+   * 中身を外へ出す（transfer）か。**どちらも使えば減る**ので、繰り返し使える道具だけが偽になる。
    * countは1回の実行で要る個数（レシピの`count`、既定1）——**筏は丸太を6本使う**ので、
    * 総コストを出す側はこれを掛けないと1本ぶんで数えることになる。
    *
    * **確率でしか消えない入力では1を下回る。** 殴って仕留められるのは21回に1回で、外した回の獲物は
-   * その場に残る——1回の実行で要るのは獲物1匹ではなく、その確率ぶんだけ。
+   * その場に残る——1回の実行で要るのは獲物1匹ではなく、その確率ぶんだけ。**中身だけを持ち出す
+   * 入力も同じ**で、1杯250mLを4000mL抱えた甕から汲むなら、要るのは甕1つではなく16分の1
+   * （craftingSteps.consumptionOf）。
+   *
+   * emptiedIntoは、中身が尽きたときに手元へ残る型（空になった器）。**器そのものは戻ってくるので
+   * 払っていない**——値段を積む側は、中身入りと空との差額だけを数える（balanceTables.Acquisition）。
+   * 空の器は繰り返し使えるので、1回あたりへ按分しない——繰り返し使えるものを按分するには「何回
+   * 使うか」の仮定が要り、その仮定が数字を支配する（#550）。丸ごと使い切る入力と、戻る先が
+   * 定義から解けない入力ではundefined。
    */
   | {
       readonly kind: 'object';
       readonly objectGlobalId: ObjectGlobalId;
       readonly consumed: boolean;
       readonly count: number;
+      readonly emptiedInto?: ObjectGlobalId;
     }
   | {
       readonly kind: 'tag';
       readonly tagGlobalId: TagGlobalId;
       readonly consumed: boolean;
       readonly count: number;
+      readonly emptiedInto?: ObjectGlobalId;
     };
 
 /** 工程の出力1つ。countsは1回の実行で生まれうる個数（分岐どうしで違いうるため、出現した値を全て持つ）。 */
@@ -49,6 +60,15 @@ export interface PropertyDelta {
   readonly target: ReferenceRoot;
   readonly propertyGlobalId: PropertyGlobalId;
   readonly amount: number;
+
+  /**
+   * 他所へ移すために出ていく分か（`transfer`の出どころ側、9.5節）。**ただ減る分と分けて名乗る**
+   * ——器から注いだ250mLは物として外へ出るが、刃こぼれで落ちた耐久（`add`）は物が出たわけではない。
+   * **入力1つが何回ぶんを抱えているかを問えるのは前者だけ**（craftingSteps.consumptionOf）。
+   *
+   * 出どころは移す側にしか分からないので、後から量の符号で見分けようとせず、その場で名乗らせる。
+   */
+  readonly movedOut?: boolean;
 }
 
 /**

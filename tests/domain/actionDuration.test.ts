@@ -312,7 +312,7 @@ object_defs:
 
     expect(
       world.instance.tryGetProperty(codex.propertyNames.getId('tick'))?.number ?? 0,
-      '60分＝4tick経つ',
+      '4 tick（60分）経つ',
     ).toBe(4);
     const bread = oven.tryGetSlot(codex.slotNames.getId('output'))?.contents[0];
     expect(bread, '焼き上がったパンが出力スロットに入る').toBeDefined();

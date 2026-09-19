@@ -46,7 +46,11 @@ choose_target() {
   else
     ENV_ID="$CLOUD_ENV"
     MODE="$CLOUD_MODE"
-    SOURCE="https://github.com/$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
+    # **リポジトリのURLは `gh` へ訊かない。** 手元の `origin` に在る事実なので、GitHub へ訊くと
+    # **`gh` の資格情報が死んだ周には立てられなくなる**——その死をクラウドへ告げに行く投入
+    # （[`check-values.mjs`](check-values.mjs)）が通るのは、まさにその周だけ。
+    SOURCE="$(git -C "$DAEMON_DIR" remote get-url origin)"
+    SOURCE="${SOURCE%.git}"
   fi
 }
 

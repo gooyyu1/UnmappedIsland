@@ -7,6 +7,7 @@
 #   bash scripts/daemon/brake.sh review-untasked   # `Closes` 先に `kind:task` が無いPRのレビュー
 #   bash scripts/daemon/brake.sh resume
 #   bash scripts/daemon/brake.sh other
+#   bash scripts/daemon/brake.sh values            # 値の死を告げに行く投入（下の「読めない周だけ」）
 #
 # 出力は次のどれか。**終了コードが0なのは `GO` のときだけ**（[`occupancy.sh`](occupancy.sh) と
 # 同じ向き。読めなかったときに止まる側へ倒すのを、呼び手ではなくここが引き受ける）。
@@ -45,10 +46,22 @@
 #
 # 見るのは `## 手綱` 節の中だけ。**種類は、根から自分までの見出しの鎖に対応する**——どれか1つでも
 # 外れていれば止まる。「投入する」が全部の根で、`review-untasked` のように鎖が3段になるものもある。
+#
+# ## 読めない周に止まらない種類が1つある（`values`）
+#
+# **手綱を読む手は `gh`。** 値の見回り（[`check-values.mjs`](check-values.mjs)）が告げに行くのは
+# **`gh` が死んでいる周だけ**なので、ここで「読めない＝止まる」へ倒すと、**いちばん告げてほしい周に
+# だけ立たない**（[`board-design.md`](../../agent-ops/board-design.md) 2.22.3。2.22.1 が見回りを1周の
+# 外へ置いたのと同じ理由）。
+#
+# **人が止められることは失われない**（2.4.1）。鎖は `other` と同じ「その他のエージェント」で、
+# **読める周は外れていれば止まる**——読めない周には、外したかどうかを知る手が誰にも無い。
+# **倒す向きが変わるのはここだけ**で、余力（[`headroom.sh`](headroom.sh)）も占有
+# （[`occupancy.sh`](occupancy.sh)）も、他の種類と同じものを通る。
 
 set -euo pipefail
 
-KIND="${1:?種類を渡す（new-task / review / review-untasked / resume / other）}"
+KIND="${1:?種類を渡す（new-task / review / review-untasked / resume / other / values）}"
 ISSUE="${BRAKE_ISSUE:-1515}"
 
 # 種類 → 「投入する」の下に続く見出しの鎖。**どれか1つでも外れていれば止まる。**
@@ -57,7 +70,7 @@ new-task) chain=('新しいタスク') ;;
 review) chain=('レビュー') ;;
 review-untasked) chain=('レビュー' 'task を持たないPRも読む') ;;
 resume) chain=('直しの再開') ;;
-other) chain=('その他のエージェント') ;;
+other | values) chain=('その他のエージェント') ;;
 *)
   echo "UNKNOWN 知らない種類: $KIND"
   exit 1
@@ -69,6 +82,14 @@ stderr=$(mktemp)
 if ! body=$(gh issue view "$ISSUE" --json body -q .body 2>"$stderr"); then
   err=$(cat "$stderr")
   rm -f "$stderr"
+  # **`values` だけは流す**（上の「読めない周に止まらない種類が1つある」）。**標準出力は `GO` の
+  # まま**で、流した理由は標準エラーへ——読み手（[`may-spend.sh`](may-spend.sh)）は通った周の出力を
+  # 捨てるので、ここへ載せると誰にも届かない。デーモンの標準エラーは `~/daemon.log` に残る。
+  if [ "$KIND" = 'values' ]; then
+    echo "手綱を読めないまま流す（値の死を告げる投入）: ${err//$'\n'/ }" >&2
+    echo GO
+    exit 0
+  fi
   echo "UNKNOWN 手綱の issue #$ISSUE を引けなかった: ${err//$'\n'/ }"
   exit 1
 fi

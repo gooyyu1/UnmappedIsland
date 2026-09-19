@@ -48,6 +48,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         # 編む人の腕で縮む分はweave_minutes自身のpassivesが持つので、ここはその1つを読むだけ。
         duration: {prop: weave_minutes}
         # **繊維・編みの腕はここから立ち上がる**（docs/engine/SkillSystem.md 3節の実行経路、量の
@@ -66,6 +68,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: split_and_weave_minutes}
         add: {agent: {skill_cordage: 2}}
         destroy: self
