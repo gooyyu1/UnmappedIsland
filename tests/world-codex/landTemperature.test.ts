@@ -229,15 +229,19 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
   }
 
   /**
-   * 世界に在る詰め物（`stuffing` タグ、docs/world/Bedding.md 5節）の型名。**まだ1つも無い**が、
-   * 足した者が押し下げ（同 4.2.1節）を足し忘れると、これを読む検査が落ちる。
+   * 寝床（`bed`）の `structure` 枠が受け入れる部品の型名（docs/world/Bedding.md 4.2節の表の段）。
+   * **今は骨組みだけ**で、詰め物はまだ世界に無い。
+   *
+   * **タグ名ではなく枠の受け入れ宣言で引く**ので、詰め物をどんなタグで名乗らせても、寝床へ差せるように
+   * した瞬間にここへ現れる——差せない部品は寝床の段にならないので、枠がそのまま段の一覧になる。
    */
-  function stuffings(): readonly string[] {
-    const stuffingId = codex.tagNames.tryGetId('stuffing');
-    if (stuffingId === undefined) return [];
+  function partsAcceptedByBed(): readonly string[] {
+    const structure = codex.objects
+      .get(codex.objectNames.getId('bed'))
+      .tryGetSlotDef(codex.slotNames.getId('structure'))!;
 
     return [...codex.objects]
-      .filter((objectDef) => !codex.isGenerated(objectDef) && objectDef.tags.includes(stuffingId))
+      .filter((objectDef) => !codex.isGenerated(objectDef) && structure.acceptsAnywhere(objectDef))
       .map((objectDef) => objectDef.name);
   }
 
@@ -296,8 +300,9 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
       `${garment}を着て寝台で眠れば${nextColdest}の夜は越せる`,
     ).toBeGreaterThan(0);
 
-    const stuffing = stuffings();
-    if (stuffing.length === 0) {
+    const parts = partsAcceptedByBed();
+    const beyondFrame = parts.filter((name) => name !== 'bed_frame');
+    if (beyondFrame.length === 0) {
       expect(
         warmthWhileSleepingIn(coldest, ['bed_frame']),
         `詰め物がまだ無いので、${garment}を着て寝台で眠っても${coldest}の夜は越せない`,
@@ -305,11 +310,10 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
       return;
     }
 
-    for (const name of stuffing)
-      expect(
-        warmthWhileSleepingIn(coldest, ['bed_frame', name]),
-        `${garment}を着て${name}を詰めた寝台で眠れば${coldest}の夜も越せる`,
-      ).toBeGreaterThan(0);
+    expect(
+      warmthWhileSleepingIn(coldest, parts),
+      `${garment}を着て${beyondFrame.join('・')}まで差した寝台で眠れば${coldest}の夜も越せる`,
+    ).toBeGreaterThan(0);
   });
 
   it('素のままでも晴れた日中に熱は戻る——山頂を除く', () => {
