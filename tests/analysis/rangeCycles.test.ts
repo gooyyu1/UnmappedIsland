@@ -393,6 +393,13 @@ object_defs:
   two_stage_firepit:
     tags: [fixture]
     props:
+      # 押し手が名乗らない、段つきのもう1つのプロパティ。
+      fuel:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: none}
+          - {name: stocked, min: 1}
       heat:
         value: 0
         range: {min: 0, max: 100}
@@ -425,6 +432,71 @@ object_defs:
         passives:
           - conditions: [{subject: parent, prop: heat, in_stage_or_above: embers}]
             add: {self: {cooking_progress: 2}}
+
+  # 祖先の火力で見る上乗せ。**親と祖先は分けない**——祖先はそのプロパティを持つ最初の親から遡った先
+  # なので、親がそれを持っていれば親そのもの。押し手がその段を名乗っている時点で、持っていることは
+  # 決まっている。
+  ancestor_seen_chunk:
+    tags: [item, roastable]
+    props:
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_chunk}
+        passives:
+          - conditions: [{subject: ancestor, prop: heat, in_stage_or_above: embers}]
+            add: {self: {cooking_progress: 2}}
+
+  # 押し手が名乗っていない段を要る上乗せ。**薪が残っているかは、押していることでは決まらない。**
+  fuel_gated_chunk:
+    tags: [item, roastable]
+    props:
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_chunk}
+        passives:
+          - conditions: [{subject: parent, prop: fuel, in_stage_or_above: stocked}]
+            add: {self: {cooking_progress: 2}}
+
+  # 値の並びの上に位置を持たない段を要る上乗せ。**綴りが宣言のどれとも合わない**ので、押し手の居る段
+  # とどちらが上かを言えない。
+  misnamed_chunk:
+    tags: [item, roastable]
+    props:
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_chunk}
+        passives:
+          - conditions: [{subject: parent, prop: heat, in_stage_or_above: embres}]
+            add: {self: {cooking_progress: 2}}
+
+  # 「その段以上」でしか押し手が居場所を名乗らない炉。**どの段に居るかは1つに決まらない**ので、
+  # ちょうどその段を要る上乗せは成立しない。
+  or_above_firepit:
+    tags: [fixture]
+    props:
+      heat:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: out}
+          - {name: embers, min: 5}
+          - {name: flame, min: 20}
+    passives:
+      - conditions: [{prop: heat, in_stage_or_above: embers}]
+        add: {child: {cooking_progress: 1}}
+    slots:
+      fire:
+        cell_count: 1
+        cell: {accept: {tag: roastable}}
 
   # 炎でしか乗らない上乗せ。**弱い火では成立しない**ので、押されている間ずっと効くとは言えない。
   seared_chunk:
@@ -982,6 +1054,12 @@ object_defs:
       // 条件ではない。
       { minutes: 8 * 15, shortestMinutes: 4.8 * 15, gatedBy: [[]] },
     ]);
+
+    // 祖先で見ていても同じ。親がその火力を持っているから押しているのであって、そこを分けると、
+    // 同じことを書いた2通りのうち片方だけが数に乗る。
+    expect(cookedCyclesOf('ancestor_seen_chunk')).toEqual([
+      { minutes: 8 * 15, shortestMinutes: 4.8 * 15, gatedBy: [[]] },
+    ]);
   });
 
   it('押し方によっては成立しない条件つきは、どの押し方にも重ねない', () => {
@@ -994,6 +1072,26 @@ object_defs:
     // ちょうどその段（`in_stage`）は、上の段へ移れば外れる。「その段以上」と同じに扱うと、炎で
     // 押されている間も乗ることになる。
     expect(cookedCyclesOf('ember_only_chunk')).toEqual([
+      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+    ]);
+
+    // 押し手が「その段以上」でしか居場所を名乗っていないなら、ちょうどその段に居るとは言えない
+    // ——上の段に居るかもしれない。24を押し手の+1だけで24 tick。
+    expect(cookedCyclesOf('ember_only_chunk', 'or_above_firepit')).toEqual([
+      { minutes: 24 * 15, shortestMinutes: 24 * 15, gatedBy: [[]] },
+    ]);
+  });
+
+  it('押し手が名乗っていない段と、位置を持たない段は、満たされたことにしない', () => {
+    // 薪が残っているかは、炉が押していることでは決まらない。要る段をプロパティで照らし合わせないと、
+    // 押し手が別のプロパティで名乗った段が、そのまま答えになる。
+    expect(cookedCyclesOf('fuel_gated_chunk')).toEqual([
+      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+    ]);
+
+    // 綴りが宣言のどれとも合わない段は、値の並びの上に位置を持たない。読めないものを満たされたことに
+    // すると、押し手が居るだけで成立しない条件まで数に入る。
+    expect(cookedCyclesOf('misnamed_chunk')).toEqual([
       { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
     ]);
   });

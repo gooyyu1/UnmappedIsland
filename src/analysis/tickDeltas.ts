@@ -268,9 +268,13 @@ export interface PushingSituation {
 /**
  * 押し手が居ると分かっている段（held）が、外側へ課された段の指定（required）を満たすか。
  *
- * ちょうどその段（`in_stage`、14.1節）は名前が同じときだけ満たし、「その段以上」
- * （`in_stage_or_above`）は居る段が値の並びの上で指定の段より下に無ければ満たす。**並びの上の位置を
+ * ちょうどその段（`in_stage`、14.1節）は、**居るのもちょうどその段で、名前が同じとき**だけ満たす
+ * ——「その段以上」に居るとしか分かっていないなら、上の段に居るかもしれない。「その段以上」
+ * （`in_stage_or_above`）は、居る段が値の並びの上で指定の段より下に無ければ満たす。**並びの上の位置を
  * 答えられるのは押し手の型だけ**——名指されているのは押し手自身のプロパティの段だから。
+ *
+ * **位置を読めない段（シンボル型、6.6節。宣言に無い名前も同じ）は満たさない。** どちらが上かを言えない
+ * ものを満たすことにすると、押し手が居るだけで成立しない条件まで数に入る。
  */
 function satisfiesOuterStage(
   source: ObjectDef,
@@ -283,9 +287,8 @@ function satisfiesOuterStage(
   const requiredLowerBound = source
     .tryGetPropertyDef(required.propertyGlobalId)
     ?.lowerBoundOfStage(required.stageName);
-  return (
-    held.lowerBound !== undefined && requiredLowerBound !== undefined && held.lowerBound >= requiredLowerBound
-  );
+  if (held.lowerBound === undefined || requiredLowerBound === undefined) return false;
+  return held.lowerBound >= requiredLowerBound;
 }
 
 /**
