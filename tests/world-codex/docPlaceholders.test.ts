@@ -13,9 +13,9 @@ import { bundledLocaleText } from '../../src/locale/Localization';
  * `{container}` のようにどの書式にも無い名前が例として残った（issue #2091）。名前は機械で
  * 突き合わせられるので、ずれたらここが落ちる。
  *
- * **射程は `docs/` だけ。** `{…}` は差し込みだけの書き方ではなく、`agent-ops/` のひな形は自分の
- * 差し込み（`{context}` など）を同じ形で書く。対応表を説明しているのは `docs/` の側だけなので、
- * そこに閉じる。
+ * **射程は `docs/` だけ。** `{…}` は表示文字列だけの書き方ではなく、`agent-ops/` は GitHub の
+ * API のパス（`repos/{owner}/{repo}/…`）を同じ形で書く。対応表を説明しているのは `docs/` の側
+ * だけなので、そこに閉じる。
  *
  * 置き場がここなのは、**片側が同梱の対応表そのもの**だから——対応表の書式を直した副作用で赤くなる
  * （tests/architecture/testKinds.test.ts の3種類目）。

@@ -8,8 +8,11 @@ import { isVerbatimRecord, trackedDocs } from '../../scripts/docScope.mjs';
  * （[`docs/README.md`](../../docs/README.md)）。
  *
  * **フォルダ名は、リンクの指し先と題名の2箇所に現れる。** 指し先が実在するかは
- * `docs/docReferences.test.ts` が見るが、題名や地の文の綴りは誰も見ていなかったので、
- * フォルダが小文字になった後も `Engine/` と書いた案内が残った（issue #2091）。
+ * [`docReferences.test.ts`](docReferences.test.ts) が見るが、題名の綴りはどちらの側でもないので、
+ * 指し先が合っていても `Engine/` と名乗ったまま緑になる（issue #2091）。
+ *
+ * **見るのはリンクの題名と囲みだけで、地の文は見ない**（{@link folderMentionsIn}）。地の文まで
+ * 広げると `UI/UX` のような同じ字面と区別が付かないため、そこは緑でも綴りの保証は無い。
  *
  * 案内の大元である `docs/README.md` のツリー図は、フォルダを増減させたときにも置き去りになる。
  * こちらは**過不足なく**突き合わせる——載っていないフォルダは、読み手には無いのと同じ。
@@ -65,11 +68,14 @@ function read(rel: string): string {
   return readFileSync(join(ROOT, rel.split('/').join(sep)), 'utf-8');
 }
 
+/** ツリー図が枝として挙げているフォルダ名。 */
+function treeFolders(text: string): string[] {
+  return [...text.matchAll(BRANCH)].map(([, name]) => name).sort();
+}
+
 describe('文書が名乗る docs/ のフォルダ名は、現物と同じ綴り', () => {
   it(`${INDEX} のツリー図が、現物のフォルダと過不足なく一致する`, () => {
-    const listed = [...read(INDEX).matchAll(BRANCH)].map(([, name]) => name);
-    expect(listed.length).toBeGreaterThan(0);
-    expect([...listed].sort()).toEqual([...folders()].sort());
+    expect(treeFolders(read(INDEX))).toEqual([...folders()].sort());
   });
 
   it.each(documents())('%s', (rel) => {
@@ -81,9 +87,13 @@ describe('文書が名乗る docs/ のフォルダ名は、現物と同じ綴り
     expect(misspelledIn('probe.md', probe)).toEqual(['probe.md:1 Engine/', 'probe.md:1 World/']);
   });
 
-  it('ツリー図からフォルダが落ちれば、過不足の照合が落ちる', () => {
-    const listed = [...read(INDEX).matchAll(BRANCH)].map(([, name]) => name);
-    expect(listed.slice(1).sort()).not.toEqual([...folders()].sort());
+  it('ツリー図の枝を拾えていて、綴りが1つ違っても増減しても落ちる', () => {
+    const probe = 'docs/\n├── Engine/   # 綴り違い\n└── engine/   # 現物の綴り\n';
+    expect(treeFolders(probe)).toEqual(['Engine', 'engine']);
+
+    const actual = [...folders()].sort();
+    expect([actual[0].toUpperCase(), ...actual.slice(1)].sort()).not.toEqual(actual);
+    expect(actual.slice(1)).not.toEqual(actual);
   });
 
   it('フォルダを指していない字面（UI/UX）は名乗りとして読まない', () => {
