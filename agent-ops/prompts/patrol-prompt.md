@@ -218,7 +218,7 @@ node -e "const l=require('fs').readFileSync(process.argv[1],'utf-8').trim().spli
 | 立てたセッションが働いたか | `~/.claude/board-state/live-sessions.tsv` の `unserved`／`served` の列（列の並びは `scripts/daemon/live-sessions.mjs` の `formatLive`。`status_bucket` では言えません——`..._FAILED` は、働いたあとに手番が転んだものにも付きます）。ブリッジなら `.claude/worktrees/bridge-cse_<ID>` が**作られたか**でも見られます |
 | 今の盤面 | `bash scripts/agent/board.sh` |
 | 満ちた枠の内訳 | 常設の盤（2.20）の `## 投入済み` の表——`手空き`／`作業中` の列と、そのPRの札。**覚え書きの件数では言えません**（そこに並ぶのはセッションIDだけ）。握っているPRが人待ちかは `gh pr list --state open --label 判断待ち` |
-| まだ名前の出ていない枠の残り | 同じ表の行数を、`board-move.mjs` の `HELD_TASKS`・`ACTIVE_WORKERS`・`UPKEEP_WORKERS` と比べます（`手空き` の行は `HELD_TASKS` だけを握り、`ACTIVE_WORKERS` は握りません）。**覚え書きに出てくるのを待たないこと**——出た周には投入が止まっています |
+| まだ名前の出ていない枠の残り | 同じ表の行数を、`board-move.mjs` の `HELD_TASKS`・`ACTIVE_WORKERS`・`UPKEEP_WORKERS` と比べます（`手空き` の行は `HELD_TASKS` だけを握り、`ACTIVE_WORKERS` も、その内数の `UPKEEP_WORKERS` も握りません——後ろの2つが数えるのは**手が動いているものだけ**なので、握っている相手が人待ちへ移った周に自分で空きます。**整備の枠が人待ちに握られていると読むと、盤面の手では空かない枠だと誤ります**）。**覚え書きに出てくるのを待たないこと**——出た周には投入が止まっています |
 | デーモンの生死 | `bash scripts/daemon/daemon.sh status`（**答えるのは今の生死だけ**。手前の区間は次の行で見ます） |
 | 周が止まっていた区間 | `~/daemon.log` の、時刻を持つ行どうしの空き（下の一行）。**死んだ周はログに何も書けない**ので、探すのは書かれたものではなく**書かれていない幅**です |
 | 盤面を引けていないか | デーモンの台帳（記録と同じ置き場の `taken.json`）の `unreadable:since`。**今まさに引けていないときだけ在ります**——引けた周に消えるので、直った後に立つあなたには残っていません |
