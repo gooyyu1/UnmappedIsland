@@ -36,12 +36,21 @@ describe('空の演出（世界→意匠 通し）', () => {
     return game.world.instance.getProperty(codex.propertyNames.getId('ambient_temperature'));
   }
 
+  /** 立っている土地が空へ足す差（ambient_temperatureの実体値）。 */
+  function landDifference(game: StartedGame): PropertyValue {
+    return game.player.location!.instance.getProperty(codex.propertyNames.getId('ambient_temperature'));
+  }
+
   /**
-   * その空での、翳りが読む明るさと、陽炎が読む気温。**翳りは空を、陽炎は居る土地を見る**
+   * その空が画面へ渡すもの。翳りが読む明るさと、陽炎が読む気温。**翳りは空を、陽炎は居る土地を見る**
    * （ScreenLayout.md 7.5節の対応表）ので、同じ空から引いても出どころが分かれる。
+   *
+   * **土地が足す差は0へ均す。** ここで見たいのは空の寄与と意匠のしきい値の噛み合わせなので、
+   * 漂着地がどの型になるか（＝海抜ぶんの差を持つか）に答えを預けない。
    */
   function skyWith(weather: string, hour: number, thermalLevel: number) {
     const game = gameWith(weather, hour, thermalLevel);
+    landDifference(game).setNumber(0);
     return {
       brightness: game.world.ambientBrightness,
       temperature: game.player.location?.ambientTemperature,
@@ -79,7 +88,7 @@ describe('空の演出（世界→意匠 通し）', () => {
     expect(tintDepth('storm')).toBeLessThan(tintDepth('light_rain'));
   });
 
-  it('空だけで陽炎が立つのは、暑い季節の日中', () => {
+  it('暑い季節の日中は空だけで陽炎が立ち、同じ季節の夜と、暑くない季節では立たない', () => {
     expect(heatHazeFor(skyWith('scorching', 11, HOT).temperature), '乾季後半の灼熱').toBeDefined();
     expect(heatHazeFor(skyWith('sunny', 11, HOT).temperature), '乾季後半の晴天でも立つ').toBeDefined();
     expect(heatHazeFor(skyWith('scorching', 2, HOT).temperature), '同じ季節でも夜は立たない').toBeUndefined();
@@ -105,11 +114,13 @@ describe('空の演出（世界→意匠 通し）', () => {
     );
   });
 
-  it('居る土地で炉が燃えていれば、空が暑くなくても陽炎は立つ', () => {
+  it('居る土地で炉が燃えていれば、暑い季節でなくても陽炎が最も強く立つ', () => {
     // 土地の気温には据えた炉の暖（+8、FireSystem.md 9.2節）も積まれる。読む先を空から土地へ移した
-    // ことで陽炎の立つ場面が広がった——**広がったことをここで留める**ので、狭めるなら
-    // ScreenLayout.md 7.5.4節ごと決め直すことになる。
+    // ことで陽炎の立つ場面が広がった——**どこまで広がったかをここで留める**（ScreenLayout.md
+    // 7.5.4節「涼しくない季節の日中なら、炉の暖だけで最も強いところまで」）ので、狭めるなら
+    // 同節ごと決め直すことになる。
     const game = gameWith('clear', 11, MILD);
+    landDifference(game).setNumber(0);
     const land = game.player.location!;
     expect(heatHazeFor(land.ambientTemperature), '炉が無ければ立たない').toBeUndefined();
 
@@ -120,6 +131,9 @@ describe('空の演出（世界→意匠 通し）', () => {
     ).toBeUndefined();
     campfire.getProperty(codex.propertyNames.getId('heat')).setNumber(20);
 
-    expect(heatHazeFor(land.ambientTemperature), '炉の暖が積まれれば立つ').toBeDefined();
+    // 頭打ちより十分に暑い気温を渡したときと同じ強さ＝しきい値の上端まで届いている。
+    expect(heatHazeFor(land.ambientTemperature)?.strength, '炉の暖だけで最も強いところまで').toBe(
+      heatHazeFor(45)!.strength,
+    );
   });
 });
