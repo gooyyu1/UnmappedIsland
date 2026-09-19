@@ -191,6 +191,7 @@ const SITUATION_ICONS: Readonly<Record<string, string>> = {
   too_dark_outside: '🌘',
   no_road: '🌑',
   sheltered: '🛖',
+  too_stormy: '🌪️',
 };
 
 /** 絵も代役も無い識別子の代役。 */
