@@ -198,7 +198,10 @@ export const WORK_PILES: readonly WorkPile[] = [
   { system: 7, label: 'そり', amount: { object: 'sledge' } },
   { system: 8, label: 'なめし革の一式', amount: { object: 'tanned_leather_clothing' } },
   { system: 9, label: '高床の寝台', amount: 1.5 },
-  { system: 9, label: '詰め物', amount: 1 },
+  // 詰め物はどれを差しても同じ段（docs/world/Bedding.md 5節）で、差は集め方だけ。**獲物の
+  // 巡り合わせを待たずに済む側で測る**——罠が掛かるのを待つ羽毛は、実測が狩りの待ちを含んで長く
+  // 出る（同3節）ので、山の日数としては手を動かす側のほうが読める。
+  { system: 9, label: '詰め物', amount: { object: 'plant_fiber_stuffing' } },
   { system: 10, label: '葉の小屋', amount: 3 },
   { system: 10, label: '高床', amount: 4 },
   { system: 10, label: '板の壁・床', amount: 5 },

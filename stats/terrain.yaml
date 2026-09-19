@@ -119,7 +119,7 @@ work_piles:
   - {system: 7, pile: そり, objects: [sledge], days: 2.04, minutes: 1813.4}
   - {system: 8, pile: なめし革の一式, objects: [tanned_leather_clothing], days: 1.76, minutes: 1563.9}
   - {system: 9, pile: 高床の寝台, objects: null, days: 1.50, minutes: 1336.5}
-  - {system: 9, pile: 詰め物, objects: null, days: 1.00, minutes: 891.0}
+  - {system: 9, pile: 詰め物, objects: [plant_fiber_stuffing], days: 2.11, minutes: 1880.1}
   - {system: 10, pile: 葉の小屋, objects: null, days: 3.00, minutes: 2673.0}
   - {system: 10, pile: 高床, objects: null, days: 4.00, minutes: 3564.0}
   - {system: 10, pile: 板の壁・床, objects: null, days: 5.00, minutes: 4455.0}
@@ -139,13 +139,13 @@ work_piles_by_system:
   - {system: 6, piles: 2, days: 3.00, minutes: 2673.0}
   - {system: 7, piles: 2, days: 3.04, minutes: 2704.4}
   - {system: 8, piles: 1, days: 1.76, minutes: 1563.9}
-  - {system: 9, piles: 2, days: 2.50, minutes: 2227.5}
+  - {system: 9, piles: 2, days: 3.61, minutes: 3216.6}
   - {system: 10, piles: 3, days: 12.00, minutes: 10692.0}
   - {system: 11, piles: 5, days: 17.72, minutes: 15790.0}
   - {system: 12, piles: 1, days: 1.78, minutes: 1585.6}
 
 work_piles_total:
-  - {piles: 28, days: 70.16, minutes: 62510.9, outdoor_minutes: 41673.9, base_minutes: 20837.0, base_days: 57.88}
+  - {piles: 28, days: 71.27, minutes: 63500.0, outdoor_minutes: 42333.4, base_minutes: 21166.7, base_days: 58.80}
 
 exploration_phase:
   - {base: shortest_mean, metric: exploration_minutes, unit: minutes, mean: 2803.11, min: 1680.00, p5: 1830.00, p95: 3645.00, max: 3900.00, sd: 570.11, n: 500}
@@ -174,5 +174,5 @@ steady_phase_by_work_share:
   - {base: shortest_mean, share: 密林, work_percent: 25, round_trip_minutes: 153.90, work_minutes_per_day: 276.93, day_percent: 36.7, islands_percent: 49.2}
 
 cycle:
-  - {base: shortest_mean, metric: steady_days, unit: days, mean: 94.72, min: 78.48, p5: 81.81, p95: 111.61, max: 124.79, sd: 9.72, n: 500}
-  - {base: shortest_mean, metric: total_days, unit: days, mean: 110.25, min: 88.48, p5: 94.81, p95: 125.87, max: 145.79, sd: 10.66, n: 500}
+  - {base: shortest_mean, metric: steady_days, unit: days, mean: 96.22, min: 79.72, p5: 83.11, p95: 113.38, max: 126.76, sd: 9.88, n: 500}
+  - {base: shortest_mean, metric: total_days, unit: days, mean: 111.75, min: 89.72, p5: 96.11, p95: 127.64, max: 147.76, sd: 10.80, n: 500}

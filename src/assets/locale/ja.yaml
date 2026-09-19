@@ -907,6 +907,20 @@ object_texts:
       lashed:
         display_name: 組む
         description: 太い枝6本を紐で縛り、寝床の下へ差せる高さの台に組む。
+  feather_stuffing:
+    display_name: 羽毛の詰め物
+    description: なめし革の袋へ羽を詰めた敷物。寝床へ載せれば、体重で潰れない厚みが体の下に入る。羽は獲物を捌いたついでに溜まる。
+    recipes:
+      stuffed:
+        display_name: 詰める
+        description: なめし革2枚を裁って袋に縫い、羽30枚を詰めて口を閉じる。
+  plant_fiber_stuffing:
+    display_name: 植物繊維の詰め物
+    description: なめし革の袋へ繊維を詰めた敷物。効きは羽毛の詰め物と同じで、獲物を待たずに集められる代わりに、紐と同じ繊維を食う。
+    recipes:
+      stuffed:
+        display_name: 詰める
+        description: なめし革2枚を裁って袋に縫い、繊維15束を詰めて口を閉じる。
   hammock:
     display_name: ハンモック
     description: 紐を編んだ網。立ち木の間へ渡せば、背中の下を風が抜けて虫にも湿気にも最も強い寝床になる。持ち上げればそのまま遠出の荷に混ぜられる。

@@ -229,16 +229,15 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
   }
 
   /**
-   * 世界に在る詰め物の型名。**まだ1つも無い。** 引くのは `stuffing` タグで、これは寝床が導入する
-   * 語彙として決まっているもの（docs/world/Bedding.md 概要。部品のタグは `bed_frame` と `stuffing`）。
+   * 世界に在る詰め物の型名。引くのは `stuffing` タグで、これは寝床が導入する語彙として決まっている
+   * もの（docs/world/Bedding.md 概要。部品のタグは `bed_frame` と `stuffing`）。
    *
    * **枠が受け入れる型で引く形は採れない**——`structure` 枠には段にならない部品（枕・蚊帳のような、
-   * 寒さの入口を押し下げないもの）も将来入りうるし、羽毛と植物繊維（同 5節）が両方現れたら、
-   * 1つの寝床へまとめて差すことになって枠の上限で落ちる。
+   * 寒さの入口を押し下げないもの）も将来入りうるし、羽毛と植物繊維（同 5節）を1つの寝床へまとめて
+   * 差すことになって枠の上限で落ちる。
    */
   function stuffings(): readonly string[] {
-    const stuffingId = codex.tagNames.tryGetId('stuffing');
-    if (stuffingId === undefined) return [];
+    const stuffingId = codex.tagNames.getId('stuffing');
 
     return [...codex.objects]
       .filter((objectDef) => !codex.isGenerated(objectDef) && objectDef.tags.includes(stuffingId))
@@ -287,8 +286,10 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
   it('いちばん深い一着と寝台で越せる先は、詰め物が在るかで分かれる', () => {
     // docs/world/Bedding.md 4.2節。衣類だけで釣り合うのは海沿いの夜まで（SurvivalItems.md 5.1節）で、
     // そこから上へ登れるかは寝床の段が決める。**骨組みまでで届くのはその1つ下の土地まで**で、
-    // 最も寒い土地の夜は詰め物まで仕上げて初めて越せる（docs/world/Bedding.md 4.2.1節）——詰め物が
-    // 世界に現れるまで、そこに残るのは火（FireSystem.md 9.2節の炉の暖）。
+    // 最も寒い土地の夜は詰め物まで仕上げて初めて越せる（docs/world/Bedding.md 4.2.1節【確定】）。
+    //
+    // **詰め物を名乗る物の1つずつに要求する。** 種類ごとに押し下げを分けた宣言を書くと、書き落とした
+    // 側でここが落ちる（同 4節。押し下げは `stuffing` タグを見る1つのブロックが持つ）。
     coolSeasonSky(0, 'dark');
     const byCold = [...lands.keys()].sort((left, right) => temperatureAt(left) - temperatureAt(right));
     const coldest = byCold[0];
@@ -300,14 +301,15 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
       `${garment}を着て寝台で眠れば${nextColdest}の夜は越せる`,
     ).toBeGreaterThan(0);
 
+    // **越せない側も見る。** ここが無いと、土地の気温や段2の押し下げが動いて骨組みだけで足りる
+    // ようになっても緑のまま通り、「詰め物まで仕上げて初めて越せる」が誰にも見張られなくなる。
+    expect(
+      warmthWhileSleepingIn(coldest, ['bed_frame']),
+      `${garment}を着ても、骨組みだけの寝台では${coldest}の夜は越せない`,
+    ).toBeLessThan(0);
+
     const stuffing = stuffings();
-    if (stuffing.length === 0) {
-      expect(
-        warmthWhileSleepingIn(coldest, ['bed_frame']),
-        `詰め物がまだ無いので、${garment}を着て寝台で眠っても${coldest}の夜は越せない`,
-      ).toBeLessThan(0);
-      return;
-    }
+    expect(stuffing.length, '詰め物を名乗る物が世界に在る').toBeGreaterThan(0);
 
     for (const name of stuffing)
       expect(

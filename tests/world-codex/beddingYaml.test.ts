@@ -8,6 +8,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import { TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { buildBalanceTables } from '../../src/analysis/balanceTables';
 
 /**
  * bedding.yamlの寝床とハンモックを、実ファイルの定義だけで検証する。
@@ -103,11 +104,11 @@ describe('bedding.yamlの寝床とハンモック', () => {
     return TICKS_PER_DAY / (netWakefulness / ticks + 1);
   }
 
-  /** 砂浜に据えた寝床。部品を差すなら`withFrame`。 */
-  function bedOnBeach(withFrame: boolean, characterName: string = SAMPLE_CHARACTER) {
+  /** 砂浜に据えた寝床。`parts`に挙げた部品を`structure`枠へ差す。 */
+  function bedOnBeach(parts: readonly string[], characterName: string = SAMPLE_CHARACTER) {
     const { session, land, player } = open('sandy_beach', characterName);
     const bed = spawnInto(session, 'bed', land, 'fixtures');
-    if (withFrame) spawnInto(session, 'bed_frame', bed, 'structure');
+    for (const part of parts) spawnInto(session, part, bed, 'structure');
     return { bed, player };
   }
 
@@ -116,11 +117,59 @@ describe('bedding.yamlの寝床とハンモック', () => {
     //
     // **測るのは通しの睡眠のほう。** 段の差がいちばん効くのがここで、一晩ぶんが体力の上限を越える
     // 位置にあると、空から測っても2つの数が上限で並んでしまう。
-    const bare = bedOnBeach(false);
-    const framed = bedOnBeach(true);
+    const bare = bedOnBeach([]);
+    const framed = bedOnBeach(['bed_frame']);
 
     expect(restOn(framed.bed, framed.player, 'sleep').stamina).toBeGreaterThan(
       restOn(bare.bed, bare.player, 'sleep').stamina,
+    );
+  });
+
+  it('詰め物を差すと更に増え、どの詰め物でも同じだけ増える', () => {
+    // docs/world/Bedding.md 4節の段3。**段3のブロックは中身を見ない**ので、詰め物として世界に
+    // 現れる物はどれも同じだけ積む（同5節。分かれているのは集め方のほう）。
+    //
+    // **世界から引く。** 型名を書き写すと、3つ目の詰め物を足した人がここを通らない。
+    const framed = bedOnBeach(['bed_frame']);
+    const restored = (set: { bed: WorldObject; player: WorldObject }) =>
+      restOn(set.bed, set.player, 'sleep').stamina;
+    const stuffingId = codex.tagNames.getId('stuffing');
+    const stuffings = [...codex.objects]
+      .filter((objectDef) => !codex.isGenerated(objectDef) && objectDef.tags.includes(stuffingId))
+      .map((objectDef) => objectDef.name);
+
+    expect(stuffings.length, '詰め物を名乗る物が世界に在る').toBeGreaterThan(0);
+    const stuffed = stuffings.map((name) => ({
+      name,
+      stamina: restored(bedOnBeach(['bed_frame', name])),
+    }));
+
+    for (const { name, stamina } of stuffed)
+      expect(stamina, `${name}を差せば骨組みだけより戻る`).toBeGreaterThan(restored(framed));
+    for (const { name, stamina } of stuffed)
+      expect(stamina, `${name}と${stuffed[0].name}は同じだけ戻る`).toBe(stuffed[0].stamina);
+  });
+
+  it('収支表が読む寝床の睡眠が、実際に組める寝床の量と一致する', () => {
+    // docs/world/Bedding.md 4節・8節。**収支の解析は条件を見ずに add を足す**
+    // （src/analysis/balanceTables.ts の expectedDeltas）ので、**同じ枠へ入る排他な部品ごとに
+    // ブロックを分けると、どの寝床でも起きない量が stats/balance.yaml に載る。**
+    //
+    // 比べる先は、実際に組めるいちばん深い寝床——骨組みと詰め物を1つずつ差したもの。
+    const stuffingId = codex.tagNames.getId('stuffing');
+    const anyStuffing = [...codex.objects].find(
+      (objectDef) => !codex.isGenerated(objectDef) && objectDef.tags.includes(stuffingId),
+    );
+    expect(anyStuffing, '詰め物を名乗る物が世界に在る').toBeDefined();
+    const deepest = bedOnBeach(['bed_frame', anyStuffing!.name]);
+
+    const row = buildBalanceTables(codex, SAMPLE_CHARACTER).supply.find(
+      (supply) => supply.ownerName === 'bed' && supply.stepName === 'sleep',
+    );
+    expect(row, '収支表に寝床の睡眠の行がある').toBeDefined();
+
+    expect(row!.agentDeltas.find((delta) => delta.name === 'stamina')?.amount).toBe(
+      restOn(deepest.bed, deepest.player, 'sleep').stamina,
     );
   });
 
@@ -135,8 +184,10 @@ describe('bedding.yamlの寝床とハンモック', () => {
     }
 
     it.each([
-      ['敷物だけの寝床', () => bedOnBeach(false, characterName)],
-      ['骨組みを差した寝台', () => bedOnBeach(true, characterName)],
+      ['敷物だけの寝床', () => bedOnBeach([], characterName)],
+      ['骨組みを差した寝台', () => bedOnBeach(['bed_frame'], characterName)],
+      ['植物繊維を詰めた寝台', () => bedOnBeach(['bed_frame', 'plant_fiber_stuffing'], characterName)],
+      ['羽毛を詰めた寝台', () => bedOnBeach(['bed_frame', 'feather_stuffing'], characterName)],
     ])('%s は、通しで眠っても体力を満タンにしない', (_label, set) => {
       // docs/world/Bedding.md 4節。**段の差が観測できるのは、一晩ぶんが上限を下回るときだけ**
       // ——越えていると、空から通しで眠れば段によらず満タンになり、骨組みを差した意味が消える。
@@ -156,7 +207,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
   it('骨組みを差した一晩が、重い荷を担ぎ通した1日ぶんとちょうど釣り合う', () => {
     // docs/world/Characters.md 荷重の効き方節。**削る側を動かさずに回復の側を置いた**位置なので、
     // load の段の削りと寝床の宣言のどちらを動かしても、ここが落ちる。
-    const framed = bedOnBeach(true);
+    const framed = bedOnBeach(['bed_frame']);
     const sleepTicks = ticksOf(framed.bed, framed.player, 'sleep');
     const restored = restOn(framed.bed, framed.player, 'sleep').stamina;
 
@@ -167,7 +218,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
     // docs/world/Bedding.md 4節。**1時間あたりで上回るだけでは足りない**——寝床の上は眠る時間が
     // 2時間短い（24 tick 対 32 tick）ので、寝床の割が地面の 4/3（1.667/tick）を下回ると1日の合計で
     // 逆転し、敷物を敷くほど損になる。
-    const { bed, player } = bedOnBeach(false);
+    const { bed, player } = bedOnBeach([]);
 
     expect(perDay(bed, player, 'sleep')).toBeGreaterThan(perDay(player, player, 'nap'));
   });
@@ -176,7 +227,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
     // docs/world/Bedding.md 4節。**段1を敷く値打ちは、削りを数えない日にしか出ない**——起きている
     // 時間が2時間伸びたぶんの削りが、戻る量の差をちょうど相殺する。回復の側と削りの側のどちらを
     // 動かしても、この釣り合いが崩れてここが落ちる。
-    const { bed, player } = bedOnBeach(false);
+    const { bed, player } = bedOnBeach([]);
     const drain = heavyDrainPerTick();
 
     expect(netPerDay(bed, player, 'sleep', drain)).toBe(netPerDay(player, player, 'nap', drain));
@@ -220,8 +271,8 @@ describe('bedding.yamlの寝床とハンモック', () => {
   it('骨組みを差しても、戻る眠気は変わらない', () => {
     // 同4節。**眠気が戻る量は段によらない**——18時間起きて6時間眠るという釣り合いを、寝床の段が
     // 動かさないため。
-    const bare = bedOnBeach(false);
-    const framed = bedOnBeach(true);
+    const bare = bedOnBeach([]);
+    const framed = bedOnBeach(['bed_frame']);
 
     expect(restOn(framed.bed, framed.player, 'sleep').wakefulness).toBe(
       restOn(bare.bed, bare.player, 'sleep').wakefulness,
@@ -231,8 +282,8 @@ describe('bedding.yamlの寝床とハンモック', () => {
   it('寝床の上では、仮眠2回と睡眠1回がちょうど同じだけ戻る', () => {
     // 同4節。**段ごとに1つの定数なので、寝床のぶんは長さに正比例する**——キャラクタ側が持つ
     // 「まとめて休むほど得」が効くのは地面の上だけ（charactersYaml.test.tsの単調性）。
-    const napped = bedOnBeach(false);
-    const slept = bedOnBeach(false);
+    const napped = bedOnBeach([]);
+    const slept = bedOnBeach([]);
     const nap = restOn(napped.bed, napped.player, 'nap');
     const sleep = restOn(slept.bed, slept.player, 'sleep');
 
@@ -244,7 +295,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
     // 同6節。**寝台の上位ではなく別系統**なので、回復量では上に立たない。差は寝床になる場所
     // （支点が要る）・伸ばしろ（詰め物を足す先が無い）・持ち出し（そのまま次の土地へ運べる）のほう。
     const hammock = open('forest');
-    const framed = bedOnBeach(true);
+    const framed = bedOnBeach(['bed_frame']);
     const slung = spawnInto(hammock.session, 'hammock', hammock.land, 'fixtures');
 
     expect(restOn(slung, hammock.player, 'nap').stamina).toBe(
@@ -288,29 +339,40 @@ describe('bedding.yamlの寝床とハンモック', () => {
         .reduce((best, entry) => (entry.drop > best.drop ? entry : best));
     });
 
-    /** 眠る先の段——据える設置物と、差し込む部品（差さないならundefined）、押し下げ（℃）。 */
+    /** 眠る先の段——据える設置物と、差し込む部品、押し下げ（℃）。 */
     interface Tier {
       readonly label: string;
       readonly fixture: string;
-      readonly part: string | undefined;
+      readonly parts: readonly string[];
       readonly drop: number;
     }
 
     /**
-     * 段ごとの押し下げ。**1℃は体の下の乾いた層、もう1℃は地面から離れること**なので、層だけの敷物と
-     * 離れるだけの据えたハンモックが並び、両方を持つ寝台だけが2℃になる（docs/world/Bedding.md 4.2節）。
+     * 段ごとの押し下げ。**1℃は体の下の乾いた層、もう1℃は地面から離れること、3つ目は潰れない厚み**
+     * なので、層だけの敷物と離れるだけの据えたハンモックが並び、両方を持つ寝台が2℃、そこへ厚みを
+     * 足した寝台が3℃になる（docs/world/Bedding.md 4.2節）。
+     *
+     * **詰め物は中身を問わず同じ深さ**——火なしで最も寒い夜を越せるのは詰め物まで仕上げた者という
+     * 約束（同4.2.1節）が、詰め物すべてに掛かるため。
      */
     const TIERS: readonly Tier[] = [
-      { label: '敷物だけの寝床', fixture: 'bed', part: undefined, drop: 1 },
-      { label: '骨組みを差した寝台', fixture: 'bed', part: 'bed_frame', drop: 2 },
-      { label: '据えたハンモック', fixture: 'hammock', part: undefined, drop: 1 },
+      { label: '敷物だけの寝床', fixture: 'bed', parts: [], drop: 1 },
+      { label: '骨組みを差した寝台', fixture: 'bed', parts: ['bed_frame'], drop: 2 },
+      {
+        label: '植物繊維を詰めた寝台',
+        fixture: 'bed',
+        parts: ['bed_frame', 'plant_fiber_stuffing'],
+        drop: 3,
+      },
+      { label: '羽毛を詰めた寝台', fixture: 'bed', parts: ['bed_frame', 'feather_stuffing'], drop: 3 },
+      { label: '据えたハンモック', fixture: 'hammock', parts: [], drop: 1 },
     ];
 
     /** その段の寝床を砂浜に据える。砂浜は海抜ぶんの差を持たないので、気温は空そのまま。 */
     function layDown(tier: Tier) {
       const { session, world, land, player } = open('sandy_beach');
       const bed = spawnInto(session, tier.fixture, land, 'fixtures');
-      if (tier.part !== undefined) spawnInto(session, tier.part, bed, 'structure');
+      for (const part of tier.parts) spawnInto(session, part, bed, 'structure');
       return { session, world, bed, player };
     }
 
