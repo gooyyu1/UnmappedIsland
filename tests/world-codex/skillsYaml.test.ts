@@ -486,7 +486,7 @@ function declaredPropsByDef(): ReadonlyMap<string, ReadonlyMap<string, unknown>>
 /**
  * 島の生成が亜種へ配る個体差（terrain_generation.yaml の `location_types`）を、型ごと・prop ごとの
  * 最大値で並べる。**素の宣言が0でも、亜種が値を配ればその土地はその候補を名乗っている**——実体化の
- * ときに土地のプロパティへ書き込まれる（`IslandSpawner`、docs/world/TerrainGeneration.md 3.6節）。
+ * ときに土地のプロパティへ書き込まれる（`IslandSpawner`、docs/engine/TerrainGeneration.md 3.6節）。
  *
  * 書き込むのは素の値だけで、`base` の土台は消えない。亜種の側に土台は要らない。
  */
