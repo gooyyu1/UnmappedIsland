@@ -9,7 +9,7 @@ import type {
 } from '../domain/EffectReader';
 import type { ObjectRefReading } from '../domain/ObjectRef';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
-import type { StepOutcome } from './CraftingStep';
+import type { PropertyDelta, StepOutcome } from './CraftingStep';
 import { UNCHANGED_OUTCOMES, combineOutcomes, scaleOutcomes } from './CraftingStep';
 import type { ReferenceValueResolver } from '../domain/ReferenceRoot';
 import { resolveDeclaredNumber } from '../domain/DeclaredNumber';
@@ -81,7 +81,7 @@ function stockedResolverOf(resolve: ReferenceValueResolver, reading: EffectReadi
 
   return (root, propertyGlobalId) => {
     const value = resolve(root, propertyGlobalId);
-    const spent = stocks.get(stockKey(root, propertyGlobalId));
+    const spent = stocks.get(root)?.get(propertyGlobalId);
     return value === undefined || spent === undefined ? value : Math.max(value, spent);
   };
 }
@@ -90,22 +90,94 @@ function stockedResolverOf(resolve: ReferenceValueResolver, reading: EffectReadi
  * 分岐が減らす量を、対象のプロパティごとに1回の実行ぶんで集めたもの（増える側は持たない）。
  * 分岐が複数あるときは最も多く減らす分岐の量——どの分岐が来ても足りる在庫が、1回ぶんの在庫。
  */
-function spentAmountsOf(outcomes: readonly StepOutcome[]): ReadonlyMap<string, number> {
-  const spent = new Map<string, number>();
-  for (const outcome of outcomes) {
-    const inOutcome = new Map<string, number>();
-    for (const delta of outcome.deltas) {
-      if (delta.amount >= 0) continue;
-      const key = stockKey(delta.target, delta.propertyGlobalId);
-      inOutcome.set(key, (inOutcome.get(key) ?? 0) - delta.amount);
+function spentAmountsOf(
+  outcomes: readonly StepOutcome[],
+): ReadonlyMap<ReferenceRoot, ReadonlyMap<PropertyGlobalId, number>> {
+  const spent = new Map<ReferenceRoot, Map<PropertyGlobalId, number>>();
+  for (const outcome of outcomes)
+    for (const [root, inOutcome] of spentInOutcome(outcome, () => true)) {
+      const known = spent.get(root) ?? new Map<PropertyGlobalId, number>();
+      for (const [propertyGlobalId, amount] of inOutcome)
+        known.set(propertyGlobalId, Math.max(known.get(propertyGlobalId) ?? 0, amount));
+      spent.set(root, known);
     }
-    for (const [key, amount] of inOutcome) spent.set(key, Math.max(spent.get(key) ?? 0, amount));
+  return spent;
+}
+
+/**
+ * 1つの分岐が、どの起点の値からいくつ減らしたか（減った側だけを、正の量で持つ）。`counts`が選んだ
+ * 減りだけを数える。同じ値への減りは足し合わせる——1つの分岐の中で2度引かれたなら、減るのはその和。
+ */
+function spentInOutcome(
+  outcome: StepOutcome,
+  counts: (delta: PropertyDelta) => boolean,
+): ReadonlyMap<ReferenceRoot, ReadonlyMap<PropertyGlobalId, number>> {
+  const spent = new Map<ReferenceRoot, Map<PropertyGlobalId, number>>();
+  for (const delta of outcome.deltas) {
+    if (delta.amount >= 0 || !counts(delta)) continue;
+    const inRoot = spent.get(delta.target) ?? new Map<PropertyGlobalId, number>();
+    inRoot.set(delta.propertyGlobalId, (inRoot.get(delta.propertyGlobalId) ?? 0) - delta.amount);
+    spent.set(delta.target, inRoot);
   }
   return spent;
 }
 
-function stockKey(root: ReferenceRoot, propertyGlobalId: PropertyGlobalId): string {
-  return `${root}:${propertyGlobalId}`;
+/**
+ * rootが指すオブジェクトから、この工程が1回で**外へ移す**量が、1つぶんの何割か（0〜1）。
+ * **その型が残っても、抱えていた量を持ち出せばその分だけ使い切っている**——水入りの甕は
+ * `transfer`で中身が減るだけで`destroy`も`become`もしないので、型が残るかだけを問うと、
+ * 1杯ごとに減る中身が値段を一度も払わないことになる（`consumesRoot`と対で読む）。
+ *
+ * **数えるのは外へ出た分だけ**（PropertyDelta.movedOut）。使って傷むだけの値（道具の刃こぼれ）は
+ * 物が出たわけではないので、ここでは数えない——それを1回あたりの個数へ直すかは別の決めごとで、
+ * 今は「何回使えるか」として別に出している（durations、DurabilitySystem.md）。
+ *
+ * `stockOf`は「その入力1つがそのプロパティに抱えている量」で、答えられなければundefined——量が
+ * 分からなければ何杯ぶんかも言えないので、その値は持ち出しに数えない。
+ *
+ * 1つの分岐が複数の値を持ち出すなら、**最も深く食う1つ**が1回ぶんを決める（先に尽きる値が
+ * 繰り返しを止める）。分岐をまたぐぶんは確率で重み付けする——消える確率と同じ数え方
+ * （CraftingInput.count）。
+ */
+export function movedOutStockOf(
+  reading: EffectReading,
+  root: ReferenceRoot,
+  stockOf: (propertyGlobalId: PropertyGlobalId) => number | undefined,
+): MovedOutStock {
+  let share = 0;
+  let emptied: PropertyGlobalId | undefined;
+  let deepestAnywhere = 0;
+  for (const outcome of reading.outcomes) {
+    let deepest = 0;
+    for (const [propertyGlobalId, amount] of spentInOutcome(outcome, (delta) => delta.movedOut === true).get(
+      root,
+    ) ?? []) {
+      const stock = stockOf(propertyGlobalId);
+      if (stock === undefined || stock <= 0) continue;
+      const eaten = Math.min(1, amount / stock);
+      deepest = Math.max(deepest, eaten);
+      // **尽きる値は分岐をまたいで選ぶ。** 分岐ごとに覚えると、最も深く食う分岐ではなく最後の分岐の
+      // 値が残り、器が空になる先を別の値の端から引くことになる。
+      if (eaten <= deepestAnywhere) continue;
+      deepestAnywhere = eaten;
+      emptied = propertyGlobalId;
+    }
+    share += outcome.probability * deepest;
+  }
+  return { share, emptiedPropertyGlobalId: emptied };
+}
+
+/** 1回の実行で、その入力から外へ出ていく在庫（movedOutStockOf）。 */
+export interface MovedOutStock {
+  /** 入力1つぶんの何割が出ていくか（0〜1）。 */
+  readonly share: number;
+
+  /**
+   * **どの分岐を通しても最も深く食われる1つ**——先に尽きて、入力がその型でなくなる値。何も
+   * 出ていかないならundefined。尽きた先で入力が何になるか（空の器）を問えるのはこの値の端だけ
+   * （craftingSteps.emptiedIntoOf）。
+   */
+  readonly emptiedPropertyGlobalId: PropertyGlobalId | undefined;
 }
 
 /** rootが指すオブジェクトを消す分岐があるか（`destroy`、9.3節）。 */
@@ -173,7 +245,13 @@ class OutcomeReader implements EffectReader {
         probability: 1,
         spawns: [],
         deltas: [
-          { target: reading.from, propertyGlobalId: reading.fromPropertyGlobalId, amount: -reading.amount },
+          {
+            target: reading.from,
+            propertyGlobalId: reading.fromPropertyGlobalId,
+            amount: -reading.amount,
+            // 出ていく分だとその場で名乗る（PropertyDelta.movedOut）。
+            movedOut: true,
+          },
           { target: reading.to, propertyGlobalId: reading.toPropertyGlobalId, amount: reading.toAmount },
           ...reading.linked,
         ],
