@@ -77,7 +77,7 @@ template_body "$PROMPT" "$INSTRUCTION"
 TITLE="$WORK/title.txt"
 template_title "$PROMPT" "$TITLE"
 
-# 手綱と占有。種類は既定で `other`（[`brake.sh`](brake.sh) の「その他のエージェント」）で、`--gate` を
+# 手綱と占有。種類は既定で `other`（[`brake.sh`](brake.sh) の鎖は `その他のエージェント`）で、`--gate` を
 # 渡された周だけそちら（上の「手綱へ訊く種類は」）。
 #
 # **二重に立つことを実際に止めているのは盤面**（[`board-move.mjs`](board-move.mjs) の `CYCLES`）で、
