@@ -31,11 +31,20 @@ import { bundledCodex } from '../support/worldCodexFiles';
  * `tests/support/generatedReport.ts` が持つ。**丸ごと作り直して比べる**（数秒で済む）。
  */
 
-/** 数える獣。`animals.yaml`で`beast` traitを名乗る型のすべて。 */
-const ANIMALS = ['rat', 'junglefowl', 'monkey', 'wild_boar'] as const;
+/**
+ * 数える獣。`animals.yaml`で`beast` traitを名乗る型のすべてを、**定義から数え上げる**。
+ *
+ * trait は合成後に消えるので、trait が配る`animal`タグが名乗りの跡になる（このタグを配るのは
+ * beast trait だけ）。手で並べると、獣が増えてもレポートは同じ顔ぶれのまま静かに出る。
+ */
+function animalNamesOf(codex: WorldCodex): readonly string[] {
+  return codex.objectDefNamesWithTag(codex.vocabulary.world.animalTagId);
+}
 
-/** 数える武器。`tools.yaml`で`weapon` traitを名乗る型のすべて。 */
-const WEAPONS = ['sharp_stone', 'stone_axe', 'spear'] as const;
+/** 数える武器。同じく`tools.yaml`の`weapon` traitが配るタグで引く。 */
+function weaponNamesOf(codex: WorldCodex): readonly string[] {
+  return codex.objectDefNamesWithTag(codex.tagNames.getId('weapon'));
+}
 
 /**
  * 逃げ道の本数。**0と1だけを見る**——逃走の候補の重みは道の本数を見ない（`among`が集合から1本
@@ -88,8 +97,8 @@ async function buildReportFromDefinitions(): Promise<string> {
     records: [
       {
         hunter: HUNTER,
-        animals: ANIMALS.length,
-        weapons: WEAPONS.length,
+        animals: animalNamesOf(codex).length,
+        weapons: weaponNamesOf(codex).length,
         encounter_seeds: ENCOUNTER_SEEDS,
         move_seeds: MOVE_SEEDS,
         tracking_seeds: TRACKING_SEEDS,
@@ -126,7 +135,7 @@ async function buildReportFromDefinitions(): Promise<string> {
 
 /** 現れたときの警戒と、そこから近寄れる・掴めるまでの手数（獣ごと）。 */
 function warinessRecords(codex: WorldCodex): YamlRecord[] {
-  return ANIMALS.map((animalName) => {
+  return animalNamesOf(codex).map((animalName) => {
     const encounter = runHuntEncounter(
       codex,
       { animalName, escapeRoutes: 0, groundItems: [], turnLimit: WARINESS_TURN_LIMIT },
@@ -148,8 +157,8 @@ function encounterRecords(codex: WorldCodex): { measures: YamlRecord[]; endings:
   const measures: YamlRecord[] = [];
   const endings: YamlRecord[] = [];
 
-  for (const animalName of ANIMALS) {
-    for (const weaponName of WEAPONS) {
+  for (const animalName of animalNamesOf(codex)) {
+    for (const weaponName of weaponNamesOf(codex)) {
       for (const escapeRoutes of ESCAPE_ROUTES) {
         const keys = { animal: animalName, weapon: weaponName, escape_routes: escapeRoutes };
         const turns = new Stat();
@@ -188,7 +197,7 @@ function encounterRecords(codex: WorldCodex): { measures: YamlRecord[]; endings:
 function beastMoveRecords(codex: WorldCodex): YamlRecord[] {
   const records: YamlRecord[] = [];
 
-  for (const animalName of ANIMALS) {
+  for (const animalName of animalNamesOf(codex)) {
     for (const braced of [false, true]) {
       for (const wariness of WARINESS_CASES) {
         for (const consciousness of CONSCIOUSNESS_CASES) {
@@ -233,8 +242,8 @@ function beastMoveRecords(codex: WorldCodex): YamlRecord[] {
 function trackingRecords(codex: WorldCodex): YamlRecord[] {
   const records: YamlRecord[] = [];
 
-  for (const animalName of ANIMALS) {
-    for (const weaponName of WEAPONS) {
+  for (const animalName of animalNamesOf(codex)) {
+    for (const weaponName of weaponNamesOf(codex)) {
       const turns = new Stat();
       const endingCounts = new Map<string, number>();
 

@@ -4,7 +4,14 @@ import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { FIRST_ISSUE_PULL } from '../../scripts/daemon/board-read.mjs';
-import { DISPATCH_TAGS, TITLE, checkValues, surveyValues } from '../../scripts/daemon/check-values.mjs';
+import {
+  DISPATCH_TAGS,
+  TITLE,
+  checkValues,
+  cloudPrompt,
+  surveyValues,
+} from '../../scripts/daemon/check-values.mjs';
+import { promptBody } from '../../scripts/daemon/prompt-body.mjs';
 
 /**
  * `scripts/daemon/check-values.mjs` の検査（`agent-ops/board-design.md` 2.22）。
@@ -42,8 +49,12 @@ interface World {
   readonly ghAuth?: boolean;
   /** `ccr-env.sh` が出す環境ID。 */
   readonly envs?: readonly { readonly name: string; readonly id: string }[];
-  /** 台帳の中身。 */
+  /** 台帳の `dead`（死んでいる値が、いつから死んでいるか）。 */
   readonly ledger?: Record<string, { since: string }>;
+  /** 台帳の `asked`（クラウドへ最後に頼んだ時刻）。 */
+  readonly asked?: string;
+  /** クラウドへ頼む手が通るか。既定は通る。 */
+  readonly cloudFails?: boolean;
   /** 題で引ける、開いている issue の番号。 */
   readonly openIssue?: number;
   /**
@@ -67,16 +78,24 @@ interface Run {
   readonly gh: readonly (readonly string[])[];
   /** `--body-file` で渡された本文（渡っていなければ `undefined`）。 */
   readonly body: string | undefined;
-  /** 見回りの後の台帳。 */
+  /** 見回りの後の台帳の `dead`。 */
   readonly ledger: Record<string, { since: string } | undefined>;
+  /** 見回りの後の台帳の `asked`。 */
+  readonly asked: string | undefined;
+  /** クラウドへ頼みに行った本文。行かなければ `undefined`。 */
+  readonly cloud: string | undefined;
   readonly said: readonly string[];
 }
 
 async function check(world: World = {}): Promise<Run> {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-check-values-'));
   try {
-    if (world.ledger !== undefined) {
-      writeFileSync(join(work, 'value-check.json'), JSON.stringify(world.ledger), 'utf-8');
+    if (world.ledger !== undefined || world.asked !== undefined) {
+      writeFileSync(
+        join(work, 'value-check.json'),
+        JSON.stringify({ dead: world.ledger ?? {}, asked: world.asked }),
+        'utf-8',
+      );
     }
 
     const ghCalls: string[][] = [];
@@ -111,9 +130,14 @@ async function check(world: World = {}): Promise<Run> {
     };
 
     const said: string[] = [];
+    let cloud: string | undefined;
     const told = await checkValues({
       call,
       gh,
+      ask: (text) => {
+        cloud = text;
+        return world.cloudFails !== true;
+      },
       envs: () => [
         ...(world.envs ?? [
           { name: 'CLOUD_ENV', id: CLOUD },
@@ -128,11 +152,14 @@ async function check(world: World = {}): Promise<Run> {
     });
 
     const path = join(work, 'value-check.json');
+    const kept = existsSync(path) ? JSON.parse(readFileSync(path, 'utf-8')) : {};
     return {
       told,
       gh: ghCalls,
       body,
-      ledger: existsSync(path) ? JSON.parse(readFileSync(path, 'utf-8')) : {},
+      ledger: kept.dead ?? {},
+      asked: kept.asked,
+      cloud,
       said,
     };
   } finally {
@@ -506,20 +533,66 @@ describe('check-values.mjs の告げ方', () => {
 });
 
 /**
- * `gh` が死んでいる周（`agent-ops/board-design.md` 2.22.3）。**告げる手はそこで尽きる**ので、
- * ここで守るのは「**告げられなかったことを、告げたことにしない**」の1点だけ。
+ * `gh` が死んでいる周（`agent-ops/board-design.md` 2.22.3）。**手元から issue を書く手が、その値
+ * そのもの**なので打てば転ぶ——残っている口はクラウドのセッションだけ。ここで守るのは4つ。
+ *
+ * - **手元では打たないこと**（転んだ結果を成功と読むと、嘘が混ざる）
+ * - **クラウドへ渡す本文が、手元が書くときと同じであること**（畳む鍵は向こうでも題だけなので、
+ *   本文が別に組み立たると、`gh` の生死で知らせの中身が変わる）
+ * - **頼めなかったことを、告げたことにしないこと**
+ * - **同じ速さでは頼み直さないこと**（1回につきセッションが1本立つ）——ただし一度きりにもしない
  */
 describe('check-values.mjs の、`gh` が死んでいる周', () => {
   const dead = { ghAuth: false, ledger: { gh: { since: LONG_AGO } } } as const;
 
   // **issue を立てる手が `gh` そのもの。** 打てば転ぶし、転んだ結果を成功と読むと嘘が混ざる。
-  it('告げられなかったと答え、issue も書かない', async () => {
+  it('手元では issue を書かず、クラウドのセッションへ頼む', async () => {
     const run = await check(dead);
 
-    expect(run.told).toBe(false);
+    expect(run.told).toBe(true);
     expect(ran(run, 'issue', 'create')).toBeUndefined();
     expect(ran(run, 'issue', 'edit')).toBeUndefined();
-    expect(run.said.join('\n')).toContain('告げられない');
+    expect(run.said.join(' ')).toContain('クラウドのセッションへ頼んだ');
+  });
+
+  it('渡す本文は、手元が書くときと同じもの', async () => {
+    const both = { gh: { since: LONG_AGO }, BRIDGE_ENV: { since: LONG_AGO } };
+    const asked = await check({ ghAuth: false, living: [CLOUD], ledger: both });
+    const written = await check({ living: [CLOUD], ledger: both });
+
+    // 死んでいる値の並びだけが違い、組み立ては同じ（直し方の升まで載る）。
+    expect(asked.cloud).toContain('このPCで `gh auth login` を打ち直す');
+    expect(asked.cloud).toContain('CLI を開き直す');
+    expect(asked.cloud?.split('| 値 |')[0]).toBe(written.body?.split('| 値 |')[0]);
+  });
+
+  // **頼めなかった周を、頼めた周と同じに見せない。** 見せると、次に頼めるのが間隔のぶん先になる。
+  it('クラウドへ頼めなければ、告げたことにせず、頼んだ時刻も残さない', async () => {
+    const run = await check({ ...dead, cloudFails: true });
+
+    expect(run.told).toBe(false);
+    expect(run.asked).toBeUndefined();
+    expect(run.said.join(' ')).toContain('頼めなかった');
+  });
+
+  // **クラウドは1回につきセッションが1本立つ**ので、手元の書き換え（`gh issue edit` 1回）と
+  // 同じ速さでは頼めない。
+  it('間隔が満ちていなければ、クラウドへ頼み直さない', async () => {
+    const run = await check({ ...dead, asked: JUST_NOW });
+
+    expect(run.cloud).toBeUndefined();
+    expect(run.told).toBe(false);
+    // 頼んだ時刻は残す（消すと、次の周がもう一度頼む）。
+    expect(run.asked).toBe(JUST_NOW);
+  });
+
+  // **一度きりにはしない。** 立てたセッションに走る者が付かない区間（2.22.4）では、頼んでも誰も
+  // 書かないまま終わる。
+  it('間隔が満ちたら、もう一度頼む', async () => {
+    const run = await check({ ...dead, asked: LONG_AGO });
+
+    expect(run.cloud).toBeDefined();
+    expect(run.asked).toBe(NOW_STAMP);
   });
 
   // **告げられない周も、死んでいた長さは書く。** 書かずに返すと、`gh` が死んでいる間は猶予が
@@ -529,5 +602,40 @@ describe('check-values.mjs の、`gh` が死んでいる周', () => {
 
     expect(run.ledger.gh?.since).toBe(LONG_AGO);
     expect(run.ledger.BRIDGE_ENV?.since).toBe(NOW_STAMP);
+  });
+
+  /**
+   * **渡すのはひな形の形のまま。** 埋めた結果を読むのは投入の口
+   * （`dispatch-chore.sh` の `template_body` / `template_title`）なので、埋め方が合わなくなると
+   * **本文の代わりに `<本文>` の4文字が届く**——セッションは立ち、issue も立ち、**中身だけが空**に
+   * なる。立ったことでは見分けが付かない。
+   */
+  it('埋めたひな形は、本文を丸ごと運び、題も名乗ったまま', () => {
+    const body = ['| 値 | いつから |', '|---|---|', '| `gh` の資格情報 | 2026-09-11T04:00:00Z |'].join('\n');
+    const filled = cloudPrompt(body);
+
+    // 渡るのは囲みの中身だけ（`prompt-body.mjs`）。
+    expect(promptBody(filled)).toContain(body);
+    expect(filled).not.toContain('<本文>');
+    expect(filled).toMatch(/^題: *\S/m);
+
+    // **差し込み口は1つだけ。** 読み手への説明の側にも同じ綴りが在ると、そこも一緒に埋まって、
+    // 説明が本文の写しに化ける。
+    expect(filled.split(body)).toHaveLength(2);
+
+    // **クラウドへ言う題は、手元が引く題と同じもの。** 食い違うと、2本目が立つ——畳む鍵は題だけ。
+    expect(promptBody(filled)).toContain(TITLE);
+  });
+
+  // **`gh` が生き返ったら、頼んだ時刻は捨てる。** 残すと、次に死んだ周が古い時刻に縛られて、
+  // 間隔のぶん黙る。
+  it('`gh` が生き返った周は、頼んだ時刻を捨てる', async () => {
+    const run = await check({
+      living: [CLOUD],
+      asked: JUST_NOW,
+      ledger: { BRIDGE_ENV: { since: LONG_AGO } },
+    });
+
+    expect(run.asked).toBeUndefined();
   });
 });

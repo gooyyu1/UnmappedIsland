@@ -16,7 +16,7 @@ import type { PropertyGlobalId } from './GlobalId';
  * （stageNameが設定済み→WhenOwnStage判定、conditionsが設定済み→conditions判定、両方設定済み=AND、
  * 両方未設定=常時有効）。
  *
- * 参照はグローバルIDのまま持ち、評価のたびにローカル化する（変換コストは1 tick=15分の時間スケールに
+ * 参照はグローバルIDのまま持ち、評価のたびにローカル化する（変換コストは1 tick（15分）の時間スケールに
  * 対して無視できるため、ビルド時の2段階パースを避ける）。
  */
 export class PassiveEffectGate {

@@ -23,15 +23,10 @@ import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveRea
 import type { CraftingInput, CraftingStep, PropertyDelta, StepOutcome } from './CraftingStep';
 import { UNCHANGED_OUTCOMES, collectOutputs, combineOutcomes } from './CraftingStep';
 import { MINUTES_PER_TICK } from '../domain/worldTime';
-import type { BecomeDestinationResolver, EffectReading } from './effectOutcomes';
-import { consumesRoot, destroysRoot, readEffect } from './effectOutcomes';
+import type { BecomeDestinationResolver, EffectReading, MovedOutStock } from './effectOutcomes';
+import { consumesRoot, destroysRoot, movedOutStockOf, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
-import type {
-  StaticSubjectReader,
-  StaticValueLayer,
-  StaticValueRange,
-  StaticValueResolver,
-} from './staticValue';
+import type { StaticPropertyReading, StaticSubjectReader, StaticValueResolver } from './staticValue';
 import {
   highestDeclaredLayer,
   layeredResolver,
@@ -40,7 +35,7 @@ import {
   staticValueOf,
   trackingResolverOf,
 } from './staticValue';
-import type { PropertyGlobalId } from '../domain/GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 定義を「入力 → 工程 → 出力」の形へ均す（CraftingStep参照）。
@@ -56,25 +51,26 @@ import type { PropertyGlobalId } from '../domain/GlobalId';
  * 終端の工程として数える）。ただし**条件（14節）が定義だけから偽と分かる操作は挙げない**
  * （conditionsNeverMet）。
  *
- * outerは、self以外の起点（祖先が入れる値・使う物の値）を定義だけから解く手立て。省くと、
+ * outerは、self以外の起点（祖先が置かれている土地・使う物）を定義だけから読む文脈。省くと、
  * それらを参照する工程に「確定しない」印が付く（CraftingStep.hasUnresolvedReferences）。
  * **作るのはanalysisContextOfだけ**なので、渡された文脈には必ず行っている人（agent）の層が入る。
  */
 export function craftingStepsOf(
   codex: WorldCodex,
   def: ObjectDef,
-  outer?: StaticValueResolver,
+  outer?: AnalysisContext,
 ): readonly CraftingStep[] {
-  const context = outer ?? analysisContextOf(codex, []);
+  const context = outer ?? analysisContextOf(codex);
+  const resolve = context.resolve;
   const steps: CraftingStep[] = [];
   for (const trigger of def.triggers)
     for (const instrument of instrumentTypesOf(codex, trigger)) {
       if (conditionsNeverMet(codex, def, instrument, trigger.interaction, context)) continue;
       steps.push(
-        withTriggeredRangeEvents(codex, interactionStep(codex, def, trigger, instrument, context), context),
+        withTriggeredRangeEvents(codex, interactionStep(codex, def, trigger, instrument, resolve), resolve),
       );
     }
-  for (const recipe of def.recipesProducingThis) steps.push(recipeStep(codex, def, recipe, context));
+  for (const recipe of def.recipesProducingThis) steps.push(recipeStep(codex, def, recipe, resolve));
   return steps;
 }
 
@@ -91,9 +87,50 @@ export function exploreStepOf(codex: WorldCodex, locationDef: ObjectDef): Crafti
 }
 
 /**
+ * 定義だけから解く文脈。**値を解く手立てと、祖先に就く土地を1つに持つ**——同じ土地から出る2つの
+ * 答え（祖先が入れる値と、祖先の型で決まる条件の真偽）なので、別々に渡すと片方だけずれる。
+ */
+export interface AnalysisContext {
+  /** ReferenceRootが指すプロパティの値を、定義だけから解く手立て。 */
+  readonly resolve: StaticValueResolver;
+
+  /**
+   * 祖先（8.6節）に就く土地の候補。**空なら定まらない**——その起点を見る条件は素通しになる
+   * （conditionsNeverMet）。
+   */
+  readonly ancestorLocations: readonly ObjectDef[];
+}
+
+/**
+ * 実行時にしか就く相手が決まらない起点の、候補（analysisContextOf）。**受け取るのは候補だけで、
+ * 層はここで組む**——起点ごとの読み方（UndeclaredReading）を呼び出し側が選べると、同じ起点が文脈に
+ * よって違う埋まり方をする。
+ *
+ * 行っている人（agent）はここに無い。**どの文脈でも候補が同じ**（操作するのは常にキャラクタ）なので、
+ * 渡させる意味が無い。
+ */
+export interface AnalysisCandidates {
+  /**
+   * 祖先（8.6節）に就く土地。置く先が決まっているならその土地1つ、どの土地に置いてもよい前提なら
+   * 島の土地すべて。**宣言していない土地では寄与0**（highestDeclaredLayerの`zero`）。
+   */
+  readonly ancestorLocations?: readonly ObjectDef[];
+
+  /**
+   * 使う物（instrument、11.5節）に就きうる型。これが無いと、相手の値を見る重み——一撃がどう入るかは
+   * 武器が決める（HuntingSystem.md 1.2節）——が解けず、宣言順で最初の候補だけが起こることになる
+   * （PickEffect.selectWeighted）。
+   */
+  readonly instruments?: readonly ObjectDef[];
+}
+
+/**
  * 定義だけから値を解く文脈を作る唯一の入口。**行っている人（agent、11.5節）の層は必ずここが入れる**
  * ——足し忘れると、腕を土台にした重みが解けず、その候補は起こらないものとして数えられる。
- * **呼び出し側が覚えておく手順にしない**ため、層を渡す口をここ1つに絞ってある。
+ * **呼び出し側が覚えておく手順にしない**ため、層を組む口をここ1つに絞ってある。
+ *
+ * **祖先の土地も同じ理由でここが受け取る。** 値を埋める層（highestDeclaredLayer）と、条件を判定する
+ * 土地（AnalysisContext.ancestorLocations）を別々に渡させると、2箇所が暗黙に一致すべき規約になる。
  *
  * 行っている人の候補は全キャラクタ（highestDeclaredLayer）なので、水分のように個体で分かれる値も
  * 最も高く宣言している1人に決まる。腕前の上乗せ（docs/world/Skills.md 5節）は素の0、荷重が
@@ -104,12 +141,17 @@ export function exploreStepOf(codex: WorldCodex, locationDef: ObjectDef): Crafti
  * 重み——着火の成否・探索で獣に出くわす確率・打った一撃の当たり所——が解けず、その候補は起こらない
  * ものとして数えられる。
  */
-export function analysisContextOf(
-  codex: WorldCodex,
-  layers: readonly StaticValueLayer[],
-): StaticValueResolver {
+export function analysisContextOf(codex: WorldCodex, candidates: AnalysisCandidates = {}): AnalysisContext {
   const characters = [...codex.objects].filter((def) => def.hasTag(codex.vocabulary.world.characterTagId));
-  return layeredResolver([highestDeclaredLayer('agent', characters, 'unresolved'), ...layers]);
+  const ancestorLocations = candidates.ancestorLocations ?? [];
+  return {
+    resolve: layeredResolver([
+      highestDeclaredLayer('agent', characters, 'unresolved'),
+      highestDeclaredLayer('ancestor', ancestorLocations, 'zero'),
+      highestDeclaredLayer('instrument', candidates.instruments ?? [], 'unresolved'),
+    ]),
+    ancestorLocations,
+  };
 }
 
 /**
@@ -162,62 +204,111 @@ function instrumentBecomeAxesOf(interaction: InteractionDef): ReadonlyMap<string
 
 /**
  * その操作の条件（14節）に、定義だけから偽と分かるものがあるか。**分からない条件は素通しにする**
- * ——祖先の天候のように実行時にしか決まらないものまで解こうとすると、収支を定義だけから出すという
- * 目的が壊れる（BalanceStats.md「この表が数えていないもの」）。
+ * ——スロットの中身のように実行時にしか決まらないものまで解こうとすると、収支を定義だけから出す
+ * という目的が壊れる（BalanceStats.md「この表が数えていないもの」）。
  *
  * 相手の型が定まっているなら、相手に課された条件も同じように読む——**空の容器へ注ぐ操作は、中身の
  * ある容器を相手には起こせない**（`{subject: instrument, prop: fill, eq: 0}`）。**型そのものへの
  * 指定も同じ**（`{subject: instrument, matches: {tag: cured}}`）——既に塩漬けの変種は、塩蔵の相手に
  * ならない。
+ *
+ * **祖先は土地の候補ごとに読み直す**（AnalysisContext.ancestorLocations）。実行時に祖先へ就くのは
+ * そのうちの1つなので、**どの候補でも満たせないときだけ**落とせる——支点の無い土地に立っている表
+ * からハンモックを吊る操作が消え、島全体（候補が全土地）の表には残る。
  */
 function conditionsNeverMet(
   codex: WorldCodex,
   def: ObjectDef,
   instrument: ObjectDef | undefined,
   interaction: InteractionDef,
-  outer: StaticValueResolver | undefined,
+  context: AnalysisContext,
 ): boolean {
-  const subject: StaticSubjectReader = {
-    rangeOf: (root, propertyGlobalId) => {
+  const ancestors: readonly (ObjectDef | undefined)[] =
+    context.ancestorLocations.length === 0 ? [undefined] : context.ancestorLocations;
+  return ancestors.every((ancestor) => {
+    const subject = staticSubjectOf(codex, def, instrument, ancestor, context.resolve);
+    return interaction.requirementDeclarations.some(
+      (requirement) => staticConditionTruth(requirement.condition, subject) === false,
+    );
+  });
+}
+
+/**
+ * 条件の葉が名指した起点を、この工程の型へ解く読み手（StaticSubjectReader）。ancestorは、その土地へ
+ * 置いた場合の読み（ancestorPropertyOf）。
+ */
+function staticSubjectOf(
+  codex: WorldCodex,
+  def: ObjectDef,
+  instrument: ObjectDef | undefined,
+  ancestor: ObjectDef | undefined,
+  outer: StaticValueResolver | undefined,
+): StaticSubjectReader {
+  return {
+    propertyOf: (root, propertyGlobalId) => {
+      if (root === 'ancestor') return ancestorPropertyOf(codex, ancestor, propertyGlobalId, outer);
       const subjectDef = rootTypeOf(def, instrument, root);
       return subjectDef === undefined
         ? undefined
-        : staticValueRangeOf(
-            codex,
-            subjectDef,
-            propertyGlobalId,
-            staticResolverOf(subjectDef, 'lowest', outer),
-          );
+        : staticPropertyOf(codex, subjectDef, propertyGlobalId, outer);
     },
     matchesType: (root, match) => {
+      // ancestorはプロパティ名で祖先を探すので、型そのものを指す葉には書けない（ReferenceScope）。
       const subjectDef = rootTypeOf(def, instrument, root);
       return subjectDef === undefined ? undefined : TypeMatchRule.readingMatches(match, subjectDef);
     },
   };
-  return interaction.requirementDeclarations.some(
-    (requirement) => staticConditionTruth(requirement.condition, subject) === false,
+}
+
+/**
+ * その土地へ置いた場合の、祖先（8.6節）のプロパティの読み。祖先は「そのプロパティを宣言している
+ * 最初の祖先」なので、**間に挟まる容れ物がそれを宣言していれば、土地までは遡らない**。
+ *
+ * だから言い切れるのは、**そのプロパティを宣言している型が土地しか無いとき**だけ——持ち物も器も
+ * 世界も宣言していないなら、遡り着く先はその土地1つに決まる（土地は入れ子にならない）。宣言して
+ * いる型が他に在れば、どれが祖先になるかは定義の側から決まらないのでundefinedを返す。
+ */
+function ancestorPropertyOf(
+  codex: WorldCodex,
+  ancestor: ObjectDef | undefined,
+  propertyGlobalId: PropertyGlobalId,
+  outer: StaticValueResolver | undefined,
+): StaticPropertyReading | undefined {
+  if (ancestor === undefined || declaredOutsideLocations(codex, propertyGlobalId)) return undefined;
+  return staticPropertyOf(codex, ancestor, propertyGlobalId, outer);
+}
+
+/** そのプロパティを、土地でない型が宣言しているか（祖先に挟まりうる＝土地まで遡るとは限らない）。 */
+function declaredOutsideLocations(codex: WorldCodex, propertyGlobalId: PropertyGlobalId): boolean {
+  return [...codex.objects].some(
+    (def) =>
+      !def.hasTag(codex.vocabulary.world.locationTagId) &&
+      def.tryGetPropertyDef(propertyGlobalId) !== undefined,
   );
 }
 
 /**
- * defがそのプロパティに取りうる値の範囲（StaticValueRange）。rangeを宣言していなければundefined
- * ——上下限が無ければ、どの値も取りうる。
+ * defにおける、そのプロパティの在り方（StaticPropertyReading）。宣言していなければ`absent`
+ * ——実行時は解決先が無く、どの比較も偽になる。rangeを宣言していなければundefined（上下限が
+ * 無ければ、どの値も取りうる）。
  */
-function staticValueRangeOf(
+function staticPropertyOf(
   codex: WorldCodex,
   def: ObjectDef,
   propertyGlobalId: PropertyGlobalId,
-  resolve: ReferenceValueResolver,
-): StaticValueRange | undefined {
+  outer: StaticValueResolver | undefined,
+): StaticPropertyReading | undefined {
   const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
-  const range = propertyDef?.range;
-  if (propertyDef === undefined || range === undefined) return undefined;
+  if (propertyDef === undefined) return { kind: 'absent' };
+  const range = propertyDef.range;
+  if (range === undefined) return undefined;
 
+  const resolve: ReferenceValueResolver = staticResolverOf(def, 'lowest', outer);
   const endsLeavingThisType: number[] = [];
   for (const [label, effect] of propertyDef.rangeEvents())
     if (leavesThisType(codex, def, effect, resolve)) endsLeavingThisType.push(range.endValue(label));
 
-  return { min: range.min, max: range.max, endsLeavingThisType };
+  return { kind: 'range', range: { min: range.min, max: range.max, endsLeavingThisType } };
 }
 
 /**
@@ -276,10 +367,17 @@ function interactionStep(
       {
         kind: 'object',
         objectGlobalId: def.globalId,
-        consumed: consumesRoot(reading, 'self') || partOfChainConsumingSelf(codex, def, trigger),
-        count: 1,
+        ...consumptionOf(
+          consumesRoot(reading, 'self') || partOfChainConsumingSelf(codex, def, trigger),
+          movedOutStockOf(
+            reading,
+            'self',
+            stockPerUnitOf(() => [def], outer),
+          ),
+          (propertyGlobalId) => emptiedIntoOf(codex, def, propertyGlobalId, outer),
+        ),
       },
-      ...instrumentInputOf(trigger, instrument, reading),
+      ...instrumentInputOf(codex, trigger, instrument, reading, outer),
     ],
     outputs: collectOutputs(reading.outcomes),
     // プレイヤーが手を止めている間に時間が進むので、払う時間と経過する時間は等しい。
@@ -577,7 +675,12 @@ function recipeStep(
     ownerGlobalId: def.globalId,
     inputs: recipe.steps.flatMap((step) =>
       step.requirements
-        .map((requirement) => inputOf(requirement.match.reading, requirement.consume, requirement.count))
+        .map((requirement) =>
+          inputOf(requirement.match.reading, {
+            consumed: requirement.consume,
+            count: requirement.count,
+          }),
+        )
         .filter((input): input is CraftingInput => input !== undefined),
     ),
     outputs: collectOutputs(outcomes),
@@ -667,19 +770,118 @@ function selfPropertyValuesAfterOf(
  * 型が定まっているならその型そのものが入力で、定まらないときだけ宣言（タグ）のまま並べる。
  */
 function instrumentInputOf(
+  codex: WorldCodex,
   trigger: InteractionTrigger,
   instrument: ObjectDef | undefined,
   effect: EffectReading,
+  outer: StaticValueResolver | undefined,
 ): readonly CraftingInput[] {
   const triggerReading = trigger.reading;
   if (triggerReading.kind !== 'drag') return [];
 
-  const consumed = consumesRoot(effect, 'instrument');
-  if (instrument !== undefined)
-    return [{ kind: 'object', objectGlobalId: instrument.globalId, consumed, count: 1 }];
+  // 型が定まらない相手でも在庫は問える——きっかけが受け付ける型を並べ、最も少ないものに合わせる。
+  const types = () =>
+    instrument !== undefined
+      ? [instrument]
+      : [...codex.objects].filter((candidate) =>
+          TypeMatchRule.readingMatches(triggerReading.with, candidate),
+        );
+  const consumption = consumptionOf(
+    consumesRoot(effect, 'instrument'),
+    movedOutStockOf(effect, 'instrument', stockPerUnitOf(types, outer)),
+    // 空になった先の型は、相手の型が定まっているときだけ解ける（候補ごとに別の器になる）。
+    (propertyGlobalId) =>
+      instrument === undefined ? undefined : emptiedIntoOf(codex, instrument, propertyGlobalId, outer),
+  );
 
-  const input = inputOf(triggerReading.with, consumed, 1);
+  if (instrument !== undefined)
+    return [{ kind: 'object', objectGlobalId: instrument.globalId, ...consumption }];
+
+  const input = inputOf(triggerReading.with, consumption);
   return input === undefined ? [] : [input];
+}
+
+/** 入力1件を、1回の実行でいくつ・どう使うか（CraftingInput参照）。 */
+interface InputConsumption {
+  readonly consumed: boolean;
+  readonly count: number;
+  readonly emptiedInto?: ObjectGlobalId;
+}
+
+/**
+ * 入力1件が、1回の実行でいくつ要るか（CraftingInput参照）。**その型が残らないなら丸ごと1つ**で、
+ * 型は残るが中身を持ち出すならその割合——1杯で1個ぶんを使い切る殻の器と、16杯ぶんを抱える甕は、
+ * 同じ飲用でも払う量が違う。
+ *
+ * 中身を持ち出す入力には、**尽きた先に残る型**（空の器）も添える——戻ってくるぶんは払っていない
+ * （CraftingInput.emptiedInto）。
+ */
+function consumptionOf(
+  usedUp: boolean,
+  movedOut: MovedOutStock,
+  emptiedInto: (propertyGlobalId: PropertyGlobalId) => ObjectGlobalId | undefined,
+): InputConsumption {
+  if (usedUp || movedOut.share <= 0 || movedOut.emptiedPropertyGlobalId === undefined)
+    return { consumed: usedUp, count: 1 };
+  return {
+    consumed: true,
+    count: movedOut.share,
+    emptiedInto: emptiedInto(movedOut.emptiedPropertyGlobalId),
+  };
+}
+
+/**
+ * その値が尽きたとき、入力がどの型になって残るか（端のイベントの`become`、6.3節）。**中身を出し切った
+ * 器が空の器へ戻るのはこの宣言**で、尽きても型が変わらない——消える・何も起きない——ならundefined。
+ *
+ * 見るのは下端だけ。出ていく量は必ず減る向きなので、先に届く端はそちらしかない。
+ */
+function emptiedIntoOf(
+  codex: WorldCodex,
+  def: ObjectDef,
+  propertyGlobalId: PropertyGlobalId,
+  outer: StaticValueResolver | undefined,
+): ObjectGlobalId | undefined {
+  const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
+  if (propertyDef === undefined) return undefined;
+
+  const effect = propertyDef.rangeEvents().find(([label]) => label === 'on_min')?.[1];
+  if (effect === undefined) return undefined;
+
+  // 端のイベントの中では、書き換わるのはその値を持つ個体自身（self）。
+  const reading = readEffect(
+    effect,
+    staticResolverOf(def, 'lowest', outer),
+    becomeDestinationResolverOf(codex, def, undefined),
+  );
+  const spawned = reading.outcomes.flatMap((outcome) => outcome.spawns);
+  return spawned.length === 1 ? spawned[0].objectGlobalId : undefined;
+}
+
+/**
+ * 入力1つがそのプロパティに抱えている量を答える手立て（`movedOutStockOf`へ渡す）。
+ *
+ * **rangeを宣言していれば端から端まで。** 入手した個体は口まで満ちているものとして数える
+ * ——器を満たす工程（汲む・注ぐ）はどれも上限まで入れる。rangeが無ければ宣言値そのもので、
+ * それが個体の抱えている全部（薪1本の持つ熱量）。
+ *
+ * **候補が複数あるなら最も少ないものに合わせる**——どの型が来ても足りるとは言えないので、
+ * 足りない側へ倒す（`partOfChainConsumingSelf`と同じ選び方）。
+ */
+function stockPerUnitOf(
+  types: () => readonly ObjectDef[],
+  outer: StaticValueResolver | undefined,
+): (propertyGlobalId: PropertyGlobalId) => number | undefined {
+  return (propertyGlobalId) => {
+    let smallest: number | undefined;
+    for (const def of types()) {
+      const range = def.tryGetPropertyDef(propertyGlobalId)?.range;
+      const stock =
+        range === undefined ? staticValueOf(def, propertyGlobalId, 'lowest', outer) : range.max - range.min;
+      if (stock !== undefined && (smallest === undefined || stock < smallest)) smallest = stock;
+    }
+    return smallest;
+  };
 }
 
 /**
@@ -714,9 +916,9 @@ function rootTypeOf(
  * **否定形（`{not: ...}`、4.1節）は入力にならない。** 図のノードは1つの型かタグを指すもので、
  * 「その型でないもの」を名指しできない。同梱の世界に否定を書いた相手は無い。
  */
-function inputOf(reading: TypeMatchReading, consumed: boolean, count: number): CraftingInput | undefined {
+function inputOf(reading: TypeMatchReading, consumption: InputConsumption): CraftingInput | undefined {
   if (reading.kind === 'not') return undefined;
   return reading.kind === 'tag'
-    ? { kind: 'tag', tagGlobalId: reading.tagGlobalId, consumed, count }
-    : { kind: 'object', objectGlobalId: reading.objectGlobalId, consumed, count };
+    ? { kind: 'tag', tagGlobalId: reading.tagGlobalId, ...consumption }
+    : { kind: 'object', objectGlobalId: reading.objectGlobalId, ...consumption };
 }

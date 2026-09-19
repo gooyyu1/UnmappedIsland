@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { isMap, isScalar, parseDocument } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { spawnsObject } from '../../src/codex-viewer/describe/effectQueries';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { PropertyDef } from '../../src/domain/PropertyDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
@@ -174,7 +175,7 @@ describe('foods.yamlの食料定義', () => {
 describe('食べ物の腐敗', () => {
   /** 洞窟が湧く土地（locations.yamlのrocky_fieldのexplore）。屋根のある場所はここにしか無い。 */
   const CAVE_LAND = 'rocky_field';
-  /** 1 tick（core.yamlの15分）。 */
+  /** core.yamlが宣言する1 tick（15分）。 */
   const ONE_TICK = 15;
 
   let codex: WorldCodex;
@@ -273,6 +274,9 @@ describe('食べ物の腐敗', () => {
   });
 });
 
+/** 火を通した1食が戻す幸福度（docs/world/Characters.md 幸福度節）。戻すのは量ではなく質なので、どれも同じ。 */
+const ROASTED_HAPPINESS = 6;
+
 /**
  * 食べた物が配る幸福度（docs/world/Characters.md 幸福度節）。**主目的は書き忘れの見張り**で、食べ物を
  * 1つ足したときにベース値を落とすと、それだけが心に何も残さない食事になる。腐敗の全数検査と同じ形。
@@ -314,14 +318,43 @@ describe('食べ物が配る幸福度', () => {
   it('火を通した食事はどれも同じだけ戻す（戻すのは量ではなく質）', () => {
     // 小さなネズミ1匹でも、火の通った1食であることは焼いた肉と変わらない（Characters.md 幸福度節）。
     const declared = declaredEatHappiness();
-    const roasted = ['roasted_meat', 'roasted_rat', 'roasted_taro', 'roasted_coconut_crab'];
+    const roasted = roastedMealNames();
 
-    expect(roasted.map((name) => declared.get(name))).toEqual([6, 6, 6, 6]);
+    expect(roasted.length, '火を通した食事が1つも無ければ、この見張りは何も見ていない').toBeGreaterThan(0);
+    expect(roasted.map((name) => declared.get(name))).toEqual(roasted.map(() => ROASTED_HAPPINESS));
   });
+
+  /**
+   * 火を通した1食（`cooking_progress`の`on_max`、FireSystem.md 7節）。**焼成の宣言から数え上げる**
+   * ——手で並べると、焼ける食べ物が増えたときに「どれも同じだけ戻す」の外へ黙って出る。
+   *
+   * 採るのは**鎖の1段目だけ**で、焼き過ぎた先（炭）は入らない——炭を生むのは、既に焼かれて生まれた
+   * 物のほう。食べ物でない焼き上がり（素焼きの器）は`eat`を持たないので、そちらで落ちる。
+   */
+  function roastedMealNames(): readonly string[] {
+    const cookingProgressId = codex.propertyNames.getId('cooking_progress');
+    const defs = [...codex.objects].filter((def) => !codex.isGenerated(def));
+    const roastsInto = (from: ObjectDef, to: ObjectDef): boolean =>
+      from
+        .tryGetPropertyDef(cookingProgressId)
+        ?.rangeEvents()
+        .some(([label, effect]) => label === 'on_max' && spawnsObject(effect, to.globalId)) === true;
+
+    const eatable = new Set(eatableObjectNames());
+    return defs
+      .filter(
+        (def) =>
+          eatable.has(def.name) &&
+          defs.some(
+            (source) => roastsInto(source, def) && !defs.some((earlier) => roastsInto(earlier, source)),
+          ),
+      )
+      .map((def) => def.name);
+  }
 
   it.each([
     // 焼いた肉と生肉の開きが、生で食べない理由を1本増やす（Characters.md 幸福度節）。
-    ['roasted_meat', 6],
+    ['roasted_meat', ROASTED_HAPPINESS],
     ['raw_meat', 1],
     // 炭は腹の嵩しか返さない終端なので、喜びも残っていない。
     ['charred_lump', 0],
@@ -349,7 +382,7 @@ describe('食べ物が配る幸福度', () => {
  * 前者が無ければ誰も刻まないので腕も伸びず、後者が抜けると20分の繰り返しが最も速い伸ばし方になる。
  */
 describe('foods.yamlの下ごしらえ', () => {
-  /** 1 tick（core.yamlの15分）。 */
+  /** core.yamlが宣言する1 tick（15分）。 */
   const ONE_TICK = 15;
   /** 炎の段（fire.yamlのheat）の下端。焚き火の上限は30なので、ここへ置けば炎のまま燃え続ける。 */
   const FLAME_HEAT = 20;

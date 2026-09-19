@@ -18,16 +18,14 @@ import type { PropertyGlobalId } from '../domain/GlobalId';
  * その日その土地で進む仕事（分） = min(屋外の枠 − 往復の移動 − 生存の採取, その土地でその仕事ができる時間)
  * ```
  *
- * **頭打ちに使うのは、その局面でそこですることができる時間**——探索の局面は探索できる時間
- * （`ActivityHoursRow.explorationHoursPerDay`）、定常の局面は採れる時間（同`gatheringHoursPerDay`）。
- * 2つが違うのは**今は嵐が採取だけを止めている**ためで（広げる先はContentSkeleton.md 8.1.4節）、
- * 明るさの要求は同じ。
- * 手元の細かい作業（`handworkHoursPerDay`）が当たっているのは夜の加工360分のほうで、この式は
- * 1分も数えていない（8.3節の割り付け）。
+ * **頭打ちに使うのは、屋外で見て探す仕事ができる時間**（`ActivityHoursRow.outdoorSearchHoursPerDay`）。
+ * 採取と探索は見る明るさもしきい値も風雨の扱いも同じなので、**局面で頭打ちが分かれることはない**
+ * （ContentSkeleton.md 8.1.4節が嵐を屋外の行動すべてへ掛けているため）。手元の細かい作業
+ * （`handworkHoursPerDay`）が当たっているのは夜の加工360分のほうで、この式は1分も数えていない
+ * （8.3節の割り付け）。
  *
- * 局面の違いは**どこへ行くか**と**そこで何をするか**の2つで、式そのものは共有する。遠さは移動の項
- * として、暗さと風雨は頭打ちとして、同じ1行に入る——**そこで何をするかは、どの頭打ちを渡すかで
- * しか現れない。**
+ * 局面の違いは**どこへ行くか**と**何を消化するか**の2つで、式そのものは共有する。遠さは移動の項
+ * として、暗さと風雨は頭打ちとして、同じ1行に入る。
  *
  * 引く線は次のとおり。**1日は1つの土地で使う**——往復は1回で、余った時間を次の土地へ繰り越さない。
  * **荷物は数えない**——運べる量に上限が無い（ExplorationSystem.md 1.1節）ので、採ったものを置いて
@@ -37,13 +35,24 @@ import type { PropertyGlobalId } from '../domain/GlobalId';
  * 持たず（`BaseDailyPhases.steady`）、数える側が標本から外す。
  */
 
-/** 1日の屋外の枠（分）。太陽が出ている12時間で、移動のしきい値を満たす時間そのもの。 */
+/**
+ * 1日の屋外の枠（分）。太陽が出ている12時間で、**明るさの側で移動のしきい値を満たす時間**そのもの。
+ *
+ * **嵐で移動も止まること（ContentSkeleton.md 8.1.4節）は、この枠からは引かない**——引くのは頭打ちの
+ * 側だけで、往復の移動が嵐に当たる分は勘定に入れていない。枠を縮めるほうへ寄せると、屋外・夜の加工・
+ * 睡眠の割り付け（8.3節）が1日24時間に揃わなくなる。
+ */
 export const OUTDOOR_WINDOW_MINUTES = 720;
 
 /** 夜の睡眠（分）。1日の割り付け（屋外720・夜の加工360・睡眠360）はContentSkeleton.md 8.3節。 */
 export const SLEEP_MINUTES_PER_DAY = 360;
 
-/** 焚き火のそばでの加工（分/日）。1日の割り付けの残りで、屋外にも睡眠にも入らない分。 */
+/**
+ * 焚き火のそばでの加工（分/日）。1日の割り付けの残りで、屋外にも睡眠にも入らない分。
+ *
+ * **嵐の夜のぶんは引いていない**——屋外の枠と同じ割り切りで（上）、嵐の日に屋根の下でなければ手元の
+ * 作業も止まる（ContentSkeleton.md 8.1.4節）ことは、この360分には現れない。
+ */
 export const NIGHT_CRAFT_MINUTES_PER_DAY = MINUTES_PER_DAY - OUTDOOR_WINDOW_MINUTES - SLEEP_MINUTES_PER_DAY;
 
 /**
@@ -63,6 +72,19 @@ export function dailyBudgetOf(balance: BalanceTables): DailyBudget {
   return { survivalGatheringMinutes: balance.minimumLabourMinutes - SLEEP_MINUTES_PER_DAY };
 }
 
+/** 移動を引く前の、その日に屋外で使える枠（分）。屋外の枠から、昼に払う生存の採取を引いたもの。 */
+function outdoorMinutesOf(budget: DailyBudget): number {
+  return OUTDOOR_WINDOW_MINUTES - budget.survivalGatheringMinutes;
+}
+
+/**
+ * 日帰りで回せる片道の長さの上限（分）。**これより遠い土地は、往復だけで枠が尽きる**ので、その拠点
+ * からは1分も働けない（`windowMinutesOf` が負になる）。
+ */
+export function dayTripOneWayLimitMinutesOf(budget: DailyBudget): number {
+  return outdoorMinutesOf(budget) / 2;
+}
+
 /** 探索できる土地の型1つの、局面の勘定に要るぶん。 */
 export interface LocationTypeDay {
   readonly locationDefName: string;
@@ -70,11 +92,8 @@ export interface LocationTypeDay {
   /** 探索率100%までに要る探索時間（分）＝ 探索の回数 × 探索1回の時間。 */
   readonly explorationMinutes: number;
 
-  /** 屋外で採れる時間（分/日）。季節ごとの値の平均。 */
-  readonly gatheringMinutesPerDay: number;
-
-  /** 探索できる時間（分/日）。同じく季節ごとの値の平均で、採取と違って今は嵐を引かない。 */
-  readonly exploringMinutesPerDay: number;
+  /** 屋外で見て探す仕事（採取・探索）ができる時間（分/日）。季節ごとの値の平均。 */
+  readonly outdoorSearchMinutesPerDay: number;
 }
 
 /**
@@ -506,7 +525,7 @@ export function cycleDaysOf(base: BaseDailyPhases, work: WorkTotal): CycleDays |
  * 探索できる土地の型ごとに、局面の勘定に要る値を実測する。定義は島をまたいで変わらないので、
  * 島ごとの算出はこれを使い回す。
  *
- * 採れる時間・探索できる時間は`activityHoursOf`の行（土地×季節）を季節で平均したもの。
+ * 屋外で見て探す仕事ができる時間は`activityHoursOf`の行（土地×季節）を季節で平均したもの。
  * **配分（`WORK_SHARES`）から漏れている型があれば投げる**——黙って通すと、その土地は山の勘定に
  * 一度も現れない。
  */
@@ -526,15 +545,10 @@ export function locationTypeDaysOf(
     days.set(locationDef.globalId, {
       locationDefName: locationDef.name,
       explorationMinutes: explorationMinutesOf(codex, locationDef),
-      gatheringMinutesPerDay: minutesPerDayOf(
+      outdoorSearchMinutesPerDay: minutesPerDayOf(
         activityHours,
         locationDef.name,
-        (row) => row.gatheringHoursPerDay,
-      ),
-      exploringMinutesPerDay: minutesPerDayOf(
-        activityHours,
-        locationDef.name,
-        (row) => row.explorationHoursPerDay,
+        (row) => row.outdoorSearchHoursPerDay,
       ),
     });
   }
@@ -601,7 +615,7 @@ function explorationPhaseOf(
     const roundTripMinutes = 2 * distances[base][site];
     explorationMinutes += day.explorationMinutes;
 
-    const perDayMinutes = workMinutesPerDayOf(day.exploringMinutesPerDay, roundTripMinutes, budget);
+    const perDayMinutes = workMinutesPerDayOf(day.outdoorSearchMinutesPerDay, roundTripMinutes, budget);
     const tripDays = perDayMinutes > 0 ? Math.ceil(day.explorationMinutes / perDayMinutes) : undefined;
     const stayDays = stayOverDaysOf(day, roundTripMinutes);
 
@@ -641,7 +655,7 @@ function explorationPhaseOf(
  */
 function stayOverDaysOf(day: LocationTypeDay, roundTripMinutes: number): number {
   return Math.max(
-    Math.ceil(day.explorationMinutes / day.exploringMinutesPerDay),
+    Math.ceil(day.explorationMinutes / day.outdoorSearchMinutesPerDay),
     Math.ceil((day.explorationMinutes + roundTripMinutes) / OUTDOOR_WINDOW_MINUTES),
   );
 }
@@ -711,7 +725,7 @@ function bestDestinationOf(
     const roundTripMinutes = 2 * distances[base][site];
     const candidate = {
       roundTripMinutes,
-      workMinutesPerDay: workMinutesPerDayOf(day.gatheringMinutesPerDay, roundTripMinutes, budget),
+      workMinutesPerDay: workMinutesPerDayOf(day.outdoorSearchMinutesPerDay, roundTripMinutes, budget),
     };
     if (best === undefined || isBetterDestination(candidate, best)) best = candidate;
   }
@@ -738,7 +752,7 @@ function workMinutesPerDayOf(capMinutes: number, roundTripMinutes: number, budge
 
 /** 頭打ちに掛ける前の、その日その土地で使える枠（分）。**往復で尽きれば負**で、その日は行けない。 */
 function windowMinutesOf(roundTripMinutes: number, budget: DailyBudget): number {
-  return OUTDOOR_WINDOW_MINUTES - roundTripMinutes - budget.survivalGatheringMinutes;
+  return outdoorMinutesOf(budget) - roundTripMinutes;
 }
 
 function locationTypeDayOf(

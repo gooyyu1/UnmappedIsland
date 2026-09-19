@@ -48,18 +48,18 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 （[`stats/terrain.yaml`](../../stats/terrain.yaml) の `site_elevation_by_location`。島の最高点が
 海抜 400 m である根拠は [`TerrainGeneration.md`](./TerrainGeneration.md) 3.5 節）です。
 
-| 土地 | 平均海抜 | 減率ぶん | `value` |
-| --- | --: | --: | --: |
-| 砂浜 | 8<!-- stats: terrain.yaml site_elevation_by_location location=sandy_beach mean ±5% --> m | −0.05℃ | — |
-| 岩礁海岸 | 15<!-- stats: terrain.yaml site_elevation_by_location location=rocky_coast mean ±5% --> m | −0.10℃ | — |
-| 断崖海岸 | 37<!-- stats: terrain.yaml site_elevation_by_location location=cliff_coast mean ±5% --> m | −0.24℃ | — |
-| 草原 | 152<!-- stats: terrain.yaml site_elevation_by_location location=grassland mean ±5% --> m | −0.98℃ | **−1** |
-| 森 | 179<!-- stats: terrain.yaml site_elevation_by_location location=forest mean ±5% --> m | −1.16℃ | **−1** |
-| 密林 | 183<!-- stats: terrain.yaml site_elevation_by_location location=jungle mean ±5% --> m | −1.19℃ | **−1** |
-| 荒野 | 201<!-- stats: terrain.yaml site_elevation_by_location location=wasteland mean ±5% --> m | −1.31℃ | **−1** |
-| 岩石地 | 211<!-- stats: terrain.yaml site_elevation_by_location location=rocky_field mean ±5% --> m | −1.37℃ | **−1** |
-| 山腹 | 308<!-- stats: terrain.yaml site_elevation_by_location location=mountainside mean ±5% --> m | −2.00℃ | **−2** |
-| 山頂 | 400<!-- stats: terrain.yaml site_elevation_by_location location=mountain_peak mean ±5% --> m | −2.60℃ | **−3** |
+| 土地 | 平均海抜 | `value` |
+| --- | --: | --: |
+| 砂浜 | 8<!-- stats: terrain.yaml site_elevation_by_location location=sandy_beach mean ±5% --> m | — |
+| 岩礁海岸 | 15<!-- stats: terrain.yaml site_elevation_by_location location=rocky_coast mean ±5% --> m | — |
+| 断崖海岸 | 37<!-- stats: terrain.yaml site_elevation_by_location location=cliff_coast mean ±5% --> m | — |
+| 草原 | 152<!-- stats: terrain.yaml site_elevation_by_location location=grassland mean ±5% --> m | **−1** |
+| 森 | 179<!-- stats: terrain.yaml site_elevation_by_location location=forest mean ±5% --> m | **−1** |
+| 密林 | 183<!-- stats: terrain.yaml site_elevation_by_location location=jungle mean ±5% --> m | **−1** |
+| 荒野 | 201<!-- stats: terrain.yaml site_elevation_by_location location=wasteland mean ±5% --> m | **−1** |
+| 岩石地 | 211<!-- stats: terrain.yaml site_elevation_by_location location=rocky_field mean ±5% --> m | **−1** |
+| 山腹 | 308<!-- stats: terrain.yaml site_elevation_by_location location=mountainside mean ±5% --> m | **−2** |
+| 山頂 | 400<!-- stats: terrain.yaml site_elevation_by_location location=mountain_peak mean ±5% --> m | **−3** |
 
 **丸めて 0 になる土地は宣言しません**——`core.yaml` の `location` trait が既定の 0 を持つので、
 「書き忘れ」と「差が無い」が同じ意味になります（明るさと違うのはここで、あちらは場所ごとに必ず
@@ -93,7 +93,7 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 
 季節は「穏やか（`calm`）→雨季（`wet`）→乾季（`dry`）→穏やか→…」という固定順のサイクルです。天気（4 節）とは
 異なり、次に来る季節がどれかは確率で決まるものではなく、常に同じ順で巡回します。それぞれの季節が基本 30 日
-（tick 換算は `DurabilitySystem.md` が前提とする `tick = 15 分・1 日 = 96 tick` に従うと 2,880 tick）続きます。
+（tick 換算は `DurabilitySystem.md` が前提とする `1 tick`（15 分）に従うと 2,880 tick）続きます。
 
 ### 2.2 プロパティ構成
 
@@ -286,9 +286,9 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 
 **これ以上動かす根拠は、シミュレーションからは出ません。** 残っているのは「遊んでみて渇きすぎるか、
 だれるか」という体感の側の問いで、それは測る道具の答えられる問いではありません。**測って出てこないものを、
-測る前に動かさない**——体感から動かす番が来たときは、`npm run test:climate`
-（`tests/world-codex/climateSystem.test.ts`）で概要の要件を満たし続けているかを確かめてから入れます。
-**この検査は `npm test` にも CI にも入っていない**ので、値を触った人が自分で回すことになります。
+測る前に動かさない**——体感から動かす番が来たときも、概要の要件を満たし続けているかは
+`tests/world-codex/climateSystem.test.ts` が見ます。**この検査は `npm test` に入っている**ので、
+値を触った人が回し忘れても、PR の CI が赤くします。
 
 ## 4. 天気: worldプロパティとしての短期変動
 
@@ -484,7 +484,7 @@ early_rain_calibration:
   stages:
     - name: idle
     - name: boosting
-      min: 96     # 2日目の開始（1日 = 96 tick）
+      min: 96     # 96 tick（1 日）が明けた、2日目の開始
       passives:
         - add:
             self:

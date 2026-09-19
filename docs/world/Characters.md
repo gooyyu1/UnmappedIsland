@@ -54,7 +54,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 
 数値のスケールは [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.0節に従い、
 `range.min` は常に0——**唯一の例外が `immunity`** で、そこだけは押し下げが重なっても残る守りの底（20）を置く
-（[`DigestionSystem.md`](../engine/DigestionSystem.md) 6.2 節）。1 tick = 15分、1時間 = 4 tick。
+（[`DigestionSystem.md`](../engine/DigestionSystem.md) 6.2 節）。1 tick（15分）、4 tick（1時間）。
 
 **尽きると死ぬのは `hydration` / `body_fat` / `blood` / `warmth`**
 （[`VitalsSystem.md`](../engine/VitalsSystem.md) 8 節・8.3 節）。
@@ -214,7 +214,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   **道が知っているのは「自分の所要時間は歩く人の遅れで伸びる」ことだけ**で、遅れの内訳（荷・怪我）は
   知りません——遅くするものが増えても押す先は人の `travel_delay` なので、道の宣言は変わりません。
 - **遅れは tick の刻みで刻みます**（[`ActionSystem.md`](../engine/ActionSystem.md) 6.2 節）。道の所要時間も
-  15 分の倍数なので（生成が刻みへ丸める）、荷を担いでも行動の長さは格子に乗ったままです。
+  1 tick（15 分）の倍数なので（生成が刻みへ丸める）、荷を担いでも行動の長さは格子に乗ったままです。
 - **一律の加算なので、短い道ほど割合として重く効きます。** `+30` 分は 15 分の道では 3 倍、120 分の
   道では 1.25 倍です。**式（積）を書ける場所を作らないことを優先した結果として承知のうえ**なので
   （[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 10.2 節）、この点は積へ戻す理由に

@@ -4,8 +4,8 @@ import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import {
   dailyBudgetOf,
   dailyPhasesOf,
+  dayTripOneWayLimitMinutesOf,
   locationTypeDaysOf,
-  OUTDOOR_WINDOW_MINUTES,
 } from '../../src/analysis/dailyPhases';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
@@ -20,17 +20,21 @@ import { Pcg32 } from '../../src/domain/Pcg32';
 /** 不変条件の検証に使うシード群。特別な意味は無く、多様なレイアウトを試すための個数。 */
 const SEEDS = Array.from({ length: 25 }, (_, i) => i);
 
-const COAST_TYPES = ['sandy_beach', 'rocky_coast', 'cliff_coast'];
-
 type Point = { x: number; y: number };
 
 describe('地形生成パイプライン(TerrainGenerator)', () => {
   let codex: WorldCodex;
+  /**
+   * 海岸の土地型。**`coast`タグで数え上げる**（voyage.yamlのcoast trait）——手で並べると、海岸を
+   * 1つ足したときに「内陸に海岸型は出ない」が新しい型を海岸と見なさず、内陸に湧いても緑のまま通る。
+   */
+  let coastTypes: readonly string[];
   /** SEEDSの島。不変条件の検証はどれも同じ島の集合を見るので、生成は一度だけにする。 */
   let islands: ReadonlyMap<number, IslandMap>;
 
   beforeAll(() => {
     codex = bundledCodex();
+    coastTypes = codex.objectDefNamesWithTag(codex.tagNames.getId('coast'));
     islands = new Map(SEEDS.map((seed) => [seed, generate(seed)]));
   });
 
@@ -90,20 +94,21 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   });
 
   it('島は海岸に囲まれ、海岸過多にはならない', () => {
+    expect(coastTypes.length, '海岸の型が1つも無ければ、この見張りは何も見ていない').toBeGreaterThan(0);
     for (const [seed, map] of islands) {
       for (const site of map.sites) {
         if (site.onCoastRing)
           expect(
-            COAST_TYPES,
+            coastTypes,
             `シード${seed}: 外周リングのサイト${site.index}は海岸型（島は海岸に囲まれる）`,
           ).toContain(site.type!.name);
         else
-          expect(COAST_TYPES, `シード${seed}: 内陸のサイト${site.index}は海岸型にならない`).not.toContain(
+          expect(coastTypes, `シード${seed}: 内陸のサイト${site.index}は海岸型にならない`).not.toContain(
             site.type!.name,
           );
       }
 
-      const coastCount = map.sites.filter((s) => COAST_TYPES.includes(s.type!.name)).length;
+      const coastCount = map.sites.filter((s) => coastTypes.includes(s.type!.name)).length;
       expect(coastCount, `シード${seed}: 島を囲む最低限の海岸がある`).toBeGreaterThanOrEqual(4);
       expect(coastCount, `シード${seed}: 海岸は全体の半数を超えない（海岸過多の防止）`).toBeLessThanOrEqual(
         Math.trunc(map.sites.length / 2),
@@ -193,7 +198,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
 
     for (const [seed, map] of islands)
       for (const site of map.sites)
-        if (COAST_TYPES.includes(site.type!.name))
+        if (coastTypes.includes(site.type!.name))
           expect(
             site.axisValues.get(island.elevationAxis)! * metersPerElevationUnit,
             `シード${seed}: ${site.type!.name}の海抜`,
@@ -237,14 +242,14 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
         })),
       ),
     );
-    // 往復に使えるのは、屋外の枠から1日を賄う生存の採取を引いた残り（TerrainStats.md「局面ごとの1日」）。
-    const reachMinutes = OUTDOOR_WINDOW_MINUTES - budget.survivalGatheringMinutes;
+    // 届く範囲は、日帰りで回せる片道の上限（TerrainStats.md「局面ごとの1日」）。
+    const reachMinutes = dayTripOneWayLimitMinutesOf(budget);
 
     // **届かない島は稀にしか出ない**（今の枠では回り道を8倍へ広げて500島に1つ）ので、不変条件の
     // 検証に使うSEEDSでは取りこぼす。見張りとして働く数まで回す。
     for (const seed of Array.from({ length: 500 }, (_, i) => i)) {
       const base = dailyPhasesOf(generate(seed), locationDays, budget).bestBase;
-      expect(2 * base.farthestOneWayMinutes, `シード${seed}: 最も遠い土地への往復`).toBeLessThanOrEqual(
+      expect(base.farthestOneWayMinutes, `シード${seed}: 最も遠い土地への片道`).toBeLessThanOrEqual(
         reachMinutes,
       );
     }

@@ -9,8 +9,9 @@ import type { ObjectGlobalId } from '../../src/domain/GlobalId';
  * 局面ごとの1日（`src/analysis/dailyPhases.ts`）が、**移動時間がどれだけ伸びても計測を続ける**こと
  * （issue #838）。
  *
- * 山の配分の組へ日帰りできない拠点は実在する（`main`でも最悪の片道は225分で、枠が尽きる228分まで
- * 3分しかない）。それを島が壊れていることとして扱うと、**移動時間を動かす変更なら何であれ**
+ * 山の配分の組へ日帰りできない拠点は実在する（`main` でも最も遠い拠点の片道は、枠が尽きる長さ
+ * ——`terrain.yaml` の `daily_budget.day_trip_one_way`——のすぐ手前に在る）。それを島が壊れている
+ * こととして扱うと、**移動時間を動かす変更なら何であれ**
  * `npm run stats:terrain` が例外で止まる。
  */
 
@@ -27,8 +28,7 @@ const LOCATION_DAYS: ReadonlyMap<number, LocationTypeDay> = new Map(
     {
       locationDefName,
       explorationMinutes: 600,
-      gatheringMinutesPerDay: 600,
-      exploringMinutesPerDay: 600,
+      outdoorSearchMinutesPerDay: 600,
     },
   ]),
 );

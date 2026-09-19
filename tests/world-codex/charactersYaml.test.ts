@@ -205,6 +205,47 @@ const LIMITS = [
 ] as const;
 
 /**
+ * 体の値であることを名乗るプロパティタグ。ステータスエリアに出る（`status`）か、カードを開いたときの
+ * どちらのタブに並ぶか（`health`・`nutrition`）を決める（docs/ui/StatusArea.md 3節・Windows.md 2節）。
+ *
+ * 下の`PROPERTY_TAGS`が「全部を挙げている」と言える相手がこれ。
+ */
+const VITAL_TAGS = ['status', 'health', 'nutrition'] as const;
+
+/**
+ * 体の値ごとに期待するプロパティタグ。**何が付くべきかは期待値なので手で書く**が、
+ * **`VITAL_TAGS`のどれかを名乗るプロパティを1つ残らず挙げていること**は数え上げと突き合わせる
+ * （「体の値のタグの表は、体の値を名乗るプロパティを1つ残らず挙げている」）。
+ */
+const PROPERTY_TAGS: readonly (readonly [string, readonly string[]])[] = [
+  ['pain', ['status', 'health']],
+  ['blood', ['status', 'health']],
+  ['warmth', ['status', 'health']],
+  ['satiety', ['status', 'nutrition']],
+  ['hydration', ['status', 'nutrition']],
+  ['body_fat', ['nutrition']],
+  ['wakefulness', ['status', 'health']],
+  ['stamina', ['status', 'health']],
+  ['load', ['status', 'health']],
+  ['carbohydrate', ['nutrition']],
+  ['protein', ['nutrition']],
+  ['lipid', ['nutrition']],
+  // ビタミンだけは在庫の3本と違い、尽きた先（壊血病）を段が持つのでステータスエリアに出す
+  // （DigestionSystem.md 4節）。
+  ['vitamin', ['status', 'nutrition']],
+  // メンタルの不調を代表する1本（Characters.md 幸福度節）。心も健康のうちなので、専用のタブは
+  // 作らずhealthへ入れる。
+  ['happiness', ['status', 'health']],
+  // 時間の経過から生える圧（同 ホームシック節）。**常時のバーに出るのはこちら**で、溜める側の
+  // 孤独と抑える側の居心地はstatusを持たず、その詳細から辿って読む。
+  ['homesickness', ['status', 'health']],
+  // 全身の菌（DigestionSystem.md 6節）。発症したときだけステータスエリアに出る。
+  ['pathogen', ['status', 'health']],
+  // 免疫はステータスエリアには出さず、カードを開いたときだけ見える（body_fatと同じ扱い）。
+  ['immunity', ['health']],
+];
+
+/**
  * 休息を1回取ったときの、実際に戻った量。**回復は経過の間ずっと効く宣言なので、受け取る量は
  * 「宣言 − その間の減り」になる**（docs/engine/GameElementDefinition.md 11.7節）。ここで宣言どおりの
  * 量を測れるのは、`stand()` が空身・無痛の個体を立てているから——体力を削るものが1つも無い。
@@ -291,33 +332,34 @@ describe('プレイヤーキャラクタの定義', () => {
       ]);
     });
 
-    it.each([
-      ['pain', ['status', 'health']],
-      ['blood', ['status', 'health']],
-      ['warmth', ['status', 'health']],
-      ['satiety', ['status', 'nutrition']],
-      ['hydration', ['status', 'nutrition']],
-      ['body_fat', ['nutrition']],
-      ['wakefulness', ['status', 'health']],
-      ['stamina', ['status', 'health']],
-      ['load', ['status', 'health']],
-      ['carbohydrate', ['nutrition']],
-      ['protein', ['nutrition']],
-      ['lipid', ['nutrition']],
-      // ビタミンだけは在庫の3本と違い、尽きた先（壊血病）を段が持つのでステータスエリアに出す
-      // （DigestionSystem.md 4節）。
-      ['vitamin', ['status', 'nutrition']],
-      // メンタルの不調を代表する1本（Characters.md 幸福度節）。心も健康のうちなので、専用のタブは
-      // 作らずhealthへ入れる。
-      ['happiness', ['status', 'health']],
-      // 時間の経過から生える圧（同 ホームシック節）。**常時のバーに出るのはこちら**で、溜める側の
-      // 孤独と抑える側の居心地はstatusを持たず、この詳細から辿って読む（下のテスト）。
-      ['homesickness', ['status', 'health']],
-      // 全身の菌（DigestionSystem.md 6節）。発症したときだけステータスエリアに出る。
-      ['pathogen', ['status', 'health']],
-      // 免疫はステータスエリアには出さず、カードを開いたときだけ見える（body_fatと同じ扱い）。
-      ['immunity', ['health']],
-    ])('%sを持ち、期待されるプロパティタグが付いている', (propertyName, expectedTags) => {
+    it('体の値のタグの表は、体の値を名乗るプロパティを1つ残らず挙げている', () => {
+      // 何が付くべきかは期待値なので上の表は手で書くが、**顔ぶれは数え上げと突き合わせる**
+      // ——体の値のタグ（VITAL_TAGS）を新しく名乗ったプロパティが表に無ければ、そのプロパティだけ
+      // タグの検査を素通りする。
+      const tagged = def(character)
+        .enumeratePropertyDefs()
+        .filter((propertyDef) =>
+          VITAL_TAGS.some((tag) => propertyDef.hasTag(codex.propertyTagNames.getId(tag))),
+        )
+        .map((propertyDef) => propertyDef.name);
+
+      expect(tagged.sort()).toEqual(PROPERTY_TAGS.map(([propertyName]) => propertyName).sort());
+    });
+
+    it('キャラクタが名乗るプロパティタグは、体の値のタグと腕前のタグで全部', () => {
+      // **上の絞り（VITAL_TAGS）そのものの見張り。** 4つ目の体の値のタグを宣言すると、そのタグを
+      // 名乗るプロパティは丸ごと上の全数検査の外へ出て、表が縮んだことも分からなくなる。
+      const declared = new Set(
+        def(character)
+          .enumeratePropertyDefs()
+          .flatMap((propertyDef) => propertyDef.tags.map((id) => codex.propertyTagNames.getName(id))),
+      );
+
+      // 腕前（`skill`）は体の値ではないので表に載らない。見張りは skillsYaml.test.ts が持つ。
+      expect([...declared].sort()).toEqual([...VITAL_TAGS, 'skill'].sort());
+    });
+
+    it.each(PROPERTY_TAGS)('%sを持ち、期待されるプロパティタグが付いている', (propertyName, expectedTags) => {
       const tagNames = propOf(def(character), propertyName).tags.map((id) =>
         codex.propertyTagNames.getName(id),
       );
@@ -471,7 +513,7 @@ describe('プレイヤーキャラクタの定義', () => {
       },
     );
 
-    // 最大値が違っても「あと何時間で赤くなるか」は揃える（Characters.md）。1時間 = 4 tick。
+    // 最大値が違っても「あと何時間で赤くなるか」は揃える（Characters.md）。4 tick（1時間）。
     it.each(['wakefulness'])('%sの域は残り時間で切られる', (propertyName) => {
       const prop = propOf(def(character), propertyName);
       const perHour = decayPerTick(character, propertyName) * 4;

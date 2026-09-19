@@ -25,7 +25,8 @@ import { ROOT } from '../support/sourceFiles';
  * **メンバを見るのは、exportしたクラスの中だけ。** ここが問うているのは「`private` へ戻すか」で、
  * インターフェースや型のフィールドにはその選択が無い（形そのものが契約）。**代わりに見落とすのは
  * 「`src` の誰も読まないフィールド」で、それは可視性ではなく死んだ宣言の問い**——同じ物差しでは
- * 倒せないので、ここでは見ない。
+ * 倒せないので、ここでは見ない。そちらは `unreadFields.test.ts` が、**書きを除いて読みだけを
+ * 数えて**見張る。
  *
  * **exportしていないクラスのメンバも落ちる。** そちらには `private` へ戻す選択が在るが、外から名前で
  * 辿れないぶん「外へ開いている」とは言いにくい。**取りこぼす側だと承知のうえで**、外から名指しできる
@@ -84,11 +85,13 @@ const READ_ONLY_FROM_OUTSIDE = [
   'src/domain/wrappers/PlayerCharacter.ts PlayerCharacter.injuryStacks',
   'src/game/looks/PlayScreenLayout.ts PlayScreenLayout.informationContent',
   'src/game/looks/PlayScreenLayout.ts PlayScreenLayout.statusArea',
+  'src/game/looks/theme.ts CARD_FRAME_KINDS',
   'src/game/ui/CardDragController.ts CardDragHandlers',
   'src/game/view/ShownCards.ts ShownCards.combinationAt',
   'src/game/view/ShownCards.ts ShownCards.edgeTargets',
   'src/game/view/cardMotionPlan.ts MotionInput',
   'src/game/view/daylight.ts SunlightHours.handworkLitAt',
+  'src/loader/parseConditions.ts PROPERTY_OPS',
   'src/loader/parseSlots.ts RETIRED_SLOT_KEYS',
   'src/locale/Localization.ts bundledLocaleText',
   'src/locale/Localization.ts parseLocale',

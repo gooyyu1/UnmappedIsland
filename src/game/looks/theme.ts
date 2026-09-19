@@ -502,6 +502,13 @@ const CARD_FRAME_BASE_COLORS: Readonly<
   artifact: { face: 0xdfa93e, line: 0x5e3f0d, plate: GOLD_PLATE },
 };
 
+/**
+ * 枠の色を持つ種別すべて（宣言順）。**上の表から数え上げる**ので、種別を1つ足せばここも増える
+ * ——手で並べた一覧を別に持つと、足した種別だけが色の検査（tests/game/cardFrameColors.test.ts）の
+ * 外へ黙って出る。
+ */
+export const CARD_FRAME_KINDS = Object.keys(CARD_FRAME_BASE_COLORS) as readonly CardFrameKind[];
+
 /** 枠1つぶんの色（cardFrameColors）。 */
 export interface CardFrameColors {
   /** 桟の面。 */

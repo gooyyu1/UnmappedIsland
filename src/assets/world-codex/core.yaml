@@ -98,13 +98,19 @@ required_props:
 # conditionsに書く。**火を熾すことだけは書かない**——摩擦発火は手と耳の作業で、熾は自分で光る。
 # ここを塞ぐと、日が落ちた後に明かりを取り戻す道が無くなる。
 #
-# 段の名前で見るので、境目はキャラクタのhand_brightnessのstagesだけが持つ
-# （characters/player_character.yaml、IlluminationSystem.md 5節）。
+# **風雨の1行も同じ扱いで一律に掛かる**（docs/world/ContentSkeleton.md 8.1.4節）。嵐の日、屋根の下で
+# なければ工程は進まない。**この条件は屋外かどうかを問わない**——見ているのは風雨そのもので、屋根の
+# 下では値が0まで落ちる（characters/player_character.yamlのsheltered）。
+#
+# 段の名前で見るので、境目はキャラクタのhand_brightness・wind_speedのstagesだけが持つ
+# （characters/player_character.yaml、IlluminationSystem.md 5節・ContentSkeleton.md 8.1.5節）。
 crafting_conditions:
   - reason: too_dark
     subject: agent
     prop: hand_brightness
     in_stage_or_above: bright
+  - reason: too_stormy
+    not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
 
 # 製作中オブジェクトが完成品から引き継ぐタグ（docs/engine/RecipeSystem.md 5節）。挙げてよいのは
 # **どこに置けるかを言うタグ**だけで、何ができるかを言うタグ（tool・weaponなど）は
@@ -308,8 +314,8 @@ object_defs:
       # hour側。シンボル型のstagesはステージ名がそのまま比較対象）。値は雲のまったく無い空
       # （scorching、正午125,000 lx）を0として、そこから何段暗いか。ContentSkeleton.md 8.1.3節の
       # 正午の照度に合わせてある（曇り5,000 lx=-5・小雨2,000=-6・大雨749=-8・嵐187=-10）。
-      # **同じstagesがwind_speedへ風速（m/s）も与える**（ContentSkeleton.md 8.1.5節）。嵐の日に屋外の
-      # 採取を止めているのはそちらで、暗さではない（同8.1節）。
+      # **同じstagesがwind_speedへ風速（m/s）も与える**（ContentSkeleton.md 8.1.5節）。嵐の日に屋根の
+      # 下でない場所での行動を止めているのはそちらで、暗さではない（同8.1節）。
       # 雨系stageは毎tick atmospheric_moistureを自己減算し、雨が水分を使い尽くすと乾いた候補が
       # 選ばれやすくなる貯水池の循環を作る（ClimateSystem.md 3節）。減算量と雨季の季節レートの
       # 大小関係が雨季の降雨の止み方を決める（4.3節）。
@@ -368,8 +374,9 @@ object_defs:
       # 守る側（浅い洞窟・蓋のある入れ物・将来の屋根）だけが1を宣言し、守らない物は宣言しない。
       sheltered:
         value: 0
-      # 吹いている風の強さ（m/s。ContentSkeleton.md 8.1.5節）。**嵐の日に屋外の採取を止めているのは
-      # この値**で、暗さではない（同8.1節）——暗さで表すと、松明を持てば嵐の中でも採れることになる。
+      # 吹いている風の強さ（m/s。ContentSkeleton.md 8.1.5節）。**嵐の日に屋根の下でない場所での行動を
+      # 止めているのはこの値**で、暗さではない（同8.1節）——暗さで表すと、松明を持てば嵐の中でも
+      # 動けることになる。
       # 上のweatherのstagesがmodifyで与える寄与そのもので、rangeの上限20はいちばん強い嵐の風速。
       # **どこから上が嵐かの境目は持たない**——境目を持つのは見る側の段だけ
       # （characters/player_character.yaml）。

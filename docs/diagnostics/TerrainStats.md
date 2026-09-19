@@ -37,7 +37,7 @@ YAMLとずれます）。
 | `edge` | 道1本あたりの距離・両端の高低差・移動時間 |
 | `base_one_way` | 拠点から他の土地への片道 |
 | `base_farthest_round_trip` | 拠点から最も遠い土地までの往復 |
-| `daily_budget` | 1日の割り付け（屋外の枠・夜の加工・生存の採取・自由時間） |
+| `daily_budget` | 1日の枠の割り付けと、そこから出る日帰りの上限 |
 | `work_piles` | 1周回に積む山1つずつの量 |
 | `work_piles_by_system` | 同じものを系統ごとにまとめた合計 |
 | `work_piles_total` | 山の合計と、屋外・拠点への割り |
@@ -105,7 +105,7 @@ YAMLとずれます）。
 
 `base_farthest_round_trip` は、同じ2つの拠点の採り方で見た**最も遠い土地への往復**。平均ではなく
 最も遠い1つを見るので、**補給を持たずに出られる範囲が島の広さで決まるか**に答える
-（GameEndings.md 9.2節）。比べる先は `daily_budget` の `outdoor_window` − `survival_gathering`。
+（GameEndings.md 9.2節）。比べる先は `daily_budget` の `day_trip_one_way` の往復ぶん。
 
 ## 1周回に積む山
 
@@ -153,16 +153,16 @@ ContentSkeleton.md 8.3節の仮置きで、`base_days` は拠点の加工が `da
   = min(outdoor_window − 往復の移動 − survival_gathering, その土地でその仕事ができる時間)
 ```
 
-- **`daily_budget.outdoor_window`** = 屋外の枠。太陽が出ている12時間で、移動のしきい値を
-  満たす時間そのもの。
+- **`daily_budget.outdoor_window`** = 屋外の枠。太陽が出ている12時間で、**明るさの側で**移動のしきい値を
+  満たす時間そのもの。**嵐で移動も止まること（ContentSkeleton.md 8.1.4節）はここから引いていない**
+  ——引くのは下の頭打ちだけで、往復の移動が嵐に当たる分は数えていない（同 8.2節）。
 - **`daily_budget.survival_gathering`** = 1日を賄う生存の採取（BalanceStats.mdの最小労働から
   `sleep` を引いた分）。`surplus` はその最小労働を払って残る自由時間で、**山の量を日数へ直す分母**は
   こちら。`outdoor_window`・`night_craft`・`sleep` が1日の割り付け（ContentSkeleton.md 8.3節）で、
   拠点での加工が当たっているのは `night_craft` の枠。
-- **その土地でその仕事ができる時間** = ClimateSystemStats.md「土地×季節ごとの活動時間」の季節平均で、
-  **局面ごとに見る列が違う**——探索の局面は `exploration`、定常の局面は `gathering`。2つが違うのは
-  今は嵐が採取だけを止めているためで（広げる先はContentSkeleton.md 8.1.4節）、**局面の違いはこの頭打ちに
-  しか現れない。**
+- **その土地でその仕事ができる時間** = ClimateSystemStats.md「土地×季節ごとの活動時間」の
+  `outdoor_search` の季節平均で、**どちらの局面も同じ列を見る**——採取と探索は明るさも風雨も同じ線で
+  閉じるので、頭打ちが局面で分かれることはない（ContentSkeleton.md 8.1.4節）。
   遠さは移動の項として、暗さと風雨は頭打ちとして、同じ1行に入る。
   **`handwork`（手元の細かい作業）の列は見ない**——この式が割っているのは屋外の枠で、手元の作業が
   当たっているのは夜の加工360分のほう（ContentSkeleton.md 8.3節）だから。
@@ -210,8 +210,8 @@ GameEndings.md 9.2節）。1日に進む探索がその土地で探索できる�
 `steady_phase`・`steady_phase_by_work_share` の標本に入らず**、残った島数の割合が
 `steady_phase_islands`。
 
-**これは島の不具合ではない。** 往復で枠が尽きるのは片道228分（`outdoor_window` −
-`survival_gathering` の半分）からで、山頂や島の端を拠点にすると届かない組が出る。数えていないのは
+**これは島の不具合ではない。** 往復で枠が尽きるのは片道が `daily_budget` の `day_trip_one_way` を
+超えたときで、山頂や島の端を拠点にすると届かない組が出る。数えていないのは
 「その拠点から日帰りで回す1日」であって島そのものではないので、`steady_phase` の標本から落ちるのは
 **最も条件の良い拠点（`base: shortest_mean`）でさえ届かない島だけ**。
 

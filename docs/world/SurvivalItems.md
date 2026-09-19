@@ -462,7 +462,7 @@
 ## 12. 効果値と工程の時間は、1日の余剰から逆算する
 
 **物の値は、1日の余剰——生存に要る労働を払って残る時間——のうち、その物が食う割合で決めます。**
-余剰は893分<!-- stats: terrain.yaml daily_budget surplus -->で、[`stats/balance.yaml`](../../stats/balance.yaml)
+余剰は891分<!-- stats: terrain.yaml daily_budget surplus -->で、[`stats/balance.yaml`](../../stats/balance.yaml)
 の `object_costs` がその分母で日数を出します（[`../diagnostics/BalanceStats.md`](../diagnostics/BalanceStats.md)）。
 
 ### 12.1 持ち物1つの維持は、1日の余剰の5%まで

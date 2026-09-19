@@ -336,7 +336,7 @@ object_defs:
     session.advanceWorldTime(15);
     expect(wear(), '誰も担いでいない1tickでは、agentが解決しないのでゲートは閉じている').toBe(0);
 
-    // 持ち上げの15分（＝1tick）は関係を張ったまま進む。石（辺の子側）は参加していないので、
+    // 持ち上げの1 tick（15分）は関係を張ったまま進む。石（辺の子側）は参加していないので、
     // 役を子から引くとここでもゲートが開かない。
     expect(crate.tryGetAction('lift', hauler)?.tryExecute()).toBe(true);
     expect(wear(), '宣言元（箱）が参加していれば、担ぎ手をagentとしてゲートが開く').toBe(1);
@@ -420,7 +420,7 @@ object_defs:
    * 同じ関係の内側**で、`interactions`と挙動が分かれない（slotEntry.putIntoSlot）。
    */
   describe('枠へ入れる操作', () => {
-    /** 30分（＝2 tick）かけて入る枠を持つ箱と、それを運ぶ者・入れる物を世界へ置く。 */
+    /** 2 tick（30分）かけて入る枠を持つ箱と、それを運ぶ者・入れる物を世界へ置く。 */
     function buildPutInWorld(extraYaml: string) {
       const built = buildWorldSession(extraYaml);
       const { codex, session, world } = built;
@@ -485,7 +485,7 @@ object_defs:
       put();
 
       expect(stone.parent, '入れ終えている').toBe(crate);
-      expect(counted(), '30分＝2 tickぶん、3役とも解ける').toEqual({ dust: 2, scuff: 2, fatigue: 2 });
+      expect(counted(), '2 tick（30分）ぶん、3役とも解ける').toEqual({ dust: 2, scuff: 2, fatigue: 2 });
 
       session.advanceWorldTime(15);
       expect(counted(), '入れ終えれば関係は外れている').toEqual({ dust: 2, scuff: 2, fatigue: 2 });

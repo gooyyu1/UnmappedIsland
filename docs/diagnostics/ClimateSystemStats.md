@@ -14,7 +14,7 @@ YAMLとずれます）。
 
 ## YAMLの節
 
-`unit` は、そのレコードの測定値（`mean`〜`max`・`estimated`・`travel`・`gathering`・`handwork`）の
+`unit` は、そのレコードの測定値（`mean`〜`max`・`estimated`・`travel`・`outdoor_search`・`handwork`）の
 単位です。
 件数（`n`・`seeds`・`days`）は単位を持ちません。`segment` は各季節インスタンスの実持続期間の
 3等分区間で、`overall`（全体）・`early`（序盤）・`middle`（中盤）・`late`（終盤）です。
@@ -30,7 +30,7 @@ YAMLとずれます）。
 | `rain_weather_moisture_decrement` | 降雨の天気ごとの、推定した自己減算（1tickあたり） |
 | `rain_weather_net_moisture_delta` | 同じものの素の実測（天気×季節ごとの正味変化量） |
 | `season_duration` | 季節1インスタンスの持続日数 |
-| `activity_hours` | 土地×季節ごとの、移動できる時間・屋外で採れる時間・探索できる時間・手元の作業ができる時間 |
+| `activity_hours` | 土地×季節ごとの、移動できる時間・屋外で見て探せる時間・手元の作業ができる時間 |
 | `excluded_locations` | 活動時間表が数えなかった土地と、外した根拠のタグ |
 | `temperature` | 季節×区間ごとの気温（内部値） |
 | `weather_hours` | 季節×天気×区間ごとの発生時間 |
@@ -87,14 +87,15 @@ ambient_brightnessへ与える寄与）・土地ごとのambient_brightness・�
 屋外の採取 +3・手元の作業 +5）。光源は含まない——据えた炉も、手に持つ松明もこの表には入らない
 （松明1本が何を開くかは[`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.1.1.4節）。
 
-列は行動のクラスと1対1で、`travel`（土地の間を移動する）・`gathering`（屋外で採る）・`exploration`
-（探索する）・`handwork`（手元の細かい作業）。**`gathering`が`handwork`より長いのは、しきい値だけの差**
+列は行動のクラスと1対1で、`travel`（土地の間を移動する）・`outdoor_search`（屋外で見て探す＝採取と
+探索）・`handwork`（手元の細かい作業）。**`outdoor_search`が`handwork`より長いのは、しきい値だけの差**
 ——見る値は違う（採る側はlooking_brightness、作る側はhand_brightness）が、据え付けの光源が無ければ
 どちらも土地のambient_brightnessをそのまま土台にするので、同じ明るさを別々のしきい値で切ったものになる。
-**`gathering`だけが`exploration`より短くなるのは、今は嵐が採取だけを止めているため**
-（止める先を屋外の行動すべてへ広げると決めてある。[`ContentSkeleton.md`](../world/ContentSkeleton.md)
-8.1.4節）。森・密林では嵐の時間帯がもともと
-明るさで落ちており、浅い洞窟は岩陰に守られているので、そこでは2つが一致する。
+**採取と探索を別の列にしないのは、風雨の扱いまで揃っているから**
+（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.1.4節が嵐を屋外の行動すべてへ掛けている）。
+
+**嵐の時間はどの列からも引く。** 引かないのは浅い洞窟だけ——岩陰に守られていて風雨が届かない。
+**建てた屋根は行にならない**ので、`handwork`の列は「屋根を建てていない場合」を出している。
 
 **数えるのは島の土地だけ**で、海区（`voyage.yaml`）は行にしない。海区は
 探索でき、寝られ、雨も貯まるので集め方の条件（`location`タグ＋`exploration_progress`）をそのまま

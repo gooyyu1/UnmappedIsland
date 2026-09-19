@@ -136,6 +136,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: strip_minutes}
         # 繊維・編みの腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。撚る・編むと同じ1本で、掻き取りもその腕を使う。
@@ -181,6 +183,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: spin_minutes}
         add: {agent: {skill_cordage: 1}}
         destroy: [self, instrument]
@@ -209,6 +213,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: {prop: ply_minutes}
         add: {agent: {skill_cordage: 1}}
         destroy: [self, instrument]

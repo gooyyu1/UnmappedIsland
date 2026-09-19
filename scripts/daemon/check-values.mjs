@@ -3,7 +3,7 @@
 // （`agent-ops/board-design.md` 2.22）。
 //
 //   node scripts/daemon/check-values.mjs            # 1回見回る
-//   DRY_RUN=1 node scripts/daemon/check-values.mjs  # 調べるだけ（issue も台帳も書かない）
+//   DRY_RUN=1 node scripts/daemon/check-values.mjs  # 調べるだけ（issue も台帳も書かず、セッションも立てない）
 //
 // **周期を持つのは呼び手**（[`daemon.sh`](daemon.sh) の `CHECK_INTERVAL`）——手で叩いた
 // 1回が「まだ早い」と言って何もしないのは、叩いた側から見て何も起きていないのと同じ
@@ -45,34 +45,67 @@
 // ——**題が鍵なので、同じ死が続いても2本目にならない。** 死んでいる値も、確かめられなかった値も
 // 1つも残らなくなったら閉じる。
 //
-// **`gh` が死んでいる周は、その issue を書けない。告げる手はそこで尽きる**——理由は
-// `agent-ops/board-design.md` 2.22.3。黙らずに `~/daemon.log` へは残すが、**読む者が居ないので
-// 告げたことにはならない。**
+// **`gh` が死んでいる周は、手元からその issue を書けない。** 書く手がその値そのものだから——
+// 代わりに**クラウドのセッションへ、同じ題・同じ本文で置かせに行く**（`agent-ops/board-design.md`
+// 2.22.3）。畳む鍵は向こうでも題だけで、**閉じるのは手元の見回りのまま**。頼めなければ
+// `~/daemon.log` へ残すが、**読む者が居ないので告げたことにはならない。**
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { callMeta, metaJson } from '../../.claude/ccr-meta.mjs';
 import { allOpenIssues } from './board-read.mjs';
 import { boardState } from './board-state.mjs';
 import { envKind, environmentIds, liveSessions } from './live-sessions.mjs';
-import { gh as runGh } from './spawn.mjs';
+import { posix, gh as runGh, runBash } from './spawn.mjs';
 
 /** 告げ先の題。**2本目を作らない鍵はこれだけ**——台帳が失われても、題が合えば書き換えになる。 */
 export const TITLE = '盤面が動くのに要る値が死んでいる';
 
+/** このリポジトリの根。クラウドへ頼むときに、ひな形と投入の口を引く。 */
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+
+/** クラウドのセッションへ渡すひな形。埋めるのは `<本文>` の1箇所だけ。 */
+const CLOUD_TEMPLATE = join(ROOT, 'agent-ops/prompts/values-prompt.md');
+
+/** ひな形の中の、告げる本文を埋める場所。 */
+const BODY_SLOT = '<本文>';
+
 /**
- * 死んだまま、これだけ経ってから告げる（時間）。
- *
- * **数でない値は既定へ落とす。** `NaN` を通すと猶予の比較が全部 false になり、**見張りが黙って
- * 止まる**——毎周「告げることは無い」と言い続けるので、効いているのと見分けが付かない。
+ * クラウドへ頼むときの係の名前。タグは `chore-<名前>` になる（[`dispatch-chore.sh`](dispatch-chore.sh)）
+ * ので、**盤面は他の周期の係と同じ条件で畳む**（`board-move.mjs`）——`gh` が生き返った周に片付く。
  */
-function graceHours() {
-  const given = Number(process.env.VALUE_GRACE_HOURS);
-  return Number.isFinite(given) ? given : 6;
+const CLOUD_CHORE = 'values';
+
+/**
+ * 手綱へ訊く種類（[`brake.sh`](brake.sh)）。**係の名前と綴りが同じだが別のもの**——あちらはタグに
+ * なり、こちらは読めなかった周に倒れる向きを決める。
+ */
+const CLOUD_GATE = 'values';
+
+/**
+ * 摘みの時間。**数でない値は既定へ落とす。** `NaN` を通すと時間の比較が全部 false になり、
+ * **見張りが黙って止まる**——毎周「告げることは無い」と言い続けるので、効いているのと見分けが
+ * 付かない。
+ */
+function hours(name, fallback) {
+  const given = Number(process.env[name]);
+  return Number.isFinite(given) ? given : fallback;
 }
+
+/** 死んだまま、これだけ経ってから告げる（時間）。 */
+const graceHours = () => hours('VALUE_GRACE_HOURS', 6);
+
+/**
+ * クラウドへ頼み直すまでの間隔（時間）。
+ *
+ * **手元から書く周は毎回書き換える**（`gh issue edit` 1回）が、**クラウドは1回につきセッションが
+ * 1本立つ**ので、同じ速さでは頼めない。**それでも一度きりにはしない**——立てたセッションに走る者が
+ * 付かない区間（2.22.4）では、頼んだのに誰も書かないまま終わる。
+ */
+const retellHours = () => hours('VALUE_RETELL_HOURS', 6);
 
 /** 台帳の置き場。**1周を回す側の `taken.json` とは分ける**——書き手が違うので、混ぜると潰し合う。 */
 const ledgerPath = (stateDir) => join(stateDir, 'value-check.json');
@@ -242,13 +275,26 @@ export async function surveyValues({
   return found;
 }
 
-/** 台帳を読む。**読めなければ空**——失われたときの害は、告げるのが猶予のぶん遅れることだけ。 */
+/**
+ * 台帳を読む。持つのは2つ——死んでいる値がいつからか（`dead`）と、**クラウドへ最後に頼んだ時刻**
+ * （`asked`。下の `askCloud`）。
+ *
+ * **読めなければ空。** 失われたときの害は、告げるのが猶予のぶん遅れること・クラウドへもう一度
+ * 頼むこと・**告げる表の「いつから」が本当より後の時刻で据え置かれること**（`since` は最初に見た
+ * 周で決まる）で、**どれも2本目は立てない**（畳む鍵は題だけ）。
+ *
+ * **`dead` を入れ子へ移した周も、同じところへ落ちる**（平らに書かれた古い1本は読めない）。
+ * 読み替えは置かない——このリポジトリに後方互換は要らず、置けば**次に形を変える人が、読み替えを
+ * 消してよいかを毎回考える**ことになる。
+ */
 function readLedger(stateDir) {
+  let found;
   try {
-    return JSON.parse(readFileSync(ledgerPath(stateDir), 'utf8'));
+    found = JSON.parse(readFileSync(ledgerPath(stateDir), 'utf8'));
   } catch {
-    return {};
+    found = {};
   }
+  return { dead: found.dead ?? {}, asked: found.asked };
 }
 
 /**
@@ -292,17 +338,56 @@ function report(due, now) {
     '',
     ...deadTable(due),
     '',
-    '**直れば、次の見回りが閉じます**——ただし `gh` が死んでいる間は誰も触れません（2.22.3）。',
+    '**直れば、次の見回りが閉じます**——`gh` が死んでいる間は、この本文をクラウドのセッションが' +
+      '代わりに置きます（`agent-ops/board-design.md` 2.22.3）。',
   ].join('\n')}\n`;
 }
 
 /**
- * `~/daemon.log` へ残す1行ぶん（`gh` が死んでいる周）。**告げたことにはならない**——ログを読める
- * のは手元で叩ける人だけで、定期的に読む者が居ない（`agent-ops/board-design.md`「未決」）。
- * **それでも黙らないのは、後から追えるようにするため。**
+ * `~/daemon.log` へ残す1行ぶん（`gh` が死んでいる周）。**これだけでは告げたことにならない**
+ * ——ログを読めるのは手元で叩ける人だけで、定期的に読む者が居ない
+ * （`agent-ops/board-design.md`「未決」）。**それでも黙らないのは、後から追えるようにするため。**
  */
 function deadBrief(due) {
   return due.map((value) => `${cell(value.label)}（${value.since} から）`).join('・');
+}
+
+/**
+ * クラウドのセッションへ渡すひな形に、告げる本文を埋める。**埋めた結果もひな形の形のまま**なので、
+ * 題の引き方も囲みの読み方も投入の口（[`dispatch-chore.sh`](dispatch-chore.sh)）が持ったまま変わら
+ * ない（[`dispatch-session.mjs`](dispatch-session.mjs) のレビューと同じ形）。**埋めるのがここなのは、
+ * 埋める値を持っているのが見回りだけだから。**
+ */
+export function cloudPrompt(body) {
+  // **置き換えは関数で渡す。** 文字列で渡すと、本文に `$&` が混ざった周だけ中身が化ける。
+  return readFileSync(CLOUD_TEMPLATE, 'utf8').replaceAll(BODY_SLOT, () => body);
+}
+
+/**
+ * クラウドのセッションへ、同じ題・同じ本文で置かせに行く（`agent-ops/board-design.md` 2.22.3）。
+ * **頼めたら `true`。**
+ *
+ * **関門は通る。** 手綱へ訊く種類だけ `values` にする（`--gate`）——読める周は他の周期の係と同じ
+ * 鎖で止まり、**読めない周だけ流す**（[`brake.sh`](brake.sh)「読めない周に止まらない種類が1つある」）。
+ * 手綱を読む手が `gh` そのものなので、そこで止めると**いちばん告げてほしい周にだけ立たない。**
+ * 余力も占有も他と同じものを通るが、それらは**通れば毎周立ててよい**とは言わないので、無制限に
+ * 頼まないための間隔は呼び手が持つ（上の `retellHours`）。
+ */
+function askCloud(body, run = runBash) {
+  const work = mkdtempSync(join(tmpdir(), 'check-values-cloud-'));
+  try {
+    const filled = join(work, 'values-prompt.md');
+    writeFileSync(filled, cloudPrompt(body));
+    const call = run(join(ROOT, 'scripts/daemon/dispatch-chore.sh'), [
+      CLOUD_CHORE,
+      posix(filled),
+      '--gate',
+      CLOUD_GATE,
+    ]);
+    return call.status === 0;
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
 }
 
 /**
@@ -378,7 +463,8 @@ function closeIssue(gh) {
 }
 
 /**
- * 1回見回って、告げる。**告げたら `true`。**
+ * 1回見回って、告げる。**告げる手を打てたら `true`**——手元で issue へ書いたか、`gh` が死んでいる
+ * 周にクラウドへ頼めたか。
  *
  * 差し替え口は試験のため（`tests/scripts/checkValues.test.ts`）。省いたものは本物が入る。
  */
@@ -390,12 +476,14 @@ export async function checkValues({
   stateDir = boardState(),
   now = new Date(),
   grace = graceHours(),
+  retell = retellHours(),
+  ask = askCloud,
   dryRun = process.env.DRY_RUN !== undefined && process.env.DRY_RUN !== '',
   say = console.log,
 } = {}) {
   const survey = await surveyValues({ call, gh, envs, sessions });
   const previous = readLedger(stateDir);
-  const dead = trackDead(previous, survey, now);
+  const dead = trackDead(previous.dead, survey, now);
 
   // 猶予を越えた値だけが、告げる対象。**越えていない死は、まだ直る途中のものと見分けが付かない。**
   const limit = now.getTime() - grace * 3_600_000;
@@ -405,8 +493,14 @@ export async function checkValues({
     .filter((value) => Date.parse(value.since) <= limit);
 
   const ghAlive = survey.find((value) => value.key === 'gh')?.state === 'alive';
-  const write = (taken) => {
-    if (!dryRun) writeFileSync(ledgerPath(stateDir), `${JSON.stringify(taken, undefined, 2)}\n`);
+  // クラウドへ最後に頼んだ時刻。**頼めた周だけ進む**——転んだ周に進めると、次に頼めるのが間隔の
+  // ぶん先になる。**`gh` が生き返ったら捨てる**（死んでいた長さと同じ扱い）——残すと、次に死んだ
+  // 周が古い時刻に縛られて、間隔のぶん黙る。
+  let asked = ghAlive ? undefined : previous.asked;
+  const write = () => {
+    if (!dryRun) {
+      writeFileSync(ledgerPath(stateDir), `${JSON.stringify({ dead, asked }, undefined, 2)}\n`);
+    }
   };
 
   if (due.length === 0) {
@@ -421,18 +515,37 @@ export async function checkValues({
         closed ? '。生き返ったので issue を閉じた' : ''
       }`,
     );
-    write(dead);
-    return false;
-  }
-
-  // **`gh` が死んでいれば、告げる手はそこで尽きる**（2.22.3）。ログへ残すだけで、届く先は無い。
-  if (!ghAlive) {
-    say(`値の見回り: \`gh\` が死んでいるので告げられない（${deadBrief(due)}）`);
-    write(dead);
+    write();
     return false;
   }
 
   const body = report(due, now);
+
+  // **`gh` が死んでいれば、手元から書く手はそこで尽きる**（2.22.3）。残っている口はクラウドの
+  // セッションだけなので、同じ題・同じ本文を置かせに行く。
+  if (!ghAlive) {
+    if (dryRun) {
+      say(`値の見回り: \`gh\` が死んでいるのでクラウドへ頼む（DRY_RUN なので立てない）\n${body}`);
+      return false;
+    }
+    // **読めない時刻は「頼んでいない」と同じに扱う。** `NaN` を比較へ通すと常に false になり、
+    // **二度と頼まなくなる**——台帳が壊れた周の先が、丸ごと黙る。
+    const lastAsk = Date.parse(asked ?? '');
+    const mayAsk = !Number.isFinite(lastAsk) || lastAsk <= now.getTime() - retell * 3_600_000;
+    if (!mayAsk) {
+      say(`値の見回り: \`gh\` が死んでいる。クラウドへは ${asked} に頼んだので、まだ頼み直さない`);
+      write();
+      return false;
+    }
+    const handed = ask(body);
+    if (handed) asked = stamp(now);
+    say(
+      `値の見回り: \`gh\` が死んでいるので、クラウドのセッションへ${handed ? '頼んだ' : '頼めなかった'}（${deadBrief(due)}）`,
+    );
+    write();
+    return handed;
+  }
+
   if (dryRun) {
     say(`値の見回り: issue で告げる（DRY_RUN なので打たない）\n${body}`);
     return false;
@@ -442,7 +555,7 @@ export async function checkValues({
   say(
     `値の見回り: ${due.map((value) => value.key).join(' ')} を issue へ${told ? '書いた' : '書けなかった'}`,
   );
-  write(dead);
+  write();
   return told;
 }
 

@@ -62,7 +62,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 区間 | 足止めしているもの | 段の切り方 |
 | --- | --- | --- |
 | **開始直後** | 知らないこと。探索が終わっていないので次にどこへ行けるかも、行った先に何があるかも分からない。在庫が無いので最悪を想定するしかない | 1段だけ。完了条件は2.1節 |
-| **それ以降** | 払う労働の量 | 1日（自由時間893分<!-- stats: terrain.yaml daily_budget surplus -->。8節）以上の労働がかかる山を1段と数える |
+| **それ以降** | 払う労働の量 | 1日（自由時間891分<!-- stats: terrain.yaml daily_budget surplus -->。8節）以上の労働がかかる山を1段と数える |
 
 **平均値の表は開始直後には当てはまりません。** [`stats/balance.yaml`](../../stats/balance.yaml) の
 `chain_routes` の分数は、どの経路も選べて `pick` の期待値どおりに引ける前提の数字です。開始直後のプレイヤーはどちらの
@@ -284,16 +284,16 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 ## 4. 各系統の段
 
 **最初の段（2.1節）に入るものと、そのあとに来る「1日以上の山」を分けて並べます。山は合計28個<!-- stats: terrain.yaml work_piles_total piles -->、
-日数にして70.11日<!-- stats: terrain.yaml work_piles_total days -->ぶんです。**
+日数にして70.16日<!-- stats: terrain.yaml work_piles_total days -->ぶんです。**
 
 **この表の一覧そのものが、1周回の日数の出どころです。** 山を何と数えるかは `src/analysis/dailyPhases.ts` の
 `WORK_PILES` が宣言し、そこから下の数は全部 [`stats/terrain.yaml`](../../stats/terrain.yaml) が出します
 （読み方は [`TerrainStats.md`](../diagnostics/TerrainStats.md)）。日数は自由時間
-（1日893分<!-- stats: terrain.yaml daily_budget surplus -->）に対する概算で、**実測**と書いたものは量を
+（1日891分<!-- stats: terrain.yaml daily_budget surplus -->）に対する概算で、**実測**と書いたものは量を
 その型の値段そのもので採っています。
 
-**この70.11日<!-- stats: terrain.yaml work_piles_total days -->は、明るさと移動時間を無視した下限です**——どちらも入れると同じ山が
-93.9日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->ぶんに広がり、島を開く15.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->を足すと
+**この70.16日<!-- stats: terrain.yaml work_piles_total days -->は、明るさと移動時間を無視した下限です**——どちらも入れると同じ山が
+94.1日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->ぶんに広がり、島を開く15.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->を足すと
 1周回は約109日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->になります（8節）。
 
 | # | 系統 | 最初の段の中で手に入るもの | 1日以上の山（括弧内は日数） | 山 | 日 |
@@ -304,13 +304,13 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 4 | 刃物・打撃 | 剥片・叩き石・石の斧 | 鉱石を掘って製錬（5<!-- stats: terrain.yaml work_piles pile=鉱石を掘って製錬 days -->） | 1<!-- stats: terrain.yaml work_piles_by_system system=4 piles --> | 5<!-- stats: terrain.yaml work_piles_by_system system=4 days --> |
 | 5 | 火 | きりもみ・焚き火・覆い焼きの炉 | **薪棚（1.20<!-- stats: terrain.yaml work_piles pile=薪棚 days -->・実測）** | 1<!-- stats: terrain.yaml work_piles_by_system system=5 piles --> | 1.20<!-- stats: terrain.yaml work_piles_by_system system=5 days --> |
 | 6 | 狩りの道具 | くくり罠・木の槍 | 石鏃の槍（1<!-- stats: terrain.yaml work_piles pile=石鏃の槍 days -->）／青銅の穂先（2<!-- stats: terrain.yaml work_piles pile=青銅の穂先 days -->） | 2<!-- stats: terrain.yaml work_piles_by_system system=6 piles --> | 3<!-- stats: terrain.yaml work_piles_by_system system=6 days --> |
-| 7 | 運ぶ入れ物 | 肩掛けの袋・編み籠 | なめし革の背負い袋（1<!-- stats: terrain.yaml work_piles pile=なめし革の背負い袋 days -->）／**そり（2.03<!-- stats: terrain.yaml work_piles pile=そり days -->・実測）** | 2<!-- stats: terrain.yaml work_piles_by_system system=7 piles --> | 3.0<!-- stats: terrain.yaml work_piles_by_system system=7 days --> |
+| 7 | 運ぶ入れ物 | 肩掛けの袋・編み籠 | なめし革の背負い袋（1<!-- stats: terrain.yaml work_piles pile=なめし革の背負い袋 days -->）／**そり（2.04<!-- stats: terrain.yaml work_piles pile=そり days -->・実測）** | 2<!-- stats: terrain.yaml work_piles_by_system system=7 piles --> | 3.0<!-- stats: terrain.yaml work_piles_by_system system=7 days --> |
 | 8 | 衣類 | 束ねた葉・編んだ葉 | **なめし革の一式（1.8<!-- stats: terrain.yaml work_piles pile=なめし革の一式 days -->・実測）** | 1<!-- stats: terrain.yaml work_piles_by_system system=8 piles --> | 1.8<!-- stats: terrain.yaml work_piles_by_system system=8 days --> |
 | 9 | 寝床 | 敷物 | 高床の寝台（1.5<!-- stats: terrain.yaml work_piles pile=高床の寝台 days -->）／詰め物（1<!-- stats: terrain.yaml work_piles pile=詰め物 days -->） | 2<!-- stats: terrain.yaml work_piles_by_system system=9 piles --> | 2.5<!-- stats: terrain.yaml work_piles_by_system system=9 days --> |
 | 10 | 住居 | 洞窟・雨よけ | 葉の小屋（3<!-- stats: terrain.yaml work_piles pile=葉の小屋 days -->）／高床（4<!-- stats: terrain.yaml work_piles pile=高床 days -->）／板の壁・床（5<!-- stats: terrain.yaml work_piles pile=板の壁・床 days -->） | 3<!-- stats: terrain.yaml work_piles_by_system system=10 piles --> | 12<!-- stats: terrain.yaml work_piles_by_system system=10 days --> |
-| 11 | 船と海図 | — | **筏（4.7<!-- stats: terrain.yaml work_piles pile=筏 days -->・実測）**／**帆（3.0<!-- stats: terrain.yaml work_piles pile=帆 days -->・実測）**／櫂と舵（2<!-- stats: terrain.yaml work_piles pile=櫂と舵 days -->）／沿岸航海（3<!-- stats: terrain.yaml work_piles pile=沿岸航海 days -->）／海図を仕上げる（5<!-- stats: terrain.yaml work_piles pile=海図を仕上げる days -->） | 5<!-- stats: terrain.yaml work_piles_by_system system=11 piles --> | 17.7<!-- stats: terrain.yaml work_piles_by_system system=11 days --> |
+| 11 | 船と海図 | — | **筏（4.7<!-- stats: terrain.yaml work_piles pile=筏 days -->・実測）**／**帆（3.1<!-- stats: terrain.yaml work_piles pile=帆 days -->・実測）**／櫂と舵（2<!-- stats: terrain.yaml work_piles pile=櫂と舵 days -->）／沿岸航海（3<!-- stats: terrain.yaml work_piles pile=沿岸航海 days -->）／海図を仕上げる（5<!-- stats: terrain.yaml work_piles pile=海図を仕上げる days -->） | 5<!-- stats: terrain.yaml work_piles_by_system system=11 piles --> | 17.7<!-- stats: terrain.yaml work_piles_by_system system=11 days --> |
 | 12 | 家具・娯楽 | — | **設えを積んで里心を止める（1.78<!-- stats: terrain.yaml work_piles pile=設えを積んで里心を止める days -->・実測）** | 1<!-- stats: terrain.yaml work_piles_by_system system=12 piles --> | 1.78<!-- stats: terrain.yaml work_piles_by_system system=12 days --> |
-| | | | **合計** | **28**<!-- stats: terrain.yaml work_piles_total piles --> | **70.11**<!-- stats: terrain.yaml work_piles_total days --> |
+| | | | **合計** | **28**<!-- stats: terrain.yaml work_piles_total piles --> | **70.16**<!-- stats: terrain.yaml work_piles_total days --> |
 
 **山が「量」で立っていることに注意してください**（2.4節）。石の斧も甕も1つでは段になりません
 ——段になるのは家1軒ぶんの丸太であり、貯水に足りる数の甕です。**畑も塩田も1枚では1日に届きません**
@@ -552,12 +552,12 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 ## 8. 埋まる時間
 
-**同じ28個<!-- stats: terrain.yaml work_piles_total piles -->の山が、明るさ・移動・土地の差を入れると93.9日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->ぶんになり、島を開く15.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->を足して
-1周回は約109日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->です。1日893分<!-- stats: terrain.yaml daily_budget surplus -->という自由時間は上限であって、実際に使える時間ではありません。**
+**同じ28個<!-- stats: terrain.yaml work_piles_total piles -->の山が、明るさ・移動・土地の差を入れると94.1日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->ぶんになり、島を開く15.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->を足して
+1周回は約109日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->です。1日891分<!-- stats: terrain.yaml daily_budget surplus -->という自由時間は上限であって、実際に使える時間ではありません。**
 
-1日を賄う最小労働は547分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->（[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum`）なので、差し引きの自由
-時間は1日893分<!-- stats: terrain.yaml daily_budget surplus -->。4節の山の合計は約62600分<!-- stats: terrain.yaml work_piles_total minutes ±100 -->なので、
-**そのまま割れば70.11日ぶん**<!-- stats: terrain.yaml work_piles_total days -->です。しかしこの893分<!-- stats: terrain.yaml daily_budget surplus -->は、
+1日を賄う最小労働は549分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->（[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum`）なので、差し引きの自由
+時間は1日891分<!-- stats: terrain.yaml daily_budget surplus -->。4節の山の合計は約62600分<!-- stats: terrain.yaml work_piles_total minutes ±100 -->なので、
+**そのまま割れば70.16日ぶん**<!-- stats: terrain.yaml work_piles_total days -->です。しかしこの891分<!-- stats: terrain.yaml daily_budget surplus -->は、
 1日のどの時間でも何でもできる場合の数字で、**明るさと移動がこれを削ります**（8.1・8.2）。
 
 **山の数を増やしても日数は伸びません。** 日数は山の合計そのものなので、増やす道は「山を増やす」か
@@ -584,8 +584,8 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 の「現実に単位があるものは、その単位で持つ」節）。ルクスなら、嵐の正午が約190 lx——手元の作業まで
 できる明るさで、真夜中とは比べものにならない——だと外の知識で確かめられます。
 
-**嵐で採れないのは風雨のせいであって、暗いせいではありません**（同「1つの原因に、複数の結果を
-兼ねさせない」節）。暗さとして表すと、松明を持てば嵐の中でも採れることになります。**風雨が止めるのは
+**嵐で動けないのは風雨のせいであって、暗いせいではありません**（同「1つの原因に、複数の結果を
+兼ねさせない」節）。暗さとして表すと、松明を持てば嵐の中でも動けることになります。**風雨が止めるのは
 屋根の下でない場所での行動です**（8.1.4節）が、止めているのは明るさとは別の値です。
 
 **線を引くのであって、遅くするのではありません**（同「悪条件は、効率を下げるのではなく、できる／
@@ -639,7 +639,7 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 **しきい値と底は、これが作る1日の形で確かめてあります。** 土地×季節ごとに何時間動けるかは
 [`stats/climate.yaml`](../../stats/climate.yaml) の `activity_hours` が定義から解いていて、開けた
 土地は昼の12時間<!-- stats: climate.yaml activity_hours location=grassland season=calm travel -->、
-密林の雨季に採れるのは1.3時間<!-- stats: climate.yaml activity_hours location=jungle season=wet gathering -->、
+密林の雨季に採れるのは1.3時間<!-- stats: climate.yaml activity_hours location=jungle season=wet outdoor_search -->、
 砂浜は夜も歩けて24時間<!-- stats: climate.yaml activity_hours location=sandy_beach season=calm travel -->に
 なります。**この3つが揃っていることが、8.1節の狙い**——暗くなる前に切り上げて帰る・明るいうちにしか
 できない仕事を先に回す・松明を持って出る——**そのもの**なので、しきい値（−5・+3・+5）と底（−6）は
@@ -709,12 +709,13 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 【いつか: 月齢】 月齢で周期させる案は、画面に月齢を出す形が決まるまで待ちます
 （[`Someday.md`](../Someday.md)）。
 
-#### 8.1.1.4 松明1本は2時間で、灯っているあいだは何でもできる
+#### 8.1.1.4 松明1本は2時間で、灯っているあいだは暗さが閉じたものが開く
 
 **灯っている松明を持っていれば、どの土地のどの時刻でも、行動のどのクラスも開きます。** 底（−6）へ
 +11 が乗ると手元のしきい値（+5）にちょうど並ぶからで、いちばん深い樹冠の夜でも同じです（夜の地表は
 すべて底に均される、8.1.2節）。**開かないのは嵐の日、屋根の下でない場所での行動**で、それを止めて
-いるのは明るさではありません（8.1.4節）。
+いるのは明るさではありません（8.1.4節）。**そこではどのクラスも開きません**——松明が買えるのは暗さで
+閉じた分だけです。
 
 **燃えるのは2時間**（`fire.yaml` の `torch` の `life`）。灯すには、燃えている炉から炎を分けてもらうか
 （[`FireSystem.md`](../engine/FireSystem.md) 3.1.2節）、火起こしから作った火種を移します。**火種から
@@ -730,7 +731,7 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 **効くのは、夜の道と、樹冠の深い土地です。** 拠点から平均的な土地への片道は86.89分<!-- stats: terrain.yaml base_one_way base=shortest_mean mean -->
 なので、**日が暮れてから往復するなら2本**——1本の2時間では帰り着けません。密林の雨季に採れるのは
-1日1.3時間<!-- stats: climate.yaml activity_hours location=jungle season=wet gathering -->なので、
+1日1.3時間<!-- stats: climate.yaml activity_hours location=jungle season=wet outdoor_search -->なので、
 そこは1本ごとに採れる時間が2時間ずつ増える土地になります。
 
 #### 8.1.2 土地は「樹冠」と「地面の反射」を持つ
@@ -861,25 +862,27 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 [`activityHoursOf`](../../src/analysis/activityHours.ts)が、`core.yaml`の`hour`・`weather`の段
 （この節の透過率と太陽高度がambient_brightnessへ与える寄与そのもの）・土地ごとのambient_brightness
 （8.1.2節）・天気の出現時間（[`stats/climate.yaml`](../../stats/climate.yaml)の`weather_hours`の実測）
-から、しきい値（8.1.1節の −5・+3・+5）を満たす時間を積算し、**採る列から
-さらに嵐の時間を引きます**（8.1.5節）。**嵐が屋外の行動をすべて止めること（8.1.4節）へ広げるのは
-これから**で、広げると移動と探索の列も同じだけ削れ、手元の作業は屋根の下かどうかで分かれます。
-据え付けの光源は含みません
+から、しきい値（8.1.1節の −5・+3・+5）を満たす時間を積算し、**どの列からも嵐の時間を引きます**
+（8.1.4節・8.1.5節）。据え付けの光源は含みません
 （含めると「焚き火があれば24時間活動できる」になり、表の意味が消えます）。
 **表そのものは同じYAMLの`activity_hours`に1本だけ持ち、ここでは繰り返しません。**
 
-**列は行動のクラスと1対1です**——`travel`（移動できる）・`gathering`（屋外で採れる）・`exploration`
-（探索できる）・`handwork`（手元の細かい作業ができる）。`travel` 以外が違う値になるのは、しきい値の差と、
-**今は嵐が採取だけを止めていること**によります。見る値は違います
+**列は行動のクラスと1対1です**——`travel`（移動できる）・`outdoor_search`（屋外で見て探せる＝採取と
+探索）・`handwork`（手元の細かい作業ができる）。**採取と探索が1列なのは、見る値もしきい値も風雨の
+扱いも1つに揃っているから**で、分けても必ず同じ値になります
+（[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 5節も1行で書いています）。列の間で値が
+違う理由はしきい値の差だけです。見る値は違います
 （採る側はlooking_brightness、作る側はhand_brightness）が、据え付けの光源を含めない限りどちらも土地の
-ambient_brightnessをそのまま土台にするためです
-（[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 2節）。**`gathering`と`exploration`が
-同じ値になる土地もあります**——森・密林では嵐の時間帯がもともと明るさで落ちているので、引くものが
-残っていません。浅い洞窟は岩陰に守られているので、そちらも引きません。
+ambient_brightnessをそのまま土台にするためです（同 2節）。
+
+**嵐を引かないのは浅い洞窟だけです**——岩陰に守られているので風雨が届きません（8.1.5節）。
+**建てた屋根は行になりません**ので、`handwork`の列は「屋根を建てていない場合」を出しています。
 
 **夜に動けるのは砂浜だけです。** 他の土地は夜になると移動のしきい値を割るので、日暮れ後に動くには
-光源が要ります（8.1.2節）。**密林は昼も天気の影響を受けます**——樹冠が−9と深いぶん、雨季の荒天では
-正午でも移動のしきい値を割ることがあり、「移動できる」列が12時間ちょうどにならない唯一の土地です。
+光源が要ります（8.1.2節）。**風雨の届く場所で「移動できる」列が明るい時間ぶん丸ごと開かないのは雨季
+です**——嵐の時間が引かれるためで、砂浜なら夜も含む24時間から、他の土地なら昼の12時間から削れます。
+**明るさの側でも落ちるのは、樹冠の深い密林と、岩陰の浅い洞窟です**——密林は樹冠が−9と深いぶん雨季の
+荒天では正午でも移動のしきい値を割ることがあり、浅い洞窟は嵐を引かない代わりに岩陰の−6で落ちます。
 
 **土地の差がいちばん大きく出るのは、採れる時間の雨季です。** 樹冠が深い森・密林ほど雨季に大きく
 削られます（森・密林とも雨季は繊維・バナナ・粘土・小枝の産地——2.3節の表——なので、**雨季は繊維が
@@ -888,24 +891,31 @@ ambient_brightnessをそのまま土台にするためです
 **夜は空白になりません。** 睡眠が360分、残りの360分は焚き火のそばで手元の作業ができるので、夜は
 「集める」から「加工する」へ切り替わります
 （[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「時間経過に任せる区間を作らない」節）。
+**嵐の夜だけは、屋根の下でなければその360分も止まります**（8.1.4節）。
 
 #### 8.1.4 嵐の日は、屋根の下でなければ何もできない【確定】
 
-**嵐の日、屋根の下でない場所では何もできません。** 採るのも、歩くのも、探すのも止まります。明るさが
-足りていてもできず、松明でも埋まりません——止めているのは風雨で、それは明るさとは別の値だからです
-（8.1節）。**屋根の下へ入る以外にすることが無い日**になります。
+**嵐の日、屋根の下でない場所では何もできません。** 採るのも、歩くのも、探すのも、手元の作業も
+止まります。明るさが足りていてもできず、松明でも埋まりません——止めているのは風雨で、それは明るさとは
+別の値だからです（8.1節）。**屋根の下へ入る以外にすることが無い日**になります。
+
+**「何もできない」の線は、目や手元の精度が要る仕事です**（顔ぶれは 8.1.5節）。暗くても止まらないもの
+——食べる・飲む・眠る・火をくべる・留守番の設備が返した実りを受け取る——は、風雨でも止まりません。
+**雨受けのように、嵐だからこそ効くものもあります**（[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 7節）。
 
 **止まる日は嵐だけです。** `core.yaml`の`weather`の段のうち屋外を閉ざすのはいちばん荒れた1段で、
-大雨（`heavy_rain`）の日は屋外で採れます。
+大雨（`heavy_rain`）の日は屋外で動けます。
+
+**海の上で渡ることだけは、この線の外です**（理由と効き方は 8.1.5節）。
 
 **出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（嵐の日は屋外の採取ができない）・
-[#2055](https://github.com/gooyyu1/UnmappedIsland/issues/2055)（嵐は屋外の行動をすべて止め、大雨では採れる。2026-09-12に回答）
+[#2055](https://github.com/gooyyu1/UnmappedIsland/issues/2055)（嵐は屋外の行動をすべて止め、大雨では動ける。2026-09-12に回答）
 
 #### 8.1.5 風雨は、風速（m/s）で持つ
 
 **8.1.4節が止めているものは、風速で表します。** 明るさと同じく現実の単位なので、値が正しいかを外の
 知識で照合できます（[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「現実に単位があるものは、
-その単位で持つ」節）。**雨のほうは値に入れていません**——屋外を閉ざすのは嵐だけで、大雨では採れる
+その単位で持つ」節）。**雨のほうは値に入れていません**——屋外を閉ざすのは嵐だけで、大雨では動ける
 からです（8.1.4節）。
 
 | 天気 | `core.yaml`の段 | 風速 | ビューフォート風力階級 |
@@ -925,15 +935,18 @@ ambient_brightnessをそのまま土台にするためです
 これを超えるのは嵐だけで、**境目を持つのはキャラクタの段（`player_character.yaml`の`wind_speed`の
 `gale`）1箇所だけ**です。行動の側の条件はその段の名前で見るので、しきい値の数字はどこにも書き写されません。
 
-**この段を見ているのは、今は屋外の採取の操作だけです**（`too_stormy`を理由に名乗る条件。書き忘れが
-無いことは`tests/world-codex/stormGathering.test.ts`が全数で見張ります）。**移動・探索・屋外の手作業へ
-広げるのはこれから**で、広げても見る段はこの1つのままです。
+**この段を見ている操作は、明るさの段を見ている操作とちょうど同じ顔ぶれです**
+（[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 5節の一覧）。目や手元の精度が要る仕事は
+暗さでも風雨でも止まり、手が覚えている粗い動作はどちらでも止まりません。**重なっていることは
+`tests/world-codex/stormOutdoors.test.ts`が全数で見張ります**——どちらか一方だけを書いた操作は、
+そこで落ちます。**どちらも書き忘れた操作は拾えません**（その見分けは同 5節が持ちます）。
 
 **海の上で渡ることは、この線の外です。** 8.1.4節が線を引けるのは屋根の下という逃げ場が在るからで、海区には
 それがありません——そのまま当てはめると、嵐の海区は待つ以外にすることの無い区間になります
 （[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「時間経過に任せる区間を作らない」節）。
 **海の上の荒天は、渡りを止めるのではなく押し流す形で効きます**（[`Voyage.md`](./Voyage.md) 3.8節）。
-海の上で嵐に閉じるのは、見て探す仕事のほうです（同 3.10節）。
+渡る手には明るさも風雨も要らず、**海の上で嵐に閉じるのは見て探す仕事のほう**（見張り・釣り・海鳥）で、
+そちらは上の顔ぶれに入っています（同 3.10節）。
 
 **屋根は風雨を引きます。** 守られている場所（`sheltered`、
 [`ContainerSystem.md`](../engine/ContainerSystem.md) 6節）に居る間はこの値が0まで落ちるので、
@@ -957,10 +970,10 @@ ambient_brightnessをそのまま土台にするためです
 ```
 
 **遠さは移動の項として、暗さと風雨は頭打ちとして、同じ1行に入ります。** 局面の違いは**どこへ行くか**と
-**そこで何をするか**だけで、式は共有します。**そこで何をするかは、どの頭打ちを渡すかにしか
-現れません**——探索の局面は`exploration`の列、定常の局面は`gathering`の列（8.1.3節）で、
-**嵐を引くのは今のところ後者だけ**です。720分<!-- stats: terrain.yaml daily_budget outdoor_window -->は屋外の枠、187分<!-- stats: terrain.yaml daily_budget survival_gathering -->は1日を賄う生存の採取
-（[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum` の547分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->から睡眠360分<!-- stats: terrain.yaml daily_budget sleep -->を引いた分）です。
+**何を消化するか**だけで、式も頭打ちも共有します——どちらの局面も`outdoor_search`の列（8.1.3節）で
+頭打ちにします。**探索と採取で頭打ちが違うことはありません**——明るさも風雨も同じ線で閉じるからです
+（8.1.4節）。720分<!-- stats: terrain.yaml daily_budget outdoor_window -->は屋外の枠、189分<!-- stats: terrain.yaml daily_budget survival_gathering -->は1日を賄う生存の採取
+（[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum` の549分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->から睡眠360分<!-- stats: terrain.yaml daily_budget sleep -->を引いた分）です。
 
 **生存の採取は、暗い土地でも払える形にしています。** 密林で1日に働ける時間は土地の組の中でいちばん
 短い（[`stats/terrain.yaml`](../../stats/terrain.yaml) の `steady_phase_by_work_share`）のですが、
@@ -971,6 +984,14 @@ ambient_brightnessをそのまま土台にするためです
 **移動は、8.1の採れる時間からは引きません。** 移動のしきい値は −5、屋外の採取は +3（8.1.1節）で、
 その差の時間帯は**歩けるが採れない**時間です。1日の屋外の枠を決めるのは移動のしきい値のほう
 ——太陽が出ている12時間です。
+
+**嵐で移動も止まること（8.1.4節）は、この枠からは引いていません。** 引くのは頭打ちの側だけで、
+**往復の移動が嵐に当たる分は勘定に入れていません**。枠を縮めるほうへ寄せると、屋外720分・夜の加工
+360分・睡眠360分の割り付け（8.3節）が1日24時間に揃わなくなります。**日数は短めに出ます**——嵐が
+1周回の日数へどう効くかは、この枠を作り直すまで出ません。
+
+**夜の加工360分も同じで、嵐の夜のぶんを引いていません**（8.1.3節）。屋外の枠と一緒に作り直す分で、
+**割り切りは1日の割り付け全体に掛かります**——嵐に当たる時間を数えていないのは昼だけではありません。
 
 **頭打ちに使うのは採れる時間で、手元の作業ができる時間ではありません。** この式が割っているのは
 屋外の枠であって、手元の作業が当たっているのは夜の360分のほうだからです（8.3節）。
@@ -983,7 +1004,7 @@ ambient_brightnessをそのまま土台にするためです
 ### 8.3 1周回は、2つの局面を積んで出す
 
 **同じ28個<!-- stats: terrain.yaml work_piles_total piles -->の山が、局面ごとに数え直すと約109日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->ぶんになります。** 内訳は
-**島を開く15.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->**と、**開き切った後の93.9日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->**です。
+**島を開く15.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->**と、**開き切った後の94.1日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->**です。
 
 局面は2つに割りました。**割る位置を決めているのは「探索がまだ残っているか」の1点だけ**で、
 どちらの1日も8.2節の同じ式で出ます。1日の側は500シード<!-- stats: terrain.yaml meta seeds -->の実測
@@ -995,8 +1016,8 @@ ambient_brightnessをそのまま土台にするためです
 | 局面 | 1日の移動 | 1日に進む分 | 消化するもの | 日数 |
 | --- | --: | --: | --: | --: |
 | **探索**（島を開き切るまで） | 164分<!-- stats: terrain.yaml exploration_phase metric=day_trip_travel_per_day mean --> | 探索 182分<!-- stats: terrain.yaml exploration_phase metric=day_trip_exploration_per_day mean --> | 全土地を探索率100%まで（2,799分<!-- stats: terrain.yaml exploration_phase metric=exploration_minutes mean -->） | **15.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->** |
-| **定常**（開き切った後） | 62分<!-- stats: terrain.yaml steady_phase metric=travel_per_day mean --> | 山 449分<!-- stats: terrain.yaml steady_phase metric=work_per_day mean --> | 屋外の山（約41700分<!-- stats: terrain.yaml work_piles_total outdoor_minutes ±100 -->） | **93.9日**<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean --> |
-| 合計 | | | | **109.3日**<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean --> |
+| **定常**（開き切った後） | 62分<!-- stats: terrain.yaml steady_phase metric=travel_per_day mean --> | 山 447分<!-- stats: terrain.yaml steady_phase metric=work_per_day mean --> | 屋外の山（約41700分<!-- stats: terrain.yaml work_piles_total outdoor_minutes ±100 -->） | **94.1日**<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean --> |
+| 合計 | | | | **109.5日**<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean --> |
 
 28個<!-- stats: terrain.yaml work_piles_total piles -->の山（約62600分<!-- stats: terrain.yaml work_piles_total minutes ±100 -->）のうち、屋外での採取・伐採・運搬を2/3
 （約41700分<!-- stats: terrain.yaml work_piles_total outdoor_minutes ±100 -->）、拠点での加工を1/3
@@ -1023,15 +1044,17 @@ ambient_brightnessをそのまま土台にするためです
 **夜**は、睡眠360分<!-- stats: terrain.yaml daily_budget sleep -->と、焚き火のそばでの加工360分<!-- stats: terrain.yaml daily_budget night_craft -->。
 **律速は屋外です**——拠点での加工は約20900分<!-- stats: terrain.yaml work_piles_total base_minutes ±100 -->で、夜の枠に対して
 58日ぶん<!-- stats: terrain.yaml work_piles_total base_days -->なので、約109日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->の中に余裕で収まります。**夜が足りなくなることはなく、
-足りないのは昼です。**
+足りないのは昼です。** **この360分は嵐の夜のぶんを引いていない**（8.2節の割り切り）ので、引いても
+収まることは別に見張ります（`tests/diagnostics/nightCraftBudget.test.ts`）——**言い切りが崩れるのは
+嵐が夜を食う割合が膨らんだときで、その境目はそこが持ちます。**
 
 **この約109日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->は上限としても下限としても読めません。** 上へ振れる材料は、4節の山の多く
 ——なめし革の背負い袋（1日<!-- stats: terrain.yaml work_piles pile=なめし革の背負い袋 days -->）のように `objects` が空の行——に
 **まだ宣言が無く、日数が実測ではなく置いた値である**こと。下へ振れる材料は、**探索の局面の
 15.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->に山を1分も乗せていない**こと
-——1日の枠369分<!-- stats: terrain.yaml exploration_phase metric=day_trip_window_per_day mean -->に対して探索は
+——1日の枠367分<!-- stats: terrain.yaml exploration_phase metric=day_trip_window_per_day mean -->に対して探索は
 182分<!-- stats: terrain.yaml exploration_phase metric=day_trip_exploration_per_day mean -->しか進まないので、
-余る187分<!-- stats: terrain.yaml exploration_phase metric=day_trip_spare_per_day mean -->×15.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->は山へ回せます。
+余る185分<!-- stats: terrain.yaml exploration_phase metric=day_trip_spare_per_day mean -->×15.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->は山へ回せます。
 
 **「1周回は約480日」という前の結論は取り下げます。** 480日は、密林のような暗い土地でも生存の採取を
 丸ごと引いていた（そこでは1日に働ける時間がそれに足りないのに）ことと、移動を「一様に選んだ行き先へ
@@ -1056,7 +1079,7 @@ ambient_brightnessをそのまま土台にするためです
 
 土地ごとに日帰りと泊まりの安いほうを採っても15.14日<!-- stats: terrain.yaml exploration_phase metric=mixed_days mean -->で、**日帰りだけの15.37日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->とほとんど変わりません**。
 500島<!-- stats: terrain.yaml exploration_day_trip_islands islands -->のうち100.0%<!-- stats: terrain.yaml exploration_day_trip_islands share -->が、日帰りだけで全土地を開き切ります。縮尺（#797）が入って、往復が屋外の枠720分<!-- stats: terrain.yaml daily_budget outdoor_window -->から
-生存の採取187分<!-- stats: terrain.yaml daily_budget survival_gathering -->を引いた残りを使い切らなくなったためです。
+生存の採取189分<!-- stats: terrain.yaml daily_budget survival_gathering -->を引いた残りを使い切らなくなったためです。
 
 **端まで届くことも同じ枠で出ます。** 拠点から最も遠い土地への往復は、最も広い島でも
 420分<!-- stats: terrain.yaml base_farthest_round_trip base=shortest_mean max -->で、**上と同じ残り**
@@ -1081,13 +1104,16 @@ ambient_brightnessをそのまま土台にするためです
 
 ## 未決事項・今後の検討課題
 
-- 1周回の日数（8節）。局面ごとに数えると**約109日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->**（探索15.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->＋定常93.9日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->、8.3節）。**残る仮置きは
+- 1周回の日数（8節）。局面ごとに数えると**約109日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->**（探索15.4日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->＋定常94.1日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->、8.3節）。**残る仮置きは
   屋外の割合（2/3）と土地の配分（開けた1/2・森1/4・密林1/4）の2つ**で、日数を支配しているのは後者
   ——密林で1日に進む山の少なさが、4分の1の配分で日数の3分の1を持っていきます。**どの材料がどの土地で採れるか
   （2.3節）を決めると、この数字は動きます。**
 - 天気の7段の風速（8.1.5節）。明るさの透過率と違って実測に合わせたものではなく、ビューフォート
   風力階級の目安から置いただけです。**線を跨ぐのが嵐だけであることは決まった**（8.1.4節）ので、
   残っているのはその形を保つ範囲での6段の値です。
+- 嵐が1周回の日数へどう効くか（8.2節）。頭打ち（`outdoor_search`）は嵐の時間を引いていますが、
+  **探索の局面を律速しているのは屋外の枠（720分）のほう**で、その枠は嵐で縮まないので日数は1日も
+  動きません。往復の移動が嵐に当たる分を数えるには、1日の割り付けの側から作り直すことになります。
 - 散らばりをどこまで許すか（2.3.3節）。「大きすぎる」の線は実測の分布を見てから引きます。
 - 固定シナリオ（山がある島・湖がある島のように、その島が何であるかを保証で決めたもの）を用意するか。
   用意するなら、そのぶん生成の自由度が下がるので、2.3.3節の散らばりも一緒に動きます。
