@@ -114,27 +114,49 @@ function mergeRequirement(merged: MergedRequirement, requirement: RecipeRequirem
 }
 
 /**
- * 工程の要求ごとに、材料スロットの中身を宣言順に割り当てる。
+ * 要求ごとに、材料スロットの中身を割り当てる（GameElementDefinition.md 13.1節）。
  *
  * **1つの物を2つの要求で二重に数えない。** 要求はタグでも書けるので、尖った石1つが
- * `cutting_tool`の要求にも`sharp_stone`の要求にも当てはまりうる。先に書いた要求から取る。
+ * `cutting_tool`の要求にも`sharp_stone`の要求にも当てはまりうる。
+ *
+ * **成立する割り当てが在るなら、必ずそれを見つける。** 当てる先を宣言順に先着で決めると、尖った石を
+ * `cutting_tool`へ当てた時点で`sharp_stone`の要求が空振りし、石斧も持っているのに「材料が足りない」と
+ * 答える。**当てた先は後から振り替える**（増加路を辿る＝二部グラフの最大マッチング）ので、宣言の順も
+ * 中身の並び順も答えを変えない。揃わないときも当てられた数は最大なので、充足率
+ * （currentStepSupplyRatio）は詰められるところまで詰めた値になる。
  */
-function allocateContentsToRequirements(
+export function allocateContentsToRequirements(
   contents: readonly WorldObject[],
-  step: RecipeStepDef,
+  requirements: readonly RecipeRequirementDef[],
 ): ReadonlyMap<RecipeRequirementDef, readonly WorldObject[]> {
-  const used = new Set<WorldObject>();
-  const allocated = new Map<RecipeRequirementDef, readonly WorldObject[]>();
-  for (const requirement of step.requirements) {
-    const taken: WorldObject[] = [];
+  // 要求1件は`count`個の受け口。どの受け口も物1つを受けるので、要求の個数は受け口の数だけで表せる。
+  const openings = requirements.flatMap((requirement) =>
+    Array.from({ length: requirement.count }, () => requirement),
+  );
+  const takenBy = new Map<WorldObject, number>();
+
+  /**
+   * その受け口へ物を1つ当てられたか。既に当たっている物でも、**その相手を別の物へ振り替えられるなら
+   * 奪う**（増加路の探索）。visitedはこの1回の探索で見た物——同じ物を辿り直して回らないための印。
+   */
+  const tryTakeFor = (opening: number, visited: Set<WorldObject>): boolean => {
     for (const object of contents) {
-      if (taken.length >= requirement.count) break;
-      if (used.has(object) || !requirement.requires(object.def)) continue;
-      used.add(object);
-      taken.push(object);
+      if (visited.has(object) || !openings[opening].requires(object.def)) continue;
+      visited.add(object);
+      const incumbent = takenBy.get(object);
+      if (incumbent !== undefined && !tryTakeFor(incumbent, visited)) continue;
+      takenBy.set(object, opening);
+      return true;
     }
-    allocated.set(requirement, taken);
-  }
+    return false;
+  };
+
+  for (let opening = 0; opening < openings.length; opening += 1) tryTakeFor(opening, new Set());
+
+  const allocated = new Map<RecipeRequirementDef, WorldObject[]>(
+    requirements.map((requirement) => [requirement, []]),
+  );
+  for (const [object, opening] of takenBy) allocated.get(openings[opening])?.push(object);
   return allocated;
 }
 
@@ -166,12 +188,15 @@ export function currentStepSupplyRatio(inProgress: WorldObject): number | undefi
   const step = currentStepOf(inProgress);
   if (step === undefined) return undefined;
 
-  const allocated = allocateContentsToRequirements(materialsSlotOf(inProgress)?.contents ?? [], step);
+  const allocated = allocateContentsToRequirements(
+    materialsSlotOf(inProgress)?.contents ?? [],
+    step.requirements,
+  );
   let needed = 0;
   let held = 0;
   for (const requirement of step.requirements) {
     needed += requirement.count;
-    // 割り当ては要求数で打ち切られているので、余分に入っている分は数に入らない。
+    // 割り当ては受け口の数で打ち切られているので、余分に入っている分は数に入らない。
     held += allocated.get(requirement)?.length ?? 0;
   }
   return needed === 0 ? 1 : held / needed;
@@ -231,7 +256,10 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
     if (!spendDurationAndReportParticipantsAlive(recipe.minutesFor(step, agent), inProgress)) return false;
 
     // 消費が進捗より先なのは、進捗が上限を超えた瞬間に完成し、残っている物は親へこぼれてしまうため。
-    const allocated = allocateContentsToRequirements(materialsSlotOf(inProgress)?.contents ?? [], step);
+    const allocated = allocateContentsToRequirements(
+      materialsSlotOf(inProgress)?.contents ?? [],
+      step.requirements,
+    );
     for (const requirement of step.requirements) {
       if (!requirement.consume) continue;
       for (const object of allocated.get(requirement) ?? []) object.destroy();

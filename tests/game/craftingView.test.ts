@@ -159,6 +159,36 @@ ui_texts:
     });
   });
 
+  it('1つの物が複数の要求に当てはまっても、入っている数を二重に数えない', () => {
+    // 数え直すと、尖った石1つでどちらの枠も満ちて見えるのに作業は始まらない
+    // （消費の側は1つの物を1つの要求へしか当てない、crafting.allocateContentsToRequirements）。
+    const mini = miniGame(`
+in_progress_tags: [item]
+object_defs:
+  sharp_stone: {tags: [item, cutting_tool]}
+  cord:
+    tags: [item]
+    recipes:
+      basic:
+        steps:
+          - requires:
+              - {tag: cutting_tool, count: 2, consume: false}
+              - {object: sharp_stone, count: 2, consume: true}
+            duration: 30
+`);
+    const wip = mini.createObject(inProgressObjectName('cord', 'basic'), mini.slot('items', mini.land));
+    mini.createObject('sharp_stone', wip.getSlot(mini.codex.vocabulary.engine.materialsSlotId));
+
+    const materials = craftingMaterials(wip);
+
+    expect(materials?.map((material) => material.needed)).toEqual([2, 2]);
+    // どちらの要求へ当たったかは問わない——**どちらか片方にしか当たらない**ことがここで見るもの。
+    expect(
+      materials?.reduce((sum, material) => sum + material.held, 0),
+      '入っているのは1つなので、満たせている要求も1つぶん',
+    ).toBe(1);
+  });
+
   it('後の工程が要求する型も枠を持つが、今の工程のものとは区別する', () => {
     const mini = miniGame(`
 in_progress_tags: [item]

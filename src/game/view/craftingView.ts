@@ -2,6 +2,7 @@ import type { StartedGame } from '../../domain/generation/NewGame';
 import type { WorldObject } from '../../domain/WorldObject';
 import { autoFillMaterials } from '../../domain/autoFill';
 import {
+  allocateContentsToRequirements,
   tryAdvanceCrafting,
   currentStepIsSupplied,
   currentStepOf,
@@ -31,7 +32,13 @@ export interface CraftingMaterial {
    * どれを出すかは画面の都合——今は1秒ごとに順に出して、どれでもよいことを見せている。
    */
   readonly objectGlobalIds: readonly ObjectGlobalId[];
-  /** 残りの工程が要求する数と、今その枠に入っている数。 */
+  /**
+   * 残りの工程が要求する数と、そのうち入っている中身で満たせている数。
+   *
+   * **`held`は要求ごとに数え直した数ではない**（crafting.allocateContentsToRequirements）——1つの物は
+   * 1つの要求しか満たさないので、尖った石1つを`cutting_tool`と`sharp_stone`の両方で数えると、
+   * どちらの枠も満ちて見えるのに作業できない形になる。
+   */
   readonly needed: number;
   readonly held: number;
   /** 今の工程が要求しているか（後の工程のぶんならfalse）。 */
@@ -112,12 +119,15 @@ export function craftingMaterials(container: WorldObject): readonly CraftingMate
   if (recipeOf(container) === undefined) return undefined;
 
   const inStep = new Set(currentStepOf(container)?.requirements.map((r) => r.match.key));
-  const contents = materialsSlotOf(container)?.contents ?? [];
+  const remaining = remainingRequirementsOf(container);
+  // 入っている数は要求ごとに数えず、**要求の並びへ1回割り当てて**その結果を読む——工程を進めるときに
+  // 消える物の決め方（crafting）と同じ答えでなければ、満ちて見える枠を出したまま作業を断ることになる。
+  const allocated = allocateContentsToRequirements(materialsSlotOf(container)?.contents ?? [], remaining);
 
-  return remainingRequirementsOf(container).map((requirement) => ({
+  return remaining.map((requirement) => ({
     objectGlobalIds: requirement.match.matchingDefs(codex.objects).map((def) => def.globalId),
     needed: requirement.count,
-    held: contents.filter((object) => requirement.requires(object.def)).length,
+    held: allocated.get(requirement)?.length ?? 0,
     inCurrentStep: inStep.has(requirement.match.key),
   }));
 }
