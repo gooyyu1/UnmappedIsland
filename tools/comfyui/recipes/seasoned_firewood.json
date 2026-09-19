@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "src/assets/objects/seasoned_firewood.png を作り直すためのレシピ。build.py が読む。",
+    "薪棚で乾き切った薪1本（src/assets/world-codex/firewood.yaml）。",
+    "",
+    "**生木の割り薪（green_firewood）から派生させる。** 同じ1本が乾いた姿なので、動かさないのは",
+    "位置・角度・長さ・太さ——つまり輪郭だけで、面の上は乾きで変わる。別々に生成すると別の個体に",
+    "なり、札が並んだときに「乾いた」ではなく「別の薪」に見える。",
+    "",
+    "**札の上で生木と分かれているのは、褪せた色と、黒く裂けて剥がれた樹皮。** 下の指示は木口の",
+    "放射状の割れも頼んでいるが、**出てくるのは年輪だけで、割れは実寸でも拡大でも読めない**",
+    "——見分けをそこに頼らない。",
+    "",
+    "**align は使えない。** 対角線へ寝かせる（diagonal）と回転のぶん寸法が変わり、align が見る",
+    "相手（回転前の生データ）と食い違って card_art.py が止まる。姿勢を揃えているのは、Qwen が",
+    "同じ位置・同じ長さのまま描き替えることと、生木と同じ段（320）で切り出すこと。",
+    "",
+    "段は320（生木と同じ）。乾いて落ちるのは目方で、嵩は変わらない（firewood.yaml）。"
+  ],
+  "output": "src/assets/objects/seasoned_firewood.png",
+  "edit": {
+    "source": "green_firewood.json",
+    "prompt": "Keep this split billet of firewood exactly where it is, at the same angle, the same length and the same thickness, painted in the same soft hand painted style on the same plain empty white page with the same soft grey shadow beneath it. Now age it until it is plainly old wood. Repaint the whole of the broad split face: the pale cream is gone, and in its place the wood is a dull weathered grey brown all over, dusty and faded, clearly darker than it was and with no cream and no yellow left anywhere on it. Cut the end open: three or four deep black cracks run out from the centre of the end grain to its edge like the spokes of a wheel, and two long dark splits run away down the length of the split face. Along the rounded back the bark has dried and curled, and has fallen away in two ragged patches to show the grey wood underneath. Dry splinters stand up along the split edges. Nothing else changes: the shape, the position and the size stay the same, and no piece is added or taken away. Keep the wide white margin all around, and keep everything clearly darker than the white page, with no white outline, no pale rim and no glow around it. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "320",
+    "mode": "background",
+    "diagonal": true,
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

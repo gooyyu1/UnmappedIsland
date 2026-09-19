@@ -264,7 +264,10 @@ function firstDayReaching(values: readonly number[], threshold: number): number 
   return values.findIndex((value) => value >= threshold) + 1;
 }
 
-describe('ホームシック(docs/world/Characters.md ホームシック節)', () => {
+// 1件が95日ぶんの暮らしを3本まで生きるので、`vite.config.ts` の予算には収まらない。**名乗る値は
+// 実測の何倍も上へ置く**——この検査はCIが混み合った回に既定の5秒を越えて、本物の赤と見分けの
+// 付かない赤を出した（issue #2376）。
+describe('ホームシック(docs/world/Characters.md ホームシック節)', { timeout: 30_000 }, () => {
   it('漂着した最初のひと月は溜まらない', () => {
     // 生き延びるだけで手一杯の29日は、孤独がoccupied段に留まる。
     const trace = live(29);

@@ -47,7 +47,7 @@ async function readRefAudit(pendingRefAudit: () => boolean): Promise<unknown> {
       pendingDecisions: () => 0,
       unsummarizedAnalyses: () => 0,
       pendingRefAudit,
-      log: () => {},
+      sayIncomplete: () => {},
       now: new Date('2026-09-06T00:00:00Z'),
       settleMinutes: 10,
       taken: {},
@@ -60,7 +60,7 @@ async function pendingDecisions(): Promise<unknown> {
     await readBoard({
       gh: EMPTY_GH,
       sessions: () => [],
-      log: () => {},
+      sayIncomplete: () => {},
       now: new Date('2026-09-06T00:00:00Z'),
       settleMinutes: 10,
       taken: {},
@@ -101,7 +101,7 @@ describe('スメルを拾う係が読む窓（board-design.md 4.4.2）', () => {
   /** `gh` へ渡った引数を控えながら盤面を1つ組む。`merged` はマージ済みPRの一覧として返る。 */
   async function readWith(merged: readonly unknown[] = []) {
     const calls: string[][] = [];
-    const log: string[] = [];
+    const sayIncomplete: string[] = [];
     const gh = (args: readonly string[]): string => {
       calls.push([...args]);
       if (args[0] === 'api' && args[1] === 'graphql') return '{"data":{}}';
@@ -115,12 +115,12 @@ describe('スメルを拾う係が読む窓（board-design.md 4.4.2）', () => {
       sessions: () => [],
       pendingDecisions: () => 0,
       unsummarizedAnalyses: () => 0,
-      log: (line) => log.push(line),
+      sayIncomplete: (line) => sayIncomplete.push(line),
       now: NOW,
       settleMinutes: 10,
       taken: {},
     });
-    return { merged: calls.find((args) => args.includes('merged')), log: log.join('\n') };
+    return { merged: calls.find((args) => args.includes('merged')), sayIncomplete: sayIncomplete.join('\n') };
   }
 
   // 窓が間隔を下回ると、間に入ったぶんが誰にも読まれないまま落ちる（#1787）。
@@ -143,11 +143,11 @@ describe('スメルを拾う係が読む窓（board-design.md 4.4.2）', () => {
   // **黙って切らない。** 切られた側は「1件も無い」と同じ形になり、次の周も同じに読まれる。
   it('引きすぎの栓に当たった周は、全部を見ていないと言う', async () => {
     const many = Array.from({ length: MERGED_CAP }, (_, index) => ({ number: index, comments: [] }));
-    expect((await readWith(many)).log).toContain('マージ済みPRが上限');
+    expect((await readWith(many)).sayIncomplete).toContain('マージ済みPRが上限');
   });
 
   it('栓に届いていない周は言わない', async () => {
-    expect((await readWith([{ number: 1, comments: [] }])).log).not.toContain('上限');
+    expect((await readWith([{ number: 1, comments: [] }])).sayIncomplete).not.toContain('上限');
   });
 });
 
@@ -177,7 +177,7 @@ describe('開いている issue は、上限で切らずに全部引く', () => 
       sessions: () => [],
       pendingDecisions: () => 0,
       unsummarizedAnalyses: () => 0,
-      log: () => {},
+      sayIncomplete: () => {},
       now: new Date('2026-09-07T12:00:00Z'),
       settleMinutes: 10,
       taken: {},
@@ -208,7 +208,7 @@ describe('開いている issue は、上限で切らずに全部引く', () => 
       sessions: () => [],
       pendingDecisions: () => 0,
       unsummarizedAnalyses: () => 0,
-      log: () => {},
+      sayIncomplete: () => {},
       now: new Date('2026-09-07T12:00:00Z'),
       settleMinutes: 10,
       taken: {},

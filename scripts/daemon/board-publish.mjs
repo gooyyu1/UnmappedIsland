@@ -20,7 +20,14 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { UNREADABLE, boardState, readLastPatrol, readLedger } from './board-state.mjs';
+import {
+  boardState,
+  readLastPatrol,
+  readNotes,
+  readPartialNotes,
+  readRounds,
+  readUnreadable,
+} from './board-state.mjs';
 import { issueBody } from './board.mjs';
 import { gh as runGh } from './spawn.mjs';
 
@@ -44,16 +51,22 @@ const defaultWarn = (line) => writeSync(2, `${line}\n`);
  *
  * **見回りの記録も同じ理由でここから渡す。** 書くのは係のセッションで、**走ったこと自体が人に
  * 見えるのはこの本文だけ**（2.21.4）。
+ *
+ * **周の出来事も同じ**（2.20.3）。**置くのは1周を回す側で、人へ見せるのはここ**——周（既定30秒）と
+ * 書き出し（既定5分）は別の周期で走る別のプロセスなので、**デーモンの帳面が両者をつなぐ唯一の道。**
  */
 export async function publish({
   gh = runGh,
   body = issueBody,
   issue = ISSUE,
   warn = defaultWarn,
-  unreadableSince = readLedger(boardState())[UNREADABLE],
+  unreadable = readUnreadable(boardState()),
   patrol = readLastPatrol(boardState()),
+  blockedNotes = readNotes(boardState()),
+  partialNotes = readPartialNotes(boardState()),
+  events = readRounds(boardState()),
 } = {}) {
-  const text = await body({ gh, warn, unreadableSince, patrol });
+  const text = await body({ gh, warn, unreadable, patrol, blockedNotes, partialNotes, events });
   if (text === undefined) return false;
 
   // 本文は複数行なので、引数ではなくファイルで渡す（`board-round.mjs` の `RETURN` と同じ）。

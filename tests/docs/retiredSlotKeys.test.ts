@@ -98,9 +98,11 @@ const COMMENT_LINES: ProseMask = (lines) => {
 /**
  * 説明が書かれている行だけを、行番号を付けて返す。**空行と、説明でない行は落とす**——落とした跡が
  * 行番号の飛びになり、{@link paragraphs} がそこで段を切る。
+ *
+ * {@link yamlFences} と同じ理由で、行へ割るときに `\r` を残さない。
  */
 function proseLines(text: string, prose: ProseMask): ProseLine[] {
-  const lines = text.split('\n');
+  const lines = text.split(/\r?\n/);
   const keep = prose(lines);
   return lines
     .map((raw, index) => ({ line: index + 1, text: raw }))
@@ -129,10 +131,16 @@ function mentionsWithoutNotice(lines: readonly ProseLine[], keys: readonly strin
   return found;
 }
 
-/** `yaml` のコードフェンスの中身と、フェンスが始まる行。 */
+/**
+ * `yaml` のコードフェンスの中身と、フェンスが始まる行。
+ *
+ * **行へ割るときに `\r` を残さない。** CRLFの作業ツリーでは、連結した中身の**最後の行だけが孤立した
+ * `\r` で終わる**ので、`yaml` が `Unexpected scalar at node end` で読めなくなる（issue #2171。
+ * 割る側で `\r` を落とす決めごとは `scripts/markdownFences.mjs`）。
+ */
 function yamlFences(text: string): { readonly line: number; readonly body: string }[] {
   const found: { line: number; body: string }[] = [];
-  const lines = text.split('\n');
+  const lines = text.split(/\r?\n/);
   let opened: { line: number; yaml: boolean } | null = null;
   lines.forEach((raw, index) => {
     const fence = /^\s*```(\w*)\s*$/.exec(raw);
@@ -261,5 +269,37 @@ describe('廃止したスロットの宣言キー', () => {
       retiredSlotKeysIn(`object_defs:\n  x:\n    ${live}: false\n    slots:\n      s: {}\n`).retired,
       'スロットの外は、廃止した綴りではない',
     ).toEqual([]);
+  });
+
+  /**
+   * `docs/**` は `.gitattributes` の射程外（改行コードに依らず読める側で受ける決まり）なので、
+   * **CRLFで取り出した作業ツリーでも同じ答えが出る**ことを、ここで見張る。
+   */
+  it('改行コードで答えが変わらない', () => {
+    const live = LIVE_ELSEWHERE[0];
+    const dead = DEAD[0];
+    const lf = [
+      '# 例',
+      '',
+      '```yaml',
+      'slots:',
+      `  s: {${live}: false}`,
+      '```',
+      '',
+      `枠には \`${dead}\` を書きます。`,
+      '',
+    ].join('\n');
+    const crlf = lf.replace(/\n/g, '\r\n');
+
+    // フェンスの中身は `yaml` へ渡る。`\r` が残ると、**読めずに例が1つ見られないまま緑**になる。
+    expect(yamlFences(lf).map(({ body }) => retiredSlotKeysIn(body).retired)).toEqual([[live]]);
+    expect(yamlFences(crlf)).toEqual(yamlFences(lf));
+
+    // 説明の側は行を値として持つので、`\r` が乗ると行がそのまま別物になる。
+    expect(proseLines(lf, ALL_LINES)).toEqual(proseLines(crlf, ALL_LINES));
+    expect(
+      mentionsWithoutNotice(proseLines(crlf, ALL_LINES), DEAD),
+      '断りの無い綴りを拾えている',
+    ).toEqual([`8 ${dead}`]);
   });
 });

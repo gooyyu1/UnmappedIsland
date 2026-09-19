@@ -20,7 +20,7 @@ export interface LiveValueSession {
 /** 外を触る手。省いたものは本物が入る。 */
 export interface SurveyValuesDeps {
   call?: (tool: string, args?: Record<string, unknown>) => Promise<string>;
-  gh?: (args: readonly string[], options?: { allowFail?: boolean }) => string | undefined;
+  gh?: (args: readonly string[], options?: { sayWhyNot?: (line: string) => void }) => string | undefined;
   envs?: () => readonly { readonly name: string; readonly id: string }[];
   /** 畳まれていないセッション（[`live-sessions.mjs`](live-sessions.mjs)）。引けなければ投げる。 */
   sessions?: () => readonly LiveValueSession[] | Promise<readonly LiveValueSession[]>;

@@ -70,6 +70,8 @@ describe('地形生成の宣言に足した未知キー', () => {
     expect(passesLoad(readFileSync(GENERATION_PATH, 'utf8'))).toBe(true);
   });
 
+  // 亜種のpropsへ足したぶんは参照の検証まで降りないと分からない（ビルドが要る）。そこだけ世界を
+  // 組み直すので、既定の5秒には収まらない。
   it('どのmappingへ足してもロードが落ちる', () => {
     const text = readFileSync(GENERATION_PATH, 'utf8');
     const paths = mappingPaths(parseDocument(text));
@@ -82,5 +84,5 @@ describe('地形生成の宣言に足した未知キー', () => {
     });
 
     expect(slippedThrough.map((path) => path.join('.'))).toEqual([]);
-  });
+  }, 60_000);
 });
