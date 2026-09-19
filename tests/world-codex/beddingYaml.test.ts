@@ -165,11 +165,34 @@ describe('bedding.yamlの寝床とハンモック', () => {
 
   it('敷物を敷けば、1日に戻る体力が地面の上を上回る', () => {
     // docs/world/Bedding.md 4節。**1時間あたりで上回るだけでは足りない**——寝床の上は眠る時間が
-    // 2時間短いので、割が地面の 2/3 まで下がると1日の合計で逆転し、敷物を敷くほど損になる。
+    // 2時間短い（24 tick 対 32 tick）ので、寝床の割が地面の 4/3（1.667/tick）を下回ると1日の合計で
+    // 逆転し、敷物を敷くほど損になる。
     const { bed, player } = bedOnBeach(false);
 
     expect(perDay(bed, player, 'sleep')).toBeGreaterThan(perDay(player, player, 'nap'));
   });
+
+  it('重い荷を担ぎ通した1日の収支では、敷物だけの寝床と地面の仮眠が並ぶ', () => {
+    // docs/world/Bedding.md 4節。**段1を敷く値打ちは、削りを数えない日にしか出ない**——起きている
+    // 時間が2時間伸びたぶんの削りが、戻る量の差をちょうど相殺する。回復の側と削りの側のどちらを
+    // 動かしても、この釣り合いが崩れてここが落ちる。
+    const { bed, player } = bedOnBeach(false);
+    const drain = heavyDrainPerTick();
+
+    expect(netPerDay(bed, player, 'sleep', drain)).toBe(netPerDay(player, player, 'nap', drain));
+  });
+
+  /** その休息だけで夜を回し、起きている間ずっと荷を担いだときの、1日の体力の収支。 */
+  function netPerDay(
+    host: WorldObject,
+    player: WorldObject,
+    actionName: string,
+    drainPerTick: number,
+  ): number {
+    const ticks = ticksOf(host, player, actionName);
+    const asleep = ticksAsleepPerDay(restOn(host, player, actionName).wakefulness, ticks);
+    return perDay(host, player, actionName) - drainPerTick * (TICKS_PER_DAY - asleep);
+  }
 
   /** その休息だけで夜を回したときに、1日で戻る体力。休息の主は寝床でもキャラクタ自身でもよい。 */
   function perDay(host: WorldObject, player: WorldObject, actionName: string): number {
