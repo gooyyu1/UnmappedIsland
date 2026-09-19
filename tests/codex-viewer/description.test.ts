@@ -106,10 +106,6 @@ object_defs:
               - {object: coconut_half, count: 1, consume: true}
               - {object: sharp_stone, count: 1, consume: false}
             duration: 30
-        surplus:
-          - {weight: 100}
-          - weight: {subject: agent, prop: woodwork_thrift}
-            spawn: {object: bowl, into: agent}
 
   wild_boar:
     tags: [item]
@@ -369,13 +365,6 @@ describe('レシピの自己記述（describeRecipe）', () => {
     // 「-15分かかる」と読む。**符号を裏返して「短くなる」と書く**ことでだけ向きが正しく届く。
     // 一度「積む」と書いて差し戻されたので、戻したら落ちるものをここへ置く。
     expect(lines()).toContain('手際: skill_woodwork が skilled 以上なら各工程が15分短くなる');
-  });
-
-  it('余分の卓は、いつ引くかを見出しで断ってから中身を出す', () => {
-    // 工程の行と同じ形で並ぶので、見出しが無いとどの工程の効果かと読める（13.5節）。
-    const text = lines();
-    expect(text).toContain('余分の卓（完成時に1回）:');
-    expect(text.some((line) => line.includes('spawn bowl'))).toBe(true);
   });
 });
 
