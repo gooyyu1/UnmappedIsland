@@ -292,12 +292,15 @@ Claude Code 本体が入れているもので、リポジトリの設定では�
    結果を書く場所なので、まだ中身が無い。**位置で切らないこと**（節の並びに決まりは無く、
    `## 仮決め`・`## 見た目` を後ろへ置くPRがある。落とすと、レビュアーが見ると決めて
    いる節が渡らないまま「要る節が無い」と挙がる）。
-2. 渡すのは、**外のレビュアーが見るのと同じ3つだけ**——差分（`git diff origin/main...HEAD`）・issue の
-   番号（閉じる issue が無いならPRの主題）・本文の原稿のパス。**差分の起点は `origin/main` で、
-   ローカルの `main` ではない**——作業ブランチは `origin/main` から切るのでローカルの `main` は一度も
-   動かず、クローンしたときのまま古い環境（クラウドのセッション）では、そこから先に `origin/main` へ
-   入った他人の変更が丸ごと差分に混ざる。指示は「`agent-ops/review-criteria.md` の
-   観点で読み、問題のあった箇所だけを返せ」。**観点の一覧も `origin/main` の版を読ませる**
+2. 渡すのは、**外のレビュアーが見るのと同じ3つだけ**——差分・issue の番号（閉じる issue が無いなら
+   PRの主題）・本文の原稿のパス。差分は `git fetch origin main && git diff origin/main...HEAD`。
+   **起点は `origin/main` で、ローカルの `main` ではない**——作業ブランチは `origin/main` から切るので
+   ローカルの `main` は一度も動かず、クローンしたときのまま古い環境（クラウドのセッション）では、
+   そこから先に `origin/main` へ入った他人の変更が丸ごと差分に混ざる。**その `origin/main` を先に
+   取り直すのは、クラウドのクローンには参照そのものが無いことがあるため**——無いまま打つと
+   `unknown revision` で1行も読めない（下の `git show` も同じ参照を引く）。指示は
+   「`agent-ops/review-criteria.md` の観点で読み、問題のあった箇所だけを返せ」。
+   **観点の一覧も `origin/main` の版を読ませる**
    （`MSYS2_ARG_CONV_EXCL='*' git show origin/main:agent-ops/review-criteria.md`。**手元の bash では
    この前置きを落とすと引数が `origin\main;agent-ops\review-criteria.md` に化けて読めない**）
    ——作業ツリーに在るのはブランチを切った時点の
