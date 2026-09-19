@@ -11,7 +11,7 @@ export interface RoundDeps {
     args: readonly string[],
     options?: { input?: string; capture?: boolean; env?: Record<string, string> },
   ) => ScriptResult;
-  gh?: (args: readonly string[], options?: { allowFail?: boolean }) => string | undefined;
+  gh?: (args: readonly string[], options?: { sayWhyNot?: (line: string) => void }) => string | undefined;
   sessions?: () => readonly unknown[] | Promise<readonly unknown[]>;
   /** `archive/` に入っていない判断の履歴の数（`board-read.mjs`）。省くと本物のリポジトリを数える。 */
   pendingDecisions?: () => number;
@@ -60,5 +60,17 @@ export function pruneTaken(
 export function trackIdle(
   taken: Readonly<Record<string, string>>,
   board: { sessions: readonly { id: string; status: string }[] },
+  now: string,
+): Record<string, string>;
+
+/**
+ * その周に出ていた断りを、出始めた時刻とともに台帳へ写す（`agent-ops/board-design.md` 2.20.3）。
+ * 頭は `board-state.mjs` の `NOTE_PREFIX`（配れない理由）か `PARTIAL_PREFIX`（盤面の欠け）。
+ * 消えた断りは落ち、続いている断りの時刻は動かない。
+ */
+export function trackNotes(
+  taken: Readonly<Record<string, string>>,
+  prefix: string,
+  notes: readonly string[],
   now: string,
 ): Record<string, string>;
