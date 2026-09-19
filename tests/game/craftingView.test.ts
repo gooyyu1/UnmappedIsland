@@ -189,6 +189,61 @@ object_defs:
     ).toBe(1);
   });
 
+  it('前の工程で道具として使う物は、後の工程で素材として数え直せる', () => {
+    // 同時に満たせないのは同じ工程の中だけ（GameElementDefinition.md 13.1節）。残りの要求へ一度に
+    // 当てると、道具に当てた石を素材の側で数え落とし、要らない石を探させることになる。
+    const mini = miniGame(`
+in_progress_tags: [item]
+object_defs:
+  sharp_stone: {tags: [item, cutting_tool]}
+  cord:
+    tags: [item]
+    recipes:
+      basic:
+        steps:
+          - requires: [{tag: cutting_tool, count: 2, consume: false}]
+            duration: 30
+          - requires: [{object: sharp_stone, count: 2, consume: true}]
+            duration: 30
+`);
+    const wip = mini.createObject(inProgressObjectName('cord', 'basic'), mini.slot('items', mini.land));
+    for (let i = 0; i < 2; i += 1)
+      mini.createObject('sharp_stone', wip.getSlot(mini.codex.vocabulary.engine.materialsSlotId));
+
+    const materials = craftingMaterials(wip);
+
+    expect(
+      materials?.map((material) => `${material.held}/${material.needed}`),
+      '石2つで完成まで足りる（削ってから削り取られる）',
+    ).toEqual(['2/2', '2/2']);
+  });
+
+  it('同じ型を続けて消費する工程では、入っている数を工程の数だけ数えない', () => {
+    // 素材は工程ごとに無くなるので、要求の側は足し合わせる（3）。入っている側も、消費した物を
+    // 次の工程へ持ち越さずに数える——持ち越すと、葉2枚で3枚ぶん揃ったことになる。
+    const mini = miniGame(`
+in_progress_tags: [item]
+object_defs:
+  leaf: {tags: [item]}
+  mat:
+    tags: [item]
+    recipes:
+      basic:
+        steps:
+          - requires: [{object: leaf, count: 1, consume: true}]
+            duration: 30
+          - requires: [{object: leaf, count: 2, consume: true}]
+            duration: 30
+`);
+    const wip = mini.createObject(inProgressObjectName('mat', 'basic'), mini.slot('items', mini.land));
+    for (let i = 0; i < 2; i += 1)
+      mini.createObject('leaf', wip.getSlot(mini.codex.vocabulary.engine.materialsSlotId));
+
+    const materials = craftingMaterials(wip);
+
+    expect(materials?.map((material) => `${material.held}/${material.needed}`)).toEqual(['2/3']);
+  });
+
   it('後の工程が要求する型も枠を持つが、今の工程のものとは区別する', () => {
     const mini = miniGame(`
 in_progress_tags: [item]

@@ -119,9 +119,10 @@ object_defs:
     tags: [item, cutting_tool]
   stone_axe:
     tags: [item, cutting_tool]
-  # タグ要求と型要求が同じ工程に並ぶレシピ。**枠は全工程ぶんまとめて並ぶ**（inProgressObjects）ので、
-  # 枠の順（sharp_stone→cutting_tool＝箱の中身の順）と2工程目の要求の順は食い違う——先に書いた要求から
-  # 先着で取る実装が、尖った石を刃物の側へ当てて型要求を空振りさせる形。
+  # タグ要求と型要求が同じ工程（2工程目）に並ぶレシピ。**先に書いた要求から先着で取る実装は、尖った石を
+  # 刃物の側へ当てて型要求を空振りさせる**——2工程目が cutting_tool を先に書いていて、かつ箱の中身も
+  # 尖った石が先に並ぶため（枠は全工程ぶんまとめて並ぶので、中身の順は sharp_stone→cutting_tool、
+  # inProgressObjects）。どちらか片方の順が逆なら、先着でも通ってしまう。
   cord:
     tags: [item]
     recipes:

@@ -2,11 +2,10 @@ import type { StartedGame } from '../../domain/generation/NewGame';
 import type { WorldObject } from '../../domain/WorldObject';
 import { autoFillMaterials } from '../../domain/autoFill';
 import {
-  allocateContentsToRequirements,
   tryAdvanceCrafting,
   currentStepIsSupplied,
   currentStepOf,
-  materialsSlotOf,
+  heldPerRemainingRequirement,
   recipeOf,
   remainingRequirementsOf,
 } from '../../domain/crafting';
@@ -33,11 +32,12 @@ export interface CraftingMaterial {
    */
   readonly objectGlobalIds: readonly ObjectGlobalId[];
   /**
-   * 残りの工程が要求する数と、そのうち入っている中身で満たせている数。
+   * 残りの工程が要求する数と、そのうち入っている中身で満たせている数
+   * （crafting.heldPerRemainingRequirement）。
    *
-   * **`held`は要求ごとに数え直した数ではない**（crafting.allocateContentsToRequirements）——1つの物は
-   * 1つの要求しか満たさないので、尖った石1つを`cutting_tool`と`sharp_stone`の両方で数えると、
-   * どちらの枠も満ちて見えるのに作業できない形になる。
+   * **`held`は枠ごとに数え直した数ではない**——同じ工程の中では1つの物が1つの要求しか満たさないので、
+   * 尖った石1つを`cutting_tool`と`sharp_stone`の両方で数えると、どちらの枠も満ちて見えるのに
+   * 作業できない形になる。
    */
   readonly needed: number;
   readonly held: number;
@@ -119,15 +119,15 @@ export function craftingMaterials(container: WorldObject): readonly CraftingMate
   if (recipeOf(container) === undefined) return undefined;
 
   const inStep = new Set(currentStepOf(container)?.requirements.map((r) => r.match.key));
-  const remaining = remainingRequirementsOf(container);
-  // 入っている数は要求ごとに数えず、**要求の並びへ1回割り当てて**その結果を読む——工程を進めるときに
-  // 消える物の決め方（crafting）と同じ答えでなければ、満ちて見える枠を出したまま作業を断ることになる。
-  const allocated = allocateContentsToRequirements(materialsSlotOf(container)?.contents ?? [], remaining);
+  // 入っている数は枠ごとに数え直さず、**要求へ割り当てた結果**を読む（heldPerRemainingRequirement）
+  // ——工程を進めるときに消える物の決め方と違う数え方をすると、満ちて見える枠を出したまま作業を
+  // 断ることになる。
+  const held = heldPerRemainingRequirement(container);
 
-  return remaining.map((requirement) => ({
+  return remainingRequirementsOf(container).map((requirement) => ({
     objectGlobalIds: requirement.match.matchingDefs(codex.objects).map((def) => def.globalId),
     needed: requirement.count,
-    held: allocated.get(requirement)?.length ?? 0,
+    held: held.get(requirement.match.key) ?? 0,
     inCurrentStep: inStep.has(requirement.match.key),
   }));
 }
