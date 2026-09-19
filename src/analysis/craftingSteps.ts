@@ -23,8 +23,8 @@ import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveRea
 import type { CraftingInput, CraftingStep, PropertyDelta, StepOutcome } from './CraftingStep';
 import { UNCHANGED_OUTCOMES, collectOutputs, combineOutcomes } from './CraftingStep';
 import { MINUTES_PER_TICK } from '../domain/worldTime';
-import type { BecomeDestinationResolver, EffectReading } from './effectOutcomes';
-import { consumesRoot, destroysRoot, readEffect } from './effectOutcomes';
+import type { BecomeDestinationResolver, EffectReading, MovedOutStock } from './effectOutcomes';
+import { consumesRoot, destroysRoot, movedOutStockOf, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
 import type {
   StaticSubjectReader,
@@ -40,7 +40,7 @@ import {
   staticValueOf,
   trackingResolverOf,
 } from './staticValue';
-import type { PropertyGlobalId } from '../domain/GlobalId';
+import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 
 /**
  * 定義を「入力 → 工程 → 出力」の形へ均す（CraftingStep参照）。
@@ -276,10 +276,17 @@ function interactionStep(
       {
         kind: 'object',
         objectGlobalId: def.globalId,
-        consumed: consumesRoot(reading, 'self') || partOfChainConsumingSelf(codex, def, trigger),
-        count: 1,
+        ...consumptionOf(
+          consumesRoot(reading, 'self') || partOfChainConsumingSelf(codex, def, trigger),
+          movedOutStockOf(
+            reading,
+            'self',
+            stockPerUnitOf(() => [def], outer),
+          ),
+          (propertyGlobalId) => emptiedIntoOf(codex, def, propertyGlobalId, outer),
+        ),
       },
-      ...instrumentInputOf(trigger, instrument, reading),
+      ...instrumentInputOf(codex, trigger, instrument, reading, outer),
     ],
     outputs: collectOutputs(reading.outcomes),
     // プレイヤーが手を止めている間に時間が進むので、払う時間と経過する時間は等しい。
@@ -577,7 +584,12 @@ function recipeStep(
     ownerGlobalId: def.globalId,
     inputs: recipe.steps.flatMap((step) =>
       step.requirements
-        .map((requirement) => inputOf(requirement.match.reading, requirement.consume, requirement.count))
+        .map((requirement) =>
+          inputOf(requirement.match.reading, {
+            consumed: requirement.consume,
+            count: requirement.count,
+          }),
+        )
         .filter((input): input is CraftingInput => input !== undefined),
     ),
     outputs: collectOutputs(outcomes),
@@ -667,19 +679,118 @@ function selfPropertyValuesAfterOf(
  * 型が定まっているならその型そのものが入力で、定まらないときだけ宣言（タグ）のまま並べる。
  */
 function instrumentInputOf(
+  codex: WorldCodex,
   trigger: InteractionTrigger,
   instrument: ObjectDef | undefined,
   effect: EffectReading,
+  outer: StaticValueResolver | undefined,
 ): readonly CraftingInput[] {
   const triggerReading = trigger.reading;
   if (triggerReading.kind !== 'drag') return [];
 
-  const consumed = consumesRoot(effect, 'instrument');
-  if (instrument !== undefined)
-    return [{ kind: 'object', objectGlobalId: instrument.globalId, consumed, count: 1 }];
+  // 型が定まらない相手でも在庫は問える——きっかけが受け付ける型を並べ、最も少ないものに合わせる。
+  const types = () =>
+    instrument !== undefined
+      ? [instrument]
+      : [...codex.objects].filter((candidate) =>
+          TypeMatchRule.readingMatches(triggerReading.with, candidate),
+        );
+  const consumption = consumptionOf(
+    consumesRoot(effect, 'instrument'),
+    movedOutStockOf(effect, 'instrument', stockPerUnitOf(types, outer)),
+    // 空になった先の型は、相手の型が定まっているときだけ解ける（候補ごとに別の器になる）。
+    (propertyGlobalId) =>
+      instrument === undefined ? undefined : emptiedIntoOf(codex, instrument, propertyGlobalId, outer),
+  );
 
-  const input = inputOf(triggerReading.with, consumed, 1);
+  if (instrument !== undefined)
+    return [{ kind: 'object', objectGlobalId: instrument.globalId, ...consumption }];
+
+  const input = inputOf(triggerReading.with, consumption);
   return input === undefined ? [] : [input];
+}
+
+/** 入力1件を、1回の実行でいくつ・どう使うか（CraftingInput参照）。 */
+interface InputConsumption {
+  readonly consumed: boolean;
+  readonly count: number;
+  readonly emptiedInto?: ObjectGlobalId;
+}
+
+/**
+ * 入力1件が、1回の実行でいくつ要るか（CraftingInput参照）。**その型が残らないなら丸ごと1つ**で、
+ * 型は残るが中身を持ち出すならその割合——1杯で1個ぶんを使い切る殻の器と、16杯ぶんを抱える甕は、
+ * 同じ飲用でも払う量が違う。
+ *
+ * 中身を持ち出す入力には、**尽きた先に残る型**（空の器）も添える——戻ってくるぶんは払っていない
+ * （CraftingInput.emptiedInto）。
+ */
+function consumptionOf(
+  usedUp: boolean,
+  movedOut: MovedOutStock,
+  emptiedInto: (propertyGlobalId: PropertyGlobalId) => ObjectGlobalId | undefined,
+): InputConsumption {
+  if (usedUp || movedOut.share <= 0 || movedOut.emptiedPropertyGlobalId === undefined)
+    return { consumed: usedUp, count: 1 };
+  return {
+    consumed: true,
+    count: movedOut.share,
+    emptiedInto: emptiedInto(movedOut.emptiedPropertyGlobalId),
+  };
+}
+
+/**
+ * その値が尽きたとき、入力がどの型になって残るか（端のイベントの`become`、6.3節）。**中身を出し切った
+ * 器が空の器へ戻るのはこの宣言**で、尽きても型が変わらない——消える・何も起きない——ならundefined。
+ *
+ * 見るのは下端だけ。出ていく量は必ず減る向きなので、先に届く端はそちらしかない。
+ */
+function emptiedIntoOf(
+  codex: WorldCodex,
+  def: ObjectDef,
+  propertyGlobalId: PropertyGlobalId,
+  outer: StaticValueResolver | undefined,
+): ObjectGlobalId | undefined {
+  const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
+  if (propertyDef === undefined) return undefined;
+
+  const effect = propertyDef.rangeEvents().find(([label]) => label === 'on_min')?.[1];
+  if (effect === undefined) return undefined;
+
+  // 端のイベントの中では、書き換わるのはその値を持つ個体自身（self）。
+  const reading = readEffect(
+    effect,
+    staticResolverOf(def, 'lowest', outer),
+    becomeDestinationResolverOf(codex, def, undefined),
+  );
+  const spawned = reading.outcomes.flatMap((outcome) => outcome.spawns);
+  return spawned.length === 1 ? spawned[0].objectGlobalId : undefined;
+}
+
+/**
+ * 入力1つがそのプロパティに抱えている量を答える手立て（`movedOutStockOf`へ渡す）。
+ *
+ * **rangeを宣言していれば端から端まで。** 入手した個体は口まで満ちているものとして数える
+ * ——器を満たす工程（汲む・注ぐ）はどれも上限まで入れる。rangeが無ければ宣言値そのもので、
+ * それが個体の抱えている全部（薪1本の持つ熱量）。
+ *
+ * **候補が複数あるなら最も少ないものに合わせる**——どの型が来ても足りるとは言えないので、
+ * 足りない側へ倒す（`partOfChainConsumingSelf`と同じ選び方）。
+ */
+function stockPerUnitOf(
+  types: () => readonly ObjectDef[],
+  outer: StaticValueResolver | undefined,
+): (propertyGlobalId: PropertyGlobalId) => number | undefined {
+  return (propertyGlobalId) => {
+    let smallest: number | undefined;
+    for (const def of types()) {
+      const range = def.tryGetPropertyDef(propertyGlobalId)?.range;
+      const stock =
+        range === undefined ? staticValueOf(def, propertyGlobalId, 'lowest', outer) : range.max - range.min;
+      if (stock !== undefined && (smallest === undefined || stock < smallest)) smallest = stock;
+    }
+    return smallest;
+  };
 }
 
 /**
@@ -714,9 +825,9 @@ function rootTypeOf(
  * **否定形（`{not: ...}`、4.1節）は入力にならない。** 図のノードは1つの型かタグを指すもので、
  * 「その型でないもの」を名指しできない。同梱の世界に否定を書いた相手は無い。
  */
-function inputOf(reading: TypeMatchReading, consumed: boolean, count: number): CraftingInput | undefined {
+function inputOf(reading: TypeMatchReading, consumption: InputConsumption): CraftingInput | undefined {
   if (reading.kind === 'not') return undefined;
   return reading.kind === 'tag'
-    ? { kind: 'tag', tagGlobalId: reading.tagGlobalId, consumed, count }
-    : { kind: 'object', objectGlobalId: reading.objectGlobalId, consumed, count };
+    ? { kind: 'tag', tagGlobalId: reading.tagGlobalId, ...consumption }
+    : { kind: 'object', objectGlobalId: reading.objectGlobalId, ...consumption };
 }

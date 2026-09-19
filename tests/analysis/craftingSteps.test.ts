@@ -729,3 +729,120 @@ object_defs:
     });
   });
 });
+
+/**
+ * 中身を外へ移す工程が、その入力を「使えば減るもの」として読むこと（issue #2150）。
+ *
+ * 器は`transfer`で中身が減るだけで消えないので、消えるかだけを問うと**繰り返し使える道具**になり、
+ * 中身を用意する時間が単位あたりの時間から丸ごと落ちる。同梱の定義で効いていることの検査は
+ * `tests/diagnostics/containerContentCost.test.ts`。
+ */
+describe('中身を持ち出す入力（craftingSteps）', () => {
+  const YAML = `
+traits:
+  liquid:
+    tags: [liquid]
+
+  water_content:
+    tags: [water]
+    interactions:
+      # 自分の中身から1杯ぶんを飲む。器は消えない。
+      drink:
+        trigger: menu
+        duration: 5
+        transfer: {amount: 25, from_prop: fill, to: agent, to_prop: hydration}
+      # 相手（タグ指定）の中身を空にする。**どの器が来ても足りる量**で数えるので、最も小さい器に合わせる。
+      water_plant:
+        trigger: {drag: {tag: water}}
+        duration: 5
+        transfer: {amount: 50, from: instrument, from_prop: fill, to: self, to_prop: fill}
+
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      hydration: {value: 96, range: {min: 0, max: 96}}
+
+  jug:
+    tags: [item]
+    props:
+      fill:
+        value: 0
+        range: {min: 0, max: 100}
+        on_min:
+          become: {content: none}
+      weight: {value: 500}
+      # 使えば傷むが、外へは何も出ていない値。
+      durability: {value: 200, range: {min: 0, max: 200}}
+    interactions:
+      # 磨くと刃こぼれならぬ器の傷みが進む。減るが、物としては何も出ていない。
+      scrub:
+        trigger: menu
+        duration: 5
+        add: {self: {durability: -50}}
+    variation_axes:
+      content: {of: {tag: liquid}}
+
+  cup:
+    tags: [item]
+    props:
+      weight: {value: 100}
+      fill:
+        value: 0
+        range: {min: 0, max: 25}
+        on_min:
+          become: {content: none}
+    variation_axes:
+      content: {of: {tag: liquid}}
+
+  water_content:
+    traits: [liquid, water_content]
+`;
+
+  const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset();
+  const id = (name: string) => codex.objectNames.getId(name);
+  const stepOf = (objectName: string, stepName: string): CraftingStep =>
+    craftingStepsOf(codex, codex.objects.get(id(objectName))).find((step) => step.name === stepName)!;
+
+  it('1回で持ち出す量が、器1つぶんの何割かになる', () => {
+    // 100抱えた器から25を出すので4分の1。飲み干した先は中身を落とした空の器。
+    expect(stepOf('jug__content_water_content', 'drink').inputs).toEqual([
+      {
+        kind: 'object',
+        objectGlobalId: id('jug__content_water_content'),
+        consumed: true,
+        count: 0.25,
+        emptiedInto: id('jug'),
+      },
+    ]);
+  });
+
+  it('1杯ぶんしか抱えない器は、1回で1個まるごと減る', () => {
+    expect(stepOf('cup__content_water_content', 'drink').inputs[0]).toEqual({
+      kind: 'object',
+      objectGlobalId: id('cup__content_water_content'),
+      consumed: true,
+      count: 1,
+      emptiedInto: id('cup'),
+    });
+  });
+
+  it('相手をタグで指した入力は、最も少ない在庫に合わせる', () => {
+    // 50を出す相手は、100抱える器なら半分だが、25しか抱えない器では1個まるごと。どちらが来ても
+    // 足りるのは後者の数え方。空になる先は候補ごとに違うので添えない。
+    expect(stepOf('jug__content_water_content', 'water_plant').inputs[1]).toEqual({
+      kind: 'tag',
+      tagGlobalId: codex.tagNames.getId('water'),
+      consumed: true,
+      count: 1,
+    });
+  });
+
+  it('使って傷むだけの値は、持ち出しに数えない', () => {
+    // 200のうち50を削る工程。割合で数えると4分の1を消費したことになるが、物としては何も出ていない
+    // ので、器は道具のまま（何回使えるかはdurationsが別に出す）。
+    expect(stepOf('jug', 'scrub').inputs).toEqual([
+      { kind: 'object', objectGlobalId: id('jug'), consumed: false, count: 1 },
+    ]);
+  });
+});
