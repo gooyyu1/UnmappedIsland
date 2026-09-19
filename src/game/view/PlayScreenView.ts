@@ -905,7 +905,7 @@ export function fromGameSession(
     statuses: entriesWithTag(game.player.instance, codex.propertyTagNames.tryGetId(STATUS_TAG)),
     propertyCategories,
     properties: everyRowOf(game.player.instance),
-    // dayは1始まり（GameElementDefinition.md 17節）なので、生存日数は0始まりへ直す。
+    // dayは1始まりで上限を持たない（GameElementDefinition.md 15.1節）ので、生存日数は0始まりへ直す。
     elapsedDays: game.world.day - 1,
     hour: game.world.hour,
     minute: game.world.minute,

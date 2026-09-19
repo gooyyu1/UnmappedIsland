@@ -229,14 +229,31 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
   }
 
   /**
-   * その土地に骨組みを差した寝台を据え、涼しい季節の夜に1回眠る間に動いた熱（kcal）。満タンだと
+   * 世界に在る詰め物の型名。**まだ1つも無い。** 引くのは `stuffing` タグで、これは寝床が導入する
+   * 語彙として決まっているもの（docs/world/Bedding.md 概要。部品のタグは `bed_frame` と `stuffing`）。
+   *
+   * **枠が受け入れる型で引く形は採れない**——`structure` 枠には段にならない部品（枕・蚊帳のような、
+   * 寒さの入口を押し下げないもの）も将来入りうるし、羽毛と植物繊維（同 5節）が両方現れたら、
+   * 1つの寝床へまとめて差すことになって枠の上限で落ちる。
+   */
+  function stuffings(): readonly string[] {
+    const stuffingId = codex.tagNames.tryGetId('stuffing');
+    if (stuffingId === undefined) return [];
+
+    return [...codex.objects]
+      .filter((objectDef) => !codex.isGenerated(objectDef) && objectDef.tags.includes(stuffingId))
+      .map((objectDef) => objectDef.name);
+  }
+
+  /**
+   * その土地に寝台を据えて `parts` を差し、涼しい季節の夜に1回眠る間に動いた熱（kcal）。満タンだと
    * 戻りが頭打ちに掛かるので半分から測る。
    *
    * **測るのは仮眠。** 通しの睡眠（6時間）は0時から始めると日射の帯を跨いで気温が動く（`core.yaml` の
    * `ambient_brightness` の段）。押し下げは境目への寄与で長さに比例しないので、削られるか戻るかは
    * どちらでも同じに決まる（`bedding.yaml` は nap と sleep へ同じ量を書く）。
    */
-  function warmthWhileSleepingIn(landName: string): number {
+  function warmthWhileSleepingIn(landName: string, parts: readonly string[]): number {
     coolSeasonSky(0, 'dark');
     standIn(landName);
     makeBrightEnoughForAnyAction(player, codex);
@@ -246,10 +263,11 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
       bed.moveToSlotOrRejection(lands.get(landName)!.getSlot(codex.slotNames.getId('fixtures'))),
       landName,
     ).toBeUndefined();
-    expect(
-      spawn('bed_frame').moveToSlotOrRejection(bed.getSlot(codex.slotNames.getId('structure'))),
-      landName,
-    ).toBeUndefined();
+    for (const part of parts)
+      expect(
+        spawn(part).moveToSlotOrRejection(bed.getSlot(codex.slotNames.getId('structure'))),
+        `${landName}の寝床へ${part}を差す`,
+      ).toBeUndefined();
 
     const warmth = property(player, 'warmth');
     warmth.setNumber((warmth.def.range?.max ?? 0) / 2);
@@ -266,10 +284,11 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
     return warmth.number - before;
   }
 
-  it('いちばん深い一着と骨組みを差した寝台で越せないのは、最も寒い土地の夜だけ', () => {
+  it('いちばん深い一着と寝台で越せる先は、詰め物が在るかで分かれる', () => {
     // docs/world/Bedding.md 4.2節。衣類だけで釣り合うのは海沿いの夜まで（SurvivalItems.md 5.1節）で、
-    // そこから上へ登れるかは寝床の段が決める。**最も寒い土地の夜はどの段でも越せない**——そこに
-    // 残るのは火（FireSystem.md 9.2節の炉の暖）。
+    // そこから上へ登れるかは寝床の段が決める。**骨組みまでで届くのはその1つ下の土地まで**で、
+    // 最も寒い土地の夜は詰め物まで仕上げて初めて越せる（docs/world/Bedding.md 4.2.1節）——詰め物が
+    // 世界に現れるまで、そこに残るのは火（FireSystem.md 9.2節の炉の暖）。
     coolSeasonSky(0, 'dark');
     const byCold = [...lands.keys()].sort((left, right) => temperatureAt(left) - temperatureAt(right));
     const coldest = byCold[0];
@@ -277,13 +296,24 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
     const garment = wearDeepestGarment();
 
     expect(
-      warmthWhileSleepingIn(nextColdest),
+      warmthWhileSleepingIn(nextColdest, ['bed_frame']),
       `${garment}を着て寝台で眠れば${nextColdest}の夜は越せる`,
     ).toBeGreaterThan(0);
-    expect(
-      warmthWhileSleepingIn(coldest),
-      `${garment}を着て寝台で眠っても${coldest}の夜は越せない`,
-    ).toBeLessThan(0);
+
+    const stuffing = stuffings();
+    if (stuffing.length === 0) {
+      expect(
+        warmthWhileSleepingIn(coldest, ['bed_frame']),
+        `詰め物がまだ無いので、${garment}を着て寝台で眠っても${coldest}の夜は越せない`,
+      ).toBeLessThan(0);
+      return;
+    }
+
+    for (const name of stuffing)
+      expect(
+        warmthWhileSleepingIn(coldest, ['bed_frame', name]),
+        `${garment}を着て${name}を詰めた寝台で眠れば${coldest}の夜も越せる`,
+      ).toBeGreaterThan(0);
   });
 
   it('素のままでも晴れた日中に熱は戻る——山頂を除く', () => {
