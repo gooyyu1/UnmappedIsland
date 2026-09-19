@@ -198,13 +198,17 @@ traits:
       # **境目を持つのはこのstagesだけ**で、条件の側は段の名前で見る（明るさと同じ形）。galeの
       # 17.2 m/sは台風の風速の定義（ビューフォート風力階級8の下限）そのもので、weatherの7段のうち
       # これを超えるのは嵐だけ。
+      #
+      # galeが名乗る situation は状況アイコン（docs/ui/ScreenLayout.md 4.1.1節）。**出すのは天気では
+      # なく、身に当たっている風雨**——同じ嵐でも屋根の下では上のstagesが0まで落とすので、段ごと
+      # 外れて絵も消える。出す／消すの条件を画面が覚える必要は無い。
       wind_speed:
         value: 0
         base: {subject: ancestor}
         range: {min: 0, max: 20}
         stages:
           - {name: calm}
-          - {name: gale, min: 17.2}
+          - {name: gale, min: 17.2, situation: too_stormy}
       # 体重（g）。**筏に乗れば積載として効く**（voyage.yaml）ので、担ぐ側も担がれる側になる。
       # 血液量が体重のおよそ1/13という下の関係から、5,000mLはちょうど65kgにあたる。個体差は
       # まだ持たせず、血と同じくこの trait が配る。
