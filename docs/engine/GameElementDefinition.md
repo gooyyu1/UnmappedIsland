@@ -2959,9 +2959,8 @@ object_defs:
 なりません。上限を持たせると、日付の出し方も季節の巡り（[`ClimateSystem.md`](./ClimateSystem.md) 2 節）も
 「年をまたいだとき」を考えることになります。
 
-`day` が `range` を持たない（6.3 節）のは、この決定の現れです。**季節は `year` を持たないまま巡ります**
-——何周したかは `season_cycle`（[`ClimateSystem.md`](./ClimateSystem.md) 2.2 節）が数えており、暦の年とは
-別の数です。
+`day` に `range` が生えていないこと・`world` が `year` を持たないことは
+`tests/world-codex/coreYaml.test.ts` が見張ります。
 
 **出どころ**: [#2286](https://github.com/gooyyu1/UnmappedIsland/issues/2286)（ゲーム内の日数は上限を持たず、そのまま数え続ける。2026-09-19に回答）
 

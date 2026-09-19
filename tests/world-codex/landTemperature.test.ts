@@ -229,19 +229,19 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
   }
 
   /**
-   * 寝床（`bed`）の `structure` 枠が受け入れる部品の型名（docs/world/Bedding.md 4.2節の表の段）。
-   * **今は骨組みだけ**で、詰め物はまだ世界に無い。
+   * 世界に在る詰め物の型名。**まだ1つも無い。** 引くのは `stuffing` タグで、これは寝床が導入する
+   * 語彙として決まっているもの（docs/world/Bedding.md 概要。部品のタグは `bed_frame` と `stuffing`）。
    *
-   * **タグ名ではなく枠の受け入れ宣言で引く**ので、詰め物をどんなタグで名乗らせても、寝床へ差せるように
-   * した瞬間にここへ現れる——差せない部品は寝床の段にならないので、枠がそのまま段の一覧になる。
+   * **枠が受け入れる型で引く形は採れない**——`structure` 枠には段にならない部品（枕・蚊帳のような、
+   * 寒さの入口を押し下げないもの）も将来入りうるし、羽毛と植物繊維（同 5節）が両方現れたら、
+   * 1つの寝床へまとめて差すことになって枠の上限で落ちる。
    */
-  function partsAcceptedByBed(): readonly string[] {
-    const structure = codex.objects
-      .get(codex.objectNames.getId('bed'))
-      .tryGetSlotDef(codex.slotNames.getId('structure'))!;
+  function stuffings(): readonly string[] {
+    const stuffingId = codex.tagNames.tryGetId('stuffing');
+    if (stuffingId === undefined) return [];
 
     return [...codex.objects]
-      .filter((objectDef) => !codex.isGenerated(objectDef) && structure.acceptsAnywhere(objectDef))
+      .filter((objectDef) => !codex.isGenerated(objectDef) && objectDef.tags.includes(stuffingId))
       .map((objectDef) => objectDef.name);
   }
 
@@ -300,9 +300,8 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
       `${garment}を着て寝台で眠れば${nextColdest}の夜は越せる`,
     ).toBeGreaterThan(0);
 
-    const parts = partsAcceptedByBed();
-    const beyondFrame = parts.filter((name) => name !== 'bed_frame');
-    if (beyondFrame.length === 0) {
+    const stuffing = stuffings();
+    if (stuffing.length === 0) {
       expect(
         warmthWhileSleepingIn(coldest, ['bed_frame']),
         `詰め物がまだ無いので、${garment}を着て寝台で眠っても${coldest}の夜は越せない`,
@@ -310,10 +309,11 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
       return;
     }
 
-    expect(
-      warmthWhileSleepingIn(coldest, parts),
-      `${garment}を着て${beyondFrame.join('・')}まで差した寝台で眠れば${coldest}の夜も越せる`,
-    ).toBeGreaterThan(0);
+    for (const name of stuffing)
+      expect(
+        warmthWhileSleepingIn(coldest, ['bed_frame', name]),
+        `${garment}を着て${name}を詰めた寝台で眠れば${coldest}の夜も越せる`,
+      ).toBeGreaterThan(0);
   });
 
   it('素のままでも晴れた日中に熱は戻る——山頂を除く', () => {
