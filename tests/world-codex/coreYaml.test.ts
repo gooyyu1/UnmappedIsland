@@ -8,7 +8,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { MINUTES_PER_DAY, MINUTES_PER_TICK } from '../../src/domain/worldTime';
-import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
+import { WORLD_CODEX_DIR, loadYamlDirectory } from '../support/worldCodexFiles';
 
 function load(yamlText: string): WorldCodex {
   return new WorldCodexYamlLoader().load('core.yaml', yamlText).buildAndReset();
@@ -18,7 +18,7 @@ describe('core.yamlのworld定義', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlFile(new WorldCodexYamlLoader(), worldCodexPath('core.yaml')).buildAndReset();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   function propOf(def: ObjectDef, propertyName: string): PropertyDef {
@@ -291,7 +291,7 @@ object_defs:
       ambient_temperature: {value: -3}
 `;
     const loader = new WorldCodexYamlLoader();
-    loadYamlFile(loader, worldCodexPath('core.yaml'));
+    loadYamlDirectory(loader, WORLD_CODEX_DIR);
     loader.load('hut.yaml', yaml);
     const testCodex = loader.buildAndReset();
 
@@ -331,7 +331,7 @@ object_defs:
       ambient_brightness: {value: 0}
 `;
     const loader = new WorldCodexYamlLoader();
-    loadYamlFile(loader, worldCodexPath('core.yaml'));
+    loadYamlDirectory(loader, WORLD_CODEX_DIR);
     loader.load('hut.yaml', yaml);
     const testCodex = loader.buildAndReset();
 

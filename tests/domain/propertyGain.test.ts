@@ -45,6 +45,7 @@ object_defs:
       minutes_per_tick: {value: 15}
       minute: {value: 0, range: {min: 0, max: 60}, on_max: {add: {self: {minute: -60, hour: 1}}}}
       hour: {value: 0, range: {min: 0, max: 24}, on_max: {add: {self: {hour: -24, day: 1}}}}
+      day: {value: 1}
     slots:
       locations: {cell: {accept: {tag: place}}}
 

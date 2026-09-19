@@ -11,7 +11,23 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  * ロード時エラーだが、理由が違うので文面まで見る——`patient`の`✕`は「居ないから」ではない。
  */
 describe('役を書ける場所（11.5節の表）', () => {
-  const load = (yaml: string) => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+  /**
+   * 表のどのマスも名指しする`stamina`・`travel_delay`の宣言。**名指しの相手はどこかの型が宣言して
+   * いなければならない**（WorldCodexの名指し検査）ので、役の可否とは関わりのないこの型を添えて読む。
+   */
+  const declarations = `
+object_defs:
+  props_holder:
+    props:
+      stamina: {value: 10}
+      travel_delay: {value: 0}
+`;
+
+  const load = (yaml: string) =>
+    new WorldCodexYamlLoader()
+      .load('core.yaml', yaml)
+      .load('declarations.yaml', declarations)
+      .buildAndReset();
 
   /** 表の1マス。`ok`なら書ける、文字列ならロード時エラーの理由に含まれる語。 */
   type Verdict = 'ok' | string;
@@ -28,7 +44,8 @@ describe('役を書ける場所（11.5節の表）', () => {
 
   /**
    * 役を`subject`として1つ書いた世界。**どの行でも同じ条件式を置く**ので、可否の差は置き場所だけから
-   * 出る。参照先の`stamina`は誰も持たなくてよい——見るのはロードが通るかどうかだけ。
+   * 出る。参照先の`stamina`を実際に持つ物は居なくてよい——見るのはロードが通るかどうかだけ
+   * （宣言そのものはdeclarationsが添える）。
    */
   const places: readonly {
     readonly name: string;

@@ -546,6 +546,12 @@ object_defs:
     props:
       lid_seal: {value: 1}
 
+  # 明るさの宣言元（甕はancestorからこれを引く。名指しの相手はどこかの型が宣言していなければ
+  # ならない）。
+  clearing:
+    props:
+      ambient_brightness: {value: 0}
+
   water_liquid:
     traits: [liquid, water_liquid]
 `;
@@ -746,7 +752,12 @@ object_defs:
           - weight: {prop: bird_find}
             spawn: {object: rat, into: self}
 
-  rat: {tags: [item]}
+  # keen_earを宣言しているのは獲物の側だけ。**キャラクタが誰も宣言していない**ので、agentを土台に
+  # した重みは解けないまま印が立つ（名指しの相手はどこかの型が宣言していなければならない）。
+  rat:
+    tags: [item]
+    props:
+      keen_ear: {value: 1}
 `;
     const agentCodex = new WorldCodexYamlLoader().load('agent.yaml', YAML_AGENT).buildAndReset();
     const ratId = agentCodex.objectNames.getId('rat');

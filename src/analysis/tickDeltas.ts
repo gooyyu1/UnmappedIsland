@@ -231,7 +231,8 @@ export interface SelfStageRequirement {
 
   /**
    * その段が値の並びの上で始まる位置（PropertyDef.lowerBoundOfStage）。undefinedになるのは位置を
-   * 持たない段——完全一致で決まる段（シンボル型、6.6節）と、綴り違いで宣言に無い名前。
+   * 持たない段——完全一致で決まる段（シンボル型、6.6節）と、この型の宣言には無い名前（同じプロパティ
+   * でも段は型ごと）。
    */
   readonly lowerBound: number | undefined;
 }

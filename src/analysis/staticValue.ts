@@ -80,8 +80,10 @@ export function layeredResolver(layers: readonly StaticValueLayer[]): StaticValu
  *
  * - `zero`: 宣言が無いこと自体が答え。**宣言していない土地ではその候補が抽選から外れる**
  *   （[`TrapSystem.md`](../../docs/engine/TrapSystem.md) 3節）ので、確定した値として読む。
- * - `unresolved`: 定義が答えを持っていない。その値を宣言している型が世界に1つも無いのは書き手の
- *   取りこぼしでありうるので、確定しない参照として印を立てる（CraftingStep.hasUnresolvedReferences）。
+ * - `unresolved`: 定義が答えを持っていない。その起点に就きうる型がどれも宣言していないのは書き手の
+ *   取りこぼしでありうる（腕の値を道具の側だけに書いた、など）ので、確定しない参照として印を立てる
+ *   （CraftingStep.hasUnresolvedReferences）。**世界のどこにも宣言が無い**ことはここまで来ない
+ *   ——名指しの相手が1つも宣言されていない世界はロードで落ちる（WorldCodexの名指し検査）。
  */
 export type UndeclaredReading = 'zero' | 'unresolved';
 
