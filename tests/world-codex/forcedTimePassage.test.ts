@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
@@ -49,7 +49,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
   /** 道1本で繋いだ2つの土地と、密林に立つプレイヤー。 */
   function open(): void {
     session = new WorldSession(codex);
-    world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
+    world = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(world));
     jungle = spawnInto('jungle', world, 'locations');
     grassland = spawnInto('grassland', world, 'locations');

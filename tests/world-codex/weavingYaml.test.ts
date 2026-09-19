@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
@@ -28,14 +28,11 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
   });
 
   beforeEach(() => {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
-    worldView = new World(worldInstance);
     // 葉採りは確率で捻挫する（injuries.yaml）。ここは加工の連鎖を見るテストなので、必ず成功する側を引く。
-    session = new WorldSession(codex, worldView, fixedRng(0));
+    session = new WorldSession(codex, undefined, fixedRng(0));
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
+    worldView = new World(worldInstance);
+    session.adoptWorld(worldView);
     startMinutes = worldView.totalMinutes;
 
     beach = spawnInto('sandy_beach', worldInstance, 'locations');

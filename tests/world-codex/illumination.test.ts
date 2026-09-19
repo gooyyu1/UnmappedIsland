@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { Path } from '../../src/domain/wrappers/Path';
@@ -40,7 +40,7 @@ describe('明るさが行動を制限する', () => {
    */
   function open(hour: number, landName: string) {
     const session = new WorldSession(codex, undefined, fixedRng(0));
-    const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);
 

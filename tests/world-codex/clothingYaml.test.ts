@@ -1,7 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { spawnInProgressObject, tryAdvanceCrafting } from '../../src/domain/crafting';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
@@ -166,7 +166,7 @@ describe('clothing.yamlの衣類', () => {
 
     /** 砂浜に立たせたキャラクタ。熱の削りは祖先の気温を読むので、居場所が要る。 */
     function stand(): { player: WorldObject; world: WorldObject } {
-      const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
+      const worldInstance = session.createObject(codex.objectNames.getId('world'));
       session.adoptWorld(new World(worldInstance));
       const beach = spawn('sandy_beach');
       expect(
