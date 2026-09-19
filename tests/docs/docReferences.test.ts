@@ -22,6 +22,7 @@ import { declaresWholeDocument, WHOLE_DOCUMENT_CONFIRMED } from '../../scripts/d
 import { githubSlugs } from '../../scripts/githubSlugs.mjs';
 import { linesOutsideFence } from '../../scripts/markdownFences.mjs';
 import { isPathTarget, linksIn, pathTargetsIn } from '../../scripts/markdownLinks.mjs';
+import { SECTION_RUN, sectionNumbersIn } from '../../scripts/sectionRefs.mjs';
 
 /**
  * ドキュメントの参照が実在の対象へ解決するかの検査（docs/DocumentStyle.md 5節）。
@@ -538,16 +539,43 @@ function resolvesInRepo(token: string): boolean {
   return solid.length > 0 && TRACKED_PATHS.has(solid.join(sep));
 }
 
+/** 文書名と節番号の間に挟んでよいもの（リンク形式の閉じ括弧と、助詞の「の」）。 */
+const NAMED_REF_GAP = /^[\s`の)）]*$/;
+
 /**
- * `source` の中で、実在の節へ解決しない節番号の参照。`rel` は自文書の判定と失敗メッセージに使う。
+ * 「節」を省いた番号を、文書名の直後と言える間。**「の」は許さない**——`Foo.md の2行` の 2 は
+ * 節番号ではなく数量で、「節」が無い側では**字面がそれと同じになる**（「節」が在れば見分けが付く
+ * ので、上の {@link NAMED_REF_GAP} は許す）。
+ */
+const BARE_REF_GAP = /^[\s`)）]*$/;
+
+/**
+ * 番号がそこで終わっていない印。直後に語・数字・`-`・`%` が続くものは数量や行の範囲
+ * （`2行`・`294-296行`・`20%`）で、節番号ではない——節番号は語を直に続けない。
  *
- * 指し先の規約（docs/DocumentStyle.md 5節）:
+ * **「節」を省いた側にしか使わない。** 「節」が在る番号は、何が続こうと節番号だと名乗っている。
+ */
+const QUANTITY_SUFFIX = /^[\p{L}\p{N}%-]/u;
+
+/**
+ * `source` の中で、規約（docs/DocumentStyle.md 5節）に沿わない節番号の参照。`rel` は自文書の判定と
+ * 失敗メッセージに使う。挙げるのは2種——**実在の節へ解決しないもの**と、**「節」を省いたもの**。
+ *
+ * 指し先の規約:
  * - 「Foo.md N節」= その文書の節
  * - 「同 N節」= 同じファイル内で直前に名前を挙げた文書の節
  * - 裸の「N節」= 読み手の解釈と同じ優先順で、自文書 → 直前に名前を挙げた文書のどれか。
  *   **GameElementDefinition.md（WorldCodex文法の節）まで落ちるのはコード・YAMLだけ**
  *   （{@link fallsBackToGrammar}）
- * - 「・」「、」で続く番号の列挙は、直前の参照と同じ文書
+ * - 「・」「、」で続く番号の列挙と「〜」の範囲は1つの並び（{@link SECTION_RUN}）で、**末尾の「節」が
+ *   並び全体に掛かる**。番号ごとに「節」を書けば、並びが1つずつに分かれるだけで同じに読める
+ *
+ * **「節」を拾ってから番号を見るのではなく、番号を拾ってから「節」の有無を見る。** 前者だと、
+ * **規約に従っていない参照だけが検査の外に出る**——`Foo.md 2.16` は指しているつもりで書かれるのに、
+ * 指し先が消えても緑のままだった（issue #2229）。
+ *
+ * **読めるのは、文書名を挙げた直後に置かれた形だけ。** 「同 N」と裸の「N」は、「節」を落とすと
+ * `同840`・`3撃` のような数量と**字面で見分けが付かない**ので、そちらの省略は拾えない。
  *
  * **原文をそのまま読む。** 見るのは `.md` 以外も含む（{@link REF_FILES}）ので、Markdownの囲みで
  * 削れない——フェンスの中のYAMLコメントも実在の節を指している。
@@ -555,8 +583,10 @@ function resolvesInRepo(token: string): boolean {
 function brokenNumberedRefsIn(rel: string, source: string): string[] {
   const broken: string[] = [];
   const grammarFallback = fallsBackToGrammar(rel);
-  const tokenPattern =
-    /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?|(同\s*)?(\d+(?:\.\d+)*)(?:\s*[〜～]\s*(\d+(?:\.\d+)*))?\s*節/g;
+  const tokenPattern = new RegExp(
+    String.raw`([A-Za-z][\w.-]*\.md)\`?(?:\]\([^)]*\))?|(同\s*)?(${SECTION_RUN})(\s*節)?`,
+    'g',
+  );
   const resolves = (base: string, nums: readonly string[]): boolean => {
     const candidates = docsByBasename.get(base);
     return (
@@ -572,19 +602,26 @@ function brokenNumberedRefsIn(rel: string, source: string): string[] {
   for (const match of text.matchAll(tokenPattern)) {
     const whole = match[0];
     // 捕獲グループは**マッチしなければundefined**になるが、TSの型は string[] と言っている。
-    const [namedBase, dou, num, rangeEnd] = match.slice(1) as (string | undefined)[];
+    const [namedBase, dou, run, setsu] = match.slice(1) as (string | undefined)[];
     if (namedBase !== undefined) {
       lastNamedBase = namedBase;
       lastNamedEnd = match.index + whole.length;
       continue;
     }
-    if (num === undefined) continue;
-    const nums = rangeEnd === undefined ? [num] : [num, rangeEnd];
+    if (run === undefined) continue;
+    const end = match.index + whole.length;
     const gap = text.slice(lastNamedEnd, match.index);
+    if (setsu === undefined) {
+      const named = lastNamedBase !== null && dou === undefined && BARE_REF_GAP.test(gap);
+      if (!named || QUANTITY_SUFFIX.test(text.slice(end))) continue;
+      broken.push(`${rel}: 「${lastNamedBase} ${run.trim()}」に「節」が無い`);
+      continue;
+    }
+    const nums = sectionNumbersIn(run);
     const sincePrev = prevRef === null ? null : text.slice(prevRef.end, match.index);
     // 指し先の候補（先頭から順に試し、最初に解決した文書を採る）
     let candidates: (string | null)[];
-    if (lastNamedBase !== null && /^[\s`の)）]*$/.test(gap)) {
+    if (lastNamedBase !== null && NAMED_REF_GAP.test(gap)) {
       candidates = [lastNamedBase]; // 明示: Foo.md N節（リンク形式の閉じ括弧は挟んでよい）
     } else if (dou !== undefined) {
       candidates = [lastNamedBase]; // 同 N節
@@ -597,7 +634,7 @@ function brokenNumberedRefsIn(rel: string, source: string): string[] {
     }
     const bases = [...new Set(candidates.filter((c): c is string => c !== null))];
     const resolved = bases.find((base) => resolves(base, nums)) ?? null;
-    prevRef = { base: resolved, end: match.index + whole.length };
+    prevRef = { base: resolved, end };
     if (resolved === null) {
       broken.push(`${rel}: 「${whole.trim()}」が解決しない（候補: ${bases.join('・')}）`);
     }
@@ -682,6 +719,23 @@ describe('ドキュメントの参照', () => {
   it('節番号の参照が実在の節に解決する（明示・同・裸の全形式）', () => {
     const broken = REF_FILES.flatMap((rel) => brokenNumberedRefsIn(rel, read(rel)));
     expect(broken, `節番号の参照切れ:\n${broken.join('\n')}`).toEqual([]);
+  });
+
+  // 上の検査は**規約に従った参照しか読めないと緑のまま**になる（issue #2229）ので、読む側を直に試す。
+  // ここの例が `REF_FILES` に入らないのは、この置き場（`tests/docs/**`）を外しているため。
+  it('文書名の直後で「節」を省いた番号を、参照として拾う', () => {
+    const doc = join('agent-ops', 'x.md');
+    const bare = brokenNumberedRefsIn(doc, '（[`board-design.md`](board-design.md) 2.16）');
+    expect(bare).toHaveLength(1);
+    expect(bare[0]).toContain('「節」が無い');
+    // 「節」を書けば、あとは指し先が実在するかだけを見る
+    expect(brokenNumberedRefsIn(doc, '（`board-design.md` 2.16節）')).toEqual([]);
+    expect(brokenNumberedRefsIn(doc, '（`board-design.md` 2.99節）')).toHaveLength(1);
+    // 数量は参照ではない
+    expect(brokenNumberedRefsIn(doc, '`board-design.md` の2行だけ')).toEqual([]);
+    expect(brokenNumberedRefsIn(doc, '`board-design.md` 2行だけ')).toEqual([]);
+    // 列挙は、末尾の「節」が並び全体に掛かる
+    expect(brokenNumberedRefsIn(doc, '（`board-design.md` 2.16・2.99節）')).toHaveLength(1);
   });
 
   it('「Foo.md 〇〇節」（名前指し）が実在の見出しに解決する', () => {

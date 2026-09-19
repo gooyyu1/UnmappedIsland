@@ -14,7 +14,7 @@
 [`refAudit.mjs`](../../scripts/daemon/refAudit.mjs) が出す。** 範囲の数え方をひな形にも持たせると、係が
 読んだ範囲と台帳へ書く到達点がずれる。
 
-題は下の `題:` の行が持つ（[`board-design.md`](../board-design.md) 2.9）。
+題は下の `題:` の行が持つ（[`board-design.md`](../board-design.md) 2.9節）。
 
 題: 検め 節番号の参照
 
@@ -74,7 +74,7 @@
 
 **この周ぶんをまとめて issue 1本**にします。**1件ずつ立てないでください**——参照の不一致は毎周いくつ
 も出るので、1件1本にすると**整備の issue が在庫を満たし続け、完成へ近づける仕事が配られなくなります**
-（`agent-ops/board-design.md` 2.18.1）。
+（`agent-ops/board-design.md` 2.18.1節）。
 
 道具は `agent-ops/github-access.md`「issue を読む・書く」に従ってください。
 

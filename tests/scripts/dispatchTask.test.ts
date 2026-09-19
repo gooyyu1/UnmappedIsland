@@ -144,7 +144,7 @@ describe('dispatch-task.sh', () => {
     expect(run(1415, { state: 'CLOSED' }).code).toBe(1);
   });
 
-  // 返された issue は `kind:task` が付いたまま残る（`agent-ops/board-design.md` 2.15.2）ので、**ここで
+  // 返された issue は `kind:task` が付いたまま残る（`agent-ops/board-design.md` 2.15.2節）ので、**ここで
   // 見なければ次の周にそのまま投入し直される。** 不変条件を持つのは投入する側（1.4）。
   it('人へ返された issue へは投入しない', () => {
     const result = run(1376, { labels: ['kind:task', '判断待ち'] });
@@ -166,7 +166,7 @@ describe('dispatch-task.sh', () => {
     expect(prompt(1415)).not.toContain('<このタスク固有の補足');
   });
 
-  // **モードは環境が決める**（`board-design.md` 2.16.3）。渡さないと未設定のまま立ち、`.claude/**`
+  // **モードは環境が決める**（`board-design.md` 2.16.3節）。渡さないと未設定のまま立ち、`.claude/**`
   // を読むだけの `bash` が「機微なファイルの編集」と判定されて承認を待つ。その承認は降りない。
   it('クラウドへは auto を渡す', () => {
     const built = args(1415);

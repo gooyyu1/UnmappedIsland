@@ -11,7 +11,7 @@ import { trackIdle } from '../../scripts/daemon/board-round.mjs';
  * `scripts/daemon/board-move.mjs` の検査。
  *
  * ここが守るのは**盤面から出る手が1つに決まること**。デーモンは出た手をそのまま打つので
- * （`agent-ops/board-design.md` 2.3）、判定を間違えると走っているセッションへ二重に投げるか、
+ * （`agent-ops/board-design.md` 2.3節）、判定を間違えると走っているセッションへ二重に投げるか、
  * 直しを待つPRが誰にも渡らないまま止まる。同じ盤面へ同じ手を二度出さないことも見る。
  */
 
@@ -156,7 +156,7 @@ function pr(number: number, over: Record<string, unknown> = {}) {
 
 /**
  * ラベルの一覧。**`kind:task` を渡したら `goal:` も足す**——**棚卸しを通った issue は向かう先を持つ**
- * （`agent-ops/board-design.md` 2.17.1 の、棚卸しが出す結論）ので、持たない盤面のほうが例外。
+ * （`agent-ops/board-design.md` 2.17.1節 の、棚卸しが出す結論）ので、持たない盤面のほうが例外。
  * 足さないと、向かう先と関わりのない検査の期待値へ一律に `NOTE` が1行増える（2.18.1）。
  *
  * **その例外を見る検査は、自分で `labels` を組む**（下の `unnamedTask`）。

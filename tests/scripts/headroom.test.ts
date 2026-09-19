@@ -8,7 +8,7 @@ import { type CachedUsage, writeUsageCache, writeUsagePolled } from '../support/
 
 /**
  * `scripts/daemon/headroom.sh`（と中身の `headroom.mjs`）の検査
- * （`agent-ops/board-design.md` 2.5.2）。
+ * （`agent-ops/board-design.md` 2.5.2節）。
  *
  * ここが守るのは**比べているものが「残量」ではなく「あと1本入るか」であること**。
  *

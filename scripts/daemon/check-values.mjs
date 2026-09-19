@@ -1,6 +1,6 @@
 // 盤面が動くのに要る値——CCR の環境ID（`CLOUD_ENV` / `BRIDGE_ENV`）、そこへ立てたセッションに走る者が
 // 付くこと、CCR・`gh` の資格情報——が生きているかを見回り、死んでいれば人へ告げる
-// （`agent-ops/board-design.md` 2.22）。
+// （`agent-ops/board-design.md` 2.22節）。
 //
 //   node scripts/daemon/check-values.mjs            # 1回見回る
 //   DRY_RUN=1 node scripts/daemon/check-values.mjs  # 調べるだけ（issue も台帳も書かず、セッションも立てない）
@@ -47,7 +47,7 @@
 //
 // **`gh` が死んでいる周は、手元からその issue を書けない。** 書く手がその値そのものだから——
 // 代わりに**クラウドのセッションへ、同じ題・同じ本文で置かせに行く**（`agent-ops/board-design.md`
-// 2.22.3）。畳む鍵は向こうでも題だけで、**閉じるのは手元の見回りのまま**。頼めなければ
+// 2.22.3節）。畳む鍵は向こうでも題だけで、**閉じるのは手元の見回りのまま**。頼めなければ
 // `~/daemon.log` へ残すが、**読む者が居ないので告げたことにはならない。**
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -147,7 +147,7 @@ const WORKER_REMEDY = {
 
 /**
  * `list_environments` で、今在る環境IDを引く。**CCR の資格情報が生きているかは、これが返ったこと
- * そのもの**（`agent-ops/board-design.md` 2.22）——別の口を作ると、確かめる対象が2つになる。
+ * そのもの**（`agent-ops/board-design.md` 2.22節）——別の口を作ると、確かめる対象が2つになる。
  *
  * 返すのは環境IDの集合。届かなければ、道具が言った理由をそのまま投げる。
  */
@@ -264,7 +264,7 @@ export async function surveyValues({
     });
   }
 
-  // **道具が言った理由をそのまま升へ載せる**（`agent-ops/board-design.md` 1.7）。読むのはスマホの人で、
+  // **道具が言った理由をそのまま升へ載せる**（`agent-ops/board-design.md` 1.7節）。読むのはスマホの人で、
   // **「非0で終わる」だけでは、打ち直せばよいのか別の不調かが読めない。**
   let ghWhyNot = '';
   found.push({
@@ -333,7 +333,7 @@ function deadTable(due) {
 function report(due, now) {
   return `${[
     '**この本文は `scripts/daemon/check-values.mjs` が周期で丸ごと書き換えます。**',
-    '人が書いたものは次の見回りで消えます（`agent-ops/board-design.md` 2.22）。',
+    '人が書いたものは次の見回りで消えます（`agent-ops/board-design.md` 2.22節）。',
     '',
     `最終更新 ${stamp(now)}`,
     '',
@@ -343,7 +343,7 @@ function report(due, now) {
     ...deadTable(due),
     '',
     '**直れば、次の見回りが閉じます**——`gh` が死んでいる間は、この本文をクラウドのセッションが' +
-      '代わりに置きます（`agent-ops/board-design.md` 2.22.3）。',
+      '代わりに置きます（`agent-ops/board-design.md` 2.22.3節）。',
   ].join('\n')}\n`;
 }
 
@@ -368,7 +368,7 @@ export function cloudPrompt(body) {
 }
 
 /**
- * クラウドのセッションへ、同じ題・同じ本文で置かせに行く（`agent-ops/board-design.md` 2.22.3）。
+ * クラウドのセッションへ、同じ題・同じ本文で置かせに行く（`agent-ops/board-design.md` 2.22.3節）。
  * **頼めたら `true`。**
  *
  * **関門は通る。** 手綱へ訊く種類だけ `values` にする（`--gate`）——読める周は他の周期の係と同じ
@@ -449,7 +449,7 @@ function tellByIssue(gh, body, sayWhyNot) {
           '判断待ち',
           '--label',
           'origin:agent',
-          // **人が `判断待ち` を外した後に効く**（`agent-ops/board-design.md` 2.18.1）。名乗らなくても
+          // **人が `判断待ち` を外した後に効く**（`agent-ops/board-design.md` 2.18.1節）。名乗らなくても
           // 整備として並ぶだけだが、そのぶん未整理として毎周拾われるので、ここで名乗る。
           '--label',
           'goal:upkeep',

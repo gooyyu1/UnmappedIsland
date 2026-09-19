@@ -10,9 +10,9 @@
 ——ここに書くと、説明の側も一緒に埋まる。
 
 **この係は閉じない。** 題で引く issue 1本に畳む持ち主は手元の見回りのままで、値が生き返ったのを
-見た周にあちらが閉じる（[`board-design.md`](../board-design.md) 2.22.3）。
+見た周にあちらが閉じる（[`board-design.md`](../board-design.md) 2.22.3節）。
 
-題は下の `題:` の行が持つ（[`board-design.md`](../board-design.md) 2.9）。
+題は下の `題:` の行が持つ（[`board-design.md`](../board-design.md) 2.9節）。
 
 題: 告げ 盤面が動くのに要る値の死
 

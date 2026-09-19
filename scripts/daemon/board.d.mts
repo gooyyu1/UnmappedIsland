@@ -31,12 +31,12 @@ export type RoundEvent = Record<string, unknown>;
 
 /**
  * 手の結果を、人へ見せる語にする表。鍵は `board-round.mjs` の `PLAYED`・`FAILED`・`SETTLED`
- * （`agent-ops/board-design.md` 2.20.3）。
+ * （`agent-ops/board-design.md` 2.20.3節）。
  */
 export const MOVE_RESULTS: Record<string, string>;
 
 /**
- * 常設の issue の本文（`agent-ops/board-design.md` 2.20）。`now` は最終更新として本文に出る。
+ * 常設の issue の本文（`agent-ops/board-design.md` 2.20節）。`now` は最終更新として本文に出る。
  * `unreadable` は盤面を引けていない区間（2.21）、`patrol` は最後の見回り（2.21.4。走っていなければ
  * 渡らない）、`blockedNotes`・`partialNotes`・`events` は周の出来事（2.20.3）。
  */

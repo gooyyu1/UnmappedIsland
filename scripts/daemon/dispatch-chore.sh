@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 周期で起きる係を1本、CCRのセッションへ投入する（`agent-ops/board-design.md` 2.17）。
+# 周期で起きる係を1本、CCRのセッションへ投入する（`agent-ops/board-design.md` 2.17節）。
 #
 #   bash scripts/daemon/dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md
 #   bash scripts/daemon/dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md --bridge  # このPCで走らせる
@@ -24,7 +24,7 @@
 #
 # ## 手綱へ訊く種類は、渡された側が選べる（`--gate`）
 #
-# **どの鎖を訊くかを決めるのは投入するスクリプト自身**（`agent-ops/board-design.md` 2.4.2。
+# **どの鎖を訊くかを決めるのは投入するスクリプト自身**（`agent-ops/board-design.md` 2.4.2節。
 # [`dispatch-review.sh`](dispatch-review.sh) が `Closes` 先のラベルで `review` と `review-untasked` を
 # 選ぶのと同じ）。周期の係は既定で `other` だが、**値の死を告げに行く1本だけ `values`**
 # ——手綱を読む手が `gh` そのもので、あの投入が通るのは `gh` が死んでいる周だけだから

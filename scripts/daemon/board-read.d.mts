@@ -12,7 +12,7 @@ export interface ReadDeps {
   /** 節番号の参照に、この周に読むものが在るか。省くと本物のリポジトリを見る。 */
   pendingRefAudit?: () => boolean;
   sayIncomplete: (line: string) => void;
-  /** 盤面を諦めたときに、道具が言った理由を受け取る口（`agent-ops/board-design.md` 1.7）。 */
+  /** 盤面を諦めたときに、道具が言った理由を受け取る口（`agent-ops/board-design.md` 1.7節）。 */
   sayWhyNot?: (line: string) => void;
   now: Date;
   settleMinutes: number;
@@ -30,7 +30,7 @@ export function readBoard(deps: ReadDeps): Promise<Record<string, unknown> | und
 
 /**
  * さかのぼるマージ済みPRの幅（時間）。後片付けが追える幅であり、スメルを拾う係が読む窓でもある
- * （係の間隔より広い。`agent-ops/board-design.md` 4.4.2）。
+ * （係の間隔より広い。`agent-ops/board-design.md` 4.4.2節）。
  */
 export const MERGED_WINDOW_HOURS: number;
 
@@ -52,7 +52,7 @@ export function allOpenIssues(
 
 /**
  * PR番号 → そのPRを書いたセッション（コミットの `Claude-Session:` トレーラ）。**引けなければ
- * `undefined`**——空の対応表と混ぜない（`agent-ops/board-design.md` 2.11.4）。
+ * `undefined`**——空の対応表と混ぜない（`agent-ops/board-design.md` 2.11.4節）。
  */
 export function readPrSessions(
   gh: (args: readonly string[], options?: { sayWhyNot?: (line: string) => void }) => string | undefined,
@@ -60,7 +60,7 @@ export function readPrSessions(
 ): Record<string, string> | undefined;
 
 /**
- * まだ二次が読んでいない、一次の分析の記録の件数（`agent-ops/board-design.md` 2.17.4）。
+ * まだ二次が読んでいない、一次の分析の記録の件数（`agent-ops/board-design.md` 2.17.4節）。
  * 読めなかったときは0。
  */
 export function countUnsummarizedAnalyses(sayIncomplete: (line: string) => void, dirs?: AnalysisDirs): number;

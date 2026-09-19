@@ -1,4 +1,4 @@
-// PRのコメントから、レビューが書いた**判定**を拾う（`agent-ops/board-design.md` 2.9）。
+// PRのコメントから、レビューが書いた**判定**を拾う（`agent-ops/board-design.md` 2.9節）。
 //
 //   import { verdicts, readVersion, readsVersion, asksUser, asksMend } from './review-verdicts.mjs';
 //   verdicts(pr.comments)        // → 判定のコメントだけを、古い順に
@@ -23,7 +23,7 @@
  */
 const VERDICT_LINE = /^\[レビュー\] (通してよい(（人の判断が要る）)?|直しが要る)[ \t]*$/;
 
-/** 判定のうち、**通したうえで人へ回す**形（`board-design.md` 2.13.4）。 */
+/** 判定のうち、**通したうえで人へ回す**形（`board-design.md` 2.13.4節）。 */
 const ASK_LINE = /^\[レビュー\] 通してよい（人の判断が要る）[ \t]*$/;
 
 /** 判定のうち、**直しを求める**形（`直し待ち` はこの1行から付く）。 */
@@ -54,14 +54,14 @@ export function readsVersion(comment, oid) {
   return version !== undefined && typeof oid === 'string' && oid.startsWith(version);
 }
 
-/** その判定が**通したうえで人へ回す**形か（`board-design.md` 2.13.4）。 */
+/** その判定が**通したうえで人へ回す**形か（`board-design.md` 2.13.4節）。 */
 export function asksUser(comment) {
   return ASK_LINE.test(body(comment).split('\n')[0]);
 }
 
 /**
  * その判定が**直しを求めた**か。**盤面が `直し待ち` を導き直す側から訊く**（`board-design.md`
- * 2.13.5 の「止める側」）——札を付けるのは `board-labels.yml` で、**転んだ回の出来事は二度と
+ * 2.13.5節 の「止める側」）——札を付けるのは `board-labels.yml` で、**転んだ回の出来事は二度と
  * 来ない**（issue #2144）。
  */
 export function asksMend(comment) {
