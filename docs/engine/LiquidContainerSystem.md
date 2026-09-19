@@ -67,7 +67,7 @@ jar:
 
 生成された型は表示の対応表に自分のエントリを持てないので、**素の型と軸の値から組み立てます**。
 
-- **名前**: `{content}入りの{container}`（`typeDisplayName`、[`Localization.md`](./Localization.md)）。
+- **名前**: `content` 軸の書式 `{value}入りの{base}`（`typeDisplayName`、[`Localization.md`](./Localization.md)）。
 - **絵**: 素の型（容器）のもの。変種のために絵を描き足す道はありません。
 - **中身のバー**: `fill` を持つカードに出ます（[`CardView.md`](../ui/CardView.md) 8 節）。空の容器では
   0 のバーになります——どれだけ入るかは容器自身の情報なので、容量のバーと同じ理由で 0 でも出します。

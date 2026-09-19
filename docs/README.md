@@ -9,26 +9,26 @@
 
 ```
 docs/
-├── Concept/       # コンセプト（企画の核となる考え方。ターゲット・マネタイズ等を含む）
-├── UI/            # UI/UX（画面レイアウト、モック、スクリーンショット）
-├── Engine/        # ルール・エンジン（WorldCodexのYAML文法そのもの、汎用サブシステム）
-├── World/         # 実際にゲームに登場する内容（地形・気候・アイテムなど、文法を使って
+├── concept/       # コンセプト（企画の核となる考え方。ターゲット・マネタイズ等を含む）
+├── ui/            # UI/UX（画面レイアウト、モック、スクリーンショット）
+├── engine/        # ルール・エンジン（WorldCodexのYAML文法そのもの、汎用サブシステム）
+├── world/         # 実際にゲームに登場する内容（地形・気候・アイテムなど、文法を使って
 │                  #   表現された具体的なゲーム内容）
-└── Diagnostics/   # 診断・統計レポート（実装の挙動を計測したスナップショット。設計判断ではなく測定値）
+└── diagnostics/   # 診断・統計レポート（実装の挙動を計測したスナップショット。設計判断ではなく測定値）
 ```
 
 ## 各フォルダの用途
 
 | フォルダ | 内容 |
 |--------|------|
-| [Concept/](./concept/README.md) | ゲームコンセプト、目指す体験、ターゲット、マネタイズ計画など |
-| [UI/](./ui/README.md) | 画面レイアウト、モック、UI/UX設計 |
-| [Engine/](./engine/README.md) | WorldCodex（YAML）の文法リファレンス、汎用サブシステム（レシピ・コンテナ・耐久値・アクション使い分け）の設計 |
-| [World/](./world/README.md) | 気候、地形生成、探索・道、アイテムなど、実際にこのゲームに登場する具体的な内容 |
-| [Diagnostics/](./diagnostics/README.md) | 実装をシミュレーションして計測した統計レポート（`tests/diagnostics/`の`RUN_CLIMATE_STATS`環境変数付きテストで再生成する測定値のスナップショット。設計そのものではない） |
+| [concept/](./concept/README.md) | ゲームコンセプト、目指す体験、ターゲット、マネタイズ計画など |
+| [ui/](./ui/README.md) | 画面レイアウト、モック、UI/UX設計 |
+| [engine/](./engine/README.md) | WorldCodex（YAML）の文法リファレンス、汎用サブシステム（レシピ・コンテナ・耐久値・アクション使い分け）の設計 |
+| [world/](./world/README.md) | 気候、地形生成、探索・道、アイテムなど、実際にこのゲームに登場する具体的な内容 |
+| [diagnostics/](./diagnostics/README.md) | 実装をシミュレーションして計測した統計レポート（`tests/diagnostics/`の`RUN_CLIMATE_STATS`環境変数付きテストで再生成する測定値のスナップショット。設計そのものではない） |
 
-`Diagnostics/` のみ性質が異なり、設計判断ではなく実装の測定結果を格納します
-（詳細は [`Diagnostics/README.md`](./diagnostics/README.md)）。
+`diagnostics/` のみ性質が異なり、設計判断ではなく実装の測定結果を格納します
+（詳細は [`diagnostics/README.md`](./diagnostics/README.md)）。
 
 各ドキュメントの構造（見出し・節番号・概要の定型・実装状況と確定度の表記）は
 [`DocumentStyle.md`](./DocumentStyle.md) に従います。**印の無い節は暫定**で、覆すのに判断が要る節
