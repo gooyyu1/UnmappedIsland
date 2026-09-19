@@ -165,10 +165,11 @@ const RECIPES_WITHOUT_DEFTNESS = [
  *
  * **口は手作業だけではない**——手際を名乗るレシピの工程も伸ばす（同3.4節）ので、そちらを持つ腕は
  * ここに並ばない。残っているのは、名乗るレシピを1つも持たない腕だけ：火はアクセス系なので名乗れず
- * （docs/world/Skills.md 2.2節）、料理は開けるレシピも名乗るレシピもまだ無い（同2.5節）。
- * どちらであるかは内容の判断なので、ここが見るのは決めずに素通りできないことだけ。
+ * （docs/world/Skills.md 2.2節）、石器は打ち欠く工程を持つレシピが無く（同2.6節）、料理は開けるレシピ
+ * も名乗るレシピもまだ無い（同2.5節）。どれであるかは内容の判断なので、ここが見るのは決めずに素通り
+ * できないことだけ。
  */
-const SKILLS_WITH_ONE_ENTRY = ['skill_cooking', 'skill_firecraft'];
+const SKILLS_WITH_ONE_ENTRY = ['skill_cooking', 'skill_firecraft', 'skill_knapping'];
 
 /**
  * 製作系の腕（Skills.md 2節）と、その段が押し上げる上乗せ（同7節）。**速さの上乗せはここに無い**

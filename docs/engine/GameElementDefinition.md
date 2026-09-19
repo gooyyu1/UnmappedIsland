@@ -2556,8 +2556,8 @@ object_defs:
     recipes:
       basic:
         conditions:
-          - {subject: agent, prop: skill_knapping, in_stage_or_above: basic}
-        deftness: {skill: skill_knapping, from_stage: skilled, minutes: -15}
+          - {subject: agent, prop: skill_woodwork, in_stage_or_above: basic}
+        deftness: {skill: skill_woodwork, from_stage: skilled, minutes: -15}
         steps:
           - requires:
               - {object: wood, count: 2, consume: true}
