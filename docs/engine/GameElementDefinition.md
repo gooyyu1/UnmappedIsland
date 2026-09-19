@@ -1907,7 +1907,7 @@ interactions:
     trigger: {drag: {tag: liquid_container}}
     conditions:
       - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
-    duration: 4
+    duration: 5
     become: {subject: instrument, content: sap_liquid}
 ```
 
@@ -2125,7 +2125,7 @@ traits:
 ```yaml
 interactions:
   explore:
-    duration: 30          # 探索は1回30分かかる
+    duration: 15          # 探索は1回15分かかる
     ...
   travel:
     duration: {prop: travel_minutes}    # 道が持つ移動時間をそのまま使う
@@ -2516,7 +2516,6 @@ object_defs:
 interactions:
   add_fuel:
     trigger: {drag: {tag: fuel}, allow_multiple: true}
-    duration: 1
     transfer: {amount: 999, from: instrument, from_prop: fuel, to_prop: fuel}
     destroy: instrument
 ```

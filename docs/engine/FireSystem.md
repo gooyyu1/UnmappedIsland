@@ -104,9 +104,8 @@ slots:
 # 炉の側が宣言する
 interactions:
   add_fuel:
-    trigger: {drag: {tag: fuel}}
-    duration: 1
-    allow_multiple: true     # 束ねた薪はまとめてくべられる（GameElementDefinition.md 12.4節）
+    # 束ねた薪はまとめてくべられる（GameElementDefinition.md 12.4節）
+    trigger: {drag: {tag: fuel}, allow_multiple: true}
     transfer:
       amount: 999            # 入るだけ入れる
       from: instrument
@@ -464,7 +463,6 @@ interactions:
 interactions:
   ignite_from_flame:
     trigger: {drag: {tag: lightable}}
-    duration: 1
     conditions:
       - {reason: no_flame_carried, subject: instrument, prop: lit, gt: 0}
       - {reason: already_lit, prop: heat, eq: 0}
@@ -472,7 +470,6 @@ interactions:
     set: {self: {heat: 1}}
   light_from_flame:
     trigger: {drag: {tag: lightable}}
-    duration: 1
     conditions:
       - {reason: fire_out, prop: heat, gt: 0}
       - {reason: already_lit, subject: instrument, prop: lit, eq: 0}

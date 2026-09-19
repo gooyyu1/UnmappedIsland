@@ -1,5 +1,6 @@
 export function trackedFiles(root: string, pathspec?: string): string[];
 export function trackedDocs(root: string): string[];
+export function specDocs(root: string): string[];
 export const COMMENTED_EXTENSIONS: readonly string[];
 export function trackedRefSources(root: string): string[];
 export function isProseData(rel: string): boolean;
