@@ -1028,6 +1028,23 @@ describe('board-round.mjs', () => {
       expect(result.noteMarks).toEqual({});
     });
 
+    // **引けない周は覚え書きを1つも出せない**ので、残すと**最後に引けた周のものが「この周にも
+    // 出ています」として出続け、続いている長さまで伸びる**（2.20.3）。
+    it('引けなかった周は、その周に出ていた断りを落とす', async () => {
+      const result = await playRound({
+        sessionsFail: true,
+        ledger: {
+          [`${NOTE_PREFIX}前の周の理由`]: '2026-09-05T01:00:00Z',
+          [`${PARTIAL_PREFIX}前の周の欠け`]: '2026-09-05T01:00:00Z',
+        },
+      });
+
+      expect(result.noteMarks).toEqual({});
+      expect(result.partialMarks).toEqual({});
+      // **引けなかったことの覚えは残る**——落とすのは断りだけ。
+      expect(result.unreadable).toBe(NOW.toISOString());
+    });
+
     // **「引けていない」だけでは、直す先が分からない**（2.20.3）。何周ぶんかは待つ間隔が動くと
     // 長さからは出せず、理由を言えるのは引きに行った道具だけ。
     it('引けなかった周に、周の数と、道具が言った理由を控える', async () => {

@@ -76,6 +76,11 @@ const defaultRunScript = (name, args, options) => runBash(join(HERE, name), args
  * **終わり・周の数・道具が言った理由は毎周上書きする。** 始まりだけでは、読む人に届くのが
  * 「引けていない」までで止まる——**何周ぶんか**は待つ間隔が環境変数で動くので長さからは出せず、
  * **理由**を言えるのは引きに行った道具だけ（2.20.3）。
+ *
+ * **その周に出ていた断りは落とす。** あれは「今その周に出ている」ものとして人へ出る（2.20.3）が、
+ * **引けない周は覚え書きを1つも出せない**ので、残すと**最後に引けた周のものが今のこととして出続け、
+ * 続いている長さまで伸びる。** 直った周に出し直すので、失うのは区間をまたいだ長さだけ——**引けて
+ * いない間はまだ詰まっているかも言えない**のだから、そこで数え直すのが正しい。
  */
 function markUnreadable(stateDir, at, reason) {
   const taken = readLedger(stateDir);
@@ -83,7 +88,7 @@ function markUnreadable(stateDir, at, reason) {
   taken[UNREADABLE_UNTIL] = at;
   taken[UNREADABLE_ROUNDS] = String(Number(taken[UNREADABLE_ROUNDS] ?? 0) + 1);
   taken[UNREADABLE_REASON] = reason;
-  writeLedger(stateDir, taken);
+  writeLedger(stateDir, trackNotes(trackNotes(taken, NOTE_PREFIX, [], at), PARTIAL_PREFIX, [], at));
 }
 
 /**
@@ -570,6 +575,10 @@ export async function round({
     since,
   );
   writeLedger(stateDir, remaining);
+  // **盤面が指す台帳は、下で書き足される側と同じもの。** 別のままにすると、`remember` が控えた指紋は
+  // 台帳には載るのに `board.taken` からは見えない——今その先を読む者は居ないが、**読む者が現れた日に
+  // 静かにずれる。**
+  board.taken = remaining;
   const remember = (key, mark) => {
     remaining[key] = mark;
     writeLedger(stateDir, remaining);
