@@ -386,7 +386,11 @@ object_defs:
       // 100 ÷ 25 = 4 tick で固まるので、奪えるのは -15/tick で4 tickぶんの60mL。
       expect(drivers('wound', 'parent')).toEqual([
         {
-          sourceGlobalId: huntId('wound'),
+          source: defOf('wound'),
+          // 持ち主の内側から押すので、親でも祖先でもない。
+          sourceIsAt: 'child',
+          // 押している間に居ると分かっている段は無い（縛っているのは血の残量）。
+          sourceStagesByCase: [[]],
           propertyGlobalId: expect.any(Number),
           amounts: [-15],
           ticksUntilStart: 0,

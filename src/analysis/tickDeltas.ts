@@ -69,14 +69,28 @@ export class TickGate {
    */
   readonly ancestorConditions: readonly AncestorCondition[];
 
+  /**
+   * 増減が効くために、**宣言元の外側**——親、またはそのプロパティを持つ最初の祖先——が入っていな
+   * ければならない段。**押し手が傍に在ることで成立する条件**を見分けるための手掛かりで、刻んだ芋の
+   * 上乗せ（`prepped`）なら親の`heat`の`coals`以上。
+   *
+   * **親と祖先を分けて持たない。** 祖先はそのプロパティを持つ最初の親から遡った先なので、親がその
+   * プロパティを持っていれば親そのもの——照らし合わせる相手（押し手）がその段を名乗っている時点で、
+   * 持っていることは決まっている。
+   */
+  private readonly outerStages: readonly OuterStageRequirement[];
+
   /** 条件が宣言元自身の型に課している指定のうち、成立していなければ効かないもの。 */
   private readonly selfTypeMatches: readonly TypeMatchReading[];
 
   /** 型だけでは真偽の決まらない条件が残っているか（{@link conditional}）。 */
   private readonly hasRuntimeConditions: boolean;
 
-  /** 自身の段の名指し以外の条件が残っているか（{@link gatedOnlyBySelfStages}）。 */
-  private readonly hasNonStageConditions: boolean;
+  /**
+   * 段の名指し——{@link requiredSelfStages}・{@link outerStages}のどちらでもない条件が残っているか
+   * （{@link gatedOnlyBySelfStagesUnder}・{@link heldThroughoutPush}）。
+   */
+  private readonly hasConditionsBeyondStages: boolean;
 
   constructor(gate: GateReading, def: ObjectDef) {
     const collector = new GateConditionCollector();
@@ -102,9 +116,10 @@ export class TickGate {
       lowerBound: def.tryGetPropertyDef(required.propertyGlobalId)?.lowerBoundOfStage(required.stageName),
     }));
     this.ancestorConditions = collector.ancestorConditions;
+    this.outerStages = collector.outerStages;
     this.selfTypeMatches = collector.selfTypeMatches;
     this.hasRuntimeConditions = collector.hasRuntimeConditions;
-    this.hasNonStageConditions = collector.hasNonStageConditions;
+    this.hasConditionsBeyondStages = collector.hasConditionsBeyondStages;
   }
 
   /**
@@ -138,15 +153,56 @@ export class TickGate {
   }
 
   /**
-   * 縛りが{@link requiredSelfStages}だけか。真なら、宣言元がその段に入ってさえいれば必ず効く。
+   * 押し手が押している間、縛りが{@link requiredSelfStages}だけになるか。真なら、宣言元がその段に
+   * 入ってさえいれば、押されている間は必ず効く。
    *
    * **{@link conditional}の否定ではない。** 段の名指し（`in_stage`、14.1節）は成立する場面としない
    * 場面のある条件なので`conditional`は真になるが、その段へ届いたかは値から読める——読めないものが
    * 残っているかを問う`conditional`とは、別の問いへの答え。段の宣言（8.2節）の下に置いて書いても
    * 条件として書いても同じことなので、書き方で答えが変わってはならない。
+   *
+   * **外側の段（{@link outerStages}）は、押し手が保証していれば縛りとして数えない**——理由は
+   * {@link heldThroughoutPush}と同じ。
    */
-  get gatedOnlyBySelfStages(): boolean {
-    return !this.hasNonStageConditions;
+  gatedOnlyBySelfStagesUnder(pushing: PushingSituation): boolean {
+    return !this.hasConditionsBeyondStages && this.outerStagesHeldThroughout(pushing);
+  }
+
+  /**
+   * その増減が、**押し手が押している間ずっと効いていると、宣言だけから言い切れるか**。真になるのは、
+   * 縛りが外側の段（{@link outerStages}）だけで、押し手が押している間に居ると分かっている段が
+   * そのどれも満たすとき——刻んだ芋が自分で足す加熱は「親の火力が熾火以上」を要るが、火にかけている
+   * 相手はまさにその段に居るからこそ押している。
+   *
+   * **「同時に成立しうる組み合わせ」の枠から出ない**ので、押されている間の数に入れてよい。押し手を
+   * 打ち消す向きの条件つき——炉の外に居る間だけ冷める石——は、押し手が居る場面をそもそも名乗って
+   * いないので、ここでは真にならない。
+   */
+  heldThroughoutPush(pushing: PushingSituation): boolean {
+    return (
+      !this.hasConditionsBeyondStages &&
+      this.requiredSelfStages.length === 0 &&
+      this.outerStages.length > 0 &&
+      this.outerStagesHeldThroughout(pushing)
+    );
+  }
+
+  /**
+   * 押し手が押している間、{@link outerStages}がどれも成立していると言い切れるか。外側の段を名指した
+   * 条件が押し手について言っているのは、**押し手が外側に居るときだけ**——持ち主の血を奪う傷のように
+   * 内側から押す押し手は、親でも祖先でもない。
+   *
+   * 押し方は同時には効かない組が並ぶ（炉の火力の段）ので、押されている間ずっと成り立つと言えるのは
+   * **どの押し方でも成り立つことだけ**。
+   */
+  private outerStagesHeldThroughout(pushing: PushingSituation): boolean {
+    if (this.outerStages.length === 0) return true;
+    if (pushing.sourceIsAt !== 'parent' || pushing.sourceStagesByCase.length === 0) return false;
+    return pushing.sourceStagesByCase.every((held) =>
+      this.outerStages.every((required) =>
+        held.some((stage) => satisfiesOuterStage(pushing.source, stage, required)),
+      ),
+    );
   }
 
   /**
@@ -172,6 +228,58 @@ export interface SelfStageRequirement {
    * 持たない段——完全一致で決まる段（シンボル型、6.6節）と、綴り違いで宣言に無い名前。
    */
   readonly lowerBound: number | undefined;
+}
+
+/** 増減が効くために、宣言元の外側（親・祖先）が入っていなければならない段1つ（TickGate.outerStages）。 */
+interface OuterStageRequirement {
+  readonly propertyGlobalId: PropertyGlobalId;
+  readonly stageName: string;
+
+  /** ちょうどその段か、その段以上か（14.1節）。 */
+  readonly bound: StageBound;
+}
+
+/**
+ * 外からtick毎の値を押している物が、**押している間どういう場面に居るか**
+ * （TickGate.heldThroughoutPush）。押される側の条件つきの増減のうち、押されている間ずっと成立して
+ * いるものを見分けるのに要る。
+ */
+export interface PushingSituation {
+  /** 押している物の型。要る段が値の並びの上でどこに在るかは、この型だけが答えられる。 */
+  readonly source: ObjectDef;
+
+  /** 押される側から見た押し手の居場所。炉は親（子を焼く）、刺さった傷は子（持ち主の血を奪う）。 */
+  readonly sourceIsAt: 'parent' | 'child';
+
+  /**
+   * **押し方1つにつき1組**の、押している間ずっと押し手自身が居ると分かっている段。炉の火力のように
+   * 同時には効かない押し方が並ぶので、押されている間ずっと成り立つと言えるのは、どの組でも成り立つ
+   * ことだけ。段で縛られていない押し方では空の組になる。
+   */
+  readonly sourceStagesByCase: readonly (readonly SelfStageRequirement[])[];
+}
+
+/**
+ * 押し手が居ると分かっている段（held）が、外側へ課された段の指定（required）を満たすか。
+ *
+ * ちょうどその段（`in_stage`、14.1節）は名前が同じときだけ満たし、「その段以上」
+ * （`in_stage_or_above`）は居る段が値の並びの上で指定の段より下に無ければ満たす。**並びの上の位置を
+ * 答えられるのは押し手の型だけ**——名指されているのは押し手自身のプロパティの段だから。
+ */
+function satisfiesOuterStage(
+  source: ObjectDef,
+  held: SelfStageRequirement,
+  required: OuterStageRequirement,
+): boolean {
+  if (held.propertyGlobalId !== required.propertyGlobalId) return false;
+  if (required.bound === 'exact') return held.bound === 'exact' && held.stageName === required.stageName;
+
+  const requiredLowerBound = source
+    .tryGetPropertyDef(required.propertyGlobalId)
+    ?.lowerBoundOfStage(required.stageName);
+  return (
+    held.lowerBound !== undefined && requiredLowerBound !== undefined && held.lowerBound >= requiredLowerBound
+  );
 }
 
 /**
@@ -283,14 +391,14 @@ function matchesType(def: ObjectDef, match: TypeMatchReading): boolean {
 /**
  * 条件の木から、増減がいつ効くかの手掛かりを集める——宣言元自身（self）の見られているプロパティ
  * （出血は `bleeding` が尽きるまでしか効かない）、名指された自身の段（膿んだ傷が宿主の菌を
- * 押し上げ始めるのは `infection` が `festering` へ届いてから）、祖先に課された比較（雨は降っている
- * 間だけ効く）、
+ * 押し上げ始めるのは `infection` が `festering` へ届いてから）、名指された外側の段（刻んだ芋が自分で
+ * 足す加熱は、親の火力が `coals` へ届いてから）、祖先に課された比較（雨は降っている間だけ効く）、
  * そして宣言元自身の型に課された指定（口径ごとに分かれた蒸発・雨の宣言）。
  *
  * selfのプロパティは比較の相手（valueRef）を数えない——尽きて条件が外れるのは、見ている側の値が
  * 動いたときだから。**段を名指した条件が見ている値も数えない**——その条件が外れるのは値が尽きた
- * ときではなく段を出たときで、答えるのは段の側（TickGate.watchedSelfProperties）。自身の段・祖先・
- * 型の指定は**論理積の枝にあるものだけ**を採る（下のreadAlternative）。
+ * ときではなく段を出たときで、答えるのは段の側（TickGate.watchedSelfProperties）。段・祖先・型の指定は
+ * **論理積の枝にあるものだけ**を採る（下のany・not）。
  *
  * **ここが集めるのは上の問いへの答えだけで、条件そのものではない。** 枠を見る葉
  * （`{in_slot}`・`{slot, matches}`）はどれにも答えない——枠に入っているかは、尽きる値でも
@@ -303,17 +411,18 @@ class GateConditionCollector implements ConditionReader {
   /** 下端はまだ読めない（プロパティの定義を持たない）ので、TickGateが引いて補う。 */
   readonly requiredSelfStages: Omit<SelfStageRequirement, 'lowerBound'>[] = [];
   readonly ancestorConditions: AncestorCondition[] = [];
+  readonly outerStages: OuterStageRequirement[] = [];
   readonly selfTypeMatches: TypeMatchReading[] = [];
 
   /** 型の指定以外の葉を1つでも読んだか（TickGate.conditional）。 */
   hasRuntimeConditions = false;
 
   /**
-   * requiredSelfStagesへ入らない葉を1つでも読んだか（TickGate.gatedOnlyBySelfStages）。論理和・否定の
-   * 下で読んだ自身の段もここへ来る——「どれかの段に居る」「その段に居ない」は、その段に居ることでは
-   * ないので、届いたかを値から読めない。
+   * requiredSelfStagesにもouterStagesにも入らない葉を1つでも読んだか
+   * （TickGate.hasConditionsBeyondStages）。論理和・否定の下で読んだ段もここへ来る——「どれかの段に
+   * 居る」「その段に居ない」は、その段に居ることではないので、届いたかを値から読めない。
    */
-  hasNonStageConditions = false;
+  hasConditionsBeyondStages = false;
 
   /** 今読んでいる枝の比較が、成立していなければ増減が効かないものか。 */
   private required = true;
@@ -323,7 +432,7 @@ class GateConditionCollector implements ConditionReader {
 
   property(reading: PropertyConditionReading): void {
     this.hasRuntimeConditions = true;
-    this.hasNonStageConditions = true;
+    this.hasConditionsBeyondStages = true;
     if (reading.root === 'self') this.selfProperties.push(reading.propertyGlobalId);
     if (reading.root !== 'ancestor' || !this.required || this.negated || reading.values === undefined) return;
     this.ancestorConditions.push({
@@ -340,28 +449,31 @@ class GateConditionCollector implements ConditionReader {
     bound: StageBound,
   ): void {
     this.hasRuntimeConditions = true;
-    if (root !== 'self') {
-      this.hasNonStageConditions = true;
+    if (!this.required || this.negated) {
+      this.hasConditionsBeyondStages = true;
       return;
     }
-    if (this.required && !this.negated) this.requiredSelfStages.push({ propertyGlobalId, stageName, bound });
-    else this.hasNonStageConditions = true;
+    if (root === 'self') this.requiredSelfStages.push({ propertyGlobalId, stageName, bound });
+    // 外側（親・祖先）の段は、押し手が傍に在ることで成立しうる（TickGate.outerStages）。
+    else if (root === 'parent' || root === 'ancestor')
+      this.outerStages.push({ propertyGlobalId, stageName, bound });
+    else this.hasConditionsBeyondStages = true;
   }
 
   slotPosition(): void {
     this.hasRuntimeConditions = true;
-    this.hasNonStageConditions = true;
+    this.hasConditionsBeyondStages = true;
   }
 
   slotContent(): void {
     this.hasRuntimeConditions = true;
-    this.hasNonStageConditions = true;
+    this.hasConditionsBeyondStages = true;
   }
 
   objectMatches(root: ReferenceRoot, match: TypeMatchReading): void {
     if (root !== 'self' || !this.required) {
       this.hasRuntimeConditions = true;
-      this.hasNonStageConditions = true;
+      this.hasConditionsBeyondStages = true;
       return;
     }
     this.selfTypeMatches.push(this.negated ? { kind: 'not', inner: match } : match);
@@ -377,7 +489,7 @@ class GateConditionCollector implements ConditionReader {
   }
 
   /**
-   * 論理和の下の枝。**自身の段も祖先の比較も型の指定も集めない**——「どれかが成り立てばよい」は、
+   * 論理和の下の枝。**段も祖先の比較も型の指定も集めない**——「どれかが成り立てばよい」は、
    * その比較が成立していることそのものではない。集めてしまうと、効き始めまでの時間も外の状態が
    * 続く時間も数え違え、効く型を取り違える。どれが成り立って増減が効いたのかも、定義だけでは
    * 決まらない。
@@ -393,7 +505,7 @@ class GateConditionCollector implements ConditionReader {
 
   /**
    * 否定の下の枝。**型の指定だけは裏返して集める**——「`cured`でないこと」はその型を見れば決まる
-   * ので、成立するかどうかが分かれる条件ではない。自身の段と祖先の比較は集めない：「成り立たない
+   * ので、成立するかどうかが分かれる条件ではない。段と祖先の比較は集めない：「成り立たない
    * こと」は、その比較が成立していることそのものではなく、集めると効き始めまでの時間と外の状態が
    * 続く時間を数え違える。
    */
