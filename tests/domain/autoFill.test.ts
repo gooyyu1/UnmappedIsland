@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { autoFillMaterials } from '../../src/domain/autoFill';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
@@ -53,7 +53,7 @@ object_defs:
     codex = new WorldCodexYamlLoader().load('core.yaml', YAML).buildAndReset();
     session = new WorldSession(codex);
 
-    ground = new WorldObject(0, codex.objects.get(idOf('ground')), session);
+    ground = session.createObject(idOf('ground'));
     player = session.createObject(idOf('character'));
     wip = session.createObject(idOf(inProgressObjectName('basket', 'woven')));
     wip.moveToSlotOrRejection(ground.getSlot(slotOf('items')));
