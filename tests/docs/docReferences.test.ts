@@ -10,6 +10,7 @@ import {
 } from '../../scripts/daemon/prompt-body.mjs';
 import {
   COMMENTED_EXTENSIONS,
+  isAnalysisRecord,
   isMarkRuleDoc,
   isVerbatimRecord,
   trackedDocs,
@@ -32,10 +33,12 @@ import { isPathTarget, linksIn, pathTargetsIn } from '../../scripts/markdownLink
  * **リンクはソースのコメントにも在る**ので、そちらも同じ規約で見る（{@link COMMENTED_SOURCES}）
  * ——TypeDoc が `/reference/` を作るときに読む側なので、切れたままだと公開の頁のリンクが死ぬ。
  *
- * **外すのは、当時の現物をそのまま残す記録だけ**（{@link isVerbatimRecord}。DocumentStyle.md 10節）。
- * 実装状況の印（4節・4.1節）だけは `docs/` に閉じており、理由は {@link docByPath}。
+ * **外すのは、当時の現物をそのまま残す記録**（{@link isVerbatimRecord}。DocumentStyle.md 10節）
+ * **と、パスの綴りだけはその回の観測も**（{@link PATH_CHECKED_FILES}）。実装状況の印（4節・4.1節）
+ * だけは `docs/` に閉じており、理由は {@link docByPath}。
  *
  * - Markdownリンク（ファイル・アンカー）が実在すること
+ * - 地の文・囲みに書いたリポジトリ直下からのパスが実在すること（{@link repoPathsIn}）
  * - コード・YAML・ドキュメント中の「Foo.md N節」「Foo.md 〇〇節」が実在の節を指すこと
  * - 見出しの【未実装: 識別子】ラベルが、実装後に剥がし忘れられていないこと
  * - 【いつか: 識別子】の印と docs/Someday.md の項目が1対1で対応すること（DocumentStyle.md 4.1節）
@@ -181,6 +184,32 @@ const COMMENTED_SOURCES = trackedFiles(ROOT).filter((rel) =>
  * 実在は見られているのに中身は誰も読んでいない置き場が黙って生える（逆も同じ）。
  */
 const REF_FILES = trackedRefSources(ROOT);
+
+/**
+ * パスの綴り（{@link repoPathsIn}）を課す側。**{@link REF_FILES} から、その回の観測
+ * （{@link isAnalysisRecord}）だけをさらに外す。**
+ *
+ * あそこが書いているのは**当時の置き場**で、引っ越した先を指し直すと観測そのものが書き換わる
+ * （行番号で互いを引き合っているので、直した行を後の回が「旧の置き場を指している」と名指したまま
+ * 残る）。節番号や節名の参照とは、そこが違う——**綴りは在り処で、在り処は当時の事実**。
+ */
+const PATH_CHECKED_FILES = REF_FILES.filter((rel) => !isAnalysisRecord(rel));
+
+/**
+ * 追跡しているパス全部——ファイルと、その親フォルダ。
+ *
+ * **在るかは git に訊く**（{@link trackedFiles}。{@link TRACKED_DOCS} と同じ理由）。手元に落ちて
+ * いる生成物で在ることにすると、**手元だけ緑でCIが赤くなる**——CIのチェックアウトに在るのは
+ * 追跡しているものだけ。
+ */
+const TRACKED_PATHS = new Set<string>();
+for (const rel of trackedFiles(ROOT)) {
+  const segments = rel.split(sep);
+  for (let i = 1; i <= segments.length; i++) TRACKED_PATHS.add(segments.slice(0, i).join(sep));
+}
+
+/** リポジトリ直下の名前。**ここから始まる綴りだけ**を、リポジトリのパスとして読む。 */
+const REPO_ROOTS = new Set([...TRACKED_PATHS].filter((path) => !path.includes(sep)));
 
 /**
  * コードフェンスの外の各行と、原文での行番号。`text` はインラインコードも除いた本文
@@ -457,6 +486,53 @@ function brokenLinkAnchorsIn(rel: string, source: string): string[] {
 }
 
 /**
+ * `source` に書かれた、リポジトリ直下からのパス（docs/DocumentStyle.md 5節）。
+ *
+ * **見るのはリンクの指し先ではなく、地の文と囲みの中の綴り。** 文書が `agent-ops/` へ引っ越した
+ * とき（#2059）に指す先を失った綴りはどれもリンクではなく、{@link brokenLinkFilesIn} の見ている面
+ * には現れなかった——`.claude/` 自体は今も在るので、綴りだけを見ても壊れていることは分からない。
+ *
+ * 読むのは、**直下の名前から始まっていて（{@link REPO_ROOTS}）、パスの形をしているもの**だけ
+ * ——末尾が `/`・`*` を含む・最後の段に拡張子が付いている、のどれか。どれでもない綴りは在り処では
+ * なく名前で（MCP の `tools/call`・単位の `-1/tick`）、指し先を持たない。
+ *
+ * **省略の `…` を含むものは外す**（DocumentStyle.md 5節が、リンクの指し先で同じ線を引いている）
+ * ——在り処ではなく形を見せている綴りがそれで、実在のパスとして読むと例示が赤くなる。
+ *
+ * **走ったときにだけ在る置き場（{@link SKIP_DIRS}）も外す。** 追跡されていないので、在るかを
+ * git に訊けない。
+ */
+function repoPathsIn(source: string): string[] {
+  const found: string[] = [];
+  for (const [token] of source.matchAll(/[A-Za-z0-9._*/…-]+/g)) {
+    if (token.includes('…')) continue;
+    const segments = token.split('/');
+    if (segments.length < 2 || !REPO_ROOTS.has(segments[0])) continue;
+    if (segments.some((segment) => SKIP_DIRS.has(segment))) continue;
+    const last = segments[segments.length - 1];
+    if (!token.endsWith('/') && !token.includes('*') && !/\.[A-Za-z0-9]+$/.test(last)) continue;
+    found.push(token);
+  }
+  return found;
+}
+
+/**
+ * そのパスが、追跡している指し先（{@link TRACKED_PATHS}）へ解決するか。
+ *
+ * `*` から先は見ない——**どれかに当たるかではなく、置き場が在るか**を見る。glob を展開して1つも
+ * 当たらないことまで赤くすると、これから置く先を指した綴り（`docs/**` の下に作る文書の案内）が
+ * 書けなくなる。
+ */
+function resolvesInRepo(token: string): boolean {
+  const solid: string[] = [];
+  for (const segment of token.split('/')) {
+    if (segment === '' || segment.includes('*')) break;
+    solid.push(segment);
+  }
+  return solid.length > 0 && TRACKED_PATHS.has(solid.join(sep));
+}
+
+/**
  * `source` の中で、実在の節へ解決しない節番号の参照。`rel` は自文書の判定と失敗メッセージに使う。
  *
  * 指し先の規約（docs/DocumentStyle.md 5節）:
@@ -580,6 +656,21 @@ describe('ドキュメントの参照', () => {
       ...COMMENTED_SOURCES.flatMap((rel) => brokenLinkAnchorsIn(rel, commentsOnly(read(rel), rel))),
     ];
     expect(broken, `アンカー切れ:\n${broken.join('\n')}`).toEqual([]);
+  });
+
+  it('リポジトリ直下から書いたパスが、実在の指し先を持つ', () => {
+    const seen: string[] = [];
+    const broken: string[] = [];
+    for (const rel of PATH_CHECKED_FILES) {
+      const source = rel.endsWith('.md') ? read(rel) : commentsOnly(read(rel), rel);
+      for (const token of repoPathsIn(source)) {
+        seen.push(`${rel}: ${token}`);
+        if (!resolvesInRepo(token)) broken.push(`${rel}: ${token}`);
+      }
+    }
+    // 拾う側が黙って0件になると、**1つも読めていない状態と、全部が正しい状態が同じ緑**になる。
+    expect(seen).not.toHaveLength(0);
+    expect(broken, `指し先の無いパス:\n${broken.join('\n')}`).toEqual([]);
   });
 
   it('節番号の参照が実在の節に解決する（明示・同・裸の全形式）', () => {
