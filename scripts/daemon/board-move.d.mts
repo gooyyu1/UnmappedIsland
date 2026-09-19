@@ -27,13 +27,13 @@ export const SESSION_ID: RegExp;
 export const STRANDS: Readonly<Record<string, { why: string; fix: string }>>;
 
 /**
- * 差し戻す理由と、そこから決まるもの（`agent-ops/board-design.md` 2.13.6）。人へ返す文面を書く側が
+ * 差し戻す理由と、そこから決まるもの（`agent-ops/board-design.md` 2.13.6節）。人へ返す文面を書く側が
  * `why` をここから取る。
  */
 export const MENDS: Readonly<Record<string, { kind: string; why: string }>>;
 
 /**
- * 頼み終えた差し戻しを人へ返すときに、人がすること（`agent-ops/board-design.md` 2.13.6）。鍵は
+ * 頼み終えた差し戻しを人へ返すときに、人がすること（`agent-ops/board-design.md` 2.13.6節）。鍵は
  * `MENDS` の `kind`。
  */
 export const TAKEOVER: Readonly<Record<string, string>>;

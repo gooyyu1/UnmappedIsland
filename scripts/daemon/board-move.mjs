@@ -1242,7 +1242,8 @@ export function moves(input) {
     }
     // **理由を分けて残す。** `asked` で落ちてきたぶんは判定が書かれていて、出し直しではなく次の周
     // ——同じ文面にすると、ログを読む人が詰まりの場所を取り違える。
-    if (asked) notes.push(`PR #${pr.number} は差し戻しを頼み終えて戻ってこないので、もう1周読ませる`);
+    if (asked !== undefined)
+      notes.push(`PR #${pr.number} は差し戻しを頼み終えて戻ってこないので、もう1周読ませる`);
     else if (verdictOn(pr, false) !== undefined)
       notes.push(`PR #${pr.number} は判定が書かれても結論のラベルが付かないので、もう1周読ませる`);
     else if (sent) notes.push(`PR #${pr.number} のレビューは判定を書かずに終わったので、もう一度出す`);

@@ -1110,7 +1110,7 @@ push された印の増減は誰にも見えないまま入る。**塞ぐ手は�
 
 **止まる形は理由によらず同じ1つなので、出口も1つに決める。** 同じ指紋で一度起こした相手が、手が
 空いたまま戻ってこないなら、**盤面がこの版へ打てる手は出し尽くしている**
-（[`board-move.mjs`](../scripts/daemon/board-move.mjs) の `askedAlready`）——そこで止めずに、次の段へ
+（[`board-move.mjs`](../scripts/daemon/board-move.mjs) の `askedMender`）——そこで止めずに、次の段へ
 落とす。
 
 | そのPRは | 次の段 |
