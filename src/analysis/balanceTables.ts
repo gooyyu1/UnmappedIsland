@@ -786,9 +786,12 @@ function routeCandidates(
     const scheduledCost = scheduled.stepCost(ref);
     if (scheduledCost === undefined) continue;
     const scheduledRoute = [ref, ...scheduled.routeOf(ref.def.globalId)];
-    const payable = buildRoute(codex, scheduled, scheduledRoute, scheduledCost, deltas, fills, place);
-    // 絞り込んだ側で前提が解けないことは、島にその前提が無いことではない（穴の一覧へ出さない）。
-    if (!payable.untimed && !payable.blocked) candidates.push(payable);
+    // **前提（道具）が解けるかは、絞り込んでいない側が答える。** 道具の時間は経路へ按分しない（#550）
+    // ので、要るのは「島のどこかで手に入るか」だけで、労働0の工程を外したこの解き直しとは関わりが
+    // ない。絞り込んだ側で答えさせると、労働0でしか手に入らない道具を使う経路が、道具の側の理由で
+    // 表から消える（issue #2150）。
+    const payable = buildRoute(codex, acquisition, scheduledRoute, scheduledCost, deltas, fills, place);
+    if (!payable.untimed) candidates.push(payable);
   }
   return candidates;
 }
@@ -1486,10 +1489,34 @@ class Acquisition {
       const resolved = this.inputSource(input);
       if (resolved === undefined) return undefined;
       // **要る個数を掛ける。** 筏は丸太を6本使うので、1本ぶんで数えると桁が変わる。
-      cost = addCost(cost, scaleCost(resolved.cost, input.count));
+      cost = addCost(cost, scaleCost(this.netCostOf(input, resolved.cost), input.count));
       imported ||= resolved.imported;
     }
     return { cost, imported };
+  }
+
+  /**
+   * 入力1つを使って正味で失う時間。**空になって手元へ残る器のぶんは差し引く**
+   * （CraftingInput.emptiedInto）——甕は16杯ぶんを抱えているが、飲み干しても甕として残るので、
+   * 1杯が食うのは中身を用意した時間だけ。器そのものは繰り返し使えるので1回あたりへ按分しない
+   * （#550）。**`prerequisites`（道具）としても並ばない**——中身ごと消費される入力なので、
+   * 器を用意する工程は経路（`routeOf`）の上流にそのまま現れる。
+   *
+   * 戻る先の値段が出ない文脈では差し引かない——引けないぶんを0と読むと、器が丸ごと消えたことになる。
+   */
+  private netCostOf(input: CraftingStep['inputs'][number], cost: Cost): Cost {
+    const emptied = input.emptiedInto === undefined ? undefined : this.costOf(input.emptiedInto);
+    if (emptied === undefined) return cost;
+
+    return {
+      exploreMinutes: Math.max(0, cost.exploreMinutes - emptied.exploreMinutes),
+      craftMinutes: Math.max(0, cost.craftMinutes - emptied.craftMinutes),
+    };
+  }
+
+  /** その型の値段。この文脈で出なければ島全体の値段（持ち込み）。どちらにも無ければundefined。 */
+  private costOf(objectGlobalId: ObjectGlobalId): Cost | undefined {
+    return this.costByObject.get(objectGlobalId) ?? this.islandWide?.costByObject.get(objectGlobalId);
   }
 
   /**
