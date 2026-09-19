@@ -21,7 +21,7 @@ vi.mock('node:child_process', async (importOriginal) => {
  * `scripts/daemon/live-sessions.mjs` の検査。
  *
  * ここが守るのは**「畳まれていない」の定義が1箇所に留まること**と、**どこで走っているかを
- * 取り違えないこと**（`agent-ops/board-design.md` 2.16.2）。後者を誤ると、盤面が正しく走っている
+ * 取り違えないこと**（`agent-ops/board-design.md` 2.16.2節）。後者を誤ると、盤面が正しく走っている
  * ワーカーを「場所が違う」と読んで畳む。
  *
  * 環境IDの既定値を持つのは [`ccr-env.sh`](../../scripts/daemon/ccr-env.sh) なので、**そこを叩いて
@@ -158,7 +158,7 @@ describe('live-sessions.mjs', () => {
 
     /**
      * **`status_bucket` では言えない。** 走る者が付かなかった周は `..._FAILED` で並ぶが、同じ値は
-     * 働いたあとに手番が転んだセッションにも付く（`board-design.md` 1.5 の `01Wcy9XLj85X`）。
+     * 働いたあとに手番が転んだセッションにも付く（`board-design.md` 1.5節 の `01Wcy9XLj85X`）。
      * bucket で読むと、**始まらなかったことと、始まってから転んだことが同じ顔になる。**
      */
     it('手番が転んだセッションは、働いた側のまま', async () => {
@@ -276,7 +276,7 @@ describe('live-sessions.mjs', () => {
   });
 
   /**
-   * **繰る回数が履歴の長さに比例して増えないこと**（`agent-ops/board-design.md` 1.7）。
+   * **繰る回数が履歴の長さに比例して増えないこと**（`agent-ops/board-design.md` 1.7節）。
    * `list_sessions` は1000回/時で頭打ちになるので、末尾まで繰ると**セッションを作るほど盤面が
    * 止まりやすくなる**。上限に当たった周は一覧が引けず、レビューも投入も1件も出ない。
    */

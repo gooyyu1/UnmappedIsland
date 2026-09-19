@@ -87,6 +87,16 @@ const REJECTED: ReadonlyArray<readonly [string, unknown]> = [
     'レシピの要求にconsumeが無い',
     { object_defs: { o: { recipes: { r: { steps: [{ requires: [{ object: 'twig' }], duration: 1 }] } } } } },
   ],
+  // レシピは余分の卓を持てない（docs/world/Skills.md 7.2節【確定】）。ローダー側の見張りは
+  // tests/loader/recipes.test.ts で、こちらはスキーマだけが緩んで文法を認め続ける形を止める。
+  [
+    'レシピに余分の卓',
+    {
+      object_defs: {
+        o: { recipes: { r: { steps: [{ duration: 1 }], pick: [{ weight: 1 }] } } },
+      },
+    },
+  ],
   ['worsensに未定義の向き', { object_defs: { o: { props: { x: { value: 0, worsens: 'sideways' } } } } }],
   ['未知のルートキー', { object_defs_typo: {} }],
 ];

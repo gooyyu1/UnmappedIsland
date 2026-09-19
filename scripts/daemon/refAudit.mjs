@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 import { isAnalysisRecord, trackedDocs, trackedRefSources } from '../docScope.mjs';
 import { linesOutsideFence } from '../markdownFences.mjs';
+import { SECTION_RUN, sectionNumbersIn } from '../sectionRefs.mjs';
 
 /**
  * 節番号の参照を、**この周はどこまで読むか**を決める1つ（`agent-ops/prompts/refs-prompt.md`）。
@@ -53,8 +54,12 @@ export const UNSET = 'なし';
  */
 export const BUDGET = 40;
 
-/** 節番号の参照。1つ目の組が番号、2つ目は範囲で指したときの後ろ側。 */
-const REF_TOKEN = /(\d+(?:\.\d+)*)(?:\s*[〜～]\s*(\d+(?:\.\d+)*))?\s*節/g;
+/**
+ * 節番号の参照。捕獲するのは番号の並び（範囲・列挙を含む）で、**綴りは
+ * [`sectionRefs.mjs`](../sectionRefs.mjs) が持つ**——別に持つと、こちらだけが列挙の先頭側を
+ * 数え落とす。
+ */
+const REF_TOKEN = new RegExp(String.raw`(${SECTION_RUN})\s*節`, 'g');
 
 /** 見出しの先頭に付く節番号。 */
 const HEADING_NUMBER = /^(\d+(?:\.\d+)*)[.\s]/;
@@ -64,9 +69,9 @@ function countRefs(text) {
   return [...text.matchAll(REF_TOKEN)].length;
 }
 
-/** そこに在る節番号の参照が挙げている番号（範囲指しは両端）。 */
+/** そこに在る節番号の参照が挙げている番号（範囲指しは両端、列挙は全部）。 */
 function refNumbers(text) {
-  return [...text.matchAll(REF_TOKEN)].flatMap((found) => [found[1], found[2]]).filter(Boolean);
+  return [...text.matchAll(REF_TOKEN)].flatMap((found) => sectionNumbersIn(found[1]));
 }
 
 /** 台帳から引いた、前の周の到達点。どちらも「まだ無い」なら `null`。 */

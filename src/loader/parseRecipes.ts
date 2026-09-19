@@ -15,13 +15,11 @@ import {
 import { YamlLoadError } from './YamlLoadError';
 import { parseRequirementList } from './parseConditions';
 import { withYamlContext, parseTypeMatchRule } from './parseCommon';
-import { parsePickList } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { RecipeDef, RecipeDeftnessDef, RecipeRequirementDef, RecipeStepDef } from '../domain/RecipeDef';
-import { PickEffect } from '../domain/PickEffect';
 import { ReferenceScope } from '../domain/ReferenceRoot';
 
-const RECIPE_KEYS = ['steps', 'conditions', 'deftness', 'surplus'];
+const RECIPE_KEYS = ['steps', 'conditions', 'deftness'];
 const STEP_KEYS = ['requires', 'duration'];
 const DEFTNESS_KEYS = ['skill', 'from_stage', 'minutes'];
 const REQUIREMENT_KEYS = ['object', 'tag', 'count', 'consume'];
@@ -70,8 +68,7 @@ function parseStep(loader: WorldCodexYamlLoader, context: string, node: YamlNode
  * 参照は解決先を持たない（何を書けるかは下のReferenceScope.acting.withoutSelfが決める）。
  *
  * **`deftness`（手際）は参照を持たない**——見るのは作り手の腕の段だけで、そこを読むのは工程を進める
- * 最中だから（RecipeDeftnessDef）。一方**`surplus`（余分の卓）はselfが居る**——引くのは完成した
- * 瞬間で、同じ個体が既に成果物になっている（9.9節の`become`）。
+ * 最中だから（RecipeDeftnessDef）。
  */
 export function parseRecipes(
   loader: WorldCodexYamlLoader,
@@ -118,13 +115,7 @@ export function parseRecipes(
             );
           });
 
-    const surplusNode = tryGetSeq(map, 'surplus', context);
-    const surplus =
-      surplusNode === undefined
-        ? undefined
-        : new PickEffect(parsePickList(loader, context, surplusNode, ReferenceScope.acting, 'surplus'));
-
-    result.push(new RecipeDef(name, steps, unlock, deftness, surplus));
+    result.push(new RecipeDef(name, steps, unlock, deftness));
   }
 
   return result;

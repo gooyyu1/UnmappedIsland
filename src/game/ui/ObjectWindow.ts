@@ -19,11 +19,12 @@ import { DESCRIPTION_TAB, EXPLORATION_TAB, PROPERTIES_TAB } from './windowTabs';
 import {
   ACTION_GAP,
   ACTION_HEIGHT,
-  ACTION_MAX_WIDTH,
   CONTENT_GAP,
   MIN_WINDOW_WIDTH,
   WINDOW_PADDING,
+  actionButtonWidth,
   centeredWindowRect,
+  windowContentWidth,
 } from '../looks/childWindowLayout';
 import { addLabel } from '../../ui/labels';
 import { addInputBlockingPanel, drawBox } from '../../ui/shapes';
@@ -194,7 +195,7 @@ export class ObjectWindow {
     this.ownedObjects.push(addInputBlockingPanel(scene, options.area, COLOR.modalOverlay, 0.5));
 
     const windowWidth = decideWidth(metrics, options.area, this.tabSpecs, padding);
-    const contentWidth = windowWidth - padding * 2;
+    const contentWidth = windowContentWidth(metrics, windowWidth);
 
     // 台紙は寸法が決まる前に作る。後から作る文字より先に置く必要があるため（screenDepth.ts）。
     const board = scene.add.graphics();
@@ -456,10 +457,7 @@ export class ObjectWindow {
     if (buttons.length === 0) return;
 
     const gap = metrics.px(ACTION_GAP);
-    const buttonWidth = Math.min(
-      metrics.px(ACTION_MAX_WIDTH),
-      (row.width - gap * (buttons.length - 1)) / buttons.length,
-    );
+    const buttonWidth = actionButtonWidth(metrics, row.width, buttons.length);
     const left = row.x + (row.width - (buttonWidth * buttons.length + gap * (buttons.length - 1))) / 2;
 
     buttons.forEach((action, index) => {

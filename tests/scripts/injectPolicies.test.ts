@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { runScript } from '../support/runScript';
 
 /**
@@ -9,10 +9,6 @@ import { runScript } from '../support/runScript';
  *
  * **落ちても気づけない**フックなので（理由はフックのコメント）、ここが鳴らないことだけが手立て。
  */
-
-// 実際に bash と jq のプロセスを起こすので、`npm test` 全体を並行実行したときのCPU競合だけで
-// 既定の5秒を超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const HOOK = resolve(__dirname, '../../.claude/hooks/inject-policies.sh');
 

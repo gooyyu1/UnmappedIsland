@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { isMap, isScalar, isSeq, parseDocument } from 'yaml';
+import { historyDocs, specDocs } from '../../scripts/docScope.mjs';
+import { linesInsideFence } from '../../scripts/markdownFences.mjs';
 import { craftingStepsOf } from '../../src/analysis/craftingSteps';
 import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 import type { RecipeDef } from '../../src/domain/RecipeDef';
@@ -9,7 +12,8 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import type { WorldObject } from '../../src/domain/WorldObject';
 
 /**
- * 行動の所要時間がtickの格子に乗っていることを、同梱のYAMLに対して確かめる
+ * 行動の所要時間がtickの格子に乗っていることを、同梱のYAMLと、`docs/` の文書が書き方の見本として
+ * 見せているYAMLの例に対して確かめる
  * （[`docs/engine/ActionSystem.md`](../../docs/engine/ActionSystem.md) 6.2節）。
  *
  * tickが回るのは**絶対時刻が15分の倍数になる瞬間**なので、格子から外れた長さの行動は、いつ押したかで
@@ -22,6 +26,8 @@ import type { WorldObject } from '../../src/domain/WorldObject';
  * その宣言の中しか見ない（どの型の素へ積む分かが名前から決まらないため。下の検査に理由が在る）。
  */
 const codex = bundledCodex();
+
+const ROOT = resolve(__dirname, '../..');
 
 /** 5分未満を要求する操作（飲む）のための、格子のもう1つの目（ActionSystem.md 6.2節）。 */
 const SHORT_MINUTES = 5;
@@ -114,6 +120,33 @@ function writtenDurations(node: unknown, found: number[]): void {
     if (key === 'duration' && minutes !== undefined) found.push(minutes);
     writtenDurations(pair.value, found);
   }
+}
+
+/**
+ * 文書のYAMLの例が `duration` へ直に書いている分数。**キーが `duration` ちょうどのものだけ**を拾う
+ * ——`season_duration`（季節の日数、docs/diagnostics/ClimateSystemStats.md）は分ではない。
+ */
+const DOC_DURATION = /(?:^|[\s{])duration:\s*(-?\d+(?:\.\d+)?)/g;
+
+/**
+ * 書き方の見本として読まれる文書（`docs/` のうち、経緯そのものを主題とするものを除いたもの）。
+ *
+ * **経緯の文書を外すのは、当時の現物をそのまま残す場所だから**（docs/DocumentStyle.md 9.1節）
+ * ——格子より前の宣言を引いた行がここに当たると、**赤を消す手が記録の書き換えしか無くなる。**
+ */
+function exampleDocs(): readonly string[] {
+  const history = historyDocs(ROOT);
+  return specDocs(ROOT).filter((rel) => !history.has(rel));
+}
+
+/** 文書のYAMLの例が書いている所要時間を、在り処つきで集める。 */
+function durationsInDocs(): readonly { readonly where: string; readonly minutes: number }[] {
+  const found: { where: string; minutes: number }[] = [];
+  for (const rel of exampleDocs())
+    for (const { line, raw } of linesInsideFence(readFileSync(join(ROOT, rel), 'utf-8'), 'yaml'))
+      for (const match of raw.matchAll(DOC_DURATION))
+        found.push({ where: `${rel}:${line}`, minutes: Number(match[1]) });
+  return found;
 }
 
 /** 所要時間を名乗るプロパティの宣言（同じ名前が複数の型に在るので、名前ごとに全部）。 */
@@ -340,6 +373,21 @@ describe('行動の所要時間はtickの格子に乗る', () => {
     }
 
     expect(offGrid, '腕を上げると格子から外れる工程').toEqual([]);
+  });
+
+  it('文書が見せているYAMLの例も、格子に乗った所要時間を書いている', () => {
+    // **例は読む人が書き方を写す先**なので、格子から外れた値が載っていると、そこから書き始めた宣言が
+    // 上の検査で落ちる（issue #2227）。落ちてから直すより、写される側を格子に留める。
+    //
+    // **見るのは格子だけで、世界の値との一致は見ない。** 例は抜粋なので「どこまで一致していれば
+    // 合っているか」が決められないが、格子に乗っているかは抜き方と関わりなく決まる。
+    const written = durationsInDocs();
+    expect(written.length, 'YAMLの例が書いている所要時間が1つも無い').toBeGreaterThan(0);
+
+    expect(
+      written.filter(({ minutes }) => !onGrid(minutes)).map(({ where, minutes }) => `${where}: ${minutes}分`),
+      '格子から外れた、YAMLの例の所要時間',
+    ).toEqual([]);
   });
 });
 

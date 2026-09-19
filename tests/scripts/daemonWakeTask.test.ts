@@ -2,12 +2,12 @@ import { execFileSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { pathForBash, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
- * `scripts/agent/daemon-wake-task.sh` の検査（`agent-ops/board-design.md` 2.19）。
+ * `scripts/agent/daemon-wake-task.sh` の検査（`agent-ops/board-design.md` 2.19節）。
  *
  * **デーモンが落ちたときに起こす唯一の経路。** 壊れても、次に気づくのは「デーモンが落ちたまま盤面が
  * 止まっている」ときになる。しかも**登録が黙って空振りすることと、正しく登録できて何も言うことが
@@ -18,10 +18,6 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * `iconv` だけは本物を使う——**UTF-16LEで渡せているかがここの見どころ**なので、身代わりにすると
  * 検査そのものが消える。
  */
-
-// 実プロセス（bash）を何本も起こすため、`npm test` 全体を並行実行したときのCPU競合だけで既定の5秒を
-// 超えうる。
-vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/agent/daemon-wake-task.sh');
 

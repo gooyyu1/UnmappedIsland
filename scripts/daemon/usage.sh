@@ -43,7 +43,7 @@
 # ## `limits[].severity` は出さない
 #
 # 基盤の出す段階は「どれだけ使ったか」を粗く言うだけで、**こちらが知りたい「あと1本投入して
-# よいか」には答えない**（[`board-design.md`](../../agent-ops/board-design.md) 2.5.1）。要るのは残量
+# よいか」には答えない**（[`board-design.md`](../../agent-ops/board-design.md) 2.5.1節）。要るのは残量
 # そのものではなく**残量と1本あたりの消費の比較**なので、比較は呼び手が自分の計測でする。
 #
 # 応答には他にも枠が並ぶ（`seven_day_opus` など）。**どの枠を出すかと、行をどう読むかは
@@ -63,7 +63,7 @@ POLLED="$STATE_DIR/usage-polled"
 # ——2つに分けると、片方だけ書けた回に「新しい印の付いた古い値」ができる。
 LATEST="$STATE_DIR/usage-latest"
 # 実測が2分ほどなので、余裕を1周ぶん足す。**詰めても得は無い**——欲しいのは全体の増分で、
-# 粗く測っても総和は変わらない（`board-design.md` 2.5.3「間隔は粗くてよい」）。
+# 粗く測っても総和は変わらない（`board-design.md` 2.5.3節「間隔は粗くてよい」）。
 USAGE_MIN_SECONDS="${USAGE_MIN_SECONDS:-180}"
 USAGE_MAX_AGE_SECONDS="${USAGE_MAX_AGE_SECONDS:-1800}"
 

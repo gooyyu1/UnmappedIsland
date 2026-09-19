@@ -46,6 +46,20 @@ export function trackedDocs(root) {
 }
 
 /**
+ * `docs/` に在る追跡下のMarkdown。**同梱の中身と突き合わせる検査が掛かる先**で、生成物の `site/` は
+ * 追跡していないので初めから入らない。
+ *
+ * **射程を呼び手ごとに書き写さない**（{@link trackedRefSources} と同じ理由）——`docs/` の外へ
+ * 文書が出た日に、書き写した側だけが取り残される。
+ *
+ * @param {string} root リポジトリの根
+ * @returns {string[]} 根からの相対パス（区切りはそのプラットフォームのもの）
+ */
+export function specDocs(root) {
+  return trackedDocs(root).filter((rel) => rel.startsWith(`docs${sep}`));
+}
+
+/**
  * コメントの印（`//` か `#` か）を [`commentsOnly`](codeComments.mjs) が知っている形式。**ここに
  * 挙がっていない形式は、コメントを持っていても読めない。**
  */
@@ -133,7 +147,7 @@ export function historyDocs(root) {
  *
  * **指した先の中身を読む係（[`refAudit.mjs`](daemon/refAudit.mjs)）も、ここを外す。** 書いてあるのは当時の
  * 観測で、**今と食い違っていても直す先ではない**ので、読んでも手の出しようが無い（そう決めて
- * いるのは `agent-ops/board-design.md` 2.17.4）。
+ * いるのは `agent-ops/board-design.md` 2.17.4節）。
  *
  * @param {string} rel 根からの相対パス
  */

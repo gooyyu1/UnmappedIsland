@@ -1,5 +1,5 @@
 // 残り余力と1本あたりの消費を比べて、この種類を流してよいかを答える
-// （`agent-ops/board-design.md` 2.5.2）。**入口は隣の [`headroom.sh`](headroom.sh)。**
+// （`agent-ops/board-design.md` 2.5.2節）。**入口は隣の [`headroom.sh`](headroom.sh)。**
 //
 //   bash scripts/daemon/usage.sh --last | node scripts/daemon/headroom.mjs new-task <spent.tsv>
 //

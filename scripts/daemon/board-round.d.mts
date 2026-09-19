@@ -64,7 +64,7 @@ export function trackIdle(
 ): Record<string, string>;
 
 /**
- * その周に出ていた断りを、出始めた時刻とともに台帳へ写す（`agent-ops/board-design.md` 2.20.3）。
+ * その周に出ていた断りを、出始めた時刻とともに台帳へ写す（`agent-ops/board-design.md` 2.20.3節）。
  * 頭は `board-state.mjs` の `NOTE_PREFIX`（配れない理由）か `PARTIAL_PREFIX`（盤面の欠け）。
  * 消えた断りは落ち、続いている断りの時刻は動かない。
  */

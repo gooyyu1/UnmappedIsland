@@ -1,7 +1,6 @@
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { vi } from 'vitest';
 
 import { pathForBash, runScript } from './runScript';
 import { STUB_SHEBANG } from './stubShebang';
@@ -19,11 +18,6 @@ import { STUB_SHEBANG } from './stubShebang';
  *
  * 身代わりの先頭の1行を直に書かず [`STUB_SHEBANG`](stubShebang.ts) から取るのも同じ理由。
  */
-
-// 全件が実プロセス（bash + gh のスタブ）を起こすため、既定の5秒だと `npm test` 全体を並行実行
-// したときのCPU競合だけで時間切れになりうる。**叩く側ではなくここが持つ**——世界がプロセスを起こす
-// ことを知っているのはこちらで、叩く側は毎回それを覚えていなくてよい。
-vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/daemon/merge-pr.sh');
 

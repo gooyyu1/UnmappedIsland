@@ -1,6 +1,5 @@
 import type { WorldObject } from './WorldObject';
 import type { ObjectDef } from './ObjectDef';
-import type { PickEffect } from './PickEffect';
 import type { TypeMatchRule } from './TypeMatchRule';
 import type { Requirement, Requirements } from './Requirement';
 import { ReferenceContext } from './ReferenceRoot';
@@ -149,18 +148,11 @@ export class RecipeDef {
    */
   readonly deftness: RecipeDeftnessDef | undefined;
 
-  /**
-   * 完成した瞬間に1回だけ引く、余分が取れるかの卓（13.5節）。宣言していなければundefined＝
-   * 何個作っても1つしかできない物。
-   */
-  readonly surplus: PickEffect | undefined;
-
   constructor(
     name: string,
     steps: readonly RecipeStepDef[],
     unlock: Requirements | undefined,
     deftness: RecipeDeftnessDef | undefined,
-    surplus: PickEffect | undefined,
   ) {
     if (steps.length === 0) throw new Error(`レシピ'${name}': stepsは1件以上必要です。`);
     // **縮めきった後の分数も、tickの刻みを割らない**（docs/engine/ActionSystem.md 6.2節）。止めるのは
@@ -177,7 +169,6 @@ export class RecipeDef {
     this.steps = steps;
     this.unlock = unlock;
     this.deftness = deftness;
-    this.surplus = surplus;
   }
 
   /**

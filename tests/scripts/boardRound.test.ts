@@ -144,7 +144,7 @@ const LONG_IDLE = '2026-09-04T02:00:00Z';
 /**
  * 掘り起こす係（`board-move.mjs` の `CYCLES` の `dig`）は、既定で**間隔の中に居る**ことにする。
  * あの係の `due` は**「完成へ近づける仕事」の供給が枠に満たないこと**（`agent-ops/board-design.md`
- * 2.18.3）なので、**そういう task を枠のぶん置かなかった世界には全部当たる**——既定のままだと、掘り起こしと
+ * 2.18.3節）なので、**そういう task を枠のぶん置かなかった世界には全部当たる**——既定のままだと、掘り起こしと
  * 関わりのない検査の1手ぶんがこれに埋まる。
  *
  * **`NOW` にしないのは、周が立てたときに残す時刻がそれだから。** 同じ値にすると、この足場と
@@ -428,7 +428,7 @@ describe('board-round.mjs', () => {
   //
   // **頼むのであって、自分では外さない。** `gh pr edit --remove-label` を打つと、それが `unlabeled`
   // の出来事になり、`unlabeled_by_hand` が**人が外した**と読んで `却下` を付ける——デーモンの `gh` は
-  // 人と同じアカウントで、`Bot` になるのは Actions の `GITHUB_TOKEN` だけ（`board-design.md` 2.2.1）。
+  // 人と同じアカウントで、`Bot` になるのは Actions の `GITHUB_TOKEN` だけ（`board-design.md` 2.2.1節）。
   it('前の差分に残った結論の札は、コメントで頼む。頼んだことは覚えない', async () => {
     const stale = { ...passed, comments: [{ body: '[レビュー] 通してよい\n読んだ版: 9990000\n' }] };
     const result = await playRound({ prs: [pr(10, stale)] });
@@ -444,7 +444,7 @@ describe('board-round.mjs', () => {
   });
 
   // ここから4件は、**盤面を引けなくなった印**（`board-state.mjs` の `UNREADABLE`）。読むのは人が
-  // 読む書き出しだけで、**引ける周の不調はここに立てない**（`agent-ops/board-design.md` 2.21.2）。
+  // 読む書き出しだけで、**引ける周の不調はここに立てない**（`agent-ops/board-design.md` 2.21.2節）。
   it('盤面を引けなかった周は、印を置く', async () => {
     expect((await playRound({ sessionsFail: true })).unreadable).toBe(NOW.toISOString());
     expect((await playRound({ ghFails: true })).unreadable).toBe(NOW.toISOString());
@@ -885,7 +885,7 @@ describe('board-round.mjs', () => {
   });
 
   /**
-   * **一覧はこの周に1回だけ引き、叩く相手へはファイルで渡す**（`agent-ops/board-design.md` 1.7）。
+   * **一覧はこの周に1回だけ引き、叩く相手へはファイルで渡す**（`agent-ops/board-design.md` 1.7節）。
    * `list_sessions` は1000回/時で頭打ちになるので、要る側が別々に引くと盤面の回る速さがそこで決まる。
    */
   describe('この周の一覧を、叩くスクリプトへ渡す', () => {
@@ -972,7 +972,7 @@ describe('board-round.mjs', () => {
   });
 
   /**
-   * 周の出来事を、**`~/daemon.log` の外へ**残す（`agent-ops/board-design.md` 2.20.3）。
+   * 周の出来事を、**`~/daemon.log` の外へ**残す（`agent-ops/board-design.md` 2.20.3節）。
    *
    * **ログには読む者が居ない。** 周（既定30秒）と書き出し（既定5分）は別の周期で走る別のプロセス
    * なので、**人が見に来る場所へ届く道は、ここが書く台帳と帳面しか無い。** 人へ見せる側の検査は

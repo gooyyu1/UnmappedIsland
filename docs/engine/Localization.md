@@ -209,7 +209,7 @@ reason_texts:
 
 同じ理由を複数の操作が使えるよう、オブジェクトやアクションの下ではなくここへ集めます（「重すぎて
 歩けない」は道以外の操作でも起こりえます）。未登録の識別子は理由を出さない扱いになるため、綴り間違いは
-自動テスト（`tests/locale/localization.test.ts`）が捕まえます。
+自動テスト（`tests/world-codex/bundledLocale.test.ts`）が捕まえます。
 
 ## stage_texts: 画面に出る段の文言
 
@@ -223,7 +223,7 @@ stage_texts:
 
 出るのはカードの上（[CardView.md](../ui/CardView.md) 9.1節の覆い）なので、**離れて見ても読める短い語**を
 選びます。長い語は幅に合わせて縮むため、大きく出て気付かせる効果が薄れます。長さの上限も、未登録の
-識別子も、自動テスト（`tests/locale/localization.test.ts`）が捕まえます。
+識別子も、自動テスト（`tests/world-codex/bundledLocale.test.ts`）が捕まえます。
 
 段の名前はプロパティごとの名前空間ですが、対応表は平らに持ちます——同じ名前の段は同じ言葉で出します。
 
@@ -260,8 +260,8 @@ signal_texts:
 ```
 
 出るのはカードの上に一瞬だけなので（[CardView.md](../ui/CardView.md) 14節）、**離れて見ても読める短い語**を
-選びます。長さの上限も、未登録の識別子も、自動テスト（`tests/locale/localization.test.ts`）が捕まえます——
-理由（`reason`）と違い、未登録でも識別子がそのまま札に出ます。
+選びます。長さの上限も、未登録の識別子も、自動テスト（`tests/world-codex/bundledLocale.test.ts`）が
+捕まえます——理由（`reason`）と違い、未登録でも識別子がそのまま札に出ます。
 
 ## location_texts: 土地の名前
 
@@ -360,7 +360,7 @@ locale.locationName(name)                     // 生成された土地の名前�
 同梱の対応表については、カードに並ぶ型（`item`/`fixture` タグを持つ `object_def`）・土地（型・亜種）・
 シンボルが漏れなく表示名を持つこと、キャラクタのプロパティが漏れなく `icon` を持つこと、および
 存在しない識別子のエントリが残っていないことを自動テストで検証します
-（`tests/locale/localization.test.ts`）。
+（`tests/world-codex/bundledLocale.test.ts`）。
 
 **検証の対象外（props・interactions など）の抜けは、閲覧ビューアで探すのが一番早いです。** 表示名が識別子の
 ままの対象には「未翻訳」の印が付くため、`npm run dev:codex` で開いて眺めれば漏れが目に入ります。

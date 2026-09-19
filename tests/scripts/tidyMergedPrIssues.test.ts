@@ -6,7 +6,7 @@ import { DEFAULT_BODY, REFUSALS, run } from '../support/tidyMergedPrWorld';
  * 後片付けのうち、`Closes #N` の issue が実際に閉じたかを確かめるところ。
  *
  * **閉じるのは GitHub** だが、閉じ損ねを見ているのはここだけ。**セッションはここでは畳まない**
- * （`board-design.md` 2.10）——畳む条件はマージとは別の問いで、盤面が毎周見て打つ。
+ * （`board-design.md` 2.10節）——畳む条件はマージとは別の問いで、盤面が毎周見て打つ。
  *
  * 世界の組み方と、ファイルを分けてある理由は `tests/support/tidyMergedPrWorld.ts`。
  */
