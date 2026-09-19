@@ -11,9 +11,9 @@
 - **1行に並べてよいのは、同じ理由で決着した宣言だけ。** 書き方は `` `<ファイル>` の `<名前>` `` で、
   同じファイルの複数件は `・` で続ける。
 - **覆すときは行を落とす。** なぜ覆したかは、その回の記録（日付のフォルダ）が持つ。
-- **同じ宣言が2行に現れたら、決着が渡らないまま再び挙がったということ。**
-  [`tests/docs/reviewSettled.test.ts`](../tests/docs/reviewSettled.test.ts) が、それと、行が指す宣言が
-  消えたこと（改名・削除）を落とす。
+- **同じ宣言が同じ問いで2行に現れたら、決着が渡らないまま再び挙がったということ**（別の問いの節に
+  並ぶのは正常）。[`tests/docs/reviewSettled.test.ts`](../tests/docs/reviewSettled.test.ts) が、それと、
+  行が指す宣言が消えたこと（改名・削除）を落とす。
 
 ## 名前
 
@@ -34,6 +34,7 @@
 | `src/codex-viewer/main.ts` の `source` | 同上（型は `CodexSource`） | [#2191](https://github.com/gooyyu1/UnmappedIsland/pull/2191) |
 | `src/game/view/cardMotionPlan.ts` の `MotionInput.left` | 作る側の `LaneUpdate` の `entered`・`left` と対で、片方だけ動かすと組が割れる。`vanished` との層の違いは型が言っている | [#2191](https://github.com/gooyyu1/UnmappedIsland/pull/2191) |
 | `src/game/view/ShownCards.ts` の `firstOf` | 返るのが要素ではなく束であることは戻り値の型（`ObjectCardStack`）が言っている | [#2191](https://github.com/gooyyu1/UnmappedIsland/pull/2191) |
-| `src/game/view/statusRows.ts` の `groupOf` | 呼び形が比較関数の中の `groupOf(a) - groupOf(b)` だけで、そこでは順序として読める | [#2191](https://github.com/gooyyu1/UnmappedIsland/pull/2191) || `src/game/ui/Card.ts` の `CellOverlay` | `CellHighlight` と対で、`CardView.md` 11節の層の名前として揃っている | [#2191](https://github.com/gooyyu1/UnmappedIsland/pull/2191) |
+| `src/game/view/statusRows.ts` の `groupOf` | 呼び形が比較関数の中の `groupOf(a) - groupOf(b)` だけで、そこでは順序として読める | [#2191](https://github.com/gooyyu1/UnmappedIsland/pull/2191) |
+| `src/game/ui/Card.ts` の `CellOverlay` | `CellHighlight` と対で、`CardView.md` 11節の層の名前として揃っている | [#2191](https://github.com/gooyyu1/UnmappedIsland/pull/2191) |
 | `src/game/ui/CardDragController.ts` の `begin` | `end`・`update`・`cancel` と揃った語彙で、ジェスチャの記録自体はここで始まっている | [#2191](https://github.com/gooyyu1/UnmappedIsland/pull/2191) |
 | `src/game/looks/PlayScreenLayout.ts` の `DASHBOARD_MIN_HEIGHT_PORTRAIT` | 縦型にもダッシュボードは在り、定数が足しているものも縦型のダッシュボードの中身と一致する（無いのは「列」のほうで、そう書いていたコメントを落とした） | [#2191](https://github.com/gooyyu1/UnmappedIsland/pull/2191) |

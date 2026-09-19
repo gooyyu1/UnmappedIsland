@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -27,36 +27,48 @@ const HEADING = /^##\s+(\S.*?)\s*$/;
 const QUOTED = /`([^`]+)`/g;
 
 /**
- * 一覧が挙げている宣言。**形を外した行は読み飛ばさずに投げる**——読み飛ばすと、書いたつもりの決着が
- * 誰にも渡らないまま緑で通る。
+ * 一覧の本文が挙げている宣言。**形を外した行は読み飛ばさずに投げる**——読み飛ばすと、書いたつもりの
+ * 決着が誰にも渡らないまま緑で通る。**行の間の改行が落ちて2行が1行に潰れると、後ろの行の決着だけが
+ * 一覧から消える**ので、見るのは列の数——**表の見出しと同じ数のセルが無い行は投げる**。数は字で
+ * 持たない（表の列を増やした日に、ここだけ古びる）。
  *
  * 所属を書いた名前（`ZipEntry.method`）は最後の部分だけを採る。**所属は読み手のためのもの**で、
  * 宣言と突き合わせるのは名前と在り処——所属が現物とずれていることは、説明の参照の検査
- * （`tests/docs/docMemberReferences.test.ts`）が別に見る。
+ * （`tests/docs/docMemberReferences.test.ts`）が別に見る。**在り処が実在するかも見ない**——
+ * リポジトリ直下から書いたパスは `tests/docs/docReferences.test.ts` が、指す宣言が在るかは
+ * `tests/docs/reviewSettled.test.ts` が見る。
  *
- * @param {string} root リポジトリの根
+ * @param {string} text 一覧の本文
  * @returns {SettledDeclaration[]} 一覧に書かれた順
  */
-export function settledDeclarations(root) {
-  const text = readFileSync(join(root, SETTLED_LIST), 'utf-8');
+export function settledDeclarationsIn(text) {
   const found = [];
   let question;
+  /** その表の見出しの列の数。表の外（見出しの行・空行の後）では未定。 */
+  let columns;
   text.split(/\r?\n/).forEach((raw, index) => {
     const line = index + 1;
+    const row = raw.trim();
     const heading = HEADING.exec(raw);
-    if (heading !== null) {
-      question = heading[1];
+    if (heading !== null) question = heading[1];
+    if (!row.startsWith('|')) {
+      columns = undefined;
       return;
     }
-    if (!raw.trimStart().startsWith('|')) return;
-    const [cell] = raw.trim().slice(1).split('|');
-    const quoted = [...cell.matchAll(QUOTED)].map((match) => match[1]);
-    // 見出しの行と区切りの行には囲みが無い。
-    if (quoted.length === 0) return;
+    const cells = row.replace(/^\|/, '').replace(/\|$/, '').split('|');
     const where = `${SETTLED_LIST}:${line}`;
+    if (columns === undefined) {
+      columns = cells.length;
+      return;
+    }
+    if (cells.length !== columns) {
+      throw new Error(`${where} 列の数が表の見出しと違う（${cells.length} と ${columns}）`);
+    }
+    const quoted = [...cells[0].matchAll(QUOTED)].map((match) => match[1]);
+    // 見出しと本体を仕切る行には囲みが無い。
+    if (quoted.length === 0) return;
     if (question === undefined) throw new Error(`${where} どの問いの決着かが、節の見出しから引けない`);
     const [file, ...names] = quoted;
-    if (!existsSync(join(root, ...file.split('/')))) throw new Error(`${where} ${file} が無い`);
     if (names.length === 0) throw new Error(`${where} ${file} の中の名前が挙がっていない`);
     for (const written of names) {
       const name = written.split('.').at(-1);
@@ -64,6 +76,15 @@ export function settledDeclarations(root) {
       found.push({ question, file, name, line });
     }
   });
-  if (found.length === 0) throw new Error(`${SETTLED_LIST} が1件も挙げていない`);
   return found;
+}
+
+/**
+ * 一覧（{@link SETTLED_LIST}）が挙げている宣言。
+ *
+ * @param {string} root リポジトリの根
+ * @returns {SettledDeclaration[]} 一覧に書かれた順
+ */
+export function settledDeclarations(root) {
+  return settledDeclarationsIn(readFileSync(join(root, SETTLED_LIST), 'utf-8'));
 }

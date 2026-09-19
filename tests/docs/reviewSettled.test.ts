@@ -1,7 +1,11 @@
 import { execFileSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { SETTLED_LIST, settledDeclarations } from '../../scripts/settledDeclarations.mjs';
+import {
+  SETTLED_LIST,
+  settledDeclarations,
+  settledDeclarationsIn,
+} from '../../scripts/settledDeclarations.mjs';
 
 /**
  * 棚卸しで今のままでよいと決めた宣言の一覧（[`review/settled.md`](../../review/settled.md)）が、
@@ -11,8 +15,12 @@ import { SETTLED_LIST, settledDeclarations } from '../../scripts/settledDeclarat
  * 行が指す宣言が消えても、改名されても、**一覧はそのまま残って印だけが付かなくなる**——そこは
  * 誰も見ていないので、決着が渡らないまま次の回が同じ問いを立て直すことになる。
  *
- * 見るのは2つ。**行が指す宣言がちょうど1つ在って、そこに印が載っていること**と、**同じ宣言が同じ
- * 問いで2行に現れていないこと**（＝決着が渡らないまま再び挙がって、また決着したということ）。
+ * 見るのは3つ。**行が指す宣言がちょうど1つ在って、そこに印が載っていること**、**同じ宣言が同じ
+ * 問いで2行に現れていないこと**（＝決着が渡らないまま再び挙がって、また決着したということ）、そして
+ * **一覧を読む側が黙って行を落としていないこと**。
+ *
+ * 3つめを本物の一覧では見られない——**読み落とした行は、上の2つの視界に初めから入らない**ので、
+ * 読む側が何も返さなくなっても緑になる。そこだけは本文を直に渡して確かめる。
  */
 
 const ROOT = resolve(__dirname, '../..');
@@ -70,5 +78,28 @@ describe('棚卸しで決着した宣言の一覧', () => {
       '決着が渡らないまま、同じ宣言が次の回で再び挙がっている（片方を落として、渡らなかった理由を' +
         `その回の記録へ書く）:\n${twice.join('\n')}`,
     ).toEqual([]);
+  });
+
+  it('読む側が、行を黙って落としていない', () => {
+    const list = [
+      '## 名前',
+      '',
+      '| 宣言 | 理由 | 出どころ |',
+      '| ---- | ---- | -------- |',
+      '| `src/domain/ObjectDef.ts` の `ZipEntry.method`・`firstOf` | わけ | #1 |',
+      '| `src/game/ui/Card.ts` の `CellOverlay` | わけ | #1 |',
+    ].join('\n');
+
+    expect(settledDeclarationsIn(list)).toEqual([
+      { question: '名前', file: 'src/domain/ObjectDef.ts', name: 'method', line: 5 },
+      { question: '名前', file: 'src/domain/ObjectDef.ts', name: 'firstOf', line: 5 },
+      { question: '名前', file: 'src/game/ui/Card.ts', name: 'CellOverlay', line: 6 },
+    ]);
+
+    // 行の間の改行が落ちると、先頭のセルしか読まない側では**後ろの行の決着だけ**が消える。
+    const joined = list.split('\n');
+    expect(() => settledDeclarationsIn([...joined.slice(0, 4), joined[4] + joined[5]].join('\n'))).toThrow(
+      /列の数が表の見出しと違う/,
+    );
   });
 });
