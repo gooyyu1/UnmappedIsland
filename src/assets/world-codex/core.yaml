@@ -303,7 +303,8 @@ object_defs:
               - modify:
                   self:
                     ambient_brightness: -6
-      # 現在の日（1始まり、上限なし。GameElementDefinition.md 17節）。
+      # 現在の日（1始まり）。**折り返さず、年も持たない**（GameElementDefinition.md 15.1節）ので、
+      # rangeもon_maxも持たない。
       day:
         value: 1
       # 現在の天気。シンボル型プロパティ（6.6節）。下のstagesが悪天から順に並び、
