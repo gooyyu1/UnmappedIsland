@@ -666,6 +666,23 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['NOTE PR #10 はCIが赤いが、`main` が赤いので直しを頼まない']);
   });
 
+  // **レビューを渡す手は止めない**（2.13.6）。この断りが言っているのは「直しを頼めない」ことで、
+  // **緑でマージできる `直し待ち` のPRをもう1周読ませる手はそのどちらでもない**——止めると、
+  // `main` が赤い間そのPRは誰の手番でもないまま残る（#2045 で塞いだ形と同じ）。
+  it('main が赤くても、頼み終えた 直し待ち はレビューへ渡す', () => {
+    const board = {
+      mainChecks: RED_MAIN,
+      prs: [pr(10, { ...label('直し待ち'), ...returned('aaa1111') })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
+    };
+    expect(moves(board)).toEqual([
+      'REVIEW 10 aaa1111:1',
+      'NOTE PR #10 は差し戻しを頼み終えて戻ってこないので、もう1周読ませる',
+    ]);
+  });
+
   // **頼み終えていても、人へは返さない**（2.13.6 の次の段）。そのPRが赤いのは `main` が赤いからで、
   // **返しても直せる者は増えない**——`main` を緑へ戻す役は人の手番にも無い。
   it('main が赤い間は、頼み終えたPRも人へ返さない', () => {
@@ -1061,6 +1078,38 @@ describe('board-move.mjs', () => {
     };
     expect(moves(board)).toEqual([
       'NOTE PR #10 はコンフリクトしているが、担当の issue が人の手番で止まっている',
+    ]);
+  });
+
+  // **`判断待ち` が付くのは、名乗りを読む段が走ってから**（`board-labels.yml` の `declared`）。**遅れる
+  // うえ転びうる**（2.13.7）ので、ラベルだけで見ると**返した直後の周が抜ける**——そこで差し戻しを
+  // 打つと、返したばかりの相手へ指示が飛び、覚えが上書きされて `[返却]` が2通目から積まれる。
+  it('返し終えていれば、判断待ちがまだ付いていなくても手を出さない', () => {
+    const board = {
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
+      issues: [{ number: 9, ...label('kind:task'), blockedBy: { nodes: [] } }],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a', 'task-9')],
+      taken: { 'resume:session_a': 'returned:9' },
+    };
+    expect(moves(board)).toEqual([
+      'NOTE PR #10 はコンフリクトしているが、担当の issue が人の手番で止まっている',
+    ]);
+  });
+
+  // **台帳だけでも足りない。** ワーカーが自分で返した形（2.15.2）は盤面の覚えに出ないので、
+  // ラベルの側でも見る（上の検査と対）。
+  it('レビューへ渡せる形なら、担当が人の手番でもレビューへ渡す', () => {
+    const board = {
+      prs: [pr(10, { ...label('直し待ち'), ...returned('aaa1111') })],
+      issues: [{ number: 9, ...label('kind:task', '判断待ち'), blockedBy: { nodes: [] } }],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
+    };
+    expect(moves(board)).toEqual([
+      'REVIEW 10 aaa1111:1',
+      'NOTE PR #10 は差し戻しを頼み終えて戻ってこないので、もう1周読ませる',
     ]);
   });
 

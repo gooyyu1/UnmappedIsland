@@ -220,6 +220,20 @@ export const MENDS = {
 };
 
 /**
+ * 頼み終えた差し戻しを人へ返すとき、**人がすること**（2.13.6。読むのは
+ * [`board-round.mjs`](board-round.mjs) の `returnBody`）。**リポジトリを開かずに読める形で書く**（2.22.3）。
+ *
+ * **引くのは `MENDS` の `kind`**（起こされた側がやること）——返すのは**その相手が戻ってこなかった
+ * ぶんを人が引き取る**ことなので、軸が同じ。理由ごとに書き分けると、`mend` の3つへ同じ文が3つ並ぶ。
+ */
+export const TAKEOVER = {
+  mend: 'PRを見て、直しを引き取って push してください（**新しいコミットが載れば指紋が動く**ので、盤面はそこからまた差し戻しを頼めます）。引き取らないなら、PRを閉じてください',
+  reject:
+    'PRのコメントに書いた「直してほしいこと」を引き取って push してください（**新しいコミットが載れば `却下` も外れます**）。通す気が無いなら、PRを閉じてください',
+  look: 'PR本文へ `## 見た目` の節を足してください——画面を撮って貼るか、「不要」とその理由の1行（撮り方は `.claude/skills/run/SKILL.md`、貼り方は `bash scripts/agent/push-screenshot.sh <画像> <名前>`）。**コミットは要りません。** 引き取らないなら、PRを閉じてください',
+};
+
+/**
  * 実在するセッションIDの形（2.11.3）。**名乗りがそもそもIDでないことを見分ける手はこれだけ**
  * ——形になっていない名乗りはどの一覧を引いても当たらないので、**畳まれた実在のIDと同じ顔をする**
  * （2026-09-11、PR #1922 の `session_cse_…`）。
@@ -873,15 +887,22 @@ export function moves(input) {
   }
 
   /**
-   * そのPRの仕事が、**もう人の手番に在る**か（2.15）。担当の issue に `判断待ち` が付いている形で、
-   * 盤面が返した後（下の `RETURN`）と、ワーカーが自分で返した後（2.15.2）の両方がこれ。
+   * そのPRの仕事が、**もう人の手番に在る**か（2.15）。盤面が返した後（下の `RETURN`）と、ワーカーが
+   * 自分で返した後（2.15.2）の両方がこれ。
    *
-   * **台帳ではなくラベルで見る**（1.1）——返す手を打ったかは盤面の覚えだが、**人の手番に在ることは
-   * 現物の事実**で、どちらの経路で返っても同じ顔になる。
+   * **ラベルと台帳の両方を見る。** どちらか片方では窓が開く。
+   *
+   * - **ラベルだけでは、返した直後の周が抜ける。** `判断待ち` を付けるのは名乗りを読む段
+   *   （`board-labels.yml` の `declared`）で、**出来事で動くので遅れるうえ転びうる**（2.13.7）
+   *   ——その窓で差し戻しを打つと、**返したばかりの相手へ指示が飛び、覚えが上書きされて
+   *   `[返却]` が2通目から積まる。**
+   * - **台帳だけでは、ワーカーが自分で返した形が抜ける**（2.15.2）。あれは盤面の覚えに出ない。
    */
   const handedOver = (pr) =>
-    closes(pr.body).some((issue) =>
-      names(input.issues.find((item) => item.number === issue) ?? {}).includes('判断待ち'),
+    closes(pr.body).some(
+      (issue) =>
+        names(input.issues.find((item) => item.number === issue) ?? {}).includes('判断待ち') ||
+        menders(pr).some((holder) => taken[`resume:${holder.id}`] === `returned:${issue}`),
     );
 
   /**
@@ -1005,15 +1026,23 @@ export function moves(input) {
     // 段へ落とす。**
     const asked = cause !== undefined && askedAlready(cause, pr);
 
-    // **担当の issue が人の手番に在るPRには、盤面から手を出さない**（2.15）。返された仕事のワーカーは
+    /**
+     * 頼み終えた差し戻しを、**レビューへ渡せる**か（2.13.6）。渡せるのは `直し待ち` で緑でマージ
+     * できる形だけ——`却下` は push でしか外れず、衝突とCIの赤はレビューの入口が先に閉じる。
+     *
+     * **下の3つの断りは、これが真なら通す。** どれも「**直しを頼めない・返しても直る先が無い**」
+     * ことの断りで、**レビューを渡す手はそのどちらでもない**——混ぜると、`main` が赤い周や担当が
+     * 人の手番に在る周に、**緑でマージできる `直し待ち` のPRが 2.13.6 の経路ごと消える。**
+     */
+    const toReview = asked && cause === RETURNED && check === 'green' && pr.mergeable === 'MERGEABLE';
+
+    // **担当の issue が人の手番に在るPRへは、直しを頼まない**（2.15）。返された仕事のワーカーは
     // 次の周に畳まれる（2.10.2）ので、頼んでも届く先が消える——**返した周の次に打つ手が、返したことを
-    // 打ち消す形にもなる。** 返る道は2つある（盤面と、ワーカー自身の名乗り。2.15.2）ので、**台帳では
-    // なく現物のラベルで見る**（1.1）——台帳で見ると、自分で返したワーカーのPRへもう1通の
-    // `[返却]` が積まる。
+    // 打ち消す形にもなる。** 返し終えているぶんも、ここで二度目を止める（`handedOver`）。
     //
-    // **PRの側の `判断待ち` とは別**（上の `HUMAN_TURN`）。あちらはそのPRを通すかの答え待ちなので
+    // **PRの側の `判断待ち` とは別**（下の `HUMAN_TURN`）。あちらはそのPRを通すかの答え待ちなので
     // `却下`・`look`・`直し待ち` は出るが、**こちらは仕事そのものが人の手に在る。**
-    if (kind !== null && handedOver(pr)) {
+    if (kind !== null && !toReview && handedOver(pr)) {
       notes.push(`PR #${pr.number} は${reason}が、担当の issue が人の手番で止まっている`);
       continue;
     }
@@ -1026,7 +1055,12 @@ export function moves(input) {
     // **頼み終えていても同じ。** 下の段（人へ返す）へ落とすと、**答えを待っているだけのPRから
     // 差し戻す相手を奪う**——返せばワーカーが畳まれ、そのPRは宛先の無いPRになる（2.11.4）。
     // 待っているのは人の答えで、届けば `却下` かマージがそのまま次の手になる。
-    if (kind !== null && MAIN_MOVED.includes(cause) && labels.some((name) => HUMAN_TURN.includes(name))) {
+    if (
+      kind !== null &&
+      !toReview &&
+      MAIN_MOVED.includes(cause) &&
+      labels.some((name) => HUMAN_TURN.includes(name))
+    ) {
       notes.push(`PR #${pr.number} は${reason}が、人の手番で止まっているので直しを頼まない`);
       continue;
     }
@@ -1037,7 +1071,7 @@ export function moves(input) {
     //
     // **頼み終えていても同じ。** そのPRが赤いのは `main` が赤いからで、**人へ返しても直せる者は
     // 増えない**——`main` を緑へ戻す役は盤面の中にも人の手番にも無く、赤を直すPRが入れば消える。
-    if (kind === 'mend' && mainCheck === 'red') {
+    if (kind === 'mend' && !toReview && mainCheck === 'red') {
       notes.push(`PR #${pr.number} は${reason}が、\`main\` が赤いので直しを頼まない`);
       continue;
     }
@@ -1075,7 +1109,7 @@ export function moves(input) {
     // CIの赤は**レビューの入口（緑・マージ可能）が先に閉じる。** 渡せないものを黙って落として
     // いたので、この3つは誰の手番でもないまま止まっていた（issue #2045。2026-09-17 には
     // コンフリクトした7本が、09-19 には赤い2本が同時にこの形だった）。
-    if (asked && !(cause === RETURNED && check === 'green' && pr.mergeable === 'MERGEABLE')) {
+    if (asked && !toReview) {
       // 返す先は**担当の issue**。`判断待ち` を付けるのは名乗りを読む段（`board-labels.yml` の
       // `declared`）で、**あれが見るのは issue のコメントだけ**——`Closes` の無いPRには返す口が無い。
       const [issue] = closes(pr.body);

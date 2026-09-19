@@ -27,7 +27,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { MENDS, STRANDS, busySession, moves } from './board-move.mjs';
+import { MENDS, STRANDS, TAKEOVER, busySession, moves } from './board-move.mjs';
 import { MERGED_WINDOW_HOURS, readBoard } from './board-read.mjs';
 import {
   NOTE_PREFIX,
@@ -292,11 +292,10 @@ function returnBody(session, issue, cause) {
     return `[返却] PR #${number} の直しを頼んでも、戻ってこない
 
 この issue のPR（#${number}）は**${mend.why}**ので、盤面は書いた本人のセッション（\`${session}\`）へ
-直しを頼みました。**それから手が動かないまま**、そのPRの版も変わっていません——**盤面がこの版へ
-打てる手は尽きました**（\`agent-ops/board-design.md\` 2.13.6）。
+直しを頼みました。**それから手が動かないまま、そのPRも変わっていません**——**盤面がこの版へ打てる手は
+尽きました**（\`agent-ops/board-design.md\` 2.13.6）。
 
-**直すには**: PRを見て、直しを引き取って push するか、PRを閉じてください。**新しいコミットが載れば
-指紋が動く**ので、盤面はそこからまた差し戻しを頼めます。
+**直すには**: ${TAKEOVER[mend.kind]}。
 
 手が動き出したら、この issue（#${issue}）から \`判断待ち\` を外してください。
 `;
