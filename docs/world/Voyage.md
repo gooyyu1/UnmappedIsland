@@ -235,7 +235,7 @@
 最も短い岸壁からでも
 3.37 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=dry days -->と
 3.59 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest season=wet days -->で、
-**差は砂浜で
+**季節のあいだで最も開いても、砂浜で
 0.3 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest days 幅 ±0.1 -->、岸壁で
 0.2 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest days 幅 ±0.1 -->です**
 （[`stats/voyage.yaml`](../../stats/voyage.yaml) の `course_season`）。
@@ -256,12 +256,12 @@
 からでも
 3.38 日<!-- stats: voyage_storm.yaml course_storm coast=cliff_coast season=dry mean -->と
 3.98 日<!-- stats: voyage_storm.yaml course_storm coast=cliff_coast season=wet mean -->で、
-**差は砂浜で
+**季節のあいだで最も開いても、砂浜で
 0.8 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach mean 幅 ±0.1 -->、岸壁で
 0.6 日<!-- stats: voyage_storm.yaml course_storm coast=cliff_coast mean 幅 ±0.1 -->です。**
 
 **一方、窓を逃したときに待つのは季節 2 つぶんです。** 季節はどれも
-24<!-- stats: climate.yaml season_duration min 最小 -->〜36<!-- stats: climate.yaml season_duration max 最大 -->
+24<!-- stats: climate.yaml season_duration min 最小 --><!-- stats: climate.yaml season_duration min 最大 -->〜36<!-- stats: climate.yaml season_duration max 最小 --><!-- stats: climate.yaml season_duration max 最大 -->
 日で回り、乾季の次の乾季までには穏やかと雨季が挟まるので、乾季を逃せばその 2 季ぶんを待つことになります
 ——引き返して逃した場合も同じで、引き返しの代償（[`GameEndings.md`](../concept/GameEndings.md) 12.5 節）
 にはこれが乗ります。**得る 1 日足らずに対して待ちが 2 桁大きいので、今の重みでは「窓を待つ」は
@@ -662,7 +662,8 @@
 | 岸壁（海鳥の岩から） | 近道 | 8<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs --> | 28<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookouts --> 回 | 420 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookout_minutes --> | 2,880 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest crossing_minutes --> | 3,300 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest total_minutes --> | 3.7<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest days --> |
 | 岸壁 | 遠回り | 10<!-- stats: voyage.yaml courses coast=cliff_coast course=detour legs --> | 34<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour total_minutes --> | 4.6<!-- stats: voyage.yaml courses coast=cliff_coast course=detour days --> |
 
-**遠回りを選ぶと、どの海岸からでも 1 日近く増えます**（沖の潮目と黒い岩礁の 2 区間で 810 分）。帆と追い風が
+**遠回りを選ぶと、どの海岸からでも 1 日近く増えます**（沖の潮目と黒い岩礁の 2 区間で
+810 分<!-- stats: voyage.yaml courses coast=sandy_beach total_minutes 幅 --><!-- stats: voyage.yaml courses coast=rocky_coast total_minutes 幅 --><!-- stats: voyage.yaml courses coast=cliff_coast total_minutes 幅 -->）。帆と追い風が
 あれば縮み、荒天の押し流し（3.8 節）と引き返し（3.5 節）が伸ばします。
 
 **表は押し流しを数えていません**（同じ物差しで数えたものは
