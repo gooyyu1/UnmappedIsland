@@ -54,39 +54,39 @@ tag_sources:
   - {tag: water_source, objects: [spring]}
 
 island_missing_object:
-  - {object: abaca, unit: percent, share: 51.95}
-  - {object: banana_plant, unit: percent, share: 0.30}
+  - {object: abaca, unit: percent, share: 52.60}
+  - {object: banana_plant, unit: percent, share: 1.00}
   - {object: berry_bush, unit: percent, share: 0.00}
-  - {object: broadleaf_tree, unit: percent, share: 0.30}
+  - {object: broadleaf_tree, unit: percent, share: 1.00}
   - {object: clay, unit: percent, share: 0.00}
   - {object: coconut, unit: percent, share: 0.00}
   - {object: coconut_crab, unit: percent, share: 0.00}
   - {object: driftwood_trunk, unit: percent, share: 0.00}
-  - {object: dry_grass, unit: percent, share: 0.10}
-  - {object: golden_chalice, unit: percent, share: 2.75}
-  - {object: junglefowl, unit: percent, share: 0.20}
+  - {object: dry_grass, unit: percent, share: 0.40}
+  - {object: golden_chalice, unit: percent, share: 1.80}
+  - {object: junglefowl, unit: percent, share: 0.55}
   - {object: monkey, unit: percent, share: 0.00}
-  - {object: palm_tree, unit: percent, share: 11.90}
+  - {object: palm_tree, unit: percent, share: 13.85}
   - {object: rat, unit: percent, share: 0.00}
-  - {object: sapling, unit: percent, share: 0.30}
+  - {object: sapling, unit: percent, share: 1.00}
   - {object: shallow_cave, unit: percent, share: 0.00}
   - {object: spring, unit: percent, share: 0.00}
   - {object: stone, unit: percent, share: 0.00}
   - {object: taro, unit: percent, share: 0.00}
   - {object: thick_branch, unit: percent, share: 0.00}
   - {object: twig, unit: percent, share: 0.00}
-  - {object: water_spinach, unit: percent, share: 0.20}
-  - {object: wild_boar, unit: percent, share: 0.30}
-  - {object: woven_basket, unit: percent, share: 19.95}
+  - {object: water_spinach, unit: percent, share: 0.55}
+  - {object: wild_boar, unit: percent, share: 1.00}
+  - {object: woven_basket, unit: percent, share: 23.30}
 
 island_missing_tag:
   - {tag: animal, unit: percent, share: 0.00}
-  - {tag: artifact, unit: percent, share: 2.75}
-  - {tag: container, unit: percent, share: 19.95}
+  - {tag: artifact, unit: percent, share: 1.80}
+  - {tag: container, unit: percent, share: 23.30}
   - {tag: dryable, unit: percent, share: 0.00}
   - {tag: fixture, unit: percent, share: 0.00}
-  - {tag: food, unit: percent, share: 0.20}
-  - {tag: fragile, unit: percent, share: 19.95}
+  - {tag: food, unit: percent, share: 0.55}
+  - {tag: fragile, unit: percent, share: 23.30}
   - {tag: fuel, unit: percent, share: 0.00}
   - {tag: item, unit: percent, share: 0.00}
   - {tag: location, unit: percent, share: 0.00}
@@ -97,5 +97,5 @@ island_missing_tag:
   - {tag: roastable, unit: percent, share: 0.00}
   - {tag: shelter, unit: percent, share: 0.00}
   - {tag: smokable, unit: percent, share: 0.00}
-  - {tag: tinder, unit: percent, share: 0.10}
+  - {tag: tinder, unit: percent, share: 0.40}
   - {tag: water_source, unit: percent, share: 0.00}

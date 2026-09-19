@@ -95,7 +95,7 @@ startNewGame(codex, characterDefName, seed, rng)          src/domain/generation/
   ジッタを加えながら配置（`Site.onCoastRing = true`）。
 - 内陸配置: 残りのサイトを、半径 `INTERIOR_MAX_RADIUS` 以内へベストキャンディデート法（候補
   `CANDIDATES_PER_SITE` 個のうち、既存サイトからの最小距離が最大のものを採用するループ）で配置
-  （`Site.onCoastRing = false`）。`scope.interiorBias` が半径分布の指数（`radiusExponent`）に反映されます。
+  （`Site.onCoastRing = false`）。候補の半径は `Math.sqrt` で引き、枠へ面積あたり一様に散ります。
 
 ### 3.2 `assignAxisValues(axes, sites, seed, scope)`（`AxisSampler.ts`）
 
