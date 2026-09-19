@@ -131,8 +131,7 @@ export class CardLane {
     return index < 0 ? undefined : index;
   }
 
-  /** スクロール量0のときのstripの位置と、可視域の幅。 */
-  private readonly originX: number;
+  /** 札が並ぶ帯（strip）の可視域の幅。 */
   private readonly stripWidth: number;
 
   /** はみ出した分の送り（ScrollArea）。ドラッグもホイールも切り抜きもこれが持つ。 */
@@ -205,7 +204,6 @@ export class CardLane {
     this.cardHeight = metrics.px(SIZE.cardHeight);
     this.cardY = cardY;
     this.insertMarkWidth = metrics.px(INSERT_MARK_WIDTH);
-    this.originX = stripX;
     this.stripWidth = Math.max(0, rect.x + rect.width - margin - stripX);
     this.strip = scene.add.container(stripX, cardY);
     this.hazeTargets.push(this.strip);
