@@ -50,9 +50,12 @@ const EXPECTED_MEAN: ReadonlyMap<string, readonly [number, number]> = new Map([
 /**
  * 探索できる土地すべての、獣の候補（土地名・重みが指すつまみ・湧く獣）。
  *
- * 拾うのは**獣1匹だけを湧かせる候補**で、重みをプロパティで宣言しているもの——獣は収穫ではないので
- * 単独で出る（docs/engine/ExplorationSystem.md 2.1節）。「獣かどうか」は`animal`タグで見る
- * （`animals.yaml`の`beast` traitが配る）。
+ * 拾うのは**獣を湧かせる候補**で、重みをプロパティで宣言しているもの。「獣かどうか」は`animal`タグで
+ * 見る（`animals.yaml`の`beast` traitが配る）。
+ *
+ * **何匹湧かすかは見ない。** 獣は収穫ではないので単独で出る（docs/engine/ExplorationSystem.md 2.1節）
+ * が、それは**下の検査が確かめる規約**であって、ここで絞る条件ではない——絞ると、規約を破った候補
+ * だけが拾われずに検査の外へ出る（BeastFindCollector）。
  */
 function beastFindsOf(codex: WorldCodex): readonly (readonly [string, string, string])[] {
   const rows: (readonly [string, string, string])[] = [];
@@ -138,7 +141,7 @@ class SpawnCollector extends QuietEffectReader {
 
 /**
  * 土地ごとの、出くわす獣とそのつまみ（docs/world/Animals.md 8節）。**探索の抽選卓から数え上げる**
- * ——獣1匹だけを湧かせる候補と、その重みが指すつまみを、土地ごとに拾う。
+ * ——獣を湧かせる候補と、その重みが指すつまみを、土地ごとに拾う（beastFindsOf）。
  *
  * **手で並べてはいけない一覧。** ここは検査の入力であると同時に、下の`withoutBeasts`が「0にする
  * つまみ」を引く出所でもある。土地が獣のつまみを1つ増やしたのに表へ書き足されないと、その獣は
@@ -371,6 +374,13 @@ describe('探索で見つかる物', () => {
       );
     },
   );
+
+  it('獣の候補を1つも拾えていないということが無い', () => {
+    // **数え上げが空になったときの番人。** `it.each([])` は0件のテストを登録して緑で通るので、
+    // 拾い方が壊れても——卓の読み方が変わる・`animal`タグの引き方がずれる——下の検査は黙って
+    // 消えるだけになり、`withoutBeasts` も何も止めない無害な上書きへ変わる。
+    expect(BEAST_FINDS.length).toBeGreaterThan(0);
+  });
 
   it.each(BEAST_FINDS)('%s の %s は、獣1匹だけを湧かせる', (landName, findProp, beastName) => {
     // つまみを他の候補より圧倒的に重くすれば、抽選のほとんどがこの候補になる。獣は単独の候補なので

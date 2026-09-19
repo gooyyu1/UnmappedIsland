@@ -1158,7 +1158,7 @@ describe('炉の火床の枠が名乗る型', () => {
   const COOKWARE_HEARTHS = ['three_stone_hearth', 'stone_hearth'];
 
   /**
-   * 器を載せる枠を持たない炉。**下の2本はこの2組で炉を二分する**ので、余りの側も名乗らせる。
+   * 器を載せる枠を持たない炉。**下の検査はこの2組で炉を二分する**ので、余りの側も名乗らせる。
    *
    * 燻し小屋（smoking.yaml）は枠が6つとも同じ物（`smokable`）を受けるので、焚き火・覆い焼きの炉と
    * 同じくどの枠も型を名乗らない。
@@ -1166,7 +1166,7 @@ describe('炉の火床の枠が名乗る型', () => {
   const PLAIN_HEARTHS = ['campfire', 'earth_kiln', 'smokehouse'];
 
   it('この検査は、炉を1つ残らずどちらか一方へ振り分けている', () => {
-    // どちらの一覧にも載らない炉は、下の2本のどちらも回さないまま緑で通る。段の表（同6節）は
+    // どちらの一覧にも載らない炉は、下のどの検査にも回されないまま緑で通る。段の表（同6節）は
     // データに無いので一覧は手で持つしかないが、**覆っていることは`hearth`タグと突き合わせられる。**
     expect([...COOKWARE_HEARTHS, ...PLAIN_HEARTHS].sort()).toEqual(
       [...codex.objectDefNamesWithTag(codex.tagNames.getId('hearth'))].sort(),

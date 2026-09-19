@@ -21,7 +21,8 @@ import { seededRng } from '../../src/domain/Rng';
  * 持つ」が自分で集めた集合へ同じことを問うだけになり、タグを付け忘れた土地は一覧ごと欠けて素通しに
  * なる。生成の宣言は`object_def`のidで土地を指すので、タグとは独立に数えられる。
  *
- * 逆向き（タグを持つのに生成されない土地）は、下の「島の土地と、地形生成が置く土地は一致する」が見る。
+ * 逆向き（タグを持つのに生成されない土地）は、下の「島の土地と、地形生成が島へ置く土地は一致する」
+ * が見る。
  */
 const LAND_NAMES = bundledCodex().generation!.locationTypes.map(
   (type) => bundledCodex().objects.get(type.objectDefGlobalId).name,
@@ -50,7 +51,15 @@ describe('locations.yamlの土地・道定義', () => {
     // 上のLAND_NAMESは生成の宣言から数えるので、**そこへ載せずに足した土地**——locationタグと
     // exploration_progressだけ持ち、どの土地型も実体化しない型——はこの一覧に現れない。
     // `islandLocationsOf`がタグの側から数えた集合と突き合わせて、その片側落ちを捕まえる。
-    expect(islandLocationsOf(codex).island.map((land) => land.name)).toEqual([...LAND_NAMES]);
+    //
+    // **見るのは顔ぶれだけ**なので、並べ直してから比べる。2つの並びは出どころが無関係
+    // （locations.yamlの宣言順と、terrain_generation.yamlの`location_types`の並び）なので、
+    // 順序まで求めると、どちらかを並べ替えただけで顔ぶれは同じまま赤くなる。
+    expect(
+      islandLocationsOf(codex)
+        .island.map((land) => land.name)
+        .sort(),
+    ).toEqual([...LAND_NAMES].sort());
   });
 
   it('すべての土地は期待されるスロットを持ち、キャラクタスロットは固定・単数である', () => {
