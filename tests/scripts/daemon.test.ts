@@ -26,6 +26,9 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  *
  * `git` もPATHの先頭で身代わりへ差し替える。**手元のリポジトリを触らせないため**——本体の
  * チェックアウトを `origin/main` へ寄せるのは、`start` のときと、回っている周の終わり。
+ *
+ * `sleep` だけは**控えてから本物へ渡す身代わり**にする。止めたいのではなく、待ち合わせが何秒刻みで
+ * 見に行っているかを読むため（下の「待ち合わせの上限は秒で、刻みはそれより細かい」）。
  */
 
 // 実プロセス（bash + node）を起こすため、`npm test` 全体を並行実行したときのCPU競合だけで
@@ -59,6 +62,11 @@ interface World {
   readonly mainMoved?: boolean;
   /** 周の途中で `stop` に撃たれるか（1周を回す身代わりが、錠の中のPIDへ `SIGTERM` を送る）。 */
   readonly stopMidRound?: boolean;
+  /**
+   * 周の終わり、寝床へ入る直前に撃たれるか（本体を寄せる `git` の身代わりが送る）。**周を回す側では
+   * 撃てない**——あちらは畳むかを見るより手前なので、`trap` を張り直す前の窓に入らない。
+   */
+  readonly stopBeforeNap?: boolean;
   /** 本体を寄せる `checkout` が `daemon.sh` に置く中身。**走っている `start` の足元が入れ替わる。** */
   readonly checkoutSwap?: string;
   readonly env?: Record<string, string>;
@@ -87,6 +95,8 @@ interface Result {
   readonly copy: string | undefined;
   /** `git` に渡された引数。 */
   readonly git: readonly string[];
+  /** `sleep` に渡された長さ（秒）。**待ち合わせの刻みと、周の寝の両方が入る。** */
+  readonly sleeps: readonly number[];
   /** 本体で `npm install` が走ったか。 */
   readonly installed: boolean;
   /** `start` が立てた側の出力（`$DAEMON_LOG`）。 */
@@ -185,7 +195,13 @@ case "$*" in
     else printf '%s' 'head000'; fi ;;
   *checkout*)
     touch '${dir}/checked-out'
-    ${world.checkoutSwap === undefined ? ':' : `cp '${dir}/swap.sh' '${pathForBash(here)}/daemon.sh'`} ;;
+    ${world.checkoutSwap === undefined ? ':' : `cp '${dir}/swap.sh' '${pathForBash(here)}/daemon.sh'`}
+    ${
+      world.stopBeforeNap === true
+        ? `kill "$(cat '${dir}/state/lock/pid')"`
+        : // 撃たない世界にまで書くと、身代わりに読み手の無い枝が残る。
+          ':'
+    } ;;
   *'rev-parse --short HEAD'*) printf '%s' 'deadbee' ;;
 esac
 exit ${world.gitFails === true ? 1 : 0}
@@ -197,6 +213,17 @@ exit ${world.gitFails === true ? 1 : 0}
     const npm = join(work, 'npm');
     writeFileSync(npm, `${STUB_SHEBANG}\necho "$*" >> '${dir}/npm-calls'\n`, 'utf-8');
     chmodSync(npm, 0o755);
+
+    // `sleep` の身代わり。**寝る長さを控えてから、本物へそのまま渡す**——待ち合わせが何秒刻みで
+    // 見に行っているかは、外から所要時間を測る以外にここでしか読めない（下の「待ち合わせの上限は秒で」）。
+    // 本物は `command -pv` で引く——PATHの先頭は自分なので、名前で引くと自分を呼び続ける。
+    const sleep = join(work, 'sleep');
+    writeFileSync(
+      sleep,
+      `${STUB_SHEBANG}\necho "$1" >> '${dir}/sleep-calls'\nexec "$(command -pv sleep)" "$@"\n`,
+      'utf-8',
+    );
+    chmodSync(sleep, 0o755);
 
     const state = join(work, 'state');
     mkdirSync(state);
@@ -239,6 +266,7 @@ exit ${world.gitFails === true ? 1 : 0}
 
     const copy = join(state, 'daemon-running.sh');
     const calls = join(work, 'git-calls');
+    const naps = join(work, 'sleep-calls');
 
     return {
       code,
@@ -250,6 +278,7 @@ exit ${world.gitFails === true ? 1 : 0}
       checks: readFileSync(checks, 'utf-8').split('\n').filter(Boolean).length,
       copy: existsSync(copy) ? readFileSync(copy, 'utf-8') : undefined,
       git: existsSync(calls) ? readFileSync(calls, 'utf-8').split('\n').filter(Boolean) : [],
+      sleeps: existsSync(naps) ? readFileSync(naps, 'utf-8').split('\n').filter(Boolean).map(Number) : [],
       installed: existsSync(join(work, 'npm-calls')),
       daemonLog: existsSync(daemonLog) ? readFileSync(daemonLog, 'utf-8') : '',
     };
@@ -461,6 +490,51 @@ describe('daemon.sh', () => {
     expect(result.daemonLog).toContain('寄せた先が立った');
   });
 
+  // **錠と心拍が出ただけでは、立ったことにならない。** 錠を取るのは立ち上がりの頭で、撃たれても
+  // 自分で外せるようになるのはその後。`restart` のように直前まで別のものが走っていた場では、心拍は
+  // 前のものが残していったぶんがまだ新しいので、**「錠が在って心拍が新しい」は立ち上がりの途中でも
+  // 真になる**——そこで返すと、呼び手が次に打つ `stop` が、錠だけを残して死んだ相手を待つことになる。
+  //
+  // 錠と心拍を置いて畳む備えの前に死ぬ版を立てて、その姿を作る。
+  it('錠と心拍が出ただけでは、立てたと言わない', () => {
+    const result = daemon({
+      checkoutSwap:
+        `${STUB_SHEBANG}\n` +
+        `mkdir -p "$BOARD_STATE/lock"\n` +
+        `date -u +%Y-%m-%dT%H:%M:%SZ >"$BOARD_STATE/heartbeat"\n`,
+      args: ['start'],
+      env: { ONCE: '', START_WAIT: '1' },
+    });
+
+    expect(result.log).toContain('1秒待っても立ち上がらなかった');
+  });
+
+  // **待ち合わせは、上限と刻みの2つでできている。** 刻みを1秒に採ると、ミリ秒で終わった起動にも
+  // 1秒を足して返すので、`start` と `stop` を打つ検査の所要時間が**相手の速さではなく刻みで
+  // 決まる**——それが既定の待ち時間を食い潰し、丸ごと走らせた回にだけ落ちていた（#2159）。
+  //
+  // 心拍を書かない版を立てて、**待ちきる側**を見る。立った瞬間に返る側では、刻みが何回入ったのかを
+  // 確かめられない。
+  it('待ち合わせの上限は秒で、刻みはそれより細かい', () => {
+    const started = Date.now();
+    const result = daemon({
+      checkoutSwap: `${STUB_SHEBANG}\necho "心拍を書かない版"\n`,
+      args: ['start'],
+      env: { ONCE: '', START_WAIT: '1' },
+    });
+    const elapsed = Date.now() - started;
+
+    expect(result.log).toContain('1秒待っても立ち上がらなかった');
+    // **上限は時計で測る。** 刻みの回数で数えていると、刻みを細かくしたぶんだけ上限が縮む。
+    // **下限で書く**——「これより速い」は遅い機械で落ちるので、書けるのは「これより遅い」だけ。
+    expect(elapsed).toBeGreaterThanOrEqual(1000);
+    // **刻みは1秒より細かい。** 1秒のあいだに2回以上見に行っていることと、1回の寝がどれも1秒に
+    // 満たないことの両方を見る。前者だけだと刻みが1秒のまま上限を延ばした形が、後者だけだと
+    // 1回も見に行かない形が通る。
+    expect(result.sleeps.length).toBeGreaterThan(1);
+    expect(Math.max(...result.sleeps)).toBeLessThan(1);
+  });
+
   // **`start` だけが寄せる形では、人がGitHubの画面から入れたぶんが届かない**
   // （`agent-ops/board-design.md` 2.3.2）。走っている間に `main` が進むのは盤面が自分でマージを
   // 打った周だけになり、次のマージまで隣の道具もひな形も古い版で読まれ続ける。
@@ -521,6 +595,16 @@ describe('daemon.sh', () => {
 
     expect(result.rounds).toBe(1);
     expect(result.git.some((call) => call.includes('checkout'))).toBe(false);
+    expect(result.log).toContain('止めろと言われたので畳む');
+  });
+
+  // **撃たれたかを見るのは、寝床へ入った後。** 畳むかを見終えてから寝入るまでの間（本体を寄せる手）に
+  // 受けたぶんは、`trap` が撃ち返す相手——寝ている `sleep`——がまだ居ないので、誰も起こしに来ない。
+  // **`INTERVAL` を長く採る**——寝てしまう形に戻ったとき、寝終わって止まるのでは確かめたことにならない。
+  it('寝床へ入る直前に撃たれても、寝ずに畳む', () => {
+    const result = daemon({ stopBeforeNap: true, env: { ONCE: '', INTERVAL: '120' } });
+
+    expect(result.rounds).toBe(1);
     expect(result.log).toContain('止めろと言われたので畳む');
   });
 
