@@ -71,8 +71,8 @@ export default defineConfig({
     // なく「止まっている」。
     //
     // **上限を動かせるのはここと、`it` の第3引数だけ。** ファイルの中から `vi.setConfig` で
-    // 渡しても効かない（tests/architecture/testTimeouts.test.ts）。1件だけ桁違いに長いものは
-    // 第3引数で名指しする（tests/support/generatedReport.ts のレポート再生成）。
+    // 渡しても効かない（tests/architecture/testTimeouts.test.ts）。第3引数を使うのは、ここの線では
+    // 桁が足りない検査——レポートを丸ごと作り直すものなど。
     testTimeout: 30_000,
     // ファイルごとにモジュールを読み直さず、ワーカー内で使い回す。テストの中身より、94ファイル分の
     // 読み直しのほうが実行時間の大半を占めていた（20.1秒→5.8秒）。使い回せる前提として、テストは
