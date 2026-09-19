@@ -829,7 +829,7 @@ export class PlayScene extends ResponsiveScene {
       this.itemLane.hazeSurface,
       this.handLane.hazeSurface,
     ]);
-    this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
+    this.haze.setHaze(heatHazeFor(this.view.currentLocationTemperature));
   }
 
   /** 今の空を画面へ映し直す（ScreenLayout.md 7.5節 空の演出）。 */
@@ -1778,7 +1778,7 @@ export class PlayScene extends ResponsiveScene {
       if (wait !== this.artWaitGeneration) return;
       this.rebuildFieldArea();
       this.showSky();
-      this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
+      this.haze.setHaze(heatHazeFor(this.view.currentLocationTemperature));
       this.showInformation();
       curtain.brighten(BRIGHTEN_MS, () => {
         this.activity = 'idle';
@@ -1822,7 +1822,7 @@ export class PlayScene extends ResponsiveScene {
     this.cardTable.update(views, { ...context, origins });
     this.showChildWindowContents();
     this.showSky();
-    this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
+    this.haze.setHaze(heatHazeFor(this.view.currentLocationTemperature));
     this.showInformation();
   }
 
