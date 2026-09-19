@@ -31,7 +31,6 @@
     "stats:voyage": "RUN_VOYAGE_STATS=1 vitest run tests/diagnostics/voyageStatsReport.test.ts",
     "stats:voyage-storm": "RUN_VOYAGE_STORM_STATS=1 vitest run tests/diagnostics/voyageStormStatsReport.test.ts",
     "test": "vitest run",
-    "test:climate": "RUN_CLIMATE_TESTS=1 vitest run tests/world-codex/climateSystem.test.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
