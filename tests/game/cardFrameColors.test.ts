@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { CardFrameKind } from '../../src/game/looks/theme';
-import { cardFrameColors } from '../../src/game/looks/theme';
+import { CARD_FRAME_KINDS, cardFrameColors } from '../../src/game/looks/theme';
 
 /**
  * カードの枠の色（CardView.md 2節 枠の色は種別で変える）の自動テスト。
@@ -10,19 +9,9 @@ import { cardFrameColors } from '../../src/game/looks/theme';
  * しきい値を置いても意匠の判断を代わりに担えない。
  */
 describe('カードの枠の色', () => {
-  const KINDS: readonly CardFrameKind[] = [
-    'location',
-    'fixture',
-    'item',
-    'food',
-    'container',
-    'tool',
-    'injury',
-    'animal',
-    'character',
-    'blueprint',
-    'artifact',
-  ];
+  // **種別は色の表から数え上げる**（CARD_FRAME_KINDS）。手で並べると、種別を足しても下の検査は
+  // 元の顔ぶれだけを見て緑のまま通り、足した種別だけが色の規約の外へ出る。
+  const KINDS = CARD_FRAME_KINDS;
 
   const brightness = (color: number): number =>
     ((color >> 16) & 0xff) + ((color >> 8) & 0xff) + (color & 0xff);

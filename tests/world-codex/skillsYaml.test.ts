@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import type { YAMLMap } from 'yaml';
 import { isMap, isScalar, isSeq, parseDocument } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { characterDefNames } from '../../src/domain/generation/NewGame';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { Combination } from '../../src/domain/Interaction';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
@@ -56,6 +57,16 @@ const CRAFTING_SKILLS = [
   'skill_cooking',
   'skill_preserving',
 ] as const;
+
+/**
+ * アクセス系の腕（Skills.md 2節）。素材・機会へのアクセスを広げるだけで、レシピは開けない（同5節）。
+ *
+ * **製作系の余りとして置く。** 系統はデータのどこにも書かれておらず、分かれ目は文書の表だけが持つので、
+ * **どちらかへ名乗らせないと、腕を1本足したときに「製作系ではない」へ黙って倒れる**——その腕は
+ * 「伸ばせるのに、どの行動も速くしない腕」の射程から外れたまま緑で通る。両方を合わせて`SKILLS`に
+ * なることは下の「系統の表は、腕を1本残らず、どちらか一方へ振り分けている」が見る。
+ */
+const ACCESS_SKILLS = ['skill_firecraft', 'skill_hunting', 'skill_smelting'] as const;
 
 /** どの腕にも共通の段（SkillSystem.md 6節の目安そのままの4段・比3）。 */
 const STAGES = [
@@ -968,15 +979,26 @@ describe('腕前とレシピの解放条件', () => {
 
   it('プレイヤーキャラクタは、Skills.md 2節の腕を腕前のタグ付きで持つ', () => {
     // タブに並ぶ順は宣言順（GameElementDefinition.md 6.7節）なので、集合ではなく並びで見る。
+    // **選べるキャラクタは数え上げる**（characterDefNames）——手で並べると、本を1冊足しても
+    // ここは元の顔ぶれだけを見て通り、その本だけが腕の検査の外へ出る。
     const skillTagId = codex.propertyTagNames.getId('skill');
+    const names = characterDefNames(codex);
 
-    for (const name of ['medic', 'captain', 'engineer', 'farmer']) {
+    expect(names.length, '選べるキャラクタが1人も居なければ、この見張りは何も見ていない').toBeGreaterThan(0);
+    for (const name of names) {
       const character = characterWithSkills(0, name);
       expect(
         character.propertiesWithTag(skillTagId).map((property) => property.def.name),
         `${name} の腕前`,
       ).toEqual([...SKILLS]);
     }
+  });
+
+  it('系統の表は、腕を1本残らず、どちらか一方へ振り分けている', () => {
+    // 系統（Skills.md 2節）はデータのどこにも書かれていないので、CRAFTING_SKILLS・ACCESS_SKILLSは
+    // 手で持つしかない。**どちらにも載らない腕が出ないこと**だけを、腕の一覧と突き合わせて見る
+    // ——載らないまま残った腕は、製作系だけを見る検査（速さへ効いているか）を素通りする。
+    expect([...CRAFTING_SKILLS, ...ACCESS_SKILLS].sort()).toEqual([...SKILLS].sort());
   });
 
   it('どの腕も段は同じ境目を持つ（本ごとに basic の遠さが変わらない）', () => {
