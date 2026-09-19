@@ -34,7 +34,17 @@ const WRITTEN_NUMBER_PATTERN = /([-−]?\d[\d,]*(?:\.\d+)?)[^\d|]{0,8}$/;
 /** 印の末尾に置く粗さ。`±100` は出どころと同じ単位、`±5%` は書いた数に対する割合。 */
 const COARSENESS_PATTERN = /^±(\d+(?:\.\d+)?)(%?)$/;
 
-/** 印が指す、レポートの1つのセル。 */
+/**
+ * 条件で絞った**複数のレコード**を1つの数へ畳む読み方。列の名前と紛れないよう、名前は日本語で持つ
+ * （生成物の列名はどれもASCII）。
+ */
+const FOLDS: Record<string, (cells: readonly number[]) => number> = {
+  最小: (cells) => Math.min(...cells),
+  最大: (cells) => Math.max(...cells),
+  幅: (cells) => Math.max(...cells) - Math.min(...cells),
+};
+
+/** 印が指す、レポートのセル。畳み方を書かなければ1つに絞る。 */
 interface Source {
   readonly file: string;
   readonly section: string;
@@ -52,6 +62,8 @@ interface Coarseness {
 /** 印の中身。 */
 interface Mark {
   readonly source: Source;
+  /** 畳み方（`FOLDS` の名前）。書かれていなければ null（1つのセルの書き写し）。 */
+  readonly fold: string | null;
   /** 粗さ。書かれていなければ null（書いた桁へ丸めた厳密一致）。 */
   readonly coarseness: Coarseness | null;
 }
@@ -121,6 +133,13 @@ function parseMark(body: string): Mark | null {
     tokens.pop();
   }
 
+  let fold: string | null = null;
+  const beforeCoarseness = tokens.at(-1);
+  if (beforeCoarseness !== undefined && Object.hasOwn(FOLDS, beforeCoarseness)) {
+    fold = beforeCoarseness;
+    tokens.pop();
+  }
+
   if (tokens.length < 3) return null;
 
   const [file, section, ...rest] = tokens;
@@ -130,6 +149,7 @@ function parseMark(body: string): Mark | null {
 
   return {
     source: { file, section, selectors: selectors as (readonly [string, string])[], column },
+    fold,
     coarseness,
   };
 }
@@ -149,7 +169,15 @@ function disagreement(written: string, cell: number, coarseness: Coarseness | nu
   const value = Number(written);
   const width = coarseness.relative ? (Math.abs(value) * coarseness.width) / 100 : coarseness.width;
   if (Math.abs(cell - value) <= width) return null;
-  return `許す幅は ${value - width}〜${value + width}`;
+  return `許す幅は ${readable(value - width)}〜${readable(value + width)}`;
+}
+
+/**
+ * 人へ見せる数。**足し引きで出た端は、そのまま書くと浮動小数の屑が付く**（`0.2 + 0.1` が
+ * `0.30000000000000004`）ので、読める桁で落とす。比べるほうはこれを通さない。
+ */
+function readable(value: number): number {
+  return Number(value.toPrecision(12));
 }
 
 /**
@@ -191,8 +219,8 @@ const REPORTS = new Map(
     }),
 );
 
-/** 印が指すセルの値。解決できなければ、なぜ解決できないかを文で返す。 */
-function cellOf(source: Source): number | string {
+/** 印が指す値。解決できなければ、なぜ解決できないかを文で返す。 */
+function cellOf({ source, fold }: Mark): number | string {
   const report = REPORTS.get(source.file);
   if (report === undefined) return `${STATS_DIR}/ に無いファイル`;
 
@@ -206,11 +234,15 @@ function cellOf(source: Source): number | string {
   const matched = records.filter((record) =>
     source.selectors.every(([key, value]) => String(record[key]) === value),
   );
-  if (matched.length !== 1) return `条件に当てはまるレコードが${matched.length}件（1件に絞る）`;
+  if (fold === null ? matched.length !== 1 : matched.length < 2) {
+    // 畳み方を書いた印が1件しか当てないなら、それは書き写しなので畳み方のほうが要らない。
+    const wanted = fold === null ? '1件に絞る' : '畳むには2件以上要る';
+    return `条件に当てはまるレコードが${matched.length}件（${wanted}）`;
+  }
 
-  const cell = matched[0][source.column];
-  if (typeof cell !== 'number') return 'そのレコードに、その名前の数の列が無い';
-  return cell;
+  const cells = matched.map((record) => record[source.column]).filter((cell) => typeof cell === 'number');
+  if (cells.length !== matched.length) return 'そのレコードに、その名前の数の列が無い';
+  return fold === null ? cells[0] : FOLDS[fold](cells);
 }
 
 const CITATIONS = listMarkdown('docs').flatMap((rel) =>
@@ -231,7 +263,7 @@ describe('文書が stats/*.yaml から書き写した数値', () => {
       }
       if (citation.written === null) broken.push(`${where} → 印の直前に数値が無い`);
 
-      const cell = cellOf(citation.mark.source);
+      const cell = cellOf(citation.mark);
       if (typeof cell === 'string') broken.push(`${where} → ${cell}`);
     }
     expect(broken, `出どころへ解決しない印:\n${broken.join('\n')}`).toEqual([]);
@@ -242,14 +274,14 @@ describe('文書が stats/*.yaml から書き写した数値', () => {
     for (const citation of CITATIONS) {
       if (citation.mark === null || citation.written === null) continue;
 
-      const cell = cellOf(citation.mark.source);
+      const cell = cellOf(citation.mark);
       if (typeof cell === 'string') continue; // 解決しないことは前の試験が見る
 
       const gap = disagreement(citation.written, cell, citation.mark.coarseness);
       if (gap !== null) {
         stale.push(
           `${citation.doc}:${citation.line}: ${citation.written} と書いてあるが` +
-            ` ${citation.body} は ${cell}（${gap}）`,
+            ` ${citation.body} は ${readable(cell)}（${gap}）`,
         );
       }
     }
@@ -260,7 +292,7 @@ describe('文書が stats/*.yaml から書き写した数値', () => {
 /** 印を読んでセルまで解決する。解決できなければ、なぜできないかを文で返す（`cellOf` と同じ形）。 */
 function cellOfMark(body: string): number | string {
   const mark = parseMark(body);
-  return mark === null ? '印の形が読めない' : cellOf(mark.source);
+  return mark === null ? '印の形が読めない' : cellOf(mark);
 }
 
 describe('レコードを選ぶ条件', () => {
@@ -294,6 +326,63 @@ describe('レコードを選ぶ条件', () => {
   });
 });
 
+describe('複数のレコードを畳む印', () => {
+  it('生成物の列の名前が、畳み方と紛れない', () => {
+    const columns = new Set<string>();
+    for (const sections of REPORTS.values()) {
+      for (const section of Object.values(sections)) {
+        if (!Array.isArray(section)) continue;
+        for (const record of section) {
+          if (typeof record === 'object' && record !== null) Object.keys(record).forEach((key) => columns.add(key));
+        }
+      }
+    }
+    // 畳み方は読む列の次に置くので、同じ名前の列が生えると印が黙ってそちらを畳み方として読む。
+    expect([...columns].filter((column) => Object.hasOwn(FOLDS, column))).toEqual([]);
+  });
+
+  /** 岸壁から近道で渡る所要日数。季節ごとに1件ずつ並ぶので、季節を選ばなければ畳める。 */
+  const COURSE = 'voyage.yaml course_season coast=cliff_coast course=shortest';
+
+  /** 畳んだ値。数に解決しなければ、その理由の文ごと落とす。 */
+  function folded(fold: string): number {
+    const value = cellOfMark(`${COURSE} days ${fold}`);
+    if (typeof value !== 'number') throw new Error(value);
+    return value;
+  }
+
+  it('幅は、当たったレコードの最大と最小の差', () => {
+    expect(folded('幅')).toBeCloseTo(folded('最大') - folded('最小'));
+    expect(folded('最小')).toBeLessThan(folded('最大'));
+  });
+
+  it('畳み方を書かない印は、2件以上に当たると赤くする', () => {
+    expect(cellOfMark(`${COURSE} days`)).toBe('条件に当てはまるレコードが3件（1件に絞る）');
+  });
+
+  it('1件しか当たらない条件は、畳めないものとして赤くする', () => {
+    expect(cellOfMark(`${COURSE} season=dry days 最小`)).toBe(
+      '条件に当てはまるレコードが1件（畳むには2件以上要る）',
+    );
+  });
+
+  it('当たったレコードの列が数でなければ、畳まずに赤くする', () => {
+    expect(cellOfMark(`${COURSE} coast 最小`)).toBe('そのレコードに、その名前の数の列が無い');
+  });
+
+  it('畳み方と粗さは両方書ける', () => {
+    expect(parseMark(`${COURSE} days 幅 ±0.1`)).toMatchObject({
+      fold: '幅',
+      coarseness: { width: 0.1 },
+    });
+  });
+
+  it('知らない畳み方は、印ごと読めないものとして赤くする', () => {
+    // 畳み方として読まれなければ列の名前になり、列だったトークンが `=` の無い条件になる。
+    expect(cellOfMark(`${COURSE} days 平均`)).toBe('印の形が読めない');
+  });
+});
+
 /** 粗さの部分だけを読む。印の他の部分は「粗さを足しても…」の試験が見る。 */
 function coarsenessOf(token: string): Coarseness | null {
   return parseMark(`balance.yaml object_costs object=raft total_minutes ${token}`)?.coarseness ?? null;
@@ -313,6 +402,10 @@ describe('印の粗さ', () => {
     expect(disagreement('4200', 4301, coarseness)).toBe('許す幅は 4100〜4300');
   });
 
+  it('外れたときに見せる幅は、浮動小数の屑を落とした桁で書く', () => {
+    expect(disagreement('0.2', 1.22, coarsenessOf('±0.1'))).toBe('許す幅は 0.1〜0.3');
+  });
+
   it('割合の粗さは、書いた数に対する百分率で幅を決める', () => {
     const coarseness = coarsenessOf('±5%');
     expect(coarseness).toEqual({ width: 5, relative: true });
@@ -328,6 +421,7 @@ describe('印の粗さ', () => {
     });
     expect(parseMark('balance.yaml object_costs total_minutes')).toEqual({
       source: { ...source, selectors: [] },
+      fold: null,
       coarseness: null,
     });
   });
