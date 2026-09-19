@@ -245,8 +245,9 @@ function relayedTickDeltasOf(def: ObjectDef, driver: ExternalTickDelta): readonl
       if (delta.target !== 'self' || delta.amount === 0) continue;
       if (delta.propertyGlobalId === driver.propertyGlobalId) continue;
       // 段のほかにも縛りがあるなら、それが押されている間に成立するかは定義からは決まらない
-      // （totalsWithDriverが自分の条件つきを数えないのと同じ理由）。**押し手が居ることで必ず成立する
-      // 外側の段は、縛りとして数えない**——そこはtotalsWithDriverと同じ見方（TickGate）。
+      // （押されている間ずっと成立していると言い切れない条件つきを数えない、totalsWithDriverと同じ
+      // 理由）。**押し手が押している間ずっと成立している外側の段は、縛りとして数えない**——そこも
+      // totalsWithDriverと同じ見方（TickGate）。
       if (!delta.gate.gatedOnlyBySelfStagesUnder(driver)) continue;
 
       const untilStage = ticksUntilDrivenStage(def, driver, delta.gate, pushedToward);

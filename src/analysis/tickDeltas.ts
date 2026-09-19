@@ -165,7 +165,11 @@ export class TickGate {
    * {@link heldThroughoutPush}と同じ。
    */
   gatedOnlyBySelfStagesUnder(pushing: PushingSituation): boolean {
-    return !this.hasConditionsBeyondStages && this.outerStagesHeldThroughout(pushing);
+    return (
+      !this.hasConditionsBeyondStages &&
+      // 外側の段を1つも要らないなら、押し手が何を保証していようと縛りは自身の段だけ。
+      (this.outerStages.length === 0 || this.outerStagesHeldThroughout(pushing))
+    );
   }
 
   /**
@@ -182,7 +186,6 @@ export class TickGate {
     return (
       !this.hasConditionsBeyondStages &&
       this.requiredSelfStages.length === 0 &&
-      this.outerStages.length > 0 &&
       this.outerStagesHeldThroughout(pushing)
     );
   }
@@ -194,9 +197,12 @@ export class TickGate {
    *
    * 押し方は同時には効かない組が並ぶ（炉の火力の段）ので、押されている間ずっと成り立つと言えるのは
    * **どの押し方でも成り立つことだけ**。
+   *
+   * **要る段が1つも無ければ偽**——押し手は何も保証していない。縛りが自身の段だけかを問う側
+   * （{@link gatedOnlyBySelfStagesUnder}）が答えを要るのは別の問いなので、そちらが自分で分ける。
    */
   private outerStagesHeldThroughout(pushing: PushingSituation): boolean {
-    if (this.outerStages.length === 0) return true;
+    if (this.outerStages.length === 0) return false;
     if (pushing.sourceIsAt !== 'parent' || pushing.sourceStagesByCase.length === 0) return false;
     return pushing.sourceStagesByCase.every((held) =>
       this.outerStages.every((required) =>
