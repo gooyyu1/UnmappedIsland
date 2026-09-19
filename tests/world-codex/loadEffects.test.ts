@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { seededRng } from '../../src/domain/Rng';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Path } from '../../src/domain/wrappers/Path';
 import { World } from '../../src/domain/wrappers/World';
@@ -50,7 +50,7 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     forest: WorldObject;
   } {
     const session = new WorldSession(codex, undefined, seededRng(42));
-    const worldInstance = new WorldObject(0, def('world'), session);
+    const worldInstance = session.createObject(def('world').globalId);
     const world = new World(worldInstance);
     session.adoptWorld(world);
 
