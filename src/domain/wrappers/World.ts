@@ -47,14 +47,6 @@ export class World extends ObjectWrapper {
     return this.tryEffectiveNumberOf(this.words.ambientBrightnessId);
   }
 
-  /**
-   * 今の気温（ClimateSystem.md）。日射と季節の寄与が重なった実効値。体温ではない。
-   * worldが気温を持たなければundefined。
-   */
-  get ambientTemperature(): number | undefined {
-    return this.tryEffectiveNumberOf(this.words.ambientTemperatureId);
-  }
-
   /** 1tickに相当するゲーム内時間（分）。実体値をそのまま返す（WorldSession.advanceWorldTime参照）。 */
   get rawMinutesPerTick(): number {
     return this.instance.tryGetProperty(this.words.minutesPerTickId)?.number ?? 0;
