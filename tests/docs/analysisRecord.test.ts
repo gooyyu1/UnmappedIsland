@@ -3,15 +3,16 @@ import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * 分析係の記録が、係の本文（`agent-ops/prompts/*-prompt.md`）の定めた節を持っていることの検査。
+ * 周期で記録を残す係の記録が、係の本文（`agent-ops/prompts/*-prompt.md`）の定めた節を持っている
+ * ことの検査。
  *
- * **一次も二次も同じ形で回る**（{@link SERIES}）——どちらも本文の `## 記録` が置く節を並べ、1回1
+ * **どの係も同じ形で回る**（{@link SERIES}）——どれも本文の `## 記録` が置く節を並べ、1回1
  * ファイルで日付の名前を付ける。**見る仕組みを分ける差は無い**ので、置き場と本文だけを変えて同じ
  * 1つを掛ける。
  *
  * 検査がここに要るのは、**記録の書き方がずれても次の回には何も届かない**ため。一次が過去の回の記録を
  * 開くのはその回のスメルが名指した行を確かめるときだけ（`agent-ops/board-design.md` 2.17.4）で、
- * 二次が必ず読むのも直前の1件までしかない。**定めを置ける場所は本文だけなので、守られたかを見るのは
+ * 二次が必ず読むのも直前の1件まで、割を見る係（2.23）が読むのも直前の1件までしかない。**定めを置ける場所は本文だけなので、守られたかを見るのは
  * ここ**——読んだスメルのうち issue にしなかったものは、コメントへ 👀 が付いた時点で二度と拾われない
  * ので、記録から落ちるとそのまま消える。
  *
@@ -70,6 +71,11 @@ const SERIES: readonly Series[] = [
     name: '二次',
     prompt: join(ROOT, 'agent-ops', 'prompts', 'analysis-trend-prompt.md'),
     dir: join(ROOT, 'agent-ops', 'analysis', 'summary'),
+  },
+  {
+    name: '見立て',
+    prompt: join(ROOT, 'agent-ops', 'prompts', 'payoff-prompt.md'),
+    dir: join(ROOT, 'agent-ops', 'payoff'),
   },
 ];
 
@@ -170,7 +176,7 @@ function checkedRecords(dir: string, from: string) {
   );
 }
 
-describe.each(SERIES)('$name の分析の記録', ({ prompt, dir }: Series) => {
+describe.each(SERIES)('$name の記録', ({ prompt, dir }: Series) => {
   // 引けなかった節は、下の検査から黙って外れる——節を1つ足したのに要求が増えない、が緑で通る。
   it('要る節を本文の箇条書きから全部引けている', () => {
     const { bullets, headings } = recordSections(prompt);
