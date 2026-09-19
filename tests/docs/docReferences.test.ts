@@ -549,6 +549,9 @@ const NAMED_REF_GAP = /^[\s`の)）]*$/;
  */
 const BARE_REF_GAP = /^[\s`)）]*$/;
 
+/** 直前の参照に、区切りだけで続いた印。指し先は直前の参照と同じ文書。 */
+const CONTINUES_PREV_REF = /^[・、／/]\s*$/;
+
 /**
  * 番号がそこで終わっていない印。直後に語・数字・`-`・`%` が続くものは数量や行の範囲
  * （`2行`・`294-296行`・`20%`）で、節番号ではない——節番号は語を直に続けない。
@@ -574,8 +577,9 @@ const QUANTITY_SUFFIX = /^[\p{L}\p{N}%-]/u;
  * **規約に従っていない参照だけが検査の外に出る**——`Foo.md 2.16` は指しているつもりで書かれるのに、
  * 指し先が消えても緑のままだった（issue #2229）。
  *
- * **読めるのは、文書名を挙げた直後に置かれた形だけ。** 「同 N」と裸の「N」は、「節」を落とすと
- * `同840`・`3撃` のような数量と**字面で見分けが付かない**ので、そちらの省略は拾えない。
+ * **読めるのは、文書名を挙げた直後の形だけ。** 「同 N」と裸の「N」——並びの続き（`3.1節・3.1.2`）を
+ * 含む——は、「節」を落とすと `同840`・`2 節、1 つの物` のような数量と**字面で見分けが付かない**ので、
+ * そちらの省略は拾えない。**文書名の直後だけが、数量の入る余地の無い位置**。
  *
  * **原文をそのまま読む。** 見るのは `.md` 以外も含む（{@link REF_FILES}）ので、Markdownの囲みで
  * 削れない——フェンスの中のYAMLコメントも実在の節を指している。
@@ -611,6 +615,7 @@ function brokenNumberedRefsIn(rel: string, source: string): string[] {
     if (run === undefined) continue;
     const end = match.index + whole.length;
     const gap = text.slice(lastNamedEnd, match.index);
+    const sincePrev = prevRef === null ? null : text.slice(prevRef.end, match.index);
     if (setsu === undefined) {
       const named = lastNamedBase !== null && dou === undefined && BARE_REF_GAP.test(gap);
       if (!named || QUANTITY_SUFFIX.test(text.slice(end))) continue;
@@ -618,14 +623,13 @@ function brokenNumberedRefsIn(rel: string, source: string): string[] {
       continue;
     }
     const nums = sectionNumbersIn(run);
-    const sincePrev = prevRef === null ? null : text.slice(prevRef.end, match.index);
     // 指し先の候補（先頭から順に試し、最初に解決した文書を採る）
     let candidates: (string | null)[];
     if (lastNamedBase !== null && NAMED_REF_GAP.test(gap)) {
       candidates = [lastNamedBase]; // 明示: Foo.md N節（リンク形式の閉じ括弧は挟んでよい）
     } else if (dou !== undefined) {
       candidates = [lastNamedBase]; // 同 N節
-    } else if (sincePrev !== null && /^[・、]\s*$/.test(sincePrev)) {
+    } else if (sincePrev !== null && CONTINUES_PREV_REF.test(sincePrev)) {
       candidates = [prevRef!.base]; // 列挙の続き: N節・M節
     } else {
       candidates = grammarFallback
