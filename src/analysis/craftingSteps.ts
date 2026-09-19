@@ -26,12 +26,7 @@ import { MINUTES_PER_TICK } from '../domain/worldTime';
 import type { BecomeDestinationResolver, EffectReading } from './effectOutcomes';
 import { consumesRoot, destroysRoot, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
-import type {
-  StaticPropertyReading,
-  StaticSubjectReader,
-  StaticValueLayer,
-  StaticValueResolver,
-} from './staticValue';
+import type { StaticPropertyReading, StaticSubjectReader, StaticValueResolver } from './staticValue';
 import {
   highestDeclaredLayer,
   layeredResolver,
@@ -65,7 +60,7 @@ export function craftingStepsOf(
   def: ObjectDef,
   outer?: AnalysisContext,
 ): readonly CraftingStep[] {
-  const context = outer ?? analysisContextOf(codex, []);
+  const context = outer ?? analysisContextOf(codex);
   const resolve = context.resolve;
   const steps: CraftingStep[] = [];
   for (const trigger of def.triggers)
@@ -107,9 +102,32 @@ export interface AnalysisContext {
 }
 
 /**
+ * 実行時にしか就く相手が決まらない起点の、候補（analysisContextOf）。**受け取るのは候補だけで、
+ * 層はここで組む**——起点ごとの読み方（UndeclaredReading）を呼び出し側が選べると、同じ起点が文脈に
+ * よって違う埋まり方をする。
+ *
+ * 行っている人（agent）はここに無い。**どの文脈でも候補が同じ**（操作するのは常にキャラクタ）なので、
+ * 渡させる意味が無い。
+ */
+export interface AnalysisCandidates {
+  /**
+   * 祖先（8.6節）に就く土地。置く先が決まっているならその土地1つ、どの土地に置いてもよい前提なら
+   * 島の土地すべて。**宣言していない土地では寄与0**（highestDeclaredLayerの`zero`）。
+   */
+  readonly ancestorLocations?: readonly ObjectDef[];
+
+  /**
+   * 使う物（instrument、11.5節）に就きうる型。これが無いと、相手の値を見る重み——一撃がどう入るかは
+   * 武器が決める（HuntingSystem.md 1.2節）——が解けず、宣言順で最初の候補だけが起こることになる
+   * （PickEffect.selectWeighted）。
+   */
+  readonly instruments?: readonly ObjectDef[];
+}
+
+/**
  * 定義だけから値を解く文脈を作る唯一の入口。**行っている人（agent、11.5節）の層は必ずここが入れる**
  * ——足し忘れると、腕を土台にした重みが解けず、その候補は起こらないものとして数えられる。
- * **呼び出し側が覚えておく手順にしない**ため、層を渡す口をここ1つに絞ってある。
+ * **呼び出し側が覚えておく手順にしない**ため、層を組む口をここ1つに絞ってある。
  *
  * **祖先の土地も同じ理由でここが受け取る。** 値を埋める層（highestDeclaredLayer）と、条件を判定する
  * 土地（AnalysisContext.ancestorLocations）を別々に渡させると、2箇所が暗黙に一致すべき規約になる。
@@ -123,18 +141,14 @@ export interface AnalysisContext {
  * 重み——着火の成否・探索で獣に出くわす確率・打った一撃の当たり所——が解けず、その候補は起こらない
  * ものとして数えられる。
  */
-export function analysisContextOf(
-  codex: WorldCodex,
-  ancestorLocations: readonly ObjectDef[],
-  layers: readonly StaticValueLayer[] = [],
-): AnalysisContext {
+export function analysisContextOf(codex: WorldCodex, candidates: AnalysisCandidates = {}): AnalysisContext {
   const characters = [...codex.objects].filter((def) => def.hasTag(codex.vocabulary.world.characterTagId));
+  const ancestorLocations = candidates.ancestorLocations ?? [];
   return {
     resolve: layeredResolver([
       highestDeclaredLayer('agent', characters, 'unresolved'),
-      // **宣言していない土地では寄与0**（'zero'）。候補が無ければ層そのものが答えない。
       highestDeclaredLayer('ancestor', ancestorLocations, 'zero'),
-      ...layers,
+      highestDeclaredLayer('instrument', candidates.instruments ?? [], 'unresolved'),
     ]),
     ancestorLocations,
   };

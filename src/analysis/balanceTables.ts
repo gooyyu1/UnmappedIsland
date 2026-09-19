@@ -18,7 +18,7 @@ import { rangeCyclesOf } from './rangeCycles';
 import { rangeEventReadouts } from './rangeEvents';
 import type { RainWaterRow } from './seasonalRain';
 import { rainWaterRows } from './seasonalRain';
-import { highestDeclaredLayer, staticValueOf } from './staticValue';
+import { staticValueOf } from './staticValue';
 import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
 import { MINUTES_PER_DAY, TICKS_PER_DAY } from '../domain/worldTime';
 
@@ -1370,20 +1370,13 @@ function decayLifetimeOf(cycles: readonly RangeCycle[]): DecayLifetime | undefin
 }
 
 /**
- * この表が使う文脈。**使う物の層**（11.5節）を足す——行っている人と祖先の層はanalysisContextOfが
- * 必ず入れる。`base` が層をまたいで別の起点を指すので、層どうしを直に繋がない（layeredResolver）。
+ * この表が使う文脈。**使う物の候補は全型**——どの型を相手にした場合の値かは工程ごとに決まらないので、
+ * 絞ると相手の値を見る重みが解けなくなる（AnalysisCandidates.instruments）。
  *
- * 祖先の候補（ancestorLocations）は、置く先が決まっているならその土地1つ、どの土地に置いてもよい
- * 前提なら島の土地すべて。
- *
- * 使う物の候補は全型。これが無いと、相手の値を見る重み——一撃がどう入るかは武器が決める
- * （HuntingSystem.md 1.2節）——が全て解けず、宣言順で最初の候補だけが起こることになる
- * （PickEffect.selectWeighted）。
+ * 祖先の候補は、置く先が決まっているならその土地1つ、どの土地に置いてもよい前提なら島の土地すべて。
  */
 function analysisContext(codex: WorldCodex, ancestorLocations: readonly ObjectDef[]): AnalysisContext {
-  return analysisContextOf(codex, ancestorLocations, [
-    highestDeclaredLayer('instrument', [...codex.objects], 'unresolved'),
-  ]);
+  return analysisContextOf(codex, { ancestorLocations, instruments: [...codex.objects] });
 }
 
 /**

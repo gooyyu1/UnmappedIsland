@@ -536,6 +536,15 @@ object_defs:
         conditions:
           - {subject: self, prop: fill, gt: 4000}
         set: {self: {fill: 0}}
+      unlid:
+        trigger: menu
+        conditions:
+          - {subject: self, prop: lid_seal, eq: 0}
+
+  crate:
+    tags: [item]
+    props:
+      lid_seal: {value: 1}
 
   water_liquid:
     traits: [liquid, water_liquid]
@@ -562,6 +571,12 @@ object_defs:
       // 空の容器のon_minは自分自身へ戻るだけなので、fillが0のままでいられる。
       expect(stepNamesOf('jar')).toContain('collect_rain');
     });
+
+    it('自分が宣言していないプロパティを見る操作は立たない', () => {
+      // 実行時は解決先が無く、どの演算子でも偽になる（ConditionNode.evaluateProperty）。0として
+      // 読むのでも素通しにするのでもないので、`eq: 0`でも成立しない。
+      expect(stepNamesOf('jar')).not.toContain('unlid');
+    });
   });
 
   /**
@@ -580,6 +595,9 @@ object_defs:
       hanging_anchor: {value: 1}
 
   barren:
+    tags: [location]
+
+  moor:
     tags: [location]
 
   hammock:
@@ -606,7 +624,7 @@ object_defs:
     /** その土地の候補に立ったときの、ハンモックの工程名。 */
     function napStepsAt(codex: WorldCodex, ...locationNames: readonly string[]): readonly string[] {
       const defOf = (name: string): ObjectDef => codex.objects.get(codex.objectNames.getId(name));
-      const context = analysisContextOf(codex, locationNames.map(defOf));
+      const context = analysisContextOf(codex, { ancestorLocations: locationNames.map(defOf) });
       return craftingStepsOf(codex, defOf('hammock'), context).map((step) => step.name);
     }
 
@@ -618,9 +636,16 @@ object_defs:
       expect(napStepsAt(ancestorCodex, 'grove')).toContain('nap');
     });
 
-    it('土地が1つに定まらないなら落とさない', () => {
-      // 島全体の文脈。実行時に祖先へ就くのは候補のどれか1つなので、成立する土地が在れば残す。
+    it('候補のどれかで成立するなら落とさない', () => {
+      // 島全体の文脈。実行時に祖先へ就くのは候補のうち1つなので、成立する土地が在れば残す。
       expect(napStepsAt(ancestorCodex, 'grove', 'barren')).toContain('nap');
+    });
+
+    it('どの候補でも成立しないなら、候補が複数でも落ちる', () => {
+      expect(napStepsAt(ancestorCodex, 'barren', 'moor')).not.toContain('nap');
+    });
+
+    it('土地の候補が無ければ素通しする', () => {
       expect(napStepsAt(ancestorCodex)).toContain('nap');
     });
 
