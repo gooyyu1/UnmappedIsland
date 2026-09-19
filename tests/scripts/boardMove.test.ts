@@ -86,12 +86,21 @@ const TRIAGED_JUST_NOW = { 'cycle:triage': NOW };
 /** 掘り起こす係を立てる手。**上の既定を外した盤面はどれもこれを出す**ので、ここで名前を持つ。 */
 const DIG = `CHORE dig agent-ops/prompts/dig-prompt.md ${NOW}`;
 
+/** 割に合っているかを見る係を立てる手。この係もどの盤面にも当たるので、同じく名前を持つ。 */
+const PAYOFF = `CHORE payoff agent-ops/prompts/payoff-prompt.md ${NOW} --bridge`;
+
 /**
  * 盤面を見回る係（`board-move.mjs` の `CYCLES` の `patrol`）も、既定で**たった今立てた**ことにする。
  * あの係の `due` は**常に真**（2.21.2）なので、**どの盤面にも当たる**——既定のままだと、見回りと
  * 関わりのない検査の期待値へ一律に1手増える。立つところを見る検査は `taken` で上書きする。
  */
 const PATROLLED_JUST_NOW = { 'cycle:patrol': NOW };
+
+/**
+ * 割に合っているかを見る係（`board-move.mjs` の `CYCLES` の `payoff`）も、既定で**たった今立てた**
+ * ことにする。あの係の `due` も**常に真**（2.23）なので、見回りと同じく**どの盤面にも当たる**。
+ */
+const PAID_OFF_JUST_NOW = { 'cycle:payoff': NOW };
 
 /**
  * マージ済みPRの後片付け（`board-move.mjs` の `TIDY`）は、既定で**もう打った**ことにする。窓に載って
@@ -119,7 +128,14 @@ function moves(board: Board): string[] {
     // **宛先を見るどの判定も既定の盤面では効かなくなる。**
     prSessions: {},
     ...board,
-    taken: { ...idled, ...tidied, ...DUG_JUST_NOW, ...PATROLLED_JUST_NOW, ...board.taken },
+    taken: {
+      ...idled,
+      ...tidied,
+      ...DUG_JUST_NOW,
+      ...PATROLLED_JUST_NOW,
+      ...PAID_OFF_JUST_NOW,
+      ...board.taken,
+    },
   });
 }
 
@@ -1217,6 +1233,64 @@ describe('board-move.mjs', () => {
     expect(moves({ issues: [game(9), rush] })).toEqual(['TASK 40', 'TASK 9']);
   });
 
+  // ## 整備の枠（2.18.1）
+  //
+  // **配る順だけでは整備は減らない。** 完成へ近づける仕事を先頭へ並べても、配れる `goal:game` が
+  // 枠の数に満たない周は、残りの枠が必ず整備で埋まる。**枠のほうで切る。**
+  it('手が動いている整備が枠のぶん在れば、次の整備は投入しない', () => {
+    const board = {
+      issues: [upkeep(9), upkeep(20)],
+      sessions: [working('session_a', 'task-9')],
+    };
+    expect(moves(board)).toEqual(['NOTE 整備の task が、整備の枠（session_a）の空きを待っている: #20']);
+  });
+
+  // **止めるのは整備だけ。** 空けた枠は、掘り起こす係が供給する `goal:game` のために在る。
+  it('整備の枠が満ちていても、完成へ近づける仕事は投入する', () => {
+    const board = {
+      issues: [upkeep(9), upkeep(20), game(30)],
+      sessions: [working('session_a', 'task-9')],
+    };
+    expect(moves(board)).toEqual([
+      'TASK 30',
+      'NOTE 整備の task が、整備の枠（session_a）の空きを待っている: #20',
+    ]);
+  });
+
+  // **`急ぎ` は枠ごと越える**（2.18 の「効き目は配る順だけ」を、ここでは枠の上でも保つ）。盤面
+  // そのものが止まる整備は、これで越える。
+  it('急ぎ の付いた整備は、整備の枠が満ちていても投入する', () => {
+    const rush = {
+      number: 40,
+      ...label('kind:task', 'origin:agent', 'goal:upkeep', '急ぎ'),
+      blockedBy: { nodes: [] },
+    };
+    const board = { issues: [upkeep(20), rush], sessions: [working('session_a', 'task-20')] };
+    expect(moves(board)).toEqual(['TASK 40']);
+  });
+
+  // **枠を握っている側を `急ぎ` で数えない。** 数えると、盤面が止まる整備を捌いている間じゅう、
+  // 普通の整備がもう1本入って枠が2本になる。
+  it('急ぎ の整備が枠を握っていても、普通の整備は投入する', () => {
+    const rush = {
+      number: 40,
+      ...label('kind:task', 'origin:agent', 'goal:upkeep', '急ぎ'),
+      blockedBy: { nodes: [] },
+    };
+    const board = { issues: [upkeep(20), rush], sessions: [working('session_a', 'task-40')] };
+    expect(moves(board)).toEqual(['TASK 20']);
+  });
+
+  // **枠を握るのは手が動いているぶんだけ**（`moving`。`held` ではない）。握ったままにすると、
+  // PRを出して人の判断を待っている1本で、整備が丸ごと止まる。
+  it('担当を握ったまま手が止まっている整備は、枠を握らない', () => {
+    const board = {
+      issues: [upkeep(9), upkeep(20)],
+      sessions: [idle('session_a', 'task-9')],
+    };
+    expect(moves(board)).toContain('TASK 20');
+  });
+
   // **既定は無い**（2.18.1）。`goal:game` を名乗るものだけが先に出る——**立てた側の印
   // （`origin:agent`）からは推し量らない。** あれは誰が書き込んだかしか答えられず、棚卸しの分解で
   // 立つ子には必ず付くので、既定に使うと**人の仕事が分解された瞬間に整備へ落ちる。**
@@ -1276,11 +1350,15 @@ describe('board-move.mjs', () => {
 
   // **並べてよいかは、錠と本数で決める**（3.1・`parallel-work.md` 2節）。**同じファイルを書くことは
   // 止めない**——ぶつかったら `mend` で直させ、実績は `board-round.mjs` が控える。
+  //
+  // **並びを見る検査の issue は `goal:game` で組む。** 既定（`label`）の `goal:upkeep` のままだと、
+  // 走っている隣が整備の枠（`UPKEEP_WORKERS`）を握るので、**錠ではなく枠のほうで止まる**——見たい
+  // 判定に届かないまま緑になる。
   it('錠を持たない issue は、隣が走っていても並べて投入する', () => {
     const board = {
       issues: [
-        { number: 9, ...label('kind:task'), blockedBy: { nodes: [] } },
-        { number: 8, ...label('kind:task'), blockedBy: { nodes: [] } },
+        { number: 9, ...label('kind:task', 'goal:game'), blockedBy: { nodes: [] } },
+        { number: 8, ...label('kind:task', 'goal:game'), blockedBy: { nodes: [] } },
       ],
       sessions: [working('session_a', 'task-8')],
     };
@@ -1295,8 +1373,8 @@ describe('board-move.mjs', () => {
   it('同じ area: の錠を取り合う issue は投入せず、何を取り合うかを書く', () => {
     const board = {
       issues: [
-        { number: 9, ...label('kind:task', 'area:daemon'), blockedBy: { nodes: [] } },
-        { number: 8, ...label('kind:task', 'area:daemon'), blockedBy: { nodes: [] } },
+        { number: 9, ...label('kind:task', 'goal:game', 'area:daemon'), blockedBy: { nodes: [] } },
+        { number: 8, ...label('kind:task', 'goal:game', 'area:daemon'), blockedBy: { nodes: [] } },
       ],
       sessions: [working('session_a', 'task-8')],
     };
@@ -1308,8 +1386,8 @@ describe('board-move.mjs', () => {
   it('錠が違えば、走っている隣へ並べて投入する', () => {
     const board = {
       issues: [
-        { number: 9, ...label('kind:task', 'area:art'), blockedBy: { nodes: [] } },
-        { number: 8, ...label('kind:task', 'area:daemon'), blockedBy: { nodes: [] } },
+        { number: 9, ...label('kind:task', 'goal:game', 'area:art'), blockedBy: { nodes: [] } },
+        { number: 8, ...label('kind:task', 'goal:game', 'area:daemon'), blockedBy: { nodes: [] } },
       ],
       sessions: [working('session_a', 'task-8')],
     };
@@ -1601,7 +1679,7 @@ describe('board-move.mjs', () => {
     // 取り返しの付く手なので倒す先が逆になる。
     it('空いてからの長さが分からなければ、停滞の手は打たない', () => {
       const board = stalling({});
-      expect(decide({ now: NOW, settledBefore: SETTLED, prs: [], ...board })).toEqual([PATROL, DIG]);
+      expect(decide({ now: NOW, settledBefore: SETTLED, prs: [], ...board })).toEqual([PATROL, DIG, PAYOFF]);
     });
 
     // **起こした合図が効くには時間が要る。** 次の周（既定30秒）で見限ると、届く前に必ず返す。
@@ -1826,8 +1904,8 @@ describe('board-move.mjs', () => {
   it('手が1つも出ない周でも、見回る係は立つ', () => {
     const board = {
       issues: [
-        { number: 9, ...label('kind:task', 'area:daemon'), blockedBy: { nodes: [] } },
-        { number: 10, ...label('kind:task', 'area:daemon'), blockedBy: { nodes: [] } },
+        { number: 9, ...label('kind:task', 'goal:game', 'area:daemon'), blockedBy: { nodes: [] } },
+        { number: 10, ...label('kind:task', 'goal:game', 'area:daemon'), blockedBy: { nodes: [] } },
       ],
       sessions: [working('session_a', 'task-9')],
       taken: { 'cycle:patrol': '2026-09-05T00:30:00Z' },
@@ -2053,8 +2131,34 @@ describe('board-move.mjs', () => {
     expect(moves({ issues: chores, taken: DUG_YESTERDAY })).toContain(DIG);
   });
 
-  it('配れる goal:game が1件でもあれば、掘り起こす係は立てない', () => {
-    expect(moves({ issues: [upkeep(1), game(2)], taken: DUG_YESTERDAY })).not.toContain(DIG);
+  // **尽きてからでは遅い**（2.18.1。出どころ: ユーザーの指示・2026-09-19）。0で見ていた間、在庫は
+  // 少数のまま滞留して係は一度も立たず、空いた枠は整備で埋まり続けた。**比べる先は枠の数**
+  // （`ACTIVE_WORKERS`）で、枠を全部ゲームの仕事で埋められない周は供給が足りていない周。
+  it('配れる goal:game が枠の数に満たなければ、掘り起こす係を立てる', () => {
+    expect(moves({ issues: [upkeep(1), game(2)], taken: DUG_YESTERDAY })).toContain(DIG);
+  });
+
+  // **手が動いているぶんも供給に数える**（`gameSupply`）。数えないと、全員がゲームの仕事を握って
+  // いる周がいちばん小さくなり、**掘る必要の無い周に掘る**。
+  it('配れるぶんと手が動いているぶんで枠が埋まるなら、掘り起こす係は立てない', () => {
+    const board = {
+      issues: [game(1), game(2), game(10)],
+      sessions: [working('a', 'task-1'), working('b', 'task-2')],
+      taken: DUG_YESTERDAY,
+    };
+    expect(moves(board)).not.toContain(DIG);
+  });
+
+  // **PRを出してマージを待っているだけの担当は数えない。** 数えると、人の手番で止まった
+  // `goal:game` が枠のぶんあるかぎり、この係は二度と立たない——在庫が0のときだけ立てる形と
+  // 同じ詰まりを、別の数で作り直すことになる。
+  it('担当を握ったまま手が止まっているぶんは、供給に数えない', () => {
+    const board = {
+      issues: [game(1), game(2), game(10)],
+      sessions: [idle('a', 'task-1'), idle('b', 'task-2')],
+      taken: { ...DUG_YESTERDAY, 'idle:a': NOW, 'idle:b': NOW },
+    };
+    expect(moves(board)).toContain(DIG);
   });
 
   // **棚卸しの取りこぼしは、掘り起こす係を止めない**（2.18.1）。`goal:game` を名乗るものだけが

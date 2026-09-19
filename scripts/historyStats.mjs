@@ -60,11 +60,11 @@
 // **記録の無い区間は0**。両方とも最初のセッションから通して記録があるので、空欄は「使っていない」
 // を意味する。
 
-import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { dayOf, git, requireFullHistory, revisionAt } from './gitHistory.mjs';
 import { formatIssueCount, issueCountAt, readIssueHistory } from './issueHistory.mjs';
-import { JAPAN_OFFSET, japanDayOf } from './japanDay.mjs';
+import { japanDayOf } from './japanDay.mjs';
 import { lineChart } from './lineChart.mjs';
 
 /** 運用を回す道具の置き場。本番のプログラムではないので、`実装` とは別の列で数える。 */
@@ -117,38 +117,6 @@ const LINE_COLUMNS = [
 const USAGE_DIRECTORY = new URL('../stats/usage/', import.meta.url);
 
 const DEFAULT_STEP_DAYS = 7;
-
-function git(args) {
-  return execFileSync('git', args, {
-    encoding: 'utf8',
-    maxBuffer: 256 * 1024 * 1024,
-  }).trim();
-}
-
-/** コミットの時刻（`%at` のエポック秒）から、日本時間の日を出す（`japanDayOf`）。 */
-function dayOf(epochSeconds) {
-  return japanDayOf(new Date(Number(epochSeconds) * 1000));
-}
-
-/**
- * 履歴を全部持っていないなら、何も測らずに落ちる。
- *
- * **浅いクローンでは、この道具が答えるべきものが元から無い。** 行数の列だけは手元の1コミットから
- * 出せてしまうが、そこで表を出すと**PRの列が欠けたまま「測れた」形の表**になり、貼った先で
- * 気づけない。数えられるものと数えられないものの線は、ここ1箇所で引く。
- */
-function requireFullHistory() {
-  if (git(['rev-parse', '--is-shallow-repository']) !== 'true') return;
-  console.error(
-    "浅いクローンでは育ち方を測れない。'git fetch --unshallow origin' で履歴を取ってから走らせること。",
-  );
-  process.exit(1);
-}
-
-/** その日（日本時間）の最終コミット。まだ1つも無い日は空文字。 */
-function revisionAt(day) {
-  return git(['rev-list', '-1', `--before=${day} 23:59:59 ${JAPAN_OFFSET}`, 'HEAD']);
-}
 
 /** pathspec に当たるファイルの総行数。`git grep -c ''` は1行1ファイルで `rev:path:行数` を返す。 */
 function lineCount(revision, pathspecs) {
@@ -528,7 +496,7 @@ function chartsOf(measurements, rolling) {
   return charts;
 }
 
-requireFullHistory();
+requireFullHistory('育ち方');
 
 const argv = process.argv.slice(2);
 const svgIndex = argv.indexOf('--svg');

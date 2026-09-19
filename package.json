@@ -26,6 +26,7 @@
     "stats:issues": "NODE_USE_ENV_PROXY=1 node scripts/collectIssueHistory.mjs",
     "stats:durations": "RUN_DURATION_STATS=1 vitest run tests/diagnostics/durationStatsReport.test.ts",
     "stats:lines": "node scripts/countLines.mjs",
+    "stats:payoff": "node scripts/payoffMetrics.mjs",
     "stats:startup": "RUN_STARTUP_REACH_STATS=1 vitest run tests/diagnostics/startupReachStatsReport.test.ts",
     "stats:terrain": "RUN_TERRAIN_STATS=1 vitest run tests/diagnostics/terrainStatsReport.test.ts",
     "stats:voyage": "RUN_VOYAGE_STATS=1 vitest run tests/diagnostics/voyageStatsReport.test.ts",

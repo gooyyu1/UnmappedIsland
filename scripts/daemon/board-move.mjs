@@ -131,6 +131,20 @@ const HELD_TASKS = 10;
 const ACTIVE_WORKERS = 3;
 
 /**
+ * そのうち、**整備**（完成へ近づけると名乗っていない `kind:task`）へ回してよい数
+ * （2.18.1。出どころ: ユーザーの指示・2026-09-19）。`ACTIVE_WORKERS` の内数で、越えるのは `急ぎ` だけ。
+ *
+ * **配る順だけでは、整備は減らない。** 完成へ近づける仕事を先頭へ並べても（`readyTasks`）、
+ * **配れる `goal:game` が枠の数に満たない周は、残りの枠が必ず整備で埋まる**——ゲームの仕事の供給は
+ * 人の答えで律速され、整備の仕事はPRが出るたびにスメルから生えるので、その差がそのまま作業者の
+ * 割り当てになる（2026-09-19 の実測: 開いていた `kind:task` 96件のうち、完成へ近づけるものは6件）。
+ *
+ * **空いた枠を整備で埋めない。** 空けたままにしておくと、下の `CYCLES` の `dig` が立って
+ * ゲームの仕事が供給される。埋めると、**その合図が二度と出ない。**
+ */
+const UPKEEP_WORKERS = 1;
+
+/**
  * 棚卸しが付ける**分類**の接頭辞（2.17.1）。**「これを1つも持たないこと」で分類がまだかを表す**——
  * 分類の値を数え上げて、そのどれでも無い、という否定の列挙にすると、出口が増えるたびに条件を
  * 書き換えることになり、書き忘れた出口の issue が毎周また拾われる（2.17.3）。
@@ -285,6 +299,12 @@ const GOAL_GAME = `${GOAL}game`;
 const advancesGame = (issue) => names(issue).includes(GOAL_GAME);
 
 /**
+ * **先に配ってほしいと名乗っているか**（2.18）。`readyTasks` の並べ替えと、整備の枠
+ * （`UPKEEP_WORKERS`）を越える判定が**同じものを見る**ように、ここから出す。
+ */
+const rushed = (issue) => names(issue).includes(URGENT);
+
+/**
  * **棚卸しの取りこぼし**——配れる形（`kind:task`）なのに、向かう先を名乗っていない issue（2.18.1）。
  *
  * **配るのは止めない。** 止めると、取りこぼし1件で盤面が静かに詰まる。整備として並ぶあいだに、
@@ -415,15 +435,39 @@ const CYCLES = [
     // 続く——間隔を置かないと、そのあいだずっとこの係だけが立ち続ける。
     hours: 24,
     prompt: 'agent-ops/prompts/dig-prompt.md',
-    // **配れる「完成へ近づける仕事」が尽きた周がこの係の出番**（2.18.1）。枠（`HELD_TASKS`・
+    // **配れる「完成へ近づける仕事」が枠を満たせない周がこの係の出番**（2.18.1）。枠（`HELD_TASKS`・
     // `ACTIVE_WORKERS`）や錠で**待たされているだけの周は立てない**——順番待ちの task は
-    // `readyTasks` に残るので、この数は0にならない。掘り起こしても配れる先が増えないため。
+    // `readyTasks` に残るので、この数は減らない。掘り起こしても配れる先が増えないため。
     //
     // **数えるのは在庫の数ではなく組成。** スメルを拾う係は**PRが出るたびに生える入力**から毎日
     // issue を作るので、「配れる task が尽きた」で見ると、**仕組みが自分で作った整備の仕事が在庫を
     // 満たし続けるかぎり、この係は二度と立たない**（実測: 2026-09-11 に配れる46件のうち、完成の
     // 定義へ向かうものは7件だった）。
-    due: (board) => readyTasks(board).filter(advancesGame).length === 0,
+    //
+    // **尽きてからでは遅い**（出どころ: ユーザーの指示・2026-09-19）。0で見ていた間、在庫は少数の
+    // まま滞留してこの係は一度も立たず、**空いた枠は整備で埋まり続けた**（2026-09-19 の実測: 配れる
+    // `goal:game` は4件、作業者の枠は `ACTIVE_WORKERS`）。**比べる先を枠の数にする**——枠を全部
+    // ゲームの仕事で埋められない周は、供給が足りていない周。
+    //
+    // **数える側は `gameSupply`**（配れるぶん＋手が動いているぶん）。配れるぶんだけで見ると、
+    // 全員がゲームの仕事を握っている周にいちばん小さくなる。
+    due: (board) => gameSupply(board) < ACTIVE_WORKERS,
+  },
+  {
+    name: 'payoff',
+    // **週1回**（出どころ: ユーザーの指示・2026-09-19）。見るのは**週をまたいだ増え方**なので、
+    // 1日では動く量が雑音に埋まる。**間隔がそのまま、仕組みを変えてよい速さの上限**でもある
+    // ——同じ週に二度変えると、どちらが効いたのかを次の回が言えない。
+    hours: 168,
+    // **このPCでしか測れない。** 履歴を全部持っているクローンが要る（[`payoffMetrics.mjs`](../payoffMetrics.mjs)
+    // は浅いクローンでは止まる）うえ、開いている issue の組成を引くのに `gh` が要る
+    // （`agent-ops/board-design.md` 2.23）。
+    env: 'bridge',
+    prompt: 'agent-ops/prompts/payoff-prompt.md',
+    // **盤面の見え方で絞らない**（見回る係と同じ理由）。**割に合っていないことは、盤面のどの印にも
+    // 現れない**——issue は捌かれ、PRはマージされ、CIは緑のまま、ゲームだけが増えない。
+    // 絞る条件を置けるなら、その条件こそがこの係の出す結論なので、置いた時点で係が要らなくなる。
+    due: () => true,
   },
   {
     name: PATROL,
@@ -473,7 +517,7 @@ function readyTasks(input) {
     [...input.issues]
       .sort(
         (a, b) =>
-          Number(names(b).includes(URGENT)) - Number(names(a).includes(URGENT)) ||
+          Number(rushed(b)) - Number(rushed(a)) ||
           Number(advancesGame(b)) - Number(advancesGame(a)) ||
           a.number - b.number,
       )
@@ -487,6 +531,27 @@ function readyTasks(input) {
       // 既にセッションが持っている issue は配り直さない（「投入済みか」は生死で見る。1.2）。
       .filter((issue) => !input.sessions.some((session) => session.tags.includes(`task-${issue.number}`)))
   );
+}
+
+/**
+ * **ゲームの仕事の供給**——今すぐ配れる `goal:game` と、**いま手が動いている `goal:game`** の合計
+ * （2.18.1）。掘り起こす係（`CYCLES` の `dig`）が、枠（`ACTIVE_WORKERS`）と比べる側。
+ *
+ * **配れる数だけでは、枠が満ちた周に必ず足りなくなる。** 配った先から `readyTasks` を出ていくので、
+ * 作業者が全員ゲームの仕事を握っている周こそ数が小さくなり、**いちばん掘る必要の無い周に掘る**。
+ *
+ * **手が止まっているものは数えない**（`busySession`）。PRを出してマージを待っているだけの担当まで
+ * 数えると、**人の手番で止まった `goal:game` が3件あるかぎり、この係は二度と立たない**——0で見て
+ * いた頃と同じ詰まり方を、別の数で作り直すことになる。
+ */
+function gameSupply(input) {
+  const inFlight = input.sessions.filter((session) => {
+    if (!busySession(session)) return false;
+    const number = heldIssue(session);
+    const issue = input.issues.find((candidate) => candidate.number === number);
+    return issue !== undefined && advancesGame(issue);
+  }).length;
+  return readyTasks(input).filter(advancesGame).length + inFlight;
 }
 
 /** `task-<番号>` のタグから担当の issue 番号を引く。持っていなければ `undefined`。 */
@@ -1241,7 +1306,24 @@ export function moves(input) {
       notes.push(`${ready.length}件の task が、${full.what}の枠（${who}）の空きを待っている`);
     }
   } else {
+    /**
+     * 整備の枠（`UPKEEP_WORKERS`）を握っている相手。**数えるのは手が動いているものだけ**で、
+     * `急ぎ` は数えない——あれは枠ごと越える印（2.18.1）。
+     *
+     * **担当を引けない相手は数えない。** 引けないのは担当が閉じているときで（上の `held`）、
+     * そのセッションは仕事を終えている。
+     */
+    const upkeepHolders = moving.filter(
+      (holder) => holder.issue !== undefined && !advancesGame(holder.issue) && !rushed(holder.issue),
+    );
+    /** 整備の枠が満ちていて出さなかった task。**出さなかったことを毎周書く**ため数える。 */
+    const heldBack = [];
     for (const issue of ready) {
+      // **整備は枠ぶんしか出さない**（2.18.1）。`急ぎ` と、完成へ近づける仕事は越える。
+      if (!advancesGame(issue) && !rushed(issue) && upkeepHolders.length >= UPKEEP_WORKERS) {
+        heldBack.push(`#${issue.number}`);
+        continue;
+      }
       const why = waitingFor(issue);
       if (why !== undefined) {
         waiting.push(why);
@@ -1250,6 +1332,12 @@ export function moves(input) {
       const flag = destination(issue);
       if (flag === undefined) continue;
       tasks.push(flag === '' ? `TASK ${issue.number}` : `TASK ${issue.number} ${flag}`);
+    }
+    if (heldBack.length > 0) {
+      // **空いた枠を整備で埋めないことは、詰まりと見分けが付かない。** 枠を握っている相手と、
+      // 出さなかった issue を並べて、意図した空きであることを読めるようにする。
+      const who = upkeepHolders.map((holder) => holder.session.id).join(' ');
+      notes.push(`整備の task が、整備の枠（${who}）の空きを待っている: ${heldBack.join(' ')}`);
     }
     if (tasks.length === 0 && waiting.length > 0) {
       notes.push(`${waiting.length}件の task が待っている。先頭は ${waiting[0]}`);
