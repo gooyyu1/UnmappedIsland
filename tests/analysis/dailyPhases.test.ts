@@ -27,8 +27,7 @@ const LOCATION_DAYS: ReadonlyMap<number, LocationTypeDay> = new Map(
     {
       locationDefName,
       explorationMinutes: 600,
-      gatheringMinutesPerDay: 600,
-      exploringMinutesPerDay: 600,
+      outdoorSearchMinutesPerDay: 600,
     },
   ]),
 );

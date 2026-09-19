@@ -140,7 +140,7 @@ object_texts:
       wind_speed:
         display_name: 風雨
         icon: 🌪️
-        description: その身に当たっている風の強さ。嵐になると屋外では採れなくなる。屋根の下では止む。
+        description: その身に当たっている風の強さ。嵐になると屋外では何もできなくなる。屋根の下では止む。
       pain:
         display_name: 痛み
         icon: 💢
@@ -1715,7 +1715,7 @@ reason_texts:
   fire_out: この炉は消えている。分けられる炎がない。
   no_flame_carried: この明かりは灯っていない。炉へ移せる火がない。
   too_dark: 暗すぎて手が付けられない。明かりが要る。
-  too_stormy: 風雨が強すぎて、屋外では手が付けられない。収まるのを待つしかない。
+  too_stormy: 風雨が強すぎる。屋根の下へ入るか、収まるのを待つしかない。
   no_anchor: 渡せる立ち木が無い。ハンモックは支点の要る寝床で、吊る先が要る。
   not_slung: まだ据えていない。ハンモックは、この土地へ置いて立ち木の間へ渡さないと寝床にならない。
   # レシピの解放条件（docs/engine/SkillSystem.md 4節）。**足りない腕と、それを伸ばす行動**を書く

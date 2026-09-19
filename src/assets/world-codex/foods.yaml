@@ -347,6 +347,8 @@ object_defs:
             subject: agent
             prop: hand_brightness
             in_stage_or_above: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
           # **二度は刻めない。** 刻んだ芋にもこの操作は残り、`become`の行き先も自分自身として解ける
           # ——干した物へ塩を打てないのは行き先が無いからだが（drying.yaml）、同じ軸の同じ値へ移る
           # ここはそうならない。**塞がないと、1つを刻み直すだけで腕が伸び続ける。**
