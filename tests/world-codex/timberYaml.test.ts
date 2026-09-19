@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { toolWearsOf } from '../../src/analysis/durations';
+import { staticValueOf } from '../../src/analysis/staticValue';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -7,7 +8,6 @@ import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
-import { instrumentDurabilityLineOf } from '../support/durabilityLines';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction, makeTooDarkToWork } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
@@ -53,6 +53,27 @@ describe('timber.yamlの伐採', () => {
     return new PlayerCharacter(character).handStacks.flatMap((stack) =>
       stack.map((object) => object.def.name),
     );
+  }
+
+  /**
+   * その工程1回が石斧の余力から食う量。
+   *
+   * **食う量は宣言から読む。** 直値で書くと閾値の側しか見ないことになり、`add` を動かしても緑の
+   * ままになる（CLAUDE.md「置いた主張は、破れたときに落ちるものと対で置く」の「その主張の面を
+   * 見ている」）。toolWearsOf の uses は満タンから尽きるまでの回数なので、満タンを割れば1回ぶん。
+   */
+  function axeCostPerUse(stepName: string): number {
+    const wear = toolWearsOf(codex).find(
+      (row) => row.objectName === 'stone_axe' && row.stepName === stepName,
+    );
+    expect(wear, `${stepName} が斧を減らす宣言`).toBeDefined();
+    const full = staticValueOf(
+      codex.objects.get(codex.objectNames.getId('stone_axe')),
+      codex.propertyNames.getId('durability'),
+      'lowest',
+    );
+    expect(full, '石斧の durability が定義だけから読めない').toBeDefined();
+    return full! / wear!.uses;
   }
 
   /**
@@ -141,25 +162,68 @@ describe('timber.yamlの伐採', () => {
     ).toEqual([['chop', 'too_worn']]);
   });
 
+  it('ちょうど1本ぶんの余力で刻み始めた斧でも、最後まで倒し切れる', () => {
+    // 刻んでいるあいだにも屋外の劣化は進む（weathering.yamlのlong_lived_material、晴れで-0.1/tick）。
+    // **刻むたびに余力の線を引き直すと、ちょうど1本ぶんで始めた斧が途中で断られる**——払った時間が
+    // 幹に取り残されたまま、丸太が1本も返らない（issue #2304）。
+    const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
+    const axe = spawnInto('stone_axe', player, 'hand');
+    const durabilityId = codex.propertyNames.getId('durability');
+    // 倒し切るのにちょうど足りる余力。**直値で書かない**——食う量を動かしても緑のままになる。
+    axe.getProperty(durabilityId).setNumberWithoutEvents(axeCostPerUse('fell'));
+
+    const swings = tree.getProperty(codex.propertyNames.getId('trunk_integrity')).number;
+    for (let left = swings; left > 0; left -= 1) {
+      const [combination] = tree.combinationsWith(axe, player);
+      expect(
+        combination,
+        `残り${left}の幹に手が立つ（立たなければ、そこまで払った時間が取り残される）: 断り=${JSON.stringify(
+          tree
+            .refusedCombinationsWith(axe, player)
+            .map((refused) => [refused.name, refused.unmetRequirement()?.reasonName]),
+        )}`,
+      ).toBeDefined();
+      expect(combination.tryExecute()).toBe(true);
+    }
+
+    expect(
+      itemsOn(forest).filter((name) => name === 'log'),
+      '払った時間のぶん、丸太が2本返る',
+    ).toHaveLength(2);
+  });
+
+  it('刻み始めた木は、余力が1本ぶんを割っていても倒し切れる（折れるのは倒した後）', () => {
+    // **線が守るのは、刻み始める前に残っていた安い使い道**（docs/engine/DurabilitySystem.md 2.1節）。
+    // 刻み始めた後にその余力を別の使い道へ回したなら、倒す一撃は残りを食い切って折れる——摩耗は
+    // 効果の一部で、効果は時間を進めきってから一度に入るので、**折れるのは木が倒れた後**。
+    const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
+    const axe = spawnInto('stone_axe', player, 'hand');
+    const durabilityId = codex.propertyNames.getId('durability');
+    const swings = tree.getProperty(codex.propertyNames.getId('trunk_integrity')).number;
+
+    for (let left = swings; left > 1; left -= 1) expect(swingAxeAt(tree, axe)).toBe('chop');
+    // 刻み終えた木の前で、余力が倒す一撃に足りなくなった斧。**0にはしない**——0へ届いた刃は折れて
+    // 無くなる（weathering.yaml）ので、その札は盤面に残らない。
+    axe.getProperty(durabilityId).setNumberWithoutEvents(axeCostPerUse('buck'));
+
+    expect(swingAxeAt(tree, axe), '刻み切った木は倒せる').toBe('fell');
+
+    expect(
+      itemsOn(forest).filter((name) => name === 'log'),
+      '丸太は返る',
+    ).toHaveLength(2);
+    expect(axe.parent, '倒したところで斧は折れて無くなる').toBeUndefined();
+  });
+
   it('斧を断る線は、その仕事が食う量と一致している', () => {
     // 線はその工程が食う量と同じところに引き、**刃を食わない手には仕事1つぶんの線を引く**
-    // （docs/engine/DurabilitySystem.md 2.1節）——倒し切れない仕事を始めさせないため。
-    //
-    // **食う量は宣言から読む。** 直値で書くと閾値の側しか見ないことになり、`add` を動かしても緑の
-    // ままになる（CLAUDE.md「置いた主張は、破れたときに落ちるものと対で置く」の「その主張の面を
-    // 見ている」）。toolWearsOf の uses は満タンから尽きるまでの回数なので、満タンを割れば1回ぶん。
+    // （docs/engine/DurabilitySystem.md 2.1節）——倒し切れない仕事を始めさせないため。**見るのは
+    // まだ手を付けていない木にだけ**なので、刻む手の線は閾値ではなく、断る／断らないで当てる
+    // （閾値を読むと、まだ何も払っていない木にだけ効く形かどうかは分からない）。
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
     const trunk = spawnInto('driftwood_trunk', forest, 'fixtures');
     const axe = spawnInto('stone_axe', player, 'hand');
     const durabilityId = codex.propertyNames.getId('durability');
-    const fullDurability = axe.getProperty(durabilityId).number;
-    const costPerUse = (stepName: string): number => {
-      const wear = toolWearsOf(codex).find(
-        (row) => row.objectName === 'stone_axe' && row.stepName === stepName,
-      );
-      expect(wear, `${stepName} が斧を減らす宣言`).toBeDefined();
-      return fullDurability / wear!.uses;
-    };
     const setDurability = (value: number): void =>
       axe.getProperty(durabilityId).setNumberWithoutEvents(value);
     const refusal = (target: WorldObject, step: string): string | undefined =>
@@ -168,13 +232,9 @@ describe('timber.yamlの伐採', () => {
         .find((combination) => combination.name === step)
         ?.unmetRequirement()?.reasonName;
 
-    const fellCost = costPerUse('fell');
-    const buckCost = costPerUse('buck');
+    const fellCost = axeCostPerUse('fell');
+    const buckCost = axeCostPerUse('buck');
     expect(buckCost, '玉切りは1回ぶんで済むので、倒し切るより安い').toBeLessThan(fellCost);
-    expect(
-      instrumentDurabilityLineOf(codex, 'broadleaf_tree', 'chop'),
-      '刃を食わない手（刻む）の線は、仕事1つぶん——倒し切れない斧では刻み始められない',
-    ).toBe(fellCost);
     expect(
       toolWearsOf(codex).find((row) => row.objectName === 'stone_axe' && row.stepName === 'chop'),
       '刻む手は刃を食わない（食う手は必ず何かを返す）',
