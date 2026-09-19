@@ -1154,7 +1154,7 @@ describe('fire.yamlの火の連鎖', () => {
     const world = land.parent!;
     setHour(NIGHT_HOUR);
     world.getProperty(codex.propertyNames.getId('thermal_level')).setNumberWithoutEvents(0);
-    expect(worldView.ambientTemperature, '空が最も冷えるとき').toBe(12);
+    expect(temperatureOf(world), '空が最も冷えるとき').toBe(12);
 
     const beach = spawnInto('sandy_beach', world, 'locations');
     const peak = spawnInto('mountain_peak', world, 'locations');
