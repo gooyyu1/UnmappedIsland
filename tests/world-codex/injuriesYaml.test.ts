@@ -498,7 +498,7 @@ describe('injuries.yamlの怪我', () => {
 
       expect(washing(injury, jar)?.tryExecute()).toBe(true);
 
-      // 洗っている15分（＝1 tick）ぶんは汚れも進むので、正味で落ちるのは25から0.25引いた分。
+      // 洗っている1 tick（15分）ぶんは汚れも進むので、正味で落ちるのは25から0.25引いた分。
       expect(before.infection - infectionOf(injury), '1杯で25').toBeCloseTo(25 - 0.25, 10);
       expect(
         idle.tryGetProperty(fillId)!.number - jar.tryGetProperty(fillId)!.number,

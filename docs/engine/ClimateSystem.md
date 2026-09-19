@@ -93,7 +93,7 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 
 季節は「穏やか（`calm`）→雨季（`wet`）→乾季（`dry`）→穏やか→…」という固定順のサイクルです。天気（4 節）とは
 異なり、次に来る季節がどれかは確率で決まるものではなく、常に同じ順で巡回します。それぞれの季節が基本 30 日
-（tick 換算は `DurabilitySystem.md` が前提とする `tick = 15 分・1 日 = 96 tick` に従うと 2,880 tick）続きます。
+（tick 換算は `DurabilitySystem.md` が前提とする `1 tick`（15 分）に従うと 2,880 tick）続きます。
 
 ### 2.2 プロパティ構成
 
@@ -484,7 +484,7 @@ early_rain_calibration:
   stages:
     - name: idle
     - name: boosting
-      min: 96     # 2日目の開始（1日 = 96 tick）
+      min: 96     # 2日目の開始（96 tick が 1 日）
       passives:
         - add:
             self:

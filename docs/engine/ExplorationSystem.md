@@ -127,7 +127,7 @@ object_defs:
   （[TerrainGeneration.md](./TerrainGeneration.md) 3.6 節）。「少しだけ木苺の多い森」の類を、地形の
   種類を増やさずに作るための仕組みです。つまみは、その土地を特徴づける候補にだけ置きます。
 - **`duration`**: 1回の探索にかかる時間（分、`GameElementDefinition.md` 11.3 節）。**全土地とも
-  1 tick（`minutes_per_tick` = 15 分）**に揃えています。1回の探索がちょうど1 tick 分の世界の変化に
+  `minutes_per_tick` の 1 tick（15 分）**に揃えています。1回の探索がちょうど1 tick 分の世界の変化に
   対応するため、探索を繰り返しても時計とゲーム内の変化が刻みからずれません。土地ごとの探索の重さは、
   探索率100%までの回数（`exploration_progress` の `range.max`）だけで表します。
 

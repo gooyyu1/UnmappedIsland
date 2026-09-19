@@ -471,7 +471,7 @@ describe('プレイヤーキャラクタの定義', () => {
       },
     );
 
-    // 最大値が違っても「あと何時間で赤くなるか」は揃える（Characters.md）。1時間 = 4 tick。
+    // 最大値が違っても「あと何時間で赤くなるか」は揃える（Characters.md）。4 tick（1時間）。
     it.each(['wakefulness'])('%sの域は残り時間で切られる', (propertyName) => {
       const prop = propOf(def(character), propertyName);
       const perHour = decayPerTick(character, propertyName) * 4;
