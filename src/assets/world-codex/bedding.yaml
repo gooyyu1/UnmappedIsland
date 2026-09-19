@@ -52,13 +52,14 @@ object_defs:
       # 問うゲートは要らない（11.7節）。**衣類の modify と加算で重なる**（clothing.yaml）。
       #
       # **1℃は体の下の乾いた層、もう1℃は地面から離れること、3つ目は潰れない厚み**（同4.2節）。
-      # 敷物が1つ目を、差した骨組みが2つ目を、差した詰め物が3つ目を持つ。**3つ目を持たせるのは
-      # `stuffing` を名乗ること自体**で、中身が羽毛か植物繊維かを見ない——いちばん寒い土地の夜を
-      # 火なしで越せるのは詰め物まで仕上げた者、という約束（同4.2.1節【確定】）は、詰め物として
-      # 世界に現れる物すべてに掛かるため。
+      # 敷物が1つ目を、差した骨組みが2つ目を、差した詰め物が3つ目を持つ。
       #
-      # **回復の上積みだけが中身で分かれる。** 沈み込みは羽毛のほうが大きいので（同5節）、そちらは
-      # 型を名指しするブロックで持つ。
+      # **段3のブロックは中身を見ない。** 見るのは `stuffing` を名乗っていることだけで、羽毛か
+      # 植物繊維かでは分かれない（同5節。分かれるのは集め方のほう）——いちばん寒い土地の夜を火なしで
+      # 越せるのは詰め物まで仕上げた者、という約束（同4.2.1節【確定】）が、詰め物として世界に現れる
+      # 物すべてに掛かるため。**型ごとにブロックを分けると、同じ枠へ入る物どうしが排他なことを
+      # 収支の解析が読めず、どの寝床でも起きない量を出す**（src/analysis/balanceTables.ts の
+      # expectedDeltas は条件を見ずに足す）。
       nap:
         trigger: menu
         duration: 180
@@ -71,13 +72,8 @@ object_defs:
             modify: {agent: {chill_point: -1}}
           - conditions:
               - {slot: structure, matches: {tag: stuffing}}
-            modify: {agent: {chill_point: -1}}
-          - conditions:
-              - {slot: structure, matches: {object: plant_fiber_stuffing}}
-            add: {agent: {stamina: 0.25}}
-          - conditions:
-              - {slot: structure, matches: {object: feather_stuffing}}
             add: {agent: {stamina: 0.5}}
+            modify: {agent: {chill_point: -1}}
       sleep:
         trigger: menu
         duration: 360
@@ -90,13 +86,8 @@ object_defs:
             modify: {agent: {chill_point: -1}}
           - conditions:
               - {slot: structure, matches: {tag: stuffing}}
-            modify: {agent: {chill_point: -1}}
-          - conditions:
-              - {slot: structure, matches: {object: plant_fiber_stuffing}}
-            add: {agent: {stamina: 0.25}}
-          - conditions:
-              - {slot: structure, matches: {object: feather_stuffing}}
             add: {agent: {stamina: 0.5}}
+            modify: {agent: {chill_point: -1}}
     recipes:
       # 編んだ葉を3枚、端を重ねて広げる。道具も紐も要らない。
       #
@@ -144,9 +135,9 @@ object_defs:
               - {object: cord, count: 3, consume: true}
             duration: 60
 
-  # 羽毛の詰め物。なめし革の袋へ羽を詰めたもの。**詰め物どうしで効きが分かれるのは沈み込みだけ**
-  # （docs/world/Bedding.md 5節）——寒さの入口の押し下げはどれも同じで、そちらは寝床の側が
-  # `stuffing` タグで受ける。
+  # 羽毛の詰め物。なめし革の袋へ羽を詰めたもの。**効きは植物繊維の詰め物と同じ**
+  # （docs/world/Bedding.md 5節）——分かれるのは集め方で、こちらは獲物を捌いた副産物が溜まるのを
+  # 待つ側。寝床への効きは、寝床の側が `stuffing` タグで受ける1つのブロックが持つ。
   #
   # **袋がなめし革なのは、目の詰んだ面でないと羽軸が抜けるため**（同5節）。布は対象外
   # （docs/world/SurvivalItems.md 7節）なので、受け皿はここに決まる。革は熱帯では蒸れるが、
@@ -187,7 +178,8 @@ object_defs:
               - {tag: sewing_tool, count: 1, consume: false}
             duration: 60
           # 羽を詰めて口を閉じる。**40g/羽なので30枚で1.2kg**（docs/world/Bedding.md 5節）
-          # ——ヤケイ30羽ぶんで、罠を回し続けた者だけが届く。
+          # ——ヤケイ30羽ぶんで、罠を回し続けた者だけが届く。解体の副産物なので、肉を採る仕事の
+          # ついでに溜まる（animals.yamlのbutcher）。
           - requires:
               - {object: feather, count: 30, consume: true}
               - {object: yarn, count: 1, consume: true}
@@ -195,9 +187,9 @@ object_defs:
             duration: 60
 
   # 植物繊維の詰め物。同じなめし革の袋へ、掻き取った繊維・叩き解したコイア（fiber.yaml・
-  # coconut.yaml）を詰めたもの。**羽毛ほど沈まないぶん回復の上積みは薄いが、集めるのに獲物が
-  # 要らない**（docs/world/Bedding.md 5節）——払う先が罠から手間へ移るだけで、寒さの入口は
-  # 同じだけ押し下げる。
+  # coconut.yaml）を詰めたもの。**獲物を待たずに集まる代わりに、紐・ロープと同じ原資を食う**
+  # （docs/world/Bedding.md 5節。筏との競合は同3節）——払う先が罠から手間へ移るだけで、
+  # 寝床への効きは羽毛と同じ。
   plant_fiber_stuffing:
     tags: [item, stuffing]
     props:
@@ -218,8 +210,8 @@ object_defs:
               - {object: yarn, count: 2, consume: true}
               - {tag: sewing_tool, count: 1, consume: false}
             duration: 60
-          # 繊維を詰めて口を閉じる。**60g/束なので15束で0.9kg**——羽毛より軽いのは、沈まない
-          # ぶん詰める量が要らないため。
+          # 繊維を詰めて口を閉じる。**60g/束なので15束で0.9kg**——羽より嵩が詰むので、同じ厚みを
+          # 作るのに要る目方が軽い。
           - requires:
               - {object: plant_fiber, count: 15, consume: true}
               - {object: yarn, count: 1, consume: true}

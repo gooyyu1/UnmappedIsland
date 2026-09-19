@@ -301,6 +301,13 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
       `${garment}を着て寝台で眠れば${nextColdest}の夜は越せる`,
     ).toBeGreaterThan(0);
 
+    // **越せない側も見る。** ここが無いと、土地の気温や段2の押し下げが動いて骨組みだけで足りる
+    // ようになっても緑のまま通り、「詰め物まで仕上げて初めて越せる」が誰にも見張られなくなる。
+    expect(
+      warmthWhileSleepingIn(coldest, ['bed_frame']),
+      `${garment}を着ても、骨組みだけの寝台では${coldest}の夜は越せない`,
+    ).toBeLessThan(0);
+
     const stuffing = stuffings();
     expect(stuffing.length, '詰め物を名乗る物が世界に在る').toBeGreaterThan(0);
 

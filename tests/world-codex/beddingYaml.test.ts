@@ -8,6 +8,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import { TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { buildBalanceTables } from '../../src/analysis/balanceTables';
 
 /**
  * bedding.yamlの寝床とハンモックを、実ファイルの定義だけで検証する。
@@ -124,19 +125,52 @@ describe('bedding.yamlの寝床とハンモック', () => {
     );
   });
 
-  it('詰め物を差すと更に増え、羽毛のほうが植物繊維より厚い', () => {
-    // docs/world/Bedding.md 4節の段3。**押し下げは詰め物どうしで並ぶ**（同4.2節）が、回復の上積みは
-    // 沈み込みのぶんだけ羽毛が上に来る（同5節）——寝床の宣言が中身を名指しするブロックを落とせば、
-    // 2つの数が並んでここが落ちる。
+  it('詰め物を差すと更に増え、どの詰め物でも同じだけ増える', () => {
+    // docs/world/Bedding.md 4節の段3。**段3のブロックは中身を見ない**ので、詰め物として世界に
+    // 現れる物はどれも同じだけ積む（同5節。分かれているのは集め方のほう）。
+    //
+    // **世界から引く。** 型名を書き写すと、3つ目の詰め物を足した人がここを通らない。
     const framed = bedOnBeach(['bed_frame']);
-    const fibrous = bedOnBeach(['bed_frame', 'plant_fiber_stuffing']);
-    const feathery = bedOnBeach(['bed_frame', 'feather_stuffing']);
-
     const restored = (set: { bed: WorldObject; player: WorldObject }) =>
       restOn(set.bed, set.player, 'sleep').stamina;
+    const stuffingId = codex.tagNames.getId('stuffing');
+    const stuffings = [...codex.objects]
+      .filter((objectDef) => !codex.isGenerated(objectDef) && objectDef.tags.includes(stuffingId))
+      .map((objectDef) => objectDef.name);
 
-    expect(restored(fibrous)).toBeGreaterThan(restored(framed));
-    expect(restored(feathery)).toBeGreaterThan(restored(fibrous));
+    expect(stuffings.length, '詰め物を名乗る物が世界に在る').toBeGreaterThan(0);
+    const stuffed = stuffings.map((name) => ({
+      name,
+      stamina: restored(bedOnBeach(['bed_frame', name])),
+    }));
+
+    for (const { name, stamina } of stuffed)
+      expect(stamina, `${name}を差せば骨組みだけより戻る`).toBeGreaterThan(restored(framed));
+    for (const { name, stamina } of stuffed)
+      expect(stamina, `${name}と${stuffed[0].name}は同じだけ戻る`).toBe(stuffed[0].stamina);
+  });
+
+  it('収支表が読む寝床の睡眠が、実際に組める寝床の量と一致する', () => {
+    // docs/world/Bedding.md 4節・8節。**収支の解析は条件を見ずに add を足す**
+    // （src/analysis/balanceTables.ts の expectedDeltas）ので、**同じ枠へ入る排他な部品ごとに
+    // ブロックを分けると、どの寝床でも起きない量が stats/balance.yaml に載る。**
+    //
+    // 比べる先は、実際に組めるいちばん深い寝床——骨組みと詰め物を1つずつ差したもの。
+    const stuffingId = codex.tagNames.getId('stuffing');
+    const anyStuffing = [...codex.objects].find(
+      (objectDef) => !codex.isGenerated(objectDef) && objectDef.tags.includes(stuffingId),
+    );
+    expect(anyStuffing, '詰め物を名乗る物が世界に在る').toBeDefined();
+    const deepest = bedOnBeach(['bed_frame', anyStuffing!.name]);
+
+    const row = buildBalanceTables(codex, SAMPLE_CHARACTER).supply.find(
+      (supply) => supply.ownerName === 'bed' && supply.stepName === 'sleep',
+    );
+    expect(row, '収支表に寝床の睡眠の行がある').toBeDefined();
+
+    expect(row!.agentDeltas.find((delta) => delta.name === 'stamina')?.amount).toBe(
+      restOn(deepest.bed, deepest.player, 'sleep').stamina,
+    );
   });
 
   describe.each(characters)('%s の体力に対して', (characterName) => {
