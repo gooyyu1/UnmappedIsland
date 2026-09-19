@@ -43,8 +43,7 @@ TARO = (124, 92, 64)
 TARO_DARK = (86, 62, 42)
 TARO_RING = (170, 142, 110)
 SAND = (196, 176, 140)
-# 縁に残った塩。**白にしない**——紙と同じ明るさだと card_art.py が背景として抜く。
-SALT = (206, 204, 196)
+SAND_DARK = (154, 136, 104)
 PAGE = (255, 255, 255)
 
 
@@ -716,17 +715,15 @@ def draw_firewood_rack(draw: ImageDraw.ImageDraw) -> None:
         while x < right - 14:
             draw.line([(x, y - 7), (x + lean, y + 7)], fill=LEAF_DARK, width=6)
             x += 44
-    # 葉3枚の継ぎ目。2本で3枚に割れる（材料がそのまま読める）。
+    # 葉3枚の継ぎ目と、そこを締める縄。**面を横切る線は、この2本より増やさない**——縄を継ぎ目と
+    # 別の位置へ置くと、数えられる区画が葉の枚数より多くなる（材料が読めなくなる）。
     for ratio in (1 / 3, 2 / 3):
-        draw.line(
-            [(back_left + (back_right - back_left) * ratio, back_y),
-             (front_left + (front_right - front_left) * ratio, front_y)],
-            fill=LEAF_DARK,
-            width=8,
-        )
-    # 屋根を脚へ締める縄。
-    for x in (400.0, 860.0):
-        draw.line([(x - 12, back_y + 8), (x + 12, front_y - 8)], fill=CORD_DARK, width=12)
+        seam = [
+            (back_left + (back_right - back_left) * ratio, back_y),
+            (front_left + (front_right - front_left) * ratio, front_y),
+        ]
+        draw.line(seam, fill=LEAF_DARK, width=10)
+        draw.line(seam, fill=CORD_DARK, width=6)
 
 
 def draw_drying_rack(draw: ImageDraw.ImageDraw) -> None:
@@ -813,26 +810,52 @@ def draw_pen(draw: ImageDraw.ImageDraw) -> None:
 
 
 def draw_salt_pan(draw: ImageDraw.ImageDraw) -> None:
-    """塩田。平たい石4枚で縁を作り、内側を砂の床にする。
+    """塩田。掻き分けた砂の窪みへ、平たい石4枚を並べて底を張る。
+
+    **底を張るのは石で、砂は退ける側**（src/assets/world-codex/salt.yaml の `laid`）。石を縁に
+    回して内側を砂の床にすると、材料（石4つ）が底ではなく枠になり、定義と逆の作りになる。
 
     **生成では石にならない**（盤の形は出るが、材質が白い漆喰の箱になる。白いものは紙と同じ
     明るさで切り出せない。prompts/objects.json の salt_pan 参照）。
 
-    **石が4枚に割れて見えることが、材料（石4つ）の手掛かり。** 外周の角と内周の角を結ぶ継ぎ目で
-    割る。**張った海水も採れた塩も描かない**（どちらも枠と数の中身）。
+    **床が4枚に割れて見えることが、材料（石4つ）の手掛かり。** 継ぎ目は床を横切る2本だけで、
+    外周には置かない——外周にも継ぎ目を入れると1枚が2枚に割れて見え、数えると材料より多くなる。
+
+    **張った海水も、採れた塩も、乾いた塩の跡も描かない**（前2つは枠と数の中身）。跡も置かない
+    のは、**白で塗られるとそれが縁になる**から——灰色で頼んでも Qwen は白い結晶として描き、
+    床を一周する白い枠になって、石が底ではなく縁に見える。
     """
-    outer = [(322.0, 396.0), (830.0, 396.0), (1002.0, 660.0), (150.0, 660.0)]
-    inner = [(404.0, 462.0), (748.0, 462.0), (856.0, 596.0), (296.0, 596.0)]
-    draw.polygon(outer, fill=STONE, outline=OUTLINE, width=4)
-    # 手前の石は陰。盤が低く、内側が掘れていることが出る。
-    draw.polygon([outer[2], outer[3], inner[3], inner[2]], fill=STONE_DARK, outline=OUTLINE, width=4)
-    # 石4枚の継ぎ目。
-    for corner_out, corner_in in zip(outer, inner):
-        draw.line([corner_out, corner_in], fill=OUTLINE, width=4)
-    # 盤の床。砂を敷いて水が抜けないようにした面。
-    draw.polygon(inner, fill=SAND, outline=OUTLINE, width=4)
-    # 縁に残った塩。**白で置かない**——紙と同じ明るさになり、切り出しで縁ごと食われる。
-    draw.line([*inner, inner[0]], fill=SALT, width=14, joint="curve")
+    # 床の外周（4枚の石が作る輪郭）と、継ぎ目が集まる点。**継ぎ目をちょうど中央へ置かない**
+    # ——揃えると敷き詰めた床板に見え、拾って並べた石にならない。
+    back_left, back_right = (386.0, 446.0), (770.0, 450.0)
+    front_right, front_left = (888.0, 604.0), (262.0, 600.0)
+    back, right = (592.0, 440.0), (826.0, 528.0)
+    front, left = (546.0, 614.0), (326.0, 518.0)
+    centre = (562.0, 526.0)
+    rim = [back_left, back, back_right, right, front_right, front, front_left, left]
+
+    # 掻き分けた砂。床を囲う低い堤で、**縁は不揃いにする**——直線で引くと、石を載せた砂の板に見える。
+    heap = [
+        (point[0] + (point[0] - centre[0]) * 0.34 + 16 * math.sin(index * 2.1),
+         point[1] + (point[1] - centre[1]) * 0.44 + 11 * math.sin(index * 1.4))
+        for index, point in enumerate(rim)
+    ]
+    draw.polygon(heap, fill=SAND, outline=OUTLINE, width=4)
+    # 床に面した手前側の砂は陰。**床の縁に沿わせる**——水平に割ると、砂そのものに継ぎ目が入る。
+    draw.polygon(
+        [right, front_right, front, front_left, left, heap[7], heap[6], heap[5], heap[4], heap[3]],
+        fill=SAND_DARK,
+        outline=OUTLINE,
+        width=4,
+    )
+
+    for slab, fill in (
+        ([back_left, back, centre, left], STONE),
+        ([back, back_right, right, centre], STONE),
+        ([centre, right, front_right, front], STONE_DARK),
+        ([left, centre, front, front_left], STONE_DARK),
+    ):
+        draw.polygon(slab, fill=fill, outline=OUTLINE, width=4)
 
 
 def draw_field(draw: ImageDraw.ImageDraw) -> None:

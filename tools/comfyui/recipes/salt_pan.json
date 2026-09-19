@@ -7,18 +7,19 @@
     "なる（4枚とも。prompts/objects.json の salt_pan 参照）——白い物は紙と同じ明るさなので",
     "card_art.py の「紙より暗ければ物」に掛からない。",
     "",
-    "**張った海水も採れた塩も描かない**（どちらも枠と数の中身。薪棚と同じ）。残るのは石と、縁に",
-    "残った塩の跡だけ。",
+    "**底を張るのは石で、砂は掻き分ける側**（salt.yaml の `laid`）。石を縁に回して内側を砂の床に",
+    "すると、材料（石4つ）が底ではなく枠になり、定義と逆の作りになる。石は床、砂は周りの堤。",
     "",
-    "**塩の跡を白で塗らせない。** 石より明るくすると縁が切り出しで食われる。編集の指示でも",
-    "「石より明るくしない」と言う。",
+    "**張った海水も、採れた塩も、乾いた塩の跡も描かない。** 前2つは枠と数の中身（薪棚と同じ）。",
+    "跡も外したのは、**「石より明るくするな」と書いても白い結晶で描かれる**から——床を一周する",
+    "白い枠になり、石が底ではなく縁に見える（それを直すのがこの絵の眼目）。残るのは石と砂だけ。",
     "",
     "段は400。炉・燻し小屋と同じ据え置きの設備。"
   ],
   "output": "src/assets/objects/salt_pan.png",
   "sketch": "salt_pan",
   "edit": {
-    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout and the same sizes: one shallow salt pan set on the ground, four flat slabs of grey stone laid edge to edge in a square to make one low rim, with a floor of packed damp sand inside them. Paint the slabs as real stone, mottled mid grey with soft brush strokes and gentle shading, each slab clearly separate from the next so that four of them can be counted, and paint the floor inside as damp grey brown sand. Everything is clearly darker than the white page. Along the inner edges of the slabs leave a thin crust of dried salt, dull grey and never brighter than the stone beside it. The pan is empty: there is no water, no pool, no puddle, no reflection, no shine and no heap of salt anywhere in the picture, and it is not a basin of pottery, not a tray and not a bath. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow along the foot of the pan. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout and the same sizes: one shallow salt pan scooped out of the sand, floored with four flat slabs of grey stone laid straight onto the ground edge to edge, two at the back and two at the front, with the sand that was scraped away heaped in a low loose bank all around them. The four slabs are the floor of the pan and nothing else is: there is no rim of stone, no wall, no kerb and no border standing up around the pan. Paint the slabs as real stone, mottled mid grey with soft brush strokes and gentle shading, each one clearly separate from the ones beside it so that exactly four can be counted, and let their outer edges be uneven where the heaped sand runs over them. Paint the bank around them as loose dry grey brown sand, crumbly and uneven, thinning away to nothing at its outer edge. Everything is clearly darker than the white page. The pan is empty and quite bare: there is no water, no pool, no puddle, no reflection and no shine anywhere in the picture, and there is no salt at all — no white crust, no white rim, no white line along the seams, no sparkle and no glitter. Nothing pale runs around the edge of the stone floor. It is not a basin of pottery, not a tray, not a bath and not a tiled floor. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow along the near foot of the sand. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
     "seed": 1
   },
   "cardArt": {

@@ -941,14 +941,18 @@
       "効かない）。**白いので切り出せない**うえ、盤の形しか合っていないので、下絵で石の割れ目まで",
       "決めるほうが速い。",
       "",
-      "**採れた塩も張った海水も描かない**（どちらも枠と数の中身。薪棚と同じ）。描くのは石と、",
-      "縁に残った塩の跡だけ。",
+      "**採れた塩も張った海水も描かない**（どちらも枠と数の中身。薪棚と同じ）。描くのは石と砂だけ。",
       "",
-      "**塩の跡を真っ白にしない。** 白い物は紙と同じ明るさになって card_art.py の「紙より暗ければ",
-      "物」に掛からず、縁が食われる（README「白い物は切り出せません」）。灰色がかった塩として頼む。",
+      "**乾いた塩の跡も頼まない。** 「石より明るくするな」と書いても白い結晶で描かれ、床を一周する",
+      "白い枠になる（白い物は紙と同じ明るさで、card_art.py の「紙より暗ければ物」に掛からず縁が",
+      "食われる。README「白い物は切り出せません」）。",
       "",
       "**石（stone）が4つ転がっている絵にしない。** 盤であることの手掛かりは、石が**隙間なく",
-      "縁を作り、内側が低い床になっている**こと。"
+      "底を張り、周りの砂がそれより高い**こと。",
+      "",
+      "**下の本文は、石が縁を作る絵を頼んでいる。** 定義（salt.yaml の `laid`）は「砂を掻き分け、",
+      "平たい石を並べて底を張る」で、石は床・砂は退ける側なので、この読み自体が誤っている。",
+      "走らせた本文としてそのまま残すが、**写して使わないこと。**"
     ],
     "positive": "exactly one shallow salt pan alone on an empty white page, four flat grey slabs of stone laid edge to edge in a square to make one low basin with a floor of packed damp sand inside it, the slabs fitted close together so they form a continuous rim with no gap between them, a thin dull grey crust of dried salt along the inner edges of the slabs and in the corners, the basin empty with no water standing in it, wider than it is tall, seen from above and a little to the side so the floor inside shows, mottled mid grey stone and damp grey brown sand, all of it clearly darker than the white page, matte dry surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "water, pool of water, puddle, sea, waves, reflection, wet shine, glossy, salt heap, white powder, snow, ice, frost, sugar, bowl, dish, tray, plate, basin of pottery, sink, bath, fountain, well, fire pit, hearth, campfire, brick, tiles, mosaic, paving, cobblestones, wall, ruins, grave, boulder, pebbles, gravel, loose stones, scattered stones, stone circle, two pans, three pans, several pans, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"

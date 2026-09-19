@@ -11,6 +11,9 @@
     "**薪は描かない。** 積んである薪は枠の中身で、押せば札として並ぶ（燻し小屋に火を描かないのと",
     "同じ）。",
     "",
+    "**屋根を横切る線は、葉3枚の継ぎ目2本だけ。** 締める縄を継ぎ目と別の位置へ置くと、面が5つに",
+    "割れて見え、数えられる枚数が材料（woven_leaf 3枚）と食い違う。縄は継ぎ目の上に重ねる。",
+    "",
     "**穴を埋めない（keepHoles）。** 屋根と桁と脚が囲んでいるのは物の内側ではなく紙で、埋めると",
     "不透明な白い塊が棚の中に嵌まる（筏・くくり罠と同じ扱い）。",
     "",
@@ -19,7 +22,7 @@
   "output": "src/assets/objects/firewood_rack.png",
   "sketch": "firewood_rack",
   "edit": {
-    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout and the same sizes: one empty firewood rack standing on the ground, four stout branch legs holding two long branch rails up clear of the ground, every crossing bound with many tight turns of rough twisted plant fibre cord, and a low roof of three mats of plaited dried palm leaf strips laid over the top and lashed down. Paint the legs and the rails as real branches with rough brown bark and pale cut ends, and paint the roof as dry plaited palm leaf in straw yellow and tan, its flat strips crossing over and under each other, with two seams showing where the three mats meet. Everything is clearly darker than the white page. The rack is empty: there is no firewood, no logs, no kindling and nothing stacked on it, and the space between the rails and the ground is open so that the plain white page shows straight through it. It is only waist high and is not a table, not a shed and not a hut: there is no wall, no door, no cloth and no person anywhere in the picture. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow along the foot of the rack. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout and the same sizes: one empty firewood rack standing on the ground, four stout branch legs holding two long branch rails up clear of the ground, every crossing bound with many tight turns of rough twisted plant fibre cord, and a low roof of three mats of plaited dried palm leaf strips laid over the top and lashed down. Paint the legs and the rails as real branches with rough brown bark and pale cut ends, and paint the roof as dry plaited palm leaf in straw yellow and tan, its flat strips crossing over and under each other, with two seams showing where the three mats meet, each seam bound down with a band of the same cord. Those two seams are the only lines that cross the roof: there is no third band, no extra batten and no other division anywhere on it, so that exactly three mats can be counted. Everything is clearly darker than the white page. The rack is empty: there is no firewood, no logs, no kindling and nothing stacked on it, and the space between the rails and the ground is open so that the plain white page shows straight through it. It is only waist high and is not a table, not a shed and not a hut: there is no wall, no door, no cloth and no person anywhere in the picture. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow along the foot of the rack. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
     "seed": 1
   },
   "cardArt": {
