@@ -72,6 +72,19 @@ export function dailyBudgetOf(balance: BalanceTables): DailyBudget {
   return { survivalGatheringMinutes: balance.minimumLabourMinutes - SLEEP_MINUTES_PER_DAY };
 }
 
+/** 移動を引く前の、その日に屋外で使える枠（分）。屋外の枠から、昼に払う生存の採取を引いたもの。 */
+function outdoorMinutesOf(budget: DailyBudget): number {
+  return OUTDOOR_WINDOW_MINUTES - budget.survivalGatheringMinutes;
+}
+
+/**
+ * 日帰りで回せる片道の長さの上限（分）。**これより遠い土地は、往復だけで枠が尽きる**ので、その拠点
+ * からは1分も働けない（`windowMinutesOf` が負になる）。
+ */
+export function dayTripOneWayLimitMinutesOf(budget: DailyBudget): number {
+  return outdoorMinutesOf(budget) / 2;
+}
+
 /** 探索できる土地の型1つの、局面の勘定に要るぶん。 */
 export interface LocationTypeDay {
   readonly locationDefName: string;
@@ -739,7 +752,7 @@ function workMinutesPerDayOf(capMinutes: number, roundTripMinutes: number, budge
 
 /** 頭打ちに掛ける前の、その日その土地で使える枠（分）。**往復で尽きれば負**で、その日は行けない。 */
 function windowMinutesOf(roundTripMinutes: number, budget: DailyBudget): number {
-  return OUTDOOR_WINDOW_MINUTES - roundTripMinutes - budget.survivalGatheringMinutes;
+  return outdoorMinutesOf(budget) - roundTripMinutes;
 }
 
 function locationTypeDayOf(
