@@ -23,11 +23,19 @@ const SETTLED = '2026-09-05T01:00:00Z';
  * 出来事の直後なので、**落ち着いてもそうなっていない形が、あの段が転んだ回**（issue #2144）。
  */
 const QUIET = '2026-09-05T00:30:00Z';
+/**
+ * `main` の先頭の指紋。**`main` が動けば理由のほうが消えうる差し戻し**（衝突・CIの赤）の指紋に
+ * 入る（`board-move.mjs` の `mendMark`、board-design 2.14.2）。**既定を置くのは、本物の盤面が毎周
+ * これを持つから**——省いた形を既定にすると、`main` が動いたときの頼み直しがどの検査にも掛からない。
+ */
+const MAIN_HEAD = 'ccc3333';
 
 interface Board {
   settledBefore?: string;
   /** `main` の先頭のCI。省くと緑（既存の盤面はどれも `main` が緑のときの話）。 */
   mainChecks?: readonly unknown[];
+  /** `main` の先頭の指紋。省くと `MAIN_HEAD`（本物の盤面は毎周これを持つ）。 */
+  mainHead?: string;
   prs?: readonly unknown[];
   /**
    * マージ済みPRとそのコメント。**後片付けの相手**（`board-move.mjs` の `TIDY`）と、スメルを拾う係の
@@ -111,6 +119,7 @@ function moves(board: Board): string[] {
   return decide({
     now: NOW,
     settledBefore: SETTLED,
+    mainHead: MAIN_HEAD,
     prs: [],
     issues: [],
     sessions: [],
@@ -237,7 +246,9 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:conflict:10:aaa1111']);
+    // **指紋に `main` の先頭が入る。** 衝突は `main` が動いて生まれるので、**動けば理由のほうが
+    // 消えることがある**（2.14.2）。
+    expect(moves(board)).toEqual([`RESUME session_a mend 10 mend:conflict:10:aaa1111:${MAIN_HEAD}`]);
   });
 
   // まだ計算中。次の周には決まるので、何も打たずに待つ。
@@ -338,6 +349,21 @@ describe('board-move.mjs', () => {
       prs: [pr(10, { ...label('判断待ち'), mergeable: 'CONFLICTING' })],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual([
+      'NOTE PR #10 はコンフリクトしているが、人の手番で止まっているので直しを頼まない',
+    ]);
+  });
+
+  // **頼み終えていても、人へは返さない**（2.13.6 の次の段）。返せばワーカーが畳まれ、**答えを待って
+  // いるだけのPRが宛先の無いPRになる**（2.11.4）——待っているのは人の答えで、届けば `却下` かマージが
+  // そのまま次の手になる。
+  it('判断待ちのPRは、コンフリクトを頼み終えていても人へ返さない', () => {
+    const board = {
+      prs: [pr(10, { ...label('判断待ち'), mergeable: 'CONFLICTING' })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': `mend:conflict:10:aaa1111:${MAIN_HEAD}` },
     };
     expect(moves(board)).toEqual([
       'NOTE PR #10 はコンフリクトしているが、人の手番で止まっているので直しを頼まない',
@@ -604,7 +630,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:red:10:aaa1111']);
+    expect(moves(board)).toEqual([`RESUME session_a mend 10 mend:red:10:aaa1111:${MAIN_HEAD}`]);
   });
 
   const RED_MAIN = [{ status: 'COMPLETED', conclusion: 'FAILURE' }];
@@ -620,6 +646,19 @@ describe('board-move.mjs', () => {
       prs: [redPr(10)],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['NOTE PR #10 はCIが赤いが、`main` が赤いので直しを頼まない']);
+  });
+
+  // **頼み終えていても、人へは返さない**（2.13.6 の次の段）。そのPRが赤いのは `main` が赤いからで、
+  // **返しても直せる者は増えない**——`main` を緑へ戻す役は人の手番にも無い。
+  it('main が赤い間は、頼み終えたPRも人へ返さない', () => {
+    const board = {
+      mainChecks: RED_MAIN,
+      prs: [redPr(10)],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': `mend:red:10:aaa1111:${MAIN_HEAD}` },
     };
     expect(moves(board)).toEqual(['NOTE PR #10 はCIが赤いが、`main` が赤いので直しを頼まない']);
   });
@@ -655,7 +694,7 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:red:10:aaa1111']);
+    expect(moves(board)).toEqual([`RESUME session_a mend 10 mend:red:10:aaa1111:${MAIN_HEAD}`]);
   });
 
   // 起こしたセッションが何もせずに止まると、盤面は前の周と同じまま残る。**同じ差し戻しは二度と
@@ -923,16 +962,148 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['NOTE PR #10 はレビューが読んでいる最中で、結論のラベルはまだ無い']);
   });
 
-  // **渡すのは `直し待ち` の差し戻しだけ。** `却下` は人が付けた印で、**外れるのは push のときだけ**
-  // ——レビューをもう1周出しても印は消えないので、読ませるぶんが丸ごと無駄になる。
-  it('却下で頼み終えたPRは、レビューへ渡さない', () => {
+  // ## レビューへ渡せない差し戻しは、人へ返す（2.13.6。issue #2045）
+  //
+  // **もう1周読ませて解けるのは `直し待ち` だけ。** `却下` は人が付けた印で**外れるのは push の
+  // ときだけ**、衝突とCIの赤は**レビューの入口（緑・マージ可能）が先に閉じる。** 渡せないものを
+  // 黙って落としていたので、この3つは**誰の手番でもないまま止まっていた**——`判断待ち` でもないので
+  // 人が読む盤（2.20）にも出ず、`NOTE` も出ないのでログにも残らない。
+  it('却下で頼み終えたPRは、担当の issue へ返す', () => {
     const board = {
       prs: [pr(10, { ...label('却下'), ...returned('aaa1111') })],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
       taken: { 'resume:session_a': 'reject:10:aaa1111' },
     };
-    expect(moves(board)).toEqual([]);
+    // 返す理由は手そのものが運ぶ（`board-round.mjs` の `returnBody`）。
+    expect(moves(board)).toEqual(['RETURN 9 session_a returned:9 reject:10']);
+  });
+
+  it('コンフリクトで頼み終えたPRは、担当の issue へ返す', () => {
+    const board = {
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': `mend:conflict:10:aaa1111:${MAIN_HEAD}` },
+    };
+    expect(moves(board)).toEqual(['RETURN 9 session_a returned:9 mend:conflict:10']);
+  });
+
+  it('CIの赤で頼み終えたPRは、担当の issue へ返す', () => {
+    const board = {
+      prs: [pr(10, { statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }] })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': `mend:red:10:aaa1111:${MAIN_HEAD}` },
+    };
+    expect(moves(board)).toEqual(['RETURN 9 session_a returned:9 mend:red:10']);
+  });
+
+  // **`直し待ち` でも、レビューへ渡せない形なら同じ。** 入口は緑でマージできることなので、赤いまま
+  // 落とすと 2.13.6 の経路そのものが無い状態に戻る。
+  it('直し待ちで頼み終えたPRも、赤ければレビューではなく人へ返す', () => {
+    const board = {
+      prs: [
+        pr(10, {
+          ...label('直し待ち'),
+          ...returned('aaa1111'),
+          statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }],
+        }),
+      ],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': `mend:returned:10:aaa1111:${MAIN_HEAD}` },
+    };
+    expect(moves(board)).toEqual(['RETURN 9 session_a returned:9 mend:returned:10']);
+  });
+
+  // **担当の issue が人の手番に在るPRには、盤面から手を出さない**（2.15）。返された仕事のワーカーは
+  // 次の周に畳まれるので、頼んでも届く先が消える。**返る道は2つある**（盤面と、ワーカー自身の名乗り。
+  // 2.15.2）ので、**台帳ではなく現物のラベルで見る**——台帳で見ると、自分で返したワーカーのPRへ
+  // もう1通の `[返却]` が積まれる。
+  it('担当の issue が既に人の手番なら、頼みも返しも出さない', () => {
+    const board = {
+      prs: [pr(10, { ...label('却下'), ...returned('aaa1111') })],
+      issues: [{ number: 9, ...label('kind:task', '判断待ち'), blockedBy: { nodes: [] } }],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': 'reject:10:aaa1111' },
+    };
+    expect(moves(board)).toEqual([
+      'NOTE PR #10 はユーザーが差し戻したが、担当の issue が人の手番で止まっている',
+    ]);
+  });
+
+  // **まだ頼んでいない差し戻しも同じ。** 返した周の次に頼む手が出ると、**返したことをその手が
+  // 打ち消す**（`判断待ち` は残るが、盤面は畳まれる相手へ指示を1つ積む）。
+  it('担当の issue が人の手番なら、まだ頼んでいない差し戻しも出さない', () => {
+    const board = {
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
+      issues: [{ number: 9, ...label('kind:task', '判断待ち'), blockedBy: { nodes: [] } }],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual([
+      'NOTE PR #10 はコンフリクトしているが、担当の issue が人の手番で止まっている',
+    ]);
+  });
+
+  // `判断待ち` を付けるのは名乗りを読む段（`board-labels.yml` の `declared`）で、**あれが見るのは
+  // issue のコメントだけ**——`Closes` の無いPRには返す口が無いので、せめて覚え書きには出す。
+  it('閉じる issue の無いPRは、返せないことを書き残す', () => {
+    const board = {
+      prs: [pr(10, { ...label('却下'), ...returned('aaa1111'), body: '' })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': 'reject:10:aaa1111' },
+    };
+    expect(moves(board)).toEqual([
+      'NOTE PR #10 はユーザーが差し戻したが、頼み終えて戻ってこない（閉じる issue が無いので返せない）',
+    ]);
+  });
+
+  // ## `main` が動けば、理由のほうが消えることがある（2.14.2）
+  //
+  // 2026-09-13、PR #2136 は**`main` が赤いせいで落ちていたテスト**で赤く、`main` が緑へ戻った後も
+  // 2時間25分ぶん誰の手番でもなかった——**取り込み直せば緑になるPR**だったのに、指紋が `headRefOid`
+  // だけだったので盤面は「もう打った」と読み続けた。
+  it('main が動いたら、衝突とCIの赤は頼み直す', () => {
+    const board = {
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': 'mend:conflict:10:aaa1111:ddd4444' },
+    };
+    expect(moves(board)).toEqual([`RESUME session_a mend 10 mend:conflict:10:aaa1111:${MAIN_HEAD}`]);
+  });
+
+  // **`直し待ち` のPRが後から赤くなる形**（issue #2045 本文）。理由の判定は `直し待ち` が先に当たる
+  // ので `cause` は変わらないが、**指紋は動く**——赤くなったことが盤面の見え方に載る。
+  it('直し待ちで頼んだ後に赤くなったら、指紋が動いて頼み直す', () => {
+    const board = {
+      prs: [
+        pr(10, {
+          ...label('直し待ち'),
+          ...returned('aaa1111'),
+          statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }],
+        }),
+      ],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
+    };
+    expect(moves(board)).toEqual([`RESUME session_a mend 10 mend:returned:10:aaa1111:${MAIN_HEAD}`]);
+  });
+
+  // **`reject` と `look` には入れない**（2.14.2 と同じ線）。出た理由が `main` の色と関わらないので、
+  // `main` が動くたびに頼み直しても手の中身が変わらない。
+  it('却下の指紋には、main の指紋を入れない', () => {
+    const board = {
+      prs: [pr(10, { ...label('却下'), mergeable: 'CONFLICTING' })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa1111']);
   });
 
   // **コンフリクトとCIの赤は、PRの版が変わらないまま `main` が動いて生まれる。** `mend` の3つを
@@ -945,7 +1116,7 @@ describe('board-move.mjs', () => {
       sessions: [idle('session_a')],
       taken: { 'resume:session_a': 'mend:returned:10:aaa1111' },
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:conflict:10:aaa1111']);
+    expect(moves(board)).toEqual([`RESUME session_a mend 10 mend:conflict:10:aaa1111:${MAIN_HEAD}`]);
   });
 
   it('直しが push されたら、また起こす', () => {
@@ -980,20 +1151,24 @@ describe('board-move.mjs', () => {
 
     it('名乗っていなければ、そうと分かる形で書き残す', () => {
       const board = { prs: [pr(10, label('直し待ち'))], prSessions: {} };
-      expect(moves(board)).toEqual(['NOTE PR #10 は差し戻されたが、書いたセッションが名乗っていない']);
+      expect(moves(board)).toEqual([
+        'NOTE PR #10 はレビューから差し戻されたが、書いたセッションが名乗っていない',
+      ]);
     });
 
     // **畳まれた実在のIDと同じ顔をする**ので、在るかどうかだけを見る盤面には見分けられない。
     it('名乗りがセッションIDの形でなければ、実在しないと書く', () => {
       const board = { prs: [pr(10, label('直し待ち'))], prSessions: { 10: BROKEN } };
       expect(moves(board)).toEqual([
-        'NOTE PR #10 は差し戻されたが、名乗りが実在しないセッションを指している',
+        'NOTE PR #10 はレビューから差し戻されたが、名乗りが実在しないセッションを指している',
       ]);
     });
 
     it('形は正しく一覧に居なければ、畳まれていると書く', () => {
       const board = { prs: [pr(10, label('直し待ち'))], prSessions: { 10: GONE } };
-      expect(moves(board)).toEqual(['NOTE PR #10 は差し戻されたが、名乗っているセッションが畳まれている']);
+      expect(moves(board)).toEqual([
+        'NOTE PR #10 はレビューから差し戻されたが、名乗っているセッションが畳まれている',
+      ]);
     });
 
     // **一覧に居るほうが強い。** 形の検査を先に置くと、**起こせる相手が居るのに「実在しない」**と
@@ -1011,7 +1186,7 @@ describe('board-move.mjs', () => {
     // 守っているPRの書き手が毎周疑われる（`board-read.mjs` の `readPrSessions`）。
     it('名乗りそのものを引けなかった周は、どれとも言わない', () => {
       expect(moves({ prs: [pr(10, label('直し待ち'))], prSessions: undefined })).toEqual([
-        'NOTE PR #10 は差し戻されたが、差し戻す相手を引けなかった',
+        'NOTE PR #10 はレビューから差し戻されたが、差し戻す相手を引けなかった',
       ]);
     });
 
@@ -1033,7 +1208,7 @@ describe('board-move.mjs', () => {
       it('起こさずに人へ返し、返す手が理由を運ぶ', () => {
         expect(moves(held({ prSessions: { 10: GONE } }))).toEqual([
           'RETURN 9 session_holder returned:9 archived:10',
-          'NOTE PR #10 は差し戻されたが、名乗っているセッションが畳まれている',
+          'NOTE PR #10 はレビューから差し戻されたが、名乗っているセッションが畳まれている',
         ]);
       });
 

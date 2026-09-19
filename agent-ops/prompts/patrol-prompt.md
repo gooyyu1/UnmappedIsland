@@ -200,7 +200,7 @@ node -e "const l=require('fs').readFileSync(process.argv[1],'utf-8').trim().spli
 | 盤面を引けなかった区間 | 周の出来事の帳面（`~/.claude/board-state/rounds.jsonl`）の `kind: "gap"` の行。**閉じた区間が、いつから・いつまで・何周・道具が言った理由ごと1行で残ります**（2.20.3）。**今まさに引けていない区間はまだ閉じていない**ので、そちらは台帳の `unreadable:*` を見ます。**ログの空きでは出ません**——5分おきに回り続けるため時刻の上では埋まります |
 | 打った手 | 同じ帳面の `kind: "move"` の行（`move`・`target`・`result`）。**`result` が `settled` の手は直す相手が居ません**。`~/daemon.log` の `打つ:` を数えるのと同じものが、窓を切らずに積まれています |
 | 周期の係の刻 | 同じ台帳の `cycle:*`。間隔を持つのは `scripts/daemon/board-move.mjs` の `CYCLES` なので、刻に足して次がいつかを出します。**打たれた手の側からは言えません**——立たない係は手を1つも残しません |
-| 控えた手の理由が消えていないか | 同じ台帳の `resume:*`。`mend:conflict`・`mend:red` は**PRの版が動かないまま `main` が動いて生まれる**ので、`main` が緑へ戻ると理由だけが消える。控えた指紋のPRを `gh pr view <番号> --json mergeable,statusCheckRollup` で引き直す |
+| 控えた手の理由が消えていないか | **盤面が自分で見ます**——衝突とCIの赤の指紋には `main` の先頭が入るので、`main` が動いた周に頼み直します（2.14.2）。あなたが見るのは**その仕組みが効いているか**で、同じ台帳の `resume:*` に**`main` の指紋が付いていない `mend:conflict`・`mend:red`**（`mend:red:<番号>:<版>` で終わるもの）が残っていたら、デーモンが古い版で走っています |
 | 誰の手番でもない跡 | 本体のチェックアウトの `git status`（issue でもPRでもセッションでもないので、盤面には映りません） |
 | `main` の色 | `git fetch origin main && git rev-parse origin/main` で指紋を出し、`gh api 'repos/{owner}/{repo}/actions/runs?event=push&head_sha=<指紋>'`（2.14.2。**枝の名前で引くと、push の直後は1つ前の色が返ります**。**`fetch` を落とすと、このクローンの `origin/main` が古いか無いかのまま引くことになります**） |
 | 機械が付ける印が欠けていないか | `gh run list --workflow board-labels.yml --limit 100`（`failure`・`startup_failure`・`queued` のまま動かないもの。**転んだ回の出来事は二度と来ません**） |
