@@ -34,14 +34,19 @@ traits:
         duration: 5
         add: {agent: {hydration: 10}}
       # 宣言があるのは中身入りの側だけなので、どちらの札をどちらへ重ねてもselfは中身入りになる。
+      #
+      # **狭いほう（tag: water）を先に置く**——実データと同じ並び（liquid_containers.yaml、
+      # GameElementDefinition.md 12.1節）。満水どうしではどちらも理由付きで残るので、順を入れ替えると
+      # container_fullは一度も出ない。
+      pour_into_filled:
+        trigger: {drag: {tag: water}}
+        conditions: [{reason: container_full, not: {prop: fill, in_stage: full}}]
+        transfer: {amount: 999999, from: instrument, from_prop: fill, to: self, to_prop: fill}
       pour_into_empty:
         trigger: {drag: {tag: liquid_container}}
         conditions: [{reason: not_empty, subject: instrument, prop: fill, eq: 0}]
         become: {subject: instrument, content: water_liquid}
         transfer: {amount: 999999, from: self, from_prop: fill, to: instrument, to_prop: fill}
-      pour_into_filled:
-        trigger: {drag: {tag: water}}
-        transfer: {amount: 999999, from: instrument, from_prop: fill, to: self, to_prop: fill}
 
 object_defs:
   # 食べ飲みの効き先を持つキャラクタ。
@@ -124,7 +129,13 @@ object_defs:
     traits: [liquid_container]
     props:
       weight: {value: 200}
-      fill: {value: 0, range: {min: 0, max: 250}, on_min: {become: {content: none}}}
+      # 満ちきった一点は器の側が段として名乗る（LiquidContainerSystem.md 4節）。中身のpour_into_filledは
+      # この名前で「もう入らない」を見るので、段が無いと満水を断る宣言がそもそも落ちない。
+      fill:
+        value: 0
+        range: {min: 0, max: 250}
+        stages: [{name: full, min: 250}]
+        on_min: {become: {content: none}}
       volume: {value: 200}
     interactions:
       # durationを宣言していない操作。
@@ -393,6 +404,36 @@ reason_texts:
       name: '着火する',
       enabled: false,
       reason: '薪が組まれていない。',
+    });
+  });
+
+  it('同じ側に断る組み合わせが複数並んだら、宣言順の先頭の理由を出す', () => {
+    // 満水の器どうしを重ねると、注ぎ足す口（pour_into_filled）も空の器へ注ぐ口（pour_into_empty）も
+    // 理由付きで残る。出るのは宣言順の先頭で、後ろに置いた口の理由は一度も出ない
+    // （CardInteraction.md 2節。狭いほうを先に書く根拠がこれ——GameElementDefinition.md 12.1節）。
+    const texts = parseLocale(
+      'ja.yaml',
+      `reason_texts:
+  container_full: もう入らない。
+  not_empty: 中身が入っている。
+`,
+    );
+    const mini = setUp();
+    const fillId = mini.codex.propertyNames.getId('fill');
+    const full = [0, 1].map(() => {
+      const bowl = mini.createObject('bowl', mini.slot('hand'));
+      bowl.becomeAlong(new Map([['content', 'water_liquid']]));
+      bowl.tryGetProperty(fillId)?.setNumber(250);
+      return bowl;
+    });
+
+    const view = viewOf(mini, texts);
+    // 同じ型・同じ量なので1枚の札にまとまる。そこへ重ねると束の中の2つが組み合わさる。
+    const bowls = cardOf(view, full[0]);
+
+    expect(view.combinationOf(bowls, bowls), '先に宣言した注ぎ足す口の理由が出る').toMatchObject({
+      enabled: false,
+      reason: 'もう入らない。',
     });
   });
 
