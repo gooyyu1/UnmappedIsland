@@ -56,8 +56,12 @@ export class WorldSession {
   readonly rng: Rng;
 
   /**
-   * 次に配るinstanceId。**1から始まるのは{@link NO_INSTANCE}を空けておくため**で、worldも含めた
-   * すべての個体がここから受け取る（どの個体も「該当なし」を名乗らない）。
+   * 次に配るinstanceId。**1から始まるのは{@link NO_INSTANCE}を空けておくため。** worldも例外ではなく
+   * ここから受け取る（`NewGame.startNewGame`）。
+   *
+   * **一意であることまでは、ここだけでは保証しない**——番号を直に名乗って`WorldObject`を組む道が
+   * 残っている（試験の足場）。予約値を名乗らないことだけは、`WorldObject`のコンストラクタが
+   * どの道でも守る。
    */
   private nextInstanceId = NO_INSTANCE + 1;
 
