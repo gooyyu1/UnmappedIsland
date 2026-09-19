@@ -114,6 +114,27 @@ object_defs:
           - {weight: 0}
           - weight: {subject: agent, prop: carving_thrift}
             spawn: {object: bowl, into: agent}
+  # 尖った石は刃物としても使える——**同じ物がタグ要求にも型要求にも当てはまる**（13.1節）。
+  sharp_stone:
+    tags: [item, cutting_tool]
+  stone_axe:
+    tags: [item, cutting_tool]
+  # タグ要求と型要求が同じ工程（2工程目）に並ぶレシピ。**先に書いた要求から先着で取る実装は、尖った石を
+  # 刃物の側へ当てて型要求を空振りさせる**——2工程目が cutting_tool を先に書いていて、かつ箱の中身も
+  # 尖った石が先に並ぶため（枠は全工程ぶんまとめて並ぶので、中身の順は sharp_stone→cutting_tool、
+  # inProgressObjects）。どちらか片方の順が逆なら、先着でも通ってしまう。
+  cord:
+    tags: [item]
+    recipes:
+      basic:
+        steps:
+          - requires:
+              - {object: sharp_stone, count: 1, consume: true}
+            duration: 10
+          - requires:
+              - {tag: cutting_tool, count: 1, consume: false}
+              - {object: sharp_stone, count: 1, consume: true}
+            duration: 10
   # 2つの工程が同じ型を要求する。枠の上限は合計（3）なので、1工程目の要求（1）より多く入りうる。
   raft:
     tags: [item]
@@ -433,6 +454,45 @@ object_defs:
 
     expect(rotting.parent, '素材は経過中に壊れて世界から外れている').toBeUndefined();
     expect(spearWip.def.name, 'それでも工程は成立し、同じ個体が完成品になる').toBe('spear');
+  });
+
+  /**
+   * 1つの物が複数の要求に当てはまる工程（13.1節）。**当てた先を振り替えない実装ではここが赤くなる**
+   * ——要求を宣言順に先着で埋めると、尖った石が刃物の役へ取られて型要求が空振りする。
+   */
+  describe('1つの物が複数の要求に当てはまるとき', () => {
+    /** タグ要求と型要求が並ぶ2工程目に取り掛かっている、紐の作りかけ。 */
+    function startCord(): WorldObject {
+      const cordWip = putOnGround(inProgressObjectName('cord', 'basic'));
+      // 1工程目は済んだところから見る（進捗を直に置き、on_maxのbecomeを起こさない）。
+      cordWip.getProperty(progressId()).setNumberWithoutEvents(10);
+      return cordWip;
+    }
+
+    const putInto = (cordWip: WorldObject, objectName: string) =>
+      session.createObject(idOf(objectName)).moveToSlotOrRejection(cordWip.getSlot(materialsId()));
+
+    it('石斧が刃物の役へ回るので、尖った石1つと石斧1つで揃う', () => {
+      const cordWip = startCord();
+      putInto(cordWip, 'sharp_stone');
+      putInto(cordWip, 'stone_axe');
+
+      expect(currentStepSupplyRatio(cordWip), '成立する割り当てが在るなら断らない').toBe(1);
+      expect(currentStepIsSupplied(cordWip)).toBe(true);
+      expect(tryAdvanceCrafting(cordWip, worker())).toBe(true);
+
+      expect(cordWip.def.name, '2工程目を終えて完成する').toBe('cord');
+      expect(onGround(), '消費されるのは型で名指しされた側だけ').toContain('stone_axe');
+      expect(onGround(), '尖った石は素材として消える').not.toContain('sharp_stone');
+    });
+
+    it('尖った石1つだけでは、2つの要求のうち片方しか満たせない', () => {
+      const cordWip = startCord();
+      putInto(cordWip, 'sharp_stone');
+
+      expect(currentStepSupplyRatio(cordWip), '1つの物を2つの要求で二重に数えない').toBe(0.5);
+      expect(tryAdvanceCrafting(cordWip, worker())).toBe(false);
+    });
   });
 
   it('最後の工程を終えると、完成品が製作中オブジェクトのいた場所へ生まれる', () => {
