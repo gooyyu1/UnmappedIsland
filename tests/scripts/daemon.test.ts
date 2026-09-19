@@ -27,8 +27,10 @@ import { STUB_SHEBANG } from '../support/stubShebang';
  * `git` もPATHの先頭で身代わりへ差し替える。**手元のリポジトリを触らせないため**——本体の
  * チェックアウトを `origin/main` へ寄せるのは、`start` のときと、回っている周の終わり。
  *
- * `sleep` だけは**控えてから本物へ渡す身代わり**にする。止めたいのではなく、待ち合わせが何秒刻みで
- * 見に行っているかを読むため（下の「待ち合わせの上限は秒で、刻みはそれより細かい」）。
+ * `sleep` は、**頼まれた世界にだけ**、控えてから本物へ渡す身代わりを置く（`recordSleeps`）。止めたいの
+ * ではなく、待ち合わせが何秒刻みで見に行っているかを読むため（下の「待ち合わせの上限は秒で、刻みは
+ * それより細かい」）。**どの世界にも置くと、周の寝がそれに当たって起こしても起きなくなる**——理由は
+ * 身代わりを書いているところ。
  */
 
 // 実プロセス（bash + node）を起こすため、`npm test` 全体を並行実行したときのCPU競合だけで
@@ -67,6 +69,11 @@ interface World {
    * 撃てない**——あちらは畳むかを見るより手前なので、`trap` を張り直す前の窓に入らない。
    */
   readonly stopBeforeNap?: boolean;
+  /**
+   * `sleep` を、寝る長さを控えてから本物へ渡す身代わりにするか（`Result.sleeps` に入る）。
+   * **要る世界にだけ置く**——理由は身代わりを書いているところ。
+   */
+  readonly recordSleeps?: boolean;
   /** 本体を寄せる `checkout` が `daemon.sh` に置く中身。**走っている `start` の足元が入れ替わる。** */
   readonly checkoutSwap?: string;
   readonly env?: Record<string, string>;
@@ -95,7 +102,7 @@ interface Result {
   readonly copy: string | undefined;
   /** `git` に渡された引数。 */
   readonly git: readonly string[];
-  /** `sleep` に渡された長さ（秒）。**待ち合わせの刻みと、周の寝の両方が入る。** */
+  /** `sleep` に渡された長さ（秒）。**`recordSleeps` を頼んだ世界だけ**。 */
   readonly sleeps: readonly number[];
   /** 本体で `npm install` が走ったか。 */
   readonly installed: boolean;
@@ -217,13 +224,19 @@ exit ${world.gitFails === true ? 1 : 0}
     // `sleep` の身代わり。**寝る長さを控えてから、本物へそのまま渡す**——待ち合わせが何秒刻みで
     // 見に行っているかは、外から所要時間を測る以外にここでしか読めない（下の「待ち合わせの上限は秒で」）。
     // 本物は `command -pv` で引く——PATHの先頭は自分なので、名前で引くと自分を呼び続ける。
-    const sleep = join(work, 'sleep');
-    writeFileSync(
-      sleep,
-      `${STUB_SHEBANG}\necho "$1" >> '${dir}/sleep-calls'\nexec "$(command -pv sleep)" "$@"\n`,
-      'utf-8',
-    );
-    chmodSync(sleep, 0o755);
+    //
+    // **欲しい世界にだけ置く。** 控えてから `exec` で本物へ移るまでの間に撃たれると、**その合図は
+    // 入れ替わりで落ちる**（受け取ったのは移る前のプロセス）。周の寝がこれに当たると、起こしても
+    // 起きない寝床がどの世界にも混ざる——`restart` の検査が15回に1回落ちたのがこれ。
+    if (world.recordSleeps === true) {
+      const sleep = join(work, 'sleep');
+      writeFileSync(
+        sleep,
+        `${STUB_SHEBANG}\necho "$1" >> '${dir}/sleep-calls'\nexec "$(command -pv sleep)" "$@"\n`,
+        'utf-8',
+      );
+      chmodSync(sleep, 0o755);
+    }
 
     const state = join(work, 'state');
     mkdirSync(state);
@@ -520,6 +533,7 @@ describe('daemon.sh', () => {
     const result = daemon({
       checkoutSwap: `${STUB_SHEBANG}\necho "立ち上がらない版"\n`,
       args: ['start'],
+      recordSleeps: true,
       env: { ONCE: '', START_WAIT: '1' },
     });
     const elapsed = Date.now() - started;

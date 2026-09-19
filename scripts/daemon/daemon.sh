@@ -528,13 +528,22 @@ while true; do
   # `INTERVAL` ぶん止まらない。
   nap="$INTERVAL"
   [ "$failures" -lt "$FAILURE_LIMIT" ] || nap="$RETRY_INTERVAL"
+  # **撃たれていたら、寝床を作らずに出る。** 上の `trap` は控えたものしか撃てないので、**控える前に
+  # 受けたぶんは誰も起こしに来ない**——`stopping` が立っているのに寝入って、次に見るのが寝終わった後に
+  # なる（周の終わりに撃たれると `INTERVAL`、引けずにいれば `RETRY_INTERVAL` ぶん）。
+  [ -z "$stopping" ] || break
   sleep "$nap" &
   napping=$!
-  # **寝る相手を控えてから、撃たれていないかを見る。** 上の `trap` は控えたものしか撃てないので、
-  # **控える前に受けたぶんは誰も起こしに来ない**——`stopping` が立っているのに寝入って、次に見るのが
-  # 寝終わった後になる（周の終わりに撃たれると `INTERVAL`、引けずにいれば `RETRY_INTERVAL` ぶん）。
-  # 見るのを寝床に入った後へ置けば、受けたのが控える前でも後でも、どちらかが必ず起こす。
-  [ -z "$stopping" ] || kill "$napping" 2>/dev/null || true
+  # **控えた後にもう一度見る。** 上の判定からここまでの間に受けたぶんは、まだ誰も起こしに来ていない。
+  #
+  # **起こしたら、寝床が畳まれるのを待たずに出る。** 起こしの合図は、寝床が `sleep` へ `exec` で
+  # 入れ替わる手前に届くと落ちる——受け取ったのは入れ替わる前のプロセスで、入れ替わった先はそれを
+  # 知らない。**待つと、届かなかった一回のために寝一回ぶん止まる。** 残った `sleep` を待つ者はもう
+  # 居ないので、放って出てよい。
+  if [ -n "$stopping" ]; then
+    kill "$napping" 2>/dev/null || true
+    break
+  fi
   wait "$napping" || true
   napping=''
   [ -z "$stopping" ] || break
