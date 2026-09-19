@@ -74,18 +74,28 @@ describe('状況アイコン（世界→映し 通し）', () => {
    * 1行に入るのは4つまでで、同時に5つ以上が点く組み合わせが現れたら行の側を見直す
    * （ScreenLayout.md 4.1.1節）。**1つのプロパティが居る段は1つ**なので、`situation`を名乗る段を
    * 持つプロパティの数が、そのまま同時に点きうる数の上限になる。
+   *
+   * **数えるのは同梱の型すべてで、操作するキャラクタ1体ではない**——今の4つはどのキャラクタにも
+   * 配られる trait（player_character.yaml）に在るが、5つ目がキャラクタ1体の側へ生えたときに、
+   * その1体で始める試験は緑のまま通る。
    */
   it('同時に点きうるアイコンは、1行に入る数を超えない', () => {
-    const game = started('storm');
-    const naming = game.player.instance
-      .allProperties()
-      .filter((property) => property.def.stages.some((stage) => stage.situation !== undefined))
-      .map((property) => property.def.name);
+    const naming = [...codex.objects]
+      .map((def) => ({
+        def: def.name,
+        properties: def
+          .enumeratePropertyDefs()
+          .filter((property) => property.stages.some((stage) => stage.situation !== undefined))
+          .map((property) => property.name),
+      }))
+      .filter((one) => one.properties.length > 0);
 
     expect(naming.length, '状況アイコンを名乗る宣言が1つも無い').toBeGreaterThan(0);
-    expect(naming.length, `同時に点きうるのは ${naming.join('・')}`).toBeLessThanOrEqual(
-      SITUATION_ROW_CAPACITY,
-    );
+    expect(
+      naming
+        .filter((one) => one.properties.length > SITUATION_ROW_CAPACITY)
+        .map((one) => `${one.def}: ${one.properties.join('・')}`),
+    ).toEqual([]);
   });
 });
 
