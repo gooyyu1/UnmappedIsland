@@ -8,11 +8,10 @@ import { ROOT } from '../support/sourceFiles';
  * **`src` の誰も読まないフィールド**の検査。書き込まれてはいるが、値を取り出す側が1人も居ない
  * 宣言を見つける。
  *
- * 隣の2つは、どちらもこれを見ない。`exports.test.ts` が見るのは「どこからも輸入されない値の
+ * 隣の検査はどちらもこれを見ない。`exports.test.ts` が見るのは「どこからも輸入されない値の
  * `export`」で、フィールドは輸入されない。`readersOutsideSrc.test.ts` が問うているのは
  * 「`private` へ戻すか」で、インターフェースや型のフィールドにはその選択が無い。**その隙間に、
- * 組み立てられるだけで誰も取り出さないフィールドが残る**——`MotionPlan.discards` は `planMotion`
- * が毎回詰めていたのに、`CardTable` は自分で組み立てた `left` を見て片付けていた。
+ * 組み立てられるだけで誰も取り出さないフィールドが残る。**
  *
  * **数えるのは読みだけで、書きは数えない**（`scripts/declarationReads.mjs`）。宣言の名前と、
  * オブジェクトリテラルのキーと、代入の左辺は読みではない——**出現をそのまま数えると、自分の
@@ -22,8 +21,10 @@ import { ROOT } from '../support/sourceFiles';
  * 識別子が在れば読み手として数え（`name` のようなありふれた名前ほど）、`obj['name']` のような
  * 文字列での読みは数えない。**確かなのは0件のほうで、1件ずつ倒すときは現物の呼び手を見ること。**
  *
- * 見るのはフィールドだけで、メソッドとアクセサは見ない。そちらの「`src` に読み手が居ない」は
- * `private` へ戻すかの問いと重なるので、`readersOutsideSrc.test.ts` が一覧で持っている。
+ * **見るのはフィールドだけで、メソッドとアクセサは見ない。** そちらで読み手の居ないものは、枠組み
+ * から呼ばれるもの（`Scene.init`）と、呼び出しが名前で現れないもの（`[Symbol.iterator]`）と、
+ * `readersOutsideSrc.test.ts` が一覧で開いておくと決めたものに分かれる。同じ物差しを当てると、
+ * **向こうの一覧をここへ写すことになる。**
  * **無名の型リテラル（`ReadonlyMap<number, { to: R }>` の `to`）も見ない**——宣言を集める
  * `scripts/declarationInventory.mjs` が、クラス・インターフェース・型別名の直下しか拾わない。
  */
@@ -75,8 +76,13 @@ const FIELDS: readonly Declaration[] = (
 
 const OUTSIDE_READS = buildReadIndex(ROOT, OUTSIDE_FILES);
 
+/**
+ * 索引に載っているのは、宣言の名前と同じ字面。**`#` から始まる private フィールドは `#` ごと**
+ * ——落として引くと、索引の側は `#` 付きで持っているので0件になり、読み手の居る宣言が
+ * 「誰も読まない」に見える。
+ */
 function readerCount(reads: Map<string, ReadonlySet<string>>, name: string): number {
-  return (reads.get(name.replace(/^#/, '')) ?? new Set<string>()).size;
+  return (reads.get(name) ?? new Set<string>()).size;
 }
 
 /** その読み方をしたときに、読み手の居ないフィールド。 */
