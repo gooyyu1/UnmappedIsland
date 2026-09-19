@@ -1,38 +1,40 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { trackedFiles } from '../../scripts/docScope.mjs';
 
 /**
- * `scripts/**\/*.mjs` の先頭にシェバングを置かないことの検査。
+ * `.mjs` の先頭にシェバングを置かないことの検査。
  *
  * **CRLFの作業ツリーでは、シェバング付きの `.mjs` を Vitest から `import` できない。** Vite の
  * 前処理がシェバングを剥がすときに `\r` を残し、構文誤り（`Invalid or unexpected token`）になる。
  * CIはLFでチェックアウトするので緑のままで、**Windowsで `npm test` を走らせた者にしか見えない。**
+ * **実行ビットが立っていればカーネルも1行目を読む**ので、そちらは `env: 'node\r'` で起動できない。
  *
- * どのスクリプトも `node scripts/….mjs` として呼ばれ（`package.json` か、隣のシェルの入口から）、
+ * どのモジュールも `node <path>.mjs` として呼ばれ（`package.json`・隣のシェルの入口・skill の手順から）、
  * 実行ビットも立っていないので、シェバングは1度も使われていない。
+ *
+ * **視野は追跡しているもの全部で、`scripts/` に閉じない**——`.claude/skills/**` にも `node` から
+ * 呼ぶモジュールが在り、そこはこの検査の外だったのでシェバングが残っていた（issue #2171）。
  */
 
-const SCRIPTS = resolve(__dirname, '../../scripts');
+const ROOT = resolve(__dirname, '../..');
 
-/** 下の階層まで見る。**`import` される側は増える**ので、視野を直下に留めると番人だけが古くなる。 */
-const modules = (dir: string): string[] =>
-  readdirSync(dir).flatMap((name) => {
-    const path = join(dir, name);
-    if (statSync(path).isDirectory()) return modules(path);
-    return name.endsWith('.mjs') ? [path.slice(SCRIPTS.length + 1)] : [];
-  });
+const MODULES = trackedFiles(ROOT, '*.mjs');
 
-const MODULES = modules(SCRIPTS);
-
-describe('scripts/ のモジュール', () => {
+describe('リポジトリのモジュール', () => {
   it('検査する対象が在る', () => {
     expect(MODULES.length).toBeGreaterThan(0);
   });
 
-  it.each(MODULES)('%s がシェバングで始まっていない', (name) => {
-    const head = readFileSync(join(SCRIPTS, name), 'utf-8').slice(0, 2);
-    expect(head, `${name} の先頭にシェバングが在る`).not.toBe('#!');
+  // 置き場を絞っていたせいで漏れた過去が在るので、`scripts/` の外も見ていることを見張る。
+  it('`scripts/` の外のモジュールも見ている', () => {
+    expect(MODULES.filter((rel) => !rel.startsWith(`scripts${sep}`))).not.toEqual([]);
+  });
+
+  it.each(MODULES)('%s がシェバングで始まっていない', (rel) => {
+    const head = readFileSync(join(ROOT, rel), 'utf-8').slice(0, 2);
+    expect(head, `${rel} の先頭にシェバングが在る`).not.toBe('#!');
   });
 });
 
