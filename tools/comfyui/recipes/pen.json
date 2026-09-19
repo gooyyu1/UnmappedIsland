@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "src/assets/objects/pen.png を作り直すためのレシピ。build.py が読む。",
+    "丸太4本を四角に組み、縄で角を締めた囲い（src/assets/world-codex/farming.yaml）。空いている",
+    "あいだは大型を生け捕る檻、埋まっているあいだは家畜の囲いになる（docs/engine/TrapSystem.md 1.2節）。",
+    "",
+    "**配置を描いて渡す（sketch: pen）。** 生成では囲いにならない（4枚とも縄で編んだ枠か、立った",
+    "柱の林。prompts/objects.json の pen 参照）。",
+    "",
+    "**中の獣は描かない**（枠の中身。薪棚と同じ）。",
+    "",
+    "**筏（raft）と見分ける。** どちらも丸太を組んで縄で締めた物なので、**中が空いた四角い枠**で",
+    "あること——面ではないこと——を編集の指示で名指しする。",
+    "",
+    "**穴を埋めない（keepHoles）。** 囲いの内側は物ではなく紙。筏と同じ切り出しで、tolerance も",
+    "同じ40（樹皮の丸太）。",
+    "",
+    "段は400。炉・燻し小屋と同じ据え置きの設備。"
+  ],
+  "output": "src/assets/objects/pen.png",
+  "sketch": "pen",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout and the same sizes: one empty animal pen lying flat on the ground, looked down on from a low angle so that it is strongly foreshortened, the far side short and high on the page and the near side long and low, four heavy round tree trunks laid on the ground in a square, each trunk crossing over the next at the four corners and bound there with many tight turns of rough twisted plant fibre rope, and the pale cut end of each trunk showing where it sticks out past the corner. Paint the trunks as real logs with rough furrowed brown bark wrapping right around them, round and solid, each one lit along its upper side and dark underneath where it rests on the ground, clearly darker than the white page, and paint the rope as rough twisted plant fibre, warm tan with its strands showing. The middle of the square is plain empty white page: there is no floor, no deck, no planking, no sand, no water and no animal inside it or anywhere in the picture. This is a low fence lying flat on the ground, not a raft and not the wall of a cabin, and above all it is not a picture frame, not a mirror and not a window: nothing hangs on a wall, and the square lies away from us on the ground. The four trunks make one single open square, one layer high, and no trunk is laid inside it. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow on the ground under the near side of the pen. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "keepHoles": true,
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

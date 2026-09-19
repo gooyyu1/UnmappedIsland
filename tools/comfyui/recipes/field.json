@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "src/assets/objects/field.png を作り直すためのレシピ。build.py が読む。",
+    "掘り返して均した土そのもので、撒いた株が実る畑（src/assets/world-codex/farming.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: field）。** 生成では区画にならない（4枚ともひび割れた大地の",
+    "風景か、めくれた紙。prompts/objects.json の field 参照）——畑という語が風景を呼ぶ。",
+    "",
+    "**作物は描かない**（実ったものは枠の中身。薪棚と同じ）。芽が1つでも出ると、実る前の畑の",
+    "札にならない。",
+    "",
+    "**四辺が紙で終わること**が、風景ではなく1枚の畑であることの手掛かり。編集の指示でも",
+    "「地平線も柵も無い」と言う。",
+    "",
+    "段は400。炉・燻し小屋と同じ据え置きの設備。"
+  ],
+  "output": "src/assets/objects/field.png",
+  "sketch": "field",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout and the same sizes: one small plot of freshly tilled earth lying on the ground, seen from above and a little to the side, its surface broken up into loose crumbly clods of every size, and drawn into three straight furrows that run away from us along the plot. Paint it as dark damp turned soil, deep earthy brown, lighter where the clods catch the light and darker in the hollows between them, clearly darker than the white page. The clods are uneven and scattered at random: they are not round, not the same size as each other and not set out in rows, and the surface has no repeating pattern, no regular dents and no holes in it. This is loose soil heaped a little and thinning away at its edges: it is not a slab, not a tile, not a board and not a cake, it has no straight cut sides and no flat edge standing up around it. The four sides of the plot end cleanly, with plain white page all around them: there is no horizon, no distant ground, no fence, no hedge, no wooden frame and no border of any kind. Nothing grows on it: there is no plant, no seedling, no sprout, no grass and no green anywhere in the picture, and there is no spade, no hoe and no person. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow along the near edge of the plot. Damp matte earth, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
