@@ -42,6 +42,7 @@ import { SECTION_RUN, sectionNumbersIn } from '../../scripts/sectionRefs.mjs';
  * - Markdownリンク（ファイル・アンカー）が実在すること
  * - 地の文・囲みに書いたリポジトリ直下からのパスが実在すること（{@link repoPathsIn}）
  * - コード・YAML・ドキュメント中の「Foo.md N節」「Foo.md 〇〇節」が実在の節を指すこと
+ * - `foo.sh`「〇〇」が、そのスクリプトのコメントに実在する名前を指すこと（{@link quotableNamesOf}）
  * - 見出しの【未実装: 識別子】ラベルが、実装後に剥がし忘れられていないこと
  * - 【いつか: 識別子】の印と docs/Someday.md の項目が1対1で対応すること（DocumentStyle.md 4.1節）
  * - 確定度の印が、印として働く形で付いていること（DocumentStyle.md 6節）
@@ -446,6 +447,79 @@ for (const rel of REF_TARGETS.filter((target) => !isVerbatimRecord(target))) {
 }
 
 /**
+ * 節を名前で引ける、シェル・node のスクリプト。**見出しはコメントの中に在る**
+ * （`# ## 〇〇` / `// ## 〇〇`）ので、{@link commentsOnly} を通してから読む。
+ *
+ * **コメントを書ける形式（{@link COMMENTED_SOURCES}）全部ではない。** `.ts` のコメントにも見出しは
+ * 在るが、そちらを名前で引く参照が指しているのは `it('〇〇')` の題で、**引ける名前の集合が別**
+ * ——混ぜると、題を引いた参照が見出しの参照切れとして挙がる。
+ */
+const SCRIPT_TARGET_EXTENSIONS = ['.sh', '.mjs'];
+
+/** コメント行の頭に付く印。落とすと、残りがそのままMarkdownの1行になる。 */
+const COMMENT_MARKER = /^\s*(?:\/\*\*?|\*\/|\/\/+|#+|\*)[ \t]?/;
+
+/**
+ * 太字の一文（`**〇〇**`）。**開きの直後と閉じの直前に字を要求する**——要求しないと、パスのグロブ
+ * （`` `.claude/worktrees/**` ``）が開きとして読まれ、そこから次の太字までの地の文がまるごと
+ * 「引ける名前」になる。
+ */
+const BOLD_RUN = /\*\*(?=\S)([^*]+?)(?<=\S)\*\*/g;
+
+/**
+ * スクリプトのコメントが持つ、**名前で引ける主張**——見出し（`## 〇〇`）と、太字の一文。
+ *
+ * **2種を1つの集合として持つ。** 文書では節名だけが引ける形で、本文の一文をそのまま引くのは検査が
+ * 禁じている（{@link isOperationalDoc} を見る検査）。**スクリプトでは同じ絞りが効かない**
+ * ——冒頭の塊には見出しが無く、そこへ置いた一文は節名では指せない（`dispatch-task.sh`「書くことが
+ * 無いなら、空のファイルでよい」）。どちらも「そこに在る主張」で、**畳めば同じように行き止まりに
+ * なる**ので、分けずに持つ。
+ *
+ * 太字を対にするのは**段落の中だけ**。Markdownの強調は空行を跨がないので、跨いで対にすると、
+ * 閉じ損ねた `**` が段落をまたいだ地の文を1つの名前にしてしまう。
+ *
+ * **この2つの絞りを外すと、地の文が名前として拾われる**（`引ける名前が、地の文まで飲み込まない`）
+ * ——外れても参照側は解決する側が増えるだけなので、リポジトリ全体を見る検査は緑のまま。
+ */
+function quotableNamesOf(rel: string, source: string): string[] {
+  const names: string[] = [];
+  let paragraph: string[] = [];
+  const flushParagraph = (): void => {
+    for (const [, bold] of paragraph.join(' ').matchAll(BOLD_RUN)) names.push(bold);
+    paragraph = [];
+  };
+  for (const line of commentsOnly(source, rel).split('\n')) {
+    const body = line.trim() === '' ? '' : line.replace(COMMENT_MARKER, '');
+    const heading = /^#{1,6}\s+(.*)$/.exec(body.trim());
+    if (heading !== null) {
+      flushParagraph();
+      names.push(heading[1].trim());
+    } else if (body.trim() === '') {
+      flushParagraph();
+    } else {
+      paragraph.push(body);
+    }
+  }
+  flushParagraph();
+  return names;
+}
+
+/**
+ * ファイル名（basename）→ そのスクリプトで名前で引けるもの。**{@link docsByBasename} と別に持つ**
+ * ——文書の指し先は見出しだけだが、スクリプトは太字の一文も引かれる（{@link quotableNamesOf}）。
+ */
+const quotableNamesByScript = new Map<string, string[]>();
+for (const rel of trackedFiles(ROOT).filter((path) =>
+  SCRIPT_TARGET_EXTENSIONS.some((ext) => path.endsWith(ext)),
+)) {
+  const base = rel.split(sep).pop() as string;
+  quotableNamesByScript.set(base, [
+    ...(quotableNamesByScript.get(base) ?? []),
+    ...quotableNamesOf(rel, read(rel)),
+  ]);
+}
+
+/**
  * 裸の「N節」が `GameElementDefinition.md` まで落ちてよいファイルか。**コード・YAMLだけが落ちる**
  * （そちらの既定。DocumentStyle.md 5節）。
  *
@@ -654,9 +728,62 @@ function normalizeName(name: string): string {
   return name.replace(/[\s「」`*]/g, '');
 }
 
+/**
+ * 引いた名前 `name`（`normalizeName` 済み）が、候補の字面 `candidate` に収まるか。
+ *
+ * **省略の `…` は任意の字に当たる。** 長い見出しは端だけを引いて省かれる
+ * （`archive-session.sh`「片付かなかった行は…」）。字のまま突き合わせると**指し先が実在するのに
+ * 解決しない**ので、引く側は省略を諦めるか、検査が緑にならないかのどちらかになる。
+ *
+ * **省略だけの名前（`「…」`）は何にも当たらない。** 全部に当たると、指し先を持たない引用が緑になる。
+ */
+function nameFitsIn(name: string, candidate: string): boolean {
+  const parts = name.split('…').filter((part) => part !== '');
+  if (parts.length === 0) return false;
+  const target = normalizeName(candidate);
+  let from = 0;
+  for (const part of parts) {
+    const at = target.indexOf(part, from);
+    if (at < 0) return false;
+    from = at + part.length;
+  }
+  return true;
+}
+
 /** その文書が、名前 `name`（`normalizeName` 済み）を含む見出しを持つか。 */
 function hasNamedSection(docRel: string, name: string): boolean {
-  return (namedSectionsByPath.get(docRel) ?? []).some((h) => normalizeName(h).includes(name));
+  return (namedSectionsByPath.get(docRel) ?? []).some((h) => nameFitsIn(name, h));
+}
+
+/**
+ * スクリプトを名前で引く形（`` `daemon.sh`「止めるのも自分の仕事」 ``）。**綴りは
+ * {@link SCRIPT_TARGET_EXTENSIONS} から組む**——書き写すと、片方だけが新しい形式を知らないまま緑になる。
+ */
+const SCRIPT_NAME_REF = new RegExp(
+  String.raw`([A-Za-z][\w-]*(?:${SCRIPT_TARGET_EXTENSIONS.map((ext) => `\\${ext}`).join('|')}))` +
+    String.raw`\`?(?:\]\([^)]*\))?[ ]*(?:の)?[ ]*「([^「」]{1,40})」`,
+  'g',
+);
+
+/**
+ * `source` の中で、スクリプトの実在しない名前を引いている参照。`rel` は失敗メッセージに使う。
+ *
+ * **鉤括弧で引けるのは、指し先に在る名前だけ**（{@link quotableNamesOf}）。コードの字面を指すなら
+ * バッククォートで囲む（`` `打たない手:` ``）——鉤括弧は「そこに在る主張を名指した」という宣言で、
+ * 畳まれれば行き止まりになる側。
+ */
+function brokenScriptNameRefsIn(rel: string, source: string): string[] {
+  const broken: string[] = [];
+  const text = source.replace(/\n[\s*/#-]*/g, ' '); // コメントの継続行をまたぐ参照を繋ぐ
+  for (const [, base, rawName] of text.matchAll(SCRIPT_NAME_REF)) {
+    const names = quotableNamesByScript.get(base);
+    if (names === undefined) {
+      broken.push(`${rel}: ${base}（そのファイルが無い）`);
+    } else if (!names.some((name) => nameFitsIn(normalizeName(rawName), name))) {
+      broken.push(`${rel}: ${base}「${rawName}」`);
+    }
+  }
+  return broken;
 }
 
 /**
@@ -792,6 +919,58 @@ describe('ドキュメントの参照', () => {
       }
     }
     expect(broken, `節名の参照切れ:\n${broken.join('\n')}`).toEqual([]);
+  });
+
+  /**
+   * `foo.sh`「〇〇」の形。**指し先が `.md` でないものは、どの検査も読んでいなかった**——走査する側
+   * には入っているのに、上の3つはどれも指し先に `.md` を要求するので素通りしていた（issue #2240）。
+   */
+  it('スクリプトを指す鉤括弧が、実在の見出し・太字の一文に解決する', () => {
+    const broken = REF_FILES.flatMap((rel) => brokenScriptNameRefsIn(rel, read(rel)));
+    expect(broken, `節名の参照切れ:\n${broken.join('\n')}`).toEqual([]);
+  });
+
+  // 上と同じ理由で、読む側を直に試す。ここの例が `REF_FILES` に入らないのは、この置き場
+  // （`tests/docs/**`）を外しているため。
+  it('スクリプトの見出しと太字の一文を、引ける名前として拾う', () => {
+    const probe = join('agent-ops', 'x.md');
+    // 「解決しない」と「1つも拾えていない」は同じ0件になるので、両向きを見る。
+    expect(brokenScriptNameRefsIn(probe, '`daemon.sh`「止めるのも自分の仕事」')).toEqual([]);
+    expect(brokenScriptNameRefsIn(probe, '`daemon.sh`「そんな見出しは無い」')).toHaveLength(1);
+    // 見出しの無い冒頭の塊に置かれた太字の一文も、引ける名前
+    expect(
+      brokenScriptNameRefsIn(probe, '`dispatch-task.sh`「書くことが無いなら、空のファイルでよい」'),
+    ).toEqual([]);
+    // 太字にも見出しにもなっていない地の文は引けない（`brake.sh` の `other` は場合分けの値）
+    expect(brokenScriptNameRefsIn(probe, '`brake.sh`「その他のエージェント」')).toHaveLength(1);
+    // 省略は任意の字に当たる
+    expect(brokenScriptNameRefsIn(probe, '`archive-session.sh`「片付かなかった行は…」')).toEqual([]);
+    expect(brokenScriptNameRefsIn(probe, '`archive-session.sh`「…」')).toHaveLength(1);
+    // 継続行をまたぐ形も、リンクの形も拾う
+    expect(brokenScriptNameRefsIn(probe, '`daemon.sh`\n// 「そんな見出しは無い」')).toHaveLength(1);
+    expect(brokenScriptNameRefsIn(probe, '[`daemon.sh`](daemon.sh) の「PIDは錠の中」')).toEqual([]);
+    expect(brokenScriptNameRefsIn(probe, '`no-such-script.sh`「〇〇」')).toHaveLength(1);
+  });
+
+  // 引ける名前の側の絞り（{@link BOLD_RUN} の `\S` と、段落ごとの対付け）は、**外しても参照側は
+  // 解決する側が増えるだけ**なので、リポジトリ全体を見る上の検査は緑のまま。直に試す。
+  it('引ける名前が、地の文まで飲み込まない', () => {
+    const script = join('scripts', 'probe.sh');
+    // 開きの直後に字が無ければ開きではない（グロブの `**` がこの形）
+    expect(quotableNamesOf(script, '# 前 ** 中** 後 **本物**')).toEqual(['本物']);
+    // 閉じの直前に字が無ければ閉じではない
+    expect(quotableNamesOf(script, '# **中 ** 後 **本物**')).toEqual(['本物']);
+    // 閉じ損ねた `**` は、空行を跨いで対にならない
+    expect(quotableNamesOf(script, '# **閉じ損ね\n#\n# 次の段落。**本物**')).toEqual(['本物']);
+    // 見出しも段落の切れ目
+    expect(quotableNamesOf(script, '# **閉じ損ね\n# ## 見出し\n# 地の文。**本物**')).toEqual([
+      '見出し',
+      '本物',
+    ]);
+    // ブロックコメントの行頭の `*` も落とす（落とさないと、その行の見出しが見出しに見えない）
+    expect(quotableNamesOf(join('scripts', 'probe.mjs'), '/**\n * ## 見出し\n * **本物**\n */')).toEqual(
+      ['見出し', '本物'],
+    );
   });
 
   it('【未実装: 識別子】ラベルの識別子が、実装に現れていない（剥がし忘れ検知）', () => {
