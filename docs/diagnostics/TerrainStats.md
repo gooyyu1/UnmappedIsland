@@ -210,9 +210,8 @@ GameEndings.md 9.2節）。1日に進む探索がその土地で探索できる�
 `steady_phase`・`steady_phase_by_work_share` の標本に入らず**、残った島数の割合が
 `steady_phase_islands`。
 
-**これは島の不具合ではない。** 往復で枠が尽きるのは
-片道266.5分<!-- stats: terrain.yaml daily_budget day_trip_one_way -->からで、山頂や島の端を拠点に
-すると届かない組が出る。数えていないのは
+**これは島の不具合ではない。** 往復で枠が尽きるのは片道が `daily_budget` の `day_trip_one_way` を
+超えたときで、山頂や島の端を拠点にすると届かない組が出る。数えていないのは
 「その拠点から日帰りで回す1日」であって島そのものではないので、`steady_phase` の標本から落ちるのは
 **最も条件の良い拠点（`base: shortest_mean`）でさえ届かない島だけ**。
 

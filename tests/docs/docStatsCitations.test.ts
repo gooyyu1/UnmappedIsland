@@ -327,6 +327,20 @@ describe('レコードを選ぶ条件', () => {
 });
 
 describe('複数のレコードを畳む印', () => {
+  it('生成物の列の名前が、畳み方と紛れない', () => {
+    const columns = new Set<string>();
+    for (const sections of REPORTS.values()) {
+      for (const section of Object.values(sections)) {
+        if (!Array.isArray(section)) continue;
+        for (const record of section) {
+          if (typeof record === 'object' && record !== null) Object.keys(record).forEach((key) => columns.add(key));
+        }
+      }
+    }
+    // 畳み方は読む列の次に置くので、同じ名前の列が生えると印が黙ってそちらを畳み方として読む。
+    expect([...columns].filter((column) => Object.hasOwn(FOLDS, column))).toEqual([]);
+  });
+
   /** 岸壁から近道で渡る所要日数。季節ごとに1件ずつ並ぶので、季節を選ばなければ畳める。 */
   const COURSE = 'voyage.yaml course_season coast=cliff_coast course=shortest';
 

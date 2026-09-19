@@ -646,10 +646,8 @@
 
 #### 3.9.1 航海は 1 週間に届かず、30 日ではない
 
-**3 節の網から出る所要時間は、近道なら素の速さで
-3.7 日<!-- stats: voyage.yaml courses course=shortest days 最小 -->〜5.5 日<!-- stats: voyage.yaml courses course=shortest days 最大 -->、
-遠回りでも最も長い出航地点で 6.4 日<!-- stats: voyage.yaml courses course=detour days 最大 -->で、
-1 週間には届きません。** 各海区で航路が現れるまでの見張り（3 節の表）と、
+**3 節の網から出る所要時間は、最も長い出航地点と針路でも素の速さで
+6.4 日<!-- stats: voyage.yaml courses days 最大 -->で、1 週間には届きません。** 各海区で航路が現れるまでの見張り（3 節の表）と、
 素の横断 360 分（3.2 節）の合計を、島と同じ物差し（1 日ぶんの自由時間
 893 分<!-- stats: voyage.yaml meta daily_free_minutes -->。[`ContentSkeleton.md`](./ContentSkeleton.md)
 4 節）で割ったものです。**数を出すのは [`stats/voyage.yaml`](../../stats/voyage.yaml) の `courses`**
