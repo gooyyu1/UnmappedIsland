@@ -1,7 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { toolWearsOf } from '../../src/analysis/durations';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
@@ -27,13 +27,10 @@ describe('timber.yamlの伐採', () => {
   });
 
   beforeEach(() => {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
+    session = new WorldSession(codex, undefined, fixedRng(0));
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
     const worldView = new World(worldInstance);
-    session = new WorldSession(codex, worldView, fixedRng(0));
+    session.adoptWorld(worldView);
 
     forest = spawnInto('forest', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, forest, 'characters');

@@ -149,7 +149,6 @@ generation_scopes:
     site_count: {min: 10, max: 20}
     coast_band: 15
     hull_coast: true
-    interior_bias: 0.6
     diameter_meters: 6700
     walk_meters_per_hour: 4000
     climb_meters_per_hour: 600

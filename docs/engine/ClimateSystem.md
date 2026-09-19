@@ -50,15 +50,15 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 
 | 土地 | 平均海抜 | `value` |
 | --- | --: | --: |
-| 砂浜 | 8<!-- stats: terrain.yaml site_elevation_by_location location=sandy_beach mean ±5% --> m | — |
+| 砂浜 | 7.5<!-- stats: terrain.yaml site_elevation_by_location location=sandy_beach mean ±5% --> m | — |
 | 岩礁海岸 | 15<!-- stats: terrain.yaml site_elevation_by_location location=rocky_coast mean ±5% --> m | — |
-| 断崖海岸 | 37<!-- stats: terrain.yaml site_elevation_by_location location=cliff_coast mean ±5% --> m | — |
+| 断崖海岸 | 40<!-- stats: terrain.yaml site_elevation_by_location location=cliff_coast mean ±5% --> m | — |
 | 草原 | 152<!-- stats: terrain.yaml site_elevation_by_location location=grassland mean ±5% --> m | **−1** |
 | 森 | 179<!-- stats: terrain.yaml site_elevation_by_location location=forest mean ±5% --> m | **−1** |
 | 密林 | 183<!-- stats: terrain.yaml site_elevation_by_location location=jungle mean ±5% --> m | **−1** |
-| 荒野 | 201<!-- stats: terrain.yaml site_elevation_by_location location=wasteland mean ±5% --> m | **−1** |
+| 荒野 | 212<!-- stats: terrain.yaml site_elevation_by_location location=wasteland mean ±5% --> m | **−1** |
 | 岩石地 | 211<!-- stats: terrain.yaml site_elevation_by_location location=rocky_field mean ±5% --> m | **−1** |
-| 山腹 | 308<!-- stats: terrain.yaml site_elevation_by_location location=mountainside mean ±5% --> m | **−2** |
+| 山腹 | 322<!-- stats: terrain.yaml site_elevation_by_location location=mountainside mean ±5% --> m | **−2** |
 | 山頂 | 400<!-- stats: terrain.yaml site_elevation_by_location location=mountain_peak mean ±5% --> m | **−3** |
 
 **丸めて 0 になる土地は宣言しません**——`core.yaml` の `location` trait が既定の 0 を持つので、

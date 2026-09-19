@@ -1,7 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { PropertyValue } from '../../src/domain/PropertyValue';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { TICKS_PER_DAY } from '../../src/domain/worldTime';
@@ -32,12 +32,8 @@ describe('全身の菌と免疫', () => {
   });
 
   beforeEach(() => {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
     session = new WorldSession(codex);
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
     const beach = spawn('sandy_beach');
     expect(
       beach.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),

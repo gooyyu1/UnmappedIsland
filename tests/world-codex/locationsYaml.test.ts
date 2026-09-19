@@ -2,7 +2,6 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { islandLocationsOf } from '../../src/analysis/islandLocations';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { Path } from '../../src/domain/wrappers/Path';
@@ -175,7 +174,7 @@ describe('locations.yamlの土地・道定義', () => {
     // 探索 → 進捗が必要値に達した道の発見（隠しスロット→公開スロット） → 移動、の一連の流れを
     // 実ファイルの定義だけで検証する（地形生成は使わず、道の配線はこのテストが手で行う）。
     const session = new WorldSession(codex, undefined, seededRng(42));
-    const worldInstance = new WorldObject(0, def('world'), session);
+    const worldInstance = session.createObject(def('world').globalId);
     const worldView = new World(worldInstance);
     session.adoptWorld(worldView);
     // 経過分は開始時刻（core.yamlのworld.hourの既定値）に依らず、組んだ時点からの差で見る。

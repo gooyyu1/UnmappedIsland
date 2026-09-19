@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Slot } from '../../src/domain/Slot';
 import type { WorldObject } from '../../src/domain/WorldObject';
+import { NO_INSTANCE } from '../../src/domain/WorldObject';
 import { Location } from '../../src/domain/wrappers/Location';
+import { Path } from '../../src/domain/wrappers/Path';
 import type { MiniGame } from '../support/miniGame';
 import { miniGame } from '../support/miniGame';
 
@@ -66,6 +68,21 @@ describe('道の行き先', () => {
     road(mini, fixtures, destination.instanceId);
 
     expect(new Location(here).discoveredPathDestinations).toEqual([destination]);
+  });
+
+  it('行き先を書き込まれていない道は、行き先を持たない', () => {
+    // destination_idの宣言上の既定値はNO_INSTANCE。**引いた結果が個体になると、行き先を書き忘れた
+    // 道が黙ってその個体（世界のツリーの根＝world）を指す**ので、既定値のまま引けることを見る。
+    const mini = miniGame(WORLD);
+    const here = land(mini);
+    const orphan = mini.createObject('road', here.getSlot(mini.codex.slotNames.getId('fixtures')));
+
+    expect(
+      orphan.getProperty(mini.codex.propertyNames.getId('destination_id')).number,
+      'destination_idは宣言の既定値のまま',
+    ).toBe(NO_INSTANCE);
+    expect(new Path(orphan).destination, '行き先は「該当なし」').toBeUndefined();
+    expect(new Location(here).discoveredPathDestinations).toEqual([]);
   });
 
   it('指す先が世界に居ない道は挙げない', () => {

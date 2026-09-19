@@ -18,7 +18,6 @@ describe('GenerationScopeDefの構築', () => {
     siteCountMax: 20,
     coastBandMaxDistance: 15,
     clampsHullSitesToCoast: true,
-    interiorBias: 0.6,
     extraEdgeDetourThreshold: 1.8,
     diameterMeters: 6700,
     walkMetersPerHour: 4000,
@@ -38,7 +37,6 @@ describe('GenerationScopeDefの構築', () => {
     expect(scope.siteCountMax).toBe(20);
     expect(scope.coastBandMaxDistance).toBe(15);
     expect(scope.clampsHullSitesToCoast).toBe(true);
-    expect(scope.interiorBias).toBe(0.6);
     expect(scope.extraEdgeDetourThreshold).toBe(1.8);
     expect(scope.diameterMeters).toBe(6700);
     expect(scope.walkMetersPerHour).toBe(4000);

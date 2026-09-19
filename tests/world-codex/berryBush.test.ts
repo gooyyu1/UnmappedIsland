@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 import { World } from '../../src/domain/wrappers/World';
@@ -50,12 +50,9 @@ describe('ベリーの茂み', () => {
    * 数えられるよう、採り尽くした直後と同じ状態（実が無く、残りが満タン）へ揃える。
    */
   function atBush(): void {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
-    session = new WorldSession(codex, new World(worldInstance), fixedRng(0));
+    session = new WorldSession(codex, undefined, fixedRng(0));
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
+    session.adoptWorld(new World(worldInstance));
     land = spawnInto('grassland', worldInstance, 'locations');
     bush = spawnInto('berry_bush', land, 'fixtures');
     bush.getProperty(ripeningRemainingId).setNumberWithoutEvents(RIPENING_DAYS * TICKS_PER_DAY);

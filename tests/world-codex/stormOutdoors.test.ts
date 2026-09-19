@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { isMap, isScalar, isSeq, parseDocument } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { World } from '../../src/domain/wrappers/World';
@@ -30,12 +30,9 @@ describe('嵐の日は屋根の下でなければ何もできない', () => {
 
   /** 草原にプレイヤーが1人立っている正午の世界。天気だけを引数で変える。 */
   function noon(weatherName: string) {
-    const worldInstance = new WorldObject(
-      0,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
-    const session = new WorldSession(codex, new World(worldInstance), fixedRng(0));
+    const session = new WorldSession(codex, undefined, fixedRng(0));
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
+    session.adoptWorld(new World(worldInstance));
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(NOON_HOUR);
     worldInstance
       .getProperty(codex.propertyNames.getId('weather'))
