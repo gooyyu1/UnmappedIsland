@@ -1,5 +1,5 @@
-# 寝床（docs/world/Bedding.md）。**入っているのは敷物（同2節の段1）と骨組み（段2）、それに
-# ハンモック**で、詰め物（段3）はまだ無い。
+# 寝床（docs/world/Bedding.md）。敷物（同2節の段1）・骨組み（段2）・詰め物（段3）と、
+# ハンモックが入っている。
 #
 # **段ごとの上積みは、ブロックを1つ足すことで届く**（同4節）。量は定数しか書けないので
 # （docs/concept/DesignPrinciples.md「計算式はエンジンに取っておき、宣言へ開かない」）、1箇所へ
@@ -16,20 +16,21 @@ object_defs:
     # 置く値打ちが、眠れること以外にも出る。
     traits: [short_lived_material]
     tags: [fixture, bed]
-    # 差した骨組みは外から見える（7.11節。筏の帆と同じ）。段が上がっているかを札から読めないと、
+    # 差した部品は外から見える（7.11節。筏の帆と同じ）。段が上がっているかを札から読めないと、
     # 差したかどうかを憶えておくことになる。
     visible_slots: [structure]
     props:
-      # 編んだ葉3枚ぶん（weaving.yaml）。骨組みを差せば、その重さが子の重さとして乗る
+      # 編んだ葉3枚ぶん（weaving.yaml）。部品を差せば、その重さが子の重さとして乗る
       # （docs/engine/ContainerSystem.md 1節）。
       weight: {value: 1200}
     slots:
-      # 下へ差し込む骨組み。**詰め物の枠はまだ置かない**——受け入れる物が世界に1つも無い枠は、
-      # 置いても何も起きない（docs/concept/DesignPrinciples.md「置ける枠を作るかは、置いてほしい
-      # 物ではなく置けてしまう物で決める」）。
+      # 下へ差し込む骨組みと、上へ載せる詰め物。**枠は部品ごとに分ける**——1つの枠に両方を
+      # 受けさせると、骨組みを差した寝台へ詰め物を足せなくなる（段は重なるもので、
+      # 差し替えではない。docs/world/Bedding.md 2節）。
       structure:
         cells:
           - {accept: {tag: bed_frame}, max: 1}
+          - {accept: {tag: stuffing}, max: 1}
     interactions:
       # **回復は経過の間ずっと効く宣言が積む**（11.7節。docs/world/Bedding.md 4節）。アクションの
       # 側に置くのは、キャラクタ自身の休息とまったく同じ形にするため（characters/player_character.yaml）。
@@ -50,9 +51,14 @@ object_defs:
       # 眠っている当人なので対象は agent で、効くのは duration を進めている間だけ——「眠っている間か」を
       # 問うゲートは要らない（11.7節）。**衣類の modify と加算で重なる**（clothing.yaml）。
       #
-      # **1℃は体の下の乾いた層、もう1℃は地面から離れること**（同4.2節）。敷物が前者を、差した骨組みが
-      # 後者を持つので、回復の上積みと同じブロックへ同居する。**3つ目（潰れない厚み）は詰め物が持つ**が、
-      # その物がまだ無いのでブロックも無い（同4.2.1節。入れば最も寒い土地の夜も火なしで越せる）。
+      # **1℃は体の下の乾いた層、もう1℃は地面から離れること、3つ目は潰れない厚み**（同4.2節）。
+      # 敷物が1つ目を、差した骨組みが2つ目を、差した詰め物が3つ目を持つ。**3つ目を持たせるのは
+      # `stuffing` を名乗ること自体**で、中身が羽毛か植物繊維かを見ない——いちばん寒い土地の夜を
+      # 火なしで越せるのは詰め物まで仕上げた者、という約束（同4.2.1節【確定】）は、詰め物として
+      # 世界に現れる物すべてに掛かるため。
+      #
+      # **回復の上積みだけが中身で分かれる。** 沈み込みは羽毛のほうが大きいので（同5節）、そちらは
+      # 型を名指しするブロックで持つ。
       nap:
         trigger: menu
         duration: 180
@@ -63,6 +69,15 @@ object_defs:
               - {slot: structure, matches: {tag: bed_frame}}
             add: {agent: {stamina: 1}}
             modify: {agent: {chill_point: -1}}
+          - conditions:
+              - {slot: structure, matches: {tag: stuffing}}
+            modify: {agent: {chill_point: -1}}
+          - conditions:
+              - {slot: structure, matches: {object: plant_fiber_stuffing}}
+            add: {agent: {stamina: 0.25}}
+          - conditions:
+              - {slot: structure, matches: {object: feather_stuffing}}
+            add: {agent: {stamina: 0.5}}
       sleep:
         trigger: menu
         duration: 360
@@ -73,6 +88,15 @@ object_defs:
               - {slot: structure, matches: {tag: bed_frame}}
             add: {agent: {stamina: 1}}
             modify: {agent: {chill_point: -1}}
+          - conditions:
+              - {slot: structure, matches: {tag: stuffing}}
+            modify: {agent: {chill_point: -1}}
+          - conditions:
+              - {slot: structure, matches: {object: plant_fiber_stuffing}}
+            add: {agent: {stamina: 0.25}}
+          - conditions:
+              - {slot: structure, matches: {object: feather_stuffing}}
+            add: {agent: {stamina: 0.5}}
     recipes:
       # 編んだ葉を3枚、端を重ねて広げる。道具も紐も要らない。
       #
@@ -118,6 +142,88 @@ object_defs:
           # 簀の子を縛る。
           - requires:
               - {object: cord, count: 3, consume: true}
+            duration: 60
+
+  # 羽毛の詰め物。なめし革の袋へ羽を詰めたもの。**詰め物どうしで効きが分かれるのは沈み込みだけ**
+  # （docs/world/Bedding.md 5節）——寒さの入口の押し下げはどれも同じで、そちらは寝床の側が
+  # `stuffing` タグで受ける。
+  #
+  # **袋がなめし革なのは、目の詰んだ面でないと羽軸が抜けるため**（同5節）。布は対象外
+  # （docs/world/SurvivalItems.md 7節）なので、受け皿はここに決まる。革は熱帯では蒸れるが、
+  # 段を置くことは決まっているので（docs/world/Bedding.md 4.2.1節）、蒸れは詰め物まで通すことの
+  # 代償になる。
+  #
+  # **素材は名乗らない。** 名乗るのは手に持って使う物・身につける物・入れ物・寝床までで、寝床へ差す
+  # 部品はその外（docs/engine/DurabilitySystem.md 2節。骨組みと同じ扱い）。
+  feather_stuffing:
+    tags: [item, stuffing]
+    props:
+      # なめし革2枚（1000g）と羽30枚（1200g）。
+      weight: {value: 2200}
+      # 嵩は中身ではなく袋の形で決まるので、植物繊維の詰め物と同じ。籠には入らない
+      # （containers.yaml）。
+      volume: {value: 30000}
+    recipes:
+      # 革を裁って袋に縫い、羽を詰めて口を閉じる。**解放条件はなめし革の衣類と同じ連言**
+      # （clothing.yamlのsewn）——裁って縫う仕事そのものなので、革が縫える者と糸が撚れる者の
+      # 両方であることが要る。いちばん深い一着がこの段の前提でもある
+      # （docs/world/Bedding.md 4.2.1節）ので、開く順は揃う。
+      stuffed:
+        conditions:
+          - {reason: needs_leatherwork, subject: agent, prop: skill_leatherwork, in_stage_or_above: skilled}
+          - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
+        # 速さを決めるのは縫う側の1本（docs/world/Skills.md 7節）。
+        deftness: {skill: skill_leatherwork, from_stage: expert, minutes: -15}
+        # **工程は1時間ずつ**（docs/engine/ActionSystem.md 6.3節）。材料は、その工程で実際に使う
+        # ものへ割り当ててある。
+        steps:
+          # 型を取り、革を裁つ。面は衣類1着ぶんと同じ2枚（clothing.yamlのsewn）。
+          - requires:
+              - {object: tanned_leather, count: 2, consume: true}
+            duration: 60
+          # 三方を縫って袋にする。骨針は道具なので縫っても減らない（tools.yamlのbone_needle）。
+          - requires:
+              - {object: yarn, count: 2, consume: true}
+              - {tag: sewing_tool, count: 1, consume: false}
+            duration: 60
+          # 羽を詰めて口を閉じる。**40g/羽なので30枚で1.2kg**（docs/world/Bedding.md 5節）
+          # ——ヤケイ30羽ぶんで、罠を回し続けた者だけが届く。
+          - requires:
+              - {object: feather, count: 30, consume: true}
+              - {object: yarn, count: 1, consume: true}
+              - {tag: sewing_tool, count: 1, consume: false}
+            duration: 60
+
+  # 植物繊維の詰め物。同じなめし革の袋へ、掻き取った繊維・叩き解したコイア（fiber.yaml・
+  # coconut.yaml）を詰めたもの。**羽毛ほど沈まないぶん回復の上積みは薄いが、集めるのに獲物が
+  # 要らない**（docs/world/Bedding.md 5節）——払う先が罠から手間へ移るだけで、寒さの入口は
+  # 同じだけ押し下げる。
+  plant_fiber_stuffing:
+    tags: [item, stuffing]
+    props:
+      # なめし革2枚（1000g）と繊維15束（900g）。
+      weight: {value: 1900}
+      volume: {value: 30000}
+    recipes:
+      stuffed:
+        conditions:
+          - {reason: needs_leatherwork, subject: agent, prop: skill_leatherwork, in_stage_or_above: skilled}
+          - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
+        deftness: {skill: skill_leatherwork, from_stage: expert, minutes: -15}
+        steps:
+          - requires:
+              - {object: tanned_leather, count: 2, consume: true}
+            duration: 60
+          - requires:
+              - {object: yarn, count: 2, consume: true}
+              - {tag: sewing_tool, count: 1, consume: false}
+            duration: 60
+          # 繊維を詰めて口を閉じる。**60g/束なので15束で0.9kg**——羽毛より軽いのは、沈まない
+          # ぶん詰める量が要らないため。
+          - requires:
+              - {object: plant_fiber, count: 15, consume: true}
+              - {object: yarn, count: 1, consume: true}
+              - {tag: sewing_tool, count: 1, consume: false}
             duration: 60
 
   # ハンモックの網。紐を編んだだけの物で、木材はゼロ。**伸ばしろを持たない**ので、寝床と違って

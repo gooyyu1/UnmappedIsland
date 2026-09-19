@@ -198,7 +198,9 @@ export const WORK_PILES: readonly WorkPile[] = [
   { system: 7, label: 'そり', amount: { object: 'sledge' } },
   { system: 8, label: 'なめし革の一式', amount: { object: 'tanned_leather_clothing' } },
   { system: 9, label: '高床の寝台', amount: 1.5 },
-  { system: 9, label: '詰め物', amount: 1 },
+  // 羽毛と植物繊維のどちらを詰めても同じ段（docs/world/Bedding.md 5節）なので、**いちばん安い
+  // 積み方で測る**（下の設えと同じ）。
+  { system: 9, label: '詰め物', amount: { object: 'plant_fiber_stuffing' } },
   { system: 10, label: '葉の小屋', amount: 3 },
   { system: 10, label: '高床', amount: 4 },
   { system: 10, label: '板の壁・床', amount: 5 },
