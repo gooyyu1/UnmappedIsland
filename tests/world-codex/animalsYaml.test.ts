@@ -823,6 +823,23 @@ describe('animals.yamlの動物', () => {
     expect(monkey.tryGetProperty(warinessId)?.alert, '警戒も戻る').toBe('caution');
   });
 
+  it('気を失っている間だけ、生きたまま入れ物へ入れられる', () => {
+    // docs/engine/VitalsSystem.md 7節。**resistsは警戒の1行しか読まない**が、unconsciousの段が
+    // 警戒を打ち消すので、意識の段を足さずに生け捕りが成立している。目覚めれば抵抗が戻って弾かれる
+    // ——resistsの宣言を変えても、unconsciousの打ち消しを外しても、ここが落ちる。
+    const basket = spawnInto('woven_basket', jungle, 'items');
+    const into = basket.getSlot(codex.slotNames.getId('contents'));
+    expect(monkey.moveToSlotOrRejection(into), '起きている間は抵抗して入らない').toBeDefined();
+
+    strikeWith('stone_axe');
+
+    expect(monkey.moveToSlotOrRejection(into), '気を失えば入る').toBeUndefined();
+
+    tick(18);
+
+    expect(monkey.parent, '目覚めれば土地へ戻される').toBe(jungle);
+  });
+
   it('負わせた傷は時間で治り、治りきれば消える', () => {
     // 手負いの動物を追う時限（HuntingSystem.md 3節）が、怪我の側の自然治癒だけで成り立つ。
     strikeWithSharpStone();

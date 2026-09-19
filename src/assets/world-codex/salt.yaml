@@ -167,8 +167,9 @@ object_defs:
             matches: {tag: coast}
         add: {self: {brine: 1}}
     # **解放条件を持たない。** 保存の腕を求めると循環する（docs/engine/SkillSystem.md 3.2節）——
-    # 今その腕を伸ばす唯一の操作は塩漬け（上のcure）で、塩はこの塩田からしか採れない。天日干し
-    # （drying.yaml）は操作を持たないので、腕の入口はまだこちらにしか無い。
+    # その腕を伸ばす入口は上のcure（本数はそちらのコメントが名乗り、
+    # tests/world-codex/skillsYaml.test.tsのSKILLS_WITH_ONE_ENTRYが見張る）で、塩はこの塩田からしか
+    # 採れない。
     recipes:
       # 砂を掻き分け、平たい石を並べて底を張る。**掘削具は要らない**——畑（240分）と同じ手間で、
       # 掘り返すのではなく並べるだけなので、掘り棒にする太い枝も折り込んでいない。

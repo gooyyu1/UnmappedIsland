@@ -68,8 +68,9 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 
 **この差が、寒さを防ぐ物の段を見分けさせます。** 空が素の寒さの入口（16℃。
 [`VitalsSystem.md`](./VitalsSystem.md) 8.4 節）を下回るのは涼しい季節の夜と、その薄明・雨天の昼の
-2 つだけで、衣類と寝床の段（[`SurvivalItems.md`](../world/SurvivalItems.md) 5.1 節・
-[`Bedding.md`](../world/Bedding.md) 4.2 節）はそれより細かく刻まれています。海抜ぶんの差が重なると、
+2 つだけで、**衣類の段**（[`SurvivalItems.md`](../world/SurvivalItems.md) 5.1 節）はそれより細かい
+4 段に刻まれています。**寝床の段**（[`Bedding.md`](../world/Bedding.md) 4.2 節）は 2 段で空の側と
+同じ数ですが、衣類へ足して重なるので刻みを細かくする側に立ちます。海抜ぶんの差が重なると、
 その 2 つが 1℃ ずつに割れます。
 
 | 涼しい季節の空 | 差 ±0 | 差 −1 | 差 −2 | 差 −3 |
@@ -255,9 +256,10 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 回ごとに違うなら、たとえ水分量の軌跡が似ていても単調ではありません。
 
 **実測は「回ごとに違う」側です。** 見るのは [`stats/climate.yaml`](../../stats/climate.yaml) の
-`weather_hours` です。**この節だけが、季節インスタンス1本を1標本として測っています**——標本数が
-`season_duration`（季節インスタンスの本数）と一致するのがその印で、散らばりがそのまま「同じ季節が毎回
-どれだけ違うか」になります。`calm` で小雨だった時間は、少ないほうの 5% が
+`weather_hours` です。**ここは `season_duration` と同じく、季節インスタンス1本を1標本として測って
+います**——tick を1標本に採る `temperature`・`season_moisture_rate` や、区間1本を1標本に採る
+`rain_streak` とは標本の単位が違い、標本数が季節インスタンスの本数と一致するのがその印です。散らばりが
+そのまま「同じ季節が毎回どれだけ違うか」になります。`calm` で小雨だった時間は、少ないほうの 5% が
 43 時間<!-- stats: climate.yaml weather_hours season=calm weather=light_rain segment=overall p5 -->の回、
 多いほうの 5% が 76 時間<!-- stats: climate.yaml weather_hours season=calm weather=light_rain segment=overall p95 -->の回。
 `wet` の嵐はもっと開いていて、34 時間<!-- stats: climate.yaml weather_hours season=wet weather=storm segment=overall p5 -->の

@@ -614,15 +614,23 @@
 （**荒天で押し流されやすい**）です。**顔ぶれの差はこの長さだけ**で、押し流し方そのものはどの海区も
 同じです。
 
-**実際に渡らせると、押し流されるのは雨季だけです**
+**実際に渡らせると、押し流しのほとんどは雨季に出ます**
 （[`VoyageStormStats.md`](../diagnostics/VoyageStormStats.md)）。砂浜から近道で渡った航海 1 回あたり、
 雨季は 0.82 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet backwards -->島の側へ、
-0.47 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet forwards -->本土の側へ流され、
-乾季にはほとんど起きません——嵐そのものが乾季には立たないからです
-（[`ClimateSystemStats.md`](../diagnostics/ClimateSystemStats.md)）。**効くのは戻された区間ではなく、
+0.47 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet forwards -->本土の側へ流されるのに
+対し、穏やかな季節は島の側へ 0.02 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=calm backwards -->、
+乾季は 0.00 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=dry backwards -->です。
+**穏やかな季節が乾季を上回るのは、嵐の多さの順ではありません**——嵐そのものは乾季のほうが長く
+（季節 1 本あたり 0.86 時間<!-- stats: climate.yaml weather_hours season=dry weather=storm segment=overall mean -->に
+対し、穏やかな季節は 0.04 時間<!-- stats: climate.yaml weather_hours season=calm weather=storm segment=overall mean -->。
+[`ClimateSystemStats.md`](../diagnostics/ClimateSystemStats.md)）、この表の季節は漕ぎ出したときのもの
+なので、穏やかな季節に出て雨季へ入った航海がここに乗るからです
+（[`VoyageStormStats.md`](../diagnostics/VoyageStormStats.md)）。**効くのは戻された区間ではなく、
 渡っている最中に流されて空振りになった渡りのほう**で、雨季は 1 回の航海で
-1.30 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet voided_crossings -->——押し流しは
-ほぼ必ず渡っている最中に来ます（航海に費やす時間の大半が横断だからです）。
+1.30 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet voided_crossings -->——押し流しの
+回数（0.82 + 0.47）と、小数第 2 位へ丸めた幅では見分けが付きません。**押し流しはほぼ必ず渡っている
+最中に来ます**（航海に費やす時間の大半が横断だからです）。空振りは押し流しの部分集合なので、丸める
+前の割合が 100% を超えることはありません。
 
 風向きの見分けだけは条件ではなく重みにしてあります——`pick` の候補は `conditions` を持てないため、
 風向きが `drift_to_mainland_weight` / `drift_to_island_weight` の片方だけを立て、`on_max` の `pick` が

@@ -301,6 +301,16 @@ describe('drying.yamlの天日干しと干し場', () => {
     expect(names.length, '検査した型が0件では通っても意味が無い').toBeGreaterThan(0);
   });
 
+  it('殻や皮に守られた食べ物は、干す軸を持たない', () => {
+    // docs/world/SurvivalItems.md 11節。**最も遅い段に居ること自体がその殻や皮から出ている**ので、
+    // 干す仕事は既に済んでいる。ここへ軸を足すと、3日並べて1日も延びない待ち時間が現れる
+    // ——上の検査は名乗った型だけを見るので、名乗らせない側はここが見張る。
+    for (const name of ['coconut', 'bird_egg', 'taro']) {
+      expect(codex.objectNames.tryGetId(name), `${name}が世界に在る`).toBeDefined();
+      expect(codex.objectNames.tryGetId(`${name}__cure_dried`), `${name}は干す軸を持たない`).toBeUndefined();
+    }
+  });
+
   it('干し場は太い枝6本と縄1本から作れる', () => {
     // **工程は1時間ずつに割ってある**（docs/engine/ActionSystem.md 6.3節）ので、要るのは工程を
     // またいだ合計のほう。
