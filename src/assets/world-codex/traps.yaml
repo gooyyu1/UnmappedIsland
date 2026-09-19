@@ -133,7 +133,7 @@ object_defs:
             add:
               self:
                 meat_bait: -1
-      # 繊維の罠は短命な素材（DurabilitySystem.md 2節の-1/tick＝10日）。獲物が入っている間は
+      # 繊維の罠は短命な素材（DurabilitySystem.md 2節の-1/tickで960 tick（10日））。獲物が入っている間は
       # もがかれるので桁違いに速く傷み、0で自壊する（TrapSystem.md 6.1節）。
       #
       # 壊れた罠の中身は道連れにならず土地へこぼれる（9.3節）。拘束のmodifyは消えるが、破られるまでに

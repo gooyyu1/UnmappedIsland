@@ -178,7 +178,9 @@ function findingsIn(file: string, collect: (line: string, lineNumber: number) =>
     .split('\n')
     .flatMap((line, index) =>
       // 定数を埋め込んで組み立てている行は、暦を字で書いていない（src/codex-viewer/balancePage.ts）。
-      line.includes('${') ? [] : collect(line, index + 1),
+      // 囲み（バッククォート）は落とす——`1 tick`（15 分）のように識別子として囲っただけの形が、
+      // 隣り合っていないものとして外れてしまう。
+      line.includes('${') ? [] : collect(line.replace(/`/g, ''), index + 1),
     )
     .map((finding) => `${file}:${finding.line} 「${finding.what}」`);
 }

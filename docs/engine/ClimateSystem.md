@@ -484,7 +484,7 @@ early_rain_calibration:
   stages:
     - name: idle
     - name: boosting
-      min: 96     # 2日目の開始（96 tick が 1 日）
+      min: 96     # 96 tick（1 日）が明けた、2日目の開始
       passives:
         - add:
             self:
