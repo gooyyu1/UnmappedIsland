@@ -53,10 +53,15 @@ object_defs:
           # **倒し切れる余力が無ければ、刻み始められない**（docs/engine/DurabilitySystem.md 2.1節）。
           # 線は1本ぶん（下のfellが食う120）で、**この手そのものは刃を食わない**——何も返さない手に
           # 刃を食わせると、倒れないまま斧だけが折れる形ができる。
+          #
+          # **余力を見るのは、まだ手を付けていない木にだけ**（同2.1節）。刻んでいる間も屋外の劣化は
+          # 進む（weathering.yaml）ので、一撃ごとに線を引き直すと、ちょうど1本ぶんで始めた斧が
+          # 途中から断られ、払った時間が幹に取り残される。**下の枝は trunk_integrity の初期値**で、
+          # 一度でも刃を入れた木はここを通り抜ける。
           - reason: too_worn
-            subject: instrument
-            prop: durability
-            gte: 120
+            any:
+              - {prop: trunk_integrity, lt: 4}
+              - {subject: instrument, prop: durability, gte: 120}
           # 受け口を見ながら斧を同じ傷へ入れ続ける屋外の行動なので、見るのは視界の側
           # （docs/engine/IlluminationSystem.md 5節）。倒れる向きも見えていなければ決められない。
           - reason: too_dark
@@ -87,11 +92,10 @@ object_defs:
         conditions:
           # 受け口を刻み切った木にだけ立つ（上のchopと排他）。
           - {prop: trunk_integrity, lte: 1}
-          # **木1本ぶんの刃の目方は、断ち切るこの1回がまとめて食う**（上のchopの注記）。線もその量。
-          - reason: too_worn
-            subject: instrument
-            prop: durability
-            gte: 120
+          # **木1本ぶんの刃の目方は、断ち切るこの1回がまとめて食う**（上のchopの注記）が、
+          # **余力は見ない**（docs/engine/DurabilitySystem.md 2.1節）——刻み始めた時点で線は通って
+          # いるので、ここで引き直すのは、待つ間に減ったぶんで、刻んできた手間を捨てさせること。
+          # 足りなければ倒したところで折れるだけで、丸太は返る。
           - reason: too_dark
             subject: agent
             prop: looking_brightness
