@@ -146,6 +146,7 @@ export function movedOutStockOf(
 ): MovedOutStock {
   let share = 0;
   let emptied: PropertyGlobalId | undefined;
+  let deepestAnywhere = 0;
   for (const outcome of reading.outcomes) {
     let deepest = 0;
     for (const [propertyGlobalId, amount] of spentInOutcome(outcome, (delta) => delta.movedOut === true).get(
@@ -154,8 +155,11 @@ export function movedOutStockOf(
       const stock = stockOf(propertyGlobalId);
       if (stock === undefined || stock <= 0) continue;
       const eaten = Math.min(1, amount / stock);
-      if (eaten <= deepest) continue;
-      deepest = eaten;
+      deepest = Math.max(deepest, eaten);
+      // **尽きる値は分岐をまたいで選ぶ。** 分岐ごとに覚えると、最も深く食う分岐ではなく最後の分岐の
+      // 値が残り、器が空になる先を別の値の端から引くことになる。
+      if (eaten <= deepestAnywhere) continue;
+      deepestAnywhere = eaten;
       emptied = propertyGlobalId;
     }
     share += outcome.probability * deepest;
@@ -169,8 +173,9 @@ export interface MovedOutStock {
   readonly share: number;
 
   /**
-   * その割合を決めた値——**最も深く食われ、先に尽きる1つ**。何も出ていかないならundefined。
-   * 尽きた先で入力が何になるか（空の器）を問えるのはこの値の端だけ（craftingSteps.emptiedIntoOf）。
+   * **どの分岐を通しても最も深く食われる1つ**——先に尽きて、入力がその型でなくなる値。何も
+   * 出ていかないならundefined。尽きた先で入力が何になるか（空の器）を問えるのはこの値の端だけ
+   * （craftingSteps.emptiedIntoOf）。
    */
   readonly emptiedPropertyGlobalId: PropertyGlobalId | undefined;
 }
