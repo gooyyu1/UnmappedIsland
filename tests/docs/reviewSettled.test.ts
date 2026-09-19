@@ -96,10 +96,20 @@ describe('棚卸しで決着した宣言の一覧', () => {
       { question: '名前', file: 'src/game/ui/Card.ts', name: 'CellOverlay', line: 6 },
     ]);
 
-    // 行の間の改行が落ちると、先頭のセルしか読まない側では**後ろの行の決着だけ**が消える。
-    const joined = list.split('\n');
-    expect(() => settledDeclarationsIn([...joined.slice(0, 4), joined[4] + joined[5]].join('\n'))).toThrow(
-      /列の数が表の見出しと違う/,
+    // 落ち方は1つではない。**飛ばしてよい行を名指しで決めていないと、どれも仕切りの行と同じ扱い**に
+    // なって、その行の決着だけが黙って消える。
+    const rows = list.split('\n');
+    const withRows = (...replacement: string[]) => [...rows.slice(0, 4), ...replacement].join('\n');
+
+    // 行の間の改行が落ちて、2行が1行に潰れた。
+    expect(() => settledDeclarationsIn(withRows(rows[4] + rows[5]))).toThrow(/列の数が表の見出しと違う/);
+    // 囲みを落として書いた。
+    expect(() => settledDeclarationsIn(withRows('| src/game/ui/Card.ts の CellOverlay | わけ | #1 |'))).toThrow(
+      /宣言を囲みで挙げていない/,
+    );
+    // 在り処だけを挙げて、宣言の名前が無い。
+    expect(() => settledDeclarationsIn(withRows('| `src/game/ui/Card.ts` | わけ | #1 |'))).toThrow(
+      /の中の名前が挙がっていない/,
     );
   });
 });

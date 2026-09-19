@@ -25,12 +25,16 @@ export const SETTLED_LIST = join('review', 'settled.md');
 
 const HEADING = /^##\s+(\S.*?)\s*$/;
 const QUOTED = /`([^`]+)`/g;
+/** 表の見出しと本体を仕切る行のセル。ここだけが、宣言を挙げていなくてよい行。 */
+const RULE = /^\s*:?-{3,}:?\s*$/;
 
 /**
  * 一覧の本文が挙げている宣言。**形を外した行は読み飛ばさずに投げる**——読み飛ばすと、書いたつもりの
- * 決着が誰にも渡らないまま緑で通る。**行の間の改行が落ちて2行が1行に潰れると、後ろの行の決着だけが
- * 一覧から消える**ので、見るのは列の数——**表の見出しと同じ数のセルが無い行は投げる**。数は字で
- * 持たない（表の列を増やした日に、ここだけ古びる）。
+ * 決着が誰にも渡らないまま緑で通る。
+ *
+ * **飛ばしてよい行は名指しで決める**（見出しの行と、それを仕切る行）。「宣言を挙げていない行は
+ * 飛ばす」で畳むと、**書き方を外した本物の行が仕切りの行と同じ扱いになる**——囲みを落とした行も、
+ * 行の間の改行が落ちて2行が1行に潰れた後ろの行も、そこで黙って消える。
  *
  * 所属を書いた名前（`ZipEntry.method`）は最後の部分だけを採る。**所属は読み手のためのもの**で、
  * 宣言と突き合わせるのは名前と在り処——所属が現物とずれていることは、説明の参照の検査
@@ -64,11 +68,10 @@ export function settledDeclarationsIn(text) {
     if (cells.length !== columns) {
       throw new Error(`${where} 列の数が表の見出しと違う（${cells.length} と ${columns}）`);
     }
-    const quoted = [...cells[0].matchAll(QUOTED)].map((match) => match[1]);
-    // 見出しと本体を仕切る行には囲みが無い。
-    if (quoted.length === 0) return;
+    if (cells.every((cell) => RULE.test(cell))) return;
     if (question === undefined) throw new Error(`${where} どの問いの決着かが、節の見出しから引けない`);
-    const [file, ...names] = quoted;
+    const [file, ...names] = [...cells[0].matchAll(QUOTED)].map((match) => match[1]);
+    if (file === undefined) throw new Error(`${where} 宣言を囲みで挙げていない`);
     if (names.length === 0) throw new Error(`${where} ${file} の中の名前が挙がっていない`);
     for (const written of names) {
       const name = written.split('.').at(-1);
