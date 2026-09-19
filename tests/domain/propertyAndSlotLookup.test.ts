@@ -75,3 +75,55 @@ object_defs:
     );
   });
 });
+
+/**
+ * `WorldObject.allProperties` が渡すもの（同口のdoc）。**実体を渡すが、顔ぶれが変わるのは型の
+ * 差し替えだけ**という組み合わせなので、どちらへ倒しても読み手の見えるものが変わる。
+ */
+describe('allPropertiesが渡すもの', () => {
+  const codex = new WorldCodexYamlLoader()
+    .load(
+      'core.yaml',
+      `
+traits:
+  # 変種にだけプロパティを配るtrait。素の型はashを持たないので、顔ぶれが替わったことが名前で分かる。
+  burnt:
+    tags: [burnt]
+    props:
+      ash: {value: 1}
+object_defs:
+  torch:
+    props:
+      fuel: {value: 3}
+      heat: {value: 1}
+    variation_axes:
+      state: {of: {tag: burnt}}
+  burnt_torch:
+    traits: [burnt]
+`,
+    )
+    .buildAndReset();
+
+  it('並びは実体だが、顔ぶれが替わるのは型の差し替えだけ', () => {
+    const session = new WorldSession(codex);
+    const torch = session.createObject(codex.objectNames.getId('torch'));
+    const fuelId = codex.propertyNames.getId('fuel');
+
+    const read = torch.allProperties();
+    expect(read, '読むたびに詰め替えない（1枚の札を描く間に何度も読む側が居る）').toBe(torch.allProperties());
+    torch.getProperty(fuelId).setNumber(2);
+    expect(read[0].number, 'PropertyValueは実体なので、値の変化はそのまま見える').toBe(2);
+
+    torch.becomeAlong(new Map([['state', 'burnt_torch']]));
+
+    expect(
+      read.map((property) => property.def.name),
+      '顔ぶれは並びごと替わるので、読んだ並びは差し替えの前のまま',
+    ).toEqual(['fuel', 'heat']);
+    expect(read[0], '居るのも前の型のPropertyValue').not.toBe(torch.getProperty(fuelId));
+    expect(
+      torch.allProperties().map((property) => property.def.name),
+      '読み直せば今の顔ぶれが返る（traitが配るぶんが前に並ぶ）',
+    ).toEqual(['ash', 'fuel', 'heat']);
+  });
+});

@@ -435,6 +435,32 @@ describe('発見物の流れ（Windows.md 5.1節）', () => {
     expect(idsAt(shown, place('items'), 0)).toEqual([1, 2]);
     expect(shown.found).toEqual([]);
   });
+
+  // foundが渡すものは並びの実体で、顔ぶれが替わるのは丸ごとの差し替えだけ（ShownCards.found）。
+  // in-placeで空にする・足すようになると、読んだ側の顔ぶれが黙って動くので、ここで落とす。
+  it('読んだ並びは、抱え直しても手放しても替わらない', () => {
+    const shown = screen({ items: [stack(place('items'), [1, 2])] });
+    shown.takeFound([found(2)]);
+
+    const read = shown.found;
+    expect(read, '読むたびに詰め替えない').toBe(shown.found);
+    shown.takeFound([found(1)]);
+
+    expect(
+      read.map((card) => card.identity),
+      '抱え直しても、読んだ並びは前の顔ぶれのまま',
+    ).toEqual([[2]]);
+    expect(
+      shown.found.map((card) => card.identity),
+      '読み直せば今の顔ぶれが返る',
+    ).toEqual([[1]]);
+
+    shown.returnFound();
+    expect(
+      read.map((card) => card.identity),
+      '手放しても、読んだ並びは短くならない',
+    ).toEqual([[2]]);
+  });
 });
 
 describe('1つのオブジェクトに札は1つ（不変条件）', () => {

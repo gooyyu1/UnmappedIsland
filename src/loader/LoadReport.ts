@@ -29,6 +29,11 @@ export class LoadReport {
     );
   }
 
+  /**
+   * 捨てた記録の全部。**渡すのは並びの実体で、写しではない**——読み込みの途中で読めば、その後に
+   * 足したぶん（addDiscarded）も戻したぶん（forgetAfter）もそのまま見える。読んだ時点の顔ぶれを
+   * 保ちたい側は自分で写し取る。
+   */
   get problems(): readonly LoadProblem[] {
     return this.entries;
   }
