@@ -235,7 +235,8 @@ function collect(file) {
 
 function withReferences(declarations, occurrences) {
   return declarations.map((declaration) => {
-    const seen = occurrences.get(declaration.name.replace(/^#/, '')) ?? new Set();
+    // 索引のキーは宣言の名前と同じ字面（privateフィールドは`#`ごと）。落として引くと0件になる。
+    const seen = occurrences.get(declaration.name) ?? new Set();
     const elsewhere = [...seen].filter((file) => file !== declaration.file);
     return {
       ...declaration,
