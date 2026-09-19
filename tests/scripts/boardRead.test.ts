@@ -95,7 +95,7 @@ describe('board-read.mjs', () => {
   });
 });
 
-describe('スメルを拾う係が読む窓（board-design.md 4.4.2）', () => {
+describe('スメルを拾う係が読む窓（board-design.md 4.4.2節）', () => {
   const NOW = new Date('2026-09-07T12:00:00Z');
 
   /** `gh` へ渡った引数を控えながら盤面を1つ組む。`merged` はマージ済みPRの一覧として返る。 */
@@ -217,7 +217,7 @@ describe('開いている issue は、上限で切らずに全部引く', () => 
   });
 });
 
-describe('二次がまだ読んでいない分析の記録を数える（board-design.md 2.17.4）', () => {
+describe('二次がまだ読んでいない分析の記録を数える（board-design.md 2.17.4節）', () => {
   /** 一次の記録と二次のまとめを置いた作業場を1つ作る。`summary` に `undefined` を渡すと、置き場ごと無い。 */
   function placed(written: readonly string[], summary?: readonly string[]) {
     const root = mkdtempSync(join(tmpdir(), 'analysis-'));

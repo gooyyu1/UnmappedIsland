@@ -3,7 +3,7 @@ export function posix(path: string): string;
 
 /**
  * `gh` を1回叩いて標準出力を返す。引けなければ `undefined` で、**そのとき道具が言った理由は
- * `sayWhyNot` へ渡る**（`agent-ops/board-design.md` 1.7）。渡さなければ標準エラーへ流れる。
+ * `sayWhyNot` へ渡る**（`agent-ops/board-design.md` 1.7節）。渡さなければ標準エラーへ流れる。
  */
 export function gh(
   args: readonly string[],

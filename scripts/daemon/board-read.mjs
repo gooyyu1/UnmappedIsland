@@ -1,5 +1,5 @@
 // GitHub と CCR、それにリポジトリ自身から盤面を1つ組み立てる。**判断は1つも持たない**——ここが
-// 集めた形を読んで手を決めるのは [`board-move.mjs`](board-move.mjs)（`agent-ops/board-design.md` 2.3）。
+// 集めた形を読んで手を決めるのは [`board-move.mjs`](board-move.mjs)（`agent-ops/board-design.md` 2.3節）。
 //
 //   import { readBoard } from './board-read.mjs';
 //   await readBoard({ sayIncomplete })   // → 盤面（`gh` が引けなければ undefined）
@@ -10,7 +10,7 @@
 //
 // `sayIncomplete` へ渡す行は、**どれも「この周はこれが引けていない／全部を見ていない」**
 // ——だから打てない手が出る、まで1行で言い切る。**呼び手はこれを丸ごと人の読む盤面へ載せる**
-// （[`board-round.mjs`](board-round.mjs) → `agent-ops/board-design.md` 2.20.3）ので、**別の種類の
+// （[`board-round.mjs`](board-round.mjs) → `agent-ops/board-design.md` 2.20.3節）ので、**別の種類の
 // 行をここへ混ぜると、欠けていない周にも欠けているように出る。**
 //
 // ## 引けなかったら、欠けたまま返さない
@@ -40,7 +40,7 @@ import { gh as runGh } from './spawn.mjs';
  *
  * - `DECISIONS` … 判断の履歴（`CLAUDE.md`「価値観の記録」）。読むのは価値観を畳む係の `due`。
  * - `ANALYSES` / `ANALYSIS_SUMMARIES` … 一次の分析係が回ごとに書く記録と、二次が横断してまとめた
- *   記録（`agent-ops/board-design.md` 2.17.4）。読むのは回をまたぐ形を見る係の `due`。
+ *   記録（`agent-ops/board-design.md` 2.17.4節）。読むのは回をまたぐ形を見る係の `due`。
  * - `ROOT` … 節番号の参照をどこまで検めたかの台帳（[`refAudit.mjs`](refAudit.mjs) の `LEDGER`）と
  *   git の一覧。読むのは参照を検める係の `due`。
  */
@@ -191,7 +191,7 @@ function refAuditWork(sayIncomplete) {
  * まだ二次が読んでいない、一次の分析の記録の件数。**読むのは回をまたぐ形を見る係の `due`**
  * （[`board-move.mjs`](board-move.mjs) の `CYCLES`）。
  *
- * **一次のファイルに処理済みの印を持たせない**（`agent-ops/board-design.md` 2.17.4）——印を持たせると、
+ * **一次のファイルに処理済みの印を持たせない**（`agent-ops/board-design.md` 2.17.4節）——印を持たせると、
  * 一次に二次の都合が入る。代わりに**二次が最後に書いた日付より後の一次のファイルを数える**
  * （どちらも `<YYYY-MM-DD>` で始まるので、文字列の大小がそのまま日付の前後になる）。
  *
@@ -246,7 +246,7 @@ function settledBefore(now, settleMinutes) {
 }
 
 /**
- * `main` の先頭のCI。**赤い間は差し戻しを打たない**（`board-move.mjs`、`board-design.md` 2.14）。
+ * `main` の先頭のCI。**赤い間は差し戻しを打たない**（`board-move.mjs`、`board-design.md` 2.14節）。
  * 数えるのは**`main` の木を見て走ったものだけ**（2.14.2）——issue へのコメントなどで立つ
  * ワークフローも既定ブランチの先頭へ結び付くが、あれは木を見ていないので、落ちてもそれを取り込んだ
  * PRは赤くならない。語彙をPRの `statusCheckRollup` に合わせて渡すので、向こうは1つの判定で両方を

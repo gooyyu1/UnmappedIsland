@@ -24,7 +24,7 @@
 **下の「記録」へ節や要求を足したら、同じPRでこの日付を動かす。** 決め方は
 [`analysis-prompt.md`](analysis-prompt.md) の同じ行と同じ。
 
-題は下の `題:` の行が持つ（[`board-design.md`](../board-design.md) 2.9）。
+題は下の `題:` の行が持つ（[`board-design.md`](../board-design.md) 2.9節）。
 
 題: 傾向 回をまたぐ形
 
@@ -111,11 +111,11 @@ issue にできるのはあなただけ**で、ここが絞りの掛かってい
 - **打ち手が `docs/DesignNotes.md` で不採用済みでないかを、立てる手前で確かめてください**
   （`agent-ops/parallel-work.md`「立てる前に、不採用の記録と突き合わせる」）。**この係が打つのは
   根本的な対策**なので、同じ形が過去に不採用になっていることは十分あります。
-- `kind:` のラベルは付けないでください（分類するのは棚卸しです。`agent-ops/board-design.md` 2.17.1）。
+- `kind:` のラベルは付けないでください（分類するのは棚卸しです。`agent-ops/board-design.md` 2.17.1節）。
 - **`origin:agent` は起票のときに一緒に渡してください**（`agent-ops/parallel-work.md`「自分で立てた
   issue には `origin:agent` を付ける」）。
   **向かう先（`goal:`）も一緒に渡してください**——盤面が配る順と、発掘係を立てるかを
-  この印で決めます（`agent-ops/board-design.md` 2.18.1）。この係が立てるものは仕組みを整える
+  この印で決めます（`agent-ops/board-design.md` 2.18.1節）。この係が立てるものは仕組みを整える
   ためのものなので `goal:upkeep` です。
 - **本文には、出どころの回（`agent-ops/analysis/<日付>.md`）を並べてください。** 一次の記録が根拠なので、
   読んだ人がそこへ戻れる形にします。

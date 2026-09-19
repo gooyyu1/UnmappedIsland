@@ -47,7 +47,7 @@ import { gh as runGh, posix, runBash } from './spawn.mjs';
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /**
- * ぶつかった実績の帳面（1行1件のJSON。`agent-ops/board-design.md` 3.1）。**盤面は同じファイルを書く
+ * ぶつかった実績の帳面（1行1件のJSON。`agent-ops/board-design.md` 3.1節）。**盤面は同じファイルを書く
  * issue を並べて投入する**ので、実際にぶつかった組を控えておかないと、`area:` の錠を足すべき資源が
  * 後から分からない。**手ではない**——打つ手が何であっても、見えたものをその周のうちに書く。
  */
@@ -69,7 +69,7 @@ const defaultRunScript = (name, args, options) => runBash(join(HERE, name), args
 
 /**
  * **盤面を引けなくなった時刻**を控える（`board-state.mjs` の `UNREADABLE`）。**読むのは人**
- * ——引けない周にデーモンが打てる手は無い（`agent-ops/board-design.md` 2.21.1）。
+ * ——引けない周にデーモンが打てる手は無い（`agent-ops/board-design.md` 2.21.1節）。
  *
  * **始まりだけを覚える。** 毎周書き直すと、続いた長さが出せない。
  *
@@ -271,7 +271,7 @@ export function trackIdle(taken, board, now) {
 /**
  * 人へ返すときに issue へ置くコメント。**1行目が返却の宣言**で、ここを読んでラベルを動かすのは
  * [`board-labels.yml`](../../.github/workflows/board-labels.yml)——**ワーカーが自分で返すときと同じ道**
- * （`agent-ops/board-design.md` 2.15）。ラベルを盤面から直に触らないので、返す経路が2つに割れない。
+ * （`agent-ops/board-design.md` 2.15節）。ラベルを盤面から直に触らないので、返す経路が2つに割れない。
  *
  * **返す理由ごとに文面を分ける**（2.11.4）。返す形は2つあり、**人がすることが違う**——止まった
  * ワーカーの仕事は投入し直せば進むが、**宛先の無いPRは、そのPRを直さないかぎり何度投入しても
@@ -302,7 +302,7 @@ PRが動き出したら、この issue（#${issue}）から \`判断待ち\` を
 
 /**
  * **前の差分の札を落としてほしい**とPRへ頼む1行目（`board-move.mjs` の `UNLABEL`。
- * `agent-ops/board-design.md` 2.13.7）。読んで札を動かすのは
+ * `agent-ops/board-design.md` 2.13.7節）。読んで札を動かすのは
  * [`board-labels.yml`](../../.github/workflows/board-labels.yml) の `swept`——**外すのはあちらだけ**
  * （こちらが外すと `却下` になる。下の `play` の `UNLABEL`）。
  *
@@ -320,7 +320,7 @@ const sweepBody = (head) =>
 
 このPRに付いている結論の札は、**前の差分に付いたもの**です。判定のコメントはどれも、今の頭
 （\`${head}\`）とは別の版を名乗っています。push で落ちるはずのものが残っているので、落とし直します
-（[\`board-design.md\`](../agent-ops/board-design.md) 2.13.7）。
+（[\`board-design.md\`](../agent-ops/board-design.md) 2.13.7節）。
 
 **直しが要るかどうかは、これで変わりません**——次の周でレビューが読み直します。
 `;
@@ -331,7 +331,7 @@ const sweepBody = (head) =>
  *
  * **割るのは、ログを読む側のため。** 盤面を見回る係（`board-move.mjs` の `CYCLES` の `patrol`）は
  * `~/daemon.log` から「何が止まっているか」を読むので、**直す相手の居ない手が転んで見えると、
- * 毎回そこを調べに行く**（`agent-ops/board-design.md` 2.21.2）。
+ * 毎回そこを調べに行く**（`agent-ops/board-design.md` 2.21.2節）。
  */
 export const PLAYED = 'played';
 export const FAILED = 'failed';
@@ -344,7 +344,7 @@ export const SETTLED = 'settled';
  * - `3` … 人が手綱で止めている（[`brake.sh`](brake.sh)）。人が外すまで戻らない。立てる側も起こす側も出す
  * - `4` … 使用量の余力が足りない（[`headroom.sh`](headroom.sh)）。枠が明ければひとりでに戻る。
  *   **立てる側も起こす側も出す**——モデルを使わせてよいかは同じ関門
- *   （[`may-spend.sh`](may-spend.sh)）に訊く（`agent-ops/board-design.md` 2.5.2）
+ *   （[`may-spend.sh`](may-spend.sh)）に訊く（`agent-ops/board-design.md` 2.5.2節）
  *
  * **どちらも直す相手が居ない**ので `SETTLED`。**打つ手は違うが、それを読むのはログを見る人**で、
  * 理由の行はそれぞれのスクリプトが標準エラーへ出している。
@@ -486,7 +486,7 @@ export async function round({
   settleMinutes = Number(process.env.SETTLE_MINUTES || 10),
   dryRun = (process.env.DRY_RUN ?? '') !== '',
 } = {}) {
-  // **一覧はこの周に1回だけ引く**（`board-design.md` 1.7）。要る側は4つあり、それぞれが自分で
+  // **一覧はこの周に1回だけ引く**（`board-design.md` 1.7節）。要る側は4つあり、それぞれが自分で
   // 引くと同じ答えを4回買うことになる——`list_sessions` の上限は1時間あたりで数えるので、その
   // 回数がそのまま盤面の回る速さの天井になる。引いたものはファイルへ置き、叩くスクリプトへは
   // 環境変数で在り処だけを渡す。**この周のうちに立ったセッションは、次の周の一覧に載る。**

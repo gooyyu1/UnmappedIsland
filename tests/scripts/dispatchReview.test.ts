@@ -8,7 +8,7 @@ import { STUB_SHEBANG } from '../support/stubShebang';
 /**
  * `scripts/daemon/dispatch-review.sh` が組み立てるタイトルの検査。
  *
- * ここが守るのは**一覧を人が読めること**（`agent-ops/board-design.md` 2.9）。とくに「何回目の判定に
+ * ここが守るのは**一覧を人が読めること**（`agent-ops/board-design.md` 2.9節）。とくに「何回目の判定に
  * なるはずか」は数えて出す値なので、数え方がずれても**それらしい番号が付いたまま**気づけない。
  *
  * `DRY_RUN` で叩くので、セッションは立たない。`gh` は PATH の先頭で差し替える。
@@ -146,7 +146,7 @@ describe('dispatch-review.sh', () => {
     expect(args(1524, { comments }).prompt).toContain('それは `なし` です');
   });
 
-  // **モードは環境が決める**（`board-design.md` 2.16.3）。渡さないと未設定のまま立ち、差分に
+  // **モードは環境が決める**（`board-design.md` 2.16.3節）。渡さないと未設定のまま立ち、差分に
   // `.claude/**` が含まれるPRを読もうとした時点で承認を待って止まる（#1567、2026-09-05）。
   it('クラウドへは auto を渡す', () => {
     const built = args(1524);

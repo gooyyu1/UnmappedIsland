@@ -133,7 +133,7 @@ export function historyDocs(root) {
  *
  * **指した先の中身を読む係（[`refAudit.mjs`](daemon/refAudit.mjs)）も、ここを外す。** 書いてあるのは当時の
  * 観測で、**今と食い違っていても直す先ではない**ので、読んでも手の出しようが無い（そう決めて
- * いるのは `agent-ops/board-design.md` 2.17.4）。
+ * いるのは `agent-ops/board-design.md` 2.17.4節）。
  *
  * @param {string} rel 根からの相対パス
  */
