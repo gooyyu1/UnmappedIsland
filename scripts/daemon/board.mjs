@@ -197,9 +197,12 @@ async function survey({ gh, sessions, warn }) {
   // **宛先を引けないPRを言うには、名乗りと生きた一覧の**両方**が要る**（`board-move.mjs` の
   // `strandedPrs`）。片方でも欠けた周に「引けない」と読むと、**健全なPRが全部そう見える**
   // ——引けなかったことは断りとして出し、節そのものは出さない。
-  const claimed = sessionsKnown ? readPrSessions(gh) : undefined;
+  // **理由は道具から受け取って、断りへ載せる**（1.7）。落とすと、**読む人には「出せない」しか
+  // 残らない**——ここの断りはそのまま本文の ⚠ の行になる。
+  let claimWhyNot = '';
+  const claimed = sessionsKnown ? readPrSessions(gh, (line) => (claimWhyNot = line)) : undefined;
   if (sessionsKnown && claimed === undefined) {
-    warn('（差し戻す相手を引けなかった。宛先の無いPRは出せない）');
+    warn(`（差し戻す相手を引けなかった。宛先の無いPRは出せない）: ${claimWhyNot}`);
   }
   const stranded = strandedPrs(prs, claimed, live);
 
@@ -290,10 +293,128 @@ const STALE_PATROL_HOURS = (cycleHours(PATROL) ?? 1) * 3;
  *
  * **読めない値なら何も出さない。** 出どころは台帳のテキストなので、壊れていることがありうる。
  */
-function unreadableNote(since, now) {
-  const from = Date.parse(since ?? '');
+function unreadableNote(unreadable, now) {
+  const from = Date.parse(unreadable?.since ?? '');
   if (Number.isNaN(from)) return undefined;
-  return `**盤面を引けていません**（${since} から ${elapsed(from, now)}）。GitHub か CCR から引けない周が続いています——**直せるのは人だけ**で、この間セッションは1本も立ちません`;
+  // **周の数と、道具が言った理由を一緒に出す**（2.20.3）。長さだけでは、待つ間隔が動いたときに
+  // 何周ぶんかが読めず、**理由が無いと直す先が分からない**——読む人はスマホから読むので、
+  // `~/daemon.log` を開けない。
+  const said = unreadable.reason === '' ? '' : `。道具が言った理由: ${cell(unreadable.reason)}`;
+  return `**盤面を引けていません**（${unreadable.since} から ${elapsed(from, now)}・${unreadable.rounds}周）。GitHub か CCR から引けない周が続いています——**直せるのは人だけ**で、この間セッションは1本も立ちません${said}`;
+}
+
+/**
+ * 周の出来事を遡る幅。**読むのは人で、要るのは「今どうなっているか」**——長く取るほど、直った
+ * 詰まりが今の詰まりと並んで出る。**帳面そのものは落とす者が置かれていない**ので、これより前を
+ * 数えたいとき（猶予を詰めるなど。2.22.2）は帳面を直に読む。
+ */
+export const EVENT_WINDOW_HOURS = 6;
+
+/**
+ * **周の出来事**（2.20.3）。**届く先はここしか無い**——1周を回す側が書くのは `~/daemon.log` で、
+ * **それを定期的に読む者は居ない**（2.22.3）。並べるのは次のもの。
+ *
+ * - **配れない理由**（`board-move.mjs` の `NOTE`）と、**それが何分続いているか**。1周ぶんの
+ *   覚え書きは「やることが無い周」と見分けが付かないので、**続いている長さが詰まりの合図**。
+ * - **この周の盤面が欠けている理由**（`board-read.mjs` の `sayIncomplete`）。**上とは別の表**に
+ *   する——あちらは盤面が何かを待っていることで、こちらは盤面がその周に全部を見られなかったこと
+ *   （`board-state.mjs` の `PARTIAL_PREFIX`）。
+ * - **打った手の件数。** `RETURN` のように、**件数そのものが合図になる手**がある
+ *   （[`patrol-prompt.md`](../../agent-ops/prompts/patrol-prompt.md)「正常の定義」）。
+ * - **盤面を引けなかった区間**（いつからいつまで・何周・道具が言った理由）。**直った周に台帳の印は
+ *   消える**ので、帳面に閉じたものだけが後から読める。
+ *
+ * **どれも無い周は節ごと出さない**（`humanTurn` と同じ理由）。
+ */
+function roundEvents(blockedNotes, partialNotes, events, now) {
+  const from = now.getTime() - EVENT_WINDOW_HOURS * 3_600_000;
+  const recent = events.filter((event) => Date.parse(String(event.at)) >= from);
+  const gaps = recent.filter((event) => event.kind === 'gap');
+
+  // 打った手を `<手> <結果>` で数える。**結果ごとに分ける**——打てたことと打てなかったことは、
+  // 読む人にとって別の出来事（2.21.2）。
+  const tally = new Map();
+  for (const event of recent) {
+    if (event.kind !== 'move') continue;
+    const key = `${event.move} ${MOVE_RESULTS[event.result] ?? event.result}`;
+    tally.set(key, (tally.get(key) ?? 0) + 1);
+  }
+
+  if (blockedNotes.length === 0 && partialNotes.length === 0 && tally.size === 0 && gaps.length === 0) {
+    return [];
+  }
+  const lines = [
+    '',
+    '## 周の出来事',
+    '',
+    `直近${EVENT_WINDOW_HOURS}時間。**出どころはデーモンの帳面**です。`,
+  ];
+
+  if (blockedNotes.length > 0) {
+    lines.push(
+      '',
+      '**配れない理由**（この周にも出ています）',
+      '',
+      '| 何が止めているか | 続いている |',
+      '|---|---|',
+      ...blockedNotes.map((note) => `| ${cell(note.text)} | ${elapsedSince(note.since, now)} |`),
+    );
+  }
+
+  if (partialNotes.length > 0) {
+    lines.push(
+      '',
+      '**この周の盤面が欠けています**（そのぶん、出ない手があります）',
+      '',
+      '| 何が引けていないか |',
+      '|---|',
+      ...partialNotes.map((text) => `| ${cell(text)} |`),
+    );
+  }
+
+  if (tally.size > 0) {
+    lines.push(
+      '',
+      '**打った手**',
+      '',
+      '| 手 | 件数 |',
+      '|---|---|',
+      ...[...tally].map(([what, count]) => `| ${cell(what)} | ${count} |`),
+    );
+  }
+
+  if (gaps.length > 0) {
+    lines.push(
+      '',
+      '**盤面を引けなかった区間**',
+      '',
+      '| いつから | いつまで | 周 | 道具が言った理由 |',
+      '|---|---|---|---|',
+      ...gaps.map(
+        (gap) => `| ${cell(gap.from)} | ${cell(gap.until)} | ${gap.rounds} | ${cell(gap.reason ?? '')} |`,
+      ),
+    );
+  }
+  return lines;
+}
+
+/**
+ * 手の結果を、人へ見せる語にする。**綴りを持つのは [`board-round.mjs`](board-round.mjs)**
+ * （`PLAYED`・`FAILED`・`SETTLED`）で、ここはその読み手。
+ *
+ * **結果が増えたら、ここにも升が要る。** 欠けると、その結果の手は帳面に載るのに**人の読む盤面には
+ * 結果が英語のまま出る**——突き合わせは検査が持つ（`tests/scripts/roundEventsReachPeople.test.ts`）。
+ */
+export const MOVE_RESULTS = {
+  played: '打てた',
+  failed: '打てなかった',
+  settled: '打てなかった（答えは返っている）',
+};
+
+/** その時刻から今までの長さ。**読めない時刻はそのまま出す**——黙って落とすと、行ごと消える。 */
+function elapsedSince(since, now) {
+  const from = Date.parse(since ?? '');
+  return Number.isNaN(from) ? String(since) : elapsed(from, now);
 }
 
 /**
@@ -366,14 +487,13 @@ function humanTurn(found) {
 }
 
 /**
- * **差し戻す相手を引けないPR**（2.11.4）。**届く先はここしか無い**——盤面は毎周 `~/daemon.log` へ
- * 覚え書きを書くが、**それを定期的に読む者は居ない**（2.22.3）。2026-09-11、PR #1922 の名乗りが
- * 引けないまま、ユーザーがPRへ書いた質問は作者へ一度も届かず、盤面は2時間手を1つも打たなかった
- * （issue #1937）。
+ * **差し戻す相手を引けないPR**（2.11.4）。2026-09-11、PR #1922 の名乗りが引けないまま、ユーザーが
+ * PRへ書いた質問は作者へ一度も届かず、盤面は2時間手を1つも打たなかった（issue #1937）。
  *
- * **人の手番の節とは分ける。** あちらは「ラベルを外すかマージするか」で答えるものだが、ここは
- * **PRを直すか閉じるかまで人がやる**——答え方が違うものを1つの表に並べると、読む人は先頭の
- * 指示に従って外すだけになる。
+ * **人の手番の節とも、周の出来事の節とも分ける。** 人の手番は「ラベルを外すかマージするか」で答える
+ * ものだが、ここは**PRを直すか閉じるかまで人がやる**。周の出来事（`roundEvents`）が渡すのは
+ * **「何が止めているか」まで**で、**直す先はここにしか出ない**——答え方が違うものを1つの表に並べると、
+ * 読む人は先頭の指示に従って外すだけになる。
  *
  * **無い周は節ごと出さない**（`humanTurn` と同じ理由）。
  */
@@ -401,6 +521,10 @@ function strandedNote(found) {
  * なので、読んでいる人には届かない。セッションの一覧を引けなかった周は、断りに加えて
  * **一覧を根拠にした行そのものを落とす**（下の `sessionsKnown`）。
  *
+ * **周の出来事も同じ理由でここへ出す**（`blockedNotes`・`events`。2.20.3）。**置くのは1周を回す側**
+ * （[`board-round.mjs`](board-round.mjs)）で、ここはその読み手——周と書き出しは別の周期で走る別の
+ * プロセスなので、**デーモンの帳面を通す以外に届く道が無い。**
+ *
  * 引けなければ `undefined`（呼び手は書き込まない——**古い本文が残るほうが、欠けた盤面より正しい**）。
  */
 export async function issueBody({
@@ -408,8 +532,11 @@ export async function issueBody({
   sessions = liveSessions,
   warn,
   now = new Date(),
-  unreadableSince,
+  unreadable,
   patrol,
+  blockedNotes = [],
+  partialNotes = [],
+  events = [],
 } = {}) {
   const notes = [];
   const found = await survey({
@@ -431,8 +558,8 @@ export async function issueBody({
   ];
   // **引けていない断りが先。** 一覧を引けなかった周の断り（`notes`）は表の読み方の注釈だが、
   // こちらは**読んだ人に手を打ってもらうための行**（2.21）。
-  const unreadable = unreadableNote(unreadableSince, now);
-  if (unreadable !== undefined) lines.push('', `⚠ ${unreadable}`);
+  const stuck = unreadableNote(unreadable, now);
+  if (stuck !== undefined) lines.push('', `⚠ ${stuck}`);
   for (const note of notes) lines.push('', `⚠ ${note}`);
   lines.push('', patrolNote(patrol, now));
   // **人の手番は、状態の表より先。** 断りと同じで、**読んだ人に手を打ってもらうための行**
@@ -441,6 +568,9 @@ export async function issueBody({
   // **人の手番の次。** 同じく手を打ってもらうための節だが、**外れるのを待っている相手が居る
   // ぶん人の手番が先**——こちらは誰も待っていないので、気づくのが1画面ぶん遅れても止まらない。
   lines.push(...strandedNote(found));
+  // **周の出来事は、人の手番の次・件数の表より先**（2.20.3）。表は「今どう見えているか」だが、
+  // ここは**盤面が動いているか**——止まっているときに人が最初に知りたいのはこちら。
+  lines.push(...roundEvents(blockedNotes, partialNotes, events, now));
 
   const tally = new Map(COUNTS.map((name) => [name, 0]));
   for (const task of found.tasks) {

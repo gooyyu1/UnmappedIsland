@@ -26,18 +26,35 @@ function announce(what, call) {
   if (call.error !== undefined) writeSync(2, `${what} を起こせなかった: ${call.error.message}\n`);
 }
 
+/** 理由の行き先を呼び手が決めなかったときの既定。**捨てはしない**（下の `sayWhyNot`）。 */
+const defaultSayWhyNot = (line) => writeSync(2, `${line}\n`);
+
 /**
- * `gh` を1回叩いて標準出力を返す。引けなければ `undefined`——**`gh` は自分で理由を言う**ので、
- * ここから言い足すことは無い。`allowFail` のときはその声も落とす（引けないことが答えになる呼び方）。
+ * `gh` を1回叩いて標準出力を返す。引けなければ `undefined`。
+ *
+ * **引けなかった理由は `sayWhyNot` へ渡す。** 理由を言えるのは道具だけで（`agent-ops/board-design.md`
+ * 1.7「引けなかったときは、道具が言った理由をそのまま出す」）、**捨てると呼び手には「引けなかった」
+ * しか残らない**——検索の文法の誤りも、資格情報の切れも、同じ顔になる。**引けないことが答えになる
+ * 呼び方でも落とさない**：そういう呼び手ほど、理由を自分の答え（人へ見せる断り・値の見張りの「見えた
+ * こと」）へ載せる先を持っている。
+ *
+ * 渡さなければ標準エラーへ流す——デーモンのログはそれを含む。
  */
-export function gh(args, { allowFail = false } = {}) {
+export function gh(args, { sayWhyNot = defaultSayWhyNot } = {}) {
   const call = spawnSync('gh', args, {
     encoding: 'utf8',
     maxBuffer: MAX_BUFFER,
-    stdio: ['ignore', 'pipe', allowFail ? 'ignore' : 'inherit'],
+    // **標準エラーは常に捕まえる。** 流しっぱなし（`inherit`）にすると、**理由は人の目に届くが
+    // 呼び手には残らない**——呼び手が人へ見せる断りを組む側なので、そこで尽きる。
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
-  if (!allowFail) announce(`gh ${args[0]}`, call);
-  return call.status === 0 && typeof call.stdout === 'string' ? call.stdout : undefined;
+  if (call.status === 0 && typeof call.stdout === 'string') return call.stdout;
+  // **起こせなかったことも、同じ口から言う。** 呼び手から見れば引けなかったことは1つで、
+  // 道具が理由を言えたかどうかは呼び手の都合ではない。
+  const said =
+    call.error !== undefined ? `起こせなかった: ${call.error.message}` : (call.stderr ?? '').trim();
+  sayWhyNot(`gh ${args.join(' ')}: ${said === '' ? `終了コード ${call.status}` : said}`);
+  return undefined;
 }
 
 /**

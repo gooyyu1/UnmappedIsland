@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { SWEEP_LINE, round } from '../../scripts/daemon/board-round.mjs';
-import { UNREADABLE } from '../../scripts/daemon/board-state.mjs';
+import { NOTE_PREFIX, PARTIAL_PREFIX, UNREADABLE, journalPath } from '../../scripts/daemon/board-state.mjs';
 
 /**
  * `scripts/daemon/board-round.mjs` の検査。
@@ -77,6 +77,8 @@ interface World {
   readonly conflictLog?: string;
   /** 非0で終わらせる打ち手（スクリプトの名前）。 */
   readonly fails?: readonly string[];
+  /** マージ済みPRの一覧だけを引けない周（盤面は欠けるが、捨てはしない）。 */
+  readonly mergedPrsFail?: boolean;
   /** **人が手綱で止めている**として返す打ち手（終了コード3。`brake.sh`）。 */
   readonly braked?: readonly string[];
   /** **使用量の余力が足りない**として返す打ち手（終了コード4。`headroom.sh`）。 */
@@ -106,6 +108,14 @@ interface Result {
   readonly idleMarks: Record<string, string>;
   /** 盤面を引けなくなった時刻（引けていれば `undefined`）。 */
   readonly unreadable: string | undefined;
+  /** 引けなかった区間の、終わり・周の数・道具が言った理由（引けていれば空）。 */
+  readonly unreadableMarks: Record<string, string>;
+  /** 配れない理由が出始めた時刻（`board-state.mjs` の `NOTE_PREFIX`。鍵から頭を落としたもの）。 */
+  readonly noteMarks: Record<string, string>;
+  /** この周の盤面が欠けている理由が出始めた時刻（同 `PARTIAL_PREFIX`）。 */
+  readonly partialMarks: Record<string, string>;
+  /** 周の出来事の帳面（1行1件）。 */
+  readonly events: readonly Record<string, unknown>[];
   /** 叩いたスクリプトへ足された環境変数（この周の一覧の在り処）。 */
   readonly envs: readonly (Record<string, string> | undefined)[];
   /** この周が書いた一覧。 */
@@ -162,6 +172,9 @@ const SCAFFOLD: Record<string, string> = { ...DUG_RECENTLY, ...PATROLLED_RECENTL
 function split(ledger: Record<string, string>) {
   const marks: Record<string, string> = {};
   const idleMarks: Record<string, string> = {};
+  const noteMarks: Record<string, string> = {};
+  const partialMarks: Record<string, string> = {};
+  const unreadableMarks: Record<string, string> = {};
   let unreadable: string | undefined;
   for (const [key, value] of Object.entries(ledger)) {
     if (SCAFFOLD[key] === value) continue;
@@ -169,9 +182,21 @@ function split(ledger: Record<string, string>) {
       unreadable = value;
       continue;
     }
+    if (key.startsWith('unreadable:')) {
+      unreadableMarks[key] = value;
+      continue;
+    }
+    if (key.startsWith(NOTE_PREFIX)) {
+      noteMarks[key.slice(NOTE_PREFIX.length)] = value;
+      continue;
+    }
+    if (key.startsWith(PARTIAL_PREFIX)) {
+      partialMarks[key.slice(PARTIAL_PREFIX.length)] = value;
+      continue;
+    }
     (key.startsWith('idle:') ? idleMarks : marks)[key] = value;
   }
-  return { ledger: marks, idleMarks, unreadable };
+  return { ledger: marks, idleMarks, noteMarks, partialMarks, unreadable, unreadableMarks };
 }
 
 async function playRound(world: World = {}): Promise<Result> {
@@ -197,9 +222,16 @@ async function playRound(world: World = {}): Promise<Result> {
     const ghCalls: string[] = [];
     const comments: string[] = [];
 
-    const gh = (args: readonly string[]): string | undefined => {
+    const gh = (
+      args: readonly string[],
+      options?: { sayWhyNot?: (line: string) => void },
+    ): string | undefined => {
       ghCalls.push(args.join(' '));
-      if (world.ghFails === true) return undefined;
+      if (world.ghFails === true) {
+        // **道具が言った理由は呼び手へ渡る**（`spawn.mjs` の `sayWhyNot`）。本物と同じ形で返す。
+        options?.sayWhyNot?.('gh pr list …: 失敗: HTTP 401');
+        return undefined;
+      }
       const [first, second, third] = args;
       // コメントを置く手は2つ——issue へ返す（`RETURN`）のと、PRへ札を落としてくれと頼む
       // （`UNLABEL`）の。**本文は消される前に読む**（打ち手が後片付けする）。
@@ -210,6 +242,11 @@ async function playRound(world: World = {}): Promise<Result> {
       }
       // 開いているPRの一覧と、窓に載っているマージ済みPRの一覧は、同じ `gh pr list` で引かれる。
       if (first === 'pr' && second === 'list') {
+        if (args.includes('merged') && world.mergedPrsFail === true) {
+          // **道具が言った理由は呼び手へ渡る**（`spawn.mjs` の `sayWhyNot`）。本物と同じ形で返す。
+          options?.sayWhyNot?.('gh pr list …: 引けない');
+          return undefined;
+        }
         return JSON.stringify((args.includes('merged') ? world.mergedPrs : world.prs) ?? []);
       }
       if (first === 'issue' && second === 'list') return JSON.stringify(world.issues ?? []);
@@ -246,7 +283,10 @@ async function playRound(world: World = {}): Promise<Result> {
       options?: { capture?: boolean; env?: Record<string, string> },
     ) => {
       envs.push(options?.env);
-      if (name === 'usage-record.sh') return { status: 0, stdout: '' };
+      // **使用量を引く手は毎周かならず走る**ので、手には数えない（転ばせる世界だけが結果を見る）。
+      if (name === 'usage-record.sh') {
+        return { status: (world.fails ?? []).includes(name) ? 1 : 0, stdout: '' };
+      }
       calls.push([name, ...args].join(' '));
       if ((world.fails ?? []).includes(name)) return { status: 1, stdout: '' };
       if ((world.braked ?? []).includes(name)) return { status: 3, stdout: '' };
@@ -293,6 +333,7 @@ async function playRound(world: World = {}): Promise<Result> {
     const ledgerPath = join(stateDir, 'taken.json');
     const livePath = join(stateDir, 'live-sessions.tsv');
     const conflictsPath = join(stateDir, 'conflicts.jsonl');
+    const journal = journalPath(stateDir);
     return {
       ok,
       log: out.join('\n'),
@@ -304,6 +345,12 @@ async function playRound(world: World = {}): Promise<Result> {
       liveTsv: existsSync(livePath) ? readFileSync(livePath, 'utf-8') : undefined,
       conflicts: existsSync(conflictsPath)
         ? readFileSync(conflictsPath, 'utf-8')
+            .split('\n')
+            .filter((line) => line !== '')
+            .map((line) => JSON.parse(line))
+        : [],
+      events: existsSync(journal)
+        ? readFileSync(journal, 'utf-8')
             .split('\n')
             .filter((line) => line !== '')
             .map((line) => JSON.parse(line))
@@ -905,6 +952,143 @@ describe('board-round.mjs', () => {
       });
 
       expect(result.ledger['resume:session_a']).toBe('returned:8');
+    });
+  });
+
+  /**
+   * 周の出来事を、**`~/daemon.log` の外へ**残す（`agent-ops/board-design.md` 2.20.3）。
+   *
+   * **ログには読む者が居ない。** 周（既定30秒）と書き出し（既定5分）は別の周期で走る別のプロセス
+   * なので、**人が見に来る場所へ届く道は、ここが書く台帳と帳面しか無い。** 人へ見せる側の検査は
+   * `board.test.ts`、通しは `roundEventsReachPeople.test.ts`。
+   */
+  describe('周の出来事を残す', () => {
+    /** 向かう先を名乗らない `kind:task`。**覚え書きが1つ出る**（`board-move.mjs` の `missingGoal`）。 */
+    const unnamedTask = [{ number: 8, labels: [{ name: 'kind:task' }], blockedBy: { nodes: [] } }];
+    const UNNAMED_NOTE = '向かう先(`goal:`)の無い kind:task がある。整備として並ぶ: #8';
+
+    // **打てた手・打てなかった手・答えが返っている手を、結果ごとに書く。** `RETURN` のように
+    // **件数そのものが合図になる手**は、ここに残らないと誰も数えない。
+    it('打った手を、結果ごとに帳面へ書く', async () => {
+      const played = await playRound({ prs: [pr(10, passed)] });
+      expect(played.events).toEqual([
+        { at: NOW.toISOString(), kind: 'move', move: 'MERGE', target: '10', result: 'played' },
+      ]);
+
+      const failed = await playRound({ prs: [pr(10, passed)], fails: ['merge-pr.sh'] });
+      expect(failed.events[0]).toMatchObject({ move: 'MERGE', result: 'failed' });
+
+      // 人が手綱で止めた手は「転んだのではない」——**直す相手が居ないことも、出来事として残す。**
+      const settled = await playRound({ prs: [pr(10)], braked: ['dispatch-review.sh'] });
+      expect(settled.events[0]).toMatchObject({ move: 'REVIEW', result: 'settled' });
+    });
+
+    // **配れない理由が何分続いているか**が、詰まりの合図（2026-09-12 は同じ3行が20分以上出続けた）。
+    // 1周ぶんの覚え書きは「やることが無い周」と見分けが付かない。
+    it('配れない理由を、出始めた時刻とともに台帳へ写す', async () => {
+      const result = await playRound({ issues: unnamedTask });
+
+      expect(result.log).toContain(`覚え書き: ${UNNAMED_NOTE}`);
+      expect(result.noteMarks).toEqual({ [UNNAMED_NOTE]: NOW.toISOString() });
+    });
+
+    it('続いている理由の時刻は、動かさない', async () => {
+      const first = '2026-09-05T01:00:00Z';
+      const result = await playRound({
+        issues: unnamedTask,
+        ledger: { [`${NOTE_PREFIX}${UNNAMED_NOTE}`]: first },
+      });
+
+      expect(result.noteMarks[UNNAMED_NOTE]).toBe(first);
+    });
+
+    // 残すと、**解けた詰まりが人の読む盤面に出続ける。**
+    it('出なくなった理由は、落とす', async () => {
+      const result = await playRound({
+        ledger: {
+          [`${NOTE_PREFIX}もう出ない理由`]: '2026-09-05T01:00:00Z',
+          [`${PARTIAL_PREFIX}もう欠けていない`]: '2026-09-05T01:00:00Z',
+        },
+      });
+
+      expect(result.noteMarks).toEqual({});
+      expect(result.partialMarks).toEqual({});
+    });
+
+    // **盤面が欠けた周は、そのぶん出ない手がある**——後片付けも、スメルを拾う係も出ない。
+    // **配れない理由とは別に持つ**（読む人がすることが違う。`board-state.mjs` の `PARTIAL_PREFIX`）。
+    it('この周の盤面が欠けている理由も、台帳へ写す', async () => {
+      const result = await playRound({ fails: ['usage-record.sh'], mergedPrsFail: true });
+
+      expect(Object.keys(result.partialMarks)).toEqual([
+        '使用量を引けなかった（この周は、余力を見ずに投入する）',
+        'マージ済みPRを引けなかった（この周は、後片付けもスメルを拾う係も出ない）: gh pr list …: 引けない',
+      ]);
+      // **配れない理由の側へ混ぜない。** 混ぜると、待っているだけの周が「盤面が壊れている」に見える。
+      expect(result.noteMarks).toEqual({});
+    });
+
+    // **引けない周は覚え書きを1つも出せない**ので、残すと**最後に引けた周のものが「この周にも
+    // 出ています」として出続け、続いている長さまで伸びる**（2.20.3）。
+    it('引けなかった周は、その周に出ていた断りを落とす', async () => {
+      const result = await playRound({
+        sessionsFail: true,
+        ledger: {
+          [`${NOTE_PREFIX}前の周の理由`]: '2026-09-05T01:00:00Z',
+          [`${PARTIAL_PREFIX}前の周の欠け`]: '2026-09-05T01:00:00Z',
+        },
+      });
+
+      expect(result.noteMarks).toEqual({});
+      expect(result.partialMarks).toEqual({});
+      // **引けなかったことの覚えは残る**——落とすのは断りだけ。
+      expect(result.unreadable).toBe(NOW.toISOString());
+    });
+
+    // **「引けていない」だけでは、直す先が分からない**（2.20.3）。何周ぶんかは待つ間隔が動くと
+    // 長さからは出せず、理由を言えるのは引きに行った道具だけ。
+    it('引けなかった周に、周の数と、道具が言った理由を控える', async () => {
+      const first = await playRound({ sessionsFail: true });
+      expect(first.unreadableMarks).toEqual({
+        'unreadable:until': NOW.toISOString(),
+        'unreadable:rounds': '1',
+        'unreadable:reason': 'セッションの一覧を引けなかった',
+      });
+
+      // **盤面を諦めた側から受け取る**（`board-read.mjs` の `sayWhyNot`）。呼び手が `gh` を包んで
+      // 最後の理由を盗み見る形にすると、諦めた理由と別の失敗が入れ替わりうる。
+      const dry = await playRound({ ghFails: true });
+      expect(dry.unreadableMarks['unreadable:reason']).toBe('gh pr list …: 失敗: HTTP 401');
+
+      const second = await playRound({
+        sessionsFail: true,
+        ledger: { [UNREADABLE]: '2026-09-05T01:30:00Z', 'unreadable:rounds': '7' },
+      });
+      expect(second.unreadableMarks['unreadable:rounds']).toBe('8');
+    });
+
+    // **直った周に台帳の印は消える**ので、閉じたものが帳面に残らないと、**後から見た者には在った
+    // ことすら分からない**（2026-09-18 に実測。同じ日に331分止まっていたのに、印は1つも無かった）。
+    it('引けた周に、引けなかった区間を帳面へ閉じる', async () => {
+      const result = await playRound({
+        ledger: {
+          [UNREADABLE]: '2026-09-05T01:00:00Z',
+          'unreadable:until': '2026-09-05T01:59:30Z',
+          'unreadable:rounds': '23',
+          'unreadable:reason': 'list_sessions: 失敗: HTTP 401',
+        },
+      });
+
+      expect(result.unreadable).toBeUndefined();
+      expect(result.unreadableMarks).toEqual({});
+      expect(result.events).toContainEqual({
+        at: NOW.toISOString(),
+        kind: 'gap',
+        from: '2026-09-05T01:00:00Z',
+        until: '2026-09-05T01:59:30Z',
+        rounds: 23,
+        reason: 'list_sessions: 失敗: HTTP 401',
+      });
     });
   });
 });

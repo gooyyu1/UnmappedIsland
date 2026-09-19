@@ -346,6 +346,11 @@ Qwen へ渡してください。
 "edit": { "prompt": "Redraw this flat diagram as a soft hand painted illustration ...", "seed": 1 }
 ```
 
+**中身の入っていない枠も、枠として生成できません。** 薪棚・干し場・囲い（`recipes/firewood_rack.json`
+ほか）は、どれも 4 枚とも編み物の一塊・枯れ枝の茂み・縄を巻いた柱の林になりました。**「何も
+載っていない」と本文で言うほど、枠そのものが潰れます**——脚が桁を持ち上げていること・縄が渡って
+いることは組み方の話なので、ここも下絵で決めます。
+
 **Qwen は指示より細く描きます。** 太さは言葉ではなく下絵の太さで決まるので、揃えたい相手より太く
 描いておきます（recipes/three_stone_hearth.json）。
 

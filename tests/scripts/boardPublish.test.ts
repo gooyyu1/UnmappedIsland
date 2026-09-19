@@ -17,16 +17,27 @@ interface Call {
   readonly body: string;
 }
 
+/** 盤面を引けていない区間（`board-state.mjs` の `readUnreadable`）。 */
+interface Unreadable {
+  since: string;
+  until: string;
+  rounds: number;
+  reason: string;
+}
+
+interface Given {
+  unreadable?: Unreadable;
+  patrol?: { at: string; verdict: string; summary: string };
+  blockedNotes?: readonly { text: string; since: string }[];
+  partialNotes?: readonly string[];
+  events?: readonly Record<string, unknown>[];
+}
+
 async function run(
   over: {
-    body?: (given: {
-      unreadableSince?: string;
-      patrol?: { at: string; verdict: string; summary: string };
-    }) => string | undefined;
+    body?: (given: Given) => string | undefined;
     ghFails?: boolean;
-    unreadableSince?: string;
-    patrol?: { at: string; verdict: string; summary: string };
-  } = {},
+  } & Given = {},
 ): Promise<{
   ok: boolean;
   calls: Call[];
@@ -41,8 +52,11 @@ async function run(
     body: over.body ?? (() => '盤面\n'),
     issue: '99',
     warn: () => {},
-    unreadableSince: over.unreadableSince,
+    unreadable: over.unreadable,
     patrol: over.patrol,
+    blockedNotes: over.blockedNotes,
+    partialNotes: over.partialNotes,
+    events: over.events,
   });
   return { ok, calls };
 }
@@ -65,24 +79,37 @@ describe('board-publish.mjs', () => {
     expect(calls).toEqual([]);
   });
 
-  // **印と記録を置くのはデーモンの側で、人へ見せるのはここ**（`agent-ops/board-design.md` 2.21）。
-  // 渡らなければ、盤面が引けていないことも、見回りが途切れたことも誰にも届かない。
-  it('引けていない印と、最後の見回りを、本文を組む側へ渡す', async () => {
-    const given: { unreadableSince?: string; patrolAt?: string } = {};
+  // **印と記録と帳面を置くのはデーモンの側で、人へ見せるのはここ**（`agent-ops/board-design.md`
+  // 2.21・2.20.3）。渡らなければ、盤面が引けていないことも、見回りが途切れたことも、**周の出来事
+  // そのものも**誰にも届かない——周と書き出しは別の周期で走る別のプロセスなので、ここが唯一の道。
+  it('引けていない印・最後の見回り・周の出来事を、本文を組む側へ渡す', async () => {
+    const unreadable = {
+      since: '2026-09-11T00:39:08Z',
+      until: '2026-09-11T00:44:08Z',
+      rounds: 11,
+      reason: 'list_sessions: 失敗: HTTP 401',
+    };
+    const blockedNotes = [{ text: '3件の task が錠待ち', since: '2026-09-11T00:20:00Z' }];
+    const partialNotes = ['マージ済みPRを引けなかった'];
+    const events = [{ at: '2026-09-11T00:38:00Z', kind: 'move', move: 'MERGE', result: 'played' }];
+    let given: Given | undefined;
     await run({
-      unreadableSince: '2026-09-11T00:39:08Z',
+      unreadable,
       patrol: { at: '2026-09-11T00:30:00Z', verdict: '異常なし', summary: '' },
+      blockedNotes,
+      partialNotes,
+      events,
       body: (args) => {
-        given.unreadableSince = args.unreadableSince;
-        given.patrolAt = args.patrol?.at;
+        given = args;
         return '盤面\n';
       },
     });
 
-    expect(given).toEqual({
-      unreadableSince: '2026-09-11T00:39:08Z',
-      patrolAt: '2026-09-11T00:30:00Z',
-    });
+    expect(given?.unreadable).toEqual(unreadable);
+    expect(given?.patrol?.at).toBe('2026-09-11T00:30:00Z');
+    expect(given?.blockedNotes).toEqual(blockedNotes);
+    expect(given?.partialNotes).toEqual(partialNotes);
+    expect(given?.events).toEqual(events);
   });
 
   it('書き込めなければ、そう答える', async () => {
