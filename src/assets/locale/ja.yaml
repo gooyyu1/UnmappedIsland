@@ -1694,11 +1694,11 @@ location_texts:
 # プレイヤーへ差し出した選択肢を選べない理由（GameElementDefinition.md 14.6節のreason）。
 # その選択肢を選ぼうとしたときに出る。
 reason_texts:
-  trap_baited: 罠にはもう餌が仕掛けてある。これ以上は入らない。
+  trap_baited: 罠にはもう餌が仕掛けてある。この餌が丸ごと入る空きは無い。
   field_sown: この畑はもう植わっている。空くまでは撒けない。
-  pen_fed: 囲いにはもう飼葉がある。これ以上は入らない。
+  pen_fed: 囲いにはもう飼葉がある。これが丸ごと入る空きは無い。
   pen_watered: 囲いの水は満ちている。これ以上は入らない。
-  hearth_full: 炉は薪でいっぱいだ。これ以上はくべられない。
+  hearth_full: 炉には、この薪が丸ごと入る空きが無い。
   already_lit: もう火が付いている。ここへ移す火はない。
   salt_pan_full: 塩田は海水で満ちている。干し上がるまでは足せない。
   no_seawater: 海に面していない土地では、汲む海水がない。

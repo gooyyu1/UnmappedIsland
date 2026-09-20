@@ -471,9 +471,9 @@ describe('farming.yamlの畑と囲い', () => {
   });
 
   it('満ちた囲いは、重ねた飼葉と水を断る理由を名乗る', () => {
-    // 上限に達したことは `conditions` にも書いてある（pen_fed・pen_watered）ので、落ちるその瞬間に
-    // 容量と条件が同時に落ちる。**容量を候補選びの足切りにすると候補ごと消えて理由が届かない**
-    // ——断る理由を宣言しているものは落とし先として残す（14.6節・CardInteraction.md 2.1節）。
+    // 飼葉を断るのはエンジン（丸ごと入らない相手は受け取らない、9.5節）で、何と言うかは宣言が持つ
+    // （`no_room_reason`）。水は器を返すので満ちたことを条件で断る（pen_watered）。**どちらも
+    // 名乗らないと候補ごと消えて理由が届かない**（14.6節・CardInteraction.md 2.1節）。
     //
     // **水を先に注ぐ。** 口の開いた甕は持っている間に蒸発する（liquid_containers.yaml）ので、
     // 芋を8つ与える40分を挟むと甕1杯では満たなくなる。
@@ -490,9 +490,7 @@ describe('farming.yamlの畑と囲い', () => {
       '成立する組み合わせは無い',
     ).toEqual([]);
     expect(
-      pen
-        .refusedCombinationsWith(taro, player)
-        .map((combination) => combination.unmetRequirement()?.reasonName),
+      pen.refusedCombinationsWith(taro, player).map((combination) => combination.refusal()?.reasonName),
       '飼葉を断る理由まで辿り着ける',
     ).toEqual(['pen_fed']);
 
@@ -503,9 +501,7 @@ describe('farming.yamlの畑と囲い', () => {
       '成立する組み合わせは無い',
     ).toEqual([]);
     expect(
-      pen
-        .refusedCombinationsWith(jar, player)
-        .map((combination) => combination.unmetRequirement()?.reasonName),
+      pen.refusedCombinationsWith(jar, player).map((combination) => combination.refusal()?.reasonName),
       '水を断る理由まで辿り着ける',
     ).toEqual(['pen_watered']);
   });

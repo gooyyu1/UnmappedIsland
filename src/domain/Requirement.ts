@@ -3,13 +3,23 @@ import type { ConditionDeclaration } from './ConditionReader';
 import type { ReferenceContext } from './ReferenceRoot';
 
 /**
+ * 操作を断ることの名乗り（14.6節）。**落ちた要件も、器が丸ごと受け取れないこと（`no_room_reason`）も
+ * 同じ形で出る**ので、引く側は理由の出どころを知らなくてよい。
+ *
+ * `reasonName`がundefinedなら、断るが理由は届かない——黙って断ると決めた宣言。
+ */
+export interface Refusal {
+  readonly reasonName: string | undefined;
+}
+
+/**
  * 要件の並び（14.6節）の要素1つ。
  *
  * 満たさなかったときにプレイヤーへ出す理由を`reason`（識別子）で指せる。条件木の形から文を組み立てず、
  * 「この要件を満たしていない」という単位で著者が書いた1行を出すのは、否定・入れ子の入った木を
  * どの言語でも自然な文にする一般的な方法が無いため（文言はlocaleが持つ、Localization.md）。
  */
-export class Requirement {
+export class Requirement implements Refusal {
   private readonly node: ConditionNode;
 
   /** localeのreason_textsを引く識別子。宣言が無ければundefined（理由を出さない要件）。 */

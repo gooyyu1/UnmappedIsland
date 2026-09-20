@@ -350,6 +350,85 @@ object_defs:
     expect(canteen.tryGetProperty(teaId)?.number ?? 0).toBe(0);
   });
 
+  describe('出どころを丸ごと消す輸送（9.5節）', () => {
+    /** 薪をくべる形そのまま——移した後に相手を消すので、端数を受け取ると薪ごと失われる。 */
+    function hearthYaml(options: { readonly fuel: number; readonly overflow?: boolean }): string {
+      return `
+object_defs:
+  keeper:
+    props: {}
+  branch:
+    tags: [fuel]
+    props:
+      fuel: {value: 20}
+  hearth:
+    props:
+      fuel:
+        value: ${options.fuel}
+        range: {min: 0, max: 30}
+    interactions:
+      add_fuel:
+        trigger: {drag: {tag: fuel}}${options.overflow === true ? '' : '\n        no_room_reason: hearth_full'}
+        transfer:
+          amount: 999
+          from: instrument
+          from_prop: fuel
+          to_prop: fuel${options.overflow === true ? '\n          allow_overflow: true' : ''}
+        destroy: instrument
+`;
+    }
+
+    function addFuel(yaml: string): {
+      readonly refusalReason: string | undefined;
+      readonly executed: boolean;
+      readonly hearthFuel: number;
+      readonly branchIsGone: boolean;
+    } {
+      const codex = load(yaml);
+      const keeper = spawn(codex, 'keeper');
+      const hearth = spawn(codex, 'hearth');
+      const branch = spawn(codex, 'branch');
+      const combination = hearth
+        .refusedCombinationsWith(branch, keeper)
+        .concat(hearth.combinationsWith(branch, keeper))
+        .find((candidate) => candidate.name === 'add_fuel');
+
+      return {
+        refusalReason: combination?.refusal()?.reasonName,
+        executed: combination?.tryExecute() === true,
+        hearthFuel: hearth.tryGetProperty(codex.propertyNames.getId('fuel'))?.number ?? 0,
+        branchIsGone:
+          branch.parent === undefined &&
+          branch.tryGetProperty(codex.propertyNames.getId('fuel')) !== undefined,
+      };
+    }
+
+    it('丸ごと入る空きがあれば、今までどおり移して相手を消す', () => {
+      expect(addFuel(hearthYaml({ fuel: 10 }))).toMatchObject({
+        refusalReason: undefined,
+        executed: true,
+        hearthFuel: 30,
+      });
+    });
+
+    it('丸ごと入らないなら1つも移さず、断る理由を名乗る', () => {
+      // 空きは19.9。端数だけ受け取ると、残り（0.1）は薪ごと消える。**受け取らないほうへ倒している。**
+      expect(addFuel(hearthYaml({ fuel: 10.1 }))).toMatchObject({
+        refusalReason: 'hearth_full',
+        executed: false,
+        hearthFuel: 10.1,
+      });
+    });
+
+    it('allow_overflowを書いた輸送はそのまま（あふれる分を捨てると名乗った形）', () => {
+      expect(addFuel(hearthYaml({ fuel: 25, overflow: true }))).toMatchObject({
+        refusalReason: undefined,
+        executed: true,
+        hearthFuel: 30,
+      });
+    });
+  });
+
   describe('to_amount（単位の違う移送）', () => {
     /** 水（mL）を飲むと水分（tick分）が増える器。250mL = 10 tick分。 */
     function drinkable(hydrationMax: number, water: number, toAmount = 10): string {

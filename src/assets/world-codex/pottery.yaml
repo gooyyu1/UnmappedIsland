@@ -196,13 +196,9 @@ object_defs:
       # 種火の衰え。土の覆いは熱を抱えるが、灰へ埋めて空気を絞る石囲いの炉ほどは保たない。
       - conditions:
           - {prop: heat, in_stage: ember}
-          - {prop: fuel, in_stage: none}
+          - {prop: fuel, eq: 0}
         add: {self: {heat: -0.5}}
     interactions:
-      # 満杯なら断る理由を出す（fire.yamlのhearthのadd_fuel）。値は上のfuelのrange.max。
-      add_fuel:
-        conditions:
-          - {reason: hearth_full, prop: fuel, lt: 200}
       # 覆いを壊して取り出す。中身は消える自分ではなく自分の親——炉が置かれた土地——へこぼれる
       # （9.3節）ので、焼き上がった壺は残る。
       break_open:

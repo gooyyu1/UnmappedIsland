@@ -3,7 +3,7 @@ import type { EffectReader, DeclaredNumberReading } from './EffectReader';
 import type { DeclaredNumber } from './DeclaredNumber';
 import type { ReferenceContext, ReferenceValueResolver } from './ReferenceRoot';
 import type { WorldObject } from './WorldObject';
-import type { Requirement, Requirements } from './Requirement';
+import type { Refusal, Requirement, Requirements } from './Requirement';
 import type { SignalEffect } from './SignalEffect';
 import type { PassiveEffect } from './PassiveEffect';
 import type { PassiveEffects } from './PassiveEffects';
@@ -47,6 +47,14 @@ export class InteractionDef {
    */
   private readonly passives: PassiveEffects;
 
+  /**
+   * 相手を丸ごと受け取れないときに断ること（`no_room_reason`、14.6節）。**要件が落ちたときと同じ形で
+   * 出す**ので、引く側は理由の出どころを知らなくてよい。
+   *
+   * 理由を宣言していなければ`reasonName`はundefinedで、断るが理由は届かない。
+   */
+  readonly noRoomRefusal: Refusal;
+
   constructor(
     name: string,
     requirements: Requirements | undefined,
@@ -54,6 +62,7 @@ export class InteractionDef {
     effect: ActiveEffect,
     duration: DeclaredNumber | undefined,
     passives: PassiveEffects,
+    noRoomReasonName?: string,
   ) {
     this.name = name;
     this.requirements = requirements;
@@ -61,6 +70,7 @@ export class InteractionDef {
     this.effect = effect;
     this.duration = duration;
     this.passives = passives;
+    this.noRoomRefusal = { reasonName: noRoomReasonName };
   }
 
   /**

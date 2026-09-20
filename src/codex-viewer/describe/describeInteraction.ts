@@ -1,14 +1,14 @@
 import type { InteractionTrigger } from '../../domain/InteractionTrigger';
 import type { DefNames, DescriptionWriter } from './Description';
-import { text } from './Description';
+import { reasonRef, text } from './Description';
 import { describeEffect, declaredNumberTokens } from './describeEffect';
 import { describePassive } from './describePassive';
 import { describeRequirements } from './describeRequirement';
 import { typeMatchTokens } from './typeMatchTokens';
 
 /**
- * 操作1つ（11節・12節）を書き出す。きっかけ（メニュー/相手のタグ）→要件→告知→所要時間→効果の順で、
- * プレイヤーがカードを触ってから起こることの順番に並べる。
+ * 操作1つ（11節・12節）を書き出す。きっかけ（メニュー/相手のタグ）→要件→断り→告知→所要時間→効果の
+ * 順で、プレイヤーがカードを触ってから起こることの順番に並べる。
  */
 export function describeInteraction(
   trigger: InteractionTrigger,
@@ -30,6 +30,11 @@ export function describeInteraction(
     out.write(text('conditions:'));
     out.indented(() => describeRequirements(requirements, names, out));
   }
+
+  // 丸ごと受け取れないときに断ること（11.2.1節）。断る線はエンジンが持つので、宣言に在るのは名前だけ。
+  const noRoomReason = interaction.noRoomRefusal.reasonName;
+  if (noRoomReason !== undefined)
+    out.write(text('丸ごと入らなければ断る（理由: '), reasonRef(noRoomReason), text('）'));
 
   const announcements = interaction.announcements;
   if (announcements.length > 0) {

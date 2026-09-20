@@ -259,9 +259,9 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('餌が満杯の罠は、重ねた餌を断る理由を名乗る', () => {
-    // 上限に達したことは `conditions` にも書いてある（trap_baited）ので、落ちるその瞬間に容量と
-    // 条件が同時に落ちる。**容量を候補選びの足切りにすると候補ごと消えて理由が届かない**——
-    // 断る理由を宣言しているものは落とし先として残す（14.6節・CardInteraction.md 2.1節）。
+    // 断るのはエンジン（丸ごと入らない相手は受け取らない、9.5節）で、何と言うかは宣言が持つ
+    // （`no_room_reason`）。**名乗らないと候補ごと消えて理由が届かない**ので、断る理由を宣言して
+    // いるものは落とし先として残す（14.6節・CardInteraction.md 2.1節）。
     open(NOTHING_CAME);
     const more = baitUntilFull('taro', 'add_plant_bait', 2);
     expect(snare.tryGetProperty(plantBaitId)!.number, '上限まで仕掛けてある').toBe(24);
@@ -271,7 +271,26 @@ describe('traps.yamlのくくり罠', () => {
       '成立する組み合わせは無い',
     ).toEqual([]);
     expect(
-      snare.refusedCombinationsWith(more, player).map((c) => c.unmetRequirement()?.reasonName),
+      snare.refusedCombinationsWith(more, player).map((c) => c.refusal()?.reasonName),
+      '断る理由まで辿り着ける',
+    ).toEqual(['trap_baited']);
+  });
+
+  it('丸ごと入らない餌は受け取らない（端数だけ仕掛けて餌を捨てない）', () => {
+    // 炉へ薪をくべるのと同じ形（FireSystem.md 2節）。餌は`destroy`で消えるので、端数だけ受け取ると
+    // 残りは餌ごと失われる。
+    open(NOTHING_CAME);
+    snare.getProperty(plantBaitId).setNumberWithoutEvents(13);
+    const taro = spawnInto('taro', player, 'hand');
+
+    expect(
+      snare.combinationsWith(taro, player).map((c) => c.name),
+      '成立する組み合わせは無い',
+    ).toEqual([]);
+    expect(snare.tryGetProperty(plantBaitId)!.number, '罠は1も受け取っていない').toBe(13);
+    expect(taro.parent, '芋は手元に残る').toBe(player);
+    expect(
+      snare.refusedCombinationsWith(taro, player).map((c) => c.refusal()?.reasonName),
       '断る理由まで辿り着ける',
     ).toEqual(['trap_baited']);
   });
@@ -287,7 +306,7 @@ describe('traps.yamlのくくり罠', () => {
       '成立する組み合わせは無い',
     ).toEqual([]);
     expect(
-      snare.refusedCombinationsWith(more, player).map((c) => c.unmetRequirement()?.reasonName),
+      snare.refusedCombinationsWith(more, player).map((c) => c.refusal()?.reasonName),
       '断る理由まで辿り着ける',
     ).toEqual(['trap_baited']);
   });
@@ -589,7 +608,7 @@ describe('traps.yamlの落とし穴', () => {
     expect(
       pitfall
         .refusedCombinationsWith(more, createBrightEnoughAgent(session))
-        .map((combination) => combination.unmetRequirement()?.reasonName),
+        .map((combination) => combination.refusal()?.reasonName),
       '断る理由まで辿り着ける',
     ).toEqual(['trap_baited']);
   });

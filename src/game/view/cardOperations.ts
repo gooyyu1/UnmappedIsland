@@ -1,6 +1,6 @@
 import type { StartedGame } from '../../domain/generation/NewGame';
 import type { WorldObject } from '../../domain/WorldObject';
-import type { Requirement } from '../../domain/Requirement';
+import type { Refusal } from '../../domain/Requirement';
 import { putIntoSlot } from '../../domain/slotEntry';
 import type { Localization } from '../../locale/Localization';
 import { craftingActions } from './craftingView';
@@ -146,11 +146,9 @@ export function cardOperationsOf(game: StartedGame, locale: Localization): CardO
    * 実行できるかと、できないなら宣言された理由（14.6節）。**ボタンの操作も重ねる操作も同じ答え方**を
    * するので、locale を引く手順は1箇所に置く。
    */
-  const permissionOf = (
-    unmet: Requirement | undefined,
-  ): { enabled: boolean; reason: string | undefined } => ({
-    enabled: unmet === undefined,
-    reason: unmet?.reasonName === undefined ? undefined : locale.reason(unmet.reasonName),
+  const permissionOf = (refusal: Refusal | undefined): { enabled: boolean; reason: string | undefined } => ({
+    enabled: refusal === undefined,
+    reason: refusal?.reasonName === undefined ? undefined : locale.reason(refusal.reasonName),
   });
 
   /**
@@ -174,7 +172,7 @@ export function cardOperationsOf(game: StartedGame, locale: Localization): CardO
         execute: () => {
           action.tryExecute();
         },
-        ...permissionOf(action.unmetRequirement()),
+        ...permissionOf(action.refusal()),
       };
     });
     return [...craftingActions(instance, game, locale), ...fromDefinition];
@@ -268,7 +266,7 @@ export function cardOperationsOf(game: StartedGame, locale: Localization): CardO
       ...self.combinationsWith(instrument, agent),
       ...self.refusedCombinationsWith(instrument, agent),
     ].map((combination) => {
-      const permission = permissionOf(combination.unmetRequirement());
+      const permission = permissionOf(combination.refusal());
       const declared = texts.interaction(combination.name);
       return {
         name: declared.displayName,
