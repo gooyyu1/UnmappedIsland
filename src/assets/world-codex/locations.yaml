@@ -267,15 +267,18 @@ object_defs:
     interactions:
       # 入る。**洞窟は場所なので、中の仕事は中に入らないとできない**（筏のboardと同じ）。
       # 既に中に居るときは移動が空振りするだけなので、条件は置かない。
+      #
+      # **出入りは1 tickを渡す**（docs/engine/ActionSystem.md 6.2節）——岩陰へ逃げ込む手でもあるので、
+      # 押した時刻で獣に手番を渡すかどうかが変わってはならない。
       enter:
         trigger: menu
-        duration: 5
+        duration: 15
         move: {subject: agent, to: self}
 
       # 出る。**明るさの条件は置かない**——置くと、夜に入った者が朝まで出られなくなる。
       leave:
         trigger: menu
-        duration: 5
+        duration: 15
         move: {subject: agent, to: parent}
 
   # 湧き水。島でただ一つの真水の水源で、器を持ち込めば汲める

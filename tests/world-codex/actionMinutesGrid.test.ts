@@ -6,7 +6,11 @@ import { historyDocs, specDocs } from '../../scripts/docScope.mjs';
 import { linesInsideFence } from '../../scripts/markdownFences.mjs';
 import { craftingStepsOf } from '../../src/analysis/craftingSteps';
 import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
+import type { ConditionalReading, EffectReader, PickReading } from '../../src/domain/EffectReader';
+import type { InteractionDef } from '../../src/domain/InteractionDef';
+import type { ObjectRefReading } from '../../src/domain/ObjectRef';
 import type { RecipeDef } from '../../src/domain/RecipeDef';
+import { declaredMinutesOf } from '../support/declaredMinutes';
 import { bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
 import { WorldSession } from '../../src/domain/WorldSession';
 import type { WorldObject } from '../../src/domain/WorldObject';
@@ -21,7 +25,8 @@ import type { WorldObject } from '../../src/domain/WorldObject';
  * 動く瞬間でもあるので、これは見た目の端数ではなく性質の違いになる。
  *
  * **数え上げにしない。** 今ずれている箇所を並べる検査は、新しく足した行動を素通りさせる。ここが見るのは
- * 「世界じゅうの行動」と「所要時間を動かしうる宣言のすべて」で、**どちらも定義から引く**。
+ * 「世界じゅうの行動」と「所要時間を動かしうる宣言のすべて」で、**どちらも定義から引く**——目の細かい
+ * ほうへ落ちてよいかを分ける「場所を移る手」も、名前ではなく宣言（{@link AgentMoveSeeker}）で見分ける。
  * **1つだけ射程が狭い**——「縮めきっても0分にならない」は、同じ名前を複数の型が名乗っているとき、
  * その宣言の中しか見ない（どの型の素へ積む分かが名前から決まらないため。下の検査に理由が在る）。
  */
@@ -29,7 +34,7 @@ const codex = bundledCodex();
 
 const ROOT = resolve(__dirname, '../..');
 
-/** 5分未満を要求する操作（飲む）のための、格子のもう1つの目（ActionSystem.md 6.2節）。 */
+/** 1 tickを渡すには短すぎる手のための、格子のもう1つの目（ActionSystem.md 6.2節）。 */
 const SHORT_MINUTES = 5;
 
 /** 所要時間を名乗るプロパティの名前の尻尾。`duration`が読める相手はこの形に揃える。 */
@@ -38,6 +43,53 @@ const MINUTES_SUFFIX = '_minutes';
 /** その分数が格子に乗っているか（0分・5分・15分の倍数のいずれか）。 */
 function onGrid(minutes: number): boolean {
   return minutes === 0 || minutes === SHORT_MINUTES || minutes % MINUTES_PER_TICK === 0;
+}
+
+/**
+ * プレイヤーの居場所を変える宣言（`move`が`agent`を動かす、9.6節）を1つでも持つか。
+ *
+ * **名前では見分けない。** 場所を移る手は入る・出る・渡るといった名前を勝手に選べるので、名前で拾うと
+ * 次に足された移動が素通りする。**動かす相手が`agent`であることだけ**が、その操作が逃げ場へ移る手にも
+ * なることの証。
+ *
+ * **役で絞る**ので、乗り物ごと動く宣言（`self`を動かす航海）は入らない——押す手は自分の足で場所を
+ * 移ることではなく、渡り切るまでの時間そのものが結果になる（6.5節の線の外）。
+ */
+class AgentMoveSeeker implements EffectReader {
+  found = false;
+
+  move(subject: ObjectRefReading): void {
+    if (subject.kind === 'root' && subject.root === 'agent') this.found = true;
+  }
+
+  set(): void {}
+
+  add(): void {}
+
+  spawn(): void {}
+
+  become(): void {}
+
+  transfer(): void {}
+
+  destroy(): void {}
+
+  signal(): void {}
+
+  pick(reading: PickReading): void {
+    reading.readEveryCandidate(this);
+  }
+
+  conditional(reading: ConditionalReading): void {
+    reading.readEveryBranch(this);
+  }
+}
+
+/** その操作がプレイヤーの居場所を変えるか（{@link AgentMoveSeeker}）。 */
+function movesThePlayer(interaction: InteractionDef): boolean {
+  const seeker = new AgentMoveSeeker();
+  interaction.readBy(seeker);
+  return seeker.found;
 }
 
 /** 世界じゅうのYAMLの構文木（型の側の宣言を字面から辿るため）。 */
@@ -280,7 +332,7 @@ describe('行動の所要時間はtickの格子に乗る', () => {
   });
 
   it('15分の倍数でない所要時間は、何にも動かされない', () => {
-    // 格子には15分の倍数のほかに0分と5分が在る（飲むのが5分）。**そこへ刻みを足すと外れる**
+    // 格子には15分の倍数のほかに0分と5分が在る。**そこへ刻みを足すと外れる**
     // （5 + 15 = 20）ので、短いほうの目に居る所要時間は動かされないことを別に確かめる。
     const moving = new Map<string, number[]>();
     for (const root of worldCodexRoots()) amountsMovingMinutes(root, moving);
@@ -294,6 +346,34 @@ describe('行動の所要時間はtickの格子に乗る', () => {
       }
 
     expect(moved, '刻みに乗っていないのに動かされる所要時間').toEqual([]);
+  });
+
+  it('プレイヤーの居場所を変える操作は、刻みの倍数だけ', () => {
+    // 格子の細かいほうの目（0分・5分）は、**場所を移る手には開かない**（ActionSystem.md 6.2節）。
+    // 5分は跨ぐtickが押した時刻で揺れるので、逃げ込む手が獣に手番を渡すかどうかが読めなくなり、
+    // 0分は獣から離れる手をただにする。**必ず1手を渡す**ので、刻みの倍数だけが残る。
+    //
+    // **一つ上が成り立つので、素の分数で足りる**——刻みに乗っていない所要時間は何にも動かされない
+    // ので、5分・0分で宣言されていなければ、動いた先も細かいほうの目には落ちない。
+    const offGrid: string[] = [];
+    let checked = 0;
+    for (const def of codex.objects)
+      for (const trigger of def.triggers) {
+        const interaction = trigger.interaction;
+        if (!movesThePlayer(interaction)) continue;
+        checked += 1;
+
+        const minutes = declaredMinutesOf(codex, def, interaction.durationReading);
+        if (minutes === undefined) {
+          offGrid.push(`${def.name} の ${interaction.name}: 所要時間が定義から解けない`);
+          continue;
+        }
+        if (minutes === 0 || minutes % MINUTES_PER_TICK !== 0)
+          offGrid.push(`${def.name} の ${interaction.name}: ${minutes}分`);
+      }
+    expect(checked, 'プレイヤーの居場所を変える操作が1つも無い').toBeGreaterThan(0);
+
+    expect(offGrid, '1手を渡さない、場所を移る操作').toEqual([]);
   });
 
   it('縮めきっても、所要時間は0分にならない', () => {
