@@ -330,6 +330,48 @@ object_defs:
       - conditions: [{prop: heat, in_stage: warm}]
         add: {parent: {ambient_temperature: 2}}
 
+  # 土間に落とした石。**下向きの組しか無く、段を決して跨がない値**——生まれた時点で既に暖める段
+  # （warm）より下に在り、そこから冷める一方なので、warmへ入ることは無い。上の端（banked_stone）を
+  # 裏返しただけの形で、下へ抜けたことにしないだけだと、効き始めが「届くまでが読めない段」の側へ
+  # 倒れて、最初のtickから止まらずに暖める押し手として数えられる。
+  dropped_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 10
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 40}
+          - {name: searing, min: 70}
+        passives:
+          - add: {self: {heat: -1}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 熱を吐く石。**上がる速さは読めるが、読み落とした増減が在る**——焼かれて熱は上がる一方に見えて、
+  # searingでは自分から熱を吐く（段の下の増減、8.2節）ので、上端より上に生まれてもwarmへ下りてくる。
+  # 上がる速さが読めるかを分かれ目にすると、この石はbanked_stoneと同じ「決して入らない」に倒れる。
+  venting_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 90
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 40}
+          - name: searing
+            min: 70
+            passives:
+              - add: {self: {heat: -3}}
+        passives:
+          - add: {self: {heat: 1}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
   # 凍傷。**受け皿の段（6.4節）に居ることを求める押し手**——巡りが鈍っている間、持ち主の熱を奪う。
   # 巡りは落ちる一方だが、受け皿には下端が無いので、下端まで落ちても段は外れない。
   frostbite:
@@ -1023,6 +1065,21 @@ object_defs:
     // 同じく、届くまでが読めない段は「最初のtickから効く」側へ倒す——ここで入らないことにすると、
     // 読めない段に縛られた押し手が向きを問わず消える。
     expect(externalDeltasOf('ashed_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('下がっていく値が段の下端より下に生まれていれば、その段に縛られた押し手は起こらない', () => {
+    // 上の端（banked_stone）の裏返し。下へ抜けたことにしないだけだと、効き始めが0＝最初のtickから
+    // 止まらずに効く押し手になる。その値はwarmを決して跨がないので、起こるのは押し手が消えるほう。
+    expect(externalDeltasOf('dropped_stone', 'ambient_temperature')).toEqual([]);
+  });
+
+  it('上がる速さが読めていても、段の下の増減を数から外しているなら、入らないことにしない', () => {
+    // searingで自分から吐く分（段の下の増減）はtickAmountsOfが数から外しているので、読める動きは
+    // 上がる+1だけ。それを根拠に「warmへ決して入らない」と読むと、外した分で下りてくる押し手が
+    // 消える。分かれ目は上がる速さが読めるかではなく、宣言を1つも外していないかのほう。
+    expect(externalDeltasOf('venting_stone', 'ambient_temperature')).toEqual([
       { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
     ]);
   });
