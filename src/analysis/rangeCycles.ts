@@ -474,6 +474,20 @@ interface TickAmounts {
 
   /** 同時に成立しうる組み合わせごとの合計。常時効く分を含み、量が同じでも組み合わせごとに並ぶ。 */
   readonly possible: readonly TickTotal[];
+
+  /**
+   * そのプロパティを動かす宣言を、**1つも数から外していないか**。段の宣言の下に置かれた増減
+   * （8.2節）を1つでも持つなら偽で、炉の火力がこれ——読めるのは雨で削られる分だけなのに、
+   * `possible`はそれが動きの全部であるかのように並ぶ。
+   *
+   * **「その値がある段を決して跨がない」と言い切れるのは、これが真のときだけ。** 外していた分が
+   * 段の向こうへ連れていくことがあるので、偽のまま言い切ると、読み落としたぶんで動く押し手が
+   * 丸ごと消える（ticksUntilStageEntered）。
+   *
+   * **外から押される分（ExternalTickDelta）は、真でも数に入っていない**——tickAmountsOfが読めるのは
+   * 渡された型の宣言だけで、隣に何が置かれうるかは引数に無い。「決して」と言えるのも、その範囲での話。
+   */
+  readonly readsEveryDeclaredDelta: boolean;
 }
 
 /**
@@ -503,15 +517,20 @@ interface TickTotal {
 function tickAmountsOf(def: ObjectDef, propertyGlobalId: PropertyGlobalId): TickAmounts {
   const always: TickDelta[] = [];
   const conditional: TickDelta[] = [];
+  let readsEveryDeclaredDelta = true;
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== 'self' || delta.propertyGlobalId !== propertyGlobalId) continue;
-    if (delta.gate.stage !== undefined) continue;
+    if (delta.gate.stage !== undefined) {
+      readsEveryDeclaredDelta = false;
+      continue;
+    }
     (delta.gate.conditional ? conditional : always).push(delta);
   }
   return {
     unconditional: totalAmountOf(always),
     conditional,
     possible: possibleTotalsOf(always, conditional),
+    readsEveryDeclaredDelta,
   };
 }
 
@@ -727,62 +746,118 @@ function ticksUntilGateRises(def: ObjectDef, gate: TickGate): number | undefined
  * 要求された段へ入るまでのtick数。届くまでが読めないなら0＝最初のtickから効く。**炉の火力がこの
  * 倒し方**——火は段の下に置かれた増減（8.2節）で育つが、そこはtickAmountsOfが数から外している。
  *
- * **`'never'`を返すのは、上がっていく値が上端より上に生まれた場合だけ**
- * （ticksUntilStageEnteredUpward）。下端より下に生まれて下がっていくだけの値もその段を跨がないが、
- * そちらは炉の火力と読める形が同じ——どちらも「上がる組が読めず、下がる組だけが読める値」で、
- * 違いは数から外した段の下の増減のほうに在る。
+ * **`'never'`を返すのは、段の向こう側に生まれて、その段から遠ざかる向きにしか動かない値**
+ * ——どちらの入り口（ticksUntilStageEnteredUpward・ticksUntilStageEnteredDownward）も、自分の側の
+ * 入り口を既に通り過ぎて生まれた値に`'never'`を返しうる。**上の端と下の端は同じ分かれ目で分かれる**
+ * （neverCrossesIntoStage）。
  *
- * **段は下からも上からも開く**（ticksUntilStageEnteredUpward・ticksUntilStageEnteredDownward）
- * ——上がっていって下端へ届くか、下がっていって上端を割るか。値がどちらへ動くかは定義からは1つに
- * 決まらないので、抜けるほう（ticksUntilGateFalls）と同じく両方を数え、**入れるほうのうち遅いほう**
- * に合わせる。上がっては入れない値でも、上から落ちて入る道が読めるならそちらが答えになる。
+ * **段は下からも上からも開く**——上がっていって下端へ届くか、下がっていって上端を割るか。値が
+ * どちらへ動くかは定義からは1つに決まらないので、抜けるほう（ticksUntilGateFalls）と同じく両方を
+ * 数え、**入れるほうのうち遅いほう**に合わせる。上がっては入れない値でも、上から落ちて入る道が
+ * 読めるならそちらが答えになるので、`'never'`が効くのはどちらの入り口も読めなかったときだけ。
  */
 function ticksUntilStageEntered(def: ObjectDef, required: SelfStageRequirement): number | 'never' {
-  const upward = ticksUntilStageEnteredUpward(def, required);
-  const downward = ticksUntilStageEnteredDownward(def, required);
-  const enters = [upward, downward].filter((ticks): ticks is number => typeof ticks === 'number');
+  const entrances = [
+    ticksUntilStageEnteredUpward(def, required),
+    ticksUntilStageEnteredDownward(def, required),
+  ];
+  const enters = entrances.filter((ticks): ticks is number => typeof ticks === 'number');
   if (enters.length > 0) return Math.max(...enters);
-  return upward === 'never' ? 'never' : 0;
+  return entrances.includes('never') ? 'never' : 0;
 }
 
 /**
  * 要求された段へ、値が上がっていって**下端へ届く**までのtick数。上がっていかない値、値の並びの上に
  * 位置を持たない段（シンボル型、6.6節）ならundefined。**既にその段に居るなら0**（ticksToReach）。
  *
- * **上がっていく値が、生まれた時点で上端より上に在るなら`'never'`**——上がるほど段から遠ざかるので、
- * 入る時は来ない。上がっていくと読めていない値は、段の下に置かれた増減（8.2節）で下りてくることが
- * あるので、そちらはundefined＝届くまでが読めないの側。
+ * **どのロールも上端より上に出る値は、上がっては入らない**——上がるほど段から遠ざかるので、
+ * そこから先は決して入らないと言えるか（neverCrossesIntoStage）の問いになる。段に最も近い側に
+ * 出た個体（nearestToStage）で見るのは、言い切る相手がその型のすべての個体だから。
  */
 function ticksUntilStageEnteredUpward(
   def: ObjectDef,
   required: SelfStageRequirement,
 ): number | 'never' | undefined {
+  const amounts = tickAmountsOf(def, required.propertyGlobalId);
   // 届くまでを**最も長く**見る側（slowest）。押し手が押せる間を最も短く見る側へ揃える。
-  const value = staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END);
-  const perTick = paceTowards(tickAmountsOf(def, required.propertyGlobalId).possible, 'on_max')?.slowest
-    .amount;
+  const perTick = paceTowards(amounts.possible, 'on_max')?.slowest.amount;
 
   const upperBound = stageUpperBoundOf(def, required);
-  const bornAboveStage = value !== undefined && upperBound !== undefined && value >= upperBound;
-  if (bornAboveStage && perTick !== undefined) return 'never';
+  const nearest = nearestToStage(def, required.propertyGlobalId, 'on_max');
+  const everyRollAboveStage = nearest !== undefined && upperBound !== undefined && nearest >= upperBound;
+  if (everyRollAboveStage) return neverCrossesIntoStage(amounts, perTick) ? 'never' : undefined;
 
-  return ticksToReach(value, required.lowerBound, perTick);
+  return ticksToReach(
+    staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
+    required.lowerBound,
+    perTick,
+  );
 }
 
 /**
  * 要求された段へ、値が下がっていって**上端を割る**までのtick数。下がっていかない値、上から入れない
  * 段（stageUpperBoundOf）ならundefined。
  *
- * **生まれた時点で上端より下に在る値は、ここでは入らない**（ticksToFallBelow）——その段に居るか、
- * 既に下へ抜けたかのどちらかで、どちらも上から落ちて入るのとは別。
+ * **どのロールも下端より下に出る値は、下がっては入らない**——下がるほど段から遠ざかる。上の端
+ * （ticksUntilStageEnteredUpward）を裏返しただけで、決して入らないと言えるかの分かれ目も、
+ * 段に最も近い側に出た個体で見ることも同じ。
+ *
+ * 下端と上端の間に生まれた値も、ここでは入らない（ticksToFallBelow）——その段に既に居るので、
+ * 上から落ちて入るのとは別。
  */
-function ticksUntilStageEnteredDownward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
+function ticksUntilStageEnteredDownward(
+  def: ObjectDef,
+  required: SelfStageRequirement,
+): number | 'never' | undefined {
+  const amounts = tickAmountsOf(def, required.propertyGlobalId);
   // 速さはticksUntilStageEnteredUpwardと同じく、届くまでを**最も長く**見る側（slowest）。
+  const perTick = paceTowards(amounts.possible, 'on_min')?.slowest.amount;
+
+  const nearest = nearestToStage(def, required.propertyGlobalId, 'on_min');
+  const everyRollBelowStage =
+    nearest !== undefined && required.lowerBound !== undefined && nearest < required.lowerBound;
+  if (everyRollBelowStage) return neverCrossesIntoStage(amounts, perTick) ? 'never' : undefined;
+
   return ticksToFallBelow(
     staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
     stageUpperBoundOf(def, required),
-    paceTowards(tickAmountsOf(def, required.propertyGlobalId).possible, 'on_min')?.slowest.amount,
+    perTick,
   );
+}
+
+/**
+ * 生成時のロール（6.2節）のうち、**その段に最も近い側に出た個体**の値——段から遠ざかる向きが
+ * movingAwayTowardなら、その端から最も遠いロール（rollEndAwayFrom）がそれに当たる。
+ *
+ * **窓の長さを数えるGATE_WINDOW_ROLL_ENDとは別の問い。** あちらは1つの個体についての長さなので端を
+ * 固定するが、ここで問うのは「**どの個体も段の向こう側に生まれるか**」。最も近い個体が越えていな
+ * ければ言い切れないので、端は向きで裏返る——片方に固定すると、下の端では段の中に生まれる個体が
+ * 居るのに押し手を落とす。
+ */
+function nearestToStage(
+  def: ObjectDef,
+  propertyGlobalId: PropertyGlobalId,
+  movingAwayToward: RangeEventLabel,
+): number | undefined {
+  return staticValueOf(def, propertyGlobalId, rollEndAwayFrom(movingAwayToward));
+}
+
+/**
+ * **その段の向こう側に生まれた値について、そこへ入ることが決して起こらないと言い切れるか。**
+ * 呼ぶのは、どのロールも入り口を既に通り過ぎていると分かっている側だけ（nearestToStage）
+ * ——perTickAwayFromStageは、その値を段から**遠ざける**向きの速さ（上端より上に生まれたなら上がる
+ * 速さ、下端より下なら下がる速さ）。
+ *
+ * **言い切るには、遠ざける動きを名指せなければならない。** 動きが1つも読めない値を「決して
+ * 入らない」と読むと、押し手に押されて初めて動く値——炉の火力は薪が焚べられて上がる——に縛られた
+ * 増減が丸ごと消える。**読めるものが何も無いのは、決して動かないことではない。**
+ *
+ * **加えて、宣言を1つも数から外していないこと**（TickAmounts.readsEveryDeclaredDelta）。外した分が
+ * 段の向こうへ連れていくなら、名指した動きは遠ざける向きの全部ではない。**上の端と下の端で分かれ目が
+ * 同じなのはここ**——どちらも「読めた動きが遠ざける」と「読み落とした動きが無い」の対で決まる。
+ */
+function neverCrossesIntoStage(amounts: TickAmounts, perTickAwayFromStage: number | undefined): boolean {
+  return perTickAwayFromStage !== undefined && amounts.readsEveryDeclaredDelta;
 }
 
 /**
