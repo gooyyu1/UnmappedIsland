@@ -689,7 +689,7 @@ describe('fire.yamlの火の連鎖', () => {
     const torch = spawnInto('torch', player, 'hand');
 
     // **プレイヤーへ届くのは先頭の1つだけ**（GameElementDefinition.md 14.6節のunmetRequirement、
-    // docs/ui/CardInteraction.md 2.1節）。どちらの向きの理由も真だが、運んできた側に火が無いことを
+    // docs/ui/CardInteraction.md 2節）。どちらの向きの理由も真だが、運んできた側に火が無いことを
     // 先に言う——火を持って来たつもりの手には、そちらが答えになる。
     expect(
       hearth.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName),
