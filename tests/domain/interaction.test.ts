@@ -258,6 +258,44 @@ object_defs:
     ).toBe(100 - 20 * 10);
   });
 
+  // GameElementDefinition.md 10.2節「合計が0（またはマイナス）になったら、宣言順で先頭の候補を選ぶ」。
+  it('weightの合計が0なら、宣言順で先頭の候補だけが選ばれる', () => {
+    const yaml = `
+object_defs:
+  player5:
+    props:
+      hp:
+        value: 100
+  dud:
+    interactions:
+      fire:
+        trigger: menu
+        pick:
+          - weight: 0
+            add:
+              agent:
+                hp: -1
+          - weight: 0
+            add:
+              agent:
+                hp: -1000
+`;
+    const codex = load(yaml);
+    const hpId = codex.propertyNames.getId('hp');
+
+    const agent = spawn(codex, 'player5');
+    const dud = spawn(codex, 'dud');
+
+    for (let i = 0; i < 20; i++) {
+      dud.tryGetAction('fire', agent)?.tryExecute();
+    }
+
+    expect(
+      agent.tryGetProperty(hpId)?.number ?? 0,
+      '重みが全部0でも抽選に落ちず、先頭の候補(-1)だけが20回とも選ばれる',
+    ).toBe(100 - 20);
+  });
+
   it('pathでweightを参照すると、より重い候補が選ばれやすくなる', () => {
     const yaml = `
 object_defs:
