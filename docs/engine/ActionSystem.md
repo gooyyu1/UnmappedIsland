@@ -59,9 +59,10 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 - `combinationsWith(instrument, agent)` — ドラッグ中のハイライト等のために、**今成立する**重ねる操作を
   宣言順に列挙する。相手のマッチング（1）だけでなく `conditions`（2）まで見る——**実行できないものを
   黙って落とし先にすると、落とせるのに何も起きない**という形になるため。
-- `refusedCombinationsWith(instrument, agent)` — 逆に、`conditions` で成立せず、**断る理由**
-  （`reason`、[`GameElementDefinition.md`](./GameElementDefinition.md)
-  14.6節）を宣言しているものだけを列挙する。画面がこちらを
+- `refusedCombinationsWith(instrument, agent)` — 逆に、成立せず、**断る理由**
+  （`conditions` の `reason` と、丸ごと受け取れないときの `no_room_reason`。
+  [`GameElementDefinition.md`](./GameElementDefinition.md)
+  14.6節・11.2.1節）を宣言しているものだけを列挙する。画面がこちらを
   **理由を言うためだけの落とし先**として出すのは、成立するものが1つも無いときだけ
   （[`../ui/CardInteraction.md`](../ui/CardInteraction.md)
   2.1 節）。上の「黙って」がここに掛かる——**理由が出るなら、実行できない落とし先を出してよい。**
@@ -73,8 +74,8 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 
 **容量**（`acceptedCountIncludingSelf` が0の相手）はこの門ではなく、`combinationsWith` の側の条件
 （`Combination.canExecute`）。0は「何個受け取れるか」の答え＝**断る理由**であって、候補になるかどうかの
-判定ではない。両方の門にすると、満杯を `conditions` にも書いた宣言（満杯の罠の `trap_baited`）は条件と
-容量が同時に落ちるので、**宣言した理由が決して届かなくなる。**
+判定ではない。両方の門にすると、**容量で断る宣言（炉へ薪をくべる・罠へ餌を仕掛ける）は、名乗った
+`no_room_reason` が決して届かなくなる。**
 
 **どちらの札を `self` として引くか**（両向きとも引いたうえで、成立するほうを先に採る。どちらの向きも
 成立しないなら落とされた側）と、複数マッチした場合にどれを実行するかの解決はUI層に委ねる
@@ -221,7 +222,9 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
   消えた後でもその位置を引き継げる。配置に失敗した場合は起点の親、さらにその親…とこぼれ落ち、
   どこにも入らなければ世界から消える（9.4 節）。どの段でも枠の宣言はそのまま効く。
 - `transfer`（9.5節）は「出せる量」と（`allow_overflow: false` なら）「受け取れる量」で実移動量を決め、
-  `linked_add` を実移動量に比例スケールして適用する。
+  `linked_add` を実移動量に比例スケールして適用する。**相手（instrument）から移して同じ並びの `destroy` が
+  その相手を消すなら、丸ごと入らない相手は受け取らない**（9.5節）——移し切れない分が相手ごと
+  失われるため。
 - `move` は、動かす物（`subject`／`subject_prop`）と行き先（`to`／`to_prop`／`to_object`）を別々に指し、
   行き先の指し方は `spawn` の `into` と共通。**行き先が定義時点で決まらず生成時に確定する**場合
   （道の移動アクション）は、`object_def` 参照ではなく `self` のプロパティが保持する

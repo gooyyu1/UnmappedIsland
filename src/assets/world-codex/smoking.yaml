@@ -117,13 +117,8 @@ object_defs:
       # 保たない——覆い焼きの炉（pottery.yaml）と同じ速さで、薪が尽きれば2時間で消える。
       - conditions:
           - {prop: heat, in_stage: ember}
-          - {prop: fuel, in_stage: none}
+          - {prop: fuel, eq: 0}
         add: {self: {heat: -0.5}}
-    interactions:
-      # 満杯なら断る理由を出す（fire.yamlのhearthのadd_fuel）。値は上のfuelのrange.max。
-      add_fuel:
-        conditions:
-          - {reason: hearth_full, prop: fuel, lt: 40}
     recipes:
       # 枝を立てて葉で囲い、縄で締める。**掘削具も刃物も要らない**——材料はどれも拾った物と、
       # 素手で編める葉から出る（weaving.yaml）。

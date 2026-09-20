@@ -2189,6 +2189,46 @@ object_defs:
     );
   });
 
+  it('相手を消す輸送に断る理由が無いとエラーになる（丸ごと入らない相手を黙って断ることになる）', () => {
+    // 端数を受け取らずに断るのはエンジンが決めている（9.5節）ので、理由を宣言していない操作は
+    // 「重ねても何も起きない」にしかならない（ActionSystem.md 1.1節）。
+    const yaml = `
+object_defs:
+  altar3:
+    props:
+      offerings:
+        value: 0
+        range: {min: 0, max: 10}
+    interactions:
+      offer:
+        trigger: {drag: {tag: offering}}
+        transfer: {amount: 999, from: instrument, from_prop: weight, to_prop: offerings}
+        destroy: instrument
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /no_room_reason/,
+    );
+  });
+
+  it('相手を消さない操作にno_room_reasonを書くとエラーになる（断る機会が無い）', () => {
+    const yaml = `
+object_defs:
+  altar4:
+    props:
+      offerings:
+        value: 0
+        range: {min: 0, max: 10}
+    interactions:
+      offer:
+        trigger: {drag: {tag: offering}}
+        no_room_reason: altar_full
+        transfer: {amount: 999, from: instrument, from_prop: weight, to_prop: offerings}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /相手を消す操作だけ/,
+    );
+  });
+
   // ------------------------------------------------------------------
   // on_max
   // ------------------------------------------------------------------

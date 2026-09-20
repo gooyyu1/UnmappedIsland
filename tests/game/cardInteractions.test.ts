@@ -101,11 +101,12 @@ object_defs:
   hearth:
     tags: [fixture]
     props:
-      fuel: {value: 0, range: {min: 0, max: 30}}
+      fuel: {value: 0, range: {min: 0, max: 40}}
     interactions:
       add_fuel:
         trigger: {drag: {object: branch}, allow_multiple: true}
         duration: 1
+        no_room_reason: hearth_full
         transfer: {amount: 999, from: instrument, from_prop: fuel, to_prop: fuel}
         destroy: instrument
       # 薪が無ければ着火しない。断る理由を宣言している（fire.yamlのigniteと同じ形）。
@@ -159,7 +160,7 @@ object_defs:
     view.cardsIn(object.parentSlot!).find((card) => card?.objects[0] === object)!;
 
   it('まとめて重ねると、宣言が許した個数ぶん実行される', () => {
-    // fuelは0〜30で1本20なので、3本運んでも入るのは2本。
+    // fuelは0〜40で1本20なので、3本運んでも丸ごと入るのは2本（端数は受け取らない、9.5節）。
     const mini = setUp();
     const hearth = mini.createObject('hearth', mini.slot('fixtures', mini.land));
     const branches = [0, 1, 2].map(() => mini.createObject('branch', mini.slot('hand')));
@@ -174,7 +175,7 @@ object_defs:
     expect(
       hearth.tryGetProperty(mini.codex.propertyNames.getId('fuel'))?.getEffectiveValue(),
       '2本ぶんで満ちる',
-    ).toBe(30);
+    ).toBe(40);
     expect(
       branches.filter((branch) => branch.parent !== undefined),
       '残るのは1本',

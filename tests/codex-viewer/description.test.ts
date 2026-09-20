@@ -142,6 +142,19 @@ object_defs:
           - {name: skilled, min: 30}
 
   # 効果の全動詞を1つずつ通すための型。書き出しの取りこぼしを検査するためだけに置く。
+  hearth:
+    tags: [fixture]
+    props:
+      fuel:
+        value: 0
+        range: {min: 0, max: 30}
+    interactions:
+      add_fuel:
+        trigger: {drag: {tag: fuel}}
+        no_room_reason: hearth_full
+        transfer: {amount: 999, from: instrument, from_prop: fuel, to_prop: fuel}
+        destroy: instrument
+
   gourd:
     tags: [item]
     props:
@@ -307,6 +320,23 @@ describe('定義の自己記述（describe）', () => {
     expect(text).not.toContain('→ agent');
     expect(text).not.toContain('あふれても移す');
     expect(text).not.toContain('→ same_slot');
+  });
+
+  it('丸ごと入らなければ断る操作は、その断りと理由を書き出す', () => {
+    // 断る線はエンジンが持つ（9.5節）ので、この1行が無いと、宣言のどこを読んでも「入らない相手は
+    // 断る」が読めない。
+    const addFuel = objectDef('hearth').dragTriggers[0];
+    const lines = describeToText(codex, (out) => describeInteraction(addFuel, names, out)).split('\n');
+
+    expect(lines).toContain('丸ごと入らなければ断る（理由: hearth_full）');
+  });
+
+  it('断りを宣言していない操作には、その行を書かない', () => {
+    const text = describeToText(codex, (out) =>
+      describeInteraction(objectDef('coconut').dragTriggers[0], names, out),
+    );
+
+    expect(text).not.toContain('丸ごと入らなければ断る');
   });
 
   it('resistsは、持ち主に付けなくなる成立条件を書き出す', () => {

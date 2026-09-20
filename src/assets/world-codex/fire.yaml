@@ -205,8 +205,14 @@ traits:
         # 尽きると火が消えるので、満タン側がgood。
         gauge: {min: bad, max: good}
         stages:
+          # **「薪が尽きた」は0のことで、この段のことではない。** 火力の側が衰える条件は段ではなく
+          # `fuel: 0`を見る（下のheat）——くべる量は整数、減る量は火力ごとの小数なので、**0と1の間は
+          # 必ず通る**。そこを尽きた扱いにすると、薪が残っているのに火が衰える。
           - {name: none}
           # 薪が火を育てる。火が消えている炉は、薪を積んでも育たない。
+          #
+          # **1未満では育たない**——燃え残りはあっても、火を大きくするには塊1つぶんが要る。育ちも
+          # 衰えもしない区間になるが、打ち消しは起きない（育ちは1以上、衰えは0ちょうど）。
           - name: few
             min: 1
             passives:
@@ -225,7 +231,7 @@ traits:
       # 火力。0が消えている状態で、段が加熱の速さ・薪の減り・薪が尽きた後の衰えを決める。
       #
       # **育ちと衰えは同時に効かない。** 育ちは薪がある間（fuelの段）、衰えは薪が尽きている間
-      # （fuelがnone）だけで、passivesのaddは登録順に値を書き換えながら適用されるため、同じtickで
+      # （fuelが0）だけで、passivesのaddは登録順に値を書き換えながら適用されるため、同じtickで
       # 正負が混ざると段の境目で打ち消し合って火が育たなくなる。
       heat:
         value: 0
@@ -250,7 +256,7 @@ traits:
               - add:
                   self: {fuel: -0.5}
                   child: {cooking_progress: 1, heat_soak: 1}
-              - conditions: [{prop: fuel, in_stage: none}]
+              - conditions: [{prop: fuel, eq: 0}]
                 add: {self: {heat: -2}}
           - name: flame
             min: 20
@@ -259,7 +265,7 @@ traits:
               - add:
                   self: {fuel: -1.5}
                   child: {cooking_progress: 3, heat_soak: 3}
-              - conditions: [{prop: fuel, in_stage: none}]
+              - conditions: [{prop: fuel, eq: 0}]
                 add: {self: {heat: -6}}
           - name: blaze
             min: 60
@@ -268,7 +274,7 @@ traits:
               - add:
                   self: {fuel: -4}
                   child: {cooking_progress: 5, heat_soak: 5}
-              - conditions: [{prop: fuel, in_stage: none}]
+              - conditions: [{prop: fuel, eq: 0}]
                 add: {self: {heat: -6}}
     passives:
       # 燃えている炉が周りへ与える、暖と明かり（docs/engine/FireSystem.md 9.2節）。どちらも親の
@@ -291,19 +297,24 @@ traits:
         add: {self: {heat: -4}}
     interactions:
       # 薪をくべる。燃料が持つfuelを炉のfuelへ移し、燃料そのものは消す（同2節）。
-      # transferの後にdestroyが走るので、移した分が失われることはない。
+      #
+      # **丸ごと入らない薪は受け取らない。** くべた薪は物ごと消える（destroy）ので、端数だけ受け取ると
+      # 残りは薪ごと失われる——運ばれてきた相手を消す輸送は端数を受け取らない、とエンジンが決めている
+      # （GameElementDefinition.md 9.5節）。**断る理由をここで名乗る**のは、断るだけでは
+      # 「重ねても何も起きない」になるため（docs/ui/CardInteraction.md 2.1節）。
+      #
+      # **満杯も同じ理由で断る**ので、炉ごとに上限を書き写した条件は要らない（書き写すと、rangeの
+      # max と2箇所に分かれる）。
       #
       # 束ねた薪はまとめてくべられる（allow_multiple、GameElementDefinition.md 12.4節）。何本入るかは
       # fuelのrangeの残りからエンジンが決めるので、ここには書かない。
       #
-      # **満杯を拒む条件は炉ごとが足す**（同5節、conditionsだけを重ねると残りはこちらを継ぐ）。
-      # 容量だけでも拒めるが、それだと断る理由が届かず「重ねても何も起きない」になる
-      # （docs/ui/CardInteraction.md 2.1節）。薪の上限は炉ごとに違うので、ここには書けない。
       # **時間は課さない**（docs/engine/FireSystem.md 2.4節）。1手の受け渡しで、繰り返しても2回目
       # 以降は炉のfuelの上限が止める——0分は「1 tickに何度でもできる」を意味するので、繰り返すと
       # 得をする操作には置けない（docs/engine/ActionSystem.md 6.2節）。
       add_fuel:
         trigger: {drag: {tag: fuel}, allow_multiple: true}
+        no_room_reason: hearth_full
         transfer:
           amount: 999
           from: instrument
@@ -534,13 +545,9 @@ object_defs:
       # 種火が冷める速さ。薪が尽きている間だけ効く——薪が載っていれば火は育つ側になる。
       - conditions:
           - {prop: heat, in_stage: ember}
-          - {prop: fuel, in_stage: none}
+          - {prop: fuel, eq: 0}
         add: {self: {heat: -2}}
     interactions:
-      # 満杯なら断る理由を出す（hearthのadd_fuel）。値は上のfuelのrange.max。
-      add_fuel:
-        conditions:
-          - {reason: hearth_full, prop: fuel, lt: 30}
       add_stone:
         trigger: {drag: {object: stone}}
         duration: 5
@@ -575,13 +582,9 @@ object_defs:
     passives:
       - conditions:
           - {prop: heat, in_stage: ember}
-          - {prop: fuel, in_stage: none}
+          - {prop: fuel, eq: 0}
         add: {self: {heat: -1}}
     interactions:
-      # 満杯なら断る理由を出す（hearthのadd_fuel）。値は上のfuelのrange.max。
-      add_fuel:
-        conditions:
-          - {reason: hearth_full, prop: fuel, lt: 30}
       add_stone:
         trigger: {drag: {object: stone}}
         duration: 5
@@ -614,10 +617,5 @@ object_defs:
       # 灰をかぶって空気を絞られた種火は8時間もつ。これが炉を常設する唯一にして最大の利得。
       - conditions:
           - {prop: heat, in_stage: ember}
-          - {prop: fuel, in_stage: none}
+          - {prop: fuel, eq: 0}
         add: {self: {heat: -0.125}}
-    interactions:
-      # 満杯なら断る理由を出す（hearthのadd_fuel）。値は上のfuelのrange.max。
-      add_fuel:
-        conditions:
-          - {reason: hearth_full, prop: fuel, lt: 120}

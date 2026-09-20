@@ -12,7 +12,7 @@ import type {
   SetValueReading,
   TransferReading,
 } from './EffectReader';
-import type { PropertyPath, ReferenceContext } from './ReferenceRoot';
+import type { PropertyPath, ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 import type { ObjectGlobalId } from './GlobalId';
 
 /**
@@ -62,6 +62,33 @@ export abstract class ActiveEffect {
   acceptedCount(_context: ReferenceContext, _candidates: readonly WorldObject[]): number | undefined {
     return undefined;
   }
+
+  /**
+   * この効果が丸ごと消す相手（`destroy`、9.6節）。消さない効果はundefined。
+   *
+   * **同じ並びに書かれた輸送が、その相手から端数を受け取ってよいかを決める**
+   * （refusingPartialMoveFrom）。
+   */
+  get destroyedRoot(): ReferenceRoot | undefined {
+    return undefined;
+  }
+
+  /**
+   * destroyedRootsを丸ごと消す並びの中に居ると知ったうえでの、自分の宣言。**既定は自分のまま**
+   * ——端数という概念を持つのは輸送だけで、他の効果は知っても変わらない。
+   */
+  refusingPartialMoveFrom(_destroyedRoots: readonly ReferenceRoot[]): ActiveEffect {
+    return this;
+  }
+
+  /**
+   * 相手（instrument）が消されるために、端数を受け取らない輸送を含むか（9.5節）。**断る理由の宣言を
+   * 要求する側が読む**（parseInteractionsの`no_room_reason`）——理由の無い refusal は、プレイヤーには
+   * 「重ねても何も起きない」にしか見えない（ActionSystem.md 1.1節）。
+   */
+  get refusesPartialMove(): boolean {
+    return false;
+  }
 }
 
 /**
@@ -75,9 +102,18 @@ export class ActiveEffectSequence extends ActiveEffect {
   /** 効果の宣言順リスト。適用順はリスト順で、パーサはYAMLに書かれた順のまま渡す（9.7節）。 */
   private readonly effectsInDeclarationOrder: readonly ActiveEffect[];
 
+  /**
+   * **並びの中に`destroy`が在れば、その相手から出す輸送はここで端数を受け取らない形になる**（9.5節）
+   * ——移し切れなかった分は、消される物と一緒に失われるため。見るのは**同じ並びに書かれた`destroy`だけ**
+   * で、入れ子（`pick`の候補・条件付きの枝）の中までは見ない。
+   */
   constructor(operations: readonly ActiveEffect[]) {
     super();
-    this.effectsInDeclarationOrder = operations;
+    const destroyedRoots = operations.flatMap((operation) => operation.destroyedRoot ?? []);
+    this.effectsInDeclarationOrder =
+      destroyedRoots.length === 0
+        ? operations
+        : operations.map((operation) => operation.refusingPartialMoveFrom(destroyedRoots));
   }
 
   /**
@@ -117,6 +153,11 @@ export class ActiveEffectSequence extends ActiveEffect {
       if (count !== undefined) return count;
     }
     return undefined;
+  }
+
+  /** 子に1つでも在れば、合成も含む。 */
+  override get refusesPartialMove(): boolean {
+    return this.effectsInDeclarationOrder.some((operation) => operation.refusesPartialMove);
   }
 }
 
@@ -277,6 +318,12 @@ export class DestroyEffect extends ActiveEffect {
     this.target.resolve(context)?.destroy(this.reason);
   }
 
+  /** 対象キーで指した相手だけが答えられる——個体や型で指す形は、宣言の時点では誰を消すか決まらない。 */
+  override get destroyedRoot(): ReferenceRoot | undefined {
+    const reading = this.target.reading;
+    return reading.kind === 'root' ? reading.root : undefined;
+  }
+
   readBy(reader: EffectReader): void {
     reader.destroy(this.target.reading, this.reason);
   }
@@ -356,6 +403,17 @@ export class TransferEffect extends ActiveEffect {
   private readonly allowOverflow: boolean;
   private readonly linkedAdd: readonly AddEffect[];
 
+  /**
+   * 相手（instrument）を丸ごと受け取れないなら、1つも受け取らないか（9.5節）。**宣言には無く、同じ
+   * 並びが相手を`destroy`することから決まる**（ActiveEffectSequence）——移し切れなかった分は、消される
+   * 相手と一緒に失われる。
+   *
+   * **効くのは受け取れる個数（acceptedCount）を通してだけ**で、0になった操作は断られる（12.4節）。
+   * 適用そのものは止めない——断りを越えてここまで来たなら、相手はどのみち消えるので、動く分は
+   * 動かしたほうが失うものが小さい。
+   */
+  private readonly movesWholeOrNothing: boolean;
+
   constructor(
     from: PropertyPath,
     to: PropertyPath,
@@ -363,6 +421,7 @@ export class TransferEffect extends ActiveEffect {
     allowOverflow: boolean,
     linkedAdd: readonly AddEffect[] = [],
     toAmount: number = amount,
+    movesWholeOrNothing = false,
   ) {
     super();
     // 受け取る量が0以下だと、出した分がどこにも入らない（9.5節）。
@@ -374,6 +433,34 @@ export class TransferEffect extends ActiveEffect {
     this.toAmount = toAmount;
     this.allowOverflow = allowOverflow;
     this.linkedAdd = linkedAdd;
+    this.movesWholeOrNothing = movesWholeOrNothing;
+  }
+
+  /**
+   * 運ばれてきた相手（instrument）が丸ごと消されるなら、端数を受け取らない輸送になる（9.5節）。
+   *
+   * **相手からの輸送だけが変わる。** 断る口を持つのは、相手を受け取るかどうかを決める組み合わせだけ
+   * （Combination.refusal）——他の起点から出す輸送には、受け取らないと言う相手が居ない。
+   *
+   * **`allow_overflow: true` を書いた宣言はそのまま**——あふれる分を捨てると著者が名乗った形なので、
+   * エンジンが代わりに断ると、宣言と違うことをすることになる。
+   */
+  override refusingPartialMoveFrom(destroyedRoots: readonly ReferenceRoot[]): ActiveEffect {
+    if (this.allowOverflow || this.movesWholeOrNothing || this.from.root !== 'instrument') return this;
+    if (!destroyedRoots.includes('instrument')) return this;
+    return new TransferEffect(
+      this.from,
+      this.to,
+      this.amount,
+      this.allowOverflow,
+      this.linkedAdd,
+      this.toAmount,
+      true,
+    );
+  }
+
+  override get refusesPartialMove(): boolean {
+    return this.movesWholeOrNothing;
   }
 
   /**
@@ -450,7 +537,10 @@ export class TransferEffect extends ActiveEffect {
 
       const taken = Math.min(this.amount, fromValue.availableToTransferOut());
       if (taken <= 0) break;
-      room -= (taken * this.toAmount) / this.amount;
+      const given = (taken * this.toAmount) / this.amount;
+      // 丸ごと入らない候補は数えない。**0を返すことが、その操作を断る**（DragTrigger.acceptedCount）。
+      if (this.movesWholeOrNothing && given > room) break;
+      room -= given;
       count += 1;
     }
     return count;

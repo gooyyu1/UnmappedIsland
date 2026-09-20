@@ -1,6 +1,6 @@
 import type { InteractionDef } from './InteractionDef';
 import type { ActionTrigger, DragTrigger, InteractionTrigger } from './InteractionTrigger';
-import type { Requirement } from './Requirement';
+import type { Refusal, Requirement } from './Requirement';
 import type { WorldObject } from './WorldObject';
 import { InteractionRelation } from './ReferenceRoot';
 
@@ -68,6 +68,16 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
     return this.relation.during((context) => this.def.unmetRequirement(context));
   }
 
+  /**
+   * 今この操作を断るなら、その名乗り（14.6節）。断らないならundefined。
+   *
+   * **要件だけでは尽きない**——相手を丸ごと受け取れない組み合わせも断るので、そちらを足すのは
+   * 相手を持つ側（`Combination`）。
+   */
+  refusal(): Refusal | undefined {
+    return this.unmetRequirement();
+  }
+
   tryExecute(): boolean {
     return this.relation.whileActing((context) => this.def.tryExecute(context));
   }
@@ -117,7 +127,7 @@ export class Action extends Interaction<ActionTrigger, undefined> {
  *
  * **型は合っている**（相手として受け入れ、行き先も詰まっていない）ものしか作られない。要件（14節）まで
  * 満たしているかは引き方が分ける——`WorldObject.combinationsWith` は今成立するもの、
- * `refusedCombinationsWith` は理由を告げて断るもの（14.6節）。どちらなのかは `unmetRequirement` が答える。
+ * `refusedCombinationsWith` は理由を告げて断るもの（14.6節）。どちらなのかは `refusal` が答える。
  */
 export class Combination extends Interaction<DragTrigger, WorldObject> {
   // 引数の並びは基底（Interaction・Action）と同じ。self・agent・instrumentはどれも WorldObject な
@@ -127,15 +137,24 @@ export class Combination extends Interaction<DragTrigger, WorldObject> {
   }
 
   /**
-   * 今このまま実行してよいか。要件（14節）を満たしているだけでなく、**1個は受け取れる**こと
-   * ——器へ入らないまま相手を消す操作（満杯の炉へ薪をくべる）が、黙って薪だけ失う結果になるのを
-   * 防ぐ（`DragTrigger.acceptedCount`）。
-   *
-   * **受け取れる個数が0なのは断る理由であって、候補から外す条件ではない。** 理由を宣言した要件が
-   * 同時に落ちているなら、落とし先としては残る（`WorldObject.refusedCombinationsWith`）。
+   * 今このまま実行してよいか。断る理由（14.6節）が1つも無いこと。
    */
   canExecute(): boolean {
-    return this.unmetRequirement() === undefined && this.acceptedCountIncludingSelf([]) >= 1;
+    return this.refusal() === undefined;
+  }
+
+  /**
+   * 断るなら、その名乗り。**要件（14節）に加えて「1個も受け取れない」でも断る**——器へ入らないまま
+   * 相手を消す操作（丸ごと入らない炉へ薪をくべる）が、黙って薪だけ失う結果になるのを防ぐ
+   * （`DragTrigger.acceptedCount`）。
+   *
+   * **受け取れる個数が0なのは断る理由であって、候補から外す条件ではない。** 理由を宣言していれば
+   * （`no_room_reason`）落とし先として残り、そこで名乗る（`WorldObject.refusedCombinationsWith`）。
+   */
+  override refusal(): Refusal | undefined {
+    const unmet = super.refusal();
+    if (unmet !== undefined) return unmet;
+    return this.acceptedCountIncludingSelf([]) >= 1 ? undefined : this.def.noRoomRefusal;
   }
 
   /**
@@ -183,11 +202,14 @@ export class Combination extends Interaction<DragTrigger, WorldObject> {
   }
 
   /**
-   * **相手の型も実行の時点で引き直す。** 候補に選ばれてから落とされるまでに、相手が別の型になっている
-   * ことがある（`become`、9.9節）——宣言が要件を引き直すのと同じ理由。
+   * **相手の型も、受け取れる個数も、実行の時点で引き直す。** 候補に選ばれてから落とされるまでに、
+   * 相手が別の型になっている（`become`、9.9節）・炉が埋まっていることがある——宣言が要件を引き直すのと
+   * 同じ理由。**1個も受け取れないなら起こさない**のは、起こすと相手を消す効果だけが走って、
+   * 移すはずだったものが物ごと消えるため（`refusal`）。
    */
   override tryExecute(): boolean {
     if (!this.trigger.acceptsInstrument(this.instrument.def)) return false;
+    if (this.acceptedCountIncludingSelf([]) < 1) return false;
     return super.tryExecute();
   }
 }

@@ -21,8 +21,12 @@ import { bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
 const NAME_MAX_WIDTH = 10;
 
 /**
- * `reason`が書ける2箇所（GameElementDefinition.md 14.6節と9.3節）。**同じ綴りの別の名前空間**なので、
- * 引く先の対応表も別（`reason_texts` と `destroy_reason_texts`）。
+ * 理由の名前が書ける2つの名前空間。**同じ綴りでも別のもの**なので、引く先の対応表も別
+ * （`reason_texts` と `destroy_reason_texts`）。
+ *
+ * - `condition`: 要件の`reason`（GameElementDefinition.md 14.6節）と、丸ごと受け取れないときに断る
+ *   `no_room_reason`（同11.2.1節）。**キーの綴りは違っても引く先は同じ**なので、ここで一緒に集める。
+ * - `destroy`: 消し方の名前（同9.3節）。
  */
 type ReasonNamespace = 'condition' | 'destroy';
 
@@ -53,6 +57,12 @@ function declaredReasonNames(): ReadonlyMap<ReasonNamespace, ReadonlySet<string>
       if (key === 'reason' && isScalar(pair.value)) {
         expect(namespace, `'reason: ${String(pair.value.value)}' が想定外の位置にある`).toBeDefined();
         found.get(namespace!)!.add(String(pair.value.value));
+        continue;
+      }
+      // 操作が直に名乗る断りの理由（11.2.1節）。位置で名前空間が決まる`reason`と違い、キーの綴りが
+      // そのまま名前空間を言う。
+      if (key === 'no_room_reason' && isScalar(pair.value)) {
+        found.get('condition')!.add(String(pair.value.value));
         continue;
       }
       // 要件は`conditions`のほか、全レシピへ掛かる`crafting_conditions`（RecipeSystem.md 5節）にも書ける。
@@ -246,7 +256,7 @@ describe('同梱の表示文字列ファイル', () => {
     }
   });
 
-  it('conditionsが宣言する理由（reason）はすべて文言を持つ', () => {
+  it('宣言が断る理由（reason・no_room_reason）はすべて文言を持つ', () => {
     // 欠けると、押せないアクションの吹き出しが「今はできない。」に落ちて理由が伝わらない
     // （GameElementDefinition.md 14.6節）。
     for (const reasonName of declaredReasonNames().get('condition')!)

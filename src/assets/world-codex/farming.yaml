@@ -306,18 +306,18 @@ object_defs:
       #
       # **肉の餌は受けない。** 肉で寄る相手が上の候補に居ないので、受け口を開けても肉を捨てる道に
       # しかならない。肉食の卓は、それで寄る大型が出たときに足す（TrapSystem.md 8節）。
+      # **中途半端に残った飼葉を作らない**ので`destroy`を併記する。**丸ごと入らない食べ物は受け取らない**
+      # ——運ばれてきた相手を消す輸送は端数を受け取らないとエンジンが決めている（9.5節）ので、
+      # 食べ物だけが消えることはない（罠の餌と同じ、traps.yaml）。
       feed:
         trigger: {drag: {tag: plant_bait}}
         duration: 5
-        conditions:
-          - {reason: pen_fed, prop: fodder, lt: 96}
+        no_room_reason: pen_fed
         transfer:
           amount: 999
           from: instrument
           from_prop: plant_bait
           to_prop: fodder
-        # 中途半端に残った飼葉を作らない。入りきらなかった分は失われるが、満杯を拒む条件があるので
-        # 失うのは高々1個ぶん（罠の餌と同じ）。
         destroy: instrument
       # 水をやる（飼葉と同じドラッグ型）。**容器は返す**——液体は容器の変種として在る
       # （liquid_containers.yaml）ので、注いだぶんfillが減り、空になれば中身の軸が落ちて空の器に戻る。

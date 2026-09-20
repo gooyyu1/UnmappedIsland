@@ -306,17 +306,19 @@ props:
 interactions:
   add_plant_bait:
     trigger: {drag: {tag: plant_bait}}
-    conditions:
-      - {reason: trap_baited, prop: plant_bait, lt: 24}
+    no_room_reason: trap_baited
     transfer: {amount: 999, from: instrument, from_prop: plant_bait, to_prop: plant_bait}
     destroy: instrument
   add_meat_bait:
     trigger: {drag: {tag: meat_bait}}
-    conditions:
-      - {reason: trap_baited, prop: meat_bait, lt: 24}
+    no_room_reason: trap_baited
     transfer: {amount: 999, from: instrument, from_prop: meat_bait, to_prop: meat_bait}
     destroy: instrument
 ```
+
+**丸ごと入らない餌は受け取りません。** 運ばれてきた餌は `destroy` で消えるので、端数だけ受け取ると
+残りは餌ごと失われます（`GameElementDefinition.md` 9.5 節。炉へ薪をくべるのと同じ形で、`FireSystem.md` 2 節）。
+上限を条件へ書き写す必要は無く、断るときに何と言うかだけを名乗ります。
 
 ```yaml
 # 餌の側が宣言する。タグとプロパティの名前で、どちらの餌かが決まる。

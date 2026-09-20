@@ -974,15 +974,16 @@ export class WorldObject {
 
   /**
    * instrumentを重ねても要件（14節）で成立しないが、**断る理由を宣言している**組み合わせ
-   * （14.6節のreason、宣言順）。薪の無い炉へ火種を落とす、暗い中で石を打ち割る、餌が満杯の罠へ餌を
-   * 重ねる、が該当する。
+   * （14.6節のreason、宣言順）。薪の無い炉へ火種を落とす、暗い中で石を打ち割る、丸ごとは入らない炉へ
+   * 薪をくべる、が該当する。
    *
-   * **`reason` を書いた要件は、落ちたときプレイヤーへ理由が届くという約束**（14.6節）。メニューの
+   * **`reason` を書いた要件（と`no_room_reason`）は、落ちたときプレイヤーへ理由が届くという約束**
+   * （14.6節）。メニューの
    * 操作は押せないボタンとして理由を出せるが、重ねる操作には候補から消えた先に理由を出す口が無い。
    * 理由を宣言しているものだけをここから引けるようにして、その口を画面へ渡す
    * （[`CardInteraction.md`](../../docs/ui/CardInteraction.md) 2.1節）。
    *
-   * **理由を宣言していない要件は返さない**——黙って断ると決めた宣言なので、言うことが無い。
+   * **理由を宣言していない断りは返さない**——黙って断ると決めた宣言なので、言うことが無い。
    *
    * **どれを見せるかはここでは決まらない。** 「成立するものが1つでもあるなら、そちらが先」の
    * 「1つでも」は**両向きに跨る**——重ねた相手の側が宣言している組み合わせも数えるので、片側だけを
@@ -991,7 +992,7 @@ export class WorldObject {
    */
   refusedCombinationsWith(instrument: WorldObject, agent: WorldObject): readonly Combination[] {
     return this.candidateCombinationsWith(instrument, agent).filter(
-      (combination) => combination.unmetRequirement()?.reasonName !== undefined,
+      (combination) => combination.refusal()?.reasonName !== undefined,
     );
   }
 
