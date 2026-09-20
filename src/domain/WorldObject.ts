@@ -984,10 +984,12 @@ export class WorldObject {
    *
    * **理由を宣言していない要件は返さない**——黙って断ると決めた宣言なので、言うことが無い。
    *
-   * **どれを見せるかはここでは決まらない。** 「成立するものが1つでもあるなら、そちらが先」の
+   * **成立するものとの順位はここでは決まらない。** 「成立するものが1つでもあるなら、そちらが先」の
    * 「1つでも」は**両向きに跨る**——重ねた相手の側が宣言している組み合わせも数えるので、片側だけを
-   * 知るこの物には答えられない。順位を決めるのは両向きを引く画面側
-   * （`cardOperations.combinationBetween`）で、ここは引けるものを宣言順に返すだけ。
+   * 知るこの物には答えられない。そこを決めるのは両向きを引く画面側
+   * （`cardOperations.combinationBetween`）。**ただし、この宣言順そのものは順位**——どちらの向きにも
+   * 成立するものが無ければ、ここの先頭がそのままプレイヤーへ届く理由になる
+   * （[`CardInteraction.md`](../../docs/ui/CardInteraction.md) 2節）。
    */
   refusedCombinationsWith(instrument: WorldObject, agent: WorldObject): readonly Combination[] {
     return this.candidateCombinationsWith(instrument, agent).filter(

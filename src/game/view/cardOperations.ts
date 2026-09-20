@@ -246,8 +246,8 @@ export function cardOperationsOf(game: StartedGame, locale: Localization): CardO
    * （CardDragController）。断るものを候補から消さないのは、消すとプレイヤーには「重ねても何も
    * 起きない」としか見えないため（CardInteraction.md 2.1節）。
    *
-   * **並びに順位の意味は無い。** どれを見せるかを決めるのはcombinationBetweenだけで、ここは引ける
-   * ものを列挙する。
+   * **並びはそのまま順位。** 呼び手（combinationBetween）はこの並びを前から引く——成立するものが
+   * 1つも無い場面では、ここの先頭がそのままプレイヤーへ届く理由になる（CardInteraction.md 2節）。
    *
    * **まとめて実行するのは、宣言が数を約束できる場合だけ**（`allow_multiple`、
    * GameElementDefinition.md 12.4節）。時間も個数ぶんかかる。
