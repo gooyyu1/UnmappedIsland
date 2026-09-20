@@ -4,8 +4,9 @@ import {
   conditionText,
   conditionTextInList,
 } from '../domain/conditionWords';
+import { conditionKey } from '../domain/conditionKey';
 import type { ObjectDef } from '../domain/ObjectDef';
-import type { TickDelta } from './tickDeltas';
+import type { TickDelta, TickGate } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
@@ -56,17 +57,45 @@ export interface Cost {
 export interface ConsumptionRow {
   readonly propertyName: string;
 
-  /**
-   * その増減が効く条件を言い表した文（常時・段・ゲートの中身・輸送。conditionLabel参照）。
-   *
-   * **文のまま持つのは、これが行の名前そのものだから**——同じプロパティの増減は、この文が一致する
-   * 分だけが1行へ足し合わさる（tickAmountsByName）。`stats/balance.yaml` の値と、文書がセルを名指す
-   * ときの鍵（引用印の`condition=`セレクタ）も同じ文なので、言い回しを変えると生成物と引用印が
-   * 同時に動く（BalanceStats.md「消費表」）。
-   */
-  readonly condition: string;
+  /** その増減が効く条件（常時・段・ゲートの中身・輸送）。 */
+  readonly condition: ConsumptionCondition;
 
   readonly perTickByCharacter: readonly (number | undefined)[];
+}
+
+/**
+ * 消費表の行を分ける条件。**同一性は{@link key}が担い、日本語の文は見せるときだけ組む**
+ * （issue #2252）。
+ *
+ * 文を同一性にすると、言い回しを変えただけで行の割れ方・`stats/balance.yaml` の値・文書がセルを
+ * 名指す鍵（引用印の`condition=`セレクタ）が一斉に動く。鍵は定義の識別子だけでできているので、
+ * 語を直しても動かない。
+ */
+export class ConsumptionCondition {
+  /**
+   * 綴りによらない正準な鍵（[`conditionKey`](../domain/conditionKey.ts)）。同じプロパティの増減は、
+   * **これが一致する分だけ**が1行へ足し合わさる（tickAmountsByKey）。`stats/balance.yaml` の
+   * `consumption[].condition` と引用印のセレクタ値もこれ（BalanceStats.md「消費表」）。
+   */
+  readonly key: string;
+
+  private readonly codex: WorldCodex;
+
+  private readonly gate: TickGate;
+
+  private readonly capped: boolean;
+
+  constructor(codex: WorldCodex, gate: TickGate, capped: boolean) {
+    this.codex = codex;
+    this.gate = gate;
+    this.capped = capped;
+    this.key = conditionKeyOf(codex, gate, capped);
+  }
+
+  /** 表に見せる文（conditionLabel参照）。**行の名前ではない**——同一性は{@link key}。 */
+  get text(): string {
+    return conditionLabel(this.codex, this.gate, this.capped);
+  }
 }
 
 /** 供給表の1行（工程1つ）。 */
@@ -539,37 +568,48 @@ function destroysWhenEmpty(def: ObjectDef, propertyGlobalId: PropertyGlobalId): 
 
 function consumptionRows(codex: WorldCodex, characterNames: readonly string[]): readonly ConsumptionRow[] {
   const byCharacter = characterNames.map((name) =>
-    tickAmountsByName(codex, codex.objects.get(codex.objectNames.getId(name))),
+    tickAmountsByKey(codex, codex.objects.get(codex.objectNames.getId(name))),
   );
 
-  const keys: string[] = [];
-  for (const deltas of byCharacter) for (const key of deltas.keys()) if (!keys.includes(key)) keys.push(key);
+  // 行の姿は最初に現れたキャラクタのものを採る。同じ鍵である以上、プロパティも条件も同じ。
+  const rows = new Map<string, Omit<ConsumptionRow, 'perTickByCharacter'>>();
+  for (const amounts of byCharacter)
+    for (const [key, amount] of amounts)
+      if (!rows.has(key)) rows.set(key, { propertyName: amount.propertyName, condition: amount.condition });
 
-  return keys.map((key) => {
-    const [propertyName, condition] = splitKey(key);
-    return {
-      propertyName,
-      condition,
-      perTickByCharacter: byCharacter.map((deltas) => deltas.get(key)),
-    };
-  });
+  return [...rows].map(([key, row]) => ({
+    ...row,
+    perTickByCharacter: byCharacter.map((amounts) => amounts.get(key)?.amount),
+  }));
 }
 
-/** 消費表の行を「プロパティ」と「条件」の対で引くための区切り。識別子にも段の名前にも現れない。 */
+/** 消費表の行を「プロパティ」と「条件」の対で引くための区切り。識別子にも条件の鍵にも現れない。 */
 const KEY_SEPARATOR = ' :: ';
 
-function splitKey(key: string): readonly [string, string] {
-  const index = key.indexOf(KEY_SEPARATOR);
-  return [key.slice(0, index), key.slice(index + KEY_SEPARATOR.length)];
+/** 1つの行へ足し合わさった増減。行の姿（プロパティと条件）を、量と一緒に持ち歩く。 */
+interface TickAmount {
+  readonly propertyName: string;
+  readonly condition: ConsumptionCondition;
+  readonly amount: number;
 }
 
-/** キャラクタ1人が、自分のプロパティをtick毎にどれだけ動かすか。 */
-function tickAmountsByName(codex: WorldCodex, def: ObjectDef): ReadonlyMap<string, number> {
-  const byKey = new Map<string, number>();
+/**
+ * キャラクタ1人が、自分のプロパティをtick毎にどれだけ動かすか。**足し合わせる単位は条件の正準な鍵**
+ * （{@link ConsumptionCondition.key}）で、見せる文ではない。
+ */
+function tickAmountsByKey(codex: WorldCodex, def: ObjectDef): ReadonlyMap<string, TickAmount> {
+  const byKey = new Map<string, TickAmount>();
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== 'self') continue;
-    const key = `${codex.propertyNames.getName(delta.propertyGlobalId)}${KEY_SEPARATOR}${conditionLabel(codex, delta)}`;
-    byKey.set(key, (byKey.get(key) ?? 0) + delta.amount);
+    const propertyName = codex.propertyNames.getName(delta.propertyGlobalId);
+    const condition = new ConsumptionCondition(codex, delta.gate, delta.capped);
+    const key = `${propertyName}${KEY_SEPARATOR}${condition.key}`;
+    const found = byKey.get(key);
+    byKey.set(key, {
+      propertyName,
+      condition: found?.condition ?? condition,
+      amount: (found?.amount ?? 0) + delta.amount,
+    });
   }
   return byKey;
 }
@@ -577,17 +617,38 @@ function tickAmountsByName(codex: WorldCodex, def: ObjectDef): ReadonlyMap<strin
 /** ゲート（8.2節）で縛られていない増減。 */
 const ALWAYS = '常時';
 
+/** 在庫の続く間だけ動く輸送（8.4節）であることを、条件へ書き足す分。 */
+const CAPPED_LABEL = '（輸送・在庫がある間）';
+
+/** 輸送であることを鍵へ書き足す分。**条件の鍵に現れない綴り**なので、条件そのものと紛れない。 */
+const CAPPED_KEY = '+capped';
+
+/**
+ * そのゲート（8.2節）と輸送かどうかの、綴りによらない鍵（{@link ConsumptionCondition.key}）。
+ *
+ * **段の宣言（8.2節）と、段を名指した条件（`in_stage`、14.1節）は別の鍵になる。** 言っていることは
+ * 同じでも文が違う（`段 pain=sore`と`painが段soreにある`）ので、畳むと同じ鍵の行が2つの文を持つ。
+ */
+function conditionKeyOf(codex: WorldCodex, gate: TickGate, capped: boolean): string {
+  const suffix = capped ? CAPPED_KEY : '';
+  const { stage, conditions } = gate;
+  if (stage !== undefined)
+    return `stage(self.${codex.propertyNames.getName(stage.propertyGlobalId)},${stage.name})${suffix}`;
+  if (conditions === undefined) return `always${suffix}`;
+  return `${conditionKey(codex, conditions)}${suffix}`;
+}
+
 /**
  * そのゲート（8.2節）と輸送かどうかを言い表す。**他のゲートと並べて置くならinList**——複合な条件が
  * 括弧で包まれ、`A または B かつ C` と切れ目なく続くのを防ぐ。
  */
-function conditionLabel(codex: WorldCodex, delta: TickDelta, inList = false): string {
-  const capped = delta.capped ? '（輸送・在庫がある間）' : '';
-  const { stage, conditions } = delta.gate;
+function conditionLabel(codex: WorldCodex, gate: TickGate, capped: boolean, inList = false): string {
+  const suffix = capped ? CAPPED_LABEL : '';
+  const { stage, conditions } = gate;
   if (stage !== undefined)
-    return `段 ${codex.propertyNames.getName(stage.propertyGlobalId)}=${stage.name}${capped}`;
-  if (conditions === undefined) return `${ALWAYS}${capped}`;
-  return `${inList ? conditionTextInList(codex, conditions) : conditionText(codex, conditions)}${capped}`;
+    return `段 ${codex.propertyNames.getName(stage.propertyGlobalId)}=${stage.name}${suffix}`;
+  if (conditions === undefined) return `${ALWAYS}${suffix}`;
+  return `${inList ? conditionTextInList(codex, conditions) : conditionText(codex, conditions)}${suffix}`;
 }
 
 function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly SupplyRow[] {
@@ -1143,9 +1204,12 @@ function cycleCondition(codex: WorldCodex, cycle: DeviceCycle): string {
  */
 function combinationLabel(codex: WorldCodex, combination: readonly TickDelta[], inList: boolean): string {
   // 1つだけなら包むかどうかはゲートの中身が決める（複合なら包む、というconditionWordsの規約）。
-  if (combination.length === 1) return conditionLabel(codex, combination[0], inList);
+  if (combination.length === 1)
+    return conditionLabel(codex, combination[0].gate, combination[0].capped, inList);
 
-  const text = combination.map((delta) => conditionLabel(codex, delta)).join(` ${ALL_CONJUNCTION} `);
+  const text = combination
+    .map((delta) => conditionLabel(codex, delta.gate, delta.capped))
+    .join(` ${ALL_CONJUNCTION} `);
   return inList ? `（${text}）` : text;
 }
 

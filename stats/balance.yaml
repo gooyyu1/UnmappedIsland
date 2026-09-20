@@ -570,182 +570,182 @@ rain_water:
   - {container: coconut_bowl, season: dry, capacity_ml: 250, rain_ml_per_day: 22, evaporation_ml_per_day: 108, net_ml_per_day: -86}
 
 consumption:
-  - {property: happiness, condition: 段 pain=sore, character: captain, per_tick: -0.13, per_day: -12}
-  - {property: happiness, condition: 段 pain=sore, character: engineer, per_tick: -0.13, per_day: -12}
-  - {property: happiness, condition: 段 pain=sore, character: farmer, per_tick: -0.13, per_day: -12}
-  - {property: happiness, condition: 段 pain=sore, character: medic, per_tick: -0.13, per_day: -12}
-  - {property: happiness, condition: 段 pain=hurting, character: captain, per_tick: -0.25, per_day: -24}
-  - {property: happiness, condition: 段 pain=hurting, character: engineer, per_tick: -0.25, per_day: -24}
-  - {property: happiness, condition: 段 pain=hurting, character: farmer, per_tick: -0.25, per_day: -24}
-  - {property: happiness, condition: 段 pain=hurting, character: medic, per_tick: -0.25, per_day: -24}
-  - {property: happiness, condition: 段 pain=unbearable, character: captain, per_tick: -0.50, per_day: -48}
-  - {property: happiness, condition: 段 pain=unbearable, character: engineer, per_tick: -0.50, per_day: -48}
-  - {property: happiness, condition: 段 pain=unbearable, character: farmer, per_tick: -0.50, per_day: -48}
-  - {property: happiness, condition: 段 pain=unbearable, character: medic, per_tick: -0.50, per_day: -48}
-  - {property: blood, condition: hydrationが段hydrated以上にある かつ body_fatが段gaunt以上にある, character: captain, per_tick: 2.00, per_day: 192}
-  - {property: blood, condition: hydrationが段hydrated以上にある かつ body_fatが段gaunt以上にある, character: engineer, per_tick: 2.00, per_day: 192}
-  - {property: blood, condition: hydrationが段hydrated以上にある かつ body_fatが段gaunt以上にある, character: farmer, per_tick: 2.00, per_day: 192}
-  - {property: blood, condition: hydrationが段hydrated以上にある かつ body_fatが段gaunt以上にある, character: medic, per_tick: 2.00, per_day: 192}
-  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: captain, per_tick: -2.00, per_day: -192}
-  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: engineer, per_tick: -2.00, per_day: -192}
-  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: farmer, per_tick: -2.00, per_day: -192}
-  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: medic, per_tick: -2.00, per_day: -192}
-  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ sheltered = 0 かつ 祖先のweather ∈ light_rain・heavy_rain・storm, character: captain, per_tick: -6.00, per_day: -576}
-  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ sheltered = 0 かつ 祖先のweather ∈ light_rain・heavy_rain・storm, character: engineer, per_tick: -6.00, per_day: -576}
-  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ sheltered = 0 かつ 祖先のweather ∈ light_rain・heavy_rain・storm, character: farmer, per_tick: -6.00, per_day: -576}
-  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ sheltered = 0 かつ 祖先のweather ∈ light_rain・heavy_rain・storm, character: medic, per_tick: -6.00, per_day: -576}
-  - {property: warmth, condition: 祖先のambient_temperature ≥ chill_point, character: captain, per_tick: 8.00, per_day: 768}
-  - {property: warmth, condition: 祖先のambient_temperature ≥ chill_point, character: engineer, per_tick: 8.00, per_day: 768}
-  - {property: warmth, condition: 祖先のambient_temperature ≥ chill_point, character: farmer, per_tick: 8.00, per_day: 768}
-  - {property: warmth, condition: 祖先のambient_temperature ≥ chill_point, character: medic, per_tick: 8.00, per_day: 768}
-  - {property: satiety, condition: 常時, character: captain, per_tick: -16.00, per_day: -1536}
-  - {property: satiety, condition: 常時, character: engineer, per_tick: -16.00, per_day: -1536}
-  - {property: satiety, condition: 常時, character: farmer, per_tick: -16.00, per_day: -1536}
-  - {property: satiety, condition: 常時, character: medic, per_tick: -16.00, per_day: -1536}
-  - {property: carbohydrate, condition: 常時（輸送・在庫がある間）, character: captain, per_tick: -2.00, per_day: -192}
-  - {property: carbohydrate, condition: 常時（輸送・在庫がある間）, character: engineer, per_tick: -2.00, per_day: -192}
-  - {property: carbohydrate, condition: 常時（輸送・在庫がある間）, character: farmer, per_tick: -2.00, per_day: -192}
-  - {property: carbohydrate, condition: 常時（輸送・在庫がある間）, character: medic, per_tick: -2.00, per_day: -192}
-  - {property: body_fat, condition: 常時（輸送・在庫がある間）, character: captain, per_tick: 3.25, per_day: 312}
-  - {property: body_fat, condition: 常時（輸送・在庫がある間）, character: engineer, per_tick: 3.25, per_day: 312}
-  - {property: body_fat, condition: 常時（輸送・在庫がある間）, character: farmer, per_tick: 3.25, per_day: 312}
-  - {property: body_fat, condition: 常時（輸送・在庫がある間）, character: medic, per_tick: 3.25, per_day: 312}
-  - {property: protein, condition: 常時（輸送・在庫がある間）, character: captain, per_tick: -1.00, per_day: -96}
-  - {property: protein, condition: 常時（輸送・在庫がある間）, character: engineer, per_tick: -1.00, per_day: -96}
-  - {property: protein, condition: 常時（輸送・在庫がある間）, character: farmer, per_tick: -1.00, per_day: -96}
-  - {property: protein, condition: 常時（輸送・在庫がある間）, character: medic, per_tick: -1.00, per_day: -96}
-  - {property: hydration, condition: 段 lipid=fat_starved, character: captain, per_tick: -1.00, per_day: -96}
-  - {property: hydration, condition: 段 lipid=fat_starved, character: engineer, per_tick: -1.00, per_day: -96}
-  - {property: hydration, condition: 段 lipid=fat_starved, character: farmer, per_tick: -1.00, per_day: -96}
-  - {property: hydration, condition: 段 lipid=fat_starved, character: medic, per_tick: -1.00, per_day: -96}
-  - {property: protein, condition: 段 lipid=fat_starved, character: captain, per_tick: -2.00, per_day: -192}
-  - {property: protein, condition: 段 lipid=fat_starved, character: engineer, per_tick: -2.00, per_day: -192}
-  - {property: protein, condition: 段 lipid=fat_starved, character: farmer, per_tick: -2.00, per_day: -192}
-  - {property: protein, condition: 段 lipid=fat_starved, character: medic, per_tick: -2.00, per_day: -192}
-  - {property: lipid, condition: 常時（輸送・在庫がある間）, character: captain, per_tick: -0.25, per_day: -24}
-  - {property: lipid, condition: 常時（輸送・在庫がある間）, character: engineer, per_tick: -0.25, per_day: -24}
-  - {property: lipid, condition: 常時（輸送・在庫がある間）, character: farmer, per_tick: -0.25, per_day: -24}
-  - {property: lipid, condition: 常時（輸送・在庫がある間）, character: medic, per_tick: -0.25, per_day: -24}
-  - {property: vitamin, condition: 常時, character: captain, per_tick: -0.50, per_day: -48}
-  - {property: vitamin, condition: 常時, character: engineer, per_tick: -0.50, per_day: -48}
-  - {property: vitamin, condition: 常時, character: farmer, per_tick: -0.50, per_day: -48}
-  - {property: vitamin, condition: 常時, character: medic, per_tick: -0.50, per_day: -48}
-  - {property: homesickness, condition: 段 loneliness=restless, character: captain, per_tick: 0.01, per_day: 1}
-  - {property: homesickness, condition: 段 loneliness=restless, character: engineer, per_tick: 0.01, per_day: 1}
-  - {property: homesickness, condition: 段 loneliness=restless, character: farmer, per_tick: 0.01, per_day: 1}
-  - {property: homesickness, condition: 段 loneliness=restless, character: medic, per_tick: 0.01, per_day: 1}
-  - {property: homesickness, condition: 段 loneliness=lonely, character: captain, per_tick: 0.02, per_day: 2}
-  - {property: homesickness, condition: 段 loneliness=lonely, character: engineer, per_tick: 0.02, per_day: 2}
-  - {property: homesickness, condition: 段 loneliness=lonely, character: farmer, per_tick: 0.02, per_day: 2}
-  - {property: homesickness, condition: 段 loneliness=lonely, character: medic, per_tick: 0.02, per_day: 2}
-  - {property: homesickness, condition: 段 loneliness=forsaken, character: captain, per_tick: 0.04, per_day: 4}
-  - {property: homesickness, condition: 段 loneliness=forsaken, character: engineer, per_tick: 0.04, per_day: 4}
-  - {property: homesickness, condition: 段 loneliness=forsaken, character: farmer, per_tick: 0.04, per_day: 4}
-  - {property: homesickness, condition: 段 loneliness=forsaken, character: medic, per_tick: 0.04, per_day: 4}
-  - {property: happiness, condition: 段 homesickness=wistful, character: captain, per_tick: -0.13, per_day: -12}
-  - {property: happiness, condition: 段 homesickness=wistful, character: engineer, per_tick: -0.13, per_day: -12}
-  - {property: happiness, condition: 段 homesickness=wistful, character: farmer, per_tick: -0.13, per_day: -12}
-  - {property: happiness, condition: 段 homesickness=wistful, character: medic, per_tick: -0.13, per_day: -12}
-  - {property: happiness, condition: 段 homesickness=yearning, character: captain, per_tick: -0.25, per_day: -24}
-  - {property: happiness, condition: 段 homesickness=yearning, character: engineer, per_tick: -0.25, per_day: -24}
-  - {property: happiness, condition: 段 homesickness=yearning, character: farmer, per_tick: -0.25, per_day: -24}
-  - {property: happiness, condition: 段 homesickness=yearning, character: medic, per_tick: -0.25, per_day: -24}
-  - {property: happiness, condition: 段 homesickness=despondent, character: captain, per_tick: -0.50, per_day: -48}
-  - {property: happiness, condition: 段 homesickness=despondent, character: engineer, per_tick: -0.50, per_day: -48}
-  - {property: happiness, condition: 段 homesickness=despondent, character: farmer, per_tick: -0.50, per_day: -48}
-  - {property: happiness, condition: 段 homesickness=despondent, character: medic, per_tick: -0.50, per_day: -48}
-  - {property: homesickness, condition: 段 comfort=homely, character: captain, per_tick: -0.02, per_day: -2}
-  - {property: homesickness, condition: 段 comfort=homely, character: engineer, per_tick: -0.02, per_day: -2}
-  - {property: homesickness, condition: 段 comfort=homely, character: farmer, per_tick: -0.02, per_day: -2}
-  - {property: homesickness, condition: 段 comfort=homely, character: medic, per_tick: -0.02, per_day: -2}
-  - {property: homesickness, condition: 段 comfort=snug, character: captain, per_tick: -0.04, per_day: -4}
-  - {property: homesickness, condition: 段 comfort=snug, character: engineer, per_tick: -0.04, per_day: -4}
-  - {property: homesickness, condition: 段 comfort=snug, character: farmer, per_tick: -0.04, per_day: -4}
-  - {property: homesickness, condition: 段 comfort=snug, character: medic, per_tick: -0.04, per_day: -4}
-  - {property: homesickness, condition: 段 company=kept, character: captain, per_tick: -0.02, per_day: -2}
-  - {property: homesickness, condition: 段 company=kept, character: engineer, per_tick: -0.02, per_day: -2}
-  - {property: homesickness, condition: 段 company=kept, character: farmer, per_tick: -0.02, per_day: -2}
-  - {property: homesickness, condition: 段 company=kept, character: medic, per_tick: -0.02, per_day: -2}
-  - {property: hydration, condition: 段 pathogen=feverish, character: captain, per_tick: -1.00, per_day: -96}
-  - {property: hydration, condition: 段 pathogen=feverish, character: engineer, per_tick: -1.00, per_day: -96}
-  - {property: hydration, condition: 段 pathogen=feverish, character: farmer, per_tick: -1.00, per_day: -96}
-  - {property: hydration, condition: 段 pathogen=feverish, character: medic, per_tick: -1.00, per_day: -96}
-  - {property: hydration, condition: 段 pathogen=septicemic, character: captain, per_tick: -2.00, per_day: -192}
-  - {property: hydration, condition: 段 pathogen=septicemic, character: engineer, per_tick: -2.00, per_day: -192}
-  - {property: hydration, condition: 段 pathogen=septicemic, character: farmer, per_tick: -2.00, per_day: -192}
-  - {property: hydration, condition: 段 pathogen=septicemic, character: medic, per_tick: -2.00, per_day: -192}
-  - {property: blood, condition: 段 pathogen=septicemic, character: captain, per_tick: -40.00, per_day: -3840}
-  - {property: blood, condition: 段 pathogen=septicemic, character: engineer, per_tick: -40.00, per_day: -3840}
-  - {property: blood, condition: 段 pathogen=septicemic, character: farmer, per_tick: -40.00, per_day: -3840}
-  - {property: blood, condition: 段 pathogen=septicemic, character: medic, per_tick: -40.00, per_day: -3840}
-  - {property: pathogen, condition: pathogenが段latent以上にある, character: captain, per_tick: 0.15, per_day: 14}
-  - {property: pathogen, condition: pathogenが段latent以上にある, character: engineer, per_tick: 0.15, per_day: 14}
-  - {property: pathogen, condition: pathogenが段latent以上にある, character: farmer, per_tick: 0.15, per_day: 14}
-  - {property: pathogen, condition: pathogenが段latent以上にある, character: medic, per_tick: 0.15, per_day: 14}
-  - {property: immunity, condition: pathogenが段latent以上にある, character: captain, per_tick: 0.25, per_day: 24}
-  - {property: immunity, condition: pathogenが段latent以上にある, character: engineer, per_tick: 0.25, per_day: 24}
-  - {property: immunity, condition: pathogenが段latent以上にある, character: farmer, per_tick: 0.25, per_day: 24}
-  - {property: immunity, condition: pathogenが段latent以上にある, character: medic, per_tick: 0.25, per_day: 24}
-  - {property: pathogen, condition: 段 immunity=failing, character: captain, per_tick: -0.05, per_day: -5}
-  - {property: pathogen, condition: 段 immunity=failing, character: engineer, per_tick: -0.05, per_day: -5}
-  - {property: pathogen, condition: 段 immunity=failing, character: farmer, per_tick: -0.05, per_day: -5}
-  - {property: pathogen, condition: 段 immunity=failing, character: medic, per_tick: -0.05, per_day: -5}
-  - {property: pathogen, condition: 段 immunity=weakened, character: captain, per_tick: -0.10, per_day: -10}
-  - {property: pathogen, condition: 段 immunity=weakened, character: engineer, per_tick: -0.10, per_day: -10}
-  - {property: pathogen, condition: 段 immunity=weakened, character: farmer, per_tick: -0.10, per_day: -10}
-  - {property: pathogen, condition: 段 immunity=weakened, character: medic, per_tick: -0.10, per_day: -10}
-  - {property: pathogen, condition: 段 immunity=robust, character: captain, per_tick: -0.20, per_day: -19}
-  - {property: pathogen, condition: 段 immunity=robust, character: engineer, per_tick: -0.20, per_day: -19}
-  - {property: pathogen, condition: 段 immunity=robust, character: farmer, per_tick: -0.20, per_day: -19}
-  - {property: pathogen, condition: 段 immunity=robust, character: medic, per_tick: -0.20, per_day: -19}
-  - {property: pathogen, condition: 段 immunity=primed, character: captain, per_tick: -0.30, per_day: -29}
-  - {property: pathogen, condition: 段 immunity=primed, character: engineer, per_tick: -0.30, per_day: -29}
-  - {property: pathogen, condition: 段 immunity=primed, character: farmer, per_tick: -0.30, per_day: -29}
-  - {property: pathogen, condition: 段 immunity=primed, character: medic, per_tick: -0.30, per_day: -29}
-  - {property: immunity, condition: 段 immunity=primed, character: captain, per_tick: -0.05, per_day: -5}
-  - {property: immunity, condition: 段 immunity=primed, character: engineer, per_tick: -0.05, per_day: -5}
-  - {property: immunity, condition: 段 immunity=primed, character: farmer, per_tick: -0.05, per_day: -5}
-  - {property: immunity, condition: 段 immunity=primed, character: medic, per_tick: -0.05, per_day: -5}
-  - {property: hydration, condition: 常時, character: captain, per_tick: -1.00, per_day: -96}
-  - {property: hydration, condition: 常時, character: engineer, per_tick: -1.00, per_day: -96}
-  - {property: hydration, condition: 常時, character: farmer, per_tick: -1.00, per_day: -96}
-  - {property: hydration, condition: 常時, character: medic, per_tick: -1.00, per_day: -96}
-  - {property: body_fat, condition: 段 body_fat=starved, character: captain, per_tick: -0.50, per_day: -48}
-  - {property: body_fat, condition: 段 body_fat=starved, character: engineer, per_tick: -0.45, per_day: -43}
-  - {property: body_fat, condition: 段 body_fat=starved, character: farmer, per_tick: -0.60, per_day: -58}
-  - {property: body_fat, condition: 段 body_fat=starved, character: medic, per_tick: -0.50, per_day: -48}
-  - {property: body_fat, condition: 段 body_fat=gaunt, character: captain, per_tick: -0.70, per_day: -67}
-  - {property: body_fat, condition: 段 body_fat=gaunt, character: engineer, per_tick: -0.60, per_day: -58}
-  - {property: body_fat, condition: 段 body_fat=gaunt, character: farmer, per_tick: -0.90, per_day: -86}
-  - {property: body_fat, condition: 段 body_fat=gaunt, character: medic, per_tick: -0.70, per_day: -67}
-  - {property: body_fat, condition: 段 body_fat=nourished, character: captain, per_tick: -1.00, per_day: -96}
-  - {property: body_fat, condition: 段 body_fat=nourished, character: engineer, per_tick: -0.88, per_day: -84}
-  - {property: body_fat, condition: 段 body_fat=nourished, character: farmer, per_tick: -1.25, per_day: -120}
-  - {property: body_fat, condition: 段 body_fat=nourished, character: medic, per_tick: -1.00, per_day: -96}
-  - {property: body_fat, condition: 段 body_fat=stout, character: captain, per_tick: -1.30, per_day: -125}
-  - {property: body_fat, condition: 段 body_fat=stout, character: engineer, per_tick: -1.15, per_day: -110}
-  - {property: body_fat, condition: 段 body_fat=stout, character: farmer, per_tick: -1.60, per_day: -154}
-  - {property: body_fat, condition: 段 body_fat=stout, character: medic, per_tick: -1.30, per_day: -125}
-  - {property: body_fat, condition: 段 body_fat=obese, character: captain, per_tick: -1.60, per_day: -154}
-  - {property: body_fat, condition: 段 body_fat=obese, character: engineer, per_tick: -1.40, per_day: -134}
-  - {property: body_fat, condition: 段 body_fat=obese, character: farmer, per_tick: -2.00, per_day: -192}
-  - {property: body_fat, condition: 段 body_fat=obese, character: medic, per_tick: -1.60, per_day: -154}
-  - {property: wakefulness, condition: 常時, character: captain, per_tick: -1.00, per_day: -96}
-  - {property: wakefulness, condition: 常時, character: engineer, per_tick: -1.00, per_day: -96}
-  - {property: wakefulness, condition: 常時, character: farmer, per_tick: -1.00, per_day: -96}
-  - {property: wakefulness, condition: 常時, character: medic, per_tick: -1.00, per_day: -96}
-  - {property: stamina, condition: 段 load=laden, character: captain, per_tick: -0.30, per_day: -29}
-  - {property: stamina, condition: 段 load=laden, character: engineer, per_tick: -0.30, per_day: -29}
-  - {property: stamina, condition: 段 load=laden, character: farmer, per_tick: -0.30, per_day: -29}
-  - {property: stamina, condition: 段 load=laden, character: medic, per_tick: -0.30, per_day: -29}
-  - {property: stamina, condition: 段 load=heavy, character: captain, per_tick: -1.00, per_day: -96}
-  - {property: stamina, condition: 段 load=heavy, character: engineer, per_tick: -1.00, per_day: -96}
-  - {property: stamina, condition: 段 load=heavy, character: farmer, per_tick: -1.00, per_day: -96}
-  - {property: stamina, condition: 段 load=heavy, character: medic, per_tick: -1.00, per_day: -96}
-  - {property: stamina, condition: 段 load=too_heavy, character: captain, per_tick: -2.00, per_day: -192}
-  - {property: stamina, condition: 段 load=too_heavy, character: engineer, per_tick: -2.00, per_day: -192}
-  - {property: stamina, condition: 段 load=too_heavy, character: farmer, per_tick: -2.00, per_day: -192}
-  - {property: stamina, condition: 段 load=too_heavy, character: medic, per_tick: -2.00, per_day: -192}
+  - {property: happiness, condition: 'stage(self.pain,sore)', character: captain, per_tick: -0.13, per_day: -12}
+  - {property: happiness, condition: 'stage(self.pain,sore)', character: engineer, per_tick: -0.13, per_day: -12}
+  - {property: happiness, condition: 'stage(self.pain,sore)', character: farmer, per_tick: -0.13, per_day: -12}
+  - {property: happiness, condition: 'stage(self.pain,sore)', character: medic, per_tick: -0.13, per_day: -12}
+  - {property: happiness, condition: 'stage(self.pain,hurting)', character: captain, per_tick: -0.25, per_day: -24}
+  - {property: happiness, condition: 'stage(self.pain,hurting)', character: engineer, per_tick: -0.25, per_day: -24}
+  - {property: happiness, condition: 'stage(self.pain,hurting)', character: farmer, per_tick: -0.25, per_day: -24}
+  - {property: happiness, condition: 'stage(self.pain,hurting)', character: medic, per_tick: -0.25, per_day: -24}
+  - {property: happiness, condition: 'stage(self.pain,unbearable)', character: captain, per_tick: -0.50, per_day: -48}
+  - {property: happiness, condition: 'stage(self.pain,unbearable)', character: engineer, per_tick: -0.50, per_day: -48}
+  - {property: happiness, condition: 'stage(self.pain,unbearable)', character: farmer, per_tick: -0.50, per_day: -48}
+  - {property: happiness, condition: 'stage(self.pain,unbearable)', character: medic, per_tick: -0.50, per_day: -48}
+  - {property: blood, condition: 'all(in_stage_or_above(self.hydration,hydrated),in_stage_or_above(self.body_fat,gaunt))', character: captain, per_tick: 2.00, per_day: 192}
+  - {property: blood, condition: 'all(in_stage_or_above(self.hydration,hydrated),in_stage_or_above(self.body_fat,gaunt))', character: engineer, per_tick: 2.00, per_day: 192}
+  - {property: blood, condition: 'all(in_stage_or_above(self.hydration,hydrated),in_stage_or_above(self.body_fat,gaunt))', character: farmer, per_tick: 2.00, per_day: 192}
+  - {property: blood, condition: 'all(in_stage_or_above(self.hydration,hydrated),in_stage_or_above(self.body_fat,gaunt))', character: medic, per_tick: 2.00, per_day: 192}
+  - {property: warmth, condition: 'all(lt(ancestor.ambient_temperature,@self.chill_point),any(gte(self.sheltered,1),not_in(ancestor.weather,light_rain|heavy_rain|storm)))', character: captain, per_tick: -2.00, per_day: -192}
+  - {property: warmth, condition: 'all(lt(ancestor.ambient_temperature,@self.chill_point),any(gte(self.sheltered,1),not_in(ancestor.weather,light_rain|heavy_rain|storm)))', character: engineer, per_tick: -2.00, per_day: -192}
+  - {property: warmth, condition: 'all(lt(ancestor.ambient_temperature,@self.chill_point),any(gte(self.sheltered,1),not_in(ancestor.weather,light_rain|heavy_rain|storm)))', character: farmer, per_tick: -2.00, per_day: -192}
+  - {property: warmth, condition: 'all(lt(ancestor.ambient_temperature,@self.chill_point),any(gte(self.sheltered,1),not_in(ancestor.weather,light_rain|heavy_rain|storm)))', character: medic, per_tick: -2.00, per_day: -192}
+  - {property: warmth, condition: 'all(lt(ancestor.ambient_temperature,@self.chill_point),eq(self.sheltered,0),in(ancestor.weather,light_rain|heavy_rain|storm))', character: captain, per_tick: -6.00, per_day: -576}
+  - {property: warmth, condition: 'all(lt(ancestor.ambient_temperature,@self.chill_point),eq(self.sheltered,0),in(ancestor.weather,light_rain|heavy_rain|storm))', character: engineer, per_tick: -6.00, per_day: -576}
+  - {property: warmth, condition: 'all(lt(ancestor.ambient_temperature,@self.chill_point),eq(self.sheltered,0),in(ancestor.weather,light_rain|heavy_rain|storm))', character: farmer, per_tick: -6.00, per_day: -576}
+  - {property: warmth, condition: 'all(lt(ancestor.ambient_temperature,@self.chill_point),eq(self.sheltered,0),in(ancestor.weather,light_rain|heavy_rain|storm))', character: medic, per_tick: -6.00, per_day: -576}
+  - {property: warmth, condition: 'gte(ancestor.ambient_temperature,@self.chill_point)', character: captain, per_tick: 8.00, per_day: 768}
+  - {property: warmth, condition: 'gte(ancestor.ambient_temperature,@self.chill_point)', character: engineer, per_tick: 8.00, per_day: 768}
+  - {property: warmth, condition: 'gte(ancestor.ambient_temperature,@self.chill_point)', character: farmer, per_tick: 8.00, per_day: 768}
+  - {property: warmth, condition: 'gte(ancestor.ambient_temperature,@self.chill_point)', character: medic, per_tick: 8.00, per_day: 768}
+  - {property: satiety, condition: always, character: captain, per_tick: -16.00, per_day: -1536}
+  - {property: satiety, condition: always, character: engineer, per_tick: -16.00, per_day: -1536}
+  - {property: satiety, condition: always, character: farmer, per_tick: -16.00, per_day: -1536}
+  - {property: satiety, condition: always, character: medic, per_tick: -16.00, per_day: -1536}
+  - {property: carbohydrate, condition: always+capped, character: captain, per_tick: -2.00, per_day: -192}
+  - {property: carbohydrate, condition: always+capped, character: engineer, per_tick: -2.00, per_day: -192}
+  - {property: carbohydrate, condition: always+capped, character: farmer, per_tick: -2.00, per_day: -192}
+  - {property: carbohydrate, condition: always+capped, character: medic, per_tick: -2.00, per_day: -192}
+  - {property: body_fat, condition: always+capped, character: captain, per_tick: 3.25, per_day: 312}
+  - {property: body_fat, condition: always+capped, character: engineer, per_tick: 3.25, per_day: 312}
+  - {property: body_fat, condition: always+capped, character: farmer, per_tick: 3.25, per_day: 312}
+  - {property: body_fat, condition: always+capped, character: medic, per_tick: 3.25, per_day: 312}
+  - {property: protein, condition: always+capped, character: captain, per_tick: -1.00, per_day: -96}
+  - {property: protein, condition: always+capped, character: engineer, per_tick: -1.00, per_day: -96}
+  - {property: protein, condition: always+capped, character: farmer, per_tick: -1.00, per_day: -96}
+  - {property: protein, condition: always+capped, character: medic, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 'stage(self.lipid,fat_starved)', character: captain, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 'stage(self.lipid,fat_starved)', character: engineer, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 'stage(self.lipid,fat_starved)', character: farmer, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 'stage(self.lipid,fat_starved)', character: medic, per_tick: -1.00, per_day: -96}
+  - {property: protein, condition: 'stage(self.lipid,fat_starved)', character: captain, per_tick: -2.00, per_day: -192}
+  - {property: protein, condition: 'stage(self.lipid,fat_starved)', character: engineer, per_tick: -2.00, per_day: -192}
+  - {property: protein, condition: 'stage(self.lipid,fat_starved)', character: farmer, per_tick: -2.00, per_day: -192}
+  - {property: protein, condition: 'stage(self.lipid,fat_starved)', character: medic, per_tick: -2.00, per_day: -192}
+  - {property: lipid, condition: always+capped, character: captain, per_tick: -0.25, per_day: -24}
+  - {property: lipid, condition: always+capped, character: engineer, per_tick: -0.25, per_day: -24}
+  - {property: lipid, condition: always+capped, character: farmer, per_tick: -0.25, per_day: -24}
+  - {property: lipid, condition: always+capped, character: medic, per_tick: -0.25, per_day: -24}
+  - {property: vitamin, condition: always, character: captain, per_tick: -0.50, per_day: -48}
+  - {property: vitamin, condition: always, character: engineer, per_tick: -0.50, per_day: -48}
+  - {property: vitamin, condition: always, character: farmer, per_tick: -0.50, per_day: -48}
+  - {property: vitamin, condition: always, character: medic, per_tick: -0.50, per_day: -48}
+  - {property: homesickness, condition: 'stage(self.loneliness,restless)', character: captain, per_tick: 0.01, per_day: 1}
+  - {property: homesickness, condition: 'stage(self.loneliness,restless)', character: engineer, per_tick: 0.01, per_day: 1}
+  - {property: homesickness, condition: 'stage(self.loneliness,restless)', character: farmer, per_tick: 0.01, per_day: 1}
+  - {property: homesickness, condition: 'stage(self.loneliness,restless)', character: medic, per_tick: 0.01, per_day: 1}
+  - {property: homesickness, condition: 'stage(self.loneliness,lonely)', character: captain, per_tick: 0.02, per_day: 2}
+  - {property: homesickness, condition: 'stage(self.loneliness,lonely)', character: engineer, per_tick: 0.02, per_day: 2}
+  - {property: homesickness, condition: 'stage(self.loneliness,lonely)', character: farmer, per_tick: 0.02, per_day: 2}
+  - {property: homesickness, condition: 'stage(self.loneliness,lonely)', character: medic, per_tick: 0.02, per_day: 2}
+  - {property: homesickness, condition: 'stage(self.loneliness,forsaken)', character: captain, per_tick: 0.04, per_day: 4}
+  - {property: homesickness, condition: 'stage(self.loneliness,forsaken)', character: engineer, per_tick: 0.04, per_day: 4}
+  - {property: homesickness, condition: 'stage(self.loneliness,forsaken)', character: farmer, per_tick: 0.04, per_day: 4}
+  - {property: homesickness, condition: 'stage(self.loneliness,forsaken)', character: medic, per_tick: 0.04, per_day: 4}
+  - {property: happiness, condition: 'stage(self.homesickness,wistful)', character: captain, per_tick: -0.13, per_day: -12}
+  - {property: happiness, condition: 'stage(self.homesickness,wistful)', character: engineer, per_tick: -0.13, per_day: -12}
+  - {property: happiness, condition: 'stage(self.homesickness,wistful)', character: farmer, per_tick: -0.13, per_day: -12}
+  - {property: happiness, condition: 'stage(self.homesickness,wistful)', character: medic, per_tick: -0.13, per_day: -12}
+  - {property: happiness, condition: 'stage(self.homesickness,yearning)', character: captain, per_tick: -0.25, per_day: -24}
+  - {property: happiness, condition: 'stage(self.homesickness,yearning)', character: engineer, per_tick: -0.25, per_day: -24}
+  - {property: happiness, condition: 'stage(self.homesickness,yearning)', character: farmer, per_tick: -0.25, per_day: -24}
+  - {property: happiness, condition: 'stage(self.homesickness,yearning)', character: medic, per_tick: -0.25, per_day: -24}
+  - {property: happiness, condition: 'stage(self.homesickness,despondent)', character: captain, per_tick: -0.50, per_day: -48}
+  - {property: happiness, condition: 'stage(self.homesickness,despondent)', character: engineer, per_tick: -0.50, per_day: -48}
+  - {property: happiness, condition: 'stage(self.homesickness,despondent)', character: farmer, per_tick: -0.50, per_day: -48}
+  - {property: happiness, condition: 'stage(self.homesickness,despondent)', character: medic, per_tick: -0.50, per_day: -48}
+  - {property: homesickness, condition: 'stage(self.comfort,homely)', character: captain, per_tick: -0.02, per_day: -2}
+  - {property: homesickness, condition: 'stage(self.comfort,homely)', character: engineer, per_tick: -0.02, per_day: -2}
+  - {property: homesickness, condition: 'stage(self.comfort,homely)', character: farmer, per_tick: -0.02, per_day: -2}
+  - {property: homesickness, condition: 'stage(self.comfort,homely)', character: medic, per_tick: -0.02, per_day: -2}
+  - {property: homesickness, condition: 'stage(self.comfort,snug)', character: captain, per_tick: -0.04, per_day: -4}
+  - {property: homesickness, condition: 'stage(self.comfort,snug)', character: engineer, per_tick: -0.04, per_day: -4}
+  - {property: homesickness, condition: 'stage(self.comfort,snug)', character: farmer, per_tick: -0.04, per_day: -4}
+  - {property: homesickness, condition: 'stage(self.comfort,snug)', character: medic, per_tick: -0.04, per_day: -4}
+  - {property: homesickness, condition: 'stage(self.company,kept)', character: captain, per_tick: -0.02, per_day: -2}
+  - {property: homesickness, condition: 'stage(self.company,kept)', character: engineer, per_tick: -0.02, per_day: -2}
+  - {property: homesickness, condition: 'stage(self.company,kept)', character: farmer, per_tick: -0.02, per_day: -2}
+  - {property: homesickness, condition: 'stage(self.company,kept)', character: medic, per_tick: -0.02, per_day: -2}
+  - {property: hydration, condition: 'stage(self.pathogen,feverish)', character: captain, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 'stage(self.pathogen,feverish)', character: engineer, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 'stage(self.pathogen,feverish)', character: farmer, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 'stage(self.pathogen,feverish)', character: medic, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 'stage(self.pathogen,septicemic)', character: captain, per_tick: -2.00, per_day: -192}
+  - {property: hydration, condition: 'stage(self.pathogen,septicemic)', character: engineer, per_tick: -2.00, per_day: -192}
+  - {property: hydration, condition: 'stage(self.pathogen,septicemic)', character: farmer, per_tick: -2.00, per_day: -192}
+  - {property: hydration, condition: 'stage(self.pathogen,septicemic)', character: medic, per_tick: -2.00, per_day: -192}
+  - {property: blood, condition: 'stage(self.pathogen,septicemic)', character: captain, per_tick: -40.00, per_day: -3840}
+  - {property: blood, condition: 'stage(self.pathogen,septicemic)', character: engineer, per_tick: -40.00, per_day: -3840}
+  - {property: blood, condition: 'stage(self.pathogen,septicemic)', character: farmer, per_tick: -40.00, per_day: -3840}
+  - {property: blood, condition: 'stage(self.pathogen,septicemic)', character: medic, per_tick: -40.00, per_day: -3840}
+  - {property: pathogen, condition: 'in_stage_or_above(self.pathogen,latent)', character: captain, per_tick: 0.15, per_day: 14}
+  - {property: pathogen, condition: 'in_stage_or_above(self.pathogen,latent)', character: engineer, per_tick: 0.15, per_day: 14}
+  - {property: pathogen, condition: 'in_stage_or_above(self.pathogen,latent)', character: farmer, per_tick: 0.15, per_day: 14}
+  - {property: pathogen, condition: 'in_stage_or_above(self.pathogen,latent)', character: medic, per_tick: 0.15, per_day: 14}
+  - {property: immunity, condition: 'in_stage_or_above(self.pathogen,latent)', character: captain, per_tick: 0.25, per_day: 24}
+  - {property: immunity, condition: 'in_stage_or_above(self.pathogen,latent)', character: engineer, per_tick: 0.25, per_day: 24}
+  - {property: immunity, condition: 'in_stage_or_above(self.pathogen,latent)', character: farmer, per_tick: 0.25, per_day: 24}
+  - {property: immunity, condition: 'in_stage_or_above(self.pathogen,latent)', character: medic, per_tick: 0.25, per_day: 24}
+  - {property: pathogen, condition: 'stage(self.immunity,failing)', character: captain, per_tick: -0.05, per_day: -5}
+  - {property: pathogen, condition: 'stage(self.immunity,failing)', character: engineer, per_tick: -0.05, per_day: -5}
+  - {property: pathogen, condition: 'stage(self.immunity,failing)', character: farmer, per_tick: -0.05, per_day: -5}
+  - {property: pathogen, condition: 'stage(self.immunity,failing)', character: medic, per_tick: -0.05, per_day: -5}
+  - {property: pathogen, condition: 'stage(self.immunity,weakened)', character: captain, per_tick: -0.10, per_day: -10}
+  - {property: pathogen, condition: 'stage(self.immunity,weakened)', character: engineer, per_tick: -0.10, per_day: -10}
+  - {property: pathogen, condition: 'stage(self.immunity,weakened)', character: farmer, per_tick: -0.10, per_day: -10}
+  - {property: pathogen, condition: 'stage(self.immunity,weakened)', character: medic, per_tick: -0.10, per_day: -10}
+  - {property: pathogen, condition: 'stage(self.immunity,robust)', character: captain, per_tick: -0.20, per_day: -19}
+  - {property: pathogen, condition: 'stage(self.immunity,robust)', character: engineer, per_tick: -0.20, per_day: -19}
+  - {property: pathogen, condition: 'stage(self.immunity,robust)', character: farmer, per_tick: -0.20, per_day: -19}
+  - {property: pathogen, condition: 'stage(self.immunity,robust)', character: medic, per_tick: -0.20, per_day: -19}
+  - {property: pathogen, condition: 'stage(self.immunity,primed)', character: captain, per_tick: -0.30, per_day: -29}
+  - {property: pathogen, condition: 'stage(self.immunity,primed)', character: engineer, per_tick: -0.30, per_day: -29}
+  - {property: pathogen, condition: 'stage(self.immunity,primed)', character: farmer, per_tick: -0.30, per_day: -29}
+  - {property: pathogen, condition: 'stage(self.immunity,primed)', character: medic, per_tick: -0.30, per_day: -29}
+  - {property: immunity, condition: 'stage(self.immunity,primed)', character: captain, per_tick: -0.05, per_day: -5}
+  - {property: immunity, condition: 'stage(self.immunity,primed)', character: engineer, per_tick: -0.05, per_day: -5}
+  - {property: immunity, condition: 'stage(self.immunity,primed)', character: farmer, per_tick: -0.05, per_day: -5}
+  - {property: immunity, condition: 'stage(self.immunity,primed)', character: medic, per_tick: -0.05, per_day: -5}
+  - {property: hydration, condition: always, character: captain, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: always, character: engineer, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: always, character: farmer, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: always, character: medic, per_tick: -1.00, per_day: -96}
+  - {property: body_fat, condition: 'stage(self.body_fat,starved)', character: captain, per_tick: -0.50, per_day: -48}
+  - {property: body_fat, condition: 'stage(self.body_fat,starved)', character: engineer, per_tick: -0.45, per_day: -43}
+  - {property: body_fat, condition: 'stage(self.body_fat,starved)', character: farmer, per_tick: -0.60, per_day: -58}
+  - {property: body_fat, condition: 'stage(self.body_fat,starved)', character: medic, per_tick: -0.50, per_day: -48}
+  - {property: body_fat, condition: 'stage(self.body_fat,gaunt)', character: captain, per_tick: -0.70, per_day: -67}
+  - {property: body_fat, condition: 'stage(self.body_fat,gaunt)', character: engineer, per_tick: -0.60, per_day: -58}
+  - {property: body_fat, condition: 'stage(self.body_fat,gaunt)', character: farmer, per_tick: -0.90, per_day: -86}
+  - {property: body_fat, condition: 'stage(self.body_fat,gaunt)', character: medic, per_tick: -0.70, per_day: -67}
+  - {property: body_fat, condition: 'stage(self.body_fat,nourished)', character: captain, per_tick: -1.00, per_day: -96}
+  - {property: body_fat, condition: 'stage(self.body_fat,nourished)', character: engineer, per_tick: -0.88, per_day: -84}
+  - {property: body_fat, condition: 'stage(self.body_fat,nourished)', character: farmer, per_tick: -1.25, per_day: -120}
+  - {property: body_fat, condition: 'stage(self.body_fat,nourished)', character: medic, per_tick: -1.00, per_day: -96}
+  - {property: body_fat, condition: 'stage(self.body_fat,stout)', character: captain, per_tick: -1.30, per_day: -125}
+  - {property: body_fat, condition: 'stage(self.body_fat,stout)', character: engineer, per_tick: -1.15, per_day: -110}
+  - {property: body_fat, condition: 'stage(self.body_fat,stout)', character: farmer, per_tick: -1.60, per_day: -154}
+  - {property: body_fat, condition: 'stage(self.body_fat,stout)', character: medic, per_tick: -1.30, per_day: -125}
+  - {property: body_fat, condition: 'stage(self.body_fat,obese)', character: captain, per_tick: -1.60, per_day: -154}
+  - {property: body_fat, condition: 'stage(self.body_fat,obese)', character: engineer, per_tick: -1.40, per_day: -134}
+  - {property: body_fat, condition: 'stage(self.body_fat,obese)', character: farmer, per_tick: -2.00, per_day: -192}
+  - {property: body_fat, condition: 'stage(self.body_fat,obese)', character: medic, per_tick: -1.60, per_day: -154}
+  - {property: wakefulness, condition: always, character: captain, per_tick: -1.00, per_day: -96}
+  - {property: wakefulness, condition: always, character: engineer, per_tick: -1.00, per_day: -96}
+  - {property: wakefulness, condition: always, character: farmer, per_tick: -1.00, per_day: -96}
+  - {property: wakefulness, condition: always, character: medic, per_tick: -1.00, per_day: -96}
+  - {property: stamina, condition: 'stage(self.load,laden)', character: captain, per_tick: -0.30, per_day: -29}
+  - {property: stamina, condition: 'stage(self.load,laden)', character: engineer, per_tick: -0.30, per_day: -29}
+  - {property: stamina, condition: 'stage(self.load,laden)', character: farmer, per_tick: -0.30, per_day: -29}
+  - {property: stamina, condition: 'stage(self.load,laden)', character: medic, per_tick: -0.30, per_day: -29}
+  - {property: stamina, condition: 'stage(self.load,heavy)', character: captain, per_tick: -1.00, per_day: -96}
+  - {property: stamina, condition: 'stage(self.load,heavy)', character: engineer, per_tick: -1.00, per_day: -96}
+  - {property: stamina, condition: 'stage(self.load,heavy)', character: farmer, per_tick: -1.00, per_day: -96}
+  - {property: stamina, condition: 'stage(self.load,heavy)', character: medic, per_tick: -1.00, per_day: -96}
+  - {property: stamina, condition: 'stage(self.load,too_heavy)', character: captain, per_tick: -2.00, per_day: -192}
+  - {property: stamina, condition: 'stage(self.load,too_heavy)', character: engineer, per_tick: -2.00, per_day: -192}
+  - {property: stamina, condition: 'stage(self.load,too_heavy)', character: farmer, per_tick: -2.00, per_day: -192}
+  - {property: stamina, condition: 'stage(self.load,too_heavy)', character: medic, per_tick: -2.00, per_day: -192}
 
 supply:
   - {owner: monkey, step: turn, kind: interaction, driver: null, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 0, spawns: [{name: bite_wound, amount: 0.15}, {name: gore_wound, amount: 0.00}, {name: fracture, amount: 0.00}], agent_deltas: [], self_deltas: []}

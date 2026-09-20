@@ -93,7 +93,7 @@ function listMarkdown(dir: string): string[] {
 
 /**
  * 印を空白で切る。**二重引用符で囲んだ中の空白では切らない**——選ぶ値には空白を含むものがある
- * （`condition="段 immunity=robust"`）。閉じない引用符は、印ごと読めないものとして null。
+ * （`route="grassland.explore → water_spinach.eat"`）。閉じない引用符は、印ごと読めないものとして null。
  */
 function tokenize(body: string): string[] | null {
   const tokens: string[] = [];
@@ -113,7 +113,7 @@ function tokenize(body: string): string[] | null {
   return tokens;
 }
 
-/** `<列>=<値>`。**値の側に `=` が入りうる**（`段 immunity=robust`）ので、最初の1つでだけ切る。 */
+/** `<列>=<値>`。**値の側にも `=` が入りうる**ので、最初の1つでだけ切る。 */
 function splitSelector(token: string): readonly [string, string] | null {
   const index = token.indexOf('=');
   if (index <= 0 || index === token.length - 1) return null;
@@ -296,27 +296,33 @@ function cellOfMark(body: string): number | string {
 }
 
 describe('レコードを選ぶ条件', () => {
-  /** 免疫の段ごとに菌が引かれる量。`condition` に空白が入る（`balanceTables` の `conditionLabel`）。 */
+  /** 1日の献立の1品。工程をつないだ `route` に空白が入る（`balanceStatsReport` の `stepsText`）。 */
   const MARK =
-    'balance.yaml consumption property=pathogen condition="段 immunity=robust" character=medic per_tick';
+    'balance.yaml daily_minimum_menu place=島全体 route="grassland.explore → water_spinach.eat" minutes';
 
   it('二重引用符で囲めば、空白を含む値でレコードを1件に絞れる', () => {
     expect(parseMark(MARK)?.source.selectors).toEqual([
-      ['property', 'pathogen'],
-      ['condition', '段 immunity=robust'],
-      ['character', 'medic'],
+      ['place', '島全体'],
+      ['route', 'grassland.explore → water_spinach.eat'],
     ]);
     expect(cellOfMark(MARK)).toBeTypeOf('number');
   });
 
   it('囲まなければ、値の中の空白がトークンの切れ目になる', () => {
+    // 切れた先（`→`）が`<列>=<値>`にならないので、絞る前に印そのものが読めなくなる。
     expect(cellOfMark(replaceAllOrFail(MARK, { from: '"', to: '', occurrences: 2 }))).toBe(
-      '条件に当てはまるレコードが0件（1件に絞る）',
+      '印の形が読めない',
     );
   });
 
   it('閉じない引用符は、印ごと読めないものとして赤くする', () => {
-    expect(parseMark(replaceAllOrFail(MARK, { from: 'robust"', to: 'robust', occurrences: 1 }))).toBeNull();
+    expect(parseMark(replaceAllOrFail(MARK, { from: 'eat"', to: 'eat', occurrences: 1 }))).toBeNull();
+  });
+
+  it('値の中の `=` では、列と値に切らない', () => {
+    expect(parseMark('balance.yaml consumption property=a=b per_tick')?.source.selectors).toEqual([
+      ['property', 'a=b'],
+    ]);
   });
 
   it('`=` で列と値に切れないトークンは、印ごと読めないものとして赤くする', () => {

@@ -81,8 +81,13 @@ const OP_SYMBOLS: Readonly<Record<ConditionOp, string>> = {
   not_in: '∉',
 };
 
-/** 否定したときの比較演算子。比較の否定は比較なので、否定を葉まで押し下げられる。 */
-const NEGATED_OPS: Readonly<Record<ConditionOp, ConditionOp>> = {
+/**
+ * 否定したときの比較演算子。比較の否定は比較なので、否定を葉まで押し下げられる。
+ *
+ * **正準な鍵（[`conditionKey`](./conditionKey.ts)）も同じ表を引く**——文と鍵で押し下げ方が割れると、
+ * 同じ文になる条件に別の鍵が付く。
+ */
+export const NEGATED_OPS: Readonly<Record<ConditionOp, ConditionOp>> = {
   lt: 'gte',
   lte: 'gt',
   gt: 'lte',
@@ -261,19 +266,28 @@ class ConditionWordWriter<T> implements ConditionReader, ConditionPhrase<T> {
 }
 
 /**
- * 識別子をそのまま語にする作り手。
+ * 比較の相手のリテラル1つを、定義が書いた綴りへ戻す。シンボル型（6.6節）と宣言しているプロパティの
+ * 値だけシンボル名になる。シンボル型でも数値リテラルが書かれている箇所（未登録のIDになる）は数値の
+ * まま。
  *
- * シンボル型（6.6節）と宣言しているプロパティの値だけシンボル名へ戻す。シンボル型でも数値リテラルが
- * 書かれている箇所（未登録のIDになる）は数値のまま出す。
+ * **文と正準な鍵（[`conditionKey`](./conditionKey.ts)）が同じここを引く**——値の綴りが割れると、
+ * 同じ文になる条件に別の鍵が付く。
  */
+export function propertyValueName(
+  codex: WorldCodex,
+  propertyGlobalId: PropertyGlobalId,
+  value: number,
+): string {
+  if (!codex.symbolicProperties.has(propertyGlobalId)) return String(value);
+  return codex.trySymbolNameOfPropertyValue(value) ?? String(value);
+}
+
+/** 識別子をそのまま語にする作り手。 */
 function plainWordMaker(codex: WorldCodex): ConditionWordMaker<string> {
   return {
     text: (value) => value,
     property: (globalId) => codex.propertyNames.getName(globalId),
-    propertyValue: (propertyGlobalId, value) => {
-      if (!codex.symbolicProperties.has(propertyGlobalId)) return String(value);
-      return codex.trySymbolNameOfPropertyValue(value) ?? String(value);
-    },
+    propertyValue: (propertyGlobalId, value) => propertyValueName(codex, propertyGlobalId, value),
     slot: (globalId) => codex.slotNames.getName(globalId),
     tag: (globalId) => codex.tagNames.getName(globalId),
     object: (globalId) => codex.objectNames.getName(globalId),
