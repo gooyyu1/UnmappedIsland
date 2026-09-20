@@ -327,11 +327,16 @@ describe('貯め込まずに毎回導出することの値段', () => {
     // 並べた順はpileCardsが決めるので、枚数を増やしても同じ添字に同じ型の札が居る。
     const draggedIndex = cards.indexOf(dragged);
     const crowded = newGame();
-    expect(pileCards(crowded, CARDS * SCAN_GROWTH).length, '増やして並べた札').toBe(CARDS * SCAN_GROWTH);
+    const crowdedCards = pileCards(crowded, CARDS * SCAN_GROWTH);
+    expect(crowdedCards.length, '増やして並べた札').toBe(CARDS * SCAN_GROWTH);
+    expect(crowdedCards[draggedIndex]?.def.name, '増やした側でも同じ型を掴む').toBe(dragged.def.name);
 
     const scan = scanOnGrab(game, draggedIndex);
     const crowdedScan = scanOnGrab(crowded, draggedIndex);
+    // **両側で光った枠を数える。** 掴んだ札が見つからなければacceptingCellsは即座に空を返すので、
+    // 数えないほうの側は**中身ゼロのまま速く**なり、下の伸びの上限が空回りで緑になる。
     expect(scan(), `'${dragged.def.name}'を掴んでふちが光った枠`).toBeGreaterThan(0);
+    expect(crowdedScan(), `増やした側でふちが光った枠`).toBeGreaterThan(0);
 
     const milliseconds = fastestEach(20, scan, crowdedScan);
 

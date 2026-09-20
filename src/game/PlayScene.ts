@@ -987,7 +987,8 @@ export class PlayScene extends ResponsiveScene {
    * 掴んだ札を重ねれば何かが起きる札（CardDragController.showAcceptingCards）。**受け入れるかを
    * 決めるのはShownCards**で、ここはレーンと場所を突き合わせるだけ。
    *
-   * ワールドの場所を映さないレーン（ポートレイト）は落とし先にならないので、そこの札は光らない。
+   * **今ワールドの場所を映していないレーンは落とし先にならない**ので、そこの札は光らない
+   * （子ウィンドウが説明のタブを開いている間の中身のレーン、札を借りていない窓の札の枠）。
    */
   private acceptingCards(from: CardLane, fromIndex: number, lanes: readonly CardLane[]): ReadonlySet<Card> {
     const grabbed = this.spotOf(from);

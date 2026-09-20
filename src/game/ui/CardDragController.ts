@@ -73,8 +73,9 @@ export interface CardDropInfo {
 
 export interface CardDragHandlers {
   /**
-   * そのドロップに**言うことがあるか**（何も無ければundefined）。ドロップ先の枠・受け入れ側のふちの光・
-   * 説明の吹き出しは、いずれもこの答えだけを見て決める。
+   * そのドロップに**言うことがあるか**（何も無ければundefined）。今の落とし先を示す枠も説明の
+   * 吹き出しも、この答えだけを見て決める（受け入れ側のふちの光だけは、掴んだ時点でまとめて訊く
+   * acceptingCardsが決める）。
    *
    * **答えが返ることは「離せば何かが起きる」を意味しない。** 理由を言うためだけの落とし先も返る
    * （enabledがfalse、CardInteraction.md 2.1節）ので、実際に起こす側はenabledで絞る。
