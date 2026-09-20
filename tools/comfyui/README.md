@@ -166,13 +166,17 @@ python build.py recipes/medic.json
 
 物ごとの当たり外れ（どの語がどう外すか）は `prompts/objects.json` の各エントリに書いてあります。
 
-**振らなくなった本文は `retired` へ移します。** 下絵（`sketch`）から起こすようにしたエントリでは、
-`positive` と `negative` はどのレシピからも振られません。そのまま残すと、`description` を読まずに
-注文の側から入った人がそこへ seed を振ります——**散文で断っても、注文の鍵から入った人には届きません。**
-`retired` の下は `generate.py` も `build.py` も読まないので、手で振ろうとすると入口で止まり、今の
-作り方（レシピ）を教えます。振られない本文が注文の鍵に残っていないかは
-[tests/art/promptOrders.test.ts](../../tests/art/promptOrders.test.ts) が見ています。何を試して外したかは、
-これまでどおり `description` です。
+**どのレシピからも振られなくなった本文は `retired` へ移します。** 下絵（`sketch`）へ移した物が
+ほとんどですが、**掛かるのは「振る相手が居るか」だけ**で、なぜ振らなくなったかは問いません。
+注文の鍵に残すと、`description` を読まずに注文の側から入った人がそこへ seed を振ります
+——**散文で断っても、注文の鍵から入った人には届きません。** `retired` の下は `generate.py` も
+`build.py` も読まないので、手で振ろうとすると入口で止まり、今の作り方（レシピ）を教えます。
+何を試して外したかは、これまでどおり `description` です。
+
+**本文とレシピは対で入れます。** 本文だけを先に足して置くと、振る相手が居ないので
+`npm test` が赤くなります（見ているのは
+[tests/art/promptOrders.test.ts](../../tests/art/promptOrders.test.ts)）。手で seed を振りながら
+詰める間は構いませんが、コミットするときはレシピと一緒にしてください。
 
 ### 既存の絵からの派生（Qwen Image Edit）
 
@@ -353,6 +357,10 @@ Qwen へ渡してください。
 "sketch": "fan",
 "edit": { "prompt": "Redraw this flat diagram as a soft hand painted illustration ...", "seed": 1 }
 ```
+
+**下絵へ移したら、レシピの `prompt` を落とします。** `build.py` は `sketch` を持つレシピで
+`generate.py` まで降りないので、残った `prompt` は誰も振りません。残すと、その本文が「振られている」
+と数えられて、上の `retired` の検査が素通しします。
 
 **中身の入っていない枠も、枠として生成できません。** 薪棚・干し場・囲い（`recipes/firewood_rack.json`
 ほか）は、どれも 4 枚とも編み物の一塊・枯れ枝の茂み・縄を巻いた柱の林になりました。**「何も

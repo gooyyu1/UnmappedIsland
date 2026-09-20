@@ -1,11 +1,17 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/** 絵の注文の置き場（tools/comfyui/README.md「アイテムのプロンプト」）。 */
-const PROMPTS_DIR = 'tools/comfyui/prompts';
+/** 絵の生成の道具の置き場（tools/comfyui/README.md）。 */
+const COMFYUI_DIR = 'tools/comfyui';
+
+/** 絵の注文の置き場（同README「アイテムのプロンプト」）。 */
+const PROMPTS_DIR = `${COMFYUI_DIR}/prompts`;
 
 /** 1枚ぶんの生成と後処理の設定の置き場（同README「作り直す」）。 */
-const RECIPES_DIR = 'tools/comfyui/recipes';
+const RECIPES_DIR = `${COMFYUI_DIR}/recipes`;
 
 /** レシピが `prompts` を名乗らないときに generate.py が読むファイル（tools/comfyui/generate.py）。 */
 const DEFAULT_PROMPTS_FILE = 'lane_backgrounds.json';
@@ -13,7 +19,14 @@ const DEFAULT_PROMPTS_FILE = 'lane_backgrounds.json';
 /** generate.py がワークフローへ差し込む鍵。この2つを持つものが「今そのまま振れる注文」。 */
 const ORDER_KEYS = ['positive', 'negative'] as const;
 
+/**
+ * 生成の代わりに絵を作る手（build.py の `build_raw`）。**このどれかを持つレシピは generate.py まで
+ * 降りない**ので、そこに `prompt` が在っても誰も振らない。
+ */
+const INSTEAD_OF_GENERATING = ['underlay', 'stain', 'puff', 'glyph', 'sketch', 'paint'] as const;
+
 type Entry = Record<string, unknown>;
+type Recipe = Record<string, unknown>;
 
 function readJson(path: string): Record<string, unknown> {
   return JSON.parse(readFileSync(path, 'utf-8')) as Record<string, unknown>;
@@ -25,9 +38,7 @@ function jsonFilesIn(dir: string): string[] {
     .sort();
 }
 
-/**
- * 本文のエントリ（`_comment` のような、物を指さない鍵を除いたもの）。
- */
+/** 本文のエントリ（`_comment` のような、物を指さない鍵を除いたもの）。 */
 function entriesOf(file: string): [string, Entry][] {
   return Object.entries(readJson(`${PROMPTS_DIR}/${file}`)).filter(
     (pair): pair is [string, Entry] =>
@@ -36,17 +47,31 @@ function entriesOf(file: string): [string, Entry][] {
 }
 
 /**
- * レシピが名指ししている本文（ファイル名 → その中の名前）。
+ * そのレシピが generate.py まで降りるか（build.py の `build_raw` と同じ順で見る）。
  *
- * **レシピ1つを1つのファイルとして読むだけで足りる。** `edit.source` の連鎖で基準にされる側も
- * `recipes/` の中のファイルなので、ここを走査すれば一緒に拾える（build.py の produce_raw）。
+ * `edit` を持つレシピの基準は、`source` が指す別のレシピ（そちらを単体で読めば足りる）か、
+ * `source` を持たないなら自分から `edit` を外したもの。
  */
+function reachesGenerate(recipe: Recipe): boolean {
+  const edit = recipe.edit;
+  if (edit !== undefined) {
+    if (typeof edit === 'object' && edit !== null && 'source' in edit) return false;
+    return reachesGenerate(Object.fromEntries(Object.entries(recipe).filter(([key]) => key !== 'edit')));
+  }
+  return !INSTEAD_OF_GENERATING.some((key) => key in recipe);
+}
+
+/** レシピを名前順に読んだもの。 */
+function recipes(): [string, Recipe][] {
+  return jsonFilesIn(RECIPES_DIR).map((file) => [file, readJson(`${RECIPES_DIR}/${file}`)]);
+}
+
+/** レシピが名指ししている本文（プロンプト集のファイル名 → その中の名前）。 */
 function orderedNames(): Map<string, Set<string>> {
   const ordered = new Map<string, Set<string>>();
-  for (const file of jsonFilesIn(RECIPES_DIR)) {
-    const recipe = readJson(`${RECIPES_DIR}/${file}`);
+  for (const [, recipe] of recipes()) {
     const name = recipe.prompt;
-    if (typeof name !== 'string') continue;
+    if (typeof name !== 'string' || !reachesGenerate(recipe)) continue;
     const from = typeof recipe.prompts === 'string' ? recipe.prompts : DEFAULT_PROMPTS_FILE;
     const names = ordered.get(from) ?? new Set<string>();
     names.add(name);
@@ -92,5 +117,47 @@ describe('絵の注文', () => {
       }
     }
     expect(left).toEqual([]);
+  });
+
+  /**
+   * **下絵へ移したレシピに `prompt` が残ると、上の2つが揃って素通しする**——そのエントリは
+   * 「振られている」と数えられ、注文の鍵に残った本文が誰にも咎められない。生成の代わりに絵を
+   * 作る手を足したなら、同じ手で `prompt` を落とす。
+   */
+  it('prompt を持つのは、generate.py まで降りるレシピだけ', () => {
+    const wrong: string[] = [];
+    for (const [file, recipe] of recipes()) {
+      const has = 'prompt' in recipe;
+      const reaches = reachesGenerate(recipe);
+      if (has && !reaches) wrong.push(`${file} は生成まで降りないのに prompt を持つ`);
+      if (!has && reaches) wrong.push(`${file} は生成まで降りるのに prompt が無い`);
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  /**
+   * 振らなくなった本文を手で振ろうとしたとき、generate.py が入口で止めて今の作り方を告げること
+   * （tools/comfyui/README.md「アイテムのプロンプト」）。**塞ぐのではなく案内板にしてある**ので、
+   * 止まることと、行き先を告げることの両方を見る。
+   */
+  it('retired だけを持つ本文は、generate.py が入口で止めて行き先を告げる', () => {
+    const retired = entriesOf('objects.json').find(
+      ([, entry]) => 'retired' in entry && !('positive' in entry),
+    );
+    expect(retired, 'retired だけを持つエントリが objects.json に無い').toBeDefined();
+
+    // 止まる場所を見るための宛先。**生成まで進めば作られる**ので、無いままであることも確かめる。
+    const out = join(mkdtempSync(join(tmpdir(), 'prompt-orders-')), 'out');
+    const run = spawnSync(
+      'python3',
+      ['generate.py', retired![0], '--prompts', 'objects.json', '--out', out],
+      { cwd: COMFYUI_DIR, encoding: 'utf-8' },
+    );
+
+    expect(run.error, `generate.py を起動できない: ${run.error?.message ?? ''}`).toBeUndefined();
+    expect(run.status).toBe(1);
+    expect(run.stderr).toContain('retired');
+    expect(run.stderr).toContain('recipes/');
+    expect(existsSync(out)).toBe(false);
   });
 });
