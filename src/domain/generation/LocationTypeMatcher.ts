@@ -74,9 +74,11 @@ interface GuaranteeOpening {
  *
  * **どの保証もhard_limitsを満たすサイトを得られる配り方が在るなら、必ずそれを採る。** 保証を1件ずつ
  * 先着で固定すると、先に見た保証が取ったサイトのせいで、後の保証だけがhard_limitsを満たさないサイトへ
- * 回る（最高標高のサイトを山頂が取り、そこしか置けない尾根が山腹へ降りる）。**当てた先は後から
- * 振り替える**（増加路を辿る＝二部グラフの最大マッチング、crafting.tsの材料割り当てと同じ）ので、
- * 保証の宣言順は答えを変えない。
+ * 回る（最高標高のサイトを山頂が取り、そこしか置けない火口が山腹へ降りる）。
+ *
+ * **取り合いになったときは、先に宣言した保証が優先する**（宣言順は、書き手が決められる唯一の順序）。
+ * ただし優先が効くのは、**後の保証を置けなくしない範囲**まで——先の保証は、取ると後の保証が
+ * hard_limitsを満たすサイトを失う候補を飛ばす。
  *
  * それでも相手の見つからない受け口は、hard_limitsを満たさないサイトからも補う（保証は絶対のため）。
  */
@@ -98,7 +100,7 @@ function assignGuaranteedSites(
     for (let i = 0; i < guarantee.count; i += 1) openings.push({ type, ordered, eligible });
   }
 
-  const matched = matchOpeningsToEligibleSites(openings);
+  const matched = assignEligibleSitesInOrder(openings, sites);
   const assigned = new Set<Site>(matched.filter((s): s is Site => s !== undefined));
   const forced = new Map<Site, LocationTypeDef>();
   for (const [index, opening] of openings.entries()) {
@@ -112,10 +114,40 @@ function assignGuaranteedSites(
 }
 
 /**
- * 受け口ごとに、hard_limitsを満たすサイトを1つずつ当てる（当たらなければundefined）。当てた数は最大で、
- * **undefinedが残るのは、その受け口を満たすサイトが他の受け口へどう振り替えても足りないときだけ**。
+ * 受け口ごとに、hard_limitsを満たすサイトを1つずつ当てる（当たらなければundefined）。
+ *
+ * **宣言順に、取りたい順で取らせる。** ただし取るのは、**そのサイトを抜いても残りの受け口が今までどおりの
+ * 数を当てられる**ものだけ——後の保証の置き場を潰す候補は飛ばす。当てた数は全体で最大になり、
+ * **undefinedが残るのは、どう配り直してもその受け口までは届かないときだけ**。
  */
-function matchOpeningsToEligibleSites(openings: readonly GuaranteeOpening[]): (Site | undefined)[] {
+function assignEligibleSitesInOrder(
+  openings: readonly GuaranteeOpening[],
+  sites: readonly Site[],
+): (Site | undefined)[] {
+  const available = new Set<Site>(sites);
+  const assigned = new Array<Site | undefined>(openings.length).fill(undefined);
+
+  for (const [index, opening] of openings.entries()) {
+    const rest = openings.slice(index + 1);
+    const reachable = maxAssignableCount(openings.slice(index), available);
+    for (const site of opening.eligible) {
+      if (!available.has(site)) continue;
+      available.delete(site);
+      if (maxAssignableCount(rest, available) === reachable - 1) {
+        assigned[index] = site;
+        break;
+      }
+      available.add(site); // このサイトを取ると、後の保証がhard_limitsを満たすサイトを失う。
+    }
+  }
+  return assigned;
+}
+
+/**
+ * その受け口群へ同時に当てられるサイトの最大数。**当てた先は後から振り替える**（増加路を辿る＝
+ * 二部グラフの最大マッチング、crafting.tsの材料割り当てと同じ）ので、受け口を見る順では変わらない。
+ */
+function maxAssignableCount(openings: readonly GuaranteeOpening[], available: ReadonlySet<Site>): number {
   const openingOf = new Map<Site, number>();
 
   /**
@@ -125,7 +157,7 @@ function matchOpeningsToEligibleSites(openings: readonly GuaranteeOpening[]): (S
    */
   const tryTakeFor = (opening: number, visited: Set<Site>): boolean => {
     for (const site of openings[opening].eligible) {
-      if (visited.has(site)) continue;
+      if (!available.has(site) || visited.has(site)) continue;
       visited.add(site);
       const incumbent = openingOf.get(site);
       if (incumbent !== undefined && !tryTakeFor(incumbent, visited)) continue;
@@ -135,11 +167,10 @@ function matchOpeningsToEligibleSites(openings: readonly GuaranteeOpening[]): (S
     return false;
   };
 
-  for (let opening = 0; opening < openings.length; opening += 1) tryTakeFor(opening, new Set());
-
-  const matched = new Array<Site | undefined>(openings.length).fill(undefined);
-  for (const [site, opening] of openingOf) matched[opening] = site;
-  return matched;
+  let count = 0;
+  for (let opening = 0; opening < openings.length; opening += 1)
+    if (tryTakeFor(opening, new Set())) count += 1;
+  return count;
 }
 
 /** 指定軸の最大/最小順（同値はindex順で決定的に）。 */

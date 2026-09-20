@@ -6,19 +6,18 @@ import type { GenerationDefs } from '../../src/domain/generation/GenerationDefs'
 import type { GenerationScopeDef } from '../../src/domain/generation/GenerationScopeDef';
 
 /**
- * guarantees（カバレッジ保証、TerrainGeneration.md 3.4節）の強制割当が、**成立する配り方が在るなら
- * 必ずそれを採る**ことの検証。
+ * guarantees（カバレッジ保証、TerrainGeneration.md 3.4節）の強制割当が、**成立する配り方が在るなら必ず
+ * それを採り、取り合いでは先に宣言した保証を優先する**ことの検証。
  *
- * **同梱のterrain_generation.yamlではなく、この場で組んだ宣言で見る。** 保証が競合するには、同じ
- * サイトしか置けない保証が2件以上要る——同梱の宣言は保証が1件なので、競合そのものが起きない。
+ * **同梱のterrain_generation.yamlではなく、この場で組んだ宣言で見る。** 保証が取り合うには、同じサイトを
+ * 欲しがる保証が2件以上要る——同梱の宣言は保証が1件なので、取り合いそのものが起きない。
  */
 describe('guaranteesの強制割当', () => {
   /**
-   * 標高だけを軸に、保証を2件持つ島。`crater`は最上部（95以上）にしか置けず、`mountain_peak`は
-   * 80以上ならどこでも置ける。**宣言順に先着で固定すると、`mountain_peak`が最高標高のサイトを取り、
-   * `crater`がhard_limitsを満たさないサイトへ降りる。**
+   * 標高だけを軸に、保証を2件持つ島。`crater`は最上部（craterFloorだけ）にしか置けず、`mountain_peak`は
+   * 標高80以上ならどこでも置ける。どちらも高いサイトから取りたがるので、最高標高のサイトを取り合う。
    */
-  const yaml = (guarantees: readonly string[]): string => `
+  const yaml = (guarantees: readonly string[], craterFloor: number): string => `
 object_defs:
   peak_land: {}
   crater_land: {}
@@ -43,7 +42,7 @@ location_types:
     axis_preferences:
       elevation: {ideal: 100, tolerance: 20}
     hard_limits:
-      elevation: {min: 95}
+      elevation: {min: ${craterFloor}}
   slope:
     object_def: slope_land
     is_fallback: true
@@ -71,9 +70,27 @@ ${guarantees.map((line) => `      - ${line}`).join('\n')}
   const PEAK_GUARANTEE = '{location_type: mountain_peak, count: 1, axis: elevation, pick: max}';
   const CRATER_GUARANTEE = '{location_type: crater, count: 1, axis: elevation, pick: max}';
 
-  function load(guarantees: readonly string[]): { defs: GenerationDefs; scope: GenerationScopeDef } {
+  /**
+   * 宣言どおりに割り当てた後の、サイトごとの型名。**保証を宣言順そのままに渡す**ので、呼ぶ側が
+   * 「先に宣言した保証」を決められる。
+   */
+  function assign(
+    guarantees: readonly string[],
+    craterFloor: number,
+    elevations: readonly number[],
+  ): string[] {
+    const { defs, scope } = load(guarantees, craterFloor);
+    const sites = sitesWithElevations(elevations);
+    assignTypes(defs, scope, sites);
+    return sites.map((s) => s.type!.name);
+  }
+
+  function load(
+    guarantees: readonly string[],
+    craterFloor: number,
+  ): { defs: GenerationDefs; scope: GenerationScopeDef } {
     const codex = new WorldCodexYamlLoader()
-      .load('terrain_generation.yaml', yaml(guarantees))
+      .load('terrain_generation.yaml', yaml(guarantees, craterFloor))
       .buildAndReset();
     return { defs: codex.generation!, scope: codex.generation!.scopes.get('island')! };
   }
@@ -87,41 +104,37 @@ ${guarantees.map((line) => `      - ${line}`).join('\n')}
     });
   }
 
-  function typeNamesOf(sites: readonly Site[]): string[] {
-    return sites.map((s) => s.type!.name);
-  }
-
-  it('先に見た保証が譲れば両方が成り立つなら、譲らせる', () => {
-    const { defs, scope } = load([PEAK_GUARANTEE, CRATER_GUARANTEE]);
-    // 標高100のサイトはcraterにもmountain_peakにも置けるが、craterは95以上にしか置けない。
-    const sites = sitesWithElevations([100, 85, 10]);
-
-    assignTypes(defs, scope, sites);
-
+  it('先に宣言した保証が譲れば両方が成り立つなら、譲らせる', () => {
+    // craterは標高95以上にしか置けないので、標高100のサイトを取れるのはcraterだけ。
     // 先着で固定する実装では、mountain_peakが標高100を取り、craterが標高85（hard_limits違反）へ降りる。
-    expect(typeNamesOf(sites)).toEqual(['crater', 'mountain_peak', 'slope']);
+    expect(assign([PEAK_GUARANTEE, CRATER_GUARANTEE], 95, [100, 85, 10])).toEqual([
+      'crater',
+      'mountain_peak',
+      'slope',
+    ]);
   });
 
-  it('保証の宣言順は、配り方を変えない', () => {
-    const forward = sitesWithElevations([100, 85, 10]);
-    const reversed = sitesWithElevations([100, 85, 10]);
-
-    const first = load([PEAK_GUARANTEE, CRATER_GUARANTEE]);
-    assignTypes(first.defs, first.scope, forward);
-    const second = load([CRATER_GUARANTEE, PEAK_GUARANTEE]);
-    assignTypes(second.defs, second.scope, reversed);
-
-    expect(typeNamesOf(reversed)).toEqual(typeNamesOf(forward));
+  it('どちらでも成り立つ取り合いは、先に宣言した保証が取る', () => {
+    // craterが標高90まで置けるので、標高100と90のどちらをどちらが取っても両方が成り立つ。
+    expect(assign([PEAK_GUARANTEE, CRATER_GUARANTEE], 90, [100, 90, 10])).toEqual([
+      'mountain_peak',
+      'crater',
+      'slope',
+    ]);
+    expect(assign([CRATER_GUARANTEE, PEAK_GUARANTEE], 90, [100, 90, 10])).toEqual([
+      'crater',
+      'mountain_peak',
+      'slope',
+    ]);
   });
 
   it('どう振り替えても足りないサイトへは、hard_limitsを満たさなくても保証を置く', () => {
-    const { defs, scope } = load([PEAK_GUARANTEE, CRATER_GUARANTEE]);
     // 95以上のサイトが1つも無い島。craterは置けるサイトを持たないが、保証は絶対。
-    const sites = sitesWithElevations([90, 85, 10]);
-
-    assignTypes(defs, scope, sites);
-
     // 置けるサイトが在るmountain_peakを先に満たし、craterは残るサイトのうち最高標高のものへ降りる。
-    expect(typeNamesOf(sites)).toEqual(['mountain_peak', 'crater', 'slope']);
+    expect(assign([PEAK_GUARANTEE, CRATER_GUARANTEE], 95, [90, 85, 10])).toEqual([
+      'mountain_peak',
+      'crater',
+      'slope',
+    ]);
   });
 });
