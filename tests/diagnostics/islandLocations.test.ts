@@ -15,9 +15,20 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  * 見るのは**どの場所が行になったかだけ**で、値は見ない。値の妥当性は各解析の単体試験と、再生成した
  * レポートの差分が持つ。
  */
+/**
+ * 「海でしか手に入らない」の例として、解説が名指ししている型——`src/analysis/islandLocations.ts` の
+ * `seaOnly`・`seaOnlyObjectsOf`、`src/analysis/balanceTables.ts` の `objectCosts`・`allSteps`、
+ * `docs/diagnostics/BalanceStats.md`「海でしか手に入らないものを外しています」。
+ *
+ * **名指しは、その型が陸の`explore`の候補に1つ載っただけで静かに嘘になる。** 海藻が実際にそうなった
+ * （issue #2403）ので、名指しされている側が`seaOnly`に居ることをここで留める。**足すのは、解説の側へ
+ * 新しい名前を書いたとき。**
+ */
+const NAMED_AS_SEA_ONLY: readonly string[] = ['fish_shoal', 'bird_egg'];
+
 describe('診断レポートが数える土地', () => {
   const codex = bundledCodex();
-  const { island, excludedSea } = islandLocationsOf(codex);
+  const { island, excludedSea, seaOnly } = islandLocationsOf(codex);
 
   // **海かどうかは定義から直に引く**——外した一覧から作ると、線が何も外さなくなったときに
   // 突き合わせる相手ごと空になり、下の表の検査が素通しになる。
@@ -29,6 +40,10 @@ describe('診断レポートが数える土地', () => {
     // 一覧には海区に湧く土地（小島）も入るので、海区を1つ残らず含むことで見る。
     const excluded = new Set(excludedSea.map(({ def }) => def.name));
     expect([...seaNames].filter((name) => !excluded.has(name))).toEqual([]);
+  });
+
+  it.each(NAMED_AS_SEA_ONLY)('解説が海でしか手に入らないと名指しする %s は、seaOnly に居る', (name) => {
+    expect(seaOnly.has(codex.objectNames.getId(name))).toBe(true);
   });
 
   it('海区に湧く土地も、島の土地から外れている', () => {
