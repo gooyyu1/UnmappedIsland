@@ -413,21 +413,49 @@ export class ShownCards {
    *
    * **受け取るのはドロップ1つ**で、掴んだ場所・重ねた先・枚数をばらして渡させない。ばらすと、噛み
    * 合わない組（別のドロップの掴み元と重ね先）を渡しても型は通り、起きていない組み合わせを答える。
-   *
-   * 同じ場所を2度引かないのは、**同じ束へ重ねたことを参照の一致で見分ける**ため（combinationOf）。
    */
   combinationAt(drop: ShownDrop): CardCombination | undefined {
-    // 重ねた相手が居なければ組み合わせも無い（隙間・空き枠へ落としたドロップ）。
-    if (drop.target.kind !== 'combine') return undefined;
+    // 重ねた相手が居なければ組み合わせも無い（隙間・空き枠へ落としたドロップではtargetが無い）。
+    const { dragged, target } = this.stacksOf(drop);
+    return this.combinationBetween(dragged, target, drop.count);
+  }
 
+  /**
+   * そのドロップが指している、掴んだ札と重ねた相手（居なければundefined。重ねたのでなければ相手は
+   * 無い）。
+   *
+   * **その場所の並びは1度しか作らない。** stacksAtは呼ぶたびにその場所の札を丸ごと作り直すので、
+   * 同じドロップについて何度も引くと、引いた回数だけ同じものを作ることになる。掴み元と落とし先が
+   * 同じ場所なら同じ並びから採るのは、**同じ束へ重ねたことを参照の一致で見分ける**ため
+   * （combinationOf）。
+   */
+  private stacksOf(drop: ShownDrop): {
+    readonly dragged: ObjectCardStack | undefined;
+    readonly target: ObjectCardStack | undefined;
+  } {
     const fromStacks = this.stacksAt(drop.from);
     const dragged = fromStacks[drop.fromIndex];
-    const target = (drop.from === drop.to ? fromStacks : this.stacksAt(drop.to))[drop.target.index];
+    if (drop.target.kind !== 'combine') return { dragged, target: undefined };
+
+    const toStacks = drop.from === drop.to ? fromStacks : this.stacksAt(drop.to);
+    return { dragged, target: toStacks[drop.target.index] };
+  }
+
+  /**
+   * その2枚を重ねたときの組み合わせ（返すものが無ければundefined）。**成立するとは限らない**のは
+   * combinationAtと同じ。
+   *
+   * **個体を1つも出していない札（帰りを待つ印）は、掴む相手にも重ねる相手にもならない。**
+   */
+  private combinationBetween(
+    dragged: ObjectCardStack | undefined,
+    target: ObjectCardStack | undefined,
+    count: number,
+  ): CardCombination | undefined {
     if (dragged === undefined || target === undefined) return undefined;
-    // 個体を1つも出していない札（帰りを待つ印）は、掴む相手にも重ねる相手にもならない。
     if (dragged.objects.length === 0 || target.objects.length === 0) return undefined;
 
-    return this.source.combinationOf(dragged, target, drop.count);
+    return this.source.combinationOf(dragged, target, count);
   }
 
   /**
@@ -452,18 +480,72 @@ export class ShownCards {
   ): { readonly told: CardDropEffect; readonly combination: CardCombination | undefined } | undefined {
     if (drop.target.kind !== 'combine') return undefined;
 
-    const dragged = this.stacksAt(drop.from)[drop.fromIndex];
+    const { dragged, target } = this.stacksOf(drop);
+    return this.overlayEffect(dragged, target, drop.count);
+  }
+
+  /**
+   * その2枚を重ねたときに言うことと、それが**実行される**組み合わせなのか（combineEffectの中身。
+   * ドロップではなく札2枚で受けるのは、並びをまとめて引いた側からも同じ順を通すため）。
+   */
+  private overlayEffect(
+    dragged: ObjectCardStack | undefined,
+    target: ObjectCardStack | undefined,
+    count: number,
+  ): { readonly told: CardDropEffect; readonly combination: CardCombination | undefined } | undefined {
     if (dragged === undefined) return undefined;
 
-    const combination = this.combinationAt(drop);
+    const combination = this.combinationBetween(dragged, target, count);
     if (combination?.enabled === true) return { told: combination, combination };
 
-    const into = this.contentsUnder(drop);
-    const putIn = into === undefined ? undefined : dragged.dropInto?.(into, undefined, drop.count);
+    // 自分自身の中へは入れられない（1枚しか映していないカードを、そのカードへ重ねた場合）。
+    const into = target === undefined || target === dragged ? undefined : target.contentsFor(dragged);
+    const putIn = into === undefined ? undefined : dragged.dropInto?.(into, undefined, count);
     if (putIn !== undefined) return { told: putIn, combination: undefined };
 
     // 残るのは断る組み合わせだけ。実行されないので、記録に残す組み合わせも無い。
     return combination === undefined ? undefined : { told: combination, combination: undefined };
+  }
+
+  /**
+   * 掴んだ札を**重ねれば何かが起きる**枠（場所ごとに、その場所の並びの中の位置）。理由を告げて
+   * 断るだけの相手は入らない（CardInteraction.md 2.1節）。
+   *
+   * **1枚ずつ問わせずにまとめて答える。** 枠を1つ問われるたびにその場所の札を丸ごと作り直す
+   * （stacksAt）ので、並んでいる枠の数だけ問われれば枚数の2乗で伸びる。ここは**場所ごとに並びを
+   * 1度だけ作る**ので、答えを出す値段は枚数に比例する。
+   *
+   * 見るのは1枚を運んだとき。**まとめて運べる枚数（multiDropLimit）は見ない**——ふちの光が示すのは
+   * 「持っていけば何かが起きる」だけで、何枚ついてくるかは重ねてから数えるため
+   * （CardDragController.trackCarry）。
+   */
+  acceptingCells(
+    from: CardSpot,
+    fromIndex: number,
+    spots: readonly CardSpot[],
+  ): ReadonlyMap<CardSpot, ReadonlySet<number>> {
+    const bySpot = new Map<CardSpot, readonly (ObjectCardStack | undefined)[]>();
+    const stacksAt = (spot: CardSpot): readonly (ObjectCardStack | undefined)[] => {
+      const known = bySpot.get(spot);
+      if (known !== undefined) return known;
+
+      const stacks = this.stacksAt(spot);
+      bySpot.set(spot, stacks);
+      return stacks;
+    };
+
+    const accepting = new Map<CardSpot, ReadonlySet<number>>();
+    const dragged = stacksAt(from)[fromIndex];
+    if (dragged === undefined) return accepting;
+
+    for (const spot of spots) {
+      const indices = new Set<number>();
+      stacksAt(spot).forEach((target, index) => {
+        if (this.overlayEffect(dragged, target, 1)?.told.enabled === true) indices.add(index);
+      });
+      accepting.set(spot, indices);
+    }
+    return accepting;
   }
 
   /**
@@ -479,10 +561,10 @@ export class ShownCards {
    * 実際に起きることのほうが、起きない理由より先に見せるものだから。
    */
   dropEffect(drop: ShownDrop): CardDropEffect | undefined {
+    if (drop.target.kind === 'combine') return this.combineEffect(drop)?.told;
+
     const dragged = this.stacksAt(drop.from)[drop.fromIndex];
     if (dragged === undefined) return undefined;
-
-    if (drop.target.kind === 'combine') return this.combineEffect(drop)?.told;
 
     // 借りた札の枠はワールドの場所ではないので、そこへ「入れる」ことはできない（重ねるだけ）。
     if (drop.to === 'windowCard') return undefined;
@@ -528,16 +610,6 @@ export class ShownCards {
     const moved = this.dropEffect(drop)?.movedIds ?? [];
     const grabbed = moved.at(0);
     return grabbed === undefined ? undefined : { grabbed, followers: moved.slice(1) };
-  }
-
-  /** カードに重ねたとき、そのカードが中身を映す場所（入れ物でなければundefined）。 */
-  private contentsUnder(drop: ShownDrop): CardPlace | undefined {
-    if (drop.target.kind !== 'combine') return undefined;
-
-    const dragged = this.stacksAt(drop.from)[drop.fromIndex];
-    const target = this.stacksAt(drop.to)[drop.target.index];
-    // 自分自身の中へは入れられない（1枚しか映していないカードを、そのカードへ重ねた場合）。
-    return dragged === undefined || dragged === target ? undefined : target?.contentsFor(dragged);
   }
 
   // ---- カードの端の移動 ----

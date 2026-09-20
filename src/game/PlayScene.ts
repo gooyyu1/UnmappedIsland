@@ -58,6 +58,7 @@ import type { CardEdgeAction } from './ui/cardEdges';
 import { borrowedFace } from './ui/cardFace';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
+import type { Card } from './ui/Card';
 import { CardLane } from './ui/CardLane';
 import type { LaneCell } from './ui/laneCells';
 import { foundCells, hiddenCountCells } from './ui/laneCells';
@@ -562,6 +563,7 @@ export class PlayScene extends ResponsiveScene {
   private resetForNewVisit(): void {
     this.drag = new CardDragController(this, () => this.metrics, {
       describeDrop: (drop) => this.describeDrop(drop),
+      acceptingCards: (from, fromIndex, lanes) => this.acceptingCards(from, fromIndex, lanes),
       onDrop: (drop, releasedRect) => this.applyDrop(drop, releasedRect),
       grab: (card, home) => this.cardTable.grab(card, home),
     });
@@ -979,6 +981,34 @@ export class PlayScene extends ResponsiveScene {
       enabled: told.enabled,
       tooltip: interactionTooltip({ label: told.name, ...told }),
     };
+  }
+
+  /**
+   * 掴んだ札を重ねれば何かが起きる札（CardDragController.showAcceptingCards）。**受け入れるかを
+   * 決めるのはShownCards**で、ここはレーンと場所を突き合わせるだけ。
+   *
+   * **今ワールドの場所を映していないレーンは落とし先にならない**ので、そこの札は光らない
+   * （子ウィンドウが説明のタブを開いている間の中身のレーン、札を借りていない窓の札の枠）。
+   */
+  private acceptingCards(from: CardLane, fromIndex: number, lanes: readonly CardLane[]): ReadonlySet<Card> {
+    const grabbed = this.spotOf(from);
+    if (grabbed === undefined) return new Set();
+
+    const spotOfLane = new Map<CardLane, CardSpot>();
+    for (const lane of lanes) {
+      const spot = this.spotOf(lane);
+      if (spot !== undefined) spotOfLane.set(lane, spot);
+    }
+
+    const accepting = this.shown.acceptingCells(grabbed, fromIndex, [...spotOfLane.values()]);
+    const cards = new Set<Card>();
+    for (const [lane, spot] of spotOfLane) {
+      const indices = accepting.get(spot);
+      if (indices === undefined) continue;
+
+      for (const { index, card } of lane.placements) if (indices.has(index)) cards.add(card);
+    }
+    return cards;
   }
 
   /** そのレーンに出ている束（ShownCards）。掴める札もタップできる札も、この並びの中にしかない。 */
