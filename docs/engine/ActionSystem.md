@@ -59,9 +59,10 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 - `combinationsWith(instrument, agent)` — ドラッグ中のハイライト等のために、**今成立する**重ねる操作を
   宣言順に列挙する。相手のマッチング（1）だけでなく `conditions`（2）まで見る——**実行できないものを
   黙って落とし先にすると、落とせるのに何も起きない**という形になるため。
-- `refusedCombinationsWith(instrument, agent)` — 逆に、`conditions` で成立せず、**断る理由**
-  （`reason`、[`GameElementDefinition.md`](./GameElementDefinition.md)
-  14.6節）を宣言しているものだけを列挙する。画面がこちらを
+- `refusedCombinationsWith(instrument, agent)` — 逆に、成立せず、**断る理由**
+  （`conditions` の `reason` と、丸ごと受け取れないときの `no_room_reason`。
+  [`GameElementDefinition.md`](./GameElementDefinition.md)
+  14.6節・11.2.1節）を宣言しているものだけを列挙する。画面がこちらを
   **理由を言うためだけの落とし先**として出すのは、成立するものが1つも無いときだけ
   （[`../ui/CardInteraction.md`](../ui/CardInteraction.md)
   2.1 節）。上の「黙って」がここに掛かる——**理由が出るなら、実行できない落とし先を出してよい。**
@@ -73,8 +74,8 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 
 **容量**（`acceptedCountIncludingSelf` が0の相手）はこの門ではなく、`combinationsWith` の側の条件
 （`Combination.canExecute`）。0は「何個受け取れるか」の答え＝**断る理由**であって、候補になるかどうかの
-判定ではない。両方の門にすると、満杯を `conditions` にも書いた宣言（満杯の罠の `trap_baited`）は条件と
-容量が同時に落ちるので、**宣言した理由が決して届かなくなる。**
+判定ではない。両方の門にすると、**容量で断る宣言（炉へ薪をくべる・罠へ餌を仕掛ける）は、名乗った
+`no_room_reason` が決して届かなくなる。**
 
 **どちらの札を `self` として引くか**（両向きとも引いたうえで、成立するほうを先に採る。どちらの向きも
 成立しないなら落とされた側）と、複数マッチした場合にどれを実行するかの解決はUI層に委ねる

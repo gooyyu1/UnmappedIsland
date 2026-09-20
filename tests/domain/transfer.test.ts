@@ -356,7 +356,10 @@ object_defs:
       return `
 object_defs:
   keeper:
-    props: {}
+    slots:
+      hand:
+        cells:
+          - {accept: {tag: fuel}}
   branch:
     tags: [fuel]
     props:
@@ -387,7 +390,11 @@ object_defs:
       const codex = load(yaml);
       const keeper = spawn(codex, 'keeper');
       const hearth = spawn(codex, 'hearth');
+      // **手に持たせてから重ねる。** どこにも属さない物は、消えても消えなくても親を持たないので、
+      // 「薪が残ったか」を見分けられない。
       const branch = spawn(codex, 'branch');
+      expect(branch.moveToSlotOrRejection(keeper.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+
       const combination = hearth
         .refusedCombinationsWith(branch, keeper)
         .concat(hearth.combinationsWith(branch, keeper))
@@ -397,34 +404,35 @@ object_defs:
         refusalReason: combination?.refusal()?.reasonName,
         executed: combination?.tryExecute() === true,
         hearthFuel: hearth.tryGetProperty(codex.propertyNames.getId('fuel'))?.number ?? 0,
-        branchIsGone:
-          branch.parent === undefined &&
-          branch.tryGetProperty(codex.propertyNames.getId('fuel')) !== undefined,
+        branchIsGone: branch.parent === undefined,
       };
     }
 
     it('丸ごと入る空きがあれば、今までどおり移して相手を消す', () => {
-      expect(addFuel(hearthYaml({ fuel: 10 }))).toMatchObject({
+      expect(addFuel(hearthYaml({ fuel: 10 }))).toEqual({
         refusalReason: undefined,
         executed: true,
         hearthFuel: 30,
+        branchIsGone: true,
       });
     });
 
     it('丸ごと入らないなら1つも移さず、断る理由を名乗る', () => {
       // 空きは19.9。端数だけ受け取ると、残り（0.1）は薪ごと消える。**受け取らないほうへ倒している。**
-      expect(addFuel(hearthYaml({ fuel: 10.1 }))).toMatchObject({
+      expect(addFuel(hearthYaml({ fuel: 10.1 }))).toEqual({
         refusalReason: 'hearth_full',
         executed: false,
         hearthFuel: 10.1,
+        branchIsGone: false,
       });
     });
 
     it('allow_overflowを書いた輸送はそのまま（あふれる分を捨てると名乗った形）', () => {
-      expect(addFuel(hearthYaml({ fuel: 25, overflow: true }))).toMatchObject({
+      expect(addFuel(hearthYaml({ fuel: 25, overflow: true }))).toEqual({
         refusalReason: undefined,
         executed: true,
         hearthFuel: 30,
+        branchIsGone: true,
       });
     });
   });

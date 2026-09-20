@@ -344,7 +344,7 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 passives:
   - conditions:
       - {prop: heat, in_stage: ember}
-      - {prop: fuel, in_stage: none}   # 薪が載っていれば、火は衰える側ではなく育つ側
+      - {prop: fuel, eq: 0}   # 薪が残っていれば、火は衰えない（2.2節）
     add:
       self: {heat: -2}   # 1〜4を2 tick(30分)で通り抜けて死ぬ。石囲いの炉は-0.125（8時間）
 ```
