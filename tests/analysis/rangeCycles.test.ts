@@ -350,6 +350,25 @@ object_defs:
       - conditions: [{prop: heat, in_stage: warm}]
         add: {parent: {ambient_temperature: 2}}
 
+  # 個体差のある冷える石。**軽く出れば段より下、重く出れば段の中**——生成時のロール（6.2節）が
+  # 10〜50なので、warm（40〜70）に生まれる個体が居る。「決して入らない」は型のすべての個体について
+  # 言うことなので、段に最も近い側に出た個体（ここでは重いほう）で見なければ、押し手を落とす。
+  cooling_stone:
+    tags: [item]
+    props:
+      heat:
+        value: {min: 10, max: 50}
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 40}
+          - {name: searing, min: 70}
+        passives:
+          - add: {self: {heat: -1}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
   # 熱を吐く石。**上がる速さは読めるが、読み落とした増減が在る**——焼かれて熱は上がる一方に見えて、
   # searingでは自分から熱を吐く（段の下の増減、8.2節）ので、上端より上に生まれてもwarmへ下りてくる。
   # 上がる速さが読めるかを分かれ目にすると、この石はbanked_stoneと同じ「決して入らない」に倒れる。
@@ -1073,6 +1092,15 @@ object_defs:
     // 上の端（banked_stone）の裏返し。下へ抜けたことにしないだけだと、効き始めが0＝最初のtickから
     // 止まらずに効く押し手になる。その値はwarmを決して跨がないので、起こるのは押し手が消えるほう。
     expect(externalDeltasOf('dropped_stone', 'ambient_temperature')).toEqual([]);
+  });
+
+  it('段の中に生まれる個体が居るなら、軽く出たほうが段より下でも、入らないことにしない', () => {
+    // ロールは10〜50で、40以上に出た個体はwarmに生まれる。軽く出たほう（10）だけを見て
+    // 「決して入らない」と読むと、その個体たちが押す分ごと押し手が消える。いつ入るか・いつ抜けるかは
+    // どちらも読めない側なので、効き始めは0・止まるまでは無しのままでよい。
+    expect(externalDeltasOf('cooling_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
   });
 
   it('上がる速さが読めていても、段の下の増減を数から外しているなら、入らないことにしない', () => {

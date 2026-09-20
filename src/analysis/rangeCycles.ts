@@ -770,32 +770,37 @@ function ticksUntilStageEntered(def: ObjectDef, required: SelfStageRequirement):
  * 要求された段へ、値が上がっていって**下端へ届く**までのtick数。上がっていかない値、値の並びの上に
  * 位置を持たない段（シンボル型、6.6節）ならundefined。**既にその段に居るなら0**（ticksToReach）。
  *
- * **生まれた時点で上端より上に在る値は、上がっては入らない**——上がるほど段から遠ざかるので、
- * そこから先は決して入らないと言えるか（neverCrossesIntoStage）の問いになる。
+ * **どのロールも上端より上に出る値は、上がっては入らない**——上がるほど段から遠ざかるので、
+ * そこから先は決して入らないと言えるか（neverCrossesIntoStage）の問いになる。段に最も近い側に
+ * 出た個体（nearestToStage）で見るのは、言い切る相手がその型のすべての個体だから。
  */
 function ticksUntilStageEnteredUpward(
   def: ObjectDef,
   required: SelfStageRequirement,
 ): number | 'never' | undefined {
   const amounts = tickAmountsOf(def, required.propertyGlobalId);
-  const value = staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END);
   // 届くまでを**最も長く**見る側（slowest）。押し手が押せる間を最も短く見る側へ揃える。
   const perTick = paceTowards(amounts.possible, 'on_max')?.slowest.amount;
 
   const upperBound = stageUpperBoundOf(def, required);
-  const bornAboveStage = value !== undefined && upperBound !== undefined && value >= upperBound;
-  if (bornAboveStage) return neverCrossesIntoStage(amounts, perTick) ? 'never' : undefined;
+  const nearest = nearestToStage(def, required.propertyGlobalId, 'on_max');
+  const everyRollAboveStage = nearest !== undefined && upperBound !== undefined && nearest >= upperBound;
+  if (everyRollAboveStage) return neverCrossesIntoStage(amounts, perTick) ? 'never' : undefined;
 
-  return ticksToReach(value, required.lowerBound, perTick);
+  return ticksToReach(
+    staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
+    required.lowerBound,
+    perTick,
+  );
 }
 
 /**
  * 要求された段へ、値が下がっていって**上端を割る**までのtick数。下がっていかない値、上から入れない
  * 段（stageUpperBoundOf）ならundefined。
  *
- * **生まれた時点で下端より下に在る値は、下がっては入らない**——下がるほど段から遠ざかる。上の端
- * （ticksUntilStageEnteredUpward）を裏返しただけで、決して入らないと言えるかの分かれ目も同じ
- * （neverCrossesIntoStage）。
+ * **どのロールも下端より下に出る値は、下がっては入らない**——下がるほど段から遠ざかる。上の端
+ * （ticksUntilStageEnteredUpward）を裏返しただけで、決して入らないと言えるかの分かれ目も、
+ * 段に最も近い側に出た個体で見ることも同じ。
  *
  * 下端と上端の間に生まれた値も、ここでは入らない（ticksToFallBelow）——その段に既に居るので、
  * 上から落ちて入るのとは別。
@@ -805,21 +810,43 @@ function ticksUntilStageEnteredDownward(
   required: SelfStageRequirement,
 ): number | 'never' | undefined {
   const amounts = tickAmountsOf(def, required.propertyGlobalId);
-  const value = staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END);
   // 速さはticksUntilStageEnteredUpwardと同じく、届くまでを**最も長く**見る側（slowest）。
   const perTick = paceTowards(amounts.possible, 'on_min')?.slowest.amount;
 
-  const bornBelowStage =
-    value !== undefined && required.lowerBound !== undefined && value < required.lowerBound;
-  if (bornBelowStage) return neverCrossesIntoStage(amounts, perTick) ? 'never' : undefined;
+  const nearest = nearestToStage(def, required.propertyGlobalId, 'on_min');
+  const everyRollBelowStage =
+    nearest !== undefined && required.lowerBound !== undefined && nearest < required.lowerBound;
+  if (everyRollBelowStage) return neverCrossesIntoStage(amounts, perTick) ? 'never' : undefined;
 
-  return ticksToFallBelow(value, stageUpperBoundOf(def, required), perTick);
+  return ticksToFallBelow(
+    staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
+    stageUpperBoundOf(def, required),
+    perTick,
+  );
+}
+
+/**
+ * 生成時のロール（6.2節）のうち、**その段に最も近い側に出た個体**の値——段から遠ざかる向きが
+ * movingAwayTowardなら、その端から最も遠いロール（rollEndAwayFrom）がそれに当たる。
+ *
+ * **窓の長さを数えるGATE_WINDOW_ROLL_ENDとは別の問い。** あちらは1つの個体についての長さなので端を
+ * 固定するが、ここで問うのは「**どの個体も段の向こう側に生まれるか**」。最も近い個体が越えていな
+ * ければ言い切れないので、端は向きで裏返る——片方に固定すると、下の端では段の中に生まれる個体が
+ * 居るのに押し手を落とす。
+ */
+function nearestToStage(
+  def: ObjectDef,
+  propertyGlobalId: PropertyGlobalId,
+  movingAwayToward: RangeEventLabel,
+): number | undefined {
+  return staticValueOf(def, propertyGlobalId, rollEndAwayFrom(movingAwayToward));
 }
 
 /**
  * **その段の向こう側に生まれた値について、そこへ入ることが決して起こらないと言い切れるか。**
- * 呼ぶのは、入り口を既に通り過ぎて生まれたと分かっている側だけ——perTickAwayFromStageは、その値を
- * 段から**遠ざける**向きの速さ（上端より上に生まれたなら上がる速さ、下端より下なら下がる速さ）。
+ * 呼ぶのは、どのロールも入り口を既に通り過ぎていると分かっている側だけ（nearestToStage）
+ * ——perTickAwayFromStageは、その値を段から**遠ざける**向きの速さ（上端より上に生まれたなら上がる
+ * 速さ、下端より下なら下がる速さ）。
  *
  * **言い切るには、遠ざける動きを名指せなければならない。** 動きが1つも読めない値を「決して
  * 入らない」と読むと、押し手に押されて初めて動く値——炉の火力は薪が焚べられて上がる——に縛られた
