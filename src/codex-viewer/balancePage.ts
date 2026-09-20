@@ -560,7 +560,7 @@ function rainWaterHtml(view: CodexView, tables: BalanceTables): string {
 function consumptionHtml(view: CodexView, tables: BalanceTables): string {
   const rows = tables.consumption.map((row) => [
     escapeHtml(row.propertyName),
-    `<span class="muted">${escapeHtml(row.condition)}</span>`,
+    `<span class="muted">${escapeHtml(row.condition.text)}</span>`,
     ...row.perTickByCharacter.map((amount) =>
       amount === undefined
         ? '—'

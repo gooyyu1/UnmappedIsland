@@ -52,11 +52,12 @@
 出どころを持たない**書式そのもの**を見せるときは、上の形のようにプレースホルダで書きます
 （`<ファイル>` は `>` を含むので、印としては読まれません）。
 
-区切りは空白なので、**空白を含む値は二重引用符で囲みます**（`consumption` 節の `condition` など、
-生成物の側に空白を含む値があります）。囲んだ中の `=` は値の一部で、列と値の切れ目は最初の1つだけです。
+区切りは空白なので、**空白を含む値は二重引用符で囲みます**（`chain_routes`・`daily_minimum_menu` 節の
+`route` は、工程を `→` でつないだ値です）。囲んだ中の `=` は値の一部で、列と値の切れ目は最初の1つだけ
+です。
 
 ```text
-**気温が寒さの入口以上なら1tickに8.00戻ります**<!-- stats: balance.yaml consumption property=warmth condition="祖先のambient_temperature ≥ chill_point" character=medic per_tick -->
+**青いヤシの実から水だけを取るなら1日152分**<!-- stats: balance.yaml chain_routes place=島全体 property=hydration route="palm_tree.pick_green_coconut → green_coconut.bore" daily_minutes -->
 ```
 
 ### 印を付けるのは、書き写しと、節を畳んだ読み方だけ

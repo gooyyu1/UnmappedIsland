@@ -765,14 +765,14 @@
 通した先も同じ `eat` を継ぐので、**製塩が前提であること**（3.9.2 節）**は、菌を避ける手にはなりません。**
 
 **それでも 1 日 3 つは、症状の段へ届きません。** 入る菌は 1 日 9 ですが、感染している間は免疫が上がり
-続け（+0.25/tick<!-- stats: balance.yaml consumption property=immunity condition=pathogenが段latent以上にある character=medic per_tick -->）、
+続け（+0.25/tick<!-- stats: balance.yaml consumption property=immunity condition=in_stage_or_above(self.pathogen,latent) character=medic per_tick -->）、
 素の 60 から 10 時間で最上段（`primed`）へ届きます。そこから先は 1 tick に
-−0.30<!-- stats: balance.yaml consumption property=pathogen condition="段 immunity=primed" character=medic per_tick --> 引くので、
-菌自身の増殖（+0.15/tick<!-- stats: balance.yaml consumption property=pathogen condition=pathogenが段latent以上にある character=medic per_tick -->）を
+−0.30<!-- stats: balance.yaml consumption property=pathogen condition=stage(self.immunity,primed) character=medic per_tick --> 引くので、
+菌自身の増殖（+0.15/tick<!-- stats: balance.yaml consumption property=pathogen condition=in_stage_or_above(self.pathogen,latent) character=medic per_tick -->）を
 差し引いた正味で 1 日 14 引けます。入る 9 を上回るので、**菌は食事ごとに 0 へ戻ります**（他の段が引く量は
 [`DigestionSystem.md`](../engine/DigestionSystem.md) 6.2 節）。**条件は間隔です**——発熱の段は 5 なので、
 1 切れ +3 が 2 回続けて入ればその場で乗ります。最上段へ届くまでは `robust` の
-−0.20<!-- stats: balance.yaml consumption property=pathogen condition="段 immunity=robust" character=medic per_tick --> なので、
+−0.20<!-- stats: balance.yaml consumption property=pathogen condition=stage(self.immunity,robust) character=medic per_tick --> なので、
 増殖を差し引いた正味（−0.05/tick）では 1 引くのに 5 時間かかり、**間隔が 5 時間では 1 日 3 つでも
 ちょうど段に乗ります**——起きている時間帯へ 3 食を寄せるとそこが境目で、8 時間おきに離せば届きません。
 
