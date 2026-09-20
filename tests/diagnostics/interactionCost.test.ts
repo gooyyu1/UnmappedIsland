@@ -4,16 +4,22 @@ import type { WorldObject } from '../../src/domain/WorldObject';
 import type { StartedGame } from '../../src/domain/generation/NewGame';
 import { startNewGame } from '../../src/domain/generation/NewGame';
 import { seededRng } from '../../src/domain/Rng';
+import type { PlayScreenView } from '../../src/game/view/PlayScreenView';
+import { fromGameSession } from '../../src/game/view/PlayScreenView';
+import type { CardSpot } from '../../src/game/view/ShownCards';
+import { ShownCards } from '../../src/game/view/ShownCards';
+import type { Localization } from '../../src/locale/Localization';
+import { parseLocale } from '../../src/locale/Localization';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
- * **貯め込み（キャッシュ）を入れずに毎回導出していることの値段**を測る。見るのは2つ——担いだ木を
+ * **貯め込み（キャッシュ）を入れずに毎回導出していることの値段**を測る。見るのは、担いだ木を
  * 辿って出す `weight`/`load` の実効値（[`ContainerSystem.md`](../../docs/engine/ContainerSystem.md)
- * 4.1節）と、札を掴んだ瞬間に並んでいる札1枚ずつへ問う組み合わせ
+ * 4.1節）と、札を掴んだ瞬間の走査——**問われた側が出す組み合わせ**と、**それを回す画面側**
  * （[`ActionSystem.md`](../../docs/engine/ActionSystem.md) 1.3節）。**入れずに済むことを言えるのは、
  * ここが緑であることだけ。**
  *
- * **どちらも規模に頭打ちが無い。**
+ * **どれも規模に頭打ちが無い。**
  *
  * - **担いだ木の物の数に頭打ちは無い。** 枠（`cell_count`）とかさ（`capacity`）が決めるのは物の数では
  *   なく、**詰める物1個のかさとの割り算**なので、かさの小さい物で埋めればいくらでも増える。
@@ -21,16 +27,18 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  *   同じ型を並べればいくらでも増える。
  *
  * だから「この規模で収まった」だけでは足りない。**規模を決め打ちした状態で値に上限を引き**、札のほうは
- * さらに**周りの枚数を倍にしても1枚あたりが動かないこと**を見る。後者は伸び方への上限なので、機械の
+ * さらに**枚数を増やしたときの伸び方**にも上限を引く——問われた側は周りの枚数を増やしても1枚あたりが
+ * 動かないこと、走査のほうは枚数に**比例**で伸びること（2乗で伸びないこと）。伸び方への上限は、機械の
  * 速さにも将来の宣言の数にも左右されない。
  *
  * **担いだ木の側に伸び方の上限は置いていない。** この木は浅くて広い（入れ物の下に物が並ぶ）ため、
  * 1物あたりの値段が木の大きさに連れて増える壊れ方を作れず、**落ちるものを置けなかった**。置いたのは
  * 1物あたりを縛る値の上限だけで、伸び方は測った値の並びが示すスナップショット。
  *
- * **値への上限は1フレーム（16ms）では引かない。** 今の値との開きが大きすぎて、伸び方が変わっても
- * 緑のまま通る。引くのは**桁の変わった遅さが落ちる幅**で、実際に導出を100倍に重くして赤くなることを
- * 見ている。
+ * **値への上限を1フレーム（16ms）で引くのは、走査そのものだけ。** そこは掴んだ指が待たされる時間
+ * そのものなので、フレームが物差しになる。問われた側の判定と担いだ木は今の値との開きが大きすぎて、
+ * 伸び方が変わっても16msなら緑のまま通るので、引くのは**桁の変わった遅さが落ちる幅**
+ * ——実際に導出を100倍に重くして赤くなることを見ている。
  *
  * **時間を見る試験なので、採るのは繰り返した中の最小値。** GCも他のプロセスも足すことしかしないので、
  * 最小値がその機械での素の値にいちばん近い。繰り返す回数は、最適化が掛かった後の値へ落ち着くまで回す
@@ -38,16 +46,25 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  */
 describe('貯め込まずに毎回導出することの値段', () => {
   let codex: WorldCodex;
+  let locale: Localization;
 
   beforeAll(() => {
     codex = bundledCodex();
+    // 測るのは導出の値段で、出てくる文字ではない。訳を1つも持たない辞書で足りる。
+    locale = parseLocale('ja.yaml', 'object_texts: {}\n');
   });
 
   /** 3は開始地点が砂浜になるシード（同梱シナリオと揃える）。 */
   const SEED = 3;
 
-  /** 並べる札の枚数（倍にした側も組んで、1枚あたりが動かないことを見る）。 */
+  /** 並べる札の枚数（増やした側も組んで、伸び方を見る）。 */
   const CARDS = 150;
+
+  /**
+   * 走査の伸び方を見るために枚数を掛ける倍率。**2倍では足りない**——比例なら2倍・2乗なら4倍と、
+   * 測りのばらつきに紛れる差しか出ない。4倍なら比例は4倍・2乗は16倍に離れる。
+   */
+  const SCAN_GROWTH = 4;
 
   /** 担いだ木にぶら下げる物の数。1物あたりの値段を、この規模で縛る。 */
   const CARRIED = 8000;
@@ -202,8 +219,8 @@ describe('貯め込まずに毎回導出することの値段', () => {
    * （要件まで届いた札の下限）——世界の宣言が変わって届かなくなったら、測っている面が抜けたことが
    * 赤で出る。
    *
-   * ここが見るのは**問われた側の判定だけ**で、走査を回す画面側の値段ではない。そちらは
-   * [issue #2255](https://github.com/gooyyu1/UnmappedIsland/issues/2255) が持つ。
+   * ここが見るのは**問われた側の判定だけ**で、走査を回す画面側の値段ではない。そちらは下の
+   * 「ふちを光らせる走査」が見る。
    */
   it('掴んだ瞬間に全札へ問う組み合わせは、貯め込まなくても札の枚数に比例する', () => {
     const game = newGame();
@@ -240,5 +257,88 @@ describe('貯め込まずに毎回導出することの値段', () => {
       milliseconds.second / milliseconds.first,
       `周りを${CARDS * 2}枚にしたときの伸び（${milliseconds.first}ms → ${milliseconds.second}ms）`,
     ).toBeLessThan(1.5);
+  });
+
+  /**
+   * 画面と同じ読み先を持つ`ShownCards`（`PlayScene.shown`と同じ組み方）。子ウィンドウを開いていない
+   * ので、借りている札も絞り込みも無い。
+   */
+  function shownCardsOf(view: PlayScreenView): ShownCards {
+    return new ShownCards({
+      stacksIn: (place) => view.cardsIn(place),
+      cardOfObjects: (objects) => view.cardOfObjects(objects),
+      combinationOf: (dragged, target, count) => view.combinationOf(dragged, target, count),
+      visible: (object) => view.visible(object),
+      windowPlace: () => undefined,
+      places: (screen) => view.places(screen),
+      filter: () => undefined,
+      midAction: () => false,
+      onOpenCard: () => {},
+      onEdgeMove: () => {},
+    });
+  }
+
+  /**
+   * 掴んだ瞬間の走査を1回ぶん組む（`CardDragController.showAcceptingCards`が回すもの）。掴むのは
+   * `draggedIndex`の札で、見て回るのは常に見えているレーンが映す場所。
+   *
+   * **viewは走査の外で作る。** 画面がviewを作り直すのは世界が変わったときで、掴んでいる間ではない
+   * ——中に入れると、走査の値段ではなく画面を組み直す値段を測ることになる。
+   *
+   * 返るのはふちが光った枠の数。**走査が何も見つけていないと、測っているのは空回りになる。**
+   */
+  function scanOnGrab(game: StartedGame, draggedIndex: number): () => number {
+    const view = fromGameSession(game, locale);
+    const shown = shownCardsOf(view);
+    const items = view.places('items');
+    const spots: readonly CardSpot[] = [view.places('fixtures'), items, view.places('hand')];
+
+    return () => {
+      const accepting = shown.acceptingCells(items, draggedIndex, spots);
+      return [...accepting.values()].reduce((lit, indices) => lit + indices.size, 0);
+    };
+  }
+
+  /**
+   * 掴んだ瞬間にふちを光らせる走査（`CardDragController.showAcceptingCards` →
+   * `ShownCards.acceptingCells`）そのものの値段。前の試験が測るのは**問われた側**の判定だけで、
+   * それを回す画面側はここが持つ。
+   *
+   * **落とし先を1枚ずつ問うと2乗で伸びる。** 問いのたびに、その場所に並ぶ札が丸ごと作り直される
+   * （`PlayScreenView.cardsIn`）ためで、142枚で走査1回が700msに達していた。まとめて問えば並びは
+   * 場所ごとに1度で済み、枚数に比例する。
+   *
+   * だから見るのは**1フレーム（16ms）に収まること**と、**枚数を`SCAN_GROWTH`倍にしたときの伸びが
+   * 比例に留まること**の両方。前者だけでは、機械が速ければ2乗のまま緑で通る。
+   */
+  it('掴んだ瞬間にふちを光らせる走査は、並んでいる枚数に比例する', () => {
+    const game = newGame();
+    const cards = pileCards(game, CARDS);
+    expect(cards.length, '並べた札').toBe(CARDS);
+
+    // 掴むのは、いちばん多くの札と噛み合う物（前の試験と同じ選び方）。何を掴むかで、要件まで届く
+    // 札の数——1枚あたりに走る判定の重さ——が変わる。
+    const agent = game.player.instance;
+    const [{ dragged, returning }] = cards
+      .map((object) => ({ dragged: object, returning: cardsReturningCombinations(cards, object, agent) }))
+      .sort((a, b) => b.returning - a.returning);
+    expect(returning, `組み合わせを返した札（掴んだのは'${dragged.def.name}'）`).toBeGreaterThan(40);
+
+    // 並べた順はpileCardsが決めるので、枚数を増やしても同じ添字に同じ型の札が居る。
+    const draggedIndex = cards.indexOf(dragged);
+    const crowded = newGame();
+    expect(pileCards(crowded, CARDS * SCAN_GROWTH).length, '増やして並べた札').toBe(CARDS * SCAN_GROWTH);
+
+    const scan = scanOnGrab(game, draggedIndex);
+    const crowdedScan = scanOnGrab(crowded, draggedIndex);
+    expect(scan(), `'${dragged.def.name}'を掴んでふちが光った枠`).toBeGreaterThan(0);
+
+    const milliseconds = fastestEach(20, scan, crowdedScan);
+
+    expect(milliseconds.first, `${CARDS}枚を掴んだときの走査1回（${milliseconds.first}ms）`).toBeLessThan(16);
+    expect(
+      milliseconds.second / milliseconds.first,
+      `${CARDS * SCAN_GROWTH}枚にしたときの伸び（${milliseconds.first}ms → ${milliseconds.second}ms）`,
+    ).toBeLessThan(SCAN_GROWTH * 1.5);
   });
 });

@@ -131,6 +131,10 @@ node <project>/.claude/skills/run/scripts/screenshot.mjs \
 だけ動かして離す（スクロールやカードのドラッグ）。**動きは細かく刻んで送らないとPhaserが
 ドラッグとして拾わない**ので、スクリプト側で8回に分けて`mouse.move`している。
 
+**掴んでいる間だけ出るものは、さらに`, "hold"`を足す**（`[x,y,待つ,名前,dx,dy,"hold"]`）。
+受け入れる札のふちの光も重ねたときの吹き出しも、離した瞬間に消えるので、**離す前に撮らないと
+写らない**——既定の並びで撮ると、何も出ていない画面が1枚残る。
+
 ```bash
 node <project>/.claude/skills/run/scripts/playthrough.mjs \
   --url http://localhost:<port>/ \

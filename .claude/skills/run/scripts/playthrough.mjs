@@ -15,7 +15,8 @@
 //
 // stepsは [x, y, 待つミリ秒, 保存名] の配列。xが負なら押さずに待って撮るだけ。
 // [x, y, 待つミリ秒, 保存名, dx, dy] と6つ書くと、(x,y)から(dx,dy)だけドラッグする
-// （スクロールや札の移動を確かめるとき）。
+// （スクロールや札の移動を確かめるとき）。7つ目に "hold" を足すと、**離す前に撮ってから離す**
+// ——掴んでいる間だけ出るもの（受け入れる札のふちの光、重ねたときの吹き出し）はこれでないと写らない。
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -65,7 +66,7 @@ const shoot = async (name) => {
 await page.goto(args.url, { waitUntil: 'load' });
 await page.waitForTimeout(Number(args.boot ?? 2500));
 
-for (const [x, y, wait, name, dx, dy] of steps) {
+for (const [x, y, wait, name, dx, dy, hold] of steps) {
   if (dx !== undefined || dy !== undefined) {
     // 1回で動かすとPhaserがドラッグと認めないことがあるので、何度かに分けて動かす。
     await page.mouse.move(x, y);
@@ -74,7 +75,13 @@ for (const [x, y, wait, name, dx, dy] of steps) {
       await page.mouse.move(x + ((dx ?? 0) * step) / 8, y + ((dy ?? 0) * step) / 8);
       await page.waitForTimeout(16);
     }
+    // 掴んでいる間だけ出るものは、離す前に撮らないと写らない。
+    if (hold === 'hold') {
+      await page.waitForTimeout(wait);
+      await shoot(name);
+    }
     await page.mouse.up();
+    if (hold === 'hold') continue;
   } else if (x >= 0) {
     await page.mouse.click(x, y);
   }

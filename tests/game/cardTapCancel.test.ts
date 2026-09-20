@@ -107,6 +107,7 @@ function fakeHandlers(): CardDragHandlers {
   } as unknown as CarriedCard;
   return {
     describeDrop: () => undefined,
+    acceptingCards: () => new Set(),
     onDrop: () => {},
     grab: () => carried,
   };
