@@ -295,8 +295,8 @@ describe('smoking.yamlの燻製と燻し小屋', () => {
   });
 
   it('燻し小屋は、保存の腕が basic に届くまで作れない', () => {
-    // **保存の腕を読む唯一の側**（docs/engine/SkillSystem.md 4節）。腕が伸びるのは塩漬けだけなので
-    // （salt.yamlのcure）、燻製は塩蔵の後ろに来る。
+    // **保存の腕を読む唯一の側**（docs/engine/SkillSystem.md 4節）。解放を要求しない入口——塩漬け
+    // （salt.yamlのcure）と干し場（drying.yaml）——が手前に在るので、燻製は塩蔵の後ろに来る。
     const [recipe] = codex.objects.get(codex.objectNames.getId('smokehouse')).recipesProducingThis;
     const session = new WorldSession(codex);
     const skill = codex.propertyNames.getId('skill_preserving');
