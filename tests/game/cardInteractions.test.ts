@@ -341,10 +341,6 @@ reason_texts:
   it('成立する組み合わせがあるなら、落とされた側が断っていても先に選ぶ', () => {
     // 薪の無い炉は着火を断る（no_fuel）が、松明の側は焦がせる。落とされた側から順に引いて最初に
     // 見つかったもので止めると、断るほうが成立するほうを隠す。
-    //
-    // **向きを跨ぐこの形でしか、その選び方は固定できない。** 同じ向きの中では成立するものが先に
-    // 並ぶ（`cardOperations.offeredCombinations`）ので、断るものが成立するものより前へ来るのは
-    // 両向きを繋いだ並びだけ。同じ向きの中だけで組むと、先頭を取るだけの実装でも通ってしまう。
     const mini = setUp();
     const hearth = mini.createObject('hearth', mini.slot('fixtures', mini.land));
     const torch = mini.createObject('torch', mini.slot('hand'));

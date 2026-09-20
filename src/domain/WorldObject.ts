@@ -987,9 +987,9 @@ export class WorldObject {
    * **成立するものとの順位はここでは決まらない。** 「成立するものが1つでもあるなら、そちらが先」の
    * 「1つでも」は**両向きに跨る**——重ねた相手の側が宣言している組み合わせも数えるので、片側だけを
    * 知るこの物には答えられない。そこを決めるのは両向きを引く画面側
-   * （`cardOperations.combinationBetween`）。**ただし、この宣言順そのものは順位**——どちらの向きにも
-   * 成立するものが無ければ、ここの先頭がそのままプレイヤーへ届く理由になる
-   * （[`CardInteraction.md`](../../docs/ui/CardInteraction.md) 2節）。
+   * （`cardOperations.combinationBetween`）。**ただし、この宣言順そのものは順位**——落とされた側として
+   * 引かれた列の先頭は、どちらの向きにも成立するものが無ければ、そのままプレイヤーへ届く理由になる
+   * （`CardInteraction.md` 2節）。
    */
   refusedCombinationsWith(instrument: WorldObject, agent: WorldObject): readonly Combination[] {
     return this.candidateCombinationsWith(instrument, agent).filter(
