@@ -11,16 +11,19 @@ TypeScriptのコーディング規約は [`docs/CodingConventions.md`](docs/Codi
 
 ## 公開サイト（GitHub Pages）
 
-`.github/workflows/pages.yml` が `main` へのプッシュのたびにサイトを丸ごと作り直してデプロイする。
+`.github/workflows/pages.yml` が `main` のサイトを丸ごと作り直してデプロイする。**走るのは、
+そこの `on.push.paths` に挙がっている場所を触った push だけ**——挙がっていない場所しか触っていない
+push では、このワークフローの走りがそもそも出ない（**壊れている印ではない**）。
 **生成物はリポジトリに存在しない**（出力先の `site/` は `.gitignore` 済み）。
 
-原稿は `docs/` に置く。サイトは3本立てで、それぞれ出どころが違う。
+原稿は `docs/` に置く。サイトのパスは、それぞれ出どころが違う。
 
 | サイトのパス | 出どころ |
 |---|---|
-| `/docs/` | `docs/**/*.md` を Pandoc で HTML 化。`*.html`・画像はそのままコピー |
+| `/docs/` | `docs/**/*.md` を `scripts/buildDocsSite.mjs` が HTML 化。`*.html`・画像はそのままコピー |
 | `/reference/` | `src/` から TypeDoc が生成 |
 | `/game/` | Vite がビルドしたゲーム本体 |
+| `/codex/` | `codex/` を入口に Vite がビルドした WorldCodex ビューア |
 
 **ドキュメント類は `docs/` 以下を編集すること。** ローカルに `site/` を作っても公開内容には
 影響しない。
