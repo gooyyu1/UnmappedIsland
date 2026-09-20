@@ -11,8 +11,8 @@ TypeScriptのコーディング規約は [`docs/CodingConventions.md`](docs/Codi
 
 ## 公開サイト（GitHub Pages）
 
-`.github/workflows/pages.yml` が `main` のサイトを丸ごと作り直してデプロイする。**走るのは、
-そこの `on.push.paths` に挙がっている場所を触った push だけ**——挙がっていない場所しか触っていない
+`.github/workflows/pages.yml` が `main` のサイトを丸ごと作り直してデプロイする。**push で走るのは、
+そこの `on.push.paths` に挙がっている場所を触ったときだけ**——挙がっていない場所しか触っていない
 push では、このワークフローの走りがそもそも出ない（**壊れている印ではない**）。
 **生成物はリポジトリに存在しない**（出力先の `site/` は `.gitignore` 済み）。
 
