@@ -166,6 +166,14 @@ python build.py recipes/medic.json
 
 物ごとの当たり外れ（どの語がどう外すか）は `prompts/objects.json` の各エントリに書いてあります。
 
+**振らなくなった本文は `retired` へ移します。** 下絵（`sketch`）から起こすようにしたエントリでは、
+`positive` と `negative` はどのレシピからも振られません。そのまま残すと、`description` を読まずに
+注文の側から入った人がそこへ seed を振ります——**散文で断っても、注文の鍵から入った人には届きません。**
+`retired` の下は `generate.py` も `build.py` も読まないので、手で振ろうとすると入口で止まり、今の
+作り方（レシピ）を教えます。振られない本文が注文の鍵に残っていないかは
+[tests/art/promptOrders.test.ts](../../tests/art/promptOrders.test.ts) が見ています。何を試して外したかは、
+これまでどおり `description` です。
+
 ### 既存の絵からの派生（Qwen Image Edit）
 
 同じ物の加工段階（ココナッツ → 皮を剥いだ実 → 剥いだ皮…）を別々に生成すると、色調も作風も
