@@ -17,6 +17,18 @@ export const HUMAN_TURN: readonly string[];
 /** 周期の係を前に立ててから空ける間隔（時間）。知らない名前には `undefined`。 */
 export function cycleHours(name: string): number | undefined;
 
+/** 周期の係を立てられなくなった時刻を置く、台帳の鍵の頭（`agent-ops/board-design.md` 2.17.6節）。 */
+export const CYCLE_DOWN: string;
+
+/** 周期の係を最後に立てようとして立てられなかった時刻を置く、台帳の鍵の頭。 */
+export const CYCLE_TRIED: string;
+
+/** 立てられなかった係を立て直すまでの下限（分）。 */
+export const CYCLE_RETRY_FLOOR_MINUTES: number;
+
+/** 立てられないまま待っている係の覚え書き。 */
+export function cycleDownNote(name: string): string;
+
 /** 未整理（棚卸しの結論が揃っていない issue。`agent-ops/board-design.md` 2.17.1節）。 */
 export function unsorted(issue: { labels?: { name: string }[] }): boolean;
 
