@@ -778,6 +778,25 @@ describe('check-values.mjs の、画面へ出す口', () => {
   });
 
   /**
+   * **画面に入る量には天井がある**（値が2つ死んだ周の文面で、末尾がわずかにはみ出るのを
+   * 2026-09-30 に実測）。**溢れるのは後ろ側**なので、**どちらが溢れてよいかで並べてある**
+   * ——値の名前と「いつから」が先で、直し方が後ろ。並びを入れ替えると、**止まっていることすら
+   * 読めない通知**になりうる。
+   */
+  it('値の名前と「いつから」を、直し方より先に置く', async () => {
+    const run = await check({
+      living: [],
+      ledger: { BRIDGE_ENV: { since: LONG_AGO }, CLOUD_ENV: { since: LONG_AGO } },
+    });
+    const body = run.screen[0]?.body ?? '';
+
+    expect(body.indexOf('CLOUD_ENV')).toBeGreaterThanOrEqual(0);
+    expect(body.indexOf('CLOUD_ENV')).toBeLessThan(body.indexOf('直し方: '));
+    expect(body.indexOf('BRIDGE_ENV')).toBeLessThan(body.indexOf('直し方: '));
+    expect(body.indexOf(LONG_AGO)).toBeLessThan(body.indexOf('直し方: '));
+  });
+
+  /**
    * **表の升の逃がしを、画面まで持ち込まない。** 表が崩れないように `|` を `\|` へ逃がすのは
    * 表の都合で、**画面にはそのまま `\|` が見える**——出口の都合は、その出口が引き受ける。
    */
