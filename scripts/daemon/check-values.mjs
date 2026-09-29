@@ -399,6 +399,10 @@ const plain = (text) => String(text).replace(/[`*]/g, '');
 /**
  * 画面へ出す1件の中身。**リポジトリも issue も開かずに直せるところまで入れる**——読むのは通知を
  * 見た人で、そこから先を開くとは限らない。
+ *
+ * **入る量には天井がある**（[`toast.mjs`](toast.mjs) の `toastScript`）。**削るならここ**で、
+ * 死んでいる値が増えるほど後ろから溢れる——**溢れるのは直し方の側**なので、値の名前と「いつから」
+ * を先に置いてある。
  */
 function toastBody(due) {
   return plain(`${deadBrief(due)}\n直し方: ${due.map((value) => oneLine(value.remedy)).join(' / ')}`);
