@@ -199,10 +199,9 @@ object_defs:
           from: instrument
           from_prop: plant_bait
           to_prop: plant_bait
-          # 入り切らない分は切り捨てる（GameElementDefinition.md 9.5.1節）。
+          # 入り切らない端数の切り捨てを名乗る（GameElementDefinition.md 9.5.1節・9.5.2節）。
           allow_overflow: true
-        # 中途半端に残った餌を作らない。入りきらなかった分は失われるが、満杯を拒む条件があるので
-        # 失うのは高々1個ぶん。
+        # 中途半端に残った餌を作らない。捨てるのは高々1個ぶんで、満杯を拒む条件（上）が保証する。
         destroy: instrument
       add_meat_bait:
         trigger: {drag: {tag: meat_bait}}

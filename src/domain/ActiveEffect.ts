@@ -140,10 +140,7 @@ export class ActiveEffectSequence extends ActiveEffect {
     return undefined;
   }
 
-  /**
-   * 子に1つでも在れば、合成も含む。**見るのは同じ並びに書かれたものだけ**で、入れ子（`pick`の候補・
-   * 条件付きの枝）の中までは見ない。
-   */
+  /** 子に1つでも在れば、合成も含む（入れ子の中まで辿る）。 */
   override get destroysInstrument(): boolean {
     return this.effectsInDeclarationOrder.some((operation) => operation.destroysInstrument);
   }
@@ -183,6 +180,21 @@ export class ConditionalEffect extends ActiveEffect {
    */
   readBy(reader: EffectReader): void {
     reader.conditional(new ConditionalBranches(this.condition, this.whenMet, this.otherwise));
+  }
+
+  /**
+   * どちらの枝も、走る回があるなら同じ問いに数える（9.5.2節の検査が、条件で分けて書いた形を
+   * 見落とさないため）。
+   */
+  override get destroysInstrument(): boolean {
+    return this.whenMet.destroysInstrument || this.otherwise?.destroysInstrument === true;
+  }
+
+  override get movesFromInstrumentKeepingRemainder(): boolean {
+    return (
+      this.whenMet.movesFromInstrumentKeepingRemainder ||
+      this.otherwise?.movesFromInstrumentKeepingRemainder === true
+    );
   }
 }
 
@@ -444,16 +456,16 @@ export class TransferEffect extends ActiveEffect {
     for (const linked of this.linkedAdd) linked.applyScaled(context, taken, this.amount);
   }
 
+  override get movesFromInstrumentKeepingRemainder(): boolean {
+    return this.from.root === 'instrument' && !this.allowOverflow;
+  }
+
   /**
    * この輸送の宣言（TransferReading参照）。出す側は`amount`だけ減り、受け取る側は`to_amount`だけ
    * 増え、linked_addは全量移った場合の値で並ぶ。
    *
    * **在庫が満ちている前提の上限。** 実際に動く量は出せる量と空きで目減りする（applyがそれを見る）。
    */
-  override get movesFromInstrumentKeepingRemainder(): boolean {
-    return this.from.root === 'instrument' && !this.allowOverflow;
-  }
-
   get reading(): TransferReading {
     return {
       from: this.from.root,

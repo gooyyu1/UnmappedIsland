@@ -320,9 +320,8 @@ interactions:
     destroy: instrument
 ```
 
-**入り切らない端数は切り捨てます**（`GameElementDefinition.md` 9.5.1 節で確定した規則。炉へ薪を
-くべるのと同じ形で、`FireSystem.md` 2 節）。切り捨てることを `allow_overflow: true` として名乗り、名乗って
-いない宣言はロード時に落ちます。
+**入り切らない端数は切り捨てます**（`GameElementDefinition.md` 9.5.1 節で確定した規則。名乗り方は
+同 9.5.2 節。炉へ薪をくべるのと同じ形で、`FireSystem.md` 2 節）。
 
 ```yaml
 # 餌の側が宣言する。タグとプロパティの名前で、どちらの餌かが決まる。

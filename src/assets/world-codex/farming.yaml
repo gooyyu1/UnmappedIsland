@@ -316,10 +316,10 @@ object_defs:
           from: instrument
           from_prop: plant_bait
           to_prop: fodder
-          # 入り切らない分は切り捨てる（GameElementDefinition.md 9.5.1節）。
+          # 入り切らない端数の切り捨てを名乗る（GameElementDefinition.md 9.5.1節・9.5.2節）。
           allow_overflow: true
-        # 中途半端に残った飼葉を作らない。入りきらなかった分は失われるが、満杯を拒む条件があるので
-        # 失うのは高々1個ぶん（罠の餌と同じ）。
+        # 中途半端に残った飼葉を作らない。捨てるのは高々1個ぶんで、満杯を拒む条件（上）が保証する
+        # （罠の餌と同じ）。
         destroy: instrument
       # 水をやる（飼葉と同じドラッグ型）。**容器は返す**——液体は容器の変種として在る
       # （liquid_containers.yaml）ので、注いだぶんfillが減り、空になれば中身の軸が落ちて空の器に戻る。

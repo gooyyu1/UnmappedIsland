@@ -2179,7 +2179,10 @@ object_defs:
     interactions:
       offer:
         trigger: {drag: {tag: offering}, allow_multiple: true}
-        transfer: {amount: 1, from: instrument, from_prop: weight, to_prop: offerings}
+        # allow_overflowは、pickの候補が相手を消すことに対して要る（9.5.2節）。ここで見たいのは
+        # allow_multipleの側なので、そちらは満たしておく。
+        transfer:
+          {amount: 1, from: instrument, from_prop: weight, to_prop: offerings, allow_overflow: true}
         pick:
           - weight: 1
             destroy: instrument
@@ -2204,6 +2207,32 @@ object_defs:
         trigger: {drag: {tag: offering}}
         transfer: {amount: 999, from: instrument, from_prop: weight, to_prop: offerings}
         destroy: instrument
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /allow_overflow/,
+    );
+  });
+
+  it('pickの候補が相手を消す形でも、allow_overflowを書いていなければエラーになる', () => {
+    // 輸送と`destroy`が並びを跨いで分かれていても、端数が相手ごと消えることは同じ（9.5.2節）。
+    const yaml = `
+object_defs:
+  grain2:
+    tags: [offering]
+    props:
+      weight: {value: 5}
+  altar5:
+    props:
+      offerings:
+        value: 0
+        range: {min: 0, max: 10}
+    interactions:
+      offer:
+        trigger: {drag: {tag: offering}}
+        transfer: {amount: 999, from: instrument, from_prop: weight, to_prop: offerings}
+        pick:
+          - weight: 1
+            destroy: instrument
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
       /allow_overflow/,
