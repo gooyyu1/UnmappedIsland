@@ -1,5 +1,4 @@
 import { join } from 'node:path';
-import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 import type { CourseTotal, VoyageCourse, VoyageLegs } from '../../src/analysis/voyageLegs';
 import { lookoutMinutesOf, voyageLegsOf } from '../../src/analysis/voyageLegs';
@@ -11,7 +10,7 @@ import {
   formatYamlReport,
   rounded,
 } from '../support/generatedReport';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 航海を区間に割って測ったもの（`src/analysis/voyageLegs.ts`）を`stats/voyage.yaml`へ書き出す。
@@ -130,6 +129,7 @@ function buildSections(legs: VoyageLegs): readonly YamlReportSection[] {
 
 const REPORT_PATH = join('stats', 'voyage.yaml');
 const DOC_PATH = join('docs', 'diagnostics', 'VoyageStats.md');
+const balanceTables = bundledBalanceTables();
 
 /** 定義から測って、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
 function buildReportFromDefinitions(): string {
@@ -140,7 +140,7 @@ function buildReportFromDefinitions(): string {
       '生成物。手で書き換えず、npm run stats:voyage で作り直す。',
       '何を測ったか・引いた線・数えていないものは docs/diagnostics/VoyageStats.md。',
     ],
-    buildSections(voyageLegsOf(codex, buildBalanceTables(codex, SAMPLE_CHARACTER))),
+    buildSections(voyageLegsOf(codex, balanceTables)),
   );
 }
 

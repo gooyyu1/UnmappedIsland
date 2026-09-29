@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildBalanceTables, WHOLE_ISLAND } from '../../src/analysis/balanceTables';
+import { WHOLE_ISLAND } from '../../src/analysis/balanceTables';
 import { MINUTES_PER_DAY } from '../../src/domain/worldTime';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledBalanceTables } from '../support/worldCodexFiles';
 
 /**
  * 同梱の定義に対して、土地に留まって1日ぶんの需要を埋める献立（`daily_minimum`、
@@ -16,7 +16,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  * 1000分を超えていた（issue #2403）。
  */
 describe('土地に留まって1日を賄う献立', () => {
-  const tables = buildBalanceTables(bundledCodex(), SAMPLE_CHARACTER);
+  const tables = bundledBalanceTables();
   const lands = tables.places.filter((place) => place.name !== WHOLE_ISLAND);
 
   it('土地の行が1つも無いということが無い', () => {

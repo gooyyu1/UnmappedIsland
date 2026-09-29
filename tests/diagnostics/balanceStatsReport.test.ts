@@ -8,7 +8,7 @@ import type {
   RoutePrerequisite,
   RouteStep,
 } from '../../src/analysis/balanceTables';
-import { buildBalanceTables, isGap } from '../../src/analysis/balanceTables';
+import { isGap } from '../../src/analysis/balanceTables';
 import { MINUTES_PER_DAY, MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 import { islandLocationsOf } from '../../src/analysis/islandLocations';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
@@ -20,7 +20,7 @@ import {
   formatYamlReport,
   rounded,
 } from '../support/generatedReport';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 定義から計算した収支表（`src/analysis/balanceTables.ts`）を`stats/balance.yaml`へ書き出す。
@@ -266,27 +266,17 @@ function dailyNeedRecords(properties: readonly PropertyChains[]): YamlRecord[] {
 const REPORT_PATH = join('stats', 'balance.yaml');
 const DOC_PATH = join('docs', 'diagnostics', 'BalanceStats.md');
 
-/**
- * 定義を読んで収支を計算する。再生成と鮮度の確認が同じものを見るための1箇所。
- *
- * **一度きり。** 入力は不変のcodexだけなので、呼ぶたびに計算しても同じ表になる。
- */
-function balanceFromDefinitions(): { readonly codex: WorldCodex; readonly tables: BalanceTables } {
-  const codex = bundledCodex();
-  return (balance ??= { codex, tables: buildBalanceTables(codex, SAMPLE_CHARACTER) });
-}
-
-let balance: { readonly codex: WorldCodex; readonly tables: BalanceTables } | undefined;
+/** 定義を読んで解いた収支。再生成・鮮度の確認・下の検査が同じものを見るための1箇所。 */
+const definitions = { codex: bundledCodex(), tables: bundledBalanceTables() };
 
 function buildReportFromDefinitions(): string {
-  const { codex, tables } = balanceFromDefinitions();
   return formatYamlReport(
     [
       'アイテム収支。定義（src/assets/world-codex/*.yaml）だけから計算した「時間あたりの収支」。',
       '生成物。手で書き換えず、npm run stats:balance で作り直す。',
       '何を測ったか・引いた線・数えていないものは docs/diagnostics/BalanceStats.md。',
     ],
-    buildSections(codex, tables),
+    buildSections(definitions.codex, definitions.tables),
   );
 }
 
@@ -318,7 +308,7 @@ describe('供給表の行', () => {
     const duplicated = lines.filter((line, index) => lines.indexOf(line) !== index);
 
     expect([...new Set(duplicated)]).toEqual([]);
-  }, 600_000);
+  });
 });
 
 /**
@@ -348,10 +338,10 @@ function supplyLinesOf(report: string): readonly string[] {
  */
 describe('収支の穴', () => {
   it('雨で溜まる水が、島全体で入手経路が無いものに数えられていない', () => {
-    const gaps = balanceFromDefinitions().tables.gaps.map((gap) => gap.label);
+    const gaps = definitions.tables.gaps.map((gap) => gap.label);
 
     expect(gaps.filter((label) => label.includes('water_liquid'))).toEqual([]);
-  }, 600_000);
+  });
 });
 
 /**
@@ -362,7 +352,7 @@ describe('収支の穴', () => {
  */
 describe('値段の付かない道具', () => {
   it('前提として要る道具に、値段の付かないものが1つも無い', () => {
-    const { tables } = balanceFromDefinitions();
+    const { tables } = definitions;
     const prerequisites = [
       ...tables.places.flatMap((place) =>
         place.properties.flatMap((chains) => chains.routes.flatMap((entry) => entry.route.prerequisites)),
@@ -376,7 +366,7 @@ describe('値段の付かない道具', () => {
         .filter((prerequisite) => !isGap(prerequisite) && prerequisite.minutes === undefined)
         .map((prerequisite) => prerequisite.label),
     ).toEqual([]);
-  }, 600_000);
+  });
 });
 
 /**
@@ -391,7 +381,7 @@ describe('値段の付かない道具', () => {
  */
 describe('代入で打ち消される増減', () => {
   it('重み0の代入の枝は、期待値を下げない', () => {
-    const { tables } = balanceFromDefinitions();
+    const { tables } = definitions;
     const satietyOf = (ownerName: string): number | undefined =>
       tables.supply
         .find((row) => row.ownerName === ownerName && row.stepName === 'eat')
@@ -400,5 +390,5 @@ describe('代入で打ち消される増減', () => {
     // 重みは 100 : {prop: spoilage}=0 : {prop: spoilage}=0。
     expect(satietyOf('raw_meat')).toBeCloseTo(500, 2);
     expect(satietyOf('raw_meat__cure_salted')).toBeCloseTo(500, 2);
-  }, 600_000);
+  });
 });

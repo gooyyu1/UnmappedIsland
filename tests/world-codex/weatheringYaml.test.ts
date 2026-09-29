@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildBalanceTables, objectCostMinutesOf } from '../../src/analysis/balanceTables';
+import { objectCostMinutesOf } from '../../src/analysis/balanceTables';
 import { durationsOf } from '../../src/analysis/durations';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 
 /**
@@ -55,7 +55,7 @@ const WEATHERED_TAGS = ['tool', 'container', 'equippable', 'bed'];
 /** 持ち物1つの維持に充ててよい、1日の余剰に対する割合（SurvivalItems.md 12.1節）。 */
 const UPKEEP_SHARE = 0.05;
 
-const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
+const balance = bundledBalanceTables();
 
 function isGenerated(def: ObjectDef): boolean {
   return codex.isGenerated(def);

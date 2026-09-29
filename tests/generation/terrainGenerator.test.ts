@@ -1,6 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { activityHoursOf } from '../../src/analysis/activityHours';
-import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import {
   dailyBudgetOf,
   dailyPhasesOf,
@@ -12,7 +11,7 @@ import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import type { IslandEdge, IslandMap } from '../../src/domain/generation/IslandMap';
 import type { GenerationScopeDef } from '../../src/domain/generation/GenerationScopeDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 import { placeSites } from '../../src/domain/generation/SitePlacer';
 import { TRAVEL_MINUTES_STEP } from '../../src/domain/generation/PathNetworkBuilder';
 import { Pcg32 } from '../../src/domain/Pcg32';
@@ -23,6 +22,7 @@ const SEEDS = Array.from({ length: 25 }, (_, i) => i);
 type Point = { x: number; y: number };
 
 describe('地形生成パイプライン(TerrainGenerator)', () => {
+  const balance = bundledBalanceTables();
   let codex: WorldCodex;
   /**
    * 海岸の土地型。**`coast`タグで数え上げる**（voyage.yamlのcoast trait）——手で並べると、海岸を
@@ -230,7 +230,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   // 生成パラメータを動かしたときにここが赤くなる。実測の分布はstats/terrain.yamlの
   // base_farthest_round_trip。
   it('どの島でも、拠点から最も遠い土地まで日帰りで往復できる', () => {
-    const budget = dailyBudgetOf(buildBalanceTables(codex, SAMPLE_CHARACTER));
+    const budget = dailyBudgetOf(balance);
     const locationDays = locationTypeDaysOf(
       codex,
       activityHoursOf(
@@ -254,9 +254,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
         reachMinutes,
       );
     }
-    // 500島を回すうえに収支表を組む分（issue #2446）が乗るので、混み合った回には1件あたりの上限を
-    // 越える。上限とその名乗り方は `vite.config.ts` の `testTimeout` のコメント（issue #2376）。
-  }, 30_000);
+  });
 
   // 移動時間が「距離 ÷ 速さ」で出ていること自体を見張る（TerrainGeneration.md 3.5節）。分布は
   // TerrainStats.mdの鮮度が見ているが、そちらは再生成すれば緑に戻るので、**導出の向きが逆に

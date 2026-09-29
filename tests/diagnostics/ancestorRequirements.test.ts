@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { PlaceBalance } from '../../src/analysis/balanceTables';
-import { buildBalanceTables, WHOLE_ISLAND } from '../../src/analysis/balanceTables';
+import { WHOLE_ISLAND } from '../../src/analysis/balanceTables';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import { islandLocationsOf } from '../../src/analysis/islandLocations';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 祖先（`{subject: ancestor, ...}`、GameElementDefinition.md 8.6節）を見る要件が、**土地ごとの表では
@@ -19,7 +19,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 const codex = bundledCodex();
 const anchorId = codex.propertyNames.getId('hanging_anchor');
-const tables = buildBalanceTables(codex, SAMPLE_CHARACTER);
+const tables = bundledBalanceTables();
 const lands = tables.places.filter((place) => place.name !== WHOLE_ISLAND);
 
 /** その土地の表に出てくる工程（`型.工程`）。献立も連鎖表も同じ経路を指すので、両方から集める。 */

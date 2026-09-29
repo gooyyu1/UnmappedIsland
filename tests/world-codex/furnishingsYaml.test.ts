@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildBalanceTables, objectCostMinutesOf } from '../../src/analysis/balanceTables';
+import { objectCostMinutesOf } from '../../src/analysis/balanceTables';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 import type { BalanceTables } from '../../src/analysis/balanceTables';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
@@ -16,6 +16,7 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
  * 世界から数え上げるので、点数の合計も持ち出せないことも、足した物ごと見られる。
  */
 const codex = bundledCodex();
+const balance = bundledBalanceTables();
 
 function propertyId(name: string): PropertyGlobalId {
   return codex.propertyNames.getId(name);
@@ -141,7 +142,6 @@ describe('里心を抑える設え(src/assets/world-codex/furnishings.yaml)', ()
     //
     // **見るのは道具を除いた総手間**——前提の道具は並べ方で変わることを織り込み済み（同冒頭）で、
     // 比例させてあると言っているのは object_costs のほう。
-    const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
     const perPoint = FURNISHINGS.map((name) => ({
       name,
       minutes: minutesPerComfortPoint(balance, name),
@@ -155,9 +155,7 @@ describe('里心を抑える設え(src/assets/world-codex/furnishings.yaml)', ()
       Math.max(...minutes) / Math.min(...minutes),
       `点あたりの手間の開き（${readout}）`,
     ).toBeLessThanOrEqual(COMFORT_COST_SPREAD_LIMIT);
-    // 収支表を検査の本体で組む分（issue #2446）が乗るので、混み合った回には1件あたりの上限を越える。
-    // 上限とその名乗り方は `vite.config.ts` の `testTimeout` のコメント（issue #2376）。
-  }, 30_000);
+  });
 
   it('同じ物を並べても効く（連れと違って積み上がる）', () => {
     // 設えは積むほど効いてよく、効き目は掛けた手間に比例させてある（furnishings.yaml）ので、

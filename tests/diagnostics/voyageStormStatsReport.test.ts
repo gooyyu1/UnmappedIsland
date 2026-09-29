@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import { VoyageDriftSimulation } from '../../src/analysis/voyageDrift';
 import type { VoyageCourse, VoyageLegs } from '../../src/analysis/voyageLegs';
 import { voyageLegsOf } from '../../src/analysis/voyageLegs';
@@ -17,7 +16,7 @@ import {
   yieldToEventLoop,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
-import { bundledCodex, SAMPLE_CHARACTER, worldCodexPath } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex, worldCodexPath } from '../support/worldCodexFiles';
 
 /**
  * 荒天の押し流し（`docs/world/Voyage.md` 3.8節）を入れて出航地点から本土まで渡らせ、その結果を
@@ -48,6 +47,7 @@ const statRecord = statRecordWith('median');
 
 const REPORT_PATH = join('stats', 'voyage_storm.yaml');
 const DOC_PATH = join('docs', 'diagnostics', 'VoyageStormStats.md');
+const balanceTables = bundledBalanceTables();
 
 /**
  * 指紋が見る入力。**世界を回す側が読むのはこの2つ**——天気と風向きの引き方（`core.yaml`）と、
@@ -183,7 +183,7 @@ function buildSections(
  */
 async function buildReportFromDefinitions(): Promise<string> {
   const codex = bundledCodex();
-  const legs = voyageLegsOf(codex, buildBalanceTables(codex, SAMPLE_CHARACTER));
+  const legs = voyageLegsOf(codex, balanceTables);
   const courses = measuredCourses(legs);
   const seasons = seasonNamesOf(courses);
 
@@ -259,8 +259,7 @@ describe('voyage_storm.yamlの鮮度', () => {
   });
 
   it('押し流しを数えない側の節が、今の定義から出る行と過不足なく一致する', () => {
-    const codex = bundledCodex();
-    const legs = voyageLegsOf(codex, buildBalanceTables(codex, SAMPLE_CHARACTER));
+    const legs = voyageLegsOf(bundledCodex(), balanceTables);
     const lineOf = (record: YamlRecord): string =>
       [record.coast, record.season, record.legs, Number(record.days).toFixed(DECIMALS)].join(' / ');
     const courses = measuredCourses(legs);
