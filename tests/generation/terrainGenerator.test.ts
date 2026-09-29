@@ -254,8 +254,8 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
         reachMinutes,
       );
     }
-    // 500島を回すので既定の線（vite.config.tsのtestTimeout）の半分を手元で使い、混み合った回には
-    // 越える。名乗る値は実測のすぐ上に置かない（同節、issue #2376）。
+    // 500島を回すうえに収支表を組む分（issue #2446）が乗るので、混み合った回には1件あたりの上限を
+    // 越える。上限とその名乗り方は `vite.config.ts` の `testTimeout` のコメント（issue #2376）。
   }, 30_000);
 
   // 移動時間が「距離 ÷ 速さ」で出ていること自体を見張る（TerrainGeneration.md 3.5節）。分布は

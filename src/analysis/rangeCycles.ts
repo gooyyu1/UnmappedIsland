@@ -772,7 +772,7 @@ function ticksUntilStageEntered(def: ObjectDef, required: SelfStageRequirement):
  *
  * **どのロールも上端より上に出る値は、上がっては入らない**——上がるほど段から遠ざかるので、
  * そこから先は決して入らないと言えるか（neverCrossesIntoStage）の問いになる。段に最も近い側に
- * 出た個体（nearestToStage）で見るのは、言い切る相手がその型のすべての個体だから。
+ * 出た個体（bornBeyond）で見るのは、言い切る相手がその型のすべての個体だから。
  */
 function ticksUntilStageEnteredUpward(
   def: ObjectDef,
@@ -853,7 +853,7 @@ function bornBeyond(
 
 /**
  * **その段の向こう側に生まれた値について、そこへ入ることが決して起こらないと言い切れるか。**
- * 呼ぶのは、どのロールも入り口を既に通り過ぎていると分かっている側だけ（nearestToStage）
+ * 呼ぶのは、どのロールも入り口を既に通り過ぎていると分かっている側だけ（bornBeyond）
  * ——perTickAwayFromStageは、その値を段から**遠ざける**向きの速さ（上端より上に生まれたなら上がる
  * 速さ、下端より下なら下がる速さ）。
  *
