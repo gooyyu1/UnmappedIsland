@@ -295,6 +295,11 @@ object_defs:
   it('対象に操作の役を書ける。誰も操作していないtickでは、その輸送だけが動かない', () => {
     const codex = load(`
 object_defs:
+  # satietyの宣言元（名指しの相手はどこかの型が宣言していなければならない）。この試験では
+  # agentが居ないので、誰も就かないまま輸送が空振りする。
+  eater:
+    props:
+      satiety: {value: 0}
   body:
     props:
       stomach: {value: 4, range: {min: 0, max: 32}}

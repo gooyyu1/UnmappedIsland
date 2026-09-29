@@ -1147,8 +1147,8 @@ object_defs:
         spawn: {object: small_bone, into: agent}
         destroy: self
 
-  # 羽。鳥1羽ぶんをまとめた1枚。**使い道はまだ無い**が、獣骨（animal_bone）と同じく素材として
-  # 溜まる——飾り・矢羽・火口・詰め物のいずれへ延ばすかは docs/world/Animals.md 10節。
+  # 羽。鳥1羽ぶんをまとめた1枚。**寝床の詰め物になる**（bedding.yamlのfeather_stuffing）。飾り・
+  # 矢羽・火口へも延ばすかは docs/world/Animals.md 10節。
   feather:
     tags: [item]
     props:

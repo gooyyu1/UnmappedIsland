@@ -63,6 +63,12 @@ object_defs:
               - modify: {self: {ambient_brightness: -10}}
       ambient_brightness: {value: 0, range: {min: -6, max: 17}}
 
+  # 雨よけの有無を宣言する場所（容器はancestorからこれを引く。名指しの相手はどこかの型が宣言して
+  # いなければならない）。
+  clearing:
+    props:
+      sheltered: {value: 0}
+
   # 甕（narrow、4L）。雨よけの無い場所で雨が降っている間だけ、降り方に応じてfillが増える。
   jar:
     tags: [item, narrow_open_container]
@@ -265,6 +271,8 @@ object_defs:
     props:
       hour: {value: 12, range: {min: 0, max: 24}}
       ambient_brightness: {value: 0}
+      # 名前空間へ入る天候を light_rain だけに保つため、初期値もそれにする。
+      weather: {value: light_rain}
   jar:
     props:
       fill: {value: 0, range: {min: 0, max: 1000}}

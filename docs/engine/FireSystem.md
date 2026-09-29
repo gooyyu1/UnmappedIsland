@@ -309,7 +309,7 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 **棚 1 基（1.20 日<!-- stats: terrain.yaml work_piles pile=薪棚 days -->）の元が取れるのは、乾いた薪を 90 本ほど
 焚いたところ**です——1 本が浮かせるのは 11.6 分（30 点 ×（1.16 − 0.77））で、棚の 1,068 分をそれで割った
 数。丸太 9 本ぶん、棚は 10 本ずつ乾かすので 9 回ぶんになります。**山が支出を安くする手段だと言えるのは
-この回数までで**、1 周回（約 110 日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->）
+この回数までで**、1 周回（約 112 日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->）
 のうちに何度も回せる長さです。率と安さは `tests/world-codex/firewoodYaml.test.ts` が見張ります。
 
 ## 3. 種火は、火力の一番下の段
@@ -483,7 +483,7 @@ interactions:
 （2.2 節）。火種を落とすとき（3.1 節）と同じ条件です。
 
 **どちらの向きも断るとき、プレイヤーへ届くのは 1 つだけです**——同じ相手を受ける組み合わせが複数
-落ちたら、画面は宣言順で先頭の理由を出します（[`CardInteraction.md`](../ui/CardInteraction.md) 2.1 節）。
+落ちたら、画面は宣言順で先頭の理由を出します（[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
 **だから炉を灯す向きを先に宣言します。** 後ろに置くと、灯った松明を薪の無い炉へ重ねたときに届くのが
 「この炉は消えている」になり、**火を持って来た側から見て逆向きの説明**になります。
 

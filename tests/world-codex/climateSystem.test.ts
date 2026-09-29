@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
+import { WORLD_CODEX_DIR, loadYamlDirectory } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 
@@ -46,7 +46,9 @@ describe('気候システム(ClimateSystem.md)', () => {
   let traces: Trace[];
 
   beforeAll(() => {
-    const codex = loadYamlFile(new WorldCodexYamlLoader(), worldCodexPath('core.yaml')).buildAndReset();
+    // core.yamlだけでは組み上がらない——crafting_conditionsが作り手のプロパティを名指ししており、
+    // それを宣言しているのはキャラクタ側のファイル（WorldCodexの名指し検査）。
+    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
 
     calmId = codex.symbolNames.intern('calm');
     wetId = codex.symbolNames.intern('wet');

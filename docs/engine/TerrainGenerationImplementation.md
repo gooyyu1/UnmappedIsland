@@ -114,8 +114,12 @@ startNewGame(codex, characterDefName, seed, rng)          src/domain/generation/
 
 各 `Site.type`（`LocationTypeDef`）を確定します。
 
-1. `scope.guarantees` を順に処理し、モジュール内関数 `orderForGuarantee` で軸値の最大/最小順に並べた候補
-   から `guarantee.count` 個へ強制的に型を割り当てます（`forced` という `Set<Site>` へ記録）。
+1. モジュール内関数 `assignGuaranteedSites` が `scope.guarantees` の強制割当先をまとめて決めます。保証 1 件の
+   `count` 個ぶんを受け口（`GuaranteeOpening`）に開き、`assignEligibleSitesInOrder` が受け口を宣言順に見て、
+   `orderForGuarantee` で軸値の最大/最小順に並べた `Site` のうち `hard_limits` を満たすものから取らせます。
+   取ってよいのは、その `Site` を抜いても残る受け口が同じ数を当てられる候補だけで、この数は
+   `maxAssignableCount`（増加路を辿る＝二部グラフの最大マッチング）が数えます。相手の見つからなかった
+   受け口は、同じ並び順の残る `Site` から補います（保証は絶対のため）。
 2. 残る `Site` を、モジュール内関数 `bestDistanceIgnoringCrowding` が返す最良距離の昇順に並べ、1つずつ
    モジュール内関数 `nearestTypeAvoidingFull(types, site, scope, counts)` へ渡します。選ぶ基準は、
    `LocationTypeDef.satisfiesHardLimits` を満たす型のうち `LocationTypeDef.normalizedDistanceFrom`

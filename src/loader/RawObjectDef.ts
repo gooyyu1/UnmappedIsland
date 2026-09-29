@@ -191,7 +191,7 @@ export class RawObjectDef {
     if (merged.stackOrder !== undefined) {
       const context = `'${this.name}'.stack_order`;
       stackOrder = new StackOrderDef(
-        loader.propertyNames.intern(requireScalar(merged.stackOrder, 'property', context)),
+        loader.referToProperty(requireScalar(merged.stackOrder, 'property', context), context),
         tryGetBool(merged.stackOrder, 'ascending', context) ?? false,
       );
     }
@@ -220,7 +220,9 @@ export class RawObjectDef {
 
     const artByStageName = merged.artByStage;
     const artByStagePropertyGlobalId =
-      artByStageName !== undefined ? loader.propertyNames.intern(artByStageName) : undefined;
+      artByStageName !== undefined
+        ? loader.referToProperty(artByStageName, `'${this.name}'.art_by_stage`)
+        : undefined;
 
     if (artByStagePropertyGlobalId !== undefined) {
       const target = propertyDefs.find((propertyDef) => propertyDef.globalId === artByStagePropertyGlobalId);

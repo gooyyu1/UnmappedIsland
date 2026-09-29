@@ -197,6 +197,11 @@ export class WorldObject {
    * 自分が持つプロパティを、propsの宣言順で全部。**絞る口（gaugeProperties・propertiesWithTag）で
    * 足りない側は、定義（enumeratePropertyDefs）から引き直さずにこれを読む**——1つずつ引き当てると、
    * 持ち主なら知っている「型の宣言と1対1」を、引けなかった場合の分岐として書くことになる。
+   *
+   * **渡すのは並びの実体で、写しではない**（居るPropertyValueもこの物のもので、値の変化はそのまま
+   * 見える）。**ただし顔ぶれが変わるのは型の差し替え（becomeType、9.9節）だけ**で、そこでは並びごと
+   * 新しいものへ替わる——だから**読んだ配列は、差し替えの前の顔ぶれと前の型のPropertyValueを持ち
+   * 続ける。** becomeを跨いで読む側は、自分で写し取るのではなくこの口を読み直す。
    */
   allProperties(): readonly PropertyValue[] {
     return this.properties;
@@ -979,10 +984,12 @@ export class WorldObject {
    *
    * **理由を宣言していない要件は返さない**——黙って断ると決めた宣言なので、言うことが無い。
    *
-   * **どれを見せるかはここでは決まらない。** 「成立するものが1つでもあるなら、そちらが先」の
+   * **成立するものとの順位はここでは決まらない。** 「成立するものが1つでもあるなら、そちらが先」の
    * 「1つでも」は**両向きに跨る**——重ねた相手の側が宣言している組み合わせも数えるので、片側だけを
-   * 知るこの物には答えられない。順位を決めるのは両向きを引く画面側
-   * （`cardOperations.combinationBetween`）で、ここは引けるものを宣言順に返すだけ。
+   * 知るこの物には答えられない。そこを決めるのは両向きを引く画面側
+   * （`cardOperations.combinationBetween`）。**ただし、この宣言順そのものは順位**——落とされた側として
+   * 引かれた列の先頭は、どちらの向きにも成立するものが無ければ、そのままプレイヤーへ届く理由になる
+   * （`CardInteraction.md` 2節）。
    */
   refusedCombinationsWith(instrument: WorldObject, agent: WorldObject): readonly Combination[] {
     return this.candidateCombinationsWith(instrument, agent).filter(

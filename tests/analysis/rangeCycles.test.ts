@@ -400,6 +400,13 @@ object_defs:
         stages:
           - {name: none}
           - {name: stocked, min: 1}
+      # シンボル型（6.6節）の段は完全一致で決まるので、値の並びの上に位置を持たない
+      # （positionless_chunkが名指す先）。
+      draft:
+        value: still
+        stages:
+          - {name: still}
+          - {name: breezy}
       heat:
         value: 0
         range: {min: 0, max: 100}
@@ -463,9 +470,9 @@ object_defs:
           - conditions: [{subject: parent, prop: fuel, in_stage_or_above: stocked}]
             add: {self: {cooking_progress: 2}}
 
-  # 値の並びの上に位置を持たない段を要る上乗せ。**綴りが宣言のどれとも合わない**ので、押し手の居る段
-  # とどちらが上かを言えない。
-  misnamed_chunk:
+  # 値の並びの上に位置を持たない段を要る上乗せ。**完全一致で決まる段（シンボル型、6.6節）**なので、
+  # 押し手の居る段とどちらが上かを言えない。
+  positionless_chunk:
     tags: [item, roastable]
     props:
       cooking_progress:
@@ -475,7 +482,7 @@ object_defs:
           destroy: self
           spawn: {object: roasted_chunk}
         passives:
-          - conditions: [{subject: parent, prop: heat, in_stage_or_above: embres}]
+          - conditions: [{subject: parent, prop: draft, in_stage_or_above: breezy}]
             add: {self: {cooking_progress: 2}}
 
   # 「その段以上」でしか押し手が居場所を名乗らない炉。**どの段に居るかは1つに決まらない**ので、
@@ -1089,9 +1096,9 @@ object_defs:
       { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
     ]);
 
-    // 綴りが宣言のどれとも合わない段は、値の並びの上に位置を持たない。読めないものを満たされたことに
+    // 完全一致で決まる段は、値の並びの上に位置を持たない。読めないものを満たされたことに
     // すると、押し手が居るだけで成立しない条件まで数に入る。
-    expect(cookedCyclesOf('misnamed_chunk')).toEqual([
+    expect(cookedCyclesOf('positionless_chunk')).toEqual([
       { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
     ]);
   });

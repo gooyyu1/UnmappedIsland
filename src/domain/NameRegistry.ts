@@ -1,4 +1,19 @@
 /**
+ * 名前空間のうち**引くだけの窓**（{@link NameRegistry.intern}を持たない）。名前を作る口と名指しする口を
+ * 分けたい側が、名前空間そのものの代わりにこれを配る（WorldCodexYamlLoader.propertyNames）。
+ *
+ * 型引数の`in out`は{@link NameRegistry}と同じ理由。
+ */
+export interface NameLookup<in out Id extends number> {
+  readonly count: number;
+  readonly ids: readonly Id[];
+  tryGetId(name: string): Id | undefined;
+  getId(name: string): Id;
+  getName(id: Id): string;
+  tryGetName(id: Id): string | undefined;
+}
+
+/**
  * YAML上の識別子（ObjectDef名・プロパティ名・スロット名など）と、実行時に扱うグローバルIDを
  * 相互変換する。「名前の空間」ごとに1つ用意する（WorldCodexが持つ名前空間ごとに別インスタンス）。
  * ロード完了後はinternを呼ばず、読み取り専用として扱う想定。
@@ -13,7 +28,7 @@
  * `NameRegistry<number>` へ落ち、そこから先は素の数が通る。境界がこのクラスの中だけであることを
  * 保っているのはこの2語。
  */
-export class NameRegistry<in out Id extends number> {
+export class NameRegistry<in out Id extends number> implements NameLookup<Id> {
   private readonly nameToId = new Map<string, Id>();
   private readonly idToName: string[] = [];
 

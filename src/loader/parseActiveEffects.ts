@@ -230,11 +230,11 @@ function parseTransfer(
 ): TransferEffect {
   const fromRaw = tryGetScalar(map, 'from', context);
   const fromObject = fromRaw !== undefined ? parseReferenceRoot(context, fromRaw, scope) : 'self';
-  const fromProp = loader.propertyNames.intern(requireScalar(map, 'from_prop', context));
+  const fromProp = loader.referToProperty(requireScalar(map, 'from_prop', context), context);
 
   const toRaw = tryGetScalar(map, 'to', context);
   const toObject = toRaw !== undefined ? parseReferenceRoot(context, toRaw, scope) : 'self';
-  const toProp = loader.propertyNames.intern(requireScalar(map, 'to_prop', context));
+  const toProp = loader.referToProperty(requireScalar(map, 'to_prop', context), context);
 
   const amount = requireNumber(map, 'amount', context);
   // 単位が同じなら省略できる（1対1）。0では移送先が増えないうえ割り戻しが割れないため弾く。
@@ -281,7 +281,7 @@ function parseSets(
           loader,
           `${context}.'${targetName}'.'${propName}'`,
           target,
-          loader.propertyNames.intern(propName),
+          loader.referToProperty(propName, `${context}.'${targetName}'.'${propName}'`),
           valueNode,
           scope,
         ),
@@ -304,7 +304,10 @@ function parseAdds(
     for (const [propName, amountNode] of entriesInOrder(asMap(targetBody, `${context}.'${targetName}'`)))
       adds.push(
         new AddEffect(
-          new PropertyPath(target, loader.propertyNames.intern(propName)),
+          new PropertyPath(
+            target,
+            loader.referToProperty(propName, `${context}.'${targetName}'.'${propName}'`),
+          ),
           parseNumberLiteral(context, asScalarText(amountNode, context)),
         ),
       );
@@ -459,7 +462,9 @@ function parseMoveSubject(
     );
 
   if (subjectProp !== undefined)
-    return ObjectRef.ofProperty(new PropertyPath('self', loader.propertyNames.intern(subjectProp)));
+    return ObjectRef.ofProperty(
+      new PropertyPath('self', loader.referToProperty(subjectProp, `${context}.subject_prop`)),
+    );
 
   return parseObjectRef(loader, `${context}.subject`, subjectNode!, scope);
 }
@@ -563,7 +568,7 @@ function parseObjectRef(
   if (propName === undefined) return ObjectRef.ofRoot(parseObjectRoot(context, subjectName ?? 'self', scope));
 
   const root = subjectName === undefined ? 'self' : parseReferenceRoot(context, subjectName, scope);
-  return ObjectRef.ofProperty(new PropertyPath(root, loader.propertyNames.intern(propName)));
+  return ObjectRef.ofProperty(new PropertyPath(root, loader.referToProperty(propName, context)));
 }
 
 /**
@@ -599,7 +604,9 @@ function parseDestinationRef(
   if (given.length === 0) return undefined;
 
   if (propName !== undefined)
-    return ObjectRef.ofProperty(new PropertyPath('self', loader.propertyNames.intern(propName)));
+    return ObjectRef.ofProperty(
+      new PropertyPath('self', loader.referToProperty(propName, `${context}.${prefix}_prop`)),
+    );
   if (objectNode !== undefined) return parseObjectDefRef(loader, `${context}.${prefix}_object`, objectNode);
 
   return parseObjectRef(loader, `${context}.${prefix}`, refNode!, scope);
@@ -612,7 +619,7 @@ function parseDestinationRef(
 function parseObjectDefRef(loader: WorldCodexYamlLoader, context: string, node: YamlNode): ObjectRef {
   if (isMap(node)) {
     requireKnownKeys(node, ['prop'], context);
-    const propertyGlobalId = loader.propertyNames.intern(requireScalar(node, 'prop', context));
+    const propertyGlobalId = loader.referToProperty(requireScalar(node, 'prop', context), context);
     loader.noteObjectDefPropertyDestination(propertyGlobalId, context);
     return ObjectRef.ofObjectDefProperty(propertyGlobalId);
   }

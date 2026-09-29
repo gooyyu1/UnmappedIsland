@@ -263,7 +263,7 @@ blood:
 
 **`+2/tick`（3 節）のままとします。** 人が一度に失う量と、狩りの間隔の両方が出たので比べられます。
 戻るのは
-1 日 192mL<!-- stats: balance.yaml consumption property=blood condition="hydrationが段hydrated以上にある かつ body_fatが段gaunt以上にある" character=medic per_day -->
+1 日 192mL<!-- stats: balance.yaml consumption property=blood condition=all(in_stage_or_above(self.hydration,hydrated),in_stage_or_above(self.body_fat,gaunt)) character=medic per_day -->
 です。
 
 - **人が 1 つの傷で失う最大は 600mL** です（牙の傷。`-150/tick` が固まるまでの 4 tick、4 節）。戻るのに
