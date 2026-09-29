@@ -67,7 +67,7 @@ export abstract class ActiveEffect {
    * 運ばれてきた相手（instrument）を丸ごと消すか（`destroy`、9.6節）。
    *
    * **入り切らない端数の行き先を決める側が読む**（9.5.1節）——相手が消えるなら、出どころへ残した分は
-   * 相手ごと失われる。
+   * 相手ごと失われる。**相手を指せるのは操作の効果だけ**なので、読むのもそこ（parseInteractions）。
    */
   get destroysInstrument(): boolean {
     return false;
@@ -180,21 +180,6 @@ export class ConditionalEffect extends ActiveEffect {
    */
   readBy(reader: EffectReader): void {
     reader.conditional(new ConditionalBranches(this.condition, this.whenMet, this.otherwise));
-  }
-
-  /**
-   * どちらの枝も、走る回があるなら同じ問いに数える（9.5.2節の検査が、条件で分けて書いた形を
-   * 見落とさないため）。
-   */
-  override get destroysInstrument(): boolean {
-    return this.whenMet.destroysInstrument || this.otherwise?.destroysInstrument === true;
-  }
-
-  override get movesFromInstrumentKeepingRemainder(): boolean {
-    return (
-      this.whenMet.movesFromInstrumentKeepingRemainder ||
-      this.otherwise?.movesFromInstrumentKeepingRemainder === true
-    );
   }
 }
 

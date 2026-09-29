@@ -318,8 +318,8 @@ object_defs:
           to_prop: fodder
           # 入り切らない端数の切り捨てを名乗る（GameElementDefinition.md 9.5.1節・9.5.2節）。
           allow_overflow: true
-        # 中途半端に残った飼葉を作らない。捨てるのは高々1個ぶんで、満杯を拒む条件（上）が保証する
-        # （罠の餌と同じ）。
+        # 中途半端に残った飼葉を作らない。捨てるのは高々1個ぶんで、それは1個も入らない囲いでは操作が
+        # 成立しないこと（GameElementDefinition.md 12.4節）が保証する（罠の餌と同じ、traps.yaml）。
         destroy: instrument
       # 水をやる（飼葉と同じドラッグ型）。**容器は返す**——液体は容器の変種として在る
       # （liquid_containers.yaml）ので、注いだぶんfillが減り、空になれば中身の軸が落ちて空の器に戻る。
