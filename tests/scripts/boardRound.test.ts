@@ -1139,7 +1139,7 @@ describe('board-round.mjs', () => {
       const result = await playRound({ fails: ['usage-record.sh'], mergedPrsFail: true });
 
       expect(Object.keys(result.partialMarks)).toEqual([
-        '使用量を引けなかった（この周は、余力を見ずに投入する）',
+        '使用量を引けなかった（控えが古くなると、余力の関門が投入を止める）',
         'マージ済みPRを引けなかった（この周は、後片付けもスメルを拾う係も出ない）: gh pr list …: 引けない',
       ]);
       // **配れない理由の側へ混ぜない。** 混ぜると、待っているだけの周が「盤面が壊れている」に見える。

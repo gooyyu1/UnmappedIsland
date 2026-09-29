@@ -564,8 +564,11 @@ export async function round({
   };
 
   const spent = runScriptHere('usage-record.sh', [], { capture: true });
-  // **使用量を引けない周は、余力で止める手が効かない**（2.5.2）ので、これも盤面の欠けとして言う。
-  if (spent.status !== 0) sayIncomplete('使用量を引けなかった（この周は、余力を見ずに投入する）');
+  // **引けない周が続いて控えが古くなると、余力の関門は止める側へ倒れ、投入も周期の係も止まる**
+  // （2.5.2）ので、これも盤面の欠けとして言う。
+  if (spent.status !== 0) {
+    sayIncomplete('使用量を引けなかった（控えが古くなると、余力の関門が投入を止める）');
+  }
   for (const line of spent.stdout.split(/\r?\n/)) {
     if (line !== '') log(`消費 ${line}`);
   }
