@@ -18,7 +18,9 @@ describe('局面ごとの1日の前提', () => {
     expect(dailyBudgetOf(balance).survivalGatheringMinutes, '昼に払う生存の採取').toBeGreaterThan(0);
     // 1日を使い切ると自由時間が0以下になり、山の日数が出なくなる（ObjectCost.days）。
     expect(balance.surplusMinutes, '最小労働を払って残る自由時間').toBeGreaterThan(0);
-  });
+    // 収支表を検査の本体で組む分（issue #2446）が乗るので、混み合った回には1件あたりの上限を越える。
+    // 上限とその名乗り方は `vite.config.ts` の `testTimeout` のコメント（issue #2376）。
+  }, 30_000);
 
   it('山の配分の割合が、合計で1になる', () => {
     const total = WORK_SHARES.reduce((sum, share) => sum + share.share, 0);
