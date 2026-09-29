@@ -155,7 +155,9 @@ describe('里心を抑える設え(src/assets/world-codex/furnishings.yaml)', ()
       Math.max(...minutes) / Math.min(...minutes),
       `点あたりの手間の開き（${readout}）`,
     ).toBeLessThanOrEqual(COMFORT_COST_SPREAD_LIMIT);
-  });
+    // 収支表を検査の本体で組むので、混み合った回には1件あたりの上限を越える。
+    // 上限とその名乗り方は `vite.config.ts` の `testTimeout` のコメント（issue #2376）。
+  }, 30_000);
 
   it('同じ物を並べても効く（連れと違って積み上がる）', () => {
     // 設えは積むほど効いてよく、効き目は掛けた手間に比例させてある（furnishings.yaml）ので、
