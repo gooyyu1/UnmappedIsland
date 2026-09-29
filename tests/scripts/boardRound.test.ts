@@ -700,6 +700,50 @@ describe('board-round.mjs', () => {
     expect(result.ledger['resume:session_holder']).toBe('returned:9');
   });
 
+  /**
+   * **頼み終えた差し戻しが戻ってこないPRも、文面が違う**（2.13.6。issue #2045）。宛先は居るのに
+   * 動かない形なので、**人がすることは「直しを引き取るか、PRを閉じる」**——投入し直しても、名乗りを
+   * 直しても動かない。
+   */
+  it('頼み終えた差し戻しが戻ってこないPRは、引き取り方の分かる文面で返す', async () => {
+    const result = await playRound({
+      issues: [
+        { number: 9, labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }], blockedBy: { nodes: [] } },
+      ],
+      prs: [pr(10, { body: 'Closes #9\n', mergeable: 'CONFLICTING' })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a', 'task-9')],
+      ledger: { 'resume:session_a': `mend:conflict:10:aaa111:${MAIN_HEAD}` },
+    });
+
+    expect(result.comments[0]?.split('\n')[0]).toBe('[返却] PR #10 の直しを頼んでも、戻ってこない');
+    // **何が起きているかを、リポジトリを開かずに読める形で書く**（2.22.3）。
+    expect(result.comments[0]).toContain('コンフリクトしている');
+    expect(result.comments[0]).toContain('直しを引き取って push してください');
+    expect(result.ledger['resume:session_a']).toBe('returned:9');
+  });
+
+  /**
+   * **人がすることは、起こされた側がやることで変わる**（`board-move.mjs` の `TAKEOVER`）。`## 見た目`
+   * の欠けで返したPRに要るのは**本文の節**で、コミットは1つも要らない——`mend` と同じ文面で返すと、
+   * 読んだ人は差分を直しに行く。
+   */
+  it('見た目 の欠けで返すときは、本文へ節を足す形で書く', async () => {
+    const result = await playRound({
+      issues: [
+        { number: 9, labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }], blockedBy: { nodes: [] } },
+      ],
+      prs: [pr(10, { body: 'Closes #9\n', files: [{ path: 'src/game/ui/Card.ts' }] })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a', 'task-9')],
+      ledger: { 'resume:session_a': 'look:10:aaa111' },
+    });
+
+    expect(result.comments[0]?.split('\n')[0]).toBe('[返却] PR #10 の直しを頼んでも、戻ってこない');
+    expect(result.comments[0]).toContain('`## 見た目` の節を足して');
+    expect(result.comments[0]).toContain('コミットは要りません');
+  });
+
   it('返せなかったら、指紋を残さない', async () => {
     const result = await playRound({
       issues: [
