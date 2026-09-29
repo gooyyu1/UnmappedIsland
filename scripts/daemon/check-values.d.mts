@@ -40,8 +40,12 @@ export interface CheckValuesDeps extends SurveyValuesDeps {
   grace?: number;
   /** クラウドへ頼み直すまでの間隔（時間）。 */
   retell?: number;
+  /** 同じ顔ぶれの死を、画面へもう一度出すまでの間隔（時間）。 */
+  reshout?: number;
   /** クラウドのセッションへ、同じ題・同じ本文で置かせに行く。頼めたら `true`。 */
   ask?: (body: string) => boolean;
+  /** このPCの画面へ1件出す（[`toast.mjs`](toast.mjs)）。出せたら `true`。 */
+  shout?: (deps: { title: string; body: string }) => boolean;
   dryRun?: boolean;
   say?: (line: string) => void;
 }
