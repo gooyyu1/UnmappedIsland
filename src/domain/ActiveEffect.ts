@@ -62,6 +62,27 @@ export abstract class ActiveEffect {
   acceptedCount(_context: ReferenceContext, _candidates: readonly WorldObject[]): number | undefined {
     return undefined;
   }
+
+  /**
+   * 運ばれてきた相手（instrument）を丸ごと消すか（`destroy`、9.6節）。
+   *
+   * **入り切らない端数の行き先を決める側が読む**（9.5.1節）——相手が消えるなら、出どころへ残した分は
+   * 相手ごと失われる。**相手を指せるのは操作の効果だけ**なので、読むのもそこ（parseInteractions）。
+   */
+  get destroysInstrument(): boolean {
+    return false;
+  }
+
+  /**
+   * 相手（instrument）から移す輸送のうち、**入り切らない分を出どころへ残す**もの（`allow_overflow` が
+   * 既定の`false`）を含むか（9.5節）。
+   *
+   * **相手を消す操作でこれを含むのは、端数を黙って捨てる形**なので、ロード時に落とす側が読む
+   * （parseInteractions）——捨てるなら`allow_overflow: true`と名乗る（9.5.1節）。
+   */
+  get movesFromInstrumentKeepingRemainder(): boolean {
+    return false;
+  }
 }
 
 /**
@@ -117,6 +138,15 @@ export class ActiveEffectSequence extends ActiveEffect {
       if (count !== undefined) return count;
     }
     return undefined;
+  }
+
+  /** 子に1つでも在れば、合成も含む（入れ子の中まで辿る）。 */
+  override get destroysInstrument(): boolean {
+    return this.effectsInDeclarationOrder.some((operation) => operation.destroysInstrument);
+  }
+
+  override get movesFromInstrumentKeepingRemainder(): boolean {
+    return this.effectsInDeclarationOrder.some((operation) => operation.movesFromInstrumentKeepingRemainder);
   }
 }
 
@@ -277,6 +307,12 @@ export class DestroyEffect extends ActiveEffect {
     this.target.resolve(context)?.destroy(this.reason);
   }
 
+  /** 対象キーで指した相手だけが答えられる——個体や型で指す形は、宣言の時点では誰を消すか決まらない。 */
+  override get destroysInstrument(): boolean {
+    const reading = this.target.reading;
+    return reading.kind === 'root' && reading.root === 'instrument';
+  }
+
   readBy(reader: EffectReader): void {
     reader.destroy(this.target.reading, this.reason);
   }
@@ -403,6 +439,10 @@ export class TransferEffect extends ActiveEffect {
     this.to.propertyValue(context)?.add((taken * this.toAmount) / this.amount);
 
     for (const linked of this.linkedAdd) linked.applyScaled(context, taken, this.amount);
+  }
+
+  override get movesFromInstrumentKeepingRemainder(): boolean {
+    return this.from.root === 'instrument' && !this.allowOverflow;
   }
 
   /**

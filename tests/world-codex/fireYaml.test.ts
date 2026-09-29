@@ -814,6 +814,25 @@ describe('fire.yamlの火の連鎖', () => {
     expect(heatIs(hearth, 'out'), '薪も種火も尽きた').toBe(true);
   });
 
+  it('薪が1未満でも、尽きるまでは火が衰えない（「尽きた」は0のこと）', () => {
+    // くべる量は整数、減る量は火力ごとの小数（2.2節）なので、0と1の間は必ず通る。そこを尽きた扱いに
+    // すると、薪が残っているのに火が衰える区間ができる。
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(0.9);
+    hearth.getProperty(codex.propertyNames.getId('heat')).setNumber(1);
+
+    session.advanceWorldTime(15);
+
+    expect(effectiveNumberOf(hearth, 'fuel'), '種火は薪を0.1食う').toBeCloseTo(0.8, 10);
+    expect(heatIs(hearth, 'ember'), '燃え残りがある間は種火が死なない').toBe(true);
+
+    // 食い尽くせば、そこから衰える（焚き火の種火は-2/tickなので1tickで消える）。
+    session.advanceWorldTime(15 * 10);
+
+    expect(effectiveNumberOf(hearth, 'fuel')).toBe(0);
+    expect(heatIs(hearth, 'out'), '尽きたら衰えて死ぬ').toBe(true);
+  });
+
   it('雨は野ざらしの炉の火力を削り、育つはずの種火を消す', () => {
     const underClearSky = smallFire();
     session.advanceWorldTime(15);
@@ -887,6 +906,25 @@ describe('fire.yamlの火の連鎖', () => {
 
     expect(effectiveNumberOf(hearth, 'fuel'), '溢れた分は捨てられる（量の器は部分的に受け取る）').toBe(30);
     expect(itemsOn(land), 'くべた2本は残らない').toEqual(['thick_branch']);
+  });
+
+  it('丸ごと入らない薪でも受け取り、入り切らない端数は切り捨てる', () => {
+    // issue #2246 の現象を、**仕様として固定する**（GameElementDefinition.md 9.5.1節）。受け取らない形に
+    // すると、いちばん小さい薪より炉の空きが小さい間、薪を足す手が丸ごと塞がる。
+    const hearth = spawnInto('stone_hearth', land, 'fixtures');
+    hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(119.9);
+
+    const log = spawnInto('log', land, 'items');
+    expect(
+      hearth
+        .combinationsWith(log, player)
+        .find((c) => c.name === 'add_fuel')
+        ?.tryExecute() === true,
+      '空きが半端でもくべられる',
+    ).toBe(true);
+
+    expect(effectiveNumberOf(hearth, 'fuel'), '炉は上限まで満ちる').toBe(120);
+    expect(itemsOn(land), '丸太は物ごと消える（端数の切り捨て）').toEqual([]);
   });
 
   it('満杯の炉にはくべられない', () => {
@@ -1016,7 +1054,7 @@ describe('fire.yamlの火の連鎖', () => {
       codex.objects.get(codex.objectNames.getId(hearthName)).tryGetSlotDef(codex.slotNames.getId('fire'))
         ?.cellCount;
 
-    // 焚き火の2枠は焼く物だけ。三石は器の枠が1つ、石囲いは2つ増える（1.1節）。
+    // 焚き火の2枠は焼く物だけ。三石は器の枠が1つ、石囲いは2つ増える（FireSystem.md 1.1節）。
     expect(cellCount('campfire')).toBe(2);
     expect(cellCount('three_stone_hearth')).toBe(3);
     expect(cellCount('stone_hearth')).toBe(5);
