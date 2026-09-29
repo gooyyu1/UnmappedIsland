@@ -7,7 +7,7 @@ import { ROOT, sourcesIn } from '../support/sourceFiles';
 /**
  * 同梱の定義から収支表を組む場所の見張り（`bundledBalanceTables` の断り、tests/support/worldCodexFiles.ts）。
  *
- * 1回の組み立てが1件あたりの上限（`vite.config.ts` の `testTimeout`）の半分近くを使うので、検査の
+ * 1回の組み立てが1件あたりの上限（`vite.config.ts` の `testTimeout`）の4割ほどを使うので、検査の
  * 本体で組むと、混んだ回に**どの検査が越えるかが回ごとに変わる**（issue #2358・#2446）。越えた検査へ
  * 上限を名乗らせて回っても、次に数パーセント遅くなる変更で別の検査が落ちる。
  */

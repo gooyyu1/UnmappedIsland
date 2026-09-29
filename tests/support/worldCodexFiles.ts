@@ -54,7 +54,7 @@ let bundled: WorldCodex | undefined;
 /**
  * 同梱の定義を {@link SAMPLE_CHARACTER} で解いた収支表。**何度呼んでも同じものが返る**。
  *
- * 1回の組み立てで1件あたりの上限（`vite.config.ts` の `testTimeout`）の半分近くを使うので、
+ * 1回の組み立てで1件あたりの上限（`vite.config.ts` の `testTimeout`）の4割ほどを使うので、
  * **呼ぶのはモジュールの直下か `describe` の直下だけ**——収集の時に組めば、どの検査の上限にも
  * 掛からない。`it` の中で呼ぶと、ワーカーで最初に呼んだ検査が組み立てを丸ごと払い、混んだ回に越える。
  * 呼ぶ場所は tests/architecture/bundledBalanceTables.test.ts が見張る。
