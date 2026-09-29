@@ -27,8 +27,11 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * 出すときに名乗るAUMID。**PowerShell 自身のもの**で、このGUIDは Windows が持つ既定の
- * `Microsoft.Windows.Shell` のもの（上の「名乗るのは」）。
+ * 出すときに名乗るAUMID（上の「名乗るのは」）。
+ *
+ * **これは登録された名前ではなく、綴りそのものが在り処を指している**——GUIDは `FOLDERID_System`
+ * （`C:\Windows\System32`）で、後ろはそこからの相対パス。**`HKCR\AppUserModelId` を探しても
+ * 出てこない**ので、触る人が登録を探しに行かないように書いておく。
  */
 const APP_ID = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe';
 
@@ -55,6 +58,10 @@ export const escapeXml = (text) =>
  * **`reminder` は、押せるものが1つも無いと普通のトーストへ落ちる**（Windows の仕様で、転ばずに
  * 落ちるので見分けが付かない）。閉じる釦を1つ置くのはそのため——**釦が消えると、居座る主張だけが
  * 残る。**
+ *
+ * **本文の行数を広げてあるのは、呼び手が直し方まで入れてくるから**——既定では2行で切られ、
+ * **死んでいる値が2つ以上の周だけ、直し方の後ろが黙って消える。** 切られたことは画面からは
+ * 分からないので、読む人は**そこまでが全部だと読む。**
  */
 export function toastScript(title, body) {
   return `
@@ -63,7 +70,7 @@ $ErrorActionPreference = 'Stop'
 [void][Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType = WindowsRuntime]
 $doc = New-Object Windows.Data.Xml.Dom.XmlDocument
 $doc.LoadXml(@'
-<toast scenario="reminder"><visual><binding template="ToastGeneric"><text>${escapeXml(title)}</text><text>${escapeXml(body)}</text></binding></visual><actions><action activationType="system" arguments="dismiss" content="閉じる"/></actions></toast>
+<toast scenario="reminder"><visual><binding template="ToastGeneric"><text>${escapeXml(title)}</text><text hint-maxLines="5">${escapeXml(body)}</text></binding></visual><actions><action activationType="system" arguments="dismiss" content="閉じる"/></actions></toast>
 '@)
 $toast = New-Object Windows.UI.Notifications.ToastNotification $doc
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('${APP_ID}').Show($toast)

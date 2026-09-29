@@ -777,6 +777,23 @@ describe('check-values.mjs の、画面へ出す口', () => {
     expect(ran(run, 'issue', 'create')).toBeDefined();
   });
 
+  /**
+   * **表の升の逃がしを、画面まで持ち込まない。** 表が崩れないように `|` を `\|` へ逃がすのは
+   * 表の都合で、**画面にはそのまま `\|` が見える**——出口の都合は、その出口が引き受ける。
+   */
+  it('表のための逃がしは、画面の文面に混ざらない', async () => {
+    const run = await check({
+      living: [],
+      envs: [{ name: 'A|B', id: 'env|x' }],
+      ledger: { 'A|B': { since: LONG_AGO } },
+    });
+
+    expect(run.screen[0]?.body).toContain('A|B');
+    expect(run.screen[0]?.body).not.toContain('\\|');
+    // **表の側は逃がしたまま。** 両方が同じ綴りになっていれば、どちらかの出口が壊れている。
+    expect(run.body).toContain('A\\|B');
+  });
+
   // **全部生き返ったら捨てる。** 残すと、次に死んだ周が古い時刻に縛られて、間隔のぶん黙る。
   it('全部生き返った周は、出した時刻を捨てる', async () => {
     const run = await check({ toasted: { at: JUST_NOW, faces: 'BRIDGE_ENV' } });

@@ -120,8 +120,8 @@ const retellHours = () => hours('VALUE_RETELL_HOURS', 6);
 /**
  * 同じ顔ぶれの死を、画面へもう一度出すまでの間隔（時間）。
  *
- * **顔ぶれが変わった周は、この間隔を待たない**（下の `checkValues`）——新しく死んだ値は、まだ一度も
- * 画面に出ていない。
+ * **顔ぶれが変わった周は、この間隔を待たない**（下の `checkValues`）——増えても減っても、最後に
+ * 出した1件はもう今の姿を述べていない。
  *
  * **一度きりにはしない。** 出た瞬間に人が見ているとは限らず、**通知を消してしまえば跡は残らない**
  * ので、消された後に死んだままなら、もう一度出るのでなければ気づく手が無くなる。
@@ -138,10 +138,18 @@ const ledgerPath = (stateDir) => join(stateDir, 'value-check.json');
 const stamp = (now) => now.toISOString().replace(/\.\d{3}Z$/, 'Z');
 
 /**
- * 表の升。**道具が言った理由をそのまま載せる**ので、改行も `|` も混ざる——**どちらもそこで表が
- * 崩れる**（崩れた表は、値の名前と直し方が別の行に散る）。
+ * 1行へ畳む。**道具が言った理由をそのまま載せる**ので改行が混ざり、**どの出口でもそこで形が
+ * 崩れる**（表なら升が割れ、画面なら1件の通知が縦に伸びる）。
  */
-const cell = (text) => String(text).replace(/\s+/g, ' ').replace(/\|/g, '\\|').trim();
+const oneLine = (text) => String(text).replace(/\s+/g, ' ').trim();
+
+/**
+ * 表の升。畳んだうえで `|` を逃がす——**逃がさないと表が崩れ**、値の名前と直し方が別の行に散る。
+ *
+ * **逃がすのはここだけ。** 表でない出口（`~/daemon.log` の1行・画面のトースト）へ回すと、
+ * **読む人には `\|` がそのまま見える**——出口の都合は、その出口が引き受ける。
+ */
+const cell = (text) => oneLine(text).replace(/\|/g, '\\|');
 
 /**
  * 環境IDごとの直し方。**鍵は [`ccr-env.sh`](ccr-env.sh) が出す名前**（あちらが出す行は
@@ -379,7 +387,7 @@ function report(due, now) {
  * （`agent-ops/board-design.md`「未決」）。**それでも黙らないのは、後から追えるようにするため。**
  */
 function deadBrief(due) {
-  return due.map((value) => `${cell(value.label)}（${value.since} から）`).join('・');
+  return due.map((value) => `${oneLine(value.label)}（${value.since} から）`).join('・');
 }
 
 /**
@@ -393,7 +401,7 @@ const plain = (text) => String(text).replace(/[`*]/g, '');
  * 見た人で、そこから先を開くとは限らない。
  */
 function toastBody(due) {
-  return plain(`${deadBrief(due)}\n直し方: ${due.map((value) => value.remedy).join(' / ')}`);
+  return plain(`${deadBrief(due)}\n直し方: ${due.map((value) => oneLine(value.remedy)).join(' / ')}`);
 }
 
 /**
@@ -583,7 +591,8 @@ export async function checkValues({
   // 書けない周にも出る（2.22.6）——**告げ先のうち、ここだけが死んだ値と無関係に動く。**
   const faces = due.map((value) => value.key).join(' ');
   const lastShout = Date.parse(toasted?.at ?? '');
-  // **顔ぶれが変わった周は、間隔を待たない**——新しく死んだ値は、まだ一度も画面に出ていない。
+  // **顔ぶれが変わった周は、間隔を待たない**——増えても減っても、**最後に出した1件はもう今の姿を
+  // 述べていない**（増えた値は一度も画面に出ておらず、生き返った値は死んでいると言われたまま）。
   // **読めない時刻は「まだ出していない」と同じに扱う**（`NaN` を比較へ通すと常に false になり、
   // 台帳が壊れた周から先が**画面へ二度と出なくなる**）。
   const mayShout =

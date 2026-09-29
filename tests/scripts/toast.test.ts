@@ -45,7 +45,7 @@ describe('toast.mjs の中身', () => {
     const script = toastScript('題 & <印>', '本文 "引用"');
 
     expect(script).toContain('<text>題 &amp; &lt;印&gt;</text>');
-    expect(script).toContain('<text>本文 &quot;引用&quot;</text>');
+    expect(script).toContain('>本文 &quot;引用&quot;</text>');
     // 生のままの `<印>` が残っていれば、そこでXMLが割れている。
     expect(script).not.toContain('<印>');
   });
@@ -60,6 +60,18 @@ describe('toast.mjs の中身', () => {
 
     expect(script).toContain('scenario="reminder"');
     expect(script).toMatch(/<actions>.*<action[^>]*\/>.*<\/actions>/s);
+  });
+
+  /**
+   * **本文は既定では2行で切られる。** 呼び手は直し方まで入れてくるので、**死んでいる値が2つ以上の
+   * 周だけ、後ろが黙って消える**——切られたことは画面から分からないので、読む人はそこまでが全部だと
+   * 読む。**題の側は広げない**（1行で足りるものしか入らない）。
+   */
+  it('本文の行数だけを広げて持つ', () => {
+    const script = toastScript('題', '本文');
+
+    expect(script).toContain('<text hint-maxLines="5">本文</text>');
+    expect(script).toContain('<text>題</text>');
   });
 });
 
