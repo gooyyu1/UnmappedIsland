@@ -28,13 +28,14 @@ const ROOT = resolve(__dirname, '../..');
 const MARKERS = [/^<<<<<<< /, /^\|\|\|\|\|\|\| /, /^=======$/, /^>>>>>>> /];
 
 /**
- * 中身を行で読む相手。**この検査自身は外す**——印の綴りを持っているので、自分で自分を止める。
+ * 中身を行で読む。**射程から外すものは無い——この検査自身も入る。** 印の綴りはここにも在るが、
+ * `MARKERS` はどれも行頭に錨を打っているので、**綴りとして書いた側は当たらない**（`MARKERS` の中も、
+ * doc コメントの `grep` の例も、行頭には来ない）。外すと、**このファイルで衝突が起きて印が行頭に
+ * 残った周に、置いた見張りが自分の中身を見ないまま緑で通る。**
  *
  * **拡張子の一覧は持たない**（追跡しているものには絵も zip も在るが、印はテキストにしか入らない）
  * ——読めたものだけを見て、読めなければ飛ばす。
  */
-const SELF = join('tests', 'architecture', 'conflictMarkers.test.ts');
-
 function lines(rel: string): string[] | undefined {
   let text: string;
   try {
@@ -48,7 +49,7 @@ function lines(rel: string): string[] | undefined {
 }
 
 describe('コンフリクトの印', () => {
-  const targets = trackedFiles(ROOT).filter((rel) => rel !== SELF);
+  const targets = trackedFiles(ROOT);
 
   // 集める側が黙って0件になると、**1つも見ていない状態と、全部が正しい状態が同じ緑**になる。
   it('検査する対象が在る', () => {
