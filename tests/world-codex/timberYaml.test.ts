@@ -142,7 +142,7 @@ describe('timber.yamlの伐採', () => {
   });
 
   it('摩耗した石斧が暗がりで名乗る理由は、その斧にできる操作のもの', () => {
-    // 断る組み合わせが複数並ぶと、画面へ出るのは先頭だけ（docs/ui/CardInteraction.md 2.1節）。
+    // 断る組み合わせが複数並ぶと、画面へ出るのは先頭だけ（docs/ui/CardInteraction.md 2節）。
     // 斧が樹皮剥ぎにも当たっていた
     // 頃は、暗さで塞がれた樹皮剥ぎの理由が伐採の「摩耗」に隠れていた。
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');

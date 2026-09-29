@@ -578,7 +578,9 @@ const RAIN_WATER_LABELS: ShownFields<RainWaterRow> = {
 /** 消費表の列と、`ConsumptionRow`のフィールドの対応。 */
 const CONSUMPTION_LABELS: ShownFields<ConsumptionRow> = {
   propertyName: asIs('プロパティ'),
-  condition: asIs('条件'),
+
+  // 表に出るのは文だけ。行を分ける鍵（`ConsumptionCondition.key`）は生成物と引用印のもの。
+  condition: shows('条件', (condition) => [condition.text]),
 
   // キャラクタ1人が1列で、見出しはその名前。見本の世界のキャラクタは代表の1人だけ。
   perTickByCharacter: shows(SAMPLE_CHARACTER, (amounts) =>

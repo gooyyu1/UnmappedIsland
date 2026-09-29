@@ -4,6 +4,12 @@
     "同じ src/assets/objects/ へ出すが、土地そのもののカードの絵だけは location_cards.json にある",
     "（白地の物ではなく風景で、作り方が違うため）。",
     "",
+    "**positive・negative に置いてよいのは、今そのまま振れる本文だけ。** レシピが sketch から",
+    "起こすようになったエントリでは、生成の本文はどこからも振られない。そのまま置くと、次に",
+    "seed を振る人が注文として読む——散文で断っても、注文の側から入った人には届かない。",
+    "振らなくなった本文は `retired` の下へ入れる（generate.py も build.py もここを読まない）。",
+    "何が起きて外したかは description に書く。tests/art/promptOrders.test.ts が対で見ている。",
+    "",
     "**NGワードはアイテムごとに持つ。** ここには sharedNegative を置かない。アイテムは性格が",
     "ばらばらなので、ある物のために入れた否定が別の物を作れなくする。たとえば石の艶を消すために",
     "glossy/shiny/reflection を共通で否定すると、この先ガラスや水や金属のアイテムが作れない。",
@@ -71,9 +77,10 @@
       "丸太。広葉樹（broadleaf_tree）を倒して玉切りにしたもの（src/assets/world-codex/timber.yaml）。",
       "太い枝（thick_branch）と並んで落ちるので、**並んだときに紛れないこと**が第一の要件。",
       "",
-      "**配置を描いて渡す（sketch: log）。以下は使っていない。** 下の本文を4通り、計26枚で振ったが、",
-      "横倒しで太さの変わらない丸太は1枚も出なかった。姿勢を決めていたのは本文ではなく枠の縦横で、",
-      "この被写体では生成側に決められることが残っていない。以下は、その4通りで何が起きたかの記録。",
+      "**配置を描いて渡す（sketch: log）。振った本文は `retired`**（記録であって注文ではない）。",
+      "4通り・計26枚で振ったが、横倒しで太さの変わらない丸太は1枚も出なかった。姿勢を決めていたのは",
+      "本文ではなく枠の縦横で、この被写体では生成側に決められることが残っていない。以下は、その4通りで",
+      "何が起きたかの記録。",
       "",
       "**分けるのは木口。** 太い枝は「先細り・側枝の折れ跡・裂けた端」で、丸太はその全部を否定した",
       "うえで「両端が真っ直ぐ切り落とされて年輪が見える」。太い枝のNGワードに sawn end / tree rings /",
@@ -101,8 +108,10 @@
       "立った切り株になった（「lies on its side」と書いてある）。太い枝が縦枠で成り立つのは",
       "斜めに寝るからで、ずんぐりした丸太では枠の縦横がそのまま姿勢を決める。横枠（1152x896）で出す。"
     ],
-    "positive": "exactly one log alone on an empty white page, one short section of tree trunk, a straight solid cylinder of the same thickness from end to end and about four times as long as it is thick, rough furrowed brown bark covering its curved side, one end turned a little towards us so that its pale cut face shows as a small oval, the cut face rough and chipped where an axe hacked through the wood, no side branches and no leaves, warm brown bark, matte dry surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "cross section, end grain, seen end on, from the end, cut face filling the frame, tree rings, growth rings, concentric circles, extreme close-up, macro, zoomed in, edge to edge, filling the frame, close-up, cropped, cut off, out of frame, face, human face, portrait, eyes, nose, mouth, carved face, wood carving, sculpture, mask, tapering, thin end, knot, side twig, twigs sticking out, forked branch, branch, snapped end, splintered end, thin twig, slender stick, long thin pole, wand, splinter of wood, wood shaving, plank, board, sawn plank, lumber yard, log cabin, two logs, three logs, several logs, pair, group, pile, stack of logs, woodpile, firewood stack, collection, scattered objects, repeated objects, chopping block, axe, hatchet, saw, tree stump, standing upright, vertical, growing, rooted, tree, dead tree, snag, roots, moss, mushrooms, ivy, leaves, foliage, white wood, grey wood, bleached driftwood, glossy, varnished, wet, animal, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+    "retired": {
+      "positive": "exactly one log alone on an empty white page, one short section of tree trunk, a straight solid cylinder of the same thickness from end to end and about four times as long as it is thick, rough furrowed brown bark covering its curved side, one end turned a little towards us so that its pale cut face shows as a small oval, the cut face rough and chipped where an axe hacked through the wood, no side branches and no leaves, warm brown bark, matte dry surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "cross section, end grain, seen end on, from the end, cut face filling the frame, tree rings, growth rings, concentric circles, extreme close-up, macro, zoomed in, edge to edge, filling the frame, close-up, cropped, cut off, out of frame, face, human face, portrait, eyes, nose, mouth, carved face, wood carving, sculpture, mask, tapering, thin end, knot, side twig, twigs sticking out, forked branch, branch, snapped end, splintered end, thin twig, slender stick, long thin pole, wand, splinter of wood, wood shaving, plank, board, sawn plank, lumber yard, log cabin, two logs, three logs, several logs, pair, group, pile, stack of logs, woodpile, firewood stack, collection, scattered objects, repeated objects, chopping block, axe, hatchet, saw, tree stump, standing upright, vertical, growing, rooted, tree, dead tree, snag, roots, moss, mushrooms, ivy, leaves, foliage, white wood, grey wood, bleached driftwood, glossy, varnished, wet, animal, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+    }
   },
   "twig": {
     "description": [
@@ -204,7 +213,7 @@
   },
   "bare_foot": {
     "description": [
-      "素足。**今はどのレシピからも使っていない**——怪我の絵は身体を描かなくなったため",
+      "素足。**どのレシピからも振っていない**（本文は `retired`）——怪我の絵は身体を描かなくなったため",
       "（docs/ui/CardView.md 7 節）。足そのものが要るときのために、指の出し方だけ残す。",
       "",
       "**足の指をまず見る。** 生成が最もしくじるのが指で、縮小したシートでは破綻が見えない。指の部分だけを",
@@ -224,19 +233,24 @@
       "",
       "**足の裏は否定する。** 言わないと真上・真下からの土踏まずの絵が半分を占める。"
     ],
-    "positive": "exactly one bare human foot alone on an empty white page, just the foot and the lower shin cut off cleanly at the calf, seen from the side with the sole hidden, standing with the heel down and the toes forward, the ankle bone rounded under smooth skin, nothing worn on it, five separate toes in a row, each toe fully modelled and clearly parted from the next, the big toe largest and the little toe smallest, a small pale nail on every toe, warm tan and pink skin with a healthy flush, smooth matte skin, it is small and rests in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "fused toes, webbed toes, merged toes, toes blurred together, smooth toeless foot, extra toes, six toes, four toes, missing toes, deformed toes, stumpy toes, bandage, dressing, gauze, wrapping, tape, plaster cast, splint, sock, stocking, shoe, boot, sandal, watercolour splash, paint splash, ink blot, purple paint, dripping paint, two feet, both feet, pair of feet, three feet, several feet, legs, whole leg, thigh, knee, standing, walking, full body, whole person, torso, head, face, arm, hand, fingers, wrist, anatomical illustration, medical illustration, anatomy plate, tendons, muscles, veins, flayed, greyscale, monochrome, black and white, marble statue, white sculpture, mannequin, prosthetic, sole of the foot, seen from below, footprint, crutch, medical chart, skeleton, bones, x-ray, blood, gore, open wound, cut skin, scar, rash, insect bite, clinic, hospital bed, doctor, nurse, filling the frame, close-up, cropped, cut off at the ankle, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, bed sheet, towel, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+    "retired": {
+      "positive": "exactly one bare human foot alone on an empty white page, just the foot and the lower shin cut off cleanly at the calf, seen from the side with the sole hidden, standing with the heel down and the toes forward, the ankle bone rounded under smooth skin, nothing worn on it, five separate toes in a row, each toe fully modelled and clearly parted from the next, the big toe largest and the little toe smallest, a small pale nail on every toe, warm tan and pink skin with a healthy flush, smooth matte skin, it is small and rests in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "fused toes, webbed toes, merged toes, toes blurred together, smooth toeless foot, extra toes, six toes, four toes, missing toes, deformed toes, stumpy toes, bandage, dressing, gauze, wrapping, tape, plaster cast, splint, sock, stocking, shoe, boot, sandal, watercolour splash, paint splash, ink blot, purple paint, dripping paint, two feet, both feet, pair of feet, three feet, several feet, legs, whole leg, thigh, knee, standing, walking, full body, whole person, torso, head, face, arm, hand, fingers, wrist, anatomical illustration, medical illustration, anatomy plate, tendons, muscles, veins, flayed, greyscale, monochrome, black and white, marble statue, white sculpture, mannequin, prosthetic, sole of the foot, seen from below, footprint, crutch, medical chart, skeleton, bones, x-ray, blood, gore, open wound, cut skin, scar, rash, insect bite, clinic, hospital bed, doctor, nurse, filling the frame, close-up, cropped, cut off at the ankle, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, bed sheet, towel, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+    }
   },
   "laceration": {
     "description": [
-      "切り傷。肌の上に1本だけ入った浅い切り傷を描かせ、あとから肌の色で割って",
-      "乗算の層（laceration_multiply.png）にする——身体は地が出すので、ここでは肌ごと描かせてよい。",
+      "切り傷。**振らずに下絵から起こす**（recipes/laceration_multiply.json は線を描いて肌へ載せ、",
+      "Qwen に描き直させる）。生成で外した本文は `retired`——記録であって注文ではない。",
+      "肌の上に1本だけ入った浅い切り傷を描かせ、あとから肌の色で割って乗算の層にする筋で頼んだ。",
       "",
       "**1本だけと言い続ける。** 放っておくと引っ掻き傷が何本も入る。",
       "**深さを否定する。** 深い傷を頼むと肉や骨まで描き出す。ja.yamlでは「浅いので早く塞がる」傷。"
     ],
-    "positive": "extreme close up of exactly one shallow knife cut on bare human skin, a single clean straight incision running down the middle of the frame, the skin parted very slightly along the cut with a thin dark red line inside it, narrow reddened inflamed edges on both sides of the cut, a faint trace of dried blood, the rest of the frame is plain unbroken sun weathered skin filling it from edge to edge, soft even diffuse daylight, matte skin, muted natural colours, soft low contrast, hand painted illustration, game art",
-    "negative": "two cuts, three cuts, many cuts, several wounds, scratches, claw marks, crosshatch, stitches, sutures, staples, bandage, plaster, gore, blood pool, heavy bleeding, dripping blood, deep wound, open flesh, muscle, fat, bone, entrails, amputation, severed limb, burn, blister, rash, tattoo, ink drawing on skin, red paint, lipstick, zipper, old scar, keloid, face, eyes, mouth, hand, fingers, foot, toes, whole figure, person, background, wall, cloth, clothing, glossy, shiny, specular highlight, 3d render, cgi, photograph, text, letters, numbers, watermark, logo, signature, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts"
+    "retired": {
+      "positive": "extreme close up of exactly one shallow knife cut on bare human skin, a single clean straight incision running down the middle of the frame, the skin parted very slightly along the cut with a thin dark red line inside it, narrow reddened inflamed edges on both sides of the cut, a faint trace of dried blood, the rest of the frame is plain unbroken sun weathered skin filling it from edge to edge, soft even diffuse daylight, matte skin, muted natural colours, soft low contrast, hand painted illustration, game art",
+      "negative": "two cuts, three cuts, many cuts, several wounds, scratches, claw marks, crosshatch, stitches, sutures, staples, bandage, plaster, gore, blood pool, heavy bleeding, dripping blood, deep wound, open flesh, muscle, fat, bone, entrails, amputation, severed limb, burn, blister, rash, tattoo, ink drawing on skin, red paint, lipstick, zipper, old scar, keloid, face, eyes, mouth, hand, fingers, foot, toes, whole figure, person, background, wall, cloth, clothing, glossy, shiny, specular highlight, 3d render, cgi, photograph, text, letters, numbers, watermark, logo, signature, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts"
+    }
   },
   "stone": {
     "description": "石。角の無い丸い灰色の河原石。艶を否定する（艶を描かせると白く飛ぶ）。",
@@ -538,13 +552,18 @@
     "description": [
       "くくり罠（traps.yaml の snare）。植物繊維の紐で作る、輪と杭だけの罠。",
       "",
+      "**振らずに配置を描いて渡す**（recipes/snare.json は sketch から起こす）。生成で外した本文は",
+      "`retired`——記録であって注文ではない。",
+      "",
       "**trap の語は鉄の罠を連れてくる。** bear trap / leg hold trap の顎と歯とばねになるので、",
       "本文では trap と言わず「紐の輪と木の杭」として頼み、金属を否定する。",
       "",
       "**縄跳びや投げ縄にならないよう、地面に置いた形だと言う。**"
     ],
-    "positive": "exactly one loop of brown cord lying on an empty white page, a running noose tied in a length of twisted plant fibre cord, the loop lying open and flat on the page in a wide circle, its long free end running out to one side and lashed to a short pointed wooden peg lying beside it, rough twisted cord of warm tan and mid brown fibre, dry matte surface, the whole thing is small and lies in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "steel wire, metal, chain, cable, spring, jaws, teeth, bear trap, leg hold trap, gin trap, cage trap, net, mesh, hook, carabiner, buckle, knot tying diagram, lasso, cowboy, skipping rope, jump rope, noose hanging from above, gallows, coiled rope only, ball of yarn, knitting, macrame, bracelet, necklace, animal, bird, rabbit, hands, tying hands, filling the frame, edge to edge, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+    "retired": {
+      "positive": "exactly one loop of brown cord lying on an empty white page, a running noose tied in a length of twisted plant fibre cord, the loop lying open and flat on the page in a wide circle, its long free end running out to one side and lashed to a short pointed wooden peg lying beside it, rough twisted cord of warm tan and mid brown fibre, dry matte surface, the whole thing is small and lies in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "steel wire, metal, chain, cable, spring, jaws, teeth, bear trap, leg hold trap, gin trap, cage trap, net, mesh, hook, carabiner, buckle, knot tying diagram, lasso, cowboy, skipping rope, jump rope, noose hanging from above, gallows, coiled rope only, ball of yarn, knitting, macrame, bracelet, necklace, animal, bird, rabbit, hands, tying hands, filling the frame, edge to edge, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+    }
   },
   "wild_boar": {
     "description": [
@@ -571,25 +590,35 @@
       "石の斧（tools.yaml の stone_axe）。石の頭部を太い枝の柄へ紐で固定した物",
       "（docs/world/SurvivalItems.md 1節）。",
       "",
+      "**振らずに配置を描いて渡す**（recipes/stone_axe.json は sketch から起こす）。生成で外した",
+      "本文は `retired`——記録であって注文ではない。",
+      "",
       "**axe の語は鋼の斧を連れてくる。** 磨いた三日月形の刃と成形された柄になるので、",
       "「割った石の塊」「樹皮の残る枝」「紐で何重にも縛る」を本文で言い、金属と磨きを否定する。",
       "**柄を握らせない。** 人・手・薪割りの場面を否定しないと、切り株に立てた斧になる。"
     ],
-    "positive": "exactly one primitive stone axe alone on an empty white page, a hafted axe lying flat on its side on the page seen from directly above, a straight wooden handle made from a rough dry branch with bark still on it, a wedge shaped grey stone head laid against the forked end of the handle and bound to it with many tight turns of twisted plant fibre cord, the stone head chipped into angular flat faces with a blunt working edge, dark grey stone with darker mottling, warm mid brown wood, tan brown fibre cord, dry matte surfaces, the whole tool lies in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "steel, iron, metal, metal blade, shiny blade, polished, honed edge, curved crescent blade, hatchet, tomahawk, viking axe, battle axe, war axe, double headed axe, halberd, fantasy weapon, glowing runes, pickaxe, mattock, adze, hammer, mallet, chisel, knife, sword, spear, arrow, turned handle, shaped haft, varnished wood, leather grip, loose stone with no handle, hand axe, held in hand, hands, person, chopping, splitting wood, log, firewood, tree stump, stuck in wood, leaning against, standing upright, two axes, three axes, several axes, pair, group, set of tools, collection, scattered objects, repeated objects, filling the frame, edge to edge, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+    "retired": {
+      "positive": "exactly one primitive stone axe alone on an empty white page, a hafted axe lying flat on its side on the page seen from directly above, a straight wooden handle made from a rough dry branch with bark still on it, a wedge shaped grey stone head laid against the forked end of the handle and bound to it with many tight turns of twisted plant fibre cord, the stone head chipped into angular flat faces with a blunt working edge, dark grey stone with darker mottling, warm mid brown wood, tan brown fibre cord, dry matte surfaces, the whole tool lies in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "steel, iron, metal, metal blade, shiny blade, polished, honed edge, curved crescent blade, hatchet, tomahawk, viking axe, battle axe, war axe, double headed axe, halberd, fantasy weapon, glowing runes, pickaxe, mattock, adze, hammer, mallet, chisel, knife, sword, spear, arrow, turned handle, shaped haft, varnished wood, leather grip, loose stone with no handle, hand axe, held in hand, hands, person, chopping, splitting wood, log, firewood, tree stump, stuck in wood, leaning against, standing upright, two axes, three axes, several axes, pair, group, set of tools, collection, scattered objects, repeated objects, filling the frame, edge to edge, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+    }
   },
   "spear": {
     "description": [
       "槍（tools.yaml の spear）。2mの長い棒の先へ石の穂先を固定した物",
       "（docs/world/SurvivalItems.md 3節）。",
       "",
+      "**振らずに配置を描いて渡す**（recipes/spear.json は sketch から起こす）。生成で外した本文は",
+      "`retired`——記録であって注文ではない。",
+      "",
       "**穂先は石だと言い切る。** 黙っていると鋼の穂先になる。木の葉形に割った灰色の石を、",
       "紐で何重にも巻いて留める形で頼む。",
       "**斜めに寝かせる。** 長さが見せ場なので、対角線に沿って端から端まで置く",
       "（切り出しでも対角線へ倒す。recipes/spear.json の diagonal）。"
     ],
-    "positive": "exactly one primitive stone tipped spear alone on an empty white page, a single long straight wooden shaft lying flat on the page along the diagonal from one corner towards the other, seen from directly above, a leaf shaped grey stone point lashed to the near end of the shaft with many tight turns of twisted plant fibre cord, the stone point chipped to a sharp tip with flaked faces, the shaft a slender peeled wooden pole of even thickness with a blunt butt end, dark grey stone, warm mid brown wood, tan brown fibre cord, dry matte surfaces, the whole spear lies in the middle with an empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "steel, iron, metal, metal spearhead, shiny blade, polished, bronze, silver, gold, trident, harpoon, javelin with metal tip, pike, halberd, lance, sword, knife, arrow, arrows, bow, quiver, fantasy weapon, glowing runes, feathers, ribbons, beads, decorated shaft, carved shaft, painted bands, planted in the ground, standing upright, leaning, held in hand, thrown, flying, hands, person, warrior, hunter, two spears, three spears, several spears, pair, crossed spears, group, bundle, rack of weapons, collection, scattered objects, repeated objects, filling the frame, edge to edge, close-up, cropped, cut off, out of frame, tip cut off, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+    "retired": {
+      "positive": "exactly one primitive stone tipped spear alone on an empty white page, a single long straight wooden shaft lying flat on the page along the diagonal from one corner towards the other, seen from directly above, a leaf shaped grey stone point lashed to the near end of the shaft with many tight turns of twisted plant fibre cord, the stone point chipped to a sharp tip with flaked faces, the shaft a slender peeled wooden pole of even thickness with a blunt butt end, dark grey stone, warm mid brown wood, tan brown fibre cord, dry matte surfaces, the whole spear lies in the middle with an empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "steel, iron, metal, metal spearhead, shiny blade, polished, bronze, silver, gold, trident, harpoon, javelin with metal tip, pike, halberd, lance, sword, knife, arrow, arrows, bow, quiver, fantasy weapon, glowing runes, feathers, ribbons, beads, decorated shaft, carved shaft, painted bands, planted in the ground, standing upright, leaning, held in hand, thrown, flying, hands, person, warrior, hunter, two spears, three spears, several spears, pair, crossed spears, group, bundle, rack of weapons, collection, scattered objects, repeated objects, filling the frame, edge to edge, close-up, cropped, cut off, out of frame, tip cut off, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+    }
   },
   "poison_potion": {
     "description": [
@@ -618,6 +647,9 @@
     "description": [
       "骨針。小さな骨を削って穴を開けた縫い針（src/assets/world-codex/tools.yaml）。",
       "",
+      "**振らずに配置を描いて渡す**（recipes/bone_needle.json は sketch から起こす）。生成で外した",
+      "本文は `retired`——記録であって注文ではない。",
+      "",
       "**象牙色は紙から切り出せない。** 獣骨（animal_bone）が tolerance 16 で通しているのと同じ事情で、",
       "白い紙とほとんど同じ明るさになる。獣骨と同じく、くすみと茶の染みを本文で頼む。",
       "",
@@ -626,13 +658,18 @@
       "**鋼の縫い針を落とす。** needle と書くと銀色の金属針になる。骨から削った物であることと、",
       "表面が多孔質であることを言い、metal / steel / silver を否定する。"
     ],
-    "positive": "exactly one bone sewing needle alone on an empty white page, a single slender needle carved from a splinter of animal bone, tapering to a sharp point at one end and pierced by one small round eye at the blunt end, its surface hand whittled with faint facets left by the blade, aged ivory and warm cream with brown staining along it, dry matte porous surface, nothing threaded through the eye, it is small and lies at an angle in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "metal, steel, silver, chrome, shiny, polished, glinting, sewing machine needle, syringe, hypodermic, pin, safety pin, nail, screw, dart, arrow, spear, knife, blade, thread, threaded, yarn, string, cotton reel, spool, pincushion, fabric, cloth, leather, two needles, three needles, several needles, pair, group, pile, stack, set, collection, scattered objects, repeated objects, filling the frame, extreme close-up, macro, close-up, cropped, cut off, out of frame, skull, teeth, skeleton, scenery, landscape, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
+    "retired": {
+      "positive": "exactly one bone sewing needle alone on an empty white page, a single slender needle carved from a splinter of animal bone, tapering to a sharp point at one end and pierced by one small round eye at the blunt end, its surface hand whittled with faint facets left by the blade, aged ivory and warm cream with brown staining along it, dry matte porous surface, nothing threaded through the eye, it is small and lies at an angle in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "metal, steel, silver, chrome, shiny, polished, glinting, sewing machine needle, syringe, hypodermic, pin, safety pin, nail, screw, dart, arrow, spear, knife, blade, thread, threaded, yarn, string, cotton reel, spool, pincushion, fabric, cloth, leather, two needles, three needles, several needles, pair, group, pile, stack, set, collection, scattered objects, repeated objects, filling the frame, extreme close-up, macro, close-up, cropped, cut off, out of frame, skull, teeth, skeleton, scenery, landscape, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
+    }
   },
   "rawhide_sail": {
     "description": [
       "生皮の帆。生皮を縫い合わせて、太い枝の枠へロープで張った帆（voyage.yaml）。",
       "組み込む前の1枚なので、筏（raft）は描かせない。",
+      "",
+      "**振らずに配置を描いて渡す**（recipes/rawhide_sail.json は sketch から起こす）。生成で外した",
+      "本文は `retired`——記録であって注文ではない。",
       "",
       "**白い帆にしない。** 紙と同じ明るさになると card_art.py の「紙より暗ければ物」に掛からず、",
       "切り出しで消える（woven_basket の生成りと同じ制約）。日に灼けた革の色で頼む。",
@@ -643,15 +680,18 @@
       "**布にしない。** sail と書くと帆布のヨットの帆になる。革であること（hide / skin）と、",
       "縁が不揃いであることを言い、canvas / linen / sailboat を否定する。"
     ],
-    "positive": "exactly one primitive sail alone on an empty white page, several stiff rawhide skins stitched edge to edge with coarse plant fibre thread to make one broad square sheet, the seams and the stitch marks showing across it, its outer edges left uneven and rough as the hides were cut, the sheet lashed along its top edge to a straight wooden pole with many turns of twisted fibre rope, hanging with a slack curve across the middle, weathered tan and dusty olive brown leather, dry matte surface, it is small and hangs in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "white sail, canvas, linen, cotton, cloth, fabric, woven textile, flag, banner, pennant, curtain, tent, awning, sailboat, yacht, ship, boat, raft, mast and rigging, deck, sea, water, waves, wind lines, parchment, scroll, paper, map, two sails, three sails, several sails, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    "retired": {
+      "positive": "exactly one primitive sail alone on an empty white page, several stiff rawhide skins stitched edge to edge with coarse plant fibre thread to make one broad square sheet, the seams and the stitch marks showing across it, its outer edges left uneven and rough as the hides were cut, the sheet lashed along its top edge to a straight wooden pole with many turns of twisted fibre rope, hanging with a slack curve across the middle, weathered tan and dusty olive brown leather, dry matte surface, it is small and hangs in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "white sail, canvas, linen, cotton, cloth, fabric, woven textile, flag, banner, pennant, curtain, tent, awning, sailboat, yacht, ship, boat, raft, mast and rigging, deck, sea, water, waves, wind lines, parchment, scroll, paper, map, two sails, three sails, several sails, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    }
   },
   "raft": {
     "description": [
       "筏。丸太6本をロープで縛った、島を出るための乗り物（src/assets/world-codex/voyage.yaml）。",
       "",
-      "**配置を描いて渡す（sketch: raft）。以下は使っていない。** 焚き火・くくり罠・槍と同じで、",
-      "組み方そのものが物の正体である物は生成では作れない。下の本文で6枚出して、筏は1枚も",
+      "**配置を描いて渡す（sketch: raft）。振った本文は `retired`**（記録であって注文ではない）。",
+      "焚き火・くくり罠・槍と同じで、組み方そのものが物の正体である物は生成では作れない。",
+      "`retired` の本文で6枚出して、筏は1枚も",
       "出なかった——どれも積み上げた丸太の山か木口のマクロで、桁も縄も一度も現れなかった。",
       "丸太を6本と数え上げたことがかえって「丸太が主題」と読まれている。",
       "",
@@ -662,8 +702,10 @@
       "帆は描く。進みを決める sail_speed が風向きで±する仕組み（voyage.yaml）なので、",
       "帆が無いほうが辻褄が合わない。"
     ],
-    "positive": "exactly one small raft made of logs alone on an empty white page, exactly six straight logs of the same length laid side by side in one flat row so that every log can be counted, the round cut ends of all six logs in a line along the near edge, two straight crosspieces laid across the logs near each end, thick twisted plant fibre rope wound in tight turns around every place where a crosspiece crosses a log, seen from above and a little to one side, rough brown bark on the logs, tan brown rope, matte dry surface, it is small and lies flat in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "sail, mast, rigging, flag, oar, paddle, rudder, tiller, anchor, cabin, hut, shelter, barrel, crate, cargo, luggage, supplies, water, sea, ocean, waves, foam, river, lake, pond, shore, beach, sand, floating, afloat, reflection in water, boat, canoe, kayak, dinghy, ship, ferry, pontoon, jetty, dock, pier, bridge, bamboo, reeds, planks, sawn boards, floorboards, deck planking, pallet, ladder, fence, gate, two rafts, three rafts, several rafts, pair, group, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+    "retired": {
+      "positive": "exactly one small raft made of logs alone on an empty white page, exactly six straight logs of the same length laid side by side in one flat row so that every log can be counted, the round cut ends of all six logs in a line along the near edge, two straight crosspieces laid across the logs near each end, thick twisted plant fibre rope wound in tight turns around every place where a crosspiece crosses a log, seen from above and a little to one side, rough brown bark on the logs, tan brown rope, matte dry surface, it is small and lies flat in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "sail, mast, rigging, flag, oar, paddle, rudder, tiller, anchor, cabin, hut, shelter, barrel, crate, cargo, luggage, supplies, water, sea, ocean, waves, foam, river, lake, pond, shore, beach, sand, floating, afloat, reflection in water, boat, canoe, kayak, dinghy, ship, ferry, pontoon, jetty, dock, pier, bridge, bamboo, reeds, planks, sawn boards, floorboards, deck planking, pallet, ladder, fence, gate, two rafts, three rafts, several rafts, pair, group, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+    }
   },
   "golden_chalice": {
     "description": [
@@ -709,6 +751,9 @@
     "description": [
       "タロイモ（src/assets/world-codex/foods.yaml）。自生している野生形の塊茎を掘り上げたもの。",
       "",
+      "**振らずに配置を描いて渡す**（recipes/taro.json は sketch から起こす）。生成で外した本文は",
+      "`retired`——記録であって注文ではない。",
+      "",
       "**株ではなく芋。** taro とだけ言うと大きな葉の付いた鉢植えになるので、掘り上げた塊茎1個で",
       "あることと、葉を落とした跡だけが上に残ることを本文で言う。",
       "",
@@ -721,8 +766,10 @@
       "**色を言わないと生成りになる。** 上の6枚はどれも白っぽいベージュで、紙から切り出せない",
       "明るさだった（golden_chalice と同じ制約）。土の茶と紫がかった灰を本文で頼む。"
     ],
-    "positive": "exactly one taro root alone on an empty white page, one whole unpeeled taro root vegetable just dug out of the ground, a short fat rounded root narrowing at the bottom, rough dark brown skin with pale rings around it and a few short bristles, the cut stub of the stalk on top, deep earthy brown, dry matte earthy surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "wood, wood grain, timber, tree, tree trunk, growth rings, bark, seed pod, cocoon, flower, arum flower, lily, aubergine, eggplant, leaves, foliage, plant, potted plant, growing plant, stalks, whole plant, sliced, cut open, halved, cross section, white flesh, purple flesh, peeled, cooked, boiled, mashed, potato, sweet potato, onion, ginger root, coconut, sack, basket, crate, market stall, price tag, soil, dirt pile, mud, two taros, three taros, several taros, pair, group, pile, heap, collection, scattered objects, repeated objects, filling the frame, close-up, macro, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, cream, beige, overexposed"
+    "retired": {
+      "positive": "exactly one taro root alone on an empty white page, one whole unpeeled taro root vegetable just dug out of the ground, a short fat rounded root narrowing at the bottom, rough dark brown skin with pale rings around it and a few short bristles, the cut stub of the stalk on top, deep earthy brown, dry matte earthy surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "wood, wood grain, timber, tree, tree trunk, growth rings, bark, seed pod, cocoon, flower, arum flower, lily, aubergine, eggplant, leaves, foliage, plant, potted plant, growing plant, stalks, whole plant, sliced, cut open, halved, cross section, white flesh, purple flesh, peeled, cooked, boiled, mashed, potato, sweet potato, onion, ginger root, coconut, sack, basket, crate, market stall, price tag, soil, dirt pile, mud, two taros, three taros, several taros, pair, group, pile, heap, collection, scattered objects, repeated objects, filling the frame, close-up, macro, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, cream, beige, overexposed"
+    }
   },
   "water_spinach": {
     "description": [
@@ -743,6 +790,9 @@
     "description": [
       "粘土（src/assets/world-codex/pottery.yaml）。水際から掘り取った、まだ濡れている練り土の塊。",
       "",
+      "**振らずに配置を描いて渡す**（recipes/clay.json は sketch から起こす）。生成で外した本文は",
+      "`retired`——記録であって注文ではない。",
+      "",
       "**作り方を書くと作り手が出る。** 最初「刃で切った面」「指で押した窪み」と工程で書いたら、",
       "9枚中6枚に手と刃物が写り込んだ（negativeのhandsは効かない——正の文が呼んだものは正の文でしか",
       "止まらない）。**結果の形だけを書く**: 片面が平ら、他は丸くて窪みがある。",
@@ -755,8 +805,10 @@
       "",
       "**色は放っておくとピンクの油粘土になる。** 焼く前の土なので、赤茶ではなく暗い灰褐色に寄せる。"
     ],
-    "positive": "exactly one lump of wet clay alone on an empty white page, a heavy fist sized block of dark damp digging clay, one face flat and smooth, the other faces uneven and rounded with shallow hollows and soft ridges across them, the edges soft and rounded because the clay is heavy and damp, a faint damp sheen on the flat face, deep grey brown earth colour with darker damp patches, clearly darker than the white page, the lump is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "hand, fingers, thumb, fingernail, arm, wrist, knife, blade, wire, tool, working, sculpting, slab, sheet, tile, puddle, spill, splash, pink clay, terracotta, plasticine, modelling clay, stone, rock, pebble, boulder, gravel, brick, dough, bread, cheese, chocolate, meat, dirt pile, soil heap, sand, dry cracked earth, pottery, pot, bowl, vase, sculpture, figurine, potters wheel, cloth, bag, two lumps, three lumps, several lumps, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    "retired": {
+      "positive": "exactly one lump of wet clay alone on an empty white page, a heavy fist sized block of dark damp digging clay, one face flat and smooth, the other faces uneven and rounded with shallow hollows and soft ridges across them, the edges soft and rounded because the clay is heavy and damp, a faint damp sheen on the flat face, deep grey brown earth colour with darker damp patches, clearly darker than the white page, the lump is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "hand, fingers, thumb, fingernail, arm, wrist, knife, blade, wire, tool, working, sculpting, slab, sheet, tile, puddle, spill, splash, pink clay, terracotta, plasticine, modelling clay, stone, rock, pebble, boulder, gravel, brick, dough, bread, cheese, chocolate, meat, dirt pile, soil heap, sand, dry cracked earth, pottery, pot, bowl, vase, sculpture, figurine, potters wheel, cloth, bag, two lumps, three lumps, several lumps, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    }
   },
   "unfired_jar": {
     "description": [
@@ -779,14 +831,19 @@
       "一度きりの焼成設備。窯ではないので、**レンガ・扉・煙突・アーチを描かせない**——出すと",
       "パン窯かタンドールになり、「壊して取り出す一度きりの覆い」に見えなくなる。",
       "",
+      "**振らずに配置を描いて渡す**（recipes/earth_kiln.json は sketch から起こす）。生成で外した",
+      "本文は `retired`——記録であって注文ではない。",
+      "",
       "**穴が炉であることの唯一の手掛かり。** 土を盛っただけの塚は、穴が無いと墓か土の山にしか",
       "見えない。裾に小さな空気穴をいくつかと、天に1つ大きめの穴を頼む。",
       "",
       "火の付いた絵（_ember / _lit）はこの生データから派生させる。上に空ける余白（headroom）は",
       "3枚で共通（README「火の付いた炉」節）。**この絵には火も煙も描かせない。**"
     ],
-    "positive": "exactly one low dome of packed wet earth alone on an empty white page, a rough rounded mound patted together by hand out of dark damp clay and soil, wider than it is tall, its surface uneven and lumpy with the marks of hands pressed into it, a row of three small round air holes low along its foot and one larger round opening at the top of the dome, the openings dark inside, no door and no bricks, deep grey brown damp earth clearly darker than the white page, the mound is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "fire, flame, flames, smoke, embers, glow, sparks, bricks, brickwork, masonry, stonework, stone wall, arch, archway, doorway, door, iron door, chimney, flue, pipe, oven, bread oven, pizza oven, tandoor, furnace, forge, igloo, tent, hut, house, roof, grave, burial mound, anthill, termite mound, haystack, rock, boulder, cave, tunnel, pottery, pots, jars, tools, two mounds, three mounds, several mounds, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    "retired": {
+      "positive": "exactly one low dome of packed wet earth alone on an empty white page, a rough rounded mound patted together by hand out of dark damp clay and soil, wider than it is tall, its surface uneven and lumpy with the marks of hands pressed into it, a row of three small round air holes low along its foot and one larger round opening at the top of the dome, the openings dark inside, no door and no bricks, deep grey brown damp earth clearly darker than the white page, the mound is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "fire, flame, flames, smoke, embers, glow, sparks, bricks, brickwork, masonry, stonework, stone wall, arch, archway, doorway, door, iron door, chimney, flue, pipe, oven, bread oven, pizza oven, tandoor, furnace, forge, igloo, tent, hut, house, roof, grave, burial mound, anthill, termite mound, haystack, rock, boulder, cave, tunnel, pottery, pots, jars, tools, two mounds, three mounds, several mounds, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    }
   },
   "log_stool": {
     "description": [
@@ -851,10 +908,10 @@
       "燻し小屋（src/assets/world-codex/smoking.yaml）。枝の骨組みへ編んだ葉を巡らせ、底で火を",
       "燻らせる小屋。",
       "",
-      "**この本文は使っていない**（recipes/smokehouse.json は sketch から起こす）。生成で外した",
-      "記録として残す。",
+      "**振らずに配置を描いて渡す**（recipes/smokehouse.json は sketch から起こす）。生成で外した",
+      "本文は `retired`——記録であって注文ではない。",
       "",
-      "**hut は建物を呼ばず、人を呼ぶ。** 下の本文で出たのは、編んだ蓑を頭からかぶった人物の胸像",
+      "**hut は建物を呼ばず、人を呼ぶ。** `retired` の本文で出たのは、編んだ蓑を頭からかぶった人物の胸像",
       "だった。人物を否定する語（person / character / hands）は既に入っていて効いていない",
       "——**大きさを人の身体で言った**（no taller than a person's waist）のが呼び水になっている。",
       "住居の部品（戸口・窓・煙突）と布・幕を落とす手当ては、そこまで届かない。",
@@ -863,16 +920,18 @@
       "燻し小屋であることの手掛かり。** どれも配置の話なので、下絵で決める",
       "（覆い焼きの炉・焚き火と同じ、layout_sketch.py）。"
     ],
-    "positive": "exactly one small empty hut alone on an empty white page, a low hut no taller than a person's waist, its frame made of six thick brown branches leaning inwards and lashed together at the top with rough twisted plant fibre cord, its sides closed in all the way round with panels of plaited dried palm leaf strips tied onto the branches, one small low opening left at the foot of the near side and dark inside, no door and no window anywhere else, the plaited leaf a dry straw yellow over warm mid brown branches, matte dry surface, it is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "fire, flame, smoke, embers, glow, ash, tent, canvas, fabric, cloth, tarpaulin, teepee, tipi, wigwam, yurt, house, home, cottage, cabin, village, hut village, roof tiles, thatched cottage, chimney, hinged door, doorway with frame, window, glass, brick, masonry, stone wall, timber framing, garden shed, beach umbrella, parasol, haystack, straw bale, birdhouse, dog kennel, beehive, palm tree, two huts, three huts, several huts, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    "retired": {
+      "positive": "exactly one small empty hut alone on an empty white page, a low hut no taller than a person's waist, its frame made of six thick brown branches leaning inwards and lashed together at the top with rough twisted plant fibre cord, its sides closed in all the way round with panels of plaited dried palm leaf strips tied onto the branches, one small low opening left at the foot of the near side and dark inside, no door and no window anywhere else, the plaited leaf a dry straw yellow over warm mid brown branches, matte dry surface, it is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "fire, flame, smoke, embers, glow, ash, tent, canvas, fabric, cloth, tarpaulin, teepee, tipi, wigwam, yurt, house, home, cottage, cabin, village, hut village, roof tiles, thatched cottage, chimney, hinged door, doorway with frame, window, glass, brick, masonry, stone wall, timber framing, garden shed, beach umbrella, parasol, haystack, straw bale, birdhouse, dog kennel, beehive, palm tree, two huts, three huts, several huts, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    }
   },
   "green_firewood": {
     "description": [
       "生木の割り薪（src/assets/world-codex/firewood.yaml）。丸太を玉切って割った1本で、まだ水を",
       "含んでいる。",
       "",
-      "**この本文は使っていない**（recipes/green_firewood.json は sketch から起こす）。",
-      "生成で外した記録として残す。",
+      "**振らずに配置を描いて渡す**（recipes/green_firewood.json は sketch から起こす）。",
+      "生成で外した本文は `retired`——記録であって注文ではない。",
       "",
       "**割った面を頼むと、割った面の接写になる。** 4枚とも被写体が枠いっぱいで、2枚は年輪が渦を",
       "巻いた木口の断面、2枚はめくれた紙の束だった。`it is small and lies in the middle with a wide",
@@ -882,16 +941,18 @@
       "**鋸の語を使わない。** この島に鋸は無く（docs/world/Skills.md）、sawn / plank と書くと",
       "製材された角材になる。木口は「木目を横切って断たれた面」として書く。"
     ],
-    "positive": "exactly one split billet of firewood alone on an empty white page, one short length of tree trunk split lengthways into a wedge and lying on its side, its rounded back still covered in rough brown bark, its other two faces flat and freshly split showing pale damp cream wood with a straight torn grain running along them, both ends cut square across the grain, the split wood still fresh and damp with no cracks and no splits opening in it, warm brown bark against pale cream wood, matte surface, it is small and lies in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "sawn plank, plank, board, lumber, timber beam, squared beam, post, dressed wood, sawdust, saw, axe, hatchet, chopping block, wedge tool, fire, flame, embers, glow, ash, charcoal, burnt wood, whole log, round log, unsplit log, log with bark all round, tree stump, branch, twig, kindling bundle, driftwood, woodpile, firewood stack, cord of wood, cracked end grain, checked end grain, grey weathered wood, two logs, three logs, several logs, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    "retired": {
+      "positive": "exactly one split billet of firewood alone on an empty white page, one short length of tree trunk split lengthways into a wedge and lying on its side, its rounded back still covered in rough brown bark, its other two faces flat and freshly split showing pale damp cream wood with a straight torn grain running along them, both ends cut square across the grain, the split wood still fresh and damp with no cracks and no splits opening in it, warm brown bark against pale cream wood, matte surface, it is small and lies in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "sawn plank, plank, board, lumber, timber beam, squared beam, post, dressed wood, sawdust, saw, axe, hatchet, chopping block, wedge tool, fire, flame, embers, glow, ash, charcoal, burnt wood, whole log, round log, unsplit log, log with bark all round, tree stump, branch, twig, kindling bundle, driftwood, woodpile, firewood stack, cord of wood, cracked end grain, checked end grain, grey weathered wood, two logs, three logs, several logs, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    }
   },
   "firewood_rack": {
     "description": [
       "薪棚（src/assets/world-codex/firewood.yaml）。枝を組んで地面から離した台に、編んだ葉の",
       "屋根を掛けたもの。",
       "",
-      "**この本文は使っていない**（recipes/firewood_rack.json は sketch から起こす）。生成で外した",
-      "記録として残す。",
+      "**振らずに配置を描いて渡す**（recipes/firewood_rack.json は sketch から起こす）。生成で外した",
+      "本文は `retired`——記録であって注文ではない。",
       "",
       "**空の枠は、枠として出ない。** 4枚とも藁で編んだ巣・ハンモック状の塊になり、脚も桁も屋根も",
       "分かれなかった。**「何も載っていない」と本文で言うほど、枠そのものが編み物の一塊に潰れる**",
@@ -905,15 +966,17 @@
       "見分けが付かなくなる（docs/concept/DesignPrinciples.md「見分けの付かない場所を作らない」）。",
       "こちらは**屋根の付いた、横に長い低い台**、あちらは**縄を1本張った背の高い枠**。"
     ],
-    "positive": "exactly one empty firewood rack alone on an empty white page, a low open cradle built from six stout brown branches, two upright end frames whose crossings are bound with many turns of rough twisted plant fibre cord, holding a pair of long rails clear of the ground, and a small pitched roof of plaited dried palm leaf mats laid over the top, nothing stored in it and nothing stacked on it so the cradle is empty and you can see through it, wider than it is tall, seen from the side and a little above, warm brown branches and dry straw yellow plaited leaf, matte dry surface, it is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "firewood, logs, split logs, stacked wood, woodpile, kindling, timber stack, fire, flame, smoke, embers, glow, ash, shelf, shelving unit, bookcase, rack of bottles, drying laundry, clothes horse, clothesline, washing, cloth, canvas, fabric, tarpaulin, tent, teepee, hut, house, cabin, shed, garden shed, kennel, bird table, birdhouse, beehive, bench, chair, table, sawhorse, easel, ladder, gate, fence, hurdle, stretcher, raft, cart, wheels, nails, screws, metal brackets, iron, two racks, three racks, several racks, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    "retired": {
+      "positive": "exactly one empty firewood rack alone on an empty white page, a low open cradle built from six stout brown branches, two upright end frames whose crossings are bound with many turns of rough twisted plant fibre cord, holding a pair of long rails clear of the ground, and a small pitched roof of plaited dried palm leaf mats laid over the top, nothing stored in it and nothing stacked on it so the cradle is empty and you can see through it, wider than it is tall, seen from the side and a little above, warm brown branches and dry straw yellow plaited leaf, matte dry surface, it is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "firewood, logs, split logs, stacked wood, woodpile, kindling, timber stack, fire, flame, smoke, embers, glow, ash, shelf, shelving unit, bookcase, rack of bottles, drying laundry, clothes horse, clothesline, washing, cloth, canvas, fabric, tarpaulin, tent, teepee, hut, house, cabin, shed, garden shed, kennel, bird table, birdhouse, beehive, bench, chair, table, sawhorse, easel, ladder, gate, fence, hurdle, stretcher, raft, cart, wheels, nails, screws, metal brackets, iron, two racks, three racks, several racks, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    }
   },
   "drying_rack": {
     "description": [
       "干し場（src/assets/world-codex/drying.yaml）。太い枝6本を組んで立て、縄を1本張った棚。",
       "",
-      "**この本文は使っていない**（recipes/drying_rack.json は sketch から起こす）。生成で外した",
-      "記録として残す。",
+      "**振らずに配置を描いて渡す**（recipes/drying_rack.json は sketch から起こす）。生成で外した",
+      "本文は `retired`——記録であって注文ではない。",
       "",
       "**三脚も縄も出ない。** 4枚とも枯れ枝の茂み（立ち枯れの木と細枝の絡まり）で、束ねた頭も",
       "張った縄も1枚に出なかった。**薪棚と同じ外し方**——空の枠は枠として生成できない。",
@@ -926,15 +989,17 @@
       "**洗濯物・物干しを強く否定する。** 「張った縄」は干した布を呼ぶ語なので、布が下がると",
       "食べ物を干す場所に見えなくなる。"
     ],
-    "positive": "exactly one empty drying rack alone on an empty white page, six stout brown branches standing as two separate tripods, the three branches of each tripod crossing near the top and bound there with many turns of rough twisted plant fibre cord, and one single length of rough twisted rope strung tight through the air from one crossing to the other, the rope bare with nothing hanging from it, the frame open so the white page shows between the branches, taller than it is wide, seen from the side, warm brown branches with rough bark and pale tan rope, matte dry surface, it stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "laundry, washing, clothes, cloth, rag, towel, canvas, fabric, sheets, clothesline with washing, clothes peg, fish hanging, meat hanging, herbs hanging, food, flags, bunting, hammock, net, fishing net, web, tent, teepee, tipi, wigwam, hut, shelter, roof, thatch, panel, wall, mat, screen, easel, tripod camera, telescope, ladder, fence, gate, swing, two racks, three racks, several racks, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    "retired": {
+      "positive": "exactly one empty drying rack alone on an empty white page, six stout brown branches standing as two separate tripods, the three branches of each tripod crossing near the top and bound there with many turns of rough twisted plant fibre cord, and one single length of rough twisted rope strung tight through the air from one crossing to the other, the rope bare with nothing hanging from it, the frame open so the white page shows between the branches, taller than it is wide, seen from the side, warm brown branches with rough bark and pale tan rope, matte dry surface, it stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "laundry, washing, clothes, cloth, rag, towel, canvas, fabric, sheets, clothesline with washing, clothes peg, fish hanging, meat hanging, herbs hanging, food, flags, bunting, hammock, net, fishing net, web, tent, teepee, tipi, wigwam, hut, shelter, roof, thatch, panel, wall, mat, screen, easel, tripod camera, telescope, ladder, fence, gate, swing, two racks, three racks, several racks, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    }
   },
   "salt_pan": {
     "description": [
       "塩田（src/assets/world-codex/salt.yaml）。平たい石4つを並べて底を張った、浅い盤。",
       "",
-      "**この本文は使っていない**（recipes/salt_pan.json は sketch から起こす）。生成で外した",
-      "記録として残す。",
+      "**振らずに配置を描いて渡す**（recipes/salt_pan.json は sketch から起こす）。生成で外した",
+      "本文は `retired`——記録であって注文ではない。",
       "",
       "**形は出るが、材質が出ない。** 4枚とも浅い四角い盤にはなったが、縁は白い漆喰を盛った",
       "一体の箱で、石4枚に割れなかった（`four flat slabs of stone` も `mottled mid grey stone` も",
@@ -950,19 +1015,20 @@
       "**石（stone）が4つ転がっている絵にしない。** 盤であることの手掛かりは、石が**隙間なく",
       "底を張り、周りの砂がそれより高い**こと。",
       "",
-      "**下の本文は、石が縁を作る絵を頼んでいる。** 定義（salt.yaml の `laid`）は「砂を掻き分け、",
-      "平たい石を並べて底を張る」で、石は床・砂は退ける側なので、この読み自体が誤っている。",
-      "走らせた本文としてそのまま残すが、**写して使わないこと。**"
+      "**`retired` の本文は、石が縁を作る絵を頼んでいる。** 定義（salt.yaml の `laid`）は「砂を",
+      "掻き分け、平たい石を並べて底を張る」で、石は床・砂は退ける側なので、この読み自体が誤っている。"
     ],
-    "positive": "exactly one shallow salt pan alone on an empty white page, four flat grey slabs of stone laid edge to edge in a square to make one low basin with a floor of packed damp sand inside it, the slabs fitted close together so they form a continuous rim with no gap between them, a thin dull grey crust of dried salt along the inner edges of the slabs and in the corners, the basin empty with no water standing in it, wider than it is tall, seen from above and a little to the side so the floor inside shows, mottled mid grey stone and damp grey brown sand, all of it clearly darker than the white page, matte dry surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "water, pool of water, puddle, sea, waves, reflection, wet shine, glossy, salt heap, white powder, snow, ice, frost, sugar, bowl, dish, tray, plate, basin of pottery, sink, bath, fountain, well, fire pit, hearth, campfire, brick, tiles, mosaic, paving, cobblestones, wall, ruins, grave, boulder, pebbles, gravel, loose stones, scattered stones, stone circle, two pans, three pans, several pans, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    "retired": {
+      "positive": "exactly one shallow salt pan alone on an empty white page, four flat grey slabs of stone laid edge to edge in a square to make one low basin with a floor of packed damp sand inside it, the slabs fitted close together so they form a continuous rim with no gap between them, a thin dull grey crust of dried salt along the inner edges of the slabs and in the corners, the basin empty with no water standing in it, wider than it is tall, seen from above and a little to the side so the floor inside shows, mottled mid grey stone and damp grey brown sand, all of it clearly darker than the white page, matte dry surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "water, pool of water, puddle, sea, waves, reflection, wet shine, glossy, salt heap, white powder, snow, ice, frost, sugar, bowl, dish, tray, plate, basin of pottery, sink, bath, fountain, well, fire pit, hearth, campfire, brick, tiles, mosaic, paving, cobblestones, wall, ruins, grave, boulder, pebbles, gravel, loose stones, scattered stones, stone circle, two pans, three pans, several pans, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    }
   },
   "field": {
     "description": [
       "畑（src/assets/world-codex/farming.yaml）。掘り返して均した土そのもので、作物は枠の中身。",
       "",
-      "**この本文は使っていない**（recipes/field.json は sketch から起こす）。生成で外した記録として",
-      "残す。",
+      "**振らずに配置を描いて渡す**（recipes/field.json は sketch から起こす）。生成で外した本文は",
+      "`retired`——記録であって注文ではない。",
       "",
       "**土は風景になり、区画にならない。** 4枚とも、ひび割れた大地を見渡した眺めか、めくれた紙の",
       "束だった。`its four sides sloping down so that the plot ends cleanly` と書いても四辺は",
@@ -974,16 +1040,18 @@
       "**木枠のレイズドベッドにしない。** 板も釘もこの島には無く（掘り返しただけの土）、枠が付くと",
       "材料が読めなくなる。"
     ],
-    "positive": "exactly one small plot of freshly tilled earth alone on an empty white page, one low rectangular bed of dark turned soil lying on the page, its surface broken into rough clods and drawn into three straight parallel furrows running along its length, its four sides sloping down so that the plot ends cleanly and white page shows all around it, the soil bare and empty with nothing planted, nothing growing and no green anywhere on it, deep brown damp earth with darker hollows between the clods, clearly darker than the white page, seen from above and a little to the side, matte damp surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow along its foot, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "plants, seedlings, sprouts, shoots, green leaves, grass, weeds, crops, vegetables, rows of plants, flowers, tree, garden, allotment, farm, farmland, ploughed field landscape, horizon, hedge, fence, gate, path, wooden frame, raised bed, planter box, crate, tray, pot, plant pot, seed tray, compost heap, manure, mud puddle, quarry, hole, pit, trench, grave, mound, rock, stones, gravel, sand dune, carpet, rug, cake, brownie, chocolate, two plots, three plots, several plots, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, floor, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, tools, spade, shovel, rake, hoe, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    "retired": {
+      "positive": "exactly one small plot of freshly tilled earth alone on an empty white page, one low rectangular bed of dark turned soil lying on the page, its surface broken into rough clods and drawn into three straight parallel furrows running along its length, its four sides sloping down so that the plot ends cleanly and white page shows all around it, the soil bare and empty with nothing planted, nothing growing and no green anywhere on it, deep brown damp earth with darker hollows between the clods, clearly darker than the white page, seen from above and a little to the side, matte damp surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow along its foot, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "plants, seedlings, sprouts, shoots, green leaves, grass, weeds, crops, vegetables, rows of plants, flowers, tree, garden, allotment, farm, farmland, ploughed field landscape, horizon, hedge, fence, gate, path, wooden frame, raised bed, planter box, crate, tray, pot, plant pot, seed tray, compost heap, manure, mud puddle, quarry, hole, pit, trench, grave, mound, rock, stones, gravel, sand dune, carpet, rug, cake, brownie, chocolate, two plots, three plots, several plots, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, floor, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, tools, spade, shovel, rake, hoe, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    }
   },
   "pen": {
     "description": [
       "家畜の囲い（src/assets/world-codex/farming.yaml）。丸太4本を四角に組み、縄2本で角を",
       "締めたもの。檻でもあるので、空で描く——中の獣は枠の中身（薪棚と同じ）。",
       "",
-      "**この本文は使っていない**（recipes/pen.json は sketch から起こす）。生成で外した記録として",
-      "残す。",
+      "**振らずに配置を描いて渡す**（recipes/pen.json は sketch から起こす）。生成で外した本文は",
+      "`retired`——記録であって注文ではない。",
       "",
       "**丸太が縄になる。** 4枚とも、縁が太い縄を編んだ枠か、縄を巻いた柱が林立する眺めだった",
       "——`bound there with many tight turns of rope` と書くと、縛る物ではなく縛られる物まで縄に",
@@ -995,7 +1063,9 @@
       "**筏（raft）・井桁の炉と見分ける。** どちらも丸太を組んだ物なので、**中が空いた四角い枠**で",
       "あること——面ではないこと——を本文で言い、筏・丸太小屋を否定する。"
     ],
-    "positive": "exactly one small empty animal pen alone on an empty white page, four straight heavy tree trunks laid flat on the ground as one low square enclosure, each trunk resting across the next at the four corners and bound there with many turns of rough twisted plant fibre rope, the trunks still round with rough brown bark on them, the middle of the square left open and empty with bare ground showing inside it and no animal anywhere, the enclosure low and knee high, seen from above and a little to the side so the open square shows, warm brown bark and pale tan rope, matte dry surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "animal, pig, boar, chicken, hen, goat, sheep, cattle, cow, horse, dog, bird, raft, log raft, boat, deck, floor of logs, logs laid side by side, solid platform, log cabin, cabin wall, house, hut, roof, well, water well, fire pit, campfire, fire, flame, sandbox, planter, garden bed, picket fence, post and rail fence, fence posts, gate, hurdle, wire, nails, metal, plank, board, sawn timber, squared beam, split log, firewood, woodpile, two pens, three pens, several pens, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    "retired": {
+      "positive": "exactly one small empty animal pen alone on an empty white page, four straight heavy tree trunks laid flat on the ground as one low square enclosure, each trunk resting across the next at the four corners and bound there with many turns of rough twisted plant fibre rope, the trunks still round with rough brown bark on them, the middle of the square left open and empty with bare ground showing inside it and no animal anywhere, the enclosure low and knee high, seen from above and a little to the side so the open square shows, warm brown bark and pale tan rope, matte dry surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+      "negative": "animal, pig, boar, chicken, hen, goat, sheep, cattle, cow, horse, dog, bird, raft, log raft, boat, deck, floor of logs, logs laid side by side, solid platform, log cabin, cabin wall, house, hut, roof, well, water well, fire pit, campfire, fire, flame, sandbox, planter, garden bed, picket fence, post and rail fence, fence posts, gate, hurdle, wire, nails, metal, plank, board, sawn timber, squared beam, split log, firewood, woodpile, two pens, three pens, several pens, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+    }
   }
 }

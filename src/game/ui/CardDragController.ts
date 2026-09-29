@@ -73,13 +73,26 @@ export interface CardDropInfo {
 
 export interface CardDragHandlers {
   /**
-   * そのドロップに**言うことがあるか**（何も無ければundefined）。ドロップ先の枠・受け入れ側のふちの光・
-   * 説明の吹き出しは、いずれもこの答えだけを見て決める。
+   * そのドロップに**言うことがあるか**（何も無ければundefined）。今の落とし先を示す枠も説明の
+   * 吹き出しも、この答えだけを見て決める（受け入れ側のふちの光だけは、掴んだ時点でまとめて訊く
+   * acceptingCardsが決める）。
    *
    * **答えが返ることは「離せば何かが起きる」を意味しない。** 理由を言うためだけの落とし先も返る
    * （enabledがfalse、CardInteraction.md 2.1節）ので、実際に起こす側はenabledで絞る。
    */
   readonly describeDrop: (drop: CardDrop) => CardDropInfo | undefined;
+  /**
+   * 掴んだ札を**重ねれば何かが起きる**札（ふちを光らせる相手。理由を言うためだけの落とし先は
+   * 入らない）。
+   *
+   * **1枚ずつ問わずにまとめて訊く。** 落とし先を1つ問うたびに、答える側はその場所に並ぶ札を丸ごと
+   * 作り直すので、並んでいる枚数の2乗で伸びる（ShownCards.acceptingCells）。
+   */
+  readonly acceptingCards: (
+    from: CardLane,
+    fromIndex: number,
+    lanes: readonly CardLane[],
+  ) => ReadonlySet<Card>;
   /** releasedRectは手を離した時点で札が居た矩形。落とした後の動きの出発点になる（CardTable参照）。 */
   readonly onDrop: (drop: CardDrop, releasedRect: Rect) => void;
   /** 掴んだ札を指の運ぶ実体の札にする（CardTable.grab）。 */
@@ -260,18 +273,12 @@ export class CardDragController {
     const glow = this.scene.add.graphics();
     gesture.glow = glow;
 
+    // 光るのは実際に何かが起きる相手だけ。理由を言うためだけの落とし先まで光ると、
+    // 「ここへ持っていけば何かが起きる」という合図が嘘になる。
+    const accepting = this.handlers.acceptingCards(gesture.lane, gesture.index, this.lanes);
     for (const lane of this.lanes) {
-      for (const { index, rect } of lane.placements) {
-        const drop = {
-          from: gesture.lane,
-          fromIndex: gesture.index,
-          to: lane,
-          target: { kind: 'combine', index } as const,
-          count: 1,
-        };
-        // 光らせるのは実際に何かが起きる相手だけ。理由を言うためだけの落とし先まで光ると、
-        // 「ここへ持っていけば何かが起きる」という合図が嘘になる。
-        if (this.handlers.describeDrop(drop)?.enabled !== true) continue;
+      for (const { card, rect } of lane.placements) {
+        if (!accepting.has(card)) continue;
 
         for (const layer of GLOW_LAYERS) {
           glow.lineStyle(this.metrics().px(layer.border), COLOR.cardDropAccept, layer.alpha);

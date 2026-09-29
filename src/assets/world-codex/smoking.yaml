@@ -128,9 +128,11 @@ object_defs:
       # 枝を立てて葉で囲い、縄で締める。**掘削具も刃物も要らない**——材料はどれも拾った物と、
       # 素手で編める葉から出る（weaving.yaml）。
       built:
-        # **保存の腕を要求する唯一のレシピ**（docs/engine/SkillSystem.md 4節）。腕が伸びるのは
-        # 塩漬け（salt.yamlのcure）だけなので、燻製は塩蔵の後ろに来る——段の順序どおりで、
-        # 循環もしない（同3.2節、docs/world/Skills.md 2.4節）。
+        # **保存の腕を要求する唯一のレシピ**（docs/engine/SkillSystem.md 4節）。腕を伸ばす口のうち
+        # 解放を要求しないのは塩漬け（salt.yamlのcure）と干し場（drying.yaml）なので、燻製は塩蔵の
+        # 後ろに来る——段の順序どおりで、循環もしない（同3.2節、docs/world/Skills.md 2.4節）。
+        # **この小屋を組む工程も保存を伸ばす**（docs/engine/SkillSystem.md 3.4節）が、開くのは
+        # 組む前なので自分は開けない。
         conditions:
           - {reason: needs_preserving, subject: agent, prop: skill_preserving, in_stage_or_above: basic}
         # 組み上げる速さも保存が決める（docs/world/Skills.md 7節）。囲いの寸法も煙の抜きも、
