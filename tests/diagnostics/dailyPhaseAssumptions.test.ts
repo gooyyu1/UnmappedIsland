@@ -39,5 +39,7 @@ describe('局面ごとの1日の前提', () => {
       amounts.filter((amount) => amount.minutes <= 0).map((amount) => amount.pile.label),
       '量が0以下の山',
     ).toEqual([]);
-  });
+    // 収支表を検査の本体で組むので、混み合った回には1件あたりの上限を越える。
+    // 上限とその名乗り方は `vite.config.ts` の `testTimeout` のコメント（issue #2376）。
+  }, 30_000);
 });
