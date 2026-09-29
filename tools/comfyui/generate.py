@@ -191,6 +191,15 @@ def main() -> None:
     if args.name not in prompts:
         raise SystemExit(f"'{args.name}' は prompts/{args.prompts} にありません")
     entry = prompts[args.name]
+    # 振らなくなった本文（retired）は記録であって注文ではない。塞がずに、正しい入口を告げる。
+    if "positive" not in entry and "retired" in entry:
+        recipe = HERE / "recipes" / f"{args.name}.json"
+        where = (
+            f"今の作り方は recipes/{recipe.name} にあります"
+            if recipe.exists()
+            else "この名前のレシピは無く、絵も作っていません"
+        )
+        raise SystemExit(f"'{args.name}' の本文は retired（振らなくなった記録）です。{where}")
     loras = json.loads((HERE / "prompts" / "loras.json").read_text("utf-8"))
     template = json.loads((HERE / "workflows" / args.workflow).read_text("utf-8"))
 

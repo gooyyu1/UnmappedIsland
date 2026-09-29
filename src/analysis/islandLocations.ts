@@ -33,6 +33,10 @@ export interface IslandLocations {
    * 海でしか手に入らない型すべて（土地に限らない）。**工程の側もここを見る**——漁り場が生肉を
    * 30分で返すので、これを外さないと生肉の代表経路が海に決まり、島で最も安い肉の経路が表から
    * 押し出される。`excludedSea`はこの集合のうち土地であるもの。
+   *
+   * **解説がこの集合の例として名指しする型は、`tests/diagnostics/islandLocations.test.ts` の
+   * `NAMED_AS_SEA_ONLY` が留める。** 陸の`explore`へ候補が1つ載っただけで名指しは静かに嘘になる
+   * ——海藻が実際にそうなった（issue #2403）ので、**名前を書いたらそちらへも足す。**
    */
   readonly seaOnly: ReadonlySet<ObjectGlobalId>;
 }

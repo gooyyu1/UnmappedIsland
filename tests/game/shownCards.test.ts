@@ -769,6 +769,59 @@ describe('ドロップの意味', () => {
       reason: '今はできない理由。',
     });
   });
+
+  /**
+   * 掴んだ瞬間にふちを光らせる走査（CardDragController.showAcceptingCards）が引く一括の答え。
+   *
+   * **1枚ずつ問うた答えと一致していること**を見る。走査は速さのために別の入口を通るので、そこが
+   * 1枚ずつの答え（dropEffect）とずれると、**光る枠と離して起きることが食い違う。**
+   */
+  const acceptingOneByOne = (shown: ShownCards, from: CardSpot, fromIndex: number, to: CardSpot) =>
+    new Set(
+      shown
+        .stacksAt(to)
+        .map((_stack, index) => index)
+        .filter((index) => shown.dropEffect(onto(from, fromIndex, to, index))?.enabled === true),
+    );
+
+  it('ふちが光る枠は、1枚ずつ問うて何かが起きる枠と一致する', () => {
+    const inside = somewhere();
+    const shown = screen({
+      // 空き枠・入れ物・ただの札・掴んだ札自身が並ぶ。組み合わせが成立するのは2個以上を運べる相手。
+      hand: [stack(place('hand'), [1, 2])],
+      items: [undefined, stack(place('items'), [9], { contents: inside }), stack(place('items'), [8])],
+    });
+
+    const accepting = shown.acceptingCells(place('hand'), 0, [place('items'), place('hand')]);
+
+    expect(accepting.get(place('items')), '並びの0番は空き枠なので、重ねる相手にならない').toEqual(
+      new Set([1, 2]),
+    );
+    expect(accepting.get(place('items')), '1枚ずつ問うた答えと一致する').toEqual(
+      acceptingOneByOne(shown, place('hand'), 0, place('items')),
+    );
+    expect(accepting.get(place('hand')), '掴んだ札自身も、束の中どうしが組めるなら光る').toEqual(
+      acceptingOneByOne(shown, place('hand'), 0, place('hand')),
+    );
+  });
+
+  it('理由を告げて断るだけの相手は光らない', () => {
+    const moves: Moved[] = [];
+    const shown = screen({
+      hand: [stack(place('hand'), [1], { moves })],
+      items: [stack(place('items'), [9])],
+    });
+    const refuser = refusing(shown, moves);
+
+    expect(refuser.dropEffect(combineDrop)?.enabled, '吹き出しは出るが離しても何も起きない').toBe(false);
+    expect(refuser.acceptingCells(place('hand'), 0, [place('items')]).get(place('items'))).toEqual(new Set());
+  });
+
+  it('掴んだ札が居なければ、どの枠も光らない', () => {
+    const shown = screen({ hand: [undefined], items: [stack(place('items'), [9])] });
+
+    expect(shown.acceptingCells(place('hand'), 0, [place('items')]).size).toBe(0);
+  });
 });
 
 describe('カードの端の行き先', () => {

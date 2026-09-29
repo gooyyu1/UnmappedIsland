@@ -765,14 +765,14 @@
 通した先も同じ `eat` を継ぐので、**製塩が前提であること**（3.9.2 節）**は、菌を避ける手にはなりません。**
 
 **それでも 1 日 3 つは、症状の段へ届きません。** 入る菌は 1 日 9 ですが、感染している間は免疫が上がり
-続け（+0.25/tick<!-- stats: balance.yaml consumption property=immunity condition=pathogenが段latent以上にある character=medic per_tick -->）、
+続け（+0.25/tick<!-- stats: balance.yaml consumption property=immunity condition=in_stage_or_above(self.pathogen,latent) character=medic per_tick -->）、
 素の 60 から 10 時間で最上段（`primed`）へ届きます。そこから先は 1 tick に
-−0.30<!-- stats: balance.yaml consumption property=pathogen condition="段 immunity=primed" character=medic per_tick --> 引くので、
-菌自身の増殖（+0.15/tick<!-- stats: balance.yaml consumption property=pathogen condition=pathogenが段latent以上にある character=medic per_tick -->）を
+−0.30<!-- stats: balance.yaml consumption property=pathogen condition=stage(self.immunity,primed) character=medic per_tick --> 引くので、
+菌自身の増殖（+0.15/tick<!-- stats: balance.yaml consumption property=pathogen condition=in_stage_or_above(self.pathogen,latent) character=medic per_tick -->）を
 差し引いた正味で 1 日 14 引けます。入る 9 を上回るので、**菌は食事ごとに 0 へ戻ります**（他の段が引く量は
 [`DigestionSystem.md`](../engine/DigestionSystem.md) 6.2 節）。**条件は間隔です**——発熱の段は 5 なので、
 1 切れ +3 が 2 回続けて入ればその場で乗ります。最上段へ届くまでは `robust` の
-−0.20<!-- stats: balance.yaml consumption property=pathogen condition="段 immunity=robust" character=medic per_tick --> なので、
+−0.20<!-- stats: balance.yaml consumption property=pathogen condition=stage(self.immunity,robust) character=medic per_tick --> なので、
 増殖を差し引いた正味（−0.05/tick）では 1 引くのに 5 時間かかり、**間隔が 5 時間では 1 日 3 つでも
 ちょうど段に乗ります**——起きている時間帯へ 3 食を寄せるとそこが境目で、8 時間おきに離せば届きません。
 
@@ -970,11 +970,9 @@
 - 貝と金属片（[`ContentSkeleton.md`](./ContentSkeleton.md) 7 節）。貝は生では食べられないので焼く鎖ごと、
   金属片は使い道ごと足すことになる。どちらも入るまでは、岩礁の湧くものは魚の群れ、沈船の海の拾い物は
   漂流物とアーティファクトで代えてある。
-- 小島へのアーティファクトの配置（[`ContentSkeleton.md`](./ContentSkeleton.md) 6 節）。小島は上陸して
-  探索できる土地になった（3.4 節）が、今の卓はアーティファクトを返さない。アーティファクトの総数が
-  決まってから（下の項）。
+- 小島へのアーティファクトの配置（[`ContentSkeleton.md`](./ContentSkeleton.md) 6.2 節）。小島は上陸して
+  探索できる土地になった（3.4 節）が、今の卓はアーティファクトを返さない。小島から出る種類数と
+  1 周回に配る数は同節が決めているので、残っているのは卓へ載せることだけ。
 - 丸太をまとめて運ぶ手段（1 節）。そりと台車は入った（[`Containers.md`](./Containers.md) 2節）が、
   2本目が積めるかが担ぎ手で分かれ、筏1つの6本を1往復で運ぶ手立てはどの担ぎ手にも無い。積める重さを
   上げるのか、往復そのものを短くするのか、担ぎ手で分かれたままにするのかは決めていない。
-- アーティファクトの総数と、1周回の島に配置する数（[`GameEndings.md`](../concept/GameEndings.md) 6 節）。
-  今は金の聖杯1つが、岸壁・岩場・山腹の探索と、沈船の海の見張りでごく稀に出るだけ。

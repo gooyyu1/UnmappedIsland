@@ -318,6 +318,10 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
     // 回数。工程が1つのレシピにはそもそも宣言が無いので、持っていなければ何も起きない。
     inProgress.tryGetProperty(codex.vocabulary.engine.finishedStepsId)?.add(1);
 
+    // 手を動かした1工程ぶん、作り手の腕が伸びる（SkillSystem.md 3.4節）。**どの腕へ何を配るかは
+    // レシピ自身が決める**ので、ここは「1工程終えた」ことだけを伝える。
+    recipe.advanceSkillOf(agent, step);
+
     spillUnneeded(inProgress);
     return true;
   });

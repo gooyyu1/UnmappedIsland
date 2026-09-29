@@ -218,7 +218,10 @@ function buildSections(codex: WorldCodex, tables: BalanceTables): readonly YamlR
           const perTick = row.perTickByCharacter[index];
           return {
             property: row.propertyName,
-            condition: row.condition,
+
+            // 綴りによらない鍵を書き出す（`ConsumptionCondition.key`）。日本語の文はビューアが組む
+            // ——文を書き出すと、言い回しを直しただけでこのYAMLと文書の引用印が動く（issue #2252）。
+            condition: row.condition.key,
             character,
             per_tick: rounded(perTick, 2),
             per_day: rounded(perTick === undefined ? undefined : perTick * TICKS_PER_DAY, 0),

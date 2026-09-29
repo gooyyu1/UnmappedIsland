@@ -258,6 +258,66 @@ object_defs:
     ).toBe(100 - 20 * 10);
   });
 
+  // GameElementDefinition.md 10.2節「負の重みは0として扱い、どの候補の重みも0以下なら宣言順で先頭を
+  // 選ぶ。1つでも正の重みが残っていれば抽選は成立する」。
+  it('どの候補の重みも0以下なら先頭が選ばれ、1つでも正なら抽選が成立する', () => {
+    const yaml = `
+object_defs:
+  player5:
+    props:
+      hp:
+        value: 1000
+  dud:
+    interactions:
+      fire:
+        trigger: menu
+        pick:
+          - weight: -5
+            add:
+              agent:
+                hp: -1
+          - weight: 0
+            add:
+              agent:
+                hp: -1000
+  biased:
+    interactions:
+      fire:
+        trigger: menu
+        pick:
+          - weight: -10
+            add:
+              agent:
+                hp: -1000
+          - weight: 5
+            add:
+              agent:
+                hp: -1
+`;
+    const codex = load(yaml);
+    const hpId = codex.propertyNames.getId('hp');
+
+    const agent = spawn(codex, 'player5');
+    const dud = spawn(codex, 'dud');
+    for (let i = 0; i < 20; i++) {
+      dud.tryGetAction('fire', agent)?.tryExecute();
+    }
+    expect(
+      agent.tryGetProperty(hpId)?.number ?? 0,
+      '重みが-5と0で全部0以下なので、抽選に落ちず先頭の候補(-1)だけが20回とも選ばれる',
+    ).toBe(1000 - 20);
+
+    const biasedAgent = spawn(codex, 'player5');
+    const biased = spawn(codex, 'biased');
+    for (let i = 0; i < 20; i++) {
+      biased.tryGetAction('fire', biasedAgent)?.tryExecute();
+    }
+    expect(
+      biasedAgent.tryGetProperty(hpId)?.number ?? 0,
+      '負の-10は0として扱われ、正の5を持つ2番目だけが選ばれる（先頭ではない）',
+    ).toBe(1000 - 20);
+  });
+
   it('pathでweightを参照すると、より重い候補が選ばれやすくなる', () => {
     const yaml = `
 object_defs:
