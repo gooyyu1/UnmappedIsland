@@ -189,29 +189,31 @@ object_defs:
       # 餌を仕掛ける（TrapSystem.md 4節）。炉へ薪をくべるのとまったく同じ形（FireSystem.md 2節）で、
       # 移る量は餌の側が1箇所で持つ。草の餌と肉の餌で1つずつ。
       #
-      # **中途半端に残った餌を作らない**ので`destroy`を併記する。**丸ごと入らない餌は受け取らない**
-      # ——運ばれてきた相手を消す輸送は端数を受け取らないとエンジンが決めている（9.5節）ので、餌だけが
-      # 消えることはない。断る理由をここで名乗るのは、断るだけでは「重ねても何も起きない」になるため
-      # （docs/ui/CardInteraction.md 2.1節）。満杯も同じ理由で断るので、上限を書き写した条件は要らない。
-      #
-      # **時間は課さない**——くべるのと同じ1手の受け渡しで、仕掛かっている餌が繰り返しを止める。
+      # **時間は課さない**——くべるのと同じ1手の受け渡しで、満杯を拒む条件が繰り返しを止める。
       add_plant_bait:
         trigger: {drag: {tag: plant_bait}}
-        no_room_reason: trap_baited
+        conditions:
+          - {reason: trap_baited, prop: plant_bait, lt: 24}
         transfer:
           amount: 999
           from: instrument
           from_prop: plant_bait
           to_prop: plant_bait
+          # 入り切らない分は切り捨てる（GameElementDefinition.md 9.5.1節）。
+          allow_overflow: true
+        # 中途半端に残った餌を作らない。入りきらなかった分は失われるが、満杯を拒む条件があるので
+        # 失うのは高々1個ぶん。
         destroy: instrument
       add_meat_bait:
         trigger: {drag: {tag: meat_bait}}
-        no_room_reason: trap_baited
+        conditions:
+          - {reason: trap_baited, prop: meat_bait, lt: 24}
         transfer:
           amount: 999
           from: instrument
           from_prop: meat_bait
           to_prop: meat_bait
+          allow_overflow: true
         destroy: instrument
     recipes:
       knotted:
@@ -362,12 +364,14 @@ object_defs:
       # 餌を仕掛ける（くくり罠とまったく同じ形、TrapSystem.md 4節）。移る量は餌の側が1箇所で持つ。
       add_plant_bait:
         trigger: {drag: {tag: plant_bait}}
-        no_room_reason: trap_baited
+        conditions:
+          - {reason: trap_baited, prop: plant_bait, lt: 24}
         transfer:
           amount: 999
           from: instrument
           from_prop: plant_bait
           to_prop: plant_bait
+          allow_overflow: true
         destroy: instrument
       # 杭を打つ（TrapSystem.md 1.2節）。掘った穴へ棒を立てるドラッグ1つで、生かす罠が殺す罠になる。
       #

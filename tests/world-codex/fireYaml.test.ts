@@ -861,9 +861,7 @@ describe('fire.yamlの火の連鎖', () => {
 
   it('焚き火は薪を積めるだけ積んでも高温には届かない', () => {
     const hearth = litCampfire();
-    // 太い枝1本（20）が入っている。上限は30なので、2本目は丸ごとは入らない（下の「丸ごと入らない
-    // 薪は受け取らない」）。小枝（3）を積めるだけ積んで29まで満たす。
-    for (let i = 0; i < 3; i++) stoke(hearth, 'twig');
+    stoke(hearth, 'thick_branch'); // 上限の30まで積む
     session.advanceWorldTime(60 * 3);
 
     expect(effectiveNumberOf(hearth, 'heat'), '火力の上限で頭打ちになる').toBe(30);
@@ -884,75 +882,58 @@ describe('fire.yamlの火の連鎖', () => {
 
   it('束ねた薪はまとめてくべられる。何本入るかは炉の残りが決める', () => {
     const hearth = spawnInto('campfire', land, 'fixtures');
-    const twigs = [
-      spawnInto('twig', land, 'items'),
-      spawnInto('twig', land, 'items'),
-      spawnInto('twig', land, 'items'),
+    const branches = [
+      spawnInto('thick_branch', land, 'items'),
+      spawnInto('thick_branch', land, 'items'),
+      spawnInto('thick_branch', land, 'items'),
     ];
 
-    // 焚き火のfuelは0〜30、小枝は1本3。3本とも丸ごと入る。
+    // 焚き火のfuelは0〜30、太い枝は1本20。2本目で満ちるので、3本目は入らない。
     expect(
       hearth
-        .combinationsWith(twigs[0], player)
+        .combinationsWith(branches[0], player)
         .find((c) => c.name === 'add_fuel')
-        ?.acceptedCountIncludingSelf(twigs.slice(1)) ?? 1,
-    ).toBe(3);
+        ?.acceptedCountIncludingSelf(branches.slice(1)) ?? 1,
+    ).toBe(2);
 
-    hearth
-      .combinationsWith(twigs[0], player)
-      .find((c) => c.name === 'add_fuel')!
-      .executeWithFollowers(twigs.slice(1));
+    for (const branch of branches.slice(0, 2))
+      expect(
+        hearth
+          .combinationsWith(branch, player)
+          .find((c) => c.name === 'add_fuel')
+          ?.tryExecute() === true,
+      ).toBe(true);
 
-    expect(effectiveNumberOf(hearth, 'fuel')).toBe(9);
-    expect(itemsOn(land), 'くべた3本は残らない').toEqual([]);
+    expect(effectiveNumberOf(hearth, 'fuel'), '溢れた分は捨てられる（量の器は部分的に受け取る）').toBe(30);
+    expect(itemsOn(land), 'くべた2本は残らない').toEqual(['thick_branch']);
   });
 
-  it('束のうち丸ごと入る分だけを数え、残りは手元に残す', () => {
-    // **数えた枚数と、実際に入る枚数が食い違わない。** 入り切らない1本まで数えると、画面は
-    // 「3本くべる」と見せてから2本しか消さない。
-    const hearth = spawnInto('campfire', land, 'fixtures');
-    const branches = [spawnInto('thick_branch', land, 'items'), spawnInto('thick_branch', land, 'items')];
-
-    // 焚き火のfuelは0〜30、太い枝は1本20。2本目（40）は丸ごとは入らない。
-    const combination = hearth.combinationsWith(branches[0], player).find((c) => c.name === 'add_fuel')!;
-    expect(combination.acceptedCountIncludingSelf(branches.slice(1))).toBe(1);
-    expect(combination.executeWithFollowers(branches.slice(1))).toBe(1);
-
-    expect(effectiveNumberOf(hearth, 'fuel')).toBe(20);
-    expect(itemsOn(land), '入らなかった1本は物ごと残る').toEqual(['thick_branch']);
-  });
-
-  it('丸ごと入らない薪は受け取らない（端数だけ受け取って物ごと捨てない）', () => {
-    // issue #2246 の再現。残り僅かな炉へ丸太を落とすと、0.1だけ入って丸太が消えていた。
+  it('丸ごと入らない薪でも受け取り、入り切らない端数は切り捨てる', () => {
+    // issue #2246 の現象を、**仕様として固定する**（GameElementDefinition.md 9.5.1節）。受け取らない形に
+    // すると、いちばん小さい薪より炉の空きが小さい間、薪を足す手が丸ごと塞がる。
     const hearth = spawnInto('stone_hearth', land, 'fixtures');
     hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(119.9);
 
     const log = spawnInto('log', land, 'items');
     expect(
-      hearth.combinationsWith(log, player).map((c) => c.name),
-      '成立する組み合わせは無い',
-    ).toEqual([]);
-    expect(
       hearth
         .combinationsWith(log, player)
         .find((c) => c.name === 'add_fuel')
         ?.tryExecute() === true,
-    ).toBe(false);
-    expect(effectiveNumberOf(hearth, 'fuel'), '炉は1も受け取っていない').toBe(119.9);
-    expect(log.parent, '丸太は手元に残る').toBe(land);
-    expect(
-      hearth.refusedCombinationsWith(log, player).map((c) => c.refusal()?.reasonName),
-      '断る理由まで辿り着ける（落とせるのに何も起きない、にしない）',
-    ).toEqual(['hearth_full']);
+      '空きが半端でもくべられる',
+    ).toBe(true);
+
+    expect(effectiveNumberOf(hearth, 'fuel'), '炉は上限まで満ちる').toBe(120);
+    expect(itemsOn(land), '丸太は物ごと消える（端数の切り捨て）').toEqual([]);
   });
 
   it('満杯の炉にはくべられない', () => {
     const hearth = spawnInto('campfire', land, 'fixtures');
-    // 乾いた薪1本（30）が焚き火の上限ちょうど（firewood.yaml）。
-    stoke(hearth, 'seasoned_firewood');
+    stoke(hearth, 'thick_branch');
+    stoke(hearth, 'thick_branch');
     expect(effectiveNumberOf(hearth, 'fuel')).toBe(30);
 
-    const extra = spawnInto('twig', land, 'items');
+    const extra = spawnInto('thick_branch', land, 'items');
     expect(
       hearth.combinationsWith(extra, player).map((c) => c.name),
       '成立する組み合わせは無い',
@@ -965,15 +946,14 @@ describe('fire.yamlの火の連鎖', () => {
     ).toBe(false);
     expect(extra.parent, 'くべられなかった薪は手元に残る').toBe(land);
     expect(
-      hearth.refusedCombinationsWith(extra, player).map((c) => c.refusal()?.reasonName),
+      hearth.refusedCombinationsWith(extra, player).map((c) => c.unmetRequirement()?.reasonName),
       '断る理由まで辿り着ける（落とせるのに何も起きない、にしない）',
     ).toEqual(['hearth_full']);
   });
 
-  it('どの炉も、薪が丸ごと入る空きがあるときだけ受け取り、無ければ理由を告げる', () => {
-    // **線は「満杯か」ではなく「今くべる薪が丸ごと入るか」**（GameElementDefinition.md 9.5節）。
-    // ちょうど入る空きで成立し、そこから1つ足りないだけで理由に変わるところまで見て、
-    // 端数を受け取って物ごと捨てる形が戻っていないことを捕まえる。
+  it('どの炉も、自分の上限で満杯を告げる', () => {
+    // 満杯を拒む条件は炉ごとに書いてあり、閾値はその炉のfuelのrange.maxと一致していなければ
+    // ならない。1本手前で成立し、ちょうど上限で理由に変わるところまで見て、写し違いを捕まえる。
     const fuelId = codex.propertyNames.getId('fuel');
     const hearthTag = codex.tagNames.getId('hearth');
     const hearths = [...codex.objects].filter((def) => def.tags.includes(hearthTag));
@@ -983,23 +963,22 @@ describe('fire.yamlの火の連鎖', () => {
       open(LIGHTS);
       const hearth = spawnInto(def.name, land, 'fixtures');
       const branch = spawnInto('thick_branch', land, 'items');
-      const branchFuel = effectiveNumberOf(branch, 'fuel');
       const capacity = def.tryGetPropertyDef(fuelId)!.range!.max;
 
-      hearth.getProperty(fuelId).setNumberWithoutEvents(capacity - branchFuel);
+      hearth.getProperty(fuelId).setNumberWithoutEvents(capacity - 1);
       expect(
         hearth.combinationsWith(branch, player).map((c) => c.name),
-        `${def.name}: ちょうど入る空きがあればくべられる`,
+        `${def.name}: 空きが残っていればくべられる`,
       ).toEqual(['add_fuel']);
 
-      hearth.getProperty(fuelId).setNumberWithoutEvents(capacity - branchFuel + 0.1);
+      hearth.getProperty(fuelId).setNumberWithoutEvents(capacity);
       expect(
         hearth.combinationsWith(branch, player).map((c) => c.name),
-        `${def.name}: 丸ごとは入らないので成立しない`,
+        `${def.name}: 満杯では成立しない`,
       ).toEqual([]);
       expect(
-        hearth.refusedCombinationsWith(branch, player).map((c) => c.refusal()?.reasonName),
-        `${def.name}: 入らないことを告げる`,
+        hearth.refusedCombinationsWith(branch, player).map((c) => c.unmetRequirement()?.reasonName),
+        `${def.name}: 満杯を告げる`,
       ).toEqual(['hearth_full']);
     }
   });

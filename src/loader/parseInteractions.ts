@@ -1,15 +1,6 @@
 import type { YAMLMap } from 'yaml';
 import { isMap, isScalar } from 'yaml';
-import {
-  asMap,
-  entriesInOrder,
-  keysOf,
-  tryGetBool,
-  tryGetMap,
-  tryGetNode,
-  tryGetScalar,
-  tryGetSeq,
-} from './yamlMapping';
+import { asMap, entriesInOrder, keysOf, tryGetBool, tryGetMap, tryGetNode, tryGetSeq } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { parseDeclaredNumber, parseTypeMatchRule } from './parseCommon';
 import { parseActiveEffectBody, parseSignals } from './parseActiveEffects';
@@ -24,14 +15,7 @@ import { DragTrigger, MenuTrigger, TickTrigger } from '../domain/InteractionTrig
 import { ReferenceScope } from '../domain/ReferenceRoot';
 
 /** 操作のエントリが持つ、効果以外の兄弟キー。 */
-const RESERVED_KEYS = [
-  'trigger',
-  'conditions',
-  'announce',
-  'duration',
-  'passives',
-  'no_room_reason',
-] as const;
+const RESERVED_KEYS = ['trigger', 'conditions', 'announce', 'duration', 'passives'] as const;
 
 /** `trigger`のマップ形（ドラッグ）が持てるキー。 */
 const DRAG_KEYS = ['drag', 'allow_multiple'] as const;
@@ -114,19 +98,13 @@ function parseInteraction(
       );
   }
 
-  // 相手を丸ごと受け取れないときに断る理由（14.6節）。**相手（instrument）から移して相手を消す操作
-  // には必須**——エンジンは端数を受け取らずに断る（9.5節）ので、理由が無いとプレイヤーには
-  // 「重ねても何も起きない」としか見えない（ActionSystem.md 1.1節）。
-  const noRoomReasonName = tryGetScalar(map, 'no_room_reason', context);
-  if (effect.refusesPartialMove && noRoomReasonName === undefined)
+  // 相手を消す操作が、入り切らない端数を黙って捨てる形になっていないか（9.5.1節）。**端数は切り捨てが
+  // 規則**で、書く側にできるのは名乗るかどうかだけ——名乗らせるのは、宣言だけを読んで「残りはどこへ
+  // 行くのか」に答えられるようにするため。
+  if (effect.destroysInstrument && effect.movesFromInstrumentKeepingRemainder)
     throw new YamlLoadError(
-      `${context}: 相手（instrument）から移して同じ操作でdestroyするので、丸ごと入らない相手は断ります。` +
-        "断る理由（'no_room_reason'）を宣言してください（9.5節・14.6節）。",
-    );
-  if (!effect.refusesPartialMove && noRoomReasonName !== undefined)
-    throw new YamlLoadError(
-      `${context}: 'no_room_reason'を書けるのは、相手（instrument）から移して相手を消す操作だけです` +
-        '（他の操作は丸ごと入らないことを理由に断りません。9.5節）。',
+      `${context}: 相手（instrument）から移して同じ操作でdestroyするので、入り切らない端数は切り捨てに` +
+        "なります。transferへ'allow_overflow: true'を書いて名乗ってください（9.5.1節）。",
     );
 
   const interaction = new InteractionDef(
@@ -136,7 +114,6 @@ function parseInteraction(
     effect,
     duration,
     new PassiveEffects(passiveDeclarations),
-    noRoomReasonName,
   );
 
   if (drag !== undefined) {

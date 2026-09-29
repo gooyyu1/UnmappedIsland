@@ -306,19 +306,23 @@ props:
 interactions:
   add_plant_bait:
     trigger: {drag: {tag: plant_bait}}
-    no_room_reason: trap_baited
-    transfer: {amount: 999, from: instrument, from_prop: plant_bait, to_prop: plant_bait}
+    conditions:
+      - {reason: trap_baited, prop: plant_bait, lt: 24}
+    transfer:
+      {amount: 999, from: instrument, from_prop: plant_bait, to_prop: plant_bait, allow_overflow: true}
     destroy: instrument
   add_meat_bait:
     trigger: {drag: {tag: meat_bait}}
-    no_room_reason: trap_baited
-    transfer: {amount: 999, from: instrument, from_prop: meat_bait, to_prop: meat_bait}
+    conditions:
+      - {reason: trap_baited, prop: meat_bait, lt: 24}
+    transfer:
+      {amount: 999, from: instrument, from_prop: meat_bait, to_prop: meat_bait, allow_overflow: true}
     destroy: instrument
 ```
 
-**丸ごと入らない餌は受け取りません。** 運ばれてきた餌は `destroy` で消えるので、端数だけ受け取ると
-残りは餌ごと失われます（`GameElementDefinition.md` 9.5 節。炉へ薪をくべるのと同じ形で、`FireSystem.md` 2 節）。
-上限を条件へ書き写す必要は無く、断るときに何と言うかだけを名乗ります。
+**入り切らない端数は切り捨てます**（`GameElementDefinition.md` 9.5.1 節で確定した規則。炉へ薪を
+くべるのと同じ形で、`FireSystem.md` 2 節）。切り捨てることを `allow_overflow: true` として名乗り、名乗って
+いない宣言はロード時に落ちます。
 
 ```yaml
 # 餌の側が宣言する。タグとプロパティの名前で、どちらの餌かが決まる。

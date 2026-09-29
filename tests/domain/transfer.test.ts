@@ -350,9 +350,9 @@ object_defs:
     expect(canteen.tryGetProperty(teaId)?.number ?? 0).toBe(0);
   });
 
-  describe('出どころを丸ごと消す輸送（9.5節）', () => {
-    /** 薪をくべる形そのまま——移した後に相手を消すので、端数を受け取ると薪ごと失われる。 */
-    function hearthYaml(options: { readonly fuel: number; readonly overflow?: boolean }): string {
+  describe('相手を丸ごと消す輸送（9.5.1節）', () => {
+    /** 薪をくべる形そのまま——移した後に相手を消すので、入り切らない端数は切り捨てになる。 */
+    function hearthYaml(fuel: number): string {
       return `
 object_defs:
   keeper:
@@ -367,22 +367,24 @@ object_defs:
   hearth:
     props:
       fuel:
-        value: ${options.fuel}
+        value: ${fuel}
         range: {min: 0, max: 30}
     interactions:
+      # **満杯を拒む条件は置かない。** 断る理由を届けるのは宣言の仕事（fire.yamlの炉が持つ）だが、
+      # ここで見たいのは条件を書き忘れた宣言でもエンジンが相手を守ることなので、条件を外して測る。
       add_fuel:
-        trigger: {drag: {tag: fuel}}${options.overflow === true ? '' : '\n        no_room_reason: hearth_full'}
+        trigger: {drag: {tag: fuel}}
         transfer:
           amount: 999
           from: instrument
           from_prop: fuel
-          to_prop: fuel${options.overflow === true ? '\n          allow_overflow: true' : ''}
+          to_prop: fuel
+          allow_overflow: true
         destroy: instrument
 `;
     }
 
     function addFuel(yaml: string): {
-      readonly refusalReason: string | undefined;
       readonly executed: boolean;
       readonly hearthFuel: number;
       readonly branchIsGone: boolean;
@@ -401,38 +403,38 @@ object_defs:
         .find((candidate) => candidate.name === 'add_fuel');
 
       return {
-        refusalReason: combination?.refusal()?.reasonName,
         executed: combination?.tryExecute() === true,
         hearthFuel: hearth.tryGetProperty(codex.propertyNames.getId('fuel'))?.number ?? 0,
         branchIsGone: branch.parent === undefined,
       };
     }
 
-    it('丸ごと入る空きがあれば、今までどおり移して相手を消す', () => {
-      expect(addFuel(hearthYaml({ fuel: 10 }))).toEqual({
-        refusalReason: undefined,
+    it('丸ごと入る空きがあれば、全量が移って相手が消える', () => {
+      expect(addFuel(hearthYaml(10))).toEqual({
         executed: true,
         hearthFuel: 30,
         branchIsGone: true,
       });
     });
 
-    it('丸ごと入らないなら1つも移さず、断る理由を名乗る', () => {
-      // 空きは19.9。端数だけ受け取ると、残り（0.1）は薪ごと消える。**受け取らないほうへ倒している。**
-      expect(addFuel(hearthYaml({ fuel: 10.1 }))).toEqual({
-        refusalReason: 'hearth_full',
+    it('入り切らない端数は切り捨てて、相手は物ごと消える', () => {
+      // 空きは19.9。**足す手を塞がないほうへ倒している**（9.5.1節）——受け取らない形にすると、
+      // いちばん小さい薪より空きが小さい間、薪を足す手が丸ごと塞がる。
+      expect(addFuel(hearthYaml(10.1))).toEqual({
+        executed: true,
+        hearthFuel: 30,
+        branchIsGone: true,
+      });
+    });
+
+    it('器が満ちているなら組み合わせが成立しない（相手だけを失わせない）', () => {
+      // **満杯を拒む条件を書き忘れていても、相手だけが消えることはない**（Combination.canExecute が
+      // 「1個は受け取れる」を見る）。1つも受け取れない回に効果を走らせると、何も移さないまま
+      // `destroy`だけが効く。
+      expect(addFuel(hearthYaml(30))).toEqual({
         executed: false,
-        hearthFuel: 10.1,
-        branchIsGone: false,
-      });
-    });
-
-    it('allow_overflowを書いた輸送はそのまま（あふれる分を捨てると名乗った形）', () => {
-      expect(addFuel(hearthYaml({ fuel: 25, overflow: true }))).toEqual({
-        refusalReason: undefined,
-        executed: true,
         hearthFuel: 30,
-        branchIsGone: true,
+        branchIsGone: false,
       });
     });
   });

@@ -2189,9 +2189,9 @@ object_defs:
     );
   });
 
-  it('相手を消す輸送に断る理由が無いとエラーになる（丸ごと入らない相手を黙って断ることになる）', () => {
-    // 端数を受け取らずに断るのはエンジンが決めている（9.5節）ので、理由を宣言していない操作は
-    // 「重ねても何も起きない」にしかならない（ActionSystem.md 1.1節）。
+  it('相手を消す輸送にallow_overflowを書いていないとエラーになる（端数を黙って捨てる形になる）', () => {
+    // 端数は切り捨てが規則（9.5.1節）。既定のfalseは「入り切らない分は出どころに残す」だが、その
+    // 出どころが消えるなら残した分も消えるので、宣言だけを読んで残りの行き先が分からなくなる。
     const yaml = `
 object_defs:
   altar3:
@@ -2206,13 +2206,17 @@ object_defs:
         destroy: instrument
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
-      /no_room_reason/,
+      /allow_overflow/,
     );
   });
 
-  it('相手を消さない操作にno_room_reasonを書くとエラーになる（断る機会が無い）', () => {
+  it('相手を消さない輸送には、allow_overflowを書かなくてよい（入り切らない分は出どころに残る）', () => {
     const yaml = `
 object_defs:
+  grain:
+    tags: [offering]
+    props:
+      weight: {value: 5}
   altar4:
     props:
       offerings:
@@ -2221,12 +2225,9 @@ object_defs:
     interactions:
       offer:
         trigger: {drag: {tag: offering}}
-        no_room_reason: altar_full
         transfer: {amount: 999, from: instrument, from_prop: weight, to_prop: offerings}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
-      /相手を消す操作だけ/,
-    );
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).not.toThrow();
   });
 
   // ------------------------------------------------------------------
