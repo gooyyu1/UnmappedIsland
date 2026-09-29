@@ -106,7 +106,7 @@ object_defs:
       add_fuel:
         trigger: {drag: {object: branch}, allow_multiple: true}
         duration: 1
-        transfer: {amount: 999, from: instrument, from_prop: fuel, to_prop: fuel}
+        transfer: {amount: 999, from: instrument, from_prop: fuel, to_prop: fuel, allow_overflow: true}
         destroy: instrument
       # 薪が無ければ着火しない。断る理由を宣言している（fire.yamlのigniteと同じ形）。
       ignite:

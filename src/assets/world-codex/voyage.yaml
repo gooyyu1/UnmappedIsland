@@ -531,9 +531,12 @@ object_defs:
       #
       # 既に中に居るときは移動が空振りするだけなので、条件は置かない。そもそも中からは筏の札が
       # 見えない（現在地の札になる）ので、押す機会が無い。
+      #
+      # **乗り降りは1 tickを渡す**（docs/engine/ActionSystem.md 6.2節）——岸を追われて筏へ逃げる手でも
+      # あるので、押した時刻で獣に手番を渡すかどうかが変わってはならない。
       board:
         trigger: menu
-        duration: 5
+        duration: 15
         move: {subject: agent, to: self}
 
       # 降りる。海の上では降りられない。**引き返しは泳ぐことではなく、来た航路を戻ること**
@@ -543,7 +546,7 @@ object_defs:
         conditions:
           - reason: at_sea
             not: {subject: parent, matches: {tag: sea}}
-        duration: 5
+        duration: 15
         move: {subject: agent, to: parent}
 
       # 航海に出る。乗り込むところまでを1手に含める——岸から直に出せるほうが手数が少なく、

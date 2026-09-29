@@ -350,6 +350,95 @@ object_defs:
     expect(canteen.tryGetProperty(teaId)?.number ?? 0).toBe(0);
   });
 
+  describe('相手を丸ごと消す輸送（9.5.1節）', () => {
+    /** 薪をくべる形そのまま——移した後に相手を消すので、入り切らない端数は切り捨てになる。 */
+    function hearthYaml(fuel: number): string {
+      return `
+object_defs:
+  keeper:
+    slots:
+      hand:
+        cells:
+          - {accept: {tag: fuel}}
+  branch:
+    tags: [fuel]
+    props:
+      fuel: {value: 20}
+  hearth:
+    props:
+      fuel:
+        value: ${fuel}
+        range: {min: 0, max: 30}
+    interactions:
+      # **満杯を拒む条件は置かない。** 断る理由を届けるのは宣言の仕事（fire.yamlの炉が持つ）だが、
+      # ここで見たいのは条件を書き忘れた宣言でもエンジンが相手を守ることなので、条件を外して測る。
+      add_fuel:
+        trigger: {drag: {tag: fuel}}
+        transfer:
+          amount: 999
+          from: instrument
+          from_prop: fuel
+          to_prop: fuel
+          allow_overflow: true
+        destroy: instrument
+`;
+    }
+
+    function addFuel(yaml: string): {
+      readonly executed: boolean;
+      readonly hearthFuel: number;
+      readonly branchIsGone: boolean;
+    } {
+      const codex = load(yaml);
+      const keeper = spawn(codex, 'keeper');
+      const hearth = spawn(codex, 'hearth');
+      // **手に持たせてから重ねる。** どこにも属さない物は、消えても消えなくても親を持たないので、
+      // 「薪が残ったか」を見分けられない。
+      const branch = spawn(codex, 'branch');
+      expect(branch.moveToSlotOrRejection(keeper.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+
+      const combination = hearth
+        .refusedCombinationsWith(branch, keeper)
+        .concat(hearth.combinationsWith(branch, keeper))
+        .find((candidate) => candidate.name === 'add_fuel');
+
+      return {
+        executed: combination?.tryExecute() === true,
+        hearthFuel: hearth.tryGetProperty(codex.propertyNames.getId('fuel'))?.number ?? 0,
+        branchIsGone: branch.parent === undefined,
+      };
+    }
+
+    it('丸ごと入る空きがあれば、全量が移って相手が消える', () => {
+      expect(addFuel(hearthYaml(10))).toEqual({
+        executed: true,
+        hearthFuel: 30,
+        branchIsGone: true,
+      });
+    });
+
+    it('入り切らない端数は切り捨てて、相手は物ごと消える', () => {
+      // 空きは19.9。**足す手を塞がないほうへ倒している**（9.5.1節）——受け取らない形にすると、
+      // いちばん小さい薪より空きが小さい間、薪を足す手が丸ごと塞がる。
+      expect(addFuel(hearthYaml(10.1))).toEqual({
+        executed: true,
+        hearthFuel: 30,
+        branchIsGone: true,
+      });
+    });
+
+    it('器が満ちているなら組み合わせが成立しない（相手だけを失わせない）', () => {
+      // **満杯を拒む条件を書き忘れていても、相手だけが消えることはない**（Combination.canExecute が
+      // 「1個は受け取れる」を見る）。1つも受け取れない回に効果を走らせると、何も移さないまま
+      // `destroy`だけが効く。
+      expect(addFuel(hearthYaml(30))).toEqual({
+        executed: false,
+        hearthFuel: 30,
+        branchIsGone: false,
+      });
+    });
+  });
+
   describe('to_amount（単位の違う移送）', () => {
     /** 水（mL）を飲むと水分（tick分）が増える器。250mL = 10 tick分。 */
     function drinkable(hydrationMax: number, water: number, toAmount = 10): string {

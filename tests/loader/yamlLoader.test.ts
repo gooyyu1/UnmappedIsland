@@ -2179,7 +2179,10 @@ object_defs:
     interactions:
       offer:
         trigger: {drag: {tag: offering}, allow_multiple: true}
-        transfer: {amount: 1, from: instrument, from_prop: weight, to_prop: offerings}
+        # allow_overflowは、pickの候補が相手を消すことに対して要る（9.5.2節）。ここで見たいのは
+        # allow_multipleの側なので、そちらは満たしておく。
+        transfer:
+          {amount: 1, from: instrument, from_prop: weight, to_prop: offerings, allow_overflow: true}
         pick:
           - weight: 1
             destroy: instrument
@@ -2187,6 +2190,73 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
       /器を1つだけ持つ効果です/,
     );
+  });
+
+  it('相手を消す輸送にallow_overflowを書いていないとエラーになる（端数を黙って捨てる形になる）', () => {
+    // 端数は切り捨てが規則（9.5.1節）。既定のfalseは「入り切らない分は出どころに残す」だが、その
+    // 出どころが消えるなら残した分も消えるので、宣言だけを読んで残りの行き先が分からなくなる。
+    const yaml = `
+object_defs:
+  altar3:
+    props:
+      offerings:
+        value: 0
+        range: {min: 0, max: 10}
+    interactions:
+      offer:
+        trigger: {drag: {tag: offering}}
+        transfer: {amount: 999, from: instrument, from_prop: weight, to_prop: offerings}
+        destroy: instrument
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /allow_overflow/,
+    );
+  });
+
+  it('pickの候補が相手を消す形でも、allow_overflowを書いていなければエラーになる', () => {
+    // 輸送と`destroy`が並びを跨いで分かれていても、端数が相手ごと消えることは同じ（9.5.2節）。
+    const yaml = `
+object_defs:
+  grain2:
+    tags: [offering]
+    props:
+      weight: {value: 5}
+  altar5:
+    props:
+      offerings:
+        value: 0
+        range: {min: 0, max: 10}
+    interactions:
+      offer:
+        trigger: {drag: {tag: offering}}
+        transfer: {amount: 999, from: instrument, from_prop: weight, to_prop: offerings}
+        pick:
+          - weight: 1
+            destroy: instrument
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /allow_overflow/,
+    );
+  });
+
+  it('相手を消さない輸送には、allow_overflowを書かなくてよい（入り切らない分は出どころに残る）', () => {
+    const yaml = `
+object_defs:
+  grain:
+    tags: [offering]
+    props:
+      weight: {value: 5}
+  altar4:
+    props:
+      offerings:
+        value: 0
+        range: {min: 0, max: 10}
+    interactions:
+      offer:
+        trigger: {drag: {tag: offering}}
+        transfer: {amount: 999, from: instrument, from_prop: weight, to_prop: offerings}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).not.toThrow();
   });
 
   // ------------------------------------------------------------------

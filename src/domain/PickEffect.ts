@@ -38,6 +38,19 @@ export class PickEffect extends ActiveEffect {
   }
 
   /**
+   * 候補に1つでも在れば、抽選も含む（GameElementDefinition.md 9.5.2節の検査が、候補の側へ分けて
+   * 書いた形を見落とさないため）。**どの候補が引かれるかは問わない**——引かれる回が在るなら、その回に
+   * 起きる。
+   */
+  override get destroysInstrument(): boolean {
+    return this.candidates.some((candidate) => candidate.destroysInstrument);
+  }
+
+  override get movesFromInstrumentKeepingRemainder(): boolean {
+    return this.candidates.some((candidate) => candidate.movesFromInstrumentKeepingRemainder);
+  }
+
+  /**
    * weightで重み付き抽選して1つ選ぶ。候補が非空であることは呼び出し側が保証する。
    *
    * **全候補の重みが0なら先頭の候補が選ばれる。** 何も起きない手番を作らないための規約で、
@@ -114,6 +127,16 @@ export class PickCandidateDef {
     // isAvailableで相手が居ることを確かめてから選ぶので、ここでundefinedにはならない。
     if (picked === undefined) return;
     this.effect.apply(context.withPicked(picked), sameSlotSpawnSite);
+  }
+
+  /** この候補が相手を丸ごと消すか（ActiveEffect.destroysInstrumentの問いを、候補へ通す）。 */
+  get destroysInstrument(): boolean {
+    return this.effect.destroysInstrument;
+  }
+
+  /** この候補が、相手からの輸送で端数を出どころに残すか（同じ問いを候補へ通す）。 */
+  get movesFromInstrumentKeepingRemainder(): boolean {
+    return this.effect.movesFromInstrumentKeepingRemainder;
   }
 
   /** この候補の宣言（PickCandidateReading参照）。PickCandidatesが読み手へ渡す。 */

@@ -308,15 +308,21 @@ interactions:
     trigger: {drag: {tag: plant_bait}}
     conditions:
       - {reason: trap_baited, prop: plant_bait, lt: 24}
-    transfer: {amount: 999, from: instrument, from_prop: plant_bait, to_prop: plant_bait}
+    transfer:
+      {amount: 999, from: instrument, from_prop: plant_bait, to_prop: plant_bait, allow_overflow: true}
     destroy: instrument
   add_meat_bait:
     trigger: {drag: {tag: meat_bait}}
     conditions:
       - {reason: trap_baited, prop: meat_bait, lt: 24}
-    transfer: {amount: 999, from: instrument, from_prop: meat_bait, to_prop: meat_bait}
+    transfer:
+      {amount: 999, from: instrument, from_prop: meat_bait, to_prop: meat_bait, allow_overflow: true}
     destroy: instrument
 ```
+
+**入り切らない端数は切り捨てます**（`GameElementDefinition.md` 9.5.1 節で確定した規則。名乗り方は
+同 9.5.2 節。炉へ薪をくべるのと同じ形で、`FireSystem.md` 2 節）。捨てるのは高々 1 つぶんで、それは
+**1 つも入らない罠では操作が成立しない**という規則（`GameElementDefinition.md` 12.4 節）が保証します。
 
 ```yaml
 # 餌の側が宣言する。タグとプロパティの名前で、どちらの餌かが決まる。

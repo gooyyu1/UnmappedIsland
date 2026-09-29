@@ -64,6 +64,10 @@ interface World {
   readonly newerIssues?: number;
   /** `gh issue list` が転ぶか（＝開いている issue を引けない周）。 */
   readonly listFails?: boolean;
+  /** 台帳の `toasted`（画面へ最後に出した時刻と顔ぶれ）。 */
+  readonly toasted?: { at: string; faces: string };
+  /** 画面へ出す手が通るか。既定は通る。 */
+  readonly screenFails?: boolean;
   /** 畳まれていないセッション。省くと1本も立てていない形。 */
   readonly sessions?: readonly {
     readonly env: string;
@@ -84,16 +88,20 @@ interface Run {
   readonly asked: string | undefined;
   /** クラウドへ頼みに行った本文。行かなければ `undefined`。 */
   readonly cloud: string | undefined;
+  /** 画面へ出しに行った中身。1件が1回。 */
+  readonly screen: readonly { title: string; body: string }[];
+  /** 見回りの後の台帳の `toasted`。 */
+  readonly toasted: { at: string; faces: string } | undefined;
   readonly said: readonly string[];
 }
 
 async function check(world: World = {}): Promise<Run> {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-check-values-'));
   try {
-    if (world.ledger !== undefined || world.asked !== undefined) {
+    if (world.ledger !== undefined || world.asked !== undefined || world.toasted !== undefined) {
       writeFileSync(
         join(work, 'value-check.json'),
-        JSON.stringify({ dead: world.ledger ?? {}, asked: world.asked }),
+        JSON.stringify({ dead: world.ledger ?? {}, asked: world.asked, toasted: world.toasted }),
         'utf-8',
       );
     }
@@ -131,9 +139,16 @@ async function check(world: World = {}): Promise<Run> {
 
     const said: string[] = [];
     let cloud: string | undefined;
+    // **画面へ出す手は必ず差し替える。** 本物を通すと、走らせた人の画面にトーストが出る
+    // （`gh` やCCRと同じ「外を触る手」）。
+    const screen: { title: string; body: string }[] = [];
     const told = await checkValues({
       call,
       gh,
+      shout: ({ title, body }) => {
+        screen.push({ title, body });
+        return world.screenFails !== true;
+      },
       ask: (text) => {
         cloud = text;
         return world.cloudFails !== true;
@@ -160,6 +175,8 @@ async function check(world: World = {}): Promise<Run> {
       ledger: kept.dead ?? {},
       asked: kept.asked,
       cloud,
+      screen,
+      toasted: kept.toasted,
       said,
     };
   } finally {
@@ -637,5 +654,150 @@ describe('check-values.mjs の、`gh` が死んでいる周', () => {
     });
 
     expect(run.asked).toBeUndefined();
+  });
+});
+
+/**
+ * 画面へ出す口（2.22.6節）。
+ *
+ * **issue へ正しく書けていることでは、気づいてもらえたとは言えない。** 書くのも読むのも同じ
+ * アカウントなので GitHub の通知は鳴らず、**正しい本文が9日読まれないまま盤面が止まった**
+ * （2026-09-20T06:40Z から 09-29T20:07Z、issue #2434）。ここで守るのは3つ。
+ *
+ * - **資格情報の死に巻き込まれないこと**——`gh` が死んでいる周も、CCRが死んでいる周も出る
+ * - **一度きりにしないこと**——出た瞬間に人が見ているとは限らず、消せば跡が残らない
+ * - **同じものを出し続けないこと**——毎周出すと、読む人が見なくなる
+ */
+describe('check-values.mjs の、画面へ出す口', () => {
+  /** 猶予を越えて `BRIDGE_ENV` が死んでいる形。 */
+  const overdue = { living: [CLOUD], ledger: { BRIDGE_ENV: { since: LONG_AGO } } } as const;
+
+  it('猶予を越えた死は、直し方まで画面へ出す', async () => {
+    const run = await check(overdue);
+
+    expect(run.screen).toHaveLength(1);
+    expect(run.screen[0]?.title).toContain('盤面が止まっています');
+    expect(run.screen[0]?.body).toContain('BRIDGE_ENV');
+    expect(run.screen[0]?.body).toContain(LONG_AGO);
+    // **リポジトリも issue も開かずに直せるところまで**（通知を見た人がそこから先を開くとは限らない）。
+    expect(run.screen[0]?.body).toContain('直し方: ');
+    expect(run.screen[0]?.body).toContain('CLI を開き直す');
+    // **マークダウンを読む者が画面には居ない。**
+    expect(run.screen[0]?.body).not.toContain('`');
+    expect(run.toasted).toEqual({ at: NOW_STAMP, faces: 'BRIDGE_ENV' });
+  });
+
+  // **直る途中のものを画面へ出すと、読む人が見なくなる**（issue の側と同じ猶予に乗る）。
+  it('猶予に届いていない死は、画面へも出さない', async () => {
+    const run = await check({ living: [CLOUD] });
+
+    expect(run.screen).toEqual([]);
+    expect(run.toasted).toBeUndefined();
+  });
+
+  /**
+   * **この口だけが、死んだ値と無関係に動く。** `gh` が死ねば issue は書けず、CCRが死ねば
+   * クラウドへも頼めない——**どちらの周にも残っているのは画面だけ。**
+   */
+  it('`gh` が死んでいる周も、画面へは出る', async () => {
+    const run = await check({ ghAuth: false, ledger: { gh: { since: LONG_AGO } } });
+
+    expect(run.screen).toHaveLength(1);
+    expect(run.screen[0]?.body).toContain('gh auth login');
+  });
+
+  it('CCRが死んでいる周は、実際に効いた直し方を画面へ出す', async () => {
+    const run = await check({ ccrFails: true, ledger: { ccr: { since: LONG_AGO } } });
+
+    // **`claude rc` では戻らない**（2026-09-29 に実測）。ここが古い手順に戻ると、読んだ人は
+    // 直せないまま「直し方は試した」と読む。
+    expect(run.screen[0]?.body).toContain('/login');
+    expect(run.screen[0]?.body).toContain('claude rc では戻らない');
+  });
+
+  // **毎周出すと、読む人が見なくなる**（見回りは1時間おきに回る）。
+  it('同じ顔ぶれが続く周は、間隔が満ちるまで出し直さない', async () => {
+    const run = await check({ ...overdue, toasted: { at: JUST_NOW, faces: 'BRIDGE_ENV' } });
+
+    expect(run.screen).toEqual([]);
+    // 出した時刻は残す（消すと、次の周がもう一度出す）。
+    expect(run.toasted).toEqual({ at: JUST_NOW, faces: 'BRIDGE_ENV' });
+  });
+
+  // **一度きりにはしない。** 出た瞬間に人が見ているとは限らず、通知を消せば跡は残らない。
+  it('間隔が満ちたら、同じ顔ぶれでも出し直す', async () => {
+    const run = await check({ ...overdue, toasted: { at: LONG_AGO, faces: 'BRIDGE_ENV' } });
+
+    expect(run.screen).toHaveLength(1);
+    expect(run.toasted?.at).toBe(NOW_STAMP);
+  });
+
+  // **新しく死んだ値は、まだ一度も画面に出ていない。** 間隔で待たせると、先に死んでいた値の
+  // ぶんだけ黙ることになる。
+  it('顔ぶれが変わった周は、間隔を待たずに出す', async () => {
+    const run = await check({
+      living: [],
+      ledger: { BRIDGE_ENV: { since: LONG_AGO }, CLOUD_ENV: { since: LONG_AGO } },
+      toasted: { at: JUST_NOW, faces: 'BRIDGE_ENV' },
+    });
+
+    expect(run.screen).toHaveLength(1);
+    expect(run.toasted?.faces).toContain('CLOUD_ENV');
+  });
+
+  /**
+   * **読めない時刻は「まだ出していない」と同じに扱う。** `NaN` を比較へ通すと常に false になり、
+   * **台帳が壊れた周から先が画面へ二度と出なくなる**——黙っていることと、出すものが無いことが
+   * 見分けられない。
+   */
+  it('出した時刻が読めなくても、画面へは出す', async () => {
+    const run = await check({ ...overdue, toasted: { at: 'いつか', faces: 'BRIDGE_ENV' } });
+
+    expect(run.screen).toHaveLength(1);
+    expect(run.toasted?.at).toBe(NOW_STAMP);
+  });
+
+  // **出せなかった周を、出せた周と同じに見せない。** 見せると、次に出るのが間隔のぶん先になる。
+  it('画面へ出せなかった周は、出した時刻を残さない', async () => {
+    const run = await check({ ...overdue, screenFails: true });
+
+    expect(run.toasted).toBeUndefined();
+    expect(run.said.join(' ')).toContain('画面へ出せなかった');
+  });
+
+  /**
+   * **2つは役が違う。** issue はいつから何が死んでいるかを残す場所で、画面は気づかせるだけ
+   * ——画面が使えない土台（CIのLinux・PowerShell の無い環境）で issue まで止まると、
+   * **残る先が丸ごと消える。**
+   */
+  it('画面へ出せなくても、issue の側は書く', async () => {
+    const run = await check({ ...overdue, screenFails: true });
+
+    expect(run.told).toBe(true);
+    expect(ran(run, 'issue', 'create')).toBeDefined();
+  });
+
+  /**
+   * **表の升の逃がしを、画面まで持ち込まない。** 表が崩れないように `|` を `\|` へ逃がすのは
+   * 表の都合で、**画面にはそのまま `\|` が見える**——出口の都合は、その出口が引き受ける。
+   */
+  it('表のための逃がしは、画面の文面に混ざらない', async () => {
+    const run = await check({
+      living: [],
+      envs: [{ name: 'A|B', id: 'env|x' }],
+      ledger: { 'A|B': { since: LONG_AGO } },
+    });
+
+    expect(run.screen[0]?.body).toContain('A|B');
+    expect(run.screen[0]?.body).not.toContain('\\|');
+    // **表の側は逃がしたまま。** 両方が同じ綴りになっていれば、どちらかの出口が壊れている。
+    expect(run.body).toContain('A\\|B');
+  });
+
+  // **全部生き返ったら捨てる。** 残すと、次に死んだ周が古い時刻に縛られて、間隔のぶん黙る。
+  it('全部生き返った周は、出した時刻を捨てる', async () => {
+    const run = await check({ toasted: { at: JUST_NOW, faces: 'BRIDGE_ENV' } });
+
+    expect(run.toasted).toBeUndefined();
   });
 });

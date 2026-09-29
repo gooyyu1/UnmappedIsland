@@ -98,6 +98,15 @@ function parseInteraction(
       );
   }
 
+  // 相手を消す操作が、入り切らない端数を黙って捨てる形になっていないか（9.5.1節）。**端数は切り捨てが
+  // 規則**で、書く側にできるのは名乗るかどうかだけ——名乗らせるのは、宣言だけを読んで「残りはどこへ
+  // 行くのか」に答えられるようにするため。
+  if (effect.destroysInstrument && effect.movesFromInstrumentKeepingRemainder)
+    throw new YamlLoadError(
+      `${context}: 相手（instrument）から移して同じ操作でdestroyするので、入り切らない端数は切り捨てに` +
+        "なります。transferへ'allow_overflow: true'を書いて名乗ってください（9.5.1節）。",
+    );
+
   const interaction = new InteractionDef(
     name,
     requirements,
