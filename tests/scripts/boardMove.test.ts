@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { moves as decide } from '../../scripts/daemon/board-move.mjs';
+import { cycleDownNote, moves as decide } from '../../scripts/daemon/board-move.mjs';
 // 打った手の覚えを消す側（`trackIdle`）。**盤面が選ぶ指紋が、あちらの消去に当たらないこと**を
 // 下で留める。
 import { trackIdle } from '../../scripts/daemon/board-round.mjs';
@@ -2140,8 +2140,8 @@ describe('board-move.mjs', () => {
   });
 
   // 手に載る綴りは上の試験が押さえるので、ここが見るのは**その先にファイルがあり、
-  // `dispatch-chore.sh` が要る2つを持っていること**。片方でも欠けると、係は毎周立とうとして
-  // 毎周失敗する（時刻を残さないので、間隔で黙りもしない）。
+  // `dispatch-chore.sh` が要る2つを持っていること**。片方でも欠けると、係は立とうとするたびに
+  // 失敗し続ける（間を空けて立て直すだけで、覚え書きが出たまま一度も立たない。2.17.6）。
   it('周期の係のプロンプトは、題と囲みを持つ', () => {
     for (const move of [TRIAGE, ANALYSIS, POLICY, TREND, REFS, DIG, PATROL]) {
       const text = readFileSync(resolve(__dirname, '../..', move.split(' ')[2]), 'utf-8');
@@ -2196,6 +2196,65 @@ describe('board-move.mjs', () => {
     };
 
     expect(moves(board)).toEqual([PATROL, `TIDY 9 ${NOW}`, 'MERGE 10']);
+  });
+
+  // ## 立てられない係（2.17.6）
+  //
+  // **何も覚えないと毎周打ち直す**——`urgent` の係なら先頭で30秒ごとに同じ失敗を繰り返す。
+  // **間は立てられない状態が続いた長さ**で、下限は `CYCLE_RETRY_FLOOR_MINUTES`、上限は係の間隔。
+  describe('立てられない係', () => {
+    const DOWN_NOTE = `NOTE ${cycleDownNote('patrol')}`;
+    const due = { 'cycle:patrol': '2026-09-05T00:30:00Z' };
+
+    it('立てられなかった直後は、下限の間まで打ち直さない。覚え書きは出す', () => {
+      const taken = {
+        ...due,
+        'cycle-down:patrol': '2026-09-05T01:58:00Z',
+        'cycle-tried:patrol': '2026-09-05T01:58:00Z',
+      };
+      expect(moves({ taken })).toEqual([DOWN_NOTE]);
+    });
+
+    it('下限の間が空いたら、立て直す', () => {
+      const taken = {
+        ...due,
+        'cycle-down:patrol': '2026-09-05T01:55:00Z',
+        'cycle-tried:patrol': '2026-09-05T01:55:00Z',
+      };
+      expect(moves({ taken })).toEqual([PATROL, DOWN_NOTE]);
+    });
+
+    // 続いた長さが次の間になる。40分続いた後は、20分空いただけでは打ち直さない（下限の5分なら
+    // とうに立て直している）。30分続いた後に30分空けば、立て直す。
+    it('続くほど、間が延びる', () => {
+      const waiting = {
+        ...due,
+        'cycle-down:patrol': '2026-09-05T01:00:00Z',
+        'cycle-tried:patrol': '2026-09-05T01:40:00Z',
+      };
+      expect(moves({ taken: waiting })).toEqual([DOWN_NOTE]);
+
+      const retried = {
+        ...due,
+        'cycle-down:patrol': '2026-09-05T01:00:00Z',
+        'cycle-tried:patrol': '2026-09-05T01:30:00Z',
+      };
+      expect(moves({ taken: retried })).toEqual([PATROL, DOWN_NOTE]);
+    });
+
+    // **元の間隔より長くは黙らない**——覚えない理由（失敗したまま間隔ぶん黙る）がそのまま成り立つ。
+    it('間は、係の間隔より長くならない', () => {
+      const taken = {
+        ...due,
+        'cycle-down:patrol': '2026-09-04T00:00:00Z',
+        'cycle-tried:patrol': '2026-09-05T00:59:00Z',
+      };
+      expect(moves({ taken })).toEqual([PATROL, DOWN_NOTE]);
+    });
+
+    it('立てられない控えが無ければ、覚え書きは出ない', () => {
+      expect(moves({ taken: due })).toEqual([PATROL]);
+    });
   });
 
   // **錠を取らない**（2.21.3）。`area:daemon` を握ったまま止まっているセッションが在ることは

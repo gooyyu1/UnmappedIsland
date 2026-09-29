@@ -567,6 +567,29 @@ export function cycleHours(name) {
 }
 
 /**
+ * 周期の係を**立てられなくなった時刻**（台帳の鍵の頭。残りは係の名）。書くのは打つ側
+ * （[`board-round.mjs`](board-round.mjs) の `CHORE`）で、**立てられた周に消える**
+ * （`agent-ops/board-design.md` 2.17.6節）。**始まりだけを覚える**——立て直しを待つ間はここから伸びる。
+ */
+export const CYCLE_DOWN = 'cycle-down:';
+
+/** 周期の係を**最後に立てようとして立てられなかった時刻**（同じく係の名が続く）。 */
+export const CYCLE_TRIED = 'cycle-tried:';
+
+/**
+ * 立てられなかった係を立て直すまでの**下限**（分）。上限は係の間隔（`hours`）で、その間は
+ * **立てられない状態が続いた長さ**——続くほど倍々に延び、**元の間隔より長くは黙らない**（2.17.6）。
+ */
+export const CYCLE_RETRY_FLOOR_MINUTES = 5;
+
+/**
+ * 立てられないまま待っている係の覚え書き。**文面に時刻も回数も入れない**——入れると毎周別の
+ * 覚え書きになり、**出始めた時刻（台帳の `note:`）が毎周0へ戻る**（2.20.3）。
+ */
+export const cycleDownNote = (name) =>
+  `周期の係 ${name} を立てられない（間を空けて立て直している。理由は ~/daemon.log の「打てなかった: CHORE ${name}」の手前）`;
+
+/**
  * 今すぐ配れる `kind:task`（`TASK` に出す候補）を、**`急ぎ` が先、次に完成へ近づける仕事
  * （`advancesGame`）、その中では古い順**に並べる。
  * 一覧は新しい順に返るので、並べ直さないと古い issue が永久に後回しになる。
@@ -1530,6 +1553,20 @@ export function moves(input) {
     const at = Date.parse(input.now ?? '');
     if (!Number.isNaN(since) && at - since < cycle.hours * 3_600_000) {
       continue;
+    }
+    // **立てられないまま続いている係は、間を空けて立て直す**（2.17.6）。毎周打ち直すと、
+    // `urgent` の係は先頭で同じ失敗を30秒ごとに繰り返す。**覚え書きは待っている周にも出す**
+    // ——人へ届くかが、打ち直した回数に左右されないように。
+    const down = Date.parse(taken[`${CYCLE_DOWN}${cycle.name}`] ?? '');
+    if (!Number.isNaN(down)) {
+      notes.push(cycleDownNote(cycle.name));
+      const tried = Date.parse(taken[`${CYCLE_TRIED}${cycle.name}`] ?? '');
+      const last = Number.isNaN(tried) ? down : tried;
+      const wait = Math.min(
+        cycle.hours * 3_600_000,
+        Math.max(CYCLE_RETRY_FLOOR_MINUTES * 60_000, last - down),
+      );
+      if (at - last < wait) continue;
     }
     const flag = DISPATCH_TO[cycle.env ?? DEFAULT_ENV];
     const move = `CHORE ${cycle.name} ${cycle.prompt} ${input.now}${flag === '' ? '' : ` ${flag}`}`;
