@@ -3,7 +3,7 @@
 // （`agent-ops/board-design.md` 2.22節）。
 //
 //   node scripts/daemon/check-values.mjs            # 1回見回る
-//   DRY_RUN=1 node scripts/daemon/check-values.mjs  # 調べるだけ（issue も台帳も書かず、セッションも立てない）
+//   DRY_RUN=1 node scripts/daemon/check-values.mjs  # 調べるだけ（issue も台帳も書かず、画面へも出さず、セッションも立てない）
 //
 // **周期を持つのは呼び手**（[`daemon.sh`](daemon.sh) の `CHECK_INTERVAL`）——手で叩いた
 // 1回が「まだ早い」と言って何もしないのは、叩いた側から見て何も起きていないのと同じ
@@ -39,11 +39,20 @@
 // トークンが切れただけの周に環境IDまで死んだことになる。**確かめられなかった値は、死とも生とも
 // 数えず、それまで数えていた長さもそのまま残す。**
 //
-// ## 告げ先は issue 1本だけ
+// ## 残る先は issue 1本だけ。気づかせるのは画面
 //
-// 告げるのは**題で引く issue 1本**（`TITLE`）。開いていれば本文を丸ごと書き換え、無ければ立てる
+// 残すのは**題で引く issue 1本**（`TITLE`）。開いていれば本文を丸ごと書き換え、無ければ立てる
 // ——**題が鍵なので、同じ死が続いても2本目にならない。** 死んでいる値も、確かめられなかった値も
 // 1つも残らなくなったら閉じる。
+//
+// **issue は、読みに行った人にしか届かない。** 書くのも読むのも同じアカウントなので GitHub の通知は
+// 鳴らず（2.20）、**正しい本文が9日読まれないまま盤面が止まった**（2026-09-20T06:40Z から
+// 09-29T20:07Z、issue #2434）。**だから、読みに行かなくても目に入る先を1つ持つ**
+// ——デーモンが走っているPCの画面へトーストを出す（[`toast.mjs`](toast.mjs)、
+// `agent-ops/board-design.md` 2.22.6節）。
+//
+// **この2つは役が違う。** issue は**いつから何が死んでいるかを残す**場所で、画面は**気づかせる**
+// だけ。だから画面の側は台帳に顔ぶれと時刻しか持たず、**出せなかった周も issue の側は止めない。**
 //
 // **`gh` が死んでいる周は、手元からその issue を書けない。** 書く手がその値そのものだから——
 // 代わりに**クラウドのセッションへ、同じ題・同じ本文で置かせに行く**（`agent-ops/board-design.md`
@@ -60,6 +69,7 @@ import { allOpenIssues } from './board-read.mjs';
 import { boardState } from './board-state.mjs';
 import { envKind, environmentIds, liveSessions } from './live-sessions.mjs';
 import { posix, gh as runGh, runBash } from './spawn.mjs';
+import { toast } from './toast.mjs';
 
 /** 告げ先の題。**2本目を作らない鍵はこれだけ**——台帳が失われても、題が合えば書き換えになる。 */
 export const TITLE = '盤面が動くのに要る値が死んでいる';
@@ -107,6 +117,20 @@ const graceHours = () => hours('VALUE_GRACE_HOURS', 6);
  */
 const retellHours = () => hours('VALUE_RETELL_HOURS', 6);
 
+/**
+ * 同じ顔ぶれの死を、画面へもう一度出すまでの間隔（時間）。
+ *
+ * **顔ぶれが変わった周は、この間隔を待たない**（下の `checkValues`）——増えても減っても、最後に
+ * 出した1件はもう今の姿を述べていない。
+ *
+ * **一度きりにはしない。** 出た瞬間に人が見ているとは限らず、**通知を消してしまえば跡は残らない**
+ * ので、消された後に死んだままなら、もう一度出るのでなければ気づく手が無くなる。
+ */
+const toastHours = () => hours('VALUE_TOAST_HOURS', 6);
+
+/** 画面へ出すときの題。**誰が出したかはここで名乗る**——出す側の名乗りは PowerShell のもの。 */
+const TOAST_TITLE = '盤面が止まっています（UnmappedIsland の見回り）';
+
 /** 台帳の置き場。**1周を回す側の `taken.json` とは分ける**——書き手が違うので、混ぜると潰し合う。 */
 const ledgerPath = (stateDir) => join(stateDir, 'value-check.json');
 
@@ -114,10 +138,18 @@ const ledgerPath = (stateDir) => join(stateDir, 'value-check.json');
 const stamp = (now) => now.toISOString().replace(/\.\d{3}Z$/, 'Z');
 
 /**
- * 表の升。**道具が言った理由をそのまま載せる**ので、改行も `|` も混ざる——**どちらもそこで表が
- * 崩れる**（崩れた表は、値の名前と直し方が別の行に散る）。
+ * 1行へ畳む。**道具が言った理由をそのまま載せる**ので改行が混ざり、**どの出口でもそこで形が
+ * 崩れる**（表なら升が割れ、画面なら1件の通知が縦に伸びる）。
  */
-const cell = (text) => String(text).replace(/\s+/g, ' ').replace(/\|/g, '\\|').trim();
+const oneLine = (text) => String(text).replace(/\s+/g, ' ').trim();
+
+/**
+ * 表の升。畳んだうえで `|` を逃がす——**逃がさないと表が崩れ**、値の名前と直し方が別の行に散る。
+ *
+ * **逃がすのはここだけ。** 表でない出口（`~/daemon.log` の1行・画面のトースト）へ回すと、
+ * **読む人には `\|` がそのまま見える**——出口の都合は、その出口が引き受ける。
+ */
+const cell = (text) => oneLine(text).replace(/\|/g, '\\|');
 
 /**
  * 環境IDごとの直し方。**鍵は [`ccr-env.sh`](ccr-env.sh) が出す名前**（あちらが出す行は
@@ -239,7 +271,9 @@ export async function surveyValues({
     // **道具が言った理由をそのまま載せる。** 切れたのか届かないのかを見分けるのは読む人で、
     // こちらには「返らなかった」しか見えない。
     seen: `\`list_environments\` が返らない（${unreachable ?? ''}）`,
-    remedy: 'このPCで Claude Code を起動し直して、トークンを貼り直させる',
+    // **プロセスを止めて `claude rc` を打っても戻らない**（2026-09-29 に実測。9日ぶんの止まりが
+    // これだった）——貼り直しが起きるのは、対話の口から `/login` を打ったときだけ。
+    remedy: 'このPCで `claude` を起動して `/login` を打つ（`claude rc` では戻らない）',
   });
 
   // **`ccr-env.sh` が出さなかった側は見ない。** ブリッジのIDはCLIが開いていなければ空で、それは
@@ -280,12 +314,12 @@ export async function surveyValues({
 }
 
 /**
- * 台帳を読む。持つのは2つ——死んでいる値がいつからか（`dead`）と、**クラウドへ最後に頼んだ時刻**
- * （`asked`。下の `askCloud`）。
+ * 台帳を読む。持つのは、死んでいる値がいつからか（`dead`）・**クラウドへ最後に頼んだ時刻**
+ * （`asked`。下の `askCloud`）・**画面へ最後に出した時刻と顔ぶれ**（`toasted`。下の `checkValues`）。
  *
  * **読めなければ空。** 失われたときの害は、告げるのが猶予のぶん遅れること・クラウドへもう一度
- * 頼むこと・**告げる表の「いつから」が本当より後の時刻で据え置かれること**（`since` は最初に見た
- * 周で決まる）で、**どれも2本目は立てない**（畳む鍵は題だけ）。
+ * 頼むこと・**画面へもう一度出すこと**・**告げる表の「いつから」が本当より後の時刻で据え置かれる
+ * こと**（`since` は最初に見た周で決まる）で、**どれも2本目は立てない**（畳む鍵は題だけ）。
  *
  * **`dead` を入れ子へ移した周も、同じところへ落ちる**（平らに書かれた古い1本は読めない）。
  * 読み替えは置かない——このリポジトリに後方互換は要らず、置けば**次に形を変える人が、読み替えを
@@ -298,7 +332,7 @@ function readLedger(stateDir) {
   } catch {
     found = {};
   }
-  return { dead: found.dead ?? {}, asked: found.asked };
+  return { dead: found.dead ?? {}, asked: found.asked, toasted: found.toasted };
 }
 
 /**
@@ -353,7 +387,21 @@ function report(due, now) {
  * （`agent-ops/board-design.md`「未決」）。**それでも黙らないのは、後から追えるようにするため。**
  */
 function deadBrief(due) {
-  return due.map((value) => `${cell(value.label)}（${value.since} から）`).join('・');
+  return due.map((value) => `${oneLine(value.label)}（${value.since} から）`).join('・');
+}
+
+/**
+ * 画面の升。**マークダウンを読む者が居ない**ので、印だけ落とす（表の升を作る `cell` と同じで、
+ * 出口の都合はその出口が引き受ける）。
+ */
+const plain = (text) => String(text).replace(/[`*]/g, '');
+
+/**
+ * 画面へ出す1件の中身。**リポジトリも issue も開かずに直せるところまで入れる**——読むのは通知を
+ * 見た人で、そこから先を開くとは限らない。
+ */
+function toastBody(due) {
+  return plain(`${deadBrief(due)}\n直し方: ${due.map((value) => oneLine(value.remedy)).join(' / ')}`);
 }
 
 /**
@@ -492,7 +540,9 @@ export async function checkValues({
   now = new Date(),
   grace = graceHours(),
   retell = retellHours(),
+  reshout = toastHours(),
   ask = askCloud,
+  shout = toast,
   dryRun = process.env.DRY_RUN !== undefined && process.env.DRY_RUN !== '',
   say = console.log,
 } = {}) {
@@ -512,9 +562,12 @@ export async function checkValues({
   // ぶん先になる。**`gh` が生き返ったら捨てる**（死んでいた長さと同じ扱い）——残すと、次に死んだ
   // 周が古い時刻に縛られて、間隔のぶん黙る。
   let asked = ghAlive ? undefined : previous.asked;
+  // 画面へ最後に出した時刻と顔ぶれ。**全部生き返ったら捨てる**（死んでいた長さと同じ扱い）——残すと、
+  // 次に死んだ周が古い時刻に縛られて、間隔のぶん画面へ出ない。
+  let toasted = Object.keys(dead).length === 0 ? undefined : previous.toasted;
   const write = () => {
     if (!dryRun) {
-      writeFileSync(ledgerPath(stateDir), `${JSON.stringify({ dead, asked }, undefined, 2)}\n`);
+      writeFileSync(ledgerPath(stateDir), `${JSON.stringify({ dead, asked, toasted }, undefined, 2)}\n`);
     }
   };
 
@@ -532,6 +585,24 @@ export async function checkValues({
     );
     write();
     return false;
+  }
+
+  // **画面へ出すのは、`gh` の生死を見るより先。** この口は資格情報を1つも通らないので、issue を
+  // 書けない周にも出る（2.22.6）——**告げ先のうち、ここだけが死んだ値と無関係に動く。**
+  const faces = due.map((value) => value.key).join(' ');
+  const lastShout = Date.parse(toasted?.at ?? '');
+  // **顔ぶれが変わった周は、間隔を待たない**——増えても減っても、**最後に出した1件はもう今の姿を
+  // 述べていない**（増えた値は一度も画面に出ておらず、生き返った値は死んでいると言われたまま）。
+  // **読めない時刻は「まだ出していない」と同じに扱う**（`NaN` を比較へ通すと常に false になり、
+  // 台帳が壊れた周から先が**画面へ二度と出なくなる**）。
+  const mayShout =
+    toasted?.faces !== faces ||
+    !Number.isFinite(lastShout) ||
+    lastShout <= now.getTime() - reshout * 3_600_000;
+  if (!dryRun && mayShout) {
+    const shown = shout({ title: TOAST_TITLE, body: toastBody(due) });
+    if (shown) toasted = { at: stamp(now), faces };
+    say(`値の見回り: ${faces} を画面へ${shown ? '出した' : '出せなかった'}`);
   }
 
   const body = report(due, now);
