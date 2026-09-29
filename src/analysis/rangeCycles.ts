@@ -782,10 +782,11 @@ function ticksUntilStageEnteredUpward(
   // 届くまでを**最も長く**見る側（slowest）。押し手が押せる間を最も短く見る側へ揃える。
   const perTick = paceTowards(amounts.possible, 'on_max')?.slowest.amount;
 
-  // 上に段が無ければ、上端より上に出るロールも無い——読みに行かずに済む。
+  // 上端を持たない段（stageUpperBoundOf——上に段が無い・「その段以上」・値の並びの上に位置を持たない）
+  // では、上端より上に出るロールも無い。読みに行かずに答えが決まる。
   const upperBound = stageUpperBoundOf(def, required);
   if (upperBound !== undefined && bornBeyond(def, required, 'on_max', upperBound))
-    return neverCrossesIntoStage(amounts, perTick) ? 'never' : undefined;
+    return neverCrossesIntoStage(def, required, amounts, perTick) ? 'never' : undefined;
 
   return ticksToReach(
     staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
@@ -813,13 +814,14 @@ function ticksUntilStageEnteredDownward(
   // 速さはticksUntilStageEnteredUpwardと同じく、届くまでを**最も長く**見る側（slowest）。
   const perTick = paceTowards(amounts.possible, 'on_min')?.slowest.amount;
 
-  // 下がどこまでも続く受け皿（6.4節）の下端は負の無限大なので、そこより下に出るロールは無い。
+  // 下端より下に出るロールが無い段では、読みに行かずに答えが決まる——値の並びの上に位置を持たない段
+  // （シンボル型、6.6節）は下端をそもそも持たず、下がどこまでも続く受け皿（6.4節）の下端は負の無限大。
   const lowerBound = required.lowerBound;
   const belowStage =
     lowerBound !== undefined &&
     lowerBound > Number.NEGATIVE_INFINITY &&
     bornBeyond(def, required, 'on_min', lowerBound);
-  if (belowStage) return neverCrossesIntoStage(amounts, perTick) ? 'never' : undefined;
+  if (belowStage) return neverCrossesIntoStage(def, required, amounts, perTick) ? 'never' : undefined;
 
   return ticksToFallBelow(
     staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
@@ -861,12 +863,28 @@ function bornBeyond(
  * 入らない」と読むと、押し手に押されて初めて動く値——炉の火力は薪が焚べられて上がる——に縛られた
  * 増減が丸ごと消える。**読めるものが何も無いのは、決して動かないことではない。**
  *
- * **加えて、宣言を1つも数から外していないこと**（TickAmounts.readsEveryDeclaredDelta）。外した分が
- * 段の向こうへ連れていくなら、名指した動きは遠ざける向きの全部ではない。**上の端と下の端で分かれ目が
- * 同じなのはここ**——どちらも「読めた動きが遠ざける」と「読み落とした動きが無い」の対で決まる。
+ * **加えて、その値を動かす宣言を1つも読み落としていないこと。** 読み落とした分が段の向こうから値を
+ * 連れ戻すなら、名指した動きは遠ざける向きの全部ではない。読み落とすのは2通りで、どちらも
+ * tickAmountsOfの数に入らない。
+ *
+ * - 段の宣言の下に置かれた増減（8.2節、TickAmounts.readsEveryDeclaredDelta）——炉の火力がこれ。
+ * - **端で値を戻す宣言**（6.3節、PropertyDef.hasDeclaredRangeEvent）。下がる一方の値でも、下端へ
+ *   届いて熱を入れ直すなら段を何度でも跨ぐ。tick毎の増減ではないので、そちらの数には現れない。
+ *   **著者が書いた端のイベントは、自分の値を戻すかどうかを問わず読み落としとして数える**
+ *   ——控えめに見るほうへ倒しておけば、読み落としの取りこぼしで押し手が消えることは無い
+ *   （既定のクランプは端に留めるだけなので、この述語には入らない）。
+ *
+ * **上の端と下の端で分かれ目が同じなのはここ**——どちらも「読めた動きが遠ざける」と「読み落とした
+ * 動きが無い」の対で決まる。
  */
-function neverCrossesIntoStage(amounts: TickAmounts, perTickAwayFromStage: number | undefined): boolean {
-  return perTickAwayFromStage !== undefined && amounts.readsEveryDeclaredDelta;
+function neverCrossesIntoStage(
+  def: ObjectDef,
+  required: SelfStageRequirement,
+  amounts: TickAmounts,
+  perTickAwayFromStage: number | undefined,
+): boolean {
+  if (perTickAwayFromStage === undefined || !amounts.readsEveryDeclaredDelta) return false;
+  return def.tryGetPropertyDef(required.propertyGlobalId)?.hasDeclaredRangeEvent !== true;
 }
 
 /**

@@ -350,6 +350,66 @@ object_defs:
       - conditions: [{prop: heat, in_stage: warm}]
         add: {parent: {ambient_temperature: 2}}
 
+  # 下端ちょうどに生まれる石。**段は下端を含む半開区間**（6.4節）なので、40はまだwarmの中——
+  # 下がる一方でも「決して入らない」ではなく、下端を割るまで暖める。境目を含む側で数えると、
+  # この石が生まれた時点で段の外に居ることになって押し手が消える。
+  brink_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 40
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 40}
+          - {name: searing, min: 70}
+        passives:
+          - add: {self: {heat: -1}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 上端ちょうどに生まれる石。**上端はちょうどでもう段の外**（同じ半開区間の裏側）なので、70は
+  # searingの側に居て、上がる一方だからwarmへ入る時は来ない。境目を含まない側で数えると、
+  # まだwarmに居ることになって押し手が残る。
+  searing_born_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 70
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 40}
+          - {name: searing, min: 70}
+        passives:
+          - add: {self: {heat: 1}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 焼き直される石。**端で戻るので、段を何度でも跨ぐ**——冷めて下端へ届くと熱を入れ直す宣言
+  # （6.3節のon_min）を持つので、下がる一方に見えて毎周期warmを通る。この戻しはtick毎の増減
+  # （8.4節）ではないのでtickAmountsOfは読まないが、読まないものが値を段の向こうから連れ戻す以上、
+  # 「決して入らない」は言えない。
+  reheated_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 10
+        range: {min: 0, max: 100}
+        on_min:
+          add: {self: {heat: 100}}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 40}
+          - {name: searing, min: 70}
+        passives:
+          - add: {self: {heat: -1}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
   # 個体差のある冷える石。**軽く出れば段より下、重く出れば段の中**——生成時のロール（6.2節）が
   # 10〜50なので、warm（40〜70）に生まれる個体が居る。「決して入らない」は型のすべての個体について
   # 言うことなので、段に最も近い側に出た個体（ここでは重いほう）で見なければ、押し手を落とす。
@@ -1092,6 +1152,28 @@ object_defs:
     // 上の端（banked_stone）の裏返し。下へ抜けたことにしないだけだと、効き始めが0＝最初のtickから
     // 止まらずに効く押し手になる。その値はwarmを決して跨がないので、起こるのは押し手が消えるほう。
     expect(externalDeltasOf('dropped_stone', 'ambient_temperature')).toEqual([]);
+  });
+
+  it('段の下端ちょうどに生まれる値は、まだその段の中に居る', () => {
+    // 段は下端を含む半開区間（6.4節）。境目を含む側で「下端より下」を数えると、この石は生まれた
+    // 時点で段の外に居ることになり、下がる一方なので押し手が消える。実際は下端を割る1 tick目まで暖める。
+    expect(externalDeltasOf('brink_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: 1 },
+    ]);
+  });
+
+  it('段の上端ちょうどに生まれる値は、もうその段の外に居る', () => {
+    // 半開区間の裏側。境目を含まない側で「上端より上」を数えると、この石はまだwarmに居ることになり、
+    // 上がる一方なのに押し手が残る。
+    expect(externalDeltasOf('searing_born_stone', 'ambient_temperature')).toEqual([]);
+  });
+
+  it('端で戻る宣言を持つ値は、下がる一方でも入らないことにしない', () => {
+    // 端で値を戻す宣言（6.3節）はtick毎の増減ではないのでtickAmountsOfが読まないが、読まないものが
+    // 値を段の向こうから連れ戻す。それを「全部読めた」と数えると、毎周期warmを通る押し手が消える。
+    expect(externalDeltasOf('reheated_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
   });
 
   it('段の中に生まれる個体が居るなら、軽く出たほうが段より下でも、入らないことにしない', () => {
