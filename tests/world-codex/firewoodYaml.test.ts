@@ -242,5 +242,7 @@ describe('firewood.yamlの薪割りと薪棚', () => {
     expect(minutesPerFuel('seasoned_firewood'), '乾かす前より安い').toBeLessThan(
       minutesPerFuel('green_firewood'),
     );
-  });
+    // 収支表を組むだけで既定の線（vite.config.tsのtestTimeout）の半分を単独で使い、混み合った回には
+    // 越える。名乗る値は実測のすぐ上に置かない（同節、issue #2376）。
+  }, 30_000);
 });

@@ -782,10 +782,10 @@ function ticksUntilStageEnteredUpward(
   // 届くまでを**最も長く**見る側（slowest）。押し手が押せる間を最も短く見る側へ揃える。
   const perTick = paceTowards(amounts.possible, 'on_max')?.slowest.amount;
 
+  // 上に段が無ければ、上端より上に出るロールも無い——読みに行かずに済む。
   const upperBound = stageUpperBoundOf(def, required);
-  const nearest = nearestToStage(def, required.propertyGlobalId, 'on_max');
-  const everyRollAboveStage = nearest !== undefined && upperBound !== undefined && nearest >= upperBound;
-  if (everyRollAboveStage) return neverCrossesIntoStage(amounts, perTick) ? 'never' : undefined;
+  if (upperBound !== undefined && bornBeyond(def, required, 'on_max', upperBound))
+    return neverCrossesIntoStage(amounts, perTick) ? 'never' : undefined;
 
   return ticksToReach(
     staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
@@ -813,10 +813,13 @@ function ticksUntilStageEnteredDownward(
   // 速さはticksUntilStageEnteredUpwardと同じく、届くまでを**最も長く**見る側（slowest）。
   const perTick = paceTowards(amounts.possible, 'on_min')?.slowest.amount;
 
-  const nearest = nearestToStage(def, required.propertyGlobalId, 'on_min');
-  const everyRollBelowStage =
-    nearest !== undefined && required.lowerBound !== undefined && nearest < required.lowerBound;
-  if (everyRollBelowStage) return neverCrossesIntoStage(amounts, perTick) ? 'never' : undefined;
+  // 下がどこまでも続く受け皿（6.4節）の下端は負の無限大なので、そこより下に出るロールは無い。
+  const lowerBound = required.lowerBound;
+  const belowStage =
+    lowerBound !== undefined &&
+    lowerBound > Number.NEGATIVE_INFINITY &&
+    bornBeyond(def, required, 'on_min', lowerBound);
+  if (belowStage) return neverCrossesIntoStage(amounts, perTick) ? 'never' : undefined;
 
   return ticksToFallBelow(
     staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
@@ -826,20 +829,26 @@ function ticksUntilStageEnteredDownward(
 }
 
 /**
- * 生成時のロール（6.2節）のうち、**その段に最も近い側に出た個体**の値——段から遠ざかる向きが
- * movingAwayTowardなら、その端から最も遠いロール（rollEndAwayFrom）がそれに当たる。
+ * 生成時のロール（6.2節）が、**どれもその段の向こう側に出る**か。movingAwayTowardは値を段から
+ * 遠ざける向きで、boundはその向きに見た段の境目——上へ遠ざかるなら上端、下へ遠ざかるなら下端。
  *
- * **窓の長さを数えるGATE_WINDOW_ROLL_ENDとは別の問い。** あちらは1つの個体についての長さなので端を
- * 固定するが、ここで問うのは「**どの個体も段の向こう側に生まれるか**」。最も近い個体が越えていな
- * ければ言い切れないので、端は向きで裏返る——片方に固定すると、下の端では段の中に生まれる個体が
- * 居るのに押し手を落とす。
+ * 読むのは**段に最も近い側に出た個体**（rollEndAwayFrom）。言い切る相手はその型のすべての個体なので、
+ * 最も近い個体が越えていなければ言い切れない。**窓の長さを数えるGATE_WINDOW_ROLL_ENDとは別の問い**
+ * ——あちらは1つの個体についての長さなので端を固定するが、ここは向きで裏返る。片方に固定すると、
+ * 下の端では段の中に生まれる個体が居るのに押し手を落とす。
+ *
+ * **越えたと言える位置も向きで変わる**（段は下端を含む半開区間、6.4節）——上端はちょうどでもう段の
+ * 外だが、下端はちょうどならまだ段の中。
  */
-function nearestToStage(
+function bornBeyond(
   def: ObjectDef,
-  propertyGlobalId: PropertyGlobalId,
+  required: SelfStageRequirement,
   movingAwayToward: RangeEventLabel,
-): number | undefined {
-  return staticValueOf(def, propertyGlobalId, rollEndAwayFrom(movingAwayToward));
+  bound: number,
+): boolean {
+  const nearest = staticValueOf(def, required.propertyGlobalId, rollEndAwayFrom(movingAwayToward));
+  if (nearest === undefined) return false;
+  return movingAwayToward === 'on_max' ? nearest >= bound : nearest < bound;
 }
 
 /**
