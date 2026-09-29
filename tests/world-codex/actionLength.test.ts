@@ -1,18 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { analysisContextOf } from '../../src/analysis/craftingSteps';
-import { staticResolverOf } from '../../src/analysis/staticValue';
-import { resolveDeclaredNumber } from '../../src/domain/DeclaredNumber';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { InteractionDef } from '../../src/domain/InteractionDef';
 import type {
   ConditionalReading,
-  DeclaredNumberReading,
   EffectReader,
   PickReading,
   TransferReading,
 } from '../../src/domain/EffectReader';
 import type { GateReading, PassivePropertyReading, PassiveReader } from '../../src/domain/PassiveReader';
+import { declaredMinutesOf } from '../support/declaredMinutes';
 import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
@@ -91,13 +88,6 @@ function handsResultAtTheEnd(interaction: InteractionDef): boolean {
   return seeker.found;
 }
 
-/** その宣言が解ける分数（解けなければundefined）。ロールは長いほうの端で見る。 */
-function minutesOf(def: ObjectDef, reading: DeclaredNumberReading | undefined): number | undefined {
-  if (reading === undefined) return 0;
-  const resolve = staticResolverOf(def, 'highest', analysisContextOf(codex).resolve);
-  return resolveDeclaredNumber(reading, resolve);
-}
-
 /** 世界じゅうの持続効果が、そのプロパティへ積む量（押し上げる向きだけ）。 */
 class UpwardPushCollector implements PassiveReader {
   readonly amounts: number[] = [];
@@ -148,7 +138,7 @@ describe('1回の行動は1時間を超えない', () => {
         if (!handsResultAtTheEnd(interaction)) continue;
         checked += 1;
 
-        const minutes = minutesOf(def, interaction.durationReading);
+        const minutes = declaredMinutesOf(codex, def, interaction.durationReading);
         if (minutes === undefined) {
           tooLong.push(`${def.name} の ${interaction.name}: 所要時間が定義から解けない`);
           continue;
@@ -213,7 +203,7 @@ describe('1回の行動は1時間を超えない', () => {
         if (!slotDef.hasPutInDuration) continue;
         checked += 1;
 
-        const minutes = minutesOf(def, slotDef.putInDurationReading);
+        const minutes = declaredMinutesOf(codex, def, slotDef.putInDurationReading);
         if (minutes === undefined || minutes > LONGEST_MINUTES)
           tooLong.push(`${def.name} の枠 ${slotDef.name}: ${minutes ?? '定義から解けない'}分`);
       }
