@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { commentsOnly } from '../../scripts/codeComments.mjs';
 import {
   COMMENTED_EXTENSIONS,
+  isPendingDecision,
   isProseData,
   isRefRuleExempt,
   refProseOf,
@@ -464,6 +465,19 @@ describe('説明の参照', () => {
     // `docs/` の文書だけで数は足りるので、外側が落ちても上の検査は緑になる。
     const outside = SCANNED.filter((rel) => rel.endsWith('.md') && !rel.startsWith(`docs${sep}`));
     expect(outside, '走査が `docs/` の中だけへ戻っている').not.toEqual([]);
+  });
+
+  it('未処理の判断の履歴は、解釈の節だけが走査に入っている', () => {
+    // 今の履歴には切れた名前が無いので、射程が `isVerbatimRecord` へ戻っても上の検査は緑になる。
+    // 原文の側が入ると、緑へ戻す手が原文の改変しか無くなる（DocumentStyle.md 10節）。
+    const pending = SCANNED.filter(isPendingDecision);
+    expect(pending, '判断の履歴が走査から落ちている').not.toEqual([]);
+    const docs = PROSE.find(({ files }) => files === DOCUMENTS);
+    if (docs === undefined) throw new Error('文書の走査が無い');
+    const said = pending.filter((rel) =>
+      docs.proseOf(rel).some(({ text }) => text.startsWith('## ユーザーの発言')),
+    );
+    expect(said, '判断の履歴の原文の側まで走査している').toEqual([]);
   });
 
   it('`.ts` 以外のコメントも、宣言へ書いた散文も、走査に入っている', () => {

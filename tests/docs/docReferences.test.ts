@@ -85,7 +85,7 @@ const DOC_FILES = listFiles('docs', ['.md']);
 /**
  * リポジトリが追跡しているMarkdownすべて。**参照の規約を課す側も指し先も、ここから絞って作る**
  * ——`docs/` の外にも規約は掛かる（DocumentStyle.md 10節）ので、既定は「全部」で、外すものだけを
- * 述語で名指しする（`isVerbatimRecord`・`isAnalysisRecord`）。
+ * 述語で名指しする（`isRefRuleExempt`・`isAnalysisRecord`）。
  *
  * **射程を決めるのは [`docScope.mjs`](../../scripts/docScope.mjs)**——同じ規約を課す
  * `docMemberReferences.test.ts` と同じ1つ。別に持つと、片方だけが `docs/` に取り残される。
