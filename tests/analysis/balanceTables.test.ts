@@ -1024,3 +1024,135 @@ object_defs:
     expect(tables.gaps).toEqual([]);
   });
 });
+
+/**
+ * 道具の持ち込み（`imported`）と、経路の起点（`rootedHere`）の分かれ目（issue #2313。
+ * BalanceStats.md「連鎖表」の `imported`）。
+ *
+ * 道具の `imported` は入手連鎖を伝う——持ち込んだ石を打った刃物も持ち込みが要る。一方、土地の表から
+ * 経路を外すのは**その土地に置けない前提**だけで、持ち運べる道具（`item`）は外さない。
+ */
+describe('道具の持ち込みと、経路の起点', () => {
+  const YAML = `
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      hydration:
+        value: 96
+        range: {min: 0, max: 96}
+        passives:
+          - add: {self: {hydration: -1}}
+
+  quarry:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 60
+        spawn: [{object: stone, into: self}, {object: spring, into: self}]
+
+  grove:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 30
+        spawn: {object: fruit_tree, into: self}
+
+  stone:
+    tags: [item]
+    interactions:
+      knap:
+        trigger: menu
+        duration: 20
+        destroy: self
+        spawn: {object: blade}
+
+  blade:
+    tags: [item]
+
+  spring:
+    tags: [fixture]
+    interactions:
+      scoop:
+        trigger: menu
+        duration: 5
+        spawn: {object: spring_water}
+
+  fruit_tree:
+    tags: [fixture]
+    interactions:
+      pick:
+        trigger: {drag: {object: stone}}
+        duration: 5
+        spawn: {object: fruit}
+
+  fruit:
+    tags: [item]
+    interactions:
+      cut:
+        trigger: {drag: {object: blade}}
+        duration: 5
+        destroy: self
+        spawn: {object: fruit_water}
+
+  fruit_water:
+    tags: [item]
+    interactions:
+      drink:
+        trigger: menu
+        duration: 5
+        destroy: self
+        add: {agent: {hydration: 96}}
+
+  spring_water:
+    tags: [item]
+    interactions:
+      drink:
+        trigger: menu
+        duration: 5
+        destroy: self
+        add: {agent: {hydration: 96}}
+`;
+
+  const tables = buildBalanceTables(
+    new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset(),
+    'medic',
+  );
+
+  /** その土地の表で、hydrationを埋める経路のうち末尾の工程が指定の型のもの。無ければundefined。 */
+  const routeEndingAt = (objectName: string, placeName: string) =>
+    tables.places
+      .find((place) => place.name === placeName)!
+      .properties.find((chains) => chains.propertyName === 'hydration')
+      ?.routes.find((route) => route.route.steps.at(-1)?.objectName === objectName)?.route;
+
+  it('持ち込んだ材料で作った道具は、材料と同じく持ち込みになる', () => {
+    // 果樹林では石が採れない。刃物はそこで石を打って作れるが、その石は持ち込み。
+    const route = routeEndingAt('fruit_water', 'grove')!;
+    const importedOf = (label: string) =>
+      route.prerequisites.find((prerequisite) => prerequisite.label === label)?.imported;
+
+    expect([importedOf('stone'), importedOf('blade')]).toEqual([true, true]);
+    expect(route.needsImport).toBe(true);
+  });
+
+  it('持ち運べる道具の持ち込みでは、経路は土地の表から落ちない', () => {
+    // 果樹林の経路は果樹林の探索を含まない（果樹は前提として並ぶ）ので、起点を決めるのは前提の側。
+    const route = routeEndingAt('fruit_water', 'grove')!;
+
+    expect(route.steps.map((step) => step.objectName)).not.toContain('grove');
+    expect(route.rootedHere).toBe(true);
+  });
+
+  it('他の土地にしか無い採取ポイントが要る経路は、その土地の表に載らない', () => {
+    // 泉は石切り場にしか無く、持ち運べない。果樹林から泉の水を汲む経路は果樹林を起点にしない。
+    expect(routeEndingAt('spring_water', 'quarry')).toBeDefined();
+    expect(routeEndingAt('spring_water', 'grove')).toBeUndefined();
+  });
+});
