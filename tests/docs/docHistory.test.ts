@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { commentParts } from '../../scripts/codeComments.mjs';
 import { historyDocs } from '../../scripts/docScope.mjs';
 
 /**
@@ -46,18 +47,18 @@ function filesIn(dir: string, extension: string): string[] {
   return found;
 }
 
-/** その行がコメントの一部か（ブロックの途中も含む）。データの中の語まで見ないための線。 */
-function isComment(line: string): boolean {
-  const trimmed = line.trim();
-  return trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*');
-}
-
-function historyIn(file: string, lookAt: (line: string) => boolean): string[] {
+/**
+ * `onlyComments` はソースを見るとき。データの中の語まで見ないための線で、コメントかどうかは
+ * {@link commentParts} が決める。
+ */
+function historyIn(file: string, onlyComments: boolean): string[] {
   const found: string[] = [];
-  readFileSync(join(ROOT, file), 'utf-8')
+  const text = readFileSync(join(ROOT, file), 'utf-8');
+  const comments = onlyComments ? commentParts(text, file) : null;
+  text
     .split('\n')
     .forEach((line, index) => {
-      if (!lookAt(line)) return;
+      if (comments !== null && comments[index] === null) return;
       for (const marker of MARKERS) {
         if (line.includes(marker)) found.push(`${file}:${index + 1} 「${marker}」 ${line.trim()}`);
       }
@@ -86,12 +87,12 @@ describe('9.1節の表から引いた文書が、走査した文書と噛み合�
 
 describe('経緯を主題としない文書は、過去の姿を語らない', () => {
   it.each(DOCUMENTS)('%s', (doc) => {
-    expect(historyIn(doc, () => true)).toEqual([]);
+    expect(historyIn(doc, false)).toEqual([]);
   });
 });
 
 describe('コメントは、過去の姿を語らない', () => {
   it.each(SOURCES)('%s', (source) => {
-    expect(historyIn(source, isComment)).toEqual([]);
+    expect(historyIn(source, true)).toEqual([]);
   });
 });
