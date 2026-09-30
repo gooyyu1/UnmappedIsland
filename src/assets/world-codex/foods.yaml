@@ -307,6 +307,16 @@ object_defs:
           - conditions:
               - {subject: agent, prop: skill_cooking, in_stage_or_above: skilled}
             modify: {self: {chop_minutes: -15}}
+      # 刻んだ手が上出来に仕上げる重み（docs/world/Skills.md 5.4節）。素の値は芋が持ち、刻んでいる間は
+      # 作り手の上乗せを継ぐ（火口のignition_chanceと同じ形、同5節）。
+      fine_chance:
+        value: 10
+        base: {subject: agent, prop: cooking_flair}
+      # 焼き上がって何になるか。**出来は刻んだときに決まり、焼き上がりはそれを読むだけ**——焼き上げる
+      # 炉の端（on_max）には操作者が居ないので、作り手の腕はそこから見えない（GameElementDefinition.md
+      # 11.5節）。刻まずに焼いた芋は、腕の出番が無かったので普段の出来のまま。
+      roasts_into_plain: {value: 1}
+      roasts_into_fine: {value: 0}
       # **肉より長くかける。** 針状結晶を壊すには芯まで熱を通す必要があり、生焼けでは食べられない。
       # 炎（3/tick）なら10 tick（2時間30分）。刻んであれば上乗せが乗る（上のprepped）ので6 tick（1時間30分）。
       cooking_progress:
@@ -314,7 +324,11 @@ object_defs:
         range: {min: 0, max: 30}
         on_max:
           destroy: self
-          spawn: {object: roasted_taro}
+          pick:
+            - weight: {prop: roasts_into_plain}
+              spawn: {object: roasted_taro}
+            - weight: {prop: roasts_into_fine}
+              spawn: {object: roasted_taro_fine}
     # **塩漬けにはできない**（salt.yamlのcure軸を名乗らない）。海鳥の卵・殻の中のヤシの実と同じ線
     # （voyage.yaml・coconut.yaml）で、**上の遅さがそのまま理由**——土の中で眠る塊茎は皮が水を抱えた
     # ままにしているからこの段に居るので、隔てているものが既に塩の仕事をしている。
@@ -360,6 +374,12 @@ object_defs:
         # **余分の卓は持たない。** 刻んでも芋は1つのままで、増えるのは切り口だけ
         # （docs/world/Skills.md 7節の、まとめて取れる物ではない側）。
         add: {agent: {skill_cooking: 1}}
+        # 出来を決める（docs/world/Skills.md 5.4節）。**腕は上出来の側にだけ積む**——普段の出来へ
+        # 積まないのは、狩猟が空振りへ積まないのと同じ（同5節）。
+        pick:
+          - weight: 100
+          - weight: {prop: fine_chance}
+            add: {self: {roasts_into_plain: -1, roasts_into_fine: 1}}
         become: {prep: chopped}
 
   # prep軸の値。**traitsだけを宣言する**（3.5.1節）——変種へ配られるのは上のpreppedで、この型自身の
@@ -399,6 +419,45 @@ object_defs:
             protein: 2
             vitamin: 24
             happiness: 6
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {agent: {satiety: 0}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
+        destroy: self
+
+  # 上出来に焼けたタロイモ（docs/world/Skills.md 5.4節）。**違うのは食べたときの幸福度だけ**で、
+  # 重さも腹の足しも傷み方も普段の出来（上のroasted_taro）と同じ（tests/world-codex/foodsYaml.test.tsが
+  # 見張る）。**絵も同じ1枚**——見分けは名前で付ける。
+  roasted_taro_fine:
+    tags: [item, food, roastable, fine_dish]
+    traits: [perishable, spoils_fast]
+    art: roasted_taro
+    props:
+      weight: {value: 600}
+      volume: {value: 700}
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 15}
+        on_max:
+          destroy: self
+          spawn: {object: charred_lump}
+    interactions:
+      eat:
+        trigger: menu
+        conditions:
+          - reason: too_full
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
+        duration: 15
+        add:
+          agent:
+            satiety: 550
+            carbohydrate: 48
+            protein: 2
+            vitamin: 24
+            happiness: 9
         pick:
           - weight: 100
           - weight: {prop: spoilage}

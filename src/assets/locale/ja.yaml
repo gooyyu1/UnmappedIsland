@@ -319,7 +319,7 @@ object_texts:
       skill_cooking:
         display_name: 料理
         icon: 🍳
-        description: 食材を調理する腕。下ごしらえをするほど上がる（焼くのは火が進める）。
+        description: 食材を調理する腕。下ごしらえをするほど上がる（焼くのは火が進める）。上がるほど上出来に仕上がる。
       skill_preserving:
         display_name: 保存
         icon: 🧂
@@ -352,6 +352,10 @@ object_texts:
         display_name: 繊維の無駄の無さ
         icon: ♻️
         description: 同じ繊維から余分が取れる重み。繊維・編みの腕が上がるほど大きくなる。
+      cooking_flair:
+        display_name: 料理の冴え
+        icon: 🍠
+        description: 作った物が上出来に仕上がる重みへの上乗せ。料理の腕が上がるほど大きくなる。
       afloat:
         display_name: 浮いている
         description: 水に浮かんでいるか。帆のような部品は、浮いている間だけ効く。
@@ -771,6 +775,9 @@ object_texts:
   roasted_taro:
     display_name: 焼いたタロイモ
     description: 熾火に埋めて芯まで焼いた芋。ここまでやって、初めて食べられる。出し忘れると焦げる。
+  roasted_taro_fine:
+    display_name: 上手に焼けたタロイモ
+    description: 丁寧に刻んだ芋が、ほくほくに焼き上がった。同じ芋でも、食べたときの嬉しさが違う。出し忘れると焦げる。
 
   # 製塩と塩蔵（salt.yaml）。
   salt:

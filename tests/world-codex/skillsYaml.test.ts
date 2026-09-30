@@ -178,6 +178,8 @@ const SKILLS_WITH_ONE_ENTRY = ['skill_cooking', 'skill_firecraft', 'skill_knappi
  */
 const CRAFTING_BONUSES = [
   { skill: 'skill_cordage', bonus: 'cordage_thrift', byStage: [0, 10, 25, 60] },
+  // 作った物が上出来になる重み（docs/world/Skills.md 5.4節）。
+  { skill: 'skill_cooking', bonus: 'cooking_flair', byStage: [0, 10, 25, 60] },
 ] as const;
 
 /** 無駄の無さの上乗せの名前の尻尾（docs/world/Skills.md 7節の`<腕>_thrift`）。 */
