@@ -590,7 +590,7 @@ esac
 describe('board-labels.yml の冒頭の一覧', timeoutOnWindows(30_000), () => {
   /** 冒頭のコメント（`on:` より前）の箇条書きが、末尾で名指ししている job 名。 */
   function listedJobs(): Set<string> {
-    const header = readFileSync(WORKFLOW, 'utf-8').split(/\r?\n/);
+    const header = readFileSync(WORKFLOW, 'utf-8').split("\n");
     const end = header.findIndex((line) => line.startsWith('on:'));
     if (end < 0) throw new Error('`on:` が見つからない');
     return new Set(
