@@ -38,10 +38,18 @@ traits:
   lightable:
     tags: [lightable]
     props:
-      # 灯っているか。火を移すと立ち、燃え尽きると物ごと消えるので0へは戻らない。
+      # 灯っているか。火を移すと立ち、野ざらしの雨に打たれると0へ戻る。
       lit:
         value: 0
         range: {min: 0, max: 1}
+        passives:
+          # 雨ざらしの明かりは消える（docs/engine/FireSystem.md 8.2節）。条件は炉の雨（hearthのheat）と
+          # 同じで、屋根の下（sheltered）なら効かない。**火口の湿りと違って地面に出しているかを問わない**
+          # ——手に持って歩く松明が雨で消えることが、この節の中身だから。
+          - conditions:
+              - {subject: ancestor, prop: sheltered, eq: 0}
+              - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
+            add: {self: {lit: -1}}
 
   # 火起こし具で火が付けられる物。摩擦で得られるのは米粒ほどの熾なので、受け止められるのは
   # ほぐした繊維・綿状のものだけ（docs/engine/FireSystem.md 3.2節）。
