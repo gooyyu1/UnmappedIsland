@@ -112,9 +112,11 @@ jungle:
 character:
   props:
     hand_brightness:
+      tags: [action_brightness]
       value: 0
       base: {subject: ancestor, prop: hand_brightness}      # 場所の手元（据え付けの光源を含む）
     looking_brightness:
+      tags: [action_brightness]
       value: 0
       base: {subject: ancestor, prop: ambient_brightness}   # 場所の環境光だけ
 ```

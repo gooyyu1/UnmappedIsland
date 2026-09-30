@@ -12,7 +12,7 @@ const ACTION_BRIGHTNESS_TAG = 'action_brightness';
  * 何も見ずに緑になる。
  *
  * **タグは `tryGetId` で引く**（`PlayScreenView` の `STATUS_TAG` と同じ）。`WorldVocabulary` のように
- * intern すると、宣言していない世界にも空のカテゴリが生え、プロパティのタブの並びへ混ざる。
+ * intern すると、宣言していない世界のプロパティタグの名前空間にも、誰も宣言していない名前が載る。
  */
 export function actionBrightnessPropertiesOf(codex: WorldCodex): readonly string[] {
   const tagId = codex.propertyTagNames.tryGetId(ACTION_BRIGHTNESS_TAG);
