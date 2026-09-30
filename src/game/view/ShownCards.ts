@@ -693,7 +693,6 @@ function stackWithAwaitingMark(stack: ObjectCardStack, awaited: readonly number[
     visibleSlots: [],
     contentsFor: () => undefined,
     place: stack.place,
-    objectGlobalId: stack.objectGlobalId,
     movedIds: () => [],
   };
 }

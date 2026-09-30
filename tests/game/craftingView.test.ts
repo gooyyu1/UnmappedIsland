@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import type { Slot } from '../../src/domain/Slot';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { craftingActions, craftingMaterials } from '../../src/game/view/craftingView';
+import type { ObjectCardStack, SlotView } from '../../src/game/view/PlayScreenView';
+import { slotCells } from '../../src/game/view/slotCells';
 import { parseLocale } from '../../src/locale/Localization';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import type { MiniGame } from '../support/miniGame';
@@ -68,6 +71,17 @@ ui_texts:
 `,
   );
   const actionsOn = (mini: MiniGame, target: WorldObject) => craftingActions(target, mini.game, locale);
+
+  /** 材料の枠の並びに効かない宣言だけを埋めたスロット（materialsは試験の側で渡す）。 */
+  const EMPTY_SLOT_VIEW: SlotView = {
+    key: 'materials',
+    label: '材料',
+    cells: 'grows',
+    acceptsCards: true,
+    background: undefined,
+    materials: undefined,
+    typesShownInEmptyCells: [],
+  };
 
   it('製作中でない物は、操作も材料の枠も持たない', () => {
     const mini = miniGame(WORLD);
@@ -269,5 +283,88 @@ object_defs:
       '並びは要求の順',
     ).toEqual([true, false]);
     expect(materials?.map((material) => material.needed)).toEqual([2, 3]);
+  });
+
+  /** 刃物1つ（道具）と尖った石2つ（素材）を要求する工程。尖った石は刃物にも当てはまる。 */
+  const CORD_WORLD = `
+in_progress_tags: [item]
+object_defs:
+  sharp_stone: {tags: [item, cutting_tool]}
+  stone_axe: {tags: [item, cutting_tool]}
+  cord:
+    tags: [item]
+    recipes:
+      basic:
+        steps:
+          - requires:
+              - {tag: cutting_tool, count: 1, consume: false}
+              - {object: sharp_stone, count: 2, consume: true}
+            duration: 30
+`;
+
+  /** 紐を作りかけの状態で足元に置き、その材料スロットと一緒に返す。 */
+  function startCord(mini: MiniGame): { readonly wip: WorldObject; readonly slot: Slot } {
+    const wip = mini.createObject(inProgressObjectName('cord', 'basic'), mini.slot('items', mini.land));
+    return { wip, slot: wip.getSlot(mini.codex.vocabulary.engine.materialsSlotId) };
+  }
+
+  /** 材料スロットの中身を、そのまま画面の束として並べた枠（slotCells）。 */
+  function materialCellsOf(wip: WorldObject) {
+    const stacks = wip.getSlot(wip.session.codex.vocabulary.engine.materialsSlotId).stacks.map(
+      (objects) =>
+        ({
+          objects,
+          name: objects[0].def.name,
+          count: objects.length,
+        }) as unknown as ObjectCardStack,
+    );
+    return slotCells(
+      { ...EMPTY_SLOT_VIEW, materials: craftingMaterials(wip) },
+      stacks,
+      stacks,
+      0,
+      (objectGlobalId) => ({ icon: '📦', name: String(objectGlobalId) }),
+    );
+  }
+
+  it('要求が重なっても、縁の色と数は実際に当てられた要求の枠に出る', () => {
+    // 尖った石は刃物にも当てはまるが、石斧が刃物を受け持つので、石は2つとも`sharp_stone`へ当たる。
+    // 型から要求を引くと石は先に書いた刃物の枠へ行き、`sharp_stone`の枠は空のまま「2/2」が出ない。
+    const mini = miniGame(CORD_WORLD);
+    const { wip, slot } = startCord(mini);
+    mini.createObject('stone_axe', slot);
+    for (let i = 0; i < 2; i += 1) mini.createObject('sharp_stone', slot);
+
+    const cells = materialCellsOf(wip);
+
+    expect(
+      cells.map((cell) => [cell.card?.name, cell.overlay]),
+      'どちらの要求も入っているので、空き枠は足されない',
+    ).toEqual(
+      expect.arrayContaining([
+        ['sharp_stone', '2/2'],
+        ['stone_axe', undefined],
+      ]),
+    );
+    expect(cells).toHaveLength(2);
+  });
+
+  it('同じ型の物は、入れた枠の要求へ当たるので、束が2つの要求にまたがらない', () => {
+    // 尖った石3つは刃物の枠へ1つ、sharp_stoneの枠へ2つ入る。置いたとおりで揃うので、割り当ても
+    // そのとおりになる——振り替えると2つの束の中身が両方の要求に分かれ、1つしか無い札に「2/2」が出る。
+    const mini = miniGame(CORD_WORLD);
+    const { wip, slot } = startCord(mini);
+    for (let i = 0; i < 3; i += 1) mini.createObject('sharp_stone', slot);
+
+    const cells = materialCellsOf(wip);
+
+    expect(
+      slot.stacks.map((stack) => stack.length),
+      '枠ごとの束',
+    ).toEqual([1, 2]);
+    expect(cells.map((cell) => [cell.card?.count ?? 1, cell.overlay])).toEqual([
+      [1, undefined],
+      [2, '2/2'],
+    ]);
   });
 });

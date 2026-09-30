@@ -65,7 +65,8 @@ function plainCells(
  * 「入っている物」と「まだ入っていない要求」で、それ以外の空き枠は出さない。
  *
  * **材料スロットの空き枠はここでは使わない。** スロットは要求ごとの枠を持つ（inProgressObjects）が、
- * どの枠がどの要求のものかは中身からしか辿れず、空の枠では決められない。空の枠をそのまま並べると、
+ * 映しの層へは枠の受け入れが届かず（SlotView）、どの枠がどの要求のものかは入っている物が当てられた
+ * 要求からしか辿れないので、空の枠では決められない。空の枠をそのまま並べると、
  * 透かしの入らない枠が要求の数だけ並び、その後ろに透かしの入った枠が続くことになる。
  *
  * materialsは残りの工程が要求している型（要求の順、craftingMaterials）。cycleは拍で、タグで書かれた
@@ -78,20 +79,28 @@ function materialCells(
   cycle: number,
   cardOfType: (objectGlobalId: ObjectGlobalId) => CardContent,
 ): readonly LaneCell[] {
-  // 枠に入っている物から、それがどの要求のものかを引く。**タグの要求は当てはまる型が複数ある**ので、
-  // 型からの逆引きは1対1にならず、ここでは先に書いた要求を採る。
+  // 枠に入っている物が、どの要求へ当てられたか（CraftingMaterial.allocated）。**型からは引かない**
+  // ——タグの要求は当てはまる型が複数あり、当てる先は成立する組み合わせを探して振り替えられるので、
+  // 型から引くと実際に消える物と縁の色・数の出る枠がずれる。
   //
-  // **これは近似で、割り当ての答え（crafting.allocateContentsToRequirements）とは食い違いうる。**
-  // 当てる先は成立する組み合わせを探して振り替えられるので、要求が重なる工程では、実際に消える物と
-  // 縁の色・数の出る枠がずれる。ここへ本当の割り当てを渡すには、個体ごとの割り当て先を映しの側まで
-  // 運ぶ必要がある（今は型しか届かない）。
-  const materialOf = (objectGlobalId: ObjectGlobalId | undefined): CraftingMaterial | undefined =>
-    objectGlobalId === undefined
-      ? undefined
-      : materials.find((material) => material.objectGlobalIds.includes(objectGlobalId));
+  // 束の中身が2つの要求に分かれて当たることがある（置いたとおりでは揃わず振り替えたとき、別々の
+  // 工程で当たったとき、crafting.allocateContentsToRequirements）。印を出せる要求は1つなので、多く
+  // 当たっているほうを、並ぶ数が同じなら要求の順（今の工程が先）で先のほうを採る。どれにも当たって
+  // いない物は印を持たない。貸し出して待ち印だけが残った束も、待っている個体（awaited）で引く。
+  const materialOf = (stack: ObjectCardStack | undefined): CraftingMaterial | undefined => {
+    if (stack === undefined) return undefined;
+    const members = [...stack.objects.map((object) => object.instanceId), ...(stack.awaited ?? [])];
+    let chosen: CraftingMaterial | undefined;
+    let chosenCount = 0;
+    for (const material of materials) {
+      const count = members.filter((id) => material.allocated.has(id)).length;
+      if (count > chosenCount) [chosen, chosenCount] = [material, count];
+    }
+    return chosen;
+  };
 
   const marksFor = (material: CraftingMaterial | undefined): LaneCell => {
-    // もう要求されない型は、取り出すための枠が残るだけで印は持たない。
+    // どの要求にも当たっていない物は、取り出すための枠が残るだけで印は持たない。
     if (material === undefined) return {};
     return {
       // 空き枠のうちに何を入れる枠なのかを見せる（EmptyCard）。
@@ -102,11 +111,11 @@ function materialCells(
     };
   };
 
-  const shown = new Set(stacks.map((stack) => materialOf(stack?.objectGlobalId)));
+  const shown = new Set(stacks.map(materialOf));
   const cells: LaneCell[] = [];
   cards.forEach((card, index) => {
     if (card === undefined) return;
-    cells.push({ card, ...marksFor(materialOf(stacks[index]?.objectGlobalId)) });
+    cells.push({ card, ...marksFor(materialOf(stacks[index])) });
   });
 
   // まだ1つも入っていない要求の空き枠を、要求の順に足す。
