@@ -16,6 +16,7 @@ describe('WorldSession.advanceWorldTimeによる時間進行', () => {
     return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
+  /** 刻みを引数に取るのは、1tickの長さが暦の定数ではなく世界の宣言に従うことを確かめるため。 */
   function buildWorld(minutesPerTick = MINUTES_PER_TICK): {
     codex: WorldCodex;
     session: WorldSession;
