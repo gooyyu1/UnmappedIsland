@@ -39,10 +39,10 @@ interface Board {
   mainHead?: string;
   prs?: readonly unknown[];
   /**
-   * マージ済みPRとそのコメント。**後片付けの相手**（`board-move.mjs` の `TIDY`）と、スメルを拾う係の
-   * `due`（同 `CYCLES`）が読む。
+   * マージ済みPRとそのコメント。**後片付けの相手**（`board-move.mjs` の `TIDY`）と、閉じ損ねを閉じる手
+   * （同 `CLOSE`）と、スメルを拾う係の `due`（同 `CYCLES`）が読む。
    */
-  mergedPrs?: readonly { number: number; body?: string; baseRefName?: string }[];
+  mergedPrs?: readonly { number: number; body?: string; baseRefName?: string; mergedAt?: string }[];
   /** 後片付けをまだ打っていない形にするか。既定は打った後（下の `TIDIED_ALREADY`）。 */
   untidied?: boolean;
   /** `archive/` に入っていない判断の履歴の数。価値観を畳む係の `due` が読む。 */
@@ -262,7 +262,7 @@ describe('board-move.mjs', () => {
   // **GitHub はマージで `Closes` の issue を閉じ損ねることがある**（issue #2483。2026-09-30 に
   // 10本以上続いた）。閉じ損ねた担当を持つワーカーは畳まれず、停滞として起こされ、人へ返っていた。
   describe('マージ済みPRが閉じ損ねた担当', () => {
-    const merged = { number: 9, body: 'Closes #8\n\nfoot', baseRefName: 'main' };
+    const merged = { number: 9, body: 'Closes #8\n\nfoot', baseRefName: 'main', mergedAt: QUIET };
     const openTask = { number: 8, ...label('kind:task'), blockedBy: { nodes: [] } };
 
     it('盤面が自分で閉じる', () => {
@@ -279,6 +279,18 @@ describe('board-move.mjs', () => {
     it('`main` 以外へ入ったPRの `Closes` では閉じない', () => {
       const board = { mergedPrs: [{ ...merged, baseRefName: 'claude/lower' }], issues: [openTask] };
       expect(moves(board).filter((move) => move.startsWith('CLOSE '))).toEqual([]);
+    });
+
+    // GitHub が閉じるのはマージの少し後なので、直後の周に打つと閉じ損ねていないものへ書き残す。
+    it('マージから落ち着くまでは閉じない', () => {
+      const board = { mergedPrs: [{ ...merged, mergedAt: NOW }], issues: [openTask] };
+      expect(moves(board)).toEqual([]);
+    });
+
+    // 閉じる手に繋がるので、見回りや分析のPRが文中で引いた他のPRの `Closes` は拾わない。
+    it('文中で引かれた `Closes` では閉じない', () => {
+      const quoted = { ...merged, body: 'PR #2481（`Closes #8`）は閉じなかった' };
+      expect(moves({ mergedPrs: [quoted], issues: [openTask] })).toEqual(['TASK 8']);
     });
 
     it('後片付けより後、マージより先に打つ', () => {

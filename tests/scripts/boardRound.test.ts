@@ -526,7 +526,9 @@ describe('board-round.mjs', () => {
   // 開け直した担当を窓のあいだ閉じ直し続ける。
   describe('マージ済みPRの `Closes` が閉じ損ねた担当', () => {
     const world = {
-      mergedPrs: [{ number: 9, comments: [], body: 'Closes #8', baseRefName: 'main' }],
+      mergedPrs: [
+        { number: 9, comments: [], body: 'Closes #8', baseRefName: 'main', mergedAt: '2026-09-05T01:00:00Z' },
+      ],
       issues: [
         {
           number: 8,

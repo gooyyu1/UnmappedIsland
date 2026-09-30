@@ -34,7 +34,7 @@
 //     "mainChecks": [ { "status": "COMPLETED", "conclusion": "SUCCESS" } ],   … `main` の先頭のCI
 //     "mainHead": "<`main` の先頭の指紋>",   … 差し戻しの指紋に入れる（2.14.2 の `mendMark`）
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments ],
-//     "mergedPrs":[ gh pr list --state merged --search merged:>=<窓の始まり> --json number,comments,body,baseRefName ],   … 後片付けと閉じ損ねの相手と、スメルを拾う係が読む範囲
+//     "mergedPrs":[ gh pr list --state merged --search merged:>=<窓の始まり> --json number,comments,body,baseRefName,mergedAt ],   … 後片付けと閉じ損ねの相手と、スメルを拾う係が読む範囲
 //     "pendingDecisions": 12,   … `agent-ops/decisions/` のうち `archive/` に入っていない件数
 //     "unsummarizedAnalyses": 3,   … `agent-ops/analysis/` のうち、二次がまだ読んでいない件数
 //     "pendingRefAudit": true,   … 節番号の参照に、この周に読むものが在るか（`scripts/daemon/refAudit.mjs`）
@@ -591,6 +591,28 @@ export const cycleDownNote = (name) =>
   `周期の係 ${name} を立てられない（間を空けて立て直している。理由は ~/daemon.log の「打てなかった: CHORE ${name}」の手前）`;
 
 /**
+ * `main` へ入ったPRの `Closes` が指しているのに、開いたままの issue か（2.10.6）。**仕事はもう
+ * `main` に在る**ので、配らない・担当を起こさない・人へ返さない。閉じるのは盤面（`CLOSE`）。
+ *
+ * **盤面が一度閉じた後に開いていれば、人が開け直したもの**なので、ここには入れない。
+ */
+function unclosed(input, number) {
+  if ((input.taken ?? {})[`close:${number}`] !== undefined) return false;
+  return (input.mergedPrs ?? []).some(
+    (pr) => pr.baseRefName === 'main' && declaredCloses(pr.body).includes(number),
+  );
+}
+
+/**
+ * マージ済みPRの本文が閉じると宣言した issue（2.10.6）。**行頭の `Closes #N` だけ**を読む
+ * ——閉じる手に繋がるので、他のPRの `Closes` を文中で引いた行（見回りや分析のPRの本文）を拾うと、
+ * 無関係の issue を閉じる。
+ */
+function declaredCloses(body) {
+  return [...(body ?? '').matchAll(/^closes\s+#(\d+)/gim)].map((match) => Number(match[1]));
+}
+
+/**
  * 今すぐ配れる `kind:task`（`TASK` に出す候補）を、**`急ぎ` が先、次に完成へ近づける仕事
  * （`advancesGame`）、その中では古い順**に並べる。
  * 一覧は新しい順に返るので、並べ直さないと古い issue が永久に後回しになる。
@@ -603,17 +625,6 @@ export const cycleDownNote = (name) =>
  * 持つもので、条件を2箇所に書くと、片方を絞った周に**配る手も掘る手も出ない**空白ができる。
  * **向かう先で絞るのは、この関数が返したものの上**で行う。
  */
-/**
- * `main` へ入ったPRの `Closes` が指しているのに、開いたままの issue か（2.10.6）。**仕事はもう
- * `main` に在る**ので、配らない・担当を起こさない・人へ返さない。閉じるのは盤面（`CLOSE`）。
- *
- * **盤面が一度閉じた後に開いていれば、人が開け直したもの**なので、ここには入れない。
- */
-function unclosed(input, number) {
-  if ((input.taken ?? {})[`close:${number}`] !== undefined) return false;
-  return (input.mergedPrs ?? []).some((pr) => pr.baseRefName === 'main' && closes(pr.body).includes(number));
-}
-
 function readyTasks(input) {
   return (
     [...input.issues]
@@ -1023,9 +1034,13 @@ export function moves(input) {
 
   // **`Closes` の閉じ損ねは盤面が閉じる**（2.10.6）。GitHub はマージで閉じ損ねることがあり、
   // 開いたままの担当は配り直され、そのワーカーは停滞として人へ返る。
+  //
+  // **マージから落ち着くまでは閉じない**（`settledBefore`）。GitHub が閉じるのはマージの少し後なので、
+  // 直後の周に打つと、閉じ損ねていないものへ「閉じなかった」と書き残す。
   const shuts = [];
   for (const pr of [...(input.mergedPrs ?? [])].sort((a, b) => a.number - b.number)) {
-    for (const issue of closes(pr.body)) {
+    if (!(pr.mergedAt < input.settledBefore)) continue;
+    for (const issue of declaredCloses(pr.body)) {
       if (!input.issues.some((item) => item.number === issue) || !unclosed(input, issue)) continue;
       if (shuts.some((move) => move.startsWith(`CLOSE ${issue} `))) continue;
       shuts.push(`CLOSE ${issue} ${pr.number} ${input.now}`);

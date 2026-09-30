@@ -142,10 +142,10 @@ describe('スメルを拾う係が読む窓（board-design.md 4.4.2節）', () =
 
   // 閉じ損ねを閉じる手（`board-move.mjs` の `CLOSE`）が読む。欠けると、閉じ損ねた担当が1つも
   // 見えないまま、そのワーカーが停滞として人へ返る（board-design 2.10.6）。
-  it('閉じ損ねを見るための本文と base を引く', async () => {
+  it('閉じ損ねを見るための本文と base とマージの時刻を引く', async () => {
     const merged = (await readWith()).merged ?? [];
     const fields = merged[merged.indexOf('--json') + 1].split(',');
-    expect(fields).toEqual(expect.arrayContaining(['body', 'baseRefName']));
+    expect(fields).toEqual(expect.arrayContaining(['body', 'baseRefName', 'mergedAt']));
   });
 
   // **黙って切らない。** 切られた側は「1件も無い」と同じ形になり、次の周も同じに読まれる。
