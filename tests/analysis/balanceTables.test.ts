@@ -140,9 +140,18 @@ object_defs:
  *
  * 株分けは親株を道具として使い、親株は減らない。繰り返せば増えるが、1株目はこの工程では手に
  * 入らない——それを作り方と数えると、探索でしか得られない1株目の時間が表から消える。
+ * **株分けは労働0**なので、数え落とせば `chain_untimed_routes` の側に出る。
+ *
+ * 接ぎ木は「植物」タグの道具を取る。挿し穂も植物なら、株を持たずに行える正当な作り方で、
+ * 株より安いかどうかでは答えが変わらない。
  */
-describe('道具そのものが産物と同じ型の工程', () => {
-  const YAML = `
+describe('道具を産物と同じ型でしか満たせない工程', () => {
+  const tablesWith = (cuttingTags: string) =>
+    buildBalanceTables(
+      new WorldCodexYamlLoader()
+        .load(
+          'test.yaml',
+          `
 object_defs:
   medic:
     tags: [character]
@@ -173,49 +182,87 @@ object_defs:
         duration: 15
         spawn: {object: shell, into: self}
 
+  forest:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 100
+        spawn: {object: cutting, into: self}
+
+  cutting:
+    tags: [${cuttingTags}]
+
   shell:
     tags: [item]
+    interactions:
+      graft:
+        trigger: {drag: {tag: plant}}
+        duration: 1
+        spawn: {object: succulent}
 
   succulent:
-    tags: [item]
+    tags: [item, plant]
     interactions:
       divide:
         trigger: menu
-        duration: 1
         spawn: {object: succulent}
       chew:
         trigger: menu
         duration: 5
         destroy: self
         add: {agent: {hydration: 96}}
-`;
+`,
+        )
+        .buildAndReset(),
+      'medic',
+    );
 
-  const tables = buildBalanceTables(
-    new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset(),
-    'medic',
-  );
-
-  const hydrationRouteSteps = (placeName: string) =>
+  const hydrationRouteSteps = (tables: ReturnType<typeof tablesWith>, placeName: string) =>
     (
       tables.places
         .find((place) => place.name === placeName)!
         .properties.find((chains) => chains.propertyName === 'hydration')?.routes ?? []
     ).map((route) => route.route.steps.map((step) => `${step.objectName}.${step.stepName}`));
 
-  it('値段は、株分けではなく1株目を探す時間になる', () => {
-    expect(tables.objectCosts.find((cost) => cost.objectName === 'succulent')).toMatchObject({
-      minutes: 60,
-      exploreMinutes: 60,
+  const succulentCost = (tables: ReturnType<typeof tablesWith>) =>
+    tables.objectCosts.find((cost) => cost.objectName === 'succulent')!;
+
+  describe('植物が株しか無いとき', () => {
+    const tables = tablesWith('item');
+
+    it('値段は、株分けでも接ぎ木でもなく1株目を探す時間になる', () => {
+      expect(succulentCost(tables)).toMatchObject({ minutes: 60, exploreMinutes: 60 });
+    });
+
+    it.each([WHOLE_ISLAND, 'grassland'])('%s の経路は、1株目を探すところから始まる', (place) => {
+      expect(hydrationRouteSteps(tables, place)).toEqual([['grassland.explore', 'succulent.chew']]);
+    });
+
+    it('株の採れない土地では、株分けも接ぎ木もその土地の作り方にならない', () => {
+      // 株は持ち込むしかないので、この土地を起点にした経路は無い。
+      expect(hydrationRouteSteps(tables, 'sandy_beach')).toEqual([]);
     });
   });
 
-  it.each([WHOLE_ISLAND, 'grassland'])('%s の経路は、1株目を探すところから始まる', (place) => {
-    expect(hydrationRouteSteps(place)).toEqual([['grassland.explore', 'succulent.chew']]);
-  });
+  describe('挿し穂も植物のとき', () => {
+    const tables = tablesWith('item, plant');
 
-  it('株の採れない土地では、株分けがその土地の作り方にならない', () => {
-    // 株は持ち込むしかないので、この土地を起点にした経路は無い。
-    expect(hydrationRouteSteps('sandy_beach')).toEqual([]);
+    it('接ぎ木は、挿し穂を道具にできるので株の作り方に数える', () => {
+      // 株（60分）が挿し穂（100分）より安くても、株を持たずに行えることは変わらない。
+      expect(succulentCost(tables)).toMatchObject({
+        minutes: 1,
+        steps: [{ objectName: 'shell', stepName: 'graft' }],
+      });
+    });
+
+    it('株分けは、それでも株の作り方にならない', () => {
+      for (const place of [WHOLE_ISLAND, 'grassland', 'sandy_beach', 'forest'])
+        for (const steps of hydrationRouteSteps(tables, place))
+          expect(steps).not.toContain('succulent.divide');
+    });
   });
 });
 

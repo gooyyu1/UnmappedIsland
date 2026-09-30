@@ -1838,7 +1838,7 @@ class Acquisition {
    * 「石を持ち込む → 焼く → 沸かす → 石が戻る」は石の作り方ではない（issue #734）。これを作り方と
    * 数えると、石の産まない土地では持ち込みより高い値段がその土地の作り方になる。
    *
-   * **道具は、その型そのものであるときだけ閉路に数え、道具の素性は遡らない。** Xで作った道具でXを
+   * **道具は、Xでしか満たせないときだけ閉路に数え、道具の素性は遡らない。** Xで作った道具でXを
    * 作るのは閉路ではない——道具は1度作れば繰り返し使えるので、その1度ぶんのXは別に用意できる。
    * 道具がX自身だと、繰り返せば増えても1つ目はこの工程では手に入らない（issue #2314）。
    *
@@ -1855,7 +1855,7 @@ class Acquisition {
 
     for (const input of ref.step.inputs) {
       if (!input.consumed) {
-        if (this.toolIs(input, objectGlobalId)) return true;
+        if (this.onlyFilledBy(input, objectGlobalId)) return true;
         continue;
       }
       const source = this.inputSource(input);
@@ -1872,15 +1872,20 @@ class Acquisition {
   }
 
   /**
-   * その道具（消費されない入力）に使う型が`objectGlobalId`そのものか。見るのは前提の表
-   * （prerequisites）が名乗るのと同じ型。**まだどの型も手に入らないなら、候補に含まれるかで見る**
-   * ——他に手に入る型が無い以上、その工程を行うには産物そのものを手に持つしかない。
+   * その道具（消費されない入力）を、`objectGlobalId`でしか満たせないか。**どの候補が最安かでは
+   * 決めない**——他に手に入る型が1つでも在れば、Xを持たずにその工程を行える。手に入る型は解決が
+   * 進むほど増えるだけなので、値段を積む途中の答えが、確定した後（netOutputsOf）の答えと食い違わない。
    */
-  private toolIs(input: CraftingStep['inputs'][number], objectGlobalId: ObjectGlobalId): boolean {
-    const source = this.obtainableSource(input);
-    return source === undefined
-      ? this.candidatesOf(input).includes(objectGlobalId)
-      : source.objectGlobalId === objectGlobalId;
+  private onlyFilledBy(input: CraftingStep['inputs'][number], objectGlobalId: ObjectGlobalId): boolean {
+    const candidates = this.candidatesOf(input);
+    return (
+      candidates.includes(objectGlobalId) &&
+      candidates.every(
+        (candidate) =>
+          candidate === objectGlobalId ||
+          !(this.obtainable(candidate) || this.islandWide?.obtainable(candidate) === true),
+      )
+    );
   }
 
   /**
