@@ -136,29 +136,28 @@ object_defs:
             duration: 60
 ```
 
-素材まで遡った手間は次のとおりです。**段2は刃物なしでは通せない**ので（この節の末尾）、**段1から
-通した合計は705分**（刃物ありの135分＋570分）——1日ぶんの自由時間
-（[`ContentSkeleton.md`](./ContentSkeleton.md) 8節）の大半を使う量です。
+素材まで遡った手間は、収支表の実測（探索と、前提になる道具を作る手間を含む。
+[`BalanceStats.md`](../diagnostics/BalanceStats.md)）で次のとおりです。**段2は刃物なしでは通せない**ので
+（この節の末尾）、段2まで通すには寝床と骨組みの両方を作ることになり、**骨組みだけでおよそ1日ぶんの
+自由時間**（[`ContentSkeleton.md`](./ContentSkeleton.md) 8節）を使います。
 
 | 完成品 | 直接の材料 | 工程 | 素材から通した時間 |
 | ------ | ---------- | ---- | ------------------ |
-| 寝床 | 編んだ葉 ×3 | 15分 | 素手で195分／刃物があれば135分 |
-| 寝台の骨組み | 太い枝 ×6、紐 ×3 | 180分 | ＋570分（うち紐に390分） |
-| 詰め物 | なめし革 ×2、糸 ×3、羽 ×30 または 繊維 ×15 | 180分 | 下の実測 |
-| ハンモック | 紐 ×5 | 120分（据えるのは無料。6.2節） | 770分（うち紐に650分） |
+| 寝床 | 編んだ葉 ×3<!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.requires.0.count --> | 15分<!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.duration --> | 約120分<!-- stats: balance.yaml object_costs object=bed total_minutes ±5% --> |
+| 寝台の骨組み | 太い枝（杭に4<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.0.requires.0.count -->・縦材に2<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.1.requires.0.count -->）、紐 ×3<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.2.requires.0.count --> | 1工程60分<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.0.duration -->ずつ（杭・縦材・簀の子） | 約900分<!-- stats: balance.yaml object_costs object=bed_frame total_minutes ±5% --> |
+| 詰め物 | なめし革 ×2<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.0.requires.0.count -->、糸（縫うのに2<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.1.requires.0.count -->・口を閉じるのに1<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.2.requires.1.count -->）、羽 ×30<!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.2.requires.0.count --> または 繊維 ×15<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.2.requires.0.count --> | 1工程60分<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.0.duration -->ずつ（裁つ・縫う・詰める） | 植物繊維で約1,880分<!-- stats: balance.yaml object_costs object=plant_fiber_stuffing total_minutes ±5% -->／羽毛で約2,980分<!-- stats: balance.yaml object_costs object=feather_stuffing total_minutes ±5% --> |
+| ハンモック | 紐（編む工程ごとに3<!-- codex: bedding.yaml object_defs.hammock.recipes.knotted.steps.0.requires.0.count -->・2<!-- codex: bedding.yaml object_defs.hammock.recipes.knotted.steps.1.requires.0.count -->） | 1工程60分<!-- codex: bedding.yaml object_defs.hammock.recipes.knotted.steps.0.duration -->ずつ（据えるのは無料。6.2節） | 約1,070分<!-- stats: balance.yaml object_costs object=hammock total_minutes ±5% --> |
 
-- **詰め物だけは、他の行と物差しが違います。** 革は狩り（罠を仕掛けて待つ）と樹皮のなめしを通るので、
-  材料の分数を足しても手間になりません。代わりに探索と待ちを含めた実測を引くと、植物繊維で
-  1880分<!-- stats: balance.yaml object_costs object=plant_fiber_stuffing total_minutes ±5% -->、
-  羽毛で2981分<!-- stats: balance.yaml object_costs object=feather_stuffing total_minutes ±5% -->
-  ——**段2までの705分に対して、どちらも寝床の他のどの段より重い**位置です。火の要らない夜を作る
-  （4.2.1節）ための値段がここに出ます。**羽毛のほうが長いのは狩りの待ちを数に入れたため**で、
+- **詰め物がどの段より重いのは、革が狩り（罠を仕掛けて待つ）と樹皮のなめしを通るため**です。火の要らない
+  夜を作る（4.2.1節）ための値段がここに出ます。**羽毛のほうが長いのは狩りの待ちを数に入れたため**で、
   肉を採り続けているなら羽はその副産物です（5節）
-- 編んだ葉は、素手でもひと編み60分で1枚、刃物で中軸を割れば同じ60分で2枚とれます（`weaving.yaml`）
-- 紐1本は糸2本、糸1本は繊維2束なので、紐3本で繊維12束＝アバカ4本ぶんです（1本から3束、`fiber.yaml`）
-- **紐の消費は筏と正面から競合します。** 筏はロープ4本＝紐12本を要求する（`voyage.yaml`）ので、骨組みは
-  その1/4、ハンモックは半分弱にあたります。**この比を意図した緊張として残すかは8節**
-- **ハンモックは、段1と段2を通した手間とほぼ並びます**（705分に対して770分）。**同じだけ戻すのに、
+- 編んだ葉は、素手なら中軸ごと1枚をひと編み60分<!-- codex: weaving.yaml object_defs.palm_frond.props.weave_minutes.value -->で、刃物で中軸を割れば同じ
+  60分<!-- codex: weaving.yaml object_defs.palm_frond.props.split_and_weave_minutes.value -->で2枚<!-- codex: weaving.yaml object_defs.palm_frond.interactions.split_and_weave.spawn.count -->とれます（`weaving.yaml`）
+- 紐は糸を、糸は繊維を撚って作り、繊維はバナナの茎1本から3束<!-- codex: fiber.yaml object_defs.banana_stem.interactions.strip.spawn.count -->とれます（`fiber.yaml`）
+- **紐の消費は筏と正面から競合します。** 筏を縛るロープも紐を撚ったもの（`voyage.yaml`・`fiber.yaml`）
+  なので、骨組みとハンモックに回した紐はそのまま筏の分から減ります。**この競合を意図した緊張として
+  残すかは8節**
+- **ハンモック1つの手間は、寝床と骨組みを通した段2の手間とほぼ並びます。** **同じだけ戻すのに、
   払う先が木材から紐へ移るだけ**という形にしてあり、寝床になる場所・保温・伸ばしろ・持ち出しで
   差が付きます（6節）
 
@@ -331,7 +330,7 @@ object_defs:
 
 **深さは、いちばん深い一着より浅いところで留めます。** 2節のとおり南国の寝床で効く分の大半は保温では
 ないので、保温の主役にはしません——同じだけ押し下げる一着が
-（[`SurvivalItems.md`](./SurvivalItems.md) 5.1節）、段2まで通す 705分（3節）に対して
+（[`SurvivalItems.md`](./SurvivalItems.md) 5.1節）、骨組みだけで約900分<!-- stats: balance.yaml object_costs object=bed_frame total_minutes ±5% -->かかる段2（3節）に対して
 123分<!-- stats: balance.yaml object_costs object=rawhide_clothing total_minutes ±5% -->で作れる位置です。**払う手間に対して浅い**ことが、保温のために寝床を建てる選択を潰します。
 
 **寝床だけでは夜を越せません。** 素の入口は16℃で、空が作るいちばん寒い夜はそれより下
@@ -477,8 +476,8 @@ object_defs:
   効かせると、寝床の値打ちが洞窟を見つけたかどうかだけで決まります
 - **部品をどう運ぶか。** 本書は骨組みを `item` にして手で運ばせていますが、[`Dwellings.md`](./Dwellings.md)
   の壁・屋根も同じ問題を持ち、あちらはまだ決めていません。揃えるべきです
-- **紐の配分。** 骨組みの紐3本と筏のロープ4本（＝紐12本）の比を、意図した競合として残すか。
-  ハンモックの紐5本も同じ原資を食います
+- **紐の配分。** 骨組みの紐3本<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.2.requires.0.count -->と、筏を縛るロープ（1本が紐3本<!-- codex: fiber.yaml object_defs.rope.recipes.twisted.steps.0.requires.0.count -->）の取り合いを、
+  意図した競合として残すか。ハンモックの紐も同じ原資を食います
 - **蚊よけの煙。** 熱帯では枕元の焚き火は暖を取るためではなく煙で蚊を追うためのものです。寝床と炉を近くに
   置く動機として表すか
 - **据えるのに手間を課すか。** ハンモックはレーンを移すだけで据わり、時間がかかりません（6.2節）
