@@ -2,9 +2,9 @@ name: Publish docs and game to GitHub Pages
 
 # ドキュメントのHTMLとビルドしたゲームをsite/へ出力し、GitHub Pagesへ直接デプロイする。
 #
-# 生成物はリポジトリへコミットしない（site/は.gitignore）。以前はmainのdocs/を配信する設定で、
-# ワークフローが生成物をコミットしていたが、それだとマージのたびに生成物一式が履歴へ積まれ、
-# ドキュメント側とゲーム側のpushでPagesのビルドも2回走っていた。
+# 生成物はリポジトリへコミットしない（site/は.gitignore）。コミットすると、マージのたびに生成物一式が
+# 履歴へ積まれる。ドキュメントとゲームを1つのワークフローで作るのは、どちらのpushでもPagesのビルドを
+# 1回で済ませるため。
 #
 # 前提: リポジトリ設定のPagesのソースが「GitHub Actions」になっていること。
 # 「Deploy from a branch」のままだとdeploy-pagesが失敗する。

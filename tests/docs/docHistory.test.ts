@@ -1,16 +1,23 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { historyDocs } from '../../scripts/docScope.mjs';
+import { commentsOnly } from '../../scripts/codeComments.mjs';
+import {
+  historyDocs,
+  historyRuleSources,
+  isProseData,
+  trackedDocs,
+} from '../../scripts/docScope.mjs';
 
 /**
  * 経緯を主題としない文書とコメントに、過去の姿を語る記述が生えていないかの検査
  * （[`docs/DocumentStyle.md`](../../docs/DocumentStyle.md) 9.1節、
  * [`CLAUDE.md`](../../CLAUDE.md)「ドキュメント・コメントのスタイル」）。
  *
- * **書いてよい文書の別は、9.1節の表からだけ引く**（{@link historyDocs}）。写すと、表を増やした
- * ときにずれる。表に無い文書やコメントで過去の姿から書き始めた記述は、旧仕様を知らない読み手には
- * 要らないものになる（issue #1936）。
+ * **射程は [`docScope.mjs`](../../scripts/docScope.mjs) から引く**（{@link historyRuleSources}。
+ * どこまで掛かるかを決めているのは同 10節）。写すと、表や置き場を増やしたときにずれる。表に無い
+ * 文書やコメントで過去の姿から書き始めた記述は、旧仕様を知らない読み手には要らないものになる
+ * （issue #1936）。
  */
 
 const ROOT = resolve(__dirname, '../..');
@@ -35,29 +42,20 @@ const SELF = repoPath(relative(ROOT, __filename));
  */
 const MARKERS = ['かつて', '以前は', 'ていた頃', 'だった頃', '時期があ'];
 
-
-function filesIn(dir: string, extension: string): string[] {
-  const found: string[] = [];
-  for (const entry of readdirSync(join(ROOT, dir))) {
-    const rel = repoPath(dir, entry);
-    if (statSync(join(ROOT, rel)).isDirectory()) found.push(...filesIn(rel, extension));
-    else if (entry.endsWith(extension)) found.push(rel);
-  }
-  return found;
+/**
+ * 読む本文。**Markdown と宣言の値へ散文を置くデータは全文、それ以外はコメントだけ**——コードや
+ * データの値の中の語まで見ると、文字列リテラルに入れた例が赤くなる。
+ */
+function proseOf(file: string): string {
+  const text = readFileSync(join(ROOT, file), 'utf-8');
+  return file.endsWith('.md') || isProseData(file) ? text : commentsOnly(text, file);
 }
 
-/** その行がコメントの一部か（ブロックの途中も含む）。データの中の語まで見ないための線。 */
-function isComment(line: string): boolean {
-  const trimmed = line.trim();
-  return trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*');
-}
-
-function historyIn(file: string, lookAt: (line: string) => boolean): string[] {
+function historyIn(file: string): string[] {
   const found: string[] = [];
-  readFileSync(join(ROOT, file), 'utf-8')
+  proseOf(file)
     .split('\n')
     .forEach((line, index) => {
-      if (!lookAt(line)) return;
       for (const marker of MARKERS) {
         if (line.includes(marker)) found.push(`${file}:${index + 1} 「${marker}」 ${line.trim()}`);
       }
@@ -65,33 +63,34 @@ function historyIn(file: string, lookAt: (line: string) => boolean): string[] {
   return found;
 }
 
-const ALLOWED = new Set([...historyDocs(ROOT)].map((doc) => repoPath(doc)));
-const ALL_DOCUMENTS = filesIn('docs', '.md');
-const DOCUMENTS = ALL_DOCUMENTS.filter((doc) => !ALLOWED.has(doc));
-const SOURCES = [...filesIn('src', '.ts'), ...filesIn('tests', '.ts')].filter(
-  (source) => source !== SELF,
-);
+const ALLOWED = [...historyDocs(ROOT)].map((doc) => repoPath(doc));
+const SCANNED = historyRuleSources(ROOT)
+  .map((file) => repoPath(file))
+  .filter((file) => file !== SELF);
 
-describe('9.1節の表から引いた文書が、走査した文書と噛み合っている', () => {
-  // 噛み合っていないと**除外が1つも当たらない**が、赤くなるのは表の文書がマーカー語を持つときだけ
-  // ——綴りの取り違えはここで落ちる。
+describe('射程が、決めた先へ届いている', () => {
+  // 9.1節の表と噛み合っていないと**除外が1つも当たらない**が、赤くなるのは表の文書がマーカー語を
+  // 持つときだけ——綴りの取り違えはここで落ちる。
   //
   // **パス区切りのずれが落ちるのは Windows で打ったときだけ。** `path.join` が `/` を返す
   // ubuntu（CI）では、{@link repoPath} を素の `join` へ戻しても照合は当たり続ける。**CI の緑は、
   // 区切りを揃える手立てが在ることの証拠にならない。**
-  it.each([...ALLOWED])('%s が `docs/` の走査結果に在る', (doc) => {
-    expect(ALL_DOCUMENTS).toContain(doc);
+  it.each(ALLOWED)('%s が追跡しているMarkdownに在る', (doc) => {
+    expect(trackedDocs(ROOT).map((rel) => repoPath(rel))).toContain(doc);
   });
+
+  // 射程を `docs/` とソースのコメントに戻しても、他の検査はどれも緑のまま——10節が決めた
+  // 「盤面を回す文書とスクリプトにも掛かる」を守るのはここだけ。
+  it.each(['agent-ops/parallel-work.md', 'scripts/daemon/usage.sh', '.github/workflows/pages.yml'])(
+    '%s を読んでいる',
+    (file) => {
+      expect(SCANNED).toContain(file);
+    },
+  );
 });
 
-describe('経緯を主題としない文書は、過去の姿を語らない', () => {
-  it.each(DOCUMENTS)('%s', (doc) => {
-    expect(historyIn(doc, () => true)).toEqual([]);
-  });
-});
-
-describe('コメントは、過去の姿を語らない', () => {
-  it.each(SOURCES)('%s', (source) => {
-    expect(historyIn(source, isComment)).toEqual([]);
+describe('経緯を主題としない文書とコメントは、過去の姿を語らない', () => {
+  it.each(SCANNED)('%s', (file) => {
+    expect(historyIn(file)).toEqual([]);
   });
 });

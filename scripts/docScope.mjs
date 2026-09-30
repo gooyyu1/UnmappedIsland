@@ -142,6 +142,30 @@ export function historyDocs(root) {
 }
 
 /**
+ * 過去の姿を語る記述を禁じる（`docs/DocumentStyle.md` 9.1節）側のファイル。**`docs/` の中かでは
+ * 絞らない**——盤面を回す文書も、スクリプトとデータのコメントも、今の形の理由を書く場所なのは同じ
+ * （射程は同 10節）。
+ *
+ * 外すのは、過去の姿を書くこと自体が中身の側——経緯を主題とする文書（{@link historyDocs}）・
+ * 当時の現物をそのまま残す記録（{@link isVerbatimRecord}）・その回の観測（{@link isAnalysisRecord}）。
+ * **読むのはMarkdownと {@link isProseData} なら全文、それ以外はコメントだけ**で、形式の別は読む側
+ * （`tests/docs/docHistory.test.ts`）が持つ。
+ *
+ * @param {string} root リポジトリの根
+ * @returns {string[]} 根からの相対パス（区切りはそのプラットフォームのもの）
+ */
+export function historyRuleSources(root) {
+  const history = historyDocs(root);
+  return trackedFiles(root).filter(
+    (rel) =>
+      (rel.endsWith('.md') || COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)) || isProseData(rel)) &&
+      !history.has(rel) &&
+      !isVerbatimRecord(rel) &&
+      !isAnalysisRecord(rel),
+  );
+}
+
+/**
  * その回の観測の記録か（`agent-ops/analysis/**`）。参照は今のリポジトリを指すので規約が掛かり、
  * **外れるのは当時を残す側だけ**——確定度の印（そこでは題材として現れる）と、パスの綴りと、
  * Markdown 以外を鉤括弧で引く名前（当時の文言の引用になる）。どれも `docs/DocumentStyle.md` 10節。
@@ -172,8 +196,8 @@ export function isMarkRuleDoc(rel) {
  * files` が返す形）のうち、印の条件が掛かるものだけをそのまま出す。
  *
  * **ここを通さずにシェル側でパターンを書き写すと、射程が2つになる**——関門
- * （[`needs-user-review.sh`](daemon/needs-user-review.sh)）の掛け先が `docs/` に取り残されていたのが
- * その形で、`agent-ops/board-design.md` の確定節が印ごと素通りしていた（#1800）。
+ * （[`needs-user-review.sh`](daemon/needs-user-review.sh)）の写しの掛け先が `docs/` に取り残されると、
+ * `agent-ops/board-design.md` の確定節が印ごと素通りする（#1800）。
  */
 function printMarkRuleDocs() {
   const kept = readFileSync(0, 'utf-8')
