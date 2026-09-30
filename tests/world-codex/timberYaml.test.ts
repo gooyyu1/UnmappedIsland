@@ -27,7 +27,7 @@ describe('timber.yamlの伐採', () => {
   });
 
   beforeEach(() => {
-    session = new WorldSession(codex, undefined, fixedRng(0));
+    session = new WorldSession(codex, fixedRng(0));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     const worldView = new World(worldInstance);
     session.adoptWorld(worldView);

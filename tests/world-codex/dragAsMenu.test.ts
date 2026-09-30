@@ -127,7 +127,7 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
   });
 
   beforeEach(() => {
-    session = new WorldSession(codex, undefined, fixedRng(0));
+    session = new WorldSession(codex, fixedRng(0));
     const worldInstance = session.createObject(def('world').globalId);
     session.adoptWorld(new World(worldInstance));
 

@@ -38,7 +38,7 @@ describe('salt.yamlの塩田と塩蔵', () => {
 
   /** 砂浜にプレイヤーが立っている世界。landを変えれば海に面していない土地にできる。 */
   function open(hour = NOON_HOUR, weather = 'clear', landName = 'sandy_beach') {
-    const session = new WorldSession(codex, undefined, fixedRng(0.9));
+    const session = new WorldSession(codex, fixedRng(0.9));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);

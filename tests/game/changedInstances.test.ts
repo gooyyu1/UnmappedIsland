@@ -84,7 +84,7 @@ object_defs:
       .load('origins.yaml', YAML)
       .load('agent.yaml', AGENT_YAML)
       .buildAndReset();
-    session = new WorldSession(codex, undefined, fixedRng(0.5));
+    session = new WorldSession(codex, fixedRng(0.5));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     ground = spawn('ground');

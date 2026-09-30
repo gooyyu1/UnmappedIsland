@@ -31,7 +31,7 @@ describe('湧き水', () => {
 
   /** 草原に湧き水が1つあり、その傍らにプレイヤーが立っている世界。 */
   function atSpring(hour = NOON_HOUR) {
-    const session = new WorldSession(codex, undefined, fixedRng(0));
+    const session = new WorldSession(codex, fixedRng(0));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     const worldView = new World(worldInstance);
     session.adoptWorld(worldView);

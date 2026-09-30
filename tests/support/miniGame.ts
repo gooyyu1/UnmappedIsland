@@ -90,7 +90,7 @@ export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
   const codex = loader.buildAndReset();
 
   // NewGame.startNewGameと同じ順序で組み立てる（worldインスタンスもセッションに属させるため）。
-  const session = new WorldSession(codex, undefined, options.rng);
+  const session = new WorldSession(codex, options.rng);
   const worldInstance = session.createObject(codex.objectNames.getId('world'));
   const world = new World(worldInstance);
   session.adoptWorld(world);

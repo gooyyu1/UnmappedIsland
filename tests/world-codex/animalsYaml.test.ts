@@ -57,7 +57,7 @@ describe('animals.yamlの動物', () => {
 
   /** 密林に立つプレイヤーと、その足元のサルから始める。rollはpickがどの候補を引くかを決める。 */
   function open(roll: number): void {
-    session = new WorldSession(codex, undefined, fixedRng(roll));
+    session = new WorldSession(codex, fixedRng(roll));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     startMinutes = session.world!.totalMinutes;

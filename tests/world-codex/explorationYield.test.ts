@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { islandLocationsOf } from '../../src/analysis/islandLocations';
 import type { ConditionalReading, EffectReader, PickReading } from '../../src/domain/EffectReader';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { World } from '../../src/domain/wrappers/World';
@@ -231,10 +231,9 @@ describe('探索で見つかる物', () => {
     huntingSkill = 0,
     watchedSkill?: string,
   ): ExploreTrial[] {
-    const session = new WorldSession(codex);
-    const worldInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), session);
-    const worldView = new World(worldInstance);
-    const explorer = new WorldSession(codex, worldView, seededRng(20250801));
+    const explorer = new WorldSession(codex, seededRng(20250801));
+    const worldInstance = explorer.createObject(codex.objectNames.getId('world'));
+    explorer.adoptWorld(new World(worldInstance));
 
     const instance = explorer.createObject(codex.objectNames.getId(landName));
     for (const [propertyGlobalId, value] of props)
@@ -333,10 +332,12 @@ describe('探索で見つかる物', () => {
         0,
       );
 
-    expect(rats(3, 180), 'expertはnoviceより出くわす').toBeGreaterThan(rats(3, 0));
+    // 素のつまみを0に据えると、noviceの側は確率ではなく不変条件で0になる（重み0は抽選から外れる）。
+    expect(rats(0, 0), '素のつまみ0なら、noviceは出くわさない').toBe(0);
+    expect(rats(0, 180), 'expertは腕の上乗せだけで出くわす').toBeGreaterThan(0);
     // **同じ重みなら同じ卓**なので、引きまでそっくり一致する。expertの上乗せは+4（Skills.md 5節）
-    // なので、素の3に積んだものは、素で7のつまみと変わらない。
-    expect(rats(3, 180), 'expertの素3＋4は、noviceのつまみ7と同じ卓').toBe(rats(7, 0));
+    // なので、素の0に積んだものは、素で4のつまみと変わらない。
+    expect(rats(0, 180), 'expertの素0＋4は、noviceのつまみ4と同じ卓').toBe(rats(4, 0));
   });
 
   it('宣言していない獣は、腕を上げても湧かない', () => {

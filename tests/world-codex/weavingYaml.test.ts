@@ -29,7 +29,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
 
   beforeEach(() => {
     // 葉採りは確率で捻挫する（injuries.yaml）。ここは加工の連鎖を見るテストなので、必ず成功する側を引く。
-    session = new WorldSession(codex, undefined, fixedRng(0));
+    session = new WorldSession(codex, fixedRng(0));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     worldView = new World(worldInstance);
     session.adoptWorld(worldView);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -148,10 +148,10 @@ object_defs:
       .load('clay.yaml', YAML)
       .load('agent.yaml', AGENT_YAML)
       .buildAndReset();
-    const bootstrap = new WorldSession(codex);
-    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), bootstrap);
+    const session = new WorldSession(codex);
+    const instance = session.createObject(codex.objectNames.getId('world'));
     const world = new World(instance);
-    const session = new WorldSession(codex, world);
+    session.adoptWorld(world);
 
     return {
       codex,

@@ -52,7 +52,7 @@ interface Island {
 
 /** 砂浜に立つ主人公と、遠征先になるもう1つの砂浜。 */
 function settle(): Island {
-  const session = new WorldSession(codex, undefined, seededRng(1));
+  const session = new WorldSession(codex, seededRng(1));
   const world = session.createObject(codex.objectNames.getId('world'));
   session.adoptWorld(new World(world));
 

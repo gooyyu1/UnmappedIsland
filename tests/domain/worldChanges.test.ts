@@ -76,7 +76,7 @@ object_defs:
 
   /** 土地1つだけの世界から始める。rollはpickがどの候補を引くかを決める（fixedRng）。 */
   function open(roll: number): void {
-    session = new WorldSession(codex, undefined, fixedRng(roll));
+    session = new WorldSession(codex, fixedRng(roll));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     ground = spawn('ground');
@@ -237,5 +237,14 @@ object_defs:
     const other = new World(new WorldObject(9, codex.objects.get(codex.objectNames.getId('world')), session));
 
     expect(() => session.adoptWorld(other)).toThrow(/1度/);
+  });
+
+  it('別のセッションで生成したworldは結び付けられない', () => {
+    // 世界とその中の物とで、codexも乱数源も食い違わないように（WorldSession.adoptWorld）。
+    const fresh = new WorldSession(codex, fixedRng(0));
+    const foreign = new World(new WorldSession(codex).createObject(codex.objectNames.getId('world')));
+
+    expect(() => fresh.adoptWorld(foreign)).toThrow(/このセッションで生成した/);
+    expect(fresh.world, '拒んだworldは抱えない').toBeUndefined();
   });
 });

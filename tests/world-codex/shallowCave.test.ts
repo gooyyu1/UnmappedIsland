@@ -32,7 +32,7 @@ describe('浅い洞窟', () => {
 
   /** 岩場に浅い洞窟が1つあり、その外にプレイヤーが立っている世界。 */
   function outside(hour: number, weather = 'clear') {
-    const session = new WorldSession(codex, undefined, fixedRng(0));
+    const session = new WorldSession(codex, fixedRng(0));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     const worldView = new World(worldInstance);
     session.adoptWorld(worldView);

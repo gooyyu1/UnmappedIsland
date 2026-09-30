@@ -38,7 +38,7 @@ describe('injuries.yamlの怪我', () => {
 
   /** 砂浜に立つプレイヤーから始める。rollはpickがどの候補を引くかを決める（fixedRng）。 */
   function open(roll: number): void {
-    session = new WorldSession(codex, undefined, fixedRng(roll));
+    session = new WorldSession(codex, fixedRng(roll));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     beach = spawnInto('sandy_beach', worldInstance, 'locations');

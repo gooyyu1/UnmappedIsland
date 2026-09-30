@@ -135,20 +135,24 @@ export class WorldSession {
   /** 待っていた手番を起こしている最中か。この間に挙がった待ちは受け取らない（takeWaitingTurns）。 */
   private takingWaitingTurns = false;
 
-  constructor(codex: WorldCodex, world?: World, rng?: Rng) {
+  constructor(codex: WorldCodex, rng?: Rng) {
     this.codex = codex;
-    this._world = world;
     this.rng = rng ?? randomRng();
   }
 
   /**
-   * worldを後から結び付ける。**worldインスタンス自身をこのセッションで生成するための唯一の道**——
-   * WorldObjectの生成にはセッションが要る（初期値のロールにrngを使う）のに、World付きのセッションは
-   * そのworldインスタンスを要る、という相互依存をここで断つ。
+   * worldを後から結び付ける。**worldを結び付ける唯一の道**——WorldObjectの生成にはセッションが要る
+   * （初期値のロールにrngを使う）のに、World付きのセッションはそのworldインスタンスを要る、という
+   * 相互依存をここで断つ。
+   *
+   * **受け取れるのは、このセッションで生まれたworldだけ。** 別のセッションのworldを抱えると、世界と
+   * その中の物とで語彙（codex）も乱数源も食い違う。
    *
    * 結び付けは一度だけ。2回目は、既にそのworldで動き出したオブジェクトが居るはずなので拒む。
    */
   adoptWorld(world: World): void {
+    if (world.instance.session !== this)
+      throw new Error('WorldSessionが結び付けられるのは、このセッションで生成したworldだけです。');
     if (this._world !== undefined) throw new Error('WorldSessionのworldは1度しか結び付けられません。');
     this._world = world;
   }

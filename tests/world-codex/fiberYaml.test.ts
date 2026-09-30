@@ -36,7 +36,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
    * ——余分の卓（無駄の無さ）は同じ引きでも腕で結果が変わるので、引きを固定しないと差が読めない。
    */
   function buildWorld(rng: Rng): void {
-    session = new WorldSession(codex, undefined, rng);
+    session = new WorldSession(codex, rng);
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     worldView = new World(worldInstance);
     session.adoptWorld(worldView);

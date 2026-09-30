@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { InteractionRelation } from '../../src/domain/ReferenceRoot';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { putIntoSlot } from '../../src/domain/slotEntry';
 import { World } from '../../src/domain/wrappers/World';
@@ -46,10 +46,10 @@ object_defs:
       .load('extra.yaml', extraYaml)
       .load('agent.yaml', AGENT_YAML)
       .buildAndReset();
-    const bootstrap = new WorldSession(codex);
-    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), bootstrap);
-    const world = new World(instance);
-    return { codex, session: new WorldSession(codex, world), world };
+    const session = new WorldSession(codex);
+    const world = new World(session.createObject(codex.objectNames.getId('world')));
+    session.adoptWorld(world);
+    return { codex, session, world };
   }
 
   /** 世界の直下（`stuff`枠）へ置く。tick操作が配られるのは世界の木に繋がっている物だけ。 */

@@ -75,7 +75,7 @@ describe('farming.yamlの畑と囲い', () => {
    * 草原はヤケイだけを宣言し、森と密林はイノシシも宣言する。
    */
   function open(roll = ROLL, locationName = 'grassland'): void {
-    session = new WorldSession(codex, undefined, fixedRng(roll));
+    session = new WorldSession(codex, fixedRng(roll));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     land = spawnInto(locationName, worldInstance, 'locations');
