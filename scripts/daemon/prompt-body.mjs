@@ -161,7 +161,7 @@ export const SESSION_PLACES = { BOARD_STATE: boardState, DAEMON_LOG: daemonLog }
 /**
  * `{{<名前>}}` を {@link SESSION_PLACES} の値で埋める。**区切りは `/` へ揃える**——受け取った
  * セッションは Windows でも bash で打つので、`\` はそのままでは通らない。知らない名前は残す
- * （ひな形の側の綴りは `tests/scripts/promptTemplate.test.ts` が見ている）。
+ * （ひな形の側の綴りは `tests/scripts/patrolRecord.test.ts` が見ている）。
  */
 function withPlaces(body) {
   return body.replace(/\{\{(\w+)\}\}/g, (found, name) =>

@@ -36,7 +36,7 @@ export const PATROL_VERDICTS: readonly string[];
 export const PATROL_KEEP_DAYS: number;
 
 /** 見回りの記録を1件足し、残す長さより古い行を落とす。読めない記録は投げる。 */
-export function appendPatrol(stateDir: string, record: Readonly<Record<string, unknown>>): void;
+export function appendPatrol(stateDir: string, record: Readonly<Record<string, unknown>>, now?: number): void;
 
 /** 最後の見回り。走っていない周も、記録が読めない周も `undefined`。 */
 export function readLastPatrol(

@@ -132,8 +132,9 @@ export const PATROL_KEEP_DAYS = 7;
  *
  * @param {string} stateDir 置き場
  * @param {Record<string, unknown>} record 足す記録
+ * @param {number} [now] 今の時刻（ミリ秒）
  */
-export function appendPatrol(stateDir, record) {
+export function appendPatrol(stateDir, record, now = Date.now()) {
   const at = typeof record.at === 'string' ? Date.parse(record.at) : Number.NaN;
   if (Number.isNaN(at)) throw new Error(`at が時刻として読めない: ${JSON.stringify(record.at)}`);
   if (!PATROL_VERDICTS.includes(/** @type {string} */ (record.verdict)))
@@ -145,7 +146,8 @@ export function appendPatrol(stateDir, record) {
   } catch {
     // 初めての1件。
   }
-  const since = at - PATROL_KEEP_DAYS * 86_400_000;
+  // **起点は今より先へ出さない**——打ち間違えた未来の `at` を起点にすると、手前の記録が丸ごと落ちる。
+  const since = Math.min(at, now) - PATROL_KEEP_DAYS * 86_400_000;
   const kept = lines.filter((line) => {
     try {
       return Date.parse(JSON.parse(line).at) >= since;

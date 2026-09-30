@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   PATROL_KEEP_DAYS,
   PATROL_VERDICTS,
@@ -15,7 +15,7 @@ import { runScript } from '../support/runScript';
 /**
  * 盤面を見回る係の記録（`agent-ops/board-design.md` 2.21.4節）の検査。
  *
- * 守るのは3つ——**係が書いた先を盤面が読む**こと、**`verdict` が係の出口をすべて表せる**こと、
+ * 守るのは、**係が書いた先を盤面が読む**こと、**`verdict` が係の出口をすべて表せる**こと、
  * **記録が無制限に伸びない**こと。どれも破れても係の回は緑のまま走り、常設の issue の1行が
  * 黙って嘘になるだけなので、ここで押さえる。
  */
@@ -49,10 +49,12 @@ describe('appendPatrol', () => {
     });
   });
 
-  it('残す長さより古い行と、読めない行を落とす', () => {
-    withStateDir((dir) => {
-      const now = Date.parse('2026-09-20T00:00:00Z');
-      const daysAgo = (days: number) => new Date(now - days * 86_400_000).toISOString();
+  const now = Date.parse('2026-09-20T00:00:00Z');
+  const daysAgo = (days: number) => new Date(now - days * 86_400_000).toISOString();
+
+  /** 古い行・壊れた行・残る行を置いてから `appendPatrol` し、残った行の `at` を返す。 */
+  function keptAfter(added: string): string[] {
+    return withStateDir((dir) => {
       writeFileSync(
         patrolPath(dir),
         [record(daysAgo(PATROL_KEEP_DAYS + 1)), '{壊れた行', record(daysAgo(PATROL_KEEP_DAYS - 1))]
@@ -60,16 +62,26 @@ describe('appendPatrol', () => {
           .join(''),
       );
 
-      appendPatrol(dir, record(new Date(now).toISOString()));
+      appendPatrol(dir, record(added), now);
 
-      const kept = readFileSync(patrolPath(dir), 'utf8')
+      // 差し替えに使った一時ファイルを残さない。
+      expect(readdirSync(dir)).toEqual(['patrol.jsonl']);
+      return readFileSync(patrolPath(dir), 'utf8')
         .split('\n')
         .filter(Boolean)
         .map((line) => (JSON.parse(line) as { at: string }).at);
-      expect(kept).toEqual([daysAgo(PATROL_KEEP_DAYS - 1), new Date(now).toISOString()]);
-      // 差し替えに使った一時ファイルを残さない。
-      expect(readdirSync(dir)).toEqual(['patrol.jsonl']);
     });
+  }
+
+  it('残す長さより古い行と、読めない行を落とす', () => {
+    expect(keptAfter(daysAgo(0))).toEqual([daysAgo(PATROL_KEEP_DAYS - 1), daysAgo(0)]);
+  });
+
+  it('未来の `at` を足しても、今から見て残す長さの内の行は落とさない', () => {
+    expect(keptAfter('2099-01-01T00:00:00.000Z')).toEqual([
+      daysAgo(PATROL_KEEP_DAYS - 1),
+      '2099-01-01T00:00:00.000Z',
+    ]);
   });
 
   it('時刻として読めない `at` は書かない', () => {
@@ -95,6 +107,15 @@ describe('見回りの係の本文', () => {
   it('置き場を自分の環境から引かせない', () => {
     for (const own of ['~/.claude/board-state', '~/daemon.log', 'process.env', 'boardState()'])
       expect(bodies, own).not.toContain(own);
+  });
+
+  // `scripts/daemon/` の道具は置き場を環境変数から引くので、付けずに打たせると係の環境の既定を見る。
+  it('デーモンの道具は、デーモンの置き場を付けて打たせる', () => {
+    const place = "BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' ";
+    const commands = [...bodies.matchAll(/(?:DRY_RUN=\S+ )?(?:bash|node) scripts\/daemon\//g)];
+    expect(commands).not.toEqual([]);
+    for (const command of commands)
+      expect(bodies.slice(0, command.index).endsWith(place), command[0]).toBe(true);
   });
 
   it('`verdict` の一覧が、書ける値と同じ並びで出ている', () => {
@@ -126,6 +147,27 @@ describe('見回りの係の本文', () => {
     expect(prompt).toContain('/daemon/state/patrol.jsonl');
     expect(prompt).toContain('/daemon/log');
     expect(prompt).not.toMatch(/\{\{\w+\}\}/);
+  });
+});
+
+// 埋める値は node の側で引き直すので、既定が `daemon.sh` とずれると、係は動いていない置き場を見る。
+describe('埋める置き場の既定', () => {
+  const daemonSh = readFileSync(join(ROOT, 'scripts/daemon/daemon.sh'), 'utf8');
+
+  it.each([
+    ['BOARD_STATE', 'STATE_DIR'],
+    ['DAEMON_LOG', 'DAEMON_LOG'],
+  ])('%s が daemon.sh の既定と同じ', (name, shellName) => {
+    const found = new RegExp(`^${shellName}="\\$\\{${name}:-\\$HOME/([^}]+)\\}"$`, 'm').exec(daemonSh);
+    expect(found, `daemon.sh に ${shellName} の既定の行が無い`).not.toBeNull();
+    vi.stubEnv(name, undefined);
+    vi.stubEnv('USERPROFILE', undefined);
+    vi.stubEnv('HOME', '/home/daemon');
+    try {
+      expect(SESSION_PLACES[name]?.()).toBe(`/home/daemon/${found?.[1] ?? ''}`);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 

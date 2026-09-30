@@ -32,7 +32,9 @@
 
 **デーモンのログは `{{DAEMON_LOG}}`、台帳の置き場は `{{BOARD_STATE}}` です。** どちらもデーモンが
 投入のときに書き込んだ値で、**あなたの環境変数（`BOARD_STATE` など）から引き直さないでください**
-——あなたはデーモンの環境を受け取っていないので、引き直すと別の場所を見ます。
+——あなたはデーモンの環境を受け取っていないので、引き直すと別の場所を見ます。**`scripts/daemon/` の
+道具は置き場を環境変数から引く**ので、打つときは下の例と同じく `BOARD_STATE=… DAEMON_LOG=…` を
+頭に付けてください（`daemon.sh restart` を付けずに打つと、別の置き場を持つデーモンが立ちます）。
 
 **あなたが立っているということは、デーモンは生きています。** 落ちていれば、あなたを立てる者が
 居ません。だから「デーモンが**今**止まっていないか」は調べる必要がありません。
@@ -244,7 +246,7 @@ node scripts/agent/patrol-record.mjs '{{BOARD_STATE}}' < <記録を書いたフ�
 - `at` … **時刻として読めること。** 読めない行は、走らなかったのと同じに扱われます
   （`scripts/daemon/board-state.mjs` の `readLastPatrol`）。
 - `verdict` … **その回に通った出口**。`直した` は下の「直す」、`次へ回した` と `人へ上げた` は
-  「自分で直せないものを渡す」の2つの出口です。**複数に当たる回は、右にあるほうを書いてください**
+  「自分で直せないものを渡す」の出口です。**複数に当たる回は、右にあるほうを書いてください**
   ——`人へ上げた` だけが人の手番を求めるので、次のセッションへ回しただけの回にこれを書くと、
   人は要らない手番を待たされます。
 - `verdict` と `summary` … **常設の盤面 issue（2.20）へそのまま出ます。** 読むのはスマホの人間なので、
@@ -288,9 +290,9 @@ node scripts/agent/patrol-record.mjs '{{BOARD_STATE}}' < <記録を書いたフ�
 | 今の盤面 | `bash scripts/agent/board.sh` |
 | 満ちた枠の内訳 | 常設の盤（2.20）の `## 投入済み` の表——`手空き`／`作業中` の列と、そのPRの札。**覚え書きの件数では言えません**（そこに並ぶのはセッションIDだけ）。握っているPRが人待ちかは、**盤面が人の手番と読むのと同じ集合**（`board-move.mjs` の `HUMAN_TURN`）で引きます——**`判断待ち` だけで数えないこと。** そちらに入らない札も人しか外せないので、片方だけを数えると、盤面が触らないPRを「まだ盤面に打てる手が在る」と読み、**自力で空けられない枠を空けられると数えます** |
 | まだ名前の出ていない枠の残り | `board-move.mjs` の `HELD_TASKS`・`ACTIVE_WORKERS`・`UPKEEP_WORKERS` と比べます。**どれも `## 投入済み` の表からは数えられません。** `HELD_TASKS` が数えるのは `task-` のタグを持つ生きたセッション（`{{BOARD_STATE}}/live-sessions.tsv`）で、**表はラベルを見て `判断待ち` の担当を `返却` として落とす**（`board.mjs`）ので、**返した周からワーカーを畳む次の周までの窓で、表の行だけを数えると枠を1つ少なく読みます**（`agent-ops/board-design.md` 2.13.6節 の返す手が作る状態がこれ）。**後ろの2つは表の `作業中`／`手空き` でも数えられません**——表が見ているのは `busySession`（セッションが走っているか）だけで、後ろの2つが数える `stillWorking` は**それに加えて「遊んでいる時間が `STALL_MINUTES` 未満か」**を見るので、**`手空き` と出ている人待ちの相手も、起こされた直後はこの枠を握ります**。**誤る向きは決まっています**——後ろの2つは時間で落ちるので、**握っている相手が人待ちでも、その枠は人を待たずに空きます**。表の列だけで数えて「人待ちに握られている＝盤面の手では空かない」と読むと、健全な周を詰まりだと報告することになります。**覚え書きに出てくるのを待たないこと**——出た周には投入が止まっています |
-| 止めているのが手綱か余力か | 人の手綱は `bash scripts/daemon/brake.sh new-task`、余力は**控えを読むだけ**にします（`bash scripts/daemon/usage.sh --last`、または `{{BOARD_STATE}}/usage.json`）。**`headroom.sh` を叩かないこと**——あれは控えが無いか古い周に**自分で口を叩き**、`usage-polled` を書いて**割り当ての側の番を奪います**（`usage.sh` の「毎周値が要る側のために、引けた行を控える」）。控えを新しくしているのはデーモンなので、**口が落ちている周ほどこちらへ落ちます** |
+| 止めているのが手綱か余力か | 人の手綱は `BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' bash scripts/daemon/brake.sh new-task`、余力は**控えを読むだけ**にします（`BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' bash scripts/daemon/usage.sh --last`、または `{{BOARD_STATE}}/usage.json`）。**`headroom.sh` を叩かないこと**——あれは控えが無いか古い周に**自分で口を叩き**、`usage-polled` を書いて**割り当ての側の番を奪います**（`usage.sh` の「毎周値が要る側のために、引けた行を控える」）。控えを新しくしているのはデーモンなので、**口が落ちている周ほどこちらへ落ちます** |
 | 余力が尽きる時刻 | 上がり幅は**過去の記録**から出します（`patrol.jsonl` の各行に控えた百分率を並べる。1周ぶんの差では、その回が忙しかっただけの揺れと区別が付きません）。枠が明ける時刻は控えの `resets_at`。**止まる百分率は、`scripts/daemon/headroom.mjs` が持つ安全率と `{{BOARD_STATE}}/spent.tsv` の1本あたりから出します**——100%ではありません。**`headroom.sh` は叩かないこと**（上の行と同じ理由） |
-| デーモンの生死 | `bash scripts/daemon/daemon.sh status`（**答えるのは今の生死だけ**。手前の区間は次の行で見ます） |
+| デーモンの生死 | `BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' bash scripts/daemon/daemon.sh status`（**答えるのは今の生死だけ**。手前の区間は次の行で見ます） |
 | 周が止まっていた区間 | `{{DAEMON_LOG}}` の、時刻を持つ行どうしの空き（下の一行）。**死んだ周はログに何も書けない**ので、探すのは書かれたものではなく**書かれていない幅**です |
 | 盤面を引けていないか | デーモンの台帳（記録と同じ置き場の `taken.json`）の `unreadable:since`。**今まさに引けていないときだけ在ります**——引けた周に消えるので、直った後に立つあなたには残っていません |
 | 盤面を引けなかった区間 | 周の出来事の帳面（`{{BOARD_STATE}}/rounds.jsonl`）の `kind: "gap"` の行。**閉じた区間が、いつから・いつまで・何周・道具が言った理由ごと1行で残ります**（2.20.3）。**今まさに引けていない区間はまだ閉じていない**ので、そちらは台帳の `unreadable:*` を見ます。**ログの空きでは出ません**——5分おきに回り続けるため時刻の上では埋まります |
@@ -318,10 +320,10 @@ node -e "const l=require('fs').readFileSync('{{DAEMON_LOG}}','utf-8').split('\n'
 理由はそのスクリプトの標準エラーにしか出ていません。`DRY_RUN=1` を付ければ立てずに引数だけ見られます。
 
 ```
-DRY_RUN=1 node scripts/daemon/board-round.mjs
-DRY_RUN=1 bash scripts/daemon/dispatch-task.sh <番号> /dev/null
-bash scripts/daemon/may-dispatch.sh new-task task-<番号>
-bash scripts/daemon/brake.sh new-task
+BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' DRY_RUN=1 node scripts/daemon/board-round.mjs
+BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' DRY_RUN=1 bash scripts/daemon/dispatch-task.sh <番号> /dev/null
+BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' bash scripts/daemon/may-dispatch.sh new-task task-<番号>
+BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' bash scripts/daemon/brake.sh new-task
 ```
 
 ## 直す
@@ -342,7 +344,7 @@ bash scripts/daemon/brake.sh new-task
   `bash scripts/agent/board.sh` の `## 走行` で確かめ、**居るなら差分を最小にして、そのことを報告に
   書いてください。** 相手のPRとぶつかっても、盤面が `mend` で直させます。
 - **デーモンを止めないでください。** 走っているデーモンは、`main` が動けば次の周に自分で新しい版へ
-  入れ替わります（2.3.2）。どうしても要るときだけ `bash scripts/daemon/daemon.sh restart` を打ち、
+  入れ替わります（2.3.2）。どうしても要るときだけ `BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' bash scripts/daemon/daemon.sh restart` を打ち、
   打ったことを報告に書いてください。
 - **セッションを立て直さないでください。** 投入するのは盤面で、原因が消えれば次の周に自分で打ちます。
   あなたが立てると、同じ仕事に2本立ちます。
