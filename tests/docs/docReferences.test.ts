@@ -868,7 +868,7 @@ describe('ドキュメントの参照', () => {
     const seen: string[] = [];
     const broken: string[] = [];
     for (const rel of PATH_CHECKED_FILES) {
-      const source = rel.endsWith('.md') ? readRef(rel) : commentsOnly(read(rel), rel);
+      const source = rel.endsWith('.md') ? readRef(rel) : proseOf(rel, read(rel));
       for (const token of repoPathsIn(source)) {
         seen.push(`${rel}: ${token}`);
         if (!resolvesInRepo(token)) broken.push(`${rel}: ${token}`);
@@ -876,6 +876,11 @@ describe('ドキュメントの参照', () => {
     }
     // 拾う側が黙って0件になると、**1つも読めていない状態と、全部が正しい状態が同じ緑**になる。
     expect(seen).not.toHaveLength(0);
+    // 散文がコメントの外に在るデータは、コメントだけを読むと黙って0件になる（#2322）。
+    expect(
+      seen.filter((entry) => isProseData(entry.split(': ')[0])),
+      '宣言の値へ書いた散文が、パスの走査から落ちている',
+    ).not.toHaveLength(0);
     expect(broken, `指し先の無いパス:\n${broken.join('\n')}`).toEqual([]);
   });
 
@@ -1388,6 +1393,17 @@ describe('ドキュメントの参照', () => {
     expect(pending.length).toBeGreaterThan(0);
     expect(pending.filter((rel) => !REF_FILES.includes(rel))).toEqual([]);
     expect(folded.filter((rel) => REF_FILES.includes(rel))).toEqual([]);
+  });
+
+  it('節番号で文書を指すJSONが、参照の検査に入っている', () => {
+    // 射程を `tools/**` に絞っていた間、`WorldCodex.schema.json` の description が引く節番号は
+    // 指し先の実在すら見られていなかった（#2322）。
+    const citing = trackedFiles(ROOT, '*.json').filter((rel) =>
+      /\.md\s*\d+(?:\.\d+)*\s*節/.test(read(rel)),
+    );
+
+    expect(citing.length).toBeGreaterThan(0);
+    expect(citing.filter((rel) => !REF_FILES.includes(rel))).toEqual([]);
   });
 
   // 原文の側で赤くすると、緑へ戻す手が原文の改変しか無い（DocumentStyle.md 10節）。
