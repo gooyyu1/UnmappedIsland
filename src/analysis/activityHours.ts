@@ -1,6 +1,7 @@
 import type { ConditionalReading, EffectReader, PickReading } from '../domain/EffectReader';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
+import { actionBrightnessPropertiesOf } from './actionBrightness';
 import { islandLocationsOf } from './islandLocations';
 import { stageModifyDeltasOf } from './stageModifiers';
 import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
@@ -48,21 +49,27 @@ export interface PropertyStageName {
   readonly stageName: string;
 }
 
-// 表の列は、行動のクラス（IlluminationSystem.md 5節）が見る明るさと、その行動ができる最も暗い段。
-// **列と行動のクラスは1対1**——1列に2つを畳むと、境目が別々に動いたときにその列の意味が消える。
-// **風雨は列の性質ではない**（どの列も同じだけ引く、上）ので、列が持つのは明るさの段だけ。
-
-/** 土地の間を移動する: 視界が `dim` 以上であること（同 5節）。 */
-const TRAVEL_COLUMN: PropertyStageName = { propertyName: 'looking_brightness', stageName: 'dim' };
-
 /**
- * 屋外で見て探す仕事——採取と探索（同 5節の1行）。**採取と探索を別の列にしない**のは、見る値も
- * しきい値も風雨の扱いも1つに揃っているからで、分けても必ず同じ値になる。
+ * 表の列は、行動のクラス（IlluminationSystem.md 5節）が見る明るさと、その行動ができる最も暗い段。
+ * **列と行動のクラスは1対1**——1列に2つを畳むと、境目が別々に動いたときにその列の意味が消える。
+ * **風雨は列の性質ではない**（どの列も同じだけ引く、上）ので、列が持つのは明るさの段だけ。
+ *
+ * **行動の可否を決める明るさ（`action_brightness` のタグ）は、どれもいずれかの列が見る**
+ * （{@link activityHoursOf} が確かめる）。列の無い明るさで止まる行動は、この表のどこにも現れない。
  */
-const OUTDOOR_SEARCH_COLUMN: PropertyStageName = { propertyName: 'looking_brightness', stageName: 'bright' };
+export const ACTIVITY_HOURS_COLUMNS = {
+  /** 土地の間を移動する: 視界が `dim` 以上であること（同 5節）。 */
+  travel: { propertyName: 'looking_brightness', stageName: 'dim' },
 
-/** 手元の細かい作業（同 5節）。 */
-const HANDWORK_COLUMN: PropertyStageName = { propertyName: 'hand_brightness', stageName: 'bright' };
+  /**
+   * 屋外で見て探す仕事——採取と探索（同 5節の1行）。**採取と探索を別の列にしない**のは、見る値も
+   * しきい値も風雨の扱いも1つに揃っているからで、分けても必ず同じ値になる。
+   */
+  outdoorSearch: { propertyName: 'looking_brightness', stageName: 'bright' },
+
+  /** 手元の細かい作業（同 5節）。 */
+  handwork: { propertyName: 'hand_brightness', stageName: 'bright' },
+} as const satisfies Record<string, PropertyStageName>;
 
 /** 風雨の強さ（`core.yaml`のworld・`characters/player_character.yaml`）と、嵐と呼ぶ段。 */
 const WIND_PROPERTY = 'wind_speed';
@@ -185,11 +192,12 @@ export function activityHoursOf(
   seasons: readonly SeasonWeatherHours[],
   carriedLightEv = 0,
 ): readonly ActivityHoursRow[] {
+  assertEveryActionBrightnessHasColumn(codex);
   const worldAmbientAt = worldAmbientBrightnessOf(codex);
   const worldWindAt = worldWindSpeedOf(codex);
-  const travelThreshold = characterStageMinimumOf(codex, TRAVEL_COLUMN);
-  const outdoorSearchThreshold = characterStageMinimumOf(codex, OUTDOOR_SEARCH_COLUMN);
-  const handworkThreshold = characterStageMinimumOf(codex, HANDWORK_COLUMN);
+  const travelThreshold = characterStageMinimumOf(codex, ACTIVITY_HOURS_COLUMNS.travel);
+  const outdoorSearchThreshold = characterStageMinimumOf(codex, ACTIVITY_HOURS_COLUMNS.outdoorSearch);
+  const handworkThreshold = characterStageMinimumOf(codex, ACTIVITY_HOURS_COLUMNS.handwork);
   const galeThreshold = characterStageMinimumOf(codex, GALE_STAGE);
 
   const rows: ActivityHoursRow[] = [];
@@ -222,6 +230,26 @@ export function activityHoursOf(
     }
   }
   return rows;
+}
+
+/**
+ * 行動の可否を決める明るさ（`action_brightness`）と、列が見る明るさが同じ集まりであること。列の無い
+ * 明るさを足すと、それで止まる行動を数えないまま表が出続け、列だけが見る明るさはもう行動を止めない。
+ */
+function assertEveryActionBrightnessHasColumn(codex: WorldCodex): void {
+  const declared = new Set(actionBrightnessPropertiesOf(codex));
+  const columns = new Set<string>(Object.values(ACTIVITY_HOURS_COLUMNS).map((column) => column.propertyName));
+  const unmatched = [
+    ...[...declared].filter((name) => !columns.has(name)).map((name) => `${name}（列が無い）`),
+    ...[...columns]
+      .filter((name) => !declared.has(name))
+      .map((name) => `${name}（action_brightness ではない）`),
+  ];
+  if (unmatched.length > 0)
+    throw new Error(
+      `活動時間表の列と、行動の可否を決める明るさが噛み合いません: ${unmatched.join('、')}` +
+        '（IlluminationSystem.md 5節）。',
+    );
 }
 
 /**

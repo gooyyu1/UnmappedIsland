@@ -8,25 +8,20 @@ import type { ObjectWindowLane, ObjectWindowPane } from './ObjectWindowPane';
 import type { StatusContent } from './StatusBar';
 import { StatusBar } from './StatusBar';
 import { addInputBlockingPanel } from '../../ui/shapes';
-import { COLOR, SIZE } from '../looks/theme';
-
-/** カテゴリの縦タブの幅と、タブ同士・行同士の間隔。 */
-const CATEGORY_WIDTH = 180;
-const CATEGORY_HEIGHT = SIZE.iconButton;
-const CATEGORY_GAP = 12;
-const ROW_GAP = 16;
+import { COLOR } from '../looks/theme';
+import {
+  CATEGORY_GAP,
+  CATEGORY_WIDTH,
+  ROW_GAP,
+  categoryTabSpan,
+  propertiesPaneHeight,
+} from '../looks/propertiesPaneLayout';
 
 /**
  * 名前欄の幅。ステータスエリアと違って絵に表示名を添えるので（絵と名前の対応をここで覚えられる
  * ようにするため、Windows.md 6節）、「穀物・イモの栄養」のような長い名前が収まるだけ取る。
  */
 const NAME_WIDTH = 260;
-
-/**
- * この面が要る高さを決める行数。**プロパティの数で窓の寸法を変えない**ので、これを超える分は
- * 縦にスクロールして送る。
- */
-const ROWS_SHOWN = 5;
 
 /** 1つのカテゴリ（1つのプロパティタグと、そのタグが付いたプロパティ）。 */
 export interface PropertyCategory {
@@ -42,8 +37,8 @@ export interface PropertyCategory {
  */
 export class PropertiesPane implements ObjectWindowPane {
   /** この面が要る高さ。窓の中段の高さは、最も高いタブに合わせて決まる（ObjectWindow）。 */
-  static height(metrics: ScreenMetrics): number {
-    return stackedLength(StatusBar.height(metrics), metrics.px(ROW_GAP), ROWS_SHOWN);
+  static height(metrics: ScreenMetrics, categoryCount: number): number {
+    return propertiesPaneHeight(metrics, StatusBar.height(metrics), categoryCount);
   }
 
   /** バーはレーンではないので、この面はレーンを持たない。 */
@@ -82,13 +77,12 @@ export class PropertiesPane implements ObjectWindowPane {
     const categories = source();
     this.categories = categories;
 
-    const height = metrics.px(CATEGORY_HEIGHT);
-    const gap = metrics.px(CATEGORY_GAP);
     categories.forEach((category, index) => {
+      const { top, height } = categoryTabSpan(metrics, index);
       const button = addTextButton(
         scene,
         metrics,
-        { x: area.x, y: area.y + index * (height + gap), width: metrics.px(CATEGORY_WIDTH), height },
+        { x: area.x, y: area.y + top, width: metrics.px(CATEGORY_WIDTH), height },
         category.name,
         { fill: COLOR.button },
         () => this.select(index),

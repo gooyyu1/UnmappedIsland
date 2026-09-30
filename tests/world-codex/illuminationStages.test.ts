@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { isMap, isScalar, isSeq, LineCounter, parseDocument } from 'yaml';
 import { describe, expect, it } from 'vitest';
+import { actionBrightnessPropertiesOf } from '../../src/analysis/actionBrightness';
 import { PROPERTY_OPS } from '../../src/loader/parseConditions';
-import { worldCodexYamlPaths } from '../support/worldCodexFiles';
+import { bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
 
 /**
- * 行動の可否を決める2つの明るさ（`docs/engine/IlluminationSystem.md` 2節）のしきい値が、段の宣言の
+ * 行動の可否を決める明るさ（`docs/engine/IlluminationSystem.md` 2節）のしきい値が、段の宣言の
  * 外へ散らないことの検査（同 8節）。
  *
  * **境目を持ってよいのは `stages` だけ**で、条件の側は段の名前（`in_stage`／`in_stage_or_above`）で
@@ -21,8 +22,8 @@ import { worldCodexYamlPaths } from '../support/worldCodexFiles';
  * `- prop: x` ＋ `  gte: 5` が別の扱いになり、書き方を変えただけで検査をすり抜ける。
  */
 
-/** 段でしか見てはいけない明るさ（IlluminationSystem.md 5節の表が見る2つ）。 */
-const STAGED_BRIGHTNESS = new Set(['hand_brightness', 'looking_brightness']);
+/** 段でしか見てはいけない明るさ。宣言の `action_brightness` のタグから数える（IlluminationSystem.md 2節）。 */
+const STAGED_BRIGHTNESS = new Set(actionBrightnessPropertiesOf(bundledCodex()));
 
 /**
  * 実効値を数と直接比べる演算子キー（GameElementDefinition.md 14.1節）。**読む側ではなく、宣言を
@@ -76,7 +77,7 @@ function brightnessConditions(): readonly BrightnessCondition[] {
 }
 
 describe('明るさのしきい値は段の宣言にしかない', () => {
-  it('条件の側が、行動の可否を決める2つの明るさを数と直接比べていない', () => {
+  it('条件の側が、行動の可否を決める明るさを数と直接比べていない', () => {
     const conditions = brightnessConditions();
 
     // 何も拾えていない検査は、緑であることと見ていないことの区別が付かない。
