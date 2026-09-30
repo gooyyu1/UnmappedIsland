@@ -115,7 +115,7 @@ function chillTheWorld(world: WorldObject, weatherName: string): void {
     .setNumberWithoutEvents(codex.symbolNames.getId(weatherName));
 }
 
-/** その土地へ、敷いた寝床を1つ据える（bedding.yamlのbed。睡眠を配るのはこれだけ）。 */
+/** その土地へ、敷いた寝床を1つ据える（bedding.yamlのbed）。 */
 function spreadBed(session: WorldSession, land: WorldObject): WorldObject {
   const bed = session.createObject(codex.objectNames.getId('bed'));
   expect(bed.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
@@ -783,11 +783,10 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     it('眠り込みは寝床を要らず、まとめて休んだ割増しも付かない', () => {
-      // 寝床を要らないのは、限界が逃げ場であって線ではないため（Characters.md 限界節）。睡眠と同じ
-      // 要件を写すと、寝床の無い場所で眠気が尽きた時点で、覚醒度を戻す手が世界から消える。
+      // 寝床を要らないのは、限界が逃げ場であって線ではないため（Characters.md 限界節）。
       //
       // **割増しを付けないほうが要。** 割増しの付いた sleep の割で戻すと、倒れるまで起きているのが
-      // 最良の手になり、寝床を敷く理由が消える。倒れ込み・打ちひしがれが rest の割に揃えているのと
+      // 最良の手になり、自分から眠る理由が消える。倒れ込み・打ちひしがれが rest の割に揃えているのと
       // 同じ線で、眠り込みも寝床を要らない休息の割で抑える。
       //
       // **見るのは戻す値すべて。** 眠気だけを見ると、体力の側が sleep の割のまま残っていても気付けない

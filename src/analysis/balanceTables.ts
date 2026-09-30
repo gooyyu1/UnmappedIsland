@@ -871,7 +871,7 @@ function schedulableSteps(steps: readonly StepRef[]): readonly StepRef[] {
 
 /**
  * その工程がキャラクタへ返す値。**宣言元がキャラクタ自身なら `self` も数える**——キャラクタ自身が
- * 持つ休息（`wait`/`rest`/`nap`）は自分の値を自分で戻す工程で、他の工程のように `agent` を持たない
+ * 持つ休息は自分の値を自分で戻す工程で、他の工程のように `agent` を持たない
  * （寝床が配る睡眠はそちらが宣言元なので、普通に `agent` を持つ）。
  */
 function gainsOf(codex: WorldCodex, ref: StepRef): ReadonlyMap<PropertyGlobalId, number> {

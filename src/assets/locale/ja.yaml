@@ -895,7 +895,7 @@ object_texts:
   # 寝床（bedding.yaml）。
   bed:
     display_name: 寝床
-    description: 編んだ葉を広げただけの寝床。地面の湿りと硬さを断つ。ここでなら通しで眠れる。
+    description: 編んだ葉を広げただけの寝床。地面の湿りと硬さを断つ。地面よりも体力が戻る。
     recipes:
       spread:
         display_name: 敷く
