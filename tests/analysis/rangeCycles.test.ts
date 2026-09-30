@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { externalTickDeltasOf, rangeCyclesOf } from '../../src/analysis/rangeCycles';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * tick毎に動く値がrangeの端へ届くまでの周期（`src/analysis/rangeCycles.ts`）の検証。
@@ -157,11 +158,11 @@ object_defs:
     props:
       minute:
         value: 0
-        range: {min: 0, max: 60}
+        range: {min: 0, max: ${MINUTES_PER_HOUR}}
         on_max:
-          add: {self: {minute: -60}}
+          add: {self: {minute: -${MINUTES_PER_HOUR}}}
         passives:
-          - add: {self: {minute: 15}}
+          - add: {self: {minute: ${MINUTES_PER_TICK}}}
 
   # 血と水を奪う傷。**奪う経路が2つあり、止まるまでも効き始めも違う**——出血は負った瞬間から効いて
   # 自分のbleedingが尽きる4 tickで止まり、膿み続ける傷が奪う分はinfectionがsepticへ届く320 tick後から
@@ -1012,7 +1013,12 @@ object_defs:
     // 周期が丸ごと消える（凍死が日をまたぐ長さの列から落ちていた）。
     // 最も遅いのは寒い所に居る-2で700/2=350 tick、最も速いのは雨の野ざらしの-6で116.67 tick。
     expect(cycleOf('camper', 'warmth')).toMatchObject([
-      { minutes: 350 * 15, shortestMinutes: (700 / 6) * 15, destroysSelf: true, repeats: false },
+      {
+        minutes: 350 * MINUTES_PER_TICK,
+        shortestMinutes: (700 / 6) * MINUTES_PER_TICK,
+        destroysSelf: true,
+        repeats: false,
+      },
     ]);
   });
 
@@ -1020,7 +1026,7 @@ object_defs:
     // -1と+2は同時にも起こりうるが、乾く-1だけが効く場合もある。合計（+1）の向きだけで見ると
     // 上端へ向かうものとして読まれ、塩を生むon_minが1つも立たなくなる。
     const [cycle] = cycleOf('salt_pan', 'drying_remaining');
-    expect(cycle).toMatchObject({ minutes: 24 * 15, repeats: true });
+    expect(cycle).toMatchObject({ minutes: 24 * MINUTES_PER_TICK, repeats: true });
     expect(cycle.step.outputs).toHaveLength(1);
   });
 
@@ -1028,14 +1034,16 @@ object_defs:
     // 渇く-1と飲む+1は同じゲートを持つが、飲めるのは囲いの水が残っている間だけ。両方を必ず
     // 重なるものとして足すと0になり、渇きの期限が消える。
     expect(cycleOf('beast', 'hydration')).toMatchObject([
-      { minutes: 336 * 15, shortestMinutes: 336 * 15, destroysSelf: true },
+      { minutes: 336 * MINUTES_PER_TICK, shortestMinutes: 336 * MINUTES_PER_TICK, destroysSelf: true },
     ]);
   });
 
   it('上端からsetで書き戻す仕掛けが、繰り返す仕掛けとして数えられる', () => {
     // 増減しか数えないと戻り0と読まれ、押し流しが「一度きり」になる。戻り量は上端16から書き戻し先の
     // 0までの16で、+1/tickなので16 tickごとに回る。
-    expect(cycleOf('sea_zone', 'storm_drift')).toMatchObject([{ minutes: 16 * 15, repeats: true }]);
+    expect(cycleOf('sea_zone', 'storm_drift')).toMatchObject([
+      { minutes: 16 * MINUTES_PER_TICK, repeats: true },
+    ]);
   });
 
   it('条件つきのon_maxは、満たさない回へ倒れる既定のクランプではなく著者の効果で読む', () => {
@@ -1043,20 +1051,22 @@ object_defs:
     // クランプ（上端へ置き直す）が著者の書き戻しに勝ち、戻り0＝一度きりと読まれる。戻り量は上端8から
     // 書き戻し先の3までの5で、+1/tickなので5 tickごとに回る。
     expect(cycleOf('lookout', 'watch_progress')).toMatchObject([
-      { minutes: 5 * 15, shortestMinutes: 5 * 15, repeats: true },
+      { minutes: 5 * MINUTES_PER_TICK, shortestMinutes: 5 * MINUTES_PER_TICK, repeats: true },
     ]);
   });
 
   it('端へ置き直すだけのsetは、戻っていない', () => {
     // 書き戻し先が上端そのものなので戻り量は0。ここを「上端ぶん戻った」と読むと、既定のクランプを
     // 持つ全プロパティが繰り返す仕掛けになる。周期は初期値0から上端10までの10 tick。
-    expect(cycleOf('peak', 'exploration_progress')).toMatchObject([{ minutes: 10 * 15, repeats: false }]);
+    expect(cycleOf('peak', 'exploration_progress')).toMatchObject([
+      { minutes: 10 * MINUTES_PER_TICK, repeats: false },
+    ]);
   });
 
   it('上端から引いて戻る仕掛けも、下端から足して戻るものと同じ向きで数える', () => {
     // 戻り量を符号つきの増減のまま見ると、上端から戻るものだけが負になって数から漏れる。
-    // 60を引いて0へ戻るので戻り量は60、+15/tickなので4 tickごと。
-    expect(cycleOf('clock', 'minute')).toMatchObject([{ minutes: 4 * 15, repeats: true }]);
+    // 1時間ぶんを引いて0へ戻り、毎tick 1tickぶん進むので、周期はちょうど1時間。
+    expect(cycleOf('clock', 'minute')).toMatchObject([{ minutes: MINUTES_PER_HOUR, repeats: true }]);
   });
 
   /** その型が隣の物（既定では親）へ与える押し手のうち、そのプロパティを動かすもの。 */
@@ -1226,13 +1236,13 @@ object_defs:
     expect(cookedCyclesOf('chopped_chunk')).toEqual([
       // **要るのは押し手が傍に在ることだけ。** 重ねた分は、押し手が居れば必ず成立するのだから
       // 条件ではない。
-      { minutes: 8 * 15, shortestMinutes: 4.8 * 15, gatedBy: [[]] },
+      { minutes: 8 * MINUTES_PER_TICK, shortestMinutes: 4.8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
 
     // 祖先で見ていても同じ。親がその火力を持っているから押しているのであって、そこを分けると、
     // 同じことを書いた2通りのうち片方だけが数に乗る。
     expect(cookedCyclesOf('ancestor_seen_chunk')).toEqual([
-      { minutes: 8 * 15, shortestMinutes: 4.8 * 15, gatedBy: [[]] },
+      { minutes: 8 * MINUTES_PER_TICK, shortestMinutes: 4.8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
   });
 
@@ -1240,19 +1250,19 @@ object_defs:
     // 炎でしか乗らない上乗せは、熾火で押されている間は効かない。押し方ごとの段を1つに束ねると、
     // 熾火の側にまで乗って、弱い火でも速く焼き上がることになる。24を熾火で24 tick、炎で8 tick。
     expect(cookedCyclesOf('seared_chunk')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
 
     // ちょうどその段（`in_stage`）は、上の段へ移れば外れる。「その段以上」と同じに扱うと、炎で
     // 押されている間も乗ることになる。
     expect(cookedCyclesOf('ember_only_chunk')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
 
     // 押し手が「その段以上」でしか居場所を名乗っていないなら、ちょうどその段に居るとは言えない
     // ——上の段に居るかもしれない。24を押し手の+1だけで24 tick。
     expect(cookedCyclesOf('ember_only_chunk', 'or_above_firepit')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 24 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 24 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
   });
 
@@ -1260,13 +1270,13 @@ object_defs:
     // 薪が残っているかは、炉が押していることでは決まらない。要る段をプロパティで照らし合わせないと、
     // 押し手が別のプロパティで名乗った段が、そのまま答えになる。
     expect(cookedCyclesOf('fuel_gated_chunk')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
 
     // 完全一致で決まる段は、値の並びの上に位置を持たない。読めないものを満たされたことに
     // すると、押し手が居るだけで成立しない条件まで数に入る。
     expect(cookedCyclesOf('positionless_chunk')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
   });
 
@@ -1274,10 +1284,10 @@ object_defs:
     // 水気が残っているかも、芯が温まったかも、押し手が傍に在ることでは決まらない。外側の段だけを
     // 見て重ねると、成立するとは限らない上乗せが押されている間ずっと効くものとして数えられる。
     expect(cookedCyclesOf('damp_chunk')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
     expect(cookedCyclesOf('core_warmed_chunk')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
   });
 
@@ -1286,7 +1296,7 @@ object_defs:
     // 段を名乗っていても成立しない。押し手の居場所を見ないと、刺さっている物の熱を場所の熱として
     // 読むことになる。24を串の+1だけで24 tick。
     expect(cookedCyclesOf('skewered_chunk', 'skewer')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 24 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 24 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
   });
 
@@ -1299,14 +1309,14 @@ object_defs:
       rangeCyclesOf(defOf('crusting_chunk'), undefined, [defOf('two_stage_firepit')])
         .filter((cycle) => cycle.drivenBy !== undefined && cycle.propertyGlobalId === propertyGlobalId)
         .map(({ minutes, gatedBy }) => ({ minutes, gatedBy })),
-    ).toEqual([{ minutes: (12 + 8) * 15, gatedBy: [[]] }]);
+    ).toEqual([{ minutes: (12 + 8) * MINUTES_PER_TICK, gatedBy: [[]] }]);
   });
 
   it('押し手を打ち消す向きの条件つきは、落としたままで周期も消えない', () => {
     // 冷めるのは炉の外に居る間の宣言なので、押されている間に成立するとは言えない。足し合わせると
     // 熾火（1-2）が下端へ向かい、焼き上がる周期そのものが立たなくなる。
     expect(cookedCyclesOf('cooling_chunk')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
   });
 
@@ -1330,7 +1340,7 @@ object_defs:
     // 火勢の段は同時に2つを取れないので、燃料が尽きるまでは-1で100 tick・-4で25 tick、持ち主から
     // 水を奪うのも-1と-4。両側が同じ数え上げを呼ばないと、片方だけが2つを足した-5を持つ。
     expect(cycleOf('torch', 'fuel')).toMatchObject([
-      { minutes: 100 * 15, shortestMinutes: 25 * 15, destroysSelf: true },
+      { minutes: 100 * MINUTES_PER_TICK, shortestMinutes: 25 * MINUTES_PER_TICK, destroysSelf: true },
     ]);
     expect(externalDeltasOf('torch', 'hydration')).toEqual([
       { amounts: [-1, -4], ticksUntilStart: 0, ticksUntilStop: undefined },
@@ -1355,7 +1365,9 @@ object_defs:
       rangeCyclesOf(defOf('boar'), undefined, [...codex.objects]).filter(
         (cycle) => codex.propertyNames.getName(cycle.propertyGlobalId) === 'blood',
       ),
-    ).toMatchObject([{ minutes: (320 + 115) * 15, destroysSelf: true, drivenBy: defOf('gash').globalId }]);
+    ).toMatchObject([
+      { minutes: (320 + 115) * MINUTES_PER_TICK, destroysSelf: true, drivenBy: defOf('gash').globalId },
+    ]);
   });
 
   /** その型の、そのプロパティが持つ周期のうち、外から押されて回るもの。 */
@@ -1372,7 +1384,7 @@ object_defs:
     // 菌が0.35でsepticemic（7）へ20 tick、開いた-40で4,600mLが尽きるまで115 tick。
     expect(drivenCyclesOf('sow', 'blood')).toMatchObject([
       {
-        minutes: (320 + 20 + 115) * 15,
+        minutes: (320 + 20 + 115) * MINUTES_PER_TICK,
         destroysSelf: true,
         drivenBy: defOf('suppurating_cut').globalId,
       },
@@ -1412,7 +1424,11 @@ object_defs:
     // -10で体力100が10 tick。軽く出た3,000を採ると101 tickになり、押し手を控えめに数えるという
     // 約束が押す向きによって破れる。
     expect(drivenCyclesOf('doe', 'stamina')).toMatchObject([
-      { minutes: (201 + 10) * 15, destroysSelf: true, drivenBy: defOf('seeping_bite').globalId },
+      {
+        minutes: (201 + 10) * MINUTES_PER_TICK,
+        destroysSelf: true,
+        drivenBy: defOf('seeping_bite').globalId,
+      },
     ]);
   });
 

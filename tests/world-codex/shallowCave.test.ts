@@ -6,6 +6,7 @@ import { Location } from '../../src/domain/wrappers/Location';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 浅い洞窟（locations.yamlのshallow_cave）が、雨をしのげる暗い拠点として働くことの検証
@@ -125,7 +126,7 @@ describe('浅い洞窟', () => {
     const shelteredJar = waterJar(session, cave);
     const before = propertyOf(shelteredJar, 'fill');
 
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
 
     expect(propertyOf(outdoorJar, 'fill'), '野ざらしの甕は雨を受ける').toBeGreaterThan(before);
     expect(propertyOf(shelteredJar, 'fill'), '洞窟の中の甕は雨を受けない').toBeLessThanOrEqual(before);
@@ -148,7 +149,7 @@ describe('浅い洞窟', () => {
     const outdoorFire = smallFire(session, land);
     const shelteredFire = smallFire(session, cave);
 
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
 
     expect(propertyOf(outdoorFire, 'heat'), '野ざらしの炉は雨に消される').toBe(0);
     expect(propertyOf(shelteredFire, 'heat'), '洞窟の中の炉は薪のぶんだけ育つ').toBe(3);

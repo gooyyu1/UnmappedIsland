@@ -16,6 +16,7 @@ import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
+import { MINUTES_PER_HOUR } from '../../src/domain/worldTime';
 
 /**
  * 腕前（characters/player_character.yaml）と、レシピの解放条件（docs/engine/SkillSystem.md 4節）の
@@ -1865,11 +1866,11 @@ describe('腕前とレシピの解放条件', () => {
       const shortest = shortestMinutes(interaction, minutes!);
       for (const amount of amounts) {
         const where = `${interaction.owner} の ${interaction.name}（${minutes}分に${amount}）`;
-        const perHour = (amount * 60) / minutes!;
+        const perHour = (amount * MINUTES_PER_HOUR) / minutes!;
         expect(perHour, `${where}: 時間あたりが速すぎる`).toBeLessThanOrEqual(GAIN_PER_HOUR.max);
         expect(perHour, `${where}: 時間あたりが遅すぎる`).toBeGreaterThanOrEqual(GAIN_PER_HOUR.min);
         expect(
-          (amount * 60) / shortest,
+          (amount * MINUTES_PER_HOUR) / shortest,
           `${where}: 腕で${shortest}分まで縮んだとき、時間あたりが速すぎる`,
         ).toBeLessThanOrEqual(GAIN_PER_HOUR.max);
       }
@@ -1883,13 +1884,15 @@ describe('腕前とレシピの解放条件', () => {
         const minutes = step.durationMinutes;
         const amount = Math.ceil(minutes / MINUTES_PER_GAIN);
         const at = `${where} の工程${index + 1}（${minutes}分に${amount}）`;
-        expect((amount * 60) / minutes, `${at}: 時間あたりが速すぎる`).toBeLessThanOrEqual(GAIN_PER_HOUR.max);
-        expect((amount * 60) / minutes, `${at}: 時間あたりが遅すぎる`).toBeGreaterThanOrEqual(
+        expect((amount * MINUTES_PER_HOUR) / minutes, `${at}: 時間あたりが速すぎる`).toBeLessThanOrEqual(
+          GAIN_PER_HOUR.max,
+        );
+        expect((amount * MINUTES_PER_HOUR) / minutes, `${at}: 時間あたりが遅すぎる`).toBeGreaterThanOrEqual(
           GAIN_PER_HOUR.min,
         );
         const shortest = recipe.minutesFor(step, expert);
         expect(
-          (amount * 60) / shortest,
+          (amount * MINUTES_PER_HOUR) / shortest,
           `${at}: 腕で${shortest}分まで縮んだとき、時間あたりが速すぎる`,
         ).toBeLessThanOrEqual(GAIN_PER_HOUR.max);
       }
@@ -1985,7 +1988,7 @@ describe('腕前とレシピの解放条件', () => {
         expect(minutes, `${where}: ${interaction.name} の所要時間が読めない`).toBeDefined();
         return interaction.gains
           .filter((gain) => gain.route === 'execution')
-          .map((gain) => (gain.amount * 60) / minutes!)
+          .map((gain) => (gain.amount * MINUTES_PER_HOUR) / minutes!)
           .join(',');
       };
 

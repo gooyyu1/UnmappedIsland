@@ -7,7 +7,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
-import { TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -18,9 +18,6 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
  * **その火が炎にならないこと**——掛けた食べ物が焼けないのは条件で止めているからではなく、火力の
  * 上限が種火の段の中に置いてあるからで、上限を動かすと黙って焼け始める。
  */
-
-/** 1tickの長さ（core.yamlのminutes_per_tick）。 */
-const TICK_MINUTES = 15;
 
 /** 強い日差しの差す時刻（干し場が進む帯。tests/world-codex/dryingYaml.test.tsと同じ）。 */
 const SUNRISE_HOUR = 9;
@@ -103,7 +100,7 @@ describe('smoking.yamlの燻製と燻し小屋', () => {
   /** tickをticks回進める。onTickがtrueを返したところで打ち切る。 */
   function advance(session: WorldSession, ticks: number, onTick?: () => boolean): void {
     for (let i = 0; i < ticks; i++) {
-      session.advanceWorldTime(TICK_MINUTES);
+      session.advanceWorldTime(MINUTES_PER_TICK);
       if (onTick?.() === true) return;
     }
   }

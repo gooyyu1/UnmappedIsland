@@ -4,7 +4,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { seededRng } from '../../src/domain/Rng';
 import { bundledCodex } from '../support/worldCodexFiles';
-import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -184,7 +184,7 @@ function startLife(plan: Plan): (days: number) => Trace {
   const hourProperty = island.world.getProperty(propertyId('hour'));
   const meals = plan.cookedMeals ?? 0;
   /** 食事を置く時刻。1日のうちへ等間隔に置く（まとめて1回にすると、食べる直前の底が深くなる）。 */
-  const mealHours = Array.from({ length: meals }, (unused, index) => (24 / meals) * index);
+  const mealHours = Array.from({ length: meals }, (unused, index) => (HOURS_PER_DAY / meals) * index);
   let pens: WorldObject[] = [];
   let lowest = happiness.number;
   let forced = 0;
@@ -307,7 +307,7 @@ describe('ホームシック(docs/world/Characters.md ホームシック節)', {
   function despairHoursPerDay(trace: Trace): number {
     const lastTen = trace.despairMinutes.slice(-10);
     expect(Math.min(...lastTen), '終盤はどの日も奪われる').toBeGreaterThan(0);
-    return lastTen.reduce((total, minutes) => total + minutes, 0) / 10 / 60;
+    return lastTen.reduce((total, minutes) => total + minutes, 0) / 10 / MINUTES_PER_HOUR;
   }
 
   /**

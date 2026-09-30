@@ -5,6 +5,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * ステータス詳細ウィンドウ（docs/ui/Windows.md 8節）に並ぶ影響の出入りを、持続効果の宣言
@@ -27,13 +28,13 @@ object_defs:
   world:
     singleton: true
     props:
-      minutes_per_tick: {value: 15}
+      minutes_per_tick: {value: ${MINUTES_PER_TICK}}
       minute:
         value: 0
-        range: {min: 0, max: 60}
+        range: {min: 0, max: ${MINUTES_PER_HOUR}}
         on_max:
-          add: {self: {minute: -60, hour: 1}}
-      hour: {value: 0, range: {min: 0, max: 24}}
+          add: {self: {minute: -${MINUTES_PER_HOUR}, hour: 1}}
+      hour: {value: 0, range: {min: 0, max: ${HOURS_PER_DAY}}}
       day: {value: 1}
     slots:
       stuff: {}

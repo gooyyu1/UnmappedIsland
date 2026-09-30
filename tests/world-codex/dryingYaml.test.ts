@@ -6,7 +6,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
-import { TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -20,9 +20,6 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
  * drying_remaining）ので、地面の72tickは経過時間で3日ぶんになる。確かめるのは日をまたいで進めた
  * ときに**どちらが先に来るか**で、開始時刻に左右されないことも合わせて見る。
  */
-
-/** 1tickの長さ（core.yamlのminutes_per_tick）。 */
-const TICK_MINUTES = 15;
 
 /** 強い日差しが差し始める時刻（tests/diagnostics/saltDryingHours.test.tsが定義から数える帯の入口）。 */
 const SUNRISE_HOUR = 9;
@@ -88,7 +85,7 @@ describe('drying.yamlの天日干しと干し場', () => {
   /** tickをticks回進める。onTickがtrueを返したところで打ち切る。 */
   function advance(session: WorldSession, ticks: number, onTick?: () => boolean): void {
     for (let i = 0; i < ticks; i++) {
-      session.advanceWorldTime(TICK_MINUTES);
+      session.advanceWorldTime(MINUTES_PER_TICK);
       if (onTick?.() === true) return;
     }
   }

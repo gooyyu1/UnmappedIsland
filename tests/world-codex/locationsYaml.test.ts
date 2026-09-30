@@ -222,6 +222,7 @@ describe('locations.yamlの土地・道定義', () => {
 
     // 発見済みの道で移動すると、プレイヤーは移動先のcharactersスロットへ移り、移動時間分だけ時間が進む。
     const minutesBefore = worldView.totalMinutes;
+    // eslint-disable-next-line no-restricted-syntax -- 探索のduration（locations.yaml）の宣言値
     expect(minutesBefore - startMinutes, '草原の探索3回でduration 15分×3が経過している').toBe(15 * 3);
     expect(pathView.travel(character)).toBe(true);
 

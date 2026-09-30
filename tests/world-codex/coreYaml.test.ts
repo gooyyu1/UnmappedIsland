@@ -7,7 +7,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { MINUTES_PER_DAY, MINUTES_PER_TICK } from '../../src/domain/worldTime';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 import { WORLD_CODEX_DIR, loadYamlDirectory } from '../support/worldCodexFiles';
 
 function load(yamlText: string): WorldCodex {
@@ -76,7 +76,7 @@ describe('core.yamlのworld定義', () => {
     ).toBeUndefined();
   });
 
-  it('コードが持つ1日の長さ・1tickの長さは、この宣言から数え直したものと一致する', () => {
+  it('コードが持つ1日の時間・1時間の分・1tickの長さは、この宣言と一致する', () => {
     // 時計の表示も航海の日数の見積もりも収支の表も、実体化された世界を持たずにこの2つを使う
     // （src/domain/worldTime.ts）。宣言だけを変えると、世界は新しい暦で回るのにコードは古い
     // 長さで計算し続けるので、ここで突き合わせる。
@@ -87,7 +87,8 @@ describe('core.yamlのworld定義', () => {
     const declaredMinutesPerTick =
       instance.tryGetProperty(codex.propertyNames.getId('minutes_per_tick'))?.number ?? 0;
 
-    expect(MINUTES_PER_DAY).toBe(hoursPerDay * minutesPerHour);
+    expect(HOURS_PER_DAY).toBe(hoursPerDay);
+    expect(MINUTES_PER_HOUR).toBe(minutesPerHour);
     expect(MINUTES_PER_TICK).toBe(declaredMinutesPerTick);
   });
 
@@ -122,12 +123,12 @@ describe('core.yamlのworld定義', () => {
     // 見たいのは繰り上がりの連鎖なので、hourの既定値（正午）ではなく0:00から始める。
     worldInstance.getProperty(hourId).setNumberWithoutEvents(0);
 
-    session.advanceWorldTime(60); // 60分 -> minuteが折り返し、hourへ+1
+    session.advanceWorldTime(MINUTES_PER_HOUR); // 1時間 -> minuteが折り返し、hourへ+1
 
     expect(worldInstance.tryGetProperty(minuteId)?.number ?? 0).toBe(0);
     expect(worldInstance.tryGetProperty(hourId)?.number ?? 0).toBe(1);
 
-    session.advanceWorldTime(60 * 23); // 残り23時間分進め、hourもdayへ折り返させる
+    session.advanceWorldTime(MINUTES_PER_HOUR * (HOURS_PER_DAY - 1)); // 1日の残りを進め、hourもdayへ折り返させる
 
     expect(worldInstance.tryGetProperty(minuteId)?.number ?? 0).toBe(0);
     expect(worldInstance.tryGetProperty(hourId)?.number ?? 0).toBe(0);

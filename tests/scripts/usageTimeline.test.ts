@@ -135,6 +135,7 @@ describe.runIf(PYTHON !== undefined)('使用量の時間への配り方', () => 
     const KEEP = '2026-09-03';
     const evenly = new Map(
       Array.from({ length: 48 }, (_, index) => [
+        // eslint-disable-next-line no-restricted-syntax -- 実時間の時刻で、世界の暦ではない
         `2026-09-0${index < 24 ? 1 : 2}T${String(index % 24).padStart(2, '0')}:00Z`,
         IDLE.cost / HOURS,
       ]),

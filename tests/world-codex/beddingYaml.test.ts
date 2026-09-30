@@ -7,7 +7,7 @@ import { characterDefNames } from '../../src/domain/generation/NewGame';
 import { bundledBalanceTables, bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
-import { TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * bedding.yamlの寝床とハンモックを、実ファイルの定義だけで検証する。
@@ -75,7 +75,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
   ): { stamina: number; wakefulness: number } {
     const SPARE = 1;
     const action = () => bed.tryGetAction(actionName, player);
-    const spent = (action()?.executionMinutes() ?? 0) / 15;
+    const spent = (action()?.executionMinutes() ?? 0) / MINUTES_PER_TICK;
 
     player.getProperty(staminaId).setNumber(0);
     player.getProperty(wakefulnessId).setNumber(spent + SPARE);
@@ -90,7 +90,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
 
   /** その休息が動かした tick 数。 */
   function ticksOf(bed: WorldObject, player: WorldObject, actionName: string): number {
-    return (bed.tryGetAction(actionName, player)?.executionMinutes() ?? 0) / 15;
+    return (bed.tryGetAction(actionName, player)?.executionMinutes() ?? 0) / MINUTES_PER_TICK;
   }
 
   /**

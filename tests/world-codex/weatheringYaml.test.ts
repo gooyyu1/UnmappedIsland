@@ -9,6 +9,7 @@ import { fixedRng } from '../support/rng';
 import { bundledBalanceTables, bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldObject } from '../../src/domain/WorldObject';
+import { MINUTES_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * 素材の屋外劣化（`src/assets/world-codex/weathering.yaml`、
@@ -215,7 +216,7 @@ describe('積んである素材の屋外劣化（DurabilitySystem.md 2.2節）',
     const log = spawnInto(session, 'log', land, 'items');
     const raft = spawnInto(session, 'raft', land, 'fixtures');
 
-    session.advanceWorldTime(24 * 60);
+    session.advanceWorldTime(MINUTES_PER_DAY);
 
     for (const pile of piles) {
       const outdoor = pile.outdoors.map(durabilityOf);

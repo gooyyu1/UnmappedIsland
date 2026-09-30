@@ -8,6 +8,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledBalanceTables, bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * firewood.yamlの薪割りと薪棚を、実ファイルの定義だけで検証する。
@@ -21,8 +22,6 @@ import { makeBrightEnoughForAnyAction } from '../support/illumination';
  * tickと世界の進みが食い違う。人が要るのは薪を割る側だけ。
  */
 describe('firewood.yamlの薪割りと薪棚', () => {
-  /** 1tickの長さ（core.yamlのminutes_per_tick）。 */
-  const TICK_MINUTES = 15;
   const balance = bundledBalanceTables();
 
   let codex: WorldCodex;
@@ -107,7 +106,7 @@ describe('firewood.yamlの薪割りと薪棚', () => {
   }
 
   function advance(ticks: number): void {
-    for (let i = 0; i < ticks; i++) session.advanceWorldTime(TICK_MINUTES);
+    for (let i = 0; i < ticks; i++) session.advanceWorldTime(MINUTES_PER_TICK);
   }
 
   /** 棚に積んである薪の型の名前。**乾き上がりは別の型に置き換わる**ので、掴んだ個体では追えない。 */

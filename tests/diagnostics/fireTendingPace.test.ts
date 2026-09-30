@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { tickDeltasOf } from '../../src/analysis/tickDeltas';
-import { MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { MINUTES_PER_HOUR, MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
@@ -118,4 +118,3 @@ function burnRatesOf(
 const HEARTH = 'hearth';
 const FUEL = 'fuel';
 const HEAT = 'heat';
-const MINUTES_PER_HOUR = 60;

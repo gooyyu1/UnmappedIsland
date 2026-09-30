@@ -4,6 +4,7 @@ import type { Rng } from '../../src/domain/Rng';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * WorldSession.advanceWorldTime（tick=15分の時間モデルに対する時間進行ロジック）に対する自動テスト。
@@ -15,7 +16,11 @@ describe('WorldSession.advanceWorldTimeによる時間進行', () => {
     return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
-  function buildWorld(minutesPerTick = 15): { codex: WorldCodex; session: WorldSession; world: World } {
+  function buildWorld(minutesPerTick = MINUTES_PER_TICK): {
+    codex: WorldCodex;
+    session: WorldSession;
+    world: World;
+  } {
     const yaml = `
 object_defs:
   world:
@@ -31,19 +36,19 @@ object_defs:
         value: ${minutesPerTick}
       minute:
         value: 0
-        range: {min: 0, max: 60}
+        range: {min: 0, max: ${MINUTES_PER_HOUR}}
         on_max:
           add:
             self:
-              minute: -60
+              minute: -${MINUTES_PER_HOUR}
               hour: 1
       hour:
         value: 0
-        range: {min: 0, max: 24}
+        range: {min: 0, max: ${HOURS_PER_DAY}}
         on_max:
           add:
             self:
-              hour: -24
+              hour: -${HOURS_PER_DAY}
               day: 1
       day:
         value: 1
@@ -100,12 +105,14 @@ object_defs:
 
     const minutesPerTick = world.rawMinutesPerTick;
 
-    session.advanceWorldTime(60 * 25); // 25時間分を1回で進める
+    session.advanceWorldTime(MINUTES_PER_HOUR * 25); // 25時間分を1回で進める
 
     expect(world.minute).toBe(0);
     expect(world.hour).toBe(1);
     expect(world.instance.tryGetProperty(dayId)?.number ?? 0).toBe(2);
-    expect(world.instance.tryGetProperty(tickId)?.number ?? 0).toBe(Math.trunc((60 * 25) / minutesPerTick));
+    expect(world.instance.tryGetProperty(tickId)?.number ?? 0).toBe(
+      Math.trunc((MINUTES_PER_HOUR * 25) / minutesPerTick),
+    );
   });
 
   it('1tickの長さはハードコードではなく設定されたminutes_per_tickに従う', () => {
@@ -139,7 +146,7 @@ object_defs:
       const { world } = buildWorld();
       const requested: [number, number][] = [];
 
-      world.rollTimeOfDay(8 * 60, 12 * 60, pickSecondCandidate(requested));
+      world.rollTimeOfDay(8 * MINUTES_PER_HOUR, 12 * MINUTES_PER_HOUR, pickSecondCandidate(requested));
 
       expect(requested, '8:00〜12:00を15分刻みで区切った17個の候補').toEqual([[32, 49]]);
       expect(world.hour).toBe(8);
@@ -150,7 +157,7 @@ object_defs:
       const { world } = buildWorld(20);
       const requested: [number, number][] = [];
 
-      world.rollTimeOfDay(8 * 60, 12 * 60, pickSecondCandidate(requested));
+      world.rollTimeOfDay(8 * MINUTES_PER_HOUR, 12 * MINUTES_PER_HOUR, pickSecondCandidate(requested));
 
       expect(requested).toEqual([[24, 37]]);
       expect(world.hour).toBe(8);
@@ -161,7 +168,7 @@ object_defs:
       const { codex, session, world } = buildWorld();
       const tickId = codex.propertyNames.getId('tick');
 
-      world.rollTimeOfDay(8 * 60, 12 * 60, pickSecondCandidate([]));
+      world.rollTimeOfDay(8 * MINUTES_PER_HOUR, 12 * MINUTES_PER_HOUR, pickSecondCandidate([]));
       session.advanceWorldTime(world.rawMinutesPerTick - 1);
       expect(world.instance.tryGetProperty(tickId)?.number ?? 0, '1tickに1分足りなければまだ回らない').toBe(
         0,
@@ -176,7 +183,7 @@ object_defs:
     it('tickを回すたびに、その境界の時刻で観測できる', () => {
       // 07:10から45分進めると、tickが回るのは07:15/07:30/07:45の3回。最後の07:55へはtickを伴わずに進む。
       const { session, world } = buildWorld();
-      session.advanceWorldTime(7 * 60 + 10);
+      session.advanceWorldTime(7 * MINUTES_PER_HOUR + 10);
 
       const observed: number[] = [];
       session.observeTicks(
@@ -184,8 +191,12 @@ object_defs:
         () => session.advanceWorldTime(45),
       );
 
-      expect(observed, 'tick境界の絶対時刻で観測される').toEqual([7 * 60 + 15, 7 * 60 + 30, 7 * 60 + 45]);
-      expect(world.totalMinutes, '観測は時間進行そのものを変えない').toBe(7 * 60 + 55);
+      expect(observed, 'tick境界の絶対時刻で観測される').toEqual([
+        7 * MINUTES_PER_HOUR + 15,
+        7 * MINUTES_PER_HOUR + 30,
+        7 * MINUTES_PER_HOUR + 45,
+      ]);
+      expect(world.totalMinutes, '観測は時間進行そのものを変えない').toBe(7 * MINUTES_PER_HOUR + 55);
     });
 
     it('観測は呼び出しの中だけで、抜けたあとのtickでは呼ばれない', () => {
@@ -194,9 +205,9 @@ object_defs:
       let observed = 0;
       session.observeTicks(
         () => observed++,
-        () => session.advanceWorldTime(15),
+        () => session.advanceWorldTime(MINUTES_PER_TICK),
       );
-      session.advanceWorldTime(15);
+      session.advanceWorldTime(MINUTES_PER_TICK);
 
       expect(observed, '2回目のtickは観測の外なので数えない').toBe(1);
     });
@@ -213,7 +224,7 @@ object_defs:
           },
         ),
       ).toThrow();
-      session.advanceWorldTime(15);
+      session.advanceWorldTime(MINUTES_PER_TICK);
 
       expect(observed).toBe(0);
     });

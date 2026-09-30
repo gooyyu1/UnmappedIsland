@@ -40,11 +40,11 @@ object_defs:
     const before = game.world.totalMinutes;
 
     const recording = runAndRecordChange(game, locale, undefined, () => {
-      game.session.advanceWorldTime(60);
+      game.session.advanceWorldTime(MINUTES_PER_HOUR);
     });
 
     const after = game.world.totalMinutes;
-    expect(after, '60分ぶん進む').toBe(before + 60);
+    expect(after, '1時間ぶん進む').toBe(before + MINUTES_PER_HOUR);
 
     // 経過し切った時刻の控えは持たない（その並びは行動の効果まで含めて呼び出し側が見せる）。
     for (const tick of recording.ticks) {
@@ -81,11 +81,11 @@ object_defs:
     ].map((lane) => ({ ...lane, instanceId: lane.object.instanceId }));
 
     const recording = runAndRecordChange(mini.game, locale, undefined, () => {
-      mini.game.session.advanceWorldTime(60);
+      mini.game.session.advanceWorldTime(MINUTES_PER_HOUR);
       for (const { object } of shown) object.destroy();
     });
 
-    expect(recording.ticks.length, '60分ぶんのtick境界がある').toBeGreaterThan(0);
+    expect(recording.ticks.length, '1時間ぶんのtick境界がある').toBeGreaterThan(0);
     for (const tick of recording.ticks)
       for (const { name, lane, object } of shown)
         expect(
@@ -127,10 +127,12 @@ object_defs:
 
     const startedAt = mini.game.world.totalMinutes;
     const recording = runAndRecordChange(mini.game, locale, undefined, () => {
-      mini.game.session.advanceWorldTime(60);
+      mini.game.session.advanceWorldTime(MINUTES_PER_HOUR);
     });
 
-    expect(mini.game.world.totalMinutes - startedAt, '60分に、倒れ込む120分が続く').toBe(180);
+    expect(mini.game.world.totalMinutes - startedAt, '1時間に、倒れ込む120分が続く').toBe(
+      MINUTES_PER_HOUR + 120,
+    );
 
     const announced = recording.ticks.filter((tick) =>
       tick.signals.some((signal) => signal.name === 'exhausted'),
@@ -173,11 +175,11 @@ object_defs:
 
     const startedAt = mini.game.world.totalMinutes;
     const recording = runAndRecordChange(mini.game, locale, undefined, () => {
-      mini.game.session.advanceWorldTime(60);
+      mini.game.session.advanceWorldTime(MINUTES_PER_HOUR);
     });
 
     // 倒れ込みが始まってからの控えは、どれも「体力が増えた」を映している。
-    const duringCollapse = recording.ticks.filter((tick) => tick.minutes - startedAt > 60);
+    const duringCollapse = recording.ticks.filter((tick) => tick.minutes - startedAt > MINUTES_PER_HOUR);
     // 120分は8 tickだが、経過し切った時刻の控えは持たない（上の「tick境界ごとに控える」）。
     expect(duringCollapse.length, '倒れ込んでいる間の控え').toBe(7);
     expect(

@@ -78,8 +78,8 @@ export class World extends ObjectWrapper {
     const lastStep = Math.trunc(latestMinutes / step);
     const minutes = rng.nextInt(firstStep, lastStep + 1) * step;
 
-    this.instance.tryGetProperty(this.words.hourId)?.setNumber(Math.trunc(minutes / 60));
-    this.instance.tryGetProperty(this.words.minuteId)?.setNumber(minutes % 60);
+    this.instance.tryGetProperty(this.words.hourId)?.setNumber(Math.trunc(minutes / MINUTES_PER_HOUR));
+    this.instance.tryGetProperty(this.words.minuteId)?.setNumber(minutes % MINUTES_PER_HOUR);
   }
 
   /** minuteへamountを加減算する（WorldSession.advanceWorldTime専用。負の値も許容する）。繰り上げ（on_max）はtickを待たずその場で走る（PropertyValue.add参照）。 */

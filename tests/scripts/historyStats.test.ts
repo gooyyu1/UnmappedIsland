@@ -51,6 +51,7 @@ function git(args: readonly string[]): string {
  * 道具と同じ道具立てで作ると、ずれたときに両方が同じだけずれて検査が素通りする。
  */
 function jstDay(epochSeconds: string): string {
+  // eslint-disable-next-line no-restricted-syntax -- 実時間の秒（日本時間の時差）で、世界の暦ではない
   return new Date((Number(epochSeconds) + 9 * 60 * 60) * 1000).toISOString().slice(0, 10);
 }
 

@@ -181,6 +181,7 @@ export class LaneHaze {
         const across = (x / MAP_SIZE) * Math.PI * 2 * WAVE_ACROSS;
         const down = (y / MAP_SIZE) * Math.PI * 2 * WAVE_DOWN;
         const index = (y * MAP_SIZE + x) * 4;
+        // eslint-disable-next-line no-restricted-syntax -- 色の振れ幅で、暦ではない
         image.data[index] = 128 + Math.sin(down) * 60 * edgeFade(x / MAP_SIZE);
         image.data[index + 1] = 128 + Math.sin(across) * Math.cos(down) * 110 * edgeFade(y / MAP_SIZE);
         image.data[index + 2] = 128;

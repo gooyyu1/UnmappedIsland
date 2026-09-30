@@ -25,7 +25,7 @@ import { Stat } from '../support/Stat';
 import { bundledCodex, worldCodexPath } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 import { type SymbolGlobalId, symbolGlobalIdOfPropertyValue } from '../../src/domain/GlobalId';
-import { TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { MINUTES_PER_HOUR, MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * 気候システム（ClimateSystem.md）の現在の実装について、季節の持続日数・気温・天気ごとの発生時間・
@@ -163,7 +163,7 @@ function processCompletedSegment(
   const len = temps.length;
   if (len === 0) return;
 
-  getStat(stats.seasonDuration, seasonSymbolId).add(len / 96);
+  getStat(stats.seasonDuration, seasonSymbolId).add(len / TICKS_PER_DAY);
 
   for (let i = 0; i < len; i++) {
     const third = Math.min(2, Math.trunc((i * 3) / len));
@@ -188,10 +188,14 @@ function processCompletedSegment(
     occupiedTicksByThird.set(key, (occupiedTicksByThird.get(key) ?? 0) + 1);
   }
   for (const w of weatherKinds) {
-    getStat(stats.weatherTimeOverall, `${w},${seasonSymbolId}`).add((occupiedTicks.get(w) ?? 0) * 0.25);
+    getStat(stats.weatherTimeOverall, `${w},${seasonSymbolId}`).add(
+      ((occupiedTicks.get(w) ?? 0) * MINUTES_PER_TICK) / MINUTES_PER_HOUR,
+    );
     for (let third = 0; third < 3; third++) {
       const occupied = occupiedTicksByThird.get(`${w},${third}`) ?? 0;
-      getStat(stats.weatherTimeThird, `${w},${seasonSymbolId},${third}`).add(occupied * 0.25);
+      getStat(stats.weatherTimeThird, `${w},${seasonSymbolId},${third}`).add(
+        (occupied * MINUTES_PER_TICK) / MINUTES_PER_HOUR,
+      );
     }
   }
 
@@ -201,7 +205,7 @@ function processCompletedSegment(
     if (i < len && rainWeatherKinds.has(weathers[i]) === rainWeatherKinds.has(weathers[runStart])) continue;
     const runLen = i - runStart;
     const third = Math.min(2, Math.trunc((runStart * 3) / len));
-    const days = runLen / 96;
+    const days = runLen / TICKS_PER_DAY;
     if (rainWeatherKinds.has(weathers[runStart])) {
       getStat(stats.rainStreak, seasonSymbolId).add(days);
       getStat(stats.rainStreakThird, `${seasonSymbolId},${third}`).add(days);
@@ -458,7 +462,7 @@ async function buildReportFromDefinitions(): Promise<string> {
     };
 
     for (let t = 0; t < totalTicks; t++) {
-      session.advanceWorldTime(15); // minutes_per_tick分。ちょうど1tick進める
+      session.advanceWorldTime(MINUTES_PER_TICK); // ちょうど1tick進める
 
       const currentSeason = symbolGlobalIdOfPropertyValue(
         worldInstance.tryGetProperty(seasonId)?.number ?? 0,

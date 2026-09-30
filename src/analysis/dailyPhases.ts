@@ -5,7 +5,7 @@ import type { WorldCodex } from '../domain/WorldCodex';
 import type { ActivityHoursRow } from './activityHours';
 import type { BalanceTables } from './balanceTables';
 import { objectCostMinutesOf } from './balanceTables';
-import { MINUTES_PER_DAY } from '../domain/worldTime';
+import { MINUTES_PER_DAY, MINUTES_PER_HOUR } from '../domain/worldTime';
 import { craftingStepsOf } from './craftingSteps';
 import type { PropertyGlobalId } from '../domain/GlobalId';
 
@@ -814,7 +814,7 @@ function minutesPerDayOf(
   const rows = activityHours.filter((row) => row.locationName === locationDefName);
   if (rows.length === 0) throw new Error(`土地 '${locationDefName}' が活動時間の表に載っていません。`);
 
-  return (rows.reduce((sum, row) => sum + hoursOf(row), 0) / rows.length) * 60;
+  return (rows.reduce((sum, row) => sum + hoursOf(row), 0) / rows.length) * MINUTES_PER_HOUR;
 }
 
 /** 配分の検査。1つの型が2つの組に現れることも、どの組にも現れないことも許さない。 */

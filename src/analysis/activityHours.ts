@@ -4,6 +4,7 @@ import type { WorldCodex } from '../domain/WorldCodex';
 import { islandLocationsOf } from './islandLocations';
 import { stageModifyDeltasOf } from './stageModifiers';
 import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
+import { HOURS_PER_DAY } from '../domain/worldTime';
 
 /**
  * 土地×季節ごとの「移動できる／活動できる時間（時間/日）」を、`core.yaml`の`hour`・`weather`の段
@@ -167,7 +168,7 @@ export function openAirGaleShareOf(codex: WorldCodex, seasons: readonly SeasonWe
     let galeHours = 0;
     for (const [weatherName, hoursInSeason] of season.hoursByWeather)
       if (worldWindAt(weatherName) >= galeThreshold) galeHours += hoursInSeason;
-    return galeHours / (season.durationDays * 24);
+    return galeHours / (season.durationDays * HOURS_PER_DAY);
   });
   return shares.reduce((sum, share) => sum + share, 0) / shares.length;
 }
@@ -198,9 +199,9 @@ export function activityHoursOf(
       let outdoorSearchHoursPerDay = 0;
       let handworkHoursPerDay = 0;
 
-      for (let hour = 0; hour < 24; hour++) {
+      for (let hour = 0; hour < HOURS_PER_DAY; hour++) {
         for (const [weatherName, hoursInSeason] of season.hoursByWeather) {
-          const fraction = hoursInSeason / (season.durationDays * 24);
+          const fraction = hoursInSeason / (season.durationDays * HOURS_PER_DAY);
           const brightness = place.brightnessAt(worldAmbientAt(hour, weatherName)) + carriedLightEv;
           const gale = !place.sheltered && worldWindAt(weatherName) >= galeThreshold;
           const opens = (threshold: number): boolean => brightness >= threshold && !gale;

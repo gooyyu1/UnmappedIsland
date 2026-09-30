@@ -7,6 +7,7 @@ import { putIntoSlot } from '../../src/domain/slotEntry';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { AGENT_YAML, createAgent } from '../support/agent';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 操作の関係（GameElementDefinition.md 11.5節）の実行時の振る舞い。
@@ -22,18 +23,18 @@ object_defs:
     singleton: true
     props:
       minutes_per_tick:
-        value: 15
+        value: ${MINUTES_PER_TICK}
       minute:
         value: 0
-        range: {min: 0, max: 60}
+        range: {min: 0, max: ${MINUTES_PER_HOUR}}
         on_max:
           add:
             self:
-              minute: -60
+              minute: -${MINUTES_PER_HOUR}
               hour: 1
       hour:
         value: 0
-        range: {min: 0, max: 24}
+        range: {min: 0, max: ${HOURS_PER_DAY}}
       day:
         value: 1
     slots:
@@ -87,7 +88,7 @@ object_defs:
     expect(path.tryGetAction('travel', walker)?.executionMinutes(), '歩く人の遅れを継いで80分').toBe(80);
 
     expect(path.tryGetAction('travel', walker)?.tryExecute()).toBe(true);
-    expect(world.minute + world.hour * 60, '見せた分数と、実際に進む分数は同じ').toBe(80);
+    expect(world.minute + world.hour * MINUTES_PER_HOUR, '見せた分数と、実際に進む分数は同じ').toBe(80);
   });
 
   it('関係を外した後は、土台も元へ戻る（1つずつ張って外す）', () => {
@@ -165,7 +166,7 @@ object_defs:
     const stamina = () => beast.tryGetProperty(codex.propertyNames.getId('stamina'))?.getEffectiveValue();
 
     expect(stamina(), '手番の外ではagent対象は解決しない').toBe(9);
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
     expect(stamina(), '手番を終えても、常時の寄与は残っている').toBe(9);
   });
 
@@ -333,7 +334,7 @@ object_defs:
 
     const wear = () => stone.tryGetProperty(codex.propertyNames.getId('wear'))?.number;
 
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
     expect(wear(), '誰も担いでいない1tickでは、agentが解決しないのでゲートは閉じている').toBe(0);
 
     // 持ち上げの1 tick（15分）は関係を張ったまま進む。石（辺の子側）は参加していないので、
@@ -355,7 +356,7 @@ object_defs:
 `);
     const beast = placeInWorld(codex, world, session.createObject(codex.objectNames.getId('beast')));
 
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
 
     expect(
       beast.tryGetProperty(codex.propertyNames.getId('steps'))?.number,
@@ -475,7 +476,7 @@ object_defs:
         fatigue: hauler.tryGetProperty(codex.propertyNames.getId('fatigue'))?.number,
       });
 
-      session.advanceWorldTime(15);
+      session.advanceWorldTime(MINUTES_PER_TICK);
       expect(counted(), '入れる前の1 tickでは、どの役も解決しない').toEqual({
         dust: 0,
         scuff: 0,
@@ -487,7 +488,7 @@ object_defs:
       expect(stone.parent, '入れ終えている').toBe(crate);
       expect(counted(), '2 tick（30分）ぶん、3役とも解ける').toEqual({ dust: 2, scuff: 2, fatigue: 2 });
 
-      session.advanceWorldTime(15);
+      session.advanceWorldTime(MINUTES_PER_TICK);
       expect(counted(), '入れ終えれば関係は外れている').toEqual({ dust: 2, scuff: 2, fatigue: 2 });
     });
 
@@ -522,7 +523,7 @@ object_defs:
         hauler.tryGetProperty(codex.propertyNames.getId('stamina'))?.number,
         '待たされた手番も起きている',
       ).toBe(20);
-      expect(world.minute + world.hour * 60, '入れる30分の後に、手番の120分が続く').toBe(150);
+      expect(world.minute + world.hour * MINUTES_PER_HOUR, '入れる30分の後に、手番の120分が続く').toBe(150);
     });
 
     it('入れている間に、入れている者が世界から失われたら入らない', () => {
@@ -552,7 +553,7 @@ object_defs:
 
       expect(hauler.parent, '入れ終える前に尽きる').toBeUndefined();
       expect(stone.parent, '入れる側が居なくなったので入らない').not.toBe(crate);
-      expect(world.minute + world.hour * 60, '時間だけは経過している').toBe(30);
+      expect(world.minute + world.hour * MINUTES_PER_HOUR, '時間だけは経過している').toBe(30);
     });
 
     it('入れている間、入れている者は別の操作のagentになれない', () => {

@@ -8,6 +8,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { placeholderIconOf } from '../../src/game/view/characterCard';
 import { bundledCodex } from '../support/worldCodexFiles';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 // describe.eachへ渡すため、beforeAllではなく読み込み時にCodexを組み立てる。
 const codex = bundledCodex();
@@ -272,7 +273,7 @@ function takeRest(
   const wakefulnessId = codex.propertyNames.getId('wakefulness');
   const action = () => patient.tryGetAction(actionName, player.instance);
   const minutes = action()?.executionMinutes() ?? 0;
-  const spent = minutes / 15;
+  const spent = minutes / MINUTES_PER_TICK;
 
   player.instance.tryGetProperty(staminaId)?.setNumber(0);
   player.instance.tryGetProperty(wakefulnessId)?.setNumber(spent + SPARE);
@@ -516,7 +517,7 @@ describe('プレイヤーキャラクタの定義', () => {
     // 最大値が違っても「あと何時間で赤くなるか」は揃える（Characters.md）。4 tick（1時間）。
     it.each(['wakefulness'])('%sの域は残り時間で切られる', (propertyName) => {
       const prop = propOf(def(character), propertyName);
-      const perHour = decayPerTick(character, propertyName) * 4;
+      const perHour = decayPerTick(character, propertyName) * (MINUTES_PER_HOUR / MINUTES_PER_TICK);
 
       expect(prop.alertOf(perHour * 3), '残り3時間').toBe('caution');
       expect(prop.alertOf(perHour * 3 - 1)).toBe('danger');
@@ -526,14 +527,14 @@ describe('プレイヤーキャラクタの定義', () => {
 
     it('水分の域は残り時間で切られ、尽きると致命的域に入る', () => {
       const prop = propOf(def(character), 'hydration');
-      const perHour = decayPerTick(character, 'hydration') * 4;
+      const perHour = decayPerTick(character, 'hydration') * (MINUTES_PER_HOUR / MINUTES_PER_TICK);
 
       expect(prop.alertOf(perHour * 6), '残り6時間').toBe('danger');
       expect(prop.alertOf(perHour * 6 - 1)).toBe('fatal');
-      expect(prop.alertOf(perHour * 24), '残り1日').toBe('caution');
-      expect(prop.alertOf(perHour * 24 - 1)).toBe('danger');
-      expect(prop.alertOf(perHour * 48), '残り2日').toBe('watch');
-      expect(prop.alertOf(perHour * 48 - 1)).toBe('caution');
+      expect(prop.alertOf(perHour * HOURS_PER_DAY), '残り1日').toBe('caution');
+      expect(prop.alertOf(perHour * HOURS_PER_DAY - 1)).toBe('danger');
+      expect(prop.alertOf(perHour * 2 * HOURS_PER_DAY), '残り2日').toBe('watch');
+      expect(prop.alertOf(perHour * 2 * HOURS_PER_DAY - 1)).toBe('caution');
     });
 
     it('体力の域は最大値に対する割合で切られる', () => {
@@ -763,7 +764,7 @@ describe('プレイヤーキャラクタの定義', () => {
       // 細切れに休むほうが得になり、まとめて休む意味が消える。
       const perHour = RESTS.map(([actionName]) => {
         const rest = takeRest(character, actionName);
-        return rest.stamina / (rest.minutes / 60);
+        return rest.stamina / (rest.minutes / MINUTES_PER_HOUR);
       });
 
       for (let i = 1; i < perHour.length; i++) expect(perHour[i]).toBeGreaterThan(perHour[i - 1]);
@@ -802,11 +803,12 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(player.instance.tryGetAction('fall_asleep', player.instance)?.tryExecute()).toBe(true);
 
       const hours =
-        (player.instance.tryGetAction('fall_asleep', player.instance)?.executionMinutes() ?? 0) / 60;
+        (player.instance.tryGetAction('fall_asleep', player.instance)?.executionMinutes() ?? 0) /
+        MINUTES_PER_HOUR;
       const perHour = (
         rest: { minutes: number; stamina: number; wakefulness: number },
         of: 'stamina' | 'wakefulness',
-      ) => rest[of] / (rest.minutes / 60);
+      ) => rest[of] / (rest.minutes / MINUTES_PER_HOUR);
       // 寝床を要らない休息のうち、体力も眠気も nap がいちばん割がよい（休息節の表）。
       const nap = takeRest(character, 'nap');
 

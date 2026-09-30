@@ -109,6 +109,7 @@ import type { BoxStyle } from '../ui/shapes';
 import { addInputBlockingPanel, addTiledImage, addTiledImageVertical, drawBox } from '../ui/shapes';
 import { COLOR, SCROLL_BAR_LOOK, SIZE } from './looks/theme';
 import type { ObjectGlobalId } from '../domain/GlobalId';
+import { MINUTES_PER_TICK } from '../domain/worldTime';
 
 /**
  * バーのアイコンボタンに載せる絵文字の大きさ（88u角のボタンに対して）。**ボタンの余白より絵が
@@ -117,10 +118,10 @@ import type { ObjectGlobalId } from '../domain/GlobalId';
 const ICON_BUTTON_GLYPH_SIZE = 58;
 
 /**
- * ゲーム内時間の経過を実時間で見せる速さ（ゲーム内15分＝現実0.5秒）。durationを持つアクションは、
+ * ゲーム内時間の経過を実時間で見せる速さ（1tick＝現実0.5秒）。durationを持つアクションは、
  * この速さで時間が経ち切るまで結果を見せない。
  */
-const REAL_MS_PER_GAME_MINUTE = 500 / 15;
+const REAL_MS_PER_GAME_MINUTE = 500 / MINUTES_PER_TICK;
 
 /**
  * 1回の経過に使う実時間の上限（CardInteraction.md 7節）。**これを超える長さの行動は、この時間に

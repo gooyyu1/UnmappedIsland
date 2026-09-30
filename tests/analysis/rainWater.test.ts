@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { HOURS_PER_DAY, TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { RainWaterRow, SeasonName } from '../../src/analysis/seasonalRain';
 import { SEASON_CLIMATE, rainWaterRows } from '../../src/analysis/seasonalRain';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -26,7 +26,7 @@ object_defs:
     props:
       hour:
         value: 12
-        range: {min: 0, max: 24}
+        range: {min: 0, max: ${HOURS_PER_DAY}}
         stages:
           - name: night
             passives:
@@ -179,7 +179,7 @@ object_defs:
   const dryFractionOf = (seasonName: SeasonName): number => {
     const season = SEASON_CLIMATE.find((candidate) => candidate.name === seasonName)!;
     const { light_rain, heavy_rain, storm } = season.hoursByWeather;
-    return 1 - (light_rain + heavy_rain + storm) / (season.durationDays * 24);
+    return 1 - (light_rain + heavy_rain + storm) / (season.durationDays * HOURS_PER_DAY);
   };
 
   it('雨を受ける容器だけが、季節ごとに1行ずつ出る', () => {
@@ -248,7 +248,7 @@ object_defs:
     // 割合の分母は持続日数なので、天候が1つ書き落とされると、残り全部の重みが黙って小さくなる。
     for (const season of SEASON_CLIMATE) {
       const hours = Object.values(season.hoursByWeather).reduce((sum, value) => sum + value, 0);
-      expect(hours, season.name).toBeCloseTo(season.durationDays * 24, 0);
+      expect(hours, season.name).toBeCloseTo(season.durationDays * HOURS_PER_DAY, 0);
     }
   });
 });
@@ -269,7 +269,7 @@ describe('宣言されていない天候', () => {
 object_defs:
   world:
     props:
-      hour: {value: 12, range: {min: 0, max: 24}}
+      hour: {value: 12, range: {min: 0, max: ${HOURS_PER_DAY}}}
       ambient_brightness: {value: 0}
       # 名前空間へ入る天候を light_rain だけに保つため、初期値もそれにする。
       weather: {value: light_rain}
@@ -294,7 +294,7 @@ object_defs:
     // どちらも、宣言されていない天候の時間がそのまま量に出る形で落ちる。
     for (const season of SEASON_CLIMATE) {
       const row = rows.find((candidate) => candidate.seasonName === season.name)!;
-      const seasonHours = season.durationDays * 24;
+      const seasonHours = season.durationDays * HOURS_PER_DAY;
       const lightRainHours = season.hoursByWeather.light_rain;
       const otherHours =
         Object.values(season.hoursByWeather).reduce((sum, hours) => sum + hours, 0) - lightRainHours;

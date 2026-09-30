@@ -6,7 +6,8 @@
  * 暦を変えたときに片方だけが古い長さのまま残る。
  *
  * 宣言との一致は `tests/world-codex/coreYaml.test.ts` が見る（rangeと宣言された値から数え直して
- * 突き合わせる）。
+ * 突き合わせる）。**同じ数を `src/`・`tests/` の式へ字で書くと `npm run lint` が落ちる**
+ * （`eslint.config.js` の暦の規則）。
  *
  * **ここの値を字で書いた文章——tickの数を人に読める長さへ言い換えた記述——の書き方は
  * [`docs/DocumentStyle.md`](../../docs/DocumentStyle.md) 11節が持つ**（`tests/docs/tickReadings.test.ts`

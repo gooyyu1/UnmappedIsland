@@ -16,6 +16,7 @@ import type { DefNames } from '../../src/codex-viewer/describe/Description';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { HOURS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * 宣言を読める形へ書き出す仕組み（src/codex-viewer/describe）のテスト。
@@ -33,12 +34,12 @@ object_defs:
     props:
       hour:
         value: 0
-        range: {min: 0, max: 24}
+        range: {min: 0, max: ${HOURS_PER_DAY}}
         stages:
           - {name: night}
           - {name: day, min: 6}
         on_max:
-          add: {self: {hour: -24, day: 1}}
+          add: {self: {hour: -${HOURS_PER_DAY}, day: 1}}
       day: {value: 1}
       # 条件つきのrangeイベント（6.3節）。満たさない回は既定のクランプ（自分を上端へset）へ倒れる。
       tide:

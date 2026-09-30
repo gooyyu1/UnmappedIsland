@@ -3,6 +3,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { SunlightHours } from '../../src/game/view/daylight';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { replaceAllOrFail } from '../support/textEdit';
+import { HOURS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * 日の出・日の入りの境目をまたいだかの判定（`src/game/view/daylight.ts`）の試験。
@@ -28,7 +29,7 @@ object_defs:
         range: {min: -6, max: 17}
       hour:
         value: 12
-        range: {min: 0, max: 24}
+        range: {min: 0, max: ${HOURS_PER_DAY}}
         stages:
           - {name: night, passives: [{modify: {self: {ambient_brightness: -6}}}]}
           - {name: sunrise, min: 6, passives: [{modify: {self: {ambient_brightness: 10}}}]}

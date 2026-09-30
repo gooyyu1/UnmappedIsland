@@ -10,6 +10,7 @@ import { generateIsland } from './TerrainGenerator';
 import { spawnIslandIntoWorld, placePlayer, placePlayerAt } from './IslandSpawner';
 import { selectStartSiteAmong } from './StartSiteSelection';
 import type { ObjectGlobalId } from '../GlobalId';
+import { MINUTES_PER_HOUR } from '../worldTime';
 
 /** NewGame.startNewGameが組み立てた、開始直後のゲーム一式。 */
 export class StartedGame {
@@ -62,8 +63,8 @@ export class StartedGame {
  * 日没までの猶予がゲームごとに変わるようにする。実際の時刻はこの範囲からtick刻みで選ぶ
  * （World.rollTimeOfDay）。
  */
-const START_TIME_EARLIEST_MINUTES = 8 * 60;
-const START_TIME_LATEST_MINUTES = 12 * 60;
+const START_TIME_EARLIEST_MINUTES = 8 * MINUTES_PER_HOUR;
+const START_TIME_LATEST_MINUTES = 12 * MINUTES_PER_HOUR;
 
 /**
  * 選べるプレイヤーキャラクタ（characterタグを持つobject_def）の識別子を宣言順で返す
