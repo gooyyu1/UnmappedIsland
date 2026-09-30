@@ -89,6 +89,8 @@ interface World {
   readonly ghFails?: boolean;
   /** `gh issue comment` だけが失敗する周（返す手が打てなかった形）。 */
   readonly commentFails?: boolean;
+  /** `gh issue close` だけが失敗する周（閉じ損ねを閉じられなかった形）。 */
+  readonly closeFails?: boolean;
   readonly dryRun?: boolean;
 }
 
@@ -267,6 +269,7 @@ async function playRound(world: World = {}): Promise<Result> {
         return JSON.stringify((args.includes('merged') ? world.mergedPrs : world.prs) ?? []);
       }
       if (first === 'issue' && second === 'list') return JSON.stringify(world.issues ?? []);
+      if (first === 'issue' && second === 'close') return world.closeFails === true ? undefined : '';
       if (first === 'issue' && second === 'view') {
         const state = (world.issueStates ?? {})[Number(third)];
         return state === undefined ? undefined : `${state}\n`;
@@ -517,6 +520,50 @@ describe('board-round.mjs', () => {
     });
 
     expect(result.ledger).toEqual({});
+  });
+
+  // **GitHub が閉じ損ねた担当は盤面が閉じる**（2.10.6）。閉じたことを台帳へ残さないと、人が
+  // 開け直した担当を窓のあいだ閉じ直し続ける。
+  describe('マージ済みPRの `Closes` が閉じ損ねた担当', () => {
+    const world = {
+      mergedPrs: [{ number: 9, comments: [], body: 'Closes #8', baseRefName: 'main' }],
+      issues: [
+        {
+          number: 8,
+          labels: [{ name: 'kind:task' }, { name: 'goal:upkeep' }],
+          blockedBy: { nodes: [] },
+        },
+      ],
+      ledger: { 'tidy:9': NOW.toISOString() },
+    };
+
+    it('理由を残して閉じ、閉じたことを台帳へ残す', async () => {
+      const result = await playRound(world);
+
+      const close = result.gh.find((args) => args.startsWith('issue close'));
+      expect(close).toMatch(/^issue close 8 --reason completed --comment .*PR #9 .*Closes #8/);
+      expect(result.calls).toEqual([]);
+      expect(result.ledger['close:8']).toBe(NOW.toISOString());
+    });
+
+    // 覚えを残すと、閉じられなかった担当が二度と閉じられない。**同じ周の次の手へ進んでも、
+    // その担当は配られない**（`board-move.mjs` の `unclosed`）。
+    it('閉じられなかったら覚えを残さず、その担当を配りもしない', async () => {
+      const result = await playRound({ ...world, closeFails: true });
+
+      expect(result.ledger['close:8']).toBeUndefined();
+      expect(result.calls.filter((call) => call.startsWith('dispatch-task.sh'))).toEqual([]);
+    });
+
+    it('閉じた覚えは、窓を過ぎたものだけ台帳から捨てる', async () => {
+      const result = await playRound({
+        prs: [pr(10)],
+        ledger: { 'close:8': '2026-09-04T02:00:00Z', 'close:7': '2026-09-01T02:00:00Z' },
+      });
+
+      expect(result.ledger['close:8']).toBe('2026-09-04T02:00:00Z');
+      expect(result.ledger['close:7']).toBeUndefined();
+    });
   });
 
   it('打った手は、そのときの指紋とともに台帳へ残る', async () => {

@@ -1150,8 +1150,9 @@ for n in $(gh pr list --state open --json number --jq '.[].number'); do gh pr up
 
 - **今の版の判定がまだ無く、緑** → `dispatch-review.sh <番号>`。マージの前に必ずここを通る。
 - **`通してよい` があり、緑で、コンフリクトも無く、人の手番で止まっていない** → `merge-pr.sh`。**後片付けは別の手**
-  （`tidy-merged-pr.sh`）で、マージ済みのPRを見つけた周に打つ——`Closes` の issue が閉じたことの
-  確認と、本体のチェックアウトの追随はそちら。
+  （`tidy-merged-pr.sh`）で、マージ済みのPRを見つけた周に打つ——積まれていたPRの差し戻しと、
+  本体のチェックアウトの追随はそちら。`Closes` の issue を GitHub が閉じ損ねたら、盤面が `CLOSE` で
+  閉じる。
 - **`直し待ち`・CIが赤・コンフリクト** → **そのPRの `task-<番号>` のセッションを起こして直させる**
   （[`resume-session.sh`](../scripts/daemon/resume-session.sh)。渡す文は
   [`resume-prompt.md`](prompts/resume-prompt.md) の `## mend`）。**起こすほうが既定**——PRの文脈を持って

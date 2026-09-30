@@ -25,12 +25,6 @@ const SCRIPT = resolve(__dirname, '../../scripts/daemon/tidy-merged-pr.sh');
 /** 後片付けするPRのブランチ。積まれていたPRの `oldBase` はこれと突き合わされる。 */
 export const HEAD = 'claude/issue-999';
 
-/**
- * 実物のPR本文の末尾に Claude Code が付ける脚注。**この道具が本文から読むのは `Closes #N` だけ**
- * なので、既定の本文はこれで足りる。`Closes` を持つ世界でも末尾に置いて、実物の並びに寄せる。
- */
-export const DEFAULT_BODY = '_[Claude Code](https://claude.ai/code/session_01ZZZZZZZZZZZZZZZZZZZZZZ)_';
-
 /** GitHub が張り替えた時刻の既定。押し返しの既定（`PUSHED`）より後。 */
 export const RETARGETED = '2026-09-10T12:00:00Z';
 /** 積まれたPRの先頭コミットの既定。 */
@@ -43,7 +37,6 @@ export const PUSHED = '2026-09-10T11:00:00Z';
  */
 export const REFUSALS = {
   stacked: 'gh: Something went wrong while executing your query. (HTTP 502)\nTry again later.',
-  issue: 'gh: Could not resolve to an Issue with the number of 1033. (NOT_FOUND)\nCheck the number.',
   note: 'gh: Unable to create comment. Issue is locked. (HTTP 403)',
   sendBack: 'gh: Resource not accessible by integration (HTTP 403)',
   checkout:
@@ -69,13 +62,8 @@ export interface OpenPr {
 }
 
 export interface World {
-  readonly body?: string;
   /** PRの `state`。既定はマージ済み。 */
   readonly state?: string;
-  /** issue番号ごとの `state`。 */
-  readonly issues?: Record<number, string>;
-  /** `Closes` の issue を引く `gh issue view` が失敗するか（＝閉じたかどうかが分からない）。 */
-  readonly issueUnknown?: boolean;
   /** 本体に未コミットの変更（追跡済み）があるか。 */
   readonly mainDirty?: boolean;
   /** 本体を進める `git checkout` が失敗するか（未追跡のものが妨げになった場合など）。 */
@@ -135,10 +123,8 @@ export function run(world: World): Run {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-tidy-merged-pr-'));
   try {
     const dir = pathForBash(work);
-    // `gh pr view --json` が返すものを、そのままの形で持たせる（改行もバッククォートも含むので、
-    // シェルへ埋め込まずファイルで渡す）。**絞り込みも符号化もここでは真似ない**——`--jq` の式は下の
-    // スタブが本物の `jq` へ渡す。スタブが真似ると、式だけを変えても試験は緑のまま通る。
-    writeFileSync(join(work, 'pr.json'), JSON.stringify({ body: world.body ?? DEFAULT_BODY }), 'utf-8');
+    // **絞り込みも符号化もここでは真似ない**——`--jq` の式は下のスタブが本物の `jq` へ渡す。
+    // スタブが真似ると、式だけを変えても試験は緑のまま通る。
     writeFileSync(join(work, 'graphql.json'), graphql(world.open ?? []), 'utf-8');
 
     // 本体の身代わり。`.git` があることでスクリプトの `--git-common-dir` からの辿りが成り立つ。
@@ -147,11 +133,6 @@ export function run(world: World): Run {
       mkdirSync(join(work, 'main', 'node_modules'), { recursive: true });
       writeFileSync(join(work, 'main', 'node_modules', '.package-lock.json'), '{}', 'utf-8');
     }
-
-    const branches = (cases: Record<string | number, string>): string =>
-      Object.entries(cases)
-        .map(([key, value]) => `    ${key}) printf '%s' '${value}' ;;`)
-        .join('\n');
 
     // **束ねて引かれたときは、絞り込まずに丸ごと返す**——本物の `gh` と同じで、選ぶのも符号化するのも
     // 呼び手の `jq`。GraphQL のぶんは `--jq` の式をそのまま本物の `jq` へ渡す（**gh 内蔵の `jq` は
@@ -171,7 +152,7 @@ if [ "$1" = api ] && [ "$2" = graphql ]; then
   exit 0
 fi
 if [ "$1" = pr ] && [ "$2" = view ]; then
-  jq '. + {state: "${world.state ?? 'MERGED'}", headRefName: "${HEAD}"}' '${dir}/pr.json'
+  jq -n '{state: "${world.state ?? 'MERGED'}", headRefName: "${HEAD}"}'
   exit 0
 fi
 if [ "$1" = pr ] && [ "$2" = edit ]; then
@@ -183,13 +164,6 @@ fi
 if [ "$1" = pr ] && [ "$2" = comment ]; then
   ${refuse(world.noteFails, REFUSALS.note)}
   cat "$5" >> '${dir}/comments'
-  exit 0
-fi
-if [ "$1" = issue ] && [ "$2" = view ]; then
-  ${refuse(world.issueUnknown, REFUSALS.issue)}
-  case "$3" in
-${branches(world.issues ?? {})}
-  esac
   exit 0
 fi
 exit 1

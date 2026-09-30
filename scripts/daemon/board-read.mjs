@@ -55,10 +55,10 @@ const PR_FIELDS =
 
 /**
  * マージ済みPRから引く項目。**読むのは後片付けの手**（[`board-move.mjs`](board-move.mjs) の `TIDY`）
- * **とスメルを拾う係の `due`**（同 `CYCLES`）で、要るのは番号とコメントだけ——上の一覧には
- * 混ぜられない（あちらは開いているPRで、後片付けもスメルもマージ後だから）。
+ * **と閉じ損ねを閉じる手**（同 `CLOSE`）**とスメルを拾う係の `due`**（同 `CYCLES`）——上の一覧には
+ * 混ぜられない（あちらは開いているPRで、どれもマージ後の話だから）。
  */
-const MERGED_PR_FIELDS = 'number,comments';
+const MERGED_PR_FIELDS = 'number,comments,body,baseRefName';
 
 /**
  * さかのぼるマージ済みPRの幅（時間）。**後片付けが追える幅でもある**——デーモンがこれより長く
