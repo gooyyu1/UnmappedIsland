@@ -13,6 +13,7 @@ import {
   historyDocs,
   isAnalysisRecord,
   isMarkRuleDoc,
+  isProseData,
   isVerbatimRecord,
   trackedDocs,
   trackedFiles,
@@ -197,7 +198,7 @@ const REF_FILES = trackedRefSources(ROOT);
  *
  * **どちらも、綴りが指しているのは当時の在り処**で、今の綴りへ直すとその日にその名前の物ができた
  * ことになる。記録のほうは互いを行番号で引き合ってもいるので、直した行を後の回が「旧の置き場を
- * 指している」と名指したまま残る。節番号や節名の参照とは、そこが違う。
+ * 指している」と名指したまま残る。節番号や文書の節名の参照とは、そこが違う。
  */
 const HISTORY_DOCS = historyDocs(ROOT);
 const PATH_CHECKED_FILES = REF_FILES.filter(
@@ -448,10 +449,15 @@ for (const rel of REF_TARGETS.filter((target) => !isVerbatimRecord(target))) {
 }
 
 /**
- * 名前で引ける、Markdown 以外の形式。**コメントを書ける形式（{@link COMMENTED_SOURCES}）と、散文を
+ * 名前で引ける、Markdown 以外のファイルか。**コメントを書ける形式（{@link COMMENTED_SOURCES}）と、散文を
  * 宣言の値に置くJSON（{@link isProseData}）の全部**——どれも名前を畳めば、引いた側が同じように
  * 行き止まりになる。形式による差は、散文がどこに在るかだけ（{@link proseOf}）。
  */
+function isNameTarget(rel: string): boolean {
+  return COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)) || isProseData(rel);
+}
+
+/** 名前の参照として拾う綴り。**`.json` は散文を持たないものも拾い、指し先が無いとして挙げる。** */
 const NAME_TARGET_EXTENSIONS = [...COMMENTED_EXTENSIONS, '.json'];
 
 /**
@@ -523,9 +529,7 @@ function quotableNamesOf(rel: string, source: string): string[] {
  * ——文書の指し先は見出しだけだが、コードは太字の一文やテストの題も引かれる（{@link quotableNamesOf}）。
  */
 const quotableNamesByFile = new Map<string, string[]>();
-for (const rel of trackedFiles(ROOT).filter((path) =>
-  NAME_TARGET_EXTENSIONS.some((ext) => path.endsWith(ext)),
-)) {
+for (const rel of trackedFiles(ROOT).filter(isNameTarget)) {
   const base = rel.split(sep).pop() as string;
   quotableNamesByFile.set(base, [
     ...(quotableNamesByFile.get(base) ?? []),
@@ -980,6 +984,8 @@ describe('ドキュメントの参照', () => {
       brokenNameRefsIn(probe, '`three_stone_hearth_lit.json`「石と枝の両方に名指しで要る」'),
     ).toEqual([]);
     expect(brokenNameRefsIn(probe, '`card_art.py`「そんな太字は無い」')).toHaveLength(1);
+    // 散文を持たないJSONは指し先にならない
+    expect(brokenNameRefsIn(probe, '`package.json`「〇〇」')).toHaveLength(1);
   });
 
   // 引ける名前の側の絞り（{@link BOLD_RUN} の `\S` と、段落ごとの対付け）は、**外しても参照側は
