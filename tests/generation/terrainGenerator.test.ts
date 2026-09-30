@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { activityHoursOf } from '../../src/analysis/activityHours';
+import { activityHoursOf, openAirGaleShareOf } from '../../src/analysis/activityHours';
 import {
   dailyBudgetOf,
   dailyPhasesOf,
@@ -230,18 +230,13 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   // 生成パラメータを動かしたときにここが赤くなる。実測の分布はstats/terrain.yamlの
   // base_farthest_round_trip。
   it('どの島でも、拠点から最も遠い土地まで日帰りで往復できる', () => {
-    const budget = dailyBudgetOf(balance);
-    const locationDays = locationTypeDaysOf(
-      codex,
-      activityHoursOf(
-        codex,
-        SEASON_CLIMATE.map((season) => ({
-          seasonName: season.name,
-          durationDays: season.durationDays,
-          hoursByWeather: new Map(Object.entries(season.hoursByWeather)),
-        })),
-      ),
-    );
+    const seasons = SEASON_CLIMATE.map((season) => ({
+      seasonName: season.name,
+      durationDays: season.durationDays,
+      hoursByWeather: new Map(Object.entries(season.hoursByWeather)),
+    }));
+    const budget = dailyBudgetOf(balance, openAirGaleShareOf(codex, seasons));
+    const locationDays = locationTypeDaysOf(codex, activityHoursOf(codex, seasons));
     // 届く範囲は、日帰りで回せる片道の上限（TerrainStats.md「局面ごとの1日」）。
     const reachMinutes = dayTripOneWayLimitMinutesOf(budget);
 

@@ -21,11 +21,12 @@ import type { PropertyGlobalId } from '../domain/GlobalId';
  * **頭打ちに使うのは、屋外で見て探す仕事ができる時間**（`ActivityHoursRow.outdoorSearchHoursPerDay`）。
  * 採取と探索は見る明るさもしきい値も風雨の扱いも同じなので、**局面で頭打ちが分かれることはない**
  * （ContentSkeleton.md 8.1.4節が嵐を屋外の行動すべてへ掛けているため）。手元の細かい作業
- * （`handworkHoursPerDay`）が当たっているのは夜の加工360分のほうで、この式は1分も数えていない
- * （8.3節の割り付け）。
+ * （`handworkHoursPerDay`）が当たっているのは夜の加工（`DailyBudget.nightCraftMinutes`）のほうで、
+ * この式は1分も数えていない（8.3節の割り付け）。
  *
  * 局面の違いは**どこへ行くか**と**何を消化するか**の2つで、式そのものは共有する。遠さは移動の項
- * として、暗さと風雨は頭打ちとして、同じ1行に入る。
+ * として、暗さは頭打ちとして、同じ1行に入る。**風雨は両方に入る**——嵐は往復の移動も止めるので屋外の
+ * 枠を縮め（`dailyBudgetOf`）、採るのも探すのも止めるので頭打ちも縮める。
  *
  * 引く線は次のとおり。**1日は1つの土地で使う**——往復は1回で、余った時間を次の土地へ繰り越さない。
  * **荷物は数えない**——運べる量に上限が無い（ExplorationSystem.md 1.1節）ので、採ったものを置いて
@@ -36,45 +37,64 @@ import type { PropertyGlobalId } from '../domain/GlobalId';
  */
 
 /**
- * 1日の屋外の枠（分）。太陽が出ている12時間で、**明るさの側で移動のしきい値を満たす時間**そのもの。
- *
- * **嵐で移動も止まること（ContentSkeleton.md 8.1.4節）は、この枠からは引かない**——引くのは頭打ちの
- * 側だけで、往復の移動が嵐に当たる分は勘定に入れていない。枠を縮めるほうへ寄せると、屋外・夜の加工・
- * 睡眠の割り付け（8.3節）が1日24時間に揃わなくなる。
+ * 太陽が出ている12時間（分）。**明るさの側で移動のしきい値を満たす時間**そのもので、嵐を引く前の
+ * 屋外の枠。
  */
-export const OUTDOOR_WINDOW_MINUTES = 720;
+const DAYLIGHT_MINUTES_PER_DAY = 720;
 
-/** 夜の睡眠（分）。1日の割り付け（屋外720・夜の加工360・睡眠360）はContentSkeleton.md 8.3節。 */
+/** 夜の睡眠（分）。1日の割り付けはContentSkeleton.md 8.3節。 */
 export const SLEEP_MINUTES_PER_DAY = 360;
 
-/**
- * 焚き火のそばでの加工（分/日）。1日の割り付けの残りで、屋外にも睡眠にも入らない分。
- *
- * **嵐の夜のぶんは引いていない**——屋外の枠と同じ割り切りで（上）、嵐の日に屋根の下でなければ手元の
- * 作業も止まる（ContentSkeleton.md 8.1.4節）ことは、この360分には現れない。
- */
-export const NIGHT_CRAFT_MINUTES_PER_DAY = MINUTES_PER_DAY - OUTDOOR_WINDOW_MINUTES - SLEEP_MINUTES_PER_DAY;
+/** 日が暮れてから眠るまで（分）。嵐を引く前の、焚き火のそばでの加工の枠。 */
+const EVENING_MINUTES_PER_DAY = MINUTES_PER_DAY - DAYLIGHT_MINUTES_PER_DAY - SLEEP_MINUTES_PER_DAY;
 
 /**
- * 1日の枠のうち、収支表の最小労働（BalanceStats.md）から出るぶん。**書き写さない**——最小労働が
- * 動けば、生存の採取も一緒に動く。
+ * 1日の割り付け（ContentSkeleton.md 8.3節）。**4つの和がちょうど24時間になる**——嵐で閉ざされた
+ * 時間は屋外の枠からも夜の加工からも消えずに、嵐で止まる時間として残る。
+ *
+ * 生存の採取は収支表の最小労働（BalanceStats.md）から出る。**書き写さない**——最小労働が動けば、
+ * 生存の採取も一緒に動く。
  */
 export interface DailyBudget {
-  /** 1日を賄う生存の採取（分）。最小労働から睡眠を引いた、昼に払うぶん。 */
+  /** 屋外の枠（分）。太陽が出ている時間のうち、嵐で閉ざされていないぶん。 */
+  readonly outdoorWindowMinutes: number;
+
+  /** 焚き火のそばでの加工（分）。日暮れから眠るまでのうち、嵐で閉ざされていないぶん。 */
+  readonly nightCraftMinutes: number;
+
+  /** 嵐で止まる時間（分）。屋根の下へ入る以外にすることが無い（ContentSkeleton.md 8.1.4節）。 */
+  readonly stormStopMinutes: number;
+
+  /** 1日を賄う生存の採取（分）。最小労働から睡眠を引いた、屋外の枠の中で払うぶん。 */
   readonly survivalGatheringMinutes: number;
 }
 
 /**
- * 収支表の最小労働を、1日の割り付けへ当てはめる。**引き算は最小労働から睡眠を落とす1回だけ**
- * ——自由時間は収支表が持っている（`BalanceTables.surplusMinutes`）ので、ここへ写さない。
+ * 収支表の最小労働と、屋外が嵐で閉ざされている割合（`openAirGaleShareOf`）を、1日の割り付けへ
+ * 当てはめる。**引き算は最小労働から睡眠を落とす1回だけ**——自由時間は収支表が持っている
+ * （`BalanceTables.surplusMinutes`）ので、ここへ写さない。
+ *
+ * **嵐の割合は、拠点のものでも行き先のものでもなく島の屋外全体の値を使う。** 往復は屋外を歩き、
+ * 島の土地はどれも屋根に守られていない（守られているのは土地ではない浅い洞窟だけ）ので、どの土地で
+ * 1日を使っても嵐に当たる時間は変わらない。嵐は時刻を選ばないので、昼にも夜にも同じ割合で掛ける。
+ * **夜は屋根を建てていない場合**——`handwork`の列（`activityHours.ts`）と同じ切り方。
  */
-export function dailyBudgetOf(balance: BalanceTables): DailyBudget {
-  return { survivalGatheringMinutes: balance.minimumLabourMinutes - SLEEP_MINUTES_PER_DAY };
+export function dailyBudgetOf(balance: BalanceTables, openAirGaleShare: number): DailyBudget {
+  if (!(openAirGaleShare >= 0 && openAirGaleShare < 1))
+    throw new Error(`嵐の割合 ${openAirGaleShare} が、0以上1未満に収まっていません。`);
+
+  const open = 1 - openAirGaleShare;
+  return {
+    outdoorWindowMinutes: DAYLIGHT_MINUTES_PER_DAY * open,
+    nightCraftMinutes: EVENING_MINUTES_PER_DAY * open,
+    stormStopMinutes: (DAYLIGHT_MINUTES_PER_DAY + EVENING_MINUTES_PER_DAY) * openAirGaleShare,
+    survivalGatheringMinutes: balance.minimumLabourMinutes - SLEEP_MINUTES_PER_DAY,
+  };
 }
 
 /** 移動を引く前の、その日に屋外で使える枠（分）。屋外の枠から、昼に払う生存の採取を引いたもの。 */
 function outdoorMinutesOf(budget: DailyBudget): number {
-  return OUTDOOR_WINDOW_MINUTES - budget.survivalGatheringMinutes;
+  return budget.outdoorWindowMinutes - budget.survivalGatheringMinutes;
 }
 
 /**
@@ -379,7 +399,7 @@ export interface WorkTotal {
   readonly outdoorMinutes: number;
   readonly baseMinutes: number;
 
-  /** 拠点での加工が、夜の加工の枠で何日ぶんか。 */
+  /** 拠点での加工が、夜の加工の枠（`DailyBudget.nightCraftMinutes`）で何日ぶんか。 */
   readonly baseDays: number;
 }
 
@@ -387,7 +407,7 @@ export interface WorkTotal {
  * 山の量の合計。**日数は山1つずつの日数の和**で、分母になる自由時間は、山の量を出した収支表の
  * ものだけ。
  */
-export function workTotalOf(amounts: readonly WorkPileAmount[]): WorkTotal {
+export function workTotalOf(amounts: readonly WorkPileAmount[], budget: DailyBudget): WorkTotal {
   const minutes = amounts.reduce((sum, amount) => sum + amount.minutes, 0);
   const baseMinutes = minutes * (1 - OUTDOOR_WORK_SHARE);
 
@@ -397,7 +417,7 @@ export function workTotalOf(amounts: readonly WorkPileAmount[]): WorkTotal {
     days: amounts.reduce((sum, amount) => sum + amount.days, 0),
     outdoorMinutes: minutes * OUTDOOR_WORK_SHARE,
     baseMinutes,
-    baseDays: baseMinutes / NIGHT_CRAFT_MINUTES_PER_DAY,
+    baseDays: baseMinutes / budget.nightCraftMinutes,
   };
 }
 
@@ -620,7 +640,7 @@ function explorationPhaseOf(
 
     const perDayMinutes = workMinutesPerDayOf(day.outdoorSearchMinutesPerDay, roundTripMinutes, budget);
     const tripDays = perDayMinutes > 0 ? Math.ceil(day.explorationMinutes / perDayMinutes) : undefined;
-    const stayDays = stayOverDaysOf(day, roundTripMinutes);
+    const stayDays = stayOverDaysOf(day, roundTripMinutes, budget);
 
     if (tripDays === undefined) {
       dayTripImpossibleSiteCount++;
@@ -656,10 +676,10 @@ function explorationPhaseOf(
  * 縛るのは次のとおり。1日に進む探索はその土地で探索できる時間を超えられず、行程全体では往復の移動も
  * 屋外の枠から出る。
  */
-function stayOverDaysOf(day: LocationTypeDay, roundTripMinutes: number): number {
+function stayOverDaysOf(day: LocationTypeDay, roundTripMinutes: number, budget: DailyBudget): number {
   return Math.max(
     Math.ceil(day.explorationMinutes / day.outdoorSearchMinutesPerDay),
-    Math.ceil((day.explorationMinutes + roundTripMinutes) / OUTDOOR_WINDOW_MINUTES),
+    Math.ceil((day.explorationMinutes + roundTripMinutes) / budget.outdoorWindowMinutes),
   );
 }
 
