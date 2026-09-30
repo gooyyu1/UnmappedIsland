@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildBalanceTables, WHOLE_ISLAND } from '../../src/analysis/balanceTables';
+import { WHOLE_ISLAND } from '../../src/analysis/balanceTables';
 import { defNamesOf } from '../../src/codex-viewer/describe/codexNames';
 import { conditionTokens } from '../../src/codex-viewer/describe/conditionTokens';
 import type { ConditionDeclaration } from '../../src/domain/ConditionReader';
 import { conditionText } from '../../src/domain/conditionWords';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 待ち生産表（`stats/balance.yaml`の`devices`）の`condition`が、**同梱の定義に対して行どうしを
@@ -22,9 +22,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 const codex = bundledCodex();
 
 describe('待ち生産の条件（同梱の定義）', () => {
-  const devices = buildBalanceTables(codex, SAMPLE_CHARACTER).places.find(
-    (place) => place.name === WHOLE_ISLAND,
-  )?.devices;
+  const devices = bundledBalanceTables().places.find((place) => place.name === WHOLE_ISLAND)?.devices;
 
   /** その設備の行の条件（産物ごとに行が分かれるが、条件は設備の周期のものなので1つ）。 */
   function conditionOf(deviceName: string): string {

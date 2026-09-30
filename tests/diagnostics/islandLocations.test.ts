@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { activityHoursOf } from '../../src/analysis/activityHours';
-import { buildBalanceTables, WHOLE_ISLAND } from '../../src/analysis/balanceTables';
+import { WHOLE_ISLAND } from '../../src/analysis/balanceTables';
 import { islandLocationsOf } from '../../src/analysis/islandLocations';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 診断レポートが数える土地の検査（`src/analysis/islandLocations.ts`）。
@@ -28,6 +28,7 @@ const NAMED_AS_SEA_ONLY: readonly string[] = ['fish_shoal', 'bird_egg'];
 
 describe('診断レポートが数える土地', () => {
   const codex = bundledCodex();
+  const tables = bundledBalanceTables();
   const { island, excludedSea, seaOnly } = islandLocationsOf(codex);
 
   // **海かどうかは定義から直に引く**——外した一覧から作ると、線が何も外さなくなったときに
@@ -68,16 +69,13 @@ describe('診断レポートが数える土地', () => {
   });
 
   it('収支表の土地にも工程にも、海区が現れない', () => {
-    const tables = buildBalanceTables(codex, SAMPLE_CHARACTER);
-
     expect(tables.places.map((place) => place.name).filter((name) => seaNames.has(name))).toEqual([]);
     expect(tables.supply.map((row) => row.ownerName).filter((name) => seaNames.has(name))).toEqual([]);
-  }, 600_000);
+  });
 
   it('海に湧くものが、島の連鎖表から島の経路を押し出さない', () => {
     // 漁り場（`fish_shoal`）は海区にしか湧かないが生肉を30分で返すので、外さないと生肉の代表経路が
     // 海に決まる。その経路は入手経路が無いので落とされ、島で最も安い肉の経路が丸ごと消える（#921）。
-    const tables = buildBalanceTables(codex, SAMPLE_CHARACTER);
     const routeTexts = tables.places
       .find((place) => place.name === WHOLE_ISLAND)!
       .properties.flatMap((chains) =>
@@ -88,7 +86,7 @@ describe('診断レポートが数える土地', () => {
 
     expect(routeTexts.filter((text) => text.includes('wild_boar.'))).not.toEqual([]);
     expect(routeTexts.filter((text) => text.includes('fish_shoal.'))).toEqual([]);
-  }, 600_000);
+  });
 
   it('活動時間表に、海区の行が現れない', () => {
     const rows = activityHoursOf(

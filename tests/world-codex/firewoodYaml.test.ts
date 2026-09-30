@@ -1,5 +1,4 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
@@ -7,7 +6,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 
 /**
@@ -24,6 +23,7 @@ import { makeBrightEnoughForAnyAction } from '../support/illumination';
 describe('firewood.yamlの薪割りと薪棚', () => {
   /** 1tickの長さ（core.yamlのminutes_per_tick）。 */
   const TICK_MINUTES = 15;
+  const balance = bundledBalanceTables();
 
   let codex: WorldCodex;
   let session: WorldSession;
@@ -229,7 +229,6 @@ describe('firewood.yamlの薪割りと薪棚', () => {
   it('乾いた薪は、燃料1点あたりの手間が拾った枝より安い', () => {
     // **これが山として立っている理由**（docs/world/ContentSkeleton.md 4節）。棚を据える手間を払って
     // 初めて、伐った木が拾った枝より安い燃料になる。
-    const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
     const minutesPerFuel = (objectName: string): number => {
       const cost = balance.objectCosts.find((row) => row.objectName === objectName);
       expect(cost?.minutes, `${objectName}の総コスト`).toBeGreaterThan(0);
@@ -242,7 +241,5 @@ describe('firewood.yamlの薪割りと薪棚', () => {
     expect(minutesPerFuel('seasoned_firewood'), '乾かす前より安い').toBeLessThan(
       minutesPerFuel('green_firewood'),
     );
-    // 収支表を検査の本体で組む分（issue #2446）が乗るので、混み合った回には1件あたりの上限を越える。
-    // 上限とその名乗り方は `vite.config.ts` の `testTimeout` のコメント（issue #2376）。
-  }, 30_000);
+  });
 });

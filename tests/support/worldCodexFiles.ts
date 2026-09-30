@@ -1,5 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
+import type { BalanceTables } from '../../src/analysis/balanceTables';
+import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
@@ -48,6 +50,23 @@ export function bundledCodex(): WorldCodex {
 }
 
 let bundled: WorldCodex | undefined;
+
+/**
+ * 同梱の定義を {@link SAMPLE_CHARACTER} で解いた収支表。**何度呼んでも同じものが返る**。
+ *
+ * 1回の組み立てで1件あたりの上限（`vite.config.ts` の `testTimeout`）の4割ほどを使うので、
+ * **呼ぶのはモジュールの直下か `describe` の直下だけ**——収集の時に組めば、どの検査の上限にも
+ * 掛からない。`it` の中で呼ぶと、ワーカーで最初に呼んだ検査が組み立てを丸ごと払い、混んだ回に越える。
+ * 呼ぶ場所は tests/architecture/bundledBalanceTables.test.ts が見張る。
+ *
+ * **返った表を書き換えてはいけない。** 理由は {@link bundledCodex} と同じ。
+ */
+export function bundledBalanceTables(): BalanceTables {
+  bundledTables ??= buildBalanceTables(bundledCodex(), SAMPLE_CHARACTER);
+  return bundledTables;
+}
+
+let bundledTables: BalanceTables | undefined;
 
 /** WORLD_CODEX_DIR以下のYAMLファイルのパス一覧（定義ファイルの字面を検査するテスト向け）。 */
 export function worldCodexYamlPaths(): readonly string[] {

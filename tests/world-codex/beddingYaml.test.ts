@@ -4,11 +4,10 @@ import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { characterDefNames } from '../../src/domain/generation/NewGame';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import { TICKS_PER_DAY } from '../../src/domain/worldTime';
-import { buildBalanceTables } from '../../src/analysis/balanceTables';
 
 /**
  * bedding.yamlの寝床とハンモックを、実ファイルの定義だけで検証する。
@@ -27,6 +26,7 @@ import { buildBalanceTables } from '../../src/analysis/balanceTables';
 const characters = characterDefNames(bundledCodex());
 
 describe('bedding.yamlの寝床とハンモック', () => {
+  const balance = bundledBalanceTables();
   let codex: WorldCodex;
   let staminaId: PropertyGlobalId;
   let wakefulnessId: PropertyGlobalId;
@@ -163,9 +163,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
     expect(anyStuffing, '詰め物を名乗る物が世界に在る').toBeDefined();
     const deepest = bedOnBeach(['bed_frame', anyStuffing!.name]);
 
-    const row = buildBalanceTables(codex, SAMPLE_CHARACTER).supply.find(
-      (supply) => supply.ownerName === 'bed' && supply.stepName === 'sleep',
-    );
+    const row = balance.supply.find((supply) => supply.ownerName === 'bed' && supply.stepName === 'sleep');
     expect(row, '収支表に寝床の睡眠の行がある').toBeDefined();
 
     expect(row!.agentDeltas.find((delta) => delta.name === 'stamina')?.amount).toBe(

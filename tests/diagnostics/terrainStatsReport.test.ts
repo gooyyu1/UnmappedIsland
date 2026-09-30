@@ -1,7 +1,6 @@
 import { join } from 'node:path';
 import { activityHoursOf } from '../../src/analysis/activityHours';
 import type { BalanceTables } from '../../src/analysis/balanceTables';
-import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import type {
   BaseDailyPhases,
   DailyBudget,
@@ -44,7 +43,7 @@ import {
   statRecordWith,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * パスネットワーク（TerrainGeneration.md 3.5節）の現在の実装について、土地1つあたりの道の本数
@@ -420,8 +419,7 @@ interface SolvedBalance {
 }
 
 /** 1日の枠も山の量も収支表から出る（ContentSkeleton.md 8.3節）ので、ここで1度だけ解く。 */
-function solvedBalanceOf(codex: WorldCodex): SolvedBalance {
-  const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
+function solvedBalanceOf(codex: WorldCodex, balance: BalanceTables): SolvedBalance {
   const amounts = workPileAmountsOf(codex, balance);
 
   return { balance, budget: dailyBudgetOf(balance), amounts, work: workTotalOf(amounts) };
@@ -624,11 +622,11 @@ function buildSections(
 
 const REPORT_PATH = join('stats', 'terrain.yaml');
 const DOC_PATH = join('docs', 'diagnostics', 'TerrainStats.md');
+const solvedBalance = solvedBalanceOf(bundledCodex(), bundledBalanceTables());
 
 /** 定義から島を生成して測り、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
 function buildReportFromDefinitions(): string {
   const codex = bundledCodex();
-  const solved = solvedBalanceOf(codex);
 
   const generation = codex.generation!;
   const scope = generation.scopes.get(SCOPE_NAME)!;
@@ -653,8 +651,8 @@ function buildReportFromDefinitions(): string {
     isCoastBand: (site) => site.axisValues.get(COASTAL_DISTANCE_AXIS_NAME)! <= scope.coastBandMaxDistance,
     schedules: pathDiscoverySchedulesOf(codex),
     locationDays,
-    budget: solved.budget,
-    work: solved.work,
+    budget: solvedBalance.budget,
+    work: solvedBalance.work,
   };
 
   const stats = createStats(generation.locationTypes.map((type) => type.name));
@@ -668,7 +666,7 @@ function buildReportFromDefinitions(): string {
       '生成物。手で書き換えず、npm run stats:terrain で作り直す。',
       '何を測ったか・引いた線・数えていないものは docs/diagnostics/TerrainStats.md。',
     ],
-    buildSections(stats, solved),
+    buildSections(stats, solvedBalance),
   );
 }
 

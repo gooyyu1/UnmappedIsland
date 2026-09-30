@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildBalanceTables, WHOLE_ISLAND } from '../../src/analysis/balanceTables';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { WHOLE_ISLAND } from '../../src/analysis/balanceTables';
+import { bundledBalanceTables } from '../support/worldCodexFiles';
 
 /**
  * 同梱の定義に対して、総コスト（`object_costs`）の出ない行が理由ごとに分かれること（issue #1175）。
@@ -13,8 +13,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  * 表に現れていなかった——分かれ方が壊れたことは、同梱の定義を通してしか見えない。
  */
 describe('総コストが出ない理由', () => {
-  const codex = bundledCodex();
-  const tables = buildBalanceTables(codex, SAMPLE_CHARACTER);
+  const tables = bundledBalanceTables();
   const costOf = (objectName: string) => tables.objectCosts.find((cost) => cost.objectName === objectName)!;
 
   it('塩は、総コストが出ないまま入手経路のあるものとして印が付く', () => {

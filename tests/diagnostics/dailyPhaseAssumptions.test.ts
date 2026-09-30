@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import { dailyBudgetOf, workPileAmountsOf, WORK_SHARES } from '../../src/analysis/dailyPhases';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 局面ごとの1日（`src/analysis/dailyPhases.ts`）が置いている前提の検査。
@@ -10,17 +9,15 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  * レポートは静かに出続ける**ので、崩れた時点で赤くする。
  */
 describe('局面ごとの1日の前提', () => {
-  it('収支表の最小労働が、睡眠と自由時間の両方を残す幅に収まっている', () => {
-    const codex = bundledCodex();
-    const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
+  const codex = bundledCodex();
+  const balance = bundledBalanceTables();
 
+  it('収支表の最小労働が、睡眠と自由時間の両方を残す幅に収まっている', () => {
     // 最小労働が睡眠を割ると生存の採取が負になり、1日の実入りが全土地で水増しされる。
     expect(dailyBudgetOf(balance).survivalGatheringMinutes, '昼に払う生存の採取').toBeGreaterThan(0);
     // 1日を使い切ると自由時間が0以下になり、山の日数が出なくなる（ObjectCost.days）。
     expect(balance.surplusMinutes, '最小労働を払って残る自由時間').toBeGreaterThan(0);
-    // 収支表を検査の本体で組む分（issue #2446）が乗るので、混み合った回には1件あたりの上限を越える。
-    // 上限とその名乗り方は `vite.config.ts` の `testTimeout` のコメント（issue #2376）。
-  }, 30_000);
+  });
 
   it('山の配分の割合が、合計で1になる', () => {
     const total = WORK_SHARES.reduce((sum, share) => sum + share.share, 0);
@@ -29,9 +26,6 @@ describe('局面ごとの1日の前提', () => {
   });
 
   it('山が名乗る型とタグが、すべて収支表に値段を持つ', () => {
-    const codex = bundledCodex();
-    const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
-
     // 値段が出ない型やどの型も名乗らないタグを名乗っていれば workPileAmountsOf が投げる。
     const amounts = workPileAmountsOf(codex, balance);
 

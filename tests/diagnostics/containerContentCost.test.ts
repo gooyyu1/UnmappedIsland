@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildBalanceTables, WHOLE_ISLAND } from '../../src/analysis/balanceTables';
+import { WHOLE_ISLAND } from '../../src/analysis/balanceTables';
 import { craftingStepsOf } from '../../src/analysis/craftingSteps';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * **中身入りの器が、繰り返し使える道具として数えられていないこと**の検査（issue #2150）。
@@ -16,6 +16,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  */
 describe('器の中身を持ち出す工程（同梱の定義）', () => {
   const codex = bundledCodex();
+  const tables = bundledBalanceTables();
   const objectId = (name: string) => codex.objectNames.getId(name);
 
   it('1杯飲む工程は、水入りの甕を容量ぶんの1杯として消費する', () => {
@@ -51,7 +52,6 @@ describe('器の中身を持ち出す工程（同梱の定義）', () => {
   });
 
   it('飲んで水分を賄う経路の時間に、汲む時間が入っている', () => {
-    const tables = buildBalanceTables(codex, SAMPLE_CHARACTER);
     const island = tables.places.find((place) => place.name === WHOLE_ISLAND)!;
     const hydration = island.properties.find((chains) => chains.propertyName === 'hydration')!;
     // 時間を数えられない経路（雨を受けて溜める）は除く。中身がただで湧く側なので、飲用の5分だけで

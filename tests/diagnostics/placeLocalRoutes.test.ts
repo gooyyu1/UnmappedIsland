@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PlaceBalance } from '../../src/analysis/balanceTables';
-import { buildBalanceTables, WHOLE_ISLAND } from '../../src/analysis/balanceTables';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { WHOLE_ISLAND } from '../../src/analysis/balanceTables';
+import { bundledBalanceTables } from '../support/worldCodexFiles';
 
 /**
  * 同梱の定義に対して、土地ごとの連鎖表（`chain_routes`）が、その土地で完結する経路を落とさないこと
@@ -16,7 +16,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  * ——同梱の定義では、くくり罠の掛かりやすさが土地ごとに違うことがそれを作っている。
  */
 describe('土地で完結する経路は、土地の表に出る', () => {
-  const tables = buildBalanceTables(bundledCodex(), SAMPLE_CHARACTER);
+  const tables = bundledBalanceTables();
   const islandWide = tables.places.find((place) => place.name === WHOLE_ISLAND)!;
   const lands = tables.places.filter((place) => place.name !== WHOLE_ISLAND);
 
@@ -93,7 +93,7 @@ describe('土地で完結する経路は、土地の表に出る', () => {
  * 読み分けるのは `devices` の側なので、そこに行が在ることまで見ないと、この読み分けは示せない。
  */
 describe('unmet が意味すること', () => {
-  const tables = buildBalanceTables(bundledCodex(), SAMPLE_CHARACTER);
+  const tables = bundledBalanceTables();
   const islandWide = tables.places.find((place) => place.name === WHOLE_ISLAND)!;
   const lands = tables.places.filter((place) => place.name !== WHOLE_ISLAND);
 
