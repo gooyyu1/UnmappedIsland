@@ -150,6 +150,29 @@ function worldWindSpeedOf(codex: WorldCodex): (weatherName: string) => number {
 }
 
 /**
+ * 風雨の届く場所が嵐で閉ざされている時間の割合（0〜1）。**季節ごとの割合を等しい重みで平均する**
+ * ——活動時間表を1日の勘定へ持ち込む側（`dailyPhases.ts`）が季節の行を等しく平均するので、同じ式に
+ * 入る値どうしで重みを揃える。
+ *
+ * 嵐かどうかの決め方は{@link activityHoursOf}と同じ（風速とキャラクタの段の境目の比較）。天候と時刻は
+ * 独立とみなすので、**この割合は昼にも夜にも同じだけ掛かる**。
+ */
+export function openAirGaleShareOf(codex: WorldCodex, seasons: readonly SeasonWeatherHours[]): number {
+  if (seasons.length === 0) throw new Error('嵐の割合を出す季節が1つもありません。');
+
+  const worldWindAt = worldWindSpeedOf(codex);
+  const galeThreshold = characterStageMinimumOf(codex, GALE_STAGE);
+
+  const shares = seasons.map((season) => {
+    let galeHours = 0;
+    for (const [weatherName, hoursInSeason] of season.hoursByWeather)
+      if (worldWindAt(weatherName) >= galeThreshold) galeHours += hoursInSeason;
+    return galeHours / (season.durationDays * 24);
+  });
+  return shares.reduce((sum, share) => sum + share, 0) / shares.length;
+}
+
+/**
  * 土地×季節ごとの活動時間表を、定義と天候の実測値から組み立てる。
  *
  * `carriedLightEv` は手に持っている光源が明るさへ足す段数（EV）。手持ちの光源は手元にも視界にも
