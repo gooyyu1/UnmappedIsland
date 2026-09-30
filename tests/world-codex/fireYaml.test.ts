@@ -50,7 +50,7 @@ describe('fire.yamlの火の連鎖', () => {
 
   /** 草地に立つプレイヤーから始める。rollはpickがどの候補を引くかを決める。 */
   function open(roll: number): void {
-    session = new WorldSession(codex, undefined, fixedRng(roll));
+    session = new WorldSession(codex, fixedRng(roll));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     worldView = new World(worldInstance);
     session.adoptWorld(worldView);

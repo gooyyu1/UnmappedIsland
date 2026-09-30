@@ -49,7 +49,7 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     path: WorldObject;
     forest: WorldObject;
   } {
-    const session = new WorldSession(codex, undefined, seededRng(42));
+    const session = new WorldSession(codex, seededRng(42));
     const worldInstance = session.createObject(def('world').globalId);
     const world = new World(worldInstance);
     session.adoptWorld(world);

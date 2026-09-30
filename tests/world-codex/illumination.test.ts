@@ -39,7 +39,7 @@ describe('明るさが行動を制限する', () => {
    * 作ると、以降ここから生える物の`session`が世界を知らないほうを指す。
    */
   function open(hour: number, landName: string) {
-    const session = new WorldSession(codex, undefined, fixedRng(0));
+    const session = new WorldSession(codex, fixedRng(0));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);

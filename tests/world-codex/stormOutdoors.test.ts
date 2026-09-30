@@ -30,7 +30,7 @@ describe('嵐の日は屋根の下でなければ何もできない', () => {
 
   /** 草原にプレイヤーが1人立っている正午の世界。天気だけを引数で変える。 */
   function noon(weatherName: string) {
-    const session = new WorldSession(codex, undefined, fixedRng(0));
+    const session = new WorldSession(codex, fixedRng(0));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(NOON_HOUR);

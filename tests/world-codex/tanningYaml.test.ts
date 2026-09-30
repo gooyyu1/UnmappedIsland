@@ -26,7 +26,7 @@ describe('なめし革の連鎖', () => {
   });
 
   beforeEach(() => {
-    session = new WorldSession(codex, undefined, fixedRng(0));
+    session = new WorldSession(codex, fixedRng(0));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
 

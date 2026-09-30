@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { Rng } from '../../src/domain/Rng';
-import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -16,7 +15,7 @@ describe('WorldSession.advanceWorldTimeによる時間進行', () => {
     return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
-  function buildWorld(minutesPerTick = 15): { codex: WorldCodex; world: World } {
+  function buildWorld(minutesPerTick = 15): { codex: WorldCodex; session: WorldSession; world: World } {
     const yaml = `
 object_defs:
   world:
@@ -50,17 +49,14 @@ object_defs:
         value: 1
 `;
     const codex = load(yaml);
-    const instance = new WorldObject(
-      1,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
-    return { codex, world: new World(instance) };
+    const session = new WorldSession(codex);
+    const world = new World(session.createObject(codex.objectNames.getId('world')));
+    session.adoptWorld(world);
+    return { codex, session, world };
   }
 
   it('同一tick内の加算はtickを発火させずamountだけ加算する', () => {
-    const { codex, world } = buildWorld();
-    const session = new WorldSession(codex, world);
+    const { codex, session, world } = buildWorld();
     const tickId = codex.propertyNames.getId('tick');
 
     session.advanceWorldTime(5);
@@ -72,8 +68,7 @@ object_defs:
   it('tick境界を跨ぐとちょうど1回だけtickが発火し、正しいminuteで終わる', () => {
     // tick内経過分(minute % minutes_per_tick)が5の状態で20分進めると、
     // Tickが1回実行され、tick内経過分は10になる。
-    const { codex, world } = buildWorld();
-    const session = new WorldSession(codex, world);
+    const { codex, session, world } = buildWorld();
     const tickId = codex.propertyNames.getId('tick');
 
     session.advanceWorldTime(5);
@@ -87,8 +82,7 @@ object_defs:
   it('1回あたりがtick未満の量でも、複数回の呼び出しの累積で境界越えを検知する', () => {
     // 1回あたりの呼び出しがminutes_per_tick未満でも、複数回の呼び出しの累積で境界を跨いだことを
     // 正しく検知できる（tick内経過分をminuteから毎回読み直しているため）。
-    const { codex, world } = buildWorld();
-    const session = new WorldSession(codex, world);
+    const { codex, session, world } = buildWorld();
     const tickId = codex.propertyNames.getId('tick');
 
     session.advanceWorldTime(10); // tick内経過分は10、まだ境界に届かない
@@ -100,8 +94,7 @@ object_defs:
   });
 
   it('大きな量を一度に進めると複数tickが発火し、hour・dayまで繰り上がる', () => {
-    const { codex, world } = buildWorld();
-    const session = new WorldSession(codex, world);
+    const { codex, session, world } = buildWorld();
     const tickId = codex.propertyNames.getId('tick');
     const dayId = codex.propertyNames.getId('day');
 
@@ -118,8 +111,7 @@ object_defs:
   it('1tickの長さはハードコードではなく設定されたminutes_per_tickに従う', () => {
     // 1tickの長さはworld.minutes_per_tick（core.yaml側）が持つ値であり、WorldSession側に
     // ハードコードされていないことを、15以外の値でも確認する。
-    const { codex, world } = buildWorld(20);
-    const session = new WorldSession(codex, world);
+    const { codex, session, world } = buildWorld(20);
     const tickId = codex.propertyNames.getId('tick');
 
     session.advanceWorldTime(25);
@@ -166,8 +158,7 @@ object_defs:
     });
 
     it('選ばれた時刻はtick境界に乗るので、最初のtickも1tick分の長さになる', () => {
-      const { codex, world } = buildWorld();
-      const session = new WorldSession(codex, world);
+      const { codex, session, world } = buildWorld();
       const tickId = codex.propertyNames.getId('tick');
 
       world.rollTimeOfDay(8 * 60, 12 * 60, pickSecondCandidate([]));
@@ -184,8 +175,7 @@ object_defs:
   describe('observeTicksによるtickの観測', () => {
     it('tickを回すたびに、その境界の時刻で観測できる', () => {
       // 07:10から45分進めると、tickが回るのは07:15/07:30/07:45の3回。最後の07:55へはtickを伴わずに進む。
-      const { codex, world } = buildWorld();
-      const session = new WorldSession(codex, world);
+      const { session, world } = buildWorld();
       session.advanceWorldTime(7 * 60 + 10);
 
       const observed: number[] = [];
@@ -199,8 +189,7 @@ object_defs:
     });
 
     it('観測は呼び出しの中だけで、抜けたあとのtickでは呼ばれない', () => {
-      const { codex, world } = buildWorld();
-      const session = new WorldSession(codex, world);
+      const { session } = buildWorld();
 
       let observed = 0;
       session.observeTicks(
@@ -213,8 +202,7 @@ object_defs:
     });
 
     it('bodyが例外を投げても観測は解除される', () => {
-      const { codex, world } = buildWorld();
-      const session = new WorldSession(codex, world);
+      const { session } = buildWorld();
 
       let observed = 0;
       expect(() =>

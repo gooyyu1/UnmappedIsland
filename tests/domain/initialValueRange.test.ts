@@ -24,7 +24,7 @@ object_defs:
     const codex = load();
     const qualityId = codex.propertyNames.getId('quality');
     const gemId = codex.objectNames.getId('gem');
-    const session = new WorldSession(codex, undefined, seededRng(12345));
+    const session = new WorldSession(codex, seededRng(12345));
 
     const seen = new Set<number>();
     for (let i = 0; i < 100; i++) {
@@ -45,8 +45,7 @@ object_defs:
 
     function firstSpawn(seed: number): number {
       return (
-        new WorldSession(codex, undefined, seededRng(seed)).createObject(gemId).tryGetProperty(qualityId)
-          ?.number ?? 0
+        new WorldSession(codex, seededRng(seed)).createObject(gemId).tryGetProperty(qualityId)?.number ?? 0
       );
     }
 

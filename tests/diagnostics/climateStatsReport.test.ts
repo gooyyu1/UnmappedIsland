@@ -427,7 +427,7 @@ async function buildReportFromDefinitions(): Promise<string> {
   for (let seed = 1; seed <= SEED_COUNT; seed++) {
     await yieldToEventLoop();
 
-    const session = new WorldSession(codex, undefined, seededRng(seed));
+    const session = new WorldSession(codex, seededRng(seed));
     const worldInstance = new WorldObject(1, worldDef, session);
     session.adoptWorld(new World(worldInstance));
 

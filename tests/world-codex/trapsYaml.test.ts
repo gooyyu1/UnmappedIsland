@@ -57,7 +57,7 @@ describe('traps.yamlのくくり罠', () => {
 
   /** 草原に立つプレイヤーと、その足元へ仕掛けた罠から始める。rollがpickの引きを決める。 */
   function open(roll: number, locationName = 'grassland'): void {
-    session = new WorldSession(codex, undefined, fixedRng(roll));
+    session = new WorldSession(codex, fixedRng(roll));
     world = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(world));
     grassland = spawnInto(locationName, world, 'locations');
@@ -445,7 +445,7 @@ describe('traps.yamlの落とし穴', () => {
 
   /** 森に掘った落とし穴から始める。イノシシを宣言している土地は森と密林だけ（locations.yaml）。 */
   function open(roll: number): void {
-    session = new WorldSession(codex, undefined, fixedRng(roll));
+    session = new WorldSession(codex, fixedRng(roll));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     forest = spawnInto('forest', worldInstance, 'locations');

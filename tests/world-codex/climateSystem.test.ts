@@ -69,7 +69,7 @@ describe('気候システム(ClimateSystem.md)', () => {
 
     traces = [];
     for (let seed = SEED_START; seed < SEED_START + SEED_COUNT; seed++) {
-      const session = new WorldSession(codex, undefined, seededRng(seed));
+      const session = new WorldSession(codex, seededRng(seed));
       const world = new WorldObject(1, worldDef, session);
       const trace: Trace = {
         seed,

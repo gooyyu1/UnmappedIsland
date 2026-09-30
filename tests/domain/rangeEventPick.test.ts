@@ -52,7 +52,7 @@ object_defs:
                 self: {counter: 20, chosen: 2}
 `;
     const codex = load(yaml);
-    const session = new WorldSession(codex, undefined, new StubRng({ doubles: [0.5, 0.5] }));
+    const session = new WorldSession(codex, new StubRng({ doubles: [0.5, 0.5] }));
     const cycler = instantiate(codex, 'cycler', session);
     const counterId = codex.propertyNames.getId('counter');
     const chosenId = codex.propertyNames.getId('chosen');
@@ -115,7 +115,7 @@ object_defs:
                 self: {chosen: 10}
 `;
     const codex = load(yaml);
-    const session = new WorldSession(codex, undefined, new StubRng({ doubles: [0.5] }));
+    const session = new WorldSession(codex, new StubRng({ doubles: [0.5] }));
     const mixer = instantiate(codex, 'mixer', session);
 
     for (let i = 0; i < 3; i++) mixer.tick();
@@ -143,7 +143,7 @@ object_defs:
 `;
     const codex = load(yaml);
     // このテストにpickは無くrngは使われないが、原文のnew Random(1)をそのまま踏襲する。
-    const session = new WorldSession(codex, undefined, seededRng(1));
+    const session = new WorldSession(codex, seededRng(1));
     const sinker = instantiate(codex, 'sinker', session);
     const levelId = codex.propertyNames.getId('level');
 

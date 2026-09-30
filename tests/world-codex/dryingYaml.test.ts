@@ -57,7 +57,7 @@ describe('drying.yamlの天日干しと干し場', () => {
    * 日をまたぐ検査では「晴れが続けば」の側を見られなくなる。
    */
   function open(hour = SUNRISE_HOUR, weather = 'clear', landName = 'sandy_beach') {
-    const session = new WorldSession(codex, undefined, fixedRng(0.9));
+    const session = new WorldSession(codex, fixedRng(0.9));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);

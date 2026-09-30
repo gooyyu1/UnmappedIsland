@@ -40,7 +40,7 @@ describe('pottery.yamlの土器の連鎖', () => {
 
   /** 草地を1つ置いた世界。rollは焼き上がりのpickがどの候補を引くかを決める。 */
   function open(roll: number): void {
-    session = new WorldSession(codex, undefined, fixedRng(roll));
+    session = new WorldSession(codex, fixedRng(roll));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     const worldView = new World(worldInstance);
     session.adoptWorld(worldView);

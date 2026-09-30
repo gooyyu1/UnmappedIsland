@@ -154,7 +154,7 @@ class Encounter {
     this.consciousnessId = codex.vocabulary.world.consciousnessId;
     this.warinessId = codex.propertyNames.getId('wariness');
 
-    this.session = new WorldSession(codex, undefined, rng);
+    this.session = new WorldSession(codex, rng);
     const world = this.session.createObject(codex.objectNames.getId('world'));
     this.session.adoptWorld(new World(world));
 

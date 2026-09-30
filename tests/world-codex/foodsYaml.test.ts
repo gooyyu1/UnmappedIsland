@@ -188,7 +188,7 @@ describe('食べ物の腐敗', () => {
 
   /** 岩場に浅い洞窟が1つある世界。土地が屋外、洞窟の中が「守られている場所」になる。 */
   function world() {
-    const session = new WorldSession(codex, undefined, fixedRng(0));
+    const session = new WorldSession(codex, fixedRng(0));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     const land = spawnInto(session, CAVE_LAND, worldInstance, 'locations');
@@ -400,7 +400,7 @@ describe('foods.yamlの下ごしらえ', () => {
 
   /** 草地にプレイヤーが立っている世界。 */
   function open(landName = 'grassland') {
-    const session = new WorldSession(codex, undefined, fixedRng(0));
+    const session = new WorldSession(codex, fixedRng(0));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     const land = spawnInto(session, landName, worldInstance, 'locations');

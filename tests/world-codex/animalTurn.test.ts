@@ -42,7 +42,7 @@ describe('動物の1手', () => {
    * 決める。道はまだ通していない——逃げ道が要る検証だけがopenPath()で通す。
    */
   function open(roll: number): void {
-    session = new WorldSession(codex, undefined, fixedRng(roll));
+    session = new WorldSession(codex, fixedRng(roll));
     world = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(world));
     jungle = spawnInto('jungle', world, 'locations');

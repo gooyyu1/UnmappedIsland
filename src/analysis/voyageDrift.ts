@@ -101,7 +101,7 @@ export class VoyageDriftSimulation {
     this.windId = codex.propertyNames.getId(WIND_PROPERTY);
     this.fixturesSlotId = codex.vocabulary.world.fixturesSlotId;
 
-    this.session = new WorldSession(codex, undefined, seededRng(seed));
+    this.session = new WorldSession(codex, seededRng(seed));
     const worldDef = codex.objects.get(codex.objectNames.getId(codex.vocabulary.world.worldObject));
     this.worldInstance = this.session.createObject(worldDef.globalId);
     this.session.adoptWorld(new World(this.worldInstance));

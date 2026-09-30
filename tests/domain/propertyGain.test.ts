@@ -142,7 +142,7 @@ object_defs:
     loader.load('gains.yaml', yaml);
     codex = loader.buildAndReset();
 
-    session = new WorldSession(codex, undefined, fixedRng(0));
+    session = new WorldSession(codex, fixedRng(0));
     const world = spawn('world');
     session.adoptWorld(new World(world));
     const land = spawn('land');

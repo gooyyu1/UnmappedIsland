@@ -50,7 +50,7 @@ describe('ベリーの茂み', () => {
    * 数えられるよう、採り尽くした直後と同じ状態（実が無く、残りが満タン）へ揃える。
    */
   function atBush(): void {
-    session = new WorldSession(codex, undefined, fixedRng(0));
+    session = new WorldSession(codex, fixedRng(0));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     land = spawnInto('grassland', worldInstance, 'locations');
