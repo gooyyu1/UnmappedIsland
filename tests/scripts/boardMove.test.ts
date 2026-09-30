@@ -39,10 +39,10 @@ interface Board {
   mainHead?: string;
   prs?: readonly unknown[];
   /**
-   * マージ済みPRとそのコメント。**後片付けの相手**（`board-move.mjs` の `TIDY`）と、スメルを拾う係の
-   * `due`（同 `CYCLES`）が読む。
+   * マージ済みPRとそのコメント。**後片付けの相手**（`board-move.mjs` の `TIDY`）と、閉じ損ねを閉じる手
+   * （同 `CLOSE`）と、スメルを拾う係の `due`（同 `CYCLES`）が読む。
    */
-  mergedPrs?: readonly { number: number }[];
+  mergedPrs?: readonly { number: number; body?: string; baseRefName?: string; mergedAt?: string }[];
   /** 後片付けをまだ打っていない形にするか。既定は打った後（下の `TIDIED_ALREADY`）。 */
   untidied?: boolean;
   /** `archive/` に入っていない判断の履歴の数。価値観を畳む係の `due` が読む。 */
@@ -255,6 +255,68 @@ describe('board-move.mjs', () => {
   it('後片付けはマージより先に打つ', () => {
     const board = { untidied: true, mergedPrs: [{ number: 9 }], prs: [pr(10, label('通してよい'))] };
     expect(moves(board)).toEqual([`TIDY 9 ${NOW}`, 'MERGE 10']);
+  });
+
+  // ## マージ済みPRの `Closes` が閉じ損ねた担当（2.10.6）
+  //
+  // **GitHub はマージで `Closes` の issue を閉じ損ねることがある**（issue #2483。2026-09-30 に
+  // 10本以上続いた）。閉じ損ねた担当を持つワーカーは畳まれず、停滞として起こされ、人へ返っていた。
+  describe('マージ済みPRが閉じ損ねた担当', () => {
+    const merged = { number: 9, body: 'Closes #8\n\nfoot', baseRefName: 'main', mergedAt: QUIET };
+    const openTask = { number: 8, ...label('kind:task'), blockedBy: { nodes: [] } };
+
+    it('盤面が自分で閉じる', () => {
+      expect(moves({ mergedPrs: [merged], issues: [openTask] })).toEqual([`CLOSE 8 9 ${NOW}`]);
+    });
+
+    // 閉じた後に人が開け直したなら、それは人の判断なので閉じ直さず、普通の task として配る。
+    it('一度閉じた担当は、開いていても閉じ直さない', () => {
+      const board = { mergedPrs: [merged], issues: [openTask], taken: { 'close:8': NOW } };
+      expect(moves(board)).toEqual(['TASK 8']);
+    });
+
+    // `main` 以外へ入ったPR（積んだPRが下のブランチへ入った形）は、まだ `main` に何も入っていない。
+    it('`main` 以外へ入ったPRの `Closes` では閉じない', () => {
+      const board = { mergedPrs: [{ ...merged, baseRefName: 'claude/lower' }], issues: [openTask] };
+      expect(moves(board).filter((move) => move.startsWith('CLOSE '))).toEqual([]);
+    });
+
+    // GitHub が閉じるのはマージの少し後なので、直後の周に打つと閉じ損ねていないものへ書き残す。
+    it('マージから落ち着くまでは閉じない', () => {
+      const board = { mergedPrs: [{ ...merged, mergedAt: NOW }], issues: [openTask] };
+      expect(moves(board)).toEqual([]);
+    });
+
+    // 閉じる手に繋がるので、見回りや分析のPRが文中で引いた他のPRの `Closes` は拾わない。
+    it('文中で引かれた `Closes` では閉じない', () => {
+      const quoted = { ...merged, body: 'PR #2481（`Closes #8`）は閉じなかった' };
+      expect(moves({ mergedPrs: [quoted], issues: [openTask] })).toEqual(['TASK 8']);
+    });
+
+    it('後片付けより後、マージより先に打つ', () => {
+      const board = {
+        untidied: true,
+        mergedPrs: [merged],
+        issues: [openTask],
+        prs: [pr(10, label('通してよい'))],
+      };
+      expect(moves(board)).toEqual([`TIDY 9 ${NOW}`, `CLOSE 8 9 ${NOW}`, 'MERGE 10']);
+    });
+
+    // **仕事を終えたワーカーを、PRがまだ出ていないとして起こさない・人へ返さない。** 閉じれば次の周に
+    // `closed:` で畳まれる（2.10.2）。
+    it('担当のワーカーを起こさず、人へも返さない', () => {
+      const board = {
+        mergedPrs: [merged],
+        issues: [openTask],
+        sessions: [idle('session_a', 'task-8')],
+      };
+      // **閉じる手が転んだ周は、同じ周の次の手が打たれる**ので、手を並べる段で外しておく。
+      const closing = `CLOSE 8 9 ${NOW}`;
+      expect(moves(board)).toEqual([closing]);
+      const woken = { 'idle:session_a': LONG_IDLE, 'resume:session_a': 'stall:8' };
+      expect(moves({ ...board, taken: woken })).toEqual([closing]);
+    });
   });
 
   it('コンフリクトしていれば、通してよいが付いていてもマージしない', () => {

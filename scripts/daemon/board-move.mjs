@@ -7,6 +7,7 @@
 // 全部引数に載っているので、実物を触らずに検査できる。
 //
 //   TIDY    <PR番号> <指紋>                  … マージ済みのPRを後片付けする（誰が入れたかを見ない）
+//   CLOSE   <issue番号> <PR番号> <指紋>      … `main` へ入ったPRの `Closes` が閉じ損ねた issue を閉じる
 //   MERGE   <PR番号>
 //   ARCHIVE <セッションID> <指紋>            … 起こす先が無くなったセッションを畳む
 //   RESUME  <セッションID> mend   <PR番号>    <指紋>  … 差し戻し・コンフリクト・CIの赤を直させる
@@ -33,7 +34,7 @@
 //     "mainChecks": [ { "status": "COMPLETED", "conclusion": "SUCCESS" } ],   … `main` の先頭のCI
 //     "mainHead": "<`main` の先頭の指紋>",   … 差し戻しの指紋に入れる（2.14.2 の `mendMark`）
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files,comments ],
-//     "mergedPrs":[ gh pr list --state merged --search merged:>=<窓の始まり> --json number,comments ],   … 後片付けの相手と、スメルを拾う係が読む範囲
+//     "mergedPrs":[ gh pr list --state merged --search merged:>=<窓の始まり> --json number,comments,body,baseRefName,mergedAt ],   … 後片付けと閉じ損ねの相手と、スメルを拾う係が読む範囲
 //     "pendingDecisions": 12,   … `agent-ops/decisions/` のうち `archive/` に入っていない件数
 //     "unsummarizedAnalyses": 3,   … `agent-ops/analysis/` のうち、二次がまだ読んでいない件数
 //     "pendingRefAudit": true,   … 節番号の参照に、この周に読むものが在るか（`scripts/daemon/refAudit.mjs`）
@@ -590,6 +591,28 @@ export const cycleDownNote = (name) =>
   `周期の係 ${name} を立てられない（間を空けて立て直している。理由は ~/daemon.log の「打てなかった: CHORE ${name}」の手前）`;
 
 /**
+ * `main` へ入ったPRの `Closes` が指しているのに、開いたままの issue か（2.10.6）。**仕事はもう
+ * `main` に在る**ので、配らない・担当を起こさない・人へ返さない。閉じるのは盤面（`CLOSE`）。
+ *
+ * **盤面が一度閉じた後に開いていれば、人が開け直したもの**なので、ここには入れない。
+ */
+function unclosed(input, number) {
+  if ((input.taken ?? {})[`close:${number}`] !== undefined) return false;
+  return (input.mergedPrs ?? []).some(
+    (pr) => pr.baseRefName === 'main' && declaredCloses(pr.body).includes(number),
+  );
+}
+
+/**
+ * マージ済みPRの本文が閉じると宣言した issue（2.10.6）。**行頭の `Closes #N` だけ**を読む
+ * ——閉じる手に繋がるので、他のPRの `Closes` を文中で引いた行（見回りや分析のPRの本文）を拾うと、
+ * 無関係の issue を閉じる。
+ */
+function declaredCloses(body) {
+  return [...(body ?? '').matchAll(/^closes\s+#(\d+)/gim)].map((match) => Number(match[1]));
+}
+
+/**
  * 今すぐ配れる `kind:task`（`TASK` に出す候補）を、**`急ぎ` が先、次に完成へ近づける仕事
  * （`advancesGame`）、その中では古い順**に並べる。
  * 一覧は新しい順に返るので、並べ直さないと古い issue が永久に後回しになる。
@@ -618,6 +641,7 @@ function readyTasks(input) {
       .filter((issue) => !names(issue).includes('判断待ち'))
       .filter((issue) => !(issue.blockedBy?.nodes ?? []).some((node) => node.state === 'OPEN'))
       .filter((issue) => !input.prs.some((pr) => closes(pr.body).includes(issue.number)))
+      .filter((issue) => !unclosed(input, issue.number))
       // 既にセッションが持っている issue は配り直さない（「投入済みか」は生死で見る。1.2）。
       .filter((issue) => !input.sessions.some((session) => session.tags.includes(`task-${issue.number}`)))
   );
@@ -1007,6 +1031,21 @@ export function moves(input) {
     if (taken[`tidy:${pr.number}`] !== undefined) continue;
     tidies.push(`TIDY ${pr.number} ${input.now}`);
   }
+
+  // **`Closes` の閉じ損ねは盤面が閉じる**（2.10.6）。GitHub はマージで閉じ損ねることがあり、
+  // 開いたままの担当は配り直され、そのワーカーは停滞として人へ返る。
+  //
+  // **マージから落ち着くまでは閉じない**（`settledBefore`）。GitHub が閉じるのはマージの少し後なので、
+  // 直後の周に打つと、閉じ損ねていないものへ「閉じなかった」と書き残す。
+  const shuts = [];
+  for (const pr of [...(input.mergedPrs ?? [])].sort((a, b) => a.number - b.number)) {
+    if (!(pr.mergedAt < input.settledBefore)) continue;
+    for (const issue of declaredCloses(pr.body)) {
+      if (!input.issues.some((item) => item.number === issue) || !unclosed(input, issue)) continue;
+      if (shuts.some((move) => move.startsWith(`CLOSE ${issue} `))) continue;
+      shuts.push(`CLOSE ${issue} ${pr.number} ${input.now}`);
+    }
+  }
   const mends = [];
   const unlabels = [];
   const stalls = [];
@@ -1376,6 +1415,9 @@ export function moves(input) {
       // それでも何も出てこなければ人へ返す**（2.15）。セッションが持つ指紋の枠は1つなので、
       // `stall:` → `returned:` と進めば、どちらの手も二度は出ない。
       if (open === undefined) continue;
+      // **仕事が `main` へ入った担当は、PRを出していないのではない**（2.10.6）。閉じる手が転んだ周は
+      // 同じ周の次の手が打たれるので、ここで外す。
+      if (unclosed(input, issue)) continue;
       /** 担当の issue を閉じる、開いているPR。 */
       const mine = input.prs.filter((pr) => closes(pr.body).includes(issue));
       // **このワーカーを停滞の判定から外せるのは、宛先を引けるPRだけ**（2.11.4）。引けないPRは
@@ -1593,6 +1635,8 @@ export function moves(input) {
     // **後片付けはマージより先。** 本体のチェックアウトは作業ツリー全部の共有先なので、片付けを
     // 後ろへ回すと、**入る本数だけ古いまま**になる（マージできるPRが並んでいる周は、片付く前に次が入る）。
     ...tidies,
+    // **閉じ損ねを閉じるのは畳むより先。** 閉じた次の周に、その担当のワーカーが `closed:` で畳まれる。
+    ...shuts,
     ...merges,
     ...archives,
     ...mends,
