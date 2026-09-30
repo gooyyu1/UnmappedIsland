@@ -29,7 +29,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  * だから「この規模で収まった」だけでは足りない。**規模を決め打ちした状態で値に上限を引き**、札のほうは
  * さらに**枚数を増やしたときの伸び方**にも上限を引く——問われた側は周りの枚数を増やしても1枚あたりが
  * 動かないこと、走査のほうは枚数に**比例**で伸びること（2乗で伸びないこと）。伸び方は時計ではなく
- * 呼び出しの回数（`domainCalls`）で見るので、機械の速さにも混み具合にも将来の宣言の数にも左右されない。
+ * 呼び出しの回数（`methodCallsDuring`）で見るので、機械の速さにも混み具合にも将来の宣言の数にも左右されない。
  *
  * **担いだ木の側に伸び方の上限は置いていない。** この木は浅くて広い（入れ物の下に物が並ぶ）ため、
  * 1物あたりの値段が木の大きさに連れて増える壊れ方を作れず、**落ちるものを置けなかった**。置いたのは
@@ -61,9 +61,9 @@ describe('貯め込まずに毎回導出することの値段', () => {
   const CARDS = 150;
 
   /**
-   * 走査の伸び方を見るために枚数を掛ける倍率。**2倍では足りない**——足す札は元の札と型が揃わず
-   * 1枚あたりの重さが違うので、比例でも倍率どおりには伸びず、2倍では比例と2乗が紛れる。4倍なら
-   * 比例は4倍・2乗は16倍に離れる。
+   * 走査の伸び方を見るために枚数を掛ける倍率。**2倍では足りない**——2乗と比例の開きは倍率と同じ
+   * 大きさにしかならず、足す札が元の札と型が揃わない（1枚あたりの重さが違う）ぶんの揺れに、2倍の
+   * 開きは紛れる。4倍なら開きも4倍になる。
    */
   const SCAN_GROWTH = 4;
 
@@ -133,17 +133,21 @@ describe('貯め込まずに毎回導出することの値段', () => {
   }
 
   /**
-   * bodyを1回走らせる間に、`src/domain/**` のクラスのメソッド・ゲッターが呼ばれた回数。
+   * bodyを1回走らせる間に、`src/domain/**` と `src/game/view/**` のクラスのメソッド・ゲッターが
+   * 呼ばれた回数。
    *
    * **伸び方は時計ではなくこの回数で見る。** 時計の比には走らせた機械の混み具合が混ざり、落ちても
    * 「走査が生えた」のか「機械が混んでいた」のかを赤と緑で区別できない。回数は同じ入力なら毎回
-   * 同じなので、比の上限が見るのは導出の形だけになる。**並びを走査すれば、並ぶ物1つごとに何かを
-   * 問う**——その問いがここに数えられる。
+   * 同じなので、比の上限が見るのは導出の形だけになる。
+   *
+   * **数えられるのは、並ぶ物やその札へ何かを問う走査だけ。** 配列の上だけで完結する走査（`indexOf`
+   * など）と、クラスの外の関数は数えない。前者は物へ何も問わないぶん1回が軽いので、2乗で伸びても
+   * 桁が変わるほど枚数が要る——そこは時計の上限が受け持つ。
    */
-  function domainCalls(body: () => void): number {
+  function methodCallsDuring(body: () => void): number {
     let calls = 0;
     const restores: (() => void)[] = [];
-    for (const prototype of domainPrototypes()) {
+    for (const prototype of countedPrototypes()) {
       for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(prototype))) {
         if (key === 'constructor') continue;
         const counted = { ...descriptor };
@@ -171,9 +175,14 @@ describe('貯め込まずに毎回導出することの値段', () => {
     return calls;
   }
 
-  /** `src/domain/**` が書き出しているクラスの prototype（重複なし）。 */
-  function domainPrototypes(): ReadonlySet<object> {
-    const modules = import.meta.glob<Record<string, unknown>>('../../src/domain/**/*.ts', { eager: true });
+  /** `src/domain/**` と `src/game/view/**` が書き出しているクラスの prototype（重複なし）。 */
+  function countedPrototypes(): ReadonlySet<object> {
+    const modules = import.meta.glob<Record<string, unknown>>(
+      ['../../src/domain/**/*.ts', '../../src/game/view/**/*.ts'],
+      {
+        eager: true,
+      },
+    );
     const prototypes = new Set<object>();
     for (const exported of Object.values(modules).flatMap((module) => Object.values(module))) {
       if (typeof exported === 'function' && /^class[\s{]/.test(Function.prototype.toString.call(exported))) {
@@ -283,8 +292,11 @@ describe('貯め込まずに毎回導出することの値段', () => {
       `'${dragged.def.name}'を掴んだときの${CARDS}枚ぶんの判定（${milliseconds}ms）`,
     ).toBeLessThan(4);
 
-    const calls = domainCalls(() => askEveryCard(cards, dragged, agent));
-    const crowdedCalls = domainCalls(() => askEveryCard(sameCards, crowdedDragged, crowdedAgent));
+    // 一致を見るので、**両側を同じだけ問うてから数える。** 初回にだけ働く控えがあると、問うた回数の
+    // 違いが走査の有無と区別できない赤になる。
+    askEveryCard(sameCards, crowdedDragged, crowdedAgent);
+    const calls = methodCallsDuring(() => askEveryCard(cards, dragged, agent));
+    const crowdedCalls = methodCallsDuring(() => askEveryCard(sameCards, crowdedDragged, crowdedAgent));
     // 数えられていなければ、両側とも0で下の一致が空回りのまま緑になる。
     expect(calls, `${CARDS}枚ぶんの判定が呼んだ回数`).toBeGreaterThan(CARDS);
     expect(
@@ -375,8 +387,8 @@ describe('貯め込まずに毎回導出することの値段', () => {
     const milliseconds = fastestMilliseconds(20, scan);
     expect(milliseconds, `${CARDS}枚を掴んだときの走査1回（${milliseconds}ms）`).toBeLessThan(16);
 
-    const calls = domainCalls(scan);
-    const crowdedCalls = domainCalls(crowdedScan);
+    const calls = methodCallsDuring(scan);
+    const crowdedCalls = methodCallsDuring(crowdedScan);
     expect(
       crowdedCalls / calls,
       `${CARDS * SCAN_GROWTH}枚にしたときの伸び（${calls}回 → ${crowdedCalls}回）`,
