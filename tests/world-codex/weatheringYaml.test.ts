@@ -64,7 +64,7 @@ const STOCKED_MATERIALS: Readonly<Record<string, Material>> = {
   woven_leaf: 'short_lived',
 };
 
-/** 現実で傷むのに年単位でかかるので、屋外に置いたままでも傷ませない物（同2.2節）。 */
+/** 現実で傷むのに年単位でかかるので、屋外に置いたままでも傷ませない物（DurabilitySystem.md 2.2節）。 */
 const LASTING = ['log', 'raft'];
 
 /** 持ち物1つの維持に充ててよい、1日の余剰に対する割合（SurvivalItems.md 12.1節）。 */
@@ -193,7 +193,8 @@ describe('積んである素材の屋外劣化（DurabilitySystem.md 2.2節）',
   });
 
   it('素材の trait を名乗るのは、持ち物の表と積んだ素材の表に並べた物だけ', () => {
-    // 表に無い在庫（ヤシの葉・枯れ草など）や据えた大物が名乗り出したら、2.2節の線を動かしたことになる。
+    // 表に無い在庫（ヤシの葉・枯れ草など）や据えた大物が名乗り出したら、DurabilitySystem.md 2.2節の線を
+    // 動かしたことになる。
     expect(materialNamerNames().sort()).toEqual(
       [...Object.keys(MATERIALS), ...Object.keys(STOCKED_MATERIALS)].sort(),
     );
