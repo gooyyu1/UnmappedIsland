@@ -28,8 +28,8 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  *
  * だから「この規模で収まった」だけでは足りない。**規模を決め打ちした状態で値に上限を引き**、札のほうは
  * さらに**枚数を増やしたときの伸び方**にも上限を引く——問われた側は周りの枚数を増やしても1枚あたりが
- * 動かないこと、走査のほうは枚数に**比例**で伸びること（2乗で伸びないこと）。伸び方への上限は、機械の
- * 速さにも将来の宣言の数にも左右されない。
+ * 動かないこと、走査のほうは枚数に**比例**で伸びること（2乗で伸びないこと）。伸び方は時計ではなく
+ * 呼び出しの回数（`methodCallsDuring`）で見るので、機械の速さにも混み具合にも将来の宣言の数にも左右されない。
  *
  * **担いだ木の側に伸び方の上限は置いていない。** この木は浅くて広い（入れ物の下に物が並ぶ）ため、
  * 1物あたりの値段が木の大きさに連れて増える壊れ方を作れず、**落ちるものを置けなかった**。置いたのは
@@ -40,7 +40,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  * 伸び方が変わっても16msなら緑のまま通るので、引くのは**桁の変わった遅さが落ちる幅**
  * ——実際に導出を100倍に重くして赤くなることを見ている。
  *
- * **時間を見る試験なので、採るのは繰り返した中の最小値。** GCも他のプロセスも足すことしかしないので、
+ * **時間を見る上限では、採るのは繰り返した中の最小値。** GCも他のプロセスも足すことしかしないので、
  * 最小値がその機械での素の値にいちばん近い。繰り返す回数は、最適化が掛かった後の値へ落ち着くまで回す
  * ぶん——数回では、温まっていない側の値しか見ない。
  */
@@ -61,8 +61,9 @@ describe('貯め込まずに毎回導出することの値段', () => {
   const CARDS = 150;
 
   /**
-   * 走査の伸び方を見るために枚数を掛ける倍率。**2倍では足りない**——比例なら2倍・2乗なら4倍と、
-   * 測りのばらつきに紛れる差しか出ない。4倍なら比例は4倍・2乗は16倍に離れる。
+   * 走査の伸び方を見るために枚数を掛ける倍率。**2倍では足りない**——2乗と比例の開きは倍率と同じ
+   * 大きさにしかならず、足す札が元の札と型が揃わない（1枚あたりの重さが違う）ぶんの揺れに、2倍の
+   * 開きは紛れる。4倍なら開きも4倍になる。
    */
   const SCAN_GROWTH = 4;
 
@@ -122,31 +123,81 @@ describe('貯め込まずに毎回導出することの値段', () => {
 
   /** bodyをtimes回走らせ、いちばん短かった1回のミリ秒を返す。 */
   function fastestMilliseconds(times: number, body: () => void): number {
-    return fastestEach(times, body, () => {}).first;
+    let fastest = Infinity;
+    for (let i = 0; i < times; i++) {
+      const startedAt = performance.now();
+      body();
+      fastest = Math.min(fastest, performance.now() - startedAt);
+    }
+    return fastest;
   }
 
   /**
-   * 2つをtimes回ずつ**交互に**走らせ、それぞれのいちばん短かった1回のミリ秒を返す。
+   * bodyを1回走らせる間に、`src/domain/**` と `src/game/view/**` が書き出しているクラスと、それらが
+   * 継いでいる先のクラスの、メソッド・ゲッター・静的メソッドが呼ばれた回数。
    *
-   * **交互にするのは、2つの比を見るため。** 順に測ると、先に測ったほうは最適化が掛かっていない
-   * ぶん遅く出る。その差がそのまま比に乗ると、比への上限が意味を失う。
+   * **伸び方は時計ではなくこの回数で見る。** 時計の比には走らせた機械の混み具合が混ざり、落ちても
+   * 「走査が生えた」のか「機械が混んでいた」のかを赤と緑で区別できない。回数は同じ入力なら毎回
+   * 同じなので、比の上限が見るのは導出の形だけになる。
+   *
+   * **並ぶ物へメソッドかゲッターで問う走査は、ここに数えられる。** 問う先の物（`WorldObject`）は
+   * 書き出されたクラスだから。数えないのは、書き出されも継がれもしないクラス、クラスの外の関数と
+   * オブジェクトリテラルの関数（`PlayScreenView` の実体はこれ）、フィールドを読むだけの問い、配列の
+   * 上だけで完結する走査（`indexOf` など）。数えない関数の中でも、物へメソッドかゲッターで問えば
+   * そちらが数えに乗る。物へ何も問わない走査は1回が軽いので、2乗で伸びても桁が変わるほど枚数が要る
+   * ——そこは時計の上限が受け持つ。
    */
-  function fastestEach(
-    times: number,
-    first: () => void,
-    second: () => void,
-  ): { first: number; second: number } {
-    const fastest = { first: Infinity, second: Infinity };
-    for (let i = 0; i < times; i++) {
-      const firstStartedAt = performance.now();
-      first();
-      fastest.first = Math.min(fastest.first, performance.now() - firstStartedAt);
-
-      const secondStartedAt = performance.now();
-      second();
-      fastest.second = Math.min(fastest.second, performance.now() - secondStartedAt);
+  function methodCallsDuring(body: () => void): number {
+    let calls = 0;
+    const restores: (() => void)[] = [];
+    for (const holder of countedMethodHolders()) {
+      for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(holder))) {
+        if (!descriptor.configurable) continue;
+        const counted = { ...descriptor };
+        const { value, get } = descriptor;
+        if (typeof value === 'function' && key !== 'constructor') {
+          counted.value = function (this: unknown, ...args: unknown[]) {
+            calls++;
+            return (value as (...a: unknown[]) => unknown).apply(this, args);
+          };
+        } else if (get !== undefined) {
+          counted.get = function (this: unknown) {
+            calls++;
+            return get.call(this);
+          };
+        } else continue;
+        Object.defineProperty(holder, key, counted);
+        restores.push(() => Object.defineProperty(holder, key, descriptor));
+      }
     }
-    return fastest;
+    try {
+      body();
+    } finally {
+      for (const restore of restores) restore();
+    }
+    return calls;
+  }
+
+  /**
+   * 数える側のクラスの、メソッドを持つ所——prototype（インスタンスのメソッド・ゲッター）と、クラス
+   * そのもの（静的メソッド）。書き出されたクラスから継ぐ先へ辿り、組み込みのクラスの手前で止める。
+   */
+  function countedMethodHolders(): ReadonlySet<object> {
+    const modules = import.meta.glob<Record<string, unknown>>(
+      ['../../src/domain/**/*.ts', '../../src/game/view/**/*.ts'],
+      { eager: true },
+    );
+    const isClass = (value: unknown): value is abstract new (...args: never[]) => unknown =>
+      typeof value === 'function' && /^class[\s{]/.test(Function.prototype.toString.call(value));
+
+    const holders = new Set<object>();
+    for (const exported of Object.values(modules).flatMap((module) => Object.values(module))) {
+      for (let cls: unknown = exported; isClass(cls); cls = Object.getPrototypeOf(cls)) {
+        holders.add(cls);
+        holders.add(cls.prototype as object);
+      }
+    }
+    return holders;
   }
 
   /**
@@ -234,8 +285,8 @@ describe('貯め込まずに毎回導出することの値段', () => {
     expect(returning, `組み合わせを返した札（掴んだのは'${dragged.def.name}'）`).toBeGreaterThan(40);
 
     // **問う札は同じままで、周りの枚数だけ倍にする。** 足したぶんまで問うと、足した札が噛み合うかで
-    // 時間が動いてしまい、伸びたのが枚数のせいだと言えない。1枚あたりの判定が周りの枚数を見て
-    // いなければ、同じ札を問う時間は動かない——動くなら、判定のどこかが並びを走査している。
+    // 回数が動いてしまい、伸びたのが枚数のせいだと言えない。1枚あたりの判定が周りの枚数を見て
+    // いなければ、同じ札を問う回数は1回も動かない——動くなら、判定のどこかが並びを走査している。
     const crowded = newGame();
     const crowdedCards = pileCards(crowded, CARDS * 2);
     expect(crowdedCards.length, '倍に並べた札').toBe(CARDS * 2);
@@ -243,20 +294,23 @@ describe('貯め込まずに毎回導出することの値段', () => {
     const crowdedDragged = crowdedCards[cards.indexOf(dragged)];
     const crowdedAgent = crowded.player.instance;
 
-    const milliseconds = fastestEach(
-      50,
-      () => askEveryCard(cards, dragged, agent),
-      () => askEveryCard(sameCards, crowdedDragged, crowdedAgent),
-    );
-
+    const milliseconds = fastestMilliseconds(50, () => askEveryCard(cards, dragged, agent));
     expect(
-      milliseconds.first,
-      `'${dragged.def.name}'を掴んだときの${CARDS}枚ぶんの判定（${milliseconds.first}ms）`,
+      milliseconds,
+      `'${dragged.def.name}'を掴んだときの${CARDS}枚ぶんの判定（${milliseconds}ms）`,
     ).toBeLessThan(4);
+
+    // 一致を見るので、**両側を同じだけ問うてから数える。** 初回にだけ働く控えがあると、問うた回数の
+    // 違いが走査の有無と区別できない赤になる。
+    askEveryCard(sameCards, crowdedDragged, crowdedAgent);
+    const calls = methodCallsDuring(() => askEveryCard(cards, dragged, agent));
+    const crowdedCalls = methodCallsDuring(() => askEveryCard(sameCards, crowdedDragged, crowdedAgent));
+    // 数えられていなければ、両側とも0で下の一致が空回りのまま緑になる。
+    expect(calls, `${CARDS}枚ぶんの判定が呼んだ回数`).toBeGreaterThan(CARDS);
     expect(
-      milliseconds.second / milliseconds.first,
-      `周りを${CARDS * 2}枚にしたときの伸び（${milliseconds.first}ms → ${milliseconds.second}ms）`,
-    ).toBeLessThan(1.5);
+      crowdedCalls,
+      `周りを${CARDS * 2}枚にしても、同じ札を問う回数は変わらない（${calls}回のまま）`,
+    ).toBe(calls);
   });
 
   /**
@@ -338,12 +392,14 @@ describe('貯め込まずに毎回導出することの値段', () => {
     expect(scan(), `'${dragged.def.name}'を掴んでふちが光った枠`).toBeGreaterThan(0);
     expect(crowdedScan(), `増やした側でふちが光った枠`).toBeGreaterThan(0);
 
-    const milliseconds = fastestEach(20, scan, crowdedScan);
+    const milliseconds = fastestMilliseconds(20, scan);
+    expect(milliseconds, `${CARDS}枚を掴んだときの走査1回（${milliseconds}ms）`).toBeLessThan(16);
 
-    expect(milliseconds.first, `${CARDS}枚を掴んだときの走査1回（${milliseconds.first}ms）`).toBeLessThan(16);
+    const calls = methodCallsDuring(scan);
+    const crowdedCalls = methodCallsDuring(crowdedScan);
     expect(
-      milliseconds.second / milliseconds.first,
-      `${CARDS * SCAN_GROWTH}枚にしたときの伸び（${milliseconds.first}ms → ${milliseconds.second}ms）`,
+      crowdedCalls / calls,
+      `${CARDS * SCAN_GROWTH}枚にしたときの伸び（${calls}回 → ${crowdedCalls}回）`,
     ).toBeLessThan(SCAN_GROWTH * 1.5);
   });
 });
