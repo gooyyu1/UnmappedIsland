@@ -13,6 +13,7 @@ import {
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { AGENT_YAML } from '../support/agent';
 import { fixedRng } from '../support/rng';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 世界に起きた変化を、カードの動きの言葉へ直す（changedInstances、docs/engine/HuntingSystem.md 6.2節と
@@ -29,7 +30,7 @@ object_defs:
       day: {value: 0}
       hour: {value: 0}
       minute: {value: 0}
-      minutes_per_tick: {value: 15}
+      minutes_per_tick: {value: ${MINUTES_PER_TICK}}
     slots:
       locations: {cell: {accept: {tag: location}}}
   ground:

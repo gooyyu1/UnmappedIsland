@@ -5,7 +5,7 @@ import { parse } from 'yaml';
 import { characterDefNames } from '../../src/domain/generation/NewGame';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { HOURS_PER_DAY, TICKS_PER_DAY } from '../../src/domain/worldTime';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
@@ -115,7 +115,7 @@ describe('文書が書いた「何日ぶん」', () => {
     expect(
       numberIn(LIQUID_DOC, /ヤシの器（250mL）は \*\*\d+ 杯＝([\d.]+) 時間ぶん\*\*/, 'ヤシの器の時間'),
       'ヤシの器1つが賄う時間',
-    ).toBeCloseTo((bowl.hydrationTicks / decayPerDay) * 24, 1);
+    ).toBeCloseTo((bowl.hydrationTicks / decayPerDay) * HOURS_PER_DAY, 1);
 
     // 積む数の元になる目盛りは、同じ1つでなければならない（3か所に同じ数が書いてある）。
     for (const [doc, text] of [

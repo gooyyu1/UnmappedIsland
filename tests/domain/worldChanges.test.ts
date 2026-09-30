@@ -7,6 +7,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { AGENT_YAML } from '../support/agent';
 import { fixedRng } from '../support/rng';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 世界に起きた物の出入りの観測（WorldSession.observeChanges・WorldChange）の自動テスト。
@@ -24,7 +25,7 @@ object_defs:
       day: {value: 0}
       hour: {value: 0}
       minute: {value: 0}
-      minutes_per_tick: {value: 15}
+      minutes_per_tick: {value: ${MINUTES_PER_TICK}}
     slots:
       locations: {cell: {accept: {tag: location}}}
   ground:

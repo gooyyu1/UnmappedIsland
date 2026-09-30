@@ -4,6 +4,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { AGENT_YAML, createAgent } from '../support/agent';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * actions/combinationsのduration（実行にかかるゲーム内時間・分）に対する自動テスト。durationを持つ操作を
@@ -25,22 +26,22 @@ object_defs:
               self:
                 tick: 1
       minutes_per_tick:
-        value: 15
+        value: ${MINUTES_PER_TICK}
       minute:
         value: 0
-        range: {min: 0, max: 60}
+        range: {min: 0, max: ${MINUTES_PER_HOUR}}
         on_max:
           add:
             self:
-              minute: -60
+              minute: -${MINUTES_PER_HOUR}
               hour: 1
       hour:
         value: 0
-        range: {min: 0, max: 24}
+        range: {min: 0, max: ${HOURS_PER_DAY}}
         on_max:
           add:
             self:
-              hour: -24
+              hour: -${HOURS_PER_DAY}
               day: 1
       day:
         value: 1

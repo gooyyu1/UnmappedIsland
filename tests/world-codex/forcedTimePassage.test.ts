@@ -5,6 +5,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 限界に達した値が起こす、強制的な時間経過（docs/world/Characters.md 限界節）を、実ファイルの
@@ -230,9 +231,6 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
     /** 休息（rest）が戻す割（player_character.yaml）。倒れ込みもこの割に合わせてある。 */
     const RECOVERY_PER_TICK = 1;
 
-    /** 1 tickの長さ（分。core.yaml の minutes_per_tick）。 */
-    const MINUTES_PER_TICK = 15;
-
     /** 倒れ込みが強制する120分（player_character.yaml の collapse）の間に回るtickの数。 */
     const COLLAPSE_TICKS = 120 / MINUTES_PER_TICK;
 
@@ -348,8 +346,14 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
 
         const amounts = gainsDuring(rest);
 
-        expect(valueOf('stamina') - 50, '1時間の休憩で実際に戻った量').toBeCloseTo(NET_PER_TICK * 4, 6);
-        expect(amounts.get('stamina'), '粒もその量').toBeCloseTo(NET_PER_TICK * 4, 6);
+        expect(valueOf('stamina') - 50, '1時間の休憩で実際に戻った量').toBeCloseTo(
+          NET_PER_TICK * (MINUTES_PER_HOUR / MINUTES_PER_TICK),
+          6,
+        );
+        expect(amounts.get('stamina'), '粒もその量').toBeCloseTo(
+          NET_PER_TICK * (MINUTES_PER_HOUR / MINUTES_PER_TICK),
+          6,
+        );
       });
 
       /** 幸福度を削る側（player_character.yaml）。ここで使う危険域の段は、どれも-0.5/tick。 */

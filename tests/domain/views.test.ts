@@ -6,6 +6,7 @@ import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * World/PlayerCharacter/Location（Views）に対する自動テスト。ラップ対象のWorldObjectが実際に持つ
@@ -37,7 +38,7 @@ object_defs:
       minute:
         value: 30
       minutes_per_tick:
-        value: 15
+        value: ${MINUTES_PER_TICK}
       weather:
         value: light_rain
 `;
@@ -63,7 +64,7 @@ object_defs:
       minute:
         value: 30
       minutes_per_tick:
-        value: 15
+        value: ${MINUTES_PER_TICK}
     passives:
       - modify:
           self:

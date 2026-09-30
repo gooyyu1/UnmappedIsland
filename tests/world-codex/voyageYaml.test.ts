@@ -13,6 +13,7 @@ import { namedEntries, nodeAt, objectValueAt, readSeaChart } from '../support/se
 import type { Rng } from '../../src/domain/Rng';
 import { seededRng } from '../../src/domain/Rng';
 import { fixedRng } from '../support/rng';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * 8種類の顔ぶれ（docs/world/ContentSkeleton.md 7節）と、それを配った海区。**顔ぶれは型でもタグでも
@@ -380,7 +381,7 @@ describe('筏と航海', () => {
     const first = singletonPlace(game, 'coastal_waters');
 
     holdWeather(game, 'clear', 'tailwind');
-    for (let i = 0; i < 96; i++) tick(game);
+    for (let i = 0; i < TICKS_PER_DAY; i++) tick(game);
 
     expect(raft.parent?.def.name, '丸1日流されても最初の海区に居る').toBe('coastal_waters');
     expect(
@@ -1143,8 +1144,8 @@ describe('筏と航海', () => {
     // 群れは30分に0.78切れ、群れの居ない海面は60分に0.15切れ（Voyage.md 3.9.2節）。当たりの重みが
     // 卓に占める割合そのもので、**この落差が「積むか釣るか」の判断を作っている**ので、どちらか
     // 一方だけを動かさない。
-    expectCatchRate('shoal', 30, 78 / 100);
-    expectCatchRate('sea', 60, 15 / 100);
+    expectCatchRate('shoal', 30, 0.78);
+    expectCatchRate('sea', 60, 0.15);
   });
 
   it('狩猟の腕が上がると、どちらの相手からもよく獲れる', () => {

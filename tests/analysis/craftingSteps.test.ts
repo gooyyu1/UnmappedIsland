@@ -6,6 +6,7 @@ import { buildCraftingNetwork } from '../../src/codex-viewer/craftingGraph';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 工程の抽出（CraftingStep）の検証。actions・combinations・recipesという文法の違いが
@@ -193,7 +194,7 @@ object_defs:
     // 値が戻らず自分が消える側は寿命で、960 tick（10日）。
     expect(lifetime.repeats).toBe(false);
     expect(lifetime.destroysSelf).toBe(true);
-    expect(lifetime.minutes).toBe(960 * 15);
+    expect(lifetime.minutes).toBe(960 * MINUTES_PER_TICK);
   });
 
   it('作る腕は、レシピの時間にも結果にも現れない', () => {
@@ -357,7 +358,7 @@ object_defs:
       const [cooking] = rangeCyclesOf(defOf('raw_meat'), undefined, [defOf('hearth')]);
 
       // maxちょうどでon_maxが起きる（6.3節）ので、届くべき距離は24。3/tickなので8 tick。
-      expect(cooking.minutes).toBeCloseTo((24 / 3) * 15);
+      expect(cooking.minutes).toBeCloseTo((24 / 3) * MINUTES_PER_TICK);
       expect(cooking.repeats).toBe(false);
       expect(cooking.drivenBy).toBe(huntId('hearth'));
       expect(cooking.step.laborMinutes).toBe(0);
@@ -373,7 +374,7 @@ object_defs:
       // 熱を溜め切る周期そのものが立たなくなる。12 ÷ 3 = 4 tick で焼け石になる。
       const [soaking] = rangeCyclesOf(defOf('stone'), undefined, [defOf('hearth')]);
 
-      expect(soaking.minutes).toBeCloseTo((12 / 3) * 15);
+      expect(soaking.minutes).toBeCloseTo((12 / 3) * MINUTES_PER_TICK);
       expect(soaking.drivenBy).toBe(huntId('hearth'));
       expect(soaking.step.outputs).toEqual([{ objectGlobalId: huntId('hot_stone'), counts: [1] }]);
     });

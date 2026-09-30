@@ -10,6 +10,7 @@ import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { fixedRng } from '../support/rng';
 import { bundledCodex } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent } from '../support/illumination';
+import { MINUTES_PER_HOUR, MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * pottery.yamlの土器の連鎖を、実ファイルの定義だけで検証する。
@@ -110,13 +111,13 @@ describe('pottery.yamlの土器の連鎖', () => {
     greenwareNames: readonly string[] = ['unfired_jar'],
   ): WorldObject {
     const greenware = greenwareNames.map((name) => spawnInto(name, land, 'items'));
-    session.advanceWorldTime(60 * hours);
+    session.advanceWorldTime(MINUTES_PER_HOUR * hours);
 
     const kiln = litKiln();
     for (const piece of greenware)
       expect(piece.moveToSlotOrRejection(kiln.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
     // 高温（blaze、5/tick）まで昇ってから24tick。昇温のぶんを足して余裕を見る。
-    session.advanceWorldTime(60 * 8);
+    session.advanceWorldTime(MINUTES_PER_HOUR * 8);
     return kiln;
   }
 
@@ -159,10 +160,10 @@ describe('pottery.yamlの土器の連鎖', () => {
     const greenware = spawnInto('unfired_jar', land, 'items');
     const moistureId = codex.propertyNames.getId('moisture');
 
-    session.advanceWorldTime(60 * 12);
+    session.advanceWorldTime(MINUTES_PER_HOUR * 12);
     expect(greenware.tryGetProperty(moistureId)?.number ?? 0, '半日で半分ほど抜ける').toBe(48);
 
-    session.advanceWorldTime(60 * 12);
+    session.advanceWorldTime(MINUTES_PER_HOUR * 12);
     expect(greenware.tryGetProperty(moistureId)?.number ?? 0, '1日で乾き切る').toBe(0);
     expect(greenware.tryGetProperty(moistureId)?.isInStage('bone_dry') ?? false).toBe(true);
   });
@@ -245,9 +246,9 @@ describe('pottery.yamlの土器の連鎖', () => {
     const moistureId = codex.propertyNames.getId('moisture');
 
     let remaining = greenware.tryGetProperty(moistureId)?.number ?? 0;
-    for (let tick = 0; tick < 96 && !childNames(kiln).includes('jar'); tick++) {
+    for (let tick = 0; tick < TICKS_PER_DAY && !childNames(kiln).includes('jar'); tick++) {
       remaining = greenware.tryGetProperty(moistureId)?.number ?? 0;
-      session.advanceWorldTime(15);
+      session.advanceWorldTime(MINUTES_PER_TICK);
     }
 
     expect(childNames(kiln), '当たりを引けば焼き上がる').toEqual(['jar']);

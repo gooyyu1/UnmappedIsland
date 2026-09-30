@@ -204,6 +204,7 @@ describe('headroom.sh', () => {
   // **古い値で通すと、上限に当たってから気づく**（`usage.sh` の `--last`）ので、控えは使わずに
   // 引き直す。
   it('控えが古ければ、控えではなく引き直した値で比べる', () => {
+    // eslint-disable-next-line no-restricted-syntax -- 実時間の秒で、世界の暦ではない
     cacheUsage({ agedSeconds: 60 * 60 * 24, fiveHour: 1, sevenDay: 1 });
     const bin = stubEndpoint('five_hour 5 - -\nseven_day 99 - -');
     try {
@@ -222,6 +223,7 @@ describe('headroom.sh', () => {
   it('引き直せなければ、どちらの落ち方でも同じ1行で止まる', () => {
     const noCache = run('new-task');
 
+    // eslint-disable-next-line no-restricted-syntax -- 実時間の秒で、世界の暦ではない
     cacheUsage({ agedSeconds: 60 * 60 * 24 });
     writeUsagePolled(stateDir);
     const notMyTurn = run('new-task');

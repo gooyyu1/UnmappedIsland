@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TickProgress } from '../../src/game/view/tickProgress';
+import { MINUTES_PER_HOUR } from '../../src/domain/worldTime';
 
 /**
  * 時間経過の見せ方（CardInteraction.md 7節 時間経過のドーナツグラフ）の自動テスト。
@@ -9,6 +10,7 @@ import { TickProgress } from '../../src/game/view/tickProgress';
  * ことを確かめる。
  */
 describe('TickProgress(tick境界で一拍置く時間経過)', () => {
+  // eslint-disable-next-line no-restricted-syntax -- TickProgressへ渡す刻みで、この試験の入力
   const TICK = 15;
 
   describe('開始時刻がtick境界に乗っている場合(00:00から45分)', () => {
@@ -58,7 +60,7 @@ describe('TickProgress(tick境界で一拍置く時間経過)', () => {
   });
 
   describe('開始時刻がtick境界に乗っていない場合(07:10から45分)', () => {
-    const from = 7 * 60 + 10;
+    const from = 7 * MINUTES_PER_HOUR + 10;
     const progress = new TickProgress(from, from + 45, TICK);
 
     it('最初の目盛りだけ短く、次のtick境界に来る', () => {
@@ -95,7 +97,7 @@ describe('TickProgress(tick境界で一拍置く時間経過)', () => {
 
     it('境界に乗っていない開始でも、tickの回る位置に目盛りが来る(07:10から20分)', () => {
       // 実際のtickは07:15と07:30（開始から5・20分後）の2回。
-      const from = 7 * 60 + 10;
+      const from = 7 * MINUTES_PER_HOUR + 10;
       const progress = new TickProgress(from, from + 20, TICK);
 
       expect(progress.steppedMinutesAt(2.5), '07:15へ').toBe(5);

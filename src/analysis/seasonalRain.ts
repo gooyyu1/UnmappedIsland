@@ -1,7 +1,7 @@
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
 import { worldAmbientBrightnessOf } from './activityHours';
-import { TICKS_PER_DAY } from '../domain/worldTime';
+import { HOURS_PER_DAY, TICKS_PER_DAY } from '../domain/worldTime';
 import type { SkyState } from './skyState';
 import { ancestorConditionsHold } from './skyState';
 import type { TickDelta } from './tickDeltas';
@@ -27,8 +27,6 @@ import { tickDeltasOf } from './tickDeltas';
  * **世界の定義から借りている語は、下のユニオンに集めてある。** 使い道は実測値の表の鍵と、その表を
  * 引く側が天候を仕分ける鍵だけなので、`WorldVocabulary` には載せない（理由はあちらのクラスコメント）。
  */
-
-const HOURS_PER_DAY = 24;
 
 /** 季節の識別子（`core.yaml` のシンボル）。 */
 export type SeasonName = 'calm' | 'wet' | 'dry';

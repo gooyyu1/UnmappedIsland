@@ -24,6 +24,7 @@ import {
 } from '../../src/codex-viewer/pages';
 import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { HOURS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * ビューアのページ組み立てのテスト。ページはDOMに触れず文字列を返すだけなので、ブラウザ無しで
@@ -65,7 +66,7 @@ object_defs:
       ambient_brightness: {value: 0, range: {min: -6, max: 17}}
       hour:
         value: 0
-        range: {min: 0, max: 24}
+        range: {min: 0, max: ${HOURS_PER_DAY}}
         stages:
           - name: night
             passives:
@@ -627,7 +628,7 @@ object_defs:
       weather: {value: clear}
       hour:
         value: 0
-        range: {min: 0, max: 24}
+        range: {min: 0, max: ${HOURS_PER_DAY}}
         stages:
           - name: night
             passives:

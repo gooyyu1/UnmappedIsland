@@ -5,7 +5,7 @@ import { parse } from 'yaml';
 import { activityHoursOf, type SeasonWeatherHours } from '../../src/analysis/activityHours';
 import { carriedLightEvOf } from '../../src/analysis/carriedLight';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
+import { HOURS_PER_DAY, MINUTES_PER_DAY, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
@@ -119,7 +119,7 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
     // 24を割ったことだけでは、暗さで閉じていても同じ結果になる。
     const closes = weatherNamesOf(codex).filter((weatherName) =>
       activityHoursOf(codex, onlyThisWeather(weatherName), torchEv).some(
-        (row) => row.travelHoursPerDay < 24 - 1e-6,
+        (row) => row.travelHoursPerDay < HOURS_PER_DAY - 1e-6,
       ),
     );
     expect(closes, '屋外を閉じる天気').toEqual(['storm']);
@@ -127,11 +127,11 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
     // 屋根の下（浅い洞窟）だけは風雨が届かず、嵐でも24時間開く。
     const inStorm = activityHoursOf(codex, onlyThisWeather('storm'), torchEv);
     expect(
-      inStorm.some((row) => row.travelHoursPerDay > 24 - 1e-6),
+      inStorm.some((row) => row.travelHoursPerDay > HOURS_PER_DAY - 1e-6),
       '嵐でも開く土地が1つも無い（風雨の届かない土地が消えた）',
     ).toBe(true);
     expect(
-      inStorm.some((row) => row.travelHoursPerDay <= 24 - 1e-6),
+      inStorm.some((row) => row.travelHoursPerDay <= HOURS_PER_DAY - 1e-6),
       '嵐で閉じる土地が1つも無い（松明が風雨まで埋めている）',
     ).toBe(true);
   });
@@ -198,12 +198,11 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
 
   it('光源を持たない1日は、起きているあいだが既に埋まっている', () => {
     const budget = (column: string): number => cell(terrain, 'daily_budget', {}, column);
-    const minutesPerDay = 24 * 60;
 
     // レポートは0.1分で丸めて出すので、和は丸めの幅だけずれうる。
     expect(
       budget('outdoor_window') + budget('night_craft') + budget('storm_stop') + budget('sleep'),
       '屋外の窓・炉端・嵐で止まる時間・睡眠で1日がちょうど埋まる（松明の入る先が無い）',
-    ).toBeCloseTo(minutesPerDay, 0);
+    ).toBeCloseTo(MINUTES_PER_DAY, 0);
   });
 });

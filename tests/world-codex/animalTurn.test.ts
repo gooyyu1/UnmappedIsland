@@ -8,6 +8,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import type { WorldChange } from '../../src/domain/WorldChange';
 import { lungeTargetsByInstance, vanishedInstances } from '../../src/game/view/changedInstances';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 動物の1手（docs/engine/HuntingSystem.md 5節）を、実ファイルの定義だけで検証する。
@@ -16,9 +17,6 @@ import { lungeTargetsByInstance, vanishedInstances } from '../../src/game/view/c
  * 深手を負うほど逃げに転じる——を、密林とその隣の草原を繋いだ小さな世界で通す。
  */
 describe('動物の1手', () => {
-  /** 1手ぶんのゲーム内時間（minutes_per_tick、core.yaml）。 */
-  const TICK_MINUTES = 15;
-
   let codex: WorldCodex;
   let session: WorldSession;
   let world: WorldObject;
@@ -87,7 +85,7 @@ describe('動物の1手', () => {
 
   /** 1手ぶんの時間を進める。手番を配るのはtickの後処理（WorldSession.advanceWorldTime）。 */
   function passTurn(count = 1): void {
-    session.advanceWorldTime(TICK_MINUTES * count);
+    session.advanceWorldTime(MINUTES_PER_TICK * count);
   }
 
   /** その物に刺さっている怪我の識別子。 */

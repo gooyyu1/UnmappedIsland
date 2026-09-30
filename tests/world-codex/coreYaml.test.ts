@@ -7,7 +7,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { MINUTES_PER_DAY, MINUTES_PER_TICK } from '../../src/domain/worldTime';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 import { WORLD_CODEX_DIR, loadYamlDirectory } from '../support/worldCodexFiles';
 
 function load(yamlText: string): WorldCodex {
@@ -46,7 +46,9 @@ describe('core.yamlのworld定義', () => {
     // 初期値は実行時インスタンスの現在値として観測する（DefaultNumberは非公開）。
     const instance = new WorldSession(codex).createObject(world.globalId);
     expect(instance.tryGetProperty(codex.propertyNames.getId('tick'))?.number ?? 0).toBe(0);
-    expect(instance.tryGetProperty(codex.propertyNames.getId('minutes_per_tick'))?.number ?? 0).toBe(15);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('minutes_per_tick'))?.number ?? 0).toBe(
+      MINUTES_PER_TICK,
+    );
     expect(instance.tryGetProperty(codex.propertyNames.getId('minute'))?.number ?? 0).toBe(0);
     expect(instance.tryGetProperty(codex.propertyNames.getId('hour'))?.number ?? 0).toBe(12);
     expect(instance.tryGetProperty(codex.propertyNames.getId('day'))?.number ?? 0).toBe(1);
@@ -57,10 +59,10 @@ describe('core.yamlのworld定義', () => {
     const world = codex.objects.get(codex.objectNames.getId('world'));
 
     const minute = propOf(world, 'minute');
-    expect(minute.range?.max, '60分で1時間へ繰り上がる').toBe(60);
+    expect(minute.range?.max, '1時間の分で1時間へ繰り上がる').toBe(MINUTES_PER_HOUR);
 
     const hour = propOf(world, 'hour');
-    expect(hour.range?.max, '24時で1日へ繰り上がる').toBe(24);
+    expect(hour.range?.max, '1日の時間で1日へ繰り上がる').toBe(HOURS_PER_DAY);
   });
 
   it('dayは折り返さず、年も持たない', () => {
@@ -76,8 +78,8 @@ describe('core.yamlのworld定義', () => {
     ).toBeUndefined();
   });
 
-  it('コードが持つ1日の長さ・1tickの長さは、この宣言から数え直したものと一致する', () => {
-    // 時計の表示も航海の日数の見積もりも収支の表も、実体化された世界を持たずにこの2つを使う
+  it('コードが持つ1日の時間・1時間の分・1tickの長さは、この宣言と一致する', () => {
+    // 時計の表示も航海の日数の見積もりも収支の表も、実体化された世界を持たずにここの暦を使う
     // （src/domain/worldTime.ts）。宣言だけを変えると、世界は新しい暦で回るのにコードは古い
     // 長さで計算し続けるので、ここで突き合わせる。
     const world = codex.objects.get(codex.objectNames.getId('world'));
@@ -87,7 +89,8 @@ describe('core.yamlのworld定義', () => {
     const declaredMinutesPerTick =
       instance.tryGetProperty(codex.propertyNames.getId('minutes_per_tick'))?.number ?? 0;
 
-    expect(MINUTES_PER_DAY).toBe(hoursPerDay * minutesPerHour);
+    expect(HOURS_PER_DAY).toBe(hoursPerDay);
+    expect(MINUTES_PER_HOUR).toBe(minutesPerHour);
     expect(MINUTES_PER_TICK).toBe(declaredMinutesPerTick);
   });
 
@@ -122,12 +125,12 @@ describe('core.yamlのworld定義', () => {
     // 見たいのは繰り上がりの連鎖なので、hourの既定値（正午）ではなく0:00から始める。
     worldInstance.getProperty(hourId).setNumberWithoutEvents(0);
 
-    session.advanceWorldTime(60); // 60分 -> minuteが折り返し、hourへ+1
+    session.advanceWorldTime(MINUTES_PER_HOUR); // 1時間 -> minuteが折り返し、hourへ+1
 
     expect(worldInstance.tryGetProperty(minuteId)?.number ?? 0).toBe(0);
     expect(worldInstance.tryGetProperty(hourId)?.number ?? 0).toBe(1);
 
-    session.advanceWorldTime(60 * 23); // 残り23時間分進め、hourもdayへ折り返させる
+    session.advanceWorldTime(MINUTES_PER_HOUR * (HOURS_PER_DAY - 1)); // 1日の残りを進め、hourもdayへ折り返させる
 
     expect(worldInstance.tryGetProperty(minuteId)?.number ?? 0).toBe(0);
     expect(worldInstance.tryGetProperty(hourId)?.number ?? 0).toBe(0);

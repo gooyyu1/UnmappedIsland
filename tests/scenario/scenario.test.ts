@@ -119,6 +119,7 @@ describe('テスト用シナリオ', () => {
     expect(game.world.weather).toBe('storm');
 
     // weather_remaining（初期20tick）が尽きて選び直されるまで進める。
+    // eslint-disable-next-line no-restricted-syntax -- 24はweather_remainingを越えるtickの数
     game.session.advanceWorldTime(game.world.rawMinutesPerTick * 24);
 
     // 飽和した大気が重みを立てる候補（ClimateSystem.md 4.3節）。**曇りも入る**——`saturated` が

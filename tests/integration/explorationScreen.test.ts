@@ -13,6 +13,7 @@ import { parseLocale } from '../../src/locale/Localization';
 import { pathsIn } from '../support/paths';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
+import { MINUTES_PER_HOUR } from '../../src/domain/worldTime';
 
 /**
  * 探索して見つけたもの・道・地図が画面に出るまでを、世界・映しを繋いだまま通す試験。
@@ -64,8 +65,8 @@ describe('探索と地図（世界→映し 通し）', () => {
     expect(lane(view, game, 'fixtures'), '未探索なので設置物も道も見つかっていない').toEqual([]);
     expect(lane(view, game, 'items'), '未探索なので土地には何も落ちていない').toEqual([]);
     expect(view.elapsedDays).toBe(0);
-    expect(view.hour * 60 + view.minute, '時計はランダムに決まった開始時刻をそのまま映す').toBe(
-      game.world.hour * 60 + game.world.minute,
+    expect(view.hour * MINUTES_PER_HOUR + view.minute, '時計はランダムに決まった開始時刻をそのまま映す').toBe(
+      game.world.hour * MINUTES_PER_HOUR + game.world.minute,
     );
   });
 

@@ -6,6 +6,8 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 // on_max（GameElementDefinition.md 6.3節）に対する自動テスト。値が変わった直後にcheckRangeEventsが
 // 再評価されるため、補正の連鎖は宣言順やTickの回数に依存せず同じtick()内で解決される。
 // YAMLパーサ経由のテストはyamlLoader.test.tsを参照。
+// minuteの60は範囲の端を試すための値で、暦の書き写しではない（暦を変えても試す中身は変わらないので、
+// src/domain/worldTime.tsからは引かない）。
 describe('rangeイベント', () => {
   function load(yaml: string) {
     return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();

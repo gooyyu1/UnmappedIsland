@@ -15,6 +15,7 @@ import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 import { placeSites } from '../../src/domain/generation/SitePlacer';
 import { TRAVEL_MINUTES_STEP } from '../../src/domain/generation/PathNetworkBuilder';
 import { Pcg32 } from '../../src/domain/Pcg32';
+import { MINUTES_PER_HOUR } from '../../src/domain/worldTime';
 
 /** 不変条件の検証に使うシード群。特別な意味は無く、多様なレイアウトを試すための個数。 */
 const SEEDS = Array.from({ length: 25 }, (_, i) => i);
@@ -265,13 +266,14 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
         const a = map.sites[edge.a];
         const b = map.sites[edge.b];
         const moveCostAverage = (a.type!.moveCost + b.type!.moveCost) / 2;
-        const walkMinutes = ((edge.distanceMeters * moveCostAverage) / island.walkMetersPerHour) * 60;
+        const walkMinutes =
+          ((edge.distanceMeters * moveCostAverage) / island.walkMetersPerHour) * MINUTES_PER_HOUR;
         const climbMinutes =
           ((Math.abs(elevationOf(a) - elevationOf(b)) * metersPerElevationUnit) / island.climbMetersPerHour) *
-          60;
+          MINUTES_PER_HOUR;
 
         expect(edge.travelMinutes, `シード${seed}: 道${edge.a}-${edge.b}`).toBe(
-          Math.max(1, Math.round((walkMinutes + climbMinutes) / 15)) * 15,
+          Math.max(1, Math.round((walkMinutes + climbMinutes) / TRAVEL_MINUTES_STEP)) * TRAVEL_MINUTES_STEP,
         );
       }
   });
@@ -288,7 +290,8 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
         const a = map.sites[edge.a];
         const b = map.sites[edge.b];
         const moveCostAverage = (a.type!.moveCost + b.type!.moveCost) / 2;
-        const walkOnlyMinutes = ((edge.distanceMeters * moveCostAverage) / island.walkMetersPerHour) * 60;
+        const walkOnlyMinutes =
+          ((edge.distanceMeters * moveCostAverage) / island.walkMetersPerHour) * MINUTES_PER_HOUR;
         const gap = Math.abs(
           a.axisValues.get(island.elevationAxis)! - b.axisValues.get(island.elevationAxis)!,
         );

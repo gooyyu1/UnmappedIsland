@@ -9,6 +9,7 @@ import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import { MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * fire.yamlの火の連鎖を、実ファイルの定義だけで検証する。
@@ -404,7 +405,7 @@ describe('fire.yamlの火の連鎖', () => {
 
     setHour(NIGHT_HOUR);
     setWeather('heavy_rain');
-    session.advanceWorldTime(60 * HOURS);
+    session.advanceWorldTime(MINUTES_PER_HOUR * HOURS);
     expect(moisture.isInStage('sodden'), '雨に打たれれば濡れる').toBe(true);
 
     setHour(NOON_HOUR);
@@ -413,7 +414,7 @@ describe('fire.yamlの火の連鎖', () => {
       land.getProperty(codex.propertyNames.getId('ambient_brightness')).getEffectiveValue(),
       '晴れた真昼は強い日差しの側',
     ).toBeGreaterThanOrEqual(STRONG_SUNLIGHT);
-    session.advanceWorldTime(60 * HOURS);
+    session.advanceWorldTime(MINUTES_PER_HOUR * HOURS);
     expect(moisture.isInStage('dry'), '日に広げれば押し下げの無い段まで戻る').toBe(true);
   });
 
@@ -428,14 +429,14 @@ describe('fire.yamlの火の連鎖', () => {
 
     setHour(NIGHT_HOUR);
     setWeather('heavy_rain');
-    session.advanceWorldTime(60 * HOURS);
+    session.advanceWorldTime(MINUTES_PER_HOUR * HOURS);
     expect(moisture.number, '持っていれば雨に打たれない').toBe(0);
 
     // 日の差さない夜のまま、抜けていく側だけを見る。
     moisture.setNumber(soakedMoistureOf('dry_grass'));
     setWeather('clear');
     const soaked = moisture.number;
-    session.advanceWorldTime(60 * HOURS);
+    session.advanceWorldTime(MINUTES_PER_HOUR * HOURS);
     expect(moisture.number, '日が無くても抜けていく').toBeLessThan(soaked);
   });
 
@@ -533,7 +534,7 @@ describe('fire.yamlの火の連鎖', () => {
     const hearth = spawnInto('campfire', land, 'fixtures');
     stoke(hearth, 'thick_branch');
 
-    session.advanceWorldTime(60 * 4);
+    session.advanceWorldTime(MINUTES_PER_HOUR * 4);
 
     expect(heatIs(hearth, 'out'), '火は消えたまま').toBe(true);
     expect(effectiveNumberOf(hearth, 'fuel'), '火がつくまで薪は減らない').toBe(20);
@@ -577,7 +578,7 @@ describe('fire.yamlの火の連鎖', () => {
       '薪の無い炉は落とさせない',
     ).toEqual([]);
 
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
 
     expect(itemsOn(land), '断られているあいだに燃え尽きる').toEqual([]);
     expect(heatIs(hearth, 'out'), '炉は消えたまま').toBe(true);
@@ -585,7 +586,7 @@ describe('fire.yamlの火の連鎖', () => {
 
   it('燃えている炉は火種を断る。重ねて火力を種火まで落とすことはない', () => {
     const hearth = litCampfire();
-    session.advanceWorldTime(60);
+    session.advanceWorldTime(MINUTES_PER_HOUR);
     expect(heatIs(hearth, 'flame'), '炎まで育っている').toBe(true);
     const grown = effectiveNumberOf(hearth, 'heat');
 
@@ -745,7 +746,7 @@ describe('fire.yamlの火の連鎖', () => {
       torch.getProperty(codex.propertyNames.getId('lit')).setNumberWithoutEvents(1);
       setWeather(weatherName);
 
-      session.advanceWorldTime(15);
+      session.advanceWorldTime(MINUTES_PER_TICK);
 
       expect(effectiveNumberOf(torch, 'lit'), `${weatherName}で消える`).toBe(0);
       expect(carried(), `${weatherName}: 燃え尽きたのではなく、消えた松明が手に残る`).toEqual(['torch']);
@@ -761,7 +762,7 @@ describe('fire.yamlの火の連鎖', () => {
     const torch = spawnInto('torch', player, 'hand');
     torch.getProperty(codex.propertyNames.getId('lit')).setNumberWithoutEvents(1);
 
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
 
     expect(effectiveNumberOf(torch, 'lit'), '灯ったまま').toBe(1);
   });
@@ -827,17 +828,17 @@ describe('fire.yamlの火の連鎖', () => {
 
     expect(heatIs(hearth, 'ember'), '落とした直後は種火').toBe(true);
 
-    session.advanceWorldTime(60);
+    session.advanceWorldTime(MINUTES_PER_HOUR);
     expect(heatIs(hearth, 'flame'), '1時間で炎まで育つ').toBe(true);
   });
 
   it('薪が尽きると火は衰え、種火を経て死ぬ', () => {
     const hearth = litCampfire();
-    session.advanceWorldTime(60);
+    session.advanceWorldTime(MINUTES_PER_HOUR);
     expect(heatIs(hearth, 'flame')).toBe(true);
 
     // 太い枝1本（20）を炎（-1.5/tick）で食い尽くし、そこから冷めきるまで進める。
-    session.advanceWorldTime(60 * 12);
+    session.advanceWorldTime(MINUTES_PER_HOUR * 12);
 
     expect(effectiveNumberOf(hearth, 'fuel')).toBe(0);
     expect(heatIs(hearth, 'out'), '薪も種火も尽きた').toBe(true);
@@ -850,13 +851,13 @@ describe('fire.yamlの火の連鎖', () => {
     hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(0.9);
     hearth.getProperty(codex.propertyNames.getId('heat')).setNumber(1);
 
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
 
     expect(effectiveNumberOf(hearth, 'fuel'), '種火は薪を0.1食う').toBeCloseTo(0.8, 10);
     expect(heatIs(hearth, 'ember'), '燃え残りがある間は種火が死なない').toBe(true);
 
     // 食い尽くせば、そこから衰える（焚き火の種火は-2/tickなので1tickで消える）。
-    session.advanceWorldTime(15 * 10);
+    session.advanceWorldTime(MINUTES_PER_TICK * 10);
 
     expect(effectiveNumberOf(hearth, 'fuel')).toBe(0);
     expect(heatIs(hearth, 'out'), '尽きたら衰えて死ぬ').toBe(true);
@@ -864,13 +865,13 @@ describe('fire.yamlの火の連鎖', () => {
 
   it('雨は野ざらしの炉の火力を削り、育つはずの種火を消す', () => {
     const underClearSky = smallFire();
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
     expect(effectiveNumberOf(underClearSky, 'heat'), '晴れなら薪のぶんだけ育つ').toBe(3);
 
     open(LIGHTS);
     const inTheRain = smallFire();
     setWeather('heavy_rain');
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
 
     expect(heatIs(inTheRain, 'out'), '大雨の-4は薪の育ちを上回る').toBe(true);
   });
@@ -883,7 +884,7 @@ describe('fire.yamlの火の連鎖', () => {
     hearth.getProperty(codex.propertyNames.getId('heat')).setNumber(1);
     setWeather('heavy_rain');
 
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
 
     expect(effectiveNumberOf(hearth, 'heat'), 'someの+6が雨の-4を上回る').toBe(3);
   });
@@ -891,7 +892,7 @@ describe('fire.yamlの火の連鎖', () => {
   it('焚き火は薪を積めるだけ積んでも高温には届かない', () => {
     const hearth = litCampfire();
     stoke(hearth, 'thick_branch'); // 上限の30まで積む
-    session.advanceWorldTime(60 * 3);
+    session.advanceWorldTime(MINUTES_PER_HOUR * 3);
 
     expect(effectiveNumberOf(hearth, 'heat'), '火力の上限で頭打ちになる').toBe(30);
     expect(heatIs(hearth, 'flame'), '開いた焚き火は炎まで').toBe(true);
@@ -904,7 +905,7 @@ describe('fire.yamlの火の連鎖', () => {
     expect(effectiveNumberOf(hearth, 'fuel')).toBe(120);
 
     hearth.tryGetProperty(codex.propertyNames.getId('heat'))?.setNumber(1);
-    session.advanceWorldTime(60 * 6);
+    session.advanceWorldTime(MINUTES_PER_HOUR * 6);
 
     expect(heatIs(hearth, 'blaze'), '料理の最上段').toBe(true);
   });
@@ -1017,17 +1018,17 @@ describe('fire.yamlの火の連鎖', () => {
     const meat = spawnInto('raw_meat', land, 'items');
     expect(meat.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
 
-    session.advanceWorldTime(60 * 3);
+    session.advanceWorldTime(MINUTES_PER_HOUR * 3);
     expect(new Location(land).fixtures[0].def.name).toBe('campfire');
     expect(childNames(hearth), '焼き上がりは同じ枠に残る').toEqual(['roasted_meat']);
 
-    session.advanceWorldTime(60 * 3);
+    session.advanceWorldTime(MINUTES_PER_HOUR * 3);
     expect(childNames(hearth), '出し忘れると焦げる').toEqual(['charred_lump']);
   });
 
   it('火にかけた肉は、今の火力のまま何tickで焼き上がるかを答える', () => {
     const hearth = litCampfire();
-    session.advanceWorldTime(60);
+    session.advanceWorldTime(MINUTES_PER_HOUR);
     expect(heatIs(hearth, 'flame'), '炎（3/tick）で焼く').toBe(true);
 
     const cookingId = codex.propertyNames.getId('cooking_progress');
@@ -1038,10 +1039,10 @@ describe('fire.yamlの火の連鎖', () => {
     // 24 ÷ 3 = 8tickでmaxちょうどに乗り、そのtickでon_maxが起きる。
     expect(meat.tryGetProperty(cookingId)?.ticksUntilMax()).toBe(8);
 
-    session.advanceWorldTime(15 * 7);
+    session.advanceWorldTime(MINUTES_PER_TICK * 7);
     expect(childNames(hearth), '7tickではまだ焼き上がらない').toEqual(['raw_meat']);
 
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
     expect(childNames(hearth), '8tick目に焼き上がる').toEqual(['roasted_meat']);
   });
 
@@ -1116,16 +1117,16 @@ describe('fire.yamlの火の連鎖', () => {
 
   it('火の中の石は熱を溜めて焼け石になり、炉から出せば冷めて石に戻る', () => {
     const hearth = litCampfire();
-    session.advanceWorldTime(60);
+    session.advanceWorldTime(MINUTES_PER_HOUR);
     expect(heatIs(hearth, 'flame'), '炎（3/tick）で焼く').toBe(true);
 
     const stone = spawnInto('stone', land, 'items');
     expect(stone.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
 
     // 12 ÷ 3 = 4tickでmaxちょうどに乗る。
-    session.advanceWorldTime(15 * 3);
+    session.advanceWorldTime(MINUTES_PER_TICK * 3);
     expect(childNames(hearth), '3tickではまだ溜まり切らない').toEqual(['stone']);
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
     expect(childNames(hearth), '4tick目に焼け石へ置き換わる').toEqual(['hot_stone']);
 
     const hot = hearth.getSlot(codex.slotNames.getId('fire')).contents[0];
@@ -1133,9 +1134,9 @@ describe('fire.yamlの火の連鎖', () => {
 
     // 炉から出すと冷める（-3/tick）。4tickで抜け切って普通の石に戻る。
     expect(hot.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
-    session.advanceWorldTime(15 * 3);
+    session.advanceWorldTime(MINUTES_PER_TICK * 3);
     expect(itemsOn(land), '3tickではまだ焼け石').toEqual(['hot_stone']);
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
     expect(itemsOn(land), '抜け切れば普通の石').toEqual(['stone']);
   });
 
@@ -1144,7 +1145,7 @@ describe('fire.yamlの火の連鎖', () => {
     const stone = spawnInto('stone', land, 'items');
     expect(stone.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
 
-    session.advanceWorldTime(60 * 4);
+    session.advanceWorldTime(MINUTES_PER_HOUR * 4);
 
     expect(effectiveNumberOf(stone, 'heat_soak'), '火が無ければ溜まらない').toBe(0);
     expect(childNames(hearth), '石のまま').toEqual(['stone']);
@@ -1184,7 +1185,7 @@ describe('fire.yamlの火の連鎖', () => {
     const hot = spawnInto('hot_stone', land, 'items');
 
     // 炉の外では-3/tick。3tick（45分）で3まで落ち、湯を沸かせる段（searing、6以上）から外れる。
-    session.advanceWorldTime(15 * 3);
+    session.advanceWorldTime(MINUTES_PER_TICK * 3);
     expect(effectiveNumberOf(hot, 'heat_soak')).toBe(3);
 
     expect(
@@ -1246,10 +1247,10 @@ describe('fire.yamlの火の連鎖', () => {
     const bowl = filledBowl('hot_water_liquid');
 
     // 湯は-1/tick。12 tick（3時間）で抜け切る。
-    session.advanceWorldTime(15 * 11);
+    session.advanceWorldTime(MINUTES_PER_TICK * 11);
     expect(bowl.def.name, '11tickではまだ湯').toBe('coconut_bowl__content_hot_water_liquid');
 
-    session.advanceWorldTime(15);
+    session.advanceWorldTime(MINUTES_PER_TICK);
     expect(bowl.def.name, '抜け切れば水').toBe('coconut_bowl__content_water_liquid');
   });
 });

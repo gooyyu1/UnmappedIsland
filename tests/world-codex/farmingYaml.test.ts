@@ -670,6 +670,7 @@ describe('farming.yamlの畑と囲い', () => {
     for (const roll of [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95]) {
       open(roll);
       const pen = buildPen();
+      // eslint-disable-next-line no-restricted-syntax -- 回す回数で、暦ではない
       for (let i = 0; i < 60; i++) {
         tick(1);
         for (const object of pen.tryGetSlot(codex.slotNames.getId('catch'))!.contents) {

@@ -6,6 +6,7 @@ import { SEASON_CLIMATE } from './seasonalRain';
 import { ancestorConditionsHold } from './skyState';
 import type { TickDelta } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
+import { HOURS_PER_DAY } from '../domain/worldTime';
 
 /**
  * 日射で進む蒸発（`docs/engine/LiquidContainerSystem.md` 6節の「上乗せ」）が、**どんな空のもとで
@@ -18,8 +19,6 @@ import { tickDeltasOf } from './tickDeltas';
  *
  * **数えるのは時間であって、量ではない。** 減る量そのものは `seasonalRain` が出す。
  */
-
-const HOURS_PER_DAY = 24;
 
 /**
  * 明るさに現れない湿りを連れてくる空か。**雲が空を覆っている天候**が真で、雨だけでなく曇りも入る

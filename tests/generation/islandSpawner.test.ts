@@ -10,6 +10,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { pathsIn } from '../support/paths';
 import { TRAVEL_MINUTES_STEP } from '../../src/domain/generation/PathNetworkBuilder';
 import { seededRng } from '../../src/domain/Rng';
+import { MINUTES_PER_HOUR } from '../../src/domain/worldTime';
 
 describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
   let codex: WorldCodex;
@@ -245,11 +246,11 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
   it('開始時刻は朝8:00〜正午12:00の間のtick刻みで決まる', () => {
     for (const seed of [3, 11, 21]) {
       const world = startNewGame(codex, SAMPLE_CHARACTER, seed, seededRng(seed)).world;
-      const minutes = world.hour * 60 + world.minute;
+      const minutes = world.hour * MINUTES_PER_HOUR + world.minute;
 
       expect(world.day, '開始は1日目').toBe(1);
-      expect(minutes, `シード${seed}の開始時刻は8:00以降`).toBeGreaterThanOrEqual(8 * 60);
-      expect(minutes, `シード${seed}の開始時刻は12:00以前`).toBeLessThanOrEqual(12 * 60);
+      expect(minutes, `シード${seed}の開始時刻は8:00以降`).toBeGreaterThanOrEqual(8 * MINUTES_PER_HOUR);
+      expect(minutes, `シード${seed}の開始時刻は12:00以前`).toBeLessThanOrEqual(12 * MINUTES_PER_HOUR);
       expect(minutes % world.rawMinutesPerTick, `シード${seed}の開始時刻はtick刻み`).toBe(0);
     }
   });

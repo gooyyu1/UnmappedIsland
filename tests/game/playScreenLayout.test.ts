@@ -53,12 +53,14 @@ describe('ScreenMetrics', () => {
 
   it('9:16より正方形に近い縦型は、uを縮めて設計上の高さ1920uを確保する', () => {
     // 短辺基準のままだと縦に積み切れず、3レーンが収まらない（PlayScreenLayoutの縦型の積み上げ）。
+    // eslint-disable-next-line no-restricted-syntax -- 画素で、暦ではない
     expect(new ScreenMetrics(1080, 1440).u, '3:4').toBe(1440 / 1920);
     expect(new ScreenMetrics(1536, 2048).u, '3:4のタブレット').toBe(2048 / 1920);
   });
 
   it('16:9より正方形に近い横型は、uを縮めて設計上の幅1683uを確保する', () => {
     // 短辺基準のままだと横に3列（ダッシュボード478 + カード5枚ぶん1085 + サイドバー120）が並ばない。
+    // eslint-disable-next-line no-restricted-syntax -- 画素で、暦ではない
     expect(new ScreenMetrics(1440, 1080).u, '4:3').toBe(1440 / 1683);
     expect(new ScreenMetrics(1080, 1080).u, '正方形').toBe(1080 / 1683);
     // 16:9以上に横長なら幅は余るので、短辺基準のまま。
