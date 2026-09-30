@@ -269,7 +269,7 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 測ったもので（標本数が季節インスタンスの本数より桁で多いのがその印）、`calm` では
 0.42 日<!-- stats: climate.yaml non_rain_streak season=calm segment=overall p5 -->の区間から
 4.21 日<!-- stats: climate.yaml non_rain_streak season=calm segment=overall p95 -->の区間まで散っています。
-**こちらは季節どうしの違いではありません**——同じ `calm` の中で、半日で次が降ることも 4 日待たされることも
+**こちらは季節どうしの違いではありません**——同じ `calm` の中で、すぐ次が降ることも何日も待たされることも
 あるという話です。上の「毎回違う」を支えるのは `weather_hours` のほうだけで、この節はその中身が
 規則的に並んでいないことを言い添えるものです。
 

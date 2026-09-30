@@ -229,7 +229,7 @@
 `*_weight` を重みとする `pick` が次を選ぶ——ですが、天気と違って持続は一律です。向きしか無いので、
 長さまで振ると何が変わったのか読めなくなります。
 
-**この重みが横断時間へ返すものは、1 周回に 1 度の航海では半日に満たない差です。** 砂浜から近道で渡ると、
+**この重みが横断時間へ返すものは、1 周回に 1 度の航海では小さな差です。** 砂浜から近道で渡ると、
 乾季なら 5.02 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=dry days -->、
 雨季なら 5.34 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=wet days -->——
 最も短い岸壁からでも
@@ -240,7 +240,7 @@
 0.2 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest days 幅 ±0.1 -->です**
 （[`stats/voyage.yaml`](../../stats/voyage.yaml) の `course_season`）。
 
-**荒天の押し流し（3.8 節）を入れても、この差は 1 日に届きません。** 風下は押し流す先も決めるので、向かい風の
+**荒天の押し流し（3.8 節）を入れても、この差は小さいままです。** 風下は押し流す先も決めるので、向かい風の
 多い雨季ほど島の側へ戻される回が増えます。海区と筏を実体化して渡らせると
 （[`VoyageStormStats.md`](../diagnostics/VoyageStormStats.md)）、**乾季の航海はほとんど押し流されません**
 ——伸びるのは
@@ -264,7 +264,7 @@
 24<!-- stats: climate.yaml season_duration min 最小 --><!-- stats: climate.yaml season_duration min 最大 -->〜36<!-- stats: climate.yaml season_duration max 最小 --><!-- stats: climate.yaml season_duration max 最大 -->
 日で回り、乾季の次の乾季までには穏やかと雨季が挟まるので、乾季を逃せばその 2 季ぶんを待つことになります
 ——引き返して逃した場合も同じで、引き返しの代償（[`GameEndings.md`](../concept/GameEndings.md) 12.5 節）
-にはこれが乗ります。**得る 1 日足らずに対して待ちが 2 桁大きいので、今の重みでは「窓を待つ」は
+にはこれが乗ります。**得るものに対して待ちが桁違いに大きいので、今の重みでは「窓を待つ」は
 選択になりません**——期限として働かせるなら、動かすのは風向きの重みでも荒天の押し流しでもなく、
 季節が航海へ返すものの側です。
 
@@ -272,7 +272,9 @@
 7.61 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet p95 -->を超え、最も長い
 回は
 9.66 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet max -->かかりました
-——**平均が半日しか動かないのに裾は 3 日以上伸びる**ので、雨季に出ることの代償は日数の期待値ではなく、
+——**平均は
+0.40 日<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=wet extra_days -->しか動かないのに
+裾はこれだけ伸びる**ので、雨季に出ることの代償は日数の期待値ではなく、
 積む量をどれだけ厚くするかに出ます（[`GameEndings.md`](../concept/GameEndings.md) 3.1 節の「読めない
 伸びをどう見込むか」、3.9.3 節）。
 
@@ -493,7 +495,7 @@
 
 **最寄りの小島はどの海岸からも海鳥の岩**（島側から 5 番目）です。岸壁はその海区に面しているので、出航して
 見張り 3 回で小島が現れます——**岸壁から出る人にとって、中盤の沿岸航海は「出て、上陸して、戻る」だけ**です。
-砂浜から出るなら 4 区間の往復（素の横断時間で 2,880 分——3.9.1 節と同じ物差しで 3.5 日、帆と追い風が
+砂浜から出るなら 4 区間の往復（素の横断時間で 2,880 分、帆と追い風が
 あればもっと短い）になり、
 これが 11 節の言う「戻ってこられる範囲の航海」の実体です。**距離を選んだのは出航地点を選んだときで、
 小島の側に遠近の仕掛けはありません。**
@@ -635,7 +637,7 @@
 （[`VoyageStormStats.md`](../diagnostics/VoyageStormStats.md)）。**効くのは戻された区間ではなく、
 渡っている最中に流されて空振りになった渡りのほう**で、雨季は 1 回の航海で
 1.30 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet voided_crossings -->——押し流しの
-回数（0.82 + 0.47）と、小数第 2 位へ丸めた幅では見分けが付きません。**押し流しはほぼ必ず渡っている
+回数（0.82<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet backwards --> + 0.47<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet forwards -->）と、小数第 2 位へ丸めた幅では見分けが付きません。**押し流しはほぼ必ず渡っている
 最中に来ます**（航海に費やす時間の大半が横断だからです）。空振りは押し流しの部分集合なので、丸める
 前の割合が 100% を超えることはありません。
 
@@ -670,7 +672,7 @@
 | 岸壁（海鳥の岩から） | 近道 | 8<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs --> | 28<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookouts --> 回 | 420 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookout_minutes --> | 2,880 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest crossing_minutes --> | 3,300 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest total_minutes --> | 3.7<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest days --> |
 | 岸壁 | 遠回り | 10<!-- stats: voyage.yaml courses coast=cliff_coast course=detour legs --> | 34<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour total_minutes --> | 4.6<!-- stats: voyage.yaml courses coast=cliff_coast course=detour days --> |
 
-**遠回りを選ぶと、どの海岸からでも 1 日近く増えます**（沖の潮目と黒い岩礁の 2 区間で
+**遠回りを選ぶと、どの海岸からでも同じだけ増えます**（沖の潮目と黒い岩礁の 2 区間で
 810 分<!-- stats: voyage.yaml courses coast=sandy_beach total_minutes 幅 --><!-- stats: voyage.yaml courses coast=rocky_coast total_minutes 幅 --><!-- stats: voyage.yaml courses coast=cliff_coast total_minutes 幅 -->）。帆と追い風が
 あれば縮み、荒天の押し流し（3.8 節）と引き返し（3.5 節）が伸ばします。
 
@@ -679,7 +681,7 @@
 いません**——1 航海ぶんの見張りは、嵐を引いた明るい時間にも収まるからです（3.10 節）。**乾季と穏やかな季節では、表のままです**
 ——押し流されるのは雨季で、平均は
 0.40 日<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=wet extra_days -->しか伸びない
-一方、**20 回に 1 回は 7 日近くかかります**（3.1 節）。**積む「4〜6 日ぶん」（3.9.3 節）は乾季に出た
+一方、**20 回に 1 回は 7.61 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet p95 -->を超えます**（3.1 節）。**積む「4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日ぶん」（3.9.3 節）は乾季に出た
 場合の話**で、雨季に出るなら積む量はその裾で決めることになります。
 
 **それでも遠回りは、時間では選べません。** 同じ風が続く日で比べると、遠回りは近道より常に長くかかります
@@ -691,15 +693,15 @@
 **風が 1 区間へ乗せる幅は最大でも 90 分**（3.2 節）**で、遠回りが増やす 2 区間には届きません。**
 **遠回りが返すのは時間ではなく実りです**（3.6 節）——沖の潮目は見張り 3 回のうちに
 99%<!-- stats: voyage.yaml zone_yields zone=outer_tide_rip spawned_by_sighting ±1 -->の割で群れが立ち、
-群れ 1 つは 3 日ぶんの身になります（3.9.2 節）。**1 日ぶんの時間を払って 3 日ぶんの当てを買う**のが
+群れ 1 つは 3 日ぶんの身になります（3.9.2 節）。**2 区間ぶんの時間を払って 3 日ぶんの当てを買う**のが
 遠回りで、**風はその判断を動かしません。**
 
 **だから「30 日ぶんを積む」という前提は、海区の網が入った時点で既に事実ではありません。**
-[`ContentSkeleton.md`](./ContentSkeleton.md) 5 節が要求するのも、この 4〜6 日ぶんです。塩蔵が保つ 20 日
-（[`SurvivalItems.md`](./SurvivalItems.md) 9 節）は航海の 3 倍以上あり、**足りない 10 日という穴も
+[`ContentSkeleton.md`](./ContentSkeleton.md) 5 節が要求するのも、この 4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日ぶんです。塩蔵が保つ 20 日
+（[`SurvivalItems.md`](./SurvivalItems.md) 9 節）は航海の日数を大きく上回り、**足りない 10 日という穴も
 ありません**。**航海をこれ以上短くはしません**——やることの少ない区間は詰めるのが既定ですが
 （[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「退屈な区間は、簡単になりすぎない範囲で
-短くする」節）、4 日はもう短い側で、ここから削ると渡る手応えごと無くなります。
+短くする」節）、4 日<!-- stats: voyage.yaml courses days 最小 -->はもう短い側で、ここから削ると渡る手応えごと無くなります。
 
 #### 3.9.2 釣りは、魚の群れへ当てたときだけよく獲れる
 
@@ -750,13 +752,13 @@
   （熟達すれば 3.6 回）。
 - **群れの出なかった日は、6 時間釣っても 1 切れに届きません**（0.9。熟達しても 2.4 で、1 日ぶんの
   3 には届きません）。**丸一日（1 日ぶんの自由時間 891 分<!-- stats: voyage.yaml meta daily_free_minutes -->）
-  粘って 2 切れ**（熟達で 5 切れ）ですが、**丸一日釣れば
+  粘っても 1 日ぶんに届きません**（熟達すれば届きます）。しかも**丸一日釣れば
   その日は 1 海区も進みません**（3 節。横断は 360 分、3.2 節）——熟達した腕で足りるようになるのは、
   進むのをやめた日のぶんだけです。**釣りだけで出れば、群れの無い区間は赤字**です——砂浜から
-  **今の網**（3 節）**では**、近道を行く 12 区間のうち群れの立ちうる海区は 4 つで、残る 8 区間がそれにあたります。**岸壁から出る
-  8 区間では 1 つだけ**（本土の島影）——**「短い航路ほど補給の当てが無い」**（3.6 節）**は、そのまま
+  **今の網**（3 節）**では**、近道を行く 12 区間<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest legs -->のうち群れの立ちうる海区は 4 つで、残る区間がそれにあたります。**岸壁から出る
+  8 区間<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs -->では 1 つだけ**（本土の島影）——**「短い航路ほど補給の当てが無い」**（3.6 節）**は、そのまま
   「短い航路ほど積んで出なければならない」**になります。
-- **だから積むのは 4〜6 日ぶん**（3.9.1 節の遠回りの日数ぶん）。生肉 12〜18 個で 6〜9 kg なので、**積荷の段が
+- **だから積むのは 4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日ぶん**（3.9.1 節の針路の日数ぶん）。1 日 3 つを日数ぶん積んでも、**積荷の段が
   上がる 80 kg**（3.2 節）**には遠く、予定ぶんを積むこと自体は速さを削りません。** 削られるのは、
   それを塩漬けにするまでの島側の時間です。
 
@@ -764,20 +766,19 @@
 [`DigestionSystem.md`](../engine/DigestionSystem.md) 6 節）。**塩漬けにしても消えません**——`cure` を
 通した先も同じ `eat` を継ぐので、**製塩が前提であること**（3.9.2 節）**は、菌を避ける手にはなりません。**
 
-**それでも 1 日 3 つは、症状の段へ届きません。** 入る菌は 1 日 9 ですが、感染している間は免疫が上がり
+**それでも 1 日 3 つは、症状の段へ届きません。** 入る菌は 1 日 9（1 切れ +3 の 3 つぶん）ですが、感染している間は免疫が上がり
 続け（+0.25/tick<!-- stats: balance.yaml consumption property=immunity condition=in_stage_or_above(self.pathogen,latent) character=medic per_tick -->）、
-素の 60 から 10 時間で最上段（`primed`）へ届きます。そこから先は 1 tick に
+素の 60 からやがて最上段（`primed`）へ届きます。そこから先は 1 tick に
 −0.30<!-- stats: balance.yaml consumption property=pathogen condition=stage(self.immunity,primed) character=medic per_tick --> 引くので、
 菌自身の増殖（+0.15/tick<!-- stats: balance.yaml consumption property=pathogen condition=in_stage_or_above(self.pathogen,latent) character=medic per_tick -->）を
-差し引いた正味で 1 日 14 引けます。入る 9 を上回るので、**菌は食事ごとに 0 へ戻ります**（他の段が引く量は
+差し引いた正味でも、1 日で入る 9 を上回って引けるので、**菌は食事ごとに 0 へ戻ります**（他の段が引く量は
 [`DigestionSystem.md`](../engine/DigestionSystem.md) 6.2 節）。**条件は間隔です**——発熱の段は 5 なので、
 1 切れ +3 が 2 回続けて入ればその場で乗ります。最上段へ届くまでは `robust` の
 −0.20<!-- stats: balance.yaml consumption property=pathogen condition=stage(self.immunity,robust) character=medic per_tick --> なので、
-増殖を差し引いた正味（−0.05/tick）では 1 引くのに 5 時間かかり、**間隔が 5 時間では 1 日 3 つでも
-ちょうど段に乗ります**——起きている時間帯へ 3 食を寄せるとそこが境目で、8 時間おきに離せば届きません。
+増殖を差し引いた正味がごくわずかで、**間隔が詰まると 1 日 3 つでも段に乗ります**——起きている時間帯へ 3 食を寄せるあたりが境目で、8 時間おきに離せば届きません。
 
 **崩れるのは、免疫の押し下げを抱えて出航したときです。** 押し下げのぶん最上段へ届くのが遅れ、その間の
-正味は 1 日 5 しか引けないので、入る 9 が勝って積み上がります——**ビタミン不足（−15）を抱えて出るだけで、
+正味で引ける量が入る 9 を下回るので、積み上がります——**ビタミン不足（−15）を抱えて出るだけで、
 初日のうちに発熱の段へ乗ります。** 壊血病（−40）まで行くと最上段へ届かなくなり、菌は上限へ暴走します。
 
 **釣りが賄うのは、予定が狂ったぶんです。** 荒天は未知の海区へ押し流し（3.8 節）、引き返しは来た区間を
@@ -790,11 +791,11 @@
 
 **ビタミンを運ぶのは、そのうち海藻です**——卵は 10、生肉は 1 切れ 2 しかありません。
 1 日に回るのは 48<!-- stats: balance.yaml daily_needs property=vitamin daily_need --> なので、**生肉 3 つでは
-42 ずつ削れていきます。** 4〜6 日なら、素の蓄え（900）から押し下げの段（600 未満）へは届きませんが、
+その大半が毎日削れていきます。** 予定どおりの日数なら、素の蓄え（900）から押し下げの段（600 未満）へは届きませんが、
 **削ったまま出るか、荒天と引き返しで伸びれば入ります**——予定が狂ったときに要るのは、満腹を埋める釣り
 だけではありません。
 
-**脂も同じ形で足りません**——1 日に要る 24 に対して、生肉 3 つが運ぶのは 12 です
+**脂も同じ形で足りません**——1 日に要る 24<!-- stats: balance.yaml daily_needs property=lipid daily_need --> に対して、生肉 3 つが運ぶのは 12 です
 （[`DigestionSystem.md`](../engine/DigestionSystem.md) 3 節）。**ただしこちらは釣りではなく積む側で
 埋まります**（3.9.6 節）。
 
@@ -814,7 +815,7 @@
 
 **銛は突いた魚に持って行かれることがあります**（どちらの卓も 50 回に 1 回、`expert` では 70 回に 1 回
 ——**失う重み 2 は動かず、腕が当たる側だけを太らせる**ので、上手いほど銛を失いにくくなります。
-4〜6 日の航海で突く回数から見て、**1 航海に 1 本ほど**）。だから積むのは銛 1 本ではなく、**穂先になる尖った石と、締める紐**です。
+4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日の航海で突く回数から見て、**1 航海に 1 本ほど**）。だから積むのは銛 1 本ではなく、**穂先になる尖った石と、締める紐**です。
 **柄になる太い枝は海が返します**（流木と漂流物、3 節の表）が、**石と紐は返りません**——漂流物が返す
 ロープは紐 3 本を撚った先で、ほどいて紐に戻す手はありません。作り直すのに火は要らず、削るための刃物を
 1 つ積んでおけば筏の上で組み直せます。**予備を切らすと、群れに出会っても突けません**——食料を積んで
@@ -837,7 +838,7 @@
 
 **水は海の上で得られないので、日数ぶんを積み切ります。** 甕 1 つは 1.7 日ぶん
 （[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5 節）なので、遠回りを見込んだ
-3.9.1 節の 4〜6 日なら
+3.9.1 節の 4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日なら
 **3〜4 つ**。**蓋をすればこれがそのまま積む数で、蓋をしなければ下限です**——蒸発が押し上げ、積む物を
 誤れば食い方の側からも押し上がります。
 
@@ -846,7 +847,7 @@
 - **蓋をしなければ蒸発が引きます。** 開けたままの甕は、中身が日なたで 1 日
   273mL<!-- stats: balance.yaml rain_water container=jar season=dry evaporation_ml_per_day -->
   （乾季。雨季でも 61mL<!-- stats: balance.yaml rain_water container=jar season=wet evaporation_ml_per_day -->）
-  ずつ減ります（同 6 節）。**1 日ぶんのおよそ 1 割**で、海区は樹冠も影も持たないので（3.10 節）日陰へ
+  ずつ減ります（同 6 節）。**1 日に飲むぶんに比べて小さくない量**で、海区は樹冠も影も持たないので（3.10 節）日陰へ
   寄せる手もありません。**飲んでいる甕だけでなく、順番を待っている甕も同じだけ失う**ので、**積む数が
   増えるほど 1 つあたりの取り分は減ります**——最後に開ける甕は、それまでの日数ぶんを失った状態で開く
   ことになります。**空になった甕は減りません**（中身の軸ごと落ちる、同 1 節）。
@@ -857,11 +858,11 @@
   `fat_starved` の段が立ち、`hydration` の削りが倍になります
   （[`DigestionSystem.md`](../engine/DigestionSystem.md) 8 節）。**1 日ぶんの生肉 3 切れが運ぶ脂は、
   1 日に要る量の半分にしかなりません**（同 3 節）——避けるには**ヤシの果肉を 2 日に 1 つ**積みます
-  （果肉 1 つが 26、1 日に要るのが 24）。生肉と同じく塩漬け・天日干し・燻しが効くので、
+  （果肉 1 つが 26、1 日に要るのが 24<!-- stats: balance.yaml daily_needs property=lipid daily_need -->）。生肉と同じく塩漬け・天日干し・燻しが効くので、
   日数ぶんを積んで出られます。
 
 **重さとかさは、どちらも効きません。** 満たした甕は 5.2kg（器 1.2kg ＋ 水 4kg）なので、5 つでも
-26kg——**積荷の段が上がる 80 kg**（3.2 節）**には、生肉 12〜18 個**（6〜9kg、3.9.3 節）**と合わせても
+26kg——**積荷の段が上がる 80 kg**（3.2 節）**には、日数ぶんの生肉**（3.9.3 節）**と合わせても
 届きません。** かさの側も、筏の 500 L に対して甕 1 つが 15 L です。**蓋を足しても同じです**——蓋 1 枚は
 0.4kg・0.3 L で、甕の数ぶん載せても段は動きません。**積む数を縛るのは船ではなく、浜まで運ぶ側**です
 （[`ContentSkeleton.md`](./ContentSkeleton.md) 5 節）。

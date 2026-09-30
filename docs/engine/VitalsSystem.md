@@ -282,7 +282,7 @@ blood:
 **戻らなくなる境目（3.1 節）も、このままとします。** ゲートが見る水と体脂肪は、**島の暮らしを 1 日ぶん
 賄う献立に丸ごと入っています**——その献立が要求するのは
 1 日 549 分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->（満腹とビタミンも含めた
-全部の合計。うち 360 分は睡眠で、段が余計に削るぶんは入っていない下限。
+全部の合計。うち 360 分<!-- stats: balance.yaml daily_minimum_menu place=島全体 route="palm_tree.pick_frond → palm_frond.split_and_weave → bed.spread → bed.nap" minutes -->は睡眠で、段が余計に削るぶんは入っていない下限。
 [`DigestionSystem.md`](./DigestionSystem.md) 9 節）で、**渡り歩ける島には賄えない値がありません。**
 ゲートが閉じるのは暮らしが崩れているときだけで、深手を負ったこと自体では閉じません。
 

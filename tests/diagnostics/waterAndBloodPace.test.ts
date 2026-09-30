@@ -129,7 +129,11 @@ describe('文書が書いた「何日ぶん」', () => {
     }
 
     // 積む数は日数の幅から出るので、**幅の両端で**確かめる。
-    const packing = /3\.9\.1 節の (\d+)〜(\d+) 日なら\s*\*\*(\d+)〜(\d+) つ\*\*/.exec(VOYAGE_DOC);
+    // 日数の両端には出どころの印（`<!-- stats: … -->`）が付くので、読み飛ばす。
+    const packing =
+      /3\.9\.1 節の (\d+)(?:<!--[^>]*-->)*〜(\d+)(?:<!--[^>]*-->)* 日なら\s*\*\*(\d+)〜(\d+) つ\*\*/.exec(
+        VOYAGE_DOC,
+      );
     expect(packing, '`Voyage.md` 3.9.6節の積む数が読めない').not.toBeNull();
     expect(Number(packing![3]), '短い側の甕の数').toBe(Math.ceil(Number(packing![1]) / jarDays));
     expect(Number(packing![4]), '長い側の甕の数').toBe(Math.ceil(Number(packing![2]) / jarDays));
