@@ -17,7 +17,12 @@ export class OpenPane {
    */
   private readonly lastRects = new Map<ObjectWindowLaneRole, readonly Rect[]>();
 
-  /** 今の面が持つレーン（役割つき）。面が無ければ空。 */
+  /**
+   * 今の面が持つレーン（役割つき）。面が無ければ空。**渡すのは今の面の並びの実体で、写しではない。
+   * ただし顔ぶれが変わるのは面の差し替え（replace・close）だけ**で、そこでは並びごと別の面のものへ
+   * 替わる——だから**読んだ配列は、差し替えの前の面のレーンを持ち続ける。** タブの切り替えを跨いで
+   * 読む側は、自分で写し取るのではなくこの口を読み直す。
+   */
   get lanes(): readonly ObjectWindowLane[] {
     return this.pane?.lanes ?? [];
   }

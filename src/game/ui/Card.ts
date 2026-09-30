@@ -709,14 +709,20 @@ export class Card extends Phaser.GameObjects.Container {
   setPresence(ids: readonly number[], emptied: boolean): void {
     if (!isAlive(this)) return;
 
-    this.present = ids;
+    this.present = [...ids];
     this.emptied = emptied;
     if ((this._content.count ?? 1) !== ids.length) this.setContent({ ...this._content, count: ids.length });
     this.setVisible(ids.length > 0 || emptied);
     this.setAlpha(ids.length === 0 ? EMPTIED_ALPHA : 1);
   }
 
-  /** この枠に今在るインスタンス。まだ何も言われていなければ、映しているもの全部。 */
+  /**
+   * この枠に今在るインスタンス。まだ何も言われていなければ、映しているもの全部。
+   *
+   * **setPresenceは渡された並びを写して持つ**——渡した側が後から自分の配列を書き換えても、札が
+   * 名乗る顔ぶれは動かない。ここが渡すのはその写しの実体で、**顔ぶれが変わるのは次のsetPresence
+   * だけ**（並びごと替わる）。だから**読んだ配列は、次に言われる前の顔ぶれを持ち続ける。**
+   */
   get presentIds(): readonly number[] {
     return this.present ?? this._content.identity ?? [];
   }

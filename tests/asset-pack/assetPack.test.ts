@@ -306,6 +306,22 @@ describe('複数のアセットパックを並べた順に読む', () => {
     expect(() => packs.receive(again)).toThrow(/twin/);
     expect(packs.all).toHaveLength(1);
   });
+
+  // allが渡すものは並びの実体（AssetPacks.all）。読むたびに詰め替えるようになると、読んだあとの
+  // receiveが読んだ側へ現れなくなるので、ここで落とす。
+  it('読んだ並びは、あとから入ったパックもそのまま持つ', async () => {
+    const packs = new AssetPacks();
+    packs.receive(await pack('first', []));
+
+    const read = packs.all;
+    expect(read, '読むたびに詰め替えない').toBe(packs.all);
+    packs.receive(await pack('second', []));
+
+    expect(
+      read.map((received) => received.name),
+      '読んだあとに入ったパックも、読んだ並びに現れる',
+    ).toEqual(['first', 'second']);
+  });
 });
 
 /**

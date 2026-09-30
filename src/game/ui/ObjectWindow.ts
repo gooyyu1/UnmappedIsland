@@ -255,11 +255,6 @@ export class ObjectWindow {
     this.replacePane(options.initialTab);
   }
 
-  /** 今開いている面が持つレーン（役割つき）。面がレーンを持たなければ空。 */
-  get lanes(): readonly ObjectWindowLane[] {
-    return this.pane.lanes;
-  }
-
   /** その役割のレーン。今開いている面が持たなければundefined。 */
   laneOf(role: ObjectWindowLaneRole): CardLane | undefined {
     return this.pane.laneOf(role);

@@ -30,6 +30,10 @@ export class AssetPacks {
   /** 配布物を1つでも取りに行ったか。読めずに外したぶんも数える（matchesSetting）。 */
   private requested = false;
 
+  /**
+   * 並んでいるパック。**渡すのは並びの実体で、写しではない**——読んだあとにreceiveで加わった
+   * パックは、読んだ配列にもそのまま足される。
+   */
   get all(): readonly AssetPack[] {
     return this.packs;
   }
