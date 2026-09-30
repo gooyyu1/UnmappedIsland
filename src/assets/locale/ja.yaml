@@ -418,10 +418,10 @@ object_texts:
         description: 腰を下ろして休む。まとめて休むほど、同じ時間でも体力の戻りは大きい。
       nap:
         display_name: 仮眠
-        description: 短く眠る。体力に加えて眠気も引く。地面に直に寝ても、これは取れる。
+        description: 短く眠る。体力に加えて眠気も引く。
       sleep:
         display_name: 睡眠
-        description: 通しで眠る。寝床の上でしか取れず、それでも一晩では眠気は戻り切らない。
+        description: 通しで眠る。地面でも眠れるが、寝床の上のほうが体力が戻る。一晩では眠気は戻り切らない。
       collapse:
         display_name: 倒れ込む
         description: 体力が尽きて倒れ込む。プレイヤーが起こすものではなく、手が出せないまま時間が過ぎる。
@@ -895,7 +895,7 @@ object_texts:
   # 寝床（bedding.yaml）。
   bed:
     display_name: 寝床
-    description: 編んだ葉を広げただけの寝床。地面の湿りと硬さを断つ。ここでなら通しで眠れる。
+    description: 編んだ葉を広げただけの寝床。地面の湿りと硬さを断つ。地面よりも体力が戻る。
     recipes:
       spread:
         display_name: 敷く

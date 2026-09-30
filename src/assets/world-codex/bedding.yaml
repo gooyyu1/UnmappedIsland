@@ -5,8 +5,8 @@
 # （docs/concept/DesignPrinciples.md「計算式はエンジンに取っておき、宣言へ開かない」）、1箇所へ
 # 集めずに段ごとのブロックへ散らしてある。有効なブロックはすべて重なる（8.5節）。
 #
-# **睡眠（sleep）を配るのは寝床だけ**（docs/world/Bedding.md 4.1節）。地面に直に寝る段0で取れるのは仮眠まで
-# （characters/player_character.yaml の nap）で、寝床の上の nap/sleep はこちらが配る。
+# 地面に直に寝る段0の nap/sleep はキャラクタ側が持ち（characters/player_character.yaml）、寝床の上の
+# nap/sleep はこちらが配る（docs/world/Bedding.md 4.1節）。
 
 object_defs:
   # 編んだ葉を広げただけの敷物に、骨組みを差し込める枠を持たせたもの。**敷物は部品ではなく寝床
