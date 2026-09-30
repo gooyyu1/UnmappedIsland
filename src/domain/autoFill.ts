@@ -80,8 +80,7 @@ function planFills(
 ): readonly Fill[] {
   const groups = groupByDef(available);
   const used = groups.map(() => 0);
-  const roomOf = (cell: SlotCell, group: number): number =>
-    Math.min(cell.vacancyForIgnoringVolume(groups[group][0]), available.length);
+  const roomOf = (cell: SlotCell, group: number): number => cell.vacancyForIgnoringVolume(groups[group][0]);
   const acceptedBy = targets.map(({ cell }) =>
     groups.flatMap((objects, group) =>
       cell.accepts(objects[0].def) && roomOf(cell, group) >= 1 ? [group] : [],

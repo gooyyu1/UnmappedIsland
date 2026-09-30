@@ -441,7 +441,19 @@ function pathToCellFor(
   incoming: CellOccupant,
   cellDefs: readonly CellDef[],
   occupants: readonly (CellOccupant | undefined)[],
-  visited = new Set<number>(),
+): number[] | undefined {
+  // 道の終わりは必ず空き枠なので、空き枠が無ければ辿らずに済む。枠が増えるスロットは空き枠を
+  // 残さないので、中身が多くても辿らない。
+  if (!occupants.includes(undefined)) return undefined;
+  return augmentingPath(incoming, cellDefs, occupants, new Set());
+}
+
+/** pathToCellForの探索本体。visitedはこの1回の探索で見た枠——同じ枠を辿り直して回らないための印。 */
+function augmentingPath(
+  incoming: CellOccupant,
+  cellDefs: readonly CellDef[],
+  occupants: readonly (CellOccupant | undefined)[],
+  visited: Set<number>,
 ): number[] | undefined {
   const fits = (index: number): boolean => {
     const cellDef = cellDefs[index];
@@ -458,7 +470,7 @@ function pathToCellFor(
   for (const [index, occupant] of occupants.entries()) {
     if (occupant === undefined || !fits(index)) continue;
     visited.add(index);
-    const rest = pathToCellFor(occupant, cellDefs, occupants, visited);
+    const rest = augmentingPath(occupant, cellDefs, occupants, visited);
     if (rest !== undefined) return [index, ...rest];
   }
   return undefined;
