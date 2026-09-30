@@ -1033,7 +1033,7 @@ describe('board-move.mjs', () => {
   // （`board-labels.yml` の `verdict`）は差し戻しの形のまま——ここで起こすと、通したばかりの差分へ
   // 書き手が push して `通してよい` を落とす。
   it('同じ版へ通す判定が載っても、書いた本人は起こさない', () => {
-    const board = (comments: readonly unknown[], woke?: string) => ({
+    const board = (comments: readonly unknown[], woke?: string): Board => ({
       prs: [pr(10, { ...label('直し待ち'), comments })],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
