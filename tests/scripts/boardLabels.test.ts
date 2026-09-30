@@ -8,6 +8,8 @@ import { SWEEP_LINE } from '../../scripts/daemon/board-round.mjs';
 import { pathForBash, runScript, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `.github/workflows/board-labels.yml` の、結論をラベルへ変える段の検査。
  *
@@ -122,7 +124,7 @@ const PASS_ASK = '[レビュー] 通してよい（人の判断が要る）';
 /** そのPRに既に付いている、結論のコメント。今回の判定もここに載る（Actions が動くのは投稿の後）。 */
 const past = (...bodies: string[]): Comment[] => bodies.map((body) => ({ body }));
 
-describe('board-labels.yml の verdict', () => {
+describe('board-labels.yml の verdict', timeoutOnWindows(30_000), () => {
   it('「直しが要る」で 直し待ち を付けて 通してよい を外す', () => {
     const result = run(BLOCK, past(BLOCK));
 
@@ -225,7 +227,7 @@ describe('board-labels.yml の verdict', () => {
  * そのまま次のセッションへ配り直し、返した意味が消える。**順序（`blockedBy`）はここが唯一の
  * 経路**なので、動かなければ張られないまま配られる。
  */
-describe('board-labels.yml の declared', () => {
+describe('board-labels.yml の declared', timeoutOnWindows(30_000), () => {
   const ISSUE = '1376';
 
   /** 通る名乗り用。**落ちたことを結果に混ぜない**ので、落ちれば「何もしない」と区別が付く。 */
@@ -387,7 +389,7 @@ esac
  * push で前の差分の印を落とす段。**人が外す作業を作らないための要**（`board-design.md` 2.13.1節）
  * なので、落とす対象が欠けると、人の手番の印が付いたまま残って盤面が止まる。
  */
-describe('board-labels.yml の synchronized', () => {
+describe('board-labels.yml の synchronized', timeoutOnWindows(30_000), () => {
   /** `synchronized` ジョブの `run:`。 */
   function synchronized(): string | undefined {
     const workflow = parse(readFileSync(WORKFLOW, 'utf-8')) as {
@@ -415,7 +417,7 @@ describe('board-labels.yml の synchronized', () => {
  * **盤面は自分で外せない**（`unlabeled` が `却下` になる。下の `unlabeled_by_hand`）ので、ここが
  * 落とさない札は誰にも落とされない。
  */
-describe('board-labels.yml の swept', () => {
+describe('board-labels.yml の swept', timeoutOnWindows(30_000), () => {
   const PR = '2120';
 
   /** 頼みの本文を渡して走らせ、`gh pr edit` に渡された引数を返す。 */
@@ -498,7 +500,7 @@ esac
  * たびに同じラベルを外すので、機械のぶんまで差し戻しに読むと、**直して push した本人がその push で
  * 差し戻される**——直すほど差し戻る輪になる。
  */
-describe('board-labels.yml の unlabeled_by_hand', () => {
+describe('board-labels.yml の unlabeled_by_hand', timeoutOnWindows(30_000), () => {
   const PR = '1701';
 
   /** 外れたラベルと、外した相手の種別を渡して走らせる。 */
@@ -585,7 +587,7 @@ esac
  * 差分が一覧を置き去りにしても、読む者が数えるまで誰も気づかない。**各行の末尾の job 名がその
  * 突き合わせの手がかり**で、ここが唯一それを読む。
  */
-describe('board-labels.yml の冒頭の一覧', () => {
+describe('board-labels.yml の冒頭の一覧', timeoutOnWindows(30_000), () => {
   /** 冒頭のコメント（`on:` より前）の箇条書きが、末尾で名指ししている job 名。 */
   function listedJobs(): Set<string> {
     const header = readFileSync(WORKFLOW, 'utf-8').split(/\r?\n/);

@@ -132,7 +132,11 @@ describe('inject-policies.sh', () => {
    * 出力を見ても分からない。
    */
   it('CLAUDE_PROJECT_DIR が無くても、自分の置き場からリポジトリの根を引く', () => {
-    const real = readFileSync(resolve(__dirname, '../../agent-ops/policies.md'), 'utf-8');
+    // フックは `$(<file)` で読むので、CRLF の作業ツリーでも行末の `\r` は落ちて届く。
+    const real = readFileSync(resolve(__dirname, '../../agent-ops/policies.md'), 'utf-8').replace(
+      /\r\n/g,
+      '\n',
+    );
     const parsed: unknown = JSON.parse(
       runScript(HOOK, [], { env: { ...process.env, CLAUDE_PROJECT_DIR: '' } }),
     );

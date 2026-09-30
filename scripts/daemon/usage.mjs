@@ -26,26 +26,34 @@ const raw = await response.text();
 //
 // **`429` が口の閉じている秒数（`retry-after`）を添えていれば、それを標準出力へ出して3で終わる。**
 // 間隔の番を持つのは `usage.sh` なので、ここは読んで渡すだけ。
-if (!response.ok) {
-  const retryAfter = response.headers.get('retry-after') ?? '';
-  console.error(`失敗: HTTP ${response.status}${retryAfter ? ` retry-after ${retryAfter}` : ''} ${raw}`);
-  if (response.status === 429 && /^\d+$/.test(retryAfter)) {
-    console.log(retryAfter);
-    process.exit(3);
+//
+// 終了コードは `process.exit` で切らずに返す——理由は `dispatch-session.mjs` の末尾と同じで、切ると
+// Windows では3が別のコードに化ける。
+function report() {
+  if (!response.ok) {
+    const retryAfter = response.headers.get('retry-after') ?? '';
+    console.error(`失敗: HTTP ${response.status}${retryAfter ? ` retry-after ${retryAfter}` : ''} ${raw}`);
+    if (response.status === 429 && /^\d+$/.test(retryAfter)) {
+      console.log(retryAfter);
+      return 3;
+    }
+    return 1;
   }
-  process.exit(1);
+
+  const usage = JSON.parse(raw);
+
+  const lines = [];
+  for (const key of WINDOWS) {
+    const quota = usage[key];
+    if (!quota || typeof quota.utilization !== 'number') {
+      console.error(`失敗: ${key} が無い ${raw}`);
+      return 1;
+    }
+    lines.push([key, quota.utilization, quota.resets_at ?? '-', quota.locked_reason ?? '-'].join(' '));
+  }
+
+  console.log(lines.join('\n'));
+  return 0;
 }
 
-const usage = JSON.parse(raw);
-
-const lines = [];
-for (const key of WINDOWS) {
-  const quota = usage[key];
-  if (!quota || typeof quota.utilization !== 'number') {
-    console.error(`失敗: ${key} が無い ${raw}`);
-    process.exit(1);
-  }
-  lines.push([key, quota.utilization, quota.resets_at ?? '-', quota.locked_reason ?? '-'].join(' '));
-}
-
-console.log(lines.join('\n'));
+process.exitCode = report();

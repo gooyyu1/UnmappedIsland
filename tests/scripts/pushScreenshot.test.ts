@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { pathForBash, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `scripts/agent/push-screenshot.sh` の、**転んだときに何を言うか**を見る検査。
  *
@@ -81,7 +83,7 @@ function push(world: World = {}): Run {
   }
 }
 
-describe('push-screenshot.sh', () => {
+describe('push-screenshot.sh', timeoutOnWindows(30_000), () => {
   it('積めたら、貼れるURLを1行だけ返す', () => {
     const run = push();
 

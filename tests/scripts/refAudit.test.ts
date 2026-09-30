@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { LEDGER, UNSET, hasRefAuditWork, refAuditBatch } from '../../scripts/daemon/refAudit.mjs';
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
 
 /**
  * `scripts/daemon/refAudit.mjs`——**節番号の参照を、この周はどこまで読むか**を決める段——の検査。
@@ -77,7 +78,7 @@ function batch(repo: string, options?: { budget?: number }) {
   };
 }
 
-describe('refAudit.mjs', () => {
+describe('refAudit.mjs', timeoutOnWindows(30_000), () => {
   // ## 掃く分
   //
   // 既に在る参照は誰も読んでいないので、変わった分だけを追っても減らない。**並びは追跡している
@@ -356,7 +357,7 @@ describe('refAudit.mjs', () => {
   // 直に打ったときだけ効く「自分の在り処から根を数える」段が誰にも通られない——**置き場を1つ
   // 動かしただけで、係が打つコマンドが実物の台帳を見失う**（実際にそうなった）。ここは実物の
   // リポジトリで、ひな形が係へ渡しているのと同じコマンドをそのまま打つ。
-  it('ひな形が渡すコマンドが、実物のリポジトリで範囲を出す', () => {
+  it('ひな形が渡すコマンドが、実物のリポジトリで範囲を出す', timeoutOnWindows(120_000), () => {
     const root = resolve(__dirname, '../..');
     const prompt = readFileSync(join(root, 'agent-ops', 'prompts', 'refs-prompt.md'), 'utf-8');
     const command = /^\s{4}(node \S+)$/m.exec(prompt);

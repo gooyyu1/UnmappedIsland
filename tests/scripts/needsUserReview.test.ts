@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { pathForBash, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `scripts/daemon/needs-user-review.sh` が引く線。
  *
@@ -134,7 +136,7 @@ function hunk(path: string, lines: readonly string[]): string {
  * `agent-ops/review-criteria.md`「人の判断へ回す」）。ファイルの線で引くと、スキーマの
  * `description` を変えただけの差分も文法を足した差分も同じに見える。
  */
-describe('needs-user-review.sh は文法・スキーマのファイルでは止めない', () => {
+describe('needs-user-review.sh は文法・スキーマのファイルでは止めない', timeoutOnWindows(30_000), () => {
   it('yaml に書ける形を決めているファイルの、実体の変更でも止めない', () => {
     const result = judge(
       ['src/loader/parsePassives.ts', 'src/domain/DeclaredNumber.ts'],
@@ -173,7 +175,7 @@ describe('needs-user-review.sh は文法・スキーマのファイルでは止�
  * 印を足したPRを止めるかどうか。**同じ答えに二度目のタップを求めない**ための緩めなので、
  * 緩みすぎれば「誰が決めたのか分からない確定」がそのまま `main` へ入る。
  */
-describe('needs-user-review.sh の MARK と SOURCED', () => {
+describe('needs-user-review.sh の MARK と SOURCED', timeoutOnWindows(30_000), () => {
   const PATH = 'docs/ui/Windows.md';
   const HEADING = '## 9.3 未解放レシピの理由は押している間だけ出す';
   const doc = (heading: string, body: readonly string[]): string => `${heading}\n\n${body.join('\n')}\n`;
@@ -426,7 +428,7 @@ describe('needs-user-review.sh の MARK と SOURCED', () => {
  * **印を足す変更ごと素通りしていた**（#1800）——`merge-pr.sh` は `判断待ち` を付けず、誰も決めて
  * いない確定がそのまま `main` へ入る。**止めると決めてある唯一の入口が、あのファイルには無かった。**
  */
-describe('needs-user-review.sh の掛け先', () => {
+describe('needs-user-review.sh の掛け先', timeoutOnWindows(30_000), () => {
   const BOARD = 'agent-ops/board-design.md';
   const HEADING = '### 2.7 中心にモデルのセッションを置かない';
 

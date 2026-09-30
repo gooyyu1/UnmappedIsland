@@ -14,6 +14,8 @@ import { describe, expect, it } from 'vitest';
 import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `scripts/daemon/daemon.sh` の検査。
  *
@@ -298,7 +300,7 @@ exit ${world.gitFails === true ? 1 : 0}
 
 const now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
 
-describe('daemon.sh', () => {
+describe('daemon.sh', timeoutOnWindows(30_000), () => {
   it('回すと、1周ぶん回る', () => {
     const result = daemon();
 

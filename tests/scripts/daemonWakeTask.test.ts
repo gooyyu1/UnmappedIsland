@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { pathForBash, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `scripts/agent/daemon-wake-task.sh` の検査（`agent-ops/board-design.md` 2.19節）。
  *
@@ -156,7 +158,7 @@ function handedXml(run: Run): string {
 
 const TASK = 'ClaudeCode-BoardDaemonWake';
 
-describe('daemon-wake-task.sh', () => {
+describe('daemon-wake-task.sh', timeoutOnWindows(30_000), () => {
   it('登録できたら、立てた名前を1行だけ出す', () => {
     const run = register();
 

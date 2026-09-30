@@ -53,7 +53,7 @@ async function buildPoliciesContext(repoDir) {
   const principles = await readIfExists(path.join(repoDir, 'docs', 'concept', 'DesignPrinciples.md'));
   if (principles !== null) {
     const headings = principles
-      .split('\n')
+      .split(/\r?\n/)
       .filter((line) => line.startsWith('## '))
       .map((line) => '- ' + line.slice(3));
     if (headings.length > 0) {

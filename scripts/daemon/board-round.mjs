@@ -693,12 +693,13 @@ export async function round({
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  // `process.exit` で切らない理由は `dispatch-session.mjs` の末尾と同じ。
   try {
-    process.exit((await round()) ? 0 : 1);
+    process.exitCode = (await round()) ? 0 : 1;
   } catch (error) {
     // 呼び手（`daemon.sh`）が終了コードから言えるのは「引けなかった」だけ。**引けなかった以外で
     // 落ちたことは、ここで言わないと誰も言わない**——引き続き諦める側へ倒すが、手掛かりは残す。
     defaultWarn(error instanceof Error ? (error.stack ?? error.message) : String(error));
-    process.exit(1);
+    process.exitCode = 1;
   }
 }
