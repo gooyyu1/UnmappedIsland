@@ -30,6 +30,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 /** 参照数を数えるときだけ見る、srcの外の置き場。**試験だけではなく、道具（scripts）も読み手に数える。** */
 const REFERENCE_ROOTS = ['tests', 'scripts'];
 
+/** モジュール直下の宣言に付ける所属名。 */
+const MODULE = '(モジュール)';
+
 /** 1行に載せるシグネチャの上限。これを超えると読み手が追えないので端を落とす。 */
 const SIGNATURE_LIMIT = 200;
 
@@ -46,21 +49,37 @@ function parse(file) {
 }
 
 /**
- * 識別子の出現をファイル単位で数えた索引。型解決ではなく名前の一致で数える粗いもので、
- * `name` や `update` のようなありふれた名前では過大に出る。**0件のほうが信用できる**。
+ * メンバを宣言している名前か。**宣言は読み手ではない**——数えると、同じ名前のメンバを持つ別の
+ * クラス（上書きや、たまたまの同名）が互いの読み手に見える。
+ */
+function namesAMember(identifier) {
+  return memberKindOf(identifier.parent) !== undefined && identifier.parent.name === identifier;
+}
+
+/**
+ * 識別子の出現を、名前 → ファイル → そのファイルのどのトップレベル宣言の中か、で引く索引。
+ * 型解決ではなく名前の一致で数える粗いもので、`name` や `update` のようなありふれた名前では
+ * 過大に出る。**0件のほうが信用できる**。
+ *
+ * トップレベル宣言まで持つのは、メンバの読み手を**所属の外かどうか**で見るため——TypeScript の
+ * メンバの可視性はファイルではなくクラスで閉じるので、同じファイルの別のクラスや関数から読まれる
+ * メンバは、`private` へ戻せない。名前の無い文（`export default` 式など）は{@link MODULE}へ入れる。
  */
 function buildOccurrenceIndex(files) {
   const occurrences = new Map();
   for (const file of files) {
-    const walk = (node) => {
-      if (ts.isIdentifier(node) || ts.isPrivateIdentifier(node)) {
-        const seen = occurrences.get(node.text) ?? new Set();
-        seen.add(file);
-        occurrences.set(node.text, seen);
-      }
-      ts.forEachChild(node, walk);
-    };
-    ts.forEachChild(parse(file), walk);
+    for (const statement of parse(file).statements) {
+      const container = statement.name === undefined ? MODULE : nameOf(statement);
+      const walk = (node) => {
+        if ((ts.isIdentifier(node) || ts.isPrivateIdentifier(node)) && !namesAMember(node)) {
+          const byFile = occurrences.get(node.text) ?? new Map();
+          byFile.set(file, (byFile.get(file) ?? new Set()).add(container));
+          occurrences.set(node.text, byFile);
+        }
+        ts.forEachChild(node, walk);
+      };
+      walk(statement);
+    }
   }
   return occurrences;
 }
@@ -186,7 +205,7 @@ function collect(file) {
     const modifiers = modifiersOf(node);
     declarations.push({
       file,
-      owner: '(モジュール)',
+      owner: MODULE,
       kind,
       name,
       visibility: modifiers.includes('export') ? 'export' : 'module',
@@ -222,7 +241,7 @@ function collect(file) {
           (ts.isArrowFunction(initializer) || ts.isFunctionExpression(initializer));
         declarations.push({
           file,
-          owner: '(モジュール)',
+          owner: MODULE,
           kind: isFunction ? 'function' : 'const',
           name: nameOf(declaration),
           visibility: modifiers.includes('export') ? 'export' : 'module',
@@ -241,11 +260,21 @@ function collect(file) {
 function withReferences(declarations, occurrences) {
   return declarations.map((declaration) => {
     // 索引のキーは宣言の名前と同じ字面（privateフィールドは`#`ごと）。落として引くと0件になる。
-    const seen = occurrences.get(declaration.name) ?? new Set();
-    const elsewhere = [...seen].filter((file) => file !== declaration.file);
+    const byFile = occurrences.get(declaration.name) ?? new Map();
+    const elsewhere = [...byFile.keys()].filter((file) => file !== declaration.file);
+    const containersInOwnFile = byFile.get(declaration.file) ?? new Set();
     return {
       ...declaration,
       referencingFiles: elsewhere.length,
+      // メンバだけが持つ。モジュール直下の宣言の可視性（export）はファイルで閉じるので、同じファイルの
+      // 読み手は公開の理由にならない。
+      ...(declaration.owner === MODULE
+        ? {}
+        : {
+            referencedInOwnFileOutsideOwner: [...containersInOwnFile].some(
+              (container) => container !== declaration.owner,
+            ),
+          }),
       // 読み手が src の外にしか居ない。**「テストだけ」ではない**——{@link REFERENCE_ROOTS} には
       // scripts/ も入るので、道具からしか読まれない宣言もここで真になる。
       referencedOnlyOutsideSrc: elsewhere.length > 0 && elsewhere.every((file) => !file.startsWith('src/')),

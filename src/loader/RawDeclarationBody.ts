@@ -49,7 +49,7 @@ export class RawDeclarationBody {
    * remove_slots（7.14節）で挙げられた、この型が持たないスロットの名前。混ぜ終わってから落とすので、
    * **他のtraitが配ったスロットも落とせる**（海が location の items を持たない、voyage.yaml）。
    */
-  removeSlots: readonly string[] = [];
+  private removeSlots: readonly string[] = [];
 
   /** 読んだ時点でmappingとして確かめてある（どの宣言に書かれていたかは、その時点でしか分からない）。 */
   passives: readonly YAMLMap[] = [];

@@ -281,5 +281,4 @@ object_defs:
 探索できない場所に居る場合は `false` が返ります。
 
 `explore` アクション（YAML側）の実行と、後処理の `revealDueFixtures` を呼び出し側（UI等）に分けて呼ばせません
-（`CLAUDE.md` の「自分のことは自分でする」方針）。`revealDueFixtures` 自体は冪等なため、進捗がYAML側の効果
-だけで動いた場合に備えて単独でも呼べるようにしています。
+（`CLAUDE.md` の「自分のことは自分でする」方針）。
