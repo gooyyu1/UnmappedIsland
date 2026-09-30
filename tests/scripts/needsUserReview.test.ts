@@ -314,6 +314,87 @@ describe('needs-user-review.sh の MARK と SOURCED', () => {
     expect(result.code).toBe(0);
   });
 
+  // 確定を外すのは、付けるのと同じだけ人間の判断が要る。印が消えた節は PR の側（head）の版では
+  // 確定節でないので、**射程を head だけから数えると、消した節はどの射程にも入らない**（#2025）。
+  it('印だけを外した差分は、そのファイルに確定節が残っていなくても止める', () => {
+    const result = judge([PATH], hunk(PATH, [`-${HEADING}【確定】`, `+${HEADING}`]), {
+      [PATH]: {
+        base: doc(`${HEADING}【確定】`, ['押している間だけ出す。']),
+        head: doc(HEADING, ['押している間だけ出す。']),
+      },
+    });
+
+    expect(result.lines).toEqual([`MARK ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】`]);
+    expect(result.code).toBe(0);
+  });
+
+  it('確定節を丸ごと消した差分も止める', () => {
+    const kept = '## 9.2 レシピは開いた順に並べる';
+    const diff =
+      `diff --git a/${PATH} b/${PATH}\n` +
+      `index 0000000..1111111 100644\n` +
+      `--- a/${PATH}\n` +
+      `+++ b/${PATH}\n` +
+      `@@ -3,4 +3,0 @@\n` +
+      `-${HEADING}【確定】\n` +
+      `-\n` +
+      `-押している間だけ出す。\n` +
+      `-\n`;
+    const result = judge([PATH], diff, {
+      [PATH]: {
+        base: `${kept}\n\n${HEADING}【確定】\n\n押している間だけ出す。\n`,
+        head: `${kept}\n`,
+      },
+    });
+
+    expect(result.lines).toEqual([`MARK ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】`]);
+    expect(result.code).toBe(0);
+  });
+
+  it('確定節を持つファイルごと消した差分も止める', () => {
+    const diff =
+      `diff --git a/${PATH} b/${PATH}\n` +
+      `deleted file mode 100644\n` +
+      `index 1111111..0000000\n` +
+      `--- a/${PATH}\n` +
+      `+++ /dev/null\n` +
+      `@@ -1,3 +0,0 @@\n` +
+      `-${HEADING}【確定】\n` +
+      `-\n` +
+      `-押している間だけ出す。\n`;
+    const result = judge([PATH], diff, {
+      [PATH]: { base: doc(`${HEADING}【確定】`, ['押している間だけ出す。']) },
+    });
+
+    expect(result.lines).toEqual([`MARK ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】`]);
+    expect(result.code).toBe(0);
+  });
+
+  // 本文の `-- ` を消した行は、差分では `--- ` で始まる。ファイルの見出しと取り違えると、その後の
+  // 塊が別のファイルのものとして読まれ、印を消した行が射程から外れる。
+  it('本文から消した行が `--- ` で始まっても、後の塊を読み落とさない', () => {
+    const lead = '## 9.1 区切り';
+    const diff =
+      `diff --git a/${PATH} b/${PATH}\n` +
+      `index 0000000..1111111 100644\n` +
+      `--- a/${PATH}\n` +
+      `+++ b/${PATH}\n` +
+      `@@ -3,1 +3,0 @@\n` +
+      `--- 区切り\n` +
+      `@@ -5,1 +4,1 @@\n` +
+      `-${HEADING}【確定】\n` +
+      `+${HEADING}\n`;
+    const result = judge([PATH], diff, {
+      [PATH]: {
+        base: `${lead}\n\n-- 区切り\n\n${HEADING}【確定】\n\n押している間だけ出す。\n`,
+        head: `${lead}\n\n\n${HEADING}\n\n押している間だけ出す。\n`,
+      },
+    });
+
+    expect(result.lines).toEqual([`MARK ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】`]);
+    expect(result.code).toBe(0);
+  });
+
   // 出どころの行は、そのPRが決めたことの申告。前から在った確定節に書いてあっても、緩める理由には
   // ならない（印が動いていないので、そもそも `CONFIRMED`）。
   it('前から確定していた節は、出どころがあっても CONFIRMED のまま', () => {
