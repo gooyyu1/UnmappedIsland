@@ -298,6 +298,18 @@ describe('材料の枠', () => {
     expect(cells.map((cell) => [cell.card?.name, cell.overlay])).toEqual([['held#2', '1/2']]);
   });
 
+  it('型が要求に当てはまっても、割り当てで余った物は印を持たない', () => {
+    // 要求は自分の枠の物で既に満ちていて、この物は数に入っていない。型から引くと、数に入っていない
+    // 物が満ちた枠の印を持つ。
+    const materials = [material({ objectGlobalIds: [typeId(2)], needed: 2, held: 2, allocated: new Set() })];
+
+    const cells = cellsOf({ materials, stacks: [stack(typeId(2))] });
+
+    expect(cells[0].card?.name).toBe('held#2');
+    expect(cells[0].borderColor, '数に入っていない物').toBeUndefined();
+    expect(cells[0].overlay).toBeUndefined();
+  });
+
   it('どの要求にも当たっていない物は、取り出すための枠として残るが印は持たない', () => {
     // 工程を終えて出番が済んだ型。こぼす前に取り出せるよう枠は残る。
     const cells = cellsOf({
