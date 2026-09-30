@@ -77,13 +77,7 @@ function renderRecord(
   moduleCount: number,
   failures: readonly Failure[],
 ): string {
-  const lines = [
-    `# ${stamp}`,
-    '',
-    `- 引数: \`${args.join(' ') || '（なし＝丸ごと）'}\``,
-    `- 走ったファイル: ${moduleCount}`,
-    '',
-  ];
+  const lines = [`# ${stamp}`, '', `- 引数: \`${args.join(' ')}\``, `- 走ったファイル: ${moduleCount}`, ''];
   for (const failure of failures) {
     const duration = failure.durationMs === undefined ? '' : `（${Math.round(failure.durationMs)}ms）`;
     lines.push(`## ${failure.where} > ${failure.name}${duration}`, '');
