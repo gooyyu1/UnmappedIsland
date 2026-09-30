@@ -235,7 +235,11 @@ describe('board-labels.yml の declared', () => {
     return result.edits;
   }
 
-  function spawnDeclared(body: string): { readonly edits: string[]; readonly status: number | null } {
+  /** `linked` は、担当を閉じるPRの本数（`gh issue view` の `closedByPullRequestsReferences`）。 */
+  function spawnDeclared(
+    body: string,
+    linked = 0,
+  ): { readonly edits: string[]; readonly status: number | null } {
     const work = mkdtempSync(join(tmpdir(), 'unmapped-island-returned-'));
     const dir = pathForBash(work);
     try {
@@ -247,6 +251,13 @@ case "$1 $2" in
 "issue edit")
   shift 2
   echo "$*" >>'${dir}/edits.txt'
+  ;;
+"issue close")
+  shift 2
+  echo "close $*" >>'${dir}/edits.txt'
+  ;;
+"issue view")
+  echo ${linked}
   ;;
 "api --method")
   shift 3
@@ -311,6 +322,23 @@ esac
     ]);
   });
 
+  // **成果が issue の側にしか出ない仕事は、PRを作れないので終わりを名乗る口がここしか無い**（2.15.4）。
+  // `判断待ち` を付けると、答えを待っていないのに人の手番へ入る。
+  it('1行目が [完了] で始まっていれば、issue を閉じ、判断待ち は付けない', () => {
+    expect(runDeclared('[完了] #1102 の「済」を task issue へ下ろした\n\n立てた issue の一覧')).toEqual([
+      `close ${ISSUE} --repo gooyyu1/UnmappedIsland --reason completed`,
+    ]);
+  });
+
+  // **閉じるのはそのPRのマージ**（`CLAUDE.md`「issue を自分で閉じない」）。先に閉じると、盤面は
+  // 担当を `closed:` で畳み、PRの直しを頼む相手が居なくなる。
+  it('[完了] でも、担当を閉じるPRが在れば閉じずに落ちる', () => {
+    const result = spawnDeclared('[完了] 済んだ', 1);
+
+    expect(result.status).not.toBe(0);
+    expect(result.edits).toEqual([]);
+  });
+
   // **分類（`kind:`）は動かさない**（2.15.2・2.17.1）。軸が違ううえ、外すと人が列へ戻すのに
   // 2タップ要り、外した issue は未整理として棚卸しへ戻る。
   it('分類は動かさない', () => {
@@ -338,6 +366,7 @@ esac
     expect(runDeclared('前置き\n[返却] 決められない')).toEqual([]);
     expect(runDeclared('前置き\n[ブリッジ] 承認で止まる')).toEqual([]);
     expect(runDeclared('前置き\n[順序] #1234 の後')).toEqual([]);
+    expect(runDeclared('前置き\n[完了] 済んだ')).toEqual([]);
   });
 });
 
