@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { autoFillMaterials } from '../../src/domain/autoFill';
+import { currentStepIsSupplied } from '../../src/domain/crafting';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -37,6 +38,17 @@ object_defs:
           - requires: [{object: reed, count: 2, consume: true}]
             duration: 60
           - requires: [{tag: item, count: 1, consume: true}]
+            duration: 60
+  sharp_stone:
+    tags: [item, cutting_tool]
+  stone_axe:
+    tags: [item, cutting_tool]
+  spear:
+    tags: [item]
+    recipes:
+      carved:
+        steps:
+          - requires: [{tag: cutting_tool, count: 1, consume: false}, {object: sharp_stone, count: 1, consume: true}]
             duration: 60
 `;
 
@@ -172,6 +184,39 @@ object_defs:
 
       expect(moved).toBe(3);
       expect(cells(), '選んだ枠へ入る（reedの枠に2つ、itemの枠に1つ）').toEqual(['reed×2', 'reed×1']);
+    });
+  });
+
+  /**
+   * 要求が重なるレシピ。尖った石は`cutting_tool`の枠にも`sharp_stone`の枠にも入るが、石斧は
+   * `cutting_tool`の枠にしか入らない。枠を宣言順に先着で埋めると、尖った石が`cutting_tool`の枠へ入り、
+   * 石斧の行き場が無くなる。
+   */
+  describe('要求が重なるとき', () => {
+    let spear: WorldObject;
+
+    beforeEach(() => {
+      spear = session.createObject(idOf(inProgressObjectName('spear', 'carved')));
+      spear.moveToSlotOrRejection(ground.getSlot(slotOf('items')));
+    });
+
+    const fillSpear = () => autoFillMaterials(spear, [player.tryGetSlot(slotOf('hand'))?.contents ?? []]);
+
+    it.each([
+      ['尖った石を先に持っている', ['sharp_stone', 'stone_axe']],
+      ['石斧を先に持っている', ['stone_axe', 'sharp_stone']],
+    ])('%sときも、入る組み合わせで両方の枠を埋める', (_, held) => {
+      for (const name of held) place(name, 1, player, 'hand');
+
+      expect(fillSpear()).toBe(2);
+      expect(currentStepIsSupplied(spear), '工程を進められる').toBe(true);
+    });
+
+    it('尖った石が2つなら、どちらの枠も尖った石で埋める', () => {
+      place('sharp_stone', 2, player, 'hand');
+
+      expect(fillSpear()).toBe(2);
+      expect(currentStepIsSupplied(spear)).toBe(true);
     });
   });
 });

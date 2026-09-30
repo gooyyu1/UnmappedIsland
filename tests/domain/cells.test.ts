@@ -74,6 +74,61 @@ object_defs:
     });
   });
 
+  /**
+   * 受け入れが重なる枠。尖った石は刃物の枠にも尖った石の枠にも入るが、石斧は刃物の枠にしか入らない。
+   * 入れた順に型の合う最初の空き枠を取ると、尖った石を先に入れた時点で石斧の行き場が無くなる。
+   */
+  describe('受け入れが重なる枠', () => {
+    const codex = build(`
+object_defs:
+  spear_in_progress:
+    slots:
+      materials:
+        cells:
+          - {accept: {tag: cutting_tool}, max: 1}
+          - {accept: {object: sharp_stone}, max: 1}
+  sharp_stone:
+    tags: [cutting_tool]
+  stone_axe:
+    tags: [cutting_tool]
+  other_blade:
+    tags: [cutting_tool]
+`);
+    const materialsId = codex.slotNames.getId('materials');
+
+    const setUp = () => {
+      const session = new WorldSession(codex);
+      const bench = session.createObject(codex.objectNames.getId('spear_in_progress'));
+      const slot = bench.getSlot(materialsId);
+      return {
+        slot,
+        create: (name: string) => session.createObject(codex.objectNames.getId(name)),
+        cells: () => slot.cells.map((cell) => cell.stack?.members[0].def.name),
+      };
+    };
+
+    it('入る組み合わせが在るなら、入っている物を型の合う別の空き枠へずらして入れる', () => {
+      const { slot, create, cells } = setUp();
+
+      expect(create('sharp_stone').moveToSlotOrRejection(slot)).toBeUndefined();
+      expect(cells(), '尖った石は先に宣言された刃物の枠へ').toEqual(['sharp_stone', undefined]);
+
+      const axe = create('stone_axe');
+      expect(slot.acceptedCount([axe]), '置ける枠を数える側も同じ答えを出す').toBe(1);
+      expect(axe.moveToSlotOrRejection(slot)).toBeUndefined();
+      expect(cells(), '尖った石が自分の枠へ移り、石斧が刃物の枠へ').toEqual(['stone_axe', 'sharp_stone']);
+    });
+
+    it('ずらす先が無ければ、入っている物は動かさずに断る', () => {
+      const { slot, create, cells } = setUp();
+      create('sharp_stone').moveToSlotOrRejection(slot);
+      create('stone_axe').moveToSlotOrRejection(slot);
+
+      expect(create('other_blade').moveToSlotOrRejection(slot)).toContain('空いていません');
+      expect(cells()).toEqual(['stone_axe', 'sharp_stone']);
+    });
+  });
+
   describe('stackable（束ねてよい型か）', () => {
     const codex = build(`
 object_defs:

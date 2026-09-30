@@ -138,14 +138,32 @@ export class CellLayout {
   }
 
   /**
-   * candidateと同じ型のものを、かさを見ずにあと何個置けるか。合流できる枠の残りと、型の合う空き枠に
-   * 入る数の合計。枠が増えるスロットは上限が無い。束ねられない型（stackable=false）は1枠に1個しか
+   * candidateと同じ型のものを、かさを見ずにあと何個置けるか。合流できる枠の残りと、型の合う空き枠
+   * （中身をずらして空く枠を含む）に入る数の合計。枠が増えるスロットは上限が無い。束ねられない型（stackable=false）は1枠に1個しか
    * 入らないので、maxがいくつでも空き枠の数がそのまま上限になる。
    */
   vacancyForIgnoringVolume(candidate: WorldObject): number {
     if (!this.hasFixedCells) return Number.POSITIVE_INFINITY;
 
-    return this._cells.reduce((room, cell) => room + cell.vacancyForIgnoringVolume(candidate), 0);
+    let room = this._cells.reduce(
+      (merged, cell) => merged + (cell.isEmpty ? 0 : cell.vacancyForIgnoringVolume(candidate)),
+      0,
+    );
+
+    // 新しいスタックとして置ける数は、addが空ける枠を順に取っていった結果と同じにする
+    // （pathToCellFor）。ずらして空く枠まで数えないと、addなら入る物を受け入れ判定が断る。
+    const cellDefs = this._cells.map((cell) => cell.def);
+    const occupants = this._cells.map(occupantOf);
+    for (;;) {
+      const path = pathToCellFor({ def: candidate.def, size: 1 }, cellDefs, occupants);
+      if (path === undefined) return room;
+      for (let i = path.length - 1; i > 0; i -= 1) occupants[path[i]] = occupants[path[i - 1]];
+
+      const capacity = candidate.def.stackable ? (cellDefs[path[0]].max ?? Number.POSITIVE_INFINITY) : 1;
+      occupants[path[0]] = { def: candidate.def, size: capacity };
+      room += capacity;
+      if (room === Number.POSITIVE_INFINITY) return room;
+    }
   }
 
   /**
@@ -287,11 +305,21 @@ export class CellLayout {
   }
 
   /**
-   * 新規スタックを置ける空き枠。型の合う空き枠が無ければ、枠が増えるスロットでは末尾に足す。
+   * 新規スタックを置ける空き枠。型の合う空き枠が無ければ、**入っている物を型の合う別の空き枠へ
+   * ずらして空ける**（pathToCellFor）。それも無理なら、枠が増えるスロットでは末尾に足す。
    */
   private takeOrGrowEmptyCell(candidateDef: WorldObject['def']): number | undefined {
-    const empty = this._cells.findIndex((cell) => cell.isEmpty && cell.accepts(candidateDef));
-    return empty >= 0 ? empty : this.tryGrowCell();
+    const path = pathToCellFor(
+      { def: candidateDef, size: 1 },
+      this._cells.map((cell) => cell.def),
+      this._cells.map(occupantOf),
+    );
+    if (path === undefined) return this.tryGrowCell();
+
+    for (let i = path.length - 1; i > 0; i -= 1)
+      this._cells[path[i]].replaceContents(this._cells[path[i - 1]].stack);
+    this._cells[path[0]].replaceContents(undefined);
+    return path[0];
   }
 
   /**
@@ -389,6 +417,51 @@ export class CellLayout {
   private indexOfCellContaining(obj: WorldObject): number {
     return this._cells.findIndex((cell) => cell.stack?.members.includes(obj) === true);
   }
+}
+
+/** 枠を移るかを決めるのに要る、枠の中身の形。 */
+interface CellOccupant {
+  readonly def: WorldObject['def'];
+  readonly size: number;
+}
+
+function occupantOf(cell: SlotCell): CellOccupant | undefined {
+  const stack = cell.stack;
+  return stack === undefined ? undefined : { def: stack.members[0].def, size: stack.members.length };
+}
+
+/**
+ * incomingを置ける枠までの道（見つからなければundefined）。先頭がincomingの入る枠、末尾が今空いて
+ * いる枠で、間の枠の中身は1つ後ろの枠へ移る（SlotSystem.md 2節）。
+ *
+ * **受け入れが重なる枠でも、入る組み合わせが在るなら必ず見つける**（増加路を辿る＝二部グラフの
+ * 最大マッチング）。型の合う空き枠を宣言順に先に見るので、直接入る枠があれば中身は動かない。
+ */
+function pathToCellFor(
+  incoming: CellOccupant,
+  cellDefs: readonly CellDef[],
+  occupants: readonly (CellOccupant | undefined)[],
+  visited = new Set<number>(),
+): number[] | undefined {
+  const fits = (index: number): boolean => {
+    const cellDef = cellDefs[index];
+    return (
+      !visited.has(index) &&
+      cellDef.accepts(incoming.def) &&
+      (cellDef.max === undefined || incoming.size <= cellDef.max)
+    );
+  };
+
+  const empty = occupants.findIndex((occupant, index) => occupant === undefined && fits(index));
+  if (empty >= 0) return [empty];
+
+  for (const [index, occupant] of occupants.entries()) {
+    if (occupant === undefined || !fits(index)) continue;
+    visited.add(index);
+    const rest = pathToCellFor(occupant, cellDefs, occupants, visited);
+    if (rest !== undefined) return [index, ...rest];
+  }
+  return undefined;
 }
 
 /** 挿入位置をセルの並びの範囲へ収める（範囲外の指定は端として受け入れる）。 */
