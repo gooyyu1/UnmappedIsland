@@ -474,8 +474,8 @@ describe('fire.yamlの火の連鎖', () => {
 
   it('雨の日でも、洞窟で起こした火種を外の炉へ運んで灯せる', () => {
     // 洞窟と外は同じ土地の中なので、1tickで燃え尽きる火種でも届く（3.1節）。**島から火が絶えた
-    // ときに雨の中で火を戻せるのはこの道だけ**で、そこが洞窟の価値になっている——生きた炉がどこかに
-    // 在るなら、雨でも松明を運べばよい（下の「雨の屋外でも…」）。
+    // ときに雨の中で火を戻せるのはこの道だけ**で、そこが洞窟の価値になっている——雨の屋外では
+    // 運ぶ松明も消える（下の「雨の日は、灯った松明を持って土地を渡れない」）。
     const cave = spawnInto('shallow_cave', land, 'fixtures');
     const hearth = spawnInto('campfire', land, 'fixtures');
     stoke(hearth, 'thick_branch');
@@ -737,24 +737,53 @@ describe('fire.yamlの火の連鎖', () => {
     expect(effectiveNumberOf(torch, 'lit'), '松明は灯ったまま——火の在る側は何も失わない').toBe(1);
   });
 
-  it('雨の屋外でも、灯った松明から炉へ火を戻せる', () => {
-    // 雨が閉じるのは着火の1点だけ（FireSystem.md 3.1.1節）。**この向きは摩擦発火を通らない**ので、
-    // 雨の条件を持たない——生きた炉がどこかに在れば、雨の日でも火は戻る（同3.1節）。
-    // 屋根の下でしか起こせないこと（上の「雨の日は屋外で火が起こせない」）と対で読む。
-    const hearth = spawnInto('campfire', land, 'fixtures');
-    stoke(hearth, 'thick_branch');
+  it('雨の屋外では、手に持った松明も消える', () => {
+    // FireSystem.md 8.2節。**全部の雨で見る**——大雨で消えることは、小雨で消えることを言わない。
+    for (const weatherName of ['light_rain', 'heavy_rain', 'storm']) {
+      open(LIGHTS);
+      const torch = spawnInto('torch', player, 'hand');
+      torch.getProperty(codex.propertyNames.getId('lit')).setNumberWithoutEvents(1);
+      setWeather(weatherName);
+
+      session.advanceWorldTime(15);
+
+      expect(effectiveNumberOf(torch, 'lit'), `${weatherName}で消える`).toBe(0);
+      expect(carried(), `${weatherName}: 燃え尽きたのではなく、消えた松明が手に残る`).toEqual(['torch']);
+    }
+  });
+
+  it('雨でも、屋根の下なら松明は灯ったまま', () => {
+    // 屋根の下（浅い洞窟）はsheltered: 1を宣言し、雨の効果自体が消える（ContainerSystem.md 6節）。
+    // 上の「雨の屋外では…」と対で読む。
+    const cave = spawnInto('shallow_cave', land, 'fixtures');
+    setWeather('heavy_rain');
+    expect(cave.tryGetAction('enter', player)?.tryExecute(), '屋根の下へ入る').toBe(true);
     const torch = spawnInto('torch', player, 'hand');
     torch.getProperty(codex.propertyNames.getId('lit')).setNumberWithoutEvents(1);
-    setWeather('heavy_rain');
 
+    session.advanceWorldTime(15);
+
+    expect(effectiveNumberOf(torch, 'lit'), '灯ったまま').toBe(1);
+  });
+
+  it('雨の日は、灯った松明を持って土地を渡れない', () => {
+    // 遠出で持つ松明も雨で消える（FireSystem.md 8.2節）。**生きた炉から明かりを運んで戻す道
+    // （同3.1節）は、雨の屋外では閉じる**——晴れなら渡り切ること（上の「灯った松明は火を別の土地へ
+    // 運び…」）と対で読む。いちばん弱い雨・いちばん短い道で見る。
+    const torch = spawnInto('torch', player, 'hand');
+    torch.getProperty(codex.propertyNames.getId('lit')).setNumberWithoutEvents(1);
+    const road = roadToAnotherLand();
+    const cold = spawnInto('campfire', road.destination, 'fixtures');
+    stoke(cold, 'thick_branch');
+    setWeather('light_rain');
+
+    road.walk();
+
+    expect(effectiveNumberOf(torch, 'lit'), '道の上で消える').toBe(0);
     expect(
-      hearth
-        .combinationsWith(torch, player)
-        .find((c) => c.name === 'ignite_from_flame')
-        ?.tryExecute() === true,
-      '大雨の屋外でも通る',
-    ).toBe(true);
-    expect(heatIs(hearth, 'ember'), '雨の中の炉に種火が立つ').toBe(true);
+      cold.refusedCombinationsWith(torch, player).map((c) => c.unmetRequirement()?.reasonName)[0],
+      '向こうの炉には移す火が無い',
+    ).toBe('no_flame_carried');
   });
 
   it('灯っていない松明では、炉に火を点けられない', () => {
