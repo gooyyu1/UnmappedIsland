@@ -45,7 +45,7 @@ export function parseSlot(
   node: YAMLMap,
 ): SlotDef {
   const context = `'${objectDefName}'.slots.'${slotName}'`;
-  const slotGlobalId = loader.slotNames.intern(slotName);
+  const slotGlobalId = loader.defineSlotName(slotName);
 
   // 廃止キーを先に見る。未知キーとして弾くと、その内容を今どこへ書くかを言えない。
   for (const [key, replacement] of RETIRED_SLOT_KEYS)

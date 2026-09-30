@@ -98,6 +98,104 @@ object_defs:${CRAFTER}
     ).not.toThrow();
   });
 
+  /** 手を持つ作り手と、名指しの相手になる型。 */
+  const HOLDER_AND_FIBER = `
+  holder:
+    slots:
+      hand: {}
+  fiber: {}
+`;
+
+  const knotWith = (declaration: string): string => `
+object_defs:${HOLDER_AND_FIBER}
+  knot:
+    interactions:
+      tie:
+        trigger: menu
+${declaration}
+`;
+
+  /** スロット名・型名を名指しする口ごとに、正しい綴りの宣言と、それを崩した宣言。 */
+  const SLOT_AND_OBJECT_REFERENCES: readonly {
+    readonly name: string;
+    readonly declaration: (slot: string, object: string) => string;
+    readonly misspelt: 'slot' | 'object';
+    readonly context: RegExp;
+  }[] = [
+    {
+      name: '条件のslot',
+      declaration: (slot, object) =>
+        `        conditions: [{subject: agent, slot: ${slot}, matches: {object: ${object}}}]`,
+      misspelt: 'slot',
+      context: /conditions\[0\]\.slot:/,
+    },
+    {
+      name: '条件のin_slot',
+      declaration: (slot) => `        conditions: [{in_slot: ${slot}}]`,
+      misspelt: 'slot',
+      context: /conditions\[0\]\.in_slot:/,
+    },
+    {
+      name: 'amongのslot',
+      declaration: (slot) =>
+        `        pick: [{weight: 1, among: {subject: agent, slot: ${slot}}, destroy: picked}]`,
+      misspelt: 'slot',
+      context: /among\.slot:/,
+    },
+    {
+      name: 'moveのto_slot',
+      declaration: (slot) => `        move: {subject: self, to: agent, to_slot: ${slot}}`,
+      misspelt: 'slot',
+      context: /move\.to_slot:/,
+    },
+    {
+      name: 'spawnのobject',
+      declaration: (_, object) => `        spawn: {object: ${object}, into: agent}`,
+      misspelt: 'object',
+      context: /spawn\.object:/,
+    },
+    {
+      name: 'matchesのobject',
+      declaration: (slot, object) =>
+        `        conditions: [{subject: agent, slot: ${slot}, matches: {object: ${object}}}]`,
+      misspelt: 'object',
+      context: /matches\.object:/,
+    },
+  ];
+
+  describe.each(SLOT_AND_OBJECT_REFERENCES)('$name', ({ declaration, misspelt, context }) => {
+    it('正しく綴れば通る', () => {
+      expect(() => load(knotWith(declaration('hand', 'fiber')))).not.toThrow();
+    });
+
+    it('綴り違いはロード時に落ち、書かれた場所を名乗る', () => {
+      const yaml = knotWith(
+        misspelt === 'slot' ? declaration('hnad', 'fiber') : declaration('hand', 'fibre'),
+      );
+      const message =
+        misspelt === 'slot'
+          ? /'hnad'というスロットは、どの型も宣言していません/
+          : /'fibre'という型は定義されていません/;
+      expect(() => load(yaml)).toThrowError(message);
+      expect(() => load(yaml)).toThrowError(context);
+    });
+  });
+
+  it('location_typesのobject_defも同じ検査を受ける', () => {
+    const generationWith = (object: string): string => `
+object_defs:${HOLDER_AND_FIBER}
+location_types:
+  meadow:
+    object_def: ${object}
+    is_fallback: true
+`;
+
+    expect(() => load(generationWith('fiber'))).not.toThrow();
+    expect(() => load(generationWith('fibre'))).toThrowError(
+      /location_types\.'meadow'\.object_def: 'fibre'という型は定義されていません/,
+    );
+  });
+
   it('名指しの側から名前は作れない（型で止まる）', () => {
     // **`@ts-expect-error` の行がこの検査の本体**（tests/architecture/globalId.test.ts と同じ形）。
     // propertyNamesの窓がNameRegistryへ戻れば、ここは型で止まらなくなり、`@ts-expect-error` の
@@ -109,6 +207,13 @@ object_defs:${CRAFTER}
     loader.propertyNames.intern('skill_cordage');
 
     expect(loader.definePropertyName('skill_cordage')).toBe(loader.referToProperty('skill_cordage', 'test'));
+
+    // @ts-expect-error スロットの名前を作るのはdefineSlotNameだけで、名指しはreferToSlotを通る。
+    loader.slotNames.intern('hand');
+    // @ts-expect-error 型の名前を作るのはobject_defsのキーだけで、名指しはreferToObjectDefを通る。
+    loader.objectNames.intern('fiber');
+
+    expect(loader.defineSlotName('hand')).toBe(loader.referToSlot('hand', 'test'));
   });
 
   it('エラーは、名指しが書かれた場所を名乗る', () => {

@@ -3,7 +3,7 @@ import type { ObjectDef } from '../domain/ObjectDef';
 import type { GeneratedCoordinate } from '../domain/GeneratedTypes';
 import type { GeneratedObjectDefs } from './generatedObjectDefs';
 import { NO_AXIS_VALUE } from '../domain/GeneratedTypes';
-import type { NameRegistry } from '../domain/NameRegistry';
+import type { NameLookup, NameRegistry } from '../domain/NameRegistry';
 import { IN_PROGRESS_TAG, RECIPE_AXIS } from '../domain/RecipeDef';
 import type { TypeMatchRule } from '../domain/TypeMatchRule';
 
@@ -49,7 +49,7 @@ export function inProgressObjectsYaml(
   defs: readonly ObjectDef[],
   inheritedTagIds: ReadonlySet<TagGlobalId>,
   tagNames: NameRegistry<TagGlobalId>,
-  objectNames: NameRegistry<ObjectGlobalId>,
+  objectNames: NameLookup<ObjectGlobalId>,
   propertyNames: NameRegistry<PropertyGlobalId>,
 ): GeneratedObjectDefs | undefined {
   const objectDefs: Record<string, unknown> = {};
@@ -82,7 +82,7 @@ function inProgressObjectDef(
   recipe: ObjectDef['recipesProducingThis'][number],
   inheritedTagIds: ReadonlySet<TagGlobalId>,
   tagNames: NameRegistry<TagGlobalId>,
-  objectNames: NameRegistry<ObjectGlobalId>,
+  objectNames: NameLookup<ObjectGlobalId>,
   propertyNames: NameRegistry<PropertyGlobalId>,
 ): Record<string, unknown> {
   const totalMinutes = recipe.steps.reduce((sum, step) => sum + step.durationMinutes, 0);
@@ -171,7 +171,7 @@ function declaredVolume(
 function requirementCells(
   recipe: ObjectDef['recipesProducingThis'][number],
   tagNames: NameRegistry<TagGlobalId>,
-  objectNames: NameRegistry<ObjectGlobalId>,
+  objectNames: NameLookup<ObjectGlobalId>,
 ): Array<Record<string, unknown>> {
   const totals = new Map<string, { match: TypeMatchRule; max: number }>();
   for (const step of recipe.steps)

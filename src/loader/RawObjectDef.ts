@@ -45,7 +45,7 @@ export class RawObjectDef {
    */
   readonly packName: string | undefined;
 
-  /** objectNames.internによるグローバルID。trait解決を待たずパース時点で確定する。 */
+  /** object_defsのキーとして作った名前（WorldCodexYamlLoader.defineObjectName）のグローバルID。trait解決を待たずパース時点で確定する。 */
   readonly globalId: ObjectGlobalId;
 
   /**
@@ -212,7 +212,9 @@ export class RawObjectDef {
     // visible_slots（7.11節）はタグと同じく足し合わせる。**並びが表示順**なので、trait由来を先に、
     // 自分自身の宣言を後ろに置く。同じスロットを2度書いても先に現れた位置を保つ。
     const visibleSlotGlobalIds = [...new Set(merged.visibleSlots)].map((slotName) => {
-      const slotDef = slotDefs.find((candidate) => candidate.globalId === loader.slotNames.intern(slotName));
+      const slotDef = slotDefs.find(
+        (candidate) => candidate.globalId === loader.slotNames.tryGetId(slotName),
+      );
       if (slotDef === undefined)
         throw new YamlLoadError(`'${this.name}': visible_slots が指すスロット '${slotName}' を持ちません。`);
       return slotDef.globalId;

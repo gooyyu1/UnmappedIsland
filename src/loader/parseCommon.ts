@@ -66,7 +66,7 @@ export function parseTypeMatchRule(
 
   return tagName !== undefined
     ? TypeMatchRule.ofTag(loader.tagNames.intern(tagName))
-    : TypeMatchRule.ofObjectDef(loader.objectNames.intern(objectName!));
+    : TypeMatchRule.ofObjectDef(loader.referToObjectDef(objectName!, `${context}.object`));
 }
 
 /**

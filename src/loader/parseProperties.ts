@@ -78,9 +78,10 @@ export function parsePropAppendingPassives(
     // 型を指す値（6.9節）。持つのはobject_defのグローバルIDで、ロードした時点で決まる定数。
     // singletonであることの検査は、行き先を型で名指した宣言と同じ経路へ乗せる。
     requireKnownKeys(valueNode, ['object'], `${context}.value`);
-    const objectGlobalId = loader.objectNames.intern(requireScalar(valueNode, 'object', context));
-    loader.noteObjectDefDestination(objectGlobalId, `${context}.value.object`);
-    initialValue = objectGlobalId;
+    initialValue = loader.referToSingletonObjectDef(
+      requireScalar(valueNode, 'object', context),
+      `${context}.value.object`,
+    );
     isSymbolProperty = false;
     isObjectProperty = true;
   } else if (isMap(valueNode)) {
