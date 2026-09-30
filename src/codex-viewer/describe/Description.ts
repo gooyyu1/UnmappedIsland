@@ -156,6 +156,10 @@ export class DescriptionWriter {
     return this.lines.length === 0;
   }
 
+  /**
+   * 書いた行を、書いた順に。**渡すのは並びの実体で、写しではない**——読んだあとにwriteした行は、
+   * 読んだ配列にもそのまま足される。書き終えてから読む。
+   */
   toLines(): readonly DescriptionLine[] {
     return this.lines;
   }
