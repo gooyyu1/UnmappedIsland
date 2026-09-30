@@ -95,6 +95,14 @@ export function environmentIds() {
 export const envKind = (name) => (name === 'BRIDGE_ENV' ? 'bridge' : 'cloud');
 
 /**
+ * 盤面が立てたセッションのタグの頭。**綴りの出どころは投入の側**（[`dispatch-task.sh`](dispatch-task.sh)
+ * の `task-`・[`dispatch-review.sh`](dispatch-review.sh) の `review-`・
+ * [`dispatch-chore.sh`](dispatch-chore.sh) の `chore-`）。**増えたら黙って数え落とす**ので、突き合わせ
+ * は検査が持つ（`tests/scripts/checkValues.test.ts`）。
+ */
+export const DISPATCH_TAGS = ['task-', 'review-', 'chore-'];
+
+/**
  * どこで走っているか（`board-design.md` 2.16節）。
  *
  * **知らない環境は `-`。** `cloud` に寄せない——盤面はこの値で「間違った場所に居るワーカー」を

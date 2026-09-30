@@ -36,19 +36,21 @@ export class FakeMetaServer {
     const chunks: Buffer[] = [];
     request.on('data', (chunk: Buffer) => chunks.push(chunk));
     request.on('end', () => {
-      this.received.push({
+      const received = {
         body: Buffer.concat(chunks).toString('utf8'),
         authorization: request.headers.authorization,
-      });
+      };
+      this.received.push(received);
       response.writeHead(this.status, { 'content-type': 'application/json' });
-      response.end(this.reply);
+      response.end(typeof this.reply === 'string' ? this.reply : this.reply(received));
     });
   });
 
   readonly received: MetaRequest[] = [];
 
   status = 200;
-  reply = metaReply('ok');
+  /** 関数なら要求ごとに組む——道具ごとに違う応答が要る叩き手のため。 */
+  reply: string | ((request: MetaRequest) => string) = metaReply('ok');
 
   async listen(): Promise<string> {
     await new Promise<void>((done) => this.server.listen(0, '127.0.0.1', done));

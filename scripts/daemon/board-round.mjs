@@ -41,7 +41,7 @@ import {
   readLedger,
   writeLedger,
 } from './board-state.mjs';
-import { formatLive, liveSessions } from './live-sessions.mjs';
+import { DISPATCH_TAGS, formatLive, liveSessions } from './live-sessions.mjs';
 import { gh as runGh, posix, runBash } from './spawn.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -442,7 +442,7 @@ export function play(kind, args, { runScript, gh, remember, recall, forget, log,
       // 畳んでよいかの判定は [`archive-session.sh`](archive-session.sh) が持つ。**終了コードは見ない**
       // ——あちらは1件ずつの結果を行で返す。`--keep-untagged` は、ここへ来る相手が必ずワーカーか
       // レビューか周期の係であること（盤面の側の約束）を、畳む手前でもう一度確かめるため。
-      const out = runScript('archive-session.sh', ['--keep-untagged', 'task-,review-,chore-'], {
+      const out = runScript('archive-session.sh', ['--keep-untagged', DISPATCH_TAGS.join(',')], {
         input: `${a}\n`,
         capture: true,
       });

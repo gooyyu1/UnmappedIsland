@@ -4,13 +4,8 @@ import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { FIRST_ISSUE_PULL } from '../../scripts/daemon/board-read.mjs';
-import {
-  DISPATCH_TAGS,
-  TITLE,
-  checkValues,
-  cloudPrompt,
-  surveyValues,
-} from '../../scripts/daemon/check-values.mjs';
+import { TITLE, checkValues, cloudPrompt, surveyValues } from '../../scripts/daemon/check-values.mjs';
+import { DISPATCH_TAGS } from '../../scripts/daemon/live-sessions.mjs';
 import { promptBody } from '../../scripts/daemon/prompt-body.mjs';
 
 /**
