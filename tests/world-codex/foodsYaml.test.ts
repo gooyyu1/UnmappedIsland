@@ -274,6 +274,9 @@ describe('食べ物の腐敗', () => {
 /** 火を通した1食が戻す幸福度（docs/world/Characters.md 幸福度節）。戻すのは量ではなく質なので、どれも同じ。 */
 const ROASTED_HAPPINESS = 6;
 
+/** 上出来の料理（`fine_dish`、docs/world/Skills.md 5.4節）が、普段の出来へ上乗せして戻す幸福度（同幸福度節）。 */
+const FINE_DISH_BONUS = 3;
+
 /**
  * 食べた物が配る幸福度（docs/world/Characters.md 幸福度節）。**主目的は書き忘れの見張り**で、食べ物を
  * 1つ足したときにベース値を落とすと、それだけが心に何も残さない食事になる。腐敗の全数検査と同じ形。
@@ -314,12 +317,92 @@ describe('食べ物が配る幸福度', () => {
 
   it('火を通した食事はどれも同じだけ戻す（戻すのは量ではなく質）', () => {
     // 小さなネズミ1匹でも、火の通った1食であることは焼いた肉と変わらない（Characters.md 幸福度節）。
+    // **上出来の料理だけはその上に乗る**（docs/world/Skills.md 5.4節）。出来も質なので、量で変えない
+    // ことは同じ。
     const declared = declaredEatHappiness();
     const roasted = roastedMealNames();
+    const fineDishTagId = codex.tagNames.getId('fine_dish');
+    const expected = (name: string): number =>
+      codex.objects.get(codex.objectNames.getId(name)).hasTag(fineDishTagId)
+        ? ROASTED_HAPPINESS + FINE_DISH_BONUS
+        : ROASTED_HAPPINESS;
 
     expect(roasted.length, '火を通した食事が1つも無ければ、この見張りは何も見ていない').toBeGreaterThan(0);
-    expect(roasted.map((name) => declared.get(name))).toEqual(roasted.map(() => ROASTED_HAPPINESS));
+    expect(roasted.map((name) => declared.get(name))).toEqual(roasted.map(expected));
   });
+
+  it('上出来の料理は、同じ火から生まれる普段の出来と、幸福度のほかは何も違わない', () => {
+    // 上出来の型は普段の出来を書き写して持つ（foods.yaml）ので、**片方だけを直すと出来が腹の足しや
+    // 傷み方まで変える**。宣言の面で、違ってよいもの（幸福度・印・絵の借り先）を除いて突き合わせる。
+    const fineDishTagId = codex.tagNames.getId('fine_dish');
+    const fineDishes = [...codex.objects].filter((def) => def.hasTag(fineDishTagId));
+    const declarations = declaredObjectBodies();
+
+    expect(fineDishes.length, '上出来の料理が1つも無ければ、この見張りは何も見ていない').toBeGreaterThan(0);
+    for (const fine of fineDishes) {
+      const plain = plainSiblingsOf(fine);
+      expect(plain, `${fine.name}: 同じ焼き上がりから生まれる普段の出来`).toHaveLength(1);
+
+      const withoutGrade = (name: string): unknown => {
+        const body = structuredClone(declarations.get(name)) as {
+          tags: string[];
+          art?: string;
+          interactions: { eat: { add: { agent: Record<string, number> } } };
+        };
+        body.tags = body.tags.filter((tag) => tag !== 'fine_dish');
+        delete body.art;
+        delete body.interactions.eat.add.agent.happiness;
+        return body;
+      };
+      expect(withoutGrade(fine.name), `${fine.name} と ${plain[0]}`).toEqual(withoutGrade(plain[0]));
+      expect(declarations.get(fine.name)).toHaveProperty('art', plain[0]);
+    }
+  });
+
+  it('上出来を生む焼き上がりは、下ごしらえできる物にだけある', () => {
+    // 出来を決めるのは刻んだ手で、焼き上げる炉の端には操作者が居ない（docs/world/Skills.md 5.5節）。
+    // **下ごしらえの軸を持たない物に上出来の枝を置くと、誰の腕も届かない抽選になる。**
+    const fineDishTagId = codex.tagNames.getId('fine_dish');
+    const preppable = new Set<string>();
+    for (const def of codex.objects) {
+      const baseGlobalId = codex.generatedTypes.baseGlobalIdIfVariantOn(def, 'prep');
+      if (baseGlobalId !== undefined) preppable.add(codex.objects.get(baseGlobalId).name);
+    }
+    const sources = [...codex.objects]
+      .filter((def) => def.hasTag(fineDishTagId))
+      .flatMap((fine) => roastingSourcesOf(fine).map((def) => def.name));
+
+    expect(sources.length, '上出来を生む焼き上がりが1つも無い').toBeGreaterThan(0);
+    expect(sources.filter((name) => !preppable.has(name))).toEqual([]);
+  });
+
+  /** その型を焼き上がり（`cooking_progress`の`on_max`）で生む、手で書いた型。 */
+  function roastingSourcesOf(product: ObjectDef): ObjectDef[] {
+    const cookingProgressId = codex.propertyNames.getId('cooking_progress');
+    return [...codex.objects].filter(
+      (def) =>
+        !codex.isGenerated(def) &&
+        def
+          .tryGetPropertyDef(cookingProgressId)
+          ?.rangeEvents()
+          .some(([label, effect]) => label === 'on_max' && spawnsObject(effect, product.globalId)) === true,
+    );
+  }
+
+  /** 上出来の型と同じ焼き上がり（`cooking_progress`の`on_max`）から生まれる、普段の出来の型の名前。 */
+  function plainSiblingsOf(fine: ObjectDef): string[] {
+    const cookingProgressId = codex.propertyNames.getId('cooking_progress');
+    const fineDishTagId = codex.tagNames.getId('fine_dish');
+    const sources = roastingSourcesOf(fine);
+    const siblings = new Set<string>();
+    for (const source of sources)
+      for (const [label, effect] of source.tryGetPropertyDef(cookingProgressId)?.rangeEvents() ?? [])
+        if (label === 'on_max')
+          for (const def of codex.objects)
+            if (!def.hasTag(fineDishTagId) && !codex.isGenerated(def) && spawnsObject(effect, def.globalId))
+              siblings.add(def.name);
+    return [...siblings];
+  }
 
   /**
    * 火を通した1食（`cooking_progress`の`on_max`、FireSystem.md 7節）。**焼成の宣言から数え上げる**
@@ -353,6 +436,9 @@ describe('食べ物が配る幸福度', () => {
     // 焼いた肉と生肉の開きが、生で食べない理由を1本増やす（Characters.md 幸福度節）。
     ['roasted_meat', ROASTED_HAPPINESS],
     ['raw_meat', 1],
+    // 同じ芋でも、出来で食べたときの嬉しさが違う（docs/world/Skills.md 5.4節）。
+    ['roasted_taro', ROASTED_HAPPINESS],
+    ['roasted_taro_fine', ROASTED_HAPPINESS + FINE_DISH_BONUS],
     // 炭は腹の嵩しか返さない終端なので、喜びも残っていない。
     ['charred_lump', 0],
   ])('%sを食べると、幸福度が%d戻る', (foodName, expectedGain) => {
@@ -398,9 +484,9 @@ describe('foods.yamlの下ごしらえ', () => {
     durabilityId = codex.propertyNames.getId('durability');
   });
 
-  /** 草地にプレイヤーが立っている世界。 */
-  function open(landName = 'grassland') {
-    const session = new WorldSession(codex, fixedRng(0));
+  /** 草地にプレイヤーが立っている世界。`roll`は抽選が引く位置（fixedRng）。 */
+  function open(landName = 'grassland', roll = 0) {
+    const session = new WorldSession(codex, fixedRng(roll));
     const worldInstance = session.createObject(codex.objectNames.getId('world'));
     session.adoptWorld(new World(worldInstance));
     const land = spawnInto(session, landName, worldInstance, 'locations');
@@ -488,6 +574,46 @@ describe('foods.yamlの下ごしらえ', () => {
     expect(childNames(hearth), '刻んだほうだけが焼き上がっている').toEqual(['roasted_taro', 'taro']);
   });
 
+  /** 料理の腕が`skill`の者が、抽選の位置`roll`で芋を刻み、炎で焼き上げたときにできる物の型名。 */
+  function roastedAfterChopping(skill: number | undefined, roll: number): string[] {
+    const { session, land, player } = open('grassland', roll);
+    const taro = spawnInto(session, 'taro', land, 'items');
+    if (skill !== undefined) {
+      player.getProperty(skillCookingId).setNumberWithoutEvents(skill);
+      expect(chopping(session, player, taro)?.tryExecute()).toBe(true);
+    }
+    const hearth = litCampfire(session, land);
+    expect(taro.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
+    session.advanceWorldTime(ONE_TICK * 10);
+    return childNames(hearth);
+  }
+
+  it('同じ芋を刻んで焼いても、出来の違う物ができることがある', () => {
+    // docs/world/Skills.md 5.4節【確定】。出来は刻んだときに決まり、焼き上がりがそれを読む
+    // （foods.yamlのtaro）。素人でも、引きが良ければ上手に焼ける。
+    expect(roastedAfterChopping(0, 0.5), '引きが並なら普段の出来').toEqual(['roasted_taro']);
+    expect(roastedAfterChopping(0, 0.99), '引きが良ければ上出来').toEqual(['roasted_taro_fine']);
+  });
+
+  it('料理の腕が高いほど、同じ引きでも上出来になる', () => {
+    // 腕は上出来の側の重みにだけ積まれる（characters/player_character.yamlのcooking_flair）ので、
+    // 同じ位置を引いても、上の段ほど上出来の側へ落ちる。位置を3つ取り、**段が1つ上がるごとに
+    // 上出来になる位置が広がる**ことを見る（段の下端は characters/player_character.yaml）。
+    const stageMins = [0, 20, 60, 180];
+    const fineAt = (roll: number): boolean[] =>
+      stageMins.map((skill) => roastedAfterChopping(skill, roll).includes('roasted_taro_fine'));
+
+    expect(fineAt(0.6), 'expertだけが上出来').toEqual([false, false, false, true]);
+    expect(fineAt(0.75), 'skilledから上出来').toEqual([false, false, true, true]);
+    expect(fineAt(0.85), 'basicから上出来').toEqual([false, true, true, true]);
+  });
+
+  it('刻まずに焼いた芋は、どれだけ引きが良くても普段の出来', () => {
+    // 焼き上げる炉の端には操作者が居ないので、腕の出番が無かった芋は出来の抽選を持たない
+    // （foods.yamlのtaroのroasts_into_*）。
+    expect(roastedAfterChopping(undefined, 0.99)).toEqual(['roasted_taro']);
+  });
+
   it('刻んだ芋は、切り口のぶん腐るのが速い', () => {
     // **下ごしらえは火にかける直前**という順序を作る上乗せ（foods.yamlのprepped）。分類によらず-1で、
     // 量は屋外に置いたぶんの上乗せから借りているが、**門は持たない**——屋根の下でも切り口は塞がらない。
@@ -563,6 +689,19 @@ function declaredEatHappiness(): ReadonlyMap<string, number | undefined> {
         );
       }
     }
+  }
+  return found;
+}
+
+/** 定義ファイルが`object_defs`へ書いた型の中身を、型の名前ごとに素のJSの値で集める。 */
+function declaredObjectBodies(): ReadonlyMap<string, unknown> {
+  const found = new Map<string, unknown>();
+  for (const path of worldCodexYamlPaths()) {
+    // 空のファイルはnullになる。
+    const root = parseDocument(readFileSync(path, 'utf8')).toJS() as {
+      object_defs?: Record<string, unknown>;
+    } | null;
+    for (const [name, body] of Object.entries(root?.object_defs ?? {})) found.set(name, body);
   }
   return found;
 }

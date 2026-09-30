@@ -788,14 +788,25 @@ traits:
       # **開けるレシピはまだ無い**（調理の全般が未設計、同2節）が、速さへは効く——**開ける物が
       # 無くても、手を動かす操作があれば縮める先はある**（同7節）。縮む分を宣言するのは下ごしらえ
       # 自身の時間で、ここではない。
+      #
+      # **段が押し上げるのは出来の冴え（cooking_flair）**——作った物が上出来になる重み（同5.4節）。
       skill_cooking:
         tags: [skill]
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {cooking_flair: 10}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {cooking_flair: 25}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {cooking_flair: 60}}
       # 得た食を保たせる（salt.yamlのcure）。開けるのは燻し小屋（smoking.yamlのsmokehouse）で、
       # 日差しの要らない保存がその先にある（docs/world/SurvivalItems.md 11節）。
       # 速さへ効く先は保たせる仕事の側が宣言する——**開ける側より名乗る側のほうが広い**（保たせる
@@ -900,3 +911,6 @@ traits:
       # **誰が読むかは、ここには書かない**——読むのは卓（`pick`）の側で、そこへ書き写すと読み手が
       # 増えるたびに嘘になる。
       cordage_thrift: {value: 0}
+      # 作った物が上出来になる重み（docs/world/Skills.md 5.4節）。**無駄の無さとは別の1本**——あちらは
+      # 同じ材料から余る数、こちらは1つの物の出来で、押し上げる先が違う。素が0で段が押し上げるのは同じ。
+      cooking_flair: {value: 0}

@@ -563,6 +563,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
         'roasted_meat',
         'roasted_rat',
         'roasted_taro',
+        'roasted_taro_fine',
         'seaweed',
         'water_spinach',
       ]);
