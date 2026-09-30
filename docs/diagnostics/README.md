@@ -192,6 +192,7 @@ PRの段では `npm test` が、`main` へ入った後は
 | レポート | 見張り方 |
 |---|---|
 | [アイテム収支](../../stats/balance.yaml) | **丸ごと作り直して比べる**（1秒で済むので取りこぼしが無い） |
+| [絵の無い型](../../stats/card_art.yaml) | **丸ごと作り直して比べる**（定義を読むだけなので一瞬） |
 | [気候システム統計](../../stats/climate.yaml) | シミュレーションの入力（`core.yaml`）の**指紋**をレポートへ書き込み、突き合わせる。定義から静的に解ける `activity_hours`・`excluded_locations` の節だけは作り直して比べる |
 | [発見物の行き渡り](../../stats/discovery_coverage.yaml) | **丸ごと作り直して比べる**（2秒） |
 | [日をまたぐ長さ](../../stats/durations.yaml) | **丸ごと作り直して比べる**（定義から解くだけなので一瞬） |
@@ -234,6 +235,11 @@ PRの段では `npm test` が、`main` へ入った後は
   生成元: `tests/diagnostics/balanceStatsReport.test.ts`
   （計算は `src/analysis/balanceTables.ts`。同じ表はコーデックスビューアの `#/balance` でも見られる
   ——絵つきで読めるのはそちら、**数値を変えたときの差分を読めるのはこちら**）。
+- [絵の無い型](../../stats/card_art.yaml) — 札に自分の絵を映す型のうち、絵がまだ無いもの。絵の無い型は
+  種別の代役アイコンで札に出るので、足りていないことはここでしか見えない。揃っていないことの判定は
+  出さず、数が減ることが進捗になる。
+  読み方は [`CardArtStats.md`](./CardArtStats.md)。
+  生成元: `tests/diagnostics/cardArtStatsReport.test.ts`（判定は `src/analysis/cardArt.ts`）
 - [気候システム統計](../../stats/climate.yaml) — 季節の持続日数・気温・天気ごとの持続時間・
   連続降雨/未降雨時間（[`ClimateSystem.md`](../engine/ClimateSystem.md) 参照）と、土地×季節ごとの活動時間。
   読み方は [`ClimateSystemStats.md`](./ClimateSystemStats.md)。
