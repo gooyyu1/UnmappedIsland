@@ -90,6 +90,8 @@ describe('射程が、決めた先へ届いている', () => {
     'tools/comfyui/recipes/campfire.json',
   ])('%s を読んでいる', (file) => {
     expect(SCANNED).toContain(file);
+    // 走査先に在っても、その形式のコメントを読めなければ何も見ていないのと同じ。
+    expect(proseOf(file).trim()).not.toBe('');
   });
 });
 
