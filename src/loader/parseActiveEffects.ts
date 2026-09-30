@@ -183,7 +183,7 @@ function parseAmong(
       ? undefined
       : parseDeclaredNumber(loader, amongContext, weightNode, scope.withPicked, 'weight');
 
-  return new AmongSpec(root, loader.slotNames.intern(slotName), match, weight);
+  return new AmongSpec(root, loader.referToSlot(slotName, `${amongContext}.slot`), match, weight);
 }
 
 /**
@@ -342,7 +342,7 @@ function parseSpawn(
     context,
     () =>
       new SpawnEffect(
-        loader.objectNames.intern(requireScalar(map, 'object', context)),
+        loader.referToObjectDef(requireScalar(map, 'object', context), `${context}.object`),
         parseSpawnTarget(loader, context, map, scope),
         count,
       ),
@@ -433,7 +433,7 @@ function parseMove(
   return new MoveEffect(
     subject,
     destination,
-    slotName === undefined ? undefined : loader.slotNames.intern(slotName),
+    slotName === undefined ? undefined : loader.referToSlot(slotName, `${context}.to_slot`),
   );
 }
 
@@ -624,9 +624,7 @@ function parseObjectDefRef(loader: WorldCodexYamlLoader, context: string, node: 
     return ObjectRef.ofObjectDefProperty(propertyGlobalId);
   }
 
-  const objectGlobalId = loader.objectNames.intern(asScalarText(node, context));
-  loader.noteObjectDefDestination(objectGlobalId, context);
-  return ObjectRef.ofObjectDef(objectGlobalId);
+  return ObjectRef.ofObjectDef(loader.referToSingletonObjectDef(asScalarText(node, context), context));
 }
 
 /**

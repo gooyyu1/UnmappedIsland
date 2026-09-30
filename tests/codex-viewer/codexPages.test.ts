@@ -647,6 +647,9 @@ object_defs:
 
   spring_field:
     tags: [location]
+    # rain_basketのpassivesが名指しする置き場（名指しの相手はどこかの型が宣言していなければならない）。
+    slots:
+      items: {cell_count: 4, cell: {accept: {tag: item}}}
     props:
       exploration_progress: {value: 0, range: {min: 0, max: 100}}
     interactions:

@@ -130,20 +130,19 @@ export class WorldCodexYamlLoader {
     return this._engine;
   }
 
-  /** 名前空間（object/property/slot/tag/property_tag/symbol）のNameRegistry。 */
-  get objectNames(): NameRegistry<ObjectGlobalId> {
+  /**
+   * 名前空間（object/property/slot/tag/property_tag/symbol）。**型・プロパティ・スロットは引くだけの窓
+   * （NameLookup）を配るので、ここから名前は作れない**——この3つは「定義の場」（`object_defs`・`props`・
+   * `slots`のキー）を持つので、名前を作る口と名指しする口を分けてある（GameElementDefinition.md 3.6節）。
+   * 作るのは`define…Name`、名指しは`referTo…`が受ける。
+   */
+  get objectNames(): NameLookup<ObjectGlobalId> {
     return this._objectNames;
   }
-
-  /**
-   * プロパティの名前空間。**引くだけの窓（NameLookup）を配るので、ここから名前は作れない**
-   * ——プロパティだけは「名前を作る口」と「名指しする口」を分けてあり、作るのは
-   * {@link definePropertyName}、名指しは{@link referToProperty}が受ける。
-   */
   get propertyNames(): NameLookup<PropertyGlobalId> {
     return this._propertyNames;
   }
-  get slotNames(): NameRegistry<SlotGlobalId> {
+  get slotNames(): NameLookup<SlotGlobalId> {
     return this._slotNames;
   }
   get tagNames(): NameRegistry<TagGlobalId> {
@@ -156,14 +155,49 @@ export class WorldCodexYamlLoader {
     return this._symbolNames;
   }
 
-  /** 型の名前で行き先を指した宣言を1件覚える（parseDestinationRefから）。 */
-  noteObjectDefDestination(objectGlobalId: ObjectGlobalId, context: string): void {
+  /**
+   * 型の名前で行き先を指した宣言（`to_object`・`into_object`、型を値に持つプロパティの`object`）を
+   * 名指しする。在るかに加えて、世界にただ1つ在る型かを判定へ持ち越す。
+   */
+  referToSingletonObjectDef(objectName: string, context: string): ObjectGlobalId {
+    const objectGlobalId = this._objectNames.intern(objectName);
     this.declarationReferences.push({ kind: 'destination_object', objectGlobalId, context });
+    return objectGlobalId;
   }
 
   /** 型を値に持つプロパティ（6.9節）から行き先を引いた宣言を1件覚える（parseDestinationRefから）。 */
   noteObjectDefPropertyDestination(propertyGlobalId: PropertyGlobalId, context: string): void {
     this.declarationReferences.push({ kind: 'destination_property', propertyGlobalId, context });
+  }
+
+  /** 型の名前を**作る**（`object_defs`のキー、4節）。綴りを照らし合わせる相手は無い。 */
+  private defineObjectName(objectName: string): ObjectGlobalId {
+    return this._objectNames.intern(objectName);
+  }
+
+  /**
+   * 型を名前で**名指しする**（`spawn`の`object`・`matches`の`object`など）。IDを配ると同時に、その型が
+   * 定義されているかの判定をWorldCodexへ持ち越す（{@link referToProperty}と同じ理由）。
+   */
+  referToObjectDef(objectName: string, context: string): ObjectGlobalId {
+    const objectGlobalId = this._objectNames.intern(objectName);
+    this.declarationReferences.push({ kind: 'object', objectGlobalId, context });
+    return objectGlobalId;
+  }
+
+  /** スロットの名前を**作る**（`slots`のキー、7節）。綴りを照らし合わせる相手は無い。 */
+  defineSlotName(slotName: string): SlotGlobalId {
+    return this._slotNames.intern(slotName);
+  }
+
+  /**
+   * 他所で宣言されたスロットを名前で**名指しする**（条件の`slot`・`in_slot`、`among`の`slot`、
+   * `move`の`to_slot`）。判定の持ち越しは{@link referToProperty}と同じ。
+   */
+  referToSlot(slotName: string, context: string): SlotGlobalId {
+    const slotGlobalId = this._slotNames.intern(slotName);
+    this.declarationReferences.push({ kind: 'slot', slotGlobalId, context });
+    return slotGlobalId;
   }
 
   /**
@@ -302,7 +336,7 @@ export class WorldCodexYamlLoader {
           new RawObjectDef(
             name,
             label,
-            this.objectNames.intern(name),
+            this.defineObjectName(name),
             asMap(node, `object_defs.'${name}'`),
             from?.name,
           ),
@@ -379,16 +413,16 @@ export class WorldCodexYamlLoader {
     const defsByGlobalId = new Array<ObjectDef | undefined>(this.objectNames.count);
     for (const [globalId, def] of objectDefsByGlobalId) defsByGlobalId[globalId] = def;
 
-    const vocabulary = new WorldVocabulary(this._propertyNames, this.slotNames, this.tagNames);
+    const vocabulary = new WorldVocabulary(this._propertyNames, this._slotNames, this.tagNames);
     const generation = buildGenerationDefs(this, objectDefsByGlobalId);
     // 世界全体を見て初めて言える矛盾（型をまたぐ宣言どうしの噛み合わせ）は、両方を持つWorldCodexが見る。
     const codex = withYamlContext(
       '世界全体',
       () =>
         new WorldCodex(
-          this.objectNames,
+          this._objectNames,
           this._propertyNames,
-          this.slotNames,
+          this._slotNames,
           this.tagNames,
           this.propertyTagNames,
           this.symbolNames,

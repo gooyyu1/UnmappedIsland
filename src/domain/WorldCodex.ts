@@ -31,6 +31,10 @@ import type { WorldObject } from './WorldObject';
  *   （6.9節）から引いたか**の2通りで、どちらも「その型のインスタンスを1つ指す」同じ宣言。
  * - `property`: 他所で宣言されたプロパティを名前で引いた宣言（条件の`prop`・`deftness`の`skill`など）。
  * - `property_stage`: そのプロパティの段（6.4節）を名前で指した宣言（`in_stage`・`from_stage`など）。
+ * - `slot`: 他所で宣言されたスロットを名前で引いた宣言（条件の`slot`・`in_slot`、`among`の`slot`、
+ *   `move`の`to_slot`）。
+ * - `object`: 型を名前で引いた宣言（「どの型が当てはまるか」の指定の`{object: ...}`（4.1節）・
+ *   `spawn`の`object`など）。行き先とは違い、世界に幾つ在る型でもよい。
  *
  * contextはその宣言が書かれた場所で、指した先が正しくなかったときのエラーメッセージに使う。
  */
@@ -43,6 +47,8 @@ export type DeclarationReference = { readonly context: string } & (
       readonly propertyGlobalId: PropertyGlobalId;
       readonly stageName: string;
     }
+  | { readonly kind: 'slot'; readonly slotGlobalId: SlotGlobalId }
+  | { readonly kind: 'object'; readonly objectGlobalId: ObjectGlobalId }
 );
 
 /** プロパティのグローバルID → その名前で宣言されている段（6.4節）の名前（WorldCodex.stageNamesByProperty）。 */
@@ -151,6 +157,7 @@ export class WorldCodex {
     if (references.length === 0) return;
 
     const stageNames = WorldCodex.stageNamesByProperty(this.objects);
+    const slotGlobalIds = WorldCodex.declaredSlotGlobalIds(this.objects);
     for (const reference of references)
       switch (reference.kind) {
         case 'destination_object':
@@ -170,7 +177,49 @@ export class WorldCodex {
             reference.context,
           );
           break;
+        case 'slot':
+          this.requireDeclaredSlot(slotGlobalIds, reference.slotGlobalId, reference.context);
+          break;
+        case 'object':
+          this.requireDefinedObjectDef(reference.objectGlobalId, reference.context);
+          break;
       }
+  }
+
+  /**
+   * 名前で引いたスロットが、どこかの型で宣言されているか。**見るのは「どこかの型が宣言しているか」
+   * まで**——{@link requireDeclaredProperty}と同じ理由で、指した相手がそのスロットを持つかは実行時にしか
+   * 決まらない。
+   */
+  private requireDeclaredSlot(
+    declared: ReadonlySet<SlotGlobalId>,
+    slotGlobalId: SlotGlobalId,
+    context: string,
+  ): void {
+    if (declared.has(slotGlobalId)) return;
+
+    throw new Error(
+      `${context}: '${this.slotNames.getName(slotGlobalId)}'というスロットは、` +
+        'どの型も宣言していません（綴りを確かめてください）。',
+    );
+  }
+
+  /** 型が宣言したスロット（7節）。 */
+  private static declaredSlotGlobalIds(objects: ObjectDefTable): ReadonlySet<SlotGlobalId> {
+    const found = new Set<SlotGlobalId>();
+    for (const objectDef of objects)
+      for (const slotDef of objectDef.enumerateSlotDefs()) found.add(slotDef.globalId);
+    return found;
+  }
+
+  /** 名前で引いた型が、`object_defs`（生成された型を含む、3.5節）に在るか。 */
+  private requireDefinedObjectDef(objectGlobalId: ObjectGlobalId, context: string): void {
+    if (this.objects.tryGet(objectGlobalId) !== undefined) return;
+
+    throw new Error(
+      `${context}: '${this.objectNames.getName(objectGlobalId)}'という型は定義されていません` +
+        '（綴りを確かめてください）。',
+    );
   }
 
   /**
