@@ -4,6 +4,7 @@ import { parseDocument } from 'yaml';
 import { describe, expect, it } from 'vitest';
 import { isVerbatimRecord, trackedDocs, trackedFiles } from '../../scripts/docScope.mjs';
 import { RETIRED_SLOT_KEYS } from '../../src/loader/parseSlots';
+import { commentParts } from '../../scripts/codeComments.mjs';
 
 /**
  * 廃止したスロットの宣言キー（{@link RETIRED_SLOT_KEYS}）を、説明が今も書けるものとして挙げて
@@ -75,25 +76,15 @@ const RETIREMENT_MARKERS = ['廃止', '旧', 'かつて', '当時'];
 type ProseLine = { readonly line: number; readonly text: string };
 
 /** どの行が説明か。行をまたぐ形（ブロックコメント）を見るので、1行ずつでは決められない。 */
-type ProseMask = (lines: readonly string[]) => boolean[];
+type ProseMask = (text: string) => boolean[];
 
 /** `.md` は全体が説明。 */
-const ALL_LINES: ProseMask = (lines) => lines.map(() => true);
+const ALL_LINES: ProseMask = (text) => text.split('\n').map(() => true);
 
-/**
- * `.ts` で説明が書かれているのはコメントの行だけ。**ブロックの中は `*` を置かない行も本文**
- * ——1行ずつ行頭だけで決めると、そこに書いた説明が丸ごと走査から外れる。
- */
-const COMMENT_LINES: ProseMask = (lines) => {
-  let inBlock = false;
-  return lines.map((raw) => {
-    const trimmed = raw.trim();
-    if (trimmed.startsWith('/*')) inBlock = true;
-    const comment = inBlock || trimmed.startsWith('//') || trimmed.startsWith('*');
-    if (trimmed.includes('*/')) inBlock = false;
-    return comment;
-  });
-};
+/** ソースで説明が書かれているのはコメントの行だけ（{@link commentParts}。印は `rel` の拡張子で決まる）。 */
+function commentLinesOf(rel: string): ProseMask {
+  return (text) => commentParts(text, rel).map((part) => part !== null);
+}
 
 /**
  * 説明が書かれている行だけを、行番号を付けて返す。**空行と、説明でない行は落とす**——落とした跡が
@@ -103,7 +94,7 @@ const COMMENT_LINES: ProseMask = (lines) => {
  */
 function proseLines(text: string, prose: ProseMask): ProseLine[] {
   const lines = text.split(/\r?\n/);
-  const keep = prose(lines);
+  const keep = prose(text);
   return lines
     .map((raw, index) => ({ line: index + 1, text: raw }))
     .filter(({ text: raw }, index) => raw.trim() !== '' && keep[index]);
@@ -207,8 +198,8 @@ const DOCUMENTS = trackedDocs(ROOT).filter((rel) => !isVerbatimRecord(rel));
  */
 const PROSE_FILES = [
   ...DOCUMENTS.map((rel) => ({ rel, prose: ALL_LINES })),
-  ...SOURCES.map((rel) => ({ rel, prose: COMMENT_LINES })),
-  ...trackedFiles(ROOT, 'tests/*.ts').map((rel) => ({ rel, prose: COMMENT_LINES })),
+  ...SOURCES.map((rel) => ({ rel, prose: commentLinesOf(rel) })),
+  ...trackedFiles(ROOT, 'tests/*.ts').map((rel) => ({ rel, prose: commentLinesOf(rel) })),
 ];
 
 describe('廃止したスロットの宣言キー', () => {
