@@ -40,12 +40,13 @@ describe('commentParts', () => {
  * 「その行がコメントか」を行頭の印で決めている、`commentParts` の外の箇所。**判定がもう1つに
  * 割れたら、ここが赤くなる**——写しは規則が少しずつずれ、検査ごとに見ているものが変わる。
  *
- * 拾うのは `startsWith` に印を渡す形だけ。`#` は私的な名前（`#field`）の判定にも使うので見ない。
+ * 拾うのは `startsWith` に印を渡す形。印ではない `#` の判定（私的な名前 `#field`）は
+ * {@link NOT_COMMENT_MARKS} で行ごとに名指しして外す——`#` ごと外すと、シェルや YAML の写しが緑で通る。
  */
 function copiesOfCommentJudgement(): string[] {
   const self = join('tests', 'scripts', 'codeComments.test.ts');
   const owner = join('scripts', 'codeComments.mjs');
-  const pattern = /\.startsWith\(\s*(['"])(\/\/|\/\*|\*)\1\s*\)/;
+  const pattern = /\.startsWith\(\s*(['"])(\/\/|\/\*|\*|#)\1\s*\)/;
   return ['.ts', '.mts', '.mjs', '.js', '.cjs']
     .flatMap((ext) => trackedFiles(ROOT, `*${ext}`))
     .filter((rel) => rel !== self && rel !== owner)
@@ -53,13 +54,24 @@ function copiesOfCommentJudgement(): string[] {
       readFileSync(join(ROOT, rel), 'utf-8')
         .split('\n')
         .flatMap((line, index) =>
-          pattern.test(line) ? [`${rel.split(sep).join('/')}:${index + 1} ${line.trim()}`] : [],
+          pattern.test(line) && !NOT_COMMENT_MARKS.includes(line.trim())
+            ? [`${rel.split(sep).join('/')}:${index + 1} ${line.trim()}`]
+            : [],
         ),
     );
 }
 
+/** 行頭の `#` を見ているが、コメントの判定ではない行（`scripts/declarationInventory.mjs` の私的な名前）。 */
+const NOT_COMMENT_MARKS = ["if (modifiers.includes('private') || name.startsWith('#')) return 'private';"];
+
 describe('コメントの判定', () => {
   it('`scripts/codeComments.mjs` の外に写しが無い', () => {
     expect(copiesOfCommentJudgement(), 'commentParts を通さずにコメントを見分けている').toEqual([]);
+  });
+
+  it('名指しで外した行が今も在る（消えた行の除外を残さない）', () => {
+    const source = readFileSync(join(ROOT, 'scripts', 'declarationInventory.mjs'), 'utf-8');
+    const lines = source.split('\n').map((line) => line.trim());
+    expect(NOT_COMMENT_MARKS.filter((mark) => !lines.includes(mark))).toEqual([]);
   });
 });
