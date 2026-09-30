@@ -4,11 +4,13 @@
 いけない**——ボタンとカードは別の概念で、片方の都合（切り出しをフレームとして足す等）がもう片方の
 描画を壊す。同じ生成物から切り出した、ボタン専用のPNGを持たせる。
 
-    python button_paper.py paper.png --out slot_button_paper.png \
+    python button_paper.py paper.png --out slot_button_paper.png --width 336 --height 144 --radius 24 \
         --at 37,40 --tint "#c2cdd8" --at 37,236 --tint "#c7d4c1" --at 37,432 --tint "#d7c2b5"
 
 **ボタンごとに別の場所を取る。** 同じ場所だと3つのボタンに同じ染みが並び、模様として目に付く。
-切り出す大きさはボタンと同じ縦横比にしておく（引き伸ばすと紙の粒が一方向へ伸びる）。
+切り出す大きさはボタンと同じ縦横比にしておく（引き伸ばすと紙の粒が一方向へ伸びる）。**寸法は
+既定値を持たず、レシピ（recipes/slot_button_paper.json）から渡す**——ボタンの寸法と揃っているかは
+そちらを tests/art/slotButtonPaper.test.ts が検める。
 
 **染めと角丸は絵に焼く。** カードの枠（card_frame.py）と同じ扱いで、ゲーム側は敷くだけにする
 （実行時の乗算・切り抜きはWebGL専用で、WebGLの無い環境では色も角丸も消える）。
@@ -28,11 +30,6 @@ import numpy as np
 from PIL import Image
 
 from card_frame import CARD_HEIGHT, CARD_WIDTH, cover, rounded_mask
-
-# ボタンの絵の寸法と角丸（theme.ts の SIZE.slotButton / SIZE.radius の2倍。絵はuの2倍で描く約束）。
-TILE_WIDTH = 336
-TILE_HEIGHT = 168
-RADIUS = 24
 
 AT_PATTERN = re.compile(r"^(\d+),(\d+)$")
 
@@ -56,9 +53,9 @@ def main() -> None:
                         help="切り出す左上の位置（410x640に均した紙の座標）。ボタンの数だけ重ねる")
     parser.add_argument("--tint", action="append", metavar="#RRGGBB",
                         help="タイルへ乗算する色（染めた紙）。--at と同じ数だけ、同じ順で並べる")
-    parser.add_argument("--width", type=int, default=TILE_WIDTH)
-    parser.add_argument("--height", type=int, default=TILE_HEIGHT)
-    parser.add_argument("--radius", type=int, default=RADIUS, help="角丸の半径（0で角丸なし）")
+    parser.add_argument("--width", type=int, required=True, help="1枚の幅（px）")
+    parser.add_argument("--height", type=int, required=True, help="1枚の高さ（px）")
+    parser.add_argument("--radius", type=int, required=True, help="角丸の半径（0で角丸なし）")
     parser.add_argument("--paper", default="#fcf8e6", help="紙の色を寄せる目標（#RRGGBB）")
     parser.add_argument("--wash", type=float, default=0.0, help="ムラを平均へ寄せる度合い（0〜1）")
     args = parser.parse_args()
