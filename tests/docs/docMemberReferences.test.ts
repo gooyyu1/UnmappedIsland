@@ -5,7 +5,8 @@ import { commentsOnly } from '../../scripts/codeComments.mjs';
 import {
   COMMENTED_EXTENSIONS,
   isProseData,
-  isVerbatimRecord,
+  isRefRuleExempt,
+  refProseOf,
   trackedDocs,
   trackedFiles,
 } from '../../scripts/docScope.mjs';
@@ -119,7 +120,7 @@ const PROSE_DATA = trackedFiles(ROOT).filter(isProseData);
  * 決めるのは [`docScope.mjs`](../../scripts/docScope.mjs)**——同じ規約（`DocumentStyle.md` 5節）を
  * 課す `docReferences.test.ts` と同じ1つ。
  */
-const DOCUMENTS = trackedDocs(ROOT).filter((rel) => !isVerbatimRecord(rel));
+const DOCUMENTS = trackedDocs(ROOT).filter((rel) => !isRefRuleExempt(rel));
 
 /**
  * 説明を読む先。**どちらの見方も同じここを読む**——片方だけが狭いと、そこへ書いた主張は形を
@@ -139,7 +140,7 @@ const PROSE: readonly {
     fenced: false,
   },
   { files: PROSE_DATA, proseOf: (rel) => allLines(read(rel)), fenced: false },
-  { files: DOCUMENTS, proseOf: (rel) => allLines(read(rel)), fenced: true },
+  { files: DOCUMENTS, proseOf: (rel) => allLines(refProseOf(rel, read(rel))), fenced: true },
 ];
 
 /**
