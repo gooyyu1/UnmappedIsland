@@ -2868,7 +2868,7 @@ conditions:
 
 ```yaml
 conditions:
-  - {subject: self, slot: content, matches: {object: water_liquid}}
+  - {subject: self, slot: treatment, matches: {tag: immobilizing}}
 ```
 
 - **`slot`**: 判定対象の、`subject` が持つスロット名。
@@ -2885,25 +2885,29 @@ conditions:
 「`subject` 自身の中に何が入っているか」という、参照する木構造上の向きが逆であるため、キー名自体を分けて
 区別しています。
 
-液体容器のような「中身の種類によって取れる行動が変わる」ケースに使います。中身の種類は、容器の中の専用
-スロットへ中身のオブジェクトを1つ置くことで表現します
-（[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 参照）。種類が1つの型で足りるなら
-`{object: ...}`、口の広い容器のように仲間が増える役割なら `{tag: ...}` で書きます（4.1 節）。
+怪我に当てた治療具のように「枠に何が入っているかで効き目や取れる行動が変わる」ケースに使います。種類が
+1つの型で足りるなら `{object: ...}`、治療具のように仲間が増える役割なら `{tag: ...}` で書きます（4.1 節）。
+容器の中身の種類（水入りの甕など）はスロットではなく変種の軸で持ち、中身が配るタグを器自身が名乗るので、
+この葉ではなく器のタグを見ます（[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 1節・10節）。
 
 ```yaml
 object_defs:
-  jar:
+  fracture:
     slots:
-      content:
+      treatment:
         cell_count: 1
-        cell: {accept: {tag: liquid}}
-        capacity: 4800
-    interactions:
-      pour_out:
-        trigger: menu
-        conditions:
-          - {slot: content, matches: {object: water_liquid}}
-        destroy: self
+        cell: {accept: {tag: treatment}, max: 1}
+    passives:
+      - conditions:
+          - not: {slot: treatment, matches: {tag: immobilizing}}
+        modify:
+          parent:
+            load: 18000
+      - conditions:
+          - {slot: treatment, matches: {tag: immobilizing}}
+        modify:
+          parent:
+            load: 9000
 ```
 
 ### 14.4 葉: 型判定
