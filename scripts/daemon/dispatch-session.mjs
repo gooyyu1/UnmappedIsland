@@ -19,10 +19,14 @@
 // `gh` の出力も送る本文もファイルのまま受け取って、ここで読む。
 
 import { readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import { callMeta, metaJson } from '../../.claude/ccr-meta.mjs';
 import { checkPrompt } from '../../.claude/ccr-check-prompt.mjs';
 import { readVersion, verdicts } from './review-verdicts.mjs';
+import { runBash } from './spawn.mjs';
+
+const ARCHIVE_SESSION = fileURLToPath(new URL('./archive-session.sh', import.meta.url));
 
 /** `--<名前> <値>` だけを受ける。**旗（値の無い引数）を作らない**ので、読む側に場合分けが要らない。 */
 function options(argv) {
@@ -110,21 +114,53 @@ async function dispatch(kind, given) {
   }
   console.log(`SESSION ${created.id}`);
 
+  // **ここから先で転んでも、外の `catch` へは落とさない**——立てた1本が残ったまま「打てなかった」に
+  // なる（下の `withdraw`）。
+  let confirmed = false;
+  try {
+    confirmed = await confirm(created.id, given);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+  }
+  return confirmed ? 0 : withdraw(created.id);
+}
+
+/** 立てた1本が、渡したとおりに起動したか。 */
+async function confirm(session, given) {
   // **渡した `source_url` が入ったかを見る**ので、渡していない（ブリッジ）なら確かめるものが無い。
   if (given.source) {
-    const got = metaJson(await callMeta('get_session', { session_id: created.id }))?.ccr;
+    const got = metaJson(await callMeta('get_session', { session_id: session }))?.ccr;
     const sources = (got?.session_context?.sources ?? [])
       .map((source) => source.git_repository)
       .filter((repository) => repository !== undefined && repository !== null)
       .map((repository) => `${repository.url}@${repository.revision}`);
     if (sources.length === 0) {
       console.error('リポジトリが入っていない（空の箱で起動している）。畳んで立て直す。');
-      return 1;
+      return false;
     }
     console.log(`SOURCES ${sources.join('\n')}`);
   }
 
-  return (await checkPrompt(created.id, given.prompt)) ? 0 : 1;
+  return checkPrompt(session, given.prompt);
+}
+
+/**
+ * 確かめられなかった1本を畳む。**「打てなかった」（1）を返すのは、畳めたときだけ**——残っているのに
+ * 打てなかったと返すと、盤面は台帳に控えず同じ手をもう一度打つ（`agent-ops/board-design.md` 1.4.3節）。
+ * 畳めなければ、残っているのだから打てたもの（0）として返す。
+ *
+ * 畳んでよいかの判定と、ブリッジの worktree の後始末は [`archive-session.sh`](archive-session.sh) が
+ * 持つ。接頭辞は盤面の `ARCHIVE` と同じ。
+ */
+function withdraw(session) {
+  const out = runBash(ARCHIVE_SESSION, ['--keep-untagged', 'task-,review-,chore-'], {
+    input: `${session}\n`,
+    capture: true,
+  });
+  process.stdout.write(out.stdout);
+  if (out.stdout.split(/\r?\n/).includes(`ARCHIVED ${session}`)) return 1;
+  console.error(`確かめられなかった1本を畳めなかったので、打てたものとして返す: ${session}`);
+  return 0;
 }
 
 const [kind, ...rest] = process.argv.slice(2);
