@@ -31,7 +31,8 @@ import {
 
 /**
  * 辿れるページはこれで全部。**1つずつ作って使い回す**ので、開き直しても残るもの（図の倍率、
- * 描いた表）はページ自身が持てる。routeが合わなければ「見つかりません」。
+ * 描いた表）はページ自身が持てる。routeが合わなければ「見つかりません」。登録漏れは
+ * `tests/codex-viewer/codexPages.test.ts` が見る。
  */
 const PAGES: readonly CodexPage[] = [
   new ObjectListPage(),

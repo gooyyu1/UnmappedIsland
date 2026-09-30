@@ -8,6 +8,7 @@ import {
 } from '../../src/analysis/escapeReach';
 import type { IslandMap } from '../../src/domain/generation/IslandMap';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
+import type { TypeMatchRule } from '../../src/domain/TypeMatchRule';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { bundledCodex } from '../support/worldCodexFiles';
 
@@ -56,6 +57,30 @@ describe('島を出るのに要るもの（同梱の定義）', () => {
     // 航海の食料を釣って賄う道具（fishing_tool、Voyage.md 3.9節）も目標。
     const tags = new Set(reach.needs.map((need) => need.goalTagName).filter((tag) => tag !== undefined));
     expect([...tags].sort()).toEqual([...ESCAPE_GOAL_TAG_NAMES].sort());
+  });
+
+  it('船が組み込む部品と、船の上で使う道具のタグは、目標に挙がっている', () => {
+    // 目標のタグは手で持つしかない（ESCAPE_GOAL_TAG_NAMES の理由）が、**船が要求する側は定義から
+    // 読める**。帆のように船の枠（structure）へ組み込む物と、釣りの道具のように船の上で重ねて使う物が
+    // 目標から漏れると、その型を島の産物から作れない島を「出られる」と数える。
+    const tagOf = (rule: TypeMatchRule | undefined): string[] =>
+      rule?.reading.kind === 'tag' ? [codex.tagNames.getName(rule.reading.tagGlobalId)] : [];
+    const structureId = codex.slotNames.getId('structure');
+    const boats = codex
+      .objectDefNamesWithTag(codex.tagNames.getId('boat'))
+      .map((name) => codex.objects.get(codex.objectNames.getId(name)));
+    expect(boats, '船が1つも無ければ、この見張りは何も見ていない').not.toHaveLength(0);
+
+    const demanded = new Set<string>(['boat']);
+    for (const boat of boats) {
+      const cells = boat.tryGetSlotDef(structureId)?.cellsReading;
+      if (cells !== undefined)
+        for (const cell of cells.kind === 'uniform' ? [cells.cell] : cells.cells)
+          for (const tag of tagOf(cell.accept)) demanded.add(tag);
+      for (const trigger of boat.dragTriggers) for (const tag of tagOf(trigger.with)) demanded.add(tag);
+    }
+
+    expect([...demanded].filter((tag) => !ESCAPE_GOAL_TAG_NAMES.includes(tag))).toEqual([]);
   });
 
   it('目標は、島にそのまま在るものではない', () => {

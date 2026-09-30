@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type {
   ChainRoute,
@@ -824,5 +826,40 @@ describe('収支ページの表', () => {
     rows: tables.supply,
     rendered: tableRowsAfter(html, '<h2 id="balance-供給">'),
     extraLabels: [],
+  });
+});
+
+/**
+ * `main.ts` の `PAGES` は「辿れるページの全部」。書いたページを登録し忘れると、routeが合わずに黙って
+ * 「見つかりません」へ落ちる。`main.ts` はDOMを掴むので読み込めず、**ソースの字面で突き合わせる**。
+ */
+describe('辿れるページの一覧', () => {
+  const VIEWER_DIR = join('src', 'codex-viewer');
+
+  function sourcesIn(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) return sourcesIn(path);
+      return entry.name.endsWith('.ts') ? [path] : [];
+    });
+  }
+
+  it('`CodexPage` を継ぐクラスを1つ残らず登録している', () => {
+    const pageClasses = sourcesIn(VIEWER_DIR).flatMap((path) =>
+      [...readFileSync(path, 'utf8').matchAll(/^export class (\w+) extends CodexPage\b/gm)].map(
+        (match) => match[1],
+      ),
+    );
+    const list = /const PAGES: readonly CodexPage\[\] = \[([\s\S]*?)\];/.exec(
+      readFileSync(join(VIEWER_DIR, 'main.ts'), 'utf8'),
+    );
+    if (list === null) throw new Error('main.ts に PAGES の一覧が見つかりません。');
+    const registered = [...list[1].matchAll(/new (\w+)\(/g)].map((match) => match[1]);
+
+    expect(
+      pageClasses.length,
+      'ページのクラスが1つも見つからなければ、この見張りは何も見ていない',
+    ).toBeGreaterThan(0);
+    expect(registered.sort()).toEqual(pageClasses.sort());
   });
 });

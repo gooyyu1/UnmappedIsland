@@ -36,6 +36,12 @@ export interface StartupNeed {
 /**
  * 測る対象（ContentSkeleton.md 2.3節）。**1つの土地では揃わない**ことがこの表の要点で、どの土地が
  * 何を持つかは`stats/startup_reach.yaml`の`location_supplies`の`needs`が出す。
+ *
+ * **出どころは型で名指しする**（島を出るのに要るもの——`src/analysis/escapeReach.ts`——がタグで指すのと
+ * 逆）。要るのは道具を持たない手で採れる物に限った出どころで、定義の側も型で名指ししている
+ * （`fire.yaml`の`fire_drill`のレシピが小枝と太い枝を要求する）。役割のタグで寄せると、道具が要る
+ * 出どころ（`ignitable`を名乗るヤシの外皮`coconut_husk`）まで混ざる。行の過不足は
+ * `tests/generation/startSiteSelection.test.ts` が2.3節の表と突き合わせる。
  */
 export const STARTUP_NEEDS: readonly StartupNeed[] = [
   { label: '火口', sourceObjectNames: ['dry_grass'] },

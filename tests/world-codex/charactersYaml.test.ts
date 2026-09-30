@@ -730,6 +730,23 @@ describe('プレイヤーキャラクタの定義', () => {
       }
     });
 
+    it('休息と限界の表は、キャラクタ自身のボタンの操作と押す機会の無い操作を1つ残らず挙げている', () => {
+      // 休息はボタンから取る（menu）、限界は押す機会を持たない（tick）。表に無い操作は、単調性や
+      // 押せないことの検査に1度も回されないまま緑で通る。
+      expect(
+        def(character)
+          .menuTriggers.map((trigger) => trigger.interaction.name)
+          .sort(),
+        '休息（RESTS）',
+      ).toEqual(RESTS.map(([actionName]) => actionName).sort());
+      expect(
+        def(character)
+          .tickTriggers.map((trigger) => trigger.interaction.name)
+          .sort(),
+        '限界（LIMITS）',
+      ).toEqual(LIMITS.map(([, turnName]) => turnName).sort());
+    });
+
     it.each(RESTS)('休息「%s」を持ち、%i分かかる', (actionName, minutes) => {
       const { player } = stand(character);
 

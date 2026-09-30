@@ -581,6 +581,30 @@ describe('climate.yamlの鮮度', () => {
       ).toBe(seasonSamples.get(String(record.season)));
   });
 
+  /**
+   * `SeasonName`・`WeatherName` は`core.yaml`のシンボルの写し。**天候を数える側（`sunlitEvaporation`）は
+   * `WeatherName` を鍵にした表を「天候の全部」として回す**ので、シンボルが1つ増えても型が増えなければ、
+   * その天候だった時間は黙ってどこにも数えられない。型そのものは読めないので、同じ型を鍵に持つ
+   * `SEASON_CLIMATE` の鍵で突き合わせる。
+   */
+  it('書き写した季節と天候が、`core.yaml`のシンボルと過不足なく一致する', () => {
+    const codex = bundledCodex();
+    const world = codex.objects.get(codex.objectNames.getId('world'));
+    const symbolsOf = (propertyName: string): string[] =>
+      world
+        .tryGetPropertyDef(codex.propertyNames.getId(propertyName))!
+        .stages.map((stage) => stage.name)
+        .sort();
+
+    expect(SEASON_CLIMATE.map((season) => season.name).sort(), '季節（SeasonName）').toEqual(
+      symbolsOf('season'),
+    );
+    for (const season of SEASON_CLIMATE)
+      expect(Object.keys(season.hoursByWeather).sort(), `${season.name} の天候（WeatherName）`).toEqual(
+        symbolsOf('weather'),
+      );
+  });
+
   it('外した土地の節が、今の定義で外れるものと過不足なく一致する', () => {
     const excluded = islandLocationsOf(bundledCodex()).excludedSea;
 

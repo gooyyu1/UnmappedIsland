@@ -6,7 +6,12 @@ import { durationsOf } from '../../src/analysis/durations';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
-import { bundledBalanceTables, bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
+import {
+  bundledBalanceTables,
+  bundledCodex,
+  worldCodexPath,
+  worldCodexYamlPaths,
+} from '../support/worldCodexFiles';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { MINUTES_PER_DAY } from '../../src/domain/worldTime';
@@ -56,8 +61,21 @@ const MATERIALS: Readonly<Record<string, Material>> = {
   hammock: 'long_lived',
 };
 
-/** 表の対象になるタグ。道具・入れ物・身につける物・寝床（DurabilitySystem.md 2節）。 */
+/**
+ * 表の対象になるタグ。道具・入れ物・身につける物・寝床（DurabilitySystem.md 2節）。
+ *
+ * **下の表の全数検査はこのタグから数え上げる**ので、ここが漏れると表ごと漏れる。覆っていることは
+ * `durability` を持つ型の数え上げと突き合わせる（「耐久を持つ物は、表のタグを名乗るか、…」）。
+ */
 const WEATHERED_TAGS = ['tool', 'container', 'equippable', 'bed'];
+
+/** `durability` を持つが、屋外劣化の表に載せない物のタグ。 */
+const DURABLE_OUTSIDE_TABLE = [
+  // 減るのは腐敗で、素材の分類ではなく腐る速さを名乗る（DurabilitySystem.md 3節、foods.yaml）。
+  'perishable',
+  // 仕掛けた罠は獲物にもがかれて減り、減り方を罠の側が持つ（TrapSystem.md 6.1節、traps.yaml）。
+  'trap',
+];
 
 /** 積んであるだけでも屋外で傷む素材と、その分類（DurabilitySystem.md 2.2節）。 */
 const STOCKED_MATERIALS: Readonly<Record<string, Material>> = {
@@ -78,7 +96,7 @@ function isGenerated(def: ObjectDef): boolean {
 }
 
 /** 素材の分類ごとの trait（weathering.yaml）。 */
-const MATERIAL_TRAITS = ['weatherproof_material', 'long_lived_material', 'short_lived_material'];
+const MATERIAL_TRAITS = Object.keys(LIFETIME_DAYS).map((material) => `${material}_material`);
 
 /** 素材の trait のどれかを名乗っている型の名前。trait は合成後に消えるので、同梱のYAMLから読む。 */
 function materialNamerNames(): string[] {
@@ -120,6 +138,22 @@ describe('素材の屋外劣化', () => {
     // 名乗り忘れた物は屋外へ置いても朽ちない。数が増えても気付けるよう、タグから数え上げて突き合わせる
     // （かさの全数検査、containersYaml.test.ts と同じ理由）。
     expect(weatheredDefNames().sort()).toEqual(Object.keys(MATERIALS).sort());
+  });
+
+  it('耐久を持つ物は、表のタグを名乗るか、積んだ素材の表に在るか、表の外に置く理由を持つ', () => {
+    // 表の対象を選ぶタグ（WEATHERED_TAGS）が漏れると、上の全数検査は数え上げの土台ごと漏れて緑の
+    // まま通る。耐久を持つのにどこにも当たらない物は、タグの一覧か、表の外に置く理由の側が足りない。
+    const durabilityId = codex.propertyNames.getId('durability');
+    const coveredTagIds = [...WEATHERED_TAGS, ...DURABLE_OUTSIDE_TABLE].map((tag) =>
+      codex.tagNames.getId(tag),
+    );
+    const uncovered = [...codex.objects]
+      .filter((def) => !isGenerated(def) && def.tryGetPropertyDef(durabilityId) !== undefined)
+      .filter((def) => !coveredTagIds.some((tagId) => def.tags.includes(tagId)))
+      .map((def) => def.name)
+      .filter((name) => !(name in STOCKED_MATERIALS));
+
+    expect(uncovered).toEqual([]);
   });
 
   it('表の分類どおりの日数で朽ちる', () => {
@@ -191,6 +225,18 @@ describe('積んである素材の屋外劣化（DurabilitySystem.md 2.2節）',
   it('積んだ短命な素材は、表の分類どおりの日数で朽ちる', () => {
     for (const [objectName, material] of Object.entries(STOCKED_MATERIALS))
       expect(weatheringOf(objectName), `${objectName} の寿命`).toEqual(LIFETIME_DAYS[material]);
+  });
+
+  it('素材の分類は、weathering.yaml が宣言する素材の trait と過不足なく一致する', () => {
+    // 下の全数検査は、素材の trait をこの分類から数える。分類に無い trait を名乗る型は、どの表からも
+    // 漏れて緑のまま通る。
+    const root = parse(readFileSync(worldCodexPath('weathering.yaml'), 'utf8')) as {
+      traits?: Record<string, unknown>;
+    };
+    const declared = Object.keys(root.traits ?? {}).filter((trait) => trait.endsWith('_material'));
+
+    expect(declared, '素材の trait が1つも読めない').not.toHaveLength(0);
+    expect([...MATERIAL_TRAITS].sort()).toEqual(declared.sort());
   });
 
   it('素材の trait を名乗るのは、持ち物の表と積んだ素材の表に並べた物だけ', () => {

@@ -20,7 +20,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
   const TRAVEL_MINUTES = 60;
 
   /**
-   * 3つの限界。**違うのは見る値・長さ・戻る量だけ**なので、同じ表に並ぶ（player_character.yaml）。
+   * 限界の表。**違うのは見る値・長さ・戻る量だけ**なので、同じ表に並ぶ（player_character.yaml）。
    *
    * `after` は強制の時間が過ぎ切った時点の値。戻しはtick毎なので、**強制の間の減りを引いた正味**に
    * なる——空身で痛みも無いこの状態で減るのは眠気だけ（-1/tick）で、眠り込みの +3/tick は差し引き
@@ -86,6 +86,15 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
     expect(path.tryGetAction('travel', player)?.tryExecute()).toBe(true);
     return session.world!.totalMinutes - before;
   }
+
+  it('限界の表は、プレイヤーの押す機会を持たない操作を1つ残らず挙げている', () => {
+    // 表に無い限界は、下のどの検査にも回されないまま緑で通る。
+    const character = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER));
+
+    expect(character.tickTriggers.map((trigger) => trigger.interaction.name).sort()).toEqual(
+      LIMITS.map(({ turn }) => turn).sort(),
+    );
+  });
 
   it.each(LIMITS)(
     '$prop が尽きると、$turn で $minutes 分が強制的に過ぎ、その間に戻る',
