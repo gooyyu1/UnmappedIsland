@@ -136,6 +136,193 @@ object_defs:
 });
 
 /**
+ * その型を1つ手に持っていないと行えない工程を、その型の出どころに数えないこと（issue #2314）。
+ *
+ * 株分けは親株を道具として使い、親株は減らない。繰り返せば増えるが、1株目はこの工程では手に
+ * 入らない——それを作り方と数えると、探索でしか得られない1株目の時間が表から消える。
+ * **株分けは労働0**なので、数え落とせば `chain_untimed_routes` の側に出る。
+ *
+ * 接ぎ木は「植物」タグの道具を取る。株のほかに植物が在れば、株を持たずに行える正当な作り方で、
+ * 株より安いか・その植物に値段が付くかでは答えが変わらない。
+ */
+describe('道具を産物と同じ型でしか満たせない工程', () => {
+  const tablesWith = (cuttingTags: string, saltTags = 'item', ghostTags = 'item') =>
+    buildBalanceTables(
+      new WorldCodexYamlLoader()
+        .load(
+          'test.yaml',
+          `
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      hydration:
+        value: 96
+        range: {min: 0, max: 96}
+        passives:
+          - add: {self: {hydration: -1}}
+
+  grassland:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 60
+        spawn: {object: succulent, into: self}
+
+  sandy_beach:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 15
+        spawn: {object: shell, into: self}
+
+  forest:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 100
+        spawn: {object: cutting, into: self}
+
+  cutting:
+    tags: [${cuttingTags}]
+
+  # 朽ちない設備。塩は手に入るが、寿命が無いので値段が付かない（obtainableWithoutCost）。
+  salt_pan:
+    tags: [fixture]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - add: {self: {drying_remaining: -1}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+    recipes:
+      laid:
+        steps:
+          - requires:
+              - {object: shell, count: 1, consume: true}
+            duration: 60
+
+  salt:
+    tags: [${saltTags}]
+
+  # 作る工程も見つけ方も無いもの。
+  ghost:
+    tags: [${ghostTags}]
+
+  shell:
+    tags: [item]
+    interactions:
+      graft:
+        trigger: {drag: {tag: plant}}
+        duration: 1
+        spawn: {object: succulent}
+
+  succulent:
+    tags: [item, plant]
+    interactions:
+      divide:
+        trigger: menu
+        spawn: {object: succulent}
+      chew:
+        trigger: menu
+        duration: 5
+        destroy: self
+        add: {agent: {hydration: 96}}
+`,
+        )
+        .buildAndReset(),
+      'medic',
+    );
+
+  const hydrationRouteSteps = (tables: ReturnType<typeof tablesWith>, placeName: string) =>
+    (
+      tables.places
+        .find((place) => place.name === placeName)!
+        .properties.find((chains) => chains.propertyName === 'hydration')?.routes ?? []
+    ).map((route) => route.route.steps.map((step) => `${step.objectName}.${step.stepName}`));
+
+  const succulentCost = (tables: ReturnType<typeof tablesWith>) =>
+    tables.objectCosts.find((cost) => cost.objectName === 'succulent')!;
+
+  describe('植物が株しか無いとき', () => {
+    const tables = tablesWith('item');
+
+    it('値段は、株分けでも接ぎ木でもなく1株目を探す時間になる', () => {
+      expect(succulentCost(tables)).toMatchObject({ minutes: 60, exploreMinutes: 60 });
+    });
+
+    it.each([WHOLE_ISLAND, 'grassland'])('%s の経路は、1株目を探すところから始まる', (place) => {
+      expect(hydrationRouteSteps(tables, place)).toEqual([['grassland.explore', 'succulent.chew']]);
+    });
+
+    it('株の採れない土地では、株分けも接ぎ木もその土地の作り方にならない', () => {
+      // 株は持ち込むしかないので、この土地を起点にした経路は無い。
+      expect(hydrationRouteSteps(tables, 'sandy_beach')).toEqual([]);
+    });
+  });
+
+  describe('挿し穂も植物のとき', () => {
+    const tables = tablesWith('item, plant');
+
+    it('接ぎ木は、挿し穂を道具にできるので株の作り方に数える', () => {
+      // 株（60分）が挿し穂（100分）より安くても、株を持たずに行えることは変わらない。
+      expect(succulentCost(tables)).toMatchObject({
+        minutes: 1,
+        steps: [{ objectName: 'shell', stepName: 'graft' }],
+      });
+    });
+
+    it('株分けは、それでも株の作り方にならない', () => {
+      for (const place of [WHOLE_ISLAND, 'grassland', 'sandy_beach', 'forest'])
+        for (const steps of hydrationRouteSteps(tables, place))
+          expect(steps).not.toContain('succulent.divide');
+    });
+  });
+
+  describe('値段の付かない塩も植物のとき', () => {
+    const tables = tablesWith('item', 'item, plant');
+
+    it('接ぎ木は、塩を道具にできるので株の作り方に数える', () => {
+      // 値段の付かない型が埋まるのは値段を積み終えた後。途中で「手に入るか」を見ると外れる。
+      expect(tables.objectCosts.find((cost) => cost.objectName === 'salt')).toMatchObject({
+        obtainableWithoutCost: true,
+      });
+      expect(succulentCost(tables)).toMatchObject({
+        minutes: 1,
+        steps: [{ objectName: 'shell', stepName: 'graft' }],
+      });
+    });
+  });
+
+  describe('どこでも手に入らない型だけが他の植物のとき', () => {
+    const tables = tablesWith('item', 'item', 'item, plant');
+
+    it('接ぎ木は、株を要るのに株の作り方に数える（宣言だけで決める代償）', () => {
+      expect(tables.objectCosts.find((cost) => cost.objectName === 'ghost')).toMatchObject({
+        minutes: undefined,
+        obtainableWithoutCost: false,
+      });
+      expect(succulentCost(tables)).toMatchObject({
+        minutes: 1,
+        steps: [{ objectName: 'shell', stepName: 'graft' }],
+      });
+    });
+  });
+});
+
+/**
  * 海区にしか湧かないものを、島の表が1つも数えないこと（issue #921）。
  *
  * 海区に湧く漁り場は、島から見れば入手経路が無い。それでも工程として数えると、その物の代表経路が
