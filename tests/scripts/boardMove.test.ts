@@ -1869,6 +1869,17 @@ describe('board-move.mjs', () => {
     ).toEqual([]);
   });
 
+  // **成果が issue の側にしか出ない仕事は、PRを出さずに終わる**（2.15.4）。終わりを名乗った `[完了]` で
+  // 担当が閉じれば、起こした後の窓が満ちていても人へ返さず、仕事を終えたワーカーとして畳む。
+  it('起こした後でも、担当が閉じていれば返さずに畳む', () => {
+    const board = {
+      sessions: [idle('session_a', 'task-8')],
+      issueStates: { 8: 'CLOSED' },
+      taken: { 'idle:session_a': LONG_IDLE, 'resume:session_a': 'stall:8' },
+    };
+    expect(moves(board)).toEqual(['ARCHIVE session_a closed:8']);
+  });
+
   /**
    * **走る者が一度も付かなかったセッションは、止まったのではなく始まっていない**（2.15.3）。
    *
