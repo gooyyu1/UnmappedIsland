@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
  *
  * 結び付けずに包むと、worldインスタンスは時計を持たないセッションに属したままになり、そこから
  * 辿った `session.world` が `undefined` を返す。型も実行時も止めないので、ここで書き方を見る。
- * 包みの生成と結び付けは隣り合って書く（間に別の処理を挟まない）。
+ * 包みの生成と結び付けは隣り合って書く——結び付けは、包みを作った行か、空行を除いたその次の行に置く。
  */
 
 const ROOT = resolve(__dirname, '../..');
@@ -15,9 +15,6 @@ const ROOT = resolve(__dirname, '../..');
 /** worldの包みの生成。**この綴りがこのファイル自身に現れない書き方**にしてある。 */
 const WRAP = /\bnew World\(/;
 const ADOPT = /\.adoptWorld\(/;
-
-/** 包みを作った行から、結び付けを探す行数（その行を含む）。 */
-const ADOPT_WINDOW_LINES = 4;
 
 /** そのディレクトリ以下の.tsファイル（リポジトリ相対）。 */
 function filesIn(dir: string): string[] {
@@ -32,11 +29,11 @@ function filesIn(dir: string): string[] {
 
 function unadoptedWraps(rel: string): string[] {
   const lines = readFileSync(join(ROOT, rel), 'utf-8').split(/\r?\n/);
-  return lines.flatMap((line, i) =>
-    WRAP.test(line) && !lines.slice(i, i + ADOPT_WINDOW_LINES).some((l) => ADOPT.test(l))
-      ? [`${rel}:${i + 1}`]
-      : [],
-  );
+  return lines.flatMap((line, i) => {
+    if (!WRAP.test(line) || ADOPT.test(line)) return [];
+    const next = lines.slice(i + 1).find((l) => l.trim() !== '');
+    return next !== undefined && ADOPT.test(next) ? [] : [`${rel}:${i + 1}`];
+  });
 }
 
 describe('worldの包み', () => {
