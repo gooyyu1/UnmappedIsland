@@ -41,6 +41,12 @@ export interface CraftingMaterial {
    */
   readonly needed: number;
   readonly held: number;
+  /**
+   * この要求へ当てた物（crafting.heldPerRemainingRequirement）。入っている物の縁の色と数を
+   * どの要求の枠に出すかは、**型ではなくこれで引く**——タグの要求は当てはまる型が複数あるので、型から
+   * 引くと、当てる先が振り替えられた物を実際とは別の要求の枠に出してしまう（slotCells.materialCells）。
+   */
+  readonly allocated: ReadonlySet<WorldObject>;
   /** 今の工程が要求しているか（後の工程のぶんならfalse）。 */
   readonly inCurrentStep: boolean;
 }
@@ -127,7 +133,8 @@ export function craftingMaterials(container: WorldObject): readonly CraftingMate
   return remainingRequirementsOf(container).map((requirement) => ({
     objectGlobalIds: requirement.match.matchingDefs(codex.objects).map((def) => def.globalId),
     needed: requirement.count,
-    held: held.get(requirement.match.key) ?? 0,
+    held: held.get(requirement.match.key)?.held ?? 0,
+    allocated: held.get(requirement.match.key)?.allocated ?? new Set(),
     inCurrentStep: inStep.has(requirement.match.key),
   }));
 }

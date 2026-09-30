@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { craftingActions, craftingMaterials } from '../../src/game/view/craftingView';
+import type { ObjectCardStack, SlotView } from '../../src/game/view/PlayScreenView';
+import { slotCells } from '../../src/game/view/slotCells';
 import { parseLocale } from '../../src/locale/Localization';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import type { MiniGame } from '../support/miniGame';
@@ -68,6 +70,17 @@ ui_texts:
 `,
   );
   const actionsOn = (mini: MiniGame, target: WorldObject) => craftingActions(target, mini.game, locale);
+
+  /** 材料の枠の並びに効かない宣言だけを埋めたスロット（materialsは試験の側で渡す）。 */
+  const EMPTY_SLOT_VIEW: SlotView = {
+    key: 'materials',
+    label: '材料',
+    cells: 'grows',
+    acceptsCards: true,
+    background: undefined,
+    materials: undefined,
+    typesShownInEmptyCells: [],
+  };
 
   it('製作中でない物は、操作も材料の枠も持たない', () => {
     const mini = miniGame(WORLD);
@@ -269,5 +282,52 @@ object_defs:
       '並びは要求の順',
     ).toEqual([true, false]);
     expect(materials?.map((material) => material.needed)).toEqual([2, 3]);
+  });
+
+  it('要求が重なっても、縁の色と数は実際に当てられた要求の枠に出る', () => {
+    // 尖った石は刃物にも当てはまるが、石斧が刃物を受け持つので、石は2つとも`sharp_stone`へ当たる。
+    // 型から要求を引くと石は先に書いた刃物の枠へ行き、`sharp_stone`の枠は空のまま「2/2」が出ない。
+    const mini = miniGame(`
+in_progress_tags: [item]
+object_defs:
+  sharp_stone: {tags: [item, cutting_tool]}
+  stone_axe: {tags: [item, cutting_tool]}
+  cord:
+    tags: [item]
+    recipes:
+      basic:
+        steps:
+          - requires:
+              - {tag: cutting_tool, count: 1, consume: false}
+              - {object: sharp_stone, count: 2, consume: true}
+            duration: 30
+`);
+    const wip = mini.createObject(inProgressObjectName('cord', 'basic'), mini.slot('items', mini.land));
+    const slot = wip.getSlot(mini.codex.vocabulary.engine.materialsSlotId);
+    mini.createObject('stone_axe', slot);
+    for (let i = 0; i < 2; i += 1) mini.createObject('sharp_stone', slot);
+
+    const stacks = slot.stacks.map(
+      (objects) =>
+        ({ objects, objectGlobalId: objects[0].def.globalId, name: objects[0].def.name }) as ObjectCardStack,
+    );
+    const cells = slotCells(
+      { ...EMPTY_SLOT_VIEW, materials: craftingMaterials(wip) },
+      stacks,
+      stacks,
+      0,
+      (objectGlobalId) => ({ icon: '📦', name: String(objectGlobalId) }),
+    );
+
+    expect(
+      cells.map((cell) => [cell.card?.name, cell.overlay]),
+      'どちらの要求も入っているので、空き枠は足されない',
+    ).toEqual(
+      expect.arrayContaining([
+        ['sharp_stone', '2/2'],
+        ['stone_axe', undefined],
+      ]),
+    );
+    expect(cells).toHaveLength(2);
   });
 });

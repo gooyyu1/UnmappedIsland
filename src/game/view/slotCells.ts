@@ -78,20 +78,19 @@ function materialCells(
   cycle: number,
   cardOfType: (objectGlobalId: ObjectGlobalId) => CardContent,
 ): readonly LaneCell[] {
-  // 枠に入っている物から、それがどの要求のものかを引く。**タグの要求は当てはまる型が複数ある**ので、
-  // 型からの逆引きは1対1にならず、ここでは先に書いた要求を採る。
+  // 枠に入っている物が、どの要求へ当てられたか（CraftingMaterial.allocated）。**型からは引かない**
+  // ——タグの要求は当てはまる型が複数あり、当てる先は成立する組み合わせを探して振り替えられるので、
+  // 型から引くと実際に消える物と縁の色・数の出る枠がずれる。
   //
-  // **これは近似で、割り当ての答え（crafting.allocateContentsToRequirements）とは食い違いうる。**
-  // 当てる先は成立する組み合わせを探して振り替えられるので、要求が重なる工程では、実際に消える物と
-  // 縁の色・数の出る枠がずれる。ここへ本当の割り当てを渡すには、個体ごとの割り当て先を映しの側まで
-  // 運ぶ必要がある（今は型しか届かない）。
-  const materialOf = (objectGlobalId: ObjectGlobalId | undefined): CraftingMaterial | undefined =>
-    objectGlobalId === undefined
+  // 前の工程の道具を後の工程が素材として消費するときだけ1つの物が2つの要求に当たるので、要求の順
+  // （今の工程が先）で先に当たったほうを採る。どれにも当たっていない物は印を持たない。
+  const materialOf = (stack: ObjectCardStack | undefined): CraftingMaterial | undefined =>
+    stack === undefined
       ? undefined
-      : materials.find((material) => material.objectGlobalIds.includes(objectGlobalId));
+      : materials.find((material) => stack.objects.some((object) => material.allocated.has(object)));
 
   const marksFor = (material: CraftingMaterial | undefined): LaneCell => {
-    // もう要求されない型は、取り出すための枠が残るだけで印は持たない。
+    // どの要求にも当たっていない物は、取り出すための枠が残るだけで印は持たない。
     if (material === undefined) return {};
     return {
       // 空き枠のうちに何を入れる枠なのかを見せる（EmptyCard）。
@@ -102,11 +101,11 @@ function materialCells(
     };
   };
 
-  const shown = new Set(stacks.map((stack) => materialOf(stack?.objectGlobalId)));
+  const shown = new Set(stacks.map(materialOf));
   const cells: LaneCell[] = [];
   cards.forEach((card, index) => {
     if (card === undefined) return;
-    cells.push({ card, ...marksFor(materialOf(stacks[index]?.objectGlobalId)) });
+    cells.push({ card, ...marksFor(materialOf(stacks[index])) });
   });
 
   // まだ1つも入っていない要求の空き枠を、要求の順に足す。

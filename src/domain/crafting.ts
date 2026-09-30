@@ -93,8 +93,20 @@ export function remainingRequirementsOf(inProgress: WorldObject): readonly Recip
   );
 }
 
+/** 残りの工程の要求1件（`match.key`）を、材料スロットの中身がどれだけ満たしているか。 */
+export interface HeldForRequirement {
+  /** 満たせている数。要求そのものの数（remainingRequirementsOf）と同じまとめ方で数える。 */
+  readonly held: number;
+
+  /**
+   * その要求へ当てた物（どの工程で当てたかは問わない）。**1つの物が2つの要求に入りうる**のは、
+   * 前の工程の道具を後の工程が素材として消費するときだけ（heldPerRemainingRequirement）。
+   */
+  readonly allocated: ReadonlySet<WorldObject>;
+}
+
 /**
- * 残りの工程の要求（`match.key`）ごとに、材料スロットの中身で**満たせている数**
+ * 残りの工程の要求（`match.key`）ごとに、材料スロットの中身で**満たせている数と当てた物**
  * （製作中オブジェクトでなければ空）。要求そのものの数はremainingRequirementsOfが答える。
  *
  * **まとめ方は要求の数え方と同じ**（mergeRequirement）——素材は工程ごとに無くなるので足し合わせ、
@@ -104,10 +116,13 @@ export function remainingRequirementsOf(inProgress: WorldObject): readonly Recip
  * 道具として使った物を後の工程が素材として消費するのは成り立つ。残りの要求へ一度に当てると、
  * その物を数え落として「持っているのに足りない」と出る。消費した物は次の工程へ持ち越さない。
  */
-export function heldPerRemainingRequirement(inProgress: WorldObject): ReadonlyMap<string, number> {
+export function heldPerRemainingRequirement(
+  inProgress: WorldObject,
+): ReadonlyMap<string, HeldForRequirement> {
   const contents = materialsSlotOf(inProgress)?.contents ?? [];
   const consumed = new Set<WorldObject>();
   const held = new Map<string, MergedRequirement>();
+  const allocatedTo = new Map<string, Set<WorldObject>>();
 
   for (const step of remainingStepsOf(inProgress)) {
     const allocated = allocateContentsToRequirements(
@@ -116,15 +131,19 @@ export function heldPerRemainingRequirement(inProgress: WorldObject): ReadonlyMa
     );
     for (const requirement of step.requirements) {
       const taken = allocated.get(requirement) ?? [];
-      held.set(
-        requirement.match.key,
-        mergeRequirement(mergedFor(held, requirement), taken.length, requirement.consume),
-      );
+      const key = requirement.match.key;
+      held.set(key, mergeRequirement(mergedFor(held, requirement), taken.length, requirement.consume));
+      allocatedTo.set(key, new Set([...(allocatedTo.get(key) ?? []), ...taken]));
       if (requirement.consume) for (const object of taken) consumed.add(object);
     }
   }
 
-  return new Map([...held].map(([key, merged]) => [key, merged.consumed + merged.held]));
+  return new Map(
+    [...held].map(([key, merged]) => [
+      key,
+      { held: merged.consumed + merged.held, allocated: allocatedTo.get(key) ?? new Set() },
+    ]),
+  );
 }
 
 /** 同じ指定への要求を、消費されるぶんと手元に居続けるぶんに分けて数えた途中経過。 */

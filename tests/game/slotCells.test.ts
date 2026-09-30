@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ObjectGlobalId } from '../../src/domain/GlobalId';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { COLOR } from '../../src/game/looks/theme';
 import type { CardContent } from '../../src/game/ui/Card';
 import type { CraftingMaterial } from '../../src/game/view/craftingView';
@@ -34,17 +35,40 @@ const typeId = (id: number): ObjectGlobalId => id as ObjectGlobalId;
 const cardOfType = (objectGlobalId: ObjectGlobalId): CardContent =>
   ({ icon: '📦', name: `type#${objectGlobalId}` }) as CardContent;
 
-const material = (options: Partial<CraftingMaterial> = {}): CraftingMaterial => ({
-  objectGlobalIds: [typeId(1)],
-  needed: 1,
-  held: 0,
-  inCurrentStep: true,
-  ...options,
-});
+/**
+ * 型ごとの個体1つ。**枠の並びは個体の中身を見ない**——どの要求へ当たったかを引く鍵として、同じ型なら
+ * 同じ1つを返せば足りる。
+ */
+const objectsOfType = new Map<ObjectGlobalId, WorldObject>();
+const objectOf = (objectGlobalId: ObjectGlobalId): WorldObject => {
+  const object = objectsOfType.get(objectGlobalId) ?? ({ objectGlobalId } as unknown as WorldObject);
+  objectsOfType.set(objectGlobalId, object);
+  return object;
+};
+
+/**
+ * 要求1件。**当てた物は、要求している型の個体すべて**を既定にする——型から要求を引いていたときと
+ * 同じ見え方になるので、割り当てが振り替わる場面だけを試験の側で書けばよい。
+ */
+const material = (options: Partial<CraftingMaterial> = {}): CraftingMaterial => {
+  const objectGlobalIds = options.objectGlobalIds ?? [typeId(1)];
+  return {
+    objectGlobalIds,
+    needed: 1,
+    held: 0,
+    allocated: new Set(objectGlobalIds.map(objectOf)),
+    inCurrentStep: true,
+    ...options,
+  };
+};
 
 /** その型を1つ入れた枠。 */
 const stack = (objectGlobalId: ObjectGlobalId): ObjectCardStack =>
-  ({ objectGlobalId, name: `held#${objectGlobalId}` }) as ObjectCardStack;
+  ({
+    objectGlobalId,
+    objects: [objectOf(objectGlobalId)],
+    name: `held#${objectGlobalId}`,
+  }) as unknown as ObjectCardStack;
 
 /**
  * 材料の要求を持たないスロットの枠。**枠を並べる入口はslotCellsだけ**なので、材料の枠しか使わない
@@ -222,7 +246,38 @@ describe('材料の枠', () => {
     expect(cells[1].accepts?.name, 'まだ入っていない要求の空き枠').toBe('type#2');
   });
 
-  it('もう要求されない型は、取り出すための枠として残るが印は持たない', () => {
+  it('入っている物の印は、型ではなく当てられた要求から引く', () => {
+    // 型2はタグの要求（型1・2）にも型2の要求にも当てはまるが、当てられたのは後者。型から引くと、
+    // 先に書いたタグの要求の枠に数が出て、型2の要求は空き枠として重ねて出る。
+    const materials = [
+      material({ objectGlobalIds: [typeId(1), typeId(2)], allocated: new Set() }),
+      material({ objectGlobalIds: [typeId(2)], needed: 2, held: 1 }),
+    ];
+
+    const cells = cellsOf({ materials, stacks: [stack(typeId(2))] });
+
+    expect(cells.map((cell) => [cell.card?.name, cell.overlay])).toEqual([
+      ['held#2', '1/2'],
+      [undefined, undefined],
+    ]);
+    expect(cells[1].accepts?.name, 'まだ何も当たっていないタグの要求の空き枠').toBe('type#1');
+  });
+
+  it('2つの要求に当たっている物は、今の工程の要求の枠に出る', () => {
+    // 前の工程の道具を後の工程が素材として消費する物（crafting.heldPerRemainingRequirement）。
+    // 並びは要求の順で、今の工程の要求が先に来る（craftingMaterials）。
+    const materials = [
+      material({ objectGlobalIds: [typeId(1), typeId(2)], needed: 2, held: 1, inCurrentStep: true }),
+      material({ objectGlobalIds: [typeId(2)], needed: 3, held: 1, inCurrentStep: false }),
+    ];
+
+    const [cell] = cellsOf({ materials, stacks: [stack(typeId(2))] });
+
+    expect(cell.overlay).toBe('1/2');
+    expect(cell.borderColor).toBe(COLOR.cellCurrentStep);
+  });
+
+  it('どの要求にも当たっていない物は、取り出すための枠として残るが印は持たない', () => {
     // 工程を終えて出番が済んだ型。こぼす前に取り出せるよう枠は残る。
     const cells = cellsOf({
       materials: [material({ objectGlobalIds: [typeId(1)] })],
