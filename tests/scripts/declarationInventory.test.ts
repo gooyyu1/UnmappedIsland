@@ -69,8 +69,8 @@ describe('srcの宣言の一覧', () => {
     // `PropertyRange.endOf` が返すリテラルの `inward` を読むのは、同じクラスの `inwardFrom` だけ。
     const [inward] = reported('src/domain/PropertyDef.ts', 'inward');
 
-    expect(inward?.owner).toBe('PropertyRange.endOf');
-    expect(inward?.container).toBe('PropertyRange');
-    expect(inward?.referencedInOwnFileOutsideOwner, '所属の名前（入れ子）と索引の粒を比べている').toBe(false);
+    expect(inward.owner).toBe('PropertyRange.endOf');
+    expect(inward.container).toBe('PropertyRange');
+    expect(inward.referencedInOwnFileOutsideOwner, '所属の名前（入れ子）と索引の粒を比べている').toBe(false);
   });
 });
