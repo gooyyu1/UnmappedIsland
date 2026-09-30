@@ -36,7 +36,7 @@ describe('core.yamlのworld定義', () => {
   it('property_tagsは宣言順にIDが振られる（UIのタブの並び順になる）', () => {
     const declared = codex.propertyTagNames.ids.map((id) => codex.propertyTagNames.getName(id));
 
-    expect(declared).toEqual(['status', 'health', 'nutrition', 'skill']);
+    expect(declared).toEqual(['status', 'health', 'nutrition', 'skill', 'action_brightness']);
   });
 
   it('worldはシングルトンで、期待されるデフォルトプロパティ値を持つ', () => {

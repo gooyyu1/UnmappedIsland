@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { activityHoursOf, type SeasonWeatherHours } from '../../src/analysis/activityHours';
 import { carriedLightEvOf } from '../../src/analysis/carriedLight';
+import { actionBrightnessPropertiesOf } from '../../src/analysis/actionBrightness';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { HOURS_PER_DAY, MINUTES_PER_DAY, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 import { bundledCodex } from '../support/worldCodexFiles';
@@ -160,7 +161,7 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
   it('キャラクタ側の明るさはrangeを持たない——持つと、足した光源が頭打ちになる', () => {
     for (const def of codex.objects) {
       if (!def.hasTag(codex.vocabulary.world.characterTagId)) continue;
-      for (const propertyName of ['hand_brightness', 'looking_brightness']) {
+      for (const propertyName of actionBrightnessPropertiesOf(codex)) {
         const propertyDef = def.tryGetPropertyDef(codex.propertyNames.getId(propertyName));
         expect(propertyDef?.range, `${def.name} の ${propertyName} がrangeを持っている`).toBeUndefined();
       }

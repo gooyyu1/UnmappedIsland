@@ -364,7 +364,7 @@ export class ObjectWindow {
               key: PROPERTIES_TAB,
               title: uiText('properties'),
               width: 0,
-              height: () => PropertiesPane.height(metrics),
+              height: () => PropertiesPane.height(metrics, this.properties.length),
               create: (area: Rect) => new PropertiesPane(scene, metrics, area, () => this.properties),
             },
           ]),

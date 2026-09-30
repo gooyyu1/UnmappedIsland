@@ -141,9 +141,11 @@ traits:
             alert: danger
             passives:
               - add: {self: {happiness: -0.5}}
-      # 行動の可否を決める2つの明るさ（docs/engine/IlluminationSystem.md 2節）。身体の仕組みでは
+      # 行動の可否を決める明るさ（docs/engine/IlluminationSystem.md 2節）。身体の仕組みでは
       # ないが、どのキャラクタでも同じなので、痛み・血と同じくこの trait が配る。
       #
+      # **どれがそれに当たるかは action_brightness のタグが名乗る**——解析と検査はこのタグから数える
+      # ので、明るさを足すならタグも付ける（同2節）。
       # **手元は場所の手元を継ぐ**ので、地面や炉に据えた光源も入る。**視界は場所の環境光を継ぐ**
       # ので、据えた光源は入らない——持ち歩ける明かりだけが道に付いてくる（同3節）。
       # どちらへも、持っている光源が自分の子として届く。
@@ -159,6 +161,7 @@ traits:
       # ——手元の作業に要るのは bright だけで、その下は「作れない」の一言に尽きる。視界は線が2本
       # （dim で採れなくなり、pitch_dark で歩けなくなる）なので、そちらだけ絵が分かれる。
       hand_brightness:
+        tags: [action_brightness]
         value: 0
         base: {subject: ancestor, prop: hand_brightness}
         stages:
@@ -166,6 +169,7 @@ traits:
           - {name: dim, min: -5, situation: too_dark_for_handwork}
           - {name: bright, min: 5}
       looking_brightness:
+        tags: [action_brightness]
         value: 0
         base: {subject: ancestor, prop: ambient_brightness}
         stages:

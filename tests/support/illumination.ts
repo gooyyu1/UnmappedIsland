@@ -1,3 +1,4 @@
+import { actionBrightnessPropertiesOf } from '../../src/analysis/actionBrightness';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import type { WorldSession } from '../../src/domain/WorldSession';
@@ -15,13 +16,13 @@ const BRIGHT_ENOUGH = 100;
 
 /** そのキャラクタを、明るさの条件に一切引っかからない状態にする。 */
 export function makeBrightEnoughForAnyAction(character: WorldObject, codex: WorldCodex): void {
-  for (const name of ['hand_brightness', 'looking_brightness'])
+  for (const name of actionBrightnessPropertiesOf(codex))
     character.getProperty(codex.propertyNames.getId(name)).setNumberWithoutEvents(BRIGHT_ENOUGH);
 }
 
 /** そのキャラクタを、明るさを要求する操作がどれも成立しない暗さにする（上の裏返し）。 */
 export function makeTooDarkToWork(character: WorldObject, codex: WorldCodex): void {
-  for (const name of ['hand_brightness', 'looking_brightness'])
+  for (const name of actionBrightnessPropertiesOf(codex))
     character.getProperty(codex.propertyNames.getId(name)).setNumberWithoutEvents(-BRIGHT_ENOUGH);
 }
 

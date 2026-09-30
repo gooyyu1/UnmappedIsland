@@ -57,6 +57,14 @@ EVは連続量なので小数を書けます（`GameElementDefinition.md` 6節�
 | 手元の明るさ | `hand_brightness` | 手元の細かい作業ができるか |
 | 視界の明るさ | `looking_brightness` | 屋外で採れるか・土地の間を移動できるか |
 
+**どれがこれに当たるかは、宣言の側がプロパティタグ `action_brightness` で名乗ります**
+（[`GameElementDefinition.md`](./GameElementDefinition.md) 6.7 節）。**タグが決めるのは、解析と検査が
+何を数えるかだけです**——光源がどの明るさを照らすかは、今までどおり各光源の `modify`（3節）が
+決めます。数えるのは、持ち歩ける明かりの量の突き合わせ（3節）・活動時間表の列（5節）・しきい値の
+見張り（8節）で、タグの付いた明るさを足したのに光源の `modify` や活動時間表の列が追いついて
+いなければ、そこで止まります。タグなので、
+プロパティのタブ（[`Windows.md`](../ui/Windows.md) 6節）にも「明るさ」のカテゴリとして並びます。
+
 **残る `ambient_brightness` は、これらを導くためだけに在ります**——その場を満たしている、**据え付けの光源が
 入っていない**明るさです。据え付けの光が視界を明るくしないこと（3節）と、暗さの底（4節）が、この値の
 存在理由です。
@@ -106,9 +114,11 @@ jungle:
 character:
   props:
     hand_brightness:
+      tags: [action_brightness]
       value: 0
       base: {subject: ancestor, prop: hand_brightness}      # 場所の手元（据え付けの光源を含む）
     looking_brightness:
+      tags: [action_brightness]
       value: 0
       base: {subject: ancestor, prop: ambient_brightness}   # 場所の環境光だけ
 ```
@@ -345,6 +355,7 @@ deep_cave:
 character:
   props:
     hand_brightness:
+      tags: [action_brightness]
       value: 0
       base: {subject: ancestor, prop: hand_brightness}
       stages:

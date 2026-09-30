@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { actionBrightnessPropertiesOf } from '../../src/analysis/actionBrightness';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { startNewGame } from '../../src/domain/generation/NewGame';
 import type { StartedGame } from '../../src/domain/generation/NewGame';
@@ -1209,7 +1210,7 @@ describe('筏と航海', () => {
       target.tryGetAction(action, player)?.unmetRequirement()?.reasonName;
 
     // ready() が積んだ上積みを戻し、海そのものの明るさで見る。
-    for (const name of ['hand_brightness', 'looking_brightness'])
+    for (const name of actionBrightnessPropertiesOf(codex))
       player.getProperty(codex.propertyNames.getId(name)).setNumberWithoutEvents(0);
 
     setHour(game, MIDNIGHT);

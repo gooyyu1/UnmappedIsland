@@ -347,7 +347,7 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(tagged.sort()).toEqual(PROPERTY_TAGS.map(([propertyName]) => propertyName).sort());
     });
 
-    it('キャラクタが名乗るプロパティタグは、体の値のタグと腕前のタグで全部', () => {
+    it('キャラクタが名乗るプロパティタグは、体の値のタグと腕前・明るさのタグで全部', () => {
       // **上の絞り（VITAL_TAGS）そのものの見張り。** 4つ目の体の値のタグを宣言すると、そのタグを
       // 名乗るプロパティは丸ごと上の全数検査の外へ出て、表が縮んだことも分からなくなる。
       const declared = new Set(
@@ -356,8 +356,9 @@ describe('プレイヤーキャラクタの定義', () => {
           .flatMap((propertyDef) => propertyDef.tags.map((id) => codex.propertyTagNames.getName(id))),
       );
 
-      // 腕前（`skill`）は体の値ではないので表に載らない。見張りは skillsYaml.test.ts が持つ。
-      expect([...declared].sort()).toEqual([...VITAL_TAGS, 'skill'].sort());
+      // 腕前（`skill`）と行動を止める明るさ（`action_brightness`）は体の値ではないので表に載らない。
+      // 見張りは skillsYaml.test.ts と、明るさを数える側（analysis/actionBrightness）が持つ。
+      expect([...declared].sort()).toEqual([...VITAL_TAGS, 'skill', 'action_brightness'].sort());
     });
 
     it.each(PROPERTY_TAGS)('%sを持ち、期待されるプロパティタグが付いている', (propertyName, expectedTags) => {

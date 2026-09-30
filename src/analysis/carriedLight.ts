@@ -2,6 +2,7 @@ import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveRea
 import type { TransferReading } from '../domain/EffectReader';
 import type { PropertyGlobalId } from '../domain/GlobalId';
 import type { WorldCodex } from '../domain/WorldCodex';
+import { actionBrightnessPropertiesOf } from './actionBrightness';
 
 /**
  * 持ち歩ける明かりが、持っている人の明るさへ足す段数（EV）を宣言から読む手立て。
@@ -11,17 +12,15 @@ import type { WorldCodex } from '../domain/WorldCodex';
  * 測り直した数も一緒に動く。
  */
 
-/** 手に持つ光源が届く先（IlluminationSystem.md 2節・3節）。手元と視界の両方へ、同じ量が届く。 */
-const CARRIED_BRIGHTNESS_PROPERTIES = ['hand_brightness', 'looking_brightness'] as const;
-
 /**
- * その型を手に持っているときに足される段数。**手元と視界が違う量なら例外にする**——1つの数として
- * 扱えるのは両方へ同じだけ届くからで（同 3節）、食い違えば「松明1本で何が開くか」を1つの数では
+ * その型を手に持っているときに足される段数。手に持つ光源は、行動の可否を決める明るさ
+ * （IlluminationSystem.md 2節・3節）のすべてへ届く。**明るさごとに違う量なら例外にする**——1つの数として
+ * 扱えるのはどれへも同じだけ届くからで（同 3節）、食い違えば「松明1本で何が開くか」を1つの数では
  * 答えられない。
  */
 export function carriedLightEvOf(codex: WorldCodex, objectName: string): number {
   const def = codex.objects.get(codex.objectNames.getId(objectName));
-  const amounts = CARRIED_BRIGHTNESS_PROPERTIES.map((propertyName) => {
+  const amounts = actionBrightnessPropertiesOf(codex).map((propertyName) => {
     const collector = new ParentModifyCollector(codex.propertyNames.getId(propertyName));
     def.passives.readBy(collector);
     return { propertyName, amount: collector.amount };
@@ -30,7 +29,7 @@ export function carriedLightEvOf(codex: WorldCodex, objectName: string): number 
   const distinct = new Set(amounts.map(({ amount }) => amount));
   if (distinct.size !== 1)
     throw new Error(
-      `${objectName} が持ち主へ届ける明るさが、手元と視界で食い違っています` +
+      `${objectName} が持ち主へ届ける明るさが、明るさごとに食い違っています` +
         `（${amounts.map(({ propertyName, amount }) => `${propertyName}: ${amount}`).join('、')}）。`,
     );
 

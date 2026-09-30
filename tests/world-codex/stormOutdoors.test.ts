@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { isMap, isScalar, isSeq, parseDocument } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { actionBrightnessPropertiesOf } from '../../src/analysis/actionBrightness';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -181,10 +182,10 @@ describe('明るさの条件と風雨の条件は、ちょうど同じ操作に�
   it('どちらか一方だけを持つ条件の並びが1つも無い', () => {
     const gated = brightnessOrWindGatedConditions();
 
-    // 何も拾えていない検査は、緑であることと見ていないことの区別が付かない。**両方の明るさと、
-    // 操作ではない`crafting_conditions`を1つずつ確かめる**——片方の綴りが変わって拾えなくなっても、
-    // もう片方が在るだけで緑になってしまう。
-    for (const kind of ['looking_brightness', 'hand_brightness', 'crafting_conditions'])
+    // 何も拾えていない検査は、緑であることと見ていないことの区別が付かない。**どの明るさと、
+    // 操作ではない`crafting_conditions`も1つずつ確かめる**——1つの綴りが変わって拾えなくなっても、
+    // 他が在るだけで緑になってしまう。
+    for (const kind of [...BRIGHTNESS_PROPERTIES, 'crafting_conditions'])
       expect(
         gated.filter((one) => one.kinds.includes(kind)).length,
         `${kind}を見ている条件が1つも見つからない`,
@@ -209,8 +210,8 @@ interface GatedConditions {
   readonly requiresWind: boolean;
 }
 
-/** 明るさとして数えるプロパティ（docs/engine/IlluminationSystem.md 5節）。 */
-const BRIGHTNESS_PROPERTIES = ['looking_brightness', 'hand_brightness'];
+/** 明るさとして数えるプロパティ。宣言の `action_brightness` のタグから数える（docs/engine/IlluminationSystem.md 2節）。 */
+const BRIGHTNESS_PROPERTIES = actionBrightnessPropertiesOf(bundledCodex());
 
 /** 風雨として数えるプロパティ（docs/world/ContentSkeleton.md 8.1.5節）。 */
 const WIND_PROPERTY = 'wind_speed';
