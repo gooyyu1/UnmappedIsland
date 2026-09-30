@@ -163,7 +163,8 @@ export interface ChainRoute {
 
   /**
    * その土地の探索・設置物から始まる経路か。偽なら、その土地の表の対象ではない（できないのではなく、
-   * 別の土地を起点にした話）。島全体の文脈では常に真。
+   * 別の土地を起点にした話）。島全体の文脈では常に真。**持ち運べる道具の持ち込みでは偽にならない**
+   * ——道具は1度作れば持ち歩けるので、偽にするのは他の土地にしか無い採取ポイント（ヤシの木・泉）だけ。
    */
   readonly rootedHere: boolean;
 
@@ -191,7 +192,8 @@ export interface RoutePrerequisite {
   readonly minutes: number | undefined;
 
   /**
-   * この土地では作れず、他の土地から持ち込むことになる道具か。**そう言えるのは値段の付く道具に
+   * この土地だけでは用意できず、他の土地の産物が要る道具か。**入手連鎖を伝う**——持ち込んだ石を
+   * 打って作った刃物も真（`Acquisition.obtainableSource`）。**そう言えるのは値段の付く道具に
    * ついてだけで、値段の付かない道具（minutesがundefined）では常に偽になる。** 値段の付く型には
    * 「その土地の値段表」と「島全体の値段表」の2つが在るので分けられるが、**値段の付かない型の集合は
    * 島全体に1つしかなく**（入手の可否を島全体でだけ判定することの帰結。BalanceStats.md
@@ -759,7 +761,10 @@ function objectCosts(
 
     const cost = islandWide.costByObject.get(def.globalId);
     const route = islandWide.routeOf(def.globalId);
-    const prerequisites = route.length === 0 ? [] : [...prerequisitesOf(codex, islandWide, route).values()];
+    const prerequisites =
+      route.length === 0
+        ? []
+        : prerequisitesOf(islandWide, route).map((prerequisite) => routePrerequisiteOf(codex, prerequisite));
 
     rows.push({
       objectName: def.name,
@@ -935,28 +940,28 @@ function propertyRoute(route: ChainRoute, dailyNeed: DailyNeed): PropertyRoute {
  * 経路を通して要る道具（消費されない入力）。**経路の中で作る物は数えない**——自分で用意する手順が
  * 既に経路として出ているため。同じ物が複数の工程で要っても1件にまとめる。
  */
-function prerequisitesOf(
-  codex: WorldCodex,
-  acquisition: Acquisition,
-  route: readonly StepRef[],
-): ReadonlyMap<string, RoutePrerequisite> {
+function prerequisitesOf(acquisition: Acquisition, route: readonly StepRef[]): readonly Prerequisite[] {
   const madeInRoute = new Set(route.flatMap((ref) => acquisition.netOutputsOf(ref)));
 
-  const prerequisites = new Map<string, RoutePrerequisite>();
+  const prerequisites = new Map<string, Prerequisite>();
   for (const ref of route)
     for (const prerequisite of acquisition.prerequisites(ref)) {
       if (prerequisite.objectGlobalId !== undefined && madeInRoute.has(prerequisite.objectGlobalId)) continue;
-      prerequisites.set(prerequisite.label, {
-        label: prerequisite.label,
-        objectName:
-          prerequisite.objectGlobalId === undefined
-            ? undefined
-            : codex.objectNames.getName(prerequisite.objectGlobalId),
-        minutes: prerequisite.cost === undefined ? undefined : totalOf(prerequisite.cost),
-        imported: prerequisite.imported,
-      });
+      prerequisites.set(prerequisite.label, prerequisite);
     }
-  return prerequisites;
+  return [...prerequisites.values()];
+}
+
+function routePrerequisiteOf(codex: WorldCodex, prerequisite: Prerequisite): RoutePrerequisite {
+  return {
+    label: prerequisite.label,
+    objectName:
+      prerequisite.objectGlobalId === undefined
+        ? undefined
+        : codex.objectNames.getName(prerequisite.objectGlobalId),
+    minutes: prerequisite.cost === undefined ? undefined : totalOf(prerequisite.cost),
+    imported: prerequisite.imported,
+  };
 }
 
 function buildRoute(
@@ -969,7 +974,8 @@ function buildRoute(
   place: ObjectDef | undefined,
 ): ChainRoute {
   const cost = resolved.cost;
-  const prerequisites = prerequisitesOf(codex, acquisition, route);
+  const required = prerequisitesOf(acquisition, route);
+  const prerequisites = required.map((prerequisite) => routePrerequisiteOf(codex, prerequisite));
 
   return {
     steps: [...route].reverse().map((ref) => ({ objectName: ref.def.name, stepName: ref.step.name })),
@@ -982,16 +988,17 @@ function buildRoute(
       amount,
     })),
     devices: routeDevices(codex, route),
-    prerequisites: [...prerequisites.values()],
-    blocked: [...prerequisites.values()].some(isGap),
-    needsImport: resolved.imported || [...prerequisites.values()].some(({ imported }) => imported),
-    // その土地を起点にする経路か。**持ち込みが1つも要らないなら起点はここ**——他の土地の産物は
-    // 必ず持ち込みとして解かれ（`allSteps`が他の土地の探索を外している）、その土地で揃う産物は
-    // 決して持ち込みとして解かれない（`Acquisition.improvesOn`）ため。休息もここに入る。
+    prerequisites,
+    blocked: prerequisites.some(isGap),
+    needsImport: resolved.imported || prerequisites.some(({ imported }) => imported),
+    // その土地を起点にする経路か。**消費する材料に持ち込みが要らず、この土地に置けない前提も無い
+    // なら起点はここ**——他の土地の産物は必ず持ち込みとして解かれ（`allSteps`が他の土地の探索を
+    // 外している）、その土地で揃う産物は決して持ち込みとして解かれない（`Acquisition.improvesOn`）
+    // ため。休息もここに入る。
     rootedHere:
       place === undefined ||
       route.some((ref) => ref.def.globalId === place.globalId) ||
-      !(resolved.imported || [...prerequisites.values()].some(({ imported }) => imported)),
+      !(resolved.imported || required.some(({ absentHere }) => absentHere)),
     // 労働0で値が返るなら、時間を数えられていない（雨で溜まる水など）。摂取そのものが0分なのは仕様
     // なので、素材を0分で得ている場合と、経路まるごとが0分の場合だけを印にする。時間で回る工程
     // （罠・焼き上がり）は労働0でよい——待つ間に他のことができるだけで、数え落としではない。
@@ -1299,10 +1306,16 @@ interface ObtainableSource {
   readonly cost: Cost | undefined;
 
   /**
-   * この土地では用意できず、他の土地から持ち込むことになるか。**costがundefinedの側では常に偽**
+   * この土地だけでは用意できず、他の土地の産物が要るか。**costがundefinedの側では常に偽**
    * （RoutePrerequisite.imported）。
    */
   readonly imported: boolean;
+
+  /**
+   * この土地に置けないか——この土地の値段表に無く、**持ち運べもしない**（`item`でない）。偽なら、
+   * 他の土地の産物が要っても（`imported`）その土地で作るか持ってくれば済む。
+   */
+  readonly absentHere: boolean;
 }
 
 /**
@@ -1314,10 +1327,20 @@ interface Prerequisite {
   readonly objectGlobalId: ObjectGlobalId | undefined;
   readonly cost: Cost | undefined;
   readonly imported: boolean;
+  readonly absentHere: boolean;
 }
 
 function totalOf(cost: Cost): number {
   return cost.exploreMinutes + cost.craftMinutes;
+}
+
+/**
+ * 同じものを満たす2つの道筋で、`a`を`b`より採るか。**持ち込みの要らない側が、安さより先に勝つ**
+ * （`Acquisition.improvesOn`）。
+ */
+function prefers(a: StepCost, b: StepCost): boolean {
+  if (a.imported !== b.imported) return b.imported;
+  return totalOf(a.cost) < totalOf(b.cost) - EPSILON;
 }
 
 function addCost(a: Cost, b: Cost): Cost {
@@ -1601,7 +1624,13 @@ class Acquisition {
 
       const source = this.obtainableSource(input);
       if (source === undefined) {
-        found.push({ label: declared, objectGlobalId: undefined, cost: undefined, imported: false });
+        found.push({
+          label: declared,
+          objectGlobalId: undefined,
+          cost: undefined,
+          imported: false,
+          absentHere: false,
+        });
         continue;
       }
 
@@ -1611,6 +1640,7 @@ class Acquisition {
         objectGlobalId: source.objectGlobalId,
         cost: source.cost,
         imported: source.imported,
+        absentHere: source.absentHere,
       });
     }
     return found;
@@ -1705,6 +1735,11 @@ class Acquisition {
     return best;
   }
 
+  /** 手に持って運べる型か（`item`）。他の土地で用意しても、この土地へ持ってくれば使える。 */
+  private isPortable(objectGlobalId: ObjectGlobalId): boolean {
+    return this.codex.objects.get(objectGlobalId).hasTag(this.codex.vocabulary.world.itemTagId);
+  }
+
   /** 用意する必要が無い入力か（立っている土地と、自分自身）。 */
   private isAlwaysAtHand(objectGlobalId: ObjectGlobalId): boolean {
     const def = this.codex.objects.get(objectGlobalId);
@@ -1715,6 +1750,9 @@ class Acquisition {
    * 入力1件を、どの型で・いくらで満たすか。**値段の付く型を先に探し、どこにも無ければ値段の
    * 付かない型を探す**——時間の出る候補を、時間の出ない候補で押しのけない。どちらも「この土地 →
    * 持ち込み」の順で見る。島のどこにも手に入る型が無ければundefined。
+   *
+   * **`imported`は、消費される入力（`inputSource`）と同じく入手連鎖を伝う**——持ち込んだ石を打って
+   * 作った刃物は、この土地の値段表に載っていても持ち込みが要る。
    *
    * **値段の付かない側では`imported`をここで決められない**——`unpricedCandidate`が当てる集合
    * （obtainableWithoutCost）は島全体に1つしか無く、土地の文脈も同じ集合を見るので、必ず
@@ -1727,10 +1765,12 @@ class Acquisition {
       for (const context of contexts) {
         const objectGlobalId = priced ? context.cheapestCandidate(input) : context.unpricedCandidate(input);
         if (objectGlobalId === undefined) continue;
+        const elsewhere = context !== this;
         return {
           objectGlobalId,
           cost: context.costByObject.get(objectGlobalId),
-          imported: context !== this,
+          imported: elsewhere || this.importedByObject.get(objectGlobalId) === true,
+          absentHere: elsewhere && !this.isPortable(objectGlobalId),
         };
       }
     return undefined;
@@ -1741,16 +1781,20 @@ class Acquisition {
     return this.candidatesOf(input).find((objectGlobalId) => this.obtainableWithoutCost.has(objectGlobalId));
   }
 
-  /** 入力1件を満たすのに最も安い型。この文脈で値段の付く型がどれも無ければundefined。 */
+  /**
+   * 入力1件を満たすのに最も安い型。この文脈で値段の付く型がどれも無ければundefined。
+   * **持ち込みの要らない型が、要る型に勝つ**（`prefers`）。
+   */
   private cheapestCandidate(input: CraftingStep['inputs'][number]): ObjectGlobalId | undefined {
     let best: ObjectGlobalId | undefined;
-    let bestCost: Cost | undefined;
+    let bestChoice: StepCost | undefined;
     for (const objectGlobalId of this.candidatesOf(input)) {
       const cost = this.costByObject.get(objectGlobalId);
       if (cost === undefined) continue;
-      if (bestCost === undefined || totalOf(cost) < totalOf(bestCost)) {
+      const choice = { cost, imported: this.importedByObject.get(objectGlobalId) === true };
+      if (bestChoice === undefined || prefers(choice, bestChoice)) {
         best = objectGlobalId;
-        bestCost = cost;
+        bestChoice = choice;
       }
     }
     return best;
@@ -1883,15 +1927,16 @@ class Acquisition {
    * 決まる前に持ち込みで埋まった型では出番が来ない）。土地の表が答えるのは「この土地を起点にすると
    * 何分か」なので、数えていない移動時間の向こうにある1分は、そもそも安さではない。
    *
-   * 持ち込みの要否が同じなら安いほうを採る。**持ち込みは要らない側へしか倒れない**ので、
+   * 持ち込みの要否が同じなら安いほうを採る（`prefers`）。**持ち込みは要らない側へしか倒れない**ので、
    * 繰り返しは必ず止まる——止まらなければ`lowerCostsUntilStable`が投げる。
    */
   private improvesOn(objectGlobalId: ObjectGlobalId, candidate: Cost, imported: boolean): boolean {
     const known = this.costByObject.get(objectGlobalId);
     if (known === undefined) return true;
 
-    const knownImported = this.importedByObject.get(objectGlobalId) === true;
-    if (knownImported !== imported) return knownImported;
-    return totalOf(candidate) < totalOf(known) - EPSILON;
+    return prefers(
+      { cost: candidate, imported },
+      { cost: known, imported: this.importedByObject.get(objectGlobalId) === true },
+    );
   }
 }

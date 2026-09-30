@@ -80,8 +80,40 @@ describe('土地で完結する経路は、土地の表に出る', () => {
       .flatMap((property) => property.routes)
       .filter(({ route }) => route.devices.some((device) => device.deviceName === 'snare'));
 
+    // 山腹の経路は山腹の探索を含まないので、載っていること自体が「材料（ネズミ）が持ち込みに
+    // 差し替わっていない」ことを示す（`rootedHere`）。**`needsImport`は真でよい**——くくり罠の
+    // 繊維は山腹で採れず、罠は持ち込みが要る（issue #2313）。
     expect(viaSnare.length).toBeGreaterThan(0);
-    expect(viaSnare.map(({ route }) => route.needsImport)).not.toContain(true);
+    expect(
+      viaSnare.map(
+        ({ route }) =>
+          route.prerequisites.find((prerequisite) => prerequisite.objectName === 'snare')?.imported,
+      ),
+    ).not.toContain(false);
+  });
+});
+
+/**
+ * 道具の `imported` が、**同じ出どころを持つ道具どうしで割れない**こと（issue #2313）。尖った石は
+ * 石を打って作るので、石が持ち込みの土地では、そこで打った尖った石も持ち込みが要る。
+ */
+describe('道具の持ち込みは、入手連鎖を伝う', () => {
+  const tables = bundledBalanceTables();
+  const sandyBeach = tables.places.find((place) => place.name === 'sandy_beach')!;
+
+  it('砂浜では、石も尖った石も持ち込み', () => {
+    const importedByObject = new Map<string, Set<boolean>>();
+    for (const property of sandyBeach.properties)
+      for (const { route } of property.routes)
+        for (const { objectName, imported } of route.prerequisites) {
+          if (objectName !== 'stone' && objectName !== 'sharp_stone') continue;
+          importedByObject.set(objectName, (importedByObject.get(objectName) ?? new Set()).add(imported));
+        }
+
+    expect(Object.fromEntries([...importedByObject].map(([name, values]) => [name, [...values]]))).toEqual({
+      stone: [true],
+      sharp_stone: [true],
+    });
   });
 });
 
