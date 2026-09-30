@@ -35,9 +35,17 @@ const DAEMON_SIDE = trackedUnder('scripts/daemon');
  * - `board.sh` … 盤面を端末へ1回出す入口。中身の `board.mjs` はデーモンも読むので向こうに在る
  * - `checked-items.sh` … `board.sh` の `## 確定待ち` だけが起こす。デーモンは通らない
  * - `daemon-wake-task.sh` … デーモンを起こす係を登録する1回。デーモンが回り始める前に在る
+ * - `patrol-record.mjs` … 盤面を見回る係のセッションが、その回の記録を書くときに打つ。中身の
+ *   `appendPatrol` は盤面も読む `board-state.mjs` に在る
  * - `push-screenshot.sh` … セッションがPR本文へ画像を貼るときに打つ
  */
-const AGENT_SIDE = ['board.sh', 'checked-items.sh', 'daemon-wake-task.sh', 'push-screenshot.sh'];
+const AGENT_SIDE = [
+  'board.sh',
+  'checked-items.sh',
+  'daemon-wake-task.sh',
+  'patrol-record.mjs',
+  'push-screenshot.sh',
+];
 
 /**
  * コメントを落とした中身。**起動の形だけを残す**——説明の中の名前まで数えると、互いを引き合う

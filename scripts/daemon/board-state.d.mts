@@ -23,8 +23,20 @@ export function readLedger(stateDir: string): Record<string, string>;
 
 export function writeLedger(stateDir: string, taken: Readonly<Record<string, string>>): void;
 
+/** デーモンのログの置き場（`daemon.sh` の `DAEMON_LOG` と同じ既定）。 */
+export function daemonLog(): string;
+
 /** 見回りの記録の在り処（`agent-ops/board-design.md` 2.21.4節）。書くのは係のセッション。 */
 export function patrolPath(stateDir: string): string;
+
+/** 見回りの `verdict` に書ける値。係の出口と1対1。 */
+export const PATROL_VERDICTS: readonly string[];
+
+/** 見回りの記録に残す長さ（日）。 */
+export const PATROL_KEEP_DAYS: number;
+
+/** 見回りの記録を1件足し、残す長さより古い行を落とす。読めない記録は投げる。 */
+export function appendPatrol(stateDir: string, record: Readonly<Record<string, unknown>>): void;
 
 /** 最後の見回り。走っていない周も、記録が読めない周も `undefined`。 */
 export function readLastPatrol(

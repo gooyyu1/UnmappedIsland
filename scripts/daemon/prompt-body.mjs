@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { linksRebasedToRepoRoot } from '../markdownLinks.mjs';
+import { boardState, daemonLog } from './board-state.mjs';
 
 /** このファイルから見たリポジトリ直下。渡す本体の起点を出すのに要る（{@link promptBodyForSession}）。 */
 const REPO_ROOT = resolve(fileURLToPath(import.meta.url), '../../..');
@@ -144,7 +145,28 @@ function dirFromRepoRoot(templatePath) {
  */
 export function promptBodyForSession(templatePath, markdown, section = null) {
   const body = promptBody(markdown, section);
-  return body === null ? null : linksRebasedToRepoRoot(body, dirFromRepoRoot(templatePath));
+  return body === null ? null : withPlaces(linksRebasedToRepoRoot(body, dirFromRepoRoot(templatePath)));
+}
+
+/**
+ * ひな形が `{{<名前>}}` と書いて指す、**デーモンの手元の置き場。** 投入するプロセスはデーモンの
+ * 環境変数を継いでいるので、ここで引いた値がデーモンの読み書きする先と一致する。
+ *
+ * **セッションの側で引かせない。** ブリッジのセッションはデーモンから環境変数を受け取らないので、
+ * デーモンが `BOARD_STATE` で置き場を移していると、セッションは既定の置き場を読み書きする
+ * （`agent-ops/board-design.md` 2.21.4節）。
+ */
+export const SESSION_PLACES = { BOARD_STATE: boardState, DAEMON_LOG: daemonLog };
+
+/**
+ * `{{<名前>}}` を {@link SESSION_PLACES} の値で埋める。**区切りは `/` へ揃える**——受け取った
+ * セッションは Windows でも bash で打つので、`\` はそのままでは通らない。知らない名前は残す
+ * （ひな形の側の綴りは `tests/scripts/promptTemplate.test.ts` が見ている）。
+ */
+function withPlaces(body) {
+  return body.replace(/\{\{(\w+)\}\}/g, (found, name) =>
+    Object.hasOwn(SESSION_PLACES, name) ? SESSION_PLACES[name]().replaceAll('\\', '/') : found,
+  );
 }
 
 /**
