@@ -1,7 +1,9 @@
 export const SETTLED_LIST: string;
+export const MODULE: string;
 export interface SettledDeclaration {
   question: string;
   file: string;
+  owner: string;
   name: string;
   line: number;
 }

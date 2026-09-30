@@ -23,15 +23,12 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
-import { settledDeclarations } from './settledDeclarations.mjs';
+import { MODULE, settledDeclarations } from './settledDeclarations.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** 参照数を数えるときだけ見る、srcの外の置き場。**試験だけではなく、道具（scripts）も読み手に数える。** */
 const REFERENCE_ROOTS = ['tests', 'scripts'];
-
-/** モジュール直下の宣言に付ける所属名。 */
-const MODULE = '(モジュール)';
 
 /** 1行に載せるシグネチャの上限。これを超えると読み手が追えないので端を落とす。 */
 const SIGNATURE_LIMIT = 200;
@@ -157,7 +154,13 @@ function memberKindOf(member) {
   return undefined;
 }
 
-function collectMembers(source, file, owner, members, into) {
+/**
+ * @param {string} owner 一覧に載せる所属
+ * @param {string} container 所属を囲むトップレベル宣言の名前。読み手が所属の外に居るかは、参照の索引と
+ *   同じくこの粒で見る（{@link buildOccurrenceIndex}）——無名の型リテラルの所属（`MotionPlan.landings`）は
+ *   索引に現れない
+ */
+function collectMembers(source, file, owner, container, members, into) {
   for (const member of members) {
     const kind = memberKindOf(member);
     if (kind === undefined) continue;
@@ -166,6 +169,7 @@ function collectMembers(source, file, owner, members, into) {
     into.push({
       file,
       owner,
+      container,
       kind,
       name,
       visibility: visibilityOf(modifiers, name),
@@ -186,6 +190,7 @@ function collectMembers(source, file, owner, members, into) {
       into.push({
         file,
         owner,
+        container,
         kind: 'field',
         name: nameOf(parameter),
         visibility: visibilityOf(parameterModifiers, nameOf(parameter)),
@@ -198,9 +203,44 @@ function collectMembers(source, file, owner, members, into) {
   }
 }
 
+/**
+ * 無名の型リテラル（`ReadonlyMap<number, { to: R }>`）に付ける所属名。**囲っている名前付きの宣言を
+ * 外側から `.` でつなぐ**（`MotionPlan.landings`・`planMotion.planArrivalsTo.sources`）——呼び手が
+ * `plan.landings` の先で読む名前がそのまま引ける。
+ *
+ * 名前を持たない型の節（共用体の枝・型引数）は所属に数えない。**共用体の枝のメンバは、枝を載せる
+ * 宣言の下へ合流する**（`CraftingInput` の各枝の `kind` は、どれも `CraftingInput::kind`）——読み手は
+ * `input.kind` で、どの枝のものかを書き分けない。
+ */
+function literalOwnerOf(literal) {
+  const names = [];
+  for (let node = literal.parent; !ts.isSourceFile(node); node = node.parent) {
+    if (ts.isConstructorDeclaration(node)) names.push('constructor');
+    else if (node.name !== undefined && !ts.isBindingPattern(node.name) && ts.isDeclaration(node))
+      names.push(nameOf(node));
+  }
+  return names.length === 0 ? '(無名)' : names.reverse().join('.');
+}
+
+/** 型別名の本体そのものではない、無名の型リテラル。本体はその型別名のメンバとして集める。 */
+function isAnonymousTypeLiteral(node) {
+  return ts.isTypeLiteralNode(node) && !(ts.isTypeAliasDeclaration(node.parent) && node.parent.type === node);
+}
+
+function collectTypeLiteralMembers(source, file, container, node, into) {
+  if (isAnonymousTypeLiteral(node)) {
+    collectMembers(source, file, literalOwnerOf(node), container, node.members, into);
+  }
+  ts.forEachChild(node, (child) => collectTypeLiteralMembers(source, file, container, child, into));
+}
+
 function collect(file) {
   const source = parse(file);
   const declarations = [];
+  for (const statement of source.statements) {
+    const container = statement.name === undefined ? MODULE : nameOf(statement);
+    collectTypeLiteralMembers(source, file, container, statement, declarations);
+  }
   const addTopLevel = (node, kind, name) => {
     const modifiers = modifiersOf(node);
     declarations.push({
@@ -220,12 +260,12 @@ function collect(file) {
     if (ts.isClassDeclaration(node) || ts.isInterfaceDeclaration(node)) {
       const name = nameOf(node);
       addTopLevel(node, ts.isClassDeclaration(node) ? 'class' : 'interface', name);
-      collectMembers(source, file, name, node.members, declarations);
+      collectMembers(source, file, name, name, node.members, declarations);
     } else if (ts.isTypeAliasDeclaration(node)) {
       const name = nameOf(node);
       addTopLevel(node, 'type', name);
       if (ts.isTypeLiteralNode(node.type)) {
-        collectMembers(source, file, name, node.type.members, declarations);
+        collectMembers(source, file, name, name, node.type.members, declarations);
       }
     } else if (ts.isEnumDeclaration(node)) {
       addTopLevel(node, 'enum', nameOf(node));
@@ -272,7 +312,7 @@ function withReferences(declarations, occurrences) {
         ? {}
         : {
             referencedInOwnFileOutsideOwner: [...containersInOwnFile].some(
-              (container) => container !== declaration.owner,
+              (container) => container !== declaration.container,
             ),
           }),
       // 読み手が src の外にしか居ない。**「テストだけ」ではない**——{@link REFERENCE_ROOTS} には
@@ -286,18 +326,18 @@ function withReferences(declarations, occurrences) {
  * 決着した宣言へ、どの問いで決着したかを載せる。**同じ名前を複数の問いで決着させることがある**ので、
  * 印は1つではなく並びで持つ。
  *
- * 突き合わせるのは在り処と名前だけ——所属は一覧の側では読み手のためのもの
- * （{@link settledDeclarations}）。**在り処と名前だけでは決まらない宣言**（同じファイルに同じ名前が
- * 並ぶ）が一覧に挙がっていないことは、`tests/docs/reviewSettled.test.ts` が見る。
+ * 突き合わせるのは在り処と所属と名前（{@link settledDeclarations}）。**それでも決まらない宣言**
+ * （共用体の枝に同じ名前が並ぶ）が一覧に挙がっていないことは、`tests/docs/reviewSettled.test.ts` が見る。
  */
 function withSettlements(declarations) {
+  const keyOf = ({ file, owner, name }) => `${file}\t${owner}\t${name}`;
   const questions = new Map();
-  for (const { question, file, name } of settledDeclarations(ROOT)) {
-    const key = `${file}\t${name}`;
-    questions.set(key, [...(questions.get(key) ?? []), question]);
+  for (const settled of settledDeclarations(ROOT)) {
+    const key = keyOf(settled);
+    questions.set(key, [...(questions.get(key) ?? []), settled.question]);
   }
   return declarations.map((declaration) => {
-    const settled = questions.get(`${declaration.file}\t${declaration.name}`);
+    const settled = questions.get(keyOf(declaration));
     return settled === undefined ? declaration : { ...declaration, settled };
   });
 }

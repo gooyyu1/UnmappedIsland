@@ -13,12 +13,16 @@ import { join } from 'node:path';
 /** 決着の一覧。**置き場は1つ**——次の回が探す先が増えると、渡らない行がそこに溜まる。 */
 export const SETTLED_LIST = join('review', 'settled.md');
 
+/** モジュール直下の宣言の所属名。**一覧（`declarationInventory.mjs`）もこれを付ける**——字面が割れると突き合わせが外れる。 */
+export const MODULE = '(モジュール)';
+
 /**
  * 表の1行が挙げている、決着した宣言。
  *
  * @typedef {object} SettledDeclaration
  * @property {string} question どの問いで決着したか（節の見出し）。決着はその問いの中でだけ効く
  * @property {string} file 宣言の在り処（リポジトリ相対。区切りは `/`）
+ * @property {string} owner 宣言の所属。所属を書かなかった行は {@link MODULE}
  * @property {string} name 宣言の名前（所属を書いた行は、その最後の部分）
  * @property {number} line 一覧の中の行番号。落ちたときに直す先を指す
  */
@@ -36,10 +40,10 @@ const RULE = /^\s*:?-{3,}:?\s*$/;
  * 飛ばす」で畳むと、**書き方を外した本物の行が仕切りの行と同じ扱いになる**——囲みを落とした行も、
  * 行の間の改行が落ちて2行が1行に潰れた後ろの行も、そこで黙って消える。
  *
- * 所属を書いた名前（`ZipEntry.method`）は最後の部分だけを採る。**所属は読み手のためのもの**で、
- * 宣言と突き合わせるのは名前と在り処——所属が現物とずれていることは、説明の参照の検査
- * （`tests/docs/docMemberReferences.test.ts`）が別に見る。**在り処が実在するかも見ない**——
- * リポジトリ直下から書いたパスは `tests/docs/docReferences.test.ts` が、指す宣言が在るかは
+ * 所属を書いた名前（`ZipEntry.method`）は、最後の部分を名前、その手前を所属として採る。**所属を
+ * 書かない行はモジュール直下の宣言を指す**——在り処と名前だけでは、同じファイルの無名の型リテラルに
+ * 並ぶ同じ名前（`DescriptionToken::text`）と見分けが付かない。**在り処と所属が実在するかは見ない**
+ * ——リポジトリ直下から書いたパスは `tests/docs/docReferences.test.ts` が、指す宣言が在るかは
  * `tests/docs/reviewSettled.test.ts` が見る。
  *
  * @param {string} text 一覧の本文
@@ -74,9 +78,11 @@ export function settledDeclarationsIn(text) {
     if (file === undefined) throw new Error(`${where} 宣言を囲みで挙げていない`);
     if (names.length === 0) throw new Error(`${where} ${file} の中の名前が挙がっていない`);
     for (const written of names) {
-      const name = written.split('.').at(-1);
+      const parts = written.split('.');
+      const name = parts.at(-1);
       if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) throw new Error(`${where} ${written} は名前ではない`);
-      found.push({ question, file, name, line });
+      const owner = parts.length === 1 ? MODULE : parts.slice(0, -1).join('.');
+      found.push({ question, file, owner, name, line });
     }
   });
   return found;

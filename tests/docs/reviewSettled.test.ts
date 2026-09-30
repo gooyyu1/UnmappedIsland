@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  MODULE,
   SETTLED_LIST,
   settledDeclarations,
   settledDeclarationsIn,
@@ -31,6 +32,7 @@ const MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
 /** 印が載る面。**一覧を作る道具そのものを通す**——印の付け方を変えた日に、ここだけ緑で残らないように。 */
 const INVENTORY: readonly {
   readonly file: string;
+  readonly owner: string;
   readonly name: string;
   readonly settled?: readonly string[];
 }[] = JSON.parse(
@@ -45,12 +47,13 @@ const SETTLED = settledDeclarations(ROOT);
 
 describe('棚卸しで決着した宣言の一覧', () => {
   it('挙げた宣言が今も在り、採点する一覧に印が載っている', () => {
-    const broken = SETTLED.flatMap(({ question, file, name, line }) => {
+    const broken = SETTLED.flatMap(({ question, file, owner, name, line }) => {
       const found = INVENTORY.filter(
-        (declaration) => declaration.file === file && declaration.name === name,
+        (declaration) =>
+          declaration.file === file && declaration.owner === owner && declaration.name === name,
       );
-      const where = `${SETTLED_LIST}:${line} ${file} の ${name}`;
-      if (found.length === 0) return [`${where}（宣言が無い。改名か削除で決着が古びている）`];
+      const where = `${SETTLED_LIST}:${line} ${file} の ${owner}::${name}`;
+      if (found.length === 0) return [`${where}（宣言が無い。改名か削除で決着が古びているか、メンバを所属から書いていない）`];
       if (found.length > 1) return [`${where}（同じ名前が複数ある。所属まで書いても決まらない）`];
       return found[0].settled?.includes(question) === true
         ? []
@@ -66,11 +69,11 @@ describe('棚卸しで決着した宣言の一覧', () => {
   it('同じ宣言を、同じ問いで2度決着させていない', () => {
     const seen = new Map<string, number>();
     const twice: string[] = [];
-    for (const { question, file, name, line } of SETTLED) {
-      const key = `${question}\t${file}\t${name}`;
+    for (const { question, file, owner, name, line } of SETTLED) {
+      const key = `${question}\t${file}\t${owner}\t${name}`;
       const first = seen.get(key);
       if (first === undefined) seen.set(key, line);
-      else twice.push(`${SETTLED_LIST}:${line} ${file} の ${name}（${question}。${first} 行目と同じ）`);
+      else twice.push(`${SETTLED_LIST}:${line} ${file} の ${owner}::${name}（${question}。${first} 行目と同じ）`);
     }
 
     expect(
@@ -91,9 +94,9 @@ describe('棚卸しで決着した宣言の一覧', () => {
     ].join('\n');
 
     expect(settledDeclarationsIn(list)).toEqual([
-      { question: '名前', file: 'src/domain/ObjectDef.ts', name: 'method', line: 5 },
-      { question: '名前', file: 'src/domain/ObjectDef.ts', name: 'firstOf', line: 5 },
-      { question: '名前', file: 'src/game/ui/Card.ts', name: 'CellOverlay', line: 6 },
+      { question: '名前', file: 'src/domain/ObjectDef.ts', owner: 'ZipEntry', name: 'method', line: 5 },
+      { question: '名前', file: 'src/domain/ObjectDef.ts', owner: MODULE, name: 'firstOf', line: 5 },
+      { question: '名前', file: 'src/game/ui/Card.ts', owner: MODULE, name: 'CellOverlay', line: 6 },
     ]);
 
     // 落ち方は1つではない。**飛ばしてよい行を名指しで決めていないと、どれも仕切りの行と同じ扱い**に

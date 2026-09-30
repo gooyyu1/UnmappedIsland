@@ -25,8 +25,11 @@ import { ROOT } from '../support/sourceFiles';
  * から呼ばれるもの（`Scene.init`）と、呼び出しが名前で現れないもの（`[Symbol.iterator]`）と、
  * `readersOutsideSrc.test.ts` が一覧で開いておくと決めたものに分かれる。同じ物差しを当てると、
  * **向こうの一覧をここへ写すことになる。**
- * **無名の型リテラル（`ReadonlyMap<number, { to: R }>` の `to`）も見ない**——宣言を集める
- * `scripts/declarationInventory.mjs` が、クラス・インターフェース・型別名の直下しか拾わない。
+ * **計算された名前のフィールド（`[namespaceOfGlobalId]`）も見ない**——読み手は名前を書かない
+ * （`x[key]` で読むか、`GlobalId` の印のように型の上でしか読まれない）ので、名前の一致では数えられない。
+ *
+ * 無名の型リテラル（`ReadonlyMap<number, { to: R }>` の `to`）のフィールドも見る。所属の名前は
+ * `scripts/declarationInventory.mjs` が付ける。
  */
 
 /** 出力は`src`の量に比例して伸びるので、既定の上限（1MB）には頼らない。 */
@@ -42,13 +45,19 @@ const MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
  */
 const READ_FROM_OUTSIDE_BY_DESIGN = ['src/analysis/'];
 
+/**
+ * 無名の型リテラルのフィールドで、読み手が1箇所だけのもの（`PropertyRange.inwardFrom` の分割代入）。
+ * **読み手が同じファイルに居る**ので、{@link DISCARDS_READER} のようにファイルを外しては作れない。
+ */
+const LITERAL_FIELD = { name: 'inward', label: 'src/domain/PropertyDef.ts PropertyRange.endOf.inward' };
+
 /** `MotionPlan.discards` を読むようになったファイル（#2082）。 */
 const DISCARDS_READER = 'src/game/ui/CardTable.ts';
 
 /** `scripts/declarationInventory.mjs --json` の1件。読むのはこの検査が使う分だけ。 */
 interface Declaration {
   readonly file: string;
-  /** 所属するクラス・インターフェース・型別名。 */
+  /** 所属するクラス・インターフェース・型別名。無名の型リテラルは、囲む宣言の名前を `.` でつないだもの。 */
   readonly owner: string;
   readonly name: string;
   /** `field`・`method`など。 */
@@ -87,7 +96,8 @@ function readerCount(reads: Map<string, ReadonlySet<string>>, name: string): num
 
 /** その読み方をしたときに、読み手の居ないフィールド。 */
 function unreadFields(srcReads: Map<string, ReadonlySet<string>>): readonly string[] {
-  return FIELDS.filter((field) => readerCount(srcReads, field.name) === 0)
+  return FIELDS.filter((field) => !field.name.startsWith('['))
+    .filter((field) => readerCount(srcReads, field.name) === 0)
     .filter(
       (field) =>
         !READ_FROM_OUTSIDE_BY_DESIGN.some((dir) => field.file.startsWith(dir)) ||
@@ -115,5 +125,15 @@ describe('`src` の誰も読まないフィールド', () => {
       unreadFields(buildReadIndex(ROOT, beforeTheReaderWasAdded)),
       `${DISCARDS_READER} の読みを外しても見つからない。別の読み手が増えているなら、外すファイルを見直す`,
     ).toContain('src/game/view/cardMotionPlan.ts MotionPlan.discards');
+  });
+
+  it('無名の型リテラルのフィールドも、所属の名前つきで取りこぼさない', () => {
+    const withoutTheReader = new Map(buildReadIndex(ROOT, SRC_FILES));
+    withoutTheReader.delete(LITERAL_FIELD.name);
+
+    expect(
+      unreadFields(withoutTheReader),
+      `${LITERAL_FIELD.label} の読みを外しても見つからない。宣言が動いたなら、題材を選び直す`,
+    ).toContain(LITERAL_FIELD.label);
   });
 });
