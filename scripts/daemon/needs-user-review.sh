@@ -166,8 +166,31 @@ answer_state() {
   cat "$cache"
 }
 
-# `【確定】` の節は、**PRの側の版**で射程を数える。main の版で数えると、そのPRが足した確定節を
-# 見落とす（印を付ける変更こそ、ユーザーの判断が要るもの）。
+# 確定節の射程を1行1節で出す（その見出しから、同位以上の次の見出しの手前まで）。文書単位の宣言が
+# あるなら、文書の全行を `# 本書全体` の1節として。
+ranges_of() {
+  if declares_whole "$1"; then
+    printf '1\t%s\t# 本書全体\n' "$(wc -l <"$1")"
+    return
+  fi
+  awk '
+    /^#+ / {
+      match($0, /^#+/); lvl = RLENGTH
+      if (owner_lvl > 0 && lvl <= owner_lvl) { print owner_start "\t" (NR - 1) "\t" owner; owner_lvl = 0 }
+      if (owner_lvl == 0 && $0 ~ /【確定】/) { owner = $0; owner_lvl = lvl; owner_start = NR }
+    }
+    END { if (owner_lvl > 0) print owner_start "\t" NR "\t" owner }
+  ' "$1"
+}
+
+# 見出しの同一性は、印を全部落とした残りで見る。印は見出しの末尾に並ぶので、**最初の `【` から
+# 行末まで**を落とす。`【[^】]*】` は使えない——`[^】]` はバイト単位の否定になり、`】`（E3 80 91）と
+# 先頭バイトを共有する `の`（E3 81 AE）等で止まる。
+strip_marks() { sed -n 's/^#\+ //p' | sed 's/【.*//' | sed 's/[[:space:]]*$//'; }
+
+# 射程は**変更の前後それぞれの版**で数え、その版の側の行番号で触った行と突き合わせる。PRの側
+# （head）だけで数えると、印を消した節・消した確定節はどの射程にも入らない（#2025）。main の側
+# （base）だけで数えると、そのPRが足した確定節を見落とす。
 shas=$(gh pr view "$PR" --json headRefOid,baseRefOid --jq '"\(.headRefOid) \(.baseRefOid)"') || exit 2
 read -r head_sha base_sha <<<"$shas"
 git fetch -q origin "pull/$PR/head" || exit 2
@@ -176,61 +199,54 @@ git fetch -q origin "pull/$PR/head" || exit 2
 node "$HERE/../docScope.mjs" <"$WORK/files" >"$WORK/targets" || exit 2
 
 while IFS= read -r path; do
-  git show "$head_sha:$path" >"$WORK/doc.md" 2>/dev/null || continue
+  # 無い側は空の文書として読む（足したファイル・消したファイル）。
+  git show "$head_sha:$path" >"$WORK/doc.md" 2>/dev/null || : >"$WORK/doc.md"
   git show "$base_sha:$path" >"$WORK/base-doc.md" 2>/dev/null || : >"$WORK/base-doc.md"
 
-  head_declares=0
-  if declares_whole "$WORK/doc.md"; then head_declares=1; fi
-  base_declares=0
-  if declares_whole "$WORK/base-doc.md"; then base_declares=1; fi
+  # 1行目に版（head／base）を添えて、両方の版の射程を1つに並べる。head を先に置くのは、同じ節が
+  # 両方で触られたとき、出どころを読める head の側で判定するため。
+  {
+    ranges_of "$WORK/doc.md" | sed 's/^/head\t/'
+    ranges_of "$WORK/base-doc.md" | sed 's/^/base\t/'
+  } >"$WORK/ranges"
+  [ -s "$WORK/ranges" ] || continue
 
-  if [ "$head_declares" -eq 0 ] && [ "$base_declares" -eq 0 ]; then
-    grep -q '【確定】' "$WORK/doc.md" || continue
-  fi
-
-  # 射程を出す。文書単位の宣言があるなら文書の全行、無ければ確定見出しごとに（その見出しから、
-  # 同位以上の次の見出しの手前まで）。
-  if [ "$head_declares" -eq 1 ] || [ "$base_declares" -eq 1 ]; then
-    printf '1\t%s\t# 本書全体\n' "$(wc -l <"$WORK/doc.md")" >"$WORK/ranges"
-  else
-    awk '
-      /^#+ / {
-        match($0, /^#+/); lvl = RLENGTH
-        if (owner_lvl > 0 && lvl <= owner_lvl) { print owner_start "\t" (NR - 1) "\t" owner; owner_lvl = 0 }
-        if (owner_lvl == 0 && $0 ~ /【確定】/) { owner = $0; owner_lvl = lvl; owner_start = NR }
-      }
-      END { if (owner_lvl > 0) print owner_start "\t" NR "\t" owner }
-    ' "$WORK/doc.md" >"$WORK/ranges"
-  fi
-
-  # そのファイルの差分から、新しい側で触られた行番号を出す。
-  awk -v target="$path" '
-    /^\+\+\+ b\// { file = substr($0, 7); next }
-    file != target { next }
-    /^@@ / {
-      # @@ -a,b +c,d @@ の c と d
-      split($3, plus, ",")
-      start = plus[1] + 0; if (start < 0) start = -start
-      len = (length(plus) > 1) ? plus[2] + 0 : 1
-      for (i = 0; i < len; i++) print start + i
+  # そのファイルの差分から、触られた行番号を版ごとに出す（`@@ -a,b +c,d @@` の a,b が base、c,d が
+  # head）。ファイル名は `diff --git` から最初の `@@` までの見出しでだけ読む——本文の `-`・`+` 行が
+  # `--- `・`+++ ` で始まっても、見出しと取り違えない。
+  : >"$WORK/touched-head"
+  : >"$WORK/touched-base"
+  awk -v target="$path" -v head_out="$WORK/touched-head" -v base_out="$WORK/touched-base" '
+    function emit(spec, out,   part, start, len, i) {
+      split(substr(spec, 2), part, ",")
+      start = part[1] + 0
+      len = (length(part) > 1) ? part[2] + 0 : 1
+      for (i = 0; i < len; i++) print start + i >out
     }
-  ' "$WORK/diff" >"$WORK/touched"
+    /^diff --git / { header = 1; base_hit = 0; head_hit = 0; next }
+    header && /^--- / { base_hit = ($0 == "--- a/" target); next }
+    header && /^\+\+\+ / { head_hit = ($0 == "+++ b/" target); next }
+    /^@@ / {
+      header = 0
+      if (base_hit) emit($2, base_out)
+      if (head_hit) emit($3, head_out)
+    }
+  ' "$WORK/diff"
 
-  [ -s "$WORK/touched" ] || continue
+  [ -s "$WORK/touched-head" ] || [ -s "$WORK/touched-base" ] || continue
 
   # 印そのものが動いたか——**変更前後で、確定している見出しの顔ぶれが変わったか**を見る。
   # 差分の行に `【確定】` が出るかでは判定できない。`【未実装: …】` を外す変更は同じ見出し行を
   # 触るので、印が動いていないのに毎回引っかかる（実測で #1148・#1153・#1156・#1158 の4本）。
-  # 見出しの同一性は、印を全部落とした残りで見る。印は見出しの末尾に並ぶので、**最初の `【` から
-  # 行末まで**を落とす。`【[^】]*】` は使えない——`[^】]` はバイト単位の否定になり、`】`（E3 80 91）と
-  # 先頭バイトを共有する `の`（E3 81 AE）等で止まる。
-  strip_marks() { sed -n 's/^#\+ //p' | sed 's/【.*//' | sed 's/[[:space:]]*$//'; }
-  git show "$head_sha:$path" 2>/dev/null | grep '【確定】' >"$WORK/head-marked" || true
-  git show "$base_sha:$path" 2>/dev/null | grep '【確定】' >"$WORK/base-marked" || true
+  grep '【確定】' "$WORK/doc.md" >"$WORK/head-marked" || true
+  grep '【確定】' "$WORK/base-doc.md" >"$WORK/base-marked" || true
   # 文書単位の宣言を、`# 本書全体` という1つの確定見出しとして混ぜる。宣言が増えた／消えた変更が
   # `mark_moved` に出て、増えた側は `new-marks` に入る。
-  if [ "$head_declares" -eq 1 ]; then printf '# 本書全体\n' >>"$WORK/head-marked"; fi
-  if [ "$base_declares" -eq 1 ]; then printf '# 本書全体\n' >>"$WORK/base-marked"; fi
+  for side in head base; do
+    doc="$WORK/doc.md"
+    if [ "$side" = base ]; then doc="$WORK/base-doc.md"; fi
+    if declares_whole "$doc"; then printf '# 本書全体\n' >>"$WORK/$side-marked"; fi
+  done
   strip_marks <"$WORK/head-marked" | sort >"$WORK/head-set"
   strip_marks <"$WORK/base-marked" | sort >"$WORK/base-set"
   mark_moved=$(comm -3 "$WORK/base-set" "$WORK/head-set")
@@ -257,13 +273,20 @@ while IFS= read -r path; do
     ' "$WORK/doc.md"
   }
 
-  while IFS=$'\t' read -r from to heading; do
-    if awk -v a="$from" -v b="$to" '$1 >= a && $1 <= b { hit = 1; exit } END { exit hit ? 0 : 1 }' "$WORK/touched"; then
+  # 両方の版で触られた見出しも、出すのは1行（見出しの同一性は `strip_marks` で見る）。
+  : >"$WORK/seen"
+  while IFS=$'\t' read -r side from to heading; do
+    if awk -v a="$from" -v b="$to" '$1 >= a && $1 <= b { hit = 1; exit } END { exit hit ? 0 : 1 }' "$WORK/touched-$side"; then
+      key=$(printf '%s\n' "$heading" | strip_marks)
+      if grep -qxF -- "$key" "$WORK/seen"; then continue; fi
+      printf '%s\n' "$key" >>"$WORK/seen"
       if [ -z "$mark_moved" ]; then
         echo "CONFIRMED $path ${heading#\#* }"
         continue
       fi
-      issue=$(source_issue "$from" "$to" "$heading")
+      # 印が増えた節は head にしか無いので、出どころを読むのは head の側だけ。
+      issue=''
+      if [ "$side" = head ]; then issue=$(source_issue "$from" "$to" "$heading"); fi
       if [ -z "$issue" ]; then
         echo "MARK $path ${heading#\#* }"
         blocking=1
