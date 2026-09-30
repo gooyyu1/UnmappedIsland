@@ -23,8 +23,16 @@ const raw = await response.text();
 
 // **呼び手が見るのは終了コードだけ**なので、落ちた理由は標準エラーへ残す（後からログを見る人間の
 // ため）。間隔を空けそこねた `429` も、資格情報が切れた `401` も、名乗れるのはここだけ。
+//
+// **`429` が口の閉じている秒数（`retry-after`）を添えていれば、それを標準出力へ出して3で終わる。**
+// 間隔の番を持つのは `usage.sh` なので、ここは読んで渡すだけ。
 if (!response.ok) {
-  console.error(`失敗: HTTP ${response.status} ${raw}`);
+  const retryAfter = response.headers.get('retry-after') ?? '';
+  console.error(`失敗: HTTP ${response.status}${retryAfter ? ` retry-after ${retryAfter}` : ''} ${raw}`);
+  if (response.status === 429 && /^\d+$/.test(retryAfter)) {
+    console.log(retryAfter);
+    process.exit(3);
+  }
   process.exit(1);
 }
 
