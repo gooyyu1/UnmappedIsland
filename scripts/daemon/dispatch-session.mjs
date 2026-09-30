@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 
 import { callMeta, metaJson } from '../../.claude/ccr-meta.mjs';
 import { checkPrompt } from '../../.claude/ccr-check-prompt.mjs';
+import { DISPATCH_TAGS } from './live-sessions.mjs';
 import { readVersion, verdicts } from './review-verdicts.mjs';
 import { runBash } from './spawn.mjs';
 
@@ -150,10 +151,10 @@ async function confirm(session, given) {
  * 畳めなければ、残っているのだから打てたもの（0）として返す。
  *
  * 畳んでよいかの判定と、ブリッジの worktree の後始末は [`archive-session.sh`](archive-session.sh) が
- * 持つ。接頭辞は盤面の `ARCHIVE` と同じ。
+ * 持つ。
  */
 function withdraw(session) {
-  const out = runBash(ARCHIVE_SESSION, ['--keep-untagged', 'task-,review-,chore-'], {
+  const out = runBash(ARCHIVE_SESSION, ['--keep-untagged', DISPATCH_TAGS.join(',')], {
     input: `${session}\n`,
     capture: true,
   });

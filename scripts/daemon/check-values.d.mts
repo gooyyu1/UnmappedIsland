@@ -26,12 +26,6 @@ export interface SurveyValuesDeps {
   sessions?: () => readonly LiveValueSession[] | Promise<readonly LiveValueSession[]>;
 }
 
-/**
- * 盤面が立てたセッションのタグの頭。**綴りの出どころは投入の側**で、ここはその写し
- * （[`check-values.mjs`](check-values.mjs)）。
- */
-export const DISPATCH_TAGS: readonly string[];
-
 export interface CheckValuesDeps extends SurveyValuesDeps {
   /** 台帳の置き場。省くと [`board-state.mjs`](board-state.mjs) の既定。 */
   stateDir?: string;

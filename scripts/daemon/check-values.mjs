@@ -67,7 +67,7 @@ import { fileURLToPath } from 'node:url';
 import { callMeta, metaJson } from '../../.claude/ccr-meta.mjs';
 import { allOpenIssues } from './board-read.mjs';
 import { boardState } from './board-state.mjs';
-import { envKind, environmentIds, liveSessions } from './live-sessions.mjs';
+import { DISPATCH_TAGS, envKind, environmentIds, liveSessions } from './live-sessions.mjs';
 import { posix, gh as runGh, runBash } from './spawn.mjs';
 import { toast } from './toast.mjs';
 
@@ -188,14 +188,6 @@ async function livingEnvironments(call) {
   if (answer === undefined) throw new Error('応答に JSON の行が無い');
   return new Set((answer.environments ?? []).map((environment) => environment.environment_id));
 }
-
-/**
- * 盤面が立てたセッションのタグの頭。**綴りの出どころは投入の側**（[`dispatch-task.sh`](dispatch-task.sh)
- * の `task-`・[`dispatch-review.sh`](dispatch-review.sh) の `review-`・
- * [`dispatch-chore.sh`](dispatch-chore.sh) の `chore-`）。**増えたら黙って数え落とす**ので、突き合わせ
- * は検査が持つ（`tests/scripts/checkValues.test.ts`）。
- */
-export const DISPATCH_TAGS = ['task-', 'review-', 'chore-'];
 
 /**
  * 盤面が立てたセッションか。**下の `workingEnvironment` が数えるのはこれだけ。**

@@ -37,6 +37,9 @@ export function environmentIds(): EnvironmentId[];
 /** `ccr-env.sh` の名前から、`LiveSession` の `env` の綴りへ。**訳を持つのはここ1箇所。** */
 export function envKind(name: string): string;
 
+/** 盤面が立てたセッションのタグの頭（[`live-sessions.mjs`](live-sessions.mjs)）。 */
+export const DISPATCH_TAGS: readonly string[];
+
 /** TSVの1行へ。列の並びを持つのは [`live-sessions.mjs`](live-sessions.mjs)。 */
 export function formatLive(session: LiveSession): string;
 
