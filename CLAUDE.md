@@ -4,6 +4,11 @@ TypeScriptのコーディング規約は [`docs/CodingConventions.md`](docs/Codi
 に従う。変更後は `npm run lint` / `npm run typecheck` / `npm test` / `npm run format:check` が
 すべて成功することを確認する（CIが走らせるのはこの4つ）。
 
+**`npm test` で落ちた検査が、走らせ直すと通ったら、落ちた回の記録を開いて出す。** 落ちた回には
+`.test-failures/<時刻>.md` が残り、置き場が端末の末尾に出る（走らせ直しでは上書きされない）。そこから
+落ちた検査の名前と文面を、`[スメル] ` で始まる行として自分のPRへコメントする。**通ったことで済ませない**
+——丸ごと走らせた回にだけ落ちる検査は、この行を分析係が束ねるまで原因へ辿れない。
+
 整形のずれは `npm run lint` では検出できない（eslintの整形系ルールはeslint-config-prettierが
 無効化しており、prettierだけが見ている）。編集ツールで書いたファイルは自動整形フックが直すが、
 フックが効かない経路で編集した場合は `npm run format` で直す。`.prettierrc` の

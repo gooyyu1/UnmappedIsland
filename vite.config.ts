@@ -1,6 +1,7 @@
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import sharp from 'sharp';
+import { FailedRunRecorder } from './tests/support/failedRunRecorder';
 
 /**
  * WebPの非可逆圧縮の品質。カードの絵・背景とも水彩調で高周波成分が少なく、この値で見た目の差は
@@ -82,5 +83,6 @@ export default defineConfig({
     // 読み直しのほうが実行時間の大半を占めていた（20.1秒→5.8秒）。使い回せる前提として、テストは
     // モジュールレベルの状態を書き換えたまま終わってはいけない（ここを破ると、実行順で結果が変わる）。
     isolate: false,
+    reporters: ['default', new FailedRunRecorder()],
   },
 });
