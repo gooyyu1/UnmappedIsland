@@ -169,7 +169,9 @@ describe('bedding.yamlの寝床とハンモック', () => {
     expect(row!.agentDeltas.find((delta) => delta.name === 'stamina')?.amount).toBe(
       restOn(deepest.bed, deepest.player, 'sleep').stamina,
     );
-  });
+    // 収支表を検査の本体で組むので、混み合った回には1件あたりの上限を越える。
+    // 上限とその名乗り方は `vite.config.ts` の `testTimeout` のコメント（issue #2376）。
+  }, 30_000);
 
   describe.each(characters)('%s の体力に対して', (characterName) => {
     /** そのキャラクタの体力の上限。 */

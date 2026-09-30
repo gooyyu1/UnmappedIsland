@@ -72,5 +72,7 @@ describe('器の中身を持ち出す工程（同梱の定義）', () => {
       route.route.steps.some((step) => step.objectName === 'jar__content_water_liquid'),
     )!;
     expect(fromJar.route.executionMinutes).toBeLessThan(6);
-  });
+    // 収支表を検査の本体で組むので、混み合った回には1件あたりの上限を越える。
+    // 上限とその名乗り方は `vite.config.ts` の `testTimeout` のコメント（issue #2376）。
+  }, 30_000);
 });

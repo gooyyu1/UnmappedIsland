@@ -27,7 +27,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { MENDS, STRANDS, TAKEOVER, busySession, moves } from './board-move.mjs';
+import { CYCLE_DOWN, CYCLE_TRIED, MENDS, STRANDS, TAKEOVER, busySession, moves } from './board-move.mjs';
 import { MERGED_WINDOW_HOURS, readBoard } from './board-read.mjs';
 import {
   NOTE_PREFIX,
@@ -212,6 +212,9 @@ export function newConflicts(prs, written, describe, at) {
  * **`cycle:` だけは残す。** あれは盤面の何かに紐づく指紋ではなく、**周期の係を前に立てた時刻**
  * （`board-move.mjs` の `CYCLES`）。捨てると、次の周に間隔が満ちていないものまで立つ。
  *
+ * **立てられない係の控え（`board-move.mjs` の `CYCLE_DOWN`・`CYCLE_TRIED`）も残す。** 同じく係に
+ * 紐づく時刻で、捨てると立て直しの間が毎周0へ戻り、覚え書きの続いた長さも消える。
+ *
  * **`unreadable:` も残す。** あれは盤面の何かに紐づく指紋ではなく、**盤面を引けなくなった時刻**
  * （`board-state.mjs` の `UNREADABLE`）。捨てると、続いた長さが毎周0へ戻る。
  *
@@ -232,6 +235,8 @@ export function pruneTaken(taken, board) {
   for (const [key, mark] of Object.entries(taken)) {
     const lives =
       key.startsWith('cycle:') ||
+      key.startsWith(CYCLE_DOWN) ||
+      key.startsWith(CYCLE_TRIED) ||
       key.startsWith('unreadable:') ||
       key.startsWith(NOTE_PREFIX) ||
       key.startsWith(PARTIAL_PREFIX) ||
@@ -375,7 +380,7 @@ const ANSWERED_EXITS = new Set([3, 4]);
 const dispatched = (status) => (status === 0 ? PLAYED : ANSWERED_EXITS.has(status) ? SETTLED : FAILED);
 
 /** 1手打つ。打てたら `PLAYED`（呼び手は周を切り上げる）、それ以外は次の手へ進む。 */
-export function play(kind, args, { runScript, gh, remember, log, echo }) {
+export function play(kind, args, { runScript, gh, remember, recall, forget, log, echo }) {
   const [a = '', b = '', c = '', d = ''] = args;
   switch (kind) {
     case 'TIDY': {
@@ -473,10 +478,20 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
     }
     case 'CHORE': {
       // 周期の係（`board-move.mjs` の `CYCLES`）。**指紋は立てた時刻**で、次に立ててよいかを決める
-      // のは盤面。**立てられなかった周は覚えない**——覚えると、失敗したまま間隔ぶん黙る。
+      // のは盤面。**立てられなかった周は `cycle:` を覚えない**——覚えると、失敗したまま間隔ぶん黙る。
+      // 代わりに**立てられないことを控える**（`CYCLE_DOWN`・`CYCLE_TRIED`）。控えが無いと盤面は
+      // 毎周同じ手を打ち直し、人へも何も届かない（`agent-ops/board-design.md` 2.17.6節）。
       const where = d === '' ? [] : [d];
       const result = dispatched(runScript('dispatch-chore.sh', [a, b, ...where]).status);
-      if (result !== PLAYED) return result;
+      // **答えが返っている止まり方（手綱・余力）は、立てられないことに数えない。** 直す相手が居ない。
+      if (result === SETTLED) return result;
+      if (result === FAILED) {
+        remember(`${CYCLE_DOWN}${a}`, recall(`${CYCLE_DOWN}${a}`) ?? c);
+        remember(`${CYCLE_TRIED}${a}`, c);
+        return result;
+      }
+      forget(`${CYCLE_DOWN}${a}`);
+      forget(`${CYCLE_TRIED}${a}`);
       remember(`cycle:${a}`, c);
       return PLAYED;
     }
@@ -606,6 +621,12 @@ export async function round({
     remaining[key] = mark;
     writeLedger(stateDir, remaining);
   };
+  const recall = (key) => remaining[key];
+  const forget = (key) => {
+    if (!(key in remaining)) return;
+    delete remaining[key];
+    writeLedger(stateDir, remaining);
+  };
 
   const played = lines.filter((line) => !line.startsWith('NOTE '));
   if (dryRun) {
@@ -642,7 +663,15 @@ export async function round({
     const [kind, ...args] = line.split(' ');
     const [a = '', b = '', c = ''] = args;
     log(`打つ: ${kind} ${a} ${b} ${c}`);
-    const result = play(kind, args, { runScript: runScriptHere, gh, remember, log, echo });
+    const result = play(kind, args, {
+      runScript: runScriptHere,
+      gh,
+      remember,
+      recall,
+      forget,
+      log,
+      echo,
+    });
     appendRound(stateDir, { at: at.toISOString(), kind: 'move', move: kind, target: a, result });
     if (result === PLAYED) {
       log(`打てた: ${kind} ${a}`);

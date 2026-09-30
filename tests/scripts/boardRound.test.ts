@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { cycleDownNote } from '../../scripts/daemon/board-move.mjs';
 import { SWEEP_LINE, round } from '../../scripts/daemon/board-round.mjs';
 import { NOTE_PREFIX, PARTIAL_PREFIX, UNREADABLE, journalPath } from '../../scripts/daemon/board-state.mjs';
 
@@ -568,14 +569,71 @@ describe('board-round.mjs', () => {
     expect(result.ledger).toEqual({ 'cycle:triage': NOW.toISOString() });
   });
 
-  // 覚えると、失敗したまま間隔ぶん黙る。
-  it('棚卸しを立てられなかったら、時刻を残さない', async () => {
+  // 覚えると、失敗したまま間隔ぶん黙る。**代わりに立てられないことを控える**（2.17.6）——控えが
+  // 無いと、盤面は同じ手を毎周打ち直す。
+  it('棚卸しを立てられなかったら、立てた時刻ではなく立てられないことを残す', async () => {
     const result = await playRound({
       issues: [{ number: 9, labels: [], blockedBy: { nodes: [] } }],
       fails: ['dispatch-chore.sh'],
     });
 
-    expect(result.ledger).toEqual({});
+    expect(result.ledger).toEqual({
+      'cycle-down:triage': NOW.toISOString(),
+      'cycle-tried:triage': NOW.toISOString(),
+    });
+  });
+
+  // **始まりは動かさない**——次に試すまでの間は、続いた長さから出る。
+  it('続けて立てられなかったら、試した時刻だけを進める', async () => {
+    const result = await playRound({
+      issues: [{ number: 9, labels: [], blockedBy: { nodes: [] } }],
+      fails: ['dispatch-chore.sh'],
+      ledger: {
+        'cycle-down:triage': '2026-09-05T01:00:00Z',
+        'cycle-tried:triage': '2026-09-05T01:30:00Z',
+      },
+    });
+
+    expect(result.calls).toEqual(['dispatch-chore.sh triage agent-ops/prompts/triage-prompt.md']);
+    expect(result.ledger).toEqual({
+      'cycle-down:triage': '2026-09-05T01:00:00Z',
+      'cycle-tried:triage': NOW.toISOString(),
+    });
+  });
+
+  // 立て直す周を待っている間も、人の見る盤面へ届く（覚え書きは出始めた時刻を保つ。2.20.3）。
+  it('立て直しを待っている周も、覚え書きを残す', async () => {
+    const result = await playRound({
+      issues: [{ number: 9, labels: [], blockedBy: { nodes: [] } }],
+      ledger: {
+        'cycle-down:triage': '2026-09-05T01:58:00Z',
+        'cycle-tried:triage': '2026-09-05T01:58:00Z',
+        [`${NOTE_PREFIX}${cycleDownNote('triage')}`]: '2026-09-05T01:58:30Z',
+      },
+    });
+
+    expect(result.calls).toEqual([]);
+    expect(result.noteMarks).toEqual({ [cycleDownNote('triage')]: '2026-09-05T01:58:30Z' });
+  });
+
+  it('立てられたら、立てられない控えを消す', async () => {
+    const result = await playRound({
+      issues: [{ number: 9, labels: [], blockedBy: { nodes: [] } }],
+      ledger: {
+        'cycle-down:triage': '2026-09-05T01:00:00Z',
+        'cycle-tried:triage': '2026-09-05T01:30:00Z',
+      },
+    });
+
+    expect(result.ledger).toEqual({ 'cycle:triage': NOW.toISOString() });
+  });
+
+  // 手綱・余力は答えが返っている止まり方で、直す相手が居ない。数えると、人が止めている間じゅう
+  // 「立てられない」と出る。
+  it('手綱や余力で止まった周は、立てられないことに数えない', async () => {
+    const issues = [{ number: 9, labels: [], blockedBy: { nodes: [] } }];
+    expect((await playRound({ issues, braked: ['dispatch-chore.sh'] })).ledger).toEqual({});
+    expect((await playRound({ issues, held: ['dispatch-chore.sh'] })).ledger).toEqual({});
   });
 
   // 畳む条件は担当の issue が閉じたこと（2.10）。**PRがマージされたかでは決めない**ので、PRが

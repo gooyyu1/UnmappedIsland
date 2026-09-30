@@ -47,6 +47,8 @@ export function play(
   deps: {
     runScript: NonNullable<RoundDeps['runScript']>;
     remember: (key: string, mark: string) => void;
+    recall: (key: string) => string | undefined;
+    forget: (key: string) => void;
     log: NonNullable<RoundDeps['log']>;
     echo: NonNullable<RoundDeps['echo']>;
   },

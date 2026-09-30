@@ -267,5 +267,7 @@ describe('voyage_storm.yamlの鮮度', () => {
     expect(storedReport().baseline.map(lineOf), `古い。${REGENERATE_HINT}`).toEqual(
       baselineRecords(courses, seasonNamesOf(courses)).map(lineOf),
     );
-  });
+    // 収支表を検査の本体で組むので、混み合った回には1件あたりの上限を越える。
+    // 上限とその名乗り方は `vite.config.ts` の `testTimeout` のコメント（issue #2376）。
+  }, 30_000);
 });
