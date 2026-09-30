@@ -82,12 +82,21 @@ function materialCells(
   // ——タグの要求は当てはまる型が複数あり、当てる先は成立する組み合わせを探して振り替えられるので、
   // 型から引くと実際に消える物と縁の色・数の出る枠がずれる。
   //
-  // 前の工程の道具を後の工程が素材として消費するときだけ1つの物が2つの要求に当たるので、要求の順
-  // （今の工程が先）で先に当たったほうを採る。どれにも当たっていない物は印を持たない。
-  const materialOf = (stack: ObjectCardStack | undefined): CraftingMaterial | undefined =>
-    stack === undefined
-      ? undefined
-      : materials.find((material) => stack.objects.some((object) => material.allocated.has(object)));
+  // 束の中身が2つの要求に分かれて当たることがある（置いたとおりでは揃わず振り替えたとき、別々の
+  // 工程で当たったとき、crafting.allocateContentsToRequirements）。印を出せる要求は1つなので、多く
+  // 当たっているほうを、並ぶ数が同じなら要求の順（今の工程が先）で先のほうを採る。どれにも当たって
+  // いない物は印を持たない。貸し出して待ち印だけが残った束も、待っている個体（awaited）で引く。
+  const materialOf = (stack: ObjectCardStack | undefined): CraftingMaterial | undefined => {
+    if (stack === undefined) return undefined;
+    const members = [...stack.objects.map((object) => object.instanceId), ...(stack.awaited ?? [])];
+    let chosen: CraftingMaterial | undefined;
+    let chosenCount = 0;
+    for (const material of materials) {
+      const count = members.filter((id) => material.allocated.has(id)).length;
+      if (count > chosenCount) [chosen, chosenCount] = [material, count];
+    }
+    return chosen;
+  };
 
   const marksFor = (material: CraftingMaterial | undefined): LaneCell => {
     // どの要求にも当たっていない物は、取り出すための枠が残るだけで印は持たない。

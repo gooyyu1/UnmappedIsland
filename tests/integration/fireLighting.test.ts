@@ -55,7 +55,7 @@ describe('火起こし（世界→映し 通し）', () => {
     expect(recording.ticks.length, '30分ぶんのtick境界がある').toBeGreaterThan(0);
     const places = cardPlacesOf(game.player, game.player.location!);
     for (const tick of recording.ticks) {
-      const shown = tick.view.cardsIn(places('items')).map((card) => card?.objectGlobalId);
+      const shown = tick.view.cardsIn(places('items')).map((card) => card?.objects[0]?.def.globalId);
       expect(shown, `tick@${tick.minutes}は火口のまま`).toContain(codex.objectNames.getId('dry_grass'));
       expect(shown, `tick@${tick.minutes}に火種はまだ無い`).not.toContain(
         codex.objectNames.getId('burning_tinder'),

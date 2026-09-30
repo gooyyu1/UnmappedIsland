@@ -36,15 +36,10 @@ const cardOfType = (objectGlobalId: ObjectGlobalId): CardContent =>
   ({ icon: '📦', name: `type#${objectGlobalId}` }) as CardContent;
 
 /**
- * 型ごとの個体1つ。**枠の並びは個体の中身を見ない**——どの要求へ当たったかを引く鍵として、同じ型なら
- * 同じ1つを返せば足りる。
+ * その型の個体のインスタンスID。**枠の並びは個体の中身を見ない**——どの要求へ当たったかを引く鍵として、
+ * 型ごとに1つあれば足りる（束を2つ以上の個体で組む試験は、自分でIDを並べる）。
  */
-const objectsOfType = new Map<ObjectGlobalId, WorldObject>();
-const objectOf = (objectGlobalId: ObjectGlobalId): WorldObject => {
-  const object = objectsOfType.get(objectGlobalId) ?? ({ objectGlobalId } as unknown as WorldObject);
-  objectsOfType.set(objectGlobalId, object);
-  return object;
-};
+const instanceOf = (objectGlobalId: ObjectGlobalId): number => 1000 + objectGlobalId;
 
 /**
  * 要求1件。**当てた物は、要求している型の個体すべて**を既定にする——型から要求を引いていたときと
@@ -56,17 +51,19 @@ const material = (options: Partial<CraftingMaterial> = {}): CraftingMaterial => 
     objectGlobalIds,
     needed: 1,
     held: 0,
-    allocated: new Set(objectGlobalIds.map(objectOf)),
+    allocated: new Set(objectGlobalIds.map(instanceOf)),
     inCurrentStep: true,
     ...options,
   };
 };
 
-/** その型を1つ入れた枠。 */
-const stack = (objectGlobalId: ObjectGlobalId): ObjectCardStack =>
+/** その型の個体を入れた枠（既定は型ごとの1つ）。 */
+const stack = (
+  objectGlobalId: ObjectGlobalId,
+  instanceIds: readonly number[] = [instanceOf(objectGlobalId)],
+): ObjectCardStack =>
   ({
-    objectGlobalId,
-    objects: [objectOf(objectGlobalId)],
+    objects: instanceIds.map((instanceId) => ({ instanceId }) as WorldObject),
     name: `held#${objectGlobalId}`,
   }) as unknown as ObjectCardStack;
 
@@ -275,6 +272,30 @@ describe('材料の枠', () => {
 
     expect(cell.overlay).toBe('1/2');
     expect(cell.borderColor).toBe(COLOR.cellCurrentStep);
+  });
+
+  it('束の中身が2つの要求に分かれて当たったら、多く当たっているほうの枠に出る', () => {
+    // 並びが先のタグの要求（型1・2）には1つ、後の型2の要求には2つ当たっている。
+    const materials = [
+      material({ objectGlobalIds: [typeId(1), typeId(2)], allocated: new Set([21]) }),
+      material({ objectGlobalIds: [typeId(2)], needed: 2, held: 2, allocated: new Set([22, 23]) }),
+    ];
+
+    const cells = cellsOf({ materials, stacks: [stack(typeId(2), [21, 22, 23])] });
+
+    expect(cells[0].overlay).toBe('2/2');
+    expect(cells[1].card, '束が出ていない要求は空き枠として足す').toBeUndefined();
+  });
+
+  it('子ウィンドウへ貸し出して待ち印だけが残った束も、同じ要求の枠に出る', () => {
+    // 待ち印の束は個体を1つも出していない（objectsが空）。待っている個体で引かないと印が消え、
+    // 同じ要求の空き枠が重ねて出る。
+    const materials = [material({ objectGlobalIds: [typeId(2)], needed: 2, held: 1 })];
+    const awaiting = { ...stack(typeId(2), []), awaited: [instanceOf(typeId(2))] };
+
+    const cells = cellsOf({ materials, stacks: [awaiting] });
+
+    expect(cells.map((cell) => [cell.card?.name, cell.overlay])).toEqual([['held#2', '1/2']]);
   });
 
   it('どの要求にも当たっていない物は、取り出すための枠として残るが印は持たない', () => {

@@ -40,9 +40,6 @@ export interface ObjectCardStack extends CardContent {
    */
   readonly objects: readonly WorldObject[];
 
-  /** この束が映している物の型（object_defのグローバルID）。要求されている型と突き合わせるのに使う。 */
-  readonly objectGlobalId: ObjectGlobalId;
-
   /** カードを押して開く子ウィンドウに出す説明文。localeに書かれていなければundefined。 */
   readonly description?: string;
 
@@ -732,7 +729,6 @@ export function fromGameSession(
     count: instances.length,
     // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。
     objects: [...instances],
-    objectGlobalId: instances[0].def.globalId,
     description: locale.object(instances[0].def.name).description,
     place,
     // 重ねたdraggedの行き先を決めるのはワールドの側（GameElementDefinition.md 7.8節）。

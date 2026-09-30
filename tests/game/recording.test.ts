@@ -89,7 +89,7 @@ object_defs:
     for (const tick of recording.ticks)
       for (const { name, lane, object } of shown)
         expect(
-          tick.view.cardsIn(lane).map((card) => card?.objectGlobalId),
+          tick.view.cardsIn(lane).map((card) => card?.objects[0]?.def.globalId),
           `tick@${tick.minutes}の${name}レーンには、まだ物がある`,
         ).toContain(object.def.globalId);
 
