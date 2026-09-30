@@ -33,6 +33,13 @@ describe('枠に今在るインスタンス', () => {
     expect(card.presentIds, '受け取ったときに写しているので、渡した配列とは別').toEqual([1, 2]);
   });
 
+  it('まだ言われていなければ、映している内容の並びそのものを渡す', async () => {
+    const identity = [1, 2, 3];
+    const card = await cardShowing({ icon: '', name: '石', identity, count: 3 });
+
+    expect(card.presentIds, '詰め替えずに渡す').toBe(identity);
+  });
+
   it('読んだ並びは、次に言われる前の顔ぶれのまま', async () => {
     const card = await cardShowing({ icon: '', name: '石', identity: [1, 2, 3], count: 3 });
     card.setPresence([1, 2], false);

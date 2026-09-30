@@ -8,7 +8,7 @@ import type { CardLane } from './CardLane';
 import { DescriptionPane } from './DescriptionPane';
 import type { ExplorationContent } from './ExplorationPane';
 import { ExplorationPane } from './ExplorationPane';
-import type { ObjectWindowLane, ObjectWindowLaneRole, ObjectWindowPane } from './ObjectWindowPane';
+import type { ObjectWindowLaneRole, ObjectWindowPane } from './ObjectWindowPane';
 import { OpenPane } from './OpenPane';
 import type { PropertyCategory } from './PropertiesPane';
 import { PropertiesPane } from './PropertiesPane';

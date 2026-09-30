@@ -720,8 +720,9 @@ export class Card extends Phaser.GameObjects.Container {
    * この枠に今在るインスタンス。まだ何も言われていなければ、映しているもの全部。
    *
    * **setPresenceは渡された並びを写して持つ**——渡した側が後から自分の配列を書き換えても、札が
-   * 名乗る顔ぶれは動かない。ここが渡すのはその写しの実体で、**顔ぶれが変わるのは次のsetPresence
-   * だけ**（並びごと替わる）。だから**読んだ配列は、次に言われる前の顔ぶれを持ち続ける。**
+   * 名乗る顔ぶれは動かない。**渡すのは持っている並びの実体で、写しではない**——言われた後は
+   * setPresenceが写した並び、言われる前は映している内容の`identity`そのもの。どちらも並びごと
+   * 替わる（setPresence・setContent）ので、**読んだ配列は替わる前の顔ぶれを持ち続ける。**
    */
   get presentIds(): readonly number[] {
     return this.present ?? this._content.identity ?? [];
