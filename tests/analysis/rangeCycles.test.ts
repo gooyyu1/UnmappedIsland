@@ -211,6 +211,27 @@ object_defs:
         add: {parent: {hydration: -1}}
       - conditions: [{prop: fullness, lte: 40}]
         add: {parent: {stamina: -1}}
+      # 点で決まる比較。値が点ちょうどに止まるかは速さから読めない。
+      - conditions: [{prop: fullness, neq: 10}]
+        add: {parent: {vitality: -1}}
+      - conditions: [{prop: fullness, not_in: [10, 20]}]
+        add: {parent: {pain: 1}}
+
+  # 腫れ上がる噛み傷。**生まれた時点で比較の外に在る値**——その条件が成り立つのはこれから。
+  swollen_bite:
+    tags: [stray_wound]
+    props:
+      swelling:
+        value: 50
+        range: {min: 0, max: 100}
+        passives:
+          - add: {self: {swelling: 2}}
+    passives:
+      - conditions: [{prop: swelling, lte: 30}]
+        add: {parent: {blood: -1}}
+      # 上端から見れば内側だが、下端（60）より下に生まれている。
+      - conditions: [{prop: swelling, eq: 60}]
+        add: {parent: {hydration: -1}}
 
   # にじむ切り傷。**0でないしきい値を割って外れる比較**——にじみが半分を割れば止まる。
   seeping_cut:
@@ -1180,6 +1201,27 @@ object_defs:
   it('rangeの上限まで許す比較は、値が上限に張り付いても外れない', () => {
     // fullnessは上限40で止まるので、lte 40は越えられない。上限を見ずに数えると21 tick目で外れる。
     expect(externalDeltasOf('leech', 'stamina')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('点で決まる比較は、値が動いていても止まる時刻を持たない', () => {
+    // 端を持つ比較と同じに数えると、neqもnot_inも10を越える6 tick目で外れることになる。
+    expect(externalDeltasOf('leech', 'vitality')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    expect(externalDeltasOf('leech', 'pain')).toEqual([
+      { amounts: [1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('生まれた時点で比較の外に在る値は、その比較からは止まらない', () => {
+    // swellingは50から+2/tick。lte 30はもう越えていて、ここで数えると負の時刻になって押し手ごと消える。eq 60は上端から
+    // 見れば内側なので、端ごとに見ると60を越える6 tick目で外れることになる。
+    expect(externalDeltasOf('swollen_bite', 'blood')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    expect(externalDeltasOf('swollen_bite', 'hydration')).toEqual([
       { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: undefined },
     ]);
   });

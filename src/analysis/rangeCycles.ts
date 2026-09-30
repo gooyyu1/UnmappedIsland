@@ -656,10 +656,7 @@ const GATE_WINDOW_ROLL_END: RollEnd = 'lowest';
  */
 function ticksUntilGateFalls(def: ObjectDef, gate: TickGate): number | undefined {
   const falls = [
-    ...gate.selfComparisons.flatMap((comparison) => [
-      ticksUntilComparisonLeftUpward(def, comparison),
-      ticksUntilComparisonLeftDownward(def, comparison),
-    ]),
+    ...gate.selfComparisons.map((comparison) => ticksUntilComparisonLeft(def, comparison)),
     ...gate.requiredSelfStages.flatMap((required) => [
       ticksUntilStageLeftUpward(def, required),
       ticksUntilStageLeftDownward(def, required),
@@ -711,48 +708,68 @@ function comparisonLowerEndOf(comparison: PropertyComparison): ComparisonEnd | u
 }
 
 /**
- * 自分の値が比較の上端を越えて、条件が外れるまでのtick数。上端を持たない比較、上がっていかない値、
- * 生まれた時点で既に上端の外に在る値ならundefined。**`range` の上限までに外へ出られない端も同じ**
- * ——`{lte: 100}` を上限100の値で見ている条件は、上がり続けても外れない（段の上端が上限より上の段を
- * 落とすのと同じ見方、PropertyDef.upperBoundOfStage）。
+ * 自分の値が比較の外へ出て、条件が外れるまでのtick数——上端を越えるか下端を割るかの早いほう。
+ * 出血を見ている `{bleeding, gte: 1}` は `bleeding` が1を割った時点で、`{fullness, lt: 30}` は
+ * `fullness` が30へ上がった時点で外れる。どちらの端からも外へ出ないならundefined＝止まらない。
+ *
+ * **生まれた時点で比較の外に在る値は止まらない**——その条件が成り立つのはこれからで、段を抜ける側
+ * （ticksUntilGateFalls）と同じ約束。**端ごとではなく区間全体で見る**——`eq` を下から上がっていく値は、
+ * 上端から見れば内側でも、比較は成り立っていない。
+ *
+ * **`range` の外にしか外へ出る先の無い端では止まらない**——`{lte: 100}` を上限100の値で見ている条件は、
+ * 上がり続けても外れない（段の上端が上限より上の段を落とすのと同じ見方、PropertyDef.upperBoundOfStage）。
  *
  * **その値を動かす宣言を1つも数から外していないときだけ**言い切る（TickAmounts.readsEveryDeclaredDelta）
  * ——外した増減が値を比較の内側へ連れ戻すなら、読めた増減で外へ出ることは起こらないかもしれない。
  */
-function ticksUntilComparisonLeftUpward(def: ObjectDef, comparison: PropertyComparison): number | undefined {
-  const end = comparisonUpperEndOf(comparison);
-  const max = def.tryGetPropertyDef(comparison.propertyGlobalId)?.range?.max ?? Number.POSITIVE_INFINITY;
-  if (end === undefined || (end.inclusive ? end.value >= max : end.value > max)) return undefined;
-
+function ticksUntilComparisonLeft(def: ObjectDef, comparison: PropertyComparison): number | undefined {
   const amounts = tickAmountsOf(def, comparison.propertyGlobalId);
   if (!amounts.readsEveryDeclaredDelta) return undefined;
   // 速さも初期値も、段を抜ける場合（ticksUntilStageLeftUpward）と同じ側。
   const value = staticValueOf(def, comparison.propertyGlobalId, GATE_WINDOW_ROLL_END);
-  const perTick = paceTowards(amounts.possible, 'on_max')?.fastest.amount;
-  return end.inclusive
-    ? ticksToRiseAbove(value, end.value, perTick)
-    : ticksToRiseTo(value, end.value, perTick);
+  const upper = comparisonUpperEndOf(comparison);
+  const lower = comparisonLowerEndOf(comparison);
+  if (value === undefined || !withinUpperEnd(value, upper) || !withinLowerEnd(value, lower)) return undefined;
+
+  // rangeの端が比較の内側に在るなら、その向きへは外へ出られない。
+  const range = def.tryGetPropertyDef(comparison.propertyGlobalId)?.range;
+  const max = range?.max ?? Number.POSITIVE_INFINITY;
+  const min = range?.min ?? Number.NEGATIVE_INFINITY;
+  const leaves = [
+    upper !== undefined && !withinUpperEnd(max, upper)
+      ? ticksToLeaveThrough(value, upper, paceTowards(amounts.possible, 'on_max')?.fastest.amount)
+      : undefined,
+    lower !== undefined && !withinLowerEnd(min, lower)
+      ? ticksToLeaveThrough(value, lower, paceTowards(amounts.possible, 'on_min')?.fastest.amount)
+      : undefined,
+  ].filter((ticks): ticks is number => ticks !== undefined);
+  return leaves.length === 0 ? undefined : Math.min(...leaves);
+}
+
+/** その値が、比較の上端の内側に在るか。上端を持たなければ常に内側。 */
+function withinUpperEnd(value: number, upper: ComparisonEnd | undefined): boolean {
+  return upper === undefined || (upper.inclusive ? value <= upper.value : value < upper.value);
+}
+
+/** その値が、比較の下端の内側に在るか。下端を持たなければ常に内側。 */
+function withinLowerEnd(value: number, lower: ComparisonEnd | undefined): boolean {
+  return lower === undefined || (lower.inclusive ? value >= lower.value : value > lower.value);
 }
 
 /**
- * 自分の値が比較の下端を割って、条件が外れるまでのtick数。上端の側（ticksUntilComparisonLeftUpward）を
- * 下へ裏返したもの——出血を見ている `{bleeding, gte: 1}` は、`bleeding` が1を割った時点で外れる。
+ * 比較の内側に在る値が、その速さでその端を抜けて外へ出るまでのtick数。その端へ向かわない値なら
+ * undefined。**向きは速さの符号が決める**ので、上端を越えるのも下端を割るのも同じ1つで数えられる。
+ * 端ちょうどが内側なら（`lte`・`gte`）通り過ぎたtick、外側なら（`lt`・`gt`）着いたtickで出る。
  */
-function ticksUntilComparisonLeftDownward(
-  def: ObjectDef,
-  comparison: PropertyComparison,
+function ticksToLeaveThrough(
+  value: number,
+  end: ComparisonEnd,
+  perTick: number | undefined,
 ): number | undefined {
-  const end = comparisonLowerEndOf(comparison);
-  const min = def.tryGetPropertyDef(comparison.propertyGlobalId)?.range?.min ?? Number.NEGATIVE_INFINITY;
-  if (end === undefined || (end.inclusive ? end.value <= min : end.value < min)) return undefined;
-
-  const amounts = tickAmountsOf(def, comparison.propertyGlobalId);
-  if (!amounts.readsEveryDeclaredDelta) return undefined;
-  const value = staticValueOf(def, comparison.propertyGlobalId, GATE_WINDOW_ROLL_END);
-  const perTick = paceTowards(amounts.possible, 'on_min')?.fastest.amount;
+  if (perTick === undefined) return undefined;
   return end.inclusive
-    ? ticksToFallBelow(value, end.value, perTick)
-    : ticksToFallTo(value, end.value, perTick);
+    ? Math.floor((end.value - value) / perTick) + 1
+    : Math.ceil((end.value - value) / perTick);
 }
 
 /**
@@ -1118,32 +1135,4 @@ function ticksToFallBelow(
   if (value === undefined || bound === undefined || perTick === undefined) return undefined;
   if (value < bound) return undefined;
   return Math.floor((bound - value) / perTick) + 1;
-}
-
-/**
- * その値がその速さで、その位置を**越えて上へ抜ける**までのtick数。位置ちょうどはまだ内側
- * （`lte` の端）——{@link ticksToFallBelow}を上へ裏返したもの。既に位置より上に在るならundefined。
- */
-function ticksToRiseAbove(
-  value: number | undefined,
-  bound: number | undefined,
-  perTick: number | undefined,
-): number | undefined {
-  if (value === undefined || bound === undefined || perTick === undefined) return undefined;
-  if (value > bound) return undefined;
-  return Math.floor((bound - value) / perTick) + 1;
-}
-
-/**
- * その値がその速さで、その位置**まで下がって抜ける**までのtick数。位置ちょうどはもう外側
- * （`gt` の端）——{@link ticksToRiseTo}を下へ裏返したもの。既に位置以下に在るならundefined。
- */
-function ticksToFallTo(
-  value: number | undefined,
-  bound: number | undefined,
-  perTick: number | undefined,
-): number | undefined {
-  if (value === undefined || bound === undefined || perTick === undefined) return undefined;
-  if (value <= bound) return undefined;
-  return Math.ceil((bound - value) / perTick);
 }
