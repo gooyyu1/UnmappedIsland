@@ -159,8 +159,9 @@ object_defs:
   # 掻き取って干した繊維のひと束。1本ずつを物として扱うことはしないので、束で1つと数える。
   plant_fiber:
     tags: [item]
-    # ほぐした繊維は火口になる（docs/engine/FireSystem.md 3.2節）。
-    traits: [ignitable]
+    # ほぐした繊維は火口になる（docs/engine/FireSystem.md 3.2節）。積んであるだけでも屋外で傷む
+    # 短命な素材（docs/engine/DurabilitySystem.md 2.2節）。
+    traits: [ignitable, short_lived_material]
     props:
       ignition_chance: {value: 80, base: {subject: agent, prop: ignition_ease}}
       weight: {value: 60}

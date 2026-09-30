@@ -4,7 +4,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/DurationStats.md。
 
 meta:
-  - {unit: days, minimum: 1, durations: 149, longest: 100.00, shortest: 1.00, tool_wears: 16}
+  - {unit: days, minimum: 1, durations: 151, longest: 100.00, shortest: 1.00, tool_wears: 16}
 
 durations:
   - {object: bone_needle, property: durability, unit: days, days: 100.00, shortest_days: 20.00, longest_days: 100.00, repeats: false, destroys: true}
@@ -75,10 +75,12 @@ durations:
   - {object: fracture, property: severity, unit: days, days: 10.50, shortest_days: 10.50, longest_days: 14.00, repeats: false, destroys: true}
   - {object: bed, property: durability, unit: days, days: 10.00, shortest_days: 5.00, longest_days: 10.00, repeats: false, destroys: true}
   - {object: bundled_leaf_clothing, property: durability, unit: days, days: 10.00, shortest_days: 5.00, longest_days: 10.00, repeats: false, destroys: true}
+  - {object: plant_fiber, property: durability, unit: days, days: 10.00, shortest_days: 5.00, longest_days: 10.00, repeats: false, destroys: true}
   - {object: rawhide_clothing, property: durability, unit: days, days: 10.00, shortest_days: 5.00, longest_days: 10.00, repeats: false, destroys: true}
   - {object: snare, property: durability, unit: days, days: 10.00, shortest_days: 0.91, longest_days: 10.00, repeats: false, destroys: true}
   - {object: sprained_ankle, property: severity, unit: days, days: 10.00, shortest_days: 10.00, longest_days: 10.00, repeats: false, destroys: true}
   - {object: woven_basket, property: durability, unit: days, days: 10.00, shortest_days: 5.00, longest_days: 10.00, repeats: false, destroys: true}
+  - {object: woven_leaf, property: durability, unit: days, days: 10.00, shortest_days: 5.00, longest_days: 10.00, repeats: false, destroys: true}
   - {object: woven_leaf_clothing, property: durability, unit: days, days: 10.00, shortest_days: 5.00, longest_days: 10.00, repeats: false, destroys: true}
   - {object: gore_wound, property: severity, unit: days, days: 7.50, shortest_days: 7.50, longest_days: 7.50, repeats: false, destroys: true}
   - {object: puncture_wound, property: severity, unit: days, days: 7.50, shortest_days: 7.50, longest_days: 7.50, repeats: false, destroys: true}

@@ -82,6 +82,8 @@ object_defs:
   woven_leaf:
     # fragileは、動物がぶつかって壊しうる物（docs/engine/HuntingSystem.md 5.4節）。
     tags: [item, fragile]
+    # 積んであるだけでも屋外で傷む短命な素材（docs/engine/DurabilitySystem.md 2.2節）。
+    traits: [short_lived_material]
     props:
       weight: {value: 400}
       # 平たい板なので重ねられる。
