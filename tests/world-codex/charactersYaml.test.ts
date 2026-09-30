@@ -823,7 +823,7 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     it('睡眠1回では、覚醒度は満タンに届かない', () => {
-      // 6時間眠って18時間ぶん。1日を回すだけでほぼ使い切るので、溜まった眠気は一晩では返らない。
+      // 6時間眠って18時間ぶん。1日を回すだけでほぼ使い切るので、溜まった眠気は睡眠1回では返らない。
       expect(takeRest(character, 'sleep', true).wakefulness).toBeLessThan(maxOf(character, 'wakefulness'));
     });
 
