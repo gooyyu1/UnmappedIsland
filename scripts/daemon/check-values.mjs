@@ -172,9 +172,9 @@ const ENV_REMEDY = {
  */
 const WORKER_REMEDY = {
   CLOUD_ENV:
-    'まず `bash scripts/daemon/usage.sh` で使用量の上限に当たっていないか見る（2026-09-14 からの3日はこれだった）。余力が在るなら `claude.ai/code` でセッションを1本開いて走るか確かめる',
+    'まず `bash scripts/daemon/usage.sh --last` で使用量の上限に当たっていないか見る（2026-09-14 からの3日はこれだった）。余力が在るなら `claude.ai/code` でセッションを1本開いて走るか確かめる',
   BRIDGE_ENV:
-    'まず `bash scripts/daemon/usage.sh` で使用量の上限に当たっていないか見る。余力が在るなら、このPCで Claude Code の CLI を開き直す（走る者はCLIのプロセスが配る）',
+    'まず `bash scripts/daemon/usage.sh --last` で使用量の上限に当たっていないか見る。余力が在るなら、このPCで Claude Code の CLI を開き直す（走る者はCLIのプロセスが配る）',
 };
 
 /**
