@@ -133,26 +133,28 @@ describe('貯め込まずに毎回導出することの値段', () => {
   }
 
   /**
-   * bodyを1回走らせる間に、`src/domain/**` と `src/game/view/**` のクラスのメソッド・ゲッターが
-   * 呼ばれた回数。
+   * bodyを1回走らせる間に、`src/domain/**` と `src/game/view/**` が書き出しているクラスと、それらが
+   * 継いでいる先のクラスの、メソッド・ゲッター・静的メソッドが呼ばれた回数。
    *
    * **伸び方は時計ではなくこの回数で見る。** 時計の比には走らせた機械の混み具合が混ざり、落ちても
    * 「走査が生えた」のか「機械が混んでいた」のかを赤と緑で区別できない。回数は同じ入力なら毎回
    * 同じなので、比の上限が見るのは導出の形だけになる。
    *
-   * **数えられるのは、並ぶ物やその札へ何かを問う走査だけ。** 配列の上だけで完結する走査（`indexOf`
-   * など）と、クラスの外の関数は数えない。前者は物へ何も問わないぶん1回が軽いので、2乗で伸びても
-   * 桁が変わるほど枚数が要る——そこは時計の上限が受け持つ。
+   * **並ぶ物やその札へ何かを問う走査は、ここに数えられる。** 問う先の物（`WorldObject`）も札を並べる
+   * 側（`PlayScreenView`・`ShownCards`）も書き出されたクラスなので、1つ問えばそのメソッドかゲッターを
+   * 通る。数えないのは、書き出されも継がれもしないクラス、クラスの外の関数、配列の上だけで完結する
+   * 走査（`indexOf` など）。最後のものは物へ何も問わないぶん1回が軽いので、2乗で伸びても桁が変わる
+   * ほど枚数が要る——そこは時計の上限が受け持つ。
    */
   function methodCallsDuring(body: () => void): number {
     let calls = 0;
     const restores: (() => void)[] = [];
-    for (const prototype of countedPrototypes()) {
-      for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(prototype))) {
-        if (key === 'constructor') continue;
+    for (const holder of countedMethodHolders()) {
+      for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(holder))) {
+        if (!descriptor.configurable) continue;
         const counted = { ...descriptor };
         const { value, get } = descriptor;
-        if (typeof value === 'function') {
+        if (typeof value === 'function' && key !== 'constructor') {
           counted.value = function (this: unknown, ...args: unknown[]) {
             calls++;
             return (value as (...a: unknown[]) => unknown).apply(this, args);
@@ -163,8 +165,8 @@ describe('貯め込まずに毎回導出することの値段', () => {
             return get.call(this);
           };
         } else continue;
-        Object.defineProperty(prototype, key, counted);
-        restores.push(() => Object.defineProperty(prototype, key, descriptor));
+        Object.defineProperty(holder, key, counted);
+        restores.push(() => Object.defineProperty(holder, key, descriptor));
       }
     }
     try {
@@ -175,21 +177,26 @@ describe('貯め込まずに毎回導出することの値段', () => {
     return calls;
   }
 
-  /** `src/domain/**` と `src/game/view/**` が書き出しているクラスの prototype（重複なし）。 */
-  function countedPrototypes(): ReadonlySet<object> {
+  /**
+   * 数える側のクラスの、メソッドを持つ所——prototype（インスタンスのメソッド・ゲッター）と、クラス
+   * そのもの（静的メソッド）。書き出されたクラスから継ぐ先へ辿り、組み込みのクラスの手前で止める。
+   */
+  function countedMethodHolders(): ReadonlySet<object> {
     const modules = import.meta.glob<Record<string, unknown>>(
       ['../../src/domain/**/*.ts', '../../src/game/view/**/*.ts'],
-      {
-        eager: true,
-      },
+      { eager: true },
     );
-    const prototypes = new Set<object>();
+    const isClass = (value: unknown): value is abstract new (...args: never[]) => unknown =>
+      typeof value === 'function' && /^class[\s{]/.test(Function.prototype.toString.call(value));
+
+    const holders = new Set<object>();
     for (const exported of Object.values(modules).flatMap((module) => Object.values(module))) {
-      if (typeof exported === 'function' && /^class[\s{]/.test(Function.prototype.toString.call(exported))) {
-        prototypes.add(exported.prototype as object);
+      for (let cls: unknown = exported; isClass(cls); cls = Object.getPrototypeOf(cls)) {
+        holders.add(cls);
+        holders.add(cls.prototype as object);
       }
     }
-    return prototypes;
+    return holders;
   }
 
   /**
