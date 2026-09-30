@@ -1,5 +1,6 @@
 import { join } from 'node:path';
-import { activityHoursOf } from '../../src/analysis/activityHours';
+import type { SeasonWeatherHours } from '../../src/analysis/activityHours';
+import { activityHoursOf, openAirGaleShareOf } from '../../src/analysis/activityHours';
 import type { BalanceTables } from '../../src/analysis/balanceTables';
 import type {
   BaseDailyPhases,
@@ -14,8 +15,6 @@ import {
   dailyPhasesOf,
   dayTripOneWayLimitMinutesOf,
   locationTypeDaysOf,
-  NIGHT_CRAFT_MINUTES_PER_DAY,
-  OUTDOOR_WINDOW_MINUTES,
   SLEEP_MINUTES_PER_DAY,
   workPileAmountsOf,
   workTotalOf,
@@ -418,11 +417,15 @@ interface SolvedBalance {
   readonly work: WorkTotal;
 }
 
-/** 1日の枠も山の量も収支表から出る（ContentSkeleton.md 8.3節）ので、ここで1度だけ解く。 */
+/**
+ * 1日の枠も山の量も収支表から出る（ContentSkeleton.md 8.3節）ので、ここで1度だけ解く。1日の枠は
+ * 屋外が嵐で閉ざされる割合でも縮む（同 8.2節）。
+ */
 function solvedBalanceOf(codex: WorldCodex, balance: BalanceTables): SolvedBalance {
   const amounts = workPileAmountsOf(codex, balance);
+  const budget = dailyBudgetOf(balance, openAirGaleShareOf(codex, SEASONS));
 
-  return { balance, budget: dailyBudgetOf(balance), amounts, work: workTotalOf(amounts) };
+  return { balance, budget, amounts, work: workTotalOf(amounts, budget) };
 }
 
 function buildSections(
@@ -505,11 +508,12 @@ function buildSections(
       records: [
         {
           unit: 'minutes',
-          outdoor_window: OUTDOOR_WINDOW_MINUTES,
-          night_craft: NIGHT_CRAFT_MINUTES_PER_DAY,
+          outdoor_window: rounded(budget.outdoorWindowMinutes, 1),
+          night_craft: rounded(budget.nightCraftMinutes, 1),
+          storm_stop: rounded(budget.stormStopMinutes, 1),
           sleep: SLEEP_MINUTES_PER_DAY,
           survival_gathering: budget.survivalGatheringMinutes,
-          day_trip_one_way: dayTripOneWayLimitMinutesOf(budget),
+          day_trip_one_way: rounded(dayTripOneWayLimitMinutesOf(budget), 1),
           surplus: balance.surplusMinutes,
         },
       ],
@@ -622,6 +626,13 @@ function buildSections(
 
 const REPORT_PATH = join('stats', 'terrain.yaml');
 const DOC_PATH = join('docs', 'diagnostics', 'TerrainStats.md');
+/** 天候の出現時間の実測（`stats/climate.yaml`）。活動時間表と嵐の割合が、同じものを読む。 */
+const SEASONS: readonly SeasonWeatherHours[] = SEASON_CLIMATE.map((season) => ({
+  seasonName: season.name,
+  durationDays: season.durationDays,
+  hoursByWeather: new Map(Object.entries(season.hoursByWeather)),
+}));
+
 const solvedBalance = solvedBalanceOf(bundledCodex(), bundledBalanceTables());
 
 /** 定義から島を生成して測り、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
@@ -634,17 +645,7 @@ function buildReportFromDefinitions(): string {
   const elevationMetersOf = (site: Site): number =>
     site.axisValues.get(scope.elevationAxis)! * metersPerElevationUnit;
 
-  const locationDays = locationTypeDaysOf(
-    codex,
-    activityHoursOf(
-      codex,
-      SEASON_CLIMATE.map((season) => ({
-        seasonName: season.name,
-        durationDays: season.durationDays,
-        hoursByWeather: new Map(Object.entries(season.hoursByWeather)),
-      })),
-    ),
-  );
+  const locationDays = locationTypeDaysOf(codex, activityHoursOf(codex, SEASONS));
 
   const measures: IslandMeasures = {
     elevationMetersOf,

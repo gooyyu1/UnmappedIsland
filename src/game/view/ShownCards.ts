@@ -630,7 +630,7 @@ export class ShownCards {
   }
 
   /** 端を押したときの移動（その向きへ移せないならundefined）。行き先は「空いている場所」なので位置は指定しない。 */
-  edgeMoveAction(card: ObjectCardStack, direction: CardEdgeDirection): (() => void) | undefined {
+  private edgeMoveAction(card: ObjectCardStack, direction: CardEdgeDirection): (() => void) | undefined {
     for (const place of this.edgeTargets(card.place, direction)) {
       const dropped = card.dropInto?.(place);
       if (dropped !== undefined) return dropped.execute;

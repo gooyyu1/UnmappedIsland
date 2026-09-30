@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { commentParts } from '../../scripts/codeComments.mjs';
 
 /**
  * ソースのdocコメントが、その直下の宣言と対応しているかの検査。
@@ -25,16 +26,13 @@ function sourcesIn(dir: string): string[] {
   return found;
 }
 
-/** その行がコメントの一部か（ブロックの途中も含む）。 */
-function isComment(line: string): boolean {
-  return line.startsWith('/*') || line.startsWith('*');
-}
-
 describe('docコメント', () => {
   it('宣言を失った説明が残っていない', () => {
     const orphans: string[] = [];
     for (const rel of sourcesIn('src')) {
-      const lines = readFileSync(join(ROOT, rel), 'utf-8').split('\n');
+      const source = readFileSync(join(ROOT, rel), 'utf-8');
+      const lines = source.split('\n');
+      const comments = commentParts(source, rel);
       // ファイル冒頭の「モジュールの説明 → 空行 → 最初の宣言の説明」は正しい形。空行を挟む並びは、
       // 宣言が1つでも出た後でだけ取り残しとみなす。
       let afterDeclaration = false;
@@ -43,7 +41,7 @@ describe('docコメント', () => {
         const line = lines[i].trim();
         if (line.startsWith('import ')) inImport = !line.endsWith(';');
         else if (inImport) inImport = !line.endsWith(';');
-        else if (line !== '' && !line.startsWith('//') && !isComment(line)) afterDeclaration = true;
+        else if (line !== '' && comments[i] === null) afterDeclaration = true;
         if (!lines[i].trimEnd().endsWith('*/')) continue;
 
         let next = i + 1;

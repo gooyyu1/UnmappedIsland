@@ -146,9 +146,9 @@ export class Location extends ObjectWrapper {
 
   /**
    * undiscovered_fixturesの設置物のうち、required_progressが現在の探索進捗以下のものをfixturesへ移して
-   * 「発見」させる。冪等。進捗がYAML側の効果だけで動いた場合に備え、exploreを介さず単独でも呼べる。
+   * 「発見」させる。冪等。
    */
-  revealDueFixtures(): void {
+  private revealDueFixtures(): void {
     const hidden = this.instance.tryGetSlot(this.words.undiscoveredFixturesSlotId);
     if (hidden === undefined) return;
 

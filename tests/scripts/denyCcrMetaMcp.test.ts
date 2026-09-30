@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { commentParts } from '../../scripts/codeComments.mjs';
 import { runWithOnlyTheseCommands } from '../support/onlyTheseCommands';
 import { runScript } from '../support/runScript';
 
@@ -40,8 +41,10 @@ function decision(): Decision {
  * （折り返しをまたぐ写しが `#` で断ち切られて抜ける）。
  */
 function entryComment(): string {
-  const lines = readFileSync(ENTRY, 'utf-8').split(/\r?\n/);
-  const body = lines.findIndex((line) => line !== '' && !line.startsWith('#'));
+  const text = readFileSync(ENTRY, 'utf-8');
+  const lines = text.split(/\r?\n/);
+  const comments = commentParts(text, ENTRY);
+  const body = lines.findIndex((line, index) => line !== '' && comments[index] === null);
   return lines
     .slice(0, body < 0 ? lines.length : body)
     .join('\n')

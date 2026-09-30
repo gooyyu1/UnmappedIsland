@@ -200,9 +200,10 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
     const budget = (column: string): number => cell(terrain, 'daily_budget', {}, column);
     const minutesPerDay = 24 * 60;
 
+    // レポートは0.1分で丸めて出すので、和は丸めの幅だけずれうる。
     expect(
-      budget('outdoor_window') + budget('night_craft') + budget('sleep'),
-      '屋外の窓・炉端・睡眠で1日がちょうど埋まる（松明の入る先が無い）',
-    ).toBe(minutesPerDay);
+      budget('outdoor_window') + budget('night_craft') + budget('storm_stop') + budget('sleep'),
+      '屋外の窓・炉端・嵐で止まる時間・睡眠で1日がちょうど埋まる（松明の入る先が無い）',
+    ).toBeCloseTo(minutesPerDay, 0);
   });
 });

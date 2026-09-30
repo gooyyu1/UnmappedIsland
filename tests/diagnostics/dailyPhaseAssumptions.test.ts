@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { dailyBudgetOf, workPileAmountsOf, WORK_SHARES } from '../../src/analysis/dailyPhases';
+import { activityHoursOf, litPlacesOf, openAirGaleShareOf } from '../../src/analysis/activityHours';
+import {
+  cycleDaysOf,
+  dailyBudgetOf,
+  dailyPhasesOf,
+  locationTypeDaysOf,
+  SLEEP_MINUTES_PER_DAY,
+  workPileAmountsOf,
+  workTotalOf,
+  WORK_SHARES,
+} from '../../src/analysis/dailyPhases';
+import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
+import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
+import { MINUTES_PER_DAY } from '../../src/domain/worldTime';
 import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 
 /**
@@ -11,12 +24,76 @@ import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 describe('局面ごとの1日の前提', () => {
   const codex = bundledCodex();
   const balance = bundledBalanceTables();
+  const seasons = SEASON_CLIMATE.map((season) => ({
+    seasonName: season.name,
+    durationDays: season.durationDays,
+    hoursByWeather: new Map(Object.entries(season.hoursByWeather)),
+  }));
+  const galeShare = openAirGaleShareOf(codex, seasons);
 
   it('収支表の最小労働が、睡眠と自由時間の両方を残す幅に収まっている', () => {
     // 最小労働が睡眠を割ると生存の採取が負になり、1日の実入りが全土地で水増しされる。
-    expect(dailyBudgetOf(balance).survivalGatheringMinutes, '昼に払う生存の採取').toBeGreaterThan(0);
+    expect(dailyBudgetOf(balance, galeShare).survivalGatheringMinutes, '昼に払う生存の採取').toBeGreaterThan(
+      0,
+    );
     // 1日を使い切ると自由時間が0以下になり、山の日数が出なくなる（ObjectCost.days）。
     expect(balance.surplusMinutes, '最小労働を払って残る自由時間').toBeGreaterThan(0);
+  });
+
+  it('1日の割り付けは、嵐で止まる時間を含めてちょうど24時間になる', () => {
+    const budget = dailyBudgetOf(balance, galeShare);
+    const total =
+      budget.outdoorWindowMinutes +
+      budget.nightCraftMinutes +
+      budget.stormStopMinutes +
+      SLEEP_MINUTES_PER_DAY;
+
+    expect(total, '屋外＋夜の加工＋嵐で止まる時間＋睡眠').toBeCloseTo(MINUTES_PER_DAY, 6);
+  });
+
+  // 嵐は往復の移動も止める（ContentSkeleton.md 8.1.4節・8.2節）。頭打ちの側だけで嵐を引く形へ戻ると、
+  // 屋外の枠で律速されている局面では嵐がどれだけ長くても日数が1日も動かない（issue #2297）。
+  // 実測の嵐と、嵐の無い空とで、同じ島の1周回を比べる。
+  it('屋外が嵐で閉ざされる時間は、1周回の日数を伸ばす', () => {
+    // 嵐を1時間も測っていない実測は、比べる2つを同じにしてこの見張りを素通りさせる。
+    expect(galeShare, '屋外が嵐で閉ざされる割合').toBeGreaterThan(0);
+
+    const locationDays = locationTypeDaysOf(codex, activityHoursOf(codex, seasons));
+    const amounts = workPileAmountsOf(codex, balance);
+    const totalDaysOver = (share: number): number => {
+      const budget = dailyBudgetOf(balance, share);
+      const work = workTotalOf(amounts, budget);
+      let totalDays = 0;
+      for (let seed = 0; seed < 20; seed++) {
+        const base = dailyPhasesOf(
+          generateIsland(codex.generation, 'island', seed),
+          locationDays,
+          budget,
+        ).bestBase;
+        const cycle = cycleDaysOf(base, work);
+        expect(cycle, `シード${seed}: 1周回が成立する`).toBeDefined();
+        totalDays += cycle!.totalDays;
+      }
+      return totalDays;
+    };
+
+    expect(totalDaysOver(galeShare), '嵐のある空での1周回（20島の合計）').toBeGreaterThan(totalDaysOver(0));
+  }, 30_000);
+
+  // 1日の枠から引く嵐は、拠点でも行き先でもなく島全体の値（dailyBudgetOf）。成り立つのは、1日を
+  // 過ごすどの土地にも風雨が届くときだけ——屋根に守られた土地が生まれると、そこで過ごす日の枠を
+  // 縮めすぎる。
+  it('島に生える土地は、どれも屋根に守られていない', () => {
+    const siteNames = new Set(
+      codex.generation!.locationTypes.map((type) => codex.objects.get(type.objectDefGlobalId).name),
+    );
+    const sheltered = litPlacesOf(codex).filter((place) => place.sheltered && siteNames.has(place.name));
+
+    expect(siteNames.size, '島に生える土地の型').toBeGreaterThan(0);
+    expect(
+      sheltered.map((place) => place.name),
+      '屋根に守られた土地',
+    ).toEqual([]);
   });
 
   it('山の配分の割合が、合計で1になる', () => {
