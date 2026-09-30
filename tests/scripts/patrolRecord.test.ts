@@ -164,7 +164,7 @@ describe('埋める置き場の既定', () => {
     vi.stubEnv('USERPROFILE', undefined);
     vi.stubEnv('HOME', '/home/daemon');
     try {
-      expect(SESSION_PLACES[name]?.()).toBe(`/home/daemon/${found?.[1] ?? ''}`);
+      expect(SESSION_PLACES[name]()).toBe(`/home/daemon/${found?.[1] ?? ''}`);
     } finally {
       vi.unstubAllEnvs();
     }
