@@ -741,7 +741,7 @@ function placeBalances(
  * 並びは宣言順にする。値で並べ替えると、数値を触るたびに行が入れ替わって差分が読めなくなる。
  * 対象から外すのは、手に入れるという言い方が成り立たないもの——土地・キャラクタ・世界（singleton）、
  * 単独で存在できない物（怪我・道）、レシピが自動生成する製作中オブジェクト、そして軸の値の型
- * （axisValueGlobalIds参照）。**海でしか手に入らない物も外す**（seaOnly）——島の表なので、海鳥の卵の
+ * （WorldCodex.isVariationAxisValue）。**海でしか手に入らない物も外す**（seaOnly）——島の表なので、海鳥の卵の
  * 値段を「入手経路が無い」として並べても、島の内容の穴を数えたことにはならない。
  */
 function objectCosts(
@@ -751,10 +751,9 @@ function objectCosts(
   seaOnly: ReadonlySet<ObjectGlobalId>,
 ): readonly ObjectCost[] {
   const rows: ObjectCost[] = [];
-  const axisValues = axisValueGlobalIds(codex);
   for (const def of [...codex.objects]) {
     if (def.isSingleton || def.boundToOwner) continue;
-    if (codex.isGenerated(def) || axisValues.has(def.globalId) || seaOnly.has(def.globalId)) continue;
+    if (codex.isGenerated(def) || codex.isVariationAxisValue(def) || seaOnly.has(def.globalId)) continue;
     // 土地は生成されるもので、手に入れるものではない。**ただし作れる土地は対象**——筏は乗り込む
     // 場所であると同時に、丸太と縄から組み上げる物でもある。
     if (isLocation(codex, def) && !islandWide.producedObjects.has(def.globalId)) continue;
@@ -1365,24 +1364,6 @@ function isCharacter(codex: WorldCodex, def: ObjectDef): boolean {
 }
 
 /**
- * 軸の値としてしか現れない型（3.5節）。液体の種類（`water_liquid`）がこれで、**世界に現れるのは
- * 中身入りの容器という変種のほう**——この型そのもののインスタンスは作られない。宣言している操作
- * （`drink`）も、変種が受け取って初めて起こるもので、この型が持っていても誰も起こせない。
- *
- * 軸の値の識別子は生成器が決める名前だが、`variation_axes` の軸では値の型の名前そのもの
- * （axisVariants）。レシピの軸の値はレシピ名なので、型として引けたものだけを見る。
- */
-function axisValueGlobalIds(codex: WorldCodex): ReadonlySet<ObjectGlobalId> {
-  const ids = new Set<ObjectGlobalId>();
-  for (const def of codex.objects)
-    for (const value of codex.variationsOf(def).values()) {
-      const globalId = codex.objectNames.tryGetId(value);
-      if (globalId !== undefined && codex.objects.tryGet(globalId) !== undefined) ids.add(globalId);
-    }
-  return ids;
-}
-
-/**
  * 経路として辿れる工程だけを残す（`CraftingStep.startedByPlayer`）。**時間が配る手番**——動物の1手と、
  * 限界に達した値が起こす強制的な時間経過（[`Characters.md`](../../docs/world/Characters.md) 限界節）
  * ——は押して選べないので、経路に並べると**選べない道が献立に載る**（強制の睡眠が「眠気を戻す手立て」
@@ -1397,7 +1378,7 @@ function reachableSteps(steps: readonly StepRef[]): readonly StepRef[] {
 
 /**
  * 島の全型の全工程。宣言順（型のグローバルID順、型の中は宣言順）。プレイヤーが起こす工程に続けて、
- * 時間で回る工程（罠の判定）も並べる。軸の値の型は飛ばす（axisValueGlobalIds参照）。
+ * 時間で回る工程（罠の判定）も並べる。軸の値の型は飛ばす（WorldCodex.isVariationAxisValue）。
  *
  * **海でしか手に入らない型が宣言する工程も飛ばす**（`IslandLocations.seaOnly`）——この表が数えるのは
  * 島の1日で、海はその外。海区の見張りだけでなく漁り場の漁も落ちる：生肉を30分で返す漁り場を残すと、
@@ -1416,9 +1397,10 @@ function allSteps(
 ): readonly StepRef[] {
   const outer = analysisContext(codex, standingAt === undefined ? islandLocations.island : [standingAt]);
   const defs = [...codex.objects];
-  const axisValues = axisValueGlobalIds(codex);
   return defs.flatMap((def) => {
-    if (axisValues.has(def.globalId) || islandLocations.seaOnly.has(def.globalId)) return [];
+    // 液体の種類が宣言している操作（`drink`）も、変種が受け取って初めて起こる——この型が持っていても
+    // 誰も起こせない。
+    if (codex.isVariationAxisValue(def) || islandLocations.seaOnly.has(def.globalId)) return [];
     if (standingAt !== undefined && isLocation(codex, def) && def.globalId !== standingAt.globalId) return [];
     const cycles = rangeCyclesOf(def, outer.resolve, defs);
     const lifetime = decayLifetimeOf(cycles);

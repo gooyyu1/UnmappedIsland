@@ -11,6 +11,7 @@ import {
   type TagGlobalId,
 } from './GlobalId';
 import { GeneratedTypes } from './GeneratedTypes';
+import { RECIPE_AXIS } from './RecipeDef';
 import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef, ObjectDefTable } from './ObjectDef';
 import type { PassiveReader } from './PassiveReader';
@@ -445,6 +446,25 @@ export class WorldCodex {
   variationsOf(def: ObjectDef): ReadonlyMap<string, string> {
     return this.generatedTypes.coordinateOf(def).axisValues;
   }
+
+  /**
+   * 変種の軸の値になっている型か（3.5.1節。液体の種類・食べ物の加工）。軸の先の変種へtraitを配るだけで、
+   * この型自身の個体は作られない。
+   *
+   * **作りかけの軸は見ない**——その値はレシピの名前で、型の名前ではない（RecipeSystem.md 1節）。
+   * 同じ名前の型が在っても、それは軸の値ではない。
+   */
+  isVariationAxisValue(def: ObjectDef): boolean {
+    if (this.variationAxisValueNames === undefined) {
+      const found = new Set<string>();
+      for (const objectDef of this.objects)
+        for (const [axis, value] of this.variationsOf(objectDef)) if (axis !== RECIPE_AXIS) found.add(value);
+      this.variationAxisValueNames = found;
+    }
+    return this.variationAxisValueNames.has(def.name);
+  }
+
+  private variationAxisValueNames: ReadonlySet<string> | undefined;
 
   /**
    * defの座標から、axisValuesで指した軸だけを動かした先の型（`become`、9.9節）。その座標に型が
