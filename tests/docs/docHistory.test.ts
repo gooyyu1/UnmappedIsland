@@ -80,13 +80,17 @@ describe('射程が、決めた先へ届いている', () => {
   });
 
   // 射程を `docs/` とソースのコメントに戻しても、他の検査はどれも緑のまま——10節が決めた
-  // 「盤面を回す文書とスクリプトにも掛かる」を守るのはここだけ。
-  it.each(['agent-ops/parallel-work.md', 'scripts/daemon/usage.sh', '.github/workflows/pages.yml'])(
-    '%s を読んでいる',
-    (file) => {
-      expect(SCANNED).toContain(file);
-    },
-  );
+  // 「盤面を回す文書にも、スクリプト・データ・ワークフローのコメントにも掛かる」を守るのはここだけ。
+  // 形式ごとに1つずつ置く（どれか1つの形式が射程から落ちても赤くなるように）。
+  it.each([
+    'agent-ops/parallel-work.md',
+    'scripts/daemon/usage.sh',
+    '.github/workflows/pages.yml',
+    'src/assets/world-codex/timber.yaml',
+    'tools/comfyui/recipes/campfire.json',
+  ])('%s を読んでいる', (file) => {
+    expect(SCANNED).toContain(file);
+  });
 });
 
 describe('経緯を主題としない文書とコメントは、過去の姿を語らない', () => {

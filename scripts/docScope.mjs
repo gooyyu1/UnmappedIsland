@@ -66,6 +66,17 @@ export function specDocs(root) {
 export const COMMENTED_EXTENSIONS = ['.ts', '.mts', '.mjs', '.js', '.sh', '.py', '.yaml', '.yml'];
 
 /**
+ * 人の読む文を持つ形式か——文書・コメントを書ける形式・宣言の値へ散文を置くデータ
+ * （{@link isProseData}）。**文書の規約を `docs/` の外へ課す側は、どれもここから絞る**
+ * （{@link trackedRefSources}・{@link historyRuleSources}）。別々に持つと、新しい形式を片方だけが知る。
+ *
+ * @param {string} rel 根からの相対パス
+ */
+function hasProse(rel) {
+  return rel.endsWith('.md') || COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)) || isProseData(rel);
+}
+
+/**
  * 節番号の参照（`docs/DocumentStyle.md` 5節）を課す側のファイル。文書自身と、節番号で文書を指す
  * コード・データ。
  *
@@ -82,10 +93,7 @@ export const COMMENTED_EXTENSIONS = ['.ts', '.mts', '.mjs', '.js', '.sh', '.py',
  */
 export function trackedRefSources(root) {
   return trackedFiles(root).filter(
-    (rel) =>
-      (rel.endsWith('.md') || COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)) || isProseData(rel)) &&
-      !rel.startsWith(join('tests', 'docs') + sep) &&
-      !isVerbatimRecord(rel),
+    (rel) => hasProse(rel) && !rel.startsWith(join('tests', 'docs') + sep) && !isVerbatimRecord(rel),
   );
 }
 
@@ -157,11 +165,7 @@ export function historyDocs(root) {
 export function historyRuleSources(root) {
   const history = historyDocs(root);
   return trackedFiles(root).filter(
-    (rel) =>
-      (rel.endsWith('.md') || COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)) || isProseData(rel)) &&
-      !history.has(rel) &&
-      !isVerbatimRecord(rel) &&
-      !isAnalysisRecord(rel),
+    (rel) => hasProse(rel) && !history.has(rel) && !isVerbatimRecord(rel) && !isAnalysisRecord(rel),
   );
 }
 
