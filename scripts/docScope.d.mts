@@ -6,5 +6,6 @@ export function trackedRefSources(root: string): string[];
 export function isProseData(rel: string): boolean;
 export function isVerbatimRecord(rel: string): boolean;
 export function historyDocs(root: string): Set<string>;
+export function historyRuleSources(root: string): string[];
 export function isAnalysisRecord(rel: string): boolean;
 export function isMarkRuleDoc(rel: string): boolean;
