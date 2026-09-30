@@ -765,7 +765,7 @@ export class Card extends Phaser.GameObjects.Container {
     this.showArt(content);
     this.showRailText(content, rail, colors);
     this.showBars(bars, rail, colors, showChange, content.midAction === true);
-    this.showEdge(content);
+    this.showEdge();
     this.showStackCount(content);
     // 印と覆いは窓の同じ矩形を使う。桟の高さで窓の下端が動くので、ここで1度だけ決めて両方へ渡す。
     const inner = windowRect(this.metrics, this.cardWidth, this.cardHeight, rail.height);
@@ -997,8 +997,8 @@ export class Card extends Phaser.GameObjects.Container {
    * 向きの組み合わせが変わったときだけ中身を入れ直す。押したときに何が起きるかは実行時に
    * `_content`から読む。
    */
-  private showEdge(content: CardContent): void {
-    const directions = EDGE_DIRECTIONS.filter((direction) => this.edgeActionFor(content, direction));
+  private showEdge(): void {
+    const directions = EDGE_DIRECTIONS.filter((direction) => this.edgeActionFor(direction));
     const key = directions.join();
     if (key === this.shownEdgeDirections) return;
 
@@ -1006,13 +1006,13 @@ export class Card extends Phaser.GameObjects.Container {
     this.cancelEdgeRepeat();
     this.edgeLayer.removeAll(true);
     for (const direction of directions) {
-      this.addEdge(this.cardWidth, this.cardHeight, direction);
+      this.addEdge(direction);
     }
   }
 
   /** その向きの端を押したときの動作（その向きへ送れないならundefined）。 */
-  private edgeActionFor(content: CardContent, direction: CardEdgeDirection): CardEdgeAction | undefined {
-    return content.edges?.find((edge) => edge.direction === direction);
+  private edgeActionFor(direction: CardEdgeDirection): CardEdgeAction | undefined {
+    return this._content.edges?.find((edge) => edge.direction === direction);
   }
 
   /**
@@ -1316,8 +1316,8 @@ export class Card extends Phaser.GameObjects.Container {
    * （Phaserの入力の既定、topOnly）ため、これで端はカード全体の操作もドラッグも横取りする。透明でも描画される
    * Rectangleを使うのは、Zoneが描画リストへ載らず前後関係が決まらないため。
    */
-  private addEdge(width: number, height: number, direction: CardEdgeDirection): void {
-    const { scene, metrics } = this;
+  private addEdge(direction: CardEdgeDirection): void {
+    const { scene, metrics, cardWidth: width, cardHeight: height } = this;
     const up = direction === 'up';
     const paper = paperRect(metrics, width, height);
     const edgeHeight = paper.height * EDGE_RATIO;
@@ -1363,7 +1363,7 @@ export class Card extends Phaser.GameObjects.Container {
         feedback.setVisible(false);
         const moved = this.edgeRepeated;
         this.cancelEdgeRepeat();
-        if (!moved) this.edgeActionFor(this._content, direction)?.onTap();
+        if (!moved) this.edgeActionFor(direction)?.onTap();
       },
     });
 
@@ -1374,7 +1374,7 @@ export class Card extends Phaser.GameObjects.Container {
   private startEdgeRepeat(direction: CardEdgeDirection): void {
     this.edgeRepeated = false;
     this.edgeRepeat.start(() => {
-      const edge = this.edgeActionFor(this._content, direction);
+      const edge = this.edgeActionFor(direction);
       if (edge === undefined) return false;
 
       this.edgeRepeated = true;

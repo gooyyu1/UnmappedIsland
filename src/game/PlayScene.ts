@@ -688,7 +688,7 @@ export class PlayScene extends ResponsiveScene {
 
     // 手前から奥への重なりに合わせて組み立てる。レーンからはみ出したカードは切り抜かず、
     // 後から描く背景板で隠す設計のため、順序そのものに意味がある。
-    this.buildFieldArea(layout);
+    this.buildFieldArea();
     // 雨は自前の層（SCREEN_DEPTH.weather）に居るので、順序ではなく深度でカードの手前・背景板の奥に入る。
     this.weatherOverlay = new WeatherOverlay(
       this,
@@ -708,10 +708,10 @@ export class PlayScene extends ResponsiveScene {
       loop: true,
       callback: () => this.advanceEmptyCellCycle(),
     });
-    this.buildFilterBar(layout.filterBar);
+    this.buildFilterBar();
     // 横型のオプションバーはフィールドエリアの隣（右サイドバー）なので、フィルターバーと同じく
     // レーンのはみ出しを隠す背景板を兼ねる。縦型は情報エリアの中なので、ページを敷いた後に置く。
-    if (this.metrics.isLandscape) this.buildOptionsBar(layout.optionsBar);
+    if (this.metrics.isLandscape) this.buildOptionsBar();
     // 区切りの帯は隣接エリアへもかぶるため、それらの背景板を描き終えてから敷く。
     for (const rect of layout.laneSeparators) addTiledImage(this, rect, SEPARATOR_TEXTURE);
     // フィールドエリアの左右の境目は、同じ絵を90度回して縦向きに敷く（横型のみ）。左の帯が本の縁で
@@ -723,9 +723,9 @@ export class PlayScene extends ResponsiveScene {
       addTiledImageVertical(this, layout.sidebarSeparator, SEPARATOR_TEXTURE);
     }
     // 情報エリアのページはフィールドエリアへ食い込むので、帯より後（＝手前）に置く。
-    this.buildInformationArea(layout);
-    this.buildDashboard(layout);
-    if (!this.metrics.isLandscape) this.buildOptionsBar(layout.optionsBar);
+    this.buildInformationArea();
+    this.buildDashboard();
+    if (!this.metrics.isLandscape) this.buildOptionsBar();
     // 本の外の帯どうしの境目は、バーの上に重ねるので最後に敷く（縦型のみ）。
     if (layout.optionsBarSeparator !== undefined) {
       addTiledImage(this, layout.optionsBarSeparator, SEPARATOR_TEXTURE);
@@ -771,13 +771,14 @@ export class PlayScene extends ResponsiveScene {
     }
   }
 
-  private buildFieldArea(layout: PlayScreenLayout): void {
+  private buildFieldArea(): void {
+    const { layout } = this;
     this.fieldPanel = addInputBlockingPanel(this, layout.fieldArea, COLOR.fieldArea).setDepth(
       SCREEN_DEPTH.field,
     );
     const [, items, hand] = layout.lanes;
 
-    this.fixtureLane = this.buildFixtureLane(layout);
+    this.fixtureLane = this.buildFixtureLane();
     this.itemLane = new CardLane(
       this,
       this.metrics,
@@ -809,9 +810,9 @@ export class PlayScene extends ResponsiveScene {
    * 設置物レーン。**ピン留めの札も敷く絵も、映している場所のもの**（ScreenLayout.md 7.1.1節）なので、
    * 映す先が変われば作り直す相手はこのレーンだけになる（rebuildFixtureLane）。
    */
-  private buildFixtureLane(layout: PlayScreenLayout): CardLane {
+  private buildFixtureLane(): CardLane {
     const place = this.placeOfScreen('fixtures');
-    return new CardLane(this, this.metrics, layout.lanes[0], COLOR.fixtureLane, this.cellsAt(place), {
+    return new CardLane(this, this.metrics, this.layout.lanes[0], COLOR.fixtureLane, this.cellsAt(place), {
       pinned: {
         ...this.shownLocation.window.card,
         // 映している場所そのものの子ウィンドウ。**中に入ると外の並びから札が消える**ので、探索する・
@@ -869,7 +870,7 @@ export class PlayScene extends ResponsiveScene {
     this.cardTable.destroyLooseCards();
     this.fieldPanel.destroy();
     for (const lane of [this.fixtureLane, this.itemLane, this.handLane]) lane.destroy();
-    this.buildFieldArea(this.layout);
+    this.buildFieldArea();
     // レーンはカードを作らない（CardTable参照）。作り直した並びへ札を出し直す。
     this.showView();
   }
@@ -883,7 +884,7 @@ export class PlayScene extends ResponsiveScene {
    */
   private rebuildFixtureLane(): void {
     this.fixtureLane.destroy();
-    this.fixtureLane = this.buildFixtureLane(this.layout);
+    this.fixtureLane = this.buildFixtureLane();
     this.showHaze();
     this.setDragLanes();
     // レーンはカードを作らない（CardTable参照）。作り直した並びへ札を出し直す。
@@ -1908,7 +1909,8 @@ export class PlayScene extends ResponsiveScene {
    * 画面外へはみ出す前提で、絵の側に十分な余白が取られている。極端な画面比で絵が届かない場合に
    * 備えて、下地に紙の色の背景板を敷く。背景板はレーンからはみ出したカードを隠す役目も兼ねる。
    */
-  private buildInformationArea(layout: PlayScreenLayout): void {
+  private buildInformationArea(): void {
+    const { layout } = this;
     const area = layout.informationArea;
     const landscape = this.metrics.isLandscape;
     addInputBlockingPanel(this, area, COLOR.informationPaper);
@@ -1952,11 +1954,11 @@ export class PlayScene extends ResponsiveScene {
     );
   }
 
-  private buildDashboard(layout: PlayScreenLayout): void {
-    this.buildCharacterDisplay(layout.characterDisplay);
+  private buildDashboard(): void {
+    this.buildCharacterDisplay();
     this.buildStatusArea();
-    this.buildSituationArea(layout.situationArea);
-    this.addDivider(layout.informationDivider);
+    this.buildSituationArea();
+    this.addDivider(this.layout.informationDivider);
   }
 
   /**
@@ -1966,7 +1968,8 @@ export class PlayScene extends ResponsiveScene {
    * 高さをボタンが使い切るので、下へ積むより1つあたりを大きく取れる。縦型・横型で同じ組み方に
    * なるため、向きによる分岐も要らない。
    */
-  private buildCharacterDisplay(area: Rect): void {
+  private buildCharacterDisplay(): void {
+    const area = this.layout.characterDisplay;
     const padding = this.metrics.px(CHARACTER_DISPLAY_PADDING);
     const gap = this.metrics.px(SIZE.gap);
     const portraitWidth = this.metrics.px(SIZE.cardWidth);
@@ -2295,7 +2298,8 @@ export class PlayScene extends ResponsiveScene {
     });
   }
 
-  private buildSituationArea(area: Rect): void {
+  private buildSituationArea(): void {
+    const area = this.layout.situationArea;
     this.situationPanel = new WeatherPanel(this, this.metrics, area, {
       weather: this.view.weather,
       weatherLabel: this.view.weatherLabel,
@@ -2307,7 +2311,8 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /** 縦型は画面最上部の横長バー（右寄せ）、横型は右サイドバー上段の縦積み。 */
-  private buildOptionsBar(area: Rect): void {
+  private buildOptionsBar(): void {
+    const area = this.layout.optionsBar;
     this.buildIconBar(area, COLOR.optionsBar, this.layout.optionsBarIcons(), (rect, index) => {
       const spec = OPTION_ICONS[index];
       return this.addIconButton(
@@ -2387,7 +2392,8 @@ export class PlayScene extends ResponsiveScene {
    * **並ぶボタンを決めるのはワールド**（`card_filters`、同8.1.3節）で、画面が足すのは先頭の
    * 「すべて」だけ。絵も絵文字もその宣言が名乗るので、ここに対応表は無い。
    */
-  private buildFilterBar(area: Rect): void {
+  private buildFilterBar(): void {
+    const area = this.layout.filterBar;
     const specs: readonly BarIcon[] = [
       FILTER_ALL_ICON,
       ...this.codex.cardFilters.map((filter) => ({ art: filter.id, icon: filter.icon })),

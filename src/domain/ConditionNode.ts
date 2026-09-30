@@ -1,5 +1,6 @@
 import type { ConditionOp, ConditionReader } from './ConditionReader';
 import type { StageBound } from './PropertyDef';
+import type { PropertyValue } from './PropertyValue';
 import type { PropertyPath, ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
 import type { PropertyGlobalId, SlotGlobalId } from './GlobalId';
@@ -207,7 +208,7 @@ export class ConditionNode {
   }
 
   private evaluateProperty(context: ReferenceContext): boolean {
-    const currentValue = this.effectiveValueAt(this.root!, this.propertyGlobalId!, context);
+    const currentValue = this.propertyIn(context)?.getEffectiveValue();
     if (currentValue === undefined) return false;
     const current = currentValue;
 
@@ -246,23 +247,14 @@ export class ConditionNode {
    * （解決できない葉は偽、否定したければnotで包む）。
    */
   private evaluatePropertyStage(context: ReferenceContext): boolean {
-    const owner = context.ownerOfProperty(this.root!, this.propertyGlobalId!);
-    return (
-      owner !== undefined &&
-      (owner.tryGetProperty(this.propertyGlobalId!)?.isInStage(this.stageName!, this.stageBound!) ?? false)
-    );
+    return this.propertyIn(context)?.isInStage(this.stageName!, this.stageBound!) ?? false;
   }
 
-  /** rootが指す相手のpropertyGlobalIdの実効値。相手が解決できない・持たない場合はundefined。 */
-  private effectiveValueAt(
-    root: ReferenceRoot,
-    propertyGlobalId: PropertyGlobalId,
-    context: ReferenceContext,
-  ): number | undefined {
+  /** rootが指す相手のpropertyGlobalIdのプロパティ。相手が解決できない・持たない場合はundefined。 */
+  private propertyIn(context: ReferenceContext): PropertyValue | undefined {
     return context
-      .ownerOfProperty(root, propertyGlobalId)
-      ?.tryGetProperty(propertyGlobalId)
-      ?.getEffectiveValue();
+      .ownerOfProperty(this.root!, this.propertyGlobalId!)
+      ?.tryGetProperty(this.propertyGlobalId!);
   }
 
   private evaluateSlotPosition(context: ReferenceContext): boolean {
