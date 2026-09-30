@@ -1872,20 +1872,16 @@ class Acquisition {
   }
 
   /**
-   * その道具（消費されない入力）を、`objectGlobalId`でしか満たせないか。**どの候補が最安かでは
-   * 決めない**——他に手に入る型が1つでも在れば、Xを持たずにその工程を行える。手に入る型は解決が
-   * 進むほど増えるだけなので、値段を積む途中の答えが、確定した後（netOutputsOf）の答えと食い違わない。
+   * その道具（消費されない入力）の候補が、宣言の上で`objectGlobalId`しか無いか。**解決の途中の状態
+   * （どの候補が最安か・手に入るか）では決めない**——値段を積む途中と確定した後（netOutputsOf）とで
+   * 答えが変わり、値段表と経路が食い違う。値段の付かない型が埋まるのは値段を積み終えた後なので、
+   * 「手に入るか」も途中では確定していない。
+   *
+   * 他の候補が島のどこでも手に入らないタグ指定の道具は、Xを要るのに作り方に数えてしまう。
    */
   private onlyFilledBy(input: CraftingStep['inputs'][number], objectGlobalId: ObjectGlobalId): boolean {
     const candidates = this.candidatesOf(input);
-    return (
-      candidates.includes(objectGlobalId) &&
-      candidates.every(
-        (candidate) =>
-          candidate === objectGlobalId ||
-          !(this.obtainable(candidate) || this.islandWide?.obtainable(candidate) === true),
-      )
-    );
+    return candidates.length > 0 && candidates.every((candidate) => candidate === objectGlobalId);
   }
 
   /**

@@ -142,11 +142,11 @@ object_defs:
  * 入らない——それを作り方と数えると、探索でしか得られない1株目の時間が表から消える。
  * **株分けは労働0**なので、数え落とせば `chain_untimed_routes` の側に出る。
  *
- * 接ぎ木は「植物」タグの道具を取る。挿し穂も植物なら、株を持たずに行える正当な作り方で、
- * 株より安いかどうかでは答えが変わらない。
+ * 接ぎ木は「植物」タグの道具を取る。株のほかに植物が在れば、株を持たずに行える正当な作り方で、
+ * 株より安いか・その植物に値段が付くかでは答えが変わらない。
  */
 describe('道具を産物と同じ型でしか満たせない工程', () => {
-  const tablesWith = (cuttingTags: string) =>
+  const tablesWith = (cuttingTags: string, saltTags = 'item', ghostTags = 'item') =>
     buildBalanceTables(
       new WorldCodexYamlLoader()
         .load(
@@ -194,6 +194,32 @@ object_defs:
 
   cutting:
     tags: [${cuttingTags}]
+
+  # 朽ちない設備。塩は手に入るが、寿命が無いので値段が付かない（obtainableWithoutCost）。
+  salt_pan:
+    tags: [fixture]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - add: {self: {drying_remaining: -1}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+    recipes:
+      laid:
+        steps:
+          - requires:
+              - {object: shell, count: 1, consume: true}
+            duration: 60
+
+  salt:
+    tags: [${saltTags}]
+
+  # 作る工程も見つけ方も無いもの。
+  ghost:
+    tags: [${ghostTags}]
 
   shell:
     tags: [item]
@@ -262,6 +288,36 @@ object_defs:
       for (const place of [WHOLE_ISLAND, 'grassland', 'sandy_beach', 'forest'])
         for (const steps of hydrationRouteSteps(tables, place))
           expect(steps).not.toContain('succulent.divide');
+    });
+  });
+
+  describe('値段の付かない塩も植物のとき', () => {
+    const tables = tablesWith('item', 'item, plant');
+
+    it('接ぎ木は、塩を道具にできるので株の作り方に数える', () => {
+      // 値段の付かない型が埋まるのは値段を積み終えた後。途中で「手に入るか」を見ると外れる。
+      expect(tables.objectCosts.find((cost) => cost.objectName === 'salt')).toMatchObject({
+        obtainableWithoutCost: true,
+      });
+      expect(succulentCost(tables)).toMatchObject({
+        minutes: 1,
+        steps: [{ objectName: 'shell', stepName: 'graft' }],
+      });
+    });
+  });
+
+  describe('どこでも手に入らない型だけが他の植物のとき', () => {
+    const tables = tablesWith('item', 'item', 'item, plant');
+
+    it('接ぎ木は、株を要るのに株の作り方に数える（宣言だけで決める代償）', () => {
+      expect(tables.objectCosts.find((cost) => cost.objectName === 'ghost')).toMatchObject({
+        minutes: undefined,
+        obtainableWithoutCost: false,
+      });
+      expect(succulentCost(tables)).toMatchObject({
+        minutes: 1,
+        steps: [{ objectName: 'shell', stepName: 'graft' }],
+      });
     });
   });
 });
