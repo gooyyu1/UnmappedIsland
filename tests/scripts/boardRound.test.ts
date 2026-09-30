@@ -129,7 +129,7 @@ interface Result {
 
 const NOW = new Date('2026-09-05T02:00:00Z');
 
-/** `main` の先頭の指紋。CIの色は**この指紋で絞って引いたぶんだけ**が返る（2.14.2）。 */
+/** `main` の先頭の指紋。CIの色は**この指紋で絞って引いたぶんだけ**が返る（board-design.md 2.14.2節）。 */
 const MAIN_HEAD = 'e0e0e0e0';
 
 /** トレーラを載せたコミットの並び。**拾われるのは最後の1本**。 */
@@ -157,14 +157,14 @@ const DUG_RECENTLY = { 'cycle:dig': '2026-09-05T01:00:00Z' };
 
 /**
  * 盤面を見回る係（`board-move.mjs` の `CYCLES` の `patrol`）も、既定で**間隔の中に居る**ことにする。
- * あの係の `due` は**常に真**（2.21.2）なので、**どの世界にも当たる**——既定のままだと、見回りと
+ * あの係の `due` は**常に真**（board-design.md 2.21.2節）なので、**どの世界にも当たる**——既定のままだと、見回りと
  * 関わりのない検査の1手ぶんがこれに埋まる。立つところを見る検査は `ledger` で上書きする。
  */
 const PATROLLED_RECENTLY = { 'cycle:patrol': '2026-09-05T01:30:00Z' };
 
 /**
  * 割に合っているかを見る係（`board-move.mjs` の `CYCLES` の `payoff`）も、既定で**間隔の中に居る**
- * ことにする。あの係の `due` も**常に真**（2.23.1）なので、`PATROLLED_RECENTLY` と同じ理由で足場が要る。
+ * ことにする。あの係の `due` も**常に真**（board-design.md 2.23.1節）なので、`PATROLLED_RECENTLY` と同じ理由で足場が要る。
  */
 const PAID_OFF_RECENTLY = { 'cycle:payoff': '2026-09-05T01:45:00Z' };
 
@@ -467,7 +467,7 @@ describe('board-round.mjs', () => {
     ).toBeUndefined();
   });
 
-  // **手が転んだ周は、印を置かない**（2.21.2）。転んだ手を数える形は、**手が1つも出ない周**に
+  // **手が転んだ周は、印を置かない**（board-design.md 2.21.2節）。転んだ手を数える形は、**手が1つも出ない周**に
   // 掛からず2時間11分止まった（#1939）。見るのは毎回立つ係で、**材料はこのログ**——直す相手が
   // 居ない手（手綱・`KEPT`）は、そうと分かる形で残す。
   it('手が転んだ周は、ログに残すだけで印を置かない', async () => {
@@ -479,14 +479,14 @@ describe('board-round.mjs', () => {
     expect(braked.log).toContain('打てなかった: REVIEW 10（転んだのではない）');
     expect(braked.unreadable).toBeUndefined();
 
-    // **使用量の余力で止まった周も、直す相手が居ない**（`headroom.sh`。2.5.1）——枠が明ければ
+    // **使用量の余力で止まった周も、直す相手が居ない**（`headroom.sh`。board-design.md 2.5.1節）——枠が明ければ
     // ひとりでに戻るので、見回る係が調べに行く先ではない。
     const held = await playRound({ prs: [pr(10)], held: ['dispatch-review.sh'] });
     expect(held.log).toContain('打てなかった: REVIEW 10（転んだのではない）');
     expect(held.unreadable).toBeUndefined();
   });
 
-  // **見回る係は、盤面の見え方によらず立つ**（2.21.2）。打つところまでを1周として留める
+  // **見回る係は、盤面の見え方によらず立つ**（board-design.md 2.21.2節）。打つところまでを1周として留める
   // ——ここが `dispatch-chore.sh` を呼ばないと、立つのは盤面の中だけの話になる。
   it('間隔が空いていれば、見回る係を立てる', async () => {
     const result = await playRound({ ledger: { 'cycle:patrol': '2026-09-05T00:00:00Z' } });
@@ -495,7 +495,7 @@ describe('board-round.mjs', () => {
     expect(result.ledger).toEqual({ 'cycle:patrol': NOW.toISOString() });
   });
 
-  // 後片付けはマージした手から切り離してあるので、**マージ済みのPRを見つけた周に打つ**（2.10.4）。
+  // 後片付けはマージした手から切り離してあるので、**マージ済みのPRを見つけた周に打つ**（board-design.md 2.10.4節）。
   // 打ったことを台帳へ残さないと、窓に載っているあいだ毎周打ち直す。
   it('マージ済みのPRを後片付けし、打ったことを台帳へ残す', async () => {
     const result = await playRound({ mergedPrs: [{ number: 9, comments: [] }] });
@@ -522,7 +522,7 @@ describe('board-round.mjs', () => {
     expect(result.ledger).toEqual({});
   });
 
-  // **GitHub が閉じ損ねた担当は盤面が閉じる**（2.10.6）。
+  // **GitHub が閉じ損ねた担当は盤面が閉じる**（board-design.md 2.10.6節）。
   describe('マージ済みPRの `Closes` が閉じ損ねた担当', () => {
     const world = {
       mergedPrs: [
@@ -586,7 +586,7 @@ describe('board-round.mjs', () => {
     expect(result.ledger['tidy:9']).toBeUndefined();
   });
 
-  // **`cycle:` は盤面の何かに紐づく指紋ではない**（周期の係を前に立てた時刻。2.17）。掃除に
+  // **`cycle:` は盤面の何かに紐づく指紋ではない**（周期の係を前に立てた時刻。board-design.md 2.17節）。掃除に
   // 巻き込むと、次の周に間隔が満ちていない係まで立つ。
   it('周期の係を立てた時刻は、台帳から捨てない', async () => {
     const result = await playRound({
@@ -604,7 +604,7 @@ describe('board-round.mjs', () => {
     expect(result.ledger).toEqual({ 'cycle:triage': NOW.toISOString() });
   });
 
-  // 覚えると、失敗したまま間隔ぶん黙る。**代わりに立てられないことを控える**（2.17.6）——控えが
+  // 覚えると、失敗したまま間隔ぶん黙る。**代わりに立てられないことを控える**（board-design.md 2.17.6節）——控えが
   // 無いと、盤面は同じ手を毎周打ち直す。
   it('棚卸しを立てられなかったら、立てた時刻ではなく立てられないことを残す', async () => {
     const result = await playRound({
@@ -636,7 +636,7 @@ describe('board-round.mjs', () => {
     });
   });
 
-  // 立て直す周を待っている間も、人の見る盤面へ届く（覚え書きは出始めた時刻を保つ。2.20.3）。
+  // 立て直す周を待っている間も、人の見る盤面へ届く（覚え書きは出始めた時刻を保つ。board-design.md 2.20.3節）。
   it('立て直しを待っている周も、覚え書きを残す', async () => {
     const result = await playRound({
       issues: [{ number: 9, labels: [], blockedBy: { nodes: [] } }],
@@ -671,7 +671,7 @@ describe('board-round.mjs', () => {
     expect((await playRound({ issues, held: ['dispatch-chore.sh'] })).ledger).toEqual({});
   });
 
-  // 畳む条件は担当の issue が閉じたこと（2.10）。**PRがマージされたかでは決めない**ので、PRが
+  // 畳む条件は担当の issue が閉じたこと（board-design.md 2.10節）。**PRがマージされたかでは決めない**ので、PRが
   // 1本も無くても畳む。
   it('担当の issue が閉じたワーカーを畳む', async () => {
     const result = await playRound({
@@ -695,7 +695,7 @@ describe('board-round.mjs', () => {
 
     expect(result.log).toContain('KEPT session_a');
     expect(result.ledger).toEqual({ 'archive:session_a': 'closed:8' });
-    // **安定した答えであって、転んだのではない**（2.21.2）。ログにそう出ないと、見回る係が毎回
+    // **安定した答えであって、転んだのではない**（board-design.md 2.21.2節）。ログにそう出ないと、見回る係が毎回
     // ここを調べに行く。
     expect(result.log).toContain('打てなかった: ARCHIVE session_a（転んだのではない）');
   });
@@ -726,9 +726,9 @@ describe('board-round.mjs', () => {
     expect(result.log).toContain('UNKNOWN session_a: 失敗: HTTP 502');
   });
 
-  // 返すのはコメントで、ラベルは `board-labels.yml` が付ける（2.15.3）。**盤面がラベルを直に
+  // 返すのはコメントで、ラベルは `board-labels.yml` が付ける（board-design.md 2.15.3節）。**盤面がラベルを直に
   // 触ると、返る道が2つに割れる**——ワーカーが自分で返す道と食い違っても、誰も気づけない。
-  // **どの `env:` がどこを指すかは盤面が持つ**（2.16.1）ので、こちらは受け取った引数をそのまま
+  // **どの `env:` がどこを指すかは盤面が持つ**（同 2.16.1節）ので、こちらは受け取った引数をそのまま
   // `dispatch-task.sh` の後ろへ足す。補足のファイルは一時的なもので、名前は毎回変わる。
   it('投入先を寄越された手は、その引数を付けて投入する', async () => {
     const result = await playRound({
@@ -771,7 +771,7 @@ describe('board-round.mjs', () => {
   });
 
   /**
-   * **宛先の無いPRを抱えた担当を返すときは、文面が違う**（2.11.4）。止まったワーカーの仕事は
+   * **宛先の無いPRを抱えた担当を返すときは、文面が違う**（board-design.md 2.11.4節）。止まったワーカーの仕事は
    * 投入し直せば進むが、**このPRは直さないかぎり何度投入しても同じところで止まる**——1つの文面に
    * 畳むと、読んだ人が手を入れる先を間違える。
    */
@@ -788,13 +788,13 @@ describe('board-round.mjs', () => {
 
     expect(result.comments[0]?.split('\n')[0]).toBe('[返却] PR #10 の直しを頼む相手を引けない');
     expect(result.comments[0]).toContain('名乗りが実在しないセッションを指している');
-    // **リポジトリを開かずに直せる形で書く**（2.22.3）。
+    // **リポジトリを開かずに直せる形で書く**（board-design.md 2.22.3節）。
     expect(result.comments[0]).toContain('英数字22文字');
     expect(result.ledger['resume:session_holder']).toBe('returned:9');
   });
 
   /**
-   * **頼み終えた差し戻しが戻ってこないPRも、文面が違う**（2.13.6。issue #2045）。宛先は居るのに
+   * **頼み終えた差し戻しが戻ってこないPRも、文面が違う**（board-design.md 2.13.6節。issue #2045）。宛先は居るのに
    * 動かない形なので、**人がすることは「直しを引き取るか、PRを閉じる」**——投入し直しても、名乗りを
    * 直しても動かない。
    */
@@ -810,7 +810,7 @@ describe('board-round.mjs', () => {
     });
 
     expect(result.comments[0]?.split('\n')[0]).toBe('[返却] PR #10 の直しを頼んでも、戻ってこない');
-    // **何が起きているかを、リポジトリを開かずに読める形で書く**（2.22.3）。
+    // **何が起きているかを、リポジトリを開かずに読める形で書く**（board-design.md 2.22.3節）。
     expect(result.comments[0]).toContain('コンフリクトしている');
     expect(result.comments[0]).toContain('直しを引き取って push してください');
     expect(result.ledger['resume:session_a']).toBe('returned:9');
@@ -851,7 +851,7 @@ describe('board-round.mjs', () => {
     expect(result.ledger).toEqual({ 'resume:session_a': 'stall:8' });
   });
 
-  // 探すのはワーカーの側から（2.10）。開いている一覧に載っているぶんは既に盤面が持っているので、
+  // 探すのはワーカーの側から（board-design.md 2.10節）。開いている一覧に載っているぶんは既に盤面が持っているので、
   // 引き直さない。
   it('開いている issue を担当しているワーカーのぶんは、issue を引き直さない', async () => {
     const result = await playRound({
@@ -864,7 +864,7 @@ describe('board-round.mjs', () => {
     expect(result.gh.filter((call) => call.startsWith('issue view'))).toEqual([]);
   });
 
-  // 差し戻す相手はコミットのトレーラで引く（2.11）。`task-` のタグではない——`Closes` は
+  // 差し戻す相手はコミットのトレーラで引く（board-design.md 2.11節）。`task-` のタグではない——`Closes` は
   // どの issue が閉じるかの印であって、誰が書いたかを指していない。
   it('差し戻す相手を、コミットのトレーラが指すセッションから引く', async () => {
     const result = await playRound({
@@ -876,7 +876,7 @@ describe('board-round.mjs', () => {
     expect(result.calls).toEqual(['resume-session.sh session_writer mend 10']);
   });
 
-  // `main` の色が盤面へ載っていなければ、判定の側は緑と読んで差し戻してしまう（2.14）。
+  // `main` の色が盤面へ載っていなければ、判定の側は緑と読んで差し戻してしまう（board-design.md 2.14節）。
   // **止まることを見るのは、載っていることを見ること。**
   it('main が赤い周は、直しの手を打たない', async () => {
     const result = await playRound({
@@ -890,7 +890,7 @@ describe('board-round.mjs', () => {
   });
 
   // 札の係は issue へのコメントで立ち、走りは**既定ブランチの先頭の指紋へ結び付く**。木を見ていない
-  // ので、転んでもそれを取り込んだPRは赤くならない——ここで `mend` を止めると、2.14.1 の輪が回らない
+  // ので、転んでもそれを取り込んだPRは赤くならない——ここで `mend` を止めると、board-design.md 2.14.1節 の輪が回らない
   // 色で盤面だけが進まなくなる（2026-09-12 に17分）。
   it('木を見ていない走りが転んでも、main は赤くない', async () => {
     const result = await playRound({
@@ -931,7 +931,7 @@ describe('board-round.mjs', () => {
     expect(result.calls).toEqual([]);
   });
 
-  // **ぶつかった実績を控える**（3.1）。盤面は同じファイルを書く issue を並べて投入するので、
+  // **ぶつかった実績を控える**（board-design.md 3.1節）。盤面は同じファイルを書く issue を並べて投入するので、
   // 実際にぶつかった組を残しておかないと、`area:` の錠を足すべき資源が後から分からない。
   it('コンフリクトしたPRを、ぶつかったファイルと相手とともに帳面へ書く', async () => {
     const result = await playRound({
@@ -1182,7 +1182,7 @@ describe('board-round.mjs', () => {
     });
 
     // **引けない周は覚え書きを1つも出せない**ので、残すと**最後に引けた周のものが「この周にも
-    // 出ています」として出続け、続いている長さまで伸びる**（2.20.3）。
+    // 出ています」として出続け、続いている長さまで伸びる**（board-design.md 2.20.3節）。
     it('引けなかった周は、その周に出ていた断りを落とす', async () => {
       const result = await playRound({
         sessionsFail: true,
@@ -1198,7 +1198,7 @@ describe('board-round.mjs', () => {
       expect(result.unreadable).toBe(NOW.toISOString());
     });
 
-    // **「引けていない」だけでは、直す先が分からない**（2.20.3）。何周ぶんかは待つ間隔が動くと
+    // **「引けていない」だけでは、直す先が分からない**（board-design.md 2.20.3節）。何周ぶんかは待つ間隔が動くと
     // 長さからは出せず、理由を言えるのは引きに行った道具だけ。
     it('引けなかった周に、周の数と、道具が言った理由を控える', async () => {
       const first = await playRound({ sessionsFail: true });

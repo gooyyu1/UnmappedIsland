@@ -2773,9 +2773,9 @@ recipes:
 
 | 主語 | 使える演算子キー | 節 |
 |------|------------------|----|
-| `prop`（`subject` のそのプロパティの実効値） | `lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`/`in_stage`/`in_stage_or_above` | 14.1 |
-| `slot`（`subject` のそのスロットの中身） | `matches` | 14.3 |
-| 無し（`subject` 自身） | `in_slot`（親の中での位置）／`matches`（`subject` 自身の型） | 14.2・14.4 |
+| `prop`（`subject` のそのプロパティの実効値） | `lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`/`in_stage`/`in_stage_or_above` | 14.1節 |
+| `slot`（`subject` のそのスロットの中身） | `matches` | 14.3節 |
+| 無し（`subject` 自身） | `in_slot`（親の中での位置）／`matches`（`subject` 自身の型） | 14.2・14.4節 |
 
 **同じ `matches` でも、量化は主語が決めます。** `slot` があれば「その中身に当てはまるものが1つでもあるか」、
 無ければ「`subject` 自身が当てはまるか」です（14.3 節・14.4 節）。

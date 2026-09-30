@@ -205,7 +205,7 @@ describe('check-values.mjs の見立て', () => {
     expect(survey.find((value) => value.key === 'BRIDGE_ENV')?.state).toBe('dead');
   });
 
-  // **`list_environments` が返ったこと自体が、CCRの資格情報の生死**（2.22）。別の口を作らない。
+  // **`list_environments` が返ったこと自体が、CCRの資格情報の生死**（board-design.md 2.22節）。別の口を作らない。
   it('CCRへ届かなければ資格情報が死んでいると読み、環境IDは確かめられなかったと読む', async () => {
     const survey = await surveyValues({
       call: async () => {
@@ -255,7 +255,7 @@ describe('check-values.mjs の見立て', () => {
   });
 
   /**
-   * **環境IDが一覧に在ることは、そこへ立てたセッションが働くことではない**（2.22.4）。
+   * **環境IDが一覧に在ることは、そこへ立てたセッションが働くことではない**（board-design.md 2.22.4節）。
    * 2026-09-14 から3日、環境は一覧に居るのに走る者が1本も付かず、見回りは最後まで
    * `告げることは無い` を出し続けた（issue #2206）。
    */
@@ -323,7 +323,7 @@ describe('check-values.mjs の見立て', () => {
       expect(found.find((value) => value.key === 'CLOUD_ENV:workers')?.state).toBe('unknown');
     });
 
-    // **引けなかったことは、死んだことではない**（2.22.1）。
+    // **引けなかったことは、死んだことではない**（board-design.md 2.22.1節）。
     it('一覧を引けなければ、確かめられなかったと読む', async () => {
       const found = await surveyValues({
         call: async () => JSON.stringify({ environments: [{ environment_id: CLOUD }] }),
@@ -399,7 +399,7 @@ describe('check-values.mjs の告げ方', () => {
     expect(run.ledger).toEqual({});
   });
 
-  // **直る途中のものを毎回告げると、告げたものが読まれなくなる**（2.22.2）。
+  // **直る途中のものを毎回告げると、告げたものが読まれなくなる**（board-design.md 2.22.2節）。
   it('死んで間もない値は、数え始めるだけで告げない', async () => {
     const run = await check({ living: [CLOUD] });
 
@@ -417,7 +417,7 @@ describe('check-values.mjs の告げ方', () => {
     expect(created).toContain('判断待ち');
     expect(created).toContain('origin:agent');
     expect(created).toContain('goal:upkeep');
-    // **読む人はリポジトリを開かない**ので、直し方まで本文に入っている（2.22.3）。
+    // **読む人はリポジトリを開かない**ので、直し方まで本文に入っている（board-design.md 2.22.3節）。
     expect(run.body).toContain(BRIDGE);
     expect(run.body).toContain(LONG_AGO);
     expect(run.body).toContain('CLI を開き直す');
@@ -445,7 +445,7 @@ describe('check-values.mjs の告げ方', () => {
     expect(run.body).not.toContain('BRIDGE_ENV へ盤面が立てたセッション');
   });
 
-  // **鍵は題だけ。** 台帳が失われても2本目は立たない（2.22.3）。
+  // **鍵は題だけ。** 台帳が失われても2本目は立たない（board-design.md 2.22.3節）。
   it('同じ死が続いても、開いている issue の本文を書き換えるだけ', async () => {
     const run = await check({
       living: [CLOUD],
@@ -478,7 +478,7 @@ describe('check-values.mjs の告げ方', () => {
     expect(run.ledger).toEqual({});
   });
 
-  // **CCRへ届かない周は、死んでいる値が `unknown` へ落ちて告げる対象から外れる**（2.22.2）。
+  // **CCRへ届かない周は、死んでいる値が `unknown` へ落ちて告げる対象から外れる**（board-design.md 2.22.2節）。
   // そこで閉じると、死んだままの周に「全部生き返った」と告げたうえ、次に確かめられた周には題で
   // 引く先が無くなって2本目が立つ。
   it('確かめられなかっただけの周は、開いている issue を閉じない', async () => {
@@ -513,7 +513,7 @@ describe('check-values.mjs の告げ方', () => {
     expect(run.ledger.BRIDGE_ENV?.since).toBe(LONG_AGO);
   });
 
-  // **トークンが切れただけの周に、環境IDまで死んだことにしない**（2.22.2）。
+  // **トークンが切れただけの周に、環境IDまで死んだことにしない**（board-design.md 2.22.2節）。
   it('CCRへ届かない周は、環境IDの死を数え始めず、数えていた長さも消さない', async () => {
     const run = await check({ ccrFails: true, ledger: { BRIDGE_ENV: { since: LONG_AGO } } });
 
@@ -521,7 +521,7 @@ describe('check-values.mjs の告げ方', () => {
     expect(run.ledger.CLOUD_ENV).toBeUndefined();
   });
 
-  // **`VALUE_GRACE_HOURS` は 2.22.2 が「人が詰める摘み」として案内している**ので、打ち間違いは
+  // **`VALUE_GRACE_HOURS` は board-design.md 2.22.2節 が「人が詰める摘み」として案内している**ので、打ち間違いは
   // 踏みうる。`NaN` を通すと猶予の比較が全部 false になり、**毎周「告げることは無い」と言い続ける
   // 見張り**になる（効いているのと見分けが付かない）。
   it('猶予に数でない値が入っていても、既定へ落ちて告げる', async () => {
@@ -598,7 +598,7 @@ describe('check-values.mjs の、`gh` が死んでいる周', () => {
     expect(run.asked).toBe(JUST_NOW);
   });
 
-  // **一度きりにはしない。** 立てたセッションに走る者が付かない区間（2.22.4）では、頼んでも誰も
+  // **一度きりにはしない。** 立てたセッションに走る者が付かない区間（board-design.md 2.22.4節）では、頼んでも誰も
   // 書かないまま終わる。
   it('間隔が満ちたら、もう一度頼む', async () => {
     const run = await check({ ...dead, asked: LONG_AGO });

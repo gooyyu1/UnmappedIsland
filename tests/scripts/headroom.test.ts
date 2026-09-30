@@ -118,7 +118,7 @@ describe('headroom.sh', () => {
     expect(result.stdout).toContain('five_hour');
   });
 
-  // **毎回引いて比べるだけ**（2.5.1）。止めた後に戻すための処理は無い。
+  // **毎回引いて比べるだけ**（board-design.md 2.5.1節）。止めた後に戻すための処理は無い。
   it('値が戻れば、次の呼び出しでそのまま通る', () => {
     cacheUsage({ sevenDay: 99 });
     expect(run('new-task').code).toBe(HELD);
@@ -127,7 +127,7 @@ describe('headroom.sh', () => {
     expect(run('new-task').code).toBe(0);
   });
 
-  // 既に立てられないので、計測に関わらず全部止める（2.5.2）。
+  // 既に立てられないので、計測に関わらず全部止める（board-design.md 2.5.2節）。
   it('錠が掛かっていれば、余力が在っても止まる', () => {
     cacheUsage({ fiveHour: 0, sevenDay: 0, locked: 'usage_limit_reached' });
 
@@ -137,7 +137,7 @@ describe('headroom.sh', () => {
     expect(result.stdout).toContain('usage_limit_reached');
   });
 
-  // **段は結果として付く**（2.5.2）。しきい値は種類ごとに書き分けていないので、同じ余力で
+  // **段は結果として付く**（board-design.md 2.5.2節）。しきい値は種類ごとに書き分けていないので、同じ余力で
   // 重い種類だけが落ちるのは、記録された消費の差からしか出ない。
   it('同じ余力でも、消費の大きい種類から先に止まる', () => {
     cacheUsage({ fiveHour: 10, sevenDay: 92 });
@@ -170,7 +170,7 @@ describe('headroom.sh', () => {
 
   // **起こす周を分けて測った値は、記録に永久に0件**（起こされたセッションの消費は、そのセッション
   // 自身のタグの種類として積まれる）。**新しいタスクが止まる周には、起こす手も止まる**と決めてある
-  // ので（2.5.2）、`other` の側がいくら軽くても通らない。
+  // ので（board-design.md 2.5.2節）、`other` の側がいくら軽くても通らない。
   it('`resume` は、`new-task` の記録で比べる', () => {
     cacheUsage({ fiveHour: 10, sevenDay: 92 });
     cacheSpent([...samples('new-task', 20, 5), ...samples('other', 1, 0.5)]);
@@ -179,7 +179,7 @@ describe('headroom.sh', () => {
     expect(run('other').code).toBe(0);
   });
 
-  // 計測が薄いうちは既定値。**既定は大きめに置く**ので、記録の無い種類は先に止まる（2.5.3）。
+  // 計測が薄いうちは既定値。**既定は大きめに置く**ので、記録の無い種類は先に止まる（board-design.md 2.5.3節）。
   it('記録が足りない種類は、既定値で比べる', () => {
     cacheUsage({ fiveHour: 10, sevenDay: 97 });
     cacheSpent([{ kind: 'new-task', five: 1, seven: 0.5 }]);
