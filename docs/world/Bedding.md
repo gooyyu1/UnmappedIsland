@@ -136,17 +136,17 @@ object_defs:
             duration: 60
 ```
 
-素材まで遡った手間は、収支表の実測（探索と、前提になる道具を作る手間を含む。
+素材まで遡った手間は、収支表の実測（探索を含み、前提になる道具を作る手間は含まない。
 [`BalanceStats.md`](../diagnostics/BalanceStats.md)）で次のとおりです。**段2は刃物なしでは通せない**ので
-（この節の末尾）、段2まで通すには寝床と骨組みの両方を作ることになり、**骨組みだけでおよそ1日ぶんの
-自由時間**（[`ContentSkeleton.md`](./ContentSkeleton.md) 8節）を使います。
+（この節の末尾）、段2まで通すには寝床と骨組みの両方を作ることになり、**骨組みだけで約900分<!-- stats: balance.yaml object_costs object=bed_frame total_minutes ±5% -->
+——1日ぶんの自由時間（891分<!-- stats: terrain.yaml daily_budget surplus -->。[`ContentSkeleton.md`](./ContentSkeleton.md) 8節）に並びます。**
 
 | 完成品 | 直接の材料 | 工程 | 素材から通した時間 |
 | ------ | ---------- | ---- | ------------------ |
 | 寝床 | 編んだ葉 ×3<!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.requires.0.count --> | 15分<!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.duration --> | 約120分<!-- stats: balance.yaml object_costs object=bed total_minutes ±5% --> |
-| 寝台の骨組み | 太い枝（杭に4<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.0.requires.0.count -->・縦材に2<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.1.requires.0.count -->）、紐 ×3<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.2.requires.0.count --> | 1工程60分<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.0.duration -->ずつ（杭・縦材・簀の子） | 約900分<!-- stats: balance.yaml object_costs object=bed_frame total_minutes ±5% --> |
-| 詰め物 | なめし革 ×2<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.0.requires.0.count -->、糸（縫うのに2<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.1.requires.0.count -->・口を閉じるのに1<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.2.requires.1.count -->）、羽 ×30<!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.2.requires.0.count --> または 繊維 ×15<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.2.requires.0.count --> | 1工程60分<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.0.duration -->ずつ（裁つ・縫う・詰める） | 植物繊維で約1,880分<!-- stats: balance.yaml object_costs object=plant_fiber_stuffing total_minutes ±5% -->／羽毛で約2,980分<!-- stats: balance.yaml object_costs object=feather_stuffing total_minutes ±5% --> |
-| ハンモック | 紐（編む工程ごとに3<!-- codex: bedding.yaml object_defs.hammock.recipes.knotted.steps.0.requires.0.count -->・2<!-- codex: bedding.yaml object_defs.hammock.recipes.knotted.steps.1.requires.0.count -->） | 1工程60分<!-- codex: bedding.yaml object_defs.hammock.recipes.knotted.steps.0.duration -->ずつ（据えるのは無料。6.2節） | 約1,070分<!-- stats: balance.yaml object_costs object=hammock total_minutes ±5% --> |
+| 寝台の骨組み | 太い枝（杭に4<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.0.requires.0.count -->・縦材に2<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.1.requires.0.count -->）、紐 ×3<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.2.requires.0.count --> | 杭60分<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.0.duration -->・縦材60分<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.1.duration -->・簀の子60分<!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.2.duration --> | 約900分<!-- stats: balance.yaml object_costs object=bed_frame total_minutes ±5% --> |
+| 詰め物 | なめし革 ×2<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.0.requires.0.count -->、糸（縫うのに2<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.1.requires.0.count -->・口を閉じるのに1<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.2.requires.1.count -->）、羽 ×30<!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.2.requires.0.count --> または 繊維 ×15<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.2.requires.0.count --> | 裁つ60分<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.0.duration --><!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.0.duration -->・縫う60分<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.1.duration --><!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.1.duration -->・詰める60分<!-- codex: bedding.yaml object_defs.plant_fiber_stuffing.recipes.stuffed.steps.2.duration --><!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.2.duration --> | 植物繊維で約1,880分<!-- stats: balance.yaml object_costs object=plant_fiber_stuffing total_minutes ±5% -->／羽毛で約2,980分<!-- stats: balance.yaml object_costs object=feather_stuffing total_minutes ±5% --> |
+| ハンモック | 紐（編む工程ごとに3<!-- codex: bedding.yaml object_defs.hammock.recipes.knotted.steps.0.requires.0.count -->・2<!-- codex: bedding.yaml object_defs.hammock.recipes.knotted.steps.1.requires.0.count -->） | 60分<!-- codex: bedding.yaml object_defs.hammock.recipes.knotted.steps.0.duration -->・60分<!-- codex: bedding.yaml object_defs.hammock.recipes.knotted.steps.1.duration -->（据えるのは無料。6.2節） | 約1,070分<!-- stats: balance.yaml object_costs object=hammock total_minutes ±5% --> |
 
 - **詰め物がどの段より重いのは、革が狩り（罠を仕掛けて待つ）と樹皮のなめしを通るため**です。火の要らない
   夜を作る（4.2.1節）ための値段がここに出ます。**羽毛のほうが長いのは狩りの待ちを数に入れたため**で、
@@ -157,7 +157,7 @@ object_defs:
 - **紐の消費は筏と正面から競合します。** 筏を縛るロープも紐を撚ったもの（`voyage.yaml`・`fiber.yaml`）
   なので、骨組みとハンモックに回した紐はそのまま筏の分から減ります。**この競合を意図した緊張として
   残すかは8節**
-- **ハンモック1つの手間は、寝床と骨組みを通した段2の手間とほぼ並びます。** **同じだけ戻すのに、
+- **ハンモック1つの手間は、上の表の寝床と骨組みを足した段2の手間とほぼ並びます。** **同じだけ戻すのに、
   払う先が木材から紐へ移るだけ**という形にしてあり、寝床になる場所・保温・伸ばしろ・持ち出しで
   差が付きます（6節）
 
