@@ -21,7 +21,9 @@ PRINCIPLES="$REPO_DIR/docs/concept/DesignPrinciples.md"
 DECISIONS="$REPO_DIR/agent-ops/decisions"
 
 # 未処理の履歴がこの数に達したら棚卸しを促す。毎回件数を告げると、注入されるのは一般則だけ、
-# という分け方が崩れる。
+# という分け方が崩れる。**しきい値と下の数え方は、Copilot CLI 側
+# （.github/extensions/session-bootstrap/pendingDecisions.mjs）と同じでなければならない**
+# （tests/scripts/pendingDecisions.test.ts が突き合わせる）。
 DECISIONS_THRESHOLD=10
 
 context=""
