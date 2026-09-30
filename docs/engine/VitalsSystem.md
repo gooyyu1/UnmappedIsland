@@ -267,12 +267,11 @@ blood:
 です。
 
 - **人が 1 つの傷で失う最大は 600mL** です（牙の傷。`-150/tick` が固まるまでの 4 tick、4 節）。戻るのに
-  **3.1 日**かかります。**槍が残す 1,000mL の刺し傷は、人には刺さりません**——湧く先は殴られた獣
+  **数日**かかります。**槍が残す 1,000mL の刺し傷は、人には刺さりません**——湧く先は殴られた獣
   （`src/assets/world-codex/animals.yaml`）と、串を打った落とし穴へ落ちた獣
   （`src/assets/world-codex/traps.yaml`）だけです。
-- **罠で回す暮らしは、その 3.1 日を持っています。** 落とし穴が返すイノシシは
-  1 日 0.24<!-- stats: balance.yaml devices place=島全体 device=pitfall product=wild_boar per_day -->頭
-  ＝**4.2 日に 1 頭**なので、深手を負っても次の 1 頭が掛かるまでに戻り切ります。**足りなくなるのは
+- **罠で回す暮らしは、その数日を持っています。** 落とし穴が返すイノシシは
+  1 日 0.24<!-- stats: balance.yaml devices place=島全体 device=pitfall product=wild_boar per_day -->頭で、**1 頭を待つ間隔のほうが戻るのにかかる日数より長い**ので、深手を負っても次の 1 頭が掛かるまでに戻り切ります。**足りなくなるのは
   立ち合ったとき**——イノシシは 4 撃を要し（5 節）、その間の 1 手ごとに牙の傷が残りうるので
   （[`stats/balance.yaml`](../../stats/balance.yaml) の `supply`、`wild_boar` の `turn`）、傷 1 つでは
   済みません。

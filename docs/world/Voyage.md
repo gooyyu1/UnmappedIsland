@@ -272,7 +272,9 @@
 7.61 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet p95 -->を超え、最も長い
 回は
 9.66 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet max -->かかりました
-——**平均が半日しか動かないのに裾は 3 日以上伸びる**ので、雨季に出ることの代償は日数の期待値ではなく、
+——**平均は
+0.40 日<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=wet extra_days -->しか動かないのに
+裾はこれだけ伸びる**ので、雨季に出ることの代償は日数の期待値ではなく、
 積む量をどれだけ厚くするかに出ます（[`GameEndings.md`](../concept/GameEndings.md) 3.1 節の「読めない
 伸びをどう見込むか」、3.9.3 節）。
 
@@ -670,7 +672,7 @@
 | 岸壁（海鳥の岩から） | 近道 | 8<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs --> | 28<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookouts --> 回 | 420 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookout_minutes --> | 2,880 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest crossing_minutes --> | 3,300 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest total_minutes --> | 3.7<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest days --> |
 | 岸壁 | 遠回り | 10<!-- stats: voyage.yaml courses coast=cliff_coast course=detour legs --> | 34<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour total_minutes --> | 4.6<!-- stats: voyage.yaml courses coast=cliff_coast course=detour days --> |
 
-**遠回りを選ぶと、どの海岸からでも 1 日近く増えます**（沖の潮目と黒い岩礁の 2 区間で
+**遠回りを選ぶと、どの海岸からでも同じだけ増えます**（沖の潮目と黒い岩礁の 2 区間で
 810 分<!-- stats: voyage.yaml courses coast=sandy_beach total_minutes 幅 --><!-- stats: voyage.yaml courses coast=rocky_coast total_minutes 幅 --><!-- stats: voyage.yaml courses coast=cliff_coast total_minutes 幅 -->）。帆と追い風が
 あれば縮み、荒天の押し流し（3.8 節）と引き返し（3.5 節）が伸ばします。
 
@@ -764,20 +766,19 @@
 [`DigestionSystem.md`](../engine/DigestionSystem.md) 6 節）。**塩漬けにしても消えません**——`cure` を
 通した先も同じ `eat` を継ぐので、**製塩が前提であること**（3.9.2 節）**は、菌を避ける手にはなりません。**
 
-**それでも 1 日 3 つは、症状の段へ届きません。** 入る菌は 1 日 9 ですが、感染している間は免疫が上がり
+**それでも 1 日 3 つは、症状の段へ届きません。** 入る菌は 1 日 9（1 切れ +3 の 3 つぶん）ですが、感染している間は免疫が上がり
 続け（+0.25/tick<!-- stats: balance.yaml consumption property=immunity condition=in_stage_or_above(self.pathogen,latent) character=medic per_tick -->）、
-素の 60 から 10 時間で最上段（`primed`）へ届きます。そこから先は 1 tick に
+素の 60 からやがて最上段（`primed`）へ届きます。そこから先は 1 tick に
 −0.30<!-- stats: balance.yaml consumption property=pathogen condition=stage(self.immunity,primed) character=medic per_tick --> 引くので、
 菌自身の増殖（+0.15/tick<!-- stats: balance.yaml consumption property=pathogen condition=in_stage_or_above(self.pathogen,latent) character=medic per_tick -->）を
-差し引いた正味で 1 日 14 引けます。入る 9 を上回るので、**菌は食事ごとに 0 へ戻ります**（他の段が引く量は
+差し引いた正味でも、1 日で入る 9 を上回って引けるので、**菌は食事ごとに 0 へ戻ります**（他の段が引く量は
 [`DigestionSystem.md`](../engine/DigestionSystem.md) 6.2 節）。**条件は間隔です**——発熱の段は 5 なので、
 1 切れ +3 が 2 回続けて入ればその場で乗ります。最上段へ届くまでは `robust` の
 −0.20<!-- stats: balance.yaml consumption property=pathogen condition=stage(self.immunity,robust) character=medic per_tick --> なので、
-増殖を差し引いた正味（−0.05/tick）では 1 引くのに 5 時間かかり、**間隔が 5 時間では 1 日 3 つでも
-ちょうど段に乗ります**——起きている時間帯へ 3 食を寄せるとそこが境目で、8 時間おきに離せば届きません。
+増殖を差し引いた正味がごくわずかで、**間隔が詰まると 1 日 3 つでも段に乗ります**——起きている時間帯へ 3 食を寄せるとそこが境目で、8 時間おきに離せば届きません。
 
 **崩れるのは、免疫の押し下げを抱えて出航したときです。** 押し下げのぶん最上段へ届くのが遅れ、その間の
-正味は 1 日 5 しか引けないので、入る 9 が勝って積み上がります——**ビタミン不足（−15）を抱えて出るだけで、
+正味で引ける量が入る 9 を下回るので、積み上がります——**ビタミン不足（−15）を抱えて出るだけで、
 初日のうちに発熱の段へ乗ります。** 壊血病（−40）まで行くと最上段へ届かなくなり、菌は上限へ暴走します。
 
 **釣りが賄うのは、予定が狂ったぶんです。** 荒天は未知の海区へ押し流し（3.8 節）、引き返しは来た区間を
@@ -790,11 +791,11 @@
 
 **ビタミンを運ぶのは、そのうち海藻です**——卵は 10、生肉は 1 切れ 2 しかありません。
 1 日に回るのは 48<!-- stats: balance.yaml daily_needs property=vitamin daily_need --> なので、**生肉 3 つでは
-42 ずつ削れていきます。** 4〜6 日なら、素の蓄え（900）から押し下げの段（600 未満）へは届きませんが、
+その大半が毎日削れていきます。** 予定どおりの日数なら、素の蓄え（900）から押し下げの段（600 未満）へは届きませんが、
 **削ったまま出るか、荒天と引き返しで伸びれば入ります**——予定が狂ったときに要るのは、満腹を埋める釣り
 だけではありません。
 
-**脂も同じ形で足りません**——1 日に要る 24 に対して、生肉 3 つが運ぶのは 12 です
+**脂も同じ形で足りません**——1 日に要る 24<!-- stats: balance.yaml daily_needs property=lipid daily_need --> に対して、生肉 3 つが運ぶのは 12 です
 （[`DigestionSystem.md`](../engine/DigestionSystem.md) 3 節）。**ただしこちらは釣りではなく積む側で
 埋まります**（3.9.6 節）。
 
@@ -846,7 +847,7 @@
 - **蓋をしなければ蒸発が引きます。** 開けたままの甕は、中身が日なたで 1 日
   273mL<!-- stats: balance.yaml rain_water container=jar season=dry evaporation_ml_per_day -->
   （乾季。雨季でも 61mL<!-- stats: balance.yaml rain_water container=jar season=wet evaporation_ml_per_day -->）
-  ずつ減ります（同 6 節）。**1 日ぶんのおよそ 1 割**で、海区は樹冠も影も持たないので（3.10 節）日陰へ
+  ずつ減ります（同 6 節）。**1 日に飲むぶんに比べて小さくない量**で、海区は樹冠も影も持たないので（3.10 節）日陰へ
   寄せる手もありません。**飲んでいる甕だけでなく、順番を待っている甕も同じだけ失う**ので、**積む数が
   増えるほど 1 つあたりの取り分は減ります**——最後に開ける甕は、それまでの日数ぶんを失った状態で開く
   ことになります。**空になった甕は減りません**（中身の軸ごと落ちる、同 1 節）。

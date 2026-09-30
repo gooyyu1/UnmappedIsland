@@ -283,7 +283,7 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 
 ここへ 1 tick（15 分）を課すと、火の番だけで 1 日 1 時間以上になります。生存の採取に要る 1 日
 189 分<!-- stats: terrain.yaml daily_budget survival_gathering -->（[`ContentSkeleton.md`](../world/ContentSkeleton.md)
-8.2 節）へ、**判断を伴わない同じ操作が 4 割近くを上乗せする**ことになります。束ねた薪はまとめて
+8.2 節）へ、**判断を伴わない同じ操作が、その何割にもなる時間を上乗せする**ことになります。束ねた薪はまとめて
 くべられる（2 節の `allow_multiple`）ので、回数のほうは既に絞り切っています。
 
 **取り出しは起こりません。** くべた薪は炉の `fuel` へ溶けて物として残らない（2 節）ので、燃料について
@@ -314,17 +314,16 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 「長くかかるものだけ、現実の 4 分の 1 へ縮める」節）。
 
 **燃料 1 点あたりの手間は、割った時点で既に枝より安くなっています。** 太い枝は 25.1 分<!-- stats: balance.yaml object_costs object=thick_branch total_minutes -->で
-20（1 点 1.26 分）、割り薪は 23.2 分<!-- stats: balance.yaml object_costs object=green_firewood total_minutes -->で 20（同 1.16 分）
+20、割り薪は 23.2 分<!-- stats: balance.yaml object_costs object=green_firewood total_minutes -->で同じ 20
 ——**枝の線を跨いでいるのは `split` のほうで、割るのに要るのは既に持っている斧だけ**です。**棚が買うのは
-その先**で、同じ 23.2 分<!-- stats: balance.yaml object_costs object=seasoned_firewood total_minutes -->が 30 になるので
-1 点 0.77 分、**3 分の 1 が落ちます**。**火の系統の山がこれ**です
+その先**で、同じ 23.2 分<!-- stats: balance.yaml object_costs object=seasoned_firewood total_minutes -->のまま
+燃料が 20 から 30 へ上がるので、**1 点あたりの手間はそのぶん落ちます**。**火の系統の山がこれ**です
 （[`../world/ContentSkeleton.md`](../world/ContentSkeleton.md) 4 節）。
 
-**棚 1 基（1.20 日<!-- stats: terrain.yaml work_piles pile=薪棚 days -->）の元が取れるのは、乾いた薪を 90 本ほど
-焚いたところ**です——1 本が浮かせるのは 11.6 分（30 点 ×（1.16 − 0.77））で、棚の 1,068 分をそれで割った
-数。丸太 9 本ぶん、棚は 10 本ずつ乾かすので 9 回ぶんになります。**山が支出を安くする手段だと言えるのは
-この回数までで**、1 周回（約 117 日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->）
-のうちに何度も回せる長さです。率と安さは `tests/world-codex/firewoodYaml.test.ts` が見張ります。
+**棚 1 基（1.20 日<!-- stats: terrain.yaml work_piles pile=薪棚 days -->）の元が取れるのは、乾いた薪で
+浮いた手間が棚を建てた手間に並んだところ**です。**山が支出を安くする手段だと言えるのはそこからで**、
+1 周回（約 117 日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->）のうちに
+棚を何度も回せば届きます。率と安さは `tests/world-codex/firewoodYaml.test.ts` が見張ります。
 
 ## 3. 種火は、火力の一番下の段
 

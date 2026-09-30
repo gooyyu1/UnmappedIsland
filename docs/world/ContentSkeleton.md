@@ -572,7 +572,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 **探索は分では軽く、日数では重いものです。** 島の土地は10〜20（`terrain_generation.yaml` の
 `site_count`）、探索率100%までは土地ごとに10〜20回で1回15分
 （[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 2節）なので、**全島を100%にしても2,803分<!-- stats: terrain.yaml exploration_phase metric=exploration_minutes mean -->**
-——山の合計の4%です。ところが**日数では16.0日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->**（1周回の14%）になります。1日に探索できる時間が土地の
+——山の合計のごく一部です。ところが**日数では16.0日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->**になります。1日に探索できる時間が土地の
 明るさで切られ、しかも1つの土地を開き切るまでそこに居る必要があるためで、この差が出るのが8.3節の
 「探索の局面」です。なお**最初の段の中では探索がほぼ全部**で、そこでの探索は時間を埋めているのでは
 なく不確実性を減らしています。同じ行動が区間によって別の働きをするので、まとめて数えられません。
@@ -722,11 +722,11 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 **燃えるのは2時間**（`fire.yaml` の `torch` の `life`）。灯すには、燃えている炉から炎を分けてもらうか
 （[`FireSystem.md`](../engine/FireSystem.md) 3.1.2節）、火起こしから作った火種を移します。**火種から
 灯すと、燃える時間より長くかかります**——火種1つが62.0分<!-- stats: balance.yaml object_costs object=burning_tinder total_minutes -->
-なので、下の松明そのものと合わせて127.2分。**炉から分けてもらう道があるのはこのためで**、その道を
+で、下の松明そのものの手間がその上に乗ります。**炉から分けてもらう道があるのはこのためで**、その道を
 通るなら払うのは松明のぶんだけです。
 
 **素材込みの手間は65.2分**<!-- stats: balance.yaml object_costs object=torch total_minutes -->
-——**明かり1分あたり0.54分**です。それでも作る価値があるのは、**買えるのが時間の延長ではなく、
+で、明かりを買う値段としては安くありません。それでも作る価値があるのは、**買えるのが時間の延長ではなく、
 そうでなければ0の場面だから**です。光源を持たない1日は、屋外の693分<!-- stats: terrain.yaml daily_budget outdoor_window -->と
 炉端の347分<!-- stats: terrain.yaml daily_budget night_craft -->と睡眠の360分<!-- stats: terrain.yaml daily_budget sleep -->と、
 嵐で止まる40分<!-- stats: terrain.yaml daily_budget storm_stop -->で既に埋まっているので、**開けた土地では松明を足しても入る先がありません**。
@@ -1033,7 +1033,7 @@ ambient_brightnessをそのまま土台にするためです（同 2節）。
 仮置きです。**
 
 **探索の局面で移動が重いのは、行き先が選べないからです。** 未踏の土地は拠点から近い順に開いていく
-ので、前線が遠ざかるほど往復が滞在時間を食います（上の表の1日の移動は、定常の2倍以上）。それでも
+ので、前線が遠ざかるほど往復が滞在時間を食います（上の表の1日の移動は、定常より大きく膨らみます）。それでも
 **1日に進む探索が、往復と生存の採取を引いた残りの枠にも届かない**のは、遠さではなく**土地を1つ
 開き切るまでその土地に居る必要がある**ためです——道は `[2, max−1]` に均等配置されるので、最後の道はほぼ探索し切る直前に出ます
 （[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 3.2節）。

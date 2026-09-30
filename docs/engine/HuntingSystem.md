@@ -522,9 +522,9 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 2.69 枚<!-- stats: hunt.yaml encounter animal=wild_boar weapon=stone_axe escape_routes=0 measure=wounds_taken mean -->なので、
 1 手あたりでは尖った石のほうがむしろ低い）。**槍との差は長さだけでは説明が付きません**——手数は
 6.36 手<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=0 measure=turns mean -->と
-3 倍台の開きですが、負う怪我は
+開きますが、負う怪我は
 0.71 枚<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=0 measure=wounds_taken mean -->で
-8 倍以上開きます。**残りを作るのは間合いの押し引きです**（1.2 節）。
+手数の開きよりずっと大きく開きます。**残りを作るのは間合いの押し引きです**（1.2 節）。
 
 **空腹は配分に触れません。** 野生の個体では `body_fat` が動かない——渇きと同じゲートで、罠や囲いの枠へ
 閉じ込めている間しか減りません（[`TrapSystem.md`](./TrapSystem.md) 5.4 節）。押し引きを置いても野生の
@@ -562,7 +562,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 **窓を閉じるのは、傷が癒えることではなく化膿です。** 獣は自分で傷を洗えない（`wash`）ので、深い傷は
 `infection` が `septic` へ届き、菌が血を削って獣を倒します。一撃だけ入れて退いたときに獲物が世界に
 残る手数は、イノシシで**中央値441手**<!-- stats: hunt.yaml tracking animal=wild_boar weapon=stone_axe median -->
-（4日半）——**追いつけば、そこには弱った個体か、腐る前の死体が在ります。** 分布は
+——**追いつけば、そこには弱った個体か、腐る前の死体が在ります。** 分布は
 [`HuntStats.md`](../diagnostics/HuntStats.md) の `tracking` 節が持ちます。
 
 「奥地へ消えて追跡不能になった」は、この立ち去りが抽象的に表します。未発見の道を実際に逃走へ使わせる
