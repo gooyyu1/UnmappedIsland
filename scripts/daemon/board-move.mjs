@@ -7,7 +7,7 @@
 // 全部引数に載っているので、実物を触らずに検査できる。
 //
 //   TIDY    <PR番号> <指紋>                  … マージ済みのPRを後片付けする（誰が入れたかを見ない）
-//   CLOSE   <issue番号> <PR番号> <指紋>      … `main` へ入ったPRの `Closes` が閉じ損ねた issue を閉じる
+//   CLOSE   <issue番号> <PR番号>              … `main` へ入ったPRの `Closes` が閉じ損ねた issue を閉じる
 //   MERGE   <PR番号>
 //   ARCHIVE <セッションID> <指紋>            … 起こす先が無くなったセッションを畳む
 //   RESUME  <セッションID> mend   <PR番号>    <指紋>  … 差し戻し・コンフリクト・CIの赤を直させる
@@ -38,7 +38,7 @@
 //     "pendingDecisions": 12,   … `agent-ops/decisions/` のうち `archive/` に入っていない件数
 //     "unsummarizedAnalyses": 3,   … `agent-ops/analysis/` のうち、二次がまだ読んでいない件数
 //     "pendingRefAudit": true,   … 節番号の参照に、この周に読むものが在るか（`scripts/daemon/refAudit.mjs`）
-//     "issues":   [ gh issue list --json number,labels,blockedBy ],
+//     "issues":   [ gh issue list --json number,labels,blockedBy,stateReason ],
 //     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
 //                     "bucket": "SESSION_STATUS_BUCKET_…", "env": "cloud | bridge | -",
 //                     "tags": ["task-1"] } ],
@@ -594,10 +594,12 @@ export const cycleDownNote = (name) =>
  * `main` へ入ったPRの `Closes` が指しているのに、開いたままの issue か（2.10.6）。**仕事はもう
  * `main` に在る**ので、配らない・担当を起こさない・人へ返さない。閉じるのは盤面（`CLOSE`）。
  *
- * **盤面が一度閉じた後に開いていれば、人が開け直したもの**なので、ここには入れない。
+ * **開け直された issue（`stateReason` が `REOPENED`）は入れない。** 閉じたのが GitHub でも盤面でも、
+ * 開け直したのは人なので、閉じ直すとその判断を黙って打ち消す。
  */
 function unclosed(input, number) {
-  if ((input.taken ?? {})[`close:${number}`] !== undefined) return false;
+  const issue = input.issues.find((item) => item.number === number);
+  if (issue?.stateReason === 'REOPENED') return false;
   return (input.mergedPrs ?? []).some(
     (pr) => pr.baseRefName === 'main' && declaredCloses(pr.body).includes(number),
   );
@@ -1043,7 +1045,7 @@ export function moves(input) {
     for (const issue of declaredCloses(pr.body)) {
       if (!input.issues.some((item) => item.number === issue) || !unclosed(input, issue)) continue;
       if (shuts.some((move) => move.startsWith(`CLOSE ${issue} `))) continue;
-      shuts.push(`CLOSE ${issue} ${pr.number} ${input.now}`);
+      shuts.push(`CLOSE ${issue} ${pr.number}`);
     }
   }
   const mends = [];

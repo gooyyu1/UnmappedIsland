@@ -352,7 +352,7 @@ export async function readBoard({
     sayWhyNot,
   });
   if (prs === undefined) return undefined;
-  const openIssues = allOpenIssues(gh, 'number,labels,blockedBy', { sayWhyNot });
+  const openIssues = allOpenIssues(gh, 'number,labels,blockedBy,stateReason', { sayWhyNot });
   if (openIssues === undefined) return undefined;
   // **引けなくても盤面は捨てない。** 欠けた周は後片付けと周期の係が出ないだけで済む——必須に
   // すると、**マージもレビューも投入も1周まるごと止まる。**
