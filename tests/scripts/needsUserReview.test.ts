@@ -370,6 +370,31 @@ describe('needs-user-review.sh の MARK と SOURCED', () => {
     expect(result.code).toBe(0);
   });
 
+  // 本文の `-- ` を消した行は、差分では `--- ` で始まる。ファイルの見出しと取り違えると、その後の
+  // 塊が別のファイルのものとして読まれ、印を消した行が射程から外れる。
+  it('本文から消した行が `--- ` で始まっても、後の塊を読み落とさない', () => {
+    const lead = '## 9.1 区切り';
+    const diff =
+      `diff --git a/${PATH} b/${PATH}\n` +
+      `index 0000000..1111111 100644\n` +
+      `--- a/${PATH}\n` +
+      `+++ b/${PATH}\n` +
+      `@@ -3,1 +3,0 @@\n` +
+      `--- 区切り\n` +
+      `@@ -5,1 +4,1 @@\n` +
+      `-${HEADING}【確定】\n` +
+      `+${HEADING}\n`;
+    const result = judge([PATH], diff, {
+      [PATH]: {
+        base: `${lead}\n\n-- 区切り\n\n${HEADING}【確定】\n\n押している間だけ出す。\n`,
+        head: `${lead}\n\n\n${HEADING}\n\n押している間だけ出す。\n`,
+      },
+    });
+
+    expect(result.lines).toEqual([`MARK ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】`]);
+    expect(result.code).toBe(0);
+  });
+
   // 出どころの行は、そのPRが決めたことの申告。前から在った確定節に書いてあっても、緩める理由には
   // ならない（印が動いていないので、そもそも `CONFIRMED`）。
   it('前から確定していた節は、出どころがあっても CONFIRMED のまま', () => {

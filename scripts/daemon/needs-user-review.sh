@@ -188,6 +188,14 @@ ranges_of() {
 # 先頭バイトを共有する `の`（E3 81 AE）等で止まる。
 strip_marks() { sed -n 's/^#\+ //p' | sed 's/【.*//' | sed 's/[[:space:]]*$//'; }
 
+# 1節が両方の版で触られると同じ行が2回出るので、出した行と一字一句同じ行だけを落とす。見出しの
+# 字面で落とすと、同じ字面の別の節の判定（`MARK` など）まで黙って消える。
+: >"$WORK/seen"
+report() {
+  if grep -qxF -- "$1" "$WORK/seen"; then return 0; fi
+  printf '%s\n' "$1" | tee -a "$WORK/seen"
+}
+
 # 射程は**変更の前後それぞれの版**で数え、その版の側の行番号で触った行と突き合わせる。PRの側
 # （head）だけで数えると、印を消した節・消した確定節はどの射程にも入らない（#2025）。main の側
 # （base）だけで数えると、そのPRが足した確定節を見落とす。
@@ -273,36 +281,31 @@ while IFS= read -r path; do
     ' "$WORK/doc.md"
   }
 
-  # 両方の版で触られた見出しも、出すのは1行（見出しの同一性は `strip_marks` で見る）。
-  : >"$WORK/seen"
   while IFS=$'\t' read -r side from to heading; do
     if awk -v a="$from" -v b="$to" '$1 >= a && $1 <= b { hit = 1; exit } END { exit hit ? 0 : 1 }' "$WORK/touched-$side"; then
-      key=$(printf '%s\n' "$heading" | strip_marks)
-      if grep -qxF -- "$key" "$WORK/seen"; then continue; fi
-      printf '%s\n' "$key" >>"$WORK/seen"
       if [ -z "$mark_moved" ]; then
-        echo "CONFIRMED $path ${heading#\#* }"
+        report "CONFIRMED $path ${heading#\#* }"
         continue
       fi
       # 印が増えた節は head にしか無いので、出どころを読むのは head の側だけ。
       issue=''
       if [ "$side" = head ]; then issue=$(source_issue "$from" "$to" "$heading"); fi
       if [ -z "$issue" ]; then
-        echo "MARK $path ${heading#\#* }"
+        report "MARK $path ${heading#\#* }"
         blocking=1
         continue
       fi
       state=$(answer_state "$issue")
       case "$state" in
       answered)
-        echo "SOURCED $path ${heading#\#* }"
+        report "SOURCED $path ${heading#\#* }"
         ;;
       pending)
-        echo "UNANSWERED $path ${heading#\#* } … #$issue は答えを待ったまま"
+        report "UNANSWERED $path ${heading#\#* } … #$issue は答えを待ったまま"
         blocking=1
         ;;
       *)
-        echo "UNANSWERED $path ${heading#\#* } … #$issue を引けなかった: ${state#missing: }"
+        report "UNANSWERED $path ${heading#\#* } … #$issue を引けなかった: ${state#missing: }"
         blocking=1
         ;;
       esac
