@@ -106,10 +106,9 @@ const READ_ONLY_FROM_OUTSIDE = [
 ];
 
 /**
- * 今、読み手がどこにも居ない公開メンバ。**載せてよいのは、名前を書かずに呼ばれるものだけ**
- * ——所属の中にしか呼び手が居ないなら `private`（上書きさせるなら `protected`）へ戻す。
- *
- * 載っているのは、Phaser がシーンの約束として名前で呼ぶもの（`preload`・`init`）。
+ * 今、読み手がどこにも居ない公開メンバ。**載せてよいのは、名前を書かずに呼ばれるもの**（枠組みが
+ * 約束として呼ぶ、Phaser の `Scene` の `init` など）**だけ**——所属の中にしか呼び手が居ないなら
+ * `private`（上書きさせるなら `protected`）へ戻す。
  */
 const CALLED_WITHOUT_NAME = [
   'src/game/BootScene.ts BootScene.preload',

@@ -227,8 +227,8 @@ export class ObjectDef {
   /**
    * art_by_stage（6.4節）が指すプロパティの、stagesが宣言しているart接尾辞の一覧。art_by_stageが無ければ空。
    *
-   * **読み手は、絵のファイル名が宣言に在るかを確かめる側だけ**（tests/art）。画面が要るのは今の段の
-   * 接尾辞1つ（WorldObject.artSuffix）で、宣言の全部を数える口はここしか無い。
+   * **`src` の読み手は居ない**——画面が要るのは今の段の接尾辞1つ（WorldObject.artSuffix）。開いて
+   * いるのは、宣言された接尾辞を全部数える口がここしか無く、絵のファイル名を確かめる側（tests/art）が要るため。
    */
   artSuffixes(): readonly string[] {
     if (this.artByStagePropertyGlobalId === undefined) return [];
