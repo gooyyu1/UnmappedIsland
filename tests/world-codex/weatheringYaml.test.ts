@@ -1,10 +1,12 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import { objectCostMinutesOf } from '../../src/analysis/balanceTables';
 import { durationsOf } from '../../src/analysis/durations';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
-import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
+import { bundledBalanceTables, bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldObject } from '../../src/domain/WorldObject';
 
@@ -72,6 +74,24 @@ const balance = bundledBalanceTables();
 
 function isGenerated(def: ObjectDef): boolean {
   return codex.isGenerated(def);
+}
+
+/** 素材の分類ごとの trait（weathering.yaml）。 */
+const MATERIAL_TRAITS = ['weatherproof_material', 'long_lived_material', 'short_lived_material'];
+
+/** 素材の trait のどれかを名乗っている型の名前。trait は合成後に消えるので、同梱のYAMLから読む。 */
+function materialNamerNames(): string[] {
+  const names: string[] = [];
+  for (const path of worldCodexYamlPaths()) {
+    const root = parse(readFileSync(path, 'utf8')) as {
+      object_defs?: Record<string, { traits?: unknown } | null>;
+    } | null;
+    for (const [name, body] of Object.entries(root?.object_defs ?? {})) {
+      const traits = Array.isArray(body?.traits) ? body.traits : [];
+      if (traits.some((trait) => MATERIAL_TRAITS.includes(String(trait)))) names.push(name);
+    }
+  }
+  return names;
 }
 
 /** 表の対象になる型の名前（宣言順）。 */
@@ -170,6 +190,13 @@ describe('積んである素材の屋外劣化（DurabilitySystem.md 2.2節）',
   it('積んだ短命な素材は、表の分類どおりの日数で朽ちる', () => {
     for (const [objectName, material] of Object.entries(STOCKED_MATERIALS))
       expect(weatheringOf(objectName), `${objectName} の寿命`).toEqual(LIFETIME_DAYS[material]);
+  });
+
+  it('素材の trait を名乗るのは、持ち物の表と積んだ素材の表に並べた物だけ', () => {
+    // 表に無い在庫（ヤシの葉・枯れ草など）や据えた大物が名乗り出したら、2.2節の線を動かしたことになる。
+    expect(materialNamerNames().sort()).toEqual(
+      [...Object.keys(MATERIALS), ...Object.keys(STOCKED_MATERIALS)].sort(),
+    );
   });
 
   it('丸太と筏は、屋外に置いたままでも時間では傷まない', () => {
