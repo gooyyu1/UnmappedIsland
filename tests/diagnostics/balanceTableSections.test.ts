@@ -44,7 +44,11 @@ function chainRouteCount(tables: BalanceTables, untimed: boolean): number {
  * 入る**（「節の名前が、生成済みのレポートと過不足なく揃っている」）。
  */
 const SECTIONS: readonly ReportSection[] = [
-  { key: 'daily_needs', rowCount: (tables) => tables.places.flatMap((place) => place.properties).length },
+  {
+    key: 'daily_needs',
+    rowCount: (tables) =>
+      new Set(tables.places.flatMap((place) => place.properties).map((chains) => chains.propertyName)).size,
+  },
   {
     key: 'daily_minimum',
     rowCount: (tables) =>

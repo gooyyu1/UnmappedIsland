@@ -116,7 +116,7 @@ describe('局面ごとの1日の前提', () => {
       const start = lines.indexOf(heading);
       expect(start, `${heading} が見つからない`).toBeGreaterThanOrEqual(0);
       const end = lines.findIndex((line, index) => index > start && /^##? /.test(line));
-      return lines.slice(start + 1, end);
+      return lines.slice(start + 1, end === -1 ? lines.length : end);
     };
     const tableRows = (lines: string[]): string[][] =>
       lines

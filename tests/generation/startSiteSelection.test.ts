@@ -260,12 +260,8 @@ describe('最初の段で要るもの', () => {
     const header = lines.indexOf('| 要るもの | 出どころ |');
     expect(header, '2.3節の表の見出しが見つからない').toBeGreaterThanOrEqual(0);
     const rows = lines.slice(header + 2);
-    const labels = rows
-      .slice(
-        0,
-        rows.findIndex((line) => !line.startsWith('|')),
-      )
-      .map((line) => line.split('|')[1].trim());
+    const end = rows.findIndex((line) => !line.startsWith('|'));
+    const labels = rows.slice(0, end === -1 ? rows.length : end).map((line) => line.split('|')[1].trim());
 
     expect(STARTUP_NEEDS.map((need) => need.label).sort()).toEqual(labels.sort());
   });
