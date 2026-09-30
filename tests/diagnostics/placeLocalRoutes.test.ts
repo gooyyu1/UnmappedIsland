@@ -83,13 +83,31 @@ describe('土地で完結する経路は、土地の表に出る', () => {
     // 山腹の経路は山腹の探索を含まないので、載っていること自体が「材料（ネズミ）が持ち込みに
     // 差し替わっていない」ことを示す（`rootedHere`）。**`needsImport`は真でよい**——くくり罠の
     // 繊維は山腹で採れず、罠は持ち込みが要る（issue #2313）。
-    expect(viaSnare.length).toBeGreaterThan(0);
-    expect(
-      viaSnare.map(
-        ({ route }) =>
-          route.prerequisites.find((prerequisite) => prerequisite.objectName === 'snare')?.imported,
-      ),
-    ).not.toContain(false);
+    const snareImported = viaSnare.map(
+      ({ route }) =>
+        route.prerequisites.find((prerequisite) => prerequisite.objectName === 'snare')?.imported,
+    );
+    expect(snareImported.length).toBeGreaterThan(0);
+    expect(snareImported).toEqual(snareImported.map(() => true));
+  });
+
+  it('その土地の探索を含む経路は、他の土地にしか無い泉が要っても載る', () => {
+    // 岸壁に泉は無い。それでも岸壁の探索から始まる経路は、起点が岸壁なので岸壁の表に残る
+    // （BalanceStats.md「連鎖表」の `imported`）。
+    const cliffCoast = tables.places.find((place) => place.name === 'cliff_coast')!;
+    const needsSpring = cliffCoast.properties
+      .flatMap((property) => property.routes)
+      .filter(({ route }) =>
+        route.prerequisites.some((prerequisite) => prerequisite.objectName === 'spring'),
+      );
+
+    expect(needsSpring.length).toBeGreaterThan(0);
+    for (const { route } of needsSpring) {
+      expect(route.prerequisites.find((prerequisite) => prerequisite.objectName === 'spring')?.imported).toBe(
+        true,
+      );
+      expect(route.steps.map((step) => step.objectName)).toContain('cliff_coast');
+    }
   });
 });
 
