@@ -21,6 +21,7 @@ import {
   openSync,
   readFileSync,
   readSync,
+  renameSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
@@ -81,6 +82,11 @@ export function boardState() {
   return process.env.BOARD_STATE ?? `${process.env.USERPROFILE ?? process.env.HOME}/.claude/board-state`;
 }
 
+/** デーモンのログの置き場（[`daemon.sh`](daemon.sh) の `DAEMON_LOG` と同じ既定）。 */
+export function daemonLog() {
+  return process.env.DAEMON_LOG ?? `${process.env.USERPROFILE ?? process.env.HOME}/daemon.log`;
+}
+
 const ledgerPath = (stateDir) => join(stateDir, 'taken.json');
 
 /** 台帳を読む。**読めなければ空**——失われたときの害は、同じ手が1回重なることだけ。 */
@@ -103,6 +109,57 @@ export function writeLedger(stateDir, taken) {
  * **追記で持つのは、前回と突き合わせるため**——進んでいないことは1枚の写真には写らない。
  */
 export const patrolPath = (stateDir) => join(stateDir, 'patrol.jsonl');
+
+/**
+ * 見回りの `verdict` に書ける値。**係の出口と1対1**（`patrol-prompt.md` の「直す」と「自分で直せない
+ * ものを渡す」）で、常設の issue へそのまま出る。**人の手番が要るのは `人へ上げた` だけ**——次の
+ * セッションへ回した回をそこへ畳むと、人は要らない手番を待たされる。
+ */
+export const PATROL_VERDICTS = ['異常なし', '直した', '次へ回した', '人へ上げた'];
+
+/**
+ * 見回りの記録に残す長さ（日）。**前回との突き合わせと、余力の傾きを出すのに要るぶん**——余力の枠は
+ * 週で明けるので、1週を切ると1枠ぶんの上がり幅が並ばない。
+ */
+export const PATROL_KEEP_DAYS = 7;
+
+/**
+ * 見回りの記録を1件足し、**`PATROL_KEEP_DAYS` より古い行を落とす。** 書き手は係のセッションだけ
+ * なので、落とすのも書くときに書き手が行う——別の者が刈ると、追記と書き直しがぶつかる。
+ *
+ * **読めない記録は書かない**（投げる）。`at` が時刻でない行は読む側が「走らなかった」と扱い
+ * （{@link readLastPatrol}）、`verdict` が一覧に無い行は人へ意味の無い判定を出す。
+ *
+ * @param {string} stateDir 置き場
+ * @param {Record<string, unknown>} record 足す記録
+ * @param {number} [now] 今の時刻（ミリ秒）
+ */
+export function appendPatrol(stateDir, record, now = Date.now()) {
+  const at = typeof record.at === 'string' ? Date.parse(record.at) : Number.NaN;
+  if (Number.isNaN(at)) throw new Error(`at が時刻として読めない: ${JSON.stringify(record.at)}`);
+  if (!PATROL_VERDICTS.includes(/** @type {string} */ (record.verdict)))
+    throw new Error(`verdict は ${PATROL_VERDICTS.join('|')} のどれか: ${JSON.stringify(record.verdict)}`);
+  const path = patrolPath(stateDir);
+  let lines = [];
+  try {
+    lines = readFileSync(path, 'utf8').split('\n');
+  } catch {
+    // 初めての1件。
+  }
+  // **起点は今より先へ出さない**——打ち間違えた未来の `at` を起点にすると、手前の記録が丸ごと落ちる。
+  const since = Math.min(at, now) - PATROL_KEEP_DAYS * 86_400_000;
+  const kept = lines.filter((line) => {
+    try {
+      return Date.parse(JSON.parse(line).at) >= since;
+    } catch {
+      return false;
+    }
+  });
+  // **書き直しは差し替えで行う**——読む側（書き出し）が途中まで書かれたファイルを見ないように。
+  const tmp = `${path}.tmp`;
+  writeFileSync(tmp, [...kept, JSON.stringify(record)].map((line) => `${line}\n`).join(''));
+  renameSync(tmp, path);
+}
 
 /**
  * 最後の見回り（`at`・`verdict`・`summary`）。**一度も走っていない周と、記録が壊れている周は
@@ -182,7 +239,7 @@ export function readUnreadable(stateDir) {
  * 載るのは2種類——**打った手とその結果**（`{ at, kind: 'move', move, target, result }`）と、
  * **閉じた「盤面を引けなかった区間」**（`{ at, kind: 'gap', from, until, rounds, reason }`）。
  *
- * **追記だけで、古い行を落とす者は置かない**（`patrol.jsonl`・`conflicts.jsonl` と同じ）。**猶予を
+ * **追記だけで、古い行を落とす者は置かない**（`conflicts.jsonl` と同じ）。**猶予を
  * 詰める材料はここ**——何度も繰り返す短い停止は、区間が閉じるたびにここへ1行ずつ残る（2.22.2 が
  * 待っている「実際に鳴った回数」）。
  */

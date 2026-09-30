@@ -8,8 +8,12 @@
 **大半の回は「異常なし」で終わる。** それでよい——**走ったことが残らないと、異常が無かったのか
 係が立たなかったのかを誰も区別できない。**
 
-**このPCで走る。** 何が転んだかが残っているのは `~/daemon.log` と `~/.claude/board-state` で、
+**このPCで走る。** 何が転んだかが残っているのはデーモンのログと台帳の置き場で、
 どちらもクラウドの箱には無い。
+
+**置き場は本体に `{{DAEMON_LOG}}`・`{{BOARD_STATE}}` と書き、投入のときにデーモンの値で埋める**
+（[`prompt-body.mjs`](../../scripts/daemon/prompt-body.mjs) の `SESSION_PLACES`）。係はブリッジで立ち、
+デーモンの環境変数を受け取らない（[`board-design.md`](../board-design.md) 2.21.4節）。
 
 **デーモンが落ちているときは立たない。** 落ちた跡から起こすのは起こす係（2.19）で、**この係を
 立てるのはデーモン自身**——立っていること自体が「デーモンは生きている」の証拠になっている。
@@ -25,6 +29,12 @@
 [デーモン] 盤面を見回ってください。健全なら「異常なし」を記録して終わりです。
 
 まず `CLAUDE.md` と `agent-ops/board-design.md` を読んでください。
+
+**デーモンのログは `{{DAEMON_LOG}}`、台帳の置き場は `{{BOARD_STATE}}` です。** どちらもデーモンが
+投入のときに書き込んだ値で、**あなたの環境変数（`BOARD_STATE` など）から引き直さないでください**
+——あなたはデーモンの環境を受け取っていないので、引き直すと別の場所を見ます。**`scripts/daemon/` の
+道具は置き場を環境変数から引く**ので、打つときは下の例と同じく `BOARD_STATE=… DAEMON_LOG=…` を
+頭に付けてください（`daemon.sh restart` を付けずに打つと、別の置き場を持つデーモンが立ちます）。
 
 **あなたが立っているということは、デーモンは生きています。** 落ちていれば、あなたを立てる者が
 居ません。だから「デーモンが**今**止まっていないか」は調べる必要がありません。
@@ -44,20 +54,20 @@
 いないか・なぜか・自分で直せるか」を答えること**です。
 
 - **この係自身が、間隔どおりに立っている。** 測るのは**立った時刻どうし**——台帳の `cycle:patrol` と、
-  `~/daemon.log` の `打つ: CHORE patrol` の行です。**記録の `at` の差で測らないこと**——あれは
+  `{{DAEMON_LOG}}` の `打つ: CHORE patrol` の行です。**記録の `at` の差で測らないこと**——あれは
   書き終わりの時刻なので、**その回の所要時間がそのまま差に乗り**、立ちがきっちり間隔どおりの周でも
   差は前後に振れます（所要は数十秒のこともあれば数十分のこともある）。**下の「短い側」が拾うのは
   盤面の詰まりなので、所要時間の揺れで振れる物差しに掛けると、健全な周を異常だと読みます。**
   立った時刻との間が間隔より大きく空いていたら、**その
   空白はこの係が立たなかった時間**——投入するのは盤面なので、**盤面を引けない間はこの係も立たない**
   （資格情報が切れている周がこれ。2.22.2）。**空白の間に起きたことは、誰も見ていない**ので、
-  そこで壊れたものは無いとは言えない。空白の区間の `~/daemon.log` を端から読むまで、この回の
+  そこで壊れたものは無いとは言えない。空白の区間の `{{DAEMON_LOG}}` を端から読むまで、この回の
   「異常なし」は空白の手前までしか掛からない。**間隔より短いのも、同じだけ異常**——刻を進めるのは
   投入が「打てた」ことなので、**前の回の投入が転んだ周は刻が止まったまま間隔が満ち、次の周でもう1本
   立つ**。**短い側は「立ちすぎた」のではなく「盤面が刻を進め損ねた」**ので、前の回の `打てなかった:`
   と台帳の `cycle:patrol` を引くまで、その周に何が起きたかは言えない
 - **盤面は、間隔ごとに1周している。** 測るのはこの係の間隔ではなく**周の間隔**で、物差しは
-  `~/daemon.log` の**時刻を持つ行どうしの空き**（下の「調べる先」に引き方がある）。**この係が時刻
+  `{{DAEMON_LOG}}` の**時刻を持つ行どうしの空き**（下の「調べる先」に引き方がある）。**この係が時刻
   どおりに立っていることは、その手前ずっと回っていた証拠にはなりません**——立て直す役が盤面の外に
   居るので、落ちていた区間も時刻の上では埋まる。**空白の直後に並ぶ手は、空白の手前で打たれるはず
   だった手**なので、手が打たれていることも進んでいた証拠にならない。空白が在れば、上の「この係自身
@@ -123,7 +133,7 @@
 - **判定の付いたPRは、いつかマージされるか差し戻される**
 - **`main` は緑である。** 赤い間、盤面はレビューもマージも差し戻しも出さない（2.14.1）ので、
   **1本の赤で盤面ごと止まる**。**緑へ戻す役は盤面の中に居ない**——赤いことは覚え書きとして
-  `~/daemon.log` と常設の盤の `## 周の出来事`（2.20.3）へ出るが、**どちらも見た者が動くまで誰の手番
+  `{{DAEMON_LOG}}` と常設の盤の `## 周の出来事`（2.20.3）へ出るが、**どちらも見た者が動くまで誰の手番
   にもならない**。直せる範囲（`agent-ops/**`・`.claude/**`・`scripts/**`）なら自分で直し、外なら人へ
   上げる
 - **生きているセッションは、何かを進めている**
@@ -164,7 +174,7 @@
   ために指紋を控えるが、**理由が外で決まる手**（`main` の色・他のPRのマージで生まれるもの）は、
   **控えた指紋が動かないまま、理由のほうだけが消える**ことがある。消えても記録は残るので、盤面は
   「打ち終えた」と読み続け、頼まれた側は**理由が消えたことを知らないまま手を止めている**。
-  **控えられている手は、理由の側を引いて今も成り立つかまで確かめる**（`~/.claude/board-state/taken.json`
+  **控えられている手は、理由の側を引いて今も成り立つかまで確かめる**（`{{BOARD_STATE}}/taken.json`
   の各項目に対して、それを生んだ条件が現に在るか）
 - **盤面が見ているものは、現に在るもの全部**（一覧の上限・窓の幅で切れた帯が無い。切れていれば、
   盤面は切られた側を「無い」と読むので、止まっていることすら見えない）
@@ -203,9 +213,9 @@
 「同じものが同じ場所で止まったままだ」と言えます。**原因を知らなくても停滞は言える**のがこの形の
 要点です。
 
-記録は1行1件のJSONで、**最後の行が前回のあなた**です。**置き場はデーモンに訊いてください**
-——既定は `~/.claude/board-state/patrol.jsonl` ですが、`BOARD_STATE` で移してあると、**書いた先と
-盤面が読む先がずれて、常設の issue に「記録がありません」が出続けます。**
+記録は `{{BOARD_STATE}}/patrol.jsonl`（1行1件のJSON）で、**最後の行が前回のあなた**です。
+**この綴りのまま読み書きしてください**——盤面は同じ先を読んで常設の issue へ出すので、別の先へ
+書くと「記録がありません」が出続けます。
 
 **読んだ行が最後の行だと、行の並びから言えるようにしてください。** 1行が数十KBあるので、生のまま
 吐かせると出力の途中で切られ、**どれが末尾かが分からなくなります**——切られた先頭を末尾と読むと、
@@ -214,19 +224,31 @@
 中身を開きます。
 
 ```
-PATROL=$(node -e "import('./scripts/daemon/board-state.mjs').then((m) => console.log(m.patrolPath(m.boardState())))")
-node -e "const l=require('fs').readFileSync(process.argv[1],'utf-8').trim().split('\n');for(const s of l.slice(-5)){const j=JSON.parse(s);console.log(j.at,j.verdict)}" "$PATROL"
-node -e "const l=require('fs').readFileSync(process.argv[1],'utf-8').trim().split('\n');const j=JSON.parse(l[l.length-1]);console.log(j.at,j.verdict,j.summary);for(const k in j.board)console.log(k,'=',j.board[k])" "$PATROL"
+node -e "const l=require('fs').readFileSync(process.argv[1],'utf-8').trim().split('\n');for(const s of l.slice(-5)){const j=JSON.parse(s);console.log(j.at,j.verdict)}" '{{BOARD_STATE}}/patrol.jsonl'
+node -e "const l=require('fs').readFileSync(process.argv[1],'utf-8').trim().split('\n');const j=JSON.parse(l[l.length-1]);console.log(j.at,j.verdict,j.summary);for(const k in j.board)console.log(k,'=',j.board[k])" '{{BOARD_STATE}}/patrol.jsonl'
 ```
 
-**最後に、必ずこの `$PATROL` へ1行追記してください**（異常が無くても）。形は次のとおりです。
+**最後に、必ずこの記録へ1件足してください**（異常が無くても）。**手で追記せず、次の道具を通します**
+——読めない記録（時刻でない `at`・一覧に無い `verdict`）を断り、残す長さより古い行を落とすのは
+こちらです（中身は `scripts/daemon/board-state.mjs` の `appendPatrol`）。断られたら、理由を読んで
+直してから打ち直してください。記録は一時フォルダへ編集ツールで書いてから渡します。
+
+```
+node scripts/agent/patrol-record.mjs '{{BOARD_STATE}}' < <記録を書いたファイル>
+```
+
+形は次のとおりです。
 
 ```json
-{"at":"<ISO8601>","verdict":"異常なし|直した|人へ上げた","summary":"<1行。人が読む>","board":{"<自由>":"..."},"broken":["<成り立っていなかった不変条件>"]}
+{"at":"<ISO8601>","verdict":"異常なし|直した|次へ回した|人へ上げた","summary":"<1行。人が読む>","board":{"<自由>":"..."},"broken":["<成り立っていなかった不変条件>"]}
 ```
 
 - `at` … **時刻として読めること。** 読めない行は、走らなかったのと同じに扱われます
   （`scripts/daemon/board-state.mjs` の `readLastPatrol`）。
+- `verdict` … **その回に通った出口**。`直した` は下の「直す」、`次へ回した` と `人へ上げた` は
+  「自分で直せないものを渡す」の出口です。**複数に当たる回は、右にあるほうを書いてください**
+  ——`人へ上げた` だけが人の手番を求めるので、次のセッションへ回しただけの回にこれを書くと、
+  人は要らない手番を待たされます。
 - `verdict` と `summary` … **常設の盤面 issue（2.20）へそのまま出ます。** 読むのはスマホの人間なので、
   リポジトリを開かずに読める1行にしてください。
 - `board` … **次の回のあなたが「同じものが同じ場所で止まったままだ」と言えるだけのもの。** 形は
@@ -257,24 +279,24 @@ node -e "const l=require('fs').readFileSync(process.argv[1],'utf-8').trim().spli
 
 | 何を | どこ |
 | --- | --- |
-| 前回の観測 | 見回りの記録（上の `$PATROL`）の最後の行 |
-| この係が立った時刻 | `grep '打つ: CHORE patrol' ~/daemon.log \| tail`（**記録の `at` ではありません**。あれは書き終わりの時刻で、所要時間のぶん後ろへずれます） |
-| 手が打たれているか | `~/daemon.log`（`打てた:` の行の時刻。**間隔ぶん空いていたら、その間は1手も動いていない**） |
+| 前回の観測 | 見回りの記録（`{{BOARD_STATE}}/patrol.jsonl`）の最後の行 |
+| この係が立った時刻 | `grep '打つ: CHORE patrol' '{{DAEMON_LOG}}' \| tail`（**記録の `at` ではありません**。あれは書き終わりの時刻で、所要時間のぶん後ろへずれます） |
+| 手が打たれているか | `{{DAEMON_LOG}}`（`打てた:` の行の時刻。**間隔ぶん空いていたら、その間は1手も動いていない**） |
 | 何が転んだか | 同（`打てなかった:` と `盤面を引けなかった` の行。`（転んだのではない）` が付く行は手綱などで、直す相手が居ません） |
 | 打たない理由 | 同（`覚え書き:` の行。**毎周同じ覚え書きだけが出ているなら、盤面は動いていません**） |
-| 打った手の内訳 | 同（`awk '/打てた:/ {print $3}' ~/daemon.log \| sort \| uniq -c`。窓で切ってから数えます。**`TASK` と `RETURN` が同じだけ並ぶ区間では、投入したものが例外なく返っています**） |
-| 盤面が自分で出した手 | 同（`grep '打つ: ' ~/daemon.log \| grep -vE 'CHORE \|ARCHIVE .* done:chore-'`。**周期の係の立ちと、その片付けを引いた残り**が、盤面が自分で出した手です。窓で切る前に**全履歴で引いて最後の1行の時刻を出す**と、そこが「盤面が最後に自分で動いた時刻」——窓に何も残らない周は、その時刻から今までずっと止まっています） |
-| 立てたセッションが働いたか | `~/.claude/board-state/live-sessions.tsv` の `unserved`／`served` の列（列の並びは `scripts/daemon/live-sessions.mjs` の `formatLive`。`status_bucket` では言えません——`..._FAILED` は、働いたあとに手番が転んだものにも付きます）。ブリッジなら `.claude/worktrees/bridge-cse_<ID>` が**作られたか**でも見られます |
+| 打った手の内訳 | 同（`awk '/打てた:/ {print $3}' '{{DAEMON_LOG}}' \| sort \| uniq -c`。窓で切ってから数えます。**`TASK` と `RETURN` が同じだけ並ぶ区間では、投入したものが例外なく返っています**） |
+| 盤面が自分で出した手 | 同（`grep '打つ: ' '{{DAEMON_LOG}}' \| grep -vE 'CHORE \|ARCHIVE .* done:chore-'`。**周期の係の立ちと、その片付けを引いた残り**が、盤面が自分で出した手です。窓で切る前に**全履歴で引いて最後の1行の時刻を出す**と、そこが「盤面が最後に自分で動いた時刻」——窓に何も残らない周は、その時刻から今までずっと止まっています） |
+| 立てたセッションが働いたか | `{{BOARD_STATE}}/live-sessions.tsv` の `unserved`／`served` の列（列の並びは `scripts/daemon/live-sessions.mjs` の `formatLive`。`status_bucket` では言えません——`..._FAILED` は、働いたあとに手番が転んだものにも付きます）。ブリッジなら `.claude/worktrees/bridge-cse_<ID>` が**作られたか**でも見られます |
 | 今の盤面 | `bash scripts/agent/board.sh` |
 | 満ちた枠の内訳 | 常設の盤（2.20）の `## 投入済み` の表——`手空き`／`作業中` の列と、そのPRの札。**覚え書きの件数では言えません**（そこに並ぶのはセッションIDだけ）。握っているPRが人待ちかは、**盤面が人の手番と読むのと同じ集合**（`board-move.mjs` の `HUMAN_TURN`）で引きます——**`判断待ち` だけで数えないこと。** そちらに入らない札も人しか外せないので、片方だけを数えると、盤面が触らないPRを「まだ盤面に打てる手が在る」と読み、**自力で空けられない枠を空けられると数えます** |
-| まだ名前の出ていない枠の残り | `board-move.mjs` の `HELD_TASKS`・`ACTIVE_WORKERS`・`UPKEEP_WORKERS` と比べます。**どれも `## 投入済み` の表からは数えられません。** `HELD_TASKS` が数えるのは `task-` のタグを持つ生きたセッション（`~/.claude/board-state/live-sessions.tsv`）で、**表はラベルを見て `判断待ち` の担当を `返却` として落とす**（`board.mjs`）ので、**返した周からワーカーを畳む次の周までの窓で、表の行だけを数えると枠を1つ少なく読みます**（`agent-ops/board-design.md` 2.13.6節 の返す手が作る状態がこれ）。**後ろの2つは表の `作業中`／`手空き` でも数えられません**——表が見ているのは `busySession`（セッションが走っているか）だけで、後ろの2つが数える `stillWorking` は**それに加えて「遊んでいる時間が `STALL_MINUTES` 未満か」**を見るので、**`手空き` と出ている人待ちの相手も、起こされた直後はこの枠を握ります**。**誤る向きは決まっています**——後ろの2つは時間で落ちるので、**握っている相手が人待ちでも、その枠は人を待たずに空きます**。表の列だけで数えて「人待ちに握られている＝盤面の手では空かない」と読むと、健全な周を詰まりだと報告することになります。**覚え書きに出てくるのを待たないこと**——出た周には投入が止まっています |
-| 止めているのが手綱か余力か | 人の手綱は `bash scripts/daemon/brake.sh new-task`、余力は**控えを読むだけ**にします（`bash scripts/daemon/usage.sh --last`、または `~/.claude/board-state/usage.json`）。**`headroom.sh` を叩かないこと**——あれは控えが無いか古い周に**自分で口を叩き**、`usage-polled` を書いて**割り当ての側の番を奪います**（`usage.sh` の「毎周値が要る側のために、引けた行を控える」）。控えを新しくしているのはデーモンなので、**口が落ちている周ほどこちらへ落ちます** |
-| 余力が尽きる時刻 | 上がり幅は**過去の記録**から出します（`patrol.jsonl` の各行に控えた百分率を並べる。1周ぶんの差では、その回が忙しかっただけの揺れと区別が付きません）。枠が明ける時刻は控えの `resets_at`。**止まる百分率は、`scripts/daemon/headroom.mjs` が持つ安全率と `~/.claude/board-state/spent.tsv` の1本あたりから出します**——100%ではありません。**`headroom.sh` は叩かないこと**（上の行と同じ理由） |
-| デーモンの生死 | `bash scripts/daemon/daemon.sh status`（**答えるのは今の生死だけ**。手前の区間は次の行で見ます） |
-| 周が止まっていた区間 | `~/daemon.log` の、時刻を持つ行どうしの空き（下の一行）。**死んだ周はログに何も書けない**ので、探すのは書かれたものではなく**書かれていない幅**です |
+| まだ名前の出ていない枠の残り | `board-move.mjs` の `HELD_TASKS`・`ACTIVE_WORKERS`・`UPKEEP_WORKERS` と比べます。**どれも `## 投入済み` の表からは数えられません。** `HELD_TASKS` が数えるのは `task-` のタグを持つ生きたセッション（`{{BOARD_STATE}}/live-sessions.tsv`）で、**表はラベルを見て `判断待ち` の担当を `返却` として落とす**（`board.mjs`）ので、**返した周からワーカーを畳む次の周までの窓で、表の行だけを数えると枠を1つ少なく読みます**（`agent-ops/board-design.md` 2.13.6節 の返す手が作る状態がこれ）。**後ろの2つは表の `作業中`／`手空き` でも数えられません**——表が見ているのは `busySession`（セッションが走っているか）だけで、後ろの2つが数える `stillWorking` は**それに加えて「遊んでいる時間が `STALL_MINUTES` 未満か」**を見るので、**`手空き` と出ている人待ちの相手も、起こされた直後はこの枠を握ります**。**誤る向きは決まっています**——後ろの2つは時間で落ちるので、**握っている相手が人待ちでも、その枠は人を待たずに空きます**。表の列だけで数えて「人待ちに握られている＝盤面の手では空かない」と読むと、健全な周を詰まりだと報告することになります。**覚え書きに出てくるのを待たないこと**——出た周には投入が止まっています |
+| 止めているのが手綱か余力か | 人の手綱は `BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' bash scripts/daemon/brake.sh new-task`、余力は**控えを読むだけ**にします（`BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' bash scripts/daemon/usage.sh --last`、または `{{BOARD_STATE}}/usage.json`）。**`headroom.sh` を叩かないこと**——あれは控えが無いか古い周に**自分で口を叩き**、`usage-polled` を書いて**割り当ての側の番を奪います**（`usage.sh` の「毎周値が要る側のために、引けた行を控える」）。控えを新しくしているのはデーモンなので、**口が落ちている周ほどこちらへ落ちます** |
+| 余力が尽きる時刻 | 上がり幅は**過去の記録**から出します（`patrol.jsonl` の各行に控えた百分率を並べる。1周ぶんの差では、その回が忙しかっただけの揺れと区別が付きません）。枠が明ける時刻は控えの `resets_at`。**止まる百分率は、`scripts/daemon/headroom.mjs` が持つ安全率と `{{BOARD_STATE}}/spent.tsv` の1本あたりから出します**——100%ではありません。**`headroom.sh` は叩かないこと**（上の行と同じ理由） |
+| デーモンの生死 | `BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' bash scripts/daemon/daemon.sh status`（**答えるのは今の生死だけ**。手前の区間は次の行で見ます） |
+| 周が止まっていた区間 | `{{DAEMON_LOG}}` の、時刻を持つ行どうしの空き（下の一行）。**死んだ周はログに何も書けない**ので、探すのは書かれたものではなく**書かれていない幅**です |
 | 盤面を引けていないか | デーモンの台帳（記録と同じ置き場の `taken.json`）の `unreadable:since`。**今まさに引けていないときだけ在ります**——引けた周に消えるので、直った後に立つあなたには残っていません |
-| 盤面を引けなかった区間 | 周の出来事の帳面（`~/.claude/board-state/rounds.jsonl`）の `kind: "gap"` の行。**閉じた区間が、いつから・いつまで・何周・道具が言った理由ごと1行で残ります**（2.20.3）。**今まさに引けていない区間はまだ閉じていない**ので、そちらは台帳の `unreadable:*` を見ます。**ログの空きでは出ません**——5分おきに回り続けるため時刻の上では埋まります |
-| 打った手 | 同じ帳面の `kind: "move"` の行（`move`・`target`・`result`）。**`result` が `settled` の手は直す相手が居ません**。`~/daemon.log` の `打つ:` を数えるのと同じものが、窓を切らずに積まれています |
+| 盤面を引けなかった区間 | 周の出来事の帳面（`{{BOARD_STATE}}/rounds.jsonl`）の `kind: "gap"` の行。**閉じた区間が、いつから・いつまで・何周・道具が言った理由ごと1行で残ります**（2.20.3）。**今まさに引けていない区間はまだ閉じていない**ので、そちらは台帳の `unreadable:*` を見ます。**ログの空きでは出ません**——5分おきに回り続けるため時刻の上では埋まります |
+| 打った手 | 同じ帳面の `kind: "move"` の行（`move`・`target`・`result`）。**`result` が `settled` の手は直す相手が居ません**。`{{DAEMON_LOG}}` の `打つ:` を数えるのと同じものが、窓を切らずに積まれています |
 | 周期の係の刻 | 同じ台帳の `cycle:*`。間隔を持つのは `scripts/daemon/board-move.mjs` の `CYCLES` なので、刻に足して次がいつかを出します。**打たれた手の側からは言えません**——立たない係は手を1つも残しません。**立てようとして転び続けている係**は、同じ台帳の `cycle-down:<名>`（いつから）と `cycle-tried:<名>`（最後に試した時刻）に出ます |
 | 控えた手の理由が消えていないか | 同じ台帳の `resume:*` を引いて、**PRの現物**（`gh pr view <番号> --json labels,body,mergeable,statusCheckRollup`）と突き合わせます——控えた理由が現物から消えていれば、その手は打ち終わったまま止まっています。**ここで残って見えるのは、盤面が自分で拾えない側だけ**のはずです——`main` が動けば消えうる控えには `main` の先頭が入っていて、動いた周に頼み直され、頼み終えたぶんは人へ返ります（`agent-ops/board-design.md` 2.13.6節・2.14.2節）。**どれが拾われる側かを数えないこと**——線は `mendMark` が持っていて、写すと動いたときに黙ってずれます |
 | 誰の手番でもない跡 | 本体のチェックアウトの `git status`（issue でもPRでもセッションでもないので、盤面には映りません） |
@@ -286,10 +308,10 @@ node -e "const l=require('fs').readFileSync(process.argv[1],'utf-8').trim().spli
 （`RETRY_INTERVAL`）ため——そこを下げると、正しく待っている区間まで空白として出ます。
 
 ```
-node -e "const l=require('fs').readFileSync(process.env.HOME+'/daemon.log','utf-8').split('\n');let p=0;for(const s of l){const m=s.match(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ/);if(!m)continue;const t=Date.parse(m[0]);if(p&&t-p>600000)console.log(m[0],'の手前に',Math.round((t-p)/60000),'分の空白');p=t}"
+node -e "const l=require('fs').readFileSync('{{DAEMON_LOG}}','utf-8').split('\n');let p=0;for(const s of l){const m=s.match(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ/);if(!m)continue;const t=Date.parse(m[0]);if(p&&t-p>600000)console.log(m[0],'の手前に',Math.round((t-p)/60000),'分の空白');p=t}"
 ```
 
-**`~/daemon.log` を前回からの窓で切るときは、時刻の比較ではなく行の位置で切ってください。** 1つの手は
+**`{{DAEMON_LOG}}` を前回からの窓で切るときは、時刻の比較ではなく行の位置で切ってください。** 1つの手は
 複数行で書かれ、**2行目以降は時刻を持ちません**（`打つ:` に続く `SESSION` の行、失敗の理由の行）。
 先頭のフィールドを時刻と比べて窓を作ると、**時刻を持たない行が漏れなくその窓に入り**、何日も前の失敗を
 この1時間のものとして数えます。窓の始まりは `grep -n` で行番号を出し、`tail -n +<行番号>` で切ります。
@@ -298,10 +320,10 @@ node -e "const l=require('fs').readFileSync(process.env.HOME+'/daemon.log','utf-
 理由はそのスクリプトの標準エラーにしか出ていません。`DRY_RUN=1` を付ければ立てずに引数だけ見られます。
 
 ```
-DRY_RUN=1 node scripts/daemon/board-round.mjs
-DRY_RUN=1 bash scripts/daemon/dispatch-task.sh <番号> /dev/null
-bash scripts/daemon/may-dispatch.sh new-task task-<番号>
-bash scripts/daemon/brake.sh new-task
+BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' DRY_RUN=1 node scripts/daemon/board-round.mjs
+BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' DRY_RUN=1 bash scripts/daemon/dispatch-task.sh <番号> /dev/null
+BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' bash scripts/daemon/may-dispatch.sh new-task task-<番号>
+BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' bash scripts/daemon/brake.sh new-task
 ```
 
 ## 直す
@@ -322,7 +344,7 @@ bash scripts/daemon/brake.sh new-task
   `bash scripts/agent/board.sh` の `## 走行` で確かめ、**居るなら差分を最小にして、そのことを報告に
   書いてください。** 相手のPRとぶつかっても、盤面が `mend` で直させます。
 - **デーモンを止めないでください。** 走っているデーモンは、`main` が動けば次の周に自分で新しい版へ
-  入れ替わります（2.3.2）。どうしても要るときだけ `bash scripts/daemon/daemon.sh restart` を打ち、
+  入れ替わります（2.3.2）。どうしても要るときだけ `BOARD_STATE='{{BOARD_STATE}}' DAEMON_LOG='{{DAEMON_LOG}}' bash scripts/daemon/daemon.sh restart` を打ち、
   打ったことを報告に書いてください。
 - **セッションを立て直さないでください。** 投入するのは盤面で、原因が消えれば次の周に自分で打ちます。
   あなたが立てると、同じ仕事に2本立ちます。
@@ -379,7 +401,7 @@ gh issue list --state open --search '詰まり:'
 
 ## 報告する
 
-最後に、次を書いて終わりです。**上の `$PATROL` への追記を先に済ませてください**——これが無いと、
+最後に、次を書いて終わりです。**見回りの記録への1件（上の `patrol-record.mjs`）を先に済ませてください**——これが無いと、
 次の回のあなたは前回を持ちません。
 
 - **どの不変条件を確かめ、どれが成り立っていなかったか**（全部成り立っていたなら、そう書く）
