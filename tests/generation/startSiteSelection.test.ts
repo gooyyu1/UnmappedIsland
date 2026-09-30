@@ -5,6 +5,7 @@ import { IslandMap, Site } from '../../src/domain/generation/IslandMap';
 import { startNewGame } from '../../src/domain/generation/NewGame';
 import type { SiteStartupReach } from '../../src/domain/generation/StartSiteSelection';
 import {
+  STARTUP_NEEDS,
   islandStartupReachOf,
   selectStartSite,
   selectStartSiteAmong,
@@ -246,5 +247,26 @@ describe('要るものの出どころ', () => {
     const crlf = (path: string): string => readFileSync(path, 'utf8').replace(/\r?\n/g, '\r\n');
 
     expect(() => startupNeedSourcesOf(codexWithLocations(zeroSpringFind, crlf))).toThrow('期待個数が0');
+  });
+});
+
+/**
+ * `STARTUP_NEEDS` は ContentSkeleton.md 2.3節の表の写し。**表に行を足しても写しが増えなければ、開始地点
+ * はその要るものを見ずに選ばれる。**
+ */
+describe('最初の段で要るもの', () => {
+  it('2.3節の表の行と過不足なく一致する', () => {
+    const lines = readFileSync('docs/world/ContentSkeleton.md', 'utf8').split(/\r?\n/);
+    const header = lines.indexOf('| 要るもの | 出どころ |');
+    expect(header, '2.3節の表の見出しが見つからない').toBeGreaterThanOrEqual(0);
+    const rows = lines.slice(header + 2);
+    const labels = rows
+      .slice(
+        0,
+        rows.findIndex((line) => !line.startsWith('|')),
+      )
+      .map((line) => line.split('|')[1].trim());
+
+    expect(STARTUP_NEEDS.map((need) => need.label).sort()).toEqual(labels.sort());
   });
 });

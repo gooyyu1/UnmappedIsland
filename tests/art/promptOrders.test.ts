@@ -88,6 +88,21 @@ function orderedNames(): Map<string, Set<string>> {
  * `retired` の下へ移し、注文の鍵には呼び手のあるものだけを置く。
  */
 describe('絵の注文', () => {
+  it('生成の代わりに絵を作る手は、build.py の build_raw の分岐と過不足なく一致する', () => {
+    // 分岐を足してもここに無ければ、そのレシピの prompt は「振られる注文」として数えられ続ける。
+    // 数えるのは generate.py を呼ぶ手前の分岐だけ（後ろの `crop` は生成した絵を切るもの）。`edit` も
+    // 除く——編集元（`source`、無ければ自分自身）を produce_raw へ戻すので、生成まで降りうる。
+    const source = readFileSync(`${COMFYUI_DIR}/build.py`, 'utf-8');
+    const body = /^def build_raw\([\s\S]*?(?="generate\.py")/m.exec(source);
+    if (body === null) throw new Error('build.py の build_raw に generate.py の呼び出しが見つかりません。');
+    const branches = [...body[0].matchAll(/^ {4}\w+ = recipe\.get\("(\w+)"\)$/gm)]
+      .map((match) => match[1])
+      .filter((key) => key !== 'edit');
+
+    expect(branches, 'build_raw の分岐が1つも読めない').not.toHaveLength(0);
+    expect(branches.sort()).toEqual([...INSTEAD_OF_GENERATING].sort());
+  });
+
   it('レシピが名指しする本文は、positive と negative を持つエントリとして在る', () => {
     const missing: string[] = [];
     for (const [file, names] of orderedNames()) {

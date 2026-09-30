@@ -33,6 +33,10 @@ describe('活動時間表の前提', () => {
   it('IlluminationSystem.md 5節の表が、キャラクタの段の境目と一致する', () => {
     const documented = documentedThresholds();
 
+    // 行の過不足も見る。表に足した行は、ここに無ければ段の境目と一度も突き合わされない。
+    expect(ACTION_CLASSES.map((action) => action.documentedClass).sort(), '5節の表の行').toEqual(
+      [...documented.keys()].sort(),
+    );
     for (const action of ACTION_CLASSES)
       expect(documented.get(action.documentedClass), `${action.documentedClass}のしきい値`).toBe(
         characterStageMinimumOf(codex, action),

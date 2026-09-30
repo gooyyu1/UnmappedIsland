@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { activityHoursOf, litPlacesOf, openAirGaleShareOf } from '../../src/analysis/activityHours';
 import {
@@ -8,6 +10,7 @@ import {
   SLEEP_MINUTES_PER_DAY,
   workPileAmountsOf,
   workTotalOf,
+  WORK_PILES,
   WORK_SHARES,
 } from '../../src/analysis/dailyPhases';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
@@ -100,6 +103,41 @@ describe('局面ごとの1日の前提', () => {
     const total = WORK_SHARES.reduce((sum, share) => sum + share.share, 0);
 
     expect(total, '山の配分の合計').toBe(1);
+  });
+
+  /**
+   * `WORK_PILES` は1周回の日数の出どころで、ContentSkeleton.md 4節の表の写し。**系統を足しても山を
+   * 足さなければ、1周回の日数は黙って短いまま**なので、表の行と系統（3節）の両方と突き合わせる。
+   */
+  it('山の一覧が、ContentSkeleton.md の系統と各系統の段の表に過不足なく一致する', () => {
+    const doc = readFileSync(join('docs', 'world', 'ContentSkeleton.md'), 'utf8');
+    const sectionOf = (heading: string): string[] => {
+      const lines = doc.split(/\r?\n/);
+      const start = lines.indexOf(heading);
+      expect(start, `${heading} が見つからない`).toBeGreaterThanOrEqual(0);
+      const end = lines.findIndex((line, index) => index > start && /^##? /.test(line));
+      return lines.slice(start + 1, end);
+    };
+    const tableRows = (lines: string[]): string[][] =>
+      lines
+        .filter((line) => /^\| \d+ \|/.test(line))
+        .map((line) => line.split('|').map((cell) => cell.trim()));
+
+    const systems = tableRows(sectionOf('## 3. 繰り返し払う支出を系統に分ける')).map((cells) =>
+      Number(cells[1]),
+    );
+    expect(systems, '3節の系統の表が読めない').not.toHaveLength(0);
+    expect(
+      [...new Set(WORK_PILES.map((pile) => pile.system))].sort((a, b) => a - b),
+      '山の無い系統',
+    ).toEqual(systems);
+
+    const documented = tableRows(sectionOf('## 4. 各系統の段')).flatMap((cells) =>
+      [...cells[4].matchAll(/pile=(\S+) days/g)].map((match) => `${cells[1]} ${match[1]}`),
+    );
+    expect(WORK_PILES.map((pile) => `${pile.system} ${pile.label}`).sort(), '4節の表の山').toEqual(
+      documented.sort(),
+    );
   });
 
   it('山が名乗る型とタグが、すべて収支表に値段を持つ', () => {

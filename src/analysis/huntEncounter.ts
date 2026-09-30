@@ -1,5 +1,7 @@
+import type { ConditionalReading, EffectReader, PickReading } from '../domain/EffectReader';
 import type { PropertyGlobalId, SlotGlobalId } from '../domain/GlobalId';
 import type { Combination } from '../domain/Interaction';
+import type { ObjectDef } from '../domain/ObjectDef';
 import type { Rng } from '../domain/Rng';
 import { seededRng } from '../domain/Rng';
 import type { WorldCodex } from '../domain/WorldCodex';
@@ -111,8 +113,48 @@ export function beastMoveCountsOf(encounter: HuntEncounter): ReadonlyMap<string,
  */
 export const HUNTER = 'medic';
 
-/** こちらの一撃が告げる名前（`animals.yaml`のbeast traitのstrike）。残りは獣の1手。 */
-const STRIKE_SIGNALS: ReadonlySet<string> = new Set(['hit', 'grazed', 'pierced', 'missed', 'killed']);
+/**
+ * こちらの一撃が告げうる名前。獣の型が宣言する`strike`（`animals.yaml`のbeast trait）の候補から
+ * 集める——ここへ書き写すと、一撃の名前を1つ足したときにそれが黙って獣の1手へ数えられる。
+ */
+function strikeSignalsOf(animal: ObjectDef): ReadonlySet<string> {
+  const collector = new SignalCollector();
+  for (const trigger of animal.triggers) {
+    if (trigger.interaction.name === 'strike') trigger.interaction.readBy(collector);
+  }
+  return collector.names;
+}
+
+/** 効果が告げうる名前（`signal`、9.8節）を、抽選の枝も分け隔てなく集める。 */
+class SignalCollector implements EffectReader {
+  readonly names = new Set<string>();
+
+  signal(name: string): void {
+    this.names.add(name);
+  }
+
+  pick(reading: PickReading): void {
+    reading.readEveryCandidate(this);
+  }
+
+  conditional(reading: ConditionalReading): void {
+    reading.readEveryBranch(this);
+  }
+
+  set(): void {}
+
+  add(): void {}
+
+  spawn(): void {}
+
+  destroy(): void {}
+
+  become(): void {}
+
+  transfer(): void {}
+
+  move(): void {}
+}
 
 /**
  * 遭遇1回ぶんの世界。密林と、そこから伸びる道と、密林に立つ狩人と獣だけを置く。
@@ -137,6 +179,7 @@ class Encounter {
 
   private readonly beastMoves = new Map<string, number>();
   private readonly strikeOutcomes = new Map<string, number>();
+  private readonly strikeSignals: ReadonlySet<string>;
   private strikes = 0;
   private readonly warinessAtStart: number;
   private readonly warinessStageAtStart: string | undefined;
@@ -168,6 +211,7 @@ class Encounter {
 
     for (const item of setup.groundItems) this.spawnInto(item, this.jungle, 'items');
     this.animal = this.spawnInto(setup.animalName, this.jungle, 'items');
+    this.strikeSignals = strikeSignalsOf(this.animal.def);
     const wariness = this.animal.getProperty(this.warinessId);
     if (setup.startingWariness !== undefined) wariness.setNumberWithoutEvents(setup.startingWariness);
     if (setup.startingConsciousness !== undefined) {
@@ -227,7 +271,7 @@ class Encounter {
    * 名前で分ける（どちらの卓の候補かは、卓の側にしか書かれていない）。
    */
   private recordSignal(name: string): void {
-    const table = STRIKE_SIGNALS.has(name) ? this.strikeOutcomes : this.beastMoves;
+    const table = this.strikeSignals.has(name) ? this.strikeOutcomes : this.beastMoves;
     table.set(name, (table.get(name) ?? 0) + 1);
   }
 

@@ -197,7 +197,8 @@ export interface WorkPile {
 
 /**
  * 1周回に積む山の全部（ContentSkeleton.md 4節の表）。**この一覧が1周回の日数の出どころ**で、
- * 山を1つ足すことは、ここへ1行足すことと同じ。
+ * 山を1つ足すことは、ここへ1行足すことと同じ。表の行・系統との過不足は
+ * `tests/diagnostics/dailyPhaseAssumptions.test.ts` が突き合わせる。
  */
 export const WORK_PILES: readonly WorkPile[] = [
   { system: 1, label: '雨受けと貯水を据える', amount: 2 },

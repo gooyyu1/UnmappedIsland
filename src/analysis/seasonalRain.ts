@@ -26,6 +26,7 @@ import { tickDeltasOf } from './tickDeltas';
  *
  * **世界の定義から借りている語は、下のユニオンに集めてある。** 使い道は実測値の表の鍵と、その表を
  * 引く側が天候を仕分ける鍵だけなので、`WorldVocabulary` には載せない（理由はあちらのクラスコメント）。
+ * シンボルとの過不足は `tests/diagnostics/climateStatsReport.test.ts` が突き合わせる。
  */
 
 /** 季節の識別子（`core.yaml` のシンボル）。 */
