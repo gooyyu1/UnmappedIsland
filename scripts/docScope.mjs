@@ -84,7 +84,7 @@ function hasProse(rel) {
  * 書いてあるかを読む係（[`refAudit.mjs`](daemon/refAudit.mjs)）が、同じ1つを読む。** 別々に持つと、
  * 片方だけが新しい置き場を見ないまま緑になる。
  *
- * `tools/**` の JSON はコメントを持たないが、宣言の値が節番号で仕様を指すので入る。**外すのは、
+ * コメントを持たないデータも、宣言の値が節番号で仕様を指すものは入る（{@link isProseData}）。**外すのは、
  * 参照の検査自身の例と正規表現（`tests/docs/**`）と、当時の現物をそのまま残す記録**
  * （{@link isRefRuleExempt}）。**読む側は本文を {@link refProseOf} へ通す**——判断の履歴は、
  * 解釈の節だけが射程に入る。
@@ -99,8 +99,9 @@ export function trackedRefSources(root) {
 }
 
 /**
- * **コメントを書けないのに、宣言の値へ散文を置いているデータ**（`tools/**` の JSON の `_comment`）。
- * 節番号で仕様を指し、ファイルと並べて名前も挙げるので、文書と同じに読む側が要る。
+ * **コメントを書けないのに、宣言の値へ散文を置いているデータ**——`tools/**` の JSON の `_comment` と、
+ * JSON Schema（`*.schema.json`）の `description`。節番号で仕様を指し、ファイルと並べて名前も挙げる
+ * ので、文書と同じに読む側が要る。
  *
  * **読む側は1つではない**（節番号の参照を見る {@link trackedRefSources} と、名前の並びを見る
  * `tests/docs/docMemberReferences.test.ts`）ので、綴りを写さずここから引く。
@@ -108,7 +109,7 @@ export function trackedRefSources(root) {
  * @param {string} rel 根からの相対パス
  */
 export function isProseData(rel) {
-  return rel.startsWith(join('tools') + sep) && rel.endsWith('.json');
+  return (rel.startsWith(join('tools') + sep) && rel.endsWith('.json')) || rel.endsWith('.schema.json');
 }
 
 /**
