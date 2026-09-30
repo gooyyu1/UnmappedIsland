@@ -116,6 +116,8 @@ describe('dispatch-session.mjs', () => {
         'https://github.com/o/r',
       ],
       {
+        // **本物の作業ツリーに触らせない**——畳んだ後の worktree の後始末は、走った場所の git を引く。
+        cwd: work,
         env: {
           ...process.env,
           CCR_META_ENDPOINT: endpoint,

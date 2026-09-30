@@ -75,8 +75,9 @@ choose_target() {
 #   一致 / 不一致                            … 送った指示が欠けずに届いたか
 #   ARCHIVED <セッションID> など             … 確かめられなかった1本を畳んだ結果（`archive-session.sh`）
 #
-# **終了コード1は、立てたものを残していない。** 確かめられなかった1本は畳み、畳めなかったときは
-# 0 を返す（[`board-design.md`](../../agent-ops/board-design.md) 1.4.3節）。
+# **`SESSION` の行を出した後の終了コード1は、立てたものを残していない。** 確かめられなかった1本は
+# 畳み、畳めなかったときは 0 を返す（[`board-design.md`](../../agent-ops/board-design.md) 1.4.3節。
+# `SESSION` の行より前の1がそう言えないことも同じ節）。
 dispatch_session() {
   local -a gate=()
   while [ "$#" -gt 0 ] && [ "$1" != '--' ]; do
