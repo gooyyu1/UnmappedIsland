@@ -85,6 +85,18 @@ describe('inject-policies.sh', () => {
     expect(contextOf({ policies: huge })).toContain(huge);
   });
 
+  // CRLF の作業ツリー（Windows）では両方の原稿が CRLF で届く。
+  it('CRLF の原稿でも、文脈へは行末の \\r を入れない', () => {
+    const context = contextOf({
+      policies: '## 場面\r\n\r\n本文。\r\n',
+      principles: '# 題\r\n\r\n## 結論A\r\n',
+    });
+
+    expect(context).toContain('## 場面\n\n本文。');
+    expect(context).toContain('- 結論A\n');
+    expect(context).not.toContain('\r');
+  });
+
   it('判断基準は見出しだけを入れる', () => {
     const context = contextOf({ principles: '# 題\n\n## 結論A\n\n本文は入れない。\n\n## 結論B\n' });
 
@@ -132,7 +144,7 @@ describe('inject-policies.sh', () => {
    * 出力を見ても分からない。
    */
   it('CLAUDE_PROJECT_DIR が無くても、自分の置き場からリポジトリの根を引く', () => {
-    // フックは `$(<file)` で読むので、CRLF の作業ツリーでも行末の `\r` は落ちて届く。
+    // CRLF の作業ツリーでも、フックは行末の `\r` を落として渡す。
     const real = readFileSync(resolve(__dirname, '../../agent-ops/policies.md'), 'utf-8').replace(
       /\r\n/g,
       '\n',
