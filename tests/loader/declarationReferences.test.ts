@@ -181,6 +181,21 @@ ${declaration}
     });
   });
 
+  it('型の指定（{object: ...}）はmatches以外の口でも同じ検査を受ける', () => {
+    // 指定を読むのは1つの関数なので、スロットのacceptで崩しても同じく落ちる（4.1節）。
+    const basketWith = (object: string): string => `
+object_defs:${HOLDER_AND_FIBER}
+  basket:
+    slots:
+      contents: {cell: {accept: {object: ${object}}}}
+`;
+
+    expect(() => load(basketWith('fiber'))).not.toThrow();
+    expect(() => load(basketWith('fibre'))).toThrowError(
+      /'basket'\.slots\.'contents'.*'fibre'という型は定義されていません/,
+    );
+  });
+
   it('location_typesのobject_defも同じ検査を受ける', () => {
     const generationWith = (object: string): string => `
 object_defs:${HOLDER_AND_FIBER}

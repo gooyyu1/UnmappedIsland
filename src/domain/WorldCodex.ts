@@ -33,8 +33,8 @@ import type { WorldObject } from './WorldObject';
  * - `property_stage`: そのプロパティの段（6.4節）を名前で指した宣言（`in_stage`・`from_stage`など）。
  * - `slot`: 他所で宣言されたスロットを名前で引いた宣言（条件の`slot`・`in_slot`、`among`の`slot`、
  *   `move`の`to_slot`）。
- * - `object`: 型を名前で引いた宣言（`spawn`の`object`・`matches`の`object`・`location_types`の
- *   `object_def`）。行き先とは違い、世界に幾つ在る型でもよい。
+ * - `object`: 型を名前で引いた宣言（「どの型が当てはまるか」の指定の`{object: ...}`（4.1節）・
+ *   `spawn`の`object`など）。行き先とは違い、世界に幾つ在る型でもよい。
  *
  * contextはその宣言が書かれた場所で、指した先が正しくなかったときのエラーメッセージに使う。
  */

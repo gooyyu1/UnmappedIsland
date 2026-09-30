@@ -215,8 +215,8 @@ combinations・passives の合成は trait の mixin（5 節）がそのまま�
   `stages`（6.4 節）にその名前を持つ宣言が無ければエラー。
 - **スロットの名前**（条件の `slot` / `in_slot`、`among` の `slot`、`move` の `to_slot`）: `slots`（7節）の
   キーとして宣言している型が無ければエラー。
-- **型の名前**（`spawn` の `object`、`matches` の `object`、`location_types` の `object_def`）:
-  `object_defs` に無ければエラー（生成された型、3.5 節を含む）。行き先を型で指す宣言（9.4 節・9.6 節）は、
+- **型の名前**（「どの型が当てはまるか」の指定の `{object: ...}`（4.1 節）、`spawn` の `object`、
+  `location_types` の `object_def`）: `object_defs` に無ければエラー（生成された型、3.5 節を含む）。行き先を型で指す宣言（9.4 節・9.6 節）は、
   加えて世界にただ1つ在る型でなければなりません。
 
 名指しの綴りを間違えると、実行時にはただ「そのプロパティを持っていない」「その段に居ない」と読まれ、

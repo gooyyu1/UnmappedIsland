@@ -127,8 +127,8 @@ function parseGeneratorLayer(context: string, node: YAMLMap): GeneratorLayer {
 
 /**
  * variants（亜種、TerrainGeneration.md 3.6節）。`- {id: berry, props: {berry_find: 30}}` の並び。
- * propsのプロパティが実在するかの検証はbuildGenerationDefsまで遅延する（object_defが別ファイルで
- * 後から定義されうるため、object_defの実在検証と同じ理由）。
+ * propsのプロパティをその土地のobject_defが持つかの検証はbuildGenerationDefsまで遅延する
+ * （object_defが別ファイルで後から定義されうるため）。
  */
 function parseVariants(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): LocationVariantDef[] {
   const variants: LocationVariantDef[] = [];
