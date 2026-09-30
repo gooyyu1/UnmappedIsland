@@ -522,8 +522,7 @@ describe('board-round.mjs', () => {
     expect(result.ledger).toEqual({});
   });
 
-  // **GitHub が閉じ損ねた担当は盤面が閉じる**（2.10.6）。閉じたことを台帳へ残さないと、人が
-  // 開け直した担当を窓のあいだ閉じ直し続ける。
+  // **GitHub が閉じ損ねた担当は盤面が閉じる**（2.10.6）。
   describe('マージ済みPRの `Closes` が閉じ損ねた担当', () => {
     const world = {
       mergedPrs: [
@@ -539,32 +538,19 @@ describe('board-round.mjs', () => {
       ledger: { 'tidy:9': NOW.toISOString() },
     };
 
-    it('理由を残して閉じ、閉じたことを台帳へ残す', async () => {
+    it('理由を残して閉じる', async () => {
       const result = await playRound(world);
 
       const close = result.gh.find((args) => args.startsWith('issue close'));
       expect(close).toMatch(/^issue close 8 --reason completed --comment .*PR #9 .*Closes #8/);
       expect(result.calls).toEqual([]);
-      expect(result.ledger['close:8']).toBe(NOW.toISOString());
     });
 
-    // 覚えを残すと、閉じられなかった担当が二度と閉じられない。**同じ周の次の手へ進んでも、
-    // その担当は配られない**（`board-move.mjs` の `unclosed`）。
-    it('閉じられなかったら覚えを残さず、その担当を配りもしない', async () => {
+    // **同じ周の次の手へ進んでも、その担当は配られない**（`board-move.mjs` の `unclosed`）。
+    it('閉じられなかった周も、その担当を配らない', async () => {
       const result = await playRound({ ...world, closeFails: true });
 
-      expect(result.ledger['close:8']).toBeUndefined();
       expect(result.calls.filter((call) => call.startsWith('dispatch-task.sh'))).toEqual([]);
-    });
-
-    it('閉じた覚えは、窓を過ぎたものだけ台帳から捨てる', async () => {
-      const result = await playRound({
-        prs: [pr(10)],
-        ledger: { 'close:8': '2026-09-04T02:00:00Z', 'close:7': '2026-09-01T02:00:00Z' },
-      });
-
-      expect(result.ledger['close:8']).toBe('2026-09-04T02:00:00Z');
-      expect(result.ledger['close:7']).toBeUndefined();
     });
   });
 

@@ -266,13 +266,13 @@ describe('board-move.mjs', () => {
     const openTask = { number: 8, ...label('kind:task'), blockedBy: { nodes: [] } };
 
     it('盤面が自分で閉じる', () => {
-      expect(moves({ mergedPrs: [merged], issues: [openTask] })).toEqual([`CLOSE 8 9 ${NOW}`]);
+      expect(moves({ mergedPrs: [merged], issues: [openTask] })).toEqual(['CLOSE 8 9']);
     });
 
-    // 閉じた後に人が開け直したなら、それは人の判断なので閉じ直さず、普通の task として配る。
-    it('一度閉じた担当は、開いていても閉じ直さない', () => {
-      const board = { mergedPrs: [merged], issues: [openTask], taken: { 'close:8': NOW } };
-      expect(moves(board)).toEqual(['TASK 8']);
+    // 開け直したのは人なので、閉じたのが GitHub でも盤面でも閉じ直さず、普通の task として配る。
+    it('開け直された担当は閉じ直さない', () => {
+      const reopened = { ...openTask, stateReason: 'REOPENED' };
+      expect(moves({ mergedPrs: [merged], issues: [reopened] })).toEqual(['TASK 8']);
     });
 
     // `main` 以外へ入ったPR（積んだPRが下のブランチへ入った形）は、まだ `main` に何も入っていない。
@@ -300,7 +300,7 @@ describe('board-move.mjs', () => {
         issues: [openTask],
         prs: [pr(10, label('通してよい'))],
       };
-      expect(moves(board)).toEqual([`TIDY 9 ${NOW}`, `CLOSE 8 9 ${NOW}`, 'MERGE 10']);
+      expect(moves(board)).toEqual([`TIDY 9 ${NOW}`, 'CLOSE 8 9', 'MERGE 10']);
     });
 
     // **仕事を終えたワーカーを、PRがまだ出ていないとして起こさない・人へ返さない。** 閉じれば次の周に
@@ -312,7 +312,7 @@ describe('board-move.mjs', () => {
         sessions: [idle('session_a', 'task-8')],
       };
       // **閉じる手が転んだ周は、同じ周の次の手が打たれる**ので、手を並べる段で外しておく。
-      const closing = `CLOSE 8 9 ${NOW}`;
+      const closing = 'CLOSE 8 9';
       expect(moves(board)).toEqual([closing]);
       const woken = { 'idle:session_a': LONG_IDLE, 'resume:session_a': 'stall:8' };
       expect(moves({ ...board, taken: woken })).toEqual([closing]);

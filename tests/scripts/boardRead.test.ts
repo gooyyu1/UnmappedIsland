@@ -120,7 +120,11 @@ describe('スメルを拾う係が読む窓（board-design.md 4.4.2節）', () =
       settleMinutes: 10,
       taken: {},
     });
-    return { merged: calls.find((args) => args.includes('merged')), sayIncomplete: sayIncomplete.join('\n') };
+    return {
+      merged: calls.find((args) => args.includes('merged')),
+      issues: calls.find((args) => args[0] === 'issue' && args[1] === 'list'),
+      sayIncomplete: sayIncomplete.join('\n'),
+    };
   }
 
   // 窓が間隔を下回ると、間に入ったぶんが誰にも読まれないまま落ちる（#1787）。
@@ -146,6 +150,12 @@ describe('スメルを拾う係が読む窓（board-design.md 4.4.2節）', () =
     const merged = (await readWith()).merged ?? [];
     const fields = merged[merged.indexOf('--json') + 1].split(',');
     expect(fields).toEqual(expect.arrayContaining(['body', 'baseRefName', 'mergedAt']));
+  });
+
+  // 欠けると、人が開け直した担当を盤面が閉じ直す（board-design 2.10.6）。
+  it('開け直されたかを見るために、issue の stateReason を引く', async () => {
+    const issues = (await readWith()).issues ?? [];
+    expect(issues[issues.indexOf('--json') + 1].split(',')).toContain('stateReason');
   });
 
   // **黙って切らない。** 切られた側は「1件も無い」と同じ形になり、次の周も同じに読まれる。

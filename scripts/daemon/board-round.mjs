@@ -226,9 +226,6 @@ export function newConflicts(prs, written, describe, at) {
  * ——**引けなかった周を「1件も無い」と読むと、その周に全部の覚えが消える**（次の周、窓に入って
  * いるぶんが丸ごと打ち直される）。指紋は打った時刻なので、**窓（`MERGED_WINDOW_HOURS`）を過ぎた
  * ものだけを捨てれば、盤面が相手として見ているあいだは必ず残っている。**
- *
- * **`close:` も同じ理由で時刻で捨てる。** 閉じた issue は開いている一覧から消えるので、そちらで
- * 引くと閉じた周に消え、人が開け直した担当を窓のあいだ閉じ直し続ける。
  */
 export function pruneTaken(taken, board) {
   const ids = new Set(board.sessions.map((session) => session.id));
@@ -243,7 +240,7 @@ export function pruneTaken(taken, board) {
       key.startsWith('unreadable:') ||
       key.startsWith(NOTE_PREFIX) ||
       key.startsWith(PARTIAL_PREFIX) ||
-      ((key.startsWith('tidy:') || key.startsWith('close:')) && Date.parse(mark) >= tidyFrom) ||
+      (key.startsWith('tidy:') && Date.parse(mark) >= tidyFrom) ||
       (key.startsWith('resume:') && ids.has(key.slice('resume:'.length))) ||
       (key.startsWith('review:') && numbers.has(key.slice('review:'.length))) ||
       (key.startsWith('archive:') && ids.has(key.slice('archive:'.length))) ||
@@ -396,10 +393,11 @@ export function play(kind, args, { runScript, gh, remember, recall, forget, log,
     }
     case 'CLOSE': {
       // **閉じた理由は、閉じる手が残す**（`board-move.mjs` の `CLOSE`）。GitHub が閉じていれば
-      // 出ない1行なので、見た人は閉じ損ねが起きたことをここで知る。
+      // 出ない1行なので、見た人は閉じ損ねが起きたことをここで知る。**覚えは残さない**——閉じれば
+      // 開いている一覧から消え、人が開け直せば `stateReason` が `REOPENED` になるので、どちらも盤面が
+      // 自分で見分けられる。
       const note = `[デーモン] PR #${b} は \`Closes #${a}\` を持ったまま \`main\` へマージされましたが、GitHub が閉じなかったので盤面が閉じます。`;
       if (gh(['issue', 'close', a, '--reason', 'completed', '--comment', note]) === undefined) return FAILED;
-      remember(`close:${a}`, c);
       return PLAYED;
     }
     case 'MERGE': {
