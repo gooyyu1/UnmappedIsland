@@ -1396,8 +1396,8 @@ describe('ドキュメントの参照', () => {
   });
 
   it('節番号で文書を指すJSONが、参照の検査に入っている', () => {
-    // 射程を `tools/**` に絞っていた間、`WorldCodex.schema.json` の description が引く節番号は
-    // 指し先の実在すら見られていなかった（#2322）。
+    // 射程は置き場や拡張子で絞るので、節番号を引くJSONが絞りの外に在ると、指し先の実在を誰も
+    // 見ないまま緑になる（#2322）。
     const citing = trackedFiles(ROOT, '*.json').filter((rel) =>
       /\.md\s*\d+(?:\.\d+)*\s*節/.test(read(rel)),
     );
