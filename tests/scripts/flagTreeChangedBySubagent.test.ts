@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -21,7 +21,9 @@ function git(...args: string[]): void {
   execFileSync('git', args, { cwd: repo, stdio: 'ignore' });
 }
 
-function hook(event: 'PreToolUse' | 'PostToolUse', id = 'toolu_1'): string {
+type Event = 'PreToolUse' | 'PostToolUse' | 'PostToolUseFailure';
+
+function hook(event: Event, id = 'toolu_1'): string {
   const out = spawnScript(HOOK, [], {
     input: JSON.stringify({ hook_event_name: event, tool_name: 'Agent', tool_use_id: id, cwd: repo }),
   });
@@ -29,15 +31,35 @@ function hook(event: 'PreToolUse' | 'PostToolUse', id = 'toolu_1'): string {
   return out.stdout;
 }
 
-/** Pre と Post の間に `during` を挟み、Post が親へ渡した理由を返す（告げなければ undefined）。 */
-function around(during: () => void): string | undefined {
+/** Pre と Post の間に `during` を挟み、Post が親へ渡した文を返す（告げなければ undefined）。 */
+function around(during: () => void, post: Event = 'PostToolUse'): string | undefined {
   hook('PreToolUse');
   during();
-  const out = hook('PostToolUse');
+  const out = hook(post);
   if (out === '') return undefined;
-  const parsed = JSON.parse(out) as { decision?: string; reason?: string };
-  expect(parsed.decision).toBe('block');
-  return parsed.reason;
+  const parsed = JSON.parse(out) as {
+    hookSpecificOutput?: { hookEventName?: string; additionalContext?: string };
+  };
+  expect(parsed.hookSpecificOutput?.hookEventName).toBe(post);
+  return parsed.hookSpecificOutput?.additionalContext;
+}
+
+interface Matcher {
+  readonly matcher?: string;
+  readonly hooks?: readonly { readonly command?: string }[];
+}
+
+/** `settings.json` でこのフックを呼んでいる matcher を、イベントごとに引く。 */
+function matchersFor(event: Event): readonly string[] {
+  const settings: unknown = JSON.parse(
+    readFileSync(resolve(__dirname, '../../.claude/settings.json'), 'utf-8'),
+  );
+  const entries = (settings as { hooks?: Record<string, readonly Matcher[]> }).hooks?.[event] ?? [];
+  return entries
+    .filter((entry) =>
+      (entry.hooks ?? []).some((h) => h.command?.includes('flag-tree-changed-by-subagent.sh')),
+    )
+    .map((entry) => entry.matcher ?? '');
 }
 
 beforeEach(() => {
@@ -71,7 +93,6 @@ describe('flag-tree-changed-by-subagent.sh', () => {
     ).toBeUndefined();
   });
 
-  // issue #2300 の形: 検査の効きを確かめるために本番コードを1行外し、戻さないまま返った。
   it('子が書き換えたまま返ったら、そのファイルを名指しで告げる', () => {
     const reason = around(() => writeFileSync(join(repo, 'code.ts'), '// requireKnownKeys(rangeNode);\n'));
 
@@ -100,6 +121,24 @@ describe('flag-tree-changed-by-subagent.sh', () => {
         git('commit', '-q', '-am', 'by child');
       }),
     ).toContain('HEAD');
+  });
+
+  // 子が失敗・中断で返ると、PostToolUse ではなくこちらが来る。途中まで書いた子ほどここへ来る。
+  it('子が失敗で返っても、書き換えを告げる', () => {
+    const reason = around(() => writeFileSync(join(repo, 'code.ts'), 'half done\n'), 'PostToolUseFailure');
+
+    expect(reason).toContain('code.ts');
+  });
+
+  /**
+   * **控えを作る側と比べる側が、同じ道具名に当たっていること。** どちらかの登録が外れる・道具名に
+   * 当たらなくなると、控えが無いまま（または比べられないまま）毎回黙って抜け、緑のまま効かなくなる。
+   */
+  it.each(['Agent', 'Task'])('%s の前後と失敗のすべてで呼ばれている', (tool) => {
+    for (const event of ['PreToolUse', 'PostToolUse', 'PostToolUseFailure'] as const) {
+      const hit = matchersFor(event).some((matcher) => new RegExp(`^(?:${matcher})$`).test(tool));
+      expect(hit, `${event} で ${tool} に当たる登録が無い`).toBe(true);
+    }
   });
 
   // 背景へ回した子や、Pre を通らなかった呼び出しで、別の控えと比べて誤って告げないこと。

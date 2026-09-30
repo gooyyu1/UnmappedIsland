@@ -84,6 +84,17 @@
           }
         ]
       }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/flag-tree-changed-by-subagent.sh\""
+          }
+        ]
+      }
     ]
   }
 }
