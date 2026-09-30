@@ -1029,6 +1029,22 @@ describe('board-move.mjs', () => {
     expect(round(2, second)).toContain('REVIEW 10 aaa1111:2');
   });
 
+  // **通した判定では起こさない。** 2本目が「通してよい」でも、`直し待ち` が外れるまでの窓
+  // （`board-labels.yml` の `verdict`）は差し戻しの形のまま——ここで起こすと、通したばかりの差分へ
+  // 書き手が push して `通してよい` を落とす。
+  it('同じ版へ通す判定が載っても、書いた本人は起こさない', () => {
+    const board = (comments: readonly unknown[], woke?: string) => ({
+      prs: [pr(10, { ...label('直し待ち'), comments })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: woke === undefined ? {} : { 'resume:session_a': woke },
+    });
+    const [first] = moves(board(returned('aaa1111').comments));
+    const woke = first.split(' ').at(-1);
+    const passed = [...returned('aaa1111').comments, ...verdict('aaa1111').comments];
+    expect(moves(board(passed, woke)).filter((move) => move.startsWith('RESUME '))).toEqual([]);
+  });
+
   // ## レビューへ渡せない差し戻しは、人へ返す（2.13.6。issue #2045）
   //
   // **もう1周読ませて解けるのは `直し待ち` だけ。** `却下` は人が付けた印で**外れるのは push の
