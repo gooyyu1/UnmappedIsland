@@ -1,4 +1,5 @@
-import { ESLint } from 'eslint';
+import { ESLint, Linter } from 'eslint';
+import tseslint from 'typescript-eslint';
 import { describe, expect, it } from 'vitest';
 import * as worldTime from '../../src/domain/worldTime';
 import { ROOT } from '../support/sourceFiles';
@@ -13,16 +14,27 @@ import { ROOT } from '../support/sourceFiles';
 
 const CALENDAR = Object.entries(worldTime);
 
-/**
- * 検査を掛ける先に名乗らせるファイル。型を見る規則が tsconfig に載ったファイルしか読まないので、
- * 在るファイルの名前を借りる（中身は下で渡す文字列に差し替わり、ファイルそのものは読み書きしない）。
- */
-const BORROWED_PATH = 'tests/support/worldYaml.ts';
+/** 規則の掛かる先として、設定を引くファイル。暦の規則はファイルの置き場で掛かるので、在るものを借りる。 */
+const CONFIGURED_PATH = 'tests/support/worldYaml.ts';
 
-/** 暦の規則が出す指摘だけを、行番号で拾う。 */
+/**
+ * 暦の規則が出す指摘だけを、行番号で拾う。**規則は本物の設定から引き、型は見ずに当てる**——
+ * 型を見る解析まで立ち上げると数秒の計算を食い、同じ時間帯に走る他の試験を時間切れへ押し出す。
+ */
 async function flaggedLines(lines: readonly string[]): Promise<number[]> {
-  const [result] = await new ESLint({ cwd: ROOT }).lintText(lines.join('\n'), { filePath: BORROWED_PATH });
-  return result.messages
+  const config = await new ESLint({ cwd: ROOT }).calculateConfigForFile(CONFIGURED_PATH);
+  const messages = new Linter().verify(
+    lines.join('\n'),
+    [
+      {
+        files: ['**/*.ts'],
+        languageOptions: { parser: tseslint.parser },
+        rules: { 'no-restricted-syntax': config.rules['no-restricted-syntax'] },
+      },
+    ],
+    'probe.ts',
+  );
+  return messages
     .filter((message) => message.ruleId === 'no-restricted-syntax' && message.message.includes('worldTime'))
     .map((message) => message.line);
 }
@@ -53,5 +65,5 @@ describe('暦の数を字で書かせない規則', () => {
       '拾うべき行だけを拾う（食い違った行番号が、上の組み立てのどれかを指す）',
     ).toEqual(flagged.map((unused, index) => firstFlagged + index));
     expect(lines.filter((line) => line >= firstPassed)).toEqual([]);
-  }, 30_000);
+  });
 });
