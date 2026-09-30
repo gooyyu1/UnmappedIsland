@@ -162,8 +162,13 @@ jobs:
             # **閉じるPRが在るなら閉じない。** 閉じるのはそのPRのマージで、先に閉じると、main に何も
             # 入らないうちに完了の合図が出て、直しを頼む相手のワーカーまで畳まれる。黙って何もしないと
             # 名乗った側は閉じたと思ったまま終わるので、落とす。
-            linked=$(gh issue view "$ISSUE" --repo "$REPO" --json closedByPullRequestsReferences \
-              --jq '.closedByPullRequestsReferences | length')
+            #
+            # **「閉じるPR」は本文の `Closes #<番号>` で見る**——盤面（`board-move.mjs` の `closes`）と
+            # 投入（`dispatch-task.sh`）がそう読むので。GitHub の紐付けは base が `main` のPRにしか
+            # 張られず、積んだPRを見落とす。
+            linked=$(gh pr list --repo "$REPO" --state open --limit 100 --json body |
+              jq --arg issue "$ISSUE" \
+                '[.[] | select(.body // "" | test("closes\\s+#" + $issue + "(\\D|$)"; "i"))] | length')
             [ "$linked" = 0 ] || {
               echo "閉じるPRが在るので、[完了] では閉じない: $head" >&2
               exit 1

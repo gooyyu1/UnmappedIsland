@@ -229,16 +229,16 @@ describe('board-labels.yml の declared', () => {
   const ISSUE = '1376';
 
   /** 通る名乗り用。**落ちたことを結果に混ぜない**ので、落ちれば「何もしない」と区別が付く。 */
-  function runDeclared(body: string): string[] {
-    const result = spawnDeclared(body);
+  function runDeclared(body: string, prBodies: readonly string[] = []): string[] {
+    const result = spawnDeclared(body, prBodies);
     if (result.status !== 0) throw new Error(`declared が ${result.status} で終わった: ${body}`);
     return result.edits;
   }
 
-  /** `linked` は、担当を閉じるPRの本数（`gh issue view` の `closedByPullRequestsReferences`）。 */
+  /** `prBodies` は、開いているPRの本文（`gh pr list --json body`）。 */
   function spawnDeclared(
     body: string,
-    linked = 0,
+    prBodies: readonly string[] = [],
   ): { readonly edits: string[]; readonly status: number | null } {
     const work = mkdtempSync(join(tmpdir(), 'unmapped-island-returned-'));
     const dir = pathForBash(work);
@@ -256,8 +256,8 @@ case "$1 $2" in
   shift 2
   echo "close $*" >>'${dir}/edits.txt'
   ;;
-"issue view")
-  echo ${linked}
+"pr list")
+  cat '${dir}/prs.json'
   ;;
 "api --method")
   shift 3
@@ -275,6 +275,11 @@ esac
       );
       chmodSync(gh, 0o755);
       writeFileSync(join(work, 'edits.txt'), '', 'utf-8');
+      writeFileSync(
+        join(work, 'prs.json'),
+        JSON.stringify(prBodies.map((text) => ({ body: text }))),
+        'utf-8',
+      );
 
       const workflow = parse(readFileSync(WORKFLOW, 'utf-8')) as {
         jobs: Record<string, { steps: { run?: string }[] }>;
@@ -331,12 +336,20 @@ esac
   });
 
   // **閉じるのはそのPRのマージ**（`CLAUDE.md`「issue を自分で閉じない」）。先に閉じると、盤面は
-  // 担当を `closed:` で畳み、PRの直しを頼む相手が居なくなる。
-  it('[完了] でも、担当を閉じるPRが在れば閉じずに落ちる', () => {
-    const result = spawnDeclared('[完了] 済んだ', 1);
+  // 担当を `closed:` で畳み、PRの直しを頼む相手が居なくなる。**本文の `Closes` で見る**のは盤面と
+  // 投入がそう読むからで、base が `main` でない積んだPRもこれで拾う。
+  it('[完了] でも、担当を本文の Closes で指す開いたPRが在れば閉じずに落ちる', () => {
+    const result = spawnDeclared('[完了] 済んだ', ['Closes #99', `前置き\n\ncloses  #${ISSUE}\n`]);
 
     expect(result.status).not.toBe(0);
     expect(result.edits).toEqual([]);
+  });
+
+  // 番号の前方一致で別の issue のPRを拾うと、閉じてよい担当がいつまでも閉じない。
+  it('[完了] は、別の issue を閉じるPRには止められない', () => {
+    expect(runDeclared('[完了] 済んだ', [`Closes #${ISSUE}0`, 'Closes #99'])).toEqual([
+      `close ${ISSUE} --repo gooyyu1/UnmappedIsland --reason completed`,
+    ]);
   });
 
   // **分類（`kind:`）は動かさない**（2.15.2・2.17.1）。軸が違ううえ、外すと人が列へ戻すのに
