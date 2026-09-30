@@ -16,6 +16,14 @@ describe('World/PlayerCharacter/Locationビュー', () => {
     return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
+  function openWorld(codex: WorldCodex): { instance: WorldObject; world: World } {
+    const session = new WorldSession(codex);
+    const instance = session.createObject(codex.objectNames.getId('world'));
+    const world = new World(instance);
+    session.adoptWorld(world);
+    return { instance, world };
+  }
+
   it('Worldはday/hour/minute/weatherを公開する', () => {
     const yaml = `
 object_defs:
@@ -33,14 +41,7 @@ object_defs:
       weather:
         value: light_rain
 `;
-    const codex = load(yaml);
-    const instance = new WorldObject(
-      1,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
-
-    const world = new World(instance);
+    const { instance, world } = openWorld(load(yaml));
 
     expect(world.day).toBe(3);
     expect(world.hour).toBe(8);
@@ -68,14 +69,7 @@ object_defs:
           self:
             minute: 10
 `;
-    const codex = load(yaml);
-    const instance = new WorldObject(
-      1,
-      codex.objects.get(codex.objectNames.getId('world')),
-      new WorldSession(codex),
-    );
-
-    const world = new World(instance);
+    const { world } = openWorld(load(yaml));
 
     expect(world.minute).toBe(40);
     expect(world.weather, '天気の語彙を持たないCodex').toBeUndefined();
