@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `scripts/daemon/dispatch-task.sh` の**投入する前の関門**の検査。
  *
@@ -111,7 +113,7 @@ function args(
   };
 }
 
-describe('dispatch-task.sh', () => {
+describe('dispatch-task.sh', timeoutOnWindows(30_000), () => {
   it('関門をどれも踏まなければ、渡す引数まで組み立てる', () => {
     const result = run(1415);
 

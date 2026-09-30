@@ -25,9 +25,29 @@ export function pathForBash(path: string): string {
  * （[`onlyTheseCommands`](onlyTheseCommands.ts)）では `bash` 自身も絞りの外に出るので、名前では
  * 見つからない。かといって `/bin/bash` と決め打つと、bash がそこに無い環境で壊れる。
  *
- * 引くのは1回だけ。**身代わりの先頭の1行も同じものを使う**（[`stubShebang`](stubShebang.ts)）。
+ * 在り処は**読み手ごとに2つの綴りを持つ。** MSYS2 の bash は自分を `/usr/bin/bash` と答えるが、
+ * Windows の node はその綴りを開けない（`spawn /usr/bin/bash ENOENT`）。node が起こす `BASH` は
+ * `cygpath` で Windows の綴りへ直し、bash 自身が読む `BASH_AS_BASH_SEES_IT` は直さない——身代わりの
+ * 先頭の1行（[`stubShebang`](stubShebang.ts)）は空白を含む綴り（`C:/Program Files/...`）を書けない。
+ * `cygpath` の無い環境では2つは同じ綴り。
+ *
+ * 引くのは1回だけ。
  */
-export const BASH = execFileSync('bash', ['-c', 'command -v bash'], { encoding: 'utf-8' }).trim();
+const [bashAsBashSeesIt, bashForNode] = execFileSync(
+  'bash',
+  [
+    '-c',
+    'b=$(command -v bash); echo "$b"; if command -v cygpath >/dev/null; then cygpath -w "$b"; else echo "$b"; fi',
+  ],
+  { encoding: 'utf-8' },
+)
+  .trim()
+  .split(/\r?\n/);
+
+export const BASH = bashForNode;
+
+/** bash 自身が読む bash の在り処（`BASH` と同じ出どころ。分けている理由は `BASH` の側）。 */
+export const BASH_AS_BASH_SEES_IT = bashAsBashSeesIt;
 
 /**
  * `.sh` を1本走らせて標準出力を返す。**走らせるスクリプトの在り処を直す約束をここが持つ**ので、

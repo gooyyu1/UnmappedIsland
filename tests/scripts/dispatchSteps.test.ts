@@ -7,6 +7,8 @@ import { FakeMetaServer, writeFakeCredentials } from '../support/fakeMetaServer'
 import { runScript, spawnScriptAsync } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `scripts/daemon/dispatch-steps.sh` の `dispatch_session` が、**関門の終了コードをそのまま呼び手の
  * 終了コードにする**ことの検査（`agent-ops/board-design.md` 2.21.2節）。
@@ -133,7 +135,7 @@ function dispatchChore(brake: string): number {
   }
 }
 
-describe('dispatch-steps.sh', () => {
+describe('dispatch-steps.sh', timeoutOnWindows(30_000), () => {
   it('人が手綱で止めていれば、3で終わる', () => {
     expect(dispatchChore(brakeBody(' '))).toBe(3);
   });
@@ -151,7 +153,7 @@ describe('dispatch-steps.sh', () => {
  * **CCRへ何が届いたかで見る。** 終了コードは、関門で止まっても身代わりの応答で止まっても同じ1に
  * なるので、区別が付かない。
  */
-describe('dispatch-chore.sh の `--gate values`', () => {
+describe('dispatch-chore.sh の `--gate values`', timeoutOnWindows(30_000), () => {
   const server = new FakeMetaServer();
   let endpoint = '';
   let work = '';

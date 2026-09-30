@@ -48,7 +48,9 @@ const MARKERS = ['かつて', '以前は', 'ていた頃', 'だった頃', '時�
  */
 function proseOf(file: string): string {
   const text = readFileSync(join(ROOT, file), 'utf-8');
-  return file.endsWith('.md') || isProseData(file) ? text : commentsOnly(text, file);
+  // `docScope.mjs` の判定はプラットフォームの区切りで受ける（`file` は `repoPath` の `/` 区切り）。
+  const native = file.split('/').join(sep);
+  return file.endsWith('.md') || isProseData(native) ? text : commentsOnly(text, file);
 }
 
 function historyIn(file: string): string[] {

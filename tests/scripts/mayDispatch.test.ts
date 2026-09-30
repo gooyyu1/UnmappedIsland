@@ -7,6 +7,8 @@ import { FakeMetaServer, wrappedMetaReply, writeFakeCredentials } from '../suppo
 import { spawnScriptAsync } from '../support/runScript';
 import { writeUsageCache, writeUsagePolled } from '../support/usageCache';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `scripts/daemon/may-dispatch.sh`（と、その下の `may-spend.sh` / `brake.sh` / `headroom.sh` /
  * `occupancy.sh`）の検査。
@@ -133,7 +135,7 @@ const working = (tag: string): Session => ({
   tags: [tag],
 });
 
-describe('may-dispatch.sh', () => {
+describe('may-dispatch.sh', timeoutOnWindows(30_000), () => {
   it('手綱が全部付いていて、同じタグのセッションが無ければ通す', async () => {
     expect(await run('new-task', 'task-1234')).toEqual({ code: 0, stderr: '' });
   });

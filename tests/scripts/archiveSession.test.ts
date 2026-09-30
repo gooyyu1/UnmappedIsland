@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `scripts/daemon/archive-session.sh` の、**戻せない操作**だけを見る検査。
  *
@@ -162,7 +164,7 @@ function reason(text: string): string | undefined {
   return at >= 0 ? line?.slice(at + 2) : undefined;
 }
 
-describe('archive-session.sh', () => {
+describe('archive-session.sh', timeoutOnWindows(30_000), () => {
   // **ブリッジで立てたものも同じ条件で畳む。** worktree を持つことは畳んでよいかの条件ではなく、
   // 畳んだ後に何を片付けるかの話。
   it('このPCの worktree を持つセッションを、畳んでロックを外して消す', () => {

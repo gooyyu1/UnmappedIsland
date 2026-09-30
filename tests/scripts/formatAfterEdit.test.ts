@@ -43,7 +43,7 @@ describe('format-after-edit.sh', () => {
     const out = run(file, REPO);
 
     expect(out.code, `フックが非0で終わった:\n${out.stderr}`).toBe(0);
-    expect(formatted(out.calls)).toBe(file);
+    expect(formatted(out.calls)).toBe(pathForBash(file));
   });
 
   /**
@@ -63,6 +63,18 @@ describe('format-after-edit.sh', () => {
   });
 
   /**
+   * Windows では書き込み先が `\` 区切りで届く。区切りを揃えずに根と比べると、中のファイルが全部
+   * 「外」に見える——**区切りを差し替えて渡すので、`/` しか出てこない環境でも同じ経路を踏む。**
+   */
+  it('`\\` 区切りで届いた書き込み先も、中のファイルとして見分ける', () => {
+    const file = join(REPO, 'src', 'main.ts').replace(/\//g, '\\');
+    const out = run(file, REPO);
+
+    expect(out.code, `フックが非0で終わった:\n${out.stderr}`).toBe(0);
+    expect(formatted(out.calls)).toBe(pathForBash(file));
+  });
+
+  /**
    * **`CLAUDE_PROJECT_DIR` が無い経路。** 根を自分の置き場から引けていないと、リポジトリの中の
    * ファイルまで「外」に見えて黙って素通りする。
    */
@@ -71,7 +83,7 @@ describe('format-after-edit.sh', () => {
     const out = run(file, undefined);
 
     expect(out.code, `フックが非0で終わった:\n${out.stderr}`).toBe(0);
-    expect(formatted(out.calls)).toBe(file);
+    expect(formatted(out.calls)).toBe(pathForBash(file));
   });
 
   /**

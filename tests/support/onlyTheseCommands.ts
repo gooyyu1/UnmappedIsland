@@ -1,8 +1,9 @@
+import { execFileSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { pathForBash, spawnScript } from './runScript';
+import { BASH, pathForBash, spawnScript } from './runScript';
 import { STUB_SHEBANG } from './stubShebang';
 
 /**
@@ -26,7 +27,10 @@ import { STUB_SHEBANG } from './stubShebang';
 
 export interface CommandCall {
   readonly name: string;
-  /** 呼ばれた時点の作業ディレクトリ。**どこで走らせたかが仕事の一部**である相手を見るのに要る。 */
+  /**
+   * 呼ばれた時点の作業ディレクトリ。**どこで走らせたかが仕事の一部**である相手を見るのに要る。
+   * `pathForBash` を通したパスと比べられる綴り（MSYS2 の bash が名乗る `/c/...` ではない）。
+   */
   readonly cwd: string;
   readonly args: readonly string[];
 }
@@ -59,11 +63,18 @@ export interface Restricted {
  */
 function record(name: string, args: string, log: string): string {
   return [
-    `{ printf '%s\\t%s' ${name} "$PWD"`,
+    `{ printf '%s\\t%s' ${name} "$(pwd -W 2>/dev/null || pwd)"`,
     `for arg in ${args}; do printf '\\t%s' "$arg"; done`,
     `printf '\\n'; } >> '${log}'`,
   ].join('\n  ');
 }
+
+/**
+ * 身代わりが本物を引き直す `PATH`。**bash が読む綴りで渡す**——Windows の node の `PATH` は
+ * `C:\...;C:\...` の綴りで、bash は起動時に `PATH` 自身しか直さないので、別の名前で渡すと直らない
+ * まま `export PATH=` され、本物が1つも見つからない。bash に一度読ませて、直した後の綴りを引く。
+ */
+const PATH_AS_BASH_SEES_IT = execFileSync(BASH, ['-c', 'printf %s "$PATH"'], { encoding: 'utf-8' });
 
 /** `PATH` を名乗った名前だけに絞って `.sh` を1本走らせる。 */
 export function runWithOnlyTheseCommands(script: string, only: OnlyTheseCommands): Restricted {
@@ -106,7 +117,7 @@ export function runWithOnlyTheseCommands(script: string, only: OnlyTheseCommands
       env: {
         ...base,
         PATH: bin,
-        ONLY_THESE_COMMANDS_PATH: process.env.PATH ?? '',
+        ONLY_THESE_COMMANDS_PATH: PATH_AS_BASH_SEES_IT,
         BASH_ENV: pathForBash(prelude),
       },
       input: only.input ?? '',

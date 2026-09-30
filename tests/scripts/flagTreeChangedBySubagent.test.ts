@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { spawnScript } from '../support/runScript';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `.claude/hooks/flag-tree-changed-by-subagent.sh` の検査。
  *
@@ -79,7 +81,7 @@ afterEach(() => {
   rmSync(repo, { recursive: true, force: true });
 });
 
-describe('flag-tree-changed-by-subagent.sh', () => {
+describe('flag-tree-changed-by-subagent.sh', timeoutOnWindows(30_000), () => {
   it('子が何も書かなければ、何も言わない', () => {
     expect(around(() => undefined)).toBeUndefined();
   });

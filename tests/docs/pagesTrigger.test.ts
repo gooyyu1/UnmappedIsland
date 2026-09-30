@@ -28,7 +28,7 @@ const TABLE_ROW = /^\|\s*`\/([^/`]+)\/`\s*\|(.*)\|\s*$/;
 
 /** {@link SECTION} の本文。**他の節の表を巻き込まない**よう、次の見出しで切る。 */
 function section(): readonly string[] {
-  const lines = readFileSync(GUIDE, 'utf-8').split('\n');
+  const lines = readFileSync(GUIDE, 'utf-8').split(/\r?\n/);
   const from = lines.indexOf(SECTION);
   if (from < 0) throw new Error(`CLAUDE.md に ${SECTION} が無い`);
   const rest = lines.slice(from + 1);

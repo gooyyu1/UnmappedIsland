@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { HEAD, PUSHED, REFUSALS, RETARGETED, run } from '../support/tidyMergedPrWorld';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * マージ済みのPR1本の後片付け——上に積まれていたPRの差し戻しと、本体のチェックアウトの追随。
  *
@@ -11,7 +13,7 @@ import { HEAD, PUSHED, REFUSALS, RETARGETED, run } from '../support/tidyMergedPr
  * 世界の組み方と、ファイルを分けてある理由は `tests/support/tidyMergedPrWorld.ts`。
  */
 
-describe('tidy-merged-pr.sh', () => {
+describe('tidy-merged-pr.sh', timeoutOnWindows(30_000), () => {
   // GitHub が張り替えても、squash マージでは差分に下のぶんが混ざったままで、CIも古い base で得た
   // 緑のまま。base が `main` になったぶん盤面は普通に捌きにかかるので、**書いた本人へ差し戻す**。
   // 差し戻す理由はPRを見ても分からない（コンフリクトもCIの赤もレビューの指摘も無い）ので、文面を

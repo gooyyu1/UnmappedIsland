@@ -137,6 +137,9 @@ describe('見回りの係の本文', () => {
               DRY_RUN: 'full',
               CLOUD_ENV: 'env_TEST_CLOUD',
               BRIDGE_ENV: 'env_TEST_BRIDGE',
+              // 架空の置き場を、MSYS2 の bash が node へ環境ごと渡すときに Windows の綴り
+              // （`C:/Program Files/Git/daemon/...`）へ書き換えないように。
+              MSYS2_ENV_CONV_EXCL: 'BOARD_STATE;DAEMON_LOG',
             },
           },
         ),
