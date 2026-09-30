@@ -28,7 +28,7 @@ export function pathForBash(path: string): string {
  * 在り処は**読み手ごとに2つの綴りを持つ。** MSYS2 の bash は自分を `/usr/bin/bash` と答えるが、
  * Windows の node はその綴りを開けない（`spawn /usr/bin/bash ENOENT`）。node が起こす `BASH` は
  * `cygpath` で Windows の綴りへ直し、bash 自身が読む `BASH_AS_BASH_SEES_IT` は直さない——身代わりの
- * 先頭の1行（[`stubShebang`](stubShebang.ts)）は空白を含む綴り（`C:/Program Files/...`）を書けない。
+ * 先頭の1行（[`stubShebang`](stubShebang.ts)）は空白を含む綴り（`C:\Program Files\...`）を書けない。
  * `cygpath` の無い環境では2つは同じ綴り。
  *
  * 引くのは1回だけ。
