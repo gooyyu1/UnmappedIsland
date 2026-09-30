@@ -60,10 +60,11 @@ object_defs:
   });
 
   it('生成型は数えない（素の型の絵を映す）', () => {
-    const generated = [...codex.objects].filter((def) => codex.isGenerated(def)).map((def) => def.name);
-    // 中身入り・加工済み・作りかけの3つ。1つも無ければ、下の検査は何も見ていない。
-    expect(generated.length).toBe(3);
-    for (const name of generated) expect(shown.has(name), name).toBe(false);
+    const generated = [...codex.objects].filter((def) => codex.isGenerated(def));
+    // 中身入り・加工済み・作りかけがどれも生成されていなければ、下の検査は何も見ていない。
+    const bases = new Set(generated.map((def) => codex.baseOf(def).name));
+    expect([...bases].sort()).toEqual(['jar', 'meat', 'rope']);
+    for (const def of generated) expect(shown.has(def.name), def.name).toBe(false);
   });
 
   it('世界そのものは数えない（どのスロットにも入らない）', () => {

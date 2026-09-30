@@ -160,19 +160,9 @@
 通常の `npm test` では実行されない）を実行して生成します。生成元テストと出力先はレポート冒頭にコメントで
 記載しています。
 
-```bash
-npm run stats:balance
-npm run stats:climate
-npm run stats:discovery
-npm run stats:durations
-npm run stats:escape
-npm run stats:escape-islands
-npm run stats:hunt
-npm run stats:startup
-npm run stats:terrain
-npm run stats:voyage
-npm run stats:voyage-storm
-```
+**コマンドは [`package.json`](../../package.json) の `stats:*` のうち、`tests/diagnostics/*StatsReport.test.ts`
+を走らせるもの**です（`npm run stats:balance` など）。レポートを足すたびにここを書き換えずに済むよう、
+一覧は写しません。
 
 ## 再生成し忘れると赤くなる
 
