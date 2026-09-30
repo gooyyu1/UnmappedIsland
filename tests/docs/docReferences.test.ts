@@ -37,7 +37,8 @@ import { SECTION_RUN, sectionNumbersIn } from '../../scripts/sectionRefs.mjs';
  * ——TypeDoc が `/reference/` を作るときに読む側なので、切れたままだと公開の頁のリンクが死ぬ。
  *
  * **外すのは、当時の現物をそのまま残す記録**（{@link isVerbatimRecord}。DocumentStyle.md 10節）
- * **と、パスの綴りだけは当時の在り処を残す側も**（{@link PATH_CHECKED_FILES}）。実装状況の印
+ * **と、当時を残す側に掛けない規約の分**（パスの綴りは {@link PATH_CHECKED_FILES}、Markdown 以外を
+ * 名前で引く形は {@link isAnalysisRecord} を外す。どちらも同 10節）。実装状況の印
  * （4節・4.1節）だけは `docs/` に閉じており、理由は {@link docByPath}。
  *
  * - Markdownリンク（ファイル・アンカー）が実在すること
@@ -797,7 +798,7 @@ function brokenNameRefsIn(rel: string, source: string): string[] {
   for (const [, base, rawName] of text.matchAll(NAME_REF)) {
     const names = quotableNamesByFile.get(base);
     if (names === undefined) {
-      broken.push(`${rel}: ${base}（そのファイルが無い）`);
+      broken.push(`${rel}: ${base}（名前で引ける指し先に、そのファイルが無い）`);
     } else if (!names.some((name) => nameFitsIn(normalizeName(rawName), name))) {
       broken.push(`${rel}: ${base}「${rawName}」`);
     }
