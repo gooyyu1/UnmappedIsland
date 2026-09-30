@@ -219,10 +219,10 @@
 
 | アイテム | 押し下げ | 総コスト | 何が層を薄くしているか |
 |---|---|---|---|
-| 束ねた葉の衣類 | −1℃ | 66分<!-- stats: balance.yaml object_costs object=bundled_leaf_clothing total_minutes ±5% --> | 束ねただけの小葉は隙間だらけで、風がそのまま通る |
-| 生皮の衣類 | −2℃ | 123分<!-- stats: balance.yaml object_costs object=rawhide_clothing total_minutes ±5% --> | 皮は風を通さないが、乾いた生皮は固く体から浮く |
-| 編んだ葉の衣類 | −3℃ | 277分<!-- stats: balance.yaml object_costs object=woven_leaf_clothing total_minutes ±5% --> | 編んだ面は形を保って沿うが、素材は葉のまま |
-| なめし革の衣類 | −4℃ | 1,570分<!-- stats: balance.yaml object_costs object=tanned_leather_clothing total_minutes ±5% --> | 裁って縫った革は体に沿い、隙間が残らない |
+| 束ねた葉の衣類 | −1℃<!-- codex: clothing.yaml object_defs.bundled_leaf_clothing.passives.0.modify.parent.chill_point --> | 66分<!-- stats: balance.yaml object_costs object=bundled_leaf_clothing total_minutes ±5% --> | 束ねただけの小葉は隙間だらけで、風がそのまま通る |
+| 生皮の衣類 | −2℃<!-- codex: clothing.yaml object_defs.rawhide_clothing.passives.0.modify.parent.chill_point --> | 123分<!-- stats: balance.yaml object_costs object=rawhide_clothing total_minutes ±5% --> | 皮は風を通さないが、乾いた生皮は固く体から浮く |
+| 編んだ葉の衣類 | −3℃<!-- codex: clothing.yaml object_defs.woven_leaf_clothing.passives.0.modify.parent.chill_point --> | 277分<!-- stats: balance.yaml object_costs object=woven_leaf_clothing total_minutes ±5% --> | 編んだ面は形を保って沿うが、素材は葉のまま |
+| なめし革の衣類 | −4℃<!-- codex: clothing.yaml object_defs.tanned_leather_clothing.passives.0.modify.parent.chill_point --> | 1,570分<!-- stats: balance.yaml object_costs object=tanned_leather_clothing total_minutes ±5% --> | 裁って縫った革は体に沿い、隙間が残らない |
 
 **両端は、空が作る気温の刻みへ合わせてあります**（[`../engine/VitalsSystem.md`](../engine/VitalsSystem.md)
 8.4 節）。素の入口は16℃で、空がそれを下回るのは涼しい季節の夜（12℃）と、その薄明・雨天の昼（15℃）です。

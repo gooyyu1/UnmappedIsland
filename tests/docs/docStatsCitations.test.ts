@@ -1,15 +1,18 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { replaceAllOrFail } from '../support/textEdit';
+import { WORLD_CODEX_DIR, worldCodexYamlPaths } from '../support/worldCodexFiles';
 
 /**
- * 文書が `stats/*.yaml` から書き写した数値が、出どころとずれていないかの検査。
+ * 文書が `stats/*.yaml`（生成物）と `src/assets/world-codex/**.yaml`（人が書く定義）から書き写した
+ * 数値が、出どころとずれていないかの検査。
  *
  * 生成物の側には鮮度の試験がある（`tests/support/generatedReport.ts` の
  * `describeReportFreshness`）が、**そこから文書へ書き写した数値は誰も見ていない**——再生成すると
- * 文書だけが古い値を持ったまま緑になる（issue #860）。
+ * 文書だけが古い値を持ったまま緑になる（issue #860）。定義も同じで、人が定義を動かせば、そこから
+ * 書き写した文書は静かに嘘になる（issue #2357）。
  *
  * 文書側は、書き写した数値の直後に出どころの印を置く。**印の形・粗さの書き方・何を印で書いてよいかは
  * [`docs/diagnostics/README.md`](../../docs/diagnostics/README.md)「文書へ書き写した数値には、
@@ -20,8 +23,8 @@ const ROOT = resolve(__dirname, '../..');
 
 const STATS_DIR = 'stats';
 
-/** 書き写した数値の出どころを名乗る印。 */
-const MARK_PATTERN = /<!--\s*stats:\s*([^>]*?)\s*-->/g;
+/** 書き写した数値の出どころを名乗る印。`stats:` は生成物のセル、`codex:` は定義の中の1つの値を指す。 */
+const MARK_PATTERN = /<!--\s*(stats|codex):\s*([^>]*?)\s*-->/g;
 
 /**
  * 印の直前に書かれている数と、そこから印までの隙間。隙間に数字と表の区切り（`|`）を許さないので、
@@ -68,12 +71,34 @@ interface Mark {
   readonly coarseness: Coarseness | null;
 }
 
+/** `codex:` の印が指す、定義の中の1つの値。 */
+interface CodexSource {
+  /** `WORLD_CODEX_DIR` からの相対パス。 */
+  readonly file: string;
+  /** トップレベルからのキーの道。リストの中は0始まりの添字で指す。 */
+  readonly path: readonly string[];
+}
+
+/** `codex:` の印の中身。定義の値は丸めずに書かれているので、畳み方は持たない。 */
+interface CodexMark {
+  readonly source: CodexSource;
+  readonly coarseness: Coarseness | null;
+}
+
+/** 読めた印。どちらの出どころかによらず、粗さと指す値だけで突き合わせる。 */
+interface ReadMark {
+  readonly coarseness: Coarseness | null;
+  /** 指す値。解決できなければ、なぜできないかの文。 */
+  readonly cell: number | string;
+}
+
 /** 文書の1つの印。 */
 interface Citation {
   readonly doc: string;
   readonly line: number;
   readonly body: string;
-  readonly mark: Mark | null;
+  /** 読めなければ null。 */
+  readonly mark: ReadMark | null;
   /**
    * 印の直前に書かれている数。桁区切りのカンマを除き、負号を `-`（U+002D）へ揃えたもの。
    * 無ければ null。
@@ -120,18 +145,25 @@ function splitSelector(token: string): readonly [string, string] | null {
   return [token.slice(0, index), token.slice(index + 1)];
 }
 
+/**
+ * 末尾の粗さを取り除いて返す。書かれていなければ null、`±` で始まるのに読めなければ undefined
+ * （印ごと読めないものとして扱う）。
+ */
+function popCoarseness(tokens: string[]): Coarseness | null | undefined {
+  const last = tokens.at(-1);
+  if (last === undefined || !last.startsWith('±')) return null;
+  const matched = COARSENESS_PATTERN.exec(last);
+  if (matched === null) return undefined;
+  tokens.pop();
+  return { width: Number(matched[1]), relative: matched[2] === '%' };
+}
+
 function parseMark(body: string): Mark | null {
   const tokens = tokenize(body);
   if (tokens === null) return null;
 
-  let coarseness: Coarseness | null = null;
-  const last = tokens.at(-1);
-  if (last !== undefined && last.startsWith('±')) {
-    const matched = COARSENESS_PATTERN.exec(last);
-    if (matched === null) return null;
-    coarseness = { width: Number(matched[1]), relative: matched[2] === '%' };
-    tokens.pop();
-  }
+  const coarseness = popCoarseness(tokens);
+  if (coarseness === undefined) return null;
 
   let fold: string | null = null;
   const beforeCoarseness = tokens.at(-1);
@@ -152,6 +184,20 @@ function parseMark(body: string): Mark | null {
     fold,
     coarseness,
   };
+}
+
+/** `<ファイル> <道> [±<粗さ>]`。道はドットで区切り、空の区切りを持たない。 */
+function parseCodexMark(body: string): CodexMark | null {
+  const tokens = tokenize(body);
+  if (tokens === null) return null;
+
+  const coarseness = popCoarseness(tokens);
+  if (coarseness === undefined || tokens.length !== 2) return null;
+
+  const [file, dotted] = tokens;
+  const path = dotted.split('.');
+  if (path.some((key) => key === '')) return null;
+  return { source: { file, path }, coarseness };
 }
 
 /**
@@ -199,8 +245,8 @@ function citationsIn(doc: string, text: string): Citation[] {
       found.push({
         doc,
         line: index + 1,
-        body: match[1],
-        mark: parseMark(match[1]),
+        body: `${match[1]}: ${match[2]}`,
+        mark: readMark(match[1], match[2]),
         written: written === null ? null : written[1].replace(/,/g, '').replace(/^−/, '-'),
       });
     }
@@ -245,14 +291,56 @@ function cellOf({ source, fold }: Mark): number | string {
   return fold === null ? cells[0] : FOLDS[fold](cells);
 }
 
+/** 定義ファイルの中身。`WORLD_CODEX_DIR` からの相対パスで引き、1ファイルにつき1回だけ解く。 */
+const CODEX_FILES = new Map<string, unknown>(
+  worldCodexYamlPaths().map((path) => [
+    relative(WORLD_CODEX_DIR, path).split(sep).join('/'),
+    parse(readFileSync(join(ROOT, path), 'utf-8')),
+  ]),
+);
+
+/** `codex:` の印が指す値。解決できなければ、なぜ解決できないかを文で返す。 */
+function codexValueOf({ file, path }: CodexSource): number | string {
+  if (!CODEX_FILES.has(file)) return `${WORLD_CODEX_DIR}/ に無いファイル`;
+
+  let node = CODEX_FILES.get(file);
+  for (const [depth, key] of path.entries()) {
+    const next = Array.isArray(node)
+      ? /^\d+$/.test(key)
+        ? node[Number(key)]
+        : undefined
+      : typeof node === 'object' && node !== null && Object.hasOwn(node, key)
+        ? (node as Record<string, unknown>)[key]
+        : undefined;
+    if (next === undefined) return `その道が ${path.slice(0, depth + 1).join('.')} で途切れる`;
+    node = next;
+  }
+  return typeof node === 'number' ? node : 'その道の先が数ではない';
+}
+
+/** 印の種類ごとに読み、指す値まで解決する。形が読めなければ null。 */
+function readMark(kind: string, body: string): ReadMark | null {
+  if (kind === 'codex') {
+    const mark = parseCodexMark(body);
+    return mark === null ? null : { coarseness: mark.coarseness, cell: codexValueOf(mark.source) };
+  }
+  const mark = parseMark(body);
+  return mark === null ? null : { coarseness: mark.coarseness, cell: cellOf(mark) };
+}
+
 const CITATIONS = listMarkdown('docs').flatMap((rel) =>
   citationsIn(rel, readFileSync(join(ROOT, rel), 'utf-8')),
 );
 
-describe('文書が stats/*.yaml から書き写した数値', () => {
-  it('印が、レポートの1つのセルに解決する', () => {
+describe('文書が stats/*.yaml と定義から書き写した数値', () => {
+  it('印が、出どころの1つの値に解決する', () => {
     // 印が1つも取れないこと自体が壊れた状態（印を消しても、値の照合は緑のままになる）。
-    expect(CITATIONS.length, '出どころの印が1つも無い').toBeGreaterThan(0);
+    for (const kind of ['stats', 'codex']) {
+      expect(
+        CITATIONS.filter((citation) => citation.body.startsWith(`${kind}:`)).length,
+        `${kind}: の印が1つも無い`,
+      ).toBeGreaterThan(0);
+    }
 
     const broken: string[] = [];
     for (const citation of CITATIONS) {
@@ -262,19 +350,17 @@ describe('文書が stats/*.yaml から書き写した数値', () => {
         continue;
       }
       if (citation.written === null) broken.push(`${where} → 印の直前に数値が無い`);
-
-      const cell = cellOf(citation.mark);
-      if (typeof cell === 'string') broken.push(`${where} → ${cell}`);
+      if (typeof citation.mark.cell === 'string') broken.push(`${where} → ${citation.mark.cell}`);
     }
     expect(broken, `出どころへ解決しない印:\n${broken.join('\n')}`).toEqual([]);
   });
 
-  it('書いた数が、印の許す粗さの中で出どころのセルと一致する', () => {
+  it('書いた数が、印の許す粗さの中で出どころの値と一致する', () => {
     const stale: string[] = [];
     for (const citation of CITATIONS) {
       if (citation.mark === null || citation.written === null) continue;
 
-      const cell = cellOf(citation.mark);
+      const { cell } = citation.mark;
       if (typeof cell === 'string') continue; // 解決しないことは前の試験が見る
 
       const gap = disagreement(citation.written, cell, citation.mark.coarseness);
@@ -479,5 +565,62 @@ describe('コードとして囲んだ印', () => {
 
   it('出どころをプレースホルダで書いた形は、印として読まない', () => {
     expect(citationsIn('doc.md', '形は `<!-- stats: <ファイル> <節> <読む列> -->` です')).toEqual([]);
+  });
+});
+
+/** `codex:` の印を読んで値まで解決する。解決できなければ、なぜできないかを文で返す。 */
+function codexValueOfMark(body: string): number | string {
+  const mark = parseCodexMark(body);
+  return mark === null ? '印の形が読めない' : codexValueOf(mark.source);
+}
+
+describe('定義を指す印', () => {
+  /** 刃物で割って編むと採れる枚数。マップの中のキーを辿った先の数。 */
+  const SPLIT_COUNT = 'weaving.yaml object_defs.palm_frond.interactions.split_and_weave.spawn.count';
+
+  it('キーの道を辿って、定義の中の1つの数に解決する', () => {
+    expect(codexValueOfMark(SPLIT_COUNT)).toBe(2);
+  });
+
+  it('リストの中は、0始まりの添字で指せる', () => {
+    expect(
+      codexValueOfMark('clothing.yaml object_defs.bundled_leaf_clothing.passives.0.modify.parent.chill_point'),
+    ).toBeTypeOf('number');
+  });
+
+  it('入れ子のフォルダの定義も、置き場からの相対パスで指せる', () => {
+    expect(codexValueOfMark('characters/player_character.yaml traits')).toBe('その道の先が数ではない');
+  });
+
+  it('無いキーで途切れる道は、どこで途切れたかを添えて赤くする', () => {
+    expect(codexValueOfMark('weaving.yaml object_defs.palm_frond.interactions.weave.spawn.count')).toBe(
+      'その道が object_defs.palm_frond.interactions.weave.spawn.count で途切れる',
+    );
+  });
+
+  it('リストをキーの名前で辿ろうとする道は、途切れたものとして赤くする', () => {
+    expect(codexValueOfMark('clothing.yaml object_defs.bundled_leaf_clothing.passives.modify')).toBe(
+      'その道が object_defs.bundled_leaf_clothing.passives.modify で途切れる',
+    );
+  });
+
+  it('置き場に無いファイルは赤くする', () => {
+    expect(codexValueOfMark('balance.yaml object_costs')).toBe(`${WORLD_CODEX_DIR}/ に無いファイル`);
+  });
+
+  it('粗さは生成物の印と同じに書ける', () => {
+    expect(parseCodexMark(`${SPLIT_COUNT} ±5%`)?.coarseness).toEqual({ width: 5, relative: true });
+  });
+
+  it('空の区切りを持つ道・ファイルと道の2つに切れない印は、読めないものとして赤くする', () => {
+    for (const body of ['weaving.yaml object_defs..palm_frond', 'weaving.yaml', `${SPLIT_COUNT} extra`, `${SPLIT_COUNT} ±`]) {
+      expect(parseCodexMark(body), body).toBeNull();
+    }
+  });
+
+  it('本文に置いた印は、生成物の印と同じく直前の数と突き合わせる', () => {
+    expect(citationsIn('doc.md', `割れば2枚<!-- codex: ${SPLIT_COUNT} -->`)).toMatchObject([
+      { written: '2', mark: { cell: 2, coarseness: null } },
+    ]);
   });
 });

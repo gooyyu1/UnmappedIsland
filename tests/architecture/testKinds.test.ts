@@ -27,6 +27,8 @@ const BUNDLED_CONTENT = [
   'tests/generation',
   'tests/scenario',
   'tests/diagnostics',
+  // 文書と、文書が書き写した定義の突き合わせ（docStatsCitations）。赤＝定義か文書のどちらかを直した副作用。
+  'tests/docs',
 ];
 
 /** 層をまたいだ噛み合わせを見る置き場（2種類目）。 */
