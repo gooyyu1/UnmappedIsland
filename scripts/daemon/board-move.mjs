@@ -881,10 +881,20 @@ export function moves(input) {
    * 緑へ戻った後も2時間25分、取り込めば直る赤のまま誰の手番でもなかった。**`mend` の理由だけに
    * 掛ける**のは、`reject` と `look` が `main` の色と関わらないから（2.14.2 と同じ線）。
    *
+   * **レビューの差し戻し（`RETURNED`）には、今の版への「直しが要る」の数も入れる**（issue #2046）。
+   * 頼み終えた後にもう1周読ませる経路（2.13.6）では**同じ版へ2本目の判定が載る**ので、版だけだと、
+   * そこで「直しが要る」が出ても「もう打った」と読み、**本人が直せるはずの指摘が読まれないまま人の
+   * 手番へ上がる**（4.6）。数なら、指摘が1本増えるたびに1回だけ動く。
+   *
+   * **通した判定は数えない。** `直し待ち` が外れるまでの窓（`board-labels.yml` の `verdict`）でも
+   * 指紋が動き、**通したばかりの差分の書き手を「差し戻された」として起こす**——そこで push すれば
+   * `通してよい` が落ちて、レビューがやり直しになる。
+   *
    * **打つ側と、頼み終えたかを見る側（`askedMender`）が同じ綴りを見る**ので、ここから出す。
    */
   const mendMark = (cause, pr) =>
     `${cause}:${pr.number}:${pr.headRefOid}` +
+    (cause === RETURNED ? `:${verdictsOn(pr, pr.headRefOid, false).filter(asksMend).length}` : '') +
     (MENDS[cause].kind === 'mend' && mainBound(pr) && input.mainHead ? `:${input.mainHead}` : '');
 
   /**
