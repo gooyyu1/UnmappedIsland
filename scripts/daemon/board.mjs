@@ -97,6 +97,7 @@ import {
   PATROL,
   STRANDS,
   busySession,
+  closes,
   cycleHours,
   strandedPrs,
   unsorted as unsortedIssue,
@@ -130,9 +131,6 @@ function checks(pr) {
  */
 const MERGEABILITY = { MERGEABLE: 'マージ可', CONFLICTING: '衝突', UNKNOWN: '不明' };
 const mergeability = (pr) => MERGEABILITY[pr.mergeable] ?? pr.mergeable ?? '不明';
-
-/** 本文の `Closes #N`。番号だけの参照では issue が閉じないので、ここでも見ない。 */
-const closes = (body) => [...(body ?? '').matchAll(/closes\s+#(\d+)/gi)].map((match) => Number(match[1]));
 
 /**
  * 盤面を1つ組み立てる。**引き当てはここだけ**で、並べ方は下の2つが持つ。**PRか issue を引けなければ
@@ -537,7 +535,7 @@ export async function issueBody({
   blockedNotes = [],
   partialNotes = [],
   events = [],
-} = {}) {
+}) {
   const notes = [];
   const found = await survey({
     gh,
