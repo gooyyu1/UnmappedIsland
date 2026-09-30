@@ -205,12 +205,12 @@ function collectMembers(source, file, owner, container, members, into) {
 
 /**
  * 無名の型リテラル（`ReadonlyMap<number, { to: R }>`）に付ける所属名。**囲っている名前付きの宣言を
- * 外側から `.` でつなぐ**（`MotionPlan.landings`・`planMotion.input`）——呼び手が `plan.landings` の先で
- * 読む名前がそのまま引ける。
+ * 外側から `.` でつなぐ**（`MotionPlan.landings`・`planMotion.planArrivalsTo.sources`）——呼び手が
+ * `plan.landings` の先で読む名前がそのまま引ける。
  *
  * 名前を持たない型の節（共用体の枝・型引数）は所属に数えない。**共用体の枝のメンバは、枝を載せる
- * 宣言の下へ合流する**（`CraftingStep` の各枝の `kind` は、どれも `CraftingStep::kind`）——読み手は
- * `step.kind` で、どの枝のものかを書き分けない。
+ * 宣言の下へ合流する**（`CraftingInput` の各枝の `kind` は、どれも `CraftingInput::kind`）——読み手は
+ * `input.kind` で、どの枝のものかを書き分けない。
  */
 function literalOwnerOf(literal) {
   const names = [];

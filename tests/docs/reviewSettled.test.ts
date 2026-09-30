@@ -73,7 +73,7 @@ describe('棚卸しで決着した宣言の一覧', () => {
       const key = `${question}\t${file}\t${owner}\t${name}`;
       const first = seen.get(key);
       if (first === undefined) seen.set(key, line);
-      else twice.push(`${SETTLED_LIST}:${line} ${file} の ${name}（${question}。${first} 行目と同じ）`);
+      else twice.push(`${SETTLED_LIST}:${line} ${file} の ${owner}::${name}（${question}。${first} 行目と同じ）`);
     }
 
     expect(
