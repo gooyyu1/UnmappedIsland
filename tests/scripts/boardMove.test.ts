@@ -270,7 +270,6 @@ describe('board-move.mjs', () => {
     });
 
     // 開け直したのは人なので、閉じたのが GitHub でも盤面でも閉じ直さず、普通の task として配る。
-    // **台帳に覚えを置く形では、GitHub が閉じた後の開け直しを見分けられない。**
     it('開け直された担当は閉じ直さない', () => {
       const reopened = { ...openTask, stateReason: 'REOPENED' };
       expect(moves({ mergedPrs: [merged], issues: [reopened] })).toEqual(['TASK 8']);
