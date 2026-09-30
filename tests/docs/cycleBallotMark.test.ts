@@ -97,10 +97,19 @@ describe('諾否の issue に置く印', () => {
  */
 const DECLINE_OPTION = /^\s*- \[ \] 入れない/m;
 
-/** 付かなかった候補を落とさない係。価値観を畳む係は付かなかった候補を見送りとして落とすので入らない。 */
+/**
+ * 印を持つ係の、付かなかった候補の扱い。**`BALLOT_PROMPTS` のどれもが、どちらかに載っていなければ
+ * 落とす**——足した係が分類されないまま検査の外へ出ると、否の口が無くても誰も気づかない。
+ */
 const KEEPS_UNCHECKED = ['dig-prompt.md'] as const;
+/** 付かなかった候補を見送りとして落とす係。付かなかったことがそのまま否なので、別の口は要らない。 */
+const DROPS_UNCHECKED = ['policy-cycle-prompt.md'] as const;
 
 describe('否を答える口', () => {
+  it('印を持つ係は、付かなかった候補の扱いで分類されている', () => {
+    expect([...KEEPS_UNCHECKED, ...DROPS_UNCHECKED].sort()).toEqual([...BALLOT_PROMPTS].sort());
+  });
+
   it.each(KEEPS_UNCHECKED)('%s は、「入れない」の子チェックを囲みの中で渡している', (file) => {
     expect(bodyOf(file)).toMatch(DECLINE_OPTION);
   });
