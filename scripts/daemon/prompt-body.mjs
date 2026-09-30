@@ -1,5 +1,5 @@
 // ひな形（`agent-ops/prompts/*-prompt.md`）から、セッションへ渡す本体を取り出す。**リンクの起点は
-// リポジトリ直下へ揃えて出す**（{@link promptBodyForSession}）。
+// リポジトリ直下へ揃え、デーモンの手元の置き場を埋めて出す**（{@link promptBodyForSession}）。
 //
 //   node scripts/daemon/prompt-body.mjs <ひな形のパス>            本体を標準出力へ
 //   node scripts/daemon/prompt-body.mjs <ひな形のパス> <節の名前>  その節の中の本体だけを見る
