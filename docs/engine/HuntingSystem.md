@@ -430,7 +430,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 仕組みです。**本数は見ません**——逃走の候補は集合から1本選ぶだけなので、道が2本目から先へ増えても
 逃げやすさは変わりません。分かれ目は「逃げ道が在るか」の1点だけです。
 
-**この1点が、狩りが最後まで通るかどうかを決めます。** 道が1本でも通っていれば、どの獣も1〜2手で
+**この1点が、狩りが最後まで通るかどうかを決めます。** 道が1本でも通っていれば、どの獣も数手で
 居なくなります——追い詰めたイノシシは槍で**100%**<!-- stats: hunt.yaml ending animal=wild_boar weapon=spear escape_routes=0 ending=felled share -->
 倒れるのに、同じ相手が道のある土地では**16.00%**<!-- stats: hunt.yaml ending animal=wild_boar weapon=spear escape_routes=1 ending=felled share -->
 しか倒れず、残りは平均**2.91手**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=1 measure=turns mean -->で
