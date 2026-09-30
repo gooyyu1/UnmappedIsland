@@ -54,15 +54,25 @@ function copiesOfCommentJudgement(): string[] {
       readFileSync(join(ROOT, rel), 'utf-8')
         .split('\n')
         .flatMap((line, index) =>
-          pattern.test(line) && !NOT_COMMENT_MARKS.includes(line.trim())
+          pattern.test(line) && !isNotCommentMark(rel, line)
             ? [`${rel.split(sep).join('/')}:${index + 1} ${line.trim()}`]
             : [],
         ),
     );
 }
 
-/** 行頭の `#` を見ているが、コメントの判定ではない行（`scripts/declarationInventory.mjs` の私的な名前）。 */
-const NOT_COMMENT_MARKS = ["if (modifiers.includes('private') || name.startsWith('#')) return 'private';"];
+/** 行頭の `#` を見ているが、コメントの判定ではない行。 */
+const NOT_COMMENT_MARKS = [
+  {
+    // 私的な名前（`#field`）
+    file: join('scripts', 'declarationInventory.mjs'),
+    line: "if (modifiers.includes('private') || name.startsWith('#')) return 'private';",
+  },
+];
+
+function isNotCommentMark(rel: string, line: string): boolean {
+  return NOT_COMMENT_MARKS.some((mark) => mark.file === rel && mark.line === line.trim());
+}
 
 describe('コメントの判定', () => {
   it('`scripts/codeComments.mjs` の外に写しが無い', () => {
@@ -70,8 +80,12 @@ describe('コメントの判定', () => {
   });
 
   it('名指しで外した行が今も在る（消えた行の除外を残さない）', () => {
-    const source = readFileSync(join(ROOT, 'scripts', 'declarationInventory.mjs'), 'utf-8');
-    const lines = source.split('\n').map((line) => line.trim());
-    expect(NOT_COMMENT_MARKS.filter((mark) => !lines.includes(mark))).toEqual([]);
+    const missing = NOT_COMMENT_MARKS.filter(
+      ({ file, line }) =>
+        !readFileSync(join(ROOT, file), 'utf-8')
+          .split('\n')
+          .some((raw) => raw.trim() === line),
+    );
+    expect(missing).toEqual([]);
   });
 });
