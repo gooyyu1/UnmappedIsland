@@ -50,6 +50,46 @@ jobs:
       - name: Run tests
         run: npx vitest run --reporter=default --reporter=github-actions
 
+  # 作業ツリーが CRLF でも読めているか。**上の `test` は `actions/checkout` が LF で取り出すので**、
+  # `core.autocrlf=true` で取り出す人（Windows）の手元でだけ落ちるものは緑のまま通る
+  # （issue #867・#2171 で実際に落ちた）。リポジトリのファイルを改行コードに依らず読むという
+  # 決めごと（`docs/CodingConventions.md`「ファイルの読み込み」）を、ここだけが見ている。
+  #
+  # 上の `test` と分けるのは、**止まる理由を混ぜないため**。ここだけが赤いなら、直す先は
+  # 改行コードに依らず読めていない読み手に絞られる。lint・整形・ビルドは上が見るので `npm test` だけ。
+  crlf:
+    name: vitest（CRLFの作業ツリー）
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      # `actions/checkout` は `core.autocrlf` を自分で false にするので、取り出した後で設定を変え、
+      # 索引を捨てて取り出し直す。`.gitattributes` が LF に固定した種類は LF のまま残る。
+      - name: 作業ツリーを CRLF で取り出し直す
+        run: |
+          set -euo pipefail
+          git config core.autocrlf true
+          git rm -rq --cached .
+          git reset -q --hard
+          # 取り出し直しが効かないと、このジョブは上の `test` と同じものを見て緑になる。
+          if ! grep -q $'\r$' package.json; then
+            echo "::error::package.json が CRLF になっていません。作業ツリーを CRLF で取り出し直せていないので、このジョブは何も見ていません。"
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npx vitest run --reporter=default --reporter=github-actions
+
   # PRを出したセッションが名乗っているか（[`agent-ops/board-design.md`](../../agent-ops/board-design.md)
   # 2.11節）。**盤面は差し戻す相手をコミットの `Claude-Session:` トレーラで引く**ので、名乗っていない
   # PRは、CIが赤くてもコンフリクトしても誰にも回らない。**促すだけにしないのは、書き忘れが既に
