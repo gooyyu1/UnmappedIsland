@@ -89,3 +89,19 @@ describe('諾否の issue に置く印', () => {
     expect([...marked].sort()).toEqual([...BALLOT_PROMPTS].sort());
   });
 });
+
+/**
+ * 否を1タップで答える子チェックの行（[`board-design.md`](../../agent-ops/board-design.md) 2.17.2）。
+ * **付かなかった候補を落とさない係**では、付かなかったことは「まだ答えていない」なので、この行が
+ * 渡らないと、答えたくない項目だけが毎周積み直される。
+ */
+const DECLINE_OPTION = /^\s*- \[ \] 入れない/m;
+
+/** 付かなかった候補を落とさない係。価値観を畳む係は付かなかった候補を見送りとして落とすので入らない。 */
+const KEEPS_UNCHECKED = ['dig-prompt.md'] as const;
+
+describe('否を答える口', () => {
+  it.each(KEEPS_UNCHECKED)('%s は、「入れない」の子チェックを囲みの中で渡している', (file) => {
+    expect(bodyOf(file)).toMatch(DECLINE_OPTION);
+  });
+});
