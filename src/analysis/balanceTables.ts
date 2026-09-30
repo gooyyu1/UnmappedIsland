@@ -1832,14 +1832,15 @@ class Acquisition {
 
   /**
    * その工程を1回行うのに、消費する入力を遡って`objectGlobalId`そのものが要るか。真なら、その工程は
-   * その型の出どころではない——正味で何も生まないため。
+   * その型の出どころではない——正味で何も生まないか、1つ目をこの工程では手に入れられないため。
    *
    * 焼け石を水の器へ落とすと石が戻る（`hot_stone.boil`）が、その焼け石は石を炉で焼いたものなので、
    * 「石を持ち込む → 焼く → 沸かす → 石が戻る」は石の作り方ではない（issue #734）。これを作り方と
    * 数えると、石の産まない土地では持ち込みより高い値段がその土地の作り方になる。
    *
-   * 遡るのは消費される入力だけ。道具は1度作れば繰り返し使えるので、Xで作った道具でXを作るのは
-   * 閉路ではない。
+   * **道具は、その型そのものであるときだけ閉路に数え、道具の素性は遡らない。** Xで作った道具でXを
+   * 作るのは閉路ではない——道具は1度作れば繰り返し使えるので、その1度ぶんのXは別に用意できる。
+   * 道具がX自身だと、繰り返せば増えても1つ目はこの工程では手に入らない（issue #2314）。
    *
    * **この土地で作れない入力は、島全体の文脈へ渡って遡る。** 焼け石は持ち込みとしても解けるので、
    * 土地の文脈だけを見ると「石から焼いた」という素性が土地の境で切れ、閉路が見えなくなる。
@@ -1853,7 +1854,10 @@ class Acquisition {
     visited.add(ref.step);
 
     for (const input of ref.step.inputs) {
-      if (!input.consumed) continue;
+      if (!input.consumed) {
+        if (this.toolIs(input, objectGlobalId)) return true;
+        continue;
+      }
       const source = this.inputSource(input);
       if (source === undefined) continue;
       if (source.objectGlobalId === objectGlobalId) return true;
@@ -1865,6 +1869,18 @@ class Acquisition {
       if (via !== undefined && context.consumesOwnOutput(via, objectGlobalId, visited)) return true;
     }
     return false;
+  }
+
+  /**
+   * その道具（消費されない入力）に使う型が`objectGlobalId`そのものか。見るのは前提の表
+   * （prerequisites）が名乗るのと同じ型。**まだどの型も手に入らないなら、候補に含まれるかで見る**
+   * ——他に手に入る型が無い以上、その工程を行うには産物そのものを手に持つしかない。
+   */
+  private toolIs(input: CraftingStep['inputs'][number], objectGlobalId: ObjectGlobalId): boolean {
+    const source = this.obtainableSource(input);
+    return source === undefined
+      ? this.candidatesOf(input).includes(objectGlobalId)
+      : source.objectGlobalId === objectGlobalId;
   }
 
   /**

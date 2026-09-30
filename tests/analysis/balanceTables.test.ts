@@ -136,6 +136,90 @@ object_defs:
 });
 
 /**
+ * その型を1つ手に持っていないと行えない工程を、その型の出どころに数えないこと（issue #2314）。
+ *
+ * 株分けは親株を道具として使い、親株は減らない。繰り返せば増えるが、1株目はこの工程では手に
+ * 入らない——それを作り方と数えると、探索でしか得られない1株目の時間が表から消える。
+ */
+describe('道具そのものが産物と同じ型の工程', () => {
+  const YAML = `
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      hydration:
+        value: 96
+        range: {min: 0, max: 96}
+        passives:
+          - add: {self: {hydration: -1}}
+
+  grassland:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 60
+        spawn: {object: succulent, into: self}
+
+  sandy_beach:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 15
+        spawn: {object: shell, into: self}
+
+  shell:
+    tags: [item]
+
+  succulent:
+    tags: [item]
+    interactions:
+      divide:
+        trigger: menu
+        duration: 1
+        spawn: {object: succulent}
+      chew:
+        trigger: menu
+        duration: 5
+        destroy: self
+        add: {agent: {hydration: 96}}
+`;
+
+  const tables = buildBalanceTables(
+    new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset(),
+    'medic',
+  );
+
+  const hydrationRouteSteps = (placeName: string) =>
+    (
+      tables.places
+        .find((place) => place.name === placeName)!
+        .properties.find((chains) => chains.propertyName === 'hydration')?.routes ?? []
+    ).map((route) => route.route.steps.map((step) => `${step.objectName}.${step.stepName}`));
+
+  it('値段は、株分けではなく1株目を探す時間になる', () => {
+    expect(tables.objectCosts.find((cost) => cost.objectName === 'succulent')).toMatchObject({
+      minutes: 60,
+      exploreMinutes: 60,
+    });
+  });
+
+  it.each([WHOLE_ISLAND, 'grassland'])('%s の経路は、1株目を探すところから始まる', (place) => {
+    expect(hydrationRouteSteps(place)).toEqual([['grassland.explore', 'succulent.chew']]);
+  });
+
+  it('株の採れない土地では、株分けがその土地の作り方にならない', () => {
+    // 株は持ち込むしかないので、この土地を起点にした経路は無い。
+    expect(hydrationRouteSteps('sandy_beach')).toEqual([]);
+  });
+});
+
+/**
  * 海区にしか湧かないものを、島の表が1つも数えないこと（issue #921）。
  *
  * 海区に湧く漁り場は、島から見れば入手経路が無い。それでも工程として数えると、その物の代表経路が
