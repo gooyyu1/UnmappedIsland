@@ -559,7 +559,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 1日を賄う最小労働は549分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->（[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum`）なので、差し引きの自由
 時間は1日891分<!-- stats: terrain.yaml daily_budget surplus -->。4節の山の合計は約63500分<!-- stats: terrain.yaml work_piles_total minutes ±100 -->なので、
 **そのまま割れば71.27日ぶん**<!-- stats: terrain.yaml work_piles_total days -->です。しかしこの891分<!-- stats: terrain.yaml daily_budget surplus -->は、
-1日のどの時間でも何でもできる場合の数字で、**明るさと移動がこれを削ります**（8.1・8.2）。
+1日のどの時間でも何でもできる場合の数字で、**明るさと移動がこれを削ります**（8.1・8.2節）。
 
 **山の数を増やしても日数は伸びません。** 日数は山の合計そのものなので、増やす道は「山を増やす」か
 「1つの山の量を増やす」かのどちらかで、合計から見れば同じことです。**増やすと決めた場合に選ぶのは、

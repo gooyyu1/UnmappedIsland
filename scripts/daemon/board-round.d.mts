@@ -36,7 +36,7 @@ export function round(deps?: RoundDeps): Promise<boolean>;
  */
 export const SWEEP_LINE: string;
 
-/** 1手の結果。**「打てなかった」を、直す相手が要る分と答えが返っている分に割る**（2.21.2）。 */
+/** 1手の結果。**「打てなかった」を、直す相手が要る分と答えが返っている分に割る**（board-design.md 2.21.2節）。 */
 export const PLAYED: 'played';
 export const FAILED: 'failed';
 export const SETTLED: 'settled';

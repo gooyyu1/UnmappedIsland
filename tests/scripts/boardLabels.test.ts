@@ -157,7 +157,7 @@ describe('board-labels.yml の verdict', timeoutOnWindows(30_000), () => {
     expect(run('[レビュー] 通してよい（人の判断が要る）だと思います').edits).toEqual([]);
   });
 
-  // 上限（4.6）。3周目の判定が「直しが要る」なら、そこで人の手番へ移す。
+  // 上限（board-design.md 4.6節）。3周目の判定が「直しが要る」なら、そこで人の手番へ移す。
   // **`直し待ち` を一緒に外す。** 残すと盤面が差し戻しを打ち、人が答える前に次の周が走る。
   it('3周目の「直しが要る」で 収束せず を付け、直し待ち を外す', () => {
     const result = run(BLOCK, past(BLOCK, BLOCK, BLOCK));
@@ -195,7 +195,7 @@ describe('board-labels.yml の verdict', timeoutOnWindows(30_000), () => {
     expect(run(BLOCK, mixed).edits.join('\n')).toContain('収束せず');
   });
 
-  // **新しい判定の形も1周**。数え方から漏らすと、3周で人へ上げる勘定（4.6）が狂う。
+  // **新しい判定の形も1周**。数え方から漏らすと、3周で人へ上げる勘定（board-design.md 4.6節）が狂う。
   it('通してよい（人の判断が要る）の周も、周回数に数える', () => {
     const mixed = past(BLOCK, PASS_ASK, BLOCK);
 
@@ -315,21 +315,21 @@ esac
     }
   }
 
-  // 名乗る理由は選択肢が閉じていないので、1行目は前方一致で見る（2.15.2）。
+  // 名乗る理由は選択肢が閉じていないので、1行目は前方一致で見る（board-design.md 2.15.2節）。
   it('1行目が [返却] で始まっていれば、判断待ち を付ける', () => {
     expect(runDeclared('[返却] 仕様が決まっておらず、仮決めもできない\n\n詳細')).toEqual([
       `${ISSUE} --repo gooyyu1/UnmappedIsland --add-label 判断待ち`,
     ]);
   });
 
-  // **名乗らせるのは、なぜブリッジが要るのかがラベルに残らないから**（2.16.2）。
+  // **名乗らせるのは、なぜブリッジが要るのかがラベルに残らないから**（board-design.md 2.16.2節）。
   it('1行目が [ブリッジ] で始まっていれば、env:bridge を付ける', () => {
     expect(runDeclared('[ブリッジ] agent-ops/parallel-work.md を直す必要がある\n\nここまで調べた')).toEqual([
       `${ISSUE} --repo gooyyu1/UnmappedIsland --add-label env:bridge`,
     ]);
   });
 
-  // **成果が issue の側にしか出ない仕事は、PRを作れないので終わりを名乗る口がここしか無い**（2.15.4）。
+  // **成果が issue の側にしか出ない仕事は、PRを作れないので終わりを名乗る口がここしか無い**（board-design.md 2.15.4節）。
   // `判断待ち` を付けると、答えを待っていないのに人の手番へ入る。
   it('1行目が [完了] で始まっていれば、issue を閉じ、判断待ち は付けない', () => {
     expect(runDeclared('[完了] #1102 の「済」を task issue へ下ろした\n\n立てた issue の一覧')).toEqual([
@@ -354,13 +354,13 @@ esac
     ]);
   });
 
-  // **分類（`kind:`）は動かさない**（2.15.2・2.17.1）。軸が違ううえ、外すと人が列へ戻すのに
+  // **分類（`kind:`）は動かさない**（board-design.md 2.15.2・2.17.1節）。軸が違ううえ、外すと人が列へ戻すのに
   // 2タップ要り、外した issue は未整理として棚卸しへ戻る。
   it('分類は動かさない', () => {
     expect(runDeclared('[返却] 決められない').join('\n')).not.toContain('kind:');
   });
 
-  // 棚卸しはクラウドで立つので、依存を張る道具を持たない（2.17.3）。**コメントを置いた issue が
+  // 棚卸しはクラウドで立つので、依存を張る道具を持たない（board-design.md 2.17.3節）。**コメントを置いた issue が
   // 待つ側**で、1行目が挙げる番号が先に要るほう。
   it('1行目が [順序] なら、その issue を、挙がった番号の後ろへ回す', () => {
     expect(runDeclared('[順序] #1234 の後（宣言を読む側がこの issue）')).toEqual([
@@ -403,8 +403,8 @@ describe('board-labels.yml の synchronized', timeoutOnWindows(30_000), () => {
   // 足し忘れても、足したのが落とすべきでない札でも、どちらも緑のまま。
   //
   // **盤面が読まない2つは、ここで名指しする。** どちらも**今の頭への判定が無くても付きうる**ので、
-  // 判定と突き合わせても古いと言えない——`直し待ち` は後片付けも付け（2.10.5）、`却下` は人が止めた
-  // 印（2.13.1）。**push で落ちることと、盤面が古いと言えることは別。**
+  // 判定と突き合わせても古いと言えない——`直し待ち` は後片付けも付け（board-design.md 2.10.5節）、`却下` は人が止めた
+  // 印（同 2.13.1節）。**push で落ちることと、盤面が古いと言えることは別。**
   it('落とすのは、盤面が前の差分のものと読む札と、判定によらず付く2つ', () => {
     expect(removedLabels(synchronized() ?? '').sort()).toEqual([...STALE_ON_PUSH, '直し待ち', '却下'].sort());
   });
@@ -558,7 +558,7 @@ esac
 
   const REJECTED = [`${PR} --repo gooyyu1/UnmappedIsland --add-label 却下`];
 
-  // 人がすることは「外す＝直してもらう」「マージする＝それでよい」の2つだけ（2.13.1）。
+  // 人がすることは「外す＝直してもらう」「マージする＝それでよい」の2つだけ（board-design.md 2.13.1節）。
   it('PRを止めている印を人が外したら、却下 を付ける', () => {
     expect(runUnlabeled('判断待ち')).toEqual(REJECTED);
     expect(runUnlabeled('収束せず')).toEqual(REJECTED);

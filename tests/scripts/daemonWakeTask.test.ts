@@ -166,7 +166,7 @@ describe('daemon-wake-task.sh', timeoutOnWindows(30_000), () => {
     expect(run.out.trim().split('\n')).toEqual([`REGISTERED ${TASK}`]);
   });
 
-  // **何度打っても1本のまま**（2.19.1）。探す鍵はタスクの名前なので、上書きの印を落とすと2本目が
+  // **何度打っても1本のまま**（board-design.md 2.19.1節）。探す鍵はタスクの名前なので、上書きの印を落とすと2本目が
   // 立つのではなく、2度目の登録が「もう在る」で撥ねられる。
   it('同じ名前へ上書きで立て、同じ名前で引き直す', () => {
     const run = register();
@@ -192,7 +192,7 @@ describe('daemon-wake-task.sh', timeoutOnWindows(30_000), () => {
     expect(handedXml(run).startsWith('<?xml ')).toBe(true);
   });
 
-  // 打つ手に判断が1つも要らないことの上に、この係は立っている（2.19）。
+  // 打つ手に判断が1つも要らないことの上に、この係は立っている（board-design.md 2.19節）。
   it('打つのは `daemon.sh start` の1行だけ', () => {
     const run = register();
 
@@ -209,7 +209,7 @@ describe('daemon-wake-task.sh', timeoutOnWindows(30_000), () => {
     expect(handedXml(run)).toContain(`<Arguments>-lc "cd '${run.root}' `);
   });
 
-  // **再起動の直後**（ログオン）と**落ちた跡**（毎時）で、拾う相手が違う（2.19）。
+  // **再起動の直後**（ログオン）と**落ちた跡**（毎時）で、拾う相手が違う（board-design.md 2.19節）。
   it('起こす口は、ログオンと毎時の2つ', () => {
     const xml = handedXml(register());
 

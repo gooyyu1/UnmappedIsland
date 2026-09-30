@@ -143,7 +143,7 @@ describe('dispatch-task.sh', timeoutOnWindows(30_000), () => {
   });
 
   // 返された issue は `kind:task` が付いたまま残る（`agent-ops/board-design.md` 2.15.2節）ので、**ここで
-  // 見なければ次の周にそのまま投入し直される。** 不変条件を持つのは投入する側（1.4）。
+  // 見なければ次の周にそのまま投入し直される。** 不変条件を持つのは投入する側（同 1.4節）。
   it('人へ返された issue へは投入しない', () => {
     const result = run(1376, { labels: ['kind:task', '判断待ち'] });
 

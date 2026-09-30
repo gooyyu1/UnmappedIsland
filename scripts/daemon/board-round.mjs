@@ -75,9 +75,9 @@ const defaultRunScript = (name, args, options) => runBash(join(HERE, name), args
  *
  * **終わり・周の数・道具が言った理由は毎周上書きする。** 始まりだけでは、読む人に届くのが
  * 「引けていない」までで止まる——**何周ぶんか**は待つ間隔が環境変数で動くので長さからは出せず、
- * **理由**を言えるのは引きに行った道具だけ（2.20.3）。
+ * **理由**を言えるのは引きに行った道具だけ（board-design.md 2.20.3節）。
  *
- * **その周に出ていた断りは落とす。** あれは「今その周に出ている」ものとして人へ出る（2.20.3）が、
+ * **その周に出ていた断りは落とす。** あれは「今その周に出ている」ものとして人へ出る（同 2.20.3節）が、
  * **引けない周は覚え書きを1つも出せない**ので、残すと**最後に引けた周のものが今のこととして出続け、
  * 続いている長さまで伸びる。** 直った周に出し直すので、失うのは区間をまたいだ長さだけ——**引けて
  * いない間はまだ詰まっているかも言えない**のだから、そこで数え直すのが正しい。
@@ -96,7 +96,7 @@ function markUnreadable(stateDir, at, reason) {
  *
  * **印を消すだけにしない。** 直った周に台帳から消えるので、**後から立った見回りには、在ったこと
  * すら分からない**（2026-09-18 に実測。同じ日に331分ぶん止まっていたのに、印は1つも残っていな
- * かった）。**猶予（2.22.2）を詰める材料もこれ**——値の見回りが告げる手前で直る停止は、ここに
+ * かった）。**猶予（board-design.md 2.22.2節）を詰める材料もこれ**——値の見回りが告げる手前で直る停止は、ここに
  * 残さないとどこにも数が出ない。
  *
  * **`DRY_RUN` の周も書く。** ぶつかった実績の帳面（下の `newConflicts`）が `DRY_RUN` で書かないのは、
@@ -126,7 +126,7 @@ function closeUnreadable(stateDir, taken, at) {
  *
  * **消えた断りは落とし、続いている断りの時刻は動かさない。** 毎周書き直すと、読む人に届くのが
  * 「今はこうだ」までで止まる——**1周ぶんの覚え書きは「やることが無い周」と見分けが付かない**ので、
- * **同じ理由が何分続いているか**が、詰まりの合図そのもの（2.20.3）。
+ * **同じ理由が何分続いているか**が、詰まりの合図そのもの（board-design.md 2.20.3節）。
  */
 export function trackNotes(taken, prefix, notes, now) {
   const marked = {};
@@ -278,12 +278,12 @@ export function trackIdle(taken, board, now) {
  * [`board-labels.yml`](../../.github/workflows/board-labels.yml)——**ワーカーが自分で返すときと同じ道**
  * （`agent-ops/board-design.md` 2.15節）。ラベルを盤面から直に触らないので、返す経路が2つに割れない。
  *
- * **返す理由ごとに文面を分ける**（2.11.4）。**人がすることが返す形ごとに違う**ので、1つの文面に
+ * **返す理由ごとに文面を分ける**（同 2.11.4節）。**人がすることが返す形ごとに違う**ので、1つの文面に
  * 畳むと**読んだ人が手を入れる先を間違える。**
  *
- * - **起こしても動かなかったワーカー**（2.15.3）… 投入し直せば進む
- * - **宛先の無いPRを抱えた担当**（2.11.4）… そのPRを直さないかぎり、何度投入しても同じところで止まる
- * - **頼み終えた差し戻しが戻ってこないPR**（2.13.6）… 宛先は居るが動かない。**直しを引き取るか、
+ * - **起こしても動かなかったワーカー**（同 2.15.3節）… 投入し直せば進む
+ * - **宛先の無いPRを抱えた担当**（同 2.11.4節）… そのPRを直さないかぎり、何度投入しても同じところで止まる
+ * - **頼み終えた差し戻しが戻ってこないPR**（同 2.13.6節）… 宛先は居るが動かない。**直しを引き取るか、
  *   PRを閉じるまで、そのPRの版は動かない**
  */
 function returnBody(session, issue, cause) {
@@ -298,7 +298,7 @@ function returnBody(session, issue, cause) {
 
 この issue のPR（#${number}）は**${mend.why}**ので、盤面は書いた本人のセッション（\`${session}\`）へ
 直しを頼みました。**それから手が動かないまま、そのPRも変わっていません**——**盤面がこの版へ打てる手は
-尽きました**（\`agent-ops/board-design.md\` 2.13.6）。
+尽きました**（\`agent-ops/board-design.md\` 2.13.6節）。
 
 **直すには**: ${TAKEOVER[mend.kind]}。
 
@@ -338,7 +338,7 @@ export const SWEEP_LINE = '[札] 前の差分の結論を落とす';
 
 /**
  * その頼みの本文。**なぜ落ちるのかを書くのは、読むのが人だから**——札が消えた理由の置き場は
- * コメントしか無い（ラベルは事実しか持たない。1.3）。
+ * コメントしか無い（ラベルは事実しか持たない。board-design.md 1.3節）。
  */
 const sweepBody = (head) =>
   `${SWEEP_LINE}
@@ -433,7 +433,7 @@ export function play(kind, args, { runScript, gh, remember, recall, forget, log,
       // **札を外すのはワークフローだけ**（`board-labels.yml` の `swept`）。ここが
       // `gh pr edit --remove-label` を打つと、それが `unlabeled` の出来事になり、
       // **あちらの `unlabeled_by_hand` が「人が外した」と読んで `却下` を付ける**——見分けは
-      // `sender` で、デーモンの `gh` は人と同じアカウントを使う（2.2.1）。**頼む形で残す。**
+      // `sender` で、デーモンの `gh` は人と同じアカウントを使う（board-design.md 2.2.1節）。**頼む形で残す。**
       const work = mkdtempSync(join(tmpdir(), 'board-round-'));
       try {
         const body = join(work, 'sweep.md');
@@ -473,7 +473,7 @@ export function play(kind, args, { runScript, gh, remember, recall, forget, log,
       // **補足は無い。** 書けるのはモデルだけで、デーモンには書くものが無い——issue 本文が全部を持つ
       // （`dispatch-task.sh`「書くことが無いなら、空のファイルでよい」）。
       //
-      // 投入先は盤面が決めて引数の形で寄越す（2.16）。**どの `env:` がどこを指すかはここには無い**
+      // 投入先は盤面が決めて引数の形で寄越す（board-design.md 2.16節）。**どの `env:` がどこを指すかはここには無い**
       // ——知っているのは盤面だけで、こちらはそれをそのまま渡す。
       const work = mkdtempSync(join(tmpdir(), 'board-round-'));
       try {
@@ -537,8 +537,8 @@ export async function round({
   // **この周の時刻は1つ**（比べる相手も、引けていない印も同じ形で書く）。
   const at = now();
 
-  // **引けなかった理由は、諦めた側から受け取る**（1.7）。**引けなかった周に人へ届くのはこれだけ**
-  // で、「引けなかった」だけでは、資格情報の切れと通信の断ちが同じ顔になる（2.20.3）。
+  // **引けなかった理由は、諦めた側から受け取る**（board-design.md 1.7節）。**引けなかった周に人へ届くのはこれだけ**
+  // で、「引けなかった」だけでは、資格情報の切れと通信の断ちが同じ顔になる（同 2.20.3節）。
   let whyUnreadable = '';
   const sayWhyNot = (line) => {
     whyUnreadable = line;
@@ -553,7 +553,7 @@ export async function round({
     const why = error instanceof Error ? error.message : String(error);
     warn(why);
     // **引けない間は誰もセッションを立てられない**ので、ここで控えた印を読むのは人
-    // （2.20 の書き出し）。
+    // （board-design.md 2.20節 の書き出し）。
     if (!dryRun) markUnreadable(stateDir, at.toISOString(), why);
     return false;
   }
@@ -565,7 +565,7 @@ export async function round({
     runScript(name, args, { ...options, env: { LIVE_SESSIONS_TSV: livePath } });
 
   // **この周の盤面が欠けている理由**（`board-read.mjs` の `sayIncomplete`）。**ログへ出すだけでは
-  // 届かない**ので、下で台帳へ写して人の読む盤面へ渡す（2.20.3）。
+  // 届かない**ので、下で台帳へ写して人の読む盤面へ渡す（board-design.md 2.20.3節）。
   const incomplete = [];
   const sayIncomplete = (line) => {
     incomplete.push(line);
@@ -574,7 +574,7 @@ export async function round({
 
   const spent = runScriptHere('usage-record.sh', [], { capture: true });
   // **引けない周が続いて控えが古くなると、余力の関門は止める側へ倒れ、投入も周期の係も止まる**
-  // （2.5.2）ので、これも盤面の欠けとして言う。
+  // （board-design.md 2.5.2節）ので、これも盤面の欠けとして言う。
   if (spent.status !== 0) {
     sayIncomplete('使用量を引けなかった（控えが古くなると、余力の関門が投入を止める）');
   }
@@ -612,7 +612,7 @@ export async function round({
   for (const note of notes) log(`覚え書き: ${note}`);
 
   // **その周に出た断りを、出始めた時刻とともに台帳へ写す。** ログへ出すだけだと、**読む者が居ない**
-  // （2.20.3）——盤面が20分以上同じ3行を出し続けても、人の見に来る盤面には何も出なかった。
+  // （board-design.md 2.20.3節）——盤面が20分以上同じ3行を出し続けても、人の見に来る盤面には何も出なかった。
   // **2種類を分けて持つ**のは、読む人がすることが違うから（`board-state.mjs` の `PARTIAL_PREFIX`）。
   const since = at.toISOString();
   const remaining = trackNotes(
@@ -643,7 +643,7 @@ export async function round({
     return true;
   }
 
-  // **ぶつかった実績を控える**（3.1）。**記録は手ではない**ので、下で打つ手が何であっても、その手前で
+  // **ぶつかった実績を控える**（board-design.md 3.1節）。**記録は手ではない**ので、下で打つ手が何であっても、その手前で
   // 書き終わる。**`DRY_RUN` の周では書かない**——指紋を埋めると、その組は本番の周でも二度と記録
   // されない（見るだけのつもりで測定を消すことになる）。
   for (const record of newConflicts(
@@ -661,12 +661,12 @@ export async function round({
     log(`ぶつかった: PR #${record.pr} ${record.files.join(' ')}${rivals === '' ? '' : ` … ${rivals}`}`);
   }
 
-  // **盤面が引けている周の不調は、印には立てない**（2.21.2）。転んだ手を数えて印を立てていたが、
+  // **盤面が引けている周の不調は、印には立てない**（board-design.md 2.21.2節）。転んだ手を数えて印を立てていたが、
   // **手が1つも出ない周**（錠で全部が待たされる・差し戻す相手を引けない）には掛からず、2026-09-11
   // にそのまま2時間11分止まった（#1939）。見るのは毎回立つ係（`CYCLES` の `patrol`）で、**この
   // ログが見る側の材料**——打った手と、打てなかった手の理由がここに残る。
   //
-  // **同じことを帳面へも書く**（2.20.3）。ログを定期的に読む者は居ないので、**打った手の件数が
+  // **同じことを帳面へも書く**（同 2.20.3節）。ログを定期的に読む者は居ないので、**打った手の件数が
   // 合図になるもの**（`RETURN` が一度に何件出たか）**は、人の見に来る場所に出ないと誰も数えない。**
   for (const line of played) {
     const [kind, ...args] = line.split(' ');

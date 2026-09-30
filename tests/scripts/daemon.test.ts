@@ -567,7 +567,7 @@ describe('daemon.sh', timeoutOnWindows(30_000), () => {
   });
 
   // **これが、この追従の眼目**——寄せたことで `daemon.sh` が入れ替わったぶんを、同じ周の終わりの
-  // 見比べが拾う。拾えなければ、新しい道具を古い呼び手が叩く周が続く（2.3.2）。
+  // 見比べが拾う。拾えなければ、新しい道具を古い呼び手が叩く周が続く（board-design.md 2.3.2節）。
   it('周の終わりに寄せて版が入れ替わったら、新しい版で回り直す', () => {
     const result = daemon({
       checkoutSwap: `${STUB_SHEBANG}\necho "新しい版が回り出した"\n`,
@@ -683,7 +683,7 @@ describe('daemon.sh', timeoutOnWindows(30_000), () => {
     expect(result.publishes).toBe(1);
   });
 
-  // **書けなくても周は止めない**（2.20.2）。古くなるのは読む先だけで、打つ手には関わらない。
+  // **書けなくても周は止めない**（board-design.md 2.20.2節）。古くなるのは読む先だけで、打つ手には関わらない。
   it('盤面を書き出せなくても、周は続く', () => {
     const result = daemon({ publishFails: true });
 
@@ -692,7 +692,7 @@ describe('daemon.sh', timeoutOnWindows(30_000), () => {
     expect(result.log).toContain('盤面を書き出せなかった');
   });
 
-  // **叩いた時刻は成否によらず控える**（2.20.2）。失敗のたびに次の周で叩き直すと、GitHubが沈んで
+  // **叩いた時刻は成否によらず控える**（board-design.md 2.20.2節）。失敗のたびに次の周で叩き直すと、GitHubが沈んで
   // いる間じゅう周と同じ速さで打ち続けることになる。
   it('書き出せなかった周も、次の周期までは叩き直さない', () => {
     const result = daemon({
@@ -706,7 +706,7 @@ describe('daemon.sh', timeoutOnWindows(30_000), () => {
     expect(result.publishes).toBe(1);
   });
 
-  // **引けない周こそ書き出す**（2.21）。引けない間は誰もセッションを立てられないので、直せるのは
+  // **引けない周こそ書き出す**（board-design.md 2.21節）。引けない間は誰もセッションを立てられないので、直せるのは
   // 人だけ——ログを読めるのは手元で叩ける人だけなので、届く先は常設の issue しか無い。
   it('盤面を引けなかった周も、書き出す', () => {
     const result = daemon({ roundFails: true });
@@ -722,7 +722,7 @@ describe('daemon.sh', timeoutOnWindows(30_000), () => {
     expect(daemon().published).toEqual([expect.stringContaining('live-sessions.tsv')]);
   });
 
-  // 見回るのは環境IDと資格情報で、動くのは人が設定を打ち直したときだけ（2.22）。周と同じ速さで
+  // 見回るのは環境IDと資格情報で、動くのは人が設定を打ち直したときだけ（board-design.md 2.22節）。周と同じ速さで
   // 叩いても、分かることは増えない。
   it('値の見回りは、間隔が満ちたときだけ', () => {
     const result = daemon({ args: ['run'], then: [['run']], env: { CHECK_INTERVAL: '3600' } });
@@ -731,7 +731,7 @@ describe('daemon.sh', timeoutOnWindows(30_000), () => {
     expect(result.checks).toBe(1);
   });
 
-  // **引けない理由がまさにこの値**（2.22.1）。盤面の成否で回すと、いちばん告げてほしい周だけ
+  // **引けない理由がまさにこの値**（board-design.md 2.22.1節）。盤面の成否で回すと、いちばん告げてほしい周だけ
   // 見回らないことになる。
   it('盤面を引けなかった周も、値を見回る', () => {
     const result = daemon({ roundFails: true });

@@ -72,7 +72,7 @@ describe('live-sessions.mjs', () => {
     expect(live.map((session) => session.env)).toEqual(['cloud', 'bridge']);
   });
 
-  // **知らない環境をクラウドへ寄せない**（2.16.2）。寄せると、盤面が正しく走っているセッションを
+  // **知らない環境をクラウドへ寄せない**（board-design.md 2.16.2節）。寄せると、盤面が正しく走っているセッションを
   // 「場所が違う」と読んで畳む。
   it('知らない環境は - として出す', async () => {
     const live = await liveSessions({
@@ -175,7 +175,7 @@ describe('live-sessions.mjs', () => {
       expect(live[0]?.served).toBe(true);
     });
 
-    // TSVは写しの受け渡しに使うので（1.7 の「1周に1回だけ引く」）、往復で落ちると**読んだ側だけが
+    // TSVは写しの受け渡しに使うので（board-design.md 1.7節 の「1周に1回だけ引く」）、往復で落ちると**読んだ側だけが
     // 区別を知らないまま**畳む手を打つ。
     it('TSVの往復で落ちない', () => {
       const written = [
@@ -331,7 +331,7 @@ describe('live-sessions.mjs', () => {
   });
 
   /**
-   * **1周に何度も引かない**（1.7）。盤面が引いたものをファイルで渡したら、そちらを読むだけで
+   * **1周に何度も引かない**（board-design.md 1.7節）。盤面が引いたものをファイルで渡したら、そちらを読むだけで
    * `list_sessions` を叩かない。
    */
   describe('この周のぶんが渡されたら、それを読む', () => {
