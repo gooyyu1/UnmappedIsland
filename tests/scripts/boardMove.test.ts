@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { cycleDownNote, moves as decide } from '../../scripts/daemon/board-move.mjs';
+import { closes, cycleDownNote, moves as decide } from '../../scripts/daemon/board-move.mjs';
+import { trackedFiles } from '../../scripts/docScope.mjs';
 // 打った手の覚えを消す側（`trackIdle`）。**盤面が選ぶ指紋が、あちらの消去に当たらないこと**を
 // 下で留める。
 import { trackIdle } from '../../scripts/daemon/board-round.mjs';
@@ -2508,5 +2509,21 @@ describe('board-move.mjs', () => {
 
   it('前に立ててから一日が経つまで、掘り起こす係は立てない', () => {
     expect(moves({ taken: { 'cycle:dig': '2026-09-04T03:00:00Z' } })).toEqual([]);
+  });
+});
+
+describe('closes', () => {
+  it('`Closes #N` だけを拾い、番号だけの参照は拾わない', () => {
+    expect(closes('Closes #12\ncloses  #34\n#56 を参照')).toEqual([12, 34]);
+    expect(closes(undefined)).toEqual([]);
+  });
+
+  // 盤面の各所が同じ本文を読むので、読み方が2箇所に在ると片方だけが直る（issue #1977）。
+  it('本文から `Closes` を引く形は、モジュールの中でここにしか無い', () => {
+    const root = resolve(__dirname, '../..');
+    const holders = trackedFiles(root, '*.mjs').filter((rel) =>
+      /closes\\s\+#/i.test(readFileSync(resolve(root, rel), 'utf-8')),
+    );
+    expect(holders.map((rel) => rel.replaceAll('\\', '/'))).toEqual(['scripts/daemon/board-move.mjs']);
   });
 });

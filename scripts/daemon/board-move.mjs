@@ -678,7 +678,7 @@ function wantedEnv(issue) {
 const names = (item) => (item.labels ?? []).map((label) => label.name);
 
 /** 本文の `Closes #N`。番号だけの参照では issue が閉じないので、ここでも見ない。 */
-function closes(body) {
+export function closes(body) {
   return [...(body ?? '').matchAll(/closes\s+#(\d+)/gi)].map((match) => Number(match[1]));
 }
 

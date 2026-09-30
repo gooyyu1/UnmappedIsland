@@ -5,6 +5,9 @@ export function moves(board: unknown): string[];
 /** 今その差分へ手が動いているか（`agent-ops/board-design.md` 1.6節）。 */
 export function busySession(session: { status: string }): boolean;
 
+/** 本文の `Closes #N` が指す issue の番号。番号だけの参照は閉じないので含めない。 */
+export function closes(body: string | null | undefined): number[];
+
 /** 盤面を見回る係の名（`agent-ops/board-design.md` 2.21節）。間隔を引く側が綴りをここから取る。 */
 export const PATROL: string;
 
