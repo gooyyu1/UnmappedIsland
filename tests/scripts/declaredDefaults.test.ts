@@ -23,7 +23,7 @@ function destructuringExports(source: string): { name: string; hasDefault: boole
     if (head === null) return;
     const oneLine = /\}( = \{\})?\) \{$/.exec(head[2]);
     if (oneLine !== null) {
-      found.push({ name: head[1], hasDefault: oneLine[1] !== undefined });
+      found.push({ name: head[1], hasDefault: oneLine[0].startsWith('} = {}') });
       return;
     }
     const close = lines.slice(index + 1).find((next) => /^\}( = \{\})?\) \{$/.test(next));

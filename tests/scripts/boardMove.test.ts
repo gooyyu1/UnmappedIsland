@@ -2519,10 +2519,11 @@ describe('closes', () => {
   });
 
   // 盤面の各所が同じ本文を読むので、読み方が2箇所に在ると片方だけが直る（issue #1977）。
-  it('本文から `Closes` を引く形は、モジュールの中でここにしか無い', () => {
+  // 綴りの揺れ（`\s*`・空白1つ）も拾えるよう、`closes` で始まる正規表現の字面を探す。
+  it('`closes` で始まる正規表現を持つモジュールは、ここにしか無い', () => {
     const root = resolve(__dirname, '../..');
     const holders = trackedFiles(root, '*.mjs').filter((rel) =>
-      /closes\\s\+#/i.test(readFileSync(resolve(root, rel), 'utf-8')),
+      /\/closes/i.test(readFileSync(resolve(root, rel), 'utf-8')),
     );
     expect(holders.map((rel) => rel.replaceAll('\\', '/'))).toEqual(['scripts/daemon/board-move.mjs']);
   });
