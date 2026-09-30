@@ -272,17 +272,11 @@ object_defs:
 
 ## 5. カプセル化: 探索の入口を1箇所にする
 
-`Location.explore(agent, session)`（`src/domain/wrappers/Location.ts`）を、探索の唯一の入口としています。
+`Location.explore`（`src/domain/wrappers/Location.ts`）を、探索の唯一の入口としています。`explore` アクションを
+実行し、成功したら続けて `Location.revealDueFixtures`（進捗が必要値に達した設置物を、隠しスロットから公開スロットへ
+移す）を呼びます。
 
-```typescript
-explore(agent: WorldObject | undefined, session: WorldSession): boolean {
-  if (!this.instance.tryExecuteAction('explore', agent, session)) return false;
-  this.revealDueFixtures(session);   // 進捗が必要値に達した設置物を、隠しスロットから公開スロットへ移す
-  return true;
-}
-```
-
-プレイヤー側の入口も同じく1箇所です。`PlayerCharacter.explore(session)`（`wrappers/PlayerCharacter.ts`）が
+プレイヤー側の入口も同じく1箇所です。`PlayerCharacter.explore`（`src/domain/wrappers/PlayerCharacter.ts`）が
 「今いる土地に自分を agent として渡す」という手順を引き受けるため、UI は自分の居場所を知らなくてよく、
 探索できない場所に居る場合は `false` が返ります。
 
