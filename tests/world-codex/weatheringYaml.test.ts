@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { objectCostMinutesOf } from '../../src/analysis/balanceTables';
 import { durationsOf } from '../../src/analysis/durations';
+import { WorldSession } from '../../src/domain/WorldSession';
+import { World } from '../../src/domain/wrappers/World';
+import { fixedRng } from '../support/rng';
 import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
+import type { WorldObject } from '../../src/domain/WorldObject';
 
 /**
  * 素材の屋外劣化（`src/assets/world-codex/weathering.yaml`、
@@ -51,6 +55,15 @@ const MATERIALS: Readonly<Record<string, Material>> = {
 
 /** 表の対象になるタグ。道具・入れ物・身につける物・寝床（DurabilitySystem.md 2節）。 */
 const WEATHERED_TAGS = ['tool', 'container', 'equippable', 'bed'];
+
+/** 積んであるだけでも屋外で傷む素材と、その分類（DurabilitySystem.md 2.2節）。 */
+const STOCKED_MATERIALS: Readonly<Record<string, Material>> = {
+  plant_fiber: 'short_lived',
+  woven_leaf: 'short_lived',
+};
+
+/** 現実で傷むのに年単位でかかるので、屋外に置いたままでも傷ませない物（同2.2節）。 */
+const LASTING = ['log', 'raft'];
 
 /** 持ち物1つの維持に充ててよい、1日の余剰に対する割合（SurvivalItems.md 12.1節）。 */
 const UPKEEP_SHARE = 0.05;
@@ -117,5 +130,76 @@ describe('素材の屋外劣化', () => {
     expect(upkeep.length, '寿命を持つ物が1つも無い').toBeGreaterThan(0);
     for (const entry of upkeep)
       expect(entry.minutesPerDay, `${entry.objectName} の1日あたりの維持（分）`).toBeLessThanOrEqual(limit);
+  });
+});
+
+describe('積んである素材の屋外劣化（DurabilitySystem.md 2.2節）', () => {
+  /** 洞窟が湧く土地の1つ（locations.yamlのrocky_fieldのexplore）。 */
+  const CAVE_LAND = 'rocky_field';
+
+  /** 岩場に浅い洞窟（屋根のある唯一の場所）が1つある世界。 */
+  function landWithCave() {
+    const session = new WorldSession(codex, fixedRng(0));
+    const worldInstance = session.createObject(codex.objectNames.getId('world'));
+    session.adoptWorld(new World(worldInstance));
+    const land = spawnInto(session, CAVE_LAND, worldInstance, 'locations');
+    const cave = spawnInto(session, 'shallow_cave', land, 'fixtures');
+    return { session, land, cave };
+  }
+
+  function spawnInto(
+    session: WorldSession,
+    objectName: string,
+    parent: WorldObject,
+    slotName: string,
+  ): WorldObject {
+    const spawned = session.createObject(codex.objectNames.getId(objectName));
+    expect(spawned.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+    return spawned;
+  }
+
+  /** 同じ場所へ2つ積む。同種なので1つの山にまとまる（SlotSystem.md 5節）。 */
+  function pileOf(session: WorldSession, objectName: string, place: WorldObject): WorldObject[] {
+    return [spawnInto(session, objectName, place, 'items'), spawnInto(session, objectName, place, 'items')];
+  }
+
+  function durabilityOf(object: WorldObject): number {
+    return object.getProperty(codex.propertyNames.getId('durability')).getEffectiveValue();
+  }
+
+  it('積んだ短命な素材は、表の分類どおりの日数で朽ちる', () => {
+    for (const [objectName, material] of Object.entries(STOCKED_MATERIALS))
+      expect(weatheringOf(objectName), `${objectName} の寿命`).toEqual(LIFETIME_DAYS[material]);
+  });
+
+  it('丸太と筏は、屋外に置いたままでも時間では傷まない', () => {
+    for (const objectName of LASTING)
+      expect(weatheringOf(objectName), `${objectName} は年単位で保つ`).toBeUndefined();
+  });
+
+  it('屋外に積んだ分は揃って日ごとに減り、屋根の下では減らない', () => {
+    const { session, land, cave } = landWithCave();
+    const piles = Object.keys(STOCKED_MATERIALS).map((objectName) => ({
+      objectName,
+      outdoors: pileOf(session, objectName, land),
+      sheltered: pileOf(session, objectName, cave),
+    }));
+    const log = spawnInto(session, 'log', land, 'items');
+    const raft = spawnInto(session, 'raft', land, 'fixtures');
+
+    session.advanceWorldTime(24 * 60);
+
+    for (const pile of piles) {
+      const outdoor = pile.outdoors.map(durabilityOf);
+      // 晴れなら1日で96、雨の刻があればその分だけ多く減る（DurabilitySystem.md 2節の表）。
+      expect(outdoor[0], `屋外の ${pile.objectName} は1日ぶん以上傷む`).toBeLessThanOrEqual(960 - 96);
+      expect(outdoor, `積んだ ${pile.objectName} は1つずつではなく同時に減る`).toEqual([
+        outdoor[0],
+        outdoor[0],
+      ]);
+      expect(pile.sheltered.map(durabilityOf), `洞窟の ${pile.objectName} は傷まない`).toEqual([960, 960]);
+    }
+    expect(log.parent, '丸太は屋外に残っている').toBe(land);
+    expect(raft.parent, '筏は屋外に残っている').toBe(land);
   });
 });
