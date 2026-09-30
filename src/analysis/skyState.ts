@@ -1,7 +1,7 @@
 import type { ConditionOp } from '../domain/ConditionReader';
 import type { SymbolGlobalId } from '../domain/GlobalId';
 import type { WorldCodex } from '../domain/WorldCodex';
-import type { AncestorCondition } from './tickDeltas';
+import type { PropertyComparison } from './tickDeltas';
 
 /**
  * 器の居る場所の空のうち、tick毎の増減が見ているもの（`docs/engine/LiquidContainerSystem.md` 6・7節）。
@@ -28,7 +28,7 @@ export interface SkyState {
  */
 export function ancestorConditionsHold(
   codex: WorldCodex,
-  conditions: readonly AncestorCondition[],
+  conditions: readonly PropertyComparison[],
   sky: SkyState,
 ): boolean {
   const { world } = codex.vocabulary;

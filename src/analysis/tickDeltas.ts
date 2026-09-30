@@ -42,15 +42,20 @@ export class TickGate {
   readonly conditions: ConditionDeclaration | undefined;
 
   /**
-   * 条件が値そのものを見ている、宣言元自身のプロパティ。**その増減がいつまで効くか**の手掛かりで、
-   * 出血なら `bleeding`——それが尽きた時点で血を奪うのが止まる。
+   * 条件が宣言元自身の値に課している比較のうち、**成立していなければ効かない**もの。**その増減が
+   * いつまで効くか**の手掛かりで、出血なら `{bleeding, gte: 1}`——`bleeding` が1を割った時点で
+   * 血を奪うのが止まる。外れるのは値が**比較の外へ出た**ときなので、`lt` で見ている条件は値が
+   * 上がって外れる。
+   *
+   * 論理和・否定の下の比較は来ない——理由は{@link ancestorConditions}と同じ。別のプロパティを相手に
+   * した比較（valueRef）も来ない——しきい値が定義だけからは決まらない。
    *
    * **段を名指した条件（`in_stage`・`in_stage_or_above`、14.1節）が見ている値はここへ来ない。**
-   * 段の条件が外れるのは値が尽きたときではなく段を出たときで、それは下の{@link requiredSelfStages}が
-   * 段の下端と上端から答える。ここへ混ぜると、下端を書いていない受け皿の段（6.4節）——値が下端まで
-   * 落ちても居続ける段——を求める増減まで、尽きた時点で止まるものとして数えられる。
+   * 段の条件が外れるのは段を出たときで、それは下の{@link requiredSelfStages}が段の下端と上端から
+   * 答える。ここへ混ぜると、下端を書いていない受け皿の段（6.4節）——値が下端まで落ちても居続ける
+   * 段——を求める増減まで、比較の外へ出た時点で止まるものとして数えられる。
    */
-  readonly watchedSelfProperties: readonly PropertyGlobalId[];
+  readonly selfComparisons: readonly PropertyComparison[];
 
   /**
    * 増減が効くために、宣言元自身が入っていなければならない段（6.4節）。**その増減がいつから
@@ -67,7 +72,7 @@ export class TickGate {
    * 外の状態でしか決まらない増減——雨で溜まる水は `ancestor.weather` が雨の間だけ増える——を、
    * その状態が続く時間から数えられるようにする。
    */
-  readonly ancestorConditions: readonly AncestorCondition[];
+  readonly ancestorConditions: readonly PropertyComparison[];
 
   /**
    * 増減が効くために、**宣言元の外側**——親、またはそのプロパティを持つ最初の祖先——が入っていな
@@ -98,7 +103,7 @@ export class TickGate {
 
     this.stage = gate.stage;
     this.conditions = gate.conditions;
-    this.watchedSelfProperties = collector.selfProperties;
+    this.selfComparisons = collector.selfComparisons;
     this.requiredSelfStages = [
       // 段の宣言（8.2節）の下に置かれた増減は、その段ちょうどに居る間だけ効く。
       ...(gate.stage === undefined
@@ -314,8 +319,8 @@ function disjointStages(a: SelfStageRequirement, b: SelfStageRequirement): boole
   );
 }
 
-/** 祖先のプロパティに課された比較1つ。 */
-export interface AncestorCondition {
+/** 条件がプロパティ1つに課したリテラルとの比較1つ（TickGate.selfComparisons・ancestorConditions）。 */
+export interface PropertyComparison {
   readonly propertyGlobalId: PropertyGlobalId;
   readonly op: ConditionOp;
 
@@ -399,16 +404,14 @@ function matchesType(def: ObjectDef, match: TypeMatchReading): boolean {
 }
 
 /**
- * 条件の木から、増減がいつ効くかの手掛かりを集める——宣言元自身（self）の見られているプロパティ
- * （出血は `bleeding` が尽きるまでしか効かない）、名指された自身の段（膿んだ傷が宿主の菌を
+ * 条件の木から、増減がいつ効くかの手掛かりを集める——宣言元自身（self）の値に課された比較
+ * （出血は `bleeding` が1を割るまでしか効かない）、名指された自身の段（膿んだ傷が宿主の菌を
  * 押し上げ始めるのは `infection` が `festering` へ届いてから）、名指された外側の段（刻んだ芋が自分で
  * 足す加熱は、親の火力が `coals` へ届いてから）、祖先に課された比較（雨は降っている間だけ効く）、
  * そして宣言元自身の型に課された指定（口径ごとに分かれた蒸発・雨の宣言）。
  *
- * selfのプロパティは比較の相手（valueRef）を数えない——尽きて条件が外れるのは、見ている側の値が
- * 動いたときだから。**段を名指した条件が見ている値も数えない**——その条件が外れるのは値が尽きた
- * ときではなく段を出たときで、答えるのは段の側（TickGate.watchedSelfProperties）。段・祖先・型の指定は
- * **論理積の枝にあるものだけ**を採る（下のany・not）。
+ * **段を名指した条件が見ている値は、自身の比較として数えない**——答えるのは段の側
+ * （TickGate.selfComparisons）。どれも**論理積の枝にあるものだけ**を採る（下のany・not）。
  *
  * **ここが集めるのは上の問いへの答えだけで、条件そのものではない。** 枠を見る葉
  * （`{in_slot}`・`{slot, matches}`）はどれにも答えない——枠に入っているかは、尽きる値でも
@@ -416,11 +419,11 @@ function matchesType(def: ObjectDef, match: TypeMatchReading): boolean {
  * 宣言のまま持つ。
  */
 class GateConditionCollector implements ConditionReader {
-  readonly selfProperties: PropertyGlobalId[] = [];
+  readonly selfComparisons: PropertyComparison[] = [];
 
   /** 下端はまだ読めない（プロパティの定義を持たない）ので、TickGateが引いて補う。 */
   readonly requiredSelfStages: Omit<SelfStageRequirement, 'lowerBound'>[] = [];
-  readonly ancestorConditions: AncestorCondition[] = [];
+  readonly ancestorConditions: PropertyComparison[] = [];
   readonly outerStages: OuterStageRequirement[] = [];
   readonly selfTypeMatches: TypeMatchReading[] = [];
 
@@ -443,13 +446,10 @@ class GateConditionCollector implements ConditionReader {
   property(reading: PropertyConditionReading): void {
     this.hasRuntimeConditions = true;
     this.hasConditionsBeyondStages = true;
-    if (reading.root === 'self') this.selfProperties.push(reading.propertyGlobalId);
-    if (reading.root !== 'ancestor' || !this.required || this.negated || reading.values === undefined) return;
-    this.ancestorConditions.push({
-      propertyGlobalId: reading.propertyGlobalId,
-      op: reading.op,
-      values: reading.values,
-    });
+    if (!this.required || this.negated || reading.values === undefined) return;
+    const comparison = { propertyGlobalId: reading.propertyGlobalId, op: reading.op, values: reading.values };
+    if (reading.root === 'self') this.selfComparisons.push(comparison);
+    else if (reading.root === 'ancestor') this.ancestorConditions.push(comparison);
   }
 
   propertyStage(
@@ -499,9 +499,9 @@ class GateConditionCollector implements ConditionReader {
   }
 
   /**
-   * 論理和の下の枝。**段も祖先の比較も型の指定も集めない**——「どれかが成り立てばよい」は、
+   * 論理和の下の枝。**段も比較も型の指定も集めない**——「どれかが成り立てばよい」は、
    * その比較が成立していることそのものではない。集めてしまうと、効き始めまでの時間も外の状態が
-   * 続く時間も数え違え、効く型を取り違える。どれが成り立って増減が効いたのかも、定義だけでは
+   * 続く時間も効かなくなるまでの時間も数え違え、効く型を取り違える。どれが成り立って増減が効いたのかも、定義だけでは
    * 決まらない。
    */
   any(children: readonly ConditionDeclaration[]): void {
@@ -515,9 +515,9 @@ class GateConditionCollector implements ConditionReader {
 
   /**
    * 否定の下の枝。**型の指定だけは裏返して集める**——「`cured`でないこと」はその型を見れば決まる
-   * ので、成立するかどうかが分かれる条件ではない。段と祖先の比較は集めない：「成り立たない
+   * ので、成立するかどうかが分かれる条件ではない。段と比較は集めない：「成り立たない
    * こと」は、その比較が成立していることそのものではなく、集めると効き始めまでの時間と外の状態が
-   * 続く時間を数え違える。
+   * 続く時間と効かなくなるまでの時間を数え違える。
    */
   not(child: ConditionDeclaration): void {
     const outer = this.negated;
