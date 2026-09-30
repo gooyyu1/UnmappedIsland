@@ -401,14 +401,14 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
    航海中に発熱の段へ乗ります（同3.9.3節）。銛は突いた魚に持って行かれるので、穂先になる尖った石と
    紐も積みます（同3.9.4節）。
 4. **浜まで運ぶ手段。** そり（運ぶ入れ物の段3）。備蓄は拠点にあり、出航地点は海岸なので、積み込みの前に
-   陸の運搬が要ります。**積む量が4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 -->日ぶんへ縮んでも要ります**——甕で運ぶ水の重さ
+   陸の運搬が要ります。**積む量が4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 -->日ぶんへ縮んでも要ります**——甕で運ぶ水は下限でも3〜4つ＝16〜21kg
    （[`Voyage.md`](./Voyage.md) 3.9.6節。蓋をしなければ蒸発が、積む物を誤れば食べ方が押し上げます）で、通れなくなる線
    （`too_heavy`。[`Characters.md`](./Characters.md) 荷重の効き方節）はどの人物も22.5〜30kg
-   （`characters/*.yaml` の `load` の段）。そこへ日数ぶんの塩漬けの生肉（
-   [`Voyage.md`](./Voyage.md) 3.9.3節）と、脂を切らさないためのヤシの果肉（同3.9.6節）が
+   （`characters/*.yaml` の `load` の段）。そこへ塩漬けの生肉12〜18個（6〜9kg。
+   [`Voyage.md`](./Voyage.md) 3.9.3節）と、脂を切らさないためのヤシの果肉2〜3個（0.4〜0.6kg。同3.9.6節）が
    乗るので、**長い側では、水と食料だけで誰も通れません。** 短い側は水と食料だけなら通れますが、
    いちばん非力な者はアーティファクト1つで線を越えます。**持ち帰る物が、そのまま
-   運べなくなる理由**です。**この勘定が数えているのは水と食料だけ**で、蓋も銛の予備も海図も乗っていません
+   運べなくなる理由**です。**この数が数えているのは水と食料だけ**で、蓋も銛の予備も海図も乗っていません
    ——蓋をしなければ、甕の数のほうがここから増えます。
 5. **残りの海区数が読める海図**（[`GameEndings.md`](../concept/GameEndings.md) 12.6節）。山頂からの視認と
    沿岸航海で作ります。
@@ -722,17 +722,17 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 **燃えるのは2時間**（`fire.yaml` の `torch` の `life`）。灯すには、燃えている炉から炎を分けてもらうか
 （[`FireSystem.md`](../engine/FireSystem.md) 3.1.2節）、火起こしから作った火種を移します。**火種から
 灯すと、燃える時間より長くかかります**——火種1つが62.0分<!-- stats: balance.yaml object_costs object=burning_tinder total_minutes -->
-で、下の松明そのものの手間がその上に乗ります。**炉から分けてもらう道があるのはこのためで**、その道を
+なので、下の松明そのものと合わせて127.2分。**炉から分けてもらう道があるのはこのためで**、その道を
 通るなら払うのは松明のぶんだけです。
 
 **素材込みの手間は65.2分**<!-- stats: balance.yaml object_costs object=torch total_minutes -->
-で、明かりを買う値段としては安くありません。それでも作る価値があるのは、**買えるのが時間の延長ではなく、
+——**明かり1分あたり0.54分**です。それでも作る価値があるのは、**買えるのが時間の延長ではなく、
 そうでなければ0の場面だから**です。光源を持たない1日は、屋外の693分<!-- stats: terrain.yaml daily_budget outdoor_window -->と
 炉端の347分<!-- stats: terrain.yaml daily_budget night_craft -->と睡眠の360分<!-- stats: terrain.yaml daily_budget sleep -->と、
 嵐で止まる40分<!-- stats: terrain.yaml daily_budget storm_stop -->で既に埋まっているので、**開けた土地では松明を足しても入る先がありません**。
 
 **効くのは、夜の道と、樹冠の深い土地です。** 拠点から平均的な土地への片道は91.61分<!-- stats: terrain.yaml base_one_way base=shortest_mean mean -->
-なので、**日が暮れてから往復するなら、1本の2時間では帰り着けません。**密林の雨季に採れるのは
+なので、**日が暮れてから往復するなら2本**——1本の2時間では帰り着けません。密林の雨季に採れるのは
 1日1.3時間<!-- stats: climate.yaml activity_hours location=jungle season=wet outdoor_search -->なので、
 そこは1本ごとに採れる時間が増える土地になります。**ただし松明が効くのは雨の合間だけです**
 ——雨の屋外では松明が消える（上）ので、雨季の雨（季節1本あたり、小雨238.17時間<!-- stats: climate.yaml weather_hours season=wet weather=light_rain segment=overall mean -->・
