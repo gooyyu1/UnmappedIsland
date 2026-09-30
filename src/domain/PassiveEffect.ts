@@ -160,7 +160,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
 
   /** この効果（registration）を、対象プロパティ値（target）のmodify用/積分用incomingのうち
    * 具象クラスに応じた側へ登録する。 */
-  abstract registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void;
+  protected abstract registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void;
 
   /** 可逆な寄与（modify、8.3節）か。影響の一覧が記号の形をこれで選ぶ（PropertyInfluence）。 */
   protected abstract get reversible(): boolean;
@@ -322,7 +322,7 @@ export class ModifyEffect extends PropertyPassiveEffect {
     return true;
   }
 
-  registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void {
+  protected registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void {
     target.registerModify(registration);
   }
 }
@@ -340,7 +340,7 @@ export class AccumulateEffect extends PropertyPassiveEffect {
     return false;
   }
 
-  registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void {
+  protected registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void {
     target.registerAccumulate(registration);
   }
 }

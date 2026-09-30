@@ -224,7 +224,12 @@ export class ObjectDef {
     return this.tags.includes(tagGlobalId);
   }
 
-  /** art_by_stage（6.4節）が指すプロパティの、stagesが宣言しているart接尾辞の一覧。art_by_stageが無ければ空。 */
+  /**
+   * art_by_stage（6.4節）が指すプロパティの、stagesが宣言しているart接尾辞の一覧。art_by_stageが無ければ空。
+   *
+   * **読み手は、絵のファイル名が宣言に在るかを確かめる側だけ**（tests/art）。画面が要るのは今の段の
+   * 接尾辞1つ（WorldObject.artSuffix）で、宣言の全部を数える口はここしか無い。
+   */
   artSuffixes(): readonly string[] {
     if (this.artByStagePropertyGlobalId === undefined) return [];
     return this.tryGetPropertyDef(this.artByStagePropertyGlobalId)?.artSuffixes() ?? [];

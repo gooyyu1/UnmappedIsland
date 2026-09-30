@@ -32,10 +32,18 @@ import { ROOT } from '../support/sourceFiles';
  * 辿れないぶん「外へ開いている」とは言いにくい。**取りこぼす側だと承知のうえで**、外から名指しできる
  * ものから倒す。
  *
+ * **メンバの「`src` の読み手」には、同じファイルの、所属するクラスの外も入る。** メンバの可視性は
+ * ファイルではなくクラスで閉じるので、同じファイルの別のクラスや関数が呼ぶメンバ（`Requirement.isMet`
+ * を `Requirements` が呼ぶ）は `private` へ戻せない。**所属の中にしか読み手が居ないメンバは読み手が
+ * 居ない側に数える**——そちらは `private` へ戻せる。
+ *
+ * **読み手がどこにも居ない公開は、別の一覧で見る**（{@link CALLED_WITHOUT_NAME}）。外に読み手が居る
+ * ものとは倒し方が違う——入口から確かめられるかではなく、**名前を書かずに呼ぶ者が居るか**を問う。
+ *
  * **数えているのは名前の一致で、型解決ではない**（`scripts/declarationInventory.mjs`）。ずれは両向きに
  * 出る——`src` のどこかに同じ名前の無関係な識別子が在れば現れず、逆に `tests/` 側の無関係な同名の
- * 識別子も「外の読み手」として数える。**確かなのは「`src` の他ファイルにその名前が無い」ことだけ**
- * なので、1件ずつ倒すときは現物の呼び手を見ること。
+ * 識別子も「外の読み手」として数える。**確かなのは「`src` の他ファイルにも、同じファイルの所属の外にも
+ * その名前が無い」ことだけ**なので、1件ずつ倒すときは現物の呼び手を見ること。
  */
 
 /** 出力は`src`の量に比例して伸びるので、既定の上限（1MB）には頼らない。 */
@@ -59,23 +67,20 @@ const READ_ONLY_FROM_OUTSIDE = [
   'src/art/artFiles.ts locationNamesWithBackgroundArt',
   'src/art/iconArt.ts ICON_NAMES',
   'src/asset-pack/install.ts AssetPacks',
-  'src/asset-pack/install.ts AssetPacks.matchesSetting',
   'src/asset-pack/zip.ts ZipReadError',
-  'src/codex-viewer/describe/Description.ts DescriptionLine.toPlainText',
   'src/codex-viewer/describe/Description.ts DescriptionWriter.toPlainText',
   'src/codex-viewer/networkLayout.ts LayoutEdge',
   'src/domain/CardFilter.ts CardFilter.tagGlobalIds',
   'src/domain/GeneratedTypes.ts GeneratedTypes.baseGlobalIdIfVariantOn',
   'src/domain/GlobalId.ts NotAGlobalId',
+  'src/domain/ObjectDef.ts ObjectDef.artSuffixes',
   'src/domain/Pcg32.ts Pcg32.nextUint',
   'src/domain/PropertyDef.ts PropertyDef.alertDirection',
-  'src/domain/PropertyDef.ts PropertyRange.hasReached',
   'src/domain/PropertyValue.ts PropertyValue.registeredContributions',
   'src/domain/SlotDef.ts SlotDef.acceptsAtMostOne',
   'src/domain/SlotDef.ts SlotDef.hasPutInDuration',
   'src/domain/generation/AxisSampler.ts COASTAL_DISTANCE_AXIS_NAME',
   'src/domain/generation/GenerationScopeDef.ts GenerationScopeParams',
-  'src/domain/generation/LocationTypeDef.ts AxisPreference.tolerance',
   'src/domain/generation/PathNetworkBuilder.ts TRAVEL_MINUTES_STEP',
   'src/domain/wrappers/Location.ts Location.fixtureStacks',
   'src/domain/wrappers/Location.ts Location.itemStacks',
@@ -100,17 +105,34 @@ const READ_ONLY_FROM_OUTSIDE = [
   'src/ui/nineSlice.ts sliceSpans',
 ];
 
+/**
+ * 今、読み手がどこにも居ない公開メンバ。**載せてよいのは、名前を書かずに呼ばれるものだけ**
+ * ——所属の中にしか呼び手が居ないなら `private`（上書きさせるなら `protected`）へ戻す。
+ *
+ * 載っているのは、Phaser がシーンの約束として名前で呼ぶもの（`preload`・`init`）。
+ */
+const CALLED_WITHOUT_NAME = [
+  'src/game/BootScene.ts BootScene.preload',
+  'src/game/NewGameScene.ts NewGameScene.init',
+  'src/game/PlayScene.ts PlayScene.init',
+  'src/game/ShelfScene.ts ShelfScene.init',
+];
+
 /** `scripts/declarationInventory.mjs --json` の1件。読むのはこの検査が使う分だけ。 */
 interface Declaration {
   readonly file: string;
   /** 所属するクラス・インターフェース。モジュール直下の宣言は`MODULE`。 */
   readonly owner: string;
   readonly name: string;
-  /** `class`・`interface`・`function`など。メンバの所有者がどちらかを見るのに使う。 */
+  /** `class`・`interface`・`function`・`ctor`など。メンバの所有者がどちらかを見るのに使う。 */
   readonly kind: string;
   readonly visibility: string;
-  /** 読み手が `src` の外（`tests/`・`scripts/`）にしか居ない。 */
+  /** 自分のファイルの外で名前が現れるファイルの数。 */
+  readonly referencingFiles: number;
+  /** 自分のファイルの外の読み手が `src` の外（`tests/`・`scripts/`）にしか居ない。 */
   readonly referencedOnlyOutsideSrc: boolean;
+  /** 同じファイルの、所属の外に読み手が居る。メンバだけが持つ。 */
+  readonly referencedInOwnFileOutsideOwner?: boolean;
 }
 
 /** モジュール直下の宣言に、インベントリが付ける所属名。 */
@@ -122,37 +144,68 @@ function labelOf(declaration: Declaration): string {
   return `${declaration.file} ${owner}${declaration.name}`;
 }
 
+/**
+ * 可視性を選べる公開のうち、`src` の中で所属の外に読み手が居ないもの（{@link OUT_OF_SCOPE}を除く）。
+ * どこに読み手が居るかは、呼び手の側で分ける。
+ */
+function publicWithoutReaderInSrc(): readonly Declaration[] {
+  const reported = execFileSync('node', [join(ROOT, 'scripts/declarationInventory.mjs'), '--json'], {
+    cwd: ROOT,
+    encoding: 'utf-8',
+    maxBuffer: MAX_OUTPUT_BYTES,
+  });
+
+  const declarations = JSON.parse(reported) as readonly Declaration[];
+  const topLevel = new Map(
+    declarations.filter((each) => each.owner === MODULE).map((each) => [`${each.file}::${each.name}`, each]),
+  );
+  const visibilityIsAChoice = (declaration: Declaration): boolean => {
+    if (declaration.owner === MODULE) return declaration.visibility === 'export';
+    const owner = topLevel.get(`${declaration.file}::${declaration.owner}`);
+    return declaration.visibility === 'public' && owner?.kind === 'class' && owner.visibility === 'export';
+  };
+
+  return declarations
+    .filter((declaration) => declaration.referencingFiles === 0 || declaration.referencedOnlyOutsideSrc)
+    .filter((declaration) => declaration.referencedInOwnFileOutsideOwner !== true)
+    .filter((declaration) => !OUT_OF_SCOPE.some((dir) => declaration.file.startsWith(dir)))
+    .filter(visibilityIsAChoice);
+}
+
+/**
+ * 名前の一致では読み手を数えられないメンバ。**呼び手が名前を書かない**ので、物差しが何も言えない。
+ *
+ * - コンストラクタ: `new Foo()` が書くのはクラスの名前だけ。
+ * - 計算された名前（`[Symbol.iterator]`）: 呼ぶのは構文（`for..of`）で、名前はどこにも書かれない。
+ */
+function isNamedByCallers(declaration: Declaration): boolean {
+  return declaration.kind !== 'ctor' && !declaration.name.startsWith('[');
+}
+
 describe('`src` に読み手が居ない公開', () => {
-  it('一覧に無いものが増えていない', () => {
-    const reported = execFileSync('node', [join(ROOT, 'scripts/declarationInventory.mjs'), '--json'], {
-      cwd: ROOT,
-      encoding: 'utf-8',
-      maxBuffer: MAX_OUTPUT_BYTES,
-    });
+  const found = publicWithoutReaderInSrc();
 
-    const declarations = JSON.parse(reported) as readonly Declaration[];
-    const topLevel = new Map(
-      declarations
-        .filter((each) => each.owner === MODULE)
-        .map((each) => [`${each.file}::${each.name}`, each]),
-    );
-    const visibilityIsAChoice = (declaration: Declaration): boolean => {
-      if (declaration.owner === MODULE) return declaration.visibility === 'export';
-      const owner = topLevel.get(`${declaration.file}::${declaration.owner}`);
-      return declaration.visibility === 'public' && owner?.kind === 'class' && owner.visibility === 'export';
-    };
-
-    const found = declarations
-      .filter((declaration) => declaration.referencedOnlyOutsideSrc)
-      .filter((declaration) => !OUT_OF_SCOPE.some((dir) => declaration.file.startsWith(dir)))
-      .filter(visibilityIsAChoice)
-      .map(labelOf)
-      .sort();
-
+  it('`src` の外にしか読み手が居ないものが、一覧に無いまま増えていない', () => {
     expect(
-      found,
+      found
+        .filter((declaration) => declaration.referencedOnlyOutsideSrc)
+        .map(labelOf)
+        .sort(),
       '`src` に読み手が居ない公開が動いた。増えたものは畳むか、開いておく理由を宣言へ書いて一覧へ足す。' +
         '減ったものは一覧から消す',
     ).toEqual([...READ_ONLY_FROM_OUTSIDE].sort());
+  });
+
+  it('読み手がどこにも居ないメンバが、一覧に無いまま増えていない', () => {
+    expect(
+      found
+        .filter((declaration) => declaration.owner !== MODULE && declaration.referencingFiles === 0)
+        .filter(isNamedByCallers)
+        .map(labelOf)
+        .sort(),
+      '読み手がどこにも居ない公開メンバが動いた。増えたものは、所属の中にしか呼び手が居なければ' +
+        '`private`（上書きさせるなら`protected`）へ戻す。名前を書かずに呼ばれるなら理由を書いて一覧へ足す。' +
+        '減ったものは一覧から消す',
+    ).toEqual([...CALLED_WITHOUT_NAME].sort());
   });
 });

@@ -75,7 +75,7 @@ export class CodexView {
   }
 
   /** objectNameの型がpropertyNameのプロパティを持つか。 */
-  hasProperty(objectName: string, propertyName: string): boolean {
+  private hasProperty(objectName: string, propertyName: string): boolean {
     const globalId = this.codex.propertyNames.tryGetId(propertyName);
     if (globalId === undefined) return false;
     return this.objectDef(objectName)?.tryGetPropertyDef(globalId) !== undefined;
@@ -131,7 +131,7 @@ export class CodexView {
    * 土地の型（TerrainGeneration.md 1節）は表示名をlocation_textsが持つ（object_textsではない）ため、
    * object_textsに宣言が無ければそちらを見る。宣言があればそちらが優先。
    */
-  objectDisplayName(name: string): string {
+  private objectDisplayName(name: string): string {
     const declared = this.locale.object(name).displayName;
     if (declared !== name) return declared;
 
@@ -191,7 +191,7 @@ export class CodexView {
     return { identifier: name, displayName: this.locale.slot(name).displayName };
   }
 
-  symbolLabel(name: string): string {
+  private symbolLabel(name: string): string {
     return this.identifierOrDisplayName({
       identifier: name,
       displayName: this.locale.symbol(name).displayName,
@@ -206,12 +206,12 @@ export class CodexView {
   }
 
   /** 告げる出来事（9.8節のsignal）の文言。札の上に出るのと同じ言葉。 */
-  signalLabel(name: string): string {
+  private signalLabel(name: string): string {
     return this.identifierOrDisplayName({ identifier: name, displayName: this.locale.signal(name) });
   }
 
   /** 消し方の名乗り（9.3節のdestroyのreason）の文言。死亡ダイアログに出るのと同じ言葉。 */
-  destroyReasonLabel(name: string): string {
+  private destroyReasonLabel(name: string): string {
     return this.identifierOrDisplayName({ identifier: name, displayName: this.locale.destroyReason(name) });
   }
 
@@ -219,7 +219,7 @@ export class CodexView {
    * object_defのタグ（4.1節）。**ここは識別子をそのまま出す**——`tag_texts`（Localization.tag）は
    * 在るが、ビューアはタグを見出しではなく分類の鍵として並べるため、引き当てていない。
    */
-  tagIdentifier(name: string): string {
+  private tagIdentifier(name: string): string {
     return name;
   }
 
@@ -296,7 +296,7 @@ export class CodexView {
    * 説明の断片1つをHTMLへ。selfObjectNameは`self`が指すobject_def（この説明を宣言している型）で、
    * `self.温度`のような参照のリンク先を決めるのに要る。
    */
-  tokenHtml(token: DescriptionToken, selfObjectName: string | undefined): string {
+  private tokenHtml(token: DescriptionToken, selfObjectName: string | undefined): string {
     switch (token.kind) {
       case 'text':
         return escapeHtml(token.text);
