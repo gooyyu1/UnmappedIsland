@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { join, resolve, sep } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
@@ -86,14 +86,15 @@ function hasProse(rel) {
  *
  * `tools/**` の JSON はコメントを持たないが、宣言の値が節番号で仕様を指すので入る。**外すのは、
  * 参照の検査自身の例と正規表現（`tests/docs/**`）と、当時の現物をそのまま残す記録**
- * （{@link isVerbatimRecord}）。
+ * （{@link isRefRuleExempt}）。**読む側は本文を {@link refProseOf} へ通す**——判断の履歴は、
+ * 解釈の節だけが射程に入る。
  *
  * @param {string} root リポジトリの根
  * @returns {string[]} 根からの相対パス（区切りはそのプラットフォームのもの）
  */
 export function trackedRefSources(root) {
   return trackedFiles(root).filter(
-    (rel) => hasProse(rel) && !rel.startsWith(join('tests', 'docs') + sep) && !isVerbatimRecord(rel),
+    (rel) => hasProse(rel) && !rel.startsWith(join('tests', 'docs') + sep) && !isRefRuleExempt(rel),
   );
 }
 
@@ -111,8 +112,9 @@ export function isProseData(rel) {
 }
 
 /**
- * **どの規約も課さない記録**か（`docs/DocumentStyle.md` 10節）。当時の現物をそのまま残す場所で、
- * **緑へ戻す手が記録の書き換えしか無い**ため、指し先の候補としてだけ生かす。
+ * **当時の現物をそのまま残す記録**か（`docs/DocumentStyle.md` 10節）。**緑へ戻す手が記録の書き換え
+ * しか無い**ため、規約を課さず、指し先の候補としてだけ生かす。**例外は未処理の判断の履歴の解釈の
+ * 節で、参照の書き方だけが掛かる**（{@link isRefRuleExempt}）。
  *
  * @param {string} rel 根からの相対パス
  */
@@ -121,6 +123,56 @@ export function isVerbatimRecord(rel) {
     rel.startsWith(join('agent-ops', 'decisions') + sep) ||
     new RegExp(`^review\\${sep}\\d{4}-\\d{2}-\\d{2}`).test(rel)
   );
+}
+
+/**
+ * まだ棚卸しを通っていない判断の履歴か（`agent-ops/decisions/` の直下）。`archive/` は畳み終えた
+ * 当時の記録で、入らない。
+ *
+ * @param {string} rel 根からの相対パス
+ */
+export function isPendingDecision(rel) {
+  return dirname(rel) === join('agent-ops', 'decisions') && rel.endsWith('.md');
+}
+
+/**
+ * 参照の書き方（`docs/DocumentStyle.md` 5節）を課さない記録か。{@link isVerbatimRecord} から、
+ * **未処理の判断の履歴を戻す**——その `## エージェントの解釈` は次の棚卸しが今の文書と突き合わせて
+ * 読む材料で、書き換えてよい側に在る（同 10節）。**戻すのは解釈の節だけ**で、切り出しは
+ * {@link refProseOf}。
+ *
+ * **参照の規約を課す側は、どれもここから絞る**——実在を見る検査も、指し先の中身を読む係
+ * （[`refAudit.mjs`](daemon/refAudit.mjs)）も。片方だけが履歴を読むと、番号の繰り上げで中身が
+ * 入れ替わった参照（リンクは切れない）を誰も拾わない。
+ *
+ * @param {string} rel 根からの相対パス
+ */
+export function isRefRuleExempt(rel) {
+  return isVerbatimRecord(rel) && !isPendingDecision(rel);
+}
+
+/** 判断の履歴のうち、参照の規約が掛かる節。 */
+const DECISION_READING = '## エージェントの解釈';
+
+/**
+ * 参照の規約を課す側が読む本文。**未処理の判断の履歴は {@link DECISION_READING} の節だけを残し、
+ * それ以外の行を空にする**——原文（`## ユーザーの発言`）と `context:` は当時を残す側で、書き換え
+ * られない（`docs/DocumentStyle.md` 10節）。行を消さずに空にするのは、行番号を原文と揃えるため。
+ *
+ * @param {string} rel 根からの相対パス
+ * @param {string} text 原文
+ * @returns {string}
+ */
+export function refProseOf(rel, text) {
+  if (!isPendingDecision(rel)) return text;
+  let inside = false;
+  return text
+    .split('\n')
+    .map((line) => {
+      if (/^#{1,2}\s/.test(line)) inside = line.trimEnd() === DECISION_READING;
+      return inside ? line : '';
+    })
+    .join('\n');
 }
 
 /**
@@ -186,7 +238,7 @@ export function isAnalysisRecord(rel) {
 
 /**
  * 確定度の印の条件（`docs/DocumentStyle.md` 6節）が掛かる文書か。**印の意味は置き場で変わらない**
- * ので、`docs/` の中かでは絞らない。外れるのは記録の2種——どの規約も課さないもの
+ * ので、`docs/` の中かでは絞らない。外れるのは記録の2種——当時の現物を残すもの
  * （{@link isVerbatimRecord}）と、印が**題材として**現れるその回の観測（{@link isAnalysisRecord}）。
  *
  * @param {string} rel 根からの相対パス

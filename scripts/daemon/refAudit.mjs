@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { isAnalysisRecord, trackedDocs, trackedRefSources } from '../docScope.mjs';
+import { isAnalysisRecord, refProseOf, trackedDocs, trackedRefSources } from '../docScope.mjs';
 import { linesOutsideFence } from '../markdownFences.mjs';
 import { SECTION_RUN, sectionNumbersIn } from '../sectionRefs.mjs';
 
@@ -97,6 +97,14 @@ export function readLedger(root) {
 /** パスの表記を `/` 区切りへ。台帳と git は `/`、`trackedFiles` はそのプラットフォームの区切り。 */
 function posix(rel) {
   return rel.split(sep).join('/');
+}
+
+/**
+ * そのファイルのうち、この係が読む本文（{@link refProseOf}）。**判断の履歴は解釈の節だけ**——原文の
+ * 側の参照は直す先が無いので、数えると読んでも手の出しようが無いものが範囲に積まれる。
+ */
+function readSource(root, rel) {
+  return refProseOf(rel.split('/').join(sep), readFileSync(resolve(root, rel), 'utf-8'));
 }
 
 /**
@@ -213,7 +221,7 @@ export function refAuditBatch(root, { budget = BUDGET, ledger = readLedger(root)
   const now = head(root);
   const sources = auditSources(root);
   const bodies = new Map();
-  for (const rel of sources) bodies.set(rel, readFileSync(resolve(root, rel), 'utf-8'));
+  for (const rel of sources) bodies.set(rel, readSource(root, rel));
 
   const changed = [];
   const changedFiles = ledger.commit === null ? [] : changedSince(root, ledger.commit);
@@ -231,7 +239,11 @@ export function refAuditBatch(root, { budget = BUDGET, ledger = readLedger(root)
       changed.push(entry);
     };
     for (const rel of changedFiles.filter((rel) => bodies.has(rel))) {
-      const lines = addedLines(root, ledger.commit, rel).filter(({ text }) => countRefs(text) > 0);
+      // 行の中身は**今の本文から引き直す**——読まない節（判断の履歴の原文）へ書き足された行を落とす。
+      const current = bodies.get(rel).split('\n');
+      const lines = addedLines(root, ledger.commit, rel)
+        .map(({ line }) => ({ line, text: current[line - 1] ?? '' }))
+        .filter(({ text }) => countRefs(text) > 0);
       const refs = lines.reduce((total, { text }) => total + countRefs(text), 0);
       add(rel, refs, '書き足された行に参照が在る', `行 ${lines.map(({ line }) => line).join('・')}`);
     }
@@ -301,7 +313,7 @@ export function refAuditBatch(root, { budget = BUDGET, ledger = readLedger(root)
 export function hasRefAuditWork(root, { ledger = readLedger(root) } = {}) {
   const sources = auditSources(root);
   const unread = sources.filter((rel) => ledger.through === null || rel > ledger.through);
-  if (unread.some((rel) => countRefs(readFileSync(resolve(root, rel), 'utf-8')) > 0)) return true;
+  if (unread.some((rel) => countRefs(readSource(root, rel)) > 0)) return true;
   if (ledger.commit === null) return true;
   const changed = changedSince(root, ledger.commit);
   // 前の周の指紋を引けない周は、変わった分を出せない＝読むものが無い（掃き終えた後の話）。
