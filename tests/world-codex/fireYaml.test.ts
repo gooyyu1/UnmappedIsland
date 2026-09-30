@@ -738,9 +738,7 @@ describe('fire.yamlの火の連鎖', () => {
   });
 
   it('雨の屋外では、手に持った松明も消える', () => {
-    // 雨ざらしの明かりは消える（FireSystem.md 8.2節）。火口の湿りと違って地面に出しているかを
-    // 問わない——持ち歩く松明が消えることがこの節の中身。**全部の雨で見る**——大雨で消えることは、
-    // 小雨で消えることを言わない。
+    // FireSystem.md 8.2節。**全部の雨で見る**——大雨で消えることは、小雨で消えることを言わない。
     for (const weatherName of ['light_rain', 'heavy_rain', 'storm']) {
       open(LIGHTS);
       const torch = spawnInto('torch', player, 'hand');

@@ -734,12 +734,13 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 **効くのは、夜の道と、樹冠の深い土地です。** 拠点から平均的な土地への片道は91.61分<!-- stats: terrain.yaml base_one_way base=shortest_mean mean -->
 なので、**日が暮れてから往復するなら2本**——1本の2時間では帰り着けません。密林の雨季に採れるのは
 1日1.3時間<!-- stats: climate.yaml activity_hours location=jungle season=wet outdoor_search -->なので、
-そこは1本ごとに採れる時間が増える土地になります。**ただし1本の2時間がまるまる乗るわけではありません**
+そこは1本ごとに採れる時間が増える土地になります。**ただし松明が効くのは雨の合間だけです**
 ——雨の屋外では松明が消える（上）ので、雨季の雨（季節1本あたり、小雨238.17時間<!-- stats: climate.yaml weather_hours season=wet weather=light_rain segment=overall mean -->・
 大雨222.39時間<!-- stats: climate.yaml weather_hours season=wet weather=heavy_rain segment=overall mean -->・
 嵐78.75時間<!-- stats: climate.yaml weather_hours season=wet weather=storm segment=overall mean -->、
-季節の長さは29.91日<!-- stats: climate.yaml season_duration season=wet mean -->）のぶんが落ち、増えるのは
-1本あたり約0.5時間です。**雨季の密林で松明が効くのは、雨の合間だけです。**
+季節の長さは29.91日<!-- stats: climate.yaml season_duration season=wet mean -->）の間は灯しておけません。
+消えている間は燃え残りが減らないので2時間そのものは失われませんが、止むたびに炎か火種から灯し直す
+手間が掛かります。
 
 #### 8.1.2 土地は「樹冠」と「地面の反射」を持つ
 
