@@ -1048,15 +1048,15 @@ describe('筏と航海', () => {
 
   it('風が1区間へ乗せる幅は、遠回りが増やす2区間ぶんの横断に届かない（Voyage.md 3.9.1節）', () => {
     const byWind = ['tailwind', 'crosswind', 'headwind'].map((wind) => crossingMinutesAtFork(wind));
-    const { game } = ready();
-    const zoneCrossing = propertyOf(singletonPlace(game, FORK), 'crossing_minutes');
+    // 1区間の物差しは、実際に払う区間の横断時間のうち最も短いもの（厳しい側）。
+    const section = Math.min(...byWind.flatMap((crossings) => [...crossings.values()]));
     for (const route of [SHORTCUT_ONWARD, DETOUR_ONWARD]) {
       const minutes = byWind.map((crossings) => crossings.get(route) as number);
-      expect(Math.max(...minutes) - Math.min(...minutes), route).toBeLessThan(2 * zoneCrossing);
+      expect(Math.max(...minutes) - Math.min(...minutes), route).toBeLessThan(2 * section);
     }
   });
 
-  it('航海ぶんの甕と食料を積んでも、積荷の段は上がらない（Voyage.md 3.9.3節・3.9.6節）', () => {
+  it('航海ぶんの甕と蓋と食料を積んでも、積荷の段は上がらない（Voyage.md 3.9.3節・3.9.6節）', () => {
     // 積む数は文書の長い側（甕は Voyage.md 3.9.6節、食料は ContentSkeleton.md 5節4番）。数が宣言から
     // 出ることは tests/diagnostics/waterAndBloodPace.test.ts が見る。
     const voyage = readFileSync('docs/world/Voyage.md', 'utf8').replace(/<!--[^>]*-->/g, '');
@@ -1085,6 +1085,8 @@ describe('筏と航海', () => {
     load('jar__content_water_liquid', jars);
     load('raw_meat__cure_salted', meats);
     load('coconut_meat', coconutMeats);
+    // 蓋も甕の数ぶん載せる（Voyage.md 3.9.6節「蓋を足しても同じです」）。
+    load('jar_lid', jars);
 
     const weight = raft.getProperty(codex.propertyNames.getId('weight'));
     // 段の境目は乗員を見込んでいて、乗り手の重さは筏の実効値に入っている（ContainerSystem.md 1.1節）。

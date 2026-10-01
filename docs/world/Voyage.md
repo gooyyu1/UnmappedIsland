@@ -51,7 +51,7 @@
 ありますが（[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「要るものは、名指しの鍵ではなく、
 部分的に代替できる資源で作る」節）、**どちらも斧を要求する**ので、上の前提は変わりません。
 
-丸太は1本20kgで、担ぐと荷重（`load`）の段が1つ上がります。**2本目は担げません。** 筏1つに丸太を何本も要するので、
+丸太は1本20kgで、担ぐと荷重（`load`）の段が1つ上がります。**2本目は担げません。** 筏の材料の丸太を
 どこで伐ってどこへ運ぶかが島側の仕事として残ります（[`GameEndings.md`](../concept/GameEndings.md) 3.1 節）。
 
 **そりを引けば、力のある担ぎ手なら2本まで一度に運べます**（[`Containers.md`](./Containers.md) 2節）
@@ -362,8 +362,8 @@
 | `overladen` | −6<!-- codex: voyage.yaml object_defs.raft.props.weight.stages.3.passives.0.modify.self.sail_speed --> |
 
 **段の境目は乗員を見込んでいます。** 乗員（65kg、[`Characters.md`](./Characters.md)）は航海中ずっと
-乗っているので、`weight` の段の境目はその65kgを含めた値で書いてあります（`voyage.yaml` の筏の `weight`）。**手に持てば積まずに済む、
-とはなりません**——手持ちの重さも乗員を通って筏へ届きます（[`ContainerSystem.md`](../engine/ContainerSystem.md)
+乗っているので、`weight` の段の境目はその65kgを含めた値で書いてあります（`voyage.yaml` の筏の `weight`）。
+**手に持てば積まずに済む、とはなりません**——手持ちの重さも乗員を通って筏へ届きます（[`ContainerSystem.md`](../engine/ContainerSystem.md)
 1.1 節）。
 
 これで「積荷を捨てれば速くなり、速いほど水と食料が保つ」（[`GameEndings.md`](../concept/GameEndings.md) 4 節）が、
@@ -757,7 +757,7 @@
   「短い航路ほど積んで出なければならない」**になります。
 - **だから積むのは 4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日ぶん**（3.9.1 節の針路の日数ぶん）。1 日 3 つを日数ぶん積んでも、**積荷の段が
   上がる境目**（3.2 節の `laden`）**には届かず、予定ぶんを積むこと自体は速さを削りません**
-  （`tests/world-codex/voyageYaml.test.ts`）。 削られるのは、
+  （`tests/world-codex/voyageYaml.test.ts`）。削られるのは、
   それを塩漬けにするまでの島側の時間です。
 
 **生肉は、満腹と一緒に菌も運びます**（1 切れ `pathogen` +3<!-- codex: animals.yaml object_defs.raw_meat.interactions.eat.add.agent.pathogen -->、
@@ -861,7 +861,7 @@
 
 **重さとかさは、どちらも効きません。** 満たした甕は 5.2kg（器 1.2kg ＋ 水 4kg）で、積む数ぶん
 載せても——**積荷の段が上がる境目**（3.2 節の `laden`）**には、日数ぶんの生肉**（3.9.3 節）**と合わせても
-届きません**（同じ検査）。 かさの側も、筏の 500 L に対して甕 1 つが 15 L です。**蓋を足しても同じです**——蓋 1 枚は
+届きません**（`tests/world-codex/voyageYaml.test.ts`）。かさの側も、筏の 500 L に対して甕 1 つが 15 L です。**蓋を足しても同じです**——蓋 1 枚は
 0.4kg・0.3 L で、甕の数ぶん載せても段は動きません。**積む数を縛るのは船ではなく、浜まで運ぶ側**です
 （[`ContentSkeleton.md`](./ContentSkeleton.md) 5 節）。
 
