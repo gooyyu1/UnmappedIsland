@@ -10,7 +10,7 @@
 **本人の検索語・直した理由・PR本文は渡さない**——渡すと本人の網をなぞるだけになる。挙がったものをどうするかは `CLAUDE.md` 3節。
 
 `<差分のパス>` を埋めて渡す。差分は**まだ push していない分**——初めてなら
-`git diff origin/main...HEAD`、2回目以降は前に push した版からの `git diff <前の版>..HEAD`。
+`git fetch origin main && git diff origin/main...HEAD`、2回目以降は前に push した版からの `git diff <前の版>..HEAD`。
 
 ---
 
