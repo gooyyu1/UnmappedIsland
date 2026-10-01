@@ -125,6 +125,20 @@ describe('bedding.yamlの寝床とハンモック', () => {
     );
   });
 
+  it('体力の戻りは、待機1回と骨組みを差した寝台での睡眠1回とで桁が違う（CardInteraction.md 10.2節）', () => {
+    // 粒の数を平方根で写す理由。1つのステータスの中でも戻る量の幅が広く、基準量では畳めない。
+    const framed = bedOnBeach(['bed_frame']);
+    const slept = restOn(framed.bed, framed.player, 'sleep').stamina;
+
+    const { player } = open('sandy_beach');
+    player.getProperty(staminaId).setNumber(0);
+    expect(player.tryGetAction('wait', player)?.tryExecute(), 'wait').toBe(true);
+    const waited = player.getProperty(staminaId).number;
+
+    expect(waited, '待機でも体力は戻る').toBeGreaterThan(0);
+    expect(slept / waited).toBeGreaterThanOrEqual(10);
+  });
+
   it('詰め物を差すと更に増え、どの詰め物でも同じだけ増える', () => {
     // docs/world/Bedding.md 4節の段3。**段3のブロックは中身を見ない**ので、詰め物として世界に
     // 現れる物はどれも同じだけ積む（同5節。分かれているのは集め方のほう）。
