@@ -158,8 +158,8 @@ water_liquid:
 反映されるわけでもないので、体内の水分を体積として持つ意味がありません。
 
 **mL から tick 数への換算は、飲用の宣言が持ちます**（`transfer` の `amount`/`to_amount`、
-`GameElementDefinition.md` 9.5 節）。体は 1 tick に 25mL を失う（1日の必要量 2400mL ÷ 96 tick）ので、
-**250mL<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount --> = 10 tick<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.to_amount --> 分**です。3日分の `max` は 288<!-- codex: characters/engineer.yaml object_defs.engineer.props.hydration.range.max --><!-- codex: characters/farmer.yaml object_defs.farmer.props.hydration.range.max --><!-- codex: characters/medic.yaml object_defs.medic.props.hydration.range.max --> になります。**エンジンは換算率を知りません**——
+`GameElementDefinition.md` 9.5 節）。飲用 1 回の
+**250mL<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount --> = 10 tick<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.to_amount --> 分**です。`max` は 288<!-- codex: characters/engineer.yaml object_defs.engineer.props.hydration.range.max --><!-- codex: characters/farmer.yaml object_defs.farmer.props.hydration.range.max --><!-- codex: characters/medic.yaml object_defs.medic.props.hydration.range.max --> です。**エンジンは換算率を知りません**——
 同じ 1 口でも水より寄与の小さい液体（酒）は、この比を小さくするだけで表せます。
 
 **器 1 つが何日ぶんかは、この換算率と容量の割り算です。** 甕（4,000mL<!-- codex: liquid_containers.yaml object_defs.jar.props.fill.range.max -->）は **16 杯＝1.7 日ぶん**、
@@ -171,7 +171,7 @@ water_liquid:
 
 **これは素の減りでの目盛りで、上限のほうです。** 器に入れたまま置けば蒸発が引き（6 節）、脂を切らせば
 水分の保ちが半分になる（[`DigestionSystem.md`](./DigestionSystem.md) 8 節）ので、**どちらも
-1.7 日を短くする向きにしか働きません。**
+この日数を短くする向きにしか働きません。**
 
 飲用は液体トレイト側のメニュー型の操作。`transfer` で自分の `fill` から 1回 250<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount -->（＝250mL<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount -->）出し、
 `agent.hydration` を 10<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.to_amount --> 増やします。`transfer` の在庫クランプにより、残量が 250mL<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount --> 未満なら残っている分だけ
@@ -268,10 +268,10 @@ water_liquid:
 `ancestor.ambient_brightness` には**時刻と天気の寄与だけ**（`ambient_brightness` の `value` が 0 の土地）を
 置いています。
 
-乾季は 30 日なので、**蓋をしていない容器は乾季を越えて水を持ち越せません**。**森や密林へ置いても
-越えられません**——上乗せが消えても基礎の蒸発は残り、甕は 2mL/tick＝1日 192mL で 21 日ほど、ヤシの器は
-1mL/tick で 2.6 日ほどです。日陰は水の寿命を数日延ばしますが、**季節をまたがせる手立てにはなりません**
-——それができるのは蓋だけです（6.2 節）。
+乾季は平均 30 日<!-- stats: climate.yaml season_duration season=dry mean --> なので、**蓋をしていない容器は、平均的な長さの乾季を越えて水を持ち越せません**。
+**森や密林へ置いても同じです**——上乗せが消えても基礎の蒸発（甕 -2<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.1.add.self.fill -->/tick、ヤシの器 -1<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.0.add.self.fill -->/tick）は残り、乾季に降る雨を差し引いても、どちらも平均的な長さの乾季より先に空になります
+（`tests/world-codex/liquidContainersYaml.test.ts`）。日陰へ置いても持ち越せるとは当てにできず、**乾季をまたがせると
+当てにできる手立ては蓋だけです**（6.2 節）。
 
 ## 6.1 天候と太陽高度は、明るさ1本へ畳んだままにする
 
@@ -369,15 +369,15 @@ water_liquid:
 なった直後は空**（[`GameElementDefinition.md`](./GameElementDefinition.md) 3.5.1 節）で、実際に溜まる量は降り方が決めるので、**「まだほとんど無い」を表す
 最少値**をここへ置いています。
 
-結果の量（mL/tick）と、空から満杯までにかかる時間:
+結果の量（mL/tick）:
 
 | | `light_rain` | `heavy_rain` | `storm` |
 |---|---|---|---|
-| `wide_open_container`（ヤシの器、250mL<!-- codex: liquid_containers.yaml object_defs.coconut_bowl.props.fill.range.max -->） | 10<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.0.add.self.fill -->（6時間） | 20<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.1.add.self.fill -->（3時間） | 40<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.2.add.self.fill -->（1.5時間） |
-| `narrow_open_container`（甕、4L） | 20<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.3.add.self.fill -->（50時間） | 40<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.4.add.self.fill -->（25時間） | 80<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.5.add.self.fill -->（12.5時間） |
+| `wide_open_container`（ヤシの器、250mL<!-- codex: liquid_containers.yaml object_defs.coconut_bowl.props.fill.range.max -->） | 10<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.0.add.self.fill --> | 20<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.1.add.self.fill --> | 40<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.2.add.self.fill --> |
+| `narrow_open_container`（甕、4L） | 20<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.3.add.self.fill --> | 40<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.4.add.self.fill --> | 80<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.5.add.self.fill --> |
 
-1 回の雨は 16〜24 tick（4〜6 時間）続く（`ClimateSystem.md` 4.2 節）ので、**ヤシの器は 1 度の雨でおよそ満ちる**
-一方、**甕は雨季に何度も降られてようやく満ちます**。序盤の生命線（`ClimateSystem.md` 3.2 節）を器 1 つで
+1 回の雨の長さは `weather_remaining` の抽選が決める（`ClimateSystem.md` 4.2 節）ので、**ヤシの器は 1 度の大雨で満ちる**
+一方、**甕は嵐にも 1 度では満たされず、雨季に何度も降られてようやく満ちます**（`tests/world-codex/liquidContainersYaml.test.ts`）。序盤の生命線（`ClimateSystem.md` 3.2 節）を器 1 つで
 成立させつつ、据え置きの大容量には季節ぶんの時間を要求する配分です。蒸発と同じく、値は容器ごとに独立した
 数値で持ちます（口径の段の倍率ではありません。9 節）。
 
