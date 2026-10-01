@@ -7,7 +7,6 @@ import { seededRng } from '../domain/Rng';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { WorldObject } from '../domain/WorldObject';
 import { WorldSession } from '../domain/WorldSession';
-import { World } from '../domain/wrappers/World';
 
 /**
  * 狩りの遭遇を、同梱の定義（`src/assets/world-codex/**`）のまま実際に通して手数を数える
@@ -198,8 +197,7 @@ class Encounter {
     this.warinessId = codex.propertyNames.getId('wariness');
 
     this.session = new WorldSession(codex, rng);
-    const world = this.session.createObject(codex.objectNames.getId('world'));
-    this.session.adoptWorld(new World(world));
+    const world = this.session.createWorld().instance;
 
     this.jungle = this.spawnInto('jungle', world, 'locations');
     this.refuge = this.spawnInto('grassland', world, 'locations');

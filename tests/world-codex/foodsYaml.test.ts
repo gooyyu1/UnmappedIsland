@@ -7,7 +7,6 @@ import type { PropertyDef } from '../../src/domain/PropertyDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
@@ -188,8 +187,7 @@ describe('食べ物の腐敗', () => {
   /** 岩場に浅い洞窟が1つある世界。土地が屋外、洞窟の中が「守られている場所」になる。 */
   function world() {
     const session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     const land = spawnInto(session, CAVE_LAND, worldInstance, 'locations');
     return { session, land, cave: spawnInto(session, 'shallow_cave', land, 'fixtures') };
   }
@@ -398,8 +396,7 @@ describe('foods.yamlの下ごしらえ', () => {
   /** 草地にプレイヤーが立っている世界。 */
   function open(landName = 'grassland') {
     const session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     const land = spawnInto(session, landName, worldInstance, 'locations');
     const player = spawnInto(session, SAMPLE_CHARACTER, land, 'characters');
     // 刃を当てる手元の作業なので明るさを要求する（foods.yaml）。ここで見たいのは下ごしらえの側なので、

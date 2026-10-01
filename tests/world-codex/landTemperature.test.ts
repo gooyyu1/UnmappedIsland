@@ -5,7 +5,6 @@ import { parse } from 'yaml';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 
@@ -62,8 +61,7 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
 
   beforeEach(() => {
     session = new WorldSession(codex);
-    world = session.createObject(codex.objectNames.getId(SKY));
-    session.adoptWorld(new World(world));
+    world = session.createWorld().instance;
 
     lands = new Map();
     for (const name of MEAN_ELEVATION.keys()) {

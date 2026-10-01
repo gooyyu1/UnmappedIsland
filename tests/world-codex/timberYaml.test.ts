@@ -6,7 +6,6 @@ import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction, makeTooDarkToWork } from '../support/illumination';
@@ -28,9 +27,8 @@ describe('timber.yamlの伐採', () => {
 
   beforeEach(() => {
     session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    const worldView = new World(worldInstance);
-    session.adoptWorld(worldView);
+    const worldView = session.createWorld();
+    const worldInstance = worldView.instance;
 
     forest = spawnInto('forest', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, forest, 'characters');

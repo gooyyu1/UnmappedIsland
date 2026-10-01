@@ -9,8 +9,6 @@ import { islandLocationsOf } from '../../src/analysis/islandLocations';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
 import type { PropertyRange } from '../../src/domain/PropertyDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { World } from '../../src/domain/wrappers/World';
-import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
 import {
@@ -432,8 +430,7 @@ async function buildReportFromDefinitions(): Promise<string> {
     await yieldToEventLoop();
 
     const session = new WorldSession(codex, seededRng(seed));
-    const worldInstance = new WorldObject(1, worldDef, session);
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
 
     // 現在進行中のセグメント（季節が変わるまでの一区間）のバッファ
     // 季節も天気もシンボル型（6.6節）なので、値はsymbolNamesのID。

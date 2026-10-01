@@ -4,7 +4,6 @@ import type { WorldChange } from '../../src/domain/WorldChange';
 import type { WorldSignal } from '../../src/domain/WorldSignal';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { AGENT_YAML } from '../support/agent';
@@ -118,8 +117,7 @@ object_defs:
 
   function open(roll: number): void {
     session = new WorldSession(codex, fixedRng(roll));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     ground = spawn('ground');
     expect(
       ground.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),

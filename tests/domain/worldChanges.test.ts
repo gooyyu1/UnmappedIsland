@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldChange } from '../../src/domain/WorldChange';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -78,8 +78,7 @@ object_defs:
   /** 土地1つだけの世界から始める。rollはpickがどの候補を引くかを決める（fixedRng）。 */
   function open(roll: number): void {
     session = new WorldSession(codex, fixedRng(roll));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     ground = spawn('ground');
     expect(ground.moveToSlotOrRejection(worldInstance.getSlot(slot('locations')))).toBeUndefined();
     changes = [];
@@ -233,19 +232,17 @@ object_defs:
     expect(outer, '抜けた後は外側へ戻る').toEqual(['stone', 'stone']);
   });
 
-  it('worldは1度しか結び付けられない', () => {
-    // 2度目には、既にそのworldで動き出したオブジェクトが居るはず（WorldSession.adoptWorld）。
-    const other = new World(new WorldObject(9, codex.objects.get(codex.objectNames.getId('world')), session));
-
-    expect(() => session.adoptWorld(other)).toThrow(/1度/);
+  it('worldは1度しか生成できない', () => {
+    // 2度目には、既にそのworldで動き出したオブジェクトが居るはず（WorldSession.createWorld）。
+    expect(() => session.createWorld()).toThrow(/1度/);
   });
 
-  it('別のセッションで生成したworldは結び付けられない', () => {
-    // 世界とその中の物とで、codexも乱数源も食い違わないように（WorldSession.adoptWorld）。
+  it('結び付いていないworldは包めない', () => {
+    // 包めると、時計を持たないセッションの物を時計付きとして扱える（World）。
     const fresh = new WorldSession(codex, fixedRng(0));
-    const foreign = new World(new WorldSession(codex).createObject(codex.objectNames.getId('world')));
+    const unbound = fresh.createObject(codex.objectNames.getId('world'));
 
-    expect(() => fresh.adoptWorld(foreign)).toThrow(/このセッションで生成した/);
-    expect(fresh.world, '拒んだworldは抱えない').toBeUndefined();
+    expect(() => new World(unbound)).toThrow(/createWorld/);
+    expect(fresh.world, '包めなかったworldは結び付かない').toBeUndefined();
   });
 });

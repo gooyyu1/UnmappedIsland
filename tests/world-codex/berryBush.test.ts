@@ -4,7 +4,6 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { TICKS_PER_DAY } from '../../src/domain/worldTime';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex } from '../support/worldCodexFiles';
 
@@ -51,8 +50,7 @@ describe('ベリーの茂み', () => {
    */
   function atBush(): void {
     session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     land = spawnInto('grassland', worldInstance, 'locations');
     bush = spawnInto('berry_bush', land, 'fixtures');
     bush.getProperty(ripeningRemainingId).setNumberWithoutEvents(RIPENING_DAYS * TICKS_PER_DAY);

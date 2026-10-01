@@ -4,7 +4,6 @@ import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { Path } from '../../src/domain/wrappers/Path';
-import { World } from '../../src/domain/wrappers/World';
 import { spawnInProgressObject, tryAdvanceCrafting } from '../../src/domain/crafting';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { fixedRng } from '../support/rng';
@@ -34,14 +33,10 @@ describe('明るさが行動を制限する', () => {
 
   /**
    * 土地の上にプレイヤーが1人立っている世界。時刻だけを引数で変える（天気は既定のclear）。
-   *
-   * **worldインスタンスも他の物と同じセッションに属させる**（WorldSession.adoptWorld）。別のセッションで
-   * 作ると、以降ここから生える物の`session`が世界を知らないほうを指す。
    */
   function open(hour: number, landName: string) {
     const session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);
 
     const land = spawnInto(landName, worldInstance, 'locations');

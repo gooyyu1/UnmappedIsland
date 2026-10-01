@@ -11,7 +11,6 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { materialsSlotOf, spawnInProgressObject, tryAdvanceCrafting } from '../../src/domain/crafting';
-import { World } from '../../src/domain/wrappers/World';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent } from '../support/illumination';
@@ -1539,8 +1538,7 @@ describe('腕前とレシピの解放条件', () => {
     recipe: RecipeDef,
   ): { session: WorldSession; inProgress: WorldObject; maker: WorldObject } {
     const session = new WorldSession(codex);
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
 
     const field = session.createObject(codex.objectNames.getId('rocky_field'));
     expect(
