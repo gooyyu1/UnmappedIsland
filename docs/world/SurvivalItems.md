@@ -290,7 +290,7 @@
 
 | 物 | 素材（レシピ） | 備考 |
 |---|---|---|
-| 塩田 | 石（1個<!-- codex: salt.yaml object_defs.salt_pan.recipes.laid.steps.0.requires.0.count -->ずつ据えて並べる） | 浅い盤。海に面した土地でしか海水を汲めない。設置物 |
+| 塩田 | 石 | 浅い盤。海に面した土地でしか海水を汲めない。設置物 |
 | 塩 | 塩田で採れる | ひと掴み。1つで食べ物1つを塩蔵できる |
 
 **塩田は罠・畑とまったく同じ「仕掛けて待つ」設備です**（[`../engine/TrapSystem.md`](../engine/TrapSystem.md)・
@@ -412,7 +412,7 @@
 
 | 物 | 素材（レシピ） | 備考 |
 |---|---|---|
-| 燻し小屋 | 太い枝6本<!-- codex: smoking.yaml object_defs.smokehouse.recipes.built.steps.0.requires.0.count --> + 編んだ葉（3枚<!-- codex: smoking.yaml object_defs.smokehouse.recipes.built.steps.1.requires.0.count -->ずつ囲う） + 縄2本<!-- codex: smoking.yaml object_defs.smokehouse.recipes.built.steps.3.requires.0.count -->／**保存の腕が `basic`** | 枝の骨組みを編んだ葉で囲い、底で火を燻らせる。設置物 |
+| 燻し小屋 | 太い枝6本<!-- codex: smoking.yaml object_defs.smokehouse.recipes.built.steps.0.requires.0.count --> + 編んだ葉 + 縄2本<!-- codex: smoking.yaml object_defs.smokehouse.recipes.built.steps.3.requires.0.count -->／**保存の腕が `basic`** | 枝の骨組みを編んだ葉で囲い、底で火を燻らせる。設置物 |
 | 燻製 | 燻し上がった食べ物 | 腐敗が最も遅い段（20日<!-- stats: durations.yaml durations object=raw_meat__cure_smoked property=durability days -->）へ移る。別の型は作らない |
 
 **燻し小屋は炉です。** 薪をくべる口も火種を落とす口も炉から継ぐので
