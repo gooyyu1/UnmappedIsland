@@ -268,10 +268,10 @@ water_liquid:
 `ancestor.ambient_brightness` には**時刻と天気の寄与だけ**（`ambient_brightness` の `value` が 0 の土地）を
 置いています。
 
-乾季は平均 30 日<!-- stats: climate.yaml season_duration season=dry mean --> なので、**蓋をしていない容器は乾季を越えて水を持ち越せません**。**森や密林へ置いても
-越えられません**——上乗せが消えても基礎の蒸発（甕 -2<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.1.add.self.fill -->/tick、ヤシの器 -1<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.0.add.self.fill -->/tick）は残り、乾季に降る雨を差し引いても、どちらも平均的な長さの乾季より先に空になります
-（`tests/world-codex/liquidContainersYaml.test.ts`）。日陰は水の寿命を数日延ばしますが、**季節をまたがせる手立てにはなりません**
-——それができるのは蓋だけです（6.2 節）。
+乾季は平均 30 日<!-- stats: climate.yaml season_duration season=dry mean --> なので、**蓋をしていない容器は、平均的な長さの乾季を越えて水を持ち越せません**。
+**森や密林へ置いても同じです**——上乗せが消えても基礎の蒸発（甕 -2<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.1.add.self.fill -->/tick、ヤシの器 -1<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.0.add.self.fill -->/tick）は残り、乾季に降る雨を差し引いても、どちらも平均的な長さの乾季より先に空になります
+（`tests/world-codex/liquidContainersYaml.test.ts`）。日陰へ置いても持ち越せるとは当てにできず、**乾季をまたがせると
+当てにできる手立ては蓋だけです**（6.2 節）。
 
 ## 6.1 天候と太陽高度は、明るさ1本へ畳んだままにする
 
