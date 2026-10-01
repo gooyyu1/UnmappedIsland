@@ -242,7 +242,7 @@ generation_scopes:
 #### 3.5.1 座標配置（海岸に囲まれ、かつ海岸過多にならない配置）
 
 島は単純な円盤（半径 `SitePlacer.ISLAND_RADIUS`）とみなします。**抽象座標系の直径（`ISLAND_RADIUS` の
-2 倍 ＝ 200 単位）が `diameter_meters` に当たり、抽象 1 単位が 33.5 m になります。** ノイズも距離場も
+2 倍）が `diameter_meters` に当たり、抽象 1 単位はそれをこの直径で割った長さになります。** ノイズも距離場も
 `ISLAND_RADIUS` で正規化しているので、縮尺を変えても地形の見た目は変わりません。要求「海岸に囲まれた島を、海岸が多くなり
 すぎないように生成する」を、次の**配置枠の分離**によって実現しています（円盤へ一様に散布すると、
 面積比の関係で外周付近のサイトが多数を占めてしまい、単純な後処理だけでは制御しづらいため、配置そのものを
@@ -302,7 +302,7 @@ generation_scopes:
 
   - `move_cost` は**その土地を進む遅さの倍率**です（1.0 が開けた土地＝ `walk_meters_per_hour`
     そのままの速さ、密林 1.6<!-- codex: terrain_generation.yaml location_types.jungle.move_cost -->、山頂 2.5<!-- codex: terrain_generation.yaml location_types.mountain_peak.move_cost -->）。
-  - `metersPerElevationUnit` は `elevation_top_meters ÷ 標高軸の値域` で、島では 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters --> ÷ 100 = 4 m です。
+  - `metersPerElevationUnit` は `elevation_top_meters ÷ 標高軸の値域` で、島では 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters --> を軸の値域で割った長さです。
     どの軸を標高として読むかは `elevation_axis` が指します（エンジンは軸の名前を知りません）。
     **軸の両端が実際に出る**（3.1 節の `stretch_sites_to_range`）ので、島の最低点は必ず海抜 0 m、
     最高点は必ず 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters --> になります。
@@ -347,13 +347,14 @@ generation_scopes:
 
 海岸の型が名乗る高さを決めたもので、覆すのに人間の判断は要りません。
 
-**砂浜は海抜 20 m まで、岸壁は海抜 24 m からとします。** どちらも `hard_limits` の `elevation` で、
+**砂浜は標高軸の 5<!-- codex: terrain_generation.yaml location_types.sandy_beach.hard_limits.elevation.max --> まで、岸壁は 6<!-- codex: terrain_generation.yaml location_types.cliff_coast.hard_limits.elevation.min --> からとします。** どちらも `hard_limits` の `elevation` で、
 **同じ高さには出ません。**
 
 引く理由は分布の調整ではなく、**名前が嘘になるから**です。線を引く前は、砂浜も岸壁も海岸帯の高さ
 （海抜 0〜68 m）のどこにでも出ていました——海抜 60 m の砂浜と、海抜 0 m の岸壁が同じ島に並びます。
 **岸壁とは海へ落ち込む崖のことなので、高さは名前そのものです。** 砂浜も同じで、浜は海面の高さに
-あります。20 m は浜の背後の段丘まで含めた上限、24 m はその1つ上（軸の1単位は 4 m）です。
+あります。砂浜の上限は浜の背後の段丘まで含めた高さで、岸壁の下限はその1つ上の目盛りです（軸の1目盛りが何 m にあたるかは
+3.5.2 節の `metersPerElevationUnit`）。
 
 **岩海岸には線を引きません。** 「岩だらけ」は高さではなく地面の性質なので、高さを名乗っていません。
 海岸帯のどの高さにも出られる型が1つあることで、線を引いても行き場を失うサイトは生じません。

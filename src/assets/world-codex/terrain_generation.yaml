@@ -98,7 +98,7 @@ location_types:
       ruggedness: {ideal: 15, tolerance: 30, weight: 100}
     hard_limits:
       coastal_distance: {max: 15}
-      # 砂浜は海抜20m（軸5）まで。これより高ければ浜ではない（3.5.3節）。
+      # 砂浜は浜の背後の段丘までの高さまで。これより高ければ浜ではない（3.5.3節）。
       elevation: {max: 5}
 
   rocky_coast:
@@ -135,7 +135,7 @@ location_types:
       elevation:  {ideal: 16, tolerance: 5, weight: 80}
     hard_limits:
       coastal_distance: {max: 15}
-      # 岸壁は海抜24m（軸6）から。砂浜の上限の1つ上で、同じ高さには出ない（3.5.3節）。
+      # 岸壁は砂浜の上限の1つ上で、同じ高さには出ない（3.5.3節）。
       elevation: {min: 6}
 
   grassland:
@@ -311,8 +311,8 @@ generation_scopes:
     # 同じ型が1個増えるごとにマッチング距離へ乗せる割増（%）。上限に当たる前から他の型へ譲らせ、
     # 「上限で打ち切られた」島ばかりにならないようにする。
     crowding_penalty: 0.6
-    # 島の差し渡し（m）。抽象座標の直径（SitePlacer.ISLAND_RADIUSの2倍＝200単位）がこの長さに当たり、
-    # 抽象1単位＝33.5mになる。山がひとつある島として自然な大きさ（面積およそ35km²で、
+    # 島の差し渡し（m）。抽象座標の直径（SitePlacer.ISLAND_RADIUSの2倍）がこの長さに当たる。
+    # 山がひとつある島として自然な大きさ（面積およそ35km²で、
     # ロビンソン・クルーソー島の約48km²よりやや小さい）。
     diameter_meters: 6700
     # move_cost 1.0 の土地を歩く速さ（m/時）。道の無い熱帯の地面を歩く速さ。

@@ -121,4 +121,16 @@ describe('terrain_generation.yamlの地形生成定義', () => {
         );
     }
   });
+
+  it('岸壁の高さの下限は、砂浜の上限のすぐ1つ上の目盛り（TerrainGeneration.md 3.5.3節）', () => {
+    const elevationOf = (name: string) => {
+      const type = singleOrUndefined(generation.locationTypes, (t) => t.name === name);
+      if (type === undefined) throw new Error(`地形の型'${name}'が見つかりません。`);
+      return singleOrUndefined(type.hardLimits, (l) => l.axis === 'elevation');
+    };
+    const beachTop = elevationOf('sandy_beach')?.max;
+    const cliffBottom = elevationOf('cliff_coast')?.min;
+    expect(beachTop, '砂浜は高さの上限を名乗る').toBeDefined();
+    expect(cliffBottom, '岸壁は高さの下限を名乗る').toBe((beachTop ?? NaN) + 1);
+  });
 });
