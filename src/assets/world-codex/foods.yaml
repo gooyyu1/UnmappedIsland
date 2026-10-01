@@ -45,8 +45,8 @@ traits:
         on_min:
           destroy: self
         # 傷み具合（docs/engine/DigestionSystem.md 6.3節）。**境目は残りの割合で置く**——腐る速さは
-        # 分類で違うが、durabilityは種類によらず960から始まるので、同じ数が全部の食べ物で
-        # 「残り半分」「残り4分の1」を指す。
+        # 分類で違うが、durabilityは種類によらず同じ値から始まるので、同じ数が全部の食べ物で
+        # 同じ残りの割合を指す。
         stages:
           - name: rotten
             alert: danger

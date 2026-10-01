@@ -35,7 +35,7 @@
 ## 2. 満腹感は、胃に入っているかさ
 
 `satiety` は実体値です。食べたかさぶん増え、tick で減ります。`max` が胃の容量（1,500mL<!-- codex: characters/player_character.yaml traits.player_character.props.satiety.range.max -->）で、
-素の減りは一定（−16/tick<!-- codex: characters/player_character.yaml traits.player_character.props.satiety.passives.0.add.self.satiety -->）で、**1 日に減る 1,536mL<!-- stats: balance.yaml daily_needs property=satiety daily_need --> が、1 日 3 食で食べる量**と釣り合います。
+素の減りは一定（−16/tick<!-- codex: characters/player_character.yaml traits.player_character.props.satiety.passives.0.add.self.satiety -->）で、**1 日に 1,536mL<!-- stats: balance.yaml daily_needs property=satiety daily_need --> 減ります**。
 
 **「これ以上食べられない」もここが持ちます。** 段 `full` を置き、`eat` を
 `not: {subject: agent, prop: satiety, in_stage_or_above: full}` で塞ぎます。水分の `full` と
@@ -100,15 +100,15 @@
 （[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）。後から入る空腹・脱水・寝不足の弊害も、
 同じ形でそれぞれの段が持ちます。
 
-段の境目は現実の量で置きます。**壊血病に落ちるのは 300mg<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.1.min --> を割ったとき**で、残りの段は 1 日 48mg の
-回転から読める日数です。
+段の境目は現実の量で置きます。**壊血病に落ちるのは 300mg<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.1.min --> を割ったとき**で、残りの段は
+そこから 1 日の回転の何日ぶん上にあるかで置いています。
 
-| 段 | 下限 | 域 | 残り |
+| 段 | 下限 | 域 | 備考 |
 | --- | --- | --- | --- |
 | `scurvy` | 0 | 危険 | **壊血病**。古傷が開き、歯が抜ける |
-| `deficient` | 300<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.1.min --> | 要注意 | 6.25 日 |
-| `waning` | 600<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.2.min --> | 留意 | 12.5 日 |
-| `replete` | 1,200<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.3.min --> | 安全 | 25 日（`max` の 80%、[`Characters.md`](../world/Characters.md)） |
+| `deficient` | 300<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.1.min --> | 要注意 | — |
+| `waning` | 600<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.2.min --> | 留意 | — |
+| `replete` | 1,200<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.3.min --> | 安全 | `max` の 80%（[`Characters.md`](../world/Characters.md)） |
 
 `scurvy` の段が `pain` を 60<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.0.passives.0.modify.self.pain --> 押し上げます（刺し傷・牙の傷と並ぶ、この島で最も重い段）。**`modify`
 なので可逆**——段を抜けた瞬間に痛みは引きます。手当てに当たるのは葉物を食べることで、**放置した分だけ
@@ -245,7 +245,7 @@
 「免疫が反応するまでの時間差」の**両方**で、別の仕組みは作りません——**潜伏期は、免疫が段を 1 つ上げるのに
 要る tick 数そのもの**です——`weakened` の下端 25<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.stages.1.min --> から `robust` の 40<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.stages.2.min --> まで 60 tick。
 **引き戻すのはいちばん上の段だけ**（`-0.05/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.stages.3.passives.0.add.self.immunity -->）なので、**罹って治った体は素の 60<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.value --> より高い所（70<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.stages.3.min --> の少し下）で
-止まります**。それが獲得免疫で、**素のままでは段を落とす押し下げを抱えても、段を保てる**余力になります。
+止まります**。それが獲得免疫で、**素のままでは段を落とす押し下げでも、少し深いものまでなら段を保てる**余力になります。
 
 **獣も同じ物差しで `pathogen` を持ちます**（`animals.yaml` の `beast`）。ただし `immunity` は固定値で、
 生活では上下しません——上の表で押し下げを宣言している段は、どれも人しか持たない値のものだからです
@@ -273,9 +273,9 @@
 
 | 段 | 下限（`durability`） | `spoilage` |
 | --- | --- | --- |
-| `sound` | 480<!-- codex: foods.yaml traits.perishable.props.durability.stages.2.min --> | 0（当たらない） |
+| `sound` | 480<!-- codex: foods.yaml traits.perishable.props.durability.stages.2.min --> | 0<!-- codex: foods.yaml traits.perishable.props.spoilage.value -->（当たらない） |
 | `stale` | 240<!-- codex: foods.yaml traits.perishable.props.durability.stages.1.min --> | 25<!-- codex: foods.yaml traits.perishable.props.durability.stages.1.passives.0.modify.self.spoilage --> |
-| `rotten` | 0 | 100<!-- codex: foods.yaml traits.perishable.props.durability.stages.0.passives.0.modify.self.spoilage --> |
+| `rotten` | 0<!-- codex: foods.yaml traits.perishable.props.durability.range.min --> | 100<!-- codex: foods.yaml traits.perishable.props.durability.stages.0.passives.0.modify.self.spoilage --> |
 
 引くのは `eat` の末尾の `pick`（[`GameElementDefinition.md`](./GameElementDefinition.md) 10 節）で、重みは
 **無事 100<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.0.weight --> : 吐く `spoilage` : 下す `spoilage`**。`spoilage` は上の段が `modify` で押し上げる食べ物側の
@@ -284,8 +284,8 @@
 
 | 症状 | 何が起きるか | どう書くか |
 | --- | --- | --- |
-| 吐く | 腹が空になり、少し前に食べた分まで失う | `satiety` を `set` で 0<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.1.set.agent.satiety -->、3 本を `add` で -40<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.1.add.agent.carbohydrate --> ずつ |
-| 下痢 | 食べた物が身にならない＋脱水 | 3 本を `add` で -40<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.2.add.agent.carbohydrate --> ずつ、`hydration` をさらに -48<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.2.add.agent.hydration --> |
+| 吐く | 腹が空になり、少し前に食べた分まで失う | `satiety` を `set` で 0<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.1.set.agent.satiety -->、3 本を `add` で -40<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.1.add.agent.carbohydrate --><!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.1.add.agent.protein --><!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.1.add.agent.lipid --> ずつ |
+| 下痢 | 食べた物が身にならない＋脱水 | 3 本を `add` で -40<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.2.add.agent.carbohydrate --><!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.2.add.agent.protein --><!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.2.add.agent.lipid --> ずつ、`hydration` をさらに -48<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.2.add.agent.hydration --> |
 
 **`pick` は `add` より後ろに置きます**——腹に収めてから吐くので、順が逆だと吐いた後に食べたことに
 なります（同 9.7 節）。下痢は「行き先が無いまま減らす」ので、`transfer` ではなく `add` で書きます。
