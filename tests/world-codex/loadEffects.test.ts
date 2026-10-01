@@ -303,6 +303,7 @@ describe('荷重が歩みの遅れと体力に効く', () => {
 
   it.each([
     ['voyage.yaml', 'raft'],
+    ['voyage.yaml', 'rawhide_sail'],
     ['farming.yaml', 'pen'],
   ])('%s の %s の目方は、どのレシピでも材料の目方の和', (fileName, objectName) => {
     // 据えた物も目方を名乗る（core.yaml）。その値はコメントで「材料ぶん」と言っているだけなので、
