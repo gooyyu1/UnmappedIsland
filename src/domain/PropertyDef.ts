@@ -1,4 +1,4 @@
-import type { WorldObject } from './WorldObject';
+import { WorldObject } from './WorldObject';
 import type { Rng } from './Rng';
 import { INT32_MAX } from '../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
@@ -688,7 +688,7 @@ export class PropertyDef {
     // 参加していても、そこに役は居ない。
     for (const [label, effect] of this.rangeEventEffects) {
       if (!this.hasReachedEnd(label, number)) continue;
-      owner.applyActiveEffect(effect, ReferenceContext.forSelf(owner));
+      WorldObject.applyActiveEffect(effect, ReferenceContext.forSelf(owner));
     }
   }
 

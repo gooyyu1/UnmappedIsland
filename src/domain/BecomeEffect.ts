@@ -2,6 +2,7 @@ import { ActiveEffect } from './ActiveEffect';
 import type { EffectReader } from './EffectReader';
 import type { ObjectRef } from './ObjectRef';
 import type { ReferenceContext } from './ReferenceRoot';
+import type { WorldObject } from './WorldObject';
 
 /**
  * become の1命令（同じ個体のまま型を差し替える、GameElementDefinition.md 9.9節）。
@@ -22,7 +23,7 @@ export class BecomeEffect extends ActiveEffect {
     this.axisValues = axisValues;
   }
 
-  apply(context: ReferenceContext): void {
+  apply(context: ReferenceContext<WorldObject>): void {
     this.subject.resolve(context)?.becomeAlong(this.axisValues);
   }
 

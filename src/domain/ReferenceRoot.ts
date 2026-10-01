@@ -90,7 +90,7 @@ export class InteractionRelation {
   }
 
   /** selfを起点に、この関係の役を解決する文脈。 */
-  contextFor(self: WorldObject): ReferenceContext {
+  contextFor(self: WorldObject): ReferenceContext<WorldObject> {
     return ReferenceContext.withRoles(self, this.agent, this.instrument, this.patient);
   }
 
@@ -101,7 +101,7 @@ export class InteractionRelation {
    * 押す前に見せるための問い合わせ（条件・所要時間）がこれ。**動作そのものではない**ので、
    * agentが動いていると主張しない——実行中の操作の傍らで別の候補の分数を引くことは起こる。
    */
-  during<T>(body: (context: ReferenceContext) => T): T {
+  during<T>(body: (context: ReferenceContext<WorldObject>) => T): T {
     return this.bound(false, body);
   }
 
@@ -118,11 +118,11 @@ export class InteractionRelation {
    * （例: 強制的な時間経過、11.5節「再帰的な操作」）だったとき、まだ外れていないクレームへ同じagentの
    * 再クレームが走り、上の不変条件が破れる。
    */
-  whileActing<T>(body: (context: ReferenceContext) => T): T {
+  whileActing<T>(body: (context: ReferenceContext<WorldObject>) => T): T {
     return this.agent.session.runToSeam(() => this.bound(true, body));
   }
 
-  private bound<T>(claimsAgent: boolean, body: (context: ReferenceContext) => T): T {
+  private bound<T>(claimsAgent: boolean, body: (context: ReferenceContext<WorldObject>) => T): T {
     const leaves: (() => void)[] = [];
     try {
       for (const participant of this.participants)
@@ -166,10 +166,13 @@ export class InteractionRelation {
  *
  * ancestorはここでは解けない——「参照先のプロパティを定義している最初の祖先」なので、探すプロパティを
  * 知っている側（PropertyPath）でしか決まらない。
+ *
+ * **selfが居るかは型引数Sが持つ。** selfを要る側（InteractionDef.tryExecute・効果のapply）は
+ * `ReferenceContext<WorldObject>`を受け取るので、selfの居ない文脈を渡せない。
  */
-export class ReferenceContext {
+export class ReferenceContext<S extends WorldObject | undefined = WorldObject | undefined> {
   /** この文脈のself。効果の宣言元であり、parent・ancestorはここから辿る。 */
-  readonly self: WorldObject | undefined;
+  readonly self: S;
 
   /** この操作をしている者。操作でもなく、問う側がagentを渡すのでもない文脈ではundefined（11.5節）。 */
   readonly agent: WorldObject | undefined;
@@ -196,7 +199,7 @@ export class ReferenceContext {
 
   private constructor(
     session: WorldSession,
-    self: WorldObject | undefined,
+    self: S,
     agent: WorldObject | undefined,
     instrument: WorldObject | undefined,
     patient: WorldObject | undefined,
@@ -215,7 +218,7 @@ export class ReferenceContext {
    * rangeイベント（6.3節）は操作ではなく値が端に着いた瞬間への反応なので、selfが今どれかの操作に
    * 参加していても役は見えない（11.5節）。
    */
-  static forSelf(self: WorldObject): ReferenceContext {
+  static forSelf(self: WorldObject): ReferenceContext<WorldObject> {
     return new ReferenceContext(self.session, self, undefined, undefined, undefined, undefined);
   }
 
@@ -224,7 +227,7 @@ export class ReferenceContext {
    * 解く関係（世界に刻まれている、InteractionRelation。入れ子なら最も内側、11.5節）から解ける。参加して
    * いなければforSelfと同じで、役はどれも解決先を持たない。
    */
-  static forParticipant(self: WorldObject): ReferenceContext {
+  static forParticipant(self: WorldObject): ReferenceContext<WorldObject> {
     const relation = self.participation;
     return relation === undefined ? ReferenceContext.forSelf(self) : relation.contextFor(self);
   }
@@ -237,17 +240,17 @@ export class ReferenceContext {
    * **問いが「誰にとって」なので、agentは必ず居る**（13.2節）。誰かを立てずに条件そのものの有無を
    * 見たいなら、条件を持っているか（`RecipeDef.unlock`）を直接見る。
    */
-  static asking(agent: WorldObject): ReferenceContext {
+  static asking(agent: WorldObject): ReferenceContext<undefined> {
     return new ReferenceContext(agent.session, undefined, agent, undefined, undefined, undefined);
   }
 
   /** 3役が揃った文脈。組み立てられるのは関係を持っている側だけ（InteractionRelation.contextFor）。 */
   static withRoles(
-    self: WorldObject | undefined,
+    self: WorldObject,
     agent: WorldObject,
     instrument: WorldObject | undefined,
     patient: WorldObject,
-  ): ReferenceContext {
+  ): ReferenceContext<WorldObject> {
     return new ReferenceContext(patient.session, self, agent, instrument, patient, undefined);
   }
 
@@ -255,17 +258,17 @@ export class ReferenceContext {
    * selfだけを差し替えた文脈。**役の出どころは変えずに、起点だけを移す**場面で使う——passivesのゲートは
    * selfが辺の子側（slotBearer）で、役はその宣言の出どころが答える（11.5節。RegisteredPassiveEffect）。
    */
-  withSelf(self: WorldObject): ReferenceContext {
+  withSelf(self: WorldObject): ReferenceContext<WorldObject> {
     return new ReferenceContext(this.session, self, this.agent, this.instrument, this.patient, this.picked);
   }
 
   /** instrumentだけを差し替えた文脈。同じ操作を候補ごとに引き直す場面で使う（TransferEffect.acceptedCount）。 */
-  withInstrument(instrument: WorldObject | undefined): ReferenceContext {
+  withInstrument(instrument: WorldObject | undefined): ReferenceContext<S> {
     return new ReferenceContext(this.session, this.self, this.agent, instrument, this.patient, this.picked);
   }
 
   /** pickedだけを差し替えた文脈。amongが候補ごとに重みを引き、選んだ1つへ効果を当てるときに使う。 */
-  withPicked(picked: WorldObject | undefined): ReferenceContext {
+  withPicked(picked: WorldObject | undefined): ReferenceContext<S> {
     return new ReferenceContext(this.session, this.self, this.agent, this.instrument, this.patient, picked);
   }
 

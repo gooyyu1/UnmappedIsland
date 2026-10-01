@@ -1,4 +1,4 @@
-import type { StartedGame } from '../../domain/generation/NewGame';
+import type { PlayerCharacter } from '../../domain/wrappers/PlayerCharacter';
 import type { WorldObject } from '../../domain/WorldObject';
 import { autoFillMaterials } from '../../domain/autoFill';
 import {
@@ -8,6 +8,7 @@ import {
   heldPerRemainingRequirement,
   recipeOf,
   remainingRequirementsOf,
+  unmetCraftingRequirementOf,
 } from '../../domain/crafting';
 import type { Requirement } from '../../domain/Requirement';
 import type { Localization } from '../../locale/Localization';
@@ -60,10 +61,9 @@ export interface CraftingMaterial {
  */
 export function craftingActions(
   object: WorldObject,
-  game: StartedGame,
+  player: PlayerCharacter,
   locale: Localization,
 ): readonly CardAction[] {
-  const codex = object.session.codex;
   const recipe = recipeOf(object);
   if (recipe === undefined) return [];
 
@@ -71,7 +71,7 @@ export function craftingActions(
   const supplied = currentStepIsSupplied(object);
   // 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.3節）。素材より先に見るのは、
   // 満たしていなければ素材が揃っていても手が付けられないため。
-  const unmetCrafting = codex.unmetCraftingRequirement(game.player.instance);
+  const unmetCrafting = unmetCraftingRequirementOf(player.instance);
 
   return [
     {
@@ -85,8 +85,8 @@ export function craftingActions(
         // 探す順は手持ち → 足元。入れ物（かご）の中までは探さない——探すと、しまった物が勝手に
         // 出ていくことになり、しまうという操作の意味が無くなる。
         autoFillMaterials(object, [
-          game.player.instance.tryGetSlot(codex.vocabulary.world.handSlotId)?.contents ?? [],
-          game.player.location?.items ?? [],
+          player.instance.tryGetSlot(player.handSlotId)?.contents ?? [],
+          player.location?.items ?? [],
         ]);
       },
     },
@@ -96,11 +96,11 @@ export function craftingActions(
       description: locale.uiText('crafting_work_detail'),
       // **押す人の手際を積んだ後の分数**（RecipeDef.minutesFor）。工程が宣言した仕事の量をそのまま
       // 出すと、腕が上がった人へ実際より長い数字を見せることになる。
-      minutes: step === undefined ? 0 : recipe.minutesFor(step, game.player.instance),
+      minutes: step === undefined ? 0 : recipe.minutesFor(step, player.instance),
       enabled: supplied && unmetCrafting === undefined,
       reason: reasonNotToWork(unmetCrafting, supplied, locale),
       execute: () => {
-        tryAdvanceCrafting(object, game.player.instance);
+        tryAdvanceCrafting(object, player.instance);
       },
     },
     {

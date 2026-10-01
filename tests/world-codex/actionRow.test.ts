@@ -69,7 +69,7 @@ describe('操作の行に並ぶ数と名前', () => {
     if (inProgress === undefined) throw new Error('製作中オブジェクトの型が1つもありません。');
 
     const spawned = spawnInProgressObject(game.startLocation.instance, inProgress.globalId);
-    return craftingActions(spawned, game, locale);
+    return craftingActions(spawned, game.player, locale);
   }
 
   beforeAll(() => {

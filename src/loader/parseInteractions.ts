@@ -8,7 +8,7 @@ import { parseRequirementList } from './parseConditions';
 import { parseInteractionPassiveInto } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { PassiveEffect } from '../domain/PassiveEffect';
-import { PassiveEffects } from '../domain/PassiveEffects';
+import { InteractionPassiveEffects } from '../domain/PassiveEffects';
 import { InteractionDef } from '../domain/InteractionDef';
 import type { InteractionTrigger } from '../domain/InteractionTrigger';
 import { DragTrigger, MenuTrigger, TickTrigger } from '../domain/InteractionTrigger';
@@ -113,7 +113,7 @@ function parseInteraction(
     announcements,
     effect,
     duration,
-    new PassiveEffects(passiveDeclarations),
+    new InteractionPassiveEffects(passiveDeclarations),
   );
 
   if (drag !== undefined) {

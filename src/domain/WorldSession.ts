@@ -4,7 +4,7 @@ import type { Rng } from './Rng';
 import type { World } from './wrappers/World';
 import type { PropertyValue } from './PropertyValue';
 import type { InteractionGains, PropertyGain } from './PropertyGain';
-import type { PassiveEffects } from './PassiveEffects';
+import type { InteractionPassiveEffects } from './PassiveEffects';
 import type { InfluenceWriter } from './PropertyInfluence';
 import type { Slot } from './Slot';
 import type { WorldChange } from './WorldChange';
@@ -116,7 +116,7 @@ export class WorldSession {
   private readonly runningInteractionPassives: {
     owner: WorldObject;
     context: ReferenceContext;
-    passives: PassiveEffects;
+    passives: InteractionPassiveEffects;
   }[] = [];
 
   /** 今どのオブジェクトの効果を適用しているか（withSubject）。記録する変化の主体になる。 */
@@ -236,7 +236,7 @@ export class WorldSession {
 
   /**
    * 操作が宣言した持続効果（11.7節）が効いている間としてbodyを実行する。登録はその一式が持ち
-   * （PassiveEffects.setAllRegistered）、こちらは効いている間のぶんを積んで持つ。
+   * （InteractionPassiveEffects.setAllRegistered）、こちらは効いている間のぶんを積んで持つ。
    *
    * `context`はその操作の関係が用意した文脈（InteractionRelation.contextFor）。**役はここから解く**
    * ——理由はrunningInteractionPassives。
@@ -244,7 +244,7 @@ export class WorldSession {
   whileInteractionPassives<T>(
     owner: WorldObject,
     context: ReferenceContext,
-    passives: PassiveEffects,
+    passives: InteractionPassiveEffects,
     body: () => T,
   ): T {
     this.runningInteractionPassives.push({ owner, context, passives });

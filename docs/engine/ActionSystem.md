@@ -151,8 +151,8 @@ Intel Xeon @ 2.10GHz・Node v22 で計測）。
    持続効果（`passives`、[`GameElementDefinition.md`](./GameElementDefinition.md) 11.7 節）を登録する。
 6. 関与オブジェクトの生存確認（6節）: 経過中に失われていたら、その行動は成立しなかったものとして
    `false` を返し、効果を適用せずに終える。
-7. 効果の適用: `self.applyActiveEffect(effect, context)`（4節）。役は `ReferenceContext` が1つに
-   まとめて持つ。
+7. 効果の適用: `WorldObject.applyActiveEffect(effect, context)`（4節）。self も役も
+   `ReferenceContext` が1つにまとめて持つ。
 8. 待たされていた手番（`trigger: tick` で `duration` を持つもの、
    [`GameElementDefinition.md`](./GameElementDefinition.md) 11.5 節）を起こす。**ここが操作の切れ目**で、
    5 の経過中に配られた手番はその場では起きずにここまで待つ（`WorldSession.runToSeam`）。

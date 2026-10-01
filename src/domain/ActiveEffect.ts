@@ -25,7 +25,10 @@ import type { ObjectGlobalId } from './GlobalId';
  * 配置時に見て置き換え位置を決める（他の効果は無視してよく、destroyが何かを書き込む必要もない）。
  */
 export abstract class ActiveEffect {
-  abstract apply(context: ReferenceContext, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void;
+  abstract apply(
+    context: ReferenceContext<WorldObject>,
+    sameSlotSpawnSite: SameSlotSpawnSite | undefined,
+  ): void;
 
   /**
    * この効果が何を宣言しているかを読み上げる（EffectReader参照）。**抽象なのは取りこぼしを防ぐため**
@@ -104,10 +107,10 @@ export class ActiveEffectSequence extends ActiveEffect {
   /**
    * **途中で`become`が走っても打ち切らない**（9.9.1節）。後ろの命令は変化後の型の物へ当たる
    * ——ここに在るのは著者が書いた1続きの手順で、並べた命令がすべて起こることはこの場所の約束
-   * （blocksOperationも同じ前提で畳んでいる）。tick毎の輸送（PassiveEffects.applyTickTransfers）が
+   * （blocksOperationも同じ前提で畳んでいる）。tick毎の輸送（ObjectPassiveEffects.applyTickTransfers）が
    * 逆なのは、あちらがエンジンの回す一式で、変化後の型が同じ一式を宣言し直しているから。
    */
-  apply(context: ReferenceContext, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
+  apply(context: ReferenceContext<WorldObject>, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
     for (const operation of this.effectsInDeclarationOrder) operation.apply(context, sameSlotSpawnSite);
   }
 
@@ -169,7 +172,7 @@ export class ConditionalEffect extends ActiveEffect {
     this.otherwise = otherwise;
   }
 
-  apply(context: ReferenceContext, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
+  apply(context: ReferenceContext<WorldObject>, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
     const chosen = this.condition.evaluate(context) ? this.whenMet : this.otherwise;
     chosen?.apply(context, sameSlotSpawnSite);
   }
@@ -229,7 +232,7 @@ export class SetEffect extends ActiveEffect {
   }
 
   /** 参照が今どこも指していなければ何も書かない（解決できない適用は無視、9.1節）。 */
-  apply(context: ReferenceContext): void {
+  apply(context: ReferenceContext<WorldObject>): void {
     const value = typeof this.value === 'number' ? this.value : this.value.resolve(context)?.instanceId;
     if (value === undefined) return;
     this.target.propertyValue(context)?.setNumber(value);
@@ -256,7 +259,7 @@ export class AddEffect extends ActiveEffect {
     this.amount = amount;
   }
 
-  apply(context: ReferenceContext): void {
+  apply(context: ReferenceContext<WorldObject>): void {
     this.applyScaled(context, 1, 1);
   }
 
@@ -303,7 +306,7 @@ export class DestroyEffect extends ActiveEffect {
     this.reason = reason;
   }
 
-  apply(context: ReferenceContext): void {
+  apply(context: ReferenceContext<WorldObject>): void {
     this.target.resolve(context)?.destroy(this.reason);
   }
 
@@ -366,9 +369,9 @@ export class SpawnEffect extends ActiveEffect {
     this.count = count;
   }
 
-  apply(context: ReferenceContext, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
+  apply(context: ReferenceContext<WorldObject>, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
     for (let i = 0; i < this.count; i++)
-      context.self?.executeSpawn(this.objectGlobalId, this.into, context, sameSlotSpawnSite);
+      context.self.executeSpawn(this.objectGlobalId, this.into, context, sameSlotSpawnSite);
   }
 
   readBy(reader: EffectReader): void {
@@ -423,7 +426,7 @@ export class TransferEffect extends ActiveEffect {
    * **受け取る側は、出した後に辿り直す。** 出す側の`on_min`からbecome（9.9.1節）が走ると受け取る側の
    * プロパティは作り直されるので、先に掴んだ個体へ入れると、出した分が現物のどこにも残らない。
    */
-  apply(context: ReferenceContext): void {
+  apply(context: ReferenceContext<WorldObject>): void {
     const fromValue: PropertyValue | undefined = this.from.propertyValue(context);
     const toValue: PropertyValue | undefined = this.to.propertyValue(context);
     if (fromValue === undefined || toValue === undefined) return;

@@ -57,7 +57,7 @@ export function parsePassiveInto(
  * 対象に書けるのはその操作の関係が持つ役（11.5節「役を書ける場所」）。
  *
  * **tick毎の輸送（8.4.1節）は書けない。** 輸送は寄与として登録できず、宣言した物のtickで走るので
- * （PassiveEffects.applyTickTransfers）、物ではない操作には走らせる時点が無い。
+ * （ObjectPassiveEffects.applyTickTransfers）、物ではない操作には走らせる時点が無い。
  */
 export function parseInteractionPassiveInto(
   loader: WorldCodexYamlLoader,
