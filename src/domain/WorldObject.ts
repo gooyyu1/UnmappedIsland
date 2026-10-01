@@ -110,7 +110,7 @@ export class WorldObject {
     return { name: this.def.name, instanceId: this.instanceId };
   }
 
-  /** 中身から受ける寄与（containerContributionTo）が使う、規約で決まったプロパティのID。 */
+  /** 自分の詰まり具合（fullestSlotFillRatio）が使う、規約で決まったプロパティのID。 */
   private get engine(): EngineVocabulary {
     return this.session.codex.vocabulary.engine;
   }

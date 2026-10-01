@@ -8,8 +8,7 @@ import type { SlotGlobalId } from '../GlobalId';
  * 土地（locations.yamlのexplorable trait実装オブジェクト）の包み（ObjectWrapper）。
  *
  * 探索の入口はexploreに一本化: exploreアクションの実行に加え、設置物の公開（revealDueFixtures）まで
- * 自分で行い、呼び出し側に後続手順を持たせない。動物の手番（runAnimalTurns）も同じ形で、
- * 呼び出し側は「この土地に居る動物へ1手ずつ与えてほしい」と頼むだけになる。
+ * 自分で行い、呼び出し側に後続手順を持たせない。
  */
 export class Location extends ObjectWrapper {
   get itemsSlotId(): SlotGlobalId {

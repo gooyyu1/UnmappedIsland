@@ -347,7 +347,7 @@ export class ObjectWindow {
                   metrics,
                   area,
                   () => this.exploration ?? exploration,
-                  // 並ぶ札は差し替えが持ってくる（laneViews）。ここで置くのは休みの姿＝空の4枠だけ。
+                  // 並ぶ札は差し替えが持ってくる（PlayScene.shownLanes）。ここで置くのは休みの姿＝空の4枠だけ。
                   foundCells([]),
                 ),
             },
