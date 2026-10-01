@@ -38,7 +38,7 @@ traits:
       fixtures:
         cell: {accept: {tag: fixture}}
       characters:
-        cell_count: 1
+        cell_count: 1  # <!-- codex: core.yaml traits.location.slots.characters.cell_count -->
         cell: {accept: {tag: character}}
 ```
 
@@ -98,14 +98,17 @@ object_defs:
     traits: [location, explorable]
     props:
       exploration_progress:
-        value: 0
+        value: 0  # <!-- codex: locations.yaml object_defs.grassland.props.exploration_progress.value -->
         # 探索率100%に達するまでの探索回数
-        range: {min: 0, max: 12}  # <!-- codex: locations.yaml object_defs.grassland.props.exploration_progress.range.max -->
+        range:
+          min: 0  # <!-- codex: locations.yaml object_defs.grassland.props.exploration_progress.range.min -->
+          max: 12  # <!-- codex: locations.yaml object_defs.grassland.props.exploration_progress.range.max -->
     interactions:
       explore:
         trigger: menu
-        duration: 15
-        add: {self: {exploration_progress: 1}}   # 何が見つかっても進捗は1つ進む
+        duration: 15  # <!-- codex: locations.yaml object_defs.grassland.interactions.explore.duration -->
+        # 何が見つかっても進捗は1つ進む
+        add: {self: {exploration_progress: 1}}  # <!-- codex: locations.yaml object_defs.grassland.interactions.explore.add.self.exploration_progress -->
         pick:
           - weight: {prop: berry_find}
             spawn: {object: berry_bush, into: self}
@@ -113,7 +116,7 @@ object_defs:
             spawn: {object: spring, into: self}
           # ...
           - weight: 18  # <!-- codex: locations.yaml object_defs.grassland.interactions.explore.pick.4.weight -->
-            spawn: {object: water_spinach, count: 2, into: self}
+            spawn: {object: water_spinach, into: self, count: 2}  # <!-- codex: locations.yaml object_defs.grassland.interactions.explore.pick.4.spawn.count -->
           # ...
 ```
 
@@ -183,15 +186,19 @@ object_defs:
     tags: [path]
     props:
       travel_minutes:
-        value: 60          # 生成時にインスタンスごと上書きされる
+        # 生成時にインスタンスごと上書きされる
+        value: 60  # <!-- codex: locations.yaml object_defs.path.props.travel_minutes.value -->
         # 道の長さに、今歩いている人の遅れを継ぐ（world/Characters.md 荷重の効き方節）
         base: {subject: agent, prop: travel_delay}
       required_progress:
-        value: 1           # 同上
+        # 同上
+        value: 1  # <!-- codex: locations.yaml object_defs.path.props.required_progress.value -->
       destination_id:
-        value: 0           # 同上（移動先LocationのインスタンスID）
+        # 同上（移動先LocationのインスタンスID）
+        value: 0  # <!-- codex: locations.yaml object_defs.path.props.destination_id.value -->
       return_path_id:
-        value: 0           # 同上（移動先にある、こちらへ戻る道のインスタンスID）
+        # 同上（移動先にある、こちらへ戻る道のインスタンスID）
+        value: 0  # <!-- codex: locations.yaml object_defs.path.props.return_path_id.value -->
     interactions:
       travel:
         trigger: menu

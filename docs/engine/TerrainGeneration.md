@@ -81,12 +81,18 @@ Axis は汎用プリミティブの重み合成（`generator.blend`）で値を�
 ```yaml
 axes:
   elevation:
-    range: {min: 0, max: 100}
+    range:
+      min: 0  # <!-- codex: terrain_generation.yaml axes.elevation.range.min -->
+      max: 100  # <!-- codex: terrain_generation.yaml axes.elevation.range.max -->
     stretch_sites_to_range: true
     generator:
       blend:
-        - {type: distance_field, reference: edge, weight: 90}
-        - {type: layered_noise, octaves: 3, frequency: 2, seed_offset: 11, weight: 10}
+        - {type: distance_field, reference: edge, weight: 90}  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.0.weight -->
+        - type: layered_noise
+          octaves: 3  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.1.octaves -->
+          frequency: 2  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.1.frequency -->
+          seed_offset: 11  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.1.seed_offset -->
+          weight: 10  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.1.weight -->
 ```
 
 **`stretch_sites_to_range`**: 1 回の生成で出たサンプルの最小・最大が `range` の両端へ来るよう、
@@ -113,14 +119,22 @@ location_types:
     object_def: jungle                 # 実体化に使う型（locations.yamlのobject_defsのid）。土地も他の
                                        # あらゆる要素と同じobject_defsで表現される
     applicable_scopes: [island]
-    move_cost: 1.6                     # 移動コストの倍率（1 = 等倍。3.5節のtravel_minutesに使う）
+    # 移動コストの倍率（1 = 等倍。3.5節のtravel_minutesに使う）
+    move_cost: 1.6  # <!-- codex: terrain_generation.yaml location_types.jungle.move_cost -->
     axis_preferences:
-      humidity:   {ideal: 90, tolerance: 20, weight: 120}
-      elevation:  {ideal: 30, tolerance: 30, weight: 60}
+      humidity:
+        ideal: 90  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.humidity.ideal -->
+        tolerance: 20  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.humidity.tolerance -->
+        weight: 120  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.humidity.weight -->
+      elevation:
+        ideal: 30  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.elevation.ideal -->
+        tolerance: 30  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.elevation.tolerance -->
+        weight: 60  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.elevation.weight -->
       # 言及しない軸は自動的に「無関心」（マッチング距離の計算に一切寄与しない）
     hard_limits:
-      coastal_distance: {min: 16}      # 絶対的な除外条件。海岸帯には出ない
-      humidity: {min: 65}
+      # 絶対的な除外条件。海岸帯には出ない
+      coastal_distance: {min: 16}  # <!-- codex: terrain_generation.yaml location_types.jungle.hard_limits.coastal_distance.min -->
+      humidity: {min: 65}  # <!-- codex: terrain_generation.yaml location_types.jungle.hard_limits.humidity.min -->
 ```
 
 マッチングは、**言及した軸だけを対象に正規化した重み付きユークリッド距離**による最近傍探索です。
@@ -183,7 +197,7 @@ D(type, site) = sqrt( Σ_i w_i * ((v_i - ideal_i) / tolerance_i)^2  /  Σ_i w_i 
 generation_scopes:
   island:
     guarantees:
-      - {location_type: mountain_peak, count: 1, axis: elevation, pick: max}
+      - {location_type: mountain_peak, axis: elevation, pick: max, count: 1}  # <!-- codex: terrain_generation.yaml generation_scopes.island.guarantees.0.count -->
 ```
 
 `axis` が `pick`（`max`/`min`）側の値を持つ `Site` から `count` 個を選び、`location_type` を強制的に割り当てます
@@ -208,7 +222,7 @@ generation_scopes:
 
 - **島の直径は 6.7 km**（面積およそ 35 km²）。山がひとつある島として自然な大きさで、ロビンソン・
   クルーソー島（約 48 km²）よりやや小さい大きさです。
-- **島の最高点は海抜 400 m。** 同じ縮尺で自然な高さです（青ヶ島は 8.7 km² で 423 m、ボラボラ島は
+- **島の最高点は海抜 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters -->。** 同じ縮尺で自然な高さです（青ヶ島は 8.7 km² で 423 m、ボラボラ島は
   30 km² で 727 m）。
 - **道の無い熱帯の地面を歩く速さは 4 km/h。**
 
@@ -287,13 +301,13 @@ generation_scopes:
   **最低 1 tick**——どんなに近い土地の間でも 1 刻みはかかります。）
 
   - `move_cost` は**その土地を進む遅さの倍率**です（1.0 が開けた土地＝ `walk_meters_per_hour`
-    そのままの速さ、密林 1.6、山頂 2.5）。
-  - `metersPerElevationUnit` は `elevation_top_meters ÷ 標高軸の値域` で、島では 400 m ÷ 100 = 4 m です。
+    そのままの速さ、密林 1.6<!-- codex: terrain_generation.yaml location_types.jungle.move_cost -->、山頂 2.5<!-- codex: terrain_generation.yaml location_types.mountain_peak.move_cost -->）。
+  - `metersPerElevationUnit` は `elevation_top_meters ÷ 標高軸の値域` で、島では 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters --> ÷ 100 = 4 m です。
     どの軸を標高として読むかは `elevation_axis` が指します（エンジンは軸の名前を知りません）。
     **軸の両端が実際に出る**（3.1 節の `stretch_sites_to_range`）ので、島の最低点は必ず海抜 0 m、
-    最高点は必ず 400 m になります。
+    最高点は必ず 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters --> になります。
   - 登り下りは**対称**です。道は両端に2つあるので向きは表せますが、行きと帰りで時間が変わると往復の
-    勘定が全部2倍に複雑になります。`climb_meters_per_hour` は 600 m/h（ネイスミスの法則）で、
+    勘定が全部2倍に複雑になります。`climb_meters_per_hour` は 600 m/h<!-- codex: terrain_generation.yaml generation_scopes.island.climb_meters_per_hour -->（ネイスミスの法則）で、
     海岸の土地から山頂まで最短経路で登ると、水平距離とは別に登るぶんの時間がかかります。
   - 道1本あたりの距離・登り・所要時間の実測の分布は
     [`stats/terrain.yaml`](../../stats/terrain.yaml) の `edge`。
@@ -309,7 +323,7 @@ generation_scopes:
 
 上の `extra_edge_detour_factor` をどの値にするかを決めたもので、覆すのに人間の判断は要りません。
 
-**2 とします。決めているのは下の線で、上の線は今のところ遠くにあります**（どちらも500シードの実測）。
+**2<!-- codex: terrain_generation.yaml generation_scopes.island.extra_edge_detour_factor --> とします。決めているのは下の線で、上の線は今のところ遠くにあります**（どちらも500シードの実測）。
 
 - **下から**: 1.5 では行き止まりを持つ島が半分を切り、1.2 ではほぼ消えます。行き止まりが無い島は
   どこへでも回り道があるので、**島ごとの形の差が移動の勘定に現れません**（[`DesignPrinciples.md`](../concept/DesignPrinciples.md)
@@ -381,7 +395,8 @@ generation_scopes:
 sandy_beach:
   object_def: sandy_beach
   variants:
-    - {id: palm, props: {palm_find: 26}}   # 素の重みは13
+    # 素の重みは13<!-- codex: locations.yaml object_defs.sandy_beach.props.palm_find.value -->
+    - {id: palm, props: {palm_find: 26}}  # <!-- codex: terrain_generation.yaml location_types.sandy_beach.variants.0.props.palm_find -->
     - {id: white_sand}                     # 素の亜種（名前だけが変わる）
 ```
 
@@ -433,7 +448,7 @@ sandy_beach:
 - **`blob_scatter`・`modifiers` プリミティブ**: 局所的に濃い領域（汚染地帯等）を作る散布や、軸同士の合成演算
   は、必要になった時点で `Domain.Generation.AxisSampler`/`GeneratorLayerType` へ追加する。
 - **Axis の計算コスト**: 軸の数・`Site` 数が増えた際のサンプリングコスト、キャッシュ戦略（現状は
-  `Site` 数が高々20のため未検討）。
+  `Site` 数が高々20<!-- codex: terrain_generation.yaml generation_scopes.island.site_count.max -->のため未検討）。
 - **`generation_scopes.island` 以外の生成スコープのパラメータ**: `island` の値は測って決まりました
   （`extra_edge_detour_factor` は 3.5.2 節）が、`structure_interior`（3.7 節）のような他のスコープの
   値は、そのスコープが動くまで決まりません。

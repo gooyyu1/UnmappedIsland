@@ -87,7 +87,7 @@ object_defs:
       spread:
         steps:
           - requires:
-              - {object: woven_leaf, count: 3, consume: true}
+              - {object: woven_leaf, consume: true, count: 3}  # <!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.requires.0.count -->
             duration: 15  # <!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.duration -->
 
   # 寝台の骨組み。杭4本を打ち、縦材を渡し、簀の子を縛る。軽いがかさばる。
@@ -103,13 +103,13 @@ object_defs:
         # 長さは工程の数で表す。材料はその工程で実際に使うものへ割り当てる。
         steps:
           - requires:
-              - {object: thick_branch, count: 4, consume: true}
+              - {object: thick_branch, consume: true, count: 4}  # <!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.0.requires.0.count -->
             duration: 60  # <!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.0.duration -->
           - requires:
-              - {object: thick_branch, count: 2, consume: true}
+              - {object: thick_branch, consume: true, count: 2}  # <!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.1.requires.0.count -->
             duration: 60  # <!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.1.duration -->
           - requires:
-              - {object: cord, count: 3, consume: true}
+              - {object: cord, consume: true, count: 3}  # <!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.2.requires.0.count -->
             duration: 60  # <!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.2.duration -->
 
   # 詰め物。なめし革を裁って袋に縫い、中身を詰めて口を閉じる。植物繊維の側も同じ形で、
@@ -123,16 +123,16 @@ object_defs:
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         steps:
           - requires:
-              - {object: tanned_leather, count: 2, consume: true}
+              - {object: tanned_leather, consume: true, count: 2}  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.0.requires.0.count -->
             duration: 60  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.0.duration -->
           - requires:
-              - {object: yarn, count: 2, consume: true}
-              - {tag: sewing_tool, count: 1, consume: false}
+              - {object: yarn, consume: true, count: 2}  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.1.requires.0.count -->
+              - {tag: sewing_tool, consume: false, count: 1}  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.1.requires.1.count -->
             duration: 60  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.1.duration -->
           - requires:
-              - {object: feather, count: 30, consume: true}
-              - {object: yarn, count: 1, consume: true}
-              - {tag: sewing_tool, count: 1, consume: false}
+              - {object: feather, consume: true, count: 30}  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.2.requires.0.count -->
+              - {object: yarn, consume: true, count: 1}  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.2.requires.1.count -->
+              - {tag: sewing_tool, consume: false, count: 1}  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.2.requires.2.count -->
             duration: 60  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.2.duration -->
 ```
 
@@ -185,7 +185,10 @@ object_defs:
         duration: 360  # <!-- codex: bedding.yaml object_defs.bed.interactions.sleep.duration -->
         passives:
           # 敷物だけの段
-          - add: {agent: {stamina: 2, wakefulness: 4}}  # <!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.add.agent.wakefulness -->
+          - add:
+              agent:
+                stamina: 2  # <!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.add.agent.stamina -->
+                wakefulness: 4  # <!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.add.agent.wakefulness -->
           # 骨組みが入っている間の上積み
           - conditions:
               - {slot: structure, matches: {tag: bed_frame}}

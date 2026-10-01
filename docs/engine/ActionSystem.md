@@ -348,7 +348,7 @@ tick が回るのは**絶対時刻が15分の倍数になる瞬間**なので、
   当てる**——足りなければ**何も要求しない工程**でよい（[`GameElementDefinition.md`](./GameElementDefinition.md)
   13.1 節）。要求を無理に散らすと、その工程で実際に使う物とずれる。
 - **1時間をわずかに超えるだけの手は、割らずに縮めてよい。** 割った先が「同じ手をもう一度」に
-  なるだけなら、切れ目を増やしてもプレイヤーに選べるものが増えない——ヤシの葉を編むのは60分へ
+  なるだけなら、切れ目を増やしてもプレイヤーに選べるものが増えない——ヤシの葉を編むのは60分<!-- codex: weaving.yaml object_defs.palm_frond.props.weave_minutes.value --><!-- codex: weaving.yaml object_defs.palm_frond.props.split_and_weave_minutes.value -->へ
   詰めてある（`weaving.yaml`）。**割るのは、分けた回ごとに違うものが返るか、対象の状態が進むとき。**
 - **レシピの工程を割ると、腕が縮める分（`deftness`、13.5節）も工程の数だけ積まれる。** 同じ仕事を
   同じ合計時間で持っても、腕の届いた作り手にとっては速くなる。**縮む幅を変えたくないなら、

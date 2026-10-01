@@ -51,7 +51,7 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
   形にしないのは、悪化・再受傷を後から足すときに「残っている傷」の方が素直に増減できるためです。
 - **減り方が自然治癒の速さ**で、これを基準レートに置きます（`-1/tick`）。`max` はそのまま「その速さで
   何 tick かかるか」を表します（[`GameElementDefinition.md`](./GameElementDefinition.md) 6.0節の
-  時間を数えるクラス。捻挫は 960 tick（10日））。
+  時間を数えるクラス。捻挫は 960 tick<!-- codex: injuries.yaml object_defs.sprained_ankle.props.severity.range.max -->（10日））。
 - **`stages` は傷の重さの段に名前を与えます**（`mending`・`sore`・`acute`）。怪我ごとに絶対値で刻むので、
   軽い怪我は負った直後でも危険域に入りません。危険域は骨折のような重い怪我のために空けておきます。
   **カードのバーの色は `stages` ではなく `gauge` の宣言から決まります**
@@ -81,7 +81,7 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
 1つだけ当てておけます。付け外しは怪我のカードを押して開く子ウィンドウで行います
 （[`Windows.md`](../ui/Windows.md) 1 節）。怪我のカードへ治療具を重ねても当てられます。
 
-**当てるのに30分かかり、外すのは一瞬**（`treatment` スロットの `put_in`、
+**当てるのに30分<!-- codex: injuries.yaml traits.treatable.slots.treatment.put_in.duration -->かかり、外すのは一瞬**（`treatment` スロットの `put_in`、
 [`GameElementDefinition.md`](./GameElementDefinition.md) 7.10節）。**値段は枠が持つので、どちらの
 経路で当てても同じだけかかります。** 当てる操作をドラッグ型として書くと、スロットへ直接落とす経路
 だけが無料になり、同じことが経路で違う値段になります。
@@ -114,7 +114,7 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
 | --- | --- | --- |
 | 包帯（`bandage`、実装済み） | 清潔を保ちやすく長く当てておける。捻挫・骨折にも多少効く | 出血を**止められない**（早く固まるだけ） |
 | 止血帯（未実装） | 出血を止める力が強い | 長く当てておけない（副作用・感染） |
-| 添え木（`splint`、実装済み） | 治りを早め（`severity` へ -0.6/tick）、骨折が押し上げる `load` を半分に緩める | 出血にも痛みにも効かない |
+| 添え木（`splint`、実装済み） | 治りを早め（`severity` へ -0.6/tick<!-- codex: treatments.yaml object_defs.splint.passives.0.add.parent.severity -->）、骨折が押し上げる `load` を半分に緩める | 出血にも痛みにも効かない |
 
 **出血への効き方は分かれ、どちらも治療具の側には結果を書きません。** 止血帯は `hemostatic` タグを
 持つことで傷のゲートを閉じ（**止める**）、包帯は傷の `bleeding` を余計に引くことで固まる速さを倍にします
@@ -122,7 +122,7 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
 効き目の強弱ではなく**仕組みの違い**として出ています（[`VitalsSystem.md`](./VitalsSystem.md) 4 節）。
 
 **添え木の「行動の制限を緩める」も同じ形です。** 添え木は `immobilizing` タグを名乗るだけで、緩んだ
-後の `load`（18,000 → 9,000）は押し上げている骨折が書きます（3 節・5 節）。**治りの速さは治療具が
+後の `load`（18,000<!-- codex: injuries.yaml object_defs.fracture.passives.1.modify.parent.load --> → 9,000<!-- codex: injuries.yaml object_defs.fracture.passives.2.modify.parent.load -->）は押し上げている骨折が書きます（3 節・5 節）。**治りの速さは治療具が
 持ちます**——押し上げと違って、どの傷へ当てても同じだけ効くからです。
 
 ## 4. 何をカードにし、何をプロパティにするか
@@ -220,10 +220,10 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
 - **`load` の押し上げ幅**は、**空身なら歩けるが、普段どおりの荷では `too_heavy` に届く**位置に
   置きます。
 - **痛みの重さ**は `pain` で取り、1 枚で危険域へ届く量を置きます。
-- **治りの長さ**は `severity` の `max` が 1,344 tick（14 日）で、基準レートの `-1/tick` で引きます。
-  次に長い捻挫が 960 tick（10 日）なので、**4 分の 1 へ縮めても順序は崩れていません**。もとにした
+- **治りの長さ**は `severity` の `max` が 1,344 tick<!-- codex: injuries.yaml object_defs.fracture.props.severity.range.max -->（14 日）で、基準レートの `-1/tick`<!-- codex: injuries.yaml object_defs.fracture.props.severity.passives.0.add.self.severity --> で引きます。
+  次に長い捻挫が 960 tick<!-- codex: injuries.yaml object_defs.sprained_ankle.props.severity.range.max -->（10 日）なので、**4 分の 1 へ縮めても順序は崩れていません**。もとにした
   のは**現実の 6〜12 週**で（[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）、
-  **縮めるのは治りのような長いものだけです**——手当てにかかる 30 分（3 節）や、宿主の乾き・飢え・
+  **縮めるのは治りのような長いものだけです**——手当てにかかる 30 分<!-- codex: injuries.yaml traits.treatable.slots.treatment.put_in.duration -->（3 節）や、宿主の乾き・飢え・
   疲れは現実のまま置きます。**1 日の中で回る量まで 4 倍にすると、1 日に 4 回飢える体**になります。
 
 ## 6. 傷を洗う
@@ -248,7 +248,7 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
 
 ### 6.2 手間の重さは、時間ではなく水が持つ
 
-**水を 1 杯（250mL）掛けて 15 分、`infection` が 25 下がります。**
+**水を 1 杯（250mL<!-- codex: injuries.yaml traits.open_wound.interactions.wash.conditions.0.gte -->）掛けて 15 分<!-- codex: injuries.yaml traits.open_wound.interactions.wash.duration -->、`infection` が 25 下がります。**
 
 - **洗えるのは真水と、沸かした湯**（`liquid_containers.yaml` の `water_liquid`・`hot_water_liquid`）で、
   **効き目は同じ**です。落とすのは傷口に入った汚れなので、沸かしてあるかどうかは効き目を変えません
@@ -256,28 +256,28 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
 - **海水では洗えません。** 器へ汲む口が無い（`salt.yaml` の `draw_seawater` は塩田が海から直に張る
   操作で、器を通りません）だけでなく、**汲めるようにしても洗える液体は真水と湯のまま**にします
   ——海に囲まれた島で無尽蔵の水源を認めると、下の代償がまるごと消えます。
-- **代償は水そのものです。** 250mL は飲用 1 回ぶん（`liquid_containers.yaml` の `drink`）＝水分
-  10 tick ぶんなので、洗うとはその 1 杯を飲まずに捨てることです。**時間の側は軽く置きます**
-  （治療具を当てる 30 分の半分。3 節）——重さを時間に持たせると、水の乏しさと関わりなく手間だけが
+- **代償は水そのものです。** 250mL<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount --> は飲用 1 回ぶん（`liquid_containers.yaml` の `drink`）＝水分
+  10 tick<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.to_amount --> ぶんなので、洗うとはその 1 杯を飲まずに捨てることです。**時間の側は軽く置きます**
+  （治療具を当てる 30 分<!-- codex: injuries.yaml traits.treatable.slots.treatment.put_in.duration -->の半分。3 節）——重さを時間に持たせると、水の乏しさと関わりなく手間だけが
   増えます。
-- `infection` は 0〜100 で、段は `clean`・`festering`（40 から）・`septic`（80 から）。1 杯で 25 なので、
+- `infection` は 0<!-- codex: injuries.yaml traits.open_wound.props.infection.range.min -->〜100<!-- codex: injuries.yaml traits.open_wound.props.infection.range.max --> で、段は `clean`・`festering`（40<!-- codex: injuries.yaml traits.open_wound.props.infection.stages.1.min --> から）・`septic`（80<!-- codex: injuries.yaml traits.open_wound.props.infection.stages.2.min --> から）。1 杯で 25 なので、
   **最も膿んだ状態からでも 4 杯（1L・1 時間）で落とし切れます**。
 
 **長さは、敗血症が命を削る速さから取りました。** 腐り切った傷が押し上げた菌は 6 時間で危険域へ届き、
-そこからは血が -40/tick で減ります（[`DigestionSystem.md`](./DigestionSystem.md) 6 節。5,000mL を
+そこからは血が -40/tick<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.3.passives.0.add.self.blood --> で減ります（[`DigestionSystem.md`](./DigestionSystem.md) 6 節。5,000mL<!-- codex: characters/player_character.yaml traits.player_character.props.blood.range.max --> を
 助からない域まで 18.75 時間）。**そこから安全域へ戻すのに要るのは 2 杯・30 分**なので、気づいてから原因を
 断つ時間はあります。間に合わない長さにすると、[`VitalsSystem.md`](./VitalsSystem.md) 8.1 節の「傷を洗う
 なり膿を出すなりして原因を断たなければ死ぬ」の後半が言葉だけになります。一方で発症している間は水も
 余計に減る（同 8.1 節）ので、**断つために飲み水を捨てる**という締め付けは残ります。
 
-**治療具を当てたままでも洗えます。** 外させると 1 回ごとに付け直しの 30 分（3 節）が乗り、手間の
+**治療具を当てたままでも洗えます。** 外させると 1 回ごとに付け直しの 30 分<!-- codex: injuries.yaml traits.treatable.slots.treatment.put_in.duration -->（3 節）が乗り、手間の
 本体が水から時間へすり替わります。
 
-**汚すのは、開いたままの時間です。** 負った瞬間は清潔（`value: 0`）で、傷が在るあいだ上がり続けます。
+**汚すのは、開いたままの時間です。** 負った瞬間は清潔（`value: 0`<!-- codex: injuries.yaml traits.open_wound.props.infection.value -->）で、傷が在るあいだ上がり続けます。
 健康な体では 1 時間に 1（`0.25/tick`）で、放っておけば 1.7 日で `festering`、3.3 日で `septic` へ届き、
-**最も短く残る傷（噛み傷、360 tick）でも治りきる前に敗血症へ入ります**——どの開いた傷も、洗わずに
+**最も短く残る傷（噛み傷、360 tick<!-- codex: injuries.yaml object_defs.bite_wound.props.severity.range.max -->）でも治りきる前に敗血症へ入ります**——どの開いた傷も、洗わずに
 済ませられません。1 杯が落とす 25 はちょうど 1 日ぶんなので、**開いた傷 1 つにつき 1 日 1 杯**が清潔を
-保つ値段です（洗っている 15 分ぶんも進むので、上の 4 杯で残るのは 1 に満たない量です）。
+保つ値段です（洗っている 15 分<!-- codex: injuries.yaml traits.open_wound.interactions.wash.duration -->ぶんも進むので、上の 4 杯で残るのは 1 に満たない量です）。
 **この速さと、治療具が上がり方へ効く形（3.1 節）は未決**で、ここに置いてあるのは仮決めです
 （末尾の未決事項）。
 
@@ -285,7 +285,7 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
 ことだけ」が崩れ、水の乏しさが効かなくなります。局所の免疫応答としても、傷口に入った汚れが免疫で
 消えるわけではありません。鈍るのは**全身で菌の増殖を抑え込めている段から上**
 （[`DigestionSystem.md`](./DigestionSystem.md) 6.2 節の除去 > 増殖）で、段が 1 つ上がるごとに `0.05` です。
-素の速さは `0.30/tick`、健康な体（`robust`）がちょうど上の「1 時間に 1」で、罹って高まった体はその 8 割。
+素の速さは `0.30/tick`<!-- codex: injuries.yaml traits.open_wound.props.infection.passives.0.add.self.infection -->、健康な体（`robust`）がちょうど上の「1 時間に 1」で、罹って高まった体はその 8 割。
 
 **弱った体では傷も速く膿む**、が段の並びからそのまま出ます。`vitamin` の `scurvy` が「古傷が開く」と
 書いている（[`DigestionSystem.md`](./DigestionSystem.md) 4 節）のと同じ現象を、傷の側から見たものです。
@@ -297,30 +297,32 @@ open_wound:
     # 膿み具合。局所の値で、全身へ回った菌は宿主のpathogenが持つ（6.3節）。
     infection:
       gauge: {min: good, max: bad}
-      value: 0
-      range: {min: 0, max: 100}
+      value: 0  # <!-- codex: injuries.yaml traits.open_wound.props.infection.value -->
+      range:
+        min: 0  # <!-- codex: injuries.yaml traits.open_wound.props.infection.range.min -->
+        max: 100  # <!-- codex: injuries.yaml traits.open_wound.props.infection.range.max -->
       stages:
         - {name: clean}
-        - {name: festering, min: 40, alert: caution}
-        - {name: septic, min: 80, alert: danger}
+        - {name: festering, alert: caution, min: 40}  # <!-- codex: injuries.yaml traits.open_wound.props.infection.stages.1.min -->
+        - {name: septic, alert: danger, min: 80}  # <!-- codex: injuries.yaml traits.open_wound.props.infection.stages.2.min -->
       passives:
         # 素の速さは、免疫が増殖に負けている体のもの。免疫は引かせず、鈍らせるだけ。
-        - add: {self: {infection: 0.30}}
+        - add: {self: {infection: 0.30}}  # <!-- codex: injuries.yaml traits.open_wound.props.infection.passives.0.add.self.infection -->
         - conditions: [{subject: parent, prop: immunity, in_stage_or_above: robust}]
-          add: {self: {infection: -0.05}}
+          add: {self: {infection: -0.05}}  # <!-- codex: injuries.yaml traits.open_wound.props.infection.passives.1.add.self.infection -->
         - conditions: [{subject: parent, prop: immunity, in_stage_or_above: primed}]
-          add: {self: {infection: -0.05}}
+          add: {self: {infection: -0.05}}  # <!-- codex: injuries.yaml traits.open_wound.props.infection.passives.2.add.self.infection -->
   interactions:
     # 宣言は傷の側（GameElementDefinition.md 12.3節）。水は自分が何を洗えるかを知らない。
     wash:
       trigger: {drag: {tag: cleansing}}
-      duration: 15
+      duration: 15  # <!-- codex: injuries.yaml traits.open_wound.interactions.wash.duration -->
       conditions:
-        - {reason: not_enough_water, subject: instrument, prop: fill, gte: 250}
-        - {reason: already_clean, subject: self, prop: infection, gte: 1}
+        - {reason: not_enough_water, subject: instrument, prop: fill, gte: 250}  # <!-- codex: injuries.yaml traits.open_wound.interactions.wash.conditions.0.gte -->
+        - {reason: already_clean, subject: self, prop: infection, gte: 1}  # <!-- codex: injuries.yaml traits.open_wound.interactions.wash.conditions.1.gte -->
       add:
-        instrument: {fill: -250}
-        self: {infection: -25}
+        instrument: {fill: -250}  # <!-- codex: injuries.yaml traits.open_wound.interactions.wash.add.instrument.fill -->
+        self: {infection: -25}  # <!-- codex: injuries.yaml traits.open_wound.interactions.wash.add.self.infection -->
 ```
 
 ### 6.3 膿は、宿主の全身の菌量へ流し込む
@@ -333,9 +335,9 @@ open_wound:
 open_wound:
   passives:
     - conditions: [{prop: infection, in_stage: festering}]
-      add: {parent: {pathogen: 0.12}}
+      add: {parent: {pathogen: 0.12}}  # <!-- codex: injuries.yaml traits.open_wound.passives.0.add.parent.pathogen -->
     - conditions: [{prop: infection, in_stage: septic}]
-      add: {parent: {pathogen: 0.35}}
+      add: {parent: {pathogen: 0.35}}  # <!-- codex: injuries.yaml traits.open_wound.passives.1.add.parent.pathogen -->
 ```
 
 **量は、全身の除去（免疫の段ごとの定数）と増殖（`+0.15/tick`）に対して読みます。**

@@ -526,8 +526,10 @@ props:
 # 沿岸の海区（voyage.yaml の coastal_waters）
 props:
   exploration_progress:
-    value: 0
-    range: {min: 0, max: 2}  # <!-- codex: voyage.yaml object_defs.coastal_waters.props.exploration_progress.range.max -->
+    value: 0  # <!-- codex: voyage.yaml object_defs.coastal_waters.props.exploration_progress.value -->
+    range:
+      min: 0  # <!-- codex: voyage.yaml object_defs.coastal_waters.props.exploration_progress.range.min -->
+      max: 2  # <!-- codex: voyage.yaml object_defs.coastal_waters.props.exploration_progress.range.max -->
     on_max:
       conditions:
         - not: {slot: fixtures, matches: {object: route_to_kelp_belt}}   # まだ湧かせていない
@@ -1851,7 +1853,7 @@ launch:
   trigger: menu
   duration: 30  # <!-- codex: voyage.yaml object_defs.offshore_islet.interactions.launch.duration -->
   pick:
-    - weight: 1
+    - weight: 1  # <!-- codex: voyage.yaml object_defs.offshore_islet.interactions.launch.pick.0.weight -->
       among: {slot: fixtures, matches: {object: raft}}   # 岸の筏を picked にする（10.3 節）
       move:
         - {subject: agent, to: picked}
