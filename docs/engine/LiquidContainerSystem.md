@@ -268,8 +268,8 @@ water_liquid:
 `ancestor.ambient_brightness` には**時刻と天気の寄与だけ**（`ambient_brightness` の `value` が 0 の土地）を
 置いています。
 
-乾季はいちばん短くても 24 日<!-- stats: climate.yaml season_duration season=dry min --> なので、**蓋をしていない容器は乾季を越えて水を持ち越せません**。**森や密林へ置いても
-越えられません**——上乗せが消えても基礎の蒸発（甕 -2<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.1.add.self.fill -->/tick、ヤシの器 -1<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.0.add.self.fill -->/tick）は残り、どちらも最も短い乾季より先に空になります
+乾季は平均 30 日<!-- stats: climate.yaml season_duration season=dry mean --> なので、**蓋をしていない容器は乾季を越えて水を持ち越せません**。**森や密林へ置いても
+越えられません**——上乗せが消えても基礎の蒸発（甕 -2<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.1.add.self.fill -->/tick、ヤシの器 -1<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.0.add.self.fill -->/tick）は残り、乾季に降る雨を差し引いても、どちらも平均的な長さの乾季より先に空になります
 （`tests/world-codex/liquidContainersYaml.test.ts`）。日陰は水の寿命を数日延ばしますが、**季節をまたがせる手立てにはなりません**
 ——それができるのは蓋だけです（6.2 節）。
 

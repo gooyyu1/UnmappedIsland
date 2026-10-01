@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
+import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import { WorldObject } from '../../src/domain/WorldObject';
@@ -387,25 +389,31 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(amountIn(container)).toBe(200 + expectedDelta);
   });
 
-  // 上乗せが消えても基礎の蒸発は残るので、日陰は乾季をまたがせる手立てにならない（6節）。
+  // 上乗せが消えても基礎の蒸発は残るので、日陰は乾季をまたがせる手立てにならない（6節）。乾季にも雨は降り、
+  // 降っている間は蒸発が止まって溜まるので、天候ごとの1 tickの増減を乾季の天候の時間で重み付けて数える。
   it.each(['coconut_bowl', 'jar'])(
-    '日陰へ置いても、満水の%sは最も短い乾季より先に空になる',
+    '日陰へ置いても、満水の%sは平均的な長さの乾季より先に空になる',
     (containerName) => {
       const capacity = capacityOf(containerName) ?? NaN;
-      const world = spawnWorld('scorching');
-      const container = spawnContainerUnderWorld(
-        containerName,
-        'water',
-        capacity,
-        world,
-        'test_shaded_ground',
-      );
+      const dry = SEASON_CLIMATE.find((season) => season.name === 'dry');
+      if (dry === undefined) throw new Error('乾季の気候の実測値が無い');
 
-      container.tick();
-      const perTick = capacity - amountIn(container);
+      const hours = Object.entries(dry.hoursByWeather);
+      const totalHours = hours.reduce((sum, [, h]) => sum + h, 0);
+      const deltaPerTick = hours.reduce((sum, [weather, h]) => {
+        const container = spawnContainerUnderWorld(
+          containerName,
+          'water',
+          capacity / 2,
+          spawnWorld(weather),
+          'test_shaded_ground',
+        );
+        container.tick();
+        return sum + ((amountIn(container) - capacity / 2) * h) / totalHours;
+      }, 0);
 
-      expect(perTick, '日陰でも基礎の蒸発は残る').toBeGreaterThan(0);
-      expect(Math.ceil(capacity / perTick)).toBeLessThan(shortestDrySeasonTicks());
+      expect(deltaPerTick, '雨を差し引いても、乾季の日陰では減っていく').toBeLessThan(0);
+      expect(capacity / -deltaPerTick).toBeLessThan(dry.durationDays * TICKS_PER_DAY);
     },
   );
 
@@ -821,11 +829,6 @@ function weatherLengthTicks(weather: string, pickOne: (...values: number[]) => n
   return pickOne(...remainingTicksOf('weather', weather, 'weather_remaining'));
 }
 
-/** 乾季の長さ（tick）の候補のうち最も短いもの。季節の遷移が乾季へ入るときに置く`season_remaining`から引く。 */
-function shortestDrySeasonTicks(): number {
-  return Math.min(...remainingTicksOf('season', 'dry', 'season_remaining'));
-}
-
 /**
  * 満ちた器を重ねたときに断る口（`*_into_filled`）と、空でないことを断る口（`*_into_empty`）は、
  * **同じ場面で両方が理由付きで残る**——前者が名乗る型指定（`water`・`tea`）は後者の
@@ -838,7 +841,6 @@ function shortestDrySeasonTicks(): number {
  *
  * 種類ごとの液体はファイルをまたいで足せるので、同梱ぶんを丸ごと読んで見る。
  */
-
 describe('満ちた器を断る口の宣言順', () => {
   const INTO_FILLED = '_into_filled';
   const INTO_EMPTY = '_into_empty';
