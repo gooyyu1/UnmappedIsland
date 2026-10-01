@@ -753,7 +753,7 @@ describe('筏と航海', () => {
       const record = node as Record<string, unknown>;
       const modify = record.modify as Record<string, Record<string, unknown>> | undefined;
       for (const [target, props] of Object.entries(modify ?? {}))
-        if (typeof props?.sail_speed === 'number') modifies.push({ target, amount: props.sail_speed, path });
+        if (typeof props.sail_speed === 'number') modifies.push({ target, amount: props.sail_speed, path });
       for (const [key, child] of Object.entries(record)) visit(child, `${path}.${key}`);
     };
     visit(voyage, '');
