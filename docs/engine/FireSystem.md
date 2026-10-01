@@ -30,7 +30,7 @@
 `tests/world-codex/fireYaml.test.ts` と `tests/world-codex/firewoodYaml.test.ts` です。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。**`【未実装】` の印が付いた節を除いて、本書の設計は実装済み**です。数値は
-いずれも目安で、1 tick（15 分）・96 tick（1 日）（[`DurabilitySystem.md`](./DurabilitySystem.md) 1 節）を
+いずれも目安で、1 tick（15<!-- codex: core.yaml object_defs.world.props.minutes_per_tick.value --> 分）（[`DurabilitySystem.md`](./DurabilitySystem.md) 1 節）を
 前提とします。未決事項は 11 節に整理しています。
 
 ## 1. 火は炉のプロパティで、「火」という物は作らない
@@ -274,7 +274,7 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 ### 2.4 くべるのに時間は課さない
 
 **`add_fuel` は `duration` を持ちません。** 火の番は毎日何度も来る操作なので、ここへ課した
-時間はそのままプレイヤーの 1 日から引かれる定額になります。**課せる最小の長さが 1 tick（15 分）**
+時間はそのままプレイヤーの 1 日から引かれる定額になります。**課せる最小の長さが 1 tick（15<!-- codex: core.yaml object_defs.world.props.minutes_per_tick.value --> 分）**
 ——行動の長さは tick の格子に乗る（[`ActionSystem.md`](./ActionSystem.md) 6.2 節）ので、それより短い
 定額は置けません。**0 分にしてよいのは、繰り返しても得をしない操作だけ**（同節）で、くべ足しは炉の
 `fuel` の上限が 2 回目以降を止めます。
@@ -285,7 +285,7 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 なく、そのわりに薪を積めない**からです。薪を多く積める石囲いの炉は、最も火力を上げてもこれより
 間遠になります。
 
-ここへ 1 tick（15 分）を課すと、火の番だけで 1 日 1 時間以上になります。生存の採取に要る 1 日
+ここへ 1 tick を課すと、火の番だけで、くべ直す回数ぶんの tick が毎日引かれます。生存の採取に要る 1 日
 189 分<!-- stats: terrain.yaml daily_budget survival_gathering -->（[`ContentSkeleton.md`](../world/ContentSkeleton.md)
 8.2 節）へ、**判断を伴わない同じ操作が、その何割にもなる時間を上乗せする**ことになります。束ねた薪はまとめて
 くべられる（2 節の `allow_multiple`）ので、回数のほうは既に絞り切っています。
@@ -302,8 +302,8 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 渡しきる前に終わり、伐ったばかりの丸太（20kg で 200<!-- codex: timber.yaml object_defs.log.props.fuel.value -->）は水を含んだうえ、丸太のままでは空気が回りません。
 
 **割って乾かすと、丸太の側の半分が埋まります。** 丸太 1 本は 10 本<!-- codex: timber.yaml object_defs.log.interactions.split.spawn.count -->の割り薪になり（`timber.yaml` の `log`
-の `split`）、薪棚に積んで乾き切ると水が抜けて目方が 4 分の 1 落ち（2.0kg → 1.5kg）、1 本の `fuel` は 20<!-- codex: firewood.yaml object_defs.green_firewood.props.fuel.value -->
-から 30<!-- codex: firewood.yaml object_defs.seasoned_firewood.props.fuel.value --> へ上がります（`firewood.yaml`）。10 本で 300、15kg × 20 fuel/kg で、**上限は超えません。**
+の `split`）、薪棚に積んで乾き切ると水が抜けて目方が落ち、1 本の `fuel` は 20<!-- codex: firewood.yaml object_defs.green_firewood.props.fuel.value -->
+から 30<!-- codex: firewood.yaml object_defs.seasoned_firewood.props.fuel.value --> へ上がります（`firewood.yaml`）。目方あたりの熱は、**上限の率を超えません**（`tests/world-codex/firewoodYaml.test.ts`）。
 
 **割るだけでは熱は増えません。** 増えるのは形のほうです——**炉に入り切ること**（火を焚く炉の `fuel` の
 上限は丸太 1 本の 200<!-- codex: timber.yaml object_defs.log.props.fuel.value --> を下回るので、丸太をくべると入りきらない分が失われます。2 節・6 節。乾いた薪 1 本の
@@ -313,9 +313,9 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 **乾かすのは棚だけの仕事です。** 薪は乾き切るまでの残り（`seasoning_remaining`）を持つだけで自分では
 進まず、棚が積んである薪を 1 tick に 1 つ進めます——炉が火にかけた物を進めるのと同じ向き（7 節）です。
 **天気も時刻も見ません**——屋根が雨を防ぎ、台が地面から離して風を通すので、日差しの当たった tick を
-数える干し場（`drying.yaml`）とはそこが違います。乾き切るのは 576 tick<!-- codex: firewood.yaml object_defs.green_firewood.props.seasoning_remaining.value -->（6 日）で、現実の 3〜4 週を
-4 分の 1 へ縮めたものです（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md) の
-「長くかかるものだけ、現実の 4 分の 1 へ縮める」節）。
+数える干し場（`drying.yaml`）とはそこが違います。乾き切るのは 576 tick<!-- codex: firewood.yaml object_defs.green_firewood.props.seasoning_remaining.value -->で、現実の 3〜4 週を
+4 分の 1 へ縮めた長さです（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md) の
+「長くかかるものだけ、現実の 4 分の 1 へ縮める」節。`tests/world-codex/firewoodYaml.test.ts` が見ます）。
 
 **燃料 1 点あたりの手間は、割った時点で既に枝より安くなっています。** 太い枝は 25.1 分<!-- stats: balance.yaml object_costs object=thick_branch total_minutes -->で
 20<!-- codex: locations.yaml object_defs.thick_branch.props.fuel.value -->、割り薪は 23.2 分<!-- stats: balance.yaml object_costs object=green_firewood total_minutes -->で同じ 20<!-- codex: firewood.yaml object_defs.green_firewood.props.fuel.value -->
@@ -360,7 +360,7 @@ passives:
       # 薪が残っていれば、火は衰えない（2.2節）
       - {prop: fuel, eq: 0}  # <!-- codex: fire.yaml object_defs.campfire.passives.0.conditions.1.eq -->
     add:
-      # 1〜4を2 tick(30分)で通り抜けて死ぬ。石囲いの炉は-0.125<!-- codex: fire.yaml object_defs.stone_hearth.passives.0.add.self.heat -->（8時間）
+      # 熾火の段を数 tick で通り抜けて死ぬ。石囲いの炉は-0.125<!-- codex: fire.yaml object_defs.stone_hearth.passives.0.add.self.heat -->でゆっくり衰える
       self: {heat: -2}  # <!-- codex: fire.yaml object_defs.campfire.passives.0.add.self.heat -->
 ```
 
@@ -409,7 +409,7 @@ interactions:
 ```
 
 **成否は `signal`（`GameElementDefinition.md` 9.8 節）が告げます。** 火口はどちらの回も同じように
-消えるので、レーンの上では 30 分かけて札が 1 枚減っただけに見え、外した回が「何も起きなかった」と
+消えるので、レーンの上では 30<!-- codex: fire.yaml traits.ignitable.interactions.light.duration --> 分かけて札が 1 枚減っただけに見え、外した回が「何も起きなかった」と
 区別できません。火種が生まれたかどうかを札の増減から読ませず、起きたことを火口の札の上へ出します。
 
 **雨で起こせないこと（3.1.1 節）を持つのは `conditions` で、`pick` の重みではありません。** 条件を
@@ -656,8 +656,8 @@ props:
 ### 5.1 石は既存の `stone` をそのまま使い、炉は一人用の大きさになる
 
 **専用の大きな石は導入しません。** 既存の `stone`（1kg・手に持てる大きさ、`locations.yaml`）を運んで積みます。
-石囲いの炉まで組んでも石は 11 個・11kg で、最も担げない担ぎ手が通れなくなる線（22.5kg。
-[`Characters.md`](../world/Characters.md) 荷重の効き方節）の半分に収まるので、運搬そのものが
+石囲いの炉まで組むのに要る石を全部担いでも、最も担げない担ぎ手が通れなくなる線
+（[`Characters.md`](../world/Characters.md) 荷重の効き方節）の半分に収まる（`tests/world-codex/fireYaml.test.ts`）ので、運搬そのものが
 関門にはなりません。
 
 その結果、炉は一般に想起されるかまどよりだいぶ小ぶりな、**一人分の器が 1 つ載る大きさ**になります。
@@ -671,13 +671,13 @@ props:
 
 ## 6. 炉の段
 
-| 段 | 炉 | 作り方 | 火の中の枠 | 器の枠 | `fuel` の上限 | `heat` の上限 | 種火の衰え | 種火が保つ時間 |
-|---|---|---|---|---|---|---|---|---|
-| 1 | 焚き火 | 小枝 3 本<!-- codex: fire.yaml object_defs.campfire.recipes.stacked.steps.0.requires.0.count --> | 2 | なし | 30<!-- codex: fire.yaml object_defs.campfire.props.fuel.range.max --> | 30<!-- codex: fire.yaml object_defs.campfire.props.heat.range.max -->（炎まで） | -2/tick<!-- codex: fire.yaml object_defs.campfire.passives.0.add.self.heat --> | 30 分 |
-| 2 | 三石のかまど | 焚き火 ＋ 石 3<!-- codex: fire.yaml object_defs.campfire.props.stones.range.max --> | 2 | 1 | 30<!-- codex: fire.yaml object_defs.three_stone_hearth.props.fuel.range.max --> | 30<!-- codex: fire.yaml object_defs.three_stone_hearth.props.heat.range.max -->（炎まで） | -1/tick<!-- codex: fire.yaml object_defs.three_stone_hearth.passives.0.add.self.heat --> | 1 時間 |
-| 3 | 石囲いの炉 | 三石のかまど ＋ 石 8<!-- codex: fire.yaml object_defs.three_stone_hearth.props.stones.range.max --> | 3 | 2 | 120<!-- codex: fire.yaml object_defs.stone_hearth.props.fuel.range.max --> | 100<!-- codex: fire.yaml object_defs.stone_hearth.props.heat.range.max -->（高温まで） | -0.125/tick<!-- codex: fire.yaml object_defs.stone_hearth.passives.0.add.self.heat --> | 8 時間 |
+| 段 | 炉 | 作り方 | 火の中の枠 | 器の枠 | `fuel` の上限 | `heat` の上限 | 種火の衰え |
+|---|---|---|---|---|---|---|---|
+| 1 | 焚き火 | 小枝 3 本<!-- codex: fire.yaml object_defs.campfire.recipes.stacked.steps.0.requires.0.count --> | 2 | なし | 30<!-- codex: fire.yaml object_defs.campfire.props.fuel.range.max --> | 30<!-- codex: fire.yaml object_defs.campfire.props.heat.range.max -->（炎まで） | -2/tick<!-- codex: fire.yaml object_defs.campfire.passives.0.add.self.heat --> |
+| 2 | 三石のかまど | 焚き火 ＋ 石 3<!-- codex: fire.yaml object_defs.campfire.props.stones.range.max --> | 2 | 1 | 30<!-- codex: fire.yaml object_defs.three_stone_hearth.props.fuel.range.max --> | 30<!-- codex: fire.yaml object_defs.three_stone_hearth.props.heat.range.max -->（炎まで） | -1/tick<!-- codex: fire.yaml object_defs.three_stone_hearth.passives.0.add.self.heat --> |
+| 3 | 石囲いの炉 | 三石のかまど ＋ 石 8<!-- codex: fire.yaml object_defs.three_stone_hearth.props.stones.range.max --> | 3 | 2 | 120<!-- codex: fire.yaml object_defs.stone_hearth.props.fuel.range.max --> | 100<!-- codex: fire.yaml object_defs.stone_hearth.props.heat.range.max -->（高温まで） | -0.125/tick<!-- codex: fire.yaml object_defs.stone_hearth.passives.0.add.self.heat --> |
 
-種火が保つ時間は、`ember` の段の幅（1<!-- codex: fire.yaml traits.hearth.props.heat.stages.1.min -->〜4、2.3 節）を衰える速さで割ったものです。
+種火が保つ長さは、`ember` の段の幅（2.3 節）を種火の衰えで割ったものです。
 
 どちらの枠も同じ `fire` スロットの `cells` に並びます（1.1 節）。枠は焼く物と焼く石のためのもので、
 薪は枠を使いません（2.1 節）。
@@ -687,7 +687,7 @@ props:
 - **焚き火 → 三石のかまど**: 器を載せる場所ができます。三石が支点になって初めて器を火にかけられる、
   という現実そのままで、器を持たないうちに作っても何も変わりません。
 - **三石のかまど → 石囲いの炉**: 種火が翌朝まで生きます。加えて火力の上限が上がって `blaze` に届き、
-  積める薪も 4 倍になり、火床が広いので熾火を掻き分けて器を 2 つ置けます。
+  積める薪も増え、火床が広いので熾火を掻き分けて器を 2 つ置けます。
 
 **梯子の中で `blaze` に届くのは石囲いの炉だけ**ですが、それは段に禁止を書いた結果ではなく、
 `heat` の上限が 30<!-- codex: fire.yaml object_defs.campfire.props.heat.range.max --><!-- codex: fire.yaml object_defs.three_stone_hearth.props.heat.range.max --> と 100<!-- codex: fire.yaml object_defs.stone_hearth.props.heat.range.max --> で違うことの帰結です（2.3 節）。
@@ -883,10 +883,10 @@ lit:
 
 | | 値 | 意味 |
 |---|--:|---|
-| `heat_soak` の上限 | 12<!-- codex: fire.yaml traits.heat_soaking.props.heat_soak.range.max --> | 炎（3/tick<!-- codex: fire.yaml traits.hearth.props.heat.stages.3.passives.0.add.child.heat_soak -->）で 4 tick（1 時間）、熾火（1/tick<!-- codex: fire.yaml traits.hearth.props.heat.stages.2.passives.0.add.child.heat_soak -->）で 3 時間 |
-| 炉の外での減り | -3/tick<!-- codex: fire.yaml traits.heat_soaking.props.heat_soak.passives.0.add.self.heat_soak --> | 火から離して 4 tick（1 時間）で常温 |
-| 湯を沸かせる下限 | 6<!-- codex: fire.yaml traits.heat_soaking.props.heat_soak.stages.1.min --> | 溜め切った石の半分。炉から出して 30 分が持ち時間 |
-| 湯が冷める速さ | -1/tick<!-- codex: liquid_containers.yaml traits.hot_water_liquid.props.heat_soak.passives.0.add.self.heat_soak --> | 12 tick（3 時間）で水に戻る |
+| `heat_soak` の上限 | 12<!-- codex: fire.yaml traits.heat_soaking.props.heat_soak.range.max --> | 溜まる速さは火力の段が決める。炎（3/tick<!-- codex: fire.yaml traits.hearth.props.heat.stages.3.passives.0.add.child.heat_soak -->）、熾火（1/tick<!-- codex: fire.yaml traits.hearth.props.heat.stages.2.passives.0.add.child.heat_soak -->） |
+| 炉の外での減り | -3/tick<!-- codex: fire.yaml traits.heat_soaking.props.heat_soak.passives.0.add.self.heat_soak --> | 火から離すと常温へ戻っていく |
+| 湯を沸かせる下限 | 6<!-- codex: fire.yaml traits.heat_soaking.props.heat_soak.stages.1.min --> | 炉から出した石が、ここを割るまでが持ち時間 |
+| 湯が冷める速さ | -1/tick<!-- codex: liquid_containers.yaml traits.hot_water_liquid.props.heat_soak.passives.0.add.self.heat_soak --> | 冷め切ると水に戻る |
 
 **炉から出したかどうかを、石は問いません。** 減るのは「祖先に燃えている炉が居ないとき」で、炉に
 入れたまま火が消えた場合も同じ 1 行で冷めます。
@@ -953,14 +953,14 @@ lit:
 腕（`ignition_ease`）が `base` の土台として積まれ、湿りの段（3.2.1 節）が `modify` で押し下げたものです。
 
 **外れの重みは 10<!-- codex: fire.yaml traits.ignitable.interactions.light.pick.1.weight --> です。乾いた火口なら、どの火口・どの腕でも 1 回で 85% 以上付きます**——**2 回続けて
-外す確率にすれば 2% ほど**に収まります。
+外すことは稀**です。
 
-**この水準を選んだのは、外した回に失われるのが火口 1 つと 30 分だからです。** 1 回程度の失敗なら
-段取りに織り込めますが、**何回失敗するか分からないと、その先の予定を組めません**——「1 時間半かけて
+**この水準を選んだのは、外した回に失われるのが火口 1 つと 30<!-- codex: fire.yaml traits.ignitable.interactions.light.duration --> 分だからです。** 1 回程度の失敗なら
+段取りに織り込めますが、**何回失敗するか分からないと、その先の予定を組めません**——「何度も外して
 火が付かない」回が珍しくない状態は、火口の消費ではなく**時間の読めなさ**として効きます。減らし切らずに
 稀な失敗を残すのは、火起こしを「押せば必ず進む工程」にしないためです。
 
-**残っている失敗のうち、プレイヤーが動かせる幅は湿り（3.2.1 節）が持ちます。** 乾いた火口の 85〜96% が
+**残っている失敗のうち、プレイヤーが動かせる幅は湿り（3.2.1 節）が持ちます。** 乾いた火口の成功率が
 下限で、そこから下げるのは濡らしたときだけ——**避ける手段（屋根の下・入れ物・日に広げる）が見えている
 ことが、確率に関与できる余地そのもの**です。
 
