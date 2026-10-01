@@ -51,9 +51,10 @@ export class Slot {
 
   /**
    * この候補オブジェクトを受け入れない理由（受け入れるならundefined）。見るのは枠の型・枠の空き・
-   * capacityと、身につける枠なら装備の排他（重ならない問いへの分け方はSlotSystem.md 2節）。
+   * capacityと、身につける枠なら装備の排他（重ならない問いへの分け方はSlotSystem.md 2節）。atを渡すと、
+   * その位置へ置けるかまで見る（CellLayout.canInsertAt）。
    */
-  rejectionFor(candidate: WorldObject): string | undefined {
+  rejectionFor(candidate: WorldObject, at?: SlotPosition): string | undefined {
     const engine = this.owner.session.codex.vocabulary.engine;
     const ownerName = this.owner.def.name;
     if (!this.def.acceptsAnywhere(candidate.def)) {
@@ -75,6 +76,10 @@ export class Slot {
 
     if (this.layout.vacancyForIgnoringVolume(candidate) < 1) {
       return `'${ownerName}.${this.def.name}' に '${candidate.def.name}' を置ける枠が空いていません。`;
+    }
+
+    if (at !== undefined && !this.layout.canInsertAt(candidate, at)) {
+      return `'${ownerName}.${this.def.name}' の指定した位置には '${candidate.def.name}' を置けません。`;
     }
 
     return undefined;

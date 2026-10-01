@@ -192,7 +192,7 @@ export function cardOperationsOf(game: StartedGame, locale: Localization): CardO
     (stack: readonly WorldObject[], from: CardPlace) =>
     (place: CardPlace, at?: CardPlacement, count = 1): CardDropEffect | undefined => {
       if (place === from) return undefined;
-      if (stack[0].rejectionForMoveTo(place) !== undefined) return undefined;
+      if (stack[0].rejectionForMoveTo(place, at) !== undefined) return undefined;
 
       // まとめて運んできたぶんも、1つずつ入れるのと同じことをする（時間も個数ぶんかかる）。
       // 入る個数を超えて頼まれても、超えたぶんは枠が断るだけ。

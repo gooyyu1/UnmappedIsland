@@ -4,7 +4,7 @@ import type { ObjectCardStack, PlayScreenView } from '../../src/game/view/PlaySc
 import { fromGameSession, withFrozenCards } from '../../src/game/view/PlayScreenView';
 import type { CardPlace, ScreenPlace } from '../../src/game/view/cardPlaces';
 import { cardPlacesOf } from '../../src/game/view/cardPlaces';
-import { slotCells } from '../../src/game/view/slotCells';
+import { slotCells, slotPositionAt } from '../../src/game/view/slotCells';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { parseLocale } from '../../src/locale/Localization';
 import type { MiniGame } from '../support/miniGame';
@@ -442,6 +442,34 @@ object_defs:
 
     view.cardsIn(equipment)[0]!.dropInto?.(place(mini, 'hand'))?.execute();
     expect(mini.game.player.hand[0], '手持ちへ戻せる').toBe(stone);
+  });
+
+  it('材料の枠のレーンへ落とすと、レーン上で指した位置によらず型の合う枠へ入る', () => {
+    // 材料の枠は要求の順に[板, 棒]。レーンには入っている棒が先に、まだ入っていない板の要求がその
+    // 後に並ぶ（slotCells.materialCells）ので、板の要求の空き枠はレーンでは2番目、スロットでは先頭。
+    const mini = miniGame(`
+in_progress_tags: [item]
+object_defs:
+  board: {tags: [item]}
+  stick: {tags: [item]}
+  chair:
+    tags: [item]
+    recipes:
+      built:
+        steps:
+          - requires: [{object: board, count: 1, consume: true}, {object: stick, count: 2, consume: true}]
+            duration: 30
+`);
+    const wip = mini.createObject(inProgressObjectName('chair', 'built'), mini.slot('items', mini.land));
+    const materials = mini.slot('materials', wip);
+    mini.createObject('stick', materials);
+    const board = mini.createObject('board', mini.slot('hand'));
+
+    const view = viewOf(mini);
+    const at = slotPositionAt(view.slotViewOf(materials), { kind: 'cell', index: 1 });
+    cardOf(view, board).dropInto?.(materials, at)?.execute();
+
+    expect(materials.cells.map((cell) => cell.stack?.members[0].def.name)).toEqual(['board', 'stick']);
   });
 
   it('withFrozenCardsは、控えた時点の中身を返し続ける', () => {

@@ -526,6 +526,27 @@ describe('ドロップの意味', () => {
     expect(shown.multiDropLimit(drop)).toBe(1);
   });
 
+  it('位置を指さない場所の中では並び替えず、外からなら位置を付けずに入れる', () => {
+    // レーン上の位置がスロットの位置にならない場所（材料の枠、slotCells.slotPositionAt）。
+    const moves: Moved[] = [];
+    const shown = screen({
+      hand: [stack(place('hand'), [1], { moves })],
+      items: [stack(place('items'), [2], { moves }), stack(place('items'), [3], { moves })],
+    });
+    const into = (from: CardPlace): ShownDrop => ({
+      from,
+      fromIndex: 0,
+      to: place('items'),
+      target: undefined,
+      count: 1,
+    });
+
+    expect(shown.dropEffect(into(place('items'))), '同じ場所の中').toBeUndefined();
+
+    shown.dropEffect(into(place('hand')))?.execute();
+    expect(moves).toEqual([{ ids: [1], to: place('items'), at: undefined }]);
+  });
+
   it('帰りを待つ印へは重ねられない', () => {
     // 印は個体を1つも出していないので、組み合わせの相手にならない（相手が居ないのだから、
     // 何が成立するかを問うこともできない）。
