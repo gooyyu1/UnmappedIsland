@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { parse } from 'yaml';
 import { spawnsObject } from '../../src/codex-viewer/describe/effectQueries';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { tryAdvanceCrafting, spawnInProgressObject } from '../../src/domain/crafting';
@@ -9,7 +9,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { fixedRng } from '../support/rng';
-import { bundledCodex, worldCodexPath } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent } from '../support/illumination';
 import { MINUTES_PER_HOUR, MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 
@@ -284,7 +284,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     // 上限を書いていないので同種はいくつでも入るが、**上限を書けばここで落ちる**——1つずつしか
     // 並べない検査では、蓋の代価が炉1つぶん増えても緑のままになる。
     //
-    // 数は航海へ積む甕の長い側（Voyage.md 3.9.6節）——最も長い行程の日数ぶんの水を、甕だけで積む数。
+    // 数は航海へ積む甕の長い側（Voyage.md 3.9.6節）。
     const voyageJars = jarsForLongestVoyage();
     const kiln = fireDriedGreenware(24, [
       ...Array.from({ length: voyageJars }, () => 'unfired_jar'),
@@ -306,25 +306,13 @@ describe('pottery.yamlの土器の連鎖', () => {
 });
 
 /**
- * 最も長い行程（`stats/voyage.yaml` の `courses` の `days`）の日数ぶんの水を、素の減り
- * （`stats/balance.yaml` の `daily_needs` の `hydration`）で甕だけに積むときの数（Voyage.md 3.9.6節）。
- * 甕1つが戻す渇きは、容量を1口の量で割った杯数×1口が戻す量（LiquidContainerSystem.md 5節）。
+ * `Voyage.md` 3.9.6節が書いた、航海へ積む甕の数の長い側。**数は文書から読む**——その数が宣言どおりかは
+ * `tests/diagnostics/waterAndBloodPace.test.ts` が見ているので、ここで割り算を組み直すと、同じ数を
+ * 2通りに出して暗黙に揃えることになる。
  */
 function jarsForLongestVoyage(): number {
-  const voyage = parse(readFileSync('stats/voyage.yaml', 'utf8')) as { courses: { days: number }[] };
-  const balance = parse(readFileSync('stats/balance.yaml', 'utf8')) as {
-    daily_needs: { property: string; daily_need: number }[];
-  };
-  const liquids = parse(readFileSync(worldCodexPath('liquid_containers.yaml'), 'utf8')) as {
-    object_defs: { jar: { props: { fill: { range: { max: number } } } } };
-    traits: {
-      water_liquid: { interactions: { drink: { transfer: { amount: number; to_amount: number } } } };
-    };
-  };
-
-  const longestDays = Math.max(...voyage.courses.map(({ days }) => days));
-  const dailyHydration = balance.daily_needs.find(({ property }) => property === 'hydration')!.daily_need;
-  const { amount, to_amount: perCup } = liquids.traits.water_liquid.interactions.drink.transfer;
-  const jarDays = ((liquids.object_defs.jar.props.fill.range.max / amount) * perCup) / dailyHydration;
-  return Math.ceil(longestDays / jarDays);
+  const voyage = readFileSync(join('docs', 'world', 'Voyage.md'), 'utf8').replace(/<!--[^>]*-->/g, '');
+  const packing = /3\.9\.1 節の \d+〜\d+ 日なら\s*\*\*\d+〜(\d+) つ\*\*/.exec(voyage);
+  expect(packing, '`Voyage.md` 3.9.6節の積む数が読めない').not.toBeNull();
+  return Number(packing![1]);
 }
