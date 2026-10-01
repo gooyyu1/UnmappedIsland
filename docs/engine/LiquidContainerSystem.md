@@ -162,8 +162,8 @@ water_liquid:
 **250mL<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount --> = 10 tick<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.to_amount --> 分**です。`max` は 288<!-- codex: characters/engineer.yaml object_defs.engineer.props.hydration.range.max --><!-- codex: characters/farmer.yaml object_defs.farmer.props.hydration.range.max --><!-- codex: characters/medic.yaml object_defs.medic.props.hydration.range.max --> です。**エンジンは換算率を知りません**——
 同じ 1 口でも水より寄与の小さい液体（酒）は、この比を小さくするだけで表せます。
 
-**器 1 つが何日ぶんかは、この換算率と容量の割り算です。** 甕（4,000mL<!-- codex: liquid_containers.yaml object_defs.jar.props.fill.range.max -->）は **16 杯＝1.7 日ぶん**、
-ヤシの器（250mL<!-- codex: liquid_containers.yaml object_defs.coconut_bowl.props.fill.range.max -->）は **1 杯＝2.5 時間ぶん**。**持ち出す量を決める場面で読むのはこの数**で、航海に積む
+**器 1 つが何日ぶんかは、この換算率と容量の割り算です。** 甕（4,000mL<!-- codex: liquid_containers.yaml object_defs.jar.props.fill.range.max -->）も
+ヤシの器（250mL<!-- codex: liquid_containers.yaml object_defs.coconut_bowl.props.fill.range.max -->）も、容量を 1 口の量で割った杯数ぶんの渇きを戻します。**持ち出す量を決める場面で読むのはこの数**で、航海に積む
 甕の数もここから出ます（[`Voyage.md`](../world/Voyage.md) 3.9.6 節）。**画面はこの割り算をしません**
 ——残量は量のまま出し、日数へ直すのはプレイヤーの仕事です
 （[`GameEndings.md`](../concept/GameEndings.md) 9.2 節）。数が宣言とずれれば
