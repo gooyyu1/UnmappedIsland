@@ -41,7 +41,7 @@
 | アイテム | 素材 | 運び方 | 入る種類 | 蓋 | 寿命 | 位置づけ |
 |---|---|---|---|---|---|---|
 | 肩掛けの袋 | 植物繊維（少） | 肩に掛ける | 8種類 | なし | 短命 | 最初に作れる。編まずに括るだけなので、編み籠より前に持てる |
-| 編み籠 | 編んだ葉（3枚<!-- codex: containers.yaml object_defs.woven_basket.recipes.woven.steps.0.requires.0.count -->ずつ編む） | 手に持つ | **10種類<!-- codex: containers.yaml object_defs.woven_basket.slots.contents.cell_count -->** | なし | 短命 | 運搬と据え置きを兼ねる基本形。実装済み |
+| 編み籠 | 編んだ葉 | 手に持つ | **10種類<!-- codex: containers.yaml object_defs.woven_basket.slots.contents.cell_count -->** | なし | 短命 | 運搬と据え置きを兼ねる基本形。実装済み |
 | 背負い籠 | 編み籠 + 植物繊維 | 背負う | 14種類 | なし | 短命 | 編み籠に負い紐を足す。手が空くので手持ちを削らない |
 | なめし革の背負い袋 | なめし革 + 植物繊維 | 背負う | 18種類 | あり | 長持ち | 口を閉じられる。携行の最終形 |
 
@@ -74,7 +74,7 @@
 
 | アイテム | 素材 | 入る種類 | 蓋 | 自重 | 体感の率の割り引き | 寿命 | 位置づけ |
 |---|---|---|---|---|---|---|---|
-| そり | 長い棒（1本<!-- codex: containers.yaml object_defs.sledge.recipes.lashed.steps.0.requires.0.count -->ずつ） + 太い枝（3本<!-- codex: containers.yaml object_defs.sledge.recipes.lashed.steps.3.requires.0.count -->ずつ） + 縄1<!-- codex: containers.yaml object_defs.sledge.recipes.lashed.steps.5.requires.0.count --> | 8種類<!-- codex: containers.yaml object_defs.sledge.slots.contents.cell_count --> | なし | 8,000g<!-- codex: containers.yaml object_defs.sledge.props.weight.value --> | −0.45<!-- codex: containers.yaml object_defs.sledge.props.load_rate.passives.0.modify.self.load_rate --> | 長持ち | 重い物専用。斧なしでも作れる |
+| そり | 長い棒 + 太い枝 + 縄1<!-- codex: containers.yaml object_defs.sledge.recipes.lashed.steps.5.requires.0.count --> | 8種類<!-- codex: containers.yaml object_defs.sledge.slots.contents.cell_count --> | なし | 8,000g<!-- codex: containers.yaml object_defs.sledge.props.weight.value --> | −0.45<!-- codex: containers.yaml object_defs.sledge.props.load_rate.passives.0.modify.self.load_rate --> | 長持ち | 重い物専用。斧なしでも作れる |
 | 台車 | そり + 丸太1<!-- codex: containers.yaml object_defs.handcart.recipes.wheeled.steps.0.requires.0.count --> + 紐1<!-- codex: containers.yaml object_defs.handcart.recipes.wheeled.steps.5.requires.0.count --> | 10種類<!-- codex: containers.yaml object_defs.handcart.slots.contents.cell_count --> | なし | 12,000g<!-- codex: containers.yaml object_defs.handcart.props.weight.value --> | −0.55<!-- codex: containers.yaml object_defs.handcart.props.load_rate.passives.0.modify.self.load_rate --> | 長持ち | そりの上位。車輪の加工に斧が要る |
 
 **そりが編み籠の上位互換にならないのは、素材コストと自重の2つによります。** 木材を多く使うので序盤には
@@ -96,9 +96,9 @@
 - **そりより台車が軽く感じ始めるのは、積載10kgから。** 車輪のぶん自重が増えるので、**そこまでは
   そりのほうが軽い**——台車を作ってもそりが無駄になりません。
 
-**線を引いたのは、運べる重さの上限が引く道具の値打ちそのものだからです。** 通れない段（`load` の
-`too_heavy`）へ届くまでに積める重さは、籠よりそり、そりより台車のほうが大きくなります。**段の境目は
-個体差そのものなので、上限も担ぎ手で動きます**。
+**線を引いたのは、運べる重さの上限が引く道具の値打ちそのものだからです。** 逆転点を越えた荷では、籠よりそり、
+そりより台車のほうが軽く感じるので、通れない段（`load` の `too_heavy`）へ届くのがそのぶん遅れます。
+**段の境目は個体差そのものなので、上限も担ぎ手で動きます**。
 
 **丸太2本がそりに積めるかは、担ぎ手で分かれます。** 力のある担ぎ手なら往復が半分になり、そう
 でなければそりを引いても1本のままです（`tests/world-codex/loadEffects.test.ts` が両方の担ぎ手が居る
