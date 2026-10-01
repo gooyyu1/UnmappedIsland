@@ -167,8 +167,8 @@ export class InteractionRelation {
  * ancestorはここでは解けない——「参照先のプロパティを定義している最初の祖先」なので、探すプロパティを
  * 知っている側（PropertyPath）でしか決まらない。
  *
- * **selfが居るかは型引数Sが持つ。** selfの居ない文脈はaskingだけなので、selfを受け取って組む口は
- * `ReferenceContext<WorldObject>`を返し、selfを要る側（InteractionDef.tryExecute）はそれを受け取る。
+ * **selfが居るかは型引数Sが持つ。** selfを要る側（InteractionDef.tryExecute・効果のapply）は
+ * `ReferenceContext<WorldObject>`を受け取るので、selfの居ない文脈を渡せない。
  */
 export class ReferenceContext<S extends WorldObject | undefined = WorldObject | undefined> {
   /** この文脈のself。効果の宣言元であり、parent・ancestorはここから辿る。 */

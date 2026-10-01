@@ -42,7 +42,7 @@ export const NO_INSTANCE = 0;
  * 持ち、WorldObjectはローカルID解決とグローバルAPIの提供に専念する。move_to_slotによる所属先の差し替え
  * （旧親からの離脱・新親への合流・weight伝播・passive effect edgeの登録）にも専念し、枠の要件・capacityの
  * 検証は対象Slot自身へ委ねる。持続効果（modify/add）の登録・解除は、生成・エッジ形成/解消・トポロジ変化の
- * 契機で、Defが宣言する効果一式（PassiveEffects）へ「登録/解除してほしい」と依頼するだけで、どのtargetが
+ * 契機で、Defが宣言する効果一式（ObjectPassiveEffects）へ「登録/解除してほしい」と依頼するだけで、どのtargetが
  * どこへ紐付くかは効果自身が知る。能動効果（9節の命令。actions/combinations・tickやrangeイベントから走る）は、
  * 適用の入口（applyActiveEffect）と対象解決、same_slot spawnの位置捕捉（SameSlotSpawnSite）・配置（place）を持つが、
  * 値の変更そのものは対象のPropertyValueへ、条件判定・抽選はDef側の効果へ委ねる。抵抗（`resists`、7.13節）が

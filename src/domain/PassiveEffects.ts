@@ -8,6 +8,21 @@ import type { ReferenceRoot } from './ReferenceRoot';
 /** 1つも宣言していない関係の契機で配る先（毎回空の配列を作らずに済ませる）。 */
 const NO_REGISTRATIONS: readonly PropertyPassiveEffect[] = [];
 
+/** 寄与として登録される効果を、契機になる関係（PassiveEffect.relationRegistration）ごとに仕分ける。 */
+function registrationsByRelationOf(
+  effects: readonly PassiveEffect[],
+): ReadonlyMap<ReferenceRoot, readonly PropertyPassiveEffect[]> {
+  const byRelation = new Map<ReferenceRoot, PropertyPassiveEffect[]>();
+  for (const effect of effects) {
+    const registration = effect.relationRegistration;
+    if (registration === undefined) continue;
+    const bucket = byRelation.get(registration.relation) ?? [];
+    byRelation.set(registration.relation, bucket);
+    bucket.push(registration.effect);
+  }
+  return byRelation;
+}
+
 /**
  * 持続効果（8節）の一式。target・kindを問わず宣言順に1つへまとめて持つ。
  *
@@ -69,16 +84,7 @@ export class ObjectPassiveEffects extends PassiveEffects {
     this.transfers = effects.flatMap((effect) =>
       effect.tickTransfer === undefined ? [] : [effect.tickTransfer],
     );
-
-    const byRelation = new Map<ReferenceRoot, PropertyPassiveEffect[]>();
-    for (const effect of effects) {
-      const registration = effect.relationRegistration;
-      if (registration === undefined) continue;
-      const bucket = byRelation.get(registration.relation) ?? [];
-      byRelation.set(registration.relation, bucket);
-      bucket.push(registration.effect);
-    }
-    this.registrationsByRelation = byRelation;
+    this.registrationsByRelation = registrationsByRelationOf(effects);
   }
 
   /**
@@ -136,7 +142,7 @@ export class InteractionPassiveEffects extends PassiveEffects {
 
   constructor(effects: readonly PassiveEffect[]) {
     super(effects);
-    this.registrations = effects.flatMap((effect) => effect.relationRegistration?.effect ?? []);
+    this.registrations = [...registrationsByRelationOf(effects).values()].flat();
   }
 
   /**
