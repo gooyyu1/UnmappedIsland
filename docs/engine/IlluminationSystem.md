@@ -78,59 +78,61 @@ EVは連続量なので小数を書けます（`GameElementDefinition.md` 6節�
 間に挟まると、祖先を辿る土台はそこで止まるためです。`ambient_brightness` の `value` は trait に置かず、
 場所ごとに必ず書かせます（樹冠と反射は場所ごとに違い、既定値を置くと書き忘れが「開けた土地」として通る）。
 
-```yaml
+```yaml codex: core.yaml object_defs.world
 # core.yaml — 世界（樹冠も反射も無い場所の明るさ）
-world:
-  props:
-    ambient_brightness:
-      # hourのstagesが太陽高度を、weatherのstagesが透過率をmodifyする
-      value: 0  # <!-- codex: core.yaml object_defs.world.props.ambient_brightness.value -->
-      range:
-        min: -6  # <!-- codex: core.yaml object_defs.world.props.ambient_brightness.range.min -->
-        max: 17  # <!-- codex: core.yaml object_defs.world.props.ambient_brightness.range.max -->
+props:
+  ambient_brightness:
+    # hourのstagesが太陽高度を、weatherのstagesが透過率をmodifyする
+    value: 0
+    range:
+      min: -6
+      max: 17
+```
 
+```yaml codex: core.yaml traits.location
 # core.yaml の location trait — あらゆる場所が持つ明るさ（valueは継承先が与える）
-location:
-  props:
-    ambient_brightness:
-      base: {subject: ancestor}      # 祖先のambient_brightness（通常はworld）が土台
-      range:
-        min: -6  # <!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->
-        max: 17  # <!-- codex: core.yaml traits.location.props.ambient_brightness.range.max -->
-    hand_brightness:
-      value: 0  # <!-- codex: core.yaml traits.location.props.hand_brightness.value -->
-      base: {subject: self, prop: ambient_brightness}       # クランプ済みの環境光が土台
+props:
+  ambient_brightness:
+    base: {subject: ancestor}      # 祖先のambient_brightness（通常はworld）が土台
+    range:
+      min: -6
+      max: 17
+  hand_brightness:
+    value: 0
+    base: {subject: self, prop: ambient_brightness}       # クランプ済みの環境光が土台
+```
 
+```yaml codex: locations.yaml object_defs.jungle
 # locations.yaml — 密林（樹冠 -7・反射 -2）
-jungle:
-  traits: [location, explorable]
-  props:
-    ambient_brightness: {value: -9}  # <!-- codex: locations.yaml object_defs.jungle.props.ambient_brightness.value -->
+traits: [location, explorable]
+props:
+  ambient_brightness: {value: -9}
+```
 
-# キャラクタ
-character:
-  props:
-    hand_brightness:
-      value: 0  # <!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.value -->
-      base: {subject: ancestor, prop: hand_brightness}      # 場所の手元（据え付けの光源を含む）
-    looking_brightness:
-      value: 0  # <!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.value -->
-      base: {subject: ancestor, prop: ambient_brightness}   # 場所の環境光だけ
+```yaml codex: characters/player_character.yaml traits.player_character
+# characters/player_character.yaml — キャラクタ
+props:
+  hand_brightness:
+    value: 0
+    base: {subject: ancestor, prop: hand_brightness}      # 場所の手元（据え付けの光源を含む）
+  looking_brightness:
+    value: 0
+    base: {subject: ancestor, prop: ambient_brightness}   # 場所の環境光だけ
 ```
 
 ## 3. 光源は、置かれた場所だけで届き先が決まる
 
 **どの光源も、条件と寄与の同じ2つの宣言を書きます。** 種類による書き分けはありません。
 
-```yaml
+```yaml codex: fire.yaml object_defs
 # 松明。キャンプファイヤーも獣脂のランプも、値が違うだけで同じ2つの宣言（火の状態の持ち方はFireSystem.md）
 torch:
   passives:
-    - conditions: [{prop: lit, eq: 1}]  # <!-- codex: fire.yaml object_defs.torch.passives.0.conditions.0.eq -->
+    - conditions: [{prop: lit, eq: 1}]
       modify:
         parent:
-          hand_brightness: 11  # <!-- codex: fire.yaml object_defs.torch.passives.0.modify.parent.hand_brightness -->
-          looking_brightness: 11  # <!-- codex: fire.yaml object_defs.torch.passives.0.modify.parent.looking_brightness -->
+          hand_brightness: 11
+          looking_brightness: 11
 ```
 
 **親がその値を持っていなければ届きません。**
@@ -193,7 +195,7 @@ torch:
 条件は段の名前で見ます。条件は行動の数だけ増えるので、境目をそこへ書き写すと、**揃っているかを
 見るものが1つも無くなります。**
 
-```yaml
+```yaml codex: locations.yaml object_defs
 path:
   interactions:
     travel:
@@ -349,16 +351,15 @@ deep_cave:
 5節のしきい値そのもので、`pitch_dark` と `dim` の境はどちらも −5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.1.min --><!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.1.min -->、`bright` の境は `hand_brightness` が
 +5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min -->、`looking_brightness` が +3<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.2.min --> です。
 
-```yaml
-character:
-  props:
-    hand_brightness:
-      value: 0  # <!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.value -->
-      base: {subject: ancestor, prop: hand_brightness}
-      stages:
-        - {name: pitch_dark}
-        - {name: dim, min: -5}  # <!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.1.min -->
-        - {name: bright, min: 5}  # <!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min -->
+```yaml codex: characters/player_character.yaml traits.player_character
+props:
+  hand_brightness:
+    value: 0
+    base: {subject: ancestor, prop: hand_brightness}
+    stages:
+      - {name: pitch_dark}
+      - {name: dim, min: -5}
+      - {name: bright, min: 5}
 ```
 
 - **どちらも同じ段の名前を持つのは、同じEVスケールを同じ底（−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min --><!-- codex: core.yaml object_defs.world.props.ambient_brightness.range.min -->）から測っているからです。** 段を共有する

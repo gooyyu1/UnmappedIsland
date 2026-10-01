@@ -27,7 +27,7 @@
 - **`explorable`**（`locations.yaml`）: 探索**できる**場所だけが追加で持つ構造。探索進捗プロパティと、
   未発見の設置物を隠しておくスロット（`undiscovered_fixtures`）。
 
-```yaml
+```yaml codex: core.yaml
 # core.yaml
 traits:
   location:
@@ -38,11 +38,11 @@ traits:
       fixtures:
         cell: {accept: {tag: fixture}}
       characters:
-        cell_count: 1  # <!-- codex: core.yaml traits.location.slots.characters.cell_count -->
+        cell_count: 1
         cell: {accept: {tag: character}}
 ```
 
-```yaml
+```yaml codex: locations.yaml
 # locations.yaml
 traits:
   explorable:
@@ -92,31 +92,31 @@ traits:
 土地ごとの `object_defs`（`locations.yaml`）が個別に定義します。`explorable` trait 自身が持つのは、進捗を
 保持する箱（`exploration_progress`）と道の発見に使う2スロット（1.2 節）という共通の器だけです。
 
-```yaml
+```yaml codex: locations.yaml
 object_defs:
   grassland:
     traits: [location, explorable]
     props:
       exploration_progress:
-        value: 0  # <!-- codex: locations.yaml object_defs.grassland.props.exploration_progress.value -->
+        value: 0
         # 探索率100%に達するまでの探索回数
         range:
-          min: 0  # <!-- codex: locations.yaml object_defs.grassland.props.exploration_progress.range.min -->
-          max: 12  # <!-- codex: locations.yaml object_defs.grassland.props.exploration_progress.range.max -->
+          min: 0
+          max: 12
     interactions:
       explore:
         trigger: menu
-        duration: 15  # <!-- codex: locations.yaml object_defs.grassland.interactions.explore.duration -->
+        duration: 15
         # 何が見つかっても進捗は1つ進む
-        add: {self: {exploration_progress: 1}}  # <!-- codex: locations.yaml object_defs.grassland.interactions.explore.add.self.exploration_progress -->
+        add: {self: {exploration_progress: 1}}
         pick:
           - weight: {prop: berry_find}
             spawn: {object: berry_bush, into: self}
           - weight: {prop: spring_find}
             spawn: {object: spring, into: self}
           # ...
-          - weight: 18  # <!-- codex: locations.yaml object_defs.grassland.interactions.explore.pick.4.weight -->
-            spawn: {object: water_spinach, into: self, count: 2}  # <!-- codex: locations.yaml object_defs.grassland.interactions.explore.pick.4.spawn.count -->
+          - weight: 18
+            spawn: {object: water_spinach, into: self, count: 2}
           # ...
 ```
 
@@ -179,25 +179,25 @@ object_defs:
 
 ## 3. 道（`path` object_def）と移動
 
-```yaml
+```yaml codex: locations.yaml
 object_defs:
   path:
     tags: [path]
     props:
       travel_minutes:
         # 生成時にインスタンスごと上書きされる
-        value: 60  # <!-- codex: locations.yaml object_defs.path.props.travel_minutes.value -->
+        value: 60
         # 道の長さに、今歩いている人の遅れを継ぐ（world/Characters.md 荷重の効き方節）
         base: {subject: agent, prop: travel_delay}
       required_progress:
         # 同上
-        value: 1  # <!-- codex: locations.yaml object_defs.path.props.required_progress.value -->
+        value: 1
       destination_id:
         # 同上（移動先LocationのインスタンスID）
-        value: 0  # <!-- codex: locations.yaml object_defs.path.props.destination_id.value -->
+        value: 0
       return_path_id:
         # 同上（移動先にある、こちらへ戻る道のインスタンスID）
-        value: 0  # <!-- codex: locations.yaml object_defs.path.props.return_path_id.value -->
+        value: 0
     interactions:
       travel:
         trigger: menu

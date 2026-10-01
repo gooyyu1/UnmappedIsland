@@ -289,39 +289,39 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
 **弱った体では傷も速く膿む**、が段の並びからそのまま出ます。`vitamin` の `scurvy` が「古傷が開く」と
 書いている（[`DigestionSystem.md`](./DigestionSystem.md) 4 節）のと同じ現象を、傷の側から見たものです。
 
-```yaml
+```yaml codex: injuries.yaml traits
 # 皮膚が破れた傷にだけ配るtrait（bleedingを持つ傷）。
 open_wound:
   props:
     # 膿み具合。局所の値で、全身へ回った菌は宿主のpathogenが持つ（6.3節）。
     infection:
       gauge: {min: good, max: bad}
-      value: 0  # <!-- codex: injuries.yaml traits.open_wound.props.infection.value -->
+      value: 0
       range:
-        min: 0  # <!-- codex: injuries.yaml traits.open_wound.props.infection.range.min -->
-        max: 100  # <!-- codex: injuries.yaml traits.open_wound.props.infection.range.max -->
+        min: 0
+        max: 100
       stages:
         - {name: clean}
-        - {name: festering, alert: caution, min: 40}  # <!-- codex: injuries.yaml traits.open_wound.props.infection.stages.1.min -->
-        - {name: septic, alert: danger, min: 80}  # <!-- codex: injuries.yaml traits.open_wound.props.infection.stages.2.min -->
+        - {name: festering, alert: caution, min: 40}
+        - {name: septic, alert: danger, min: 80}
       passives:
         # 素の速さは、免疫が増殖に負けている体のもの。免疫は引かせず、鈍らせるだけ。
-        - add: {self: {infection: 0.30}}  # <!-- codex: injuries.yaml traits.open_wound.props.infection.passives.0.add.self.infection -->
+        - add: {self: {infection: 0.30}}
         - conditions: [{subject: parent, prop: immunity, in_stage_or_above: robust}]
-          add: {self: {infection: -0.05}}  # <!-- codex: injuries.yaml traits.open_wound.props.infection.passives.1.add.self.infection -->
+          add: {self: {infection: -0.05}}
         - conditions: [{subject: parent, prop: immunity, in_stage_or_above: primed}]
-          add: {self: {infection: -0.05}}  # <!-- codex: injuries.yaml traits.open_wound.props.infection.passives.2.add.self.infection -->
+          add: {self: {infection: -0.05}}
   interactions:
     # 宣言は傷の側（GameElementDefinition.md 12.3節）。水は自分が何を洗えるかを知らない。
     wash:
       trigger: {drag: {tag: cleansing}}
-      duration: 15  # <!-- codex: injuries.yaml traits.open_wound.interactions.wash.duration -->
+      duration: 15
       conditions:
-        - {reason: not_enough_water, subject: instrument, prop: fill, gte: 250}  # <!-- codex: injuries.yaml traits.open_wound.interactions.wash.conditions.0.gte -->
-        - {reason: already_clean, subject: self, prop: infection, gte: 1}  # <!-- codex: injuries.yaml traits.open_wound.interactions.wash.conditions.1.gte -->
+        - {reason: not_enough_water, subject: instrument, prop: fill, gte: 250}
+        - {reason: already_clean, subject: self, prop: infection, gte: 1}
       add:
-        instrument: {fill: -250}  # <!-- codex: injuries.yaml traits.open_wound.interactions.wash.add.instrument.fill -->
-        self: {infection: -25}  # <!-- codex: injuries.yaml traits.open_wound.interactions.wash.add.self.infection -->
+        instrument: {fill: -250}
+        self: {infection: -25}
 ```
 
 ### 6.3 膿は、宿主の全身の菌量へ流し込む
@@ -330,13 +330,13 @@ open_wound:
 （[`DigestionSystem.md`](./DigestionSystem.md) 6 節）で、傷は「そこへどれだけ送り込むか」しか知りません。
 **同じ 1 つの宣言が人にも獣にも刺さります**（獣は `pathogen` と固定の `immunity` を持ちます）。
 
-```yaml
+```yaml codex: injuries.yaml traits
 open_wound:
   passives:
     - conditions: [{prop: infection, in_stage: festering}]
-      add: {parent: {pathogen: 0.12}}  # <!-- codex: injuries.yaml traits.open_wound.passives.0.add.parent.pathogen -->
+      add: {parent: {pathogen: 0.12}}
     - conditions: [{prop: infection, in_stage: septic}]
-      add: {parent: {pathogen: 0.35}}  # <!-- codex: injuries.yaml traits.open_wound.passives.1.add.parent.pathogen -->
+      add: {parent: {pathogen: 0.35}}
 ```
 
 **量は、全身の除去（免疫の段ごとの定数）と増殖（`+0.15/tick`）に対して読みます。**

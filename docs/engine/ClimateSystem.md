@@ -317,30 +317,30 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 選ばれた候補の内側の `pick` が持続時間（16<!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.0.set.self.weather_remaining -->/20<!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.1.set.self.weather_remaining -->/24<!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.2.set.self.weather_remaining --> tick）を等確率で選び、葉の `set` が「次の天気」と
 「新しい `weather_remaining`」を同時に設定します（構造は 2.3 節の季節遷移と同型。完全な定義は `core.yaml` 参照）。
 
-```yaml
+```yaml codex: core.yaml object_defs.world.props
 weather_remaining:
   # 初期値: day1の最初の遷移までの猶予
-  value: 20  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.value -->
+  value: 20
   range:  # 0に達した瞬間にon_minが発火する
-    min: 0  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.range.min -->
-    max: 999999  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.range.max -->
+    min: 0
+    max: 999999
   passives:
     - add:
         self:
-          weather_remaining: -1  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.passives.0.add.self.weather_remaining -->
+          weather_remaining: -1
   on_min:
     pick:
       - weight: {prop: sunny_weight}
         pick:
-          - weight: 1  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.0.weight -->
+          - weight: 1
             set:
-              self: {weather: sunny, weather_remaining: 16}  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.0.set.self.weather_remaining -->
-          - weight: 1  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.1.weight -->
+              self: {weather: sunny, weather_remaining: 16}
+          - weight: 1
             set:
-              self: {weather: sunny, weather_remaining: 20}  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.1.set.self.weather_remaining -->
-          - weight: 1  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.2.weight -->
+              self: {weather: sunny, weather_remaining: 20}
+          - weight: 1
             set:
-              self: {weather: sunny, weather_remaining: 24}  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.2.set.self.weather_remaining -->
+              self: {weather: sunny, weather_remaining: 24}
       - weight: {prop: clear_weight}
         # ... 以下、残りの候補も同じ形（core.yaml参照）
 ```
@@ -349,49 +349,49 @@ weather_remaining:
 6.4 節）が `passives` の `modify` として常時上書きすることで決まります（`weather` の `stages` が `ambient_brightness` を
 `modify` しているのと同じパターンで、新しいエンジン機能は不要です）。実装値は以下の通りです。
 
-```yaml
+```yaml codex: core.yaml object_defs.world.props
 atmospheric_moisture:
-  value: 0  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.value -->
+  value: 0
   range:
-    min: 0  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.range.min -->
-    max: 100  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.range.max -->
+    min: 0
+    max: 100
   stages:
     - name: dry            # 〜29.9: ほぼ晴れ（clearが最多）。雨はlight_rainのみ稀に（乾季の「稀に降る」を担う）
       passives:
         - modify:
             self:
-              sunny_weight: 25  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.0.passives.0.modify.self.sunny_weight -->
-              clear_weight: 45  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.0.passives.0.modify.self.clear_weight -->
-              cloudy_weight: 20  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.0.passives.0.modify.self.cloudy_weight -->
-              light_rain_weight: 1  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.0.passives.0.modify.self.light_rain_weight -->
+              sunny_weight: 25
+              clear_weight: 45
+              cloudy_weight: 20
+              light_rain_weight: 1
     - name: moderate       # 30〜59.9: 小雨が現実的な選択肢に。大雨・嵐は重み0のまま
-      min: 30  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.1.min -->
+      min: 30
       passives:
         - modify:
             self:
-              sunny_weight: 10  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.1.passives.0.modify.self.sunny_weight -->
-              clear_weight: 30  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.1.passives.0.modify.self.clear_weight -->
-              cloudy_weight: 25  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.1.passives.0.modify.self.cloudy_weight -->
-              light_rain_weight: 20  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.1.passives.0.modify.self.light_rain_weight -->
+              sunny_weight: 10
+              clear_weight: 30
+              cloudy_weight: 25
+              light_rain_weight: 20
     - name: humid          # 60〜84.9: 雨が優勢になり、大雨・嵐も現れ始める（降らないのはclear/cloudyだけ、僅かに）
-      min: 60  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.2.min -->
+      min: 60
       passives:
         - modify:
             self:
-              clear_weight: 4  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.2.passives.0.modify.self.clear_weight -->
-              cloudy_weight: 3  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.2.passives.0.modify.self.cloudy_weight -->
-              light_rain_weight: 40  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.2.passives.0.modify.self.light_rain_weight -->
-              heavy_rain_weight: 30  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.2.passives.0.modify.self.heavy_rain_weight -->
-              storm_weight: 3  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.2.passives.0.modify.self.storm_weight -->
+              clear_weight: 4
+              cloudy_weight: 3
+              light_rain_weight: 40
+              heavy_rain_weight: 30
+              storm_weight: 3
     - name: saturated      # 85〜: まず晴れない（sunny/clearの重みを立てない=0）。嵐・大雨が中心
-      min: 85  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.3.min -->
+      min: 85
       passives:
         - modify:
             self:
-              cloudy_weight: 5  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.3.passives.0.modify.self.cloudy_weight -->
-              light_rain_weight: 20  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.3.passives.0.modify.self.light_rain_weight -->
-              heavy_rain_weight: 40  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.3.passives.0.modify.self.heavy_rain_weight -->
-              storm_weight: 40  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.3.passives.0.modify.self.storm_weight -->
+              cloudy_weight: 5
+              light_rain_weight: 20
+              heavy_rain_weight: 40
+              storm_weight: 40
 ```
 
 晴れ系（`sunny`/`clear`/`cloudy`）の重みも雨系と同じく `atmospheric_moisture` の段階に連動させ、固定の
@@ -472,25 +472,25 @@ GameElementDefinition.md 6.4 節）で表現します。
 
 ### 5.1 ゲーム開始2日目
 
-```yaml
+```yaml codex: core.yaml object_defs.world.props
 early_rain_calibration:
-  value: 0  # <!-- codex: core.yaml object_defs.world.props.early_rain_calibration.value -->
+  value: 0
   passives:
     - add:
         self:
-          early_rain_calibration: 1  # <!-- codex: core.yaml object_defs.world.props.early_rain_calibration.passives.0.add.self.early_rain_calibration -->
+          early_rain_calibration: 1
   stages:
     - name: idle
     - name: boosting
       # 96 tick（1 日）が明けた、2日目の開始
-      min: 96  # <!-- codex: core.yaml object_defs.world.props.early_rain_calibration.stages.1.min -->
+      min: 96
       passives:
         - add:
             self:
-              atmospheric_moisture: 0.6  # <!-- codex: core.yaml object_defs.world.props.early_rain_calibration.stages.1.passives.0.add.self.atmospheric_moisture -->
+              atmospheric_moisture: 0.6
     - name: done
       # 3日目の開始でオフに戻る
-      min: 192  # <!-- codex: core.yaml object_defs.world.props.early_rain_calibration.stages.2.min -->
+      min: 192
 ```
 
 `early_rain_calibration` はゲーム開始と同時に毎 tick `+1` されるだけの専用カウンタです。`boosting` 区間
@@ -504,25 +504,25 @@ early_rain_calibration:
 季節の巡回順（2.1 節）と初回サイクル固定 30 日（2.3 節）により、最初の `dry` は 61 日目に始まり、その
 10 日目前後は絶対 71 日目（tick 換算で `(71-1) × 96 = 6,720` tick）と、ゲーム開始前から確定します。
 
-```yaml
+```yaml codex: core.yaml object_defs.world.props
 first_dry_rain_calibration:
-  value: 0  # <!-- codex: core.yaml object_defs.world.props.first_dry_rain_calibration.value -->
+  value: 0
   passives:
     - add:
         self:
-          first_dry_rain_calibration: 1  # <!-- codex: core.yaml object_defs.world.props.first_dry_rain_calibration.passives.0.add.self.first_dry_rain_calibration -->
+          first_dry_rain_calibration: 1
   stages:
     - name: idle
     - name: boosting
       # 71日目の開始（最初の乾季開始=61日目 + 10日）
-      min: 6720  # <!-- codex: core.yaml object_defs.world.props.first_dry_rain_calibration.stages.1.min -->
+      min: 6720
       passives:
         - add:
             self:
-              atmospheric_moisture: 2  # <!-- codex: core.yaml object_defs.world.props.first_dry_rain_calibration.stages.1.passives.0.add.self.atmospheric_moisture -->
+              atmospheric_moisture: 2
     - name: done
       # 72日目の開始でオフに戻る
-      min: 6816  # <!-- codex: core.yaml object_defs.world.props.first_dry_rain_calibration.stages.2.min -->
+      min: 6816
 ```
 
 `boosting` の +2<!-- codex: core.yaml object_defs.world.props.first_dry_rain_calibration.stages.1.passives.0.add.self.atmospheric_moisture -->/tick は dry の -0.2<!-- codex: core.yaml object_defs.world.props.season.stages.2.passives.1.add.self.atmospheric_moisture -->/tick を大きく上回る（正味 +1.8/tick）ため、乾ききった水分量が

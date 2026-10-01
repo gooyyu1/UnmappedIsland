@@ -125,7 +125,7 @@ actions/combinations と同じで（[ActionSystem.md](ActionSystem.md) 2 節）�
 **ルートキー `in_progress_tags` に挙がっているものだけ**を引き継ぎます（同梱の世界では `item` と
 `fixture`）。挙がっていないタグは付きません。挙げるタグが 1 つも無い世界では、`wip` だけが付きます。
 
-```yaml
+```yaml codex: core.yaml
 # core.yaml
 in_progress_tags: [item, fixture]
 ```

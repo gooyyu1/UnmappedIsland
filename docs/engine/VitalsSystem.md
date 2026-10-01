@@ -75,19 +75,19 @@
 **`consciousness` は自分では動きません。** 初期値は満たした状態（100<!-- codex: animals.yaml traits.beast.props.consciousness.value -->）で、痛み・失血・衝撃が
 `modify` で押し下げます。原因が消えれば寄与も消えるので、**気絶から覚めるのに回復処理は要りません**。
 
-```yaml
+```yaml codex: animals.yaml traits.beast.props
 # 獣（animals.yaml の beast trait）。段ごとの寄与と絵の差し替えは省いている
 consciousness:
   gauge: {min: bad, max: good}
-  value: 100  # <!-- codex: animals.yaml traits.beast.props.consciousness.value -->
+  value: 100
   range:
-    min: 0  # <!-- codex: animals.yaml traits.beast.props.consciousness.range.min -->
-    max: 100  # <!-- codex: animals.yaml traits.beast.props.consciousness.range.max -->
+    min: 0
+    max: 100
   stages:
     - {name: unconscious, alert: danger}
-    - {name: dazed, alert: caution, min: 25}  # <!-- codex: animals.yaml traits.beast.props.consciousness.stages.1.min -->
-    - {name: foggy, alert: watch, min: 60}  # <!-- codex: animals.yaml traits.beast.props.consciousness.stages.2.min -->
-    - {name: clear, min: 80}  # <!-- codex: animals.yaml traits.beast.props.consciousness.stages.3.min -->
+    - {name: dazed, alert: caution, min: 25}
+    - {name: foggy, alert: watch, min: 60}
+    - {name: clear, min: 80}
 ```
 
 - 段の刻みは [`Characters.md`](../world/Characters.md) の規約に従い、**安全域を外れるのは `max` の80%**。
@@ -101,32 +101,32 @@ consciousness:
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 6.4節）。時刻（`hour`）の段が明るさ
 （`ambient_brightness`）へ寄与しているのと同じ形で、**しきい値と寄与量が同じ1箇所に並びます**。
 
-```yaml
+```yaml codex: animals.yaml traits.beast.props
 # 獣（animals.yaml の beast trait）。flee は逃げの重み
 pain:
   stages:
     - {name: painless}
     - name: sore
-      min: 25  # <!-- codex: animals.yaml traits.beast.props.pain.stages.1.min -->
+      min: 25
       alert: watch
       passives:
-        - modify: {self: {flee: 25}}  # <!-- codex: animals.yaml traits.beast.props.pain.stages.1.passives.0.modify.self.flee -->
+        - modify: {self: {flee: 25}}
     - name: hurting
-      min: 50  # <!-- codex: animals.yaml traits.beast.props.pain.stages.2.min -->
+      min: 50
       alert: caution
       passives:
         - modify:
             self:
-              consciousness: -20  # <!-- codex: animals.yaml traits.beast.props.pain.stages.2.passives.0.modify.self.consciousness -->
-              flee: 60  # <!-- codex: animals.yaml traits.beast.props.pain.stages.2.passives.0.modify.self.flee -->
+              consciousness: -20
+              flee: 60
     - name: unbearable
-      min: 83  # <!-- codex: animals.yaml traits.beast.props.pain.stages.3.min -->
+      min: 83
       alert: danger
       passives:
         - modify:
             self:
-              consciousness: -45  # <!-- codex: animals.yaml traits.beast.props.pain.stages.3.passives.0.modify.self.consciousness -->
-              flee: 120  # <!-- codex: animals.yaml traits.beast.props.pain.stages.3.passives.0.modify.self.flee -->
+              consciousness: -45
+              flee: 120
 ```
 
 段は排他なので（同じ値が2つの段に該当することはない）、階段がそのまま並びます。**効き方は連続では
@@ -155,37 +155,37 @@ pain:
 時間の尺度が合いません——深い傷は日の単位で治り、気絶から覚めるのは時間の単位だからです。同じ量の段で
 桁違いの時間は表せないので、衝撃を1つの量として持ちます。
 
-```yaml
+```yaml codex: animals.yaml object_defs.monkey.props
 # サル（animals.yaml の monkey）
 shock:
-  value: 0  # <!-- codex: animals.yaml object_defs.monkey.props.shock.value -->
+  value: 0
   range:  # maxが体格（体重の1/50）。イノシシは1200<!-- codex: animals.yaml object_defs.wild_boar.props.shock.range.max -->
-    min: 0  # <!-- codex: animals.yaml object_defs.monkey.props.shock.range.min -->
-    max: 100  # <!-- codex: animals.yaml object_defs.monkey.props.shock.range.max -->
+    min: 0
+    max: 100
   passives:
     # max ÷ 25（下の箇条）
-    - add: {self: {shock: -4}}  # <!-- codex: animals.yaml object_defs.monkey.props.shock.passives.0.add.self.shock -->
+    - add: {self: {shock: -4}}
   stages:
     - {name: steady}
     - name: rattled
-      min: 30  # <!-- codex: animals.yaml object_defs.monkey.props.shock.stages.1.min -->
+      min: 30
       passives:
-        - modify: {self: {consciousness: -30}}  # <!-- codex: animals.yaml object_defs.monkey.props.shock.stages.1.passives.0.modify.self.consciousness -->
+        - modify: {self: {consciousness: -30}}
     - name: reeling
-      min: 70  # <!-- codex: animals.yaml object_defs.monkey.props.shock.stages.2.min -->
+      min: 70
       passives:
-        - modify: {self: {consciousness: -80}}  # <!-- codex: animals.yaml object_defs.monkey.props.shock.stages.2.passives.0.modify.self.consciousness -->
+        - modify: {self: {consciousness: -80}}
 ```
 
 与えるのは攻撃の側で、`add` は実体値への即時の書き込みなので**殴った瞬間に効きます**。
 
-```yaml
+```yaml codex: animals.yaml traits.beast.interactions.strike.pick
 - weight: {subject: instrument, prop: heavy_blow}
   add:
     self:
-      wariness: 25  # <!-- codex: animals.yaml traits.beast.interactions.strike.pick.0.add.self.wariness -->
-      shock: 250  # <!-- codex: animals.yaml traits.beast.interactions.strike.pick.0.add.self.shock -->
-    instrument: {durability: -20}  # <!-- codex: animals.yaml traits.beast.interactions.strike.pick.0.add.instrument.durability -->
+      wariness: 25
+      shock: 250
+    instrument: {durability: -20}
   spawn: {object: laceration, into: self}
   signal: hit
 ```
@@ -211,21 +211,21 @@ shock:
 自分を消す形は怪我の `severity` と同じ（[`InjurySystem.md`](./InjurySystem.md) 1 節）です。消す宣言が
 死因の名前を添える（`reason: exsanguinated`）ので、消えたあとでも死に方を読めます（6 節）。
 
-```yaml
+```yaml codex: characters/player_character.yaml traits.player_character.props
 # キャラクタ（characters/player_character.yaml）
 blood:
   tags: [status, health]
   # 体重のおよそ1/13。maxがそのまま体格
-  value: 5000  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.value -->
+  value: 5000
   range:
-    min: 0  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.range.min -->
-    max: 5000  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.range.max -->
+    min: 0
+    max: 5000
   stages:
     - {name: exsanguinated, alert: fatal}             # 6割を失えば助からない
-    - {name: hemorrhaging, alert: danger, min: 2000}  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.stages.1.min -->
-    - {name: bled, alert: caution, min: 3000}  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.stages.2.min -->
-    - {name: low, alert: watch, min: 3500}  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.stages.3.min -->
-    - {name: replete, min: 4000}  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.stages.4.min -->
+    - {name: hemorrhaging, alert: danger, min: 2000}
+    - {name: bled, alert: caution, min: 3000}
+    - {name: low, alert: watch, min: 3500}
+    - {name: replete, min: 4000}
   on_min:
     destroy: {subject: self, reason: exsanguinated}   # 消す宣言が死因を名乗る（6 節）
   passives:
@@ -233,30 +233,30 @@ blood:
     - conditions:
         - {prop: hydration, in_stage_or_above: hydrated}
         - {prop: body_fat, in_stage_or_above: gaunt}
-      add: {self: {blood: 2}}  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.passives.0.add.self.blood -->
+      add: {self: {blood: 2}}
 ```
 
 獣の段は、同じしきい値の比率で意識を押し下げます（人の段はまだ寄与を持ちません。7 節）。
 
-```yaml
+```yaml codex: animals.yaml object_defs.monkey.props.blood
 # サル（animals.yaml の monkey）
 stages:
   - name: exsanguinated
     alert: fatal
     passives:
-      - modify: {self: {consciousness: -100}}  # <!-- codex: animals.yaml object_defs.monkey.props.blood.stages.0.passives.0.modify.self.consciousness -->
+      - modify: {self: {consciousness: -100}}
   - name: hemorrhaging
-    min: 160  # <!-- codex: animals.yaml object_defs.monkey.props.blood.stages.1.min -->
+    min: 160
     alert: danger
     passives:
-      - modify: {self: {consciousness: -70}}  # <!-- codex: animals.yaml object_defs.monkey.props.blood.stages.1.passives.0.modify.self.consciousness -->
+      - modify: {self: {consciousness: -70}}
   - name: bled
-    min: 240  # <!-- codex: animals.yaml object_defs.monkey.props.blood.stages.2.min -->
+    min: 240
     alert: caution
     passives:
-      - modify: {self: {consciousness: -30}}  # <!-- codex: animals.yaml object_defs.monkey.props.blood.stages.2.passives.0.modify.self.consciousness -->
-  - {name: low, alert: watch, min: 280}  # <!-- codex: animals.yaml object_defs.monkey.props.blood.stages.3.min -->
-  - {name: replete, min: 320}  # <!-- codex: animals.yaml object_defs.monkey.props.blood.stages.4.min -->
+      - modify: {self: {consciousness: -30}}
+  - {name: low, alert: watch, min: 280}
+  - {name: replete, min: 320}
 ```
 
 - **`max` は体格です。** ヒトは体重のおよそ1/13（70kgで5,000mL<!-- codex: characters/player_character.yaml traits.player_character.props.blood.range.max -->）で、動物の体重比もほぼ同じ。専用の
@@ -332,24 +332,24 @@ stages:
 **出血する傷とは「宿主の `blood` を毎 tick 削る傷」のこと**で、勢いの違いはレートの違いとして表れます。
 そして**血は固まります**——傷の側が `bleeding`（今流れている勢い）を持ち、それが尽きた時点で止まります。
 
-```yaml
+```yaml codex: injuries.yaml object_defs
 laceration:
   props:
     # 傷の重さとは別の時間で動く。満ちた勢いが毎 tick 引いて、尽きれば固まる。
     bleeding:
-      value: 100  # <!-- codex: injuries.yaml object_defs.laceration.props.bleeding.value -->
+      value: 100
       range:
-        min: 0  # <!-- codex: injuries.yaml object_defs.laceration.props.bleeding.range.min -->
-        max: 100  # <!-- codex: injuries.yaml object_defs.laceration.props.bleeding.range.max -->
+        min: 0
+        max: 100
       passives:
-        - add: {self: {bleeding: -25}}  # <!-- codex: injuries.yaml object_defs.laceration.props.bleeding.passives.0.add.self.bleeding -->
+        - add: {self: {bleeding: -25}}
   passives:
-    - modify: {parent: {pain: 50}}  # <!-- codex: injuries.yaml object_defs.laceration.passives.0.modify.parent.pain -->
+    - modify: {parent: {pain: 50}}
     # 流れている間だけ、宿主の血が失われていく。これが出血そのもの。
     - conditions:
-        - {prop: bleeding, gte: 1}  # <!-- codex: injuries.yaml object_defs.laceration.passives.1.conditions.0.gte -->
+        - {prop: bleeding, gte: 1}
         - not: {slot: treatment, matches: {tag: hemostatic}}
-      add: {parent: {blood: -15}}  # <!-- codex: injuries.yaml object_defs.laceration.passives.1.add.parent.blood -->
+      add: {parent: {blood: -15}}
 ```
 
 - **止まる仕組みを傷の側に持たせないと、掠り傷でも必ず死にます。** `severity` の段をゲートにすると、
@@ -507,26 +507,26 @@ laceration:
 膿み具合しか持たず、水も血も削りません**——膿んだ傷がするのは `pathogen` を押し上げることだけで
 （[`InjurySystem.md`](./InjurySystem.md) 6.3 節）、そこから先に何が起きるかを知りません。
 
-```yaml
+```yaml codex: characters/player_character.yaml traits.player_character.props
 pathogen:
   stages:
     - {name: sterile}
-    - {name: latent, min: 0.1}  # <!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.1.min -->
+    - {name: latent, min: 0.1}
     # 熱で水が余計に要る。飲めば追いつくので、ここだけなら水で凌げる。
     - name: feverish
-      min: 5  # <!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.2.min -->
+      min: 5
       alert: caution
       passives:
-        - add: {self: {hydration: -1}}  # <!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.2.passives.0.add.self.hydration -->
+        - add: {self: {hydration: -1}}
     # 菌が血へ回れば血漿が循環の外へ漏れ出す。飲んでも循環へは戻らない。
     - name: septicemic
-      min: 7  # <!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.3.min -->
+      min: 7
       alert: danger
       passives:
         - add:
             self:
-              hydration: -2  # <!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.3.passives.0.add.self.hydration -->
-              blood: -40  # <!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.3.passives.0.add.self.blood -->
+              hydration: -2
+              blood: -40
 ```
 
 `hydration` は素で -1/tick<!-- codex: characters/captain.yaml object_defs.captain.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/engineer.yaml object_defs.engineer.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/farmer.yaml object_defs.farmer.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/medic.yaml object_defs.medic.props.hydration.passives.0.add.self.hydration --> 減る（[`Characters.md`](../world/Characters.md)）ので、段の削りがそこへ

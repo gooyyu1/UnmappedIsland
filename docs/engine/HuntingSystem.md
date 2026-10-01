@@ -44,12 +44,12 @@
 中核動詞（[`GameElementDefinition.md`](./GameElementDefinition.md) 12 節）そのままで、新しい操作の語彙を
 持ち込みません。
 
-```yaml
+```yaml codex: animals.yaml traits
 beast:
   interactions:
     strike:
       trigger: {drag: {tag: weapon}}
-      duration: 15  # <!-- codex: animals.yaml traits.beast.interactions.strike.duration -->
+      duration: 15
 ```
 
 **狙い所は武器の性格に畳みます。** 「急所／胴／脚」を選ばせる専用のUIは持たず、槍は急所寄り（当たりにくく
@@ -128,9 +128,9 @@ beast:
 
 **仕留められるかは、相手の無防備さ（`vulnerability`）がそのまま候補の重みになります。**
 
-```yaml
+```yaml codex: animals.yaml traits.beast.interactions.strike.pick
 - weight: {prop: vulnerability}
-  set: {self: {blood: 0}}  # <!-- codex: animals.yaml traits.beast.interactions.strike.pick.4.set.self.blood -->
+  set: {self: {blood: 0}}
   signal: killed
 ```
 
@@ -165,18 +165,18 @@ beast:
 6.3 節）。**それより大きい獲物では、内臓を出すところから骨に付いた肉を落とすところまで手が分かれ**、
 どこまで捌けたかは死体の側が持ちます——回ごとに出る物が違い、途中で肉だけ運んでから戻れます。
 
-```yaml
+```yaml codex: animals.yaml object_defs
 monkey_carcass:
   props:
     butcher_minutes:   # 皮革の腕が縮める分は省いている
-      value: 60  # <!-- codex: animals.yaml object_defs.monkey_carcass.props.butcher_minutes.value -->
+      value: 60
   interactions:
     butcher:
       trigger: {drag: {tag: handheld_blade}}
       duration: {prop: butcher_minutes}   # 暗さ・嵐で断る条件と、皮革の腕の伸びは省いている
       destroy: self
       spawn:
-        - {object: raw_meat, count: 4}  # <!-- codex: animals.yaml object_defs.monkey_carcass.interactions.butcher.spawn.0.count -->
+        - {object: raw_meat, count: 4}
         - {object: animal_bone}
         - {object: rawhide}
 ```
@@ -295,10 +295,10 @@ monkey_carcass:
 | `bound_to_owner: true` | 持ち主から**離れられない**（怪我・液体・道） |
 | `resists: [条件]` | 条件が成立している間、**持ち主を持てない**（土地以外の親へ移れない） |
 
-```yaml
+```yaml codex: animals.yaml traits
 beast:
   tags: [item, animal, quarry]
-  resists: [{prop: wariness, gte: 1}]  # <!-- codex: animals.yaml traits.beast.resists.0.gte -->
+  resists: [{prop: wariness, gte: 1}]
 ```
 
 - 手持ち・かご・台車の定義は変更しません。既存の `accept: {tag: item}` のまま、抵抗する側が拒みます
@@ -360,7 +360,7 @@ beast:
 **候補が `among`（[`GameElementDefinition.md`](./GameElementDefinition.md) 10.3 節）で自分の相手を選びます。**
 どこから・どう絞って・どんな重みで選ぶかを候補自身が書き、選ばれた相手は `picked` で指します。
 
-```yaml
+```yaml codex: animals.yaml traits
 beast:
   props:
     # 動物ごとに宣言する重み配分（値を持たないので宣言し忘れはロードで落ちる）。
@@ -652,7 +652,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 入るため、**当たった回もレーンの上では何も変わりません。** 当たり外れがカードの上で読めるのは、
 両方が告げているからです。
 
-```yaml
+```yaml codex: animals.yaml traits.beast.interactions
 strike:
   pick:
     - weight: {subject: instrument, prop: heavy_blow}

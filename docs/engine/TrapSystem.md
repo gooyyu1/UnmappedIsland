@@ -51,7 +51,7 @@
 **「仕掛けた罠」と「持ち歩く罠」を別の型にはしません。** 作動しているかどうかは、罠が今どのスロットに
 入っているかが決めます。
 
-```yaml
+```yaml codex: traps.yaml
 object_defs:
   snare:
     tags: [item, trap]
@@ -62,7 +62,7 @@ object_defs:
       # ——罠へ動物を手で入れられて困ることは無い（そもそも荒ぶる動物は手に持てない、
       # HuntingSystem.md 4節）。
       catch:
-        cell_count: 1  # <!-- codex: traps.yaml object_defs.snare.slots.catch.cell_count -->
+        cell_count: 1
         # 生きた獲物と死体の両方が持つタグ（1.1節）。capacityは宣言しない（同）。
         cell: {accept: {tag: quarry}}
 ```
@@ -170,33 +170,33 @@ object_defs:
 
 **罠は仕掛けた時刻からの残り時間を 1 つ持ち、0 に達した瞬間に 1 回抽選して、周期を置き直します。**
 
-```yaml
+```yaml codex: traps.yaml object_defs.snare
 props:
   catch_remaining:
     # 生成時に1回ロールされる位相（2.1節）。以後この幅は使われない。
     value:
-      min: 1  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.value.min -->
-      max: 16  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.value.max -->
+      min: 1
+      max: 16
     range:
-      min: 0  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.range.min -->
-      max: 16  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.range.max -->
+      min: 0
+      max: 16
     passives:
       - conditions:
           - {in_slot: items}                  # 地面に置かれている間だけ（1節）
           # 空いている間だけ（6節）。獲物も死体もquarryなので、両方をこれ1つで拾う。
           - not: {slot: catch, matches: {tag: quarry}}
-        add: {self: {catch_remaining: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.passives.0.add.self.catch_remaining -->
+        add: {self: {catch_remaining: -1}}
     on_min:
       # 外側は食性の卓を選び（餌が決める、4節）、内側はその卓で掛かるかどうかと種を選ぶ
       # （土地が決める、3節）。
-      add: {self: {catch_remaining: 16}}  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.on_min.add.self.catch_remaining -->
+      add: {self: {catch_remaining: 16}}
       pick:
         # 何も寄って来なかった回。先頭に置く（3節）。
         - weight: {prop: miss_weight}
         - weight: {prop: herbivore_weight}
           pick:
             # 寄ってはきたが掛からなかった回。その食性の相手が居ない土地では必ずここになる。
-            - weight: 8  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.on_min.pick.1.pick.0.weight -->
+            - weight: 8
             # 掛かった候補は、獲物とその罠の怪我を順に生む（5.1節）。
             - weight: {prop: junglefowl_catch}
               spawn:
@@ -208,7 +208,7 @@ props:
                 - {object: snare_laceration, into: child}
         - weight: {prop: carnivore_weight}
           pick:
-            - weight: 8  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.on_min.pick.2.pick.0.weight -->
+            - weight: 8
             # ネズミは雑食なので、両方の卓に同じつまみで載る（4.1節）。
             - weight: {prop: rat_catch}
               spawn:
@@ -249,26 +249,26 @@ props:
 **その土地に何がどれだけ居るかは土地の `props` が持ち、罠は `base` でそれを自分の重みの土台に
 します**（`GameElementDefinition.md` 6.5 節）。
 
-```yaml
+```yaml codex: locations.yaml object_defs
 # locations.yaml — 草原
 grassland:
   props:
-    rat_catch: {value: 6}  # <!-- codex: locations.yaml object_defs.grassland.props.rat_catch.value -->
-    junglefowl_catch: {value: 10}  # <!-- codex: locations.yaml object_defs.grassland.props.junglefowl_catch.value -->
+    rat_catch: {value: 6}
+    junglefowl_catch: {value: 10}
 ```
 
-```yaml
+```yaml codex: traps.yaml object_defs.snare
 # traps.yaml — くくり罠
 props:
   # 素の値は0で、祖先（＝置かれている土地）が宣言していれば、その実効値が土台になる。
-  rat_catch: {base: {subject: ancestor}, value: 0}  # <!-- codex: traps.yaml object_defs.snare.props.rat_catch.value -->
-  junglefowl_catch: {base: {subject: ancestor}, value: 0}  # <!-- codex: traps.yaml object_defs.snare.props.junglefowl_catch.value -->
+  rat_catch: {base: {subject: ancestor}, value: 0}
+  junglefowl_catch: {base: {subject: ancestor}, value: 0}
   miss_weight:
-    value: 40  # <!-- codex: traps.yaml object_defs.snare.props.miss_weight.value -->
+    value: 40
     # 餌のmodifyが押し下げても0にはしない（4節）。上限は素の値。
     range:
-      min: 5  # <!-- codex: traps.yaml object_defs.snare.props.miss_weight.range.min -->
-      max: 40  # <!-- codex: traps.yaml object_defs.snare.props.miss_weight.range.max -->
+      min: 5
+      max: 40
 ```
 
 - **宣言していない土地では、その候補が抽選から外れます。** 寄与が 0 なら重みが 0 になり、`pick` は
@@ -307,22 +307,22 @@ props:
 **餌は 2 種類あり、どちらを仕掛けたかが、外側の `pick` でどちらの卓を引くかを動かします。** 掛かる確率が
 上がるのと、掛かる相手が食性で寄るのは、この 1 つの動きの両面です。
 
-```yaml
+```yaml codex: traps.yaml object_defs.snare
 # 罠の側が宣言する。草の餌と肉の餌で1つずつ。
 interactions:
   add_plant_bait:
     trigger: {drag: {tag: plant_bait}}
     conditions:
-      - {reason: trap_baited, prop: plant_bait, lt: 24}  # <!-- codex: traps.yaml object_defs.snare.interactions.add_plant_bait.conditions.0.lt -->
+      - {reason: trap_baited, prop: plant_bait, lt: 24}
     transfer:
-      {from: instrument, from_prop: plant_bait, to_prop: plant_bait, allow_overflow: true, amount: 999}  # <!-- codex: traps.yaml object_defs.snare.interactions.add_plant_bait.transfer.amount -->
+      {from: instrument, from_prop: plant_bait, to_prop: plant_bait, allow_overflow: true, amount: 999}
     destroy: instrument
   add_meat_bait:
     trigger: {drag: {tag: meat_bait}}
     conditions:
-      - {reason: trap_baited, prop: meat_bait, lt: 24}  # <!-- codex: traps.yaml object_defs.snare.interactions.add_meat_bait.conditions.0.lt -->
+      - {reason: trap_baited, prop: meat_bait, lt: 24}
     transfer:
-      {from: instrument, from_prop: meat_bait, to_prop: meat_bait, allow_overflow: true, amount: 999}  # <!-- codex: traps.yaml object_defs.snare.interactions.add_meat_bait.transfer.amount -->
+      {from: instrument, from_prop: meat_bait, to_prop: meat_bait, allow_overflow: true, amount: 999}
     destroy: instrument
 ```
 
@@ -330,57 +330,57 @@ interactions:
 同 9.5.2 節。炉へ薪をくべるのと同じ形で、`FireSystem.md` 2 節）。捨てるのは高々 1 つぶんで、それは
 **1 つも入らない罠では操作が成立しない**という規則（`GameElementDefinition.md` 12.4 節）が保証します。
 
-```yaml
+```yaml codex: animals.yaml object_defs
 # 餌の側が宣言する。タグとプロパティの名前で、どちらの餌かが決まる。
 raw_meat:
   tags: [item, food, meat_bait]
   props:
-    meat_bait: {value: 12}  # <!-- codex: animals.yaml object_defs.raw_meat.props.meat_bait.value -->
+    meat_bait: {value: 12}
 ```
 
 `transfer` を使うのは、`add` だと罠の種類 × 餌の種類の数だけ固定値を書くことになるためです。移る量は
 餌の側が 1 箇所で持ちます（`FireSystem.md` 2 節の燃料と同じ形）。
 
-```yaml
+```yaml codex: traps.yaml object_defs.snare
 # 罠の側の効かせ方
 props:
   herbivore_weight:
-    value: 10  # <!-- codex: traps.yaml object_defs.snare.props.herbivore_weight.value -->
+    value: 10
     range:
-      min: 0  # <!-- codex: traps.yaml object_defs.snare.props.herbivore_weight.range.min -->
-      max: 35  # <!-- codex: traps.yaml object_defs.snare.props.herbivore_weight.range.max -->
+      min: 0
+      max: 35
   carnivore_weight:
-    value: 10  # <!-- codex: traps.yaml object_defs.snare.props.carnivore_weight.value -->
+    value: 10
     range:
-      min: 0  # <!-- codex: traps.yaml object_defs.snare.props.carnivore_weight.range.min -->
-      max: 35  # <!-- codex: traps.yaml object_defs.snare.props.carnivore_weight.range.max -->
+      min: 0
+      max: 35
   plant_bait:
-    value: 0  # <!-- codex: traps.yaml object_defs.snare.props.plant_bait.value -->
+    value: 0
     range:
-      min: 0  # <!-- codex: traps.yaml object_defs.snare.props.plant_bait.range.min -->
-      max: 24  # <!-- codex: traps.yaml object_defs.snare.props.plant_bait.range.max -->
+      min: 0
+      max: 24
     passives:
       - conditions: [{in_slot: items}]
-        add: {self: {plant_bait: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.plant_bait.passives.0.add.self.plant_bait -->
+        add: {self: {plant_bait: -1}}
   meat_bait:
-    value: 0  # <!-- codex: traps.yaml object_defs.snare.props.meat_bait.value -->
+    value: 0
     range:
-      min: 0  # <!-- codex: traps.yaml object_defs.snare.props.meat_bait.range.min -->
-      max: 24  # <!-- codex: traps.yaml object_defs.snare.props.meat_bait.range.max -->
+      min: 0
+      max: 24
     passives:
       - conditions: [{in_slot: items}]
-        add: {self: {meat_bait: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.meat_bait.passives.0.add.self.meat_bait -->
+        add: {self: {meat_bait: -1}}
 passives:
-  - conditions: [{prop: plant_bait, gte: 1}]  # <!-- codex: traps.yaml object_defs.snare.passives.1.conditions.0.gte -->
+  - conditions: [{prop: plant_bait, gte: 1}]
     modify:
       self:
-        herbivore_weight: 25  # <!-- codex: traps.yaml object_defs.snare.passives.1.modify.self.herbivore_weight -->
-        miss_weight: -25  # <!-- codex: traps.yaml object_defs.snare.passives.1.modify.self.miss_weight -->
-  - conditions: [{prop: meat_bait, gte: 1}]  # <!-- codex: traps.yaml object_defs.snare.passives.2.conditions.0.gte -->
+        herbivore_weight: 25
+        miss_weight: -25
+  - conditions: [{prop: meat_bait, gte: 1}]
     modify:
       self:
-        carnivore_weight: 25  # <!-- codex: traps.yaml object_defs.snare.passives.2.modify.self.carnivore_weight -->
-        miss_weight: -25  # <!-- codex: traps.yaml object_defs.snare.passives.2.modify.self.miss_weight -->
+        carnivore_weight: 25
+        miss_weight: -25
 ```
 
 - **1 つのブロックが 2 つのことを同時に言います。** その食性の卓が引かれやすくなり、何も寄って来ない回
@@ -417,7 +417,7 @@ passives:
 
 **罠は自分の子の `wariness` を打ち消し、`vulnerability` を押し上げます。**
 
-```yaml
+```yaml codex: farming.yaml object_defs.pen
 passives:
   - modify:
       child:
@@ -461,7 +461,7 @@ passives:
 **殺す罠と生かす罠の差は、獲物と一緒に生む怪我の中身だけです。** 罠は死を書かず、削りもしません
 ——刺すだけです。
 
-```yaml
+```yaml codex: traps.yaml object_defs.snare.props.catch_remaining.on_min.pick.1.pick
 # 掛かった候補（2節）が、獲物と怪我を順に生む。
 - weight: {prop: junglefowl_catch}
   spawn:
@@ -477,35 +477,35 @@ passives:
 （`GameElementDefinition.md` 6.2 節）が
 「浅く掛かったか、深く食い込んだか」をそのまま表します。
 
-```yaml
+```yaml codex: injuries.yaml object_defs
 # くくり罠の怪我。縄が食い込んで裂ける傷で、laceration（injuries.yaml）より浅い。
 snare_laceration:
   traits: [injury, treatable]
   props:
     severity:
       value:
-        min: 240  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.value.min -->
-        max: 480  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.value.max -->
+        min: 240
+        max: 480
       range:
-        min: 0  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.range.min -->
-        max: 480  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.range.max -->
-      passives: [{add: {self: {severity: -1}}}]  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.passives.0.add.self.severity -->
+        min: 0
+        max: 480
+      passives: [{add: {self: {severity: -1}}}]
       on_min: {destroy: self}
     # 掛かり方の深さ。深く掛かるほど固まるまでが長く、そのぶん多く奪う。
     bleeding:
       value:
-        min: 40  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.value.min -->
-        max: 100  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.value.max -->
+        min: 40
+        max: 100
       range:
-        min: 0  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.range.min -->
-        max: 100  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.range.max -->
-      passives: [{add: {self: {bleeding: -25}}}]  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.passives.0.add.self.bleeding -->
+        min: 0
+        max: 100
+      passives: [{add: {self: {bleeding: -25}}}]
   passives:
-    - modify: {parent: {pain: 50}}  # <!-- codex: injuries.yaml object_defs.snare_laceration.passives.0.modify.parent.pain -->
+    - modify: {parent: {pain: 50}}
     - conditions:
-        - {prop: bleeding, gte: 1}  # <!-- codex: injuries.yaml object_defs.snare_laceration.passives.1.conditions.0.gte -->
+        - {prop: bleeding, gte: 1}
         - not: {slot: treatment, matches: {tag: hemostatic}}
-      add: {parent: {blood: -15}}  # <!-- codex: injuries.yaml object_defs.snare_laceration.passives.1.add.parent.blood -->
+      add: {parent: {blood: -15}}
 ```
 
 **掛かった tick に死ぬかどうかは、怪我が奪う量と獲物の体格の比が決めます。** `blood` の `range.max` は体格そのもの
@@ -583,7 +583,7 @@ snare_laceration:
 [`InjurySystem.md`](./InjurySystem.md) 6 節）なので、**膿んで敗血症まで行くかどうかも、同じ 1 つの差から
 出ます**（5.1 節）。
 
-```yaml
+```yaml codex: injuries.yaml object_defs
 # 生かす罠の打ち身（injuries.yaml）。閉じ込められた獣が丸太へ、落ちた獣が穴の底へ体を打ちつけて負う。
 bruise:
   traits: [injury, treatable]
@@ -591,15 +591,15 @@ bruise:
     severity:
       gauge: {min: good, max: bad}
       value:  # ぶつかり方の激しさを生成時に1回ロールする（GameElementDefinition.md 6.2節）
-        min: 120  # <!-- codex: injuries.yaml object_defs.bruise.props.severity.value.min -->
-        max: 240  # <!-- codex: injuries.yaml object_defs.bruise.props.severity.value.max -->
+        min: 120
+        max: 240
       range:
-        min: 0  # <!-- codex: injuries.yaml object_defs.bruise.props.severity.range.min -->
-        max: 240  # <!-- codex: injuries.yaml object_defs.bruise.props.severity.range.max -->
-      passives: [{add: {self: {severity: -1}}}]  # <!-- codex: injuries.yaml object_defs.bruise.props.severity.passives.0.add.self.severity -->
+        min: 0
+        max: 240
+      passives: [{add: {self: {severity: -1}}}]
       on_min: {destroy: self}
   passives:
-    - modify: {parent: {pain: 30}}  # <!-- codex: injuries.yaml object_defs.bruise.passives.0.modify.parent.pain -->
+    - modify: {parent: {pain: 30}}
 ```
 
 **体格で意味が変わりません。** 5.1 節の表は「同じ 1 枚の傷が体格で意味を変える」ことを、傷が奪う
@@ -686,12 +686,12 @@ bruise:
 
 5.4節のゲートを宣言と数へ落としたもので、覆すのに人間の判断は要りません。
 
-```yaml
+```yaml codex: animals.yaml traits.beast.props
 # 獣の側（animals.yaml）が1箇所だけ宣言する。
 hydration:
   passives:
     - conditions: [{in_slot: catch}]
-      add: {self: {hydration: -1}}  # <!-- codex: animals.yaml traits.beast.props.hydration.passives.0.add.self.hydration -->
+      add: {self: {hydration: -1}}
   on_min:
     destroy: {subject: self, reason: dehydrated}
 ```
@@ -722,20 +722,20 @@ hydration:
 **獲物が入っている間、耐久は速く減ります。** もがかれ続ける罠は、空のまま風雨に晒される罠より
 桁違いに早く傷みます。
 
-```yaml
+```yaml codex: traps.yaml object_defs.snare
 props:
   durability:
-    value: 960  # <!-- codex: traps.yaml object_defs.snare.props.durability.value -->
+    value: 960
     range:
-      min: 0  # <!-- codex: traps.yaml object_defs.snare.props.durability.range.min -->
-      max: 960  # <!-- codex: traps.yaml object_defs.snare.props.durability.range.max -->
+      min: 0
+      max: 960
     passives:
       - conditions: [{in_slot: items}]
         # 屋外での劣化
-        add: {self: {durability: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.durability.passives.0.add.self.durability -->
+        add: {self: {durability: -1}}
       - conditions: [{slot: catch, matches: {tag: quarry}}]
         # もがかれている間（屋外より桁違いに速い、下の箇条）
-        add: {self: {durability: -10}}  # <!-- codex: traps.yaml object_defs.snare.props.durability.passives.1.add.self.durability -->
+        add: {self: {durability: -10}}
     on_min:
       destroy: self
 ```

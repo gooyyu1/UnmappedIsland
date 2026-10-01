@@ -608,7 +608,7 @@
 [Localization.md](../engine/Localization.md)）です。分類のために別の語彙を持ち込まず、既にあるタグを
 並べ替えて指すだけにします。
 
-```yaml
+```yaml codex: core.yaml
 recipe_categories: [tool, container, fixture, item]
 ```
 
