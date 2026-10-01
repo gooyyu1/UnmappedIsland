@@ -9,6 +9,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
+import type { RollEnd } from '../../src/domain/PropertyDef';
 
 /**
  * injuries.yamlの怪我を、実ファイルの定義だけで検証する（docs/engine/InjurySystem.md）。
@@ -106,7 +107,7 @@ describe('injuries.yamlの怪我', () => {
    * しまわないよう（VitalsSystem.md 8節）、命を絶つ値だけは減った分を戻しておく。ここで見たいのは
    * 傷の治りだけで、生き延びる手立ては別のテストが持つ。
    *
-   * **脂の在庫も戻す。** 15時間で尽きて段が痛みを押し上げる（DigestionSystem.md 7節）ので、
+   * **脂の在庫も戻す。** 尽きると段が痛みを押し上げる（DigestionSystem.md 7節）ので、
    * そのままでは怪我の痛みだけを見ていられなくなる。
    *
    * **眠気と幸福度も同じ理由で戻す。** 尽きると次の操作の切れ目で強制的に時間が進む
@@ -393,7 +394,7 @@ describe('injuries.yamlの怪我', () => {
    * ——下げる手立てだけがあっても、上がる道が無ければ数字は動かない。
    */
   describe('傷を洗う', () => {
-    /** 健康な体でinfectionが1段上がるのにかかるtick数（0.25/tick で 40）。 */
+    /** 健康な体でinfectionが1段上がるのにかかるtick数。 */
     const TO_FESTERING = 160;
     /** cleanからsepticへ届くまでのtick数。 */
     const TO_SEPTIC = 320;
@@ -479,6 +480,46 @@ describe('injuries.yamlの怪我', () => {
 
       tick(TO_SEPTIC - TO_FESTERING);
       expect(injury.tryGetProperty(infectionId())?.stage?.name).toBe('septic');
+    });
+
+    /** 膿む傷（infectionを持つinjury）の名前。 */
+    function festeringWounds(): string[] {
+      const names = codex
+        .objectDefNamesWithTag(codex.tagNames.getId('injury'))
+        .filter((name) => codex.objects.get(codex.objectNames.getId(name)).tryGetPropertyDef(infectionId()));
+      expect(names.length, '膿む傷が1つも無い').toBeGreaterThan(0);
+      return names;
+    }
+
+    /**
+     * 負った重さを生成時のロールのその端に据えた傷が、敗血症の段へ入る前に治りきるか。傷ごとに
+     * 新しい体へ負わせる（他の傷の菌が体を弱らせて速さが変わらないように）。
+     */
+    function healsBeforeSeptic(name: string, end: RollEnd): boolean {
+      open(FALLS);
+      const wound = openWound(name);
+      const severity = wound.getProperty(codex.propertyNames.getId('severity'));
+      severity.setNumberWithoutEvents(severity.def.initialValueAt(end));
+      tick(TO_SEPTIC);
+      return (
+        !injuriesOf(player).includes(name) || wound.tryGetProperty(infectionId())?.stage?.name !== 'septic'
+      );
+    }
+
+    it('深く残る個体なら、どの開いた傷も治りきる前に敗血症の段へ入る', () => {
+      // InjurySystem.md 6.2節。重さを振る傷の浅い個体は先に治りきりうるので、ロールの上端で見る。
+      expect(
+        festeringWounds().filter((name) => healsBeforeSeptic(name, 'highest')),
+        '深く残っても、敗血症の段へ入る前に治りきる傷',
+      ).toEqual([]);
+    });
+
+    it('浅い個体が敗血症の段へ入る前に治りきる傷は、くくり罠の裂傷だけ', () => {
+      // InjurySystem.md 6.2節の「くくり罠の浅い裂傷だけは」。重さを振る開いた傷が増えて、その下端が
+      // 敗血症の手前より短ければここが落ちる。
+      expect(festeringWounds().filter((name) => healsBeforeSeptic(name, 'lowest'))).toEqual([
+        'snare_laceration',
+      ]);
     });
 
     it('水を1杯掛けると25落ち、その1杯は器から消える', () => {
