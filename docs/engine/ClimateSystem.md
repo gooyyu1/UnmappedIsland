@@ -73,12 +73,12 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 ませんが、衣類へ足して重なるので、合わせた刻みを細かくする側に立ちます。海抜ぶんの差が重なると、
 その 2 つが 1℃ ずつに割れます。
 
-**どの一着にも、そこでちょうど釣り合う土地があります**——涼しい季節の薄明に土地の差を足した気温が、素の入口から 1℃ ずつ下がった
+**どの一着にも、そこでちょうど釣り合う土地があります**——涼しい季節の薄明に土地の差を足した気温が、素の入口から下がっていく
 衣類の段とそのまま並びます（`tests/world-codex/landTemperature.test.ts`）。
 
-**素のままで越せるかは、山頂だけが変わります。** 戻る速さは削られる速さより速い（`+8`<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.passives.2.add.self.warmth -->/tick と
+**素のままで越せるかは、山頂だけが変わります。** 戻る速さは削られる速さより十分に速い（`+8`<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.passives.2.add.self.warmth -->/tick と
 `-2`<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.passives.0.add.self.warmth -->/tick、[`VitalsSystem.md`](./VitalsSystem.md) 8.4 節）なので、晴れた日中に入口を上回りさえすれば、
-夜に削られたぶんはその日のうちに戻ります。晴れた日中に土地の差を足しても入口を下回るのは山頂だけで（`landTemperature.test.ts`）、そこも
+夜に削られたぶんはその日のうちに戻ります（`landTemperature.test.ts` の「素のままでも、晴れた1日を通せば…」）。晴れた日中に土地の差を足しても入口を下回るのは山頂だけで（`landTemperature.test.ts`）、そこも
 **いちばん安い一着**があれば戻ります（山腹はちょうど入口と釣り合うので、素のままで足ります）。
 **登るほど深い一着が要る**という形で、衣類の段が島の高さに対応します。
 
@@ -204,8 +204,7 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 
 実装値では、`calm` 中の `light_rain` の正味レートは自己減算 -1.1<!-- codex: core.yaml object_defs.world.props.weather.stages.2.passives.1.add.self.atmospheric_moisture --> と季節レート +0.1<!-- codex: core.yaml object_defs.world.props.season.stages.0.passives.1.add.self.atmospheric_moisture --> の和で、
 `weather_remaining` 1 回分（16<!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.0.set.self.weather_remaining -->〜24<!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.2.set.self.weather_remaining --> tick、4.2 節）の雨がそのぶん水分を押し戻します。押し戻した分を
-+0.1<!-- codex: core.yaml object_defs.world.props.season.stages.0.passives.1.add.self.atmospheric_moisture -->/tick で登り返すあいだが連続未降雨時間です（上の「上昇側」）。**実測の平均は 2.17 日<!-- stats: climate.yaml non_rain_streak season=calm segment=overall mean -->**
-（[`stats/climate.yaml`](../../stats/climate.yaml) の `non_rain_streak` の `season: calm`・`segment: overall`）です。`moderate` 帯の `light_rain_weight` は 20<!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.1.passives.0.modify.self.light_rain_weight -->に抑えており、閾値に触れてから
++0.1<!-- codex: core.yaml object_defs.world.props.season.stages.0.passives.1.add.self.atmospheric_moisture -->/tick で登り返すあいだが連続未降雨時間です（上の「上昇側」。実測は 3.5 節）。`moderate` 帯の `light_rain_weight` は 20<!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.1.passives.0.modify.self.light_rain_weight -->に抑えており、閾値に触れてから
 実際に雨が選ばれるまでの待ち時間も間隔に上乗せされます。閾値のすぐ上では `heavy_rain`/`storm` の
 重みが 0（`moderate` 段階、4.3 節）のため雨はほぼ `light_rain` で、水分が稀に `humid`（60<!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.2.min -->）まで
 登り切った場合にのみ大雨が起こりえます（実測でも `calm` の大雨は tick のごく一部で、許容する揺らぎです）。

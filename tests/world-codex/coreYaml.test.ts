@@ -361,17 +361,22 @@ object_defs:
 
 describe('core.yamlの天気の持続', () => {
   interface DurationBranch {
-    readonly pick: readonly { readonly set: { readonly self: { readonly weather_remaining: number } } }[];
+    readonly pick: readonly {
+      readonly weight: number;
+      readonly set: { readonly self: { readonly weather_remaining: number } };
+    }[];
   }
 
-  it('どの天気の枝も、同じ持続の候補を同じ順に選ぶ（ClimateSystem.md 4.3節の抜粋「残りの候補も同じ形」）', () => {
+  it('どの天気の枝も、同じ持続の候補を同じ重みで選ぶ（ClimateSystem.md 4.3節の抜粋「残りの候補も同じ形」）', () => {
     const core = parse(readFileSync(worldCodexPath('core.yaml'), 'utf8')) as {
       object_defs: {
         world: { props: { weather_remaining: { on_min: { pick: readonly DurationBranch[] } } } };
       };
     };
     const branches = core.object_defs.world.props.weather_remaining.on_min.pick;
-    const durations = branches.map((branch) => branch.pick.map((leaf) => leaf.set.self.weather_remaining));
+    const durations = branches.map((branch) =>
+      branch.pick.map((leaf) => ({ weight: leaf.weight, ticks: leaf.set.self.weather_remaining })),
+    );
 
     expect(durations.length).toBeGreaterThan(1);
     for (const each of durations) expect(each).toEqual(durations[0]);
