@@ -11,8 +11,8 @@ import {
   rounded,
   shareRecord,
   statRecordWith,
-  yieldToEventLoop,
 } from '../support/generatedReport';
+import { yieldToEventLoop } from '../support/yieldToEventLoop';
 import { Stat } from '../support/Stat';
 import { bundledCodex } from '../support/worldCodexFiles';
 

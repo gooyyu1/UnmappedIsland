@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import sharp from 'sharp';
@@ -84,5 +85,6 @@ export default defineConfig({
     // モジュールレベルの状態を書き換えたまま終わってはいけない（ここを破ると、実行順で結果が変わる）。
     isolate: false,
     reporters: ['default', new FailedRunRecorder()],
+    setupFiles: [fileURLToPath(new URL('./tests/support/yieldBetweenTests.ts', import.meta.url))],
   },
 });
