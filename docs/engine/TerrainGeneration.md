@@ -280,7 +280,7 @@ generation_scopes:
 - 全 `Site` に対して **Delaunay 三角形分割**を実施します（`Domain.Generation.DelaunayTriangulator`、
   Bowyer-Watson 法）。数学的に辺が交差しないという性質を、交差なしパスネットワークの土台に使います。
 - 間引きは以下の順で行います。
-  1. **最小全域木（MST、Kruskal法）**は必ず残します（到達性の保証）。
+  1. **最小全域木**（MST、Kruskal法）は必ず残します（到達性の保証）。
   2. MST 以外の Delaunay 辺は、距離の短い順に走査し、「現在のグラフでのその2点間最短距離（Dijkstra）が、
      直結距離の `generation_scopes.island.extra_edge_detour_factor`（倍率）を超える」場合だけ復活させます
      （大回りを強いられている場合に、近道・分岐を作る）。復活させる辺も Delaunay 辺の部分集合であるため、

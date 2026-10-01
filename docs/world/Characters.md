@@ -107,7 +107,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **`wakefulness`（覚醒度）**: 0で強制的に眠りに入る（下の[限界](#限界)節。致死性は無い）。`-1/tick`<!-- codex: characters/captain.yaml object_defs.captain.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/engineer.yaml object_defs.engineer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.passives.0.add.self.wakefulness -->。
   戻すのは眠る休息（仮眠・睡眠）と、その眠り込み（[休息](#休息)節）、それに飲むと `wakefulness` を
   配る液体（茶。[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md)）。**`max` は「満タンから、
-  意識を保てなくなって眠り込むまでの時間」**で、普通の人間の48時間（192<!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.range.max --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.range.max --> tick）を基準に置く。外から起こし続ける実験の記録
+  意識を保てなくなって眠り込むまでの時間」で**、普通の人間の48時間（192<!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.range.max --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.range.max --> tick）を基準に置く。外から起こし続ける実験の記録
   （数日〜十日）は採らない——あれは自力で起きていられる長さではないため。眠らずにいられる長さの
   個人差はここに出る。
 - **`stamina`（体力）**: 疲労の逆。戻すのは休息（同節）と、倒れ込み・眠り込み（下の[限界](#限界)節）。

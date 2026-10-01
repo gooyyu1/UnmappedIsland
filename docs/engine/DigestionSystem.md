@@ -157,7 +157,7 @@
 
 **対数目盛では指数増殖が定数の `add` になります。** 明るさを EV で持っているのと同じ形
 （[`IlluminationSystem.md`](./IlluminationSystem.md) 2 節）で、「細菌が自分で自分を押し上げる」を
-近似せずに書けます。**増える速さは定数 1 つ（`+0.15/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.passives.0.add.self.pathogen -->）**で、`log₁₀2 ≒ 0.30` が 1 回の倍加なので、
+近似せずに書けます。**増える速さは定数 1 つ**（`+0.15/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.passives.0.add.self.pathogen -->）で、`log₁₀2 ≒ 0.30` が 1 回の倍加なので、
 **倍加時間は `log₁₀2` をこの速さで割った長さ**です。
 
 **`add` の量に参照や積は書きません。** あの表現力はエンジン専用に取ってあるので
@@ -217,7 +217,7 @@
 | `robust` | 40<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.stages.2.min --> | `-0.20`<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.stages.2.passives.0.add.self.pathogen --> | 着地する。**健康な体（素の 60<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.value -->）はここ** |
 | `primed` | 70<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.stages.3.min --> | `-0.30`<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.stages.3.passives.0.add.self.pathogen --> | 速く着地する |
 
-**生活からの寄与は `modify`（可逆）**で、宣言は原因の段の側が持ちます（壊血病が `pain` を押し上げるのと
+**生活からの寄与は `modify`**（可逆）で、宣言は原因の段の側が持ちます（壊血病が `pain` を押し上げるのと
 同じ形、4 節）。押す量の順位は現実の効き目の順です。
 
 | 押し下げるもの | 量 | どの段 |
@@ -265,7 +265,7 @@
 口にした報いはその場で終わり、次の食事へ持ち越しません。
 
 **仕組みの側でも、いまは書けません。** `eat` の `add` の量はリテラルなので**傷んだ段と腐った段の差を
-書けず**、段の `passives` には `set` が無いので**「吐く」（腹が空になる）が書けない**——移すには食べ物の
+書けず**、段の `passives` には `set` が無いので、**「吐く」（腹が空になる）が書けない**——移すには食べ物の
 側が菌量を実体値として溜める形（`perishable` の作り直し）が要ります。
 
 傷み具合は `durability` の**残りの割合**で刻みます。腐る速さは分類で違いますが、`durability` は種類に
