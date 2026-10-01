@@ -81,7 +81,7 @@ jobs:
           git rm -rq --cached .
           git reset -q --hard
           # 取り出し直しが効かないと、このジョブは CRLF の作業ツリーを見ないまま緑になる。改行は
-          # git 自身に答えさせる（読み手の道具の改行の扱いに、判定を預けない）。
+          # git 自身に答えさせる——Git for Windows の `grep $'\r$'` は、CRLF のファイルにも当たらない。
           eol=$(git ls-files --eol package.json)
           echo "$eol"
           if [[ $eol != *w/crlf* ]]; then
