@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { PropertyDef } from '../../src/domain/PropertyDef';
 import type { SlotDef } from '../../src/domain/SlotDef';
@@ -7,7 +9,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
-import { WORLD_CODEX_DIR, loadYamlDirectory } from '../support/worldCodexFiles';
+import { WORLD_CODEX_DIR, loadYamlDirectory, worldCodexPath } from '../support/worldCodexFiles';
 
 function load(yamlText: string): WorldCodex {
   return new WorldCodexYamlLoader().load('core.yaml', yamlText).buildAndReset();
@@ -354,5 +356,29 @@ object_defs:
       hut.tryGetSlotDef(testCodex.vocabulary.world.undiscoveredFixturesSlotId),
       '未発見の設置物スロットも持たない',
     ).toBeUndefined();
+  });
+});
+
+describe('core.yamlの天気の持続', () => {
+  interface DurationBranch {
+    readonly pick: readonly {
+      readonly weight: number;
+      readonly set: { readonly self: { readonly weather_remaining: number } };
+    }[];
+  }
+
+  it('どの天気の枝も、同じ持続の候補を同じ重みで選ぶ（ClimateSystem.md 4.3節の抜粋「残りの候補も同じ形」）', () => {
+    const core = parse(readFileSync(worldCodexPath('core.yaml'), 'utf8')) as {
+      object_defs: {
+        world: { props: { weather_remaining: { on_min: { pick: readonly DurationBranch[] } } } };
+      };
+    };
+    const branches = core.object_defs.world.props.weather_remaining.on_min.pick;
+    const durations = branches.map((branch) =>
+      branch.pick.map((leaf) => ({ weight: leaf.weight, ticks: leaf.set.self.weather_remaining })),
+    );
+
+    expect(durations.length).toBeGreaterThan(1);
+    for (const each of durations) expect(each).toEqual(durations[0]);
   });
 });

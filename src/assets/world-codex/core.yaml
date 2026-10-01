@@ -627,8 +627,8 @@ object_defs:
       scorching_weight:
         value: 0
       # 現在の天気の残りtick数。0に達した瞬間（min:1を下回るon_min、6.3節）に、外側のpickが
-      # *_weightを重みに次の天気を、内側のpickが持続時間4/5/6時間（16/20/24tick）を等確率で選ぶ
-      # （ClimateSystem.md 4節）。初期値20（5時間）はday1の最初の遷移までの猶予。
+      # *_weightを重みに次の天気を、内側のpickが持続時間を等確率で選ぶ
+      # （ClimateSystem.md 4節）。初期値はday1の最初の遷移までの猶予。
       weather_remaining:
         value: 20
         range: {min: 0, max: 999999}
@@ -729,7 +729,7 @@ object_defs:
       headwind_weight:
         value: 0
       # 今の風向きの残りtick数。0に達した瞬間（min:1を下回るon_min、6.3節）に、*_weightを
-      # 重みとするpickで次の風向きを選ぶ。持続は一律8時間（32tick）——天気と違って向きしか無いので、
+      # 重みとするpickで次の風向きを選ぶ。持続は一律——天気と違って向きしか無いので、
       # 長さまで振ると、どちらが変わったのかが読めなくなる。
       wind_remaining:
         value: 32
@@ -750,8 +750,8 @@ object_defs:
               set:
                 self: {wind: headwind, wind_remaining: 32}
       # 蓄熱量（ClimateSystem.md 3節のもう一つの貯水池）。季節レートをambient_temperatureへ直接
-      # 加算すると±1/tickでも1季節で±2880になるため、atmospheric_moistureと同じ「スケールした
-      # 貯水池のstagesが表向きの値をmodifyする」パターンを使う。dryで+1/tick（20日で0→上限1920）、
+      # 加算すると±1/tickでも1季節のうちに季節のtick数ぶん動くため、atmospheric_moistureと同じ「スケールした
+      # 貯水池のstagesが表向きの値をmodifyする」パターンを使う。dryで+1/tick（0→上限）、
       # calm/wetで-1/tick。初期値1000は「開始時は補正なし（mild帯）」のため。
       # hot stageはscorching_weightも駆動する（乾季後半だけ灼熱が抽選に加わる。stageのminは
       # その値を含む判定のため、上限=hot閾値でもhotは有効）。
@@ -776,7 +776,7 @@ object_defs:
                     ambient_temperature: 8
                     scorching_weight: 50
       # 雨季の深まり（ClimateSystem.md 4.3節）。thermal_levelと対称の貯水池で、wetで+1/tick
-      # （20日で0→上限1920）、calm/dryで-1/tick。deepening帯（雨季10日目〜）・peak帯（20日目〜）が
+      # （0→上限）、calm/dryで-1/tick。deepening帯・peak帯が
       # heavy_rain_weight/storm_weightへ上乗せし、「雨季後半ほど嵐・大雨が増える」を保証する。
       # 上乗せは大気水分量が高いときにconditionsで限定する: 無条件だと、乾季序盤に水分が尽きた後まで
       # 大雨の重みが残ってしまうため。水分がまだ高い過渡の間は上乗せが生き、嵐の名残が表現される。

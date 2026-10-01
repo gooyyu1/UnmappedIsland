@@ -7,6 +7,7 @@ import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 土地が空の気温へ足す海抜ぶんの差（[`docs/engine/ClimateSystem.md`](../../docs/engine/ClimateSystem.md)
@@ -318,7 +319,7 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
 
   it('素のままでも晴れた日中に熱は戻る——山頂を除く', () => {
     // 刻みを増やしても「何も着ず火も無いままでは越せない日が続く」形にしない（issue #2147）。
-    // 戻りは削りの4倍なので、日中に入口を上回りさえすればその日のうちに戻る。
+    // 日中に入口を上回るかを見る。その日のうちに戻りきるかは下の検査が見る。
     coolSeasonSky(12, 'bright');
     const coldest = [...lands.keys()].reduce((left, right) =>
       temperatureAt(left) <= temperatureAt(right) ? left : right,
@@ -341,5 +342,28 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
     ).toBeUndefined();
 
     expect(warmthChange(), `${coldest}でも${shallowest.name}があれば戻る`).toBeGreaterThan(0);
+  });
+
+  it('素のままでも、晴れた1日を通せば夜に削られたぶんは戻る——山頂を除く', () => {
+    // 戻りが削りより速いだけでは足りない。日中の長さと速さの比が揃って初めて、その日のうちに戻る。
+    coolSeasonSky(12, 'bright');
+    const coldest = [...lands.keys()].reduce((left, right) =>
+      temperatureAt(left) <= temperatureAt(right) ? left : right,
+    );
+
+    for (const landName of lands.keys()) {
+      if (landName === coldest) continue;
+      standIn(landName);
+
+      let overTheDay = 0;
+      for (let hour = 0; hour < HOURS_PER_DAY; hour++) {
+        property(world, 'thermal_level').setNumber(0);
+        property(world, 'hour').setNumber(hour);
+        property(world, 'weather').setNumberWithoutEvents(codex.symbolNames.getId('clear'));
+        overTheDay += warmthChange() * (MINUTES_PER_HOUR / MINUTES_PER_TICK);
+      }
+
+      expect(overTheDay, `${landName}なら晴れた1日を通して熱は減らない`).toBeGreaterThanOrEqual(0);
+    }
   });
 });
