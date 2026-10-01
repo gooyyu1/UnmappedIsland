@@ -757,8 +757,13 @@ describe('筏と航海', () => {
       for (const [key, child] of Object.entries(record)) visit(child, `${path}.${key}`);
     };
     visit(voyage, '');
-    const current = modifies.find(({ target }) => target === 'child')!.amount;
-    const sail = modifies.find(({ path }) => path.includes('.rawhide_sail.'))!.amount;
+    // 海流も帆も1か所でだけ宣言している前提で読む。増えたら、どれを数えるかをここで決め直す。
+    const currents = modifies.filter(({ target }) => target === 'child');
+    const sails = modifies.filter(({ path }) => path.includes('.rawhide_sail.'));
+    expect(currents, '海流の宣言').toHaveLength(1);
+    expect(sails, '帆の宣言').toHaveLength(1);
+    const current = currents[0].amount;
+    const sail = sails[0].amount;
 
     const raftDef = codex.objects.get(codex.objectNames.getId('raft'));
     const speed = raftDef.tryGetPropertyDef(codex.propertyNames.getId('sail_speed'))!;
@@ -767,13 +772,15 @@ describe('筏と航海', () => {
     const stageIndexOf = (value: number): number =>
       stageNames.indexOf(speed.stageAt(speed.range!.clamp(value))!.name);
 
-    // 積載の段ごとの削り（宣言の無い段は0）。積みすぎ（最後の段）は除く。
-    const loads = weightStages.slice(0, -1).map((stage) => {
-      const own = modifies.find(
-        ({ path }) => path.includes('.raft.') && path.includes(`.stages.${weightStages.indexOf(stage)}.`),
-      );
-      return { name: stage.name, base: current + (own?.amount ?? 0) };
-    });
+    // 積載の段ごとの削り（宣言の無い段は0）。積みすぎ（overladen）は除く。
+    const loads = weightStages
+      .filter((stage) => stage.name !== 'overladen')
+      .map((stage) => {
+        const own = modifies.find(
+          ({ path }) => path.includes('.raft.') && path.includes(`.stages.${weightStages.indexOf(stage)}.`),
+        );
+        return { name: stage.name, base: current + (own?.amount ?? 0) };
+      });
     expect(loads.length).toBeGreaterThan(0);
 
     expect(stageNames[stageIndexOf(current)], '素の筏は海流だけで').toBe('slow');
