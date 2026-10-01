@@ -192,6 +192,91 @@ object_defs:
       - conditions: [{prop: infection, in_stage: septic}]
         add: {parent: {blood: -40, hydration: -2}}
 
+  # 吸い付いたヒル。**上がって外れる比較で縛られた押し手**——満ちていくほど吸うのをやめる。
+  # 外れるのは満ち具合が上がってしきい値へ届いたときで、0は最も確かに吸っている位置。
+  # 上限40ちょうどまでを許す比較は、上限に張り付いても外れない。
+  # ここから3つの傷は、どの枠も受けないタグを持つ——injuryにすると猪の失血を押す手に混ざる。
+  leech:
+    tags: [stray_wound]
+    props:
+      fullness:
+        value: 0
+        range: {min: 0, max: 40}
+        passives:
+          - add: {self: {fullness: 2}}
+    passives:
+      - conditions: [{prop: fullness, lt: 30}]
+        add: {parent: {blood: -3}}
+      - conditions: [{prop: fullness, lte: 30}]
+        add: {parent: {hydration: -1}}
+      - conditions: [{prop: fullness, lte: 40}]
+        add: {parent: {stamina: -1}}
+      # 点で決まる比較。値が点ちょうどに止まるかは速さから読めない。
+      - conditions: [{prop: fullness, neq: 10}]
+        add: {parent: {vitality: -1}}
+      - conditions: [{prop: fullness, not_in: [10, 20]}]
+        add: {parent: {pain: 1}}
+
+  # 腫れ上がる噛み傷。**生まれた時点で比較の外に在る値**——その条件が成り立つのはこれから。
+  swollen_bite:
+    tags: [stray_wound]
+    props:
+      swelling:
+        value: 50
+        range: {min: 0, max: 100}
+        passives:
+          - add: {self: {swelling: 2}}
+    passives:
+      - conditions: [{prop: swelling, lte: 30}]
+        add: {parent: {blood: -1}}
+      # 上端から見れば内側だが、下端（60）より下に生まれている。
+      - conditions: [{prop: swelling, eq: 60}]
+        add: {parent: {hydration: -1}}
+
+  # にじむ切り傷。**0でないしきい値を割って外れる比較**——にじみが半分を割れば止まる。
+  seeping_cut:
+    tags: [stray_wound]
+    props:
+      oozing:
+        value: 100
+        range: {min: 0, max: 100}
+        passives:
+          - add: {self: {oozing: -10}}
+    passives:
+      - conditions: [{prop: oozing, gte: 50}]
+        add: {parent: {blood: -5}}
+      - conditions: [{prop: oozing, gt: 50}]
+        add: {parent: {hydration: -1}}
+      # 論理和・否定の下の比較。どちらも、にじみが尽きても外れるとは限らない。
+      - conditions:
+          - any:
+              - {prop: oozing, gte: 1}
+              - {subject: ancestor, prop: wetness, gte: 1}
+        add: {parent: {stamina: -1}}
+      # 否定の下のgte 1は、にじみが1を割った時点で成り立ち始める側で、外れる側ではない。
+      - conditions:
+          - not: {prop: oozing, gte: 1}
+        add: {parent: {pain: 1}}
+
+  # 塞がりかけの傷。にじみを減らす分しか読めないが、**段の下に置かれた増減**（8.2節）が開いた口から
+  # にじみを足し戻す。読めた分だけで「尽きる」と言い切ると、足し戻される傷が止まることになる。
+  reopening_cut:
+    tags: [stray_wound]
+    props:
+      oozing:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - name: open
+            passives:
+              - add: {self: {oozing: 12}}
+          - {name: closing, min: 60}
+        passives:
+          - add: {self: {oozing: -10}}
+    passives:
+      - conditions: [{prop: oozing, gte: 1}]
+        add: {parent: {blood: -5}}
+
   # 焼けただれ。**「その段以上」で縛られた押し手**——焦げ始めてから水を奪い、上の段へ抜けても
   # 奪い続ける。ちょうどその段でだけ効く傷の膿みと分かれるのはここ。
   burn:
@@ -1098,6 +1183,75 @@ object_defs:
     expect(externalDeltasOf('gash', 'hydration')).toEqual([
       { amounts: [-1], ticksUntilStart: 160, ticksUntilStop: 320 },
       { amounts: [-2], ticksUntilStart: 320, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('上がって外れる比較で縛られた押し手は、値がしきい値へ上がった時点で止まる', () => {
+    // 見ている値を「0まで尽きたら外れる」としか読まないと、増える一方のfullnessでは尽きる時が
+    // 来ず、どれも「止まらない」になる。0から+2/tickなので、lt 30は30へ届く15 tick目で外れ、
+    // lte 30は30ちょうどではまだ成立していて、越える16 tick目で外れる。
+    expect(externalDeltasOf('leech', 'blood')).toEqual([
+      { amounts: [-3], ticksUntilStart: 0, ticksUntilStop: 15 },
+    ]);
+    expect(externalDeltasOf('leech', 'hydration')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: 16 },
+    ]);
+  });
+
+  it('rangeの上限まで許す比較は、値が上限に張り付いても外れない', () => {
+    // fullnessは上限40で止まるので、lte 40は越えられない。上限を見ずに数えると21 tick目で外れる。
+    expect(externalDeltasOf('leech', 'stamina')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('点で決まる比較は、値が動いていても止まる時刻を持たない', () => {
+    // 端を持つ比較と同じに数えると、neqもnot_inも10を越える6 tick目で外れることになる。
+    expect(externalDeltasOf('leech', 'vitality')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    expect(externalDeltasOf('leech', 'pain')).toEqual([
+      { amounts: [1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('生まれた時点で比較の外に在る値は、その比較からは止まらない', () => {
+    // swellingは50から+2/tick。lte 30はもう越えていて、ここで数えると負の時刻になって押し手ごと消える。eq 60は上端から
+    // 見れば内側なので、端ごとに見ると60を越える6 tick目で外れることになる。
+    expect(externalDeltasOf('swollen_bite', 'blood')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    expect(externalDeltasOf('swollen_bite', 'hydration')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('しきい値が0でない比較は、0まで待たずにしきい値を割った時点で止まる', () => {
+    // 100から-10/tickで、0まで尽きるのは10 tick目。gte 50は50ちょうどではまだ成立していて、割る
+    // 6 tick目で外れる。gt 50は50へ着いた5 tick目で外れる。
+    expect(externalDeltasOf('seeping_cut', 'blood')).toEqual([
+      { amounts: [-5], ticksUntilStart: 0, ticksUntilStop: 6 },
+    ]);
+    expect(externalDeltasOf('seeping_cut', 'hydration')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: 5 },
+    ]);
+  });
+
+  it('論理和・否定の下にしか現れない比較は、押し手の止まる時刻を決めない', () => {
+    // 論理和は外の雨でも成立し続け、否定の下の比較はその比較が成立していることそのものではない。
+    // どちらも数に入れると、にじみが尽きる10 tick目で止まるものとして数えられる。
+    expect(externalDeltasOf('seeping_cut', 'stamina')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    expect(externalDeltasOf('seeping_cut', 'pain')).toEqual([
+      { amounts: [1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('段の下の増減を数から外している値では、比較の外へ出ることを言い切らない', () => {
+    // 読めるのは-10だけだが、openの段では+12が足し戻す。-10だけで数えると10 tick目で止まる。
+    expect(externalDeltasOf('reopening_cut', 'blood')).toEqual([
+      { amounts: [-5], ticksUntilStart: 0, ticksUntilStop: undefined },
     ]);
   });
 

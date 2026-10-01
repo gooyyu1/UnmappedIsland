@@ -1,7 +1,13 @@
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { PropertyDef, RangeEventLabel, RollEnd } from '../domain/PropertyDef';
 import { movesTowardEnd, RANGE_EVENT_LABELS, rollEndAwayFrom, ROLL_ENDS } from '../domain/PropertyDef';
-import type { PushingSituation, SelfStageRequirement, TickDelta, TickGate } from './tickDeltas';
+import type {
+  PropertyComparison,
+  PushingSituation,
+  SelfStageRequirement,
+  TickDelta,
+  TickGate,
+} from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 import type { CraftingStep } from './CraftingStep';
 import { collectOutputs } from './CraftingStep';
@@ -636,21 +642,21 @@ function totalsWithDriver(own: TickAmounts, driver: ExternalTickDelta | undefine
 const GATE_WINDOW_ROLL_END: RollEnd = 'lowest';
 
 /**
- * ゲートが落ちて、その増減が効かなくなるまでのtick数（TickGate参照）。**見ている自分の値が
- * 尽きるか、居ることを要求された段を抜けるか**で落ちる。どちらも来なければundefined＝
+ * ゲートが落ちて、その増減が効かなくなるまでのtick数（TickGate参照）。**自分の値に課された比較の
+ * 外へ出るか、居ることを要求された段を抜けるか**で落ちる。どちらも来なければundefined＝
  * 止まらない。**生まれた時点から数える**ので、効き始めまでの時間（ticksUntilGateRises）と同じ
  * 物差しの上に乗る。
  *
- * **段は上へも下へも抜ける。** 値がどちらへ動くかは定義からは1つに決まらないので、どちらの抜け方も
- * 数える。**その端を既に越えて生まれた値は、その端からは抜けない**——上端より上に生まれたなら上へは、
- * 下端より下に生まれたなら下へは抜けない。どちらもその段へ入るのはこれからで、いつ入るかを答えるのは
- * ticksUntilGateRises。ここで抜けたことにすると、その押し手が丸ごと消える。
+ * **比較も段も、上へも下へも抜ける。** 値がどちらへ動くかは定義からは1つに決まらないので、どちらの
+ * 抜け方も数える。**その端を既に越えて生まれた値は、その端からは抜けない**——上端より上に生まれたなら
+ * 上へは、下端より下に生まれたなら下へは抜けない。どちらもその段へ入るのはこれからで、いつ入るかを
+ * 答えるのはticksUntilGateRises。ここで抜けたことにすると、その押し手が丸ごと消える。
  *
  * 落ちるのは**要るもののどれか1つが外れた時点**なので、最も早いものを採る。
  */
 function ticksUntilGateFalls(def: ObjectDef, gate: TickGate): number | undefined {
   const falls = [
-    ...gate.watchedSelfProperties.map((propertyGlobalId) => ticksUntilValueRunsOut(def, propertyGlobalId)),
+    ...gate.selfComparisons.map((comparison) => ticksUntilComparisonLeft(def, comparison)),
     ...gate.requiredSelfStages.flatMap((required) => [
       ticksUntilStageLeftUpward(def, required),
       ticksUntilStageLeftDownward(def, required),
@@ -659,14 +665,111 @@ function ticksUntilGateFalls(def: ObjectDef, gate: TickGate): number | undefined
   return falls.length === 0 ? undefined : Math.min(...falls);
 }
 
-/** その値が尽きて、それを見ている条件が外れるまでのtick数。尽きない値ならundefined。 */
-function ticksUntilValueRunsOut(def: ObjectDef, propertyGlobalId: PropertyGlobalId): number | undefined {
-  // 尽きるまでを**最も短く**見る側（fastest）。
-  return ticksToReach(
-    staticValueOf(def, propertyGlobalId, GATE_WINDOW_ROLL_END),
-    0,
-    paceTowards(tickAmountsOf(def, propertyGlobalId).possible, 'on_min')?.fastest.amount,
-  );
+/**
+ * 比較が成立する値の区間の端1つ（comparisonUpperEndOf・comparisonLowerEndOf）。
+ * `inclusive` は、端の値ちょうどが区間に入るか——`lte`・`gte`・`eq` なら入る。
+ */
+interface ComparisonEnd {
+  readonly value: number;
+  readonly inclusive: boolean;
+}
+
+/**
+ * 比較が成立する区間の上端。上へどこまで行っても成立したままならundefined。
+ *
+ * **点で成り立つ・点で外れる比較（`neq`・`in`・`not_in`）は端を持たないことにする。** 値がその点
+ * ちょうどに止まるかは速さからは読めず、跨いで通り過ぎることもある。
+ */
+function comparisonUpperEndOf(comparison: PropertyComparison): ComparisonEnd | undefined {
+  const [value] = comparison.values;
+  switch (comparison.op) {
+    case 'lt':
+      return { value, inclusive: false };
+    case 'lte':
+    case 'eq':
+      return { value, inclusive: true };
+    default:
+      return undefined;
+  }
+}
+
+/** 比較が成立する区間の下端。下へどこまで行っても成立したままならundefined（comparisonUpperEndOf）。 */
+function comparisonLowerEndOf(comparison: PropertyComparison): ComparisonEnd | undefined {
+  const [value] = comparison.values;
+  switch (comparison.op) {
+    case 'gt':
+      return { value, inclusive: false };
+    case 'gte':
+    case 'eq':
+      return { value, inclusive: true };
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * 自分の値が比較の外へ出て、条件が外れるまでのtick数——上端を越えるか下端を割るかの早いほう。
+ * 出血を見ている `{bleeding, gte: 1}` は `bleeding` が1を割った時点で、`{fullness, lt: 30}` は
+ * `fullness` が30へ上がった時点で外れる。どちらの端からも外へ出ないならundefined＝止まらない。
+ *
+ * **生まれた時点で比較の外に在る値は止まらない**——その条件が成り立つのはこれからで、段を抜ける側
+ * （ticksUntilGateFalls）と同じ約束。**端ごとではなく区間全体で見る**——`eq` を下から上がっていく値は、
+ * 上端から見れば内側でも、比較は成り立っていない。
+ *
+ * **`range` の外にしか外へ出る先の無い端では止まらない**——`{lte: 100}` を上限100の値で見ている条件は、
+ * 上がり続けても外れない（段の上端が上限より上の段を落とすのと同じ見方、PropertyDef.upperBoundOfStage）。
+ *
+ * **その値を動かす宣言を1つも数から外していないときだけ**言い切る（TickAmounts.readsEveryDeclaredDelta）
+ * ——外した増減が値を比較の内側へ連れ戻すなら、読めた増減で外へ出ることは起こらないかもしれない。
+ */
+function ticksUntilComparisonLeft(def: ObjectDef, comparison: PropertyComparison): number | undefined {
+  const amounts = tickAmountsOf(def, comparison.propertyGlobalId);
+  if (!amounts.readsEveryDeclaredDelta) return undefined;
+  // 速さも初期値も、段を抜ける場合（ticksUntilStageLeftUpward）と同じ側。
+  const value = staticValueOf(def, comparison.propertyGlobalId, GATE_WINDOW_ROLL_END);
+  const upper = comparisonUpperEndOf(comparison);
+  const lower = comparisonLowerEndOf(comparison);
+  if (value === undefined || !withinUpperEnd(value, upper) || !withinLowerEnd(value, lower)) return undefined;
+
+  // rangeの端が比較の内側に在るなら、その向きへは外へ出られない。
+  const range = def.tryGetPropertyDef(comparison.propertyGlobalId)?.range;
+  const max = range?.max ?? Number.POSITIVE_INFINITY;
+  const min = range?.min ?? Number.NEGATIVE_INFINITY;
+  const leaves = [
+    upper !== undefined && !withinUpperEnd(max, upper)
+      ? ticksToLeaveThrough(value, upper, paceTowards(amounts.possible, 'on_max')?.fastest.amount)
+      : undefined,
+    lower !== undefined && !withinLowerEnd(min, lower)
+      ? ticksToLeaveThrough(value, lower, paceTowards(amounts.possible, 'on_min')?.fastest.amount)
+      : undefined,
+  ].filter((ticks): ticks is number => ticks !== undefined);
+  return leaves.length === 0 ? undefined : Math.min(...leaves);
+}
+
+/** その値が、比較の上端の内側に在るか。上端を持たなければ常に内側。 */
+function withinUpperEnd(value: number, upper: ComparisonEnd | undefined): boolean {
+  return upper === undefined || (upper.inclusive ? value <= upper.value : value < upper.value);
+}
+
+/** その値が、比較の下端の内側に在るか。下端を持たなければ常に内側。 */
+function withinLowerEnd(value: number, lower: ComparisonEnd | undefined): boolean {
+  return lower === undefined || (lower.inclusive ? value >= lower.value : value > lower.value);
+}
+
+/**
+ * 比較の内側に在る値が、その速さでその端を抜けて外へ出るまでのtick数。その端へ向かわない値なら
+ * undefined。**向きは速さの符号が決める**ので、上端を越えるのも下端を割るのも同じ1つで数えられる。
+ * 端ちょうどが内側なら（`lte`・`gte`）通り過ぎたtick、外側なら（`lt`・`gt`）着いたtickで出る。
+ */
+function ticksToLeaveThrough(
+  value: number,
+  end: ComparisonEnd,
+  perTick: number | undefined,
+): number | undefined {
+  if (perTick === undefined) return undefined;
+  return end.inclusive
+    ? Math.floor((end.value - value) / perTick) + 1
+    : Math.ceil((end.value - value) / perTick);
 }
 
 /**
@@ -978,8 +1081,7 @@ function drivenPaceOf(
 
 /**
  * その値がその速さでその位置まで届くまでのtick数。既に届いているなら0。値・位置・速さのどれかが
- * 読めないならundefined。**向きは速さの符号が決める**ので、尽きるまで（位置は0）も段へ届くまで
- * （位置は段の下端）も同じ1つで数えられる。
+ * 読めないならundefined。**向きは速さの符号が決める**。
  *
  * **幅のどちら側を渡すかは、呼ぶ側が決める。** 押し手を控えめに数えるには、効き始めまでは遅いほう、
  * 効かなくなるまでは速いほうで、同じ問いでも向きが逆になる。
