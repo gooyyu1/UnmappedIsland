@@ -153,7 +153,7 @@ pain:
 
 **殴られて意識が飛ぶのは、傷ではなく打たれたことの結果です。** 傷（`severity`）の段にぶら下げると
 時間の尺度が合いません——深い傷は日の単位で治り、気絶から覚めるのは時間の単位だからです。同じ量の段で
-2桁違う時間は表せないので、衝撃を1つの量として持ちます。
+桁違いの時間は表せないので、衝撃を1つの量として持ちます。
 
 ```yaml
 # サル（animals.yaml の monkey）
@@ -307,7 +307,7 @@ stages:
 1 日 192mL<!-- stats: balance.yaml consumption property=blood condition=all(in_stage_or_above(self.hydration,hydrated),in_stage_or_above(self.body_fat,gaunt)) character=medic per_day -->
 です。
 
-- **人が 1 つの傷で失う最大は 600mL** です（牙の傷。`-150/tick`<!-- codex: injuries.yaml object_defs.gore_wound.passives.1.add.parent.blood --> が固まるまで、4 節）。戻るのに
+- **人が 1 つの傷で失う最大は 600mL** です（牙の傷。`-150/tick`<!-- codex: injuries.yaml object_defs.gore_wound.passives.1.add.parent.blood --> が固まるまで流れた合計。4 節）。戻るのに
   **3.1 日**かかります。**槍が残す刺し傷は、人には刺さりません**——湧く先は殴られた獣
   （`src/assets/world-codex/animals.yaml`）と、串を打った落とし穴へ落ちた獣
   （`src/assets/world-codex/traps.yaml`）だけです。
