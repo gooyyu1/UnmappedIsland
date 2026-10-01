@@ -371,6 +371,27 @@ object_defs:
       - conditions: [{prop: heat, in_stage_or_above: warm}]
         add: {parent: {ambient_temperature: 2}}
 
+  # 火照りを逃がす石。**上へ抜ける側でも同じ**——warmの間は自分で-5して熱を逃がすので、常時の+5
+  # だけを読んで「warmの上端を越える」と言い切ると、越えない石を止めてしまう。
+  venting_warm_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 50
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - name: warm
+            min: 40
+            passives:
+              - add: {self: {heat: -5}}
+          - {name: hot, min: 60}
+        passives:
+          - add: {self: {heat: 5}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
   # 冷えきると湿気を吸って温まりなおす石。**名指した段の外の段が宣言した増減**——coldの+5は、
   # hotに居る間は効かないので、hotの下端を割るまでは常時の-5だけで数えてよい。
   rewarming_stone:
@@ -1386,6 +1407,10 @@ object_defs:
     ]);
     // 「その段以上」では、名指した段より上の段の宣言も、その段に居る間に効く。
     expect(externalDeltasOf('smoldering_wrapped_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    // 上へ抜ける側も同じ。+5だけで数えると、50からwarmの上端60を越える2 tick目で止まる。
+    expect(externalDeltasOf('venting_warm_stone', 'ambient_temperature')).toEqual([
       { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
     ]);
     // 別のプロパティの段の宣言は、名指した段に居る間に効くかが定義からは決まらない。
