@@ -234,8 +234,8 @@
   1.1 節）、山の夜はここより下です。**そこから上へ伸ばすのは、眠っている間だけ重なる寝床の分**です
   （[`Bedding.md`](./Bedding.md) 4.2 節）。
 
-**両端に挟まれた分は、総コストの順に同じ幅で刻んであります。** その土地ごとの気温差が空の刻みをその幅に割るので、
-**どの一着にも、そこでちょうど釣り合う土地があります**（同 1.1 節の表）——手をかけた一着ほど、島の
+**両端に挟まれた一着も、その土地ごとの気温差のどこかで釣り合います**——**どの一着にも、そこでちょうど
+釣り合う土地があります**（同 1.1 節の表）——手をかけた一着ほど、島の
 高い所で越せます。
 
 **火を置き換えはしません。** 炉の暖（+8℃<!-- codex: fire.yaml traits.hearth.passives.0.modify.parent.ambient_temperature -->）は**空の**最も寒い夜を平年へ戻す
@@ -347,7 +347,7 @@
 
 **線を引いているのは、この速さではなく腐敗のほうです。** 干している間も食べ物は屋外に居るので、
 屋外の上乗せ（-1<!-- codex: foods.yaml traits.perishable.passives.0.add.self.durability -->）を受けたまま乾きと競走します（[`../engine/DurabilitySystem.md`](../engine/DurabilitySystem.md) 3節）。
-**日差しの量と経過時間は別の物差しです**——境目を超えるのは開けた土地の晴れでも1日に24 tick<!-- codex: salt.yaml object_defs.salt_pan.props.drying_remaining.on_min.add.self.drying_remaining --> だけです
+**日差しの量と経過時間は別の物差しです**——境目を超えるのは開けた土地の晴れでも1日に24 tick<!-- codex: salt.yaml object_defs.salt_pan.props.drying_remaining.range.max --> だけです
 （塩田の周期と同じ数、`salt.yaml` の `drying_remaining`）。
 
 | 分類 | 屋外の寿命 | 地面に並べる | 干し場に掛ける |
@@ -427,7 +427,7 @@
 
 | | 進む条件 | 掛かる長さ | 代償 |
 |---|---|---|---|
-| 干し場（10節） | 強い日差しが当たっている | 日差しの当たる帯の中でだけ減る。晴れていれば燻し小屋より短い | 建てるだけ |
+| 干し場（10節） | 強い日差しが当たっている | 日差しの当たる帯の中でだけ減る | 建てるだけ |
 | 燻し小屋 | 火が生きている | 96 tick<!-- codex: smoking.yaml traits.smokable.props.smoking_remaining.value -->。時刻を選ばないので、経過時間そのままの1日<!-- stats: durations.yaml durations object=raw_meat property=smoking_remaining days --> | 薪と、保存の腕 |
 
 **晴れた日に掛けるなら干し場のほうが速い**、というのが燻し小屋の引き換えです。持ち込むのは速さでは
