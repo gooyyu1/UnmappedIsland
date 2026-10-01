@@ -622,15 +622,16 @@ moisture:
 interactions:
   add_stone:
     trigger: {drag: {object: stone}}
+    duration: 5  # <!-- codex: fire.yaml object_defs.campfire.interactions.add_stone.duration -->
     destroy: instrument
     add: {self: {stones: 1}}
 props:
   stones:
     value: 0
-    range: {min: 0, max: 2}
+    range: {min: 0, max: 3}  # <!-- codex: fire.yaml object_defs.campfire.props.stones.range.max -->
     on_max:
-      spawn: {object: three_stone_hearth}
       destroy: self
+      spawn: {object: three_stone_hearth}
 ```
 
 `range.max` を必要数に置き、そこへ届いた瞬間に反応させるのは、耐久値 0 での自壊と同じ形です
@@ -731,6 +732,7 @@ cooking_progress:
 
 **器の中身は、器が自分で加熱します。** 炉の子は器であって、中身は器の子（炉から見れば孫）です。
 炉が孫まで手を伸ばすのではなく、器が「炉の上にいるあいだ、自分の中身を加熱する」を自分で持ちます。
+**下の宣言は未実装です**——`cookware` を名乗る型がまだ無く（1 節）、器を足すときに書く形を示しています。
 
 ```yaml
 # 器の側が宣言する

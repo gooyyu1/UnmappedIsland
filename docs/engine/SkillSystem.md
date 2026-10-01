@@ -37,20 +37,20 @@
 参照する迂回（同節、`subject: world` は未対応）が要りません。
 
 ```yaml
-object_defs:
+traits:
   player_character:
     props:
       skill_cordage:
+        tags: [skill]
         value: 0
-        stages:
-          - name: novice
-            min: 0
+        stages:   # 段ごとの寄与（腕が縮めるもの）は省いている
+          - {name: novice, min: 0}
           - name: basic
-            min: 20
+            min: 20  # <!-- codex: characters/player_character.yaml traits.player_character.props.skill_cordage.stages.1.min -->
           - name: skilled
-            min: 60
+            min: 60  # <!-- codex: characters/player_character.yaml traits.player_character.props.skill_cordage.stages.2.min -->
           - name: expert
-            min: 180
+            min: 180  # <!-- codex: characters/player_character.yaml traits.player_character.props.skill_cordage.stages.3.min -->
 ```
 
 ## 3. 進捗が伸びる経路
@@ -207,8 +207,8 @@ interactions:
       explore:
         pick:
           - weight: {prop: stone_find}
-            spawn: {object: stone, count: 2, into: self}
-            add: {agent: {skill_knapping: 1}}
+            spawn: {object: stone, into: self}
+            add: {agent: {skill_knapping: 1}}  # <!-- codex: locations.yaml object_defs.wasteland.interactions.explore.pick.0.add.agent.skill_knapping -->
 ```
 
 **配る量は +1 です。** **発見だけは長さから決めません**——契機は候補を引き当てたことそのもので、

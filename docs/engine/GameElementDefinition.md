@@ -519,18 +519,21 @@ props:
 
 **「一度だけ起こす」を、呼ぶ側ではなく起こす側に書くための口です。** 境界に居る値は書き込みのたびに
 イベントを呼び直すので、これが無いと「もう起こした」を呼ぶ側（そこへ書き込むアクションの `conditions`）が
-覚えることになり、**そのアクション自体が打ち切られます**。海区の見張りが航路を1本だけ湧かせる例が
+覚えることになり、**そのアクション自体が打ち切られます**。海区の見張りが航路を一度だけ湧かせる例が
 これで（[`Voyage.md`](../world/Voyage.md) 3.5 節）、条件が見るのは印ではなく**湧かせた物そのもの**です。
 
 ```yaml
+# 沿岸の海区（voyage.yaml の coastal_waters）
 props:
   exploration_progress:
     value: 0
-    range: {min: 0, max: 3}
+    range: {min: 0, max: 2}  # <!-- codex: voyage.yaml object_defs.coastal_waters.props.exploration_progress.range.max -->
     on_max:
       conditions:
         - not: {slot: fixtures, matches: {object: route_to_kelp_belt}}   # まだ湧かせていない
-      spawn: {object: route_to_kelp_belt, into: self}
+      spawn:   # 辺の両端へ1本ずつ立てる
+        - {object: route_to_kelp_belt, into: self}
+        - {object: route_to_coastal_waters, into_object: {prop: zone_toward_mainland}}
 ```
 
 ```yaml
@@ -1557,12 +1560,20 @@ interactions:
 島へ戻る航路はその個体へ帰します（[`Voyage.md`](../world/Voyage.md) 3.5 節）。
 
 ```yaml
+# 筏（voyage.yaml の raft）。海岸に居るかの条件は省いている
 set_sail:
   trigger: menu
+  duration: 60  # <!-- codex: voyage.yaml object_defs.raft.interactions.set_sail.duration -->
   set: {self: {home_coast_id: {subject: parent}}}   # 押し出す前に、出た海岸を覚える
-  move:
-    - {subject: agent, to: self}
-    - {subject: self, to_object: coastal_waters}
+  move: {subject: agent, to: self}
+  pick:   # 押し出す先の海区は、出た海岸ごとの重みで引く
+    - weight: {subject: parent, prop: offshore_coastal_waters}
+      move: {subject: self, to_object: coastal_waters}
+    - weight: {subject: parent, prop: offshore_tide_rip}
+      move: {subject: self, to_object: tide_rip}
+    - weight: {subject: parent, prop: offshore_gull_rock}
+      move: {subject: self, to_object: gull_rock}
+  spawn: {object: route_to_shore, into: parent}   # 島へ引き返す道
 ```
 
 書けるのは**対象キーだけ**で、`prop` は書けません。`{subject, prop}` は「そのプロパティの実効値が指す個体」
@@ -1732,18 +1743,22 @@ interactions:
   固定の `add` では表現できない「飲んだ量に比例した副効果」（例: お茶の眠気改善）を表すために使います。
 
 ```yaml
+# お茶（liquid_containers.yaml の tea_liquid trait）。喉が渇いているかの条件は省いている
 interactions:
   drink:
     trigger: menu
+    duration: 5  # <!-- codex: liquid_containers.yaml traits.tea_liquid.interactions.drink.duration -->
     transfer:
-      amount: 250            # 水を250mL出す
-      to_amount: 10          # 飲みきると水分が10 tick分回復する
-      from_prop: volume
+      # 250mL出し、飲みきると水分が10 tick分回復する
+      amount: 250  # <!-- codex: liquid_containers.yaml traits.tea_liquid.interactions.drink.transfer.amount -->
+      to_amount: 10  # <!-- codex: liquid_containers.yaml traits.tea_liquid.interactions.drink.transfer.to_amount -->
+      from_prop: fill        # 器の中のお茶の量（mL）
       to: agent
       to_prop: hydration
       linked_add:
         agent:
-          wakefulness: 2     # 実際に出した量に比例: 250 飲めば +2、125 飲めば +1
+          # 実際に出した量に比例: 250 飲めば +2、125 飲めば +1
+          wakefulness: 2  # <!-- codex: liquid_containers.yaml traits.tea_liquid.interactions.drink.transfer.linked_add.agent.wakefulness -->
 ```
 
 `from`/`from_prop`/`to`/`to_prop` をフラットな4フィールドにしているのは、`conditions`（14.1 節）の
@@ -1809,8 +1824,8 @@ interactions:
   違うのはキーの綴りだけです。
   - **`to`**: `subject` と同じく、その場所が用意できる相手を指せます（14.1 節）。行き先が定義時点で
     決まっている場合に使います。`parent` は、代表（[`SlotSystem.md`](./SlotSystem.md) 4 節）へ
-    リダイレクトされた中身が、自分ではなく容器を行き先にしたい場合のためのものです（液体の注ぎ移し、
-    `LiquidContainerSystem.md` 4 節）。指した相手が居ない場合は何も起きません。
+    リダイレクトされた中身が、自分ではなく容器を行き先にしたい場合（液体の注ぎ移し、
+    `LiquidContainerSystem.md` 4 節）や、自分の居る場所へ物を押し出す場合（小島が岸の筏を海区へ出す、下の例）に使います。指した相手が居ない場合は何も起きません。
   - **`to_prop`**: `self` が持つプロパティ名。その実効値を `WorldObject` のインスタンスID（生成時に発行される、
     実行時限りの識別子）として解釈し、移動先とみなします。書き込むのは生成器（地上の道の `destination_id`）か
     `set`（9.2 節。筏が出航した海岸を覚える）です。
@@ -1831,9 +1846,16 @@ interactions:
 から、その筏ごと漕ぎ出す——のに使います。適用は書かれた順です。
 
 ```yaml
-move:
-  - {subject: agent, to: self}
-  - {subject: self, to_object: coastal_waters}
+# 小島の岸から漕ぎ出す（voyage.yaml の offshore_islet の launch）。条件は省いている
+launch:
+  trigger: menu
+  duration: 30  # <!-- codex: voyage.yaml object_defs.offshore_islet.interactions.launch.duration -->
+  pick:
+    - weight: 1
+      among: {slot: fixtures, matches: {object: raft}}   # 岸の筏を picked にする（10.3 節）
+      move:
+        - {subject: agent, to: picked}
+        - {subject: picked, to: parent}   # 小島が居る海区へ
 ```
 
 プロパティが個体を `object_defs` の id（型）ではなくインスタンスIDで指すのは、典型例（生成された特定の道が

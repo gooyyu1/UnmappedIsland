@@ -168,10 +168,13 @@ beast:
 
 ```yaml
 monkey_carcass:
+  props:
+    butcher_minutes:   # 皮革の腕が縮める分は省いている
+      value: 60  # <!-- codex: animals.yaml object_defs.monkey_carcass.props.butcher_minutes.value -->
   interactions:
     butcher:
       trigger: {drag: {tag: handheld_blade}}
-      duration: 60
+      duration: {prop: butcher_minutes}   # 暗さ・嵐で断る条件と、皮革の腕の伸びは省いている
       destroy: self
       spawn:
         - {object: raw_meat, count: 4}

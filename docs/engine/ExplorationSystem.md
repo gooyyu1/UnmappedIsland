@@ -99,20 +99,25 @@ object_defs:
     props:
       exploration_progress:
         value: 0
-        range: {min: 0, max: 12}   # 探索率100%に達するまでの探索回数
+        # 探索率100%に達するまでの探索回数
+        range: {min: 0, max: 12}  # <!-- codex: locations.yaml object_defs.grassland.props.exploration_progress.range.max -->
     interactions:
       explore:
         trigger: menu
         duration: 15
         add: {self: {exploration_progress: 1}}   # 何が見つかっても進捗は1つ進む
         pick:
-          - weight: 25
-          - weight: 25
-            spawn: {object: water_spinach, into: self}
+          - weight: {prop: berry_find}
+            spawn: {object: berry_bush, into: self}
+          - weight: {prop: spring_find}
+            spawn: {object: spring, into: self}
+          # ...
+          - weight: 18  # <!-- codex: locations.yaml object_defs.grassland.interactions.explore.pick.4.weight -->
+            spawn: {object: water_spinach, count: 2, into: self}
           # ...
 ```
 
-- **探索率100%までの回数**: `exploration_progress` の `range.max`（10〜20 の範囲、土地ごとに異なる）。
+- **探索率100%までの回数**: `exploration_progress` の `range.max`（土地ごとに異なる）。
 - **100%に達しても探索は続けられます**。`explore` に進捗の上限を見る `conditions` は置いていません。
   上限を超えた進捗は `range` の既定のクランプ（`GameElementDefinition.md` 6.3 節）で `range.max` に
   張り付くため、探索率は100%のまま、`pick` による発見物だけが増え続けます。100%到達で変わるのは、
