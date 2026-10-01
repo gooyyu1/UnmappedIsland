@@ -81,7 +81,10 @@ describe('落ちた検査の記録', { timeout: 20_000 }, () => {
     const { root } = runVitestOn({
       'probe.test.ts': ["import { it } from 'vitest';", "it('通る検査', () => {});"],
     });
-    expect(() => records(root)).toThrow(/ENOENT/);
+    let names: string[] = [];
+    try { names = records(root); } catch { /* none */ }
+    const dump = names.map((n) => readFileSync(join(root, FAILED_RUN_DIR, n), 'utf-8')).join('\n');
+    expect(dump + '\nROOT=' + root).toBe('');
   });
 
   it('記録は新しいものから上限まで残し、古いものを消す', () => {

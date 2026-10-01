@@ -93,7 +93,7 @@ function costByDay(
     );
     args.push(carried.keep);
   }
-  execFileSync(PYTHON as string, args, { stdio: 'ignore' });
+  execFileSync(PYTHON as string, args, { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf-8' });
   const [, ...lines] = readFileSync(join(work, 'stats/usage/by_day.tsv'), 'utf-8').trim().split('\n');
   return new Map(lines.map((line) => line.split('\t')).map(([day, cost]) => [day, Number(cost)]));
 }

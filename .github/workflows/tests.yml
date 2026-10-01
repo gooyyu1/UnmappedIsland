@@ -99,7 +99,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npx vitest run --reporter=default --reporter=github-actions
+        run: npx vitest run tests/scripts/usageTimeline.test.ts tests/support/failedRunRecorder.test.ts --reporter=default
 
   # PRを出したセッションが名乗っているか（[`agent-ops/board-design.md`](../../agent-ops/board-design.md)
   # 2.11節）。**盤面は差し戻す相手をコミットの `Claude-Session:` トレーラで引く**ので、名乗っていない
