@@ -7,7 +7,7 @@ import { Location } from '../../src/domain/wrappers/Location';
 import { fixedRng } from '../support/rng';
 import { bundledBalanceTables, bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
-import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
+import { MINUTES_PER_DAY, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * firewood.yamlの薪割りと薪棚を、実ファイルの定義だけで検証する。
@@ -158,6 +158,14 @@ describe('firewood.yamlの薪割りと薪棚', () => {
     expect(stackedNames(rack), '1tick足りなければまだ生木').toEqual(Array(count).fill('green_firewood'));
     advance(1);
     expect(stackedNames(rack), '積んだ薪は全部が乾く').toEqual(Array(count).fill('seasoned_firewood'));
+  });
+
+  it('乾き切るまでは、現実の3〜4週を4分の1へ縮めた長さ', () => {
+    // 長くかかるものだけ現実の4分の1へ縮める（FireSystem.md 2.5節、DesignPrinciples.md）。
+    const days =
+      (declaredNumber('green_firewood', seasoningRemainingId) * MINUTES_PER_TICK) / MINUTES_PER_DAY;
+    expect(days).toBeGreaterThanOrEqual((3 * 7) / 4);
+    expect(days).toBeLessThanOrEqual((4 * 7) / 4);
   });
 
   it('棚に積まなければ、いつまでも乾かない', () => {

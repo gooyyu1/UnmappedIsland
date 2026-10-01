@@ -1344,4 +1344,26 @@ describe('炉が火にかける場所', () => {
       ).toEqual(['fire']);
     }
   });
+
+  it('石囲いの炉まで組む石を全部担いでも、どの担ぎ手も通れなくなる線の半分に収まる', () => {
+    // 炉は既存の石をそのまま積む（FireSystem.md 5.1節）。運ぶことそのものを関門にしないための線。
+    const stonesId = codex.propertyNames.getId('stones');
+    const stones = [...codex.objects].reduce(
+      (sum, def) => sum + (def.tryGetPropertyDef(stonesId)?.range?.max ?? 0),
+      0,
+    );
+    const weightId = codex.propertyNames.getId('weight');
+    const stoneWeight = codex.objects
+      .get(codex.objectNames.getId('stone'))
+      .tryGetPropertyDef(weightId)?.initialValueWithoutRoll;
+    const loadId = codex.propertyNames.getId('load');
+    const tooHeavy = [...codex.objects]
+      .filter((def) => def.hasTag(codex.vocabulary.world.characterTagId))
+      .map((def) => def.tryGetPropertyDef(loadId)?.lowerBoundOfStage('too_heavy'))
+      .filter((min): min is number => min !== undefined);
+
+    expect(stones, '炉が積む石が1つも数えられていない').toBeGreaterThan(0);
+    expect(tooHeavy, '担げない段を名乗る担ぎ手が居ない').not.toHaveLength(0);
+    expect(stones * (stoneWeight ?? NaN) * 2).toBeLessThanOrEqual(Math.min(...tooHeavy));
+  });
 });

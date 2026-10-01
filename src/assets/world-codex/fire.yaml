@@ -77,7 +77,7 @@ traits:
       # 割ると、束で拾う火口が枠を食い尽くす。
       moisture:
         value: 0
-        # 野ざらしの雨（下のpassives、実質+3/tick）で2時間、日に広げれば（-4/tick）1時間半。
+        # 野ざらしの雨（下のpassives）で湿りが満ち、日に広げれば乾いていく。
         range: {min: 0, max: 24}
         # 濡れているほど火が付かないので、空の側がgood。
         gauge: {min: good, max: bad}
@@ -628,7 +628,7 @@ object_defs:
           - {accept: {tag: cookware}}
           - {accept: {tag: cookware}}
     passives:
-      # 灰をかぶって空気を絞られた種火は8時間もつ。これが炉を常設する唯一にして最大の利得。
+      # 灰をかぶって空気を絞られた種火は長くもつ。これが炉を常設する唯一にして最大の利得。
       - conditions:
           - {prop: heat, in_stage: ember}
           - {prop: fuel, eq: 0}
