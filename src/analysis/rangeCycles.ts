@@ -494,6 +494,13 @@ interface TickAmounts {
    * 渡された型の宣言だけで、隣に何が置かれうるかは引数に無い。「決して」と言えるのも、その範囲での話。
    */
   readonly readsEveryDeclaredDelta: boolean;
+
+  /**
+   * 数から外した、段の宣言の下に置かれた増減（8.2節）。readsEveryDeclaredDeltaはこれが空であること。
+   * **どの段のものかを残す**のは、段を抜ける時刻を数える側が、名指した段に居る間に効くものだけを
+   * 読み落としとして数えるため（readsEveryDeltaWhileInStage）。
+   */
+  readonly stageGated: readonly TickDelta[];
 }
 
 /**
@@ -523,20 +530,18 @@ interface TickTotal {
 function tickAmountsOf(def: ObjectDef, propertyGlobalId: PropertyGlobalId): TickAmounts {
   const always: TickDelta[] = [];
   const conditional: TickDelta[] = [];
-  let readsEveryDeclaredDelta = true;
+  const stageGated: TickDelta[] = [];
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== 'self' || delta.propertyGlobalId !== propertyGlobalId) continue;
-    if (delta.gate.stage !== undefined) {
-      readsEveryDeclaredDelta = false;
-      continue;
-    }
-    (delta.gate.conditional ? conditional : always).push(delta);
+    if (delta.gate.stage !== undefined) stageGated.push(delta);
+    else (delta.gate.conditional ? conditional : always).push(delta);
   }
   return {
     unconditional: totalAmountOf(always),
     conditional,
     possible: possibleTotalsOf(always, conditional),
-    readsEveryDeclaredDelta,
+    readsEveryDeclaredDelta: stageGated.length === 0,
+    stageGated,
   };
 }
 
@@ -775,15 +780,18 @@ function ticksToLeaveThrough(
 /**
  * 要求された段を上へ抜けて、条件が外れるまでのtick数。抜ける先が無い、上がっていかない値、
  * 値の並びの上に位置を持たない段（シンボル型、6.6節）、生まれた時点で上端より上に在る値
- * （ticksToRiseTo）ならundefined。
+ * （ticksToRiseTo）、その段に居る間に効く増減を読み落としている値（readsEveryDeltaWhileInStage）
+ * ならundefined。
  */
 function ticksUntilStageLeftUpward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
+  const amounts = tickAmountsOf(def, required.propertyGlobalId);
+  if (!readsEveryDeltaWhileInStage(def, amounts, required)) return undefined;
   // 速さは**最も速い増減**（fastest）——**効き始めから抜けるまでが最も狭くなる組**で、押し手を
   // 控えめに数える側。
   return ticksToRiseTo(
     staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
     stageUpperBoundOf(def, required),
-    paceTowards(tickAmountsOf(def, required.propertyGlobalId).possible, 'on_max')?.fastest.amount,
+    paceTowards(amounts.possible, 'on_max')?.fastest.amount,
   );
 }
 
@@ -798,13 +806,39 @@ function ticksUntilStageLeftUpward(def: ObjectDef, required: SelfStageRequiremen
  * 生まれた時点で下端より下に在る値が抜けないのは、上へ抜けるほうと同じ（ticksToFallBelow）。
  */
 function ticksUntilStageLeftDownward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
+  const amounts = tickAmountsOf(def, required.propertyGlobalId);
+  if (!readsEveryDeltaWhileInStage(def, amounts, required)) return undefined;
   // 速さはticksUntilStageLeftUpwardと同じ側——効き始めから抜けるまでが最も狭くなる組で、押し手を
   // 控えめに数える。
   return ticksToFallBelow(
     staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
     stageLowerExitOf(def, required),
-    paceTowards(tickAmountsOf(def, required.propertyGlobalId).possible, 'on_min')?.fastest.amount,
+    paceTowards(amounts.possible, 'on_min')?.fastest.amount,
   );
+}
+
+/**
+ * 要求された段に値が居る間、その値を動かす宣言を1つも数から外していないか。段を抜ける時刻を
+ * 言い切れるのは、これが真のときだけ——外した増減が段の内側へ連れ戻すなら、読めた増減で抜けることは
+ * 起こらないかもしれない。
+ *
+ * 比較の外へ出る側（ticksUntilComparisonLeft）が段の宣言の下の増減を1つでも持てば言い切らないのと
+ * 違い、**同じ値の他の段の宣言は数えない**——段は値の区間を分けるので、名指した段（「その段以上」なら、
+ * その段以上のどれか）に居る間、それより外の段の宣言は効かない。**別のプロパティの段の宣言は数える**
+ * ——そちらの段に居るかは、名指した段に居ることからは決まらない。
+ */
+function readsEveryDeltaWhileInStage(
+  def: ObjectDef,
+  amounts: TickAmounts,
+  required: SelfStageRequirement,
+): boolean {
+  const propertyDef = def.tryGetPropertyDef(required.propertyGlobalId);
+  return amounts.stageGated.every(({ gate: { stage } }) => {
+    if (stage === undefined || propertyDef === undefined) return false;
+    if (stage.propertyGlobalId !== required.propertyGlobalId) return false;
+    const lowerBound = propertyDef.lowerBoundOfStage(stage.name);
+    return lowerBound === undefined || !propertyDef.isInStage(lowerBound, required.stageName, required.bound);
+  });
 }
 
 /**
