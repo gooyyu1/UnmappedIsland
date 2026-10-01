@@ -158,8 +158,8 @@
 素焼きの中間アイテムは別途用意していません。
 
 **土器は実装済みです**（`src/assets/world-codex/pottery.yaml`）。草地・森林・密林の探索で粘土が
-見つかり、粘土2個を成形して未焼成の壺にし、粘土3個で築いた**使い捨ての覆い焼きの炉**で焼くと甕に
-なります。**乾かすのは工程ではなく、置いておく時間です**（1日で乾き切ります）。濡れたまま焼くと、
+見つかり、粘土を成形して未焼成の壺にし、粘土で築いた**使い捨ての覆い焼きの炉**で焼くと甕に
+なります。**乾かすのは工程ではなく、置いておく時間です**（1日<!-- stats: durations.yaml durations object=unfired_jar property=moisture days -->で乾き切ります）。濡れたまま焼くと、
 残った水が水蒸気になって器を割ります——割れる確率は残った水そのもので、乾き切っていれば必ず成功します。
 **甕の蓋も同じ土・同じ炉です**——粘土1個<!-- codex: pottery.yaml object_defs.unfired_jar_lid.recipes.pressed.steps.0.requires.0.count -->を平たく伸ばして焼くと蓋になり、甕へ載せている間は中身が
 蒸発しません（[`../engine/LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 6.2節）。
@@ -207,8 +207,8 @@
 
 **なめし革を作る工程も入りました**（`clothing.yaml` の `tanned_leather`）。広葉樹から**立ったまま樹皮を
 剥ぎ**（握りの刃が要る。柄付きの斧では帯に剥がせない。`timber.yaml`）、毛と肉を落とした生皮1枚<!-- codex: clothing.yaml object_defs.tanned_leather.recipes.tanned.steps.0.requires.0.count -->を樹皮
-3巻きの渋に漬けると、なめし革1枚になります。**ひと剥ぎが革1枚ぶん**で、木は剥いでも残ります。所要は計480分——同梱の世界で最も手間の
-かかる仕事（落とし穴を掘る・囲いを組む）に並べた値で、実際のなめしは日をまたぐ漬け込みですが、
+3巻きの渋に漬けると、なめし革1枚になります。**ひと剥ぎが革1枚ぶん**で、木は剥いでも残ります。所要は同梱の世界で最も手間の
+かかる仕事（落とし穴を掘る・囲いを組む）に並べた長さで、実際のなめしは日をまたぐ漬け込みですが、
 **1つの工程が1時間を超えられない**（[`../engine/ActionSystem.md`](../engine/ActionSystem.md) 6.3節）ので、
 その長さは工程の数で持っています。
 
@@ -225,17 +225,17 @@
 | なめし革の衣類 | −4℃<!-- codex: clothing.yaml object_defs.tanned_leather_clothing.passives.0.modify.parent.chill_point --> | 1,570分<!-- stats: balance.yaml object_costs object=tanned_leather_clothing total_minutes ±5% --> | 裁って縫った革は体に沿い、隙間が残らない |
 
 **両端は、空が作る気温の刻みへ合わせてあります**（[`../engine/VitalsSystem.md`](../engine/VitalsSystem.md)
-8.4 節）。素の入口は16℃<!-- codex: characters/player_character.yaml traits.player_character.props.chill_point.value -->で、空がそれを下回るのは涼しい季節の夜（12℃）と、その薄明・雨天の昼（15℃）です。
+8.4 節）。素の入口は16℃<!-- codex: characters/player_character.yaml traits.player_character.props.chill_point.value -->で、空がそれを下回るのは涼しい季節の夜と、その薄明・雨天の昼です。
 
-- **いちばん安い一着が、海沿いの薄明と雨天の昼（15℃）とちょうど釣り合います。** 雨天の昼は屋根の無い所で
+- **いちばん安い一着が、海沿いの薄明と雨天の昼とちょうど釣り合います。** 雨天の昼は屋根の無い所で
   `warmth` を最も速く削る場面（`-6/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.passives.1.add.self.warmth -->）なので、**一着も持たずに雨季を歩くかどうか**がここで分かれます。
-- **いちばん高い一着が、海沿いの最も寒い夜（12℃）とちょうど釣り合います。** 釣り合うだけなので、**登れば
+- **いちばん高い一着が、海沿いの最も寒い夜とちょうど釣り合います。** 釣り合うだけなので、**登れば
   足りなくなります**——土地は海抜ぶんだけ寒く（[`../engine/ClimateSystem.md`](../engine/ClimateSystem.md)
   1.1 節）、山の夜はここより下です。**そこから上へ伸ばすのは、眠っている間だけ重なる寝床の分**です
   （[`Bedding.md`](./Bedding.md) 4.2 節）。
 
-**両端に挟まれた分は、総コストの順に1℃ずつです。** その土地ごとの気温差が空の刻みを1℃ずつに割るので、
-**どの一着にも、そこでちょうど釣り合う土地があります**（同 1.1 節の表）——手をかけた一着ほど、島の
+**両端に挟まれた一着も、その土地ごとの気温差のどこかで釣り合います**——**どの一着にも、そこでちょうど
+釣り合う土地があります**（同 1.1 節の表）——手をかけた一着ほど、島の
 高い所で越せます。
 
 **火を置き換えはしません。** 炉の暖（+8℃<!-- codex: fire.yaml traits.hearth.passives.0.modify.parent.ambient_temperature -->）は**空の**最も寒い夜を平年へ戻す
@@ -290,7 +290,7 @@
 
 | 物 | 素材（レシピ） | 備考 |
 |---|---|---|
-| 塩田 | 石4個（4時間） | 浅い盤。海に面した土地でしか海水を汲めない。設置物 |
+| 塩田 | 石（1個<!-- codex: salt.yaml object_defs.salt_pan.recipes.laid.steps.0.requires.0.count -->ずつ据えて並べる） | 浅い盤。海に面した土地でしか海水を汲めない。設置物 |
 | 塩 | 塩田で採れる | ひと掴み。1つで食べ物1つを塩蔵できる |
 
 **塩田は罠・畑とまったく同じ「仕掛けて待つ」設備です**（[`../engine/TrapSystem.md`](../engine/TrapSystem.md)・
@@ -303,14 +303,14 @@
 出す口も、器の側（`liquid_containers.yaml`）に置くことになりますが、甕の中身は既に「尽きたら空の容器へ
 戻る」を持っているため、そこへ「尽きたら塩が残る」を重ねられません。焼け石
 （[`../engine/FireSystem.md`](../engine/FireSystem.md) 9.1節）が沸かせるのも1個につき1杯ぶんなので、
-4Lを煮詰める燃料の勘定を新しく持ち込むことになります。
+塩田いっぱいの海水を煮詰める燃料の勘定を新しく持ち込むことになります。
 
 **塩蔵は、腐敗の速さを既にある段の中で移すだけです**（[`../engine/DurabilitySystem.md`](../engine/DurabilitySystem.md)
-3節）。塩を食べ物へ重ねると、通常温度で減る速さが最も遅い段（芋と同じ20日）へ移ります。新しいレートは
+3節）。塩を食べ物へ重ねると、通常温度で減る速さが最も遅い段（芋と同じ20日<!-- stats: durations.yaml durations object=raw_meat__cure_salted property=durability days -->）へ移ります。新しいレートは
 持ち込みません。
 
 - **無事な物にしか効きません。** 塩は腐敗を止めるだけで、進んだぶんは戻りません。
-- **屋外の上乗せ（-1<!-- codex: foods.yaml traits.perishable.passives.0.add.self.durability -->）はそのまま効きます。** 塩漬けでも外へ置けば6.7日に落ちるので、塩は温度と湿りの
+- **屋外の上乗せ（-1<!-- codex: foods.yaml traits.perishable.passives.0.add.self.durability -->）はそのまま効きます。** 塩漬けでも外へ置けば6.7日<!-- stats: durations.yaml durations object=raw_meat__cure_salted property=durability shortest_days -->に落ちるので、塩は温度と湿りの
   代わりにはなりません。
 - **漬かるのは生のままの物だけです**（`foods.yaml` の `cure` 軸）。焼くのは食べるための工程なので、
   焼いた物を保たせる形は作りません。
@@ -333,28 +333,28 @@
 
 | 物 | 素材（レシピ） | 備考 |
 |---|---|---|
-| 干し場 | 太い枝6本<!-- codex: drying.yaml object_defs.drying_rack.recipes.lashed.steps.0.requires.0.count --> + 縄1本<!-- codex: drying.yaml object_defs.drying_rack.recipes.lashed.steps.1.requires.0.count -->（2時間） | 立てた枝に縄を張り、切り分けた食べ物を掛ける棚。設置物 |
-| 干物 | 干し上がった食べ物 | 腐敗が最も遅い段（20日）へ移る。別の型は作らない |
+| 干し場 | 太い枝6本<!-- codex: drying.yaml object_defs.drying_rack.recipes.lashed.steps.0.requires.0.count --> + 縄1本<!-- codex: drying.yaml object_defs.drying_rack.recipes.lashed.steps.1.requires.0.count --> | 立てた枝に縄を張り、切り分けた食べ物を掛ける棚。設置物 |
+| 干物 | 干し上がった食べ物 | 腐敗が最も遅い段（20日<!-- stats: durations.yaml durations object=raw_meat__cure_dried property=durability days -->）へ移る。別の型は作らない |
 
 **干す仕掛けは1つだけです。** 食べ物を日の当たる地面へ並べるか干し場に掛けると「干し上がるまでの
 残り」が **72**<!-- codex: drying.yaml traits.dryable.props.drying_remaining.value --> で立ち、**強い日差しが当たる tick だけ減ります**。境目は塩田の `drying_remaining` と
 同じ1つ（9節）なので、曇れば止まり、雨は乾きかけを押し戻します。**残りを持つのは食べ物で、干し場が
 変えるのは1 tick に減る量1つだけです**——地面に並べると片面にしか日と風が当たらないので `-1`<!-- codex: drying.yaml traits.dryable.props.drying_remaining.passives.0.add.self.drying_remaining -->
-（72 tick<!-- codex: drying.yaml traits.dryable.props.drying_remaining.value --> かかる）、干し場に掛けている間は上乗せの `-2`<!-- codex: drying.yaml traits.dryable.props.drying_remaining.passives.1.add.self.drying_remaining --> が重なって `-3`（24 tick）。**途中で
+、干し場に掛けている間は上乗せの `-2`<!-- codex: drying.yaml traits.dryable.props.drying_remaining.passives.1.add.self.drying_remaining --> が重なります。**途中で
 掛け替えても進んだぶんは残ります**——残りが食べ物に付いているので、場所が変わるのは減る速さだけです。
 **しまってある間は乾きも戻りも起きません**——手に持っていても籠の中でも、並べるか掛けるかしなければ
 日差しも雨も届きません。
 
 **線を引いているのは、この速さではなく腐敗のほうです。** 干している間も食べ物は屋外に居るので、
 屋外の上乗せ（-1<!-- codex: foods.yaml traits.perishable.passives.0.add.self.durability -->）を受けたまま乾きと競走します（[`../engine/DurabilitySystem.md`](../engine/DurabilitySystem.md) 3節）。
-**日差しの量と経過時間は別の物差しです**——境目を超えるのは開けた土地の晴れでも1日に24 tick だけ
-なので（`salt.yaml` の `drying_remaining`）、地面の72 tick<!-- codex: drying.yaml traits.dryable.props.drying_remaining.value --> は経過時間では3日ぶんにあたります。
+**日差しの量と経過時間は別の物差しです**——境目を超えるのは開けた土地の晴れでも1日に24 tick<!-- codex: salt.yaml object_defs.salt_pan.props.drying_remaining.range.max --> だけです
+（塩田の周期と同じ数、`salt.yaml` の `drying_remaining`）。
 
-| 分類 | 屋外の寿命 | 地面に並べる（72 tick<!-- codex: drying.yaml traits.dryable.props.drying_remaining.value -->） | 干し場に掛ける（24 tick） |
+| 分類 | 屋外の寿命 | 地面に並べる | 干し場に掛ける |
 |---|---|---|---|
-| 生肉・死体・ヤシガニ・海藻 | 2日 | **届かない**（腐り切るまでに貯まるのは48 tick まで） | 干し上がる |
-| 空心菜・バナナ・ベリー・ヤシの果肉とゼリー | 3.3日 | 晴れが3日続けば干し上がる | 干し上がる |
-| 芋・ヤシの実・卵 | 6.7日 | 既に最も遅い段なので干す意味が無い（軸を持ちません） | 同左 |
+| 生肉・死体・ヤシガニ・海藻 | 2日<!-- stats: durations.yaml durations object=raw_meat property=durability shortest_days --> | **届かない**（晴れが続いても、干し上がる前に腐り切る） | 干し上がる |
+| 空心菜・バナナ・ベリー・ヤシの果肉とゼリー | 3.3日<!-- stats: durations.yaml durations object=banana property=durability shortest_days --> | 晴れが続けば、腐り切る前に干し上がる | 干し上がる |
+| 芋・ヤシの実・卵 | 6.7日<!-- stats: durations.yaml durations object=taro property=durability shortest_days --> | 既に最も遅い段なので干す意味が無い（軸を持ちません） | 同左 |
 
 **速くなること自体は値打ちではありません**（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md)
 の「悪条件は、効率を下げるのではなく、できる／できないの線で効かせる」節）。ここで速さが値打ちに
@@ -397,10 +397,10 @@
 （[`ContentSkeleton.md`](./ContentSkeleton.md) 8.1.2節）ので、**干せないことは乾きが進まないことで
 分かります**——塩田を海から離して据えられるのと同じです。
 
-**実装済みです**（`src/assets/world-codex/drying.yaml`）。**tick の数は詰め直しました**——地面の48 は
-最短30時間で貯まってしまい、生肉の屋外2日に間に合います。**腐り切るまでに貯められるのは、何時に
-並べても48 tick ちょうど**なので、地面を72<!-- codex: drying.yaml traits.dryable.props.drying_remaining.value -->・干し場をその3分の1の24に置き直すと上の表の線がどれも出ます
-（`tests/world-codex/dryingYaml.test.ts` が、並べ始めの時刻を1日ぶん振って確かめます）。
+**実装済みです**（`src/assets/world-codex/drying.yaml`）。**tick の数は、生肉が屋外で腐り切るまでに
+貯まる日差しを物差しにして置いてあります**——地面の72<!-- codex: drying.yaml traits.dryable.props.drying_remaining.value -->はそれを上回り、干し場の速さで減らせばそれに収まるので、
+上の表の線がどれも出ます（`tests/world-codex/dryingYaml.test.ts` が、並べ始めの時刻を1日ぶん振って
+確かめます）。
 **干し上がりを告げる仕組みはありません**——罠・畑・塩田と同じ沈黙なので、見に来るまで分かりません
 （[`../engine/TrapSystem.md`](../engine/TrapSystem.md) 5節）。
 
@@ -412,8 +412,8 @@
 
 | 物 | 素材（レシピ） | 備考 |
 |---|---|---|
-| 燻し小屋 | 太い枝6本<!-- codex: smoking.yaml object_defs.smokehouse.recipes.built.steps.0.requires.0.count --> + 編んだ葉6枚 + 縄2本<!-- codex: smoking.yaml object_defs.smokehouse.recipes.built.steps.3.requires.0.count -->（4時間）／**保存の腕が `basic`** | 枝の骨組みを編んだ葉で囲い、底で火を燻らせる。設置物 |
-| 燻製 | 燻し上がった食べ物 | 腐敗が最も遅い段（20日）へ移る。別の型は作らない |
+| 燻し小屋 | 太い枝6本<!-- codex: smoking.yaml object_defs.smokehouse.recipes.built.steps.0.requires.0.count --> + 編んだ葉（3枚<!-- codex: smoking.yaml object_defs.smokehouse.recipes.built.steps.1.requires.0.count -->ずつ囲う） + 縄2本<!-- codex: smoking.yaml object_defs.smokehouse.recipes.built.steps.3.requires.0.count -->／**保存の腕が `basic`** | 枝の骨組みを編んだ葉で囲い、底で火を燻らせる。設置物 |
+| 燻製 | 燻し上がった食べ物 | 腐敗が最も遅い段（20日<!-- stats: durations.yaml durations object=raw_meat__cure_smoked property=durability days -->）へ移る。別の型は作らない |
 
 **燻し小屋は炉です。** 薪をくべる口も火種を落とす口も炉から継ぐので
 （[`../engine/FireSystem.md`](../engine/FireSystem.md) 2節）、この設備が自分で名乗るのは
@@ -427,8 +427,8 @@
 
 | | 進む条件 | 掛かる長さ | 代償 |
 |---|---|---|---|
-| 干し場（10節） | 強い日差しが当たっている | 24 tick。日差しの当たる帯（9時〜15時）を使い切るので、晴れていれば半日と掛からない | 建てるだけ |
-| 燻し小屋 | 火が生きている | 96 tick<!-- codex: smoking.yaml traits.smokable.props.smoking_remaining.value -->。時刻を選ばないので、経過時間そのままの1日 | 薪と、保存の腕 |
+| 干し場（10節） | 強い日差しが当たっている | 日差しの当たる帯の中でだけ減る | 建てるだけ |
+| 燻し小屋 | 火が生きている | 96 tick<!-- codex: smoking.yaml traits.smokable.props.smoking_remaining.value -->。時刻を選ばないので、経過時間そのままの1日<!-- stats: durations.yaml durations object=raw_meat property=smoking_remaining days --> | 薪と、保存の腕 |
 
 **晴れた日に掛けるなら干し場のほうが速い**、というのが燻し小屋の引き換えです。持ち込むのは速さでは
 なく、**曇っても夜でも樹冠の下でも同じに進むこと**1つで、そこが干し場を残す線になります
@@ -455,7 +455,7 @@
 **燻製は塩漬け・干物と重ねません**（10節と同じ理由で、行き先が同じ段の端だからです）。保存の道は
 どれも同じ1つの軸（`cure`）の上に並びます。
 
-**1基で段に届きます**——編んだ葉6枚と縄2本<!-- codex: smoking.yaml object_defs.smokehouse.recipes.built.steps.3.requires.0.count -->が要るためで、干し場が縄1本で段に届くのと同じ理由です
+**1基で段に届きます**——編んだ葉と縄2本<!-- codex: smoking.yaml object_defs.smokehouse.recipes.built.steps.3.requires.0.count -->が要るためで、干し場が縄1本で段に届くのと同じ理由です
 （[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の2.09日<!-- stats: terrain.yaml work_piles pile=燻し小屋 days -->は、この1基ぶんです。**
 
 **実装済みです**（`src/assets/world-codex/smoking.yaml`。`tests/world-codex/smokingYaml.test.ts` が
@@ -480,8 +480,8 @@
 届きません**——枠数はキャラクタごとに決まる（`characters/`）ので、数ではなくこの形で持ちます。
 
 **この線は測って出しました。** 編み籠は総コスト333分<!-- stats: balance.yaml object_costs object=woven_basket total_minutes ±5% -->で
-寿命10日です。**この線を引いた時点（2026年9月）で最も高くついた持ち物が
-編み籠**だったので、そこへ2割の余裕を足したところに線を置いています。
+寿命10日<!-- stats: durations.yaml durations object=woven_basket property=durability days -->です。**この線を引いた時点（2026年9月）で最も高くついた持ち物が
+編み籠**だったので、そこへ余裕を足したところに線を置いています。
 
 **逆向きにも使えます。** 素材で寿命が決まっている物では、`余剰の5% × 寿命日数` がレシピに許される総コストの
 上限になります——短命な素材で作る物ほど安くなければならない、という形で、素材と手間が噛み合います。
