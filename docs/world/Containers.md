@@ -72,7 +72,7 @@
 
 **そりと台車はどちらも実装済みです**（`src/assets/world-codex/containers.yaml`）。
 
-| アイテム | 素材 | 入る種類 | 蓋 | 自重 | 感じる率の割り引き | 寿命 | 位置づけ |
+| アイテム | 素材 | 入る種類 | 蓋 | 自重 | 体感の率の割り引き | 寿命 | 位置づけ |
 |---|---|---|---|---|---|---|---|
 | そり | 長い棒（1本<!-- codex: containers.yaml object_defs.sledge.recipes.lashed.steps.0.requires.0.count -->ずつ） + 太い枝（3本<!-- codex: containers.yaml object_defs.sledge.recipes.lashed.steps.3.requires.0.count -->ずつ） + 縄1<!-- codex: containers.yaml object_defs.sledge.recipes.lashed.steps.5.requires.0.count --> | 8種類<!-- codex: containers.yaml object_defs.sledge.slots.contents.cell_count --> | なし | 8,000g<!-- codex: containers.yaml object_defs.sledge.props.weight.value --> | −0.45<!-- codex: containers.yaml object_defs.sledge.props.load_rate.passives.0.modify.self.load_rate --> | 長持ち | 重い物専用。斧なしでも作れる |
 | 台車 | そり + 丸太1<!-- codex: containers.yaml object_defs.handcart.recipes.wheeled.steps.0.requires.0.count --> + 紐1<!-- codex: containers.yaml object_defs.handcart.recipes.wheeled.steps.5.requires.0.count --> | 10種類<!-- codex: containers.yaml object_defs.handcart.slots.contents.cell_count --> | なし | 12,000g<!-- codex: containers.yaml object_defs.handcart.props.weight.value --> | −0.55<!-- codex: containers.yaml object_defs.handcart.props.load_rate.passives.0.modify.self.load_rate --> | 長持ち | そりの上位。車輪の加工に斧が要る |
@@ -81,14 +81,14 @@
 作れず、それ自体が重いので、軽い荷物を運ぶだけなら籠のほうが楽です。積載量がある量を超えたところで
 初めて、そりのほうが軽く感じるようになります。
 
-**引きやすさを高くしすぎると、この差別化は成立しません。** 引きやすさは自重にもかかるので、高くするほど
+**割り引きを深くしすぎると、この差別化は成立しません。** 割り引きは自重にもかかるので、深くするほど
 「自重が重い」という枷が打ち消されてしまい、わずかな荷でもそりのほうが有利になります。逆転が起きる
-積載量と引きやすさの関係は [`ContainerSystem.md`](../engine/ContainerSystem.md) 2節にあります。
+積載量と割り引きの関係は [`ContainerSystem.md`](../engine/ContainerSystem.md) 2節にあります。
 
-### 引きやすさは、逆転させたい積載量から逆算する
+### 割り引きは、逆転させたい積載量から逆算する
 
 **先に決めるのは率ではなく、どれだけ積んだら乗り換えてほしいかです。** 率を先に決めると、自重の枷が
-どこまで効いているかを誰も答えられません。置いた線は次の2つで、上の表の率はここから出ています
+どこまで効いているかを誰も答えられません。置いた線は次の2つで、上の表の割り引きはここから出ています
 （式は [`ContainerSystem.md`](../engine/ContainerSystem.md) 2節）。
 
 - **編み籠（800g<!-- codex: containers.yaml object_defs.woven_basket.props.weight.value -->）よりそりが軽く感じ始めるのは、積載8kgから。** 道具や食料を少し持ち歩くだけの荷では
@@ -101,8 +101,9 @@
 個体差そのものなので、上限も担ぎ手で動きます**。
 
 **丸太2本がそりに積めるかは、担ぎ手で分かれます。** 力のある担ぎ手なら往復が半分になり、そう
-でなければそりを引いても1本のままです。**率をこれより高くすると自重の枷が消え、低くすると籠を持つ
-理由が無くなる**ので、幅をまたぐこと自体は率では消せません。
+でなければそりを引いても1本のままです（`tests/world-codex/loadEffects.test.ts` が両方の担ぎ手が居る
+ことを見ます）。**割り引きをこれより深くすると自重の枷が消え、浅くすると籠を持つ理由が無くなる**ので、
+担ぎ手で分かれること自体は割り引きでは消せません。
 
 ## 3. 役割の住み分け
 

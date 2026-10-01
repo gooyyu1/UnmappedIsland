@@ -218,6 +218,38 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     expect(loadOf('handcart'), '台車はさらに軽い').toBeLessThan(loadOf('sledge'));
   });
 
+  it('丸太2本をそりで運べるかは、担ぎ手で分かれる', () => {
+    // 段の境目は個体差そのもの（docs/world/Characters.md 荷重の効き方節）なので、そりで積める重さも
+    // 担ぎ手で動く。**丸太2本がその幅の中に在る**ことを、往復が半分で済む担ぎ手と、1本のままの
+    // 担ぎ手の両方が居ることで見る（docs/world/Containers.md 2節・docs/world/Voyage.md）。
+    const stageWithTwoLogs = (characterName: string): string | undefined => {
+      const session = new WorldSession(codex, seededRng(42));
+      session.createWorld();
+      const character = session.createObject(codex.objectNames.getId(characterName));
+      const sledge = session.createObject(codex.objectNames.getId('sledge'));
+      expect(sledge.moveToSlotOrRejection(character.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+      const contents = sledge.getSlot(codex.slotNames.getId('contents'));
+      for (let i = 0; i < 2; i++)
+        expect(
+          session.createObject(codex.objectNames.getId('log')).moveToSlotOrRejection(contents),
+        ).toBeUndefined();
+      return character.tryGetProperty(propertyId('load'))?.stage?.name;
+    };
+
+    const carriers = [...codex.objects]
+      .filter((def) => def.hasTag(codex.vocabulary.world.characterTagId))
+      .map((def) => def.name);
+    const stages = carriers.map((name) => [name, stageWithTwoLogs(name)] as const);
+    expect(
+      stages.filter(([, stage]) => stage === 'too_heavy'),
+      'そりでも丸太2本では動けない担ぎ手が居る',
+    ).not.toHaveLength(0);
+    expect(
+      stages.filter(([, stage]) => stage !== 'too_heavy'),
+      'そりなら丸太2本を運べる担ぎ手が居る',
+    ).not.toHaveLength(0);
+  });
+
   it('引く道具へ乗り換える積載は、Containers.mdが置いた線のとおり', () => {
     // 率は逆転点から逆算してある（docs/world/Containers.md 2節）ので、**線が動けばここが落ちる**。
     // 石は1個1kgなので、個数がそのまま積載（kg）になる。
