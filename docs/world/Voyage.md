@@ -89,7 +89,7 @@
 今ある帆は生皮の帆（`rawhide_sail`）1種で、生皮・糸・太い枝2<!-- codex: voyage.yaml object_defs.rawhide_sail.recipes.sewn.steps.0.requires.0.count -->・ロープ2<!-- codex: voyage.yaml object_defs.rawhide_sail.recipes.sewn.steps.1.requires.0.count -->から、骨針（`sewing_tool`）を
 道具として縫います。**+2<!-- codex: voyage.yaml object_defs.rawhide_sail.passives.0.modify.parent.sail_speed --> は、積みすぎでない限り段をちょうど1つ上げる最小の値です**——素の筏は海流だけで
 `slow`、帆があれば `moderate` に届きます。+1 では段が動かない積載があり、+3 にしても上がる段は
-変わらないので、盤面に差が出るのは2だけです。
+変わらないので、盤面に差が出るのは2だけです（`tests/world-codex/voyageYaml.test.ts`）。
 
 **構造スロットは、筏に乗り込んでから現在地の札を押すと開きます**（積荷のスロットは外から札を押して
 開くので、2つは操作の入口から分かれています）。乗り降りは筏の `board`/`disembark` です。
