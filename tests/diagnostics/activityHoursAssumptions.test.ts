@@ -1,7 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { activityHoursOf, characterStageMinimumOf } from '../../src/analysis/activityHours';
+import {
+  activityHoursOf,
+  characterStageMinimumOf,
+  litPlacesOf,
+  worldAmbientBrightnessOf,
+} from '../../src/analysis/activityHours';
+import { HOURS_PER_DAY } from '../../src/domain/worldTime';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
 import { bundledCodex } from '../support/worldCodexFiles';
 
@@ -41,6 +47,41 @@ describe('活動時間表の前提', () => {
       expect(documented.get(action.documentedClass), `${action.documentedClass}のしきい値`).toBe(
         characterStageMinimumOf(codex, action),
       );
+  });
+
+  describe('夜と洞窟の明るさ（ContentSkeleton.md 8.1節）', () => {
+    const worldAmbientAt = worldAmbientBrightnessOf(codex);
+    const places = litPlacesOf(codex);
+    const weathers = Object.keys(SEASON_CLIMATE[0].hoursByWeather);
+    const RAIN = ['light_rain', 'heavy_rain', 'storm'];
+    const NIGHT = 0;
+    const NOON = 12;
+
+    it('夜に土地の間を歩けるのは、砂浜だけ', () => {
+      const travel = characterStageMinimumOf(codex, ACTION_CLASSES[0]);
+      const walkable = places
+        .filter((place) =>
+          weathers.some((weather) => place.brightnessAt(worldAmbientAt(NIGHT, weather)) >= travel),
+        )
+        .map((place) => place.name);
+      expect(walkable).toEqual(['sandy_beach']);
+    });
+
+    it('浅い洞窟の中で手元の作業ができるのは、外が曇りの正午以上に明るいときだけで、雨の日は一日中できない', () => {
+      const handwork = characterStageMinimumOf(codex, ACTION_CLASSES[2]);
+      const cave = places.find((place) => place.name === 'shallow_cave');
+      expect(cave, '浅い洞窟の明るさが解けない').toBeDefined();
+      const cloudyNoon = worldAmbientAt(NOON, 'cloudy');
+
+      for (const weather of weathers)
+        for (let hour = 0; hour < HOURS_PER_DAY; hour++) {
+          const outside = worldAmbientAt(hour, weather);
+          expect(cave!.brightnessAt(outside) >= handwork, `${weather} の ${hour}時`).toBe(
+            outside >= cloudyNoon,
+          );
+          if (RAIN.includes(weather)) expect(outside, `${weather} の ${hour}時`).toBeLessThan(cloudyNoon);
+        }
+    });
   });
 
   it('浅い洞窟の明るさが、生え先の土地から1つに決まる', () => {

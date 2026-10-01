@@ -317,7 +317,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 ——段になるのは家1軒ぶんの丸太であり、貯水に足りる数の甕です。**畑も塩田も1枚では1日に届きません**
 （[`stats/balance.yaml`](../../stats/balance.yaml) の `object_costs`）——段になるのは拓いた枚数・据えた
 枚数と、撒いて収穫しに戻る往復・海水を汲みに戻る往復の回数のほうです。**囲いは1つで段に届きます**
-——丸太4本と縄2本が要るためです。**干し場も1基で段に届きます**——縄が1本<!-- codex: drying.yaml object_defs.drying_rack.recipes.lashed.steps.1.requires.0.count -->要るためで、開けるのは
+——丸太と縄が要るためです。**干し場も1基で段に届きます**——縄が1本<!-- codex: drying.yaml object_defs.drying_rack.recipes.lashed.steps.1.requires.0.count -->要るためで、開けるのは
 腐敗の最も速い段の食べ物（生肉・獣の死体・ヤシガニ・海藻）を干物にできることです
 （[`SurvivalItems.md`](./SurvivalItems.md) 10節）。**薪棚も1基で届きます**——こちらも縄が1本<!-- codex: firewood.yaml object_defs.firewood_rack.recipes.built.steps.2.requires.0.count -->要るためです。
 
@@ -389,11 +389,11 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 1. **積める船。** 筏に帆と櫂が付いたもの（[`Voyage.md`](./Voyage.md) 2.1節）。丸太・ロープ・帆材が要り、
    丸太は斧だけが作ります（同1節）。
 2. **水を4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 -->日ぶん運ぶ手段**（遠回りと荒天を見込んで、余裕を取るなら10日ぶん）。1日は2.4L
-   （飲用250mL<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount -->がhydration 10 tick<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.to_amount -->、1日の必要は96 tick）なので、10日で24Lです。**海の上で水が増える道は
+   （飲用250mL<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount -->がhydration 10 tick<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.to_amount -->、1日の必要は96<!-- stats: balance.yaml daily_needs property=hydration daily_need --> tick）なので、10日で24Lです。**海の上で水が増える道は
    雨水しかありません**（[`GameEndings.md`](../concept/GameEndings.md) 3.1節）。**これは水の系統の段に
-   届いていなくても運べる量です**——ヤシの実は1日5個の勘定で、10日ぶんの50個は110kg・245Lですが、
-   積荷が横断を長くするのは160kgから、筏の積荷枠は500L（[`Voyage.md`](./Voyage.md) 3.2節）で、どちらの
-   線にも届きません。甕（水の段3）なら24Lを31kgで運べます。**どちらでも運べるようにします**（5.3節）。
+   届いていなくても運べる量です**——ヤシの実は1日5個の勘定で、10日ぶんを積んでも、積荷が横断を長くする
+   段にも筏の積荷枠のかさ（[`Voyage.md`](./Voyage.md) 3.2節）にも届きません
+   （`tests/diagnostics/waterAndBloodPace.test.ts` が、この節の水の量と合わせて見ます）。甕（水の段3）なら24Lを31kgで運べます。**どちらでも運べるようにします**（5.3節）。
 3. **航海ぶんの塩漬けと、突き銛の予備。** 積むのは4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 -->日ぶんで、伸びたぶんは海の上で釣って賄います
    （[`Voyage.md`](./Voyage.md) 3.9節）。生肉は2.5日で腐るので塩漬けは要り、腐らせない側は**保存の段4
    （製塩・塩蔵）に届いていれば足ります**——塩蔵の20日が航海の日数を大きく上回るので、量は問われません。
@@ -403,9 +403,9 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 4. **浜まで運ぶ手段。** そり（運ぶ入れ物の段3）。備蓄は拠点にあり、出航地点は海岸なので、積み込みの前に
    陸の運搬が要ります。**積む量が4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 -->日ぶんへ縮んでも要ります**——甕で運ぶ水は下限でも3〜4つ＝16〜21kg
    （[`Voyage.md`](./Voyage.md) 3.9.6節。蓋をしなければ蒸発が、積む物を誤れば食べ方が押し上げます）で、通れなくなる線
-   （`too_heavy`。[`Characters.md`](./Characters.md) 荷重の効き方節）はどの人物も22.5〜30kg
-   （`characters/*.yaml` の `load` の段）。そこへ塩漬けの生肉12〜18個（6〜9kg。
-   [`Voyage.md`](./Voyage.md) 3.9.3節）と、脂を切らさないためのヤシの果肉2〜3個（0.4〜0.6kg。同3.9.6節）が
+   （`too_heavy`。[`Characters.md`](./Characters.md) 荷重の効き方節）は人物ごとに違います
+   （`characters/*.yaml` の `load` の段）。そこへ塩漬けの生肉12〜18個（
+   [`Voyage.md`](./Voyage.md) 3.9.3節）と、脂を切らさないためのヤシの果肉2〜3個（同3.9.6節）が
    乗るので、**長い側では、水と食料だけで誰も通れません。** 短い側は水と食料だけなら通れますが、
    いちばん非力な者はアーティファクト1つで線を越えます。**持ち帰る物が、そのまま
    運べなくなる理由**です。**この数が数えているのは水と食料だけ**で、蓋も銛の予備も海図も乗っていません
@@ -497,9 +497,9 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 24種類は、1周で6つ持ち帰れたとして最短4周、重複を織り込んで6〜8周で埋まる勘定です。
 
-重さで引き換えになるのは、航海ぶんの水と食料との速さです——甕で運べば40kg、ヤシの実で10日ぶんを
-積んでも120kgほど（5節）で、**積荷が160kgを越えると、帆を張っても横断が30分伸びます**
-（[`Voyage.md`](./Voyage.md) 3.2節）。**6つ全部を持ち帰るかは、そこで速さと引き換えになります。**
+重さで引き換えになるのは、航海ぶんの水と食料との速さです——甕で運んでも、ヤシの実で10日ぶんを
+積んでも、それだけでは横断を長くする段に届きません（5節）が、**積荷がその段を越えると、帆を張っても
+横断が伸びます**（[`Voyage.md`](./Voyage.md) 3.2節）。**6つ全部を持ち帰るかは、そこで速さと引き換えになります。**
 
 ## 7. 海区の顔ぶれと、遠征先の小島
 
@@ -772,14 +772,15 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 **夜の地表は、これだけで決まります。** 空は底（−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->）に張り付いていて時刻でも天気でも動かないので
 （8.1.1.1節）、夜の明暗を作るのは土地だけです。
 
-| 夜の地表 | 環境光 | 移動（しきい値 −5<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.1.min -->） |
-| --- | --: | --- |
-| 砂浜 | **−5** | **歩ける** |
-| 草原・岩場・荒野など | −6 | 歩けない |
-| 森・密林（底へ引き戻される） | −6 | 歩けない |
-| 浅い洞窟の中（親の土地からさらに −6<!-- codex: locations.yaml object_defs.shallow_cave.props.ambient_brightness.value -->。同じく底へ） | −6 | 歩けない |
+| 夜の地表 | 移動（しきい値 −5<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.1.min -->） |
+| --- | --- |
+| 砂浜 | **歩ける** |
+| 草原・岩場・荒野など | 歩けない |
+| 森・密林（底へ引き戻される） | 歩けない |
+| 浅い洞窟の中（親の土地からさらに −6<!-- codex: locations.yaml object_defs.shallow_cave.props.ambient_brightness.value -->。同じく底へ） | 歩けない |
 
-**夜に歩けるのは砂浜だけです。** 反射 +1<!-- codex: locations.yaml object_defs.sandy_beach.props.ambient_brightness.value --> を持つ砂浜だけが底の上へ1段乗り、しきい値にちょうど届きます。
+**夜に歩けるのは砂浜だけです。** 反射 +1<!-- codex: locations.yaml object_defs.sandy_beach.props.ambient_brightness.value --> を持つ砂浜だけが底の上へ1段乗り、しきい値に届きます
+（`tests/diagnostics/activityHoursAssumptions.test.ts`）。
 **海沿いは夜でも帰れる道になり**、他の土地から日暮れ後に動くには光源が要ります。
 
 **現実の半月の砂浜は 0.05 lx で、しきい値（0.1 lx）に半段届きません。** 底が空の暗さを持ち上げるぶん、
@@ -796,9 +797,10 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 砂浜だけ」を作っています。**他の土地の反射を動かしても、昼は境目が数分動くだけ**（8.1.3節）なので、
 反射率が効いているかはこの1段で見ます。
 
-**浅い洞窟の中で作業できるのは、外が曇りの正午（+11）以上に明るいときだけです。** 中は外より6段暗く、
-手元のしきい値は +5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min --> だからです。晴れ以上なら7時から16時まで、曇りの日は11時から12時まで、雨の日は
-一日中できません。**アーティファクトの出どころの3分の1が浅い洞窟（6節）**で、そこは同時に序盤の住居
+**浅い洞窟の中で作業できるのは、外が曇りの正午（+11）以上に明るいときだけです。** 中は外より段が −6<!-- codex: locations.yaml object_defs.shallow_cave.props.ambient_brightness.value --> 下がり、
+手元のしきい値は +5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min --> だからです。曇りの日は正午のあたりだけ、雨の日は
+一日中できません（`tests/diagnostics/activityHoursAssumptions.test.ts`。季節ごとに何時間できるかは
+[`stats/climate.yaml`](../../stats/climate.yaml) の `activity_hours` の `shallow_cave`）。**アーティファクトの出どころの3分の1が浅い洞窟（6節）**で、そこは同時に序盤の住居
 （[`Dwellings.md`](./Dwellings.md) 5節）でもあるので、朝夕と雨の日に中で手を動かすぶんが燃料の需要に
 なります。奥の洞窟が開けば（【いつか: 洞窟内部】）、そちらは昼でも光源が要ります。
 

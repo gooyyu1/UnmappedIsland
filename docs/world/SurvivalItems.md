@@ -372,7 +372,7 @@
   なります。干し場の棚に入る数には限りがありますが、それは棚の大きさであって、干し場が開けるものでは
   ありません。
 
-**1基で段に届きます**——縄が1本<!-- codex: drying.yaml object_defs.drying_rack.recipes.lashed.steps.1.requires.0.count -->要るためで、囲いが丸太4本と縄2本で1つでも段になるのと同じ理由です
+**1基で段に届きます**——縄が1本<!-- codex: drying.yaml object_defs.drying_rack.recipes.lashed.steps.1.requires.0.count -->要るためで、囲いが丸太と縄を要して1つでも段になるのと同じ理由です
 （[`ContentSkeleton.md`](./ContentSkeleton.md) 4節）。**同4節の1.01日<!-- stats: terrain.yaml work_piles pile=干し場 days -->は、この1基ぶんです。**
 
 **素手の天日干しは、干し場が建っても残ります**（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md)
