@@ -177,7 +177,7 @@ export function cardOperationsOf(game: StartedGame, locale: Localization): CardO
         ...permissionOf(action.unmetRequirement()),
       };
     });
-    return [...craftingActions(instance, game, locale), ...fromDefinition];
+    return [...craftingActions(instance, game.player, locale), ...fromDefinition];
   };
 
   /**

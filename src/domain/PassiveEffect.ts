@@ -103,7 +103,8 @@ export abstract class PassiveEffect {
    * **役（11.5節）を答える文脈は受け取る。** 物のdefの宣言なら宣言元の今の参加から解けるが、
    * 操作が宣言した持続効果（11.7節）の役は、宣言したその操作の関係が答えるもので、宣言元の
    * 参加からは辿り直せない（WorldSession.whileInteractionPassives）——登録と同じ分かれ方
-   * （setRelationRegistered／setRegisteredInContext）なので、出どころは呼ぶ側が渡す。
+   * （setRelationRegistered／setRegisteredInContext）。どちらから解くかは、呼ぶ一式の型が決める
+   * （PassiveEffects）。
    */
   abstract collectInfluences(declarer: WorldObject, roles: ReferenceContext, out: InfluenceWriter): void;
 
@@ -118,7 +119,7 @@ export abstract class PassiveEffect {
 
   /**
    * tick毎に走る輸送（8.4節）ならそれ自身。寄与として登録される効果（modify/add）ではundefined。
-   * 走らせる側（PassiveEffects）が種別で振り分けずに済むよう、効果自身が名乗る。
+   * 走らせる側（ObjectPassiveEffects）が種別で振り分けずに済むよう、効果自身が名乗る。
    */
   get tickTransfer(): TransferPassiveEffect | undefined {
     return undefined;
@@ -126,7 +127,7 @@ export abstract class PassiveEffect {
 
   /**
    * この1 tickで自分が動かす先を、操作の稼ぎを数える対象として名乗る
-   * （PassiveEffects.countTickMovementsAsGains）。
+   * （InteractionPassiveEffects.countTickMovementsAsGains）。
    *
    * **既定は何もしない。** 呼ばれるのは操作が宣言した一式だけで（11.7節）、そこに書けるのは
    * 実体値へ積む`add`と、実体値を動かさない`modify`しかない——輸送は書けない（8.4.1節）。
@@ -232,7 +233,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
   /**
    * 対象（relationRegistrationで名乗った関係）の相手へ、この効果を登録/解除する。相手はowner自身から
    * 解決するので、呼び出し側は相手を知らなくてよい。**呼ばれるのは名乗った関係の契機だけ**
-   * （仕分けはPassiveEffectsが持つ）。
+   * （仕分けはObjectPassiveEffectsが持つ）。
    *
    * ancestorは、ツリー構造が変わる前に解除・変わった後に登録という順序を呼び出し側
    * （WorldObject.setAncestorTargetsRegistered）が守る前提で、「今この瞬間の祖先」を毎回辿るだけで
@@ -349,7 +350,7 @@ export class AccumulateEffect extends PropertyPassiveEffect {
  * 条件が真の間、tick毎に走る輸送（YAMLでは `transfer`、8.4節・9.5節）。
  *
  * **寄与としては登録しない。** 2つのプロパティを同時に動かす操作は、どちらか一方への寄与としては
- * 表せないため、宣言したオブジェクトのtickでそのまま走る（PassiveEffects.applyTickTransfers）。
+ * 表せないため、宣言したオブジェクトのtickでそのまま走る（ObjectPassiveEffects.applyTickTransfers）。
  * 走らせ方はactiveの輸送と全く同じで、違いは「毎tick呼ばれること」だけ。
  */
 export class TransferPassiveEffect extends PassiveEffect {

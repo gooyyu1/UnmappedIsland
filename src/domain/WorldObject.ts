@@ -920,12 +920,9 @@ export class WorldObject {
     for (const child of this.children()) child.collectInfluencesRecursively(out);
   }
 
-  /**
-   * この物のdefが宣言した持続効果の辺を書き出す。**役はそのつど今の参加から解く**——物のdefの宣言が
-   * 見る役は登録の後も参加に追随するので（RegisteredPassiveEffect）、読むときも同じ出どころで解く。
-   */
+  /** この物のdefが宣言した持続効果の辺を書き出す（役の出どころはObjectPassiveEffects.collectInfluences）。 */
   private collectDeclaredInfluences(out: InfluenceWriter): void {
-    this.def.passives.collectInfluences(this, ReferenceContext.forParticipant(this), out);
+    this.def.passives.collectInfluences(this, out);
   }
 
   /**
@@ -1100,7 +1097,8 @@ export class WorldObject {
   // ---- 能動効果とspawn（9節） ----
 
   /**
-   * このオブジェクトをselfとして、渡された効果が持つ命令を実行する（9節。何が走るかはActiveEffectSequence）。
+   * 文脈のselfを起点に、渡された効果が持つ命令を実行する（9節。何が走るかはActiveEffectSequence）。
+   * **selfは文脈から引く**——起点を別に受け取ると、文脈のselfと食い違う組を渡せてしまう。
    * rangeイベント（6節）とactions/combinations（11節・12節）の両方から呼ばれる。**文脈は呼び出し側が
    * 持っているものをそのまま渡す**——操作からは張られている関係の文脈が、rangeイベントからは役の居ない
    * 文脈（11.5節）が来る。対象が解決できない場合（例えばparentが無い、この実行文脈に居ない役を指している。
@@ -1113,12 +1111,13 @@ export class WorldObject {
    * （WorldChange.subject）。どの`pick`の候補が選ばれたかによらず1つに決まるので、観測する側は分岐を
    * 知らずに「このオブジェクトが何をしたか」を読める。
    */
-  applyActiveEffect(effect: ActiveEffect, context: ReferenceContext): void {
+  static applyActiveEffect(effect: ActiveEffect, context: ReferenceContext<WorldObject>): void {
+    const self = context.self;
     // same_slot spawnのために「selfが今占めている位置」を、まだ何も起きていないこの入口で捕捉する。destroyが
     // selfを消した後でも、spawnはこのアンカーと配置時のスロットの状態から置き換え位置を決められる（SameSlotSpawnSite
     // 参照）。
-    const sameSlotSpawnSite = this.captureSameSlotSpawnSite();
-    this.session.withSubject(this, () => effect.apply(context, sameSlotSpawnSite));
+    const sameSlotSpawnSite = self.captureSameSlotSpawnSite();
+    self.session.withSubject(self, () => effect.apply(context, sameSlotSpawnSite));
   }
 
   /** same_slotの置き換えのために、selfが今占めている位置を捕捉する。「これから消えるか」の予測は織り込まず、置き換え位置の判断は配置時にSameSlotSpawnSite自身が行う。parentが無ければ位置が無いのでundefined。 */

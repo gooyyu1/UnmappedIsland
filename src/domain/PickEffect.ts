@@ -4,6 +4,7 @@ import type { SameSlotSpawnSite } from './SameSlotSpawnSite';
 import { ActiveEffect } from './ActiveEffect';
 import type { EffectReader, PickCandidateReading, PickReading } from './EffectReader';
 import type { ReferenceContext } from './ReferenceRoot';
+import type { WorldObject } from './WorldObject';
 import type { DeclaredNumber } from './DeclaredNumber';
 
 /**
@@ -22,7 +23,7 @@ export class PickEffect extends ActiveEffect {
    * **相手が居ない候補は抽選に出ない**（`among`、10.3節）ので、著者は「相手が居なければ起こらない」を
    * 書かなくてよい。全部外れれば何も起きない。
    */
-  apply(context: ReferenceContext, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
+  apply(context: ReferenceContext<WorldObject>, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
     const available = this.candidates.filter((candidate) => candidate.isAvailable(context));
     if (available.length === 0) return;
     this.selectWeighted(available, context).apply(context, sameSlotSpawnSite);
@@ -117,7 +118,7 @@ export class PickCandidateDef {
   }
 
   /** この候補が選ばれたときに起こす。`among`を書いていれば、選んだ相手をpickedにした文脈で当てる。 */
-  apply(context: ReferenceContext, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
+  apply(context: ReferenceContext<WorldObject>, sameSlotSpawnSite: SameSlotSpawnSite | undefined): void {
     if (this.among === undefined) {
       this.effect.apply(context, sameSlotSpawnSite);
       return;

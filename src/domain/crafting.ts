@@ -6,6 +6,7 @@ import type { Slot } from './Slot';
 import type { TypeMatchRule } from './TypeMatchRule';
 import type { WorldObject } from './WorldObject';
 import type { ObjectGlobalId } from './GlobalId';
+import type { Requirement } from './Requirement';
 
 /**
  * その製作中オブジェクトが従っているレシピ（製作中オブジェクトでなければundefined）。
@@ -311,6 +312,17 @@ export function currentStepIsSupplied(inProgress: WorldObject): boolean {
 }
 
 /**
+ * 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.3節）のうち、agentが満たしていない
+ * 最初の要件（満たしていればundefined）。
+ *
+ * **条件はagent自身の世界から引く。** 製作中オブジェクトから引いてagentへ当てると、別の世界の物どうしを
+ * 渡されたとき、agentの居ない世界の条件で判定することになる。
+ */
+export function unmetCraftingRequirementOf(agent: WorldObject): Requirement | undefined {
+  return agent.session.codex.unmetCraftingRequirement(agent);
+}
+
+/**
  * 工程を1つ進める。**作り手の手際を積んだ後の分数**ぶんゲーム内時間を進め、**工程が宣言した
  * 仕事の量**ぶん進捗を進め、素材（`consume: true`）を要求数だけ消費する。道具（`consume: false`）は
  * 減らさない。
@@ -334,7 +346,7 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
   //
   // 問うのは関係を張る前。crafting_conditionsは操作ではなく（11.5節）、画面も関係を張らずに同じ
   // 問いを出すので、内側で問うと押す前に見せた可否と実際の可否がずれる。
-  if (codex.unmetCraftingRequirement(agent) !== undefined) return false;
+  if (unmetCraftingRequirementOf(agent) !== undefined) return false;
 
   // 工程は操作なので、関係を張った状態で走らせる（11.5節）。patientは製作中オブジェクト——工程の
   // 宣言が乗っている側（RecipeSystem.md 4節の`interactions.work`相当）。instrumentは居ない——

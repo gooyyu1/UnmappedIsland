@@ -9,7 +9,7 @@ import type {
 import type { ConditionNode } from './ConditionNode';
 import { LocalIndexByGlobalId } from './LocalIndexByGlobalId';
 import type { PassiveEffect } from './PassiveEffect';
-import { PassiveEffects } from './PassiveEffects';
+import { ObjectPassiveEffects } from './PassiveEffects';
 import type { PropertyDef } from './PropertyDef';
 import type { RecipeDef } from './RecipeDef';
 import type { Placement, SlotDef } from './SlotDef';
@@ -54,8 +54,8 @@ export class ObjectDef {
   /** slotDefsのうち、それぞれの走査（`placement`、7.7節）に参加するものだけを宣言順に並べたもの。 */
   private readonly placementSlots: Readonly<Record<Placement, readonly SlotDef[]>>;
 
-  /** このObjectDefが宣言する持続効果（8節）の一式（PassiveEffects参照）。 */
-  readonly passives: PassiveEffects;
+  /** このObjectDefが宣言する持続効果（8節）の一式（ObjectPassiveEffects参照）。 */
+  readonly passives: ObjectPassiveEffects;
 
   /** この型を成果物とするレシピ（13節）。宣言順。 */
   readonly recipesProducingThis: readonly RecipeDef[];
@@ -177,7 +177,7 @@ export class ObjectDef {
       auto: slotDefs.filter((slotDef) => slotDef.allows('auto')),
       manual: slotDefs.filter((slotDef) => slotDef.allows('manual')),
     };
-    this.passives = new PassiveEffects(passives);
+    this.passives = new ObjectPassiveEffects(passives);
     this.stackOrder = stackOrder;
     this.tags = tags;
     this.triggers = triggers;
