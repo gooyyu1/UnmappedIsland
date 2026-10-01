@@ -51,7 +51,7 @@
 ありますが（[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「要るものは、名指しの鍵ではなく、
 部分的に代替できる資源で作る」節）、**どちらも斧を要求する**ので、上の前提は変わりません。
 
-丸太は1本20kgで、担ぐと荷重（`load`）の段が1つ上がります。**2本目は担げません。** 筏1つに6本要るので、
+丸太は1本20kgで、担ぐと荷重（`load`）の段が1つ上がります。**2本目は担げません。** 筏の材料の丸太を
 どこで伐ってどこへ運ぶかが島側の仕事として残ります（[`GameEndings.md`](../concept/GameEndings.md) 3.1 節）。
 
 **そりを引けば、力のある担ぎ手なら2本まで一度に運べます**（[`Containers.md`](./Containers.md) 2節）
@@ -86,7 +86,7 @@
 構造スロットと同じ形）を1枠だけ持ち、`sail` タグを持つ物を1つ受け入れます。組み込んだ帆は
 `modify` で親（筏）の `sail_speed` を +2<!-- codex: voyage.yaml object_defs.rawhide_sail.passives.0.modify.parent.sail_speed --> します。
 
-今ある帆は生皮の帆（`rawhide_sail`）1種で、生皮6・糸10・太い枝2<!-- codex: voyage.yaml object_defs.rawhide_sail.recipes.sewn.steps.0.requires.0.count -->・ロープ2<!-- codex: voyage.yaml object_defs.rawhide_sail.recipes.sewn.steps.1.requires.0.count -->から、骨針（`sewing_tool`）を
+今ある帆は生皮の帆（`rawhide_sail`）1種で、生皮・糸・太い枝2<!-- codex: voyage.yaml object_defs.rawhide_sail.recipes.sewn.steps.0.requires.0.count -->・ロープ2<!-- codex: voyage.yaml object_defs.rawhide_sail.recipes.sewn.steps.1.requires.0.count -->から、骨針（`sewing_tool`）を
 道具として縫います。**+2<!-- codex: voyage.yaml object_defs.rawhide_sail.passives.0.modify.parent.sail_speed --> は、積みすぎでない限り段をちょうど1つ上げる最小の値です**——素の筏は海流だけで
 `slow`、帆があれば `moderate` に届きます。+1 では段が動かない積載があり、+3 にしても上がる段は
 変わらないので、盤面に差が出るのは2だけです。
@@ -328,7 +328,7 @@
 どちらへ伸びる辺にも横から当たる**ので、方角を見ません。
 
 **分かれ道の 2 本が差を持つのはここです**（3 節）。近道（うねりの海 → 流れ藻の海）は本土へ近づく辺、
-遠回りの入口（うねりの海 → 沖の潮目）は本土から遠ざかる辺なので、向かい風の日は遠回りのほうが 90 分
+遠回りの入口（うねりの海 → 沖の潮目）は本土から遠ざかる辺なので、向かい風の日は遠回りのほうが
 短く渡れます。**「遠回りだが今なら短く渡れる航路」と「最短だが今は長くかかる航路」が同時に盤面へ出る**
 （同 12.3 節）のは、この 1 点だけです。
 
@@ -342,10 +342,7 @@
 
 **横断時間は漕ぎ出すときに読み切ります**（`duration` は効果より先に時計を進めます）。渡っている最中に
 風が変わっても伸び縮みしないので、針路の判断が博打になりません
-（[`GameEndings.md`](../concept/GameEndings.md) 12.3 節）。**最も良い条件でも 240 分**（360<!-- codex: voyage.yaml traits.sea_zone.props.crossing_minutes.value --> − 60 − 60。
-軽く積んで帆を張り、本土へ近づく辺を追い風で渡ったとき）で、`range` の下限 120 分<!-- codex: voyage.yaml traits.sea_zone.props.crossing_minutes.range.min --><!-- codex: voyage.yaml traits.sea_route.props.crossing_minutes.range.min -->は、寄与がどれだけ
-重なっても横断時間が消えないための底です。**最も悪くて 390 分**（360<!-- codex: voyage.yaml traits.sea_zone.props.crossing_minutes.value --> + 30<!-- codex: voyage.yaml traits.sea_route.passives.2.modify.self.crossing_minutes -->。積みすぎた筏が、本土へ近づく辺を
-向かい風で渡ったとき）。
+（[`GameEndings.md`](../concept/GameEndings.md) 12.3 節）。`range` の下限 120 分<!-- codex: voyage.yaml traits.sea_zone.props.crossing_minutes.range.min --><!-- codex: voyage.yaml traits.sea_route.props.crossing_minutes.range.min -->は、寄与がどれだけ重なっても横断時間が消えないための底です。
 
 **海流は海区が `modify: {child: ...}` で、浮かんでいるものすべてへ +3<!-- codex: voyage.yaml traits.sea_zone.passives.0.modify.child.sail_speed --> を配ります。** 筏の側に「今どこの
 海に居るか」を書かずに済み、海区ごとに別の海流を持たせることもできます（今は揃えてあります）。
@@ -357,16 +354,16 @@
 **積荷は `weight` の段が速さを削ります。** 筏の `weight` は中身の重さを含む実効値なので
 （[`ContainerSystem.md`](../engine/ContainerSystem.md) 1 節）、積むほど段が上がり、横断が長くなります。
 
-| 積荷 | `sail_speed` への寄与 |
+| `weight` の段 | `sail_speed` への寄与 |
 |---|---|
-| 80kgまで | 0 |
-| 80〜160kg | −1<!-- codex: voyage.yaml object_defs.raft.props.weight.stages.1.passives.0.modify.self.sail_speed --> |
-| 160〜240kg | −3<!-- codex: voyage.yaml object_defs.raft.props.weight.stages.2.passives.0.modify.self.sail_speed --> |
-| 240kg超 | −6<!-- codex: voyage.yaml object_defs.raft.props.weight.stages.3.passives.0.modify.self.sail_speed --> |
+| `light` | 0 |
+| `laden` | −1<!-- codex: voyage.yaml object_defs.raft.props.weight.stages.1.passives.0.modify.self.sail_speed --> |
+| `heavy` | −3<!-- codex: voyage.yaml object_defs.raft.props.weight.stages.2.passives.0.modify.self.sail_speed --> |
+| `overladen` | −6<!-- codex: voyage.yaml object_defs.raft.props.weight.stages.3.passives.0.modify.self.sail_speed --> |
 
-**表の「積荷」は乗員を含みません。** 乗員（65kg、[`Characters.md`](./Characters.md)）は航海中ずっと
-乗っているので、`weight` の段の境目はその65kgを見込んだ値で書いてあります。**手に持てば積まずに済む、
-とはなりません**——手持ちの重さも乗員を通って筏へ届きます（[`ContainerSystem.md`](../engine/ContainerSystem.md)
+**段の境目は乗員を見込んでいます。** 乗員（65kg、[`Characters.md`](./Characters.md)）は航海中ずっと
+乗っているので、`weight` の段の境目はその65kgを含めた値で書いてあります（`voyage.yaml` の筏の `weight`）。
+**手に持てば積まずに済む、とはなりません**——手持ちの重さも乗員を通って筏へ届きます（[`ContainerSystem.md`](../engine/ContainerSystem.md)
 1.1 節）。
 
 これで「積荷を捨てれば速くなり、速いほど水と食料が保つ」（[`GameEndings.md`](../concept/GameEndings.md) 4 節）が、
@@ -690,7 +687,7 @@
 遠回りは 6,045 分<!-- stats: voyage.yaml course_wind coast=sandy_beach course=detour wind=headwind total_minutes -->、
 追い風でも 4,185 分<!-- stats: voyage.yaml course_wind coast=sandy_beach course=shortest wind=tailwind total_minutes -->に対して
 4,965 分<!-- stats: voyage.yaml course_wind coast=sandy_beach course=detour wind=tailwind total_minutes --> です。
-**風が 1 区間へ乗せる幅は最大でも 90 分**（3.2 節）**で、遠回りが増やす 2 区間には届きません。**
+**風が 1 区間へ乗せる幅**（3.2 節）**は、遠回りが増やす 2 区間には届きません**（`tests/world-codex/voyageYaml.test.ts`）。
 **遠回りが返すのは時間ではなく実りです**（3.6 節）——沖の潮目は見張り 3 回<!-- codex: voyage.yaml object_defs.outer_tide_rip.props.exploration_progress.range.max -->のうちに
 99%<!-- stats: voyage.yaml zone_yields zone=outer_tide_rip spawned_by_sighting ±1 -->の割で群れが立ち、
 群れ 1 つは 3 日ぶんの身になります（3.9.2 節）。**2 区間ぶんの時間を払って 3 日ぶんの当てを買う**のが
@@ -759,7 +756,8 @@
   8 区間<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs -->では 1 つだけ**（本土の島影）——**「短い航路ほど補給の当てが無い」**（3.6 節）**は、そのまま
   「短い航路ほど積んで出なければならない」**になります。
 - **だから積むのは 4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日ぶん**（3.9.1 節の針路の日数ぶん）。1 日 3 つを日数ぶん積んでも、**積荷の段が
-  上がる 80 kg**（3.2 節）**には遠く、予定ぶんを積むこと自体は速さを削りません。** 削られるのは、
+  上がる境目**（3.2 節の `laden`）**には届かず、予定ぶんを積むこと自体は速さを削りません**
+  （`tests/world-codex/voyageYaml.test.ts`）。削られるのは、
   それを塩漬けにするまでの島側の時間です。
 
 **生肉は、満腹と一緒に菌も運びます**（1 切れ `pathogen` +3<!-- codex: animals.yaml object_defs.raw_meat.interactions.eat.add.agent.pathogen -->、
@@ -861,9 +859,9 @@
   （果肉 1 つが 26<!-- codex: coconut.yaml object_defs.coconut_meat.interactions.eat.add.agent.lipid -->、1 日に要るのが 24<!-- stats: balance.yaml daily_needs property=lipid daily_need -->）。生肉と同じく塩漬け・天日干し・燻しが効くので、
   日数ぶんを積んで出られます。
 
-**重さとかさは、どちらも効きません。** 満たした甕は 5.2kg（器 1.2kg ＋ 水 4kg）なので、5 つでも
-26kg——**積荷の段が上がる 80 kg**（3.2 節）**には、日数ぶんの生肉**（3.9.3 節）**と合わせても
-届きません。** かさの側も、筏の 500 L に対して甕 1 つが 15 L です。**蓋を足しても同じです**——蓋 1 枚は
+**重さとかさは、どちらも効きません。** 満たした甕は 5.2kg（器 1.2kg ＋ 水 4kg）で、積む数ぶん
+載せても——**積荷の段が上がる境目**（3.2 節の `laden`）**には、日数ぶんの生肉**（3.9.3 節）**と合わせても
+届きません**（`tests/world-codex/voyageYaml.test.ts`）。かさの側も、筏の 500 L に対して甕 1 つが 15 L です。**蓋を足しても同じです**——蓋 1 枚は
 0.4kg・0.3 L で、甕の数ぶん載せても段は動きません。**積む数を縛るのは船ではなく、浜まで運ぶ側**です
 （[`ContentSkeleton.md`](./ContentSkeleton.md) 5 節）。
 

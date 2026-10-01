@@ -1046,6 +1046,53 @@ describe('筏と航海', () => {
     }
   });
 
+  it('風が1区間へ乗せる幅は、遠回りが増やす2区間ぶんの横断に届かない（Voyage.md 3.9.1節）', () => {
+    const byWind = ['tailwind', 'crosswind', 'headwind'].map((wind) => crossingMinutesAtFork(wind));
+    // 1区間の物差しは、実際に払う区間の横断時間のうち最も短いもの（厳しい側）。
+    const section = Math.min(...byWind.flatMap((crossings) => [...crossings.values()]));
+    for (const route of [SHORTCUT_ONWARD, DETOUR_ONWARD]) {
+      const minutes = byWind.map((crossings) => crossings.get(route) as number);
+      expect(Math.max(...minutes) - Math.min(...minutes), route).toBeLessThan(2 * section);
+    }
+  });
+
+  it('航海ぶんの甕と蓋と食料を積んでも、積荷の段は上がらない（Voyage.md 3.9.3節・3.9.6節）', () => {
+    // 積む数は文書の長い側（甕は Voyage.md 3.9.6節、食料は ContentSkeleton.md 5節4番）。数が宣言から
+    // 出ることは tests/diagnostics/waterAndBloodPace.test.ts が見る。
+    const voyage = readFileSync('docs/world/Voyage.md', 'utf8').replace(/<!--[^>]*-->/g, '');
+    const skeleton = readFileSync('docs/world/ContentSkeleton.md', 'utf8').replace(/<!--[^>]*-->/g, '');
+    const jars = Number(/3\.9\.1 節の \d+〜\d+ 日なら\s*\*\*\d+〜(\d+) つ\*\*/.exec(voyage)?.[1]);
+    const meats = Number(/塩漬けの生肉\d+〜(\d+)個/.exec(skeleton)?.[1]);
+    const coconutMeats = Number(/ヤシの果肉\d+〜(\d+)個/.exec(skeleton)?.[1]);
+    expect(jars * meats * coconutMeats, '積む数が文書から読めない').toBeGreaterThan(0);
+
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    expect([...raft.children()], '乗り手が筏に乗っている').toContain(game.player.instance);
+    for (const cargo of [...raft.children()])
+      if (cargo !== game.player.instance && cargo.def.name !== 'rawhide_sail') cargo.destroy();
+    const hold = raft.getSlot(codex.slotNames.getId('items'));
+    const load = (name: string, count: number): void => {
+      for (let i = 0; i < count; i++) {
+        const item = game.session.createObject(codex.objectNames.getId(name));
+        if (name === 'jar__content_water_liquid') {
+          const fill = item.getProperty(codex.propertyNames.getId('fill'));
+          fill.setNumberWithoutEvents(fill.def.range!.max);
+        }
+        expect(item.moveToSlotOrRejection(hold), `${name} を積める`).toBeUndefined();
+      }
+    };
+    load('jar__content_water_liquid', jars);
+    load('raw_meat__cure_salted', meats);
+    load('coconut_meat', coconutMeats);
+    // 蓋も甕の数ぶん載せる（Voyage.md 3.9.6節「蓋を足しても同じです」）。
+    load('jar_lid', jars);
+
+    const weight = raft.getProperty(codex.propertyNames.getId('weight'));
+    // 段の境目は乗員を見込んでいて、乗り手の重さは筏の実効値に入っている（ContainerSystem.md 1.1節）。
+    expect(weight.getEffectiveValue()).toBeLessThan(weight.def.lowerBoundOfStage('laden')!);
+  });
+
   /** 銛を1本、乗り手の手に持たせる。 */
   function giveHarpoon(game: StartedGame): WorldObject {
     const harpoon = game.session.createObject(codex.objectNames.getId('fishing_harpoon'));
