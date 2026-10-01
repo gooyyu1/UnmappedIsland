@@ -273,7 +273,7 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
 本体が水から時間へすり替わります。
 
 **汚すのは、開いたままの時間です。** 負った瞬間は清潔（`value: 0`<!-- codex: injuries.yaml traits.open_wound.props.infection.value -->）で、傷が在るあいだ上がり続けます。
-健康な体では 1 時間に 1（`0.25/tick`）で、放っておけば 1.7 日で `festering`、3.3 日で `septic` へ届き、
+健康な体では `0.25/tick` で上がり、放っておけば `festering` を経て `septic` へ届き、
 **最も短く残る傷（噛み傷、360 tick<!-- codex: injuries.yaml object_defs.bite_wound.props.severity.range.max -->）でも治りきる前に敗血症へ入ります**——どの開いた傷も、洗わずに
 済ませられません。1 杯が落とす量は健康な体で 1 日に膿む量を上回るので、**開いた傷 1 つにつき 1 日 1 杯**が清潔を
 保つ値段です（`tests/world-codex/injuriesYaml.test.ts` が見ます）。

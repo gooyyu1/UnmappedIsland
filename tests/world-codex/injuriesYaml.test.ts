@@ -106,7 +106,7 @@ describe('injuries.yamlの怪我', () => {
    * しまわないよう（VitalsSystem.md 8節）、命を絶つ値だけは減った分を戻しておく。ここで見たいのは
    * 傷の治りだけで、生き延びる手立ては別のテストが持つ。
    *
-   * **脂の在庫も戻す。** 15時間で尽きて段が痛みを押し上げる（DigestionSystem.md 7節）ので、
+   * **脂の在庫も戻す。** 尽きると段が痛みを押し上げる（DigestionSystem.md 7節）ので、
    * そのままでは怪我の痛みだけを見ていられなくなる。
    *
    * **眠気と幸福度も同じ理由で戻す。** 尽きると次の操作の切れ目で強制的に時間が進む
@@ -479,6 +479,26 @@ describe('injuries.yamlの怪我', () => {
 
       tick(TO_SEPTIC - TO_FESTERING);
       expect(injury.tryGetProperty(infectionId())?.stage?.name).toBe('septic');
+    });
+
+    it('どの開いた傷も、治りきる前に敗血症の段へ入る', () => {
+      // どの開いた傷も洗わずに済ませられない、の根拠（InjurySystem.md 6.2節）。最も短く残る傷で
+      // 決まるので、膿む傷を1つずつ新しい体に負わせて、敗血症へ届く時点でまだ残っているかを見る。
+      const festering = codex
+        .objectDefNamesWithTag(codex.tagNames.getId('injury'))
+        .filter((name) => codex.objects.get(codex.objectNames.getId(name)).tryGetPropertyDef(infectionId()));
+      expect(festering.length, '膿む傷が1つも無い').toBeGreaterThan(0);
+
+      const notSeptic = festering.filter((name) => {
+        open(FALLS);
+        const wound = openWound(name);
+        tick(TO_SEPTIC);
+        return (
+          !injuriesOf(player).includes(name) || wound.tryGetProperty(infectionId())?.stage?.name !== 'septic'
+        );
+      });
+
+      expect(notSeptic, '治りきる前に敗血症の段へ入っていない傷').toEqual([]);
     });
 
     it('水を1杯掛けると25落ち、その1杯は器から消える', () => {
