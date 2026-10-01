@@ -5,6 +5,8 @@ import type { SeasonName } from '../../src/analysis/seasonalRain';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
 import type { SunlitEvaporationRow } from '../../src/analysis/sunlitEvaporation';
 import { sunlitEvaporationRows } from '../../src/analysis/sunlitEvaporation';
+import { litPlacesOf, worldAmbientBrightnessOf } from '../../src/analysis/activityHours';
+import { HOURS_PER_DAY } from '../../src/domain/worldTime';
 import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
@@ -73,6 +75,114 @@ describe('日射で進む蒸発が効いている空（同梱の定義）', () =
     }
   });
 });
+
+describe('日射の上乗せが効く時刻（同梱の定義、LiquidContainerSystem.md 6節）', () => {
+  const codex = bundledCodex();
+  const worldAmbientAt = worldAmbientBrightnessOf(codex);
+  const places = new Map(litPlacesOf(codex).map((place) => [place.name, place]));
+  const table = brightnessTimeTableOf();
+  const lowest = Math.min(...table.thresholds);
+  const weathers = Object.keys(SEASON_CLIMATE[0].hoursByWeather);
+  const RAIN = ['light_rain', 'heavy_rain', 'storm'];
+  const NOON = 12;
+
+  /** 開けた土地で、明るさがしきい値以上になる時刻の帯（表の書き方: `7-16時`、届かなければ `—`）。 */
+  function windowOf(weatherName: string, threshold: number): string {
+    const hours = [...Array(HOURS_PER_DAY).keys()].filter(
+      (hour) => worldAmbientAt(hour, weatherName) >= threshold,
+    );
+    return hours.length === 0 ? '—' : `${hours[0]}-${hours[hours.length - 1]}時`;
+  }
+
+  /** その場所の、どの天候・どの時刻よりも明るい値。 */
+  function brightestAt(placeName: string, weatherNames: readonly string[]): number {
+    const place = places.get(placeName);
+    expect(place, `場所 '${placeName}' の明るさが解けない`).toBeDefined();
+    return Math.max(
+      ...weatherNames.flatMap((weatherName) =>
+        [...Array(HOURS_PER_DAY).keys()].map((hour) =>
+          place!.brightnessAt(worldAmbientAt(hour, weatherName)),
+        ),
+      ),
+    );
+  }
+
+  it('時刻表の天候ごとの行が、正午の明るさと効く時刻の帯を定義から数え直した値と一致する', () => {
+    expect(table.rows.length, '時刻表に天候の行が無い').toBeGreaterThan(0);
+    for (const { weatherName, noon, windows } of table.rows) {
+      expect(`+${worldAmbientAt(NOON, weatherName)}`, `${weatherName} の正午の明るさ`).toBe(noon);
+      table.thresholds.forEach((threshold, column) =>
+        expect(windowOf(weatherName, threshold), `${weatherName} の ≧+${threshold}`).toBe(windows[column]),
+      );
+    }
+  });
+
+  it('雨系の行が、どの雨の正午の明るさと効く時刻の帯とも一致する', () => {
+    for (const weatherName of RAIN) {
+      expect(worldAmbientAt(NOON, weatherName), `${weatherName} の正午`).toBeLessThanOrEqual(
+        table.rainNoonAtMost,
+      );
+      for (const threshold of table.thresholds)
+        expect(windowOf(weatherName, threshold), `${weatherName} の ≧+${threshold}`).toBe('—');
+    }
+  });
+
+  it('上乗せ側は天候を見なくてよい——雨の空は、どの場所でも最も低いしきい値に届かない', () => {
+    for (const placeName of places.keys())
+      expect(brightestAt(placeName, RAIN), placeName).toBeLessThan(lowest);
+  });
+
+  it('森・密林・浅い洞窟は、どの空・どの時刻でも上乗せを受けない', () => {
+    for (const placeName of ['forest', 'jungle', 'shallow_cave'])
+      expect(brightestAt(placeName, weathers), placeName).toBeLessThan(lowest);
+  });
+
+  it('森の地表は、雲の無い空の正午でも開けた土地の曇りの正午ほどの明るさしかない', () => {
+    expect(places.get('forest')!.brightnessAt(worldAmbientAt(NOON, 'scorching'))).toBeLessThanOrEqual(
+      worldAmbientAt(NOON, 'cloudy'),
+    );
+  });
+});
+
+/**
+ * `docs/engine/LiquidContainerSystem.md` 6節の「上乗せが効く時刻」の表。しきい値は見出しの `≧+N` から、
+ * 天候の行は名前の付いた行から、雨系の行は正午の `+N以下` から読む。
+ */
+function brightnessTimeTableOf(): {
+  readonly thresholds: readonly number[];
+  readonly rows: readonly { weatherName: string; noon: string; windows: readonly string[] }[];
+  readonly rainNoonAtMost: number;
+} {
+  const lines = readFileSync(join('docs', 'engine', 'LiquidContainerSystem.md'), 'utf8').split(/\r?\n/);
+  const start = lines.findIndex((line) => line.startsWith('上乗せが効く時刻'));
+  expect(start, '時刻表が見つからない').toBeGreaterThanOrEqual(0);
+  const table = lines.slice(start + 1);
+  const cellsOf = (line: string): string[] =>
+    line
+      .split('|')
+      .slice(1, -1)
+      .map((cell) => cell.trim());
+
+  const header = table.find((line) => line.startsWith('|'))!;
+  const thresholds = cellsOf(header)
+    .slice(2)
+    .map((cell) => Number.parseFloat(cell.replace('≧', '')));
+  const body = table.slice(table.indexOf(header) + 2);
+  const tableRows = body.slice(
+    0,
+    body.findIndex((line) => !line.startsWith('|')),
+  );
+
+  const rows = tableRows
+    .filter((line) => line.startsWith('| `'))
+    .map((line) => {
+      const [label, noon, ...windows] = cellsOf(line);
+      return { weatherName: label.replaceAll('`', ''), noon, windows };
+    });
+  const rain = tableRows.find((line) => line.startsWith('| 雨系 |'));
+  expect(rain, '時刻表に雨系の行が無い').toBeDefined();
+  return { thresholds, rows, rainNoonAtMost: Number.parseFloat(cellsOf(rain!)[1]) };
+}
 
 function rowOf(
   rows: readonly SunlitEvaporationRow[],

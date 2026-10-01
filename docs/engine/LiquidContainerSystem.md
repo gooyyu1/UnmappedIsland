@@ -192,15 +192,15 @@ water_liquid:
 `evaporating_liquid` トレイトの `passives`（`add`）で、自分の `fill` を毎 tick 減らします。
 **日射に依らない基礎の蒸発と、`ancestor.ambient_brightness` のしきい値で決まる上乗せの和**です。
 しきい値は EV（[`IlluminationSystem.md`](./IlluminationSystem.md) 1節）で、**どのくらいの明るさで水が
-減り始めるか**として置いてあります——1段が照度の2倍なので、上乗せの段は4倍ごとです。
+減り始めるか**として置いてあります（EV と照度の対応は同節）。
 
-| | 基礎 | +≧+12<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.2.conditions.2.gte -->（10,000 lx） | +≧+14<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.3.conditions.2.gte --><!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.4.conditions.2.gte -->（40,000 lx） | +≧+16<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.5.conditions.2.gte --><!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.6.conditions.2.gte -->（160,000 lx） |
+| | 基礎 | +≧+12<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.2.conditions.2.gte --> | +≧+14<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.3.conditions.2.gte --><!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.4.conditions.2.gte --> | +≧+16<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.5.conditions.2.gte --><!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.6.conditions.2.gte --> |
 |---|---|---|---|---|
-| `wide_open_container`（ヤシの器） | 1 | — | +1 | +1 |
-| `narrow_open_container`（甕） | 2 | +2 | +2 | +2 |
+| `wide_open_container`（ヤシの器） | -1<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.0.add.self.fill --> | — | -1<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.3.add.self.fill --> | -1<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.5.add.self.fill --> |
+| `narrow_open_container`（甕） | -2<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.1.add.self.fill --> | -2<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.2.add.self.fill --> | -2<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.4.add.self.fill --> | -2<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.6.add.self.fill --> |
 
 **いちばん下の +12<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.2.conditions.2.gte --> が「水が減り始める明るさ」です。** 薄日でも直射がある明るさで、開けた土地では、
-雲のまったく無い空なら日の出の1時間後に届き、曇りでは1日を通して届きません。上に並ぶ段は、雲の無い空の
+晴れた空なら朝のうちに届き、曇りでは1日を通して届きません（下の時刻表）。上に並ぶ段は、雲の無い空の
 正午（+16）を最上段に置いた、その間の刻みです。
 
 **読むのは世界の日射ではなく、器が居る場所の環境光です**（[`IlluminationSystem.md`](./IlluminationSystem.md) 2節）。
@@ -222,19 +222,20 @@ water_liquid:
 | 砂浜 | +1<!-- codex: locations.yaml object_defs.sandy_beach.props.ambient_brightness.value --> | 開けた土地より1段ぶん早く効く（**曇りの正午でも最下段に届く**） |
 | 草原・岩場・荒野・山腹・山頂・岩だらけの海岸・岸壁 | 0<!-- codex: locations.yaml object_defs.grassland.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.rocky_field.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.wasteland.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.mountainside.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.mountain_peak.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.rocky_coast.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.cliff_coast.props.ambient_brightness.value --> | 下の時刻表のとおり |
 | 筏・小島・本土 | 0<!-- codex: voyage.yaml object_defs.raft.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.offshore_islet.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.mainland.props.ambient_brightness.value --> | 同上（遮るものが無い。`voyage.yaml`） |
-| 森 | −5<!-- codex: locations.yaml object_defs.forest.props.ambient_brightness.value --> | **効かない**（雲の無い空の正午でも +11 で、最下段に1段届かない） |
+| 森 | −5<!-- codex: locations.yaml object_defs.forest.props.ambient_brightness.value --> | **効かない** |
 | 密林 | −9<!-- codex: locations.yaml object_defs.jungle.props.ambient_brightness.value --> | **効かない** |
-| 浅い洞窟 | −6<!-- codex: locations.yaml object_defs.shallow_cave.props.ambient_brightness.value --> | **効かない**（湧く先が `value: 0` の土地だけなので、上限は世界の最大 +16 から −6<!-- codex: locations.yaml object_defs.shallow_cave.props.ambient_brightness.value --> の +10） |
+| 浅い洞窟 | −6<!-- codex: locations.yaml object_defs.shallow_cave.props.ambient_brightness.value --> | **効かない**（湧く先は `value: 0` の土地だけ） |
 | 海区 | 0<!-- codex: voyage.yaml object_defs.coastal_waters.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.kelp_belt.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.tide_rip.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.reef_shallows.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.gull_rock.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.islet_waters.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.open_water.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.wreck_waters.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.long_swell.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.outer_tide_rip.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.black_reef.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.drifting_kelp.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.white_rock.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.mainland_shallows.props.ambient_brightness.value --> | **器を置けない**（`sea_zone` が `items` 枠を落とす）。効くのは筏の積荷・手持ちの器の祖先としてだけ |
 
-森と密林で上乗せが丸ごと消えるのは、樹冠が日射の 95〜99% を遮るからです（同 8.1.2節）。雲の無い空の
-正午でも森の地表は +11＝約 5,000 lx で、**開けた土地の曇り空と同じ明るさ**しかありません。
+森と密林で上乗せが丸ごと消えるのは、樹冠が日射の大半を遮るからです（同 8.1.2節）。雲の無い空の
+正午でも森の地表は、**開けた土地の曇りの正午ほどの明るさ**しかありません。効かない土地はどれも、どの空・
+どの時刻でも最も低いしきい値に届きません（`tests/diagnostics/sunlitEvaporationContent.test.ts`）。
 
 **時間帯の概念は液体側に持ち込みません。** 夜は `hour` の夜ステージが底（−6）へ均す（`core.yaml`）ので、
 上乗せは自動的に消えます。時刻の区切りを変えても蒸発側は無修正で追従します。
 
-**上乗せ側は天候を見ません。** 雨天でいちばん明るい小雨の正午でも +10（最も明るい砂浜でも +11）で、
-最も低いしきい値 +12 に届かないためです。天候の判定が要るのは基礎の側だけで、湿度が未実装なので雨天を
+**上乗せ側は天候を見ません。** 雨の空は、最も明るい砂浜のどの時刻でも、最も低いしきい値に届かない
+ためです（同じ検査）。天候の判定が要るのは基礎の側だけで、湿度が未実装なので雨天を
 「湿度が高くて乾かない」の代理として除外しています。**蒸発は `sheltered`（[`ContainerSystem.md`](./ContainerSystem.md)
 6 節）を見ません**——除外しているのは湿った空気であって、雨が当たるかどうかではないためです。洞窟の中の
 器も、外が雨なら乾きません。**蓋を載せた容器は、基礎も上乗せも成立しないため蒸発しません**
@@ -244,7 +245,8 @@ water_liquid:
 （`core.yaml` の `hour`・`weather` それぞれの `modify` 量）と、土地の側の `value`（`locations.yaml`）。
 **どちらを変えても蒸発量が動きます。**
 
-上乗せが効く時刻（**開けた土地**。`hour`。日の出6時・日没18時）:
+上乗せが効く時刻（**開けた土地**。`hour`。日の出6時・日没18時。定義から数え直した値と食い違うと
+`tests/diagnostics/sunlitEvaporationContent.test.ts` が赤くなります）:
 
 | 天候 | 正午の明るさ | ≧+12 | ≧+14 | ≧+16 |
 |---|--:|---|---|---|
