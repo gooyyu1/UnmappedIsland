@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -92,11 +95,10 @@ describe('bedding.yamlの寝床とハンモック', () => {
   }
 
   /**
-   * その休息だけで眠気の釣り合いを取る1日のうち、眠っているほうの tick 数
-   * （docs/world/Bedding.md 4.1節。地面の仮眠だけなら8時間、寝床の睡眠なら6時間）。
+   * その休息だけで眠気の釣り合いを取る1日のうち、眠っているほうの tick 数（docs/world/Bedding.md 4.1節）。
    *
    * **測った正味から出す。** 起きている間は -1/tick なので、眠るぶんの正味との比がそのまま割り振りに
-   * なる——地面の8時間・寝床の6時間をここへ書き写すと、宣言を動かしたときに古い割り振りのまま通る。
+   * なる——割り振りをここへ書き写すと、宣言を動かしたときに古い割り振りのまま通る。
    */
   function ticksAsleepPerDay(netWakefulness: number, ticks: number): number {
     return TICKS_PER_DAY / (netWakefulness / ticks + 1);
@@ -214,8 +216,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
 
   it('敷物を敷けば、1日に戻る体力が地面の上を上回る', () => {
     // docs/world/Bedding.md 4節。**1時間あたりで上回るだけでは足りない**——寝床の上は眠る時間が
-    // 2時間短い（24 tick 対 32 tick）ので、寝床の割が地面の 4/3（1.667/tick）を下回ると1日の合計で
-    // 逆転し、敷物を敷くほど損になる。
+    // 地面より短いので、寝床の割の上回り方が小さいと1日の合計で逆転し、敷物を敷くほど損になる。
     const { bed, player } = bedOnBeach([]);
 
     expect(perDay(bed, player, 'sleep')).toBeGreaterThan(perDay(player, player, 'nap'));
@@ -266,8 +267,37 @@ describe('bedding.yamlの寝床とハンモック', () => {
     return before - player.getProperty(staminaId).number;
   }
 
+  it('寝床が無いと、1日に起きていられる時間が短くなる', () => {
+    // docs/world/Bedding.md 4.1節。地面の nap は長さあたりに戻る眠気が寝床の sleep より少ないので、
+    // 仮眠だけで回すと眠る時間が長くなる。
+    const { bed, player } = bedOnBeach([]);
+    const onBed = ticksAsleepPerDay(restOn(bed, player, 'sleep').wakefulness, ticksOf(bed, player, 'sleep'));
+    const onGround = ticksAsleepPerDay(
+      restOn(player, player, 'nap').wakefulness,
+      ticksOf(player, player, 'nap'),
+    );
+
+    expect(onGround).toBeGreaterThan(onBed);
+  });
+
+  it('地面の仮眠だけで回しても、眠る時間は屋外の枠の外に収まる', () => {
+    // docs/world/Bedding.md 4.1節「削られるのは夜で、昼ではありません」。屋外の枠は生成した島の実測
+    // （stats/terrain.yaml の daily_budget.outdoor_window）。
+    const { player } = open('sandy_beach');
+    const asleepMinutes =
+      ticksAsleepPerDay(restOn(player, player, 'nap').wakefulness, ticksOf(player, player, 'nap')) *
+      MINUTES_PER_TICK;
+    const [{ outdoor_window: outdoorWindow }] = (
+      parse(readFileSync(resolve(__dirname, '../../stats/terrain.yaml'), 'utf-8')) as {
+        daily_budget: readonly { outdoor_window: number }[];
+      }
+    ).daily_budget;
+
+    expect(asleepMinutes).toBeLessThanOrEqual(TICKS_PER_DAY * MINUTES_PER_TICK - outdoorWindow);
+  });
+
   it('骨組みを差しても、戻る眠気は変わらない', () => {
-    // 同4節。**眠気が戻る量は段によらない**——18時間起きて6時間眠るという釣り合いを、寝床の段が
+    // 同4節。**眠気が戻る量は段によらない**——睡眠1回で1日ぶんが戻るという釣り合いを、寝床の段が
     // 動かさないため。
     const bare = bedOnBeach([]);
     const framed = bedOnBeach(['bed_frame']);
