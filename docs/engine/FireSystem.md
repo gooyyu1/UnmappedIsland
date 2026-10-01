@@ -50,7 +50,7 @@
 
 **器を置ける炉と置けない炉の差は、`cells`（`GameElementDefinition.md` 7.2 節）の並びが持ちます。**
 
-```yaml
+```yaml codex: fire.yaml object_defs.three_stone_hearth
 # 三石のかまど
 slots:
   fire:
@@ -100,7 +100,7 @@ slots:
 しません（中身入りの容器とは違う扱い。[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 1 節）。
 炉へくべると、その物が持つ `fuel` が炉の `fuel` へ移り、**燃料そのものは残らず消えます**。
 
-```yaml
+```yaml codex: fire.yaml traits.hearth
 # 炉の側が宣言する
 interactions:
   add_fuel:
@@ -108,7 +108,7 @@ interactions:
     trigger: {drag: {tag: fuel}, allow_multiple: true}
     transfer:
       # 入るだけ入れる
-      amount: 999  # <!-- codex: fire.yaml traits.hearth.interactions.add_fuel.transfer.amount -->
+      amount: 999
       from: instrument
       from_prop: fuel
       to_prop: fuel
@@ -129,7 +129,7 @@ interactions:
 `add_fuel` へ `conditions` だけを重ねると、残りは trait 側を引き継ぎます
 （`GameElementDefinition.md` 5 節）。
 
-```yaml
+```yaml codex: fire.yaml object_defs.campfire
 # 炉ごとが足す（値はその炉のfuelのrange.max）
 interactions:
   add_fuel:
@@ -137,12 +137,12 @@ interactions:
       - {reason: hearth_full, prop: fuel, lt: 30}  # <!-- codex: fire.yaml object_defs.campfire.interactions.add_fuel.conditions.0.lt --><!-- codex: fire.yaml object_defs.three_stone_hearth.interactions.add_fuel.conditions.0.lt -->
 ```
 
-```yaml
+```yaml codex: locations.yaml object_defs.thick_branch
 # 燃料の側が宣言する
 props:
   fuel:
     # 太い枝1本ぶん
-    value: 20  # <!-- codex: locations.yaml object_defs.thick_branch.props.fuel.value -->
+    value: 20
 ```
 
 `transfer`（`GameElementDefinition.md` 9.5 節）を使うのは、**`add` だと炉の種類 × 燃料の種類の数だけ
@@ -182,30 +182,30 @@ props:
 - **薪があれば、火力は育つ。** ただし `heat` が 0 より大きいとき、つまり火がついているときだけです。
 - **火力が高いほど、薪を速く食う。** 薪が尽きれば、その火力に応じた速さで衰えていく。
 
-```yaml
+```yaml codex: fire.yaml traits.hearth.props.fuel.stages
 # 炉のfuelのstagesが宣言する（薪が火を育てる）
 - name: some
-  min: 10  # <!-- codex: fire.yaml traits.hearth.props.fuel.stages.2.min -->
+  min: 10
   passives:
     - conditions:
         # 消えている炉は、薪を積んでも育たない
-        - {prop: heat, gt: 0}  # <!-- codex: fire.yaml traits.hearth.props.fuel.stages.2.passives.0.conditions.0.gt -->
+        - {prop: heat, gt: 0}
       add:
         self:
-          heat: 6  # <!-- codex: fire.yaml traits.hearth.props.fuel.stages.2.passives.0.add.self.heat -->
+          heat: 6
 ```
 
-```yaml
+```yaml codex: fire.yaml traits.hearth.props.heat.stages
 # 炉のheatのstagesが宣言する（火が薪を食い、薪が尽きたら衰える）
 - name: flame
-  min: 20  # <!-- codex: fire.yaml traits.hearth.props.heat.stages.3.min -->
+  min: 20
   passives:
     - add:
-        self: {fuel: -1.5}  # <!-- codex: fire.yaml traits.hearth.props.heat.stages.3.passives.0.add.self.fuel -->
+        self: {fuel: -1.5}
     # 「尽きた」は0のこと
-    - conditions: [{prop: fuel, eq: 0}]  # <!-- codex: fire.yaml traits.hearth.props.heat.stages.3.passives.1.conditions.0.eq -->
+    - conditions: [{prop: fuel, eq: 0}]
       add:
-        self: {heat: -6}  # <!-- codex: fire.yaml traits.hearth.props.heat.stages.3.passives.1.add.self.heat -->
+        self: {heat: -6}
 ```
 
 | `fuel`（薪） | 段 | 火力の育ち |
@@ -351,17 +351,17 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 種火のままで、料理ができる段へは出られません。**表の「薪を足せば育つ」はそのまま効きます**——育つ先が
 その炉の上限で止まるだけで、段の意味が炉によって変わるわけではありません。
 
-```yaml
+```yaml codex: fire.yaml object_defs.campfire
 # 焚き火の側が宣言する。段のpassivesではなく炉のpassivesに置くのは、traitが配るstagesを
 # 炉ごとに部分的に差し替えられないため。
 passives:
   - conditions:
       - {prop: heat, in_stage: ember}
       # 薪が残っていれば、火は衰えない（2.2節）
-      - {prop: fuel, eq: 0}  # <!-- codex: fire.yaml object_defs.campfire.passives.0.conditions.1.eq -->
+      - {prop: fuel, eq: 0}
     add:
       # 熾火の段を数 tick で通り抜けて死ぬ。石囲いの炉は-0.125<!-- codex: fire.yaml object_defs.stone_hearth.passives.0.add.self.heat -->でゆっくり衰える
-      self: {heat: -2}  # <!-- codex: fire.yaml object_defs.campfire.passives.0.add.self.heat -->
+      self: {heat: -2}
 ```
 
 **種火が残っているあいだに薪を足せば、道具なしで火が戻ります。** 火起こし具を使わずに済むことが、
@@ -382,18 +382,18 @@ passives:
 種火は炉に残る最小の火力（`heat` の `ember` の段、3 節）で、物ではありません。火種を炉へ落とすことは、
 運んできた火を炉の種火へ置き換える操作です。
 
-```yaml
+```yaml codex: fire.yaml traits.ignitable
 # 火口の側が宣言する。成功の重みは火口ごとの素の値に起こす人の腕を積み、火口の湿りが
 # 押し下げたもの（10 節・3.2.1 節）で、天気は可否を決める（3.1.1 節）
 interactions:
   light:
     trigger: {drag: {object: fire_drill}}
-    duration: 30  # <!-- codex: fire.yaml traits.ignitable.interactions.light.duration -->
+    duration: 30
     conditions:
       - reason: raining
         not:
           all:
-            - {subject: ancestor, prop: sheltered, eq: 0}  # <!-- codex: fire.yaml traits.ignitable.interactions.light.conditions.0.not.all.0.eq -->
+            - {subject: ancestor, prop: sheltered, eq: 0}
             - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
     pick:
       # ignition_chanceは火口ごとの素の値に、起こす人の腕を base で積み、湿りの段が
@@ -403,7 +403,7 @@ interactions:
         spawn: {object: burning_tinder}
         signal: lit
       # 外した回は火口だけが無駄になる
-      - weight: 10  # <!-- codex: fire.yaml traits.ignitable.interactions.light.pick.1.weight -->
+      - weight: 10
         destroy: self
         signal: not_lit
 ```
@@ -417,18 +417,18 @@ interactions:
 何度も試して火口を使い切ることにはなりません。条件の葉は 8 節の炉の雨と同じもので、あちらは
 火力を削り、こちらは可否を閉じます。
 
-```yaml
+```yaml codex: fire.yaml traits.hearth
 # 炉の側が宣言する
 interactions:
   ignite:
     trigger: {drag: {object: burning_tinder}}
     conditions:
       # 火が生きている炉には置き直せない
-      - {reason: already_lit, prop: heat, eq: 0}  # <!-- codex: fire.yaml traits.hearth.interactions.ignite.conditions.0.eq -->
-      - {reason: no_fuel, prop: fuel, gt: 0}  # <!-- codex: fire.yaml traits.hearth.interactions.ignite.conditions.1.gt -->
+      - {reason: already_lit, prop: heat, eq: 0}
+      - {reason: no_fuel, prop: fuel, gt: 0}
     destroy: instrument
     # 種火の段のいちばん下から始まる
-    set: {self: {heat: 1}}  # <!-- codex: fire.yaml traits.hearth.interactions.ignite.set.self.heat -->
+    set: {self: {heat: 1}}
 ```
 
 **火が生きている炉は火種を断ります。** 置くのは種火 1 つぶんなので、燃えている炉へ重ねると火種を
@@ -480,22 +480,22 @@ interactions:
 理由がないからです。**どちらの向きでも、火の在る側は何も失いません**——分けた炎は薪を余分に食わないので
 炉の火力にも薪にも触れず、火を渡した松明も灯ったままです。
 
-```yaml
+```yaml codex: fire.yaml traits.hearth
 # どちらも炉の側が宣言する。炉を灯す向きが置くのは、炉の着火（3.1 節）と同じ種火 1 つ
 interactions:
   ignite_from_flame:
     trigger: {drag: {tag: lightable}}
     conditions:
-      - {reason: no_flame_carried, subject: instrument, prop: lit, gt: 0}  # <!-- codex: fire.yaml traits.hearth.interactions.ignite_from_flame.conditions.0.gt -->
-      - {reason: already_lit, prop: heat, eq: 0}  # <!-- codex: fire.yaml traits.hearth.interactions.ignite_from_flame.conditions.1.eq -->
-      - {reason: no_fuel, prop: fuel, gt: 0}  # <!-- codex: fire.yaml traits.hearth.interactions.ignite_from_flame.conditions.2.gt -->
-    set: {self: {heat: 1}}  # <!-- codex: fire.yaml traits.hearth.interactions.ignite_from_flame.set.self.heat -->
+      - {reason: no_flame_carried, subject: instrument, prop: lit, gt: 0}
+      - {reason: already_lit, prop: heat, eq: 0}
+      - {reason: no_fuel, prop: fuel, gt: 0}
+    set: {self: {heat: 1}}
   light_from_flame:
     trigger: {drag: {tag: lightable}}
     conditions:
-      - {reason: fire_out, prop: heat, gt: 0}  # <!-- codex: fire.yaml traits.hearth.interactions.light_from_flame.conditions.0.gt -->
-      - {reason: already_lit, subject: instrument, prop: lit, eq: 0}  # <!-- codex: fire.yaml traits.hearth.interactions.light_from_flame.conditions.1.eq -->
-    set: {instrument: {lit: 1}}  # <!-- codex: fire.yaml traits.hearth.interactions.light_from_flame.set.instrument.lit -->
+      - {reason: fire_out, prop: heat, gt: 0}
+      - {reason: already_lit, subject: instrument, prop: lit, eq: 0}
+    set: {instrument: {lit: 1}}
 ```
 
 **炉を灯す向きも、薪の入っていない炉は断ります**——火を育てるのは薪で、種火だけでは残らないからです
@@ -557,22 +557,22 @@ interactions:
 ——壺は残った水の値そのものが割れる重みになり、火口は段ごとの押し下げになります。乾き切れば押し下げは
 無くなります。
 
-```yaml
+```yaml codex: fire.yaml traits.ignitable.props
 # 火口の側（ignitable trait）が宣言する。押し下げ量はどの火口にも同じ
 moisture:
-  value: 0  # <!-- codex: fire.yaml traits.ignitable.props.moisture.value -->
+  value: 0
   range:
-    min: 0  # <!-- codex: fire.yaml traits.ignitable.props.moisture.range.min -->
-    max: 24  # <!-- codex: fire.yaml traits.ignitable.props.moisture.range.max -->
+    min: 0
+    max: 24
   gauge: {min: good, max: bad}
   stages:
     - {name: dry}
     - name: damp
-      min: 8  # <!-- codex: fire.yaml traits.ignitable.props.moisture.stages.1.min -->
-      passives: [{modify: {self: {ignition_chance: -30}}}]  # <!-- codex: fire.yaml traits.ignitable.props.moisture.stages.1.passives.0.modify.self.ignition_chance -->
+      min: 8
+      passives: [{modify: {self: {ignition_chance: -30}}}]
     - name: sodden
-      min: 16  # <!-- codex: fire.yaml traits.ignitable.props.moisture.stages.2.min -->
-      passives: [{modify: {self: {ignition_chance: -50}}}]  # <!-- codex: fire.yaml traits.ignitable.props.moisture.stages.2.passives.0.modify.self.ignition_chance -->
+      min: 16
+      passives: [{modify: {self: {ignition_chance: -50}}}]
 ```
 
 **濡れるのは、地面に出している火口が野ざらしの雨に打たれたときだけです。** 屋根の下
@@ -628,20 +628,20 @@ moisture:
 
 **石を炉へ運ぶと `stones` が 1 増え、必要数に達した瞬間に次の段の炉へ置き換わります。**
 
-```yaml
+```yaml codex: fire.yaml object_defs.campfire
 # 焚き火の側が宣言する
 interactions:
   add_stone:
     trigger: {drag: {object: stone}}
-    duration: 5  # <!-- codex: fire.yaml object_defs.campfire.interactions.add_stone.duration -->
+    duration: 5
     destroy: instrument
-    add: {self: {stones: 1}}  # <!-- codex: fire.yaml object_defs.campfire.interactions.add_stone.add.self.stones -->
+    add: {self: {stones: 1}}
 props:
   stones:
-    value: 0  # <!-- codex: fire.yaml object_defs.campfire.props.stones.value -->
+    value: 0
     range:
-      min: 0  # <!-- codex: fire.yaml object_defs.campfire.props.stones.range.min -->
-      max: 3  # <!-- codex: fire.yaml object_defs.campfire.props.stones.range.max -->
+      min: 0
+      max: 3
     on_max:
       destroy: self
       spawn: {object: three_stone_hearth}
@@ -715,25 +715,25 @@ props:
 料理側が書くのは「未加熱の物が `cooking_progress` を持ち、上限に達したら焼き上がりへ置き換わる」だけで、
 炉のことも火のことも知りません。
 
-```yaml
+```yaml codex: fire.yaml traits.hearth.props.heat.stages
 # 炉のheatのstagesが宣言する（4節の薪の減りと同じブロックに並ぶ）
 - name: flame
-  min: 20  # <!-- codex: fire.yaml traits.hearth.props.heat.stages.3.min -->
+  min: 20
   passives:
     - add:
         self:
-          fuel: -1.5  # <!-- codex: fire.yaml traits.hearth.props.heat.stages.3.passives.0.add.self.fuel -->
+          fuel: -1.5
         child:
-          cooking_progress: 3  # <!-- codex: fire.yaml traits.hearth.props.heat.stages.3.passives.0.add.child.cooking_progress -->
+          cooking_progress: 3
 ```
 
-```yaml
+```yaml codex: animals.yaml object_defs.raw_meat.props
 # 料理側（本書の対象外）が宣言する
 cooking_progress:
-  value: 0  # <!-- codex: animals.yaml object_defs.raw_meat.props.cooking_progress.value -->
+  value: 0
   range:
-    min: 0  # <!-- codex: animals.yaml object_defs.raw_meat.props.cooking_progress.range.min -->
-    max: 24  # <!-- codex: animals.yaml object_defs.raw_meat.props.cooking_progress.range.max -->
+    min: 0
+    max: 24
   on_max:
     spawn: {object: roasted_meat}
     destroy: self
@@ -817,15 +817,15 @@ passives:
 **雨天で野ざらしの炉は `heat` が余分に減ります。** 消火を判定する専用の仕組みは持たず、火が死ぬ経路を
 3 節と同じ 1 本に保ちます。
 
-```yaml
+```yaml codex: fire.yaml traits.hearth
 # 炉の側が宣言する
 passives:
   - conditions:
-      - {subject: ancestor, prop: sheltered, eq: 0}  # <!-- codex: fire.yaml traits.hearth.passives.1.conditions.0.eq -->
+      - {subject: ancestor, prop: sheltered, eq: 0}
       - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
     add:
       self:
-        heat: -4  # <!-- codex: fire.yaml traits.hearth.passives.1.add.self.heat -->
+        heat: -4
 ```
 
 種火の冷める速さが炉ごとに違う（6 節）ため、同じ雨でも焚き火は一降りで死に、石囲いの炉は生き延びます。浅い洞窟
@@ -853,16 +853,16 @@ passives:
 違って、**地面に出しているかは問いません**——手に持って歩く松明が消えることが、この節の中身だからです。
 消えた明かりは燃え尽きたのではないので物として残り、また灯せます。
 
-```yaml
+```yaml codex: fire.yaml traits.lightable.props
 # 明かりの側が宣言する
 lit:
   passives:
     - conditions:
-        - {subject: ancestor, prop: sheltered, eq: 0}  # <!-- codex: fire.yaml traits.lightable.props.lit.passives.0.conditions.0.eq -->
+        - {subject: ancestor, prop: sheltered, eq: 0}
         - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
       add:
         self:
-          lit: -1  # <!-- codex: fire.yaml traits.lightable.props.lit.passives.0.add.self.lit -->
+          lit: -1
 ```
 
 **出どころ**: [#2404](https://github.com/gooyyu1/UnmappedIsland/issues/2404)（雨ざらしの明かりは消える。2026-09-29に回答）

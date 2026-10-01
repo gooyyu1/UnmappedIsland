@@ -268,7 +268,7 @@
 ありません**——ステータスエリアが `status` タグと `alert` から出し分けているのと同じ形です
 （[`StatusArea.md`](./StatusArea.md) 1 節・2 節）。
 
-```yaml
+```yaml codex: characters/player_character.yaml traits.player_character.props
 looking_brightness:
   stages:
     - name: pitch_dark
@@ -857,7 +857,7 @@ looking_brightness:
 3.1 節）に、ボタンを**並べる順に**書きます。`recipe_categories` と同じく、分類のために別の語彙を
 持ち込まず、既にあるタグを指すだけにします。
 
-```yaml
+```yaml codex: core.yaml
 card_filters:
   - id: filter_food
     icon: 🍖

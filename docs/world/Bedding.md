@@ -33,15 +33,15 @@
 **「地面の寝床」「高床の寝台」「詰め物入りの寝台」を別々の型にしません。** 型は `bed` 1つで、骨組みと
 詰め物を差し込む枠を持ちます。
 
-```yaml
+```yaml codex: bedding.yaml
 object_defs:
   bed:
     tags: [fixture, bed]
     slots:
       structure:
         cells:
-          - {accept: {tag: bed_frame}, max: 1}  # <!-- codex: bedding.yaml object_defs.bed.slots.structure.cells.0.max -->
-          - {accept: {tag: stuffing}, max: 1}  # <!-- codex: bedding.yaml object_defs.bed.slots.structure.cells.1.max -->
+          - {accept: {tag: bed_frame}, max: 1}
+          - {accept: {tag: stuffing}, max: 1}
 ```
 
 理由は組み合わせの数です。型で表すと、骨組み（有・無）×詰め物（無・羽毛・植物繊維）で6つになり、素材を
@@ -79,7 +79,7 @@ object_defs:
 
 ## 3. レシピ
 
-```yaml
+```yaml codex: bedding.yaml
 object_defs:
   bed:
     recipes:
@@ -87,30 +87,30 @@ object_defs:
       spread:
         steps:
           - requires:
-              - {object: woven_leaf, consume: true, count: 3}  # <!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.requires.0.count -->
-            duration: 15  # <!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.duration -->
+              - {object: woven_leaf, consume: true, count: 3}
+            duration: 15
 
   # 寝台の骨組み。杭4本を打ち、縦材を渡し、簀の子を縛る。軽いがかさばる。
   bed_frame:
     tags: [item, bed_frame]
     props:
-      weight: {value: 6600}  # <!-- codex: bedding.yaml object_defs.bed_frame.props.weight.value -->
+      weight: {value: 6600}
       # ヤシの葉と同じく、籠には入らない嵩にする。
-      volume: {value: 24000}  # <!-- codex: bedding.yaml object_defs.bed_frame.props.volume.value -->
+      volume: {value: 24000}
     recipes:
       lashed:
         # 1つの工程は1時間まで（docs/engine/ActionSystem.md 6.3節）なので、
         # 長さは工程の数で表す。材料はその工程で実際に使うものへ割り当てる。
         steps:
           - requires:
-              - {object: thick_branch, consume: true, count: 4}  # <!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.0.requires.0.count -->
-            duration: 60  # <!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.0.duration -->
+              - {object: thick_branch, consume: true, count: 4}
+            duration: 60
           - requires:
-              - {object: thick_branch, consume: true, count: 2}  # <!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.1.requires.0.count -->
-            duration: 60  # <!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.1.duration -->
+              - {object: thick_branch, consume: true, count: 2}
+            duration: 60
           - requires:
-              - {object: cord, consume: true, count: 3}  # <!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.2.requires.0.count -->
-            duration: 60  # <!-- codex: bedding.yaml object_defs.bed_frame.recipes.lashed.steps.2.duration -->
+              - {object: cord, consume: true, count: 3}
+            duration: 60
 
   # 詰め物。なめし革を裁って袋に縫い、中身を詰めて口を閉じる。植物繊維の側も同じ形で、
   # 最後の工程の材料だけが違う。
@@ -123,17 +123,17 @@ object_defs:
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         steps:
           - requires:
-              - {object: tanned_leather, consume: true, count: 2}  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.0.requires.0.count -->
-            duration: 60  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.0.duration -->
+              - {object: tanned_leather, consume: true, count: 2}
+            duration: 60
           - requires:
-              - {object: yarn, consume: true, count: 2}  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.1.requires.0.count -->
-              - {tag: sewing_tool, consume: false, count: 1}  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.1.requires.1.count -->
-            duration: 60  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.1.duration -->
+              - {object: yarn, consume: true, count: 2}
+              - {tag: sewing_tool, consume: false, count: 1}
+            duration: 60
           - requires:
-              - {object: feather, consume: true, count: 30}  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.2.requires.0.count -->
-              - {object: yarn, consume: true, count: 1}  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.2.requires.1.count -->
-              - {tag: sewing_tool, consume: false, count: 1}  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.2.requires.2.count -->
-            duration: 60  # <!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.2.duration -->
+              - {object: feather, consume: true, count: 30}
+              - {object: yarn, consume: true, count: 1}
+              - {tag: sewing_tool, consume: false, count: 1}
+            duration: 60
 ```
 
 素材まで遡った手間は、収支表の実測（探索を含み、前提になる道具を作る手間は含まない。
@@ -176,23 +176,23 @@ object_defs:
 
 **この節は上積みの側だけを述べます。** 寝床が無いときに何が取れないかは 4.1節です。
 
-```yaml
+```yaml codex: bedding.yaml
 object_defs:
   bed:
     interactions:
       sleep:
         trigger: menu
-        duration: 360  # <!-- codex: bedding.yaml object_defs.bed.interactions.sleep.duration -->
+        duration: 360
         passives:
           # 敷物だけの段
           - add:
               agent:
-                stamina: 2  # <!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.add.agent.stamina -->
-                wakefulness: 4  # <!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.add.agent.wakefulness -->
+                stamina: 2
+                wakefulness: 4
           # 骨組みが入っている間の上積み
           - conditions:
               - {slot: structure, matches: {tag: bed_frame}}
-            add: {agent: {stamina: 1}}  # <!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.1.add.agent.stamina -->
+            add: {agent: {stamina: 1}}
 ```
 
 **回復を宣言するのはアクションの側です。** 経過している間ずっと効く宣言（同 11.7節）がそのまま毎 tick の

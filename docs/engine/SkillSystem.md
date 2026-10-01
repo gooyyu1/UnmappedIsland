@@ -36,21 +36,21 @@
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 14.1 節）から直接参照でき、`world` シングルトンを
 参照する迂回（同節、`subject: world` は未対応）が要りません。
 
-```yaml
+```yaml codex: characters/player_character.yaml
 traits:
   player_character:
     props:
       skill_cordage:
         tags: [skill]
-        value: 0  # <!-- codex: characters/player_character.yaml traits.player_character.props.skill_cordage.value -->
+        value: 0
         stages:   # 段ごとの寄与（腕が縮めるもの）は省いている
-          - {name: novice, min: 0}  # <!-- codex: characters/player_character.yaml traits.player_character.props.skill_cordage.stages.0.min -->
+          - {name: novice, min: 0}
           - name: basic
-            min: 20  # <!-- codex: characters/player_character.yaml traits.player_character.props.skill_cordage.stages.1.min -->
+            min: 20
           - name: skilled
-            min: 60  # <!-- codex: characters/player_character.yaml traits.player_character.props.skill_cordage.stages.2.min -->
+            min: 60
           - name: expert
-            min: 180  # <!-- codex: characters/player_character.yaml traits.player_character.props.skill_cordage.stages.3.min -->
+            min: 180
 ```
 
 ## 3. 進捗が伸びる経路
@@ -201,14 +201,14 @@ interactions:
 （同 10.1 節）、`add` を足すだけで済み、概要で置いた「新しい文法を導入しない」から外れません。候補は
 すでに出す型を名指ししているので、**型と腕前の対応はそこに書き切れます**。
 
-```yaml
+```yaml codex: locations.yaml object_defs
   wasteland:
     interactions:
       explore:
         pick:
           - weight: {prop: stone_find}
             spawn: {object: stone, into: self}
-            add: {agent: {skill_knapping: 1}}  # <!-- codex: locations.yaml object_defs.wasteland.interactions.explore.pick.0.add.agent.skill_knapping -->
+            add: {agent: {skill_knapping: 1}}
 ```
 
 **配る量は +1 です。** **発見だけは長さから決めません**——契機は候補を引き当てたことそのもので、

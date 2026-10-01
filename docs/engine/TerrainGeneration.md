@@ -78,21 +78,21 @@ Axis は汎用プリミティブの重み合成（`generator.blend`）で値を�
 `blob_scatter`（局所的に濃い領域を作る散布）・`modifiers`（他の軸との合成演算）は、実際の10土地種の定義には
 まだ必要にならなかったため未実装です（6 節）。
 
-```yaml
+```yaml codex: terrain_generation.yaml
 axes:
   elevation:
     range:
-      min: 0  # <!-- codex: terrain_generation.yaml axes.elevation.range.min -->
-      max: 100  # <!-- codex: terrain_generation.yaml axes.elevation.range.max -->
+      min: 0
+      max: 100
     stretch_sites_to_range: true
     generator:
       blend:
-        - {type: distance_field, reference: edge, weight: 90}  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.0.weight -->
+        - {type: distance_field, reference: edge, weight: 90}
         - type: layered_noise
-          octaves: 3  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.1.octaves -->
-          frequency: 2  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.1.frequency -->
-          seed_offset: 11  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.1.seed_offset -->
-          weight: 10  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.1.weight -->
+          octaves: 3
+          frequency: 2
+          seed_offset: 11
+          weight: 10
 ```
 
 **`stretch_sites_to_range`**: 1 回の生成で出たサンプルの最小・最大が `range` の両端へ来るよう、
@@ -113,28 +113,28 @@ axes:
 
 各 `LocationType` は、軸空間上の「理想点＋許容範囲」として定義します。
 
-```yaml
+```yaml codex: terrain_generation.yaml
 location_types:
   jungle:
     object_def: jungle                 # 実体化に使う型（locations.yamlのobject_defsのid）。土地も他の
                                        # あらゆる要素と同じobject_defsで表現される
     applicable_scopes: [island]
     # 移動コストの倍率（1 = 等倍。3.5節のtravel_minutesに使う）
-    move_cost: 1.6  # <!-- codex: terrain_generation.yaml location_types.jungle.move_cost -->
+    move_cost: 1.6
     axis_preferences:
       humidity:
-        ideal: 90  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.humidity.ideal -->
-        tolerance: 20  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.humidity.tolerance -->
-        weight: 120  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.humidity.weight -->
+        ideal: 90
+        tolerance: 20
+        weight: 120
       elevation:
-        ideal: 30  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.elevation.ideal -->
-        tolerance: 30  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.elevation.tolerance -->
-        weight: 60  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.elevation.weight -->
+        ideal: 30
+        tolerance: 30
+        weight: 60
       # 言及しない軸は自動的に「無関心」（マッチング距離の計算に一切寄与しない）
     hard_limits:
       # 絶対的な除外条件。海岸帯には出ない
-      coastal_distance: {min: 16}  # <!-- codex: terrain_generation.yaml location_types.jungle.hard_limits.coastal_distance.min -->
-      humidity: {min: 65}  # <!-- codex: terrain_generation.yaml location_types.jungle.hard_limits.humidity.min -->
+      coastal_distance: {min: 16}
+      humidity: {min: 65}
 ```
 
 マッチングは、**言及した軸だけを対象に正規化した重み付きユークリッド距離**による最近傍探索です。
@@ -193,11 +193,11 @@ D(type, site) = sqrt( Σ_i w_i * ((v_i - ideal_i) / tolerance_i)^2  /  Σ_i w_i 
 そこで、`generation_scopes` に **`guarantees`**（明示的な強制割当）を持たせ、最近傍マッチングの**前**に
 確定的に処理します。
 
-```yaml
+```yaml codex: terrain_generation.yaml
 generation_scopes:
   island:
     guarantees:
-      - {location_type: mountain_peak, axis: elevation, pick: max, count: 1}  # <!-- codex: terrain_generation.yaml generation_scopes.island.guarantees.0.count -->
+      - {location_type: mountain_peak, axis: elevation, pick: max, count: 1}
 ```
 
 `axis` が `pick`（`max`/`min`）側の値を持つ `Site` から `count` 個を選び、`location_type` を強制的に割り当てます
@@ -392,12 +392,12 @@ generation_scopes:
 （`locations.yaml` の `weight: {prop: ...}`。`ExplorationSystem.md` 2 節）。表示名は対応表が持ちます
 （[Localization.md](./Localization.md) の `location_texts`）。
 
-```yaml
+```yaml codex: terrain_generation.yaml location_types
 sandy_beach:
   object_def: sandy_beach
   variants:
     # 素の重みは13<!-- codex: locations.yaml object_defs.sandy_beach.props.palm_find.value -->
-    - {id: palm, props: {palm_find: 26}}  # <!-- codex: terrain_generation.yaml location_types.sandy_beach.variants.0.props.palm_find -->
+    - {id: palm, props: {palm_find: 26}}
     - {id: white_sand}                     # 素の亜種（名前だけが変わる）
 ```
 

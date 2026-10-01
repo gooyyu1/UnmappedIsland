@@ -91,18 +91,18 @@ load の実効値 = load.value + 通常の modify + Σ( 直接の子の weight�
 `load_rate`（担いだときに感じる割合）は**アイテム側**のプロパティで、スロット位置に応じて `passives` が
 動かします。8.5 節の「装備するスロットによってボーナス量を変える剣」と同じ形です。
 
-```yaml
+```yaml codex: containers.yaml
 object_defs:
   sledge:
     props:
       # 8kg
-      weight: {value: 8000}  # <!-- codex: containers.yaml object_defs.sledge.props.weight.value -->
+      weight: {value: 8000}
       load_rate:
-        value: 1  # <!-- codex: containers.yaml object_defs.sledge.props.load_rate.value -->
+        value: 1
         passives:
           - conditions: [{in_slot: hand}]
             # 引きずるので、割り引いてしか感じない
-            modify: {self: {load_rate: -0.45}}  # <!-- codex: containers.yaml object_defs.sledge.props.load_rate.passives.0.modify.self.load_rate -->
+            modify: {self: {load_rate: -0.45}}
 ```
 
 率をスロットではなく**アイテム**が持つのは、同じ入れ物でも担ぎ方で体感が変わるからです。背負い袋は背負えば
@@ -162,21 +162,25 @@ object_defs:
 実効値であれば、宣言が値を参照するたびに `getEffectiveValue` で導出されるため、
 キャラクターの `load` に `stages` を持たせるだけで参照口が揃います。新しい参照の仕組みは要りません。
 
-```yaml
-# 自重は characters/player_character.yaml、荷の段の境目は人物ごと（characters/engineer.yaml）
-weight: {value: 65000}  # <!-- codex: characters/player_character.yaml traits.player_character.props.weight.value -->
+```yaml codex: characters/player_character.yaml traits.player_character.props
+# 自重（characters/player_character.yaml）
+weight: {value: 65000}
+```
+
+```yaml codex: characters/engineer.yaml object_defs.engineer.props
+# 荷の段の境目は人物ごと（characters/engineer.yaml）
 load:
   tags: [status, health]
-  value: 0  # <!-- codex: characters/engineer.yaml object_defs.engineer.props.load.value -->
+  value: 0
   range:
-    min: 0  # <!-- codex: characters/engineer.yaml object_defs.engineer.props.load.range.min -->
-    max: 27000  # <!-- codex: characters/engineer.yaml object_defs.engineer.props.load.range.max -->
+    min: 0
+    max: 27000
   stages:   # 段ごとの寄与（歩みの遅れ・体力の削り）は省いている
     - {name: light}
-    - {name: laden, alert: watch, min: 6750}  # <!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.1.min -->
-    - {name: heavy, alert: caution, min: 13500}  # <!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.2.min -->
+    - {name: laden, alert: watch, min: 6750}
+    - {name: heavy, alert: caution, min: 13500}
     - name: too_heavy
-      min: 22500  # <!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.3.min -->
+      min: 22500
       alert: danger
 ```
 
@@ -215,7 +219,7 @@ load:
 
 書き方は、道の `travel` に `agent` の `load` を見る条件を足すだけです。
 
-```yaml
+```yaml codex: locations.yaml object_defs.path
 interactions:
   travel:
     trigger: menu
@@ -238,7 +242,7 @@ interactions:
 蓋のある入れ物に入れた物が天候から守られることは、`sheltered`（0/1）というプロパティ1つで表します。
 天候を見ている側の `add` や `conditions` を、次の条件でゲートするだけです。
 
-```yaml
+```yaml codex: drying.yaml traits.dryable.props.drying_remaining.passives.2
 conditions:
   - {subject: ancestor, prop: sheltered, eq: 0}
 ```
