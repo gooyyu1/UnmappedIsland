@@ -521,14 +521,14 @@ describe('injuries.yamlの怪我', () => {
 
       for (let i = 0; i < 4; i++) expect(washing(injury, jar)?.tryExecute(), `${i + 1}杯目`).toBe(true);
 
-      // 1L・1時間で落ち切る。残るのは洗っている4 tickのあいだに進んだ汚れだけで、1にも満たない。
+      // 落ち切る。残るのは洗っている間に進んだ汚れだけで、1にも満たない。
       expect(injury.tryGetProperty(infectionId())?.stage?.name).toBe('clean');
       expect(infectionOf(injury)).toBeLessThan(1);
     });
 
     it('開いた傷1つは、1日1杯洗えば膿む手前に留まる', () => {
-      // InjurySystem.md 6.2節「開いた傷 1 つにつき 1 日 1 杯が清潔を保つ値段」。1杯が落とす量と、
-      // 健康な体で1日に膿む量が釣り合っているので、毎日洗えば festering へ届かない。
+      // InjurySystem.md 6.2節「開いた傷 1 つにつき 1 日 1 杯が清潔を保つ値段」。1杯が落とす量が、
+      // 健康な体で1日に膿む量を上回るので、毎日洗えば洗った直後は毎回まっさらに戻る。
       const injury = openWound();
       const jar = filledJar();
       const hydration = player.getProperty(codex.propertyNames.getId('hydration'));
@@ -537,6 +537,7 @@ describe('injuries.yamlの怪我', () => {
         hydration.setNumber(hydration.def.range!.max);
         expect(injury.tryGetProperty(infectionId())?.stage?.name, `${day}日目、洗う前`).toBe('clean');
         expect(washing(injury, jar)?.tryExecute(), `${day}日目の1杯`).toBe(true);
+        expect(infectionOf(injury), `${day}日目、洗った直後は持ち越さない`).toBe(0);
       }
     });
 
