@@ -118,6 +118,15 @@ export function craftingActions(
 }
 
 /**
+ * その物のスロットを、材料の枠として映すか（craftingMaterialsが枠を返すのと同じ条件）。
+ * **枠を組む側（slotCells）と並びを作る側（PlayScreenView.cardsIn）が同じ答えを要る**ので、
+ * 材料を数えずに答えられるここで1度だけ決める。
+ */
+export function showsMaterialCells(container: WorldObject): boolean {
+  return recipeOf(container) !== undefined;
+}
+
+/**
  * その物が製作中オブジェクトなら、材料スロットが要求している型ごとの枠（そうでなければundefined）。
  *
  * **枠は残りの工程が要求する型ごとに1つ**で、要求の順に並ぶ。出番の終わった型は挙げない——こぼした
@@ -125,7 +134,7 @@ export function craftingActions(
  */
 export function craftingMaterials(container: WorldObject): readonly CraftingMaterial[] | undefined {
   const codex = container.session.codex;
-  if (recipeOf(container) === undefined) return undefined;
+  if (!showsMaterialCells(container)) return undefined;
 
   const inStep = new Set(currentStepOf(container)?.requirements.map((r) => r.match.key));
   // 入っている数は枠ごとに数え直さず、**要求へ割り当てた結果**を読む（heldPerRemainingRequirement）
