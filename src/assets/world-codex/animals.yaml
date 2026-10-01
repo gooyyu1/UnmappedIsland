@@ -898,8 +898,8 @@ object_defs:
           - add:
               self:
                 shock: -48
-      # maxが体格（体重のおよそ1/13＝4,600mL）。ヒトに近い量なので、**裂傷1つ（60mL）は
-      # ほとんど響かない**——刺し傷（1,000mL、injuries.yamlのpuncture_wound）だけが釣り合う。
+      # maxが体格（体重のおよそ1/13）。ヒトに近い量なので、**裂傷1つは
+      # ほとんど響かない**——刺し傷（injuries.yamlのpuncture_wound）だけが釣り合う。
       # 段のしきい値も戻る速さも、サルと同じ割合で刻む。
       blood:
         value: 4600

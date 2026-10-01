@@ -300,7 +300,7 @@ traits:
               - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
             add: {self: {warmth: -6}}
           # 境目より上に居る間は戻る。**血と違って熱は取り返せる**ので、凍死は「一晩をどう越すか」の
-          # 死に方になる——濡れた一晩（48 tick）で失う288 kcalが、火のそばの9時間で戻る。
+          # 死に方になる——濡れた一晩で失った熱も、火のそばに居れば時間をかけて戻る。
           - conditions:
               - {subject: ancestor, prop: ambient_temperature, gte: {prop: chill_point}}
             add: {self: {warmth: 8}}
