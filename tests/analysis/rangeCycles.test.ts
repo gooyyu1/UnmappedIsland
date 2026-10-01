@@ -983,6 +983,10 @@ object_defs:
               # 熱で余計に渇く（characters/player_character.yamlのpathogen）。**押し手はこの段を
               # 開けたそばから上へ押し抜けさせる**ので、効くのは下のsepticemicへ入るまでの間だけ。
               - add: {self: {thirst: -10}}
+              # 食が細る。**同じ菌に段の要求が2つ並ぶ**——段の宣言（feverish）と、生まれた時点で
+              # 既に入っている「sterile以上」の条件。後者を開けたのは押し手ではない。
+              - conditions: [{prop: pathogen, in_stage_or_above: sterile}]
+                add: {self: {appetite: -50}}
           - name: septicemic
             min: 7
             passives:
@@ -992,6 +996,10 @@ object_defs:
               - conditions: [{in_slot: catch}]
                 add: {self: {hydration: -2}}
       vitality: {value: 0, range: {min: 0, max: 100}}
+      appetite:
+        value: 100
+        range: {min: 0, max: 100}
+        on_min: {destroy: self}
       thirst:
         value: 100
         range: {min: 0, max: 100}
@@ -1056,12 +1064,20 @@ object_defs:
               - add: {self: {stamina: -10}}
               # 体そのものの弱り。**開いた段を割って抜けるほうが先**なので、この-0.5では尽きない。
               - add: {self: {vitality: -0.5}}
+              # 喉が渇く。**同じ血に段の要求が2つ並ぶ**——段の宣言（hemorrhaging）と、生まれた時点で
+              # 既に入っている「exsanguinated以上」の条件。押し上げる側（sowのappetite）の裏返し。
+              - conditions: [{prop: blood, in_stage_or_above: exsanguinated}]
+                add: {self: {moisture: -50}}
           - {name: replete, min: 2000}
       stamina:
         value: 100
         range: {min: 0, max: 100}
         on_min: {destroy: self}
       vitality:
+        value: 100
+        range: {min: 0, max: 100}
+        on_min: {destroy: self}
+      moisture:
         value: 100
         range: {min: 0, max: 100}
         on_min: {destroy: self}
@@ -1569,6 +1585,14 @@ object_defs:
     // 菌の居ない体が活力を戻すのは、傷が在ろうと無かろうと起こる。押し手に付けると、傷が傍に
     // 在って初めて活力が戻る周期になる。
     expect(drivenCyclesOf('sow', 'vitality')).toEqual([]);
+  });
+
+  it('段の要求が複数並んでいても、生まれた時点で入っている段は押し手が開けたものではない', () => {
+    // 押し上げる側。sterile以上はfeverishへ入る前から成立している。入り口を越えていることを段ごとに
+    // 見ず、要る段のうち最も遅いもの（feverishまで）に飲ませると、傷が傍に在って初めて食が細る
+    // 周期が立つ。押し下げる側（doeのmoisture）と同じ分かれ目で落ちること。
+    expect(drivenCyclesOf('sow', 'appetite')).toEqual([]);
+    expect(drivenCyclesOf('doe', 'moisture')).toEqual([]);
   });
 
   it('押し下げる押し手が開ける段も辿る', () => {
