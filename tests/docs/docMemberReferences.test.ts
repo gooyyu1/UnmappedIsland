@@ -18,9 +18,9 @@ import {
  * lintにも掛からない。初回の全数調査では、既に無いメソッドを指す説明がコメントに8件・
  * `docs/` に10件見つかった。
  *
- * **読む先はどちらの見方も {@link PROSE} の1つ**——コメントを書ける形式のソース・宣言の値へ散文を
+ * **読む先はどの見方も {@link PROSE} の1つ**——コメントを書ける形式のソース・宣言の値へ散文を
  * 置いているデータ・文書。
- * 見方は2つあり、どちらが赤くなったかで直す場所が変わるので `it` を分けてある。
+ * どの見方が赤くなったかで直す場所が変わるので、見方ごとに `it` を分けてある。
  *
  * 1. **`Xxx.yyy`・`Xxx.Yyy` の形**（下の「今は無い名前を指していない」）。判定は
  *    「**その所有者を宣言しているファイルの中に**その語が
@@ -129,7 +129,7 @@ const PROSE_DATA = trackedFiles(ROOT).filter(isProseData);
 const DOCUMENTS = trackedDocs(ROOT).filter((rel) => !isRefRuleExempt(rel));
 
 /**
- * 説明を読む先。**どちらの見方も同じここを読む**——片方だけが狭いと、そこへ書いた主張は形を
+ * 説明を読む先。**どの見方も同じここを読む**——片方だけが狭いと、そこへ書いた主張は形を
  * 満たしていても誰も見ていない。
  *
  * `fenced` は、コードフェンスで囲みの中と外が切り替わる形式か。**Markdownだけ**——コメントの中の
@@ -544,23 +544,24 @@ describe('説明の参照', () => {
     ).toEqual([]);
   });
 
-  // どこにも無い名前。**字面で書かない**——このファイルの文字列リテラルもコードの字面に入るので、
-  // 書いた時点で「在る」になる。
-  const absent = ['absent', 'Name', 'Probe'].join('');
+  // 例に使う名前は**字面で書かない**——このファイルの文字列リテラルもコードの字面に入るので、
+  // 書いた時点でその名前が「在る」ことになり、同じ名前を指す説明が改名されても緑のままになる。
+  const joined = (...parts: string[]) => parts.join('');
+  const absent = joined('absent', 'Name', 'Probe');
 
   it('括弧へ置いた語のうち、名前の形のものだけを採る', () => {
     // 小文字だけの語まで採ると、括弧で添えた普通の語（squash・kcal）が指し先を要求される。
     expect(parenthesizedNames(`マージ（squash）の行（${absent}）`)).toEqual([absent]);
-    expect(parenthesizedNames('(mulberry32) (WebGL) (relayedTickDeltasOf)')).toEqual([
-      'relayedTickDeltasOf',
-    ]);
+    expect(parenthesizedNames(`(mulberry32) (WebGL) (${absent})`)).toEqual([absent]);
   });
 
   it('依存先が宣言する名前と、どこにも無い名前を見分ける', () => {
     // 依存先の読み込みが空へ戻ると、外の名前を挙げた説明がすべて赤くなる。逆に何でも在ることに
     // なると、上の検査が黙って緑になる——両側をここで留める。
-    expect(declaredByDependency('requestAnimationFrame')).toBe(true);
-    expect(declaredByDependency('fillGradientStyle')).toBe(true);
+    for (const external of [joined('request', 'AnimationFrame'), joined('fill', 'GradientStyle')]) {
+      expect(nameExistsHere(external), external).toBe(false);
+      expect(declaredByDependency(external), external).toBe(true);
+    }
     expect(nameExistsHere(absent) || declaredByDependency(absent)).toBe(false);
   });
 
