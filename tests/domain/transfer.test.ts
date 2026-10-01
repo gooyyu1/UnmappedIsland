@@ -97,6 +97,75 @@ object_defs:
     expect(agent.tryGetProperty(hydrationId)?.number ?? 0, '実際に出せた分(500)しか回復しない').toBe(500);
   });
 
+  it('sourceにrangeがあれば、出せるのはrange.minまで（下限を割らない）', () => {
+    const yaml = `
+object_defs:
+  player_floor:
+    props:
+      hydration:
+        value: 0
+        range: {min: 0, max: 28800}
+  canteen_floor:
+    props:
+      water_amount:
+        value: 500
+        range: {min: 100, max: 4800}
+    interactions:
+      drink:
+        trigger: menu
+        transfer:
+          amount: 2000
+          from_prop: water_amount
+          to: agent
+          to_prop: hydration
+`;
+    const codex = load(yaml);
+    const waterId = codex.propertyNames.getId('water_amount');
+    const hydrationId = codex.propertyNames.getId('hydration');
+
+    const agent = spawn(codex, 'player_floor');
+    const canteen = spawn(codex, 'canteen_floor');
+
+    canteen.tryGetAction('drink', agent)?.tryExecute();
+
+    expect(canteen.tryGetProperty(waterId)?.number ?? 0, 'range.min(100)で止まる').toBe(100);
+    expect(agent.tryGetProperty(hydrationId)?.number ?? 0, '出せたのは500-100=400').toBe(400);
+  });
+
+  it('sourceにrangeが無ければ、出せるのは0まで', () => {
+    const yaml = `
+object_defs:
+  player_no_range:
+    props:
+      hydration:
+        value: 0
+        range: {min: 0, max: 28800}
+  canteen_no_range:
+    props:
+      water_amount:
+        value: 500
+    interactions:
+      drink:
+        trigger: menu
+        transfer:
+          amount: 2000
+          from_prop: water_amount
+          to: agent
+          to_prop: hydration
+`;
+    const codex = load(yaml);
+    const waterId = codex.propertyNames.getId('water_amount');
+    const hydrationId = codex.propertyNames.getId('hydration');
+
+    const agent = spawn(codex, 'player_no_range');
+    const canteen = spawn(codex, 'canteen_no_range');
+
+    canteen.tryGetAction('drink', agent)?.tryExecute();
+
+    expect(canteen.tryGetProperty(waterId)?.number ?? 0, '0で止まる').toBe(0);
+    expect(agent.tryGetProperty(hydrationId)?.number ?? 0, '在庫(500)を出し切る').toBe(500);
+  });
+
   it('transferの配列で1回のアクションから複数の移送が適用される', () => {
     const yaml = `
 object_defs:
