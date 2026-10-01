@@ -35,10 +35,7 @@ export function pathForBash(path: string): string {
  */
 const [bashAsBashSeesIt, bashForNode] = execFileSync(
   'bash',
-  [
-    '-c',
-    'b=$(command -v bash); echo "$b"; if command -v cygpath >/dev/null; then cygpath -w "$b"; else echo "$b"; fi',
-  ],
+  ['-c', 'b=$(command -v bash); echo "$b"; echo "$b"'],
   { encoding: 'utf-8' },
 )
   .trim()
