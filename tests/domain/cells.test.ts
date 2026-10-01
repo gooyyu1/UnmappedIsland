@@ -91,12 +91,24 @@ object_defs:
 
       it('指した枠が受け入れない物は、その枠へ入らずに断る', () => {
         const { slot, create, cells } = setUpWith();
+        // 断ったときに元の居場所から切り離していないことを見るため、先に別の作業台へ置いておく。
+        const other = create('chair_in_progress').getSlot(materialsId);
         const stick = create('stick');
+        stick.moveToSlotOrRejection(other);
 
         expect(stick.rejectionForMoveTo(slot, { kind: 'cell', index: 0 }), '動かす前に断る').toBeDefined();
         expect(stick.moveToSlotOrRejection(slot, { kind: 'cell', index: 0 })).toBeDefined();
         expect(cells()).toEqual([undefined, undefined]);
-        expect(stick.parent, '断ったときは元のまま（どこへも移っていない）').toBeUndefined();
+        expect(stick.parentSlot, '断ったときは元の居場所に居る').toBe(other);
+        expect(other.contents).toEqual([stick]);
+      });
+
+      it('隙間を指しても、入る物を受け入れない枠へは入れない', () => {
+        const { slot, create, cells } = setUpWith();
+
+        // 末尾の隙間の左隣は棒の枠で、空いているので何もずらさずに済むが、板は受け入れない。
+        expect(create('board').moveToSlotOrRejection(slot, { kind: 'gap', index: 2 })).toBeDefined();
+        expect(cells()).toEqual([undefined, undefined]);
       });
 
       it('受け入れる枠を指せば入る', () => {
@@ -122,6 +134,31 @@ object_defs:
 
         expect(stick.reorderInParentSlot({ kind: 'cell', index: 0 })).toBe(false);
         expect(cells()).toEqual([undefined, ['stick']]);
+      });
+
+      it('並び替えで入れ替わる相手も、移る先の枠に合わなければ入れ替えない', () => {
+        // 棒だけの枠と、何でも受ける枠。棒は何でも受ける枠へ移れるが、そこに居る板は棒の枠へ移れない。
+        const mixed = build(`
+object_defs:
+  rack:
+    slots:
+      things:
+        cells:
+          - {accept: {object: stick}}
+          - {}
+  board: {}
+  stick: {}
+`);
+        const session = new WorldSession(mixed);
+        const things = session
+          .createObject(mixed.objectNames.getId('rack'))
+          .getSlot(mixed.slotNames.getId('things'));
+        const stick = session.createObject(mixed.objectNames.getId('stick'));
+        stick.moveToSlotOrRejection(things, { kind: 'cell', index: 0 });
+        session.createObject(mixed.objectNames.getId('board')).moveToSlotOrRejection(things);
+
+        expect(stick.reorderInParentSlot({ kind: 'cell', index: 1 })).toBe(false);
+        expect(things.cells.map((cell) => cell.stack?.members[0].def.name)).toEqual(['stick', 'board']);
       });
     });
   });
