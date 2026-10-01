@@ -797,18 +797,6 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   });
 });
 
-/**
- * 満ちた器を重ねたときに断る口（`*_into_filled`）と、空でないことを断る口（`*_into_empty`）は、
- * **同じ場面で両方が理由付きで残る**——前者が名乗る型指定（`water`・`tea`）は後者の
- * `liquid_container` に必ず含まれるため。画面が出すのは宣言順の先頭
- * （docs/ui/CardInteraction.md 2節）なので、狭いほうを後ろに置くと `container_full` は一度も出ない
- * （docs/engine/LiquidContainerSystem.md 4節・10節）。
- *
- * **型指定どうしの包含は判定しない**（PR #1721の仮決め）。見るのは口の名前の対と宣言順だけなので、
- * 同じ形を別の綴りで足した宣言はここに掛からない。1組も掛からなくなったことは下のexpectが落とす。
- *
- * 種類ごとの液体はファイルをまたいで足せるので、同梱ぶんを丸ごと読んで見る。
- */
 /** core.yaml の遷移が置く値のうち、`key` が `value` の組で同時に置く `remainingKey` の候補（tick）。 */
 function remainingTicksOf(key: string, value: string, remainingKey: string): number[] {
   const lengths: number[] = [];
@@ -837,6 +825,19 @@ function weatherLengthTicks(weather: string, pickOne: (...values: number[]) => n
 function shortestDrySeasonTicks(): number {
   return Math.min(...remainingTicksOf('season', 'dry', 'season_remaining'));
 }
+
+/**
+ * 満ちた器を重ねたときに断る口（`*_into_filled`）と、空でないことを断る口（`*_into_empty`）は、
+ * **同じ場面で両方が理由付きで残る**——前者が名乗る型指定（`water`・`tea`）は後者の
+ * `liquid_container` に必ず含まれるため。画面が出すのは宣言順の先頭
+ * （docs/ui/CardInteraction.md 2節）なので、狭いほうを後ろに置くと `container_full` は一度も出ない
+ * （docs/engine/LiquidContainerSystem.md 4節・10節）。
+ *
+ * **型指定どうしの包含は判定しない**（PR #1721の仮決め）。見るのは口の名前の対と宣言順だけなので、
+ * 同じ形を別の綴りで足した宣言はここに掛からない。1組も掛からなくなったことは下のexpectが落とす。
+ *
+ * 種類ごとの液体はファイルをまたいで足せるので、同梱ぶんを丸ごと読んで見る。
+ */
 
 describe('満ちた器を断る口の宣言順', () => {
   const INTO_FILLED = '_into_filled';

@@ -163,8 +163,8 @@ traits:
       # 満水では何も移らない操作になるため、実行自体をさせない。境目はキャラクターのhydrationの
       # full段が持つ（Characters.md）。
       #
-      # 水分はtick数で持つので（6.0節）、mLからの換算率はto_amountが持つ: 体は25mL/tickを失うため、
-      # 250mLは10 tick分にあたる。寄与の小さい液体（酒）はこの比を小さくするだけで表せる。
+      # 水分はtick数で持つので（6.0節）、mLからの換算率はto_amountが持つ（amountの250mLを何tick分とするか）。
+      # 寄与の小さい液体（酒）はこの比を小さくするだけで表せる。
       drink:
         trigger: menu
         conditions:
