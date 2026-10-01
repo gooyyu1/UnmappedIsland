@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { commentParts, commentsOnly } from '../../scripts/codeComments.mjs';
+import { commentParts, commentsOnly, withoutComments } from '../../scripts/codeComments.mjs';
 import { trackedFiles } from '../../scripts/docScope.mjs';
 
 const ROOT = resolve(__dirname, '../..');
@@ -33,6 +33,41 @@ describe('commentParts', () => {
 
   it('`commentsOnly` は同じ判定で、落とした行を空行にする', () => {
     expect(commentsOnly('// a\nconst x = 1;\n/* b */', 'a.ts')).toEqual('// a\n\n/* b ');
+  });
+});
+
+describe('withoutComments', () => {
+  it('JS・TSは、ブロックと行の途中からのコメントも落とし、行番号を揃える', () => {
+    const source = ['/**', ' * 説明 hidden', ' */', 'const x = 1; // hidden', 'x();'].join('\n');
+    const code = withoutComments(source, 'a.ts');
+    expect(code).not.toContain('hidden');
+    expect(code.split('\n')).toHaveLength(5);
+    expect(code.split('\n')[3]).toBe('const x = 1; ');
+  });
+
+  it('`:` の直後の `//` は残す（`https://…`）', () => {
+    expect(withoutComments("const url = 'https://example.com';", 'a.mjs')).toBe(
+      "const url = 'https://example.com';",
+    );
+  });
+
+  it('JS・TS以外は、行頭か空白に続く `#` から落とし、語へ続く `#` は残す', () => {
+    expect(withoutComments('color: "#fff" # hidden\n# hidden\necho ${#arr}', 'a.sh')).toBe(
+      'color: "#fff" \n\necho ${#arr}',
+    );
+  });
+
+  it('落ち方が、改行コードで変わらない', () => {
+    const lf = 'node "$HERE/board.mjs" # live-sessions.mjs は呼ばない\nconst a = 1; // b.mjs\n';
+    for (const rel of ['a.sh', 'a.mjs']) {
+      // 一致だけでは、両方が同じに壊れていても緑になる。落ちていることを先に見る。
+      expect(withoutComments(lf, rel), 'コメントが落ちている').not.toMatch(
+        rel === 'a.sh' ? /live-sessions/ : /b\.mjs/,
+      );
+      expect(withoutComments(lf.replace(/\n/g, '\r\n'), rel).replace(/\r/g, '')).toBe(
+        withoutComments(lf, rel),
+      );
+    }
   });
 });
 
@@ -87,5 +122,35 @@ describe('コメントの判定', () => {
           .some((raw) => raw.trim() === line),
     );
     expect(missing).toEqual([]);
+  });
+});
+
+/**
+ * コードからコメントを剥がす正規表現を、`withoutComments` の外で書いている箇所。**剥がす処理がもう
+ * 1つに割れたら、ここが赤くなる**——写しは剥がす範囲が少しずつずれ、同じ説明が検査によってコードに
+ * 数えられたり数えられなかったりする。
+ *
+ * 拾うのは、ブロック（`\/\*[\s\S]`）・`//` から行末（`\/\/.*`・`\/\/[^\n]*`）・`#` から行末
+ * （`#.*`・`#[^\n]*`）を正規表現で書いた行。
+ */
+function copiesOfCommentStripping(): string[] {
+  const self = join('tests', 'scripts', 'codeComments.test.ts');
+  const owner = join('scripts', 'codeComments.mjs');
+  const pattern = /\\\/\\\*\[\\s\\S\]|(?:\\\/\\\/|#)(?:\.\*|\[\^\\n\]\*)/;
+  return ['.ts', '.mts', '.mjs', '.js', '.cjs']
+    .flatMap((ext) => trackedFiles(ROOT, `*${ext}`))
+    .filter((rel) => rel !== self && rel !== owner)
+    .flatMap((rel) =>
+      readFileSync(join(ROOT, rel), 'utf-8')
+        .split('\n')
+        .flatMap((line, index) =>
+          pattern.test(line) ? [`${rel.split(sep).join('/')}:${index + 1} ${line.trim()}`] : [],
+        ),
+    );
+}
+
+describe('コメントの剥がし方', () => {
+  it('`scripts/codeComments.mjs` の外に写しが無い', () => {
+    expect(copiesOfCommentStripping(), 'withoutComments を通さずにコメントを剥がしている').toEqual([]);
   });
 });
