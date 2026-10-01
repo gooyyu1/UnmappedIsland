@@ -7,6 +7,9 @@ import type { SunlitEvaporationRow } from '../../src/analysis/sunlitEvaporation'
 import { sunlitEvaporationRows } from '../../src/analysis/sunlitEvaporation';
 import { litPlacesOf, worldAmbientBrightnessOf } from '../../src/analysis/activityHours';
 import { HOURS_PER_DAY } from '../../src/domain/worldTime';
+import { symbolGlobalIdOfPropertyValue } from '../../src/domain/GlobalId';
+import type { PropertyComparison } from '../../src/analysis/tickDeltas';
+import { tickDeltasOf } from '../../src/analysis/tickDeltas';
 import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
@@ -81,9 +84,45 @@ describe('日射の上乗せが効く時刻（同梱の定義、LiquidContainerS
   const worldAmbientAt = worldAmbientBrightnessOf(codex);
   const places = new Map(litPlacesOf(codex).map((place) => [place.name, place]));
   const table = brightnessTimeTableOf();
-  const lowest = Math.min(...table.thresholds);
   const weathers = Object.keys(SEASON_CLIMATE[0].hoursByWeather);
-  const RAIN = ['light_rain', 'heavy_rain', 'storm'];
+
+  // しきい値と雨の天候は、器の蒸発（`fill` を減らす増減）の条件から読む——文書から読むと、定義が
+  // 動いても表と検査が揃って古いまま緑で通る。
+  const evaporationConditions: readonly PropertyComparison[] = [...codex.objects].flatMap((def) =>
+    tickDeltasOf(def)
+      .filter(
+        (delta) =>
+          delta.target === 'self' &&
+          delta.propertyGlobalId === codex.vocabulary.engine.fillId &&
+          delta.amount < 0 &&
+          delta.gate.stage === undefined,
+      )
+      .flatMap((delta) => delta.gate.ancestorConditions),
+  );
+  const thresholds = [
+    ...new Set(
+      evaporationConditions
+        .filter(
+          ({ propertyGlobalId, op }) =>
+            propertyGlobalId === codex.vocabulary.world.ambientBrightnessId && op === 'gte',
+        )
+        .map(({ values }) => values[0]),
+    ),
+  ].sort((left, right) => left - right);
+  const lowest = Math.min(...thresholds);
+  /** 基礎の蒸発が除外している天候（湿った空気の代理、6節）。 */
+  const RAIN = [
+    ...new Set(
+      evaporationConditions
+        .filter(
+          ({ propertyGlobalId, op }) =>
+            propertyGlobalId === codex.vocabulary.world.weatherId && op === 'not_in',
+        )
+        .flatMap(({ values }) =>
+          values.map((value) => codex.symbolNames.getName(symbolGlobalIdOfPropertyValue(value))),
+        ),
+    ),
+  ];
   const NOON = 12;
 
   /** 開けた土地で、明るさがしきい値以上になる時刻の帯（表の書き方: `7-16時`、届かなければ `—`）。 */
@@ -107,6 +146,16 @@ describe('日射の上乗せが効く時刻（同梱の定義、LiquidContainerS
     );
   }
 
+  it('時刻表の見出しのしきい値が、蒸発の定義のしきい値と一致する', () => {
+    expect(thresholds.length, '明るさで決まる蒸発が1つも読めない').toBeGreaterThan(0);
+    expect(table.thresholds).toEqual(thresholds);
+  });
+
+  it('雨の天候を、基礎の蒸発の条件から読めている', () => {
+    expect(RAIN.length).toBeGreaterThan(0);
+    for (const weatherName of RAIN) expect(weathers, weatherName).toContain(weatherName);
+  });
+
   it('時刻表の天候ごとの行が、正午の明るさと効く時刻の帯を定義から数え直した値と一致する', () => {
     expect(table.rows.length, '時刻表に天候の行が無い').toBeGreaterThan(0);
     for (const { weatherName, noon, windows } of table.rows) {
@@ -122,8 +171,11 @@ describe('日射の上乗せが効く時刻（同梱の定義、LiquidContainerS
       expect(worldAmbientAt(NOON, weatherName), `${weatherName} の正午`).toBeLessThanOrEqual(
         table.rainNoonAtMost,
       );
-      for (const threshold of table.thresholds)
-        expect(windowOf(weatherName, threshold), `${weatherName} の ≧+${threshold}`).toBe('—');
+      table.thresholds.forEach((threshold, column) =>
+        expect(windowOf(weatherName, threshold), `${weatherName} の ≧+${threshold}`).toBe(
+          table.rainWindows[column],
+        ),
+      );
     }
   });
 
@@ -152,6 +204,7 @@ function brightnessTimeTableOf(): {
   readonly thresholds: readonly number[];
   readonly rows: readonly { weatherName: string; noon: string; windows: readonly string[] }[];
   readonly rainNoonAtMost: number;
+  readonly rainWindows: readonly string[];
 } {
   const lines = readFileSync(join('docs', 'engine', 'LiquidContainerSystem.md'), 'utf8').split(/\r?\n/);
   const start = lines.findIndex((line) => line.startsWith('上乗せが効く時刻'));
@@ -181,7 +234,8 @@ function brightnessTimeTableOf(): {
     });
   const rain = tableRows.find((line) => line.startsWith('| 雨系 |'));
   expect(rain, '時刻表に雨系の行が無い').toBeDefined();
-  return { thresholds, rows, rainNoonAtMost: Number.parseFloat(cellsOf(rain!)[1]) };
+  const [, rainNoon, ...rainWindows] = cellsOf(rain!);
+  return { thresholds, rows, rainNoonAtMost: Number.parseFloat(rainNoon), rainWindows };
 }
 
 function rowOf(
