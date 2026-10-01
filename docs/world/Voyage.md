@@ -215,7 +215,7 @@
 
 ### 3.1 風向きは季節が配る
 
-**風向き（world の `wind`）は `tailwind`/`crosswind`/`headwind` で、8時間ごとに引き直します。**
+**風向き（world の `wind`）は `tailwind`/`crosswind`/`headwind` で、`wind_remaining` の 32<!-- codex: core.yaml object_defs.world.props.wind_remaining.value --><!-- codex: core.yaml object_defs.world.props.wind_remaining.on_min.pick.0.set.self.wind_remaining --><!-- codex: core.yaml object_defs.world.props.wind_remaining.on_min.pick.1.set.self.wind_remaining --><!-- codex: core.yaml object_defs.world.props.wind_remaining.on_min.pick.2.set.self.wind_remaining --> tick ごとに引き直します。**
 候補の重みは季節の段が配るので、乾季は追い風が多く、雨季は向かい風が増えます——これが
 「出航に適した季節の窓」（[`GameEndings.md`](../concept/GameEndings.md) 3.1 節）になります。
 

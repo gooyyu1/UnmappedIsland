@@ -49,7 +49,7 @@ describe('drying.yamlの天日干しと干し場', () => {
   /**
    * 砂浜にプレイヤーが立っている世界。時刻・天気・土地は呼び出し側が決める。
    *
-   * **天気は据え置く。** 放っておくと4〜6時間ごとに変わるので（core.yamlのweather_remaining）、
+   * **天気は据え置く。** 放っておくとcore.yamlのweather_remainingが尽きるたびに変わるので、
    * 日をまたぐ検査では「晴れが続けば」の側を見られなくなる。
    */
   function open(hour = SUNRISE_HOUR, weather = 'clear', landName = 'sandy_beach') {

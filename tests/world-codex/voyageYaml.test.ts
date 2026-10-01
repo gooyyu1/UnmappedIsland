@@ -167,7 +167,7 @@ describe('筏と航海', () => {
     return place;
   }
 
-  /** 風向きを直接置く（8時間ごとの引き直しは天気と同じ仕組みなので、ここでは向きだけを固定する）。 */
+  /** 風向きを直接置く（時間で引き直すのは天気と同じ仕組みなので、ここでは向きだけを固定する）。 */
   function setWind(game: StartedGame, wind: string): void {
     game.world.instance
       .getProperty(codex.propertyNames.getId('wind'))
