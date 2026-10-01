@@ -521,9 +521,24 @@ describe('injuries.yamlの怪我', () => {
 
       for (let i = 0; i < 4; i++) expect(washing(injury, jar)?.tryExecute(), `${i + 1}杯目`).toBe(true);
 
-      // 1L・1時間で落ち切る。残るのは洗っている4 tickのあいだに進んだ汚れだけで、1にも満たない。
+      // 落ち切る。残るのは洗っている間に進んだ汚れだけで、1にも満たない。
       expect(injury.tryGetProperty(infectionId())?.stage?.name).toBe('clean');
       expect(infectionOf(injury)).toBeLessThan(1);
+    });
+
+    it('開いた傷1つは、1日1杯洗えば膿む手前に留まる', () => {
+      // InjurySystem.md 6.2節「開いた傷 1 つにつき 1 日 1 杯が清潔を保つ値段」。1杯が落とす量が、
+      // 健康な体で1日に膿む量を上回るので、毎日洗えば洗った直後は毎回まっさらに戻る。
+      const injury = openWound();
+      const jar = filledJar();
+      const hydration = player.getProperty(codex.propertyNames.getId('hydration'));
+      for (let day = 1; day <= 4; day++) {
+        tick(DAY);
+        hydration.setNumber(hydration.def.range!.max);
+        expect(injury.tryGetProperty(infectionId())?.stage?.name, `${day}日目、洗う前`).toBe('clean');
+        expect(washing(injury, jar)?.tryExecute(), `${day}日目の1杯`).toBe(true);
+        expect(infectionOf(injury), `${day}日目、洗った直後は持ち越さない`).toBe(0);
+      }
     });
 
     it('汚れていない傷は洗えない', () => {
@@ -622,6 +637,65 @@ describe('injuries.yamlの怪我', () => {
       tick(DAY);
 
       expect(pathogenOf(player).number, '流入が止まれば引いていく').toBeLessThan(peak);
+    });
+
+    /** 罹って免疫が高まった体（primed）にする。段の下端より少し上に置くので、短い間は段を保つ。 */
+    function primeImmunity(): void {
+      const immunity = player.getProperty(codex.propertyNames.getId('immunity'));
+      immunity.setNumberWithoutEvents(immunity.def.lowerBoundOfStage('primed')! + 5);
+      expect(immunity.isInStage('primed')).toBe(true);
+    }
+
+    /** その膿み具合の開いた傷を、数だけ負わせる。 */
+    function woundsAt(stageName: string, count: number): WorldObject[] {
+      return Array.from({ length: count }, () => {
+        const injury = openWound();
+        const infection = injury.getProperty(infectionId());
+        infection.setNumberWithoutEvents(infection.def.lowerBoundOfStage(stageName)!);
+        return injury;
+      });
+    }
+
+    it('膿んだ傷2つは、健康な体でも全身へ回る', () => {
+      // InjurySystem.md 6.3節。2つ負えば流入も2倍で、健康な体の除去を越える——多発外傷が危険なのは、
+      // 傷ごとの特別扱いではなく足し合わせから。
+      woundsAt('festering', 2);
+      tick(8);
+      expect(pathogenOf(player).number).toBeGreaterThan(0);
+    });
+
+    it('膿んだ傷2つは、一度入り込めば免疫が高まった体でも抑え込めない', () => {
+      // InjurySystem.md 6.3節。菌が居れば増殖が加わり、流入と合わせて最も高い免疫の除去を越える。
+      primeImmunity();
+      woundsAt('festering', 2);
+      const pathogen = pathogenOf(player);
+      pathogen.setNumberWithoutEvents(1);
+      tick(8);
+      expect(pathogen.number).toBeGreaterThan(1);
+    });
+
+    it('腐り切った傷1つは、免疫が高まった体でも全身へ回る', () => {
+      // InjurySystem.md 6.3節。septic の傷は1つで最も高い免疫を越え、正味で押し上がる。
+      primeImmunity();
+      woundsAt('septic', 1);
+      tick(4);
+      const early = pathogenOf(player).number;
+      tick(4);
+      expect(early, '入り込む').toBeGreaterThan(0);
+      expect(pathogenOf(player).number, '押し上がり続ける').toBeGreaterThan(early);
+    });
+
+    it('免疫が高まった体では、傷が健康な体より遅く膿む', () => {
+      // InjurySystem.md 6.2節。免疫は上がる速さを鈍らせ、段が上がるほど鈍る。
+      const injury = openWound();
+      const rateOverOneTick = (): number => {
+        const before = infectionOf(injury);
+        player.tick();
+        return infectionOf(injury) - before;
+      };
+      const robust = rateOverOneTick();
+      primeImmunity();
+      expect(rateOverOneTick()).toBeLessThan(robust);
     });
 
     it('免疫が落ちている体では、傷も速く膿む', () => {

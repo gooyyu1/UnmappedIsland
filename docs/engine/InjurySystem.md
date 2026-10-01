@@ -51,7 +51,7 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
   形にしないのは、悪化・再受傷を後から足すときに「残っている傷」の方が素直に増減できるためです。
 - **減り方が自然治癒の速さ**で、これを基準レートに置きます（`-1/tick`）。`max` はそのまま「その速さで
   何 tick かかるか」を表します（[`GameElementDefinition.md`](./GameElementDefinition.md) 6.0節の
-  時間を数えるクラス。捻挫は 960 tick<!-- codex: injuries.yaml object_defs.sprained_ankle.props.severity.range.max -->（10日））。
+  時間を数えるクラス。捻挫は 960 tick<!-- codex: injuries.yaml object_defs.sprained_ankle.props.severity.range.max -->（10 日<!-- stats: durations.yaml durations object=sprained_ankle property=severity days -->））。
 - **`stages` は傷の重さの段に名前を与えます**（`mending`・`sore`・`acute`）。怪我ごとに絶対値で刻むので、
   軽い怪我は負った直後でも危険域に入りません。危険域は骨折のような重い怪我のために空けておきます。
   **カードのバーの色は `stages` ではなく `gauge` の宣言から決まります**
@@ -220,8 +220,8 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
 - **`load` の押し上げ幅**は、**空身なら歩けるが、普段どおりの荷では `too_heavy` に届く**位置に
   置きます。
 - **痛みの重さ**は `pain` で取り、1 枚で危険域へ届く量を置きます。
-- **治りの長さ**は `severity` の `max` が 1,344 tick<!-- codex: injuries.yaml object_defs.fracture.props.severity.range.max -->（14 日）で、基準レートの `-1/tick`<!-- codex: injuries.yaml object_defs.fracture.props.severity.passives.0.add.self.severity --> で引きます。
-  次に長い捻挫が 960 tick<!-- codex: injuries.yaml object_defs.sprained_ankle.props.severity.range.max -->（10 日）なので、**4 分の 1 へ縮めても順序は崩れていません**。もとにした
+- **治りの長さ**は `severity` の `max` が 1,344 tick<!-- codex: injuries.yaml object_defs.fracture.props.severity.range.max -->（14 日<!-- stats: durations.yaml durations object=fracture property=severity longest_days -->）で、基準レートの `-1/tick`<!-- codex: injuries.yaml object_defs.fracture.props.severity.passives.0.add.self.severity --> で引きます。
+  次に長い捻挫が 960 tick<!-- codex: injuries.yaml object_defs.sprained_ankle.props.severity.range.max -->（10 日<!-- stats: durations.yaml durations object=sprained_ankle property=severity days -->）なので、**4 分の 1 へ縮めても順序は崩れていません**。もとにした
   のは**現実の 6〜12 週**で（[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）、
   **縮めるのは治りのような長いものだけです**——手当てにかかる 30 分<!-- codex: injuries.yaml traits.treatable.slots.treatment.put_in.duration -->（3 節）や、宿主の乾き・飢え・
   疲れは現実のまま置きます。**1 日の中で回る量まで 4 倍にすると、1 日に 4 回飢える体**になります。
@@ -261,11 +261,10 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
   （治療具を当てる 30 分<!-- codex: injuries.yaml traits.treatable.slots.treatment.put_in.duration -->の半分。3 節）——重さを時間に持たせると、水の乏しさと関わりなく手間だけが
   増えます。
 - `infection` は 0<!-- codex: injuries.yaml traits.open_wound.props.infection.range.min -->〜100<!-- codex: injuries.yaml traits.open_wound.props.infection.range.max --> で、段は `clean`・`festering`（40<!-- codex: injuries.yaml traits.open_wound.props.infection.stages.1.min --> から）・`septic`（80<!-- codex: injuries.yaml traits.open_wound.props.infection.stages.2.min --> から）。1 杯で 25 なので、
-  **最も膿んだ状態からでも 4 杯（1L・1 時間）で落とし切れます**。
+  **最も膿んだ状態からでも 4 杯で落とし切れます**。
 
 **長さは、敗血症が命を削る速さから取りました。** 腐り切った傷が押し上げた菌は 6 時間で危険域へ届き、
-そこからは血が -40/tick<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.3.passives.0.add.self.blood --> で減ります（[`DigestionSystem.md`](./DigestionSystem.md) 6 節。5,000mL<!-- codex: characters/player_character.yaml traits.player_character.props.blood.range.max --> を
-助からない域まで 18.75 時間）。**そこから安全域へ戻すのに要るのは 2 杯・30 分**なので、気づいてから原因を
+そこからは血が -40/tick<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.3.passives.0.add.self.blood --> で減ります（[`DigestionSystem.md`](./DigestionSystem.md) 6 節）。**そこから安全域へ戻すのに要るのは 2 杯**なので、気づいてから原因を
 断つ時間はあります。間に合わない長さにすると、[`VitalsSystem.md`](./VitalsSystem.md) 8.1 節の「傷を洗う
 なり膿を出すなりして原因を断たなければ死ぬ」の後半が言葉だけになります。一方で発症している間は水も
 余計に減る（同 8.1 節）ので、**断つために飲み水を捨てる**という締め付けは残ります。
@@ -276,8 +275,8 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
 **汚すのは、開いたままの時間です。** 負った瞬間は清潔（`value: 0`<!-- codex: injuries.yaml traits.open_wound.props.infection.value -->）で、傷が在るあいだ上がり続けます。
 健康な体では 1 時間に 1（`0.25/tick`）で、放っておけば 1.7 日で `festering`、3.3 日で `septic` へ届き、
 **最も短く残る傷（噛み傷、360 tick<!-- codex: injuries.yaml object_defs.bite_wound.props.severity.range.max -->）でも治りきる前に敗血症へ入ります**——どの開いた傷も、洗わずに
-済ませられません。1 杯が落とす 25 はちょうど 1 日ぶんなので、**開いた傷 1 つにつき 1 日 1 杯**が清潔を
-保つ値段です（洗っている 15 分<!-- codex: injuries.yaml traits.open_wound.interactions.wash.duration -->ぶんも進むので、上の 4 杯で残るのは 1 に満たない量です）。
+済ませられません。1 杯が落とす量は健康な体で 1 日に膿む量を上回るので、**開いた傷 1 つにつき 1 日 1 杯**が清潔を
+保つ値段です（`tests/world-codex/injuriesYaml.test.ts` が見ます）。
 **この速さと、治療具が上がり方へ効く形（3.1 節）は未決**で、ここに置いてあるのは仮決めです
 （末尾の未決事項）。
 
@@ -285,7 +284,7 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
 ことだけ」が崩れ、水の乏しさが効かなくなります。局所の免疫応答としても、傷口に入った汚れが免疫で
 消えるわけではありません。鈍るのは**全身で菌の増殖を抑え込めている段から上**
 （[`DigestionSystem.md`](./DigestionSystem.md) 6.2 節の除去 > 増殖）で、段が 1 つ上がるごとに `0.05` です。
-素の速さは `0.30/tick`<!-- codex: injuries.yaml traits.open_wound.props.infection.passives.0.add.self.infection -->、健康な体（`robust`）がちょうど上の「1 時間に 1」で、罹って高まった体はその 8 割。
+素の速さは `0.30/tick`<!-- codex: injuries.yaml traits.open_wound.props.infection.passives.0.add.self.infection -->、健康な体（`robust`）がちょうど上の「1 時間に 1」で、罹って高まった体はそれより遅くなります。
 
 **弱った体では傷も速く膿む**、が段の並びからそのまま出ます。`vitamin` の `scurvy` が「古傷が開く」と
 書いている（[`DigestionSystem.md`](./DigestionSystem.md) 4 節）のと同じ現象を、傷の側から見たものです。
@@ -347,10 +346,10 @@ open_wound:
   打ち消されます。
 - **弱った体（増殖を抑え込めていない段、除去は最も高くて `0.10`）では 1 つでも入り込みます。** 入れば
   増殖が加わって除去を大きく上回るので、免疫を戻すのでは追いつきません——止めるのは洗うことだけです。
-- **2 つ負えば流入も 2 倍で、健康な体でも越えます**（`0.24 > 0.20`）。しかも最も高い免疫でも抑え込め
-  ません（`0.24 + 0.15 > 0.30`）。多発外傷が危険なのは、傷ごとの特別扱いではなくこの足し合わせからです。
-- **腐り切った傷（`septic`）は、1 つで最も高い免疫を越えます。** 健康な体では正味 `+0.30/tick`
-  （免疫が高まっても `+0.20/tick`）で押し上がるので、危険域（`septicemic`、7）まで 6 時間。そこから
+- **2 つ負えば流入も 2 倍で、健康な体でも越えます**。しかも一度入り込めば、最も高い免疫でも
+  抑え込めません。多発外傷が危険なのは、傷ごとの特別扱いではなくこの足し合わせからです。
+- **腐り切った傷（`septic`）は、1 つで最も高い免疫を越えます。** 健康な体でも免疫が高まった体でも正味で
+  押し上がるので、危険域（`septicemic`、7<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.3.min -->）まで 6 時間。そこから
   先は全身の菌が血を削ります。
 
 **押し上げる量は仮決めです**（末尾の未決事項）。洗わずに放置した開いた傷 1 つは、健康な体でも
