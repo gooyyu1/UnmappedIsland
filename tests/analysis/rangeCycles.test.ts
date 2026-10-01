@@ -1590,7 +1590,8 @@ object_defs:
   it('段の要求が複数並んでいても、生まれた時点で入っている段は押し手が開けたものではない', () => {
     // 押し上げる側。sterile以上はfeverishへ入る前から成立している。入り口を越えていることを段ごとに
     // 見ず、要る段のうち最も遅いもの（feverishまで）に飲ませると、傷が傍に在って初めて食が細る
-    // 周期が立つ。押し下げる側（doeのmoisture）と同じ分かれ目で落ちること。
+    // 周期が立つ。押し下げる側（doeのmoisture）は、上端を持たない「exsanguinated以上」を入り口で
+    // 落とすので、両側が同じ答えになっていることを並べて見る。
     expect(drivenCyclesOf('sow', 'appetite')).toEqual([]);
     expect(drivenCyclesOf('doe', 'moisture')).toEqual([]);
   });
