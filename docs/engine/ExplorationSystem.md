@@ -104,8 +104,8 @@ object_defs:
     interactions:
       explore:
         trigger: menu
-        duration: 15
-        add: {self: {exploration_progress: 1}}   # 何が見つかっても進捗は1つ進む
+        duration: 15  # <!-- codex: locations.yaml object_defs.grassland.interactions.explore.duration -->
+        add: {self: {exploration_progress: 1}}  # <!-- codex: locations.yaml object_defs.grassland.interactions.explore.add.self.exploration_progress -->   # 何が見つかっても進捗は1つ進む
         pick:
           - weight: {prop: berry_find}
             spawn: {object: berry_bush, into: self}

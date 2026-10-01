@@ -125,8 +125,8 @@ object_defs:
   ける」の差です。**大型で殺す側に付く上乗せは、長い棒 1 本と打つ手間だけ**（`drive_stake`）で、
   檻の材料には届きません。
 - **「殺す」欄が掛かったその場で殺すのは、今はネズミだけです。** くくり罠の傷（30〜60 mL）で血が尽きるのは
-  6 mL のネズミで、ヤケイ（80 mL）はその場では死にません（5.1 節）。**杭の刺し傷（1,000 mL）もイノシシの
-  4,600 mL に届きません**（8 節）。**落ちた大型は、杭のあるなしにかかわらず生きて拘束されます**
+  6 mL<!-- codex: animals.yaml object_defs.rat.props.blood.value --> のネズミで、ヤケイ（80 mL<!-- codex: animals.yaml object_defs.junglefowl.props.blood.value -->）はその場では死にません（5.1 節）。**杭の刺し傷（1,000 mL）もイノシシの
+  4,600 mL<!-- codex: animals.yaml object_defs.wild_boar.props.blood.value --> に届きません**（8 節）。**落ちた大型は、杭のあるなしにかかわらず生きて拘束されます**
   ——`stake` 軸が入れ替えるのは刺す怪我だけで、掛かる候補も 5 節の拘束の 1 ブロックも同じものです
   （`traps.yaml`）。
 - **2 軸を分けているのは、開いた傷を残すかどうかです。** 殺す側の裂傷も刺し傷も `open_wound` を名乗るので、
@@ -174,25 +174,25 @@ object_defs:
 props:
   catch_remaining:
     # 生成時に1回ロールされる位相（2.1節）。以後この幅は使われない。
-    value: {min: 1, max: 16}
-    range: {min: 0, max: 16}
+    value: {min: 1, max: 16}  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.value.max -->
+    range: {min: 0, max: 16}  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.range.max -->
     passives:
       - conditions:
           - {in_slot: items}                  # 地面に置かれている間だけ（1節）
           # 空いている間だけ（6節）。獲物も死体もquarryなので、両方をこれ1つで拾う。
           - not: {slot: catch, matches: {tag: quarry}}
-        add: {self: {catch_remaining: -1}}
+        add: {self: {catch_remaining: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.passives.0.add.self.catch_remaining -->
     on_min:
       # 外側は食性の卓を選び（餌が決める、4節）、内側はその卓で掛かるかどうかと種を選ぶ
       # （土地が決める、3節）。
-      add: {self: {catch_remaining: 16}}
+      add: {self: {catch_remaining: 16}}  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.on_min.add.self.catch_remaining -->
       pick:
         # 何も寄って来なかった回。先頭に置く（3節）。
         - weight: {prop: miss_weight}
         - weight: {prop: herbivore_weight}
           pick:
             # 寄ってはきたが掛からなかった回。その食性の相手が居ない土地では必ずここになる。
-            - weight: 8
+            - weight: 8  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.on_min.pick.1.pick.0.weight -->
             # 掛かった候補は、獲物とその罠の怪我を順に生む（5.1節）。
             - weight: {prop: junglefowl_catch}
               spawn:
@@ -204,7 +204,7 @@ props:
                 - {object: snare_laceration, into: child}
         - weight: {prop: carnivore_weight}
           pick:
-            - weight: 8
+            - weight: 8  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.on_min.pick.2.pick.0.weight -->
             # ネズミは雑食なので、両方の卓に同じつまみで載る（4.1節）。
             - weight: {prop: rat_catch}
               spawn:
@@ -228,11 +228,11 @@ props:
 **「いつ結果が出るか分からない」は、タイマーの初期値を毎回振り直すのではなく、当たるまでの回数が
 決まっていないことが作ります。**
 
-抽選は 16 tick（4 時間）ごとに回り、1 回あたりの成功率は 3 節が決めます。仮に 3 割なら、掛かるまでの
+抽選は 16 tick<!-- codex: traps.yaml object_defs.snare.props.catch_remaining.on_min.add.self.catch_remaining --><!-- codex: traps.yaml object_defs.pitfall.props.catch_remaining.on_min.add.self.catch_remaining --><!-- codex: farming.yaml object_defs.pen.props.catch_remaining.on_min.add.self.catch_remaining -->（4 時間）ごとに回り、1 回あたりの成功率は 3 節が決めます。仮に 3 割なら、掛かるまでの
 待ち時間は幾何分布になり——数時間で掛かることも、丸一日空振りが続くこともあります。**乱数を 1 つも
 足さずに、狩猟には無い「待たされる」が出ます。**
 
-そのうえで初期値だけは `{min: 1, max: 16}` の範囲でロールします（`GameElementDefinition.md` 6.2 節）。
+そのうえで初期値だけは `{min: 1, max: 16}`<!-- codex: traps.yaml object_defs.snare.props.catch_remaining.value.max --><!-- codex: traps.yaml object_defs.pitfall.props.catch_remaining.value.max --><!-- codex: farming.yaml object_defs.pen.props.catch_remaining.value.max --> の範囲でロールします（`GameElementDefinition.md` 6.2 節）。
 これは待ち時間の幅ではなく**位相**で、複数の罠が同じ tick に一斉に判定するのを防ぐためだけのものです。
 
 **周期そのものを毎回振り直す形は採りません。** `set`/`add` の値はリテラルだけで
@@ -249,8 +249,8 @@ props:
 # locations.yaml — 草原
 grassland:
   props:
-    rat_catch: {value: 6}
-    junglefowl_catch: {value: 10}
+    rat_catch: {value: 6}  # <!-- codex: locations.yaml object_defs.grassland.props.rat_catch.value -->
+    junglefowl_catch: {value: 10}  # <!-- codex: locations.yaml object_defs.grassland.props.junglefowl_catch.value -->
 ```
 
 ```yaml
@@ -260,9 +260,9 @@ props:
   rat_catch: {value: 0, base: {subject: ancestor}}
   junglefowl_catch: {value: 0, base: {subject: ancestor}}
   miss_weight:
-    value: 40
+    value: 40  # <!-- codex: traps.yaml object_defs.snare.props.miss_weight.value -->
     # 餌のmodifyが押し下げても0にはしない（4節）。上限は素の値。
-    range: {min: 5, max: 40}
+    range: {min: 5, max: 40}  # <!-- codex: traps.yaml object_defs.snare.props.miss_weight.range.max -->
 ```
 
 - **宣言していない土地では、その候補が抽選から外れます。** 寄与が 0 なら重みが 0 になり、`pick` は
@@ -307,14 +307,14 @@ interactions:
   add_plant_bait:
     trigger: {drag: {tag: plant_bait}}
     conditions:
-      - {reason: trap_baited, prop: plant_bait, lt: 24}
+      - {reason: trap_baited, prop: plant_bait, lt: 24}  # <!-- codex: traps.yaml object_defs.snare.interactions.add_plant_bait.conditions.0.lt -->
     transfer:
       {amount: 999, from: instrument, from_prop: plant_bait, to_prop: plant_bait, allow_overflow: true}
     destroy: instrument
   add_meat_bait:
     trigger: {drag: {tag: meat_bait}}
     conditions:
-      - {reason: trap_baited, prop: meat_bait, lt: 24}
+      - {reason: trap_baited, prop: meat_bait, lt: 24}  # <!-- codex: traps.yaml object_defs.snare.interactions.add_meat_bait.conditions.0.lt -->
     transfer:
       {amount: 999, from: instrument, from_prop: meat_bait, to_prop: meat_bait, allow_overflow: true}
     destroy: instrument
@@ -329,7 +329,7 @@ interactions:
 raw_meat:
   tags: [item, food, meat_bait]
   props:
-    meat_bait: {value: 12}
+    meat_bait: {value: 12}  # <!-- codex: animals.yaml object_defs.raw_meat.props.meat_bait.value -->
 ```
 
 `transfer` を使うのは、`add` だと罠の種類 × 餌の種類の数だけ固定値を書くことになるためです。移る量は
@@ -338,30 +338,30 @@ raw_meat:
 ```yaml
 # 罠の側の効かせ方
 props:
-  herbivore_weight: {value: 10, range: {min: 0, max: 35}}
-  carnivore_weight: {value: 10, range: {min: 0, max: 35}}
+  herbivore_weight: {value: 10, range: {min: 0, max: 35}}  # <!-- codex: traps.yaml object_defs.snare.props.herbivore_weight.range.max -->
+  carnivore_weight: {value: 10, range: {min: 0, max: 35}}  # <!-- codex: traps.yaml object_defs.snare.props.carnivore_weight.range.max -->
   plant_bait:
-    value: 0
-    range: {min: 0, max: 24}
+    value: 0  # <!-- codex: traps.yaml object_defs.snare.props.plant_bait.value -->
+    range: {min: 0, max: 24}  # <!-- codex: traps.yaml object_defs.snare.props.plant_bait.range.max -->
     passives:
       - conditions: [{in_slot: items}]
-        add: {self: {plant_bait: -1}}
+        add: {self: {plant_bait: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.plant_bait.passives.0.add.self.plant_bait -->
   meat_bait:
-    value: 0
-    range: {min: 0, max: 24}
+    value: 0  # <!-- codex: traps.yaml object_defs.snare.props.meat_bait.value -->
+    range: {min: 0, max: 24}  # <!-- codex: traps.yaml object_defs.snare.props.meat_bait.range.max -->
     passives:
       - conditions: [{in_slot: items}]
-        add: {self: {meat_bait: -1}}
+        add: {self: {meat_bait: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.meat_bait.passives.0.add.self.meat_bait -->
 passives:
-  - conditions: [{prop: plant_bait, gte: 1}]
-    modify: {self: {herbivore_weight: 25, miss_weight: -25}}
-  - conditions: [{prop: meat_bait, gte: 1}]
-    modify: {self: {carnivore_weight: 25, miss_weight: -25}}
+  - conditions: [{prop: plant_bait, gte: 1}]  # <!-- codex: traps.yaml object_defs.snare.passives.1.conditions.0.gte -->
+    modify: {self: {herbivore_weight: 25, miss_weight: -25}}  # <!-- codex: traps.yaml object_defs.snare.passives.1.modify.self.miss_weight -->
+  - conditions: [{prop: meat_bait, gte: 1}]  # <!-- codex: traps.yaml object_defs.snare.passives.2.conditions.0.gte -->
+    modify: {self: {carnivore_weight: 25, miss_weight: -25}}  # <!-- codex: traps.yaml object_defs.snare.passives.2.modify.self.miss_weight -->
 ```
 
 - **1 つのブロックが 2 つのことを同時に言います。** その食性の卓が引かれやすくなり、何も寄って来ない回
   （`miss_weight`）が減ります。**餌を置くほど当たり、かつ食性が寄る**が、加算式を 1 つも書かずに出ます。
-- **`miss_weight` の `range.min` が 5 で止めるので、餌を積んでも必中にはなりません**
+- **`miss_weight` の `range.min` が 5<!-- codex: traps.yaml object_defs.snare.props.miss_weight.range.min --><!-- codex: traps.yaml object_defs.pitfall.props.miss_weight.range.min --><!-- codex: farming.yaml object_defs.pen.props.miss_weight.range.min --> で止めるので、餌を積んでも必中にはなりません**
   （`GameElementDefinition.md` 8.3 節。合成結果の下限はプロパティ側の `range` が持ちます）。両方の餌を
   仕掛ければ両方の卓が上がりますが、そのぶん食料を 2 種類ぶん賭けることになります。
 - **餌は仕掛けている間だけ減ります**——24 tick（6 時間）で切れます。**罠を放置しても餌は待っていてくれない**ので、
@@ -397,8 +397,8 @@ passives:
 passives:
   - modify:
       child:
-        wariness: -100
-        vulnerability: 200
+        wariness: -100  # <!-- codex: traps.yaml object_defs.snare.passives.0.modify.child.wariness --><!-- codex: traps.yaml object_defs.pitfall.passives.0.modify.child.wariness --><!-- codex: farming.yaml object_defs.pen.passives.0.modify.child.wariness -->
+        vulnerability: 200  # <!-- codex: traps.yaml object_defs.snare.passives.0.modify.child.vulnerability --><!-- codex: traps.yaml object_defs.pitfall.passives.0.modify.child.vulnerability --><!-- codex: farming.yaml object_defs.pen.passives.0.modify.child.vulnerability -->
 ```
 
 これは気を失った動物に対する宣言（`animals.yaml` の `consciousness` の `unconscious` 段）とまったく
@@ -459,55 +459,55 @@ snare_laceration:
   traits: [injury, treatable]
   props:
     severity:
-      value: {min: 240, max: 480}
-      range: {min: 0, max: 480}
-      passives: [{add: {self: {severity: -1}}}]
+      value: {min: 240, max: 480}  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.value.max -->
+      range: {min: 0, max: 480}  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.range.max -->
+      passives: [{add: {self: {severity: -1}}}]  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.passives.0.add.self.severity -->
       on_min: {destroy: self}
     # 掛かり方の深さ。2〜4 tickで固まり、その間に30〜60mLを奪う。
     bleeding:
-      value: {min: 40, max: 100}
-      range: {min: 0, max: 100}
-      passives: [{add: {self: {bleeding: -25}}}]
+      value: {min: 40, max: 100}  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.value.max -->
+      range: {min: 0, max: 100}  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.range.max -->
+      passives: [{add: {self: {bleeding: -25}}}]  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.passives.0.add.self.bleeding -->
   passives:
-    - modify: {parent: {pain: 50}}
+    - modify: {parent: {pain: 50}}  # <!-- codex: injuries.yaml object_defs.snare_laceration.passives.0.modify.parent.pain -->
     - conditions:
-        - {prop: bleeding, gte: 1}
+        - {prop: bleeding, gte: 1}  # <!-- codex: injuries.yaml object_defs.snare_laceration.passives.1.conditions.0.gte -->
         - not: {slot: treatment, matches: {tag: hemostatic}}
-      add: {parent: {blood: -15}}
+      add: {parent: {blood: -15}}  # <!-- codex: injuries.yaml object_defs.snare_laceration.passives.1.add.parent.blood -->
 ```
 
 **掛かった tick に死ぬかどうかは、怪我が奪う量と獲物の体格の比が決めます。** `blood` の `range.max` は体格そのもの
-（サル 5 kg で 400 mL）なので、同じ 1 枚の傷が体格で意味を変えます。
+（サル 5 kg で 400 mL<!-- codex: animals.yaml object_defs.monkey.props.blood.value -->）なので、同じ 1 枚の傷が体格で意味を変えます。
 
 | 獲物 | 血の量 | 奪われる 30〜60 mL は | 血が固まるまでの結果 |
 |---|---|---|---|
-| ネズミ（80 g） | 6 | 全部 | **必ず死ぬ** |
-| ヤケイ（1 kg） | 80 | 4〜8 割 | 血は尽きない（残りは 50 / 35 / 20 mL） |
-| サル（5 kg） | 400 | 1 割前後 | 血は尽きない |
-| イノシシ（60 kg） | 4,600 | 1 % 前後 | 応えない |
+| ネズミ（80 g<!-- codex: animals.yaml object_defs.rat.props.weight.value -->） | 6<!-- codex: animals.yaml object_defs.rat.props.blood.value --> | 全部 | **必ず死ぬ** |
+| ヤケイ（1 kg） | 80<!-- codex: animals.yaml object_defs.junglefowl.props.blood.value --> | 4〜8 割 | 血は尽きない（残りは 50 / 35 / 20 mL） |
+| サル（5 kg） | 400<!-- codex: animals.yaml object_defs.monkey.props.blood.value --> | 1 割前後 | 血は尽きない |
+| イノシシ（60 kg） | 4,600<!-- codex: animals.yaml object_defs.wild_boar.props.blood.value --> | 1 % 前後 | 応えない |
 
 **この表が答えるのは「その場で血が尽きるか」だけです。** 血が止まった後も傷は残り、そこから先は体格を
 見ません（下の「血が止まっても、傷は膿み続けます」）。
 
 - **「ある体格から下は 1 枚で死ぬ」が、レートを分けずに出ます。** その線がどこに引かれるかを誰も
   書いていないのは、怪我の側が奪う量を宣言し、体格の側が持ちこたえる量を宣言しているからです。
-- **同じ罠でも、奪う量は同じになりません。** 掛かりの深さのロール（`bleeding` の `{min: 40, max: 100}`）が
+- **同じ罠でも、奪う量は同じになりません。** 掛かりの深さのロール（`bleeding` の `{min: 40, max: 100}`<!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.value.max -->）が
   罠の運の 2 つ目です（1 つ目は 2.1 節の「いつ掛かるか」）。**ただし今の顔ぶれで、このロールが生死を
   分けることはありません**——分かれ目になるのは血が 30〜60 mL に収まる獣（体格にしておよそ 400〜750 g）
   だけで、ネズミは必ず死に、ヤケイ以上は血が尽きません。**分かれるのはヤケイがどこまで落ちるかです**——
-  最も深く掛かった個体は 60 mL を失って 20 mL しか残らず、`exsanguinated`（32 mL 未満。失血で助からない
+  最も深く掛かった個体は 60 mL を失って 20 mL しか残らず、`exsanguinated`（32 mL<!-- codex: animals.yaml object_defs.junglefowl.props.blood.stages.1.min --> 未満。失血で助からない
   域、`VitalsSystem.md` 3 節）へ入って意識を失います。
 - **見回りが早ければ、落ちる先が変わります。** 出血は 2〜4 tick（30 分〜1 時間）で固まり、その間に
   止血の治療具を当てれば `add` のゲートが閉じます（`InjurySystem.md` 3.1 節）。ヤケイが失うのは止まる
   までの tick 数だけ増えて 30 / 45 / 60 mL で、**30 mL で止まれば意識が残り、45 mL では傷の痛み
-  （`pain: 50` が意識を -20）と合わさって気を失い、60 mL では `exsanguinated` に入ります。**
+  （`pain: 50`<!-- codex: injuries.yaml object_defs.snare_laceration.passives.0.modify.parent.pain --> が意識を -20<!-- codex: animals.yaml traits.beast.props.pain.stages.2.passives.0.modify.self.consciousness -->）と合わさって気を失い、60 mL では `exsanguinated` に入ります。**
   ネズミは掛かった tick のうちに死ぬので間に合いません——**掛かった直後について罠を見に行く速さが
   買えるのは、生死ではなくこの差です。**
 - **杭を打った落とし穴は、槍と同じ刺し傷を刺します**（`puncture_wound`）。落ちて貫かれるのも突かれるのも
   深部の血管を開いたまま残す傷なので、罠のためだけの型は作りません（`InjurySystem.md` 4.2 節
   「武器の性格は、傷の枚数ではなく傷の中身で表す」と同じ形）。**サイズの差は罠の側ではなく、刺す怪我の
   中身が持ちます**——固まるまでに奪う 1,000 mL はくくり罠の傷（30〜60 mL）の 20 倍前後で、穴に落ちる
-  唯一の相手であるイノシシ（4,600 mL、1.1 節）でも 2 割を超えます。
+  唯一の相手であるイノシシ（4,600 mL<!-- codex: animals.yaml object_defs.wild_boar.props.blood.value -->、1.1 節）でも 2 割を超えます。
   ただし**その場では 60 kg は死にません**。杭が変えるのは「深手を負って血を流している」ところまでで、
   回収に戻った時点で仕留めるのは拘束された相手への一撃（5 節）になります。**穴の中で死ぬのを待つことも
   できません**——待てる長さより先に罠が破られ、獲物ごと失います（すぐ下の箇条書き）。1 枚で殺し切る
@@ -518,21 +518,21 @@ snare_laceration:
   入り、そこから宿主の `pathogen` を押し上げて 344 tick で `septicemic`、以後は体格によらず 40 mL/tick で
   血を失います。**体格が変えるのは死ぬかどうかではなく、そこから何 tick 保つかだけです**——ヤケイは
   345 tick、イノシシは 454 tick（4.7 日）で血が尽きます。**くくり罠の傷は、ここでも掛かりの深さで
-  分かれます**——`severity` の初期値が 345 以上の個体（ロールの幅 240〜480 の上半分ほど）だけが敗血症へ届き、
-  それより浅い個体は膿み切る前に傷のほうが消えます。**杭の刺し傷は 720 で固定なので、必ず届きます。**
+  分かれます**——`severity` の初期値が 345 以上の個体（ロールの幅 240<!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.value.min -->〜480<!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.value.max --> の上半分ほど）だけが敗血症へ届き、
+  それより浅い個体は膿み切る前に傷のほうが消えます。**杭の刺し傷は 720<!-- codex: injuries.yaml object_defs.puncture_wound.props.severity.value --> で固定なので、必ず届きます。**
 - **放置した罠でも、傷は最後まで行きます。** 獲物が入っている間、罠は速く傷んで破られ（6.1 節）、
   こぼれた獲物はその土地に立ちます。**立ち去りの時計は深手のあいだ止まる**
   （[`HuntingSystem.md`](./HuntingSystem.md) 5.6 節）ので、こぼれても数え始めません——**罠を失った後も、
   傷が決着するまでその獲物はそこに居ます。** 決着の仕方は上の箇条書きと同じで、掛かりの深さで分かれます。
   - **敗血症へ届く個体は、野ざらしのまま倒れます。** くくり罠で深く掛かった個体（`severity` の初期値が
-    345 以上）と、杭の刺し傷（720 で固定）のすべてです。**死体はその土地に残る**ので、遅れて戻った側が
+    345 以上）と、杭の刺し傷（720<!-- codex: injuries.yaml object_defs.puncture_wound.props.severity.value --> で固定）のすべてです。**死体はその土地に残る**ので、遅れて戻った側が
     拾えるのは獲物ではなく死体で、そこからは腐敗の時計が別に走ります（[`HuntingSystem.md`](./HuntingSystem.md) 1.5 節）。
-  - **届かない個体は、傷が癒えてから 96 tick で立ち去ります。** くくり罠に浅く掛かった個体がこれで、
+  - **届かない個体は、傷が癒えてから 96 tick<!-- codex: animals.yaml traits.beast.props.stay_remaining.value --> で立ち去ります。** くくり罠に浅く掛かった個体がこれで、
     **罠を失った後にもう一度だけ狩り直す猶予**が残ります。
 - **死体は罠の中に残ります。** 枠が `quarry` で受ける（1.1 節）ので、`same_slot` の置き換えがそのまま
   通ります。タイマーのゲートも同じタグを問う（2 節）ので、**死体が入ったままでも次の抽選は回りません**。
 - **最も小さい相手は、掛かった tick のうちに死にます。** 傷は最初の 1 tick で 15 mL 奪うので、
-  6 mL のネズミは生きた姿で 1 度も画面に出ません。
+  6 mL<!-- codex: animals.yaml object_defs.rat.props.blood.value --> のネズミは生きた姿で 1 度も画面に出ません。
 - **掛かっていることは漏れません。** 出血の印（`CardView.md` 9.0 節）が上がるのは怪我を負った本人まで
   で、UI が見るのは直下の子だけです。罠の直下に居るのは動物で、動物自身は `bleeding` を持たないため、
   そこで止まります。
@@ -558,12 +558,12 @@ bruise:
   props:
     severity:
       gauge: {min: good, max: bad}
-      value: {min: 120, max: 240}   # ぶつかり方の激しさを生成時に1回ロールする（GameElementDefinition.md 6.2節）
-      range: {min: 0, max: 240}
-      passives: [{add: {self: {severity: -1}}}]
+      value: {min: 120, max: 240}   # <!-- codex: injuries.yaml object_defs.bruise.props.severity.value.max -->ぶつかり方の激しさを生成時に1回ロールする（GameElementDefinition.md 6.2節）
+      range: {min: 0, max: 240}  # <!-- codex: injuries.yaml object_defs.bruise.props.severity.range.max -->
+      passives: [{add: {self: {severity: -1}}}]  # <!-- codex: injuries.yaml object_defs.bruise.props.severity.passives.0.add.self.severity -->
       on_min: {destroy: self}
   passives:
-    - modify: {parent: {pain: 30}}
+    - modify: {parent: {pain: 30}}  # <!-- codex: injuries.yaml object_defs.bruise.passives.0.modify.parent.pain -->
 ```
 
 **体格で意味が変わりません。** 5.1 節の表は「同じ 1 枚の傷が体格で意味を変える」ことを、傷が奪う
@@ -655,7 +655,7 @@ bruise:
 hydration:
   passives:
     - conditions: [{in_slot: catch}]
-      add: {self: {hydration: -1}}
+      add: {self: {hydration: -1}}  # <!-- codex: animals.yaml traits.beast.props.hydration.passives.0.add.self.hydration -->
   on_min:
     destroy: {subject: self, reason: dehydrated}
 ```
@@ -689,13 +689,13 @@ hydration:
 ```yaml
 props:
   durability:
-    value: 960
-    range: {min: 0, max: 960}
+    value: 960  # <!-- codex: traps.yaml object_defs.snare.props.durability.value -->
+    range: {min: 0, max: 960}  # <!-- codex: traps.yaml object_defs.snare.props.durability.range.max -->
     passives:
       - conditions: [{in_slot: items}]
-        add: {self: {durability: -1}}       # 屋外での劣化（10日）
+        add: {self: {durability: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.durability.passives.0.add.self.durability -->       # 屋外での劣化（10日）
       - conditions: [{slot: catch, matches: {tag: quarry}}]
-        add: {self: {durability: -10}}      # もがかれている間（新品でも1日弱）
+        add: {self: {durability: -10}}  # <!-- codex: traps.yaml object_defs.snare.props.durability.passives.1.add.self.durability -->      # もがかれている間（新品でも1日弱）
     on_min:
       destroy: self
 ```
@@ -728,7 +728,7 @@ props:
 |---|---|---|
 | **危険** | 反撃を受ける。深手は数日残り、手当ての間も殴られる | 無い。掛かった相手は拘束されている（5 節） |
 | **拘束** | tick が動物の手番なので、対峙している間は他のことができない | 仕掛けたら別の土地へ行ける。ただし回収に戻る（6 節） |
-| **時間** | 15 分の一撃を重ねる。決着はその場 | 4 時間ごとに 1 回抽選。掛かるまで何度でも回る（2 節） |
+| **時間** | 15 分<!-- codex: animals.yaml traits.beast.interactions.strike.duration -->の一撃を重ねる。決着はその場 | 4 時間ごとに 1 回抽選。掛かるまで何度でも回る（2 節） |
 | **前払い** | 武器（作る手間と、賭ける耐久） | 罠（サイズと生死で変わる、1.2 節）と餌（**食べられる食料**、4 節） |
 | **獲物** | 大型まで。1 頭で数日分の肉 | 罠の型が並べた候補まで（1.1 節）。小型の罠なら 1 匹の肉は少ない |
 | **運** | 当たり所と、負う怪我の抽選 | **いつ・何が掛かるかの抽選**（2.1 節・3 節） |
@@ -741,9 +741,9 @@ props:
 上位に置き換わりません——**両方が同時に成り立つのは、片方が危険を、もう片方が時間を課しているから**です。
 
 **大型ほど、この差が開きます。** ネズミに選択はありません——載るのはくくり罠の卓だけで（檻は丸太の
-隙間から出ていく大きさを並べない、1.1 節）、掛かれば血 6 mL を失って必ず死にます（5.1 節）。
+隙間から出ていく大きさを並べない、1.1 節）、掛かれば血 6 mL<!-- codex: animals.yaml object_defs.rat.props.blood.value --> を失って必ず死にます（5.1 節）。
 **ヤケイはくくり罠にも檻にも載り、どちらでも生きて手に入りますが、傷の手当てなしに飼えるのは檻の側
-だけです**——くくり罠の 30〜60 mL は 80 mL を空にできない（同節）ので回収の時点ではどちらも生きて
+だけです**——くくり罠の 30〜60 mL は 80 mL<!-- codex: animals.yaml object_defs.junglefowl.props.blood.value --> を空にできない（同節）ので回収の時点ではどちらも生きて
 いますが、くくり罠の傷は開いたままなので、飼うなら傷へ水を注ぎ続けることになります（5.2 節）。
 分かれるのは費用と、**見回りが遅れたときに `exsanguinated` まで落ちるかどうか**と、**連れ帰った先で
 傷を洗う水が上乗せで要るかどうか**です。
@@ -789,7 +789,7 @@ props:
   （[`SurvivalItems.md`](../world/SurvivalItems.md) 3 節）で、獣の落ちる深さを貫くだけの長さが
   要ります。**そのぶん、生かす罠を殺す罠へ変える手だけが刃物と若木を要求します**
 - **杭を打った落とし穴が大型を殺し切るか。** 今刺さるのは槍と同じ刺し傷（5.1 節）で、固まるまでの
-  1,000 mL はイノシシの 4,600 mL を削り切りません。1 枚で殺し切る傷を別に用意するか、深手を負わせて
+  1,000 mL はイノシシの 4,600 mL<!-- codex: animals.yaml object_defs.wild_boar.props.blood.value --> を削り切りません。1 枚で殺し切る傷を別に用意するか、深手を負わせて
   仕留めさせるところまでで足りるかは、**穴に中型が落ちるようになってから**でないと見えません
 - **筌**（魚・`Animals.md` 9 節）。本書の形をそのまま使えますが、水面の土地がまだ無く、掛かる相手が
   土地の別のつまみになります

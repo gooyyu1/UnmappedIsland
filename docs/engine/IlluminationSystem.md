@@ -147,15 +147,15 @@ torch:
 
 ## 4. 暗さには底がある
 
-**`ambient_brightness` は `range` で −6 を下限とします。** これより暗い場所を区別しません。
+**`ambient_brightness` は `range` で −6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min --><!-- codex: core.yaml object_defs.world.props.ambient_brightness.range.min --> を下限とします。** これより暗い場所を区別しません。
 
 底があるのは、**光源が持ち上げる段数を場所によらず一定にするため**です。底が無いと、密林の夜（−15）と
 浅い洞窟の夜（−12）でランプの効き方が変わり、「1本で歩けるようになる」「作業できる明るさには11本要る」
 という段が作れません（`ContentSkeleton.md` 8.1.1節）。
 
-**−6 に現実の根拠はありません**——移動のしきい値（−5）の1段下、というゲーム側の都合です。上限の
-**+17 のほうには根拠があり**、雲のまったく無い空（`scorching`）の正午（+16）に最も明るい地面
-（砂浜 +1）を足した、**太陽光だけで届く最大**です。
+**−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min --><!-- codex: core.yaml object_defs.world.props.ambient_brightness.range.min --> に現実の根拠はありません**——移動のしきい値（−5<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.1.min -->）の1段下、というゲーム側の都合です。上限の
+**+17<!-- codex: core.yaml traits.location.props.ambient_brightness.range.max --><!-- codex: core.yaml object_defs.world.props.ambient_brightness.range.max --> のほうには根拠があり**、雲のまったく無い空（`scorching`）の正午（+16<!-- codex: core.yaml object_defs.world.props.hour.stages.5.passives.0.modify.self.ambient_brightness -->）に最も明るい地面
+（砂浜 +1<!-- codex: locations.yaml object_defs.sandy_beach.props.ambient_brightness.value -->）を足した、**太陽光だけで届く最大**です。
 
 **底は光源より前に効きます。** `range` は同じプロパティの中では `modify` の後に効くので、底を持つ値
 （`ambient_brightness`）と光源が入る値（`hand_brightness`・`looking_brightness`）を分けてあります。`base` が読むのは相手の
@@ -171,9 +171,9 @@ torch:
 
 | 行動のクラス | 見る値 | しきい値 | 段で書くと | 書く場所 |
 | --- | --- | --: | --- | --- |
-| 土地の間を移動する | `looking_brightness` | −5 | `dim` | `path` の `travel`（`ExplorationSystem.md` 3節） |
-| 屋外で採る・探索する | `looking_brightness` | +3 | `bright` | 土地の `explore` と、各採取の操作 |
-| 手元の細かい作業 | `hand_brightness` | +5 | `bright` | 全レシピ共通の `crafting_conditions` と、その作業を宣言している `interactions` |
+| 土地の間を移動する | `looking_brightness` | −5<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.1.min --> | `dim` | `path` の `travel`（`ExplorationSystem.md` 3節） |
+| 屋外で採る・探索する | `looking_brightness` | +3<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.2.min --> | `bright` | 土地の `explore` と、各採取の操作 |
+| 手元の細かい作業 | `hand_brightness` | +5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min --> | `bright` | 全レシピ共通の `crafting_conditions` と、その作業を宣言している `interactions` |
 
 **採る側が作る側より2段低いのは、要る明るさが違うからです。** +5（80 lx）は倉庫や廊下の明るさで、
 縫製の推奨（750〜1,500 lx）には遠く及びません——それでも手元の作業を通すのは、屋内の粗い作業の下限が
@@ -338,8 +338,8 @@ deep_cave:
 比べられていないことは、`tests/world-codex/illuminationStages.test.ts` が見張ります。
 
 **行動の可否を決める明るさは、キャラクタが同じ名前の段で持ちます**（`characters/player_character.yaml`）。境目は
-5節のしきい値そのもので、`pitch_dark` と `dim` の境はどちらも −5、`bright` の境は `hand_brightness` が
-+5、`looking_brightness` が +3 です。
+5節のしきい値そのもので、`pitch_dark` と `dim` の境はどちらも −5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.1.min --><!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.1.min -->、`bright` の境は `hand_brightness` が
++5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min -->、`looking_brightness` が +3<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.2.min --> です。
 
 ```yaml
 character:
@@ -349,26 +349,26 @@ character:
       base: {subject: ancestor, prop: hand_brightness}
       stages:
         - {name: pitch_dark}
-        - {name: dim, min: -5}
-        - {name: bright, min: 5}
+        - {name: dim, min: -5}  # <!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.1.min -->
+        - {name: bright, min: 5}  # <!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min -->
 ```
 
-- **どちらも同じ段の名前を持つのは、同じEVスケールを同じ底（−6）から測っているからです。** 段を共有する
+- **どちらも同じ段の名前を持つのは、同じEVスケールを同じ底（−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min --><!-- codex: core.yaml object_defs.world.props.ambient_brightness.range.min -->）から測っているからです。** 段を共有する
   のではなく、**同じ刻みを別々に持ちます**——片方の境目を動かせば、そのプロパティを見る行動だけが動きます
-  （屋外で見て探す仕事だけを緩めるのは `looking_brightness` の `bright` を1行）。`hand_brightness` は −5 を
+  （屋外で見て探す仕事だけを緩めるのは `looking_brightness` の `bright` を1行）。`hand_brightness` は −5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.1.min --> を
   境目として使いませんが、そこで段を1つ減らすと `dim` が2つの意味を持つことになります。
 - **場所の側には段を置きません。** 行動が見るのはキャラクタ側の明るさ（2節）なので、場所の
   `hand_brightness` を段の名前で読む者が居ません。
 
-**world の `ambient_brightness` も段を持ちます**——`dark`（0未満）・`dim`（0〜+10）・`bright`（+11以上）。
+**world の `ambient_brightness` も段を持ちます**——`dark`（0<!-- codex: core.yaml object_defs.world.props.ambient_brightness.stages.1.min -->未満）・`dim`（0<!-- codex: core.yaml object_defs.world.props.ambient_brightness.stages.1.min -->〜+10）・`bright`（+11<!-- codex: core.yaml object_defs.world.props.ambient_brightness.stages.2.min -->以上）。
 気温への寄与（9節）がこの段に乗っています。**境目は日射の強さで置きます**——気温が要るのは「陽が
 どれだけ照っているか」で、行動のしきい値（5節）ではありません。同じ名前でも、プロパティが違えば
 境目も違います（段の名前はプロパティごとの名前空間、`GameElementDefinition.md` 6.4節）。
 
-- **0（2.5 lx）は、陽が地平線の下にあること。** 月あかりはこれより遥かに暗いので、夜はすべて
+- **0<!-- codex: core.yaml object_defs.world.props.ambient_brightness.stages.1.min -->（2.5 lx）は、陽が地平線の下にあること。** 月あかりはこれより遥かに暗いので、夜はすべて
   `dark` に入ります。**夜の涼しさが天気や月で揺れてはいけない**ので、境目は月の届く範囲より上に
   置きます。
-- **+11（5,000 lx）は曇りの正午**（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.1.3節）で、
+- **+11<!-- codex: core.yaml object_defs.world.props.ambient_brightness.stages.2.min -->（5,000 lx）は曇りの正午**（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.1.3節）で、
   **日射が空気を暖め始める明るさ**です。
 
 段の側を細かくしても、できることは変わりません。
@@ -381,7 +381,7 @@ character:
 | 読み手 | 読む先 | 読み方 |
 | --- | --- | --- |
 | 気温への寄与（`core.yaml`） | world | `ambient_brightness` の段（8節）の `dark` と `bright` が `ambient_temperature` を `modify` する |
-| 空の色（`src/game/looks/skyTint.ts`） | world | 曇りの正午（+11）を翳りも輝きも無い基準に、底（−6）から上限（+17）までを1本の値で読む |
+| 空の色（`src/game/looks/skyTint.ts`） | world | 曇りの正午（+11<!-- codex: core.yaml object_defs.world.props.ambient_brightness.stages.2.min -->）を翳りも輝きも無い基準に、底（−6<!-- codex: core.yaml object_defs.world.props.ambient_brightness.range.min -->）から上限（+17<!-- codex: core.yaml object_defs.world.props.ambient_brightness.range.max -->）までを1本の値で読む |
 | 水の蒸発（`liquid_containers.yaml`、[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 6節） | **土地** | `gte` のしきい値 |
 
 **気温と空の色は world の側を見ます。** 土地の `ambient_brightness` には樹冠と地面の反射が入っているので、
@@ -396,7 +396,7 @@ character:
 18時が動かず、太陽は1時間に15°動くので、6時から18時までを正午をはさんで対称な段に刻み、その外側を
 夜の段にしています。値の出どころは [`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.1.3節の照度の表です。
 
-**夜の寄与は底（−6）そのものです。** 月あかりは半月固定（同 8.1.1.3節）で、中天でも 0.025 lx＝
+**夜の寄与は底（−6<!-- codex: core.yaml object_defs.world.props.ambient_brightness.range.min --><!-- codex: core.yaml object_defs.world.props.hour.stages.0.passives.0.modify.self.ambient_brightness --><!-- codex: core.yaml object_defs.world.props.hour.stages.10.passives.0.modify.self.ambient_brightness -->）そのものです。** 月あかりは半月固定（同 8.1.1.3節）で、中天でも 0.025 lx＝
 −6.6 と底（0.039 lx）を下回るため、**月の高度で刻んでも結果が変わりません**。天気の寄与は引く向きに
 しか働かないので、これで**夜は天気によらず同じ暗さ**になります。
 

@@ -126,7 +126,7 @@ object_defs:
 ```
 
 自重 8kg のそりで `load_rate` を 0.1（9 割減）にすると、逆転点は 0 まで下がります——荷が空のときに
-編み籠（800g）と並び、少しでも積めばそりが勝つので、籠を持つ理由が無くなります。同じ自重で逆転点を
+編み籠（800g<!-- codex: containers.yaml object_defs.woven_basket.props.weight.value -->）と並び、少しでも積めばそりが勝つので、籠を持つ理由が無くなります。同じ自重で逆転点を
 8kg に置きたいなら `load_rate` は 0.55 です。**逆転させたい積載量を先に決めて率を逆算する**のが、
 数値の決め方として素直です。実際に置いた線は [`../world/Containers.md`](../world/Containers.md) 2節に
 あります。
@@ -135,8 +135,8 @@ object_defs:
 
 | 対象 | weight.value | 子から | weight実効値 | load_rate | load |
 |---|---|---|---|---|---|
-| 石 | 1000（1kg） | 0 | **1000** | — | — |
-| そり | 8000（8kg） | 1000 | **9000** | 0.55（handにいる） | — |
+| 石 | 1000<!-- codex: locations.yaml object_defs.stone.props.weight.value -->（1kg） | 0 | **1000** | — | — |
+| そり | 8000<!-- codex: containers.yaml object_defs.sledge.props.weight.value -->（8kg） | 1000 | **9000** | 0.55（handにいる） | — |
 | キャラクター | 65000<!-- codex: characters/player_character.yaml traits.player_character.props.weight.value -->（自重65kg） | 9000 | **74000** | — | 9000 × 0.55 = **4950** |
 
 キャラクターの `weight` は自重込みの 74000 で正直なままです。負荷の `load` は荷だけの 4950 なので、段階の
@@ -269,8 +269,8 @@ conditions:
 
 | | 見積もり方 | 例 |
 |---|---|---|
-| **1L を超える物** | **実際の占有体積**（楕円体・円柱として計算） | 熟したヤシの実 25×17×17cm の楕円体 = 3,800 |
-| **1L 以下の物** | **外接直方体**（寸法を掛けるだけ） | 石 12×9×7cm = 700 |
+| **1L を超える物** | **実際の占有体積**（楕円体・円柱として計算） | 熟したヤシの実 25×17×17cm の楕円体 = 3,800<!-- codex: coconut.yaml object_defs.coconut.props.volume.value --> |
+| **1L 以下の物** | **外接直方体**（寸法を掛けるだけ） | 石 12×9×7cm = 700<!-- codex: locations.yaml object_defs.stone.props.volume.value --> |
 | **ばらけた材料・ばねのある物** | **嵩そのまま**（詰めても縮まないため） | ヤシの実の皮 600g<!-- codex: coconut.yaml object_defs.coconut_husk.props.weight.value --> ÷ 嵩密度 0.15 = 4,000<!-- codex: coconut.yaml object_defs.coconut_husk.props.volume.value --> |
 
 **大きい物に隙間ぶんの割り増しを乗せないのは、その隙間を小さい物が埋められるからです。** 籠にヤシの実を
@@ -295,8 +295,8 @@ conditions:
 - **重い物とかさばる物で、先に効く上限が違います。** 石を担げば `load` が先に尽き、ヤシの葉のような
   嵩のある物は `capacity` が先に尽きます。**種類を少しずつ持ち歩けば、枠数（`cell_count`）が先に尽きます**
   ——入れ物は「重さ・かさ・種類」の理由で満杯になり、どれが先に来るかは荷の中身が決めます。
-  何種類入るかは [`../world/Containers.md`](../world/Containers.md) 1節が決めます（編み籠は10枠）。
-- **重ねられる物は、1個ぶんの外寸より小さく見ます。** ヤシの殻の器（200）は半球の外寸（450）より小さい
+  何種類入るかは [`../world/Containers.md`](../world/Containers.md) 1節が決めます（編み籠は10<!-- codex: containers.yaml object_defs.woven_basket.slots.contents.cell_count -->枠）。
+- **重ねられる物は、1個ぶんの外寸より小さく見ます。** ヤシの殻の器（200<!-- codex: liquid_containers.yaml object_defs.coconut_bowl.props.volume.value -->）は半球の外寸（450）より小さい
   値です。重ねて入る物のかさは「1個目の外寸」ではなく「1個増やすたびに増える分」なので、そちらを採ります。
 
 **入れ物の `capacity` は内容積そのまま**です（編み籠は 20L）。

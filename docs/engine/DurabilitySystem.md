@@ -18,7 +18,7 @@
 ## 1. スケールの規約
 
 `durability` の最大値は、素材・アイテムの種類によらず **960** に統一します。基準レートを「短命な素材が
-すり減る速さ」（-1/tick）に置いた値で、960 tick（10 日）にあたります
+すり減る速さ」（-1/tick<!-- codex: weathering.yaml traits.short_lived_material.passives.0.add.self.durability -->）に置いた値で、960 tick（10 日）にあたります
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 6.0 節の時間を数えるクラス）。
 
 この規約のもとでは、次の式で「寿命 L 日」を実現する tick あたりの減少量が決まります。
@@ -33,7 +33,7 @@ tick あたりの減少量 = 10 ÷ L（寿命の日数）
 **素材の trait（2 節）を名乗らない物も、この規約の内側です。** 食べ物（`foods.yaml`）も罠
 （`traps.yaml`）も 960 から始まり、違うのは減らす軸と速さだけです——落とし穴が空のまま
 30 日<!-- stats: durations.yaml durations object=pitfall property=durability days -->もつのは
-上限を積んだからではなく、`-0.3333`（上の式へその日数を入れて丸めた値）で減るからです。**長持ちを上限で作ると、同じレートが
+上限を積んだからではなく、`-0.3333`<!-- codex: traps.yaml object_defs.pitfall.props.durability.passives.0.add.self.durability -->（上の式へその日数を入れて丸めた値）で減るからです。**長持ちを上限で作ると、同じレートが
 物ごとに違う日数を意味することになり、上の式が読めなくなります。**
 
 **同梱の定義がこの上限を破ると [`tests/world-codex/durabilitySystem.test.ts`](../../tests/world-codex/durabilitySystem.test.ts)
@@ -46,8 +46,8 @@ tick あたりの減少量 = 10 ÷ L（寿命の日数）
 | 分類 | 素材 | 晴れ | 雨 |
 |---|---|---|---|
 | 傷まない素材 | 石材・金属 | — | — |
-| 長持ちする素材 | 木材・なめし革・獣骨・綯った紐 | 100日(-0.1) | 20日(-0.5) |
-| 短命な素材 | 葉・草・植物繊維・生皮 | 10日(-1) | 5日(-2) |
+| 長持ちする素材 | 木材・なめし革・獣骨・綯った紐 | 100日(-0.1)<!-- codex: weathering.yaml traits.long_lived_material.passives.0.add.self.durability --> | 20日(-0.5) |
+| 短命な素材 | 葉・草・植物繊維・生皮 | 10日(-1)<!-- codex: weathering.yaml traits.short_lived_material.passives.0.add.self.durability --> | 5日(-2) |
 
 **石材・金属は時間では1も減りません。** 石は雨で痩せるのではなく、打ち合わせて欠けます——減らすのは
 使った側（`animals.yaml` の `instrument`）だけで、置いておくだけの日数には現れません。**それでも
@@ -93,14 +93,14 @@ tick あたりの減少量 = 10 ÷ L（寿命の日数）
 です。（**時間で朽ちる側は別です**——経過中に参加者が世界から消えれば、その操作は成立しなかったものと
 して打ち切られます。`src/domain/actionTime.ts`）
 
-**線はその工程が食う量と同じところへ引きます。** 流木の玉切りは1回30を食うので `gte: 30`
+**線はその工程が食う量と同じところへ引きます。** 流木の玉切りは1回30を食うので `gte: 30`<!-- codex: timber.yaml object_defs.driftwood_trunk.interactions.buck.conditions.1.gte --><!-- codex: timber.yaml object_defs.driftwood_trunk.interactions.buck_last.conditions.1.gte -->
 （`timber.yaml`）。**どの手に引けるか**は下のとおりです。
 
 **刃を食うのは、物を返す手だけです。** 進みや腕しか返さない手——1つの仕事が何回かの手に分かれた
 とき（1回の行動は1時間を超えられない、[`ActionSystem.md`](./ActionSystem.md) 6.3節）の、途中の手
 ——は刃を食わず、**そこへ引く線は仕事1つぶん**になります。立ち木は受け口を刻む間は刃を食わず、断ち切る
-1回が120をまとめて食う——刻む手にも120の線が在るので、倒し切れない斧では刻み始められません。流木の
-玉切りは1回ごとに丸太が1本返るので、手ごとに30を食い、線も30です。
+1回が120をまとめて食う——刻む手にも120<!-- codex: timber.yaml object_defs.broadleaf_tree.interactions.chop.conditions.1.any.1.gte -->の線が在るので、倒し切れない斧では刻み始められません。流木の
+玉切りは1回ごとに丸太が1本返るので、手ごとに30を食い、線も30<!-- codex: timber.yaml object_defs.driftwood_trunk.interactions.buck.conditions.1.gte --><!-- codex: timber.yaml object_defs.driftwood_trunk.interactions.buck_last.conditions.1.gte -->です。
 
 **線を問えるのは、断っても何も取り残さない手だけです。** 余力は待つ間にも減る（2 節）ので、線が言える
 のは「今この手を始められるか」までで、**後の手が成り立つことは約束できません。** 何も返さない手を挟んだ
@@ -150,23 +150,23 @@ tick あたりの減少量 = 10 ÷ L（寿命の日数）
 
 ## 3. 食料の腐敗速度（保存温度・屋外放置）
 
-食料の屋外劣化速度は、すべて「短命な素材（葉っぱなど）」と同じ（晴れ-1/tick）を前提とします。「屋外（晴れ）+
+食料の屋外劣化速度は、すべて「短命な素材（葉っぱなど）」と同じ（晴れ-1/tick<!-- codex: foods.yaml traits.perishable.passives.0.add.self.durability -->）を前提とします。「屋外（晴れ）+
 通常温度」の列は、腐敗（保存温度由来）と屋外劣化の両方の `add` が同時に対象となり加算的に重なった場合
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 8.4 節）の複合寿命です。屋内保管（通常温度・保冷）よりも必ず短くなり、「屋外に置きっぱなしにすると腐敗が早まる」
 という直感と整合します。セルの形式は2節と同じです。
 
 | 分類 | 通常温度 | 保冷 | 屋外（晴れ）+通常温度 |
 |---|---|---|---|
-| 調理済み料理・生魚など | 2.5日(-4) | 5日(-2) | 2日(-5) |
-| 野菜など | 5日(-2) | 10日(-1) | 3.3日(-3) |
-| 芋など | 20日(-0.5) | 40日(-0.25) | 6.7日(-1.5) |
+| 調理済み料理・生魚など | 2.5日(-4)<!-- codex: foods.yaml traits.spoils_fast.passives.0.add.self.durability --> | 5日(-2) | 2日(-5) |
+| 野菜など | 5日(-2)<!-- codex: foods.yaml traits.spoils_normal.passives.0.add.self.durability --> | 10日(-1) | 3.3日(-3) |
+| 芋など | 20日(-0.5)<!-- codex: foods.yaml traits.spoils_slow.passives.0.add.self.durability --> | 40日(-0.25) | 6.7日(-1.5) |
 
 入っているのは「通常温度」と「屋外（晴れ）」の2列だけです。**保冷の列は投入していません**——涼しい
 置き場（穴・洞窟の奥）がまだ無く、置き場の側から作ることになるためです。
 
 レートは `src/assets/world-codex/foods.yaml` の trait が持ちます。分類の違いは通常温度で減る速さ
 1つだけなので、そこだけを `spoils_fast`/`spoils_normal`/`spoils_slow` に分け、`durability`
-本体と屋外の上乗せ（分類によらず -1）は `perishable` が持ちます。食べ物は両方を名乗ります
+本体と屋外の上乗せ（分類によらず -1<!-- codex: foods.yaml traits.perishable.passives.0.add.self.durability -->）は `perishable` が持ちます。食べ物は両方を名乗ります
 （`traits: [perishable, spoils_fast]`）。屋外かどうかを見るのは `sheltered`（0/1）1つで、蓋つきの
 入れ物・浅い洞窟に入れれば上乗せだけが止まります（[`ContainerSystem.md`](./ContainerSystem.md) 6 節）。
 

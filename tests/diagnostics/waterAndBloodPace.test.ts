@@ -25,8 +25,12 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 const ROOT = join(__dirname, '..', '..');
 
+/** 文書の、読み手に見える文面。出どころの印は描画されないので、剥がしてから読む。 */
 function docText(...segments: string[]): string {
-  return readFileSync(join(ROOT, 'docs', ...segments), 'utf-8');
+  return readFileSync(join(ROOT, 'docs', ...segments), 'utf-8').replace(
+    /<!--\s*(?:stats|codex):[^>]*-->/g,
+    '',
+  );
 }
 
 /** 文書の、その正規表現が捕らえた数。捕まらなければ落とす（書き換えで数が消えたことも壊れた状態）。 */

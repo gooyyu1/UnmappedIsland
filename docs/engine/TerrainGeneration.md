@@ -208,7 +208,7 @@ generation_scopes:
 
 - **島の直径は 6.7 km**（面積およそ 35 km²）。山がひとつある島として自然な大きさで、ロビンソン・
   クルーソー島（約 48 km²）よりやや小さい大きさです。
-- **島の最高点は海抜 400 m。** 同じ縮尺で自然な高さです（青ヶ島は 8.7 km² で 423 m、ボラボラ島は
+- **島の最高点は海抜 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters -->。** 同じ縮尺で自然な高さです（青ヶ島は 8.7 km² で 423 m、ボラボラ島は
   30 km² で 727 m）。
 - **道の無い熱帯の地面を歩く速さは 4 km/h。**
 
@@ -287,13 +287,13 @@ generation_scopes:
   **最低 1 tick**——どんなに近い土地の間でも 1 刻みはかかります。）
 
   - `move_cost` は**その土地を進む遅さの倍率**です（1.0 が開けた土地＝ `walk_meters_per_hour`
-    そのままの速さ、密林 1.6、山頂 2.5）。
-  - `metersPerElevationUnit` は `elevation_top_meters ÷ 標高軸の値域` で、島では 400 m ÷ 100 = 4 m です。
+    そのままの速さ、密林 1.6<!-- codex: terrain_generation.yaml location_types.jungle.move_cost -->、山頂 2.5<!-- codex: terrain_generation.yaml location_types.mountain_peak.move_cost -->）。
+  - `metersPerElevationUnit` は `elevation_top_meters ÷ 標高軸の値域` で、島では 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters --> ÷ 100 = 4 m です。
     どの軸を標高として読むかは `elevation_axis` が指します（エンジンは軸の名前を知りません）。
     **軸の両端が実際に出る**（3.1 節の `stretch_sites_to_range`）ので、島の最低点は必ず海抜 0 m、
-    最高点は必ず 400 m になります。
+    最高点は必ず 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters --> になります。
   - 登り下りは**対称**です。道は両端に2つあるので向きは表せますが、行きと帰りで時間が変わると往復の
-    勘定が全部2倍に複雑になります。`climb_meters_per_hour` は 600 m/h（ネイスミスの法則）で、
+    勘定が全部2倍に複雑になります。`climb_meters_per_hour` は 600 m/h<!-- codex: terrain_generation.yaml generation_scopes.island.climb_meters_per_hour -->（ネイスミスの法則）で、
     海岸の土地から山頂まで最短経路で登ると、水平距離とは別に登るぶんの時間がかかります。
   - 道1本あたりの距離・登り・所要時間の実測の分布は
     [`stats/terrain.yaml`](../../stats/terrain.yaml) の `edge`。
@@ -309,7 +309,7 @@ generation_scopes:
 
 上の `extra_edge_detour_factor` をどの値にするかを決めたもので、覆すのに人間の判断は要りません。
 
-**2 とします。決めているのは下の線で、上の線は今のところ遠くにあります**（どちらも500シードの実測）。
+**2<!-- codex: terrain_generation.yaml generation_scopes.island.extra_edge_detour_factor --> とします。決めているのは下の線で、上の線は今のところ遠くにあります**（どちらも500シードの実測）。
 
 - **下から**: 1.5 では行き止まりを持つ島が半分を切り、1.2 ではほぼ消えます。行き止まりが無い島は
   どこへでも回り道があるので、**島ごとの形の差が移動の勘定に現れません**（[`DesignPrinciples.md`](../concept/DesignPrinciples.md)
@@ -433,7 +433,7 @@ sandy_beach:
 - **`blob_scatter`・`modifiers` プリミティブ**: 局所的に濃い領域（汚染地帯等）を作る散布や、軸同士の合成演算
   は、必要になった時点で `Domain.Generation.AxisSampler`/`GeneratorLayerType` へ追加する。
 - **Axis の計算コスト**: 軸の数・`Site` 数が増えた際のサンプリングコスト、キャッシュ戦略（現状は
-  `Site` 数が高々20のため未検討）。
+  `Site` 数が高々20<!-- codex: terrain_generation.yaml generation_scopes.island.site_count.max -->のため未検討）。
 - **`generation_scopes.island` 以外の生成スコープのパラメータ**: `island` の値は測って決まりました
   （`extra_edge_detour_factor` は 3.5.2 節）が、`structure_interior`（3.7 節）のような他のスコープの
   値は、そのスコープが動くまで決まりません。
