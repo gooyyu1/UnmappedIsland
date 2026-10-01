@@ -73,18 +73,12 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 ませんが、衣類へ足して重なるので、合わせた刻みを細かくする側に立ちます。海抜ぶんの差が重なると、
 その 2 つが 1℃ ずつに割れます。
 
-| 涼しい季節の空 | 差 ±0 | 差 −1 | 差 −2 | 差 −3 |
-| --- | --: | --: | --: | --: |
-| 晴れた日中 | 18℃ | 17℃ | 16℃ | 15℃ |
-| 薄明・雨天の昼 | 15℃ | 14℃ | 13℃ | 12℃ |
-| 夜 | 12℃ | 11℃ | 10℃ | 9℃ |
+**どの一着にも、そこでちょうど釣り合う土地があります**——涼しい季節の薄明に土地の差を足した気温が、素の入口から 1℃ ずつ下がった
+衣類の段とそのまま並びます（`tests/world-codex/landTemperature.test.ts`）。
 
-**どの一着にも、そこでちょうど釣り合う土地があります**——薄明の行が、素の入口から 1℃ ずつ下がった
-衣類の段とそのまま並びます。
-
-**素のままで越せるかは、山頂だけが変わります。** 戻る速さは削られる速さの 4 倍（`+8`<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.passives.2.add.self.warmth -->/tick と
+**素のままで越せるかは、山頂だけが変わります。** 戻る速さは削られる速さより速い（`+8`<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.passives.2.add.self.warmth -->/tick と
 `-2`<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.passives.0.add.self.warmth -->/tick、[`VitalsSystem.md`](./VitalsSystem.md) 8.4 節）なので、晴れた日中に入口を上回りさえすれば、
-夜に削られたぶんはその日のうちに戻ります。上の表で日中が入口を下回るのは山頂だけで、そこも
+夜に削られたぶんはその日のうちに戻ります。晴れた日中に土地の差を足しても入口を下回るのは山頂だけで（`landTemperature.test.ts`）、そこも
 **いちばん安い一着**があれば戻ります（山腹はちょうど入口と釣り合うので、素のままで足ります）。
 **登るほど深い一着が要る**という形で、衣類の段が島の高さに対応します。
 
@@ -145,11 +139,11 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
   自己減算（後述）との**大小関係**（正味でどちらへ動くか）が作る。
 - `thermal_level`（蓄熱量。同じく `world` の蓄積型プロパティ、range 0<!-- codex: core.yaml object_defs.world.props.thermal_level.range.min -->〜1,920<!-- codex: core.yaml object_defs.world.props.thermal_level.range.max -->）: `season` の各 stage が
   毎 tick 加算する（dry: +1<!-- codex: core.yaml object_defs.world.props.season.stages.2.passives.1.add.self.thermal_level --> / calm・wet: -1<!-- codex: core.yaml object_defs.world.props.season.stages.0.passives.1.add.self.thermal_level --><!-- codex: core.yaml object_defs.world.props.season.stages.1.passives.1.add.self.thermal_level -->）。気温そのもの（`ambient_temperature`）へ季節レートを直接
-  加算すると、±1/tick でも 1 季節（2,880 tick）で ±2,880 になってしまうため、
+  加算すると、±1/tick でも 1 季節のうちに季節の tick 数ぶん動いてしまうため、
   `atmospheric_moisture` と同じ「貯水池の `stages` が表向きの値を `modify` する」パターンを
   使う: `thermal_level` の `stages`（`cool`: 〜959 / `mild`: 960<!-- codex: core.yaml object_defs.world.props.thermal_level.stages.1.min -->〜1,919 / `hot`: 1,920<!-- codex: core.yaml object_defs.world.props.thermal_level.stages.2.min -->〜）が
-  `ambient_temperature` を -5<!-- codex: core.yaml object_defs.world.props.thermal_level.stages.0.passives.0.modify.self.ambient_temperature --> / ±0 / +8<!-- codex: core.yaml object_defs.world.props.thermal_level.stages.2.passives.0.modify.self.ambient_temperature --> する。dry は 20 日かけて 0→上限 1,920<!-- codex: core.yaml object_defs.world.props.thermal_level.range.max --> と登り「乾季後半ほど暑い」を、
-  calm は 20 日かけて 0 へ下り「乾季の暑さからじわじわ涼しくなる」を表現する。
+  `ambient_temperature` を -5<!-- codex: core.yaml object_defs.world.props.thermal_level.stages.0.passives.0.modify.self.ambient_temperature --> / ±0 / +8<!-- codex: core.yaml object_defs.world.props.thermal_level.stages.2.passives.0.modify.self.ambient_temperature --> する。dry は季節をかけて 0→上限 1,920<!-- codex: core.yaml object_defs.world.props.thermal_level.range.max --> と登り「乾季後半ほど暑い」を、
+  calm も季節をかけて 0 へ下り「乾季の暑さからじわじわ涼しくなる」を表現する。
   `hot` stage は灼熱（`scorching`）の抽選重み `scorching_weight` も駆動する（4.3 節）。
   **上限は `hot` 閾値 1,920<!-- codex: core.yaml object_defs.world.props.thermal_level.stages.2.min --><!-- codex: core.yaml object_defs.world.props.thermal_level.range.max --> と同値**とし、残暑（calm へ持ち越される灼熱）は無い: calm に入った最初の
   tick で蓄熱が 1,919 へ下がって `mild` になるため、灼熱と気温 +8<!-- codex: core.yaml object_defs.world.props.thermal_level.stages.2.passives.0.modify.self.ambient_temperature --> は乾季の終了と同時に消える（stage の
@@ -165,7 +159,7 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 - 雨季の「後半ほど嵐・大雨」は、この大気水分量とは別の季節内進行度 `monsoon_level`（4.3 節）が保証する。
 - 上限・下限は既存ルール通り、プロパティ側の `range` でクランプする。
 
-`layered_noise`（時間軸のノイズ）によるレート変動は実装していません。天気の遷移自体が 4〜6 時間ごとの
+`layered_noise`（時間軸のノイズ）によるレート変動は実装していません。天気の遷移自体が数時間ごとの
 `pick`（4 節）という確率過程であるため、雨がいつ降るかは十分にばらつくことを統計テストで確認済みです
 （将来オプションは 3.3 節、その採否は 3.4 節）。
 
@@ -208,15 +202,13 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 - **下降側**: 降雨中の自己減算（3 節）が、一度 `light_rain` が選ばれてから大気水分量をどこまで押し戻すか。
   ここが深いほど、次の上昇側にかかる日数（＝連続未降雨時間）は長くなります。
 
-実装値では、`calm` 中の `light_rain` の正味レートは -1/tick（自己減算 -1.1<!-- codex: core.yaml object_defs.world.props.weather.stages.2.passives.1.add.self.atmospheric_moisture --> ＋季節レート +0.1<!-- codex: core.yaml object_defs.world.props.season.stages.0.passives.1.add.self.atmospheric_moisture -->）で、
-`weather_remaining` 1 回分（16<!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.0.set.self.weather_remaining -->〜24<!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.2.set.self.weather_remaining --> tick、4.2 節）の放電は 16〜24 に達します。この放電を
-+0.1<!-- codex: core.yaml object_defs.world.props.season.stages.0.passives.1.add.self.atmospheric_moisture -->/tick で登り返すのに 160〜240 tick（1.7〜2.5 日）かかるため、**連続未降雨時間は平均およそ 2 日**に
-なります。`moderate` 帯の `light_rain_weight` は 20<!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.1.passives.0.modify.self.light_rain_weight -->（晴れ系 65 に対し約 24%）に抑えており、閾値に触れてから
+実装値では、`calm` 中の `light_rain` の正味レートは自己減算 -1.1<!-- codex: core.yaml object_defs.world.props.weather.stages.2.passives.1.add.self.atmospheric_moisture --> と季節レート +0.1<!-- codex: core.yaml object_defs.world.props.season.stages.0.passives.1.add.self.atmospheric_moisture --> の和で、
+`weather_remaining` 1 回分（16<!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.0.set.self.weather_remaining -->〜24<!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.2.set.self.weather_remaining --> tick、4.2 節）の雨がそのぶん水分を押し戻します。押し戻した分を
++0.1<!-- codex: core.yaml object_defs.world.props.season.stages.0.passives.1.add.self.atmospheric_moisture -->/tick で登り返すのが連続未降雨時間の大半で、**実測の平均は 2.17 日<!-- stats: climate.yaml non_rain_streak season=calm segment=overall mean -->**
+（[`stats/climate.yaml`](../../stats/climate.yaml) の `non_rain_streak` の `season: calm`・`segment: overall`）です。`moderate` 帯の `light_rain_weight` は 20<!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.1.passives.0.modify.self.light_rain_weight -->に抑えており、閾値に触れてから
 実際に雨が選ばれるまでの待ち時間も間隔に上乗せされます。閾値のすぐ上では `heavy_rain`/`storm` の
 重みが 0（`moderate` 段階、4.3 節）のため雨はほぼ `light_rain` で、水分が稀に `humid`（60<!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.stages.2.min -->）まで
 登り切った場合にのみ大雨が起こりえます（実測でも `calm` の大雨は tick のごく一部で、許容する揺らぎです）。
-実測（[`stats/climate.yaml`](../../stats/climate.yaml) の `non_rain_streak` の `season: calm`・
-`segment: overall`）でも、連続未降雨時間の平均はこの 1.7〜2.5 日の帯に収まります。
 
 自己減算を弱めると「押し戻す」度合いが浅くなり、連続未降雨時間は**短くなります**（両者は独立ではなく
 直結しています）。逆に連続降雨時間を伸ばす方向には自己減算はあまり効きません: `moderate` 帯では雨が
@@ -282,7 +274,7 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 **3 節のレート・貯水池の閾値・4.3 節の重みは、いま宣言されている値のままにします。**
 
 狙いとして書いてあることに、実測が届いているためです。`calm` の連続未降雨時間は「長くしすぎない」
-（3.2 節）が狙いで、3.2 節がレートから見積もった 1.7〜2.5 日の帯に対し、実測の平均は
+（3.2 節）が狙いで、実測の平均は
 2.17 日<!-- stats: climate.yaml non_rain_streak season=calm segment=overall mean -->。季節ごとの天気の
 対比も、`weather_hours` を季節で並べれば雨の時間が段違いに出ています。
 
@@ -328,7 +320,7 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 
 ```yaml
 weather_remaining:
-  # 初期値5時間: day1の最初の遷移までの猶予
+  # 初期値: day1の最初の遷移までの猶予
   value: 20  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.value -->
   range:  # 0に達した瞬間にon_minが発火する
     min: 0  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.range.min -->
@@ -413,13 +405,13 @@ atmospheric_moisture:
 
 **`scorching_weight` だけは大気水分量ではなく、もう一つの貯水池である蓄熱量（`thermal_level`、3 節）の
 `hot` stage（1,920<!-- codex: core.yaml object_defs.world.props.thermal_level.stages.2.min --> 以上）が `modify` で駆動します**（`ambient_temperature: +8`<!-- codex: core.yaml object_defs.world.props.thermal_level.stages.2.passives.0.modify.self.ambient_temperature --> と同じブロックで
-`scorching_weight: 50`<!-- codex: core.yaml object_defs.world.props.thermal_level.stages.2.passives.0.modify.self.scorching_weight --> を立てる）。蓄熱量が `hot` に達するのは乾季開始から 20 日後（30 日固定の初回
-サイクルなら絶対 81 日目）以降であり、灼熱は**乾季後半の天気**になります。
+`scorching_weight: 50`<!-- codex: core.yaml object_defs.world.props.thermal_level.stages.2.passives.0.modify.self.scorching_weight --> を立てる）。蓄熱量が `hot` に達するのは乾季の後半に入ってからで、灼熱は**乾季後半の天気**になります
+（`tests/world-codex/climateSystem.test.ts` の「scorching(灼熱)は乾季後半にだけ発生し、雨季には決して発生しない」）。
 
 **「雨季後半ほど嵐・大雨が増える」は、`thermal_level` と対称の季節内進行度 `monsoon_level`（雨季の
-深まり）が保証します。** `monsoon_level` は `wet` で +1<!-- codex: core.yaml object_defs.world.props.season.stages.1.passives.1.add.self.monsoon_level -->/tick（20 日で 0→上限 1,920<!-- codex: core.yaml object_defs.world.props.monsoon_level.range.max -->）、`calm`/`dry` で
+深まり）が保証します。** `monsoon_level` は `wet` で +1<!-- codex: core.yaml object_defs.world.props.season.stages.1.passives.1.add.self.monsoon_level -->/tick（季節をかけて 0→上限 1,920<!-- codex: core.yaml object_defs.world.props.monsoon_level.range.max -->）、`calm`/`dry` で
 -1<!-- codex: core.yaml object_defs.world.props.season.stages.0.passives.1.add.self.monsoon_level --><!-- codex: core.yaml object_defs.world.props.season.stages.2.passives.1.add.self.monsoon_level -->/tick と減衰する、range 0<!-- codex: core.yaml object_defs.world.props.monsoon_level.range.min -->〜1,920<!-- codex: core.yaml object_defs.world.props.monsoon_level.range.max --> の蓄積型プロパティで、`stages` が重みへ上乗せします:
-`deepening`（960<!-- codex: core.yaml object_defs.world.props.monsoon_level.stages.1.min --> 以上 = 雨季 10 日目〜）が `heavy_rain_weight` +15<!-- codex: core.yaml object_defs.world.props.monsoon_level.stages.1.passives.0.modify.self.heavy_rain_weight --> を、`peak`（1,920<!-- codex: core.yaml object_defs.world.props.monsoon_level.stages.2.min --> = 雨季 20 日目〜）が
+`deepening`（960<!-- codex: core.yaml object_defs.world.props.monsoon_level.stages.1.min --> 以上）が `heavy_rain_weight` +15<!-- codex: core.yaml object_defs.world.props.monsoon_level.stages.1.passives.0.modify.self.heavy_rain_weight --> を、`peak`（1,920<!-- codex: core.yaml object_defs.world.props.monsoon_level.stages.2.min -->）が
 `heavy_rain_weight` +30<!-- codex: core.yaml object_defs.world.props.monsoon_level.stages.2.passives.0.modify.self.heavy_rain_weight --> と `storm_weight` +40<!-- codex: core.yaml object_defs.world.props.monsoon_level.stages.2.passives.0.modify.self.storm_weight --> を立てます（大気水分量は雨自身の自己減算のため季節内で
 単調に増えず「後半ほど」を表現できない。3 節末尾と同じ解法）。
 
@@ -437,7 +429,7 @@ calm に入った瞬間に灼熱は消える。3 節）。プレイヤーから�
 持続日数のランダム性（2.3 節）が表現します。ゲーム開始直後の最初の calm は、蓄熱量の初期値が中立
 （1,000<!-- codex: core.yaml object_defs.world.props.thermal_level.value --> = `mild`）のため灼熱は発生しません。
 
-段階の境界（`min`）を跨いだ瞬間に重みが階段状に飛ぶ点は、`weather_remaining` の遷移自体が 4〜6 時間に 1 回
+段階の境界（`min`）を跨いだ瞬間に重みが階段状に飛ぶ点は、`weather_remaining` の遷移自体が数時間に 1 回
 （4.2 節）しか起きないため、体感上の不自然さにはならないと考えます。
 
 **雨季の降雨の緩急は、季節レートと自己減算の大小関係が作ります。** `wet` 中の各天気の正味レートは、
@@ -453,14 +445,14 @@ tick が大半を占め、連続降雨時間は連続未降雨時間より長く
 
 ### 4.4 二回連続で同じ天気になった場合
 
-`weather_remaining` は遷移のたびに 4〜6 時間の範囲で改めて `pick` されるため、たまたま同じ天気が連続して
-選ばれ、プレイヤーからは天気が変わらないまま 6 時間を超えて継続しているように見えることがあります。これは
+`weather_remaining` は遷移のたびに 4.2 節の長さの範囲で改めて `pick` されるため、たまたま同じ天気が連続して
+選ばれ、プレイヤーからは天気が変わらないまま 1 回の持続の上限を超えて継続しているように見えることがあります。これは
 独立試行の結果として自然に起こる不確実性であり、狙って作り込んだ特別なルールではありません。
 
 ### 4.5 風向きは季節が配る
 
 **風向き（`wind`）も同じ形の短期変動です。** `tailwind`/`crosswind`/`headwind` を、季節の段が配る
-重み（`tailwind_weight` ほか）で8時間ごとに引き直します。天気と違って持続の長さは振りません。
+重み（`tailwind_weight` ほか）で、`wind_remaining` の 32<!-- codex: core.yaml object_defs.world.props.wind_remaining.value --> tick ごとに引き直します。天気と違って持続の長さは振りません。
 
 島の上での暮らしには効かず、読むのは航路を渡るのにかかる時間だけなので、値の意味と重みの表は
 [`Voyage.md`](../world/Voyage.md) 3.1 節が持ちます。ここに置くのは「季節が駆動する短期変動という点で
