@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { commentsOnly } from '../../scripts/codeComments.mjs';
+import { commentParts, commentsOnly } from '../../scripts/codeComments.mjs';
 import {
   COMMENTED_EXTENSIONS,
   isPendingDecision,
@@ -18,9 +18,9 @@ import {
  * lintにも掛からない。初回の全数調査では、既に無いメソッドを指す説明がコメントに8件・
  * `docs/` に10件見つかった。
  *
- * **読む先はどちらの見方も {@link PROSE} の1つ**——コメントを書ける形式のソース・宣言の値へ散文を
+ * **読む先はどの見方も {@link PROSE} の1つ**——コメントを書ける形式のソース・宣言の値へ散文を
  * 置いているデータ・文書。
- * 見方は2つあり、どちらが赤くなったかで直す場所が変わるので `it` を分けてある。
+ * どの見方が赤くなったかで直す場所が変わるので、見方ごとに `it` を分けてある。
  *
  * 1. **`Xxx.yyy`・`Xxx.Yyy` の形**（下の「今は無い名前を指していない」）。判定は
  *    「**その所有者を宣言しているファイルの中に**その語が
@@ -42,6 +42,11 @@ import {
  *    いる箇所なら、**指す先のファイルが決まっている**ので裸のままでも判定できる。
  *    **名前でないものを「の」で続けると、この形に読める**（`Foo.mjs` の issue #867）——そこは
  *    並びを崩して書く（`DocumentStyle.md` 5節）。
+ * 3. **括弧へ名前を単独で置いた形**（下の「括弧へ置いた名前が、どこかに在る」）。所有者もファイルも
+ *    無いので、判定はリポジトリ全体の字面（{@link nameExistsHere}）——同じファイルに限ると、別の
+ *    ファイルの名前を正しく指している説明が軒並み落ちる。1・2 と同じく**決めているのがこのリポジトリ
+ *    でない名前には何も言わず**（{@link declaredByDependency}）、**名前と字面で見分けられない語も
+ *    読まない**（{@link PARENTHESIZED_NAME}）。
  */
 
 const ROOT = resolve(__dirname, '../..');
@@ -124,7 +129,7 @@ const PROSE_DATA = trackedFiles(ROOT).filter(isProseData);
 const DOCUMENTS = trackedDocs(ROOT).filter((rel) => !isRefRuleExempt(rel));
 
 /**
- * 説明を読む先。**どちらの見方も同じここを読む**——片方だけが狭いと、そこへ書いた主張は形を
+ * 説明を読む先。**どの見方も同じここを読む**——片方だけが狭いと、そこへ書いた主張は形を
  * 満たしていても誰も見ていない。
  *
  * `fenced` は、コードフェンスで囲みの中と外が切り替わる形式か。**Markdownだけ**——コメントの中の
@@ -395,6 +400,80 @@ function fileMembersOn(text: string, insideFence: boolean): FileMember[] {
   return found;
 }
 
+/**
+ * 括弧へ単独で置いた名前（`（relayedTickDeltasOf）`）。**内側に大文字を持つcamelCaseだけを名前として
+ * 読む**——小文字だけの語（`（squash）`・`（kcal）`）は、括弧で添えた普通の語と字面で見分けられない
+ * （1 が所有者の無い `start` を見ないのと同じ理由）。
+ */
+const PARENTHESIZED_NAME = /[（(]([a-z][a-z0-9]*[A-Z][A-Za-z0-9]*)[）)]/g;
+
+function parenthesizedNames(text: string): string[] {
+  return [...text.matchAll(PARENTHESIZED_NAME)].map(([, name]) => name);
+}
+
+/**
+ * 説明を書ける形式すべての、コメント以外の本文。**`.ts` に限らない**——`scripts/**` の `.mjs` の
+ * 説明は、同じ `.mjs` の関数を括弧で指す。
+ */
+const ALL_CODE = COMMENTED_SOURCES.map((rel) => {
+  const text = read(rel);
+  if (/\.[mc]?[jt]s$/.test(rel)) return codeOnly(text);
+  const parts = commentParts(text, rel);
+  return text
+    .split('\n')
+    .filter((_, index) => parts[index] === null)
+    .join('\n');
+}).join('\n');
+
+/** 追跡しているファイルの、最初の `.` より前（`（docStatsCitations）` はテストのファイルを指す）。 */
+const FILE_STEMS = new Set(TRACKED_PATHS.map((path) => basename(path).split('.')[0]));
+
+/**
+ * その名前を、このリポジトリのどこかが持っているか——**コードの字面か、モジュール**。コメントは
+ * 証拠にしない（{@link hasMember} と同じ理由で、改名し残したコメントどうしが互いを裏書きする）。
+ */
+function nameExistsHere(name: string): boolean {
+  return FILE_STEMS.has(name) || new RegExp(`\\b${name}\\b`).test(ALL_CODE);
+}
+
+/** パッケージの中の型宣言。入れ子の `node_modules` は、そのパッケージが決めた名前ではないので降りない。 */
+function declarationsIn(dir: string): string[] {
+  const found: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== 'node_modules') found.push(...declarationsIn(path));
+    } else if (/\.d\.[mc]?ts$/.test(entry.name)) found.push(path);
+  }
+  return found;
+}
+
+let dependencyDeclarations: string | undefined;
+
+/**
+ * その名前を、`package.json` が直に挙げる依存先が宣言しているか（`requestAnimationFrame` は
+ * TypeScript の DOM 定義、`fillGradientStyle` は Phaser）。**在るかどうかを決めているのがこの
+ * リポジトリではない**ので、こちらのコードに無くても指し先が消えた証拠にならない（{@link ownedHere}
+ * と同じ線）。
+ */
+function declaredByDependency(name: string): boolean {
+  if (dependencyDeclarations === undefined) {
+    const manifest = JSON.parse(read('package.json')) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+    const packages = [
+      ...Object.keys(manifest.dependencies ?? {}),
+      ...Object.keys(manifest.devDependencies ?? {}),
+    ];
+    dependencyDeclarations = packages
+      .flatMap((pkg) => declarationsIn(join(ROOT, 'node_modules', pkg)))
+      .map((path) => readFileSync(path, 'utf-8'))
+      .join('\n');
+  }
+  return new RegExp(`\\b${name}\\b`).test(dependencyDeclarations);
+}
+
 describe('説明の参照', () => {
   it('今は無い名前を指していない', () => {
     const dangling: string[] = [];
@@ -446,6 +525,47 @@ describe('説明の参照', () => {
       '説明がファイルと並べて挙げた名前が、そのファイルに無い（名前を挙げているつもりが無いなら、' +
         `並びを崩して主張に読めなくする——DocumentStyle.md 5節）:\n${missing.join('\n')}`,
     ).toEqual([]);
+  });
+
+  it('括弧へ置いた名前が、どこかに在る', () => {
+    const missing: string[] = [];
+    for (const { files, proseOf } of PROSE) {
+      for (const rel of files) {
+        for (const { line, text } of proseOf(rel)) {
+          for (const name of parenthesizedNames(text)) {
+            if (nameExistsHere(name) || declaredByDependency(name)) continue;
+            missing.push(`${rel}:${line} ${name}`);
+          }
+        }
+      }
+    }
+
+    expect(
+      missing,
+      '説明が括弧で挙げた名前が、リポジトリのどこにも無い（改名したなら説明も追随させる。名前を' +
+        `挙げているつもりが無いなら、括弧の中を名前の形にしない）:\n${missing.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  // 例に使う名前は**字面で書かない**——このファイルの文字列リテラルもコードの字面に入るので、
+  // 書いた時点でその名前が「在る」ことになり、同じ名前を指す説明が改名されても緑のままになる。
+  const joined = (...parts: string[]) => parts.join('');
+  const absent = joined('absent', 'Name', 'Probe');
+
+  it('括弧へ置いた語のうち、名前の形のものだけを採る', () => {
+    // 小文字だけの語まで採ると、括弧で添えた普通の語（squash・kcal）が指し先を要求される。
+    expect(parenthesizedNames(`マージ（squash）の行（${absent}）`)).toEqual([absent]);
+    expect(parenthesizedNames(`(mulberry32) (WebGL) (${absent})`)).toEqual([absent]);
+  });
+
+  it('依存先が宣言する名前と、どこにも無い名前を見分ける', () => {
+    // 依存先の読み込みが空へ戻ると、外の名前を挙げた説明がすべて赤くなる。逆に何でも在ることに
+    // なると、上の検査が黙って緑になる——両側をここで留める。
+    for (const external of [joined('request', 'AnimationFrame'), joined('fill', 'GradientStyle')]) {
+      expect(nameExistsHere(external), external).toBe(false);
+      expect(declaredByDependency(external), external).toBe(true);
+    }
+    expect(nameExistsHere(absent) || declaredByDependency(absent)).toBe(false);
   });
 
   it('追跡しているファイルは、どれも指し先として引ける', () => {

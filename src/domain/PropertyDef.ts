@@ -144,7 +144,7 @@ export class PropertyStage {
 
   /**
    * 完全一致判定の対象値。**持ち主がシンボル型（6.6節）のときに限り、段名そのもののシンボルIDが入る**
-   * （parseProperty）。数値型の段は持たないので、**シンボル型かどうかを訊きたい側はこれではなく
+   * （`parseProperties.ts` の `parseStageAppendingPassives`）。数値型の段は持たないので、**シンボル型かどうかを訊きたい側はこれではなく
    * `PropertyDef.isSymbolic` を見る**。
    */
   readonly eq: number | undefined;
