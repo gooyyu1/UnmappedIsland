@@ -128,11 +128,7 @@ function materialCells(
   };
 
   const shown = new Set(stacks.map(materialOf));
-  const cells: LaneCell[] = [];
-  cards.forEach((card, index) => {
-    if (card === undefined) return;
-    cells.push({ card, ...marksFor(materialOf(stacks[index])) });
-  });
+  const cells: LaneCell[] = cards.map((card, index) => ({ card, ...marksFor(materialOf(stacks[index])) }));
 
   // まだ1つも入っていない要求の空き枠を、要求の順に足す。
   for (const material of materials) {

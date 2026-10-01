@@ -509,8 +509,11 @@ object_defs:
     // 画面がレーンへ並べるのと同じ組み方（PlayScene.cellsAt）。
     const stacks = shown.stacksAt(materials);
     const cells = slotCells(view.slotViewOf(materials), stacks, shown.cardsOf(stacks), 0, view.cardOfType);
+    expect(
+      cells.map((cell) => cell.card?.identity?.[0] ?? cell.accepts?.name),
+      '棒の札と、板の要求の空き枠だけが並ぶ',
+    ).toEqual([stick.instanceId, view.cardOfType(mini.codex.objectNames.getId('board')).name]);
     const stickAt = cells.findIndex((cell) => cell.card?.identity?.[0] === stick.instanceId);
-    expect(stickAt, '棒の札がレーンに出ている').toBeGreaterThanOrEqual(0);
     // 重ねる先として指したときも、同じ位置で引かれる（ShownCards.stacksOfのtarget.index）。
     expect(stacks[stickAt]?.identity, 'レーン上の位置が棒の束を指す').toEqual([stick.instanceId]);
 
