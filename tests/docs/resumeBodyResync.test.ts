@@ -19,16 +19,24 @@ const CLAUDE_MD = join(ROOT, 'CLAUDE.md');
 const SECTION_REF = '`CLAUDE.md`「修正作業の進め方」6節';
 const SECTION_HEADING = '## 6. PR本文は最後に、実際のdiffから書く';
 
-/** 起こされた側が差分を push する理由。`look` は本文だけ、`stall`・`review-stall` は直しではない。 */
-const PUSHING_KINDS = ['mend', 'reject'];
+/**
+ * 本文が push を指示しているか。**理由を書き写さずに本文から引く**——push させる理由が増えたとき、
+ * 段の欠けた文面がそのまま緑にならないように。道具の名前（`push-screenshot.sh`）は push ではない。
+ */
+const ORDERS_PUSH = /(?<![\w-])push(?![\w-])/;
 
 describe('直しの周で起こす文面', () => {
   const template = readFileSync(RESUME_PROMPT, 'utf-8');
+  const kinds = [...template.matchAll(/^## ([a-z-]+) /gm)].map((found) => found[1]);
+  const pushing = kinds.filter((kind) => ORDERS_PUSH.test(promptBody(template, kind) ?? ''));
 
-  it.each(PUSHING_KINDS)('%s は、push の後に本文を突き合わせ直す段を指す', (kind) => {
-    const body = promptBody(template, kind);
-    if (body === null) throw new Error(`${kind} の本文が ${RESUME_PROMPT} から引けない`);
-    expect(body).toContain(SECTION_REF);
+  it('push させる理由を本文から引ける', () => {
+    expect(pushing).not.toEqual([]);
+  });
+
+  it('push させる理由はどれも、本文を突き合わせ直す段を指す', () => {
+    const missing = pushing.filter((kind) => !promptBody(template, kind)?.includes(SECTION_REF));
+    expect(missing).toEqual([]);
   });
 
   it('指す先の節が、push のたびに突き合わせ直すことを持っている', () => {
