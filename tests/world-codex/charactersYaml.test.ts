@@ -7,7 +7,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { placeholderIconOf } from '../../src/game/view/characterCard';
 import { bundledCodex } from '../support/worldCodexFiles';
-import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 // describe.eachへ渡すため、beforeAllではなく読み込み時にCodexを組み立てる。
 const codex = bundledCodex();
@@ -838,8 +838,35 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     it('睡眠1回では、覚醒度は満タンに届かない', () => {
-      // 6時間眠って18時間ぶん。1日を回すだけでほぼ使い切るので、溜まった眠気は睡眠1回では返らない。
+      // 1日を回すだけでほぼ使い切るので、溜まった眠気は睡眠1回では返らない。
       expect(takeRest(character, 'sleep', true).wakefulness).toBeLessThan(maxOf(character, 'wakefulness'));
+    });
+
+    it('寝床の上で睡眠1回を取る1日は、覚醒度がちょうど元へ戻る', () => {
+      // Characters.md 休息節。眠って戻る正味が、残りの時間を起きて減るぶんと等しい。
+      const sleep = takeRest(character, 'sleep', true);
+
+      expect(sleep.wakefulness).toBe(TICKS_PER_DAY - sleep.minutes / MINUTES_PER_TICK);
+    });
+
+    it('空身で倒れ込んでも、体力の危険域からは出られない', () => {
+      // Characters.md 限界節。倒れ込みは逃げ場であって、戻す手ではない。
+      const { player } = stand(character);
+      const stamina = player.instance.getProperty(codex.propertyNames.getId('stamina'));
+      stamina.setNumber(0);
+
+      expect(player.instance.tryGetAction('collapse', player.instance)?.tryExecute()).toBe(true);
+      expect(stamina.stage?.name).toBe('exhausted');
+    });
+
+    it('打ちひしがれると、幸福度の危険域をちょうど抜ける', () => {
+      // Characters.md 限界節。幸福度には自発の休息が無いので、戻す量は危険域の境目で決めてある。
+      const { player } = stand(character);
+      const happiness = player.instance.getProperty(codex.propertyNames.getId('happiness'));
+      happiness.setNumber(0);
+
+      expect(player.instance.tryGetAction('despair', player.instance)?.tryExecute()).toBe(true);
+      expect(happiness.number).toBe(propOf(def(character), 'happiness').lowerBoundOfStage('dejected'));
     });
 
     it('絵ができるまでの代替アイコンを持つ', () => {
