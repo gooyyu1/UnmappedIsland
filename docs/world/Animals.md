@@ -184,7 +184,7 @@
 （[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 2 節）。素の重みは土地の `props` が持ち、亜種が
 上書きします。
 
-既に `crab_find` が砂浜16／岩礁海岸24 として「海岸ほどカニが多い」を表しており、`insects`（草原）・
+既に亜種 `crab` が `crab_find` を砂浜で16<!-- codex: terrain_generation.yaml location_types.sandy_beach.variants.1.props.crab_find -->・岩礁海岸で24<!-- codex: terrain_generation.yaml location_types.rocky_coast.variants.1.props.crab_find -->へ上書きして（素の重みは7<!-- codex: locations.yaml object_defs.sandy_beach.props.crab_find.value -->と12<!-- codex: locations.yaml object_defs.rocky_coast.props.crab_find.value -->）「カニの多い海岸」を表しており、`insects`（草原）・
 `birds`（ジャングル）という亜種も用意されています。**「鳥の多いジャングル」「サルの多い森」を、土地の種類を
 増やさずに作れます。**
 

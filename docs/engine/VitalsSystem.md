@@ -76,8 +76,9 @@
 `modify` で押し下げます。原因が消えれば寄与も消えるので、**気絶から覚めるのに回復処理は要りません**。
 
 ```yaml
+# 獣（animals.yaml の beast trait）。段ごとの寄与は省いている
 consciousness:
-  tags: [status, health]
+  gauge: {min: bad, max: good}
   value: 100
   range: {min: 0, max: 100}
   stages:
@@ -99,20 +100,25 @@ consciousness:
 （`ambient_brightness`）へ寄与しているのと同じ形で、**しきい値と寄与量が同じ1箇所に並びます**。
 
 ```yaml
+# 獣（animals.yaml の beast trait）。flee は逃げの重み
 pain:
   stages:
     - {name: painless}
-    - {name: sore, min: 25, alert: watch}
+    - name: sore
+      min: 25
+      alert: watch
+      passives:
+        - modify: {self: {flee: 25}}
     - name: hurting
       min: 50
       alert: caution
       passives:
-        - modify: {self: {consciousness: -20}}
+        - modify: {self: {consciousness: -20, flee: 60}}
     - name: unbearable
       min: 83
       alert: danger
       passives:
-        - modify: {self: {consciousness: -45}}
+        - modify: {self: {consciousness: -45, flee: 120}}
 ```
 
 段は排他なので（同じ値が2つの段に該当することはない）、階段がそのまま並びます。**効き方は連続では
@@ -142,6 +148,7 @@ pain:
 2桁違う時間は表せないので、衝撃を1つの量として持ちます。
 
 ```yaml
+# サル（animals.yaml の monkey）
 shock:
   value: 0
   range: {min: 0, max: 100}          # maxが体格（体重の1/50）。イノシシは1200
@@ -163,8 +170,10 @@ shock:
 
 ```yaml
 - weight: {subject: instrument, prop: heavy_blow}
-  add: {self: {shock: 250, wariness: 25}, instrument: {durability: -20}}
-  spawn: {object: deep_gash, into: self}
+  add:
+    self: {wariness: 25, shock: 250}  # <!-- codex: animals.yaml traits.beast.interactions.strike.pick.0.add.self.shock -->
+    instrument: {durability: -20}
+  spawn: {object: laceration, into: self}
   signal: hit
 ```
 
@@ -190,32 +199,48 @@ shock:
 死因の名前を添える（`reason: exsanguinated`）ので、消えたあとでも死に方を読めます（6 節）。
 
 ```yaml
+# キャラクタ（characters/player_character.yaml）
 blood:
   tags: [status, health]
   value: 5000                       # 体重のおよそ1/13。maxがそのまま体格
   range: {min: 0, max: 5000}
   stages:
-    - name: exsanguinated                             # 6割を失えば助からない
-      alert: fatal
-      passives:
-        - modify: {self: {consciousness: -100}}
-    - name: hemorrhaging
-      min: 2000
-      alert: danger
-      passives:
-        - modify: {self: {consciousness: -70}}
-    - name: bled
-      min: 3000
-      alert: caution
-      passives:
-        - modify: {self: {consciousness: -30}}
+    - {name: exsanguinated, alert: fatal}             # 6割を失えば助からない
+    - {name: hemorrhaging, min: 2000, alert: danger}
+    - {name: bled, min: 3000, alert: caution}
     - {name: low, min: 3500, alert: watch}
     - {name: replete, min: 4000}
   on_min:
     destroy: {subject: self, reason: exsanguinated}   # 消す宣言が死因を名乗る（6 節）
   passives:
-    # 血は自分で作り直される。1日およそ200mL。
-    - add: {self: {blood: 2}}
+    # 血は自分で作り直される。1日およそ200mL。戻る条件は 3.1 節
+    - conditions:
+        - {prop: hydration, in_stage_or_above: hydrated}
+        - {prop: body_fat, in_stage_or_above: gaunt}
+      add: {self: {blood: 2}}  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.passives.0.add.self.blood -->
+```
+
+獣の段は、同じしきい値の比率で意識を押し下げます（人の段はまだ寄与を持ちません。7 節）。
+
+```yaml
+# サル（animals.yaml の monkey）
+stages:
+  - name: exsanguinated
+    alert: fatal
+    passives:
+      - modify: {self: {consciousness: -100}}
+  - name: hemorrhaging
+    min: 160
+    alert: danger
+    passives:
+      - modify: {self: {consciousness: -70}}
+  - name: bled
+    min: 240
+    alert: caution
+    passives:
+      - modify: {self: {consciousness: -30}}
+  - {name: low, min: 280, alert: watch}
+  - {name: replete, min: 320}
 ```
 
 - **`max` は体格です。** ヒトは体重のおよそ1/13（70kgで5,000mL）で、動物の体重比もほぼ同じ。専用の

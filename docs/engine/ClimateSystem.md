@@ -347,7 +347,7 @@ weather_remaining:
           - weight: 1
             set:
               self: {weather: sunny, weather_remaining: 24}
-      - weight: {prop: cloudy_weight}
+      - weight: {prop: clear_weight}
         # ... 以下、残りの候補も同じ形（core.yaml参照）
 ```
 

@@ -570,7 +570,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 その区間の重さは出ません。乗るのは日数だけで、数日です。
 
 **探索は分では軽く、日数では重いものです。** 島の土地は10〜20（`terrain_generation.yaml` の
-`site_count`）、探索率100%までは土地ごとに10〜20回で1回15分
+`site_count`）、探索率100%までの回数は土地ごとに異なり、1回15分
 （[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 2節）なので、**全島を100%にしても2,803分<!-- stats: terrain.yaml exploration_phase metric=exploration_minutes mean -->**
 ——山の合計のごく一部です。ところが**日数では16.0日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->**になります。1日に探索できる時間が土地の
 明るさで切られ、しかも1つの土地を開き切るまでそこに居る必要があるためで、この差が出るのが8.3節の

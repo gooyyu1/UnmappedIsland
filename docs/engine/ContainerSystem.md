@@ -137,9 +137,9 @@ object_defs:
 |---|---|---|---|---|---|
 | 石 | 1000（1kg） | 0 | **1000** | — | — |
 | そり | 8000（8kg） | 1000 | **9000** | 0.55（handにいる） | — |
-| キャラクター | 70000（自重70kg） | 9000 | **79000** | — | 9000 × 0.55 = **4950** |
+| キャラクター | 65000<!-- codex: characters/player_character.yaml traits.player_character.props.weight.value -->（自重65kg） | 9000 | **74000** | — | 9000 × 0.55 = **4950** |
 
-キャラクターの `weight` は自重込みの 79000 で正直なままです。負荷の `load` は荷だけの 4950 なので、段階の
+キャラクターの `weight` は自重込みの 74000 で正直なままです。負荷の `load` は荷だけの 4950 なので、段階の
 閾値を「荷物をどれだけ持ったら」とそのまま読めます。
 
 編み籠をそりへ積んだ場合、籠は `hand` にいないので率のかかりようがなく、そりの `weight` には籠と中身が
@@ -161,19 +161,22 @@ object_defs:
 キャラクターの `load` に `stages` を持たせるだけで参照口が揃います。新しい参照の仕組みは要りません。
 
 ```yaml
-character:
-  props:
-    weight: {value: 70000}     # 自重
-    load:
-      value: 0
-      stages:
-        - name: light
-        - name: overweighted
-          min: 60000
+# 自重は characters/player_character.yaml、荷の段の境目は人物ごと（characters/engineer.yaml）
+weight: {value: 65000}  # <!-- codex: characters/player_character.yaml traits.player_character.props.weight.value -->
+load:
+  tags: [status, health]
+  value: 0
+  range: {min: 0, max: 27000}
+  stages:   # 段ごとの寄与（歩みの遅れ・体力の削り）は省いている
+    - {name: light}
+    - {name: laden, min: 6750, alert: watch}
+    - {name: heavy, min: 13500, alert: caution}
+    - name: too_heavy
+      min: 22500  # <!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.3.min -->
+      alert: danger
 ```
 
-移動可否は `{subject: agent, prop: load, lt: 60000}` のように、道の `travel` アクションの
-`conditions` で直接書けます。
+移動可否は道の `travel` アクションの `conditions` が、`load` の段の名前で直接書けます（5 節）。
 
 ### 4.1 毎回導出しても、貯め込みは要らない
 
@@ -268,7 +271,7 @@ conditions:
 |---|---|---|
 | **1L を超える物** | **実際の占有体積**（楕円体・円柱として計算） | 熟したヤシの実 25×17×17cm の楕円体 = 3,800 |
 | **1L 以下の物** | **外接直方体**（寸法を掛けるだけ） | 石 12×9×7cm = 700 |
-| **ばらけた材料・ばねのある物** | **嵩そのまま**（詰めても縮まないため） | ヤシの実の皮 400g ÷ 嵩密度 0.1 = 4,000 |
+| **ばらけた材料・ばねのある物** | **嵩そのまま**（詰めても縮まないため） | ヤシの実の皮 600g<!-- codex: coconut.yaml object_defs.coconut_husk.props.weight.value --> ÷ 嵩密度 0.15 = 4,000<!-- codex: coconut.yaml object_defs.coconut_husk.props.volume.value --> |
 
 **大きい物に隙間ぶんの割り増しを乗せないのは、その隙間を小さい物が埋められるからです。** 籠にヤシの実を
 入れれば実と実の間に空きが出ますが、そこへ果肉や石を差し込めます。大きい物の側で隙間を負担させると、
