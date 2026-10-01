@@ -351,7 +351,8 @@ function yamlBlocksIn(doc: string, text: string): YamlBlock[] {
   let open: { readonly line: number; readonly indent: string; readonly lang: string; readonly info: string } | null =
     null;
   let body: string[] = [];
-  text.split('\n').forEach((line, index) => {
+  // `.` は `\r` に当たらないので、CRLF のまま切るとフェンスの行が `(.*)$` で読めなくなる。
+  text.split(/\r?\n/).forEach((line, index) => {
     const fence = /^(\s*)```(\S*)\s*(.*)$/.exec(line);
     if (fence === null) {
       if (open !== null) body.push(line.startsWith(open.indent) ? line.slice(open.indent.length) : line);
@@ -839,6 +840,14 @@ describe('出どころを名乗った YAML の抜粋', () => {
     expect(staleIn(MOISTURE, 'value: [0')).toHaveLength(1);
     expect(staleIn(MOISTURE, '# コメントだけ')).toEqual([
       'doc.md:1: codex: fire.yaml traits.ignitable.props.moisture → 突き合わせる値が無い',
+    ]);
+  });
+
+  it('CRLF の行末でも、フェンスと名乗りを読む', () => {
+    // Windows の作業ツリーは CRLF で取り出される（CLAUDE.md「実装スタイル」）。
+    const text = [`\`\`\`yaml ${MOISTURE}`, 'value: 1', '```'].join('\r\n');
+    expect(yamlBlocksIn('doc.md', text).flatMap(staleExcerptLines)).toEqual([
+      'doc.md:1: codex: fire.yaml traits.ignitable.props.moisture → value: 文書は 1、定義は 0',
     ]);
   });
 
