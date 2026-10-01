@@ -996,8 +996,9 @@ function neverCrossesIntoStage(
  *
  * - 押されている値の段を1つも要らない（押し手と関わりなく開いている）
  * - 押しても入れない段が混じっている（向きが逆・段が並びの上に位置を持たない）
- * - 生まれた時点で、押している向きの入り口を既に越えている——その段に居るか、通り過ぎて向こうに
- *   在るかで、どちらも開けたのは押し手ではない
+ * - 要る段のどれかについて、生まれた時点で、押している向きの入り口を既に越えている——その段に
+ *   居るか、通り過ぎて向こうに在るかで、どちらも開けたのは押し手ではない。**押し上げる場合も
+ *   押し下げる場合も、段ごとに入り口で判定する**（ticksToRiseTo・ticksToFallBelow）
  *
  * **入り口は押している向きで裏返る**——押し上げるなら段の下端へ届いた時点で入り、押し下げるなら
  * 段の上端を割った時点で入る。「その段以上」（`in_stage_or_above`、14.1節）に上から入ることは
@@ -1025,12 +1026,12 @@ function ticksUntilDrivenStage(
   for (const required of drivenStagesOf(driver, gate)) {
     const ticks =
       pushedToward === 'on_max'
-        ? ticksToReach(value, required.lowerBound, perTick)
+        ? ticksToRiseTo(value, required.lowerBound, perTick)
         : ticksToFallBelow(value, stageUpperBoundOf(def, required), perTick);
     if (ticks === undefined) return undefined;
     if (longest === undefined || ticks > longest) longest = ticks;
   }
-  return longest === 0 ? undefined : longest;
+  return longest;
 }
 
 /**
@@ -1057,7 +1058,7 @@ function ticksUntilDrivenStageLeft(
   for (const required of drivenStagesOf(driver, gate)) {
     const ticks =
       pushedToward === 'on_max'
-        ? ticksToReach(value, stageUpperBoundOf(def, required), perTick)
+        ? ticksToRiseTo(value, stageUpperBoundOf(def, required), perTick)
         : ticksToFallBelow(value, stageLowerExitOf(def, required), perTick);
     if (ticks === undefined) continue;
     if (earliest === undefined || ticks < earliest) earliest = ticks;
@@ -1082,9 +1083,6 @@ function drivenPaceOf(
 /**
  * その値がその速さでその位置まで届くまでのtick数。既に届いているなら0。値・位置・速さのどれかが
  * 読めないならundefined。**向きは速さの符号が決める**。
- *
- * **幅のどちら側を渡すかは、呼ぶ側が決める。** 押し手を控えめに数えるには、効き始めまでは遅いほう、
- * 効かなくなるまでは速いほうで、同じ問いでも向きが逆になる。
  */
 function ticksToReach(
   value: number | undefined,
@@ -1096,12 +1094,13 @@ function ticksToReach(
 }
 
 /**
- * その値がその速さで、その位置**まで上がって抜ける**までのtick数。**その位置ちょうどに着いた時点
- * で、もう抜けている**（段は下端を含む半開区間、6.4節）ので、下へ割る{@link ticksToFallBelow}と
- * 違って1 tickを足さない。
+ * その値がその速さで、その位置**まで上がって越える**までのtick数。**その位置ちょうどに着いた時点
+ * で、もう越えている**（段は下端を含む半開区間、6.4節）——上端ならそこで段を抜け、下端ならそこで段に
+ * 入る——ので、下へ割る{@link ticksToFallBelow}と違って1 tickを足さない。
  *
- * 既に位置以上に在るならundefined——**上がるのはこれからではなく、もう上に在る**。値・位置・速さの
- * どれかが読めないときも同じ。
+ * 既に位置以上に在るならundefined——**越えるのはこれからではなく、もう越えた後**。値・位置・速さの
+ * どれかが読めないときも同じ。**既に居るなら0**が要る問い（自分の増減で段へ入るまで）は
+ * {@link ticksToReach}の側。
  *
  * **速さは上向き**（正）でなければならない。上がる向きへ動く場合を選ぶのは呼ぶ側の仕事で、どちらの
  * 端へ向かう場合かはpaceTowardsが分けてある。
@@ -1118,8 +1117,8 @@ function ticksToRiseTo(
 
 /**
  * その値がその速さで、その位置を**割って下へ抜ける**までのtick数。**その位置ちょうどに着いた時点
- * では、まだ割っていない**（段は下端を含む半開区間、6.4節）ので、位置まで測る{@link ticksToReach}
- * より1 tick遅くなることがある。
+ * では、まだ割っていない**（段は下端を含む半開区間、6.4節）ので、上へ越える{@link ticksToRiseTo}
+ * と違って1 tickを足す。
  *
  * 既に位置より下に在るならundefined——**割るのはこれからではなく、もう割った後**。値・位置・速さの
  * どれかが読めないときも同じ。
