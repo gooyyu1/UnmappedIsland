@@ -876,7 +876,7 @@
 **見張り（3 節）・釣り（3.9.2 節）・海鳥を捕ること（3 節の表）は、視界が明るく、嵐でないうちだけ
 できます。** どれも屋外で見て探す仕事なので、地上の探索・採取と同じ分類に入ります
 （[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 5 節）。**海の上を昼夜の外へは置きません**
-——海区は樹冠も地面の反射も持たないので、明るさは空そのものです。夜は暗さの底（−6<!-- codex: core.yaml object_defs.world.props.hour.stages.0.passives.0.modify.self.ambient_brightness --><!-- codex: core.yaml object_defs.world.props.hour.stages.10.passives.0.modify.self.ambient_brightness -->）で、地面の反射を
+——海区は樹冠も地面の反射も持たないので、明るさは空そのものです。夜は暗さの底（−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->）で、地面の反射を
 持つ砂浜（−5）よりさらに 1 段暗くなります。
 
 **どれも、嵐でも止まります。** 屋根の下でない場所での行動だからで、そこは既に決まっています

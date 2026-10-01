@@ -241,11 +241,11 @@
 
 **上乗せの刻みを揃えられないのは、上乗せする先の桁が違うから**です——着火の重みは 60 前後、獣のつまみは 2〜4、
 当てる側は 15〜78 で、同じ数を足せば片方は効かず片方は跳ねます。**狩猟が 2 本持つのも同じ理由**で、
-出くわすつまみ（2〜4）を動かす刻みは当たり所の重み（55〜70）の前では見えません。**同じ刻みで全部に
+出くわすつまみ（2〜4）を動かす刻みは当たり所の重み（55<!-- codex: tools.yaml object_defs.spear.props.thrust.value -->〜70<!-- codex: tools.yaml object_defs.sharp_stone.props.light_blow.value -->）の前では見えません。**同じ刻みで全部に
 効かせられるのは倍率だけ**ですが、掛け算はこの世界の文法に無く、合成の器（`modify`・`base`）はどちらも
 加算です（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 10.2 節）。
 
-**当てる側の中でも幅はあります。** 武器の当たり（55〜70）と魚の群れ（78<!-- codex: voyage.yaml object_defs.fish_shoal.props.catch_chance.value -->）は同じ桁ですが、群れの居ない
+**当てる側の中でも幅はあります。** 武器の当たり（55<!-- codex: tools.yaml object_defs.spear.props.thrust.value -->〜70<!-- codex: tools.yaml object_defs.sharp_stone.props.light_blow.value -->）と魚の群れ（78<!-- codex: voyage.yaml object_defs.fish_shoal.props.catch_chance.value -->）は同じ桁ですが、群れの居ない
 海面（15<!-- codex: voyage.yaml object_defs.raft.props.catch_chance.value -->）だけは 1 桁下で、`expert`（+40<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.hunting_aim -->）では 3.7 倍になります——**同じ刻みが最も強く効く場所**で、
 群れとの落差が縮む形で現れます（[`Voyage.md`](Voyage.md) 3.9.2 節）。3 本目を足してまで分けるほどでは
 ないと見て、当てる側は 1 本のままにしています。
