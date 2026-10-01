@@ -838,15 +838,18 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     it('睡眠1回では、覚醒度は満タンに届かない', () => {
-      // 1日を回すだけでほぼ使い切るので、溜まった眠気は睡眠1回では返らない。
+      // 睡眠1回で戻るぶんは1日を回すだけで減り切るので、溜まった眠気は睡眠1回では返らない。
       expect(takeRest(character, 'sleep', true).wakefulness).toBeLessThan(maxOf(character, 'wakefulness'));
     });
 
     it('寝床の上で睡眠1回を取る1日は、覚醒度がちょうど元へ戻る', () => {
-      // Characters.md 休息節。眠って戻る正味が、残りの時間を起きて減るぶんと等しい。
+      // Characters.md 休息節。眠って戻る正味が、残りの時間を起きて減るぶんと等しい。起きている間の
+      // 減りは、眠気を戻さない待機の正味から引く。
+      const wait = takeRest(character, 'wait');
+      const awakeDrainPerTick = -wait.wakefulness / (wait.minutes / MINUTES_PER_TICK);
       const sleep = takeRest(character, 'sleep', true);
 
-      expect(sleep.wakefulness).toBe(TICKS_PER_DAY - sleep.minutes / MINUTES_PER_TICK);
+      expect(sleep.wakefulness).toBe(awakeDrainPerTick * (TICKS_PER_DAY - sleep.minutes / MINUTES_PER_TICK));
     });
 
     it('空身で倒れ込んでも、体力の危険域からは出られない', () => {
