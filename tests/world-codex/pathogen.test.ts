@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import type { PropertyValue } from '../../src/domain/PropertyValue';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
@@ -250,6 +252,22 @@ describe('全身の菌と免疫', () => {
     expect(voyage.peakStage, '症状の段へは一度も上がらない').toBe('latent');
     expect(voyage.peak, 'いちばん高いのは1切れが入った直後で、この値').toBeCloseTo(4.7, 5);
     expect(prop('vitamin').stage?.name, 'ビタミンは削れるが、免疫を押す段までは落ちない').toBe('waning');
+  });
+
+  it('生肉を1日3つ食べても、脂は1日に要るぶんへ届かない（Voyage.md 3.9.3節）', () => {
+    // 3つは文書の献立（「1 日 3 つ」）。1切れが運ぶ脂は、実際に食べて増えたぶんで測る。
+    const perDay = Number(/それでも 1 日 (\d+) つは/.exec(readFileSync('docs/world/Voyage.md', 'utf8'))?.[1]);
+    expect(perDay, 'Voyage.md 3.9.3節の献立が読めない').toBeGreaterThan(0);
+    const balance = parse(readFileSync('stats/balance.yaml', 'utf8')) as {
+      daily_needs: { property: string; daily_need: number }[];
+    };
+    const dailyLipid = balance.daily_needs.find(({ property }) => property === 'lipid')!.daily_need;
+
+    prop('lipid').setNumberWithoutEvents(0);
+    eatRawMeat();
+    const perMeat = prop('lipid').number;
+    expect(perMeat, '生肉は脂を運ぶ').toBeGreaterThan(0);
+    expect(perMeat * perDay).toBeLessThan(dailyLipid);
   });
 
   it('ビタミン不足を抱えて出れば、同じ献立で初日のうちに発熱する', () => {
