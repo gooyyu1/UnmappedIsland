@@ -76,7 +76,7 @@
 `modify` で押し下げます。原因が消えれば寄与も消えるので、**気絶から覚めるのに回復処理は要りません**。
 
 ```yaml
-# 獣（animals.yaml の beast trait）。段ごとの寄与は省いている
+# 獣（animals.yaml の beast trait）。段ごとの寄与と絵の差し替えは省いている
 consciousness:
   gauge: {min: bad, max: good}
   value: 100
@@ -92,7 +92,7 @@ consciousness:
 - **致命的域（`fatal`）は持ちません。** 気絶それ自体は死に至らず、死に至らせるのは血を失わせている側です。
   本書が致命的域を置くのは、命を絶つ値である `blood` の `exsanguinated`（3 節）と `warmth` の
   `frozen`（8.3 節）だけです。
-- **`pain` と同じく個体差を持たせません**（`player_character` trait が配る）。押し下げる量は傷の側が
+- **`pain` と同じく個体差を持たせません**（獣には `beast` trait が配る。人へ配るときも `player_character` trait が配る、7 節）。押し下げる量は傷の側が
   宣言するので、同じ傷が誰に刺さっても同じ意味を持つ必要があります。
 
 **押し下げるのは、押し下げる側の段です。** 寄与は `stages` の中の `passives` に書きます

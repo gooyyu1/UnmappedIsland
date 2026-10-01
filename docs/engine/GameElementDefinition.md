@@ -519,7 +519,7 @@ props:
 
 **「一度だけ起こす」を、呼ぶ側ではなく起こす側に書くための口です。** 境界に居る値は書き込みのたびに
 イベントを呼び直すので、これが無いと「もう起こした」を呼ぶ側（そこへ書き込むアクションの `conditions`）が
-覚えることになり、**そのアクション自体が打ち切られます**。海区の見張りが航路を1本だけ湧かせる例が
+覚えることになり、**そのアクション自体が打ち切られます**。海区の見張りが航路を一度だけ湧かせる例が
 これで（[`Voyage.md`](../world/Voyage.md) 3.5 節）、条件が見るのは印ではなく**湧かせた物そのもの**です。
 
 ```yaml
@@ -1747,6 +1747,7 @@ interactions:
 interactions:
   drink:
     trigger: menu
+    duration: 5  # <!-- codex: liquid_containers.yaml traits.tea_liquid.interactions.drink.duration -->
     transfer:
       # 250mL出し、飲みきると水分が10 tick分回復する
       amount: 250  # <!-- codex: liquid_containers.yaml traits.tea_liquid.interactions.drink.transfer.amount -->
@@ -1823,8 +1824,8 @@ interactions:
   違うのはキーの綴りだけです。
   - **`to`**: `subject` と同じく、その場所が用意できる相手を指せます（14.1 節）。行き先が定義時点で
     決まっている場合に使います。`parent` は、代表（[`SlotSystem.md`](./SlotSystem.md) 4 節）へ
-    リダイレクトされた中身が、自分ではなく容器を行き先にしたい場合のためのものです（液体の注ぎ移し、
-    `LiquidContainerSystem.md` 4 節）。指した相手が居ない場合は何も起きません。
+    リダイレクトされた中身が、自分ではなく容器を行き先にしたい場合（液体の注ぎ移し、
+    `LiquidContainerSystem.md` 4 節）や、自分の居る場所へ物を押し出す場合（小島が岸の筏を海区へ出す、下の例）に使います。指した相手が居ない場合は何も起きません。
   - **`to_prop`**: `self` が持つプロパティ名。その実効値を `WorldObject` のインスタンスID（生成時に発行される、
     実行時限りの識別子）として解釈し、移動先とみなします。書き込むのは生成器（地上の道の `destination_id`）か
     `set`（9.2 節。筏が出航した海岸を覚える）です。
@@ -1845,10 +1846,16 @@ interactions:
 から、その筏ごと漕ぎ出す——のに使います。適用は書かれた順です。
 
 ```yaml
-# 小島の岸から漕ぎ出す（voyage.yaml の offshore_islet の launch）。picked は岸の筏（10.3 節）
-move:
-  - {subject: agent, to: picked}
-  - {subject: picked, to: parent}
+# 小島の岸から漕ぎ出す（voyage.yaml の offshore_islet の launch）。条件は省いている
+launch:
+  trigger: menu
+  duration: 30  # <!-- codex: voyage.yaml object_defs.offshore_islet.interactions.launch.duration -->
+  pick:
+    - weight: 1
+      among: {slot: fixtures, matches: {object: raft}}   # 岸の筏を picked にする（10.3 節）
+      move:
+        - {subject: agent, to: picked}
+        - {subject: picked, to: parent}   # 小島が居る海区へ
 ```
 
 プロパティが個体を `object_defs` の id（型）ではなくインスタンスIDで指すのは、典型例（生成された特定の道が
