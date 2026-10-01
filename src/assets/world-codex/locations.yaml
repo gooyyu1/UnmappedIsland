@@ -314,7 +314,7 @@ object_defs:
   #   のではなく、居る獣に気づけるようになる**。積むのは獣のつまみだけで、実りの候補には積まない。
   #   **ヤシガニ（crab_find）は実りの側**——動くものだが定義はitemで（foods.yaml）、警戒も手番も
   #   持たず、獲るのに狩猟の腕を配る操作も無い。拾う物なので、腕が気づく相手にはならない。
-  #   **卓の合計が増えるぶん、実りの出る割合は下がる**（数字はdocs/engine/ExplorationSystem.md 2.1節）。
+  #   **卓の合計が増えるぶん、実りの出る割合は下がる**（docs/engine/ExplorationSystem.md 2.1節）。
   #   **腕を上げた探索は、獣へ寄る**。
   # - ambient_brightnessは樹冠と地面の反射の合計（core.yamlのlocation traitが土台と底を持つ）。
   #   内訳はContentSkeleton.md 8.1.2節の表で、ここに書くのは合計だけ。

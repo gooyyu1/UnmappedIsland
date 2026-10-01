@@ -129,6 +129,34 @@ class BeastFindCollector extends QuietEffectReader {
   }
 }
 
+/**
+ * 抽選卓の直下の候補の、素の重みと、重みが指すつまみ（指していなければ`undefined`）。つまみの値は
+ * `land`（その土地の個体）から読む。入れ子の候補までは降りない（{@link BeastFindCollector}と同じ段）。
+ */
+class CandidateWeightCollector extends QuietEffectReader {
+  readonly candidates: { readonly knob: string | undefined; readonly weight: number }[] = [];
+
+  private readonly codex: WorldCodex;
+  private readonly land: WorldObject;
+
+  constructor(codex: WorldCodex, land: WorldObject) {
+    super();
+    this.codex = codex;
+    this.land = land;
+  }
+
+  override pick(reading: PickReading): void {
+    reading.forEachCandidate(({ weight }) => {
+      if (weight.kind === 'literal') this.candidates.push({ knob: undefined, weight: weight.value });
+      else
+        this.candidates.push({
+          knob: this.codex.propertyNames.getName(weight.propertyGlobalId),
+          weight: this.land.getProperty(weight.propertyGlobalId).number,
+        });
+    });
+  }
+}
+
 /** 1つの候補が湧かせる型（`spawn`、9.4節）。個数が2以上なら、その回数ぶん並ぶ。 */
 class SpawnCollector extends QuietEffectReader {
   readonly spawned: ObjectGlobalId[] = [];
@@ -336,6 +364,71 @@ describe('探索で見つかる物', () => {
     // **同じ重みなら同じ卓**なので、引きまでそっくり一致する。expertの上乗せは+4（Skills.md 5節）
     // なので、素の0に積んだものは、素で4のつまみと変わらない。
     expect(rats(0, 180), 'expertの素0＋4は、noviceのつまみ4と同じ卓').toBe(rats(4, 0));
+  });
+
+  describe('卓の中で獣が占める割合（ExplorationSystem.md 2.1節）', () => {
+    /** 探索する人の狩猟の腕がその段の下端のときの、獣のつまみ1つへの上乗せ（Skills.md 5節）。 */
+    function quarrySenseAt(stageName: string): number {
+      const agent = createBrightEnoughAgent(new WorldSession(codex));
+      const skill = agent.getProperty(codex.propertyNames.getId('skill_hunting'));
+      skill.setNumberWithoutEvents(skill.def.lowerBoundOfStage(stageName)!);
+      return agent.getProperty(codex.propertyNames.getId('quarry_sense')).getEffectiveValue();
+    }
+
+    /** 獣の居る土地ごとの、獣の種類の数と、卓の合計に獣の重みが占める割合（上乗せ`bonus`を積んだとき）。 */
+    function beastSharesWith(bonus: number): ReadonlyMap<string, { species: number; share: number }> {
+      const shares = new Map<string, { species: number; share: number }>();
+      const session = new WorldSession(codex);
+      for (const land of islandLocationsOf(codex).island) {
+        const beastKnobs = new Set(
+          BEAST_FINDS.filter(([name]) => name === land.name).map(([, knob]) => knob),
+        );
+        if (beastKnobs.size === 0) continue;
+        const explore = land.triggers.find(({ interaction }) => interaction.name === 'explore')!.interaction;
+        const weights = new CandidateWeightCollector(codex, session.createObject(land.globalId));
+        explore.readBy(weights);
+
+        let beasts = 0;
+        let all = 0;
+        for (const { knob, weight } of weights.candidates) {
+          const isBeast = knob !== undefined && beastKnobs.has(knob);
+          const effective = weight + (isBeast ? bonus : 0);
+          if (isBeast) beasts += effective;
+          all += effective;
+        }
+        shares.set(land.name, { species: beastKnobs.size, share: beasts / all });
+      }
+      return shares;
+    }
+
+    it('noviceが獣に出くわすのは、どの土地でも1回の探索の1割に届かない', () => {
+      const shares = beastSharesWith(quarrySenseAt('novice'));
+      expect(shares.size).toBeGreaterThan(0);
+      for (const [land, { share }] of shares) expect(share, land).toBeLessThan(0.1);
+    });
+
+    it('腕を上げた探索は、どの土地でも獣へ寄る', () => {
+      const novice = beastSharesWith(quarrySenseAt('novice'));
+      const expert = beastSharesWith(quarrySenseAt('expert'));
+      for (const [land, { share }] of novice) expect(expert.get(land)!.share, land).toBeGreaterThan(share);
+    });
+
+    it('獣の種類の多い土地ほど、腕を上げたぶん獣へ寄る幅が大きい', () => {
+      const novice = beastSharesWith(quarrySenseAt('novice'));
+      const expert = beastSharesWith(quarrySenseAt('expert'));
+      const gains = [...novice].map(([land, { species, share }]) => ({
+        land,
+        species,
+        gain: expert.get(land)!.share - share,
+      }));
+
+      for (const richer of gains)
+        for (const poorer of gains.filter(({ species }) => species < richer.species))
+          expect(
+            richer.gain,
+            `${richer.land}（${richer.species}種）と${poorer.land}（${poorer.species}種）`,
+          ).toBeGreaterThan(poorer.gain);
+    });
   });
 
   it('宣言していない獣は、腕を上げても湧かない', () => {
