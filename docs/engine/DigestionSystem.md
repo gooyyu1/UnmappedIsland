@@ -35,7 +35,7 @@
 ## 2. 満腹感は、胃に入っているかさ
 
 `satiety` は実体値です。食べたかさぶん増え、tick で減ります。`max` が胃の容量（1,500mL<!-- codex: characters/player_character.yaml traits.player_character.props.satiety.range.max -->）で、
-素の減りは一定（−16/tick<!-- codex: characters/player_character.yaml traits.player_character.props.satiety.passives.0.add.self.satiety -->）で、**1 日 1,536mL ＝ 3 食 × 512mL** がちょうど食べる量と釣り合います。
+素の減りは一定（−16/tick<!-- codex: characters/player_character.yaml traits.player_character.props.satiety.passives.0.add.self.satiety -->）で、**1 日に 1,536mL<!-- stats: balance.yaml daily_needs property=satiety daily_need --> 減ります**。
 
 **「これ以上食べられない」もここが持ちます。** 段 `full` を置き、`eat` を
 `not: {subject: agent, prop: satiety, in_stage_or_above: full}` で塞ぎます。水分の `full` と
@@ -84,7 +84,7 @@
 2〜3 割）から採りました。**残りの 2 本の速さは在庫が何 tick 保つかしか決めません**（5 節）が、
 ここだけは違う——**速さを動かすと、`fat_starved` を抜ける値段が動きます。**
 
-`max` は 3 本とも 120<!-- codex: characters/player_character.yaml traits.player_character.props.carbohydrate.range.max --><!-- codex: characters/player_character.yaml traits.player_character.props.protein.range.max --><!-- codex: characters/player_character.yaml traits.player_character.props.lipid.range.max -->（1.25 日ぶん）。**食べ溜めはできません**——満杯の在庫へ足した分は捨てられます。
+`max` は 3 本とも 120<!-- codex: characters/player_character.yaml traits.player_character.props.carbohydrate.range.max --><!-- codex: characters/player_character.yaml traits.player_character.props.protein.range.max --><!-- codex: characters/player_character.yaml traits.player_character.props.lipid.range.max -->。**食べ溜めはできません**——満杯の在庫へ足した分は捨てられます。
 
 ## 4. ビタミンは、エネルギーとは別の物差し
 
@@ -93,22 +93,22 @@
 なるためです。
 
 ヒトのプールは飽和で約 1,500mg、300mg<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.1.min --> を割ると壊血病が出ます。代謝回転は 1 日およそ 48mg なので、
-`max` 1,500<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.range.max -->・−0.5/tick<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.passives.0.add.self.vitamin -->。空心菜 1 束（83mg<!-- codex: foods.yaml object_defs.water_spinach.interactions.eat.add.agent.vitamin -->）で 1.7 日ぶんです。
+`max` 1,500<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.range.max -->・−0.5/tick<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.passives.0.add.self.vitamin -->。空心菜 1 束（83mg<!-- codex: foods.yaml object_defs.water_spinach.interactions.eat.add.agent.vitamin -->）は、1 日の回転を越えて運びます。
 
 **壊血病は、この値の一番下の段そのものです。** 怪我のカードにはしません——身体の外から負ったものだけを
 怪我にし、内側で起きている不調はその原因となる値の段が持ちます
 （[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）。後から入る空腹・脱水・寝不足の弊害も、
 同じ形でそれぞれの段が持ちます。
 
-段の境目は現実の量で置きます。**壊血病に落ちるのは 300mg<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.1.min --> を割ったとき**で、残りの段は 1 日 48mg の
-回転から読める日数です。
+段の境目は現実の量で置きます。**壊血病に落ちるのは 300mg<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.1.min --> を割ったとき**で、残りの段は
+そこから 1 日の回転の何日ぶん上にあるかで置いています。
 
-| 段 | 下限 | 域 | 残り |
+| 段 | 下限 | 域 | 備考 |
 | --- | --- | --- | --- |
 | `scurvy` | 0 | 危険 | **壊血病**。古傷が開き、歯が抜ける |
-| `deficient` | 300<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.1.min --> | 要注意 | 6.25 日 |
-| `waning` | 600<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.2.min --> | 留意 | 12.5 日 |
-| `replete` | 1,200<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.3.min --> | 安全 | 25 日（`max` の 80%、[`Characters.md`](../world/Characters.md)） |
+| `deficient` | 300<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.1.min --> | 要注意 | — |
+| `waning` | 600<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.2.min --> | 留意 | — |
+| `replete` | 1,200<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.3.min --> | 安全 | `max` の 80%（[`Characters.md`](../world/Characters.md)） |
 
 `scurvy` の段が `pain` を 60<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.0.passives.0.modify.self.pain --> 押し上げます（刺し傷・牙の傷と並ぶ、この島で最も重い段）。**`modify`
 なので可逆**——段を抜けた瞬間に痛みは引きます。手当てに当たるのは葉物を食べることで、**放置した分だけ
@@ -118,7 +118,7 @@
 致命的域を持ちませんが、**菌源のある暮らしで壊血病を抱えれば、菌が上限へ暴走して血が削られます**
 （[`Voyage.md`](../world/Voyage.md) 3.9.3 節が航海でその筋書きを通します）。
 
-開始時の 900mg<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.value --> から葉物を絶てば **12.5 日目**に、満タンの 1,500mg<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.range.max --> からなら 25 日目に落ちます。
+開始時の 900mg<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.value --> から葉物を絶てば **12.5 日目**に落ちます。
 `status` タグを持つので、落ちるより前から残りがステータスエリアのバーに出ます
 （[`StatusArea.md`](../ui/StatusArea.md)）。
 
@@ -132,8 +132,8 @@
 減ります（太っているほど速い＝食べ過ぎても際限なく太らない平衡点）。
 
 **糖質だけで暮らすと、ちょうど釣り合います**——糖質は 2/tick<!-- codex: characters/player_character.yaml traits.player_character.props.carbohydrate.passives.0.transfer.amount --> 流れますが、在庫が半分の時間しか
-続かないため、1 日 96 単位（1,536mL のイモ）が基礎代謝 1/tick と釣り合う勘定です。3 本とも在庫が
-あるときは合計 3.25/tick で流れるので、食べた直後は身になるのが速く、尽きれば止まります。
+続かないため、1 日 3 食のイモが基礎代謝 1/tick と釣り合う勘定です。3 本とも在庫が
+あるときは 3 本の速さを足した速さで流れるので、食べた直後は身になるのが速く、尽きれば止まります。
 **流れる総量は速さによらず変わらない**（`transfer` は保存する）ので、速さが決めるのは timing だけです
 ——**段を持つ `lipid` を除いて**（3 節）。あちらは在庫が尽きた域そのものに寄与があるので、
 速さが「切らさずにいるのに要る量」になります。
@@ -158,7 +158,7 @@
 **対数目盛では指数増殖が定数の `add` になります。** 明るさを EV で持っているのと同じ形
 （[`IlluminationSystem.md`](./IlluminationSystem.md) 2 節）で、「細菌が自分で自分を押し上げる」を
 近似せずに書けます。**増える速さは定数 1 つ（`+0.15/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.passives.0.add.self.pathogen -->）**で、`log₁₀2 ≒ 0.30` が 1 回の倍加なので、
-これは**倍加時間 30 分**にあたります。
+**倍加時間は `log₁₀2` をこの速さで割った長さ**です。
 
 **`add` の量に参照や積は書きません。** あの表現力はエンジン専用に取ってあるので
 （`src/domain/PassiveAmount.ts` の `ProductAmount`）、増える速さも減る速さも、すべて段ごとの定数です。
@@ -243,9 +243,9 @@
 
 **上がるのは感染している間だけ**（`+0.25/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.passives.0.add.self.immunity -->）。これが「感染が免疫を上げる」（獲得免疫）と
 「免疫が反応するまでの時間差」の**両方**で、別の仕組みは作りません——**潜伏期は、免疫が段を 1 つ上げるのに
-要る tick 数そのもの**です——`weakened` の下端 25<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.stages.1.min --> から `robust` の 40<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.stages.2.min --> まで 60 tick（15 時間）。
+要る tick 数そのもの**です——`weakened` の下端 25<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.stages.1.min --> から `robust` の 40<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.stages.2.min --> まで 60 tick。
 **引き戻すのはいちばん上の段だけ**（`-0.05/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.stages.3.passives.0.add.self.immunity -->）なので、**罹って治った体は素の 60<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.value --> より高い所（70<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.stages.3.min --> の少し下）で
-止まります**。それが獲得免疫で、**押し下げ `-30` までは段を保てる**余力になります（素のままなら `-20` まで）。
+止まります**。それが獲得免疫で、**素のままでは段を落とす押し下げでも、少し深いものまでなら段を保てる**余力になります。
 
 **獣も同じ物差しで `pathogen` を持ちます**（`animals.yaml` の `beast`）。ただし `immunity` は固定値で、
 生活では上下しません——上の表で押し下げを宣言している段は、どれも人しか持たない値のものだからです
@@ -271,11 +271,11 @@
 傷み具合は `durability` の**残りの割合**で刻みます。腐る速さは分類で違いますが、`durability` は種類に
 よらず 960<!-- codex: foods.yaml traits.perishable.props.durability.value --> から始まるので、同じ境目が全部の食べ物で同じ「残り」を指します。
 
-| 段 | 残り | 食べて当たる割合 |
+| 段 | 下限（`durability`） | `spoilage` |
 | --- | --- | --- |
-| `sound` | 半分より上 | 当たらない |
-| `stale` | 半分〜4 分の 1 | 3 回に 1 回 |
-| `rotten` | 4 分の 1 未満 | 3 回に 2 回 |
+| `sound` | 480<!-- codex: foods.yaml traits.perishable.props.durability.stages.2.min --> | 0<!-- codex: foods.yaml traits.perishable.props.spoilage.value -->（当たらない） |
+| `stale` | 240<!-- codex: foods.yaml traits.perishable.props.durability.stages.1.min --> | 25<!-- codex: foods.yaml traits.perishable.props.durability.stages.1.passives.0.modify.self.spoilage --> |
+| `rotten` | 0<!-- codex: foods.yaml traits.perishable.props.durability.range.min --> | 100<!-- codex: foods.yaml traits.perishable.props.durability.stages.0.passives.0.modify.self.spoilage --> |
 
 引くのは `eat` の末尾の `pick`（[`GameElementDefinition.md`](./GameElementDefinition.md) 10 節）で、重みは
 **無事 100<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.0.weight --> : 吐く `spoilage` : 下す `spoilage`**。`spoilage` は上の段が `modify` で押し上げる食べ物側の
@@ -284,8 +284,8 @@
 
 | 症状 | 何が起きるか | どう書くか |
 | --- | --- | --- |
-| 吐く | 腹が空になり、少し前に食べた分まで失う | `satiety` を `set` で 0<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.1.set.agent.satiety -->、3 本を `add` で 40（`max` の 3 分の 1）ずつ |
-| 下痢 | 食べた物が身にならない＋脱水 | 3 本を `add` で 40 ずつ、`hydration` をさらに 48（半日ぶん） |
+| 吐く | 腹が空になり、少し前に食べた分まで失う | `satiety` を `set` で 0<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.1.set.agent.satiety -->、3 本を `add` で -40<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.1.add.agent.carbohydrate --><!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.1.add.agent.protein --><!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.1.add.agent.lipid --> ずつ |
+| 下痢 | 食べた物が身にならない＋脱水 | 3 本を `add` で -40<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.2.add.agent.carbohydrate --><!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.2.add.agent.protein --><!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.2.add.agent.lipid --> ずつ、`hydration` をさらに -48<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.2.add.agent.hydration --> |
 
 **`pick` は `add` より後ろに置きます**——腹に収めてから吐くので、順が逆だと吐いた後に食べたことに
 なります（同 9.7 節）。下痢は「行き先が無いまま減らす」ので、`transfer` ではなく `add` で書きます。
@@ -381,7 +381,7 @@
   （4 節）、採るのが探索だけで済むからです。**島でいちばん安いのはベリーの茂み**ですが、この表には
   出ません——朽ちない設備の待ち生産には按分する寿命が無いので値段が付かず
   （`balanceTables` の `obtainableWithoutCost`）、**通う手間しか払わないぶん、表より安い側へずれます**
-  （1 株が 3 日で 2 個<!-- codex: locations.yaml object_defs.berry_bush.props.ripening_remaining.on_min.spawn.count -->実らせ（`locations.yaml`）、1 個が 65mg<!-- codex: foods.yaml object_defs.berry.interactions.eat.add.agent.vitamin -->（`foods.yaml`）なので 1 日 43mg）。**壊血病は、手当ての値段ではなく忘れることで起きます。**
+  （1 株が 3 日で 2 個<!-- codex: locations.yaml object_defs.berry_bush.props.ripening_remaining.on_min.spawn.count -->実らせ（`locations.yaml`）、1 個が 65mg<!-- codex: foods.yaml object_defs.berry.interactions.eat.add.agent.vitamin -->（`foods.yaml`））。**壊血病は、手当ての値段ではなく忘れることで起きます。**
 - **脂は、葉物より高くつきます。** 献立に入る果肉は 1 つに満たないのに葉物より高いのは、**脂が探索だけ
   では採れない**——皮をはぎ、割り、掻き出す——ことがそのまま出たものです。**それでも桁は変わらず、
   肉に偏った献立でも `fat_starved` は既定になりません**——表が運ぶ脂が 1 日ぶんに届いています
@@ -396,7 +396,7 @@
 
 ## 未決事項・今後の検討課題
 
-- 菌と免疫の定数（6.1・6.2 節）。倍加時間 30 分（`+0.15/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.passives.0.add.self.pathogen -->）・段ごとの除去・感染中の `+0.25/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.passives.0.add.self.immunity -->・
+- 菌と免疫の定数（6.1・6.2 節）。増える速さ（`+0.15/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.passives.0.add.self.pathogen -->）・段ごとの除去・感染中の `+0.25/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.passives.0.add.self.immunity -->・
   生肉 1 食の `+3`<!-- codex: animals.yaml object_defs.raw_meat.interactions.eat.add.agent.pathogen --> は、いずれも桁を置いただけで、**遊びとして妥当かは通してみないと分からない**
 - 獣の免疫の高さ（6.2 節）。人の健康時と同じに置いてあるが、**野生の動物の免疫が実際どの程度かは
   分からない**
