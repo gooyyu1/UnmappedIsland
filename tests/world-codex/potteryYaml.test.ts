@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { spawnsObject } from '../../src/codex-viewer/describe/effectQueries';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
@@ -282,8 +284,8 @@ describe('pottery.yamlの土器の連鎖', () => {
     // 上限を書いていないので同種はいくつでも入るが、**上限を書けばここで落ちる**——1つずつしか
     // 並べない検査では、蓋の代価が炉1つぶん増えても緑のままになる。
     //
-    // 数は航海へ積む甕の長い側（Voyage.md 3.9.6節の3〜4つ）。
-    const voyageJars = 4;
+    // 数は航海へ積む甕の長い側（Voyage.md 3.9.6節）。
+    const voyageJars = jarsForLongestVoyage();
     const kiln = fireDriedGreenware(24, [
       ...Array.from({ length: voyageJars }, () => 'unfired_jar'),
       ...Array.from({ length: voyageJars }, () => 'unfired_jar_lid'),
@@ -302,3 +304,15 @@ describe('pottery.yamlの土器の連鎖', () => {
     expect(jar.tags).toContain(codex.tagNames.getId('fragile'));
   });
 });
+
+/**
+ * `Voyage.md` 3.9.6節が書いた、航海へ積む甕の数の長い側。**数は文書から読む**——その数が宣言どおりかは
+ * `tests/diagnostics/waterAndBloodPace.test.ts` が見ているので、ここで割り算を組み直すと、同じ数を
+ * 2通りに出して暗黙に揃えることになる。
+ */
+function jarsForLongestVoyage(): number {
+  const voyage = readFileSync(join('docs', 'world', 'Voyage.md'), 'utf8').replace(/<!--[^>]*-->/g, '');
+  const packing = /3\.9\.1 節の \d+〜\d+ 日なら\s*\*\*\d+〜(\d+) つ\*\*/.exec(voyage);
+  expect(packing, '`Voyage.md` 3.9.6節の積む数が読めない').not.toBeNull();
+  return Number(packing![1]);
+}
