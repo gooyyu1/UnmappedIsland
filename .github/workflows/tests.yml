@@ -50,31 +50,42 @@ jobs:
       - name: Run tests
         run: npx vitest run --reporter=default --reporter=github-actions
 
-  # 作業ツリーが CRLF でも読めているか。**上の `test` は LF の作業ツリーで走るので**、
-  # `core.autocrlf=true` で取り出す人（Windows）の手元でだけ落ちるものは緑のまま通る
-  # （issue #867・#2171 で実際に落ちた）。リポジトリのファイルを改行コードに依らず読むという
-  # 決めごと（`docs/CodingConventions.md`「ファイルの読み込み」）を、ここだけが見ている。
+  # ブリッジ（Windows・`core.autocrlf=true` の作業ツリー）の手元でだけ落ちる検査を、ここで落とす。
+  # **上の `test` は Linux・LF の作業ツリーで走るので**、どちらの壊れ方も緑のまま通る——CRLF で
+  # 読み損ねる読み手（issue #867・#2171）と、Windows でしか起きないもの（issue #2335 で283件落ちて
+  # いた。MSYS 系の bash の綴りを node が開けない・大小を区別しないファイルシステム・`fetch` の後の
+  # `process.exit` で node が落ちる、など）。リポジトリのファイルを改行コードに依らず読むという決めごと
+  # （`docs/CodingConventions.md`「ファイルの読み込み」）を見ているのも、ここだけ。
   #
   # 上の `test` と分けるのは、**止まる理由を混ぜないため**。ここだけが赤いなら、直す先は
-  # 改行コードに依らず読めていない読み手に絞られる。lint・整形・ビルドは上が見るので `npm test` だけ。
-  crlf:
-    name: vitest（CRLFの作業ツリー）
-    runs-on: ubuntu-latest
+  # Windows か CRLF に依って壊れる箇所に絞られる。lint・整形・ビルドは上が見るので `npm test` だけ。
+  windows:
+    name: vitest（Windows・CRLFの作業ツリー）
+    runs-on: windows-latest
+    # 試験が起こす `bash` を、ブリッジと同じ MSYS 系（Git for Windows）の bash に解かせる。既定の
+    # PowerShell から node を起こすと、`PATH` の先に在る `System32\bash.exe`（WSL）を掴みうる。
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      # ランナーの git は `core.autocrlf` を持たないので、`actions/checkout` は LF で取り出す。取り出した
-      # 後で設定を入れ、索引を捨てて取り出し直す。`.gitattributes` が LF に固定した種類は LF のまま残る。
+      # `actions/checkout` が CRLF で取り出すかはランナー画像の git の設定次第なので、当てにしない。
+      # 取り出した後で設定を入れ、索引を捨てて取り出し直す。`.gitattributes` が LF に固定した種類は
+      # LF のまま残る。
       - name: 作業ツリーを CRLF で取り出し直す
         run: |
           set -euo pipefail
           git config core.autocrlf true
           git rm -rq --cached .
           git reset -q --hard
-          # 取り出し直しが効かないと、このジョブは上の `test` と同じものを見て緑になる。
-          if ! grep -q $'\r$' package.json; then
-            echo "::error::package.json が CRLF になっていません。作業ツリーを CRLF で取り出し直せていないので、このジョブは何も見ていません。"
+          # 取り出し直しが効かないと、このジョブは CRLF の作業ツリーを見ないまま緑になる。改行は
+          # git 自身に答えさせる——Git for Windows の `grep $'\r$'` は、CRLF のファイルにも当たらない。
+          eol=$(git ls-files --eol package.json)
+          echo "$eol"
+          if [[ $eol != *w/crlf* ]]; then
+            echo "::error::package.json が CRLF になっていません（$eol）。作業ツリーを CRLF で取り出し直せていないので、このジョブは何も見ていません。"
             exit 1
           fi
 

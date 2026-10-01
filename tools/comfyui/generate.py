@@ -21,6 +21,7 @@ import json
 import os
 import random
 import subprocess
+import sys
 import tempfile
 import time
 import urllib.error
@@ -29,6 +30,9 @@ import urllib.request
 from pathlib import Path
 
 import raw_store
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_SERVER = "http://127.0.0.1:8188"

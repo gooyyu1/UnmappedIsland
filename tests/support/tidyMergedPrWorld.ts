@@ -13,11 +13,7 @@ import { STUB_SHEBANG } from './stubShebang';
  *
  * **1回の実行で外部プロセスが数十個起きる**（スタブがさらに `jq` を呼ぶため）。Windowsではプロセス
  * 生成が1回10〜30msかかるので、これを叩く試験は1件あたり1.6秒前後になる（2026-08 に測ったとき）。
- * **1ファイルに詰め込むと vitest のワーカーが本体へ返す `onTaskUpdate` の60秒を超えて落ちる**
- * ——同期の `execFileSync` がイベントループを止めるので、本体からの返事を受け取る前にタイマーが鳴る。
- * だから叩く側は責務ごとにファイルを分けてある。
- *
- * 身代わりの先頭の1行を直に書かず [`STUB_SHEBANG`](stubShebang.ts) から取るのも同じ理由。
+ * 身代わりの先頭の1行を直に書かず [`STUB_SHEBANG`](stubShebang.ts) から取るのはそのため。
  */
 
 const SCRIPT = resolve(__dirname, '../../scripts/daemon/tidy-merged-pr.sh');

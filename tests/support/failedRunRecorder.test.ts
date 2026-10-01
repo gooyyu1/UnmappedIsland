@@ -1,5 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -19,7 +27,9 @@ function runVitestOn(
   files: Readonly<Record<string, readonly string[]>>,
   prepare: (root: string) => void = () => {},
 ): { root: string; stdout: string } {
-  const root = mkdtempSync(join(tmpdir(), 'failed-run-'));
+  // 実パスへ直してから渡す。Windows の `tmpdir()` は 8.3 形式の短い名前（`RUNNER~1`）を返すことが
+  // あり、vitest はその `--root` の下に置いた検査を解決できない。
+  const root = realpathSync.native(mkdtempSync(join(tmpdir(), 'failed-run-')));
   roots.push(root);
   prepare(root);
   mkdirSync(join(root, 'tests'));

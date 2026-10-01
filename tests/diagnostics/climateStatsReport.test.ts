@@ -17,8 +17,8 @@ import {
   formatYamlReport,
   rounded,
   statRecordWith,
-  yieldToEventLoop,
 } from '../support/generatedReport';
+import { yieldToEventLoop } from '../support/yieldToEventLoop';
 import { Stat } from '../support/Stat';
 import { bundledCodex, worldCodexPath } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';

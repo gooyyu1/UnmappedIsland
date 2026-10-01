@@ -15,6 +15,9 @@ import traceback
 from fetch_events import fetch
 from paths import cost, data
 
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
+
 SINCE = (sys.argv[1] if len(sys.argv) > 1 else "2000-01-01") + "T00:00:00Z"
 
 

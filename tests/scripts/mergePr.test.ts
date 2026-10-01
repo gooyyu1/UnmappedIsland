@@ -10,7 +10,7 @@ import { run } from '../support/mergePrWorld';
  *
  * **後片付けはここには無い**（`tests/scripts/tidyMergedPr.test.ts`）。
  *
- * 世界の組み方と、ファイルを分けてある理由は `tests/support/mergePrWorld.ts`。
+ * 世界の組み方は `tests/support/mergePrWorld.ts`。
  */
 
 /**

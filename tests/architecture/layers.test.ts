@@ -407,8 +407,8 @@ describe('層の境界', () => {
   });
 
   it('CRLFの作業ツリーでも、表の行と図のノードを同じに読む', () => {
-    // CIはLFでしか走らないので、字面で拾う処理に改行を直書きしても向こうでは気づけない。**CRLFに
-    // した同じ文書を通して**、読み口が改行の種類を吸収していることをLFの側から見る。
+    // 字面で拾う処理に改行を直書きしても、LFの作業ツリーでは気づけない。**CRLFにした同じ文書を
+    // 通して**、読み口が改行の種類を吸収していることをLFの側から見る。
     const crlf = structureDoc(readFileSync(join(ROOT, STRUCTURE_DOC), 'utf-8').replace(/\r?\n/g, '\r\n'));
 
     expect(diagramNodes(crlf), '図がCRLFで読めていない').toEqual(diagramNodes());
