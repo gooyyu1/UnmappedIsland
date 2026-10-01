@@ -836,10 +836,10 @@
 **積む手段は甕とヤシの実の 2 つで、どちらで運ぶかはプレイヤーが選びます**
 （[`ContentSkeleton.md`](./ContentSkeleton.md) 5.3 節）。**この節が数えているのは甕の側**です。
 
-**水は海の上で得られないので、日数ぶんを積み切ります。** 甕 1 つが何日ぶんかは
-[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5 節の割り算で、遠回りを見込んだ
-3.9.1 節の 4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日をそれで割った数が
-**積む甕の数**です（最も長い行程の数は `tests/world-codex/potteryYaml.test.ts` が数えます）。**蓋をすればこれがそのまま積む数で、蓋をしなければ下限です**——蒸発が押し上げ、積む物を
+**水は海の上で得られないので、日数ぶんを積み切ります。** 甕 1 つは 1.7 日ぶん
+（[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5 節）なので、遠回りを見込んだ
+3.9.1 節の 4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日なら
+**3〜4 つ**。**蓋をすればこれがそのまま積む数で、蓋をしなければ下限です**——蒸発が押し上げ、積む物を
 誤れば食い方の側からも押し上がります。
 
 - **蓋をすれば、蒸発は 1mL も引きません**（同 6.2 節）。**蓋の有無がそのまま積む数に出る**のがここで、
