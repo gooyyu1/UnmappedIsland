@@ -43,7 +43,7 @@
 仕掛ける・待つ・掛かる・怪我が刺さる・死ぬか生き延びる・閉じ込めれば渇く・放置すれば壊れる、までが
 動きます。**未実装なのはかご罠だけ**です。檻に大型が掛かるのはその土地が `wild_boar_catch` を宣言してからで
 （3 節）、**森と密林が宣言済みです**——密林の檻はヤケイとイノシシを、森の檻はイノシシだけを捕らえ、
-残りの土地では大型は掛かりません。数値はいずれも目安で、1 tick（15 分）・96 tick（1 日）を前提とします。
+残りの土地では大型は掛かりません。数値はいずれも目安で、1 tick（15<!-- codex: core.yaml object_defs.world.props.minutes_per_tick.value --> 分）を前提とします。
 未決事項は 8 節に整理しています。
 
 ## 1. 罠は 1 つの型で、土地に置かれている間だけ動く
@@ -121,11 +121,11 @@ object_defs:
 - **穴を掘る手間は、檻を組む手間と同じだけ置いてあります**（`traps.yaml` の `dug` と `farming.yaml`
   の `fenced`）。**開いている差は材料だけ**で、穴は太い枝 1 本、檻は丸太と縄です。**ただしこの 2 つは
   どちらも生かす側**——落ちた大型は杭のあるなしにかかわらず生きて拘束される（下）ので、ここに出て
-  いる差は「もがかれて 1 日弱で破られる穴に留め置く」（6.1 節）と「渇き（5.4 節）だけを罰に飼い続
+  いる差は「もがかれて 2.7 日<!-- stats: durations.yaml durations object=pitfall property=durability shortest_days -->で破られる穴に留め置く」（6.1 節）と「渇き（5.4 節）だけを罰に飼い続
   ける」の差です。**大型で殺す側に付く上乗せは、長い棒 1 本と打つ手間だけ**（`drive_stake`）で、
   檻の材料には届きません。
-- **「殺す」欄が掛かったその場で殺すのは、今はネズミだけです。** くくり罠の傷（30〜60 mL）で血が尽きるのは
-  6 mL<!-- codex: animals.yaml object_defs.rat.props.blood.value --> のネズミで、ヤケイ（80 mL<!-- codex: animals.yaml object_defs.junglefowl.props.blood.value -->）はその場では死にません（5.1 節）。**杭の刺し傷（1,000 mL）もイノシシの
+- **「殺す」欄が掛かったその場で殺すのは、今はネズミだけです。** くくり罠の傷で血が尽きるのは
+  6 mL<!-- codex: animals.yaml object_defs.rat.props.blood.value --> のネズミで、ヤケイ（80 mL<!-- codex: animals.yaml object_defs.junglefowl.props.blood.value -->）はその場では死にません（5.1 節）。**杭の刺し傷もイノシシの
   4,600 mL<!-- codex: animals.yaml object_defs.wild_boar.props.blood.value --> に届きません**（8 節）。**落ちた大型は、杭のあるなしにかかわらず生きて拘束されます**
   ——`stake` 軸が入れ替えるのは刺す怪我だけで、掛かる候補も 5 節の拘束の 1 ブロックも同じものです
   （`traps.yaml`）。
@@ -232,7 +232,7 @@ props:
 **「いつ結果が出るか分からない」は、タイマーの初期値を毎回振り直すのではなく、当たるまでの回数が
 決まっていないことが作ります。**
 
-抽選は 16 tick<!-- codex: traps.yaml object_defs.snare.props.catch_remaining.on_min.add.self.catch_remaining --><!-- codex: traps.yaml object_defs.pitfall.props.catch_remaining.on_min.add.self.catch_remaining --><!-- codex: farming.yaml object_defs.pen.props.catch_remaining.on_min.add.self.catch_remaining -->（4 時間）ごとに回り、1 回あたりの成功率は 3 節が決めます。仮に 3 割なら、掛かるまでの
+抽選は 16 tick<!-- codex: traps.yaml object_defs.snare.props.catch_remaining.on_min.add.self.catch_remaining --><!-- codex: traps.yaml object_defs.pitfall.props.catch_remaining.on_min.add.self.catch_remaining --><!-- codex: farming.yaml object_defs.pen.props.catch_remaining.on_min.add.self.catch_remaining -->ごとに回り、1 回あたりの成功率は 3 節が決めます。仮に 3 割なら、掛かるまでの
 待ち時間は幾何分布になり——数時間で掛かることも、丸一日空振りが続くこともあります。**乱数を 1 つも
 足さずに、狩猟には無い「待たされる」が出ます。**
 
@@ -388,7 +388,7 @@ passives:
 - **`miss_weight` の `range.min` が 5<!-- codex: traps.yaml object_defs.snare.props.miss_weight.range.min --><!-- codex: traps.yaml object_defs.pitfall.props.miss_weight.range.min --><!-- codex: farming.yaml object_defs.pen.props.miss_weight.range.min --> で止めるので、餌を積んでも必中にはなりません**
   （`GameElementDefinition.md` 8.3 節。合成結果の下限はプロパティ側の `range` が持ちます）。両方の餌を
   仕掛ければ両方の卓が上がりますが、そのぶん食料を 2 種類ぶん賭けることになります。
-- **餌は仕掛けている間だけ減ります**——24 tick（6 時間）で切れます。**罠を放置しても餌は待っていてくれない**ので、
+- **餌は仕掛けている間だけ減ります**——上限の 24<!-- codex: traps.yaml object_defs.snare.props.plant_bait.range.max --> から `-1/tick`<!-- codex: traps.yaml object_defs.snare.props.plant_bait.passives.0.add.self.plant_bait --> で減って切れます。**罠を放置しても餌は待っていてくれない**ので、
   「餌を仕掛けて見に行く」が 1 往復の単位になります。
 - **時間で減るのは、持ち歩ける罠だけです。** 据え置きの檻（1.2 節）の飼葉は時間では傷みません
   ——持ち歩ける罠が見回りの速さを代償にしているのに対し、据え置きの罠が払うのは材料だからです
@@ -491,7 +491,7 @@ snare_laceration:
         max: 480  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.range.max -->
       passives: [{add: {self: {severity: -1}}}]  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.passives.0.add.self.severity -->
       on_min: {destroy: self}
-    # 掛かり方の深さ。2〜4 tickで固まり、その間に30〜60mLを奪う。
+    # 掛かり方の深さ。深く掛かるほど固まるまでが長く、そのぶん多く奪う。
     bleeding:
       value:
         min: 40  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.value.min -->
@@ -511,12 +511,12 @@ snare_laceration:
 **掛かった tick に死ぬかどうかは、怪我が奪う量と獲物の体格の比が決めます。** `blood` の `range.max` は体格そのもの
 （サル 5 kg で 400 mL<!-- codex: animals.yaml object_defs.monkey.props.blood.value -->）なので、同じ 1 枚の傷が体格で意味を変えます。
 
-| 獲物 | 血の量 | 奪われる 30〜60 mL は | 血が固まるまでの結果 |
+| 獲物 | 血の量 | 奪われる量は | 血が固まるまでの結果 |
 |---|---|---|---|
 | ネズミ（80 g<!-- codex: animals.yaml object_defs.rat.props.weight.value -->） | 6<!-- codex: animals.yaml object_defs.rat.props.blood.value --> | 全部 | **必ず死ぬ** |
-| ヤケイ（1 kg） | 80<!-- codex: animals.yaml object_defs.junglefowl.props.blood.value --> | 4〜8 割 | 血は尽きない（残りは 50 / 35 / 20 mL） |
-| サル（5 kg） | 400<!-- codex: animals.yaml object_defs.monkey.props.blood.value --> | 1 割前後 | 血は尽きない |
-| イノシシ（60 kg） | 4,600<!-- codex: animals.yaml object_defs.wild_boar.props.blood.value --> | 1 % 前後 | 応えない |
+| ヤケイ（1 kg） | 80<!-- codex: animals.yaml object_defs.junglefowl.props.blood.value --> | 大きな割合 | 血は尽きない |
+| サル（5 kg） | 400<!-- codex: animals.yaml object_defs.monkey.props.blood.value --> | 小さな割合 | 血は尽きない |
+| イノシシ（60 kg） | 4,600<!-- codex: animals.yaml object_defs.wild_boar.props.blood.value --> | ごくわずか | 応えない |
 
 **この表が答えるのは「その場で血が尽きるか」だけです。** 血が止まった後も傷は残り、そこから先は体格を
 見ません（下の「血が止まっても、傷は膿み続けます」）。
@@ -525,45 +525,45 @@ snare_laceration:
   書いていないのは、怪我の側が奪う量を宣言し、体格の側が持ちこたえる量を宣言しているからです。
 - **同じ罠でも、奪う量は同じになりません。** 掛かりの深さのロール（`bleeding` の `{min: 40, max: 100}`<!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.value.max -->）が
   罠の運の 2 つ目です（1 つ目は 2.1 節の「いつ掛かるか」）。**ただし今の顔ぶれで、このロールが生死を
-  分けることはありません**——分かれ目になるのは血が 30〜60 mL に収まる獣（体格にしておよそ 400〜750 g）
+  分けることはありません**——分かれ目になるのは、奪われる量の幅の中に血の量が収まる獣
   だけで、ネズミは必ず死に、ヤケイ以上は血が尽きません。**分かれるのはヤケイがどこまで落ちるかです**——
-  最も深く掛かった個体は 60 mL を失って 20 mL しか残らず、`exsanguinated`（32 mL<!-- codex: animals.yaml object_defs.junglefowl.props.blood.stages.1.min --> 未満。失血で助からない
+  最も深く掛かった個体は `exsanguinated`（32 mL<!-- codex: animals.yaml object_defs.junglefowl.props.blood.stages.1.min --> 未満。失血で助からない
   域、`VitalsSystem.md` 3 節）へ入って意識を失います。
-- **見回りが早ければ、落ちる先が変わります。** 出血は 2〜4 tick（30 分〜1 時間）で固まり、その間に
-  止血の治療具を当てれば `add` のゲートが閉じます（`InjurySystem.md` 3.1 節）。ヤケイが失うのは止まる
-  までの tick 数だけ増えて 30 / 45 / 60 mL で、**30 mL で止まれば意識が残り、45 mL では傷の痛み
-  （`pain: 50`<!-- codex: injuries.yaml object_defs.snare_laceration.passives.0.modify.parent.pain --> が意識を -20<!-- codex: animals.yaml traits.beast.props.pain.stages.2.passives.0.modify.self.consciousness -->）と合わさって気を失い、60 mL では `exsanguinated` に入ります。**
+- **見回りが早ければ、落ちる先が変わります。** 出血は掛かりの深さに応じて数 tick で固まり、その間に
+  止血の治療具を当てれば `add` のゲートが閉じます（`InjurySystem.md` 3.1 節）。ヤケイが失う量は止まる
+  までの tick 数だけ増え、**早く止まれば意識が残り、もう少し流れると傷の痛み
+  （`pain: 50`<!-- codex: injuries.yaml object_defs.snare_laceration.passives.0.modify.parent.pain --> が意識を -20<!-- codex: animals.yaml traits.beast.props.pain.stages.2.passives.0.modify.self.consciousness -->）と合わさって気を失い、最後まで流れれば `exsanguinated` に入ります**。
   ネズミは掛かった tick のうちに死ぬので間に合いません——**掛かった直後について罠を見に行く速さが
   買えるのは、生死ではなくこの差です。**
 - **杭を打った落とし穴は、槍と同じ刺し傷を刺します**（`puncture_wound`）。落ちて貫かれるのも突かれるのも
   深部の血管を開いたまま残す傷なので、罠のためだけの型は作りません（`InjurySystem.md` 4.2 節
   「武器の性格は、傷の枚数ではなく傷の中身で表す」と同じ形）。**サイズの差は罠の側ではなく、刺す怪我の
-  中身が持ちます**——固まるまでに奪う 1,000 mL はくくり罠の傷（30〜60 mL）の 20 倍前後で、穴に落ちる
-  唯一の相手であるイノシシ（4,600 mL<!-- codex: animals.yaml object_defs.wild_boar.props.blood.value -->、1.1 節）でも 2 割を超えます。
+  中身が持ちます**——刺し傷の流れ（`-250/tick`<!-- codex: injuries.yaml object_defs.puncture_wound.passives.1.add.parent.blood -->）はくくり罠の傷（`-15/tick`<!-- codex: injuries.yaml object_defs.snare_laceration.passives.1.add.parent.blood -->）より桁で大きく、
+  穴に落ちる唯一の相手であるイノシシ（4,600 mL<!-- codex: animals.yaml object_defs.wild_boar.props.blood.value -->、1.1 節）も大きく削ります。
   ただし**その場では 60 kg は死にません**。杭が変えるのは「深手を負って血を流している」ところまでで、
   回収に戻った時点で仕留めるのは拘束された相手への一撃（5 節）になります。**穴の中で死ぬのを待つことも
   できません**——待てる長さより先に罠が破られ、獲物ごと失います（すぐ下の箇条書き）。1 枚で殺し切る
   傷を用意するかは 8 節の未決事項です。
 - **血が止まっても、傷は膿み続けます。** 殺す罠の裂傷も刺し傷も `open_wound` を名乗る（`injuries.yaml`）ので、
   固まった後は `infection` が上がります（[`InjurySystem.md`](./InjurySystem.md) 6 節）。獣の免疫は生活で
-  上下しない固定値（`animals.yaml`）なので上がる速さも一定で、傷を負ってから 320 tick（3.3 日）で `septic` へ
-  入り、そこから宿主の `pathogen` を押し上げて 344 tick で `septicemic`、以後は体格によらず 40 mL/tick で
-  血を失います。**体格が変えるのは死ぬかどうかではなく、そこから何 tick 保つかだけです**——ヤケイは
-  345 tick、イノシシは 454 tick（4.7 日）で血が尽きます。**くくり罠の傷は、ここでも掛かりの深さで
-  分かれます**——`severity` の初期値が 345 以上の個体（ロールの幅 240<!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.value.min -->〜480<!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.value.max --> の上半分ほど）だけが敗血症へ届き、
+  上下しない固定値（`animals.yaml`）なので上がる速さも一定で、傷を負ってから日の単位で `septic` へ
+  入り、そこから宿主の `pathogen` を押し上げて `septicemic`、以後は体格によらず同じ速さで
+  血を失います。**体格が変えるのは死ぬかどうかではなく、そこから何 tick 保つかだけです**——小さい相手ほど
+  早く血が尽きます。**くくり罠の傷は、ここでも掛かりの深さで
+  分かれます**——`severity` の初期値が高い個体（ロールの幅 240<!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.value.min -->〜480<!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.value.max --> の上のほう）だけが敗血症へ届き、
   それより浅い個体は膿み切る前に傷のほうが消えます。**杭の刺し傷は 720<!-- codex: injuries.yaml object_defs.puncture_wound.props.severity.value --> で固定なので、必ず届きます。**
 - **放置した罠でも、傷は最後まで行きます。** 獲物が入っている間、罠は速く傷んで破られ（6.1 節）、
   こぼれた獲物はその土地に立ちます。**立ち去りの時計は深手のあいだ止まる**
   （[`HuntingSystem.md`](./HuntingSystem.md) 5.6 節）ので、こぼれても数え始めません——**罠を失った後も、
   傷が決着するまでその獲物はそこに居ます。** 決着の仕方は上の箇条書きと同じで、掛かりの深さで分かれます。
   - **敗血症へ届く個体は、野ざらしのまま倒れます。** くくり罠で深く掛かった個体（`severity` の初期値が
-    345 以上）と、杭の刺し傷（720<!-- codex: injuries.yaml object_defs.puncture_wound.props.severity.value --> で固定）のすべてです。**死体はその土地に残る**ので、遅れて戻った側が
+    高いもの）と、杭の刺し傷（720<!-- codex: injuries.yaml object_defs.puncture_wound.props.severity.value --> で固定）のすべてです。**死体はその土地に残る**ので、遅れて戻った側が
     拾えるのは獲物ではなく死体で、そこからは腐敗の時計が別に走ります（[`HuntingSystem.md`](./HuntingSystem.md) 1.5 節）。
   - **届かない個体は、傷が癒えてから 96 tick<!-- codex: animals.yaml traits.beast.props.stay_remaining.value --> で立ち去ります。** くくり罠に浅く掛かった個体がこれで、
     **罠を失った後にもう一度だけ狩り直す猶予**が残ります。
 - **死体は罠の中に残ります。** 枠が `quarry` で受ける（1.1 節）ので、`same_slot` の置き換えがそのまま
   通ります。タイマーのゲートも同じタグを問う（2 節）ので、**死体が入ったままでも次の抽選は回りません**。
-- **最も小さい相手は、掛かった tick のうちに死にます。** 傷は最初の 1 tick で 15 mL 奪うので、
+- **最も小さい相手は、掛かった tick のうちに死にます。** 傷は最初の 1 tick で血を奪い切るので、
   6 mL<!-- codex: animals.yaml object_defs.rat.props.blood.value --> のネズミは生きた姿で 1 度も画面に出ません。
 - **掛かっていることは漏れません。** 出血の印（`CardView.md` 9.0 節）が上がるのは怪我を負った本人まで
   で、UI が見るのは直下の子だけです。罠の直下に居るのは動物で、動物自身は `bleeding` を持たないため、
@@ -661,7 +661,7 @@ bruise:
 **獣も `hydration` と `body_fat` を持ちますが、減るのは `catch` の枠の中に居る間だけです。**
 野生の個体では減りません。
 
-- **島中の獣が 3 日で死ぬことはありません。** 獣が自分で水を飲む仕組みは無いままなので、無条件に
+- **島中の獣が数日で死ぬことはありません。** 獣が自分で水を飲む仕組みは無いままなので、無条件に
   減らせば全滅します。**ゲート 1 つで「飲めない状況に置いたのは誰か」を言い分けられます**——閉じ込め
   たのはプレイヤーなので、そこだけ責任が生じます。
 - **ゲートは罠の型を問いません。** くくり罠・かご罠・落とし穴・檻・家畜の囲いのどれも枠の名前は
@@ -696,8 +696,8 @@ hydration:
     destroy: {subject: self, reason: dehydrated}
 ```
 
-くくり罠がもがかれて壊れるまでは 21 時間（6.1 節）、閉じ込めた獣が渇いて死ぬまでは満水から 3 日半、
-飢えて死ぬまでは 67 日です。**飢えだけが罠の時間の桁から外れている**ので、5.4節の「罰として働くのは
+くくり罠がもがかれて壊れるまでは 0.91 日<!-- stats: durations.yaml durations object=snare property=durability shortest_days -->（6.1 節）、閉じ込めた獣が渇いて死ぬまでは満水から 3.5 日<!-- stats: durations.yaml durations object=junglefowl property=hydration days -->、
+飢えて死ぬまでは 67 日<!-- stats: durations.yaml durations object=junglefowl property=body_fat days -->です。**飢えだけが罠の時間の桁から外れている**ので、5.4節の「罰として働くのは
 渇きだけ」がここで出ます。
 
 ## 6. 回収するまで、次は掛からない
@@ -731,10 +731,10 @@ props:
       max: 960  # <!-- codex: traps.yaml object_defs.snare.props.durability.range.max -->
     passives:
       - conditions: [{in_slot: items}]
-        # 屋外での劣化（10日）
+        # 屋外での劣化
         add: {self: {durability: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.durability.passives.0.add.self.durability -->
       - conditions: [{slot: catch, matches: {tag: quarry}}]
-        # もがかれている間（新品でも1日弱）
+        # もがかれている間（屋外より桁違いに速い、下の箇条）
         add: {self: {durability: -10}}  # <!-- codex: traps.yaml object_defs.snare.props.durability.passives.1.add.self.durability -->
     on_min:
       destroy: self
@@ -742,7 +742,7 @@ props:
 
 **壊れた罠の中身は、道連れにならず土地へこぼれます**（`GameElementDefinition.md` 9.3 節）。
 
-- **罰は罠と獲物の両方を失うことです。** 罠が破られるまでのおよそ 86 tick（21.5 時間）で
+- **罰は罠と獲物の両方を失うことです。** 罠が破られるまでの 0.91 日<!-- stats: durations.yaml durations object=snare property=durability shortest_days -->で
   警戒は引き切っている（5 節）ので、こぼれた獲物は暴れも逃げもせず、その土地に立っています。
   **そのまま放っておけば、立ち去りまでの残りが尽きて獲物も消えます**
   （[`HuntingSystem.md`](./HuntingSystem.md) 5.6 節）——地面に立っている間だけ減る値なので、
@@ -768,7 +768,7 @@ props:
 |---|---|---|
 | **危険** | 反撃を受ける。深手は数日残り、手当ての間も殴られる | 無い。掛かった相手は拘束されている（5 節） |
 | **拘束** | tick が動物の手番なので、対峙している間は他のことができない | 仕掛けたら別の土地へ行ける。ただし回収に戻る（6 節） |
-| **時間** | 15 分<!-- codex: animals.yaml traits.beast.interactions.strike.duration -->の一撃を重ねる。決着はその場 | 4 時間ごとに 1 回抽選。掛かるまで何度でも回る（2 節） |
+| **時間** | 15 分<!-- codex: animals.yaml traits.beast.interactions.strike.duration -->の一撃を重ねる。決着はその場 | 16 tick<!-- codex: traps.yaml object_defs.snare.props.catch_remaining.on_min.add.self.catch_remaining --> ごとに 1 回抽選。掛かるまで何度でも回る（2 節） |
 | **前払い** | 武器（作る手間と、賭ける耐久） | 罠（サイズと生死で変わる、1.2 節）と餌（**食べられる食料**、4 節） |
 | **獲物** | 大型まで。1 頭で数日分の肉 | 罠の型が並べた候補まで（1.1 節）。小型の罠なら 1 匹の肉は少ない |
 | **運** | 当たり所と、負う怪我の抽選 | **いつ・何が掛かるかの抽選**（2.1 節・3 節） |
@@ -783,7 +783,7 @@ props:
 **大型ほど、この差が開きます。** ネズミに選択はありません——載るのはくくり罠の卓だけで（檻は丸太の
 隙間から出ていく大きさを並べない、1.1 節）、掛かれば血 6 mL<!-- codex: animals.yaml object_defs.rat.props.blood.value --> を失って必ず死にます（5.1 節）。
 **ヤケイはくくり罠にも檻にも載り、どちらでも生きて手に入りますが、傷の手当てなしに飼えるのは檻の側
-だけです**——くくり罠の 30〜60 mL は 80 mL<!-- codex: animals.yaml object_defs.junglefowl.props.blood.value --> を空にできない（同節）ので回収の時点ではどちらも生きて
+だけです**——くくり罠の傷は 80 mL<!-- codex: animals.yaml object_defs.junglefowl.props.blood.value --> を空にできない（同節）ので回収の時点ではどちらも生きて
 いますが、くくり罠の傷は開いたままなので、飼うなら傷へ水を注ぎ続けることになります（5.2 節）。
 分かれるのは費用と、**見回りが遅れたときに `exsanguinated` まで落ちるかどうか**と、**連れ帰った先で
 傷を洗う水が上乗せで要るかどうか**です。
@@ -799,7 +799,7 @@ props:
   大型のイノシシは雑食なので（同節）、卓 1 つと `meat_bait` を足せば肉でも寄せられますが、**同じ
   相手を 2 通りの餌で呼べるようにする値打ちがあるか**が先の問いです。肉でしか寄らない相手が出れば
   問いは消えます
-- **閉じ込めた獣の渇きの速さ**（5.5 節）。人と同じ「満水から 3 日半」を獣にも配るのか、体格で変えるのかは、
+- **閉じ込めた獣の渇きの速さ**（5.5 節）。人と同じ「満水から 3.5 日<!-- stats: durations.yaml durations object=junglefowl property=hydration days -->」を獣にも配るのか、体格で変えるのかは、
   囲いに飲み水を置く操作の手間と一緒に決める
 - **同じ土地に罠を何個も置いた場合。** 現状は個数に比例して収穫が増えます。掛かった瞬間に土地の
   `<動物>_catch` を `add` で減らす（獲り尽くすと居なくなる）形は書けますが、**回復の仕組み**を
@@ -823,13 +823,13 @@ props:
   （[`../world/Skills.md`](../world/Skills.md) 5 節）。どちらも腕の持ち主が操作している場面です
   ——**留守のあいだ働く罠は腕を映さない**が、7 節の非対称に「腕前の効き方」の行として加わりました。
   効かせるなら、腕の持ち主が居る場面（餌を仕掛ける、4 節）に何かを残させることになります
-- **落とし穴の掘削具。** **掘り棒にする太い枝を 1 本折り込む（8 時間）形で置いてあります**
+- **落とし穴の掘削具。** **掘り棒にする太い枝を 1 本折り込む形で置いてあります**
   ——畑（`farming.yaml`）が掘削具の代わりに太い枝を折り込んでいるのと同じ仮置きで、掘削具が島に
   入れば、そちらへ移します。**杭のほうは仮置きではありません**——立てるのは長い棒
   （[`SurvivalItems.md`](../world/SurvivalItems.md) 3 節）で、獣の落ちる深さを貫くだけの長さが
   要ります。**そのぶん、生かす罠を殺す罠へ変える手だけが刃物と若木を要求します**
-- **杭を打った落とし穴が大型を殺し切るか。** 今刺さるのは槍と同じ刺し傷（5.1 節）で、固まるまでの
-  1,000 mL はイノシシの 4,600 mL<!-- codex: animals.yaml object_defs.wild_boar.props.blood.value --> を削り切りません。1 枚で殺し切る傷を別に用意するか、深手を負わせて
+- **杭を打った落とし穴が大型を殺し切るか。** 今刺さるのは槍と同じ刺し傷（5.1 節）で、固まるまでに
+  奪う量はイノシシの 4,600 mL<!-- codex: animals.yaml object_defs.wild_boar.props.blood.value --> を削り切りません。1 枚で殺し切る傷を別に用意するか、深手を負わせて
   仕留めさせるところまでで足りるかは、**穴に中型が落ちるようになってから**でないと見えません
 - **筌**（魚・`Animals.md` 9 節）。本書の形をそのまま使えますが、水面の土地がまだ無く、掛かる相手が
   土地の別のつまみになります
