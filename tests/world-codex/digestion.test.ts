@@ -183,7 +183,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
    * あればpathogenが暴走して血を削る。そちらの筋書きは tests/world-codex/pathogen.test.ts が見る。
    */
   describe('壊血病', () => {
-    /** 空心菜1束ぶんのビタミン（foods.yaml）。1.7日ぶんに当たる。 */
+    /** 空心菜1束ぶんのビタミン（foods.yaml）。 */
     const ONE_BUNCH = 83;
     /** 壊血病が出る量（現実の閾値）。 */
     const SCURVY_THRESHOLD = 300;
@@ -252,6 +252,22 @@ describe('消化（かさ・栄養素・蓄え）', () => {
 
       expect(vitamin().stage?.name).toBe('deficient');
       expect(painOf(), 'modifyは可逆なので、段を出た瞬間に消える（8.3節）').toBe(0);
+    });
+
+    it('空心菜1束は、1日に回転して減るぶんを越えて運ぶ（DigestionSystem.md 4節）', () => {
+      // 定義の束を実際に食べて測る——ONE_BUNCHの定数ではなく、foods.yamlの宣言を見るため。
+      const before = vitamin().number;
+      endure(DAY);
+      const dailyLoss = before - vitamin().number;
+
+      const bunch = spawn('water_spinach');
+      expect(bunch.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+      player.getProperty(satietyId).setNumberWithoutEvents(0);
+      const beforeEating = vitamin().number;
+      expect(bunch.tryGetAction('eat', player)?.tryExecute() === true).toBe(true);
+
+      expect(dailyLoss, '1日で減る').toBeGreaterThan(0);
+      expect(vitamin().number - beforeEating).toBeGreaterThan(dailyLoss);
     });
 
     it('尽きるまで放っておくと、戻すのに4束要る', () => {
