@@ -330,6 +330,113 @@ object_defs:
       - conditions: [{prop: heat, in_stage_or_above: hot}]
         add: {parent: {ambient_temperature: 2}}
 
+  # 熾火の石。**名指した段そのものが、見ている値へ増減を宣言している**——hotの間は自分で熱を
+  # 保つので、常時の-5だけを読んで「hotの下端を割る」と言い切ると、割らない石を止めてしまう。
+  smoldering_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - name: hot
+            min: 60
+            passives:
+              - add: {self: {heat: 5}}
+        passives:
+          - add: {self: {heat: -5}}
+    passives:
+      - conditions: [{prop: heat, in_stage: hot}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 熾火を抱えた温石。**「その段以上」なら、名指した段より上の段の増減も、その段に居る間に効く**
+  # ——warm以上を見ている押し手にとって、hotが自分で熱を保つ分は読み落とせない。
+  smoldering_wrapped_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 40}
+          - name: hot
+            min: 60
+            passives:
+              - add: {self: {heat: 5}}
+        passives:
+          - add: {self: {heat: -5}}
+    passives:
+      - conditions: [{prop: heat, in_stage_or_above: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 火照りを逃がす石。**上へ抜ける側でも同じ**——warmの間は自分で-5して熱を逃がすので、常時の+5
+  # だけを読んで「warmの上端を越える」と言い切ると、越えない石を止めてしまう。
+  venting_warm_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 50
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - name: warm
+            min: 40
+            passives:
+              - add: {self: {heat: -5}}
+          - {name: hot, min: 60}
+        passives:
+          - add: {self: {heat: 5}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 冷えきると湿気を吸って温まりなおす石。**名指した段の外の段が宣言した増減**——coldの+5は、
+  # hotに居る間は効かないので、hotの下端を割るまでは常時の-5だけで数えてよい。
+  rewarming_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - name: cold
+            passives:
+              - add: {self: {heat: 5}}
+          - {name: hot, min: 60}
+        passives:
+          - add: {self: {heat: -5}}
+    passives:
+      - conditions: [{prop: heat, in_stage: hot}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 濡れると温まる石。**別のプロパティの段が宣言した増減**——soakedの間の+5は、熱がhotに居る間にも
+  # 効きうるので、熱の段の外とは言えない。
+  soaking_stone:
+    tags: [item]
+    props:
+      wetness:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: dry}
+          - name: soaked
+            min: 50
+            passives:
+              - add: {self: {heat: 5}}
+      heat:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: hot, min: 60}
+        passives:
+          - add: {self: {heat: -5}}
+    passives:
+      - conditions: [{prop: heat, in_stage: hot}]
+        add: {parent: {ambient_temperature: 2}}
+
   # 窯出しの石。**上から落ちて入る段で縛られた押し手**——焼けたてはsearingで、そこから冷めてhotへ
   # 落ちてきて初めて暖める。段は下から開くものとして数えると、窯から出した瞬間から暖めることになる。
   #
@@ -1289,6 +1396,32 @@ object_defs:
       { amounts: [2], ticksUntilStart: 0, ticksUntilStop: 9 },
     ]);
     expect(externalDeltasOf('wrapped_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: 9 },
+    ]);
+  });
+
+  it('名指した段が見ている値へ増減を宣言しているなら、その段を抜けることを言い切らない', () => {
+    // 読めるのは常時の-5だけだが、hotの間は+5が打ち消す。-5だけで数えると、焼け石と同じ9 tick目で止まる。
+    expect(externalDeltasOf('smoldering_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    // 「その段以上」では、名指した段より上の段の宣言も、その段に居る間に効く。
+    expect(externalDeltasOf('smoldering_wrapped_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    // 上へ抜ける側も同じ。+5だけで数えると、50からwarmの上端60を越える2 tick目で止まる。
+    expect(externalDeltasOf('venting_warm_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    // 別のプロパティの段の宣言は、名指した段に居る間に効くかが定義からは決まらない。
+    expect(externalDeltasOf('soaking_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('名指した段の外の段しか増減を宣言していないなら、その段を抜ける時刻を数える', () => {
+    // coldの+5はhotに居る間は効かない。100から-5/tickでhotの下端60を割るのは焼け石と同じ9 tick目。
+    expect(externalDeltasOf('rewarming_stone', 'ambient_temperature')).toEqual([
       { amounts: [2], ticksUntilStart: 0, ticksUntilStop: 9 },
     ]);
   });
