@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { specDocs } from '../../scripts/docScope.mjs';
+import { specDocs, trackedFiles } from '../../scripts/docScope.mjs';
 import { parseDocsMarkdown, type DocsToken } from '../../scripts/docsMarkdown.mjs';
 
 /**
@@ -46,5 +46,24 @@ describe('公開サイトの太字', () => {
       docs.flatMap(strayBold),
       '`**` が約物と文字に挟まれると区切りにならない。約物を太字の外へ出す（`**……**。`・`「**……**」`）',
     ).toEqual([]);
+  });
+});
+
+/**
+ * markdown-it を読み込む書き方。サイトの描画器が `docsMarkdown.mjs` の1箇所に在ることを、読み込み元で
+ * 確かめる——別の場所が自前の markdown-it を持つと、そこだけ設定がずれ、上の検査はサイトと違う読み方の
+ * まま緑になる。
+ */
+const IMPORTS_MARKDOWN_IT = /(?:from|import\(|require\()\s*['"]markdown-it['"]/;
+
+describe('サイトの描画器の在り処', () => {
+  it('markdown-it を読み込むのは `scripts/docsMarkdown.mjs` だけ', () => {
+    const importers = ['*.ts', '*.mts', '*.cts', '*.js', '*.mjs', '*.cjs']
+      .flatMap((pattern) => trackedFiles(ROOT, pattern))
+      .filter((rel) => IMPORTS_MARKDOWN_IT.test(readFileSync(join(ROOT, rel), 'utf-8')))
+      .map((rel) => rel.split(sep).join('/'));
+    expect(importers, '描画器は `docsMarkdown.mjs` から引く（設定を写すと検査とサイトがずれる）').toEqual([
+      'scripts/docsMarkdown.mjs',
+    ]);
   });
 });
