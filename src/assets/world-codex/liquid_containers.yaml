@@ -314,9 +314,9 @@ traits:
             fill: -2
       # 日射による上乗せ。読むのは**器が居る場所の環境光**で、樹冠と地面の反射が入り、据え付けの
       # 光源は入らない（IlluminationSystem.md 2節・3節）。しきい値はEV（同1節）＝器へ届いている
-      # 照度そのもので、+12は約10,000 lx。夜は底の-6になる（core.yamlのhour）ため成立せず、雨天は
-      # 最も明るい小雨の正午でも届かないため、天候を見る必要がない。土地ごとの効き方は
-      # LiquidContainerSystem.md 6節。
+      # 照度そのもの。夜は底になる（core.yamlのhour）ため成立せず、雨天はどの場所・どの時刻でも
+      # 最も低いしきい値に届かないため、天候を見る必要がない
+      # （tests/diagnostics/sunlitEvaporationContent.test.ts）。土地ごとの効き方は LiquidContainerSystem.md 6節。
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
           - not: {subject: self, slot: lid, matches: {tag: container_lid}}
