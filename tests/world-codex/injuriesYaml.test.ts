@@ -639,6 +639,65 @@ describe('injuries.yamlの怪我', () => {
       expect(pathogenOf(player).number, '流入が止まれば引いていく').toBeLessThan(peak);
     });
 
+    /** 罹って免疫が高まった体（primed）にする。段の下端より少し上に置くので、短い間は段を保つ。 */
+    function primeImmunity(): void {
+      const immunity = player.getProperty(codex.propertyNames.getId('immunity'));
+      immunity.setNumberWithoutEvents(immunity.def.lowerBoundOfStage('primed')! + 5);
+      expect(immunity.isInStage('primed')).toBe(true);
+    }
+
+    /** その膿み具合の開いた傷を、数だけ負わせる。 */
+    function woundsAt(stageName: string, count: number): WorldObject[] {
+      return Array.from({ length: count }, () => {
+        const injury = openWound();
+        const infection = injury.getProperty(infectionId());
+        infection.setNumberWithoutEvents(infection.def.lowerBoundOfStage(stageName)!);
+        return injury;
+      });
+    }
+
+    it('膿んだ傷2つは、健康な体でも全身へ回る', () => {
+      // InjurySystem.md 6.3節。2つ負えば流入も2倍で、健康な体の除去を越える——多発外傷が危険なのは、
+      // 傷ごとの特別扱いではなく足し合わせから。
+      woundsAt('festering', 2);
+      tick(8);
+      expect(pathogenOf(player).number).toBeGreaterThan(0);
+    });
+
+    it('膿んだ傷2つは、一度入り込めば免疫が高まった体でも抑え込めない', () => {
+      // InjurySystem.md 6.3節。菌が居れば増殖が加わり、流入と合わせて最も高い免疫の除去を越える。
+      primeImmunity();
+      woundsAt('festering', 2);
+      const pathogen = pathogenOf(player);
+      pathogen.setNumberWithoutEvents(1);
+      tick(8);
+      expect(pathogen.number).toBeGreaterThan(1);
+    });
+
+    it('腐り切った傷1つは、免疫が高まった体でも全身へ回る', () => {
+      // InjurySystem.md 6.3節。septic の傷は1つで最も高い免疫を越え、正味で押し上がる。
+      primeImmunity();
+      woundsAt('septic', 1);
+      tick(4);
+      const early = pathogenOf(player).number;
+      tick(4);
+      expect(early, '入り込む').toBeGreaterThan(0);
+      expect(pathogenOf(player).number, '押し上がり続ける').toBeGreaterThan(early);
+    });
+
+    it('免疫が高まった体では、傷が健康な体より遅く膿む', () => {
+      // InjurySystem.md 6.2節。免疫は上がる速さを鈍らせ、段が上がるほど鈍る。
+      const injury = openWound();
+      const rateOverOneTick = (): number => {
+        const before = infectionOf(injury);
+        player.tick();
+        return infectionOf(injury) - before;
+      };
+      const robust = rateOverOneTick();
+      primeImmunity();
+      expect(rateOverOneTick()).toBeLessThan(robust);
+    });
+
     it('免疫が落ちている体では、傷も速く膿む', () => {
       // 免疫は傷のinfectionを下げず、上がる速さを鈍らせるだけ（InjurySystem.md 6.2節）。鈍りが
       // 掛かるのは全身で増殖を抑え込めている段から上で、そこから落ちれば素の速さに戻る。
