@@ -63,8 +63,7 @@ const CHATTER = 'INFO: スケジュール タスク "…" は正常に作成さ�
  *
  * XMLへ入るのは `cd … && pwd` が出した綴りで、**MSYS2 の bash はそこで `/c/…` を返す**（`C:/…` では
  * ない。[`ccr-env.sh`](../../scripts/daemon/ccr-env.sh) が同じ往復を記録している）。Node が組んだ綴りと
- * 直に突き合わせると、**Windowsで `npm test` を打った者にだけ赤くなり**、`schtasks` の無いCIでは
- * 気づけない。
+ * 直に突き合わせると、**Windowsで `npm test` を打ったときにだけ赤くなり**、Linux では気づけない。
  */
 function bashPath(path: string): string {
   return execFileSync('bash', ['-c', `cd '${pathForBash(path)}' && pwd`], {

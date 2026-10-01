@@ -83,7 +83,7 @@ describe('toast.mjs の撃ち方', () => {
   const WINDOWS = { platform: 'win32' } as const;
 
   /**
-   * **Windows 以外では撃たない。** CIはLinuxで走るので、撃つと `powershell.exe` が見つからずに
+   * **Windows 以外では撃たない。** CIはLinuxでも走るので、撃つと `powershell.exe` が見つからずに
    * 転ぶ——**見回りの側は転びを握り潰す**ので、転んだことは誰にも届かない。
    */
   it('Windows でなければ、撃たずに出せなかったと答える', () => {
