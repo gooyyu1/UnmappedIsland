@@ -273,8 +273,18 @@ describe('獲物を丸ごと担げるかの線（docs/world/Animals.md 5節）',
   const codex = bundledCodex();
   const animalsDoc = readFileSync(join('docs', 'world', 'Animals.md'), 'utf8');
 
-  /** 文書が書いた、その獣の重さ（g）。表の数は獣の側の仕様で、定義はまだ無い獣も在る。 */
-  function massOf(label: string): number {
+  /** 文書の表が書いた、その獣の重さ（g）。表の数は獣の側の仕様で、定義はまだ無い獣も在る。 */
+  function massOf(name: string): number {
+    const matched = new RegExp(
+      `^\\| \\*\\*(?:野生化した)?${name}\\*\\*[^|]* \\|[^|]*\\| (\\d+) kg \\|`,
+      'm',
+    ).exec(animalsDoc);
+    expect(matched, `Animals.md の表に ${name} の行が無い`).not.toBeNull();
+    return Number(matched![1]) * 1000;
+  }
+
+  /** 5節の地の文が書き写した重さ（g）。表と食い違えば、地の文の主張がどの獣の話か分からなくなる。 */
+  function proseMassOf(label: string): number {
     const matched = new RegExp(`${label}（(\\d+) kg）`).exec(animalsDoc);
     expect(matched, `Animals.md から「${label}（N kg）」が読めない`).not.toBeNull();
     return Number(matched![1]) * 1000;
@@ -295,12 +305,16 @@ describe('獲物を丸ごと担げるかの線（docs/world/Animals.md 5節）',
 
   it('シカは誰でも担げるが、全員が heavy の段に入る', () => {
     const deer = massOf('シカ');
+    expect(proseMassOf('シカ'), '地の文のシカの重さが表と合う').toBe(deer);
     for (const floor of stageFloors('heavy')) expect(floor).toBeLessThanOrEqual(deer);
     for (const floor of stageFloors('too_heavy')) expect(floor).toBeGreaterThan(deer);
   });
 
   it('ニシキヘビとヤギは誰にも担げず、最も担げる担ぎ手でちょうど too_heavy の下端に乗る', () => {
-    const pythonAndGoat = massOf('ニシキヘビとヤギ');
-    expect(Math.max(...stageFloors('too_heavy'))).toBe(pythonAndGoat);
+    const strongest = Math.max(...stageFloors('too_heavy'));
+    for (const name of ['ニシキヘビ', 'ヤギ']) {
+      expect(proseMassOf('ニシキヘビとヤギ'), `地の文の重さが表の${name}と合う`).toBe(massOf(name));
+      expect(strongest, name).toBe(massOf(name));
+    }
   });
 });

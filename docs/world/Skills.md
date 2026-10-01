@@ -246,7 +246,7 @@
 加算です（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 10.2 節）。
 
 **当てる側の中でも幅はあります。** 武器の当たり（55<!-- codex: tools.yaml object_defs.spear.props.thrust.value -->〜70<!-- codex: tools.yaml object_defs.sharp_stone.props.light_blow.value -->）と魚の群れ（78<!-- codex: voyage.yaml object_defs.fish_shoal.props.catch_chance.value -->）は同じ桁ですが、群れの居ない
-海面（15<!-- codex: voyage.yaml object_defs.raft.props.catch_chance.value -->）だけは 1 桁下で、`expert`（+40<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.hunting_aim -->）では素の重みを上回ります——**同じ刻みが最も強く効く場所**で、
+海面（15<!-- codex: voyage.yaml object_defs.raft.props.catch_chance.value -->）だけは 1 桁下です。**同じ刻みが最も強く効く場所**はここで、`expert`（+40<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.hunting_aim -->）の上乗せは
 群れとの落差が縮む形で現れます（[`Voyage.md`](Voyage.md) 3.9.2 節）。3 本目を足してまで分けるほどでは
 ないと見て、当てる側は 1 本のままにしています。
 
