@@ -526,6 +526,20 @@ describe('injuries.yamlの怪我', () => {
       expect(infectionOf(injury)).toBeLessThan(1);
     });
 
+    it('開いた傷1つは、1日1杯洗えば膿む手前に留まる', () => {
+      // InjurySystem.md 6.2節「開いた傷 1 つにつき 1 日 1 杯が清潔を保つ値段」。1杯が落とす量と、
+      // 健康な体で1日に膿む量が釣り合っているので、毎日洗えば festering へ届かない。
+      const injury = openWound();
+      const jar = filledJar();
+      const hydration = player.getProperty(codex.propertyNames.getId('hydration'));
+      for (let day = 1; day <= 4; day++) {
+        tick(DAY);
+        hydration.setNumber(hydration.def.range!.max);
+        expect(injury.tryGetProperty(infectionId())?.stage?.name, `${day}日目、洗う前`).toBe('clean');
+        expect(washing(injury, jar)?.tryExecute(), `${day}日目の1杯`).toBe(true);
+      }
+    });
+
     it('汚れていない傷は洗えない', () => {
       expect(washing(openWound(), filledJar())?.unmetRequirement()?.reasonName).toBe('already_clean');
     });
