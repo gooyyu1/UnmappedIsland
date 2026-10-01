@@ -42,9 +42,9 @@ traits:
     props:
       skill_cordage:
         tags: [skill]
-        value: 0
+        value: 0  # <!-- codex: characters/player_character.yaml traits.player_character.props.skill_cordage.value -->
         stages:   # 段ごとの寄与（腕が縮めるもの）は省いている
-          - {name: novice, min: 0}
+          - {name: novice, min: 0}  # <!-- codex: characters/player_character.yaml traits.player_character.props.skill_cordage.stages.0.min -->
           - name: basic
             min: 20  # <!-- codex: characters/player_character.yaml traits.player_character.props.skill_cordage.stages.1.min -->
           - name: skilled

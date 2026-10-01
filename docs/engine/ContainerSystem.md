@@ -95,12 +95,14 @@ load の実効値 = load.value + 通常の modify + Σ( 直接の子の weight�
 object_defs:
   sledge:
     props:
-      weight: {value: 8000}          # 8kg
+      # 8kg
+      weight: {value: 8000}  # <!-- codex: containers.yaml object_defs.sledge.props.weight.value -->
       load_rate:
-        value: 1
+        value: 1  # <!-- codex: containers.yaml object_defs.sledge.props.load_rate.value -->
         passives:
           - conditions: [{in_slot: hand}]
-            modify: {self: {load_rate: -0.45}}  # 引きずるので体感は55%
+            # 引きずるので体感は55%
+            modify: {self: {load_rate: -0.45}}  # <!-- codex: containers.yaml object_defs.sledge.props.load_rate.passives.0.modify.self.load_rate -->
 ```
 
 率をスロットではなく**アイテム**が持つのは、同じ入れ物でも担ぎ方で体感が変わるからです。背負い袋は背負えば
@@ -165,12 +167,14 @@ object_defs:
 weight: {value: 65000}  # <!-- codex: characters/player_character.yaml traits.player_character.props.weight.value -->
 load:
   tags: [status, health]
-  value: 0
-  range: {min: 0, max: 27000}
+  value: 0  # <!-- codex: characters/engineer.yaml object_defs.engineer.props.load.value -->
+  range:
+    min: 0  # <!-- codex: characters/engineer.yaml object_defs.engineer.props.load.range.min -->
+    max: 27000  # <!-- codex: characters/engineer.yaml object_defs.engineer.props.load.range.max -->
   stages:   # 段ごとの寄与（歩みの遅れ・体力の削り）は省いている
     - {name: light}
-    - {name: laden, min: 6750, alert: watch}
-    - {name: heavy, min: 13500, alert: caution}
+    - {name: laden, alert: watch, min: 6750}  # <!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.1.min -->
+    - {name: heavy, alert: caution, min: 13500}  # <!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.2.min -->
     - name: too_heavy
       min: 22500  # <!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.3.min -->
       alert: danger

@@ -328,7 +328,8 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 
 ```yaml
 weather_remaining:
-  value: 20  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.value -->                        # 初期値5時間: day1の最初の遷移までの猶予
+  # 初期値5時間: day1の最初の遷移までの猶予
+  value: 20  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.value -->
   range:  # 0に達した瞬間にon_minが発火する
     min: 0  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.range.min -->
     max: 999999  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.range.max -->
@@ -490,13 +491,15 @@ early_rain_calibration:
   stages:
     - name: idle
     - name: boosting
-      min: 96  # <!-- codex: core.yaml object_defs.world.props.early_rain_calibration.stages.1.min -->     # 96 tick（1 日）が明けた、2日目の開始
+      # 96 tick（1 日）が明けた、2日目の開始
+      min: 96  # <!-- codex: core.yaml object_defs.world.props.early_rain_calibration.stages.1.min -->
       passives:
         - add:
             self:
               atmospheric_moisture: 0.6  # <!-- codex: core.yaml object_defs.world.props.early_rain_calibration.stages.1.passives.0.add.self.atmospheric_moisture -->
     - name: done
-      min: 192  # <!-- codex: core.yaml object_defs.world.props.early_rain_calibration.stages.2.min -->    # 3日目の開始でオフに戻る
+      # 3日目の開始でオフに戻る
+      min: 192  # <!-- codex: core.yaml object_defs.world.props.early_rain_calibration.stages.2.min -->
 ```
 
 `early_rain_calibration` はゲーム開始と同時に毎 tick `+1` されるだけの専用カウンタです。`boosting` 区間
@@ -520,13 +523,15 @@ first_dry_rain_calibration:
   stages:
     - name: idle
     - name: boosting
-      min: 6720  # <!-- codex: core.yaml object_defs.world.props.first_dry_rain_calibration.stages.1.min -->   # 71日目の開始（最初の乾季開始=61日目 + 10日）
+      # 71日目の開始（最初の乾季開始=61日目 + 10日）
+      min: 6720  # <!-- codex: core.yaml object_defs.world.props.first_dry_rain_calibration.stages.1.min -->
       passives:
         - add:
             self:
               atmospheric_moisture: 2  # <!-- codex: core.yaml object_defs.world.props.first_dry_rain_calibration.stages.1.passives.0.add.self.atmospheric_moisture -->
     - name: done
-      min: 6816  # <!-- codex: core.yaml object_defs.world.props.first_dry_rain_calibration.stages.2.min -->   # 72日目の開始でオフに戻る
+      # 72日目の開始でオフに戻る
+      min: 6816  # <!-- codex: core.yaml object_defs.world.props.first_dry_rain_calibration.stages.2.min -->
 ```
 
 `boosting` の +2<!-- codex: core.yaml object_defs.world.props.first_dry_rain_calibration.stages.1.passives.0.add.self.atmospheric_moisture -->/tick は dry の -0.2<!-- codex: core.yaml object_defs.world.props.season.stages.2.passives.1.add.self.atmospheric_moisture -->/tick を大きく上回る（正味 +1.8/tick）ため、乾ききった水分量が

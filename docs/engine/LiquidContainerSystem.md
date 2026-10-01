@@ -22,8 +22,11 @@ jar:
   traits: [liquid_container, narrow_open_container]
   props:
     fill:
-      value: 0
-      range: {min: 0, max: 4000}          # この容器の容量（mL）
+      value: 0  # <!-- codex: liquid_containers.yaml object_defs.jar.props.fill.value -->
+      # この容器の容量（mL）
+      range:
+        min: 0  # <!-- codex: liquid_containers.yaml object_defs.jar.props.fill.range.min -->
+        max: 4000  # <!-- codex: liquid_containers.yaml object_defs.jar.props.fill.range.max -->
       on_min: {become: {content: none}}   # 尽きたら中身の軸を落とす＝空へ戻る
   variation_axes:
     content: {of: {tag: liquid}}
@@ -87,15 +90,15 @@ water_liquid:
       trigger: {drag: {tag: water}}
       conditions:
         - {reason: container_full, not: {prop: fill, in_stage: full}}
-      transfer: {amount: 999999, from: instrument, from_prop: fill, to: self, to_prop: fill}
+      transfer: {from: instrument, from_prop: fill, to: self, to_prop: fill, amount: 999999}  # <!-- codex: liquid_containers.yaml traits.water_liquid.interactions.pour_into_filled.transfer.amount -->
     # 相手が空の容器のとき。相手を水入りの変種にしてから移す（becomeが先。移した先を中身入りとして
     # 名乗らせるためで、空の容器もfillを持つ以上、transferを通すためではない）。
     pour_into_empty:
       trigger: {drag: {tag: liquid_container}}
       conditions:
-        - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
+        - {reason: not_empty, subject: instrument, prop: fill, eq: 0}  # <!-- codex: liquid_containers.yaml traits.water_liquid.interactions.pour_into_empty.conditions.0.eq -->
       become: {subject: instrument, content: water_liquid}
-      transfer: {amount: 999999, from: self, from_prop: fill, to: instrument, to_prop: fill}
+      transfer: {from: self, from_prop: fill, to: instrument, to_prop: fill, amount: 999999}  # <!-- codex: liquid_containers.yaml traits.water_liquid.interactions.pour_into_empty.transfer.amount -->
 ```
 
 **宣言を持つのは中身入りの側だけなので、どちらの札をどちらへ重ねても `self` は中身入り・`instrument` は

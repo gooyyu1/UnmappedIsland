@@ -182,7 +182,9 @@ shock:
 ```yaml
 - weight: {subject: instrument, prop: heavy_blow}
   add:
-    self: {wariness: 25, shock: 250}  # <!-- codex: animals.yaml traits.beast.interactions.strike.pick.0.add.self.shock -->
+    self:
+      wariness: 25  # <!-- codex: animals.yaml traits.beast.interactions.strike.pick.0.add.self.wariness -->
+      shock: 250  # <!-- codex: animals.yaml traits.beast.interactions.strike.pick.0.add.self.shock -->
     instrument: {durability: -20}  # <!-- codex: animals.yaml traits.beast.interactions.strike.pick.0.add.instrument.durability -->
   spawn: {object: laceration, into: self}
   signal: hit

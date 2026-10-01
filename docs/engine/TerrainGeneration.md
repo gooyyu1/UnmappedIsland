@@ -81,12 +81,18 @@ Axis は汎用プリミティブの重み合成（`generator.blend`）で値を�
 ```yaml
 axes:
   elevation:
-    range: {min: 0, max: 100}
+    range:
+      min: 0  # <!-- codex: terrain_generation.yaml axes.elevation.range.min -->
+      max: 100  # <!-- codex: terrain_generation.yaml axes.elevation.range.max -->
     stretch_sites_to_range: true
     generator:
       blend:
-        - {type: distance_field, reference: edge, weight: 90}
-        - {type: layered_noise, octaves: 3, frequency: 2, seed_offset: 11, weight: 10}
+        - {type: distance_field, reference: edge, weight: 90}  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.0.weight -->
+        - type: layered_noise
+          octaves: 3  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.1.octaves -->
+          frequency: 2  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.1.frequency -->
+          seed_offset: 11  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.1.seed_offset -->
+          weight: 10  # <!-- codex: terrain_generation.yaml axes.elevation.generator.blend.1.weight -->
 ```
 
 **`stretch_sites_to_range`**: 1 回の生成で出たサンプルの最小・最大が `range` の両端へ来るよう、
@@ -113,14 +119,22 @@ location_types:
     object_def: jungle                 # 実体化に使う型（locations.yamlのobject_defsのid）。土地も他の
                                        # あらゆる要素と同じobject_defsで表現される
     applicable_scopes: [island]
-    move_cost: 1.6                     # 移動コストの倍率（1 = 等倍。3.5節のtravel_minutesに使う）
+    # 移動コストの倍率（1 = 等倍。3.5節のtravel_minutesに使う）
+    move_cost: 1.6  # <!-- codex: terrain_generation.yaml location_types.jungle.move_cost -->
     axis_preferences:
-      humidity:   {ideal: 90, tolerance: 20, weight: 120}
-      elevation:  {ideal: 30, tolerance: 30, weight: 60}
+      humidity:
+        ideal: 90  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.humidity.ideal -->
+        tolerance: 20  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.humidity.tolerance -->
+        weight: 120  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.humidity.weight -->
+      elevation:
+        ideal: 30  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.elevation.ideal -->
+        tolerance: 30  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.elevation.tolerance -->
+        weight: 60  # <!-- codex: terrain_generation.yaml location_types.jungle.axis_preferences.elevation.weight -->
       # 言及しない軸は自動的に「無関心」（マッチング距離の計算に一切寄与しない）
     hard_limits:
-      coastal_distance: {min: 16}      # 絶対的な除外条件。海岸帯には出ない
-      humidity: {min: 65}
+      # 絶対的な除外条件。海岸帯には出ない
+      coastal_distance: {min: 16}  # <!-- codex: terrain_generation.yaml location_types.jungle.hard_limits.coastal_distance.min -->
+      humidity: {min: 65}  # <!-- codex: terrain_generation.yaml location_types.jungle.hard_limits.humidity.min -->
 ```
 
 マッチングは、**言及した軸だけを対象に正規化した重み付きユークリッド距離**による最近傍探索です。
@@ -183,7 +197,7 @@ D(type, site) = sqrt( Σ_i w_i * ((v_i - ideal_i) / tolerance_i)^2  /  Σ_i w_i 
 generation_scopes:
   island:
     guarantees:
-      - {location_type: mountain_peak, count: 1, axis: elevation, pick: max}
+      - {location_type: mountain_peak, axis: elevation, pick: max, count: 1}  # <!-- codex: terrain_generation.yaml generation_scopes.island.guarantees.0.count -->
 ```
 
 `axis` が `pick`（`max`/`min`）側の値を持つ `Site` から `count` 個を選び、`location_type` を強制的に割り当てます
@@ -381,7 +395,8 @@ generation_scopes:
 sandy_beach:
   object_def: sandy_beach
   variants:
-    - {id: palm, props: {palm_find: 26}}   # 素の重みは13
+    # 素の重みは13<!-- codex: locations.yaml object_defs.sandy_beach.props.palm_find.value -->
+    - {id: palm, props: {palm_find: 26}}  # <!-- codex: terrain_generation.yaml location_types.sandy_beach.variants.0.props.palm_find -->
     - {id: white_sand}                     # 素の亜種（名前だけが変わる）
 ```
 

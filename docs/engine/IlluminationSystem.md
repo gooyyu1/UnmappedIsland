@@ -83,46 +83,54 @@ EVは連続量なので小数を書けます（`GameElementDefinition.md` 6節�
 world:
   props:
     ambient_brightness:
-      value: 0                       # hourのstagesが太陽高度を、weatherのstagesが透過率をmodifyする
-      range: {min: -6, max: 17}
+      # hourのstagesが太陽高度を、weatherのstagesが透過率をmodifyする
+      value: 0  # <!-- codex: core.yaml object_defs.world.props.ambient_brightness.value -->
+      range:
+        min: -6  # <!-- codex: core.yaml object_defs.world.props.ambient_brightness.range.min -->
+        max: 17  # <!-- codex: core.yaml object_defs.world.props.ambient_brightness.range.max -->
 
 # core.yaml の location trait — あらゆる場所が持つ明るさ（valueは継承先が与える）
 location:
   props:
     ambient_brightness:
       base: {subject: ancestor}      # 祖先のambient_brightness（通常はworld）が土台
-      range: {min: -6, max: 17}
+      range:
+        min: -6  # <!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->
+        max: 17  # <!-- codex: core.yaml traits.location.props.ambient_brightness.range.max -->
     hand_brightness:
-      value: 0
+      value: 0  # <!-- codex: core.yaml traits.location.props.hand_brightness.value -->
       base: {subject: self, prop: ambient_brightness}       # クランプ済みの環境光が土台
 
 # locations.yaml — 密林（樹冠 -7・反射 -2）
 jungle:
   traits: [location, explorable]
   props:
-    ambient_brightness: {value: -9}
+    ambient_brightness: {value: -9}  # <!-- codex: locations.yaml object_defs.jungle.props.ambient_brightness.value -->
 
 # キャラクタ
 character:
   props:
     hand_brightness:
-      value: 0
+      value: 0  # <!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.value -->
       base: {subject: ancestor, prop: hand_brightness}      # 場所の手元（据え付けの光源を含む）
     looking_brightness:
-      value: 0
+      value: 0  # <!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.value -->
       base: {subject: ancestor, prop: ambient_brightness}   # 場所の環境光だけ
 ```
 
 ## 3. 光源は、置かれた場所だけで届き先が決まる
 
-**どの光源も同じ2行を書きます。** 種類による書き分けはありません。
+**どの光源も、条件と寄与の同じ2つの宣言を書きます。** 種類による書き分けはありません。
 
 ```yaml
-# 松明。キャンプファイヤーも獣脂のランプも、値が違うだけで同じ2行（火の状態の持ち方はFireSystem.md）
+# 松明。キャンプファイヤーも獣脂のランプも、値が違うだけで同じ2つの宣言（火の状態の持ち方はFireSystem.md）
 torch:
   passives:
-    - conditions: [{prop: lit, eq: 1}]
-      modify: {parent: {hand_brightness: 11, looking_brightness: 11}}
+    - conditions: [{prop: lit, eq: 1}]  # <!-- codex: fire.yaml object_defs.torch.passives.0.conditions.0.eq -->
+      modify:
+        parent:
+          hand_brightness: 11  # <!-- codex: fire.yaml object_defs.torch.passives.0.modify.parent.hand_brightness -->
+          looking_brightness: 11  # <!-- codex: fire.yaml object_defs.torch.passives.0.modify.parent.looking_brightness -->
 ```
 
 **親がその値を持っていなければ届きません。**
@@ -289,11 +297,11 @@ path:
 
 ```yaml
 # 祖先の同名（propを省略）
-ambient_brightness: {value: -9, base: {subject: ancestor}}
+ambient_brightness: {base: {subject: ancestor}, value: -9}  # <!-- codex: locations.yaml object_defs.jungle.props.ambient_brightness.value -->
 # 自分の別のプロパティ
-hand_brightness: {value: 0, base: {subject: self, prop: ambient_brightness}}
+hand_brightness: {base: {subject: self, prop: ambient_brightness}, value: 0}  # <!-- codex: core.yaml traits.location.props.hand_brightness.value -->
 # 祖先の、別名のプロパティ
-looking_brightness: {value: 0, base: {subject: ancestor, prop: ambient_brightness}}
+looking_brightness: {base: {subject: ancestor, prop: ambient_brightness}, value: 0}  # <!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.value -->
 ```
 
 読むのは土台の実効値（クランプ済み・`modify` 込み）で、自分の `value` はそこへ**加算**されます。
@@ -345,7 +353,7 @@ deep_cave:
 character:
   props:
     hand_brightness:
-      value: 0
+      value: 0  # <!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.value -->
       base: {subject: ancestor, prop: hand_brightness}
       stages:
         - {name: pitch_dark}

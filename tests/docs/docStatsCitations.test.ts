@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
+import { withoutComments } from '../../scripts/codeComments.mjs';
 import { replaceAllOrFail } from '../support/textEdit';
 import { WORLD_CODEX_DIR, worldCodexYamlPaths } from '../support/worldCodexFiles';
 
@@ -254,6 +255,36 @@ function citationsIn(doc: string, text: string): Citation[] {
   return found;
 }
 
+/** YAML として読んだときの数の値（スカラー）。キーや名前に混ざった数字は拾わない。 */
+const YAML_NUMBER_PATTERN = /(?<![\w.-])-?\d+(?:\.\d+)?(?![\w.])/g;
+
+/**
+ * `codex:` の印を1つでも持つ YAML の抜粋で、印の掛かっていない数を持つ行。**定義の写しだと名乗った
+ * 抜粋は、中の数すべてを突き合わせる**——抜粋ごとに印を置く・置かないが分かれると、印の無い数が
+ * 写しのまま古くなる（issue #2521 のレビュー）。行末の印は行の最後の数にしか掛からないので、数を持つ
+ * 行は数を1つだけにする（フロー形式は開く）。印の無い抜粋は説明用の例として見ない。
+ */
+function unmarkedExcerptLines(doc: string, text: string): string[] {
+  const found: string[] = [];
+  let excerpt: { readonly yaml: boolean; marked: boolean; readonly lines: string[] } | null = null;
+  text.split('\n').forEach((line, index) => {
+    const fence = /^\s*```(\w*)/.exec(line);
+    if (fence !== null) {
+      if (excerpt?.marked === true) found.push(...excerpt.lines);
+      excerpt = excerpt === null ? { yaml: /^ya?ml$/.test(fence[1]), marked: false, lines: [] } : null;
+      return;
+    }
+    if (excerpt === null || !excerpt.yaml) return;
+
+    const marks = line.match(/<!--\s*codex:/g)?.length ?? 0;
+    if (marks > 0) excerpt.marked = true;
+    const value = withoutComments(line.replace(/<!--[\s\S]*?-->/g, ''), 'excerpt.yaml');
+    const numbers = value.match(YAML_NUMBER_PATTERN)?.length ?? 0;
+    if (numbers > 1 || (numbers === 1 && marks === 0)) excerpt.lines.push(`${doc}:${index + 1}: ${line.trim()}`);
+  });
+  return found;
+}
+
 /** レポートの中身。読むのは `stats/` 直下のYAMLだけで、1ファイルにつき1回だけ解く。 */
 const REPORTS = new Map(
   readdirSync(join(ROOT, STATS_DIR))
@@ -353,6 +384,13 @@ describe('文書が stats/*.yaml と定義から書き写した数値', () => {
       if (typeof citation.mark.cell === 'string') broken.push(`${where} → ${citation.mark.cell}`);
     }
     expect(broken, `出どころへ解決しない印:\n${broken.join('\n')}`).toEqual([]);
+  });
+
+  it('印を持つ YAML の抜粋は、中の数すべてに印を持つ', () => {
+    const unmarked = listMarkdown('docs').flatMap((rel) =>
+      unmarkedExcerptLines(rel, readFileSync(join(ROOT, rel), 'utf-8')),
+    );
+    expect(unmarked, `印の無い数が残る抜粋の行:\n${unmarked.join('\n')}`).toEqual([]);
   });
 
   it('書いた数が、印の許す粗さの中で出どころの値と一致する', () => {
@@ -622,5 +660,29 @@ describe('定義を指す印', () => {
     expect(citationsIn('doc.md', `割れば2枚<!-- codex: ${SPLIT_COUNT} -->`)).toMatchObject([
       { written: '2', mark: { cell: 2, coarseness: null } },
     ]);
+  });
+});
+
+describe('印を持つ YAML の抜粋', () => {
+  const MARK = '<!-- codex: weaving.yaml object_defs.palm_frond.interactions.split_and_weave.spawn.count -->';
+
+  function unmarkedIn(...lines: string[]): string[] {
+    return unmarkedExcerptLines('doc.md', ['```yaml', ...lines, '```'].join('\n'));
+  }
+
+  it('印の無い数を持つ行を挙げる', () => {
+    expect(unmarkedIn(`count: 2  # ${MARK}`, 'duration: 15')).toEqual(['doc.md:3: duration: 15']);
+  });
+
+  it('1行に数が2つあれば、行末の印は最後の数にしか掛からないので挙げる', () => {
+    expect(unmarkedIn(`range: {min: 0, max: 2}  # ${MARK}`)).toHaveLength(1);
+  });
+
+  it('コメントの中の数とキーに混ざった数字は、値として数えない', () => {
+    expect(unmarkedIn(`count: 2  # ${MARK}`, '# 1日に2回', 'skill_l2: {tag: t3}')).toEqual([]);
+  });
+
+  it('印を1つも持たない抜粋は、説明用の例として見ない', () => {
+    expect(unmarkedIn('duration: 15', 'range: {min: 0, max: 2}')).toEqual([]);
   });
 });

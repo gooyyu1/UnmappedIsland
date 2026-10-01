@@ -62,7 +62,7 @@ object_defs:
       # ——罠へ動物を手で入れられて困ることは無い（そもそも荒ぶる動物は手に持てない、
       # HuntingSystem.md 4節）。
       catch:
-        cell_count: 1
+        cell_count: 1  # <!-- codex: traps.yaml object_defs.snare.slots.catch.cell_count -->
         # 生きた獲物と死体の両方が持つタグ（1.1節）。capacityは宣言しない（同）。
         cell: {accept: {tag: quarry}}
 ```
@@ -262,7 +262,7 @@ grassland:
 props:
   # 素の値は0で、祖先（＝置かれている土地）が宣言していれば、その実効値が土台になる。
   rat_catch: {base: {subject: ancestor}, value: 0}  # <!-- codex: traps.yaml object_defs.snare.props.rat_catch.value -->
-  junglefowl_catch: {value: 0, base: {subject: ancestor}}
+  junglefowl_catch: {base: {subject: ancestor}, value: 0}  # <!-- codex: traps.yaml object_defs.snare.props.junglefowl_catch.value -->
   miss_weight:
     value: 40  # <!-- codex: traps.yaml object_defs.snare.props.miss_weight.value -->
     # 餌のmodifyが押し下げても0にはしない（4節）。上限は素の値。
@@ -372,9 +372,15 @@ props:
         add: {self: {meat_bait: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.meat_bait.passives.0.add.self.meat_bait -->
 passives:
   - conditions: [{prop: plant_bait, gte: 1}]  # <!-- codex: traps.yaml object_defs.snare.passives.1.conditions.0.gte -->
-    modify: {self: {herbivore_weight: 25, miss_weight: -25}}  # <!-- codex: traps.yaml object_defs.snare.passives.1.modify.self.miss_weight -->
+    modify:
+      self:
+        herbivore_weight: 25  # <!-- codex: traps.yaml object_defs.snare.passives.1.modify.self.herbivore_weight -->
+        miss_weight: -25  # <!-- codex: traps.yaml object_defs.snare.passives.1.modify.self.miss_weight -->
   - conditions: [{prop: meat_bait, gte: 1}]  # <!-- codex: traps.yaml object_defs.snare.passives.2.conditions.0.gte -->
-    modify: {self: {carnivore_weight: 25, miss_weight: -25}}  # <!-- codex: traps.yaml object_defs.snare.passives.2.modify.self.miss_weight -->
+    modify:
+      self:
+        carnivore_weight: 25  # <!-- codex: traps.yaml object_defs.snare.passives.2.modify.self.carnivore_weight -->
+        miss_weight: -25  # <!-- codex: traps.yaml object_defs.snare.passives.2.modify.self.miss_weight -->
 ```
 
 - **1 つのブロックが 2 つのことを同時に言います。** その食性の卓が引かれやすくなり、何も寄って来ない回
@@ -725,9 +731,11 @@ props:
       max: 960  # <!-- codex: traps.yaml object_defs.snare.props.durability.range.max -->
     passives:
       - conditions: [{in_slot: items}]
-        add: {self: {durability: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.durability.passives.0.add.self.durability -->       # 屋外での劣化（10日）
+        # 屋外での劣化（10日）
+        add: {self: {durability: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.durability.passives.0.add.self.durability -->
       - conditions: [{slot: catch, matches: {tag: quarry}}]
-        add: {self: {durability: -10}}  # <!-- codex: traps.yaml object_defs.snare.props.durability.passives.1.add.self.durability -->      # もがかれている間（新品でも1日弱）
+        # もがかれている間（新品でも1日弱）
+        add: {self: {durability: -10}}  # <!-- codex: traps.yaml object_defs.snare.props.durability.passives.1.add.self.durability -->
     on_min:
       destroy: self
 ```
