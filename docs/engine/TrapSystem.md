@@ -388,7 +388,7 @@ passives:
 - **`miss_weight` の `range.min` が 5<!-- codex: traps.yaml object_defs.snare.props.miss_weight.range.min --><!-- codex: traps.yaml object_defs.pitfall.props.miss_weight.range.min --><!-- codex: farming.yaml object_defs.pen.props.miss_weight.range.min --> で止めるので、餌を積んでも必中にはなりません**
   （`GameElementDefinition.md` 8.3 節。合成結果の下限はプロパティ側の `range` が持ちます）。両方の餌を
   仕掛ければ両方の卓が上がりますが、そのぶん食料を 2 種類ぶん賭けることになります。
-- **餌は仕掛けている間だけ減ります**——24 tick<!-- codex: traps.yaml object_defs.snare.props.plant_bait.range.max --> で切れます。**罠を放置しても餌は待っていてくれない**ので、
+- **餌は仕掛けている間だけ減ります**——上限の 24<!-- codex: traps.yaml object_defs.snare.props.plant_bait.range.max --> から `-1/tick`<!-- codex: traps.yaml object_defs.snare.props.plant_bait.passives.0.add.self.plant_bait --> で減って切れます。**罠を放置しても餌は待っていてくれない**ので、
   「餌を仕掛けて見に行く」が 1 往復の単位になります。
 - **時間で減るのは、持ち歩ける罠だけです。** 据え置きの檻（1.2 節）の飼葉は時間では傷みません
   ——持ち歩ける罠が見回りの速さを代償にしているのに対し、据え置きの罠が払うのは材料だからです
@@ -661,7 +661,7 @@ bruise:
 **獣も `hydration` と `body_fat` を持ちますが、減るのは `catch` の枠の中に居る間だけです。**
 野生の個体では減りません。
 
-- **島中の獣が 3 日で死ぬことはありません。** 獣が自分で水を飲む仕組みは無いままなので、無条件に
+- **島中の獣が数日で死ぬことはありません。** 獣が自分で水を飲む仕組みは無いままなので、無条件に
   減らせば全滅します。**ゲート 1 つで「飲めない状況に置いたのは誰か」を言い分けられます**——閉じ込め
   たのはプレイヤーなので、そこだけ責任が生じます。
 - **ゲートは罠の型を問いません。** くくり罠・かご罠・落とし穴・檻・家畜の囲いのどれも枠の名前は
@@ -734,7 +734,7 @@ props:
         # 屋外での劣化
         add: {self: {durability: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.durability.passives.0.add.self.durability -->
       - conditions: [{slot: catch, matches: {tag: quarry}}]
-        # もがかれている間（新品でも1日もたない、下の箇条）
+        # もがかれている間（屋外より桁違いに速い、下の箇条）
         add: {self: {durability: -10}}  # <!-- codex: traps.yaml object_defs.snare.props.durability.passives.1.add.self.durability -->
     on_min:
       destroy: self

@@ -201,7 +201,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('ヤケイは同じ傷で生き延びる', () => {
-    // 血が80mLあるので、30〜60mLを奪われても残る。**同じ1枚の傷が体格で意味を変える**（5.1節）。
+    // 血が80mLあるので、くくり罠の傷に奪われても残る。**同じ1枚の傷が体格で意味を変える**（5.1節）。
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
 
@@ -211,6 +211,58 @@ describe('traps.yamlのくくり罠', () => {
       '死体になっていない',
     ).toEqual(['junglefowl']);
     expect(prey.tryGetProperty(bloodId)!.getEffectiveValue()).toBeGreaterThan(0);
+  });
+
+  /** 掛かったヤケイと、刺さったくくり罠の傷。傷の掛かり方（初期値のロール）をその場で据え直す。 */
+  function fowlWithSnareWound(rolls: { bleeding?: 'min' | 'max'; severity?: 'min' | 'max' }): {
+    prey: WorldObject;
+    wound: WorldObject;
+  } {
+    open(CATCHES_FOWL);
+    const prey = tickUntilCaught();
+    const [wound] = prey.tryGetSlot(codex.slotNames.getId('injuries'))!.contents;
+    for (const [name, end] of Object.entries(rolls)) {
+      const property = wound.getProperty(codex.propertyNames.getId(name));
+      const roll = property.def.initialValueReading;
+      if (roll.kind !== 'roll') throw new Error(`${name} は初期値をロールしない`);
+      property.setNumber(end === 'max' ? roll.max : roll.min);
+    }
+    prey.getProperty(bloodId).setNumber(prey.getProperty(bloodId).def.range!.max);
+    return { prey, wound };
+  }
+
+  it('くくり罠に最も深く掛かったヤケイだけが、血が止まるまでに失血の域へ入る', () => {
+    // 5.1節。奪う量は掛かりの深さ（bleedingのロール）で変わり、深い端でだけヤケイが exsanguinated に入る。
+    const bloodStageWhenClotted = (bleeding: 'min' | 'max'): string | undefined => {
+      const { prey, wound } = fowlWithSnareWound({ bleeding });
+      const bleedingId = codex.propertyNames.getId('bleeding');
+      tickUntil(() => wound.getProperty(bleedingId).number === 0, 10);
+      return prey.getProperty(bloodId).stage?.name;
+    };
+
+    expect(bloodStageWhenClotted('max'), '最も深く掛かると失血の域').toBe('exsanguinated');
+    expect(bloodStageWhenClotted('min'), '浅く掛かれば入らない').not.toBe('exsanguinated');
+  });
+
+  it('くくり罠の傷は、深く掛かった個体だけが敗血症まで届く', () => {
+    // 5.1節。膿む速さは体格を見ないので、届くかを分けるのは傷の重さ（severityのロール）だけ。
+    // 浅い個体は膿み切る前に傷のほうが消える。
+    const reachesSepticemia = (severity: 'min' | 'max'): boolean => {
+      const { prey, wound } = fowlWithSnareWound({ severity, bleeding: 'min' });
+      const pathogenId = codex.propertyNames.getId('pathogen');
+      return tickUntil(
+        () =>
+          prey.tryGetProperty(pathogenId)?.stage?.name === 'septicemic' ||
+          wound.parent === undefined ||
+          prey.parent === undefined,
+        2000,
+      )
+        ? prey.parent !== undefined && prey.tryGetProperty(pathogenId)?.stage?.name === 'septicemic'
+        : false;
+    };
+
+    expect(reachesSepticemia('max'), '深く掛かった個体は届く').toBe(true);
+    expect(reachesSepticemia('min'), '浅く掛かった個体は届かない').toBe(false);
   });
 
   it('土地が宣言していない動物は掛からない', () => {
