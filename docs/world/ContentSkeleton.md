@@ -246,7 +246,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 **手段の側は、ほかの系統とも重なります。** 雨風のために建てた家は居心地を押し
 （[`Dwellings.md`](./Dwellings.md) 2.1節）、家畜のための囲いは連れとして押します（系統2、
-`farming.yaml`）。どちらも別の目的で作る物なので、**単体で止められるのは60日目からの募りまで**に
+`farming.yaml`）。どちらも別の目的で作る物なので、**単体で止められるのは60日目<!-- codex: characters/player_character.yaml traits.player_character.props.loneliness.stages.2.min -->からの募りまで**に
 抑えてあります（同節）——その先は、2つを重ねるか、`snug` まで積むかです。
 
 **この系統の物は、据えること以外に何の役にも立ちません。** 生きるのに要る物が居心地を兼ねると、
@@ -317,9 +317,9 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 ——段になるのは家1軒ぶんの丸太であり、貯水に足りる数の甕です。**畑も塩田も1枚では1日に届きません**
 （[`stats/balance.yaml`](../../stats/balance.yaml) の `object_costs`）——段になるのは拓いた枚数・据えた
 枚数と、撒いて収穫しに戻る往復・海水を汲みに戻る往復の回数のほうです。**囲いは1つで段に届きます**
-——丸太4本と縄2本が要るためです。**干し場も1基で段に届きます**——縄が1本要るためで、開けるのは
+——丸太4本と縄2本が要るためです。**干し場も1基で段に届きます**——縄が1本<!-- codex: drying.yaml object_defs.drying_rack.recipes.lashed.steps.1.requires.0.count -->要るためで、開けるのは
 腐敗の最も速い段の食べ物（生肉・獣の死体・ヤシガニ・海藻）を干物にできることです
-（[`SurvivalItems.md`](./SurvivalItems.md) 10節）。**薪棚も1基で届きます**——こちらも縄が1本要るためです。
+（[`SurvivalItems.md`](./SurvivalItems.md) 10節）。**薪棚も1基で届きます**——こちらも縄が1本<!-- codex: firewood.yaml object_defs.firewood_rack.recipes.built.steps.2.requires.0.count -->要るためです。
 
 **12の量は、里心が止まる `snug` へ届かせる、いちばん安い積み方で測っています。** 何をいくつ並べるかは
 自由で、要るのは合計の手間のほうなので（[`Characters.md`](./Characters.md) ホームシック節）、**足止め
@@ -359,9 +359,9 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 **火（5番）の山は、薪棚です**（4.1節・`src/assets/world-codex/firewood.yaml`）。炉の段
 （[`FireSystem.md`](../engine/FireSystem.md) 6節）はいずれも石を数個積むだけで1日に届かないので、
 段ではなく幅です（2節）——段として立つのは薪のほうで、**開けるのは「伐った木から、取り出せる上限まで
-熱を取れること」**です。伐ったばかりの丸太は目方あたり太い枝の半分しか熱を出さず、1本の200は火を焚く
+熱を取れること」**です。伐ったばかりの丸太は目方あたり太い枝の半分しか熱を出さず、1本の200<!-- codex: timber.yaml object_defs.log.props.fuel.value -->は火を焚く
 炉の薪の上限を超えるので、くべると入りきらない分が失われます。**棚が買うのは、割っただけの薪の先——同じ手間のまま
-燃料が20から30へ上がるぶん**です——拾った枝より安くなる線は割った時点で跨いでいて、そこから先を落とすのが棚のほう
+燃料が20<!-- codex: firewood.yaml object_defs.green_firewood.props.fuel.value -->から30<!-- codex: firewood.yaml object_defs.seasoned_firewood.props.fuel.value -->へ上がるぶん**です——拾った枝より安くなる線は割った時点で跨いでいて、そこから先を落とすのが棚のほう
 （[`FireSystem.md`](../engine/FireSystem.md) 2.5節）。同じ形だった移動の距離は系統から落としましたが
 （3.1節）、火は落としませんでした（4.1節）。
 
@@ -389,7 +389,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 1. **積める船。** 筏に帆と櫂が付いたもの（[`Voyage.md`](./Voyage.md) 2.1節）。丸太・ロープ・帆材が要り、
    丸太は斧だけが作ります（同1節）。
 2. **水を4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 -->日ぶん運ぶ手段**（遠回りと荒天を見込んで、余裕を取るなら10日ぶん）。1日は2.4L
-   （飲用250mLがhydration 10 tick、1日の必要は96 tick）なので、10日で24Lです。**海の上で水が増える道は
+   （飲用250mL<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount -->がhydration 10 tick<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.to_amount -->、1日の必要は96 tick）なので、10日で24Lです。**海の上で水が増える道は
    雨水しかありません**（[`GameEndings.md`](../concept/GameEndings.md) 3.1節）。**これは水の系統の段に
    届いていなくても運べる量です**——ヤシの実は1日5個の勘定で、10日ぶんの50個は110kg・245Lですが、
    積荷が横断を長くするのは160kgから、筏の積荷枠は500L（[`Voyage.md`](./Voyage.md) 3.2節）で、どちらの
@@ -460,7 +460,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 作らなければ何も作らずにヤシの実で積めて、そのぶん積荷の重さを水が食います（5節の4・
 [`Voyage.md`](./Voyage.md) 3.9.6節）。
 
-**蓋は素焼きで、甕と同じ炉を通ります**（`pottery.yaml`）。粘土1個を平たく伸ばして乾かし、覆い焼きの炉で
+**蓋は素焼きで、甕と同じ炉を通ります**（`pottery.yaml`）。粘土1個<!-- codex: pottery.yaml object_defs.unfired_jar_lid.recipes.pressed.steps.0.requires.0.count -->を平たく伸ばして乾かし、覆い焼きの炉で
 焼くだけで、成形そのものは壺より短く済みます。**炉は増えません**——甕と一緒に並べて一度に焼けるので、
 払うのは粘土と成形の時間だけです。載せている間は蒸発も雨受けも止まり、外せば元どおりです
 （[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 6.2節）。
@@ -569,8 +569,8 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 **最初の段は、この勘定には乗りません。** 足止めしているのが労働の量ではないので（2節）、分で測っても
 その区間の重さは出ません。乗るのは日数だけで、数日です。
 
-**探索は分では軽く、日数では重いものです。** 島の土地は10〜20（`terrain_generation.yaml` の
-`site_count`）、探索率100%までの回数は土地ごとに異なり、1回15分
+**探索は分では軽く、日数では重いものです。** 島の土地は10<!-- codex: terrain_generation.yaml generation_scopes.island.site_count.min -->〜20<!-- codex: terrain_generation.yaml generation_scopes.island.site_count.max -->（`terrain_generation.yaml` の
+`site_count`）、探索率100%までの回数は土地ごとに異なり、1回15分<!-- codex: locations.yaml object_defs.sandy_beach.interactions.explore.duration --><!-- codex: locations.yaml object_defs.rocky_coast.interactions.explore.duration --><!-- codex: locations.yaml object_defs.cliff_coast.interactions.explore.duration --><!-- codex: locations.yaml object_defs.grassland.interactions.explore.duration --><!-- codex: locations.yaml object_defs.forest.interactions.explore.duration --><!-- codex: locations.yaml object_defs.jungle.interactions.explore.duration --><!-- codex: locations.yaml object_defs.rocky_field.interactions.explore.duration --><!-- codex: locations.yaml object_defs.wasteland.interactions.explore.duration --><!-- codex: locations.yaml object_defs.mountainside.interactions.explore.duration --><!-- codex: locations.yaml object_defs.mountain_peak.interactions.explore.duration -->
 （[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 2節）なので、**全島を100%にしても2,803分<!-- stats: terrain.yaml exploration_phase metric=exploration_minutes mean -->**
 ——山の合計のごく一部です。ところが**日数では16.0日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->**になります。1日に探索できる時間が土地の
 明るさで切られ、しかも1つの土地を開き切るまでそこに居る必要があるためで、この差が出るのが8.3節の
@@ -612,15 +612,15 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 | 雲のまったく無い空の正午 | 125,000 lx | +16 |
 | 曇りの正午 | 5,000 lx | +11 |
 | 嵐の正午 | 187 lx | +6 |
-| **手元の細かい作業のしきい値** | 80 lx | **+5** |
-| **屋外の採取のしきい値** | 20 lx | **+3** |
-| **土地の間を移動するしきい値** | 0.1 lx | **−5** |
-| **暗さの底（これより下は区別しない）** | 0.04 lx | **−6** |
+| **手元の細かい作業のしきい値** | 80 lx | **+5**<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min --> |
+| **屋外の採取のしきい値** | 20 lx | **+3**<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.2.min --> |
+| **土地の間を移動するしきい値** | 0.1 lx | **−5**<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.1.min --> |
+| **暗さの底（これより下は区別しない）** | 0.04 lx | **−6**<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min --> |
 | 半月の夜の空（開けた土地） | 0.025 lx | −6.6 |
 | 月の無い夜の星明かり | 0.002 lx | −10 |
 | 半月の夜の密林 | 0.00005 lx | −16 |
 
-**移動のしきい値が −5（0.1 lx）なのは、暗順応した人間が満月の砂浜を普通に歩けるからです。** 満月が
+**移動のしきい値が −5<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.1.min -->（0.1 lx）なのは、暗順応した人間が満月の砂浜を普通に歩けるからです。** 満月が
 中天にあるとき開けた土地は0.25 lx で、これを歩けないことにすると現実と合いません。**この島に満月は
 出ません**（8.1.1.3節）が、しきい値のほうは現実の目盛りに合わせてあります。
 
@@ -633,8 +633,8 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 **見る値も違い**、手元の作業は据え付けの光源を含む明るさを、屋外の採取と移動は含まない明るさを見ます
 （[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 2節・5節）。
 
-**表の夜の3行は、空の側では底（−6）に均されます。** 底があるのは、光源が持ち上げる段数を場所によらず
-一定にするためで、−6 自体に現実の根拠はありません（同 4節）。**土地の樹冠と反射は、その底の上へ
+**表の夜の3行は、空の側では底（−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->）に均されます。** 底があるのは、光源が持ち上げる段数を場所によらず
+一定にするためで、−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min --> 自体に現実の根拠はありません（同 4節）。**土地の樹冠と反射は、その底の上へ
 足されます**——夜の地表がどうなるかは 8.1.2節です。
 
 **しきい値と底は、これが作る1日の形で確かめてあります。** 土地×季節ごとに何時間動けるかは
@@ -643,7 +643,7 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 密林の雨季に採れるのは1.3時間<!-- stats: climate.yaml activity_hours location=jungle season=wet outdoor_search -->、
 砂浜は夜も歩けて24時間<!-- stats: climate.yaml activity_hours location=sandy_beach season=calm travel -->に
 なります。**この3つが揃っていることが、8.1節の狙い**——暗くなる前に切り上げて帰る・明るいうちにしか
-できない仕事を先に回す・松明を持って出る——**そのもの**なので、しきい値（−5・+3・+5）と底（−6）は
+できない仕事を先に回す・松明を持って出る——**そのもの**なので、しきい値（−5<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.1.min -->・+3<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.2.min -->・+5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min -->）と底（−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->）は
 今の値のままです。**底を1段動かせば、砂浜が夜に開くかどうかが裏返ります**（8.1.2節）。
 
 #### 8.1.1.1 夜の空は、月あかりを項として持たない【確定】
@@ -663,11 +663,11 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 | 光源 | 現実の照度 | 現実のEV | **採る値** |
 | --- | --: | --: | --: |
 | 獣脂のランプ | 10 lx | +2 | **+1** |
-| 松明 | 30 lx | +4 | **+11** |
-| キャンプファイヤー | 150 lx | +6 | **+11** |
+| 松明 | 30 lx | +4 | **+11**<!-- codex: fire.yaml object_defs.torch.passives.0.modify.parent.hand_brightness --><!-- codex: fire.yaml object_defs.torch.passives.0.modify.parent.looking_brightness --> |
+| キャンプファイヤー | 150 lx | +6 | **+11**<!-- codex: fire.yaml traits.hearth.passives.0.modify.parent.hand_brightness --><!-- codex: fire.yaml traits.hearth.passives.0.modify.parent.looking_brightness --> |
 
-底（−6）と移動・手元の作業のしきい値（−5・+5）を決めると、光源の値は引き算で一意に出ます——**1つで
-歩けるようになる明るさが +1、1つで作業できる明るさが +11** です。**獣脂のランプは1つで歩けますが、作業できる明るさに
+底（−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->）と移動・手元の作業のしきい値（−5<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.1.min -->・+5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min -->）を決めると、光源の値は引き算で一意に出ます——**1つで
+歩けるようになる明るさが +1、1つで作業できる明るさが +11<!-- codex: fire.yaml object_defs.torch.passives.0.modify.parent.hand_brightness --><!-- codex: fire.yaml traits.hearth.passives.0.modify.parent.hand_brightness -->** です。**獣脂のランプは1つで歩けますが、作業できる明るさに
 するには11個要ります。** これは障壁として十分で、しかも現実の照度でも一致します（10 lx × 11個 =
 110 lx で、100 lx のしきい値を超える）。
 
@@ -678,19 +678,19 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 **松明とキャンプファイヤーは同じ値です。** 差を付けても「底では作業できないが少し明るければできる」
 という読みにくい段になるだけなので、光源は「歩けるようになるもの（+1）」と「作業できるようになるもの
-（+11）」の2階層で足ります。**両方を同時に使うと雲のまったく無い空の正午を超えますが、しきい値との比較にしか
+（+11<!-- codex: fire.yaml object_defs.torch.passives.0.modify.parent.hand_brightness --><!-- codex: fire.yaml traits.hearth.passives.0.modify.parent.hand_brightness -->）」の2階層で足ります。**両方を同時に使うと雲のまったく無い空の正午を超えますが、しきい値との比較にしか
 使わないので害はありません。**
 
-段（`stages`）は、しきい値の境目にだけ置いてあります——`pitch_dark`（−5未満）・`dim`・`bright`で、
-`bright` の境は手元が +5、視界が +3。**これらがしきい値の置き場そのもの**で、条件の側は段の名前で見ます
+段（`stages`）は、しきい値の境目にだけ置いてあります——`pitch_dark`（−5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.1.min --><!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.1.min -->未満）・`dim`・`bright`で、
+`bright` の境は手元が +5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min -->、視界が +3<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.2.min -->。**これらがしきい値の置き場そのもの**で、条件の側は段の名前で見ます
 （[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 8節）。上の表の値を動かすときに
 一緒に見るのは、キャラクタの `hand_brightness`・`looking_brightness` の段だけです。
 
 **「携行光源か固定光源か」という区別は、明るさの側には要りません。** 焚き火が視界を明るくしないのは、
 それが動かせない設置物だからで、光源自身は何も知りません（[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 3節）。
 
-**光源の値も今のままです。** +1 も +11 も底としきい値からの引き算なので（上）、確かめたのはその2つ
-（8.1.1節・8.1.2節）。**+11 のほうは松明1本が何を開くかでも確かめてあり、1段下げれば手元の作業だけが
+**光源の値も今のままです。** +1 も +11<!-- codex: fire.yaml object_defs.torch.passives.0.modify.parent.hand_brightness --><!-- codex: fire.yaml traits.hearth.passives.0.modify.parent.hand_brightness --> も底としきい値からの引き算なので（上）、確かめたのはその2つ
+（8.1.1節・8.1.2節）。**+11<!-- codex: fire.yaml object_defs.torch.passives.0.modify.parent.hand_brightness --> のほうは松明1本が何を開くかでも確かめてあり、1段下げれば手元の作業だけが
 閉じます**（8.1.1.4節）——2階層のうち上の段は、そこでしか置けません。
 
 #### 8.1.1.3 月あかりを落とせる理由は、半月の照度が底を下回ること
@@ -703,7 +703,7 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 8割はそこへ届きません。
 
 **半月の照度は満月の約1/10**（中天で 0.025 lx＝−6.6）です。面積が半分だからではなく、欠け際の影が
-長く伸び、満月のときだけ効く衝効果が無いためです。**これは暗さの底（0.039 lx＝−6）を下回るので、
+長く伸び、満月のときだけ効く衝効果が無いためです。**これは暗さの底（0.039 lx＝−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->）を下回るので、
 月の高度で刻んでも天気の透過率を掛けても、空の側は底のままです**——区別できるものが何も残らないので、
 項を持たせません。
 
@@ -712,8 +712,8 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 #### 8.1.1.4 松明1本は2時間で、灯っているあいだは暗さが閉じたものが開く
 
-**灯っている松明を持っていれば、どの土地のどの時刻でも、行動のどのクラスも開きます。** 底（−6）へ
-+11 が乗ると手元のしきい値（+5）にちょうど並ぶからで、いちばん深い樹冠の夜でも同じです（夜の地表は
+**灯っている松明を持っていれば、どの土地のどの時刻でも、行動のどのクラスも開きます。** 底（−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->）へ
++11<!-- codex: fire.yaml object_defs.torch.passives.0.modify.parent.hand_brightness --> が乗ると手元のしきい値（+5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min -->）にちょうど並ぶからで、いちばん深い樹冠の夜でも同じです（夜の地表は
 すべて底に均される、8.1.2節）。**開かないのは嵐の日、屋根の下でない場所での行動**で、それを止めて
 いるのは明るさではありません（8.1.4節）。**そこではどのクラスも開きません**——松明が買えるのは暗さで
 閉じた分だけです。**ただし雨の屋外では、松明はそもそも灯っていられません**（小雨でも消える、
@@ -752,16 +752,16 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 | 土地 | 樹冠 | EV | 反射率 | EV | **合計（`value`）** |
 | --- | --: | --: | --: | --: | --: |
-| 砂浜 | 1.00 | 0 | **0.40** | **+1** | **+1** |
-| 草原 | 1.00 | 0 | 0.22 | 0 | 0 |
-| 岩礁海岸・断崖海岸・岩石地・荒野・山腹・山頂 | 1.00 | 0 | 0.20 | 0 | 0 |
-| 森 | 0.05 | **−4** | 0.08 | −1 | **−5** |
-| 密林 | 0.01 | **−7** | 0.06 | −2 | **−9** |
+| 砂浜 | 1.00 | 0 | **0.40** | **+1** | **+1**<!-- codex: locations.yaml object_defs.sandy_beach.props.ambient_brightness.value --> |
+| 草原 | 1.00 | 0 | 0.22 | 0 | 0<!-- codex: locations.yaml object_defs.grassland.props.ambient_brightness.value --> |
+| 岩礁海岸・断崖海岸・岩石地・荒野・山腹・山頂 | 1.00 | 0 | 0.20 | 0 | 0<!-- codex: locations.yaml object_defs.rocky_coast.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.cliff_coast.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.rocky_field.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.wasteland.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.mountainside.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.mountain_peak.props.ambient_brightness.value --> |
+| 森 | 0.05 | **−4** | 0.08 | −1 | **−5**<!-- codex: locations.yaml object_defs.forest.props.ambient_brightness.value --> |
+| 密林 | 0.01 | **−7** | 0.06 | −2 | **−9**<!-- codex: locations.yaml object_defs.jungle.props.ambient_brightness.value --> |
 
 **定義に書くのは合計の1つだけ**で、内訳を持つのはこの表です
 （[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 2節）。
 
-**浅い洞窟はこの表に載りません。** 土地ではなく土地の中の設置物で、持っている −6 は樹冠と反射の合計では
+**浅い洞窟はこの表に載りません。** 土地ではなく土地の中の設置物で、持っている −6<!-- codex: locations.yaml object_defs.shallow_cave.props.ambient_brightness.value --> は樹冠と反射の合計では
 なく**外との差**だからです——親の土地の環境光を土台に6段下げます
 （[`Dwellings.md`](./Dwellings.md) 5.1節）。空から光が来ないことを土台を持たないことで表す形
 （[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 7節、値は底そのもの）は**奥の洞窟の値**で、
@@ -769,17 +769,17 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 反射率は基準の地面（0.20）に対する比として掛けます。
 
-**夜の地表は、これだけで決まります。** 空は底（−6）に張り付いていて時刻でも天気でも動かないので
+**夜の地表は、これだけで決まります。** 空は底（−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->）に張り付いていて時刻でも天気でも動かないので
 （8.1.1.1節）、夜の明暗を作るのは土地だけです。
 
-| 夜の地表 | 環境光 | 移動（しきい値 −5） |
+| 夜の地表 | 環境光 | 移動（しきい値 −5<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.1.min -->） |
 | --- | --: | --- |
 | 砂浜 | **−5** | **歩ける** |
 | 草原・岩場・荒野など | −6 | 歩けない |
 | 森・密林（底へ引き戻される） | −6 | 歩けない |
-| 浅い洞窟の中（親の土地からさらに −6。同じく底へ） | −6 | 歩けない |
+| 浅い洞窟の中（親の土地からさらに −6<!-- codex: locations.yaml object_defs.shallow_cave.props.ambient_brightness.value -->。同じく底へ） | −6 | 歩けない |
 
-**夜に歩けるのは砂浜だけです。** 反射 +1 を持つ砂浜だけが底の上へ1段乗り、しきい値にちょうど届きます。
+**夜に歩けるのは砂浜だけです。** 反射 +1<!-- codex: locations.yaml object_defs.sandy_beach.props.ambient_brightness.value --> を持つ砂浜だけが底の上へ1段乗り、しきい値にちょうど届きます。
 **海沿いは夜でも帰れる道になり**、他の土地から日暮れ後に動くには光源が要ります。
 
 **現実の半月の砂浜は 0.05 lx で、しきい値（0.1 lx）に半段届きません。** 底が空の暗さを持ち上げるぶん、
@@ -792,12 +792,12 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 **夜は、樹冠の差が消えます。** 森も密林も浅い洞窟も底へ引き戻されるので、夜の暗さでは区別が付きません。
 
-**反射率も今の値のままです。** 線を跨がせているのは砂浜の +1 だけで、それが上の表の「夜に歩けるのは
+**反射率も今の値のままです。** 線を跨がせているのは砂浜の +1<!-- codex: locations.yaml object_defs.sandy_beach.props.ambient_brightness.value --> だけで、それが上の表の「夜に歩けるのは
 砂浜だけ」を作っています。**他の土地の反射を動かしても、昼は境目が数分動くだけ**（8.1.3節）なので、
 反射率が効いているかはこの1段で見ます。
 
 **浅い洞窟の中で作業できるのは、外が曇りの正午（+11）以上に明るいときだけです。** 中は外より6段暗く、
-手元のしきい値は +5 だからです。晴れ以上なら7時から16時まで、曇りの日は11時から12時まで、雨の日は
+手元のしきい値は +5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min --> だからです。晴れ以上なら7時から16時まで、曇りの日は11時から12時まで、雨の日は
 一日中できません。**アーティファクトの出どころの3分の1が浅い洞窟（6節）**で、そこは同時に序盤の住居
 （[`Dwellings.md`](./Dwellings.md) 5節）でもあるので、朝夕と雨の日に中で手を動かすぶんが燃料の需要に
 なります。奥の洞窟が開けば（【いつか: 洞窟内部】）、そちらは昼でも光源が要ります。
@@ -811,7 +811,7 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 | 値 | 何を寄せるか |
 | --- | --- |
-| **環境光** | 時刻・天気・土地の樹冠と地面の反射。**底（−6）で均す** |
+| **環境光** | 時刻・天気・土地の樹冠と地面の反射。**底（−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->）で均す** |
 | **手元の明るさ** | 環境光と、持っている光源＋その場に据えられた光源 |
 | **視界の明るさ** | 環境光と、**持っている光源だけ** |
 
@@ -827,7 +827,7 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 どのオブジェクトがどれを持つかは [`IlluminationSystem.md`](../engine/IlluminationSystem.md) 2節、
 底の置き方は同 4節です。**樹冠が光源を遮ってしまう問題は、底が飲み込みます**——密林の夜は樹冠込みで
-−15 ですが底で −6 になり、そこへ松明の +11 が乗ります。
+−15 ですが底で −6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min --> になり、そこへ松明の +11<!-- codex: fire.yaml object_defs.torch.passives.0.modify.parent.hand_brightness --> が乗ります。
 
 **合成はすべて単純加算です。** 対数なので光源を足し合わせるのは厳密には正しくありません（10 lx の
 ランプ2つは1段しか増えないところ、加算では2段になります）。**それでもしきい値との比較にしか使わない
@@ -836,7 +836,7 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 #### 8.1.3 天気は、明るさへは樹冠を通してだけ効く
 
-赤道付近の島（[`Animals.md`](./Animals.md) 概要）なので、日の出6時・日没18時が年間ほぼ動きません。
+赤道付近の島（[`Animals.md`](./Animals.md) 概要）なので、日の出6時<!-- codex: core.yaml object_defs.world.props.hour.stages.1.min -->・日没18時<!-- codex: core.yaml object_defs.world.props.hour.stages.10.min -->が年間ほぼ動きません。
 太陽高度から出した、雲のまったく無い空の照度に、天気の透過率を掛けます。**天気は`core.yaml`の`weather`の7段すべて
 です**——「寄与」は同じ段が`ambient_brightness`へ与える段数で、雲のまったく無い空を0として何段暗いかです。
 天気の行名は画面へ出る日本語名（`locale/ja.yaml`の`symbol_texts`）です。
@@ -844,33 +844,33 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 | 天気 | `core.yaml`の段 | 寄与 | 12時（90°） | 9時・15時（45°） | 7時・17時（15°） | 6時・18時（0°） |
 | --- | --- | --: | --: | --: | --: | --: |
 | 灼熱 | `scorching` | 0 | 125,000 | 68,400 | 8,570 | 1.0 |
-| 快晴 | `sunny` | −1 | 68,700 | 37,600 | 4,710 | 0.6 |
-| 晴れ | `clear` | −2 | 41,000 | 22,400 | 2,810 | 0.3 |
-| 曇り | `cloudy` | −5 | 5,000 | 2,730 | 343 | 0.04 |
-| 小雨 | `light_rain` | −6 | 2,000 | 1,090 | 137 | 0.02 |
-| 大雨 | `heavy_rain` | −8 | 749 | 410 | 51 | 0.006 |
-| 嵐 | `storm` | −10 | 187 | 103 | 13 | 0.002 |
+| 快晴 | `sunny` | −1<!-- codex: core.yaml object_defs.world.props.weather.stages.5.passives.0.modify.self.ambient_brightness --> | 68,700 | 37,600 | 4,710 | 0.6 |
+| 晴れ | `clear` | −2<!-- codex: core.yaml object_defs.world.props.weather.stages.4.passives.0.modify.self.ambient_brightness --> | 41,000 | 22,400 | 2,810 | 0.3 |
+| 曇り | `cloudy` | −5<!-- codex: core.yaml object_defs.world.props.weather.stages.3.passives.0.modify.self.ambient_brightness --> | 5,000 | 2,730 | 343 | 0.04 |
+| 小雨 | `light_rain` | −6<!-- codex: core.yaml object_defs.world.props.weather.stages.2.passives.0.modify.self.ambient_brightness --> | 2,000 | 1,090 | 137 | 0.02 |
+| 大雨 | `heavy_rain` | −8<!-- codex: core.yaml object_defs.world.props.weather.stages.1.passives.0.modify.self.ambient_brightness --> | 749 | 410 | 51 | 0.006 |
+| 嵐 | `storm` | −10<!-- codex: core.yaml object_defs.world.props.weather.stages.0.passives.0.modify.self.ambient_brightness --> | 187 | 103 | 13 | 0.002 |
 
 照度の単位はlxです。**灼熱（`scorching`）は暑さの名前ですが、明るさの側では雲のまったく無い空**——寄与を
 持たない基準の段です。**晴れ（`clear`）がこの島でいちばん多い天気**で、快晴と曇りの間に落ちます。
 
-**照度と実装を突き合わせるのは正午の列です。** `hour`が正午に与える寄与が+16なので、実装の正午のEVは
-「16＋寄与」になります。照度をEVへ直した値（`EV = log2(照度 / 2.5 lx)`、8.1.1節）とは最大0.4段ずれます
+**照度と実装を突き合わせるのは正午の列です。** `hour`が正午に与える寄与が+16<!-- codex: core.yaml object_defs.world.props.hour.stages.5.passives.0.modify.self.ambient_brightness -->なので、実装の正午のEVは
+「16<!-- codex: core.yaml object_defs.world.props.hour.stages.5.passives.0.modify.self.ambient_brightness -->＋寄与」になります。照度をEVへ直した値（`EV = log2(照度 / 2.5 lx)`、8.1.1節）とは最大0.4段ずれます
 ——実装は段を整数で持つための丸めで、**正しいのは実装のほう**です。**正午以外の列は直接は一致しません**
 ——実装の`hour`の段はその1時間の中央の太陽高度を使うのに対し、この表の列は正時の高度だからです。
 
 **夜の列はありません。** 半月の月あかりは中天でも 0.025 lx（−6.6）で、天気の透過率を掛けるまでもなく
-底（−6）を下回るためです（8.1.1.3節）。**天気が明るさへ効くのは昼だけ**で、夜の砂浜が開くかどうかは
+底（−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->）を下回るためです（8.1.1.3節）。**天気が明るさへ効くのは昼だけ**で、夜の砂浜が開くかどうかは
 天気によりません。
 
 透過率は正午の実測に合わせました（雲のまったく無い空10〜13万 lx・曇り5,000 lx・嵐200 lx）。**晴れ
-（`clear`）だけは実測ではなく、実装の−2段（EV 14 ＝ 41,000 lx）から置いています。**
+（`clear`）だけは実測ではなく、実装の−2<!-- codex: core.yaml object_defs.world.props.weather.stages.4.passives.0.modify.self.ambient_brightness -->段（EV 14 ＝ 41,000 lx）から置いています。**
 
 **土地×季節ごとに1日何時間動けるかは、手で計算せず定義から数えます。**
 [`activityHoursOf`](../../src/analysis/activityHours.ts)が、`core.yaml`の`hour`・`weather`の段
 （この節の透過率と太陽高度がambient_brightnessへ与える寄与そのもの）・土地ごとのambient_brightness
 （8.1.2節）・天気の出現時間（[`stats/climate.yaml`](../../stats/climate.yaml)の`weather_hours`の実測）
-から、しきい値（8.1.1節の −5・+3・+5）を満たす時間を積算し、**どの列からも嵐の時間を引きます**
+から、しきい値（8.1.1節の −5<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.1.min -->・+3<!-- codex: characters/player_character.yaml traits.player_character.props.looking_brightness.stages.2.min -->・+5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min -->）を満たす時間を積算し、**どの列からも嵐の時間を引きます**
 （8.1.4節・8.1.5節）。据え付けの光源は含みません
 （含めると「焚き火があれば24時間活動できる」になり、表の意味が消えます）。
 **表そのものは同じYAMLの`activity_hours`に1本だけ持ち、ここでは繰り返しません。**
@@ -889,8 +889,8 @@ ambient_brightnessをそのまま土台にするためです（同 2節）。
 **夜に動けるのは砂浜だけです。** 他の土地は夜になると移動のしきい値を割るので、日暮れ後に動くには
 光源が要ります（8.1.2節）。**風雨の届く場所で「移動できる」列が明るい時間ぶん丸ごと開かないのは雨季
 です**——嵐の時間が引かれるためで、砂浜なら夜も含む24時間から、他の土地なら昼の12時間から削れます。
-**明るさの側でも落ちるのは、樹冠の深い密林と、岩陰の浅い洞窟です**——密林は樹冠が−9と深いぶん雨季の
-荒天では正午でも移動のしきい値を割ることがあり、浅い洞窟は嵐を引かない代わりに岩陰の−6で落ちます。
+**明るさの側でも落ちるのは、樹冠の深い密林と、岩陰の浅い洞窟です**——密林は樹冠が−9<!-- codex: locations.yaml object_defs.jungle.props.ambient_brightness.value -->と深いぶん雨季の
+荒天では正午でも移動のしきい値を割ることがあり、浅い洞窟は嵐を引かない代わりに岩陰の−6<!-- codex: locations.yaml object_defs.shallow_cave.props.ambient_brightness.value -->で落ちます。
 
 **土地の差がいちばん大きく出るのは、採れる時間の雨季です。** 樹冠が深い森・密林ほど雨季に大きく
 削られます（森・密林とも雨季は繊維・バナナ・粘土・小枝の産地——2.3節の表——なので、**雨季は繊維が
@@ -929,17 +929,17 @@ ambient_brightnessをそのまま土台にするためです（同 2節）。
 | 天気 | `core.yaml`の段 | 風速 | ビューフォート風力階級 |
 | --- | --- | --: | --- |
 | 灼熱 | `scorching` | 0 | 0 平穏（0.3未満） |
-| 快晴 | `sunny` | 2 | 2 軽風（1.6〜3.3） |
-| 晴れ | `clear` | 3 | 2 軽風（1.6〜3.3） |
-| 曇り | `cloudy` | 5 | 3 軟風（3.4〜5.4） |
-| 小雨 | `light_rain` | 7 | 4 和風（5.5〜7.9） |
-| 大雨 | `heavy_rain` | 12 | 6 雄風（10.8〜13.8） |
-| 嵐 | `storm` | 20 | 8 疾強風（17.2〜20.7） |
+| 快晴 | `sunny` | 2<!-- codex: core.yaml object_defs.world.props.weather.stages.5.passives.0.modify.self.wind_speed --> | 2 軽風（1.6〜3.3） |
+| 晴れ | `clear` | 3<!-- codex: core.yaml object_defs.world.props.weather.stages.4.passives.0.modify.self.wind_speed --> | 2 軽風（1.6〜3.3） |
+| 曇り | `cloudy` | 5<!-- codex: core.yaml object_defs.world.props.weather.stages.3.passives.0.modify.self.wind_speed --> | 3 軟風（3.4〜5.4） |
+| 小雨 | `light_rain` | 7<!-- codex: core.yaml object_defs.world.props.weather.stages.2.passives.0.modify.self.wind_speed --> | 4 和風（5.5〜7.9） |
+| 大雨 | `heavy_rain` | 12<!-- codex: core.yaml object_defs.world.props.weather.stages.1.passives.0.modify.self.wind_speed --> | 6 雄風（10.8〜13.8） |
+| 嵐 | `storm` | 20<!-- codex: core.yaml object_defs.world.props.weather.stages.0.passives.0.modify.self.wind_speed --> | 8 疾強風（17.2〜20.7） |
 
 単位はm/sです。**灼熱（`scorching`）は明るさと同じく寄与を持たない基準の段**——雲も風も無いから
 灼けます。値は階級の目安から置いたもので、明るさの透過率のような実測はありません。
 
-**屋外が閉ざされる境目は17.2 m/s**で、台風の風速の定義（ビューフォート8の下限）そのものです。7段のうち
+**屋外が閉ざされる境目は17.2<!-- codex: characters/player_character.yaml traits.player_character.props.wind_speed.stages.1.min --> m/s**で、台風の風速の定義（ビューフォート8の下限）そのものです。7段のうち
 これを超えるのは嵐だけで、**境目を持つのはキャラクタの段（`player_character.yaml`の`wind_speed`の
 `gale`）1箇所だけ**です。行動の側の条件はその段の名前で見るので、しきい値の数字はどこにも書き写されません。
 
