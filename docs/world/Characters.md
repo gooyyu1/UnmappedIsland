@@ -53,8 +53,8 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 ### 値の刻み方（キャラクタ間で共通の規約）
 
 数値のスケールは [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.0節に従い、
-`range.min` は常に0——**唯一の例外が `immunity`** で、そこだけは押し下げが重なっても残る守りの底（20）を置く
-（[`DigestionSystem.md`](../engine/DigestionSystem.md) 6.2 節）。1 tick（15分）、4 tick（1時間）。
+`range.min` は常に0——**唯一の例外が `immunity`** で、そこだけは押し下げが重なっても残る守りの底（20<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.range.min -->）を置く
+（[`DigestionSystem.md`](../engine/DigestionSystem.md) 6.2 節）。1 tick（15<!-- codex: core.yaml object_defs.world.props.minutes_per_tick.value -->分）、4 tick（1時間）。
 
 **尽きると死ぬのは `hydration` / `body_fat` / `blood` / `warmth`**
 （[`VitalsSystem.md`](../engine/VitalsSystem.md) 8 節・8.3 節）。
@@ -77,20 +77,20 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   物差しが違う（同 4 節）。同じく trait が配る。一番下の段 **`scurvy`**（壊血病）が `pain` を押し上げる
   ——**体調不良を怪我のカードにせず、原因となる値の段に持たせる**
   （[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）。
-- **`happiness`（幸福度）**: **メンタルの不調を代表する1本**で、単位を持たない 0〜100。自分では動かず、
+- **`happiness`（幸福度）**: **メンタルの不調を代表する1本**で、単位を持たない 0<!-- codex: characters/player_character.yaml traits.player_character.props.happiness.range.min -->〜100<!-- codex: characters/player_character.yaml traits.player_character.props.happiness.range.max -->。自分では動かず、
   食べた物が上げ、`pain` と `homesickness` の段が下げる（下の[幸福度](#幸福度)節）。0 まで落ちると
   打ちひしがれ、その強制の時間の間だけ戻る（下の[限界](#限界)節）。個体差は持たせず trait が配る。
 - **`loneliness`（孤独、日）／`homesickness`（ホームシック）／`comfort`（居心地）／`company`（連れ）**:
   時間の経過そのものから生える圧（下の[ホームシック](#ホームシック)節）。溜める側と抑える側は自分では
-  動かず `base` で継ぐだけで、間の `homesickness`（0〜120、増える側が悪い）だけが溜まって `happiness` を
+  動かず `base` で継ぐだけで、間の `homesickness`（0<!-- codex: characters/player_character.yaml traits.player_character.props.homesickness.range.min -->〜120<!-- codex: characters/player_character.yaml traits.player_character.props.homesickness.range.max -->、増える側が悪い）だけが溜まって `happiness` を
   削る。個体差は持たせず trait が配る。
-- **`pathogen`（全身の菌）／`immunity`（免疫）**: 菌は **log₁₀ CFU**（0〜9）で持ち、菌が居ることになる段
+- **`pathogen`（全身の菌）／`immunity`（免疫）**: 菌は **log₁₀ CFU**（0<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.range.min -->〜9<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.range.max -->）で持ち、菌が居ることになる段
   （`latent` 以上）に居る間だけ定数で増える。免疫は段ごとの定数でそれを引き、**除去と増殖の大小 1 つ**で
   着地するか暴走するかが決まる（[`DigestionSystem.md`](../engine/DigestionSystem.md) 6 節）。菌の上2段が `hydration` と `blood` を
   削るので**死に方は増えない**。免疫を押し下げるのは生活の側で、**ビタミンが最も重く、しかも2段で
   押す**（壊血病と、その手前の不足）。宣言はそれぞれの段の側が持ち、何がどれだけ押すかの一覧は
   [`DigestionSystem.md`](../engine/DigestionSystem.md) 6.2 節。どちらも個体差は持たせず trait が配る。
-- **`hydration`（水分）**: `-1/tick` 固定で、`max` が「満水から何 tick 保つか」。**減り方に個体差を
+- **`hydration`（水分）**: `-1/tick`<!-- codex: characters/captain.yaml object_defs.captain.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/engineer.yaml object_defs.engineer.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/farmer.yaml object_defs.farmer.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/medic.yaml object_defs.medic.props.hydration.passives.0.add.self.hydration --> 固定で、`max` が「満水から何 tick 保つか」。**減り方に個体差を
   持たせない**——キャラクタが違っても、飲んだ水1mLの意味が変わってはならないため。持ちの差は
   `max`（＝体が抱える水の量）で表す。液体の mL からの換算は飲用側の宣言が持つ（`transfer` の
   `to_amount`、[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5節）。
@@ -104,10 +104,10 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   1日に要る量の個体差（標準体格で `nourished` 段のレート）はここに出る
   （[`DigestionSystem.md`](../engine/DigestionSystem.md) 4 節）。`status` タグを持たないため
   ステータスエリアには出ない——画面に見える飢えの兆しは満腹感が受け持つ。
-- **`wakefulness`（覚醒度）**: 0で強制的に眠りに入る（下の[限界](#限界)節。致死性は無い）。`-1/tick`。
+- **`wakefulness`（覚醒度）**: 0で強制的に眠りに入る（下の[限界](#限界)節。致死性は無い）。`-1/tick`<!-- codex: characters/captain.yaml object_defs.captain.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/engineer.yaml object_defs.engineer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.passives.0.add.self.wakefulness -->。
   戻すのは眠る休息（仮眠・睡眠）と、その眠り込み（[休息](#休息)節）、それに飲むと `wakefulness` を
   配る液体（茶。[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md)）。**`max` は「満タンから、
-  意識を保てなくなって眠り込むまでの時間」**で、普通の人間の48時間（192 tick）を基準に置く。外から起こし続ける実験の記録
+  意識を保てなくなって眠り込むまでの時間」**で、普通の人間の48時間（192<!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.range.max --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.range.max --> tick）を基準に置く。外から起こし続ける実験の記録
   （数日〜十日）は採らない——あれは自力で起きていられる長さではないため。眠らずにいられる長さの
   個人差はここに出る。
 - **`stamina`（体力）**: 疲労の逆。戻すのは休息（同節）と、倒れ込み・眠り込み（下の[限界](#限界)節）。
@@ -116,23 +116,23 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **`pain`（痛み）**: 負っている怪我（[`InjurySystem.md`](../engine/InjurySystem.md)）が `modify` で押し上げる値。自分では
   動かないので `value` は 0 のまま、`max` は「これ以上は耐えられない」点。痛みの感じ方は食の好みではなく
   身体の仕組みなので、栄養バランスと同じく個体差を持たせず `player_character` trait が配る。
-- **`weight`（体重、g）**: 65,000（下の `blood` が体重のおよそ1/13という関係から、5,000mLがちょうど
+- **`weight`（体重、g）**: 65,000<!-- codex: characters/player_character.yaml traits.player_character.props.weight.value -->（下の `blood` が体重のおよそ1/13という関係から、5,000mL<!-- codex: characters/player_character.yaml traits.player_character.props.blood.range.max -->がちょうど
   65kg）。**担ぐ側も担がれる側になる**——筏に乗れば自分と手持ちが積載として効く
   （[`ContainerSystem.md`](../engine/ContainerSystem.md) 1.1 節）。個体差はまだ持たせず trait が配る。
 - **`travel_delay`（歩みの遅れ、分）**: 素は 0 で、自分では動かず `load` の段が `modify` で押し上げる
   （下の荷重の効き方節）。道の `travel_minutes` が `base` でここを土台にする。`status` タグは持たない
   ——見せるのは荷重そのもので、遅れはその段から読める。個体差は持たせず trait が配る。
 - **`blood`（血液量、mL）**: `max` が体格そのもの（体重のおよそ1/13）で、満タンから始まる。**体が
-  自分で作り直すステータス**（`+2/tick` ＝ 1日およそ200mL、赤血球が作られる実際の速さ）。削るのは出血する
+  自分で作り直すステータス**（`+2/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.blood.passives.0.add.self.blood --> ＝ 1日およそ200mL、赤血球が作られる実際の速さ）。削るのは出血する
   怪我だけなので、**削られるのは一瞬でも戻るのは桁違いに遅い**——牙の傷1つが奪う600mLに3.1日かかる
 （[`VitalsSystem.md`](../engine/VitalsSystem.md) 3.3 節）。尽きた段の
   名前は **`exsanguinated`**。刻み方は [`VitalsSystem.md`](../engine/VitalsSystem.md) 3 節、これも個体差を
   持たせず trait が配る。**戻るのは水分と体脂肪がともに安全域にある間だけ**で（同 3.1 節）、
   水も食べ物も切らしたまま養生することはできない。
 - **`warmth`（熱、kcal）／`chill_point`（寒さの入口、℃）**: `blood` と同じく `max` が体格そのもの
-  （700 ＝ 深部体温 37℃ から 25℃ までに失える熱）で、満タンから始まる。**寒いかどうかは、居る場所の
-  `ambient_temperature` と `chill_point`（素は16℃）の比較1つで決まる**——下回る間は `-2/tick`、
-  屋根も蓋も無い所で雨に打たれている間は `-6/tick` で削られ、上回る間は `+8/tick` で戻る。尽きた段の
+  （700<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.range.max --> ＝ 深部体温 37℃ から 25℃ までに失える熱）で、満タンから始まる。**寒いかどうかは、居る場所の
+  `ambient_temperature` と `chill_point`（素は16℃<!-- codex: characters/player_character.yaml traits.player_character.props.chill_point.value -->）の比較1つで決まる**——下回る間は `-2/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.passives.0.add.self.warmth -->、
+  屋根も蓋も無い所で雨に打たれている間は `-6/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.passives.1.add.self.warmth --> で削られ、上回る間は `+8/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.passives.2.add.self.warmth --> で戻る。尽きた段の
   名前は **`frozen`**。段の境目は深部体温で置く（刻み方は
   [`VitalsSystem.md`](../engine/VitalsSystem.md) 8.4 節）。個体差は持たせず trait が配る。
   **`chill_point` は、防ぐ側（衣服・寝床）が `modify` で押し下げるための境目**で、火だけは境目ではなく
@@ -151,7 +151,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **安全域から外れるのは `max` の80%**（＝ステータスエリアに出始める位置）。この境界だけは
   全ステータス・全キャラクタで共通でなければ「まだ大丈夫」の感覚が崩れる。端数は丸める——段のしきい値は
   人が読む数字なので、小数が書けても整数に留める。
-- **`hydration` と `happiness` の初期値は `max` の75%**（安全域のやや下）。満腹感も同じ狙いで留意域（300mL）から
+- **`hydration` と `happiness` の初期値は `max` の75%**（安全域のやや下）。満腹感も同じ狙いで留意域（300mL<!-- codex: characters/player_character.yaml traits.player_character.props.satiety.value -->）から
   始める（[`DigestionSystem.md`](../engine/DigestionSystem.md) 2 節）。満タンで始めると alert が
   `safe` でステータスバーに出ず（[`StatusArea.md`](../ui/StatusArea.md)）、
   飲食の操作も最初は試せないため。**荷が無ければ減らない `stamina`** と、序盤に眠らせたくない
@@ -166,15 +166,15 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **`happiness` も割合で切る**: `max` の80%で安全域を外れ、50%未満で `caution`、20%未満で `danger`
   （下の[幸福度](#幸福度)節）。**減る速さが今の痛みで変わる**ので、`stamina` と同じ理由で残り時間では
   切れない。
-- `vitamin` の80%より下は現実の量で切る: 300mg 未満が壊血病（`danger`）で、その上の `caution` の
-  境目は 600mg（残り12.5日）。**発症の境目だけは残り時間ではなく実際の血中量**で、外から検算できる
+- `vitamin` の80%より下は現実の量で切る: 300mg<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.1.min --> 未満が壊血病（`danger`）で、その上の `caution` の
+  境目は 600mg<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.2.min -->（残り12.5日）。**発症の境目だけは残り時間ではなく実際の血中量**で、外から検算できる
   （[`DesignPrinciples.md`](../concept/DesignPrinciples.md) 「現実に単位があるものは、その単位で持つ」）。
 - `blood` は**失った割合**で切る（臨床の出血性ショックの分類、
   [`VitalsSystem.md`](../engine/VitalsSystem.md) 3 節）。2割失って安全域を外れるので、上の80%の境界と
   ちょうど一致する。以降 3割で `caution`、4割で `danger`、6割で `fatal`。
 - **`warmth` の境目は深部体温で切る**（[`VitalsSystem.md`](../engine/VitalsSystem.md) 8.4 節）ので、
-  上の80%は安全域の境目ではなく `caution` の境目になる（560 ＝ 34.6℃ ＝ 軽度低体温症の入口）。
-  **安全域は `max` ちょうど**（37℃）で、満タンから始まり、そこから 560 までが `watch`——体温は満タンが
+  上の80%は安全域の境目ではなく `caution` の境目になる（560<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.stages.3.min --> ＝ 34.6℃ ＝ 軽度低体温症の入口）。
+  **安全域は `max` ちょうど**（37℃）で、満タンから始まり、そこから 560<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.stages.3.min --> までが `watch`——体温は満タンが
   常態なので、失った熱はそれだけで留意に値する。
 - **`load` と `pain` と `homesickness` は増える側が悪い**ので、上の「80%で安全域を外れる」は当てはまらない。`max` からの
   割合で刻む: 1/4 で `watch`、1/2 で `caution`、5/6 で `danger`。0 から始まって荷造り・怪我の最中に
@@ -190,16 +190,16 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | 段 | 移動 | 歩みの遅れ | `stamina` |
 | --- | --- | --- | --- |
 | `light` | 通る | 遅れない | 減らない |
-| `laden` | 通る | `+15` 分 | `-0.3/tick` |
-| `heavy` | 通る | `+30` 分 | `-1/tick` |
-| `too_heavy` | **通れない** | — | `-2/tick` |
+| `laden` | 通る | `+15` 分<!-- codex: characters/captain.yaml object_defs.captain.props.load.stages.1.passives.1.modify.self.travel_delay --><!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.1.passives.1.modify.self.travel_delay --><!-- codex: characters/farmer.yaml object_defs.farmer.props.load.stages.1.passives.1.modify.self.travel_delay --><!-- codex: characters/medic.yaml object_defs.medic.props.load.stages.1.passives.1.modify.self.travel_delay --> | `-0.3/tick`<!-- codex: characters/captain.yaml object_defs.captain.props.load.stages.1.passives.0.add.self.stamina --><!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.1.passives.0.add.self.stamina --><!-- codex: characters/farmer.yaml object_defs.farmer.props.load.stages.1.passives.0.add.self.stamina --><!-- codex: characters/medic.yaml object_defs.medic.props.load.stages.1.passives.0.add.self.stamina --> |
+| `heavy` | 通る | `+30` 分<!-- codex: characters/captain.yaml object_defs.captain.props.load.stages.2.passives.1.modify.self.travel_delay --><!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.2.passives.1.modify.self.travel_delay --><!-- codex: characters/farmer.yaml object_defs.farmer.props.load.stages.2.passives.1.modify.self.travel_delay --><!-- codex: characters/medic.yaml object_defs.medic.props.load.stages.2.passives.1.modify.self.travel_delay --> | `-1/tick`<!-- codex: characters/captain.yaml object_defs.captain.props.load.stages.2.passives.0.add.self.stamina --><!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.2.passives.0.add.self.stamina --><!-- codex: characters/farmer.yaml object_defs.farmer.props.load.stages.2.passives.0.add.self.stamina --><!-- codex: characters/medic.yaml object_defs.medic.props.load.stages.2.passives.0.add.self.stamina --> |
+| `too_heavy` | **通れない** | — | `-2/tick`<!-- codex: characters/captain.yaml object_defs.captain.props.load.stages.3.passives.0.add.self.stamina --><!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.3.passives.0.add.self.stamina --><!-- codex: characters/farmer.yaml object_defs.farmer.props.load.stages.3.passives.0.add.self.stamina --><!-- codex: characters/medic.yaml object_defs.medic.props.load.stages.3.passives.0.add.self.stamina --> |
 
 - **疲れる側は、今の文法でそのまま書けます。** 段の `passives` が `add` で `stamina` を削るだけです
   （[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.4 節）。**削るのが時間なので、
   往復の回数そのものが重みを持ちます**——重い荷で長い道を歩くほど、削られる tick が増えます。
   `stamina` が空身では減らない、という既定が破れるのは、ここだけです。
 - **桁は「1 日で使い切れる」位置に取ります。** 起きている 18 時間（72 tick）を `heavy` のまま担ぎ通すと
-  `-72` で、`max` 100 のほとんどを使い切ります（`captain.yaml`）。**荷を下ろして骨組みを差した寝台で
+  `-72` で、`max` 100<!-- codex: characters/captain.yaml object_defs.captain.props.stamina.range.max --> のほとんどを使い切ります（`captain.yaml`）。**荷を下ろして骨組みを差した寝台で
   眠れば +72** なので、**重い荷の 1 日ぶんと、睡眠1回の回復がちょうど釣り合う**位置です。これより 1 桁
   小さいと、何往復しても睡眠1回で必ず取り返せてしまい、**削っているのに何も決まりません**。
 - **借金が積み上がるかは、寝床の段で決まります。** 釣り合うのは骨組みを差した寝台の上だけで、敷物だけ
@@ -214,8 +214,8 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   **道が知っているのは「自分の所要時間は歩く人の遅れで伸びる」ことだけ**で、遅れの内訳（荷・怪我）は
   知りません——遅くするものが増えても押す先は人の `travel_delay` なので、道の宣言は変わりません。
 - **遅れは tick の刻みで刻みます**（[`ActionSystem.md`](../engine/ActionSystem.md) 6.2 節）。道の所要時間も
-  1 tick（15 分）の倍数なので（生成が刻みへ丸める）、荷を担いでも行動の長さは格子に乗ったままです。
-- **一律の加算なので、短い道ほど割合として重く効きます。** `+30` 分は 15 分の道では 3 倍、120 分の
+  1 tick（15<!-- codex: core.yaml object_defs.world.props.minutes_per_tick.value --> 分）の倍数なので（生成が刻みへ丸める）、荷を担いでも行動の長さは格子に乗ったままです。
+- **一律の加算なので、短い道ほど割合として重く効きます。** `+30` 分<!-- codex: characters/captain.yaml object_defs.captain.props.load.stages.2.passives.1.modify.self.travel_delay --><!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.2.passives.1.modify.self.travel_delay --><!-- codex: characters/farmer.yaml object_defs.farmer.props.load.stages.2.passives.1.modify.self.travel_delay --><!-- codex: characters/medic.yaml object_defs.medic.props.load.stages.2.passives.1.modify.self.travel_delay -->は 15 分の道では 3 倍、120 分の
   道では 1.25 倍です。**式（積）を書ける場所を作らないことを優先した結果として承知のうえ**なので
   （[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 10.2 節）、この点は積へ戻す理由に
   なりません。釣り合いを動かすなら、動かすのは段ごとの分数です。
@@ -252,15 +252,15 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 所有していること自体ではありません。
 
 **現実の単位を持ちません**（`pain`・`stamina` と同じ抽象の 0〜100）。**値そのものは外から検算できず、
-確かめられるのは大小の関係だけ**です。初期値は水分と同じ 75（安全域のやや下）——漂着した直後から
+確かめられるのは大小の関係だけ**です。初期値は水分と同じ 75<!-- codex: characters/player_character.yaml traits.player_character.props.happiness.value -->（安全域のやや下）——漂着した直後から
 ステータスエリアに出ていて、食べれば戻ることが最初の1食で分かります。
 
 | 段 | 下限 | 域 |
 | --- | --- | --- |
-| `miserable` | 0 | 危険 |
-| `dejected` | 20 | 要注意 |
-| `glum` | 50 | 留意 |
-| `content` | 80 | 安全 |
+| `miserable` | 0<!-- codex: characters/player_character.yaml traits.player_character.props.happiness.range.min --> | 危険 |
+| `dejected` | 20<!-- codex: characters/player_character.yaml traits.player_character.props.happiness.stages.1.min --> | 要注意 |
+| `glum` | 50<!-- codex: characters/player_character.yaml traits.player_character.props.happiness.stages.2.min --> | 留意 |
+| `content` | 80<!-- codex: characters/player_character.yaml traits.player_character.props.happiness.stages.3.min --> | 安全 |
 
 **致命的域は持ちません。** 尽きても死なず、0 に達すると打ちひしがれて時間が過ぎ、その間に少し戻ります
 （下の[限界](#限界)節）。
@@ -276,11 +276,11 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 
 | 値 | 何を食べたか |
 | --- | --- |
-| 6 | 火を通した食事（焼いた肉・ヤシガニ・タロイモ・ネズミ） |
-| 4 | 生でうまい果実（バナナ・ベリー・ヤシの果肉・青い実のゼリー） |
-| 2 | 生で食べられるだけの物（空心菜・海藻・海鳥の卵） |
-| 1 | 本来は火を通すもの（生肉） |
-| 0 | 炭（腹の嵩しか残っていない） |
+| 6<!-- codex: animals.yaml object_defs.roasted_meat.interactions.eat.add.agent.happiness --><!-- codex: foods.yaml object_defs.roasted_coconut_crab.interactions.eat.add.agent.happiness --><!-- codex: foods.yaml object_defs.roasted_taro.interactions.eat.add.agent.happiness --><!-- codex: animals.yaml object_defs.roasted_rat.interactions.eat.add.agent.happiness --> | 火を通した食事（焼いた肉・ヤシガニ・タロイモ・ネズミ） |
+| 4<!-- codex: fiber.yaml object_defs.banana.interactions.eat.add.agent.happiness --><!-- codex: foods.yaml object_defs.berry.interactions.eat.add.agent.happiness --><!-- codex: coconut.yaml object_defs.coconut_meat.interactions.eat.add.agent.happiness --><!-- codex: coconut.yaml object_defs.coconut_jelly.interactions.eat.add.agent.happiness --> | 生でうまい果実（バナナ・ベリー・ヤシの果肉・青い実のゼリー） |
+| 2<!-- codex: foods.yaml object_defs.water_spinach.interactions.eat.add.agent.happiness --><!-- codex: voyage.yaml object_defs.seaweed.interactions.eat.add.agent.happiness --><!-- codex: voyage.yaml object_defs.bird_egg.interactions.eat.add.agent.happiness --> | 生で食べられるだけの物（空心菜・海藻・海鳥の卵） |
+| 1<!-- codex: animals.yaml object_defs.raw_meat.interactions.eat.add.agent.happiness --> | 本来は火を通すもの（生肉） |
+| 0<!-- codex: animals.yaml object_defs.charred_lump.interactions.eat.add.agent.happiness --> | 炭（腹の嵩しか残っていない） |
 
 **焼いた肉は生肉の6倍です。** エネルギーの 24 対 31（1.29倍）よりずっと開きが大きいので、
 [`DigestionSystem.md`](../engine/DigestionSystem.md) 6節の菌と併せて、生で食べない理由が1本増えます。
@@ -293,8 +293,8 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 
 ### 下げるのは、痛みとホームシックの段
 
-`pain` の段が `add` で削ります——`sore` で −0.125/tick、`hurting` で −0.25/tick、`unbearable` で
-−0.5/tick（1日あたり −12・−24・−48）。**怪我も壊血病も脂の欠乏も痛みへ合流している**ので、削る宣言を
+`pain` の段が `add` で削ります——`sore` で −0.125/tick<!-- codex: characters/player_character.yaml traits.player_character.props.pain.stages.1.passives.0.add.self.happiness -->、`hurting` で −0.25/tick<!-- codex: characters/player_character.yaml traits.player_character.props.pain.stages.2.passives.0.add.self.happiness -->、`unbearable` で
+−0.5/tick<!-- codex: characters/player_character.yaml traits.player_character.props.pain.stages.3.passives.0.add.self.happiness -->（1日あたり −12・−24・−48）。**怪我も壊血病も脂の欠乏も痛みへ合流している**ので、削る宣言を
 1箇所に置くだけで、内側の不調が残らず心へ届きます。**疼く程度なら食事で取り返せ、激痛のまま1日を
 過ごすと最良の食事3食（+18）でも追いつきません。**
 
@@ -331,7 +331,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 別に持つと、同じ数が2箇所に立ちます。`base` にしてあるので、将来「他の生存者に会う」で `modify` して
 下げる余地は追加のコストなしに残ります。
 
-段の境目は**日数**で置きます——30・60・90日目で、初回の季節がちょうど各30日（`calm`→`wet`→`dry`、
+段の境目は**日数**で置きます——30<!-- codex: characters/player_character.yaml traits.player_character.props.loneliness.stages.1.min -->・60<!-- codex: characters/player_character.yaml traits.player_character.props.loneliness.stages.2.min -->・90<!-- codex: characters/player_character.yaml traits.player_character.props.loneliness.stages.3.min -->日目で、初回の季節がちょうど各30日（`calm`→`wet`→`dry`、
 [`ClimateSystem.md`](../engine/ClimateSystem.md) 2.3 節）なので雨季と乾季の入口に重なります。**漂着した
 最初のひと月は溜まりません**——生き延びるだけで手一杯のあいだに里心は付きません。
 
@@ -342,26 +342,26 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | 段 | 日 | `homesickness` を溜める速さ |
 | --- | --- | --- |
 | `occupied` | 〜29 | — |
-| `restless` | 30〜 | +0.96/日（`+0.01/tick`） |
-| `lonely` | 60〜 | +1.92/日 |
-| `forsaken` | 90〜 | +3.84/日 |
+| `restless` | 30<!-- codex: characters/player_character.yaml traits.player_character.props.loneliness.stages.1.min -->〜 | +0.96/日（`+0.01/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.loneliness.stages.1.passives.0.add.self.homesickness -->） |
+| `lonely` | 60<!-- codex: characters/player_character.yaml traits.player_character.props.loneliness.stages.2.min -->〜 | +1.92/日 |
+| `forsaken` | 90<!-- codex: characters/player_character.yaml traits.player_character.props.loneliness.stages.3.min -->〜 | +3.84/日 |
 
 ### ホームシックが幸福度を削る
 
-`homesickness` は 0〜120 で、**増える側が悪い**ので段は `max` からの割合で刻みます（`pain`・`load` と同じ
+`homesickness` は 0<!-- codex: characters/player_character.yaml traits.player_character.props.homesickness.range.min -->〜120<!-- codex: characters/player_character.yaml traits.player_character.props.homesickness.range.max --> で、**増える側が悪い**ので段は `max` からの割合で刻みます（`pain`・`load` と同じ
 1/4・1/2・5/6、上の[域の区分](#域の区分stages-の不変条件)節）。削り方も `pain` と同じ形で、1段上がるごとに倍です。
 
 | 段 | 下限 | 域 | `happiness` |
 | --- | --- | --- | --- |
-| `settled` | 0 | 安全 | — |
-| `wistful` | 30 | 留意 | −12/日（`-0.125/tick`） |
-| `yearning` | 60 | 要注意 | −24/日 |
-| `despondent` | 100 | 危険 | −48/日 |
+| `settled` | 0<!-- codex: characters/player_character.yaml traits.player_character.props.homesickness.range.min --> | 安全 | — |
+| `wistful` | 30<!-- codex: characters/player_character.yaml traits.player_character.props.homesickness.stages.1.min --> | 留意 | −12/日（`-0.125/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.homesickness.stages.1.passives.0.add.self.happiness -->） |
+| `yearning` | 60<!-- codex: characters/player_character.yaml traits.player_character.props.homesickness.stages.2.min --> | 要注意 | −24/日 |
+| `despondent` | 100<!-- codex: characters/player_character.yaml traits.player_character.props.homesickness.stages.3.min --> | 危険 | −48/日 |
 
-**`max` が 120 なのは、表へ出る日のほうが先に決まっているからです。** この目盛りに現実の単位は無く、
+**`max` が 120<!-- codex: characters/player_character.yaml traits.player_character.props.homesickness.range.max --> なのは、表へ出る日のほうが先に決まっているからです。** この目盛りに現実の単位は無く、
 決まっているのは「60日目に顕在化する」ほう。1日 0.96 で30日ぶん溜めた 28.8 が、**60日目のうちに留意域
 （`max` の1/4）を越える**——60日目の1日で 28.8 から 30.72 まで動くので、これを満たす `max` は
-**115.2 より上で 122.88 以下**。**そのうちいちばん読みやすい数**が 120 です（100 に置くと4日早まります）。
+**115.2 より上で 122.88 以下**。**そのうちいちばん読みやすい数**が 120<!-- codex: characters/player_character.yaml traits.player_character.props.homesickness.range.max --> です（100 に置くと4日早まります）。
 
 **何も打たなければ、60日目に留意域へ入って削られ始め、91日目に初めて打ちひしがれます**（火を通した3食
 ＝ +18/日 を通した場合。`tests/world-codex/homesickness.test.ts`）。初回の雨季が明けるころに表へ出て、
@@ -369,7 +369,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 **追いつくのは最初の段まで**——`yearning` の −24/日 は最良の食事でも埋まりません。
 
 **0 は終点ではありません。** 幸福度が尽きると打ちひしがれ、2時間が強制的に過ぎて `happiness` が
-`+2.5/tick` 戻り（下の[限界](#限界)節）、削りが続く限りそれを繰り返します。
+`+2.5/tick`<!-- codex: characters/player_character.yaml traits.player_character.interactions.despair.passives.0.add.self.happiness --> 戻り（下の[限界](#限界)節）、削りが続く限りそれを繰り返します。
 
 **繰り返す速さを決めるのは、削りと戻しの差**——`despondent` の −48/日 に何を食べたかを差し引いた**正味**で
 持ち出せた量を割った時間が、次に打ちひしがれるまでの間隔です。**強制の2時間にも削りは走る**ので、
@@ -404,17 +404,17 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | 段 | 下限 | `homesickness` |
 | --- | --- | --- |
 | `bare` | 0 | — |
-| `homely` | 20 | −1.92/日（`-0.02/tick`） |
-| `snug` | 50 | −3.84/日 |
+| `homely` | 20<!-- codex: characters/player_character.yaml traits.player_character.props.comfort.stages.1.min --> | −1.92/日（`-0.02/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.comfort.stages.1.passives.0.add.self.homesickness -->） |
+| `snug` | 50<!-- codex: characters/player_character.yaml traits.player_character.props.comfort.stages.2.min --> | −3.84/日 |
 
-**`company`（連れ）は、飼葉の残っている囲いが1つにつき 1 だけ押し上げます**（`farming.yaml`。数えるのは
+**`company`（連れ）は、飼葉の残っている囲いが1つにつき 1<!-- codex: farming.yaml object_defs.pen.passives.2.modify.ancestor.company --> だけ押し上げます**（`farming.yaml`。数えるのは
 **囲いの数で、頭数ではありません**——囲いは中に何頭居るかを知らないためです）。囲いの中に生きた獣が
 居ることが飼いならしたことそのもので、**世話をやめれば慰めも切れます**。
 
 | 段 | 下限 | `homesickness` |
 | --- | --- | --- |
 | `alone` | 0 | — |
-| `kept` | 1 | −1.92/日 |
+| `kept` | 1<!-- codex: characters/player_character.yaml traits.player_character.props.company.stages.1.min --> | −1.92/日 |
 
 **分けているのは、積み上がってよいかどうかが違うからです。** 据えた設えは**積むほど効いてよい**
 ——それが家具・娯楽を作る値打ちそのものなので、`comfort` は段を重ねます。**連れは積み上がってはいけません**
@@ -475,9 +475,9 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 
 | | 長さ | `stamina` | 1時間あたり | `wakefulness` | 1時間あたり | 眠気の実質 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `wait`（待機） | 15分 | +0.75/tick | 3 | — | — | −1 |
-| `rest`（休憩） | 60分 | +1/tick | 4 | — | — | −4 |
-| `nap`（仮眠） | 180分 | +1.25/tick | 5 | +3/tick | 12 | **+24**（6時間ぶん） |
+| `wait`（待機） | 15分<!-- codex: characters/player_character.yaml traits.player_character.interactions.wait.duration --> | +0.75/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.wait.passives.0.add.self.stamina --> | 3 | — | — | −1 |
+| `rest`（休憩） | 60分<!-- codex: characters/player_character.yaml traits.player_character.interactions.rest.duration --> | +1/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.rest.passives.0.add.self.stamina --> | 4 | — | — | −4 |
+| `nap`（仮眠） | 180分<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.duration --> | +1.25/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.passives.0.add.self.stamina --> | 5 | +3/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.passives.0.add.self.wakefulness --> | 12 | **+24**（6時間ぶん） |
 
 - **通しで眠れるのは寝床の上だけです。** 地面の上で取れるのは仮眠までなので、**釣り合う点がずれます**
   ——寝床の上では18時間起きて6時間眠るところ、仮眠だけだと16時間起きて8時間で、**1日に起きていられる
@@ -487,14 +487,14 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   仮眠2回（30）のほうが多く戻ります。細切れに休むより通しで休むほうが得、が数値だけで出ます。
   **この割増しが効くのは地面の上だけ**です（同 4節）。
 - **体力の割は、荷が削る量から逆算しています**（下の[荷重の効き方](#荷重の効き方)節）。地面の上の1日は
-  16時間起きて8時間（32 tick）仮眠なので、`heavy`（−1/tick）をその16時間担ぎ通した −64 を返すには
+  16時間起きて8時間（32 tick）仮眠なので、`heavy`（−1/tick<!-- codex: characters/captain.yaml object_defs.captain.props.load.stages.2.passives.0.add.self.stamina --><!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.2.passives.0.add.self.stamina --><!-- codex: characters/farmer.yaml object_defs.farmer.props.load.stages.2.passives.0.add.self.stamina --><!-- codex: characters/medic.yaml object_defs.medic.props.load.stages.2.passives.0.add.self.stamina -->）をその16時間担ぎ通した −64 を返すには
   2/tick が要ります——**仮眠はそこへ届きません。** 地面の上では重い荷の日を続けられない、というのが
   寝床を敷き骨組みを差す理由で、返せる位置に在るのは骨組みを差した寝台だけです
   （[`Bedding.md`](./Bedding.md) 4節）。`too_heavy` を担いだままなら、地面のどの休息でも体力は減ります。
-- **眠っている間も覚醒度は減り続けます**（`-1/tick`）。上の表の「実質」は経過ぶんを引いた値です。
+- **眠っている間も覚醒度は減り続けます**（`-1/tick`<!-- codex: characters/captain.yaml object_defs.captain.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/engineer.yaml object_defs.engineer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.passives.0.add.self.wakefulness -->）。上の表の「実質」は経過ぶんを引いた値です。
   **18時間起きて6時間眠ると、覚醒度はちょうど元へ戻ります**（−72 と +72）——普通の1日を回すぶんには
   釣り合い、それより長く起きた日だけが翌日へ持ち越されます。**睡眠1回で戻るのは満タンの半分ほど**
-  （基準のキャラクタで 96/192）なので、寝溜めはできません。
+  （基準のキャラクタで 96/192<!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.range.max --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.range.max -->）なので、寝溜めはできません。
 - **回復量は個体差を持ちません**（痛み・血と同じく trait が配ります）。`stamina` の `max` が大きい
   キャラクタほど1回で戻る割合は小さく、休息の重みは体格の側に出ます。
 - **休んでいる間も水分と体脂肪は減ります。** 睡眠1回で水分がおよそ1日ぶんの1/4——眠ること自体に
@@ -514,13 +514,13 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 
 | 手番 | 見る値 | 長さ | 戻るもの | 1時間あたり |
 | --- | --- | --- | --- | --- |
-| `collapse`（倒れ込む） | `stamina` | 120分 | `stamina` +1/tick | 4 |
-| `fall_asleep`（眠り込む） | `wakefulness` | 360分 | `wakefulness` +3/tick・`stamina` +1/tick | 12・4 |
-| `despair`（打ちひしがれる） | `happiness` | 120分 | `happiness` +2.5/tick | 10 |
+| `collapse`（倒れ込む） | `stamina` | 120分<!-- codex: characters/player_character.yaml traits.player_character.interactions.collapse.duration --> | `stamina` +1/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.collapse.passives.0.add.self.stamina --> | 4 |
+| `fall_asleep`（眠り込む） | `wakefulness` | 360分<!-- codex: characters/player_character.yaml traits.player_character.interactions.fall_asleep.duration --> | `wakefulness` +3/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.fall_asleep.passives.0.add.self.wakefulness -->・`stamina` +1/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.fall_asleep.passives.0.add.self.stamina --> | 12・4 |
+| `despair`（打ちひしがれる） | `happiness` | 120分<!-- codex: characters/player_character.yaml traits.player_character.interactions.despair.duration --> | `happiness` +2.5/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.despair.passives.0.add.self.happiness --> | 10 |
 
 - **戻る割に、まとめて休んだ割増し**（上の[休息](#休息)節）**は付けません——どの値についても。** どれも
   休み方を選んだことにならないためで、体力は `rest` の割（4/時間）です。**幸福度には自発の休息が無い**
-  ので割の比べようがなく、120分で危険域（`max` の20%）をちょうど抜ける量（10/時間）を置きます。
+  ので割の比べようがなく、120分<!-- codex: characters/player_character.yaml traits.player_character.interactions.despair.duration -->で危険域（`max` の20%）をちょうど抜ける量（10/時間）を置きます。
   **眠気を戻せる休息は
   眠る休息で、どれも割増しを持っている**ので、そちらはいちばん薄い `nap` の割（12/時間）を使います。
 - **眠り込みが戻すのは眠気だけではないので、体力もこの割に従います。** 寝床の上の `sleep` と同じ割に
@@ -529,7 +529,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **戻る量は個体差を持ちません**（休息と同じく trait が配ります）。`stamina` の `max` が大きい
   キャラクタほど1回で戻る割合は小さく、倒れる回数の重みは体格の側に出ます。**ただし空身で倒れても、
   どのキャラクタも危険域（`exhausted`）からは出られません**——戻るのは +8 で、`max` がいちばん薄い
-  技師（90）の境目 18 にすら届かないためです。**倒れ込みは逃げ場であって、戻す手ではありません**
+  技師（90<!-- codex: characters/engineer.yaml object_defs.engineer.props.stamina.range.max -->）の境目 18<!-- codex: characters/engineer.yaml object_defs.engineer.props.stamina.stages.1.min --> にすら届かないためです。**倒れ込みは逃げ場であって、戻す手ではありません**
   ——戻すのは自発の休息の仕事です。荷を担いだままならさらに薄く、`heavy` では 1 も戻りません。
 - **眠気を `sleep` の割（16/時間）で戻すと、寝床を敷く理由が消えます。** 6時間で +96 なら起きている
   割合は 80% で、寝床の上の 75% を上回ってしまうためです。`nap` の割（12/時間）なら実質は 8/時間で、
@@ -556,7 +556,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 11.6 節。何を告げるかは
 `player_character.yaml` の各手番が持ちます）。1時間の道を選んで押したプレイヤーには、ボタンが言った
 60 分ではなく 180 分が過ぎたことしか見えないので、告げなければ時計が飛んだ理由が画面のどこにも
-出ません。**告げるのを結果の側（`signal`）に置けない**のはここで、眠り込みの 360 分では理由を聞くのが
+出ません。**告げるのを結果の側（`signal`）に置けない**のはここで、眠り込みの 360 分<!-- codex: characters/player_character.yaml traits.player_character.interactions.fall_asleep.duration -->では理由を聞くのが
 6 時間後になります。出す場所と見え方は札の上の文字で、他の出来事と同じです
 （[`../ui/CardView.md`](../ui/CardView.md) 14 節）。
 
