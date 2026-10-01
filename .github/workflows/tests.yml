@@ -80,9 +80,12 @@ jobs:
           git config core.autocrlf true
           git rm -rq --cached .
           git reset -q --hard
-          # 取り出し直しが効かないと、このジョブは上の `test` と同じものを見て緑になる。
-          if ! grep -q $'\r$' package.json; then
-            echo "::error::package.json が CRLF になっていません。作業ツリーを CRLF で取り出し直せていないので、このジョブは何も見ていません。"
+          # 取り出し直しが効かないと、このジョブは CRLF の作業ツリーを見ないまま緑になる。改行は
+          # git 自身に答えさせる（読み手の道具の改行の扱いに、判定を預けない）。
+          eol=$(git ls-files --eol package.json)
+          echo "$eol"
+          if [[ $eol != *w/crlf* ]]; then
+            echo "::error::package.json が CRLF になっていません（$eol）。作業ツリーを CRLF で取り出し直せていないので、このジョブは何も見ていません。"
             exit 1
           fi
 
