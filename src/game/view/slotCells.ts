@@ -12,6 +12,9 @@ import type { ObjectGlobalId } from '../../domain/GlobalId';
  * スロットの宣言をそのまま形にする（plainCells）。
  *
  * cardsはstacksと同じ並びの札（空き枠はundefined）。stacksは材料の枠だけが使う。
+ *
+ * **札の枠は、レーン上でもstacksと同じ位置に並べる。** 掴んだ札・重ねた先はレーン上の位置のまま
+ * stacksから引かれる（ShownCards.stacksAt）ので、札をstacksと違う位置へ置くと別の束を指す。
  */
 export function slotCells(
   slot: SlotView,
@@ -77,7 +80,7 @@ function plainCells(
  * **枠は要求ごとに1つ。** 何がどれだけ要るかを見せるのがこのレーンの役目なので、並ぶのは
  * 「入っている物」と「まだ入っていない要求」で、それ以外の空き枠は出さない。
  *
- * **材料スロットの空き枠はここでは使わない。** スロットは要求ごとの枠を持つ（inProgressObjects）が、
+ * **材料スロットの空き枠は届かない**（PlayScreenView.cardsInが落とす）。スロットは要求ごとの枠を持つ（inProgressObjects）が、
  * 映しの層へは枠の受け入れが届かず（SlotView）、どの枠がどの要求のものかは入っている物が当てられた
  * 要求からしか辿れないので、空の枠では決められない。空の枠をそのまま並べると、
  * 透かしの入らない枠が要求の数だけ並び、その後ろに透かしの入った枠が続くことになる。
