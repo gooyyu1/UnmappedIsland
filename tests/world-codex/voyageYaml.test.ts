@@ -7,7 +7,12 @@ import type { StartedGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { Location } from '../../src/domain/wrappers/Location';
 import { applyScenario, bundledScenario } from '../../src/scenario/Scenario';
-import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
+import {
+  bundledCodex,
+  SAMPLE_CHARACTER,
+  worldCodexPath,
+  worldCodexYamlPaths,
+} from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import { namedEntries, nodeAt, objectValueAt, readSeaChart } from '../support/seaChain';
 import type { Rng } from '../../src/domain/Rng';
@@ -736,6 +741,55 @@ describe('筏と航海', () => {
 
     // **帆に条件を付けないとここが2になり、陸に繋いだままの筏が横断時間を縮め始める。**
     expect(propertyOf(raft, 'sail_speed'), '浜では帆も効かない').toBe(0);
+  });
+
+  it('帆の寄与は、積みすぎでない限り段をちょうど1つ上げる最小の値（Voyage.md 2.1節）', () => {
+    // 海流・積載・帆の寄与を voyage.yaml から読み、筏の sail_speed の段で数え直す。
+    const voyage = parse(readFileSync(worldCodexPath('voyage.yaml'), 'utf8')) as Record<string, unknown>;
+    const modifies: { target: string; amount: number; path: string }[] = [];
+    const visit = (node: unknown, path: string): void => {
+      if (Array.isArray(node)) return node.forEach((child, index) => visit(child, `${path}.${index}`));
+      if (node === null || typeof node !== 'object') return;
+      const record = node as Record<string, unknown>;
+      const modify = record.modify as Record<string, Record<string, unknown>> | undefined;
+      for (const [target, props] of Object.entries(modify ?? {}))
+        if (typeof props?.sail_speed === 'number') modifies.push({ target, amount: props.sail_speed, path });
+      for (const [key, child] of Object.entries(record)) visit(child, `${path}.${key}`);
+    };
+    visit(voyage, '');
+    const current = modifies.find(({ target }) => target === 'child')!.amount;
+    const sail = modifies.find(({ path }) => path.includes('.rawhide_sail.'))!.amount;
+
+    const raftDef = codex.objects.get(codex.objectNames.getId('raft'));
+    const speed = raftDef.tryGetPropertyDef(codex.propertyNames.getId('sail_speed'))!;
+    const weightStages = raftDef.tryGetPropertyDef(codex.propertyNames.getId('weight'))!.stages;
+    const stageNames = speed.stages.map((stage) => stage.name);
+    const stageIndexOf = (value: number): number =>
+      stageNames.indexOf(speed.stageAt(speed.range!.clamp(value))!.name);
+
+    // 積載の段ごとの削り（宣言の無い段は0）。積みすぎ（最後の段）は除く。
+    const loads = weightStages.slice(0, -1).map((stage) => {
+      const own = modifies.find(
+        ({ path }) => path.includes('.raft.') && path.includes(`.stages.${weightStages.indexOf(stage)}.`),
+      );
+      return { name: stage.name, base: current + (own?.amount ?? 0) };
+    });
+    expect(loads.length).toBeGreaterThan(0);
+
+    expect(stageNames[stageIndexOf(current)], '素の筏は海流だけで').toBe('slow');
+    expect(stageNames[stageIndexOf(current + sail)], '帆があれば').toBe('moderate');
+    for (const { name, base } of loads) {
+      expect(stageIndexOf(base + sail), `${name}: 帆で段がちょうど1つ上がる`).toBe(stageIndexOf(base) + 1);
+      expect(stageIndexOf(base + sail + 1), `${name}: 1つ増やしても上がる段は変わらない`).toBe(
+        stageIndexOf(base + sail),
+      );
+    }
+    expect(
+      loads
+        .filter(({ base }) => stageIndexOf(base + sail - 1) === stageIndexOf(base))
+        .map(({ name }) => name),
+      '1つ減らすと段が動かない積載がある',
+    ).not.toHaveLength(0);
   });
 
   it('帆を張ると、渡る速さの段が1つ上がる', () => {
