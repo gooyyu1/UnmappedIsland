@@ -519,7 +519,7 @@
   刻み（`<腕>_thrift`）の側で期待値を合わせる必要はありません。
 
 **出どころ**: ユーザーの判断（2026-09-14、
-`agent-ops/decisions/2026-09-14-craft-randomness-and-surplus-scale.md`）
+`agent-ops/decisions/archive/2026-09-14-craft-randomness-and-surplus-scale.md`）
 
 `tests/world-codex/skillsYaml.test.ts` が見張ります。**拾い方は在り処ではなく重み**——枝の重みが
 `<腕>_thrift`（上の表）を読んでいれば、どこに置かれた卓でも同じ 1 本に掛かるので、**名指しで数え上げて
