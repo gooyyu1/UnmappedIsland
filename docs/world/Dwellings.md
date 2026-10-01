@@ -85,9 +85,9 @@ object_defs:
 | 板の壁 | 20 |
 | 高床 | 10 |
 
-**`homely`（20）へ届くのは高床まで進めてからで**、柱と葉の屋根だけでも、葉の壁を足しただけでも
-届きません（3 節の段階）。**そして板の壁まで揃えても、合計は `snug`（50）に届きません**——60日目からの
-募りは建て進めた家が止め、90日目からの募りはどの家も止められない、という形です
+**`homely`（20<!-- codex: characters/player_character.yaml traits.player_character.props.comfort.stages.1.min -->）へ届くのは高床まで進めてからで**、柱と葉の屋根だけでも、葉の壁を足しただけでも
+届きません（3 節の段階）。**そして板の壁まで揃えても、合計は `snug`（50<!-- codex: characters/player_character.yaml traits.player_character.props.comfort.stages.2.min -->）に届きません**——60日目<!-- codex: characters/player_character.yaml traits.player_character.props.loneliness.stages.2.min -->からの
+募りは建て進めた家が止め、90日目<!-- codex: characters/player_character.yaml traits.player_character.props.loneliness.stages.3.min -->からの募りはどの家も止められない、という形です
 （[`Characters.md`](./Characters.md) ホームシック節）。**「どうせ建てる家」を
 1つ置けば済む圧にしないための線**で、そこから先は住居とは別に据える設えが払います
 （[`ContentSkeleton.md`](./ContentSkeleton.md) 3 節の系統12）。
@@ -179,7 +179,7 @@ interactions:
   2 節の `base`）。奥の洞窟のように空を継がない真っ暗（同 7 節）にはしません。この差だと、境目が
   世界の環境光 +11（曇りの正午）に載るので、**晴れた日中は中でも手元の作業ができ、雨の日と朝夕は
   火を焚かないと何もできません。**
-- **雨が当たらないのは、洞窟自身が `sheltered: 1` を宣言するから**です（[`ContainerSystem.md`](../engine/ContainerSystem.md)
+- **雨が当たらないのは、洞窟自身が `sheltered: 1`<!-- codex: locations.yaml object_defs.shallow_cave.props.sheltered.value --> を宣言するから**です（[`ContainerSystem.md`](../engine/ContainerSystem.md)
   6 節）。雨を見ている条件は `ancestor`＝同名を宣言している最初の祖先で止まるため、中の物と据えた炉には
   雨が届きません。専用の「屋根」の文法は要りません。**天気そのものは外と同じ**で、中で空が曇るわけでは
   ないので、暗さも湿り気も外の雨天のまま残ります。

@@ -36,13 +36,13 @@
 ### 携行するもの
 
 **どれも、どのキャラクタの手持ちよりも多い**（1節）。括弧内は「手持ちの残り＋入れ物」で実際に持ち
-歩ける種類数——**手持ちが6枠の担ぎ手での数**で、7枠の担ぎ手（`characters/engineer.yaml`）なら1つ増え
+歩ける種類数——**手持ちが6枠<!-- codex: characters/captain.yaml object_defs.captain.slots.hand.cell_count --><!-- codex: characters/farmer.yaml object_defs.farmer.slots.hand.cell_count --><!-- codex: characters/medic.yaml object_defs.medic.slots.hand.cell_count -->の担ぎ手での数**で、7枠<!-- codex: characters/engineer.yaml object_defs.engineer.slots.hand.cell_count -->の担ぎ手（`characters/engineer.yaml`）なら1つ増え
 ます。手に持つものは入れ物ぶんの1枠を引き、背負うものは引きません。
 
 | アイテム | 素材 | 運び方 | 入る種類 | 蓋 | 寿命 | 位置づけ |
 |---|---|---|---|---|---|---|
 | 肩掛けの袋 | 植物繊維（少） | 肩に掛ける | 8種類（5+8=13） | なし | 短命 | 最初に作れる。編まずに括るだけなので、編み籠より前に持てる |
-| 編み籠 | 編んだ葉6枚 | 手に持つ | **10種類（5+10=15）** | なし | 短命 | 運搬と据え置きを兼ねる基本形。実装済み |
+| 編み籠 | 編んだ葉6枚 | 手に持つ | **10種類<!-- codex: containers.yaml object_defs.woven_basket.slots.contents.cell_count -->（5+10=15）** | なし | 短命 | 運搬と据え置きを兼ねる基本形。実装済み |
 | 背負い籠 | 編み籠 + 植物繊維 | 背負う | 14種類（6+14=20） | なし | 短命 | 編み籠に負い紐を足す。手が空くので手持ちを削らない |
 | なめし革の背負い袋 | なめし革 + 植物繊維 | 背負う | 18種類（6+18=24） | あり | 長持ち | 口を閉じられる。携行の最終形 |
 
@@ -75,8 +75,8 @@
 
 | アイテム | 素材 | 入る種類 | 蓋 | 自重 | 引きやすさ | 寿命 | 位置づけ |
 |---|---|---|---|---|---|---|---|
-| そり | 長い棒3 + 太い枝6 + 縄1 | 8種類 | なし | 8kg | 0.55 | 長持ち | 重い物専用。斧なしでも作れる |
-| 台車 | そり + 丸太1 + 紐1 | 10種類 | なし | 12kg | 0.45 | 長持ち | そりの上位。車輪の加工に斧が要る |
+| そり | 長い棒3 + 太い枝6 + 縄1<!-- codex: containers.yaml object_defs.sledge.recipes.lashed.steps.5.requires.0.count --> | 8種類<!-- codex: containers.yaml object_defs.sledge.slots.contents.cell_count --> | なし | 8kg | 0.55 | 長持ち | 重い物専用。斧なしでも作れる |
+| 台車 | そり + 丸太1<!-- codex: containers.yaml object_defs.handcart.recipes.wheeled.steps.0.requires.0.count --> + 紐1<!-- codex: containers.yaml object_defs.handcart.recipes.wheeled.steps.5.requires.0.count --> | 10種類<!-- codex: containers.yaml object_defs.handcart.slots.contents.cell_count --> | なし | 12kg | 0.45 | 長持ち | そりの上位。車輪の加工に斧が要る |
 
 **そりが編み籠の上位互換にならないのは、素材コストと自重の2つによります。** 木材を多く使うので序盤には
 作れず、それ自体が重いので、軽い荷物を運ぶだけなら籠のほうが楽です。積載量がある量を超えたところで
@@ -92,7 +92,7 @@
 どこまで効いているかを誰も答えられません。置いた線は次の2つで、上の表の率はここから出ています
 （式は [`ContainerSystem.md`](../engine/ContainerSystem.md) 2節）。
 
-- **編み籠（800g）よりそりが軽く感じ始めるのは、積載8kgから。** 道具や食料を少し持ち歩くだけの荷では
+- **編み籠（800g<!-- codex: containers.yaml object_defs.woven_basket.props.weight.value -->）よりそりが軽く感じ始めるのは、積載8kgから。** 道具や食料を少し持ち歩くだけの荷では
   籠が勝ちます。
 - **そりより台車が軽く感じ始めるのは、積載10kgから。** 車輪のぶん自重が4kg増えるので、**そこまでは
   そりのほうが軽い**——台車を作ってもそりが無駄になりません。
