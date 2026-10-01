@@ -244,19 +244,47 @@ describe('traps.yamlのくくり罠', () => {
     expect(bloodStageWhenClotted('min'), '浅く掛かれば入らない').not.toBe('exsanguinated');
   });
 
+  it('最も深く掛かったヤケイも、出血を早く止めるほど浅い段で済む', () => {
+    // 5.1節「見回りが早ければ、落ちる先が変わります」。止めるのが早ければ意識が残り、少し遅れると
+    // 傷の痛みと合わさって気を失い、最後まで流れれば失血の域へ入る。止血の治療具が閉じるのは
+    // 出血のゲート（InjurySystem.md 3.1節）なので、ここでは流れそのものを尽きさせて同じ形を作る。
+    const bleedingId = codex.propertyNames.getId('bleeding');
+    const consciousnessId = codex.propertyNames.getId('consciousness');
+    const outcomeAfter = (bleedTicks: number | undefined): string => {
+      const { prey, wound } = fowlWithSnareWound({ bleeding: 'max' });
+      if (bleedTicks === undefined) tickUntil(() => wound.getProperty(bleedingId).number === 0, 10);
+      else {
+        tick(bleedTicks);
+        wound.getProperty(bleedingId).setNumber(0);
+      }
+      if (prey.getProperty(bloodId).isInStage('exsanguinated')) return 'exsanguinated';
+      return prey.getProperty(consciousnessId).isInStage('unconscious') ? 'unconscious' : 'conscious';
+    };
+
+    const outcomes = [1, 2, 3].map((ticks) => outcomeAfter(ticks));
+    expect(outcomes, '早く止めれば意識が残る').toContain('conscious');
+    expect(outcomes, '少し遅れれば気を失う').toContain('unconscious');
+    expect(outcomes.indexOf('conscious'), '早いほうが浅い').toBeLessThan(outcomes.indexOf('unconscious'));
+    expect(outcomeAfter(undefined), '最後まで流れれば失血の域').toBe('exsanguinated');
+  });
+
   it('くくり罠の傷は、深く掛かった個体だけが敗血症まで届く', () => {
     // 5.1節。膿む速さは体格を見ないので、届くかを分けるのは傷の重さ（severityのロール）だけ。
     // 浅い個体は膿み切る前に傷のほうが消える。
     const reachesSepticemia = (severity: 'min' | 'max'): boolean => {
       const { prey, wound } = fowlWithSnareWound({ severity, bleeding: 'min' });
       const pathogenId = codex.propertyNames.getId('pathogen');
-      return tickUntil(
-        () =>
+      const hydration = prey.getProperty(codex.propertyNames.getId('hydration'));
+      return tickUntil(() => {
+        // 枠の中の獣は渇いていく（TrapSystem.md 5.4節）。見たいのは傷の重さで分かれることなので、渇き死が先に
+        // 来て「届かない」になる経路を、毎 tick 満水へ戻して塞ぐ。
+        hydration.setNumber(hydration.def.range!.max);
+        return (
           prey.tryGetProperty(pathogenId)?.stage?.name === 'septicemic' ||
           wound.parent === undefined ||
-          prey.parent === undefined,
-        2000,
-      )
+          prey.parent === undefined
+        );
+      }, 2000)
         ? prey.parent !== undefined && prey.tryGetProperty(pathogenId)?.stage?.name === 'septicemic'
         : false;
     };

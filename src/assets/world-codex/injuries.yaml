@@ -364,7 +364,7 @@ object_defs:
   snare_laceration:
     traits: [injury, treatable, open_wound]
     props:
-      # 自然に治るまで240〜480 tick（2.5〜5日）。深く食い込んだ個体ほど長く残る。
+      # 自然に治るまでの長さをロールする。深く食い込んだ個体ほど長く残る。
       severity:
         # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
         gauge: {min: good, max: bad}
