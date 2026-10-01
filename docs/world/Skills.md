@@ -235,9 +235,9 @@
 
 | 段 | novice | basic | skilled | expert |
 | -- | ------ | ----- | ------- | ------ |
-| 火（`ignition_ease`） | 0 | +20 | +50 | +120 |
-| 狩猟・出くわす（`quarry_sense`） | 0 | +1 | +2 | +4 |
-| 狩猟・当てる（`hunting_aim`） | 0 | +10 | +20 | +40 |
+| 火（`ignition_ease`） | 0<!-- codex: characters/player_character.yaml traits.player_character.props.ignition_ease.value --> | +20<!-- codex: characters/player_character.yaml traits.player_character.props.skill_firecraft.stages.1.passives.0.modify.self.ignition_ease --> | +50<!-- codex: characters/player_character.yaml traits.player_character.props.skill_firecraft.stages.2.passives.0.modify.self.ignition_ease --> | +120<!-- codex: characters/player_character.yaml traits.player_character.props.skill_firecraft.stages.3.passives.0.modify.self.ignition_ease --> |
+| 狩猟・出くわす（`quarry_sense`） | 0<!-- codex: characters/player_character.yaml traits.player_character.props.quarry_sense.value --> | +1<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.1.passives.0.modify.self.quarry_sense --> | +2<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.2.passives.0.modify.self.quarry_sense --> | +4<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.quarry_sense --> |
+| 狩猟・当てる（`hunting_aim`） | 0<!-- codex: characters/player_character.yaml traits.player_character.props.hunting_aim.value --> | +10<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.1.passives.0.modify.self.hunting_aim --> | +20<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.2.passives.0.modify.self.hunting_aim --> | +40<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.hunting_aim --> |
 
 **上乗せの刻みを揃えられないのは、上乗せする先の桁が違うから**です——着火の重みは 60 前後、獣のつまみは 2〜4、
 当てる側は 15〜78 で、同じ数を足せば片方は効かず片方は跳ねます。**狩猟が 2 本持つのも同じ理由**で、
@@ -245,8 +245,8 @@
 効かせられるのは倍率だけ**ですが、掛け算はこの世界の文法に無く、合成の器（`modify`・`base`）はどちらも
 加算です（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 10.2 節）。
 
-**当てる側の中でも幅はあります。** 武器の当たり（55〜70）と魚の群れ（78）は同じ桁ですが、群れの居ない
-海面（15）だけは 1 桁下で、`expert`（+40）では 3.7 倍になります——**同じ刻みが最も強く効く場所**で、
+**当てる側の中でも幅はあります。** 武器の当たり（55〜70）と魚の群れ（78<!-- codex: voyage.yaml object_defs.fish_shoal.props.catch_chance.value -->）は同じ桁ですが、群れの居ない
+海面（15<!-- codex: voyage.yaml object_defs.raft.props.catch_chance.value -->）だけは 1 桁下で、`expert`（+40<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.hunting_aim -->）では 3.7 倍になります——**同じ刻みが最も強く効く場所**で、
 群れとの落差が縮む形で現れます（[`Voyage.md`](Voyage.md) 3.9.2 節）。3 本目を足してまで分けるほどでは
 ないと見て、当てる側は 1 本のままにしています。
 
@@ -262,7 +262,7 @@
 **積むのは、その卓で最も太い当たり方 1 つだけです。** 当たり方の数だけ積むと、2 つ名乗る石斧だけが
 倍受け取り、**配分の合計を 100 に揃えた意味**（[`HuntingSystem.md`](../engine/HuntingSystem.md) 1.2 節）
 が実効値で崩れます。1 つに限れば `expert` でどの武器も卓が 105 → 145 になり、仕留めの割合は武器に
-よらず同じままです。尖った石の強打（`heavy_blow: 0`）のように 0 を宣言した当たり方へ積まないのも同じ
+よらず同じままです。尖った石の強打（`heavy_blow: 0`<!-- codex: tools.yaml object_defs.sharp_stone.props.heavy_blow.value -->）のように 0 を宣言した当たり方へ積まないのも同じ
 理由で、積むと腕が上がるだけでその武器に無いはずの一撃が出ます。**土台を持つのは値を名乗った側だけ**
 なので、`weapon` trait は土台を持ちません。
 
@@ -285,15 +285,15 @@
   加算だけで出ます。**当てる側でも同じことが起きます**——下の空振り・仕留めがそれです。
 - **空振り（`whiff`）には積みません。** 当たる側だけを押せば、卓の合計が増えるぶんで外れの割合は
   自然に落ちます。外れにも積むと、腕が上がるほど空を切る形になります。
-- **仕留めの重み（`vulnerability`）にも積みません。** 桁が違う（起きている獣で 5、気絶した獣で
+- **仕留めの重み（`vulnerability`）にも積みません。** 桁が違う（起きている獣で 5<!-- codex: animals.yaml traits.beast.props.vulnerability.value -->、気絶した獣で
   200 超）ので、当たり所と同じ刻みは効きません。**そのぶん、当たり所が太った卓では仕留めの割合が
   相対的に落ちます**が、気絶させてから仕留める流れは変わりません——気絶した相手の無防備さは
   当たり所の合計より大きいためです。
-- **加算なので、相手ごとの差は腕を上げるほど埋もれます。** 枯れ草（60）とヤシの実の皮（100）の差は
-  `expert`（+120）では 180 対 220 まで縮み、**火口を選ぶ判断は腕が上がるほど軽くなります**。獣の側も
+- **加算なので、相手ごとの差は腕を上げるほど埋もれます。** 枯れ草（60<!-- codex: fire.yaml object_defs.dry_grass.props.ignition_chance.value -->）とヤシの実の皮（100<!-- codex: coconut.yaml object_defs.coconut_husk.props.ignition_chance.value -->）の差は
+  `expert`（+120<!-- codex: characters/player_character.yaml traits.player_character.props.skill_firecraft.stages.3.passives.0.modify.self.ignition_ease -->）では 180 対 220 まで縮み、**火口を選ぶ判断は腕が上がるほど軽くなります**。獣の側も
   同じで、上乗せの総量は獣の種類の数に比例します。**火口の差が埋もれることも、獣の種類が多い土地ほど
   腕が報われることも狙いどおりです**（5.2 節）。**当てる側だけは逆**で、
-  積むのが卓に 1 つなので、石斧の強打対浅打（60 対 15）は `expert` で 100 対 15 へ開きます——**腕が
+  積むのが卓に 1 つなので、石斧の強打対浅打（60<!-- codex: tools.yaml object_defs.stone_axe.props.heavy_blow.value --> 対 15<!-- codex: tools.yaml object_defs.stone_axe.props.light_blow.value -->）は `expert` で 100 対 15 へ開きます——**腕が
   上がるほど、その武器が得意な当たり方へ寄ります。**
 - **狩猟は罠には効きません。** 罠の抽選は誰も操作していない場面で走るため、罠から腕の持ち主が
   見えません（[`TrapSystem.md`](../engine/TrapSystem.md) 8 節）。**腕が動かせるのは、腕の持ち主が
@@ -309,7 +309,7 @@
 
 出せる 1 つの数字が無いからです。実際の成功率は「（相手の側の値＋上乗せ）÷ 卓の合計」で、火口ごと・
 土地ごとに違ううえ、火口では同じ 1 枚でも湿り具合で動きます（[`FireSystem.md`](../engine/FireSystem.md)
-3.2.1 節）。上乗せ（+50）だけを出せば読み手はそれを成功率として受け取り、成功率を出すなら火口と土地の
+3.2.1 節）。上乗せ（+50<!-- codex: characters/player_character.yaml traits.player_character.props.skill_firecraft.stages.2.passives.0.modify.self.ignition_ease -->）だけを出せば読み手はそれを成功率として受け取り、成功率を出すなら火口と土地の
 一覧を腕の隣に並べることになります。
 
 **腕前の詳細には「与えている影響」の記号が並びます**（[`Windows.md`](../ui/Windows.md) 8 節）。上乗せの
@@ -389,22 +389,22 @@
 
 | 段 | novice | basic | skilled | expert |
 | -- | ------ | ----- | ------- | ------ |
-| 無駄の無さ（`<腕>_thrift`） | 0 | 10 | 25 | 60 |
+| 無駄の無さ（`<腕>_thrift`） | 0<!-- codex: characters/player_character.yaml traits.player_character.props.cordage_thrift.value --> | 10<!-- codex: characters/player_character.yaml traits.player_character.props.skill_cordage.stages.1.passives.0.modify.self.cordage_thrift --> | 25<!-- codex: characters/player_character.yaml traits.player_character.props.skill_cordage.stages.2.passives.0.modify.self.cordage_thrift --> | 60<!-- codex: characters/player_character.yaml traits.player_character.props.skill_cordage.stages.3.passives.0.modify.self.cordage_thrift --> |
 
 速さを行動ごとに宣言する理由は 6 節が持ちます。ここに書くのは、その枠の中で**今どう置いてあるか**です。
 
-- **今は引く分数を、tick の刻み 1 つぶんの 1 tick（15 分）で揃えてあります。** 加算なので**1 回の手が短いほど、
-  割合として大きく効きます**（撚る 30 分 → 15 分は半分）。**大きな仕事は手の数で表す**ので
+- **今は引く分数を、tick の刻み 1 つぶんの 1 tick（15 分<!-- codex: core.yaml object_defs.world.props.minutes_per_tick.value -->）で揃えてあります。** 加算なので**1 回の手が短いほど、
+  割合として大きく効きます**（撚る 30 分<!-- codex: fiber.yaml object_defs.plant_fiber.props.spin_minutes.value --> → 15 分は半分）。**大きな仕事は手の数で表す**ので
   （[`ActionSystem.md`](../engine/ActionSystem.md) 6.3 節）、**縮む分もその数だけ積まれます**——木を
-  1 本倒すのに 60 分の手を何度か入れる者には、その回数ぶんが返ります。**割合を決めるのは 1 回の手の
+  1 本倒すのに 60 分<!-- codex: timber.yaml object_defs.broadleaf_tree.props.fell_minutes.value -->の手を何度か入れる者には、その回数ぶんが返ります。**割合を決めるのは 1 回の手の
   長さだけで、仕事の大きさは決めません。**
 - **効き始める段は、その行動を何度行うかで分けます。** 何度も繰り返す手は `skilled` から、数えるほど
   しか行わない大物は `expert` から。**「何を作るか」ではなく「何度その手を動かすか」で切ります**
   ——同じ衣類でも、葉を束ねる一着は繰り返す側、裁って縫う革の一着は数えるほどの側です。
-- **素が tick の刻み 1 つ、1 tick（15 分）の行動は、速さを名乗りません。** そこから縮める先が無く、
+- **素が tick の刻み 1 つ、1 tick（15 分<!-- codex: core.yaml object_defs.world.props.minutes_per_tick.value -->）の行動は、速さを名乗りません。** そこから縮める先が無く、
   名乗っても誰にも効かない宣言になります。**腕で縮めたい短い手は、2 tick（30 分）から始めます**
   ——半分になってちょうど刻み 1 つです。
-- **縮めた先が 1 tick（15 分）を割る宣言はロード時に弾かれます**（[`ActionSystem.md`](../engine/ActionSystem.md)
+- **縮めた先が 1 tick（15 分<!-- codex: core.yaml object_defs.world.props.minutes_per_tick.value -->）を割る宣言はロード時に弾かれます**（[`ActionSystem.md`](../engine/ActionSystem.md)
   6.2 節）。黙って下限で止めると、格子から外れた宣言が世界に残ります。
 - **手際が動かすのは経過する時間だけで、進捗は動きません。** 工程が宣言するのは仕事の量で、片付いた量は
   腕によりません——進捗の上限（[`RecipeSystem.md`](../engine/RecipeSystem.md) 1 節）がロード時に決まったまま
@@ -424,12 +424,12 @@
   アクセス系が空振りへ積まないのと同じです**（5 節）。
 - **余分の卓を持つのは、まとめて取れる物だけです。** 素の値は作る相手が持つので、卓を宣言していない物には
   腕が上がっても何も起きません（5 節「積む相手が居なければ、何も起きません」と同じ）。**同じ材料から何枚
-  取れるか**という見方は既に世界にあります——ヤシの葉は中軸で割れば 1 枚から 2 枚取れます
+  取れるか**という見方は既に世界にあります——ヤシの葉は中軸で割れば 1 枚から 2 枚<!-- codex: weaving.yaml object_defs.palm_frond.interactions.split_and_weave.spawn.count -->取れます
   （`src/assets/world-codex/weaving.yaml`）。1 つしかできない物は卓を持たず、腕は速さだけに効きます
   ——レシピが必ずそうなる理由は 7.2 節です。**足せる量にも上限があります**（同節）。
 - **まとめて取れても、数が材料の作りで決まっているなら卓を持ちません。** 手で作る操作の側で卓を持つのは
   繊維を採る入口（`fiber.yaml` の `strip`・`coconut.yaml` の `ret`）だけで、どこまで髄を落とすかが取れる束を
-  決めるのはそこだからです。**同じ 2 枚でも、葉を割って編むほうは持ちません**——2 枚取れるのは中軸を
+  決めるのはそこだからです。**同じ 2 枚<!-- codex: weaving.yaml object_defs.palm_frond.interactions.split_and_weave.spawn.count -->でも、葉を割って編むほうは持ちません**——2 枚<!-- codex: weaving.yaml object_defs.palm_frond.interactions.split_and_weave.spawn.count -->取れるのは中軸を
   割ったからで、刃物が決めた数に腕を足すと葉に無い 3 枚目が出ます。解体も同じで、出る数は死体の重さの
   内訳が決めています。**同じ物を出す入口が複数あるなら、卓も揃えます**——配る腕を揃えるのと同じ理由で
   （`src/assets/world-codex/characters/player_character.yaml` の腕前の前書き）、片方だけが余分を出すと、
@@ -487,7 +487,7 @@
 - **どの行にも当たらない仕事は名乗りません。** 担う腕が一覧（2 節）に無いか、あっても手つきが違うもので、
   石を並べるだけの塩田がそれです（石を使うことは、石を打ち欠く仕事であることを意味しません）。
   **名乗らないと決めた側は、そのレシピのコメントに理由を書きます。**
-- **行に当たっていても、縮める先が無ければ名乗りません。** 工程が tick の刻み 1 つ、1 tick（15 分）なら、そこから
+- **行に当たっていても、縮める先が無ければ名乗りません。** 工程が tick の刻み 1 つ、1 tick（15 分<!-- codex: core.yaml object_defs.world.props.minutes_per_tick.value -->）なら、そこから
   引ける分数が無いためです（[`ActionSystem.md`](../engine/ActionSystem.md) 6.2 節）——名乗っても誰にも
   効かない宣言になり、**上の「腕が効くものと効かないものが並ぶ」を名乗りでは直せません。** 直すなら
   工程の側を刻み 2 つにします（7 節）。**この理由で名乗らない側も、コメントに理由を書きます。**
@@ -505,7 +505,7 @@
 
 **腕が引く余分の卓が足してよいのは、素の産出の 1/3 までです。** もとが 3 つの物が 4 つになる程度で、
 腕が上がったからといって 1 つの物が 2 つになるような卓は置きません。**縛るのは卓だけです**——道具が
-広げる歩留まり（刃物で中軸を割れば葉が 1 枚から 2 枚、`src/assets/world-codex/weaving.yaml`）は、
+広げる歩留まり（刃物で中軸を割れば葉が 1 枚から 2 枚<!-- codex: weaving.yaml object_defs.palm_frond.interactions.split_and_weave.spawn.count -->、`src/assets/world-codex/weaving.yaml`）は、
 腕ではなく持ち物が決めるので、ここの上限には掛かりません。
 
 - **余分を足せるのは、素が 3 つ以上ある卓だけです。** 物は割れないので、素が 2 つの卓は 1 つ足しただけで
