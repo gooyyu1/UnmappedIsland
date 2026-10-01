@@ -80,14 +80,13 @@ beast:
 **殴る人の腕は、どの武器の卓も同じだけ伸ばします。** 積むのは**その武器が最も太く名乗る当たり方 1 つ**
 だけで、狩猟の腕（`hunting_aim`）を `base` の土台にします（[`../world/Skills.md`](../world/Skills.md) 5 節）。
 **当たり方の数だけ積まないのは、上の目盛りを実効値でも保つため**です——2 つ名乗る石斧だけが倍受け取ると、
-仕留めの重みと並ぶ目盛りが武器ごとに変わります。1 つに限れば、`expert`（+40<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.hunting_aim -->）ではどの武器も卓が
-105 → 145 になり、仕留めの割合（5/145）は武器によらず同じままです。
+仕留めの重みと並ぶ目盛りが武器ごとに変わります。1 つに限れば、`expert`（+40<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.hunting_aim -->）でも卓の合計はどの武器も
+同じだけ伸び、仕留めの割合は武器によらず同じままです。
 
-- **外し（`whiff`）には積みません。** 卓の合計が増えるぶんで外れの割合が落ちます（尖った石で 28.6% →
-  20.7%、石斧で 23.8% → 17.2%、槍で 42.9% → 31.0%）。
+- **外し（`whiff`）には積みません。** 卓の合計が増えるぶんで外れの割合が落ちます。
 - **0 を宣言した当たり方（尖った石の強打）にも積みません。** 積むと、腕が上がるだけでその武器に無い
   一撃が出ます。
-- **腕は、その武器の性格を強めます。** 石斧の強打対浅打は 60<!-- codex: tools.yaml object_defs.stone_axe.props.heavy_blow.value --> 対 15<!-- codex: tools.yaml object_defs.stone_axe.props.light_blow.value --> から 100 対 15<!-- codex: tools.yaml object_defs.stone_axe.props.light_blow.value --> へ開きます——腕が
+- **腕は、その武器の性格を強めます。** 石斧の強打対浅打は 60<!-- codex: tools.yaml object_defs.stone_axe.props.heavy_blow.value --> 対 15<!-- codex: tools.yaml object_defs.stone_axe.props.light_blow.value --> から、強打の側だけが伸びて開きます——腕が
   上がるほど、その武器が得意な当たり方へ寄ります。
 
 **同じ一撃が、体格で意味を変えます。** 衝撃の `max` は体重の1/50（[`VitalsSystem.md`](./VitalsSystem.md)
@@ -221,8 +220,8 @@ monkey_carcass:
 専用の画面を持たないため、「今から動物の手番」と宣言する場所がありません。動物を動かすのは**時間の経過**
 だけです。
 
-- 1 tick（15分）の行動 = 動物の1手
-- 6 tick（90分）の行動 = 動物の**6手**
+- 1 tick の行動 = 動物の1手
+- 6 tick の行動 = 動物の**6手**
 
 これにより「動物に詰められながら悠長な作業はできない」が、ルールを1行も書かずに成立します。同じ理由で、
 **無視することも自動的に罰せられる**ため、行動を禁じるモーダルな鍵が要りません。
@@ -230,8 +229,8 @@ monkey_carcass:
 不意打ちも同じ仕組みです。発見した tick で既に相手の手が入っていれば先手を取られたことになり、専用の
 イニシアチブ判定を持ちません。
 
-怪我の手当てにも同じ帰結が及びます。治療具を当てるのに30分かかる（[`InjurySystem.md`](./InjurySystem.md)）ため、
-**荒ぶっている動物の傷を手当てすると2手ぶん殴られます**。「落ち着くまで待つ方が賢い」を、条件で禁じずに
+怪我の手当てにも同じ帰結が及びます。治療具を当てるには時間がかかる（[`InjurySystem.md`](./InjurySystem.md)）ため、
+**荒ぶっている動物の傷を手当てすると、その間の手数ぶん殴られます**。「落ち着くまで待つ方が賢い」を、条件で禁じずに
 コストとして表せます。
 
 ## 3. 動物は体力を持たず、怪我を負う

@@ -261,7 +261,7 @@
 
 **積むのは、その卓で最も太い当たり方 1 つだけです。** 当たり方の数だけ積むと、2 つ名乗る石斧だけが
 倍受け取り、**配分の合計を 100 に揃えた意味**（[`HuntingSystem.md`](../engine/HuntingSystem.md) 1.2 節）
-が実効値で崩れます。1 つに限れば `expert` でどの武器も卓が 105 → 145 になり、仕留めの割合は武器に
+が実効値で崩れます。1 つに限れば `expert` でもどの武器も卓の合計が同じだけ伸び、仕留めの割合は武器に
 よらず同じままです。尖った石の強打（`heavy_blow: 0`<!-- codex: tools.yaml object_defs.sharp_stone.props.heavy_blow.value -->）のように 0 を宣言した当たり方へ積まないのも同じ
 理由で、積むと腕が上がるだけでその武器に無いはずの一撃が出ます。**土台を持つのは値を名乗った側だけ**
 なので、`weapon` trait は土台を持ちません。
@@ -290,10 +290,10 @@
   相対的に落ちます**が、気絶させてから仕留める流れは変わりません——気絶した相手の無防備さは
   当たり所の合計より大きいためです。
 - **加算なので、相手ごとの差は腕を上げるほど埋もれます。** 枯れ草（60<!-- codex: fire.yaml object_defs.dry_grass.props.ignition_chance.value -->）とヤシの実の皮（100<!-- codex: coconut.yaml object_defs.coconut_husk.props.ignition_chance.value -->）の差は
-  `expert`（+120<!-- codex: characters/player_character.yaml traits.player_character.props.skill_firecraft.stages.3.passives.0.modify.self.ignition_ease -->）では 180 対 220 まで縮み、**火口を選ぶ判断は腕が上がるほど軽くなります**。獣の側も
+  `expert`（+120<!-- codex: characters/player_character.yaml traits.player_character.props.skill_firecraft.stages.3.passives.0.modify.self.ignition_ease -->）では比で見て縮み、**火口を選ぶ判断は腕が上がるほど軽くなります**。獣の側も
   同じで、上乗せの総量は獣の種類の数に比例します。**火口の差が埋もれることも、獣の種類が多い土地ほど
   腕が報われることも狙いどおりです**（5.2 節）。**当てる側だけは逆**で、
-  積むのが卓に 1 つなので、石斧の強打対浅打（60<!-- codex: tools.yaml object_defs.stone_axe.props.heavy_blow.value --> 対 15<!-- codex: tools.yaml object_defs.stone_axe.props.light_blow.value -->）は `expert` で 100 対 15 へ開きます——**腕が
+  積むのが卓に 1 つなので、石斧の強打対浅打（60<!-- codex: tools.yaml object_defs.stone_axe.props.heavy_blow.value --> 対 15<!-- codex: tools.yaml object_defs.stone_axe.props.light_blow.value -->）は `expert` で強打の側だけが伸びて開きます——**腕が
   上がるほど、その武器が得意な当たり方へ寄ります。**
 - **狩猟は罠には効きません。** 罠の抽選は誰も操作していない場面で走るため、罠から腕の持ち主が
   見えません（[`TrapSystem.md`](../engine/TrapSystem.md) 8 節）。**腕が動かせるのは、腕の持ち主が
