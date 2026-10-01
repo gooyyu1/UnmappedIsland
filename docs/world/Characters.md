@@ -123,7 +123,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   ——見せるのは荷重そのもので、遅れはその段から読める。個体差は持たせず trait が配る。
 - **`blood`（血液量、mL）**: `max` が体格そのもの（体重のおよそ1/13）で、満タンから始まる。**体が
   自分で作り直すステータス**（`+2/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.blood.passives.0.add.self.blood -->、赤血球が作られる実際の速さ）。削るのは出血する
-  怪我だけなので、**削られるのは一瞬でも戻るのは桁違いに遅い**
+  怪我だけなので、**削られるのは一瞬でも戻るのは桁違いに遅い**——牙の傷1つが奪う600mLに3.1日かかる
 （[`VitalsSystem.md`](../engine/VitalsSystem.md) 3.3 節）。尽きた段の
   名前は **`exsanguinated`**。刻み方は [`VitalsSystem.md`](../engine/VitalsSystem.md) 3 節、これも個体差を
   持たせず trait が配る。**戻るのは水分と体脂肪がともに安全域にある間だけ**で（同 3.1 節）、
