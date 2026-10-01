@@ -414,6 +414,9 @@ describe('探索で見つかる物', () => {
     });
 
     it('獣の種類の多い土地ほど、腕を上げたぶん獣へ寄る幅が大きい', () => {
+      // Skills.md 5.2節【確定】の「獣の種類が多い土地ほど、腕が報われます」を守る。幅は卓の合計にも
+      // 左右されるので、種類の数が1つ違うだけの土地どうしでは差がごく小さいことがある——実りの重みを
+      // 動かしてここが落ちたら、種類の少ない土地の卓が合計で軽すぎないかを見る。
       const novice = beastSharesWith(quarrySenseAt('novice'));
       const expert = beastSharesWith(quarrySenseAt('expert'));
       const gains = [...novice].map(([land, { species, share }]) => ({
