@@ -452,7 +452,7 @@ tick が大半を占め、連続降雨時間は連続未降雨時間より長く
 ### 4.5 風向きは季節が配る
 
 **風向き（`wind`）も同じ形の短期変動です。** `tailwind`/`crosswind`/`headwind` を、季節の段が配る
-重み（`tailwind_weight` ほか）で、`wind_remaining` の 32<!-- codex: core.yaml object_defs.world.props.wind_remaining.on_min.pick.0.set.self.wind_remaining --> tick ごとに引き直します。天気と違って持続の長さは振りません。
+重み（`tailwind_weight` ほか）で、`wind_remaining` の 32<!-- codex: core.yaml object_defs.world.props.wind_remaining.value --><!-- codex: core.yaml object_defs.world.props.wind_remaining.on_min.pick.0.set.self.wind_remaining --><!-- codex: core.yaml object_defs.world.props.wind_remaining.on_min.pick.1.set.self.wind_remaining --><!-- codex: core.yaml object_defs.world.props.wind_remaining.on_min.pick.2.set.self.wind_remaining --> tick ごとに引き直します。天気と違って持続の長さは振りません。
 
 島の上での暮らしには効かず、読むのは航路を渡るのにかかる時間だけなので、値の意味と重みの表は
 [`Voyage.md`](../world/Voyage.md) 3.1 節が持ちます。ここに置くのは「季節が駆動する短期変動という点で
