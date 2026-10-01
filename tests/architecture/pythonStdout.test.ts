@@ -20,15 +20,28 @@ const ROOT = resolve(__dirname, '../..');
 
 const FIXES = 'sys.stdout.reconfigure(encoding="utf-8")';
 
-const printing = trackedFiles(ROOT, '*.py').filter((rel) =>
-  readFileSync(join(ROOT, rel), 'utf-8').includes('print('),
-);
+/**
+ * 固定している行。**モジュールの最上位（行頭）に在るものだけ**を数える——コメントの中や関数の中に
+ * 書いたものは、`print` より先に走る保証が無い。
+ */
+const FIXING_LINE = /^sys\.stdout\.reconfigure\(encoding="utf-8"\)$/m;
+
+const read = (rel: string): string => readFileSync(join(ROOT, rel), 'utf-8');
+
+const printing = trackedFiles(ROOT, '*.py').filter((rel) => read(rel).includes('print('));
+
+/** 固定の行が、最初の `print(` より前に在るか。 */
+function fixesBeforePrinting(source: string): boolean {
+  const lf = source.replace(/\r\n/g, '\n');
+  const fixing = FIXING_LINE.exec(lf);
+  return fixing !== null && fixing.index < lf.indexOf('print(');
+}
 
 describe('Python の標準出力', () => {
   it('print を持つスクリプトは、標準出力を UTF-8 に固定している', () => {
     expect(
-      printing.filter((rel) => !readFileSync(join(ROOT, rel), 'utf-8').includes(FIXES)),
-      `冒頭に ${FIXES} を置く`,
+      printing.filter((rel) => !fixesBeforePrinting(read(rel))),
+      `最初の print より前に、モジュールの最上位で ${FIXES} を置く`,
     ).toEqual([]);
   });
 

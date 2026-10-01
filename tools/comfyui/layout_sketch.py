@@ -13,9 +13,9 @@
 
 from __future__ import annotations
 
-import sys
 import argparse
 import math
+import sys
 
 from PIL import Image, ImageDraw
 

@@ -8,12 +8,12 @@ bridge は worktree 名に CCR の session id 後半が入るので、~/.claude/
 ディレクトリ名から突き合わせられる。
 """
 
-import sys
 import glob
 import json
 import os
 import re
 from collections import defaultdict
+import sys
 
 from paths import cost, data
 

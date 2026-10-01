@@ -14,9 +14,9 @@ PIL が要る。絵文字のフォントは Windows 同梱の Segoe UI Emoji（C
 
 from __future__ import annotations
 
-import sys
 import argparse
 from pathlib import Path
+import sys
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont

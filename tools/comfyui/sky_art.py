@@ -13,9 +13,9 @@ PIL と numpy が要る。ComfyUI同梱の .venv のPythonで動く（README参�
 
 from __future__ import annotations
 
-import sys
 import argparse
 from pathlib import Path
+import sys
 
 import numpy as np
 from PIL import Image

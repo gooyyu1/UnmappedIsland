@@ -50,11 +50,11 @@ jobs:
       - name: Run tests
         run: npx vitest run --reporter=default --reporter=github-actions
 
-  # ブリッジ（Windows・`core.autocrlf=true` の作業ツリー）の手元でだけ落ちるものを、ここで落とす。
+  # ブリッジ（Windows・`core.autocrlf=true` の作業ツリー）の手元でだけ落ちる検査を、ここで落とす。
   # **上の `test` は Linux・LF の作業ツリーで走るので**、どちらの壊れ方も緑のまま通る——CRLF で
-  # 読み損ねる読み手（issue #867・#2171）と、Windows でしか起きないもの（MSYS 系の bash の綴りを node が
-  # 開けない・大小を区別しないファイルシステム・`fetch` の後の `process.exit` で node が落ちる。
-  # issue #2335 で283件落ちていた）。リポジトリのファイルを改行コードに依らず読むという決めごと
+  # 読み損ねる読み手（issue #867・#2171）と、Windows でしか起きないもの（issue #2335 で283件落ちて
+  # いた。MSYS 系の bash の綴りを node が開けない・大小を区別しないファイルシステム・`fetch` の後の
+  # `process.exit` で node が落ちる、など）。リポジトリのファイルを改行コードに依らず読むという決めごと
   # （`docs/CodingConventions.md`「ファイルの読み込み」）を見ているのも、ここだけ。
   #
   # 上の `test` と分けるのは、**止まる理由を混ぜないため**。ここだけが赤いなら、直す先は

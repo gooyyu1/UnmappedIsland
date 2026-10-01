@@ -14,9 +14,9 @@ Qwenに「白い紙の上の物」として扱わせるため。
 
 from __future__ import annotations
 
-import sys
 import argparse
 from pathlib import Path
+import sys
 
 from PIL import Image
 

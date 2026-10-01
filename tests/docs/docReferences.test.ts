@@ -1339,7 +1339,7 @@ describe('ドキュメントの参照', () => {
 
   it('見出しの解析が、CRLFの作業ツリーでも効く', () => {
     // 行末に `\r` が残ると、見出しを見る検査（アンカー・節番号・印）が**揃って空振りし、
-    // 違反ゼロと同じ緑になる**。Linuxで走るCIでは気づけないので、既知の入力で確かめる。
+    // 違反ゼロと同じ緑になる**。LFの作業ツリーでは気づけないので、既知の入力で確かめる。
     expect(headingsOf('# 題名\r\n\r\n## 1. 節\r\n本文\r\n')).toEqual(['題名', '1. 節']);
     const [section] = sectionsOf('## 1. 節\r\n本文\r\n### 1.1 枝\r\n');
     expect(section.hasSubsections).toBe(true);

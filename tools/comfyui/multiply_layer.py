@@ -23,9 +23,9 @@ PIL と numpy が要る。
 
 from __future__ import annotations
 
-import sys
 import argparse
 from pathlib import Path
+import sys
 
 import numpy as np
 from PIL import Image
