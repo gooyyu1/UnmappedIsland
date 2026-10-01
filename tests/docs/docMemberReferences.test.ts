@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { commentParts, commentsOnly } from '../../scripts/codeComments.mjs';
+import { commentsOnly, withoutComments } from '../../scripts/codeComments.mjs';
 import {
   COMMENTED_EXTENSIONS,
   isPendingDecision,
@@ -80,11 +80,8 @@ function allLines(text: string): ProseLine[] {
  * 語がメンバーとして在る証拠にはならない**——`PlayScene` が `from './ui/cardEdges'` を読むだけで、
  * `PlayScene` の `cardEdges` を指す説明が在ることになり、この検査が黙る。
  */
-function codeOnly(text: string): string {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1')
-    .replace(/\b(?:from|import)\s*\(?\s*'[^']*'/g, ' ');
+function codeOnly(rel: string): string {
+  return withoutComments(read(rel), rel).replace(/\b(?:from|import)\s*\(?\s*'[^']*'/g, ' ');
 }
 
 /**
@@ -156,7 +153,7 @@ const PROSE: readonly {
  */
 const SCANNED = PROSE.flatMap(({ files }) => [...files]);
 
-const CODE = TYPED_SOURCES.map((rel) => codeOnly(read(rel))).join('\n');
+const CODE = TYPED_SOURCES.map(codeOnly).join('\n');
 const foundInCode = new Map<string, boolean>();
 function appearsInCode(name: string): boolean {
   const cached = foundInCode.get(name);
@@ -219,7 +216,7 @@ function contentOf(file: string, face: Face): string {
   const key = `${face} ${file}`;
   let content = contentByFace.get(key);
   if (content === undefined) {
-    content = face === 'code' ? codeOnly(read(file)) : read(file);
+    content = face === 'code' ? codeOnly(file) : read(file);
     contentByFace.set(key, content);
   }
   return content;
@@ -415,15 +412,7 @@ function parenthesizedNames(text: string): string[] {
  * 説明を書ける形式すべての、コメント以外の本文。**`.ts` に限らない**——`scripts/**` の `.mjs` の
  * 説明は、同じ `.mjs` の関数を括弧で指す。
  */
-const ALL_CODE = COMMENTED_SOURCES.map((rel) => {
-  const text = read(rel);
-  if (/\.[mc]?[jt]s$/.test(rel)) return codeOnly(text);
-  const parts = commentParts(text, rel);
-  return text
-    .split('\n')
-    .filter((_, index) => parts[index] === null)
-    .join('\n');
-}).join('\n');
+const ALL_CODE = COMMENTED_SOURCES.map(codeOnly).join('\n');
 
 /** 追跡しているファイルの、最初の `.` より前（`（docStatsCitations）` はテストのファイルを指す）。 */
 const FILE_STEMS = new Set(TRACKED_PATHS.map((path) => basename(path).split('.')[0]));

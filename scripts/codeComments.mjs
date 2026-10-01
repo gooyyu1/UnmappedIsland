@@ -2,7 +2,7 @@
  * 行ごとに「その行がコメントか」を決める実装。**コメントの行を見る検査はここを通す**——検査ごとに
  * 規則を持つと、どの検査が何を見ているかが検査ごとに変わる。行頭の印を `startsWith` で見る写しが
  * 外に生えたら `tests/scripts/codeComments.test.ts` が落ちる。コードからコメントを字単位で剥がす側
- * （行の途中のコメントも落とす）は別の問いで、ここを通らない。
+ * （行の途中のコメントも落とす）は別の問いで、{@link withoutComments} が答える。
  *
  * 行ごとの、コメントの部分。**コメントでない行は `null`**。
  *
@@ -55,4 +55,29 @@ export function commentsOnly(source, rel) {
   return commentParts(source, rel)
     .map((part) => part ?? '')
     .join('\n');
+}
+
+/**
+ * ソースからコメントを字単位で剥がした、コードの本文。**行の途中から始まるコメントも落とす**
+ * ——{@link commentParts} とは問いが逆で、こちらは「コードとして何が書かれているか」を見る検査が読む。
+ * **コードの本文を見る検査はここを通す**——剥がす範囲が検査ごとにずれると、同じ説明が検査によって
+ * コードに数えられる。剥がす正規表現の写しが外に生えたら `tests/scripts/codeComments.test.ts` が落ちる。
+ *
+ * - JS・TS: ブロックと、`:` の直後以外の `//` から行末まで（`https://…` の `//` は残す）。
+ * - それ以外: 行頭か空白に続く `#` から行末まで（`${#arr}`・`'#fff'` のように語へ続く `#` は残す）。
+ *
+ * **字面だけで切る**ので、文字列・正規表現の中の `//` や ` #` からも落とす。行番号は原文と揃える
+ * （ブロックの中の改行は残す）。CRLF でも LF と同じだけ落ちる。
+ *
+ * @param {string} source
+ * @param {string} rel {@link commentParts} と同じ
+ * @returns {string} コメントを剥がした本文
+ */
+export function withoutComments(source, rel) {
+  if (/\.[mc]?[jt]s$/.test(rel)) {
+    return source
+      .replace(/\/\*[\s\S]*?\*\//g, (block) => block.replace(/[^\n]+/g, ' '))
+      .replace(/(^|[^:])\/\/[^\n]*/gm, '$1');
+  }
+  return source.replace(/(^|[ \t])#[^\n]*/gm, '$1');
 }

@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { commentsOnly } from '../../scripts/codeComments.mjs';
+import { commentsOnly, withoutComments } from '../../scripts/codeComments.mjs';
 import {
   promptBodies,
   promptBodiesForSession,
@@ -1046,14 +1046,9 @@ describe('ドキュメントの参照', () => {
       `見出しに付いた【未実装】:\n${inHeadings.join('\n')}`,
     ).toHaveLength(inHeadings.length);
     // コメントを除いた実装・データだけを見る（コメントはドキュメントへの言及でありうるため）。
-    const sources = [
-      ...listFiles('src', ['.ts']).map((rel) =>
-        read(rel)
-          .replace(/\/\*[\s\S]*?\*\//g, '')
-          .replace(/^\s*\/\/.*$/gm, ''),
-      ),
-      ...listFiles('src', ['.yaml']).map((rel) => read(rel).replace(/#.*$/gm, '')),
-    ].join('\n');
+    const sources = listFiles('src', ['.ts', '.yaml'])
+      .map((rel) => withoutComments(read(rel), rel))
+      .join('\n');
     const stale = labels.filter(({ ident }) => appearsInSources(ident, sources));
     expect(
       stale,
