@@ -134,7 +134,7 @@ interactions:
 interactions:
   add_fuel:
     conditions:
-      - {reason: hearth_full, prop: fuel, lt: 30}  # <!-- codex: fire.yaml object_defs.campfire.interactions.add_fuel.conditions.0.lt --><!-- codex: fire.yaml object_defs.three_stone_hearth.interactions.add_fuel.conditions.0.lt -->
+      - {reason: hearth_full, prop: fuel, lt: 30}  # 三つ石の炉も30<!-- codex: fire.yaml object_defs.three_stone_hearth.interactions.add_fuel.conditions.0.lt -->
 ```
 
 ```yaml codex: locations.yaml object_defs.thick_branch
