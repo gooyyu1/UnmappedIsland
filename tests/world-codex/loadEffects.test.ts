@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import { characterDefNames } from '../../src/domain/generation/NewGame';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { seededRng } from '../../src/domain/Rng';
@@ -9,7 +10,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { Path } from '../../src/domain/wrappers/Path';
 import type { World } from '../../src/domain/wrappers/World';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER, worldCodexPath } from '../support/worldCodexFiles';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -250,6 +251,47 @@ describe('荷重が歩みの遅れと体力に効く', () => {
       stages.filter(([, stage]) => stage !== 'too_heavy'),
       'そりなら丸太2本を運べる担ぎ手が居る',
     ).not.toHaveLength(0);
+  });
+
+  it('筏1つぶんの丸太を1往復で運べる担ぎ手は居ない（Voyage.md 未決事項）', () => {
+    // 筏のレシピが要る丸太を足し合わせ、どの担ぎ手がどの引く道具に積んでも、通れる段に収まらないか、
+    // 積み切れないことを見る。
+    const voyage = parse(readFileSync(worldCodexPath('voyage.yaml'), 'utf8')) as {
+      object_defs: {
+        raft: { recipes: Record<string, { steps: { requires?: { object: string; count?: number }[] }[] }> };
+      };
+    };
+    const logsPerRaft = Math.max(
+      ...Object.values(voyage.object_defs.raft.recipes).map((recipe) =>
+        recipe.steps
+          .flatMap((step) => step.requires ?? [])
+          .filter((requirement) => requirement.object === 'log')
+          .reduce((sum, requirement) => sum + (requirement.count ?? 1), 0),
+      ),
+    );
+    const logId = codex.objectNames.getId('log');
+    expect(logsPerRaft, '筏が丸太を要る').toBeGreaterThan(1);
+
+    const carriers = [...codex.objects]
+      .filter((def) => def.hasTag(codex.vocabulary.world.characterTagId))
+      .map((def) => def.name);
+    for (const characterName of carriers)
+      for (const tool of ['sledge', 'handcart']) {
+        const session = new WorldSession(codex, seededRng(42));
+        session.createWorld();
+        const character = session.createObject(codex.objectNames.getId(characterName));
+        const carrier = session.createObject(codex.objectNames.getId(tool));
+        expect(
+          carrier.moveToSlotOrRejection(character.getSlot(codex.slotNames.getId('hand'))),
+        ).toBeUndefined();
+        const contents = carrier.getSlot(codex.slotNames.getId('contents'));
+        let loaded = 0;
+        for (let i = 0; i < logsPerRaft; i++)
+          if (session.createObject(logId).moveToSlotOrRejection(contents) === undefined) loaded++;
+        const passes =
+          loaded === logsPerRaft && character.tryGetProperty(propertyId('load'))?.stage?.name !== 'too_heavy';
+        expect(passes, `${characterName} が ${tool} で筏1つぶんの丸太を1往復で運べてしまう`).toBe(false);
+      }
   });
 
   it('引く道具へ乗り換える積載は、Containers.mdが置いた線のとおり', () => {

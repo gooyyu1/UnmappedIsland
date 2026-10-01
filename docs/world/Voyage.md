@@ -764,19 +764,20 @@
 [`DigestionSystem.md`](../engine/DigestionSystem.md) 6 節）。**塩漬けにしても消えません**——`cure` を
 通した先も同じ `eat` を継ぐので、**製塩が前提であること**（3.9.2 節）**は、菌を避ける手にはなりません。**
 
-**それでも 1 日 3 つは、症状の段へ届きません。** 入る菌は 1 日 9（1 切れ +3<!-- codex: animals.yaml object_defs.raw_meat.interactions.eat.add.agent.pathogen --> の 3 つぶん）ですが、感染している間は免疫が上がり
+**それでも 1 日 3 つは、症状の段へ届きません。** 入る菌は 1 切れ +3<!-- codex: animals.yaml object_defs.raw_meat.interactions.eat.add.agent.pathogen --> ずつですが、感染している間は免疫が上がり
 続け（+0.25/tick<!-- stats: balance.yaml consumption property=immunity condition=in_stage_or_above(self.pathogen,latent) character=medic per_tick -->）、
 素の 60<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.value --> からやがて最上段（`primed`）へ届きます。そこから先は 1 tick に
 −0.30<!-- stats: balance.yaml consumption property=pathogen condition=stage(self.immunity,primed) character=medic per_tick --> 引くので、
 菌自身の増殖（+0.15/tick<!-- stats: balance.yaml consumption property=pathogen condition=in_stage_or_above(self.pathogen,latent) character=medic per_tick -->）を
-差し引いた正味でも、1 日で入る 9 を上回って引けるので、**菌は食事ごとに 0 へ戻ります**（他の段が引く量は
+差し引いた正味でも、1 日で入るぶんを上回って引けるので、**菌は食事ごとに 0 へ戻ります**（他の段が引く量は
 [`DigestionSystem.md`](../engine/DigestionSystem.md) 6.2 節）。**条件は間隔です**——発熱の段は 5<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.2.min --> なので、
 1 切れ +3<!-- codex: animals.yaml object_defs.raw_meat.interactions.eat.add.agent.pathogen --> が 2 回続けて入ればその場で乗ります。最上段へ届くまでは `robust` の
 −0.20<!-- stats: balance.yaml consumption property=pathogen condition=stage(self.immunity,robust) character=medic per_tick --> なので、
-増殖を差し引いた正味がごくわずかで、**間隔が詰まると 1 日 3 つでも段に乗ります**——起きている時間帯へ 3 食を寄せるあたりが境目で、8 時間おきに離せば届きません。
+増殖を差し引いた正味がごくわずかで、**間隔が詰まると 1 日 3 つでも段に乗ります**——起きている時間帯へ 3 食を寄せるあたりが境目で、満腹が減るたびに食べる間隔なら届きません
+（`tests/world-codex/pathogen.test.ts`）。
 
 **崩れるのは、免疫の押し下げを抱えて出航したときです。** 押し下げのぶん最上段へ届くのが遅れ、その間の
-正味で引ける量が入る 9 を下回るので、積み上がります——**ビタミン不足（−15<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.1.passives.0.modify.self.immunity -->）を抱えて出るだけで、
+正味で引ける量が入るぶんを下回るので、積み上がります——**ビタミン不足（−15<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.1.passives.0.modify.self.immunity -->）を抱えて出るだけで、
 初日のうちに発熱の段へ乗ります。** 壊血病（−40<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.0.passives.0.modify.self.immunity -->）まで行くと最上段へ届かなくなり、菌は上限へ暴走します。
 
 **釣りが賄うのは、予定が狂ったぶんです。** 荒天は未知の海区へ押し流し（3.8 節）、引き返しは来た区間を
@@ -793,8 +794,8 @@
 **削ったまま出るか、荒天と引き返しで伸びれば入ります**——予定が狂ったときに要るのは、満腹を埋める釣り
 だけではありません。
 
-**脂も同じ形で足りません**——1 日に要る 24<!-- stats: balance.yaml daily_needs property=lipid daily_need --> に対して、生肉 3 つが運ぶのは 12 です
-（[`DigestionSystem.md`](../engine/DigestionSystem.md) 3 節）。**ただしこちらは釣りではなく積む側で
+**脂も同じ形で足りません**——1 日に要る 24<!-- stats: balance.yaml daily_needs property=lipid daily_need --> に、生肉 1 日 3 つでは届きません
+（[`DigestionSystem.md`](../engine/DigestionSystem.md) 3 節。`tests/world-codex/pathogen.test.ts`）。**ただしこちらは釣りではなく積む側で
 埋まります**（3.9.6 節）。
 
 #### 3.9.4 道具は突き銛で、失っても海の上で作り直せる
@@ -811,9 +812,8 @@
 ためです。槍の軸は若木を切って採る長い棒で（[`SurvivalItems.md`](./SurvivalItems.md) 3 節）、そこへ
 載せると釣りまで若木を探すことと木材加工の腕の後ろへ回ります。
 
-**銛は突いた魚に持って行かれることがあります**（どちらの卓も 50 回に 1 回、`expert` では 70 回に 1 回
-——**失う重み 2<!-- codex: voyage.yaml object_defs.raft.interactions.spear_sea.pick.2.weight --><!-- codex: voyage.yaml object_defs.fish_shoal.interactions.spear_shoal.pick.2.weight --> は動かず、腕が当たる側だけを太らせる**ので、上手いほど銛を失いにくくなります。
-4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日の航海で突く回数から見て、**1 航海に 1 本ほど**）。だから積むのは銛 1 本ではなく、**穂先になる尖った石と、締める紐**です。
+**銛は突いた魚に持って行かれることがあります**（**失う重み 2<!-- codex: voyage.yaml object_defs.raft.interactions.spear_sea.pick.2.weight --><!-- codex: voyage.yaml object_defs.fish_shoal.interactions.spear_shoal.pick.2.weight --> は動かず、腕が当たる側だけを
+太らせる**ので、上手いほど銛を失いにくくなります）。だから積むのは銛 1 本ではなく、**穂先になる尖った石と、締める紐**です。
 **柄になる太い枝は海が返します**（流木と漂流物、3 節の表）が、**石と紐は返りません**——漂流物が返す
 ロープは紐 3 本<!-- codex: fiber.yaml object_defs.rope.recipes.twisted.steps.0.requires.0.count -->を撚った先で、ほどいて紐に戻す手はありません。作り直すのに火は要らず、削るための刃物を
 1 つ積んでおけば筏の上で組み直せます。**予備を切らすと、群れに出会っても突けません**——食料を積んで
@@ -874,8 +874,7 @@
 **見張り（3 節）・釣り（3.9.2 節）・海鳥を捕ること（3 節の表）は、視界が明るく、嵐でないうちだけ
 できます。** どれも屋外で見て探す仕事なので、地上の探索・採取と同じ分類に入ります
 （[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 5 節）。**海の上を昼夜の外へは置きません**
-——海区は樹冠も地面の反射も持たないので、明るさは空そのものです。夜は暗さの底（−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->）で、地面の反射を
-持つ砂浜（−5）よりさらに 1 段暗くなります。
+——海区は樹冠も地面の反射も持たないので、明るさは空そのものです。夜は暗さの底（−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->）です。
 
 **どれも、嵐でも止まります。** 屋根の下でない場所での行動だからで、そこは既に決まっています
 （[`ContentSkeleton.md`](./ContentSkeleton.md) 8.1.4 節）。**海区に屋根は無い**ので、嵐のあいだは
@@ -973,5 +972,6 @@
   探索できる土地になった（3.4 節）が、今の卓はアーティファクトを返さない。小島から出る種類数と
   1 周回に配る数は同節が決めているので、残っているのは卓へ載せることだけ。
 - 丸太をまとめて運ぶ手段（1 節）。そりと台車は入った（[`Containers.md`](./Containers.md) 2節）が、
-  2本目が積めるかが担ぎ手で分かれ、筏1つの6本を1往復で運ぶ手立てはどの担ぎ手にも無い。積める重さを
+  2本目が積めるかが担ぎ手で分かれ、筏1つぶんの丸太を1往復で運ぶ手立てはどの担ぎ手にも無い
+  （`tests/world-codex/loadEffects.test.ts`）。積める重さを
   上げるのか、往復そのものを短くするのか、担ぎ手で分かれたままにするのかは決めていない。
