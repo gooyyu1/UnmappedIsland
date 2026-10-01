@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { InteractionGains } from '../../src/domain/PropertyGain';
-import { World } from '../../src/domain/wrappers/World';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -144,8 +143,7 @@ object_defs:
     codex = loader.buildAndReset();
 
     session = new WorldSession(codex, fixedRng(0));
-    const world = spawn('world');
-    session.adoptWorld(new World(world));
+    const world = session.createWorld().instance;
     const land = spawn('land');
     expect(land.moveToSlotOrRejection(world.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
     player = spawn('survivor');

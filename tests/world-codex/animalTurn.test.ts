@@ -2,7 +2,6 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
@@ -41,8 +40,7 @@ describe('動物の1手', () => {
    */
   function open(roll: number): void {
     session = new WorldSession(codex, fixedRng(roll));
-    world = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(world));
+    world = session.createWorld().instance;
     jungle = spawnInto('jungle', world, 'locations');
     grassland = spawnInto('grassland', world, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');

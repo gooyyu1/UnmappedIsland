@@ -4,7 +4,6 @@ import { seededRng } from '../domain/Rng';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { WorldObject } from '../domain/WorldObject';
 import { WorldSession } from '../domain/WorldSession';
-import { World } from '../domain/wrappers/World';
 import { MINUTES_PER_DAY, MINUTES_PER_TICK, TICKS_PER_DAY } from '../domain/worldTime';
 import type { SeaLeg, SeaZoneReading, VoyageLegs } from './voyageLegs';
 
@@ -103,8 +102,7 @@ export class VoyageDriftSimulation {
 
     this.session = new WorldSession(codex, seededRng(seed));
     const worldDef = codex.objects.get(codex.objectNames.getId(codex.vocabulary.world.worldObject));
-    this.worldInstance = this.session.createObject(worldDef.globalId);
-    this.session.adoptWorld(new World(this.worldInstance));
+    this.worldInstance = this.session.createWorld().instance;
 
     // 海区も本土も singleton なので、world が受け取れるものを全部入れれば網がそのまま立つ。
     // **隣が世界に居ないと押し流しは何も起きない回になる**ので、名指しで選ばずまとめて置く。

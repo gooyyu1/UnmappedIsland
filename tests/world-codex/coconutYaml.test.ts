@@ -4,7 +4,7 @@ import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
-import { World } from '../../src/domain/wrappers/World';
+import type { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
@@ -34,9 +34,8 @@ describe('coconut.yamlのヤシの実の加工', () => {
   beforeEach(() => {
     // 実採りは確率で捻挫する（injuries.yaml）。ここは加工の連鎖を見るテストなので、必ず成功する側を引く。
     session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    worldView = new World(worldInstance);
-    session.adoptWorld(worldView);
+    worldView = session.createWorld();
+    const worldInstance = worldView.instance;
     startMinutes = worldView.totalMinutes;
 
     beach = spawnInto('sandy_beach', worldInstance, 'locations');

@@ -5,7 +5,7 @@ import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
-import { World } from '../../src/domain/wrappers/World';
+import type { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
@@ -37,9 +37,8 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
    */
   function buildWorld(rng: Rng): void {
     session = new WorldSession(codex, rng);
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    worldView = new World(worldInstance);
-    session.adoptWorld(worldView);
+    worldView = session.createWorld();
+    const worldInstance = worldView.instance;
 
     jungle = spawnInto('jungle', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');

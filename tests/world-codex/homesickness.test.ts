@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { seededRng } from '../../src/domain/Rng';
 import { bundledCodex } from '../support/worldCodexFiles';
 import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
@@ -53,8 +52,7 @@ interface Island {
 /** 砂浜に立つ主人公と、遠征先になるもう1つの砂浜。 */
 function settle(): Island {
   const session = new WorldSession(codex, seededRng(1));
-  const world = session.createObject(codex.objectNames.getId('world'));
-  session.adoptWorld(new World(world));
+  const world = session.createWorld().instance;
 
   const lands = [0, 1].map(() => {
     const land = session.createObject(codex.objectNames.getId('sandy_beach'));

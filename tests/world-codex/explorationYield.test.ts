@@ -5,7 +5,6 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
-import { World } from '../../src/domain/wrappers/World';
 import { bundledCodex } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent } from '../support/illumination';
 import { seededRng } from '../../src/domain/Rng';
@@ -232,8 +231,7 @@ describe('探索で見つかる物', () => {
     watchedSkill?: string,
   ): ExploreTrial[] {
     const explorer = new WorldSession(codex, seededRng(20250801));
-    const worldInstance = explorer.createObject(codex.objectNames.getId('world'));
-    explorer.adoptWorld(new World(worldInstance));
+    const worldInstance = explorer.createWorld().instance;
 
     const instance = explorer.createObject(codex.objectNames.getId(landName));
     for (const [propertyGlobalId, value] of props)

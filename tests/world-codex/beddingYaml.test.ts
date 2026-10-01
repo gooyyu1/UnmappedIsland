@@ -2,7 +2,6 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { characterDefNames } from '../../src/domain/generation/NewGame';
 import { bundledBalanceTables, bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
@@ -42,8 +41,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
   /** その土地にプレイヤーが立っている世界。 */
   function open(landName: string, characterName: string = SAMPLE_CHARACTER) {
     const session = new WorldSession(codex);
-    const world = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(world));
+    const world = session.createWorld().instance;
     const land = spawnInto(session, landName, world, 'locations');
     const player = spawnInto(session, characterName, land, 'characters');
     makeBrightEnoughForAnyAction(player, codex);

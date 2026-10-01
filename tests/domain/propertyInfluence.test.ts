@@ -3,7 +3,6 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { PropertyInfluence } from '../../src/domain/PropertyInfluence';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
@@ -50,10 +49,10 @@ object_defs:
       .load('world.yaml', WORLD_YAML)
       .load('extra.yaml', yaml)
       .buildAndReset();
-    const worldDef = codex.objects.get(codex.objectNames.getId('world'));
     const session = new WorldSession(codex);
-    const world = new World(new WorldObject(nextInstanceId++, worldDef, session));
-    session.adoptWorld(world);
+    const world = session.createWorld();
+    // worldの番号はセッションが配るので、手で配る番号はその後から続ける。
+    nextInstanceId = world.instance.instanceId + 1;
     const stuff = world.instance.getSlot(codex.slotNames.getId('stuff'));
 
     return {

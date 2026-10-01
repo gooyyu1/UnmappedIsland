@@ -1,11 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { seededRng } from '../../src/domain/Rng';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Path } from '../../src/domain/wrappers/Path';
-import { World } from '../../src/domain/wrappers/World';
+import type { World } from '../../src/domain/wrappers/World';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
@@ -32,10 +31,6 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     codex = bundledCodex();
   });
 
-  function def(name: string): ObjectDef {
-    return codex.objects.get(codex.objectNames.getId(name));
-  }
-
   function propertyId(name: string): PropertyGlobalId {
     return codex.propertyNames.getId(name);
   }
@@ -50,9 +45,8 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     forest: WorldObject;
   } {
     const session = new WorldSession(codex, seededRng(42));
-    const worldInstance = session.createObject(def('world').globalId);
-    const world = new World(worldInstance);
-    session.adoptWorld(world);
+    const world = session.createWorld();
+    const worldInstance = world.instance;
 
     const locationsSlotId = codex.slotNames.getId('locations');
     const grassland = session.createObject(codex.objectNames.getId('grassland'));

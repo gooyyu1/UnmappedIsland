@@ -2,7 +2,7 @@ import type { WorldCodex } from '../WorldCodex';
 import type { WorldObject } from '../WorldObject';
 import { WorldSession } from '../WorldSession';
 import type { Rng } from '../Rng';
-import { World } from '../wrappers/World';
+import type { World } from '../wrappers/World';
 import { PlayerCharacter } from '../wrappers/PlayerCharacter';
 import type { Location } from '../wrappers/Location';
 import type { SpawnedIsland } from './SpawnedIsland';
@@ -97,13 +97,9 @@ export function startNewGame(
   seed: number,
   rng?: Rng,
 ): StartedGame {
-  // セッションを先に作ってworldを後から結び付けるのは、WorldObjectの生成にsession（初期値ロール文脈）が
-  // 必要で、World付きセッション自体がworldインスタンスを必要とするという相互依存を断つため
-  // （WorldSession.adoptWorld）。**この順序にすると、worldインスタンスも他の物と同じセッションに属する。**
   const session = new WorldSession(codex, rng);
-  const worldInstance = session.createObject(codex.objectNames.getId(codex.vocabulary.world.worldObject));
-  const world = new World(worldInstance);
-  session.adoptWorld(world);
+  const world = session.createWorld();
+  const worldInstance = world.instance;
   world.rollTimeOfDay(START_TIME_EARLIEST_MINUTES, START_TIME_LATEST_MINUTES, session.rng);
 
   spawnSingletonsAcceptedByWorld(worldInstance);

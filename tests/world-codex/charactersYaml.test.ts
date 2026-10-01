@@ -3,7 +3,6 @@ import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { PropertyDef } from '../../src/domain/PropertyDef';
 import { characterDefNames, resolveCharacterDefNameOrFirst } from '../../src/domain/generation/NewGame';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
-import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { placeholderIconOf } from '../../src/game/view/characterCard';
@@ -90,8 +89,7 @@ function stand(character: string): {
   land: WorldObject;
 } {
   const session = new WorldSession(codex);
-  const worldInstance = session.createObject(def('world').globalId);
-  session.adoptWorld(new World(worldInstance));
+  const worldInstance = session.createWorld().instance;
   const beach = session.createObject(codex.objectNames.getId('sandy_beach'));
   expect(
     beach.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),

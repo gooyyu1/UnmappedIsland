@@ -3,7 +3,6 @@ import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { PropertyDef } from '../../src/domain/PropertyDef';
 import type { SlotDef } from '../../src/domain/SlotDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -113,15 +112,13 @@ describe('core.yamlのworld定義', () => {
   });
 
   it('minuteの繰り上がりはhourへ、さらにdayへ連鎖する', () => {
-    const world = codex.objects.get(codex.objectNames.getId('world'));
     const minuteId = codex.propertyNames.getId('minute');
     const hourId = codex.propertyNames.getId('hour');
     const dayId = codex.propertyNames.getId('day');
 
     const session = new WorldSession(codex);
-    const worldInstance = session.createObject(world.globalId);
-    const worldView = new World(worldInstance);
-    session.adoptWorld(worldView);
+    const worldView = session.createWorld();
+    const worldInstance = worldView.instance;
     // 見たいのは繰り上がりの連鎖なので、hourの既定値（正午）ではなく0:00から始める。
     worldInstance.getProperty(hourId).setNumberWithoutEvents(0);
 

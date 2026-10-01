@@ -1,7 +1,7 @@
 import type { WorldCodex } from './WorldCodex';
 import { randomRng } from './Rng';
 import type { Rng } from './Rng';
-import type { World } from './wrappers/World';
+import { World } from './wrappers/World';
 import type { PropertyValue } from './PropertyValue';
 import type { InteractionGains, PropertyGain } from './PropertyGain';
 import type { InteractionPassiveEffects } from './PassiveEffects';
@@ -47,9 +47,11 @@ function gainTargetKey(object: WorldObject, propertyGlobalId: PropertyGlobalId):
 export class WorldSession {
   readonly codex: WorldCodex;
 
-  private _world: World | undefined;
+  private worldInstance: WorldObject | undefined;
+  private worldView: World | undefined;
+  /** このセッションのworld（createWorld）。生成していなければundefined——時間の概念を持たないセッション。 */
   get world(): World | undefined {
-    return this._world;
+    return this.worldView;
   }
 
   /** pick（10節）の重み付き抽選に使う乱数源。テストで決定的に振る舞わせられるよう、コンストラクタで差し替え可能。 */
@@ -57,7 +59,7 @@ export class WorldSession {
 
   /**
    * 次に配るinstanceId。**1から始まるのは{@link NO_INSTANCE}を空けておくため。** worldも例外ではなく
-   * ここから受け取る（`NewGame.startNewGame`）。
+   * ここから受け取る（`createWorld`）。
    *
    * **一意であることまでは、ここだけでは保証しない**——番号を直に名乗って`WorldObject`を組む道が
    * 残っている（試験の足場）。予約値を名乗らないことだけは、`WorldObject`のコンストラクタが
@@ -141,20 +143,24 @@ export class WorldSession {
   }
 
   /**
-   * worldを後から結び付ける。**worldを結び付ける唯一の道**——WorldObjectの生成にはセッションが要る
-   * （初期値のロールにrngを使う）のに、World付きのセッションはそのworldインスタンスを要る、という
-   * 相互依存をここで断つ。
+   * worldインスタンスを生成し、このセッションのworldとして結び付けて返す。**時計を持つworldを得る唯一の道**
+   * ——WorldObjectの生成にはセッションが要る（初期値のロールにrngを使う）のに、World付きのセッションは
+   * そのworldインスタンスを要る、という相互依存を、生成と結び付けを同じ1手にして断つ。
    *
-   * **受け取れるのは、このセッションで生まれたworldだけ。** 別のセッションのworldを抱えると、世界と
-   * その中の物とで語彙（codex）も乱数源も食い違う。
-   *
-   * 結び付けは一度だけ。2回目は、既にそのworldで動き出したオブジェクトが居るはずなので拒む。
+   * 生成は一度だけ。2回目は、既にそのworldで動き出したオブジェクトが居るはずなので拒む。
    */
-  adoptWorld(world: World): void {
-    if (world.instance.session !== this)
-      throw new Error('WorldSessionが結び付けられるのは、このセッションで生成したworldだけです。');
-    if (this._world !== undefined) throw new Error('WorldSessionのworldは1度しか結び付けられません。');
-    this._world = world;
+  createWorld(): World {
+    if (this.worldInstance !== undefined) throw new Error('WorldSessionのworldは1度しか生成できません。');
+    this.worldInstance = this.createObject(
+      this.codex.objectNames.getId(this.codex.vocabulary.world.worldObject),
+    );
+    this.worldView = new World(this.worldInstance);
+    return this.worldView;
+  }
+
+  /** objectがこのセッションのworld（createWorld）か。 */
+  isWorld(object: WorldObject): boolean {
+    return object === this.worldInstance;
   }
 
   /** 指定したObjectDefの新しいWorldObjectを生成する（spawn、9.4節）。まだどこにも配置されていないため、呼び出し側がmoveToSlotOrRejectionで配置する。 */

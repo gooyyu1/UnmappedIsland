@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { AGENT_YAML, createAgent } from '../support/agent';
 import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
@@ -150,9 +149,8 @@ object_defs:
       .load('agent.yaml', AGENT_YAML)
       .buildAndReset();
     const session = new WorldSession(codex);
-    const instance = session.createObject(codex.objectNames.getId('world'));
-    const world = new World(instance);
-    session.adoptWorld(world);
+    const world = session.createWorld();
+    const instance = world.instance;
 
     return {
       codex,

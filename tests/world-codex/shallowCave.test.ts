@@ -3,7 +3,6 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
@@ -34,9 +33,8 @@ describe('浅い洞窟', () => {
   /** 岩場に浅い洞窟が1つあり、その外にプレイヤーが立っている世界。 */
   function outside(hour: number, weather = 'clear') {
     const session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    const worldView = new World(worldInstance);
-    session.adoptWorld(worldView);
+    const worldView = session.createWorld();
+    const worldInstance = worldView.instance;
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);
     worldInstance
       .getProperty(codex.propertyNames.getId('weather'))

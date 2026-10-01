@@ -5,7 +5,6 @@ import { tryAdvanceCrafting, spawnInProgressObject } from '../../src/domain/craf
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
-import { World } from '../../src/domain/wrappers/World';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { fixedRng } from '../support/rng';
 import { bundledCodex } from '../support/worldCodexFiles';
@@ -42,9 +41,8 @@ describe('pottery.yamlの土器の連鎖', () => {
   /** 草地を1つ置いた世界。rollは焼き上がりのpickがどの候補を引くかを決める。 */
   function open(roll: number): void {
     session = new WorldSession(codex, fixedRng(roll));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    const worldView = new World(worldInstance);
-    session.adoptWorld(worldView);
+    const worldView = session.createWorld();
+    const worldInstance = worldView.instance;
 
     land = session.createObject(codex.objectNames.getId('grassland'));
     expect(

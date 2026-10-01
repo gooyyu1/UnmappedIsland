@@ -1,10 +1,8 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
-import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
@@ -128,18 +126,13 @@ describe('ドラッグ型をメニュー型へ書き換えると何が変わる�
 
   beforeEach(() => {
     session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(def('world').globalId);
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
 
     jungle = spawnInto('jungle', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');
     // 見たいのは書き換えの効き方だけなので、暗さと嵐の要件は作業者の側で満たす。
     makeBrightEnoughForAnyAction(player, codex);
   });
-
-  function def(name: string): ObjectDef {
-    return codex.objects.get(codex.objectNames.getId(name));
-  }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.createObject(codex.objectNames.getId(objectName));

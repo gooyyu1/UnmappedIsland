@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { Rng } from '../../src/domain/Rng';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
+import type { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
@@ -56,8 +56,7 @@ object_defs:
 `;
     const codex = load(yaml);
     const session = new WorldSession(codex);
-    const world = new World(session.createObject(codex.objectNames.getId('world')));
-    session.adoptWorld(world);
+    const world = session.createWorld();
     return { codex, session, world };
   }
 
