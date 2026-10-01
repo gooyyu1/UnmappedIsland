@@ -278,13 +278,13 @@
 | `rotten` | 4 分の 1 未満 | 3 回に 2 回 |
 
 引くのは `eat` の末尾の `pick`（[`GameElementDefinition.md`](./GameElementDefinition.md) 10 節）で、重みは
-**無事 100 : 吐く `spoilage` : 下す `spoilage`**。`spoilage` は上の段が `modify` で押し上げる食べ物側の
+**無事 100<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.0.weight --> : 吐く `spoilage` : 下す `spoilage`**。`spoilage` は上の段が `modify` で押し上げる食べ物側の
 値（`sound` では 0）で、**当たるかどうかを決める数を 1 つに集めたもの**です。吐くと下すは同じ重みなので、
 当たった回の半分ずつになります。
 
 | 症状 | 何が起きるか | どう書くか |
 | --- | --- | --- |
-| 吐く | 腹が空になり、少し前に食べた分まで失う | `satiety` を `set` で 0、3 本を `add` で 40（`max` の 3 分の 1）ずつ |
+| 吐く | 腹が空になり、少し前に食べた分まで失う | `satiety` を `set` で 0<!-- codex: foods.yaml object_defs.berry.interactions.eat.pick.1.set.agent.satiety -->、3 本を `add` で 40（`max` の 3 分の 1）ずつ |
 | 下痢 | 食べた物が身にならない＋脱水 | 3 本を `add` で 40 ずつ、`hydration` をさらに 48（半日ぶん） |
 
 **`pick` は `add` より後ろに置きます**——腹に収めてから吐くので、順が逆だと吐いた後に食べたことに

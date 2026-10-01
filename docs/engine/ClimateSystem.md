@@ -94,7 +94,7 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 
 季節は「穏やか（`calm`）→雨季（`wet`）→乾季（`dry`）→穏やか→…」という固定順のサイクルです。天気（4 節）とは
 異なり、次に来る季節がどれかは確率で決まるものではなく、常に同じ順で巡回します。それぞれの季節が基本 30 日
-（tick 換算は `DurabilitySystem.md` が前提とする `1 tick`（15 分）に従うと 2,880<!-- codex: core.yaml object_defs.world.props.season_remaining.value --> tick）続きます。
+（tick 換算は `DurabilitySystem.md` が前提とする `1 tick`（15 分）に従うと 2,880<!-- codex: core.yaml object_defs.world.props.season_remaining.value --><!-- codex: core.yaml object_defs.world.props.season_remaining.on_min.pick.0.pick.0.set.self.season_remaining --><!-- codex: core.yaml object_defs.world.props.season_remaining.on_min.pick.1.pick.0.set.self.season_remaining --><!-- codex: core.yaml object_defs.world.props.season_remaining.on_min.pick.2.pick.0.set.self.season_remaining --> tick）続きます。
 
 ### 2.2 プロパティ構成
 
@@ -329,7 +329,9 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 ```yaml
 weather_remaining:
   value: 20  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.value -->                        # 初期値5時間: day1の最初の遷移までの猶予
-  range: {min: 0, max: 999999}  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.range.max -->     # 0に達した瞬間にon_minが発火する
+  range:  # 0に達した瞬間にon_minが発火する
+    min: 0  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.range.min -->
+    max: 999999  # <!-- codex: core.yaml object_defs.world.props.weather_remaining.range.max -->
   passives:
     - add:
         self:
@@ -358,7 +360,9 @@ weather_remaining:
 ```yaml
 atmospheric_moisture:
   value: 0  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.value -->
-  range: {min: 0, max: 100}  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.range.max -->
+  range:
+    min: 0  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.range.min -->
+    max: 100  # <!-- codex: core.yaml object_defs.world.props.atmospheric_moisture.range.max -->
   stages:
     - name: dry            # 〜29.9: ほぼ晴れ（clearが最多）。雨はlight_rainのみ稀に（乾季の「稀に降る」を担う）
       passives:

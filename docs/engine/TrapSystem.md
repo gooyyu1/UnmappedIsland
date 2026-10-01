@@ -174,8 +174,12 @@ object_defs:
 props:
   catch_remaining:
     # 生成時に1回ロールされる位相（2.1節）。以後この幅は使われない。
-    value: {min: 1, max: 16}  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.value.max -->
-    range: {min: 0, max: 16}  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.range.max -->
+    value:
+      min: 1  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.value.min -->
+      max: 16  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.value.max -->
+    range:
+      min: 0  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.range.min -->
+      max: 16  # <!-- codex: traps.yaml object_defs.snare.props.catch_remaining.range.max -->
     passives:
       - conditions:
           - {in_slot: items}                  # 地面に置かれている間だけ（1節）
@@ -257,12 +261,14 @@ grassland:
 # traps.yaml — くくり罠
 props:
   # 素の値は0で、祖先（＝置かれている土地）が宣言していれば、その実効値が土台になる。
-  rat_catch: {value: 0, base: {subject: ancestor}}
+  rat_catch: {base: {subject: ancestor}, value: 0}  # <!-- codex: traps.yaml object_defs.snare.props.rat_catch.value -->
   junglefowl_catch: {value: 0, base: {subject: ancestor}}
   miss_weight:
     value: 40  # <!-- codex: traps.yaml object_defs.snare.props.miss_weight.value -->
     # 餌のmodifyが押し下げても0にはしない（4節）。上限は素の値。
-    range: {min: 5, max: 40}  # <!-- codex: traps.yaml object_defs.snare.props.miss_weight.range.max -->
+    range:
+      min: 5  # <!-- codex: traps.yaml object_defs.snare.props.miss_weight.range.min -->
+      max: 40  # <!-- codex: traps.yaml object_defs.snare.props.miss_weight.range.max -->
 ```
 
 - **宣言していない土地では、その候補が抽選から外れます。** 寄与が 0 なら重みが 0 になり、`pick` は
@@ -309,14 +315,14 @@ interactions:
     conditions:
       - {reason: trap_baited, prop: plant_bait, lt: 24}  # <!-- codex: traps.yaml object_defs.snare.interactions.add_plant_bait.conditions.0.lt -->
     transfer:
-      {amount: 999, from: instrument, from_prop: plant_bait, to_prop: plant_bait, allow_overflow: true}
+      {from: instrument, from_prop: plant_bait, to_prop: plant_bait, allow_overflow: true, amount: 999}  # <!-- codex: traps.yaml object_defs.snare.interactions.add_plant_bait.transfer.amount -->
     destroy: instrument
   add_meat_bait:
     trigger: {drag: {tag: meat_bait}}
     conditions:
       - {reason: trap_baited, prop: meat_bait, lt: 24}  # <!-- codex: traps.yaml object_defs.snare.interactions.add_meat_bait.conditions.0.lt -->
     transfer:
-      {amount: 999, from: instrument, from_prop: meat_bait, to_prop: meat_bait, allow_overflow: true}
+      {from: instrument, from_prop: meat_bait, to_prop: meat_bait, allow_overflow: true, amount: 999}  # <!-- codex: traps.yaml object_defs.snare.interactions.add_meat_bait.transfer.amount -->
     destroy: instrument
 ```
 
@@ -338,17 +344,29 @@ raw_meat:
 ```yaml
 # 罠の側の効かせ方
 props:
-  herbivore_weight: {value: 10, range: {min: 0, max: 35}}  # <!-- codex: traps.yaml object_defs.snare.props.herbivore_weight.range.max -->
-  carnivore_weight: {value: 10, range: {min: 0, max: 35}}  # <!-- codex: traps.yaml object_defs.snare.props.carnivore_weight.range.max -->
+  herbivore_weight:
+    value: 10  # <!-- codex: traps.yaml object_defs.snare.props.herbivore_weight.value -->
+    range:
+      min: 0  # <!-- codex: traps.yaml object_defs.snare.props.herbivore_weight.range.min -->
+      max: 35  # <!-- codex: traps.yaml object_defs.snare.props.herbivore_weight.range.max -->
+  carnivore_weight:
+    value: 10  # <!-- codex: traps.yaml object_defs.snare.props.carnivore_weight.value -->
+    range:
+      min: 0  # <!-- codex: traps.yaml object_defs.snare.props.carnivore_weight.range.min -->
+      max: 35  # <!-- codex: traps.yaml object_defs.snare.props.carnivore_weight.range.max -->
   plant_bait:
     value: 0  # <!-- codex: traps.yaml object_defs.snare.props.plant_bait.value -->
-    range: {min: 0, max: 24}  # <!-- codex: traps.yaml object_defs.snare.props.plant_bait.range.max -->
+    range:
+      min: 0  # <!-- codex: traps.yaml object_defs.snare.props.plant_bait.range.min -->
+      max: 24  # <!-- codex: traps.yaml object_defs.snare.props.plant_bait.range.max -->
     passives:
       - conditions: [{in_slot: items}]
         add: {self: {plant_bait: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.plant_bait.passives.0.add.self.plant_bait -->
   meat_bait:
     value: 0  # <!-- codex: traps.yaml object_defs.snare.props.meat_bait.value -->
-    range: {min: 0, max: 24}  # <!-- codex: traps.yaml object_defs.snare.props.meat_bait.range.max -->
+    range:
+      min: 0  # <!-- codex: traps.yaml object_defs.snare.props.meat_bait.range.min -->
+      max: 24  # <!-- codex: traps.yaml object_defs.snare.props.meat_bait.range.max -->
     passives:
       - conditions: [{in_slot: items}]
         add: {self: {meat_bait: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.meat_bait.passives.0.add.self.meat_bait -->
@@ -459,14 +477,22 @@ snare_laceration:
   traits: [injury, treatable]
   props:
     severity:
-      value: {min: 240, max: 480}  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.value.max -->
-      range: {min: 0, max: 480}  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.range.max -->
+      value:
+        min: 240  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.value.min -->
+        max: 480  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.value.max -->
+      range:
+        min: 0  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.range.min -->
+        max: 480  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.range.max -->
       passives: [{add: {self: {severity: -1}}}]  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.severity.passives.0.add.self.severity -->
       on_min: {destroy: self}
     # 掛かり方の深さ。2〜4 tickで固まり、その間に30〜60mLを奪う。
     bleeding:
-      value: {min: 40, max: 100}  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.value.max -->
-      range: {min: 0, max: 100}  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.range.max -->
+      value:
+        min: 40  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.value.min -->
+        max: 100  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.value.max -->
+      range:
+        min: 0  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.range.min -->
+        max: 100  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.range.max -->
       passives: [{add: {self: {bleeding: -25}}}]  # <!-- codex: injuries.yaml object_defs.snare_laceration.props.bleeding.passives.0.add.self.bleeding -->
   passives:
     - modify: {parent: {pain: 50}}  # <!-- codex: injuries.yaml object_defs.snare_laceration.passives.0.modify.parent.pain -->
@@ -558,8 +584,12 @@ bruise:
   props:
     severity:
       gauge: {min: good, max: bad}
-      value: {min: 120, max: 240}   # <!-- codex: injuries.yaml object_defs.bruise.props.severity.value.max -->ぶつかり方の激しさを生成時に1回ロールする（GameElementDefinition.md 6.2節）
-      range: {min: 0, max: 240}  # <!-- codex: injuries.yaml object_defs.bruise.props.severity.range.max -->
+      value:  # ぶつかり方の激しさを生成時に1回ロールする（GameElementDefinition.md 6.2節）
+        min: 120  # <!-- codex: injuries.yaml object_defs.bruise.props.severity.value.min -->
+        max: 240  # <!-- codex: injuries.yaml object_defs.bruise.props.severity.value.max -->
+      range:
+        min: 0  # <!-- codex: injuries.yaml object_defs.bruise.props.severity.range.min -->
+        max: 240  # <!-- codex: injuries.yaml object_defs.bruise.props.severity.range.max -->
       passives: [{add: {self: {severity: -1}}}]  # <!-- codex: injuries.yaml object_defs.bruise.props.severity.passives.0.add.self.severity -->
       on_min: {destroy: self}
   passives:
@@ -690,7 +720,9 @@ hydration:
 props:
   durability:
     value: 960  # <!-- codex: traps.yaml object_defs.snare.props.durability.value -->
-    range: {min: 0, max: 960}  # <!-- codex: traps.yaml object_defs.snare.props.durability.range.max -->
+    range:
+      min: 0  # <!-- codex: traps.yaml object_defs.snare.props.durability.range.min -->
+      max: 960  # <!-- codex: traps.yaml object_defs.snare.props.durability.range.max -->
     passives:
       - conditions: [{in_slot: items}]
         add: {self: {durability: -1}}  # <!-- codex: traps.yaml object_defs.snare.props.durability.passives.0.add.self.durability -->       # 屋外での劣化（10日）

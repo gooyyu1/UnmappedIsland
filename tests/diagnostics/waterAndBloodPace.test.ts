@@ -25,7 +25,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 const ROOT = join(__dirname, '..', '..');
 
-/** 文書の、読み手に見える文面。出どころの印は描画されないので、剥がしてから読む。 */
+/** 文書の地の文。出どころの印は地の文では描画されないので、剥がしてから読む。 */
 function docText(...segments: string[]): string {
   return readFileSync(join(ROOT, 'docs', ...segments), 'utf-8').replace(
     /<!--\s*(?:stats|codex):[^>]*-->/g,

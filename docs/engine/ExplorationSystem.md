@@ -100,7 +100,9 @@ object_defs:
       exploration_progress:
         value: 0
         # 探索率100%に達するまでの探索回数
-        range: {min: 0, max: 12}  # <!-- codex: locations.yaml object_defs.grassland.props.exploration_progress.range.max -->
+        range:
+          min: 0  # <!-- codex: locations.yaml object_defs.grassland.props.exploration_progress.range.min -->
+          max: 12  # <!-- codex: locations.yaml object_defs.grassland.props.exploration_progress.range.max -->
     interactions:
       explore:
         trigger: menu

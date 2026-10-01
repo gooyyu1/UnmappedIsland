@@ -628,7 +628,9 @@ interactions:
 props:
   stones:
     value: 0
-    range: {min: 0, max: 3}  # <!-- codex: fire.yaml object_defs.campfire.props.stones.range.max -->
+    range:
+      min: 0  # <!-- codex: fire.yaml object_defs.campfire.props.stones.range.min -->
+      max: 3  # <!-- codex: fire.yaml object_defs.campfire.props.stones.range.max -->
     on_max:
       destroy: self
       spawn: {object: three_stone_hearth}

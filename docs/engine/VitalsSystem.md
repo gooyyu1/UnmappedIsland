@@ -80,11 +80,13 @@
 consciousness:
   gauge: {min: bad, max: good}
   value: 100  # <!-- codex: animals.yaml traits.beast.props.consciousness.value -->
-  range: {min: 0, max: 100}  # <!-- codex: animals.yaml traits.beast.props.consciousness.range.max -->
+  range:
+    min: 0  # <!-- codex: animals.yaml traits.beast.props.consciousness.range.min -->
+    max: 100  # <!-- codex: animals.yaml traits.beast.props.consciousness.range.max -->
   stages:
     - {name: unconscious, alert: danger}
-    - {name: dazed, min: 25, alert: caution}
-    - {name: foggy, min: 60, alert: watch}
+    - {name: dazed, alert: caution, min: 25}  # <!-- codex: animals.yaml traits.beast.props.consciousness.stages.1.min -->
+    - {name: foggy, alert: watch, min: 60}  # <!-- codex: animals.yaml traits.beast.props.consciousness.stages.2.min -->
     - {name: clear, min: 80}  # <!-- codex: animals.yaml traits.beast.props.consciousness.stages.3.min -->
 ```
 
@@ -113,12 +115,18 @@ pain:
       min: 50  # <!-- codex: animals.yaml traits.beast.props.pain.stages.2.min -->
       alert: caution
       passives:
-        - modify: {self: {consciousness: -20, flee: 60}}  # <!-- codex: animals.yaml traits.beast.props.pain.stages.2.passives.0.modify.self.flee -->
+        - modify:
+            self:
+              consciousness: -20  # <!-- codex: animals.yaml traits.beast.props.pain.stages.2.passives.0.modify.self.consciousness -->
+              flee: 60  # <!-- codex: animals.yaml traits.beast.props.pain.stages.2.passives.0.modify.self.flee -->
     - name: unbearable
       min: 83  # <!-- codex: animals.yaml traits.beast.props.pain.stages.3.min -->
       alert: danger
       passives:
-        - modify: {self: {consciousness: -45, flee: 120}}  # <!-- codex: animals.yaml traits.beast.props.pain.stages.3.passives.0.modify.self.flee -->
+        - modify:
+            self:
+              consciousness: -45  # <!-- codex: animals.yaml traits.beast.props.pain.stages.3.passives.0.modify.self.consciousness -->
+              flee: 120  # <!-- codex: animals.yaml traits.beast.props.pain.stages.3.passives.0.modify.self.flee -->
 ```
 
 段は排他なので（同じ値が2つの段に該当することはない）、階段がそのまま並びます。**効き方は連続では
@@ -151,9 +159,12 @@ pain:
 # サル（animals.yaml の monkey）
 shock:
   value: 0  # <!-- codex: animals.yaml object_defs.monkey.props.shock.value -->
-  range: {min: 0, max: 100}          # maxが体格（体重の1/50）。イノシシは1200<!-- codex: animals.yaml object_defs.wild_boar.props.shock.range.max -->
+  range:  # maxが体格（体重の1/50）。イノシシは1200<!-- codex: animals.yaml object_defs.wild_boar.props.shock.range.max -->
+    min: 0  # <!-- codex: animals.yaml object_defs.monkey.props.shock.range.min -->
+    max: 100  # <!-- codex: animals.yaml object_defs.monkey.props.shock.range.max -->
   passives:
-    - add: {self: {shock: -4}}      # max ÷ 25。満タンから6時間で引き切る
+    # max ÷ 25。満タンから6時間で引き切る
+    - add: {self: {shock: -4}}  # <!-- codex: animals.yaml object_defs.monkey.props.shock.passives.0.add.self.shock -->
   stages:
     - {name: steady}
     - name: rattled
@@ -202,13 +213,16 @@ shock:
 # キャラクタ（characters/player_character.yaml）
 blood:
   tags: [status, health]
-  value: 5000                       # 体重のおよそ1/13。maxがそのまま体格
-  range: {min: 0, max: 5000}  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.range.max -->
+  # 体重のおよそ1/13。maxがそのまま体格
+  value: 5000  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.value -->
+  range:
+    min: 0  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.range.min -->
+    max: 5000  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.range.max -->
   stages:
     - {name: exsanguinated, alert: fatal}             # 6割を失えば助からない
-    - {name: hemorrhaging, min: 2000, alert: danger}
-    - {name: bled, min: 3000, alert: caution}
-    - {name: low, min: 3500, alert: watch}
+    - {name: hemorrhaging, alert: danger, min: 2000}  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.stages.1.min -->
+    - {name: bled, alert: caution, min: 3000}  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.stages.2.min -->
+    - {name: low, alert: watch, min: 3500}  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.stages.3.min -->
     - {name: replete, min: 4000}  # <!-- codex: characters/player_character.yaml traits.player_character.props.blood.stages.4.min -->
   on_min:
     destroy: {subject: self, reason: exsanguinated}   # 消す宣言が死因を名乗る（6 節）
@@ -239,7 +253,7 @@ stages:
     alert: caution
     passives:
       - modify: {self: {consciousness: -30}}  # <!-- codex: animals.yaml object_defs.monkey.props.blood.stages.2.passives.0.modify.self.consciousness -->
-  - {name: low, min: 280, alert: watch}
+  - {name: low, alert: watch, min: 280}  # <!-- codex: animals.yaml object_defs.monkey.props.blood.stages.3.min -->
   - {name: replete, min: 320}  # <!-- codex: animals.yaml object_defs.monkey.props.blood.stages.4.min -->
 ```
 
@@ -322,7 +336,9 @@ laceration:
     # 傷の重さとは別の時間で動く。4 tick（1時間）で固まる。
     bleeding:
       value: 100  # <!-- codex: injuries.yaml object_defs.laceration.props.bleeding.value -->
-      range: {min: 0, max: 100}  # <!-- codex: injuries.yaml object_defs.laceration.props.bleeding.range.max -->
+      range:
+        min: 0  # <!-- codex: injuries.yaml object_defs.laceration.props.bleeding.range.min -->
+        max: 100  # <!-- codex: injuries.yaml object_defs.laceration.props.bleeding.range.max -->
       passives:
         - add: {self: {bleeding: -25}}  # <!-- codex: injuries.yaml object_defs.laceration.props.bleeding.passives.0.add.self.bleeding -->
   passives:
@@ -505,7 +521,10 @@ pathogen:
       min: 7  # <!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.3.min -->
       alert: danger
       passives:
-        - add: {self: {hydration: -2, blood: -40}}  # <!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.3.passives.0.add.self.blood -->
+        - add:
+            self:
+              hydration: -2  # <!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.3.passives.0.add.self.hydration -->
+              blood: -40  # <!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.3.passives.0.add.self.blood -->
 ```
 
 `hydration` は素で -1/tick<!-- codex: characters/captain.yaml object_defs.captain.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/engineer.yaml object_defs.engineer.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/farmer.yaml object_defs.farmer.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/medic.yaml object_defs.medic.props.hydration.passives.0.add.self.hydration --> 減る（[`Characters.md`](../world/Characters.md)）ので、`feverish` は水の
