@@ -235,7 +235,7 @@
   （[`Bedding.md`](./Bedding.md) 4.2 節）。
 
 **両端に挟まれた一着も、その土地ごとの気温差のどこかで釣り合います**——**どの一着にも、そこでちょうど
-釣り合う土地があります**（同 1.1 節の表）——手をかけた一着ほど、島の
+釣り合う土地があります**（同 1.1 節。`tests/world-codex/landTemperature.test.ts` が見ます）——手をかけた一着ほど、島の
 高い所で越せます。
 
 **火を置き換えはしません。** 炉の暖（+8℃<!-- codex: fire.yaml traits.hearth.passives.0.modify.parent.ambient_temperature -->）は**空の**最も寒い夜を平年へ戻す

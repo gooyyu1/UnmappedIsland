@@ -318,7 +318,7 @@ describe('土地が空の気温へ足す、海抜ぶんの差', () => {
 
   it('素のままでも晴れた日中に熱は戻る——山頂を除く', () => {
     // 刻みを増やしても「何も着ず火も無いままでは越せない日が続く」形にしない（issue #2147）。
-    // 戻りは削りの4倍なので、日中に入口を上回りさえすればその日のうちに戻る。
+    // 戻りは削りより速いので、日中に入口を上回りさえすればその日のうちに戻る。
     coolSeasonSky(12, 'bright');
     const coldest = [...lands.keys()].reduce((left, right) =>
       temperatureAt(left) <= temperatureAt(right) ? left : right,
