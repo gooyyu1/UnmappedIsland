@@ -206,40 +206,39 @@ object_defs:
 ブロックはすべて重なるので（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 8.5節）、
 段が増えてもブロックは1つずつしか増えません。
 
-| 段 | 毎tick | `nap`（12 tick） | `sleep`（24 tick） |
-| -- | ------ | ---------------- | ------------------ |
-| 0 地面 | （キャラクタ側の宣言） | 15 / 36 | **押せない**（4.1節） |
-| 1 敷物 | 2<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.add.agent.stamina --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.0.add.agent.stamina --> / 4<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.add.agent.wakefulness --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.0.add.agent.wakefulness --> | 24 / 48 | 48 / 96 |
-| 2 ＋骨組み | 3 / 4<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.add.agent.wakefulness --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.0.add.agent.wakefulness --> | 36 / 48 | 72 / 96 |
-| 3 ＋詰め物 | 3.5 / 4<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.add.agent.wakefulness --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.0.add.agent.wakefulness --> | 42 / 48 | 84 / 96 |
+| 段 | その段が毎tickに足す量 |
+| -- | ---------------------- |
+| 0 地面 | （キャラクタ側の宣言。`sleep` は**押せない**、4.1節） |
+| 1 敷物 | 2<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.add.agent.stamina --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.0.add.agent.stamina --> / 4<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.add.agent.wakefulness --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.0.add.agent.wakefulness --> |
+| 2 ＋骨組み | +1<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.1.add.agent.stamina --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.1.add.agent.stamina --> / ― |
+| 3 ＋詰め物 | +0.5<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.2.add.agent.stamina --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.2.add.agent.stamina --> / ― |
 
-`stamina` / `wakefulness`。**表の合計は、荷も痛みも
-無いときに宣言が積む量**です——回復は経過の間ずっと効く宣言なので、削りと同じ足し算に入ります
+`stamina` / `wakefulness`。**有効なブロックはすべて重なる**ので、段3の寝床ではこの3行が足し合わさって
+効きます。**量は、荷も痛みも無いときに宣言が積む量**です——回復は経過の間ずっと効く宣言なので、削りと同じ足し算に入ります
 （[`Characters.md`](./Characters.md) 休息節）。担いだまま眠れば、寝床の上でもそのぶん薄くなります。
 
 **体力の量は、1日に削られる量から逆算してあります。** 削るのは荷だけで
-（[`Characters.md`](./Characters.md) 荷重の効き方節）、起きている18時間（72 tick）を `heavy` のまま
-担ぎ通すと −72。寝床の上の1日は「18時間起きて6時間眠る」なので、**睡眠1回（24 tick）でそれを返すには
-3/tick が要ります——そこが段2**です。**段1はそこへ届きません**（+48）。骨組みを差す理由が、
+（[`Characters.md`](./Characters.md) 荷重の効き方節）、起きている間を `heavy` のまま担ぎ通した1日ぶんを、
+**睡眠1回でちょうど返せるのが段2**です。**段1はそこへ届きません。**骨組みを差す理由が、
 数字の上でもここに出ます。**どの段の睡眠1回も、いちばん薄い体力の上限**（`characters/engineer.yaml` の
 90<!-- codex: characters/engineer.yaml object_defs.engineer.props.stamina.range.max -->）**を下回る**ので、空から通しで眠っても頭打ちに呑まれず、段の差がそのまま観測できます。
 
-**地面の仮眠より薄くはなりません。** 地面の上の1日は「16時間起きて8時間仮眠」（4.1節）なので、同じ荷を
-支えるのに要る割は 2/tick——寝床の 2/3 です。地面の仮眠はその線の下（[`Characters.md`](./Characters.md)
-休息節）に置いてあります。**ただし、敷物と地面のどちらが1日に多く返すかの線は、この 2/3 では
-ありません**——眠る時間が 24 tick と 32 tick で違うので、**逆転するのは敷物の割が地面の 4/3
-（1.667/tick）を下回ったとき**です。段1の 2/tick<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.add.agent.stamina --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.0.add.agent.stamina --> はその上なので、1日に戻る量は 48 対 40 で敷物が
-上回ります。**荷を `heavy` のまま担ぎ通した収支では、段1も地面も −24 で並びます**——要る割への不足が
-地面は 0.75×32、段1は 1×24 で同じだからです。**段1を敷く値打ちは、削りを数えない日に出ます。**
+**地面の仮眠より薄くはなりません。** 地面の上の1日は仮眠で回すぶん眠る時間が長い（4.1節）ので、同じ荷を
+支えるのに要る割は寝床の上より低く、地面の仮眠はその線の下（[`Characters.md`](./Characters.md)
+休息節）に置いてあります。**ただし、敷物と地面のどちらが1日に多く返すかは、この割の比べでは決まりません**
+——眠る時間が違うので、比べるのは1日に戻る量の合計で、**段1はそこで地面を上回ります。** **荷を `heavy` の
+まま担ぎ通した収支では、段1と地面が並びます**——起きている時間が伸びたぶんの削りが、戻る量の差を
+ちょうど相殺するからです。**段1を敷く値打ちは、削りを数えない日に出ます。**（3つとも
+`tests/world-codex/beddingYaml.test.ts` が見ます。）
 
 **寝床の段のうち跳躍が最も大きいのは段2**（2節。骨組みで +1<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.1.add.agent.stamina --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.1.add.agent.stamina -->、詰め物で +0.5<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.2.add.agent.stamina --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.2.add.agent.stamina -->）。**覚醒度は骨組みと
 詰め物では動きません**——`sleep` で
-戻るのは段によらず +96 で、18時間起きて6時間眠るとちょうど元へ戻るという釣り合い
+戻る量は段によらず同じで、睡眠1回で1日ぶんが元へ戻るという釣り合い
 （[`Characters.md`](./Characters.md) 休息節）を、寝床の上でも保ちます。
 
 **段ごとに1つの定数なので、寝床のぶんは長さに正比例します。** キャラクタ側が持つ「まとめて休む
 ほど1時間あたり得」（同節。長い休息ほど毎 tick の量が大きい）が効くのは段0だけで、**寝床の上では `nap` 2回と `sleep` 1回がちょうど同じだけ
-戻ります**（どちらも24 tick）。細切れに休むほど損、は地面の上にしかありません。**ただし地面の上で比べ
+戻ります**（合わせた長さが同じなので）。細切れに休むほど損、は地面の上にしかありません。**ただし地面の上で比べ
 られるのは、寝床を要らない休息どうしだけ**です（4.1節）。
 
 **段3のブロックは中身を見ません。** 見るのは `stuffing` を名乗っていることだけで、羽毛と植物繊維
@@ -273,23 +272,21 @@ object_defs:
 寝床は据える物なので、洞窟や筏のように場所でもある物の中に敷けば、その中に居る間だけ札が出ます
 （[`Characters.md`](./Characters.md) ホームシック節が場所の入れ子について述べるものと同じ構造）。
 
-**縮むのは、1日に起きていられる時間です。** `sleep` の実質は +72（18時間ぶん）なので、寝床の上では
-**18時間起きて6時間眠る**とちょうど釣り合います（[`Characters.md`](./Characters.md) 休息節）。`nap` の
-実質は +24（6時間ぶん）で1回に3時間かかるので、仮眠だけの釣り合いは **16時間起きて8時間**——**寝床が
-無いと、起きていられる時間が1日に2時間短くなります。**
+**縮むのは、1日に起きていられる時間です。** 寝床の上では睡眠1回で1日ぶんの覚醒度が戻ります
+（[`Characters.md`](./Characters.md) 休息節）。`nap` は長さあたりに戻る量が `sleep` より少ないので、
+仮眠だけで回すと眠る時間がそのぶん長くなり——**寝床が無いと、1日に起きていられる時間が短くなります。**
 
-**眠り込みに任せても、その2時間は戻りません。** 覚醒度が尽きて起きる `fall_asleep`（同 限界節）は寝床を
-要りませんが、6時間で戻すのは `nap` と同じ割の +48 なので、**任せた側も16時間起きて8時間**——仮眠を
-重ねるのと同じ釣り合いに着きます。**限界に割増しを付けていないのは、ここを抜け道にしないため**で、
+**眠り込みに任せても、その時間は戻りません。** 覚醒度が尽きて起きる `fall_asleep`（同 限界節）は寝床を
+要りませんが、戻す割は `nap` と同じなので、**任せた側も仮眠を重ねるのと同じ釣り合いに着きます。****限界に割増しを付けていないのは、ここを抜け道にしないため**で、
 そちらの節がその理由を持ちます。任せるとさらに、**眠る時刻を選べず**、落ちるまで `overtired`
 （免疫 −15<!-- codex: characters/captain.yaml object_defs.captain.props.wakefulness.stages.0.passives.0.modify.self.immunity --><!-- codex: characters/engineer.yaml object_defs.engineer.props.wakefulness.stages.0.passives.0.modify.self.immunity --><!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.stages.0.passives.0.modify.self.immunity --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.stages.0.passives.0.modify.self.immunity -->）に居ることになります。
 
-**削られるのは夜で、昼ではありません。** 仮眠の8時間は夜の12時間（[`ContentSkeleton.md`](./ContentSkeleton.md)
+**削られるのは夜で、昼ではありません。** 仮眠で回す眠りは夜（[`ContentSkeleton.md`](./ContentSkeleton.md)
 8節）に収まるので、屋外の枠（昼の12時間）は減りません。減るのは焚き火のそばでの加工のほうで、
 **そこには今のところ余裕があります**（同節「夜が足りなくなることはなく、足りないのは昼です」）。
 
 **行き先を選ばない戻り道は編んだ葉です。** 3枚<!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.requires.0.count -->（1枚400g<!-- codex: weaving.yaml object_defs.woven_leaf.props.weight.value -->・1500mL<!-- codex: weaving.yaml object_defs.woven_leaf.props.volume.value -->）を持って出れば、遠出の先でも15分<!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.duration -->で
-敷けます（3節）。籠の容量20L（`containers.yaml`）の2割強を、食い物と水と道具と取り合う嵩なので、
+敷けます（3節）。籠の容量（`containers.yaml`）の少なくない部分を、食い物と水と道具と取り合う嵩なので、
 **積むか仮眠で回すかが出発前の判断になります**。**準備の有無がそのまま結果になる**——同原則
 「線を引いたら、そこから戻る道を1本だけ開けておく」の形で、夜の暗さに対する火起こし具・火口・炉と
 同じ立て付けです。
@@ -299,7 +296,7 @@ object_defs:
 だからです。
 
 **一度敷いた寝床はそこに残ります。** 同じ土地へ2度目に来たときは支度が要りません。ただし**屋根の無い
-所に敷いたままなら朽ちます**（編んだ葉は短命な素材で10日、雨なら5日。
+所に敷いたままなら朽ちます**（編んだ葉は短命な素材で10日<!-- stats: durations.yaml durations object=woven_leaf property=durability days -->、雨なら5日<!-- stats: durations.yaml durations object=woven_leaf property=durability shortest_days -->。
 [`DurabilitySystem.md`](../engine/DurabilitySystem.md) 2節）ので、葺き替えと同じ恒久の手間になります
 ——**浅い洞窟のように守られた場所へ敷けば止まります。**
 
@@ -316,15 +313,15 @@ object_defs:
 8.3節）、**衣類の押し下げとは加算で重なります。** 宣言は回復の上積みと同じブロックに乗ります（4節）
 ——効くのは `nap`/`sleep` が時間を進めている間だけなので、「眠っている間か」を問うゲートは要りません。
 
-| 段 | 押し下げ | 何がその分を作っているか |
+| 段 | その段が足す押し下げ | 何がその分を作っているか |
 | -- | -------: | ------------------------ |
 | 1 敷物 | −1℃<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.modify.agent.chill_point --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.0.modify.agent.chill_point --> | 体と地面の間に、乾いた層が入る |
-| 2 ＋骨組み | −2℃ | 層ごと地面から離れ、逃げ道が地面の伝導から空気へ移る |
-| 3 ＋詰め物 | −3℃ | 体重で潰れない厚みが入り、層そのものが厚くなる |
+| 2 ＋骨組み | −1℃<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.1.modify.agent.chill_point --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.1.modify.agent.chill_point --> | 層ごと地面から離れ、逃げ道が地面の伝導から空気へ移る |
+| 3 ＋詰め物 | −1℃<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.2.modify.agent.chill_point --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.2.modify.agent.chill_point --> | 体重で潰れない厚みが入り、層そのものが厚くなる |
 | ハンモック | −1℃<!-- codex: bedding.yaml object_defs.hammock.interactions.sleep.passives.0.modify.agent.chill_point --><!-- codex: bedding.yaml object_defs.hammock.interactions.nap.passives.0.modify.agent.chill_point --> | 地面からは離れるが、網は体重で潰れて層が残らない |
 
 **押し下げは「体の下に乾いた層が在ること」「地面から離れていること」「その層が潰れない厚みを持つこと」の
-足し算**で、どれも1℃です。前の2つを割れるのは、2節のとおり**横になっている間の熱の逃げ道は空気より
+足し算**で、段ごとの分が上の表のとおり重なります。前の2つを割れるのは、2節のとおり**横になっている間の熱の逃げ道は空気より
 地面が主**だからで、敷物は乾いた層だけ、据えたハンモックは地面からの距離だけを持ち、どちらも持つのは
 骨組みを差した寝台です。**厚みを持てるのは詰め物だけ**——敷いた葉も簀の子も体重で潰れるので、
 厚みが残るのは詰め物が入ってからです。
@@ -338,7 +335,7 @@ object_defs:
 
 **寝床だけでは夜を越せません。** 素の入口は16℃<!-- codex: characters/player_character.yaml traits.player_character.props.chill_point.value -->で、空が作るいちばん寒い夜はそれより下
 （[`../engine/ClimateSystem.md`](../engine/ClimateSystem.md) 1節）なので、どの段も1つでは届きません
-——**寝床は衣類や火の代わりにならず、その上へ段のぶんを足すだけ**です。空の刻みを1℃ずつに割るのは
+——**寝床は衣類や火の代わりにならず、その上へ段のぶんを足すだけ**です。空の刻みを割るのは
 土地の海抜ぶんの差（同 1.1節）なので、**いちばん深い一着に段を重ねると、眠って越せる土地が段のぶんだけ
 上へ伸びます。** 骨組みまででは**最も寒い土地の夜が残り**、そこは詰め物が入って初めて越せます（4.2.1節）。
 
@@ -378,8 +375,8 @@ object_defs:
 溜まります**。
 
 羽は `feather` として解体から出ます（1羽ぶん40g<!-- codex: animals.yaml object_defs.feather.props.weight.value -->、[`Animals.md`](./Animals.md) 10節）。**ここで作るのは
-敷布団ではなく、簀の子の上へ敷く当て**です——3〜5kgの敷布団なら75〜125羽が要りますが、体の下に潰れない
-層を作るだけなら1.2kg、ヤケイ30羽で届きます。羽毛布団が水鳥で作られたのは1羽あたりの取れ高が桁で違う
+敷布団ではなく、簀の子の上へ敷く当て**です——敷布団にするなら桁違いの数の羽が要りますが、体の下に潰れない
+層を作るだけなら羽30<!-- codex: bedding.yaml object_defs.feather_stuffing.recipes.stuffed.steps.2.requires.0.count -->で届きます。羽毛布団が水鳥で作られたのは1羽あたりの取れ高が桁で違う
 ためで、この島では罠を回し続ける長期目標のままです。
 
 **植物繊維はカポックではありません。** カポックの木は島に置いていないので、詰めるのは掻き取った繊維と、

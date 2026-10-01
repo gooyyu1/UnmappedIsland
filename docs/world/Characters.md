@@ -480,8 +480,8 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | `nap`（仮眠） | 180分<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.duration --> | +1.25/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.passives.0.add.self.stamina --> | 5 | +3/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.passives.0.add.self.wakefulness --> | 12 | **+24**（6時間ぶん） |
 
 - **通しで眠れるのは寝床の上だけです。** 地面の上で取れるのは仮眠までなので、**釣り合う点がずれます**
-  ——寝床の上では18時間起きて6時間眠るところ、仮眠だけだと16時間起きて8時間で、**1日に起きていられる
-  時間が2時間短くなります**（[`Bedding.md`](./Bedding.md) 4.1節）。**地面でも通しで眠れるようにする
+  ——仮眠だけで回すと寝床の上より眠る時間が長くなり、**1日に起きていられる時間が短くなります**
+  （[`Bedding.md`](./Bedding.md) 4.1節）。**地面でも通しで眠れるようにする
   ことが決まっていて**（同 4.1.1節）、入ればこの行と上の表は書き直しになります。
 - **まとめて休むほど1時間あたりの回復が大きい。** 同じ6時間でも、空身なら休憩6回（体力24）より
   仮眠2回（30）のほうが多く戻ります。細切れに休むより通しで休むほうが得、が数値だけで出ます。
