@@ -773,8 +773,8 @@ object_defs:
       # 群れは海そのものと同じく目方を持たない（航路と同じ、ContainerSystem.md 1節）。
       weight: {value: 0}
       # 1回の突きが当たる重み。**漁場ごとの素の値**で、突く人の狙い（hunting_aim）をbaseの土台として
-      # 積む（下のspear_shoal）。水面に立った群れは密なので、群れの居ない海面（raftの15）の5倍あまり
-      # （78/15＝5.2倍。docs/world/Voyage.md 3.9.2節）。
+      # 積む（下のspear_shoal）。水面に立った群れは密なので、群れの居ない海面（raft）よりずっと高い
+      # （docs/world/Voyage.md 3.9.2節）。
       catch_chance: {value: 78, base: {subject: agent, prop: hunting_aim}}
       # 立ち去りまでの残り。獣と同じ形（HuntingSystem.md 5.6節）だが、**獣が持つゲートをどれも
       # 持たない**——人が居ても止まらないのは、獣が目の前で消えないのは同じ土地に立っているからで、
