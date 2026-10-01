@@ -43,8 +43,8 @@ object_defs:
       # **どの段の睡眠1回も、いちばん薄い体力の上限を下回る**ので（characters/engineer.yaml の90）、
       # 段の差は通しの睡眠にそのまま出る。
       #
-      # **覚醒度は段で動かない**——sleep で戻るのは段によらず同じで、18時間起きて6時間眠るとちょうど
-      # 元へ戻るという釣り合いを寝床の上でも保つ（docs/world/Characters.md 休息節）。
+      # **覚醒度は段で動かない**——sleep で戻るのは段によらず同じで、睡眠1回を取る1日で覚醒度が
+      # ちょうど元へ戻るという釣り合いを寝床の上でも保つ（docs/world/Characters.md 休息節）。
       #
       # **同じブロックが、寝ている間だけ寒さの入口（chill_point）も押し下げる**
       # （docs/engine/VitalsSystem.md 8.3節。深さは docs/world/Bedding.md 4.2節）。押し下げるのは

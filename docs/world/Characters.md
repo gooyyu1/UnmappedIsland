@@ -198,15 +198,15 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   （[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.4 節）。**削るのが時間なので、
   往復の回数そのものが重みを持ちます**——重い荷で長い道を歩くほど、削られる tick が増えます。
   `stamina` が空身では減らない、という既定が破れるのは、ここだけです。
-- **桁は「1 日で使い切れる」位置に取ります。** 起きている 18 時間（72 tick）を `heavy` のまま担ぎ通すと
-  `-72` で、`max` 100<!-- codex: characters/captain.yaml object_defs.captain.props.stamina.range.max --> のほとんどを使い切ります（`captain.yaml`）。**荷を下ろして骨組みを差した寝台で
-  眠れば +72** なので、**重い荷の 1 日ぶんと、睡眠1回の回復がちょうど釣り合う**位置です。これより 1 桁
+- **桁は「1 日で使い切れる」位置に取ります。** 起きている間を `heavy` のまま担ぎ通すと、`max` 100<!-- codex: characters/captain.yaml object_defs.captain.props.stamina.range.max --> のほとんどを使い切ります（`captain.yaml`）。**荷を下ろして骨組みを差した寝台で
+  眠れば、その 1 日ぶんがちょうど戻る**ので、**重い荷の 1 日ぶんと、睡眠1回の回復がちょうど釣り合う**位置です
+  （`tests/world-codex/beddingYaml.test.ts` が見ます）。これより 1 桁
   小さいと、何往復しても睡眠1回で必ず取り返せてしまい、**削っているのに何も決まりません**。
 - **借金が積み上がるかは、寝床の段で決まります。** 釣り合うのは骨組みを差した寝台の上だけで、敷物だけ
-  なら睡眠1回で +48 しか返りません（[`Bedding.md`](./Bedding.md) 4節）——**重い荷の日を毎日続けられるか
+  では睡眠1回で返し切れません（[`Bedding.md`](./Bedding.md) 4節）——**重い荷の日を毎日続けられるか
   どうかが、寝床を仕上げたかどうかで分かれます。**
 - **担いだまま眠れば、そのぶん戻りません。** 回復は経過の間ずっと効く宣言なので、削りと同じ足し算に
-  入ります（下の[休息](#休息)節）——`heavy` のまま 6 時間眠っても +48 で、釣り合いは崩れます。
+  入ります（下の[休息](#休息)節）——`heavy` のまま眠れば削りのぶん戻りが減り、釣り合いは崩れます。
   **荷を下ろす理由がここから出ます**（そりを作る理由と同じ向きで、下ろす手間そのものは要りません）。
 - **遅くなる側は、道が担ぎ手の遅れを土台に継ぎます。** 道の所要時間は道自身が持つので、そこへ
   `base: {subject: agent, prop: travel_delay}`（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.5 節）を書き、`duration` は `{prop: travel_minutes}`
@@ -215,8 +215,8 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   知りません——遅くするものが増えても押す先は人の `travel_delay` なので、道の宣言は変わりません。
 - **遅れは tick の刻みで刻みます**（[`ActionSystem.md`](../engine/ActionSystem.md) 6.2 節）。道の所要時間も
   1 tick（15<!-- codex: core.yaml object_defs.world.props.minutes_per_tick.value --> 分）の倍数なので（生成が刻みへ丸める）、荷を担いでも行動の長さは格子に乗ったままです。
-- **一律の加算なので、短い道ほど割合として重く効きます。** `+30` 分<!-- codex: characters/captain.yaml object_defs.captain.props.load.stages.2.passives.1.modify.self.travel_delay --><!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.2.passives.1.modify.self.travel_delay --><!-- codex: characters/farmer.yaml object_defs.farmer.props.load.stages.2.passives.1.modify.self.travel_delay --><!-- codex: characters/medic.yaml object_defs.medic.props.load.stages.2.passives.1.modify.self.travel_delay -->は 15 分の道では 3 倍、120 分の
-  道では 1.25 倍です。**式（積）を書ける場所を作らないことを優先した結果として承知のうえ**なので
+- **一律の加算なので、短い道ほど割合として重く効きます。** 同じ遅れが、道が短いほど所要に対して
+  大きな割合になります。**式（積）を書ける場所を作らないことを優先した結果として承知のうえ**なので
   （[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 10.2 節）、この点は積へ戻す理由に
   なりません。釣り合いを動かすなら、動かすのは段ごとの分数です。
 - **軽くする道具の値打ちは損なわれません。** そりのような率を下げる道具は `load` そのものを下げるので、
@@ -473,31 +473,30 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 入口は日時のフリップカードで、押すとキャラクタ自身の子ウィンドウが開きます
 （[`Windows.md`](../ui/Windows.md) 4 節）。
 
-| | 長さ | `stamina` | 1時間あたり | `wakefulness` | 1時間あたり | 眠気の実質 |
-| --- | --- | --- | --- | --- | --- | --- |
-| `wait`（待機） | 15分<!-- codex: characters/player_character.yaml traits.player_character.interactions.wait.duration --> | +0.75/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.wait.passives.0.add.self.stamina --> | 3 | — | — | −1 |
-| `rest`（休憩） | 60分<!-- codex: characters/player_character.yaml traits.player_character.interactions.rest.duration --> | +1/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.rest.passives.0.add.self.stamina --> | 4 | — | — | −4 |
-| `nap`（仮眠） | 180分<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.duration --> | +1.25/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.passives.0.add.self.stamina --> | 5 | +3/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.passives.0.add.self.wakefulness --> | 12 | **+24**（6時間ぶん） |
+| | 長さ | `stamina` | `wakefulness` |
+| --- | --- | --- | --- |
+| `wait`（待機） | 15分<!-- codex: characters/player_character.yaml traits.player_character.interactions.wait.duration --> | +0.75/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.wait.passives.0.add.self.stamina --> | — |
+| `rest`（休憩） | 60分<!-- codex: characters/player_character.yaml traits.player_character.interactions.rest.duration --> | +1/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.rest.passives.0.add.self.stamina --> | — |
+| `nap`（仮眠） | 180分<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.duration --> | +1.25/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.passives.0.add.self.stamina --> | +3/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.passives.0.add.self.wakefulness --> |
 
 - **通しで眠れるのは寝床の上だけです。** 地面の上で取れるのは仮眠までなので、**釣り合う点がずれます**
   ——仮眠だけで回すと寝床の上より眠る時間が長くなり、**1日に起きていられる時間が短くなります**
   （[`Bedding.md`](./Bedding.md) 4.1節）。**地面でも通しで眠れるようにする
   ことが決まっていて**（同 4.1.1節）、入ればこの行と上の表は書き直しになります。
-- **まとめて休むほど1時間あたりの回復が大きい。** 同じ6時間でも、空身なら休憩6回（体力24）より
-  仮眠2回（30）のほうが多く戻ります。細切れに休むより通しで休むほうが得、が数値だけで出ます。
+- **まとめて休むほど1時間あたりの回復が大きい。** 同じ長さを休むなら、空身で休憩を重ねるより
+  仮眠のほうが多く戻ります。細切れに休むより通しで休むほうが得、が数値だけで出ます。
   **この割増しが効くのは地面の上だけ**です（同 4節）。
-- **体力の割は、荷が削る量から逆算しています**（下の[荷重の効き方](#荷重の効き方)節）。地面の上の1日は
-  16時間起きて8時間（32 tick）仮眠なので、`heavy`（−1/tick<!-- codex: characters/captain.yaml object_defs.captain.props.load.stages.2.passives.0.add.self.stamina --><!-- codex: characters/engineer.yaml object_defs.engineer.props.load.stages.2.passives.0.add.self.stamina --><!-- codex: characters/farmer.yaml object_defs.farmer.props.load.stages.2.passives.0.add.self.stamina --><!-- codex: characters/medic.yaml object_defs.medic.props.load.stages.2.passives.0.add.self.stamina -->）をその16時間担ぎ通した −64 を返すには
-  2/tick が要ります——**仮眠はそこへ届きません。** 地面の上では重い荷の日を続けられない、というのが
+- **体力の割は、荷が削る量から逆算しています**（下の[荷重の効き方](#荷重の効き方)節）。地面の上の1日を
+  仮眠で回すと、`heavy` を起きている間担ぎ通した1日ぶんを**仮眠では返し切れません**。地面の上では重い荷の日を
+  続けられない、というのが
   寝床を敷き骨組みを差す理由で、返せる位置に在るのは骨組みを差した寝台だけです
   （[`Bedding.md`](./Bedding.md) 4節）。`too_heavy` を担いだままなら、地面のどの休息でも体力は減ります。
-- **眠っている間も覚醒度は減り続けます**（`-1/tick`<!-- codex: characters/captain.yaml object_defs.captain.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/engineer.yaml object_defs.engineer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.passives.0.add.self.wakefulness -->）。上の表の「実質」は経過ぶんを引いた値です。
-  **18時間起きて6時間眠ると、覚醒度はちょうど元へ戻ります**（−72 と +72）——普通の1日を回すぶんには
-  釣り合い、それより長く起きた日だけが翌日へ持ち越されます。**睡眠1回で戻るのは満タンの半分ほど**
-  （基準のキャラクタで 96/192<!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.range.max --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.range.max -->）なので、寝溜めはできません。
+- **眠っている間も覚醒度は減り続けます**（`-1/tick`<!-- codex: characters/captain.yaml object_defs.captain.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/engineer.yaml object_defs.engineer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.passives.0.add.self.wakefulness -->）。**寝床の上で睡眠1回を取る1日は、覚醒度がちょうど元へ戻ります**——普通の1日を回すぶんには
+  釣り合い、それより長く起きた日だけが翌日へ持ち越されます。**睡眠1回では満タンに届かない**ので、
+  寝溜めはできません（2つとも `tests/world-codex/charactersYaml.test.ts` が見ます）。
 - **回復量は個体差を持ちません**（痛み・血と同じく trait が配ります）。`stamina` の `max` が大きい
   キャラクタほど1回で戻る割合は小さく、休息の重みは体格の側に出ます。
-- **休んでいる間も水分と体脂肪は減ります。** 睡眠1回で水分がおよそ1日ぶんの1/4——眠ること自体に
+- **休んでいる間も水分と体脂肪は減ります。** 眠っている間も水分は起きているときと同じ割で減ります——眠ること自体に
   値段があり、渇いたまま眠れば眠っている間に死にます（[`VitalsSystem.md`](../engine/VitalsSystem.md) 6 節）。
 
 ## 限界
@@ -512,28 +511,27 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 `conditions` で見て、`duration` ぶん時間を進め、`passives` が tick 毎に戻す——上の[休息](#休息)と
 同じ形で、`player_character` trait が並べて配ります。**違うのは見る値・長さ・戻る量だけです。**
 
-| 手番 | 見る値 | 長さ | 戻るもの | 1時間あたり |
-| --- | --- | --- | --- | --- |
-| `collapse`（倒れ込む） | `stamina` | 120分<!-- codex: characters/player_character.yaml traits.player_character.interactions.collapse.duration --> | `stamina` +1/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.collapse.passives.0.add.self.stamina --> | 4 |
-| `fall_asleep`（眠り込む） | `wakefulness` | 360分<!-- codex: characters/player_character.yaml traits.player_character.interactions.fall_asleep.duration --> | `wakefulness` +3/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.fall_asleep.passives.0.add.self.wakefulness -->・`stamina` +1/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.fall_asleep.passives.0.add.self.stamina --> | 12・4 |
-| `despair`（打ちひしがれる） | `happiness` | 120分<!-- codex: characters/player_character.yaml traits.player_character.interactions.despair.duration --> | `happiness` +2.5/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.despair.passives.0.add.self.happiness --> | 10 |
+| 手番 | 見る値 | 長さ | 戻るもの |
+| --- | --- | --- | --- |
+| `collapse`（倒れ込む） | `stamina` | 120分<!-- codex: characters/player_character.yaml traits.player_character.interactions.collapse.duration --> | `stamina` +1/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.collapse.passives.0.add.self.stamina --> |
+| `fall_asleep`（眠り込む） | `wakefulness` | 360分<!-- codex: characters/player_character.yaml traits.player_character.interactions.fall_asleep.duration --> | `wakefulness` +3/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.fall_asleep.passives.0.add.self.wakefulness -->・`stamina` +1/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.fall_asleep.passives.0.add.self.stamina --> |
+| `despair`（打ちひしがれる） | `happiness` | 120分<!-- codex: characters/player_character.yaml traits.player_character.interactions.despair.duration --> | `happiness` +2.5/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.despair.passives.0.add.self.happiness --> |
 
 - **戻る割に、まとめて休んだ割増し**（上の[休息](#休息)節）**は付けません——どの値についても。** どれも
-  休み方を選んだことにならないためで、体力は `rest` の割（4/時間）です。**幸福度には自発の休息が無い**
-  ので割の比べようがなく、120分<!-- codex: characters/player_character.yaml traits.player_character.interactions.despair.duration -->で危険域（`max` の20%）をちょうど抜ける量（10/時間）を置きます。
+  休み方を選んだことにならないためで、体力は `rest` と同じ割です。**幸福度には自発の休息が無い**
+  ので割の比べようがなく、120分<!-- codex: characters/player_character.yaml traits.player_character.interactions.despair.duration -->で危険域をちょうど抜ける量を置きます（`tests/world-codex/charactersYaml.test.ts` が見ます）。
   **眠気を戻せる休息は
-  眠る休息で、どれも割増しを持っている**ので、そちらはいちばん薄い `nap` の割（12/時間）を使います。
+  眠る休息で、どれも割増しを持っている**ので、そちらはいちばん薄い `nap` の割を使います。
 - **眠り込みが戻すのは眠気だけではないので、体力もこの割に従います。** 寝床の上の `sleep` と同じ割に
   すると、**寝床の無い場所で体力を戻す最良の手が眠り込みになります**——寝床を要らない休息のうち最も
-  割のよい `nap`（体力は 5/時間）を上回ってしまうためです。
+  割のよい `nap` を上回ってしまうためです。
 - **戻る量は個体差を持ちません**（休息と同じく trait が配ります）。`stamina` の `max` が大きい
   キャラクタほど1回で戻る割合は小さく、倒れる回数の重みは体格の側に出ます。**ただし空身で倒れても、
-  どのキャラクタも危険域（`exhausted`）からは出られません**——戻るのは +8 で、`max` がいちばん薄い
-  技師（90<!-- codex: characters/engineer.yaml object_defs.engineer.props.stamina.range.max -->）の境目 18<!-- codex: characters/engineer.yaml object_defs.engineer.props.stamina.stages.1.min --> にすら届かないためです。**倒れ込みは逃げ場であって、戻す手ではありません**
-  ——戻すのは自発の休息の仕事です。荷を担いだままならさらに薄く、`heavy` では 1 も戻りません。
-- **眠気を `sleep` の割（16/時間）で戻すと、寝床を敷く理由が消えます。** 6時間で +96 なら起きている
-  割合は 80% で、寝床の上の 75% を上回ってしまうためです。`nap` の割（12/時間）なら実質は 8/時間で、
-  倒れるまで起きているほうが損になります。
+  どのキャラクタも危険域（`exhausted`）からは出られません**——戻る量が、`max` がいちばん薄い
+  技師（90<!-- codex: characters/engineer.yaml object_defs.engineer.props.stamina.range.max -->）の境目 18<!-- codex: characters/engineer.yaml object_defs.engineer.props.stamina.stages.1.min --> にすら届かないためです（`tests/world-codex/charactersYaml.test.ts` が見ます）。**倒れ込みは逃げ場であって、戻す手ではありません**
+  ——戻すのは自発の休息の仕事です。荷を担いだままならさらに薄くなります。
+- **眠気を `sleep` の割で戻すと、寝床を敷く理由が消えます。** 倒れるまで起きているほうが、寝床で眠るより
+  1日に長く起きていられることになるためです。`nap` の割なら、倒れるまで起きているほうが損になります。
 - **戻すのが tick 毎なのは、限界だけが下限から始まるからです。** 経過し終えてから足す形だと、下限に
   張り付いた値の減りを既定のクランプが吸い、**宣言した量がまるごと残ります**——自発の休息は経過ぶんを
   引かれるので、同じ長さなら限界のほうが多く戻ることになります。tick 毎なら減りと同じ足し算に
