@@ -1557,7 +1557,7 @@ class Acquisition {
       if (!input.consumed) continue;
       const resolved = this.inputSource(input);
       if (resolved === undefined) return undefined;
-      // **要る個数を掛ける。** 筏の工程は丸太を1度に複数本使うので、1本ぶんで数えると桁が変わる。
+      // **要る個数を掛ける。** 工程は1つの材料を複数個要ることがある（`count`）ので、1個ぶんで数えると桁が変わる。
       cost = addCost(cost, scaleCost(this.netCostOf(input, resolved.cost), input.count));
       imported ||= resolved.imported;
     }

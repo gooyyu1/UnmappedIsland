@@ -301,6 +301,39 @@ describe('荷重が歩みの遅れと体力に効く', () => {
       }
   });
 
+  it.each([
+    ['voyage.yaml', 'raft'],
+    ['farming.yaml', 'pen'],
+  ])('%s の %s の目方は、どのレシピでも材料の目方の和', (fileName, objectName) => {
+    // 据えた物も目方を名乗る（core.yaml）。その値はコメントで「材料ぶん」と言っているだけなので、
+    // 材料かレシピの本数を動かして目方を据え置けば、ここが落ちる。
+    const defs = parse(readFileSync(worldCodexPath(fileName), 'utf8')) as {
+      object_defs: Record<
+        string,
+        {
+          recipes: Record<
+            string,
+            { steps: { requires?: { object: string; count?: number; consume?: boolean }[] }[] }
+          >;
+        }
+      >;
+    };
+    const weightId = propertyId('weight');
+    const weightOf = (name: string): number =>
+      codex.objects.get(codex.objectNames.getId(name)).tryGetPropertyDef(weightId)?.initialValueWithoutRoll ??
+      0;
+
+    const recipes = Object.entries(defs.object_defs[objectName].recipes);
+    expect(recipes.length, `${objectName} がレシピを持たない`).toBeGreaterThan(0);
+    for (const [recipeName, recipe] of recipes) {
+      const materials = recipe.steps
+        .flatMap((step) => step.requires ?? [])
+        .filter((requirement) => requirement.consume === true)
+        .reduce((sum, requirement) => sum + weightOf(requirement.object) * (requirement.count ?? 1), 0);
+      expect(weightOf(objectName), `${objectName} の ${recipeName}`).toBe(materials);
+    }
+  });
+
   it('引く道具へ乗り換える積載は、Containers.mdが置いた線のとおり', () => {
     // 率は逆転点から逆算してある（docs/world/Containers.md 2節）ので、**線が動けばここが落ちる**。
     // 石は1個1kgなので、個数がそのまま積載（kg）になる。
