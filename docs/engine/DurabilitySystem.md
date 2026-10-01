@@ -5,7 +5,7 @@
 本ドキュメントは、単一の `durability` プロパティで、素材の屋外劣化（天候）と食料の腐敗（保存温度）の両方を
 表すときの、具体的な減少量（`add` の量）をまとめたものです。両者は同じ `durability` を減らす
 独立した `add` として扱い、対象条件が同時に満たされれば加算的に重なります（`GameElementDefinition.md` 8.4
-節）。1 tick（15分）・96 tick（1日）というこのゲーム固有の対応づけ（`core.yaml`）を前提とします。
+節）。1 tick（15<!-- codex: core.yaml object_defs.world.props.minutes_per_tick.value -->分）というこのゲーム固有の対応づけ（`core.yaml`）を前提とします。
 
 実際のレートは各定義の `add` が持ち、本書はその目安の出所です。**素材の屋外劣化（2 節）も食料の腐敗
 （3 節）も投入済み**で、前者は `src/assets/world-codex/weathering.yaml` の trait、後者は
@@ -18,7 +18,7 @@
 ## 1. スケールの規約
 
 `durability` の最大値は、素材・アイテムの種類によらず **960** に統一します。基準レートを「短命な素材が
-すり減る速さ」（-1/tick<!-- codex: weathering.yaml traits.short_lived_material.passives.0.add.self.durability -->）に置いた値で、960 tick（10 日）にあたります
+すり減る速さ」（-1/tick<!-- codex: weathering.yaml traits.short_lived_material.passives.0.add.self.durability -->）に置いた値で、短命な素材の寿命（10 日<!-- stats: durations.yaml durations object=woven_leaf property=durability days -->）にあたります
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 6.0 節の時間を数えるクラス）。
 
 この規約のもとでは、次の式で「寿命 L 日」を実現する tick あたりの減少量が決まります。
@@ -41,13 +41,13 @@ tick あたりの減少量 = 10 ÷ L（寿命の日数）
 
 ## 2. 素材の屋外劣化速度（天候）
 
-セルは「寿命（tickあたりの減少量）」の形式です。
+セルは「寿命（tickあたりの減少量）」の形式です。寿命は代表の物（長持ちは石の斧、短命は編んだ葉）の `stats/durations.yaml` の値で、雨の列は晴れのぶんに雨の上乗せが重なった寿命です。
 
 | 分類 | 素材 | 晴れ | 雨 |
 |---|---|---|---|
 | 傷まない素材 | 石材・金属 | — | — |
-| 長持ちする素材 | 木材・なめし革・獣骨・綯った紐 | 100日(-0.1)<!-- codex: weathering.yaml traits.long_lived_material.passives.0.add.self.durability --> | 20日(-0.5) |
-| 短命な素材 | 葉・草・植物繊維・生皮 | 10日(-1)<!-- codex: weathering.yaml traits.short_lived_material.passives.0.add.self.durability --> | 5日(-2) |
+| 長持ちする素材 | 木材・なめし革・獣骨・綯った紐 | 100日<!-- stats: durations.yaml durations object=stone_axe property=durability days -->(-0.1)<!-- codex: weathering.yaml traits.long_lived_material.passives.0.add.self.durability --> | 20日<!-- stats: durations.yaml durations object=stone_axe property=durability shortest_days --> |
+| 短命な素材 | 葉・草・植物繊維・生皮 | 10日<!-- stats: durations.yaml durations object=woven_leaf property=durability days -->(-1)<!-- codex: weathering.yaml traits.short_lived_material.passives.0.add.self.durability --> | 5日<!-- stats: durations.yaml durations object=woven_leaf property=durability shortest_days --> |
 
 **石材・金属は時間では1も減りません。** 石は雨で痩せるのではなく、打ち合わせて欠けます——減らすのは
 使った側（`animals.yaml` の `instrument`）だけで、置いておくだけの日数には現れません。**それでも
@@ -153,13 +153,13 @@ tick あたりの減少量 = 10 ÷ L（寿命の日数）
 食料の屋外劣化速度は、すべて「短命な素材（葉っぱなど）」と同じ（晴れ-1/tick<!-- codex: foods.yaml traits.perishable.passives.0.add.self.durability -->）を前提とします。「屋外（晴れ）+
 通常温度」の列は、腐敗（保存温度由来）と屋外劣化の両方の `add` が同時に対象となり加算的に重なった場合
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 8.4 節）の複合寿命です。屋内保管（通常温度・保冷）よりも必ず短くなり、「屋外に置きっぱなしにすると腐敗が早まる」
-という直感と整合します。セルの形式は2節と同じです。
+という直感と整合します。セルの形式は2節と同じで、寿命は代表の物（生肉・バナナ・タロイモ）の `stats/durations.yaml` の値です。**保冷の列は投入していない目安**で、上の式から置いた値です（下）。
 
 | 分類 | 通常温度 | 保冷 | 屋外（晴れ）+通常温度 |
 |---|---|---|---|
-| 調理済み料理・生魚など | 2.5日(-4)<!-- codex: foods.yaml traits.spoils_fast.passives.0.add.self.durability --> | 5日(-2) | 2日(-5) |
-| 野菜など | 5日(-2)<!-- codex: foods.yaml traits.spoils_normal.passives.0.add.self.durability --> | 10日(-1) | 3.3日(-3) |
-| 芋など | 20日(-0.5)<!-- codex: foods.yaml traits.spoils_slow.passives.0.add.self.durability --> | 40日(-0.25) | 6.7日(-1.5) |
+| 調理済み料理・生魚など | 2.5日<!-- stats: durations.yaml durations object=raw_meat property=durability days -->(-4)<!-- codex: foods.yaml traits.spoils_fast.passives.0.add.self.durability --> | 5日(-2) | 2日<!-- stats: durations.yaml durations object=raw_meat property=durability shortest_days --> |
+| 野菜など | 5日<!-- stats: durations.yaml durations object=banana property=durability days -->(-2)<!-- codex: foods.yaml traits.spoils_normal.passives.0.add.self.durability --> | 10日(-1) | 3.3日<!-- stats: durations.yaml durations object=banana property=durability shortest_days --> |
+| 芋など | 20日<!-- stats: durations.yaml durations object=taro property=durability days -->(-0.5)<!-- codex: foods.yaml traits.spoils_slow.passives.0.add.self.durability --> | 40日(-0.25) | 6.7日<!-- stats: durations.yaml durations object=taro property=durability shortest_days --> |
 
 入っているのは「通常温度」と「屋外（晴れ）」の2列だけです。**保冷の列は投入していません**——涼しい
 置き場（穴・洞窟の奥）がまだ無く、置き場の側から作ることになるためです。
