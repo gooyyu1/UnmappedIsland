@@ -2,6 +2,7 @@ import { COLOR } from '../looks/theme';
 import type { CardContent } from '../ui/Card';
 import type { LaneCell } from '../ui/laneCells';
 import type { CraftingMaterial } from './craftingView';
+import type { CardPlacement } from './cardPlaces';
 import type { ObjectCardStack, SlotView } from './PlayScreenView';
 import type { ObjectGlobalId } from '../../domain/GlobalId';
 
@@ -22,6 +23,18 @@ export function slotCells(
   return slot.materials === undefined
     ? plainCells(slot, cards, cycle, cardOfType)
     : materialCells(slot.materials, stacks, cards, cycle, cardOfType);
+}
+
+/**
+ * そのスロットを映すレーン上の落とし位置を、スロットの中の位置へ直したもの（直せなければundefined
+ * ——位置を指さずに入れ、どの枠へ入るかはスロットが選ぶ）。
+ *
+ * **材料の枠のレーン上の位置はスロットの位置にならない。** 並ぶのは入っている物と要求ごとの空き枠で
+ * （materialCells）、スロットの枠をそのまま映していないため。他のレーンは枠をその位置のまま並べる
+ * （plainCells）ので、そのまま渡せる。
+ */
+export function slotPositionAt(slot: SlotView, at: CardPlacement): CardPlacement | undefined {
+  return slot.materials === undefined ? at : undefined;
 }
 
 /**

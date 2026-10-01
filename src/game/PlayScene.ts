@@ -42,7 +42,7 @@ import type { CardSpot, ShownDrop } from './view/ShownCards';
 import { ShownCards } from './view/ShownCards';
 import type { RecordedView, Recording } from './view/recording';
 import { runAndRecordChange } from './view/recording';
-import { cellsCycleWithBeat, slotCells } from './view/slotCells';
+import { cellsCycleWithBeat, slotCells, slotPositionAt } from './view/slotCells';
 import { noteOperation, setStateReporter } from './errorReport';
 import { ShownStatuses } from './view/ShownStatuses';
 import type { ElapseFrame } from './view/elapsePlayback';
@@ -954,14 +954,19 @@ export class PlayScene extends ResponsiveScene {
 
   /**
    * ドロップを、レーンを場所（CardSpot）に直した形へ（判断はShownCardsが行う）。どちらかの
-   * レーンがワールドの場所を映していなければ、落とし先の決まらない操作なのでundefined。
+   * レーンがワールドの場所を映していなければ、落とし先の決まらない操作なのでundefined。レーン上の
+   * 位置は、スロットの中の位置へ直して渡す（slotPositionAt）。
    */
   private dropOf(drop: CardDrop): ShownDrop | undefined {
     const from = this.spotOf(drop.from);
     const to = this.spotOf(drop.to);
     if (from === undefined || to === undefined) return undefined;
 
-    return { from, fromIndex: drop.fromIndex, to, target: drop.target, count: drop.count };
+    const target =
+      drop.target.kind === 'combine' || to === 'windowCard'
+        ? drop.target
+        : slotPositionAt(this.view.slotViewOf(to), drop.target);
+    return { from, fromIndex: drop.fromIndex, to, target, count: drop.count };
   }
 
   /**

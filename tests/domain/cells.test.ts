@@ -72,6 +72,58 @@ object_defs:
 
       expect(put('chair_in_progress')).toContain('受け入れられません');
     });
+
+    /**
+     * 位置を指定しても、枠の宣言に合わない物は入らない（SlotSystem.md 3節）。指した枠そのものも、
+     * 隙間へ入れるためにずらされる中身の移る先も、同じ宣言で断る。
+     */
+    describe('位置の指定', () => {
+      const setUpWith = () => {
+        const session = new WorldSession(codex);
+        const bench = session.createObject(codex.objectNames.getId('chair_in_progress'));
+        const slot = bench.getSlot(materialsId);
+        return {
+          slot,
+          create: (name: string) => session.createObject(codex.objectNames.getId(name)),
+          cells: () => slot.cells.map((cell) => cell.stack?.members.map((o) => o.def.name)),
+        };
+      };
+
+      it('指した枠が受け入れない物は、その枠へ入らずに断る', () => {
+        const { slot, create, cells } = setUpWith();
+        const stick = create('stick');
+
+        expect(stick.rejectionForMoveTo(slot, { kind: 'cell', index: 0 }), '動かす前に断る').toBeDefined();
+        expect(stick.moveToSlotOrRejection(slot, { kind: 'cell', index: 0 })).toBeDefined();
+        expect(cells()).toEqual([undefined, undefined]);
+        expect(stick.parent, '断ったときは元のまま（どこへも移っていない）').toBeUndefined();
+      });
+
+      it('受け入れる枠を指せば入る', () => {
+        const { slot, create, cells } = setUpWith();
+
+        expect(create('stick').moveToSlotOrRejection(slot, { kind: 'cell', index: 1 })).toBeUndefined();
+        expect(cells()).toEqual([undefined, ['stick']]);
+      });
+
+      it('隙間へ入れるとき、中身を型の合わない枠へずらさない', () => {
+        const { slot, create, cells } = setUpWith();
+        create('stick').moveToSlotOrRejection(slot);
+
+        // 棒の後ろの隙間へ板を入れるには、棒を左の板の枠へずらし、空いた棒の枠へ板を入れることになる。
+        expect(create('board').moveToSlotOrRejection(slot, { kind: 'gap', index: 2 })).toBeDefined();
+        expect(cells()).toEqual([undefined, ['stick']]);
+      });
+
+      it('並び替えでも、型の合わない枠とは入れ替えない', () => {
+        const { slot, create, cells } = setUpWith();
+        const stick = create('stick');
+        stick.moveToSlotOrRejection(slot);
+
+        expect(stick.reorderInParentSlot({ kind: 'cell', index: 0 })).toBe(false);
+        expect(cells()).toEqual([undefined, ['stick']]);
+      });
+    });
   });
 
   /**

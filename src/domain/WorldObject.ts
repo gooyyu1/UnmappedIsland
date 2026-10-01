@@ -361,6 +361,7 @@ export class WorldObject {
   moveToSlotOrRejection(slot: Slot, at?: SlotPosition): string | undefined {
     return this.attachToSlotOrRejection(
       slot,
+      at,
       at === undefined ? undefined : (target) => target.insertAt(this, at),
     );
   }
@@ -371,7 +372,7 @@ export class WorldObject {
    * （＝呼び出し側でfallbackへ委ねる）。
    */
   insertSameSlotOrRejection(slot: Slot, placement: SameSlotPlacement): string | undefined {
-    return this.attachToSlotOrRejection(slot, (target) =>
+    return this.attachToSlotOrRejection(slot, undefined, (target) =>
       target.placeSameSlot(this, placement.originCellIndex, placement.sameKindStillInCell),
     );
   }
@@ -397,9 +398,11 @@ export class WorldObject {
    *
    * 何が移せないかを画面側が場所ごとに覚えていると、ワールド側の宣言と食い違う（設置物のかごを
    * 持ち歩けるようにしたのに、画面がそのレーンを読み取り専用のままにしている、など）。
+   *
+   * atはmoveToSlotOrRejectionと同じ位置の指定で、渡せばその位置へ置けるかまで見る。
    */
-  rejectionForMoveTo(slot: Slot): string | undefined {
-    return this.rejectionForLoopOrDetach(slot) ?? slot.rejectionFor(this);
+  rejectionForMoveTo(slot: Slot, at?: SlotPosition): string | undefined {
+    return this.rejectionForLoopOrDetach(slot) ?? slot.rejectionFor(this, at);
   }
 
   /**
@@ -488,16 +491,18 @@ export class WorldObject {
 
   /**
    * placeは位置を指定する配置（moveToSlotOrRejectionのat・insertSameSlotOrRejection）専用。省略すると通常の追加
-   * （Slot.addWithoutParentLink）になる。
+   * （Slot.addWithoutParentLink）になる。atはplaceが置く位置で、受け入れ判定はそこへ置けるかまで見る
+   * ——切り離した後で置けないと分かると、物はどこにも属さないまま戻るため。
    *
    * **配置を伴う変化の唯一の関門**なので、ここが出入りを記録する（WorldChange）。移動前の居場所は
    * 切り離す前に控える——切り離した後では、どこから来たのかを誰も知らない。
    */
   private attachToSlotOrRejection(
     targetSlot: Slot,
+    at: SlotPosition | undefined,
     place: ((slot: Slot) => boolean) | undefined,
   ): string | undefined {
-    const rejection = this.rejectionForMoveTo(targetSlot);
+    const rejection = this.rejectionForMoveTo(targetSlot, at);
     if (rejection !== undefined) return rejection;
 
     const newParent = targetSlot.owner;
@@ -731,7 +736,7 @@ export class WorldObject {
    */
   moveIntoFirstAcceptingSlot(target: WorldObject): boolean {
     for (const slotDef of target.def.placementSlotDefs('auto'))
-      if (this.attachToSlotOrRejection(target.getSlot(slotDef.globalId), undefined) === undefined)
+      if (this.attachToSlotOrRejection(target.getSlot(slotDef.globalId), undefined, undefined) === undefined)
         return true;
 
     return false;
