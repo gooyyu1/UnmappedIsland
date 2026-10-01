@@ -303,6 +303,48 @@ describe('文書が書いた「何日ぶん」', () => {
     expect(Number(range![1]), '甕3つ').toBeCloseTo(voyageLoadGrams(3, 0, 0, 0) / 1000, 0);
     expect(Number(range![2]), '甕4つ').toBeCloseTo(voyageLoadGrams(4, 0, 0, 0) / 1000, 0);
   });
+
+  it('ContentSkeleton.md 5節2番の水の量が、飲用の換算率と素の減りから出る', () => {
+    const bowl = drainOf('coconut_bowl');
+    const bowlMl = spawn('coconut_bowl__content_water_liquid').getProperty(fillId).def.range!.max;
+    const dailyMl = (hydrationDecayPerDay() / (bowl.hydrationTicks / bowl.drinks)) * (bowlMl / bowl.drinks);
+
+    expect(numberIn(SKELETON_DOC, /1日は([\d.]+)L/, '1日の水'), '1日に要る水（L）').toBeCloseTo(
+      dailyMl / 1000,
+      1,
+    );
+    const days = numberIn(SKELETON_DOC, /(\d+)日で\d+Lです/, '余裕の日数');
+    expect(
+      numberIn(SKELETON_DOC, /\d+日で(\d+)Lです/, '余裕の日数ぶんの水'),
+      `${days}日ぶんの水（L）`,
+    ).toBeCloseTo((dailyMl * days) / 1000, 0);
+
+    // 甕で運ぶなら、その水を満たした甕の数ぶんの重さ。
+    const jarMl = spawn('jar__content_water_liquid').getProperty(fillId).def.range!.max;
+    const jarsKg = (Math.ceil((dailyMl * days) / jarMl) * voyageLoadGrams(1, 0, 0, 0)) / 1000;
+    expect(numberIn(SKELETON_DOC, /甕（水の段3）なら(\d+)Lを/, '甕で運ぶ水'), '甕で運ぶ水（L）').toBeCloseTo(
+      (dailyMl * days) / 1000,
+      0,
+    );
+    expect(
+      numberIn(SKELETON_DOC, /甕（水の段3）なら\d+Lを(\d+)kgで/, '甕で運ぶ重さ'),
+      '甕で運ぶ重さ（kg）',
+    ).toBeCloseTo(jarsKg, 0);
+  });
+
+  it('ContentSkeleton.md 5節2番のヤシの実の勘定が、飲む1つの量から出る', () => {
+    const coconuts = parse(
+      readFileSync(join(ROOT, 'src', 'assets', 'world-codex', 'coconut.yaml'), 'utf8'),
+    ) as {
+      object_defs: { green_coconut: { interactions: { bore: { add: { agent: { hydration: number } } } } } };
+    };
+    const perCoconut = coconuts.object_defs.green_coconut.interactions.bore.add.agent.hydration;
+    const perDay = Math.ceil(hydrationDecayPerDay() / perCoconut);
+    expect(
+      numberIn(SKELETON_DOC, /ヤシの実は1日(\d+)個の勘定/, 'ヤシの実の1日の数'),
+      '1日に飲むヤシの実',
+    ).toBe(perDay);
+  });
 });
 
 describe('最小の献立について文書が言っていること', () => {

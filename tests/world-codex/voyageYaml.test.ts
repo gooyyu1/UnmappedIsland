@@ -1019,6 +1019,33 @@ describe('筏と航海', () => {
     expect(empty, '軽くなれば短く渡れる').toBeLessThan(laden);
   });
 
+  it('ヤシの実で余裕の日数ぶんの水を積んでも、どの風でも横断は空荷より長くならない（ContentSkeleton.md 5節2番）', () => {
+    // 積む数は文書の勘定（1日に飲む数×余裕の日数）。勘定そのものが定義から出ることは
+    // tests/diagnostics/waterAndBloodPace.test.ts が見る。
+    const skeleton = readFileSync('docs/world/ContentSkeleton.md', 'utf8');
+    const perDay = Number(/ヤシの実は1日(\d+)個の勘定/.exec(skeleton)?.[1]);
+    const days = Number(/(\d+)日で\d+Lです/.exec(skeleton)?.[1]);
+    expect(perDay * days, 'ContentSkeleton.md 5節2番の勘定が読めない').toBeGreaterThan(0);
+
+    for (const wind of ['tailwind', 'crosswind', 'headwind']) {
+      const { game, raft } = ready();
+      raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+      setWind(game, wind);
+      const zone = singletonPlace(game, 'coastal_waters');
+      for (const cargo of [...raft.children()]) if (cargo !== game.player.instance) cargo.destroy();
+      const empty = propertyOf(zone, 'crossing_minutes');
+
+      const hold = raft.getSlot(codex.slotNames.getId('items'));
+      for (let i = 0; i < perDay * days; i++)
+        expect(
+          game.session.createObject(codex.objectNames.getId('green_coconut')).moveToSlotOrRejection(hold),
+          `${i + 1}個目が筏の積荷枠に入る`,
+        ).toBeUndefined();
+
+      expect(propertyOf(zone, 'crossing_minutes'), `${wind} で横断が延びない`).toBe(empty);
+    }
+  });
+
   /** 銛を1本、乗り手の手に持たせる。 */
   function giveHarpoon(game: StartedGame): WorldObject {
     const harpoon = game.session.createObject(codex.objectNames.getId('fishing_harpoon'));
