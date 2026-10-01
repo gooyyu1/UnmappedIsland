@@ -302,7 +302,7 @@ generation_scopes:
 
   - `move_cost` は**その土地を進む遅さの倍率**です（1.0 が開けた土地＝ `walk_meters_per_hour`
     そのままの速さ、密林 1.6<!-- codex: terrain_generation.yaml location_types.jungle.move_cost -->、山頂 2.5<!-- codex: terrain_generation.yaml location_types.mountain_peak.move_cost -->）。
-  - `metersPerElevationUnit` は `elevation_top_meters ÷ 標高軸の値域` で、島では 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters --> を軸の値域で割った長さです。
+  - `metersPerElevationUnit` は `elevation_top_meters ÷ 標高軸の値域` です（島の `elevation_top_meters` は 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters -->）。
     どの軸を標高として読むかは `elevation_axis` が指します（エンジンは軸の名前を知りません）。
     **軸の両端が実際に出る**（3.1 節の `stretch_sites_to_range`）ので、島の最低点は必ず海抜 0 m、
     最高点は必ず 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters --> になります。
