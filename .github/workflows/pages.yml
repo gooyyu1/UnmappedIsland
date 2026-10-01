@@ -90,7 +90,7 @@ jobs:
               }
             }
             /*
-             * mermaidの図は<pre>で出す（buildDocsSite.mjs）ので、github-markdown-cssの
+             * mermaidの図は<pre>で出す（docsMarkdown.mjs）ので、github-markdown-cssの
              * コードブロックの地と余白が付く。図に枠は要らないので外し、中央へ置く。
              * 要素で絞るのは、github-markdown-cssの`.markdown-body pre`に詳細度で負けないため。
              */
