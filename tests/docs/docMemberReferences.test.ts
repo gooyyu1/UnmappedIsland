@@ -458,7 +458,10 @@ let dependencyDeclarations: string | undefined;
  */
 function declaredByDependency(name: string): boolean {
   if (dependencyDeclarations === undefined) {
-    const manifest = JSON.parse(read('package.json')) as Record<string, Record<string, string>>;
+    const manifest = JSON.parse(read('package.json')) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
     const packages = [
       ...Object.keys(manifest.dependencies ?? {}),
       ...Object.keys(manifest.devDependencies ?? {}),
