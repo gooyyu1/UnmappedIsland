@@ -261,7 +261,8 @@ describe('荷重が歩みの遅れと体力に効く', () => {
         raft: { recipes: Record<string, { steps: { requires?: { object: string; count?: number }[] }[] }> };
       };
     };
-    const logsPerRaft = Math.max(
+    // **いちばん少ないレシピで見る**——主張が先に破れるのは、丸太の少ないほうから。
+    const logsPerRaft = Math.min(
       ...Object.values(voyage.object_defs.raft.recipes).map((recipe) =>
         recipe.steps
           .flatMap((step) => step.requires ?? [])
@@ -271,12 +272,18 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     );
     const logId = codex.objectNames.getId('log');
     expect(logsPerRaft, '筏が丸太を要る').toBeGreaterThan(1);
+    // 引く道具は、体感の率（load_rate）を名乗る物すべて（docs/world/Containers.md 2節）。
+    const loadRateId = codex.propertyNames.getId('load_rate');
+    const haulers = [...codex.objects]
+      .filter((def) => !codex.isGenerated(def) && def.tryGetPropertyDef(loadRateId) !== undefined)
+      .map((def) => def.name);
+    expect(haulers.length, '引く道具が見つからない').toBeGreaterThan(0);
 
     const carriers = [...codex.objects]
       .filter((def) => def.hasTag(codex.vocabulary.world.characterTagId))
       .map((def) => def.name);
     for (const characterName of carriers)
-      for (const tool of ['sledge', 'handcart']) {
+      for (const tool of haulers) {
         const session = new WorldSession(codex, seededRng(42));
         session.createWorld();
         const character = session.createObject(codex.objectNames.getId(characterName));
