@@ -359,7 +359,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 **火（5番）の山は、薪棚です**（4.1節・`src/assets/world-codex/firewood.yaml`）。炉の段
 （[`FireSystem.md`](../engine/FireSystem.md) 6節）はいずれも石を数個積むだけで1日に届かないので、
 段ではなく幅です（2節）——段として立つのは薪のほうで、**開けるのは「伐った木から、取り出せる上限まで
-熱を取れること」**です。伐ったばかりの丸太は目方あたり太い枝の半分しか熱を出さず、1本の200<!-- codex: timber.yaml object_defs.log.props.fuel.value -->は火を焚く
+熱を取れること」です**。伐ったばかりの丸太は目方あたり太い枝の半分しか熱を出さず、1本の200<!-- codex: timber.yaml object_defs.log.props.fuel.value -->は火を焚く
 炉の薪の上限を超えるので、くべると入りきらない分が失われます。**棚が買うのは、割っただけの薪の先——同じ手間のまま
 燃料が20<!-- codex: firewood.yaml object_defs.green_firewood.props.fuel.value -->から30<!-- codex: firewood.yaml object_defs.seasoned_firewood.props.fuel.value -->へ上がるぶん**です——拾った枝より安くなる線は割った時点で跨いでいて、そこから先を落とすのが棚のほう
 （[`FireSystem.md`](../engine/FireSystem.md) 2.5節）。同じ形だった移動の距離は系統から落としましたが
@@ -799,7 +799,7 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 **浅い洞窟の中で作業できるのは、外が曇りの正午（+11）以上に明るいときだけです。** 中は外より段が −6<!-- codex: locations.yaml object_defs.shallow_cave.props.ambient_brightness.value --> 下がり、
 手元のしきい値は +5<!-- codex: characters/player_character.yaml traits.player_character.props.hand_brightness.stages.2.min --> だからです。曇りの日は正午のあたりだけ、雨の日は
 一日中できません（`tests/diagnostics/activityHoursAssumptions.test.ts`。季節ごとに何時間できるかは
-[`stats/climate.yaml`](../../stats/climate.yaml) の `activity_hours` の `shallow_cave`）。**アーティファクトの出どころの3分の1が浅い洞窟（6節）**で、そこは同時に序盤の住居
+[`stats/climate.yaml`](../../stats/climate.yaml) の `activity_hours` の `shallow_cave`）。**アーティファクトの出どころの3分の1が浅い洞窟**（6節）で、そこは同時に序盤の住居
 （[`Dwellings.md`](./Dwellings.md) 5節）でもあるので、朝夕と雨の日に中で手を動かすぶんが燃料の需要に
 なります。奥の洞窟が開けば（【いつか: 洞窟内部】）、そちらは昼でも光源が要ります。
 
@@ -816,8 +816,8 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 | **手元の明るさ** | 環境光と、持っている光源＋その場に据えられた光源 |
 | **視界の明るさ** | 環境光と、**持っている光源だけ** |
 
-しきい値の対応は——**手元の細かい作業は「手元の明るさ」**、**移動と屋外の採取は「視界の明るさ」**を
-見ます。
+しきい値の対応は——**手元の細かい作業は「手元の明るさ」**、**移動と屋外の採取は「視界の明るさ」を
+見ます**。
 
 分ける理由があり、**どちらか一方をやめても、もう一方が同じ分け方を要求します。**
 
@@ -1013,7 +1013,7 @@ ambient_brightnessをそのまま土台にするためです（同 2節）。
 ### 8.3 1周回は、2つの局面を積んで出す
 
 **同じ28個<!-- stats: terrain.yaml work_piles_total piles -->の山が、局面ごとに数え直すと約117日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->ぶんになります。** 内訳は
-**島を開く16.0日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->**と、**開き切った後の101.4日<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->**です。
+**島を開く16.0日**<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->と、**開き切った後の101.4日**<!-- stats: terrain.yaml cycle base=shortest_mean metric=steady_days mean -->です。
 
 局面は2つに割りました。**割る位置を決めているのは「探索がまだ残っているか」の1点だけ**で、
 どちらの1日も8.2節の同じ式で出ます。1日の側は500シード<!-- stats: terrain.yaml meta seeds -->の実測
@@ -1052,7 +1052,7 @@ ambient_brightnessをそのまま土台にするためです（同 2節）。
 
 **夜**は、睡眠360分<!-- stats: terrain.yaml daily_budget sleep -->と、焚き火のそばでの加工347分<!-- stats: terrain.yaml daily_budget night_craft -->。
 加工の枠は、日暮れから眠るまでの360分から嵐の夜のぶんを引いたものです（8.2節）。1日は、屋外の枠・
-夜の加工・睡眠に、**嵐で止まる40分<!-- stats: terrain.yaml daily_budget storm_stop -->**を足してちょうど24時間になります
+夜の加工・睡眠に、**嵐で止まる40分**<!-- stats: terrain.yaml daily_budget storm_stop -->を足してちょうど24時間になります
 （`tests/diagnostics/dailyPhaseAssumptions.test.ts` が見張ります）。
 **律速は屋外です**——拠点での加工は約21200分<!-- stats: terrain.yaml work_piles_total base_minutes ±100 -->で、夜の枠に対して
 61日ぶん<!-- stats: terrain.yaml work_piles_total base_days -->なので、約117日<!-- stats: terrain.yaml cycle base=shortest_mean metric=total_days mean ±1 -->の中に余裕で収まります。**夜が足りなくなることはなく、

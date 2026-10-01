@@ -754,7 +754,7 @@
   進むのをやめた日のぶんだけです。**釣りだけで出れば、群れの無い区間は赤字**です——砂浜から
   **今の網**（3 節）**では**、近道を行く 12 区間<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest legs -->のうち群れの立ちうる海区は 4 つで、残る区間がそれにあたります。**岸壁から出る
   8 区間<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs -->では 1 つだけ**（本土の島影）——**「短い航路ほど補給の当てが無い」**（3.6 節）**は、そのまま
-  「短い航路ほど積んで出なければならない」**になります。
+  「短い航路ほど積んで出なければならない」になります**。
 - **だから積むのは 4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日ぶん**（3.9.1 節の針路の日数ぶん）。1 日 3 つを日数ぶん積んでも、**積荷の段が
   上がる境目**（3.2 節の `laden`）**には届かず、予定ぶんを積むこと自体は速さを削りません**
   （`tests/world-codex/voyageYaml.test.ts`）。削られるのは、
