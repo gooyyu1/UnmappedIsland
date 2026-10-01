@@ -152,7 +152,7 @@ pain:
 ### 2.1 衝撃は、自分で引いていく量
 
 **殴られて意識が飛ぶのは、傷ではなく打たれたことの結果です。** 傷（`severity`）の段にぶら下げると
-時間の尺度が合いません——深い傷は10日かけて治り、気絶から覚めるのは数十分だからです。同じ量の段で
+時間の尺度が合いません——深い傷は日の単位で治り、気絶から覚めるのは時間の単位だからです。同じ量の段で
 2桁違う時間は表せないので、衝撃を1つの量として持ちます。
 
 ```yaml
@@ -163,7 +163,7 @@ shock:
     min: 0  # <!-- codex: animals.yaml object_defs.monkey.props.shock.range.min -->
     max: 100  # <!-- codex: animals.yaml object_defs.monkey.props.shock.range.max -->
   passives:
-    # max ÷ 25。満タンから6時間で引き切る
+    # max ÷ 25（下の箇条）
     - add: {self: {shock: -4}}  # <!-- codex: animals.yaml object_defs.monkey.props.shock.passives.0.add.self.shock -->
   stages:
     - {name: steady}
@@ -192,7 +192,7 @@ shock:
 
 - **どれだけ与えるかは武器の性格が決めます。** 量そのものは候補が持ち、武器はどの候補を引くかの重みだけを
   宣言します（[`HuntingSystem.md`](./HuntingSystem.md) 1.2 節）。5kgのサルは石斧の強打（250<!-- codex: animals.yaml traits.beast.interactions.strike.pick.0.add.self.shock -->）なら一撃、
-  尖った石の浅打（30<!-- codex: animals.yaml traits.beast.interactions.strike.pick.1.add.self.shock -->）なら3撃
+  尖った石の浅打（30<!-- codex: animals.yaml traits.beast.interactions.strike.pick.1.add.self.shock -->）なら何撃も要ります
 - **階段状に覚めます。** `max` を越えた分は捨てられるので、上の例のサルは100<!-- codex: animals.yaml object_defs.monkey.props.shock.range.max -->から `-4/tick`<!-- codex: animals.yaml object_defs.monkey.props.shock.passives.0.add.self.shock --> で引き、70<!-- codex: animals.yaml object_defs.monkey.props.shock.stages.2.min -->を
   割れば `rattled`（-30<!-- codex: animals.yaml object_defs.monkey.props.shock.stages.1.passives.0.modify.self.consciousness -->）、30<!-- codex: animals.yaml object_defs.monkey.props.shock.stages.1.min -->を割れば戻り切ります。当たり所が頭でなくても同じように効きます
 - **引く速さも `max` に比例させます**（`max ÷ 25`）。しないと、大きい相手ほど殴った端から溜まっていき、
@@ -229,7 +229,7 @@ blood:
   on_min:
     destroy: {subject: self, reason: exsanguinated}   # 消す宣言が死因を名乗る（6 節）
   passives:
-    # 血は自分で作り直される。1日およそ200mL。戻る条件は 3.1 節
+    # 血は自分で作り直される。戻る条件は 3.1 節
     - conditions:
         - {prop: hydration, in_stage_or_above: hydrated}
         - {prop: body_fat, in_stage_or_above: gaunt}
@@ -269,7 +269,7 @@ stages:
 - **意識を奪う量は、深い段ほど大きくします。** 段の寄与は今居る段のものだけが立つので、最も深い段に
   寄与を書き忘れると、**瀕死の相手が中等症より意識がはっきりする**という裏返りが起きます。
 - **血は自分で戻ります**（tick で増えます）。**速さの非対称が効き目のすべて**
-  で、削るのは一瞬（毎時60mLの裂傷でも、大血管なら数分）なのに戻るのは1日およそ200mL——**牙の傷1つが
+  で、削るのは一瞬（大血管なら数分）なのに戻るのは日の単位——**牙の傷1つが
   奪う600mLに3.1日**かかります（3.3 節）。「気をつけていれば治る」と「一度の失敗が何日も響く」が
   同じ1本で両立します。
 - **戻るのに条件が付きます**（3.1 節）。水と食べ物が足りていない間は戻りません。
@@ -307,8 +307,8 @@ stages:
 1 日 192mL<!-- stats: balance.yaml consumption property=blood condition=all(in_stage_or_above(self.hydration,hydrated),in_stage_or_above(self.body_fat,gaunt)) character=medic per_day -->
 です。
 
-- **人が 1 つの傷で失う最大は 600mL** です（牙の傷。`-150/tick`<!-- codex: injuries.yaml object_defs.gore_wound.passives.1.add.parent.blood --> が固まるまでの 4 tick、4 節）。戻るのに
-  **3.1 日**かかります。**槍が残す 1,000mL の刺し傷は、人には刺さりません**——湧く先は殴られた獣
+- **人が 1 つの傷で失う最大は 600mL** です（牙の傷。`-150/tick`<!-- codex: injuries.yaml object_defs.gore_wound.passives.1.add.parent.blood --> が固まるまで、4 節）。戻るのに
+  **3.1 日**かかります。**槍が残す刺し傷は、人には刺さりません**——湧く先は殴られた獣
   （`src/assets/world-codex/animals.yaml`）と、串を打った落とし穴へ落ちた獣
   （`src/assets/world-codex/traps.yaml`）だけです。
 - **罠で回す暮らしは、その 3.1 日を持っています。** 落とし穴が返すイノシシは
@@ -335,7 +335,7 @@ stages:
 ```yaml
 laceration:
   props:
-    # 傷の重さとは別の時間で動く。4 tick（1時間）で固まる。
+    # 傷の重さとは別の時間で動く。満ちた勢いが毎 tick 引いて、尽きれば固まる。
     bleeding:
       value: 100  # <!-- codex: injuries.yaml object_defs.laceration.props.bleeding.value -->
       range:
@@ -355,13 +355,13 @@ laceration:
 - **止まる仕組みを傷の側に持たせないと、掠り傷でも必ず死にます。** `severity` の段をゲートにすると、
   **傷が治りきるまで何日も流れ続けます**。血が固まるのは数分、傷が塞がるのは数日で、**これらは別の時間**
   で動きます。
-- **勢いは桁で書き分けます。** 1 tick は15分なので、`-15`<!-- codex: injuries.yaml object_defs.laceration.passives.1.add.parent.blood --> は毎時60mL——尖った石で裂けた傷の桁です
+- **勢いは桁で書き分けます。** `-15`<!-- codex: injuries.yaml object_defs.laceration.passives.1.add.parent.blood --> は尖った石で裂けた傷の桁です
   （潰れた血管は縮んで塞がるので、切れる刃で切った傷ほどは出ません）。**槍が残す刺し傷は `-250`<!-- codex: injuries.yaml object_defs.puncture_wound.passives.1.add.parent.blood -->**
-  ——固まるまでの4 tick で1,000mL を奪うので、400mL<!-- codex: animals.yaml object_defs.monkey.props.blood.range.max --> のサルは30分で尽き、4,600mL<!-- codex: animals.yaml object_defs.wild_boar.props.blood.range.max --> のイノシシでも数突きで
+  ——固まるまでに、400mL<!-- codex: animals.yaml object_defs.monkey.props.blood.range.max --> のサルは尽き、4,600mL<!-- codex: animals.yaml object_defs.wild_boar.props.blood.range.max --> のイノシシでも数突きで
   危機に届きます。大血管を切れば `-1000` の桁で数 tick しか保たず、にじむ程度の擦り傷は `-2` で実質
   何も起きません。**同じ1つの量に対するレートの違い**だけで、致命傷から掠り傷までが並びます。
 - **レートは傷が持ち、相手の大きさを知りません。** だから**同じ傷が、体格で意味を変えます**——固まる
-  までの合計60mLは、ヒトの5,000mL<!-- codex: characters/player_character.yaml traits.player_character.props.blood.range.max -->には響きませんが、サルの400mL<!-- codex: animals.yaml object_defs.monkey.props.blood.range.max -->では1割半です。狩る相手が小さいほど
+  までに失う量は、ヒトの5,000mL<!-- codex: characters/player_character.yaml traits.player_character.props.blood.range.max -->には響きませんが、サルの400mL<!-- codex: animals.yaml object_defs.monkey.props.blood.range.max -->では無視できない割合です。狩る相手が小さいほど
   効く、が調整値なしで出ます。
 - **治療具の効き方は分かれます。** 止血帯（`hemostatic`、未実装）は**ゲートを閉じて止め**、包帯は
   **`bleeding` を余計に引いて固まるのを早めます**（失う量は半分になりますが、ゼロにはなりません）。
@@ -529,15 +529,15 @@ pathogen:
               blood: -40  # <!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.3.passives.0.add.self.blood -->
 ```
 
-`hydration` は素で -1/tick<!-- codex: characters/captain.yaml object_defs.captain.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/engineer.yaml object_defs.engineer.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/farmer.yaml object_defs.farmer.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/medic.yaml object_defs.medic.props.hydration.passives.0.add.self.hydration --> 減る（[`Characters.md`](../world/Characters.md)）ので、`feverish` は水の
-保ちを半分に、`septicemic` は 3 分の 1 にします。
+`hydration` は素で -1/tick<!-- codex: characters/captain.yaml object_defs.captain.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/engineer.yaml object_defs.engineer.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/farmer.yaml object_defs.farmer.props.hydration.passives.0.add.self.hydration --><!-- codex: characters/medic.yaml object_defs.medic.props.hydration.passives.0.add.self.hydration --> 減る（[`Characters.md`](../world/Characters.md)）ので、段の削りがそこへ
+足されて、`feverish` より `septicemic` のほうが水の保ちを大きく縮めます。
 
 **敗血症が血を削るのは、辻褄合わせではありません。** 敗血症性ショックでは血管が漏れ、血漿が循環の外へ
 抜けます。**傷口から流れ出るのと、体内で循環から失われるのは同じこと**（4 節）なので、外傷と同じ量へ
 そのまま載ります。そして**飲んだ水は漏れを塞がない**——渇きは戻るのに血は戻らない、という非対称が
 そのまま「対症療法では買えないもの」になります。
 
-血が戻るのは1日200mLで、漏れ出る速さとは桁が違うので（3 節）、**重体になってからの対症療法は時間しか
+血が戻る速さは、漏れ出る速さとは桁が違うので（3 節）、**重体になってからの対症療法は時間しか
 買えず、傷を洗うなり膿を出すなりして原因を断たなければ死ぬ**、が値の動きだけで成立します。症状に対処
 しても根本解決にならない、というコンセプトはここに宿ります。
 
@@ -611,9 +611,9 @@ pathogen:
 
 **押し下げる深さは、気温の刻みへ端を合わせます。** 空の気温は平年の 20℃<!-- codex: core.yaml object_defs.world.props.ambient_temperature.value --> に日射と季節が重なるだけなので
 （[`ClimateSystem.md`](./ClimateSystem.md) 1 節、`core.yaml`）、空だけで素の 16℃ を下回るのは
-**涼しい季節の夜（12℃）と、その薄明・雨天の昼（15℃）** の 2 つです。**その間を 1℃ ずつに割るのは、
+**涼しい季節の夜と、その薄明・雨天の昼**です。**その間を割るのは、
 土地が持つ海抜ぶんの差**（同 1.1 節）で、**守る側の 1 段ごとに、ちょうど釣り合う土地があります。**
-**最も深い衣服が海沿いの 12℃ とちょうど釣り合う**のは、炉の暖（+8<!-- codex: fire.yaml traits.hearth.passives.0.modify.parent.ambient_temperature -->）が**空の**最も寒い夜をちょうど平年へ
+**最も深い衣服が海沿いの最も寒い夜とちょうど釣り合う**のは、炉の暖（+8<!-- codex: fire.yaml traits.hearth.passives.0.modify.parent.ambient_temperature -->）が**空の**最も寒い夜をちょうど平年へ
 戻すのと同じ置き方です（[`FireSystem.md`](./FireSystem.md) 9.2 節）——**釣り合うだけなので、衣服だけでは山の夜に
 届きません**（[`ClimateSystem.md`](./ClimateSystem.md) 1.1 節）。**そこから上へ伸ばすのは、寝ている間だけ
 重なる寝床の分**です（[`Bedding.md`](../world/Bedding.md) 4.2 節）。深さそのものは、衣服が
@@ -621,7 +621,7 @@ pathogen:
 4.2 節です。
 
 削る速さは `-2/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.passives.0.add.self.warmth -->、雨に打たれている間は `-6/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.passives.1.add.self.warmth -->、境目より上に居る間の戻りは `+8/tick`<!-- codex: characters/player_character.yaml traits.player_character.props.warmth.passives.2.add.self.warmth --> です。
-濡れた一晩（48 tick）で失う 288 kcal は、火のそばの 9 時間で戻ります。
+濡れた一晩で失った熱は、火のそばに居れば時間をかけて戻ります。
 
 ## 9. 画面に出すのは、意識のバーと出血の印
 
@@ -660,7 +660,7 @@ pathogen:
   据えると、その値自身が毎 tick 出ていってしまううえ、出した分を受け取るプロパティも無い）ので、傷の
   種類が増えたときに見るのは、その刻みの粗さで足りるか
 - 傷ごとの出血レート（4 節）。裂傷の `-15`<!-- codex: injuries.yaml object_defs.laceration.passives.1.add.parent.blood --> と刺し傷の `-250`<!-- codex: injuries.yaml object_defs.puncture_wound.passives.1.add.parent.blood --> が並んだので桁は決まったが、**大血管を
-  切る傷はまだ無い**。血が固まるまでの 4 tick も、今は傷の種類で変えていない
+  切る傷はまだ無い**。血が固まるまでの長さも、今は傷の種類で変えていない
 - `shock` の配分（2.1 節）は、武器と獲物が並んだ時点の釣り合いで置いてある。**倒れた当人に手番が
   回らないことは決まった**（6 節）ので、残るのは下の「倒れている間に周りが何をするか」——それが
   決まれば、覚めるまでの長さを見直すことになる
