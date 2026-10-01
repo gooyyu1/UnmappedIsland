@@ -31,6 +31,9 @@ from collections import defaultdict
 from calibrate import PRICE, linked_session_files
 from paths import data, stats, usage
 
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
+
 START = dt.datetime(2000, 1, 1, tzinfo=dt.timezone.utc)
 RATE = 1 / 2.69  # 公称単価から CCR の cost_usd へ揃える係数（calibrate.py の実測）
 COLS = ("input", "output", "cache_write", "cache_read")

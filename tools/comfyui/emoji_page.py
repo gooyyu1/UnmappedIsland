@@ -14,12 +14,16 @@ Qwenに「白い紙の上の物」として扱わせるため。
 
 from __future__ import annotations
 
+import sys
 import argparse
 from pathlib import Path
 
 from PIL import Image
 
 from icon_mark import render_emoji
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 
 def main() -> None:

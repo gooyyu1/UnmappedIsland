@@ -12,10 +12,13 @@ output_tokens と合わない。cache 系はメタデータと一致するので
 単体で使うほか、sweep_events.py から並列に呼ばれる。
 """
 
+import sys
 import json
 import os
 import subprocess
-import sys
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 

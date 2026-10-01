@@ -25,6 +25,7 @@ PIL と numpy と scipy が要る。ComfyUI同梱の .venv のPythonで動く（
 
 from __future__ import annotations
 
+import sys
 import argparse
 import json
 from pathlib import Path
@@ -32,6 +33,9 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 from scipy.ndimage import gaussian_filter, uniform_filter
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 TARGET_WIDTH = 1024
 TARGET_HEIGHT = 320

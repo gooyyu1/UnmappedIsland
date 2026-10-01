@@ -8,6 +8,7 @@ bridge は worktree 名に CCR の session id 後半が入るので、~/.claude/
 ディレクトリ名から突き合わせられる。
 """
 
+import sys
 import glob
 import json
 import os
@@ -15,6 +16,9 @@ import re
 from collections import defaultdict
 
 from paths import cost, data
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 ROOT = os.path.expanduser("~/.claude/projects")
 # $/Mtok（Opus の公称）

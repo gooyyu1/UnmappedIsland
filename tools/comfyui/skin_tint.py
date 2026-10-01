@@ -26,12 +26,16 @@ PIL と numpy が要る。
 
 from __future__ import annotations
 
+import sys
 import argparse
 import re
 from pathlib import Path
 
 import numpy as np
 from PIL import Image
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 SPOT_PATTERN = re.compile(r"^([\d.]+),([\d.]+),([\d.]+),([\d.]+),#([0-9a-fA-F]{6})$")
 SLASH_PATTERN = re.compile(

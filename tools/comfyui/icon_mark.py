@@ -14,11 +14,15 @@ PIL が要る。絵文字のフォントは Windows 同梱の Segoe UI Emoji（C
 
 from __future__ import annotations
 
+import sys
 import argparse
 from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 EMOJI_FONT = "C:/Windows/Fonts/seguiemj.ttf"
 # Segoe UI Emojiのカラーグリフはこの大きさでしか出ない（他の値だと白黒の輪郭になる）。

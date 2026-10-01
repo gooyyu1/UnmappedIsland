@@ -13,12 +13,16 @@
 
 from __future__ import annotations
 
+import sys
 import hashlib
 import json
 import os
 import urllib.error
 import urllib.request
 from pathlib import Path
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent

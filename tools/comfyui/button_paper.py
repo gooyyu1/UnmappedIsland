@@ -21,6 +21,7 @@
 
 from __future__ import annotations
 
+import sys
 import argparse
 import json
 import re
@@ -30,6 +31,9 @@ import numpy as np
 from PIL import Image
 
 from card_frame import CARD_HEIGHT, CARD_WIDTH, cover, rounded_mask
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 AT_PATTERN = re.compile(r"^(\d+),(\d+)$")
 

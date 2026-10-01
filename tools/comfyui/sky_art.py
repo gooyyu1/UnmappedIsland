@@ -13,11 +13,15 @@ PIL と numpy が要る。ComfyUI同梱の .venv のPythonで動く（README参�
 
 from __future__ import annotations
 
+import sys
 import argparse
 from pathlib import Path
 
 import numpy as np
 from PIL import Image
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 
 def parse_stop(text: str) -> tuple[float, np.ndarray]:
