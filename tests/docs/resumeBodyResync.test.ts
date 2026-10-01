@@ -40,7 +40,8 @@ describe('直しの周で起こす文面', () => {
   });
 
   it('指す先の節が、push のたびに突き合わせ直すことを持っている', () => {
-    const claude = readFileSync(CLAUDE_MD, 'utf-8');
+    // CRLFの作業ツリーでも見出しの行を同じ綴りで探せるように、改行を揃えてから読む。
+    const claude = readFileSync(CLAUDE_MD, 'utf-8').replace(/\r\n/g, '\n');
     const start = claude.indexOf(`\n${SECTION_HEADING}\n`);
     if (start < 0) throw new Error(`${SECTION_HEADING} が ${CLAUDE_MD} に無い`);
     const section = claude.slice(start + 1, claude.indexOf('\n## ', start + 1));
