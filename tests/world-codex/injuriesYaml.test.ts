@@ -393,7 +393,7 @@ describe('injuries.yamlの怪我', () => {
    * ——下げる手立てだけがあっても、上がる道が無ければ数字は動かない。
    */
   describe('傷を洗う', () => {
-    /** 健康な体でinfectionが1段上がるのにかかるtick数（0.25/tick で 40）。 */
+    /** 健康な体でinfectionが1段上がるのにかかるtick数。 */
     const TO_FESTERING = 160;
     /** cleanからsepticへ届くまでのtick数。 */
     const TO_SEPTIC = 320;
@@ -481,9 +481,9 @@ describe('injuries.yamlの怪我', () => {
       expect(injury.tryGetProperty(infectionId())?.stage?.name).toBe('septic');
     });
 
-    it('どの開いた傷も、治りきる前に敗血症の段へ入る', () => {
-      // どの開いた傷も洗わずに済ませられない、の根拠（InjurySystem.md 6.2節）。最も短く残る傷で
-      // 決まるので、膿む傷を1つずつ新しい体に負わせて、敗血症へ届く時点でまだ残っているかを見る。
+    it('深く残る個体なら、どの開いた傷も治りきる前に敗血症の段へ入る', () => {
+      // InjurySystem.md 6.2節。重さを振る傷（くくり罠の裂傷）の浅い個体は先に治りきるので、どの傷も
+      // 重さの上端に据え直し、膿む傷を1つずつ新しい体に負わせて、敗血症へ届く時点でまだ残っているかを見る。
       const festering = codex
         .objectDefNamesWithTag(codex.tagNames.getId('injury'))
         .filter((name) => codex.objects.get(codex.objectNames.getId(name)).tryGetPropertyDef(infectionId()));
@@ -492,6 +492,8 @@ describe('injuries.yamlの怪我', () => {
       const notSeptic = festering.filter((name) => {
         open(FALLS);
         const wound = openWound(name);
+        const severity = wound.getProperty(codex.propertyNames.getId('severity'));
+        severity.setNumberWithoutEvents(severity.def.range?.max ?? NaN);
         tick(TO_SEPTIC);
         return (
           !injuriesOf(player).includes(name) || wound.tryGetProperty(infectionId())?.stage?.name !== 'septic'

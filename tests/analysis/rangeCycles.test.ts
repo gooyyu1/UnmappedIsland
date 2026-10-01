@@ -1195,7 +1195,7 @@ object_defs:
   it('効き始めの違う押し手も、束ねずに別々に並べる', () => {
     // 段が上がるほど速く奪うが、速い側は遅い側より後からしか効かない。1つの幅に束ねると
     // 「膿み始めた時点で-2」という、どちらの段も持っていない押し手ができる。
-    // 0から+0.25/tickなので、festering（40）へは160 tick、septic（80）へは320 tick。
+    // 0から上がり始め、festeringへは160 tick、septicへは320 tick。
     expect(externalDeltasOf('gash', 'hydration')).toEqual([
       { amounts: [-1], ticksUntilStart: 160, ticksUntilStop: 320 },
       { amounts: [-2], ticksUntilStart: 320, ticksUntilStop: undefined },
