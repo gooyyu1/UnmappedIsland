@@ -239,14 +239,14 @@
 | 狩猟・出くわす（`quarry_sense`） | 0<!-- codex: characters/player_character.yaml traits.player_character.props.quarry_sense.value --> | +1<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.1.passives.0.modify.self.quarry_sense --> | +2<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.2.passives.0.modify.self.quarry_sense --> | +4<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.quarry_sense --> |
 | 狩猟・当てる（`hunting_aim`） | 0<!-- codex: characters/player_character.yaml traits.player_character.props.hunting_aim.value --> | +10<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.1.passives.0.modify.self.hunting_aim --> | +20<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.2.passives.0.modify.self.hunting_aim --> | +40<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.hunting_aim --> |
 
-**上乗せの刻みを揃えられないのは、上乗せする先の桁が違うから**です——着火の重みは 60 前後、獣のつまみは 2〜4、
-当てる側は 15〜78 で、同じ数を足せば片方は効かず片方は跳ねます。**狩猟が 2 本持つのも同じ理由**で、
-出くわすつまみ（2〜4）を動かす刻みは当たり所の重み（55<!-- codex: tools.yaml object_defs.spear.props.thrust.value -->〜70<!-- codex: tools.yaml object_defs.sharp_stone.props.light_blow.value -->）の前では見えません。**同じ刻みで全部に
+**上乗せの刻みを揃えられないのは、上乗せする先の桁が違うから**です——着火の重みは 60<!-- codex: fire.yaml object_defs.dry_grass.props.ignition_chance.value -->〜100<!-- codex: coconut.yaml object_defs.coconut_husk.props.ignition_chance.value -->、獣のつまみは 2<!-- codex: locations.yaml object_defs.sandy_beach.props.rat_find.value -->〜4<!-- codex: locations.yaml object_defs.sandy_beach.props.monkey_find.value -->、
+当てる側は 15<!-- codex: voyage.yaml object_defs.raft.props.catch_chance.value -->〜78<!-- codex: voyage.yaml object_defs.fish_shoal.props.catch_chance.value --> で、同じ数を足せば片方は効かず片方は跳ねます。**狩猟が 2 本持つのも同じ理由**で、
+出くわすつまみ（2<!-- codex: locations.yaml object_defs.sandy_beach.props.rat_find.value -->〜4<!-- codex: locations.yaml object_defs.sandy_beach.props.monkey_find.value -->）を動かす刻みは当たり所の重み（55<!-- codex: tools.yaml object_defs.spear.props.thrust.value -->〜70<!-- codex: tools.yaml object_defs.sharp_stone.props.light_blow.value -->）の前では見えません。**同じ刻みで全部に
 効かせられるのは倍率だけ**ですが、掛け算はこの世界の文法に無く、合成の器（`modify`・`base`）はどちらも
 加算です（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 10.2 節）。
 
 **当てる側の中でも幅はあります。** 武器の当たり（55<!-- codex: tools.yaml object_defs.spear.props.thrust.value -->〜70<!-- codex: tools.yaml object_defs.sharp_stone.props.light_blow.value -->）と魚の群れ（78<!-- codex: voyage.yaml object_defs.fish_shoal.props.catch_chance.value -->）は同じ桁ですが、群れの居ない
-海面（15<!-- codex: voyage.yaml object_defs.raft.props.catch_chance.value -->）だけは 1 桁下で、`expert`（+40<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.hunting_aim -->）では 3.7 倍になります——**同じ刻みが最も強く効く場所**で、
+海面（15<!-- codex: voyage.yaml object_defs.raft.props.catch_chance.value -->）だけは 1 桁下です。**同じ刻みが最も強く効く場所**はここで、`expert`（+40<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.hunting_aim -->）の上乗せは
 群れとの落差が縮む形で現れます（[`Voyage.md`](Voyage.md) 3.9.2 節）。3 本目を足してまで分けるほどでは
 ないと見て、当てる側は 1 本のままにしています。
 
@@ -285,8 +285,8 @@
   加算だけで出ます。**当てる側でも同じことが起きます**——下の空振り・仕留めがそれです。
 - **空振り（`whiff`）には積みません。** 当たる側だけを押せば、卓の合計が増えるぶんで外れの割合は
   自然に落ちます。外れにも積むと、腕が上がるほど空を切る形になります。
-- **仕留めの重み（`vulnerability`）にも積みません。** 桁が違う（起きている獣で 5<!-- codex: animals.yaml traits.beast.props.vulnerability.value -->、気絶した獣で
-  200 超）ので、当たり所と同じ刻みは効きません。**そのぶん、当たり所が太った卓では仕留めの割合が
+- **仕留めの重み（`vulnerability`）にも積みません。** 桁が違う（起きている獣で 5<!-- codex: animals.yaml traits.beast.props.vulnerability.value -->、気絶すると
+  +200<!-- codex: animals.yaml traits.beast.props.consciousness.stages.0.passives.0.modify.self.vulnerability -->）ので、当たり所と同じ刻みは効きません。**そのぶん、当たり所が太った卓では仕留めの割合が
   相対的に落ちます**が、気絶させてから仕留める流れは変わりません——気絶した相手の無防備さは
   当たり所の合計より大きいためです。
 - **加算なので、相手ごとの差は腕を上げるほど埋もれます。** 枯れ草（60<!-- codex: fire.yaml object_defs.dry_grass.props.ignition_chance.value -->）とヤシの実の皮（100<!-- codex: coconut.yaml object_defs.coconut_husk.props.ignition_chance.value -->）の差は

@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { characterDefNames } from '../../src/domain/generation/NewGame';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { seededRng } from '../../src/domain/Rng';
 import type { WorldObject } from '../../src/domain/WorldObject';
@@ -263,5 +266,55 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     expect(sledgeAt(10), 'そりと台車は10kgで並ぶ').toBeCloseTo(handcartAt(10), 6);
     expect(sledgeAt(9), '9kgではそりのほうが軽い').toBeLessThan(handcartAt(9));
     expect(sledgeAt(11), '11kgでは台車のほうが軽い').toBeGreaterThan(handcartAt(11));
+  });
+});
+
+describe('獲物を丸ごと担げるかの線（docs/world/Animals.md 5節）', () => {
+  const codex = bundledCodex();
+  const animalsDoc = readFileSync(join('docs', 'world', 'Animals.md'), 'utf8');
+
+  /** 文書の表が書いた、その獣の重さ（g）。表の数は獣の側の仕様で、定義はまだ無い獣も在る。 */
+  function massOf(name: string): number {
+    const matched = new RegExp(
+      `^\\| \\*\\*(?:野生化した)?${name}\\*\\*[^|]* \\|[^|]*\\| (\\d+) kg \\|`,
+      'm',
+    ).exec(animalsDoc);
+    expect(matched, `Animals.md の表に ${name} の行が無い`).not.toBeNull();
+    return Number(matched![1]) * 1000;
+  }
+
+  /** 5節の地の文が書き写した重さ（g）。表と食い違えば、地の文の主張がどの獣の話か分からなくなる。 */
+  function proseMassOf(label: string): number {
+    const matched = new RegExp(`${label}（(\\d+) kg）`).exec(animalsDoc);
+    expect(matched, `Animals.md から「${label}（N kg）」が読めない`).not.toBeNull();
+    return Number(matched![1]) * 1000;
+  }
+
+  /** 人物ごとの、荷重のその段の下端（g）。 */
+  function stageFloors(stageName: string): readonly number[] {
+    const loadId = codex.propertyNames.getId('load');
+    return characterDefNames(codex).map((name) => {
+      const floor = codex.objects
+        .get(codex.objectNames.getId(name))
+        .tryGetPropertyDef(loadId)
+        ?.lowerBoundOfStage(stageName);
+      expect(floor, `${name} の load に段 ${stageName} が無い`).toBeDefined();
+      return floor!;
+    });
+  }
+
+  it('シカは誰でも担げるが、全員が heavy の段に入る', () => {
+    const deer = massOf('シカ');
+    expect(proseMassOf('シカ'), '地の文のシカの重さが表と合う').toBe(deer);
+    for (const floor of stageFloors('heavy')) expect(floor).toBeLessThanOrEqual(deer);
+    for (const floor of stageFloors('too_heavy')) expect(floor).toBeGreaterThan(deer);
+  });
+
+  it('ニシキヘビとヤギは誰にも担げず、最も担げる担ぎ手でちょうど too_heavy の下端に乗る', () => {
+    const strongest = Math.max(...stageFloors('too_heavy'));
+    for (const name of ['ニシキヘビ', 'ヤギ']) {
+      expect(proseMassOf('ニシキヘビとヤギ'), `地の文の重さが表の${name}と合う`).toBe(massOf(name));
+      expect(strongest, name).toBe(massOf(name));
+    }
   });
 });
