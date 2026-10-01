@@ -515,7 +515,7 @@ object_defs:
         become: {subject: instrument, content: hot_water_liquid}
         set: {self: {heat_soak: 0}}
 
-  # 焚き火。枝を積んだだけの炉。器を載せる枠を持たず、種火は30分で死ぬ。
+  # 焚き火。枝を積んだだけの炉。器を載せる枠を持たず、種火はすぐに死ぬ。
   campfire:
     traits: [hearth]
     recipes:
@@ -568,7 +568,7 @@ object_defs:
   three_stone_hearth:
     traits: [hearth]
     props:
-      # 焚き火（900）に石3つ（1,000×3）。
+      # 焚き火に石を積んだ重さ。
       weight: {value: 3900}
       fuel:
         value: 0
@@ -609,7 +609,7 @@ object_defs:
   stone_hearth:
     traits: [hearth]
     props:
-      # 三石のかまど（3,900）に石8つ。囲いごと運ぶ物ではないが、重さは名乗る。
+      # 三石のかまどに石を積み足した重さ。囲いごと運ぶ物ではないが、重さは名乗る。
       weight: {value: 11900}
       fuel:
         value: 0

@@ -314,8 +314,8 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 進まず、棚が積んである薪を 1 tick に 1 つ進めます——炉が火にかけた物を進めるのと同じ向き（7 節）です。
 **天気も時刻も見ません**——屋根が雨を防ぎ、台が地面から離して風を通すので、日差しの当たった tick を
 数える干し場（`drying.yaml`）とはそこが違います。乾き切るのは 576 tick<!-- codex: firewood.yaml object_defs.green_firewood.props.seasoning_remaining.value -->で、現実の 3〜4 週を
-4 分の 1 へ縮めた長さです（`tests/world-codex/firewoodYaml.test.ts`）（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md) の
-「長くかかるものだけ、現実の 4 分の 1 へ縮める」節）。
+4 分の 1 へ縮めた長さです（[`../concept/DesignPrinciples.md`](../concept/DesignPrinciples.md) の
+「長くかかるものだけ、現実の 4 分の 1 へ縮める」節。`tests/world-codex/firewoodYaml.test.ts` が見ます）。
 
 **燃料 1 点あたりの手間は、割った時点で既に枝より安くなっています。** 太い枝は 25.1 分<!-- stats: balance.yaml object_costs object=thick_branch total_minutes -->で
 20<!-- codex: locations.yaml object_defs.thick_branch.props.fuel.value -->、割り薪は 23.2 分<!-- stats: balance.yaml object_costs object=green_firewood total_minutes -->で同じ 20<!-- codex: firewood.yaml object_defs.green_firewood.props.fuel.value -->
@@ -656,8 +656,8 @@ props:
 ### 5.1 石は既存の `stone` をそのまま使い、炉は一人用の大きさになる
 
 **専用の大きな石は導入しません。** 既存の `stone`（1kg・手に持てる大きさ、`locations.yaml`）を運んで積みます。
-石囲いの炉まで組むのに要る石を全部担いでも、最も担げない担ぎ手が通れなくなる線（
-[`Characters.md`](../world/Characters.md) 荷重の効き方節）の半分に収まる（`tests/world-codex/fireYaml.test.ts`）ので、運搬そのものが
+石囲いの炉まで組むのに要る石を全部担いでも、最も担げない担ぎ手が通れなくなる線
+（[`Characters.md`](../world/Characters.md) 荷重の効き方節）の半分に収まる（`tests/world-codex/fireYaml.test.ts`）ので、運搬そのものが
 関門にはなりません。
 
 その結果、炉は一般に想起されるかまどよりだいぶ小ぶりな、**一人分の器が 1 つ載る大きさ**になります。
@@ -671,13 +671,13 @@ props:
 
 ## 6. 炉の段
 
-| 段 | 炉 | 作り方 | 火の中の枠 | 器の枠 | `fuel` の上限 | `heat` の上限 | 種火の衰え | 種火が保つ時間 |
-|---|---|---|---|---|---|---|---|---|
-| 1 | 焚き火 | 小枝 3 本<!-- codex: fire.yaml object_defs.campfire.recipes.stacked.steps.0.requires.0.count --> | 2 | なし | 30<!-- codex: fire.yaml object_defs.campfire.props.fuel.range.max --> | 30<!-- codex: fire.yaml object_defs.campfire.props.heat.range.max -->（炎まで） | -2/tick<!-- codex: fire.yaml object_defs.campfire.passives.0.add.self.heat --> | 30 分 |
-| 2 | 三石のかまど | 焚き火 ＋ 石 3<!-- codex: fire.yaml object_defs.campfire.props.stones.range.max --> | 2 | 1 | 30<!-- codex: fire.yaml object_defs.three_stone_hearth.props.fuel.range.max --> | 30<!-- codex: fire.yaml object_defs.three_stone_hearth.props.heat.range.max -->（炎まで） | -1/tick<!-- codex: fire.yaml object_defs.three_stone_hearth.passives.0.add.self.heat --> | 1 時間 |
-| 3 | 石囲いの炉 | 三石のかまど ＋ 石 8<!-- codex: fire.yaml object_defs.three_stone_hearth.props.stones.range.max --> | 3 | 2 | 120<!-- codex: fire.yaml object_defs.stone_hearth.props.fuel.range.max --> | 100<!-- codex: fire.yaml object_defs.stone_hearth.props.heat.range.max -->（高温まで） | -0.125/tick<!-- codex: fire.yaml object_defs.stone_hearth.passives.0.add.self.heat --> | 8 時間 |
+| 段 | 炉 | 作り方 | 火の中の枠 | 器の枠 | `fuel` の上限 | `heat` の上限 | 種火の衰え |
+|---|---|---|---|---|---|---|---|
+| 1 | 焚き火 | 小枝 3 本<!-- codex: fire.yaml object_defs.campfire.recipes.stacked.steps.0.requires.0.count --> | 2 | なし | 30<!-- codex: fire.yaml object_defs.campfire.props.fuel.range.max --> | 30<!-- codex: fire.yaml object_defs.campfire.props.heat.range.max -->（炎まで） | -2/tick<!-- codex: fire.yaml object_defs.campfire.passives.0.add.self.heat --> |
+| 2 | 三石のかまど | 焚き火 ＋ 石 3<!-- codex: fire.yaml object_defs.campfire.props.stones.range.max --> | 2 | 1 | 30<!-- codex: fire.yaml object_defs.three_stone_hearth.props.fuel.range.max --> | 30<!-- codex: fire.yaml object_defs.three_stone_hearth.props.heat.range.max -->（炎まで） | -1/tick<!-- codex: fire.yaml object_defs.three_stone_hearth.passives.0.add.self.heat --> |
+| 3 | 石囲いの炉 | 三石のかまど ＋ 石 8<!-- codex: fire.yaml object_defs.three_stone_hearth.props.stones.range.max --> | 3 | 2 | 120<!-- codex: fire.yaml object_defs.stone_hearth.props.fuel.range.max --> | 100<!-- codex: fire.yaml object_defs.stone_hearth.props.heat.range.max -->（高温まで） | -0.125/tick<!-- codex: fire.yaml object_defs.stone_hearth.passives.0.add.self.heat --> |
 
-種火が保つ時間は、`ember` の段の幅（1<!-- codex: fire.yaml traits.hearth.props.heat.stages.1.min -->〜4、2.3 節）を衰える速さで割ったものです。
+種火が保つ長さは、`ember` の段の幅（2.3 節）を種火の衰えで割ったものです。
 
 どちらの枠も同じ `fire` スロットの `cells` に並びます（1.1 節）。枠は焼く物と焼く石のためのもので、
 薪は枠を使いません（2.1 節）。
