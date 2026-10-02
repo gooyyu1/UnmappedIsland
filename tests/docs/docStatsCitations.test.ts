@@ -451,6 +451,61 @@ function unannouncedExcerptSource(block: YamlBlock): string | null {
   return null;
 }
 
+/**
+ * 定義が名前で置くもの。`<節>.<ID>`（`object_defs.raft`・`traits.location` など、トップレベルの節の
+ * 項目）と `interactions.<ID>`（どこに置かれた操作か）で引き、同じ名前の現物をすべて持つ。
+ */
+const CODEX_ENTRIES = new Map<string, unknown[]>();
+for (const root of CODEX_FILES.values()) {
+  const add = (key: string, node: unknown) => CODEX_ENTRIES.set(key, [...(CODEX_ENTRIES.get(key) ?? []), node]);
+  if (isPlainMap(root)) {
+    for (const [section, entries] of Object.entries(root)) {
+      if (isPlainMap(entries)) for (const [id, node] of Object.entries(entries)) add(`${section}.${id}`, node);
+    }
+  }
+  for (const [path, node] of containersOf(root)) {
+    if (path.at(-1) === 'interactions' && isPlainMap(node)) {
+      for (const [id, entry] of Object.entries(node)) add(`interactions.${id}`, entry);
+    }
+  }
+}
+
+/** 定義のトップレベルの節の名前。例示が操作だけを書くときのトップレベル `interactions` も含める。 */
+const CODEX_SECTIONS = new Set(
+  [...CODEX_ENTRIES.keys()].map((key) => key.slice(0, key.indexOf('.'))),
+);
+
+/**
+ * 出どころを名乗っていない YAML が実在の名前を借り、**同じ名前のどの現物とも違う値を書いた**項目の
+ * 道。名乗らない YAML は例示として読む約束だが、実在の名前が出ていれば現物の写しとして読まれうる。
+ * 見るのはトップレベルの節の直下と、どこに置かれた `interactions` の直下も——架空の型の名前は
+ * 在りそうな名前であることが多く、中の操作が例示だとは読み手に分からない。
+ */
+function borrowedNamesWithForeignValues(block: YamlBlock): string[] {
+  if (parseExcerptSource(block.info) !== null) return [];
+  let parsed: unknown;
+  try {
+    parsed = parse(block.text);
+  } catch {
+    return [];
+  }
+  const borrowed: string[] = [];
+  for (const [path, entries] of containersOf(parsed)) {
+    if (!isPlainMap(entries)) continue;
+    // 表示文の辞書（`object_texts` など）も同じ名前で引くので、定義の節の下に在るものだけを見る。
+    if (path.length === 0 || !CODEX_SECTIONS.has(path[0])) continue;
+    const kind = path.length === 1 ? path[0] : path.at(-1) === 'interactions' ? 'interactions' : null;
+    if (kind === null) continue;
+    for (const [id, node] of Object.entries(entries)) {
+      const actuals = CODEX_ENTRIES.get(`${kind}.${id}`);
+      if (actuals !== undefined && !actuals.some((actual) => excerptGaps(node, actual).length === 0)) {
+        borrowed.push([...path, id].join('.'));
+      }
+    }
+  }
+  return borrowed;
+}
+
 /** 出どころを名乗った抜粋が、定義とずれている箇所。名乗りが読めない・解けないことも含む。 */
 function staleExcerptLines(block: YamlBlock): string[] {
   const where = `${block.doc}:${block.line}: ${block.info}`;
@@ -515,6 +570,16 @@ describe('文書が stats/*.yaml と定義から書き写した数値', () => {
     expect(unannounced, `出どころを名乗っていない抜粋（フェンスへ置く印の候補）:\n${unannounced.join('\n')}`).toEqual(
       [],
     );
+  });
+
+  it('名乗らない YAML が実在の名前を借りるなら、現物と違う値を書かない', () => {
+    const borrowed = YAML_BLOCKS.flatMap((block) =>
+      borrowedNamesWithForeignValues(block).map((name) => `${block.doc}:${block.line}: ${name}`),
+    );
+    expect(
+      borrowed,
+      `実在の名前を借りて現物と違う値を書いた例示。実在しない名前へ付け替えるか、現物に合わせて出どころを名乗る:\n${borrowed.join('\n')}`,
+    ).toEqual([]);
   });
 
   it('書いた数が、印の許す粗さの中で出どころの値と一致する', () => {
@@ -870,5 +935,38 @@ describe('出どころを名乗っていない YAML', () => {
   it('当たらないもの・葉が1つだけの断片は挙げない', () => {
     expect(sourceOf('moisture:', '  value: 0', '  range: {max: 25}')).toBeNull();
     expect(sourceOf('value: 0')).toBeNull();
+  });
+
+  describe('実在の名前を借りた例示', () => {
+    function borrowedIn(info: string, ...lines: string[]): string[] {
+      const [block] = yamlBlocksIn('doc.md', [`\`\`\`yaml ${info}`, ...lines, '```'].join('\n'));
+      return borrowedNamesWithForeignValues(block);
+    }
+
+    it('現物と違う値を書いた型・trait・操作を挙げる', () => {
+      expect(borrowedIn('', 'traits:', '  ignitable:', '    props:', '      moisture: {value: 1}')).toEqual([
+        'traits.ignitable',
+      ]);
+      expect(borrowedIn('', 'interactions:', '  split_and_weave:', '    trigger: menu', '    spawn: {count: 99}')).toEqual([
+        'interactions.split_and_weave',
+      ]);
+    });
+
+    it('同じ名前の現物のどれかの部分集合なら挙げない', () => {
+      expect(borrowedIn('', 'traits:', '  ignitable:', '    props:', '      moisture: {value: 0}')).toEqual([]);
+    });
+
+    it('架空の型の中に置いた操作も、実在の名前なら挙げる', () => {
+      expect(
+        borrowedIn('', 'object_defs:', '  made_up_frond:', '    interactions:', '      split_and_weave: {spawn: {count: 99}}'),
+      ).toEqual(['object_defs.made_up_frond.interactions.split_and_weave']);
+    });
+
+    it('実在しない名前と、出どころを名乗ったフェンスは見ない', () => {
+      expect(borrowedIn('', 'traits:', '  made_up_trait:', '    props: {moisture: {value: 1}}')).toEqual([]);
+      expect(borrowedIn('codex: fire.yaml', 'traits:', '  ignitable:', '    props: {moisture: {value: 1}}')).toEqual(
+        [],
+      );
+    });
   });
 });
