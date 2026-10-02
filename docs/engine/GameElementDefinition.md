@@ -2160,7 +2160,7 @@ pick:
 traits:
   eatable:
     interactions:
-      eat:
+      snack:
         trigger: menu
         conditions:
           - {subject: agent, prop: satiety, lt: max}
@@ -2489,7 +2489,7 @@ interactions:
 object_defs:
   wood:
     interactions:
-      chop:
+      cleave:
         trigger: {drag: {tag: axe_tool}}
         conditions:
           - {subject: instrument, prop: durability, gt: 0}
