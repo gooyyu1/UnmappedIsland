@@ -328,7 +328,7 @@ traits:
 
 ```yaml
 traits:
-  perishable:
+  spoilable:
     props:
       shelf_life:      # valueなし→継承先で必須
         unit: days
@@ -337,7 +337,7 @@ traits:
 
 object_defs:
   apple:
-    traits: [perishable]
+    traits: [spoilable]
     props:
       shelf_life:
         value: 7
@@ -966,7 +966,7 @@ object_defs:
           - conditions: [{in_slot: hand}]
             modify: {self: {load_rate: -0.45}}  # 引きずるので体感は55%
 
-  character:
+  castaway:
     props:
       weight: {value: 70000}   # 自重。荷物は中身として上に乗る
       load: {value: 0}
@@ -1133,7 +1133,7 @@ slots:
 
 ```yaml
 object_defs:
-  sprained_ankle:
+  twisted_knee:
     bound_to_owner: true      # 身体から離れた「捻挫」は無い
 ```
 
@@ -1248,7 +1248,7 @@ object_defs:
 
 ```yaml
 object_defs:
-  wild_boar:
+  feral_boar:
     tags: [item]
     resists: [{prop: wariness, gte: 1}]   # 荒ぶっている間は手にも台車にも入らない
 ```
@@ -1532,7 +1532,7 @@ object_defs:
 
 ```yaml
 interactions:
-  eat:
+  snack:
     trigger: menu
     add:
       agent:
@@ -1721,7 +1721,7 @@ spawn: {object: item_coconut, count: 2, into: self}
 
 ```yaml
 interactions:
-  drink:
+  sip:
     trigger: menu
     transfer:
       amount: 2000
@@ -1880,7 +1880,7 @@ launch:
 
 ```yaml
 traits:
-  liquid_container:
+  pourable_vessel:
     interactions:
       pour_in:
         trigger: {drag: {tag: liquid}}
@@ -1921,7 +1921,7 @@ traits:
 
 ```yaml
 interactions:
-  turn:
+  flip:
     trigger: menu
     add: {self: {fatigue: 1}}   # 分岐に関わらず必ず起こること
     pick:                       # 分岐する部分。共通処理を全候補へ複製しなくてよい
@@ -1937,7 +1937,7 @@ interactions:
 
 ```yaml
 interactions:
-  strike:
+  swat:
     trigger: {drag: {tag: weapon}}
     pick:
       - weight: 70
@@ -1952,7 +1952,7 @@ interactions:
 
 ```yaml
 interactions:
-  strike:
+  swat:
     trigger: {drag: {tag: weapon}}
     signal: {instrument: chipped}   # 殴った側（重ねた武器）に起きたこととして告げる
 ```
@@ -2512,7 +2512,7 @@ object_defs:
 
 ```yaml
 interactions:
-  chop:
+  cleave:
     trigger: {drag: {tag: axe_tool}}          # そのタグを持つあらゆるカード
   ignite:
     trigger: {drag: {object: burning_tinder}} # その型そのものだけ
@@ -2579,7 +2579,7 @@ object_defs:
         trigger: {drag: {tag: rope}}
         destroy: [self, instrument]
         spawn: {object: spear}
-  rope:
+  twine:
     tags: [rope]
 ```
 
@@ -2929,7 +2929,7 @@ conditions:
 
 ```yaml
 object_defs:
-  fracture:
+  cracked_rib:
     slots:
       treatment:
         cell_count: 1

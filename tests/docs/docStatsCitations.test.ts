@@ -451,6 +451,50 @@ function unannouncedExcerptSource(block: YamlBlock): string | null {
   return null;
 }
 
+/**
+ * 定義が名前で置くもの。`<節>.<ID>`（`object_defs.raft`・`traits.location` など、トップレベルの節の
+ * 項目）と `interactions.<ID>`（どこに置かれた操作か）で引き、同じ名前の現物をすべて持つ。
+ */
+const CODEX_ENTRIES = new Map<string, unknown[]>();
+for (const root of CODEX_FILES.values()) {
+  const add = (key: string, node: unknown) => CODEX_ENTRIES.set(key, [...(CODEX_ENTRIES.get(key) ?? []), node]);
+  if (isPlainMap(root)) {
+    for (const [section, entries] of Object.entries(root)) {
+      if (isPlainMap(entries)) for (const [id, node] of Object.entries(entries)) add(`${section}.${id}`, node);
+    }
+  }
+  for (const [path, node] of containersOf(root)) {
+    if (path.at(-1) === 'interactions' && isPlainMap(node)) {
+      for (const [id, entry] of Object.entries(node)) add(`interactions.${id}`, entry);
+    }
+  }
+}
+
+/**
+ * 出どころを名乗っていない YAML が実在の名前を借り、**同じ名前のどの現物とも違う値を書いた**項目
+ * （`<節>.<ID>`）。名乗らない YAML は例示として読む約束だが、実在の名前が出ていれば現物の写しとして
+ * 読まれうる。見るのはトップレベルの節の直下だけ——架空の型の中に置いた操作は、型の名前が例示だと名乗る。
+ */
+function borrowedNamesWithForeignValues(block: YamlBlock): string[] {
+  if (parseExcerptSource(block.info) !== null) return [];
+  let parsed: unknown;
+  try {
+    parsed = parse(block.text);
+  } catch {
+    return [];
+  }
+  if (!isPlainMap(parsed)) return [];
+  return Object.entries(parsed).flatMap(([section, entries]) =>
+    isPlainMap(entries)
+      ? Object.entries(entries).flatMap(([id, node]) => {
+          const actuals = CODEX_ENTRIES.get(`${section}.${id}`);
+          if (actuals === undefined) return [];
+          return actuals.some((actual) => excerptGaps(node, actual).length === 0) ? [] : [`${section}.${id}`];
+        })
+      : [],
+  );
+}
+
 /** 出どころを名乗った抜粋が、定義とずれている箇所。名乗りが読めない・解けないことも含む。 */
 function staleExcerptLines(block: YamlBlock): string[] {
   const where = `${block.doc}:${block.line}: ${block.info}`;
@@ -515,6 +559,16 @@ describe('文書が stats/*.yaml と定義から書き写した数値', () => {
     expect(unannounced, `出どころを名乗っていない抜粋（フェンスへ置く印の候補）:\n${unannounced.join('\n')}`).toEqual(
       [],
     );
+  });
+
+  it('名乗らない YAML が実在の名前を借りるなら、現物と違う値を書かない', () => {
+    const borrowed = YAML_BLOCKS.flatMap((block) =>
+      borrowedNamesWithForeignValues(block).map((name) => `${block.doc}:${block.line}: ${name}`),
+    );
+    expect(
+      borrowed,
+      `実在の名前を借りて現物と違う値を書いた例示。実在しない名前へ付け替えるか、現物に合わせて出どころを名乗る:\n${borrowed.join('\n')}`,
+    ).toEqual([]);
   });
 
   it('書いた数が、印の許す粗さの中で出どころの値と一致する', () => {
@@ -870,5 +924,32 @@ describe('出どころを名乗っていない YAML', () => {
   it('当たらないもの・葉が1つだけの断片は挙げない', () => {
     expect(sourceOf('moisture:', '  value: 0', '  range: {max: 25}')).toBeNull();
     expect(sourceOf('value: 0')).toBeNull();
+  });
+
+  describe('実在の名前を借りた例示', () => {
+    function borrowedIn(info: string, ...lines: string[]): string[] {
+      const [block] = yamlBlocksIn('doc.md', [`\`\`\`yaml ${info}`, ...lines, '```'].join('\n'));
+      return borrowedNamesWithForeignValues(block);
+    }
+
+    it('現物と違う値を書いた型・trait・操作を挙げる', () => {
+      expect(borrowedIn('', 'traits:', '  ignitable:', '    props:', '      moisture: {value: 1}')).toEqual([
+        'traits.ignitable',
+      ]);
+      expect(borrowedIn('', 'interactions:', '  split_and_weave:', '    trigger: menu', '    spawn: {count: 99}')).toEqual([
+        'interactions.split_and_weave',
+      ]);
+    });
+
+    it('同じ名前の現物のどれかの部分集合なら挙げない', () => {
+      expect(borrowedIn('', 'traits:', '  ignitable:', '    props:', '      moisture: {value: 0}')).toEqual([]);
+    });
+
+    it('実在しない名前と、出どころを名乗ったフェンスは見ない', () => {
+      expect(borrowedIn('', 'traits:', '  made_up_trait:', '    props: {moisture: {value: 1}}')).toEqual([]);
+      expect(borrowedIn('codex: fire.yaml', 'traits:', '  ignitable:', '    props: {moisture: {value: 1}}')).toEqual(
+        [],
+      );
+    });
   });
 });
