@@ -1075,6 +1075,16 @@ describe('board-round.mjs', () => {
       expect(result.previous).toBeNull();
     });
 
+    // **引けなかった周は写しを書かない。** 空で上書きすると、次の周は前の周を「誰も居なかった」と
+    // 読み、沈んだ1本を `DRY_PAGES` で取りこぼす（`board-round.mjs` の `previousLive`）。
+    it('引けなかった周は、前の周の写しを残す', async () => {
+      const previousLiveTsv = 'session_old\tSESSION_STATUS_IDLE\tB\ttask-1\tcloud\tserved\n';
+
+      const result = await playRound({ previousLiveTsv, sessionsFail: true });
+
+      expect(result.liveTsv).toBe(previousLiveTsv);
+    });
+
     // **`process.env` は書き換えない。** 同じプロセスで動く他の呼び手にも見えてしまう
     // （渡した覚えの無いところへ効き、試験は並ぶ順で落ちる）。
     it('自分のプロセスの環境変数は書き換えない', async () => {
