@@ -53,6 +53,20 @@ interface World {
   readonly dirty?: boolean;
   /** 渡す引数。 */
   readonly args?: readonly string[];
+  /** 渡さない相手が、このPCに残している作業ツリー（見回りが掃くかを見る）。 */
+  readonly others?: readonly Other[];
+}
+
+/** 渡されていない相手の作業ツリー。 */
+interface Other {
+  /** IDの `session_` を落とした部分。作業ツリーは `bridge-cse_<これ>`。 */
+  readonly id: string;
+  /** 素性。`unreachable` は引けない。 */
+  readonly status: 'archived' | 'running' | 'unreachable';
+  /** 既定は登録の外れた空の殻。 */
+  readonly worktree?: 'orphan' | 'registered';
+  /** 中に未追跡のファイルを置くか。 */
+  readonly dirty?: boolean;
 }
 
 interface Run {
@@ -64,6 +78,10 @@ interface Run {
   readonly archived: boolean;
   /** worktree のディレクトリが残っているか。 */
   readonly kept: boolean;
+  /** 渡さない相手のうち、作業ツリーのディレクトリが残っているものの `id`。 */
+  readonly othersKept: string[];
+  /** 畳む口を打たれた相手（渡した相手を含む）。 */
+  readonly archivedIds: string[];
 }
 
 function run(world: World = {}): Run {
@@ -92,6 +110,26 @@ function run(world: World = {}): Run {
       mkdirSync(tree, { recursive: true });
     }
     if (shape !== 'none' && world.dirty === true) writeFileSync(join(tree, 'scratch.txt'), 'y\n', 'utf-8');
+    const others = world.others ?? [];
+    const otherTree = (other: Other): string => join(repo, '.claude', 'worktrees', `bridge-cse_${other.id}`);
+    for (const other of others) {
+      if (other.worktree === 'registered') {
+        git('worktree', 'add', '--detach', otherTree(other));
+        git('worktree', 'lock', otherTree(other));
+      } else {
+        mkdirSync(otherTree(other), { recursive: true });
+      }
+      if (other.dirty === true) writeFileSync(join(otherTree(other), 'scratch.txt'), 'y\n', 'utf-8');
+    }
+    const otherCases = others
+      .map((other) => {
+        const id = `session_${other.id}`;
+        if (other.status === 'unreachable') return `  ${id}) echo 'fetch failed' >&2; exit 1 ;;`;
+        const status = other.status === 'archived' ? 'SESSION_STATUS_ARCHIVED' : 'SESSION_STATUS_RUNNING';
+        const body = JSON.stringify({ ccr: { session_status: status, tags: ['task-1'] } });
+        return `  ${id}) echo '<other-session>'; echo '${body}'; exit 0 ;;`;
+      })
+      .join('\n');
 
     // 引数は標準入力のJSON。`ccr-meta.sh` と同じ包み（`<other-session>`）を付けて返す。
     const meta = join(work, 'ccr-meta.sh');
@@ -99,6 +137,9 @@ function run(world: World = {}): Run {
       meta,
       `${STUB_SHEBANG}
 payload=$(cat)
+case "$(printf '%s' "$payload" | jq -r '.session_id')" in
+${otherCases}
+esac
 if [ "$1" = archive_session ]; then
   printf '%s' "$payload" | jq -r '.session_id' >> '${dir}/archived'
 ${
@@ -151,6 +192,12 @@ echo '${((body: string) => (world.truncated === true ? body.slice(0, 20) : body)
       archived:
         existsSync(join(work, 'archived')) && readFileSync(join(work, 'archived'), 'utf-8').includes(SESSION),
       kept: existsSync(tree),
+      othersKept: others.filter((other) => existsSync(otherTree(other))).map((other) => other.id),
+      archivedIds: existsSync(join(work, 'archived'))
+        ? readFileSync(join(work, 'archived'), 'utf-8')
+            .split('\n')
+            .filter((line) => line !== '')
+        : [],
     };
   } finally {
     rmSync(work, { recursive: true, force: true });
@@ -278,5 +325,57 @@ describe('archive-session.sh', timeoutOnWindows(30_000), () => {
 
     expect(result.lines).toEqual([`ARCHIVED ${SESSION}`, `REMOVED ${WORKTREE}`]);
     expect(result.archived).toBe(true);
+  });
+
+  // **一度畳んだ相手が二度渡ることは無い**ので、畳んだ瞬間に消し損ねた空の殻には、渡された相手とは
+  // 別に見回らないと誰も手を出さない（issue #2107）。
+  describe('取りこぼした空の殻の見回り', () => {
+    const ARCHIVED_SHELL = { id: '01ARCHIVEDSHELL', status: 'archived' } as const;
+
+    it('畳まれていると引けた相手の空の殻は、渡されていなくても消す', () => {
+      const result = run({ others: [ARCHIVED_SHELL] });
+
+      expect(result.othersKept).toEqual([]);
+      expect(result.text).toMatch(/^REMOVED .*\/bridge-cse_01ARCHIVEDSHELL$/m);
+      // 見回りがするのは後始末だけで、渡されていない相手は畳まない。
+      expect(result.archivedIds).toEqual([SESSION]);
+    });
+
+    it('渡された相手を何も畳まない回でも掃く', () => {
+      const result = run({ unreachable: true, others: [ARCHIVED_SHELL] });
+
+      expect(result.othersKept).toEqual([]);
+    });
+
+    // **空であることは、生きていないことを意味しない**——立ち上がったばかりの作業ツリーは一瞬空で
+    // ありうる。空かどうかだけで掃く実装にすると、ここで落ちる。
+    it('走っている相手の空の殻は残す', () => {
+      const result = run({ others: [{ id: '01RUNNINGSHELL', status: 'running' }] });
+
+      expect(result.othersKept).toEqual(['01RUNNINGSHELL']);
+      expect(result.archivedIds).toEqual([SESSION]);
+    });
+
+    // 引けないのは「畳まれていない」という答えではないが、畳まれているとも言えない。
+    it('素性を引けない相手の殻は残す', () => {
+      const result = run({ others: [{ id: '01UNREACHABLE', status: 'unreachable' }] });
+
+      expect(result.othersKept).toEqual(['01UNREACHABLE']);
+    });
+
+    // 戻せないものは消さない。呼ばれるたびに `DIRTY` を積もらせもしない。
+    it('畳まれた相手でも、中身の在る殻は残して何も言わない', () => {
+      const result = run({ others: [{ ...ARCHIVED_SHELL, dirty: true }] });
+
+      expect(result.othersKept).toEqual([ARCHIVED_SHELL.id]);
+      expect(result.text).not.toContain('01ARCHIVEDSHELL');
+    });
+
+    // 取りこぼしは登録が外れた後の殻。登録の在るものは見回りの対象にしない。
+    it('登録の在る作業ツリーは、畳まれた相手のものでも見回りでは触らない', () => {
+      const result = run({ others: [{ ...ARCHIVED_SHELL, worktree: 'registered' }] });
+
+      expect(result.othersKept).toEqual([ARCHIVED_SHELL.id]);
+    });
   });
 });

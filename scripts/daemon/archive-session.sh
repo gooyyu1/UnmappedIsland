@@ -9,6 +9,7 @@
 # `UNARCHIVED <ID>: <理由>`、素性を引けずに畳んでよいかが分からなかったものは `UNKNOWN <ID>: <理由>`。
 # このPCに worktree を持つ相手には後始末の行が続く（`REMOVED <パス>` / `DIRTY <パス>: <理由>`。
 # 既に畳まれているものからも出る）。worktree の無いものが既に畳まれていたときは何も出さない。
+# 最後に、渡されていない相手の取りこぼした殻を掃いた分の `REMOVED <パス>` が続くことがある。
 # **終了コードは常に0**——呼び手（投入・マージ）の本題は別にあるので、後片付けで落とさない。
 #
 # ## 片付かなかった行は、`<タグ> <対象>: <理由>` で出す
@@ -85,6 +86,19 @@
 # ものを黙って消すより、残骸が1つ残るほうがよい。** 理由を同じ行へ載せるのは上の「片付かなかった行
 # は…」のとおりで、パスだけの行は「未コミットの変更が残っている」と読まれた（issue #1557）。
 #
+# ## 取りこぼした空の殻は、次に呼ばれたときに掃く
+#
+# `git worktree remove` は、畳んだその瞬間だけ掴まれていて中身を消した後のディレクトリを消せない
+# ことがある（後から `rmdir` すれば通る）。**一度畳んだ相手が二度渡ることは無い**ので、その殻には
+# 次に手を出す者が居ない（issue #2107）。だから呼ばれるたびに、渡された相手とは別に
+# `bridge-cse_*` を見回る。
+#
+# 掃くのは**登録が外れていて中身が空**で、**素性を引いて畳まれていると分かった**ものだけ。空である
+# ことは生きていないことを意味しない——立ち上がったばかりの作業ツリーも一瞬は空でありうるので、
+# 決め手は素性の側に置く。引けなかったものは触らず、次に呼ばれたときにもう一度引く。**渡されて
+# いない相手は畳まない**——見回りがするのは後始末だけ。掃いた殻は `REMOVED` として出し、それ以外は
+# 何も出さない（呼ばれるたびに同じ行が積もるだけで、読む者が次に打つ手は無い）。
+#
 # ## 引けなかったものは畳まない。ただし `KEPT` とは別の行で出す
 #
 # 上の「守る」条件は、どれも**引けた値**で判定する。`get_session` が引けないと全部のキーが空に
@@ -160,8 +174,30 @@ remove_worktree() {
   echo "REMOVED $path"
 }
 
+# 取りこぼした空の殻を掃く（上の「取りこぼした空の殻は…」）。渡された相手は既に片付けたので除く。
+sweep_empty_worktrees() {
+  local common root path session status
+  common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || return 0
+  root="$(dirname "$common")/.claude/worktrees"
+  [ -d "$root" ] || return 0
+  for path in "$root"/bridge-cse_*; do
+    [ -d "$path" ] || continue
+    [ -z "$(ls -A "$path" 2>/dev/null)" ] || continue
+    ! git worktree list --porcelain 2>/dev/null | grep -Fxq "worktree $path" || continue
+    session="session_${path##*/bridge-cse_}"
+    [ -z "${GIVEN[$session]:-}" ] || continue
+    status=$(printf '{"session_id":"%s"}' "$session" |
+      bash "$CCR_META" get_session 2>/dev/null | grep -o '{"ccr".*' |
+      jq -r '.ccr.session_status // ""' 2>/dev/null) || continue
+    [ "$status" = "SESSION_STATUS_ARCHIVED" ] || continue
+    remove_worktree "$session"
+  done
+}
+
+declare -A GIVEN=()
 while read -r session; do
   [ -n "$session" ] || continue
+  GIVEN[$session]=1
   # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。引けないときは
   # `ccr-meta.sh` が転ぶか、転ばなくても `grep` が 1 を返す。`pipefail` があるのでどちらもここで
   # 拾えるが、**理由は標準エラーに在る**——この口は標準出力が値なので、混ぜずに受ける。
@@ -208,3 +244,5 @@ while read -r session; do
     unfinished UNARCHIVED "$session" "$err"
   fi
 done
+
+sweep_empty_worktrees
