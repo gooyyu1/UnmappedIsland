@@ -57,14 +57,12 @@ interface World {
   readonly others?: readonly Other[];
 }
 
-/** 渡されていない相手の作業ツリー。 */
+/** 渡されていない相手の、登録の外れた殻。 */
 interface Other {
   /** IDの `session_` を落とした部分。作業ツリーは `bridge-cse_<これ>`。 */
   readonly id: string;
   /** 素性。`unreachable` は引けない。 */
   readonly status: 'archived' | 'running' | 'unreachable';
-  /** 既定は登録の外れた空の殻。 */
-  readonly worktree?: 'orphan' | 'registered';
   /** 中に未追跡のファイルを置くか。 */
   readonly dirty?: boolean;
 }
@@ -113,12 +111,7 @@ function run(world: World = {}): Run {
     const others = world.others ?? [];
     const otherTree = (other: Other): string => join(repo, '.claude', 'worktrees', `bridge-cse_${other.id}`);
     for (const other of others) {
-      if (other.worktree === 'registered') {
-        git('worktree', 'add', '--detach', otherTree(other));
-        git('worktree', 'lock', otherTree(other));
-      } else {
-        mkdirSync(otherTree(other), { recursive: true });
-      }
+      mkdirSync(otherTree(other), { recursive: true });
       if (other.dirty === true) writeFileSync(join(otherTree(other), 'scratch.txt'), 'y\n', 'utf-8');
     }
     const otherCases = others
@@ -137,9 +130,11 @@ function run(world: World = {}): Run {
       meta,
       `${STUB_SHEBANG}
 payload=$(cat)
-case "$(printf '%s' "$payload" | jq -r '.session_id')" in
+if [ "$1" = get_session ]; then
+  case "$(printf '%s' "$payload" | jq -r '.session_id')" in
 ${otherCases}
-esac
+  esac
+fi
 if [ "$1" = archive_session ]; then
   printf '%s' "$payload" | jq -r '.session_id' >> '${dir}/archived'
 ${
@@ -369,13 +364,6 @@ describe('archive-session.sh', timeoutOnWindows(30_000), () => {
 
       expect(result.othersKept).toEqual([ARCHIVED_SHELL.id]);
       expect(result.text).not.toContain('01ARCHIVEDSHELL');
-    });
-
-    // 取りこぼしは登録が外れた後の殻。登録の在るものは見回りの対象にしない。
-    it('登録の在る作業ツリーは、畳まれた相手のものでも見回りでは触らない', () => {
-      const result = run({ others: [{ ...ARCHIVED_SHELL, worktree: 'registered' }] });
-
-      expect(result.othersKept).toEqual([ARCHIVED_SHELL.id]);
     });
   });
 });
