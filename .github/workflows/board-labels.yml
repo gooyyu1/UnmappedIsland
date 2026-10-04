@@ -188,9 +188,17 @@ jobs:
               exit 1
             }
             # 渡すのは**REST の数値 ID**（`--jq .id`）で、`I_kwDO...` の node ID では通らない。
-            # 循環は GitHub が 422 で拒む。
+            blocker_id=$(gh api "repos/$REPO/issues/$blocker" --jq .id)
             gh api --method POST "repos/$REPO/issues/$ISSUE/dependencies/blocked_by" \
-              -F issue_id="$(gh api "repos/$REPO/issues/$blocker" --jq .id)"
+              -F issue_id="$blocker_id" && exit 0
+            # **既に張ってある相手でも GitHub は 422 で拒む**（循環と同じ応答）。申告のとおりに
+            # なっているなら成功で、落とすのは張れていないときだけ。
+            blocked=$(gh api --paginate "repos/$REPO/issues/$ISSUE/dependencies/blocked_by" --jq '.[].number')
+            grep -qx "$blocker" <<<"$blocked" || {
+              echo "#$blocker の後へ回せなかった: $head" >&2
+              exit 1
+            }
+            echo "既に #$blocker の後へ回してある"
             exit 0
             ;;
           *)

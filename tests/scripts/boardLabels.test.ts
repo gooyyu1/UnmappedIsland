@@ -230,9 +230,17 @@ describe('board-labels.yml の verdict', timeoutOnWindows(30_000), () => {
 describe('board-labels.yml の declared', timeoutOnWindows(30_000), () => {
   const ISSUE = '1376';
 
+  /** 依存の側の状態。どちらに挙がった番号も、GitHub と同じく追加を 422 で拒む。 */
+  interface Dependencies {
+    /** 既に張ってある、先に要るほうの番号。 */
+    readonly existing?: readonly string[];
+    /** 張ると循環になる番号。 */
+    readonly cyclic?: readonly string[];
+  }
+
   /** 通る名乗り用。**落ちたことを結果に混ぜない**ので、落ちれば「何もしない」と区別が付く。 */
-  function runDeclared(body: string, prBodies: readonly string[] = []): string[] {
-    const result = spawnDeclared(body, prBodies);
+  function runDeclared(body: string, prBodies: readonly string[] = [], deps: Dependencies = {}): string[] {
+    const result = spawnDeclared(body, prBodies, deps);
     if (result.status !== 0) throw new Error(`declared が ${result.status} で終わった: ${body}`);
     return result.edits;
   }
@@ -241,6 +249,7 @@ describe('board-labels.yml の declared', timeoutOnWindows(30_000), () => {
   function spawnDeclared(
     body: string,
     prBodies: readonly string[] = [],
+    deps: Dependencies = {},
   ): { readonly edits: string[]; readonly status: number | null } {
     const work = mkdtempSync(join(tmpdir(), 'unmapped-island-returned-'));
     const dir = pathForBash(work);
@@ -264,6 +273,22 @@ case "$1 $2" in
 "api --method")
   shift 3
   echo "api $*" >>'${dir}/edits.txt'
+  number=\${3#issue_id=88}
+  if grep -qx "$number" '${dir}/blocked.txt' '${dir}/cyclic.txt'; then
+    echo 'Validation failed: Target issue has already been taken (HTTP 422)' >&2
+    exit 1
+  fi
+  echo "$number" >>'${dir}/blocked.txt'
+  ;;
+# 張ってある一覧は、待つ側（担当の issue）のものだけを持つ。別の issue を引いたら空。
+"api --paginate")
+  [ "$3" = repos/gooyyu1/UnmappedIsland/issues/${ISSUE}/dependencies/blocked_by ] || exit 0
+  filter=''
+  while [ $# -gt 0 ]; do
+    if [ "$1" = --jq ]; then filter="$2"; fi
+    shift
+  done
+  jq -R 'tonumber | {number: .}' '${dir}/blocked.txt' | jq -s . | jq -r "$filter"
   ;;
 # 先に要るほうの数値 ID を引く側。**番号から導ける値を返す**ので、どの issue を引いたかが
 # 打たれた行に残る。
@@ -277,6 +302,8 @@ esac
       );
       chmodSync(gh, 0o755);
       writeFileSync(join(work, 'edits.txt'), '', 'utf-8');
+      writeFileSync(join(work, 'blocked.txt'), (deps.existing ?? []).map((n) => `${n}\n`).join(''), 'utf-8');
+      writeFileSync(join(work, 'cyclic.txt'), (deps.cyclic ?? []).map((n) => `${n}\n`).join(''), 'utf-8');
       writeFileSync(
         join(work, 'prs.json'),
         JSON.stringify(prBodies.map((text) => ({ body: text }))),
@@ -366,6 +393,25 @@ esac
     expect(runDeclared('[順序] #1234 の後（宣言を読む側がこの issue）')).toEqual([
       `api repos/gooyyu1/UnmappedIsland/issues/${ISSUE}/dependencies/blocked_by -F issue_id=881234`,
     ]);
+  });
+
+  // **同じ申告の二度目は「既に張ってある」が正しい答え**で、GitHub は 422 で拒むが申告のとおりには
+  // なっている。落とすと、直す相手の居ない赤が Actions に残る（issue #2094）。
+  it('[順序] の相手が既に張ってあれば、追加が拒まれても通る', () => {
+    const result = spawnDeclared('[順序] #1234 の後（二度目）', [], { existing: ['1234'] });
+
+    expect(result.status).toBe(0);
+  });
+
+  // **落とすのは申告のとおりになっていないときだけ**——循環で拒まれたなら、順序はどこにも無い。
+  // 張ってある他の相手や、番号の前方一致で通すと、それを見逃す。
+  it('[順序] の追加が拒まれ、その相手が張られていなければ落ちる', () => {
+    const cyclic = { cyclic: ['1234'] };
+
+    expect(spawnDeclared('[順序] #1234 の後', [], cyclic).status).not.toBe(0);
+    expect(spawnDeclared('[順序] #1234 の後', [], { ...cyclic, existing: ['999', '12345'] }).status).not.toBe(
+      0,
+    );
   });
 
   // **黙って何もしないと、申告した側は張られたと思ったまま進む。**
