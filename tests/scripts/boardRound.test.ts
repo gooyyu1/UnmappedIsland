@@ -37,6 +37,8 @@ interface World {
   readonly sessions?: readonly Session[];
   /** 一覧そのものを引けない周。 */
   readonly sessionsFail?: boolean;
+  /** 周が始まる時点で置いてある、前の周の一覧の写し。既定は無い（初めての周）。 */
+  readonly previousLiveTsv?: string;
   readonly ledger?: Record<string, string>;
   /** 手が空いたばかり（覚えがまだ無い）の形。既定は十分に空いたまま。 */
   readonly justIdle?: boolean;
@@ -97,6 +99,8 @@ interface World {
 interface Result {
   /** 盤面を引けたか。 */
   readonly ok: boolean;
+  /** 一覧を引く手へ渡した、前の周に生きていたID。 */
+  readonly previous: readonly string[] | null | undefined;
   /** ログと、叩いたスクリプトの出力を並べたもの。 */
   readonly log: string;
   /** 打つ側の道具の呼び出し。**使用量の記録は毎周かならず走るので、手には数えない。** */
@@ -235,6 +239,10 @@ async function playRound(world: World = {}): Promise<Result> {
     if (world.conflictLog !== undefined) {
       writeFileSync(join(stateDir, 'conflicts.jsonl'), world.conflictLog, 'utf-8');
     }
+    if (world.previousLiveTsv !== undefined) {
+      writeFileSync(join(stateDir, 'live-sessions.tsv'), world.previousLiveTsv, 'utf-8');
+    }
+    let previous: readonly string[] | null | undefined;
 
     const out: string[] = [];
     const calls: string[] = [];
@@ -340,7 +348,8 @@ async function playRound(world: World = {}): Promise<Result> {
       echo: (text: string) => out.push(text.trimEnd()),
       warn: (line: string) => out.push(line),
       gh,
-      sessions: () => {
+      sessions: (deps) => {
+        previous = deps.previous;
         if (world.sessionsFail === true) throw new Error('セッションの一覧を引けなかった');
         return world.sessions ?? [];
       },
@@ -356,6 +365,7 @@ async function playRound(world: World = {}): Promise<Result> {
     const journal = journalPath(stateDir);
     return {
       ok,
+      previous,
       log: out.join('\n'),
       calls,
       gh: ghCalls,
@@ -1043,6 +1053,26 @@ describe('board-round.mjs', () => {
 
       expect(result.liveTsv).toBe('session_a\tSESSION_STATUS_RUNNING\tB\ttask-1,review-2\tcloud\tserved\n');
       for (const env of result.envs) expect(env?.LIVE_SESSIONS_TSV).toMatch(/live-sessions\.tsv$/);
+    });
+
+    // **前の周に生きていたものを、一覧を引く手へ渡す**（`live-sessions.mjs`「前の周に生きていた
+    // ものは、通り過ぎるまで繰る」）。渡さないと、新しい側が空の周に沈んだ1本を「居ない」と読む。
+    it('前の周の写しに載っていたIDを、一覧を引く手へ渡す', async () => {
+      const result = await playRound({
+        previousLiveTsv:
+          'session_old\tSESSION_STATUS_IDLE\tB\ttask-1\tcloud\tserved\n' +
+          'session_new\tSESSION_STATUS_RUNNING\tB\t\tcloud\tserved\n',
+      });
+
+      expect(result.previous).toEqual(['session_old', 'session_new']);
+    });
+
+    // **前の周を知らないことを「誰も居なかった」と読まない。** 空の並びを渡すと、沈んだ1本を
+    // 見ないまま止まる。
+    it('写しが無ければ、前の周を知らないと渡す', async () => {
+      const result = await playRound({});
+
+      expect(result.previous).toBeNull();
     });
 
     // **`process.env` は書き換えない。** 同じプロセスで動く他の呼び手にも見えてしまう

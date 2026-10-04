@@ -12,7 +12,10 @@ export interface RoundDeps {
     options?: { input?: string; capture?: boolean; env?: Record<string, string> },
   ) => ScriptResult;
   gh?: (args: readonly string[], options?: { sayWhyNot?: (line: string) => void }) => string | undefined;
-  sessions?: () => readonly unknown[] | Promise<readonly unknown[]>;
+  /** `previous` は前の周に生きていたID（`live-sessions.mjs` の `liveSessions`）。 */
+  sessions?: (deps: {
+    previous: readonly string[] | null;
+  }) => readonly unknown[] | Promise<readonly unknown[]>;
   /** `archive/` に入っていない判断の履歴の数（`board-read.mjs`）。省くと本物のリポジトリを数える。 */
   pendingDecisions?: () => number;
   /** 二次がまだ読んでいない、一次の分析の記録の数（`board-read.mjs`）。省くと本物のリポジトリを数える。 */

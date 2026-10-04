@@ -21,6 +21,11 @@ export interface LiveSessionsDeps {
   envs?: () => Record<string, string>;
   /** この周のぶんを既に引いてあるファイル。空なら自分で引く。 */
   taken?: string;
+  /**
+   * 前の周に生きていたID。すべてを見つけるまで繰る。`null` なら履歴の末尾まで
+   * （[`live-sessions.mjs`](live-sessions.mjs)「前の周に生きていたものは、通り過ぎるまで繰る」）。
+   */
+  previous?: readonly string[] | null;
 }
 
 export function liveSessions(deps?: LiveSessionsDeps): Promise<LiveSession[]>;
