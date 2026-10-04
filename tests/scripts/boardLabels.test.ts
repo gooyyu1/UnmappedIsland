@@ -280,7 +280,9 @@ case "$1 $2" in
   fi
   echo "$number" >>'${dir}/blocked.txt'
   ;;
+# 張ってある一覧は、待つ側（担当の issue）のものだけを持つ。別の issue を引いたら空。
 "api --paginate")
+  [ "$3" = repos/gooyyu1/UnmappedIsland/issues/${ISSUE}/dependencies/blocked_by ] || exit 0
   filter=''
   while [ $# -gt 0 ]; do
     if [ "$1" = --jq ]; then filter="$2"; fi
