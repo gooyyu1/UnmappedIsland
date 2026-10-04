@@ -190,7 +190,8 @@ echo '${((body: string) => (world.truncated === true ? body.slice(0, 20) : body)
       othersKept: others.filter((other) => existsSync(otherTree(other))).map((other) => other.id),
       archivedIds: existsSync(join(work, 'archived'))
         ? readFileSync(join(work, 'archived'), 'utf-8')
-            .split('\n')
+            // Windows の `jq` は CRLF で書く。
+            .split(/\r?\n/)
             .filter((line) => line !== '')
         : [],
     };
