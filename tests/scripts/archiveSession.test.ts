@@ -327,6 +327,8 @@ describe('archive-session.sh', timeoutOnWindows(30_000), () => {
   // 別に見回らないと誰も手を出さない（issue #2107）。
   describe('取りこぼした空の殻の見回り', () => {
     const ARCHIVED_SHELL = { id: '01ARCHIVEDSHELL', status: 'archived' } as const;
+    /** 掃く条件に当たらない殻からは何も出ないので、渡した相手の行だけが残る。 */
+    const PASSED_ONLY = [`ARCHIVED ${SESSION}`, `REMOVED ${WORKTREE}`];
 
     it('畳まれていると引けた相手の空の殻は、渡されていなくても消す', () => {
       const result = run({ others: [ARCHIVED_SHELL] });
@@ -345,18 +347,20 @@ describe('archive-session.sh', timeoutOnWindows(30_000), () => {
 
     // **空であることは、生きていないことを意味しない**——立ち上がったばかりの作業ツリーは一瞬空で
     // ありうる。空かどうかだけで掃く実装にすると、ここで落ちる。
-    it('走っている相手の空の殻は残す', () => {
+    it('走っている相手の空の殻は、残して何も言わない', () => {
       const result = run({ others: [{ id: '01RUNNINGSHELL', status: 'running' }] });
 
       expect(result.othersKept).toEqual(['01RUNNINGSHELL']);
       expect(result.archivedIds).toEqual([SESSION]);
+      expect(result.lines).toEqual(PASSED_ONLY);
     });
 
     // 引けないのは「畳まれていない」という答えではないが、畳まれているとも言えない。
-    it('素性を引けない相手の殻は残す', () => {
+    it('素性を引けない相手の殻は、残して何も言わない', () => {
       const result = run({ others: [{ id: '01UNREACHABLE', status: 'unreachable' }] });
 
       expect(result.othersKept).toEqual(['01UNREACHABLE']);
+      expect(result.lines).toEqual(PASSED_ONLY);
     });
 
     // 戻せないものは消さない。呼ばれるたびに `DIRTY` を積もらせもしない。
@@ -364,7 +368,7 @@ describe('archive-session.sh', timeoutOnWindows(30_000), () => {
       const result = run({ others: [{ ...ARCHIVED_SHELL, dirty: true }] });
 
       expect(result.othersKept).toEqual([ARCHIVED_SHELL.id]);
-      expect(result.text).not.toContain('01ARCHIVEDSHELL');
+      expect(result.lines).toEqual(PASSED_ONLY);
     });
   });
 });
