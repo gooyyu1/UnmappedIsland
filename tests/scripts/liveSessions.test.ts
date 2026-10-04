@@ -319,6 +319,65 @@ describe('live-sessions.mjs', () => {
       expect(asked).toHaveLength(3);
     });
 
+    /**
+     * **前の周に生きていたものは、空のページが何枚続いても通り過ぎるまで繰る**（issue #2611）。
+     * 人待ちで何日も生きる1本の上には、後から立って畳まれたセッションが積もる——新しい側に生きた
+     * ものが無い周に `DRY_PAGES` で止めると、それを「居ない」と読んで錠も枠も空きとして手を打つ。
+     */
+    describe('前の周に生きていたもの', () => {
+      /** 生きた1本の上に、畳まれただけのページを `DRY_PAGES`（既定 2）より多く積んだ一覧。 */
+      const buried = () =>
+        pages(
+          [archived('session_b')],
+          [archived('session_c')],
+          [archived('session_d')],
+          [alive('session_old'), archived('session_e')],
+          [archived('session_f')],
+          [archived('session_g')],
+          [archived('session_h')],
+        );
+
+      it('畳まれたページが何枚挟まっても、通り過ぎるまで繰って拾う', async () => {
+        const { fetch, asked } = buried();
+
+        const live = await liveSessions({ page: fetch, envs, taken: '', previous: ['session_old'] });
+
+        expect(live.map((session) => session.id)).toEqual(['session_old']);
+        // 通り過ぎた後は、空のページが `DRY_PAGES` 枚続いたら止める。
+        expect(asked).toHaveLength(6);
+      });
+
+      // 畳まれた姿で見つけても「通り過ぎた」——その先を探し続ける理由は無い。
+      it('畳まれていたら、そこで追うのをやめる', async () => {
+        const { fetch, asked } = buried();
+
+        const live = await liveSessions({ page: fetch, envs, taken: '', previous: ['session_d'] });
+
+        expect(live).toEqual([]);
+        expect(asked).toHaveLength(3);
+      });
+
+      // **前の周を知らないなら、止める枚数を決められない。** 決めると、初めの周にだけ同じ取りこぼしが起きる。
+      it('前の周を知らなければ、履歴の末尾まで繰る', async () => {
+        const { fetch, asked } = buried();
+
+        const live = await liveSessions({ page: fetch, envs, taken: '', previous: null });
+
+        expect(live.map((session) => session.id)).toEqual(['session_old']);
+        expect(asked).toHaveLength(7);
+      });
+
+      // 一覧から消えたものを追っても、末尾で止まる。
+      it('どこにも見つからなければ、末尾で止まる', async () => {
+        const { fetch, asked } = buried();
+
+        const live = await liveSessions({ page: fetch, envs, taken: '', previous: ['session_gone'] });
+
+        expect(live.map((session) => session.id)).toEqual(['session_old']);
+        expect(asked).toHaveLength(7);
+      });
+    });
+
     // **途切れ1枚では諦めない。** 生きたセッションは新しい側に固まるが、間に畳まれたものが挟まる。
     it('畳まれたページが1枚だけなら、越えて拾う', async () => {
       const { fetch, asked } = pages([alive('session_a')], [archived('session_b')], [alive('session_c')]);

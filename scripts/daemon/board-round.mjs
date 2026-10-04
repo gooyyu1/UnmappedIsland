@@ -41,7 +41,7 @@ import {
   readLedger,
   writeLedger,
 } from './board-state.mjs';
-import { DISPATCH_TAGS, formatLive, liveSessions } from './live-sessions.mjs';
+import { DISPATCH_TAGS, formatLive, liveSessions, parseLive } from './live-sessions.mjs';
 import { gh as runGh, posix, runBash } from './spawn.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -510,6 +510,19 @@ export function play(kind, args, { runScript, gh, remember, recall, forget, log,
   }
 }
 
+/**
+ * 前の周に生きていたID（`live-sessions.mjs`「前の周に生きていたものは、通り過ぎるまで繰る」）。
+ * **写しが無ければ `null`**——前の周を知らないことを「誰も居なかった」と読むと、沈んだ1本を
+ * 見ないまま止まる。引けなかった周は写しを書かないので、残っているのは最後に引けた周のもの。
+ */
+function previousLive(livePath) {
+  try {
+    return parseLive(readFileSync(livePath, 'utf8')).map((session) => session.id);
+  } catch {
+    return null;
+  }
+}
+
 /** 1周。盤面を引けたら `true`、引けなかったら `false`（呼び手はその周を捨てる）。 */
 export async function round({
   runScript = defaultRunScript,
@@ -545,9 +558,10 @@ export async function round({
     warn(line);
   };
 
+  const livePath = join(stateDir, 'live-sessions.tsv');
   let live;
   try {
-    live = await sessions();
+    live = await sessions({ previous: previousLive(livePath) });
   } catch (error) {
     // **理由を言えるのは投げた側だけ**なので、その言葉をそのまま出す。
     const why = error instanceof Error ? error.message : String(error);
@@ -557,7 +571,6 @@ export async function round({
     if (!dryRun) markUnreadable(stateDir, at.toISOString(), why);
     return false;
   }
-  const livePath = join(stateDir, 'live-sessions.tsv');
   writeFileSync(livePath, live.map((session) => `${formatLive(session)}\n`).join(''));
   // **在り処は、叩く相手にだけ渡す。** `process.env` を書き換えると、同じプロセスで動く他の呼び手
   // にも見える（`spawn.mjs`）。
