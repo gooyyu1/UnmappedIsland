@@ -17,7 +17,7 @@ import { bundledCodex } from '../support/worldCodexFiles';
  * （[`LiquidContainerSystem.md`](../../docs/engine/LiquidContainerSystem.md) 6.1節）。
  *
  * 畳みが蒸発を誤らせるのは、**同じ上乗せを乾いた空と曇った空が分け合っているとき**だけ。ここが赤く
- * なったら、6.1節が「畳んだままでよい」と言っている根拠が消えている——天候の透過率か、しきい値か、
+ * なったら、同 6.1節が「畳んだままでよい」と言っている根拠が消えている——天候の透過率か、しきい値か、
  * 土地の明るさのどれかが動いて、曇った空が上乗せへ届くようになった。
  */
 describe('日射で進む蒸発が効いている空（同梱の定義）', () => {
@@ -110,7 +110,7 @@ describe('日射の上乗せが効く時刻（同梱の定義、LiquidContainerS
     ),
   ].sort((left, right) => left - right);
   const lowest = Math.min(...thresholds);
-  /** 基礎の蒸発が除外している天候（湿った空気の代理、6節）。 */
+  /** 基礎の蒸発が除外している天候（湿った空気の代理、同 6節）。 */
   const RAIN = [
     ...new Set(
       evaporationConditions
@@ -257,7 +257,7 @@ function rowOf(
 function sandyBeachHoursOf(): ReadonlyMap<SeasonName, readonly [number, number]> {
   const lines = readFileSync(join('docs', 'engine', 'LiquidContainerSystem.md'), 'utf8').split(/\r?\n/);
   const start = lines.findIndex((line) => line.startsWith('## 6.1'));
-  expect(start, '6.1節が見つからない').toBeGreaterThanOrEqual(0);
+  expect(start, 'LiquidContainerSystem.md 6.1節が見つからない').toBeGreaterThanOrEqual(0);
   const section = lines.slice(
     start,
     lines.findIndex((line, index) => index > start && line.startsWith('## ')),

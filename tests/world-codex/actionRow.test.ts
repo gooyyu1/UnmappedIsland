@@ -41,7 +41,7 @@ describe('操作の行に並ぶ数と名前', () => {
 
   /**
    * 上限まで並べたときに、1つの箱へ入る名前の長さ（全角の文字数。Windows.md 4節が書いている数）。
-   * **4節はこの数を書いているだけで導いてはいない**ので、幾何の側が動いたらここで赤くする。
+   * **同 4節はこの数を書いているだけで導いてはいない**ので、幾何の側が動いたらここで赤くする。
    */
   const NAME_BUDGET_AT_CAPACITY = 3;
 
@@ -84,14 +84,14 @@ describe('操作の行に並ぶ数と名前', () => {
   /**
    * 6という数が幾何から出ていることを固定する。**最も狭いウィンドウで等分して、アイコンボタンの
    * 最小タップ領域（ScreenLayout.md 2節）を割らない最後の数**で、ウィンドウの下限幅・間隔・
-   * タップ領域のどれかが動けばここが赤くなり、4節の記述を書き直す合図になる。
+   * タップ領域のどれかが動けばここが赤くなり、`Windows.md` 4節の記述を書き直す合図になる。
    */
   it('上限は、最小タップ領域を割らない最後の数', () => {
     expect(widthOf(ACTION_ROW_CAPACITY), `${ACTION_ROW_CAPACITY}個`).toBeGreaterThanOrEqual(SIZE.iconButton);
     expect(widthOf(ACTION_ROW_CAPACITY + 1), `${ACTION_ROW_CAPACITY + 1}個`).toBeLessThan(SIZE.iconButton);
   });
 
-  it('上限まで並べた箱に入る名前の長さが、4節の書いている数と合っている', () => {
+  it('上限まで並べた箱に入る名前の長さが、`Windows.md` 4節の書いている数と合っている', () => {
     expect(Math.floor(widthOf(ACTION_ROW_CAPACITY) / SIZE.textButtonLabel)).toBe(NAME_BUDGET_AT_CAPACITY);
   });
 

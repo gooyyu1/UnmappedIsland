@@ -38,7 +38,7 @@ const LANDSCAPE_WIDTH_UNITS = SIZE.dashboardColumn + SIZE.margin * 2 + LANE_MIN_
  * u = 画面短辺 ÷ 1080 とすることで、同一端末ならカードの実寸が画面の向きによらず一致する。
  *
  * ただし短辺基準のままでは、9:16（縦型）・16:9（横型）より正方形に近い画面で設計寸法が入り切らない。
- * uは**向きごとの設計寸法が縦横とも収まる最大値**とし、入り切らない画面では全体を縮める（3.1節）。
+ * uは**向きごとの設計寸法が縦横とも収まる最大値**とし、入り切らない画面では全体を縮める（同 3.1節）。
  */
 export class ScreenMetrics {
   readonly width: number;

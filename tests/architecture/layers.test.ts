@@ -155,7 +155,7 @@ function routesFrom(
 const STRUCTURE_DOC = 'docs/CodeStructure.md';
 
 /**
- * 構造の文書。1節の表と2節の図が、どちらもここから読める。
+ * 構造の文書。同 1節の表と同 2節の図が、どちらもここから読める。
  *
  * **改行はここで均す。** 表も図も字面で拾うので、CRLFの作業ツリー——`.prettierrc` の
  * `endOfLine: auto` が想定している状態（CLAUDE.md）——では ```` ```mermaid ```` に当たらず、図が
@@ -166,8 +166,8 @@ function structureDoc(raw = readFileSync(join(ROOT, STRUCTURE_DOC), 'utf-8')): s
 }
 
 /**
- * 1節の表の行。**他の節の表を混ぜない**——5節にもドメインと解析を比べる表があり、混ぜると
- * 1節から行が消えてもそちらが拾ってしまう。「1節の表が唯一の記載場所」を検査するのだから、
+ * `CodeStructure.md` 1節の表の行。**他の節の表を混ぜない**——`CodeStructure.md` 5節にもドメインと解析を比べる表があり、混ぜると
+ * `CodeStructure.md` 1節から行が消えてもそちらが拾ってしまう。「`CodeStructure.md` 1節の表が唯一の記載場所」を検査するのだから、
  * 見る範囲もその表だけ。
  */
 function structureRows(doc = structureDoc()): readonly string[] {
@@ -176,12 +176,12 @@ function structureRows(doc = structureDoc()): readonly string[] {
   return section.split('\n').filter((line) => line.startsWith('| **'));
 }
 
-/** 1節の表が並べる構成要素の名前（1列目）。 */
+/** 同 1節の表が並べる構成要素の名前（1列目）。 */
 function structureNames(doc = structureDoc()): readonly string[] {
   return structureRows(doc).map((line) => line.split('|')[1].replaceAll('*', '').trim());
 }
 
-/** 3節の判定のうち、見出しが `label` の項（次の項が始まる手前まで）。 */
+/** 同 3節の判定のうち、見出しが `label` の項（次の項が始まる手前まで）。 */
 function judgementBullet(label: string, doc = structureDoc()): string {
   const section = doc.split(/^## /m).find((part) => part.startsWith('3. '));
   if (section === undefined) throw new Error('CodeStructure.md の3節が見つかりません');
@@ -213,10 +213,10 @@ function functionBodyIn(rel: string, name: string): string {
 }
 
 /**
- * 2節の依存の図が並べるノードのラベル。
+ * 同 2節の依存の図が並べるノードのラベル。
  *
  * ラベルは**丸ごと**取る。`<br/>` の手前で切ると、ノードに置き場を書き足しても検査の外に出て
- * しまい、1節の表だけが唯一の記載場所だという宣言がそこで破れる。
+ * しまい、同 1節の表だけが唯一の記載場所だという宣言がそこで破れる。
  */
 function diagramNodes(doc = structureDoc()): readonly string[] {
   const diagram = doc.match(/```mermaid\n([\s\S]*?)```/);
@@ -280,7 +280,7 @@ describe('層の境界', () => {
     // ファイルを1つ足すたびにここが落ちるようになり、決めごとを見張る役から在庫表へ変わる。
     //
     // 落ちるのは宣言と実体で分けたときに限らない。話題のまとまりを1つ足すときも同じ合図が要る
-    // ——直下に何を置いてよいかを決めているのは3節のほうなので、先に読み直す先はそこ。
+    // ——直下に何を置いてよいかを決めているのは同 3節のほうなので、先に読み直す先はそこ。
     const subdirs = readdirSync(join(ROOT, 'src/domain')).filter((entry) =>
       statSync(join(ROOT, 'src/domain', entry)).isDirectory(),
     );
@@ -367,7 +367,7 @@ describe('層の境界', () => {
     expect(listed.length).toBeGreaterThan(10);
   });
 
-  it('依存の図のノードが、1節の表の行と同じ', () => {
+  it('依存の図のノードが、CodeStructure.md 1節の表の行と同じ', () => {
     // 表と図は同じものを説明する2つの一覧なので、**並べた時点で行集合の一致を誰かが見る必要が
     // ある**。図が網羅すると言っているのはノードで（CodeStructure.md 2節）、辺は主な向きの要約。
     const nodes = diagramNodes();
@@ -377,7 +377,7 @@ describe('層の境界', () => {
   });
 
   it('汎用部品かどうかの判定例が、現物と合っている', () => {
-    // 3節は現物を指して判定の仕方を教える。**指した先を読む**——意匠を直に引いていると挙げたほうは
+    // 同 3節は現物を指して判定の仕方を教える。**指した先を読む**——意匠を直に引いていると挙げたほうは
     // 本当に引いており、同じファイルに居るだけだと挙げたほうは、その関数の中で意匠に触れていない。
     // 例が現物とずれたままだと、読み手はここで判定の仕方を学べない（issue #1961・#1986）。
     //
@@ -412,6 +412,6 @@ describe('層の境界', () => {
     const crlf = structureDoc(readFileSync(join(ROOT, STRUCTURE_DOC), 'utf-8').replace(/\r?\n/g, '\r\n'));
 
     expect(diagramNodes(crlf), '図がCRLFで読めていない').toEqual(diagramNodes());
-    expect(structureRows(crlf), '1節の表がCRLFで読めていない').toEqual(structureRows());
+    expect(structureRows(crlf), 'CodeStructure.md 1節の表がCRLFで読めていない').toEqual(structureRows());
   });
 });

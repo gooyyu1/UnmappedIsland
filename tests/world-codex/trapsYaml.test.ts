@@ -151,7 +151,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('掛かった獲物は罠のスロットへ入り、その罠の怪我が1つ刺さる', () => {
-    // spawnの配列が順に生むので、獲物を生んでからその中へ怪我を生む（into: child、5.3節）。
+    // spawnの配列が順に生むので、獲物を生んでからその中へ怪我を生む（into: child、同 5.3節）。
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
 
@@ -161,7 +161,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('掛かっている間、罠は止まる', () => {
-    // 見回らなければ罠は増えない（6節）。回収するまで次の抽選は回らない。
+    // 見回らなければ罠は増えない（同 6節）。回収するまで次の抽選は回らない。
     open(CATCHES_FOWL);
     tickUntilCaught();
     const stopped = snare.tryGetProperty(catchRemainingId)!.getEffectiveValue();
@@ -172,7 +172,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('掛かった獲物は警戒を打ち消され、仕留めやすくなる', () => {
-    // 拘束（5節）。気を失った動物への宣言とまったく同じ内容で、resistsが成立しないので
+    // 拘束（同 5節）。気を失った動物への宣言とまったく同じ内容で、resistsが成立しないので
     // 飛び出さず、仕留めの重みは跳ね上がる。
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
@@ -184,14 +184,14 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('ネズミは掛かったその場で死に、死体は罠の中に残る', () => {
-    // 血が6mLしかないので、傷が最初の1tickで奪う15mLに耐えられない（5.1節）。掛かった tick の
+    // 血が6mLしかないので、傷が最初の1tickで奪う15mLに耐えられない（同 5.1節）。掛かった tick の
     // うちに死体へ置き換わるので、生きたネズミは1度も画面に出ない。
     open(CATCHES_RAT);
     const prey = tickUntilCaught();
     expect(prey.def.name, '掛かった瞬間には既に死体').toBe('rat_carcass');
 
     // 死体はanimalタグを持たないが、枠もタイマーのゲートもquarryで受けるので、罠の中に残り、
-    // 次の抽選も回らない（1.1節・6節）。
+    // 次の抽選も回らない（同 1.1節・6節）。
     const stopped = snare.tryGetProperty(catchRemainingId)!.getEffectiveValue();
     tick(4);
     expect(caught().map((object) => object.def.name)).toEqual(['rat_carcass']);
@@ -201,7 +201,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('ヤケイは同じ傷で生き延びる', () => {
-    // 血が80mLあるので、くくり罠の傷に奪われても残る。**同じ1枚の傷が体格で意味を変える**（5.1節）。
+    // 血が80mLあるので、くくり罠の傷に奪われても残る。**同じ1枚の傷が体格で意味を変える**（同 5.1節）。
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
 
@@ -232,7 +232,7 @@ describe('traps.yamlのくくり罠', () => {
   }
 
   it('くくり罠に最も深く掛かったヤケイだけが、血が止まるまでに失血の域へ入る', () => {
-    // 5.1節。奪う量は掛かりの深さ（bleedingのロール）で変わり、深い端でだけヤケイが exsanguinated に入る。
+    // 同 5.1節。奪う量は掛かりの深さ（bleedingのロール）で変わり、深い端でだけヤケイが exsanguinated に入る。
     const bloodStageWhenClotted = (bleeding: 'min' | 'max'): string | undefined => {
       const { prey, wound } = fowlWithSnareWound({ bleeding });
       const bleedingId = codex.propertyNames.getId('bleeding');
@@ -245,7 +245,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('最も深く掛かったヤケイも、出血を早く止めるほど浅い段で済む', () => {
-    // 5.1節「見回りが早ければ、落ちる先が変わります」。止めるのが早ければ意識が残り、少し遅れると
+    // 同 5.1節「見回りが早ければ、落ちる先が変わります」。止めるのが早ければ意識が残り、少し遅れると
     // 傷の痛みと合わさって気を失い、最後まで流れれば失血の域へ入る。止血の治療具が閉じるのは
     // 出血のゲート（InjurySystem.md 3.1節）なので、ここでは流れそのものを尽きさせて同じ形を作る。
     const bleedingId = codex.propertyNames.getId('bleeding');
@@ -269,7 +269,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('くくり罠の傷は、深く掛かった個体だけが敗血症まで届く', () => {
-    // 5.1節。膿む速さは体格を見ないので、届くかを分けるのは傷の重さ（severityのロール）だけ。
+    // TrapSystem.md 5.1節。膿む速さは体格を見ないので、届くかを分けるのは傷の重さ（severityのロール）だけ。
     // 浅い個体は膿み切る前に傷のほうが消える。
     const reachesSepticemia = (severity: 'min' | 'max'): boolean => {
       const { prey, wound } = fowlWithSnareWound({ severity, bleeding: 'min' });
@@ -294,7 +294,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('土地が宣言していない動物は掛からない', () => {
-    // 罠の側は1行も書き換えずに、土地のpropsの有無だけで決まる（3節）。岩礁海岸はヤケイを
+    // 罠の側は1行も書き換えずに、土地のpropsの有無だけで決まる（同 3節）。岩礁海岸はヤケイを
     // 宣言していないので、草原と同じ引きでも重みが0になり、その候補ごと抽選から外れる。
     open(CATCHES_FOWL, 'rocky_coast');
     const caughtNames = new Set<string>();
@@ -311,7 +311,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('餌を仕掛けると、その食性の卓が引かれやすくなる', () => {
-    // 餌は掛かる確率を上げるのと、掛かる相手を食性で寄せるのを同時に言う（4節）。
+    // 餌は掛かる確率を上げるのと、掛かる相手を食性で寄せるのを同時に言う（同 4節）。
     open(NOTHING_CAME);
     const before = {
       miss: snare.tryGetProperty(missWeightId)!.getEffectiveValue(),
@@ -355,7 +355,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('肉の餌でも同じで、満杯なら断る理由を名乗る', () => {
-    // 草の餌と肉の餌は同じ形の宣言が2つ（4節）。片方だけ理由が届く、が起きないことを見る。
+    // 草の餌と肉の餌は同じ形の宣言が2つ（TrapSystem.md 4節）。片方だけ理由が届く、が起きないことを見る。
     open(NOTHING_CAME);
     const more = baitUntilFull('coconut_crab', 'add_meat_bait', 2);
     expect(snare.tryGetProperty(meatBaitId)!.number, '上限まで仕掛けてある').toBe(24);
@@ -371,7 +371,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('獲物が入っている間は速く傷み、壊れれば中身は土地へこぼれる', () => {
-    // 放置の罰は獲物と罠の両方を失うこと（6.1節）。壊れた罠の中身は道連れにならず親へこぼれる。
+    // 放置の罰は獲物と罠の両方を失うこと（TrapSystem.md 6.1節）。壊れた罠の中身は道連れにならず親へこぼれる。
     // 拘束のmodifyは消えるが、警戒の実体値は罠の中でも引き切っているので戻らない（同節）。
     open(CATCHES_FOWL);
     const empty = snare.tryGetProperty(durabilityId)!.getEffectiveValue();
@@ -392,7 +392,7 @@ describe('traps.yamlのくくり罠', () => {
   it('こぼれた獲物は、罠の傷が癒えるまで残り、そのあと立ち去る', () => {
     // 立ち去りまでの残りは土地の地面に居る間だけ減る（HuntingSystem.md 5.6節）ので、掛かっている
     // 間は止まる。**こぼれても、くくり罠の傷が痛む間はまだ動き出さない**（同節の深手のゲート）
-    // ——罠を放置した罰は「罠を失う」が先に来て、獲物を失うのはその傷が癒えてからになる（6.1節）。
+    // ——罠を放置した罰は「罠を失う」が先に来て、獲物を失うのはその傷が癒えてからになる（TrapSystem.md 6.1節）。
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
     const stayWhenCaught = prey.tryGetProperty(stayRemainingId)!.getEffectiveValue();
@@ -644,7 +644,7 @@ describe('traps.yamlの落とし穴', () => {
   });
 
   it('餌が満杯の穴も、重ねた餌を断る理由を名乗る', () => {
-    // くくり罠とまったく同じ宣言（4節）なので、理由の届き方も同じでなければならない。
+    // くくり罠とまったく同じ宣言（同 4節）なので、理由の届き方も同じでなければならない。
     open(CATCHES_BOAR);
     for (let i = 0; i < 2; i++) {
       const taro = spawnInto('taro', forest, 'items');

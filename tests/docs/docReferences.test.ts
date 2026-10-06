@@ -644,15 +644,19 @@ function resolvesInRepo(token: string): boolean {
   return solid.length > 0 && TRACKED_PATHS.has(solid.join(sep));
 }
 
-/** 文書名と節番号の間に挟んでよいもの（リンク形式の閉じ括弧と、助詞の「の」）。 */
-const NAMED_REF_GAP = /^[\s`の)）]*$/;
+/**
+ * 文書名と節番号の間に挟んでよいもの（リンク形式の閉じ括弧と、助詞の「の」）。**`\` も挟んでよい**
+ * ——テンプレート文字列の中ではバッククォートを `` \` `` と書くので、許さないと文書名の直後の番号が
+ * 裸の番号として読まれる。
+ */
+const NAMED_REF_GAP = /^[\s`\\の)）]*$/;
 
 /**
  * 「節」を省いた番号を、文書名の直後と言える間。**「の」は許さない**——`Foo.md の2行` の 2 は
  * 節番号ではなく数量で、「節」が無い側では**字面がそれと同じになる**（「節」が在れば見分けが付く
  * ので、上の {@link NAMED_REF_GAP} は許す）。
  */
-const BARE_REF_GAP = /^[\s`)）]*$/;
+const BARE_REF_GAP = /^[\s`\\)）]*$/;
 
 /** 直前の参照に、区切りだけで続いた印。指し先は直前の参照と同じ文書。 */
 const CONTINUES_PREV_REF = /^[・、／/]\s*$/;
@@ -672,11 +676,9 @@ const QUANTITY_SUFFIX = /^[\p{L}\p{N}%-]/u;
  * 指し先の規約:
  * - 「Foo.md N節」= その文書の節
  * - 「同 N節」= 同じファイル内で直前に名前を挙げた文書の節
- * - 裸の「N節」= 文書では自文書の節だけ。**直前に名前を挙げた文書へは落とさない**——読み手は
- *   自文書の節を探すので、手前で名を挙げた文書が同じ番号を持っていても、そちらとは読まれない。
- *   コード・YAMLは GameElementDefinition.md（WorldCodex文法の節）が既定（{@link fallsBackToGrammar}）。
- *   **ただしこの検査は、コード・YAMLの裸の番号をまだ直前に名前を挙げた文書へも落とす**——規約では
- *   なく、規約から外れたまま残している挙動
+ * - 裸の「N節」= 文書では自文書の節、コード・YAMLでは GameElementDefinition.md（WorldCodex文法の
+ *   節。{@link fallsBackToGrammar}）だけ。**どちらも直前に名前を挙げた文書へは落とさない**——読み手は
+ *   規約の指し先を探すので、手前で名を挙げた文書が同じ番号を持っていても、そちらとは読まれない
  * - 「・」「、」で続く番号の列挙と「〜」の範囲は1つの並び（{@link SECTION_RUN}）で、**末尾の「節」が
  *   並び全体に掛かる**。番号ごとに「節」を書けば、並びが1つずつに分かれるだけで同じに読める
  *
@@ -739,9 +741,7 @@ function brokenNumberedRefsIn(rel: string, source: string): string[] {
     } else if (sincePrev !== null && CONTINUES_PREV_REF.test(sincePrev)) {
       candidates = [prevRef!.base]; // 列挙の続き: N節・M節
     } else {
-      candidates = grammarFallback
-        ? [selfBase, lastNamedBase, 'GameElementDefinition.md']
-        : [selfBase];
+      candidates = grammarFallback ? ['GameElementDefinition.md'] : [selfBase];
     }
     const bases = [...new Set(candidates.filter((c): c is string => c !== null))];
     const resolved = bases.find((base) => resolves(base, nums)) ?? null;
@@ -906,6 +906,14 @@ describe('ドキュメントの参照', () => {
     expect(brokenNumberedRefsIn(doc, '`board-design.md` 2行だけ')).toEqual([]);
     // 列挙は、末尾の「節」が並び全体に掛かる
     expect(brokenNumberedRefsIn(doc, '（`board-design.md` 2.16・2.99節）')).toHaveLength(1);
+  });
+
+  it('テンプレート文字列でエスケープしたバッククォートの後ろも、文書名の直後として読む', () => {
+    // 読めないと、番号が裸の番号としてコードの既定（GameElementDefinition.md）へ流れる。
+    const code = join('scripts', 'x.mjs');
+    expect(brokenNumberedRefsIn(code, '`（\\`board-design.md\\` 2.16節）`')).toEqual([]);
+    expect(brokenNumberedRefsIn(code, '`（\\`board-design.md\\` 2.99節）`')).toHaveLength(1);
+    expect(brokenNumberedRefsIn(code, '`（\\`board-design.md\\` 2.16）`')[0]).toContain('「節」が無い');
   });
 
   it('「Foo.md 〇〇節」（名前指し）が実在の見出しに解決する', () => {
@@ -1461,6 +1469,22 @@ describe('ドキュメントの参照', () => {
 
     expect(namedOnly, `${named} だけが持つ節番号が無く、この検査は何も確かめていない`).toBeDefined();
     const mention = '`GameElementDefinition.md` の宣言を使う。';
+    expect(brokenNumberedRefsIn(rel, `${mention}${namedOnly as string}節`)).toHaveLength(1);
+    expect(brokenNumberedRefsIn(rel, `${mention}同 ${namedOnly as string}節`)).toEqual([]);
+  });
+
+  it('コード・YAMLの裸の「N節」が、直前に名前を挙げた文書へは落ちない', () => {
+    // 落ちると、文法書に無い番号でも手前で名を挙げた文書が持っていれば緑になり、両方が持つ番号は
+    // 名を挙げた文書の節として読まれる（読み手は規約どおり文法書の節を探す）。
+    const rel = join('src', 'assets', 'world-codex', 'traps.yaml');
+    const named = join('docs', 'engine', 'TrapSystem.md');
+    const grammar = join('docs', 'engine', 'GameElementDefinition.md');
+    const namedOnly = (namedSectionsByPath.get(named) ?? [])
+      .flatMap((heading) => /^(\d+(?:\.\d+)+)[.\s]/.exec(heading)?.[1] ?? [])
+      .find((num) => !hasNumberedSection(grammar, num));
+
+    expect(namedOnly, `${named} だけが持つ節番号が無く、この検査は何も確かめていない`).toBeDefined();
+    const mention = '# `TrapSystem.md` の罠を置く。\n# ';
     expect(brokenNumberedRefsIn(rel, `${mention}${namedOnly as string}節`)).toHaveLength(1);
     expect(brokenNumberedRefsIn(rel, `${mention}同 ${namedOnly as string}節`)).toEqual([]);
   });

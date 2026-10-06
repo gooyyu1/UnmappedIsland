@@ -792,7 +792,7 @@ describe('injuries.yamlの怪我', () => {
     });
 
     it('1枚で痛みが危険域へ届く', () => {
-      // 2節が「1つで危険域に届く量は重い怪我のために取っておく」と空けておいた枠（InjurySystem.md 5節）。
+      // `InjurySystem.md` 2節が「1つで危険域に届く量は重い怪我のために取っておく」と空けておいた枠（InjurySystem.md 5節）。
       breakBone();
 
       expect(player.tryGetProperty(painId)?.stage?.name).toBe('unbearable');

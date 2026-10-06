@@ -43,7 +43,7 @@ object_defs:
     tags: [fixture, path]
     # 繋がる土地の無い道は存在しない（7.9節）。土地から外せず、土地が消えれば一緒に消える。
     bound_to_owner: true
-    # 行き先が個体ごとに違うので束ねない。束ねると代表の行き先しかカードに出せなくなる（4節）。
+    # 行き先が個体ごとに違うので束ねない。束ねると代表の行き先しかカードに出せなくなる（SlotSystem.md 4節）。
     stackable: false
     props:
       # 道は地形そのものなので目方を持たない（浅い洞窟と同じ、ContainerSystem.md 1節）。

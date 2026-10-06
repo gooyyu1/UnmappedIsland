@@ -26,7 +26,7 @@ recipe_categories: [tool, container, fixture, item]
 #
 # **フィルター専用のタグは作らない**（docs/ui/ScreenLayout.md 8.1.5節）。指すのは既にあるタグだけで、1枚の札が複数の
 # ボタンに出てよい（炉は食と火の両方）。`id`がそのままボタンの絵の名前（`src/assets/icons/<id>.png`）
-# で、`icon`は絵がまだ無い間そこへ置く絵文字（4.2節）。
+# で、`icon`は絵がまだ無い間そこへ置く絵文字（同 4.2節）。
 card_filters:
   # 食の調達（系統2）と保存（系統3）。**食べられる物だけではない**——焼ける物は生では食べられなくても
   # 残り、炉も塩も残る。料理は札を並べてする仕事なので、材料と器具が同時に見えている必要がある。
@@ -319,7 +319,7 @@ object_defs:
       # 下でない場所での行動を止めているのはそちらで、暗さではない（同8.1節）。
       # 雨系stageは毎tick atmospheric_moistureを自己減算し、雨が水分を使い尽くすと乾いた候補が
       # 選ばれやすくなる貯水池の循環を作る（ClimateSystem.md 3節）。減算量と雨季の季節レートの
-      # 大小関係が雨季の降雨の止み方を決める（4.3節）。
+      # 大小関係が雨季の降雨の止み方を決める（同 4.3節）。
       weather:
         value: clear
         stages:
@@ -418,9 +418,9 @@ object_defs:
       # 季節・天気はいずれも専用オブジェクトではなくworld自身のプロパティ（現在値＋残り時間）で表現する。
 
       # 現在の季節。calm→wet→dry→calm…の固定順で巡回（ClimateSystem.md 2節）。各stageはフラグ
-      # （season_is_*）と貯水池への季節レート（3節）を持つ。calmの水分+0.1は回復方向のレートで、
+      # （season_is_*）と貯水池への季節レート（同 3節）を持つ。calmの水分+0.1は回復方向のレートで、
       # moderate閾値（30）付近を上下しながら1日1回前後の軽い雨を降らせる、序盤の生命線となる
-      # 降雨サイクルを作る（3.1節・3.2節）。
+      # 降雨サイクルを作る（同 3.1節・3.2節）。
       season:
         value: calm
         stages:
@@ -569,7 +569,7 @@ object_defs:
       # saturatedではsunny/clearの重みなし（降らない候補として残るのはcloudyだけ）、
       # dryではheavy_rain/stormの重み0。clearの重みが立つ段階では晴れ系の中でclearを最も重くする。
       # moderateまでの雨は必ずlight_rain
-      # （序盤の「軽めの雨」要件、3.2節）。scorching_weightのみthermal_levelのhot stageが駆動する。
+      # （序盤の「軽めの雨」要件、同 3.2節）。scorching_weightのみthermal_levelのhot stageが駆動する。
       atmospheric_moisture:
         value: 0
         range: {min: 0, max: 100}
@@ -804,7 +804,7 @@ object_defs:
                   - {subject: self, prop: atmospheric_moisture, gte: 45}
       # 難易度の初期補正1: 経過tickを数える専用カウンタで、2日目（tick 96-191）だけ
       # atmospheric_moistureへ追加加算し、高確率で雨を降らせる（ClimateSystem.md 5.1節）。
-      # 天気そのものは固定しない（5.3節）ため、晴れる可能性もある。
+      # 天気そのものは固定しない（同 5.3節）ため、晴れる可能性もある。
       early_rain_calibration:
         value: 0
         passives:
@@ -822,7 +822,7 @@ object_defs:
           - name: done
             min: 192
       # 難易度の初期補正2: 最初の乾季の10日目前後（71日目、tick 6720-6815）にdryのレートを大きく
-      # 上回る+2/tickを加算し、高確率で雨を降らせる（5.2節）。6720/6816はseason_remainingの
+      # 上回る+2/tickを加算し、高確率で雨を降らせる（同 5.2節）。6720/6816はseason_remainingの
       # 「初回サイクル30日固定」に依存した導出値であり、そちらを変えたらこちらも再計算が必要。
       first_dry_rain_calibration:
         value: 0

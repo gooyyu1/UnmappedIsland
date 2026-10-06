@@ -41,7 +41,7 @@ export interface StartupNeed {
  * 逆）。要るのは道具を持たない手で採れる物に限った出どころで、定義の側も型で名指ししている
  * （`fire.yaml`の`fire_drill`のレシピが小枝と太い枝を要求する）。役割のタグで寄せると、道具が要る
  * 出どころ（`ignitable`を名乗るヤシの外皮`coconut_husk`）まで混ざる。行の過不足は
- * `tests/generation/startSiteSelection.test.ts` が2.3節の表と突き合わせる。
+ * `tests/generation/startSiteSelection.test.ts` が同 2.3節の表と突き合わせる。
  */
 export const STARTUP_NEEDS: readonly StartupNeed[] = [
   { label: '火口', sourceObjectNames: ['dry_grass'] },

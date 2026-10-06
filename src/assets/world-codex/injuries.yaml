@@ -441,7 +441,7 @@ object_defs:
         on_min:
           destroy: self
     passives:
-      # **1枚で危険域へ届く痛み**（player_characterのunbearableは83）。2節が「1つで危険域に届く量は
+      # **1枚で危険域へ届く痛み**（player_characterのunbearableは83）。同 2節が「1つで危険域に届く量は
       # 重い怪我のために取っておく」と空けておいた枠がここで、他の傷は最も重いgore_woundでも60。
       - modify:
           parent:

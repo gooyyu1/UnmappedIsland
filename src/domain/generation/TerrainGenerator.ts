@@ -21,7 +21,7 @@ import { assignNames } from './NameAssigner';
  * 分割・パスネットワークは乱数を引かない。世界への実体化はIslandSpawnerが担う。
  *
  * 生成スコープを差し替えれば同じロジックがそのまま走る（島と構造物内部で生成ロジックを
- * 共有するという方針、3.7節。structure_interiorスコープの定義・再帰実行は今後の課題）。
+ * 共有するという方針、同 3.7節。structure_interiorスコープの定義・再帰実行は今後の課題）。
  */
 export function generateIsland(defs: GenerationDefs | undefined, scopeName: string, seed: number): IslandMap {
   if (defs === undefined)

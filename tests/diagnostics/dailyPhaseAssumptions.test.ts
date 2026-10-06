@@ -107,7 +107,7 @@ describe('局面ごとの1日の前提', () => {
 
   /**
    * `WORK_PILES` は1周回の日数の出どころで、ContentSkeleton.md 4節の表の写し。**系統を足しても山を
-   * 足さなければ、1周回の日数は黙って短いまま**なので、表の行と系統（3節）の両方と突き合わせる。
+   * 足さなければ、1周回の日数は黙って短いまま**なので、表の行と系統（同 3節）の両方と突き合わせる。
    */
   it('山の一覧が、ContentSkeleton.md の系統と各系統の段の表に過不足なく一致する', () => {
     const doc = readFileSync(join('docs', 'world', 'ContentSkeleton.md'), 'utf8');
@@ -126,7 +126,7 @@ describe('局面ごとの1日の前提', () => {
     const systems = tableRows(sectionOf('## 3. 繰り返し払う支出を系統に分ける')).map((cells) =>
       Number(cells[1]),
     );
-    expect(systems, '3節の系統の表が読めない').not.toHaveLength(0);
+    expect(systems, '同 3節の系統の表が読めない').not.toHaveLength(0);
     expect(
       [...new Set(WORK_PILES.map((pile) => pile.system))].sort((a, b) => a - b),
       '山の無い系統',
@@ -135,7 +135,7 @@ describe('局面ごとの1日の前提', () => {
     const documented = tableRows(sectionOf('## 4. 各系統の段')).flatMap((cells) =>
       [...cells[4].matchAll(/pile=(\S+) days/g)].map((match) => `${cells[1]} ${match[1]}`),
     );
-    expect(WORK_PILES.map((pile) => `${pile.system} ${pile.label}`).sort(), '4節の表の山').toEqual(
+    expect(WORK_PILES.map((pile) => `${pile.system} ${pile.label}`).sort(), '同 4節の表の山').toEqual(
       documented.sort(),
     );
   });

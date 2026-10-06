@@ -152,7 +152,7 @@ export class StatusDetailWindow {
 
     // バーが映すのは、rangeの中での位置か、それを持たないなら今いる段の中での進み（行と同じ決め方、
     // statusBarLook.barFillOf）。どちらも言えなければバーを出さない——値そのものは出さない画面なので
-    // （8節）、代わりに数字を置くこともしない。
+    // （同 8節）、代わりに数字を置くこともしない。
     const fill = barFillOf(content);
     const barHeight = fill === undefined ? 0 : metrics.px(BAR_HEIGHT);
 
@@ -173,7 +173,7 @@ export class StatusDetailWindow {
 
     const title = addLabel(scene, metrics, 0, 0, content.name, { size: TITLE_SIZE, bold: true });
 
-    // 今いる段の名前は、バーの上へ名札として置き、しっぽでその段を指す（8.1節）。見出しの端ではなく
+    // 今いる段の名前は、バーの上へ名札として置き、しっぽでその段を指す（同 8.1節）。見出しの端ではなく
     // バーの上に置くのは、「今ここ」を名前と目盛りの位置関係そのもので言うため。
     const stage =
       content.stage === undefined
@@ -275,7 +275,7 @@ export class StatusDetailWindow {
       bar.markStages(content.stage?.boundaries ?? [], span);
 
       // 囲みがあればその中央、無ければバーの左端——段1つぶんしか映さないバーでは、左端がその段の
-      // 下端そのものだから（8.1節）。
+      // 下端そのものだから（同 8.1節）。
       tailX = span === undefined ? left : bar.xAt((span.start + span.end) / 2);
 
       // 段の中の進みを映すバーだけ、満ちる先として次の段の名前を右端へ重ねる（行と同じ、

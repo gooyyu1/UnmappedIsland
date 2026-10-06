@@ -352,7 +352,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
 
     beforeAll(() => {
       // **どちらも書き写さずに実ファイルから引く。** 素の入口は player_character.yaml、一着ごとの
-      // 押し下げは clothing.yaml のものなので、そちらを動かせば下の各テストが落ちる——4.2節が
+      // 押し下げは clothing.yaml のものなので、そちらを動かせば下の各テストが落ちる——同 4.2節が
       // 「いちばん深い一着より浅い」と衣類を基準に深さを決めているため、基準の側が動けば主張も動く。
       const probe = new WorldSession(codex);
       const chillPointId = codex.propertyNames.getId('chill_point');

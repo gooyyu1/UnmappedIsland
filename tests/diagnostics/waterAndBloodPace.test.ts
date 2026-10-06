@@ -20,7 +20,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  *
  * - 器1つが何日ぶんか（`LiquidContainerSystem.md` 5節・`Voyage.md` 3.9.6節・`GameEndings.md` 9.2節）
  * - 牙の傷1つが奪う量と、戻るのにかかる日数（`VitalsSystem.md` 3節・3.3節）
- * - 3.3節と`DigestionSystem.md` 3節・9節が最小の献立について言っていること
+ * - 同 3.3節と`DigestionSystem.md` 3節・9節が最小の献立について言っていること
  */
 
 const ROOT = join(__dirname, '..', '..');
@@ -278,7 +278,7 @@ describe('文書が書いた「何日ぶん」', () => {
     ]) {
       expect(
         SKELETON_DOC,
-        `5節4番の結論が見当たらない（書き換えたなら、この検査も同じ主張を見るよう直す）: ${claim}`,
+        `ContentSkeleton.md 5節4番の結論が見当たらない（書き換えたなら、この検査も同じ主張を見るよう直す）: ${claim}`,
       ).toContain(claim);
     }
 
