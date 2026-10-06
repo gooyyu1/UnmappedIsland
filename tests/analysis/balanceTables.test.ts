@@ -142,8 +142,9 @@ object_defs:
  * 入らない——それを作り方と数えると、探索でしか得られない1株目の時間が表から消える。
  * **株分けは労働0**なので、数え落とせば `chain_untimed_routes` の側に出る。
  *
- * 接ぎ木は「植物」タグの道具を取る。株のほかに植物が在れば、株を持たずに行える正当な作り方で、
- * 株より安いか・その植物に値段が付くかでは答えが変わらない。
+ * 接ぎ木は「植物」タグの道具を取る。株のほかに島のどこかで手に入る植物が在れば、株を持たずに行える
+ * 正当な作り方で、株より安いか・その植物に値段が付くかでは答えが変わらない。どこでも手に入らない
+ * 植物しか無ければ、株が無いと行えない（issue #2628）。
  */
 describe('道具を産物と同じ型でしか満たせない工程', () => {
   const tablesWith = (cuttingTags: string, saltTags = 'item', ghostTags = 'item') =>
@@ -309,15 +310,20 @@ object_defs:
   describe('どこでも手に入らない型だけが他の植物のとき', () => {
     const tables = tablesWith('item', 'item', 'item, plant');
 
-    it('接ぎ木は、株を要るのに株の作り方に数える（宣言だけで決める代償）', () => {
+    it('接ぎ木は、株が無いと行えないので株の作り方にならない', () => {
       expect(tables.objectCosts.find((cost) => cost.objectName === 'ghost')).toMatchObject({
         minutes: undefined,
         obtainableWithoutCost: false,
       });
-      expect(succulentCost(tables)).toMatchObject({
-        minutes: 1,
-        steps: [{ objectName: 'shell', stepName: 'graft' }],
-      });
+      expect(succulentCost(tables)).toMatchObject({ minutes: 60, exploreMinutes: 60 });
+    });
+
+    it.each([WHOLE_ISLAND, 'grassland'])('%s の経路は、1株目を探すところから始まる', (place) => {
+      expect(hydrationRouteSteps(tables, place)).toEqual([['grassland.explore', 'succulent.chew']]);
+    });
+
+    it('株の採れない土地では、接ぎ木もその土地の作り方にならない', () => {
+      expect(hydrationRouteSteps(tables, 'sandy_beach')).toEqual([]);
     });
   });
 });

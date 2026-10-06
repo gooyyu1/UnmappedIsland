@@ -1476,6 +1476,14 @@ class Acquisition {
   readonly obtainableWithoutCost: Set<ObjectGlobalId>;
 
   /**
+   * 島のどこかで行える工程が生む型。**値段を積む前に、入力が揃うかだけから決める**
+   * （collectReachable）ので、解決の途中の状態で答えが変わらない（onlyFilledBy）。
+   *
+   * **島全体で1つ**（obtainableWithoutCostと同じ）。土地の文脈は同じ集合を見る。
+   */
+  private readonly reachable: ReadonlySet<ObjectGlobalId>;
+
+  /**
    * この文脈で採った道筋が、他の土地の産物を含むか。**入手連鎖を伝って残す**——熟したヤシの実を
    * 持ち込んで加工した果肉は、果肉そのものがこの土地で作れても「持ち込みが要る」。
    *
@@ -1511,6 +1519,7 @@ class Acquisition {
     this.obtainableWithoutCost = islandWide?.obtainableWithoutCost ?? new Set();
     for (const ref of steps)
       for (const objectGlobalId of expectedSpawns(ref.step).keys()) this.producedObjects.add(objectGlobalId);
+    this.reachable = islandWide?.reachable ?? this.collectReachable();
     this.lowerCostsUntilStable();
     if (islandWide === undefined) this.collectObtainableWithoutCost();
   }
@@ -1854,16 +1863,44 @@ class Acquisition {
   }
 
   /**
-   * その道具（消費されない入力）の候補が、宣言の上で`objectGlobalId`しか無いか。**解決の途中の状態
-   * （どの候補が最安か・手に入るか）では決めない**——値段を積む途中と確定した後（netOutputsOf）とで
-   * 答えが変わり、値段表と経路が食い違う。値段の付かない型が埋まるのは値段を積み終えた後なので、
-   * 「手に入るか」も途中では確定していない。
-   *
-   * 他の候補が島のどこでも手に入らないタグ指定の道具は、Xを要るのに作り方に数えてしまう。
+   * その道具（消費されない入力）を、`objectGlobalId`の他に満たせる型が島のどこでも手に入らないか。
+   * **解決の途中の状態（どの候補が最安か・値段が付いたか）では決めない**——値段を積む途中と確定した
+   * 後（netOutputsOf）とで答えが変わり、値段表と経路が食い違う。手に入るかは、値段を積む前に
+   * 決まる集合（reachable）だけで見る。
    */
   private onlyFilledBy(input: CraftingStep['inputs'][number], objectGlobalId: ObjectGlobalId): boolean {
     const candidates = this.candidatesOf(input);
-    return candidates.length > 0 && candidates.every((candidate) => candidate === objectGlobalId);
+    return (
+      candidates.includes(objectGlobalId) &&
+      candidates.every((candidate) => candidate === objectGlobalId || !this.reachable.has(candidate))
+    );
+  }
+
+  /**
+   * 島のどこかで行える工程が生む型を、増えなくなるまで集める（reachable）。工程を行えるのは、入力の
+   * どれもが手に入る型か用意の要らない型（isAlwaysAtHand）で満たせるときだけ。**閉路は自然に外れる**
+   * ——Xが無いと行えない工程は、Xが他の工程で手に入るまで行えないので、Xをここへ足さない。
+   */
+  private collectReachable(): ReadonlySet<ObjectGlobalId> {
+    const reachable = new Set<ObjectGlobalId>();
+    const filled = (input: CraftingStep['inputs'][number]) =>
+      this.candidatesOf(input).some(
+        (candidate) => this.isAlwaysAtHand(candidate) || reachable.has(candidate),
+      );
+
+    let added = true;
+    while (added) {
+      added = false;
+      for (const ref of this.steps) {
+        if (!ref.step.inputs.every(filled)) continue;
+        for (const [objectGlobalId, count] of expectedSpawns(ref.step)) {
+          if (count <= 0 || reachable.has(objectGlobalId)) continue;
+          reachable.add(objectGlobalId);
+          added = true;
+        }
+      }
+    }
+    return reachable;
   }
 
   /**
