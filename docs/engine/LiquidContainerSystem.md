@@ -341,8 +341,8 @@ water_liquid:
 （同「プレイヤーから考える時間を奪わない」節）。
 
 **6 節の日数の表と `stats/balance.yaml` の `rain_water` は、蓋をしていない甕の数です。** 数えている
-`src/analysis/seasonalRain.ts` は、置き方で決まる条件（`sheltered`）と同じく枠を見る条件を素通しする
-ので、表の甕の行は**開けた場所に蓋をせず置いた器**の量になります
+`src/analysis/seasonalRain.ts` は、器を屋根の無い場所（`sheltered` が0）に置いたものとして数え、枠を
+見る条件は素通しするので、表の甕の行は**開けた場所に蓋をせず置いた器**の量になります
 （[`BalanceStats.md`](../diagnostics/BalanceStats.md)）。**蓋をした甕の行は別に立ちません**——蓋の有無は
 型の違いではなく枠の中身なので、表が並べる「容器1種」は蓋をしていない側 1 つだけです。
 

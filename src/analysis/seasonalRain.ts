@@ -202,13 +202,14 @@ class SeasonalFillClimate {
       // IDだ」という境界がここで破れる。undefined のときの読み方は skyState.ts。
       weatherSymbolId: this.codex.symbolNames.tryGetId(weatherName),
       ambientBrightness: this.worldAmbientAt(hour, weatherName),
+      // この表は**雨の当たる開けた場所に置いた容器**の量（`docs/diagnostics/BalanceStats.md`
+      // 「雨で溜まる水（`rain_water`）」）。
+      sheltered: 0,
     };
   }
 
   /**
-   * その増減が、この天候と明るさのもとで効くか。**雨よけ（`sheltered`）のような場所の置き方で
-   * 決まる条件は素通しする**ので、この表は**雨の当たる開けた場所に置いた容器**の量になる
-   * （`docs/diagnostics/BalanceStats.md`「この表が数えていないもの」）。
+   * その増減が、この天候と明るさのもとで効くか。
    *
    * 段（`stage`）で縛られた増減は数えない——その段だった時間は天候の出現時間からは決まらない。
    */

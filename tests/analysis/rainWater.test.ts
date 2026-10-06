@@ -194,8 +194,8 @@ object_defs:
   });
 
   it('天候以外の条件が課されていても、その天候の量として数える', () => {
-    // 雨を受ける宣言は「雨よけの下でないこと」も課している。祖先の条件のうち天候と明るさ以外は
-    // 真偽を決めずに素通しする決まりなので、それを理由に数えるのをやめると、容器そのものが表から消える。
+    // 雨を受ける宣言は「雨よけの下でないこと」も課している。この表は屋根の無い場所に置いた容器の量
+    // （`seasonalRain.ts`）なので、それを理由に数えるのをやめると、容器そのものが表から消える。
     for (const containerName of ['jar', 'coconut_bowl'])
       expect(rowOf(containerName, 'wet').rainPerDay, containerName).toBeGreaterThan(0);
   });
