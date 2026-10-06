@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { LEDGER, UNSET, hasRefAuditWork, refAuditBatch } from '../../scripts/daemon/refAudit.mjs';
+import { TIMEOUT_FOR_CLONE_HISTORY } from '../support/timeoutForCloneHistory';
 import { timeoutOnWindows } from '../support/timeoutOnWindows';
 
 /**
@@ -357,7 +358,7 @@ describe('refAudit.mjs', timeoutOnWindows(30_000), () => {
   // 直に打ったときだけ効く「自分の在り処から根を数える」段が誰にも通られない——**置き場を1つ
   // 動かしただけで、係が打つコマンドが実物の台帳を見失う**（実際にそうなった）。ここは実物の
   // リポジトリで、ひな形が係へ渡しているのと同じコマンドをそのまま打つ。
-  it('ひな形が渡すコマンドが、実物のリポジトリで範囲を出す', timeoutOnWindows(120_000), () => {
+  it('ひな形が渡すコマンドが、実物のリポジトリで範囲を出す', TIMEOUT_FOR_CLONE_HISTORY, () => {
     const root = resolve(__dirname, '../..');
     const prompt = readFileSync(join(root, 'agent-ops', 'prompts', 'refs-prompt.md'), 'utf-8');
     const command = /^\s{4}(node \S+)$/m.exec(prompt);
