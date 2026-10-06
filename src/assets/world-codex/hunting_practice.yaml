@@ -29,8 +29,8 @@ object_defs:
   practice_target:
     tags: [fixture, strike_target]
     props:
-      # 太い枝2本（1,000×2）＋葉2枚ぶんの小葉（葉1枚4,000gのうち巻けるのは小葉800gだけで、重さの
-      # 大半を占める中軸は捨てる。weaving.yaml）。
+      # 太い枝2本に、葉2枚ぶんの小葉を巻いた目方（巻けるのは小葉だけで、重さの大半を占める中軸は
+      # 捨てる。weaving.yaml）。
       weight: {value: 3600}
     interactions:
       # 武器を重ねて打ち込む。**獣を殴るのと同じ操作の名前**（animals.yamlのstrike）——初歩の行動が

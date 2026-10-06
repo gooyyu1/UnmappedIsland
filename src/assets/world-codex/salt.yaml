@@ -98,7 +98,7 @@ object_defs:
         cell: {accept: {tag: item}}
         placement: [auto]
     props:
-      # 平たい石4つぶん（1,000×4）。**据えた物も目方を名乗る**（core.yaml）。
+      # 材料の目方の和（tests/world-codex/loadEffects.test.ts が見る）。**据えた物も目方を名乗る**（core.yaml）。
       weight: {value: 4000}
       # 次に1杯ぶんが干し上がるまでの残り（罠のcatch_remaining・畑のgrowth_remainingと同じ見えない
       # タイマー、TrapSystem.md 2節）。

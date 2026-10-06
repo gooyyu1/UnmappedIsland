@@ -131,7 +131,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
   });
 
   it('1日3食（512mLのイモ）で体脂肪は横ばいになる', () => {
-    // 1食40単位×3 = 120単位が、基礎代謝1/tick × 96 tickをやや上回る（DigestionSystem.md 5節）。
+    // 下で足す1食ぶんの糖質を3回で、基礎代謝の1日ぶんと釣り合う（DigestionSystem.md 5節）。
     const fatBefore = valueOf(bodyFatId);
     stock(0);
 

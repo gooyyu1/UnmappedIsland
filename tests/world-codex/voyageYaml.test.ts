@@ -41,7 +41,7 @@ const FACES: ReadonlyMap<string, readonly string[]> = new Map([
  */
 const ISLET_ZONES: readonly string[] = ['gull_rock', 'islet_waters', 'white_rock'];
 
-/** 砂浜から最寄りの小島（海鳥の岩）まで、見張って渡っていく海区の順（4区間、素の横断時間1680分）。 */
+/** 砂浜から最寄りの小島（海鳥の岩）まで、見張って渡っていく海区の順。 */
 const TO_NEAREST_ISLET: readonly string[] = ['coastal_waters', 'kelp_belt', 'tide_rip', 'reef_shallows'];
 
 /**
@@ -476,7 +476,7 @@ describe('筏と航海', () => {
 
   it('渡り着いたばかりの海区から、1回も見張らずに来た航路を戻れる', () => {
     // **確定した仕様（GameEndings.md 12.5節）そのもの。** 引き返しは航海のどこからでも選べ、代償は
-    // 来た航路を戻るぶんの時間だけ——渡り着いた先で見張り（3〜5回＝45〜75分）を済ませるまで待つ、は
+    // 来た航路を戻るぶんの時間だけ——渡り着いた先で見張りを済ませるまで待つ、は
     // そこに無い。航路は辺なので、見つけた側の見張りが**両端へ1本ずつ**立てる（voyage.yaml）。
     const { game, raft } = ready();
     raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();

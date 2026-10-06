@@ -301,13 +301,8 @@ describe('荷重が歩みの遅れと体力に効く', () => {
       }
   });
 
-  it.each([
-    ['voyage.yaml', 'raft'],
-    ['voyage.yaml', 'rawhide_sail'],
-    ['farming.yaml', 'pen'],
-  ])('%s の %s の目方は、どのレシピでも材料の目方の和', (fileName, objectName) => {
-    // 据えた物も目方を名乗る（core.yaml）。その値はコメントで「材料ぶん」と言っているだけなので、
-    // 材料かレシピの本数を動かして目方を据え置けば、ここが落ちる。
+  /** レシピごとに、消費する材料の目方を足した値。 */
+  function materialWeights(fileName: string, objectName: string): [string, number][] {
     const defs = parse(readFileSync(worldCodexPath(fileName), 'utf8')) as {
       object_defs: Record<
         string,
@@ -319,20 +314,63 @@ describe('荷重が歩みの遅れと体力に効く', () => {
         }
       >;
     };
-    const weightId = propertyId('weight');
-    const weightOf = (name: string): number =>
-      codex.objects.get(codex.objectNames.getId(name)).tryGetPropertyDef(weightId)?.initialValueWithoutRoll ??
-      0;
-
     const recipes = Object.entries(defs.object_defs[objectName].recipes);
     expect(recipes.length, `${objectName} がレシピを持たない`).toBeGreaterThan(0);
-    for (const [recipeName, recipe] of recipes) {
-      const materials = recipe.steps
+    return recipes.map(([recipeName, recipe]) => [
+      recipeName,
+      recipe.steps
         .flatMap((step) => step.requires ?? [])
         .filter((requirement) => requirement.consume === true)
-        .reduce((sum, requirement) => sum + weightOf(requirement.object) * (requirement.count ?? 1), 0);
+        .reduce((sum, requirement) => sum + weightOf(requirement.object) * (requirement.count ?? 1), 0),
+    ]);
+  }
+
+  function weightOf(name: string): number {
+    return (
+      codex.objects.get(codex.objectNames.getId(name)).tryGetPropertyDef(propertyId('weight'))
+        ?.initialValueWithoutRoll ?? 0
+    );
+  }
+
+  it.each([
+    ['voyage.yaml', 'raft'],
+    ['voyage.yaml', 'rawhide_sail'],
+    ['farming.yaml', 'pen'],
+    ['bedding.yaml', 'bed'],
+    ['bedding.yaml', 'bed_frame'],
+    ['bedding.yaml', 'hammock'],
+    ['bedding.yaml', 'feather_stuffing'],
+    ['bedding.yaml', 'plant_fiber_stuffing'],
+    ['clothing.yaml', 'rawhide_clothing'],
+    ['clothing.yaml', 'tanned_leather_clothing'],
+    ['clothing.yaml', 'woven_leaf_clothing'],
+    ['drying.yaml', 'drying_rack'],
+    ['fiber.yaml', 'rope'],
+    ['fire.yaml', 'campfire'],
+    ['firewood.yaml', 'firewood_rack'],
+    ['furnishings.yaml', 'branch_table'],
+    ['pottery.yaml', 'earth_kiln'],
+    ['salt.yaml', 'salt_pan'],
+    ['smoking.yaml', 'smokehouse'],
+  ])('%s の %s の目方は、どのレシピでも材料の目方の和', (fileName, objectName) => {
+    // 据えた物も目方を名乗る（core.yaml）。その値はコメントで「材料ぶん」と言っているだけなので、
+    // 材料かレシピの本数を動かして目方を据え置けば、ここが落ちる。
+    for (const [recipeName, materials] of materialWeights(fileName, objectName))
       expect(weightOf(objectName), `${objectName} の ${recipeName}`).toBe(materials);
-    }
+  });
+
+  it.each([
+    ['tools.yaml', 'stone_axe'],
+    ['tools.yaml', 'spear'],
+    ['tools.yaml', 'fishing_harpoon'],
+    ['containers.yaml', 'sledge'],
+    ['treatments.yaml', 'splint'],
+    ['pottery.yaml', 'unfired_jar'],
+  ])('%s の %s は、どのレシピでも材料より軽い', (fileName, objectName) => {
+    // 削る・乾かす工程で目方を落とす物。コメントは「材料より軽い」としか言っていないので、
+    // 材料を軽くして目方を据え置けば、ここが落ちる。
+    for (const [recipeName, materials] of materialWeights(fileName, objectName))
+      expect(weightOf(objectName), `${objectName} の ${recipeName}`).toBeLessThan(materials);
   });
 
   it('引く道具へ乗り換える積載は、Containers.mdが置いた線のとおり', () => {
@@ -391,6 +429,37 @@ describe('獲物を丸ごと担げるかの線（docs/world/Animals.md 5節）',
     expect(proseMassOf('シカ'), '地の文のシカの重さが表と合う').toBe(deer);
     for (const floor of stageFloors('heavy')) expect(floor).toBeLessThanOrEqual(deer);
     for (const floor of stageFloors('too_heavy')) expect(floor).toBeGreaterThan(deer);
+  });
+
+  /** 死体を解体し切ったときに出る取り分の目方（g）を、物ごとに足した値。 */
+  function yieldsOf(carcass: string): Map<string, number> {
+    type Spawn = { object: string; count?: number };
+    const animals = parse(readFileSync(worldCodexPath('animals.yaml'), 'utf8')) as {
+      object_defs: Record<string, { interactions: Record<string, { spawn?: Spawn | Spawn[] }> }>;
+    };
+    const weightId = codex.propertyNames.getId('weight');
+    const yields = new Map<string, number>();
+    for (const interaction of Object.values(animals.object_defs[carcass].interactions))
+      for (const spawn of [interaction.spawn ?? []].flat()) {
+        const weight =
+          codex.objects.get(codex.objectNames.getId(spawn.object)).tryGetPropertyDef(weightId)
+            ?.initialValueWithoutRoll ?? 0;
+        yields.set(spawn.object, (yields.get(spawn.object) ?? 0) + weight * (spawn.count ?? 1));
+      }
+    return yields;
+  }
+
+  it('イノシシの肉だけなら誰でも担げるが全員 heavy に入り、取り分を丸ごと担げない担ぎ手が居る', () => {
+    // animals.yaml の wild_boar_carcass のコメントが言う線。取り分の個数か目方を動かせば、ここが落ちる。
+    const yields = yieldsOf('wild_boar_carcass');
+    const meat = yields.get('raw_meat') ?? 0;
+    const whole = [...yields.values()].reduce((sum, weight) => sum + weight, 0);
+    for (const floor of stageFloors('heavy'))
+      expect(floor, '肉だけで heavy に入る').toBeLessThanOrEqual(meat);
+    for (const floor of stageFloors('too_heavy')) expect(floor, '肉だけなら担げる').toBeGreaterThan(meat);
+    expect(Math.min(...stageFloors('too_heavy')), '取り分を丸ごと担げない担ぎ手が居る').toBeLessThanOrEqual(
+      whole,
+    );
   });
 
   it('ニシキヘビとヤギは誰にも担げず、最も担げる担ぎ手でちょうど too_heavy の下端に乗る', () => {

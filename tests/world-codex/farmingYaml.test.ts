@@ -172,7 +172,7 @@ describe('farming.yamlの畑と囲い', () => {
    */
   function calmJunglefowl(): WorldObject {
     const fowl = spawnInto('junglefowl', land, 'items');
-    // ヤケイの初期値は24で、減りは-1/tick。この島でいちばん早く引き切る（飼いならしの学習台）。
+    // 警戒した姿で現れる獣の中で、ヤケイがいちばん早く引き切る（飼いならしの学習台）。
     tick(24);
     expect(fowl.tryGetProperty(warinessId)!.getEffectiveValue(), '警戒が引き切っている').toBe(0);
     return fowl;

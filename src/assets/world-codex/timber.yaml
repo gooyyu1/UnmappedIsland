@@ -18,7 +18,7 @@ object_defs:
   broadleaf_tree:
     tags: [fixture]
     props:
-      # 立ち木1本ぶん。倒して採れるのは丸太2本と太枝3本（43kg）で、残りは根と梢と枝葉。
+      # 立ち木1本ぶん。倒して採れるのは丸太2本と太枝3本で、残りは根と梢と枝葉。
       weight: {value: 150000}
       # 斧を入れる作業1回ぶんにかかる時間（docs/engine/ActionSystem.md 6.3節）。**どの腕がどの段から
       # どれだけ縮めるかは、この操作が自分で宣言する**（docs/world/Skills.md 7節）。丸太を要る物は
@@ -270,7 +270,8 @@ object_defs:
   # 丸太。幹を運べる長さ（2mほど）に切ったもの。筏の浮力を担う。
   log:
     tags: [item]
-    # 焚き付けから育てた火に入れれば、一晩保つ大きさ（docs/engine/FireSystem.md 2.3節）。
+    # 火を焚く炉には入り切らない（tests/world-codex/firewoodYaml.test.ts が見る）ので、割って薪にする
+    # （firewood.yaml）か、覆い焼きの炉（pottery.yaml）へ入れる。
     traits: [burnable]
     props:
       weight: {value: 20000}
@@ -328,7 +329,7 @@ object_defs:
       # かさで効く（docs/world/SurvivalItems.md 0節）。
       weight: {value: 600}
       volume: {value: 5000}
-      # 太い枝（fuel 20）の目方ぶん。炎を1時間ほど保てる。
+      # 目方あたりの率は太い枝と同じ（tests/world-codex/firewoodYaml.test.ts が見る）。
       fuel: {value: 12}
 
   # 樹皮。剥いだ帯を丸めたひと巻き（docs/world/SurvivalItems.md 0節）。渋（タンニン）を含むので、

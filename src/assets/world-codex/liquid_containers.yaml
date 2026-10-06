@@ -17,7 +17,7 @@ traits:
   liquid:
     tags: [liquid]
     props:
-      # 単位量あたりの重さ（g/mL）。水は1で、油のように軽い液体は0.92のように書く。
+      # 単位量あたりの重さ（g/mL）。水は1で、水より軽い液体は1未満を書く。
       # fill × density がそのまま重さ（g）になる（ContainerSystem.md 1節）。
       density:
         value: 1
@@ -412,7 +412,7 @@ traits:
 object_defs:
   # 中身入りの変種（水入りの水筒など）はロード時に生成される（3.5節）。**一度に入る液体は1種類だけ**
   # ——軸が1本しかないので、水の入った水筒へ茶は注げない。
-  # 甕。粘土を焼いて作る（pottery.yaml）。**汲み置きできる唯一の容器**で、これが入るまで運べる水は
+  # 甕。粘土を焼いて作る（pottery.yaml）。**水を汲み置く容器**で、これが入るまで運べる水は
   # 青いヤシの実だけだった（docs/world/Voyage.md）。
   jar:
     # fragileは、動物がぶつかって壊しうる物（docs/engine/HuntingSystem.md 5.4節）。素焼きは

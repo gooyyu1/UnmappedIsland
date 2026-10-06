@@ -113,7 +113,7 @@ object_defs:
   # **木を倒せる唯一の道具**（chopping_tool、timber.yaml）。尖った石では幹の木部を断てないため、
   # 丸太＝筏（voyage.yaml）への道はここを通る。
   #
-  # **材料より軽い。** 頭部400＋柄600＋紐200＝1200gで、太い枝1000gのうち400gは削り落とす木屑。
+  # **材料より軽い**（tests/world-codex/loadEffects.test.ts が見る）。太い枝を柄へ削る工程で木屑を落とす。
   # 撚る工程（fiber.yaml）が重さを保つのと違い、削る工程では減る。
   stone_axe:
     # 頭部は石だが、目方の大半は柄の太い枝（600g）なので長持ちする素材で名乗る（weathering.yaml）
@@ -183,11 +183,10 @@ object_defs:
   # 2mの軸の先へ突くためだけに据えてあり、握って刃を沿わせることも、打ち込んで断つこともできない
   # ——柄に固定されて剥ぐ側へ回れないのは石斧と同じで、石斧が担う断つ・割る側にも入らない。
   #
-  # 2mの棒なので、重さのわりにかさばる（同0節 長さの違いはかさで効かせる）。穂先400＋軸300＋紐200＝
-  # 900gで、長い棒600gのうち軸に残るのは300g——石斧と同じく、削る工程では重さが減る。
+  # 2mの棒なので、重さのわりにかさばる（同0節 長さの違いはかさで効かせる）。石斧と同じく、軸を削る
+  # 工程では重さが減る（材料より軽いことは tests/world-codex/loadEffects.test.ts が見る）。
   spear:
-    # 目方の大半は2mの軸（300g）で、穂先の石は400gだが形を保っているのは軸のほう
-    # （weathering.yaml）。
+    # 穂先は石だが、形を保っているのは2mの軸のほう（weathering.yaml）。
     traits: [weapon, long_lived_material]
     tags: [item, tool]
     props:
@@ -206,7 +205,7 @@ object_defs:
         # するが、2mの軸は落ちていない（docs/world/SurvivalItems.md 0節）ので、若木を切って採った
         # 長い棒（timber.yaml）を削って軸にする——皮を剥ぎ、節を落とし、通りをまっすぐに整える製材
         # （docs/world/Skills.md 2節の「柄材・板」）なので、柄付けの入力のうち軸だけが腕を要求する。
-        # **木材加工の腕を読む唯一の場所**（docs/engine/SkillSystem.md 3.2節の循環は無い——木材加工は
+        # 木材加工の腕を読んでも、docs/engine/SkillSystem.md 3.2節の循環は無い（木材加工は
         # 若木を伐る手とwhittleから伸びる、timber.yamlのcut_pole・animals.yamlのwhittle）。
         #
         # **掘り棒（farming.yaml）が掘削具を太い枝で代用しているのに、軸だけ代用が効かないのは、

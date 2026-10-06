@@ -18,7 +18,8 @@
 # **間の1℃ずつを見分けさせるのは土地の海抜ぶんの差**で、一着ごとに釣り合う土地が別にある
 # （docs/engine/ClimateSystem.md 1.1節）。
 #
-# 重さは材料の和で置く（中軸のように捨てる部分だけを引く）。値を変えるときは、材料側の重さ
+# 重さは材料の和で置く（中軸のように捨てる部分だけを引く。引かない一着は
+# tests/world-codex/loadEffects.test.ts が材料の和と突き合わせる）。値を変えるときは、材料側の重さ
 # （weaving.yaml・fiber.yaml・animals.yaml）と釣り合っているかを見ること。
 
 object_defs:
@@ -26,7 +27,7 @@ object_defs:
   tanned_leather:
     tags: [item]
     props:
-      # 生皮（600g）から、毛と肉を落としたぶん軽くなる。**樹皮は重さに足さない**——渋が革へ入る
+      # 生皮から、毛と肉を落としたぶん軽くなる。**樹皮は重さに足さない**——渋が革へ入る
       # 代わりに樹皮そのものは搾りかすとして捨てるので、材料の和にならない唯一の材料。
       weight: {value: 500}
       volume: {value: 1200}
@@ -143,7 +144,7 @@ object_defs:
     covers: [body]
     layer: base
     props:
-      weight: {value: 1300}
+      weight: {value: 1320}
       volume: {value: 4000}
     passives:
       # 編んだ面は形を保って体へ沿うので、束ねただけの葉より厚い層を抱える。素材は葉のままなので、
@@ -172,7 +173,7 @@ object_defs:
   # （tools.yamlのbone_needle、voyage.yamlの帆と同じ要求の書き方）——減るのは屋外に置いた間だけで、
   # そちらは素材の trait が持つ（weathering.yaml）。
   tanned_leather_clothing:
-    # なめし革は長持ちする素材（weathering.yaml）。**同じ1着でも生皮の10倍保つ**ので、なめしに
+    # なめし革は長持ちする素材（weathering.yaml）。**同じ1着でも生皮よりずっと長く保つ**ので、なめしに
     # かけた手間は寿命と、下の押し下げの深さの両方で返る。
     traits: [long_lived_material]
     tags: [item, equippable]

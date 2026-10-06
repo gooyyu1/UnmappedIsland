@@ -149,8 +149,8 @@ object_defs:
   feather_stuffing:
     tags: [item, stuffing]
     props:
-      # なめし革2枚（1000g）と羽30枚（1200g）。
-      weight: {value: 2200}
+      # 材料の目方の和（tests/world-codex/loadEffects.test.ts が見る）。
+      weight: {value: 2500}
       # 嵩は中身ではなく袋の形で決まるので、植物繊維の詰め物と同じ。籠には入らない
       # （containers.yaml）。
       volume: {value: 30000}
@@ -193,8 +193,8 @@ object_defs:
   plant_fiber_stuffing:
     tags: [item, stuffing]
     props:
-      # なめし革2枚（1000g）と繊維15束（900g）。
-      weight: {value: 1900}
+      # 材料の目方の和（tests/world-codex/loadEffects.test.ts が見る）。
+      weight: {value: 2200}
       volume: {value: 30000}
     recipes:
       stuffed:
@@ -210,8 +210,7 @@ object_defs:
               - {object: yarn, count: 2, consume: true}
               - {tag: sewing_tool, count: 1, consume: false}
             duration: 60
-          # 繊維を詰めて口を閉じる。**60g/束なので15束で0.9kg**——羽より嵩が詰むので、同じ厚みを
-          # 作るのに要る目方が軽い。
+          # 繊維を詰めて口を閉じる。羽より嵩が詰むので、同じ厚みを作るのに要る目方が軽い。
           - requires:
               - {object: plant_fiber, count: 15, consume: true}
               - {object: yarn, count: 1, consume: true}
@@ -235,12 +234,14 @@ object_defs:
     traits: [long_lived_material]
     tags: [item, fixture, bed]
     props:
-      # 紐5本ぶん（fiber.yaml）。骨組みの1/6以下なので、遠出の荷に混ぜられる。
+      # 材料の目方の和（tests/world-codex/loadEffects.test.ts が見る）。紐だけで編むので、遠出の荷に
+      # 混ぜられる。
       weight: {value: 1000}
       volume: {value: 1250}
     interactions:
       # 背中の下を風が抜けるので、虫にも湿気にも最も強い（docs/world/Bedding.md 6節）。骨組みを
-      # 差した寝台（2+1）と並ぶ量を、段が1つしかないので1行で持つ。
+      # 差した寝台（敷物と骨組みの段の和）と並ぶ量を、段が1つしかないので1行で持つ
+      # （tests/world-codex/beddingYaml.test.ts が見る）。
       #
       # **寒さの入口の押し下げだけは、寝台と並ばない**（同4.2節）。地面からは離れるが、網は体重で
       # 潰れて体の下に層が残らないので、取れるのは2つのうち1つぶん——敷物だけの寝床と同じ1℃で、

@@ -108,7 +108,7 @@ object_defs:
         add: {self: {water_spinach_sown: 1}}
         destroy: instrument
     # **解放条件を持たない。** 土を起こす腕を担うスキルが一覧（docs/world/Skills.md 2節）に無く、
-    # 半日を掘り返すこと自体がゲートになっている（docs/engine/SkillSystem.md 4.2節）。
+    # 掘り返す手間そのものを、素材チェーンと同じくゲートと見る（docs/engine/SkillSystem.md 4.2節）。
     recipes:
       # 掘り返して均すだけで、土は元からそこにある。**掘削具はまだ無い**（TrapSystem.md 8節の
       # 落とし穴と同じ空白）ので、掘り棒にする太い枝を1本折り込む形で置いてある。

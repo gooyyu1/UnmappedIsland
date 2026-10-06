@@ -35,7 +35,7 @@ traits:
       - conditions:
           - {subject: ancestor, prop: sheltered, eq: 0}
         add: {self: {durability: -1}}
-      # 雨に打たれている間の上乗せ。晴れのぶんと加算的に重なって-2になる（8.4節）。
+      # 雨に打たれている間の上乗せ。晴れのぶんと加算的に重なる（GameElementDefinition.md 8.4節）。
       # 天候の概念を持たない祖先の下では成立しない書き方で揃える（player_character.yamlのwarmth）。
       - conditions:
           - {subject: ancestor, prop: sheltered, eq: 0}

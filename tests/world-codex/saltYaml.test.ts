@@ -265,8 +265,8 @@ describe('salt.yamlの塩田と塩蔵', () => {
   });
 
   it('生肉を塩漬けにすると、腐るのが遅くなる', () => {
-    // **塩蔵の本来の相手。** 生肉は調理済みと同じ段（-4）で、屋外の上乗せ（-1）と重なって-5——
-    // 狩った肉は2.5日で消える。塩漬けにすると芋と同じ段へ移って-1.5になる。
+    // **塩蔵の本来の相手。** 生肉は調理済みと同じ段で、屋外の上乗せと重なってすぐ消える。塩漬けに
+    // すると芋と同じ段へ移る。
     const { session, land, player } = open();
     const meat = spawnInto(session, 'raw_meat', land, 'items');
     expect(spoilRateOf(land, meat), '生のままなら速い').toBeCloseTo(5);
