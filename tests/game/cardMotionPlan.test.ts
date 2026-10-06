@@ -293,7 +293,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     expect(plan.flights).toEqual([]);
   });
 
-  describe('砂埃（6.1節）', () => {
+  describe('砂埃（CardInteraction.md 6.1節）', () => {
     it('世界から出たインスタンスは、居た枠で砂埃が立つ', () => {
       const plan = planMotion(
         input({

@@ -844,7 +844,7 @@ describe('fire.yamlの火の連鎖', () => {
   });
 
   it('薪が1未満でも、尽きるまでは火が衰えない（「尽きた」は0のこと）', () => {
-    // くべる量は整数、減る量は火力ごとの小数（2.2節）なので、0と1の間は必ず通る。そこを尽きた扱いに
+    // くべる量は整数、減る量は火力ごとの小数（同 2.2節）なので、0と1の間は必ず通る。そこを尽きた扱いに
     // すると、薪が残っているのに火が衰える区間ができる。
     const hearth = spawnInto('campfire', land, 'fixtures');
     hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(0.9);
@@ -1096,8 +1096,8 @@ describe('fire.yamlの火の連鎖', () => {
     const accepts = (objectName: string): boolean =>
       fireSlot?.acceptsAnywhere(codex.objects.get(codex.objectNames.getId(objectName))) === true;
 
-    // 焦げた塊は焼けないが、焦げた瞬間に枠を引き継ぐために入る（7.2節）。焼け石も同じ理由で入る
-    // ——溜め切った瞬間に石から置き換わる（9.1節）。
+    // 焦げた塊は焼けないが、焦げた瞬間に枠を引き継ぐために入る（同 7.2節）。焼け石も同じ理由で入る
+    // ——溜め切った瞬間に石から置き換わる（同 9.1節）。
     for (const name of ['raw_meat', 'roasted_meat', 'charred_lump', 'rat_carcass', 'roasted_rat']) {
       expect(accepts(name), name).toBe(true);
     }

@@ -12,14 +12,14 @@
 # generatorは汎用プリミティブの重み合成（blend）:
 # - distance_field: 島の縁からの距離（reference: edge。中心=100、縁=0）
 # - layered_noise: シード付き格子値ノイズ（octaves/frequency/seed_offset）
-# blob_scatter・modifiers（3.1節）は未実装。
+# blob_scatter・modifiers（同 3.1節）は未実装。
 # ------------------------------------------------------------------
 axes:
   # 標高。内陸ほど高くなる距離場を主成分に、ノイズで起伏を加える。「海岸に囲まれた島で、
   # 内陸に山がある」という島の基本形はこの軸が作る。
   # この軸だけはメートルへ読み替える（generation_scopes.island.elevation_top_meters）ので、
   # 宣言した両端（海面0m・最高点400m）が実際に出るよう引き伸ばす。ノイズの重みが低いのは、
-  # 加算で乗せた起伏がそのまま海岸の高さのばらつきになるため（3.1節）。
+  # 加算で乗せた起伏がそのまま海岸の高さのばらつきになるため（同 3.1節）。
   elevation:
     range: {min: 0, max: 100}
     stretch_sites_to_range: true
@@ -56,10 +56,10 @@ axes:
 #   D = sqrt( Σ w_i * ((v_i - ideal_i) / tolerance_i)^2 / Σ w_i )
 # 言及した軸だけで正規化するため、言及軸が少ない型が有利になる次元数バイアスは生じない。
 # toleranceは距離のスケールであり、超えたら除外というゲートではない。絶対的な除外は
-# hard_limitsだけが担う（3.2〜3.3節）。
+# hard_limitsだけが担う（同 3.2〜3.3節）。
 #
 # - object_def: この型が実体化するときのobject_defs（locations.yaml）のid。Build時に存在検証する。
-# - variants: 同じ型が複数あるときに配る亜種（3.6節）。idがその土地の名前を引くキーになり（表示名は
+# - variants: 同じ型が複数あるときに配る亜種（同 3.6節）。idがその土地の名前を引くキーになり（表示名は
 #   locale/ja.yamlのlocation_texts、Localization.md）、propsは実体化した土地へ書き込まれて発見量を
 #   変える（locations.yamlの`weight: {prop: ...}`の候補）。propsを持たない素の亜種は名前だけが変わる。
 #   - **島のどこに在るかが分かる語を入れないこと。** 地形の把握はプレイヤー自身の仕事なので、
@@ -73,7 +73,7 @@ axes:
 #     足りない分は通し番号で埋まる（名前としては読めないので、余裕を持って用意する）。
 # - move_cost: その土地を進む遅さの倍率（1=開けた土地＝generation_scopesのwalk_meters_per_hour
 #   そのままの速さ）。両端の平均が水平移動の時間へ掛かる（TerrainGeneration.md 3.5節）。
-# - is_fallback/priority: どの型もhard_limitsで弾かれたサイトの受け皿（3.3節）。
+# - is_fallback/priority: どの型もhard_limitsで弾かれたサイトの受け皿（同 3.3節）。
 #   priorityが最も高いfallbackが選ばれる。
 # - 海岸過多の防止: 海岸3種はhard_limits(coastal_distance.max=coast_band)で海岸帯にしか出ず、
 #   内陸型はmin=coast_band+1で海岸帯に出ない。海岸帯のサイト数自体を絞るのはサイト配置側
@@ -98,7 +98,7 @@ location_types:
       ruggedness: {ideal: 15, tolerance: 30, weight: 100}
     hard_limits:
       coastal_distance: {max: 15}
-      # 砂浜は浜の背後の段丘までの高さまで。これより高ければ浜ではない（3.5.3節）。
+      # 砂浜は浜の背後の段丘までの高さまで。これより高ければ浜ではない（同 3.5.3節）。
       elevation: {max: 5}
 
   rocky_coast:
@@ -135,7 +135,7 @@ location_types:
       elevation:  {ideal: 16, tolerance: 5, weight: 80}
     hard_limits:
       coastal_distance: {max: 15}
-      # 岸壁は砂浜の上限の1つ上で、同じ高さには出ない（3.5.3節）。
+      # 岸壁は砂浜の上限の1つ上で、同じ高さには出ない（同 3.5.3節）。
       elevation: {min: 6}
 
   grassland:
@@ -318,7 +318,7 @@ generation_scopes:
     # move_cost 1.0 の土地を歩く速さ（m/時）。道の無い熱帯の地面を歩く速さ。
     walk_meters_per_hour: 4000
     # 高低差を登り下りする速さ（m/時）。水平移動とは別に、両端の高低差ぶんの時間が乗る。
-    # ネイスミスの法則（登り600m/時）の値を、登りにも下りにも同じだけ課す（3.5節）。
+    # ネイスミスの法則（登り600m/時）の値を、登りにも下りにも同じだけ課す（同 3.5節）。
     climb_meters_per_hour: 600
     # 標高として読む軸と、その軸の上端（100）が海抜何メートルか。軸は0〜100の整数のまま
     # （数値の規約）で、メートルへの読み替えをここが持つ。同じ縮尺で自然な高さ

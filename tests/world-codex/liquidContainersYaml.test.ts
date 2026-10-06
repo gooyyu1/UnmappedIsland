@@ -375,7 +375,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(amountIn(container)).toBe(200 + expectedDelta);
   });
 
-  // 上乗せが読むのは器の居る場所の明るさなので、樹冠と地面の反射が段を動かす（6節）。
+  // 上乗せが読むのは器の居る場所の明るさなので、樹冠と地面の反射が段を動かす（LiquidContainerSystem.md 6節）。
   it.each([
     ['coconut_bowl', -1],
     ['jar', -2],
@@ -389,7 +389,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(amountIn(container)).toBe(200 + expectedDelta);
   });
 
-  // 上乗せが消えても基礎の蒸発は残るので、日陰は乾季をまたがせる手立てにならない（6節）。乾季にも雨は降り、
+  // 上乗せが消えても基礎の蒸発は残るので、日陰は乾季をまたがせる手立てにならない（LiquidContainerSystem.md 6節）。乾季にも雨は降り、
   // 降っている間は蒸発が止まって溜まるので、天候ごとの1 tickの増減を乾季の天候の時間で重み付けて数える。
   it.each(['coconut_bowl', 'jar'])(
     '日陰へ置いても、満水の%sは平均的な長さの乾季より先に空になる',

@@ -824,7 +824,7 @@ object_defs:
     });
 
     it('同じ絵を名乗る段どうしでは、絵が変わらない', () => {
-      // 手元の作業に要るのはbrightだけで、その下は「作れない」の一言に尽きる（4.1.2節）。
+      // 手元の作業に要るのはbrightだけで、その下は「作れない」の一言に尽きる（同 4.1.2節）。
       const mini = setUpIslander();
 
       setProperty(mini, 'hand_brightness', -3);

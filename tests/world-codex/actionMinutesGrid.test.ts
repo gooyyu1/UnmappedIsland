@@ -53,7 +53,7 @@ function onGrid(minutes: number): boolean {
  * なることの証。
  *
  * **役で絞る**ので、乗り物ごと動く宣言（`self`を動かす航海）は入らない——押す手は自分の足で場所を
- * 移ることではなく、渡り切るまでの時間そのものが結果になる（6.5節の線の外）。
+ * 移ることではなく、渡り切るまでの時間そのものが結果になる（同 6.5節の線の外）。
  */
 class AgentMoveSeeker implements EffectReader {
   found = false;

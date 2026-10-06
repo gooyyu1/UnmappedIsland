@@ -285,7 +285,7 @@ describe('複数のアセットパックを並べた順に読む', () => {
   it('片方が読めなくても、もう片方は生き残る', async () => {
     const report = new LoadReport();
     const broken = await pack('broken', [
-      // 同梱と同じ識別子。操作単位では捨てられないので、このパックだけが丸ごと外れる（6.1節）。
+      // 同梱と同じ識別子。操作単位では捨てられないので、このパックだけが丸ごと外れる（同 6.1節）。
       { name: 'world-codex/clash.yaml', content: 'object_defs:\n  coconut: {tags: [item]}\n' },
     ]);
     const sound = await pack('sound', [{ name: 'world-codex/totem.yaml', content: OBJECT_YAML }]);
@@ -395,7 +395,7 @@ object_defs:
   it('定義が読めずに外したパックの絵は、在庫表に残らない', async () => {
     const report = new LoadReport();
     const broken = await pack('broken', [
-      // 同梱と同じ識別子。操作単位では捨てられないので、このパックだけが丸ごと外れる（6.1節）。
+      // 同梱と同じ識別子。操作単位では捨てられないので、このパックだけが丸ごと外れる（同 6.1節）。
       { name: 'world-codex/clash.yaml', content: 'object_defs:\n  coconut: {tags: [item]}\n' },
       { name: 'backgrounds/driftwood_mask_fixtures_lane.png', content: new Uint8Array([2]) },
       { name: 'objects/driftwood_mask.png', content: new Uint8Array([3]) },

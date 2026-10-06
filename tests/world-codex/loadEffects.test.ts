@@ -366,7 +366,7 @@ describe('獲物を丸ごと担げるかの線（docs/world/Animals.md 5節）',
     return Number(matched![1]) * 1000;
   }
 
-  /** 5節の地の文が書き写した重さ（g）。表と食い違えば、地の文の主張がどの獣の話か分からなくなる。 */
+  /** 同 5節の地の文が書き写した重さ（g）。表と食い違えば、地の文の主張がどの獣の話か分からなくなる。 */
   function proseMassOf(label: string): number {
     const matched = new RegExp(`${label}（(\\d+) kg）`).exec(animalsDoc);
     expect(matched, `Animals.md から「${label}（N kg）」が読めない`).not.toBeNull();

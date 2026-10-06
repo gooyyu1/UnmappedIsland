@@ -367,7 +367,7 @@ describe('筏と航海', () => {
     expect(zone.slotForPutIn(cargo!), '手で置く先が無い').toBeUndefined();
 
     // こぼれ落ちる経路（spawnの行き先が塞がったとき、9.4節）でも海面には残らない。海区が受け取らず、
-    // その上のworldも物を受け取らないので、その物は手に入らないまま失われる（12.7節）。
+    // その上のworldも物を受け取らないので、その物は手に入らないまま失われる（同 12.7節）。
     cargo!.spillTo(zone);
     expect(
       zone.findSelfOrDescendantByInstanceId(cargo!.instanceId),
@@ -1716,7 +1716,7 @@ describe('筏と航海', () => {
 
   it('渡っていない海区は、幅を持って海図に載る', () => {
     // **海図が持つべき精度は本土までの残り海区数**（GameEndings.md 12.6節）。真値は海区の側の事実で、
-    // 海図が言うのはその上下に幅を取った範囲——幅を狭めていくのが9.1節の段階になる。
+    // 海図が言うのはその上下に幅を取った範囲——幅を狭めていくのが同 9.1節の段階になる。
     const { game } = ready();
 
     const zones = seaZones(game);
@@ -1738,7 +1738,7 @@ describe('筏と航海', () => {
   });
 
   it('山頂から見渡すと、海図の幅が狭まる', () => {
-    // **山頂へ登ることが9.1節の段階の1つ**（GameEndings.md 9.1節）。見渡した海区は幅が狭まるだけで、
+    // **山頂へ登ることが同 9.1節の段階の1つ**（GameEndings.md 9.1節）。見渡した海区は幅が狭まるだけで、
     // 真値そのものは動かない——狭まっていくのは推定の幅（同12.6節）。
     const { game } = ready();
     const zones = seaZones(game);

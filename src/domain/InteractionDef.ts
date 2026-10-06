@@ -14,7 +14,7 @@ import { spendDurationAndReportParticipantsAlive } from './actionTime';
  * 操作1つの中身（ActionSystem.md 1節）——満たすべき要件・起こすこと・かかる時間。
  *
  * **何がこれを起こすかは持たない。** 操作どうしの違いは起こされ方だけなので、そちらは
- * きっかけ（InteractionTrigger）が持ち、宣言をぶら下げる。選ばれた後の実行手順（2節）は
+ * きっかけ（InteractionTrigger）が持ち、宣言をぶら下げる。選ばれた後の実行手順（同 2節）は
  * きっかけによらず同じなので、ここが1箇所で持つ。
  */
 export class InteractionDef {

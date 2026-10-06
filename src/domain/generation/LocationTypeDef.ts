@@ -92,13 +92,13 @@ export class LocationTypeDef {
    */
   readonly variants: readonly LocationVariantDef[];
 
-  /** 宣言に書かれた生成スコープ名（`applicable_scopes`、3.7節）。 */
+  /** 宣言に書かれた生成スコープ名（`applicable_scopes`、同 3.7節）。 */
   private readonly declaredScopes: readonly string[];
 
   /** 移動コストの倍率（1=等倍）。道のtravel_minutesの係数になる。 */
   readonly moveCost: number;
 
-  /** どの型もhard_limitsで弾かれたサイトの受け皿か（3.3節のフォールバック）。 */
+  /** どの型もhard_limitsで弾かれたサイトの受け皿か（同 3.3節のフォールバック）。 */
   readonly isFallback: boolean;
 
   /** フォールバックが複数あるときの優先度（大きいほど優先）。 */
@@ -137,7 +137,7 @@ export class LocationTypeDef {
   }
 
   /**
-   * この型をそのスコープ（3.7節）へ置けるか。**スコープを1つも宣言していない型は、どのスコープへも
+   * この型をそのスコープ（同 3.7節）へ置けるか。**スコープを1つも宣言していない型は、どのスコープへも
    * 置ける**——絞りたい型だけが名指しする。
    */
   appliesTo(scopeName: string): boolean {
