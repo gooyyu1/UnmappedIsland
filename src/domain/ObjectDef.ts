@@ -219,7 +219,7 @@ export class ObjectDef {
     return this.triggers.some((trigger) => trigger.interaction.name === name);
   }
 
-  /** この型にタグ（5節）が付いているか（PropertyDef.hasTagと同じ揃え）。 */
+  /** この型にタグ（4.1節）が付いているか（PropertyDef.hasTagと同じ揃え）。 */
   hasTag(tagGlobalId: TagGlobalId): boolean {
     return this.tags.includes(tagGlobalId);
   }

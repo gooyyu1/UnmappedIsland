@@ -428,7 +428,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   });
 
   it('蓋を載せた甕は、雲の無い空の正午でも1mLも蒸発しない', () => {
-    // 蓋は上乗せだけでなく基礎の蒸発も止める（6.2節）。**器を日なたに置いたまま**確かめる
+    // 蓋は上乗せだけでなく基礎の蒸発も止める（同 6.2節）。**器を日なたに置いたまま**確かめる
     // ——日陰へ寄せて確かめると、蓋ではなく置き場所の効き目を測ることになる。
     const world = spawnWorld('scorching');
     const jar = spawnContainerUnderWorld('jar', 'water', 200, world);
