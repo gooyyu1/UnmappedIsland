@@ -421,33 +421,69 @@ function totalAmountOf(deltas: readonly TickDelta[]): number {
 }
 
 /**
- * その組み合わせが起こす押し方。押していない（合計0）か、開くことの無いゲートを含むか、効いている
- * 間が空ならundefined。
+ * その組み合わせが起こす押し方。押していない（合計0）か、どちらの端の個体でも起こらない
+ * （pushingWindowOf）ならundefined。
  */
 function pushingCaseOf(def: ObjectDef, combination: readonly TickDelta[]): PushingCase | undefined {
   const amount = totalAmountOf(combination);
   if (amount === 0) return undefined;
 
+  const windows = ROLL_ENDS.map((rollEnd) => pushingWindowOf(def, combination, rollEnd)).filter(
+    (window): window is PushingWindow => window !== undefined,
+  );
+  if (windows.length === 0) return undefined;
+  const narrowest = windows.reduce((best, window) => (widthOf(window) < widthOf(best) ? window : best));
+
+  return {
+    amount,
+    ...narrowest,
+    sourceStages: combination.flatMap((delta) => delta.gate.requiredSelfStages),
+  };
+}
+
+/** 1つの個体について、押し方が効いている間（pushingWindowOf）。 */
+type PushingWindow = Pick<PushingCase, 'ticksUntilStart' | 'ticksUntilStop'>;
+
+/** 効いている間の長さ。止まらないなら無限大。 */
+function widthOf({ ticksUntilStart, ticksUntilStop }: PushingWindow): number {
+  return ticksUntilStop === undefined ? Number.POSITIVE_INFINITY : ticksUntilStop - ticksUntilStart;
+}
+
+/**
+ * 生成時のロール（6.2節）がその端に出た個体で、その組み合わせが効いている間。開くことの無いゲートを
+ * 含むか、効いている間が空ならundefined＝その個体ではこの押し方は起こらない。
+ *
+ * **効き始め（ticksUntilGateRises）と止まるまで（ticksUntilGateFalls）は同じ1つの個体で数える。**
+ * 別々の端を採ると、段へ落ちて入る個体と段を割って出る個体が入れ替わり、窓が縮む・消えるといった、
+ * どちらの個体にも起こらない長さが出る。押し手の側（ticksUntilDrivenStage）が向きで端を決め打てるのは、
+ * 押している向きが1つに決まっているからで、自分の増減で動く値には同じ手が使えない——同じ値に上向きと
+ * 下向きの組が並ぶ。
+ *
+ * 押し方（pushingCaseOf）は、両端の個体のうち**窓が狭いほう**で数える＝押し手を控えめに数える。
+ * **狭いほうは、段へ入るか・どちらの端から抜けるかで入れ替わる**——上へ抜けるなら段の中で上に生まれた
+ * 個体ほど、下へ割るなら下に生まれた個体ほど早く抜けるので、どちらかの端に固定すると、その向きでだけ
+ * 控えめの逆になる。**比べるのは端の個体どうしだけ**で、ロールが段や比較の境目を跨ぐとき、境目の
+ * すぐ内側に生まれた個体がもっと狭い窓を持つことまでは追わない。
+ */
+function pushingWindowOf(
+  def: ObjectDef,
+  combination: readonly TickDelta[],
+  rollEnd: RollEnd,
+): PushingWindow | undefined {
   const starts: number[] = [];
   for (const delta of combination) {
-    const ticks = ticksUntilGateRises(def, delta.gate);
+    const ticks = ticksUntilGateRises(def, delta.gate, rollEnd);
     // 開くことの無いゲートが1つでもあれば、その組み合わせは起こらない。
     if (ticks === undefined) return undefined;
     starts.push(ticks);
   }
   const ticksUntilStart = Math.max(...starts);
   const stops = combination
-    .map((delta) => ticksUntilGateFalls(def, delta.gate))
+    .map((delta) => ticksUntilGateFalls(def, delta.gate, rollEnd))
     .filter((ticks): ticks is number => ticks !== undefined);
   const ticksUntilStop = stops.length === 0 ? undefined : Math.min(...stops);
   if (ticksUntilStop !== undefined && ticksUntilStop <= ticksUntilStart) return undefined;
-
-  return {
-    amount,
-    ticksUntilStart,
-    ticksUntilStop,
-    sourceStages: combination.flatMap((delta) => delta.gate.requiredSelfStages),
-  };
+  return { ticksUntilStart, ticksUntilStop };
 }
 
 /**
@@ -498,7 +534,7 @@ interface TickAmounts {
   /**
    * 数から外した、段の宣言の下に置かれた増減（8.2節）。readsEveryDeclaredDeltaはこれが空であること。
    * **どの段のものかを残す**のは、段を抜ける時刻を数える側が、名指した段に居る間に効くものだけを
-   * 読み落としとして数えるため（readsEveryDeltaWhileInStage）。
+   * 読み落としとして数えるため（readsEveryDeltaUntilStageLeft）。
    */
   readonly stageGated: readonly TickDelta[];
 }
@@ -633,20 +669,6 @@ function totalsWithDriver(own: TickAmounts, driver: ExternalTickDelta | undefine
 }
 
 /**
- * ゲートが開いている間——効き始め（ticksUntilGateRises）から止まるまで（ticksUntilGateFalls）——を
- * 数えるときに読む、生成時のロール（6.2節）の端。
- *
- * **窓は同じ1つの個体についての長さ**なので、入り口と出口で別の端を採ってはならない。向きごとに
- * 裏返すと、段へ落ちて入る個体と段を割って出る個体が入れ替わり、窓が縮む・消えるといった、どちらの
- * 個体にも起こらない長さが出る。押し手の側（ticksUntilDrivenStage）が向きで裏返せるのは、押して
- * いる向きが1つに決まっているからで、自分の増減で動く値には同じ手が使えない——同じ値に上向きと
- * 下向きの組が並ぶ。
- *
- * 軽く出たほうを採るのは、上がっていって段へ入る場合に**段から遠い＝効き始めが最も遅い**側だから。
- */
-const GATE_WINDOW_ROLL_END: RollEnd = 'lowest';
-
-/**
  * ゲートが落ちて、その増減が効かなくなるまでのtick数（TickGate参照）。**自分の値に課された比較の
  * 外へ出るか、居ることを要求された段を抜けるか**で落ちる。どちらも来なければundefined＝
  * 止まらない。**生まれた時点から数える**ので、効き始めまでの時間（ticksUntilGateRises）と同じ
@@ -659,12 +681,12 @@ const GATE_WINDOW_ROLL_END: RollEnd = 'lowest';
  *
  * 落ちるのは**要るもののどれか1つが外れた時点**なので、最も早いものを採る。
  */
-function ticksUntilGateFalls(def: ObjectDef, gate: TickGate): number | undefined {
+function ticksUntilGateFalls(def: ObjectDef, gate: TickGate, rollEnd: RollEnd): number | undefined {
   const falls = [
-    ...gate.selfComparisons.map((comparison) => ticksUntilComparisonLeft(def, comparison)),
+    ...gate.selfComparisons.map((comparison) => ticksUntilComparisonLeft(def, comparison, rollEnd)),
     ...gate.requiredSelfStages.flatMap((required) => [
-      ticksUntilStageLeftUpward(def, required),
-      ticksUntilStageLeftDownward(def, required),
+      ticksUntilStageLeftUpward(def, required, rollEnd),
+      ticksUntilStageLeftDownward(def, required, rollEnd),
     ]),
   ].filter((ticks): ticks is number => ticks !== undefined);
   return falls.length === 0 ? undefined : Math.min(...falls);
@@ -727,11 +749,15 @@ function comparisonLowerEndOf(comparison: PropertyComparison): ComparisonEnd | u
  * **その値を動かす宣言を1つも数から外していないときだけ**言い切る（TickAmounts.readsEveryDeclaredDelta）
  * ——外した増減が値を比較の内側へ連れ戻すなら、読めた増減で外へ出ることは起こらないかもしれない。
  */
-function ticksUntilComparisonLeft(def: ObjectDef, comparison: PropertyComparison): number | undefined {
+function ticksUntilComparisonLeft(
+  def: ObjectDef,
+  comparison: PropertyComparison,
+  rollEnd: RollEnd,
+): number | undefined {
   const amounts = tickAmountsOf(def, comparison.propertyGlobalId);
   if (!amounts.readsEveryDeclaredDelta) return undefined;
-  // 速さも初期値も、段を抜ける場合（ticksUntilStageLeftUpward）と同じ側。
-  const value = staticValueOf(def, comparison.propertyGlobalId, GATE_WINDOW_ROLL_END);
+  // 速さは段を抜ける場合（ticksUntilStageLeftUpward）と同じ側。
+  const value = staticValueOf(def, comparison.propertyGlobalId, rollEnd);
   const upper = comparisonUpperEndOf(comparison);
   const lower = comparisonLowerEndOf(comparison);
   if (value === undefined || !withinUpperEnd(value, upper) || !withinLowerEnd(value, lower)) return undefined;
@@ -772,24 +798,45 @@ function ticksToLeaveThrough(
   perTick: number | undefined,
 ): number | undefined {
   if (perTick === undefined) return undefined;
-  return end.inclusive
-    ? Math.floor((end.value - value) / perTick) + 1
-    : Math.ceil((end.value - value) / perTick);
+  const ticks = ticksToCover(end.value - value, perTick);
+  return end.inclusive ? Math.floor(ticks) + 1 : Math.ceil(ticks);
 }
+
+/**
+ * その距離をその速さで進むのに要るtick数（端数を残したまま）。**整数のすぐ脇に落ちた商は整数へ戻す**
+ * ——宣言の値は十進で書かれるが、0.1のような速さは2進で割り切れず、端ちょうどへ着く組
+ * （1から+0.1/tickで1.3）の商が2.9999999999999996や3.0000000000000004になる。そのまま切り上げ・
+ * 切り捨てると、着いたtickが1つずれる。
+ */
+function ticksToCover(distance: number, perTick: number): number {
+  const ticks = distance / perTick;
+  const nearest = Math.round(ticks);
+  return Math.abs(ticks - nearest) <= TICK_QUOTIENT_TOLERANCE * Math.max(1, Math.abs(nearest))
+    ? nearest
+    : ticks;
+}
+
+/** ticksToCoverが整数とみなす、商と整数の隔たり（整数の大きさに対する比）。 */
+const TICK_QUOTIENT_TOLERANCE = 1e-9;
 
 /**
  * 要求された段を上へ抜けて、条件が外れるまでのtick数。抜ける先が無い、上がっていかない値、
  * 値の並びの上に位置を持たない段（シンボル型、6.6節）、生まれた時点で上端より上に在る値
- * （ticksToRiseTo）、その段に居る間に効く増減を読み落としている値（readsEveryDeltaWhileInStage）
- * ならundefined。
+ * （ticksToRiseTo）、その段へ届くまでか居る間に効く増減を読み落としている値
+ * （readsEveryDeltaUntilStageLeft）ならundefined。
  */
-function ticksUntilStageLeftUpward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
+function ticksUntilStageLeftUpward(
+  def: ObjectDef,
+  required: SelfStageRequirement,
+  rollEnd: RollEnd,
+): number | undefined {
   const amounts = tickAmountsOf(def, required.propertyGlobalId);
-  if (!readsEveryDeltaWhileInStage(def, amounts, required)) return undefined;
+  const value = staticValueOf(def, required.propertyGlobalId, rollEnd);
+  if (!readsEveryDeltaUntilStageLeft(def, amounts, required, value)) return undefined;
   // 速さは**最も速い増減**（fastest）——**効き始めから抜けるまでが最も狭くなる組**で、押し手を
   // 控えめに数える側。
   return ticksToRiseTo(
-    staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
+    value,
     stageUpperBoundOf(def, required),
     paceTowards(amounts.possible, 'on_max')?.fastest.amount,
   );
@@ -805,36 +852,49 @@ function ticksUntilStageLeftUpward(def: ObjectDef, required: SelfStageRequiremen
  *
  * 生まれた時点で下端より下に在る値が抜けないのは、上へ抜けるほうと同じ（ticksToFallBelow）。
  */
-function ticksUntilStageLeftDownward(def: ObjectDef, required: SelfStageRequirement): number | undefined {
+function ticksUntilStageLeftDownward(
+  def: ObjectDef,
+  required: SelfStageRequirement,
+  rollEnd: RollEnd,
+): number | undefined {
   const amounts = tickAmountsOf(def, required.propertyGlobalId);
-  if (!readsEveryDeltaWhileInStage(def, amounts, required)) return undefined;
+  const value = staticValueOf(def, required.propertyGlobalId, rollEnd);
+  if (!readsEveryDeltaUntilStageLeft(def, amounts, required, value)) return undefined;
   // 速さはticksUntilStageLeftUpwardと同じ側——効き始めから抜けるまでが最も狭くなる組で、押し手を
   // 控えめに数える。
   return ticksToFallBelow(
-    staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
+    value,
     stageLowerExitOf(def, required),
     paceTowards(amounts.possible, 'on_min')?.fastest.amount,
   );
 }
 
 /**
- * 要求された段に値が居る間、その値を動かす宣言を1つも数から外していないか。段を抜ける時刻を
- * 言い切れるのは、これが真のときだけ——外した増減が段の内側へ連れ戻すなら、読めた増減で抜けることは
- * 起こらないかもしれない。
+ * その初期値から要求された段を抜けるまでの間、その値を動かす宣言を1つも数から外していないか。段を
+ * 抜ける時刻を言い切れるのは、これが真のときだけ——外した増減が段の内側へ連れ戻すなら、読めた増減で
+ * 抜けることは起こらないかもしれない。
  *
- * 比較の外へ出る側（ticksUntilComparisonLeft）が段の宣言の下の増減を1つでも持てば言い切らないのと
- * 違い、**同じ値の他の段の宣言は数えない**——段は値の区間を分けるので、名指した段（「その段以上」なら、
- * その段以上のどれか）に居る間、それより外の段の宣言は効かない。**別のプロパティの段の宣言は数える**
- * ——そちらの段に居るかは、名指した段に居ることからは決まらない。
+ * **名指した段の中に生まれた値なら、同じ値の他の段の宣言は数えない**——段は値の区間を分けるので、
+ * 名指した段（「その段以上」なら、その段以上のどれか）に居る間、それより外の段の宣言は効かない。
+ * **段の外に生まれた値では数える**——段へ入るまでの道中は外の段に居るので、そこの宣言が効く
+ * （段の外に居る間は自分で熱を保つ石は、段へ下りてこない）。比較の外へ出る側
+ * （ticksUntilComparisonLeft）と同じく、段の宣言の下の増減を1つでも持てば言い切らない。
+ *
+ * **別のプロパティの段の宣言はどちらでも数える**——そちらの段に居るかは、名指した段に居ることからは
+ * 決まらない。
  */
-function readsEveryDeltaWhileInStage(
+function readsEveryDeltaUntilStageLeft(
   def: ObjectDef,
   amounts: TickAmounts,
   required: SelfStageRequirement,
+  value: number | undefined,
 ): boolean {
   const propertyDef = def.tryGetPropertyDef(required.propertyGlobalId);
+  const bornInStage =
+    value !== undefined && propertyDef?.isInStage(value, required.stageName, required.bound) === true;
+  if (!bornInStage) return amounts.readsEveryDeclaredDelta;
   return amounts.stageGated.every(({ gate: { stage } }) => {
-    if (stage === undefined || propertyDef === undefined) return false;
+    if (stage === undefined) return false;
     if (stage.propertyGlobalId !== required.propertyGlobalId) return false;
     const lowerBound = propertyDef.lowerBoundOfStage(stage.name);
     return lowerBound === undefined || !propertyDef.isInStage(lowerBound, required.stageName, required.bound);
@@ -869,10 +929,10 @@ function stageLowerExitOf(def: ObjectDef, required: SelfStageRequirement): numbe
  * **要る段が複数あれば最も遅いものに合わせる**——どれか1つでも跨いでいなければ増減は効かない。
  * ゲートが落ちるのは要るもののどれか1つが外れた時点なので、ticksUntilGateFallsとは向きが逆になる。
  */
-function ticksUntilGateRises(def: ObjectDef, gate: TickGate): number | undefined {
+function ticksUntilGateRises(def: ObjectDef, gate: TickGate, rollEnd: RollEnd): number | undefined {
   let latest = 0;
   for (const required of gate.requiredSelfStages) {
-    const entered = ticksUntilStageEntered(def, required);
+    const entered = ticksUntilStageEntered(def, required, rollEnd);
     if (entered === 'never') return undefined;
     latest = Math.max(latest, entered);
   }
@@ -893,10 +953,14 @@ function ticksUntilGateRises(def: ObjectDef, gate: TickGate): number | undefined
  * 数え、**入れるほうのうち遅いほう**に合わせる。上がっては入れない値でも、上から落ちて入る道が
  * 読めるならそちらが答えになるので、`'never'`が効くのはどちらの入り口も読めなかったときだけ。
  */
-function ticksUntilStageEntered(def: ObjectDef, required: SelfStageRequirement): number | 'never' {
+function ticksUntilStageEntered(
+  def: ObjectDef,
+  required: SelfStageRequirement,
+  rollEnd: RollEnd,
+): number | 'never' {
   const entrances = [
-    ticksUntilStageEnteredUpward(def, required),
-    ticksUntilStageEnteredDownward(def, required),
+    ticksUntilStageEnteredUpward(def, required, rollEnd),
+    ticksUntilStageEnteredDownward(def, required, rollEnd),
   ];
   const enters = entrances.filter((ticks): ticks is number => typeof ticks === 'number');
   if (enters.length > 0) return Math.max(...enters);
@@ -905,7 +969,8 @@ function ticksUntilStageEntered(def: ObjectDef, required: SelfStageRequirement):
 
 /**
  * 要求された段へ、値が上がっていって**下端へ届く**までのtick数。上がっていかない値、値の並びの上に
- * 位置を持たない段（シンボル型、6.6節）ならundefined。**既にその段に居るなら0**（ticksToReach）。
+ * 位置を持たない段（シンボル型、6.6節）、届くまでの道中に効く増減を読み落としている値
+ * （readsEveryDeltaUntilStageEntered）ならundefined。**既にその段に居るなら0**（ticksToReach）。
  *
  * **どのロールも上端より上に出る値は、上がっては入らない**——上がるほど段から遠ざかるので、
  * そこから先は決して入らないと言えるか（neverCrossesIntoStage）の問いになる。段に最も近い側に
@@ -914,6 +979,7 @@ function ticksUntilStageEntered(def: ObjectDef, required: SelfStageRequirement):
 function ticksUntilStageEnteredUpward(
   def: ObjectDef,
   required: SelfStageRequirement,
+  rollEnd: RollEnd,
 ): number | 'never' | undefined {
   const amounts = tickAmountsOf(def, required.propertyGlobalId);
   // 届くまでを**最も長く**見る側（slowest）。押し手が押せる間を最も短く見る側へ揃える。
@@ -925,16 +991,33 @@ function ticksUntilStageEnteredUpward(
   if (upperBound !== undefined && bornBeyond(def, required, 'on_max', upperBound))
     return neverCrossesIntoStage(def, required, amounts, perTick) ? 'never' : undefined;
 
-  return ticksToReach(
-    staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
-    required.lowerBound,
-    perTick,
-  );
+  const value = staticValueOf(def, required.propertyGlobalId, rollEnd);
+  if (!readsEveryDeltaUntilStageEntered(amounts, value, required.lowerBound, 'on_max')) return undefined;
+  return ticksToReach(value, required.lowerBound, perTick);
+}
+
+/**
+ * 段の外に生まれた値が、その段の境目（bound）へ着くまでの間、その値を動かす宣言を1つも数から
+ * 外していないか。approachingは段へ近づく向き——下から上がって入るなら`on_max`。**段へ入るまでの
+ * 道中は名指した段の外に居る**ので、段を抜ける側（readsEveryDeltaUntilStageLeft）が段の外に生まれた
+ * 値にしているのと同じく、段の宣言の下の増減を1つでも外していれば言い切らない。
+ *
+ * 道中が無い——既に境目を越えて生まれた——値には、外した増減が効く間が無いので真。
+ */
+function readsEveryDeltaUntilStageEntered(
+  amounts: TickAmounts,
+  value: number | undefined,
+  bound: number | undefined,
+  approaching: RangeEventLabel,
+): boolean {
+  if (amounts.readsEveryDeclaredDelta || value === undefined || bound === undefined) return true;
+  return approaching === 'on_max' ? value >= bound : value < bound;
 }
 
 /**
  * 要求された段へ、値が下がっていって**上端を割る**までのtick数。下がっていかない値、上から入れない
- * 段（stageUpperBoundOf）ならundefined。
+ * 段（stageUpperBoundOf）、割るまでの道中に効く増減を読み落としている値
+ * （readsEveryDeltaUntilStageEntered）ならundefined。
  *
  * **どのロールも下端より下に出る値は、下がっては入らない**——下がるほど段から遠ざかる。上の端
  * （ticksUntilStageEnteredUpward）を裏返しただけで、決して入らないと言えるかの分かれ目も、
@@ -946,6 +1029,7 @@ function ticksUntilStageEnteredUpward(
 function ticksUntilStageEnteredDownward(
   def: ObjectDef,
   required: SelfStageRequirement,
+  rollEnd: RollEnd,
 ): number | 'never' | undefined {
   const amounts = tickAmountsOf(def, required.propertyGlobalId);
   // 速さはticksUntilStageEnteredUpwardと同じく、届くまでを**最も長く**見る側（slowest）。
@@ -960,11 +1044,10 @@ function ticksUntilStageEnteredDownward(
     bornBeyond(def, required, 'on_min', lowerBound);
   if (belowStage) return neverCrossesIntoStage(def, required, amounts, perTick) ? 'never' : undefined;
 
-  return ticksToFallBelow(
-    staticValueOf(def, required.propertyGlobalId, GATE_WINDOW_ROLL_END),
-    stageUpperBoundOf(def, required),
-    perTick,
-  );
+  const value = staticValueOf(def, required.propertyGlobalId, rollEnd);
+  const upperBound = stageUpperBoundOf(def, required);
+  if (!readsEveryDeltaUntilStageEntered(amounts, value, upperBound, 'on_min')) return undefined;
+  return ticksToFallBelow(value, upperBound, perTick);
 }
 
 /**
@@ -972,9 +1055,9 @@ function ticksUntilStageEnteredDownward(
  * 遠ざける向きで、boundはその向きに見た段の境目——上へ遠ざかるなら上端、下へ遠ざかるなら下端。
  *
  * 読むのは**段に最も近い側に出た個体**（rollEndAwayFrom）。言い切る相手はその型のすべての個体なので、
- * 最も近い個体が越えていなければ言い切れない。**窓の長さを数えるGATE_WINDOW_ROLL_ENDとは別の問い**
- * ——あちらは1つの個体についての長さなので端を固定するが、ここは向きで裏返る。片方に固定すると、
- * 下の端では段の中に生まれる個体が居るのに押し手を落とす。
+ * 最も近い個体が越えていなければ言い切れない。**窓の長さを数える個体（pushingWindowOf）とは別の問い**
+ * ——あちらは1つの個体についての長さなので効き始めと止まるまでで端を揃えるが、ここは向きで裏返る。
+ * 片方に固定すると、下の端では段の中に生まれる個体が居るのに押し手を落とす。
  *
  * **越えたと言える位置も向きで変わる**（段は下端を含む半開区間、6.4節）——上端はちょうどでもう段の
  * 外だが、下端はちょうどならまだ段の中。
@@ -1124,7 +1207,7 @@ function ticksToReach(
   perTick: number | undefined,
 ): number | undefined {
   if (value === undefined || target === undefined || perTick === undefined) return undefined;
-  return Math.max(0, Math.ceil((target - value) / perTick));
+  return Math.max(0, Math.ceil(ticksToCover(target - value, perTick)));
 }
 
 /**
@@ -1146,7 +1229,7 @@ function ticksToRiseTo(
 ): number | undefined {
   if (value === undefined || bound === undefined || perTick === undefined) return undefined;
   if (value >= bound) return undefined;
-  return Math.ceil((bound - value) / perTick);
+  return Math.ceil(ticksToCover(bound - value, perTick));
 }
 
 /**
@@ -1167,5 +1250,5 @@ function ticksToFallBelow(
 ): number | undefined {
   if (value === undefined || bound === undefined || perTick === undefined) return undefined;
   if (value < bound) return undefined;
-  return Math.floor((bound - value) / perTick) + 1;
+  return Math.floor(ticksToCover(bound - value, perTick)) + 1;
 }
