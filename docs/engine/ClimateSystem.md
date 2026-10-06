@@ -416,7 +416,7 @@ atmospheric_moisture:
 
 この上乗せには **`conditions`（GameElementDefinition.md 14 節）で「大気水分量が閾値以上のとき」というゲート**が付いています
 （`deepening` は 60<!-- codex: core.yaml object_defs.world.props.monsoon_level.stages.1.passives.0.conditions.0.gte --> 以上、`peak` は 45<!-- codex: core.yaml object_defs.world.props.monsoon_level.stages.2.passives.0.conditions.0.gte --> 以上。stage の WhenOwnStage ゲートと `conditions` は AND で
-重なる、同 8.2 節）。無条件に上乗せすると、`monsoon_level` の減衰が終わらない乾季序盤に、水分が尽きた
+重なる、同 6.4 節）。無条件に上乗せすると、`monsoon_level` の減衰が終わらない乾季序盤に、水分が尽きた
 空からも大雨が降ってしまうためです。逆にこのゲートのおかげで、乾季に入っても水分がまだ高い間は上乗せが
 生き、嵐・大雨の名残が自然に表現されます。実測でも、`wet` を 3 等分した嵐・大雨の tick 比率は序盤から
 終盤へ単調に増えます（[`stats/climate.yaml`](../../stats/climate.yaml) の `weather_hours` の `segment`。
