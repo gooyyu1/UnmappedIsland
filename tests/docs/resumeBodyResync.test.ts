@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { promptBody } from '../../scripts/daemon/prompt-body.mjs';
 
 /**
- * 直しの周で起こす文面が、**本文を差分と突き合わせ直す段**（`CLAUDE.md`「修正作業の進め方」6節）を
+ * 直しの周で起こす文面が、**本文を差分と突き合わせ直す段**（`CLAUDE.md` 6節（修正作業の進め方））を
  * 指しているかの検査。
  *
  * 起こされた側は文面に書かれた終わり方で手を止めるので、**段が文面から外れれば、指す先の規則が
@@ -16,7 +16,7 @@ const RESUME_PROMPT = join(ROOT, 'agent-ops', 'prompts', 'resume-prompt.md');
 const CLAUDE_MD = join(ROOT, 'CLAUDE.md');
 
 /** 文面が指す節。見出しの番号が動けば、指し先が別の節になるので一緒に見る。 */
-const SECTION_REF = '`CLAUDE.md`「修正作業の進め方」6節';
+const SECTION_REF = '`CLAUDE.md` 6節（修正作業の進め方）';
 const SECTION_HEADING = '## 6. PR本文は最後に、実際のdiffから書く';
 
 /**

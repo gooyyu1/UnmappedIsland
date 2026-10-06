@@ -672,9 +672,11 @@ const QUANTITY_SUFFIX = /^[\p{L}\p{N}%-]/u;
  * 指し先の規約:
  * - 「Foo.md N節」= その文書の節
  * - 「同 N節」= 同じファイル内で直前に名前を挙げた文書の節
- * - 裸の「N節」= 読み手の解釈と同じ優先順で、自文書 → 直前に名前を挙げた文書のどれか。
- *   **GameElementDefinition.md（WorldCodex文法の節）まで落ちるのはコード・YAMLだけ**
- *   （{@link fallsBackToGrammar}）
+ * - 裸の「N節」= 文書では自文書の節だけ。**直前に名前を挙げた文書へは落とさない**——読み手は
+ *   自文書の節を探すので、手前で名を挙げた文書が同じ番号を持っていても、そちらとは読まれない。
+ *   コード・YAMLは GameElementDefinition.md（WorldCodex文法の節）が既定（{@link fallsBackToGrammar}）。
+ *   **ただしこの検査は、コード・YAMLの裸の番号をまだ直前に名前を挙げた文書へも落とす**——規約では
+ *   なく、規約から外れたまま残している挙動
  * - 「・」「、」で続く番号の列挙と「〜」の範囲は1つの並び（{@link SECTION_RUN}）で、**末尾の「節」が
  *   並び全体に掛かる**。番号ごとに「節」を書けば、並びが1つずつに分かれるだけで同じに読める
  *
@@ -739,7 +741,7 @@ function brokenNumberedRefsIn(rel: string, source: string): string[] {
     } else {
       candidates = grammarFallback
         ? [selfBase, lastNamedBase, 'GameElementDefinition.md']
-        : [selfBase, lastNamedBase];
+        : [selfBase];
     }
     const bases = [...new Set(candidates.filter((c): c is string => c !== null))];
     const resolved = bases.find((base) => resolves(base, nums)) ?? null;
@@ -1446,6 +1448,21 @@ describe('ドキュメントの参照', () => {
     expect(brokenNumberedRefsIn(rel, `${grammarOnly as string}節`)).toHaveLength(1);
     const named = `[\`GameElementDefinition.md\`](./GameElementDefinition.md) ${grammarOnly as string}節`;
     expect(brokenNumberedRefsIn(rel, named)).toEqual([]);
+  });
+
+  it('文書の裸の「N節」が、直前に名前を挙げた文書へは落ちない', () => {
+    // 落ちると、自文書に無い番号でも手前で名を挙げた文書が持っていれば緑になる（読み手は自文書の
+    // 節を探して見つけられない）。文書名か「同」を付ければ、同じ番号がその文書へ解決する。
+    const rel = join('docs', 'engine', 'SlotSystem.md');
+    const named = join('docs', 'engine', 'GameElementDefinition.md');
+    const namedOnly = (namedSectionsByPath.get(named) ?? [])
+      .flatMap((heading) => /^(\d+(?:\.\d+)+)[.\s]/.exec(heading)?.[1] ?? [])
+      .find((num) => !hasNumberedSection(rel, num));
+
+    expect(namedOnly, `${named} だけが持つ節番号が無く、この検査は何も確かめていない`).toBeDefined();
+    const mention = '`GameElementDefinition.md` の宣言を使う。';
+    expect(brokenNumberedRefsIn(rel, `${mention}${namedOnly as string}節`)).toHaveLength(1);
+    expect(brokenNumberedRefsIn(rel, `${mention}同 ${namedOnly as string}節`)).toEqual([]);
   });
 
   it('暫定を表す語の照合が、他の語の一部を拾わない', () => {
