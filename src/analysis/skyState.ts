@@ -4,27 +4,31 @@ import type { WorldCodex } from '../domain/WorldCodex';
 import type { PropertyComparison } from './tickDeltas';
 
 /**
- * 器の居る場所の空のうち、tick毎の増減が見ているもの（`docs/engine/LiquidContainerSystem.md` 6・7節）。
- *
- * **持つのは2つだけ。** 雨よけ（`sheltered`）のように場所の置き方で決まる条件は、置き方を決めるのが
- * 数える側なので、ここには来ない（{@link ancestorConditionsHold} が素通しする）。
+ * 物の居る場所の空のうち、tick毎の増減が見ているもの（`docs/engine/LiquidContainerSystem.md` 6・7節、
+ * `docs/engine/FireSystem.md` 8.2節）。
  */
 export interface SkyState {
   /** この世界が宣言していない天候（実測の表にだけ在る名前）なら undefined。 */
   readonly weatherSymbolId: SymbolGlobalId | undefined;
 
-  /** 器の居る場所へ届いている明るさ。天候と太陽高度と、その場所の樹冠・反射を畳んだ値。 */
+  /** 物の居る場所へ届いている明るさ。天候と太陽高度と、その場所の樹冠・反射を畳んだ値。 */
   readonly ambientBrightness: number;
+
+  /**
+   * その場所が名乗る屋根（`sheltered`、ContainerSystem.md 6節）。**数える側が必ず決める**——
+   * 決めずに素通しすると、屋根の下の場所を数えながら野ざらしの増減まで効いていることになる
+   * （浅い洞窟で雨に消えない松明が、消えるものとして数えられた）。開けた場所は0。
+   */
+  readonly sheltered: number;
 }
 
 /**
  * その増減へ祖先（＝置かれている場所）が課している比較が、この空のもとで成立するか。
  *
- * **判定するのは天候と明るさだけで、それ以外の比較は素通しする。** 数える側が置き方を決める条件
- * （雨よけなど）を偽にすると、その置き方の量が数から丸ごと落ちる。
+ * **判定するのは天候と明るさと屋根で、それ以外の比較は素通しする。**
  *
- * **降雨と蒸発が同じ判定を通る。** 別々に持つと、条件の読み方が片方にだけ足されたときに、量の食い違いが
- * どちらの誤りなのか決まらない。
+ * **降雨と蒸発と明かりが同じ判定を通る。** 別々に持つと、条件の読み方が1つにだけ足されたときに、量の
+ * 食い違いがどれの誤りなのか決まらない。
  */
 export function ancestorConditionsHold(
   codex: WorldCodex,
@@ -32,6 +36,7 @@ export function ancestorConditionsHold(
   sky: SkyState,
 ): boolean {
   const { world } = codex.vocabulary;
+  const shelteredId = codex.propertyNames.tryGetId('sheltered');
   return conditions.every((condition) => {
     if (condition.propertyGlobalId === world.weatherId)
       return sky.weatherSymbolId === undefined
@@ -39,6 +44,8 @@ export function ancestorConditionsHold(
         : comparisonHolds(condition.op, sky.weatherSymbolId, condition.values);
     if (condition.propertyGlobalId === world.ambientBrightnessId)
       return comparisonHolds(condition.op, sky.ambientBrightness, condition.values);
+    if (condition.propertyGlobalId === shelteredId)
+      return comparisonHolds(condition.op, sky.sheltered, condition.values);
     return true;
   });
 }

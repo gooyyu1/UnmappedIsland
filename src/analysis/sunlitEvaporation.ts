@@ -74,6 +74,7 @@ export function sunlitEvaporationRows(codex: WorldCodex): readonly SunlitEvapora
         const sky = {
           weatherSymbolId: codex.symbolNames.tryGetId(weatherName),
           ambientBrightness: place.brightnessAt(worldAmbientAt(hour, weatherName)),
+          sheltered: place.shelteredValue,
         };
         if (!sunlitDeltas.some((delta) => ancestorConditionsHold(codex, delta.gate.ancestorConditions, sky)))
           continue;
