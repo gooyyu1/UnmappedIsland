@@ -1059,7 +1059,7 @@ describe('死体の取り分', () => {
   const animals = parse(readFileSync(worldCodexPath('animals.yaml'), 'utf8')) as {
     object_defs: Record<string, Def>;
   };
-  const weightOf = (name: string): number => animals.object_defs[name]?.props?.weight?.value ?? 0;
+  const weightOf = (name: string): number => animals.object_defs[name].props?.weight?.value ?? 0;
   /** 解体して取り分を出す死体（丸焼きにするだけの小さな獲物は除く）。 */
   const carcasses = Object.entries(animals.object_defs).filter(
     ([, def]) =>
