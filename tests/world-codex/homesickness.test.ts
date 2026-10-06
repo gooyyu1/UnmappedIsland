@@ -294,7 +294,8 @@ describe('ホームシック(docs/world/Characters.md ホームシック節)', {
   });
 
   it('対策を何も打たなければ、最良の食事を通しても91日目に打ちひしがれる', () => {
-    // 火を通した3食で**追いつくのは最初の段まで**で、里心が深まれば削りが食事を上回り、埋まらない。0 は終点ではなく、打ちひしがれる入口（Characters.md 限界節）。
+    // 火を通した3食で**追いつくのは最初の段まで**で、里心が深まれば削りが食事を上回り、埋まらない。
+    // 0 は終点ではなく、打ちひしがれる入口（Characters.md 限界節）。
     const trace = live(115, { cookedMeals: 3 });
 
     expect(trace.despairMinutes.findIndex((minutes) => minutes > 0) + 1).toBe(91);

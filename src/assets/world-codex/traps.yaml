@@ -390,8 +390,7 @@ object_defs:
         become: {stake: staked}
         destroy: instrument
     # **解放条件を持たない。** 掘るだけで結ぶ工程が無いので、くくり罠を開ける繊維・編みの腕
-    # （上）はここには効かない。掘り続ける手間そのものを、素材チェーンと同じくゲートと見る
-    # （docs/engine/SkillSystem.md 4.2節）。
+    # （上）はここには効かない。
     recipes:
       # 掘るだけ。**掘削具はまだ無い**（TrapSystem.md 8節）ので、畑と同じく掘り棒にする太い枝を
       # 1本折り込む形で置いてある（farming.yamlのfield）。獣が落ちる深さまで掘るので、畑を均す
