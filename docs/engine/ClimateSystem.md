@@ -93,7 +93,7 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 ### 2.2 プロパティ構成
 
 - `season`: 現在の季節を表す symbol プロパティ（`calm`/`wet`/`dry`。GameElementDefinition.md 6.6 節）。`stages`
-  は季節ごとに 1 つずつ、`eq` は値名から自動導出されます（6.4 節）。各 stage は (1) 貯水池への季節レート
+  は季節ごとに 1 つずつ、`eq` は値名から自動導出されます（同 6.4 節）。各 stage は (1) 貯水池への季節レート
   （3 節）と、(2) 自分が現在の季節であることを示すフラグ（次項）の `modify` を持ちます。
 - `season_is_calm`/`season_is_wet`/`season_is_dry`: 「今の季節はどれか」を 0/1 で表すフラグ。`season` の
   各 stage が `modify` で立てる。2.3 節の遷移 `pick` の重みとして参照される。
@@ -110,7 +110,7 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 「役を書ける場所」）。遷移が触るのはすべて `world` 自身のプロパティなので、制約にはなりません。
 
 エンジンの `active` には「現在の値によって `set` の内容を変える」条件分岐の記法がないため、遷移は
-**0/1 の重みプロパティを参照する `pick`**（10 節）で表現します。重みが 0 の候補は選ばれないため、0/1 の重みは
+**0/1 の重みプロパティを参照する `pick`**（同 10 節）で表現します。重みが 0 の候補は選ばれないため、0/1 の重みは
 そのまま決定的な条件分岐として機能します（確率のための仕組みを、確率 0/100% の極として使う形です）。
 `pick` は次の順に入れ子になります。
 
@@ -313,7 +313,7 @@ trait。土地・海区・筏・本土）が同名のプロパティを持ち、
 ### 4.3 遷移先: 天気ごとの重みプロパティを貯水池（大気水分量・蓄熱量）の `stages` が `modify` する
 
 `weather_remaining` の `on_min`（`self`）で `pick`（GameElementDefinition.md 10 節）を実行し、次の天気を選びます。
-外側の `pick` の各候補は対応する `*_weight` プロパティを重みとして参照し（10.2 節の「既存プロパティへの参照」）、
+外側の `pick` の各候補は対応する `*_weight` プロパティを重みとして参照し（同 10.2 節の「既存プロパティへの参照」）、
 選ばれた候補の内側の `pick` が持続時間（16<!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.0.set.self.weather_remaining -->/20<!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.1.set.self.weather_remaining -->/24<!-- codex: core.yaml object_defs.world.props.weather_remaining.on_min.pick.0.pick.2.set.self.weather_remaining --> tick）を等確率で選び、葉の `set` が「次の天気」と
 「新しい `weather_remaining`」を同時に設定します（構造は 2.3 節の季節遷移と同型。完全な定義は `core.yaml` 参照）。
 
@@ -414,9 +414,9 @@ atmospheric_moisture:
 `heavy_rain_weight` +30<!-- codex: core.yaml object_defs.world.props.monsoon_level.stages.2.passives.0.modify.self.heavy_rain_weight --> と `storm_weight` +40<!-- codex: core.yaml object_defs.world.props.monsoon_level.stages.2.passives.0.modify.self.storm_weight --> を立てます（大気水分量は雨自身の自己減算のため季節内で
 単調に増えず「後半ほど」を表現できない。3 節末尾と同じ解法）。
 
-この上乗せには **`conditions`（14 節）で「大気水分量が閾値以上のとき」というゲート**が付いています
+この上乗せには **`conditions`（GameElementDefinition.md 14 節）で「大気水分量が閾値以上のとき」というゲート**が付いています
 （`deepening` は 60<!-- codex: core.yaml object_defs.world.props.monsoon_level.stages.1.passives.0.conditions.0.gte --> 以上、`peak` は 45<!-- codex: core.yaml object_defs.world.props.monsoon_level.stages.2.passives.0.conditions.0.gte --> 以上。stage の WhenOwnStage ゲートと `conditions` は AND で
-重なる、8.2 節）。無条件に上乗せすると、`monsoon_level` の減衰が終わらない乾季序盤に、水分が尽きた
+重なる、同 8.2 節）。無条件に上乗せすると、`monsoon_level` の減衰が終わらない乾季序盤に、水分が尽きた
 空からも大雨が降ってしまうためです。逆にこのゲートのおかげで、乾季に入っても水分がまだ高い間は上乗せが
 生き、嵐・大雨の名残が自然に表現されます。実測でも、`wet` を 3 等分した嵐・大雨の tick 比率は序盤から
 終盤へ単調に増えます（[`stats/climate.yaml`](../../stats/climate.yaml) の `weather_hours` の `segment`。
