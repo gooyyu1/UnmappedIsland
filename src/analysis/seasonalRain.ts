@@ -203,7 +203,7 @@ class SeasonalFillClimate {
       weatherSymbolId: this.codex.symbolNames.tryGetId(weatherName),
       ambientBrightness: this.worldAmbientAt(hour, weatherName),
       // この表は**雨の当たる開けた場所に置いた容器**の量（`docs/diagnostics/BalanceStats.md`
-      // 「この表が数えていないもの」）。
+      // 「雨で溜まる水（`rain_water`）」）。
       sheltered: 0,
     };
   }

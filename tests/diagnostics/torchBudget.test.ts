@@ -113,7 +113,7 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
   // 屋根の下でない場所の行動を、明るさに依らず止める天気（ContentSkeleton.md 8.1.4節）。
   // **どこでも灯っていて暗さを埋め切る仮の明かり**で数えるので、残る閉じ方は風雨だけ
   // ——暗さで閉じた時間と混ざらない。
-  const neverDark = { ev: torch.ev * 10, staysLitUnder: (): boolean => true };
+  const neverDark = { ev: 1000, staysLitUnder: (): boolean => true };
   const galeWeathers = new Set(
     weatherNamesOf(codex).filter((weatherName) =>
       activityHoursOf(codex, onlyThisWeather(weatherName), neverDark).some(
@@ -153,7 +153,8 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
         if (!torch.staysLitUnder(skyAt(row.locationName, weatherName))) continue;
         litCombinations++;
         const where = `${row.locationName}・${weatherName}`;
-        // 明るさのほうは松明が埋め切るので、**列の間に残る差は風雨だけ**（下の嵐）。
+        // 明るさのほうは松明が埋め切るので、閉じうるのは風雨だけ（下の嵐）。嵐の屋外は今は灯って
+        // いられずここへ来ないが、灯っていられるよう規則が変わっても、そこは風雨で閉じる。
         const expected = galeWeathers.has(weatherName) && !placeNamed(row.locationName).sheltered ? 0 : 24;
         expect(row.travelHoursPerDay, `${where}: 移動`).toBeCloseTo(expected, 6);
         expect(row.outdoorSearchHoursPerDay, `${where}: 屋外で見て探す`).toBeCloseTo(expected, 6);
@@ -167,10 +168,22 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
     // ContentSkeleton.md 8.1.4節。松明が買えるのは暗さで閉じた分だけで、風雨で閉じた分は買えない。
     expect([...galeWeathers], '屋外を風雨で閉じる天気').toEqual(['storm']);
 
-    const inStorm = activityHoursOf(codex, onlyThisWeather('storm'), torch);
+    // 暗さを埋め切った仮の明かりで、屋根の有無だけが開くかを分けていることを見る。
+    const inStorm = activityHoursOf(codex, onlyThisWeather('storm'), neverDark);
+    for (const row of inStorm) {
+      const sheltered = placeNamed(row.locationName).sheltered;
+      expect(
+        row.travelHoursPerDay,
+        `${row.locationName}: 屋根の${sheltered ? '下は開く' : '無い場所は閉じる'}`,
+      ).toBeCloseTo(sheltered ? HOURS_PER_DAY : 0, 6);
+    }
     expect(
-      inStorm.some((row) => row.travelHoursPerDay > HOURS_PER_DAY - 1e-6),
-      '嵐でも開く土地が1つも無い（風雨の届かない土地が消えた）',
+      inStorm.some((row) => placeNamed(row.locationName).sheltered),
+      '屋根の下の土地が1つも無い（風雨の届かない土地が消えた）',
+    ).toBe(true);
+    expect(
+      inStorm.some((row) => !placeNamed(row.locationName).sheltered),
+      '屋根の無い土地が1つも無い',
     ).toBe(true);
   });
 
@@ -226,6 +239,18 @@ describe('松明1本が買うもの（ContentSkeleton.md 8.1.1.4節）', () => {
         }
         const torchInHand = spawnInto('torch', player, 'hand');
         torchInHand.getProperty(litId).setNumberWithoutEvents(1);
+
+        // 下の skyAt は正午で代表させているので、灯っていられるかが時刻で変わらないことも見る。
+        const byHour = new Set(
+          Array.from({ length: HOURS_PER_DAY }, (_, h) =>
+            torch.staysLitUnder({
+              weatherSymbolId: codex.symbolNames.tryGetId(weatherName),
+              ambientBrightness: place.brightnessAt(worldAmbientAt(h, weatherName)),
+              sheltered: place.shelteredValue,
+            }),
+          ),
+        );
+        expect(byHour.size, `${place.name}・${weatherName}: 灯っていられるかが時刻で変わる`).toBe(1);
 
         const hour = world.getProperty(hourId).number;
         const expected = torch.staysLitUnder({
