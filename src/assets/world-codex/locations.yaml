@@ -107,7 +107,7 @@ object_defs:
     props:
       weight: {value: 1000}
       volume: {value: 1300}
-      # 太い枝1本で、炎を100分ほど保てる（docs/engine/FireSystem.md 2.3節）。
+      # 目方あたりの燃料は、木の燃料の上限（docs/engine/FireSystem.md 2.5節）。
       fuel: {value: 20}
 
   # 石。石同士を打ち合わせると、片方が割れて尖った石（tools.yaml）になる。
@@ -294,7 +294,7 @@ object_defs:
 
   # ------------------------------------------------------------------
   # 土地。すべて traits: [location, explorable]。
-  # - exploration_progress.range.max = 探索率100%に達するまでの探索回数（10〜20）。100%に達しても
+  # - exploration_progress.range.max = 探索率100%に達するまでの探索回数。100%に達しても
   #   探索は続けられ（進捗はrangeの上限に張り付く）、生成時に仕込まれた道がそれ以上見つからなくなるだけ。
   # - exploreのpickは「その土地で何が見つかるか」の確率テーブル。進捗+1（add self）は
   #   どの候補が選ばれても起こるので、pickの外に1つだけ置く（9.7節）。
@@ -337,7 +337,7 @@ object_defs:
     # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのcoast trait）。
     traits: [location, explorable, coast]
     props:
-      # 遠浅の浜からは、陸がまだ見えている海へそのまま漕ぎ出す。**本土まで14区間で最も遠いが、
+      # 遠浅の浜からは、陸がまだ見えている海へそのまま漕ぎ出す。**本土まで最も遠いが、
       # 序盤に補給の当てになる海区が続く**（voyage.yamlのcoast trait）。
       offshore_coastal_waters: {value: 1}
       # 遮るものが無く、乾いた砂がよく返す。**島で最も明るい地面**で、上限+17の根拠でもある
@@ -430,7 +430,7 @@ object_defs:
     # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのcoast trait）。
     traits: [location, explorable, coast]
     props:
-      # 岩の鼻に潮が当たるので、漕ぎ出せばすぐ流れのぶつかる帯に出る。**本土まで12区間で、島影の海と
+      # 岩の鼻に潮が当たるので、漕ぎ出せばすぐ流れのぶつかる帯に出る。**島影の海と
       # 海藻の帯を跨ぐ**（voyage.yamlのcoast trait）。
       offshore_tide_rip: {value: 1}
       # 遮るものが無く、地面は基準の明るさ。
@@ -524,7 +524,7 @@ object_defs:
     # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのcoast trait）。
     traits: [location, explorable, coast]
     props:
-      # 崖の下はすぐ深く、海鳥の集まる岩へそのまま続いている。**本土まで10区間で最も近いが、その先は
+      # 崖の下はすぐ深く、海鳥の集まる岩へそのまま続いている。**本土まで最も近いが、その先は
       # 補給の当てが無い海区が続く**（voyage.yamlのcoast trait）。
       offshore_gull_rock: {value: 1}
       # 遮るものが無く、地面は基準の明るさ。

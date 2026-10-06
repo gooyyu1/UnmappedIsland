@@ -45,7 +45,7 @@ traits:
       # 健康な体では1時間で1上がり、放っておけばfesteringを経てsepticへ届く
       # ——**深く残る個体なら、どの開いた傷も治りきる前に敗血症へ入る**位置（くくり罠の浅い裂傷だけは
       # その前に治りきる。TrapSystem.md 5.1節）。洗う1杯（-25）は
-      # 1日ぶんの汚れを上回って落とすので、**開いた傷1つにつき1日1杯**が保つための代償になる（InjurySystem.md 6.2節）。
+      # 健康な体の1日ぶんの汚れを上回って落とすので、**開いた傷1つにつき1日1杯**が保つための代償になる（InjurySystem.md 6.2節）。
       infection:
         gauge: {min: good, max: bad}
         value: 0
@@ -189,8 +189,8 @@ object_defs:
       # 今この傷から流れている血の勢い（docs/engine/VitalsSystem.md 4節）。
       #
       # **傷の重さとは別の時間で動く。** 血は放っておいても固まって止まるので、傷が塞がるより
-      # ずっと早く——4 tick（1時間）で——0になる。severityの段で出血を表すと、傷が治るまで
-      # 何日も流れ続けることになり、掠り傷でも必ず死ぬ。
+      # ずっと早く0になる（固まるまでの長さは tests/world-codex/animalsYaml.test.ts が見る）。
+      # severityの段で出血を表すと、傷が治るまで何日も流れ続けることになり、掠り傷でも必ず死ぬ。
       bleeding:
         value: 100
         range: {min: 0, max: 100}
@@ -247,7 +247,7 @@ object_defs:
                 severity: -1
         on_min:
           destroy: self
-      # 固まるまでの速さは裂傷と同じ4 tick。変わるのは下の流れる量だけ。
+      # 固まるまでの速さは裂傷と同じ。変わるのは下の流れる量だけ。
       bleeding:
         value: 100
         range: {min: 0, max: 100}
@@ -291,7 +291,7 @@ object_defs:
                 severity: -1
         on_min:
           destroy: self
-      # 固まるまでの速さは裂傷と同じ4 tick。
+      # 固まるまでの速さは裂傷と同じ。
       bleeding:
         value: 100
         range: {min: 0, max: 100}
@@ -303,7 +303,7 @@ object_defs:
       - modify:
           parent:
             pain: 40
-      # 固まるまでの合計は40mL。ヒトには響かないが、噛まれた側が小動物なら1割を超える。
+      # 固まるまでに流れる量はヒトには響かないが、噛まれた側が小動物なら無視できない。
       - conditions:
           - {prop: bleeding, gte: 1}
           - not: {slot: treatment, matches: {tag: hemostatic}}
@@ -344,7 +344,7 @@ object_defs:
       - modify:
           parent:
             pain: 60
-      # 固まるまでの4tickで合計600mL。ヒトの5,000mLの1割強で、2度突かれれば意識が薄れ始める。
+      # 固まるまでに流れる量は、ヒトの血にも響く桁になる。
       - conditions:
           - {prop: bleeding, gte: 1}
           - not: {slot: treatment, matches: {tag: hemostatic}}
@@ -421,7 +421,7 @@ object_defs:
       # 捻挫（960 tick）を、最も軽い折れ方でも上回る。骨折が別格であることをロールの下振れで
       # 崩さないため、幅の下端を捻挫より上に置く。
       #
-      # 14日は現実の6〜12週を4分の1へ縮めた長さ（docs/concept/DesignPrinciples.md）。幅そのものは
+      # 現実の6〜12週に対して、長くても14日に収めた（docs/concept/DesignPrinciples.md）。幅そのものは
       # **折れ方の違い**を生成時に1回ロールしたもの（6.2節）で、部位を分ける代わりにここが引き受ける。
       severity:
         # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。

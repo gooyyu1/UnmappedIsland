@@ -234,7 +234,7 @@ object_defs:
       weight: {value: 2000}
       meat_bait: {value: 12}
       volume: {value: 1900}
-      # 2kgを殻ごと焼くので、生肉（500gで24）より長くかかる。炎（3/tick）なら12 tick（3時間）。
+      # 2kgを殻ごと焼くので、生肉より長くかかる。
       cooking_progress:
         value: 0
         range: {min: 0, max: 36}
@@ -254,7 +254,7 @@ object_defs:
       # 水が飛んだぶん軽くなる。
       weight: {value: 1700}
       volume: {value: 1800}
-      # 焦げるまでの猶予は生から焼きより短い。炎なら6 tick（1時間30分）。
+      # 焦げるまでの猶予は生から焼きより短い。
       cooking_progress:
         value: 0
         range: {min: 0, max: 18}
@@ -300,7 +300,7 @@ object_defs:
       volume: {value: 800}
       # 刻むのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
       # （docs/world/Skills.md 7節）。**素がtickの刻み1つ分では腕の効きようが無い**ので、2つ分から
-      # 始めて届いた段で半分になる——火にかけるたびに繰り返す手なので、撚る・解体すると同じ置き方。
+      # 始めて届いた段で半分になる——火にかけるたびに繰り返す手なので、撚ると同じ置き方。
       chop_minutes:
         value: 30
         passives:
@@ -308,7 +308,7 @@ object_defs:
               - {subject: agent, prop: skill_cooking, in_stage_or_above: skilled}
             modify: {self: {chop_minutes: -15}}
       # **肉より長くかける。** 針状結晶を壊すには芯まで熱を通す必要があり、生焼けでは食べられない。
-      # 炎（3/tick）なら10 tick（2時間30分）。刻んであれば上乗せが乗る（上のprepped）ので6 tick（1時間30分）。
+      # 刻んであれば上乗せが乗る（上のprepped）ので早く煮える。
       cooking_progress:
         value: 0
         range: {min: 0, max: 30}
@@ -377,7 +377,7 @@ object_defs:
       # 水が飛んだぶん軽くなる。
       weight: {value: 600}
       volume: {value: 700}
-      # 焦げるまでの猶予は生から焼きより短い。炎なら5 tick（1時間15分）。
+      # 焦げるまでの猶予は生から焼きより短い。
       cooking_progress:
         value: 0
         range: {min: 0, max: 15}

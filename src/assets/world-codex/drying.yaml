@@ -121,7 +121,7 @@ object_defs:
         cell_count: 6
         cell: {accept: {tag: dryable}, max: 1}
     props:
-      # 太い枝6本（1,000×6）＋縄1本（600）。**据えた物も目方を名乗る**（core.yaml）。
+      # 材料の目方の和（tests/world-codex/loadEffects.test.ts が見る）。**据えた物も目方を名乗る**（core.yaml）。
       weight: {value: 6600}
     # **解放条件を持たない。** 保存の腕を求めると**自分で自分を塞ぐ**——下のレシピは保存を名乗るので、
     # 組む工程が配る腕をその工程自身が要求することになる（docs/engine/SkillSystem.md 3.2節・3.4節）。

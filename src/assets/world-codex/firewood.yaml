@@ -105,7 +105,7 @@ object_defs:
         cell_count: 10
         cell: {accept: {tag: firewood}, max: 1}
     props:
-      # 太い枝6本（1,000×6）＋編んだ葉3枚（400×3）＋縄1本（600）。**据えた物も目方を名乗る**
+      # 材料の目方の和（tests/world-codex/loadEffects.test.ts が見る）。**据えた物も目方を名乗る**
       # （core.yaml）。
       weight: {value: 7800}
     passives:

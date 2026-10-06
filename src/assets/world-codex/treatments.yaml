@@ -45,8 +45,8 @@ object_defs:
     # 出血のゲートをhemostaticで開け閉めするのと同じ形（同3.1節）。
     tags: [item, treatment, immobilizing]
     props:
-      # **材料より軽い**（tools.yamlの石斧と同じ）。太い枝2本（2,000g）から削り出した副木2枚に
-      # 紐200gを足した重さで、差の800gは削り落とした木屑。
+      # **材料より軽い**（tools.yamlの石斧と同じ。tests/world-codex/loadEffects.test.ts が見る）。
+      # 太い枝から副木を削り出すときに木屑を落とす。
       weight: {value: 1400}
       volume: {value: 1800}
     passives:

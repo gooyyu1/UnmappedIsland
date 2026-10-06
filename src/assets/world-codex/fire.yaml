@@ -100,8 +100,8 @@ traits:
           # 詰みにしない**——雨宿りした洞窟には日が差さないので、日差しだけを乾かす道にすると、
           # 雨の日に濡らした火口を戻す手が無くなる。
           - add: {self: {moisture: -1}}
-          # 日に広げれば速い。境目は塩田・干し場のdrying_remainingと同じ+14
-          # （docs/engine/IlluminationSystem.md 1節のEV）。**地面に出しているあいだだけ**で、
+          # 日に広げれば速い。境目は塩田・干し場のdrying_remainingと同じ明るさ
+          # （明るさの物差しは docs/engine/IlluminationSystem.md 1節のEV）。**地面に出しているあいだだけ**で、
           # 鞄の中や手の中では上の1行ぶんしか抜けない（drying.yamlと同じ切り分け）。
           - conditions:
               - {subject: parent, matches: {tag: location}}
@@ -127,7 +127,7 @@ traits:
       # （docs/world/Skills.md 2.4節）ので、腕を配れる手はここだけになる。
       #
       # どちらの回もsignal（9.8節）で結果を告げる。火口はどちらの回も同じように消えるので、
-      # レーンの上では30分かけて札が1枚減っただけに見え、成否が付かない。
+      # レーンの上では時間をかけて札が1枚減っただけに見え、成否が付かない。
       # **明るさの条件は持たない**（IlluminationSystem.md 5.2節）。摩擦発火は手と耳の作業で、
       # 受け止める熾は自分で光るため、暗さで難しくならない。暗さで塞ぐと、日が落ちた後に
       # 明かりを取り戻す道が無くなる。**閉じるのは雨だけ**で、それも屋根の下なら開いている
@@ -178,7 +178,7 @@ traits:
     props:
       heat_soak:
         value: 0
-        # 炎（3/tick）なら4 tick（1時間）、熾火（1/tick）なら3時間で溜まり切る。
+        # 炎なら熾火より速く溜まり切る。
         range: {min: 0, max: 12}
         stages:
           # 湯を沸かすには、溜め切った石の半分が要る（hot_stoneのboil）。炉から出して45分——6ちょうどは
@@ -290,7 +290,7 @@ traits:
       #
       # どちらも段では見ない。種火も炎も同じ値として扱い、持つのは線を1本跨がせる量だけ——明かりは
       # 暗闇から作業できる明るさへ持ち上げる+11（ContentSkeleton.md 8.1.1.2節）、暖は空が最も冷える
-      # とき（涼しい季節-5＋夜-3＝12℃、core.yaml）をちょうど平年の20℃へ戻す+8。土地の海抜ぶんの差は
+      # とき（涼しい季節の夜、core.yaml）をちょうど平年へ戻す+8。土地の海抜ぶんの差は
       # この上に乗るので戻り先は土地で変わり、跨がせる線は平年ではなくchill_point
       # （docs/engine/FireSystem.md 9.2節）。
       - conditions: [{prop: heat, gt: 0}]
@@ -628,7 +628,7 @@ object_defs:
           - {accept: {tag: cookware}}
           - {accept: {tag: cookware}}
     passives:
-      # 灰をかぶって空気を絞られた種火は長くもつ。これが炉を常設する唯一にして最大の利得。
+      # 灰をかぶって空気を絞られた種火は長くもつ。これが炉を常設する利得の1つ。
       - conditions:
           - {prop: heat, in_stage: ember}
           - {prop: fuel, eq: 0}

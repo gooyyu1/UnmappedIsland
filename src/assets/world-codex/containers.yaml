@@ -68,8 +68,8 @@ object_defs:
 
   # そり。長い棒の走り木へ太い枝の横木を渡し、縄で締めた引き具（docs/world/Containers.md 2節）。
   #
-  # **籠と競合しない。** 運ぶのは重さとかさで、種類は籠が受け持つ——枠数は籠（10）より少なく、
-  # かさは籠の7倍を取る。丸太も石も、担げないぶんだけ引いて運ぶ道具。
+  # **籠と競合しない。** 運ぶのは重さとかさで、種類は籠が受け持つ——枠数は籠より少なく、
+  # かさは籠よりずっと大きく取る。丸太も石も、担げないぶんだけ引いて運ぶ道具。
   #
   # **軽い荷では籠のほうが楽。** 体感の率（load_rate）は自分の8kgにもかかるので、積載が
   # 8kgを超えるまでは、8kgのそりを引くほうが800gの籠を提げるより重い（ContainerSystem.md 2節の
@@ -85,7 +85,7 @@ object_defs:
     traits: [item_container, long_lived_material]
     tags: [item, fixture]
     props:
-      # 走り木1800＋横木6000＋縄600＝8400gのうち、削り落とす400gを引いた値。
+      # 材料の目方から、削り落とすぶんを引いた値（材料より軽いことは tests/world-codex/loadEffects.test.ts が見る）。
       weight: {value: 8000}
       # 1.8m×0.7m×0.25mの枠組み。**中身の入る空きは実体ではない**ので、ばらけた材料と同じく
       # 嵩そのままで見る（ContainerSystem.md 7節）——これで、そりが他の入れ物へ入ることもなくなる。
@@ -152,7 +152,7 @@ object_defs:
     traits: [item_container, long_lived_material]
     tags: [item, fixture]
     props:
-      # そり8000＋車輪2枚4000。
+      # そりに車輪の重さを足した値。
       weight: {value: 12000}
       # 1.8m×0.8m×0.5m。車輪の径のぶん、そりより高くかさばる。
       volume: {value: 720000}

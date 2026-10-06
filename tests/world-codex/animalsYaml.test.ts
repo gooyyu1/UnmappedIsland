@@ -1,9 +1,11 @@
+import { readFileSync } from 'node:fs';
+import { parse } from 'yaml';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { fixedRng } from '../support/rng';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER, worldCodexPath } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import { TICKS_PER_DAY } from '../../src/domain/worldTime';
@@ -422,7 +424,7 @@ describe('animals.yamlの動物', () => {
 
       tick(100);
 
-      // 削るのは一瞬でも戻るのは桁違いに遅い（VitalsSystem.md 3節）——1日かけて16mLしか戻らない。
+      // 削るのは一瞬でも戻るのは桁違いに遅い（VitalsSystem.md 3節）——1日かけてもわずかしか戻らない。
       expect(
         (monkey.tryGetProperty(bloodId)?.number ?? 0) - afterClotting,
         '止まった後は少しずつ戻る',
@@ -997,5 +999,84 @@ describe('animals.yamlの動物', () => {
       monkey.combinationsWith(stone, player).map((c) => c.name),
       '素手の石はweaponタグを持たない',
     ).toEqual([]);
+  });
+});
+
+/**
+ * 衝撃を引く速さと血の戻る速さは、どの獣も max に比例させてある（animals.yaml のコメントが言う
+ * 「max の同じ割合」「ヒトと同じ割合」）。比例が崩れると、大きい相手ほど殴った端から溜まる・
+ * 小さい相手ほど血が戻らない、といった偏りが体格から生える。
+ */
+describe('獣の引く速さ・戻る速さは体格に比例する', () => {
+  interface Gauge {
+    readonly range: { readonly max: number };
+    readonly passives: readonly { readonly add: { readonly self: Record<string, number> } }[];
+  }
+  interface Props {
+    readonly props: Readonly<Record<string, Gauge | undefined>>;
+  }
+  const animals = parse(readFileSync(worldCodexPath('animals.yaml'), 'utf8')) as {
+    object_defs: Record<string, Props>;
+  };
+  const human = parse(readFileSync(worldCodexPath('characters/player_character.yaml'), 'utf8')) as {
+    traits: { player_character: Props };
+  };
+
+  /** 1 tick に動く量を max で割った値。 */
+  function perMax(gauge: Gauge, name: string): number {
+    return gauge.passives[0].add.self[name] / gauge.range.max;
+  }
+
+  function beastsWith(name: string): [string, Gauge][] {
+    const found = Object.entries(animals.object_defs).flatMap(([beast, def]): [string, Gauge][] => {
+      const gauge = def.props[name];
+      return gauge === undefined ? [] : [[beast, gauge]];
+    });
+    expect(found.length, `${name} を持つ獣が無い`).toBeGreaterThan(1);
+    return found;
+  }
+
+  it('衝撃は、どの獣も max の同じ割合ずつ引く', () => {
+    const [[, first], ...rest] = beastsWith('shock');
+    for (const [beast, gauge] of rest)
+      expect(perMax(gauge, 'shock'), beast).toBeCloseTo(perMax(first, 'shock'), 9);
+  });
+
+  it('血は、どの獣もヒトと同じ割合で戻る', () => {
+    const humanBlood = human.traits.player_character.props.blood!;
+    for (const [beast, gauge] of beastsWith('blood'))
+      expect(perMax(gauge, 'blood'), beast).toBeCloseTo(perMax(humanBlood, 'blood'), 9);
+  });
+});
+
+describe('死体の取り分', () => {
+  type Spawn = { object: string; count?: number };
+  interface Def {
+    readonly tags?: readonly string[];
+    readonly props?: { readonly weight?: { readonly value: number } };
+    readonly interactions?: Readonly<Record<string, { readonly spawn?: Spawn | Spawn[] }>>;
+  }
+  const animals = parse(readFileSync(worldCodexPath('animals.yaml'), 'utf8')) as {
+    object_defs: Record<string, Def>;
+  };
+  const weightOf = (name: string): number => animals.object_defs[name].props?.weight?.value ?? 0;
+  /** 解体して取り分を出す死体（丸焼きにするだけの小さな獲物は除く）。 */
+  const carcasses = Object.entries(animals.object_defs).filter(
+    ([, def]) =>
+      def.tags?.includes('quarry') === true &&
+      Object.values(def.interactions ?? {}).some((interaction) => interaction.spawn !== undefined),
+  );
+
+  it('解体する死体が在る', () => {
+    expect(carcasses.length).toBeGreaterThan(1);
+  });
+
+  it.each(carcasses.map(([name]) => name))('%s の取り分の目方は、死体より軽い', (name) => {
+    // 血と内臓はカードにしない（animals.yaml の死体のコメント）ので、取り分は死体の目方を超えない。
+    const spawns = Object.values(animals.object_defs[name].interactions ?? {}).flatMap((interaction) => [
+      interaction.spawn ?? [],
+    ]);
+    const yields = spawns.flat().reduce((sum, spawn) => sum + weightOf(spawn.object) * (spawn.count ?? 1), 0);
+    expect(yields).toBeLessThan(weightOf(name));
   });
 });

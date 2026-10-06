@@ -98,11 +98,11 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   **`dehydrated`**。
   `min: max` の段 **`full`**（満水ちょうど）を持ち、名前を固定する——液体の `drink` がこの名前で
   「もう飲めない」を見る（[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5節）。
-- **`body_fat`（体脂肪）**: 腸から吸収した分が積み上がり、尽きると餓死する。`max` は「最大限に肥満した
-  状態」から絶食で保つ tick 数、初期値はその1/4（標準体格）。**減る速さは自分の段で決まり**（太っている
+- **`body_fat`（体脂肪）**: 3本のエネルギーから届いた分が積み上がり、尽きると餓死する。初期値は `max` の
+  1/4（標準体格）。**減る速さは自分の段で決まり**（太っている
   ほど速い）、これが食べ過ぎても際限なく太らない平衡点になる。尽きる域の名前が **`starved`**。
   1日に要る量の個体差（標準体格で `nourished` 段のレート）はここに出る
-  （[`DigestionSystem.md`](../engine/DigestionSystem.md) 4 節）。`status` タグを持たないため
+  （[`DigestionSystem.md`](../engine/DigestionSystem.md) 5 節）。`status` タグを持たないため
   ステータスエリアには出ない——画面に見える飢えの兆しは満腹感が受け持つ。
 - **`wakefulness`（覚醒度）**: 0で強制的に眠りに入る（下の[限界](#限界)節。致死性は無い）。`-1/tick`<!-- codex: characters/captain.yaml object_defs.captain.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/engineer.yaml object_defs.engineer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.passives.0.add.self.wakefulness -->。
   戻すのは眠る休息（仮眠・睡眠）と、その眠り込み（[休息](#休息)節）、それに飲むと `wakefulness` を

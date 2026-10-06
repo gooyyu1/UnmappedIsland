@@ -82,11 +82,11 @@ object_defs:
     # 束ねてよいが、この小屋は干し場・塩田と同じく吊るした物を抱えて留守番する。
     stackable: false
     props:
-      # 太い枝6本（1,000×6）＋編んだ葉6枚（400×6）＋縄2本（600×2）。**据えた物も目方を名乗る**
+      # 材料の目方の和（tests/world-codex/loadEffects.test.ts が見る）。**据えた物も目方を名乗る**
       # （core.yaml）。
       weight: {value: 9600}
-      # 太い枝2本（fuel 20×2）でちょうど満ちる。種火は1tickに0.1しか食わない（fire.yamlのhearthの
-      # ember段）ので、満たせば1回ぶん（96tick）を焚いてなお何度か焚ける。
+      # 太い枝2本でちょうど満ちる。種火はわずかしか食わない（fire.yamlのhearthのember段）ので、
+      # 満たせば1回ぶんを焚いてなお薪が残る（tests/world-codex/smokingYaml.test.ts が見る）。
       #
       # **薪が心細いと雨に負ける。** 雨が炉から削るのは4で、薪の段が火を育てるのは少なければ2
       # （fire.yamlのhearth）。小枝しか入っていない小屋は野ざらしでは燃え続けられない——**囲いが

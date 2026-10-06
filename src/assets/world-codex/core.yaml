@@ -401,9 +401,9 @@ object_defs:
               - modify:
                   self:
                     ambient_temperature: -3
-          - name: dim         # 0〜+10（朝夕と雨天の日中）: 補正なし
+          - name: dim         # brightの手前まで: 補正なし
             min: 0
-          - name: bright      # +11以上（曇り以上の日中）: やや暑い
+          - name: bright      # 曇りの正午の明るさ以上: やや暑い
             min: 11
             passives:
               - modify:
@@ -419,7 +419,7 @@ object_defs:
 
       # 現在の季節。calm→wet→dry→calm…の固定順で巡回（ClimateSystem.md 2節）。各stageはフラグ
       # （season_is_*）と貯水池への季節レート（同 3節）を持つ。calmの水分+0.1は回復方向のレートで、
-      # moderate閾値（30）付近を上下しながら1日1回前後の軽い雨を降らせる、序盤の生命線となる
+      # moderate閾値付近を上下しながら軽い雨をときどき降らせる、序盤の生命線となる
       # 降雨サイクルを作る（同 3.1節・3.2節）。
       season:
         value: calm
@@ -568,7 +568,7 @@ object_defs:
       # stagesは天気候補ごとの重み（*_weight）をmodifyで駆動する（ClimateSystem.md 4.3節）:
       # saturatedではsunny/clearの重みなし（降らない候補として残るのはcloudyだけ）、
       # dryではheavy_rain/stormの重み0。clearの重みが立つ段階では晴れ系の中でclearを最も重くする。
-      # moderateまでの雨は必ずlight_rain
+      # moderateまでの雨は、雨季の後半（下のmonsoon_levelのpeak）を除いてlight_rain
       # （序盤の「軽めの雨」要件、同 3.2節）。scorching_weightのみthermal_levelのhot stageが駆動する。
       atmospheric_moisture:
         value: 0

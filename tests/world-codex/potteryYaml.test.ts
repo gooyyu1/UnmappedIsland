@@ -238,7 +238,7 @@ describe('pottery.yamlの土器の連鎖', () => {
   });
 
   it('成形直後に火へ入れると、焼き上がるまでに水は抜け切らない', () => {
-    // 炉の中でも水は抜けるが、焼成のほうが4倍近く速いので追いつかない。急げば賭けになる。
+    // 炉の中でも水は抜けるが、焼成のほうがずっと速いので追いつかない。急げば賭けになる。
     open(SURVIVES);
     const kiln = litKiln();
     const greenware = spawnInto('unfired_jar', land, 'items');
