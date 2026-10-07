@@ -950,3 +950,33 @@ object_defs:
     ]);
   });
 });
+
+describe('手前の手を何回打つか（craftingSteps）', () => {
+  // 1から1.3まで0.1ずつ。浮動小数では距離が0.30000000000000004になり、0.1で割った商は整数のすぐ上へ
+  // 落ちる。宣言の十進どおりなら3回。
+  const YAML = `
+object_defs:
+  log:
+    tags: [item]
+    props:
+      notch: {value: 1, range: {min: 0, max: 2}}
+    interactions:
+      chop:
+        trigger: menu
+        duration: 10
+        add: {self: {notch: 0.1}}
+      fell:
+        trigger: menu
+        duration: 5
+        conditions:
+          - {subject: self, prop: notch, gte: 1.3}
+`;
+  const codex = new WorldCodexYamlLoader().load('notch.yaml', YAML).buildAndReset();
+
+  it('小数の量で端ちょうどへ届くなら、宣言の十進どおりの回数を数える', () => {
+    const fell = craftingStepsOf(codex, codex.objects.get(codex.objectNames.getId('log'))).find(
+      (step) => step.name === 'fell',
+    );
+    expect(fell?.laborMinutes).toBe(5 + 3 * 10);
+  });
+});
