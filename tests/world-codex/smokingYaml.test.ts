@@ -21,6 +21,9 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 /** 強い日差しの差す時刻（干し場が進む帯。tests/world-codex/dryingYaml.test.tsと同じ）。 */
 const SUNRISE_HOUR = 9;
 
+/** 夜明け。強い日差しの帯（干し場が進む帯）はまだ始まっていない。 */
+const DAWN_HOUR = 6;
+
 /** 日差しが届かない夜。 */
 const NIGHT_HOUR = 0;
 
@@ -156,6 +159,26 @@ describe('smoking.yamlの燻製と燻し小屋', () => {
     expect(raceInSmokehouse(SUNRISE_HOUR, 'cloudy'), '曇り').toBe('燻し上がった');
     expect(raceInSmokehouse(NIGHT_HOUR), '夜').toBe('燻し上がった');
     expect(raceInSmokehouse(SUNRISE_HOUR, 'clear', 'jungle'), '樹冠の下').toBe('燻し上がった');
+  });
+
+  it('晴れた日に日差しが強まる前から掛ければ、干し場のほうが燻し小屋より先に上がる', () => {
+    // **燻し小屋は干し場より遅い**（smoking.yaml の冒頭）。引き換えに持つのは上の「曇りでも夜でも」
+    // だけで、晴れた日にまで速いと干し場を残す線が消える。
+    const { session, land } = open(DAWN_HOUR);
+    const rack = spawnInto(session, 'drying_rack', land, 'fixtures');
+    const dried = spawnInto(session, 'raw_meat', rack, 'drying');
+    const smoked = spawnInto(session, 'raw_meat', litSmokehouse(session, land), 'fire');
+
+    let first = 'どちらも来ない';
+    advance(session, LIMIT_TICKS, () => {
+      const rackDone = dried.def.name.endsWith('__cure_dried');
+      const houseDone = isSmoked(smoked);
+      if (rackDone && houseDone) first = '同着';
+      else if (rackDone) first = '干し場';
+      else if (houseDone) first = '燻し小屋';
+      return first !== 'どちらも来ない';
+    });
+    expect(first).toBe('干し場');
   });
 
   it('火が消えていれば、吊るしても進まない', () => {

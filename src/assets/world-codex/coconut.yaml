@@ -83,8 +83,8 @@ object_defs:
   # ように皮をはぐ工程を挟まない。
   green_coconut:
     tags: [item, food]
-    # 腐敗（foods.yamlのtrait）。**殻に包まれた丸のままの実は保つ**ので、芋と同じ20日。刃を入れた
-    # 先（drained_green_coconut以降）は中身が空気に触れるため、野菜の5日へ落ちる。
+    # 腐敗（foods.yamlのtrait）。**殻に包まれた丸のままの実は保つ**ので、芋と同じ段。刃を入れた
+    # 先（drained_green_coconut以降）は中身が空気に触れるため、野菜の段へ落ちる。
     traits: [perishable, spoils_slow]
     props:
       weight: {value: 2200}
@@ -200,7 +200,6 @@ object_defs:
     props:
       # よく燃える繊維で、火口としては最良の部類。
       ignition_chance: {value: 100, base: {subject: agent, prop: ignition_ease}}
-      # 塊のままくべると、熾火を1時間ほど保てる。
       fuel: {value: 2}
       # 実の各部で一番重いのは皮（丸ごとの4割強）。
       weight: {value: 600}

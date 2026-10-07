@@ -1367,3 +1367,49 @@ describe('炉が火にかける場所', () => {
     expect(stones * (stoneWeight ?? NaN) * 2).toBeLessThanOrEqual(Math.min(...tooHeavy));
   });
 });
+
+/**
+ * 薪の尽きた種火がどれだけ保つか（fire.yaml の stone_hearth、docs/engine/FireSystem.md 6節）。
+ * 石囲いの炉を常設する利得の1つがここなので、炉を足しても石囲いの炉が最も長く保つことを見る。
+ */
+describe('薪の尽きた種火の保ち', () => {
+  const codex = bundledCodex();
+
+  /** 薪の尽きた種火の段の頂から、火が消えるまでのtick数。 */
+  function emberTicksOf(hearthName: string): number {
+    const session = new WorldSession(codex, fixedRng(0));
+    const worldInstance = session.createWorld().instance;
+    worldInstance
+      .getProperty(codex.propertyNames.getId('weather'))
+      .setNumberWithoutEvents(codex.symbolNames.getId('clear'));
+    worldInstance.getProperty(codex.propertyNames.getId('weather_remaining')).setNumberWithoutEvents(999999);
+    const land = session.createObject(codex.objectNames.getId('grassland'));
+    expect(
+      land.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
+    ).toBeUndefined();
+    const hearth = session.createObject(codex.objectNames.getId(hearthName));
+    expect(hearth.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+
+    const heat = hearth.getProperty(codex.propertyNames.getId('heat'));
+    hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(0);
+    // 種火の段（ember）の頂。1つ上の段（coals）の下限のすぐ下。
+    heat.setNumberWithoutEvents(4);
+    expect(heat.isInStage('ember'), `${hearthName} の種火`).toBe(true);
+
+    for (let ticks = 1; ticks <= 1000; ticks++) {
+      session.advanceWorldTime(MINUTES_PER_TICK);
+      if (!heat.isInStage('ember')) return ticks;
+    }
+    throw new Error(`${hearthName} の種火が消えない。`);
+  }
+
+  it('石囲いの炉の種火は、どの炉の種火よりも長く保つ', () => {
+    const hearthNames = [...codex.objectDefNamesWithTag(codex.tagNames.getId('hearth'))];
+    expect(hearthNames).toContain('stone_hearth');
+
+    const stone = emberTicksOf('stone_hearth');
+    for (const hearthName of hearthNames.filter((name) => name !== 'stone_hearth')) {
+      expect(emberTicksOf(hearthName), hearthName).toBeLessThan(stone);
+    }
+  });
+});
