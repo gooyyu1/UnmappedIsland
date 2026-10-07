@@ -162,7 +162,7 @@ describe('smoking.yamlの燻製と燻し小屋', () => {
   });
 
   it('晴れた日に日差しが強まる前から掛ければ、干し場のほうが燻し小屋より先に上がる', () => {
-    // **燻し小屋は干し場より遅い**（smoking.yaml の冒頭）。引き換えに持つのは上の「曇りでも夜でも」
+    // **晴れた日には、燻し小屋は干し場より遅い**（smoking.yaml の冒頭）。引き換えに持つのは上の「曇りでも夜でも」
     // だけで、晴れた日にまで速いと干し場を残す線が消える。
     const { session, land } = open(DAWN_HOUR);
     const rack = spawnInto(session, 'drying_rack', land, 'fixtures');

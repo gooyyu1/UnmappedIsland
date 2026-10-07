@@ -1052,6 +1052,7 @@ describe('死体の取り分', () => {
   type Spawn = { object: string; count?: number };
   interface Def {
     readonly tags?: readonly string[];
+    readonly traits?: readonly string[];
     readonly props?: { readonly weight?: { readonly value: number } };
     readonly interactions?: Readonly<Record<string, { readonly spawn?: Spawn | Spawn[] }>>;
   }
@@ -1068,6 +1069,20 @@ describe('死体の取り分', () => {
 
   it('解体する死体が在る', () => {
     expect(carcasses.length).toBeGreaterThan(1);
+  });
+
+  /** 獣の死体すべて（丸焼きにするだけの小さな獲物も含む）。 */
+  const allCarcasses = Object.entries(animals.object_defs)
+    .filter(([name, def]) => def.tags?.includes('quarry') === true && name.endsWith('_carcass'))
+    .map(([name]) => name);
+
+  it.each(allCarcasses)('%s は生肉と同じ速さで腐る', (name) => {
+    // 解体を急ぐ理由を「腐る前に」ではなく「軽くして運ぶために」に留める（animals.yaml の
+    // monkey_carcass の上のコメント、HuntingSystem.md 1.5節）。
+    const spoilsOf = (defName: string): string[] =>
+      (animals.object_defs[defName].traits ?? []).filter((trait) => trait.startsWith('spoils_'));
+    expect(spoilsOf('raw_meat')).toHaveLength(1);
+    expect(spoilsOf(name)).toEqual(spoilsOf('raw_meat'));
   });
 
   it.each(carcasses.map(([name]) => name))('%s の取り分の目方は、死体より軽い', (name) => {

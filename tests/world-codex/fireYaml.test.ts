@@ -1392,8 +1392,10 @@ describe('薪の尽きた種火の保ち', () => {
 
     const heat = hearth.getProperty(codex.propertyNames.getId('heat'));
     hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(0);
-    // 種火の段（ember）の頂。1つ上の段（coals）の下限のすぐ下。
-    heat.setNumberWithoutEvents(4);
+    // 種火の段（ember）の頂。1つ上の段（coals）の下限から1下。
+    const coalsMin = heat.def.lowerBoundOfStage('coals');
+    if (coalsMin === undefined) throw new Error(`${hearthName} の火力が coals の段を持たない。`);
+    heat.setNumberWithoutEvents(coalsMin - 1);
     expect(heat.isInStage('ember'), `${hearthName} の種火`).toBe(true);
 
     for (let ticks = 1; ticks <= 1000; ticks++) {
