@@ -14,7 +14,8 @@
 # ——上限960はどこも同じ（DurabilitySystem.md 1節）。
 
 traits:
-  # 短命な素材（どの素材がこれかは DurabilitySystem.md 2節の表）。屋外で10日、雨なら5日。
+  # 短命な素材（どの素材がこれかと、屋外で朽ちるまでの日数は DurabilitySystem.md 2節の表。日数は
+  # tests/world-codex/weatheringYaml.test.ts が見る）。
   short_lived_material:
     props:
       # すり減るまでの余力。上限は種類によらず960（DurabilitySystem.md 1節）。
@@ -42,7 +43,7 @@ traits:
           - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
         add: {self: {durability: -1}}
 
-  # 長持ちする素材（同節の表）。屋外で100日、雨なら20日。
+  # 長持ちする素材（同節の表。日数は同じ検査が見る）。
   long_lived_material:
     props:
       durability:

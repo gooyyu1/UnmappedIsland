@@ -448,7 +448,7 @@ object_defs:
     props:
       weight: {value: 1100}
       volume: {value: 1400}
-      # 燃え残り（tick）。灯している間だけ減り、2時間で燃え尽きる。
+      # 燃え残り（tick）。灯している間だけ減る。
       life:
         value: 8
         range: {min: 0, max: 8}
@@ -605,7 +605,7 @@ object_defs:
         destroy: instrument
         add: {self: {stones: 1}}
 
-  # 石囲いの炉。料理の最上段。種火が翌朝まで生き、薪を多く積め、火床が広いので器を2つ置ける。
+  # 石囲いの炉。料理の最上段。種火がどの炉より長く生き（tests/world-codex/fireYaml.test.ts が見る）、薪を多く積め、火床が広いので器を2つ置ける。
   stone_hearth:
     traits: [hearth]
     props:

@@ -31,8 +31,8 @@ object_defs:
     tags: [item, fixture, fragile]
     # 中身が個体ごとに違うので束ねない。束ねると代表の中身しか開けなくなる（SlotSystem.md 4節）。
     stackable: false
-    # 編んだ葉は短命な素材（weathering.yaml）。屋外に出しっぱなしなら10日、雨に打たせれば5日で
-    # 朽ちる——**しまい込めば止まる**ので、拠点へ置いて使う分には作り直しが要らない。
+    # 編んだ葉は短命な素材（weathering.yaml）。屋外に出しっぱなしなら朽ちる（日数は
+    # tests/world-codex/weatheringYaml.test.ts が見る）——**しまい込めば止まる**ので、拠点へ置いて使う分には作り直しが要らない。
     traits: [item_container, short_lived_material]
     props:
       weight: {value: 800}
