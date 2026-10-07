@@ -277,7 +277,7 @@ describe('全身の菌と免疫', () => {
     expect(prop('vitamin').stage?.name).toBe('deficient');
     expect(prop('immunity').getEffectiveValue(), '押し下げ1つぶん').toBe(45);
     const held = [...HELD_AT_SEA, 'vitamin'];
-    /** 3切れ目が入って発熱の段へ乗るtick（0.59日目）。 */
+    /** 3切れ目が入って発熱の段へ乗るtick。 */
     const FEVER_ONSET = 58;
 
     const beforeOnset = liveEatingOnlyRawMeat(FEVER_ONSET - 1, held);

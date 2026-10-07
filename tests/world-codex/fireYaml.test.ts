@@ -235,8 +235,8 @@ describe('fire.yamlの火の連鎖', () => {
   }
 
   it('火の腕が上がると火が付きやすくなる（noviceが外す引きでも、expertは火を得る）', () => {
-    // 乾いた枯れ草の素の重みは60対10でnoviceは85.7%、expertは上乗せ+120が積まれて180対10で94.7%
-    // （docs/world/Skills.md 5節）。引きは両方とも0.9で、動かしているのは腕だけ。
+    // 腕の上乗せは付く側の重みに積まれる（docs/world/Skills.md 5節）。引きは両方とも0.9——noviceなら
+    // 外し、expertなら当たる位置（下のexpectが見る）で、動かしているのは腕だけ。
     const BETWEEN = 0.9;
     const firecraftId = codex.propertyNames.getId('skill_firecraft');
 

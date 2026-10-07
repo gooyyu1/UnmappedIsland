@@ -626,8 +626,8 @@ describe('プレイヤーキャラクタの定義', () => {
       const { player, world } = stand(character);
       chillTheWorld(world, 'heavy_rain');
 
-      // -6/tickなので、満タンの熱は120 tick（30時間）足らずで尽きる。水分はどのキャラクタも
-      // 216 tick以上あるので、ここで先に尽きるのは熱だけ。
+      // 満タンの熱は、maxを1 tickの減り（上のWARMTH_CASES）で割ったtick数のうちに尽きる。水分は
+      // それより長く保つので、ここで先に尽きるのは熱だけ（causeOfDeathのexpectが見る）。
       for (let i = 0; i < Math.ceil(maxOf(character, 'warmth') / 6); i++) {
         if (player.ending.kind !== undefined) break;
         player.instance.tick();

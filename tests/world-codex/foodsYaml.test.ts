@@ -235,7 +235,7 @@ describe('食べ物の腐敗', () => {
   it('腐りきると消える', () => {
     const { session, land } = world();
     const meat = spawnInto(session, 'raw_meat', land, 'items');
-    // 屋外の生肉は2日（192 tick）で尽きる。最後の1 tickだけを見たいので、そこまで詰めておく。
+    // 最後の1 tickだけを見たいので、残りを1 tickの減りより少なく詰めておく。
     meat.getProperty(durabilityId).setNumberWithoutEvents(5);
 
     session.advanceWorldTime(MINUTES_PER_TICK);

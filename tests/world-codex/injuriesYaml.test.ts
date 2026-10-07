@@ -776,7 +776,7 @@ describe('injuries.yamlの怪我', () => {
 
     it('空身なら歩けるが、普段どおりの荷では動けなくなる', () => {
       // 段の名前で見るのは、道のtravelがこの名前で移動可否を決めるから（ContainerSystem.md 5節）。
-      // 担ぐのはヤシの実5つ（11kg）——折れていなければ、担いだと数え始めたばかりの荷。
+      // 担ぐのはヤシの実5つ——折れていなければ、担いだと数え始めたばかりの荷。
       for (let i = 0; i < 5; i++) spawnInto('green_coconut', player, 'hand');
       expect(player.tryGetProperty(loadId())?.stage?.name, '無傷なら通れる').toBe('laden');
 
@@ -839,7 +839,7 @@ describe('injuries.yamlの怪我', () => {
     }
 
     it('骨折へ当てると、押し上げが緩んで普段どおりの荷を担げる', () => {
-      // 折れていなければladen（ContainerSystem.md 5節の通れる段）のヤシの実5つ（11kg）。
+      // 折れていなければladen（ContainerSystem.md 5節の通れる段）のヤシの実5つ。
       for (let i = 0; i < 5; i++) spawnInto('green_coconut', player, 'hand');
       const { injury, splint } = splintFor(breakBone());
       expect(player.tryGetProperty(loadId())?.stage?.name, '当てる前は担げない').toBe('too_heavy');
@@ -867,7 +867,7 @@ describe('injuries.yamlの怪我', () => {
 
       treat(injury, splint);
 
-      // 自然治癒の-1/tickに、添え木の-0.6/tickが重なる（8.4節）。包帯の-1.4/tickより速い。
+      // 自然治癒の-1/tickに、添え木の-0.6/tickが重なる（8.4節）。
       expect(healedOver(injury, 10)).toBeCloseTo(1.6 * 10, 10);
 
       removeTreatment(splint);

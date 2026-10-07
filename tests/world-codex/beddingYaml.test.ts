@@ -438,7 +438,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
      *
      * 動く段は2つ。**日射の帯**（`ambient_brightness`）は夜が18時から翌6時まで続くので、20時から
      * 6時間眠っても出ない。**季節の貯水池**（`thermal_level`）は`calm`で毎tick下がり、既定値から
-     * 睡眠2回ぶんで`mild`の下限を割るので、**下限へ張り付ける**——`cool`の底なら減っても
+     * 睡眠を重ねるうちに`mild`の下限を割るので、**下限へ張り付ける**——`cool`の底なら減っても
      * クランプで動かず、乾季の向きへ振れても1季節ぶん登るまで帯を出ない。
      */
     function setNightSky(world: WorldObject): void {

@@ -116,7 +116,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     const kiln = litKiln();
     for (const piece of greenware)
       expect(piece.moveToSlotOrRejection(kiln.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
-    // 高温（blaze、5/tick）まで昇ってから24tick。昇温のぶんを足して余裕を見る。
+    // 焼き上がりは高温（blaze）まで昇ってから数え始める（pottery.yaml）。昇温のぶんを足して余裕を見る。
     session.advanceWorldTime(MINUTES_PER_HOUR * 8);
     return kiln;
   }
