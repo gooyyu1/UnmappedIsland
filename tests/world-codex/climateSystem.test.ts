@@ -113,7 +113,7 @@ describe('気候システム(ClimateSystem.md)', () => {
   }
 
   /**
-   * tick範囲 [first, last] でscorchingになった（シード, 日）を、全シードぶん並べる。
+   * tick範囲 [first, last] でscorchingになったtickを、全シードぶん（シード, 日）の形で並べる。
    * **1 tickごとに expect を呼ばない**——失敗文の組み立てがシード数×tick数ぶん走り、Windowsの
    * 全体実行で `testTimeout` を越えた。
    */

@@ -72,7 +72,7 @@ describe('文書が書いた「何日ぶん」', () => {
     const agent = spawn(SAMPLE_CHARACTER);
     let drinks = 0;
     let hydrationTicks = 0;
-    // **受け取った量を数えるのが目的**なので、1杯ごとに空にして満水の段（not_thirsty）で受け取りが
+    // **受け取った量を数えるのが目的**なので、1杯ごとに空にして満水（`full`）で not_thirsty と断られて受け取りが
     // 切れないようにする。
     while ((filled.tryGetProperty(fillId)?.number ?? 0) > 0) {
       agent.getProperty(hydrationId).setNumberWithoutEvents(0);
