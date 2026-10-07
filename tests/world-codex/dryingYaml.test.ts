@@ -16,7 +16,7 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
  * 干し上がる。野菜の段（spoils_normal）は素手のまま地面でも届く。
  *
  * **この線は1tickの減りからは出ない。** 強い日差しは1日のうち一部の時間しか当たらない（salt.yamlの
- * drying_remaining）ので、地面で干し上がるまでの経過時間は、貯めるtick数より何倍も長い。確かめるのは日をまたいで進めた
+ * drying_remaining）ので、貯めるtick数を腐るまでのtick数と比べても決着は読めない。確かめるのは日をまたいで進めた
  * ときに**どちらが先に来るか**で、開始時刻に左右されないことも合わせて見る。
  */
 

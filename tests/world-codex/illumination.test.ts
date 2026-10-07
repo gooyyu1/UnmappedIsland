@@ -21,7 +21,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 const NIGHT_HOUR = 0;
 /** 正午。晴れ（clear）の世界の明るさは coreYaml.test.ts が見る。 */
 const NOON_HOUR = 12;
-/** 朝。晴れなら世界の明るさは+11で、密林（-9）だけが採取のしきい値（+3）に届かない。 */
+/** 朝。晴れでも、密林だけが採取のしきい値に届かない。 */
 const MORNING_HOUR = 7;
 
 describe('明るさが行動を制限する', () => {

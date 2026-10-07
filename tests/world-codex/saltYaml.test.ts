@@ -19,7 +19,7 @@ import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /** 正午。砂浜の晴れなら、塩田が干し上がる境目を越える（下の干し上がる検査が見る）。 */
 const NOON_HOUR = 12;
-/** 夜。太陽が地平線の下なので、どの土地も暗さの底（-6）に張り付く。 */
+/** 夜。太陽が地平線の下なので、どの土地も暗さの底に張り付く。 */
 const NIGHT_HOUR = 0;
 
 describe('salt.yamlの塩田と塩蔵', () => {
@@ -155,8 +155,8 @@ describe('salt.yamlの塩田と塩蔵', () => {
   });
 
   it('陽が届かなければ干し上がらない', () => {
-    // 干すのは日差しで、境目は液体の蒸発の上乗せと同じ+14（liquid_containers.yaml）。夜は底の-6
-    // なので、何日置いても進まない。
+    // 干すのは日差しで、境目は液体の蒸発の上乗せと同じ（liquid_containers.yaml）。夜は暗さの
+    // 底なので、何日置いても進まない。
     const { session, land, player } = open(NIGHT_HOUR);
     const pan = buildPan(session, land, player, 1);
     const before = numberOf(pan, dryingRemainingId);

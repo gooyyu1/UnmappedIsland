@@ -72,8 +72,8 @@ describe('文書が書いた「何日ぶん」', () => {
     const agent = spawn(SAMPLE_CHARACTER);
     let drinks = 0;
     let hydrationTicks = 0;
-    // hydrationのmaxは甕より小さいので、甕1つぶんを一度には受け取れない。**受け取った量を
-    // 数えるのが目的**なので、1杯ごとに空にして満水の段（not_thirsty）に当たらないようにする。
+    // **受け取った量を数えるのが目的**なので、1杯ごとに空にして満水の段（not_thirsty）で受け取りが
+    // 切れないようにする。
     while ((filled.tryGetProperty(fillId)?.number ?? 0) > 0) {
       agent.getProperty(hydrationId).setNumberWithoutEvents(0);
       const executed = filled.tryGetAction('drink', agent)?.tryExecute() === true;
