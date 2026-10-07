@@ -65,8 +65,8 @@ describe('器の中身を持ち出す工程（同梱の定義）', () => {
     // 1回の実行はその5分ちょうどになる。
     for (const route of drinking) expect(route.route.executionMinutes).toBeGreaterThan(5);
 
-    // **器そのものは按分していない。** 甕は空になって手元に残るので、1杯に乗るのは汲む5分を16杯へ
-    // 割った0.31分だけ——甕の値段（数百分、`object_costs`）が少しでも乗れば、この上限を超える。
+    // **器そのものは按分していない。** 甕は空になって手元に残るので、1杯に乗るのは汲む時間を甕の
+    // 杯数で割ったぶんだけ——甕の値段（数百分、`object_costs`）が少しでも乗れば、この上限を超える。
     // 汲む時間か甕の容量を動かしたら、ここの上限も一緒に動く。
     const fromJar = drinking.find((route) =>
       route.route.steps.some((step) => step.objectName === 'jar__content_water_liquid'),

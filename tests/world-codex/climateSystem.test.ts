@@ -112,6 +112,20 @@ describe('気候システム(ClimateSystem.md)', () => {
     return { first: (firstDay - 1) * TICKS_PER_DAY, last: lastDay * TICKS_PER_DAY - 1 };
   }
 
+  /**
+   * tick範囲 [first, last] でscorchingになったtickを、全シードぶん（シード, 日）の形で並べる。
+   * **1 tickごとに expect を呼ばない**——失敗文の組み立てがシード数×tick数ぶん走り、Windowsの
+   * 全体実行で `testTimeout` を越えた。
+   */
+  function scorchingDays(first: number, last: number): string[] {
+    const found: string[] = [];
+    for (const trace of traces)
+      for (let t = first; t <= last; t++)
+        if (trace.weather[t] === scorchingId)
+          found.push(`seed ${trace.seed}: ${Math.trunc(t / TICKS_PER_DAY) + 1}日目`);
+    return found;
+  }
+
   /** 確率的な要件をシードごとに判定し、成功率が閾値以上であることを検証する。 */
   function assertSuccessRate(
     requirement: string,
@@ -380,23 +394,14 @@ describe('気候システム(ClimateSystem.md)', () => {
     // これは乱数に依存しないため全シードで成立を要求する。
     const { first: calmFirst } = dayRange(1, 30);
     const { last: wetLast } = dayRange(31, 60);
-    for (const trace of traces) {
-      for (let t = calmFirst; t <= wetLast; t++)
-        expect(
-          trace.weather[t],
-          `seed ${trace.seed}: ${Math.trunc(t / TICKS_PER_DAY) + 1}日目（初回calm/wet）にscorchingは発生し得ないはず`,
-        ).not.toBe(scorchingId);
-    }
+    expect(scorchingDays(calmFirst, wetLast), '初回calm/wetにscorchingは発生し得ないはず').toEqual([]);
 
     // 最初の乾季（61日目〜）の前半には、蓄熱量がまだhotへ届かない。乱数に依存しないので全シードで要求する。
     const { first: earlyDryFirst, last: earlyDryLast } = dayRange(61, 75);
-    for (const trace of traces) {
-      for (let t = earlyDryFirst; t <= earlyDryLast; t++)
-        expect(
-          trace.weather[t],
-          `seed ${trace.seed}: ${Math.trunc(t / TICKS_PER_DAY) + 1}日目（最初の乾季の前半）にscorchingは発生し得ないはず`,
-        ).not.toBe(scorchingId);
-    }
+    expect(
+      scorchingDays(earlyDryFirst, earlyDryLast),
+      '最初の乾季の前半にscorchingは発生し得ないはず',
+    ).toEqual([]);
   });
 });
 

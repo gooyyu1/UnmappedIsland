@@ -30,7 +30,7 @@ const FROZEN_WEATHER_TICKS = 999999;
 /** 燻し上がるまでのtick数（smoking.yamlのsmoking_remaining）。 */
 const SMOKING_TICKS = 96;
 
-/** 打ち切り。生肉の屋外寿命（2日）を大きく超えて回しても答えは変わらない。 */
+/** 打ち切り。生肉の屋外寿命より長く取る（足りなければ決着が「どちらも来ない」になって落ちる）。 */
 const LIMIT_TICKS = TICKS_PER_DAY * 6;
 
 describe('smoking.yamlの燻製と燻し小屋', () => {

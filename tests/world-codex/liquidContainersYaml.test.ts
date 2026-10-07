@@ -324,7 +324,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(Math.min(oil.red, oil.green), '油は赤と緑が揃って強い＝黄色').toBeGreaterThan(oil.blue);
   });
 
-  // 正午のambient_brightnessは cloudy 11 / clear 14 / sunny 15 / scorching 16。
+  // 正午のambient_brightnessは日差しが強い天気ほど高い（core.yaml）。
   it.each([
     ['cloudy', -1],
     ['clear', -2],

@@ -255,7 +255,7 @@ describe('筏と航海', () => {
    * その見張りの成果になる。
    *
    * **航路が現れた時点で止める。** 見張り自体は航路が見えた後も続けられる（GameEndings.md 12.1節）
-   * ので、止めるのはこの検査の都合。回数の上限は、どの海区の必要回数（最大5）よりも十分に大きい値。
+   * ので、止めるのはこの検査の都合。回数の上限は、どの海区の必要回数よりも十分に大きい値。
    */
   function watchUntilSighted(game: StartedGame, zone: WorldObject): readonly WorldObject[] {
     const before = new Set(sightedRoutes(zone).map((route) => route.instanceId));
@@ -1616,7 +1616,7 @@ describe('筏と航海', () => {
   /**
    * 小島を、名指しした物が見つかるまで歩く。見つけた1個を返す。
    *
-   * **回数に上限を置く。** 錫は6回に1回ほど返る候補（voyage.yamlのoffshore_islet）なので素の宣言では
+   * **回数に上限を置く。** 錫は小島が返す候補の1つ（voyage.yamlのoffshore_islet）なので素の宣言では
    * すぐ見つかるが、卓から落ちたときに赤くなる代わりに止まらなくなるのでは、この検査が何も言わない。
    */
   function exploreIsletFor(game: StartedGame, islet: WorldObject, objectName: string): WorldObject {

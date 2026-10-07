@@ -17,11 +17,11 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  * docs/world/ContentSkeleton.md 8.1節が持つ。
  */
 
-/** 夜。太陽が地平線の下なので、世界の明るさは底（-6）に張り付く。 */
+/** 夜。太陽が地平線の下なので、世界の明るさは底に張り付く。 */
 const NIGHT_HOUR = 0;
-/** 正午。晴れ（clear）なら世界の明るさは+14。 */
+/** 正午。晴れ（clear）の世界の明るさは coreYaml.test.ts が見る。 */
 const NOON_HOUR = 12;
-/** 朝。晴れなら世界の明るさは+11で、密林（-9）だけが採取のしきい値（+3）に届かない。 */
+/** 朝。晴れでも、密林だけが採取のしきい値に届かない。 */
 const MORNING_HOUR = 7;
 
 describe('明るさが行動を制限する', () => {

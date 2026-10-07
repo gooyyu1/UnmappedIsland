@@ -72,8 +72,8 @@ describe('文書が書いた「何日ぶん」', () => {
     const agent = spawn(SAMPLE_CHARACTER);
     let drinks = 0;
     let hydrationTicks = 0;
-    // hydrationは3日ぶんしか入らないので、甕1つぶんを一度には受け取れない。**受け取った量を
-    // 数えるのが目的**なので、1杯ごとに空にして満水の段（not_thirsty）に当たらないようにする。
+    // **受け取った量を数えるのが目的**なので、1杯ごとに空にして満水（`full`）で not_thirsty と断られて受け取りが
+    // 切れないようにする。
     while ((filled.tryGetProperty(fillId)?.number ?? 0) > 0) {
       agent.getProperty(hydrationId).setNumberWithoutEvents(0);
       const executed = filled.tryGetAction('drink', agent)?.tryExecute() === true;
@@ -184,9 +184,12 @@ describe('文書が書いた「何日ぶん」', () => {
   });
 
   it('牙の傷が奪う量と、戻るのにかかる日数が、宣言から出る', () => {
-    // 素のキャラクタは水分が安全域の下（216 < hydratedの230）なので、血の戻りは効かない
+    // 素のキャラクタは水分が安全域（hydrated）の下なので、血の戻りは効かない
     // （VitalsSystem.md 3.1節）。奪われた量だけを数えるのに、そのまま使える。
     const wounded = spawn(SAMPLE_CHARACTER);
+    expect(wounded.getProperty(hydrationId).isInStage('hydrated', 'or_above'), '素の水分は安全域の下').toBe(
+      false,
+    );
     const before = wounded.getProperty(bloodId).number;
     const wound = spawn('gore_wound');
     expect(wound.moveToSlotOrRejection(wounded.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
