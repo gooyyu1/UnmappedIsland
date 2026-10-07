@@ -12,6 +12,7 @@ import { tickDeltasOf } from './tickDeltas';
 import type { CraftingStep } from './CraftingStep';
 import { collectOutputs } from './CraftingStep';
 import { rangeEventReadouts, ticksToRangeEnd } from './rangeEvents';
+import { stepsToCover } from './stepsToCover';
 import type { StaticValueResolver } from './staticValue';
 import { MINUTES_PER_TICK } from '../domain/worldTime';
 import { staticValueOf, trackingResolverOf } from './staticValue';
@@ -798,26 +799,9 @@ function ticksToLeaveThrough(
   perTick: number | undefined,
 ): number | undefined {
   if (perTick === undefined) return undefined;
-  const ticks = ticksToCover(end.value - value, perTick);
+  const ticks = stepsToCover(end.value - value, perTick);
   return end.inclusive ? Math.floor(ticks) + 1 : Math.ceil(ticks);
 }
-
-/**
- * その距離をその速さで進むのに要るtick数（端数を残したまま）。**整数のすぐ脇に落ちた商は整数へ戻す**
- * ——宣言の値は十進で書かれるが、0.1のような速さは2進で割り切れず、端ちょうどへ着く組
- * （1から+0.1/tickで1.3）の商が2.9999999999999996や3.0000000000000004になる。そのまま切り上げ・
- * 切り捨てると、着いたtickが1つずれる。
- */
-function ticksToCover(distance: number, perTick: number): number {
-  const ticks = distance / perTick;
-  const nearest = Math.round(ticks);
-  return Math.abs(ticks - nearest) <= TICK_QUOTIENT_TOLERANCE * Math.max(1, Math.abs(nearest))
-    ? nearest
-    : ticks;
-}
-
-/** ticksToCoverが整数とみなす、商と整数の隔たり（整数の大きさに対する比）。 */
-const TICK_QUOTIENT_TOLERANCE = 1e-9;
 
 /**
  * 要求された段を上へ抜けて、条件が外れるまでのtick数。抜ける先が無い、上がっていかない値、
@@ -1207,7 +1191,7 @@ function ticksToReach(
   perTick: number | undefined,
 ): number | undefined {
   if (value === undefined || target === undefined || perTick === undefined) return undefined;
-  return Math.max(0, Math.ceil(ticksToCover(target - value, perTick)));
+  return Math.max(0, Math.ceil(stepsToCover(target - value, perTick)));
 }
 
 /**
@@ -1229,7 +1213,7 @@ function ticksToRiseTo(
 ): number | undefined {
   if (value === undefined || bound === undefined || perTick === undefined) return undefined;
   if (value >= bound) return undefined;
-  return Math.ceil(ticksToCover(bound - value, perTick));
+  return Math.ceil(stepsToCover(bound - value, perTick));
 }
 
 /**
@@ -1250,5 +1234,5 @@ function ticksToFallBelow(
 ): number | undefined {
   if (value === undefined || bound === undefined || perTick === undefined) return undefined;
   if (value < bound) return undefined;
-  return Math.floor(ticksToCover(bound - value, perTick)) + 1;
+  return Math.floor(stepsToCover(bound - value, perTick)) + 1;
 }
