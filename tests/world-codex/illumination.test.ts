@@ -17,7 +17,7 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  * docs/world/ContentSkeleton.md 8.1節が持つ。
  */
 
-/** 夜。太陽が地平線の下なので、世界の明るさは底（-6）に張り付く。 */
+/** 夜。太陽が地平線の下なので、世界の明るさは底に張り付く。 */
 const NIGHT_HOUR = 0;
 /** 正午。晴れ（clear）の世界の明るさは coreYaml.test.ts が見る。 */
 const NOON_HOUR = 12;

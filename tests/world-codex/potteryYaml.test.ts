@@ -116,7 +116,8 @@ describe('pottery.yamlの土器の連鎖', () => {
     const kiln = litKiln();
     for (const piece of greenware)
       expect(piece.moveToSlotOrRejection(kiln.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
-    // 焼き上がりは高温（blaze）まで昇ってから数え始める（pottery.yaml）。昇温のぶんを足して余裕を見る。
+    // 焼成の進みは炉の火の段で速さが変わる（fire.yamlのhearthのheat）。熾したばかりの弱い火から
+    // 始めるので、焼き切るまでに余裕を見た時間を進める。
     session.advanceWorldTime(MINUTES_PER_HOUR * 8);
     return kiln;
   }
