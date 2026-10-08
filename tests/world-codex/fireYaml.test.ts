@@ -1425,9 +1425,9 @@ describe('薪の尽きた種火の保ち', () => {
     }
   });
 
-  it('雨ざらしでは、どの炉の種火も1tickで消える——種火の保ちの差は残らない', () => {
-    // docs/engine/FireSystem.md 8節。**全部の雨・種火の段の頂で見る**——いちばん弱い雨で、いちばん
-    // 強い種火が消えることが、どの雨・どの種火でも消えることを言う。
+  it('雨ざらしでは、どの炉の薪の尽きた種火も1tickで消える——種火の保ちの差は残らない', () => {
+    // docs/engine/FireSystem.md 8節。**全部の雨で、種火の段の上端で見る**——削りが雨の種類で変わっても
+    // 取りこぼさず、上端で消えることがどの種火でも消えることを言う。
     const hearthNames = [...codex.objectDefNamesWithTag(codex.tagNames.getId('hearth'))];
     expect(hearthNames).toContain('stone_hearth');
 
@@ -1437,7 +1437,8 @@ describe('薪の尽きた種火の保ち', () => {
         worldInstance
           .getProperty(codex.propertyNames.getId('weather'))
           .setNumberWithoutEvents(codex.symbolNames.getId(weatherName));
-        heat.setNumberWithoutEvents(coalsMin - 1);
+        // 種火の段の上端。1つ上の段（coals）の下限のすぐ下。
+        heat.setNumberWithoutEvents(coalsMin - 1e-9);
         expect(heat.isInStage('ember'), `${hearthName} の種火`).toBe(true);
 
         session.advanceWorldTime(MINUTES_PER_TICK);
