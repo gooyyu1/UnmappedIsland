@@ -63,7 +63,7 @@ describe('明るさが行動を制限する', () => {
     return torch;
   }
 
-  /** 燃えている焚き火。火力が0より大きいことが「火が生きている」（FireSystem.md 2節）。 */
+  /** 燃えている焚き火。火力が種火の段以上にあることが「火が生きている」（FireSystem.md 3節）。 */
   function litCampfire(land: WorldObject): WorldObject {
     const campfire = spawnInto('campfire', land, 'fixtures');
     campfire.getProperty(codex.propertyNames.getId('heat')).setNumberWithoutEvents(20);

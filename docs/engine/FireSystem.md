@@ -179,7 +179,7 @@ props:
 `modify` は使いません——火は「今の状態から計算される値」ではなく、**育ったり衰えたりする量**だからです
 （[`ClimateSystem.md`](./ClimateSystem.md) 1 節の数値積分と同じ考え方）。
 
-- **薪があれば、火力は育つ。** ただし `heat` が 0 より大きいとき、つまり火がついているときだけです。
+- **薪があれば、火力は育つ。** ただし `heat` が種火の段（3 節）以上にあるとき、つまり火がついているときだけです。
 - **火力が高いほど、薪を速く食う。** 薪が尽きれば、その火力に応じた速さで衰えていく。
 
 ```yaml codex: fire.yaml traits.hearth.props.fuel.stages
@@ -189,7 +189,7 @@ props:
   passives:
     - conditions:
         # 消えている炉は、薪を積んでも育たない
-        - {prop: heat, gt: 0}
+        - {prop: heat, in_stage_or_above: ember}
       add:
         self:
           heat: 6
@@ -336,13 +336,18 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 
 | `heat` | 意味 |
 |---|---|
-| 0（`out`） | 死んでいる。薪を足しても何も起きず、着火が要る |
+| 1 未満（`out`） | 死んでいる。薪を足しても何も起きず、着火が要る |
 | 1〜4（`ember`） | 種火。料理はできないが、薪を足せば育つ |
 | 5 以上 | 料理ができる |
 
 **「料理ができるほど熱い」なら「再着火が要らない」のは自明です。** これらを別のプロパティで持つと、
 この当たり前の含意を守るために両者を同期させ続けることになります。1 本の数直線の上下として持てば、
 含意は順序そのものになって守る必要が消えます。
+
+**生きているかも、この段で見ます。** 火を育てる・明かりと暖を出す・着火を断る・明かりへ火を分ける
+——どれも `heat` が `ember` 以上にあるかを条件にし、0 より大きいかは見ません。**種火の衰えは炉ごとに小数**
+（6 節）なので、段を割っても 0 に着くまで端数が残り、0 を境にすると、絵は消えているのに明かりを
+出し続け、着火も断る炉ができるためです。見張るのは `tests/world-codex/fireYaml.test.ts`。
 
 **`ember` の段だけ、冷める速さが炉ごとに違います。** 灰をかぶって空気を絞られた火がどれだけもつかが、
 炉の差そのものだからです（6 節）。
@@ -360,7 +365,7 @@ passives:
       # 薪が残っていれば、火は衰えない（2.2節）
       - {prop: fuel, eq: 0}
     add:
-      # 熾火の段を数 tick で通り抜けて死ぬ。石囲いの炉は-0.125<!-- codex: fire.yaml object_defs.stone_hearth.passives.0.add.self.heat -->でゆっくり衰える
+      # 熾火の段を数 tick で通り抜けて死ぬ。石囲いの炉は-0.03125<!-- codex: fire.yaml object_defs.stone_hearth.passives.0.add.self.heat -->でゆっくり衰える
       self: {heat: -2}
 ```
 
@@ -424,7 +429,7 @@ interactions:
     trigger: {drag: {object: burning_tinder}}
     conditions:
       # 火が生きている炉には置き直せない
-      - {reason: already_lit, prop: heat, eq: 0}
+      - {reason: already_lit, prop: heat, in_stage: out}
       - {reason: no_fuel, prop: fuel, gt: 0}
     destroy: instrument
     # 種火の段のいちばん下から始まる
@@ -487,13 +492,13 @@ interactions:
     trigger: {drag: {tag: lightable}}
     conditions:
       - {reason: no_flame_carried, subject: instrument, prop: lit, gt: 0}
-      - {reason: already_lit, prop: heat, eq: 0}
+      - {reason: already_lit, prop: heat, in_stage: out}
       - {reason: no_fuel, prop: fuel, gt: 0}
     set: {self: {heat: 1}}
   light_from_flame:
     trigger: {drag: {tag: lightable}}
     conditions:
-      - {reason: fire_out, prop: heat, gt: 0}
+      - {reason: fire_out, prop: heat, in_stage_or_above: ember}
       - {reason: already_lit, subject: instrument, prop: lit, eq: 0}
     set: {instrument: {lit: 1}}
 ```
@@ -617,8 +622,8 @@ moisture:
 もし `heat` を温度として定義したら、この置き方は誤りになります。火が消えた直後のまだ熱い炉が薪を食い
 続けてしまうためで、そのときは「燃えているか」を別に持つ必要が出ます。
 
-**火が生きているかを別に持たないのも、同じ理由です。** 火力が 0 より大きいことがそのまま「燃えている」で、
-その一番下が種火です（3 節）。薪の消費・加熱・冷めのすべてを `heat` の段に並べられるのは、この 1 つの
+**火が生きているかを別に持たないのも、同じ理由です。** 火力が種火の段以上にあることがそのまま
+「燃えている」です（3 節）。薪の消費・加熱・冷めのすべてを `heat` の段に並べられるのは、この 1 つの
 定義から出ています。
 
 **炉ごとの差は、火力と薪の上限、そして種火の衰えだけです**（6 節）。薪の減りと加熱の速さはどの炉でも
@@ -675,9 +680,15 @@ props:
 |---|---|---|---|---|---|---|---|
 | 1 | 焚き火 | 小枝 3 本<!-- codex: fire.yaml object_defs.campfire.recipes.stacked.steps.0.requires.0.count --> | 2 | なし | 30<!-- codex: fire.yaml object_defs.campfire.props.fuel.range.max --> | 30<!-- codex: fire.yaml object_defs.campfire.props.heat.range.max -->（炎まで） | -2/tick<!-- codex: fire.yaml object_defs.campfire.passives.0.add.self.heat --> |
 | 2 | 三石のかまど | 焚き火 ＋ 石 3<!-- codex: fire.yaml object_defs.campfire.props.stones.range.max --> | 2 | 1 | 30<!-- codex: fire.yaml object_defs.three_stone_hearth.props.fuel.range.max --> | 30<!-- codex: fire.yaml object_defs.three_stone_hearth.props.heat.range.max -->（炎まで） | -1/tick<!-- codex: fire.yaml object_defs.three_stone_hearth.passives.0.add.self.heat --> |
-| 3 | 石囲いの炉 | 三石のかまど ＋ 石 8<!-- codex: fire.yaml object_defs.three_stone_hearth.props.stones.range.max --> | 3 | 2 | 120<!-- codex: fire.yaml object_defs.stone_hearth.props.fuel.range.max --> | 100<!-- codex: fire.yaml object_defs.stone_hearth.props.heat.range.max -->（高温まで） | -0.125/tick<!-- codex: fire.yaml object_defs.stone_hearth.passives.0.add.self.heat --> |
+| 3 | 石囲いの炉 | 三石のかまど ＋ 石 8<!-- codex: fire.yaml object_defs.three_stone_hearth.props.stones.range.max --> | 3 | 2 | 120<!-- codex: fire.yaml object_defs.stone_hearth.props.fuel.range.max --> | 100<!-- codex: fire.yaml object_defs.stone_hearth.props.heat.range.max -->（高温まで） | -0.03125/tick<!-- codex: fire.yaml object_defs.stone_hearth.passives.0.add.self.heat --> |
 
-種火が保つ長さは、`ember` の段の幅（2.3 節）を種火の衰えで割ったものです。
+種火が保つ長さは、種火の段へ落ちたときの火力から段の下限（2.3 節）を割るまでを、種火の衰えで割った
+ものです。
+
+**石囲いの炉の「種火が翌朝まで生きる」は、日没に薪が尽きた火が種火のまま日の出を迎えることです。**
+いちばん弱い燃え方——熾火の段の下限——で薪が尽きても、熾火の衰え（2.3 節）で種火の段へ落ちてから
+一晩（48 tick）を越えるだけ遅く衰えます。見張るのは `tests/world-codex/fireYaml.test.ts`。**雨をしのげる
+場所か、降らない夜の話です**——雨ざらしの炉は種火ごと削られ、炉の差では残りません（8 節）。
 
 どちらの枠も同じ `fire` スロットの `cells` に並びます（1.1 節）。枠は焼く物と焼く石のためのもので、
 薪は枠を使いません（2.1 節）。
@@ -702,7 +713,7 @@ props:
 **燻し小屋も梯子の外にあります。** 燻し小屋（`src/assets/world-codex/smoking.yaml`）は `heat` の上限を
 種火の段の中（4<!-- codex: smoking.yaml object_defs.smokehouse.props.heat.range.max -->）に置いた炉で、**梯子のどの炉よりも低い**——熾火へ届かないので、`fire` スロットへ
 吊るした食べ物は焼けません（7 節）。焼けないことを条件で止めてはおらず、**上限がそこまでしか無い**
-という同じ形で分かれます。種火の衰えは覆い焼きの炉と同じ -0.5/tick<!-- codex: smoking.yaml object_defs.smokehouse.passives.0.add.self.heat --><!-- codex: pottery.yaml object_defs.earth_kiln.passives.0.add.self.heat --> で、薪が尽きれば 2 時間で消えます。
+という同じ形で分かれます。種火の衰えは覆い焼きの炉と同じ -0.5/tick<!-- codex: smoking.yaml object_defs.smokehouse.passives.0.add.self.heat --><!-- codex: pottery.yaml object_defs.earth_kiln.passives.0.add.self.heat --> です。
 何のための炉かは [`../world/SurvivalItems.md`](../world/SurvivalItems.md) 11 節が持ちます。
 
 **器を持たない段階でも煮炊きはできます。** 焼け石を水へ落とす方法（9 節）は容器に耐火性を要求しない
@@ -909,7 +920,7 @@ lit:
 ### 9.2 暖と明かりは、置かれた場所のプロパティを押し上げる
 
 **熱以外に炉が周囲へ与えるものは、いずれも `parent` への `modify`（`GameElementDefinition.md` 8.3 節）
-1 つで表します。** 条件は「火が生きていること」（`heat > 0`）だけで、火力の段では分けません。
+1 つで表します。** 条件は「火が生きていること」（`heat` が `ember` 以上、3 節）だけで、種火か炎かでは分けません。
 
 - **暖**: `ambient_temperature` を +8<!-- codex: fire.yaml traits.hearth.passives.0.modify.parent.ambient_temperature --> 上げます。**空が最も冷えるとき**（涼しい季節 −5<!-- codex: core.yaml object_defs.world.props.thermal_level.stages.0.passives.0.modify.self.ambient_temperature --> ＋ 夜 −3<!-- codex: core.yaml object_defs.world.props.ambient_brightness.stages.0.passives.0.modify.self.ambient_temperature --> ＝ 12℃、
   [`ClimateSystem.md`](./ClimateSystem.md) 1 節）を、ちょうど平年の 20℃<!-- codex: core.yaml object_defs.world.props.ambient_temperature.value --> へ戻す量です。**土地が持つ
