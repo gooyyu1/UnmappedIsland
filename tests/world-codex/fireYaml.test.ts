@@ -604,7 +604,7 @@ describe('fire.yamlの火の連鎖', () => {
     expect(itemsOn(land), '火種も失われない').toEqual(['burning_tinder']);
   });
 
-  it('種火だけの炉も火種を断る（火が生きているかは火力が0より大きいこと）', () => {
+  it('種火だけの炉も火種を断る（火が生きているかは火力が種火の段以上にあること）', () => {
     // 種火（heatが1）へ落としても差分は0で、火種だけが黙って消える。
     const hearth = spawnInto('campfire', land, 'fixtures');
     hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(20);

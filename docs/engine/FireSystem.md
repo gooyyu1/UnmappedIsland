@@ -687,7 +687,8 @@ props:
 
 **石囲いの炉の「種火が翌朝まで生きる」は、日没に薪が尽きた火が種火のまま日の出を迎えることです。**
 いちばん弱い燃え方——熾火の段の下限——で薪が尽きても、熾火の衰え（2.3 節）で種火の段へ落ちてから
-一晩（48 tick）を越えるだけ遅く衰えます。見張るのは `tests/world-codex/fireYaml.test.ts`。
+一晩（48 tick）を越えるだけ遅く衰えます。見張るのは `tests/world-codex/fireYaml.test.ts`。**雨をしのげる
+場所か、降らない夜の話です**——雨ざらしの炉は種火ごと削られ、炉の差では残りません（8 節）。
 
 どちらの枠も同じ `fire` スロットの `cells` に並びます（1.1 節）。枠は焼く物と焼く石のためのもので、
 薪は枠を使いません（2.1 節）。
@@ -919,7 +920,7 @@ lit:
 ### 9.2 暖と明かりは、置かれた場所のプロパティを押し上げる
 
 **熱以外に炉が周囲へ与えるものは、いずれも `parent` への `modify`（`GameElementDefinition.md` 8.3 節）
-1 つで表します。** 条件は「火が生きていること」（`heat > 0`）だけで、火力の段では分けません。
+1 つで表します。** 条件は「火が生きていること」（`heat` が `ember` 以上、3 節）だけで、種火か炎かでは分けません。
 
 - **暖**: `ambient_temperature` を +8<!-- codex: fire.yaml traits.hearth.passives.0.modify.parent.ambient_temperature --> 上げます。**空が最も冷えるとき**（涼しい季節 −5<!-- codex: core.yaml object_defs.world.props.thermal_level.stages.0.passives.0.modify.self.ambient_temperature --> ＋ 夜 −3<!-- codex: core.yaml object_defs.world.props.ambient_brightness.stages.0.passives.0.modify.self.ambient_temperature --> ＝ 12℃、
   [`ClimateSystem.md`](./ClimateSystem.md) 1 節）を、ちょうど平年の 20℃<!-- codex: core.yaml object_defs.world.props.ambient_temperature.value --> へ戻す量です。**土地が持つ
