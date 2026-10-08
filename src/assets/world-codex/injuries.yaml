@@ -424,7 +424,7 @@ object_defs:
       # （tests/world-codex/injuriesYaml.test.ts が見る）。骨折が別格であることをロールの下振れで
       # 崩さないため、幅の下端を捻挫より上に置く。
       #
-      # 現実の6〜12週より大きく縮めてある（docs/concept/DesignPrinciples.md）。幅そのものは
+      # 現実の6〜12週を縮めてある（docs/engine/InjurySystem.md 5.2節）。幅そのものは
       # **折れ方の違い**を生成時に1回ロールしたもの（6.2節）で、部位を分ける代わりにここが引き受ける。
       severity:
         # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
@@ -450,7 +450,7 @@ object_defs:
           parent:
             pain: 85
       # 同じ荷が重く感じる（docs/engine/InjurySystem.md 5節）。**空身なら歩けるが、担げる余りは
-      # 大きく削られる**位置に置く。**空身ならどのキャラクタもheavyの段**（道は通れる）に収まり、
+      # 削られる**位置に置く（同 5.2節）。**空身ならどのキャラクタもheavyの段**（道は通れる）に収まり、
       # そこからtoo_heavyまでの残りは担ぎ慣れの個人差（loadのmax）で開く——それがそのまま折れた脚で
       # 運べる量の差になる（どちらも tests/world-codex/injuriesYaml.test.ts が見る）。
       #

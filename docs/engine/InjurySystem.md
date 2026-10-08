@@ -217,8 +217,9 @@ trait として持ちます**——ただし**上がる速さも押し上げる�
 
 5.1節の骨折を数へ落としたもので、覆すのに人間の判断は要りません。
 
-- **`load` の押し上げ幅**は、**空身なら歩けるが、普段どおりの荷では `too_heavy` に届く**位置に
-  置きます。
+- **`load` の押し上げ幅**は、**空身ならどのキャラクタも歩けるが、担げる余りは削られる**位置に
+  置きます。残る余りは担ぎ慣れ（`load` の `max`）の差で開くので、それがそのまま折れた脚で運べる
+  量の差になります。
 - **痛みの重さ**は `pain` で取り、1 枚で危険域へ届く量を置きます。
 - **治りの長さ**は `severity` の `max` が 1,344 tick<!-- codex: injuries.yaml object_defs.fracture.props.severity.range.max -->（14 日<!-- stats: durations.yaml durations object=fracture property=severity longest_days -->）で、基準レートの `-1/tick`<!-- codex: injuries.yaml object_defs.fracture.props.severity.passives.0.add.self.severity --> で引きます。
   次に長い捻挫が 960 tick<!-- codex: injuries.yaml object_defs.sprained_ankle.props.severity.range.max -->（10 日<!-- stats: durations.yaml durations object=sprained_ankle property=severity days -->）なので、**4 分の 1 へ縮めても順序は崩れていません**。もとにした

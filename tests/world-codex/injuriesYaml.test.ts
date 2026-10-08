@@ -558,7 +558,7 @@ describe('injuries.yamlの怪我', () => {
         idle.tryGetProperty(fillId)!.number - jar.tryGetProperty(fillId)!.number,
         '掛けた1杯は器へ戻らない',
       ).toBe(250);
-      expect(session.world!.totalMinutes - before.minutes, '治療具を当てる30分の半分').toBe(15);
+      expect(session.world!.totalMinutes - before.minutes, '洗う手間').toBe(15);
     });
 
     it('沸かした湯でも同じだけ落ちる', () => {
@@ -889,7 +889,7 @@ describe('injuries.yamlの怪我', () => {
 
     it('島にある傷の中で最も長く残る', () => {
       // 現実の6〜12週を4分の1へ縮めても順序は崩れていない（DesignPrinciples.md）。**最も軽い
-      // 折れ方でも**次に長い捻挫（960 tick）を上回るので、ロールの下振れでも順序は保たれる。
+      // 折れ方でも**次に長い捻挫を上回るので、ロールの下振れでも順序は保たれる。
       const severityId = codex.propertyNames.getId('severity');
       const injuries = codex.objectDefNamesWithTag(codex.tagNames.getId('injury'));
       expect(injuries.length, '検査対象が無い（injuryタグが変わっていないか）').toBeGreaterThan(1);
@@ -977,7 +977,7 @@ describe('injuries.yamlの怪我', () => {
     });
 
     it('押し上げていない傷へ当てても、荷は軽くならない', () => {
-      // 緩める量は押し上げている骨折が持つ（injuries.yaml）。治療具の側に「-9,000」と書いていたら、
+      // 緩める量は押し上げている骨折が持つ（injuries.yaml）。治療具の側に差し引く量を書いていたら、
       // 荷重を押し上げない捻挫へ当てたときに無傷より軽くなる。
       pickCoconut();
       const { injury, splint } = splintFor(new PlayerCharacter(player).injuryStacks[0][0]);
