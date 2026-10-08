@@ -43,8 +43,8 @@ traits:
         value: 96
         range: {min: 0, max: 96}
         passives:
-          # 火の生きている燻し小屋に吊るしているあいだ。**火力の段は見ない**——この小屋の火力は
-          # 種火の段より上へ行かない（下のsmokehouseのheat）ので、生きているかどうかしかない。
+          # 火の生きている燻し小屋に吊るしているあいだ。**見るのは生きているか（種火の段以上か、
+          # fire.yamlのhearth）だけ**——この小屋の火力は種火の段より上へ行かない（下のsmokehouseのheat）。
           #
           # **保存済みの物では止める。** 塩漬けを吊るしたまま放つと、燻し上がりが塩漬けを塗り替える
           # ——枠は型で受けるので、同じ型の保存済みの個体だけを弾く書き方が無い（干し場と同じ、
@@ -52,7 +52,7 @@ traits:
           - conditions:
               - not: {subject: self, matches: {tag: cured}}
               - {subject: parent, matches: {object: smokehouse}}
-              - {subject: parent, prop: heat, gt: 0}
+              - {subject: parent, prop: heat, in_stage_or_above: ember}
             add: {self: {smoking_remaining: -1}}
         # 燻し上がる。**別の型は作らず**、塩漬け・干物と同じcure軸の値になる（become、9.9節）ので、
         # 傷み具合はそのまま引き継がれる。

@@ -4,8 +4,9 @@
 # 速く冷める。これらが釣り合ったところで火力が落ち着くので、「薪の量が火の大きさを決める」は上限を
 # どこかへ書いた結果ではない（同2.2節）。
 #
-# 火が生きているかを表すフラグは持たない。火力が0より大きいことがそれで、一番下の段（ember）が
-# 種火——料理には使えないが、薪をくべれば育つ火力（同3節）。
+# 火が生きているかを表すフラグは持たない。火力が種火の段（ember）以上にあることがそれで、その段が
+# 種火——料理には使えないが、薪をくべれば育つ火力（同3節）。**0より大きいかでは判定しない**——炉ごとの
+# 種火の衰えは小数なので、段を割っても0に着くまで端数が残る。
 #
 # 着火は2段構え。火起こし具を火口へ重ねて火種を作り、火種を炉へ重ねて種火を立てる。火種は1tickで
 # 燃え尽きるので、届くのは同じ土地の中まで——洞窟の中で起こして外の炉へ運ぶことはできるが、
@@ -190,7 +191,7 @@ traits:
           # 否定形の演算子ではなくnotで包む（GameElementDefinition.md 14.1節）。炉に入れたまま火が
           # 消えた場合も、同じこの1行で冷める。
           - conditions:
-              - not: {subject: ancestor, prop: heat, gt: 0}
+              - not: {subject: ancestor, prop: heat, in_stage_or_above: ember}
             add: {self: {heat_soak: -3}}
 
   # 炉。薪と火力を持ち、火にかけた物を子として加熱する。
@@ -222,17 +223,17 @@ traits:
           - name: few
             min: 1
             passives:
-              - conditions: [{prop: heat, gt: 0}]
+              - conditions: [{prop: heat, in_stage_or_above: ember}]
                 add: {self: {heat: 2}}
           - name: some
             min: 10
             passives:
-              - conditions: [{prop: heat, gt: 0}]
+              - conditions: [{prop: heat, in_stage_or_above: ember}]
                 add: {self: {heat: 6}}
           - name: many
             min: 40
             passives:
-              - conditions: [{prop: heat, gt: 0}]
+              - conditions: [{prop: heat, in_stage_or_above: ember}]
                 add: {self: {heat: 16}}
       # 火力。0が消えている状態で、段が加熱の速さ・薪の減り・薪が尽きた後の衰えを決める。
       #
@@ -293,7 +294,7 @@ traits:
       # とき（涼しい季節の夜、core.yaml）をちょうど平年へ戻す+8。土地の海抜ぶんの差は
       # この上に乗るので戻り先は土地で変わり、跨がせる線は平年ではなくchill_point
       # （docs/engine/FireSystem.md 9.2節）。
-      - conditions: [{prop: heat, gt: 0}]
+      - conditions: [{prop: heat, in_stage_or_above: ember}]
         modify: {parent: {hand_brightness: 11, looking_brightness: 11, ambient_temperature: 8}}
       # 雨。野ざらしの炉は火力を余分に削られる。守られた場所（sheltered）なら効かない
       # （docs/engine/ContainerSystem.md 6節）。
@@ -329,13 +330,13 @@ traits:
         destroy: instrument
       # 火種を落として着火する。置くのは種火1つぶんだけで、そこから先は薪が育てる。
       #
-      # **火が生きている炉は断る**（生きているかは火力が0より大きいこと、上のheat）。setが置くのは
+      # **火が生きている炉は断る**（生きているかは火力が種火の段以上にあること、上のheat）。setが置くのは
       # 種火の1だけなので、燃えている炉へ重ねると火種を失ったうえに火力がそこまで落ちる。理由を
       # 名乗るのは、断るだけでは「重ねても何も起きない」になるため（docs/ui/CardInteraction.md 2.1節）。
       ignite:
         trigger: {drag: {object: burning_tinder}}
         conditions:
-          - {reason: already_lit, prop: heat, eq: 0}
+          - {reason: already_lit, prop: heat, in_stage: out}
           - {reason: no_fuel, prop: fuel, gt: 0}
         destroy: instrument
         set: {self: {heat: 1}}
@@ -360,7 +361,7 @@ traits:
           # **理由の名前は火起こしの signal（上のignitableのnot_lit）と分ける**——同じfire.yamlの中で
           # 同じ語が別のことを指すと、拾う側は名前空間まで見ないと見分けられない。
           - {reason: no_flame_carried, subject: instrument, prop: lit, gt: 0}
-          - {reason: already_lit, prop: heat, eq: 0}
+          - {reason: already_lit, prop: heat, in_stage: out}
           - {reason: no_fuel, prop: fuel, gt: 0}
         set: {self: {heat: 1}}
       # 燃えている炉から、持ち歩ける明かり（lightable）へ火を移す。上のignite_from_flameと**同じ1つの
@@ -373,7 +374,7 @@ traits:
       light_from_flame:
         trigger: {drag: {tag: lightable}}
         conditions:
-          - {reason: fire_out, prop: heat, gt: 0}
+          - {reason: fire_out, prop: heat, in_stage_or_above: ember}
           - {reason: already_lit, subject: instrument, prop: lit, eq: 0}
         set: {instrument: {lit: 1}}
 
@@ -605,7 +606,7 @@ object_defs:
         destroy: instrument
         add: {self: {stones: 1}}
 
-  # 石囲いの炉。料理の最上段。種火がどの炉より長く生き（tests/world-codex/fireYaml.test.ts が見る）、薪を多く積め、火床が広いので器を2つ置ける。
+  # 石囲いの炉。料理の最上段。種火がどの炉より長く生き、翌朝まで保ち（下のpassives）、薪を多く積め、火床が広いので器を2つ置ける。
   stone_hearth:
     traits: [hearth]
     props:
@@ -629,10 +630,14 @@ object_defs:
           - {accept: {tag: cookware}}
     passives:
       # 灰をかぶって空気を絞られた種火は長くもつ。これが炉を常設する利得の1つ。
+      #
+      # **日没に薪が尽きても、種火のまま日の出を迎える速さ**（docs/engine/FireSystem.md 6節）。
+      # 熾火の段の下限で尽きた火は、熾火の衰えで種火の段へ3で落ちるので、そこから一晩を越せる
+      # だけ遅くしてある（tests/world-codex/fireYaml.test.ts が見る）。
       - conditions:
           - {prop: heat, in_stage: ember}
           - {prop: fuel, eq: 0}
-        add: {self: {heat: -0.125}}
+        add: {self: {heat: -0.03125}}
     interactions:
       # 満杯なら断る理由を出す（hearthのadd_fuel）。値は上のfuelのrange.max。
       add_fuel:

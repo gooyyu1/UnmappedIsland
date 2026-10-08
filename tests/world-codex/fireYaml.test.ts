@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import { TRAVEL_MINUTES_STEP } from '../../src/domain/generation/PathNetworkBuilder';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
@@ -7,9 +9,9 @@ import { Location } from '../../src/domain/wrappers/Location';
 import type { World } from '../../src/domain/wrappers/World';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { fixedRng } from '../support/rng';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
-import { MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
+import { MINUTES_PER_HOUR, MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * fire.yamlの火の連鎖を、実ファイルの定義だけで検証する。
@@ -1370,13 +1372,14 @@ describe('炉が火にかける場所', () => {
 
 /**
  * 薪の尽きた種火がどれだけ保つか（fire.yaml の stone_hearth、docs/engine/FireSystem.md 6節）。
- * 石囲いの炉を常設する利得の1つがここなので、炉を足しても石囲いの炉が最も長く保つことを見る。
+ * 石囲いの炉を常設する利得の1つがここなので、炉を足しても石囲いの炉が最も長く保つことと、翌朝まで
+ * 保つことを見る。保った後に消える線（種火の段の下限）が、生死を見るどの判定とも一致することも見る。
  */
 describe('薪の尽きた種火の保ち', () => {
   const codex = bundledCodex();
 
-  /** 薪の尽きた種火の段の頂から、火が消えるまでのtick数。 */
-  function emberTicksOf(hearthName: string): number {
+  /** 晴れが続く草地に、薪の尽きた炉を1つ据える。 */
+  function emptyHearthOnLand(hearthName: string) {
     const session = new WorldSession(codex, fixedRng(0));
     const worldInstance = session.createWorld().instance;
     worldInstance
@@ -1391,10 +1394,17 @@ describe('薪の尽きた種火の保ち', () => {
     expect(hearth.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
 
     const heat = hearth.getProperty(codex.propertyNames.getId('heat'));
-    hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(0);
-    // 種火の段（ember）の頂。1つ上の段（coals）の下限から1下。
+    const fuel = hearth.getProperty(codex.propertyNames.getId('fuel'));
+    fuel.setNumberWithoutEvents(0);
     const coalsMin = heat.def.lowerBoundOfStage('coals');
     if (coalsMin === undefined) throw new Error(`${hearthName} の火力が coals の段を持たない。`);
+    return { session, worldInstance, land, heat, fuel, coalsMin };
+  }
+
+  /** 薪の尽きた種火の段の頂から、火が消えるまでのtick数。 */
+  function emberTicksOf(hearthName: string): number {
+    const { session, heat, coalsMin } = emptyHearthOnLand(hearthName);
+    // 種火の段（ember）の頂。1つ上の段（coals）の下限から1下。
     heat.setNumberWithoutEvents(coalsMin - 1);
     expect(heat.isInStage('ember'), `${hearthName} の種火`).toBe(true);
 
@@ -1413,5 +1423,82 @@ describe('薪の尽きた種火の保ち', () => {
     for (const hearthName of hearthNames.filter((name) => name !== 'stone_hearth')) {
       expect(emberTicksOf(hearthName), hearthName).toBeLessThan(stone);
     }
+  });
+
+  it('石囲いの炉は、日没にいちばん弱い火のまま薪が尽きても、種火のまま日の出を迎える', () => {
+    // カードの説明文と docs/engine/FireSystem.md 6節の「種火が翌朝まで生きる」。
+    const { session, worldInstance, heat } = emptyHearthOnLand('stone_hearth');
+    const hour = worldInstance.getProperty(codex.propertyNames.getId('hour'));
+    const sunset = hour.def.lowerBoundOfStage('night_late');
+    if (sunset === undefined) throw new Error('hour が night_late の段を持たない。');
+    hour.setNumberWithoutEvents(sunset);
+    worldInstance.getProperty(codex.propertyNames.getId('minute')).setNumberWithoutEvents(0);
+    // 料理のできるいちばん弱い火。
+    heat.setNumberWithoutEvents(heat.def.lowerBoundOfStage('coals')!);
+
+    let ticks = 0;
+    while (!hour.isInStage('sunrise')) {
+      session.advanceWorldTime(MINUTES_PER_TICK);
+      expect(++ticks, '日の出が来ない').toBeLessThanOrEqual(TICKS_PER_DAY);
+    }
+    expect(heat.isInStage('ember'), `日の出に種火が残っていない（火力 ${heat.number}）`).toBe(true);
+  });
+
+  it('どの炉も、種火の段を割った火は消えていて、明かりを出さず、薪をくべても育たない', () => {
+    // 生きているかは段で見る（docs/engine/FireSystem.md 3節）。種火の衰えが小数の炉では、段を割った後も
+    // 0に着くまで端数が残る。
+    const hearthNames = [...codex.objectDefNamesWithTag(codex.tagNames.getId('hearth'))];
+    for (const hearthName of hearthNames) {
+      const { session, worldInstance, land, heat, fuel, coalsMin } = emptyHearthOnLand(hearthName);
+      // 土地の明るさは時刻でも動くので、炉の無い隣の草地と比べる。
+      const bare = session.createObject(codex.objectNames.getId('grassland'));
+      expect(
+        bare.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
+      ).toBeUndefined();
+      const brightness = land.getProperty(codex.propertyNames.getId('hand_brightness'));
+      const unlit = bare.getProperty(codex.propertyNames.getId('hand_brightness'));
+      heat.setNumberWithoutEvents(Math.min(coalsMin - 1, heat.def.range!.max));
+      session.advanceWorldTime(MINUTES_PER_TICK);
+      expect(brightness.getEffectiveValue(), `${hearthName} の種火が明かりを出していない`).toBeGreaterThan(
+        unlit.getEffectiveValue(),
+      );
+
+      for (let ticks = 0; !heat.isInStage('out'); ticks++) {
+        expect(ticks, `${hearthName} の種火が消えない`).toBeLessThan(1000);
+        session.advanceWorldTime(MINUTES_PER_TICK);
+      }
+      expect(
+        brightness.getEffectiveValue(),
+        `${hearthName} は消えた後も明かりを出す（火力 ${heat.number}）`,
+      ).toBe(unlit.getEffectiveValue());
+
+      fuel.setNumberWithoutEvents(fuel.def.range!.max);
+      session.advanceWorldTime(MINUTES_PER_TICK);
+      expect(heat.isInStage('out'), `${hearthName} は消えた後に薪で火が戻る（火力 ${heat.number}）`).toBe(
+        true,
+      );
+    }
+  });
+
+  it('火力を条件にする箇所は、どれも段で見る', () => {
+    // 上の検査が通す明かりと育ちのほかに、着火・明かりへ火を分ける・燻し・焼け石の冷めも同じ線を見る。
+    // 値の比較で書くと、種火の段を割った端数の上で生死の判定が割れる。
+    const byValue: string[] = [];
+    const visit = (node: unknown, path: string): void => {
+      if (Array.isArray(node)) node.forEach((item, index) => visit(item, `${path}[${index}]`));
+      else if (node !== null && typeof node === 'object') {
+        const map = node as Record<string, unknown>;
+        if (map.prop === 'heat' && !('in_stage' in map) && !('in_stage_or_above' in map)) byValue.push(path);
+        for (const [key, value] of Object.entries(map)) visit(value, `${path}.${key}`);
+      }
+    };
+    let seen = 0;
+    for (const path of worldCodexYamlPaths()) {
+      const text = readFileSync(path, 'utf8');
+      seen += text.split('prop: heat,').length - 1;
+      visit(parse(text), path);
+    }
+    expect(seen, '火力を条件にする箇所が1つも見つからない').toBeGreaterThan(0);
+    expect(byValue).toEqual([]);
   });
 });
