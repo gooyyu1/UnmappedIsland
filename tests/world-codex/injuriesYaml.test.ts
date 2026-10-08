@@ -37,11 +37,11 @@ describe('injuries.yamlの怪我', () => {
   });
 
   /** 砂浜に立つプレイヤーから始める。rollはpickがどの候補を引くかを決める（fixedRng）。 */
-  function open(roll: number): void {
+  function open(roll: number, character = SAMPLE_CHARACTER): void {
     session = new WorldSession(codex, fixedRng(roll));
     const worldInstance = session.createWorld().instance;
     beach = spawnInto('sandy_beach', worldInstance, 'locations');
-    player = spawnInto(SAMPLE_CHARACTER, beach, 'characters');
+    player = spawnInto(character, beach, 'characters');
     // 怪我を負う実採り（coconut.yaml）は明るさを要求する（IlluminationSystem.md 5節）。ここで
     // 見たいのは怪我なので、時刻や光源を組み立てずに作業者の側で明るさを満たす。
     makeBrightEnoughForAnyAction(player, codex);
@@ -94,6 +94,24 @@ describe('injuries.yamlの怪我', () => {
   /** 荷重（load）のプロパティ番号。 */
   function loadId(): PropertyGlobalId {
     return codex.propertyNames.getId('load');
+  }
+
+  /** 選べるキャラクタすべての名前。 */
+  function characterNames(): string[] {
+    const characterTagId = codex.vocabulary.world.characterTagId;
+    const names = [...codex.objects].filter((def) => def.hasTag(characterTagId)).map((def) => def.name);
+    expect(names.length, '検査対象が無い（キャラクタのタグが変わっていないか）').toBeGreaterThan(1);
+    return names;
+  }
+
+  /** 普段どおりの荷（ヤシの実5つ）を手持ちに担ぐ。 */
+  function carryUsualLoad(): void {
+    for (let i = 0; i < 5; i++) spawnInto('green_coconut', player, 'hand');
+  }
+
+  /** 今の荷重の段の名前。 */
+  function loadStage(): string | undefined {
+    return player.tryGetProperty(loadId())?.stage?.name;
   }
 
   /** ヤシの実を採ろうとする。成否はopenへ渡したrollで決まっている。 */
@@ -540,7 +558,7 @@ describe('injuries.yamlの怪我', () => {
         idle.tryGetProperty(fillId)!.number - jar.tryGetProperty(fillId)!.number,
         '掛けた1杯は器へ戻らない',
       ).toBe(250);
-      expect(session.world!.totalMinutes - before.minutes, '治療具を当てる30分の半分').toBe(15);
+      expect(session.world!.totalMinutes - before.minutes, '洗う手間').toBe(15);
     });
 
     it('沸かした湯でも同じだけ落ちる', () => {
@@ -764,6 +782,52 @@ describe('injuries.yamlの怪我', () => {
     expect(player.tryGetProperty(loadId())?.getEffectiveValue() ?? 0).toBe(0);
   });
 
+  describe('出血の速さ', () => {
+    /** その傷を1つ負わせ、1 tickで本人が失う血。 */
+    function bloodLostInOneTick(name: string): number {
+      open(FALLS);
+      spawnInto(name, player, 'injuries');
+      const blood = player.getProperty(codex.propertyNames.getId('blood'));
+      const before = blood.number;
+      tick(1);
+      return before - blood.number;
+    }
+
+    it('くくり罠の傷は、裂傷と同じ速さで血を流す', () => {
+      // 罠がばらつかせるのは掛かりの深さ（固まるまでの長さ）だけで、傷の勢いではない。
+      expect(bloodLostInOneTick('snare_laceration')).toBe(bloodLostInOneTick('laceration'));
+    });
+
+    it('刺し傷と牙の傷は、裂傷より桁違いに速く血を流す', () => {
+      // VitalsSystem.md 4節。裂傷との違いを桁で書き分ける。
+      const laceration = bloodLostInOneTick('laceration');
+      expect(laceration, '裂傷も血を流す').toBeGreaterThan(0);
+      for (const name of ['puncture_wound', 'gore_wound']) {
+        expect(bloodLostInOneTick(name), name).toBeGreaterThanOrEqual(10 * laceration);
+      }
+    });
+
+    it('裂傷1つが固まるまでに失う血は、ヒトには響かない', () => {
+      // 同じ傷がサルには無視できない割合に当たること（体格で意味を変えること）は
+      // tests/world-codex/animalsYaml.test.ts が見る。
+      open(FALLS);
+      const injury = spawnInto('laceration', player, 'injuries');
+      const blood = player.getProperty(codex.propertyNames.getId('blood'));
+      const alertBefore = blood.alert;
+
+      for (
+        let count = 0;
+        (injury.tryGetProperty(codex.propertyNames.getId('bleeding'))?.number ?? 0) > 0;
+        count++
+      ) {
+        expect(count, '固まらないまま1日が過ぎた').toBeLessThan(TICKS_PER_DAY);
+        tick(1);
+      }
+
+      expect(blood.alert, '固まった時点でも段の警告は変わらない').toBe(alertBefore);
+    });
+  });
+
   describe('骨折', () => {
     it('血は流れず、動きを奪う', () => {
       // 皮膚の下で折れるのでbleedingを持たない（InjurySystem.md 5節）。血を持たない代わりに、
@@ -776,8 +840,8 @@ describe('injuries.yamlの怪我', () => {
 
     it('空身なら歩けるが、普段どおりの荷では動けなくなる', () => {
       // 段の名前で見るのは、道のtravelがこの名前で移動可否を決めるから（ContainerSystem.md 5節）。
-      // 担ぐのはヤシの実5つ——折れていなければ、担いだと数え始めたばかりの荷。
-      for (let i = 0; i < 5; i++) spawnInto('green_coconut', player, 'hand');
+      // 折れていなければ、担いだと数え始めたばかりの荷。
+      carryUsualLoad();
       expect(player.tryGetProperty(loadId())?.stage?.name, '無傷なら通れる').toBe('laden');
 
       breakBone();
@@ -785,10 +849,35 @@ describe('injuries.yamlの怪我', () => {
       expect(player.tryGetProperty(loadId())?.stage?.name, '同じ荷が担げなくなる').toBe('too_heavy');
     });
 
-    it('折れているだけでは歩ける', () => {
-      breakBone();
+    it('どのキャラクタも、折れているだけでは歩ける', () => {
+      for (const character of characterNames()) {
+        open(FALLS, character);
+        breakBone();
 
-      expect(player.tryGetProperty(loadId())?.stage?.name).toBe('heavy');
+        expect(loadStage(), character).toBe('heavy');
+      }
+    });
+
+    it('折れたまま担げる余りは、担ぎ慣れたキャラクタほど大きい', () => {
+      // 個人差は段の境目（loadのmax）にだけ出る（docs/world/Characters.md）ので、押し上げを全員へ
+      // 同じだけ掛ければ、残りの並びは担げる量の並びと一致する。
+      const readings = characterNames().map((character) => {
+        open(FALLS, character);
+        breakBone();
+        const load = player.getProperty(loadId());
+        return {
+          character,
+          max: load.def.range!.max,
+          room: load.def.lowerBoundOfStage('too_heavy')! - load.getEffectiveValue(),
+        };
+      });
+
+      for (const a of readings) {
+        for (const b of readings) {
+          if (a.max < b.max)
+            expect(a.room, `${a.character}は${b.character}より担げない`).toBeLessThan(b.room);
+        }
+      }
     });
 
     it('1枚で痛みが危険域へ届く', () => {
@@ -800,7 +889,7 @@ describe('injuries.yamlの怪我', () => {
 
     it('島にある傷の中で最も長く残る', () => {
       // 現実の6〜12週を4分の1へ縮めても順序は崩れていない（DesignPrinciples.md）。**最も軽い
-      // 折れ方でも**次に長い捻挫（960 tick）を上回るので、ロールの下振れでも順序は保たれる。
+      // 折れ方でも**次に長い捻挫を上回るので、ロールの下振れでも順序は保たれる。
       const severityId = codex.propertyNames.getId('severity');
       const injuries = codex.objectDefNamesWithTag(codex.tagNames.getId('injury'));
       expect(injuries.length, '検査対象が無い（injuryタグが変わっていないか）').toBeGreaterThan(1);
@@ -839,8 +928,8 @@ describe('injuries.yamlの怪我', () => {
     }
 
     it('骨折へ当てると、押し上げが緩んで普段どおりの荷を担げる', () => {
-      // 折れていなければladen（ContainerSystem.md 5節の通れる段）のヤシの実5つ。
-      for (let i = 0; i < 5; i++) spawnInto('green_coconut', player, 'hand');
+      // 折れていなければladen（ContainerSystem.md 5節の通れる段）の荷。
+      carryUsualLoad();
       const { injury, splint } = splintFor(breakBone());
       expect(player.tryGetProperty(loadId())?.stage?.name, '当てる前は担げない').toBe('too_heavy');
 
@@ -850,9 +939,21 @@ describe('injuries.yamlの怪我', () => {
       expect(player.tryGetProperty(loadId())?.stage?.name, '添え木の重さを担いでも道は通れる').toBe('heavy');
     });
 
+    it('どのキャラクタも、骨折へ当てれば普段どおりの荷で道を通れる', () => {
+      for (const character of characterNames()) {
+        open(FALLS, character);
+        carryUsualLoad();
+        const { injury, splint } = splintFor(breakBone());
+
+        treat(injury, splint);
+
+        expect(loadStage(), character).not.toBe('too_heavy');
+      }
+    });
+
     it('外せば押し上げも戻る', () => {
       // 可逆な寄与（InjurySystem.md 3節）。緩みは当てている間だけで、外した瞬間に元の押し上げへ戻る。
-      for (let i = 0; i < 5; i++) spawnInto('green_coconut', player, 'hand');
+      carryUsualLoad();
       const { injury, splint } = splintFor(breakBone());
       treat(injury, splint);
 
@@ -876,7 +977,7 @@ describe('injuries.yamlの怪我', () => {
     });
 
     it('押し上げていない傷へ当てても、荷は軽くならない', () => {
-      // 緩める量は押し上げている骨折が持つ（injuries.yaml）。治療具の側に「-9,000」と書いていたら、
+      // 緩める量は押し上げている骨折が持つ（injuries.yaml）。治療具の側に差し引く量を書いていたら、
       // 荷重を押し上げない捻挫へ当てたときに無傷より軽くなる。
       pickCoconut();
       const { injury, splint } = splintFor(new PlayerCharacter(player).injuryStacks[0][0]);
