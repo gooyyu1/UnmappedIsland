@@ -1425,6 +1425,28 @@ describe('薪の尽きた種火の保ち', () => {
     }
   });
 
+  it('雨ざらしでは、どの炉の種火も1tickで消える——種火の保ちの差は残らない', () => {
+    // docs/engine/FireSystem.md 8節。**全部の雨・種火の段の頂で見る**——いちばん弱い雨で、いちばん
+    // 強い種火が消えることが、どの雨・どの種火でも消えることを言う。
+    const hearthNames = [...codex.objectDefNamesWithTag(codex.tagNames.getId('hearth'))];
+    expect(hearthNames).toContain('stone_hearth');
+
+    for (const hearthName of hearthNames) {
+      for (const weatherName of ['light_rain', 'heavy_rain', 'storm']) {
+        const { session, worldInstance, heat, coalsMin } = emptyHearthOnLand(hearthName);
+        worldInstance
+          .getProperty(codex.propertyNames.getId('weather'))
+          .setNumberWithoutEvents(codex.symbolNames.getId(weatherName));
+        heat.setNumberWithoutEvents(coalsMin - 1);
+        expect(heat.isInStage('ember'), `${hearthName} の種火`).toBe(true);
+
+        session.advanceWorldTime(MINUTES_PER_TICK);
+
+        expect(heat.isInStage('out'), `${hearthName}・${weatherName}（火力 ${heat.number}）`).toBe(true);
+      }
+    }
+  });
+
   it('石囲いの炉は、日没にいちばん弱い火のまま薪が尽きても、種火のまま日の出を迎える', () => {
     // カードの説明文と docs/engine/FireSystem.md 6節の「種火が翌朝まで生きる」。
     const { session, worldInstance, heat } = emptyHearthOnLand('stone_hearth');
