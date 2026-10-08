@@ -42,10 +42,11 @@ traits:
       # DigestionSystem.md 6節）。増えるほど悪いのでseverityと同じ向き（CardView.md 8.1節）。
       #
       # **負った瞬間は清潔で、開いたままの時間が汚す**（InjurySystem.md 6節の未決事項に対する仮決め）。
-      # 健康な体では1時間で1上がり、放っておけばfesteringを経てsepticへ届く
+      # 健康な体でも上がり続け、放っておけばfesteringを経てsepticへ届く
       # ——**深く残る個体なら、どの開いた傷も治りきる前に敗血症へ入る**位置（くくり罠の浅い裂傷だけは
-      # その前に治りきる。TrapSystem.md 5.1節）。洗う1杯（-25）は
-      # 健康な体の1日ぶんの汚れを上回って落とすので、**開いた傷1つにつき1日1杯**が保つための代償になる（InjurySystem.md 6.2節）。
+      # その前に治りきる。TrapSystem.md 5.1節）。洗う1杯は
+      # 健康な体の1日ぶんの汚れを上回って落とすので、**開いた傷1つにつき1日1杯**が保つための代償になる
+      # （InjurySystem.md 6.2節。速さも1日1杯で足りることも tests/world-codex/injuriesYaml.test.ts が見る）。
       infection:
         gauge: {min: good, max: bad}
         value: 0
@@ -64,8 +65,7 @@ traits:
           # としても、傷口の汚れが免疫で消えるわけではない。
           #
           # **鈍るのは、全身で増殖を抑え込めている段から上**（DigestionSystem.md 6.2節の除去 > 増殖）。
-          # 段が1つ上がるごとに0.05で、健康な体（robust）がちょうど上の1時間で1、罹って高まった体
-          # （primed）はそれより遅い。**増殖に負けている段では素の速さのまま**——弱った体では傷も速く膿む、
+          # 段が1つ上がるごとに鈍り、罹って高まった体（primed）は健康な体（robust）より遅い。**増殖に負けている段では素の速さのまま**——弱った体では傷も速く膿む、
           # が段の並びからそのまま出る。
           #
           # 宛先を持たない相手（immunityを宣言していない物）では鈍らないだけで、素の速さは残る。
@@ -88,7 +88,7 @@ traits:
       # 乗り、手間の本体が水から時間へすり替わる。
       wash:
         trigger: {drag: {tag: cleansing}}
-        # 治療具を当てる30分の半分。**重さを時間ではなく水に持たせる**——時間の側を重くすると、
+        # **重さを時間ではなく水に持たせる**——時間の側を重くすると、
         # 水の乏しさと関わりなく手間だけが増える（InjurySystem.md 6.2節）。
         duration: 15
         conditions:
@@ -119,10 +119,10 @@ traits:
         add:
           parent:
             pathogen: 0.12
-      # 腐り切った傷は、いちばん高い免疫（primed、-0.3）でも抑え込めない量を送り込む——健康な体では
-      # 正味+0.3/tick（免疫が高まっても+0.2/tick）で押し上がり、危険域（septicemic、7）まで6時間。
-      # そこから先は全身の菌が血を削る。
-      # **気づいてから原因を断つ時間はある**（2杯・30分で安全域へ戻る、InjurySystem.md 6.2節）。
+      # 腐り切った傷は、いちばん高い免疫（primed）でも抑え込めない量を送り込む——健康な体でも免疫が
+      # 高まった体でも押し上がり、危険域（septicemic）へ届く。そこから先は全身の菌が血を削る。
+      # **気づいてから原因を断つ時間はある**（洗えば安全域へ戻る、InjurySystem.md 6.2節。届くまでの
+      # 長さも戻すのに要る杯数も tests/world-codex/injuriesYaml.test.ts が見る）。
       - conditions: [{prop: infection, in_stage: septic}]
         add:
           parent:
@@ -134,7 +134,7 @@ object_defs:
     traits: [injury, treatable]
     props:
       # 残っている傷の重さ。自然に治る速さを基準レートに置き（-1/tick、6.0節）、maxが「その速さで
-      # 何tickぶんか」＝ 960 tick（10日）を表す。
+      # 何tickぶんか」を表す。
       #
       # **痛みの割に長い。** 関節の傷は塞がって終わらず、動かすたびにやり直しになるので、痛みが
       # 軽くてもどの皮膚の傷より長く残る（docs/engine/InjurySystem.md 2節）。
@@ -170,7 +170,8 @@ object_defs:
   laceration:
     traits: [injury, treatable, open_wound]
     props:
-      # 自然に治るまで480 tick（5日）。捻挫より浅い傷なので、同じ-1/tickでも早く引く。
+      # 捻挫より浅い傷なので、同じ-1/tickでも早く引く（傷どうしの長さの並びは
+      # tests/world-codex/injuriesYaml.test.ts が見る。以下の傷も同じ）。
       severity:
         # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
         gauge: {min: good, max: bad}
@@ -205,8 +206,9 @@ object_defs:
           parent:
             pain: 50
       # 流れている間だけ、負った本人の血が減る（VitalsSystem.md 4節）。-15は尖った石で裂けた傷の桁
-      # ——**潰れた血管は縮んで塞がるので、切創ほどは出ない**。固まるまでに失う量は、ヒトの
-      # 5,000mLには響かないが、サル（400mL）には無視できない。**同じ傷が、体格で意味を変える。**
+      # ——**潰れた血管は縮んで塞がるので、切創ほどは出ない**。固まるまでに失う量は、ヒトには
+      # 響かないが、サルには無視できない（tests/world-codex/injuriesYaml.test.ts・animalsYaml.test.ts が
+      # 見る）。**同じ傷が、体格で意味を変える。**
       #
       # 止血できる治療具（hemostatic）を当てている間はここが閉じる。包帯はそのタグを持たず、
       # 代わりに固まるのを早める（treatments.yaml、InjurySystem.md 3.1節）。
@@ -221,17 +223,17 @@ object_defs:
   # animals.yamlのstrikeの刺突の候補）。杭を打った落とし穴（traps.yaml）に落ちた獣も同じ傷を負う
   # ——上から落ちて杭に貫かれるのは、突かれるのと同じ深さの傷（docs/engine/TrapSystem.md 5.2節）。
   #
-  # **裂傷との違いは血の流れる速さで、桁で書き分ける**（docs/engine/VitalsSystem.md 4節）。潰れた
-  # 血管が縮んで塞がる裂傷（-15/tick）に対し、刺し傷は深部の血管を開いたまま残すので-250/tick。
-  # 固まるまでに、サル（400mL）なら尽き、イノシシ（4,600mL）でも数突きで
-  # 危機に届く。**同じ傷が、体格で意味を変える。**
+  # **裂傷との違いは血の流れる速さで、桁で書き分ける**（docs/engine/VitalsSystem.md 4節。桁の差は
+  # tests/world-codex/injuriesYaml.test.ts が見る）。潰れた血管が縮んで塞がる裂傷に対し、刺し傷は
+  # 深部の血管を開いたまま残す。固まるまでに、サルなら尽き、イノシシでも数突きで
+  # 危機に届く（tests/world-codex/animalsYaml.test.ts が見る）。**同じ傷が、体格で意味を変える。**
   #
   # 衝撃（shock）はほとんど生まれないので、**突かれた獲物はその場では倒れない**。深手を負ったまま
   # 逃げる相手を追うことになる。
   puncture_wound:
     traits: [injury, treatable, open_wound]
     props:
-      # 自然に治るまで720 tick（7.5日）。裂傷より深いぶん、捻挫と同じ桁まで長引く。
+      # 裂傷より深いぶん長引く。
       severity:
         # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
         gauge: {min: good, max: bad}
@@ -275,7 +277,7 @@ object_defs:
   bite_wound:
     traits: [injury, treatable, open_wound]
     props:
-      # 自然に治るまで360 tick（3.75日）。裂傷（480）より浅い。
+      # 裂傷より浅いので短い。
       severity:
         # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
         gauge: {min: good, max: bad}
@@ -317,7 +319,7 @@ object_defs:
   gore_wound:
     traits: [injury, treatable, open_wound]
     props:
-      # 自然に治るまで720 tick（7.5日）。刺し傷と同じ深さの傷として扱う。
+      # 刺し傷と同じ深さの傷として扱い、同じだけ長引く。
       severity:
         # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
         gauge: {min: good, max: bad}
@@ -381,7 +383,8 @@ object_defs:
                 severity: -1
         on_min:
           destroy: self
-      # 深く掛かるほど固まるまでが長く、そのぶん多く奪う。レートは laceration と同じ-15/tickで、
+      # 深く掛かるほど固まるまでが長く、そのぶん多く奪う。レートは laceration と同じ
+      # （tests/world-codex/injuriesYaml.test.ts が見る）で、
       # 変わるのは初期値の幅だけ——罠は傷の勢いではなく、掛かりの深さでばらつく。
       bleeding:
         value: {min: 40, max: 100}
@@ -417,11 +420,11 @@ object_defs:
   fracture:
     traits: [injury, treatable]
     props:
-      # 自然に治るまで1,008〜1,344 tick（10.5〜14日）。**島にある傷の中で最も長い**——次に長い
-      # 捻挫（960 tick）を、最も軽い折れ方でも上回る。骨折が別格であることをロールの下振れで
+      # **島にある傷の中で最も長い**——次に長い捻挫を、最も軽い折れ方でも上回る
+      # （tests/world-codex/injuriesYaml.test.ts が見る）。骨折が別格であることをロールの下振れで
       # 崩さないため、幅の下端を捻挫より上に置く。
       #
-      # 現実の6〜12週に対して、長くても14日に収めた（docs/concept/DesignPrinciples.md）。幅そのものは
+      # 現実の6〜12週より大きく縮めてある（docs/concept/DesignPrinciples.md）。幅そのものは
       # **折れ方の違い**を生成時に1回ロールしたもの（6.2節）で、部位を分ける代わりにここが引き受ける。
       severity:
         # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
@@ -446,18 +449,17 @@ object_defs:
       - modify:
           parent:
             pain: 85
-      # 同じ荷が重く感じる（docs/engine/InjurySystem.md 5節）。**空身なら歩けるが、普段どおりの荷では
-      # too_heavyに届く**位置に置く。18,000gは、担げる量が最も少ない技師（27,000g）から最も多い農夫
-      # （36,000g）まで、**空身ならどのキャラクタもheavyの段**（道は通れる）に収まる位置で、そこから
-      # too_heavyまでの残りは4.5〜12kg——担ぎ慣れの個人差（loadのmax）が、そのまま折れた脚で運べる
-      # 量の差になる。
+      # 同じ荷が重く感じる（docs/engine/InjurySystem.md 5節）。**空身なら歩けるが、担げる余りは
+      # 大きく削られる**位置に置く。**空身ならどのキャラクタもheavyの段**（道は通れる）に収まり、
+      # そこからtoo_heavyまでの残りは担ぎ慣れの個人差（loadのmax）で開く——それがそのまま折れた脚で
+      # 運べる量の差になる（どちらも tests/world-codex/injuriesYaml.test.ts が見る）。
       #
       # 量そのものの釣り合いは、荷重が移動の速さと疲れへ効く形が入って初めて見える（同 未決事項）。
       #
-      # **添え木で固定している間は半分に緩む**（immobilizing、treatments.yaml）。緩んだ後の量を
+      # **添え木で固定している間は緩む**（immobilizing、treatments.yaml）。緩んだ後の量を
       # 押し上げている側が持つのは、hemostaticで出血のゲートを開け閉めするのと同じ形（同3.1節）
-      # ——治療具の側に「-9,000」と書くと、押し上げていない傷（捻挫）へ当てたときに無傷より軽くなる。
-      # 9,000gなら、空身は通れる段まで戻り、普段どおりの荷（ヤシの実5つ）でも道を通れる。
+      # ——治療具の側に差し引く量を書くと、押し上げていない傷（捻挫）へ当てたときに無傷より軽くなる。
+      # 緩んだ後は、どのキャラクタも普段どおりの荷で道を通れる（tests/world-codex/injuriesYaml.test.ts が見る）。
       - conditions:
           - not: {slot: treatment, matches: {tag: immobilizing}}
         modify:
@@ -478,7 +480,7 @@ object_defs:
   bruise:
     traits: [injury, treatable]
     props:
-      # 自然に治るまで120〜240 tick（1.25〜2.5日）。裂ける傷（snare_laceration）より浅いので短い。
+      # 裂ける傷（snare_laceration）より浅いので短い。
       # 幅は**ぶつかり方の激しさ**を生成時に1回ロールしたもの（6.2節）で、深さが失う血の量を分ける
       # 裂傷と違い、ここで変わるのは落ち着くまでの長さだけ。
       severity:
