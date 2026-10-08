@@ -8,7 +8,7 @@ import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER, worldCodexPath } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
-import { TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * animals.yamlの動物を、実ファイルの定義だけで検証する（docs/engine/HuntingSystem.md・
@@ -991,6 +991,134 @@ describe('animals.yamlの動物', () => {
     });
   });
 
+  describe('定義のコメントが言う手数と段', () => {
+    /** 獣すべての名前（beast traitが配るanimalタグから数え上げる）。 */
+    function beastNames(): readonly string[] {
+      const names = codex.objectDefNamesWithTag(codex.vocabulary.world.animalTagId);
+      expect(names.length, '検査対象が無い（animalタグが変わっていないか）').toBeGreaterThan(1);
+      return names;
+    }
+
+    /** その段の下端（段の名前はワールド側の宣言）。 */
+    function stageMin(animal: WorldObject, propertyGlobalId: PropertyGlobalId, stage: string): number {
+      const min = animal.getProperty(propertyGlobalId).def.stages.find((s) => s.name === stage)?.min;
+      expect(min, `${stage} の段が無い`).toBeDefined();
+      return min!;
+    }
+
+    it('どの獣も、現れたときの警戒がそのまま掴めるまでの手数になる', () => {
+      // 減り方が獣によらず-1/tickなので、初期値がそのまま手数になる（beast traitのwariness）。
+      // **掴めるのは完全に落ち着いてから**（下の「抵抗」）なので、0に届く手で数える。
+      for (const name of beastNames()) {
+        open(LANDS);
+        const animal = spawnInto(name, jungle, 'items');
+        const wariness = animal.getProperty(warinessId);
+        const initial = wariness.number;
+
+        tick(initial - 1, animal);
+        expect(wariness.number, `${name}: 1手前ではまだ残る`).toBeGreaterThan(0);
+        expect(wariness.alert, `${name}: その前に安全域へ下りている`).toBe('safe');
+
+        tick(1, animal);
+        expect(wariness.number, `${name}: 初期値の手数で尽きる`).toBe(0);
+      }
+    });
+
+    it('1打で荒ぶるのはネズミだけで、イノシシは1打で警戒し、3打で荒ぶる', () => {
+      // 当たり外れによらず、どの候補も同じだけ警戒を上げる（beast traitのstrike）。外した回で
+      // 確かめるのは、当たると気を失って警戒が打ち消されるため。
+      const enragedByOneBlow = beastNames().filter((name) => {
+        open(WHIFFS);
+        const animal = spawnInto(name, jungle, 'items');
+        strikeWith('sharp_stone', animal);
+        return animal.getProperty(warinessId).alert === 'danger';
+      });
+      expect(enragedByOneBlow).toEqual(['rat']);
+
+      open(WHIFFS);
+      const boar = spawnInto('wild_boar', jungle, 'items');
+      expect(boar.getProperty(warinessId).alert, '落ち着いた姿で現れる').toBe('safe');
+      strikeWith('sharp_stone', boar);
+      expect(boar.getProperty(warinessId).alert, '1打で警戒する').toBe('caution');
+      strikeWith('sharp_stone', boar);
+      expect(boar.getProperty(warinessId).alert, '2打ではまだ荒ぶらない').toBe('caution');
+      strikeWith('sharp_stone', boar);
+      expect(boar.getProperty(warinessId).alert, '3打で荒ぶる').toBe('danger');
+    });
+
+    it('打ちかかって付ける傷と殺す罠の傷は深手の段に届き、生かす罠の打ち身は届かない', () => {
+      // 立ち去りを止める線（beast traitのstay_remaining）は痛みのhurtingで引く。**打ちかかって
+      // 付ける傷は定義から数え上げる**——手で並べると、候補を足したときにここが元の顔ぶれだけを見る。
+      const animals = parse(readFileSync(worldCodexPath('animals.yaml'), 'utf8')) as {
+        traits: { beast: { interactions: { strike: { pick: { spawn?: { object: string } }[] } } } };
+      };
+      const struck = animals.traits.beast.interactions.strike.pick.flatMap((c) =>
+        c.spawn === undefined ? [] : [c.spawn.object],
+      );
+      expect(struck.length, '打ちかかって付ける傷が無い').toBeGreaterThan(0);
+
+      /** その傷だけを負ったサルの痛みの段。 */
+      const painStageOf = (injury: string): string | undefined => {
+        open(LANDS);
+        spawnInto(injury, monkey, 'injuries');
+        return monkey.getProperty(painId).stage?.name;
+      };
+      const deep = ['hurting', 'unbearable'];
+      // 殺す罠の傷（traps.yamlのsnareと、杭を打ったpitfall）。
+      for (const injury of [...struck, 'snare_laceration', 'puncture_wound'])
+        expect(deep, `${injury} は深手の段に届く`).toContain(painStageOf(injury));
+      expect(painStageOf('bruise'), '生かす罠の打ち身はsoreに留まる').toBe('sore');
+    });
+
+    it('深手の痛みに、衝撃か失血の最初の段が重なると、意識はdazedまで落ちる', () => {
+      // consciousnessのfoggyが「狩りの最中にはまず立たない」と言える根拠（beast trait）。
+      const reachesDazed = (setUp: () => void): string | undefined => {
+        open(LANDS);
+        spawnInto('laceration', monkey, 'injuries');
+        expect(monkey.getProperty(painId).stage?.name, '裂傷は深手の段').toBe('hurting');
+        setUp();
+        return monkey.getProperty(consciousnessId).stage?.name;
+      };
+
+      expect(
+        reachesDazed(() => monkey.getProperty(shockId).setNumber(stageMin(monkey, shockId, 'rattled'))),
+        '衝撃',
+      ).toBe('dazed');
+      expect(
+        reachesDazed(() => monkey.getProperty(bloodId).setNumber(stageMin(monkey, bloodId, 'bled'))),
+        '失血',
+      ).toBe('dazed');
+    });
+
+    it('気を失った獣では、腕を極めてどの武器を振っても、仕留めの重みが当たり所の合計を上回る', () => {
+      // 狩猟の腕は仕留めに積まず当たり所にだけ積む（beast traitのstrikeのkilled）ので、腕が
+      // 上がるほど仕留めの割合は落ちる。**いちばん上の段でも気絶させれば仕留めが勝つ**ことを見る。
+      strikeWith('stone_axe');
+      expect(monkey.getProperty(consciousnessId).isInStage('unconscious'), '気を失っている').toBe(true);
+      const kill = monkey.getProperty(codex.propertyNames.getId('vulnerability')).getEffectiveValue();
+
+      const skill = player.getProperty(codex.propertyNames.getId('skill_hunting'));
+      skill.setNumber(skill.def.stages.at(-1)!.min!);
+      const aim = player.getProperty(codex.propertyNames.getId('hunting_aim')).getEffectiveValue();
+      expect(aim, '腕を極めると狙いが乗る').toBeGreaterThan(0);
+
+      const weaponTagId = codex.tagNames.getId('weapon');
+      const weapons = [...codex.objects].filter((def) => def.tags.includes(weaponTagId));
+      expect(weapons.length, '武器が無い').toBeGreaterThan(1);
+      const placements = ['heavy_blow', 'light_blow', 'thrust', 'whiff'].map((n) =>
+        codex.propertyNames.getId(n),
+      );
+      for (const def of weapons) {
+        const weapon = session.createObject(def.globalId);
+        // 狙いは当たり所のどれか1つの土台に積まれる（tools.yamlのweapon trait）。
+        const placementTotal =
+          placements.reduce((sum, id) => sum + (weapon.tryGetProperty(id)?.getEffectiveValue() ?? 0), 0) +
+          aim;
+        expect(kill, def.name).toBeGreaterThan(placementTotal);
+      }
+    });
+  });
+
   it('武器でない物を重ねても殴れない', () => {
     const stone = spawnInto('stone', player, 'hand');
 
@@ -1045,6 +1173,173 @@ describe('獣の引く速さ・戻る速さは体格に比例する', () => {
     const humanBlood = human.traits.player_character.props.blood!;
     for (const [beast, gauge] of beastsWith('blood'))
       expect(perMax(gauge, 'blood'), beast).toBeCloseTo(perMax(humanBlood, 'blood'), 9);
+  });
+});
+
+/**
+ * animals.yaml のコメントが数を書かずに言っている釣り合い。YAML のコメントには `codex:` の印を
+ * 置けないので、定義を動かしたときに主張だけが古いまま残らないよう、ここで見る。
+ */
+describe('animals.yamlのコメントが言う釣り合い', () => {
+  interface Stage {
+    readonly name: string;
+    readonly min?: number;
+    readonly passives?: readonly { readonly add?: { readonly self?: Record<string, number> } }[];
+  }
+  interface Prop {
+    readonly value?: number;
+    readonly range?: { readonly max: number };
+    readonly stages?: readonly Stage[];
+    readonly passives?: readonly {
+      readonly conditions?: readonly Record<string, unknown>[];
+      readonly add?: { readonly self?: Record<string, number> };
+      readonly modify?: { readonly self?: Record<string, number> };
+      readonly transfer?: { readonly amount: number; readonly to_amount: number };
+    }[];
+  }
+  interface Def {
+    readonly traits?: readonly string[];
+    readonly props?: Readonly<Record<string, Prop | undefined>>;
+    readonly interactions?: Readonly<Record<string, { readonly duration?: unknown }>>;
+  }
+  const read = <T>(file: string): T => parse(readFileSync(worldCodexPath(file), 'utf8')) as T;
+  const animals = read<{
+    traits: { beast: Def & { passives: readonly NonNullable<Prop['passives']>[number][] } };
+    object_defs: Record<string, Def>;
+  }>('animals.yaml');
+  const beastTrait = animals.traits.beast;
+  const beasts = Object.entries(animals.object_defs).filter(([, def]) => def.traits?.includes('beast'));
+  const prop = (def: Def, name: string): Prop => {
+    const found = def.props?.[name];
+    expect(found, name).toBeDefined();
+    return found!;
+  };
+  const stage = (gauge: Prop, name: string): Stage => {
+    const found = gauge.stages?.find((s) => s.name === name);
+    expect(found, name).toBeDefined();
+    return found!;
+  };
+
+  it('獣が在る', () => {
+    expect(beasts.length).toBeGreaterThan(1);
+  });
+
+  it('衝撃のmaxは、どの獣も体重に比例する', () => {
+    const ratio = ([, def]: [string, Def]): number =>
+      prop(def, 'shock').range!.max / prop(def, 'weight').value!;
+    for (const beast of beasts) expect(ratio(beast), beast[0]).toBeCloseTo(ratio(beasts[0]), 9);
+  });
+
+  it('血のmaxは、どの獣も体重におよそ比例する', () => {
+    // 「およそ」の幅は1割。血の段は失った割合で刻むので、ここがずれても段の意味は変わらない。
+    const ratio = ([, def]: [string, Def]): number =>
+      prop(def, 'blood').range!.max / prop(def, 'weight').value!;
+    for (const beast of beasts) {
+      expect(ratio(beast) / ratio(beasts[0]), beast[0]).toBeGreaterThan(0.9);
+      expect(ratio(beast) / ratio(beasts[0]), beast[0]).toBeLessThan(1.1);
+    }
+  });
+
+  it('立ち去りまでの長さは、どの獣も同じ', () => {
+    // beast traitが1箇所で持つ。獣ごとに上書きすると「獣によらず同じ」が崩れる。
+    expect(prop(beastTrait, 'stay_remaining').value).toBeDefined();
+    for (const [name, def] of beasts) expect(def.props?.stay_remaining, name).toBeUndefined();
+  });
+
+  it('構えられた間合いでは、踏み込む手が同じだけ細り、噛みつきと圧し掛かりだけが落ちる', () => {
+    const braced = beastTrait.passives.find((p) =>
+      p.conditions?.some((c) => (c as { prop?: string }).prop === 'braced_reach'),
+    );
+    const push = braced?.modify?.self;
+    expect(push, '構えの押し引きが無い').toBeDefined();
+    const thinning = -push!.gore;
+    expect(thinning, '踏み込む手は細る').toBeGreaterThan(0);
+    expect([push!.bite, push!.crush], '踏み込む手はどれも同じだけ細る').toEqual([-thinning, -thinning]);
+    expect(push!.lurk, '待ち受けは同じだけ太る').toBe(thinning);
+
+    for (const [name, def] of beasts) {
+      for (const move of ['bite', 'crush'])
+        expect(prop(def, move).value! + push![move], `${name}: ${move} は落ちる`).toBeLessThanOrEqual(0);
+      const gore = prop(def, 'gore').value!;
+      if (gore > 0) expect(gore + push!.gore, `${name}: 牙は通る`).toBeGreaterThan(0);
+    }
+  });
+
+  it('囲いで飲む水の換算は、人が飲むときと同じ', () => {
+    // 比べるのは水。換算を小さくして寄与の小さい液体を表す（liquid_containers.yamlのdrink）ので、
+    // 液体すべてが同じ比ではない。
+    const drinking = prop(beastTrait, 'hydration').passives!.find((p) => p.transfer !== undefined)!.transfer!;
+    const water = read<{ traits: Record<string, Def> }>('liquid_containers.yaml').traits.water_liquid;
+    const drink = water.interactions?.drink as
+      { transfer?: { amount: number; to_amount: number } } | undefined;
+    expect(drink?.transfer, '水を飲む定義が無い').toBeDefined();
+    expect(drinking.amount / drinking.to_amount).toBe(drink!.transfer!.amount / drink!.transfer!.to_amount);
+  });
+
+  it('飢えの段は、残りの日数で標準体格の人と同じ位置で切れる', () => {
+    /** その段の下端を、減る速さで割った残りの日数。 */
+    const days = (gauge: Prop, rate: number, name: string): number =>
+      stage(gauge, name).min! / rate / TICKS_PER_DAY;
+
+    const beastFat = prop(beastTrait, 'body_fat');
+    const beastRate = -beastFat.passives!.find((p) => p.add?.self?.body_fat !== undefined)!.add!.self!
+      .body_fat;
+    const human = read<{ object_defs: Record<string, Def> }>(`characters/${SAMPLE_CHARACTER}.yaml`)
+      .object_defs[SAMPLE_CHARACTER];
+    const humanFat = prop(human, 'body_fat');
+    // 標準体格の減る速さは nourished 段のレート（docs/world/Characters.md の body_fat）。
+    const humanRate = -stage(humanFat, 'nourished').passives![0].add!.self!.body_fat;
+
+    for (const name of ['gaunt', 'nourished'])
+      expect(days(beastFat, beastRate, name), name).toBe(days(humanFat, humanRate, name));
+  });
+
+  it('獣の免疫は、人の健康時の段に在る', () => {
+    const human = read<{ traits: { player_character: Def } }>('characters/player_character.yaml').traits
+      .player_character;
+    const stages = prop(human, 'immunity').stages!;
+    const robust = stages.findIndex((s) => s.name === 'robust');
+    expect(robust, 'robustの段が無い').toBeGreaterThanOrEqual(0);
+    const value = prop(beastTrait, 'immunity').value!;
+    expect(value).toBeGreaterThanOrEqual(stages[robust].min!);
+    if (robust + 1 < stages.length) expect(value).toBeLessThan(stages[robust + 1].min!);
+  });
+
+  describe('解体の手間', () => {
+    const carcasses = Object.entries(animals.object_defs).filter(([, def]) => def.props?.butcher_minutes);
+    /** 腕が届いた段で縮む量（正の分数）。 */
+    const shortening = (def: Def): number =>
+      -prop(def, 'butcher_minutes').passives!.find((p) => p.modify?.self?.butcher_minutes !== undefined)!
+        .modify!.self!.butcher_minutes;
+
+    it('解体する死体が在る', () => {
+      expect(carcasses.length).toBeGreaterThan(1);
+    });
+
+    it('どの死体も届いた段で同じだけ縮み、縮めても刻み1つ分は残る', () => {
+      for (const [name, def] of carcasses) {
+        expect(shortening(def), name).toBe(shortening(carcasses[0][1]));
+        expect(prop(def, 'butcher_minutes').value! - shortening(def), name).toBeGreaterThanOrEqual(
+          MINUTES_PER_TICK,
+        );
+      }
+    });
+
+    it('イノシシの1回ぶんはサル1頭と同じ長さで、1kgあたりではサルより速い', () => {
+      const boar = animals.object_defs.wild_boar_carcass;
+      const monkey = animals.object_defs.monkey_carcass;
+      /** 捌き切るまでの分数（butcher_minutes を読む手の数 × 1回ぶん）。 */
+      const totalMinutes = (def: Def): number =>
+        Object.values(def.interactions ?? {}).filter(
+          (interaction) =>
+            (interaction.duration as { prop?: string } | undefined)?.prop === 'butcher_minutes',
+        ).length * prop(def, 'butcher_minutes').value!;
+      const perKg = (def: Def): number => totalMinutes(def) / prop(def, 'weight').value!;
+
+      expect(prop(boar, 'butcher_minutes').value).toBe(prop(monkey, 'butcher_minutes').value);
+      expect(totalMinutes(boar), 'イノシシは何度かに分けて捌く').toBeGreaterThan(totalMinutes(monkey));
+      expect(perKg(boar)).toBeLessThan(perKg(monkey));
+    });
   });
 });
 
