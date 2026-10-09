@@ -206,7 +206,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
   });
 
   it('皮を叩き解すのは漬けと叩きの2手で、掻き取りより長く、採れる繊維は皮より軽い', () => {
-    // coconut.yamlのcoconut_huskのret。**漬けと叩きは同じ長さの手を1回ずつ**（soak・retのduration）。
+    // coconut.yamlのcoconut_huskのsoak・ret。どちらもret_minutesの長さを1回ずつ取る。
     expect(declaredNumber('coconut_husk', 'ret_minutes') * 2, '掻き取りより長い').toBeGreaterThan(
       declaredNumber('banana_stem', 'strip_minutes'),
     );
@@ -216,13 +216,16 @@ describe('coconut.yamlのヤシの実の加工', () => {
     husk.getProperty(codex.propertyNames.getId('retting_progress')).setNumber(1);
     combine(husk, 'stone', 'ret');
 
+    const fibers = weightsOn(beach);
+    expect(itemsOn(beach).length, '繊維が出る').toBeGreaterThan(0);
     expect(
       itemsOn(beach).every((name) => name === 'plant_fiber'),
       '皮は繊維に置き換わる',
     ).toBe(true);
+    // 腕の余分の卓が当たれば1束増える（docs/world/Skills.md 7.2節）。そのときでも皮より軽い。
     expect(
-      weightsOn(beach).reduce((sum, weight) => sum + weight, 0),
-      '採れる繊維は皮より軽い（残りは叩き落とす髄）',
+      fibers.reduce((sum, weight) => sum + weight, 0) + fibers[0],
+      '採れる繊維は、余分の1束を足しても皮より軽い（残りは叩き落とす髄）',
     ).toBeLessThan(huskWeight);
   });
 

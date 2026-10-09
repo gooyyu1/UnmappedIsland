@@ -138,6 +138,12 @@ describe('firewood.yamlの薪割りと薪棚', () => {
 
     stackOn(rack, firewood);
     expect(stackedNames(rack)).toHaveLength(firewood.length);
+    // **枠の数は丸太1本ぶんちょうど**（同）——もう1本は積めない。
+    const extra = session.createObject(codex.objectNames.getId('green_firewood'));
+    expect(
+      extra.moveToSlotOrRejection(rack.getSlot(codex.slotNames.getId('woodpile'))),
+      '丸太1本ぶんを超える薪',
+    ).toBeDefined();
   });
 
   it('尖った石では割れない（斧が要る）', () => {
