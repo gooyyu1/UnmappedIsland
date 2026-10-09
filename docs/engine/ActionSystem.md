@@ -151,8 +151,8 @@ Intel Xeon @ 2.10GHz・Node v22 で計測）。
    持続効果（`passives`、[`GameElementDefinition.md`](./GameElementDefinition.md) 11.7 節）を登録する。
 6. 関与オブジェクトの生存確認（6節）: 経過中に失われていたら、その行動は成立しなかったものとして
    `false` を返し、効果を適用せずに終える。
-7. 効果の適用: `WorldObject.applyActiveEffect(effect, context)`（4節）。self も役も
-   `ReferenceContext` が1つにまとめて持つ。
+7. 効果の適用: `WorldObject.applyActiveEffect(effect, context)`（5節）。self も役も
+   `ReferenceContext`（4節）が1つにまとめて持つ。
 8. 待たされていた手番（`trigger: tick` で `duration` を持つもの、
    [`GameElementDefinition.md`](./GameElementDefinition.md) 11.5 節）を起こす。**ここが操作の切れ目**で、
    5 の経過中に配られた手番はその場では起きずにここまで待つ（`WorldSession.runToSeam`）。
@@ -163,7 +163,7 @@ Intel Xeon @ 2.10GHz・Node v22 で計測）。
 ## 3. 実行可能条件（conditions）
 
 `ConditionNode` の木。葉と、複合の `all` / `any` / `not` からなり、条件の並びを書ける場所は
-どこも同じ木を共用する（一度きりの判定も、passives（8節）の持続的なゲートも）。書ける葉と演算子キーは
+どこも同じ木を共用する（一度きりの判定も、passives の持続的なゲート（`GameElementDefinition.md` 8.2節）も）。書ける葉と演算子キーは
 [`GameElementDefinition.md`](./GameElementDefinition.md) 14節の表が唯一の一覧で、ここには写さない。
 
 参照先が解決できない場合（親が無い等）、その葉は偽になる。
@@ -209,7 +209,7 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
   その順に書く（同 9.7節）。
 - **`pick`（`PickEffect`、同 10節）**: `weight`（リテラルかプロパティ参照）による重み付き抽選で
   1候補を選んで適用する。候補の効果も `ActiveEffect` なので、pick のネストができる。
-- **`ConditionalEffect`**: rangeイベントの `conditions`（6.3節）を満たす回だけ中身を適用し、
+- **`ConditionalEffect`**: rangeイベントの `conditions`（同 6.3節）を満たす回だけ中身を適用し、
   満たさない回は既定のクランプへ倒れる。
 
 設計上の要点:
@@ -229,7 +229,7 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
   行き先の指し方は `spawn` の `into` と共通。**行き先が定義時点で決まらず生成時に確定する**場合
   （道の移動アクション）は、`object_def` 参照ではなく `self` のプロパティが保持する
   **インスタンスID**（`to_prop`）で指す。
-- プロパティの rangeイベント（`on_max`/`on_min`、6.3節）も**同じ**
+- プロパティの rangeイベント（`on_max`/`on_min`、同 6.3節）も**同じ**
   `ActiveEffect` と適用経路（`WorldObject.applyActiveEffect`）を使う。書ける動詞に差は無く、
   `pick` も `move` も並べて書ける（海区の `storm_drift` の `on_max` が、`among` で選んだ筏を `move` で
   隣の海区へ流す。`voyage.yaml`）。**ここは操作ではなく、値が端に着いた瞬間への反応**なので、rangeイベントで
@@ -402,7 +402,7 @@ UI が演出のために「誰が何をしたか」を要る（[`HuntingSystem.m
 ### 7.3 主体は `applyActiveEffect` が決める
 
 1 件の変化には、それを起こした効果を宣言していたオブジェクト（`self`）が主体として付きます。境界は
-効果適用の入口（4 節・`applyActiveEffect`）で、**その中で起きた出入りはすべて同じ主体になります。**
+効果適用の入口（5 節・`applyActiveEffect`）で、**その中で起きた出入りはすべて同じ主体になります。**
 
 - **`pick` のどの候補が選ばれたかによらず 1 つに決まります。** 観測する側は分岐を知らずに「このオブジェクトが
   何をしたか」を読めるので、候補を足しても観測する側は変わりません
