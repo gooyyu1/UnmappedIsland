@@ -923,8 +923,8 @@ describe('プレイヤーキャラクタの定義', () => {
 
       expect(
         (player.instance.tryGetProperty(wakefulnessId)?.number ?? 0) / hours,
-        '眠気の1時間あたり',
-      ).toBeLessThanOrEqual(perHour(nap, 'wakefulness'));
+        '眠気の1時間あたりは、眠る休息のうちいちばん薄い nap の割そのもの',
+      ).toBeCloseTo(perHour(nap, 'wakefulness'), 9);
       expect(
         (player.instance.tryGetProperty(staminaId)?.number ?? 0) / hours,
         '体力の1時間あたり',

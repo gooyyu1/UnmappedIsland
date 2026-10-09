@@ -204,12 +204,12 @@ describe('全身の菌と免疫', () => {
     expect(prop('pathogen').number, '段が上がった次の回から減りに転じる').toBeLessThan(peak);
   });
 
-  it('罹って治った体は、素の60より高いところで止まる', () => {
+  it('罹って治った体は、素の高さより高いところで止まる', () => {
     // 獲得免疫。いちばん上の段（primed）だけが自分を引き戻すので、上げた分は使い切られずに残る。
     // 押し下げ2つ（惨め-10と寝不足-15）を当てて、罹る前と後で段が変わることを見る。
     prop('happiness').setNumberWithoutEvents(0);
     prop('wakefulness').setNumberWithoutEvents(0);
-    expect(prop('immunity').stage?.name, '素の60では、2つ重なると落ちる').toBe('weakened');
+    expect(prop('immunity').stage?.name, '素の高さでは、2つ重なると落ちる').toBe('weakened');
     prop('happiness').setNumberWithoutEvents(75);
     prop('wakefulness').setNumberWithoutEvents(192);
 

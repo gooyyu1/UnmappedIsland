@@ -17,7 +17,7 @@ traits:
     # **戻すのは毎tickの `passives`**（11.7節）。経過中の減り（荷・痛み・里心）と同じ足し算に入る
     # ので、受け取る量は「宣言 − その間の減り」になる。眠っている間も覚醒度は減り続ける
     # （docs/world/Characters.md 休息節）ので、眠る休息で戻る眠気もその減りを引いた量になる
-    # （tests/world-codex/forcedTimePassage.test.ts が見る）。
+    # （tests/world-codex/charactersYaml.test.ts が見る）。
     #
     # 身体の仕組みなので個体差を持たせず、この trait が配る（痛み・血と同じ扱い）。回復量は
     # 一律なので、体力のmaxが大きいキャラクタほど1回の休息で戻る割合は小さい。
