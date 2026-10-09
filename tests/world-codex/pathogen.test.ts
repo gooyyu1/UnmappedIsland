@@ -217,8 +217,12 @@ describe('全身の菌と免疫', () => {
     live(10 * DAY);
 
     expect(prop('pathogen').number, '感染は収まっている').toBe(0);
-    expect(prop('immunity').number, '素の60より高い').toBeGreaterThan(60);
-    expect(prop('immunity').number, 'いちばん上の段を抜けたところで止まる').toBeLessThan(70);
+    expect(prop('immunity').number, '素の高さより高い').toBeGreaterThan(
+      prop('immunity').def.initialValueWithoutRoll,
+    );
+    expect(prop('immunity').number, 'いちばん上の段を抜けたところで止まる').toBeLessThan(
+      prop('immunity').def.lowerBoundOfStage('primed')!,
+    );
 
     prop('happiness').setNumberWithoutEvents(0);
     prop('wakefulness').setNumberWithoutEvents(0);

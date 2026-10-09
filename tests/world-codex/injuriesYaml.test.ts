@@ -715,6 +715,20 @@ describe('injuries.yamlの怪我', () => {
       });
     }
 
+    it('膿んだ傷1つでも、増殖を抑え込めていない体なら全身へ回って増え続ける', () => {
+      // InjurySystem.md 6.3節。弱った体では、入り込んだ菌に増殖が加わって除去を上回る。押し下げを
+      // 2つ重ねて落とす（tickが空腹と寝不足をその値に留める）。
+      player.getProperty(codex.propertyNames.getId('satiety')).setNumberWithoutEvents(0);
+      player.getProperty(codex.propertyNames.getId('wakefulness')).setNumberWithoutEvents(0);
+      expect(player.getProperty(codex.propertyNames.getId('immunity')).isInStage('weakened')).toBe(true);
+      woundsAt('festering', 1);
+      tick(4);
+      const early = pathogenOf(player).number;
+      tick(4);
+      expect(early, '入り込む').toBeGreaterThan(0);
+      expect(pathogenOf(player).number, '増え続ける').toBeGreaterThan(early);
+    });
+
     it('膿んだ傷2つは、健康な体でも全身へ回る', () => {
       // InjurySystem.md 6.3節。2つ負えば流入も2倍で、健康な体の除去を越える——多発外傷が危険なのは、
       // 傷ごとの特別扱いではなく足し合わせから。

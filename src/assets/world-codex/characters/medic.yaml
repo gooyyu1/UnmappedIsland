@@ -60,7 +60,7 @@ object_defs:
             min: 4320
             passives:
               - add: {self: {body_fat: -1.6}}
-      # 意識を保っていられるのは48時間（192 tick）。
+      # 意識を保っていられる長さは、普通の人間の基準どおり（docs/world/Characters.md の wakefulness）。
       wakefulness:
         tags: [status, health]
         value: 192
