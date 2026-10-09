@@ -1,14 +1,15 @@
 # 薪を割って積み、乾かす（docs/world/ContentSkeleton.md 4節の火の山、docs/engine/FireSystem.md 2.5節）。
 #
-# **開けるのは「伐った木から、取り出せる上限まで熱を取れること」。** 木から取り出せるのはいちばん良くて
-# 20 fuel/kgで、拾った太い枝（locations.yamlのthick_branch）と若木の棒（timber.yamlのlong_pole）が
-# この率。伐ったばかりの丸太は20kgでfuel 200——**半分しか出ない**（水を含み、丸太のままでは空気が
-# 回らない。docs/engine/FireSystem.md 2.5節）。割って積んでおけば水が抜け、同じ木がその上限へ届く。
+# **開けるのは「伐った木から、取り出せる上限まで熱を取れること」。** 目方あたりで木から取り出せる
+# 上限の率を持つのは、拾った太い枝（locations.yamlのthick_branch）と若木の棒（timber.yamlのlong_pole）。
+# 伐ったばかりの丸太は**その半分しか出ない**（水を含み、丸太のままでは空気が回らない。
+# docs/engine/FireSystem.md 2.5節）。割って積んでおけば水が抜け、同じ木がその上限へ届く。
 #
-# **丸太のままでは、率が半分なだけでなく、火を焚く炉に入り切らない。** 焚き火と三石のかまどのfuelの
-# 上限は30、石囲いの炉でも120（fire.yaml）で、丸太1本の200はくべても残りが失われる
-# （docs/engine/FireSystem.md 2節）。受け切れるのは土器を焼く覆い焼きの炉（200、pottery.yaml）だけで、
-# あれは土器しか載らない使い捨ての炉。**割り薪1本は乾いても30なので、いちばん小さい炉にも入り切る。**
+# **丸太のままでは、率が半分なだけでなく、火を焚く炉に入り切らない。** 火を焚く炉（fire.yaml）は
+# どれもfuelの上限が丸太1本に届かず、くべても残りが失われる
+# （docs/engine/FireSystem.md 2節）。受け切れるのは土器を焼く覆い焼きの炉（pottery.yaml）だけで、
+# あれは土器しか載らない使い捨ての炉。**割り薪1本なら、乾いた後でもいちばん小さい炉に入り切る。**
+# （率も炉に入り切るかも、tests/world-codex/firewoodYaml.test.ts が見る。）
 #
 # **乾くのは薪棚に積んであるあいだだけ。** 地面へ直に積んだ薪は下から湿気を吸い、雨のたびに濡れて
 # 乾き切らない。棚が地面から離して風を通し、屋根が雨を防ぐ——**だから雨の条件を1つも持たない**
@@ -36,20 +37,20 @@ object_defs:
     tags: [item, firewood]
     traits: [burnable]
     props:
-      # 丸太（20kg）を10本に割った1本ぶん。**2mの丸太を玉切ってから割る**ので、1本は炉へくべられる
+      # 丸太を割った1本ぶん。**2mの丸太を玉切ってから割る**ので、1本は炉へくべられる
       # 大きさになる。
       weight: {value: 2000}
       # 割り口の隙間ができるので、寄せても丸太の嵩（35,000）へは戻らない。
       volume: {value: 3600}
-      # 10本で丸太1本ぶん（200）。**割っただけでは増えない**——空気が回る形になるだけで、水はまだ
-      # 中に在る。
+      # 割った薪を合わせると丸太1本ぶん。**割っただけでは増えない**——空気が回る形になるだけで、水は
+      # まだ中に在る（目方とともに tests/world-codex/firewoodYaml.test.ts が見る）。
       fuel: {value: 20}
       # 乾き切るまでの残り。罠のcatch_remaining・塩田や食べ物のdrying_remainingと同じ見えない
       # タイマー（docs/engine/TrapSystem.md 2節）で、**棚に積んであるtickの数だけを数える**。
       #
       # 現実には細く割って風を通しても3〜4週かかるので、日をまたいで
-      # 進む長いものとして4分の1へ縮めたもの（docs/concept/DesignPrinciples.md の「長くかかるものだけ、
-      # 現実の4分の1へ縮める」節）。**干物・燻製・素焼き前の壺より遅い**
+      # 進む長いものとして縮めたもの（docs/concept/DesignPrinciples.md の「長くかかるものだけ、
+      # 現実の4分の1へ縮める」節。tests/world-codex/firewoodYaml.test.ts が見る）。**干物・燻製・素焼き前の壺より遅い**
       # ——薪はいちばん厚く、抜く水がいちばん多い。
       #
       # **初期値に幅を持たせない**（干し場・燻し小屋と同じ、drying.yaml）——薪は自分が積まれた
@@ -66,20 +67,20 @@ object_defs:
           destroy: self
           spawn: {object: seasoned_firewood}
 
-  # 乾いた薪。水が抜けて目方が4分の1落ち、出る熱は木から取り出せる上限の率になる。
+  # 乾いた薪。水が抜けて目方が落ち、出る熱は木から取り出せる上限の率になる。
   #
-  # **上限を超えない。** 20 fuel/kgが太い枝・若木の棒と同じ率で（locations.yamlのthick_branch）、
+  # **上限を超えない。** 太い枝・若木の棒と同じ率で（locations.yamlのthick_branch）、
   # 乾かして得られるのはそこへ届くことまで。tests/world-codex/firewoodYaml.test.tsが見張る。
   seasoned_firewood:
     tags: [item, firewood]
     traits: [burnable]
     props:
-      # 生木の割り薪（2,000）から水が抜けたもの。丸太1本ぶんの10本で15kgになる。
+      # 生木の割り薪から水が抜けたもの（軽くなることは tests/world-codex/firewoodYaml.test.ts が見る）。
       weight: {value: 1500}
       # 乾いても縮みはわずかなので、嵩は割ったときのまま。
       volume: {value: 3600}
       # **太い枝と同じ率**（目方あたりの熱）。
-      # **いちばん小さい炉（焚き火のfuelの上限30）にも、1本がそのまま入る。**
+      # **いちばん小さい炉にも、1本がそのまま入る。**
       fuel: {value: 30}
 
   # 薪棚。枝を組んで地面から離した台に薪を積み、編んだ葉の屋根を掛けたもの。
@@ -100,7 +101,7 @@ object_defs:
       #
       # **枠ごとに1つ**（maxを置く、7.2節）——薪は束ねられるので、maxが無いと1つの枠に何本でも
       # 積まれて、棚の広さが何も意味しなくなる（干し場・燻し小屋と同じ、drying.yaml）。
-      # **枠の数は丸太1本ぶん**——割った10本をそのまま積める。
+      # **枠の数は丸太1本ぶん**——割った薪をそのまま積める（tests/world-codex/firewoodYaml.test.ts が見る）。
       woodpile:
         cell_count: 10
         cell: {accept: {tag: firewood}, max: 1}

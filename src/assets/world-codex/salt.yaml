@@ -24,7 +24,7 @@ object_defs:
       weight: {value: 300}
       volume: {value: 200}
       # すり込むのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
-      # （docs/world/Skills.md 7節）。獲物のたびに繰り返す手なので、届いた段で半分になる。
+      # （docs/world/Skills.md 7節）。獲物のたびに繰り返す手なので、届いた段で縮む。
       cure_minutes:
         value: 30
         passives:

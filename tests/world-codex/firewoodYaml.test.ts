@@ -205,6 +205,7 @@ describe('firewood.yamlの薪割りと薪棚', () => {
     ).toContain('seasoned_firewood');
     expect(rates.find((row) => row.name === 'seasoned_firewood')?.ratio).toBe('1.00');
     expect(rates.find((row) => row.name === 'green_firewood')?.ratio, '生木は半分').toBe('0.50');
+    expect(rates.find((row) => row.name === 'log')?.ratio, '伐ったばかりの丸太も半分').toBe('0.50');
     expect(rates.find((row) => row.name === 'long_pole')?.ratio, '若木の棒は太い枝と同じ率').toBe('1.00');
     expect(declaredNumber('seasoned_firewood', weightId), '乾けば軽くなる').toBeLessThan(
       declaredNumber('green_firewood', weightId),

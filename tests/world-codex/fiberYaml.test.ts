@@ -69,6 +69,20 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
     return new Location(location).items.map((object) => object.tryGetProperty(weightId)?.number ?? 0);
   }
 
+  /** 手持ちの物の重さの和（g）。 */
+  function carriedWeight(character: WorldObject): number {
+    const weightId = codex.propertyNames.getId('weight');
+    return new PlayerCharacter(character).handStacks
+      .flat()
+      .filter((object) => object.def.name !== 'sharp_stone')
+      .reduce((sum, object) => sum + (object.tryGetProperty(weightId)?.number ?? 0), 0);
+  }
+
+  /** 型が宣言している重さ（g）。 */
+  function declaredWeight(object: WorldObject): number {
+    return object.tryGetProperty(codex.propertyNames.getId('weight'))?.number ?? 0;
+  }
+
   /** 刃物を1本持たせる。 */
   function armPlayer(): WorldObject {
     return spawnInto('sharp_stone', player, 'hand');
@@ -76,6 +90,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
 
   it('アバカは刃物で切り倒すと消え、茎だけがまとめて採れる', () => {
     const plant = spawnInto('abaca', jungle, 'fixtures');
+    const plantWeight = declaredWeight(plant);
     const knife = armPlayer();
 
     expect(
@@ -86,6 +101,8 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
     ).toBe(true);
 
     expect(carriedBy(player).filter((name) => name === 'banana_stem')).toHaveLength(5);
+    // 株の重さは、採れる茎に葉と根を足したもの（fiber.yamlのabacaのweight）。
+    expect(carriedWeight(player), '採れる茎は株より軽い（残りは葉と根）').toBeLessThan(plantWeight);
     expect(carriedBy(player), '実は付かない').not.toContain('banana');
     expect(plant.parent, '切り倒した株は残らない').toBeUndefined();
     expect(knife.parent, '刃物は消費されない').toBe(player);
@@ -93,6 +110,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
 
   it('バナナの株は切り倒すと、実と茎が一度に採れる', () => {
     const plant = spawnInto('banana_plant', jungle, 'fixtures');
+    const plantWeight = declaredWeight(plant);
     const knife = armPlayer();
 
     expect(
@@ -108,6 +126,8 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
       carried.filter((name) => name === 'banana_stem'),
       'アバカ（5本）より少ない',
     ).toHaveLength(2);
+    // 株の重さは、採れる茎と房に葉と根を足したもの（fiber.yamlのbanana_plantのweight）。
+    expect(carriedWeight(player), '採れる茎と房は株より軽い（残りは葉と根）').toBeLessThan(plantWeight);
     expect(plant.parent).toBeUndefined();
   });
 
