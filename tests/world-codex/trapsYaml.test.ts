@@ -213,6 +213,35 @@ describe('traps.yamlのくくり罠', () => {
     expect(prey.tryGetProperty(bloodId)!.getEffectiveValue()).toBeGreaterThan(0);
   });
 
+  it('くくり罠の傷で血が尽きるのは、どの深さでもネズミだけ', () => {
+    // injuries.yamlのsnare_laceration（同 5.1節）。尽きるかは奪う量の幅と体格の比べで決まる。**獣は
+    // 定義から数え上げる**ので、獣を足せばここで顔ぶれが変わったことが分かる。
+    const bleedingId = codex.propertyNames.getId('bleeding');
+    const bleedsOut = (animal: string, end: 'min' | 'max'): boolean => {
+      open(NOTHING_CAME);
+      const prey = spawnInto(animal, snare, 'catch');
+      const wound = spawnInto('snare_laceration', prey, 'injuries');
+      const bleeding = wound.getProperty(bleedingId);
+      const roll = bleeding.def.initialValueReading;
+      if (roll.kind !== 'roll') throw new Error('bleeding は初期値をロールしない');
+      bleeding.setNumber(end === 'max' ? roll.max : roll.min);
+      prey.getProperty(bloodId).setNumber(prey.getProperty(bloodId).def.range!.max);
+      tickUntil(() => !caught().includes(prey) || bleeding.number === 0, 10);
+      return !caught().includes(prey);
+    };
+    const beasts = codex.objectDefNamesWithTag(codex.vocabulary.world.animalTagId);
+    expect(beasts.length, '検査対象が無い（animalタグが変わっていないか）').toBeGreaterThan(1);
+
+    expect(
+      beasts.filter((animal) => bleedsOut(animal, 'min')),
+      '浅く掛かっても尽きる',
+    ).toEqual(['rat']);
+    expect(
+      beasts.filter((animal) => bleedsOut(animal, 'max')),
+      '深く掛かっても尽きるのは同じ顔ぶれ',
+    ).toEqual(['rat']);
+  });
+
   /** 掛かったヤケイと、刺さったくくり罠の傷。傷の掛かり方（初期値のロール）をその場で据え直す。 */
   function fowlWithSnareWound(rolls: { bleeding?: 'min' | 'max'; severity?: 'min' | 'max' }): {
     prey: WorldObject;

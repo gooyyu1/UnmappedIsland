@@ -61,7 +61,8 @@ object_defs:
             min: 3960
             passives:
               - add: {self: {body_fat: -1.6}}
-      # 当直で刻む睡眠に慣れており、意識を保っていられるのは54時間（216 tick）。
+      # 当直で刻む睡眠に慣れており、普通の人間の基準（docs/world/Characters.md の wakefulness）より長く
+      # 意識を保っていられる（tests/world-codex/charactersYaml.test.ts が見る）。
       wakefulness:
         tags: [status, health]
         value: 216

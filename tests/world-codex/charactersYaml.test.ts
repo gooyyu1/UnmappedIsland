@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
+import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import type { PropertyDef } from '../../src/domain/PropertyDef';
 import { characterDefNames, resolveCharacterDefNameOrFirst } from '../../src/domain/generation/NewGame';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
@@ -59,6 +60,39 @@ function valueInStage(objectDef: ObjectDef, propertyName: string, stageName: str
   if (upperBound === undefined || range === undefined)
     throw new Error(`'${objectDef.name}'.${propertyName} の受け皿'${stageName}'に入る値がありません。`);
   return (range.min + upperBound) / 2;
+}
+
+/** 免疫を押し下げる段1つと、その量（負の数）。 */
+interface ImmunityPushdown {
+  readonly property: string;
+  readonly stage: string;
+  readonly amount: number;
+}
+
+/**
+ * そのキャラクタの値のうち、段に入ると免疫の実効値を押し下げるもの（DigestionSystem.md 6.2節）。
+ * **段の宣言を読まずに、実際に段へ置いて実効値の差で拾う**——宣言の形を書き写すと、押し下げを
+ * 別の形で書いた段がここから漏れる。
+ */
+function immunityPushdowns(character: string, immunityId: PropertyGlobalId): ImmunityPushdown[] {
+  const objectDef = def(character);
+  return objectDef.enumeratePropertyDefs().flatMap((propertyDef) => {
+    if (propertyDef.globalId === immunityId || propertyDef.isSymbolic) return [];
+    return propertyDef.stages.flatMap((stage) => {
+      const lowerBound = propertyDef.lowerBoundOfStage(stage.name);
+      const upperBound = propertyDef.upperBoundOfStage(stage.name);
+      // rangeを持たない受け皿は valueInStage が値を選べないので、すぐ上の段の手前に置く。
+      const value =
+        propertyDef.range === undefined && !Number.isFinite(lowerBound) && upperBound !== undefined
+          ? upperBound - 1
+          : valueInStage(objectDef, propertyDef.name, stage.name);
+      const instance = new WorldObject(1, objectDef, new WorldSession(codex));
+      const before = instance.getProperty(immunityId).getEffectiveValue();
+      instance.getProperty(propertyDef.globalId).setNumberWithoutEvents(value);
+      const amount = instance.getProperty(immunityId).getEffectiveValue() - before;
+      return amount < 0 ? [{ property: propertyDef.name, stage: stage.name, amount }] : [];
+    });
+  });
 }
 
 /**
@@ -299,6 +333,16 @@ describe('プレイヤーキャラクタの定義', () => {
   it('セーブに残っていた識別子が未知でも、先頭のキャラクタで開ける', () => {
     expect(resolveCharacterDefNameOrFirst(codex, characters[1])).toBe(characters[1]);
     expect(resolveCharacterDefNameOrFirst(codex, 'いなくなったキャラクタ')).toBe(characters[0]);
+  });
+
+  it('当直・徹夜に慣れた船長と技師は、普通の人間の基準より長く起きていられる', () => {
+    // Characters.md の wakefulness。基準の長さを名乗っているのは農夫と医師の max。
+    const awake = (character: string): number => maxOf(character, 'wakefulness');
+    for (const accustomed of ['captain', 'engineer']) {
+      for (const ordinary of ['farmer', 'medic']) {
+        expect(awake(accustomed), `${accustomed} > ${ordinary}`).toBeGreaterThan(awake(ordinary));
+      }
+    }
   });
 
   describe.each(characters)('%s', (character) => {
@@ -544,6 +588,56 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(prop.alertOf(Math.trunc(max * 0.6) - 1)).toBe('caution');
       expect(prop.alertOf(Math.trunc(max * 0.2))).toBe('caution');
       expect(prop.alertOf(Math.trunc(max * 0.2) - 1)).toBe('danger');
+    });
+
+    it('体重は、血が体重のおよそ1/13という関係に合わせてある', () => {
+      // Characters.md の weight。「およそ」の幅は獣の検査（animalsYaml.test.ts）と同じ1割。
+      const ratio = maxOf(character, 'blood') / propOf(def(character), 'weight').initialValueWithoutRoll;
+
+      expect(ratio * 13).toBeGreaterThan(0.9);
+      expect(ratio * 13).toBeLessThan(1.1);
+    });
+
+    it('免疫の段は、押し下げがいくつ重なったかで決まる', () => {
+      // DigestionSystem.md 6.2節。素の高さから、押し下げが1つまでならrobust、2つでweakened、
+      // 3つか壊血病1つでfailing。**押し下げは定義から拾う**——段に入れて免疫の実効値が下がったものを
+      // 全部数えるので、押し下げを1つ足せばここで組み合わせに入る。
+      const immunityId = codex.propertyNames.getId('immunity');
+      const pushdowns = immunityPushdowns(character, immunityId);
+      const scurvy = pushdowns.find(
+        (pushdown) => pushdown.property === 'vitamin' && pushdown.stage === 'scurvy',
+      );
+      expect(scurvy, '壊血病が免疫を押し下げていない').toBeDefined();
+      const others = pushdowns.filter((pushdown) => pushdown !== scurvy);
+      expect(new Set(others.map((pushdown) => pushdown.property)).size, '3つ重ねられない').toBeGreaterThan(2);
+
+      const immunityDef = propOf(def(character), 'immunity');
+      const base = immunityDef.initialValueWithoutRoll;
+      const stageWith = (picked: readonly ImmunityPushdown[]): string | undefined =>
+        immunityDef.stageAt(
+          Math.max(immunityDef.range!.min, base + picked.reduce((sum, pushdown) => sum + pushdown.amount, 0)),
+        )?.name;
+      /** 別々の値から選んだcount個の組（同じ値の2段は同時に立たない）。 */
+      const combinations = (count: number, from = 0, taken: readonly string[] = []): ImmunityPushdown[][] =>
+        count === 0
+          ? [[]]
+          : others
+              .slice(from)
+              .flatMap((pushdown, offset) =>
+                taken.includes(pushdown.property)
+                  ? []
+                  : combinations(count - 1, from + offset + 1, [...taken, pushdown.property]).map((rest) => [
+                      pushdown,
+                      ...rest,
+                    ]),
+              );
+      const label = (picked: readonly ImmunityPushdown[]): string =>
+        picked.map((pushdown) => `${pushdown.property}:${pushdown.stage}`).join('+');
+
+      expect(stageWith([scurvy!]), '壊血病1つ').toBe('failing');
+      for (const picked of combinations(1)) expect(stageWith(picked), label(picked)).toBe('robust');
+      for (const picked of combinations(2)) expect(stageWith(picked), label(picked)).toBe('weakened');
+      for (const picked of combinations(3)) expect(stageWith(picked), label(picked)).toBe('failing');
     });
 
     it('幸福度の域は最大値に対する割合で切られ、致命的域は持たない', () => {
@@ -829,8 +923,8 @@ describe('プレイヤーキャラクタの定義', () => {
 
       expect(
         (player.instance.tryGetProperty(wakefulnessId)?.number ?? 0) / hours,
-        '眠気の1時間あたり',
-      ).toBeLessThanOrEqual(perHour(nap, 'wakefulness'));
+        '眠気の1時間あたりは、眠る休息のうちいちばん薄い nap の割そのもの',
+      ).toBeCloseTo(perHour(nap, 'wakefulness'), 9);
       expect(
         (player.instance.tryGetProperty(staminaId)?.number ?? 0) / hours,
         '体力の1時間あたり',
