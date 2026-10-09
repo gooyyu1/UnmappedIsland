@@ -201,7 +201,8 @@ object_defs:
       # よく燃える繊維で、火口としては最良の部類。
       ignition_chance: {value: 100, base: {subject: agent, prop: ignition_ease}}
       fuel: {value: 2}
-      # 実の各部で一番重いのは皮（丸ごとの4割強）。
+      # 丸ごとの実から、皮を剥いだ実（husked_coconut）を引いた残り（tests/world-codex/coconutYaml.test.ts が
+      # 見る）。
       weight: {value: 600}
       # ばらけた繊維は詰めても縮まないので、嵩そのままで見る。
       volume: {value: 4000}
@@ -238,8 +239,8 @@ object_defs:
       # 違うのは道具ではなく採れる土地——バショウ属の草（fiber.yaml）が生えない島でも、ヤシの実さえ
       # あれば繊維へ届く。**刃物の段は飛ばない**（皮を出すのは上のhuskで、そこが握りの刃を要求する）。
       #
-      # 漬けと合わせて2時間。掻き取り（30分）より長いのはそのぶん。600gの皮から
-      # 繊維3束（180g）で、残りは叩き落とす髄。
+      # 漬けと叩きの2手が要るので、掻き取り（fiber.yamlのstrip）より長い。採れる繊維は皮より軽く、
+      # 残りは叩き落とす髄（どちらも tests/world-codex/coconutYaml.test.ts が見る）。
       #
       # **明るさの条件は書かない**——叩いて解すだけで、暗くて損なう形が無い（crackと同じ理由）。
       ret:

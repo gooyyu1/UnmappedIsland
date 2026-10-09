@@ -28,7 +28,7 @@ object_defs:
   abaca:
     tags: [fixture]
     props:
-      # 株ひとつぶん。切り分けて採れる茎5本（15kg）に、葉と根を足した重さ。
+      # 株ひとつぶん。切り分けて採れる茎に、葉と根を足した重さ（tests/world-codex/fiberYaml.test.ts が見る）。
       weight: {value: 25000}
     interactions:
       # 根元を刃物で断ち、運べる長さに切り分ける。株立ちなので1株から何本も採れる。
@@ -52,7 +52,7 @@ object_defs:
   banana_plant:
     tags: [fixture]
     props:
-      # 株ひとつぶん。茎2本（6kg）と房2つのほかは、葉と根。
+      # 株ひとつぶん。採れる茎と房のほかは、葉と根（tests/world-codex/fiberYaml.test.ts が見る）。
       weight: {value: 20000}
     interactions:
       fell:
@@ -115,7 +115,7 @@ object_defs:
       volume: {value: 6000}
       # 掻き取るのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
       # （docs/world/Skills.md 7節）。繊維を採る入口は長い連鎖の序盤で何度も繰り返すので、届いた段で
-      # 半分になる。
+      # 縮む。
       strip_minutes:
         value: 30
         passives:
@@ -148,8 +148,8 @@ object_defs:
         # 無駄の無さ（docs/world/Skills.md 7節）。**取れる束の数は葉鞘の作りで決まっていない**ので、
         # 刃の送りが上手いほど同じ株からもう1束落ちる。**取れない側の重みを持つのは株**で、取れる側に
         # 作り手の上乗せを置く（素は0なので、腕が無ければ何も起きない）。
-        # **素が3束なのは、余分1束を上限（もとの1/3）に収めるため**——束は割れないので、素が2なら
-        # 1束足すだけで+50%になる（同7.2節）。
+        # **素が3束なのは、余分1束を上限に収めるため**——束は割れないので、素が少ないと1束足すだけで
+        # 上限を超える（同7.2節。tests/world-codex/skillsYaml.test.ts が見る）。
         # **叩き解し（coconut.yamlのret）と揃える**——同じ物を出す2つ目の入口なので、片方だけが
         # 余分を持つと、どの島に流れ着いたかが歩留まりに化ける。
         pick:
@@ -168,8 +168,8 @@ object_defs:
       weight: {value: 60}
       # ばらけた繊維は詰めても縮まないので、嵩そのままで見る。
       volume: {value: 800}
-      # 撚るのにかかる時間。**素がtickの刻み1つ分では腕の効きようが無い**ので、2つ分から始めて
-      # 届いた段で半分になる（docs/world/Skills.md 7節）。撚る仕事は紐にもロープにも要る。
+      # 撚るのにかかる時間。**素がtickの刻み1つ分では腕の効きようが無い**ので、そこより長く始めて
+      # 届いた段で縮める（docs/world/Skills.md 7節）。撚る仕事は紐にもロープにも要る。
       spin_minutes:
         value: 30
         passives:
@@ -235,8 +235,8 @@ object_defs:
     props:
       weight: {value: 600}
       volume: {value: 800}
-    # 中間素材なので解放条件を持たない（docs/engine/SkillSystem.md 4.2節）。紐3本＝繊維12束を
-    # 撚る手間そのものがゲートで、そこへ腕を重ねても二重になる。
+    # 中間素材なので解放条件を持たない（docs/engine/SkillSystem.md 4.2節）。紐を撚り重ねる
+    # 手間そのものがゲートで、そこへ腕を重ねても二重になる。
     recipes:
       twisted:
         # **解放は要求しないが、手際は名乗る**（docs/world/Skills.md 7.1節）。撚る仕事そのものなので、

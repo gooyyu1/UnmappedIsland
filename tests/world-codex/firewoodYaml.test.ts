@@ -138,6 +138,12 @@ describe('firewood.yamlの薪割りと薪棚', () => {
 
     stackOn(rack, firewood);
     expect(stackedNames(rack)).toHaveLength(firewood.length);
+    // **枠の数は丸太1本ぶんちょうど**（同）——もう1本は積めない。
+    const extra = session.createObject(codex.objectNames.getId('green_firewood'));
+    expect(
+      extra.moveToSlotOrRejection(rack.getSlot(codex.slotNames.getId('woodpile'))),
+      '丸太1本ぶんを超える薪',
+    ).toBeDefined();
   });
 
   it('尖った石では割れない（斧が要る）', () => {
@@ -205,6 +211,7 @@ describe('firewood.yamlの薪割りと薪棚', () => {
     ).toContain('seasoned_firewood');
     expect(rates.find((row) => row.name === 'seasoned_firewood')?.ratio).toBe('1.00');
     expect(rates.find((row) => row.name === 'green_firewood')?.ratio, '生木は半分').toBe('0.50');
+    expect(rates.find((row) => row.name === 'log')?.ratio, '伐ったばかりの丸太も半分').toBe('0.50');
     expect(rates.find((row) => row.name === 'long_pole')?.ratio, '若木の棒は太い枝と同じ率').toBe('1.00');
     expect(declaredNumber('seasoned_firewood', weightId), '乾けば軽くなる').toBeLessThan(
       declaredNumber('green_firewood', weightId),

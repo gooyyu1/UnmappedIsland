@@ -79,6 +79,13 @@ describe('coconut.yamlのヤシの実の加工', () => {
     );
   }
 
+  /** 型が宣言している値（インスタンスを1つ作って読む）。 */
+  function declaredNumber(objectName: string, propertyName: string): number {
+    return session
+      .createObject(codex.objectNames.getId(objectName))
+      .getProperty(codex.propertyNames.getId(propertyName)).number;
+  }
+
   /** 道具を手に取り、対象のカードへドラッグしてcombinationを1つ実行する。 */
   function combine(target: WorldObject, toolName: string, combinationName: string): void {
     const tool = spawnInto(toolName, player, 'hand');
@@ -191,10 +198,35 @@ describe('coconut.yamlのヤシの実の加工', () => {
       'husked_coconut',
       'coconut_husk',
     ]);
-    expect(weightsOn(beach), '1400gの実が800gの実と600gの皮に分かれる（重さが増えも減りもしない）').toEqual([
-      800, 600,
-    ]);
+    expect(
+      weightsOn(beach).reduce((sum, weight) => sum + weight, 0),
+      '実と皮の重さの和は、もとの実のまま（増えも減りもしない）',
+    ).toBe(declaredNumber('coconut', 'weight'));
     expect(handOf(player), '道具以外は手元へ入らない').toEqual(['sharp_stone']);
+  });
+
+  it('皮を叩き解すのは漬けと叩きの2手で、掻き取りより長く、採れる繊維は皮より軽い', () => {
+    // coconut.yamlのcoconut_huskのsoak・ret。どちらもret_minutesの長さを1回ずつ取る。
+    expect(declaredNumber('coconut_husk', 'ret_minutes') * 2, '掻き取りより長い').toBeGreaterThan(
+      declaredNumber('banana_stem', 'strip_minutes'),
+    );
+
+    const husk = spawnInto('coconut_husk', beach, 'items');
+    const huskWeight = declaredNumber('coconut_husk', 'weight');
+    husk.getProperty(codex.propertyNames.getId('retting_progress')).setNumber(1);
+    combine(husk, 'stone', 'ret');
+
+    const fibers = weightsOn(beach);
+    expect(itemsOn(beach).length, '繊維が出る').toBeGreaterThan(0);
+    expect(
+      itemsOn(beach).every((name) => name === 'plant_fiber'),
+      '皮は繊維に置き換わる',
+    ).toBe(true);
+    // 腕の余分の卓が当たれば1束増える（docs/world/Skills.md 7.2節）。そのときでも皮より軽い。
+    expect(
+      fibers.reduce((sum, weight) => sum + weight, 0) + fibers[0],
+      '採れる繊維は、余分の1束を足しても皮より軽い（残りは叩き落とす髄）',
+    ).toBeLessThan(huskWeight);
   });
 
   it('手持ちのヤシの実の皮をはぐと、実も皮も手持ちに残る', () => {
