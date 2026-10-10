@@ -14,8 +14,8 @@ import { HOURS_PER_DAY, MINUTES_PER_HOUR } from '../../src/domain/worldTime';
  * `core.yaml` の `hour`・`weather` の段が持っている。ここが数えるのは、砂浜の晴れの1日で境目を
  * 超えている時間帯と、そのtick数。
  *
- * 時間帯を文で書いているのは `salt.yaml` の `drying_remaining` のコメント1箇所だけなので、
- * その字面を実測と突き合わせる（`docs/world/SurvivalItems.md` 9節はそこへの参照だけを持つ）。
+ * **時間帯もtick数も、文に書き写さない**——写すと、境目や明るさの段を動かしたときに文だけが古いまま
+ * 残る。`salt.yaml` と `docs/world/SurvivalItems.md` 9節は、ここを指すだけにする。
  */
 describe('塩田が干し上がる時間帯（同梱の定義）', () => {
   const codex = bundledCodex();
@@ -33,21 +33,13 @@ describe('塩田が干し上がる時間帯（同梱の定義）', () => {
     expect(band.ticks, `${LOCATION}・${WEATHER}で境目(+${band.threshold})を超えるtick数`).toBe(drying.max);
   });
 
-  it('salt.yamlが書いている時間帯が、実測と一致する', () => {
-    const source = readFileSync(worldCodexPath('salt.yaml'), 'utf8');
-    const written = /(\d+)時から(\d+)時までの(\d+)時間/.exec(source);
-    expect(written, 'salt.yamlに「N時からM時までのH時間」の記述が見つからない').not.toBeNull();
-
-    const [, fromHour, toHour, hours] = written!;
-    expect(Number(fromHour), '干し始める時刻').toBe(band.fromHour);
-    expect(Number(toHour), '干し終わる時刻').toBe(band.toHour);
-    expect(Number(hours), '日差しの届く時間数').toBe(band.toHour - band.fromHour);
-  });
-
-  it('時間帯を書き写しているのはsalt.yamlだけ', () => {
-    const doc = readFileSync('docs/world/SurvivalItems.md', 'utf8');
-    expect(/\d+時から\d+時まで/.test(doc), 'SurvivalItems.mdが時間帯を書き写している').toBe(false);
-  });
+  it.each([worldCodexPath('salt.yaml'), 'docs/world/SurvivalItems.md'])(
+    '%s は時間帯を書き写さない',
+    (path) => {
+      const source = readFileSync(path, 'utf8');
+      expect(/\d+時から\d+時まで|\d+時間で/.test(source), '時間帯を書き写している').toBe(false);
+    },
+  );
 });
 
 /** 塩田が干される時間帯と、そのtick数。 */

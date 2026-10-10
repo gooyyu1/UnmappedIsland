@@ -329,6 +329,16 @@ describe('salt.yamlの塩田と塩蔵', () => {
     expect(step!.requirements[0].requires(codex.objects.get(codex.objectNames.getId('stone')))).toBe(true);
   });
 
+  it('塩田を据える手間は、畑を耕す手間と同じ', () => {
+    // salt.yamlのlaid。掘り返さずに並べるだけなので掘削具は要らないが、手間は畑に並ぶ。
+    const minutesOf = (objectName: string): number[] =>
+      codex.objects
+        .get(codex.objectNames.getId(objectName))
+        .recipesProducingThis.map((recipe) => recipe.totalMinutes);
+
+    expect(minutesOf('salt_pan')).toEqual(minutesOf('field'));
+  });
+
   it('据えた塩田は、持ち歩けない', () => {
     // 設置物（fixture）でitemタグを持たないので、手持ちの枠が受け取らない（畑・囲いと同じ）。
     const { session, land, player } = open();

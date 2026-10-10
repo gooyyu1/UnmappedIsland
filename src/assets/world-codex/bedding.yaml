@@ -36,15 +36,16 @@ object_defs:
       # 側に置くのは、キャラクタ自身の休息とまったく同じ形にするため（characters/player_character.yaml）。
       #
       # **段ごとに1つの定数なので、寝床のぶんは長さに正比例する。** キャラクタ側が持つ「まとめて休む
-      # ほど得」が効くのは地面の上だけで、寝床の上では nap 2回と sleep 1回がちょうど同じだけ戻る。
+      # ほど得」が効くのは地面の上だけで、寝床の上では nap と sleep が長さに比例して戻る。
       #
       # **量は1日に削られる体力から逆算してある**（docs/world/Bedding.md 4節）。骨組みを差した段が、
       # 睡眠1回で heavy を担ぎ通した1日ぶんをちょうど返す位置で、敷物だけの段はそこへ届かない。
-      # **どの段の睡眠1回も、いちばん薄い体力の上限を下回る**ので（characters/engineer.yaml の90）、
-      # 段の差は通しの睡眠にそのまま出る。
+      # **どの段の睡眠1回も、どのキャラクタの体力の上限も下回る**ので、段の差は通しの睡眠にそのまま出る
+      # （ここまで tests/world-codex/beddingYaml.test.ts が見る）。
       #
       # **覚醒度は段で動かない**——sleep で戻るのは段によらず同じで、睡眠1回を取る1日で覚醒度が
-      # ちょうど元へ戻るという釣り合いを寝床の上でも保つ（docs/world/Characters.md 休息節）。
+      # ちょうど元へ戻るという釣り合いを寝床の上でも保つ（docs/world/Characters.md 休息節。
+      # tests/world-codex/charactersYaml.test.ts が見る）。
       #
       # **同じブロックが、寝ている間だけ寒さの入口（chill_point）も押し下げる**
       # （docs/engine/VitalsSystem.md 8.3節。深さは docs/world/Bedding.md 4.2節）。押し下げるのは
