@@ -220,7 +220,7 @@ object_defs:
           - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         # **速さを決めるのは連言の3本ではなく、名乗った1本**（docs/world/Skills.md 7節）。**石斧・突き銛と
         # 違って木材加工が候補に入る**のは、上の注記のとおり軸だけが腕を要求する入力だから。**その候補の
-        # 中でいちばん長いのも木材加工**——軸を削るのと溝を切るのとで、穂先を据える・紐を締める工程より長い（同7.1節。
+        # 中でいちばん長いのも木材加工**——軸を削るのと溝を切るのとで、紐を締める工程より長い（同7.1節。
         # tests/world-codex/toolsYaml.test.ts が見る）。
         deftness: {skill: skill_woodwork, from_stage: skilled, minutes: -15}
         steps:

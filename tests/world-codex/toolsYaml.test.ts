@@ -121,17 +121,13 @@ describe('tools.yamlの道具定義', () => {
     expect(materialsOf(spear), '丸太も、それを割る斧も要らない').not.toContain('stone_axe');
   });
 
-  it('槍の工程でいちばん手間がかかるのは、手際に名乗った木材加工', () => {
-    // tools.yamlのspear。**速さを決めるのは連言の3本のうち、いちばん長い工程を受け持つ腕**
-    // （docs/world/Skills.md 7.1節）。軸を削る工程と、何も要求しない溝切りが木材加工。
+  it('槍の手際に名乗った木材加工の工程は、紐で締める工程より長い', () => {
+    // tools.yamlのspear。**工程を持つ候補が2つ以上残ったら、長いほうを名乗る**（docs/world/Skills.md
+    // 7.1節）。軸を削る工程と、何も要求しない溝切りが木材加工。打ち欠く工程は無い（同2.6節）。
     const spear = recipeOf('spear');
     const defOf = (name: string) => codex.objects.get(codex.objectNames.getId(name));
     const minutesOf = (steps: RecipeDef['steps']): number =>
       steps.reduce((sum, step) => sum + step.durationMinutes, 0);
-    const requiring = (name: string) =>
-      spear.steps.filter((step) =>
-        step.requirements.some((requirement) => requirement.requires(defOf(name))),
-      );
     const woodwork = minutesOf(
       spear.steps.filter(
         (step) =>
@@ -141,8 +137,12 @@ describe('tools.yamlの道具定義', () => {
     );
 
     expect(codex.propertyNames.getName(spear.deftness!.skillGlobalId)).toBe('skill_woodwork');
-    expect(woodwork, '穂先を据える工程より長い').toBeGreaterThan(minutesOf(requiring('sharp_stone')));
-    expect(woodwork, '紐を締める工程より長い').toBeGreaterThan(minutesOf(requiring('cord')));
+    const tying = minutesOf(
+      spear.steps.filter((step) =>
+        step.requirements.some((requirement) => requirement.requires(defOf('cord'))),
+      ),
+    );
+    expect(woodwork).toBeGreaterThan(tying);
   });
 
   it('突き銛の材料と工程は石斧と同じ（新しい素材を足していない）', () => {

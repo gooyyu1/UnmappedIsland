@@ -14,8 +14,8 @@ import { HOURS_PER_DAY, MINUTES_PER_HOUR } from '../../src/domain/worldTime';
  * `core.yaml` の `hour`・`weather` の段が持っている。ここが数えるのは、砂浜の晴れの1日で境目を
  * 超えている時間帯と、そのtick数。
  *
- * **時間帯もtick数も、文に書き写さない**——写すと、境目や明るさの段を動かしたときに文だけが古いまま
- * 残る。`salt.yaml` と `docs/world/SurvivalItems.md` 9節は、ここを指すだけにする。
+ * **時間帯は文に書き写さない**——写すと、境目や明るさの段を動かしたときに文だけが古いまま残る。
+ * `salt.yaml` と `docs/world/SurvivalItems.md` 9節は、時間帯についてはここを指すだけにする。
  */
 describe('塩田が干し上がる時間帯（同梱の定義）', () => {
   const codex = bundledCodex();
