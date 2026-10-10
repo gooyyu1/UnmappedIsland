@@ -378,6 +378,8 @@ describe('食べ物が配る幸福度', () => {
 describe('foods.yamlの下ごしらえ', () => {
   /** 炎の段（fire.yamlのheat）の下端。焚き火の上限は30なので、ここへ置けば炎のまま燃え続ける。 */
   const FLAME_HEAT = 20;
+  /** 熾火の段（同）の下端。炉が子へ渡す熱が最も弱い、料理のできる段。 */
+  const COALS_HEAT = 5;
   /** 浅い洞窟が湧く土地（locations.yamlのrocky_fieldのexplore）。屋根のある場所はここにしか無い。 */
   const CAVE_LAND = 'rocky_field';
 
@@ -480,6 +482,24 @@ describe('foods.yamlの下ごしらえ', () => {
 
     session.advanceWorldTime(MINUTES_PER_TICK * 6);
     expect(childNames(hearth), '刻んだほうだけが焼き上がっている').toEqual(['roasted_taro', 'taro']);
+  });
+
+  it('刻んだ芋が先に焼ける比は、炎より熾火のほうが大きい', () => {
+    // foods.yamlのprepped。**上乗せは加算なので、炉の渡す熱が弱いほど効く**。
+    function speedRatioAt(heat: number): number {
+      const { session, land, player } = open();
+      const whole = spawnInto(session, 'taro', land, 'items');
+      const chopped = spawnInto(session, 'taro', land, 'items');
+      expect(chopping(session, player, chopped)?.tryExecute()).toBe(true);
+      const hearth = litCampfire(session, land);
+      hearth.getProperty(codex.propertyNames.getId('heat')).setNumberWithoutEvents(heat);
+      for (const food of [whole, chopped])
+        expect(food.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
+      const ticksOf = (food: WorldObject): number => food.tryGetProperty(cookingProgressId)!.ticksUntilMax()!;
+      return ticksOf(whole) / ticksOf(chopped);
+    }
+
+    expect(speedRatioAt(COALS_HEAT)).toBeGreaterThan(speedRatioAt(FLAME_HEAT));
   });
 
   it('刻んだ芋は、切り口のぶん腐るのが速い', () => {

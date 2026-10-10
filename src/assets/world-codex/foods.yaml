@@ -124,8 +124,8 @@ traits:
     tags: [prepped]
     passives:
       # 火にかけているあいだ、炉が渡す熱へ上乗せする。**最もよく効くのは熾火**——加算なので、
-      # 熾火（1/tick）では3倍になり、炎（3/tick）では5/3にしかならない。刻めば弱い火でも芯まで
-      # 通る、という形でそのまま読める（加算から出る偏りは均さない、docs/world/Skills.md 7節）。
+      # 炉の渡す熱が弱いほど速さの比が大きい（tests/world-codex/foodsYaml.test.ts が見る）。刻めば弱い火
+      # でも芯まで通る、という形でそのまま読める（加算から出る偏りは均さない、docs/world/Skills.md 7節）。
       - conditions:
           - {subject: parent, prop: heat, in_stage_or_above: coals}
         add: {self: {cooking_progress: 2}}

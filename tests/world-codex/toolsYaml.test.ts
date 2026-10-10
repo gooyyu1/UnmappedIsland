@@ -121,6 +121,30 @@ describe('tools.yamlの道具定義', () => {
     expect(materialsOf(spear), '丸太も、それを割る斧も要らない').not.toContain('stone_axe');
   });
 
+  it('槍の手際に名乗った木材加工の工程は、紐で締める工程より長い', () => {
+    // tools.yamlのspear。**工程を持つ候補が2つ以上残ったら、長いほうを名乗る**（docs/world/Skills.md
+    // 7.1節）。軸を削る工程と、何も要求しない溝切りが木材加工。打ち欠く工程は無い（同2.6節）。
+    const spear = recipeOf('spear');
+    const defOf = (name: string) => codex.objects.get(codex.objectNames.getId(name));
+    const minutesOf = (steps: RecipeDef['steps']): number =>
+      steps.reduce((sum, step) => sum + step.durationMinutes, 0);
+    const woodwork = minutesOf(
+      spear.steps.filter(
+        (step) =>
+          step.requirements.length === 0 ||
+          step.requirements.some((requirement) => requirement.requires(defOf('long_pole'))),
+      ),
+    );
+
+    expect(codex.propertyNames.getName(spear.deftness!.skillGlobalId)).toBe('skill_woodwork');
+    const tying = minutesOf(
+      spear.steps.filter((step) =>
+        step.requirements.some((requirement) => requirement.requires(defOf('cord'))),
+      ),
+    );
+    expect(woodwork).toBeGreaterThan(tying);
+  });
+
   it('突き銛の材料と工程は石斧と同じ（新しい素材を足していない）', () => {
     // **島の産物から筏・帆へ届く鎖の上に、素材を足さずに載る**（docs/world/Voyage.md 3.9.4節）。
     // 繊維で直に締める形にすれば柄付けの標準が2つ並び、長い棒から軸を削り出す形にすれば、槍と同じく
