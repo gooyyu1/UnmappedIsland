@@ -141,7 +141,7 @@ traits:
     props:
       # その場を満たしている明るさ（IlluminationSystem.md 2節）。世界の明るさ（時刻と天気）を土台に、
       # 樹冠と地面の反射ぶんを足したもの。**据え付けの光源は入らない**（同3節）。
-      # 底の-6は「これより暗い場所を区別しない」暗さの底で、光源より前に効く（同4節）。
+      # rangeの底は「これより暗い場所を区別しない」暗さの底で、光源より前に効く（同4節）。
       #
       # **valueを持たないので、場所ごとに必ず与える**（5節）。樹冠も反射も場所ごとに違い、
       # 既定値を置くと書き忘れがそのまま「開けた土地」として通る。内訳の表は
@@ -805,8 +805,8 @@ object_defs:
                     storm_weight: 40
                 conditions:
                   - {subject: self, prop: atmospheric_moisture, gte: 45}
-      # 難易度の初期補正1: 経過tickを数える専用カウンタで、2日目（tick 96-191）だけ
-      # atmospheric_moistureへ追加加算し、高確率で雨を降らせる（ClimateSystem.md 5.1節）。
+      # 難易度の初期補正1: 経過tickを数える専用カウンタで、2日目だけatmospheric_moistureへ追加加算し
+      # （tests/world-codex/climateSystem.test.ts が見る）、高確率で雨を降らせる（ClimateSystem.md 5.1節）。
       # 天気そのものは固定しない（同 5.3節）ため、晴れる可能性もある。
       early_rain_calibration:
         value: 0

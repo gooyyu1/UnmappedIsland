@@ -222,6 +222,11 @@ describe('core.yamlのworld定義', () => {
         .filter((def) => def.hasTag(codex.vocabulary.world.locationTagId))
         .map((def) => def.tryGetPropertyDef(ambientBrightnessId)?.initialValueWithoutRoll ?? -Infinity),
     );
+    expect(
+      codex.objects.get(codex.objectNames.getId('sandy_beach')).tryGetPropertyDef(ambientBrightnessId)
+        ?.initialValueWithoutRoll,
+      '最も明るい地面は砂浜',
+    ).toBe(brightestGround);
     expect(propOf(world, 'ambient_brightness').range?.max, '雲の無い正午＋最も明るい地面').toBe(
       noonOfCloudlessSky + brightestGround,
     );

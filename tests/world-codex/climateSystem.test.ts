@@ -23,6 +23,8 @@ interface Trace {
   readonly season: number[];
   readonly seasonCycle: number[];
   readonly effectiveTemperature: number[];
+  /** 序盤補正1（early_rain_calibration）が水分を足す段にいるか。 */
+  readonly earlyRainBoosting: boolean[];
   /** 序盤補正2（first_dry_rain_calibration）が水分を足す段にいるか。 */
   readonly firstDryRainBoosting: boolean[];
 }
@@ -67,6 +69,7 @@ describe('気候システム(ClimateSystem.md)', () => {
     const seasonId = codex.propertyNames.getId('season');
     const seasonCycleId = codex.propertyNames.getId('season_cycle');
     const temperatureId = codex.propertyNames.getId('ambient_temperature');
+    const earlyRainCalibrationId = codex.propertyNames.getId('early_rain_calibration');
     const firstDryRainCalibrationId = codex.propertyNames.getId('first_dry_rain_calibration');
     const worldDef = codex.objects.get(codex.objectNames.getId('world'));
 
@@ -80,6 +83,7 @@ describe('気候システム(ClimateSystem.md)', () => {
         season: new Array(SIM_TICKS),
         seasonCycle: new Array(SIM_TICKS),
         effectiveTemperature: new Array(SIM_TICKS),
+        earlyRainBoosting: new Array(SIM_TICKS),
         firstDryRainBoosting: new Array(SIM_TICKS),
       };
 
@@ -89,6 +93,7 @@ describe('気候システム(ClimateSystem.md)', () => {
         trace.season[t] = world.tryGetProperty(seasonId)?.number ?? 0;
         trace.seasonCycle[t] = world.tryGetProperty(seasonCycleId)?.number ?? 0;
         trace.effectiveTemperature[t] = world.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0;
+        trace.earlyRainBoosting[t] = world.tryGetProperty(earlyRainCalibrationId)?.stage?.name === 'boosting';
         trace.firstDryRainBoosting[t] =
           world.tryGetProperty(firstDryRainCalibrationId)?.stage?.name === 'boosting';
       }
@@ -329,6 +334,19 @@ describe('気候システム(ClimateSystem.md)', () => {
       for (let t = first; t <= last; t++) if (isRain(trace.weather[t])) return undefined;
       return '2〜3日目に雨が降らなかった';
     });
+  });
+
+  it('序盤補正1が水分を足すのは、2日目の1日だけ', () => {
+    // 補正も乱数に依存しないので、全シードで要求する。iは「i+1回目のtick直後」なので、
+    // 2日目の初めのtickを済ませた直後がTICKS_PER_DAY-1。
+    for (const trace of traces) {
+      const boosted = trace.earlyRainBoosting.flatMap((boosting, t) => (boosting ? [t] : []));
+      expect(boosted[0], `seed ${trace.seed}: 2日目から`).toBe(TICKS_PER_DAY - 1);
+      expect(boosted.length, `seed ${trace.seed}: 1日だけ`).toBe(TICKS_PER_DAY);
+      expect(boosted[boosted.length - 1] - boosted[0], `seed ${trace.seed}: 途切れずに`).toBe(
+        TICKS_PER_DAY - 1,
+      );
+    }
   });
 
   it('序盤補正2が水分を足すのは、最初の乾季に入って10日後からの1日だけ', () => {

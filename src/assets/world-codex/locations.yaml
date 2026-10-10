@@ -342,8 +342,8 @@ object_defs:
       # 遠浅の浜からは、陸がまだ見えている海へそのまま漕ぎ出す。**本土まで最も遠いが、
       # 序盤に補給の当てになる海区が続く**（voyage.yamlのcoast trait）。
       offshore_coastal_waters: {value: 1}
-      # 遮るものが無く、乾いた砂がよく返す。**島で最も明るい地面**で、上限+17の根拠でもある
-      # （IlluminationSystem.md 4節）。
+      # 遮るものが無く、乾いた砂がよく返す。**島で最も明るい地面**で、明るさの上限の根拠でもある
+      # （IlluminationSystem.md 4節。tests/world-codex/coreYaml.test.ts が見る）。
       ambient_brightness: {value: 1}
       # ハンモックを渡せる支点が在る（docs/world/Bedding.md 6節）。汀に沿ってヤシが並ぶ浜なので、
       # 間を渡せる木の組は必ずある。**探索で見つけた木の本数とは別物**——支点が在るかは土地の
