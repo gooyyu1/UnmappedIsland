@@ -23,6 +23,8 @@ interface Trace {
   readonly season: number[];
   readonly seasonCycle: number[];
   readonly effectiveTemperature: number[];
+  /** 序盤補正2（first_dry_rain_calibration）が水分を足す段にいるか。 */
+  readonly firstDryRainBoosting: boolean[];
 }
 
 /**
@@ -65,6 +67,7 @@ describe('気候システム(ClimateSystem.md)', () => {
     const seasonId = codex.propertyNames.getId('season');
     const seasonCycleId = codex.propertyNames.getId('season_cycle');
     const temperatureId = codex.propertyNames.getId('ambient_temperature');
+    const firstDryRainCalibrationId = codex.propertyNames.getId('first_dry_rain_calibration');
     const worldDef = codex.objects.get(codex.objectNames.getId('world'));
 
     traces = [];
@@ -77,6 +80,7 @@ describe('気候システム(ClimateSystem.md)', () => {
         season: new Array(SIM_TICKS),
         seasonCycle: new Array(SIM_TICKS),
         effectiveTemperature: new Array(SIM_TICKS),
+        firstDryRainBoosting: new Array(SIM_TICKS),
       };
 
       for (let t = 0; t < SIM_TICKS; t++) {
@@ -85,6 +89,8 @@ describe('気候システム(ClimateSystem.md)', () => {
         trace.season[t] = world.tryGetProperty(seasonId)?.number ?? 0;
         trace.seasonCycle[t] = world.tryGetProperty(seasonCycleId)?.number ?? 0;
         trace.effectiveTemperature[t] = world.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0;
+        trace.firstDryRainBoosting[t] =
+          world.tryGetProperty(firstDryRainCalibrationId)?.stage?.name === 'boosting';
       }
 
       traces.push(trace);
@@ -323,6 +329,20 @@ describe('気候システム(ClimateSystem.md)', () => {
       for (let t = first; t <= last; t++) if (isRain(trace.weather[t])) return undefined;
       return '2〜3日目に雨が降らなかった';
     });
+  });
+
+  it('序盤補正2が水分を足すのは、最初の乾季に入って10日後からの1日だけ', () => {
+    // 境目のtickは初回サイクルの日数から導いた値（ClimateSystem.md 5.2節）なので、季節の長さを
+    // 変えたらここが落ちる。季節の遷移もこの補正も乱数に依存しないので、全シードで要求する。
+    for (const trace of traces) {
+      const firstDry = trace.season.indexOf(dryId);
+      const boosted = trace.firstDryRainBoosting.flatMap((boosting, t) => (boosting ? [t] : []));
+      expect(boosted[0], `seed ${trace.seed}: 乾季に入って10日後から`).toBe(firstDry + 10 * TICKS_PER_DAY);
+      expect(boosted.length, `seed ${trace.seed}: 1日だけ`).toBe(TICKS_PER_DAY);
+      expect(boosted[boosted.length - 1] - boosted[0], `seed ${trace.seed}: 途切れずに`).toBe(
+        TICKS_PER_DAY - 1,
+      );
+    }
   });
 
   it('最初の乾季の10日目前後（71〜73日目）に高確率で雨が降る', () => {

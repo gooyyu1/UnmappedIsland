@@ -222,8 +222,8 @@ object_defs:
         range: {min: 0, max: 288}
         passives:
           # **実が残っていない間だけ数える**（囲いが空いている間だけ数えるのと同じ、farming.yaml）。
-          # 採るまで止まっているので、この288tick（3日）がそのまま「採り尽くしてから次に採れるまで」
-          # になる。**摘み残した分も実のうち**——1粒でも残っていれば次は始まらない。
+          # 採るまで止まっているので、rangeの上限がそのまま「採り尽くしてから次に採れるまで」
+          # になる（tests/world-codex/berryBush.test.ts が見る）。**摘み残した分も実のうち**——1粒でも残っていれば次は始まらない。
           #
           # **置かれている場所では分岐しない。** 茂みは持ち歩けないので、罠の`{in_slot: items}`に
           # あたる「仕掛かっているか」の区別がそもそも立たない（畑と同じ）。
@@ -256,9 +256,10 @@ object_defs:
       # （ContainerSystem.md 1節）。以下の湧き水・道も同じ。
       weight: {value: 0}
       # 岩陰ぶんの暗さ（IlluminationSystem.md 2節）。土台は親の土地なので、外が暮れれば中も暮れる。
-      # **-6は暗さの底ではなく外との差**——空を継がない真っ暗（同7節）は奥の洞窟の値で、ここは
-      # 日の差さない岩陰にすぎない。この差だと境目が世界の環境光+11（曇りの正午、同8節のbright段の
-      # 下端）に載るので、**外が曇りの正午より明るければ中でも手元の作業ができる**（しきい値+5、同5節）。
+      # **この値は暗さの底ではなく外との差**——空を継がない真っ暗（同7節）は奥の洞窟の値で、ここは
+      # 日の差さない岩陰にすぎない。この差だと境目が世界の環境光の曇りの正午（同8節のbright段の
+      # 下端）に載るので、**外が曇りの正午より明るければ中でも手元の作業ができる**（しきい値は同5節。
+      # tests/world-codex/shallowCave.test.ts が見る）。
       ambient_brightness: {value: -6}
       # 岩屋根が雨を防ぐ（ContainerSystem.md 6節）。雨を見ている条件（fire.yamlの炉・
       # liquid_containers.yamlの雨受け）は`ancestor`＝同名を宣言している最初の祖先で止まるため、
@@ -299,8 +300,8 @@ object_defs:
   # - exploreのpickは「その土地で何が見つかるか」の確率テーブル。進捗+1（add self）は
   #   どの候補が選ばれても起こるので、pickの外に1つだけ置く（9.7節）。
   # - どの候補も1個以上を必ず見つける（ハズレの候補は置かない）。1回で見つかる数は候補ごとに1〜3個で、
-  #   実りの多い土地は平均2個、荒野・山頂・岸壁のような乏しい土地は平均1.6個になるよう重みを配る
-  #   （tests/world-codex/explorationYield.test.tsが検証する）。設置物（木・茂み・洞窟の入口など）は
+  #   荒野・山頂・岸壁のような乏しい土地は実りの多い土地より平均が少なくなるよう重みを配る
+  #   （平均の幅は tests/world-codex/explorationYield.test.ts が持ち、検証する）。設置物（木・茂み・洞窟の入口など）は
   #   1回に1つまでにし、数で増えるのはアイテムだけにする。
   # - 生きた獣（animals.yaml）は**単独の候補**にする。収穫ではなく出くわすものなので、他の物と一緒に
   #   見つかると「実り」に混ざってしまう（docs/engine/ExplorationSystem.md 2.1節）。
@@ -491,7 +492,7 @@ object_defs:
             add: {agent: {skill_cordage: 1}}
           # 打ち上げられた海藻（voyage.yaml）。流木やヤシの実と同じく海が寄せるもので、岩がその帯を
           # 引っ掛ける。**草も木の実も生えないこの海岸に、vitaminの当てを置くための候補**——無いと、
-          # 1日ぶんの48を、漂着のヤシの実（果肉1つで7）だけで埋めることになる（issue #2403）。
+          # 漂着のヤシの実の果肉だけで、1日ぶんのvitaminを埋めることになる（issue #2403）。
           - weight: 12
             spawn: {object: seaweed, count: 2, into: self}
           - weight: 20
@@ -669,8 +670,8 @@ object_defs:
               - {object: dry_grass, into: self}
               - {object: water_spinach, into: self}
           # 粘土は水際に堆積するので、水気のある土地（草地・森林・密林）にだけ置く（pottery.yaml）。
-          # 壺1つ分をまとめて掘り取る。**2個の候補なので、足しても1回あたりの平均個数（約2個）は
-          # ほとんど動かない**——上の「平均2個」の配りは、既存の重みを触らずに保てる。
+          # 壺1つ分をまとめて掘り取る。**実りの多い土地の平均に近い個数の候補なので、足しても1回
+          # あたりの平均個数はほとんど動かない**——上の平均の配りは、既存の重みを触らずに保てる。
           - weight: 14
             spawn: {object: clay, count: 2, into: self}
           # 3個
@@ -687,7 +688,7 @@ object_defs:
   forest:
     traits: [location, explorable]
     props:
-      # 樹冠が通すのは5%（-4）、落ち葉の地面は返さない（-1）。
+      # 樹冠が通す光は少なく、落ち葉の地面もほとんど返さない（内訳は ContentSkeleton.md 8.1.2節の表）。
       ambient_brightness: {value: -5}
       ambient_temperature: {value: -1}
       # ハンモックを渡せる支点が在る（docs/world/Bedding.md 6節。砂浜の hanging_anchor と同じ）。
@@ -791,8 +792,8 @@ object_defs:
   jungle:
     traits: [location, explorable]
     props:
-      # 樹冠が通すのは1%（-7）、暗い林床はほとんど返さない（-2）。**島で最も暗い土地**で、
-      # 陽が高い数時間しか採りに入れない。
+      # 樹冠は森よりも通さず、暗い林床はほとんど返さない（内訳は ContentSkeleton.md 8.1.2節の表）。
+      # **島で最も暗い土地**で、陽が高い数時間しか採りに入れない。
       ambient_brightness: {value: -9}
       ambient_temperature: {value: -1}
       # ハンモックを渡せる支点が在る（docs/world/Bedding.md 6節。砂浜の hanging_anchor と同じ）。
