@@ -1117,6 +1117,31 @@ describe('筏と航海', () => {
     }
   });
 
+  it('積荷の段の境目は、空の筏に乗員1人を足した重さから測った積荷の量', () => {
+    // voyage.yaml の筏の weight は境目を「自重＋乗員＋積荷」で書いている。**自重や乗員の重さだけを
+    // 動かして境目を据え置けば、積める量が黙って変わる**——そのずれをここで止める。積荷の量は段の
+    // 仕様そのもの（kg）。
+    const CARGO_KG: ReadonlyMap<string, number> = new Map([
+      ['laden', 80],
+      ['heavy', 160],
+      ['overladen', 240],
+    ]);
+    const { game } = ready();
+    const weightId = codex.propertyNames.getId('weight');
+    const emptyRaft = game.session.createObject(codex.objectNames.getId('raft')).getProperty(weightId);
+    const crew = game.session
+      .createObject(codex.objectNames.getId(SAMPLE_CHARACTER))
+      .getProperty(weightId)
+      .getEffectiveValue();
+
+    const loaded = emptyRaft.def.stages.filter((stage) => stage.name !== 'light').map((stage) => stage.name);
+    expect(loaded.sort(), '積荷の量を持たない段が無い').toEqual([...CARGO_KG.keys()].sort());
+    for (const [stage, kg] of CARGO_KG)
+      expect(emptyRaft.def.lowerBoundOfStage(stage)! - emptyRaft.getEffectiveValue() - crew, stage).toBe(
+        kg * 1000,
+      );
+  });
+
   it('航海ぶんの甕と蓋と食料を積んでも、積荷の段は上がらない（Voyage.md 3.9.3節・3.9.6節）', () => {
     // 積む数は文書の長い側（甕は Voyage.md 3.9.6節、食料は ContentSkeleton.md 5節4番）。数が宣言から
     // 出ることは tests/diagnostics/waterAndBloodPace.test.ts が見る。
@@ -1671,6 +1696,21 @@ describe('筏と航海', () => {
     expect(raft.parent?.instanceId, '出た海岸へ戻り着く').toBe(departure.instanceId);
     expect(cargoNames(raft), '錫は積んだまま').toContain('tin_ore');
     expect(game.player.ending.kind, '島へ戻っただけなので周回は終わらない').not.toBe('escape');
+  });
+
+  it('小島の探索は、どの候補も同じ数を返す', () => {
+    // voyage.yaml の小島は「どの候補も同じ数を返すので、候補を足しても1回あたりの平均は動かない」と
+    // 言っている。数の違う候補が混ざれば、錫のような候補を足すたびに平均が動く。
+    const voyage = parse(readFileSync(worldCodexPath('voyage.yaml'), 'utf8')) as Record<string, unknown>;
+    const pick = nodeAt(voyage, 'object_defs', 'offshore_islet', 'interactions', 'explore', 'pick');
+    if (!Array.isArray(pick) || pick.length === 0) throw new Error('小島の探索に卓がありません。');
+
+    const counts = pick.map((candidate) => {
+      const spawn = nodeAt(candidate, 'spawn');
+      const spawns = (Array.isArray(spawn) ? spawn : [spawn]) as readonly { count?: number }[];
+      return spawns.reduce((sum, entry) => sum + (entry.count ?? 1), 0);
+    });
+    expect(new Set(counts).size, `候補ごとの数: ${counts.join(', ')}`).toBe(1);
   });
 
   it('錫を湧かせるのは、小島の探索だけ', () => {

@@ -424,7 +424,7 @@ object_defs:
       # **段の境目は自重＋乗員＋積荷で書く。** 段が見るのは実効値なので、積荷の量で言い表すには
       # 自重を足した値になる。**乗員1人の重さも足す**——航海中は必ず乗っているので、乗員を
       # 見込まないと積める量がそのぶん減る（characters/player_character.yaml）。自重や乗員の重さを
-      # 変えるときは境目も一緒に動かすこと。
+      # 変えるときは境目も一緒に動かすこと（積荷の量は tests/world-codex/voyageYaml.test.ts が見る）。
       weight:
         value: 122400
         stages:
@@ -913,8 +913,8 @@ object_defs:
               - {object: feather, into: self}
           - weight: 15
             spawn: {object: thick_branch, count: 2, into: self}
-          # 錫鉱石。**どの候補も2個を返す**ので、1つ足しても1回あたりの平均（2個）は動かない
-          # （地上の土地と同じ配り方、locations.yaml）。
+          # 錫鉱石。**どの候補も同じ数を返す**ので、1つ足しても1回あたりの平均は動かない
+          # （地上の土地と同じ配り方、locations.yaml。tests/world-codex/voyageYaml.test.ts が見る）。
           - weight: 20
             spawn: {object: tin_ore, count: 2, into: self}
       # 上陸。**航路を渡るのと同じ形**で、同じ海区に浮かんでいる筏を乗り手ごと引き寄せる。
@@ -976,9 +976,9 @@ object_defs:
   #   流れ藻の海 — 白い岩 — 本土の島影 — 本土
   #
   # **近道のほうが実りが薄い**（同12.1節）。渡る時間はどの海区も同じなので、実りの濃淡は見張りの卓の
-  # 重みだけで表し、経路の長短は**通る海区の数**で表す——近道は1区間で流れ藻の海へ着くかわりに、
-  # 沖の潮目（実り0.8）と黒い岩礁（同0.55）の2区間ぶんの見張りを丸ごと飛ばす。遠回りは2区間ぶん
-  # 長いが、その2つが返す。
+  # 重みだけで表し、経路の長短は**通る海区の数**で表す——近道は流れ藻の海へ直に着くかわりに、
+  # 沖の潮目と黒い岩礁の見張りを丸ごと飛ばす。遠回りはそこを通るぶん長いが、そこが返す
+  # （実りの濃さは tests/world-codex/voyageYaml.test.ts が見る）。
   #
   # **辺で繋がった隣は、海区が `zone_toward_mainland`・`zone_toward_island` に1度だけ書く。** 航路を
   # 立てる先（`exploration_progress` の `on_max`）も、荒天が押し流す先（`storm_drift` の `on_max`）も
@@ -1179,7 +1179,8 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       zones_to_mainland: {value: 5}
-      # 1周回に0〜1個（ContentSkeleton.md 7節）。見張り4回で当たるのは2割ほど。
+      # 1周回に0〜1個（ContentSkeleton.md 7節）。航路が現れるまでに当たる見込みは
+      # stats/voyage.yaml（docs/diagnostics/VoyageStats.md）。
       wreck_find: {value: 5}
       flotsam_find: {value: 15}
       barren_find: {value: 80}
@@ -1243,7 +1244,8 @@ object_defs:
               signal: {picked: swept}
 
   # 沖の潮目。島影の無い沖でも、流れのぶつかる帯には魚が集まる。**遠回りの側の入口**で、うねりの海
-  # （4）より遠い5なのは、ここを通ると本土まで2区間ぶん長くなるから（zones_to_mainland）。
+  # より本土から遠いのは、ここを通ると遠回りになるから（zones_to_mainland は辺から数えた最短の数で、
+  # tests/world-codex/voyageYaml.test.ts が見る）。
   outer_tide_rip:
     singleton: true
     traits: [location, explorable, sea_zone]

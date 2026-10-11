@@ -361,8 +361,9 @@
 | `heavy` | −3<!-- codex: voyage.yaml object_defs.raft.props.weight.stages.2.passives.0.modify.self.sail_speed --> |
 | `overladen` | −6<!-- codex: voyage.yaml object_defs.raft.props.weight.stages.3.passives.0.modify.self.sail_speed --> |
 
-**段の境目は乗員を見込んでいます。** 乗員（65kg、[`Characters.md`](./Characters.md)）は航海中ずっと
-乗っているので、`weight` の段の境目はその65kgを含めた値で書いてあります（`voyage.yaml` の筏の `weight`）。
+**段の境目は乗員を見込んでいます。** 乗員（[`Characters.md`](./Characters.md)）は航海中ずっと
+乗っているので、`weight` の段の境目はその体重を含めた値で書いてあります（`voyage.yaml` の筏の `weight`。
+空の筏と乗員から測った積荷の量は `tests/world-codex/voyageYaml.test.ts` が見ます）。
 **手に持てば積まずに済む、とはなりません**——手持ちの重さも乗員を通って筏へ届きます（[`ContainerSystem.md`](../engine/ContainerSystem.md)
 1.1 節）。
 
