@@ -1179,8 +1179,8 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       zones_to_mainland: {value: 5}
-      # 1周回に0〜1個（ContentSkeleton.md 7節）。航路が現れるまでに当たる見込みは
-      # stats/voyage.yaml（docs/diagnostics/VoyageStats.md）。
+      # 1周回に0〜1個（ContentSkeleton.md 7節）。見張り1回あたりの期待値と、航路が現れるまでの
+      # 見張りの回数は stats/voyage.yaml（docs/diagnostics/VoyageStats.md）。
       wreck_find: {value: 5}
       flotsam_find: {value: 15}
       barren_find: {value: 80}
