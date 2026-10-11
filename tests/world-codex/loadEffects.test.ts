@@ -253,6 +253,27 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     ).not.toHaveLength(0);
   });
 
+  it('そりに丸太を積んでいくと、どの担ぎ手もかさより先に重さが尽きる', () => {
+    // containers.yaml のそりの capacity は「丸太が何本も積めるかさで、実際には重さが先に尽きる」と
+    // 言っている。かさを絞りすぎれば、通れない段（too_heavy）へ届く前に積めなくなる。
+    const tooHeavyAt = (characterName: string): number => {
+      const session = new WorldSession(codex, seededRng(42));
+      session.createWorld();
+      const character = session.createObject(codex.objectNames.getId(characterName));
+      const sledge = session.createObject(codex.objectNames.getId('sledge'));
+      expect(sledge.moveToSlotOrRejection(character.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+      const contents = sledge.getSlot(codex.slotNames.getId('contents'));
+      for (let logs = 1; ; logs++) {
+        const log = session.createObject(codex.objectNames.getId('log'));
+        expect(log.moveToSlotOrRejection(contents), `${characterName}: ${logs}本目も積める`).toBeUndefined();
+        if (character.tryGetProperty(propertyId('load'))?.stage?.name === 'too_heavy') return logs;
+      }
+    };
+
+    for (const name of characterDefNames(codex))
+      expect(tooHeavyAt(name), `${name}: 何本も積める`).toBeGreaterThan(1);
+  });
+
   it('筏1つぶんの丸太を1往復で運べる担ぎ手は居ない（Voyage.md 未決事項）', () => {
     // 筏のレシピが要る丸太を足し合わせ、どの担ぎ手がどの引く道具に積んでも、通れる段に収まらないか、
     // 積み切れないことを見る。
