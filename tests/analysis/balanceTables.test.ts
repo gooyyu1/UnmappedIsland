@@ -805,6 +805,91 @@ object_defs:
 });
 
 /**
+ * 「手に入るか」は、値段が付くかではなく入力が揃うかで決まる。**道具の欠けた工程の産物にも値段は付く**
+ * （道具の時間は按分しない、#550）ので、値段で答えると、手に入らない物から建てた設備の産物までが
+ * 「値段は付かないが手に入る」側へ入る。
+ */
+describe('道具の欠けた工程の産物から作る物', () => {
+  const YAML = `
+object_defs:
+  medic:
+    tags: [character]
+
+  orchard:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      pick:
+        trigger: menu
+        duration: 10
+        spawn: {object: fruit, into: self}
+
+  # 入手経路が無い道具。
+  spear:
+    tags: [item]
+
+  fruit:
+    tags: [item]
+    interactions:
+      pierce:
+        trigger: {drag: {object: spear}}
+        duration: 5
+        destroy: self
+        spawn: {object: fruit_water}
+
+  fruit_water:
+    tags: [item]
+
+  # 道具の欠けた工程の産物から建てる、朽ちない設備。
+  juice_press:
+    tags: [fixture]
+    slots:
+      juice:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      press_remaining:
+        value: 12
+        range: {min: 0, max: 12}
+        passives:
+          - add: {self: {press_remaining: -1}}
+        on_min:
+          add: {self: {press_remaining: 12}}
+          spawn: {object: juice, into: self}
+    recipes:
+      built:
+        steps:
+          - requires:
+              - {object: fruit_water, count: 1, consume: true}
+            duration: 30
+
+  juice:
+    tags: [item]
+`;
+
+  const tables = buildBalanceTables(
+    new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset(),
+    'medic',
+  );
+
+  const costOf = (objectName: string) => tables.objectCosts.find((cost) => cost.objectName === objectName)!;
+
+  it('道具の欠けた工程の産物は、値段が付いても道具が無いという印が立つ', () => {
+    expect(costOf('fruit_water')).toMatchObject({ minutes: 15, blockedByTool: true });
+  });
+
+  it('それから建てた設備の産物は、手に入る側に入らず、足りない入力に設備が挙がる', () => {
+    expect(costOf('juice')).toMatchObject({
+      minutes: undefined,
+      obtainableWithoutCost: false,
+      missing: ['juice_press'],
+    });
+  });
+});
+
+/**
  * 待ち生産表の周期と「いつ働くか」が、**同じ組み合わせ**から出ること（issue #1433）。
  *
  * 周期は「同時に成立しうる組み合わせのうち最も遅いもの」から決まる。条件のほうを別の基準で

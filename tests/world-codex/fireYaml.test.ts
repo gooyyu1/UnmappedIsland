@@ -11,6 +11,7 @@ import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import { rainyWeathersOf } from '../support/rainyWeathers';
 import { MINUTES_PER_HOUR, MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
@@ -741,7 +742,7 @@ describe('fire.yamlの火の連鎖', () => {
 
   it('雨の屋外では、手に持った松明も消える', () => {
     // FireSystem.md 8.2節。**全部の雨で見る**——大雨で消えることは、小雨で消えることを言わない。
-    for (const weatherName of ['light_rain', 'heavy_rain', 'storm']) {
+    for (const weatherName of rainyWeathersOf(codex)) {
       open(LIGHTS);
       const torch = spawnInto('torch', player, 'hand');
       torch.getProperty(codex.propertyNames.getId('lit')).setNumberWithoutEvents(1);
@@ -1432,7 +1433,7 @@ describe('薪の尽きた種火の保ち', () => {
     expect(hearthNames).toContain('stone_hearth');
 
     for (const hearthName of hearthNames) {
-      for (const weatherName of ['light_rain', 'heavy_rain', 'storm']) {
+      for (const weatherName of rainyWeathersOf(codex)) {
         const { session, worldInstance, heat, coalsMin } = emptyHearthOnLand(hearthName);
         worldInstance
           .getProperty(codex.propertyNames.getId('weather'))

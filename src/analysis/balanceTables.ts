@@ -1479,6 +1479,10 @@ class Acquisition {
    * 島のどこかで行える工程が生む型。**値段を積む前に、入力が揃うかだけから決める**
    * （collectReachable）ので、解決の途中の状態で答えが変わらない（onlyFilledBy）。
    *
+   * **「手に入るか」はこの集合1つが答える**（obtainable）。値段が付くかでは答えない——道具の欠けた
+   * 工程の産物にも値段は付く（道具の時間は按分しない、#550。`blockedByTool`）が、手には入らない。
+   * 値段の付かない側（obtainableWithoutCost）も、この集合から値段の付いた型を除いた残り。
+   *
    * **島全体で1つ**（obtainableWithoutCostと同じ）。土地の文脈は同じ集合を見る。
    */
   private readonly reachable: ReadonlySet<ObjectGlobalId>;
@@ -1525,11 +1529,11 @@ class Acquisition {
   }
 
   /**
-   * その型を島のどこかで手に入れられるか。**値段が付くかとは別の問い**——待ち生産に行き着く型は
-   * 按分できないので値段が付かないが、待てば手に入る（obtainableWithoutCost）。
+   * その型を島のどこかで手に入れられるか（reachable）。**値段が付くかとは別の問い**——待ち生産に
+   * 行き着く型は按分できないので値段が付かないが、待てば手に入る（obtainableWithoutCost）。
    */
   obtainable(objectGlobalId: ObjectGlobalId): boolean {
-    return this.costByObject.has(objectGlobalId) || this.obtainableWithoutCost.has(objectGlobalId);
+    return this.reachable.has(objectGlobalId);
   }
 
   /**
@@ -1658,13 +1662,14 @@ class Acquisition {
   /**
    * その工程に足りていない入力（消費する物も道具も）。**空なら、その工程は実行できる。**
    * 値段が積めるか（stepCost）とは別の問い——道具の時間は値段へ按分しない（#550）が、道具が
-   * 無ければ工程そのものが行えない。
+   * 無ければ工程そのものが行えない。**手に入るかは obtainable で見る**——値段の付いた入力でも、
+   * 道具の欠けた工程の産物なら手には入らない。
    */
   private missingInputsOf(ref: StepRef): readonly string[] {
     const missing: string[] = [];
     for (const input of ref.step.inputs) {
       if (input.kind === 'object' && this.isAlwaysAtHand(input.objectGlobalId)) continue;
-      if (this.obtainableSource(input) !== undefined) continue;
+      if (this.candidatesOf(input).some((candidate) => this.obtainable(candidate))) continue;
       missing.push(
         input.kind === 'tag'
           ? this.codex.tagNames.getName(input.tagGlobalId)
@@ -1904,29 +1909,12 @@ class Acquisition {
   }
 
   /**
-   * 値段が付かないまま残った型のうち、それでも手に入るものを控える（obtainableWithoutCost）。
+   * 手に入る型（reachable）のうち、値段が付かないまま残ったものを控える（obtainableWithoutCost）。
    * 出どころは朽ちない設備の待ち生産で、按分の分母（寿命）だけが無い。
-   *
-   * 見るのは**その工程を実行できるか**（missingInputsOf）だけ——設備も道具もその工程の入力なので、
-   * どれかが欠けていれば、値段が付かない理由は按分ではなく入手経路のほうにある。**塩を材料に取る
-   * 工程の産物も同じ**なので、増えなくなるまで繰り返す（値段の側と同じ形、lowerCostsUntilStable）。
    */
   private collectObtainableWithoutCost(): void {
-    for (let pass = 0; pass <= this.codex.objects.count; pass++) {
-      let added = false;
-      for (const ref of this.steps) {
-        if (this.missingInputsOf(ref).length > 0) continue;
-
-        for (const [objectGlobalId, count] of expectedSpawns(ref.step)) {
-          if (count <= 0 || this.obtainable(objectGlobalId)) continue;
-          if (this.consumesOwnOutput(ref, objectGlobalId)) continue;
-
-          this.obtainableWithoutCost.add(objectGlobalId);
-          added = true;
-        }
-      }
-      if (!added) return;
-    }
+    for (const objectGlobalId of this.reachable)
+      if (!this.costByObject.has(objectGlobalId)) this.obtainableWithoutCost.add(objectGlobalId);
   }
 
   private lowerCostsUntilStable(): void {

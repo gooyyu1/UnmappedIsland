@@ -69,10 +69,6 @@ const HANDWORK_COLUMN: PropertyStageName = { propertyName: 'hand_brightness', st
 const WIND_PROPERTY = 'wind_speed';
 const GALE_STAGE: PropertyStageName = { propertyName: WIND_PROPERTY, stageName: 'gale' };
 
-/** 屋根や岩陰に守られていること（ContainerSystem.md 6節）と、守られていると数える段。 */
-const SHELTERED_PROPERTY = 'sheltered';
-const SHELTERED_STAGE: PropertyStageName = { propertyName: SHELTERED_PROPERTY, stageName: 'sheltered' };
-
 /** 季節1つぶんの、天候の出現時間の実測値（`stats/climate.yaml`の`weather_hours`）。 */
 export interface SeasonWeatherHours {
   readonly seasonName: string;
@@ -290,9 +286,13 @@ export interface LitPlace {
  */
 export function litPlacesOf(codex: WorldCodex): readonly LitPlace[] {
   const ambientId = codex.vocabulary.world.ambientBrightnessId;
-  const shelteredId = codex.propertyNames.getId(SHELTERED_PROPERTY);
-  // 守られていると数える境目も、キャラクタの段の宣言から読む（境目を書き写す箇所を作らない）。
-  const shelteredMinimum = characterStageMinimumOf(codex, SHELTERED_STAGE);
+  const shelteredId = codex.vocabulary.world.shelteredId;
+  // 屋根や岩陰に守られていると数える境目も、キャラクタの段の宣言から読む（境目を書き写す箇所を
+  // 作らない。ContainerSystem.md 6節）。
+  const shelteredMinimum = characterStageMinimumOf(codex, {
+    propertyName: codex.propertyNames.getName(shelteredId),
+    stageName: 'sheltered',
+  });
   const shelteredValueOf = (def: ObjectDef): number =>
     def.tryGetPropertyDef(shelteredId)?.initialValueWithoutRoll ?? 0;
 
