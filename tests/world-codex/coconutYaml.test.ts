@@ -8,6 +8,7 @@ import type { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import { declaredNumberOf } from '../support/declaredNumber';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -77,13 +78,6 @@ describe('coconut.yamlのヤシの実の加工', () => {
     return new PlayerCharacter(character).handStacks.flatMap((stack) =>
       stack.map((object) => object.def.name),
     );
-  }
-
-  /** 型が宣言している値（インスタンスを1つ作って読む）。 */
-  function declaredNumber(objectName: string, propertyName: string): number {
-    return session
-      .createObject(codex.objectNames.getId(objectName))
-      .getProperty(codex.propertyNames.getId(propertyName)).number;
   }
 
   /** 道具を手に取り、対象のカードへドラッグしてcombinationを1つ実行する。 */
@@ -201,18 +195,18 @@ describe('coconut.yamlのヤシの実の加工', () => {
     expect(
       weightsOn(beach).reduce((sum, weight) => sum + weight, 0),
       '実と皮の重さの和は、もとの実のまま（増えも減りもしない）',
-    ).toBe(declaredNumber('coconut', 'weight'));
+    ).toBe(declaredNumberOf(session, 'coconut', 'weight'));
     expect(handOf(player), '道具以外は手元へ入らない').toEqual(['sharp_stone']);
   });
 
   it('皮を叩き解すのは漬けと叩きの2手で、掻き取りより長く、採れる繊維は皮より軽い', () => {
     // coconut.yamlのcoconut_huskのsoak・ret。どちらもret_minutesの長さを1回ずつ取る。
-    expect(declaredNumber('coconut_husk', 'ret_minutes') * 2, '掻き取りより長い').toBeGreaterThan(
-      declaredNumber('banana_stem', 'strip_minutes'),
+    expect(declaredNumberOf(session, 'coconut_husk', 'ret_minutes') * 2, '掻き取りより長い').toBeGreaterThan(
+      declaredNumberOf(session, 'banana_stem', 'strip_minutes'),
     );
 
     const husk = spawnInto('coconut_husk', beach, 'items');
-    const huskWeight = declaredNumber('coconut_husk', 'weight');
+    const huskWeight = declaredNumberOf(session, 'coconut_husk', 'weight');
     husk.getProperty(codex.propertyNames.getId('retting_progress')).setNumber(1);
     combine(husk, 'stone', 'ret');
 
