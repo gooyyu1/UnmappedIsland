@@ -50,13 +50,17 @@ describe('語彙が持つ綴り', () => {
    */
   it('診断は、語彙が持つプロパティ・枠の綴りを字で書かない', () => {
     const codex = bundledCodex();
-    const words: Readonly<Record<string, unknown>> = { ...codex.vocabulary.world };
+    const words: Readonly<Record<string, unknown>> = {
+      ...codex.vocabulary.engine,
+      ...codex.vocabulary.world,
+    };
     const spellings = Object.entries(words).flatMap(([key, id]) => {
       if (typeof id !== 'number' || key.endsWith('TagId')) return [];
       const names = key.endsWith('SlotId') ? codex.slotNames : codex.propertyNames;
       return [names.getName(id as never)];
     });
-    expect(spellings, '語彙のプロパティ名').toContain('sheltered');
+    expect(spellings, '世界の語彙のプロパティ名').toContain('sheltered');
+    expect(spellings, 'エンジンの語彙のプロパティ名').toContain('weight');
 
     const found = sourcesIn('src/analysis').flatMap((file) => {
       const text = readFileSync(join(ROOT, file), 'utf8').replace(/stageName: '\w+'/g, '');

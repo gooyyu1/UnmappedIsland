@@ -824,6 +824,10 @@ object_defs:
         trigger: menu
         duration: 10
         spawn: {object: fruit, into: self}
+      comb:
+        trigger: menu
+        duration: 10
+        spawn: [{object: shell, into: self}, {object: husk, into: self}]
 
   # 入手経路が無い道具。
   spear:
@@ -867,6 +871,28 @@ object_defs:
 
   juice:
     tags: [item]
+
+  # 道具の欠けた工程の産物から作る道具と、それを道具に取る工程。
+  knife:
+    tags: [item]
+  shell:
+    tags: [item]
+    interactions:
+      grind:
+        trigger: {drag: {object: fruit_water}}
+        duration: 5
+        destroy: [self, instrument]
+        spawn: {object: knife}
+  husk:
+    tags: [item]
+    interactions:
+      split:
+        trigger: {drag: {object: knife}}
+        duration: 5
+        destroy: self
+        spawn: {object: fiber}
+  fiber:
+    tags: [item]
 `;
 
   const tables = buildBalanceTables(
@@ -878,6 +904,11 @@ object_defs:
 
   it('道具の欠けた工程の産物は、値段が付いても道具が無いという印が立つ', () => {
     expect(costOf('fruit_water')).toMatchObject({ minutes: 15, blockedByTool: true });
+  });
+
+  it('それから作った道具は、値段が付いても、要る道具として手に入る側に数えない', () => {
+    expect(costOf('knife').minutes, '道具そのものには値段が付く').toBeDefined();
+    expect(costOf('fiber')).toMatchObject({ blockedByTool: true });
   });
 
   it('それから建てた設備の産物は、手に入る側に入らず、足りない入力に設備が挙がる', () => {

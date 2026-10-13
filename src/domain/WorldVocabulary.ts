@@ -115,7 +115,7 @@ export class WorldRuleVocabulary {
   readonly ambientBrightnessId: PropertyGlobalId;
   readonly ambientTemperatureId: PropertyGlobalId;
 
-  /** 屋根や岩陰に守られていること（ContainerSystem.md 6節）。雨と風を読む側がどれもこれを先に見る。 */
+  /** 屋根や岩陰に守られていること（ContainerSystem.md 6節）。 */
   readonly shelteredId: PropertyGlobalId;
 
   // ---- 生命と意識（VitalsSystem.md、WorldObject.runTickActions・cardLooks・analysis/huntEncounter） ----

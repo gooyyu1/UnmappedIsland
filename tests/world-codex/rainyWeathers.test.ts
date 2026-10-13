@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import { rainyWeathersOf } from '../support/rainyWeathers';
 import { bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
 
@@ -20,11 +21,19 @@ describe('雨の天気', () => {
       .stages.map((stage) => stage.name),
   );
 
+  /** 宣言の木から、`in`・`not_in` に並べた名前の一覧をすべて集める。 */
+  function listsIn(node: unknown): string[][] {
+    if (Array.isArray(node)) return node.flatMap(listsIn);
+    if (typeof node !== 'object' || node === null) return [];
+    return Object.entries(node).flatMap(([key, value]) =>
+      (key === 'in' || key === 'not_in') && Array.isArray(value) ? [value.map(String)] : listsIn(value),
+    );
+  }
+
   it('天気を集合で見る条件は、どれも雨の天気をちょうど名指す', () => {
     const rainy = [...rainyWeathersOf(codex)].sort();
     const lists = worldCodexYamlPaths().flatMap((path) =>
-      [...readFileSync(path, 'utf8').matchAll(/\b(?:not_)?in:\s*\[([^\]]*)\]/g)]
-        .map(([, items]) => items.split(',').map((item) => item.trim()))
+      listsIn(parse(readFileSync(path, 'utf8')))
         .filter((items) => items.some((item) => weathers.has(item)))
         .map((items) => ({ path, items: [...items].sort() })),
     );

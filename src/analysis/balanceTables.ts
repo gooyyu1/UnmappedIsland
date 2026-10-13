@@ -380,8 +380,8 @@ export interface ObjectCost {
 
   /**
    * 総コストが出ないとき、足りていない入力。**どこで詰まっているか**がこれで分かる。
-   * obtainableWithoutCostの側では空——印が立つのは足りない入力が1つも無い工程が在るときだけで、
-   * 同じ判定（Acquisition.missingInputsOf）がこの一覧を組む。
+   * obtainableWithoutCostの側では空——手に入る型（Acquisition.reachable）には、入力が揃う工程が
+   * 必ず在る。
    */
   readonly missing: readonly string[];
 
@@ -1662,14 +1662,13 @@ class Acquisition {
   /**
    * その工程に足りていない入力（消費する物も道具も）。**空なら、その工程は実行できる。**
    * 値段が積めるか（stepCost）とは別の問い——道具の時間は値段へ按分しない（#550）が、道具が
-   * 無ければ工程そのものが行えない。**手に入るかは obtainable で見る**——値段の付いた入力でも、
-   * 道具の欠けた工程の産物なら手には入らない。
+   * 無ければ工程そのものが行えない。
    */
   private missingInputsOf(ref: StepRef): readonly string[] {
     const missing: string[] = [];
     for (const input of ref.step.inputs) {
       if (input.kind === 'object' && this.isAlwaysAtHand(input.objectGlobalId)) continue;
-      if (this.candidatesOf(input).some((candidate) => this.obtainable(candidate))) continue;
+      if (this.obtainableSource(input) !== undefined) continue;
       missing.push(
         input.kind === 'tag'
           ? this.codex.tagNames.getName(input.tagGlobalId)
@@ -1759,7 +1758,9 @@ class Acquisition {
 
     for (const priced of [true, false])
       for (const context of contexts) {
-        const objectGlobalId = priced ? context.cheapestCandidate(input) : context.unpricedCandidate(input);
+        const objectGlobalId = priced
+          ? context.cheapestCandidate(input, true)
+          : context.unpricedCandidate(input);
         if (objectGlobalId === undefined) continue;
         const elsewhere = context !== this;
         return {
@@ -1780,13 +1781,19 @@ class Acquisition {
   /**
    * 入力1件を満たすのに最も安い型。この文脈で値段の付く型がどれも無ければundefined。
    * **持ち込みの要らない型が、要る型に勝つ**（`prefers`）。
+   *
+   * obtainableOnlyなら、手に入らない型（obtainable）を候補から外す——値段が付いていても、道具の
+   * 欠けた工程の産物は手に入らない。
    */
-  private cheapestCandidate(input: CraftingStep['inputs'][number]): ObjectGlobalId | undefined {
+  private cheapestCandidate(
+    input: CraftingStep['inputs'][number],
+    obtainableOnly = false,
+  ): ObjectGlobalId | undefined {
     let best: ObjectGlobalId | undefined;
     let bestChoice: StepCost | undefined;
     for (const objectGlobalId of this.candidatesOf(input)) {
       const cost = this.costByObject.get(objectGlobalId);
-      if (cost === undefined) continue;
+      if (cost === undefined || (obtainableOnly && !this.obtainable(objectGlobalId))) continue;
       const choice = { cost, imported: this.importedByObject.get(objectGlobalId) === true };
       if (bestChoice === undefined || prefers(choice, bestChoice)) {
         best = objectGlobalId;
