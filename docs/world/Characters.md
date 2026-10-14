@@ -367,7 +367,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 **何も打たなければ、60日目に留意域へ入って削られ始め、91日目に初めて打ちひしがれます**（火を通した3食
 を通した場合。`tests/world-codex/homesickness.test.ts`）。初回の雨季が明けるころに表へ出て、
 1周回（[`ContentSkeleton.md`](./ContentSkeleton.md) 8.3 節）の終盤で手が止まり始める位置です。
-**追いつくのは最初の段まで**——`yearning` からの削りは最良の食事でも埋まりません。
+**追いつくのは最初の段まで**——`yearning` からの削りは、普段の出来の食事では埋まりません。
 
 **0 は終点ではありません。** 幸福度が尽きると打ちひしがれ、120分<!-- codex: characters/player_character.yaml traits.player_character.interactions.despair.duration -->が強制的に過ぎて `happiness` が
 `+2.5/tick`<!-- codex: characters/player_character.yaml traits.player_character.interactions.despair.passives.0.add.self.happiness --> 戻り（下の[限界](#限界)節）、削りが続く限りそれを繰り返します。
