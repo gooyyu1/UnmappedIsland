@@ -478,7 +478,7 @@ laceration:
 させます**——口から入った菌（生肉）も、膿んだ傷から回った菌（[`InjurySystem.md`](./InjurySystem.md)
 6.3 節）も、押し上げる先は同じ値です。**行が増えるのは発症している間だけ**です——潜伏期のうちは
 `alert` が `safe` で、安全域の行はステータスエリアに出ません
-（[`StatusArea.md`](../ui/StatusArea.md) 3 節）。
+（[`StatusArea.md`](../ui/StatusArea.md) 2 節）。
 
 飢えの道は既に通っています——食べた物は胃と腸を経て `body_fat` へ積み上がり、基礎代謝で減ります
 （[`DigestionSystem.md`](./DigestionSystem.md)）。
