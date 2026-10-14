@@ -91,6 +91,15 @@ describe('appendPatrol', () => {
     });
   });
 
+  it('前回より新しくない `at` は、前の回の原稿として書かない', () => {
+    withStateDir((dir) => {
+      appendPatrol(dir, record('2026-09-20T01:00:00Z'));
+      for (const stale of ['2026-09-20T01:00:00Z', '2026-09-20T00:00:00Z'])
+        expect(() => appendPatrol(dir, record(stale, '直した')), stale).toThrow(/前回/);
+      expect(readLastPatrol(dir)?.verdict).toBe('異常なし');
+    });
+  });
+
   it('一覧に無い `verdict` は書かない', () => {
     withStateDir((dir) => {
       expect(() => appendPatrol(dir, record('2026-09-20T00:00:00Z', '人へ回した'))).toThrow(/verdict/);

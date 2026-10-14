@@ -155,6 +155,13 @@ export function appendPatrol(stateDir, record, now = Date.now()) {
       return false;
     }
   });
+  // **前回より新しくない `at` は、前の回が残した原稿を渡している**——そのまま足すと、前回の観測が
+  // 今回として盤面へ出て、今回の観測は消える（編集ツールと bash で `/tmp` が別の場所を指す。`CLAUDE.md`）。
+  const last = kept.length === 0 ? Number.NaN : Date.parse(JSON.parse(kept[kept.length - 1]).at);
+  if (at <= last)
+    throw new Error(
+      `at が前回の記録（${new Date(last).toISOString()}）より新しくない——前の回の原稿を渡していないか`,
+    );
   // **書き直しは差し替えで行う**——読む側（書き出し）が途中まで書かれたファイルを見ないように。
   const tmp = `${path}.tmp`;
   writeFileSync(tmp, [...kept, JSON.stringify(record)].map((line) => `${line}\n`).join(''));
