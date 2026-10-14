@@ -4,7 +4,6 @@ import { spawnInProgressObject, tryAdvanceCrafting } from '../../src/domain/craf
 import type { RecipeDef } from '../../src/domain/RecipeDef';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
@@ -27,8 +26,7 @@ describe('なめし革の連鎖', () => {
 
   beforeEach(() => {
     session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
 
     forest = spawnInto('forest', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, forest, 'characters');

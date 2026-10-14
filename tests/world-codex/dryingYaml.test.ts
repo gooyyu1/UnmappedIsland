@@ -2,27 +2,23 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
-import { TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * drying.yamlの天日干しと干し場を、実ファイルの定義だけで検証する。
  *
  * 見たいのは1つ。**腐敗が引いた線を、干し場だけが跨げること**（docs/world/SurvivalItems.md 10節）
- * ——最も速い段（spoils_fast、屋外2日）は地面に並べても腐り切るのが先で、干し場に掛けたときだけ
- * 干し上がる。野菜の段（spoils_normal、屋外3.3日）は素手のまま地面でも届く。
+ * ——最も速い段（spoils_fast）は地面に並べても腐り切るのが先で、干し場に掛けたときだけ
+ * 干し上がる。野菜の段（spoils_normal）は素手のまま地面でも届く。
  *
- * **この線は1tickの減りからは出ない。** 強い日差しは1日に24tickしか当たらない（salt.yamlの
- * drying_remaining）ので、地面の72tickは経過時間で3日ぶんになる。確かめるのは日をまたいで進めた
+ * **この線は1tickの減りからは出ない。** 強い日差しは1日のうち一部の時間しか当たらない（salt.yamlの
+ * drying_remaining）ので、貯めるtick数を腐るまでのtick数と比べても決着は読めない。確かめるのは日をまたいで進めた
  * ときに**どちらが先に来るか**で、開始時刻に左右されないことも合わせて見る。
  */
-
-/** 1tickの長さ（core.yamlのminutes_per_tick）。 */
-const TICK_MINUTES = 15;
 
 /** 強い日差しが差し始める時刻（tests/diagnostics/saltDryingHours.test.tsが定義から数える帯の入口）。 */
 const SUNRISE_HOUR = 9;
@@ -33,7 +29,7 @@ const NIGHT_HOUR = 0;
 /** 天気を据え置くための残り時間。周期（core.yamlのweather_remaining）が尽きなければ天気は変わらない。 */
 const FROZEN_WEATHER_TICKS = 999999;
 
-/** 打ち切り。最も長い野菜の屋外寿命（3.3日）を大きく超えて回しても答えは変わらない。 */
+/** 打ち切り。最も長い野菜の屋外寿命より長く取る（足りなければ決着が「どちらも来ない」になって落ちる）。 */
 const LIMIT_TICKS = TICKS_PER_DAY * 6;
 
 /** 1日を通して並べ始めうる時刻。**線が開始時刻に左右されないこと**まで見る。 */
@@ -53,13 +49,12 @@ describe('drying.yamlの天日干しと干し場', () => {
   /**
    * 砂浜にプレイヤーが立っている世界。時刻・天気・土地は呼び出し側が決める。
    *
-   * **天気は据え置く。** 放っておくと4〜6時間ごとに変わるので（core.yamlのweather_remaining）、
+   * **天気は据え置く。** 放っておくとcore.yamlのweather_remainingが尽きるたびに変わるので、
    * 日をまたぐ検査では「晴れが続けば」の側を見られなくなる。
    */
   function open(hour = SUNRISE_HOUR, weather = 'clear', landName = 'sandy_beach') {
     const session = new WorldSession(codex, fixedRng(0.9));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(hour);
     worldInstance
       .getProperty(codex.propertyNames.getId('weather'))
@@ -88,7 +83,7 @@ describe('drying.yamlの天日干しと干し場', () => {
   /** tickをticks回進める。onTickがtrueを返したところで打ち切る。 */
   function advance(session: WorldSession, ticks: number, onTick?: () => boolean): void {
     for (let i = 0; i < ticks; i++) {
-      session.advanceWorldTime(TICK_MINUTES);
+      session.advanceWorldTime(MINUTES_PER_TICK);
       if (onTick?.() === true) return;
     }
   }
@@ -152,8 +147,8 @@ describe('drying.yamlの天日干しと干し場', () => {
   }
 
   it('生肉は、地面に並べても干し上がらない', () => {
-    // **これが干し場の値打ち。** 晴れが1日も欠けなくても、強い日差しは1日24tickしか当たらないので、
-    // 腐り切るまでに貯められるのは48tickまで——地面の72tickには何時に並べても届かない。
+    // **これが干し場の値打ち。** 晴れが1日も欠けなくても、強い日差しは1日の一部にしか当たらないので、
+    // 腐り切るまでに地面の干し上がりへは何時に並べても届かない。
     expect(racesByHour((hour) => raceOnGround('raw_meat', hour))).toEqual(allHours('腐り切った'));
   });
 
@@ -163,7 +158,7 @@ describe('drying.yamlの天日干しと干し場', () => {
 
   it('空心菜は、地面に並べるだけで干し上がる', () => {
     // **素手の天日干しは、干し場が建っても残る**（docs/world/SurvivalItems.md 10節）。野菜の段は
-    // 屋外3.3日あるので、晴れが3日続けば地面の72tickに届く。
+    // 屋外でも長く保つので、晴れが続けば地面の干し上がりに届く。
     expect(racesByHour((hour) => raceOnGround('water_spinach', hour))).toEqual(allHours('干し上がった'));
   });
 

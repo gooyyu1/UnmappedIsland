@@ -380,8 +380,8 @@ export interface ObjectCost {
 
   /**
    * 総コストが出ないとき、足りていない入力。**どこで詰まっているか**がこれで分かる。
-   * obtainableWithoutCostの側では空——印が立つのは足りない入力が1つも無い工程が在るときだけで、
-   * 同じ判定（Acquisition.missingInputsOf）がこの一覧を組む。
+   * obtainableWithoutCostの側では空——手に入る型（Acquisition.reachable）には、入力が揃う工程が
+   * 必ず在る。
    */
   readonly missing: readonly string[];
 
@@ -741,7 +741,7 @@ function placeBalances(
  * 並びは宣言順にする。値で並べ替えると、数値を触るたびに行が入れ替わって差分が読めなくなる。
  * 対象から外すのは、手に入れるという言い方が成り立たないもの——土地・キャラクタ・世界（singleton）、
  * 単独で存在できない物（怪我・道）、レシピが自動生成する製作中オブジェクト、そして軸の値の型
- * （axisValueGlobalIds参照）。**海でしか手に入らない物も外す**（seaOnly）——島の表なので、海鳥の卵の
+ * （WorldCodex.isVariationAxisValue）。**海でしか手に入らない物も外す**（seaOnly）——島の表なので、海鳥の卵の
  * 値段を「入手経路が無い」として並べても、島の内容の穴を数えたことにはならない。
  */
 function objectCosts(
@@ -751,10 +751,9 @@ function objectCosts(
   seaOnly: ReadonlySet<ObjectGlobalId>,
 ): readonly ObjectCost[] {
   const rows: ObjectCost[] = [];
-  const axisValues = axisValueGlobalIds(codex);
   for (const def of [...codex.objects]) {
     if (def.isSingleton || def.boundToOwner) continue;
-    if (codex.isGenerated(def) || axisValues.has(def.globalId) || seaOnly.has(def.globalId)) continue;
+    if (codex.isGenerated(def) || codex.isVariationAxisValue(def) || seaOnly.has(def.globalId)) continue;
     // 土地は生成されるもので、手に入れるものではない。**ただし作れる土地は対象**——筏は乗り込む
     // 場所であると同時に、丸太と縄から組み上げる物でもある。
     if (isLocation(codex, def) && !islandWide.producedObjects.has(def.globalId)) continue;
@@ -1365,24 +1364,6 @@ function isCharacter(codex: WorldCodex, def: ObjectDef): boolean {
 }
 
 /**
- * 軸の値としてしか現れない型（3.5節）。液体の種類（`water_liquid`）がこれで、**世界に現れるのは
- * 中身入りの容器という変種のほう**——この型そのもののインスタンスは作られない。宣言している操作
- * （`drink`）も、変種が受け取って初めて起こるもので、この型が持っていても誰も起こせない。
- *
- * 軸の値の識別子は生成器が決める名前だが、`variation_axes` の軸では値の型の名前そのもの
- * （axisVariants）。レシピの軸の値はレシピ名なので、型として引けたものだけを見る。
- */
-function axisValueGlobalIds(codex: WorldCodex): ReadonlySet<ObjectGlobalId> {
-  const ids = new Set<ObjectGlobalId>();
-  for (const def of codex.objects)
-    for (const value of codex.variationsOf(def).values()) {
-      const globalId = codex.objectNames.tryGetId(value);
-      if (globalId !== undefined && codex.objects.tryGet(globalId) !== undefined) ids.add(globalId);
-    }
-  return ids;
-}
-
-/**
  * 経路として辿れる工程だけを残す（`CraftingStep.startedByPlayer`）。**時間が配る手番**——動物の1手と、
  * 限界に達した値が起こす強制的な時間経過（[`Characters.md`](../../docs/world/Characters.md) 限界節）
  * ——は押して選べないので、経路に並べると**選べない道が献立に載る**（強制の睡眠が「眠気を戻す手立て」
@@ -1397,7 +1378,7 @@ function reachableSteps(steps: readonly StepRef[]): readonly StepRef[] {
 
 /**
  * 島の全型の全工程。宣言順（型のグローバルID順、型の中は宣言順）。プレイヤーが起こす工程に続けて、
- * 時間で回る工程（罠の判定）も並べる。軸の値の型は飛ばす（axisValueGlobalIds参照）。
+ * 時間で回る工程（罠の判定）も並べる。軸の値の型は飛ばす（WorldCodex.isVariationAxisValue）。
  *
  * **海でしか手に入らない型が宣言する工程も飛ばす**（`IslandLocations.seaOnly`）——この表が数えるのは
  * 島の1日で、海はその外。海区の見張りだけでなく漁り場の漁も落ちる：生肉を30分で返す漁り場を残すと、
@@ -1416,9 +1397,10 @@ function allSteps(
 ): readonly StepRef[] {
   const outer = analysisContext(codex, standingAt === undefined ? islandLocations.island : [standingAt]);
   const defs = [...codex.objects];
-  const axisValues = axisValueGlobalIds(codex);
   return defs.flatMap((def) => {
-    if (axisValues.has(def.globalId) || islandLocations.seaOnly.has(def.globalId)) return [];
+    // 液体の種類が宣言している操作（`drink`）も、変種が受け取って初めて起こる——この型が持っていても
+    // 誰も起こせない。
+    if (codex.isVariationAxisValue(def) || islandLocations.seaOnly.has(def.globalId)) return [];
     if (standingAt !== undefined && isLocation(codex, def) && def.globalId !== standingAt.globalId) return [];
     const cycles = rangeCyclesOf(def, outer.resolve, defs);
     const lifetime = decayLifetimeOf(cycles);
@@ -1494,6 +1476,18 @@ class Acquisition {
   readonly obtainableWithoutCost: Set<ObjectGlobalId>;
 
   /**
+   * 島のどこかで行える工程が生む型。**値段を積む前に、入力が揃うかだけから決める**
+   * （collectReachable）ので、解決の途中の状態で答えが変わらない（onlyFilledBy）。
+   *
+   * **「手に入るか」はこの集合1つが答える**（obtainable）。値段が付くかでは答えない——道具の欠けた
+   * 工程の産物にも値段は付く（道具の時間は按分しない、#550。`blockedByTool`）が、手には入らない。
+   * 値段の付かない側（obtainableWithoutCost）も、この集合から値段の付いた型を除いた残り。
+   *
+   * **島全体で1つ**（obtainableWithoutCostと同じ）。土地の文脈は同じ集合を見る。
+   */
+  private readonly reachable: ReadonlySet<ObjectGlobalId>;
+
+  /**
    * この文脈で採った道筋が、他の土地の産物を含むか。**入手連鎖を伝って残す**——熟したヤシの実を
    * 持ち込んで加工した果肉は、果肉そのものがこの土地で作れても「持ち込みが要る」。
    *
@@ -1529,16 +1523,17 @@ class Acquisition {
     this.obtainableWithoutCost = islandWide?.obtainableWithoutCost ?? new Set();
     for (const ref of steps)
       for (const objectGlobalId of expectedSpawns(ref.step).keys()) this.producedObjects.add(objectGlobalId);
+    this.reachable = islandWide?.reachable ?? this.collectReachable();
     this.lowerCostsUntilStable();
     if (islandWide === undefined) this.collectObtainableWithoutCost();
   }
 
   /**
-   * その型を島のどこかで手に入れられるか。**値段が付くかとは別の問い**——待ち生産に行き着く型は
-   * 按分できないので値段が付かないが、待てば手に入る（obtainableWithoutCost）。
+   * その型を島のどこかで手に入れられるか（reachable）。**値段が付くかとは別の問い**——待ち生産に
+   * 行き着く型は按分できないので値段が付かないが、待てば手に入る（obtainableWithoutCost）。
    */
   obtainable(objectGlobalId: ObjectGlobalId): boolean {
-    return this.costByObject.has(objectGlobalId) || this.obtainableWithoutCost.has(objectGlobalId);
+    return this.reachable.has(objectGlobalId);
   }
 
   /**
@@ -1575,7 +1570,7 @@ class Acquisition {
       if (!input.consumed) continue;
       const resolved = this.inputSource(input);
       if (resolved === undefined) return undefined;
-      // **要る個数を掛ける。** 筏は丸太を6本使うので、1本ぶんで数えると桁が変わる。
+      // **要る個数を掛ける。** 工程は1つの材料を複数個要ることがある（`count`）ので、1個ぶんで数えると桁が変わる。
       cost = addCost(cost, scaleCost(this.netCostOf(input, resolved.cost), input.count));
       imported ||= resolved.imported;
     }
@@ -1763,7 +1758,9 @@ class Acquisition {
 
     for (const priced of [true, false])
       for (const context of contexts) {
-        const objectGlobalId = priced ? context.cheapestCandidate(input) : context.unpricedCandidate(input);
+        const objectGlobalId = priced
+          ? context.cheapestCandidate(input, true)
+          : context.unpricedCandidate(input);
         if (objectGlobalId === undefined) continue;
         const elsewhere = context !== this;
         return {
@@ -1784,13 +1781,19 @@ class Acquisition {
   /**
    * 入力1件を満たすのに最も安い型。この文脈で値段の付く型がどれも無ければundefined。
    * **持ち込みの要らない型が、要る型に勝つ**（`prefers`）。
+   *
+   * obtainableOnlyなら、手に入らない型（obtainable）を候補から外す——値段が付いていても、道具の
+   * 欠けた工程の産物は手に入らない。
    */
-  private cheapestCandidate(input: CraftingStep['inputs'][number]): ObjectGlobalId | undefined {
+  private cheapestCandidate(
+    input: CraftingStep['inputs'][number],
+    obtainableOnly = false,
+  ): ObjectGlobalId | undefined {
     let best: ObjectGlobalId | undefined;
     let bestChoice: StepCost | undefined;
     for (const objectGlobalId of this.candidatesOf(input)) {
       const cost = this.costByObject.get(objectGlobalId);
-      if (cost === undefined) continue;
+      if (cost === undefined || (obtainableOnly && !this.obtainable(objectGlobalId))) continue;
       const choice = { cost, imported: this.importedByObject.get(objectGlobalId) === true };
       if (bestChoice === undefined || prefers(choice, bestChoice)) {
         best = objectGlobalId;
@@ -1872,42 +1875,53 @@ class Acquisition {
   }
 
   /**
-   * その道具（消費されない入力）の候補が、宣言の上で`objectGlobalId`しか無いか。**解決の途中の状態
-   * （どの候補が最安か・手に入るか）では決めない**——値段を積む途中と確定した後（netOutputsOf）とで
-   * 答えが変わり、値段表と経路が食い違う。値段の付かない型が埋まるのは値段を積み終えた後なので、
-   * 「手に入るか」も途中では確定していない。
-   *
-   * 他の候補が島のどこでも手に入らないタグ指定の道具は、Xを要るのに作り方に数えてしまう。
+   * その道具（消費されない入力）を、`objectGlobalId`の他に満たせる型が島のどこでも手に入らないか。
+   * **解決の途中の状態（どの候補が最安か・値段が付いたか）では決めない**——値段を積む途中と確定した
+   * 後（netOutputsOf）とで答えが変わり、値段表と経路が食い違う。手に入るかは、値段を積む前に
+   * 決まる集合（reachable）だけで見る。
    */
   private onlyFilledBy(input: CraftingStep['inputs'][number], objectGlobalId: ObjectGlobalId): boolean {
     const candidates = this.candidatesOf(input);
-    return candidates.length > 0 && candidates.every((candidate) => candidate === objectGlobalId);
+    return (
+      candidates.includes(objectGlobalId) &&
+      candidates.every((candidate) => candidate === objectGlobalId || !this.reachable.has(candidate))
+    );
   }
 
   /**
-   * 値段が付かないまま残った型のうち、それでも手に入るものを控える（obtainableWithoutCost）。
-   * 出どころは朽ちない設備の待ち生産で、按分の分母（寿命）だけが無い。
-   *
-   * 見るのは**その工程を実行できるか**（missingInputsOf）だけ——設備も道具もその工程の入力なので、
-   * どれかが欠けていれば、値段が付かない理由は按分ではなく入手経路のほうにある。**塩を材料に取る
-   * 工程の産物も同じ**なので、増えなくなるまで繰り返す（値段の側と同じ形、lowerCostsUntilStable）。
+   * 島のどこかで行える工程が生む型を、増えなくなるまで集める（reachable）。工程を行えるのは、入力の
+   * どれもが手に入る型か用意の要らない型（isAlwaysAtHand）で満たせるときだけ。**閉路は自然に外れる**
+   * ——Xが無いと行えない工程は、Xが他の工程で手に入るまで行えないので、Xをここへ足さない。
    */
-  private collectObtainableWithoutCost(): void {
-    for (let pass = 0; pass <= this.codex.objects.count; pass++) {
-      let added = false;
+  private collectReachable(): ReadonlySet<ObjectGlobalId> {
+    const reachable = new Set<ObjectGlobalId>();
+    const filled = (input: CraftingStep['inputs'][number]) =>
+      this.candidatesOf(input).some(
+        (candidate) => this.isAlwaysAtHand(candidate) || reachable.has(candidate),
+      );
+
+    let added = true;
+    while (added) {
+      added = false;
       for (const ref of this.steps) {
-        if (this.missingInputsOf(ref).length > 0) continue;
-
+        if (!ref.step.inputs.every(filled)) continue;
         for (const [objectGlobalId, count] of expectedSpawns(ref.step)) {
-          if (count <= 0 || this.obtainable(objectGlobalId)) continue;
-          if (this.consumesOwnOutput(ref, objectGlobalId)) continue;
-
-          this.obtainableWithoutCost.add(objectGlobalId);
+          if (count <= 0 || reachable.has(objectGlobalId)) continue;
+          reachable.add(objectGlobalId);
           added = true;
         }
       }
-      if (!added) return;
     }
+    return reachable;
+  }
+
+  /**
+   * 手に入る型（reachable）のうち、値段が付かないまま残ったものを控える（obtainableWithoutCost）。
+   * 出どころは朽ちない設備の待ち生産で、按分の分母（寿命）だけが無い。
+   */
+  private collectObtainableWithoutCost(): void {
+    for (const objectGlobalId of this.reachable)
+      if (!this.costByObject.has(objectGlobalId)) this.obtainableWithoutCost.add(objectGlobalId);
   }
 
   private lowerCostsUntilStable(): void {

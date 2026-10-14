@@ -25,9 +25,13 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
 
 import numpy as np
 from PIL import Image
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 # 捨てる暗さと、そのまま残す暗さ（間は滑らかに繋ぐ）。地の側の寄りは数%に収まるので、
 # それを跨ぐ値を選ぶ。上げすぎると傷の縁の淡い赤みまで消える。

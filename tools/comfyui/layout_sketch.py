@@ -15,8 +15,12 @@ from __future__ import annotations
 
 import argparse
 import math
+import sys
 
 from PIL import Image, ImageDraw
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 WIDTH, HEIGHT = 1152, 896
 BARK = (109, 66, 40)

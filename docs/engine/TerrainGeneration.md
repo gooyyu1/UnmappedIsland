@@ -78,15 +78,21 @@ Axis は汎用プリミティブの重み合成（`generator.blend`）で値を�
 `blob_scatter`（局所的に濃い領域を作る散布）・`modifiers`（他の軸との合成演算）は、実際の10土地種の定義には
 まだ必要にならなかったため未実装です（6 節）。
 
-```yaml
+```yaml codex: terrain_generation.yaml
 axes:
   elevation:
-    range: {min: 0, max: 100}
+    range:
+      min: 0
+      max: 100
     stretch_sites_to_range: true
     generator:
       blend:
         - {type: distance_field, reference: edge, weight: 90}
-        - {type: layered_noise, octaves: 3, frequency: 2, seed_offset: 11, weight: 10}
+        - type: layered_noise
+          octaves: 3
+          frequency: 2
+          seed_offset: 11
+          weight: 10
 ```
 
 **`stretch_sites_to_range`**: 1 回の生成で出たサンプルの最小・最大が `range` の両端へ来るよう、
@@ -107,19 +113,27 @@ axes:
 
 各 `LocationType` は、軸空間上の「理想点＋許容範囲」として定義します。
 
-```yaml
+```yaml codex: terrain_generation.yaml
 location_types:
   jungle:
     object_def: jungle                 # 実体化に使う型（locations.yamlのobject_defsのid）。土地も他の
                                        # あらゆる要素と同じobject_defsで表現される
     applicable_scopes: [island]
-    move_cost: 1.6                     # 移動コストの倍率（1 = 等倍。3.5節のtravel_minutesに使う）
+    # 移動コストの倍率（1 = 等倍。3.5節のtravel_minutesに使う）
+    move_cost: 1.6
     axis_preferences:
-      humidity:   {ideal: 90, tolerance: 20, weight: 120}
-      elevation:  {ideal: 30, tolerance: 30, weight: 60}
+      humidity:
+        ideal: 90
+        tolerance: 20
+        weight: 120
+      elevation:
+        ideal: 30
+        tolerance: 30
+        weight: 60
       # 言及しない軸は自動的に「無関心」（マッチング距離の計算に一切寄与しない）
     hard_limits:
-      coastal_distance: {min: 16}      # 絶対的な除外条件。海岸帯には出ない
+      # 絶対的な除外条件。海岸帯には出ない
+      coastal_distance: {min: 16}
       humidity: {min: 65}
 ```
 
@@ -179,11 +193,11 @@ D(type, site) = sqrt( Σ_i w_i * ((v_i - ideal_i) / tolerance_i)^2  /  Σ_i w_i 
 そこで、`generation_scopes` に **`guarantees`**（明示的な強制割当）を持たせ、最近傍マッチングの**前**に
 確定的に処理します。
 
-```yaml
+```yaml codex: terrain_generation.yaml
 generation_scopes:
   island:
     guarantees:
-      - {location_type: mountain_peak, count: 1, axis: elevation, pick: max}
+      - {location_type: mountain_peak, axis: elevation, pick: max, count: 1}
 ```
 
 `axis` が `pick`（`max`/`min`）側の値を持つ `Site` から `count` 個を選び、`location_type` を強制的に割り当てます
@@ -208,7 +222,7 @@ generation_scopes:
 
 - **島の直径は 6.7 km**（面積およそ 35 km²）。山がひとつある島として自然な大きさで、ロビンソン・
   クルーソー島（約 48 km²）よりやや小さい大きさです。
-- **島の最高点は海抜 400 m。** 同じ縮尺で自然な高さです（青ヶ島は 8.7 km² で 423 m、ボラボラ島は
+- **島の最高点は海抜 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters -->。** 同じ縮尺で自然な高さです（青ヶ島は 8.7 km² で 423 m、ボラボラ島は
   30 km² で 727 m）。
 - **道の無い熱帯の地面を歩く速さは 4 km/h。**
 
@@ -228,7 +242,7 @@ generation_scopes:
 #### 3.5.1 座標配置（海岸に囲まれ、かつ海岸過多にならない配置）
 
 島は単純な円盤（半径 `SitePlacer.ISLAND_RADIUS`）とみなします。**抽象座標系の直径（`ISLAND_RADIUS` の
-2 倍 ＝ 200 単位）が `diameter_meters` に当たり、抽象 1 単位が 33.5 m になります。** ノイズも距離場も
+2 倍）が `diameter_meters` に当たり、抽象 1 単位はそれをこの直径で割った長さになります。** ノイズも距離場も
 `ISLAND_RADIUS` で正規化しているので、縮尺を変えても地形の見た目は変わりません。要求「海岸に囲まれた島を、海岸が多くなり
 すぎないように生成する」を、次の**配置枠の分離**によって実現しています（円盤へ一様に散布すると、
 面積比の関係で外周付近のサイトが多数を占めてしまい、単純な後処理だけでは制御しづらいため、配置そのものを
@@ -266,7 +280,7 @@ generation_scopes:
 - 全 `Site` に対して **Delaunay 三角形分割**を実施します（`Domain.Generation.DelaunayTriangulator`、
   Bowyer-Watson 法）。数学的に辺が交差しないという性質を、交差なしパスネットワークの土台に使います。
 - 間引きは以下の順で行います。
-  1. **最小全域木（MST、Kruskal法）**は必ず残します（到達性の保証）。
+  1. **最小全域木**（MST、Kruskal法）は必ず残します（到達性の保証）。
   2. MST 以外の Delaunay 辺は、距離の短い順に走査し、「現在のグラフでのその2点間最短距離（Dijkstra）が、
      直結距離の `generation_scopes.island.extra_edge_detour_factor`（倍率）を超える」場合だけ復活させます
      （大回りを強いられている場合に、近道・分岐を作る）。復活させる辺も Delaunay 辺の部分集合であるため、
@@ -287,14 +301,14 @@ generation_scopes:
   **最低 1 tick**——どんなに近い土地の間でも 1 刻みはかかります。）
 
   - `move_cost` は**その土地を進む遅さの倍率**です（1.0 が開けた土地＝ `walk_meters_per_hour`
-    そのままの速さ、密林 1.6、山頂 2.5）。
-  - `metersPerElevationUnit` は `elevation_top_meters ÷ 標高軸の値域` で、島では 400 m ÷ 100 = 4 m です。
+    そのままの速さ、密林 1.6<!-- codex: terrain_generation.yaml location_types.jungle.move_cost -->、山頂 2.5<!-- codex: terrain_generation.yaml location_types.mountain_peak.move_cost -->）。
+  - `metersPerElevationUnit` は `elevation_top_meters ÷ 標高軸の値域` です（島の `elevation_top_meters` は 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters -->）。
     どの軸を標高として読むかは `elevation_axis` が指します（エンジンは軸の名前を知りません）。
     **軸の両端が実際に出る**（3.1 節の `stretch_sites_to_range`）ので、島の最低点は必ず海抜 0 m、
-    最高点は必ず 400 m になります。
+    最高点は必ず 400 m<!-- codex: terrain_generation.yaml generation_scopes.island.elevation_top_meters --> になります。
   - 登り下りは**対称**です。道は両端に2つあるので向きは表せますが、行きと帰りで時間が変わると往復の
-    勘定が全部2倍に複雑になります。`climb_meters_per_hour` は 600 m/h（ネイスミスの法則）で、
-    海岸の土地から山頂まで最短経路で登ると、水平距離とは別に平均 38 分ぶんかかります。
+    勘定が全部2倍に複雑になります。`climb_meters_per_hour` は 600 m/h<!-- codex: terrain_generation.yaml generation_scopes.island.climb_meters_per_hour -->（ネイスミスの法則）で、
+    海岸の土地から山頂まで最短経路で登ると、水平距離とは別に登るぶんの時間がかかります。
   - 道1本あたりの距離・登り・所要時間の実測の分布は
     [`stats/terrain.yaml`](../../stats/terrain.yaml) の `edge`。
 
@@ -309,7 +323,7 @@ generation_scopes:
 
 上の `extra_edge_detour_factor` をどの値にするかを決めたもので、覆すのに人間の判断は要りません。
 
-**2 とします。決めているのは下の線で、上の線は今のところ遠くにあります**（どちらも500シードの実測）。
+**2<!-- codex: terrain_generation.yaml generation_scopes.island.extra_edge_detour_factor --> とします。決めているのは下の線で、上の線は今のところ遠くにあります**（どちらも500シードの実測）。
 
 - **下から**: 1.5 では行き止まりを持つ島が半分を切り、1.2 ではほぼ消えます。行き止まりが無い島は
   どこへでも回り道があるので、**島ごとの形の差が移動の勘定に現れません**（[`DesignPrinciples.md`](../concept/DesignPrinciples.md)
@@ -333,13 +347,14 @@ generation_scopes:
 
 海岸の型が名乗る高さを決めたもので、覆すのに人間の判断は要りません。
 
-**砂浜は海抜 20 m まで、岸壁は海抜 24 m からとします。** どちらも `hard_limits` の `elevation` で、
+**砂浜は標高軸の 5<!-- codex: terrain_generation.yaml location_types.sandy_beach.hard_limits.elevation.max --> まで、岸壁は 6<!-- codex: terrain_generation.yaml location_types.cliff_coast.hard_limits.elevation.min --> からとします。** どちらも `hard_limits` の `elevation` で、
 **同じ高さには出ません。**
 
 引く理由は分布の調整ではなく、**名前が嘘になるから**です。線を引く前は、砂浜も岸壁も海岸帯の高さ
 （海抜 0〜68 m）のどこにでも出ていました——海抜 60 m の砂浜と、海抜 0 m の岸壁が同じ島に並びます。
 **岸壁とは海へ落ち込む崖のことなので、高さは名前そのものです。** 砂浜も同じで、浜は海面の高さに
-あります。20 m は浜の背後の段丘まで含めた上限、24 m はその1つ上（軸の1単位は 4 m）です。
+あります。砂浜の上限は浜の背後の段丘まで含めた高さで、岸壁の下限はその1つ上の目盛りです（軸の1目盛りが何 m にあたるかは
+3.5.2 節の `metersPerElevationUnit`）。
 
 **岩海岸には線を引きません。** 「岩だらけ」は高さではなく地面の性質なので、高さを名乗っていません。
 海岸帯のどの高さにも出られる型が1つあることで、線を引いても行き場を失うサイトは生じません。
@@ -377,11 +392,12 @@ generation_scopes:
 （`locations.yaml` の `weight: {prop: ...}`。`ExplorationSystem.md` 2 節）。表示名は対応表が持ちます
 （[Localization.md](./Localization.md) の `location_texts`）。
 
-```yaml
+```yaml codex: terrain_generation.yaml location_types
 sandy_beach:
   object_def: sandy_beach
   variants:
-    - {id: palm, props: {palm_find: 26}}   # 素の重みは13
+    # 素の重みは13<!-- codex: locations.yaml object_defs.sandy_beach.props.palm_find.value -->
+    - {id: palm, props: {palm_find: 26}}
     - {id: white_sand}                     # 素の亜種（名前だけが変わる）
 ```
 
@@ -433,7 +449,7 @@ sandy_beach:
 - **`blob_scatter`・`modifiers` プリミティブ**: 局所的に濃い領域（汚染地帯等）を作る散布や、軸同士の合成演算
   は、必要になった時点で `Domain.Generation.AxisSampler`/`GeneratorLayerType` へ追加する。
 - **Axis の計算コスト**: 軸の数・`Site` 数が増えた際のサンプリングコスト、キャッシュ戦略（現状は
-  `Site` 数が高々20のため未検討）。
+  `Site` 数が高々20<!-- codex: terrain_generation.yaml generation_scopes.island.site_count.max -->のため未検討）。
 - **`generation_scopes.island` 以外の生成スコープのパラメータ**: `island` の値は測って決まりました
   （`extra_edge_detour_factor` は 3.5.2 節）が、`structure_interior`（3.7 節）のような他のスコープの
   値は、そのスコープが動くまで決まりません。

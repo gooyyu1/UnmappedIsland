@@ -17,13 +17,16 @@
 **「水入りの甕」は、甕と水の親子2つではなく1つの型です。** 容器が「中身」の軸を宣言し、その軸の
 値ごとの型がロード時に生成されます（[`GameElementDefinition.md`](./GameElementDefinition.md) 3.5 節）。
 
-```yaml
+```yaml codex: liquid_containers.yaml object_defs
 jar:
   traits: [liquid_container, narrow_open_container]
   props:
     fill:
       value: 0
-      range: {min: 0, max: 4000}          # この容器の容量（mL）
+      # この容器の容量（mL）
+      range:
+        min: 0
+        max: 4000
       on_min: {become: {content: none}}   # 尽きたら中身の軸を落とす＝空へ戻る
   variation_axes:
     content: {of: {tag: liquid}}
@@ -55,7 +58,7 @@ jar:
 - **中身の trait**（`liquid`・`water_liquid`・`evaporating_liquid`・`rain_filled_liquid` 等）:
   密度（`density`）・色（`color`）・種類タグ・飲用と注ぎの `interactions`・蒸発 `passives` を持つ。
 
-**量そのものが容器側なのは、同じ水がヤシの殻（250mL）にも甕（4L）にも入るためです。** 上限も、尽きたときに
+**量そのものが容器側なのは、同じ水がヤシの殻（250mL<!-- codex: liquid_containers.yaml object_defs.coconut_bowl.props.fill.range.max -->）にも甕（4L）にも入るためです。** 上限も、尽きたときに
 空へ戻ることも、`fill` を持つ容器自身が宣言します——中身の軸を持っているのも容器なので、両方が
 同じ場所にあります。
 
@@ -78,7 +81,7 @@ jar:
 液体は場所が変わるだけで別の概念にはならないので、**注ぎ移しは量の移送**です。宣言は液体の trait が
 持ち、相手が空か中身入りかで 2 つに分かれます。
 
-```yaml
+```yaml codex: liquid_containers.yaml traits
 water_liquid:
   tags: [water]
   interactions:
@@ -87,7 +90,7 @@ water_liquid:
       trigger: {drag: {tag: water}}
       conditions:
         - {reason: container_full, not: {prop: fill, in_stage: full}}
-      transfer: {amount: 999999, from: instrument, from_prop: fill, to: self, to_prop: fill}
+      transfer: {from: instrument, from_prop: fill, to: self, to_prop: fill, amount: 999999}
     # 相手が空の容器のとき。相手を水入りの変種にしてから移す（becomeが先。移した先を中身入りとして
     # 名乗らせるためで、空の容器もfillを持つ以上、transferを通すためではない）。
     pour_into_empty:
@@ -95,7 +98,7 @@ water_liquid:
       conditions:
         - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
       become: {subject: instrument, content: water_liquid}
-      transfer: {amount: 999999, from: self, from_prop: fill, to: instrument, to_prop: fill}
+      transfer: {from: self, from_prop: fill, to: instrument, to_prop: fill, amount: 999999}
 ```
 
 **宣言を持つのは中身入りの側だけなので、どちらの札をどちらへ重ねても `self` は中身入り・`instrument` は
@@ -155,12 +158,12 @@ water_liquid:
 反映されるわけでもないので、体内の水分を体積として持つ意味がありません。
 
 **mL から tick 数への換算は、飲用の宣言が持ちます**（`transfer` の `amount`/`to_amount`、
-`GameElementDefinition.md` 9.5 節）。体は 1 tick に 25mL を失う（1日の必要量 2400mL ÷ 96 tick）ので、
-**250mL = 10 tick 分**です。3日分の `max` は 288 になります。**エンジンは換算率を知りません**——
+`GameElementDefinition.md` 9.5 節）。飲用 1 回の
+**250mL<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount --> = 10 tick<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.to_amount --> 分**です。`max` は 288<!-- codex: characters/engineer.yaml object_defs.engineer.props.hydration.range.max --><!-- codex: characters/farmer.yaml object_defs.farmer.props.hydration.range.max --><!-- codex: characters/medic.yaml object_defs.medic.props.hydration.range.max --> です。**エンジンは換算率を知りません**——
 同じ 1 口でも水より寄与の小さい液体（酒）は、この比を小さくするだけで表せます。
 
-**器 1 つが何日ぶんかは、この換算率と容量の割り算です。** 甕（4,000mL）は **16 杯＝1.7 日ぶん**、
-ヤシの器（250mL）は **1 杯＝2.5 時間ぶん**。**持ち出す量を決める場面で読むのはこの数**で、航海に積む
+**器 1 つが何日ぶんかは、この換算率と容量の割り算です。** 甕（4,000mL<!-- codex: liquid_containers.yaml object_defs.jar.props.fill.range.max -->）は **16 杯＝1.7 日ぶん**、
+ヤシの器（250mL<!-- codex: liquid_containers.yaml object_defs.coconut_bowl.props.fill.range.max -->）は **1 杯＝2.5 時間ぶん**。**持ち出す量を決める場面で読むのはこの数**で、航海に積む
 甕の数もここから出ます（[`Voyage.md`](../world/Voyage.md) 3.9.6 節）。**画面はこの割り算をしません**
 ——残量は量のまま出し、日数へ直すのはプレイヤーの仕事です
 （[`GameEndings.md`](../concept/GameEndings.md) 9.2 節）。数が宣言とずれれば
@@ -168,11 +171,11 @@ water_liquid:
 
 **これは素の減りでの目盛りで、上限のほうです。** 器に入れたまま置けば蒸発が引き（6 節）、脂を切らせば
 水分の保ちが半分になる（[`DigestionSystem.md`](./DigestionSystem.md) 8 節）ので、**どちらも
-1.7 日を短くする向きにしか働きません。**
+この日数を短くする向きにしか働きません。**
 
-飲用は液体トレイト側のメニュー型の操作。`transfer` で自分の `fill` から 1回 250（＝250mL）出し、
-`agent.hydration` を 10 増やします。`transfer` の在庫クランプにより、残量が 250mL 未満なら残っている分だけ
-飲みます（増える水分もその比で減ります）。逆に `hydration` 側の空きが 10 tick 分未満なら入る分だけ飲み、
+飲用は液体トレイト側のメニュー型の操作。`transfer` で自分の `fill` から 1回 250<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount -->（＝250mL<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount -->）出し、
+`agent.hydration` を 10<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.to_amount --> 増やします。`transfer` の在庫クランプにより、残量が 250mL<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount --> 未満なら残っている分だけ
+飲みます（増える水分もその比で減ります）。逆に `hydration` 側の空きが 10 tick<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.to_amount --> 分未満なら入る分だけ飲み、
 あふれる分は容器に残ります（`allow_overflow` 既定の受け側クランプ。空きは mL へ割り戻して比べられます）。
 
 - **満水のときは飲めません。** `hydration` が `full` 段（満水ちょうど、`Characters.md`）にある間は
@@ -180,8 +183,8 @@ water_liquid:
 - 効果が種類ごとに違う液体は `linked_add` で表します: 茶は実際に飲んだ量に比例して
   `agent.wakefulness` を加算します。
 - 飲めない液体（油）は、単に `drink` を定義しません。
-- **1 回に 5 分かかります。** 行動の長さは tick の格子に乗る（[`ActionSystem.md`](./ActionSystem.md)
-  6.2 節）ので、**世界で最も短い行動がこれ**です。**1 回の飲用量（250mL）は変えません**——飲む回数が
+- **1 回に 5 分<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.duration -->かかります。** 行動の長さは tick の格子に乗る（[`ActionSystem.md`](./ActionSystem.md)
+  6.2 節）ので、**世界で最も短い行動がこれ**です。**1 回の飲用量（250mL<!-- codex: liquid_containers.yaml traits.water_liquid.interactions.drink.transfer.amount -->）は変えません**——飲む回数が
   増えるのではなく、1 回が少し長くなるだけなので、1 日あたりの上積みは生存に要る最小労働の数%に収まります。
 
 ## 6. 蒸発
@@ -189,15 +192,15 @@ water_liquid:
 `evaporating_liquid` トレイトの `passives`（`add`）で、自分の `fill` を毎 tick 減らします。
 **日射に依らない基礎の蒸発と、`ancestor.ambient_brightness` のしきい値で決まる上乗せの和**です。
 しきい値は EV（[`IlluminationSystem.md`](./IlluminationSystem.md) 1節）で、**どのくらいの明るさで水が
-減り始めるか**として置いてあります——1段が照度の2倍なので、上乗せの段は4倍ごとです。
+減り始めるか**として置いてあります（EV と照度の対応は同節）。
 
-| | 基礎 | +≧+12（10,000 lx） | +≧+14（40,000 lx） | +≧+16（160,000 lx） |
+| | 基礎 | +≧+12<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.2.conditions.2.gte --> | +≧+14<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.3.conditions.2.gte --><!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.4.conditions.2.gte --> | +≧+16<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.5.conditions.2.gte --><!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.6.conditions.2.gte --> |
 |---|---|---|---|---|
-| `wide_open_container`（ヤシの器） | 1 | — | +1 | +1 |
-| `narrow_open_container`（甕） | 2 | +2 | +2 | +2 |
+| `wide_open_container`（ヤシの器） | -1<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.0.add.self.fill --> | — | -1<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.3.add.self.fill --> | -1<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.5.add.self.fill --> |
+| `narrow_open_container`（甕） | -2<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.1.add.self.fill --> | -2<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.2.add.self.fill --> | -2<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.4.add.self.fill --> | -2<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.6.add.self.fill --> |
 
-**いちばん下の +12 が「水が減り始める明るさ」です。** 薄日でも直射がある明るさで、開けた土地では、
-雲のまったく無い空なら日の出の1時間後に届き、曇りでは1日を通して届きません。上に並ぶ段は、雲の無い空の
+**いちばん下の +12<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.2.conditions.2.gte --> が「水が減り始める明るさ」です。** 薄日でも直射がある明るさで、開けた土地では、
+晴れた空なら朝のうちに届き、曇りでは1日を通して届きません（下の時刻表）。上に並ぶ段は、雲の無い空の
 正午（+16）を最上段に置いた、その間の刻みです。
 
 **読むのは世界の日射ではなく、器が居る場所の環境光です**（[`IlluminationSystem.md`](./IlluminationSystem.md) 2節）。
@@ -216,22 +219,23 @@ water_liquid:
 
 | 土地 | `ambient_brightness` の `value` | 上乗せ |
 |---|--:|---|
-| 砂浜 | +1 | 開けた土地より1段ぶん早く効く（**曇りの正午でも最下段に届く**） |
-| 草原・岩場・荒野・山腹・山頂・岩だらけの海岸・岸壁 | 0 | 下の時刻表のとおり |
-| 筏・小島・本土 | 0 | 同上（遮るものが無い。`voyage.yaml`） |
-| 森 | −5 | **効かない**（雲の無い空の正午でも +11 で、最下段に1段届かない） |
-| 密林 | −9 | **効かない** |
-| 浅い洞窟 | −6 | **効かない**（湧く先が `value: 0` の土地だけなので、上限は世界の最大 +16 から −6 の +10） |
-| 海区 | 0 | **器を置けない**（`sea_zone` が `items` 枠を落とす）。効くのは筏の積荷・手持ちの器の祖先としてだけ |
+| 砂浜 | +1<!-- codex: locations.yaml object_defs.sandy_beach.props.ambient_brightness.value --> | 開けた土地より1段ぶん早く効く（**曇りの正午でも最下段に届く**） |
+| 草原・岩場・荒野・山腹・山頂・岩だらけの海岸・岸壁 | 0<!-- codex: locations.yaml object_defs.grassland.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.rocky_field.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.wasteland.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.mountainside.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.mountain_peak.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.rocky_coast.props.ambient_brightness.value --><!-- codex: locations.yaml object_defs.cliff_coast.props.ambient_brightness.value --> | 下の時刻表のとおり |
+| 筏・小島・本土 | 0<!-- codex: voyage.yaml object_defs.raft.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.offshore_islet.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.mainland.props.ambient_brightness.value --> | 同上（遮るものが無い。`voyage.yaml`） |
+| 森 | −5<!-- codex: locations.yaml object_defs.forest.props.ambient_brightness.value --> | **効かない** |
+| 密林 | −9<!-- codex: locations.yaml object_defs.jungle.props.ambient_brightness.value --> | **効かない** |
+| 浅い洞窟 | −6<!-- codex: locations.yaml object_defs.shallow_cave.props.ambient_brightness.value --> | **効かない**（湧く先は `value: 0` の土地だけ） |
+| 海区 | 0<!-- codex: voyage.yaml object_defs.coastal_waters.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.kelp_belt.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.tide_rip.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.reef_shallows.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.gull_rock.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.islet_waters.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.open_water.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.wreck_waters.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.long_swell.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.outer_tide_rip.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.black_reef.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.drifting_kelp.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.white_rock.props.ambient_brightness.value --><!-- codex: voyage.yaml object_defs.mainland_shallows.props.ambient_brightness.value --> | **器を置けない**（`sea_zone` が `items` 枠を落とす）。効くのは筏の積荷・手持ちの器の祖先としてだけ |
 
-森と密林で上乗せが丸ごと消えるのは、樹冠が日射の 95〜99% を遮るからです（同 8.1.2節）。雲の無い空の
-正午でも森の地表は +11＝約 5,000 lx で、**開けた土地の曇り空と同じ明るさ**しかありません。
+森と密林で上乗せが丸ごと消えるのは、樹冠が日射の大半を遮るからです（同 8.1.2節）。雲の無い空の
+正午でも森の地表は、**開けた土地の曇りの正午ほどの明るさ**しかありません。効かない土地はどれも、どの空・
+どの時刻でも最も低いしきい値に届きません（`tests/diagnostics/sunlitEvaporationContent.test.ts`）。
 
 **時間帯の概念は液体側に持ち込みません。** 夜は `hour` の夜ステージが底（−6）へ均す（`core.yaml`）ので、
 上乗せは自動的に消えます。時刻の区切りを変えても蒸発側は無修正で追従します。
 
-**上乗せ側は天候を見ません。** 雨天でいちばん明るい小雨の正午でも +10（最も明るい砂浜でも +11）で、
-最も低いしきい値 +12 に届かないためです。天候の判定が要るのは基礎の側だけで、湿度が未実装なので雨天を
+**上乗せ側は天候を見ません。** 雨の空は、最も明るい砂浜のどの時刻でも、最も低いしきい値に届かない
+ためです（同じ検査）。天候の判定が要るのは基礎の側だけで、湿度が未実装なので雨天を
 「湿度が高くて乾かない」の代理として除外しています。**蒸発は `sheltered`（[`ContainerSystem.md`](./ContainerSystem.md)
 6 節）を見ません**——除外しているのは湿った空気であって、雨が当たるかどうかではないためです。洞窟の中の
 器も、外が雨なら乾きません。**蓋を載せた容器は、基礎も上乗せも成立しないため蒸発しません**
@@ -241,7 +245,8 @@ water_liquid:
 （`core.yaml` の `hour`・`weather` それぞれの `modify` 量）と、土地の側の `value`（`locations.yaml`）。
 **どちらを変えても蒸発量が動きます。**
 
-上乗せが効く時刻（**開けた土地**。`hour`。日の出6時・日没18時）:
+上乗せが効く時刻（**開けた土地**。`hour`。日の出6時・日没18時。定義から数え直した値と食い違うと
+`tests/diagnostics/sunlitEvaporationContent.test.ts` が赤くなります）:
 
 | 天候 | 正午の明るさ | ≧+12 | ≧+14 | ≧+16 |
 |---|--:|---|---|---|
@@ -265,10 +270,10 @@ water_liquid:
 `ancestor.ambient_brightness` には**時刻と天気の寄与だけ**（`ambient_brightness` の `value` が 0 の土地）を
 置いています。
 
-乾季は 30 日なので、**蓋をしていない容器は乾季を越えて水を持ち越せません**。**森や密林へ置いても
-越えられません**——上乗せが消えても基礎の蒸発は残り、甕は 2mL/tick＝1日 192mL で 21 日ほど、ヤシの器は
-1mL/tick で 2.6 日ほどです。日陰は水の寿命を数日延ばしますが、**季節をまたがせる手立てにはなりません**
-——それができるのは蓋だけです（6.2 節）。
+乾季は平均 30 日<!-- stats: climate.yaml season_duration season=dry mean --> なので、**蓋をしていない容器は、平均的な長さの乾季を越えて水を持ち越せません**。
+**森や密林へ置いても同じです**——上乗せが消えても基礎の蒸発（甕 -2<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.1.add.self.fill -->/tick、ヤシの器 -1<!-- codex: liquid_containers.yaml traits.evaporating_liquid.passives.0.add.self.fill -->/tick）は残り、乾季に降る雨を差し引いても、どちらも平均的な長さの乾季より先に空になります
+（`tests/world-codex/liquidContainersYaml.test.ts`）。日陰へ置いても持ち越せるとは当てにできず、**乾季をまたがせると
+当てにできる手立ては蓋だけです**（6.2 節）。
 
 ## 6.1 天候と太陽高度は、明るさ1本へ畳んだままにする
 
@@ -336,8 +341,8 @@ water_liquid:
 （同「プレイヤーから考える時間を奪わない」節）。
 
 **6 節の日数の表と `stats/balance.yaml` の `rain_water` は、蓋をしていない甕の数です。** 数えている
-`src/analysis/seasonalRain.ts` は、置き方で決まる条件（`sheltered`）と同じく枠を見る条件を素通しする
-ので、表の甕の行は**開けた場所に蓋をせず置いた器**の量になります
+`src/analysis/seasonalRain.ts` は、器を屋根の無い場所（`sheltered` が0）に置いたものとして数え、枠を
+見る条件は素通しするので、表の甕の行は**開けた場所に蓋をせず置いた器**の量になります
 （[`BalanceStats.md`](../diagnostics/BalanceStats.md)）。**蓋をした甕の行は別に立ちません**——蓋の有無は
 型の違いではなく枠の中身なので、表が並べる「容器1種」は蓋をしていない側 1 つだけです。
 
@@ -362,19 +367,19 @@ water_liquid:
   「降っていない」と「降ってはいるが当たらない」が同じ文言になりません。
 - **量（`rain_filled_liquid` トレイトの `passives`）**: 降っている間、毎 tick 自分の `fill` を増やします。
 
-溜め始めた瞬間の量は **1mL**（`collect_rain` が `become` の直後に `set` する値）です。**`become` で変種に
+溜め始めた瞬間の量は **1mL<!-- codex: liquid_containers.yaml traits.rain_catching_container.interactions.collect_rain.set.self.fill -->**（`collect_rain` が `become` の直後に `set` する値）です。**`become` で変種に
 なった直後は空**（[`GameElementDefinition.md`](./GameElementDefinition.md) 3.5.1 節）で、実際に溜まる量は降り方が決めるので、**「まだほとんど無い」を表す
 最少値**をここへ置いています。
 
-結果の量（mL/tick）と、空から満杯までにかかる時間:
+結果の量（mL/tick）:
 
 | | `light_rain` | `heavy_rain` | `storm` |
 |---|---|---|---|
-| `wide_open_container`（ヤシの器、250mL） | 10（6時間） | 20（3時間） | 40（1.5時間） |
-| `narrow_open_container`（甕、4L） | 20（50時間） | 40（25時間） | 80（12.5時間） |
+| `wide_open_container`（ヤシの器、250mL<!-- codex: liquid_containers.yaml object_defs.coconut_bowl.props.fill.range.max -->） | 10<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.0.add.self.fill --> | 20<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.1.add.self.fill --> | 40<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.2.add.self.fill --> |
+| `narrow_open_container`（甕、4L） | 20<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.3.add.self.fill --> | 40<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.4.add.self.fill --> | 80<!-- codex: liquid_containers.yaml traits.rain_filled_liquid.passives.5.add.self.fill --> |
 
-1 回の雨は 16〜24 tick（4〜6 時間）続く（`ClimateSystem.md` 4.2 節）ので、**ヤシの器は 1 度の雨でおよそ満ちる**
-一方、**甕は雨季に何度も降られてようやく満ちます**。序盤の生命線（`ClimateSystem.md` 3.2 節）を器 1 つで
+1 回の雨の長さは `weather_remaining` の抽選が決める（`ClimateSystem.md` 4.2 節）ので、**ヤシの器は 1 度の大雨で満ちる**
+一方、**甕は嵐にも 1 度では満たされず、雨季に何度も降られてようやく満ちます**（`tests/world-codex/liquidContainersYaml.test.ts`）。序盤の生命線（`ClimateSystem.md` 3.2 節）を器 1 つで
 成立させつつ、据え置きの大容量には季節ぶんの時間を要求する配分です。蒸発と同じく、値は容器ごとに独立した
 数値で持ちます（口径の段の倍率ではありません。9 節）。
 

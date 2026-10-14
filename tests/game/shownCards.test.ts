@@ -10,7 +10,6 @@ import type { CardCombination } from '../../src/game/view/cardOperations';
 import type { CardContent } from '../../src/game/ui/Card';
 import type { CardPlace, CardPlacement, ScreenPlace } from '../../src/game/view/cardPlaces';
 import { planMotion } from '../../src/game/view/cardMotionPlan';
-import type { ObjectGlobalId } from '../../src/domain/GlobalId';
 
 /**
  * 画面に出ている札の並びと、その上の操作の意味（ShownCards）の自動テスト。
@@ -67,8 +66,6 @@ function stack(
     identity: ids,
     count: ids.length,
     objects: ids.map(object),
-    // 札の並べ替えは型を読まない（identityで見分ける）ので、どの型でもよい1つを名前空間を通さずに置く。
-    objectGlobalId: 0 as ObjectGlobalId,
     actions: [],
     place,
     visibleSlots: [],
@@ -527,6 +524,27 @@ describe('ドロップの意味', () => {
     } as const;
     expect(shown.dropEffect(drop)?.execute).toBeUndefined();
     expect(shown.multiDropLimit(drop)).toBe(1);
+  });
+
+  it('位置を指さない場所の中では並び替えず、外からなら位置を付けずに入れる', () => {
+    // レーン上の位置がスロットの位置にならない場所（材料の枠、slotCells.slotPositionAt）。
+    const moves: Moved[] = [];
+    const shown = screen({
+      hand: [stack(place('hand'), [1], { moves })],
+      items: [stack(place('items'), [2], { moves }), stack(place('items'), [3], { moves })],
+    });
+    const into = (from: CardPlace): ShownDrop => ({
+      from,
+      fromIndex: 0,
+      to: place('items'),
+      target: undefined,
+      count: 1,
+    });
+
+    expect(shown.dropEffect(into(place('items'))), '同じ場所の中').toBeUndefined();
+
+    shown.dropEffect(into(place('hand')))?.execute();
+    expect(moves).toEqual([{ ids: [1], to: place('items'), at: undefined }]);
   });
 
   it('帰りを待つ印へは重ねられない', () => {

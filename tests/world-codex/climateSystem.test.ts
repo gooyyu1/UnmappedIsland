@@ -23,6 +23,10 @@ interface Trace {
   readonly season: number[];
   readonly seasonCycle: number[];
   readonly effectiveTemperature: number[];
+  /** 序盤補正1（early_rain_calibration）が水分を足す段にいるか。 */
+  readonly earlyRainBoosting: boolean[];
+  /** 序盤補正2（first_dry_rain_calibration）が水分を足す段にいるか。 */
+  readonly firstDryRainBoosting: boolean[];
 }
 
 /**
@@ -65,6 +69,8 @@ describe('気候システム(ClimateSystem.md)', () => {
     const seasonId = codex.propertyNames.getId('season');
     const seasonCycleId = codex.propertyNames.getId('season_cycle');
     const temperatureId = codex.propertyNames.getId('ambient_temperature');
+    const earlyRainCalibrationId = codex.propertyNames.getId('early_rain_calibration');
+    const firstDryRainCalibrationId = codex.propertyNames.getId('first_dry_rain_calibration');
     const worldDef = codex.objects.get(codex.objectNames.getId('world'));
 
     traces = [];
@@ -77,6 +83,8 @@ describe('気候システム(ClimateSystem.md)', () => {
         season: new Array(SIM_TICKS),
         seasonCycle: new Array(SIM_TICKS),
         effectiveTemperature: new Array(SIM_TICKS),
+        earlyRainBoosting: new Array(SIM_TICKS),
+        firstDryRainBoosting: new Array(SIM_TICKS),
       };
 
       for (let t = 0; t < SIM_TICKS; t++) {
@@ -85,6 +93,9 @@ describe('気候システム(ClimateSystem.md)', () => {
         trace.season[t] = world.tryGetProperty(seasonId)?.number ?? 0;
         trace.seasonCycle[t] = world.tryGetProperty(seasonCycleId)?.number ?? 0;
         trace.effectiveTemperature[t] = world.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0;
+        trace.earlyRainBoosting[t] = world.tryGetProperty(earlyRainCalibrationId)?.stage?.name === 'boosting';
+        trace.firstDryRainBoosting[t] =
+          world.tryGetProperty(firstDryRainCalibrationId)?.stage?.name === 'boosting';
       }
 
       traces.push(trace);
@@ -110,6 +121,20 @@ describe('気候システム(ClimateSystem.md)', () => {
   /** 1始まりの日番号dの範囲 [firstDay, lastDay] に対応するtickインデックス範囲（両端含む）。 */
   function dayRange(firstDay: number, lastDay: number): { first: number; last: number } {
     return { first: (firstDay - 1) * TICKS_PER_DAY, last: lastDay * TICKS_PER_DAY - 1 };
+  }
+
+  /**
+   * tick範囲 [first, last] でscorchingになったtickを、全シードぶん（シード, 日）の形で並べる。
+   * **1 tickごとに expect を呼ばない**——失敗文の組み立てがシード数×tick数ぶん走り、Windowsの
+   * 全体実行で `testTimeout` を越えた。
+   */
+  function scorchingDays(first: number, last: number): string[] {
+    const found: string[] = [];
+    for (const trace of traces)
+      for (let t = first; t <= last; t++)
+        if (trace.weather[t] === scorchingId)
+          found.push(`seed ${trace.seed}: ${Math.trunc(t / TICKS_PER_DAY) + 1}日目`);
+    return found;
   }
 
   /** 確率的な要件をシードごとに判定し、成功率が閾値以上であることを検証する。 */
@@ -184,9 +209,9 @@ describe('気候システム(ClimateSystem.md)', () => {
   it('穏やかな季節(calm)は概ね2日に1回雨が降り、嵐にはならない', () => {
     // 「穏やかな季節は連続未降雨時間が長くなりすぎない」（晴れが続くと蓋のない容器の水が
     // 蒸発してしまうため。ClimateSystem.md 3.2節)。現行バランスでは概ね2日に1回前後の軽い雨が
-    // 降る（連続未降雨時間の平均約2日）。大気水分量が稀にhumid帯（6000）へ届くとheavy_rain・
-    // stormも原理的には起こりうるが、heavy_rainは許容し、より稀なstorm（humidでの重み3は
-    // heavy_rainの30より大幅に小さい）は序盤補正の影響が抜けた初回calmの判定窓では発生しない
+    // 降る（連続未降雨時間の平均約2日）。大気水分量が稀にhumid帯へ届くとheavy_rain・
+    // stormも原理的には起こりうるが、heavy_rainは許容し、より稀なstorm（humidでの重みは
+    // heavy_rainより大幅に小さい）は序盤補正の影響が抜けた初回calmの判定窓では発生しない
     // ことを、95%閾値の統計的保証として要求する。判定窓は4日目以降の初回calm（4-30日目）。
     const { first, last } = dayRange(4, 30);
 
@@ -311,6 +336,33 @@ describe('気候システム(ClimateSystem.md)', () => {
     });
   });
 
+  it('序盤補正1が水分を足すのは、2日目の1日だけ', () => {
+    // 補正も乱数に依存しないので、全シードで要求する。iは「i+1回目のtick直後」なので、
+    // 2日目の初めのtickを済ませた直後がTICKS_PER_DAY-1。
+    for (const trace of traces) {
+      const boosted = trace.earlyRainBoosting.flatMap((boosting, t) => (boosting ? [t] : []));
+      expect(boosted[0], `seed ${trace.seed}: 2日目から`).toBe(TICKS_PER_DAY - 1);
+      expect(boosted.length, `seed ${trace.seed}: 1日だけ`).toBe(TICKS_PER_DAY);
+      expect(boosted[boosted.length - 1] - boosted[0], `seed ${trace.seed}: 途切れずに`).toBe(
+        TICKS_PER_DAY - 1,
+      );
+    }
+  });
+
+  it('序盤補正2が水分を足すのは、最初の乾季に入って10日後からの1日だけ', () => {
+    // 境目のtickは初回サイクルの日数から導いた値（ClimateSystem.md 5.2節）なので、季節の長さを
+    // 変えたらここが落ちる。季節の遷移もこの補正も乱数に依存しないので、全シードで要求する。
+    for (const trace of traces) {
+      const firstDry = trace.season.indexOf(dryId);
+      const boosted = trace.firstDryRainBoosting.flatMap((boosting, t) => (boosting ? [t] : []));
+      expect(boosted[0], `seed ${trace.seed}: 乾季に入って10日後から`).toBe(firstDry + 10 * TICKS_PER_DAY);
+      expect(boosted.length, `seed ${trace.seed}: 1日だけ`).toBe(TICKS_PER_DAY);
+      expect(boosted[boosted.length - 1] - boosted[0], `seed ${trace.seed}: 途切れずに`).toBe(
+        TICKS_PER_DAY - 1,
+      );
+    }
+  });
+
   it('最初の乾季の10日目前後（71〜73日目）に高確率で雨が降る', () => {
     // 序盤補正2（ClimateSystem.md 5.2節): 最初の乾季の10日目前後（絶対71日目、遅くとも73日目まで）に
     // 大気水分量の底上げにより十分高確率で雨が降る。
@@ -366,8 +418,8 @@ describe('気候システム(ClimateSystem.md)', () => {
 
   it('scorching(灼熱)は乾季後半にだけ発生し、雨季には決して発生しない', () => {
     // scorching（灼熱）は蓄熱量（thermal_level）がhot帯に達した乾季後半にだけ抽選へ加わる
-    // （雨季後半のstormと対称の扱い、ClimateSystem.md 4.3節）。初回サイクルでは、thermal_levelが
-    // hot閾値(1920)へ達するのはdry開始から20日後=絶対81日目。
+    // （雨季後半のstormと対称の扱い、ClimateSystem.md 4.3節）。初回サイクルでは、乾季の前半には
+    // 出ず、後半（81日目〜）には出る。
     const { first: lateFirst, last: lateLast } = dayRange(81, 90);
 
     assertSuccessRate('scorchingが乾季後半（81-90日目）に発生する', (trace) => {
@@ -380,13 +432,14 @@ describe('気候システム(ClimateSystem.md)', () => {
     // これは乱数に依存しないため全シードで成立を要求する。
     const { first: calmFirst } = dayRange(1, 30);
     const { last: wetLast } = dayRange(31, 60);
-    for (const trace of traces) {
-      for (let t = calmFirst; t <= wetLast; t++)
-        expect(
-          trace.weather[t],
-          `seed ${trace.seed}: ${Math.trunc(t / TICKS_PER_DAY) + 1}日目（初回calm/wet）にscorchingは発生し得ないはず`,
-        ).not.toBe(scorchingId);
-    }
+    expect(scorchingDays(calmFirst, wetLast), '初回calm/wetにscorchingは発生し得ないはず').toEqual([]);
+
+    // 最初の乾季（61日目〜）の前半には、蓄熱量がまだhotへ届かない。乱数に依存しないので全シードで要求する。
+    const { first: earlyDryFirst, last: earlyDryLast } = dayRange(61, 75);
+    expect(
+      scorchingDays(earlyDryFirst, earlyDryLast),
+      '最初の乾季の前半にscorchingは発生し得ないはず',
+    ).toEqual([]);
   });
 });
 

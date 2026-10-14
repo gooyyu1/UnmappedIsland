@@ -23,6 +23,9 @@ from collections import defaultdict
 
 from paths import cost, data, stats
 
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
+
 DROP = 0.6  # 直前までの最大の6割を下回ったら急落
 FLOOR = 40_000  # 立ち上がり途中の小さな揺れを拾わないための下限
 BACK = 0.9  # 直後3turnで元の9割まで戻ればキャッシュの失効

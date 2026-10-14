@@ -16,10 +16,14 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 
 import numpy as np
 from PIL import Image, ImageDraw
 from scipy.ndimage import gaussian_filter
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 # 出来上がりの寸法と、紙が占める範囲（card_art.py の PAPER_MARGIN / PAPER_RADIUS、
 # および Card.ts の PAPER_INSET / PAPER_RADIUS と揃っていなければならない）。

@@ -125,7 +125,7 @@ export function allOpenIssues(gh, fields, options) {
       issues = JSON.parse(raw);
     } catch {
       // **道具は転んでいないので、言えるのはここだけ。** 黙ると、呼び手には理由の無い
-      // 「引けなかった」だけが残る（1.7）。
+      // 「引けなかった」だけが残る（board-design.md 1.7節）。
       options?.sayWhyNot?.('gh issue list: 応答が JSON として読めない');
       return undefined;
     }
@@ -144,7 +144,7 @@ function capped(sayIncomplete, what, items, cap) {
 }
 
 /**
- * 差し戻す相手は、そのPRのコミットの `Claude-Session:` トレーラで引く（2.11）。**上の一覧には
+ * 差し戻す相手は、そのPRのコミットの `Claude-Session:` トレーラで引く（board-design.md 2.11節）。**上の一覧には
  * 混ぜられない**——`gh pr list --json commits` はPRごとに全コミットを取りに行き、GraphQL の
  * ノード数の上限（50万）を超えて何も返らなくなる。末尾の何本かだけを指名すれば1回で足りる。
  */
@@ -247,7 +247,7 @@ function settledBefore(now, settleMinutes) {
 
 /**
  * `main` の先頭のCI。**赤い間は差し戻しを打たない**（`board-move.mjs`、`board-design.md` 2.14節）。
- * 数えるのは**`main` の木を見て走ったものだけ**（2.14.2）——issue へのコメントなどで立つ
+ * 数えるのは**`main` の木を見て走ったものだけ**（同 2.14.2節）——issue へのコメントなどで立つ
  * ワークフローも既定ブランチの先頭へ結び付くが、あれは木を見ていないので、落ちてもそれを取り込んだ
  * PRは赤くならない。語彙をPRの `statusCheckRollup` に合わせて渡すので、向こうは1つの判定で両方を
  * 読める。
@@ -267,7 +267,7 @@ function mainChecks(raw) {
  * **引くのはここ1箇所。** 人の読む盤面（[`board.mjs`](board.mjs)）も同じ手を通す——別々に引くと、
  * デーモンが起こせる相手と、人に見えている宛先が食い違う。
  *
- * **引けなかった理由は `sayWhyNot` へ渡す**（1.7）。**呼び手は2つとも人へ断りを出す側**なので、ここで
+ * **引けなかった理由は `sayWhyNot` へ渡す**（board-design.md 1.7節）。**呼び手は2つとも人へ断りを出す側**なので、ここで
  * 落とすと、読む人には「引けなかった」しか届かない。
  */
 export function readPrSessions(gh, sayWhyNot) {
@@ -298,15 +298,15 @@ function prSessions(raw) {
 }
 
 /**
- * ワーカーを畳んでよいかは、担当の issue の側で決まる（2.10）。**探すのはセッションの側から**
+ * ワーカーを畳んでよいかは、担当の issue の側で決まる（board-design.md 2.10節）。**探すのはセッションの側から**
  * ——閉じた issue の一覧は増える一方で、畳む相手はそこには居ない。開いている一覧に載っている
  * ぶんは引かないので、引くのは**行き先が消えたタグの数**だけ（普通は0）。
  *
  * ここが答えるのは**閉じたかどうかだけ**。開いたまま人の手番へ移った issue（`判断待ち`）は
- * 開いている一覧の側に載っているので、そちらのラベルで見る（2.10.2）。
+ * 開いている一覧の側に載っているので、そちらのラベルで見る（同 2.10.2節）。
  *
  * 引けなかったものは書かない。**知らないことを「閉じた」として読まない**——畳んだ判定は戻せる
- * とはいえ、次の周にもう一度引ける。**そのときの理由はログへ残す**（1.7）——引けない番号が続くと、
+ * とはいえ、次の周にもう一度引ける。**そのときの理由はログへ残す**（同 1.7節）——引けない番号が続くと、
  * その担当は畳まれないまま枠を握り続けるので、**引けなかったのか閉じていないのかが読めないと、
  * 見回る係はそこを毎回調べ直す。**
  */
@@ -333,8 +333,8 @@ function issueStates(gh, sessions, issues, sayIncomplete) {
 /**
  * 盤面を1つ組み立てる。`gh` が引けなければ `undefined`、一覧が引けなければ投げる。
  *
- * **諦めた理由は `sayWhyNot` へ渡す**（1.7）。**その周は丸ごと捨てられる**ので、理由が呼び手へ
- * 渡らないと、人へ出る断りが「引けなかった」だけになる（2.20.3）。
+ * **諦めた理由は `sayWhyNot` へ渡す**（board-design.md 1.7節）。**その周は丸ごと捨てられる**ので、理由が呼び手へ
+ * 渡らないと、人へ出る断りが「引けなかった」だけになる（同 2.20.3節）。
  */
 export async function readBoard({
   gh = runGh,
@@ -374,7 +374,7 @@ export async function readBoard({
       '--json',
       MERGED_PR_FIELDS,
     ],
-    // **理由は道具から受け取って、自分の断りへ載せる**（1.7）。落とすと、呼び手にも人にも
+    // **理由は道具から受け取って、自分の断りへ載せる**（board-design.md 1.7節）。落とすと、呼び手にも人にも
     // 「引けなかった」しか残らない。
     { sayWhyNot: (line) => (mergedWhyNot = line) },
   );
@@ -389,7 +389,7 @@ export async function readBoard({
     mergedRaw === undefined ? [] : JSON.parse(mergedRaw),
     CAPS.mergedPrs,
   );
-  // **先頭の指紋で絞る**（2.14.2）。ブランチの名前だけで引くと、`main` へ push が入った直後の
+  // **先頭の指紋で絞る**（board-design.md 2.14.2節）。ブランチの名前だけで引くと、`main` へ push が入った直後の
   // 数十秒は**1つ前のコミットの色**が返り、赤くなった `main` を緑と読む。
   const head = gh(['api', 'repos/{owner}/{repo}/commits/main', '--jq', '.sha'], { sayWhyNot });
   if (head === undefined) return undefined;
@@ -401,7 +401,7 @@ export async function readBoard({
   // **引けなかった周も盤面は捨てない。** 差し戻す相手が分からないだけで、他の手は打てる
   // （`board-move.mjs` が覚え書きを出す）。**黙って空にしない**——空は「名乗っていない」と同じ形
   // なので、**開いているPRが全部宛先を失ったように見え**、抱えている担当が片端から人へ返る
-  // （2.11.4）。`undefined` のまま渡して、読む側に「言えない」を持たせる。
+  // （board-design.md 2.11.4節）。`undefined` のまま渡して、読む側に「言えない」を持たせる。
   let claimWhyNot = '';
   const claimed = readPrSessions(gh, (line) => (claimWhyNot = line));
   if (claimed === undefined) {
@@ -419,7 +419,7 @@ export async function readBoard({
     now: now.toISOString(),
     settledBefore: settledBefore(now, settleMinutes),
     mainChecks: mainChecks(checks),
-    // **差し戻しの指紋に入れる**（`board-move.mjs` の `mendMark`、2.14.2）。**`main` が動けば
+    // **差し戻しの指紋に入れる**（`board-move.mjs` の `mendMark`、board-design.md 2.14.2節）。**`main` が動けば
     // 理由のほうが消えることがある**ので、入れないと盤面は「もう打った」と読み続ける。
     mainHead: head.trim(),
     prs: openPrs,

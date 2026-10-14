@@ -91,6 +91,15 @@ describe('appendPatrol', () => {
     });
   });
 
+  it('前回より新しくない `at` は、前の回の原稿として書かない', () => {
+    withStateDir((dir) => {
+      appendPatrol(dir, record('2026-09-20T01:00:00Z'));
+      for (const stale of ['2026-09-20T01:00:00Z', '2026-09-20T00:00:00Z'])
+        expect(() => appendPatrol(dir, record(stale, '直した')), stale).toThrow(/前回/);
+      expect(readLastPatrol(dir)?.verdict).toBe('異常なし');
+    });
+  });
+
   it('一覧に無い `verdict` は書かない', () => {
     withStateDir((dir) => {
       expect(() => appendPatrol(dir, record('2026-09-20T00:00:00Z', '人へ回した'))).toThrow(/verdict/);
@@ -137,6 +146,9 @@ describe('見回りの係の本文', () => {
               DRY_RUN: 'full',
               CLOUD_ENV: 'env_TEST_CLOUD',
               BRIDGE_ENV: 'env_TEST_BRIDGE',
+              // 架空の置き場を、MSYS2 の bash が node へ環境ごと渡すときに Windows の綴り
+              // （`C:/Program Files/Git/daemon/...`）へ書き換えないように。
+              MSYS2_ENV_CONV_EXCL: 'BOARD_STATE;DAEMON_LOG',
             },
           },
         ),

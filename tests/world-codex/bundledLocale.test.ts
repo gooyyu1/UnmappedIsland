@@ -163,12 +163,15 @@ describe('同梱の表示文字列ファイル', () => {
     locale = loadLocalization([]);
   });
 
-  it('カードに並ぶもの（item/fixture/injury）はすべて表示名を持つ', () => {
+  it('カードに並ぶものはすべて表示名を持つ', () => {
     // 対応表に無いと識別子（thick_branch等）がそのままカードに出るため、UIに出る型には必須とする。
-    const carded = ['item', 'fixture', 'injury'].map((tag) => codex.tagNames.getId(tag));
+    // **カードに並ぶかをタグで絞らない**——どの種別のタグも名乗らない型も、カードには物として出る
+    // （cardLooks.tsのkindOf）。外すのは、カードにならない世界そのものと、名前を土地の対応表
+    // （location_texts）から引く土地の型（下の「土地の型と亜種はすべて表示名を持つ」）だけ。
+    const namedAsLand = new Set(codex.generation!.locationTypes.map((type) => type.name));
 
     for (const objectDef of codex.objects) {
-      if (!carded.some((tag) => objectDef.tags.includes(tag))) continue;
+      if (objectDef.name === 'world' || namedAsLand.has(objectDef.name)) continue;
       // 自動生成された型は自分のエントリを持たず、素の型の名前と書式から組み立てる（3.5節）。
       expect(typeDisplayName(codex, locale, objectDef), `${objectDef.name} には表示名が必要`).not.toBe(
         objectDef.name,
@@ -240,7 +243,13 @@ describe('同梱の表示文字列ファイル', () => {
     // プロパティ（ambient_temperature）が持つ。また気温を決める値はいずれも仮の値なので、
     // 数値の定義を持つ名前は調整のたびに実態とずれる（ClimateSystem.md 4節）。
     const FORBIDDEN = ['暑', '夏日', '熱帯夜', '冬日'];
-    for (const weather of ['storm', 'heavy_rain', 'light_rain', 'cloudy', 'clear', 'sunny', 'scorching']) {
+    // 天気の名前は core.yaml の weather の段から数える。書き写すと、足した天気だけが禁則の外へ出る。
+    const world = codex.objects.get(codex.objectNames.getId('world'));
+    const weathers = world
+      .tryGetPropertyDef(codex.propertyNames.getId('weather'))!
+      .stages.map((stage) => stage.name);
+    expect(weathers, '天気が1つも数えられなければ、この検査は何も見ていない').not.toHaveLength(0);
+    for (const weather of weathers) {
       const name = locale.symbol(weather).displayName;
       for (const term of FORBIDDEN) expect(name.includes(term), `${weather}: '${name}'`).toBe(false);
     }

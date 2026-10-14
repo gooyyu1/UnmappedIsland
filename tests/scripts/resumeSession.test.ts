@@ -7,6 +7,8 @@ import { FakeMetaServer, metaReply, writeFakeCredentials } from '../support/fake
 import { pathForBash, spawnScript, spawnScriptAsync } from '../support/runScript';
 import { writeUsageCache, writeUsagePolled } from '../support/usageCache';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `scripts/daemon/resume-session.sh`——止まったセッションへ送る本文を組み立てる段——の検査。
  *
@@ -50,7 +52,7 @@ function build(kind: string, number: string, template?: readonly string[]): Buil
   }
 }
 
-describe('resume-session.sh の本文', () => {
+describe('resume-session.sh の本文', timeoutOnWindows(30_000), () => {
   // 本物のひな形を通す。差し替えたひな形だけで確かめると、実際に毎回渡るほうが読めなくなっても緑。
   it('ひな形の節を読んで `<番号>` を埋める', () => {
     const built = build('mend', '1512');
@@ -186,15 +188,15 @@ async function wake(gates: Gates = {}): Promise<Woken> {
  *
  * **上限に当たっている間に起こしても、モデルが割り当たらず何も出てこない。** それだけなら空振りで
  * 済むが、**盤面は起こした印を打てた手にしか残さない**ので、起こせてしまうと次の窓で人へ返るところ
- * まで進む（2.15.3）——**止めれば印が残らず、枠が明けた周にそのまま起こし直される。**
+ * まで進む（同 2.15.3節）——**止めれば印が残らず、枠が明けた周にそのまま起こし直される。**
  */
-describe('resume-session.sh の関門', () => {
+describe('resume-session.sh の関門', timeoutOnWindows(30_000), () => {
   it('手綱も余力も在れば送る', async () => {
     expect(await wake()).toEqual({ code: 0, calls: 1 });
   });
 
   // **人が止めている3と別の終了コード**（`headroom.sh`）。枠が明ければひとりでに戻るので、
-  // 見回る係の打つ手が違う（2.21.2）。
+  // 見回る係の打つ手が違う（board-design.md 2.21.2節）。
   it('余力が足りなければ、送らずに4で止まる', async () => {
     expect(await wake({ sevenDay: 99 })).toEqual({ code: 4, calls: 0 });
   });

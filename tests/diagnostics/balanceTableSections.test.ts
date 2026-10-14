@@ -40,10 +40,24 @@ function chainRouteCount(tables: BalanceTables, untimed: boolean): number {
 }
 
 /**
- * 空になってはいけない節。**内容の穴を挙げる節（`chain_gaps`）は入れない**——空であることが
- * 望ましい状態で、手書きの文書の側でも「空でもよい」と印を付けてある。
+ * 空になってはいけない節。**レポートの節は、ここか下の{@link UNCHECKED_SECTIONS}のどちらかに必ず
+ * 入る**（「節の名前が、生成済みのレポートと過不足なく揃っている」）。
  */
 const SECTIONS: readonly ReportSection[] = [
+  {
+    key: 'daily_needs',
+    rowCount: (tables) =>
+      new Set(tables.places.flatMap((place) => place.properties).map((chains) => chains.propertyName)).size,
+  },
+  {
+    key: 'daily_minimum',
+    rowCount: (tables) =>
+      tables.places.filter((place) => place.menu.entries.length > 0 || place.menu.unmet.length > 0).length,
+  },
+  {
+    key: 'daily_minimum_menu',
+    rowCount: (tables) => tables.places.flatMap((place) => place.menu.entries).length,
+  },
   { key: 'chain_routes', rowCount: (tables) => chainRouteCount(tables, false) },
   { key: 'chain_untimed_routes', rowCount: (tables) => chainRouteCount(tables, true) },
   {
@@ -56,6 +70,16 @@ const SECTIONS: readonly ReportSection[] = [
   { key: 'supply', rowCount: (tables) => tables.supply.length },
 ];
 
+/** 空かどうかを見ない節。 */
+const UNCHECKED_SECTIONS = [
+  // 解析の出力ではなく、数えた前提（代表キャラクタ・暦）の1行。
+  'meta',
+  // 表が数えなかった土地。外すものが無ければ空でよい。
+  'excluded_locations',
+  // 内容の穴。空であることが望ましい状態で、手書きの文書の側でも「空でもよい」と印を付けてある。
+  'chain_gaps',
+];
+
 describe('収支レポートの節', () => {
   const tables = bundledBalanceTables();
 
@@ -65,13 +89,15 @@ describe('収支レポートの節', () => {
     expect(empty, '解析が同梱の定義を読めなくなると、この節が空になる').toEqual([]);
   });
 
-  it('節の名前が、生成済みのレポートと揃っている', () => {
-    // 上の一覧が古びると、空になった節をここが見張れなくなる。生成物と突き合わせて、節の改名や
-    // 削除に気づけるようにする（`npm run stats:balance` で再生成される側が正）。
+  it('節の名前が、生成済みのレポートと過不足なく揃っている', () => {
+    // 上の一覧が古びると、空になった節をここが見張れなくなる。生成物と両向きに突き合わせて、節の
+    // 改名・削除にも、**足した節が空かどうかを誰も見ていないこと**にも気づけるようにする
+    // （`npm run stats:balance` で再生成される側が正）。
     const keys = yamlSectionKeys(readFileSync(join('stats', 'balance.yaml'), 'utf8'));
-    const missing = SECTIONS.map((section) => section.key).filter((key) => !keys.includes(key));
 
-    expect(missing, 'レポートに無い節を見張っている').toEqual([]);
+    expect([...SECTIONS.map((section) => section.key), ...UNCHECKED_SECTIONS].sort()).toEqual(
+      [...keys].sort(),
+    );
   });
 
   it('島全体の連鎖表が、経路を持つ', () => {

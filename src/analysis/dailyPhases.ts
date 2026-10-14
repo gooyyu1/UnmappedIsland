@@ -5,7 +5,7 @@ import type { WorldCodex } from '../domain/WorldCodex';
 import type { ActivityHoursRow } from './activityHours';
 import type { BalanceTables } from './balanceTables';
 import { objectCostMinutesOf } from './balanceTables';
-import { MINUTES_PER_DAY } from '../domain/worldTime';
+import { MINUTES_PER_DAY, MINUTES_PER_HOUR } from '../domain/worldTime';
 import { craftingStepsOf } from './craftingSteps';
 import type { PropertyGlobalId } from '../domain/GlobalId';
 
@@ -22,7 +22,7 @@ import type { PropertyGlobalId } from '../domain/GlobalId';
  * 採取と探索は見る明るさもしきい値も風雨の扱いも同じなので、**局面で頭打ちが分かれることはない**
  * （ContentSkeleton.md 8.1.4節が嵐を屋外の行動すべてへ掛けているため）。手元の細かい作業
  * （`handworkHoursPerDay`）が当たっているのは夜の加工（`DailyBudget.nightCraftMinutes`）のほうで、
- * この式は1分も数えていない（8.3節の割り付け）。
+ * この式は1分も数えていない（同 8.3節の割り付け）。
  *
  * 局面の違いは**どこへ行くか**と**何を消化するか**の2つで、式そのものは共有する。遠さは移動の項
  * として、暗さは頭打ちとして、同じ1行に入る。**風雨は両方に入る**——嵐は往復の移動も止めるので屋外の
@@ -197,7 +197,8 @@ export interface WorkPile {
 
 /**
  * 1周回に積む山の全部（ContentSkeleton.md 4節の表）。**この一覧が1周回の日数の出どころ**で、
- * 山を1つ足すことは、ここへ1行足すことと同じ。
+ * 山を1つ足すことは、ここへ1行足すことと同じ。表の行・系統との過不足は
+ * `tests/diagnostics/dailyPhaseAssumptions.test.ts` が突き合わせる。
  */
 export const WORK_PILES: readonly WorkPile[] = [
   { system: 1, label: '雨受けと貯水を据える', amount: 2 },
@@ -814,7 +815,7 @@ function minutesPerDayOf(
   const rows = activityHours.filter((row) => row.locationName === locationDefName);
   if (rows.length === 0) throw new Error(`土地 '${locationDefName}' が活動時間の表に載っていません。`);
 
-  return (rows.reduce((sum, row) => sum + hoursOf(row), 0) / rows.length) * 60;
+  return (rows.reduce((sum, row) => sum + hoursOf(row), 0) / rows.length) * MINUTES_PER_HOUR;
 }
 
 /** 配分の検査。1つの型が2つの組に現れることも、どの組にも現れないことも許さない。 */

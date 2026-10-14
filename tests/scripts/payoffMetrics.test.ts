@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 
 import { KEY_LINES, countCutIssues, countObjectDefs, ratio } from '../../scripts/payoffMetrics.mjs';
 
+import { TIMEOUT_FOR_CLONE_HISTORY } from '../support/timeoutForCloneHistory';
+
 /**
  * `npm run stats:payoff`（`scripts/payoffMetrics.mjs`）の検査。
  *
@@ -129,7 +131,7 @@ describe('countCutIssues', () => {
   });
 });
 
-describe('npm run stats:payoff', () => {
+describe('npm run stats:payoff', TIMEOUT_FOR_CLONE_HISTORY, () => {
   const shallow = execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
     cwd: ROOT,
     encoding: 'utf-8',

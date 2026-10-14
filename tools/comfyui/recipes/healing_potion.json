@@ -1,7 +1,7 @@
 {
   "_comment": [
     "sample-pack/objects/healing_potion.png を作り直すためのレシピ。build.py が読む。",
-    "回復ポーション（src/assets/world-codex/potions.yaml）。",
+    "回復ポーション（sample-pack/world-codex/potions.yaml）。",
     "",
     "2段構えの理由と、中身を編集の段で入れる理由は recipes/poison_potion.json と同じ。",
     "赤い液は緑よりさらに空になりやすく、6枚のうち4枚が底に少し溜まっただけの瓶だった。",

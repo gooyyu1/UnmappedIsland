@@ -67,7 +67,9 @@ describe('仕込んだ在庫を重みにした抽選（同梱の定義）', () =
     // ので在庫としては読まず、宣言値のままの配分になる。
     const spawns = periodicSpawnsOf('snare', 'catch_remaining.on_min', 'grassland');
 
+    // eslint-disable-next-line no-restricted-syntax -- 60・24は卓の重みの和で、暦ではない
     expect(spawns.get('junglefowl')).toBeCloseTo((10 / 60) * (10 / 24));
+    // eslint-disable-next-line no-restricted-syntax -- 60・24は卓の重みの和で、暦ではない
     expect(spawns.get('rat')).toBeCloseTo((10 / 60) * (6 / 24) + (10 / 60) * (6 / 14));
   });
 });

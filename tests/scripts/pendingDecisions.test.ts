@@ -74,13 +74,18 @@ async function countBoth(
 
 describe('未処理の判断の履歴の数え方', () => {
   // しきい値ちょうどの履歴に1つ足すので、どちらかが数えればフックは必ず件数を告げる。
-  // シンボリックリンクは Windows では権限が無いと作れないので、その場だけ外す（CI は Linux で必ず通る）。
-  it.each(Object.keys(EDGES))('%s: 両方が同じ件数を出す', async (name) => {
-    if (name === 'シンボリックリンク' && process.platform === 'win32') return;
-    const counted = await countBoth(DECISIONS_THRESHOLD, EDGES[name]);
+  // シンボリックリンクは Windows では権限が無いと作れないので、そこでだけ飛ばす（CI は Linux で必ず走る）。
+  // 飛ばしたことが結果に出るよう、抜けずに skip で外す。
+  for (const name of Object.keys(EDGES)) {
+    it.skipIf(name === 'シンボリックリンク' && process.platform === 'win32')(
+      `${name}: 両方が同じ件数を出す`,
+      async () => {
+        const counted = await countBoth(DECISIONS_THRESHOLD, EDGES[name]);
 
-    expect(counted.hook).toBe(counted.extension);
-  });
+        expect(counted.hook).toBe(counted.extension);
+      },
+    );
+  }
 
   it('しきい値が同じ', async () => {
     const below = await countBoth(DECISIONS_THRESHOLD - 1, EDGES['何も足さない']);

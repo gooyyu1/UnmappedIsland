@@ -51,12 +51,12 @@
 ありますが（[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「要るものは、名指しの鍵ではなく、
 部分的に代替できる資源で作る」節）、**どちらも斧を要求する**ので、上の前提は変わりません。
 
-丸太は1本20kgで、担ぐと荷重（`load`）の段が1つ上がります。**2本目は担げません。** 筏1つに6本要るので、
+丸太は1本20kgで、担ぐと荷重（`load`）の段が1つ上がります。**2本目は担げません。** 筏の材料の丸太を
 どこで伐ってどこへ運ぶかが島側の仕事として残ります（[`GameEndings.md`](../concept/GameEndings.md) 3.1 節）。
 
 **そりを引けば、力のある担ぎ手なら2本まで一度に運べます**（[`Containers.md`](./Containers.md) 2節）
-——**全員ではありません。** そりで積めるのは33〜46kgで、幅は担ぎ手の違いそのもの
-（[`Characters.md`](./Characters.md) 荷重の効き方節）。丸太2本の40kgはこの幅の中にあるので、**往復が
+——**全員ではありません。** そりで積める重さは担ぎ手で違い
+（[`Characters.md`](./Characters.md) 荷重の効き方節）、丸太2本はその違いの中にあるので、**往復が
 半分で済む担ぎ手と、そりを引いても1本のままの担ぎ手に分かれます。**
 
 そりそのものが丸太を要らない代わりに長い棒と縄を食い、木材加工の腕も要るので、**斧を手にした直後の
@@ -76,7 +76,7 @@
   帆として張るのはプレイヤーが `structure` の枠へ入れたときだけです（
   [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 7.8 節の宣言順で `items` が先）。
   **帆の種類が増えれば「どれを張るか」という判断が生まれる**ので、重ねただけで張られては困ります。
-- 積める量は枠の数（12）とかさ（500L）が決めますが、**実際の限界は重さ**です（3.2 節）。
+- 積める量は枠の数（12<!-- codex: voyage.yaml object_defs.raft.slots.items.cell_count -->）とかさ（500L）が決めますが、**実際の限界は重さ**です（3.2 節）。
 - 乗り込むのは出航アクションの一部です。**降りられるのは陸の上だけ**——本土・小島（3.4 節）・引き返した
   先の海岸（3.5 節）で、海の上では降りられません。乗る手と出る手を分けても選べることは増えません。
 
@@ -84,12 +84,12 @@
 
 **帆は積荷ではなく筏の一部です。** 筏は `structure` スロット（[`Dwellings.md`](./Dwellings.md) 1 節の
 構造スロットと同じ形）を1枠だけ持ち、`sail` タグを持つ物を1つ受け入れます。組み込んだ帆は
-`modify` で親（筏）の `sail_speed` を +2 します。
+`modify` で親（筏）の `sail_speed` を +2<!-- codex: voyage.yaml object_defs.rawhide_sail.passives.0.modify.parent.sail_speed --> します。
 
-今ある帆は生皮の帆（`rawhide_sail`）1種で、生皮6・糸10・太い枝2・ロープ2から、骨針（`sewing_tool`）を
-道具として縫います。**+2 は、積みすぎでない限り段をちょうど1つ上げる最小の値です**——素の筏は海流だけで
+今ある帆は生皮の帆（`rawhide_sail`）1種で、生皮・糸・太い枝2<!-- codex: voyage.yaml object_defs.rawhide_sail.recipes.sewn.steps.0.requires.0.count -->・ロープ2<!-- codex: voyage.yaml object_defs.rawhide_sail.recipes.sewn.steps.1.requires.0.count -->から、骨針（`sewing_tool`）を
+道具として縫います。**+2<!-- codex: voyage.yaml object_defs.rawhide_sail.passives.0.modify.parent.sail_speed --> は、積みすぎでない限り段をちょうど1つ上げる最小の値です**——素の筏は海流だけで
 `slow`、帆があれば `moderate` に届きます。+1 では段が動かない積載があり、+3 にしても上がる段は
-変わらないので、盤面に差が出るのは2だけです。
+変わらないので、盤面に差が出るのは2だけです（`tests/world-codex/voyageYaml.test.ts`）。
 
 **構造スロットは、筏に乗り込んでから現在地の札を押すと開きます**（積荷のスロットは外から札を押して
 開くので、2つは操作の入口から分かれています）。乗り降りは筏の `board`/`disembark` です。
@@ -215,21 +215,21 @@
 
 ### 3.1 風向きは季節が配る
 
-**風向き（world の `wind`）は `tailwind`/`crosswind`/`headwind` で、8時間ごとに引き直します。**
+**風向き（world の `wind`）は `tailwind`/`crosswind`/`headwind` で、`wind_remaining` の 32<!-- codex: core.yaml object_defs.world.props.wind_remaining.value --><!-- codex: core.yaml object_defs.world.props.wind_remaining.on_min.pick.0.set.self.wind_remaining --><!-- codex: core.yaml object_defs.world.props.wind_remaining.on_min.pick.1.set.self.wind_remaining --><!-- codex: core.yaml object_defs.world.props.wind_remaining.on_min.pick.2.set.self.wind_remaining --> tick ごとに引き直します。**
 候補の重みは季節の段が配るので、乾季は追い風が多く、雨季は向かい風が増えます——これが
 「出航に適した季節の窓」（[`GameEndings.md`](../concept/GameEndings.md) 3.1 節）になります。
 
 | 季節 | 追い風 | 横風 | 向かい風 |
 |---|---|---|---|
-| 穏やか | 30 | 45 | 25 |
-| 雨季 | 20 | 40 | 40 |
-| 乾季 | 50 | 35 | 15 |
+| 穏やか | 30<!-- codex: core.yaml object_defs.world.props.season.stages.0.passives.0.modify.self.tailwind_weight --> | 45<!-- codex: core.yaml object_defs.world.props.season.stages.0.passives.0.modify.self.crosswind_weight --> | 25<!-- codex: core.yaml object_defs.world.props.season.stages.0.passives.0.modify.self.headwind_weight --> |
+| 雨季 | 20<!-- codex: core.yaml object_defs.world.props.season.stages.1.passives.0.modify.self.tailwind_weight --> | 40<!-- codex: core.yaml object_defs.world.props.season.stages.1.passives.0.modify.self.crosswind_weight --> | 40<!-- codex: core.yaml object_defs.world.props.season.stages.1.passives.0.modify.self.headwind_weight --> |
+| 乾季 | 50<!-- codex: core.yaml object_defs.world.props.season.stages.2.passives.0.modify.self.tailwind_weight --> | 35<!-- codex: core.yaml object_defs.world.props.season.stages.2.passives.0.modify.self.crosswind_weight --> | 15<!-- codex: core.yaml object_defs.world.props.season.stages.2.passives.0.modify.self.headwind_weight --> |
 
 仕組みは天気の遷移（[`ClimateSystem.md`](../engine/ClimateSystem.md) 4 節）と同じ形——残り時間が尽きるたび、
 `*_weight` を重みとする `pick` が次を選ぶ——ですが、天気と違って持続は一律です。向きしか無いので、
 長さまで振ると何が変わったのか読めなくなります。
 
-**この重みが横断時間へ返すものは、1 周回に 1 度の航海では半日に満たない差です。** 砂浜から近道で渡ると、
+**この重みが横断時間へ返すものは、1 周回に 1 度の航海では小さな差です。** 砂浜から近道で渡ると、
 乾季なら 5.02 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=dry days -->、
 雨季なら 5.34 日<!-- stats: voyage.yaml course_season coast=sandy_beach course=shortest season=wet days -->——
 最も短い岸壁からでも
@@ -240,7 +240,7 @@
 0.2 日<!-- stats: voyage.yaml course_season coast=cliff_coast course=shortest days 幅 ±0.1 -->です**
 （[`stats/voyage.yaml`](../../stats/voyage.yaml) の `course_season`）。
 
-**荒天の押し流し（3.8 節）を入れても、この差は 1 日に届きません。** 風下は押し流す先も決めるので、向かい風の
+**荒天の押し流し（3.8 節）を入れても、この差は小さいままです。** 風下は押し流す先も決めるので、向かい風の
 多い雨季ほど島の側へ戻される回が増えます。海区と筏を実体化して渡らせると
 （[`VoyageStormStats.md`](../diagnostics/VoyageStormStats.md)）、**乾季の航海はほとんど押し流されません**
 ——伸びるのは
@@ -264,7 +264,7 @@
 24<!-- stats: climate.yaml season_duration min 最小 --><!-- stats: climate.yaml season_duration min 最大 -->〜36<!-- stats: climate.yaml season_duration max 最小 --><!-- stats: climate.yaml season_duration max 最大 -->
 日で回り、乾季の次の乾季までには穏やかと雨季が挟まるので、乾季を逃せばその 2 季ぶんを待つことになります
 ——引き返して逃した場合も同じで、引き返しの代償（[`GameEndings.md`](../concept/GameEndings.md) 12.5 節）
-にはこれが乗ります。**得る 1 日足らずに対して待ちが 2 桁大きいので、今の重みでは「窓を待つ」は
+にはこれが乗ります。**得るものに対して待ちが桁違いに大きいので、今の重みでは「窓を待つ」は
 選択になりません**——期限として働かせるなら、動かすのは風向きの重みでも荒天の押し流しでもなく、
 季節が航海へ返すものの側です。
 
@@ -272,7 +272,9 @@
 7.61 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet p95 -->を超え、最も長い
 回は
 9.66 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet max -->かかりました
-——**平均が半日しか動かないのに裾は 3 日以上伸びる**ので、雨季に出ることの代償は日数の期待値ではなく、
+——**平均は
+0.40 日<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=wet extra_days -->しか動かないのに
+裾はこれだけ伸びる**ので、雨季に出ることの代償は日数の期待値ではなく、
 積む量をどれだけ厚くするかに出ます（[`GameEndings.md`](../concept/GameEndings.md) 3.1 節の「読めない
 伸びをどう見込むか」、3.9.3 節）。
 
@@ -291,7 +293,7 @@
 同じ海区から出る 2 本の航路が必ず同じ時間になり、分かれ道が「今なら短く渡れる航路」を出せません**
 （3 節）。
 
-**素の横断時間はどの海区も 360 分で、海区ごとの差はありません**（`sea_zone` trait が 1 度だけ持ちます）。
+**素の横断時間はどの海区も 360 分<!-- codex: voyage.yaml traits.sea_zone.props.crossing_minutes.value -->で、海区ごとの差はありません**（`sea_zone` trait が 1 度だけ持ちます）。
 海図が持てるのは残りの海区数だけなので（[`GameEndings.md`](../concept/GameEndings.md) 12.6 節）、推定日数は
 **これから渡る 1 区間の時間で残り全部を代表して**出すしかありません（同 9.3 節）。海区ごとに違えば、その
 1 区間は全体を代表せず、**鎖の先頭に立つ最も遠い出航地点が最も短く見える**といったことが起きます。
@@ -299,14 +301,14 @@
 
 | `sail_speed` の段 | `crossing_minutes` への寄与 |
 |---|---|
-| `becalmed`（0〜1） | 0 |
-| `slow`（2〜3） | −30 |
-| `moderate`（4〜） | −60 |
+| `becalmed`（0<!-- codex: voyage.yaml object_defs.raft.props.sail_speed.range.min -->〜1） | 0 |
+| `slow`（2<!-- codex: voyage.yaml object_defs.raft.props.sail_speed.stages.1.min -->〜3） | −30<!-- codex: voyage.yaml object_defs.raft.props.sail_speed.stages.1.passives.0.modify.parent.crossing_minutes --> |
+| `moderate`（4<!-- codex: voyage.yaml object_defs.raft.props.sail_speed.stages.2.min -->〜） | −60<!-- codex: voyage.yaml object_defs.raft.props.sail_speed.stages.2.passives.0.modify.parent.crossing_minutes --> |
 
-`sail_speed` の素の値は0で、寄与は海流・積載・帆だけです。**陸に居る間はどれも効かない**ので、
+`sail_speed` の素の値は0<!-- codex: voyage.yaml object_defs.raft.props.sail_speed.value -->で、寄与は海流・積載・帆だけです。**陸に居る間はどれも効かない**ので、
 浜に繋いだ筏は横断時間を縮めません。段で刻むのは、`modify` の量がリテラルしか書けないためです
 （[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 8.3 節）——可変の効き方を段に写しています。
-**段が 3 つなのは、寄与の合計が 0〜5 にしかならないから**です（海流 +3、帆 +2、積載 0〜−6）——
+**段が 3 つなのは、寄与の合計が 0〜5 にしかならないから**です（海流 +3<!-- codex: voyage.yaml traits.sea_zone.passives.0.modify.child.sail_speed -->、帆 +2<!-- codex: voyage.yaml object_defs.rawhide_sail.passives.0.modify.parent.sail_speed -->、積載 0〜−6<!-- codex: voyage.yaml object_defs.raft.props.weight.stages.3.passives.0.modify.self.sail_speed -->）——
 届かない段を並べても、読む人に「どうすればそこへ届くのか」を探させるだけになります。
 
 #### 航路が風をどう受けるか
@@ -317,8 +319,8 @@
 
 | 辺の伸びる先 | 追い風 | 横風 | 向かい風 |
 |---|--:|--:|--:|
-| 本土の側（行き先のほうが本土に近い） | −60 | −30 | +30 |
-| 沖の側（行き先のほうが本土から遠い） | +30 | −30 | −60 |
+| 本土の側（行き先のほうが本土に近い） | −60<!-- codex: voyage.yaml traits.sea_route.passives.1.modify.self.crossing_minutes --> | −30<!-- codex: voyage.yaml traits.sea_route.passives.0.modify.self.crossing_minutes --> | +30<!-- codex: voyage.yaml traits.sea_route.passives.2.modify.self.crossing_minutes --> |
+| 沖の側（行き先のほうが本土から遠い） | +30<!-- codex: voyage.yaml traits.sea_route.passives.3.modify.self.crossing_minutes --> | −30<!-- codex: voyage.yaml traits.sea_route.passives.0.modify.self.crossing_minutes --> | −60<!-- codex: voyage.yaml traits.sea_route.passives.4.modify.self.crossing_minutes --> |
 
 **航路そのものは向きを持ちません**（3.5 節）。同じ型の航路が辺の両端に立っても、立っている海区が違えば
 差の符号が逆になるので、**同じ辺を逆に渡れば追い風は向かい風になります**——引き返しの代償
@@ -326,7 +328,7 @@
 どちらへ伸びる辺にも横から当たる**ので、方角を見ません。
 
 **分かれ道の 2 本が差を持つのはここです**（3 節）。近道（うねりの海 → 流れ藻の海）は本土へ近づく辺、
-遠回りの入口（うねりの海 → 沖の潮目）は本土から遠ざかる辺なので、向かい風の日は遠回りのほうが 90 分
+遠回りの入口（うねりの海 → 沖の潮目）は本土から遠ざかる辺なので、向かい風の日は遠回りのほうが
 短く渡れます。**「遠回りだが今なら短く渡れる航路」と「最短だが今は長くかかる航路」が同時に盤面へ出る**
 （同 12.3 節）のは、この 1 点だけです。
 
@@ -340,12 +342,9 @@
 
 **横断時間は漕ぎ出すときに読み切ります**（`duration` は効果より先に時計を進めます）。渡っている最中に
 風が変わっても伸び縮みしないので、針路の判断が博打になりません
-（[`GameEndings.md`](../concept/GameEndings.md) 12.3 節）。**最も良い条件でも 240 分**（360 − 60 − 60。
-軽く積んで帆を張り、本土へ近づく辺を追い風で渡ったとき）で、`range` の下限 120 分は、寄与がどれだけ
-重なっても横断時間が消えないための底です。**最も悪くて 390 分**（360 + 30。積みすぎた筏が、本土へ近づく辺を
-向かい風で渡ったとき）。
+（[`GameEndings.md`](../concept/GameEndings.md) 12.3 節）。`range` の下限 120 分<!-- codex: voyage.yaml traits.sea_zone.props.crossing_minutes.range.min --><!-- codex: voyage.yaml traits.sea_route.props.crossing_minutes.range.min -->は、寄与がどれだけ重なっても横断時間が消えないための底です。
 
-**海流は海区が `modify: {child: ...}` で、浮かんでいるものすべてへ +3 を配ります。** 筏の側に「今どこの
+**海流は海区が `modify: {child: ...}` で、浮かんでいるものすべてへ +3<!-- codex: voyage.yaml traits.sea_zone.passives.0.modify.child.sail_speed --> を配ります。** 筏の側に「今どこの
 海に居るか」を書かずに済み、海区ごとに別の海流を持たせることもできます（今は揃えてあります）。
 
 帆の寄与だけは、条件の書き方が他と違います。筏自身なら親の型で絞れますが（`parent` が
@@ -355,16 +354,17 @@
 **積荷は `weight` の段が速さを削ります。** 筏の `weight` は中身の重さを含む実効値なので
 （[`ContainerSystem.md`](../engine/ContainerSystem.md) 1 節）、積むほど段が上がり、横断が長くなります。
 
-| 積荷 | `sail_speed` への寄与 |
+| `weight` の段 | `sail_speed` への寄与 |
 |---|---|
-| 80kgまで | 0 |
-| 80〜160kg | −1 |
-| 160〜240kg | −3 |
-| 240kg超 | −6 |
+| `light` | 0 |
+| `laden` | −1<!-- codex: voyage.yaml object_defs.raft.props.weight.stages.1.passives.0.modify.self.sail_speed --> |
+| `heavy` | −3<!-- codex: voyage.yaml object_defs.raft.props.weight.stages.2.passives.0.modify.self.sail_speed --> |
+| `overladen` | −6<!-- codex: voyage.yaml object_defs.raft.props.weight.stages.3.passives.0.modify.self.sail_speed --> |
 
-**表の「積荷」は乗員を含みません。** 乗員（65kg、[`Characters.md`](./Characters.md)）は航海中ずっと
-乗っているので、`weight` の段の境目はその65kgを見込んだ値で書いてあります。**手に持てば積まずに済む、
-とはなりません**——手持ちの重さも乗員を通って筏へ届きます（[`ContainerSystem.md`](../engine/ContainerSystem.md)
+**段の境目は乗員を見込んでいます。** 乗員（[`Characters.md`](./Characters.md)）は航海中ずっと
+乗っているので、`weight` の段の境目はその体重を含めた値で書いてあります（`voyage.yaml` の筏の `weight`。
+空の筏と乗員から測った積荷の量は `tests/world-codex/voyageYaml.test.ts` が見ます）。
+**手に持てば積まずに済む、とはなりません**——手持ちの重さも乗員を通って筏へ届きます（[`ContainerSystem.md`](../engine/ContainerSystem.md)
 1.1 節）。
 
 これで「積荷を捨てれば速くなり、速いほど水と食料が保つ」（[`GameEndings.md`](../concept/GameEndings.md) 4 節）が、
@@ -429,7 +429,7 @@
 （[`GameEndings.md`](../concept/GameEndings.md) 11 節）。錫を使う先（製錬と青銅の道具）は刃物・打撃の系統
 （[`ContentSkeleton.md`](./ContentSkeleton.md) 4 節）が持つので、ここにあるのは物そのものだけです。
 
-**卓はどの候補も 2 個ずつ返す形で、錫は重み 20 / 120。** 地上の土地と同じ配り方
+**卓はどの候補も 2 個<!-- codex: voyage.yaml object_defs.offshore_islet.interactions.explore.pick.0.spawn.count --><!-- codex: voyage.yaml object_defs.offshore_islet.interactions.explore.pick.2.spawn.count --><!-- codex: voyage.yaml object_defs.offshore_islet.interactions.explore.pick.4.spawn.count --><!-- codex: voyage.yaml object_defs.offshore_islet.interactions.explore.pick.5.spawn.count -->ずつ返す形で、錫は重み 20<!-- codex: voyage.yaml object_defs.offshore_islet.interactions.explore.pick.5.weight --> / 120。** 地上の土地と同じ配り方
 （1 回の探索で平均 2 個、`locations.yaml`）のまま候補を 1 つ増やしただけなので、実りの濃さは動いていません。
 1 個 1.5 kg（石より重い）なので、持ち帰る量がそのまま帰りの速さを削ります（3.2 節）。
 
@@ -492,10 +492,10 @@
 出ても 2 区間ぶん増えます。
 
 **最寄りの小島はどの海岸からも海鳥の岩**（島側から 5 番目）です。岸壁はその海区に面しているので、出航して
-見張り 3 回で小島が現れます——**岸壁から出る人にとって、中盤の沿岸航海は「出て、上陸して、戻る」だけ**です。
-砂浜から出るなら 4 区間の往復（素の横断時間で 2,880 分——3.9.1 節と同じ物差しで 3.5 日、帆と追い風が
+見張り 3 回<!-- codex: voyage.yaml object_defs.gull_rock.props.exploration_progress.range.max -->で小島が現れます——**岸壁から出る人にとって、中盤の沿岸航海は「出て、上陸して、戻る」だけ**です。
+砂浜から出るなら 4 区間の往復（素の横断時間で 2,880 分、帆と追い風が
 あればもっと短い）になり、
-これが 11 節の言う「戻ってこられる範囲の航海」の実体です。**距離を選んだのは出航地点を選んだときで、
+これが `GameEndings.md` 11 節の言う「戻ってこられる範囲の航海」の実体です。**距離を選んだのは出航地点を選んだときで、
 小島の側に遠近の仕掛けはありません。**
 
 **地点差を持たせる仕組みはありません。** 海岸が持つのは「自分はどの海区に面しているか」の 1 点だけで、
@@ -515,7 +515,7 @@
 1 つだけ立てるので抽選になりませんが、2 つ立てれば「風向き次第でどちらへ出るか」も同じ卓で書けます。
 
 **この差が判断になるのは、筏をその海岸まで運ぶ手が要るからです。** 丸太は 1 本ずつしか運べない（1 節）ので、
-遠い海岸を選ぶことは 6 往復ぶんの島側の仕事を選ぶことでもあります。岸壁は歩きにくく（`move_cost` 1.7）、
+遠い海岸を選ぶことは 6 往復ぶんの島側の仕事を選ぶことでもあります。岸壁は歩きにくく（`move_cost` 1.7<!-- codex: terrain_generation.yaml location_types.cliff_coast.move_cost -->）、
 どの島にもあるとは限りません（[`stats/terrain.yaml`](../../stats/terrain.yaml) の
 `location_type_counts` の `cliff_coast`）。**資材の運搬コストと航海日数を秤に
 かける判断**が、ここに残ります。
@@ -533,20 +533,20 @@
 海区が持つのは次のとおりです。
 
 - `zones_to_mainland` — その海区から本土まで、その海区を含めて**最短で**何区間あるか。**海の側の
-  事実**で、島側の端（島影の海）が 12、本土の手前（本土の島影）が 1（3.6 節の表の「本土まで最短で」
+  事実**で、島側の端（島影の海）が 12<!-- codex: voyage.yaml object_defs.coastal_waters.props.zones_to_mainland.value -->、本土の手前（本土の島影）が 1<!-- codex: voyage.yaml object_defs.mainland_shallows.props.zones_to_mainland.value -->（3.6 節の表の「本土まで最短で」
   そのもの）。**分岐があるので 1 つの数で言えるのは最短だけ**です——遠回りを選べば実際は 2 区間ぶん
   延びますが、それは海図の粗さではなく針路の選択なので、下の幅には入りません。**この数は隣どうしで
-  必ず 1 違うわけでもありません**——遠回りの側の隣（沖の潮目、5）は、分かれ道（うねりの海、4）より
+  必ず 1 違うわけでもありません**——遠回りの側の隣（沖の潮目、5<!-- codex: voyage.yaml object_defs.outer_tide_rip.props.zones_to_mainland.value -->）は、分かれ道（うねりの海、4<!-- codex: voyage.yaml object_defs.long_swell.props.zones_to_mainland.value -->）より
   遠くなります。
 - `zones_to_mainland_min` / `zones_to_mainland_max` — 海図が言う下限と上限。**土台は上の真値**で、
-  そこへ記入の粗さが幅として乗ります。下限は 0 で止まります。
+  そこへ記入の粗さが幅として乗ります。下限は 0<!-- codex: voyage.yaml traits.sea_zone.props.zones_to_mainland_min.range.min --> で止まります。
 
 幅を配るのは記入の印だけです。
 
 | 海図の記入 | 幅 | 立てるもの |
 |---|---|---|
-| 方角しか分からない | ±5 海区 | 初期値（漂流物の向き・鳥の方角、9.1 節） |
-| 山頂から見定めた | ±2 海区 | 山頂の探索（`locations.yaml`） |
+| 方角しか分からない | ±5 海区<!-- codex: voyage.yaml traits.sea_zone.props.chart_crossed.stages.0.passives.0.modify.self.zones_to_mainland_max --> | 初期値（漂流物の向き・鳥の方角、同 9.1 節） |
+| 山頂から見定めた | ±2 海区<!-- codex: voyage.yaml traits.sea_zone.props.chart_crossed.stages.0.passives.1.modify.self.zones_to_mainland_max --> | 山頂の探索（`locations.yaml`） |
 | 渡った | 幅無し | その海区自身 |
 
 **渡った海区を記入するのは海区自身です。** 筏が浮かんでいるかは自分の中を見れば分かるので、渡らせた
@@ -558,7 +558,7 @@
 入っている区画を見直すこともある**ので、14 区画すべてが埋まるには何度も登ることになります。これが
 「山頂へ到達すること自体が中盤の目標になる」（同 9.1 節）の中身です。
 
-9.1 節の残る段階——海岸線の踏破と、海流・季節風の把握——はまだありません。**幅を狭める段を
+同 9.1 節の残る段階——海岸線の踏破と、海流・季節風の把握——はまだありません。**幅を狭める段を
 足す形でそのまま入ります**（今あるものと同じで、幅の表に行が増えるだけです）。
 
 ### 3.8 荒天は、風下の隣の海区へ押し流す
@@ -583,7 +583,7 @@
 持ち、海区が書くのは隣だけです。
 
 - 海区は「この海区で荒天にさらされた時間」（`storm_drift`）を持ち、**筏がそこに浮いている間だけ**
-  1 tick ずつ進みます。折り返す点に達すると 1 回押し流して 0 へ戻ります（`range` + `on_max`、
+  1 tick<!-- codex: voyage.yaml traits.sea_zone.passives.5.add.self.storm_drift --> ずつ進みます。折り返す点に達すると 1 回押し流して 0 へ戻ります（`range` + `on_max`、
   [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.3 節）。**海岸に繋いだままの筏が
   流されない**のは、この条件が筏の在処を見ているからです。
 - **風下は風向き（3.1 節）が決めます**——追い風なら本土の側の隣、向かい風なら島の側の隣。
@@ -614,8 +614,8 @@
 
 | 顔ぶれ | さらされてから押し流されるまで |
 |---|--:|
-| 岩礁（岩礁の海・黒い岩礁） | 8 tick（2 時間） |
-| その他 | 16 tick（4 時間） |
+| 岩礁（岩礁の海・黒い岩礁） | 8 tick<!-- codex: voyage.yaml object_defs.reef_shallows.props.storm_drift.range.max --><!-- codex: voyage.yaml object_defs.black_reef.props.storm_drift.range.max -->（2 時間） |
+| その他 | 16 tick<!-- codex: voyage.yaml traits.sea_zone.props.storm_drift.range.max -->（4 時間） |
 
 岩礁だけが短いのは、[`ContentSkeleton.md`](./ContentSkeleton.md) 7 節が岩礁に与えている役割
 （**荒天で押し流されやすい**）です。**顔ぶれの差はこの長さだけ**で、押し流し方そのものはどの海区も
@@ -635,7 +635,7 @@
 （[`VoyageStormStats.md`](../diagnostics/VoyageStormStats.md)）。**効くのは戻された区間ではなく、
 渡っている最中に流されて空振りになった渡りのほう**で、雨季は 1 回の航海で
 1.30 回<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet voided_crossings -->——押し流しの
-回数（0.82 + 0.47）と、小数第 2 位へ丸めた幅では見分けが付きません。**押し流しはほぼ必ず渡っている
+回数（0.82<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet backwards --> + 0.47<!-- stats: voyage_storm.yaml sweeps coast=sandy_beach season=wet forwards -->）と、小数第 2 位へ丸めた幅では見分けが付きません。**押し流しはほぼ必ず渡っている
 最中に来ます**（航海に費やす時間の大半が横断だからです）。空振りは押し流しの部分集合なので、丸める
 前の割合が 100% を超えることはありません。
 
@@ -656,7 +656,7 @@
 
 **3 節の網から出る所要時間は、最も長い出航地点と針路でも素の速さで
 6.4 日<!-- stats: voyage.yaml courses days 最大 -->で、1 週間には届きません。** 各海区で航路が現れるまでの見張り（3 節の表）と、
-素の横断 360 分（3.2 節）の合計を、島と同じ物差し（1 日ぶんの自由時間
+素の横断 360 分<!-- codex: voyage.yaml traits.sea_zone.props.crossing_minutes.value -->（3.2 節）の合計を、島と同じ物差し（1 日ぶんの自由時間
 891 分<!-- stats: voyage.yaml meta daily_free_minutes -->。[`ContentSkeleton.md`](./ContentSkeleton.md)
 4 節）で割ったものです。**数を出すのは [`stats/voyage.yaml`](../../stats/voyage.yaml) の `courses`**
 （読み方は [`VoyageStats.md`](../diagnostics/VoyageStats.md)）。
@@ -670,7 +670,7 @@
 | 岸壁（海鳥の岩から） | 近道 | 8<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs --> | 28<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookouts --> 回 | 420 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest lookout_minutes --> | 2,880 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest crossing_minutes --> | 3,300 分<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest total_minutes --> | 3.7<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest days --> |
 | 岸壁 | 遠回り | 10<!-- stats: voyage.yaml courses coast=cliff_coast course=detour legs --> | 34<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookouts --> 回 | 510 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour lookout_minutes --> | 3,600 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour crossing_minutes --> | 4,110 分<!-- stats: voyage.yaml courses coast=cliff_coast course=detour total_minutes --> | 4.6<!-- stats: voyage.yaml courses coast=cliff_coast course=detour days --> |
 
-**遠回りを選ぶと、どの海岸からでも 1 日近く増えます**（沖の潮目と黒い岩礁の 2 区間で
+**遠回りを選ぶと、どの海岸からでも同じだけ増えます**（沖の潮目と黒い岩礁の 2 区間で
 810 分<!-- stats: voyage.yaml courses coast=sandy_beach total_minutes 幅 --><!-- stats: voyage.yaml courses coast=rocky_coast total_minutes 幅 --><!-- stats: voyage.yaml courses coast=cliff_coast total_minutes 幅 -->）。帆と追い風が
 あれば縮み、荒天の押し流し（3.8 節）と引き返し（3.5 節）が伸ばします。
 
@@ -679,7 +679,7 @@
 いません**——1 航海ぶんの見張りは、嵐を引いた明るい時間にも収まるからです（3.10 節）。**乾季と穏やかな季節では、表のままです**
 ——押し流されるのは雨季で、平均は
 0.40 日<!-- stats: voyage_storm.yaml storm_cost coast=sandy_beach season=wet extra_days -->しか伸びない
-一方、**20 回に 1 回は 7 日近くかかります**（3.1 節）。**積む「4〜6 日ぶん」（3.9.3 節）は乾季に出た
+一方、**20 回に 1 回は 7.61 日<!-- stats: voyage_storm.yaml course_storm coast=sandy_beach season=wet p95 -->を超えます**（3.1 節）。**積む「4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日ぶん」（3.9.3 節）は乾季に出た
 場合の話**で、雨季に出るなら積む量はその裾で決めることになります。
 
 **それでも遠回りは、時間では選べません。** 同じ風が続く日で比べると、遠回りは近道より常に長くかかります
@@ -688,18 +688,18 @@
 遠回りは 6,045 分<!-- stats: voyage.yaml course_wind coast=sandy_beach course=detour wind=headwind total_minutes -->、
 追い風でも 4,185 分<!-- stats: voyage.yaml course_wind coast=sandy_beach course=shortest wind=tailwind total_minutes -->に対して
 4,965 分<!-- stats: voyage.yaml course_wind coast=sandy_beach course=detour wind=tailwind total_minutes --> です。
-**風が 1 区間へ乗せる幅は最大でも 90 分**（3.2 節）**で、遠回りが増やす 2 区間には届きません。**
-**遠回りが返すのは時間ではなく実りです**（3.6 節）——沖の潮目は見張り 3 回のうちに
+**風が 1 区間へ乗せる幅**（3.2 節）**は、遠回りが増やす 2 区間には届きません**（`tests/world-codex/voyageYaml.test.ts`）。
+**遠回りが返すのは時間ではなく実りです**（3.6 節）——沖の潮目は見張り 3 回<!-- codex: voyage.yaml object_defs.outer_tide_rip.props.exploration_progress.range.max -->のうちに
 99%<!-- stats: voyage.yaml zone_yields zone=outer_tide_rip spawned_by_sighting ±1 -->の割で群れが立ち、
-群れ 1 つは 3 日ぶんの身になります（3.9.2 節）。**1 日ぶんの時間を払って 3 日ぶんの当てを買う**のが
+群れ 1 つは 3 日ぶんの身になります（3.9.2 節）。**2 区間ぶんの時間を払って 3 日ぶんの当てを買う**のが
 遠回りで、**風はその判断を動かしません。**
 
 **だから「30 日ぶんを積む」という前提は、海区の網が入った時点で既に事実ではありません。**
-[`ContentSkeleton.md`](./ContentSkeleton.md) 5 節が要求するのも、この 4〜6 日ぶんです。塩蔵が保つ 20 日
-（[`SurvivalItems.md`](./SurvivalItems.md) 9 節）は航海の 3 倍以上あり、**足りない 10 日という穴も
+[`ContentSkeleton.md`](./ContentSkeleton.md) 5 節が要求するのも、この 4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日ぶんです。塩蔵が保つ 20 日
+（[`SurvivalItems.md`](./SurvivalItems.md) 9 節）は航海の日数を大きく上回り、**足りない 10 日という穴も
 ありません**。**航海をこれ以上短くはしません**——やることの少ない区間は詰めるのが既定ですが
 （[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「退屈な区間は、簡単になりすぎない範囲で
-短くする」節）、4 日はもう短い側で、ここから削ると渡る手応えごと無くなります。
+短くする」節）、4 日<!-- stats: voyage.yaml courses days 最小 -->はもう短い側で、ここから削ると渡る手応えごと無くなります。
 
 #### 3.9.2 釣りは、魚の群れへ当てたときだけよく獲れる
 
@@ -707,16 +707,16 @@
 
 | 突く相手 | 1 回 | 生肉 1 つ | 空振り | 銛を失う |
 |---|--:|--:|--:|--:|
-| 海区に立った魚の群れ（`fish_shoal`） | 30 分 | 78 | 20 | 2 |
-| 群れの居ない海面（筏から） | 60 分 | 15 | 83 | 2 |
+| 海区に立った魚の群れ（`fish_shoal`） | 30 分<!-- codex: voyage.yaml object_defs.fish_shoal.interactions.spear_shoal.duration --> | 78<!-- codex: voyage.yaml object_defs.fish_shoal.props.catch_chance.value --> | 20<!-- codex: voyage.yaml object_defs.fish_shoal.interactions.spear_shoal.pick.1.weight --> | 2<!-- codex: voyage.yaml object_defs.fish_shoal.interactions.spear_shoal.pick.2.weight --> |
+| 群れの居ない海面（筏から） | 60 分<!-- codex: voyage.yaml object_defs.raft.interactions.spear_sea.duration --> | 15<!-- codex: voyage.yaml object_defs.raft.props.catch_chance.value --> | 83<!-- codex: voyage.yaml object_defs.raft.interactions.spear_sea.pick.1.weight --> | 2<!-- codex: voyage.yaml object_defs.raft.interactions.spear_sea.pick.2.weight --> |
 
 **表の数は卓の重みで、1 回あたりの当たりはその重みが卓に占める割合そのものです**
 （[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 10 節）。**以下に出す割合は、どれも
 この割り算から出ます**——突いた回数を数えて測った値ではありません。
 
 **表は素人の卓で、狩猟の腕は当たる側だけを押し上げます。** 生肉の重みが狙い（`hunting_aim`）を `base` の
-土台にするためで（[`Skills.md`](./Skills.md) 5 節）、`expert`（+40）では群れが 78 → 118、海面が
-15 → 55 になります。**空振りと銛を失う重みは動かない**ので、獲れる割合は群れで 78% → 84%、海面で
+土台にするためで（[`Skills.md`](./Skills.md) 5 節）、`expert`（+40<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.hunting_aim -->）では群れが 78<!-- codex: voyage.yaml object_defs.fish_shoal.props.catch_chance.value --> → 118、海面が
+15<!-- codex: voyage.yaml object_defs.raft.props.catch_chance.value --> → 55 になります。**空振りと銛を失う重みは動かない**ので、獲れる割合は群れで 78% → 84%、海面で
 15% → 39% です。
 
 **そのぶん、群れと海面の落差は縮みます**——素人の 5.2 倍が `expert` では 2.1 倍です。加算なので相手ごとの
@@ -742,7 +742,7 @@
 
 #### 3.9.3 積むのは予定ぶん、釣るのは狂ったぶん
 
-**1 日ぶんは生肉 3 つです**（満腹 500 が 3 つで 1,500。1 日に減るのは
+**1 日ぶんは生肉 3 つです**（満腹 500<!-- codex: animals.yaml object_defs.raw_meat.interactions.eat.add.agent.satiety --> が 3 つで 1,500。1 日に減るのは
 1,536<!-- stats: balance.yaml daily_needs property=satiety daily_need -->。
 [`DigestionSystem.md`](../engine/DigestionSystem.md) 2 節）。ここから次の数が出ます。
 
@@ -750,52 +750,53 @@
   （熟達すれば 3.6 回）。
 - **群れの出なかった日は、6 時間釣っても 1 切れに届きません**（0.9。熟達しても 2.4 で、1 日ぶんの
   3 には届きません）。**丸一日（1 日ぶんの自由時間 891 分<!-- stats: voyage.yaml meta daily_free_minutes -->）
-  粘って 2 切れ**（熟達で 5 切れ）ですが、**丸一日釣れば
+  粘っても 1 日ぶんに届きません**（熟達すれば届きます）。しかも**丸一日釣れば
   その日は 1 海区も進みません**（3 節。横断は 360 分、3.2 節）——熟達した腕で足りるようになるのは、
   進むのをやめた日のぶんだけです。**釣りだけで出れば、群れの無い区間は赤字**です——砂浜から
-  **今の網**（3 節）**では**、近道を行く 12 区間のうち群れの立ちうる海区は 4 つで、残る 8 区間がそれにあたります。**岸壁から出る
-  8 区間では 1 つだけ**（本土の島影）——**「短い航路ほど補給の当てが無い」**（3.6 節）**は、そのまま
-  「短い航路ほど積んで出なければならない」**になります。
-- **だから積むのは 4〜6 日ぶん**（3.9.1 節の遠回りの日数ぶん）。生肉 12〜18 個で 6〜9 kg なので、**積荷の段が
-  上がる 80 kg**（3.2 節）**には遠く、予定ぶんを積むこと自体は速さを削りません。** 削られるのは、
+  **今の網**（3 節）**では**、近道を行く 12 区間<!-- stats: voyage.yaml courses coast=sandy_beach course=shortest legs -->のうち群れの立ちうる海区は 4 つで、残る区間がそれにあたります。**岸壁から出る
+  8 区間<!-- stats: voyage.yaml courses coast=cliff_coast course=shortest legs -->では 1 つだけ**（本土の島影）——**「短い航路ほど補給の当てが無い」**（3.6 節）**は、そのまま
+  「短い航路ほど積んで出なければならない」になります**。
+- **だから積むのは 4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日ぶん**（3.9.1 節の針路の日数ぶん）。1 日 3 つを日数ぶん積んでも、**積荷の段が
+  上がる境目**（3.2 節の `laden`）**には届かず、予定ぶんを積むこと自体は速さを削りません**
+  （`tests/world-codex/voyageYaml.test.ts`）。削られるのは、
   それを塩漬けにするまでの島側の時間です。
 
-**生肉は、満腹と一緒に菌も運びます**（1 切れ `pathogen` +3、
+**生肉は、満腹と一緒に菌も運びます**（1 切れ `pathogen` +3<!-- codex: animals.yaml object_defs.raw_meat.interactions.eat.add.agent.pathogen -->、
 [`DigestionSystem.md`](../engine/DigestionSystem.md) 6 節）。**塩漬けにしても消えません**——`cure` を
 通した先も同じ `eat` を継ぐので、**製塩が前提であること**（3.9.2 節）**は、菌を避ける手にはなりません。**
 
-**それでも 1 日 3 つは、症状の段へ届きません。** 入る菌は 1 日 9 ですが、感染している間は免疫が上がり
+**それでも 1 日 3 つは、症状の段へ届きません。** 入る菌は 1 切れ +3<!-- codex: animals.yaml object_defs.raw_meat.interactions.eat.add.agent.pathogen --> ずつですが、感染している間は免疫が上がり
 続け（+0.25/tick<!-- stats: balance.yaml consumption property=immunity condition=in_stage_or_above(self.pathogen,latent) character=medic per_tick -->）、
-素の 60 から 10 時間で最上段（`primed`）へ届きます。そこから先は 1 tick に
+素の 60<!-- codex: characters/player_character.yaml traits.player_character.props.immunity.value --> からやがて最上段（`primed`）へ届きます。そこから先は 1 tick に
 −0.30<!-- stats: balance.yaml consumption property=pathogen condition=stage(self.immunity,primed) character=medic per_tick --> 引くので、
 菌自身の増殖（+0.15/tick<!-- stats: balance.yaml consumption property=pathogen condition=in_stage_or_above(self.pathogen,latent) character=medic per_tick -->）を
-差し引いた正味で 1 日 14 引けます。入る 9 を上回るので、**菌は食事ごとに 0 へ戻ります**（他の段が引く量は
-[`DigestionSystem.md`](../engine/DigestionSystem.md) 6.2 節）。**条件は間隔です**——発熱の段は 5 なので、
-1 切れ +3 が 2 回続けて入ればその場で乗ります。最上段へ届くまでは `robust` の
+差し引いた正味でも、1 日で入るぶんを上回って引けるので、**菌は食事ごとに 0 へ戻ります**（他の段が引く量は
+[`DigestionSystem.md`](../engine/DigestionSystem.md) 6.2 節）。**条件は間隔です**——発熱の段は 5<!-- codex: characters/player_character.yaml traits.player_character.props.pathogen.stages.2.min --> なので、
+1 切れ +3<!-- codex: animals.yaml object_defs.raw_meat.interactions.eat.add.agent.pathogen --> が 2 回続けて入ればその場で乗ります。最上段へ届くまでは `robust` の
 −0.20<!-- stats: balance.yaml consumption property=pathogen condition=stage(self.immunity,robust) character=medic per_tick --> なので、
-増殖を差し引いた正味（−0.05/tick）では 1 引くのに 5 時間かかり、**間隔が 5 時間では 1 日 3 つでも
-ちょうど段に乗ります**——起きている時間帯へ 3 食を寄せるとそこが境目で、8 時間おきに離せば届きません。
+増殖を差し引いた正味がごくわずかで、**間隔が詰まると 1 日 3 つでも段に乗ります**——起きている時間帯へ 3 食を寄せるあたりが境目で、満腹が減るたびに食べる間隔なら届きません
+（`tests/world-codex/pathogen.test.ts`）。
 
 **崩れるのは、免疫の押し下げを抱えて出航したときです。** 押し下げのぶん最上段へ届くのが遅れ、その間の
-正味は 1 日 5 しか引けないので、入る 9 が勝って積み上がります——**ビタミン不足（−15）を抱えて出るだけで、
-初日のうちに発熱の段へ乗ります。** 壊血病（−40）まで行くと最上段へ届かなくなり、菌は上限へ暴走します。
+正味で引ける量が入るぶんを下回るので、積み上がります——**ビタミン不足（−15<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.1.passives.0.modify.self.immunity -->）を抱えて出るだけで、
+初日のうちに発熱の段へ乗ります。** 壊血病（−40<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.0.passives.0.modify.self.immunity -->）まで行くと最上段へ届かなくなり、菌は上限へ暴走します。
 
 **釣りが賄うのは、予定が狂ったぶんです。** 荒天は未知の海区へ押し流し（3.8 節）、引き返しは来た区間を
 もう一度渡らせます（3.5 節）——**どちらも何日伸びるかを出航前には出せない**ので、そこを積んで先回り
 することはできません。**積む量は読める日数ぶん、釣りは読めない日数ぶん**、という分担になります。
 
-**海の食料は釣りだけではありません。** 海藻（満腹 200・ビタミン 60。海藻の帯と沿岸で拾え、塩漬けで
-20 日保つ）と海鳥の卵（満腹 150。殻が隔てるので芋と同じ 20 日）、それに海鳥の群れを狩って得る生肉が
+**海の食料は釣りだけではありません。** 海藻（満腹 200<!-- codex: voyage.yaml object_defs.seaweed.interactions.eat.add.agent.satiety -->・ビタミン 60<!-- codex: voyage.yaml object_defs.seaweed.interactions.eat.add.agent.vitamin -->。海藻の帯と沿岸で拾え、塩漬けで
+20 日保つ）と海鳥の卵（満腹 150<!-- codex: voyage.yaml object_defs.bird_egg.interactions.eat.add.agent.satiety -->。殻が隔てるので芋と同じ 20 日）、それに海鳥の群れを狩って得る生肉が
 あります（3 節の表）。**群れの出ない日に効くのはこちら**で、釣りを入れたことで潰れてはいません。
 
-**ビタミンを運ぶのは、そのうち海藻です**——卵は 10、生肉は 1 切れ 2 しかありません。
+**ビタミンを運ぶのは、そのうち海藻です**——卵は 10<!-- codex: voyage.yaml object_defs.bird_egg.interactions.eat.add.agent.vitamin -->、生肉は 1 切れ 2<!-- codex: animals.yaml object_defs.raw_meat.interactions.eat.add.agent.vitamin --> しかありません。
 1 日に回るのは 48<!-- stats: balance.yaml daily_needs property=vitamin daily_need --> なので、**生肉 3 つでは
-42 ずつ削れていきます。** 4〜6 日なら、素の蓄え（900）から押し下げの段（600 未満）へは届きませんが、
+その大半が毎日削れていきます。** 予定どおりの日数なら、素の蓄え（900<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.value -->）から押し下げの段（600<!-- codex: characters/player_character.yaml traits.player_character.props.vitamin.stages.2.min --> 未満）へは届きませんが、
 **削ったまま出るか、荒天と引き返しで伸びれば入ります**——予定が狂ったときに要るのは、満腹を埋める釣り
 だけではありません。
 
-**脂も同じ形で足りません**——1 日に要る 24 に対して、生肉 3 つが運ぶのは 12 です
-（[`DigestionSystem.md`](../engine/DigestionSystem.md) 3 節）。**ただしこちらは釣りではなく積む側で
+**脂も同じ形で足りません**——1 日に要る 24<!-- stats: balance.yaml daily_needs property=lipid daily_need --> に、生肉 1 日 3 つでは届きません
+（[`DigestionSystem.md`](../engine/DigestionSystem.md) 3 節。`tests/world-codex/pathogen.test.ts`）。**ただしこちらは釣りではなく積む側で
 埋まります**（3.9.6 節）。
 
 #### 3.9.4 道具は突き銛で、失っても海の上で作り直せる
@@ -812,18 +813,17 @@
 ためです。槍の軸は若木を切って採る長い棒で（[`SurvivalItems.md`](./SurvivalItems.md) 3 節）、そこへ
 載せると釣りまで若木を探すことと木材加工の腕の後ろへ回ります。
 
-**銛は突いた魚に持って行かれることがあります**（どちらの卓も 50 回に 1 回、`expert` では 70 回に 1 回
-——**失う重み 2 は動かず、腕が当たる側だけを太らせる**ので、上手いほど銛を失いにくくなります。
-4〜6 日の航海で突く回数から見て、**1 航海に 1 本ほど**）。だから積むのは銛 1 本ではなく、**穂先になる尖った石と、締める紐**です。
+**銛は突いた魚に持って行かれることがあります**（**失う重み 2<!-- codex: voyage.yaml object_defs.raft.interactions.spear_sea.pick.2.weight --><!-- codex: voyage.yaml object_defs.fish_shoal.interactions.spear_shoal.pick.2.weight --> は動かず、腕が当たる側だけを
+太らせる**ので、上手いほど銛を失いにくくなります）。だから積むのは銛 1 本ではなく、**穂先になる尖った石と、締める紐**です。
 **柄になる太い枝は海が返します**（流木と漂流物、3 節の表）が、**石と紐は返りません**——漂流物が返す
-ロープは紐 3 本を撚った先で、ほどいて紐に戻す手はありません。作り直すのに火は要らず、削るための刃物を
+ロープは紐 3 本<!-- codex: fiber.yaml object_defs.rope.recipes.twisted.steps.0.requires.0.count -->を撚った先で、ほどいて紐に戻す手はありません。作り直すのに火は要らず、削るための刃物を
 1 つ積んでおけば筏の上で組み直せます。**予備を切らすと、群れに出会っても突けません**——食料を積んで
 いても、伸びたぶんを賄う手がそこで消えます。
 
 #### 3.9.5 火は要りません
 
-**生肉はそのまま食べられます**（`src/assets/world-codex/animals.yaml` の `raw_meat`。満腹 500・
-たんぱく 20）。焼けば身になる量が増え、菌も入りませんが
+**生肉はそのまま食べられます**（`src/assets/world-codex/animals.yaml` の `raw_meat`。満腹 500<!-- codex: animals.yaml object_defs.raw_meat.interactions.eat.add.agent.satiety -->・
+たんぱく 20<!-- codex: animals.yaml object_defs.raw_meat.interactions.eat.add.agent.protein -->）。焼けば身になる量が増え、菌も入りませんが
 （[`DigestionSystem.md`](../engine/DigestionSystem.md) 6.1 節）、どちらも**焼かないと食べられない**という
 関係ではありません。現実の漂流者も生で食べています。**生のままで賄える条件は 3.9.3 節**です。
 
@@ -837,7 +837,7 @@
 
 **水は海の上で得られないので、日数ぶんを積み切ります。** 甕 1 つは 1.7 日ぶん
 （[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5 節）なので、遠回りを見込んだ
-3.9.1 節の 4〜6 日なら
+3.9.1 節の 4<!-- stats: voyage.yaml courses days 最小 -->〜6<!-- stats: voyage.yaml courses days 最大 --> 日なら
 **3〜4 つ**。**蓋をすればこれがそのまま積む数で、蓋をしなければ下限です**——蒸発が押し上げ、積む物を
 誤れば食い方の側からも押し上がります。
 
@@ -846,7 +846,7 @@
 - **蓋をしなければ蒸発が引きます。** 開けたままの甕は、中身が日なたで 1 日
   273mL<!-- stats: balance.yaml rain_water container=jar season=dry evaporation_ml_per_day -->
   （乾季。雨季でも 61mL<!-- stats: balance.yaml rain_water container=jar season=wet evaporation_ml_per_day -->）
-  ずつ減ります（同 6 節）。**1 日ぶんのおよそ 1 割**で、海区は樹冠も影も持たないので（3.10 節）日陰へ
+  ずつ減ります（同 6 節）。**1 日に飲むぶんに比べて小さくない量**で、海区は樹冠も影も持たないので（3.10 節）日陰へ
   寄せる手もありません。**飲んでいる甕だけでなく、順番を待っている甕も同じだけ失う**ので、**積む数が
   増えるほど 1 つあたりの取り分は減ります**——最後に開ける甕は、それまでの日数ぶんを失った状態で開く
   ことになります。**空になった甕は減りません**（中身の軸ごと落ちる、同 1 節）。
@@ -857,12 +857,12 @@
   `fat_starved` の段が立ち、`hydration` の削りが倍になります
   （[`DigestionSystem.md`](../engine/DigestionSystem.md) 8 節）。**1 日ぶんの生肉 3 切れが運ぶ脂は、
   1 日に要る量の半分にしかなりません**（同 3 節）——避けるには**ヤシの果肉を 2 日に 1 つ**積みます
-  （果肉 1 つが 26、1 日に要るのが 24）。生肉と同じく塩漬け・天日干し・燻しが効くので、
+  （果肉 1 つが 26<!-- codex: coconut.yaml object_defs.coconut_meat.interactions.eat.add.agent.lipid -->、1 日に要るのが 24<!-- stats: balance.yaml daily_needs property=lipid daily_need -->）。生肉と同じく塩漬け・天日干し・燻しが効くので、
   日数ぶんを積んで出られます。
 
-**重さとかさは、どちらも効きません。** 満たした甕は 5.2kg（器 1.2kg ＋ 水 4kg）なので、5 つでも
-26kg——**積荷の段が上がる 80 kg**（3.2 節）**には、生肉 12〜18 個**（6〜9kg、3.9.3 節）**と合わせても
-届きません。** かさの側も、筏の 500 L に対して甕 1 つが 15 L です。**蓋を足しても同じです**——蓋 1 枚は
+**重さとかさは、どちらも効きません。** 満たした甕は 5.2kg（器 1.2kg ＋ 水 4kg）で、積む数ぶん
+載せても——**積荷の段が上がる境目**（3.2 節の `laden`）**には、日数ぶんの生肉**（3.9.3 節）**と合わせても
+届きません**（`tests/world-codex/voyageYaml.test.ts`）。かさの側も、筏の 500 L に対して甕 1 つが 15 L です。**蓋を足しても同じです**——蓋 1 枚は
 0.4kg・0.3 L で、甕の数ぶん載せても段は動きません。**積む数を縛るのは船ではなく、浜まで運ぶ側**です
 （[`ContentSkeleton.md`](./ContentSkeleton.md) 5 節）。
 
@@ -875,8 +875,7 @@
 **見張り（3 節）・釣り（3.9.2 節）・海鳥を捕ること（3 節の表）は、視界が明るく、嵐でないうちだけ
 できます。** どれも屋外で見て探す仕事なので、地上の探索・採取と同じ分類に入ります
 （[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 5 節）。**海の上を昼夜の外へは置きません**
-——海区は樹冠も地面の反射も持たないので、明るさは空そのものです。夜は暗さの底（−6）で、地面の反射を
-持つ砂浜（−5）よりさらに 1 段暗くなります。
+——海区は樹冠も地面の反射も持たないので、明るさは空そのものです。夜は暗さの底（−6<!-- codex: core.yaml traits.location.props.ambient_brightness.range.min -->）です。
 
 **どれも、嵐でも止まります。** 屋根の下でない場所での行動だからで、そこは既に決まっています
 （[`ContentSkeleton.md`](./ContentSkeleton.md) 8.1.4 節）。**海区に屋根は無い**ので、嵐のあいだは
@@ -974,5 +973,6 @@
   探索できる土地になった（3.4 節）が、今の卓はアーティファクトを返さない。小島から出る種類数と
   1 周回に配る数は同節が決めているので、残っているのは卓へ載せることだけ。
 - 丸太をまとめて運ぶ手段（1 節）。そりと台車は入った（[`Containers.md`](./Containers.md) 2節）が、
-  2本目が積めるかが担ぎ手で分かれ、筏1つの6本を1往復で運ぶ手立てはどの担ぎ手にも無い。積める重さを
+  2本目が積めるかが担ぎ手で分かれ、筏1つぶんの丸太を1往復で運ぶ手立てはどの担ぎ手にも無い
+  （`tests/world-codex/loadEffects.test.ts`）。積める重さを
   上げるのか、往復そのものを短くするのか、担ぎ手で分かれたままにするのかは決めていない。

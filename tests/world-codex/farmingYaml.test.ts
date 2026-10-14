@@ -2,7 +2,6 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
@@ -24,8 +23,8 @@ describe('farming.yamlの畑と囲い', () => {
    * **撒いていない作物が出ないこと**を見るため——芋だけを撒いた畑でこの引きを与えても、
    * 重み0の葉物へは落ちない。
    *
-   * 囲いにとってもこれは**掛かる引き**にあたる。外側は 空振り40・寄った10（飼葉があれば15と35）で
-   * 合計50なので0.9は寄った側へ落ち、内側は据えた土地が並べた候補で決まる——草原の
+   * 囲いにとってもこれは**掛かる引き**にあたる。外側は 空振り40・寄った10（飼葉があれば15と35）
+   * なので0.9は寄った側へ落ち、内側は据えた土地が並べた候補で決まる——草原の
    * 空振り8・ヤケイ10 ならヤケイ、森の 空振り8・イノシシ2 と密林の 空振り8・ヤケイ8・イノシシ2 なら
    * どちらもイノシシに当たる（末尾の候補なので、土地が宣言していなければ引きは空振りへ落ちる）。
    * **囲いを空のまま進めると掛かる**ので、飼育を見る試験は先に中を埋めてから時間を進める。
@@ -76,8 +75,7 @@ describe('farming.yamlの畑と囲い', () => {
    */
   function open(roll = ROLL, locationName = 'grassland'): void {
     session = new WorldSession(codex, fixedRng(roll));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     land = spawnInto(locationName, worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, land, 'characters');
     makeBrightEnoughForAnyAction(player, codex);
@@ -174,7 +172,7 @@ describe('farming.yamlの畑と囲い', () => {
    */
   function calmJunglefowl(): WorldObject {
     const fowl = spawnInto('junglefowl', land, 'items');
-    // ヤケイの初期値は24で、減りは-1/tick。この島でいちばん早く引き切る（飼いならしの学習台）。
+    // 警戒した姿で現れる獣の中で、ヤケイがいちばん早く引き切る（飼いならしの学習台）。
     tick(24);
     expect(fowl.tryGetProperty(warinessId)!.getEffectiveValue(), '警戒が引き切っている').toBe(0);
     return fowl;
@@ -670,6 +668,7 @@ describe('farming.yamlの畑と囲い', () => {
     for (const roll of [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95]) {
       open(roll);
       const pen = buildPen();
+      // eslint-disable-next-line no-restricted-syntax -- 回す回数で、暦ではない
       for (let i = 0; i < 60; i++) {
         tick(1);
         for (const object of pen.tryGetSlot(codex.slotNames.getId('catch'))!.contents) {

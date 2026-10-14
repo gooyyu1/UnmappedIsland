@@ -4,7 +4,8 @@ import type { ObjectCardStack, PlayScreenView } from '../../src/game/view/PlaySc
 import { fromGameSession, withFrozenCards } from '../../src/game/view/PlayScreenView';
 import type { CardPlace, ScreenPlace } from '../../src/game/view/cardPlaces';
 import { cardPlacesOf } from '../../src/game/view/cardPlaces';
-import { slotCells } from '../../src/game/view/slotCells';
+import { ShownCards } from '../../src/game/view/ShownCards';
+import { slotCells, slotPositionAt } from '../../src/game/view/slotCells';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { parseLocale } from '../../src/locale/Localization';
 import type { MiniGame } from '../support/miniGame';
@@ -444,6 +445,92 @@ object_defs:
     expect(mini.game.player.hand[0], '手持ちへ戻せる').toBe(stone);
   });
 
+  it('材料の枠のレーンへ落とすと、レーン上で指した位置によらず型の合う枠へ入る', () => {
+    // 材料の枠は要求の順に[板, 棒]。レーンには入っている棒が先に、まだ入っていない板の要求がその
+    // 後に並ぶ（slotCells.materialCells）ので、板の要求の空き枠はレーンでは2番目、スロットでは先頭。
+    const mini = miniGame(`
+in_progress_tags: [item]
+object_defs:
+  board: {tags: [item]}
+  stick: {tags: [item]}
+  chair:
+    tags: [item]
+    recipes:
+      built:
+        steps:
+          - requires: [{object: board, count: 1, consume: true}, {object: stick, count: 2, consume: true}]
+            duration: 30
+`);
+    const wip = mini.createObject(inProgressObjectName('chair', 'built'), mini.slot('items', mini.land));
+    const materials = mini.slot('materials', wip);
+    mini.createObject('stick', materials);
+    const board = mini.createObject('board', mini.slot('hand'));
+
+    const view = viewOf(mini);
+    const at = slotPositionAt(view.slotViewOf(materials), { kind: 'cell', index: 1 });
+    cardOf(view, board).dropInto?.(materials, at)?.execute();
+
+    expect(materials.cells.map((cell) => cell.stack?.members[0].def.name)).toEqual(['board', 'stick']);
+  });
+
+  it('材料の枠のレーンの札は、レーン上の位置のまま掴める', () => {
+    // 材料の枠は要求の順に[板, 棒]で、棒だけが入っている。レーンには棒の札が先に、板の要求の空き枠が
+    // その後に並ぶ（slotCells.materialCells）。掴んだ札はレーン上の位置で引かれる（ShownDrop.fromIndex）。
+    const mini = miniGame(`
+in_progress_tags: [item]
+object_defs:
+  board: {tags: [item]}
+  stick: {tags: [item]}
+  chair:
+    tags: [item]
+    recipes:
+      built:
+        steps:
+          - requires: [{object: board, count: 1, consume: true}, {object: stick, count: 2, consume: true}]
+            duration: 30
+`);
+    const wip = mini.createObject(inProgressObjectName('chair', 'built'), mini.slot('items', mini.land));
+    const materials = mini.slot('materials', wip);
+    const stick = mini.createObject('stick', materials);
+
+    const view = viewOf(mini);
+    const shown = new ShownCards({
+      stacksIn: (asked) => view.cardsIn(asked),
+      cardOfObjects: (objects) => view.cardOfObjects(objects),
+      combinationOf: (dragged, target, count) => view.combinationOf(dragged, target, count),
+      visible: (object) => view.visible(object),
+      windowPlace: () => undefined,
+      places: view.places,
+      filter: () => undefined,
+      midAction: () => false,
+      onOpenCard: () => {},
+      onEdgeMove: () => {},
+    });
+    // 画面がレーンへ並べるのと同じ組み方（PlayScene.cellsAt）。
+    const stacks = shown.stacksAt(materials);
+    const cells = slotCells(view.slotViewOf(materials), stacks, shown.cardsOf(stacks), 0, view.cardOfType);
+    expect(
+      cells.map((cell) => cell.card?.identity?.[0] ?? cell.accepts?.name),
+      '棒の札と、板の要求の空き枠だけが並ぶ',
+    ).toEqual([stick.instanceId, view.cardOfType(mini.codex.objectNames.getId('board')).name]);
+    const stickAt = cells.findIndex((cell) => cell.card?.identity?.[0] === stick.instanceId);
+    // 重ねる先として指したときも、同じ位置で引かれる（ShownCards.stacksOfのtarget.index）。
+    expect(stacks[stickAt]?.identity, 'レーン上の位置が棒の束を指す').toEqual([stick.instanceId]);
+
+    const hand = place(mini, 'hand');
+    shown
+      .dropEffect({
+        from: materials,
+        fromIndex: stickAt,
+        to: hand,
+        target: { kind: 'cell', index: 0 },
+        count: 1,
+      })
+      ?.execute();
+
+    expect(stick.parentSlot, '掴んだ棒が手持ちへ移る').toBe(hand);
+  });
+
   it('withFrozenCardsは、控えた時点の中身を返し続ける', () => {
     // 時間経過の再現（PlayScene）では、控えておいたviewをあとから表示する。cardsInだけは呼んだ時点の
     // 生きたワールドを読むため、固定しないとその部分に限って「今」の状態が出てしまう。
@@ -737,7 +824,7 @@ object_defs:
     });
 
     it('同じ絵を名乗る段どうしでは、絵が変わらない', () => {
-      // 手元の作業に要るのはbrightだけで、その下は「作れない」の一言に尽きる（4.1.2節）。
+      // 手元の作業に要るのはbrightだけで、その下は「作れない」の一言に尽きる（同 4.1.2節）。
       const mini = setUpIslander();
 
       setProperty(mini, 'hand_brightness', -3);

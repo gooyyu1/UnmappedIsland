@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DescriptionWriter } from '../../src/codex-viewer/describe/Description';
+import { DescriptionWriter, text } from '../../src/codex-viewer/describe/Description';
 import { defNamesOf } from '../../src/codex-viewer/describe/codexNames';
 import {
   createsObject,
@@ -16,6 +16,7 @@ import type { DefNames } from '../../src/codex-viewer/describe/Description';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { HOURS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * 宣言を読める形へ書き出す仕組み（src/codex-viewer/describe）のテスト。
@@ -33,12 +34,12 @@ object_defs:
     props:
       hour:
         value: 0
-        range: {min: 0, max: 24}
+        range: {min: 0, max: ${HOURS_PER_DAY}}
         stages:
           - {name: night}
           - {name: day, min: 6}
         on_max:
-          add: {self: {hour: -24, day: 1}}
+          add: {self: {hour: -${HOURS_PER_DAY}, day: 1}}
       day: {value: 1}
       # 条件つきのrangeイベント（6.3節）。満たさない回は既定のクランプ（自分を上端へset）へ倒れる。
       tide:
@@ -403,5 +404,23 @@ describe('生まれる側・材料側からの逆引き', () => {
     // 消費しない道具（consume: false）も、そのレシピに関わる型として数える。
     expect(usesInRecipes(bowl, def('sharp_stone'))).toBe(true);
     expect(usesInRecipes(bowl, def('coconut'))).toBe(false);
+  });
+});
+
+// toLinesが渡すものは並びの実体（DescriptionWriter.toLines）。読むたびに詰め替えるようになると、
+// 読んだあとに書いた行が読んだ側へ現れなくなるので、ここで落とす。
+describe('書き込み先が渡す行', () => {
+  it('読んだ並びは、あとから書いた行もそのまま持つ', () => {
+    const writer = new DescriptionWriter();
+    writer.write(text('一'));
+
+    const read = writer.toLines();
+    expect(read, '読むたびに詰め替えない').toBe(writer.toLines());
+    writer.write(text('二'));
+
+    expect(
+      read.map((line) => line.toPlainText()),
+      '読んだあとに書いた行も、読んだ並びに現れる',
+    ).toEqual(['一', '二']);
   });
 });

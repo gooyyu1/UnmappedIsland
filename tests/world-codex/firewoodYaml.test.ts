@@ -4,10 +4,11 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledBalanceTables, bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import { declaredNumberOf } from '../support/declaredNumber';
+import { MINUTES_PER_DAY, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * firewood.yamlの薪割りと薪棚を、実ファイルの定義だけで検証する。
@@ -21,8 +22,6 @@ import { makeBrightEnoughForAnyAction } from '../support/illumination';
  * tickと世界の進みが食い違う。人が要るのは薪を割る側だけ。
  */
 describe('firewood.yamlの薪割りと薪棚', () => {
-  /** 1tickの長さ（core.yamlのminutes_per_tick）。 */
-  const TICK_MINUTES = 15;
   const balance = bundledBalanceTables();
 
   let codex: WorldCodex;
@@ -43,8 +42,7 @@ describe('firewood.yamlの薪割りと薪棚', () => {
 
   beforeEach(() => {
     session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     forest = spawnInto('forest', worldInstance, 'locations');
   });
 
@@ -64,14 +62,11 @@ describe('firewood.yamlの薪割りと薪棚', () => {
     return player;
   }
 
-  /** 型が宣言している値（インスタンスを1つ作って読む）。 */
-  function declaredNumber(objectName: string, propertyId: PropertyGlobalId): number {
-    return session.createObject(codex.objectNames.getId(objectName)).getProperty(propertyId).number;
-  }
-
   /** 目方1kgあたりに取り出せる熱（fuel/kg）。 */
   function fuelPerKilogram(objectName: string): number {
-    return (declaredNumber(objectName, fuelId) / declaredNumber(objectName, weightId)) * 1000;
+    return (
+      (declaredNumberOf(session, objectName, 'fuel') / declaredNumberOf(session, objectName, 'weight')) * 1000
+    );
   }
 
   /** 丸太を1本、斧で割る。返すのは割れて出た薪。 */
@@ -107,7 +102,7 @@ describe('firewood.yamlの薪割りと薪棚', () => {
   }
 
   function advance(ticks: number): void {
-    for (let i = 0; i < ticks; i++) session.advanceWorldTime(TICK_MINUTES);
+    for (let i = 0; i < ticks; i++) session.advanceWorldTime(MINUTES_PER_TICK);
   }
 
   /** 棚に積んである薪の型の名前。**乾き上がりは別の型に置き換わる**ので、掴んだ個体では追えない。 */
@@ -127,11 +122,11 @@ describe('firewood.yamlの薪割りと薪棚', () => {
     expect(
       firewood.reduce((sum, piece) => sum + piece.getProperty(fuelId).number, 0),
       '割って出た薪の熱の合計は、丸太1本ぶんのまま',
-    ).toBe(declaredNumber('log', fuelId));
+    ).toBe(declaredNumberOf(session, 'log', 'fuel'));
     expect(
       firewood.reduce((sum, piece) => sum + piece.getProperty(weightId).number, 0),
       '目方も丸太1本ぶんのまま',
-    ).toBe(declaredNumber('log', weightId));
+    ).toBe(declaredNumberOf(session, 'log', 'weight'));
   });
 
   it('割った1本ぶんが、そのまま薪棚の枠に収まる', () => {
@@ -141,6 +136,12 @@ describe('firewood.yamlの薪割りと薪棚', () => {
 
     stackOn(rack, firewood);
     expect(stackedNames(rack)).toHaveLength(firewood.length);
+    // **枠の数は丸太1本ぶんちょうど**（同）——もう1本は積めない。
+    const extra = session.createObject(codex.objectNames.getId('green_firewood'));
+    expect(
+      extra.moveToSlotOrRejection(rack.getSlot(codex.slotNames.getId('woodpile'))),
+      '丸太1本ぶんを超える薪',
+    ).toBeDefined();
   });
 
   it('尖った石では割れない（斧が要る）', () => {
@@ -155,12 +156,21 @@ describe('firewood.yamlの薪割りと薪棚', () => {
     const count = 3;
     const rack = rackWithGreenFirewood(count);
     // 何tickかかるかは薪の宣言が持つので、直値では書かない。
-    const ticks = declaredNumber('green_firewood', seasoningRemainingId);
+    const ticks = declaredNumberOf(session, 'green_firewood', 'seasoning_remaining');
 
     advance(ticks - 1);
     expect(stackedNames(rack), '1tick足りなければまだ生木').toEqual(Array(count).fill('green_firewood'));
     advance(1);
     expect(stackedNames(rack), '積んだ薪は全部が乾く').toEqual(Array(count).fill('seasoned_firewood'));
+  });
+
+  it('乾き切るまでは、現実の3〜4週を4分の1へ縮めた長さ', () => {
+    // 長くかかるものだけ現実の4分の1へ縮める（FireSystem.md 2.5節、DesignPrinciples.md）。
+    const days =
+      (declaredNumberOf(session, 'green_firewood', 'seasoning_remaining') * MINUTES_PER_TICK) /
+      MINUTES_PER_DAY;
+    expect(days).toBeGreaterThanOrEqual((3 * 7) / 4);
+    expect(days).toBeLessThanOrEqual((4 * 7) / 4);
   });
 
   it('棚に積まなければ、いつまでも乾かない', () => {
@@ -200,8 +210,10 @@ describe('firewood.yamlの薪割りと薪棚', () => {
     ).toContain('seasoned_firewood');
     expect(rates.find((row) => row.name === 'seasoned_firewood')?.ratio).toBe('1.00');
     expect(rates.find((row) => row.name === 'green_firewood')?.ratio, '生木は半分').toBe('0.50');
-    expect(declaredNumber('seasoned_firewood', weightId), '乾けば軽くなる').toBeLessThan(
-      declaredNumber('green_firewood', weightId),
+    expect(rates.find((row) => row.name === 'log')?.ratio, '伐ったばかりの丸太も半分').toBe('0.50');
+    expect(rates.find((row) => row.name === 'long_pole')?.ratio, '若木の棒は太い枝と同じ率').toBe('1.00');
+    expect(declaredNumberOf(session, 'seasoned_firewood', 'weight'), '乾けば軽くなる').toBeLessThan(
+      declaredNumberOf(session, 'green_firewood', 'weight'),
     );
   });
 
@@ -210,8 +222,8 @@ describe('firewood.yamlの薪割りと薪棚', () => {
     const capacities = [...codex.objects]
       .filter((def) => def.hasTag(hearthTagId))
       .map((def) => ({ name: def.name, max: def.tryGetPropertyDef(fuelId)?.range?.max }));
-    const seasoned = declaredNumber('seasoned_firewood', fuelId);
-    const logFuel = declaredNumber('log', fuelId);
+    const seasoned = declaredNumberOf(session, 'seasoned_firewood', 'fuel');
+    const logFuel = declaredNumberOf(session, 'log', 'fuel');
 
     expect(capacities.length, '炉が1つも出ない').toBeGreaterThan(0);
     expect(
@@ -232,7 +244,7 @@ describe('firewood.yamlの薪割りと薪棚', () => {
     const minutesPerFuel = (objectName: string): number => {
       const cost = balance.objectCosts.find((row) => row.objectName === objectName);
       expect(cost?.minutes, `${objectName}の総コスト`).toBeGreaterThan(0);
-      return cost!.minutes! / declaredNumber(objectName, fuelId);
+      return cost!.minutes! / declaredNumberOf(session, objectName, 'fuel');
     };
 
     expect(minutesPerFuel('seasoned_firewood'), '拾った枝より安い').toBeLessThan(

@@ -45,7 +45,7 @@ traits:
 
   # 海区（GameEndings.md 12節）。**地上の土地と同じ場所**で、足しているのは海の側だけ
   # ——浮かんでいるものを押す海流、浮いていることの配布、ここを渡るのにかかる時間、そして荒天が
-  # 浮かんでいるものを風下へ押し流すこと（12.4節）。
+  # 浮かんでいるものを風下へ押し流すこと（同 12.4節）。
   #
   # **顔ぶれ（ContentSkeleton.md 7節）は、この trait が持つ1つの見張りの卓と、その重みの
   # 配り方だけで表す。** 顔ぶれごとの型もタグも持たない。海区ごとに違うのは本土までの最短の残り
@@ -162,7 +162,7 @@ traits:
       # **ここで分けている「本土の側／島の側」は、航路が風をどう受けるか（sea_route）とは別の分け方。**
       # こちらが分けるのは鎖の先の隣か手前の隣かで、分かれ道では近道も遠回りも「先」。**航路の側から
       # 出せないのは、航路がまだ1本も立っていない海区でも荒天は流すから**——未知の海区へ流れ着くことが
-      # 12.4節の眼目なので、隣は海区の側の事実として持つ（下の zone_toward_*、Voyage.md 3.8節）。
+      # 同 12.4節の眼目なので、隣は海区の側の事実として持つ（下の zone_toward_*、Voyage.md 3.8節）。
       drift_to_mainland_weight: {value: 0}
       drift_to_island_weight: {value: 0}
 
@@ -274,14 +274,14 @@ traits:
               - {object: feather, into: agent}
           - weight: {prop: wreck_find}
             spawn: {object: golden_chalice, into: agent}
-          # 湧くものは海区の設置物になる（12.7節）。居る間だけ実り、しばらくすると去る。
+          # 湧くものは海区の設置物になる（同 12.7節）。居る間だけ実り、しばらくすると去る。
           #
           # **これらには狩猟の腕（quarry_sense）が積まれる**（docs/world/Skills.md 5節）。地上で
           # 獣の候補へ積んでいるのとまったく同じ「出くわす機会」で、獲る手（下のspear_shoal・
           # catch_seabird）はどちらも狩猟の腕を配る。**拾えるもの（上）には積まない**
           # ——流木も海藻も卵も、居合わせるかどうかではなく海が返す実りだから。
           # **出くわす側も狩猟の腕を配る**（発見の契機、docs/engine/SkillSystem.md 3.3節）。地上で
-          # 獣に出くわす候補が配っているのと同じもので、獲る手（下）が配るのとは経路が違う（+1と+2）。
+          # 獣に出くわす候補が配っているのと同じもので、獲る手（下）が配るのとは経路が違う。
           - weight: {prop: shoal_find}
             spawn: {object: fish_shoal, into: self}
             add: {agent: {skill_hunting: 1}}
@@ -417,30 +417,27 @@ object_defs:
       # （docs/engine/IlluminationSystem.md 2節）。**場所を名乗る以上は明るさも名乗る**
       # ——書かなければ、乗った瞬間に明かりの継ぎ目が切れる。
       ambient_brightness: {value: 0}
-      # 材料ぶんの自重（丸太6本120kg＋ロープ4本2.4kg）。中身の重さは実効値に足されるので（7.4節）、
+      # 材料ぶんの自重（丸太とロープの目方の和）。中身の重さは実効値に足されるので（7.4節）、
       # 積むほど重くなる。**積むほど遅い**のは段が sail_speed を削るから（GameEndings.md 4節）。
       # 海の上で積荷を捨てれば段が下がり、そのぶん速くなる——専用の仕組みは要らない。
       #
       # **段の境目は自重＋乗員＋積荷で書く。** 段が見るのは実効値なので、積荷の量で言い表すには
-      # 自重を足した値になる。**乗員1人（65kg）も足す**——航海中は必ず乗っているので、乗員を
+      # 自重を足した値になる。**乗員1人の重さも足す**——航海中は必ず乗っているので、乗員を
       # 見込まないと積める量がそのぶん減る（characters/player_character.yaml）。自重や乗員の重さを
-      # 変えるときは境目も一緒に動かすこと。
+      # 変えるときは境目も一緒に動かすこと（積荷の量は tests/world-codex/voyageYaml.test.ts が見る）。
       weight:
         value: 122400
         stages:
-          # 80kgまでの積荷。
           - name: light
-          # 80〜160kg。
           - name: laden
             min: 267400
             passives:
               - modify: {self: {sail_speed: -1}}
-          # 160〜240kg。
           - name: heavy
             min: 347400
             passives:
               - modify: {self: {sail_speed: -3}}
-          # 240kg超。海流を打ち消し切るので、帆を張っても止まったまま。
+          # 海流を打ち消し切るので、帆を張っても止まったまま。
           - name: overladen
             min: 427400
             passives:
@@ -459,7 +456,7 @@ object_defs:
       afloat: {value: 0}
       # 1回の突きが当たる重み。**漁場ごとの素の値**で、突く人の狙い（hunting_aim）をbaseの土台として
       # 積む（下のspear_sea。火口のignition_chanceと同じ形、docs/world/Skills.md 5節）。群れの居ない
-      # 海面は筏そのものが漁礁になっているだけなので、群れ（fish_shoalの78）の5分の1弱
+      # 海面は筏そのものが漁礁になっているだけなので、群れ（fish_shoal）よりずっと低い
       # （docs/world/Voyage.md 3.9.2節）。
       #
       # **筏が持つのは、突く相手が筏の下だから。** 群れは自分で持つ（fish_shoal）が、群れの居ない
@@ -582,7 +579,7 @@ object_defs:
         spawn: {object: route_to_shore, into: parent}
 
       # 海へ突く。群れの居ない海面へ、筏の縁から真下を突く（Voyage.md 3.9.2節）。**皆無ではないのは
-      # 筏そのものが漁礁になるから**で、60分に0.15切れ——当てにできる量ではない、という違いがここに出る。
+      # 筏そのものが漁礁になるから**で、当てにできる量ではない、という違いがここに出る。
       #
       # **浮いている間だけ**（afloat）。帆の寄与と同じ形で、条件を落とすと浜に繋いだままの筏の下から
       # 魚が獲れる。**群れへ突く手（fish_shoalのspear_shoal）はこの条件を持たない**——群れは海区に
@@ -622,15 +619,16 @@ object_defs:
   # 生皮の帆。筏の構造スロットへ組み込むと、風を捉える量が増える（sail_speed +2）。
   #
   # **段をちょうど1つ上げる最小の値が2。** 素の筏は海流だけで `slow`、帆があれば `moderate` に届く。
-  # +1 では段が動かない積載があり、+3 にしても上がる段は変わらないので、盤面に差が出るのは2だけ。
+  # +1 では段が動かない積載があり、+3 にしても上がる段は変わらないので、盤面に差が出るのは2だけ
+  # （tests/world-codex/voyageYaml.test.ts が海流・積載の寄与と段から数え直す）。
   # 後から入るなめし革の帆を+4にすれば、重く積んだ日ほど差が開く伸び方になる。
   #
-  # 質量は材料の和（生皮6×600 + 糸10×100 + 太い枝2×1000 + ロープ2×600 = 7800g）。
+  # 質量は材料の目方の和。
   rawhide_sail:
     tags: [item, sail]
     props:
       weight: {value: 7800}
-      # 畳んでも枠と革はかさばる。筏の積載（500L）に対しては小さい。
+      # 畳んでも枠と革はかさばる。
       volume: {value: 15000}
     passives:
       # 効き先は親（＝組み込まれた筏）。積荷のスロットに置いても親は同じなので、構造スロットに
@@ -702,7 +700,7 @@ object_defs:
       weight: {value: 200}
       # 濡れた葉体は詰めても縮まないので、嵩そのままで見る（plant_fiberと同じ扱い）。
       volume: {value: 1500}
-    # 塩漬けにできる（salt.yaml）。**隔てるものが無く、塩が葉体へ直に届く。** 2.5日が20日になるので、
+    # 塩漬けにできる（salt.yaml）。**隔てるものが無く、塩が葉体へ直に届く。** 保ちが大きく延びるので、
     # 海で拾ったものを島へ持ち帰れるようになる。
     variation_axes:
       cure: {of: {tag: cured}}
@@ -776,8 +774,8 @@ object_defs:
       # 群れは海そのものと同じく目方を持たない（航路と同じ、ContainerSystem.md 1節）。
       weight: {value: 0}
       # 1回の突きが当たる重み。**漁場ごとの素の値**で、突く人の狙い（hunting_aim）をbaseの土台として
-      # 積む（下のspear_shoal）。水面に立った群れは密なので、群れの居ない海面（raftの15）の5倍あまり
-      # （78/15＝5.2倍。docs/world/Voyage.md 3.9.2節）。
+      # 積む（下のspear_shoal）。水面に立った群れは密なので、群れの居ない海面（raft）よりずっと高い
+      # （docs/world/Voyage.md 3.9.2節）。
       catch_chance: {value: 78, base: {subject: agent, prop: hunting_aim}}
       # 立ち去りまでの残り。獣と同じ形（HuntingSystem.md 5.6節）だが、**獣が持つゲートをどれも
       # 持たない**——人が居ても止まらないのは、獣が目の前で消えないのは同じ土地に立っているからで、
@@ -792,7 +790,7 @@ object_defs:
           destroy: self
     interactions:
       # 群れへ突く。**当たりが違うのは突く相手**（Voyage.md 3.9.2節）——水面に立った群れは密なので、
-      # 30分に0.78切れが返る。群れの居ない海面（raftのspear_sea）との落差が、積むか釣るかの判断を
+      # 当たりが多い。群れの居ない海面（raftのspear_sea）との落差が、積むか釣るかの判断を
       # 作っているので、どちらか一方だけを動かさない。
       #
       # **屋外の採取なので、明るさと風雨の両方が要る**（docs/world/Voyage.md 3.10節）。
@@ -915,8 +913,8 @@ object_defs:
               - {object: feather, into: self}
           - weight: 15
             spawn: {object: thick_branch, count: 2, into: self}
-          # 錫鉱石。**どの候補も2個を返す**ので、1つ足しても1回あたりの平均（2個）は動かない
-          # （地上の土地と同じ配り方、locations.yaml）。
+          # 錫鉱石。**どの候補も同じ数を返す**ので、1つ足しても1回あたりの平均は動かない
+          # （地上の土地と同じ配り方、locations.yaml。tests/world-codex/voyageYaml.test.ts が見る）。
           - weight: 20
             spawn: {object: tin_ore, count: 2, into: self}
       # 上陸。**航路を渡るのと同じ形**で、同じ海区に浮かんでいる筏を乗り手ごと引き寄せる。
@@ -978,9 +976,9 @@ object_defs:
   #   流れ藻の海 — 白い岩 — 本土の島影 — 本土
   #
   # **近道のほうが実りが薄い**（同12.1節）。渡る時間はどの海区も同じなので、実りの濃淡は見張りの卓の
-  # 重みだけで表し、経路の長短は**通る海区の数**で表す——近道は1区間で流れ藻の海へ着くかわりに、
-  # 沖の潮目（実り0.8）と黒い岩礁（同0.55）の2区間ぶんの見張りを丸ごと飛ばす。遠回りは2区間ぶん
-  # 長いが、その2つが返す。
+  # 重みだけで表し、経路の長短は**通る海区の数**で表す——近道は流れ藻の海へ直に着くかわりに、
+  # 沖の潮目と黒い岩礁の見張りを丸ごと飛ばす。遠回りはそこを通るぶん長いが、そこが返す
+  # （実りの濃さは tests/world-codex/voyageYaml.test.ts が見る）。
   #
   # **辺で繋がった隣は、海区が `zone_toward_mainland`・`zone_toward_island` に1度だけ書く。** 航路を
   # 立てる先（`exploration_progress` の `on_max`）も、荒天が押し流す先（`storm_drift` の `on_max`）も
@@ -1154,7 +1152,7 @@ object_defs:
             - {object: route_to_islet_waters, into_object: {prop: zone_toward_mainland}}
 
   # 空の海。目印が何も無いので、航路を見つけるのに最も見張りを重ねることになる。
-  # **最短の航路はここを通る**——渡る時間は最も短く、拾えるものは何も無い。
+  # **最短の航路はここを通る**が、拾えるものは何も無い。
   open_water:
     singleton: true
     traits: [location, explorable, sea_zone]
@@ -1181,7 +1179,8 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       zones_to_mainland: {value: 5}
-      # 1周回に0〜1個（ContentSkeleton.md 7節）。見張り4回で当たるのは2割ほど。
+      # 1周回に0〜1個（ContentSkeleton.md 7節）。見張り1回あたりの期待値と、航路が現れるまでの
+      # 見張りの回数は stats/voyage.yaml（docs/diagnostics/VoyageStats.md）。
       wreck_find: {value: 5}
       flotsam_find: {value: 15}
       barren_find: {value: 80}
@@ -1199,8 +1198,8 @@ object_defs:
 
   # うねりの海（空の海）。大きなうねりだけが続く。
   #
-  # **ここで航路が二手に分かれる**（GameEndings.md 12.3節）——流れ藻の海へ直に渡る近道（1区間）と、
-  # 沖の潮目・黒い岩礁を回る遠回り（3区間）。**見張り切ると2本とも現れる**ので、渡る前にどちらも
+  # **ここで航路が二手に分かれる**（GameEndings.md 12.3節）——流れ藻の海へ直に渡る近道と、
+  # 沖の潮目・黒い岩礁を回る遠回り。**見張り切ると2本とも現れる**ので、渡る前にどちらも
   # 盤面に出ている。見張りの進み具合は1つしか無いので、片方を先に見せるには別のつまみが要る。
   long_swell:
     singleton: true
@@ -1245,7 +1244,8 @@ object_defs:
               signal: {picked: swept}
 
   # 沖の潮目。島影の無い沖でも、流れのぶつかる帯には魚が集まる。**遠回りの側の入口**で、うねりの海
-  # （4）より遠い5なのは、ここを通ると本土まで2区間ぶん長くなるから（zones_to_mainland）。
+  # より本土から遠いのは、ここを通ると遠回りになるから（zones_to_mainland は辺から数えた最短の数で、
+  # tests/world-codex/voyageYaml.test.ts が見る）。
   outer_tide_rip:
     singleton: true
     traits: [location, explorable, sea_zone]

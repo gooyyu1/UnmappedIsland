@@ -2,11 +2,11 @@ import type { ActiveEffect } from './ActiveEffect';
 import type { EffectReader, DeclaredNumberReading } from './EffectReader';
 import type { DeclaredNumber } from './DeclaredNumber';
 import type { ReferenceContext, ReferenceValueResolver } from './ReferenceRoot';
-import type { WorldObject } from './WorldObject';
+import { WorldObject } from './WorldObject';
 import type { Requirement, Requirements } from './Requirement';
 import type { SignalEffect } from './SignalEffect';
 import type { PassiveEffect } from './PassiveEffect';
-import type { PassiveEffects } from './PassiveEffects';
+import type { InteractionPassiveEffects } from './PassiveEffects';
 import type { PassiveReader } from './PassiveReader';
 import { spendDurationAndReportParticipantsAlive } from './actionTime';
 
@@ -14,7 +14,7 @@ import { spendDurationAndReportParticipantsAlive } from './actionTime';
  * 操作1つの中身（ActionSystem.md 1節）——満たすべき要件・起こすこと・かかる時間。
  *
  * **何がこれを起こすかは持たない。** 操作どうしの違いは起こされ方だけなので、そちらは
- * きっかけ（InteractionTrigger）が持ち、宣言をぶら下げる。選ばれた後の実行手順（2節）は
+ * きっかけ（InteractionTrigger）が持ち、宣言をぶら下げる。選ばれた後の実行手順（同 2節）は
  * きっかけによらず同じなので、ここが1箇所で持つ。
  */
 export class InteractionDef {
@@ -45,7 +45,7 @@ export class InteractionDef {
    * `duration`を進めている間だけ効く持続効果（11.7節）。**効果（effect）と別に持つのは効く時点が
    * 違うため**——こちらは経過の各tickに1回ずつ、あちらは経過し終えてから1回。
    */
-  private readonly passives: PassiveEffects;
+  private readonly passives: InteractionPassiveEffects;
 
   constructor(
     name: string,
@@ -53,7 +53,7 @@ export class InteractionDef {
     announcements: readonly SignalEffect[],
     effect: ActiveEffect,
     duration: DeclaredNumber | undefined,
-    passives: PassiveEffects,
+    passives: InteractionPassiveEffects,
   ) {
     this.name = name;
     this.requirements = requirements;
@@ -150,8 +150,8 @@ export class InteractionDef {
    * 1つの操作としてまるごと囲う（`InteractionRelation.whileActing`）のは、関係を張る側。ここは
    * 囲まれた中身だけを持つ。
    */
-  tryExecute(context: ReferenceContext): boolean {
-    const self = context.self!;
+  tryExecute(context: ReferenceContext<WorldObject>): boolean {
+    const self = context.self;
     if (this.unmetRequirement(context) !== undefined) return false;
 
     // 実行のはじめから囲う。経過中のtickが動かした値は「操作が増やしたもの」に入らないが、この操作
@@ -166,7 +166,7 @@ export class InteractionDef {
       );
       if (!alive) return false;
 
-      self.applyActiveEffect(this.effect, context);
+      WorldObject.applyActiveEffect(this.effect, context);
       return true;
     });
   }

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { tickDeltasOf } from '../../src/analysis/tickDeltas';
-import { MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { MINUTES_PER_HOUR, MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
@@ -43,7 +43,7 @@ describe('火の番の間隔（同梱の定義）', () => {
   });
 
   it('最も忙しいのは、火力の上限が低く火床も小さい炉', () => {
-    // 薪を多く積める炉ほど間遠になる。**逆転したら2.4節の理由づけが嘘になる**ので、最も忙しい炉が
+    // 薪を多く積める炉ほど間遠になる。**逆転したら同 2.4節の理由づけが嘘になる**ので、最も忙しい炉が
     // 薪の上限の最も小さい側に居ることを見張る。
     const smallestLoad = Math.min(...paces.map((pace) => pace.fuelCapacity));
 
@@ -118,4 +118,3 @@ function burnRatesOf(
 const HEARTH = 'hearth';
 const FUEL = 'fuel';
 const HEAT = 'heat';
-const MINUTES_PER_HOUR = 60;

@@ -6,10 +6,10 @@ import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction, makeTooDarkToWork } from '../support/illumination';
+import { declaredNumberOf } from '../support/declaredNumber';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -28,9 +28,8 @@ describe('timber.yamlの伐採', () => {
 
   beforeEach(() => {
     session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    const worldView = new World(worldInstance);
-    session.adoptWorld(worldView);
+    const worldView = session.createWorld();
+    const worldInstance = worldView.instance;
 
     forest = spawnInto('forest', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, forest, 'characters');
@@ -324,6 +323,29 @@ describe('timber.yamlの伐採', () => {
 
     expect(valueOf(pole, weightId)).toBeLessThan(valueOf(branch, weightId));
     expect(valueOf(pole, volumeId)).toBeGreaterThan(valueOf(branch, volumeId) * 3);
+  });
+
+  it('倒れた幹の玉切りは、立ち木と1回の長さが同じで、回数が少ない', () => {
+    // timber.yamlのdriftwood_trunkのbuck_minutes・buck（「立ち木を倒すより少ない手間」）。
+    expect(declaredNumberOf(session, 'driftwood_trunk', 'buck_minutes'), '1回の長さは立ち木と同じ').toBe(
+      declaredNumberOf(session, 'broadleaf_tree', 'fell_minutes'),
+    );
+    expect(
+      declaredNumberOf(session, 'driftwood_trunk', 'trunk_integrity'),
+      '受け口を刻むぶん、立ち木のほうが手数が多い',
+    ).toBeLessThan(declaredNumberOf(session, 'broadleaf_tree', 'trunk_integrity'));
+  });
+
+  it('倒れた幹も若木も、採れる物より重い（残りは落ちる部分）', () => {
+    // 玉切りは幹1つぶんの数だけ丸太を1本ずつ返す（timber.yamlのdriftwood_trunkのbuck・buck_last）。
+    const logs = declaredNumberOf(session, 'driftwood_trunk', 'trunk_integrity');
+    expect(
+      declaredNumberOf(session, 'driftwood_trunk', 'weight'),
+      '末口と割れた部分のぶん重い',
+    ).toBeGreaterThan(declaredNumberOf(session, 'log', 'weight') * logs);
+    expect(declaredNumberOf(session, 'sapling', 'weight'), '根と梢と枝葉のぶん重い').toBeGreaterThan(
+      declaredNumberOf(session, 'long_pole', 'weight'),
+    );
   });
 
   it('丸太1本は、キャラクタが担げる限界に近い重さ', () => {

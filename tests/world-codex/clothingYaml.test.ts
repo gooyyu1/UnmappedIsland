@@ -3,17 +3,16 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { spawnInProgressObject, tryAdvanceCrafting } from '../../src/domain/crafting';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 
 /**
- * clothing.yamlの衣類4種（docs/world/SurvivalItems.md 5節）を、実ファイルの定義だけで検証する。
+ * clothing.yamlの衣類（docs/world/SurvivalItems.md 5節）を、実ファイルの定義だけで検証する。
  * カタログの素材から作れること、作った物をキャラクタの装備スロットへ着られて脱げること。
  */
 describe('clothing.yamlの衣類', () => {
-  /** 4種と、そのレシピ名・工程が要求する素材・消費されない道具。 */
+  /** 衣類と、そのレシピ名・工程が要求する素材・消費されない道具。 */
   const CLOTHING: readonly {
     readonly name: string;
     readonly recipe: string;
@@ -93,6 +92,17 @@ describe('clothing.yamlの衣類', () => {
     return wip;
   }
 
+  it('表は、身につけられる物を1つ残らず挙げている', () => {
+    // 表に無い一着は、作れること・着られること・全身を覆うことのどの検査にも回されない。数え上げる
+    // タグは下の押し下げの表と同じequippableで、絞らない理由もあちらと同じ。
+    const equippableId = codex.tagNames.getId('equippable');
+    const worn = [...codex.objects]
+      .filter((objectDef) => !codex.isGenerated(objectDef) && objectDef.tags.includes(equippableId))
+      .map((objectDef) => objectDef.name);
+
+    expect(worn.sort()).toEqual(CLOTHING.map((clothing) => clothing.name).sort());
+  });
+
   it.each(CLOTHING)('$name はカタログの素材から作れる', (clothing) => {
     craft(clothing);
   });
@@ -127,7 +137,7 @@ describe('clothing.yamlの衣類', () => {
     expect(garment.parentSlot?.def.globalId, '手持ちへ戻っている').toBe(handId);
   });
 
-  it('4種はどれも1着で全身を覆う（同じ部位・同じ階層）', () => {
+  it('衣類はどれも1着で全身を覆う（同じ部位・同じ階層）', () => {
     const coverages = CLOTHING.map(
       (clothing) => codex.objects.get(codex.objectNames.getId(clothing.name)).wornCoverage,
     );
@@ -166,8 +176,7 @@ describe('clothing.yamlの衣類', () => {
 
     /** 砂浜に立たせたキャラクタ。熱の削りは祖先の気温を読むので、居場所が要る。 */
     function stand(): { player: WorldObject; world: WorldObject } {
-      const worldInstance = session.createObject(codex.objectNames.getId('world'));
-      session.adoptWorld(new World(worldInstance));
+      const worldInstance = session.createWorld().instance;
       const beach = spawn('sandy_beach');
       expect(
         beach.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),

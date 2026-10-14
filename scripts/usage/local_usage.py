@@ -10,8 +10,12 @@ CCR 側と違って `cost_usd` は持たないが、メッセージ単位の時�
 import glob
 import json
 import os
+import sys
 
 from paths import data
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 ROOT = os.path.expanduser("~/.claude/projects")
 

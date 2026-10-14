@@ -16,7 +16,7 @@ export class Ending extends ObjectWrapper {
     // 命を絶つ値は尽きた瞬間に自分を消す（`on_min`の`destroy`）ので、**世界の中に居ないことが
     // そのまま死んでいること**になる（VitalsSystem.md 6節）。
     if (this.instance.parent === undefined) return 'death';
-    // 本土（mainlandタグを持つ場所）の中に居ることが到達を表す（3節）——筏ごと本土へ移った
+    // 本土（mainlandタグを持つ場所）の中に居ることが到達を表す（`GameEndings.md` 3節）——筏ごと本土へ移った
     // （voyage.yaml）結果として、自分もその中に居る。
     return this.mainland === undefined ? undefined : 'escape';
   }
@@ -34,7 +34,7 @@ export class Ending extends ObjectWrapper {
   }
 
   /**
-   * 持ち帰ったアーティファクト（`artifact`タグ、6節）のobject_defの識別子。島を出ていなければ空。
+   * 持ち帰ったアーティファクト（`artifact`タグ、`GameEndings.md` 6節）のobject_defの識別子。島を出ていなければ空。
    *
    * **本土に着いた物すべてが対象**で、筏の積荷か手持ちかは問わない——渡り切った側に在ることだけが
    * 持ち帰った条件なので、置き場所ごとの数え方を持たない。

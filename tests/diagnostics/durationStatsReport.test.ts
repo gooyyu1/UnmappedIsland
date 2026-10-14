@@ -11,6 +11,7 @@ import {
   formatYamlReport,
 } from '../support/generatedReport';
 import { bundledCodex } from '../support/worldCodexFiles';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * 定義全体の**日をまたぐ長さ**を、種類を問わず1本の列に並べ（`src/analysis/durations.ts`）、
@@ -128,15 +129,21 @@ describe('生成時にロールする長さの幅', () => {
     // severityは1008〜1344 tickを1回引いて-1/tickで減る（injuries.yaml）。条件つきの増減は
     // 持たないので、幅を作っているのはロールだけ——daysとshortest_daysは一致したままになる。
     expect(severityOf('fracture')).toMatchObject({
-      days: 1008 / 96,
-      shortestDays: 1008 / 96,
-      longestDays: 1344 / 96,
+      days: 1008 / TICKS_PER_DAY,
+      shortestDays: 1008 / TICKS_PER_DAY,
+      longestDays: 1344 / TICKS_PER_DAY,
     });
   });
 
   it('同じロールを持つ他の傷も、上端まで載る', () => {
-    expect(severityOf('snare_laceration')).toMatchObject({ days: 240 / 96, longestDays: 480 / 96 });
-    expect(severityOf('bruise')).toMatchObject({ days: 120 / 96, longestDays: 240 / 96 });
+    expect(severityOf('snare_laceration')).toMatchObject({
+      days: 240 / TICKS_PER_DAY,
+      longestDays: 480 / TICKS_PER_DAY,
+    });
+    expect(severityOf('bruise')).toMatchObject({
+      days: 120 / TICKS_PER_DAY,
+      longestDays: 240 / TICKS_PER_DAY,
+    });
   });
 
   it('位相をロールする周期は、幅を持たない', () => {
@@ -168,8 +175,8 @@ describe('同時には成立しない増減で終わる長さ', () => {
 
     expect(warmth.map((duration) => duration.objectName)).toEqual(['captain', 'engineer', 'farmer', 'medic']);
     for (const duration of warmth) {
-      expect(duration.days).toBeCloseTo(700 / 2 / 96, 6);
-      expect(duration.shortestDays).toBeCloseTo(700 / 6 / 96, 6);
+      expect(duration.days).toBeCloseTo(700 / 2 / TICKS_PER_DAY, 6);
+      expect(duration.shortestDays).toBeCloseTo(700 / 6 / TICKS_PER_DAY, 6);
       expect(duration.destroysSelf).toBe(true);
     }
   });
@@ -183,7 +190,7 @@ describe('同時には成立しない増減で終わる長さ', () => {
 
     expect(hydration.map((duration) => duration.objectName)).toEqual(beasts);
     for (const duration of hydration) {
-      expect(duration.days).toBeCloseTo(336 / 96, 6);
+      expect(duration.days).toBeCloseTo(336 / TICKS_PER_DAY, 6);
       expect(duration.destroysSelf).toBe(true);
     }
   });

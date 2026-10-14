@@ -29,9 +29,13 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 
 import numpy as np
 from PIL import Image, ImageDraw
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 # 仕上がりの短辺。9patchなので中央は引き伸ばされる。縁と角が入る大きさがあればよい。
 SHORT_SIDE = 128

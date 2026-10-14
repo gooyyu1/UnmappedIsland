@@ -42,7 +42,7 @@ export const NO_INSTANCE = 0;
  * 持ち、WorldObjectはローカルID解決とグローバルAPIの提供に専念する。move_to_slotによる所属先の差し替え
  * （旧親からの離脱・新親への合流・weight伝播・passive effect edgeの登録）にも専念し、枠の要件・capacityの
  * 検証は対象Slot自身へ委ねる。持続効果（modify/add）の登録・解除は、生成・エッジ形成/解消・トポロジ変化の
- * 契機で、Defが宣言する効果一式（PassiveEffects）へ「登録/解除してほしい」と依頼するだけで、どのtargetが
+ * 契機で、Defが宣言する効果一式（ObjectPassiveEffects）へ「登録/解除してほしい」と依頼するだけで、どのtargetが
  * どこへ紐付くかは効果自身が知る。能動効果（9節の命令。actions/combinations・tickやrangeイベントから走る）は、
  * 適用の入口（applyActiveEffect）と対象解決、same_slot spawnの位置捕捉（SameSlotSpawnSite）・配置（place）を持つが、
  * 値の変更そのものは対象のPropertyValueへ、条件判定・抽選はDef側の効果へ委ねる。抵抗（`resists`、7.13節）が
@@ -110,7 +110,7 @@ export class WorldObject {
     return { name: this.def.name, instanceId: this.instanceId };
   }
 
-  /** 中身から受ける寄与（containerContributionTo）が使う、規約で決まったプロパティのID。 */
+  /** 自分の詰まり具合（fullestSlotFillRatio）が使う、規約で決まったプロパティのID。 */
   private get engine(): EngineVocabulary {
     return this.session.codex.vocabulary.engine;
   }
@@ -361,6 +361,7 @@ export class WorldObject {
   moveToSlotOrRejection(slot: Slot, at?: SlotPosition): string | undefined {
     return this.attachToSlotOrRejection(
       slot,
+      at,
       at === undefined ? undefined : (target) => target.insertAt(this, at),
     );
   }
@@ -371,7 +372,7 @@ export class WorldObject {
    * （＝呼び出し側でfallbackへ委ねる）。
    */
   insertSameSlotOrRejection(slot: Slot, placement: SameSlotPlacement): string | undefined {
-    return this.attachToSlotOrRejection(slot, (target) =>
+    return this.attachToSlotOrRejection(slot, undefined, (target) =>
       target.placeSameSlot(this, placement.originCellIndex, placement.sameKindStillInCell),
     );
   }
@@ -397,9 +398,11 @@ export class WorldObject {
    *
    * 何が移せないかを画面側が場所ごとに覚えていると、ワールド側の宣言と食い違う（設置物のかごを
    * 持ち歩けるようにしたのに、画面がそのレーンを読み取り専用のままにしている、など）。
+   *
+   * atはmoveToSlotOrRejectionと同じ位置の指定で、渡せばその位置へ置けるかまで見る。
    */
-  rejectionForMoveTo(slot: Slot): string | undefined {
-    return this.rejectionForLoopOrDetach(slot) ?? slot.rejectionFor(this);
+  rejectionForMoveTo(slot: Slot, at?: SlotPosition): string | undefined {
+    return this.rejectionForLoopOrDetach(slot) ?? slot.rejectionFor(this, at);
   }
 
   /**
@@ -488,16 +491,18 @@ export class WorldObject {
 
   /**
    * placeは位置を指定する配置（moveToSlotOrRejectionのat・insertSameSlotOrRejection）専用。省略すると通常の追加
-   * （Slot.addWithoutParentLink）になる。
+   * （Slot.addWithoutParentLink）になる。atはplaceが置く位置で、受け入れ判定はそこへ置けるかまで見る
+   * ——切り離した後で置けないと分かると、物はどこにも属さないまま戻るため。
    *
    * **配置を伴う変化の唯一の関門**なので、ここが出入りを記録する（WorldChange）。移動前の居場所は
    * 切り離す前に控える——切り離した後では、どこから来たのかを誰も知らない。
    */
   private attachToSlotOrRejection(
     targetSlot: Slot,
+    at: SlotPosition | undefined,
     place: ((slot: Slot) => boolean) | undefined,
   ): string | undefined {
-    const rejection = this.rejectionForMoveTo(targetSlot);
+    const rejection = this.rejectionForMoveTo(targetSlot, at);
     if (rejection !== undefined) return rejection;
 
     const newParent = targetSlot.owner;
@@ -731,7 +736,7 @@ export class WorldObject {
    */
   moveIntoFirstAcceptingSlot(target: WorldObject): boolean {
     for (const slotDef of target.def.placementSlotDefs('auto'))
-      if (this.attachToSlotOrRejection(target.getSlot(slotDef.globalId), undefined) === undefined)
+      if (this.attachToSlotOrRejection(target.getSlot(slotDef.globalId), undefined, undefined) === undefined)
         return true;
 
     return false;
@@ -915,12 +920,9 @@ export class WorldObject {
     for (const child of this.children()) child.collectInfluencesRecursively(out);
   }
 
-  /**
-   * この物のdefが宣言した持続効果の辺を書き出す。**役はそのつど今の参加から解く**——物のdefの宣言が
-   * 見る役は登録の後も参加に追随するので（RegisteredPassiveEffect）、読むときも同じ出どころで解く。
-   */
+  /** この物のdefが宣言した持続効果の辺を書き出す（役の出どころはObjectPassiveEffects.collectInfluences）。 */
   private collectDeclaredInfluences(out: InfluenceWriter): void {
-    this.def.passives.collectInfluences(this, ReferenceContext.forParticipant(this), out);
+    this.def.passives.collectInfluences(this, out);
   }
 
   /**
@@ -1095,7 +1097,8 @@ export class WorldObject {
   // ---- 能動効果とspawn（9節） ----
 
   /**
-   * このオブジェクトをselfとして、渡された効果が持つ命令を実行する（9節。何が走るかはActiveEffectSequence）。
+   * 文脈のselfを起点に、渡された効果が持つ命令を実行する（9節。何が走るかはActiveEffectSequence）。
+   * **selfは文脈から引く**——起点を別に受け取ると、文脈のselfと食い違う組を渡せてしまう。
    * rangeイベント（6節）とactions/combinations（11節・12節）の両方から呼ばれる。**文脈は呼び出し側が
    * 持っているものをそのまま渡す**——操作からは張られている関係の文脈が、rangeイベントからは役の居ない
    * 文脈（11.5節）が来る。対象が解決できない場合（例えばparentが無い、この実行文脈に居ない役を指している。
@@ -1108,12 +1111,13 @@ export class WorldObject {
    * （WorldChange.subject）。どの`pick`の候補が選ばれたかによらず1つに決まるので、観測する側は分岐を
    * 知らずに「このオブジェクトが何をしたか」を読める。
    */
-  applyActiveEffect(effect: ActiveEffect, context: ReferenceContext): void {
+  static applyActiveEffect(effect: ActiveEffect, context: ReferenceContext<WorldObject>): void {
+    const self = context.self;
     // same_slot spawnのために「selfが今占めている位置」を、まだ何も起きていないこの入口で捕捉する。destroyが
     // selfを消した後でも、spawnはこのアンカーと配置時のスロットの状態から置き換え位置を決められる（SameSlotSpawnSite
     // 参照）。
-    const sameSlotSpawnSite = this.captureSameSlotSpawnSite();
-    this.session.withSubject(this, () => effect.apply(context, sameSlotSpawnSite));
+    const sameSlotSpawnSite = self.captureSameSlotSpawnSite();
+    self.session.withSubject(self, () => effect.apply(context, sameSlotSpawnSite));
   }
 
   /** same_slotの置き換えのために、selfが今占めている位置を捕捉する。「これから消えるか」の予測は織り込まず、置き換え位置の判断は配置時にSameSlotSpawnSite自身が行う。parentが無ければ位置が無いのでundefined。 */

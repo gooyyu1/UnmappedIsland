@@ -17,6 +17,9 @@ import os
 import subprocess
 import sys
 
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 

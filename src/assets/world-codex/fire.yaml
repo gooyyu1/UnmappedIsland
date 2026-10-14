@@ -4,8 +4,9 @@
 # 速く冷める。これらが釣り合ったところで火力が落ち着くので、「薪の量が火の大きさを決める」は上限を
 # どこかへ書いた結果ではない（同2.2節）。
 #
-# 火が生きているかを表すフラグは持たない。火力が0より大きいことがそれで、一番下の段（ember）が
-# 種火——料理には使えないが、薪をくべれば育つ火力（同3節）。
+# 火が生きているかを表すフラグは持たない。火力が種火の段（ember）以上にあることがそれで、その段が
+# 種火——料理には使えないが、薪をくべれば育つ火力（同3節）。**0より大きいかでは判定しない**——炉ごとの
+# 種火の衰えは小数なので、段を割っても0に着くまで端数が残る。
 #
 # 着火は2段構え。火起こし具を火口へ重ねて火種を作り、火種を炉へ重ねて種火を立てる。火種は1tickで
 # 燃え尽きるので、届くのは同じ土地の中まで——洞窟の中で起こして外の炉へ運ぶことはできるが、
@@ -77,7 +78,7 @@ traits:
       # 割ると、束で拾う火口が枠を食い尽くす。
       moisture:
         value: 0
-        # 野ざらしの雨（下のpassives、実質+3/tick）で2時間、日に広げれば（-4/tick）1時間半。
+        # 野ざらしの雨（下のpassives）で湿りが満ち、日に広げれば乾いていく。
         range: {min: 0, max: 24}
         # 濡れているほど火が付かないので、空の側がgood。
         gauge: {min: good, max: bad}
@@ -100,8 +101,8 @@ traits:
           # 詰みにしない**——雨宿りした洞窟には日が差さないので、日差しだけを乾かす道にすると、
           # 雨の日に濡らした火口を戻す手が無くなる。
           - add: {self: {moisture: -1}}
-          # 日に広げれば速い。境目は塩田・干し場のdrying_remainingと同じ+14
-          # （docs/engine/IlluminationSystem.md 1節のEV）。**地面に出しているあいだだけ**で、
+          # 日に広げれば速い。境目は塩田・干し場のdrying_remainingと同じ明るさ
+          # （明るさの物差しは docs/engine/IlluminationSystem.md 1節のEV）。**地面に出しているあいだだけ**で、
           # 鞄の中や手の中では上の1行ぶんしか抜けない（drying.yamlと同じ切り分け）。
           - conditions:
               - {subject: parent, matches: {tag: location}}
@@ -127,7 +128,7 @@ traits:
       # （docs/world/Skills.md 2.4節）ので、腕を配れる手はここだけになる。
       #
       # どちらの回もsignal（9.8節）で結果を告げる。火口はどちらの回も同じように消えるので、
-      # レーンの上では30分かけて札が1枚減っただけに見え、成否が付かない。
+      # レーンの上では時間をかけて札が1枚減っただけに見え、成否が付かない。
       # **明るさの条件は持たない**（IlluminationSystem.md 5.2節）。摩擦発火は手と耳の作業で、
       # 受け止める熾は自分で光るため、暗さで難しくならない。暗さで塞ぐと、日が落ちた後に
       # 明かりを取り戻す道が無くなる。**閉じるのは雨だけ**で、それも屋根の下なら開いている
@@ -178,7 +179,7 @@ traits:
     props:
       heat_soak:
         value: 0
-        # 炎（3/tick）なら4 tick（1時間）、熾火（1/tick）なら3時間で溜まり切る。
+        # 炎なら熾火より速く溜まり切る。
         range: {min: 0, max: 12}
         stages:
           # 湯を沸かすには、溜め切った石の半分が要る（hot_stoneのboil）。炉から出して45分——6ちょうどは
@@ -190,7 +191,7 @@ traits:
           # 否定形の演算子ではなくnotで包む（GameElementDefinition.md 14.1節）。炉に入れたまま火が
           # 消えた場合も、同じこの1行で冷める。
           - conditions:
-              - not: {subject: ancestor, prop: heat, gt: 0}
+              - not: {subject: ancestor, prop: heat, in_stage_or_above: ember}
             add: {self: {heat_soak: -3}}
 
   # 炉。薪と火力を持ち、火にかけた物を子として加熱する。
@@ -222,19 +223,19 @@ traits:
           - name: few
             min: 1
             passives:
-              - conditions: [{prop: heat, gt: 0}]
+              - conditions: [{prop: heat, in_stage_or_above: ember}]
                 add: {self: {heat: 2}}
           - name: some
             min: 10
             passives:
-              - conditions: [{prop: heat, gt: 0}]
+              - conditions: [{prop: heat, in_stage_or_above: ember}]
                 add: {self: {heat: 6}}
           - name: many
             min: 40
             passives:
-              - conditions: [{prop: heat, gt: 0}]
+              - conditions: [{prop: heat, in_stage_or_above: ember}]
                 add: {self: {heat: 16}}
-      # 火力。0が消えている状態で、段が加熱の速さ・薪の減り・薪が尽きた後の衰えを決める。
+      # 火力。種火の段（1）未満が消えている状態で、段が加熱の速さ・薪の減り・薪が尽きた後の衰えを決める。
       #
       # **育ちと衰えは同時に効かない。** 育ちは薪がある間（fuelの段）、衰えは薪が尽きている間
       # （fuelが0）だけで、passivesのaddは登録順に値を書き換えながら適用されるため、同じtickで
@@ -290,10 +291,10 @@ traits:
       #
       # どちらも段では見ない。種火も炎も同じ値として扱い、持つのは線を1本跨がせる量だけ——明かりは
       # 暗闇から作業できる明るさへ持ち上げる+11（ContentSkeleton.md 8.1.1.2節）、暖は空が最も冷える
-      # とき（涼しい季節-5＋夜-3＝12℃、core.yaml）をちょうど平年の20℃へ戻す+8。土地の海抜ぶんの差は
+      # とき（涼しい季節の夜、core.yaml）をちょうど平年へ戻す+8。土地の海抜ぶんの差は
       # この上に乗るので戻り先は土地で変わり、跨がせる線は平年ではなくchill_point
       # （docs/engine/FireSystem.md 9.2節）。
-      - conditions: [{prop: heat, gt: 0}]
+      - conditions: [{prop: heat, in_stage_or_above: ember}]
         modify: {parent: {hand_brightness: 11, looking_brightness: 11, ambient_temperature: 8}}
       # 雨。野ざらしの炉は火力を余分に削られる。守られた場所（sheltered）なら効かない
       # （docs/engine/ContainerSystem.md 6節）。
@@ -329,13 +330,13 @@ traits:
         destroy: instrument
       # 火種を落として着火する。置くのは種火1つぶんだけで、そこから先は薪が育てる。
       #
-      # **火が生きている炉は断る**（生きているかは火力が0より大きいこと、上のheat）。setが置くのは
+      # **火が生きている炉は断る**（生きているかは火力が種火の段以上にあること、上のheat）。setが置くのは
       # 種火の1だけなので、燃えている炉へ重ねると火種を失ったうえに火力がそこまで落ちる。理由を
       # 名乗るのは、断るだけでは「重ねても何も起きない」になるため（docs/ui/CardInteraction.md 2.1節）。
       ignite:
         trigger: {drag: {object: burning_tinder}}
         conditions:
-          - {reason: already_lit, prop: heat, eq: 0}
+          - {reason: already_lit, prop: heat, in_stage: out}
           - {reason: no_fuel, prop: fuel, gt: 0}
         destroy: instrument
         set: {self: {heat: 1}}
@@ -360,7 +361,7 @@ traits:
           # **理由の名前は火起こしの signal（上のignitableのnot_lit）と分ける**——同じfire.yamlの中で
           # 同じ語が別のことを指すと、拾う側は名前空間まで見ないと見分けられない。
           - {reason: no_flame_carried, subject: instrument, prop: lit, gt: 0}
-          - {reason: already_lit, prop: heat, eq: 0}
+          - {reason: already_lit, prop: heat, in_stage: out}
           - {reason: no_fuel, prop: fuel, gt: 0}
         set: {self: {heat: 1}}
       # 燃えている炉から、持ち歩ける明かり（lightable）へ火を移す。上のignite_from_flameと**同じ1つの
@@ -373,7 +374,7 @@ traits:
       light_from_flame:
         trigger: {drag: {tag: lightable}}
         conditions:
-          - {reason: fire_out, prop: heat, gt: 0}
+          - {reason: fire_out, prop: heat, in_stage_or_above: ember}
           - {reason: already_lit, subject: instrument, prop: lit, eq: 0}
         set: {instrument: {lit: 1}}
 
@@ -448,7 +449,7 @@ object_defs:
     props:
       weight: {value: 1100}
       volume: {value: 1400}
-      # 燃え残り（tick）。灯している間だけ減り、2時間で燃え尽きる。
+      # 燃え残り（tick）。灯している間だけ減る。
       life:
         value: 8
         range: {min: 0, max: 8}
@@ -515,7 +516,7 @@ object_defs:
         become: {subject: instrument, content: hot_water_liquid}
         set: {self: {heat_soak: 0}}
 
-  # 焚き火。枝を積んだだけの炉。器を載せる枠を持たず、種火は30分で死ぬ。
+  # 焚き火。枝を積んだだけの炉。器を載せる枠を持たず、種火はすぐに死ぬ。
   campfire:
     traits: [hearth]
     recipes:
@@ -568,7 +569,7 @@ object_defs:
   three_stone_hearth:
     traits: [hearth]
     props:
-      # 焚き火（900）に石3つ（1,000×3）。
+      # 焚き火に石を積んだ重さ。
       weight: {value: 3900}
       fuel:
         value: 0
@@ -605,11 +606,11 @@ object_defs:
         destroy: instrument
         add: {self: {stones: 1}}
 
-  # 石囲いの炉。料理の最上段。種火が翌朝まで生き、薪を多く積め、火床が広いので器を2つ置ける。
+  # 石囲いの炉。料理の最上段。種火がどの炉より長く生き、翌朝まで保ち（下のpassives）、薪を多く積め、火床が広いので器を2つ置ける。
   stone_hearth:
     traits: [hearth]
     props:
-      # 三石のかまど（3,900）に石8つ。囲いごと運ぶ物ではないが、重さは名乗る。
+      # 三石のかまどに石を積み足した重さ。囲いごと運ぶ物ではないが、重さは名乗る。
       weight: {value: 11900}
       fuel:
         value: 0
@@ -628,11 +629,15 @@ object_defs:
           - {accept: {tag: cookware}}
           - {accept: {tag: cookware}}
     passives:
-      # 灰をかぶって空気を絞られた種火は8時間もつ。これが炉を常設する唯一にして最大の利得。
+      # 灰をかぶって空気を絞られた種火は長くもつ。これが炉を常設する利得の1つ。
+      #
+      # **日没に薪が尽きても、種火のまま日の出を迎える速さ**（docs/engine/FireSystem.md 6節）。
+      # 熾火の段の下限で尽きた火は、熾火の衰えで種火の段へ3で落ちるので、そこから一晩を越せる
+      # だけ遅くしてある（tests/world-codex/fireYaml.test.ts が見る）。
       - conditions:
           - {prop: heat, in_stage: ember}
           - {prop: fuel, eq: 0}
-        add: {self: {heat: -0.125}}
+        add: {self: {heat: -0.03125}}
     interactions:
       # 満杯なら断る理由を出す（hearthのadd_fuel）。値は上のfuelのrange.max。
       add_fuel:

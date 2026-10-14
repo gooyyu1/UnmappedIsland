@@ -181,7 +181,7 @@ patch_object_defs:
 **`variation_axes` は、その型の変種がどの軸で並ぶかを宣言します。** 軸の名前は著者が付け、値に
 なれる型は `of`（4.1 節の型指定）が選びます。
 
-```yaml
+```yaml codex: liquid_containers.yaml
 object_defs:
   jar:
     traits: [liquid_container, narrow_open_container]
@@ -207,12 +207,17 @@ combinations・passives の合成は trait の mixin（5 節）がそのまま�
 
 ### 3.6 宣言が名指しする別の宣言
 
-条件の `prop`、`base` の土台、効果の行き先、`deftness` の `skill`——**別の宣言を名前で名指しする口**は
+条件の `prop`、`base` の土台、効果の行き先、`deftness` の `skill`、スロットや型の指定——**別の宣言を名前で名指しする口**は
 いくつもあります。名指した名前は、**それを宣言している型が世界に1つも無ければロード時に落とします**。
 
 - **プロパティの名前**: `props`（6節）のキーとして宣言している型が無ければエラー。
 - **段の名前**（`in_stage` / `in_stage_or_above`、`deftness` の `from_stage`）: そのプロパティの
   `stages`（6.4 節）にその名前を持つ宣言が無ければエラー。
+- **スロットの名前**（条件の `slot` / `in_slot`、`among` の `slot`、`move` の `to_slot`）: `slots`（7節）の
+  キーとして宣言している型が無ければエラー。
+- **型の名前**（「どの型が当てはまるか」の指定の `{object: ...}`（4.1 節）、`spawn` の `object`、
+  `location_types` の `object_def`）: `object_defs` に無ければエラー（生成された型、3.5 節を含む）。行き先を型で指す宣言（9.4 節・9.6 節）は、
+  加えて世界にただ1つ在る型でなければなりません。
 
 名指しの綴りを間違えると、実行時にはただ「そのプロパティを持っていない」「その段に居ない」と読まれ、
 **宣言は落ちずに一度も効きません。** 名前を作る口と名指しする口が同じでは、綴り違いがその場で新しい
@@ -229,7 +234,7 @@ combinations・passives の合成は trait の mixin（5 節）がそのまま�
 
 型定義は `object_defs` の下に、識別子を**キーとして**表現します（値ではありません）。
 
-```yaml
+```yaml codex: locations.yaml
 object_defs:
   stone:
     props:
@@ -272,7 +277,7 @@ id で書けば、そのためだけの単発タグを新設せずに済みま�
 ルートキー `required_props` は、**タグ名 → そのタグを持つ型が宣言していなければならないプロパティ名の列**です。
 1 つでも欠けている型があればロード時エラーになります。
 
-```yaml
+```yaml codex: core.yaml
 required_props:
   item: [weight]      # 持ち歩ける物は必ず重さを名乗る
   character: [load]   # 担ぐ者は必ず負荷を受け取る口を持つ
@@ -292,7 +297,7 @@ required_props:
 型は **`art`** で「カードに出す絵の名前」を名乗れます。値は `src/assets/objects/<この値>.png` を指し
 （[`CardView.md`](../ui/CardView.md) 5 節）、**宣言しなければ型の識別子そのもの**です。
 
-```yaml
+```yaml codex: voyage.yaml
 traits:
   sea_route:
     art: sea_route      # この trait を持つ航路が、1枚の sea_route.png を共有する
@@ -323,7 +328,7 @@ traits:
 
 ```yaml
 traits:
-  perishable:
+  spoilable:
     props:
       shelf_life:      # valueなし→継承先で必須
         unit: days
@@ -332,7 +337,7 @@ traits:
 
 object_defs:
   apple:
-    traits: [perishable]
+    traits: [spoilable]
     props:
       shelf_life:
         value: 7
@@ -514,18 +519,23 @@ props:
 
 **「一度だけ起こす」を、呼ぶ側ではなく起こす側に書くための口です。** 境界に居る値は書き込みのたびに
 イベントを呼び直すので、これが無いと「もう起こした」を呼ぶ側（そこへ書き込むアクションの `conditions`）が
-覚えることになり、**そのアクション自体が打ち切られます**。海区の見張りが航路を1本だけ湧かせる例が
+覚えることになり、**そのアクション自体が打ち切られます**。海区の見張りが航路を一度だけ湧かせる例が
 これで（[`Voyage.md`](../world/Voyage.md) 3.5 節）、条件が見るのは印ではなく**湧かせた物そのもの**です。
 
-```yaml
+```yaml codex: voyage.yaml object_defs.coastal_waters
+# 沿岸の海区（voyage.yaml の coastal_waters）
 props:
   exploration_progress:
     value: 0
-    range: {min: 0, max: 3}
+    range:
+      min: 0
+      max: 2
     on_max:
       conditions:
         - not: {slot: fixtures, matches: {object: route_to_kelp_belt}}   # まだ湧かせていない
-      spawn: {object: route_to_kelp_belt, into: self}
+      spawn:   # 辺の両端へ1本ずつ立てる
+        - {object: route_to_kelp_belt, into: self}
+        - {object: route_to_coastal_waters, into_object: {prop: zone_toward_mainland}}
 ```
 
 ```yaml
@@ -553,7 +563,7 @@ props:
   大小関係に意味が無いため）。代わりに、**段階の `name` 自体がそのまま比較対象の値になります**（値が
   `name` と完全一致する場合だけその段階になる、シンボル名同士の比較）。
 
-  ```yaml
+  ```yaml codex: core.yaml object_defs.world
   props:
     weather:
       value: clear
@@ -707,8 +717,9 @@ props:
 
 - シンボル名同士の大小関係（`lt`/`gt` 等）は、登録順に依存する恣意的なものであり意味を持ちません。
   シンボル型のプロパティは `eq`/`neq`/`in`/`not_in` で比較する用途を想定しています。
-- `range`/`on_max`/`on_min`/`stages` はいずれも数値の大小関係を前提にした仕組みのため、
-  シンボル型のプロパティと組み合わせても意味のある結果にはなりません。
+- `range`/`on_max`/`on_min` はいずれも数値の大小関係を前提にした仕組みのため、
+  シンボル型のプロパティと組み合わせても意味のある結果にはなりません。`stages` は大小ではなく
+  名前との完全一致で段を決めます（6.4 節）。
 
 ### 6.7 tags（プロパティのカテゴリ）
 
@@ -750,7 +761,7 @@ object_defs:
 [`Windows.md`](../ui/Windows.md) 8 節）・バーの向き（[`StatusArea.md`](../ui/StatusArea.md) 6 節）・
 収支表が 1 日に賄う量に数えるか（[`BalanceStats.md`](../diagnostics/BalanceStats.md)）が、これを見ます。
 
-```yaml
+```yaml codex: characters/player_character.yaml traits.player_character
 props:
   travel_delay:
     # 歩みの遅れ（分）。増えるほど遅くなるので、増える側が悪い。
@@ -800,7 +811,7 @@ props:
 値は整数（その型のグローバル ID）で、シンボル型（6.6 節）と同じく**名前を整数へ畳んだ値**です。ロードした
 時点で決まる定数なので、生成の順序にも世界の形にも依存しません。
 
-```yaml
+```yaml codex: voyage.yaml object_defs.coastal_waters
 props:
   # この海区の、本土の側の隣（voyage.yaml）。
   zone_toward_mainland: {value: {object: kelp_belt}}
@@ -810,7 +821,7 @@ props:
 `{prop: <名前>}` と書くとこの値を読みます。**探し方は型の名前をその場に書いたときとまったく同じ**なので、
 違うのは名前をどこに書くかだけです。
 
-```yaml
+```yaml codex: voyage.yaml traits.sea_zone.props.storm_drift.on_max.pick.0
 move: {subject: picked, to_object: {prop: zone_toward_mainland}}
 ```
 
@@ -819,8 +830,8 @@ move: {subject: picked, to_object: {prop: zone_toward_mainland}}
 - **同じ行き先を 2 か所へ書き写さないための仕組みです。** 型の名前を直接書くと、同じ隣を
   「航路を立てる先」と「荒天が押し流す先」の両方へ手で書くことになります
   （[`Voyage.md`](../world/Voyage.md) 3.8 節）。
-- **`range`/`on_max`/`on_min`/`stages` とは組み合わせても意味のある結果になりません**（シンボル型と同じ
-  理由で、値の大小に意味が無いため）。
+- **`range`/`on_max`/`on_min`/`stages` とは組み合わせても意味のある結果になりません**（値の大小に意味が
+  無いため。シンボル型と違い、名前との完全一致で段を決める仕組み（6.4 節）も持ちません）。
 - **引く先がこの宣言を持たないプロパティならロード時エラーです。** 値は数のままなので、ただの数値
   プロパティを引く `to_object` は、実行時に無関係な型を引くか黙って何も起きないかのどちらかになります。
   型の名前を直接書いたときに `singleton` を要求するのと同じ、**書いた時点で分かる誤り**です。
@@ -956,7 +967,7 @@ object_defs:
           - conditions: [{in_slot: hand}]
             modify: {self: {load_rate: -0.45}}  # 引きずるので体感は55%
 
-  character:
+  castaway:
     props:
       weight: {value: 70000}   # 自重。荷物は中身として上に乗る
       load: {value: 0}
@@ -1123,7 +1134,7 @@ slots:
 
 ```yaml
 object_defs:
-  sprained_ankle:
+  twisted_knee:
     bound_to_owner: true      # 身体から離れた「捻挫」は無い
 ```
 
@@ -1151,7 +1162,7 @@ object_defs:
 持ち主、`instrument` が入れる物、`agent` が入れている者です。**ここも操作の宣言なので `patient` は
 書けません**——枠の持ち主が `patient` で、`self` と同じ物だからです（11.5 節「役を書ける場所」）。
 
-```yaml
+```yaml codex: injuries.yaml traits.treatable
 slots:
   treatment:
     cell_count: 1
@@ -1238,7 +1249,7 @@ object_defs:
 
 ```yaml
 object_defs:
-  wild_boar:
+  feral_boar:
     tags: [item]
     resists: [{prop: wariness, gte: 1}]   # 荒ぶっている間は手にも台車にも入らない
 ```
@@ -1522,7 +1533,7 @@ object_defs:
 
 ```yaml
 interactions:
-  eat:
+  snack:
     trigger: menu
     add:
       agent:
@@ -1551,13 +1562,21 @@ interactions:
 `move` の `to_prop`・`spawn` の `into_prop` がそのまま引きます——筏は出航のときに自分が居た海岸を覚え、
 島へ戻る航路はその個体へ帰します（[`Voyage.md`](../world/Voyage.md) 3.5 節）。
 
-```yaml
+```yaml codex: voyage.yaml object_defs.raft.interactions
+# 筏（voyage.yaml の raft）。海岸に居るかの条件は省いている
 set_sail:
   trigger: menu
+  duration: 60
   set: {self: {home_coast_id: {subject: parent}}}   # 押し出す前に、出た海岸を覚える
-  move:
-    - {subject: agent, to: self}
-    - {subject: self, to_object: coastal_waters}
+  move: {subject: agent, to: self}
+  pick:   # 押し出す先の海区は、出た海岸ごとの重みで引く
+    - weight: {subject: parent, prop: offshore_coastal_waters}
+      move: {subject: self, to_object: coastal_waters}
+    - weight: {subject: parent, prop: offshore_tide_rip}
+      move: {subject: self, to_object: tide_rip}
+    - weight: {subject: parent, prop: offshore_gull_rock}
+      move: {subject: self, to_object: gull_rock}
+  spawn: {object: route_to_shore, into: parent}   # 島へ引き返す道
 ```
 
 書けるのは**対象キーだけ**で、`prop` は書けません。`{subject, prop}` は「そのプロパティの実効値が指す個体」
@@ -1594,7 +1613,7 @@ set_sail:
 **どう消したのかは、消した宣言がその場で名乗ります。** 対象をマップで書くと `reason` を添えられ、
 名前は消された側に残ります（`WorldObject.destroyedReason`）。
 
-```yaml
+```yaml codex: animals.yaml traits.beast.props
 hydration:
   range: {min: 0, max: 336}
   on_min:
@@ -1692,14 +1711,18 @@ spawn: {object: item_coconut, count: 2, into: self}
 
 `set`/`add` は固定の値・量しか書けないため、「在庫に応じて実際に動く量が変わる」移送（例: 容器に入っている
 分だけ回復する水分補給）を表現できません。`transfer` は、`from` が指すプロパティの実体値のうち、実際に
-出せる量（0未満にはならない量）と `amount` の小さい方だけを、`to` が指すプロパティへ移す専用の動詞です。
+出せる量と `amount` の小さい方だけを、`to` が指すプロパティへ移す専用の動詞です。
+
+**出せる量の床は、`from` のプロパティに `range` があれば `range.min`、無ければ 0 です。** 出せる量は
+実体値から床を引いた分（0未満にはならない）で、出し切った値はちょうど下限に着きます——それでも
+「出し切った」に反応できるのは、`on_min` が下限そのもので発火するからです（6.3 節）。
 
 `add` と同じく、**`passives` の中に置けば tick 毎に走る輸送**になります（8.4.1 節）。以下の文法は
 どちらの置き場所でも同じです。
 
 ```yaml
 interactions:
-  drink:
+  sip:
     trigger: menu
     transfer:
       amount: 2000
@@ -1726,19 +1749,23 @@ interactions:
   追加の加減算を表します。各プロパティへの加減算量は `宣言値 × 実際に出した量 / amount` で確定します。
   固定の `add` では表現できない「飲んだ量に比例した副効果」（例: お茶の眠気改善）を表すために使います。
 
-```yaml
+```yaml codex: liquid_containers.yaml traits.tea_liquid
+# お茶（liquid_containers.yaml の tea_liquid trait）。喉が渇いているかの条件は省いている
 interactions:
   drink:
     trigger: menu
+    duration: 5
     transfer:
-      amount: 250            # 水を250mL出す
-      to_amount: 10          # 飲みきると水分が10 tick分回復する
-      from_prop: volume
+      # 250mL出し、飲みきると水分が10 tick分回復する
+      amount: 250
+      to_amount: 10
+      from_prop: fill        # 器の中のお茶の量（mL）
       to: agent
       to_prop: hydration
       linked_add:
         agent:
-          wakefulness: 2     # 実際に出した量に比例: 250 飲めば +2、125 飲めば +1
+          # 実際に出した量に比例: 250 飲めば +2、125 飲めば +1
+          wakefulness: 2
 ```
 
 `from`/`from_prop`/`to`/`to_prop` をフラットな4フィールドにしているのは、`conditions`（14.1 節）の
@@ -1781,7 +1808,7 @@ interactions:
 の中へ移動させる**専用の動詞です。`transfer`（9.5 節）が連続量（プロパティの値）を移すのに対し、`move` は
 オブジェクト自身の所属を移します。典型例は、土地と土地を繋ぐ道の移動アクション（`agent` を移動先の土地へ移す）です。
 
-```yaml
+```yaml codex: locations.yaml object_defs.path
 interactions:
   travel:
     trigger: menu
@@ -1804,8 +1831,8 @@ interactions:
   違うのはキーの綴りだけです。
   - **`to`**: `subject` と同じく、その場所が用意できる相手を指せます（14.1 節）。行き先が定義時点で
     決まっている場合に使います。`parent` は、代表（[`SlotSystem.md`](./SlotSystem.md) 4 節）へ
-    リダイレクトされた中身が、自分ではなく容器を行き先にしたい場合のためのものです（液体の注ぎ移し、
-    `LiquidContainerSystem.md` 4 節）。指した相手が居ない場合は何も起きません。
+    リダイレクトされた中身が、自分ではなく容器を行き先にしたい場合（液体の注ぎ移し、
+    `LiquidContainerSystem.md` 4 節）や、自分の居る場所へ物を押し出す場合（小島が岸の筏を海区へ出す、下の例）に使います。指した相手が居ない場合は何も起きません。
   - **`to_prop`**: `self` が持つプロパティ名。その実効値を `WorldObject` のインスタンスID（生成時に発行される、
     実行時限りの識別子）として解釈し、移動先とみなします。書き込むのは生成器（地上の道の `destination_id`）か
     `set`（9.2 節。筏が出航した海岸を覚える）です。
@@ -1825,10 +1852,17 @@ interactions:
 `move` は1つでも配列でも書けます（`destroy`・`transfer` と同じ）。**同じ一手で2つ動かす**——筏に乗り込んで
 から、その筏ごと漕ぎ出す——のに使います。適用は書かれた順です。
 
-```yaml
-move:
-  - {subject: agent, to: self}
-  - {subject: self, to_object: coastal_waters}
+```yaml codex: voyage.yaml object_defs.offshore_islet.interactions
+# 小島の岸から漕ぎ出す（voyage.yaml の offshore_islet の launch）。条件は省いている
+launch:
+  trigger: menu
+  duration: 30
+  pick:
+    - weight: 1
+      among: {slot: fixtures, matches: {object: raft}}   # 岸の筏を picked にする（10.3 節）
+      move:
+        - {subject: agent, to: picked}
+        - {subject: picked, to: parent}   # 小島が居る海区へ
 ```
 
 プロパティが個体を `object_defs` の id（型）ではなくインスタンスIDで指すのは、典型例（生成された特定の道が
@@ -1847,7 +1881,7 @@ move:
 
 ```yaml
 traits:
-  liquid_container:
+  pourable_vessel:
     interactions:
       pour_in:
         trigger: {drag: {tag: liquid}}
@@ -1888,7 +1922,7 @@ traits:
 
 ```yaml
 interactions:
-  turn:
+  flip:
     trigger: menu
     add: {self: {fatigue: 1}}   # 分岐に関わらず必ず起こること
     pick:                       # 分岐する部分。共通処理を全候補へ複製しなくてよい
@@ -1904,7 +1938,7 @@ interactions:
 
 ```yaml
 interactions:
-  strike:
+  swat:
     trigger: {drag: {tag: weapon}}
     pick:
       - weight: 70
@@ -1919,7 +1953,7 @@ interactions:
 
 ```yaml
 interactions:
-  strike:
+  swat:
     trigger: {drag: {tag: weapon}}
     signal: {instrument: chipped}   # 殴った側（重ねた武器）に起きたこととして告げる
 ```
@@ -2088,7 +2122,7 @@ pick:
 候補に `among` を書くと、**その候補が選ばれたときに、周りの物からさらに相手を1つ選んで**から効果を
 当てます。選ばれた相手は `picked`（14.1 節の対象キー）で指します。
 
-```yaml
+```yaml codex: animals.yaml traits.beast.interactions.turn.pick
 - weight: {prop: snatch}
   among:
     subject: parent            # 候補を探す相手（省略時は self）
@@ -2127,7 +2161,7 @@ pick:
 traits:
   eatable:
     interactions:
-      eat:
+      snack:
         trigger: menu
         conditions:
           - {subject: agent, prop: satiety, lt: max}
@@ -2198,7 +2232,7 @@ interactions:
 `conditions` には `agent` を書けるので（11.5 節）、**どの腕が・どの段から・何分縮めるかは、その操作の側の
 宣言 1 つに収まります**（設計は [`../world/Skills.md`](../world/Skills.md) 6 節）。
 
-```yaml
+```yaml codex: fiber.yaml object_defs.plant_fiber
 props:
   spin_minutes:
     value: 30
@@ -2273,7 +2307,7 @@ props:
 | `on_max`/`on_min`（6.3 節） | — | — | — |
 | `resists`（7.13 節） | — | — | — |
 
-- **✕ は「書くとロード時エラー」、— は「その場所に居ないので解決先を持たず、やはりロード時エラー」**です。
+- **✕ は「書くとロード時エラー」、— は「その場所に居ないので解決先を持たず、やはりロード時エラー」です。**
   区別が要るのは理由が違うからで、`patient` の ✕ は居ないからではありません。
 - **`patient` が操作の宣言の中で書けないのは、役の定義そのものが「宣言が乗っている側」だから**です。
   どの操作でも必ず `self` と同じ物になり、同じ物に 2 つの名前が付くと、読む側は毎回どちらが正かを考えることに
@@ -2376,7 +2410,7 @@ object_defs:
 **`duration` を進める前に、その操作が始まったことを告げます。** 書き方は `signal`（9.8 節）と同じで、
 対象を省いた形（`self` へ告げる）も、対象キーごとに書く形も取れます。
 
-```yaml
+```yaml codex: characters/player_character.yaml traits.player_character
 interactions:
   collapse:
     trigger: tick
@@ -2410,7 +2444,7 @@ interactions:
 **`duration` を進めている間だけ効く持続効果です。** 文法は物の `passives`（8 節）と丸ごと同じで、
 違うのは登録が続く長さ——操作が始まったところで登録し、経過し終えたところで外します。
 
-```yaml
+```yaml codex: characters/player_character.yaml traits.player_character
 interactions:
   rest:
     trigger: menu
@@ -2456,7 +2490,7 @@ interactions:
 object_defs:
   wood:
     interactions:
-      chop:
+      cleave:
         trigger: {drag: {tag: axe_tool}}
         conditions:
           - {subject: instrument, prop: durability, gt: 0}
@@ -2479,7 +2513,7 @@ object_defs:
 
 ```yaml
 interactions:
-  chop:
+  cleave:
     trigger: {drag: {tag: axe_tool}}          # そのタグを持つあらゆるカード
   ignite:
     trigger: {drag: {object: burning_tinder}} # その型そのものだけ
@@ -2546,7 +2580,7 @@ object_defs:
         trigger: {drag: {tag: rope}}
         destroy: [self, instrument]
         spawn: {object: spear}
-  rope:
+  twine:
     tags: [rope]
 ```
 
@@ -2563,7 +2597,7 @@ object_defs:
 書くと、束からまとめて運んできた枚数ぶんを続けて実行します。**きっかけの中に置くのは、重ねる操作
 以外では意味を持たないから**です——外に出すと、書けてしまうが効かないキーができます。
 
-```yaml
+```yaml codex: fire.yaml traits.hearth
 interactions:
   add_fuel:
     trigger: {drag: {tag: fuel}, allow_multiple: true}
@@ -2623,12 +2657,12 @@ object_defs:
 
 ### 13.1 steps / requires
 
-- レシピは 1 つ以上の**工程（`steps`）**からなります。
+- レシピは 1 つ以上の**工程**（`steps`）からなります。
 - 各工程は**素材または道具**を要求できます（`requires`）。**1 つも要求しない工程も書けます**——1 つの工程が
   1 時間を超えられない（[`ActionSystem.md`](./ActionSystem.md) 6.3 節）ので、長い仕事では素材を入れ終えた
   後も工程が続きます。要求を無理に散らすと、その工程で実際に使う物とずれます。素材（`consume: true`）は消費され、道具
   （`consume: false`）は消耗しますが消費はされません。
-- 各工程には**仕事の量（`duration`）**が、それを素人が片付けるのにかかるゲーム内時間（分）として定義されます。
+- 各工程には**仕事の量**（`duration`）が、それを素人が片付けるのにかかるゲーム内時間（分）として定義されます。
   **リテラル数値だけ**で、`{prop: ...}` 参照は書けません——進捗の上限がこの合計なので（`RecipeSystem.md` 1 節）、
   誰が作っても同じ値でなければ、作りかけの進み具合が作り手ごとに違う意味を持ちます。
   **実際に経過する時間は作り手の手際ぶん短くなります**（13.5 節）。
@@ -2639,7 +2673,7 @@ object_defs:
 ので、他のキーと同居できない `not` の形にならないためです。道具は「その用途に使える物」で
 あって特定の型ではないので、刃物を `{tag: cutting_tool}` で求められます。
 
-```yaml
+```yaml codex: voyage.yaml object_defs.rawhide_sail
 recipes:
   sewn:
     steps:
@@ -2657,6 +2691,10 @@ recipes:
 `{tag: cutting_tool}` と `{object: sharp_stone}` が並ぶ工程はそれで揃います——**要求を書く順も、箱に
 入れた順も、揃うかどうかを変えません。** 揃わないときに「あと何個」として出る数（`CardView.md` 13 節）も、
 当てられる数が最大の割り当てから出ます。
+
+**物はまず、入れた枠の要求へ当てます。** 材料スロットの枠は要求ごとに 1 つなので、置いた場所がそのまま
+「どの要求のつもりか」を言っています。振り替えるのはそのままでは揃わないときだけで、置いたとおりで
+揃うなら割り当ても置いたとおりです（枠に出る印は `CardView.md` 13 節）。
 
 **同時に満たせないのは同じ工程の中だけです。** 前の工程で道具として使った物は消えないので、後の工程が
 それを素材として消費できます。数え方も工程ごとで、**素材は工程をまたいで足し合わせ、道具は最も多い工程の
@@ -2700,7 +2738,7 @@ recipes:
 ルートキー（`core.yaml`）で持ちます。書き方は `conditions`（14 節）と同じで、**ここは要件の並びなので**、
 要素ごとに `reason`（14.6 節）を持てます。
 
-```yaml
+```yaml codex: core.yaml
 # core.yaml
 crafting_conditions:
   - reason: too_dark
@@ -2764,9 +2802,9 @@ recipes:
 
 | 主語 | 使える演算子キー | 節 |
 |------|------------------|----|
-| `prop`（`subject` のそのプロパティの実効値） | `lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`/`in_stage`/`in_stage_or_above` | 14.1 |
-| `slot`（`subject` のそのスロットの中身） | `matches` | 14.3 |
-| 無し（`subject` 自身） | `in_slot`（親の中での位置）／`matches`（`subject` 自身の型） | 14.2・14.4 |
+| `prop`（`subject` のそのプロパティの実効値） | `lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`/`in_stage`/`in_stage_or_above` | 14.1節 |
+| `slot`（`subject` のそのスロットの中身） | `matches` | 14.3節 |
+| 無し（`subject` 自身） | `in_slot`（親の中での位置）／`matches`（`subject` 自身の型） | 14.2・14.4節 |
 
 **同じ `matches` でも、量化は主語が決めます。** `slot` があれば「その中身に当てはまるものが1つでもあるか」、
 無ければ「`subject` 自身が当てはまるか」です（14.3 節・14.4 節）。
@@ -2873,7 +2911,7 @@ conditions:
 
 - **`slot`**: 判定対象の、`subject` が持つスロット名。
 - **`matches`**: そのスロットの中身に求める型（4.1 節の型指定）。**`{not: ...}` を書くと「当てはまらない
-  中身が1つはある」**で、この葉ごと 14.5 節の `not` で包む「1つも無い」とは別物です。
+  中身が1つはある」で**、この葉ごと 14.5 節の `not` で包む「1つも無い」とは別物です。
 
 **`subject` がそのスロットを持たなければ偽になります**（解決できない葉は偽、という他の葉と同じ約束）。
 **スロット名は型をまたいで1つの名前空間にある**ので、一部の型だけが持つ枠を見る条件を、その枠を持たない
@@ -2892,7 +2930,7 @@ conditions:
 
 ```yaml
 object_defs:
-  fracture:
+  cracked_rib:
     slots:
       treatment:
         cell_count: 1
@@ -2944,7 +2982,7 @@ conditions:
 **満たさなかったときにプレイヤーへ出す理由**を `reason`（識別子）で添えられます。文言は locale の
 `reason_texts` が持ちます（[`Localization.md`](./Localization.md)）。
 
-```yaml
+```yaml codex: locations.yaml object_defs.path
 interactions:
   travel:
     trigger: menu
@@ -2977,7 +3015,7 @@ UI は、実行できないアクションのボタンを押せない見た目�
 「インスタンスが1つだけ存在すべき」という制約は、`object_defs` のエントリに `singleton: true` を追加することで
 表現します。
 
-```yaml
+```yaml codex: core.yaml
 object_defs:
   world:
     singleton: true
@@ -3013,7 +3051,8 @@ object_defs:
 必ず解決できます。
 
 日時・天候はオブジェクトから直接参照されるのではなく、**環境がオブジェクトに影響を与える**という位置づけです
-（例: 明るさによって行動可否が変わる）。直接のプロパティ参照は 14 節の `conditions`（`subject: world`）で使います。
+（例: 明るさによって行動可否が変わる）。直接のプロパティ参照は 14 節の `conditions` で `subject: ancestor` を通して行います（`subject: world` は
+未対応、14.1 節）。
 
 ### 15.1 日は上限を持たず、そのまま数え続ける【確定】
 

@@ -1,7 +1,7 @@
 {
   "_comment": [
     "sample-pack/objects/poison_potion.png を作り直すためのレシピ。build.py が読む。",
-    "毒薬（src/assets/world-codex/potions.yaml）。",
+    "毒薬（sample-pack/world-codex/potions.yaml）。",
     "",
     "**2段構え。** ガラスの小瓶を頼むと、SDXLはほぼ必ず studio 写真を出す——灰色やベージュの",
     "背景に置かれた実物の瓶で、白い紙にはならない（12枚とも）。生成には形だけを出させ、",

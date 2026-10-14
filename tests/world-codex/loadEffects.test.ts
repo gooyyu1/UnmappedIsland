@@ -1,13 +1,16 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { ObjectDef } from '../../src/domain/ObjectDef';
+import { parse } from 'yaml';
+import { characterDefNames } from '../../src/domain/generation/NewGame';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { seededRng } from '../../src/domain/Rng';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Path } from '../../src/domain/wrappers/Path';
-import { World } from '../../src/domain/wrappers/World';
+import type { World } from '../../src/domain/wrappers/World';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER, worldCodexPath } from '../support/worldCodexFiles';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 
 /**
@@ -32,10 +35,6 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     codex = bundledCodex();
   });
 
-  function def(name: string): ObjectDef {
-    return codex.objects.get(codex.objectNames.getId(name));
-  }
-
   function propertyId(name: string): PropertyGlobalId {
     return codex.propertyNames.getId(name);
   }
@@ -50,9 +49,8 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     forest: WorldObject;
   } {
     const session = new WorldSession(codex, seededRng(42));
-    const worldInstance = session.createObject(def('world').globalId);
-    const world = new World(worldInstance);
-    session.adoptWorld(world);
+    const world = session.createWorld();
+    const worldInstance = world.instance;
 
     const locationsSlotId = codex.slotNames.getId('locations');
     const grassland = session.createObject(codex.objectNames.getId('grassland'));
@@ -153,7 +151,7 @@ describe('荷重が歩みの遅れと体力に効く', () => {
   });
 
   it('重い荷ほど遅れが大きく、削りも大きい', () => {
-    // medicのheavyは16500gから。同じ道の遅れが30分に開き、削りは3倍以上になる。
+    // medicのheavyは16500gから。同じ道の遅れが開き、削りも大きくなる。
     const laden = trek(9);
     const heavy = trek(17);
 
@@ -174,9 +172,8 @@ describe('荷重が歩みの遅れと体力に効く', () => {
   });
 
   it('そりに載せれば、担ぎきれない荷でも道に出られる', () => {
-    // 同じ28個（28kg）でも、引きずるそりなら体感は55%（(8000 + 28000) × 0.55 ＝ 19800g）で、
-    // 通れない段（27500g）の内側に収まる。**遅れも削りも消えはしない**——そりが戻すのは
-    // 通れることだけで、heavyの段はそのまま効く。
+    // 同じ28個（28kg）でも、引きずるそりなら自重ごと率で割り引かれ、通れない段の内側に収まる。
+    // **遅れも削りも消えはしない**——そりが戻すのは通れることだけで、heavyの段はそのまま効く。
     const carried = trek(28);
     const dragged = trek(28, 'sledge');
 
@@ -188,10 +185,10 @@ describe('荷重が歩みの遅れと体力に効く', () => {
 
   it('丸太2本は、代表の担ぎ手ならそりで運べる', () => {
     // そりの値打ちは「担げない重さを運べる」ことに出る（docs/world/Containers.md 2節）。
-    // 丸太は1本20kgなので、2本＝40kgは担いでも籠でも通れない段に入る。
+    // 丸太2本は担いでも籠でも通れない段に入る。
     //
     // **通れるかは担ぎ手で分かれる。** 段の境目は個体差そのもの（docs/world/Characters.md 荷重の
-    // 効き方節）で、そりで積めるのは33〜46kg——40kgはその幅の中にある。ここが見ているのは代表
+    // 効き方節）で、丸太2本はそりで積める重さの幅の中にある。ここが見ているのは代表
     // （SAMPLE_CHARACTER）1人ぶんなので、**境目の数は書かず段の名前で見る。**
     const stageOf = (container: string): string | undefined => {
       const { session: s, character } = setUpTrek();
@@ -224,6 +221,179 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     expect(loadOf('handcart'), '台車はさらに軽い').toBeLessThan(loadOf('sledge'));
   });
 
+  it('丸太2本をそりで運べるかは、担ぎ手で分かれる', () => {
+    // 段の境目は個体差そのもの（docs/world/Characters.md 荷重の効き方節）なので、そりで積める重さも
+    // 担ぎ手で動く。**丸太2本がその幅の中に在る**ことを、往復が半分で済む担ぎ手と、1本のままの
+    // 担ぎ手の両方が居ることで見る（docs/world/Containers.md 2節・docs/world/Voyage.md）。
+    const stageWithTwoLogs = (characterName: string): string | undefined => {
+      const session = new WorldSession(codex, seededRng(42));
+      session.createWorld();
+      const character = session.createObject(codex.objectNames.getId(characterName));
+      const sledge = session.createObject(codex.objectNames.getId('sledge'));
+      expect(sledge.moveToSlotOrRejection(character.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+      const contents = sledge.getSlot(codex.slotNames.getId('contents'));
+      for (let i = 0; i < 2; i++)
+        expect(
+          session.createObject(codex.objectNames.getId('log')).moveToSlotOrRejection(contents),
+        ).toBeUndefined();
+      return character.tryGetProperty(propertyId('load'))?.stage?.name;
+    };
+
+    const carriers = [...codex.objects]
+      .filter((def) => def.hasTag(codex.vocabulary.world.characterTagId))
+      .map((def) => def.name);
+    const stages = carriers.map((name) => [name, stageWithTwoLogs(name)] as const);
+    expect(
+      stages.filter(([, stage]) => stage === 'too_heavy'),
+      'そりでも丸太2本では動けない担ぎ手が居る',
+    ).not.toHaveLength(0);
+    expect(
+      stages.filter(([, stage]) => stage !== 'too_heavy'),
+      'そりなら丸太2本を運べる担ぎ手が居る',
+    ).not.toHaveLength(0);
+  });
+
+  it('そりに丸太を積んでいくと、どの担ぎ手もかさより先に重さが尽きる', () => {
+    // containers.yaml のそりの capacity は「丸太が何本も積めるかさで、実際には重さが先に尽きる」と
+    // 言っている。かさを絞りすぎれば、通れない段（too_heavy）へ届く前に積めなくなる。
+    const tooHeavyAt = (characterName: string): number => {
+      const session = new WorldSession(codex, seededRng(42));
+      session.createWorld();
+      const character = session.createObject(codex.objectNames.getId(characterName));
+      const sledge = session.createObject(codex.objectNames.getId('sledge'));
+      expect(sledge.moveToSlotOrRejection(character.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+      const contents = sledge.getSlot(codex.slotNames.getId('contents'));
+      for (let logs = 1; ; logs++) {
+        const log = session.createObject(codex.objectNames.getId('log'));
+        expect(log.moveToSlotOrRejection(contents), `${characterName}: ${logs}本目も積める`).toBeUndefined();
+        if (character.tryGetProperty(propertyId('load'))?.stage?.name === 'too_heavy') return logs;
+      }
+    };
+
+    for (const name of characterDefNames(codex))
+      expect(tooHeavyAt(name), `${name}: 何本も積める`).toBeGreaterThan(1);
+  });
+
+  it('筏1つぶんの丸太を1往復で運べる担ぎ手は居ない（Voyage.md 未決事項）', () => {
+    // 筏のレシピが要る丸太を足し合わせ、どの担ぎ手がどの引く道具に積んでも、通れる段に収まらないか、
+    // 積み切れないことを見る。
+    const voyage = parse(readFileSync(worldCodexPath('voyage.yaml'), 'utf8')) as {
+      object_defs: {
+        raft: { recipes: Record<string, { steps: { requires?: { object: string; count?: number }[] }[] }> };
+      };
+    };
+    // **いちばん少ないレシピで見る**——主張が先に破れるのは、丸太の少ないほうから。
+    const logsPerRaft = Math.min(
+      ...Object.values(voyage.object_defs.raft.recipes).map((recipe) =>
+        recipe.steps
+          .flatMap((step) => step.requires ?? [])
+          .filter((requirement) => requirement.object === 'log')
+          .reduce((sum, requirement) => sum + (requirement.count ?? 1), 0),
+      ),
+    );
+    const logId = codex.objectNames.getId('log');
+    expect(logsPerRaft, '筏が丸太を要る').toBeGreaterThan(1);
+    // 引く道具は、体感の率（load_rate）を名乗る物すべて（docs/world/Containers.md 2節）。
+    const loadRateId = codex.propertyNames.getId('load_rate');
+    const haulers = [...codex.objects]
+      .filter((def) => !codex.isGenerated(def) && def.tryGetPropertyDef(loadRateId) !== undefined)
+      .map((def) => def.name);
+    expect(haulers.length, '引く道具が見つからない').toBeGreaterThan(0);
+
+    const carriers = [...codex.objects]
+      .filter((def) => def.hasTag(codex.vocabulary.world.characterTagId))
+      .map((def) => def.name);
+    for (const characterName of carriers)
+      for (const tool of haulers) {
+        const session = new WorldSession(codex, seededRng(42));
+        session.createWorld();
+        const character = session.createObject(codex.objectNames.getId(characterName));
+        const carrier = session.createObject(codex.objectNames.getId(tool));
+        expect(
+          carrier.moveToSlotOrRejection(character.getSlot(codex.slotNames.getId('hand'))),
+        ).toBeUndefined();
+        const contents = carrier.getSlot(codex.slotNames.getId('contents'));
+        let loaded = 0;
+        for (let i = 0; i < logsPerRaft; i++)
+          if (session.createObject(logId).moveToSlotOrRejection(contents) === undefined) loaded++;
+        const passes =
+          loaded === logsPerRaft && character.tryGetProperty(propertyId('load'))?.stage?.name !== 'too_heavy';
+        expect(passes, `${characterName} が ${tool} で筏1つぶんの丸太を1往復で運べてしまう`).toBe(false);
+      }
+  });
+
+  /** レシピごとに、消費する材料の目方を足した値。 */
+  function materialWeights(fileName: string, objectName: string): [string, number][] {
+    const defs = parse(readFileSync(worldCodexPath(fileName), 'utf8')) as {
+      object_defs: Record<
+        string,
+        {
+          recipes: Record<
+            string,
+            { steps: { requires?: { object: string; count?: number; consume?: boolean }[] }[] }
+          >;
+        }
+      >;
+    };
+    const recipes = Object.entries(defs.object_defs[objectName].recipes);
+    expect(recipes.length, `${objectName} がレシピを持たない`).toBeGreaterThan(0);
+    return recipes.map(([recipeName, recipe]) => [
+      recipeName,
+      recipe.steps
+        .flatMap((step) => step.requires ?? [])
+        .filter((requirement) => requirement.consume === true)
+        .reduce((sum, requirement) => sum + weightOf(requirement.object) * (requirement.count ?? 1), 0),
+    ]);
+  }
+
+  function weightOf(name: string): number {
+    return (
+      codex.objects.get(codex.objectNames.getId(name)).tryGetPropertyDef(propertyId('weight'))
+        ?.initialValueWithoutRoll ?? 0
+    );
+  }
+
+  it.each([
+    ['voyage.yaml', 'raft'],
+    ['voyage.yaml', 'rawhide_sail'],
+    ['farming.yaml', 'pen'],
+    ['bedding.yaml', 'bed'],
+    ['bedding.yaml', 'bed_frame'],
+    ['bedding.yaml', 'hammock'],
+    ['bedding.yaml', 'feather_stuffing'],
+    ['bedding.yaml', 'plant_fiber_stuffing'],
+    ['clothing.yaml', 'rawhide_clothing'],
+    ['clothing.yaml', 'tanned_leather_clothing'],
+    ['clothing.yaml', 'woven_leaf_clothing'],
+    ['drying.yaml', 'drying_rack'],
+    ['fiber.yaml', 'rope'],
+    ['fire.yaml', 'campfire'],
+    ['firewood.yaml', 'firewood_rack'],
+    ['furnishings.yaml', 'branch_table'],
+    ['pottery.yaml', 'earth_kiln'],
+    ['salt.yaml', 'salt_pan'],
+    ['smoking.yaml', 'smokehouse'],
+  ])('%s の %s の目方は、どのレシピでも材料の目方の和', (fileName, objectName) => {
+    // 据えた物も目方を名乗る（core.yaml）。その値はコメントで「材料ぶん」と言っているだけなので、
+    // 材料かレシピの本数を動かして目方を据え置けば、ここが落ちる。
+    for (const [recipeName, materials] of materialWeights(fileName, objectName))
+      expect(weightOf(objectName), `${objectName} の ${recipeName}`).toBe(materials);
+  });
+
+  it.each([
+    ['tools.yaml', 'stone_axe'],
+    ['tools.yaml', 'spear'],
+    ['tools.yaml', 'fishing_harpoon'],
+    ['containers.yaml', 'sledge'],
+    ['treatments.yaml', 'splint'],
+    ['pottery.yaml', 'unfired_jar'],
+  ])('%s の %s は、どのレシピでも材料より軽い', (fileName, objectName) => {
+    // 削る・乾かす工程で目方を落とす物。コメントは「材料より軽い」としか言っていないので、
+    // 材料を軽くして目方を据え置けば、ここが落ちる。
+    for (const [recipeName, materials] of materialWeights(fileName, objectName))
+      expect(weightOf(objectName), `${objectName} の ${recipeName}`).toBeLessThan(materials);
+  });
+
   it('引く道具へ乗り換える積載は、Containers.mdが置いた線のとおり', () => {
     // 率は逆転点から逆算してある（docs/world/Containers.md 2節）ので、**線が動けばここが落ちる**。
     // 石は1個1kgなので、個数がそのまま積載（kg）になる。
@@ -238,5 +408,86 @@ describe('荷重が歩みの遅れと体力に効く', () => {
     expect(sledgeAt(10), 'そりと台車は10kgで並ぶ').toBeCloseTo(handcartAt(10), 6);
     expect(sledgeAt(9), '9kgではそりのほうが軽い').toBeLessThan(handcartAt(9));
     expect(sledgeAt(11), '11kgでは台車のほうが軽い').toBeGreaterThan(handcartAt(11));
+  });
+});
+
+describe('獲物を丸ごと担げるかの線（docs/world/Animals.md 5節）', () => {
+  const codex = bundledCodex();
+  const animalsDoc = readFileSync(join('docs', 'world', 'Animals.md'), 'utf8');
+
+  /** 文書の表が書いた、その獣の重さ（g）。表の数は獣の側の仕様で、定義はまだ無い獣も在る。 */
+  function massOf(name: string): number {
+    const matched = new RegExp(
+      `^\\| \\*\\*(?:野生化した)?${name}\\*\\*[^|]* \\|[^|]*\\| (\\d+) kg \\|`,
+      'm',
+    ).exec(animalsDoc);
+    expect(matched, `Animals.md の表に ${name} の行が無い`).not.toBeNull();
+    return Number(matched![1]) * 1000;
+  }
+
+  /** 同 5節の地の文が書き写した重さ（g）。表と食い違えば、地の文の主張がどの獣の話か分からなくなる。 */
+  function proseMassOf(label: string): number {
+    const matched = new RegExp(`${label}（(\\d+) kg）`).exec(animalsDoc);
+    expect(matched, `Animals.md から「${label}（N kg）」が読めない`).not.toBeNull();
+    return Number(matched![1]) * 1000;
+  }
+
+  /** 人物ごとの、荷重のその段の下端（g）。 */
+  function stageFloors(stageName: string): readonly number[] {
+    const loadId = codex.propertyNames.getId('load');
+    return characterDefNames(codex).map((name) => {
+      const floor = codex.objects
+        .get(codex.objectNames.getId(name))
+        .tryGetPropertyDef(loadId)
+        ?.lowerBoundOfStage(stageName);
+      expect(floor, `${name} の load に段 ${stageName} が無い`).toBeDefined();
+      return floor!;
+    });
+  }
+
+  it('シカは誰でも担げるが、全員が heavy の段に入る', () => {
+    const deer = massOf('シカ');
+    expect(proseMassOf('シカ'), '地の文のシカの重さが表と合う').toBe(deer);
+    for (const floor of stageFloors('heavy')) expect(floor).toBeLessThanOrEqual(deer);
+    for (const floor of stageFloors('too_heavy')) expect(floor).toBeGreaterThan(deer);
+  });
+
+  /** 死体を解体し切ったときに出る取り分の目方（g）を、物ごとに足した値。 */
+  function yieldsOf(carcass: string): Map<string, number> {
+    type Spawn = { object: string; count?: number };
+    const animals = parse(readFileSync(worldCodexPath('animals.yaml'), 'utf8')) as {
+      object_defs: Record<string, { interactions: Record<string, { spawn?: Spawn | Spawn[] }> }>;
+    };
+    const weightId = codex.propertyNames.getId('weight');
+    const yields = new Map<string, number>();
+    for (const interaction of Object.values(animals.object_defs[carcass].interactions))
+      for (const spawn of [interaction.spawn ?? []].flat()) {
+        const weight =
+          codex.objects.get(codex.objectNames.getId(spawn.object)).tryGetPropertyDef(weightId)
+            ?.initialValueWithoutRoll ?? 0;
+        yields.set(spawn.object, (yields.get(spawn.object) ?? 0) + weight * (spawn.count ?? 1));
+      }
+    return yields;
+  }
+
+  it('イノシシの肉だけなら誰でも担げるが全員 heavy に入り、取り分を丸ごと担げない担ぎ手が居る', () => {
+    // animals.yaml の wild_boar_carcass のコメントが言う線。取り分の個数か目方を動かせば、ここが落ちる。
+    const yields = yieldsOf('wild_boar_carcass');
+    const meat = yields.get('raw_meat') ?? 0;
+    const whole = [...yields.values()].reduce((sum, weight) => sum + weight, 0);
+    for (const floor of stageFloors('heavy'))
+      expect(floor, '肉だけで heavy に入る').toBeLessThanOrEqual(meat);
+    for (const floor of stageFloors('too_heavy')) expect(floor, '肉だけなら担げる').toBeGreaterThan(meat);
+    expect(Math.min(...stageFloors('too_heavy')), '取り分を丸ごと担げない担ぎ手が居る').toBeLessThanOrEqual(
+      whole,
+    );
+  });
+
+  it('ニシキヘビとヤギは誰にも担げず、最も担げる担ぎ手でちょうど too_heavy の下端に乗る', () => {
+    const strongest = Math.max(...stageFloors('too_heavy'));
+    for (const name of ['ニシキヘビ', 'ヤギ']) {
+      expect(proseMassOf('ニシキヘビとヤギ'), `地の文の重さが表の${name}と合う`).toBe(massOf(name));
+      expect(strongest, name).toBe(massOf(name));
+    }
   });
 });

@@ -15,6 +15,9 @@ __pycache__/
 # トークン使用量の生データの置き場の既定（セッションIDと指示の原文が入る。scripts/usage）。
 .usage-data/
 
+# 落ちた検査の記録（tests/support/failedRunRecorder.ts）。
+.test-failures/
+
 # Editor/OS
 .vscode/
 .idea/

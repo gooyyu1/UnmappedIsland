@@ -2,12 +2,12 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
 import type { WorldChange } from '../../src/domain/WorldChange';
 import { lungeTargetsByInstance, vanishedInstances } from '../../src/game/view/changedInstances';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 動物の1手（docs/engine/HuntingSystem.md 5節）を、実ファイルの定義だけで検証する。
@@ -16,9 +16,6 @@ import { lungeTargetsByInstance, vanishedInstances } from '../../src/game/view/c
  * 深手を負うほど逃げに転じる——を、密林とその隣の草原を繋いだ小さな世界で通す。
  */
 describe('動物の1手', () => {
-  /** 1手ぶんのゲーム内時間（minutes_per_tick、core.yaml）。 */
-  const TICK_MINUTES = 15;
-
   let codex: WorldCodex;
   let session: WorldSession;
   let world: WorldObject;
@@ -43,8 +40,7 @@ describe('動物の1手', () => {
    */
   function open(roll: number): void {
     session = new WorldSession(codex, fixedRng(roll));
-    world = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(world));
+    world = session.createWorld().instance;
     jungle = spawnInto('jungle', world, 'locations');
     grassland = spawnInto('grassland', world, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');
@@ -87,7 +83,7 @@ describe('動物の1手', () => {
 
   /** 1手ぶんの時間を進める。手番を配るのはtickの後処理（WorldSession.advanceWorldTime）。 */
   function passTurn(count = 1): void {
-    session.advanceWorldTime(TICK_MINUTES * count);
+    session.advanceWorldTime(MINUTES_PER_TICK * count);
   }
 
   /** その物に刺さっている怪我の識別子。 */
@@ -208,7 +204,7 @@ describe('動物の1手', () => {
     // 傷の側に移動の規則を1行も書かずに「折れた脚では運べない」が出る（InjurySystem.md 5節）。
     //
     // 密林に居るイノシシの候補は様子見15・牙30・圧し掛かり10（足元に物も逃げ道も無いので、
-    // 残りは抽選に出ない）。合計55のうち末尾の10を引くrollを渡す。
+    // 残りは抽選に出ない）。末尾の圧し掛かりを引くrollを渡す。
     open(0.9);
     const boar = alarm(release('wild_boar'));
 
@@ -240,7 +236,7 @@ describe('動物の1手', () => {
     // 「傷めつければ逃げる」が全種類に効く。
     //
     // **重みが意味を持つのは手番を1つ回した後**——その場の状況（逃げ道の本数）を書き込むのは
-    // 手番を与える側なので、置いた直後の値はまだ何も見ていない（5.2節）。引きは常に先頭の
+    // 手番を与える側なので、置いた直後の値はまだ何も見ていない（同 5.2節）。引きは常に先頭の
     // 様子見になる0.0にして、動物をその場に留めたまま重みだけを読む。
     open(0.0);
     openPath();
@@ -311,8 +307,8 @@ describe('動物の1手', () => {
 
   it('現れたときの警戒は獣ごとに違い、落ち着いた姿で現れるのはイノシシだけ', () => {
     // 全種が同じ姿勢で現れていたのを、獣ごとの値にした（HuntingSystem.md 3.1節、issue #1994）。
-    // **初期値がそのまま「掴めるようになるまでの手数」**で、そこから19を引いたものが
-    // 「近寄れる（落ち着く）までの手数」になる——減り方は獣によらず-1/tickだから。
+    // **初期値がそのまま「掴めるようになるまでの手数」**になる——減り方は獣によらず-1/tickだから
+    // （animalsYaml.test.ts が見る）。
     open(0.5);
     // **獣は定義から数え上げる**（`beast` traitが配る`animal`タグ）。手で並べると、獣を1つ足しても
     // ここは元の顔ぶれだけを見て緑のまま通り、その獣だけが現れ方の検査の外へ出る。
@@ -332,6 +328,10 @@ describe('動物の1手', () => {
       '落ち着いた姿で現れるのはイノシシだけ（人を恐れない）',
     ).toEqual(['wild_boar']);
     expect(Math.max(...values), 'いちばん長く落ち着かないのはネズミ').toBe(wariness.get('rat')?.value);
+    expect(
+      Math.min(...[...wariness.values()].filter((seen) => seen.stage !== 'calm').map((seen) => seen.value)),
+      '警戒した姿で現れる獣の中で、いちばん早く落ち着くのはヤケイ',
+    ).toBe(wariness.get('junglefowl')?.value);
   });
 
   it('間合いのある武器を構えている間は、獣が踏み込む手が細る', () => {
@@ -442,7 +442,7 @@ describe('動物の1手', () => {
   it('目を覚ました獣は、また手番を受け取る', () => {
     // 気絶が手番を奪うのは段に居る間だけ（VitalsSystem.md 2節。意識は原因が消えれば戻る実効値）。
     // 衝撃は自分で引いていく（同 2.1節）ので、覚めるのに回復処理は要らない。
-    // 覚めた後の候補は様子見45（20＋濁りの25）と持ち去り35。合計80のうち末尾の35を引くrollを渡す。
+    // 覚めた後の候補は様子見（濁りの上乗せ込み）と持ち去り。末尾の持ち去りを引くrollを渡す。
     open(0.9);
     const monkey = release('monkey');
     const coconut = release('coconut');
@@ -465,13 +465,13 @@ describe('動物の1手', () => {
 
   it('槍を構えられていても、追い詰められた朦朧の獣は襲ってくる', () => {
     // **意識の押し引きは間合いの押し引きと重なる**（HuntingSystem.md 5.5節）。意識の側も手を
-    // 細らせる形にすると、イノシシの牙（素の30）が構えの-20と重なって抽選から落ち、5.3節の
+    // 細らせる形にすると、イノシシの牙が構えの押し下げと重なって抽選から落ち、同 5.3節の
     // 「追い詰められた動物は逃げずに襲う」が、**大型を追い詰めるときにいちばん使う武器の側だけ**
     // 成立しなくなる。
     //
-    // 逃げ道も足元の物も無い密林で残る候補は、様子見95（15＋構えの20＋朦朧の60）と牙10
-    // （30－構えの20）。圧し掛かりは構えだけで間合いの外へ出る。合計105のうち末尾の10を引く
-    // rollを渡す——細らせる形に戻すと、ここが様子見か圧し掛かりに化ける。
+    // 逃げ道も足元の物も無い密林で残る候補は、構えと朦朧で太った様子見と、構えで細った牙。
+    // 圧し掛かりは構えだけで間合いの外へ出る。末尾の牙を引くrollを渡す——細らせる形に戻すと、
+    // ここが様子見か圧し掛かりに化ける。
     open(0.95);
     const boar = alarm(release('wild_boar'));
     boar.getProperty(codex.propertyNames.getId('consciousness')).setNumberWithoutEvents(40);
@@ -562,7 +562,7 @@ describe('動物の1手', () => {
   it('罠に掛かった獲物は立ち去らない', () => {
     // in_slot: itemsが「土地の地面に居る」を言うので、罠の中ではタイマーが止まる
     // （HuntingSystem.md 5.6節）。獲物が消えるより先に、もがかれた罠のほうが壊れる（traps.yamlの
-    // durability、-11/tickで約87tick）ので、罠が保っている間はいつ戻っても獲物が居る。
+    // durability）ので、罠が保っている間はいつ戻っても獲物が居る。
     open(0.0);
     const stayId = codex.propertyNames.getId('stay_remaining');
     const snare = release('snare');

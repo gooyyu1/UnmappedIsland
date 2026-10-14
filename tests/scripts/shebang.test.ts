@@ -8,7 +8,7 @@ import { trackedFiles } from '../../scripts/docScope.mjs';
  *
  * **CRLFの作業ツリーでは、シェバング付きの `.mjs` を Vitest から `import` できない。** Vite の
  * 前処理がシェバングを剥がすときに `\r` を残し、構文誤り（`Invalid or unexpected token`）になる。
- * CIはLFでチェックアウトするので緑のままで、**Windowsで `npm test` を走らせた者にしか見えない。**
+ * LFの作業ツリーでは緑のままで、**CRLFの作業ツリーで `npm test` を走らせたときにしか見えない。**
  * **実行ビットが立っていればカーネルも1行目を読む**ので、そちらは `env: 'node\r'` で起動できない。
  *
  * どのモジュールも `node <path>.mjs` として呼ばれ（`package.json`・隣のシェルの入口・skill の手順から）、

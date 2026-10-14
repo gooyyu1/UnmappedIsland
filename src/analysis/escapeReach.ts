@@ -45,6 +45,10 @@ import type { ObjectGlobalId, TagGlobalId } from '../domain/GlobalId';
  *
  * 釣りの道具（`fishing_tool`）も船・帆と同じ「島を出るのに要るもの」。航海の食料は積まずに釣って
  * 賄う（Voyage.md 3.9節）ので、これが島の産物から作れない島は、出航しても餓死する。
+ *
+ * **タグの一覧そのものは手で持つ。** 島を出るのに要るものを括る宣言は定義に無く、船の枠や操作から
+ * 数えると、場所として継いだ枠（乗る人・積荷）まで拾う。船が組み込む部品と船の上で使う道具が
+ * ここに挙がっていることは `tests/integration/escapeReach.test.ts` が見る。
  */
 export const ESCAPE_GOAL_TAG_NAMES: readonly string[] = ['boat', 'sail', 'fishing_tool'];
 

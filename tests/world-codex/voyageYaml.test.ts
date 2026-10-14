@@ -7,12 +7,18 @@ import type { StartedGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { Location } from '../../src/domain/wrappers/Location';
 import { applyScenario, bundledScenario } from '../../src/scenario/Scenario';
-import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
+import {
+  bundledCodex,
+  SAMPLE_CHARACTER,
+  worldCodexPath,
+  worldCodexYamlPaths,
+} from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import { namedEntries, nodeAt, objectValueAt, readSeaChart } from '../support/seaChain';
 import type { Rng } from '../../src/domain/Rng';
 import { seededRng } from '../../src/domain/Rng';
 import { fixedRng } from '../support/rng';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * 8種類の顔ぶれ（docs/world/ContentSkeleton.md 7節）と、それを配った海区。**顔ぶれは型でもタグでも
@@ -35,7 +41,7 @@ const FACES: ReadonlyMap<string, readonly string[]> = new Map([
  */
 const ISLET_ZONES: readonly string[] = ['gull_rock', 'islet_waters', 'white_rock'];
 
-/** 砂浜から最寄りの小島（海鳥の岩）まで、見張って渡っていく海区の順（4区間、素の横断時間1680分）。 */
+/** 砂浜から最寄りの小島（海鳥の岩）まで、見張って渡っていく海区の順。 */
 const TO_NEAREST_ISLET: readonly string[] = ['coastal_waters', 'kelp_belt', 'tide_rip', 'reef_shallows'];
 
 /**
@@ -166,7 +172,7 @@ describe('筏と航海', () => {
     return place;
   }
 
-  /** 風向きを直接置く（8時間ごとの引き直しは天気と同じ仕組みなので、ここでは向きだけを固定する）。 */
+  /** 風向きを直接置く（時間で引き直すのは天気と同じ仕組みなので、ここでは向きだけを固定する）。 */
   function setWind(game: StartedGame, wind: string): void {
     game.world.instance
       .getProperty(codex.propertyNames.getId('wind'))
@@ -249,7 +255,7 @@ describe('筏と航海', () => {
    * その見張りの成果になる。
    *
    * **航路が現れた時点で止める。** 見張り自体は航路が見えた後も続けられる（GameEndings.md 12.1節）
-   * ので、止めるのはこの検査の都合。回数の上限は、どの海区の必要回数（最大5）よりも十分に大きい値。
+   * ので、止めるのはこの検査の都合。回数の上限は、どの海区の必要回数よりも十分に大きい値。
    */
   function watchUntilSighted(game: StartedGame, zone: WorldObject): readonly WorldObject[] {
     const before = new Set(sightedRoutes(zone).map((route) => route.instanceId));
@@ -361,7 +367,7 @@ describe('筏と航海', () => {
     expect(zone.slotForPutIn(cargo!), '手で置く先が無い').toBeUndefined();
 
     // こぼれ落ちる経路（spawnの行き先が塞がったとき、9.4節）でも海面には残らない。海区が受け取らず、
-    // その上のworldも物を受け取らないので、その物は手に入らないまま失われる（12.7節）。
+    // その上のworldも物を受け取らないので、その物は手に入らないまま失われる（同 12.7節）。
     cargo!.spillTo(zone);
     expect(
       zone.findSelfOrDescendantByInstanceId(cargo!.instanceId),
@@ -380,7 +386,7 @@ describe('筏と航海', () => {
     const first = singletonPlace(game, 'coastal_waters');
 
     holdWeather(game, 'clear', 'tailwind');
-    for (let i = 0; i < 96; i++) tick(game);
+    for (let i = 0; i < TICKS_PER_DAY; i++) tick(game);
 
     expect(raft.parent?.def.name, '丸1日流されても最初の海区に居る').toBe('coastal_waters');
     expect(
@@ -470,7 +476,7 @@ describe('筏と航海', () => {
 
   it('渡り着いたばかりの海区から、1回も見張らずに来た航路を戻れる', () => {
     // **確定した仕様（GameEndings.md 12.5節）そのもの。** 引き返しは航海のどこからでも選べ、代償は
-    // 来た航路を戻るぶんの時間だけ——渡り着いた先で見張り（3〜5回＝45〜75分）を済ませるまで待つ、は
+    // 来た航路を戻るぶんの時間だけ——渡り着いた先で見張りを済ませるまで待つ、は
     // そこに無い。航路は辺なので、見つけた側の見張りが**両端へ1本ずつ**立てる（voyage.yaml）。
     const { game, raft } = ready();
     raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
@@ -735,6 +741,62 @@ describe('筏と航海', () => {
 
     // **帆に条件を付けないとここが2になり、陸に繋いだままの筏が横断時間を縮め始める。**
     expect(propertyOf(raft, 'sail_speed'), '浜では帆も効かない').toBe(0);
+  });
+
+  it('帆の寄与は、積みすぎでない限り段をちょうど1つ上げる最小の値（Voyage.md 2.1節）', () => {
+    // 海流・積載・帆の寄与を voyage.yaml から読み、筏の sail_speed の段で数え直す。
+    const voyage = parse(readFileSync(worldCodexPath('voyage.yaml'), 'utf8')) as Record<string, unknown>;
+    const modifies: { target: string; amount: number; path: string }[] = [];
+    const visit = (node: unknown, path: string): void => {
+      if (Array.isArray(node)) return node.forEach((child, index) => visit(child, `${path}.${index}`));
+      if (node === null || typeof node !== 'object') return;
+      const record = node as Record<string, unknown>;
+      const modify = record.modify as Record<string, Record<string, unknown>> | undefined;
+      for (const [target, props] of Object.entries(modify ?? {}))
+        if (typeof props.sail_speed === 'number') modifies.push({ target, amount: props.sail_speed, path });
+      for (const [key, child] of Object.entries(record)) visit(child, `${path}.${key}`);
+    };
+    visit(voyage, '');
+    // 海流も帆も1か所でだけ宣言している前提で読む。増えたら、どれを数えるかをここで決め直す。
+    const currents = modifies.filter(({ target }) => target === 'child');
+    const sails = modifies.filter(({ path }) => path.includes('.rawhide_sail.'));
+    expect(currents, '海流の宣言').toHaveLength(1);
+    expect(sails, '帆の宣言').toHaveLength(1);
+    const current = currents[0].amount;
+    const sail = sails[0].amount;
+
+    const raftDef = codex.objects.get(codex.objectNames.getId('raft'));
+    const speed = raftDef.tryGetPropertyDef(codex.propertyNames.getId('sail_speed'))!;
+    const weightStages = raftDef.tryGetPropertyDef(codex.propertyNames.getId('weight'))!.stages;
+    const stageNames = speed.stages.map((stage) => stage.name);
+    const stageIndexOf = (value: number): number =>
+      stageNames.indexOf(speed.stageAt(speed.range!.clamp(value))!.name);
+
+    // 積載の段ごとの削り（宣言の無い段は0）。積みすぎ（overladen）は除く。
+    const loads = weightStages
+      .filter((stage) => stage.name !== 'overladen')
+      .map((stage) => {
+        const own = modifies.find(
+          ({ path }) => path.includes('.raft.') && path.includes(`.stages.${weightStages.indexOf(stage)}.`),
+        );
+        return { name: stage.name, base: current + (own?.amount ?? 0) };
+      });
+    expect(loads.length).toBeGreaterThan(0);
+
+    expect(stageNames[stageIndexOf(current)], '素の筏は海流だけで').toBe('slow');
+    expect(stageNames[stageIndexOf(current + sail)], '帆があれば').toBe('moderate');
+    for (const { name, base } of loads) {
+      expect(stageIndexOf(base + sail), `${name}: 帆で段がちょうど1つ上がる`).toBe(stageIndexOf(base) + 1);
+      expect(stageIndexOf(base + sail + 1), `${name}: 1つ増やしても上がる段は変わらない`).toBe(
+        stageIndexOf(base + sail),
+      );
+    }
+    expect(
+      loads
+        .filter(({ base }) => stageIndexOf(base + sail - 1) === stageIndexOf(base))
+        .map(({ name }) => name),
+      '1つ減らすと段が動かない積載がある',
+    ).not.toHaveLength(0);
   });
 
   it('帆を張ると、渡る速さの段が1つ上がる', () => {
@@ -1018,6 +1080,105 @@ describe('筏と航海', () => {
     expect(empty, '軽くなれば短く渡れる').toBeLessThan(laden);
   });
 
+  it('ヤシの実で余裕の日数ぶんの水を積んでも、どの風でも横断は空荷より長くならない（ContentSkeleton.md 5節2番）', () => {
+    // 積む数は文書の勘定（1日に飲む数×余裕の日数）。勘定そのものが定義から出ることは
+    // tests/diagnostics/waterAndBloodPace.test.ts が見る。
+    const skeleton = readFileSync('docs/world/ContentSkeleton.md', 'utf8');
+    const perDay = Number(/ヤシの実は1日(\d+)個の勘定/.exec(skeleton)?.[1]);
+    const days = Number(/(\d+)日で\d+Lです/.exec(skeleton)?.[1]);
+    expect(perDay * days, 'ContentSkeleton.md 5節2番の勘定が読めない').toBeGreaterThan(0);
+
+    for (const wind of ['tailwind', 'crosswind', 'headwind']) {
+      const { game, raft } = ready();
+      raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+      setWind(game, wind);
+      const zone = singletonPlace(game, 'coastal_waters');
+      for (const cargo of [...raft.children()]) if (cargo !== game.player.instance) cargo.destroy();
+      const empty = propertyOf(zone, 'crossing_minutes');
+
+      const hold = raft.getSlot(codex.slotNames.getId('items'));
+      for (let i = 0; i < perDay * days; i++)
+        expect(
+          game.session.createObject(codex.objectNames.getId('green_coconut')).moveToSlotOrRejection(hold),
+          `${i + 1}個目が筏の積荷枠に入る`,
+        ).toBeUndefined();
+
+      expect(propertyOf(zone, 'crossing_minutes'), `${wind} で横断が延びない`).toBe(empty);
+    }
+  });
+
+  it('風が1区間へ乗せる幅は、遠回りが増やす2区間ぶんの横断に届かない（Voyage.md 3.9.1節）', () => {
+    const byWind = ['tailwind', 'crosswind', 'headwind'].map((wind) => crossingMinutesAtFork(wind));
+    // 1区間の物差しは、実際に払う区間の横断時間のうち最も短いもの（厳しい側）。
+    const section = Math.min(...byWind.flatMap((crossings) => [...crossings.values()]));
+    for (const route of [SHORTCUT_ONWARD, DETOUR_ONWARD]) {
+      const minutes = byWind.map((crossings) => crossings.get(route) as number);
+      expect(Math.max(...minutes) - Math.min(...minutes), route).toBeLessThan(2 * section);
+    }
+  });
+
+  it('積荷の段の境目は、空の筏に乗員1人を足した重さから測った積荷の量', () => {
+    // voyage.yaml の筏の weight は境目を「自重＋乗員＋積荷」で書いている。**自重や乗員の重さだけを
+    // 動かして境目を据え置けば、積める量が黙って変わる**——そのずれをここで止める。積荷の量は段の
+    // 仕様そのもの（kg）。
+    const CARGO_KG: ReadonlyMap<string, number> = new Map([
+      ['laden', 80],
+      ['heavy', 160],
+      ['overladen', 240],
+    ]);
+    const { game } = ready();
+    const weightId = codex.propertyNames.getId('weight');
+    const emptyRaft = game.session.createObject(codex.objectNames.getId('raft')).getProperty(weightId);
+    const crew = game.session
+      .createObject(codex.objectNames.getId(SAMPLE_CHARACTER))
+      .getProperty(weightId)
+      .getEffectiveValue();
+
+    const loaded = emptyRaft.def.stages.filter((stage) => stage.name !== 'light').map((stage) => stage.name);
+    expect(loaded.sort(), '積荷の量を持たない段が無い').toEqual([...CARGO_KG.keys()].sort());
+    for (const [stage, kg] of CARGO_KG)
+      expect(emptyRaft.def.lowerBoundOfStage(stage)! - emptyRaft.getEffectiveValue() - crew, stage).toBe(
+        kg * 1000,
+      );
+  });
+
+  it('航海ぶんの甕と蓋と食料を積んでも、積荷の段は上がらない（Voyage.md 3.9.3節・3.9.6節）', () => {
+    // 積む数は文書の長い側（甕は Voyage.md 3.9.6節、食料は ContentSkeleton.md 5節4番）。数が宣言から
+    // 出ることは tests/diagnostics/waterAndBloodPace.test.ts が見る。
+    const voyage = readFileSync('docs/world/Voyage.md', 'utf8').replace(/<!--[^>]*-->/g, '');
+    const skeleton = readFileSync('docs/world/ContentSkeleton.md', 'utf8').replace(/<!--[^>]*-->/g, '');
+    const jars = Number(/3\.9\.1 節の \d+〜\d+ 日なら\s*\*\*\d+〜(\d+) つ\*\*/.exec(voyage)?.[1]);
+    const meats = Number(/塩漬けの生肉\d+〜(\d+)個/.exec(skeleton)?.[1]);
+    const coconutMeats = Number(/ヤシの果肉\d+〜(\d+)個/.exec(skeleton)?.[1]);
+    expect(jars * meats * coconutMeats, '積む数が文書から読めない').toBeGreaterThan(0);
+
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    expect([...raft.children()], '乗り手が筏に乗っている').toContain(game.player.instance);
+    for (const cargo of [...raft.children()])
+      if (cargo !== game.player.instance && cargo.def.name !== 'rawhide_sail') cargo.destroy();
+    const hold = raft.getSlot(codex.slotNames.getId('items'));
+    const load = (name: string, count: number): void => {
+      for (let i = 0; i < count; i++) {
+        const item = game.session.createObject(codex.objectNames.getId(name));
+        if (name === 'jar__content_water_liquid') {
+          const fill = item.getProperty(codex.propertyNames.getId('fill'));
+          fill.setNumberWithoutEvents(fill.def.range!.max);
+        }
+        expect(item.moveToSlotOrRejection(hold), `${name} を積める`).toBeUndefined();
+      }
+    };
+    load('jar__content_water_liquid', jars);
+    load('raw_meat__cure_salted', meats);
+    load('coconut_meat', coconutMeats);
+    // 蓋も甕の数ぶん載せる（Voyage.md 3.9.6節「蓋を足しても同じです」）。
+    load('jar_lid', jars);
+
+    const weight = raft.getProperty(codex.propertyNames.getId('weight'));
+    // 段の境目は乗員を見込んでいて、乗り手の重さは筏の実効値に入っている（ContainerSystem.md 1.1節）。
+    expect(weight.getEffectiveValue()).toBeLessThan(weight.def.lowerBoundOfStage('laden')!);
+  });
+
   /** 銛を1本、乗り手の手に持たせる。 */
   function giveHarpoon(game: StartedGame): WorldObject {
     const harpoon = game.session.createObject(codex.objectNames.getId('fishing_harpoon'));
@@ -1143,8 +1304,8 @@ describe('筏と航海', () => {
     // 群れは30分に0.78切れ、群れの居ない海面は60分に0.15切れ（Voyage.md 3.9.2節）。当たりの重みが
     // 卓に占める割合そのもので、**この落差が「積むか釣るか」の判断を作っている**ので、どちらか
     // 一方だけを動かさない。
-    expectCatchRate('shoal', 30, 78 / 100);
-    expectCatchRate('sea', 60, 15 / 100);
+    expectCatchRate('shoal', 30, 0.78);
+    expectCatchRate('sea', 60, 0.15);
   });
 
   it('狩猟の腕が上がると、どちらの相手からもよく獲れる', () => {
@@ -1480,7 +1641,7 @@ describe('筏と航海', () => {
   /**
    * 小島を、名指しした物が見つかるまで歩く。見つけた1個を返す。
    *
-   * **回数に上限を置く。** 錫は6回に1回ほど返る候補（voyage.yamlのoffshore_islet）なので素の宣言では
+   * **回数に上限を置く。** 錫は小島が返す候補の1つ（voyage.yamlのoffshore_islet）なので素の宣言では
    * すぐ見つかるが、卓から落ちたときに赤くなる代わりに止まらなくなるのでは、この検査が何も言わない。
    */
   function exploreIsletFor(game: StartedGame, islet: WorldObject, objectName: string): WorldObject {
@@ -1537,6 +1698,21 @@ describe('筏と航海', () => {
     expect(game.player.ending.kind, '島へ戻っただけなので周回は終わらない').not.toBe('escape');
   });
 
+  it('小島の探索は、どの候補も同じ数を返す', () => {
+    // voyage.yaml の小島は「どの候補も同じ数を返すので、候補を足しても1回あたりの平均は動かない」と
+    // 言っている。数の違う候補が混ざれば、錫のような候補を足すたびに平均が動く。
+    const voyage = parse(readFileSync(worldCodexPath('voyage.yaml'), 'utf8')) as Record<string, unknown>;
+    const pick = nodeAt(voyage, 'object_defs', 'offshore_islet', 'interactions', 'explore', 'pick');
+    if (!Array.isArray(pick) || pick.length === 0) throw new Error('小島の探索に卓がありません。');
+
+    const counts = pick.map((candidate) => {
+      const spawn = nodeAt(candidate, 'spawn');
+      const spawns = (Array.isArray(spawn) ? spawn : [spawn]) as readonly { count?: number }[];
+      return spawns.reduce((sum, entry) => sum + (entry.count ?? 1), 0);
+    });
+    expect(new Set(counts).size, `候補ごとの数: ${counts.join(', ')}`).toBe(1);
+  });
+
   it('錫を湧かせるのは、小島の探索だけ', () => {
     // **「遠征先の小島にしかない」は、湧かせる場所が1つであること**（ContentSkeleton.md 7.1節）。
     // 見るのは spawn の側だけ——使い道（製錬・青銅の道具、同4節）が入れば錫を**要求する**定義は
@@ -1580,7 +1756,7 @@ describe('筏と航海', () => {
 
   it('渡っていない海区は、幅を持って海図に載る', () => {
     // **海図が持つべき精度は本土までの残り海区数**（GameEndings.md 12.6節）。真値は海区の側の事実で、
-    // 海図が言うのはその上下に幅を取った範囲——幅を狭めていくのが9.1節の段階になる。
+    // 海図が言うのはその上下に幅を取った範囲——幅を狭めていくのが同 9.1節の段階になる。
     const { game } = ready();
 
     const zones = seaZones(game);
@@ -1602,7 +1778,7 @@ describe('筏と航海', () => {
   });
 
   it('山頂から見渡すと、海図の幅が狭まる', () => {
-    // **山頂へ登ることが9.1節の段階の1つ**（GameEndings.md 9.1節）。見渡した海区は幅が狭まるだけで、
+    // **山頂へ登ることが同 9.1節の段階の1つ**（GameEndings.md 9.1節）。見渡した海区は幅が狭まるだけで、
     // 真値そのものは動かない——狭まっていくのは推定の幅（同12.6節）。
     const { game } = ready();
     const zones = seaZones(game);
