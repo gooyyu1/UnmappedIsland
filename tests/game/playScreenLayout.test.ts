@@ -253,7 +253,7 @@ describe('PlayScreenLayout(ScreenLayout.md 9〜11節 エリア構成)', () => {
     // **幾何のほう**——レーンに使える幅がカード5枚ぶん1073u以上あること。保証を持っているのは
     // 寸法の側（ScreenMetrics）なので、そちらを見れば下限が本当の退行を隠すことはない。
     // laneCellsの値そのものは期待値ちょうどで見る。6が出るかどうかが、手持ちの6枠目が隠れるか
-    // （＝前へ詰めるか、7.3節）を分ける。
+    // （＝前へ詰めるか、同 7.3節）を分ける。
     for (const [width, height, expected] of [
       [1080, 1920, 5], // 9:16（縦型の基準）
       [540, 960, 5], // 9:16の小さな端末
@@ -327,7 +327,7 @@ describe('PlayScreenLayout(ScreenLayout.md 9〜11節 エリア構成)', () => {
     const layout = new PlayScreenLayout(new ScreenMetrics(2340, 1080));
 
     expect(layout.fieldArea).toEqual({ x: 478, y: 0, width: 1622, height: 1080 });
-    // 2列とも画面の高さいっぱい。フィルターはフィールドエリア寄りの左、オプションが右端（10.2節）。
+    // 2列とも画面の高さいっぱい。フィルターはフィールドエリア寄りの左、オプションが右端（同 10.2節）。
     expect(layout.filterBar).toEqual({ x: 2100, y: 0, width: 120, height: 1080 });
     expect(layout.optionsBar).toEqual({ x: 2220, y: 0, width: 120, height: 1080 });
     // 境目の帯はフィールドエリアの右辺（＝広げたサイドバーの左辺）に、中心を合わせて敷く。
@@ -339,7 +339,7 @@ describe('PlayScreenLayout(ScreenLayout.md 9〜11節 エリア構成)', () => {
   });
 
   it('広げるかは広げる前の幅で決め、広げた後もカード6枚は割らない', () => {
-    // 広げた後の幅で測ると、広げる→6枚になる→余剰が無くなる→戻す、を繰り返す（10.2節）。
+    // 広げた後の幅で測ると、広げる→6枚になる→余剰が無くなる→戻す、を繰り返す（同 10.2節）。
     // 120u（回す幅）はカード1枚のピッチ217uより狭いので、広げても6枚を下回ることは無い。
     for (const [width, height, widened, cells] of [
       [1920, 1080, false, 6], // 16:9（横型の基準。ここが変わると#1092の設計が崩れる）

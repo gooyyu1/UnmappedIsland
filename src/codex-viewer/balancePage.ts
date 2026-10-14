@@ -24,8 +24,11 @@ import type { PropertyGlobalId } from '../domain/GlobalId';
  * YAMLのスナップショット（stats/balance.yaml）に対するこちらの取り柄。
  */
 
-/** 1日の必要量を取る代表キャラクタ（docs/world/Characters.md）。 */
-const SAMPLE_CHARACTER = 'medic';
+/**
+ * 1日の必要量を取る代表キャラクタ（docs/world/Characters.md）。**ページの表と突き合わせる検査も同じ代表で
+ * 表を組む**ので開いておく——検査の側で字に写すと、代表を変えたときに検査だけが古い代表で比べる。
+ */
+export const SAMPLE_CHARACTER = 'medic';
 
 /** 収支のページ（`#/balance`、`#/balance/<場所>` でその節まで送る）。 */
 export class BalancePage extends CodexPage {

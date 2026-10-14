@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { timeoutOnWindows } from '../support/timeoutOnWindows';
+import { TIMEOUT_FOR_CLONE_HISTORY } from '../support/timeoutForCloneHistory';
 
 /**
  * `npm run stats:history`（`scripts/historyStats.mjs`）が空を返していないかの検査。
@@ -116,7 +116,7 @@ describe.runIf(IS_SHALLOW)('浅いクローンでの育ち方の推移', () => {
   });
 });
 
-describe.skipIf(IS_SHALLOW)('育ち方の推移', timeoutOnWindows(30_000), () => {
+describe.skipIf(IS_SHALLOW)('育ち方の推移', TIMEOUT_FOR_CLONE_HISTORY, () => {
   const stdout = run([TODAY]).stdout;
   const latest = latestOf(stdout);
   const value = (header: string) => Number(latest?.get(header)?.replace(/,/g, ''));

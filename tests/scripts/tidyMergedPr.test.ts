@@ -10,7 +10,7 @@ import { timeoutOnWindows } from '../support/timeoutOnWindows';
  * **誰がマージしたかを見ない**ので、ユーザーが画面から入れたPRも同じ道を通る
  * （`agent-ops/board-design.md` 2.10.4節）。
  *
- * 世界の組み方と、ファイルを分けてある理由は `tests/support/tidyMergedPrWorld.ts`。
+ * 世界の組み方は `tests/support/tidyMergedPrWorld.ts`。
  */
 
 describe('tidy-merged-pr.sh', timeoutOnWindows(30_000), () => {

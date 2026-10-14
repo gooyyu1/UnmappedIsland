@@ -69,6 +69,7 @@ const READ_ONLY_FROM_OUTSIDE = [
   'src/art/iconArt.ts ICON_NAMES',
   'src/asset-pack/install.ts AssetPacks',
   'src/asset-pack/zip.ts ZipReadError',
+  'src/codex-viewer/balancePage.ts SAMPLE_CHARACTER',
   'src/codex-viewer/describe/Description.ts DescriptionWriter.toPlainText',
   'src/codex-viewer/networkLayout.ts LayoutEdge',
   'src/domain/CardFilter.ts CardFilter.tagGlobalIds',

@@ -1,15 +1,18 @@
+import { readFileSync } from 'node:fs';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import { TRAVEL_MINUTES_STEP } from '../../src/domain/generation/PathNetworkBuilder';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
-import { World } from '../../src/domain/wrappers/World';
+import type { World } from '../../src/domain/wrappers/World';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { fixedRng } from '../support/rng';
-import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
-import { MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
+import { rainyWeathersOf } from '../support/rainyWeathers';
+import { MINUTES_PER_HOUR, MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * fire.yamlの火の連鎖を、実ファイルの定義だけで検証する。
@@ -52,9 +55,8 @@ describe('fire.yamlの火の連鎖', () => {
   /** 草地に立つプレイヤーから始める。rollはpickがどの候補を引くかを決める。 */
   function open(roll: number): void {
     session = new WorldSession(codex, fixedRng(roll));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    worldView = new World(worldInstance);
-    session.adoptWorld(worldView);
+    worldView = session.createWorld();
+    const worldInstance = worldView.instance;
 
     land = spawnInto('grassland', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, land, 'characters');
@@ -236,8 +238,8 @@ describe('fire.yamlの火の連鎖', () => {
   }
 
   it('火の腕が上がると火が付きやすくなる（noviceが外す引きでも、expertは火を得る）', () => {
-    // 乾いた枯れ草の素の重みは60対10でnoviceは85.7%、expertは上乗せ+120が積まれて180対10で94.7%
-    // （docs/world/Skills.md 5節）。引きは両方とも0.9で、動かしているのは腕だけ。
+    // 腕の上乗せは付く側の重みに積まれる（docs/world/Skills.md 5節）。引きは両方とも0.9——noviceなら
+    // 外し、expertなら当たる位置（下のexpectが見る）で、動かしているのは腕だけ。
     const BETWEEN = 0.9;
     const firecraftId = codex.propertyNames.getId('skill_firecraft');
 
@@ -603,7 +605,7 @@ describe('fire.yamlの火の連鎖', () => {
     expect(itemsOn(land), '火種も失われない').toEqual(['burning_tinder']);
   });
 
-  it('種火だけの炉も火種を断る（火が生きているかは火力が0より大きいこと）', () => {
+  it('種火だけの炉も火種を断る（火が生きているかは火力が種火の段以上にあること）', () => {
     // 種火（heatが1）へ落としても差分は0で、火種だけが黙って消える。
     const hearth = spawnInto('campfire', land, 'fixtures');
     hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(20);
@@ -740,7 +742,7 @@ describe('fire.yamlの火の連鎖', () => {
 
   it('雨の屋外では、手に持った松明も消える', () => {
     // FireSystem.md 8.2節。**全部の雨で見る**——大雨で消えることは、小雨で消えることを言わない。
-    for (const weatherName of ['light_rain', 'heavy_rain', 'storm']) {
+    for (const weatherName of rainyWeathersOf(codex)) {
       open(LIGHTS);
       const torch = spawnInto('torch', player, 'hand');
       torch.getProperty(codex.propertyNames.getId('lit')).setNumberWithoutEvents(1);
@@ -845,7 +847,7 @@ describe('fire.yamlの火の連鎖', () => {
   });
 
   it('薪が1未満でも、尽きるまでは火が衰えない（「尽きた」は0のこと）', () => {
-    // くべる量は整数、減る量は火力ごとの小数（2.2節）なので、0と1の間は必ず通る。そこを尽きた扱いに
+    // くべる量は整数、減る量は火力ごとの小数（同 2.2節）なので、0と1の間は必ず通る。そこを尽きた扱いに
     // すると、薪が残っているのに火が衰える区間ができる。
     const hearth = spawnInto('campfire', land, 'fixtures');
     hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(0.9);
@@ -1097,8 +1099,8 @@ describe('fire.yamlの火の連鎖', () => {
     const accepts = (objectName: string): boolean =>
       fireSlot?.acceptsAnywhere(codex.objects.get(codex.objectNames.getId(objectName))) === true;
 
-    // 焦げた塊は焼けないが、焦げた瞬間に枠を引き継ぐために入る（7.2節）。焼け石も同じ理由で入る
-    // ——溜め切った瞬間に石から置き換わる（9.1節）。
+    // 焦げた塊は焼けないが、焦げた瞬間に枠を引き継ぐために入る（同 7.2節）。焼け石も同じ理由で入る
+    // ——溜め切った瞬間に石から置き換わる（同 9.1節）。
     for (const name of ['raw_meat', 'roasted_meat', 'charred_lump', 'rat_carcass', 'roasted_rat']) {
       expect(accepts(name), name).toBe(true);
     }
@@ -1344,5 +1346,183 @@ describe('炉が火にかける場所', () => {
         hearthName,
       ).toEqual(['fire']);
     }
+  });
+
+  it('石囲いの炉まで組む石を全部担いでも、どの担ぎ手も通れなくなる線の半分に収まる', () => {
+    // 炉は既存の石をそのまま積む（FireSystem.md 5.1節）。運ぶことそのものを関門にしないための線。
+    const stonesId = codex.propertyNames.getId('stones');
+    const stones = [...codex.objects].reduce(
+      (sum, def) => sum + (def.tryGetPropertyDef(stonesId)?.range?.max ?? 0),
+      0,
+    );
+    const weightId = codex.propertyNames.getId('weight');
+    const stoneWeight = codex.objects
+      .get(codex.objectNames.getId('stone'))
+      .tryGetPropertyDef(weightId)?.initialValueWithoutRoll;
+    const loadId = codex.propertyNames.getId('load');
+    const tooHeavy = [...codex.objects]
+      .filter((def) => def.hasTag(codex.vocabulary.world.characterTagId))
+      .map((def) => def.tryGetPropertyDef(loadId)?.lowerBoundOfStage('too_heavy'))
+      .filter((min): min is number => min !== undefined);
+
+    expect(stones, '炉が積む石が1つも数えられていない').toBeGreaterThan(0);
+    expect(tooHeavy, '担げない段を名乗る担ぎ手が居ない').not.toHaveLength(0);
+    expect(stones * (stoneWeight ?? NaN) * 2).toBeLessThanOrEqual(Math.min(...tooHeavy));
+  });
+});
+
+/**
+ * 薪の尽きた種火がどれだけ保つか（fire.yaml の stone_hearth、docs/engine/FireSystem.md 6節）。
+ * 石囲いの炉を常設する利得の1つがここなので、炉を足しても石囲いの炉が最も長く保つことと、翌朝まで
+ * 保つことを見る。保った後に消える線（種火の段の下限）が、生死を見るどの判定とも一致することも見る。
+ */
+describe('薪の尽きた種火の保ち', () => {
+  const codex = bundledCodex();
+
+  /** 晴れが続く草地に、薪の尽きた炉を1つ据える。 */
+  function emptyHearthOnLand(hearthName: string) {
+    const session = new WorldSession(codex, fixedRng(0));
+    const worldInstance = session.createWorld().instance;
+    worldInstance
+      .getProperty(codex.propertyNames.getId('weather'))
+      .setNumberWithoutEvents(codex.symbolNames.getId('clear'));
+    worldInstance.getProperty(codex.propertyNames.getId('weather_remaining')).setNumberWithoutEvents(999999);
+    const land = session.createObject(codex.objectNames.getId('grassland'));
+    expect(
+      land.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
+    ).toBeUndefined();
+    const hearth = session.createObject(codex.objectNames.getId(hearthName));
+    expect(hearth.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+
+    const heat = hearth.getProperty(codex.propertyNames.getId('heat'));
+    const fuel = hearth.getProperty(codex.propertyNames.getId('fuel'));
+    fuel.setNumberWithoutEvents(0);
+    const coalsMin = heat.def.lowerBoundOfStage('coals');
+    if (coalsMin === undefined) throw new Error(`${hearthName} の火力が coals の段を持たない。`);
+    return { session, worldInstance, land, heat, fuel, coalsMin };
+  }
+
+  /** 薪の尽きた種火の段の頂から、火が消えるまでのtick数。 */
+  function emberTicksOf(hearthName: string): number {
+    const { session, heat, coalsMin } = emptyHearthOnLand(hearthName);
+    // 種火の段（ember）の頂。1つ上の段（coals）の下限から1下。
+    heat.setNumberWithoutEvents(coalsMin - 1);
+    expect(heat.isInStage('ember'), `${hearthName} の種火`).toBe(true);
+
+    for (let ticks = 1; ticks <= 1000; ticks++) {
+      session.advanceWorldTime(MINUTES_PER_TICK);
+      if (!heat.isInStage('ember')) return ticks;
+    }
+    throw new Error(`${hearthName} の種火が消えない。`);
+  }
+
+  it('石囲いの炉の種火は、どの炉の種火よりも長く保つ', () => {
+    const hearthNames = [...codex.objectDefNamesWithTag(codex.tagNames.getId('hearth'))];
+    expect(hearthNames).toContain('stone_hearth');
+
+    const stone = emberTicksOf('stone_hearth');
+    for (const hearthName of hearthNames.filter((name) => name !== 'stone_hearth')) {
+      expect(emberTicksOf(hearthName), hearthName).toBeLessThan(stone);
+    }
+  });
+
+  it('雨ざらしでは、どの炉の薪の尽きた種火も1tickで消える——種火の保ちの差は残らない', () => {
+    // docs/engine/FireSystem.md 8節。**全部の雨で、種火の段の上端で見る**——削りが雨の種類で変わっても
+    // 取りこぼさず、上端で消えることがどの種火でも消えることを言う。
+    const hearthNames = [...codex.objectDefNamesWithTag(codex.tagNames.getId('hearth'))];
+    expect(hearthNames).toContain('stone_hearth');
+
+    for (const hearthName of hearthNames) {
+      for (const weatherName of rainyWeathersOf(codex)) {
+        const { session, worldInstance, heat, coalsMin } = emptyHearthOnLand(hearthName);
+        worldInstance
+          .getProperty(codex.propertyNames.getId('weather'))
+          .setNumberWithoutEvents(codex.symbolNames.getId(weatherName));
+        // 種火の段の上端。1つ上の段（coals）の下限のすぐ下。
+        heat.setNumberWithoutEvents(coalsMin - 1e-9);
+        expect(heat.isInStage('ember'), `${hearthName} の種火`).toBe(true);
+
+        session.advanceWorldTime(MINUTES_PER_TICK);
+
+        expect(heat.isInStage('out'), `${hearthName}・${weatherName}（火力 ${heat.number}）`).toBe(true);
+      }
+    }
+  });
+
+  it('石囲いの炉は、日没にいちばん弱い火のまま薪が尽きても、種火のまま日の出を迎える', () => {
+    // カードの説明文と docs/engine/FireSystem.md 6節の「種火が翌朝まで生きる」。
+    const { session, worldInstance, heat } = emptyHearthOnLand('stone_hearth');
+    const hour = worldInstance.getProperty(codex.propertyNames.getId('hour'));
+    const sunset = hour.def.lowerBoundOfStage('night_late');
+    if (sunset === undefined) throw new Error('hour が night_late の段を持たない。');
+    hour.setNumberWithoutEvents(sunset);
+    worldInstance.getProperty(codex.propertyNames.getId('minute')).setNumberWithoutEvents(0);
+    // 料理のできるいちばん弱い火。
+    heat.setNumberWithoutEvents(heat.def.lowerBoundOfStage('coals')!);
+
+    let ticks = 0;
+    while (!hour.isInStage('sunrise')) {
+      session.advanceWorldTime(MINUTES_PER_TICK);
+      expect(++ticks, '日の出が来ない').toBeLessThanOrEqual(TICKS_PER_DAY);
+    }
+    expect(heat.isInStage('ember'), `日の出に種火が残っていない（火力 ${heat.number}）`).toBe(true);
+  });
+
+  it('どの炉も、種火の段を割った火は消えていて、明かりを出さず、薪をくべても育たない', () => {
+    // 生きているかは段で見る（docs/engine/FireSystem.md 3節）。種火の衰えが小数の炉では、段を割った後も
+    // 0に着くまで端数が残る。
+    const hearthNames = [...codex.objectDefNamesWithTag(codex.tagNames.getId('hearth'))];
+    for (const hearthName of hearthNames) {
+      const { session, worldInstance, land, heat, fuel, coalsMin } = emptyHearthOnLand(hearthName);
+      // 土地の明るさは時刻でも動くので、炉の無い隣の草地と比べる。
+      const bare = session.createObject(codex.objectNames.getId('grassland'));
+      expect(
+        bare.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
+      ).toBeUndefined();
+      const brightness = land.getProperty(codex.propertyNames.getId('hand_brightness'));
+      const unlit = bare.getProperty(codex.propertyNames.getId('hand_brightness'));
+      heat.setNumberWithoutEvents(Math.min(coalsMin - 1, heat.def.range!.max));
+      session.advanceWorldTime(MINUTES_PER_TICK);
+      expect(brightness.getEffectiveValue(), `${hearthName} の種火が明かりを出していない`).toBeGreaterThan(
+        unlit.getEffectiveValue(),
+      );
+
+      for (let ticks = 0; !heat.isInStage('out'); ticks++) {
+        expect(ticks, `${hearthName} の種火が消えない`).toBeLessThan(1000);
+        session.advanceWorldTime(MINUTES_PER_TICK);
+      }
+      expect(
+        brightness.getEffectiveValue(),
+        `${hearthName} は消えた後も明かりを出す（火力 ${heat.number}）`,
+      ).toBe(unlit.getEffectiveValue());
+
+      fuel.setNumberWithoutEvents(fuel.def.range!.max);
+      session.advanceWorldTime(MINUTES_PER_TICK);
+      expect(heat.isInStage('out'), `${hearthName} は消えた後に薪で火が戻る（火力 ${heat.number}）`).toBe(
+        true,
+      );
+    }
+  });
+
+  it('火力を条件にする箇所は、どれも段で見る', () => {
+    // 上の検査が通す明かりと育ちのほかに、着火・明かりへ火を分ける・燻し・焼け石の冷めも同じ線を見る。
+    // 値の比較で書くと、種火の段を割った端数の上で生死の判定が割れる。
+    const byValue: string[] = [];
+    const visit = (node: unknown, path: string): void => {
+      if (Array.isArray(node)) node.forEach((item, index) => visit(item, `${path}[${index}]`));
+      else if (node !== null && typeof node === 'object') {
+        const map = node as Record<string, unknown>;
+        if (map.prop === 'heat' && !('in_stage' in map) && !('in_stage_or_above' in map)) byValue.push(path);
+        for (const [key, value] of Object.entries(map)) visit(value, `${path}.${key}`);
+      }
+    };
+    let seen = 0;
+    for (const path of worldCodexYamlPaths()) {
+      const text = readFileSync(path, 'utf8');
+      seen += text.split('prop: heat,').length - 1;
+      visit(parse(text), path);
+    }
+    expect(seen, '火力を条件にする箇所が1つも見つからない').toBeGreaterThan(0);
+    expect(byValue).toEqual([]);
   });
 });

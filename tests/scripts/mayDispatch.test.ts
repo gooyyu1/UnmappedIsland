@@ -17,7 +17,7 @@ import { timeoutOnWindows } from '../support/timeoutOnWindows';
  * 2本立ち、同じPRへ食い違う判定が残る（`agent-ops/board-design.md` 1.5節 の PR #1493）。手綱も使用量も
  * セッション一覧も**引けなかったときは止まる**ことを、実際にスクリプトを走らせて見る。
  *
- * **止まった理由が終了コードで見分けられること**も、ここが守る（2.5.2）——人が止めた3と、余力で
+ * **止まった理由が終了コードで見分けられること**も、ここが守る（同 2.5.2節）——人が止めた3と、余力で
  * 止まった4は、**打つ手が違う**（前者は人が外すまで戻らず、後者は枠が明ければひとりでに戻る）。
  *
  * `gh` を PATH の先頭に、使用量の控えを `BOARD_STATE` で、セッションの一覧を
@@ -156,7 +156,7 @@ describe('may-dispatch.sh', timeoutOnWindows(30_000), () => {
     expect((await run('new-task', 'task-1234', { brake })).code).toBe(0);
   });
 
-  // 種類は根から自分までの鎖に対応する（board-design 2.4）。子だけを外して、親のレビューは流す。
+  // 種類は根から自分までの鎖に対応する（board-design.md 2.4節）。子だけを外して、親のレビューは流す。
   it('子だけ外れていれば、その子の種類だけが止まる', async () => {
     const brake = brakeOff('task を持たないPRも読む');
 
@@ -196,7 +196,7 @@ describe('may-dispatch.sh', timeoutOnWindows(30_000), () => {
     expect((await run('new-task', 'task-1234', { sessions: [working('task-5678')] })).code).toBe(0);
   });
 
-  // 再レビューが止まらないことの確認。手番を終えたセッションは手が動いていない（board-design 1.2）。
+  // 再レビューが止まらないことの確認。手番を終えたセッションは手が動いていない（board-design.md 1.2節）。
   it('レビューでは、手番を終えたセッションは占有していない', async () => {
     const done = ['SESSION_STATUS_BUCKET_COMPLETED', 'SESSION_STATUS_BUCKET_FAILED'];
     for (const bucket of done) {
@@ -206,8 +206,8 @@ describe('may-dispatch.sh', timeoutOnWindows(30_000), () => {
     }
   });
 
-  // **種類ごとに訊く問いが違う**（1.2）。新しいタスクが訊くのは「もう配ったか」なので、手が空いて
-  // いても配り直さない。同じ issue へ2本立つと、別々のPRが出る（1.5）。
+  // **種類ごとに訊く問いが違う**（board-design.md 1.2節）。新しいタスクが訊くのは「もう配ったか」なので、手が空いて
+  // いても配り直さない。同じ issue へ2本立つと、別々のPRが出る（同 1.5節）。
   it('新しいタスクでは、手番を終えたセッションも占有している', async () => {
     const done = ['SESSION_STATUS_BUCKET_COMPLETED', 'SESSION_STATUS_BUCKET_FAILED'];
     for (const bucket of done) {
@@ -232,7 +232,7 @@ describe('may-dispatch.sh', timeoutOnWindows(30_000), () => {
     expect((await run('review', 'review-1500', { sessions })).code).toBe(0);
   });
 
-  // `..._BLOCKED` は手番が終わって人へ問いを返した状態（board-design 1.6 の実測）。手は空いている。
+  // `..._BLOCKED` は手番が終わって人へ問いを返した状態（board-design.md 1.6節 の実測）。手は空いている。
   it('BLOCKED のセッションは、手が空いている側として数える', async () => {
     const sessions = [
       {
@@ -259,7 +259,7 @@ describe('may-dispatch.sh', timeoutOnWindows(30_000), () => {
     expect((await run('new-task', 'task-1234', { sessions })).code).toBe(0);
   });
 
-  // レビューは「前のレビュー」と「そのPRを直しているセッション」の両方を見る（board-design 1.3）。
+  // レビューは「前のレビュー」と「そのPRを直しているセッション」の両方を見る（board-design.md 1.3節）。
   // `直し待ち` のラベルからは、直している最中か誰も居ないかが読めない。
   it('タグを複数渡すと、どれか1つでも占有されていれば止まる', async () => {
     const result = await run('review', ['review-1500', 'task-1415'], { sessions: [working('task-1415')] });
@@ -302,14 +302,14 @@ describe('may-dispatch.sh', timeoutOnWindows(30_000), () => {
     expect((await run('new-task', 'task-1234', { fiveHour: 95 })).code).toBe(4);
   });
 
-  // **「制限中だった」という状態を持たない**（board-design 2.5.1）。毎回引いて比べるだけなので、
+  // **「制限中だった」という状態を持たない**（board-design.md 2.5.1節）。毎回引いて比べるだけなので、
   // 止まった次の呼び出しでも、値が戻っていればそのまま通る。
   it('枠が明けた周は、何もしなくても投入が戻る', async () => {
     expect((await run('new-task', 'task-1234', { sevenDay: 99 })).code).toBe(4);
     expect((await run('new-task', 'task-1234', { sevenDay: 20 })).code).toBe(0);
   });
 
-  // **見回る係は終了コードで打つ手を選ぶ**（2.21.2）。同じ3にすると、枠が明ければ戻るものを
+  // **見回る係は終了コードで打つ手を選ぶ**（board-design.md 2.21.2節）。同じ3にすると、枠が明ければ戻るものを
   // 「人が止めている」と読む。
   it('余力で止まった周は、人が手綱で止めた周と終了コードが違う', async () => {
     const held = await run('new-task', 'task-1234', { sevenDay: 99 });
@@ -320,7 +320,7 @@ describe('may-dispatch.sh', timeoutOnWindows(30_000), () => {
     expect(held.stderr).not.toContain('手綱で止まっている');
   });
 
-  // 手綱（人間）と余力（自動）の AND（2.5.2）。人が止めている周は、余力の話をする前に止まる。
+  // 手綱（人間）と余力（自動）の AND（board-design.md 2.5.2節）。人が止めている周は、余力の話をする前に止まる。
   it('手綱が外れていれば、余力が在っても止まる', async () => {
     const result = await run('new-task', 'task-1234', { brake: brakeOff('新しいタスク'), fiveHour: 0 });
 

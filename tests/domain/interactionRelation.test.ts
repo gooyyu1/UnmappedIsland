@@ -4,7 +4,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { putIntoSlot } from '../../src/domain/slotEntry';
-import { World } from '../../src/domain/wrappers/World';
+import type { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { AGENT_YAML, createAgent } from '../support/agent';
 import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
@@ -48,8 +48,7 @@ object_defs:
       .load('agent.yaml', AGENT_YAML)
       .buildAndReset();
     const session = new WorldSession(codex);
-    const world = new World(session.createObject(codex.objectNames.getId('world')));
-    session.adoptWorld(world);
+    const world = session.createWorld();
     return { codex, session, world };
   }
 

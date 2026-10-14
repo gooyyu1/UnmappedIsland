@@ -214,7 +214,7 @@ function parseConditionLeaf(
     nodes.push(
       ConditionNode.slotContent(
         root,
-        loader.slotNames.intern(slotName),
+        loader.referToSlot(slotName, `${context}.slot`),
         parseTypeMatchRule(loader, `${context}.${MATCHES_KEY}`, matchNode),
       ),
     );
@@ -222,7 +222,7 @@ function parseConditionLeaf(
     const inSlotName = tryGetScalar(map, 'in_slot', context);
     if (inSlotName !== undefined) {
       used.add('in_slot');
-      nodes.push(ConditionNode.slotPosition(root, loader.slotNames.intern(inSlotName)));
+      nodes.push(ConditionNode.slotPosition(root, loader.referToSlot(inSlotName, `${context}.in_slot`)));
     }
 
     const matchNode = tryGetMap(map, MATCHES_KEY, context);

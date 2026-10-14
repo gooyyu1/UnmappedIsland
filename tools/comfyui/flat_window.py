@@ -23,9 +23,13 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
 
 import numpy as np
 from PIL import Image
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 # カードの絵の比率（objectArt.ts の CARD_ART_WIDTH と card_art.py の card サイズ）。
 CARD_RATIO = 410 / 640

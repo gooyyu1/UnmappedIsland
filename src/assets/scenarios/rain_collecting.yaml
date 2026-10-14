@@ -10,7 +10,7 @@ seed: 3
 
 world:
   props:
-    # 開始時から降らせる。weather_remainingが尽きる（4〜6時間後）まで続き、その後は通常の遷移に戻る。
+    # 開始時から降らせる。weather_remainingが尽きるまで続き、その後は通常の遷移に戻る。
     weather: light_rain
 
 player:

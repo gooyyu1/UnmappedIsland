@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import sharp from 'sharp';
@@ -73,7 +74,8 @@ export default defineConfig({
     // 差分に出るので、緩めたことが1件ずつ見える。越えたのが手元かCIかは問わない（混み合った回に
     // だけ越えるものが在る）。**名乗る値は実測のすぐ上に置かない**——そこへ置くと、同じ検査が
     // 混んだ回だけ越えて、本物の赤と見分けが付かなくなる（issue #2376）。**越えるのが Windows だけ
-    // なら、名乗りも Windows に限る**（tests/support/timeoutOnWindows.ts）。
+    // なら、名乗りも Windows に限る**（tests/support/timeoutOnWindows.ts）。**越えるかが手元のクローンの
+    // 履歴で決まるなら、環境を問わず名乗る**（tests/support/timeoutForCloneHistory.ts）。
     //
     // **フックはこの線に掛からない**（`hookTimeout`。動かすのは `beforeAll` などの第2引数）。
     // **ファイルの中から `vi.setConfig` で渡しても効かない**（`vi` はワーカーに1つで、掴んでいるのは
@@ -84,5 +86,6 @@ export default defineConfig({
     // モジュールレベルの状態を書き換えたまま終わってはいけない（ここを破ると、実行順で結果が変わる）。
     isolate: false,
     reporters: ['default', new FailedRunRecorder()],
+    setupFiles: [fileURLToPath(new URL('./tests/support/yieldBetweenTests.ts', import.meta.url))],
   },
 });

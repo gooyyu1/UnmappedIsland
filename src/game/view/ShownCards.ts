@@ -67,8 +67,12 @@ export interface ShownDrop {
   readonly from: CardSpot;
   readonly fromIndex: number;
   readonly to: CardSpot;
-  /** カードへ重ねた（combine）か、隙間・空き枠へ落とした（CardPlacement）か。 */
-  readonly target: { readonly kind: 'combine'; readonly index: number } | CardPlacement;
+  /**
+   * カードへ重ねた（combine）か、隙間・空き枠へ落とした（CardPlacement）か。undefinedは、その場所へ
+   * 落としたが位置は指さない——レーン上の位置がスロットの位置にならない場所（slotCells.slotPositionAt）
+   * で、どの枠へ入るかはスロットが選ぶ。
+   */
+  readonly target: { readonly kind: 'combine'; readonly index: number } | CardPlacement | undefined;
   /** この操作で動かす枚数（1以上）。束をまとめて運んでいるときだけ2以上になる。 */
   readonly count: number;
 }
@@ -435,7 +439,7 @@ export class ShownCards {
   } {
     const fromStacks = this.stacksAt(drop.from);
     const dragged = fromStacks[drop.fromIndex];
-    if (drop.target.kind !== 'combine') return { dragged, target: undefined };
+    if (drop.target?.kind !== 'combine') return { dragged, target: undefined };
 
     const toStacks = drop.from === drop.to ? fromStacks : this.stacksAt(drop.to);
     return { dragged, target: toStacks[drop.target.index] };
@@ -478,7 +482,7 @@ export class ShownCards {
   private combineEffect(
     drop: ShownDrop,
   ): { readonly told: CardDropEffect; readonly combination: CardCombination | undefined } | undefined {
-    if (drop.target.kind !== 'combine') return undefined;
+    if (drop.target?.kind !== 'combine') return undefined;
 
     const { dragged, target } = this.stacksOf(drop);
     return this.overlayEffect(dragged, target, drop.count);
@@ -561,7 +565,7 @@ export class ShownCards {
    * 実際に起きることのほうが、起きない理由より先に見せるものだから。
    */
   dropEffect(drop: ShownDrop): CardDropEffect | undefined {
-    if (drop.target.kind === 'combine') return this.combineEffect(drop)?.told;
+    if (drop.target?.kind === 'combine') return this.combineEffect(drop)?.told;
 
     const dragged = this.stacksAt(drop.from)[drop.fromIndex];
     if (dragged === undefined) return undefined;
@@ -569,9 +573,10 @@ export class ShownCards {
     // 借りた札の枠はワールドの場所ではないので、そこへ「入れる」ことはできない（重ねるだけ）。
     if (drop.to === 'windowCard') return undefined;
 
-    // 同じ場所の中は並び替え。位置が変わるだけなので、名乗るものも値段も無い。
+    // 同じ場所の中は並び替え。位置が変わるだけなので、名乗るものも値段も無い。位置を指さない場所では
+    // 並び替えられない。
     if (drop.from === drop.to) {
-      const execute = dragged.reorderActionAt?.(drop.target);
+      const execute = drop.target === undefined ? undefined : dragged.reorderActionAt?.(drop.target);
       return execute === undefined
         ? undefined
         : {

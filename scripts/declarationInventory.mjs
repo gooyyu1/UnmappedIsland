@@ -23,6 +23,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
+import { withoutComments } from './codeComments.mjs';
 import { MODULE, settledDeclarations } from './settledDeclarations.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -109,10 +110,7 @@ function signatureOf(source, node) {
   if (members !== undefined) end = members.length > 0 ? members.pos : node.end;
   else if (body !== undefined && ts.isBlock(body)) end = body.pos;
 
-  const text = source.text
-    .slice(node.getStart(source), end)
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/\/\/[^\n]*/g, ' ')
+  const text = withoutComments(source.text.slice(node.getStart(source), end), source.fileName)
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/[{(]\s*$/, '')

@@ -1610,6 +1610,10 @@ object_defs:
   it('満たしていない要件のreasonを、実行前に引ける', () => {
     const yaml = `
 object_defs:
+  # in_slotが名指しする手（名指しの相手はどこかの型が宣言していなければならない）。
+  holder:
+    slots:
+      hand: {}
   thing:
     props:
       durability: {value: 0}

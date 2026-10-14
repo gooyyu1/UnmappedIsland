@@ -11,7 +11,7 @@ import type {
 import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import type { RainWaterRow } from '../../src/analysis/seasonalRain';
 import { ART_BY_NAME } from '../../src/art/objectArt';
-import { BalancePage } from '../../src/codex-viewer/balancePage';
+import { BalancePage, SAMPLE_CHARACTER } from '../../src/codex-viewer/balancePage';
 import { CodexSource } from '../../src/codex-viewer/CodexSource';
 import { CodexView } from '../../src/codex-viewer/CodexView';
 import type { CodexPage } from '../../src/codex-viewer/CodexPage';
@@ -493,9 +493,6 @@ function routeDetailRows(html: string): readonly RenderedRow[] {
   );
 }
 
-/** 1日の必要量を取る代表キャラクタ。収支ページが持つ定数（balancePage.SAMPLE_CHARACTER）と同じ名前。 */
-const SAMPLE_CHARACTER = 'medic';
-
 /** 待ち生産表の列と、`DeviceRow`（`src/analysis/balanceTables.ts`）のフィールドの対応。 */
 const DEVICE_LABELS: ShownFields<DeviceRow> = {
   deviceName: asIs('設備'),
@@ -647,6 +644,9 @@ object_defs:
 
   spring_field:
     tags: [location]
+    # rain_basketのpassivesが名指しする置き場（名指しの相手はどこかの型が宣言していなければならない）。
+    slots:
+      items: {cell_count: 4, cell: {accept: {tag: item}}}
     props:
       exploration_progress: {value: 0, range: {min: 0, max: 100}}
     interactions:

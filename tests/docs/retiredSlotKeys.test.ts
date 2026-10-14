@@ -4,7 +4,7 @@ import { parseDocument } from 'yaml';
 import { describe, expect, it } from 'vitest';
 import { isVerbatimRecord, trackedDocs, trackedFiles } from '../../scripts/docScope.mjs';
 import { RETIRED_SLOT_KEYS } from '../../src/loader/parseSlots';
-import { commentParts } from '../../scripts/codeComments.mjs';
+import { commentParts, withoutComments } from '../../scripts/codeComments.mjs';
 
 /**
  * 廃止したスロットの宣言キー（{@link RETIRED_SLOT_KEYS}）を、説明が今も書けるものとして挙げて
@@ -40,22 +40,17 @@ const PARSE_SLOTS = join('src', 'loader', 'parseSlots.ts');
 const SOURCES = trackedFiles(ROOT, 'src/*.ts');
 
 /**
- * コメントを取り除いた本文（文字列リテラルは残す——名前を文字列で持つ宣言もあるため）。
- * **コメントを残すと、廃止済みの綴りを説明が1つ挙げただけでその綴りが「生きている」ことになり、
- * 検査の外へ出る**——見張る対象が、そのまま見張りを外す。
- */
-function codeOnly(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
-}
-
-/**
- * 廃止の一覧を置いているファイルを除いたソースのコード。**そこには全部の綴りが在る**ので、含めると
- * 綴りが1つも死んでいないことになり、下の 1 が何も見なくなる。
+ * 廃止の一覧を置いているファイルを除いたソースの、コメントを剥がした本文（文字列リテラルは残す
+ * ——名前を文字列で持つ宣言もあるため）。**コメントを残すと、廃止済みの綴りを説明が1つ挙げただけで
+ * その綴りが「生きている」ことになり、検査の外へ出る**——見張る対象が、そのまま見張りを外す。
+ *
+ * 一覧のファイルを除くのは、**そこには全部の綴りが在る**から——含めると綴りが1つも死んでいない
+ * ことになり、下の 1 が何も見なくなる。
  *
  * 一覧の中だけで生きている綴りは死んだ側に入るが、そちらは 1 が赤くなって知れる。見逃す側へ倒さない。
  */
 const CODE = SOURCES.filter((rel) => rel !== PARSE_SLOTS)
-  .map((rel) => codeOnly(read(rel)))
+  .map((rel) => withoutComments(read(rel), rel))
   .join('\n');
 
 /** 今どこも指していない綴り。スロットの外では今も生きている綴り（{@link LIVE_ELSEWHERE}）と分ける。 */

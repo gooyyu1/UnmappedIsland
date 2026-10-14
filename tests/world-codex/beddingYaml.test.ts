@@ -1,8 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { characterDefNames } from '../../src/domain/generation/NewGame';
 import { bundledBalanceTables, bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
@@ -42,8 +44,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
   /** その土地にプレイヤーが立っている世界。 */
   function open(landName: string, characterName: string = SAMPLE_CHARACTER) {
     const session = new WorldSession(codex);
-    const world = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(world));
+    const world = session.createWorld().instance;
     const land = spawnInto(session, landName, world, 'locations');
     const player = spawnInto(session, characterName, land, 'characters');
     makeBrightEnoughForAnyAction(player, codex);
@@ -94,11 +95,10 @@ describe('bedding.yamlの寝床とハンモック', () => {
   }
 
   /**
-   * その休息だけで眠気の釣り合いを取る1日のうち、眠っているほうの tick 数
-   * （docs/world/Bedding.md 4.1節。地面の仮眠だけなら8時間、寝床の睡眠なら6時間）。
+   * その休息だけで眠気の釣り合いを取る1日のうち、眠っているほうの tick 数（docs/world/Bedding.md 4.1節）。
    *
    * **測った正味から出す。** 起きている間は -1/tick なので、眠るぶんの正味との比がそのまま割り振りに
-   * なる——地面の8時間・寝床の6時間をここへ書き写すと、宣言を動かしたときに古い割り振りのまま通る。
+   * なる——割り振りをここへ書き写すと、宣言を動かしたときに古い割り振りのまま通る。
    */
   function ticksAsleepPerDay(netWakefulness: number, ticks: number): number {
     return TICKS_PER_DAY / (netWakefulness / ticks + 1);
@@ -123,6 +123,20 @@ describe('bedding.yamlの寝床とハンモック', () => {
     expect(restOn(framed.bed, framed.player, 'sleep').stamina).toBeGreaterThan(
       restOn(bare.bed, bare.player, 'sleep').stamina,
     );
+  });
+
+  it('体力の戻りは、待機1回と骨組みを差した寝台での睡眠1回とで桁が違う（CardInteraction.md 10.2節）', () => {
+    // 粒の数を平方根で写す理由。1つのステータスの中でも戻る量の幅が広く、基準量では畳めない。
+    const framed = bedOnBeach(['bed_frame']);
+    const slept = restOn(framed.bed, framed.player, 'sleep').stamina;
+
+    const { player } = open('sandy_beach');
+    player.getProperty(staminaId).setNumber(0);
+    expect(player.tryGetAction('wait', player)?.tryExecute(), 'wait').toBe(true);
+    const waited = player.getProperty(staminaId).number;
+
+    expect(waited, '待機でも体力は戻る').toBeGreaterThan(0);
+    expect(slept / waited).toBeGreaterThanOrEqual(10);
   });
 
   it('詰め物を差すと更に増え、どの詰め物でも同じだけ増える', () => {
@@ -216,8 +230,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
 
   it('敷物を敷けば、1日に戻る体力が地面の上を上回る', () => {
     // docs/world/Bedding.md 4節。**1時間あたりで上回るだけでは足りない**——寝床の上は眠る時間が
-    // 2時間短い（24 tick 対 32 tick）ので、寝床の割が地面の 4/3（1.667/tick）を下回ると1日の合計で
-    // 逆転し、敷物を敷くほど損になる。
+    // 地面より短いので、寝床の割の上回り方が小さいと1日の合計で逆転し、敷物を敷くほど損になる。
     const { bed, player } = bedOnBeach([]);
 
     expect(perDay(bed, player, 'sleep')).toBeGreaterThan(perDay(player, player, 'nap'));
@@ -268,8 +281,37 @@ describe('bedding.yamlの寝床とハンモック', () => {
     return before - player.getProperty(staminaId).number;
   }
 
+  it('寝床が無いと、1日に起きていられる時間が短くなる', () => {
+    // docs/world/Bedding.md 4.1節。地面の nap は長さあたりに戻る眠気が寝床の sleep より少ないので、
+    // 仮眠だけで回すと眠る時間が長くなる。
+    const { bed, player } = bedOnBeach([]);
+    const onBed = ticksAsleepPerDay(restOn(bed, player, 'sleep').wakefulness, ticksOf(bed, player, 'sleep'));
+    const onGround = ticksAsleepPerDay(
+      restOn(player, player, 'nap').wakefulness,
+      ticksOf(player, player, 'nap'),
+    );
+
+    expect(onGround).toBeGreaterThan(onBed);
+  });
+
+  it('地面の仮眠だけで回しても、眠る時間は屋外の枠の外に収まる', () => {
+    // docs/world/Bedding.md 4.1節「削られるのは夜で、昼ではありません」。屋外の枠は生成した島の実測
+    // （stats/terrain.yaml の daily_budget.outdoor_window）。
+    const { player } = open('sandy_beach');
+    const asleepMinutes =
+      ticksAsleepPerDay(restOn(player, player, 'nap').wakefulness, ticksOf(player, player, 'nap')) *
+      MINUTES_PER_TICK;
+    const [{ outdoor_window: outdoorWindow }] = (
+      parse(readFileSync(resolve(__dirname, '../../stats/terrain.yaml'), 'utf-8')) as {
+        daily_budget: readonly { outdoor_window: number }[];
+      }
+    ).daily_budget;
+
+    expect(asleepMinutes).toBeLessThanOrEqual(TICKS_PER_DAY * MINUTES_PER_TICK - outdoorWindow);
+  });
+
   it('骨組みを差しても、戻る眠気は変わらない', () => {
-    // 同4節。**眠気が戻る量は段によらない**——18時間起きて6時間眠るという釣り合いを、寝床の段が
+    // 同4節。**眠気が戻る量は段によらない**——睡眠1回で1日ぶんが戻るという釣り合いを、寝床の段が
     // 動かさないため。
     const bare = bedOnBeach([]);
     const framed = bedOnBeach(['bed_frame']);
@@ -310,7 +352,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
 
     beforeAll(() => {
       // **どちらも書き写さずに実ファイルから引く。** 素の入口は player_character.yaml、一着ごとの
-      // 押し下げは clothing.yaml のものなので、そちらを動かせば下の各テストが落ちる——4.2節が
+      // 押し下げは clothing.yaml のものなので、そちらを動かせば下の各テストが落ちる——同 4.2節が
       // 「いちばん深い一着より浅い」と衣類を基準に深さを決めているため、基準の側が動けば主張も動く。
       const probe = new WorldSession(codex);
       const chillPointId = codex.propertyNames.getId('chill_point');
@@ -396,7 +438,7 @@ describe('bedding.yamlの寝床とハンモック', () => {
      *
      * 動く段は2つ。**日射の帯**（`ambient_brightness`）は夜が18時から翌6時まで続くので、20時から
      * 6時間眠っても出ない。**季節の貯水池**（`thermal_level`）は`calm`で毎tick下がり、既定値から
-     * 睡眠2回ぶんで`mild`の下限を割るので、**下限へ張り付ける**——`cool`の底なら減っても
+     * 睡眠を重ねるうちに`mild`の下限を割るので、**下限へ張り付ける**——`cool`の底なら減っても
      * クランプで動かず、乾季の向きへ振れても1季節ぶん登るまで帯を出ない。
      */
     function setNightSky(world: WorldObject): void {

@@ -299,9 +299,9 @@ const CODEX_FILES = new Map<string, unknown>(
   ]),
 );
 
-/** `codex:` の印が指す値。解決できなければ、なぜ解決できないかを文で返す。 */
-function codexValueOf({ file, path }: CodexSource): number | string {
-  if (!CODEX_FILES.has(file)) return `${WORLD_CODEX_DIR}/ に無いファイル`;
+/** 道の先にある定義の中身。辿れなければ、なぜ辿れないかの文を `broken` に入れて返す。 */
+function codexNodeAt({ file, path }: CodexSource): { readonly node: unknown } | { readonly broken: string } {
+  if (!CODEX_FILES.has(file)) return { broken: `${WORLD_CODEX_DIR}/ に無いファイル` };
 
   let node = CODEX_FILES.get(file);
   for (const [depth, key] of path.entries()) {
@@ -312,10 +312,17 @@ function codexValueOf({ file, path }: CodexSource): number | string {
       : typeof node === 'object' && node !== null && Object.hasOwn(node, key)
         ? (node as Record<string, unknown>)[key]
         : undefined;
-    if (next === undefined) return `その道が ${path.slice(0, depth + 1).join('.')} で途切れる`;
+    if (next === undefined) return { broken: `その道が ${path.slice(0, depth + 1).join('.')} で途切れる` };
     node = next;
   }
-  return typeof node === 'number' ? node : 'その道の先が数ではない';
+  return { node };
+}
+
+/** `codex:` の印が指す値。解決できなければ、なぜ解決できないかを文で返す。 */
+function codexValueOf(source: CodexSource): number | string {
+  const found = codexNodeAt(source);
+  if ('broken' in found) return found.broken;
+  return typeof found.node === 'number' ? found.node : 'その道の先が数ではない';
 }
 
 /** 印の種類ごとに読み、指す値まで解決する。形が読めなければ null。 */
@@ -327,6 +334,198 @@ function readMark(kind: string, body: string): ReadMark | null {
   const mark = parseMark(body);
   return mark === null ? null : { coarseness: mark.coarseness, cell: cellOf(mark) };
 }
+
+/** 文書の中の YAML のフェンス1つ。 */
+interface YamlBlock {
+  readonly doc: string;
+  /** 開きのフェンスの行（1始まり）。 */
+  readonly line: number;
+  /** 情報文字列の、言語名より後ろ。抜粋の出どころを名乗るならここに `codex:` が来る。 */
+  readonly info: string;
+  /** フェンスの字下げを除いた中身。 */
+  readonly text: string;
+}
+
+function yamlBlocksIn(doc: string, text: string): YamlBlock[] {
+  const found: YamlBlock[] = [];
+  let open: { readonly line: number; readonly indent: string; readonly lang: string; readonly info: string } | null =
+    null;
+  let body: string[] = [];
+  // `.` は `\r` に当たらないので、CRLF のまま切るとフェンスの行が `(.*)$` で読めなくなる。
+  text.split(/\r?\n/).forEach((line, index) => {
+    const fence = /^(\s*)```(\S*)\s*(.*)$/.exec(line);
+    if (fence === null) {
+      if (open !== null) body.push(line.startsWith(open.indent) ? line.slice(open.indent.length) : line);
+      return;
+    }
+    if (open === null) {
+      open = { line: index + 1, indent: fence[1], lang: fence[2], info: fence[3].trim() };
+      body = [];
+      return;
+    }
+    if (/^ya?ml$/.test(open.lang)) found.push({ doc, line: open.line, info: open.info, text: body.join('\n') });
+    open = null;
+  });
+  return found;
+}
+
+/** フェンスの `codex: <ファイル> [<道>]`。道を書かなければ定義ファイルのトップレベルと突き合わせる。 */
+function parseExcerptSource(info: string): CodexSource | null {
+  const matched = /^codex:\s*(.*)$/.exec(info);
+  if (matched === null) return null;
+  const tokens = tokenize(matched[1]);
+  if (tokens === null || tokens.length < 1 || tokens.length > 2) return null;
+  const [file, ...dotted] = tokens;
+  const path = dotted.flatMap((token) => token.split('.'));
+  if (path.some((key) => key === '')) return null;
+  return { file, path };
+}
+
+function isPlainMap(node: unknown): node is Record<string, unknown> {
+  return typeof node === 'object' && node !== null && !Array.isArray(node);
+}
+
+/**
+ * 抜粋が定義の部分集合になっていない箇所。**抜粋に書いた葉（スカラー）だけを見て、省いたキーは
+ * 見ない。** 並びは、抜粋の要素が定義の要素へ**順を保って**1つずつ当たるかで見る——途中の要素を
+ * 略した抜粋（段の1つだけ、候補の一部だけ）を、略したまま書けるようにするため。
+ */
+function excerptGaps(excerpt: unknown, actual: unknown, path: readonly string[] = []): string[] {
+  const where = path.length === 0 ? '（抜粋の全体）' : path.join('.');
+  if (Array.isArray(excerpt)) {
+    if (!Array.isArray(actual)) return [`${where}: 定義の側が並びではない`];
+    const gaps: string[] = [];
+    let from = 0;
+    excerpt.forEach((item, index) => {
+      const at = actual.findIndex(
+        (candidate, actualIndex) => actualIndex >= from && excerptGaps(item, candidate).length === 0,
+      );
+      if (at < 0) gaps.push(`${where} の ${index}番目（0始まり）: 定義の並びに、前の要素より後ろで一致するものが無い`);
+      else from = at + 1;
+    });
+    return gaps;
+  }
+  if (isPlainMap(excerpt)) {
+    if (!isPlainMap(actual)) return [`${where}: 定義の側がマップではない`];
+    return Object.entries(excerpt).flatMap(([key, value]) =>
+      Object.hasOwn(actual, key) ? excerptGaps(value, actual[key], [...path, key]) : [`${[...path, key].join('.')}: 定義に無いキー`],
+    );
+  }
+  return excerpt === actual ? [] : [`${where}: 文書は ${JSON.stringify(excerpt)}、定義は ${JSON.stringify(actual)}`];
+}
+
+/** 抜粋に書いた葉（スカラー）の数。 */
+function leafCount(node: unknown): number {
+  if (typeof node !== 'object' || node === null) return 1;
+  return Object.values(node).reduce((sum: number, child) => sum + leafCount(child), 0);
+}
+
+/** 定義の中の、マップと並びのすべて。 */
+function* containersOf(node: unknown, path: readonly string[] = []): Generator<readonly [readonly string[], object]> {
+  if (typeof node !== 'object' || node === null) return;
+  yield [path, node];
+  for (const [key, child] of Object.entries(node)) yield* containersOf(child, [...path, key]);
+}
+
+/**
+ * 出どころを名乗っていない YAML が、定義のどこかの部分集合にそのまま当たるなら、その在り処。
+ * **書き写したばかりの抜粋は現物と一致する**ので、名乗り忘れはこの形で見つかる。葉が1つだけの
+ * ものは見ない（`duration: 15` のような断片は、例として書いても定義のどこかに当たる）。
+ */
+function unannouncedExcerptSource(block: YamlBlock): string | null {
+  if (parseExcerptSource(block.info) !== null) return null;
+  let parsed: unknown;
+  try {
+    parsed = parse(block.text);
+  } catch {
+    return null;
+  }
+  if (typeof parsed !== 'object' || parsed === null || leafCount(parsed) < 2) return null;
+  for (const [file, root] of CODEX_FILES) {
+    for (const [path, node] of containersOf(root)) {
+      if (Array.isArray(node) === Array.isArray(parsed) && excerptGaps(parsed, node).length === 0) {
+        return [file, ...(path.length === 0 ? [] : [path.join('.')])].join(' ');
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * 定義が名前で置くもの。`<節>.<ID>`（`object_defs.raft`・`traits.location` など、トップレベルの節の
+ * 項目）と `interactions.<ID>`（どこに置かれた操作か）で引き、同じ名前の現物をすべて持つ。
+ */
+const CODEX_ENTRIES = new Map<string, unknown[]>();
+for (const root of CODEX_FILES.values()) {
+  const add = (key: string, node: unknown) => CODEX_ENTRIES.set(key, [...(CODEX_ENTRIES.get(key) ?? []), node]);
+  if (isPlainMap(root)) {
+    for (const [section, entries] of Object.entries(root)) {
+      if (isPlainMap(entries)) for (const [id, node] of Object.entries(entries)) add(`${section}.${id}`, node);
+    }
+  }
+  for (const [path, node] of containersOf(root)) {
+    if (path.at(-1) === 'interactions' && isPlainMap(node)) {
+      for (const [id, entry] of Object.entries(node)) add(`interactions.${id}`, entry);
+    }
+  }
+}
+
+/** 定義のトップレベルの節の名前。例示が操作だけを書くときのトップレベル `interactions` も含める。 */
+const CODEX_SECTIONS = new Set(
+  [...CODEX_ENTRIES.keys()].map((key) => key.slice(0, key.indexOf('.'))),
+);
+
+/**
+ * 出どころを名乗っていない YAML が実在の名前を借り、**同じ名前のどの現物とも違う値を書いた**項目の
+ * 道。名乗らない YAML は例示として読む約束だが、実在の名前が出ていれば現物の写しとして読まれうる。
+ * 見るのはトップレベルの節の直下と、どこに置かれた `interactions` の直下も——架空の型の名前は
+ * 在りそうな名前であることが多く、中の操作が例示だとは読み手に分からない。
+ */
+function borrowedNamesWithForeignValues(block: YamlBlock): string[] {
+  if (parseExcerptSource(block.info) !== null) return [];
+  let parsed: unknown;
+  try {
+    parsed = parse(block.text);
+  } catch {
+    return [];
+  }
+  const borrowed: string[] = [];
+  for (const [path, entries] of containersOf(parsed)) {
+    if (!isPlainMap(entries)) continue;
+    // 表示文の辞書（`object_texts` など）も同じ名前で引くので、定義の節の下に在るものだけを見る。
+    if (path.length === 0 || !CODEX_SECTIONS.has(path[0])) continue;
+    const kind = path.length === 1 ? path[0] : path.at(-1) === 'interactions' ? 'interactions' : null;
+    if (kind === null) continue;
+    for (const [id, node] of Object.entries(entries)) {
+      const actuals = CODEX_ENTRIES.get(`${kind}.${id}`);
+      if (actuals !== undefined && !actuals.some((actual) => excerptGaps(node, actual).length === 0)) {
+        borrowed.push([...path, id].join('.'));
+      }
+    }
+  }
+  return borrowed;
+}
+
+/** 出どころを名乗った抜粋が、定義とずれている箇所。名乗りが読めない・解けないことも含む。 */
+function staleExcerptLines(block: YamlBlock): string[] {
+  const where = `${block.doc}:${block.line}: ${block.info}`;
+  const source = parseExcerptSource(block.info);
+  if (source === null) return block.info.startsWith('codex:') ? [`${where} → 出どころの形が読めない`] : [];
+
+  let excerpt: unknown;
+  try {
+    excerpt = parse(block.text);
+  } catch (error) {
+    return [`${where} → YAML として読めない（${(error as Error).message.split('\n')[0]}）`];
+  }
+  if (typeof excerpt !== 'object' || excerpt === null) return [`${where} → 突き合わせる値が無い`];
+
+  const found = codexNodeAt(source);
+  if ('broken' in found) return [`${where} → ${found.broken}`];
+  return excerptGaps(excerpt, found.node).map((gap) => `${where} → ${gap}`);
+}
+
+const YAML_BLOCKS = listMarkdown('docs').flatMap((rel) => yamlBlocksIn(rel, readFileSync(join(ROOT, rel), 'utf-8')));
 
 const CITATIONS = listMarkdown('docs').flatMap((rel) =>
   citationsIn(rel, readFileSync(join(ROOT, rel), 'utf-8')),
@@ -353,6 +552,34 @@ describe('文書が stats/*.yaml と定義から書き写した数値', () => {
       if (typeof citation.mark.cell === 'string') broken.push(`${where} → ${citation.mark.cell}`);
     }
     expect(broken, `出どころへ解決しない印:\n${broken.join('\n')}`).toEqual([]);
+  });
+
+  it('出どころを名乗った YAML の抜粋は、定義の部分集合になっている', () => {
+    // 名乗った抜粋が1つも取れないこと自体が壊れた状態（フェンスの読み方が変わっても緑のままになる）。
+    expect(YAML_BLOCKS.filter((block) => parseExcerptSource(block.info) !== null).length).toBeGreaterThan(0);
+
+    const stale = YAML_BLOCKS.flatMap(staleExcerptLines);
+    expect(stale, `定義とずれた抜粋。文書を書き直す:\n${stale.join('\n')}`).toEqual([]);
+  });
+
+  it('定義にそのまま当たる YAML は、抜粋の出どころを名乗る', () => {
+    const unannounced = YAML_BLOCKS.flatMap((block) => {
+      const source = unannouncedExcerptSource(block);
+      return source === null ? [] : [`${block.doc}:${block.line}: \`\`\`yaml codex: ${source}`];
+    });
+    expect(unannounced, `出どころを名乗っていない抜粋（フェンスへ置く印の候補）:\n${unannounced.join('\n')}`).toEqual(
+      [],
+    );
+  });
+
+  it('名乗らない YAML が実在の名前を借りるなら、現物と違う値を書かない', () => {
+    const borrowed = YAML_BLOCKS.flatMap((block) =>
+      borrowedNamesWithForeignValues(block).map((name) => `${block.doc}:${block.line}: ${name}`),
+    );
+    expect(
+      borrowed,
+      `実在の名前を借りて現物と違う値を書いた例示。実在しない名前へ付け替えるか、現物に合わせて出どころを名乗る:\n${borrowed.join('\n')}`,
+    ).toEqual([]);
   });
 
   it('書いた数が、印の許す粗さの中で出どころの値と一致する', () => {
@@ -622,5 +849,124 @@ describe('定義を指す印', () => {
     expect(citationsIn('doc.md', `割れば2枚<!-- codex: ${SPLIT_COUNT} -->`)).toMatchObject([
       { written: '2', mark: { cell: 2, coarseness: null } },
     ]);
+  });
+});
+
+describe('出どころを名乗った YAML の抜粋', () => {
+  /** 1つのフェンスだけの文書から、抜粋のずれを拾う。 */
+  function staleIn(info: string, ...lines: string[]): string[] {
+    return yamlBlocksIn('doc.md', [`\`\`\`yaml ${info}`, ...lines, '```'].join('\n')).flatMap(staleExcerptLines);
+  }
+
+  /** 火口の湿り。段の並びを持つ。 */
+  const MOISTURE = 'codex: fire.yaml traits.ignitable.props.moisture';
+
+  it('書いた葉が定義と一致し、省いたキーは見ない', () => {
+    expect(staleIn(MOISTURE, 'value: 0', '# 説明のコメントは解いた時点で落ちる', 'range: {max: 24}')).toEqual([]);
+  });
+
+  it('値の違う葉と、定義に無いキーを、道を添えて挙げる', () => {
+    expect(staleIn(MOISTURE, 'value: 1', 'range: {max: 24, step: 1}')).toEqual([
+      'doc.md:1: codex: fire.yaml traits.ignitable.props.moisture → value: 文書は 1、定義は 0',
+      'doc.md:1: codex: fire.yaml traits.ignitable.props.moisture → range.step: 定義に無いキー',
+    ]);
+  });
+
+  it('並びは、途中の要素を略してよいが、順は保つ', () => {
+    expect(staleIn(MOISTURE, 'stages:', '  - {name: dry}', '  - {name: sodden, min: 16}')).toEqual([]);
+    expect(staleIn(MOISTURE, 'stages:', '  - {name: sodden}', '  - {name: dry}')).toEqual([
+      'doc.md:1: codex: fire.yaml traits.ignitable.props.moisture → stages の 1番目（0始まり）: 定義の並びに、前の要素より後ろで一致するものが無い',
+    ]);
+  });
+
+  it('並びの要素は、書いた葉がすべて一致する要素にだけ当たる', () => {
+    expect(staleIn(MOISTURE, 'stages:', '  - {name: damp, min: 16}')).toHaveLength(1);
+  });
+
+  it('道を書かなければ、定義ファイルのトップレベルと突き合わせる', () => {
+    expect(staleIn('codex: fire.yaml', 'traits:', '  ignitable:', '    props:', '      moisture: {value: 0}')).toEqual(
+      [],
+    );
+  });
+
+  it('道が途切れる・置き場に無いファイル・読めない名乗りは赤くする', () => {
+    expect(staleIn('codex: fire.yaml traits.nothing', 'value: 0')).toEqual([
+      'doc.md:1: codex: fire.yaml traits.nothing → その道が traits.nothing で途切れる',
+    ]);
+    expect(staleIn('codex: balance.yaml', 'value: 0')).toEqual([
+      `doc.md:1: codex: balance.yaml → ${WORLD_CODEX_DIR}/ に無いファイル`,
+    ]);
+    expect(staleIn('codex: fire.yaml traits..ignitable', 'value: 0')).toEqual([
+      'doc.md:1: codex: fire.yaml traits..ignitable → 出どころの形が読めない',
+    ]);
+  });
+
+  it('YAML として読めない・葉を持たない抜粋は赤くする', () => {
+    expect(staleIn(MOISTURE, 'value: [0')).toHaveLength(1);
+    expect(staleIn(MOISTURE, '# コメントだけ')).toEqual([
+      'doc.md:1: codex: fire.yaml traits.ignitable.props.moisture → 突き合わせる値が無い',
+    ]);
+  });
+
+  it('CRLF の行末でも、フェンスと名乗りを読む', () => {
+    // Windows の作業ツリーは CRLF で取り出される（CLAUDE.md「実装スタイル」）。
+    const text = [`\`\`\`yaml ${MOISTURE}`, 'value: 1', '```'].join('\r\n');
+    expect(yamlBlocksIn('doc.md', text).flatMap(staleExcerptLines)).toEqual([
+      'doc.md:1: codex: fire.yaml traits.ignitable.props.moisture → value: 文書は 1、定義は 0',
+    ]);
+  });
+
+  it('字下げしたフェンスの中身も、字下げを除いて読む', () => {
+    const text = ['- 箇条書きの中', `  \`\`\`yaml ${MOISTURE}`, '  value: 1', '  ```'].join('\n');
+    expect(yamlBlocksIn('doc.md', text).flatMap(staleExcerptLines)).toHaveLength(1);
+  });
+});
+
+describe('出どころを名乗っていない YAML', () => {
+  function sourceOf(...lines: string[]): string | null {
+    const [block] = yamlBlocksIn('doc.md', ['```yaml', ...lines, '```'].join('\n'));
+    return unannouncedExcerptSource(block);
+  }
+
+  it('定義のどこかにそのまま当たるなら、その在り処を挙げる', () => {
+    expect(sourceOf('moisture:', '  value: 0', '  range: {max: 24}')).toBe('fire.yaml traits.ignitable.props');
+  });
+
+  it('当たらないもの・葉が1つだけの断片は挙げない', () => {
+    expect(sourceOf('moisture:', '  value: 0', '  range: {max: 25}')).toBeNull();
+    expect(sourceOf('value: 0')).toBeNull();
+  });
+
+  describe('実在の名前を借りた例示', () => {
+    function borrowedIn(info: string, ...lines: string[]): string[] {
+      const [block] = yamlBlocksIn('doc.md', [`\`\`\`yaml ${info}`, ...lines, '```'].join('\n'));
+      return borrowedNamesWithForeignValues(block);
+    }
+
+    it('現物と違う値を書いた型・trait・操作を挙げる', () => {
+      expect(borrowedIn('', 'traits:', '  ignitable:', '    props:', '      moisture: {value: 1}')).toEqual([
+        'traits.ignitable',
+      ]);
+      expect(borrowedIn('', 'interactions:', '  split_and_weave:', '    trigger: menu', '    spawn: {count: 99}')).toEqual([
+        'interactions.split_and_weave',
+      ]);
+    });
+
+    it('同じ名前の現物のどれかの部分集合なら挙げない', () => {
+      expect(borrowedIn('', 'traits:', '  ignitable:', '    props:', '      moisture: {value: 0}')).toEqual([]);
+    });
+
+    it('架空の型の中に置いた操作も、実在の名前なら挙げる', () => {
+      expect(
+        borrowedIn('', 'object_defs:', '  made_up_frond:', '    interactions:', '      split_and_weave: {spawn: {count: 99}}'),
+      ).toEqual(['object_defs.made_up_frond.interactions.split_and_weave']);
+    });
+
+    it('実在しない名前と、出どころを名乗ったフェンスは見ない', () => {
+      expect(borrowedIn('', 'traits:', '  made_up_trait:', '    props: {moisture: {value: 1}}')).toEqual([]);
+      expect(borrowedIn('codex: fire.yaml', 'traits:', '  ignitable:', '    props: {moisture: {value: 1}}')).toEqual(
+        [],
+      );
+    });
   });
 });

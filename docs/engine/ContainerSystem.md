@@ -89,25 +89,27 @@ load の実効値 = load.value + 通常の modify + Σ( 直接の子の weight�
 要りません）。
 
 `load_rate`（担いだときに感じる割合）は**アイテム側**のプロパティで、スロット位置に応じて `passives` が
-動かします。8.5 節の「装備するスロットによってボーナス量を変える剣」と同じ形です。
+動かします。`GameElementDefinition.md` 8.5 節の「装備するスロットによってボーナス量を変える剣」と同じ形です。
 
-```yaml
+```yaml codex: containers.yaml
 object_defs:
   sledge:
     props:
-      weight: {value: 8000}          # 8kg
+      # 8kg
+      weight: {value: 8000}
       load_rate:
         value: 1
         passives:
           - conditions: [{in_slot: hand}]
-            modify: {self: {load_rate: -0.45}}  # 引きずるので体感は55%
+            # 引きずるので、割り引いてしか感じない
+            modify: {self: {load_rate: -0.45}}
 ```
 
 率をスロットではなく**アイテム**が持つのは、同じ入れ物でも担ぎ方で体感が変わるからです。背負い袋は背負えば
 楽ですが、手に提げれば重い。中身も自重も同じなのに違うので、率はアイテムに固有の値ではありません。かといって
 スロット側に一律の率を置くと、同じ `equipment` に入る鎧と背負い袋と肩掛け袋を区別できません。
 
-**「率はアイテムが持ち、どのスロットにいるかで切り替える」**とすれば、両方が同時に成立します。部位のような
+「**率はアイテムが持ち、どのスロットにいるかで切り替える**」とすれば、両方が同時に成立します。部位のような
 中間概念も要りません。
 
 `load` を読むのはキャラクター自身だけなので、他のオブジェクトは `load` を定義しません（未定義のプロパティの
@@ -125,9 +127,9 @@ object_defs:
 1 − load_rate = (引く道具の自重 − 素朴な入れ物の重さ) ÷ (引く道具の自重 + 逆転させたい積載量)
 ```
 
-自重 8kg のそりで `load_rate` を 0.1（9 割減）にすると、逆転点は 0 まで下がります——荷が空のときに
-編み籠（800g）と並び、少しでも積めばそりが勝つので、籠を持つ理由が無くなります。同じ自重で逆転点を
-8kg に置きたいなら `load_rate` は 0.55 です。**逆転させたい積載量を先に決めて率を逆算する**のが、
+割り引きを深くしすぎると、逆転点は 0 まで下がります——荷が空のときに
+編み籠（800g<!-- codex: containers.yaml object_defs.woven_basket.props.weight.value -->）と並び、少しでも積めばそりが勝つので、籠を持つ理由が無くなります。今のそりの `load_rate` は、
+逆転点を 8kg に置いてこの式から逆算したものです（`tests/world-codex/loadEffects.test.ts` が線を見ます）。**逆転させたい積載量を先に決めて率を逆算する**のが、
 数値の決め方として素直です。実際に置いた線は [`../world/Containers.md`](../world/Containers.md) 2節に
 あります。
 
@@ -135,11 +137,11 @@ object_defs:
 
 | 対象 | weight.value | 子から | weight実効値 | load_rate | load |
 |---|---|---|---|---|---|
-| 石 | 1000（1kg） | 0 | **1000** | — | — |
-| そり | 8000（8kg） | 1000 | **9000** | 0.55（handにいる） | — |
-| キャラクター | 70000（自重70kg） | 9000 | **79000** | — | 9000 × 0.55 = **4950** |
+| 石 | 1000<!-- codex: locations.yaml object_defs.stone.props.weight.value -->（1kg） | 0 | **1000** | — | — |
+| そり | 8000<!-- codex: containers.yaml object_defs.sledge.props.weight.value -->（8kg） | 石の実効値 | **自重 + 石** | 1<!-- codex: containers.yaml object_defs.sledge.props.load_rate.value --> に -0.45<!-- codex: containers.yaml object_defs.sledge.props.load_rate.passives.0.modify.self.load_rate --> を足した値（handにいる） | — |
+| キャラクター | 65000<!-- codex: characters/player_character.yaml traits.player_character.props.weight.value -->（自重65kg） | そりの実効値 | **自重 + そり** | — | **そりの実効値 × そりの率** |
 
-キャラクターの `weight` は自重込みの 79000 で正直なままです。負荷の `load` は荷だけの 4950 なので、段階の
+キャラクターの `weight` は自重込みで正直なままです。負荷の `load` は荷だけ（自重を含まない）なので、段階の
 閾値を「荷物をどれだけ持ったら」とそのまま読めます。
 
 編み籠をそりへ積んだ場合、籠は `hand` にいないので率のかかりようがなく、そりの `weight` には籠と中身が
@@ -152,7 +154,7 @@ object_defs:
 伝播は「スロットへの出入りの瞬間に 1 回だけ加減算する」のではなく、**読むたびに導出する実効値**として扱います。
 
 `load` は率がスロット位置に依存するため、出入りの瞬間の加減算では帳尻が合いません。そりを `hand` へ入れる
-瞬間はまだ `hand` にいないので率は 1、出す瞬間は率が 0.55——差分が残ります。
+瞬間はまだ `hand` にいないので率は 1、出す瞬間は割り引かれた率——差分が残ります。
 
 液体はさらに直接的です。注ぎ移し（`transfer`）と蒸発（`add`）で量が絶えず変わるため、出入りの
 瞬間しか見ない方式では、水を注いでも蒸発しても容器の重さが更新されません。
@@ -160,20 +162,29 @@ object_defs:
 実効値であれば、宣言が値を参照するたびに `getEffectiveValue` で導出されるため、
 キャラクターの `load` に `stages` を持たせるだけで参照口が揃います。新しい参照の仕組みは要りません。
 
-```yaml
-character:
-  props:
-    weight: {value: 70000}     # 自重
-    load:
-      value: 0
-      stages:
-        - name: light
-        - name: overweighted
-          min: 60000
+```yaml codex: characters/player_character.yaml traits.player_character.props
+# 自重（characters/player_character.yaml）
+weight: {value: 65000}
 ```
 
-移動可否は `{subject: agent, prop: load, lt: 60000}` のように、道の `travel` アクションの
-`conditions` で直接書けます。
+```yaml codex: characters/engineer.yaml object_defs.engineer.props
+# 荷の段の境目は人物ごと（characters/engineer.yaml）
+load:
+  tags: [status, health]
+  value: 0
+  range:
+    min: 0
+    max: 27000
+  stages:   # 段ごとの寄与（歩みの遅れ・体力の削り）は省いている
+    - {name: light}
+    - {name: laden, alert: watch, min: 6750}
+    - {name: heavy, alert: caution, min: 13500}
+    - name: too_heavy
+      min: 22500
+      alert: danger
+```
+
+移動可否は道の `travel` アクションの `conditions` が、`load` の段の名前で直接書けます（5 節）。
 
 ### 4.1 毎回導出しても、貯め込みは要らない
 
@@ -187,7 +198,7 @@ character:
 
 **「担げる量で頭打ちだから安い」ではありません。** 枠（`cell_count`）とかさ（`capacity`、7 節）が
 決めるのは**物の数ではなく、詰める物 1 個のかさとの割り算**なので、かさの小さい物で埋めれば数は
-いくらでも増えます（籠 1 つ（20L）に骨針（5mL）なら 4000 個）。**それでも読み取りが 1 フレームに並ぶ
+いくらでも増えます（籠 1 つを骨針で埋める、など）。**それでも読み取りが 1 フレームに並ぶ
 のは 10 万物の桁で、1 万物なら 1.5 ミリ秒（1 フレームの 1 割）です。**
 
 頭打ちが在るのは範囲のほうだけです——目方を名乗らないでいられるのは土地と `world` だけ（1.1 節）で、
@@ -208,7 +219,7 @@ character:
 
 書き方は、道の `travel` に `agent` の `load` を見る条件を足すだけです。
 
-```yaml
+```yaml codex: locations.yaml object_defs.path
 interactions:
   travel:
     trigger: menu
@@ -231,14 +242,14 @@ interactions:
 蓋のある入れ物に入れた物が天候から守られることは、`sheltered`（0/1）というプロパティ1つで表します。
 天候を見ている側の `add` や `conditions` を、次の条件でゲートするだけです。
 
-```yaml
+```yaml codex: drying.yaml traits.dryable.props.drying_remaining.passives.2
 conditions:
   - {subject: ancestor, prop: sheltered, eq: 0}
 ```
 
 要点は、**守る側だけが `sheltered: 1` を定義し、守らない側は定義しない**ことです（`world` が
 `sheltered: 0` を定義して既定値を与えます）。`ancestor` は「そのプロパティを定義している最初の祖先」を
-探すため（8.6 節）、定義しない入れ物は素通りされます。結果として、蓋のない籠を蓋つきの箱にしまえば籠の
+探すため（同 8.6 節）、定義しない入れ物は素通りされます。結果として、蓋のない籠を蓋つきの箱にしまえば籠の
 中身まで守られ、その籠を地面に置けば `world` まで遡って `0` になる、という入れ子の振る舞いが、新しい
 文法なしで正しく出ます。将来の屋根・小屋も同じプロパティを定義するだけで同じように働きます。
 
@@ -255,8 +266,8 @@ conditions:
 気温・湿度）が増えるたびに巻き込まれます。**守られているかと、空がどうなっているかは別のことです。**
 
 守れるのは天候による屋外劣化だけです。保存温度由来の腐敗は別の `add` なので止まりません
-（`DurabilitySystem.md` 3 節）。蓋つきの箱に生肉を入れても「屋外・晴れ・通常温度の2日」が「通常温度の
-2.5日」に戻るだけで、保冷は別の軸のまま残ります。保護を強くしすぎない歯止めとして、この分離をそのまま
+（`DurabilitySystem.md` 3 節）。蓋つきの箱に生肉を入れても「屋外・晴れ・通常温度の2日<!-- stats: durations.yaml durations object=raw_meat property=durability shortest_days -->」が「通常温度の
+2.5日<!-- stats: durations.yaml durations object=raw_meat property=durability days -->」に戻るだけで、保冷は別の軸のまま残ります。保護を強くしすぎない歯止めとして、この分離をそのまま
 使います。
 
 ## 7. 固形物のかさは、大きい物は実占有体積・小さい物は外接直方体
@@ -266,9 +277,9 @@ conditions:
 
 | | 見積もり方 | 例 |
 |---|---|---|
-| **1L を超える物** | **実際の占有体積**（楕円体・円柱として計算） | 熟したヤシの実 25×17×17cm の楕円体 = 3,800 |
-| **1L 以下の物** | **外接直方体**（寸法を掛けるだけ） | 石 12×9×7cm = 700 |
-| **ばらけた材料・ばねのある物** | **嵩そのまま**（詰めても縮まないため） | ヤシの実の皮 400g ÷ 嵩密度 0.1 = 4,000 |
+| **1L を超える物** | **実際の占有体積**（楕円体・円柱として計算） | 熟したヤシの実 25×17×17cm の楕円体 = 3,800<!-- codex: coconut.yaml object_defs.coconut.props.volume.value --> |
+| **1L 以下の物** | **外接直方体**（寸法を掛けるだけ） | 石 12×9×7cm = 700<!-- codex: locations.yaml object_defs.stone.props.volume.value --> |
+| **ばらけた材料・ばねのある物** | **嵩そのまま**（詰めても縮まないため） | ヤシの実の皮 600g<!-- codex: coconut.yaml object_defs.coconut_husk.props.weight.value --> ÷ 嵩密度 0.15 = 4,000<!-- codex: coconut.yaml object_defs.coconut_husk.props.volume.value --> |
 
 **大きい物に隙間ぶんの割り増しを乗せないのは、その隙間を小さい物が埋められるからです。** 籠にヤシの実を
 入れれば実と実の間に空きが出ますが、そこへ果肉や石を差し込めます。大きい物の側で隙間を負担させると、
@@ -292,8 +303,8 @@ conditions:
 - **重い物とかさばる物で、先に効く上限が違います。** 石を担げば `load` が先に尽き、ヤシの葉のような
   嵩のある物は `capacity` が先に尽きます。**種類を少しずつ持ち歩けば、枠数（`cell_count`）が先に尽きます**
   ——入れ物は「重さ・かさ・種類」の理由で満杯になり、どれが先に来るかは荷の中身が決めます。
-  何種類入るかは [`../world/Containers.md`](../world/Containers.md) 1節が決めます（編み籠は10枠）。
-- **重ねられる物は、1個ぶんの外寸より小さく見ます。** ヤシの殻の器（200）は半球の外寸（450）より小さい
+  何種類入るかは [`../world/Containers.md`](../world/Containers.md) 1節が決めます（編み籠は10<!-- codex: containers.yaml object_defs.woven_basket.slots.contents.cell_count -->枠）。
+- **重ねられる物は、1個ぶんの外寸より小さく見ます。** ヤシの殻の器（200<!-- codex: liquid_containers.yaml object_defs.coconut_bowl.props.volume.value -->）は半球の外寸（450）より小さい
   値です。重ねて入る物のかさは「1個目の外寸」ではなく「1個増やすたびに増える分」なので、そちらを採ります。
 
 **入れ物の `capacity` は内容積そのまま**です（編み籠は 20L）。

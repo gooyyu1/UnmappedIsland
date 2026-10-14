@@ -27,7 +27,7 @@
 - **`explorable`**（`locations.yaml`）: 探索**できる**場所だけが追加で持つ構造。探索進捗プロパティと、
   未発見の設置物を隠しておくスロット（`undiscovered_fixtures`）。
 
-```yaml
+```yaml codex: core.yaml
 # core.yaml
 traits:
   location:
@@ -42,7 +42,7 @@ traits:
         cell: {accept: {tag: character}}
 ```
 
-```yaml
+```yaml codex: locations.yaml
 # locations.yaml
 traits:
   explorable:
@@ -92,42 +92,50 @@ traits:
 土地ごとの `object_defs`（`locations.yaml`）が個別に定義します。`explorable` trait 自身が持つのは、進捗を
 保持する箱（`exploration_progress`）と道の発見に使う2スロット（1.2 節）という共通の器だけです。
 
-```yaml
+```yaml codex: locations.yaml
 object_defs:
   grassland:
     traits: [location, explorable]
     props:
       exploration_progress:
         value: 0
-        range: {min: 0, max: 12}   # 探索率100%に達するまでの探索回数
+        # 探索率100%に達するまでの探索回数
+        range:
+          min: 0
+          max: 12
     interactions:
       explore:
         trigger: menu
         duration: 15
-        add: {self: {exploration_progress: 1}}   # 何が見つかっても進捗は1つ進む
+        # 何が見つかっても進捗は1つ進む
+        add: {self: {exploration_progress: 1}}
         pick:
-          - weight: 25
-          - weight: 25
-            spawn: {object: water_spinach, into: self}
+          - weight: {prop: berry_find}
+            spawn: {object: berry_bush, into: self}
+          - weight: {prop: spring_find}
+            spawn: {object: spring, into: self}
+          # ...
+          - weight: 18
+            spawn: {object: water_spinach, into: self, count: 2}
           # ...
 ```
 
-- **探索率100%までの回数**: `exploration_progress` の `range.max`（10〜20 の範囲、土地ごとに異なる）。
+- **探索率100%までの回数**: `exploration_progress` の `range.max`（土地ごとに異なる）。
 - **100%に達しても探索は続けられます**。`explore` に進捗の上限を見る `conditions` は置いていません。
   上限を超えた進捗は `range` の既定のクランプ（`GameElementDefinition.md` 6.3 節）で `range.max` に
   張り付くため、探索率は100%のまま、`pick` による発見物だけが増え続けます。100%到達で変わるのは、
   生成時に仕込まれた道（3.2 節）がそれ以上見つからなくなることだけです。
-- **発見物**: `pick`（10 節）による重み付き抽選です。**ハズレの候補は置かず、1 回の探索で必ず 1 個以上
+- **発見物**: `pick`（同 10 節）による重み付き抽選です。**ハズレの候補は置かず、1 回の探索で必ず 1 個以上
   見つかります**。候補ごとに見つかる数は 1〜3 個で、実りの多い土地は平均 2 個、荒野・山頂・岸壁のような
   乏しい土地は平均 1.6 個になるよう重みを配っています（`tests/world-codex/explorationYield.test.ts` が
   検証）。設置物（木・茂み・洞窟の入口など）は 1 回に 1 つまでとし、数で増えるのはアイテムだけです。
-  進捗+1（`add`）はどの候補が選ばれても起こるので、`pick` の外に1つだけ置いています（9.7 節）。
+  進捗+1（`add`）はどの候補が選ばれても起こるので、`pick` の外に1つだけ置いています（同 9.7 節）。
 - **発見量のつまみ**: 一部の候補は `weight` をリテラルではなくプロパティ参照（`{prop: berry_find}`）で
   持ちます。素の重みは土地の `props` が持ち、**亜種**が土地ごとに上書きします
   （[TerrainGeneration.md](./TerrainGeneration.md) 3.6 節）。「少しだけ木苺の多い森」の類を、地形の
   種類を増やさずに作るための仕組みです。つまみは、その土地を特徴づける候補にだけ置きます。
 - **`duration`**: 1回の探索にかかる時間（分、`GameElementDefinition.md` 11.3 節）。**全土地とも
-  `minutes_per_tick` の 1 tick（15 分）**に揃えています。1回の探索がちょうど1 tick 分の世界の変化に
+  `minutes_per_tick` の 1 tick（15<!-- codex: core.yaml object_defs.world.props.minutes_per_tick.value --> 分）に揃えています。** 1回の探索がちょうど1 tick 分の世界の変化に
   対応するため、探索を繰り返しても時計とゲーム内の変化が刻みからずれません。土地ごとの探索の重さは、
   探索率100%までの回数（`exploration_progress` の `range.max`）だけで表します。
 
@@ -146,22 +154,21 @@ object_defs:
 
 **獣の候補は、その獣を1匹だけ湧かせます**（`tests/world-codex/explorationYield.test.ts` が検証）。
 獣は収穫ではなく出くわすもので、木の実や枝と一緒に並ぶと実りの一部に見えてしまうためです。**重みは
-他の候補より一桁低く**（2〜4 に対し 10〜30）、1回の探索で獣に出くわす確率は、ネズミしか居ない荒野で
-2/114 ＝ 約 2%、4 種が居るジャングルで 13/157 ＝ 約 8% です。
+低く抑え**、`novice` が1回の探索で獣に出くわすのは、どの土地でも1割に届きません
+（`tests/world-codex/explorationYield.test.ts`）。
 
 **獣のつまみは、探索する人の狩猟の腕を `base` の土台にします**
-（[`../world/Skills.md`](../world/Skills.md) 5 節。上の確率は `novice` のもので、`expert` はつまみ 1 つ
-につき +4）。土地が持つのは素の重みだけで、**宣言していない獣は卓に無いので、腕がいくら高くても
-出くわしません**。実りの候補には積みませんが、**卓の合計が増えるぶん実りの出る割合は下がります**
-——ジャングルは実り 144・獣 13 なので、144/157 ＝ 約 92% から、`expert`（獣 29）の 144/173 ＝ 約 83% へ。
-**腕を上げた探索は獣へ寄ります。**
+（[`../world/Skills.md`](../world/Skills.md) 5 節。`expert` はつまみ 1 つ
+につき +4<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.quarry_sense -->）。土地が持つのは素の重みだけで、**宣言していない獣は卓に無いので、腕がいくら高くても
+出くわしません**。実りの候補には積みませんが、**卓の合計が増えるぶん実りの出る割合は下がります**——
+**腕を上げた探索は、どの土地でも獣へ寄ります**（同じ検査）。
 
 **上乗せは、つまみ 1 つにつき同じ量が積まれます。** 受け取る総量は獣の種類の数に比例する
-ので、**種類の多い土地ほど腕が効きます**——荒野のネズミは 2/114 ＝ 約 2% から 6/118 ＝ 約 5% までで、
-ジャングルの 8% → 17% には届きません。**この偏りは狙いどおりで、土地ごとに上乗せを割る調整は
+ので、**種類の多い土地ほど腕が効きます**——腕を上げたぶん獣へ寄る幅は、獣の種類が多い土地ほど
+大きくなります（同じ検査）。**この偏りは狙いどおりで、土地ごとに上乗せを割る調整は
 入れません**（[`../world/Skills.md`](../world/Skills.md) 5.2 節）。
 
-**海区の見張りも同じです。** 海区は土地と同じ `explorable`（[`../world/Voyage.md`](../world/Voyage.md)）で、
+**海区の見張りにも、同じ上乗せが積まれます**（獣の割合の線は土地のもので、海区には掛かりません）。海区は土地と同じ `explorable`（[`../world/Voyage.md`](../world/Voyage.md)）で、
 魚の群れと海鳥の群れ（`shoal_find`・`seabird_find`）が獣のつまみにあたります——どちらもその場に湧いて
 しばらくすると去り、獲る手が狩猟の腕を配ります。**拾えるもの（流木・海藻・卵）には積みません。**
 
@@ -172,21 +179,25 @@ object_defs:
 
 ## 3. 道（`path` object_def）と移動
 
-```yaml
+```yaml codex: locations.yaml
 object_defs:
   path:
     tags: [path]
     props:
       travel_minutes:
-        value: 60          # 生成時にインスタンスごと上書きされる
+        # 生成時にインスタンスごと上書きされる
+        value: 60
         # 道の長さに、今歩いている人の遅れを継ぐ（world/Characters.md 荷重の効き方節）
         base: {subject: agent, prop: travel_delay}
       required_progress:
-        value: 1           # 同上
+        # 同上
+        value: 1
       destination_id:
-        value: 0           # 同上（移動先LocationのインスタンスID）
+        # 同上（移動先LocationのインスタンスID）
+        value: 0
       return_path_id:
-        value: 0           # 同上（移動先にある、こちらへ戻る道のインスタンスID）
+        # 同上（移動先にある、こちらへ戻る道のインスタンスID）
+        value: 0
     interactions:
       travel:
         trigger: menu

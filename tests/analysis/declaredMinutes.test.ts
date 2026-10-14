@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { craftingStepsOf } from '../../src/analysis/craftingSteps';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { AGENT_YAML, createAgent } from '../support/agent';
 import { WORLD_TIME_YAML } from '../support/worldYaml';
@@ -41,8 +40,7 @@ const codex = new WorldCodexYamlLoader()
 /** 世界に置いた渚へ、実行時の文脈で分数を訊く（Interaction.executionMinutes）。 */
 function runtimeMinutesOf(interactionName: string): number {
   const session = new WorldSession(codex);
-  const worldInstance = session.createObject(codex.objectNames.getId('world'));
-  session.adoptWorld(new World(worldInstance));
+  const worldInstance = session.createWorld().instance;
 
   const shoreline = session.createObject(codex.objectNames.getId('shoreline'));
   shoreline.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations')));

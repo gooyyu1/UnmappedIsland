@@ -193,12 +193,12 @@ export function historyDocs(root) {
   const styleDoc = join('docs', 'DocumentStyle.md');
   const text = readFileSync(join(root, styleDoc), 'utf-8');
   const section = /\n### 9\.1 [^\n]*\n([\s\S]*?)(?=\n#{2,3} |$)/.exec(text);
-  if (section === null) throw new Error(`${styleDoc} に 9.1 節が無い`);
+  if (section === null) throw new Error('docs/DocumentStyle.md 9.1節が無い');
   const docs = new Set();
   for (const [, target] of section[1].matchAll(/^\| \[[^\]]+\]\(([^)\s]+)\)/gm)) {
     docs.add(join('docs', ...target.split('#')[0].split('/')));
   }
-  if (docs.size === 0) throw new Error(`${styleDoc} 9.1 節の表から文書を引けない`);
+  if (docs.size === 0) throw new Error('docs/DocumentStyle.md 9.1節の表から文書を引けない');
   return docs;
 }
 

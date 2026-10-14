@@ -46,7 +46,7 @@ async function buildPoliciesContext(repoDir) {
   if (policies !== null) {
     context +=
       '過去のセッションで記録した、ユーザーの価値観。A・Bどちらもあり得る場面ではこれに従い、訊き直さない。\n\n';
-    context += policies;
+    context += policies.replace(/\r\n/g, '\n');
     context += '\n\n';
   }
 

@@ -46,7 +46,7 @@
 が `@ts-expect-error` で見張る。受け口が `number` へ戻ると `npm run typecheck` が赤くなる）。
 
 **`WorldCodex` が持つ名前空間はどれも分かれている。** 別名は `GlobalId.ts` に並ぶ。とくに**タグは
-2つの名前空間に分かれる**——型のタグ（4.1節、`tagNames`）とプロパティのタグ（6.7節、
+2つの名前空間に分かれる**——型のタグ（`GameElementDefinition.md` 4.1節、`tagNames`）とプロパティのタグ（同 6.7節、
 `propertyTagNames`）で、取り違えても番号としては通り、「そのタグを持たない」が静かに返る。
 
 **素の `number` から専用の型へ変わるのは `NameRegistry` の中だけ。** 番号を決めているのが

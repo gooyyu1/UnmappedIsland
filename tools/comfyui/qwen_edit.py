@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -21,6 +22,9 @@ from pathlib import Path
 
 import raw_store
 from generate import DEFAULT_SERVER, download, ensure_running, fill, post_prompt, wait_for_images
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 HERE = Path(__file__).resolve().parent
 WORKFLOW = "qwen_image_edit_2511.api.json"

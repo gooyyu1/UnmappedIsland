@@ -25,7 +25,7 @@ const ROOT = resolve(__dirname, '../..');
 /**
  * リポジトリルートからの相対パスを `/` 区切りで持つ。**この検査でパスを組むのは、どこもここを通す**
  * ——`path.join` も `path.relative` も Windows では `\` を返すので、片側だけ素で組むと照合が一度も
- * 当たらない。**当たらないことは CI（ubuntu）では見えない**ので、揃える手段を2通りにしない。
+ * 当たらない。**当たらないことは Windows で打ったときにしか見えない**ので、揃える手段を2通りにしない。
  */
 function repoPath(...segments: string[]): string {
   return join(...segments)
@@ -75,8 +75,8 @@ describe('射程が、決めた先へ届いている', () => {
   // 持つときだけ——綴りの取り違えはここで落ちる。
   //
   // **パス区切りのずれが落ちるのは Windows で打ったときだけ。** `path.join` が `/` を返す
-  // ubuntu（CI）では、{@link repoPath} を素の `join` へ戻しても照合は当たり続ける。**CI の緑は、
-  // 区切りを揃える手立てが在ることの証拠にならない。**
+  // Linux では、{@link repoPath} を素の `join` へ戻しても照合は当たり続ける——CI で見ているのは
+  // `tests.yml` の `windows` job だけ。
   it.each(ALLOWED)('%s が追跡しているMarkdownに在る', (doc) => {
     expect(trackedDocs(ROOT).map((rel) => repoPath(rel))).toContain(doc);
   });

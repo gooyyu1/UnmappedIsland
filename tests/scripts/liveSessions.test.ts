@@ -72,7 +72,7 @@ describe('live-sessions.mjs', () => {
     expect(live.map((session) => session.env)).toEqual(['cloud', 'bridge']);
   });
 
-  // **知らない環境をクラウドへ寄せない**（2.16.2）。寄せると、盤面が正しく走っているセッションを
+  // **知らない環境をクラウドへ寄せない**（board-design.md 2.16.2節）。寄せると、盤面が正しく走っているセッションを
   // 「場所が違う」と読んで畳む。
   it('知らない環境は - として出す', async () => {
     const live = await liveSessions({
@@ -175,7 +175,7 @@ describe('live-sessions.mjs', () => {
       expect(live[0]?.served).toBe(true);
     });
 
-    // TSVは写しの受け渡しに使うので（1.7 の「1周に1回だけ引く」）、往復で落ちると**読んだ側だけが
+    // TSVは写しの受け渡しに使うので（board-design.md 1.7節 の「1周に1回だけ引く」）、往復で落ちると**読んだ側だけが
     // 区別を知らないまま**畳む手を打つ。
     it('TSVの往復で落ちない', () => {
       const written = [
@@ -319,6 +319,65 @@ describe('live-sessions.mjs', () => {
       expect(asked).toHaveLength(3);
     });
 
+    /**
+     * **前の周に生きていたものは、空のページが何枚続いても通り過ぎるまで繰る**（issue #2611）。
+     * 人待ちで何日も生きる1本の上には、後から立って畳まれたセッションが積もる——新しい側に生きた
+     * ものが無い周に `DRY_PAGES` で止めると、それを「居ない」と読んで錠も枠も空きとして手を打つ。
+     */
+    describe('前の周に生きていたもの', () => {
+      /** 生きた1本の上に、畳まれただけのページを `DRY_PAGES`（既定 2）より多く積んだ一覧。 */
+      const buried = () =>
+        pages(
+          [archived('session_b')],
+          [archived('session_c')],
+          [archived('session_d')],
+          [alive('session_old'), archived('session_e')],
+          [archived('session_f')],
+          [archived('session_g')],
+          [archived('session_h')],
+        );
+
+      it('畳まれたページが何枚挟まっても、通り過ぎるまで繰って拾う', async () => {
+        const { fetch, asked } = buried();
+
+        const live = await liveSessions({ page: fetch, envs, taken: '', previous: ['session_old'] });
+
+        expect(live.map((session) => session.id)).toEqual(['session_old']);
+        // 通り過ぎた後は、空のページが `DRY_PAGES` 枚続いたら止める。
+        expect(asked).toHaveLength(6);
+      });
+
+      // 畳まれた姿で見つけても「通り過ぎた」——その先を探し続ける理由は無い。
+      it('畳まれていたら、そこで追うのをやめる', async () => {
+        const { fetch, asked } = buried();
+
+        const live = await liveSessions({ page: fetch, envs, taken: '', previous: ['session_d'] });
+
+        expect(live).toEqual([]);
+        expect(asked).toHaveLength(3);
+      });
+
+      // **前の周を知らないなら、止める枚数を決められない。** 決めると、初めの周にだけ同じ取りこぼしが起きる。
+      it('前の周を知らなければ、履歴の末尾まで繰る', async () => {
+        const { fetch, asked } = buried();
+
+        const live = await liveSessions({ page: fetch, envs, taken: '', previous: null });
+
+        expect(live.map((session) => session.id)).toEqual(['session_old']);
+        expect(asked).toHaveLength(7);
+      });
+
+      // 一覧から消えたものを追っても、末尾で止まる。
+      it('どこにも見つからなければ、末尾で止まる', async () => {
+        const { fetch, asked } = buried();
+
+        const live = await liveSessions({ page: fetch, envs, taken: '', previous: ['session_gone'] });
+
+        expect(live.map((session) => session.id)).toEqual(['session_old']);
+        expect(asked).toHaveLength(7);
+      });
+    });
+
     // **途切れ1枚では諦めない。** 生きたセッションは新しい側に固まるが、間に畳まれたものが挟まる。
     it('畳まれたページが1枚だけなら、越えて拾う', async () => {
       const { fetch, asked } = pages([alive('session_a')], [archived('session_b')], [alive('session_c')]);
@@ -331,7 +390,7 @@ describe('live-sessions.mjs', () => {
   });
 
   /**
-   * **1周に何度も引かない**（1.7）。盤面が引いたものをファイルで渡したら、そちらを読むだけで
+   * **1周に何度も引かない**（board-design.md 1.7節）。盤面が引いたものをファイルで渡したら、そちらを読むだけで
    * `list_sessions` を叩かない。
    */
   describe('この周のぶんが渡されたら、それを読む', () => {

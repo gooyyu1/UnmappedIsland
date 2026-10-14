@@ -70,7 +70,8 @@ ui_texts:
   crafting_no_materials: 素材が足りない。
 `,
   );
-  const actionsOn = (mini: MiniGame, target: WorldObject) => craftingActions(target, mini.game, locale);
+  const actionsOn = (mini: MiniGame, target: WorldObject) =>
+    craftingActions(target, mini.game.player, locale);
 
   /** 材料の枠の並びに効かない宣言だけを埋めたスロット（materialsは試験の側で渡す）。 */
   const EMPTY_SLOT_VIEW: SlotView = {

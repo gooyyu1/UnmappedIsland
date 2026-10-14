@@ -2,6 +2,7 @@ import { COLOR } from '../looks/theme';
 import type { CardContent } from '../ui/Card';
 import type { LaneCell } from '../ui/laneCells';
 import type { CraftingMaterial } from './craftingView';
+import type { CardPlacement } from './cardPlaces';
 import type { ObjectCardStack, SlotView } from './PlayScreenView';
 import type { ObjectGlobalId } from '../../domain/GlobalId';
 
@@ -11,6 +12,9 @@ import type { ObjectGlobalId } from '../../domain/GlobalId';
  * スロットの宣言をそのまま形にする（plainCells）。
  *
  * cardsはstacksと同じ並びの札（空き枠はundefined）。stacksは材料の枠だけが使う。
+ *
+ * **札の枠は、レーン上でもstacksと同じ位置に並べる。** 掴んだ札・重ねた先はレーン上の位置のまま
+ * stacksから引かれる（ShownCards.stacksAt）ので、札をstacksと違う位置へ置くと別の束を指す。
  */
 export function slotCells(
   slot: SlotView,
@@ -22,6 +26,18 @@ export function slotCells(
   return slot.materials === undefined
     ? plainCells(slot, cards, cycle, cardOfType)
     : materialCells(slot.materials, stacks, cards, cycle, cardOfType);
+}
+
+/**
+ * そのスロットを映すレーン上の落とし位置を、スロットの中の位置へ直したもの（直せなければundefined
+ * ——位置を指さずに入れ、どの枠へ入るかはスロットが選ぶ）。
+ *
+ * **材料の枠のレーン上の位置はスロットの位置にならない。** 並ぶのは入っている物と要求ごとの空き枠で
+ * （materialCells）、スロットの枠をそのまま映していないため。他のレーンは枠をその位置のまま並べる
+ * （plainCells）ので、そのまま渡せる。
+ */
+export function slotPositionAt(slot: SlotView, at: CardPlacement): CardPlacement | undefined {
+  return slot.materials === undefined ? at : undefined;
 }
 
 /**
@@ -64,7 +80,7 @@ function plainCells(
  * **枠は要求ごとに1つ。** 何がどれだけ要るかを見せるのがこのレーンの役目なので、並ぶのは
  * 「入っている物」と「まだ入っていない要求」で、それ以外の空き枠は出さない。
  *
- * **材料スロットの空き枠はここでは使わない。** スロットは要求ごとの枠を持つ（inProgressObjects）が、
+ * **材料スロットの空き枠は届かない**（PlayScreenView.cardsInが落とす）。スロットは要求ごとの枠を持つ（inProgressObjects）が、
  * 映しの層へは枠の受け入れが届かず（SlotView）、どの枠がどの要求のものかは入っている物が当てられた
  * 要求からしか辿れないので、空の枠では決められない。空の枠をそのまま並べると、
  * 透かしの入らない枠が要求の数だけ並び、その後ろに透かしの入った枠が続くことになる。
@@ -112,11 +128,7 @@ function materialCells(
   };
 
   const shown = new Set(stacks.map(materialOf));
-  const cells: LaneCell[] = [];
-  cards.forEach((card, index) => {
-    if (card === undefined) return;
-    cells.push({ card, ...marksFor(materialOf(stacks[index])) });
-  });
+  const cells: LaneCell[] = cards.map((card, index) => ({ card, ...marksFor(materialOf(stacks[index])) }));
 
   // まだ1つも入っていない要求の空き枠を、要求の順に足す。
   for (const material of materials) {

@@ -4,7 +4,6 @@ import { parse } from 'yaml';
 import { objectCostMinutesOf } from '../../src/analysis/balanceTables';
 import { durationsOf } from '../../src/analysis/durations';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import {
   bundledBalanceTables,
@@ -195,8 +194,7 @@ describe('積んである素材の屋外劣化（DurabilitySystem.md 2.2節）',
   /** 岩場に浅い洞窟（屋根のある唯一の場所）が1つある世界。 */
   function landWithCave() {
     const session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     const land = spawnInto(session, CAVE_LAND, worldInstance, 'locations');
     const cave = spawnInto(session, 'shallow_cave', land, 'fixtures');
     return { session, land, cave };

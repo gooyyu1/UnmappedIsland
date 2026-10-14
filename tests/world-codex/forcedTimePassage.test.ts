@@ -2,7 +2,6 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
@@ -50,8 +49,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
   /** 道1本で繋いだ2つの土地と、密林に立つプレイヤー。 */
   function open(): void {
     session = new WorldSession(codex);
-    world = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(world));
+    world = session.createWorld().instance;
     jungle = spawnInto('jungle', world, 'locations');
     grassland = spawnInto('grassland', world, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');
@@ -326,7 +324,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
     /**
      * 画面に出る回復の粒（`WorldSession.observeGains`、docs/ui/CardInteraction.md 10.1節）が示すのは、
      * その操作がそのtickで実際に動かした量。宣言した量をそのまま出すと、荷を担いだまま倒れ込んだ
-     * プレイヤーは +20 の粒を見ながら +4 しか戻っていない。
+     * プレイヤーは、荷の削りぶんだけ実際より大きい粒を見ることになる。
      */
     describe('粒が示す量も、同じ正味', () => {
       /** bodyの間にプレイヤーの値が増えた量を、プロパティ名から引ける形にする。 */

@@ -142,8 +142,9 @@ object_defs:
  * 入らない——それを作り方と数えると、探索でしか得られない1株目の時間が表から消える。
  * **株分けは労働0**なので、数え落とせば `chain_untimed_routes` の側に出る。
  *
- * 接ぎ木は「植物」タグの道具を取る。株のほかに植物が在れば、株を持たずに行える正当な作り方で、
- * 株より安いか・その植物に値段が付くかでは答えが変わらない。
+ * 接ぎ木は「植物」タグの道具を取る。株のほかに島のどこかで手に入る植物が在れば、株を持たずに行える
+ * 正当な作り方で、株より安いか・その植物に値段が付くかでは答えが変わらない。どこでも手に入らない
+ * 植物しか無ければ、株が無いと行えない（issue #2628）。
  */
 describe('道具を産物と同じ型でしか満たせない工程', () => {
   const tablesWith = (cuttingTags: string, saltTags = 'item', ghostTags = 'item') =>
@@ -309,15 +310,20 @@ object_defs:
   describe('どこでも手に入らない型だけが他の植物のとき', () => {
     const tables = tablesWith('item', 'item', 'item, plant');
 
-    it('接ぎ木は、株を要るのに株の作り方に数える（宣言だけで決める代償）', () => {
+    it('接ぎ木は、株が無いと行えないので株の作り方にならない', () => {
       expect(tables.objectCosts.find((cost) => cost.objectName === 'ghost')).toMatchObject({
         minutes: undefined,
         obtainableWithoutCost: false,
       });
-      expect(succulentCost(tables)).toMatchObject({
-        minutes: 1,
-        steps: [{ objectName: 'shell', stepName: 'graft' }],
-      });
+      expect(succulentCost(tables)).toMatchObject({ minutes: 60, exploreMinutes: 60 });
+    });
+
+    it.each([WHOLE_ISLAND, 'grassland'])('%s の経路は、1株目を探すところから始まる', (place) => {
+      expect(hydrationRouteSteps(tables, place)).toEqual([['grassland.explore', 'succulent.chew']]);
+    });
+
+    it('株の採れない土地では、接ぎ木もその土地の作り方にならない', () => {
+      expect(hydrationRouteSteps(tables, 'sandy_beach')).toEqual([]);
     });
   });
 });
@@ -794,6 +800,122 @@ object_defs:
     expect(costOf('brine_trap')).toMatchObject({ minutes: undefined, obtainableWithoutCost: true });
     expect(wholeIsland.devices.find((device) => device.deviceName === 'brine_trap')).toMatchObject({
       buildMinutes: undefined,
+    });
+  });
+});
+
+/**
+ * 「手に入るか」は、値段が付くかではなく入力が揃うかで決まる。**道具の欠けた工程の産物にも値段は付く**
+ * （道具の時間は按分しない、#550）ので、値段で答えると、手に入らない物から建てた設備の産物までが
+ * 「値段は付かないが手に入る」側へ入る。
+ */
+describe('道具の欠けた工程の産物から作る物', () => {
+  const YAML = `
+object_defs:
+  medic:
+    tags: [character]
+
+  orchard:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      pick:
+        trigger: menu
+        duration: 10
+        spawn: {object: fruit, into: self}
+      comb:
+        trigger: menu
+        duration: 10
+        spawn: [{object: shell, into: self}, {object: husk, into: self}]
+
+  # 入手経路が無い道具。
+  spear:
+    tags: [item]
+
+  fruit:
+    tags: [item]
+    interactions:
+      pierce:
+        trigger: {drag: {object: spear}}
+        duration: 5
+        destroy: self
+        spawn: {object: fruit_water}
+
+  fruit_water:
+    tags: [item]
+
+  # 道具の欠けた工程の産物から建てる、朽ちない設備。
+  juice_press:
+    tags: [fixture]
+    slots:
+      juice:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      press_remaining:
+        value: 12
+        range: {min: 0, max: 12}
+        passives:
+          - add: {self: {press_remaining: -1}}
+        on_min:
+          add: {self: {press_remaining: 12}}
+          spawn: {object: juice, into: self}
+    recipes:
+      built:
+        steps:
+          - requires:
+              - {object: fruit_water, count: 1, consume: true}
+            duration: 30
+
+  juice:
+    tags: [item]
+
+  # 道具の欠けた工程の産物から作る道具と、それを道具に取る工程。
+  knife:
+    tags: [item]
+  shell:
+    tags: [item]
+    interactions:
+      grind:
+        trigger: {drag: {object: fruit_water}}
+        duration: 5
+        destroy: [self, instrument]
+        spawn: {object: knife}
+  husk:
+    tags: [item]
+    interactions:
+      split:
+        trigger: {drag: {object: knife}}
+        duration: 5
+        destroy: self
+        spawn: {object: fiber}
+  fiber:
+    tags: [item]
+`;
+
+  const tables = buildBalanceTables(
+    new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset(),
+    'medic',
+  );
+
+  const costOf = (objectName: string) => tables.objectCosts.find((cost) => cost.objectName === objectName)!;
+
+  it('道具の欠けた工程の産物は、値段が付いても道具が無いという印が立つ', () => {
+    expect(costOf('fruit_water')).toMatchObject({ minutes: 15, blockedByTool: true });
+  });
+
+  it('それから作った道具は、値段が付いても、要る道具として手に入る側に数えない', () => {
+    expect(costOf('knife').minutes, '道具そのものには値段が付く').toBeDefined();
+    expect(costOf('fiber')).toMatchObject({ blockedByTool: true });
+  });
+
+  it('それから建てた設備の産物は、手に入る側に入らず、足りない入力に設備が挙がる', () => {
+    expect(costOf('juice')).toMatchObject({
+      minutes: undefined,
+      obtainableWithoutCost: false,
+      missing: ['juice_press'],
     });
   });
 });

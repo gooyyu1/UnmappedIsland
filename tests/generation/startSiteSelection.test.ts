@@ -255,10 +255,10 @@ describe('要るものの出どころ', () => {
  * はその要るものを見ずに選ばれる。**
  */
 describe('最初の段で要るもの', () => {
-  it('2.3節の表の行と過不足なく一致する', () => {
+  it('ContentSkeleton.md 2.3節の表の行と過不足なく一致する', () => {
     const lines = readFileSync('docs/world/ContentSkeleton.md', 'utf8').split(/\r?\n/);
     const header = lines.indexOf('| 要るもの | 出どころ |');
-    expect(header, '2.3節の表の見出しが見つからない').toBeGreaterThanOrEqual(0);
+    expect(header, 'ContentSkeleton.md 2.3節の表の見出しが見つからない').toBeGreaterThanOrEqual(0);
     const rows = lines.slice(header + 2);
     const end = rows.findIndex((line) => !line.startsWith('|'));
     const labels = rows.slice(0, end === -1 ? rows.length : end).map((line) => line.split('|')[1].trim());

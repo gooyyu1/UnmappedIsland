@@ -93,7 +93,9 @@ function costByDay(
     );
     args.push(carried.keep);
   }
-  execFileSync(PYTHON as string, args, { stdio: 'ignore' });
+  // 写した先で走らせる——最後に置き場を作業ディレクトリからの相対で出すので、一時ディレクトリと
+  // 作業ディレクトリのドライブが違う Windows では、ここで投げる。
+  execFileSync(PYTHON as string, args, { cwd: work, stdio: 'ignore' });
   const [, ...lines] = readFileSync(join(work, 'stats/usage/by_day.tsv'), 'utf-8').trim().split('\n');
   return new Map(lines.map((line) => line.split('\t')).map(([day, cost]) => [day, Number(cost)]));
 }

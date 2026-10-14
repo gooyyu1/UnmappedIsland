@@ -6,7 +6,6 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
 
@@ -15,11 +14,11 @@ import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/
  * （docs/world/ContentSkeleton.md 8.1.4節・8.1.5節）。
  *
  * **止めているのは明るさではない**（同 8.1節）ので、見るのは「明るさが足りているのにできない」
- * ところ。嵐の正午は+6（約190 lx）で屋外の採取のしきい値（+3）も手元の作業のしきい値（+5）も
- * 超えるため、この1点で明るさと風雨が別の値であることが出る。
+ * ところ。嵐の正午でも屋外の採取のしきい値も手元の作業のしきい値も超える
+ * （下の1つ目の検査が見る）ため、この1点で明るさと風雨が別の値であることが出る。
  */
 
-/** 正午。晴れなら世界の明るさは+14、嵐でも+6で、採取（+3）と手元の作業（+5）のしきい値を超える。 */
+/** 正午。嵐でも採取と手元の作業のしきい値を超える。 */
 const NOON_HOUR = 12;
 
 describe('嵐の日は屋根の下でなければ何もできない', () => {
@@ -32,8 +31,7 @@ describe('嵐の日は屋根の下でなければ何もできない', () => {
   /** 草原にプレイヤーが1人立っている正午の世界。天気だけを引数で変える。 */
   function noon(weatherName: string) {
     const session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     worldInstance.getProperty(codex.propertyNames.getId('hour')).setNumberWithoutEvents(NOON_HOUR);
     worldInstance
       .getProperty(codex.propertyNames.getId('weather'))
@@ -149,7 +147,7 @@ describe('嵐の日は屋根の下でなければ何もできない', () => {
    * 屋根の下へ入ると、断る理由が風雨から暗さへ入れ替わる。**同じ手を同じ嵐の中で2度訊く**ので、
    * 変わったのが居場所だけであることがこの1件で出る。
    *
-   * **岩陰では「できる」までは行かない**——嵐の正午の岩陰は0で手元のしきい値（+5）を割るので、
+   * **岩陰では「できる」までは行かない**——嵐の正午の岩陰は手元のしきい値を割るので、
    * そこから先は明かりの話になる（docs/world/ContentSkeleton.md 8.1.1.4節）。
    */
   it('屋根の下では風雨が止み、断る理由が暗さだけになる', () => {

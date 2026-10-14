@@ -174,5 +174,6 @@ describe('絵の注文', () => {
     expect(run.stderr).toContain('retired');
     expect(run.stderr).toContain('recipes/');
     expect(existsSync(out)).toBe(false);
-  });
+    // python を起こす待ちは、混んだ回（Windows のランナー）では既定の上限を越える。
+  }, 30_000);
 });

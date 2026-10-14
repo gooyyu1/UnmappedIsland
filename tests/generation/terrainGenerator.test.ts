@@ -307,7 +307,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
 
   // 上限は置けるかどうかの条件ではなく、hard_limitsを満たす型が全部上限に達したサイトは上限を
   // 無視して選び直す（TerrainGeneration.md 3.4節）。**その逃げ道が常用されていないこと**まで見る
-  // ——超えるのが普通になれば、上限は何も抑えていない。海岸に高さの線を引いた（3.5.3節）ぶん、
+  // ——超えるのが普通になれば、上限は何も抑えていない。海岸に高さの線を引いた（同 3.5.3節）ぶん、
   // 海岸帯のサイトが選べる型は2つに減っているので、逃げ道は実際に使われる。
   it('同じ地形が並びすぎず、上限を外れるのは例外に留まる', () => {
     const max = scope().maxSitesPerType;
@@ -321,8 +321,12 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
       for (const site of generate(seed).sites)
         counts.set(site.type!.name, (counts.get(site.type!.name) ?? 0) + 1);
 
-      for (const [name, count] of counts)
+      for (const [name, count] of counts) {
         expect(count, `シード${seed}: ${name}は、外れても上限+1まで`).toBeLessThanOrEqual(max + 1);
+        // 外れてよいのは選べる型が限られる海岸帯だけ（terrain_generation.yaml の max_sites_per_type）。
+        if (!coastTypes.includes(name))
+          expect(count, `シード${seed}: 内陸の${name}は上限に収まる`).toBeLessThanOrEqual(max);
+      }
       if ([...counts.values()].some((count) => count > max)) overCapIslands++;
     }
 

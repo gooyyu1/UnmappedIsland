@@ -7,7 +7,6 @@ import { seededRng } from '../domain/Rng';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { WorldObject } from '../domain/WorldObject';
 import { WorldSession } from '../domain/WorldSession';
-import { World } from '../domain/wrappers/World';
 
 /**
  * 狩りの遭遇を、同梱の定義（`src/assets/world-codex/**`）のまま実際に通して手数を数える
@@ -191,26 +190,28 @@ class Encounter {
     private readonly setup: HuntEncounterSetup,
     rng: Rng,
   ) {
-    this.injuriesSlotId = codex.slotNames.getId('injuries');
-    this.charactersSlotId = codex.slotNames.getId('characters');
+    const words = codex.vocabulary.world;
+    this.injuriesSlotId = words.injuriesSlotId;
+    this.charactersSlotId = words.charactersSlotId;
     this.bloodId = codex.propertyNames.getId('blood');
-    this.consciousnessId = codex.vocabulary.world.consciousnessId;
+    this.consciousnessId = words.consciousnessId;
     this.warinessId = codex.propertyNames.getId('wariness');
 
     this.session = new WorldSession(codex, rng);
-    const world = this.session.createObject(codex.objectNames.getId('world'));
-    this.session.adoptWorld(new World(world));
+    const world = this.session.createWorld().instance;
 
-    this.jungle = this.spawnInto('jungle', world, 'locations');
-    this.refuge = this.spawnInto('grassland', world, 'locations');
+    this.jungle = this.spawnInto('jungle', world, words.locationsSlotId);
+    this.refuge = this.spawnInto('grassland', world, words.locationsSlotId);
     for (let i = 0; i < setup.escapeRoutes; i++) this.openPath(world);
 
-    this.hunter = this.spawnInto(HUNTER, this.jungle, 'characters');
+    this.hunter = this.spawnInto(HUNTER, this.jungle, words.charactersSlotId);
     this.weapon =
-      setup.weaponName === undefined ? undefined : this.spawnInto(setup.weaponName, this.hunter, 'hand');
+      setup.weaponName === undefined
+        ? undefined
+        : this.spawnInto(setup.weaponName, this.hunter, words.handSlotId);
 
-    for (const item of setup.groundItems) this.spawnInto(item, this.jungle, 'items');
-    this.animal = this.spawnInto(setup.animalName, this.jungle, 'items');
+    for (const item of setup.groundItems) this.spawnInto(item, this.jungle, words.itemsSlotId);
+    this.animal = this.spawnInto(setup.animalName, this.jungle, words.itemsSlotId);
     this.strikeSignals = strikeSignalsOf(this.animal.def);
     const wariness = this.animal.getProperty(this.warinessId);
     if (setup.startingWariness !== undefined) wariness.setNumberWithoutEvents(setup.startingWariness);
@@ -330,17 +331,17 @@ class Encounter {
 
   /** 密林から伸びる道を1本通す。行き先は道ごとに別の土地にする（同じ先へ何本も繋がないため）。 */
   private openPath(world: WorldObject): void {
-    const destination = this.spawnInto('grassland', world, 'locations');
-    const path = this.spawnInto('path', this.jungle, 'fixtures');
-    path
-      .getProperty(this.codex.propertyNames.getId('destination_id'))
-      .setNumberWithoutEvents(destination.instanceId);
+    const words = this.codex.vocabulary.world;
+    const destination = this.spawnInto('grassland', world, words.locationsSlotId);
+    const path = this.spawnInto(words.pathObject, this.jungle, words.fixturesSlotId);
+    path.getProperty(words.destinationIdId).setNumberWithoutEvents(destination.instanceId);
   }
 
-  private spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
+  private spawnInto(objectName: string, parent: WorldObject, slotGlobalId: SlotGlobalId): WorldObject {
     const spawned = this.session.createObject(this.codex.objectNames.getId(objectName));
-    const rejection = spawned.moveToSlotOrRejection(parent.getSlot(this.codex.slotNames.getId(slotName)));
+    const rejection = spawned.moveToSlotOrRejection(parent.getSlot(slotGlobalId));
     if (rejection !== undefined) {
+      const slotName = this.codex.slotNames.getName(slotGlobalId);
       throw new Error(`${objectName}を${parent.def.name}の${slotName}へ置けない: ${rejection}`);
     }
     return spawned;

@@ -204,14 +204,13 @@ describe('材料の枠', () => {
     );
 
   it('何も入っていなければ、要求の数だけ透かしの入った空き枠が出る', () => {
-    // 材料スロットは要求ごとの枠を持つので、その空き枠をそのまま並べると、透かしの入らない枠が
-    // 要求の数だけ並んだ後ろに透かしの入った枠が続くことになる（a75472aの回帰）。
+    // 材料スロットの空き枠は並びに届かない（PlayScreenView.cardsIn）ので、何も入っていない並びは空。
     const materials = [
       material({ objectGlobalIds: [typeId(1)] }),
       material({ objectGlobalIds: [typeId(2)] }),
     ];
 
-    const cells = cellsOf({ materials, stacks: [undefined, undefined] });
+    const cells = cellsOf({ materials, stacks: [] });
 
     expect(cells).toHaveLength(2);
     expect(cells.map((cell) => cell.accepts?.name)).toEqual(['type#1', 'type#2']);
@@ -236,7 +235,7 @@ describe('材料の枠', () => {
       material({ objectGlobalIds: [typeId(2)] }),
     ];
 
-    const cells = cellsOf({ materials, stacks: [stack(typeId(1)), undefined] });
+    const cells = cellsOf({ materials, stacks: [stack(typeId(1))] });
 
     expect(cells).toHaveLength(2);
     expect(cells[0].card?.name, '入っている枠').toBe('held#1');

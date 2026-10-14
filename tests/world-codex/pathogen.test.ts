@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import type { PropertyValue } from '../../src/domain/PropertyValue';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
@@ -202,12 +204,12 @@ describe('全身の菌と免疫', () => {
     expect(prop('pathogen').number, '段が上がった次の回から減りに転じる').toBeLessThan(peak);
   });
 
-  it('罹って治った体は、素の60より高いところで止まる', () => {
+  it('罹って治った体は、素の高さより高いところで止まる', () => {
     // 獲得免疫。いちばん上の段（primed）だけが自分を引き戻すので、上げた分は使い切られずに残る。
     // 押し下げ2つ（惨め-10と寝不足-15）を当てて、罹る前と後で段が変わることを見る。
     prop('happiness').setNumberWithoutEvents(0);
     prop('wakefulness').setNumberWithoutEvents(0);
-    expect(prop('immunity').stage?.name, '素の60では、2つ重なると落ちる').toBe('weakened');
+    expect(prop('immunity').stage?.name, '素の高さでは、2つ重なると落ちる').toBe('weakened');
     prop('happiness').setNumberWithoutEvents(75);
     prop('wakefulness').setNumberWithoutEvents(192);
 
@@ -215,8 +217,12 @@ describe('全身の菌と免疫', () => {
     live(10 * DAY);
 
     expect(prop('pathogen').number, '感染は収まっている').toBe(0);
-    expect(prop('immunity').number, '素の60より高い').toBeGreaterThan(60);
-    expect(prop('immunity').number, 'いちばん上の段を抜けたところで止まる').toBeLessThan(70);
+    expect(prop('immunity').number, '素の高さより高い').toBeGreaterThan(
+      prop('immunity').def.initialValueWithoutRoll,
+    );
+    expect(prop('immunity').number, 'いちばん上の段を抜けたところで止まる').toBeLessThan(
+      prop('immunity').def.lowerBoundOfStage('primed')!,
+    );
 
     prop('happiness').setNumberWithoutEvents(0);
     prop('wakefulness').setNumberWithoutEvents(0);
@@ -252,6 +258,22 @@ describe('全身の菌と免疫', () => {
     expect(prop('vitamin').stage?.name, 'ビタミンは削れるが、免疫を押す段までは落ちない').toBe('waning');
   });
 
+  it('生肉を1日3つ食べても、脂は1日に要るぶんへ届かない（Voyage.md 3.9.3節）', () => {
+    // 3つは文書の献立（「1 日 3 つ」）。1切れが運ぶ脂は、実際に食べて増えたぶんで測る。
+    const perDay = Number(/それでも 1 日 (\d+) つは/.exec(readFileSync('docs/world/Voyage.md', 'utf8'))?.[1]);
+    expect(perDay, 'Voyage.md 3.9.3節の献立が読めない').toBeGreaterThan(0);
+    const balance = parse(readFileSync('stats/balance.yaml', 'utf8')) as {
+      daily_needs: { property: string; daily_need: number }[];
+    };
+    const dailyLipid = balance.daily_needs.find(({ property }) => property === 'lipid')!.daily_need;
+
+    prop('lipid').setNumberWithoutEvents(0);
+    eatRawMeat();
+    const perMeat = prop('lipid').number;
+    expect(perMeat, '生肉は脂を運ぶ').toBeGreaterThan(0);
+    expect(perMeat * perDay).toBeLessThan(dailyLipid);
+  });
+
   it('ビタミン不足を抱えて出れば、同じ献立で初日のうちに発熱する', () => {
     // 押し下げ（-15）のぶん最上段へ届くのが遅れ、遅れている間の正味では1切れぶんを引き切れない。
     // **献立は上のテストと同じ**なので、崩すのは食べ方ではなく出航時の体のほう。
@@ -259,7 +281,7 @@ describe('全身の菌と免疫', () => {
     expect(prop('vitamin').stage?.name).toBe('deficient');
     expect(prop('immunity').getEffectiveValue(), '押し下げ1つぶん').toBe(45);
     const held = [...HELD_AT_SEA, 'vitamin'];
-    /** 3切れ目が入って発熱の段へ乗るtick（0.59日目）。 */
+    /** 3切れ目が入って発熱の段へ乗るtick。 */
     const FEVER_ONSET = 58;
 
     const beforeOnset = liveEatingOnlyRawMeat(FEVER_ONSET - 1, held);

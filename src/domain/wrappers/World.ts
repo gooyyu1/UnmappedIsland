@@ -1,4 +1,5 @@
 import { ObjectWrapper } from './ObjectWrapper';
+import type { WorldObject } from '../WorldObject';
 import type { Rng } from '../Rng';
 import { HOURS_PER_DAY, MINUTES_PER_HOUR } from '../worldTime';
 
@@ -6,8 +7,17 @@ import { HOURS_PER_DAY, MINUTES_PER_HOUR } from '../worldTime';
  * world（唯一のシングルトン、GameElementDefinition.md 15節）の包み（ObjectWrapper）。
  *
  * worldがどのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みのものだけを実装している。
+ *
+ * **包めるのは、セッションが結び付けたworldだけ**（WorldSession.createWorld）。結び付いていない
+ * worldを包むと、時計を持たないセッションの物を時計付きとして扱うことになる。
  */
 export class World extends ObjectWrapper {
+  constructor(instance: WorldObject) {
+    super(instance);
+    if (!instance.session.isWorld(instance))
+      throw new Error('Worldで包めるのは、WorldSession.createWorldで生成したworldだけです。');
+  }
+
   get day(): number {
     return this.effectiveNumberOf(this.words.dayId);
   }

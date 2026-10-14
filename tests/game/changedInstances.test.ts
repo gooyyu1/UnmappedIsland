@@ -3,7 +3,6 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldChange } from '../../src/domain/WorldChange';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import {
   bornInstances,
   lungeTargetsByInstance,
@@ -86,8 +85,7 @@ object_defs:
       .load('agent.yaml', AGENT_YAML)
       .buildAndReset();
     session = new WorldSession(codex, fixedRng(0.5));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     ground = spawn('ground');
     expect(ground.moveToSlotOrRejection(worldInstance.getSlot(slot('locations')))).toBeUndefined();
   });

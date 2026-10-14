@@ -1,5 +1,5 @@
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import type { Reporter, TestModule, Vitest } from 'vitest/node';
 
 /** 落ちた回の記録の置き場（作業ツリーの根から。`.gitignore` 済み）。 */
@@ -54,7 +54,8 @@ export class FailedRunRecorder implements Reporter {
   }
 
   private failuresIn(module: TestModule): Failure[] {
-    const where = relative(this.root, module.moduleId);
+    // 見出しは検査の名前と同じく `/` 区切りで書く（`relative` は Windows では `\` を返す）。
+    const where = relative(this.root, module.moduleId).split(sep).join('/');
     const moduleErrors = module.errors();
     return [
       ...(moduleErrors.length > 0 ? [{ where, name: '（ファイル全体）', errors: moduleErrors }] : []),

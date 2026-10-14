@@ -3,6 +3,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { startNewGame } from '../../src/domain/generation/NewGame';
 import { heatHazeFor } from '../../src/game/looks/heatHaze';
 import { applyScenario, bundledScenario, parseScenario, scenarioNames } from '../../src/scenario/Scenario';
+import { rainyWeathersOf } from '../support/rainyWeathers';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 
@@ -123,11 +124,10 @@ describe('テスト用シナリオ', () => {
     game.session.advanceWorldTime(game.world.rawMinutesPerTick * 24);
 
     // 飽和した大気が重みを立てる候補（ClimateSystem.md 4.3節）。**曇りも入る**——`saturated` が
-    // 立てないのは `sunny`/`clear` で、`cloudy` は僅かに残るため、雨の3つだけでは足りない。
-    expect(
-      ['cloudy', 'light_rain', 'heavy_rain', 'storm'],
-      '飽和した大気が重みを立てた候補しか選ばれない',
-    ).toContain(game.world.weather);
+    // 立てないのは `sunny`/`clear` で、`cloudy` は僅かに残るため、雨だけでは足りない。
+    expect(['cloudy', ...rainyWeathersOf(codex)], '飽和した大気が重みを立てた候補しか選ばれない').toContain(
+      game.world.weather,
+    );
   });
 
   it('土地の指定があると、置いたものはその土地に乗る', () => {

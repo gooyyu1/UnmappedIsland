@@ -2,7 +2,6 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent, makeBrightEnoughForAnyAction } from '../support/illumination';
@@ -14,8 +13,8 @@ import type { RecipeDef } from '../../src/domain/RecipeDef';
  * 仕掛ける→待つ→掛かる→怪我が刺さる→死ぬか生き延びる、の一巡を通す。
  */
 describe('traps.yamlのくくり罠', () => {
-  // 外側のpickの重みは 空振り40・草食10・肉食10（合計60）。内側は草原なら 空振り8・ヤケイ10・
-  // ネズミ6（合計24）、肉食側は 空振り8・ネズミ6（合計14）。fixedRngは両方の階層へ同じ値を渡すので、
+  // 外側のpickの重みは 空振り40・草食10・肉食10。内側は草原なら 空振り8・ヤケイ10・
+  // ネズミ6、肉食側は 空振り8・ネズミ6。fixedRngは両方の階層へ同じ値を渡すので、
   // 引きは2つの区間の重なりで決まる。
   /** 何も寄って来ない引き（外側の空振り）。 */
   const NOTHING_CAME = 0.2;
@@ -58,8 +57,7 @@ describe('traps.yamlのくくり罠', () => {
   /** 草原に立つプレイヤーと、その足元へ仕掛けた罠から始める。rollがpickの引きを決める。 */
   function open(roll: number, locationName = 'grassland'): void {
     session = new WorldSession(codex, fixedRng(roll));
-    world = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(world));
+    world = session.createWorld().instance;
     grassland = spawnInto(locationName, world, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, grassland, 'characters');
     // 掛かった獲物の解体は明るさを要求する（IlluminationSystem.md 5節）。ここで見たいのは罠なので、
@@ -153,7 +151,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('掛かった獲物は罠のスロットへ入り、その罠の怪我が1つ刺さる', () => {
-    // spawnの配列が順に生むので、獲物を生んでからその中へ怪我を生む（into: child、5.3節）。
+    // spawnの配列が順に生むので、獲物を生んでからその中へ怪我を生む（into: child、同 5.3節）。
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
 
@@ -163,7 +161,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('掛かっている間、罠は止まる', () => {
-    // 見回らなければ罠は増えない（6節）。回収するまで次の抽選は回らない。
+    // 見回らなければ罠は増えない（同 6節）。回収するまで次の抽選は回らない。
     open(CATCHES_FOWL);
     tickUntilCaught();
     const stopped = snare.tryGetProperty(catchRemainingId)!.getEffectiveValue();
@@ -174,7 +172,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('掛かった獲物は警戒を打ち消され、仕留めやすくなる', () => {
-    // 拘束（5節）。気を失った動物への宣言とまったく同じ内容で、resistsが成立しないので
+    // 拘束（同 5節）。気を失った動物への宣言とまったく同じ内容で、resistsが成立しないので
     // 飛び出さず、仕留めの重みは跳ね上がる。
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
@@ -186,14 +184,14 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('ネズミは掛かったその場で死に、死体は罠の中に残る', () => {
-    // 血が6mLしかないので、傷が最初の1tickで奪う15mLに耐えられない（5.1節）。掛かった tick の
+    // 血が6mLしかないので、傷が最初の1tickで奪う15mLに耐えられない（同 5.1節）。掛かった tick の
     // うちに死体へ置き換わるので、生きたネズミは1度も画面に出ない。
     open(CATCHES_RAT);
     const prey = tickUntilCaught();
     expect(prey.def.name, '掛かった瞬間には既に死体').toBe('rat_carcass');
 
     // 死体はanimalタグを持たないが、枠もタイマーのゲートもquarryで受けるので、罠の中に残り、
-    // 次の抽選も回らない（1.1節・6節）。
+    // 次の抽選も回らない（同 1.1節・6節）。
     const stopped = snare.tryGetProperty(catchRemainingId)!.getEffectiveValue();
     tick(4);
     expect(caught().map((object) => object.def.name)).toEqual(['rat_carcass']);
@@ -203,7 +201,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('ヤケイは同じ傷で生き延びる', () => {
-    // 血が80mLあるので、30〜60mLを奪われても残る。**同じ1枚の傷が体格で意味を変える**（5.1節）。
+    // 血が80mLあるので、くくり罠の傷に奪われても残る。**同じ1枚の傷が体格で意味を変える**（同 5.1節）。
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
 
@@ -215,8 +213,117 @@ describe('traps.yamlのくくり罠', () => {
     expect(prey.tryGetProperty(bloodId)!.getEffectiveValue()).toBeGreaterThan(0);
   });
 
+  it('くくり罠の傷で血が尽きるのは、どの深さでもネズミだけ', () => {
+    // injuries.yamlのsnare_laceration（同 5.1節）。尽きるかは奪う量の幅と体格の比べで決まる。**獣は
+    // 定義から数え上げる**ので、獣を足せばここで顔ぶれが変わったことが分かる。
+    const bleedingId = codex.propertyNames.getId('bleeding');
+    const bleedsOut = (animal: string, end: 'min' | 'max'): boolean => {
+      open(NOTHING_CAME);
+      const prey = spawnInto(animal, snare, 'catch');
+      const wound = spawnInto('snare_laceration', prey, 'injuries');
+      const bleeding = wound.getProperty(bleedingId);
+      const roll = bleeding.def.initialValueReading;
+      if (roll.kind !== 'roll') throw new Error('bleeding は初期値をロールしない');
+      bleeding.setNumber(end === 'max' ? roll.max : roll.min);
+      prey.getProperty(bloodId).setNumber(prey.getProperty(bloodId).def.range!.max);
+      tickUntil(() => !caught().includes(prey) || bleeding.number === 0, 10);
+      return !caught().includes(prey);
+    };
+    const beasts = codex.objectDefNamesWithTag(codex.vocabulary.world.animalTagId);
+    expect(beasts.length, '検査対象が無い（animalタグが変わっていないか）').toBeGreaterThan(1);
+
+    expect(
+      beasts.filter((animal) => bleedsOut(animal, 'min')),
+      '浅く掛かっても尽きる',
+    ).toEqual(['rat']);
+    expect(
+      beasts.filter((animal) => bleedsOut(animal, 'max')),
+      '深く掛かっても尽きるのは同じ顔ぶれ',
+    ).toEqual(['rat']);
+  });
+
+  /** 掛かったヤケイと、刺さったくくり罠の傷。傷の掛かり方（初期値のロール）をその場で据え直す。 */
+  function fowlWithSnareWound(rolls: { bleeding?: 'min' | 'max'; severity?: 'min' | 'max' }): {
+    prey: WorldObject;
+    wound: WorldObject;
+  } {
+    open(CATCHES_FOWL);
+    const prey = tickUntilCaught();
+    const [wound] = prey.tryGetSlot(codex.slotNames.getId('injuries'))!.contents;
+    for (const [name, end] of Object.entries(rolls)) {
+      const property = wound.getProperty(codex.propertyNames.getId(name));
+      const roll = property.def.initialValueReading;
+      if (roll.kind !== 'roll') throw new Error(`${name} は初期値をロールしない`);
+      property.setNumber(end === 'max' ? roll.max : roll.min);
+    }
+    prey.getProperty(bloodId).setNumber(prey.getProperty(bloodId).def.range!.max);
+    return { prey, wound };
+  }
+
+  it('くくり罠に最も深く掛かったヤケイだけが、血が止まるまでに失血の域へ入る', () => {
+    // 同 5.1節。奪う量は掛かりの深さ（bleedingのロール）で変わり、深い端でだけヤケイが exsanguinated に入る。
+    const bloodStageWhenClotted = (bleeding: 'min' | 'max'): string | undefined => {
+      const { prey, wound } = fowlWithSnareWound({ bleeding });
+      const bleedingId = codex.propertyNames.getId('bleeding');
+      tickUntil(() => wound.getProperty(bleedingId).number === 0, 10);
+      return prey.getProperty(bloodId).stage?.name;
+    };
+
+    expect(bloodStageWhenClotted('max'), '最も深く掛かると失血の域').toBe('exsanguinated');
+    expect(bloodStageWhenClotted('min'), '浅く掛かれば入らない').not.toBe('exsanguinated');
+  });
+
+  it('最も深く掛かったヤケイも、出血を早く止めるほど浅い段で済む', () => {
+    // 同 5.1節「見回りが早ければ、落ちる先が変わります」。止めるのが早ければ意識が残り、少し遅れると
+    // 傷の痛みと合わさって気を失い、最後まで流れれば失血の域へ入る。止血の治療具が閉じるのは
+    // 出血のゲート（InjurySystem.md 3.1節）なので、ここでは流れそのものを尽きさせて同じ形を作る。
+    const bleedingId = codex.propertyNames.getId('bleeding');
+    const consciousnessId = codex.propertyNames.getId('consciousness');
+    const outcomeAfter = (bleedTicks: number | undefined): string => {
+      const { prey, wound } = fowlWithSnareWound({ bleeding: 'max' });
+      if (bleedTicks === undefined) tickUntil(() => wound.getProperty(bleedingId).number === 0, 10);
+      else {
+        tick(bleedTicks);
+        wound.getProperty(bleedingId).setNumber(0);
+      }
+      if (prey.getProperty(bloodId).isInStage('exsanguinated')) return 'exsanguinated';
+      return prey.getProperty(consciousnessId).isInStage('unconscious') ? 'unconscious' : 'conscious';
+    };
+
+    const outcomes = [1, 2, 3].map((ticks) => outcomeAfter(ticks));
+    expect(outcomes, '早く止めれば意識が残る').toContain('conscious');
+    expect(outcomes, '少し遅れれば気を失う').toContain('unconscious');
+    expect(outcomes.indexOf('conscious'), '早いほうが浅い').toBeLessThan(outcomes.indexOf('unconscious'));
+    expect(outcomeAfter(undefined), '最後まで流れれば失血の域').toBe('exsanguinated');
+  });
+
+  it('くくり罠の傷は、深く掛かった個体だけが敗血症まで届く', () => {
+    // TrapSystem.md 5.1節。膿む速さは体格を見ないので、届くかを分けるのは傷の重さ（severityのロール）だけ。
+    // 浅い個体は膿み切る前に傷のほうが消える。
+    const reachesSepticemia = (severity: 'min' | 'max'): boolean => {
+      const { prey, wound } = fowlWithSnareWound({ severity, bleeding: 'min' });
+      const pathogenId = codex.propertyNames.getId('pathogen');
+      const hydration = prey.getProperty(codex.propertyNames.getId('hydration'));
+      return tickUntil(() => {
+        // 枠の中の獣は渇いていく（TrapSystem.md 5.4節）。見たいのは傷の重さで分かれることなので、渇き死が先に
+        // 来て「届かない」になる経路を、毎 tick 満水へ戻して塞ぐ。
+        hydration.setNumber(hydration.def.range!.max);
+        return (
+          prey.tryGetProperty(pathogenId)?.stage?.name === 'septicemic' ||
+          wound.parent === undefined ||
+          prey.parent === undefined
+        );
+      }, 2000)
+        ? prey.parent !== undefined && prey.tryGetProperty(pathogenId)?.stage?.name === 'septicemic'
+        : false;
+    };
+
+    expect(reachesSepticemia('max'), '深く掛かった個体は届く').toBe(true);
+    expect(reachesSepticemia('min'), '浅く掛かった個体は届かない').toBe(false);
+  });
+
   it('土地が宣言していない動物は掛からない', () => {
-    // 罠の側は1行も書き換えずに、土地のpropsの有無だけで決まる（3節）。岩礁海岸はヤケイを
+    // 罠の側は1行も書き換えずに、土地のpropsの有無だけで決まる（同 3節）。岩礁海岸はヤケイを
     // 宣言していないので、草原と同じ引きでも重みが0になり、その候補ごと抽選から外れる。
     open(CATCHES_FOWL, 'rocky_coast');
     const caughtNames = new Set<string>();
@@ -233,7 +340,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('餌を仕掛けると、その食性の卓が引かれやすくなる', () => {
-    // 餌は掛かる確率を上げるのと、掛かる相手を食性で寄せるのを同時に言う（4節）。
+    // 餌は掛かる確率を上げるのと、掛かる相手を食性で寄せるのを同時に言う（同 4節）。
     open(NOTHING_CAME);
     const before = {
       miss: snare.tryGetProperty(missWeightId)!.getEffectiveValue(),
@@ -277,7 +384,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('肉の餌でも同じで、満杯なら断る理由を名乗る', () => {
-    // 草の餌と肉の餌は同じ形の宣言が2つ（4節）。片方だけ理由が届く、が起きないことを見る。
+    // 草の餌と肉の餌は同じ形の宣言が2つ（TrapSystem.md 4節）。片方だけ理由が届く、が起きないことを見る。
     open(NOTHING_CAME);
     const more = baitUntilFull('coconut_crab', 'add_meat_bait', 2);
     expect(snare.tryGetProperty(meatBaitId)!.number, '上限まで仕掛けてある').toBe(24);
@@ -293,7 +400,7 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('獲物が入っている間は速く傷み、壊れれば中身は土地へこぼれる', () => {
-    // 放置の罰は獲物と罠の両方を失うこと（6.1節）。壊れた罠の中身は道連れにならず親へこぼれる。
+    // 放置の罰は獲物と罠の両方を失うこと（TrapSystem.md 6.1節）。壊れた罠の中身は道連れにならず親へこぼれる。
     // 拘束のmodifyは消えるが、警戒の実体値は罠の中でも引き切っているので戻らない（同節）。
     open(CATCHES_FOWL);
     const empty = snare.tryGetProperty(durabilityId)!.getEffectiveValue();
@@ -314,7 +421,7 @@ describe('traps.yamlのくくり罠', () => {
   it('こぼれた獲物は、罠の傷が癒えるまで残り、そのあと立ち去る', () => {
     // 立ち去りまでの残りは土地の地面に居る間だけ減る（HuntingSystem.md 5.6節）ので、掛かっている
     // 間は止まる。**こぼれても、くくり罠の傷が痛む間はまだ動き出さない**（同節の深手のゲート）
-    // ——罠を放置した罰は「罠を失う」が先に来て、獲物を失うのはその傷が癒えてからになる（6.1節）。
+    // ——罠を放置した罰は「罠を失う」が先に来て、獲物を失うのはその傷が癒えてからになる（TrapSystem.md 6.1節）。
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
     const stayWhenCaught = prey.tryGetProperty(stayRemainingId)!.getEffectiveValue();
@@ -421,7 +528,7 @@ describe('traps.yamlのくくり罠', () => {
  * 掘る→待つ→落ちる→怪我が刺さる、の一巡と、杭を打つと刺す傷が入れ替わることを通す。
  */
 describe('traps.yamlの落とし穴', () => {
-  // 外側のpickの重みは 空振り40・草食10（合計50）。内側は森なら 空振り8・イノシシ2（合計10）。
+  // 外側のpickの重みは 空振り40・草食10。内側は森なら 空振り8・イノシシ2。
   // fixedRngは両方の階層へ同じ値を渡すので、0.85は両方で末尾の区間に入る。
   /** 草食の卓を引き、その中でイノシシに当たる引き。 */
   const CATCHES_BOAR = 0.85;
@@ -446,8 +553,7 @@ describe('traps.yamlの落とし穴', () => {
   /** 森に掘った落とし穴から始める。イノシシを宣言している土地は森と密林だけ（locations.yaml）。 */
   function open(roll: number): void {
     session = new WorldSession(codex, fixedRng(roll));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     forest = spawnInto('forest', worldInstance, 'locations');
     // 掘る手間そのものはレシピが持つ（最後のit）ので、ここでは掘り終えた穴から始める。
     pitfall = spawnInto('pitfall', forest, 'fixtures');
@@ -567,7 +673,7 @@ describe('traps.yamlの落とし穴', () => {
   });
 
   it('餌が満杯の穴も、重ねた餌を断る理由を名乗る', () => {
-    // くくり罠とまったく同じ宣言（4節）なので、理由の届き方も同じでなければならない。
+    // くくり罠とまったく同じ宣言（同 4節）なので、理由の届き方も同じでなければならない。
     open(CATCHES_BOAR);
     for (let i = 0; i < 2; i++) {
       const taro = spawnInto('taro', forest, 'items');

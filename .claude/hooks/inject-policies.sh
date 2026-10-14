@@ -29,13 +29,14 @@ context=""
 if [ -f "$POLICIES" ]; then
   context+="過去のセッションで記録した、ユーザーの価値観。A・Bどちらもあり得る場面ではこれに従い、訊き直さない。"
   context+=$'\n\n'
-  context+="$(<"$POLICIES")"
+  # `$(<file)` は行末の `\r` を落とさないので、CRLF の作業ツリーではそのまま文脈へ届く。
+  context+="$(tr -d '\r' <"$POLICIES")"
   context+=$'\n\n'
 fi
 
 if [ -f "$PRINCIPLES" ]; then
   # 見出しが結論そのものなので、一覧だけで「その基準が在ること」に気づける。
-  headings=$(grep -E '^## ' "$PRINCIPLES" | sed 's/^## /- /' || true)
+  headings=$(tr -d '\r' <"$PRINCIPLES" | grep -E '^## ' | sed 's/^## /- /' || true)
   if [ -n "$headings" ]; then
     context+="ゲーム内容の判断基準（docs/concept/DesignPrinciples.md の結論一覧。"
     context+="ゲーム内容に関わる判断をするときは本文も読む）:"
