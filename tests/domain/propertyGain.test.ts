@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { InteractionGains } from '../../src/domain/PropertyGain';
-import { World } from '../../src/domain/wrappers/World';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 操作そのものが増やした値の観測（`WorldSession.observeGains`、docs/ui/CardInteraction.md 10.1節）の
@@ -42,9 +42,9 @@ object_defs:
   world:
     singleton: true
     props:
-      minutes_per_tick: {value: 15}
-      minute: {value: 0, range: {min: 0, max: 60}, on_max: {add: {self: {minute: -60, hour: 1}}}}
-      hour: {value: 0, range: {min: 0, max: 24}, on_max: {add: {self: {hour: -24, day: 1}}}}
+      minutes_per_tick: {value: ${MINUTES_PER_TICK}}
+      minute: {value: 0, range: {min: 0, max: ${MINUTES_PER_HOUR}}, on_max: {add: {self: {minute: -${MINUTES_PER_HOUR}, hour: 1}}}}
+      hour: {value: 0, range: {min: 0, max: ${HOURS_PER_DAY}}, on_max: {add: {self: {hour: -${HOURS_PER_DAY}, day: 1}}}}
       day: {value: 1}
     slots:
       locations: {cell: {accept: {tag: place}}}
@@ -143,8 +143,7 @@ object_defs:
     codex = loader.buildAndReset();
 
     session = new WorldSession(codex, fixedRng(0));
-    const world = spawn('world');
-    session.adoptWorld(new World(world));
+    const world = session.createWorld().instance;
     const land = spawn('land');
     expect(land.moveToSlotOrRejection(world.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
     player = spawn('survivor');

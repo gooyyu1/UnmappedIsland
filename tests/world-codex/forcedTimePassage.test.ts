@@ -2,9 +2,9 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
+import { MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 限界に達した値が起こす、強制的な時間経過（docs/world/Characters.md 限界節）を、実ファイルの
@@ -19,7 +19,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
   const TRAVEL_MINUTES = 60;
 
   /**
-   * 3つの限界。**違うのは見る値・長さ・戻る量だけ**なので、同じ表に並ぶ（player_character.yaml）。
+   * 限界の表。**違うのは見る値・長さ・戻る量だけ**なので、同じ表に並ぶ（player_character.yaml）。
    *
    * `after` は強制の時間が過ぎ切った時点の値。戻しはtick毎なので、**強制の間の減りを引いた正味**に
    * なる——空身で痛みも無いこの状態で減るのは眠気だけ（-1/tick）で、眠り込みの +3/tick は差し引き
@@ -49,8 +49,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
   /** 道1本で繋いだ2つの土地と、密林に立つプレイヤー。 */
   function open(): void {
     session = new WorldSession(codex);
-    world = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(world));
+    world = session.createWorld().instance;
     jungle = spawnInto('jungle', world, 'locations');
     grassland = spawnInto('grassland', world, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');
@@ -85,6 +84,15 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
     expect(path.tryGetAction('travel', player)?.tryExecute()).toBe(true);
     return session.world!.totalMinutes - before;
   }
+
+  it('限界の表は、プレイヤーの押す機会を持たない操作を1つ残らず挙げている', () => {
+    // 表に無い限界は、下のどの検査にも回されないまま緑で通る。
+    const character = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER));
+
+    expect(character.tickTriggers.map((trigger) => trigger.interaction.name).sort()).toEqual(
+      LIMITS.map(({ turn }) => turn).sort(),
+    );
+  });
 
   it.each(LIMITS)(
     '$prop が尽きると、$turn で $minutes 分が強制的に過ぎ、その間に戻る',
@@ -230,9 +238,6 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
     /** 休息（rest）が戻す割（player_character.yaml）。倒れ込みもこの割に合わせてある。 */
     const RECOVERY_PER_TICK = 1;
 
-    /** 1 tickの長さ（分。core.yaml の minutes_per_tick）。 */
-    const MINUTES_PER_TICK = 15;
-
     /** 倒れ込みが強制する120分（player_character.yaml の collapse）の間に回るtickの数。 */
     const COLLAPSE_TICKS = 120 / MINUTES_PER_TICK;
 
@@ -319,7 +324,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
     /**
      * 画面に出る回復の粒（`WorldSession.observeGains`、docs/ui/CardInteraction.md 10.1節）が示すのは、
      * その操作がそのtickで実際に動かした量。宣言した量をそのまま出すと、荷を担いだまま倒れ込んだ
-     * プレイヤーは +20 の粒を見ながら +4 しか戻っていない。
+     * プレイヤーは、荷の削りぶんだけ実際より大きい粒を見ることになる。
      */
     describe('粒が示す量も、同じ正味', () => {
       /** bodyの間にプレイヤーの値が増えた量を、プロパティ名から引ける形にする。 */
@@ -348,8 +353,14 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
 
         const amounts = gainsDuring(rest);
 
-        expect(valueOf('stamina') - 50, '1時間の休憩で実際に戻った量').toBeCloseTo(NET_PER_TICK * 4, 6);
-        expect(amounts.get('stamina'), '粒もその量').toBeCloseTo(NET_PER_TICK * 4, 6);
+        expect(valueOf('stamina') - 50, '1時間の休憩で実際に戻った量').toBeCloseTo(
+          NET_PER_TICK * (MINUTES_PER_HOUR / MINUTES_PER_TICK),
+          6,
+        );
+        expect(amounts.get('stamina'), '粒もその量').toBeCloseTo(
+          NET_PER_TICK * (MINUTES_PER_HOUR / MINUTES_PER_TICK),
+          6,
+        );
       });
 
       /** 幸福度を削る側（player_character.yaml）。ここで使う危険域の段は、どれも-0.5/tick。 */

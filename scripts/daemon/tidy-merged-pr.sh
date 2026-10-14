@@ -10,15 +10,15 @@
 #   MENDED    <PR番号>              … 積まれていたPRを、理由を残して書いた本人へ差し戻した
 #   UNMENDED  <PR番号>: <理由>      … その差し戻しに失敗した（`直し待ち` が付いていない）
 #   UNSTACKED <PR番号>: <理由>      … 積まれていたPRを引けなかった（差し戻せていない）
-#   CLOSED    <issue番号>           … PR本文の `Closes #N` が閉じたことの確認
-#   OPEN      <issue番号>           … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
-#   UNKNOWN   <issue番号>: <理由>   … その issue を引けなかった（閉じたかどうかは分からない）
 #   SYNCED    <コミット>            … 本体のチェックアウトを新しい `main` へ進めた
 #   INSTALLED                       … 依存が変わったので本体で `npm install` した
 #   DIRTY     <本体のパス>: <理由>  … 本体に未コミットの変更があるので触らなかった
 #   終了コード 0 … すべて片付いた
 #   終了コード 1 … マージ済みのPRではない（何もしていない）
-#   終了コード 2 … 後片付けに残りがある（上の `UNMENDED`・`UNSTACKED`・`OPEN`・`UNKNOWN`・`DIRTY`）
+#   終了コード 2 … 後片付けに残りがある（上の `UNMENDED`・`UNSTACKED`・`DIRTY`）
+#
+# **`Closes #N` が閉じたかはここでは見ない。** 閉じ損ねを閉じるのは盤面の `CLOSE`
+# （[`board-move.mjs`](board-move.mjs)。`agent-ops/board-design.md` 2.10.6節）。
 #
 # ## 後片付けの残りは、`<タグ> <対象>: <理由>` で出す
 #
@@ -27,15 +27,6 @@
 # から始めることになる。理由を持っているのは打った側（`gh` の標準エラー・`git status` の中身）なので、
 # 捨てずに同じ行へ載せる（[`archive-session.sh`](archive-session.sh) の `DIRTY` と同じ形。issue #1557
 # では、パスだけの行を読んだ側が実際に誤読した）。**出力は1行1件**なので、改行は空白へ畳む。
-#
-# ## 引けなかったことは、`OPEN` として出さない
-#
-# `OPEN` は**閉じるはずの issue が開いたまま**という意味で、読んだ人が次に見るのは `Closes` の
-# 書き方。**引けなかっただけのときに同じ行が出ると、そこには無い誤りを探しに行く。** 状態が分から
-# ないことは分からないこととして、`UNKNOWN <issue番号>: <理由>` で出す。
-#
-# **条件式の中の `$(gh …)` では、この区別が付かない。** `set -e` が効かず、転んだ `gh` の空文字が
-# そのまま `OPEN` へ倒れる（`CLOSED` との比較に外れるため）——だから終了コードで受ける。
 #
 # ## GitHub が肩代わりするもの
 #
@@ -95,7 +86,7 @@
 #   `\r` を行の中身として残す**ので、見出しに当たらない（[`brake.sh`](brake.sh) が `## 手綱` の節を
 #   引く形）。同じ理由で `grep -x` も当たらない。
 # - **落とさない。** `grep -o` で数字や識別子を抜き出すとき。`\r` は抜き出す側に入らない
-#   （下の `Closes` の番号を拾う形と、[`dispatch-review.sh`](dispatch-review.sh) の同じ形）。
+#   （[`dispatch-review.sh`](dispatch-review.sh) が `Closes` の番号を拾う形）。
 #
 # **落とし方は、値が変数へ入っているなら `${var//$'\r'/}`。** 外部の `tr` を起こす必要は無い。
 # パイプを流れているものだけが `| tr -d '\r' |` を要る（[`checked-items.sh`](../agent/checked-items.sh)）。
@@ -133,13 +124,12 @@ HERE="$(cd "$HERE" && pwd)"
 
 # **PRは1回だけ引く。** 項目ごとに `gh pr view` を打つと、その数だけ往復が増えるうえ、**項目ごとに
 # 見ている時点がずれる**。
-pr=$(gh pr view "$PR" --json body,state,headRefName)
+pr=$(gh pr view "$PR" --json state,headRefName)
 state=$(jq -r '.state' <<<"$pr")
 if [ "$state" != "MERGED" ]; then
   echo "マージされていない（state=$state）" >&2
   exit 1
 fi
-body=$(jq -r '.body // ""' <<<"$pr")
 head=$(jq -r '.headRefName' <<<"$pr")
 
 leftover=0
@@ -197,28 +187,10 @@ else
 fi
 rm -f "$stderr"
 
-# `Closes #123` だけを拾う。番号だけの参照（`#123`）では閉じないので、ここでも見ない。
-closes=$(grep -oiE 'closes[[:space:]]+#[0-9]+' <<<"$body" | grep -oE '[0-9]+' | sort -u || true)
-# 引けなかった理由は標準エラーに在るが、この `gh` も**標準出力が値**なので、混ぜずに受ける。
-stderr="$(mktemp)"
-while read -r issue; do
-  [ -n "$issue" ] || continue
-  # **状態は終了コードで受ける**（上の「引けなかったことは、`OPEN` として出さない」）。
-  if ! issue_state=$(gh issue view "$issue" --json state --jq '.state' 2>"$stderr"); then
-    unfinished UNKNOWN "$issue" "$(cat "$stderr")"
-  elif [ "$issue_state" = "CLOSED" ]; then
-    echo "CLOSED $issue"
-  else
-    echo "OPEN $issue"
-    leftover=1
-  fi
-done <<<"$closes"
-rm -f "$stderr"
-
 # 本体は作業ツリーの共有先なので、進める前に汚れていないことを見る。**未追跡は数え上げない**
 # ——妨げになるかは、進める先に同じパスが在るかで決まるので、判定は `checkout` 自身に任せる。
 #
-# **その `checkout` の失敗も `DIRTY` で受ける。** `set -e` へ落とすと、既に済んだ `MENDED`・`CLOSED`
+# **その `checkout` の失敗も `DIRTY` で受ける。** `set -e` へ落とすと、既に済んだ `MENDED`
 # ごと「打てなかった」の一語になり、盤面は覚えを残さないので**毎周同じところまで打ち直し続ける**
 # （[`board-move.mjs`](board-move.mjs) の `TIDY` が覚えるのは、終了コード 0 と 2 だけ）。
 main_dir="$(cd "$HERE" && cd "$(git rev-parse --git-common-dir)/.." && pwd)"

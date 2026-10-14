@@ -6,6 +6,7 @@ import type { Slot } from './Slot';
 import type { TypeMatchRule } from './TypeMatchRule';
 import type { WorldObject } from './WorldObject';
 import type { ObjectGlobalId } from './GlobalId';
+import type { Requirement } from './Requirement';
 
 /**
  * その製作中オブジェクトが従っているレシピ（製作中オブジェクトでなければundefined）。
@@ -93,8 +94,21 @@ export function remainingRequirementsOf(inProgress: WorldObject): readonly Recip
   );
 }
 
+/** 残りの工程の要求1件（`match.key`）を、材料スロットの中身がどれだけ満たしているか。 */
+export interface HeldForRequirement {
+  /** 満たせている数。要求そのものの数（remainingRequirementsOf）と同じまとめ方で数える。 */
+  readonly held: number;
+
+  /**
+   * その要求へ当てた物（どの工程で当てたかは問わない）。**1つの物が2つの要求に入りうる**のは、
+   * 別々の工程で当てたときだけ——道具は消えないので、後の工程が別の要求へ当て直せる
+   * （heldPerRemainingRequirement）。
+   */
+  readonly allocated: ReadonlySet<WorldObject>;
+}
+
 /**
- * 残りの工程の要求（`match.key`）ごとに、材料スロットの中身で**満たせている数**
+ * 残りの工程の要求（`match.key`）ごとに、材料スロットの中身で**満たせている数と当てた物**
  * （製作中オブジェクトでなければ空）。要求そのものの数はremainingRequirementsOfが答える。
  *
  * **まとめ方は要求の数え方と同じ**（mergeRequirement）——素材は工程ごとに無くなるので足し合わせ、
@@ -104,27 +118,36 @@ export function remainingRequirementsOf(inProgress: WorldObject): readonly Recip
  * 道具として使った物を後の工程が素材として消費するのは成り立つ。残りの要求へ一度に当てると、
  * その物を数え落として「持っているのに足りない」と出る。消費した物は次の工程へ持ち越さない。
  */
-export function heldPerRemainingRequirement(inProgress: WorldObject): ReadonlyMap<string, number> {
+export function heldPerRemainingRequirement(
+  inProgress: WorldObject,
+): ReadonlyMap<string, HeldForRequirement> {
   const contents = materialsSlotOf(inProgress)?.contents ?? [];
+  const placed = requirementKeyOfCellHolding(inProgress);
   const consumed = new Set<WorldObject>();
   const held = new Map<string, MergedRequirement>();
+  const allocatedTo = new Map<string, Set<WorldObject>>();
 
   for (const step of remainingStepsOf(inProgress)) {
     const allocated = allocateContentsToRequirements(
       contents.filter((object) => !consumed.has(object)),
       step.requirements,
+      placed,
     );
     for (const requirement of step.requirements) {
       const taken = allocated.get(requirement) ?? [];
-      held.set(
-        requirement.match.key,
-        mergeRequirement(mergedFor(held, requirement), taken.length, requirement.consume),
-      );
+      const key = requirement.match.key;
+      held.set(key, mergeRequirement(mergedFor(held, requirement), taken.length, requirement.consume));
+      allocatedTo.set(key, new Set([...(allocatedTo.get(key) ?? []), ...taken]));
       if (requirement.consume) for (const object of taken) consumed.add(object);
     }
   }
 
-  return new Map([...held].map(([key, merged]) => [key, merged.consumed + merged.held]));
+  return new Map(
+    [...held].map(([key, merged]) => [
+      key,
+      { held: merged.consumed + merged.held, allocated: allocatedTo.get(key) ?? new Set() },
+    ]),
+  );
 }
 
 /** 同じ指定への要求を、消費されるぶんと手元に居続けるぶんに分けて数えた途中経過。 */
@@ -171,16 +194,33 @@ function mergeRequirement(merged: MergedRequirement, count: number, consume: boo
  * 答える。**当てた先は後から振り替える**（増加路を辿る＝二部グラフの最大マッチング）ので、宣言の順も
  * 中身の並び順も答えを変えない。揃わないときも当てられた数は最大なので、充足率
  * （currentStepSupplyRatio）は詰められるところまで詰めた値になる。
+ *
+ * **物はまず、自分の入っている枠の要求へ当てる**（placed、requirementKeyOfCellHolding）。振り替えるのは
+ * そのままでは揃わないときだけなので、置いたとおりで揃うなら割り当ても置いたとおりになり、枠に出る印
+ * （CardView.md 13節）が1つの束の中で2つの要求に割れない。
  */
 function allocateContentsToRequirements(
   contents: readonly WorldObject[],
   requirements: readonly RecipeRequirementDef[],
+  placed: ReadonlyMap<WorldObject, string>,
 ): ReadonlyMap<RecipeRequirementDef, readonly WorldObject[]> {
   // 要求1件は`count`個の受け口。どの受け口も物1つを受けるので、要求の個数は受け口の数だけで表せる。
   const openings = requirements.flatMap((requirement) =>
     Array.from({ length: requirement.count }, () => requirement),
   );
   const takenBy = new Map<WorldObject, number>();
+
+  // 置いた枠の要求へ先に当てる。どこから当て始めても、空いた受け口から増加路を辿れば最大に届く。
+  openings.forEach((requirement, opening) => {
+    const object = contents.find(
+      (candidate) =>
+        !takenBy.has(candidate) &&
+        placed.get(candidate) === requirement.match.key &&
+        requirement.requires(candidate.def),
+    );
+    if (object !== undefined) takenBy.set(object, opening);
+  });
+  const filled = new Set(takenBy.values());
 
   /**
    * その受け口へ物を1つ当てられたか。既に当たっている物でも、**その相手を別の物へ振り替えられるなら
@@ -198,13 +238,29 @@ function allocateContentsToRequirements(
     return false;
   };
 
-  for (let opening = 0; opening < openings.length; opening += 1) tryTakeFor(opening, new Set());
+  for (let opening = 0; opening < openings.length; opening += 1)
+    if (!filled.has(opening)) tryTakeFor(opening, new Set());
 
   const allocated = new Map<RecipeRequirementDef, WorldObject[]>(
     requirements.map((requirement) => [requirement, []]),
   );
   for (const [object, opening] of takenBy) allocated.get(openings[opening])?.push(object);
   return allocated;
+}
+
+/**
+ * 材料スロットの中身 → その物が入っている枠の受け入れ（`accept`）の指定（`match.key`）。
+ *
+ * 材料スロットの枠は要求の指定ごとに1つ（inProgressObjects.requirementCells）なので、枠の受け入れの
+ * 指定はそのまま要求の指定と突き合わせられる。受け入れを書かない枠に入っている物は挙げない。
+ */
+function requirementKeyOfCellHolding(inProgress: WorldObject): ReadonlyMap<WorldObject, string> {
+  const placed = new Map<WorldObject, string>();
+  for (const cell of materialsSlotOf(inProgress)?.cells ?? []) {
+    const key = cell.def.accept?.key;
+    if (key !== undefined) for (const object of cell.stack?.members ?? []) placed.set(object, key);
+  }
+  return placed;
 }
 
 /**
@@ -238,6 +294,7 @@ export function currentStepSupplyRatio(inProgress: WorldObject): number | undefi
   const allocated = allocateContentsToRequirements(
     materialsSlotOf(inProgress)?.contents ?? [],
     step.requirements,
+    requirementKeyOfCellHolding(inProgress),
   );
   let needed = 0;
   let held = 0;
@@ -252,6 +309,17 @@ export function currentStepSupplyRatio(inProgress: WorldObject): number | undefi
 /** 今の工程が要求する素材と道具が、材料スロットに揃っているか（進める工程が無ければfalse）。 */
 export function currentStepIsSupplied(inProgress: WorldObject): boolean {
   return (currentStepSupplyRatio(inProgress) ?? 0) >= 1;
+}
+
+/**
+ * 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.3節）のうち、agentが満たしていない
+ * 最初の要件（満たしていればundefined）。
+ *
+ * **条件はagent自身の世界から引く。** 製作中オブジェクトから引いてagentへ当てると、別の世界の物どうしを
+ * 渡されたとき、agentの居ない世界の条件で判定することになる。
+ */
+export function unmetCraftingRequirementOf(agent: WorldObject): Requirement | undefined {
+  return agent.session.codex.unmetCraftingRequirement(agent);
 }
 
 /**
@@ -278,7 +346,7 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
   //
   // 問うのは関係を張る前。crafting_conditionsは操作ではなく（11.5節）、画面も関係を張らずに同じ
   // 問いを出すので、内側で問うと押す前に見せた可否と実際の可否がずれる。
-  if (codex.unmetCraftingRequirement(agent) !== undefined) return false;
+  if (unmetCraftingRequirementOf(agent) !== undefined) return false;
 
   // 工程は操作なので、関係を張った状態で走らせる（11.5節）。patientは製作中オブジェクト——工程の
   // 宣言が乗っている側（RecipeSystem.md 4節の`interactions.work`相当）。instrumentは居ない——
@@ -306,6 +374,7 @@ export function tryAdvanceCrafting(inProgress: WorldObject, agent: WorldObject):
     const allocated = allocateContentsToRequirements(
       materialsSlotOf(inProgress)?.contents ?? [],
       step.requirements,
+      requirementKeyOfCellHolding(inProgress),
     );
     for (const requirement of step.requirements) {
       if (!requirement.consume) continue;

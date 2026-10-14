@@ -44,7 +44,7 @@
 中核動詞（[`GameElementDefinition.md`](./GameElementDefinition.md) 12 節）そのままで、新しい操作の語彙を
 持ち込みません。
 
-```yaml
+```yaml codex: animals.yaml traits
 beast:
   interactions:
     strike:
@@ -64,9 +64,9 @@ beast:
 
 | 候補 | 与える衝撃 | 残る傷 |
 | --- | --- | --- |
-| 強打（`heavy_blow`） | 250 | 裂傷 |
-| 浅打（`light_blow`） | 30 | 裂傷 |
-| 刺突（`thrust`） | 30 | 刺し傷（血が桁違いに速く流れる） |
+| 強打（`heavy_blow`） | 250<!-- codex: animals.yaml traits.beast.interactions.strike.pick.0.add.self.shock --> | 裂傷 |
+| 浅打（`light_blow`） | 30<!-- codex: animals.yaml traits.beast.interactions.strike.pick.1.add.self.shock --> | 裂傷 |
+| 刺突（`thrust`） | 30<!-- codex: animals.yaml traits.beast.interactions.strike.pick.2.add.self.shock --> | 刺し傷（血が桁違いに速く流れる） |
 | 外し（`whiff`） | — | — |
 | 仕留め | — | —（1.4 節） |
 
@@ -80,18 +80,17 @@ beast:
 **殴る人の腕は、どの武器の卓も同じだけ伸ばします。** 積むのは**その武器が最も太く名乗る当たり方 1 つ**
 だけで、狩猟の腕（`hunting_aim`）を `base` の土台にします（[`../world/Skills.md`](../world/Skills.md) 5 節）。
 **当たり方の数だけ積まないのは、上の目盛りを実効値でも保つため**です——2 つ名乗る石斧だけが倍受け取ると、
-仕留めの重みと並ぶ目盛りが武器ごとに変わります。1 つに限れば、`expert`（+40）ではどの武器も卓が
-105 → 145 になり、仕留めの割合（5/145）は武器によらず同じままです。
+仕留めの重みと並ぶ目盛りが武器ごとに変わります。1 つに限れば、`expert`（+40<!-- codex: characters/player_character.yaml traits.player_character.props.skill_hunting.stages.3.passives.0.modify.self.hunting_aim -->）でも卓の合計はどの武器も
+同じだけ伸び、仕留めの割合は武器によらず同じままです。
 
-- **外し（`whiff`）には積みません。** 卓の合計が増えるぶんで外れの割合が落ちます（尖った石で 28.6% →
-  20.7%、石斧で 23.8% → 17.2%、槍で 42.9% → 31.0%）。
+- **外し（`whiff`）には積みません。** 卓の合計が増えるぶんで外れの割合が落ちます。
 - **0 を宣言した当たり方（尖った石の強打）にも積みません。** 積むと、腕が上がるだけでその武器に無い
   一撃が出ます。
-- **腕は、その武器の性格を強めます。** 石斧の強打対浅打は 60 対 15 から 100 対 15 へ開きます——腕が
+- **腕は、その武器の性格を強めます。** 石斧の強打対浅打は 60<!-- codex: tools.yaml object_defs.stone_axe.props.heavy_blow.value --> 対 15<!-- codex: tools.yaml object_defs.stone_axe.props.light_blow.value --> から、強打の側だけが伸びて開きます——腕が
   上がるほど、その武器が得意な当たり方へ寄ります。
 
 **同じ一撃が、体格で意味を変えます。** 衝撃の `max` は体重の1/50（[`VitalsSystem.md`](./VitalsSystem.md)
-2.1 節）なので、浅打（30）はネズミ・ヤケイを一撃で沈め、サル（気絶は70）には3撃を要し、イノシシ（同840）
+2.1 節）なので、浅打（30<!-- codex: animals.yaml traits.beast.interactions.strike.pick.1.add.self.shock -->）はネズミ・ヤケイを一撃で沈め、サル（気絶は70<!-- codex: animals.yaml object_defs.monkey.props.shock.stages.2.min -->）には3撃を要し、イノシシ（同840<!-- codex: animals.yaml object_defs.wild_boar.props.shock.stages.2.min -->）
 には何撃当てても届きません。**上位の武器の存在価値は、この壁が作ります**——衝撃の引きも体格に比例するので、
 弱い武器で殴り続けても大型の衝撃は溜まりません。
 
@@ -106,8 +105,8 @@ beast:
 - **武器はどんな獣が居るかを知らず、獣はどんな武器が在るかを知りません。** 条件は入れ子のスロットを
   見られない（[`GameElementDefinition.md`](./GameElementDefinition.md) 14.3 節）ので、場所が1つ挟まります
   ——据えた設えが土地の居心地を押し、キャラクタがそこから継ぐのと同じ形（同 8.6 節）です。
-- **線は150cm。** 獣が踏み込む一歩の外へ穂先を置けるのはここからで、70cmの柄（石斧）は牙の届く
-  間合いの内側に入ります。**この島で間合いを取れるのは槍（200cm）だけです。**
+- **線は150cm<!-- codex: tools.yaml traits.weapon.passives.0.conditions.1.gte -->。** 獣が踏み込む一歩の外へ穂先を置けるのはここからで、70cm<!-- codex: tools.yaml object_defs.stone_axe.props.reach.value -->の柄（石斧）は牙の届く
+  間合いの内側に入ります。**この島で間合いを取れるのは槍（200cm<!-- codex: tools.yaml object_defs.spear.props.reach.value -->）だけです。**
 - **構えていなければ効きません**（`in_slot: hand` のゲート）。地面に置いた槍も、背負った槍も同じです。
 - **盾ではありません。** 押し引きなので牙は通り、追い詰めたイノシシからでも**1回の遭遇で平均
   0.71枚**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=0 measure=wounds_taken mean -->の
@@ -129,7 +128,7 @@ beast:
 
 **仕留められるかは、相手の無防備さ（`vulnerability`）がそのまま候補の重みになります。**
 
-```yaml
+```yaml codex: animals.yaml traits.beast.interactions.strike.pick
 - weight: {prop: vulnerability}
   set: {self: {blood: 0}}
   signal: killed
@@ -166,12 +165,15 @@ beast:
 6.3 節）。**それより大きい獲物では、内臓を出すところから骨に付いた肉を落とすところまで手が分かれ**、
 どこまで捌けたかは死体の側が持ちます——回ごとに出る物が違い、途中で肉だけ運んでから戻れます。
 
-```yaml
+```yaml codex: animals.yaml object_defs
 monkey_carcass:
+  props:
+    butcher_minutes:   # 皮革の腕が縮める分は省いている
+      value: 60
   interactions:
     butcher:
       trigger: {drag: {tag: handheld_blade}}
-      duration: 60
+      duration: {prop: butcher_minutes}   # 暗さ・嵐で断る条件と、皮革の腕の伸びは省いている
       destroy: self
       spawn:
         - {object: raw_meat, count: 4}
@@ -186,7 +188,7 @@ monkey_carcass:
   イノシシで別の肉を作ると、それを使う側（料理・皮革）が獲物の数だけ分岐します。**鶏肉も獣肉も
   同じ `raw_meat` です**——栄養と味の違いが実際に効くようになるまで、獲物の種類で肉を分けません
 - **1 枚の取り分より小さい獲物は、解体せず丸ごと火にかけます**（`animals.yaml` の `rat_carcass`）。
-  80g のネズミのために小さい肉のカードを作ると、**同じ「肉」で大きさだけが違う 2 枚**ができ、料理は
+  80g<!-- codex: animals.yaml object_defs.rat.props.weight.value --> のネズミのために小さい肉のカードを作ると、**同じ「肉」で大きさだけが違う 2 枚**ができ、料理は
   「どちらでもよい」と書けなくなります。刻みを増やさないための道で、得られる物が種類で変わるという
   意味ではありません
 - **重さは減ります。** 血と内臓は使い道が無いのでカードにしません。ヤシの実の連鎖
@@ -218,8 +220,8 @@ monkey_carcass:
 専用の画面を持たないため、「今から動物の手番」と宣言する場所がありません。動物を動かすのは**時間の経過**
 だけです。
 
-- 1 tick（15分）の行動 = 動物の1手
-- 6 tick（90分）の行動 = 動物の**6手**
+- 1 tick の行動 = 動物の1手
+- 6 tick の行動 = 動物の**6手**
 
 これにより「動物に詰められながら悠長な作業はできない」が、ルールを1行も書かずに成立します。同じ理由で、
 **無視することも自動的に罰せられる**ため、行動を禁じるモーダルな鍵が要りません。
@@ -227,8 +229,8 @@ monkey_carcass:
 不意打ちも同じ仕組みです。発見した tick で既に相手の手が入っていれば先手を取られたことになり、専用の
 イニシアチブ判定を持ちません。
 
-怪我の手当てにも同じ帰結が及びます。治療具を当てるのに30分かかる（[`InjurySystem.md`](./InjurySystem.md)）ため、
-**荒ぶっている動物の傷を手当てすると2手ぶん殴られます**。「落ち着くまで待つ方が賢い」を、条件で禁じずに
+怪我の手当てにも同じ帰結が及びます。治療具を当てるには時間がかかる（[`InjurySystem.md`](./InjurySystem.md)）ため、
+**荒ぶっている動物の傷を手当てすると、その間の手数ぶん殴られます**。「落ち着くまで待つ方が賢い」を、条件で禁じずに
 コストとして表せます。
 
 ## 3. 動物は体力を持たず、怪我を負う
@@ -264,8 +266,8 @@ monkey_carcass:
 **現れたときの値は獣ごとに違います**（`animals.yaml` の各獣。しきい値の側は獣によらず同じで、
 1 手の配分の合計を 100 に揃えるのと同じ理由です）。減り方は自然治癒と同じ基準レート
 （`-1/tick`、[`InjurySystem.md`](./InjurySystem.md) 2 節）で獣によらないので、**初期値がそのまま
-「掴めるようになるまでの手数」**（4 節）で、そこから 19 を引いたものが**「近寄れる（落ち着く）までの
-手数」**になります。待つより追い払うほうが速い、は変わりません。
+「掴めるようになるまでの手数」**（4 節）で、そこから 19 を引いたものが「**近寄れる（落ち着く）までの
+手数**」になります。待つより追い払うほうが速い、は変わりません。
 
 - **人を恐れない獣は、落ち着いた姿で現れます。** 逃げも襲いもせず（5.5 節の `calm` の打ち消し）、
   藪を割って進むついでに足元の物を壊すだけなので、**危険はこちらが手を出してから始まります。**
@@ -293,7 +295,7 @@ monkey_carcass:
 | `bound_to_owner: true` | 持ち主から**離れられない**（怪我・液体・道） |
 | `resists: [条件]` | 条件が成立している間、**持ち主を持てない**（土地以外の親へ移れない） |
 
-```yaml
+```yaml codex: animals.yaml traits
 beast:
   tags: [item, animal, quarry]
   resists: [{prop: wariness, gte: 1}]
@@ -334,10 +336,10 @@ beast:
 
 | | 様子見 | 噛みつき | 牙 | 圧し掛かり | 持ち去り | 体当たり | 盗み食い | 逃走 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| ネズミ | 15 | 5 | 0 | 0 | 0 | 0 | 0 | **80** |
-| ヤケイ | 30 | 0 | 0 | 0 | 0 | 0 | 0 | **70** |
-| サル | 20 | 15 | 0 | 0 | **35** | 0 | 10 | 20 |
-| イノシシ | 15 | 0 | **30** | 10 | 0 | 25 | 0 | 20 |
+| ネズミ | 15<!-- codex: animals.yaml object_defs.rat.props.lurk.value --> | 5<!-- codex: animals.yaml object_defs.rat.props.bite.value --> | 0<!-- codex: animals.yaml object_defs.rat.props.gore.value --> | 0<!-- codex: animals.yaml object_defs.rat.props.crush.value --> | 0<!-- codex: animals.yaml object_defs.rat.props.snatch.value --> | 0<!-- codex: animals.yaml object_defs.rat.props.smash.value --> | 0<!-- codex: animals.yaml object_defs.rat.props.devour.value --> | **80**<!-- codex: animals.yaml object_defs.rat.props.flee.value --> |
+| ヤケイ | 30<!-- codex: animals.yaml object_defs.junglefowl.props.lurk.value --> | 0<!-- codex: animals.yaml object_defs.junglefowl.props.bite.value --> | 0<!-- codex: animals.yaml object_defs.junglefowl.props.gore.value --> | 0<!-- codex: animals.yaml object_defs.junglefowl.props.crush.value --> | 0<!-- codex: animals.yaml object_defs.junglefowl.props.snatch.value --> | 0<!-- codex: animals.yaml object_defs.junglefowl.props.smash.value --> | 0<!-- codex: animals.yaml object_defs.junglefowl.props.devour.value --> | **70**<!-- codex: animals.yaml object_defs.junglefowl.props.flee.value --> |
+| サル | 20<!-- codex: animals.yaml object_defs.monkey.props.lurk.value --> | 15<!-- codex: animals.yaml object_defs.monkey.props.bite.value --> | 0<!-- codex: animals.yaml object_defs.monkey.props.gore.value --> | 0<!-- codex: animals.yaml object_defs.monkey.props.crush.value --> | **35**<!-- codex: animals.yaml object_defs.monkey.props.snatch.value --> | 0<!-- codex: animals.yaml object_defs.monkey.props.smash.value --> | 10<!-- codex: animals.yaml object_defs.monkey.props.devour.value --> | 20<!-- codex: animals.yaml object_defs.monkey.props.flee.value --> |
+| イノシシ | 15<!-- codex: animals.yaml object_defs.wild_boar.props.lurk.value --> | 0<!-- codex: animals.yaml object_defs.wild_boar.props.bite.value --> | **30**<!-- codex: animals.yaml object_defs.wild_boar.props.gore.value --> | 10<!-- codex: animals.yaml object_defs.wild_boar.props.crush.value --> | 0<!-- codex: animals.yaml object_defs.wild_boar.props.snatch.value --> | 25<!-- codex: animals.yaml object_defs.wild_boar.props.smash.value --> | 0<!-- codex: animals.yaml object_defs.wild_boar.props.devour.value --> | 20<!-- codex: animals.yaml object_defs.wild_boar.props.flee.value --> |
 
 **傷の種類は候補が持ちます。** 動物の側が持つのは「どちらを引きやすいか」だけで、噛みつきは `bite_wound`、
 牙は `gore_wound` を相手へ刺します（[`InjurySystem.md`](./InjurySystem.md)）。`add` の値がリテラルしか
@@ -358,7 +360,7 @@ beast:
 **候補が `among`（[`GameElementDefinition.md`](./GameElementDefinition.md) 10.3 節）で自分の相手を選びます。**
 どこから・どう絞って・どんな重みで選ぶかを候補自身が書き、選ばれた相手は `picked` で指します。
 
-```yaml
+```yaml codex: animals.yaml traits
 beast:
   props:
     # 動物ごとに宣言する重み配分（値を持たないので宣言し忘れはロードで落ちる）。
@@ -430,7 +432,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 仕組みです。**本数は見ません**——逃走の候補は集合から1本選ぶだけなので、道が2本目から先へ増えても
 逃げやすさは変わりません。分かれ目は「逃げ道が在るか」の1点だけです。
 
-**この1点が、狩りが最後まで通るかどうかを決めます。** 道が1本でも通っていれば、どの獣も1〜2手で
+**この1点が、狩りが最後まで通るかどうかを決めます。** 道が1本でも通っていれば、どの獣も数手で
 居なくなります——追い詰めたイノシシは槍で**100%**<!-- stats: hunt.yaml ending animal=wild_boar weapon=spear escape_routes=0 ending=felled share -->
 倒れるのに、同じ相手が道のある土地では**16.00%**<!-- stats: hunt.yaml ending animal=wild_boar weapon=spear escape_routes=1 ending=felled share -->
 しか倒れず、残りは平均**2.91手**<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=1 measure=turns mean -->で
@@ -460,7 +462,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 
 ### 5.5 顔ぶれを変えるのは警戒、逃げに転じさせるのは傷、立ち尽くさせるのは意識
 
-**動物ごとの配分は素の性分で、その場の事情は `modify` が押し引きします**（8.3 節）。押し引きは `beast` trait
+**動物ごとの配分は素の性分で、その場の事情は `modify` が押し引きします**（同 8.3 節）。押し引きは `beast` trait
 の1箇所にまとまり、動物ごとには書きません。
 
 打ち消しは「重みが0でクランプされる」ことを使います。素の配分より桁の大きい負の寄与を当てれば、その候補は
@@ -474,10 +476,10 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 | 手を出せる物が無い／既に1つくわえている | 持ち去り・体当たりを打ち消す |
 | くわえた食べ物が無い | 盗み食いを打ち消す（食べ物でない物は食べない） |
 | 逃げ道が無い | 逃走を打ち消す（5.3 節） |
-| 痛みの段（`sore`/`hurting`/`unbearable`） | 逃走を +25／+60／+120 |
-| 意識が濁っている（`consciousness` が `foggy`） | 様子見を +25 |
-| 朦朧としている（同 `dazed`） | 様子見を +60 |
-| 間合いのある武器が構えられている（1.2 節） | 噛みつき・牙・圧し掛かりを -20、様子見を +20 |
+| 痛みの段（`sore`/`hurting`/`unbearable`） | 逃走を +25<!-- codex: animals.yaml traits.beast.props.pain.stages.1.passives.0.modify.self.flee -->／+60<!-- codex: animals.yaml traits.beast.props.pain.stages.2.passives.0.modify.self.flee -->／+120<!-- codex: animals.yaml traits.beast.props.pain.stages.3.passives.0.modify.self.flee --> |
+| 意識が濁っている（`consciousness` が `foggy`） | 様子見を +25<!-- codex: animals.yaml traits.beast.props.consciousness.stages.2.passives.0.modify.self.lurk --> |
+| 朦朧としている（同 `dazed`） | 様子見を +60<!-- codex: animals.yaml traits.beast.props.consciousness.stages.1.passives.0.modify.self.lurk --> |
+| 間合いのある武器が構えられている（1.2 節） | 噛みつき・牙・圧し掛かりを -20<!-- codex: animals.yaml traits.beast.passives.3.modify.self.bite --><!-- codex: animals.yaml traits.beast.passives.3.modify.self.gore --><!-- codex: animals.yaml traits.beast.passives.3.modify.self.crush -->、様子見を +20<!-- codex: animals.yaml traits.beast.passives.3.modify.self.lurk --> |
 
 これで**警戒しているかどうかで1手の顔ぶれが変わります**。落ち着いた動物は様子をうかがうか足元の物へ手を
 出すだけ、警戒すれば逃げるか噛みつくか、荒ぶれば物どころではなくなり逃げるか向かってくるかの二択になります。
@@ -488,7 +490,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 
 **間合いの押し引きも1箇所です。** 踏み込む手はどれも20細るので、素の配分が20に満たない候補
 （小型の獣の噛みつき・唯一 `crush` の重みを立てる大型の圧し掛かり）は間合いの外へ出て抽選から
-落ちます——**槍を構えている限り骨は折られず、小型の獣は噛みつけません。** 太い牙（30）だけが通ります。 合計が100から落ちるぶんは逃走と物への手が相対的に太るので、
+落ちます——**槍を構えている限り骨は折られず、小型の獣は噛みつけません。** 太い牙（30<!-- codex: animals.yaml object_defs.wild_boar.props.gore.value -->）だけが通ります。 合計が100から落ちるぶんは逃走と物への手が相対的に太るので、
 **間合いを取られた獣は、掛かってくるのをやめて逃げるか、そこらの物へ当たります。**
 
 **失血と衝撃が配分を押す道は、意識1本です。** 痛みは `beast` trait の中に段を持つので `flee` を直に
@@ -506,7 +508,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 形になります。太らせる形なら、いくつ重なっても手は消えません。
 
 **`foggy` は狩りの最中にはまず立ちません。** こちらが付けられる傷はどれも痛みが `hurting` 以上
-（-20）で、そこへ失血か衝撃（どちらも -30）が重なれば `dazed` まで落ちるためです。**立つのは、傷が
+（-20<!-- codex: animals.yaml traits.beast.props.pain.stages.2.passives.0.modify.self.consciousness -->）で、そこへ失血か衝撃（どちらも -30<!-- codex: animals.yaml object_defs.monkey.props.shock.stages.1.passives.0.modify.self.consciousness --><!-- codex: animals.yaml object_defs.monkey.props.blood.stages.2.passives.0.modify.self.consciousness --><!-- codex: animals.yaml object_defs.junglefowl.props.shock.stages.1.passives.0.modify.self.consciousness --><!-- codex: animals.yaml object_defs.junglefowl.props.blood.stages.2.passives.0.modify.self.consciousness --><!-- codex: animals.yaml object_defs.rat.props.shock.stages.1.passives.0.modify.self.consciousness --><!-- codex: animals.yaml object_defs.rat.props.blood.stages.2.passives.0.modify.self.consciousness --><!-- codex: animals.yaml object_defs.wild_boar.props.shock.stages.1.passives.0.modify.self.consciousness --><!-- codex: animals.yaml object_defs.wild_boar.props.blood.stages.2.passives.0.modify.self.consciousness -->）が重なれば `dazed` まで落ちるためです。**立つのは、傷が
 癒えても血が戻っていない個体**——血の戻りは桁違いに遅い（[`VitalsSystem.md`](./VitalsSystem.md) 3 節）ので、
 **追いついた獲物がこの段に居ます。**
 
@@ -522,9 +524,9 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 2.69 枚<!-- stats: hunt.yaml encounter animal=wild_boar weapon=stone_axe escape_routes=0 measure=wounds_taken mean -->なので、
 1 手あたりでは尖った石のほうがむしろ低い）。**槍との差は長さだけでは説明が付きません**——手数は
 6.36 手<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=0 measure=turns mean -->と
-3 倍台の開きですが、負う怪我は
+開きますが、負う怪我は
 0.71 枚<!-- stats: hunt.yaml encounter animal=wild_boar weapon=spear escape_routes=0 measure=wounds_taken mean -->で
-8 倍以上開きます。**残りを作るのは間合いの押し引きです**（1.2 節）。
+手数の開きよりずっと大きく開きます。**残りを作るのは間合いの押し引きです**（1.2 節）。
 
 **空腹は配分に触れません。** 野生の個体では `body_fat` が動かない——渇きと同じゲートで、罠や囲いの枠へ
 閉じ込めている間しか減りません（[`TrapSystem.md`](./TrapSystem.md) 5.4 節）。押し引きを置いても野生の
@@ -547,8 +549,8 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
   中身は土地へこぼれます（[`TrapSystem.md`](./TrapSystem.md) 6.1 節）
 - **深手を負っている間は止まります。** 痛みが `hurting` 以上の個体では減りません——こちらが付けられる
   傷はどれもその段に届く（[`InjurySystem.md`](./InjurySystem.md)）ので、**手を出した獲物は必ず留まります。**
-  **こぼれた獲物がそこから動き出すかも、このゲートが決めます**——生かす罠の打ち身（痛み30）なら
-  動き出し、殺す罠の裂傷・刺し傷（同 50・60）なら止まったままです
+  **こぼれた獲物がそこから動き出すかも、このゲートが決めます**——生かす罠の打ち身（痛み30<!-- codex: injuries.yaml object_defs.bruise.passives.0.modify.parent.pain -->）なら
+  動き出し、殺す罠の裂傷・刺し傷（同 50<!-- codex: injuries.yaml object_defs.snare_laceration.passives.0.modify.parent.pain -->・60<!-- codex: injuries.yaml object_defs.puncture_wound.passives.0.modify.parent.pain -->）なら止まったままです
 - **消えるとき、くわえていた物はその土地へこぼれます**（`destroy` が中身を親へこぼす規約、
   [`GameElementDefinition.md`](./GameElementDefinition.md) 9.3 節）。
   逃げ込んだ先を突き止めれば、本体が消えた後でも盗品は落ちています
@@ -562,7 +564,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 **窓を閉じるのは、傷が癒えることではなく化膿です。** 獣は自分で傷を洗えない（`wash`）ので、深い傷は
 `infection` が `septic` へ届き、菌が血を削って獣を倒します。一撃だけ入れて退いたときに獲物が世界に
 残る手数は、イノシシで**中央値441手**<!-- stats: hunt.yaml tracking animal=wild_boar weapon=stone_axe median -->
-（4日半）——**追いつけば、そこには弱った個体か、腐る前の死体が在ります。** 分布は
+——**追いつけば、そこには弱った個体か、腐る前の死体が在ります。** 分布は
 [`HuntStats.md`](../diagnostics/HuntStats.md) の `tracking` 節が持ちます。
 
 「奥地へ消えて追跡不能になった」は、この立ち去りが抽象的に表します。未発見の道を実際に逃走へ使わせる
@@ -597,7 +599,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 `RecordedView` として控え、実時間をかけて再生しているので、**ログはその控えと並べて運びます。** 両方が要ります
 ——ログだけでは絵にならず、絵だけでは誰の仕業か分かりません。
 
-- 90分の行動が1コマに潰れません（tick ごとに控えて再生しているため、突進した tick が独立したコマになる）
+- 6 tick の行動が1コマに潰れません（tick ごとに控えて再生しているため、突進した tick が独立したコマになる）
 - 被害者のカードの矩形が取れます。差し替えの前の並びには被害者の札がまだ居るので、突き当たる先はそこから
   引けます（`cardMotionPlan` の `before`）。**片付けるのは突き当たってから**——被害者の札は、突進が
   着くまで枠の外に出したままにします
@@ -650,7 +652,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 入るため、**当たった回もレーンの上では何も変わりません。** 当たり外れがカードの上で読めるのは、
 両方が告げているからです。
 
-```yaml
+```yaml codex: animals.yaml traits.beast.interactions
 strike:
   pick:
     - weight: {subject: instrument, prop: heavy_blow}
@@ -674,7 +676,7 @@ strike:
 | 拡張 | 内容 |
 | --- | --- |
 | `resists`（4 節） | `bound_to_owner` の対称形。条件が成立する間、土地以外の親へ移れない。成立した瞬間に土地へこぼれ出る（[`GameElementDefinition.md`](./GameElementDefinition.md) 7.13 節） |
-| オブジェクトを指す参照（`ObjectRef`） | 対象キーと、インスタンスIDを保持するプロパティ（`{prop: ...}`）の二択。`destroy` の対象と `move` の `subject`・移動先が共有する（`GameElementDefinition.md` 9.3 節・9.6 節）。**どの対象キーを書けるかは、その宣言が置かれた場所が何を持つかで決まる**（同 14.1 節の表。操作の関係の役は 11.5 節「役を書ける場所」が唯一の一覧）。**動かす物と行き先を別々の仕組みで指さない**——どちらも「1つのオブジェクトを指す」という同じ役目だから |
+| オブジェクトを指す参照（`ObjectRef`） | 対象キーと、インスタンスIDを保持するプロパティ（`{prop: ...}`）の二択。`destroy` の対象と `move` の `subject`・移動先が共有する（`GameElementDefinition.md` 9.3 節・9.6 節）。**どの対象キーを書けるかは、その宣言が置かれた場所が何を持つかで決まる**（同 14.1 節の表。操作の関係の役は同 11.5 節「役を書ける場所」が唯一の一覧）。**動かす物と行き先を別々の仕組みで指さない**——どちらも「1つのオブジェクトを指す」という同じ役目だから |
 | `move` の `subject: self` | 動かす物に宣言元自身を指せる（同 9.6 節）。動物が自分で逃げる一手（5.1 節）が使う |
 | `trigger: tick`（同 11.1 節） | 画面のボタンには出さない操作。起こすのはプレイヤーではなく時間の側になる |
 | `signal`（6.3 節） | 世界の形を変えず、出来事が起きたことだけを告げる。当たり外れに限らず、出入りを伴わない出来事すべてが使う |
@@ -704,7 +706,7 @@ strike:
   [`DurabilitySystem.md`](./DurabilitySystem.md) 3 節が持つ
 - **`fragile` を付ける範囲**（5.4 節）: 今は編み籠・くくり罠・編んだ葉・ヤシの器・甕だけで、序盤の土地には
   壊れる物がほとんど無い。壊される痛手が実際に効くのは、拠点に物を並べ始めてからになる
-- **同じ傷を、噛んだ相手によらず同じ深さにしてよいか**（5 節）: 傷の種類は候補が持つので、80gのネズミと
+- **同じ傷を、噛んだ相手によらず同じ深さにしてよいか**（5 節）: 傷の種類は候補が持つので、80g<!-- codex: animals.yaml object_defs.rat.props.weight.value -->のネズミと
   5kgのサルは同じ `bite_wound` を残す。大型と小型の差は、大型だけが重みを立てる圧し掛かり（骨折）が
   表すようになったが、**同じ候補を引いたときの差は依然として頻度だけ**が持つ。
   **体格が1手へ効くのを素の配分の差だけに留めてよいか**も、ここで一緒に決まる——体調は意識を通して

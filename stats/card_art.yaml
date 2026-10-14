@@ -1,0 +1,45 @@
+# 札に自分の絵を映す型のうち、絵（src/assets/objects/<絵の名前>.png）がまだ無いもの。
+# 生成物。手で書き換えず、npm run stats:card-art で作り直す。
+# 何を数えて何を数えていないかは docs/diagnostics/CardArtStats.md。
+
+meta:
+  - {types: 167, drawn: 130, missing: 37}
+
+missing:
+  - {object: feather, art: feather}
+  - {object: small_bone, art: small_bone}
+  - {object: bed, art: bed}
+  - {object: bed_frame, art: bed_frame}
+  - {object: feather_stuffing, art: feather_stuffing}
+  - {object: plant_fiber_stuffing, art: plant_fiber_stuffing}
+  - {object: hammock, art: hammock}
+  - {object: tanned_leather, art: tanned_leather}
+  - {object: bundled_leaf_clothing, art: bundled_leaf_clothing}
+  - {object: rawhide_clothing, art: rawhide_clothing}
+  - {object: woven_leaf_clothing, art: woven_leaf_clothing}
+  - {object: tanned_leather_clothing, art: tanned_leather_clothing}
+  - {object: sledge, art: sledge}
+  - {object: handcart, art: handcart}
+  - {object: torch, art: torch}
+  - {object: berry, art: berry}
+  - {object: practice_target, art: practice_target}
+  - {object: sprained_ankle, art: sprained_ankle}
+  - {object: fracture, art: fracture}
+  - {object: bruise, art: bruise}
+  - {object: jar_lid, art: jar_lid}
+  - {object: berry_bush, art: berry_bush}
+  - {object: shallow_cave, art: shallow_cave}
+  - {object: spring, art: spring}
+  - {object: unfired_jar_lid, art: unfired_jar_lid}
+  - {object: salt, art: salt}
+  - {object: tree_bark, art: tree_bark}
+  - {object: pitfall, art: pitfall}
+  - {object: bandage, art: bandage}
+  - {object: splint, art: splint}
+  - {object: seaweed, art: seaweed}
+  - {object: bird_egg, art: bird_egg}
+  - {object: fish_shoal, art: fish_shoal}
+  - {object: seabird_flock, art: seabird_flock}
+  - {object: offshore_islet, art: offshore_islet}
+  - {object: tin_ore, art: tin_ore}
+  - {object: mainland, art: mainland}

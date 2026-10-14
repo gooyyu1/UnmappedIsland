@@ -1,4 +1,4 @@
-import type { StartedGame } from '../../domain/generation/NewGame';
+import type { PlayerCharacter } from '../../domain/wrappers/PlayerCharacter';
 import type { WorldObject } from '../../domain/WorldObject';
 import { autoFillMaterials } from '../../domain/autoFill';
 import {
@@ -8,6 +8,7 @@ import {
   heldPerRemainingRequirement,
   recipeOf,
   remainingRequirementsOf,
+  unmetCraftingRequirementOf,
 } from '../../domain/crafting';
 import type { Requirement } from '../../domain/Requirement';
 import type { Localization } from '../../locale/Localization';
@@ -41,6 +42,15 @@ export interface CraftingMaterial {
    */
   readonly needed: number;
   readonly held: number;
+  /**
+   * この要求へ当てた物のインスタンスID（crafting.heldPerRemainingRequirement）。入っている物の縁の色と
+   * 数をどの要求の枠に出すかは、**型ではなくこれで引く**——タグの要求は当てはまる型が複数あるので、型
+   * から引くと、当てる先が振り替えられた物を実際とは別の要求の枠に出してしまう（slotCells.materialCells）。
+   *
+   * 個体ではなくIDなのは、子ウィンドウへ貸し出して枠に待ち印だけが残った札（`awaited`）も同じ鍵で
+   * 引けるようにするため。
+   */
+  readonly allocated: ReadonlySet<number>;
   /** 今の工程が要求しているか（後の工程のぶんならfalse）。 */
   readonly inCurrentStep: boolean;
 }
@@ -51,10 +61,9 @@ export interface CraftingMaterial {
  */
 export function craftingActions(
   object: WorldObject,
-  game: StartedGame,
+  player: PlayerCharacter,
   locale: Localization,
 ): readonly CardAction[] {
-  const codex = object.session.codex;
   const recipe = recipeOf(object);
   if (recipe === undefined) return [];
 
@@ -62,7 +71,7 @@ export function craftingActions(
   const supplied = currentStepIsSupplied(object);
   // 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.3節）。素材より先に見るのは、
   // 満たしていなければ素材が揃っていても手が付けられないため。
-  const unmetCrafting = codex.unmetCraftingRequirement(game.player.instance);
+  const unmetCrafting = unmetCraftingRequirementOf(player.instance);
 
   return [
     {
@@ -76,8 +85,8 @@ export function craftingActions(
         // 探す順は手持ち → 足元。入れ物（かご）の中までは探さない——探すと、しまった物が勝手に
         // 出ていくことになり、しまうという操作の意味が無くなる。
         autoFillMaterials(object, [
-          game.player.instance.tryGetSlot(codex.vocabulary.world.handSlotId)?.contents ?? [],
-          game.player.location?.items ?? [],
+          player.instance.tryGetSlot(player.handSlotId)?.contents ?? [],
+          player.location?.items ?? [],
         ]);
       },
     },
@@ -87,11 +96,11 @@ export function craftingActions(
       description: locale.uiText('crafting_work_detail'),
       // **押す人の手際を積んだ後の分数**（RecipeDef.minutesFor）。工程が宣言した仕事の量をそのまま
       // 出すと、腕が上がった人へ実際より長い数字を見せることになる。
-      minutes: step === undefined ? 0 : recipe.minutesFor(step, game.player.instance),
+      minutes: step === undefined ? 0 : recipe.minutesFor(step, player.instance),
       enabled: supplied && unmetCrafting === undefined,
       reason: reasonNotToWork(unmetCrafting, supplied, locale),
       execute: () => {
-        tryAdvanceCrafting(object, game.player.instance);
+        tryAdvanceCrafting(object, player.instance);
       },
     },
     {
@@ -109,6 +118,15 @@ export function craftingActions(
 }
 
 /**
+ * その物のスロットを、材料の枠として映すか（craftingMaterialsが枠を返すのと同じ条件）。
+ * **枠を組む側（slotCells）と並びを作る側（PlayScreenView.cardsIn）が同じ答えを要る**ので、
+ * 材料を数えずに答えられるここで1度だけ決める。
+ */
+export function showsMaterialCells(container: WorldObject): boolean {
+  return recipeOf(container) !== undefined;
+}
+
+/**
  * その物が製作中オブジェクトなら、材料スロットが要求している型ごとの枠（そうでなければundefined）。
  *
  * **枠は残りの工程が要求する型ごとに1つ**で、要求の順に並ぶ。出番の終わった型は挙げない——こぼした
@@ -116,7 +134,7 @@ export function craftingActions(
  */
 export function craftingMaterials(container: WorldObject): readonly CraftingMaterial[] | undefined {
   const codex = container.session.codex;
-  if (recipeOf(container) === undefined) return undefined;
+  if (!showsMaterialCells(container)) return undefined;
 
   const inStep = new Set(currentStepOf(container)?.requirements.map((r) => r.match.key));
   // 入っている数は枠ごとに数え直さず、**要求へ割り当てた結果**を読む（heldPerRemainingRequirement）
@@ -124,12 +142,16 @@ export function craftingMaterials(container: WorldObject): readonly CraftingMate
   // 断ることになる。
   const held = heldPerRemainingRequirement(container);
 
-  return remainingRequirementsOf(container).map((requirement) => ({
-    objectGlobalIds: requirement.match.matchingDefs(codex.objects).map((def) => def.globalId),
-    needed: requirement.count,
-    held: held.get(requirement.match.key) ?? 0,
-    inCurrentStep: inStep.has(requirement.match.key),
-  }));
+  return remainingRequirementsOf(container).map((requirement) => {
+    const holding = held.get(requirement.match.key);
+    return {
+      objectGlobalIds: requirement.match.matchingDefs(codex.objects).map((def) => def.globalId),
+      needed: requirement.count,
+      held: holding?.held ?? 0,
+      allocated: new Set([...(holding?.allocated ?? [])].map((object) => object.instanceId)),
+      inCurrentStep: inStep.has(requirement.match.key),
+    };
+  });
 }
 
 /**

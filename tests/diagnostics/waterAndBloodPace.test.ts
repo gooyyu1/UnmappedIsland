@@ -5,7 +5,7 @@ import { parse } from 'yaml';
 import { characterDefNames } from '../../src/domain/generation/NewGame';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { HOURS_PER_DAY, TICKS_PER_DAY } from '../../src/domain/worldTime';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
@@ -20,13 +20,17 @@ import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
  *
  * - 器1つが何日ぶんか（`LiquidContainerSystem.md` 5節・`Voyage.md` 3.9.6節・`GameEndings.md` 9.2節）
  * - 牙の傷1つが奪う量と、戻るのにかかる日数（`VitalsSystem.md` 3節・3.3節）
- * - 3.3節と`DigestionSystem.md` 3節・9節が最小の献立について言っていること
+ * - 同 3.3節と`DigestionSystem.md` 3節・9節が最小の献立について言っていること
  */
 
 const ROOT = join(__dirname, '..', '..');
 
+/** 文書の地の文。出どころの印は地の文では描画されないので、剥がしてから読む。 */
 function docText(...segments: string[]): string {
-  return readFileSync(join(ROOT, 'docs', ...segments), 'utf-8');
+  return readFileSync(join(ROOT, 'docs', ...segments), 'utf-8').replace(
+    /<!--\s*(?:stats|codex):[^>]*-->/g,
+    '',
+  );
 }
 
 /** 文書の、その正規表現が捕らえた数。捕まらなければ落とす（書き換えで数が消えたことも壊れた状態）。 */
@@ -68,8 +72,8 @@ describe('文書が書いた「何日ぶん」', () => {
     const agent = spawn(SAMPLE_CHARACTER);
     let drinks = 0;
     let hydrationTicks = 0;
-    // hydrationは3日ぶんしか入らないので、甕1つぶんを一度には受け取れない。**受け取った量を
-    // 数えるのが目的**なので、1杯ごとに空にして満水の段（not_thirsty）に当たらないようにする。
+    // **受け取った量を数えるのが目的**なので、1杯ごとに空にして満水（`full`）で not_thirsty と断られて受け取りが
+    // 切れないようにする。
     while ((filled.tryGetProperty(fillId)?.number ?? 0) > 0) {
       agent.getProperty(hydrationId).setNumberWithoutEvents(0);
       const executed = filled.tryGetAction('drink', agent)?.tryExecute() === true;
@@ -115,7 +119,7 @@ describe('文書が書いた「何日ぶん」', () => {
     expect(
       numberIn(LIQUID_DOC, /ヤシの器（250mL）は \*\*\d+ 杯＝([\d.]+) 時間ぶん\*\*/, 'ヤシの器の時間'),
       'ヤシの器1つが賄う時間',
-    ).toBeCloseTo((bowl.hydrationTicks / decayPerDay) * 24, 1);
+    ).toBeCloseTo((bowl.hydrationTicks / decayPerDay) * HOURS_PER_DAY, 1);
 
     // 積む数の元になる目盛りは、同じ1つでなければならない（3か所に同じ数が書いてある）。
     for (const [doc, text] of [
@@ -129,7 +133,11 @@ describe('文書が書いた「何日ぶん」', () => {
     }
 
     // 積む数は日数の幅から出るので、**幅の両端で**確かめる。
-    const packing = /3\.9\.1 節の (\d+)〜(\d+) 日なら\s*\*\*(\d+)〜(\d+) つ\*\*/.exec(VOYAGE_DOC);
+    // 日数の両端には出どころの印（`<!-- stats: … -->`）が付くので、読み飛ばす。
+    const packing =
+      /3\.9\.1 節の (\d+)(?:<!--[^>]*-->)*〜(\d+)(?:<!--[^>]*-->)* 日なら\s*\*\*(\d+)〜(\d+) つ\*\*/.exec(
+        VOYAGE_DOC,
+      );
     expect(packing, '`Voyage.md` 3.9.6節の積む数が読めない').not.toBeNull();
     expect(Number(packing![3]), '短い側の甕の数').toBe(Math.ceil(Number(packing![1]) / jarDays));
     expect(Number(packing![4]), '長い側の甕の数').toBe(Math.ceil(Number(packing![2]) / jarDays));
@@ -176,9 +184,12 @@ describe('文書が書いた「何日ぶん」', () => {
   });
 
   it('牙の傷が奪う量と、戻るのにかかる日数が、宣言から出る', () => {
-    // 素のキャラクタは水分が安全域の下（216 < hydratedの230）なので、血の戻りは効かない
+    // 素のキャラクタは水分が安全域（hydrated）の下なので、血の戻りは効かない
     // （VitalsSystem.md 3.1節）。奪われた量だけを数えるのに、そのまま使える。
     const wounded = spawn(SAMPLE_CHARACTER);
+    expect(wounded.getProperty(hydrationId).isInStage('hydrated', 'or_above'), '素の水分は安全域の下').toBe(
+      false,
+    );
     const before = wounded.getProperty(bloodId).number;
     const wound = spawn('gore_wound');
     expect(wound.moveToSlotOrRejection(wounded.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
@@ -270,7 +281,7 @@ describe('文書が書いた「何日ぶん」', () => {
     ]) {
       expect(
         SKELETON_DOC,
-        `5節4番の結論が見当たらない（書き換えたなら、この検査も同じ主張を見るよう直す）: ${claim}`,
+        `ContentSkeleton.md 5節4番の結論が見当たらない（書き換えたなら、この検査も同じ主張を見るよう直す）: ${claim}`,
       ).toContain(claim);
     }
 
@@ -294,6 +305,48 @@ describe('文書が書いた「何日ぶん」', () => {
     expect(range, '水の重さの幅が読めない').not.toBeNull();
     expect(Number(range![1]), '甕3つ').toBeCloseTo(voyageLoadGrams(3, 0, 0, 0) / 1000, 0);
     expect(Number(range![2]), '甕4つ').toBeCloseTo(voyageLoadGrams(4, 0, 0, 0) / 1000, 0);
+  });
+
+  it('ContentSkeleton.md 5節2番の水の量が、飲用の換算率と素の減りから出る', () => {
+    const bowl = drainOf('coconut_bowl');
+    const bowlMl = spawn('coconut_bowl__content_water_liquid').getProperty(fillId).def.range!.max;
+    const dailyMl = (hydrationDecayPerDay() / (bowl.hydrationTicks / bowl.drinks)) * (bowlMl / bowl.drinks);
+
+    expect(numberIn(SKELETON_DOC, /1日は([\d.]+)L/, '1日の水'), '1日に要る水（L）').toBeCloseTo(
+      dailyMl / 1000,
+      1,
+    );
+    const days = numberIn(SKELETON_DOC, /(\d+)日で\d+Lです/, '余裕の日数');
+    expect(
+      numberIn(SKELETON_DOC, /\d+日で(\d+)Lです/, '余裕の日数ぶんの水'),
+      `${days}日ぶんの水（L）`,
+    ).toBeCloseTo((dailyMl * days) / 1000, 0);
+
+    // 甕で運ぶなら、その水を満たした甕の数ぶんの重さ。
+    const jarMl = spawn('jar__content_water_liquid').getProperty(fillId).def.range!.max;
+    const jarsKg = (Math.ceil((dailyMl * days) / jarMl) * voyageLoadGrams(1, 0, 0, 0)) / 1000;
+    expect(numberIn(SKELETON_DOC, /甕（水の段3）なら(\d+)Lを/, '甕で運ぶ水'), '甕で運ぶ水（L）').toBeCloseTo(
+      (dailyMl * days) / 1000,
+      0,
+    );
+    expect(
+      numberIn(SKELETON_DOC, /甕（水の段3）なら\d+Lを(\d+)kgで/, '甕で運ぶ重さ'),
+      '甕で運ぶ重さ（kg）',
+    ).toBeCloseTo(jarsKg, 0);
+  });
+
+  it('ContentSkeleton.md 5節2番のヤシの実の勘定が、飲む1つの量から出る', () => {
+    const coconuts = parse(
+      readFileSync(join(ROOT, 'src', 'assets', 'world-codex', 'coconut.yaml'), 'utf8'),
+    ) as {
+      object_defs: { green_coconut: { interactions: { bore: { add: { agent: { hydration: number } } } } } };
+    };
+    const perCoconut = coconuts.object_defs.green_coconut.interactions.bore.add.agent.hydration;
+    const perDay = Math.ceil(hydrationDecayPerDay() / perCoconut);
+    expect(
+      numberIn(SKELETON_DOC, /ヤシの実は1日(\d+)個の勘定/, 'ヤシの実の1日の数'),
+      '1日に飲むヤシの実',
+    ).toBe(perDay);
   });
 });
 

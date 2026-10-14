@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FakeMetaServer, metaReply, wrappedMetaReply, writeFakeCredentials } from '../support/fakeMetaServer';
 import type { ScriptRun } from '../support/runScript';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `scripts/daemon/dispatch-session.mjs` が、**「打てなかった」（1）で終わるときに立てたものを残さない**
  * ことの検査（`agent-ops/board-design.md` 1.4.3節）。
@@ -75,7 +77,7 @@ function answer({
   };
 }
 
-describe('dispatch-session.mjs', () => {
+describe('dispatch-session.mjs', timeoutOnWindows(30_000), () => {
   const server = new FakeMetaServer();
   let endpoint = '';
   let work = '';

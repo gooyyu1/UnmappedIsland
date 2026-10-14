@@ -93,7 +93,9 @@ function costByDay(
     );
     args.push(carried.keep);
   }
-  execFileSync(PYTHON as string, args, { stdio: 'ignore' });
+  // 写した先で走らせる——最後に置き場を作業ディレクトリからの相対で出すので、一時ディレクトリと
+  // 作業ディレクトリのドライブが違う Windows では、ここで投げる。
+  execFileSync(PYTHON as string, args, { cwd: work, stdio: 'ignore' });
   const [, ...lines] = readFileSync(join(work, 'stats/usage/by_day.tsv'), 'utf-8').trim().split('\n');
   return new Map(lines.map((line) => line.split('\t')).map(([day, cost]) => [day, Number(cost)]));
 }
@@ -135,6 +137,7 @@ describe.runIf(PYTHON !== undefined)('使用量の時間への配り方', () => 
     const KEEP = '2026-09-03';
     const evenly = new Map(
       Array.from({ length: 48 }, (_, index) => [
+        // eslint-disable-next-line no-restricted-syntax -- 実時間の時刻で、世界の暦ではない
         `2026-09-0${index < 24 ? 1 : 2}T${String(index % 24).padStart(2, '0')}:00Z`,
         IDLE.cost / HOURS,
       ]),

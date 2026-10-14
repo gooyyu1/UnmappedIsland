@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type {
   ChainRoute,
@@ -9,7 +11,7 @@ import type {
 import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import type { RainWaterRow } from '../../src/analysis/seasonalRain';
 import { ART_BY_NAME } from '../../src/art/objectArt';
-import { BalancePage } from '../../src/codex-viewer/balancePage';
+import { BalancePage, SAMPLE_CHARACTER } from '../../src/codex-viewer/balancePage';
 import { CodexSource } from '../../src/codex-viewer/CodexSource';
 import { CodexView } from '../../src/codex-viewer/CodexView';
 import type { CodexPage } from '../../src/codex-viewer/CodexPage';
@@ -24,6 +26,7 @@ import {
 } from '../../src/codex-viewer/pages';
 import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { HOURS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * ビューアのページ組み立てのテスト。ページはDOMに触れず文字列を返すだけなので、ブラウザ無しで
@@ -65,7 +68,7 @@ object_defs:
       ambient_brightness: {value: 0, range: {min: -6, max: 17}}
       hour:
         value: 0
-        range: {min: 0, max: 24}
+        range: {min: 0, max: ${HOURS_PER_DAY}}
         stages:
           - name: night
             passives:
@@ -490,9 +493,6 @@ function routeDetailRows(html: string): readonly RenderedRow[] {
   );
 }
 
-/** 1日の必要量を取る代表キャラクタ。収支ページが持つ定数（balancePage.SAMPLE_CHARACTER）と同じ名前。 */
-const SAMPLE_CHARACTER = 'medic';
-
 /** 待ち生産表の列と、`DeviceRow`（`src/analysis/balanceTables.ts`）のフィールドの対応。 */
 const DEVICE_LABELS: ShownFields<DeviceRow> = {
   deviceName: asIs('設備'),
@@ -627,7 +627,7 @@ object_defs:
       weather: {value: clear}
       hour:
         value: 0
-        range: {min: 0, max: 24}
+        range: {min: 0, max: ${HOURS_PER_DAY}}
         stages:
           - name: night
             passives:
@@ -644,6 +644,9 @@ object_defs:
 
   spring_field:
     tags: [location]
+    # rain_basketのpassivesが名指しする置き場（名指しの相手はどこかの型が宣言していなければならない）。
+    slots:
+      items: {cell_count: 4, cell: {accept: {tag: item}}}
     props:
       exploration_progress: {value: 0, range: {min: 0, max: 100}}
     interactions:
@@ -823,5 +826,40 @@ describe('収支ページの表', () => {
     rows: tables.supply,
     rendered: tableRowsAfter(html, '<h2 id="balance-供給">'),
     extraLabels: [],
+  });
+});
+
+/**
+ * `main.ts` の `PAGES` は「辿れるページの全部」。書いたページを登録し忘れると、routeが合わずに黙って
+ * 「見つかりません」へ落ちる。`main.ts` はDOMを掴むので読み込めず、**ソースの字面で突き合わせる**。
+ */
+describe('辿れるページの一覧', () => {
+  const VIEWER_DIR = join('src', 'codex-viewer');
+
+  function sourcesIn(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) return sourcesIn(path);
+      return entry.name.endsWith('.ts') ? [path] : [];
+    });
+  }
+
+  it('`CodexPage` を継ぐクラスを1つ残らず登録している', () => {
+    const pageClasses = sourcesIn(VIEWER_DIR).flatMap((path) =>
+      [...readFileSync(path, 'utf8').matchAll(/^export class (\w+) extends CodexPage\b/gm)].map(
+        (match) => match[1],
+      ),
+    );
+    const list = /const PAGES: readonly CodexPage\[\] = \[([\s\S]*?)\];/.exec(
+      readFileSync(join(VIEWER_DIR, 'main.ts'), 'utf8'),
+    );
+    if (list === null) throw new Error('main.ts に PAGES の一覧が見つかりません。');
+    const registered = [...list[1].matchAll(/new (\w+)\(/g)].map((match) => match[1]);
+
+    expect(
+      pageClasses.length,
+      'ページのクラスが1つも見つからなければ、この見張りは何も見ていない',
+    ).toBeGreaterThan(0);
+    expect(registered.sort()).toEqual(pageClasses.sort());
   });
 });

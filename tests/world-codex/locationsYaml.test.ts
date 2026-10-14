@@ -6,7 +6,6 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { Path } from '../../src/domain/wrappers/Path';
 import { pathsIn } from '../support/paths';
-import { World } from '../../src/domain/wrappers/World';
 import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent, makeBrightEnoughForAnyAction } from '../support/illumination';
 import { seededRng } from '../../src/domain/Rng';
@@ -174,9 +173,8 @@ describe('locations.yamlの土地・道定義', () => {
     // 探索 → 進捗が必要値に達した道の発見（隠しスロット→公開スロット） → 移動、の一連の流れを
     // 実ファイルの定義だけで検証する（地形生成は使わず、道の配線はこのテストが手で行う）。
     const session = new WorldSession(codex, seededRng(42));
-    const worldInstance = session.createObject(def('world').globalId);
-    const worldView = new World(worldInstance);
-    session.adoptWorld(worldView);
+    const worldView = session.createWorld();
+    const worldInstance = worldView.instance;
     // 経過分は開始時刻（core.yamlのworld.hourの既定値）に依らず、組んだ時点からの差で見る。
     const startMinutes = worldView.totalMinutes;
 
@@ -222,6 +220,7 @@ describe('locations.yamlの土地・道定義', () => {
 
     // 発見済みの道で移動すると、プレイヤーは移動先のcharactersスロットへ移り、移動時間分だけ時間が進む。
     const minutesBefore = worldView.totalMinutes;
+    // eslint-disable-next-line no-restricted-syntax -- 探索のduration（locations.yaml）の宣言値
     expect(minutesBefore - startMinutes, '草原の探索3回でduration 15分×3が経過している').toBe(15 * 3);
     expect(pathView.travel(character)).toBe(true);
 

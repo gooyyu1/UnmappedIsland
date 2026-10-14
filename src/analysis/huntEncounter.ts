@@ -1,11 +1,12 @@
+import type { ConditionalReading, EffectReader, PickReading } from '../domain/EffectReader';
 import type { PropertyGlobalId, SlotGlobalId } from '../domain/GlobalId';
 import type { Combination } from '../domain/Interaction';
+import type { ObjectDef } from '../domain/ObjectDef';
 import type { Rng } from '../domain/Rng';
 import { seededRng } from '../domain/Rng';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { WorldObject } from '../domain/WorldObject';
 import { WorldSession } from '../domain/WorldSession';
-import { World } from '../domain/wrappers/World';
 
 /**
  * 狩りの遭遇を、同梱の定義（`src/assets/world-codex/**`）のまま実際に通して手数を数える
@@ -111,8 +112,48 @@ export function beastMoveCountsOf(encounter: HuntEncounter): ReadonlyMap<string,
  */
 export const HUNTER = 'medic';
 
-/** こちらの一撃が告げる名前（`animals.yaml`のbeast traitのstrike）。残りは獣の1手。 */
-const STRIKE_SIGNALS: ReadonlySet<string> = new Set(['hit', 'grazed', 'pierced', 'missed', 'killed']);
+/**
+ * こちらの一撃が告げうる名前。獣の型が宣言する`strike`（`animals.yaml`のbeast trait）の候補から
+ * 集める——ここへ書き写すと、一撃の名前を1つ足したときにそれが黙って獣の1手へ数えられる。
+ */
+function strikeSignalsOf(animal: ObjectDef): ReadonlySet<string> {
+  const collector = new SignalCollector();
+  for (const trigger of animal.triggers) {
+    if (trigger.interaction.name === 'strike') trigger.interaction.readBy(collector);
+  }
+  return collector.names;
+}
+
+/** 効果が告げうる名前（`signal`、9.8節）を、抽選の枝も分け隔てなく集める。 */
+class SignalCollector implements EffectReader {
+  readonly names = new Set<string>();
+
+  signal(name: string): void {
+    this.names.add(name);
+  }
+
+  pick(reading: PickReading): void {
+    reading.readEveryCandidate(this);
+  }
+
+  conditional(reading: ConditionalReading): void {
+    reading.readEveryBranch(this);
+  }
+
+  set(): void {}
+
+  add(): void {}
+
+  spawn(): void {}
+
+  destroy(): void {}
+
+  become(): void {}
+
+  transfer(): void {}
+
+  move(): void {}
+}
 
 /**
  * 遭遇1回ぶんの世界。密林と、そこから伸びる道と、密林に立つ狩人と獣だけを置く。
@@ -137,6 +178,7 @@ class Encounter {
 
   private readonly beastMoves = new Map<string, number>();
   private readonly strikeOutcomes = new Map<string, number>();
+  private readonly strikeSignals: ReadonlySet<string>;
   private strikes = 0;
   private readonly warinessAtStart: number;
   private readonly warinessStageAtStart: string | undefined;
@@ -148,26 +190,29 @@ class Encounter {
     private readonly setup: HuntEncounterSetup,
     rng: Rng,
   ) {
-    this.injuriesSlotId = codex.slotNames.getId('injuries');
-    this.charactersSlotId = codex.slotNames.getId('characters');
+    const words = codex.vocabulary.world;
+    this.injuriesSlotId = words.injuriesSlotId;
+    this.charactersSlotId = words.charactersSlotId;
     this.bloodId = codex.propertyNames.getId('blood');
-    this.consciousnessId = codex.vocabulary.world.consciousnessId;
+    this.consciousnessId = words.consciousnessId;
     this.warinessId = codex.propertyNames.getId('wariness');
 
     this.session = new WorldSession(codex, rng);
-    const world = this.session.createObject(codex.objectNames.getId('world'));
-    this.session.adoptWorld(new World(world));
+    const world = this.session.createWorld().instance;
 
-    this.jungle = this.spawnInto('jungle', world, 'locations');
-    this.refuge = this.spawnInto('grassland', world, 'locations');
+    this.jungle = this.spawnInto('jungle', world, words.locationsSlotId);
+    this.refuge = this.spawnInto('grassland', world, words.locationsSlotId);
     for (let i = 0; i < setup.escapeRoutes; i++) this.openPath(world);
 
-    this.hunter = this.spawnInto(HUNTER, this.jungle, 'characters');
+    this.hunter = this.spawnInto(HUNTER, this.jungle, words.charactersSlotId);
     this.weapon =
-      setup.weaponName === undefined ? undefined : this.spawnInto(setup.weaponName, this.hunter, 'hand');
+      setup.weaponName === undefined
+        ? undefined
+        : this.spawnInto(setup.weaponName, this.hunter, words.handSlotId);
 
-    for (const item of setup.groundItems) this.spawnInto(item, this.jungle, 'items');
-    this.animal = this.spawnInto(setup.animalName, this.jungle, 'items');
+    for (const item of setup.groundItems) this.spawnInto(item, this.jungle, words.itemsSlotId);
+    this.animal = this.spawnInto(setup.animalName, this.jungle, words.itemsSlotId);
+    this.strikeSignals = strikeSignalsOf(this.animal.def);
     const wariness = this.animal.getProperty(this.warinessId);
     if (setup.startingWariness !== undefined) wariness.setNumberWithoutEvents(setup.startingWariness);
     if (setup.startingConsciousness !== undefined) {
@@ -227,7 +272,7 @@ class Encounter {
    * 名前で分ける（どちらの卓の候補かは、卓の側にしか書かれていない）。
    */
   private recordSignal(name: string): void {
-    const table = STRIKE_SIGNALS.has(name) ? this.strikeOutcomes : this.beastMoves;
+    const table = this.strikeSignals.has(name) ? this.strikeOutcomes : this.beastMoves;
     table.set(name, (table.get(name) ?? 0) + 1);
   }
 
@@ -286,17 +331,17 @@ class Encounter {
 
   /** 密林から伸びる道を1本通す。行き先は道ごとに別の土地にする（同じ先へ何本も繋がないため）。 */
   private openPath(world: WorldObject): void {
-    const destination = this.spawnInto('grassland', world, 'locations');
-    const path = this.spawnInto('path', this.jungle, 'fixtures');
-    path
-      .getProperty(this.codex.propertyNames.getId('destination_id'))
-      .setNumberWithoutEvents(destination.instanceId);
+    const words = this.codex.vocabulary.world;
+    const destination = this.spawnInto('grassland', world, words.locationsSlotId);
+    const path = this.spawnInto(words.pathObject, this.jungle, words.fixturesSlotId);
+    path.getProperty(words.destinationIdId).setNumberWithoutEvents(destination.instanceId);
   }
 
-  private spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
+  private spawnInto(objectName: string, parent: WorldObject, slotGlobalId: SlotGlobalId): WorldObject {
     const spawned = this.session.createObject(this.codex.objectNames.getId(objectName));
-    const rejection = spawned.moveToSlotOrRejection(parent.getSlot(this.codex.slotNames.getId(slotName)));
+    const rejection = spawned.moveToSlotOrRejection(parent.getSlot(slotGlobalId));
     if (rejection !== undefined) {
+      const slotName = this.codex.slotNames.getName(slotGlobalId);
       throw new Error(`${objectName}を${parent.def.name}の${slotName}へ置けない: ${rejection}`);
     }
     return spawned;

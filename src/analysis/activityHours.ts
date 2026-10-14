@@ -1,9 +1,11 @@
 import type { ConditionalReading, EffectReader, PickReading } from '../domain/EffectReader';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
+import type { CarriedLight } from './carriedLight';
 import { islandLocationsOf } from './islandLocations';
 import { stageModifyDeltasOf } from './stageModifiers';
 import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
+import { HOURS_PER_DAY } from '../domain/worldTime';
 
 /**
  * 土地×季節ごとの「移動できる／活動できる時間（時間/日）」を、`core.yaml`の`hour`・`weather`の段
@@ -13,9 +15,9 @@ import type { ObjectGlobalId, PropertyGlobalId } from '../domain/GlobalId';
  * **表の数値を書き写さず、段そのものを読む。** hourとweatherがambient_brightnessをmodifyする量は
  * `core.yaml`のstages passivesから読み取り、太陽高度・天気の透過率の値をこのファイルは持たない。
  * 光源は既定では数えない——入れると「焚き火があれば24時間活動できる」になり、この表の意味が消える
- * （IlluminationSystem.md 3節）。**手に持つ光源だけは呼び出し側が段数を渡せる**（`carriedLightEv`）
+ * （IlluminationSystem.md 3節）。**手に持つ光源だけは呼び出し側が渡せる**（`carriedLight`）
  * ——「松明を持てば何が開くか」は表の外側の補集合で、同じ切り方で測らないと差が出せない。
- * `stats/climate.yaml`の`activity_hours`は既定（0）のまま出す。
+ * `stats/climate.yaml`の`activity_hours`は既定（持たない）のまま出す。
  *
  * **「屋外で採れる」と「手元の細かい作業」は別々の列。** 要求する段の名前はどちらもbrightだが、
  * 見る値が違い（採る側はlooking_brightness、作る側はhand_brightness）、境目も違う（同5節）。
@@ -66,10 +68,6 @@ const HANDWORK_COLUMN: PropertyStageName = { propertyName: 'hand_brightness', st
 /** 風雨の強さ（`core.yaml`のworld・`characters/player_character.yaml`）と、嵐と呼ぶ段。 */
 const WIND_PROPERTY = 'wind_speed';
 const GALE_STAGE: PropertyStageName = { propertyName: WIND_PROPERTY, stageName: 'gale' };
-
-/** 屋根や岩陰に守られていること（ContainerSystem.md 6節）と、守られていると数える段。 */
-const SHELTERED_PROPERTY = 'sheltered';
-const SHELTERED_STAGE: PropertyStageName = { propertyName: SHELTERED_PROPERTY, stageName: 'sheltered' };
 
 /** 季節1つぶんの、天候の出現時間の実測値（`stats/climate.yaml`の`weather_hours`）。 */
 export interface SeasonWeatherHours {
@@ -167,7 +165,7 @@ export function openAirGaleShareOf(codex: WorldCodex, seasons: readonly SeasonWe
     let galeHours = 0;
     for (const [weatherName, hoursInSeason] of season.hoursByWeather)
       if (worldWindAt(weatherName) >= galeThreshold) galeHours += hoursInSeason;
-    return galeHours / (season.durationDays * 24);
+    return galeHours / (season.durationDays * HOURS_PER_DAY);
   });
   return shares.reduce((sum, share) => sum + share, 0) / shares.length;
 }
@@ -175,14 +173,15 @@ export function openAirGaleShareOf(codex: WorldCodex, seasons: readonly SeasonWe
 /**
  * 土地×季節ごとの活動時間表を、定義と天候の実測値から組み立てる。
  *
- * `carriedLightEv` は手に持っている光源が明るさへ足す段数（EV）。手持ちの光源は手元にも視界にも
- * 同じだけ届き（IlluminationSystem.md 3節）、キャラクタ側の明るさにはrangeが無いので、場所の
- * 環境光を底で均した後へそのまま足す。既定の0が「光源を持たない」で、表はこちらで出す。
+ * `carriedLight` は手に持っている光源。手持ちの光源は手元にも視界にも同じだけ届き
+ * （IlluminationSystem.md 3節）、キャラクタ側の明るさにはrangeが無いので、場所の環境光を底で均した
+ * 後へそのまま足す——**その場所・その天気で灯っていられるときだけ**（FireSystem.md 8.2節）。
+ * 省けば「光源を持たない」で、表はこちらで出す。
  */
 export function activityHoursOf(
   codex: WorldCodex,
   seasons: readonly SeasonWeatherHours[],
-  carriedLightEv = 0,
+  carriedLight?: CarriedLight,
 ): readonly ActivityHoursRow[] {
   const worldAmbientAt = worldAmbientBrightnessOf(codex);
   const worldWindAt = worldWindSpeedOf(codex);
@@ -198,10 +197,17 @@ export function activityHoursOf(
       let outdoorSearchHoursPerDay = 0;
       let handworkHoursPerDay = 0;
 
-      for (let hour = 0; hour < 24; hour++) {
+      for (let hour = 0; hour < HOURS_PER_DAY; hour++) {
         for (const [weatherName, hoursInSeason] of season.hoursByWeather) {
-          const fraction = hoursInSeason / (season.durationDays * 24);
-          const brightness = place.brightnessAt(worldAmbientAt(hour, weatherName)) + carriedLightEv;
+          const fraction = hoursInSeason / (season.durationDays * HOURS_PER_DAY);
+          const ambientBrightness = place.brightnessAt(worldAmbientAt(hour, weatherName));
+          const sky = {
+            weatherSymbolId: codex.symbolNames.tryGetId(weatherName),
+            ambientBrightness,
+            sheltered: place.shelteredValue,
+          };
+          const lightEv = carriedLight !== undefined && carriedLight.staysLitUnder(sky) ? carriedLight.ev : 0;
+          const brightness = ambientBrightness + lightEv;
           const gale = !place.sheltered && worldWindAt(weatherName) >= galeThreshold;
           const opens = (threshold: number): boolean => brightness >= threshold && !gale;
 
@@ -265,6 +271,12 @@ export interface LitPlace {
 
   /** 屋根や岩陰に守られている場所か。守られていれば風雨は届かない（ContentSkeleton.md 8.1.4節）。 */
   readonly sheltered: boolean;
+
+  /**
+   * その場所が名乗る `sheltered` の値（宣言が無ければ0）。祖先の `sheltered` を見る増減
+   * （`skyState.ts`）へは、段で切った{@link sheltered}ではなくこちらを渡す。
+   */
+  readonly shelteredValue: number;
 }
 
 /**
@@ -274,15 +286,19 @@ export interface LitPlace {
  */
 export function litPlacesOf(codex: WorldCodex): readonly LitPlace[] {
   const ambientId = codex.vocabulary.world.ambientBrightnessId;
-  const shelteredId = codex.propertyNames.getId(SHELTERED_PROPERTY);
-  // 守られていると数える境目も、キャラクタの段の宣言から読む（境目を書き写す箇所を作らない）。
-  const shelteredMinimum = characterStageMinimumOf(codex, SHELTERED_STAGE);
-  const isSheltered = (def: ObjectDef): boolean =>
-    (def.tryGetPropertyDef(shelteredId)?.initialValueWithoutRoll ?? 0) >= shelteredMinimum;
+  const shelteredId = codex.vocabulary.world.shelteredId;
+  // 屋根や岩陰に守られていると数える境目も、キャラクタの段の宣言から読む（境目を書き写す箇所を
+  // 作らない。ContainerSystem.md 6節）。
+  const shelteredMinimum = characterStageMinimumOf(codex, {
+    propertyName: codex.propertyNames.getName(shelteredId),
+    stageName: 'sheltered',
+  });
+  const shelteredValueOf = (def: ObjectDef): number =>
+    def.tryGetPropertyDef(shelteredId)?.initialValueWithoutRoll ?? 0;
 
   const places: LitPlace[] = [];
   for (const def of islandLocationsOf(codex).island) {
-    const place = placeOf(def, ambientId, 0, isSheltered);
+    const place = placeOf(def, ambientId, 0, shelteredValueOf, shelteredMinimum);
     if (place !== undefined) places.push(place);
   }
 
@@ -290,21 +306,28 @@ export function litPlacesOf(codex: WorldCodex): readonly LitPlace[] {
   const shallowCave = shallowCaveId === undefined ? undefined : codex.objects.tryGet(shallowCaveId);
   if (shallowCave === undefined) return places;
 
-  const cave = placeOf(shallowCave, ambientId, hostAmbientOf(codex, shallowCave, ambientId), isSheltered);
+  const cave = placeOf(
+    shallowCave,
+    ambientId,
+    hostAmbientOf(codex, shallowCave, ambientId),
+    shelteredValueOf,
+    shelteredMinimum,
+  );
   return cave === undefined ? places : [...places, cave];
 }
 
 /**
  * ambient_brightnessを宣言していれば、その場所。宣言していなければundefined（表に出さない）。
  *
- * 守られているかは**その型から決まる**ので、判定そのもの（isSheltered）を受け取って中で当てる
+ * 屋根の値は**その型から決まる**ので、読み方そのもの（shelteredValueOf）を受け取って中で当てる
  * ——外で当てさせると、別の型の答えを渡しても型は通り、風雨の届く場所が守られていることになる。
  */
 function placeOf(
   def: ObjectDef,
   ambientId: PropertyGlobalId,
   hostAmbient: number,
-  isSheltered: (def: ObjectDef) => boolean,
+  shelteredValueOf: (def: ObjectDef) => number,
+  shelteredMinimum: number,
 ): LitPlace | undefined {
   const ambientDef = def.tryGetPropertyDef(ambientId);
   if (ambientDef === undefined) return undefined;
@@ -315,7 +338,8 @@ function placeOf(
     name: def.name,
     brightnessAt: (worldAmbient) =>
       range === undefined ? worldAmbient + offset : range.clamp(worldAmbient + offset),
-    sheltered: isSheltered(def),
+    sheltered: shelteredValueOf(def) >= shelteredMinimum,
+    shelteredValue: shelteredValueOf(def),
   };
 }
 

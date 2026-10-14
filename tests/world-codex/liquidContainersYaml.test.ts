@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
+import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import { WorldObject } from '../../src/domain/WorldObject';
@@ -320,7 +324,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(Math.min(oil.red, oil.green), '油は赤と緑が揃って強い＝黄色').toBeGreaterThan(oil.blue);
   });
 
-  // 正午のambient_brightnessは cloudy 11 / clear 14 / sunny 15 / scorching 16。
+  // 正午のambient_brightnessは日差しが強い天気ほど高い（core.yaml）。
   it.each([
     ['cloudy', -1],
     ['clear', -2],
@@ -371,7 +375,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(amountIn(container)).toBe(200 + expectedDelta);
   });
 
-  // 上乗せが読むのは器の居る場所の明るさなので、樹冠と地面の反射が段を動かす（6節）。
+  // 上乗せが読むのは器の居る場所の明るさなので、樹冠と地面の反射が段を動かす（LiquidContainerSystem.md 6節）。
   it.each([
     ['coconut_bowl', -1],
     ['jar', -2],
@@ -385,6 +389,34 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(amountIn(container)).toBe(200 + expectedDelta);
   });
 
+  // 上乗せが消えても基礎の蒸発は残るので、日陰は乾季をまたがせる手立てにならない（LiquidContainerSystem.md 6節）。乾季にも雨は降り、
+  // 降っている間は蒸発が止まって溜まるので、天候ごとの1 tickの増減を乾季の天候の時間で重み付けて数える。
+  it.each(['coconut_bowl', 'jar'])(
+    '日陰へ置いても、満水の%sは平均的な長さの乾季より先に空になる',
+    (containerName) => {
+      const capacity = capacityOf(containerName) ?? NaN;
+      const dry = SEASON_CLIMATE.find((season) => season.name === 'dry');
+      if (dry === undefined) throw new Error('乾季の気候の実測値が無い');
+
+      const hours = Object.entries(dry.hoursByWeather);
+      const totalHours = hours.reduce((sum, [, h]) => sum + h, 0);
+      const deltaPerTick = hours.reduce((sum, [weather, h]) => {
+        const container = spawnContainerUnderWorld(
+          containerName,
+          'water',
+          capacity / 2,
+          spawnWorld(weather),
+          'test_shaded_ground',
+        );
+        container.tick();
+        return sum + ((amountIn(container) - capacity / 2) * h) / totalHours;
+      }, 0);
+
+      expect(deltaPerTick, '雨を差し引いても、乾季の日陰では減っていく').toBeLessThan(0);
+      expect(capacity / -deltaPerTick).toBeLessThan(dry.durationDays * TICKS_PER_DAY);
+    },
+  );
+
   it('明るい地面は、開けた土地より1段ぶん早く上乗せが効く', () => {
     // 砂浜(+1)。曇りの正午は開けた土地なら+11で上乗せゼロだが、反射のぶん最も低いしきい値へ届く。
     const world = spawnWorld('cloudy');
@@ -396,7 +428,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   });
 
   it('蓋を載せた甕は、雲の無い空の正午でも1mLも蒸発しない', () => {
-    // 蓋は上乗せだけでなく基礎の蒸発も止める（6.2節）。**器を日なたに置いたまま**確かめる
+    // 蓋は上乗せだけでなく基礎の蒸発も止める（同 6.2節）。**器を日なたに置いたまま**確かめる
     // ——日陰へ寄せて確かめると、蓋ではなく置き場所の効き目を測ることになる。
     const world = spawnWorld('scorching');
     const jar = spawnContainerUnderWorld('jar', 'water', 200, world);
@@ -500,6 +532,26 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     jar.tick();
 
     expect(amountIn(jar)).toBe(100 + expectedDelta);
+  });
+
+  /** その降り方で1 tickに溜まる量。 */
+  function rainPerTick(containerName: string, weather: string): number {
+    const container = spawnContainerUnderWorld(containerName, 'water', 1, spawnWorld(weather));
+    container.tick();
+    return amountIn(container) - 1;
+  }
+
+  // 序盤の水は器1つで1度の雨から取れ、据え置きの大容量には季節ぶんの時間が要る（9節）。
+  it('ヤシの器は1度の大雨で満ちるが、甕は1度の嵐では満ちない', () => {
+    const bowl = capacityOf('coconut_bowl') ?? NaN;
+    const jar = capacityOf('jar') ?? NaN;
+
+    expect(Math.ceil(bowl / rainPerTick('coconut_bowl', 'heavy_rain'))).toBeLessThanOrEqual(
+      weatherLengthTicks('heavy_rain', Math.min),
+    );
+    expect(Math.ceil(jar / rainPerTick('jar', 'storm'))).toBeGreaterThan(
+      weatherLengthTicks('storm', Math.max),
+    );
   });
 
   it('雨で増えるのは水だけで、茶の入った容器は開いていても増えない', () => {
@@ -752,6 +804,30 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     ).toBe('not_empty');
   });
 });
+
+/** core.yaml の遷移が置く値のうち、`key` が `value` の組で同時に置く `remainingKey` の候補（tick）。 */
+function remainingTicksOf(key: string, value: string, remainingKey: string): number[] {
+  const lengths: number[] = [];
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+    if (node === null || typeof node !== 'object') return;
+    const record = node as Record<string, unknown>;
+    const remaining = record[remainingKey];
+    if (record[key] === value && typeof remaining === 'number') lengths.push(remaining);
+    Object.values(record).forEach(visit);
+  };
+  visit(parse(readFileSync(worldCodexPath('core.yaml'), 'utf8')));
+  expect(lengths, `${key}: ${value} へ入る遷移が core.yaml に見つからない`).not.toHaveLength(0);
+  return lengths;
+}
+
+/** 1回の天気の長さ（tick）の候補を`pickOne`で1つに絞ったもの。 */
+function weatherLengthTicks(weather: string, pickOne: (...values: number[]) => number): number {
+  return pickOne(...remainingTicksOf('weather', weather, 'weather_remaining'));
+}
 
 /**
  * 満ちた器を重ねたときに断る口（`*_into_filled`）と、空でないことを断る口（`*_into_empty`）は、

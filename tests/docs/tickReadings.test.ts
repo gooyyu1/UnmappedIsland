@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import { MINUTES_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 import { ROOT } from '../support/sourceFiles';
 
@@ -233,5 +234,56 @@ describe('tickの数の言い換えは、今の暦と合っている', () => {
 describe('tickの数と人の単位は、`＝` ではなく丸括弧で並べる', () => {
   it.each(TARGETS)('%s', (file) => {
     expect(findingsIn(file, equalsFindings)).toEqual([]);
+  });
+});
+
+interface HourStage {
+  readonly name: string;
+  readonly min?: number;
+}
+
+/**
+ * 夜の長さ（分）。`core.yaml` の `hour` の段のうち、名前が `night` で始まるものの幅を足す——夜は
+ * 0時をまたぐので、2つの段で表されている。段は次の段の `min` まで（最後の段は `range.max` まで）続く。
+ */
+function nightMinutes(): number {
+  const core = parse(readFileSync(join(ROOT, 'src/assets/world-codex/core.yaml'), 'utf-8')) as {
+    object_defs: {
+      world: { props: { hour: { range: { min: number; max: number }; stages: HourStage[] } } };
+    };
+  };
+  const { range, stages } = core.object_defs.world.props.hour;
+  const starts = stages.map((stage) => stage.min ?? range.min);
+  const hours = stages.reduce(
+    (sum, stage, index) =>
+      stage.name.startsWith('night') ? sum + ((starts[index + 1] ?? range.max) - starts[index]) : sum,
+    0,
+  );
+  return hours * MINUTES_PER_HOUR;
+}
+
+const NIGHT_MINUTES = nightMinutes();
+
+/** `一晩（48 tick）`・`一晩（12時間）` の、括弧の中が夜の長さと違うものを拾う。 */
+function overnightFindings(line: string, lineNumber: number): Finding[] {
+  const found: Finding[] = [];
+  for (const matched of line.matchAll(/一晩（([^（）]*)）/g)) {
+    const tick = TICK_ALONE.exec(matched[1]);
+    const minutes = tick !== null ? tickMinutes(tick) : humanMinutes(matched[1]);
+    if (minutes === undefined) continue;
+    if (minutes[0] !== NIGHT_MINUTES || minutes[1] !== NIGHT_MINUTES) {
+      found.push({ line: lineNumber, what: matched[0] });
+    }
+  }
+  return found;
+}
+
+describe('「一晩」は夜の長さを指す（寝床での1回の眠りは「睡眠1回」と書く）', () => {
+  it('夜の段が読めている', () => {
+    expect(NIGHT_MINUTES).toBeGreaterThan(0);
+  });
+
+  it.each(TARGETS)('%s', (file) => {
+    expect(findingsIn(file, overnightFindings)).toEqual([]);
   });
 });

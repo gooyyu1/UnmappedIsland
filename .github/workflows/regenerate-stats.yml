@@ -51,6 +51,7 @@ jobs:
       - name: Regenerate
         run: |
           npm run stats:balance
+          npm run stats:card-art
           npm run stats:terrain
           npm run stats:startup
           npm run stats:escape

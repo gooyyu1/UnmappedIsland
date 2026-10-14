@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { durationsOf, toolWearsOf } from '../../src/analysis/durations';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * 日をまたぐ長さの抽出（`src/analysis/durations.ts`）の検証。**引いた線がそのまま検証項目**で、
@@ -227,7 +228,7 @@ object_defs:
     expect(found('fish')).toMatchObject({ days: 2.5, shortestDays: 2 });
 
     // 塩漬けの魚では一度も効かないので、最も速い場合でも足されない。
-    expect(found('salted_fish')).toMatchObject({ days: 20, shortestDays: 960 / 1.5 / 96 });
+    expect(found('salted_fish')).toMatchObject({ days: 20, shortestDays: 960 / 1.5 / TICKS_PER_DAY });
   });
 
   it('使ってはじめて減る値は、日の列には現れない', () => {

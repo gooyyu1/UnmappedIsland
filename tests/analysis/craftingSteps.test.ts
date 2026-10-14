@@ -6,6 +6,7 @@ import { buildCraftingNetwork } from '../../src/codex-viewer/craftingGraph';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 工程の抽出（CraftingStep）の検証。actions・combinations・recipesという文法の違いが
@@ -193,7 +194,7 @@ object_defs:
     // 値が戻らず自分が消える側は寿命で、960 tick（10日）。
     expect(lifetime.repeats).toBe(false);
     expect(lifetime.destroysSelf).toBe(true);
-    expect(lifetime.minutes).toBe(960 * 15);
+    expect(lifetime.minutes).toBe(960 * MINUTES_PER_TICK);
   });
 
   it('作る腕は、レシピの時間にも結果にも現れない', () => {
@@ -357,7 +358,7 @@ object_defs:
       const [cooking] = rangeCyclesOf(defOf('raw_meat'), undefined, [defOf('hearth')]);
 
       // maxちょうどでon_maxが起きる（6.3節）ので、届くべき距離は24。3/tickなので8 tick。
-      expect(cooking.minutes).toBeCloseTo((24 / 3) * 15);
+      expect(cooking.minutes).toBeCloseTo((24 / 3) * MINUTES_PER_TICK);
       expect(cooking.repeats).toBe(false);
       expect(cooking.drivenBy).toBe(huntId('hearth'));
       expect(cooking.step.laborMinutes).toBe(0);
@@ -373,7 +374,7 @@ object_defs:
       // 熱を溜め切る周期そのものが立たなくなる。12 ÷ 3 = 4 tick で焼け石になる。
       const [soaking] = rangeCyclesOf(defOf('stone'), undefined, [defOf('hearth')]);
 
-      expect(soaking.minutes).toBeCloseTo((12 / 3) * 15);
+      expect(soaking.minutes).toBeCloseTo((12 / 3) * MINUTES_PER_TICK);
       expect(soaking.drivenBy).toBe(huntId('hearth'));
       expect(soaking.step.outputs).toEqual([{ objectGlobalId: huntId('hot_stone'), counts: [1] }]);
     });
@@ -947,5 +948,35 @@ object_defs:
     expect(stepOf('jug', 'scrub').inputs).toEqual([
       { kind: 'object', objectGlobalId: id('jug'), consumed: false, count: 1 },
     ]);
+  });
+});
+
+describe('手前の手を何回打つか（craftingSteps）', () => {
+  // 1から1.3まで0.1ずつ。浮動小数では距離が0.30000000000000004になり、0.1で割った商は整数のすぐ上へ
+  // 落ちる。宣言の十進どおりなら3回。
+  const YAML = `
+object_defs:
+  log:
+    tags: [item]
+    props:
+      notch: {value: 1, range: {min: 0, max: 2}}
+    interactions:
+      chop:
+        trigger: menu
+        duration: 10
+        add: {self: {notch: 0.1}}
+      fell:
+        trigger: menu
+        duration: 5
+        conditions:
+          - {subject: self, prop: notch, gte: 1.3}
+`;
+  const codex = new WorldCodexYamlLoader().load('notch.yaml', YAML).buildAndReset();
+
+  it('小数の量で端ちょうどへ届くなら、宣言の十進どおりの回数を数える', () => {
+    const fell = craftingStepsOf(codex, codex.objects.get(codex.objectNames.getId('log'))).find(
+      (step) => step.name === 'fell',
+    );
+    expect(fell?.laborMinutes).toBe(5 + 3 * 10);
   });
 });

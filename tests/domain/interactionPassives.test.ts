@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { AGENT_YAML, createAgent } from '../support/agent';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 操作が宣言した持続効果（GameElementDefinition.md 11.7節）が効いている間の振る舞い。書けない宣言を
@@ -24,9 +24,9 @@ object_defs:
   world:
     singleton: true
     props:
-      minutes_per_tick: {value: 15}
-      minute: {value: 0, range: {min: 0, max: 60}, on_max: {add: {self: {minute: -60, hour: 1}}}}
-      hour: {value: 0, range: {min: 0, max: 24}}
+      minutes_per_tick: {value: ${MINUTES_PER_TICK}}
+      minute: {value: 0, range: {min: 0, max: ${MINUTES_PER_HOUR}}, on_max: {add: {self: {minute: -${MINUTES_PER_HOUR}, hour: 1}}}}
+      hour: {value: 0, range: {min: 0, max: ${HOURS_PER_DAY}}}
       day: {value: 1}
     slots:
       stuff: {}
@@ -149,9 +149,8 @@ object_defs:
       .load('agent.yaml', AGENT_YAML)
       .buildAndReset();
     const session = new WorldSession(codex);
-    const instance = session.createObject(codex.objectNames.getId('world'));
-    const world = new World(instance);
-    session.adoptWorld(world);
+    const world = session.createWorld();
+    const instance = world.instance;
 
     return {
       codex,
@@ -174,7 +173,7 @@ object_defs:
     expect(sand.tryGetAction('harden', createAgent(session))?.tryExecute()).toBe(true);
     expect(heat(sand), '2 tick（30分）ぶん').toBe(2);
 
-    session.advanceWorldTime(60);
+    session.advanceWorldTime(MINUTES_PER_HOUR);
     expect(heat(sand), '経過を終えれば外れるので、その後の時間では積まれない').toBe(2);
   });
 
@@ -192,7 +191,7 @@ object_defs:
       expect(clay.def.name, '1 tick目の途中で素焼きへ変わっている').not.toBe('clay');
       expect(heat(clay), '変わったtickのぶんも含めて、新しいプロパティへ積まれている').toBe(2);
 
-      session.advanceWorldTime(60);
+      session.advanceWorldTime(MINUTES_PER_HOUR);
       expect(heat(clay), '新しいプロパティからも、経過の終わりに外れている').toBe(2);
     });
 
@@ -206,7 +205,7 @@ object_defs:
       expect(potter.def.name, '1 tick目の途中で型が変わっている').not.toBe('potter');
       expect(heat(potter), '宣言元は変わっていないが、載る先が作り直されている').toBe(2);
 
-      session.advanceWorldTime(60);
+      session.advanceWorldTime(MINUTES_PER_HOUR);
       expect(heat(potter), '新しいプロパティからも、経過の終わりに外れている').toBe(2);
     });
 
@@ -226,7 +225,7 @@ object_defs:
       expect(heat(baker), '焼いている者が温まる').toBe(2);
       expect(heat(kiln), '窯自身は温まらない（agentは窯ではない）').toBe(0);
 
-      session.advanceWorldTime(60);
+      session.advanceWorldTime(MINUTES_PER_HOUR);
       expect(heat(kiln), '経過を終えた後も、窯へ載った登録は残っていない').toBe(0);
     });
   });

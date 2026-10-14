@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { commentsOnly } from '../../scripts/codeComments.mjs';
+import { commentsOnly, withoutComments } from '../../scripts/codeComments.mjs';
 import {
   promptBodies,
   promptBodiesForSession,
@@ -13,8 +13,11 @@ import {
   historyDocs,
   isAnalysisRecord,
   isMarkRuleDoc,
+  isPendingDecision,
   isProseData,
+  isRefRuleExempt,
   isVerbatimRecord,
+  refProseOf,
   trackedDocs,
   trackedFiles,
   trackedRefSources,
@@ -36,7 +39,8 @@ import { SECTION_RUN, sectionNumbersIn } from '../../scripts/sectionRefs.mjs';
  * **リンクはソースのコメントにも在る**ので、そちらも同じ規約で見る（{@link COMMENTED_SOURCES}）
  * ——TypeDoc が `/reference/` を作るときに読む側なので、切れたままだと公開の頁のリンクが死ぬ。
  *
- * **外すのは、当時の現物をそのまま残す記録**（{@link isVerbatimRecord}。DocumentStyle.md 10節）
+ * **外すのは、当時の現物をそのまま残す記録**（{@link isRefRuleExempt}。DocumentStyle.md 10節。
+ * 未処理の判断の履歴は、解釈の節だけを読む——{@link readRef}）
  * **と、当時を残す側に掛けない規約の分**（パスの綴りは {@link PATH_CHECKED_FILES}、Markdown 以外を
  * 名前で引く形は {@link isAnalysisRecord} を外す。どちらも同 10節）。実装状況の印
  * （4節・4.1節）だけは `docs/` に閉じており、理由は {@link docByPath}。
@@ -81,7 +85,7 @@ const DOC_FILES = listFiles('docs', ['.md']);
 /**
  * リポジトリが追跡しているMarkdownすべて。**参照の規約を課す側も指し先も、ここから絞って作る**
  * ——`docs/` の外にも規約は掛かる（DocumentStyle.md 10節）ので、既定は「全部」で、外すものだけを
- * 述語で名指しする（`isVerbatimRecord`・`isAnalysisRecord`）。
+ * 述語で名指しする（`isRefRuleExempt`・`isAnalysisRecord`）。
  *
  * **射程を決めるのは [`docScope.mjs`](../../scripts/docScope.mjs)**——同じ規約を課す
  * `docMemberReferences.test.ts` と同じ1つ。別に持つと、片方だけが `docs/` に取り残される。
@@ -268,6 +272,14 @@ function read(rel: string): string {
 }
 
 /**
+ * 参照の規約を課す側が読む本文。**判断の履歴は解釈の節だけ**（{@link refProseOf}）——原文の側で
+ * 赤くすると、緑へ戻す手が原文の改変しか無い（DocumentStyle.md 10節）。
+ */
+function readRef(rel: string): string {
+  return refProseOf(rel, read(rel));
+}
+
+/**
  * 見出しと、次の見出しまでの本文。`【確定】` の射程はこの本文だけ（DocumentStyle.md 6.1節）。
  *
  * 見出しは**原文のまま**持つ——失敗メッセージに出す名前であり、アンカーの照合にも使うので、
@@ -325,7 +337,7 @@ function slugsOf(headings: readonly string[]): Set<string> {
 const docByPath = new Map(DOC_FILES.map((rel) => [rel, read(rel)]));
 
 /**
- * 参照の指し先になりうる文書。**規約を課す対象とは別に持つ**——指し先には、どの規約も課さない文書
+ * 参照の指し先になりうる文書。**規約を課す対象とは別に持つ**——指し先には、当時の現物を残す文書
  * （日付ごとの記録。{@link isVerbatimRecord}）も入る。
  */
 const REF_TARGETS = TRACKED_DOCS;
@@ -339,7 +351,7 @@ const REF_TARGETS = TRACKED_DOCS;
  *
  * ソースのコメントに在るリンクは {@link COMMENTED_SOURCES} が持つ。
  */
-const LINK_CHECKED_FILES = REF_TARGETS.filter((rel) => !isVerbatimRecord(rel));
+const LINK_CHECKED_FILES = REF_TARGETS.filter((rel) => !isRefRuleExempt(rel));
 
 /**
  * 確定度の印の規約（DocumentStyle.md 6節・6.1節・6.2節）を課す対象。**`docs/` の中だけではない**
@@ -632,15 +644,19 @@ function resolvesInRepo(token: string): boolean {
   return solid.length > 0 && TRACKED_PATHS.has(solid.join(sep));
 }
 
-/** 文書名と節番号の間に挟んでよいもの（リンク形式の閉じ括弧と、助詞の「の」）。 */
-const NAMED_REF_GAP = /^[\s`の)）]*$/;
+/**
+ * 文書名と節番号の間に挟んでよいもの（リンク形式の閉じ括弧と、助詞の「の」）。**`\` も挟んでよい**
+ * ——テンプレート文字列の中ではバッククォートを `` \` `` と書くので、許さないと文書名の直後の番号が
+ * 裸の番号として読まれる。
+ */
+const NAMED_REF_GAP = /^[\s`\\の)）]*$/;
 
 /**
  * 「節」を省いた番号を、文書名の直後と言える間。**「の」は許さない**——`Foo.md の2行` の 2 は
  * 節番号ではなく数量で、「節」が無い側では**字面がそれと同じになる**（「節」が在れば見分けが付く
  * ので、上の {@link NAMED_REF_GAP} は許す）。
  */
-const BARE_REF_GAP = /^[\s`)）]*$/;
+const BARE_REF_GAP = /^[\s`\\)）]*$/;
 
 /** 直前の参照に、区切りだけで続いた印。指し先は直前の参照と同じ文書。 */
 const CONTINUES_PREV_REF = /^[・、／/]\s*$/;
@@ -660,9 +676,9 @@ const QUANTITY_SUFFIX = /^[\p{L}\p{N}%-]/u;
  * 指し先の規約:
  * - 「Foo.md N節」= その文書の節
  * - 「同 N節」= 同じファイル内で直前に名前を挙げた文書の節
- * - 裸の「N節」= 読み手の解釈と同じ優先順で、自文書 → 直前に名前を挙げた文書のどれか。
- *   **GameElementDefinition.md（WorldCodex文法の節）まで落ちるのはコード・YAMLだけ**
- *   （{@link fallsBackToGrammar}）
+ * - 裸の「N節」= 文書では自文書の節、コード・YAMLでは GameElementDefinition.md（WorldCodex文法の
+ *   節。{@link fallsBackToGrammar}）だけ。**どちらも直前に名前を挙げた文書へは落とさない**——読み手は
+ *   規約の指し先を探すので、手前で名を挙げた文書が同じ番号を持っていても、そちらとは読まれない
  * - 「・」「、」で続く番号の列挙と「〜」の範囲は1つの並び（{@link SECTION_RUN}）で、**末尾の「節」が
  *   並び全体に掛かる**。番号ごとに「節」を書けば、並びが1つずつに分かれるだけで同じに読める
  *
@@ -725,9 +741,7 @@ function brokenNumberedRefsIn(rel: string, source: string): string[] {
     } else if (sincePrev !== null && CONTINUES_PREV_REF.test(sincePrev)) {
       candidates = [prevRef!.base]; // 列挙の続き: N節・M節
     } else {
-      candidates = grammarFallback
-        ? [selfBase, lastNamedBase, 'GameElementDefinition.md']
-        : [selfBase, lastNamedBase];
+      candidates = grammarFallback ? ['GameElementDefinition.md'] : [selfBase];
     }
     const bases = [...new Set(candidates.filter((c): c is string => c !== null))];
     const resolved = bases.find((base) => resolves(base, nums)) ?? null;
@@ -838,7 +852,7 @@ function unimplementedHeadingLines(): string[] {
 describe('ドキュメントの参照', () => {
   it('Markdownリンクの先のファイルが存在する', () => {
     const broken = [
-      ...LINK_CHECKED_FILES.flatMap((rel) => brokenLinkFilesIn(rel, read(rel))),
+      ...LINK_CHECKED_FILES.flatMap((rel) => brokenLinkFilesIn(rel, readRef(rel))),
       ...COMMENTED_SOURCES.flatMap((rel) => brokenLinkFilesIn(rel, commentsOnly(read(rel), rel))),
     ];
     expect(broken, `リンク切れ:\n${broken.join('\n')}`).toEqual([]);
@@ -846,7 +860,7 @@ describe('ドキュメントの参照', () => {
 
   it('Markdownリンクのアンカーが、リンク先の見出しに解決する', () => {
     const broken = [
-      ...LINK_CHECKED_FILES.flatMap((rel) => brokenLinkAnchorsIn(rel, read(rel))),
+      ...LINK_CHECKED_FILES.flatMap((rel) => brokenLinkAnchorsIn(rel, readRef(rel))),
       ...COMMENTED_SOURCES.flatMap((rel) => brokenLinkAnchorsIn(rel, commentsOnly(read(rel), rel))),
     ];
     expect(broken, `アンカー切れ:\n${broken.join('\n')}`).toEqual([]);
@@ -856,7 +870,7 @@ describe('ドキュメントの参照', () => {
     const seen: string[] = [];
     const broken: string[] = [];
     for (const rel of PATH_CHECKED_FILES) {
-      const source = rel.endsWith('.md') ? read(rel) : commentsOnly(read(rel), rel);
+      const source = rel.endsWith('.md') ? readRef(rel) : proseOf(rel, read(rel));
       for (const token of repoPathsIn(source)) {
         seen.push(`${rel}: ${token}`);
         if (!resolvesInRepo(token)) broken.push(`${rel}: ${token}`);
@@ -864,11 +878,16 @@ describe('ドキュメントの参照', () => {
     }
     // 拾う側が黙って0件になると、**1つも読めていない状態と、全部が正しい状態が同じ緑**になる。
     expect(seen).not.toHaveLength(0);
+    // 散文がコメントの外に在るデータは、コメントだけを読むと黙って0件になる（#2322）。
+    expect(
+      seen.filter((entry) => isProseData(entry.split(': ')[0])),
+      '宣言の値へ書いた散文が、パスの走査から落ちている',
+    ).not.toHaveLength(0);
     expect(broken, `指し先の無いパス:\n${broken.join('\n')}`).toEqual([]);
   });
 
   it('節番号の参照が実在の節に解決する（明示・同・裸の全形式）', () => {
-    const broken = REF_FILES.flatMap((rel) => brokenNumberedRefsIn(rel, read(rel)));
+    const broken = REF_FILES.flatMap((rel) => brokenNumberedRefsIn(rel, readRef(rel)));
     expect(broken, `節番号の参照切れ:\n${broken.join('\n')}`).toEqual([]);
   });
 
@@ -889,10 +908,18 @@ describe('ドキュメントの参照', () => {
     expect(brokenNumberedRefsIn(doc, '（`board-design.md` 2.16・2.99節）')).toHaveLength(1);
   });
 
+  it('テンプレート文字列でエスケープしたバッククォートの後ろも、文書名の直後として読む', () => {
+    // 読めないと、番号が裸の番号としてコードの既定（GameElementDefinition.md）へ流れる。
+    const code = join('scripts', 'x.mjs');
+    expect(brokenNumberedRefsIn(code, '`（\\`board-design.md\\` 2.16節）`')).toEqual([]);
+    expect(brokenNumberedRefsIn(code, '`（\\`board-design.md\\` 2.99節）`')).toHaveLength(1);
+    expect(brokenNumberedRefsIn(code, '`（\\`board-design.md\\` 2.16）`')[0]).toContain('「節」が無い');
+  });
+
   it('「Foo.md 〇〇節」（名前指し）が実在の見出しに解決する', () => {
     const broken: string[] = [];
     for (const rel of REF_FILES) {
-      const text = read(rel).replace(/\n[\s*/#-]*/g, ' ');
+      const text = readRef(rel).replace(/\n[\s*/#-]*/g, ' ');
       for (const match of text.matchAll(
         /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?[ ]*(?:の)?[ ]*「?([^\s\d「」、。：:（）()*`・—〜～-][^「」、。：:（）()*`・—〜～]{0,30}?)」?[ ]*節/g,
       )) {
@@ -924,7 +951,7 @@ describe('ドキュメントの参照', () => {
   it('運用の文書を指す鉤括弧が、実在の見出しに解決する', () => {
     const broken: string[] = [];
     for (const rel of REF_FILES) {
-      const text = read(rel).replace(/\n[\s*/#-]*/g, ' ');
+      const text = readRef(rel).replace(/\n[\s*/#-]*/g, ' ');
       for (const match of text.matchAll(
         // 「〇〇」節 と「〇〇N節」は上の2つが見る。**除外は先読みで書く**——マッチの側は必ず `」` で
         // 終わるので、マッチ後の文字列を見ないと「節」が続くかは分からない。
@@ -950,7 +977,7 @@ describe('ドキュメントの参照', () => {
    */
   it('Markdown 以外を指す鉤括弧が、実在の見出し・太字の一文・テストの題に解決する', () => {
     const broken = REF_FILES.filter((rel) => !isAnalysisRecord(rel)).flatMap((rel) =>
-      brokenNameRefsIn(rel, read(rel)),
+      brokenNameRefsIn(rel, readRef(rel)),
     );
     expect(broken, `節名の参照切れ:\n${broken.join('\n')}`).toEqual([]);
   });
@@ -1029,14 +1056,9 @@ describe('ドキュメントの参照', () => {
       `見出しに付いた【未実装】:\n${inHeadings.join('\n')}`,
     ).toHaveLength(inHeadings.length);
     // コメントを除いた実装・データだけを見る（コメントはドキュメントへの言及でありうるため）。
-    const sources = [
-      ...listFiles('src', ['.ts']).map((rel) =>
-        read(rel)
-          .replace(/\/\*[\s\S]*?\*\//g, '')
-          .replace(/^\s*\/\/.*$/gm, ''),
-      ),
-      ...listFiles('src', ['.yaml']).map((rel) => read(rel).replace(/#.*$/gm, '')),
-    ].join('\n');
+    const sources = listFiles('src', ['.ts', '.yaml'])
+      .map((rel) => withoutComments(read(rel), rel))
+      .join('\n');
     const stale = labels.filter(({ ident }) => appearsInSources(ident, sources));
     expect(
       stale,
@@ -1327,7 +1349,7 @@ describe('ドキュメントの参照', () => {
 
   it('見出しの解析が、CRLFの作業ツリーでも効く', () => {
     // 行末に `\r` が残ると、見出しを見る検査（アンカー・節番号・印）が**揃って空振りし、
-    // 違反ゼロと同じ緑になる**。Linuxで走るCIでは気づけないので、既知の入力で確かめる。
+    // 違反ゼロと同じ緑になる**。LFの作業ツリーでは気づけないので、既知の入力で確かめる。
     expect(headingsOf('# 題名\r\n\r\n## 1. 節\r\n本文\r\n')).toEqual(['題名', '1. 節']);
     const [section] = sectionsOf('## 1. 節\r\n本文\r\n### 1.1 枝\r\n');
     expect(section.hasSubsections).toBe(true);
@@ -1353,7 +1375,7 @@ describe('ドキュメントの参照', () => {
     // 射程を在り処の一覧で持つと、`review/**` も `.github/**` も誰も見ない（#1948）。
     // 一覧は足した日にしか更新されないので、**フォルダを1つ作ると黙って射程の外が増える。**
     const covered = new Set(LINK_CHECKED_FILES);
-    const uncovered = everyTrackedMarkdown().filter((rel) => !isVerbatimRecord(rel) && !covered.has(rel));
+    const uncovered = everyTrackedMarkdown().filter((rel) => !isRefRuleExempt(rel) && !covered.has(rel));
 
     expect(uncovered, `リンクの検査に入っていない文書:\n${uncovered.join('\n')}`).toEqual([]);
   });
@@ -1368,7 +1390,39 @@ describe('ドキュメントの参照', () => {
     expect(records.filter((rel) => inMap.has(rel))).toEqual([]);
   });
 
-  it('どの規約も課さない記録が、指し先としては生きている', () => {
+  it('未処理の判断の履歴が、参照の検査に入っている', () => {
+    // 外したままだと、解釈が引いた節番号は実在も中身も誰も見ない（#2321）。
+    const pending = everyTrackedMarkdown().filter(isPendingDecision);
+    const folded = everyTrackedMarkdown().filter((rel) => isVerbatimRecord(rel) && !isPendingDecision(rel));
+
+    expect(pending.length).toBeGreaterThan(0);
+    expect(pending.filter((rel) => !REF_FILES.includes(rel))).toEqual([]);
+    expect(folded.filter((rel) => REF_FILES.includes(rel))).toEqual([]);
+  });
+
+  it('節番号で文書を指すJSONが、参照の検査に入っている', () => {
+    // 射程は置き場や拡張子で絞るので、節番号を引くJSONが絞りの外に在ると、指し先の実在を誰も
+    // 見ないまま緑になる（#2322）。
+    const citing = trackedFiles(ROOT, '*.json').filter((rel) =>
+      /\.md\s*\d+(?:\.\d+)*\s*節/.test(read(rel)),
+    );
+
+    expect(citing.length).toBeGreaterThan(0);
+    expect(citing.filter((rel) => !REF_FILES.includes(rel))).toEqual([]);
+  });
+
+  // 原文の側で赤くすると、緑へ戻す手が原文の改変しか無い（DocumentStyle.md 10節）。
+  it('判断の履歴は、解釈の節の参照だけを見る', () => {
+    const rel = join('agent-ops', 'decisions', 'x.md');
+    const record = (said: string, reading: string): string =>
+      `---\ncontext: ${said}\n---\n\n## ユーザーの発言\n\n> ${said}\n\n## エージェントの解釈\n\n- ${reading}\n`;
+    const missing = '`board-design.md` 2.99節';
+
+    expect(brokenNumberedRefsIn(rel, refProseOf(rel, record(missing, '解釈')))).toEqual([]);
+    expect(brokenNumberedRefsIn(rel, refProseOf(rel, record('原文', missing)))).toHaveLength(1);
+  });
+
+  it('当時の現物を残す記録が、指し先としては生きている', () => {
     // 課す側から外した拍子に指し先からも落とすと、そこへのリンクが実在するのに赤くなる。
     const records = everyTrackedMarkdown().filter(isVerbatimRecord);
 
@@ -1402,6 +1456,37 @@ describe('ドキュメントの参照', () => {
     expect(brokenNumberedRefsIn(rel, `${grammarOnly as string}節`)).toHaveLength(1);
     const named = `[\`GameElementDefinition.md\`](./GameElementDefinition.md) ${grammarOnly as string}節`;
     expect(brokenNumberedRefsIn(rel, named)).toEqual([]);
+  });
+
+  it('文書の裸の「N節」が、直前に名前を挙げた文書へは落ちない', () => {
+    // 落ちると、自文書に無い番号でも手前で名を挙げた文書が持っていれば緑になる（読み手は自文書の
+    // 節を探して見つけられない）。文書名か「同」を付ければ、同じ番号がその文書へ解決する。
+    const rel = join('docs', 'engine', 'SlotSystem.md');
+    const named = join('docs', 'engine', 'GameElementDefinition.md');
+    const namedOnly = (namedSectionsByPath.get(named) ?? [])
+      .flatMap((heading) => /^(\d+(?:\.\d+)+)[.\s]/.exec(heading)?.[1] ?? [])
+      .find((num) => !hasNumberedSection(rel, num));
+
+    expect(namedOnly, `${named} だけが持つ節番号が無く、この検査は何も確かめていない`).toBeDefined();
+    const mention = '`GameElementDefinition.md` の宣言を使う。';
+    expect(brokenNumberedRefsIn(rel, `${mention}${namedOnly as string}節`)).toHaveLength(1);
+    expect(brokenNumberedRefsIn(rel, `${mention}同 ${namedOnly as string}節`)).toEqual([]);
+  });
+
+  it('コード・YAMLの裸の「N節」が、直前に名前を挙げた文書へは落ちない', () => {
+    // 落ちると、文法書に無い番号でも手前で名を挙げた文書が持っていれば緑になり、両方が持つ番号は
+    // 名を挙げた文書の節として読まれる（読み手は規約どおり文法書の節を探す）。
+    const rel = join('src', 'assets', 'world-codex', 'traps.yaml');
+    const named = join('docs', 'engine', 'TrapSystem.md');
+    const grammar = join('docs', 'engine', 'GameElementDefinition.md');
+    const namedOnly = (namedSectionsByPath.get(named) ?? [])
+      .flatMap((heading) => /^(\d+(?:\.\d+)+)[.\s]/.exec(heading)?.[1] ?? [])
+      .find((num) => !hasNumberedSection(grammar, num));
+
+    expect(namedOnly, `${named} だけが持つ節番号が無く、この検査は何も確かめていない`).toBeDefined();
+    const mention = '# `TrapSystem.md` の罠を置く。\n# ';
+    expect(brokenNumberedRefsIn(rel, `${mention}${namedOnly as string}節`)).toHaveLength(1);
+    expect(brokenNumberedRefsIn(rel, `${mention}同 ${namedOnly as string}節`)).toEqual([]);
   });
 
   it('暫定を表す語の照合が、他の語の一部を拾わない', () => {

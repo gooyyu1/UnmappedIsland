@@ -1,7 +1,7 @@
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
 import { worldAmbientBrightnessOf } from './activityHours';
-import { TICKS_PER_DAY } from '../domain/worldTime';
+import { HOURS_PER_DAY, TICKS_PER_DAY } from '../domain/worldTime';
 import type { SkyState } from './skyState';
 import { ancestorConditionsHold } from './skyState';
 import type { TickDelta } from './tickDeltas';
@@ -26,9 +26,8 @@ import { tickDeltasOf } from './tickDeltas';
  *
  * **世界の定義から借りている語は、下のユニオンに集めてある。** 使い道は実測値の表の鍵と、その表を
  * 引く側が天候を仕分ける鍵だけなので、`WorldVocabulary` には載せない（理由はあちらのクラスコメント）。
+ * シンボルとの過不足は `tests/diagnostics/climateStatsReport.test.ts` が突き合わせる。
  */
-
-const HOURS_PER_DAY = 24;
 
 /** 季節の識別子（`core.yaml` のシンボル）。 */
 export type SeasonName = 'calm' | 'wet' | 'dry';
@@ -203,13 +202,14 @@ class SeasonalFillClimate {
       // IDだ」という境界がここで破れる。undefined のときの読み方は skyState.ts。
       weatherSymbolId: this.codex.symbolNames.tryGetId(weatherName),
       ambientBrightness: this.worldAmbientAt(hour, weatherName),
+      // この表は**雨の当たる開けた場所に置いた容器**の量（`docs/diagnostics/BalanceStats.md`
+      // 「雨で溜まる水（`rain_water`）」）。
+      sheltered: 0,
     };
   }
 
   /**
-   * その増減が、この天候と明るさのもとで効くか。**雨よけ（`sheltered`）のような場所の置き方で
-   * 決まる条件は素通しする**ので、この表は**雨の当たる開けた場所に置いた容器**の量になる
-   * （`docs/diagnostics/BalanceStats.md`「この表が数えていないもの」）。
+   * その増減が、この天候と明るさのもとで効くか。
    *
    * 段（`stage`）で縛られた増減は数えない——その段だった時間は天候の出現時間からは決まらない。
    */

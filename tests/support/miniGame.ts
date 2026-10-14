@@ -5,7 +5,6 @@ import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
-import { World } from '../../src/domain/wrappers/World';
 import { IslandMap } from '../../src/domain/generation/IslandMap';
 import { SpawnedIsland } from '../../src/domain/generation/SpawnedIsland';
 import { StartedGame } from '../../src/domain/generation/NewGame';
@@ -91,9 +90,8 @@ export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
 
   // NewGame.startNewGameと同じ順序で組み立てる（worldインスタンスもセッションに属させるため）。
   const session = new WorldSession(codex, options.rng);
-  const worldInstance = session.createObject(codex.objectNames.getId('world'));
-  const world = new World(worldInstance);
-  session.adoptWorld(world);
+  const world = session.createWorld();
+  const worldInstance = world.instance;
 
   const landInstance = session.createObject(codex.objectNames.getId('land'));
   if (

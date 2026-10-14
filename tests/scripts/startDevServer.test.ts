@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `.claude/skills/run/scripts/start-dev-server.sh` の検査。
  *
@@ -98,7 +100,7 @@ function readSleeps(calls: string): readonly number[] {
   }
 }
 
-describe('start-dev-server.sh', () => {
+describe('start-dev-server.sh', timeoutOnWindows(30_000), () => {
   // **名乗るまで待って、名乗ったら返す。** 刻みが1秒だと、`SAYS_AFTER` で名乗り終えている相手にも
   // 1秒を払う——画面を撮るたびに通る道なので、そのぶんがそのまま毎回の待ちになる。
   //

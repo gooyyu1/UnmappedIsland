@@ -2,6 +2,7 @@ import { ActiveEffect } from './ActiveEffect';
 import type { EffectReader } from './EffectReader';
 import type { ObjectRef } from './ObjectRef';
 import type { ReferenceContext } from './ReferenceRoot';
+import type { WorldObject } from './WorldObject';
 import type { SlotGlobalId } from './GlobalId';
 
 /**
@@ -30,7 +31,7 @@ export class MoveEffect extends ActiveEffect {
     this.slotGlobalId = slotGlobalId;
   }
 
-  apply(context: ReferenceContext): void {
+  apply(context: ReferenceContext<WorldObject>): void {
     const mover = this.subject.resolve(context);
     if (mover === undefined) return;
 

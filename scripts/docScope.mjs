@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { join, resolve, sep } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
@@ -66,6 +66,17 @@ export function specDocs(root) {
 export const COMMENTED_EXTENSIONS = ['.ts', '.mts', '.mjs', '.js', '.sh', '.py', '.yaml', '.yml'];
 
 /**
+ * 人の読む文を持つ形式か——文書・コメントを書ける形式・宣言の値へ散文を置くデータ
+ * （{@link isProseData}）。**文書の規約を `docs/` の外へ課す側は、どれもここから絞る**
+ * （{@link trackedRefSources}・{@link historyRuleSources}）。別々に持つと、新しい形式を片方だけが知る。
+ *
+ * @param {string} rel 根からの相対パス
+ */
+function hasProse(rel) {
+  return rel.endsWith('.md') || COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)) || isProseData(rel);
+}
+
+/**
  * 節番号の参照（`docs/DocumentStyle.md` 5節）を課す側のファイル。文書自身と、節番号で文書を指す
  * コード・データ。
  *
@@ -73,25 +84,24 @@ export const COMMENTED_EXTENSIONS = ['.ts', '.mts', '.mjs', '.js', '.sh', '.py',
  * 書いてあるかを読む係（[`refAudit.mjs`](daemon/refAudit.mjs)）が、同じ1つを読む。** 別々に持つと、
  * 片方だけが新しい置き場を見ないまま緑になる。
  *
- * `tools/**` の JSON はコメントを持たないが、宣言の値が節番号で仕様を指すので入る。**外すのは、
+ * コメントを持たないデータも、宣言の値が節番号で仕様を指すものは入る（{@link isProseData}）。**外すのは、
  * 参照の検査自身の例と正規表現（`tests/docs/**`）と、当時の現物をそのまま残す記録**
- * （{@link isVerbatimRecord}）。
+ * （{@link isRefRuleExempt}）。**読む側は本文を {@link refProseOf} へ通す**——判断の履歴は、
+ * 解釈の節だけが射程に入る。
  *
  * @param {string} root リポジトリの根
  * @returns {string[]} 根からの相対パス（区切りはそのプラットフォームのもの）
  */
 export function trackedRefSources(root) {
   return trackedFiles(root).filter(
-    (rel) =>
-      (rel.endsWith('.md') || COMMENTED_EXTENSIONS.some((ext) => rel.endsWith(ext)) || isProseData(rel)) &&
-      !rel.startsWith(join('tests', 'docs') + sep) &&
-      !isVerbatimRecord(rel),
+    (rel) => hasProse(rel) && !rel.startsWith(join('tests', 'docs') + sep) && !isRefRuleExempt(rel),
   );
 }
 
 /**
- * **コメントを書けないのに、宣言の値へ散文を置いているデータ**（`tools/**` の JSON の `_comment`）。
- * 節番号で仕様を指し、ファイルと並べて名前も挙げるので、文書と同じに読む側が要る。
+ * **コメントを書けないのに、宣言の値へ散文を置いているデータ**——`tools/**` の JSON の `_comment` と、
+ * JSON Schema（`*.schema.json`）の `description`。節番号で仕様を指し、ファイルと並べて名前も挙げる
+ * ので、文書と同じに読む側が要る。
  *
  * **読む側は1つではない**（節番号の参照を見る {@link trackedRefSources} と、名前の並びを見る
  * `tests/docs/docMemberReferences.test.ts`）ので、綴りを写さずここから引く。
@@ -99,12 +109,13 @@ export function trackedRefSources(root) {
  * @param {string} rel 根からの相対パス
  */
 export function isProseData(rel) {
-  return rel.startsWith(join('tools') + sep) && rel.endsWith('.json');
+  return (rel.startsWith(join('tools') + sep) && rel.endsWith('.json')) || rel.endsWith('.schema.json');
 }
 
 /**
- * **どの規約も課さない記録**か（`docs/DocumentStyle.md` 10節）。当時の現物をそのまま残す場所で、
- * **緑へ戻す手が記録の書き換えしか無い**ため、指し先の候補としてだけ生かす。
+ * **当時の現物をそのまま残す記録**か（`docs/DocumentStyle.md` 10節）。**緑へ戻す手が記録の書き換え
+ * しか無い**ため、規約を課さず、指し先の候補としてだけ生かす。**例外は未処理の判断の履歴の解釈の
+ * 節で、参照の書き方だけが掛かる**（{@link isRefRuleExempt}）。
  *
  * @param {string} rel 根からの相対パス
  */
@@ -113,6 +124,56 @@ export function isVerbatimRecord(rel) {
     rel.startsWith(join('agent-ops', 'decisions') + sep) ||
     new RegExp(`^review\\${sep}\\d{4}-\\d{2}-\\d{2}`).test(rel)
   );
+}
+
+/**
+ * まだ棚卸しを通っていない判断の履歴か（`agent-ops/decisions/` の直下）。`archive/` は畳み終えた
+ * 当時の記録で、入らない。
+ *
+ * @param {string} rel 根からの相対パス
+ */
+export function isPendingDecision(rel) {
+  return dirname(rel) === join('agent-ops', 'decisions') && rel.endsWith('.md');
+}
+
+/**
+ * 参照の書き方（`docs/DocumentStyle.md` 5節）を課さない記録か。{@link isVerbatimRecord} から、
+ * **未処理の判断の履歴を戻す**——その `## エージェントの解釈` は次の棚卸しが今の文書と突き合わせて
+ * 読む材料で、書き換えてよい側に在る（同 10節）。**戻すのは解釈の節だけ**で、切り出しは
+ * {@link refProseOf}。
+ *
+ * **参照の規約を課す側は、どれもここから絞る**——実在を見る検査も、指し先の中身を読む係
+ * （[`refAudit.mjs`](daemon/refAudit.mjs)）も。片方だけが履歴を読むと、番号の繰り上げで中身が
+ * 入れ替わった参照（リンクは切れない）を誰も拾わない。
+ *
+ * @param {string} rel 根からの相対パス
+ */
+export function isRefRuleExempt(rel) {
+  return isVerbatimRecord(rel) && !isPendingDecision(rel);
+}
+
+/** 判断の履歴のうち、参照の規約が掛かる節。 */
+const DECISION_READING = '## エージェントの解釈';
+
+/**
+ * 参照の規約を課す側が読む本文。**未処理の判断の履歴は {@link DECISION_READING} の節だけを残し、
+ * それ以外の行を空にする**——原文（`## ユーザーの発言`）と `context:` は当時を残す側で、書き換え
+ * られない（`docs/DocumentStyle.md` 10節）。行を消さずに空にするのは、行番号を原文と揃えるため。
+ *
+ * @param {string} rel 根からの相対パス
+ * @param {string} text 原文
+ * @returns {string}
+ */
+export function refProseOf(rel, text) {
+  if (!isPendingDecision(rel)) return text;
+  let inside = false;
+  return text
+    .split('\n')
+    .map((line) => {
+      if (/^#{1,2}\s/.test(line)) inside = line.trimEnd() === DECISION_READING;
+      return inside ? line : '';
+    })
+    .join('\n');
 }
 
 /**
@@ -132,13 +193,33 @@ export function historyDocs(root) {
   const styleDoc = join('docs', 'DocumentStyle.md');
   const text = readFileSync(join(root, styleDoc), 'utf-8');
   const section = /\n### 9\.1 [^\n]*\n([\s\S]*?)(?=\n#{2,3} |$)/.exec(text);
-  if (section === null) throw new Error(`${styleDoc} に 9.1 節が無い`);
+  if (section === null) throw new Error('docs/DocumentStyle.md 9.1節が無い');
   const docs = new Set();
   for (const [, target] of section[1].matchAll(/^\| \[[^\]]+\]\(([^)\s]+)\)/gm)) {
     docs.add(join('docs', ...target.split('#')[0].split('/')));
   }
-  if (docs.size === 0) throw new Error(`${styleDoc} 9.1 節の表から文書を引けない`);
+  if (docs.size === 0) throw new Error('docs/DocumentStyle.md 9.1節の表から文書を引けない');
   return docs;
+}
+
+/**
+ * 過去の姿を語る記述を禁じる（`docs/DocumentStyle.md` 9.1節）側のファイル。**`docs/` の中かでは
+ * 絞らない**——盤面を回す文書も、スクリプトとデータのコメントも、今の形の理由を書く場所なのは同じ
+ * （射程は同 10節）。
+ *
+ * 外すのは、過去の姿を書くこと自体が中身の側——経緯を主題とする文書（{@link historyDocs}）・
+ * 当時の現物をそのまま残す記録（{@link isVerbatimRecord}）・その回の観測（{@link isAnalysisRecord}）。
+ * **読むのはMarkdownと {@link isProseData} なら全文、それ以外はコメントだけ**で、形式の別は読む側
+ * （`tests/docs/docHistory.test.ts`）が持つ。
+ *
+ * @param {string} root リポジトリの根
+ * @returns {string[]} 根からの相対パス（区切りはそのプラットフォームのもの）
+ */
+export function historyRuleSources(root) {
+  const history = historyDocs(root);
+  return trackedFiles(root).filter(
+    (rel) => hasProse(rel) && !history.has(rel) && !isVerbatimRecord(rel) && !isAnalysisRecord(rel),
+  );
 }
 
 /**
@@ -158,7 +239,7 @@ export function isAnalysisRecord(rel) {
 
 /**
  * 確定度の印の条件（`docs/DocumentStyle.md` 6節）が掛かる文書か。**印の意味は置き場で変わらない**
- * ので、`docs/` の中かでは絞らない。外れるのは記録の2種——どの規約も課さないもの
+ * ので、`docs/` の中かでは絞らない。外れるのは記録の2種——当時の現物を残すもの
  * （{@link isVerbatimRecord}）と、印が**題材として**現れるその回の観測（{@link isAnalysisRecord}）。
  *
  * @param {string} rel 根からの相対パス
@@ -172,8 +253,8 @@ export function isMarkRuleDoc(rel) {
  * files` が返す形）のうち、印の条件が掛かるものだけをそのまま出す。
  *
  * **ここを通さずにシェル側でパターンを書き写すと、射程が2つになる**——関門
- * （[`needs-user-review.sh`](daemon/needs-user-review.sh)）の掛け先が `docs/` に取り残されていたのが
- * その形で、`agent-ops/board-design.md` の確定節が印ごと素通りしていた（#1800）。
+ * （[`needs-user-review.sh`](daemon/needs-user-review.sh)）の写しの掛け先が `docs/` に取り残されると、
+ * `agent-ops/board-design.md` の確定節が印ごと素通りする（#1800）。
  */
 function printMarkRuleDocs() {
   const kept = readFileSync(0, 'utf-8')

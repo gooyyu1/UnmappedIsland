@@ -39,7 +39,7 @@ export function assignAxisValues(
   }
 
   // 外周リングのサイトを海岸帯へクランプし、島が必ず海岸（の型しかマッチしない領域）で
-  // 囲まれることを保証する（3.4節のバランス保証の一部を配置の構造で担う）。
+  // 囲まれることを保証する（同 3.4節のバランス保証の一部を配置の構造で担う）。
   for (const site of sites) {
     const coastal = site.axisValues.get(COASTAL_DISTANCE_AXIS_NAME);
     if (scope.clampsHullSitesToCoast && site.onCoastRing && coastal !== undefined) {

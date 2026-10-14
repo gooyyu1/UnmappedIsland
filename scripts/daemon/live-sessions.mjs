@@ -20,21 +20,21 @@
 // **手が空いていることは、仕事が終わったことではない。** `status_bucket` が
 // `..._COMPLETED` / `..._BLOCKED` / `..._FAILED` でも、そのセッションは仕事を持ったまま次の指示を
 // 待っている——**畳まれたセッションでさえ、`unarchive_session` → `send_message` で文脈ごと再開
-// できる**（1.5 の実測）。ここで落とすと、占有の側が「空いている」と読んで二重に立てる。
+// できる**（board-design.md 1.5節 の実測）。ここで落とすと、占有の側が「空いている」と読んで二重に立てる。
 //
 // **`session_status` と `status_bucket` は両方そのまま出す。** どちらで何を読むかは呼び手が決める
-// （1.6）。条件をこちらへ持つと、どちらの呼び手にも合わない定義が1つできる。
+// （同 1.6節）。条件をこちらへ持つと、どちらの呼び手にも合わない定義が1つできる。
 //
 // ## 立てられたことと、働いたことは別
 //
 // **投入が通っても、その先に走る者が付くとは限らない。** 走る者の配られない区間では、セッション
-// だけが作られて中身が空のまま残り、**呼び手には「手が空いている」としか映らない**（1.6 のどの値も
+// だけが作られて中身が空のまま残り、**呼び手には「手が空いている」としか映らない**（同 1.6節 のどの値も
 // これには答えない）——盤面はそれを停滞と読み、担当の issue を片端から人へ返した（issue #2206）。
 //
 // **区別は呼び手ではなくここが持つ**（`CLAUDE.md`「自分のことは自分でする」）。読む側が
 // `external_metadata` の中身を知っていると、**見るべき区別を知らない呼び手だけが黙って取り違える。**
 //
-// 判定に **`updated_at` は使わない**（1.6）——走行中でも動かないことを 2026-09-05 に実測している。
+// 判定に **`updated_at` は使わない**（board-design.md 1.6節）——走行中でも動かないことを 2026-09-05 に実測している。
 //
 // ## 繰るのは、生きたセッションが尽きるまで
 //
@@ -48,9 +48,22 @@
 // （`board-design.md` 1.7節）。生きたセッションが1件も無いページが `DRY_PAGES` 枚続いたら、そこで
 // 止める。
 //
-// **`DRY_PAGES` は「間に何件の畳まれたセッションが挟まっても見つけるか」**（1枚 = 100件）。
+// **`DRY_PAGES` は「前の周に見ていないものを、間に何件の畳まれたセッションが挟まっても見つけるか」**
+// （1枚 = 100件）。
 // 深いところに居る生きたセッションを取りこぼすと、盤面はそのタグを空きと読んで**二重に立てる**ので、
 // 減らす向きには倒さない。
+//
+// ## 前の周に生きていたものは、通り過ぎるまで繰る
+//
+// **空のページが続くことは、その先に生きたものが居ないことではない。** 人待ちのまま何日も生きる
+// セッションの上には、後から立って畳まれたセッションがいくらでも積もる——新しい側に生きた1本が
+// 無い周は、1・2ページ目が続けて空になり、3ページ目に居る5本を「居ない」と読んだ（issue #2611）。
+//
+// そこで呼び手は**前の周に生きていたID**（`previous`）を渡せる。渡されたら、そのすべてを一覧の中に
+// 見つける（畳まれた姿でもよい）まで、空のページが何枚続いても止めない。**生きたものは、立った
+// ときには必ず新しい側に居る**ので、一度見つけたものを毎周追い続ければ、どれだけ沈んでも見失わない。
+// `previous` が `null`（前の周を知らない）なら、**履歴の末尾まで繰る**——知らないまま止まる枚数を
+// 決めると、上と同じ取りこぼしが初回にだけ起きる。省いた呼び手は `DRY_PAGES` だけで止める。
 
 import { readFileSync, writeSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -163,7 +176,7 @@ export class LiveSessionsError extends Error {
  * `container_cc_version` と `cross_session_inbound` だけで、この鍵が無かった）。
  *
  * **`status_bucket` では言えない。** 走る者が付かなかった周は `..._FAILED` で並ぶが、同じ値は
- * 働いたあとに手番が転んだセッションにも付く（1.5 の `01Wcy9XLj85X`）——**始まらなかったことと、
+ * 働いたあとに手番が転んだセッションにも付く（board-design.md 1.5節 の `01Wcy9XLj85X`）——**始まらなかったことと、
  * 始まってから転んだことが同じ顔になる。**
  *
  * **引けなければ「付いた」側へ倒す。** 呼び手はこの値で畳む手を打つので、知らないことを
@@ -233,24 +246,32 @@ function snapshot(path) {
   }
 }
 
-/** 畳まれていないセッションを、新しい順に返す。 */
+/**
+ * 畳まれていないセッションを、新しい順に返す。
+ *
+ * `previous` は前の周に生きていたID（上の「前の周に生きていたものは、通り過ぎるまで繰る」）。
+ * `null` なら履歴の末尾まで、省けば `DRY_PAGES` だけで止める。
+ */
 export async function liveSessions({
   page: fetch = listSessions,
   envs = environments,
   taken = process.env.LIVE_SESSIONS_TSV ?? '',
+  previous,
 } = {}) {
   if (taken !== '') return snapshot(taken);
 
   const known = envs();
+  const unseen = new Set(previous ?? []);
   const live = [];
   let after = '';
   let dry = 0;
-  while (dry < DRY_PAGES) {
+  while (previous === null || unseen.size > 0 || dry < DRY_PAGES) {
     const page = await fetch({ mine: true, limit: 100, ...(after === '' ? {} : { after_id: after }) });
     if (page === undefined) throw new LiveSessionsError();
 
     const before = live.length;
     for (const session of page.ccr?.data ?? []) {
+      unseen.delete(session.id);
       if (session.session_status === 'SESSION_STATUS_ARCHIVED') continue;
       live.push({
         id: session.id,

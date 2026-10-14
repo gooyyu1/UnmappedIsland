@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { spawnsObject } from '../../src/codex-viewer/describe/effectQueries';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
@@ -5,11 +7,11 @@ import { tryAdvanceCrafting, spawnInProgressObject } from '../../src/domain/craf
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
-import { World } from '../../src/domain/wrappers/World';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { fixedRng } from '../support/rng';
 import { bundledCodex } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent } from '../support/illumination';
+import { MINUTES_PER_HOUR, MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * pottery.yamlの土器の連鎖を、実ファイルの定義だけで検証する。
@@ -41,9 +43,8 @@ describe('pottery.yamlの土器の連鎖', () => {
   /** 草地を1つ置いた世界。rollは焼き上がりのpickがどの候補を引くかを決める。 */
   function open(roll: number): void {
     session = new WorldSession(codex, fixedRng(roll));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    const worldView = new World(worldInstance);
-    session.adoptWorld(worldView);
+    const worldView = session.createWorld();
+    const worldInstance = worldView.instance;
 
     land = session.createObject(codex.objectNames.getId('grassland'));
     expect(
@@ -110,13 +111,14 @@ describe('pottery.yamlの土器の連鎖', () => {
     greenwareNames: readonly string[] = ['unfired_jar'],
   ): WorldObject {
     const greenware = greenwareNames.map((name) => spawnInto(name, land, 'items'));
-    session.advanceWorldTime(60 * hours);
+    session.advanceWorldTime(MINUTES_PER_HOUR * hours);
 
     const kiln = litKiln();
     for (const piece of greenware)
       expect(piece.moveToSlotOrRejection(kiln.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
-    // 高温（blaze、5/tick）まで昇ってから24tick。昇温のぶんを足して余裕を見る。
-    session.advanceWorldTime(60 * 8);
+    // 焼成の進みは炉の火の段で速さが変わる（fire.yamlのhearthのheat）。熾したばかりの弱い火から
+    // 始めるので、焼き切るまでに余裕を見た時間を進める。
+    session.advanceWorldTime(MINUTES_PER_HOUR * 8);
     return kiln;
   }
 
@@ -159,10 +161,10 @@ describe('pottery.yamlの土器の連鎖', () => {
     const greenware = spawnInto('unfired_jar', land, 'items');
     const moistureId = codex.propertyNames.getId('moisture');
 
-    session.advanceWorldTime(60 * 12);
+    session.advanceWorldTime(MINUTES_PER_HOUR * 12);
     expect(greenware.tryGetProperty(moistureId)?.number ?? 0, '半日で半分ほど抜ける').toBe(48);
 
-    session.advanceWorldTime(60 * 12);
+    session.advanceWorldTime(MINUTES_PER_HOUR * 12);
     expect(greenware.tryGetProperty(moistureId)?.number ?? 0, '1日で乾き切る').toBe(0);
     expect(greenware.tryGetProperty(moistureId)?.isInStage('bone_dry') ?? false).toBe(true);
   });
@@ -237,7 +239,7 @@ describe('pottery.yamlの土器の連鎖', () => {
   });
 
   it('成形直後に火へ入れると、焼き上がるまでに水は抜け切らない', () => {
-    // 炉の中でも水は抜けるが、焼成のほうが4倍近く速いので追いつかない。急げば賭けになる。
+    // 炉の中でも水は抜けるが、焼成のほうがずっと速いので追いつかない。急げば賭けになる。
     open(SURVIVES);
     const kiln = litKiln();
     const greenware = spawnInto('unfired_jar', land, 'items');
@@ -245,9 +247,9 @@ describe('pottery.yamlの土器の連鎖', () => {
     const moistureId = codex.propertyNames.getId('moisture');
 
     let remaining = greenware.tryGetProperty(moistureId)?.number ?? 0;
-    for (let tick = 0; tick < 96 && !childNames(kiln).includes('jar'); tick++) {
+    for (let tick = 0; tick < TICKS_PER_DAY && !childNames(kiln).includes('jar'); tick++) {
       remaining = greenware.tryGetProperty(moistureId)?.number ?? 0;
-      session.advanceWorldTime(15);
+      session.advanceWorldTime(MINUTES_PER_TICK);
     }
 
     expect(childNames(kiln), '当たりを引けば焼き上がる').toEqual(['jar']);
@@ -283,8 +285,8 @@ describe('pottery.yamlの土器の連鎖', () => {
     // 上限を書いていないので同種はいくつでも入るが、**上限を書けばここで落ちる**——1つずつしか
     // 並べない検査では、蓋の代価が炉1つぶん増えても緑のままになる。
     //
-    // 数は航海へ積む甕の長い側（Voyage.md 3.9.6節の3〜4つ）。
-    const voyageJars = 4;
+    // 数は航海へ積む甕の長い側（Voyage.md 3.9.6節）。
+    const voyageJars = jarsForLongestVoyage();
     const kiln = fireDriedGreenware(24, [
       ...Array.from({ length: voyageJars }, () => 'unfired_jar'),
       ...Array.from({ length: voyageJars }, () => 'unfired_jar_lid'),
@@ -303,3 +305,15 @@ describe('pottery.yamlの土器の連鎖', () => {
     expect(jar.tags).toContain(codex.tagNames.getId('fragile'));
   });
 });
+
+/**
+ * `Voyage.md` 3.9.6節が書いた、航海へ積む甕の数の長い側。**数は文書から読む**——その数が宣言どおりかは
+ * `tests/diagnostics/waterAndBloodPace.test.ts` が見ているので、ここで割り算を組み直すと、同じ数を
+ * 2通りに出して暗黙に揃えることになる。
+ */
+function jarsForLongestVoyage(): number {
+  const voyage = readFileSync(join('docs', 'world', 'Voyage.md'), 'utf8').replace(/<!--[^>]*-->/g, '');
+  const packing = /3\.9\.1 節の \d+〜\d+ 日なら\s*\*\*\d+〜(\d+) つ\*\*/.exec(voyage);
+  expect(packing, '`Voyage.md` 3.9.6節の積む数が読めない').not.toBeNull();
+  return Number(packing![1]);
+}

@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { pathForBash, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `scripts/agent/daemon-wake-task.sh` の検査（`agent-ops/board-design.md` 2.19節）。
  *
@@ -61,8 +63,7 @@ const CHATTER = 'INFO: スケジュール タスク "…" は正常に作成さ�
  *
  * XMLへ入るのは `cd … && pwd` が出した綴りで、**MSYS2 の bash はそこで `/c/…` を返す**（`C:/…` では
  * ない。[`ccr-env.sh`](../../scripts/daemon/ccr-env.sh) が同じ往復を記録している）。Node が組んだ綴りと
- * 直に突き合わせると、**Windowsで `npm test` を打った者にだけ赤くなり**、`schtasks` の無いCIでは
- * 気づけない。
+ * 直に突き合わせると、**Windowsで `npm test` を打ったときにだけ赤くなり**、Linux では気づけない。
  */
 function bashPath(path: string): string {
   return execFileSync('bash', ['-c', `cd '${pathForBash(path)}' && pwd`], {
@@ -156,7 +157,7 @@ function handedXml(run: Run): string {
 
 const TASK = 'ClaudeCode-BoardDaemonWake';
 
-describe('daemon-wake-task.sh', () => {
+describe('daemon-wake-task.sh', timeoutOnWindows(30_000), () => {
   it('登録できたら、立てた名前を1行だけ出す', () => {
     const run = register();
 
@@ -164,7 +165,7 @@ describe('daemon-wake-task.sh', () => {
     expect(run.out.trim().split('\n')).toEqual([`REGISTERED ${TASK}`]);
   });
 
-  // **何度打っても1本のまま**（2.19.1）。探す鍵はタスクの名前なので、上書きの印を落とすと2本目が
+  // **何度打っても1本のまま**（board-design.md 2.19.1節）。探す鍵はタスクの名前なので、上書きの印を落とすと2本目が
   // 立つのではなく、2度目の登録が「もう在る」で撥ねられる。
   it('同じ名前へ上書きで立て、同じ名前で引き直す', () => {
     const run = register();
@@ -190,7 +191,7 @@ describe('daemon-wake-task.sh', () => {
     expect(handedXml(run).startsWith('<?xml ')).toBe(true);
   });
 
-  // 打つ手に判断が1つも要らないことの上に、この係は立っている（2.19）。
+  // 打つ手に判断が1つも要らないことの上に、この係は立っている（board-design.md 2.19節）。
   it('打つのは `daemon.sh start` の1行だけ', () => {
     const run = register();
 
@@ -207,7 +208,7 @@ describe('daemon-wake-task.sh', () => {
     expect(handedXml(run)).toContain(`<Arguments>-lc "cd '${run.root}' `);
   });
 
-  // **再起動の直後**（ログオン）と**落ちた跡**（毎時）で、拾う相手が違う（2.19）。
+  // **再起動の直後**（ログオン）と**落ちた跡**（毎時）で、拾う相手が違う（board-design.md 2.19節）。
   it('起こす口は、ログオンと毎時の2つ', () => {
     const xml = handedXml(register());
 

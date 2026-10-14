@@ -11,12 +11,8 @@ import { STUB_SHEBANG } from './stubShebang';
  * `gh` を PATH の先頭に、関門を `NEEDS_USER_REVIEW` で差し替える。
  *
  * **1回の実行で外部プロセスがいくつも起きる**ので、Windowsではプロセス生成（1回10〜30ms）が
- * そのまま試験の時間になる。**1ファイルに詰め込むと vitest のワーカーが本体へ返す `onTaskUpdate` の
- * 60秒を超えて落ちる**——同期の `execFileSync` がイベントループを止めるので、本体からの返事を
- * 受け取る前にタイマーが鳴る。だから叩く側は責務ごとにファイルを分けてある
- * （後片付けの側は [`tidyMergedPrWorld`](tidyMergedPrWorld.ts)）。
- *
- * 身代わりの先頭の1行を直に書かず [`STUB_SHEBANG`](stubShebang.ts) から取るのも同じ理由。
+ * そのまま試験の時間になる。身代わりの先頭の1行を直に書かず [`STUB_SHEBANG`](stubShebang.ts) から
+ * 取るのはそのため。
  */
 
 const SCRIPT = resolve(__dirname, '../../scripts/daemon/merge-pr.sh');

@@ -10,9 +10,9 @@
 # （焚き火は器を載せられず、覆い焼きは土器しか受けない、docs/engine/FireSystem.md 6節）ので、
 # ここも同じ2つだけで分かれる。
 #
-# **干し場より遅い。** 燻し上がりに要るのは、経過時間で96 tick（1日）。干し場は日差しの当たる帯
-# （1日24tick、salt.yamlのdrying_remaining）を使い切るだけなので、晴れていれば半日と掛からない。
-# **晴れた日に掛けるなら干し場のほうが速く、薪も要らない**——燻し小屋が引き換えに持つのは、
+# **晴れた日には干し場より遅い。** 燻し上がりは経過時間で数え、干し場は日差しの当たる帯（salt.yamlの
+# drying_remaining と同じ）だけを数える。**晴れた日に日差しが強まる前から掛けるなら干し場のほうが
+# 速く（tests/world-codex/smokingYaml.test.ts が見る）、薪も要らない**——燻し小屋が引き換えに持つのは、
 # 曇っても夜でも樹冠の下でも同じに進むこと1つで、そこが干し場を残す線になる
 # （docs/concept/DesignPrinciples.md「後から足す手段は、既存の手段を残す強さに抑える」）。
 #
@@ -33,9 +33,9 @@ traits:
       # 燻し上がるまでの残り。罠のcatch_remaining・塩田や食べ物のdrying_remainingと同じ見えない
       # タイマー（docs/engine/TrapSystem.md 2節）で、**火の生きているtickの数だけを数える**。
       #
-      # 96は「経過時間で1日ぶん」。煙は時刻を選ばないので、日差しの当たる帯を数える干し場
+      # 煙は時刻を選ばないので、日差しの当たる帯を数える干し場
       # （drying.yaml）と違って経過時間そのもので数える。**日差しを選ばないぶん、遅い**——
-      # 晴れていれば干し場のほうが先に上がる（上の冒頭）。
+      # 晴れた日には干し場のほうが先に上がりうる（条件は上の冒頭）。
       #
       # **初期値に幅を持たせない**（干し場と同じ理由、drying.yaml）——食べ物は自分が吊るされた
       # ところから数え始めるので、設備どうしの位相をずらす必要が無い。
@@ -43,8 +43,8 @@ traits:
         value: 96
         range: {min: 0, max: 96}
         passives:
-          # 火の生きている燻し小屋に吊るしているあいだ。**火力の段は見ない**——この小屋の火力は
-          # 種火の段より上へ行かない（下のsmokehouseのheat）ので、生きているかどうかしかない。
+          # 火の生きている燻し小屋に吊るしているあいだ。**見るのは生きているか（種火の段以上か、
+          # fire.yamlのhearth）だけ**——この小屋の火力は種火の段より上へ行かない（下のsmokehouseのheat）。
           #
           # **保存済みの物では止める。** 塩漬けを吊るしたまま放つと、燻し上がりが塩漬けを塗り替える
           # ——枠は型で受けるので、同じ型の保存済みの個体だけを弾く書き方が無い（干し場と同じ、
@@ -52,7 +52,7 @@ traits:
           - conditions:
               - not: {subject: self, matches: {tag: cured}}
               - {subject: parent, matches: {object: smokehouse}}
-              - {subject: parent, prop: heat, gt: 0}
+              - {subject: parent, prop: heat, in_stage_or_above: ember}
             add: {self: {smoking_remaining: -1}}
         # 燻し上がる。**別の型は作らず**、塩漬け・干物と同じcure軸の値になる（become、9.9節）ので、
         # 傷み具合はそのまま引き継がれる。
@@ -82,11 +82,11 @@ object_defs:
     # 束ねてよいが、この小屋は干し場・塩田と同じく吊るした物を抱えて留守番する。
     stackable: false
     props:
-      # 太い枝6本（1,000×6）＋編んだ葉6枚（400×6）＋縄2本（600×2）。**据えた物も目方を名乗る**
+      # 材料の目方の和（tests/world-codex/loadEffects.test.ts が見る）。**据えた物も目方を名乗る**
       # （core.yaml）。
       weight: {value: 9600}
-      # 太い枝2本（fuel 20×2）でちょうど満ちる。種火は1tickに0.1しか食わない（fire.yamlのhearthの
-      # ember段）ので、満たせば1回ぶん（96tick）を焚いてなお何度か焚ける。
+      # 太い枝2本でちょうど満ちる。種火はわずかしか食わない（fire.yamlのhearthのember段）ので、
+      # 満たせば1回ぶんを焚いてなお薪が残る（tests/world-codex/smokingYaml.test.ts が見る）。
       #
       # **薪が心細いと雨に負ける。** 雨が炉から削るのは4で、薪の段が火を育てるのは少なければ2
       # （fire.yamlのhearth）。小枝しか入っていない小屋は野ざらしでは燃え続けられない——**囲いが
@@ -114,7 +114,7 @@ object_defs:
         cell: {accept: {tag: smokable}, max: 1}
     passives:
       # 種火が冷める速さ。葉を巡らせた囲いは熱を抱えるが、灰へ埋めて空気を絞る石囲いの炉ほどは
-      # 保たない——覆い焼きの炉（pottery.yaml）と同じ速さで、薪が尽きれば2時間で消える。
+      # 保たない——覆い焼きの炉（pottery.yaml）と同じ速さで冷める。
       - conditions:
           - {prop: heat, in_stage: ember}
           - {prop: fuel, eq: 0}

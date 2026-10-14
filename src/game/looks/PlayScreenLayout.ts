@@ -199,7 +199,7 @@ export class PlayScreenLayout {
       const dashboardWidth = dashboardBeside(sidebarWidth);
       const optionsHeight = Math.min(u(OPTIONS_HEIGHT_LANDSCAPE), height);
 
-      // 余剰があれば2列に分け、**どちらも画面の高さいっぱい**の列にする（10.2節）。1列を上下に
+      // 余剰があれば2列に分け、**どちらも画面の高さいっぱい**の列にする（同 10.2節）。1列を上下に
       // 分け合うときだけ、オプションバーが内容量ぶんを取って残りをフィルターバーへ渡す。
       this.optionsBar = {
         x: width - barColumn,

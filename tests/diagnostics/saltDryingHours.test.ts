@@ -4,6 +4,7 @@ import { worldAmbientBrightnessOf } from '../../src/analysis/activityHours';
 import { tickDeltasOf } from '../../src/analysis/tickDeltas';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { bundledCodex, worldCodexPath } from '../support/worldCodexFiles';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR } from '../../src/domain/worldTime';
 
 /**
  * 塩田が干し上がる時間帯の検査（issue #1207）。
@@ -130,5 +131,3 @@ function dryingRemainingRangeOf(codex: WorldCodex): { readonly max: number } {
 
 const SALT_PAN = 'salt_pan';
 const DRYING_REMAINING = 'drying_remaining';
-const HOURS_PER_DAY = 24;
-const MINUTES_PER_HOUR = 60;

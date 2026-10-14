@@ -26,6 +26,7 @@ import { MINUTES_PER_TICK } from '../domain/worldTime';
 import type { BecomeDestinationResolver, EffectReading, MovedOutStock } from './effectOutcomes';
 import { consumesRoot, destroysRoot, movedOutStockOf, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
+import { stepsToCover } from './stepsToCover';
 import type { StaticPropertyReading, StaticSubjectReader, StaticValueResolver } from './staticValue';
 import {
   highestDeclaredLayer,
@@ -542,7 +543,7 @@ function cheapestPushMinutes(
     trigger.interaction.readBy(collector);
     if (collector.amount === undefined || Math.abs(collector.amount) === 0) continue;
 
-    const times = Math.ceil(distance / Math.abs(collector.amount));
+    const times = Math.ceil(stepsToCover(distance, Math.abs(collector.amount)));
     const minutes = times * trigger.interaction.minutesFor(resolve);
     if (cheapest === undefined || minutes < cheapest) cheapest = minutes;
   }

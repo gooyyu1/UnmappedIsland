@@ -237,6 +237,14 @@ export class CellLayout {
     return this.tryPlaceAt(new ObjectStack(obj), at);
   }
 
+  /** insertAtが成功するか（何も動かさずに問う）。 */
+  canInsertAt(obj: WorldObject, at: SlotPosition): boolean {
+    return (
+      this._cells.some((cell) => cell.canMerge(obj)) ||
+      this.shiftForPosition({ def: obj.def, size: 1 }, at) !== undefined
+    );
+  }
+
   /**
    * 位置を指定して並び替える。動くのは1個ではなくスタック丸ごと。
    *
@@ -322,15 +330,29 @@ export class CellLayout {
     return path[0];
   }
 
-  /**
-   * 位置の指定に従ってスタックを置く。枠の指定はその枠を埋め（埋まっていれば失敗）、隙間の指定は
-   * まず右方向へ、それが無理なら左方向へ既存のセルをずらして場所を作る。
-   */
+  /** 位置の指定に従ってスタックを置く（置き方はshiftForPositionが決める）。 */
   private tryPlaceAt(stack: ObjectStack, at: SlotPosition): boolean {
-    if (this.pointsCell(at)) return this.tryFillCell(stack, at.index);
+    return this.tryApplyShift(stack, this.shiftForPosition(stackOccupant(stack), at));
+  }
+
+  /** gapIndexの隙間へ、step方向へ既存のセルをずらして場所を作り、スタックを入れる。 */
+  private tryPlaceAtGap(stack: ObjectStack, gapIndex: number, step: 1 | -1): boolean {
+    return this.tryApplyShift(stack, this.shiftAtGap(stackOccupant(stack), gapIndex, step));
+  }
+
+  /**
+   * 位置の指定に従ってincomingを置くときの、中身の動かし方（置けなければundefined）。枠の指定はその枠を
+   * 埋め（埋まっていれば失敗）、隙間の指定はまず右方向へ、それが無理なら左方向へ既存のセルをずらして
+   * 場所を作る。
+   *
+   * **どの指定でも、枠の宣言（acceptとmax）に合わない置き方はしない**——指した枠も、ずらされる中身の
+   * 移る先も同じく見る（SlotSystem.md 3節）。合わなければ失敗で、型の合う別の枠へは振り替えない。
+   */
+  private shiftForPosition(incoming: CellOccupant, at: SlotPosition): CellShift | undefined {
+    if (this.pointsCell(at)) return this.shiftFillingCell(incoming, at.index);
 
     const gapIndex = clampIndex(at.index, this._cells.length);
-    return this.tryPlaceAtGap(stack, gapIndex, 1) || this.tryPlaceAtGap(stack, gapIndex, -1);
+    return this.shiftAtGap(incoming, gapIndex, 1) ?? this.shiftAtGap(incoming, gapIndex, -1);
   }
 
   /**
@@ -342,57 +364,82 @@ export class CellLayout {
     return at.kind === 'cell' && this.hasFixedCells;
   }
 
-  /** 空いているセル(cellIndex)をスタックで埋める（埋まっていれば失敗）。 */
-  private tryFillCell(stack: ObjectStack, cellIndex: number): boolean {
-    if (cellIndex < 0 || cellIndex >= this._cells.length || !this._cells[cellIndex].isEmpty) return false;
-    this._cells[cellIndex].replaceContents(stack);
-    return true;
+  /** 空いているセル(cellIndex)をincomingで埋める動かし方（埋まっているか、枠の宣言に合わなければ失敗）。 */
+  private shiftFillingCell(incoming: CellOccupant, cellIndex: number): CellShift | undefined {
+    if (cellIndex < 0 || cellIndex >= this._cells.length) return undefined;
+    const cell = this._cells[cellIndex];
+    if (!cell.isEmpty || !fitsCell(incoming, cell.def)) return undefined;
+    return { target: cellIndex, emptyAt: cellIndex, step: 1 };
   }
 
-  /** gapIndexの隙間へ、step方向へ既存のセルをずらして場所を作り、スタックを入れる。 */
-  private tryPlaceAtGap(stack: ObjectStack, gapIndex: number, step: 1 | -1): boolean {
+  /** gapIndexの隙間へ、step方向へ既存のセルをずらして場所を作る動かし方。 */
+  private shiftAtGap(incoming: CellOccupant, gapIndex: number, step: 1 | -1): CellShift | undefined {
     return step === 1
-      ? this.tryPlaceShifted(stack, gapIndex - 1, 1)
-      : this.tryPlaceShifted(stack, gapIndex, -1);
+      ? this.shiftToward(incoming, gapIndex - 1, 1)
+      : this.shiftToward(incoming, gapIndex, -1);
   }
 
   /**
-   * originCellIndexのstep隣へ、最寄りの空きセルをその方向からずらして場所を作り、スタックを入れる。
-   * 空きが無ければfalse（＝そちらへは置けない。呼び出し側が反対方向やfallbackへ進む）。
+   * originCellIndexのstep隣へ、最寄りの空きセルをその方向からずらして場所を作る動かし方。空きが無いか、
+   * ずらした先の枠の宣言に合わなければundefined（＝そちらへは置けない。呼び出し側が反対方向や
+   * fallbackへ進む）。
    */
-  private tryPlaceShifted(stack: ObjectStack, originCellIndex: number, step: 1 | -1): boolean {
+  private shiftToward(incoming: CellOccupant, originCellIndex: number, step: 1 | -1): CellShift | undefined {
     const target = originCellIndex + step;
-    if (target < 0) return false;
-    // 枠が増えるスロットには空き枠が残らないので、ずらす先をその都度末尾に作る（右方向のみ）。
-    if (step === 1 && target <= this._cells.length && !this._cells.some((cell) => cell.isEmpty)) {
-      this.tryGrowCell();
+    if (target < 0) return undefined;
+
+    const cellDefs = this._cells.map((cell) => cell.def);
+    const occupants = this._cells.map(occupantOf);
+    // 枠が増えるスロットには空き枠が残らないので、ずらす先を末尾に生やす枠とする（右方向のみ。
+    // 実際に生やすのはtryApplyShift）。
+    if (step === 1 && target <= cellDefs.length && !this.hasFixedCells && !occupants.includes(undefined)) {
+      cellDefs.push(this.def.cellAt(cellDefs.length));
+      occupants.push(undefined);
     }
-    if (target >= this._cells.length) return false;
+    if (target >= cellDefs.length) return undefined;
 
     let emptyAt = -1;
-    for (let i = target; i >= 0 && i < this._cells.length; i += step) {
-      if (this._cells[i].isEmpty) {
+    for (let i = target; i >= 0 && i < occupants.length; i += step) {
+      if (occupants[i] === undefined) {
         emptyAt = i;
         break;
       }
     }
-    if (emptyAt === -1) return false;
+    if (emptyAt === -1) return undefined;
 
-    // emptyからtargetへ、間の**中身**をstep方向へ1つずつずらす（targetを空ける）。枠の宣言は添字に
-    // 留まり、動くのは中身だけ。押し出しはセル単位で行うため、押し出されるスタック（同種複数個）の
-    // 中身の相対順序は変わらない。
     for (let i = emptyAt; i !== target; i -= step)
-      this._cells[i].replaceContents(this._cells[i - step].stack);
-    this._cells[target].replaceContents(stack);
+      if (!fitsCell(occupants[i - step]!, cellDefs[i])) return undefined;
+    return fitsCell(incoming, cellDefs[target]) ? { target, emptyAt, step } : undefined;
+  }
+
+  /**
+   * 動かし方に従ってスタックを置く（shiftが無ければ何もせずfalse）。emptyAtからtargetへ、間の**中身**を
+   * step方向へ1つずつずらす（targetを空ける）。枠の宣言は添字に留まり、動くのは中身だけ。押し出しは
+   * セル単位で行うため、押し出されるスタック（同種複数個）の中身の相対順序は変わらない。
+   */
+  private tryApplyShift(stack: ObjectStack, shift: CellShift | undefined): boolean {
+    if (shift === undefined) return false;
+
+    if (shift.emptyAt === this._cells.length) this.tryGrowCell();
+    for (let i = shift.emptyAt; i !== shift.target; i -= shift.step)
+      this._cells[i].replaceContents(this._cells[i - shift.step].stack);
+    this._cells[shift.target].replaceContents(stack);
     return true;
   }
 
-  /** 枠を指した並び替え。中身だけを入れ替える（枠の宣言はそれぞれの添字に留まる）。 */
+  /**
+   * 枠を指した並び替え。中身だけを入れ替える（枠の宣言はそれぞれの添字に留まる）。入れ替えた先の枠の
+   * 宣言に合わない中身が出るなら入れ替えない（shiftForPositionと同じ規則）。
+   */
   private trySwapCellContents(from: number, cellIndex: number): boolean {
     if (cellIndex < 0 || cellIndex >= this._cells.length) return false;
 
+    const moved = this._cells[from].stack!;
     const swapped = this._cells[cellIndex].stack;
-    this._cells[cellIndex].replaceContents(this._cells[from].stack);
+    if (!fitsCell(stackOccupant(moved), this._cells[cellIndex].def)) return false;
+    if (swapped !== undefined && !fitsCell(stackOccupant(swapped), this._cells[from].def)) return false;
+
+    this._cells[cellIndex].replaceContents(moved);
     this._cells[from].replaceContents(swapped);
     return true;
   }
@@ -427,7 +474,26 @@ interface CellOccupant {
 
 function occupantOf(cell: SlotCell): CellOccupant | undefined {
   const stack = cell.stack;
-  return stack === undefined ? undefined : { def: stack.members[0].def, size: stack.members.length };
+  return stack === undefined ? undefined : stackOccupant(stack);
+}
+
+function stackOccupant(stack: ObjectStack): CellOccupant {
+  return { def: stack.members[0].def, size: stack.members.length };
+}
+
+/** その中身が、枠の宣言（受け入れる型とmax）に合うか。 */
+function fitsCell(occupant: CellOccupant, cellDef: CellDef): boolean {
+  return cellDef.accepts(occupant.def) && (cellDef.max === undefined || occupant.size <= cellDef.max);
+}
+
+/**
+ * 位置を指定して置くときの中身の動かし方。emptyAt（空き枠）からtargetまでの中身がstep方向へ1つずつ
+ * ずれ、空いたtargetへ入る。emptyAtが並びの長さに等しければ、そこは末尾に生やす枠。
+ */
+interface CellShift {
+  readonly target: number;
+  readonly emptyAt: number;
+  readonly step: 1 | -1;
 }
 
 /**
@@ -455,14 +521,7 @@ function augmentingPath(
   occupants: readonly (CellOccupant | undefined)[],
   visited: Set<number>,
 ): number[] | undefined {
-  const fits = (index: number): boolean => {
-    const cellDef = cellDefs[index];
-    return (
-      !visited.has(index) &&
-      cellDef.accepts(incoming.def) &&
-      (cellDef.max === undefined || incoming.size <= cellDef.max)
-    );
-  };
+  const fits = (index: number): boolean => !visited.has(index) && fitsCell(incoming, cellDefs[index]);
 
   const empty = occupants.findIndex((occupant, index) => occupant === undefined && fits(index));
   if (empty >= 0) return [empty];

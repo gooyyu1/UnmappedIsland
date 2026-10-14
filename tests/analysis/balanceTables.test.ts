@@ -136,6 +136,199 @@ object_defs:
 });
 
 /**
+ * その型を1つ手に持っていないと行えない工程を、その型の出どころに数えないこと（issue #2314）。
+ *
+ * 株分けは親株を道具として使い、親株は減らない。繰り返せば増えるが、1株目はこの工程では手に
+ * 入らない——それを作り方と数えると、探索でしか得られない1株目の時間が表から消える。
+ * **株分けは労働0**なので、数え落とせば `chain_untimed_routes` の側に出る。
+ *
+ * 接ぎ木は「植物」タグの道具を取る。株のほかに島のどこかで手に入る植物が在れば、株を持たずに行える
+ * 正当な作り方で、株より安いか・その植物に値段が付くかでは答えが変わらない。どこでも手に入らない
+ * 植物しか無ければ、株が無いと行えない（issue #2628）。
+ */
+describe('道具を産物と同じ型でしか満たせない工程', () => {
+  const tablesWith = (cuttingTags: string, saltTags = 'item', ghostTags = 'item') =>
+    buildBalanceTables(
+      new WorldCodexYamlLoader()
+        .load(
+          'test.yaml',
+          `
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      hydration:
+        value: 96
+        range: {min: 0, max: 96}
+        passives:
+          - add: {self: {hydration: -1}}
+
+  grassland:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 60
+        spawn: {object: succulent, into: self}
+
+  sandy_beach:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 15
+        spawn: {object: shell, into: self}
+
+  forest:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 100
+        spawn: {object: cutting, into: self}
+
+  cutting:
+    tags: [${cuttingTags}]
+
+  # 朽ちない設備。塩は手に入るが、寿命が無いので値段が付かない（obtainableWithoutCost）。
+  salt_pan:
+    tags: [fixture]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - add: {self: {drying_remaining: -1}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+    recipes:
+      laid:
+        steps:
+          - requires:
+              - {object: shell, count: 1, consume: true}
+            duration: 60
+
+  salt:
+    tags: [${saltTags}]
+
+  # 作る工程も見つけ方も無いもの。
+  ghost:
+    tags: [${ghostTags}]
+
+  shell:
+    tags: [item]
+    interactions:
+      graft:
+        trigger: {drag: {tag: plant}}
+        duration: 1
+        spawn: {object: succulent}
+
+  succulent:
+    tags: [item, plant]
+    interactions:
+      divide:
+        trigger: menu
+        spawn: {object: succulent}
+      chew:
+        trigger: menu
+        duration: 5
+        destroy: self
+        add: {agent: {hydration: 96}}
+`,
+        )
+        .buildAndReset(),
+      'medic',
+    );
+
+  const hydrationRouteSteps = (tables: ReturnType<typeof tablesWith>, placeName: string) =>
+    (
+      tables.places
+        .find((place) => place.name === placeName)!
+        .properties.find((chains) => chains.propertyName === 'hydration')?.routes ?? []
+    ).map((route) => route.route.steps.map((step) => `${step.objectName}.${step.stepName}`));
+
+  const succulentCost = (tables: ReturnType<typeof tablesWith>) =>
+    tables.objectCosts.find((cost) => cost.objectName === 'succulent')!;
+
+  describe('植物が株しか無いとき', () => {
+    const tables = tablesWith('item');
+
+    it('値段は、株分けでも接ぎ木でもなく1株目を探す時間になる', () => {
+      expect(succulentCost(tables)).toMatchObject({ minutes: 60, exploreMinutes: 60 });
+    });
+
+    it.each([WHOLE_ISLAND, 'grassland'])('%s の経路は、1株目を探すところから始まる', (place) => {
+      expect(hydrationRouteSteps(tables, place)).toEqual([['grassland.explore', 'succulent.chew']]);
+    });
+
+    it('株の採れない土地では、株分けも接ぎ木もその土地の作り方にならない', () => {
+      // 株は持ち込むしかないので、この土地を起点にした経路は無い。
+      expect(hydrationRouteSteps(tables, 'sandy_beach')).toEqual([]);
+    });
+  });
+
+  describe('挿し穂も植物のとき', () => {
+    const tables = tablesWith('item, plant');
+
+    it('接ぎ木は、挿し穂を道具にできるので株の作り方に数える', () => {
+      // 株（60分）が挿し穂（100分）より安くても、株を持たずに行えることは変わらない。
+      expect(succulentCost(tables)).toMatchObject({
+        minutes: 1,
+        steps: [{ objectName: 'shell', stepName: 'graft' }],
+      });
+    });
+
+    it('株分けは、それでも株の作り方にならない', () => {
+      for (const place of [WHOLE_ISLAND, 'grassland', 'sandy_beach', 'forest'])
+        for (const steps of hydrationRouteSteps(tables, place))
+          expect(steps).not.toContain('succulent.divide');
+    });
+  });
+
+  describe('値段の付かない塩も植物のとき', () => {
+    const tables = tablesWith('item', 'item, plant');
+
+    it('接ぎ木は、塩を道具にできるので株の作り方に数える', () => {
+      // 値段の付かない型が埋まるのは値段を積み終えた後。途中で「手に入るか」を見ると外れる。
+      expect(tables.objectCosts.find((cost) => cost.objectName === 'salt')).toMatchObject({
+        obtainableWithoutCost: true,
+      });
+      expect(succulentCost(tables)).toMatchObject({
+        minutes: 1,
+        steps: [{ objectName: 'shell', stepName: 'graft' }],
+      });
+    });
+  });
+
+  describe('どこでも手に入らない型だけが他の植物のとき', () => {
+    const tables = tablesWith('item', 'item', 'item, plant');
+
+    it('接ぎ木は、株が無いと行えないので株の作り方にならない', () => {
+      expect(tables.objectCosts.find((cost) => cost.objectName === 'ghost')).toMatchObject({
+        minutes: undefined,
+        obtainableWithoutCost: false,
+      });
+      expect(succulentCost(tables)).toMatchObject({ minutes: 60, exploreMinutes: 60 });
+    });
+
+    it.each([WHOLE_ISLAND, 'grassland'])('%s の経路は、1株目を探すところから始まる', (place) => {
+      expect(hydrationRouteSteps(tables, place)).toEqual([['grassland.explore', 'succulent.chew']]);
+    });
+
+    it('株の採れない土地では、接ぎ木もその土地の作り方にならない', () => {
+      expect(hydrationRouteSteps(tables, 'sandy_beach')).toEqual([]);
+    });
+  });
+});
+
+/**
  * 海区にしか湧かないものを、島の表が1つも数えないこと（issue #921）。
  *
  * 海区に湧く漁り場は、島から見れば入手経路が無い。それでも工程として数えると、その物の代表経路が
@@ -612,6 +805,122 @@ object_defs:
 });
 
 /**
+ * 「手に入るか」は、値段が付くかではなく入力が揃うかで決まる。**道具の欠けた工程の産物にも値段は付く**
+ * （道具の時間は按分しない、#550）ので、値段で答えると、手に入らない物から建てた設備の産物までが
+ * 「値段は付かないが手に入る」側へ入る。
+ */
+describe('道具の欠けた工程の産物から作る物', () => {
+  const YAML = `
+object_defs:
+  medic:
+    tags: [character]
+
+  orchard:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      pick:
+        trigger: menu
+        duration: 10
+        spawn: {object: fruit, into: self}
+      comb:
+        trigger: menu
+        duration: 10
+        spawn: [{object: shell, into: self}, {object: husk, into: self}]
+
+  # 入手経路が無い道具。
+  spear:
+    tags: [item]
+
+  fruit:
+    tags: [item]
+    interactions:
+      pierce:
+        trigger: {drag: {object: spear}}
+        duration: 5
+        destroy: self
+        spawn: {object: fruit_water}
+
+  fruit_water:
+    tags: [item]
+
+  # 道具の欠けた工程の産物から建てる、朽ちない設備。
+  juice_press:
+    tags: [fixture]
+    slots:
+      juice:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      press_remaining:
+        value: 12
+        range: {min: 0, max: 12}
+        passives:
+          - add: {self: {press_remaining: -1}}
+        on_min:
+          add: {self: {press_remaining: 12}}
+          spawn: {object: juice, into: self}
+    recipes:
+      built:
+        steps:
+          - requires:
+              - {object: fruit_water, count: 1, consume: true}
+            duration: 30
+
+  juice:
+    tags: [item]
+
+  # 道具の欠けた工程の産物から作る道具と、それを道具に取る工程。
+  knife:
+    tags: [item]
+  shell:
+    tags: [item]
+    interactions:
+      grind:
+        trigger: {drag: {object: fruit_water}}
+        duration: 5
+        destroy: [self, instrument]
+        spawn: {object: knife}
+  husk:
+    tags: [item]
+    interactions:
+      split:
+        trigger: {drag: {object: knife}}
+        duration: 5
+        destroy: self
+        spawn: {object: fiber}
+  fiber:
+    tags: [item]
+`;
+
+  const tables = buildBalanceTables(
+    new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset(),
+    'medic',
+  );
+
+  const costOf = (objectName: string) => tables.objectCosts.find((cost) => cost.objectName === objectName)!;
+
+  it('道具の欠けた工程の産物は、値段が付いても道具が無いという印が立つ', () => {
+    expect(costOf('fruit_water')).toMatchObject({ minutes: 15, blockedByTool: true });
+  });
+
+  it('それから作った道具は、値段が付いても、要る道具として手に入る側に数えない', () => {
+    expect(costOf('knife').minutes, '道具そのものには値段が付く').toBeDefined();
+    expect(costOf('fiber')).toMatchObject({ blockedByTool: true });
+  });
+
+  it('それから建てた設備の産物は、手に入る側に入らず、足りない入力に設備が挙がる', () => {
+    expect(costOf('juice')).toMatchObject({
+      minutes: undefined,
+      obtainableWithoutCost: false,
+      missing: ['juice_press'],
+    });
+  });
+});
+
+/**
  * 待ち生産表の周期と「いつ働くか」が、**同じ組み合わせ**から出ること（issue #1433）。
  *
  * 周期は「同時に成立しうる組み合わせのうち最も遅いもの」から決まる。条件のほうを別の基準で
@@ -1022,5 +1331,137 @@ object_defs:
 
   it('その道具は、島のどこにも入手経路が無いもの（穴）にはならない', () => {
     expect(tables.gaps).toEqual([]);
+  });
+});
+
+/**
+ * 道具の持ち込み（`imported`）と、経路の起点（`rootedHere`）の分かれ目（issue #2313。
+ * BalanceStats.md「連鎖表」の `imported`）。
+ *
+ * 道具の `imported` は入手連鎖を伝う——持ち込んだ石を打った刃物も持ち込みが要る。一方、土地の表から
+ * 経路を外すのは**その土地に置けない前提**だけで、持ち運べる道具（`item`）は外さない。
+ */
+describe('道具の持ち込みと、経路の起点', () => {
+  const YAML = `
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      hydration:
+        value: 96
+        range: {min: 0, max: 96}
+        passives:
+          - add: {self: {hydration: -1}}
+
+  quarry:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 60
+        spawn: [{object: stone, into: self}, {object: spring, into: self}]
+
+  grove:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 30
+        spawn: {object: fruit_tree, into: self}
+
+  stone:
+    tags: [item]
+    interactions:
+      knap:
+        trigger: menu
+        duration: 20
+        destroy: self
+        spawn: {object: blade}
+
+  blade:
+    tags: [item]
+
+  spring:
+    tags: [fixture]
+    interactions:
+      scoop:
+        trigger: menu
+        duration: 5
+        spawn: {object: spring_water}
+
+  fruit_tree:
+    tags: [fixture]
+    interactions:
+      pick:
+        trigger: {drag: {object: stone}}
+        duration: 5
+        spawn: {object: fruit}
+
+  fruit:
+    tags: [item]
+    interactions:
+      cut:
+        trigger: {drag: {object: blade}}
+        duration: 5
+        destroy: self
+        spawn: {object: fruit_water}
+
+  fruit_water:
+    tags: [item]
+    interactions:
+      drink:
+        trigger: menu
+        duration: 5
+        destroy: self
+        add: {agent: {hydration: 96}}
+
+  spring_water:
+    tags: [item]
+    interactions:
+      drink:
+        trigger: menu
+        duration: 5
+        destroy: self
+        add: {agent: {hydration: 96}}
+`;
+
+  const tables = buildBalanceTables(
+    new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset(),
+    'medic',
+  );
+
+  /** その土地の表で、hydrationを埋める経路のうち末尾の工程が指定の型のもの。無ければundefined。 */
+  const routeEndingAt = (objectName: string, placeName: string) =>
+    tables.places
+      .find((place) => place.name === placeName)!
+      .properties.find((chains) => chains.propertyName === 'hydration')
+      ?.routes.find((route) => route.route.steps.at(-1)?.objectName === objectName)?.route;
+
+  it('持ち込んだ材料で作った道具は、材料と同じく持ち込みになる', () => {
+    // 果樹林では石が採れない。刃物はそこで石を打って作れるが、その石は持ち込み。
+    const route = routeEndingAt('fruit_water', 'grove')!;
+    const importedOf = (label: string) =>
+      route.prerequisites.find((prerequisite) => prerequisite.label === label)?.imported;
+
+    expect([importedOf('stone'), importedOf('blade')]).toEqual([true, true]);
+    expect(route.needsImport).toBe(true);
+  });
+
+  it('持ち運べる道具の持ち込みでは、経路は土地の表から落ちない', () => {
+    // 果樹林の経路は果樹林の探索を含まない（果樹は前提として並ぶ）ので、起点を決めるのは前提の側。
+    const route = routeEndingAt('fruit_water', 'grove')!;
+
+    expect(route.steps.map((step) => step.objectName)).not.toContain('grove');
+    expect(route.rootedHere).toBe(true);
+  });
+
+  it('他の土地にしか無い採取ポイントが要る経路は、その土地の表に載らない', () => {
+    // 泉は石切り場にしか無く、持ち運べない。果樹林から泉の水を汲む経路は果樹林を起点にしない。
+    expect(routeEndingAt('spring_water', 'quarry')).toBeDefined();
+    expect(routeEndingAt('spring_water', 'grove')).toBeUndefined();
   });
 });

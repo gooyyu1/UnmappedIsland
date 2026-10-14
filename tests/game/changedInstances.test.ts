@@ -3,7 +3,6 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldChange } from '../../src/domain/WorldChange';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import {
   bornInstances,
   lungeTargetsByInstance,
@@ -13,6 +12,7 @@ import {
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { AGENT_YAML } from '../support/agent';
 import { fixedRng } from '../support/rng';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 世界に起きた変化を、カードの動きの言葉へ直す（changedInstances、docs/engine/HuntingSystem.md 6.2節と
@@ -29,7 +29,7 @@ object_defs:
       day: {value: 0}
       hour: {value: 0}
       minute: {value: 0}
-      minutes_per_tick: {value: 15}
+      minutes_per_tick: {value: ${MINUTES_PER_TICK}}
     slots:
       locations: {cell: {accept: {tag: location}}}
   ground:
@@ -85,8 +85,7 @@ object_defs:
       .load('agent.yaml', AGENT_YAML)
       .buildAndReset();
     session = new WorldSession(codex, fixedRng(0.5));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     ground = spawn('ground');
     expect(ground.moveToSlotOrRejection(worldInstance.getSlot(slot('locations')))).toBeUndefined();
   });

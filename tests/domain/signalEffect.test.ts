@@ -4,11 +4,11 @@ import type { WorldChange } from '../../src/domain/WorldChange';
 import type { WorldSignal } from '../../src/domain/WorldSignal';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { AGENT_YAML } from '../support/agent';
 import { fixedRng } from '../support/rng';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * 起きたことを告げる効果（signal、GameElementDefinition.md 9.8節）の自動テスト。
@@ -25,7 +25,7 @@ object_defs:
       day: {value: 0}
       hour: {value: 0}
       minute: {value: 0}
-      minutes_per_tick: {value: 15}
+      minutes_per_tick: {value: ${MINUTES_PER_TICK}}
     slots:
       locations: {cell: {accept: {tag: location}}}
   ground:
@@ -117,8 +117,7 @@ object_defs:
 
   function open(roll: number): void {
     session = new WorldSession(codex, fixedRng(roll));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     ground = spawn('ground');
     expect(
       ground.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),

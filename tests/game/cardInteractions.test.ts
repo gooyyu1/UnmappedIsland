@@ -213,7 +213,6 @@ object_defs:
         name: defName,
         place: mini.slot('items', mini.land),
         objects,
-        objectGlobalId: objects[0].def.globalId,
         movedIds: () => objects.map((object) => object.instanceId),
         actions: [],
         visibleSlots: [],

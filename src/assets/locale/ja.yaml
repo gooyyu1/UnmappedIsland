@@ -421,7 +421,7 @@ object_texts:
         description: 短く眠る。体力に加えて眠気も引く。
       sleep:
         display_name: 睡眠
-        description: 通しで眠る。地面でも眠れるが、寝床の上のほうが体力が戻る。一晩では眠気は戻り切らない。
+        description: 通しで眠る。地面でも眠れるが、寝床の上のほうが体力が戻る。1回では眠気は戻り切らない。
       collapse:
         display_name: 倒れ込む
         description: 体力が尽きて倒れ込む。プレイヤーが起こすものではなく、手が出せないまま時間が過ぎる。
