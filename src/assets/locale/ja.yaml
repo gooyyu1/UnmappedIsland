@@ -427,7 +427,7 @@ object_texts:
         description: 体力が尽きて倒れ込む。プレイヤーが起こすものではなく、手が出せないまま時間が過ぎる。
       fall_asleep:
         display_name: 眠り込む
-        description: 眠気に負けて眠り込む。プレイヤーが起こすものではなく、寝床が無くても時間が過ぎる。
+        description: 眠気に負けて眠り込む。プレイヤーが起こすものではなく、どこにいても時間が過ぎる。
       despair:
         display_name: 打ちひしがれる
         description: 幸福度が尽きて手につかなくなる。プレイヤーが起こすものではなく、手が出せないまま時間が過ぎる。
