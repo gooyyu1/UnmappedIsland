@@ -13,12 +13,16 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 
 import numpy as np
 from PIL import Image
 from scipy.ndimage import gaussian_filter
 
 from card_frame import cover, rounded_mask
+
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
 
 # 寸法（px、1u=2px）。紙の上にリングが伸びるぶんだけ、キャンバスは紙より背が高い。
 # FlipCalendar.ts は紙の高さを桁の寸法に合わせて表示するので、PAPER_HEIGHT と OVERHEAD の比を

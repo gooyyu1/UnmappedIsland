@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { MODULE } from '../../scripts/settledDeclarations.mjs';
 import { ROOT } from '../support/sourceFiles';
 
 /**
@@ -68,6 +69,7 @@ const READ_ONLY_FROM_OUTSIDE = [
   'src/art/iconArt.ts ICON_NAMES',
   'src/asset-pack/install.ts AssetPacks',
   'src/asset-pack/zip.ts ZipReadError',
+  'src/codex-viewer/balancePage.ts SAMPLE_CHARACTER',
   'src/codex-viewer/describe/Description.ts DescriptionWriter.toPlainText',
   'src/codex-viewer/networkLayout.ts LayoutEdge',
   'src/domain/CardFilter.ts CardFilter.tagGlobalIds',
@@ -120,7 +122,7 @@ const CALLED_WITHOUT_NAME = [
 /** `scripts/declarationInventory.mjs --json` の1件。読むのはこの検査が使う分だけ。 */
 interface Declaration {
   readonly file: string;
-  /** 所属するクラス・インターフェース。モジュール直下の宣言は`MODULE`。 */
+  /** 所属。モジュール直下の宣言は`MODULE`。 */
   readonly owner: string;
   readonly name: string;
   /** `class`・`interface`・`function`・`ctor`など。メンバの所有者がどちらかを見るのに使う。 */
@@ -133,9 +135,6 @@ interface Declaration {
   /** 同じファイルの、所属の外に読み手が居る。メンバだけが持つ。 */
   readonly referencedInOwnFileOutsideOwner?: boolean;
 }
-
-/** モジュール直下の宣言に、インベントリが付ける所属名。 */
-const MODULE = '(モジュール)';
 
 /** 一覧に並べる名前。所属を持つメンバだけが`所有者.名前`になる。 */
 function labelOf(declaration: Declaration): string {

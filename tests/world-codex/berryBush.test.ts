@@ -4,7 +4,6 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { TICKS_PER_DAY } from '../../src/domain/worldTime';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex } from '../support/worldCodexFiles';
 
@@ -25,7 +24,7 @@ const BERRIES_PER_HARVEST = 2;
 /**
  * 実った後、そのまま置いて様子を見る日数。
  *
- * **屋外に置いた実が腐って消えるまで（3.3日、foods.yamlのspoils_normalと屋外の上乗せ）より短く
+ * **屋外に置いた実が腐って消えるまで（foods.yamlのspoils_normalと屋外の上乗せ）より短く
  * 採ること。** 長くすると、枠が空いてタイマーが回り直した後の**別の回の実**を見ることになり、
  * 「増えていない」と「入れ替わった」が個数では見分けられなくなる。
  */
@@ -51,8 +50,7 @@ describe('ベリーの茂み', () => {
    */
   function atBush(): void {
     session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     land = spawnInto('grassland', worldInstance, 'locations');
     bush = spawnInto('berry_bush', land, 'fixtures');
     bush.getProperty(ripeningRemainingId).setNumberWithoutEvents(RIPENING_DAYS * TICKS_PER_DAY);

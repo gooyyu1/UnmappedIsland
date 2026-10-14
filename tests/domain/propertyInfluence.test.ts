@@ -3,8 +3,8 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { PropertyInfluence } from '../../src/domain/PropertyInfluence';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * ステータス詳細ウィンドウ（docs/ui/Windows.md 8節）に並ぶ影響の出入りを、持続効果の宣言
@@ -27,13 +27,13 @@ object_defs:
   world:
     singleton: true
     props:
-      minutes_per_tick: {value: 15}
+      minutes_per_tick: {value: ${MINUTES_PER_TICK}}
       minute:
         value: 0
-        range: {min: 0, max: 60}
+        range: {min: 0, max: ${MINUTES_PER_HOUR}}
         on_max:
-          add: {self: {minute: -60, hour: 1}}
-      hour: {value: 0, range: {min: 0, max: 24}}
+          add: {self: {minute: -${MINUTES_PER_HOUR}, hour: 1}}
+      hour: {value: 0, range: {min: 0, max: ${HOURS_PER_DAY}}}
       day: {value: 1}
     slots:
       stuff: {}
@@ -49,10 +49,10 @@ object_defs:
       .load('world.yaml', WORLD_YAML)
       .load('extra.yaml', yaml)
       .buildAndReset();
-    const worldDef = codex.objects.get(codex.objectNames.getId('world'));
     const session = new WorldSession(codex);
-    const world = new World(new WorldObject(nextInstanceId++, worldDef, session));
-    session.adoptWorld(world);
+    const world = session.createWorld();
+    // worldの番号はセッションが配るので、手で配る番号はその後から続ける。
+    nextInstanceId = world.instance.instanceId + 1;
     const stuff = world.instance.getSlot(codex.slotNames.getId('stuff'));
 
     return {

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { objectCostMinutesOf } from '../../src/analysis/balanceTables';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { bundledBalanceTables, bundledCodex } from '../support/worldCodexFiles';
 import type { BalanceTables } from '../../src/analysis/balanceTables';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
@@ -36,8 +35,7 @@ interface Camp {
 /** 何も据えていない砂浜と、そこに立つ主人公。 */
 function camp(): Camp {
   const session = new WorldSession(codex);
-  const world = session.createObject(codex.objectNames.getId('world'));
-  session.adoptWorld(new World(world));
+  const world = session.createWorld().instance;
 
   const land = session.createObject(codex.objectNames.getId('sandy_beach'));
   expect(land.moveToSlotOrRejection(world.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();

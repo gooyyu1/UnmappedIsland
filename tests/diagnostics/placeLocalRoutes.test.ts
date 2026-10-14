@@ -80,8 +80,58 @@ describe('土地で完結する経路は、土地の表に出る', () => {
       .flatMap((property) => property.routes)
       .filter(({ route }) => route.devices.some((device) => device.deviceName === 'snare'));
 
-    expect(viaSnare.length).toBeGreaterThan(0);
-    expect(viaSnare.map(({ route }) => route.needsImport)).not.toContain(true);
+    // 山腹の経路は山腹の探索を含まないので、載っていること自体が「材料（ネズミ）が持ち込みに
+    // 差し替わっていない」ことを示す（`rootedHere`）。**`needsImport`は真でよい**——くくり罠の
+    // 繊維は山腹で採れず、罠は持ち込みが要る（issue #2313）。
+    const snareImported = viaSnare.map(
+      ({ route }) =>
+        route.prerequisites.find((prerequisite) => prerequisite.objectName === 'snare')?.imported,
+    );
+    expect(snareImported.length).toBeGreaterThan(0);
+    expect(snareImported).toEqual(snareImported.map(() => true));
+  });
+
+  it('その土地の探索を含む経路は、他の土地にしか無い泉が要っても載る', () => {
+    // 岸壁に泉は無い。それでも岸壁の探索から始まる経路は、起点が岸壁なので岸壁の表に残る
+    // （BalanceStats.md「連鎖表」の `imported`）。
+    const cliffCoast = tables.places.find((place) => place.name === 'cliff_coast')!;
+    const needsSpring = cliffCoast.properties
+      .flatMap((property) => property.routes)
+      .filter(({ route }) =>
+        route.prerequisites.some((prerequisite) => prerequisite.objectName === 'spring'),
+      );
+
+    expect(needsSpring.length).toBeGreaterThan(0);
+    for (const { route } of needsSpring) {
+      expect(route.prerequisites.find((prerequisite) => prerequisite.objectName === 'spring')?.imported).toBe(
+        true,
+      );
+      expect(route.steps.map((step) => step.objectName)).toContain('cliff_coast');
+    }
+  });
+});
+
+/**
+ * 道具の `imported` が、**同じ出どころを持つ道具どうしで割れない**こと（issue #2313）。尖った石は
+ * 石を打って作るので、石が持ち込みの土地では、そこで打った尖った石も持ち込みが要る。
+ */
+describe('道具の持ち込みは、入手連鎖を伝う', () => {
+  const tables = bundledBalanceTables();
+  const sandyBeach = tables.places.find((place) => place.name === 'sandy_beach')!;
+
+  it('砂浜では、石も尖った石も持ち込み', () => {
+    const importedByObject = new Map<string, Set<boolean>>();
+    for (const property of sandyBeach.properties)
+      for (const { route } of property.routes)
+        for (const { objectName, imported } of route.prerequisites) {
+          if (objectName !== 'stone' && objectName !== 'sharp_stone') continue;
+          importedByObject.set(objectName, (importedByObject.get(objectName) ?? new Set()).add(imported));
+        }
+
+    expect(Object.fromEntries([...importedByObject].map(([name, values]) => [name, [...values]]))).toEqual({
+      stone: [true],
+      sharp_stone: [true],
+    });
   });
 });
 

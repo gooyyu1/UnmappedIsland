@@ -9,8 +9,6 @@ import { islandLocationsOf } from '../../src/analysis/islandLocations';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
 import type { PropertyRange } from '../../src/domain/PropertyDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { World } from '../../src/domain/wrappers/World';
-import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
 import {
@@ -19,13 +17,13 @@ import {
   formatYamlReport,
   rounded,
   statRecordWith,
-  yieldToEventLoop,
 } from '../support/generatedReport';
+import { yieldToEventLoop } from '../support/yieldToEventLoop';
 import { Stat } from '../support/Stat';
 import { bundledCodex, worldCodexPath } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 import { type SymbolGlobalId, symbolGlobalIdOfPropertyValue } from '../../src/domain/GlobalId';
-import { TICKS_PER_DAY } from '../../src/domain/worldTime';
+import { MINUTES_PER_HOUR, MINUTES_PER_TICK, TICKS_PER_DAY } from '../../src/domain/worldTime';
 
 /**
  * 気候システム（ClimateSystem.md）の現在の実装について、季節の持続日数・気温・天気ごとの発生時間・
@@ -163,7 +161,7 @@ function processCompletedSegment(
   const len = temps.length;
   if (len === 0) return;
 
-  getStat(stats.seasonDuration, seasonSymbolId).add(len / 96);
+  getStat(stats.seasonDuration, seasonSymbolId).add(len / TICKS_PER_DAY);
 
   for (let i = 0; i < len; i++) {
     const third = Math.min(2, Math.trunc((i * 3) / len));
@@ -188,10 +186,14 @@ function processCompletedSegment(
     occupiedTicksByThird.set(key, (occupiedTicksByThird.get(key) ?? 0) + 1);
   }
   for (const w of weatherKinds) {
-    getStat(stats.weatherTimeOverall, `${w},${seasonSymbolId}`).add((occupiedTicks.get(w) ?? 0) * 0.25);
+    getStat(stats.weatherTimeOverall, `${w},${seasonSymbolId}`).add(
+      ((occupiedTicks.get(w) ?? 0) * MINUTES_PER_TICK) / MINUTES_PER_HOUR,
+    );
     for (let third = 0; third < 3; third++) {
       const occupied = occupiedTicksByThird.get(`${w},${third}`) ?? 0;
-      getStat(stats.weatherTimeThird, `${w},${seasonSymbolId},${third}`).add(occupied * 0.25);
+      getStat(stats.weatherTimeThird, `${w},${seasonSymbolId},${third}`).add(
+        (occupied * MINUTES_PER_TICK) / MINUTES_PER_HOUR,
+      );
     }
   }
 
@@ -201,7 +203,7 @@ function processCompletedSegment(
     if (i < len && rainWeatherKinds.has(weathers[i]) === rainWeatherKinds.has(weathers[runStart])) continue;
     const runLen = i - runStart;
     const third = Math.min(2, Math.trunc((runStart * 3) / len));
-    const days = runLen / 96;
+    const days = runLen / TICKS_PER_DAY;
     if (rainWeatherKinds.has(weathers[runStart])) {
       getStat(stats.rainStreak, seasonSymbolId).add(days);
       getStat(stats.rainStreakThird, `${seasonSymbolId},${third}`).add(days);
@@ -428,8 +430,7 @@ async function buildReportFromDefinitions(): Promise<string> {
     await yieldToEventLoop();
 
     const session = new WorldSession(codex, seededRng(seed));
-    const worldInstance = new WorldObject(1, worldDef, session);
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
 
     // 現在進行中のセグメント（季節が変わるまでの一区間）のバッファ
     // 季節も天気もシンボル型（6.6節）なので、値はsymbolNamesのID。
@@ -458,7 +459,7 @@ async function buildReportFromDefinitions(): Promise<string> {
     };
 
     for (let t = 0; t < totalTicks; t++) {
-      session.advanceWorldTime(15); // minutes_per_tick分。ちょうど1tick進める
+      session.advanceWorldTime(MINUTES_PER_TICK); // ちょうど1tick進める
 
       const currentSeason = symbolGlobalIdOfPropertyValue(
         worldInstance.tryGetProperty(seasonId)?.number ?? 0,
@@ -575,6 +576,30 @@ describe('climate.yamlの鮮度', () => {
         `${String(record.season)} / ${String(record.weather)} の標本数。` +
           'ClimateSystem.md 3.4節が、この節を季節インスタンス単位として読んでいる',
       ).toBe(seasonSamples.get(String(record.season)));
+  });
+
+  /**
+   * `SeasonName`・`WeatherName` は`core.yaml`のシンボルの写し。**天候を数える側（`sunlitEvaporation`）は
+   * `WeatherName` を鍵にした表を「天候の全部」として回す**ので、シンボルが1つ増えても型が増えなければ、
+   * その天候だった時間は黙ってどこにも数えられない。型そのものは読めないので、同じ型を鍵に持つ
+   * `SEASON_CLIMATE` の鍵で突き合わせる。
+   */
+  it('書き写した季節と天候が、`core.yaml`のシンボルと過不足なく一致する', () => {
+    const codex = bundledCodex();
+    const world = codex.objects.get(codex.objectNames.getId('world'));
+    const symbolsOf = (propertyName: string): string[] =>
+      world
+        .tryGetPropertyDef(codex.propertyNames.getId(propertyName))!
+        .stages.map((stage) => stage.name)
+        .sort();
+
+    expect(SEASON_CLIMATE.map((season) => season.name).sort(), '季節（SeasonName）').toEqual(
+      symbolsOf('season'),
+    );
+    for (const season of SEASON_CLIMATE)
+      expect(Object.keys(season.hoursByWeather).sort(), `${season.name} の天候（WeatherName）`).toEqual(
+        symbolsOf('weather'),
+      );
   });
 
   it('外した土地の節が、今の定義で外れるものと過不足なく一致する', () => {

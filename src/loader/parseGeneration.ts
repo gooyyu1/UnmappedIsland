@@ -127,8 +127,8 @@ function parseGeneratorLayer(context: string, node: YAMLMap): GeneratorLayer {
 
 /**
  * variants（亜種、TerrainGeneration.md 3.6節）。`- {id: berry, props: {berry_find: 30}}` の並び。
- * propsのプロパティが実在するかの検証はbuildGenerationDefsまで遅延する（object_defが別ファイルで
- * 後から定義されうるため、object_defの実在検証と同じ理由）。
+ * propsのプロパティをその土地のobject_defが持つかの検証はbuildGenerationDefsまで遅延する
+ * （object_defが別ファイルで後から定義されうるため）。
  */
 function parseVariants(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): LocationVariantDef[] {
   const variants: LocationVariantDef[] = [];
@@ -165,8 +165,10 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, raw: Yaml
   const context = `location_types.'${name}'`;
   const node = asMap(raw, context);
 
-  // object_defの実在検証はbuildGenerationDefsまで遅延する（別ファイルで後から定義されうるため）。
-  const objectDefGlobalId = loader.objectNames.intern(requireScalar(node, 'object_def', context));
+  const objectDefGlobalId = loader.referToObjectDef(
+    requireScalar(node, 'object_def', context),
+    `${context}.object_def`,
+  );
   const variants = parseVariants(loader, context, node);
 
   const scopes: string[] = [];
@@ -354,17 +356,13 @@ export function buildGenerationDefs(
   )
     return undefined;
 
-  // 型の一覧を名前で引くのはここだけの仕事。**指した名前がグローバルIDへ解決できるか**は
-  // 生成の宣言だけでは答えられない（GenerationDefsはobject_defの表もNameRegistryも持たない）。
   for (const type of loader.generationLocationTypes) {
-    if (!objectDefsByGlobalId.has(type.objectDefGlobalId))
-      throw new YamlLoadError(
-        `location_types '${type.name}' が参照するobject_def '${loader.objectNames.getName(type.objectDefGlobalId)}' が見つかりません。`,
-      );
+    // 型が定義されているかは、名指し（DeclarationReference）の検査がWorldCodexで見る。
+    const objectDef = objectDefsByGlobalId.get(type.objectDefGlobalId);
+    if (objectDef === undefined) continue;
 
     // 亜種が上書きするプロパティは、その土地のobject_defが持っていなければならない（持たない
     // プロパティへの書き込みは黙って消えるため、書き間違いをここで止める）。
-    const objectDef = objectDefsByGlobalId.get(type.objectDefGlobalId)!;
     for (const variant of type.variants)
       for (const propertyGlobalId of variant.props.keys())
         if (objectDef.tryGetPropertyDef(propertyGlobalId) === undefined)

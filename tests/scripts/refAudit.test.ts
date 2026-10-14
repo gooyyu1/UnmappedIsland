@@ -5,6 +5,8 @@ import { dirname, join, resolve } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { LEDGER, UNSET, hasRefAuditWork, refAuditBatch } from '../../scripts/daemon/refAudit.mjs';
+import { TIMEOUT_FOR_CLONE_HISTORY } from '../support/timeoutForCloneHistory';
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
 
 /**
  * `scripts/daemon/refAudit.mjs`——**節番号の参照を、この周はどこまで読むか**を決める段——の検査。
@@ -77,7 +79,7 @@ function batch(repo: string, options?: { budget?: number }) {
   };
 }
 
-describe('refAudit.mjs', () => {
+describe('refAudit.mjs', timeoutOnWindows(30_000), () => {
   // ## 掃く分
   //
   // 既に在る参照は誰も読んでいないので、変わった分だけを追っても減らない。**並びは追跡している
@@ -298,13 +300,65 @@ describe('refAudit.mjs', () => {
     expect(batch(repo).sweep).toEqual(['z.md']);
   });
 
+  // **判断の履歴は、解釈の節だけを読む**（`docs/DocumentStyle.md` 10節）。原文の側の参照は
+  // 書き換えられないので、範囲に積むと読んでも手の出しようが無い。畳み終えた `archive/` は読まない。
+  it('判断の履歴は、未処理のものの解釈の節の参照だけを数える', () => {
+    const decision = (said: string, read: string): string =>
+      `---\ncontext: 当時（${cite('9')}）\n---\n\n## ユーザーの発言\n\n> ${said}\n\n## エージェントの解釈\n\n- ${read}\n`;
+    const repo = makeRepo({
+      [LEDGER]: ledgerText(UNSET, UNSET),
+      'agent-ops/decisions/a.md': decision(`原文（${cite('1')}）`, `解釈（${cite('2')}）`),
+      'agent-ops/decisions/b.md': decision(`原文（${cite('1')}）`, '解釈'),
+      'agent-ops/decisions/archive/c.md': decision('原文', `解釈（${cite('2')}）`),
+    });
+
+    const taken = refAuditBatch(repo);
+    expect(taken.sweep.map(({ file, refs }) => [file, refs])).toEqual([['agent-ops/decisions/a.md', 1]]);
+  });
+
+  // 番号の繰り上げで、履歴の解釈が引いていた節が別の決めごとへ入れ替わった形（#2321）。リンクは
+  // 切れないので、実在の検査はここを素通りする。
+  it('節が繰り上がったら、履歴の解釈でその番号を指している側を変わった分に出す', () => {
+    const decision = (said: string, read: string): string =>
+      `## ユーザーの発言\n\n> ${said}\n\n## エージェントの解釈\n\n- ${read}\n`;
+    const repo = makeRepo({
+      [LEDGER]: ledgerText('zzz', UNSET),
+      'spec.md': '# spec\n\n## 1. あ\n\n## 2. い\n\n## 3. う\n',
+      'agent-ops/decisions/read.md': decision('原文', `\`spec.md\` ${cite('3')}はそのまま`),
+      'agent-ops/decisions/said.md': decision(`\`spec.md\` ${cite('3')}`, '解釈'),
+    });
+    const before = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf-8' }).trim();
+    commit(repo, { 'spec.md': '# spec\n\n## 1. あ\n\n## 2. う\n' });
+    writeFileSync(join(repo, LEDGER), ledgerText('zzz', before), 'utf-8');
+
+    expect(batch(repo).changed).toEqual(['agent-ops/decisions/read.md']);
+  });
+
+  it('履歴の原文の側へ書き足された参照は、変わった分に出さない', () => {
+    const decision = (said: string, read: string): string =>
+      `## ユーザーの発言\n\n> ${said}\n\n## エージェントの解釈\n\n- ${read}\n`;
+    const repo = makeRepo({
+      [LEDGER]: ledgerText('zzz', UNSET),
+      'agent-ops/decisions/a.md': decision('原文', '解釈'),
+      'agent-ops/decisions/b.md': decision('原文', '解釈'),
+    });
+    const before = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf-8' }).trim();
+    commit(repo, {
+      'agent-ops/decisions/a.md': decision(`原文（${cite('1')}）`, '解釈'),
+      'agent-ops/decisions/b.md': decision('原文', `解釈（${cite('1')}）`),
+    });
+    writeFileSync(join(repo, LEDGER), ledgerText('zzz', before), 'utf-8');
+
+    expect(batch(repo).changed).toEqual(['agent-ops/decisions/b.md']);
+  });
+
   // ## 係が打つ口
   //
   // **仕掛けのリポジトリでは、根の決め方を通らない。** 上のどれも根を渡して呼ぶので、`node` で
   // 直に打ったときだけ効く「自分の在り処から根を数える」段が誰にも通られない——**置き場を1つ
   // 動かしただけで、係が打つコマンドが実物の台帳を見失う**（実際にそうなった）。ここは実物の
   // リポジトリで、ひな形が係へ渡しているのと同じコマンドをそのまま打つ。
-  it('ひな形が渡すコマンドが、実物のリポジトリで範囲を出す', () => {
+  it('ひな形が渡すコマンドが、実物のリポジトリで範囲を出す', TIMEOUT_FOR_CLONE_HISTORY, () => {
     const root = resolve(__dirname, '../..');
     const prompt = readFileSync(join(root, 'agent-ops', 'prompts', 'refs-prompt.md'), 'utf-8');
     const command = /^\s{4}(node \S+)$/m.exec(prompt);

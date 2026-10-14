@@ -4,8 +4,9 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
-import { World } from '../../src/domain/wrappers/World';
+import type { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * World/PlayerCharacter/Location（Views）に対する自動テスト。ラップ対象のWorldObjectが実際に持つ
@@ -18,9 +19,8 @@ describe('World/PlayerCharacter/Locationビュー', () => {
 
   function openWorld(codex: WorldCodex): { instance: WorldObject; world: World } {
     const session = new WorldSession(codex);
-    const instance = session.createObject(codex.objectNames.getId('world'));
-    const world = new World(instance);
-    session.adoptWorld(world);
+    const world = session.createWorld();
+    const instance = world.instance;
     return { instance, world };
   }
 
@@ -37,7 +37,7 @@ object_defs:
       minute:
         value: 30
       minutes_per_tick:
-        value: 15
+        value: ${MINUTES_PER_TICK}
       weather:
         value: light_rain
 `;
@@ -63,7 +63,7 @@ object_defs:
       minute:
         value: 30
       minutes_per_tick:
-        value: 15
+        value: ${MINUTES_PER_TICK}
     passives:
       - modify:
           self:

@@ -24,7 +24,7 @@ object_defs:
       weight: {value: 300}
       volume: {value: 200}
       # すり込むのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
-      # （docs/world/Skills.md 7節）。獲物のたびに繰り返す手なので、届いた段で半分になる。
+      # （docs/world/Skills.md 7節）。獲物のたびに繰り返す手なので、届いた段で縮む。
       cure_minutes:
         value: 30
         passives:
@@ -98,7 +98,7 @@ object_defs:
         cell: {accept: {tag: item}}
         placement: [auto]
     props:
-      # 平たい石4つぶん（1,000×4）。**据えた物も目方を名乗る**（core.yaml）。
+      # 材料の目方の和（tests/world-codex/loadEffects.test.ts が見る）。**据えた物も目方を名乗る**（core.yaml）。
       weight: {value: 4000}
       # 次に1杯ぶんが干し上がるまでの残り（罠のcatch_remaining・畑のgrowth_remainingと同じ見えない
       # タイマー、TrapSystem.md 2節）。

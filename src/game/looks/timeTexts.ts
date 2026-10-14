@@ -1,4 +1,4 @@
-import { MINUTES_PER_DAY } from '../../domain/worldTime';
+import { MINUTES_PER_DAY, MINUTES_PER_HOUR } from '../../domain/worldTime';
 import { uiText } from '../../locale/uiTexts';
 
 /**
@@ -11,8 +11,8 @@ export function clockParts(totalMinutes: number): { days: number; hour: number; 
   const whole = Math.trunc(totalMinutes);
   return {
     days: Math.trunc(whole / MINUTES_PER_DAY),
-    hour: Math.trunc((whole % MINUTES_PER_DAY) / 60),
-    minute: whole % 60,
+    hour: Math.trunc((whole % MINUTES_PER_DAY) / MINUTES_PER_HOUR),
+    minute: whole % MINUTES_PER_HOUR,
   };
 }
 
@@ -23,8 +23,8 @@ export function clockParts(totalMinutes: number): { days: number; hour: number; 
  * 動きながら出る長さ（時間経過の演出）だけはelapsedTextが別の形を持つ。理由はそちらに書く。
  */
 export function hoursAndMinutesText(minutes: number): string {
-  const hours = Math.trunc(minutes / 60);
-  const rest = minutes % 60;
+  const hours = Math.trunc(minutes / MINUTES_PER_HOUR);
+  const rest = minutes % MINUTES_PER_HOUR;
   return hours === 0
     ? uiText('duration_minutes', { minutes: String(rest) })
     : rest === 0
@@ -61,5 +61,5 @@ export function voyageDaysText(minDays: number, maxDays: number): string {
  */
 export function elapsedText(minutes: number): string {
   const whole = Math.max(0, Math.trunc(minutes));
-  return `+${Math.trunc(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+  return `+${Math.trunc(whole / MINUTES_PER_HOUR)}:${String(whole % MINUTES_PER_HOUR).padStart(2, '0')}`;
 }

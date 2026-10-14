@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { externalTickDeltasOf, rangeCyclesOf } from '../../src/analysis/rangeCycles';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 /**
  * tick毎に動く値がrangeの端へ届くまでの周期（`src/analysis/rangeCycles.ts`）の検証。
@@ -157,11 +158,11 @@ object_defs:
     props:
       minute:
         value: 0
-        range: {min: 0, max: 60}
+        range: {min: 0, max: ${MINUTES_PER_HOUR}}
         on_max:
-          add: {self: {minute: -60}}
+          add: {self: {minute: -${MINUTES_PER_HOUR}}}
         passives:
-          - add: {self: {minute: 15}}
+          - add: {self: {minute: ${MINUTES_PER_TICK}}}
 
   # 血と水を奪う傷。**奪う経路が2つあり、止まるまでも効き始めも違う**——出血は負った瞬間から効いて
   # 自分のbleedingが尽きる4 tickで止まり、膿み続ける傷が奪う分はinfectionがsepticへ届く320 tick後から
@@ -190,6 +191,125 @@ object_defs:
         add: {parent: {hydration: -1}}
       - conditions: [{prop: infection, in_stage: septic}]
         add: {parent: {blood: -40, hydration: -2}}
+
+  # 吸い付いたヒル。**上がって外れる比較で縛られた押し手**——満ちていくほど吸うのをやめる。
+  # 外れるのは満ち具合が上がってしきい値へ届いたときで、0は最も確かに吸っている位置。
+  # 上限40ちょうどまでを許す比較は、上限に張り付いても外れない。
+  # ここから3つの傷は、どの枠も受けないタグを持つ——injuryにすると猪の失血を押す手に混ざる。
+  leech:
+    tags: [stray_wound]
+    props:
+      fullness:
+        value: 0
+        range: {min: 0, max: 40}
+        passives:
+          - add: {self: {fullness: 2}}
+    passives:
+      - conditions: [{prop: fullness, lt: 30}]
+        add: {parent: {blood: -3}}
+      - conditions: [{prop: fullness, lte: 30}]
+        add: {parent: {hydration: -1}}
+      - conditions: [{prop: fullness, lte: 40}]
+        add: {parent: {stamina: -1}}
+      # 点で決まる比較。値が点ちょうどに止まるかは速さから読めない。
+      - conditions: [{prop: fullness, neq: 10}]
+        add: {parent: {vitality: -1}}
+      - conditions: [{prop: fullness, not_in: [10, 20]}]
+        add: {parent: {pain: 1}}
+
+  # 食い溜めの蛭。**比較で見ている値に個体差がある**——上がって外れる比較では重く出た個体ほど、下がって
+  # 外れる比較では軽く出た個体ほど早く外れる。
+  gorging_leech:
+    tags: [stray_wound]
+    props:
+      fullness:
+        value: {min: 10, max: 25}
+        range: {min: 0, max: 40}
+        passives:
+          - add: {self: {fullness: 1}}
+      oozing:
+        value: {min: 60, max: 100}
+        range: {min: 0, max: 100}
+        passives:
+          - add: {self: {oozing: -10}}
+    passives:
+      - conditions: [{prop: fullness, lt: 30}]
+        add: {parent: {blood: -3}}
+      - conditions: [{prop: oozing, gte: 50}]
+        add: {parent: {hydration: -1}}
+
+  # 少しずつ吸う蛭。**小数の速さで、比較の端ちょうどへ着く**（embering_stoneと同じ）。
+  sipping_leech:
+    tags: [stray_wound]
+    props:
+      fullness:
+        value: 0
+        range: {min: 0, max: 40}
+        passives:
+          - add: {self: {fullness: 0.1}}
+    passives:
+      - conditions: [{prop: fullness, lte: 0.3}]
+        add: {parent: {blood: -3}}
+
+  # 腫れ上がる噛み傷。**生まれた時点で比較の外に在る値**——その条件が成り立つのはこれから。
+  swollen_bite:
+    tags: [stray_wound]
+    props:
+      swelling:
+        value: 50
+        range: {min: 0, max: 100}
+        passives:
+          - add: {self: {swelling: 2}}
+    passives:
+      - conditions: [{prop: swelling, lte: 30}]
+        add: {parent: {blood: -1}}
+      # 上端から見れば内側だが、下端（60）より下に生まれている。
+      - conditions: [{prop: swelling, eq: 60}]
+        add: {parent: {hydration: -1}}
+
+  # にじむ切り傷。**0でないしきい値を割って外れる比較**——にじみが半分を割れば止まる。
+  seeping_cut:
+    tags: [stray_wound]
+    props:
+      oozing:
+        value: 100
+        range: {min: 0, max: 100}
+        passives:
+          - add: {self: {oozing: -10}}
+    passives:
+      - conditions: [{prop: oozing, gte: 50}]
+        add: {parent: {blood: -5}}
+      - conditions: [{prop: oozing, gt: 50}]
+        add: {parent: {hydration: -1}}
+      # 論理和・否定の下の比較。どちらも、にじみが尽きても外れるとは限らない。
+      - conditions:
+          - any:
+              - {prop: oozing, gte: 1}
+              - {subject: ancestor, prop: wetness, gte: 1}
+        add: {parent: {stamina: -1}}
+      # 否定の下のgte 1は、にじみが1を割った時点で成り立ち始める側で、外れる側ではない。
+      - conditions:
+          - not: {prop: oozing, gte: 1}
+        add: {parent: {pain: 1}}
+
+  # 塞がりかけの傷。にじみを減らす分しか読めないが、**段の下に置かれた増減**（8.2節）が開いた口から
+  # にじみを足し戻す。読めた分だけで「尽きる」と言い切ると、足し戻される傷が止まることになる。
+  reopening_cut:
+    tags: [stray_wound]
+    props:
+      oozing:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - name: open
+            passives:
+              - add: {self: {oozing: 12}}
+          - {name: closing, min: 60}
+        passives:
+          - add: {self: {oozing: -10}}
+    passives:
+      - conditions: [{prop: oozing, gte: 1}]
+        add: {parent: {blood: -5}}
 
   # 焼けただれ。**「その段以上」で縛られた押し手**——焦げ始めてから水を奪い、上の段へ抜けても
   # 奪い続ける。ちょうどその段でだけ効く傷の膿みと分かれるのはここ。
@@ -244,12 +364,191 @@ object_defs:
       - conditions: [{prop: heat, in_stage_or_above: hot}]
         add: {parent: {ambient_temperature: 2}}
 
+  # 熾火の石。**名指した段そのものが、見ている値へ増減を宣言している**——hotの間は自分で熱を
+  # 保つので、常時の-5だけを読んで「hotの下端を割る」と言い切ると、割らない石を止めてしまう。
+  smoldering_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - name: hot
+            min: 60
+            passives:
+              - add: {self: {heat: 5}}
+        passives:
+          - add: {self: {heat: -5}}
+    passives:
+      - conditions: [{prop: heat, in_stage: hot}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 熾火を抱えた温石。**「その段以上」なら、名指した段より上の段の増減も、その段に居る間に効く**
+  # ——warm以上を見ている押し手にとって、hotが自分で熱を保つ分は読み落とせない。
+  smoldering_wrapped_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 40}
+          - name: hot
+            min: 60
+            passives:
+              - add: {self: {heat: 5}}
+        passives:
+          - add: {self: {heat: -5}}
+    passives:
+      - conditions: [{prop: heat, in_stage_or_above: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 火照りを逃がす石。**上へ抜ける側でも同じ**——warmの間は自分で-5して熱を逃がすので、常時の+5
+  # だけを読んで「warmの上端を越える」と言い切ると、越えない石を止めてしまう。
+  venting_warm_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 50
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - name: warm
+            min: 40
+            passives:
+              - add: {self: {heat: -5}}
+          - {name: hot, min: 60}
+        passives:
+          - add: {self: {heat: 5}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 冷えきると湿気を吸って温まりなおす石。**名指した段の外の段が宣言した増減**——coldの+5は、
+  # hotに居る間は効かないので、hotの下端を割るまでは常時の-5だけで数えてよい。
+  rewarming_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - name: cold
+            passives:
+              - add: {self: {heat: 5}}
+          - {name: hot, min: 60}
+        passives:
+          - add: {self: {heat: -5}}
+    passives:
+      - conditions: [{prop: heat, in_stage: hot}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 濡れると温まる石。**別のプロパティの段が宣言した増減**——soakedの間の+5は、熱がhotに居る間にも
+  # 効きうるので、熱の段の外とは言えない。
+  soaking_stone:
+    tags: [item]
+    props:
+      wetness:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: dry}
+          - name: soaked
+            min: 50
+            passives:
+              - add: {self: {heat: 5}}
+      heat:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: hot, min: 60}
+        passives:
+          - add: {self: {heat: -5}}
+    passives:
+      - conditions: [{prop: heat, in_stage: hot}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 名指した段の外に生まれる石。**段へ入るまでの道中で、他の段の増減が効く**——hotの間は自分で+5して
+  # 熱を保つので、warmへは下りてこない。hotの+5を「warmに居る間は効かない」として外したまま、生まれた
+  # 時点からwarmの下端を割るまでを数えると、起こらない「止まる時刻」が付く。
+  held_hot_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 40}
+          - name: hot
+            min: 60
+            passives:
+              - add: {self: {heat: 5}}
+        passives:
+          - add: {self: {heat: -5}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 温まりかけの石。**名指した段の中に、熱の個体差を持って生まれる**——上へ抜けて止まるので、重く
+  # 出た個体ほど暖める間が短い。
+  warming_stone:
+    tags: [item]
+    props:
+      heat:
+        value: {min: 40, max: 55}
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 40}
+          - {name: hot, min: 60}
+        passives:
+          - add: {self: {heat: 1}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
+  # 熾りかけの石と、冷めかけの石。**小数の速さで、段の端ちょうどへ着く**——0.1は2進で割り切れない
+  # ので、端までの距離を速さで割った商が整数のすぐ脇へ落ちる。
+  embering_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 1
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 1.3}
+          - {name: hot, min: 1.6}
+        passives:
+          - add: {self: {heat: 0.1}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
+  dimming_stone:
+    tags: [item]
+    props:
+      heat:
+        value: 1
+        range: {min: 0, max: 100}
+        stages:
+          - {name: cold}
+          - {name: warm, min: 0.4}
+        passives:
+          - add: {self: {heat: -0.1}}
+    passives:
+      - conditions: [{prop: heat, in_stage: warm}]
+        add: {parent: {ambient_temperature: 2}}
+
   # 窯出しの石。**上から落ちて入る段で縛られた押し手**——焼けたてはsearingで、そこから冷めてhotへ
   # 落ちてきて初めて暖める。段は下から開くものとして数えると、窯から出した瞬間から暖めることになる。
   #
-  # 熱に個体差を持たせてあるのは、**上から入る場合でもロールは軽く出たほうを採る**のを見るため
-  # （GATE_WINDOW_ROLL_END）。効き始めと止まるまでは同じ1つの個体についての長さなので、向きで
-  # 裏返すと、落ちて入る個体と割って出る個体が別々になる。
+  # 熱に個体差を持たせてあるのは、**効き始めと止まるまでを同じ1つの個体で数える**のを見るため
+  # （pushingWindowOf）。向きで裏返すと、落ちて入る個体と割って出る個体が別々になる。
   kiln_stone:
     tags: [item]
     props:
@@ -897,6 +1196,10 @@ object_defs:
               # 熱で余計に渇く（characters/player_character.yamlのpathogen）。**押し手はこの段を
               # 開けたそばから上へ押し抜けさせる**ので、効くのは下のsepticemicへ入るまでの間だけ。
               - add: {self: {thirst: -10}}
+              # 食が細る。**同じ菌に段の要求が2つ並ぶ**——段の宣言（feverish）と、生まれた時点で
+              # 既に入っている「sterile以上」の条件。後者を開けたのは押し手ではない。
+              - conditions: [{prop: pathogen, in_stage_or_above: sterile}]
+                add: {self: {appetite: -50}}
           - name: septicemic
             min: 7
             passives:
@@ -906,6 +1209,10 @@ object_defs:
               - conditions: [{in_slot: catch}]
                 add: {self: {hydration: -2}}
       vitality: {value: 0, range: {min: 0, max: 100}}
+      appetite:
+        value: 100
+        range: {min: 0, max: 100}
+        on_min: {destroy: self}
       thirst:
         value: 100
         range: {min: 0, max: 100}
@@ -970,12 +1277,20 @@ object_defs:
               - add: {self: {stamina: -10}}
               # 体そのものの弱り。**開いた段を割って抜けるほうが先**なので、この-0.5では尽きない。
               - add: {self: {vitality: -0.5}}
+              # 喉が渇く。**同じ血に段の要求が2つ並ぶ**——段の宣言（hemorrhaging）と、生まれた時点で
+              # 既に入っている「exsanguinated以上」の条件。押し上げる側（sowのappetite）の裏返し。
+              - conditions: [{prop: blood, in_stage_or_above: exsanguinated}]
+                add: {self: {moisture: -50}}
           - {name: replete, min: 2000}
       stamina:
         value: 100
         range: {min: 0, max: 100}
         on_min: {destroy: self}
       vitality:
+        value: 100
+        range: {min: 0, max: 100}
+        on_min: {destroy: self}
+      moisture:
         value: 100
         range: {min: 0, max: 100}
         on_min: {destroy: self}
@@ -1012,7 +1327,12 @@ object_defs:
     // 周期が丸ごと消える（凍死が日をまたぐ長さの列から落ちていた）。
     // 最も遅いのは寒い所に居る-2で700/2=350 tick、最も速いのは雨の野ざらしの-6で116.67 tick。
     expect(cycleOf('camper', 'warmth')).toMatchObject([
-      { minutes: 350 * 15, shortestMinutes: (700 / 6) * 15, destroysSelf: true, repeats: false },
+      {
+        minutes: 350 * MINUTES_PER_TICK,
+        shortestMinutes: (700 / 6) * MINUTES_PER_TICK,
+        destroysSelf: true,
+        repeats: false,
+      },
     ]);
   });
 
@@ -1020,7 +1340,7 @@ object_defs:
     // -1と+2は同時にも起こりうるが、乾く-1だけが効く場合もある。合計（+1）の向きだけで見ると
     // 上端へ向かうものとして読まれ、塩を生むon_minが1つも立たなくなる。
     const [cycle] = cycleOf('salt_pan', 'drying_remaining');
-    expect(cycle).toMatchObject({ minutes: 24 * 15, repeats: true });
+    expect(cycle).toMatchObject({ minutes: 24 * MINUTES_PER_TICK, repeats: true });
     expect(cycle.step.outputs).toHaveLength(1);
   });
 
@@ -1028,14 +1348,16 @@ object_defs:
     // 渇く-1と飲む+1は同じゲートを持つが、飲めるのは囲いの水が残っている間だけ。両方を必ず
     // 重なるものとして足すと0になり、渇きの期限が消える。
     expect(cycleOf('beast', 'hydration')).toMatchObject([
-      { minutes: 336 * 15, shortestMinutes: 336 * 15, destroysSelf: true },
+      { minutes: 336 * MINUTES_PER_TICK, shortestMinutes: 336 * MINUTES_PER_TICK, destroysSelf: true },
     ]);
   });
 
   it('上端からsetで書き戻す仕掛けが、繰り返す仕掛けとして数えられる', () => {
     // 増減しか数えないと戻り0と読まれ、押し流しが「一度きり」になる。戻り量は上端16から書き戻し先の
     // 0までの16で、+1/tickなので16 tickごとに回る。
-    expect(cycleOf('sea_zone', 'storm_drift')).toMatchObject([{ minutes: 16 * 15, repeats: true }]);
+    expect(cycleOf('sea_zone', 'storm_drift')).toMatchObject([
+      { minutes: 16 * MINUTES_PER_TICK, repeats: true },
+    ]);
   });
 
   it('条件つきのon_maxは、満たさない回へ倒れる既定のクランプではなく著者の効果で読む', () => {
@@ -1043,20 +1365,22 @@ object_defs:
     // クランプ（上端へ置き直す）が著者の書き戻しに勝ち、戻り0＝一度きりと読まれる。戻り量は上端8から
     // 書き戻し先の3までの5で、+1/tickなので5 tickごとに回る。
     expect(cycleOf('lookout', 'watch_progress')).toMatchObject([
-      { minutes: 5 * 15, shortestMinutes: 5 * 15, repeats: true },
+      { minutes: 5 * MINUTES_PER_TICK, shortestMinutes: 5 * MINUTES_PER_TICK, repeats: true },
     ]);
   });
 
   it('端へ置き直すだけのsetは、戻っていない', () => {
     // 書き戻し先が上端そのものなので戻り量は0。ここを「上端ぶん戻った」と読むと、既定のクランプを
     // 持つ全プロパティが繰り返す仕掛けになる。周期は初期値0から上端10までの10 tick。
-    expect(cycleOf('peak', 'exploration_progress')).toMatchObject([{ minutes: 10 * 15, repeats: false }]);
+    expect(cycleOf('peak', 'exploration_progress')).toMatchObject([
+      { minutes: 10 * MINUTES_PER_TICK, repeats: false },
+    ]);
   });
 
   it('上端から引いて戻る仕掛けも、下端から足して戻るものと同じ向きで数える', () => {
     // 戻り量を符号つきの増減のまま見ると、上端から戻るものだけが負になって数から漏れる。
-    // 60を引いて0へ戻るので戻り量は60、+15/tickなので4 tickごと。
-    expect(cycleOf('clock', 'minute')).toMatchObject([{ minutes: 4 * 15, repeats: true }]);
+    // 1時間ぶんを引いて0へ戻り、毎tick 1tickぶん進むので、周期はちょうど1時間。
+    expect(cycleOf('clock', 'minute')).toMatchObject([{ minutes: MINUTES_PER_HOUR, repeats: true }]);
   });
 
   /** その型が隣の物（既定では親）へ与える押し手のうち、そのプロパティを動かすもの。 */
@@ -1084,10 +1408,100 @@ object_defs:
   it('効き始めの違う押し手も、束ねずに別々に並べる', () => {
     // 段が上がるほど速く奪うが、速い側は遅い側より後からしか効かない。1つの幅に束ねると
     // 「膿み始めた時点で-2」という、どちらの段も持っていない押し手ができる。
-    // 0から+0.25/tickなので、festering（40）へは160 tick、septic（80）へは320 tick。
+    // 0から上がり始め、festeringへは160 tick、septicへは320 tick。
     expect(externalDeltasOf('gash', 'hydration')).toEqual([
       { amounts: [-1], ticksUntilStart: 160, ticksUntilStop: 320 },
       { amounts: [-2], ticksUntilStart: 320, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('上がって外れる比較で縛られた押し手は、値がしきい値へ上がった時点で止まる', () => {
+    // 見ている値を「0まで尽きたら外れる」としか読まないと、増える一方のfullnessでは尽きる時が
+    // 来ず、どれも「止まらない」になる。0から+2/tickなので、lt 30は30へ届く15 tick目で外れ、
+    // lte 30は30ちょうどではまだ成立していて、越える16 tick目で外れる。
+    expect(externalDeltasOf('leech', 'blood')).toEqual([
+      { amounts: [-3], ticksUntilStart: 0, ticksUntilStop: 15 },
+    ]);
+    expect(externalDeltasOf('leech', 'hydration')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: 16 },
+    ]);
+  });
+
+  it('比較の外へ出るまでは、向きを問わず最も早く外れる個体で数える', () => {
+    // 上がって外れるlt 30を軽く出た10で数えると20 tickだが、重く出た25は5 tickで外れる。下がって外れる
+    // gte 50は逆で、軽く出た60が割る2 tick目（重く出た100は6 tick目）。
+    expect(externalDeltasOf('gorging_leech', 'blood')).toEqual([
+      { amounts: [-3], ticksUntilStart: 0, ticksUntilStop: 5 },
+    ]);
+    expect(externalDeltasOf('gorging_leech', 'hydration')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: 2 },
+    ]);
+  });
+
+  it('小数の速さで比較の端ちょうどへ着く値は、着いたtickではまだ外れない', () => {
+    // 宣言の値どおりなら、0から+0.1/tickで3 tick後にちょうど0.3＝lte 0.3はまだ成立していて、越える
+    // 4 tick目で外れる。0.3/0.1を浮動小数のまま割ると2.9999999999999996になり、3 tick目と数える。
+    // （エンジンは浮動小数で積むので、3 tick後は0.30000000000000004で外れる。端ちょうどの組がどちらへ
+    // 落ちるかは積み方の偶然なので、解析は宣言の値どおりに数える。）
+    expect(externalDeltasOf('sipping_leech', 'blood')).toEqual([
+      { amounts: [-3], ticksUntilStart: 0, ticksUntilStop: 4 },
+    ]);
+  });
+
+  it('rangeの上限まで許す比較は、値が上限に張り付いても外れない', () => {
+    // fullnessは上限40で止まるので、lte 40は越えられない。上限を見ずに数えると21 tick目で外れる。
+    expect(externalDeltasOf('leech', 'stamina')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('点で決まる比較は、値が動いていても止まる時刻を持たない', () => {
+    // 端を持つ比較と同じに数えると、neqもnot_inも10を越える6 tick目で外れることになる。
+    expect(externalDeltasOf('leech', 'vitality')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    expect(externalDeltasOf('leech', 'pain')).toEqual([
+      { amounts: [1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('生まれた時点で比較の外に在る値は、その比較からは止まらない', () => {
+    // swellingは50から+2/tick。lte 30はもう越えていて、ここで数えると負の時刻になって押し手ごと消える。eq 60は上端から
+    // 見れば内側なので、端ごとに見ると60を越える6 tick目で外れることになる。
+    expect(externalDeltasOf('swollen_bite', 'blood')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    expect(externalDeltasOf('swollen_bite', 'hydration')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('しきい値が0でない比較は、0まで待たずにしきい値を割った時点で止まる', () => {
+    // 100から-10/tickで、0まで尽きるのは10 tick目。gte 50は50ちょうどではまだ成立していて、割る
+    // 6 tick目で外れる。gt 50は50へ着いた5 tick目で外れる。
+    expect(externalDeltasOf('seeping_cut', 'blood')).toEqual([
+      { amounts: [-5], ticksUntilStart: 0, ticksUntilStop: 6 },
+    ]);
+    expect(externalDeltasOf('seeping_cut', 'hydration')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: 5 },
+    ]);
+  });
+
+  it('論理和・否定の下にしか現れない比較は、押し手の止まる時刻を決めない', () => {
+    // 論理和は外の雨でも成立し続け、否定の下の比較はその比較が成立していることそのものではない。
+    // どちらも数に入れると、にじみが尽きる10 tick目で止まるものとして数えられる。
+    expect(externalDeltasOf('seeping_cut', 'stamina')).toEqual([
+      { amounts: [-1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    expect(externalDeltasOf('seeping_cut', 'pain')).toEqual([
+      { amounts: [1], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('段の下の増減を数から外している値では、比較の外へ出ることを言い切らない', () => {
+    // 読めるのは-10だけだが、openの段では+12が足し戻す。-10だけで数えると10 tick目で止まる。
+    expect(externalDeltasOf('reopening_cut', 'blood')).toEqual([
+      { amounts: [-5], ticksUntilStart: 0, ticksUntilStop: undefined },
     ]);
   });
 
@@ -1113,12 +1527,68 @@ object_defs:
     ]);
   });
 
+  it('名指した段が見ている値へ増減を宣言しているなら、その段を抜けることを言い切らない', () => {
+    // 読めるのは常時の-5だけだが、hotの間は+5が打ち消す。-5だけで数えると、焼け石と同じ9 tick目で止まる。
+    expect(externalDeltasOf('smoldering_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    // 「その段以上」では、名指した段より上の段の宣言も、その段に居る間に効く。
+    expect(externalDeltasOf('smoldering_wrapped_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    // 上へ抜ける側も同じ。+5だけで数えると、50からwarmの上端60を越える2 tick目で止まる。
+    expect(externalDeltasOf('venting_warm_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+    // 別のプロパティの段の宣言は、名指した段に居る間に効くかが定義からは決まらない。
+    expect(externalDeltasOf('soaking_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('名指した段の外の段しか増減を宣言していないなら、その段を抜ける時刻を数える', () => {
+    // coldの+5はhotに居る間は効かない。100から-5/tickでhotの下端60を割るのは焼け石と同じ9 tick目。
+    expect(externalDeltasOf('rewarming_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: 9 },
+    ]);
+  });
+
+  it('名指した段の外に生まれた値は、道中の段の増減を外したまま段へ入る時刻も抜ける時刻も言い切らない', () => {
+    // hotの+5はwarmに居る間は効かないが、warmへ下りてくるまでの間は効いて-5を打ち消す。外したまま
+    // 数えると、100から-5/tickでwarmの上端60を割る9 tick目に効き始め、下端40を割る13 tick目で止まる
+    // ことになる。入る側も抜ける側も読めないので、炉の火力と同じく最初のtickから止まらずに効く側へ倒す。
+    expect(externalDeltasOf('held_hot_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
+    ]);
+  });
+
+  it('段の中に個体差を持って生まれる値は、最も早く段を抜ける個体で数える', () => {
+    // どの個体も生まれた時点でwarmに居る。軽く出た40で数えるとwarmの上端60を越えるのは20 tick目だが、
+    // 重く出た55は5 tick目で越える。
+    expect(externalDeltasOf('warming_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: 5 },
+    ]);
+  });
+
+  it('小数の速さで段の端ちょうどへ着く値は、着いたtickで入り、着いたtickで上へ抜ける', () => {
+    // 1から+0.1/tickで、3 tick後にちょうど1.3＝warmの下端（入る）、6 tick後にちょうど1.6＝hotの下端
+    // （抜ける）。浮動小数のまま割ると3.0000000000000004・6.000000000000001になり、どちらも1 tick遅れる。
+    expect(externalDeltasOf('embering_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 3, ticksUntilStop: 6 },
+    ]);
+    // 1から-0.1/tickで、6 tick後にちょうど0.4＝warmの下端はまだwarmで、割るのは7 tick目。浮動小数のまま
+    // 割ると5.999999999999999になり、6 tick目で抜けることになる。
+    expect(externalDeltasOf('dimming_stone', 'ambient_temperature')).toEqual([
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: 7 },
+    ]);
+  });
+
   it('自分の増減で上から段へ落ちて効き始める押し手は、落ちるまでの時間を持つ', () => {
     // 段を下端へ届くことでしか開かないものとして数えると、冷めていく熱では届く時が来ないので
     // 立ち上がりが0＝窯から出した瞬間から暖めるものとして数えられる。軽く出た80から-1/tickなので、
     // hotの上端60を割るのは21 tick目（20 tick後はちょうど60＝まだsearing）、下端20を割って
-    // 止まるのは61 tick目。重く出た100を採ると41 tickと81 tickになり、効き始めと止まるまでが
-    // 別々の個体の長さになる。
+    // 止まるのは61 tick目。重く出た100の個体は41 tickと81 tickで窓の幅は同じなので、軽く出たほうが
+    // 残る。効き始めだけを重いほう（41）で数えると、止まるまで（61）と別々の個体の長さになる。
     expect(externalDeltasOf('kiln_stone', 'ambient_temperature')).toEqual([
       { amounts: [2], ticksUntilStart: 21, ticksUntilStop: 61 },
     ]);
@@ -1178,10 +1648,10 @@ object_defs:
 
   it('段の中に生まれる個体が居るなら、軽く出たほうが段より下でも、入らないことにしない', () => {
     // ロールは10〜50で、40以上に出た個体はwarmに生まれる。軽く出たほう（10）だけを見て
-    // 「決して入らない」と読むと、その個体たちが押す分ごと押し手が消える。いつ入るか・いつ抜けるかは
-    // どちらも読めない側なので、効き始めは0・止まるまでは無しのままでよい。
+    // 「決して入らない」と読むと、その個体たちが押す分ごと押し手が消える。窓を数えるのはwarmに生まれた
+    // 重いほう（50）で、下端40を割る11 tick目まで暖める。
     expect(externalDeltasOf('cooling_stone', 'ambient_temperature')).toEqual([
-      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: undefined },
+      { amounts: [2], ticksUntilStart: 0, ticksUntilStop: 11 },
     ]);
   });
 
@@ -1226,13 +1696,13 @@ object_defs:
     expect(cookedCyclesOf('chopped_chunk')).toEqual([
       // **要るのは押し手が傍に在ることだけ。** 重ねた分は、押し手が居れば必ず成立するのだから
       // 条件ではない。
-      { minutes: 8 * 15, shortestMinutes: 4.8 * 15, gatedBy: [[]] },
+      { minutes: 8 * MINUTES_PER_TICK, shortestMinutes: 4.8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
 
     // 祖先で見ていても同じ。親がその火力を持っているから押しているのであって、そこを分けると、
     // 同じことを書いた2通りのうち片方だけが数に乗る。
     expect(cookedCyclesOf('ancestor_seen_chunk')).toEqual([
-      { minutes: 8 * 15, shortestMinutes: 4.8 * 15, gatedBy: [[]] },
+      { minutes: 8 * MINUTES_PER_TICK, shortestMinutes: 4.8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
   });
 
@@ -1240,19 +1710,19 @@ object_defs:
     // 炎でしか乗らない上乗せは、熾火で押されている間は効かない。押し方ごとの段を1つに束ねると、
     // 熾火の側にまで乗って、弱い火でも速く焼き上がることになる。24を熾火で24 tick、炎で8 tick。
     expect(cookedCyclesOf('seared_chunk')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
 
     // ちょうどその段（`in_stage`）は、上の段へ移れば外れる。「その段以上」と同じに扱うと、炎で
     // 押されている間も乗ることになる。
     expect(cookedCyclesOf('ember_only_chunk')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
 
     // 押し手が「その段以上」でしか居場所を名乗っていないなら、ちょうどその段に居るとは言えない
     // ——上の段に居るかもしれない。24を押し手の+1だけで24 tick。
     expect(cookedCyclesOf('ember_only_chunk', 'or_above_firepit')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 24 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 24 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
   });
 
@@ -1260,13 +1730,13 @@ object_defs:
     // 薪が残っているかは、炉が押していることでは決まらない。要る段をプロパティで照らし合わせないと、
     // 押し手が別のプロパティで名乗った段が、そのまま答えになる。
     expect(cookedCyclesOf('fuel_gated_chunk')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
 
     // 完全一致で決まる段は、値の並びの上に位置を持たない。読めないものを満たされたことに
     // すると、押し手が居るだけで成立しない条件まで数に入る。
     expect(cookedCyclesOf('positionless_chunk')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
   });
 
@@ -1274,10 +1744,10 @@ object_defs:
     // 水気が残っているかも、芯が温まったかも、押し手が傍に在ることでは決まらない。外側の段だけを
     // 見て重ねると、成立するとは限らない上乗せが押されている間ずっと効くものとして数えられる。
     expect(cookedCyclesOf('damp_chunk')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
     expect(cookedCyclesOf('core_warmed_chunk')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
   });
 
@@ -1286,7 +1756,7 @@ object_defs:
     // 段を名乗っていても成立しない。押し手の居場所を見ないと、刺さっている物の熱を場所の熱として
     // 読むことになる。24を串の+1だけで24 tick。
     expect(cookedCyclesOf('skewered_chunk', 'skewer')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 24 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 24 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
   });
 
@@ -1299,14 +1769,14 @@ object_defs:
       rangeCyclesOf(defOf('crusting_chunk'), undefined, [defOf('two_stage_firepit')])
         .filter((cycle) => cycle.drivenBy !== undefined && cycle.propertyGlobalId === propertyGlobalId)
         .map(({ minutes, gatedBy }) => ({ minutes, gatedBy })),
-    ).toEqual([{ minutes: (12 + 8) * 15, gatedBy: [[]] }]);
+    ).toEqual([{ minutes: (12 + 8) * MINUTES_PER_TICK, gatedBy: [[]] }]);
   });
 
   it('押し手を打ち消す向きの条件つきは、落としたままで周期も消えない', () => {
     // 冷めるのは炉の外に居る間の宣言なので、押されている間に成立するとは言えない。足し合わせると
     // 熾火（1-2）が下端へ向かい、焼き上がる周期そのものが立たなくなる。
     expect(cookedCyclesOf('cooling_chunk')).toEqual([
-      { minutes: 24 * 15, shortestMinutes: 8 * 15, gatedBy: [[]] },
+      { minutes: 24 * MINUTES_PER_TICK, shortestMinutes: 8 * MINUTES_PER_TICK, gatedBy: [[]] },
     ]);
   });
 
@@ -1330,7 +1800,7 @@ object_defs:
     // 火勢の段は同時に2つを取れないので、燃料が尽きるまでは-1で100 tick・-4で25 tick、持ち主から
     // 水を奪うのも-1と-4。両側が同じ数え上げを呼ばないと、片方だけが2つを足した-5を持つ。
     expect(cycleOf('torch', 'fuel')).toMatchObject([
-      { minutes: 100 * 15, shortestMinutes: 25 * 15, destroysSelf: true },
+      { minutes: 100 * MINUTES_PER_TICK, shortestMinutes: 25 * MINUTES_PER_TICK, destroysSelf: true },
     ]);
     expect(externalDeltasOf('torch', 'hydration')).toEqual([
       { amounts: [-1, -4], ticksUntilStart: 0, ticksUntilStop: undefined },
@@ -1355,7 +1825,9 @@ object_defs:
       rangeCyclesOf(defOf('boar'), undefined, [...codex.objects]).filter(
         (cycle) => codex.propertyNames.getName(cycle.propertyGlobalId) === 'blood',
       ),
-    ).toMatchObject([{ minutes: (320 + 115) * 15, destroysSelf: true, drivenBy: defOf('gash').globalId }]);
+    ).toMatchObject([
+      { minutes: (320 + 115) * MINUTES_PER_TICK, destroysSelf: true, drivenBy: defOf('gash').globalId },
+    ]);
   });
 
   /** その型の、そのプロパティが持つ周期のうち、外から押されて回るもの。 */
@@ -1372,7 +1844,7 @@ object_defs:
     // 菌が0.35でsepticemic（7）へ20 tick、開いた-40で4,600mLが尽きるまで115 tick。
     expect(drivenCyclesOf('sow', 'blood')).toMatchObject([
       {
-        minutes: (320 + 20 + 115) * 15,
+        minutes: (320 + 20 + 115) * MINUTES_PER_TICK,
         destroysSelf: true,
         drivenBy: defOf('suppurating_cut').globalId,
       },
@@ -1405,6 +1877,15 @@ object_defs:
     expect(drivenCyclesOf('sow', 'vitality')).toEqual([]);
   });
 
+  it('段の要求が複数並んでいても、生まれた時点で入っている段は押し手が開けたものではない', () => {
+    // 押し上げる側。sterile以上はfeverishへ入る前から成立している。入り口を越えていることを段ごとに
+    // 見ず、要る段のうち最も遅いもの（feverishまで）に飲ませると、傷が傍に在って初めて食が細る
+    // 周期が立つ。押し下げる側（doeのmoisture）は、上端を持たない「exsanguinated以上」を入り口で
+    // 落とすので、両側が同じ答えになっていることを並べて見る。
+    expect(drivenCyclesOf('sow', 'appetite')).toEqual([]);
+    expect(drivenCyclesOf('doe', 'moisture')).toEqual([]);
+  });
+
   it('押し下げる押し手が開ける段も辿る', () => {
     // 血を流す傷は宿主の血を奪うだけで、気の遠のきには触れない。段は下からしか開かないものとして
     // 数えると、流血で倒れる道が丸ごと消える。上端2,000を割ってhemorrhagingへ入るのは-10で201 tick
@@ -1412,7 +1893,11 @@ object_defs:
     // -10で体力100が10 tick。軽く出た3,000を採ると101 tickになり、押し手を控えめに数えるという
     // 約束が押す向きによって破れる。
     expect(drivenCyclesOf('doe', 'stamina')).toMatchObject([
-      { minutes: (201 + 10) * 15, destroysSelf: true, drivenBy: defOf('seeping_bite').globalId },
+      {
+        minutes: (201 + 10) * MINUTES_PER_TICK,
+        destroysSelf: true,
+        drivenBy: defOf('seeping_bite').globalId,
+      },
     ]);
   });
 

@@ -107,4 +107,24 @@ describe('開いている面', () => {
     expect(destroyed, '閉じるときに面を破棄する').toBe(1);
     expect(open.lanes, '閉じたあとのレーンは無い').toEqual([]);
   });
+
+  // lanesが渡すものは今の面の並びの実体で、顔ぶれが替わるのは面の差し替えだけ（OpenPane.lanes）。
+  // 読むたびに詰め替える・面を開いたまま並びを書き換えるようになると、読んだ側の見えるものが変わる。
+  it('読んだ並びは、面を差し替えても前の面のレーンのまま', () => {
+    const open = new OpenPane();
+    open.replace(() => cardPane(CARD_RECT));
+
+    const read = open.lanes;
+    expect(read, '読むたびに詰め替えない').toBe(open.lanes);
+    open.replace(foundPane);
+
+    expect(
+      read.map(({ role }) => role),
+      '差し替えても、読んだ並びは前の面のレーンのまま',
+    ).toEqual(['card']);
+    expect(
+      open.lanes.map(({ role }) => role),
+      '読み直せば今の面のレーンが返る',
+    ).toEqual(['found']);
+  });
 });

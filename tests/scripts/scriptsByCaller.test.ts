@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { withoutComments } from '../../scripts/codeComments.mjs';
 
 /**
  * 盤面を回す道具が、**呼び手で2つに分かれたまま**であることの検査
@@ -49,36 +50,11 @@ const AGENT_SIDE = [
 
 /**
  * コメントを落とした中身。**起動の形だけを残す**——説明の中の名前まで数えると、互いを引き合う
- * 冒頭のコメントだけで全部が「辿れる」ことになり、この検査は何も見なくなる。
- *
- * `//` の手前が `:` のものは落とさない（`https://…`）。**落としすぎると、同じ行の後ろで名指し
- * している道具を辿れないと読む**——足りないほうへ倒すと、在るものを無いと言う赤になる。
- *
- * **`.sh` でも行末のコメントを落とす。** 行頭の `#` だけを落としていた間は、コードの行の後ろへ
- * 名前を書けばこの検査が「辿れる」と読んだ——言語で穴の大きさが変わると、どちらの言語で書いたかが
- * 見張りの強さを決めてしまう。落とすのは**行頭の `#` と、空白に続く `#`** から行末まで
- * （`${#arr}`・`$#` のように語へ続く `#` は落とさない）。
- *
+ * 冒頭のコメントだけで全部が「辿れる」ことになり、この検査は何も見なくなる。行末のコメントも
+ * `.sh` と `.mjs` で同じに落ちる（{@link withoutComments}）。
  */
 function code(name: string): string {
-  const text = readFileSync(join(ROOT, 'scripts', 'daemon', name), 'utf-8');
-  if (name.endsWith('.sh')) return withoutShellComments(text);
-  return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-}
-
-/**
- * シェルのコメントを落とした中身。
- *
- * **行末の `\r` は自分で落とす。** `m` の無い `$` は `\r` を越えられないので、残したままだと
- * コメントが1つも落ちず、**説明の中の名前だけで「辿れる」になる**（偽の緑。issue #2171）。
- * 今は `.gitattributes` が `*.sh` を LF に固定しているので `\r` は届かないが、**均す責務を
- * 取り出し方の側へ預けない**——預けると、固定の射程が動いた日に、ここが黙って何も見なくなる。
- */
-function withoutShellComments(text: string): string {
-  return text
-    .split(/\r?\n/)
-    .map((line) => line.replace(/(^|\s)#.*$/, '$1'))
-    .join('\n');
+  return withoutComments(readFileSync(join(ROOT, 'scripts', 'daemon', name), 'utf-8'), name);
 }
 
 /**
@@ -115,13 +91,5 @@ describe('盤面を回す道具の置き場', () => {
 
   it('`scripts/agent/` に在るのは、人かセッションが自分で打つものだけ', () => {
     expect([...trackedUnder('scripts/agent')].sort()).toEqual([...AGENT_SIDE].sort());
-  });
-
-  it('コメントの落ち方が、改行コードで変わらない', () => {
-    const lf = 'node "$HERE/board.mjs" # live-sessions.mjs は呼ばない\n';
-
-    // 一致だけでは、両方が同じに壊れていても緑になる。落ちていることを先に見る。
-    expect(withoutShellComments(lf), 'コメントが落ちている').not.toContain('live-sessions.mjs');
-    expect(withoutShellComments(lf.replace(/\n/g, '\r\n'))).toBe(withoutShellComments(lf));
   });
 });

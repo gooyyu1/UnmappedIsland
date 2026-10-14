@@ -32,10 +32,10 @@ import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId, TagGlobalId } from
  * 引く線は次のとおり。
  *
  * - **筏の側の事情（`sail_speed`）は乗せない。** 海流・積載・帆はどれも「どう積んだか」で決まるので、
- *   ここが出すのは素の横断時間だけ。**風は乗せる**——風は筏ではなく航路が持ち（3.2節）、積み方に
+ *   ここが出すのは素の横断時間だけ。**風は乗せる**——風は筏ではなく航路が持ち（同 3.2節）、積み方に
  *   よらないので、同じ航海の幅としてそのまま出せる。
  * - **荒天の押し流しと引き返しは数えない。** どちらも何区間ぶん動くかが実行時にしか決まらない
- *   （3.8節・3.5節）ので、ここが出すのはそれらが起きなかった場合の下限になる。押し流しのほうは、
+ *   （同 3.8節・3.5節）ので、ここが出すのはそれらが起きなかった場合の下限になる。押し流しのほうは、
  *   ここが出した辺と時間の上で実際に渡らせて測る（`voyageDrift.ts`）。
  * - **釣りや拾い物に費やす時間は数えない。** 渡るのに要る時間と、渡りながら何が返るかは別の問いで、
  *   後者は見張り1回あたりの割合として出す。
@@ -57,7 +57,7 @@ export interface SeaFind {
   readonly expectedPerLookout: number;
 
   /**
-   * 手に入るのではなく海区へ立つもの（魚の群れ・海鳥の群れ、3.3節）か。**設置物かどうかで見分ける**
+   * 手に入るのではなく海区へ立つもの（魚の群れ・海鳥の群れ、同 3.3節）か。**設置物かどうかで見分ける**
    * ——`spawn` の配置先は読み上げに残らない（`EffectReader`）が、立つものはどれも設置物なので、
    * 型の側の事実で同じ線が引ける。
    */
@@ -388,7 +388,7 @@ function yieldsOf(codex: WorldCodex, ids: VoyageIds, outcomes: readonly StepOutc
     foragedShare: 1 - barrenShare - spawnedShare,
     spawnedShare,
     // **卓に並んでいても重みが0なら落とす**——素の重みは0で、海区が名乗らなかった候補はその海には
-    // 無い（3.3節）。落とさないと、どの海区も卓の全候補を並べたまま、無いものと在るものが同じ顔で並ぶ。
+    // 無い（同 3.3節）。落とさないと、どの海区も卓の全候補を並べたまま、無いものと在るものが同じ顔で並ぶ。
     finds: [...expected]
       .filter(([, expectedPerLookout]) => expectedPerLookout > 0)
       .map(([objectGlobalId, expectedPerLookout]) => ({
@@ -400,7 +400,7 @@ function yieldsOf(codex: WorldCodex, ids: VoyageIds, outcomes: readonly StepOutc
 }
 
 /**
- * その海区から出る辺。**見張り切ったときに湧く航路がそのまま辺**（3節）で、**折り返しの1本は落とす**
+ * その海区から出る辺。**見張り切ったときに湧く航路がそのまま辺**（同 3節）で、**折り返しの1本は落とす**
  * ——見張りは辺の両端へ1本ずつ立てるので、湧く航路には隣へ置く「この海区への航路」も混じる。
  * 行き先が自分である航路がそれにあたる。
  */
@@ -857,7 +857,7 @@ class WindGateReader implements ConditionReader {
       return;
     }
 
-    // 行き先の残り海区数と、今いる海区の残り海区数の比較が、そのまま辺の伸びる向き（3.2節）。
+    // 行き先の残り海区数と、今いる海区の残り海区数の比較が、そのまま辺の伸びる向き（同 3.2節）。
     if (
       reading.propertyGlobalId === this.ids.destinationZonesToMainlandId &&
       reading.valueRef?.propertyGlobalId === this.ids.zonesToMainlandId

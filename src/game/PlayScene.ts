@@ -42,7 +42,7 @@ import type { CardSpot, ShownDrop } from './view/ShownCards';
 import { ShownCards } from './view/ShownCards';
 import type { RecordedView, Recording } from './view/recording';
 import { runAndRecordChange } from './view/recording';
-import { cellsCycleWithBeat, slotCells } from './view/slotCells';
+import { cellsCycleWithBeat, slotCells, slotPositionAt } from './view/slotCells';
 import { noteOperation, setStateReporter } from './errorReport';
 import { ShownStatuses } from './view/ShownStatuses';
 import type { ElapseFrame } from './view/elapsePlayback';
@@ -109,6 +109,7 @@ import type { BoxStyle } from '../ui/shapes';
 import { addInputBlockingPanel, addTiledImage, addTiledImageVertical, drawBox } from '../ui/shapes';
 import { COLOR, SCROLL_BAR_LOOK, SIZE } from './looks/theme';
 import type { ObjectGlobalId } from '../domain/GlobalId';
+import { MINUTES_PER_TICK } from '../domain/worldTime';
 
 /**
  * バーのアイコンボタンに載せる絵文字の大きさ（88u角のボタンに対して）。**ボタンの余白より絵が
@@ -117,10 +118,10 @@ import type { ObjectGlobalId } from '../domain/GlobalId';
 const ICON_BUTTON_GLYPH_SIZE = 58;
 
 /**
- * ゲーム内時間の経過を実時間で見せる速さ（ゲーム内15分＝現実0.5秒）。durationを持つアクションは、
+ * ゲーム内時間の経過を実時間で見せる速さ（1tick＝現実0.5秒）。durationを持つアクションは、
  * この速さで時間が経ち切るまで結果を見せない。
  */
-const REAL_MS_PER_GAME_MINUTE = 500 / 15;
+const REAL_MS_PER_GAME_MINUTE = 500 / MINUTES_PER_TICK;
 
 /**
  * 1回の経過に使う実時間の上限（CardInteraction.md 7節）。**これを超える長さの行動は、この時間に
@@ -953,14 +954,19 @@ export class PlayScene extends ResponsiveScene {
 
   /**
    * ドロップを、レーンを場所（CardSpot）に直した形へ（判断はShownCardsが行う）。どちらかの
-   * レーンがワールドの場所を映していなければ、落とし先の決まらない操作なのでundefined。
+   * レーンがワールドの場所を映していなければ、落とし先の決まらない操作なのでundefined。レーン上の
+   * 位置は、スロットの中の位置へ直して渡す（slotPositionAt）。
    */
   private dropOf(drop: CardDrop): ShownDrop | undefined {
     const from = this.spotOf(drop.from);
     const to = this.spotOf(drop.to);
     if (from === undefined || to === undefined) return undefined;
 
-    return { from, fromIndex: drop.fromIndex, to, target: drop.target, count: drop.count };
+    const target =
+      drop.target.kind === 'combine' || to === 'windowCard'
+        ? drop.target
+        : slotPositionAt(this.view.slotViewOf(to), drop.target);
+    return { from, fromIndex: drop.fromIndex, to, target, count: drop.count };
   }
 
   /**

@@ -78,7 +78,8 @@ YAMLとずれます）。
 
 `site_elevation` の `group` は土地の組で、`all`（全部）・`coast_band`（`coastal_distance` が
 `coast_band` 以下＝海に接する土地）・`inland`（残り）。**`location_type` ではなく軸の値で分ける**
-——砂浜と岸壁を分ける高さ（TerrainGeneration.md 3.5.3節）は、型が決まる前の分布から引いたもの。
+——砂浜と岸壁を分ける高さ（TerrainGeneration.md 3.5.3節）は、型が選べるかの条件として標高軸の上に
+引く線で、切り分けているのは型が決まる前の海岸帯の高さだから。
 
 `site_elevation_by_location` は同じものを型ごとに分けたもの。海抜は軸の値を
 `elevation_top_meters ÷ 軸の値域` でメートルへ直したもので、島の最低点は必ず0m、最高点は必ず
@@ -163,7 +164,7 @@ ContentSkeleton.md 8.3節の仮置きで、`base_days` は拠点の加工が `da
   こちら。拠点での加工が当たっているのは `night_craft` の枠（1日の割り付けは ContentSkeleton.md 8.3節）。
 - **その土地でその仕事ができる時間** = ClimateSystemStats.md「土地×季節ごとの活動時間」の
   `outdoor_search` の季節平均で、**どちらの局面も同じ列を見る**——採取と探索は明るさも風雨も同じ線で
-  閉じるので、頭打ちが局面で分かれることはない（ContentSkeleton.md 8.1.4節）。
+  閉じるので、頭打ちが局面で分かれることはない（ContentSkeleton.md 8.1.3節）。
   遠さは移動の項として、暗さは頭打ちとして、風雨は屋外の枠と頭打ちの両方として、同じ1行に入る。
   **`handwork`（手元の細かい作業）の列は見ない**——この式が割っているのは屋外の枠で、手元の作業が
   当たっているのは `night_craft` のほう（ContentSkeleton.md 8.3節）だから。

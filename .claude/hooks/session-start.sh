@@ -24,7 +24,10 @@ if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ]; then
   # Unity/C#からTypeScriptへ移行した際、追跡対象のC#ファイルはcheckoutで消えたが、
   # dotnet restoreが作ったTests/obj以下（未追跡）はgitが触らないため環境に残りうる。
   # gitが1つも追跡していないことを確かめてから消す（誤って実体を消さないため）。
-  if [ -d Tests ] && [ -z "$(git ls-files Tests)" ]; then
+  # 名前は glob（`Test[s]`）で綴りちょうどに照合する——大文字小文字を区別しないファイルシステムでは
+  # `[ -d Tests ]` が現役の `tests/` に当たる一方、`git ls-files Tests` は綴りが違うので空を返し、
+  # 消しに行く先が `tests/` になる。
+  if compgen -G 'Test[s]' >/dev/null && [ -d Tests ] && [ -z "$(git ls-files Tests)" ]; then
     echo "[session-start] C#時代の残骸 Tests/ を削除します。"
     rm -rf Tests
   fi

@@ -107,11 +107,12 @@ export async function checkPrompt(
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [session, sent] = process.argv.slice(2);
+  // `process.exit` で切らない理由は `scripts/daemon/dispatch-session.mjs` の末尾と同じ。
   try {
-    process.exit((await checkPrompt(session, sent)) ? 0 : 1);
+    process.exitCode = (await checkPrompt(session, sent)) ? 0 : 1;
   } catch (error) {
     // **読めない・読み取れないは、不一致ではない。** 判定として数えられないように別の終了コードで返す。
     console.error(error instanceof Error ? error.message : error);
-    process.exit(2);
+    process.exitCode = 2;
   }
 }

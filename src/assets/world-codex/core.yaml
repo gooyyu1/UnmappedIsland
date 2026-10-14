@@ -26,7 +26,7 @@ recipe_categories: [tool, container, fixture, item]
 #
 # **フィルター専用のタグは作らない**（docs/ui/ScreenLayout.md 8.1.5節）。指すのは既にあるタグだけで、1枚の札が複数の
 # ボタンに出てよい（炉は食と火の両方）。`id`がそのままボタンの絵の名前（`src/assets/icons/<id>.png`）
-# で、`icon`は絵がまだ無い間そこへ置く絵文字（4.2節）。
+# で、`icon`は絵がまだ無い間そこへ置く絵文字（同 4.2節）。
 card_filters:
   # 食の調達（系統2）と保存（系統3）。**食べられる物だけではない**——焼ける物は生では食べられなくても
   # 残り、炉も塩も残る。料理は札を並べてする仕事なので、材料と器具が同時に見えている必要がある。
@@ -141,7 +141,7 @@ traits:
     props:
       # その場を満たしている明るさ（IlluminationSystem.md 2節）。世界の明るさ（時刻と天気）を土台に、
       # 樹冠と地面の反射ぶんを足したもの。**据え付けの光源は入らない**（同3節）。
-      # 底の-6は「これより暗い場所を区別しない」暗さの底で、光源より前に効く（同4節）。
+      # rangeの底は「これより暗い場所を区別しない」暗さの底で、光源より前に効く（同4節）。
       #
       # **valueを持たないので、場所ごとに必ず与える**（5節）。樹冠も反射も場所ごとに違い、
       # 既定値を置くと書き忘れがそのまま「開けた土地」として通る。内訳の表は
@@ -223,9 +223,10 @@ object_defs:
       # **その1時間の中央の太陽高度**での雲のまったく無い空の照度（125,000 lx × sin²高度）をEVへ直したもの
       # （EV = log2(照度 / 2.5 lx)、IlluminationSystem.md 1節）。
       # 夜は月あかりだけになるが、**半月固定**（ContentSkeleton.md 8.1.1.3節）なので底へ均される
-      # ——半月の照度は満月の約1/10（中天で0.025 lx = -6.6）で、底の-6（0.039 lx）を下回るため、
-      # 月の高度で刻んでも結果が変わらない。夜は0時をまたぐため、先頭のフォールバック段階（0-5時）と
-      # night_late（18-23時）の2エントリで概念上1つの「夜」段階を表す。
+      # ——半月の照度は中天でも暗さの底を下回るため、月の高度で刻んでも結果が変わらない
+      # （IlluminationSystem.md 9節。tests/world-codex/coreYaml.test.ts が夜を底として見る）。
+      # 夜は0時をまたぐため、先頭のフォールバック段階（0-5時）とnight_late（18-23時）の2エントリで
+      # 概念上1つの「夜」段階を表す。
       # valueは抽選前の既定値であって、実際の開始時刻ではない（新しいゲームはNewGameが8:00〜12:00から
       # 選び直す。SaveDataManagement.md）。昼の値を置くのは、抽選を通さずにworldを組んだときも
       # 暗さで何も成立しない状態から始めないため。
@@ -314,12 +315,12 @@ object_defs:
       # stagesはambient_brightnessへ**雲がどれだけ陽を遮るか**をmodifyで与える（太陽高度の寄与は
       # hour側。シンボル型のstagesはステージ名がそのまま比較対象）。値は雲のまったく無い空
       # （scorching、正午125,000 lx）を0として、そこから何段暗いか。ContentSkeleton.md 8.1.3節の
-      # 正午の照度に合わせてある（曇り5,000 lx=-5・小雨2,000=-6・大雨749=-8・嵐187=-10）。
+      # 正午の照度に合わせてある（各段の値は同節の表が codex: の印で持つ）。
       # **同じstagesがwind_speedへ風速（m/s）も与える**（ContentSkeleton.md 8.1.5節）。嵐の日に屋根の
       # 下でない場所での行動を止めているのはそちらで、暗さではない（同8.1節）。
       # 雨系stageは毎tick atmospheric_moistureを自己減算し、雨が水分を使い尽くすと乾いた候補が
       # 選ばれやすくなる貯水池の循環を作る（ClimateSystem.md 3節）。減算量と雨季の季節レートの
-      # 大小関係が雨季の降雨の止み方を決める（4.3節）。
+      # 大小関係が雨季の降雨の止み方を決める（同 4.3節）。
       weather:
         value: clear
         stages:
@@ -387,11 +388,12 @@ object_defs:
       # 樹冠も地面の反射も無い場所の明るさ（IlluminationSystem.md 2節）。EVスケール
       # （EV = log2(照度 / 2.5 lx)、同1節）で、hourとweather両方のmodifyが加算的に重なる、
       # 都度導出される実効値（8.3節）。
-      # rangeの底-6は「これより暗い場所を区別しない」暗さの底（同4節）。上限+17は、雲のまったく無い空
-      # （scorching）の正午（+16）に最も明るい地面（砂浜+1）を足した、太陽光だけで届く最大（同4節）。
+      # rangeの底は「これより暗い場所を区別しない」暗さの底（同4節）。上限は、雲のまったく無い空
+      # （scorching）の正午に最も明るい地面を足した、太陽光だけで届く最大（同4節。
+      # tests/world-codex/coreYaml.test.ts が見る）。
       # ambient_temperatureへの補正はこのstages+WhenOwnStageゲート（6.4節・8.2節）が担う。境目は
-      # 2つとも日射の強さで置いてある: 0は2.5 lxで**陽が地平線の下**、+11は曇りの正午（5,000 lx）で
-      # **日射が空気を暖め始める明るさ**。補正量は仮の値。
+      # 2つとも日射の強さで置いてある: darkとの境は**陽が地平線の下**、brightとの境は曇りの正午で
+      # **日射が空気を暖め始める明るさ**（IlluminationSystem.md 8節）。補正量は仮の値。
       ambient_brightness:
         value: 0
         range: {min: -6, max: 17}
@@ -401,9 +403,9 @@ object_defs:
               - modify:
                   self:
                     ambient_temperature: -3
-          - name: dim         # 0〜+10（朝夕と雨天の日中）: 補正なし
+          - name: dim         # brightの手前まで: 補正なし
             min: 0
-          - name: bright      # +11以上（曇り以上の日中）: やや暑い
+          - name: bright      # 曇りの正午の明るさ以上: やや暑い
             min: 11
             passives:
               - modify:
@@ -418,9 +420,9 @@ object_defs:
       # 季節・天気はいずれも専用オブジェクトではなくworld自身のプロパティ（現在値＋残り時間）で表現する。
 
       # 現在の季節。calm→wet→dry→calm…の固定順で巡回（ClimateSystem.md 2節）。各stageはフラグ
-      # （season_is_*）と貯水池への季節レート（3節）を持つ。calmの水分+0.1は回復方向のレートで、
-      # moderate閾値（30）付近を上下しながら1日1回前後の軽い雨を降らせる、序盤の生命線となる
-      # 降雨サイクルを作る（3.1節・3.2節）。
+      # （season_is_*）と貯水池への季節レート（同 3節）を持つ。calmの水分+0.1は回復方向のレートで、
+      # moderate閾値付近を上下しながら軽い雨をときどき降らせる、序盤の生命線となる
+      # 降雨サイクルを作る（同 3.1節・3.2節）。
       season:
         value: calm
         stages:
@@ -475,7 +477,7 @@ object_defs:
       season_is_dry:
         value: 0
       # 季節サイクルの周回数（0始まり、dry→calm遷移のたびに+1）。stagesが立てるフラグが
-      # 「初回サイクルは30日固定・2周目以降はランダム」の分岐（ClimateSystem.md 2.3節）の重みになる。
+      # 「初回サイクルは固定・2周目以降はランダム」の分岐（ClimateSystem.md 2.3節）の重みになる。
       season_cycle:
         value: 0
         stages:
@@ -495,8 +497,9 @@ object_defs:
       later_cycle_flag:
         value: 0
       # 現在の季節の残りtick数。0に達した瞬間（min:1を下回るon_min、6.3節）に3段のpick（10節）で
-      # 遷移: (1)season_is_*で今の季節へ分岐、(2)初回サイクルか否かで分岐、(3)初回は30日（2880tick）固定、
-      # 2周目以降は24/30/36日（2304/2880/3456tick）の等確率pick。dry→calm遷移だけがseason_cycleを+1する。
+      # 遷移: (1)season_is_*で今の季節へ分岐、(2)初回サイクルか否かで分岐、(3)初回は固定、2周目以降は
+      # 候補の等確率pick（日数はどちらも tests/world-codex/climateSystem.test.ts が見る）。dry→calm遷移だけが
+      # season_cycleを+1する。
       season_remaining:
         value: 2880
         range: {min: 0, max: 999999}
@@ -568,8 +571,8 @@ object_defs:
       # stagesは天気候補ごとの重み（*_weight）をmodifyで駆動する（ClimateSystem.md 4.3節）:
       # saturatedではsunny/clearの重みなし（降らない候補として残るのはcloudyだけ）、
       # dryではheavy_rain/stormの重み0。clearの重みが立つ段階では晴れ系の中でclearを最も重くする。
-      # moderateまでの雨は必ずlight_rain
-      # （序盤の「軽めの雨」要件、3.2節）。scorching_weightのみthermal_levelのhot stageが駆動する。
+      # moderateまでの雨は、雨季の後半（下のmonsoon_levelのpeak）を除いてlight_rain
+      # （序盤の「軽めの雨」要件、同 3.2節）。scorching_weightのみthermal_levelのhot stageが駆動する。
       atmospheric_moisture:
         value: 0
         range: {min: 0, max: 100}
@@ -627,8 +630,8 @@ object_defs:
       scorching_weight:
         value: 0
       # 現在の天気の残りtick数。0に達した瞬間（min:1を下回るon_min、6.3節）に、外側のpickが
-      # *_weightを重みに次の天気を、内側のpickが持続時間4/5/6時間（16/20/24tick）を等確率で選ぶ
-      # （ClimateSystem.md 4節）。初期値20（5時間）はday1の最初の遷移までの猶予。
+      # *_weightを重みに次の天気を、内側のpickが持続時間を等確率で選ぶ
+      # （ClimateSystem.md 4節）。初期値はday1の最初の遷移までの猶予。
       weather_remaining:
         value: 20
         range: {min: 0, max: 999999}
@@ -729,7 +732,7 @@ object_defs:
       headwind_weight:
         value: 0
       # 今の風向きの残りtick数。0に達した瞬間（min:1を下回るon_min、6.3節）に、*_weightを
-      # 重みとするpickで次の風向きを選ぶ。持続は一律8時間（32tick）——天気と違って向きしか無いので、
+      # 重みとするpickで次の風向きを選ぶ。持続は一律——天気と違って向きしか無いので、
       # 長さまで振ると、どちらが変わったのかが読めなくなる。
       wind_remaining:
         value: 32
@@ -750,8 +753,8 @@ object_defs:
               set:
                 self: {wind: headwind, wind_remaining: 32}
       # 蓄熱量（ClimateSystem.md 3節のもう一つの貯水池）。季節レートをambient_temperatureへ直接
-      # 加算すると±1/tickでも1季節で±2880になるため、atmospheric_moistureと同じ「スケールした
-      # 貯水池のstagesが表向きの値をmodifyする」パターンを使う。dryで+1/tick（20日で0→上限1920）、
+      # 加算すると±1/tickでも1季節のうちに季節のtick数ぶん動くため、atmospheric_moistureと同じ「スケールした
+      # 貯水池のstagesが表向きの値をmodifyする」パターンを使う。dryで+1/tick（0→上限）、
       # calm/wetで-1/tick。初期値1000は「開始時は補正なし（mild帯）」のため。
       # hot stageはscorching_weightも駆動する（乾季後半だけ灼熱が抽選に加わる。stageのminは
       # その値を含む判定のため、上限=hot閾値でもhotは有効）。
@@ -776,7 +779,7 @@ object_defs:
                     ambient_temperature: 8
                     scorching_weight: 50
       # 雨季の深まり（ClimateSystem.md 4.3節）。thermal_levelと対称の貯水池で、wetで+1/tick
-      # （20日で0→上限1920）、calm/dryで-1/tick。deepening帯（雨季10日目〜）・peak帯（20日目〜）が
+      # （0→上限）、calm/dryで-1/tick。deepening帯・peak帯が
       # heavy_rain_weight/storm_weightへ上乗せし、「雨季後半ほど嵐・大雨が増える」を保証する。
       # 上乗せは大気水分量が高いときにconditionsで限定する: 無条件だと、乾季序盤に水分が尽きた後まで
       # 大雨の重みが残ってしまうため。水分がまだ高い過渡の間は上乗せが生き、嵐の名残が表現される。
@@ -802,9 +805,9 @@ object_defs:
                     storm_weight: 40
                 conditions:
                   - {subject: self, prop: atmospheric_moisture, gte: 45}
-      # 難易度の初期補正1: 経過tickを数える専用カウンタで、2日目（tick 96-191）だけ
-      # atmospheric_moistureへ追加加算し、高確率で雨を降らせる（ClimateSystem.md 5.1節）。
-      # 天気そのものは固定しない（5.3節）ため、晴れる可能性もある。
+      # 難易度の初期補正1: 経過tickを数える専用カウンタで、2日目だけatmospheric_moistureへ追加加算し
+      # （tests/world-codex/climateSystem.test.ts が見る）、高確率で雨を降らせる（ClimateSystem.md 5.1節）。
+      # 天気そのものは固定しない（同 5.3節）ため、晴れる可能性もある。
       early_rain_calibration:
         value: 0
         passives:
@@ -821,9 +824,9 @@ object_defs:
                     atmospheric_moisture: 0.6
           - name: done
             min: 192
-      # 難易度の初期補正2: 最初の乾季の10日目前後（71日目、tick 6720-6815）にdryのレートを大きく
-      # 上回る+2/tickを加算し、高確率で雨を降らせる（5.2節）。6720/6816はseason_remainingの
-      # 「初回サイクル30日固定」に依存した導出値であり、そちらを変えたらこちらも再計算が必要。
+      # 難易度の初期補正2: 最初の乾季の10日目前後の1日にdryのレートを大きく上回る量を加算し、
+      # 高確率で雨を降らせる（同 5.2節）。段の境目のtickはseason_remainingの「初回サイクル固定」に
+      # 依存した導出値であり、そちらを変えたらこちらも再計算が必要。
       first_dry_rain_calibration:
         value: 0
         passives:

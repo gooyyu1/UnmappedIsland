@@ -7,11 +7,11 @@ import type { PropertyDef } from '../../src/domain/PropertyDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/wrappers/World';
 import { fixedRng } from '../support/rng';
 import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import type { PropertyGlobalId } from '../../src/domain/GlobalId';
+import { MINUTES_PER_TICK } from '../../src/domain/worldTime';
 
 describe('foods.yamlの食料定義', () => {
   let codex: WorldCodex;
@@ -175,8 +175,6 @@ describe('foods.yamlの食料定義', () => {
 describe('食べ物の腐敗', () => {
   /** 洞窟が湧く土地（locations.yamlのrocky_fieldのexplore）。屋根のある場所はここにしか無い。 */
   const CAVE_LAND = 'rocky_field';
-  /** core.yamlが宣言する1 tick（15分）。 */
-  const ONE_TICK = 15;
 
   let codex: WorldCodex;
   let durabilityId: PropertyGlobalId;
@@ -189,8 +187,7 @@ describe('食べ物の腐敗', () => {
   /** 岩場に浅い洞窟が1つある世界。土地が屋外、洞窟の中が「守られている場所」になる。 */
   function world() {
     const session = new WorldSession(codex, fixedRng(0));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     const land = spawnInto(session, CAVE_LAND, worldInstance, 'locations');
     return { session, land, cave: spawnInto(session, 'shallow_cave', land, 'fixtures') };
   }
@@ -213,7 +210,7 @@ describe('食べ物の腐敗', () => {
   /** 1 tickの間に減ったdurability。 */
   function lossIn1Tick(session: WorldSession, food: WorldObject): number {
     const before = durabilityOf(food);
-    session.advanceWorldTime(ONE_TICK);
+    session.advanceWorldTime(MINUTES_PER_TICK);
     return before - durabilityOf(food);
   }
 
@@ -229,7 +226,7 @@ describe('食べ物の腐敗', () => {
     const exposed = spawnInto(session, foodName, land, 'items');
     const before = durabilityOf(sheltered);
 
-    session.advanceWorldTime(ONE_TICK);
+    session.advanceWorldTime(MINUTES_PER_TICK);
 
     expect(before - durabilityOf(sheltered), '守られていれば腐敗だけ').toBe(indoors);
     expect(before - durabilityOf(exposed), '屋外では屋外劣化が上乗せされる').toBe(outdoors);
@@ -238,10 +235,10 @@ describe('食べ物の腐敗', () => {
   it('腐りきると消える', () => {
     const { session, land } = world();
     const meat = spawnInto(session, 'raw_meat', land, 'items');
-    // 屋外の生肉は2日（192 tick）で尽きる。最後の1 tickだけを見たいので、そこまで詰めておく。
+    // 最後の1 tickだけを見たいので、残りを屋外の1 tickの減り（上の表）まで詰めておく。
     meat.getProperty(durabilityId).setNumberWithoutEvents(5);
 
-    session.advanceWorldTime(ONE_TICK);
+    session.advanceWorldTime(MINUTES_PER_TICK);
 
     expect(meat.parent, '0に達した食べ物は世界から出る').toBeUndefined();
   });
@@ -465,8 +462,6 @@ describe('食べ物が配る幸福度', () => {
  * 前者が無ければ誰も刻まないので腕も伸びず、後者が抜けると20分の繰り返しが最も速い伸ばし方になる。
  */
 describe('foods.yamlの下ごしらえ', () => {
-  /** core.yamlが宣言する1 tick（15分）。 */
-  const ONE_TICK = 15;
   /** 炎の段（fire.yamlのheat）の下端。焚き火の上限は30なので、ここへ置けば炎のまま燃え続ける。 */
   const FLAME_HEAT = 20;
   /** 浅い洞窟が湧く土地（locations.yamlのrocky_fieldのexplore）。屋根のある場所はここにしか無い。 */
@@ -487,8 +482,7 @@ describe('foods.yamlの下ごしらえ', () => {
   /** 草地にプレイヤーが立っている世界。`roll`は抽選が引く位置（fixedRng）。 */
   function open(landName = 'grassland', roll = 0) {
     const session = new WorldSession(codex, fixedRng(roll));
-    const worldInstance = session.createObject(codex.objectNames.getId('world'));
-    session.adoptWorld(new World(worldInstance));
+    const worldInstance = session.createWorld().instance;
     const land = spawnInto(session, landName, worldInstance, 'locations');
     const player = spawnInto(session, SAMPLE_CHARACTER, land, 'characters');
     // 刃を当てる手元の作業なので明るさを要求する（foods.yaml）。ここで見たいのは下ごしらえの側なので、
@@ -570,7 +564,7 @@ describe('foods.yamlの下ごしらえ', () => {
     expect(whole.tryGetProperty(cookingProgressId)?.ticksUntilMax(), '丸のままは3/tick').toBe(10);
     expect(chopped.tryGetProperty(cookingProgressId)?.ticksUntilMax(), '刻んであれば5/tick').toBe(6);
 
-    session.advanceWorldTime(ONE_TICK * 6);
+    session.advanceWorldTime(MINUTES_PER_TICK * 6);
     expect(childNames(hearth), '刻んだほうだけが焼き上がっている').toEqual(['roasted_taro', 'taro']);
   });
 
@@ -584,7 +578,7 @@ describe('foods.yamlの下ごしらえ', () => {
     }
     const hearth = litCampfire(session, land);
     expect(taro.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
-    session.advanceWorldTime(ONE_TICK * 10);
+    session.advanceWorldTime(MINUTES_PER_TICK * 10);
     return childNames(hearth);
   }
 
@@ -623,7 +617,7 @@ describe('foods.yamlの下ごしらえ', () => {
     expect(chopping(session, player, chopped)?.tryExecute()).toBe(true);
 
     const before = [whole, chopped].map((food) => food.getProperty(durabilityId).number);
-    session.advanceWorldTime(ONE_TICK);
+    session.advanceWorldTime(MINUTES_PER_TICK);
 
     expect(before[0] - whole.getProperty(durabilityId).number, '丸のままは芋の速さ＋屋外').toBe(1.5);
     expect(before[1] - chopped.getProperty(durabilityId).number, '刻むと-1が重なる').toBe(2.5);
@@ -642,7 +636,7 @@ describe('foods.yamlの下ごしらえ', () => {
       expect(food.moveToSlotOrRejection(cave.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
 
     const before = [whole, chopped].map((food) => food.getProperty(durabilityId).number);
-    session.advanceWorldTime(ONE_TICK);
+    session.advanceWorldTime(MINUTES_PER_TICK);
 
     expect(before[0] - whole.getProperty(durabilityId).number, '丸のままは屋外の-1が落ちる').toBe(0.5);
     expect(before[1] - chopped.getProperty(durabilityId).number, '刻んだぶんの-1は残る').toBe(1.5);

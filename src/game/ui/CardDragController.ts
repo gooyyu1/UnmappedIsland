@@ -299,7 +299,7 @@ export class CardDragController {
 
   /**
    * 運んでいる札をポインタの中心へ置き、今の位置で言うことのあるドロップ先を枠で示す。**枠が出ることは
-   * 「離せば起きる」を意味しない**——理由を言うためだけの落とし先には灰色の枠が出る（2.1節）。
+   * 「離せば起きる」を意味しない**——理由を言うためだけの落とし先には灰色の枠が出る（同 2.1節）。
    */
   private follow(gesture: Gesture, pointer: Phaser.Input.Pointer): void {
     if (gesture.carried === undefined || gesture.indicator === undefined) return;

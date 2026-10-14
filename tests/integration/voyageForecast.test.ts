@@ -199,7 +199,7 @@ describe('推定日数', () => {
     const forecast = forecastIn(game)(raft);
 
     expect(forecast, '砂浜の筏には見積もりが出る').toBeDefined();
-    // 砂浜が面するのは島影の海（本土まで14海区）。海図はまだ方角しか知らないので±5海区の幅がある
+    // 砂浜が面するのは島影の海。海図はまだ方角しか知らないので海区の数に幅がある
     // （Voyage.md 3.7節）ため、日数も幅のまま出る。
     expect(forecast!.minDays).toBeGreaterThan(0);
     expect(forecast!.maxDays, '海図に幅がある間は日数も幅を持つ').toBeGreaterThan(forecast!.minDays);

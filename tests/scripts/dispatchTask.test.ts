@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `scripts/daemon/dispatch-task.sh` の**投入する前の関門**の検査。
  *
@@ -111,7 +113,7 @@ function args(
   };
 }
 
-describe('dispatch-task.sh', () => {
+describe('dispatch-task.sh', timeoutOnWindows(30_000), () => {
   it('関門をどれも踏まなければ、渡す引数まで組み立てる', () => {
     const result = run(1415);
 
@@ -141,7 +143,7 @@ describe('dispatch-task.sh', () => {
   });
 
   // 返された issue は `kind:task` が付いたまま残る（`agent-ops/board-design.md` 2.15.2節）ので、**ここで
-  // 見なければ次の周にそのまま投入し直される。** 不変条件を持つのは投入する側（1.4）。
+  // 見なければ次の周にそのまま投入し直される。** 不変条件を持つのは投入する側（同 1.4節）。
   it('人へ返された issue へは投入しない', () => {
     const result = run(1376, { labels: ['kind:task', '判断待ち'] });
 

@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { pathForBash, runScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `scripts/daemon/dispatch-review.sh` が組み立てるタイトルの検査。
  *
@@ -83,7 +85,7 @@ esac
   }
 }
 
-describe('dispatch-review.sh', () => {
+describe('dispatch-review.sh', timeoutOnWindows(30_000), () => {
   it('判定がまだ1つも無ければ、1回目', () => {
     expect(args(1524).title).toBe('レビュー #1524:1 題');
   });

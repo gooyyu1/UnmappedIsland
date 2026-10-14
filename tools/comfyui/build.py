@@ -32,6 +32,9 @@ from pathlib import Path
 
 import raw_store
 
+# 書き先が端末でない Windows でも日本語を書けるように（tests/architecture/pythonStdout.test.ts）。
+sys.stdout.reconfigure(encoding="utf-8")
+
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 
@@ -332,7 +335,9 @@ def main() -> None:
                     "--out", str(processed),
                     *[str(v) for at in paper["at"] for v in ("--at", at)],
                     *[str(v) for tint in paper.get("tint", []) for v in ("--tint", tint)],
-                    *(["--radius", str(paper["radius"])] if "radius" in paper else []),
+                    "--width", str(paper["width"]),
+                    "--height", str(paper["height"]),
+                    "--radius", str(paper["radius"]),
                     "--paper", paper["paper"],
                     "--wash", str(paper["wash"]),
                 ],

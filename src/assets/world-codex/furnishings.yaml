@@ -65,7 +65,7 @@ object_defs:
   branch_table:
     tags: [fixture, furnishing]
     props:
-      # 太い枝6本（1,000×6）＋縄1本（200）。
+      # 材料の目方の和（tests/world-codex/loadEffects.test.ts が見る）。
       weight: {value: 6200}
     passives:
       - modify:

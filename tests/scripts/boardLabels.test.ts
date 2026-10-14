@@ -8,6 +8,8 @@ import { SWEEP_LINE } from '../../scripts/daemon/board-round.mjs';
 import { pathForBash, runScript, spawnScript } from '../support/runScript';
 import { STUB_SHEBANG } from '../support/stubShebang';
 
+import { timeoutOnWindows } from '../support/timeoutOnWindows';
+
 /**
  * `.github/workflows/board-labels.yml` の、結論をラベルへ変える段の検査。
  *
@@ -122,7 +124,7 @@ const PASS_ASK = '[レビュー] 通してよい（人の判断が要る）';
 /** そのPRに既に付いている、結論のコメント。今回の判定もここに載る（Actions が動くのは投稿の後）。 */
 const past = (...bodies: string[]): Comment[] => bodies.map((body) => ({ body }));
 
-describe('board-labels.yml の verdict', () => {
+describe('board-labels.yml の verdict', timeoutOnWindows(30_000), () => {
   it('「直しが要る」で 直し待ち を付けて 通してよい を外す', () => {
     const result = run(BLOCK, past(BLOCK));
 
@@ -155,7 +157,7 @@ describe('board-labels.yml の verdict', () => {
     expect(run('[レビュー] 通してよい（人の判断が要る）だと思います').edits).toEqual([]);
   });
 
-  // 上限（4.6）。3周目の判定が「直しが要る」なら、そこで人の手番へ移す。
+  // 上限（board-design.md 4.6節）。3周目の判定が「直しが要る」なら、そこで人の手番へ移す。
   // **`直し待ち` を一緒に外す。** 残すと盤面が差し戻しを打ち、人が答える前に次の周が走る。
   it('3周目の「直しが要る」で 収束せず を付け、直し待ち を外す', () => {
     const result = run(BLOCK, past(BLOCK, BLOCK, BLOCK));
@@ -193,7 +195,7 @@ describe('board-labels.yml の verdict', () => {
     expect(run(BLOCK, mixed).edits.join('\n')).toContain('収束せず');
   });
 
-  // **新しい判定の形も1周**。数え方から漏らすと、3周で人へ上げる勘定（4.6）が狂う。
+  // **新しい判定の形も1周**。数え方から漏らすと、3周で人へ上げる勘定（board-design.md 4.6節）が狂う。
   it('通してよい（人の判断が要る）の周も、周回数に数える', () => {
     const mixed = past(BLOCK, PASS_ASK, BLOCK);
 
@@ -225,12 +227,20 @@ describe('board-labels.yml の verdict', () => {
  * そのまま次のセッションへ配り直し、返した意味が消える。**順序（`blockedBy`）はここが唯一の
  * 経路**なので、動かなければ張られないまま配られる。
  */
-describe('board-labels.yml の declared', () => {
+describe('board-labels.yml の declared', timeoutOnWindows(30_000), () => {
   const ISSUE = '1376';
 
+  /** 依存の側の状態。どちらに挙がった番号も、GitHub と同じく追加を 422 で拒む。 */
+  interface Dependencies {
+    /** 既に張ってある、先に要るほうの番号。 */
+    readonly existing?: readonly string[];
+    /** 張ると循環になる番号。 */
+    readonly cyclic?: readonly string[];
+  }
+
   /** 通る名乗り用。**落ちたことを結果に混ぜない**ので、落ちれば「何もしない」と区別が付く。 */
-  function runDeclared(body: string, prBodies: readonly string[] = []): string[] {
-    const result = spawnDeclared(body, prBodies);
+  function runDeclared(body: string, prBodies: readonly string[] = [], deps: Dependencies = {}): string[] {
+    const result = spawnDeclared(body, prBodies, deps);
     if (result.status !== 0) throw new Error(`declared が ${result.status} で終わった: ${body}`);
     return result.edits;
   }
@@ -239,6 +249,7 @@ describe('board-labels.yml の declared', () => {
   function spawnDeclared(
     body: string,
     prBodies: readonly string[] = [],
+    deps: Dependencies = {},
   ): { readonly edits: string[]; readonly status: number | null } {
     const work = mkdtempSync(join(tmpdir(), 'unmapped-island-returned-'));
     const dir = pathForBash(work);
@@ -262,6 +273,22 @@ case "$1 $2" in
 "api --method")
   shift 3
   echo "api $*" >>'${dir}/edits.txt'
+  number=\${3#issue_id=88}
+  if grep -qx "$number" '${dir}/blocked.txt' '${dir}/cyclic.txt'; then
+    echo 'Validation failed: Target issue has already been taken (HTTP 422)' >&2
+    exit 1
+  fi
+  echo "$number" >>'${dir}/blocked.txt'
+  ;;
+# 張ってある一覧は、待つ側（担当の issue）のものだけを持つ。別の issue を引いたら空。
+"api --paginate")
+  [ "$3" = repos/gooyyu1/UnmappedIsland/issues/${ISSUE}/dependencies/blocked_by ] || exit 0
+  filter=''
+  while [ $# -gt 0 ]; do
+    if [ "$1" = --jq ]; then filter="$2"; fi
+    shift
+  done
+  jq -R 'tonumber | {number: .}' '${dir}/blocked.txt' | jq -s . | jq -r "$filter"
   ;;
 # 先に要るほうの数値 ID を引く側。**番号から導ける値を返す**ので、どの issue を引いたかが
 # 打たれた行に残る。
@@ -275,6 +302,8 @@ esac
       );
       chmodSync(gh, 0o755);
       writeFileSync(join(work, 'edits.txt'), '', 'utf-8');
+      writeFileSync(join(work, 'blocked.txt'), (deps.existing ?? []).map((n) => `${n}\n`).join(''), 'utf-8');
+      writeFileSync(join(work, 'cyclic.txt'), (deps.cyclic ?? []).map((n) => `${n}\n`).join(''), 'utf-8');
       writeFileSync(
         join(work, 'prs.json'),
         JSON.stringify(prBodies.map((text) => ({ body: text }))),
@@ -313,21 +342,21 @@ esac
     }
   }
 
-  // 名乗る理由は選択肢が閉じていないので、1行目は前方一致で見る（2.15.2）。
+  // 名乗る理由は選択肢が閉じていないので、1行目は前方一致で見る（board-design.md 2.15.2節）。
   it('1行目が [返却] で始まっていれば、判断待ち を付ける', () => {
     expect(runDeclared('[返却] 仕様が決まっておらず、仮決めもできない\n\n詳細')).toEqual([
       `${ISSUE} --repo gooyyu1/UnmappedIsland --add-label 判断待ち`,
     ]);
   });
 
-  // **名乗らせるのは、なぜブリッジが要るのかがラベルに残らないから**（2.16.2）。
+  // **名乗らせるのは、なぜブリッジが要るのかがラベルに残らないから**（board-design.md 2.16.2節）。
   it('1行目が [ブリッジ] で始まっていれば、env:bridge を付ける', () => {
     expect(runDeclared('[ブリッジ] agent-ops/parallel-work.md を直す必要がある\n\nここまで調べた')).toEqual([
       `${ISSUE} --repo gooyyu1/UnmappedIsland --add-label env:bridge`,
     ]);
   });
 
-  // **成果が issue の側にしか出ない仕事は、PRを作れないので終わりを名乗る口がここしか無い**（2.15.4）。
+  // **成果が issue の側にしか出ない仕事は、PRを作れないので終わりを名乗る口がここしか無い**（board-design.md 2.15.4節）。
   // `判断待ち` を付けると、答えを待っていないのに人の手番へ入る。
   it('1行目が [完了] で始まっていれば、issue を閉じ、判断待ち は付けない', () => {
     expect(runDeclared('[完了] #1102 の「済」を task issue へ下ろした\n\n立てた issue の一覧')).toEqual([
@@ -352,18 +381,37 @@ esac
     ]);
   });
 
-  // **分類（`kind:`）は動かさない**（2.15.2・2.17.1）。軸が違ううえ、外すと人が列へ戻すのに
+  // **分類（`kind:`）は動かさない**（board-design.md 2.15.2・2.17.1節）。軸が違ううえ、外すと人が列へ戻すのに
   // 2タップ要り、外した issue は未整理として棚卸しへ戻る。
   it('分類は動かさない', () => {
     expect(runDeclared('[返却] 決められない').join('\n')).not.toContain('kind:');
   });
 
-  // 棚卸しはクラウドで立つので、依存を張る道具を持たない（2.17.3）。**コメントを置いた issue が
+  // 棚卸しはクラウドで立つので、依存を張る道具を持たない（board-design.md 2.17.3節）。**コメントを置いた issue が
   // 待つ側**で、1行目が挙げる番号が先に要るほう。
   it('1行目が [順序] なら、その issue を、挙がった番号の後ろへ回す', () => {
     expect(runDeclared('[順序] #1234 の後（宣言を読む側がこの issue）')).toEqual([
       `api repos/gooyyu1/UnmappedIsland/issues/${ISSUE}/dependencies/blocked_by -F issue_id=881234`,
     ]);
+  });
+
+  // **同じ申告の二度目は「既に張ってある」が正しい答え**で、GitHub は 422 で拒むが申告のとおりには
+  // なっている。落とすと、直す相手の居ない赤が Actions に残る（issue #2094）。
+  it('[順序] の相手が既に張ってあれば、追加が拒まれても通る', () => {
+    const result = spawnDeclared('[順序] #1234 の後（二度目）', [], { existing: ['1234'] });
+
+    expect(result.status).toBe(0);
+  });
+
+  // **落とすのは申告のとおりになっていないときだけ**——循環で拒まれたなら、順序はどこにも無い。
+  // 張ってある他の相手や、番号の前方一致で通すと、それを見逃す。
+  it('[順序] の追加が拒まれ、その相手が張られていなければ落ちる', () => {
+    const cyclic = { cyclic: ['1234'] };
+
+    expect(spawnDeclared('[順序] #1234 の後', [], cyclic).status).not.toBe(0);
+    expect(spawnDeclared('[順序] #1234 の後', [], { ...cyclic, existing: ['999', '12345'] }).status).not.toBe(
+      0,
+    );
   });
 
   // **黙って何もしないと、申告した側は張られたと思ったまま進む。**
@@ -387,7 +435,7 @@ esac
  * push で前の差分の印を落とす段。**人が外す作業を作らないための要**（`board-design.md` 2.13.1節）
  * なので、落とす対象が欠けると、人の手番の印が付いたまま残って盤面が止まる。
  */
-describe('board-labels.yml の synchronized', () => {
+describe('board-labels.yml の synchronized', timeoutOnWindows(30_000), () => {
   /** `synchronized` ジョブの `run:`。 */
   function synchronized(): string | undefined {
     const workflow = parse(readFileSync(WORKFLOW, 'utf-8')) as {
@@ -401,8 +449,8 @@ describe('board-labels.yml の synchronized', () => {
   // 足し忘れても、足したのが落とすべきでない札でも、どちらも緑のまま。
   //
   // **盤面が読まない2つは、ここで名指しする。** どちらも**今の頭への判定が無くても付きうる**ので、
-  // 判定と突き合わせても古いと言えない——`直し待ち` は後片付けも付け（2.10.5）、`却下` は人が止めた
-  // 印（2.13.1）。**push で落ちることと、盤面が古いと言えることは別。**
+  // 判定と突き合わせても古いと言えない——`直し待ち` は後片付けも付け（board-design.md 2.10.5節）、`却下` は人が止めた
+  // 印（同 2.13.1節）。**push で落ちることと、盤面が古いと言えることは別。**
   it('落とすのは、盤面が前の差分のものと読む札と、判定によらず付く2つ', () => {
     expect(removedLabels(synchronized() ?? '').sort()).toEqual([...STALE_ON_PUSH, '直し待ち', '却下'].sort());
   });
@@ -415,7 +463,7 @@ describe('board-labels.yml の synchronized', () => {
  * **盤面は自分で外せない**（`unlabeled` が `却下` になる。下の `unlabeled_by_hand`）ので、ここが
  * 落とさない札は誰にも落とされない。
  */
-describe('board-labels.yml の swept', () => {
+describe('board-labels.yml の swept', timeoutOnWindows(30_000), () => {
   const PR = '2120';
 
   /** 頼みの本文を渡して走らせ、`gh pr edit` に渡された引数を返す。 */
@@ -498,7 +546,7 @@ esac
  * たびに同じラベルを外すので、機械のぶんまで差し戻しに読むと、**直して push した本人がその push で
  * 差し戻される**——直すほど差し戻る輪になる。
  */
-describe('board-labels.yml の unlabeled_by_hand', () => {
+describe('board-labels.yml の unlabeled_by_hand', timeoutOnWindows(30_000), () => {
   const PR = '1701';
 
   /** 外れたラベルと、外した相手の種別を渡して走らせる。 */
@@ -556,7 +604,7 @@ esac
 
   const REJECTED = [`${PR} --repo gooyyu1/UnmappedIsland --add-label 却下`];
 
-  // 人がすることは「外す＝直してもらう」「マージする＝それでよい」の2つだけ（2.13.1）。
+  // 人がすることは「外す＝直してもらう」「マージする＝それでよい」の2つだけ（board-design.md 2.13.1節）。
   it('PRを止めている印を人が外したら、却下 を付ける', () => {
     expect(runUnlabeled('判断待ち')).toEqual(REJECTED);
     expect(runUnlabeled('収束せず')).toEqual(REJECTED);
@@ -585,7 +633,7 @@ esac
  * 差分が一覧を置き去りにしても、読む者が数えるまで誰も気づかない。**各行の末尾の job 名がその
  * 突き合わせの手がかり**で、ここが唯一それを読む。
  */
-describe('board-labels.yml の冒頭の一覧', () => {
+describe('board-labels.yml の冒頭の一覧', timeoutOnWindows(30_000), () => {
   /** 冒頭のコメント（`on:` より前）の箇条書きが、末尾で名指ししている job 名。 */
   function listedJobs(): Set<string> {
     const header = readFileSync(WORKFLOW, 'utf-8').split(/\r?\n/);

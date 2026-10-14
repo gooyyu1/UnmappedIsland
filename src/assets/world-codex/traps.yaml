@@ -66,19 +66,19 @@ object_defs:
         range: {min: 0, max: 16}
         passives:
           - conditions:
-              # 地面に置かれている間だけ（1節）。
+              # 地面に置かれている間だけ（TrapSystem.md 1節）。
               - {in_slot: items}
-              # 空いている間だけ（6節）。獲物も死体もquarryなので、両方をこれ1つで拾う。
+              # 空いている間だけ（TrapSystem.md 6節）。獲物も死体もquarryなので、両方をこれ1つで拾う。
               - not: {slot: catch, matches: {tag: quarry}}
             add:
               self:
                 catch_remaining: -1
-        # 外側は食性の卓を選び（餌が決める、4節）、内側はその卓で掛かるかどうかと種を選ぶ
-        # （土地が決める、3節）。周期の置き直しは分岐に関わらず起こるので、pickの外に1つだけ置く。
+        # 外側は食性の卓を選び（餌が決める、TrapSystem.md 4節）、内側はその卓で掛かるかどうかと種を選ぶ
+        # （土地が決める、TrapSystem.md 3節）。周期の置き直しは分岐に関わらず起こるので、pickの外に1つだけ置く。
         on_min:
           add: {self: {catch_remaining: 16}}
           pick:
-            # 何も寄って来なかった回。先頭に置く（3節）。
+            # 何も寄って来なかった回。先頭に置く（TrapSystem.md 3節）。
             - weight: {prop: miss_weight}
             - weight: {prop: herbivore_weight}
               pick:
@@ -97,7 +97,7 @@ object_defs:
             - weight: {prop: carnivore_weight}
               pick:
                 - weight: 8
-                # ネズミは雑食なので、同じつまみで両方の卓に載る（4.1節）。
+                # ネズミは雑食なので、同じつまみで両方の卓に載る（同 4.1節）。
                 - weight: {prop: rat_catch}
                   spawn:
                     - {object: rat, into: self}
@@ -107,14 +107,14 @@ object_defs:
       # 抽選から外れる**ので、罠の側は1行も書き換えずに「岩礁海岸にヤケイは掛からない」が決まる。
       junglefowl_catch: {value: 0, base: {subject: ancestor}}
       rat_catch: {value: 0, base: {subject: ancestor}}
-      # 食性の卓の重み。素は互角で、餌が片方を押し上げる（4節）。
+      # 食性の卓の重み。素は互角で、餌が片方を押し上げる（同 4節）。
       herbivore_weight: {value: 10, range: {min: 0, max: 35}}
       carnivore_weight: {value: 10, range: {min: 0, max: 35}}
       # 何も寄って来なかった回の重み。どちらの餌でも下がるが、range.minが5で止めるので必中には
       # ならない（8.3節。合成結果の下限はプロパティ側のrangeが持つ）。
       miss_weight: {value: 40, range: {min: 5, max: 40}}
-      # 仕掛けた餌。餌の側では「仕掛けると増える量」（4節）。仕掛けている間だけ減るので、
-      # 24 tick（6時間）で切れる——罠を放置しても餌は待っていてくれない。
+      # 仕掛けた餌。餌の側では「仕掛けると増える量」（同 4節）。仕掛けている間だけ減るので、
+      # 上限を使い切れば切れる——罠を放置しても餌は待っていてくれない。
       plant_bait:
         value: 0
         range: {min: 0, max: 24}
@@ -133,14 +133,14 @@ object_defs:
             add:
               self:
                 meat_bait: -1
-      # 繊維の罠は短命な素材（DurabilitySystem.md 2節の-1/tickで960 tick（10日））。獲物が入っている間は
+      # 繊維の罠は短命な素材（DurabilitySystem.md 2節の-1/tick）。獲物が入っている間は
       # もがかれるので桁違いに速く傷み、0で自壊する（TrapSystem.md 6.1節）。
       #
       # 壊れた罠の中身は道連れにならず土地へこぼれる（9.3節）。拘束のmodifyは消えるが、破られるまでに
       # 警戒は引き切っている（TrapSystem.md 6.1節）ので、**放置した罠の跡には落ち着いた獲物が立って
       # いる**。**そこですぐ立ち去りが動き出すわけではない**——くくり罠の裂傷は深手なので、痛みが
       # 引くまでタイマーは止まったまま（HuntingSystem.md 5.6節）で、深く掛かった個体はその前に膿んで
-      # 倒れる。**先に失うのは罠のほうで、獲物を失うのはそこから数日遅れる**（TrapSystem.md 5.1節）。
+      # 倒れる。**先に失うのは罠のほうで、獲物を失うのはそこから数日遅れる**（TrapSystem.md 6.1節）。
       durability:
         # 尽きると使えなくなるので、満タン側がgood（CardView.md 8節）。
         gauge: {min: bad, max: good}
@@ -272,7 +272,7 @@ object_defs:
         on_min:
           add: {self: {catch_remaining: 16}}
           pick:
-            # 何も寄って来なかった回。先頭に置く（3節）。
+            # 何も寄って来なかった回。先頭に置く（同 3節）。
             - weight: {prop: miss_weight}
             - weight: {prop: herbivore_weight}
               pick:
@@ -300,9 +300,9 @@ object_defs:
       # 中型のシカ・オオトカゲはまだ島に居らず、サルは罠を学習して避ける
       # （docs/world/Animals.md 4節・10節）ので、今この島で穴に落ちるのはイノシシだけになる。
       wild_boar_catch: {value: 0, base: {subject: ancestor}}
-      # 寄ってきた回の重み。素は囲いと同じで、餌が押し上げる（4節）。
+      # 寄ってきた回の重み。素は囲いと同じで、餌が押し上げる（TrapSystem.md 4節）。
       #
-      # **肉の卓は持たない。** 掛かるイノシシは雑食（4.1節）なので卓1つとmeat_baitを足せば肉でも
+      # **肉の卓は持たない。** 掛かるイノシシは雑食（TrapSystem.md 4.1節）なので卓1つとmeat_baitを足せば肉でも
       # 寄せられるが、同じ相手を2通りの餌で呼べるようにする値打ちがあるかは、囲いと同じ未決事項
       # （同8節）。片方だけ先に決めない。
       herbivore_weight: {value: 10, range: {min: 0, max: 35}}
@@ -317,19 +317,19 @@ object_defs:
       # stake軸のtraitで入れ替える。
       bruise_weight: {value: 10, range: {min: 0, max: 10}}
       puncture_weight: {value: 0, range: {min: 0, max: 10}}
-      # 雨に縁を崩され、落ちた獣に壁を掘られて浅くなる。空のままなら30日、獣が入れば2.7日で
-      # 埋まって使えなくなる（TrapSystem.md 6.1節）。**丸太を組んだ檻と違って耐久を持つ**のは、
+      # 雨に縁を崩され、落ちた獣に壁を掘られて浅くなる。空のままでも埋まっていき、獣が入れば
+      # 桁違いに速く埋まって使えなくなる（TrapSystem.md 6.1節。日数は stats/durations.yaml）。**丸太を組んだ檻と違って耐久を持つ**のは、
       # 掘った穴が土に戻る物だから——閉じ込め続ける檻の罰が渇き（TrapSystem.md 5.4節）なのに対し、
       # こちらは穴が埋まって獲物を手放すことが罰になる。
       #
       # 壊れた罠の中身は道連れにならず土地へこぼれる（9.3節）。こぼれた先は土地の地面だが、
-      # **杭の刺し傷は深手なので立ち去りは動き出さない**（HuntingSystem.md 5.6節）——720tickで固定の
+      # **杭の刺し傷は深手なので立ち去りは動き出さない**（HuntingSystem.md 5.6節）——重さが固定の
       # 傷はどの個体も敗血症へ届くので、放置した穴の跡に残るのは獲物ではなく死体になる
       # （TrapSystem.md 5.1節）。
       durability:
         # 尽きると使えなくなるので、満タン側がgood（CardView.md 8節）。**上限は種類によらず960**
-        # （DurabilitySystem.md 1節）——長持ちを上限で作らず、減る速さだけで作る。30日なので
-        # 10÷30（同節の式）で、割り切れないぶんは小数で置く。
+        # （DurabilitySystem.md 1節）——長持ちを上限で作らず、減る速さだけで作る。速さは
+        # 同節の式で置き、割り切れないぶんは小数で置く。
         gauge: {min: bad, max: good}
         value: 960
         range: {min: 0, max: 960}
@@ -353,7 +353,7 @@ object_defs:
           child:
             wariness: -100
             vulnerability: 200
-      # 餌は「草食の卓が引かれやすくなる」と「何も寄って来ない回が減る」を同時に言う（4節）。
+      # 餌は「草食の卓が引かれやすくなる」と「何も寄って来ない回が減る」を同時に言う（同 4節）。
       - conditions:
           - {prop: plant_bait, gte: 1}
         modify:
@@ -390,12 +390,11 @@ object_defs:
         become: {stake: staked}
         destroy: instrument
     # **解放条件を持たない。** 掘るだけで結ぶ工程が無いので、くくり罠を開ける繊維・編みの腕
-    # （上）はここには効かない。半日を掘り続けること自体がゲートになっている
-    # （docs/engine/SkillSystem.md 4.2節）。
+    # （上）はここには効かない。
     recipes:
       # 掘るだけ。**掘削具はまだ無い**（TrapSystem.md 8節）ので、畑と同じく掘り棒にする太い枝を
       # 1本折り込む形で置いてある（farming.yamlのfield）。獣が落ちる深さまで掘るので、畑を均す
-      # 半日より長い。
+      # より長い。
       #
       # **手際も名乗らない**（docs/world/Skills.md 7.1節）。結ぶ工程を持たないので繊維・編みは
       # 効かず（上と同じ理由）、土を起こす腕は一覧（同2節）に無い。

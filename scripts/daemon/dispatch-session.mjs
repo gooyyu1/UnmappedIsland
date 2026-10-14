@@ -165,10 +165,12 @@ function withdraw(session) {
 }
 
 const [kind, ...rest] = process.argv.slice(2);
+// `process.exit` で切らない——Windows の node は `fetch` の後始末の途中で切られると libuv の表明で
+// 落ち（`0xC0000409`）、打てた手が打てなかったものとして返る。
 try {
-  process.exit(await dispatch(kind, options(rest)));
+  process.exitCode = await dispatch(kind, options(rest));
 } catch (error) {
   // **投入のログを読むのは人間。** 積み上がった呼び出しではなく、何が起きたかだけを残す。
   console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
+  process.exitCode = 1;
 }

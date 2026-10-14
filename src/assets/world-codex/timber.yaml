@@ -7,7 +7,7 @@
 # （fiber.yaml）・ヤシの葉（weaving.yaml）と同じく刃物で断てるため、こちらは斧を待たない。
 #
 # 丸太は1本20kgで、荷重の限界（キャラクタのload、docs/world/Characters.md）に対して1本ずつしか
-# 運べない重さにしてある。筏に6本要るので、拠点をどこに置くかが運搬の手間を決める。
+# 運べない重さにしてある。筏には何本も要るので、拠点をどこに置くかが運搬の手間を決める。
 #
 # 同じ木から樹皮も剥ぐ。倒さずに立ったまま剥げるので、丸太とは別の入口になる（なめし革へ繋がる
 # 先はclothing.yaml）。
@@ -18,7 +18,7 @@ object_defs:
   broadleaf_tree:
     tags: [fixture]
     props:
-      # 立ち木1本ぶん。倒して採れるのは丸太2本と太枝3本（43kg）で、残りは根と梢と枝葉。
+      # 立ち木1本ぶん。倒して採れるのは丸太2本と太枝3本で、残りは根と梢と枝葉。
       weight: {value: 150000}
       # 斧を入れる作業1回ぶんにかかる時間（docs/engine/ActionSystem.md 6.3節）。**どの腕がどの段から
       # どれだけ縮めるかは、この操作が自分で宣言する**（docs/world/Skills.md 7節）。丸太を要る物は
@@ -77,7 +77,7 @@ object_defs:
         # 木材加工は斧より手前から伸び始める。どれも循環しない（同3.2節）。
         #
         # **腕の伸びは1手ずつ配る**——量はその1手の長さから決まる（30分につき1、端数は切り上げ。
-        # docs/engine/SkillSystem.md 3節）ので、割った手を順に打っても、1回で倒していた頃と
+        # docs/engine/SkillSystem.md 3節）ので、割った手を順に打っても、1回で倒すのと
         # 時間あたりは変わらない。
         add:
           self:
@@ -151,10 +151,11 @@ object_defs:
     # 同じ絵しか持ちようがない。
     art: log
     props:
-      # 丸太2本（40kg）に、玉切りで落ちる末口と割れた部分を足した重さ。
+      # 採れる丸太に、玉切りで落ちる末口と割れた部分を足した重さ。
       weight: {value: 60000}
-      # 玉切り1回ぶんにかかる時間（上のfell_minutesと同じ形）。**立ち木と同じ1回60分で、違うのは
-      # 回数のほう**——既に倒れているので、受け口を刻む手間（chop）が要らない。
+      # 玉切り1回ぶんにかかる時間（上のfell_minutesと同じ形）。**1回の長さは立ち木と同じで、違うのは
+      # 回数のほう**——既に倒れているので、受け口を刻む手間（chop）が要らない
+      # （tests/world-codex/timberYaml.test.ts が見る）。
       buck_minutes:
         value: 60
         passives:
@@ -168,7 +169,7 @@ object_defs:
         range: {min: 1, max: 2}
         gauge: {min: bad, max: good}
     interactions:
-      # 運べる長さに玉切りする。既に倒れているので、立ち木を倒すより半分の手間で済む。
+      # 運べる長さに玉切りする。既に倒れているので、立ち木を倒すより少ない手間で済む（上のbuck_minutes）。
       # **残り1本になったら下のbuck_lastへ移る**（12.1節「条件で分ける」）。
       buck:
         trigger: {drag: {tag: chopping_tool}}
@@ -232,8 +233,8 @@ object_defs:
   sapling:
     tags: [fixture]
     props:
-      # 細い木1本ぶん。幹（3.5mほど、根元で3cm）に枝葉を足した重さで、採れる2m（長い棒600g）は
-      # そのおよそ半分。残りは根と梢と枝葉になる。
+      # 細い木1本ぶん。幹（3.5mほど、根元で3cm）に枝葉を足した重さで、採れる2m（長い棒）のほかは
+      # 根と梢と枝葉になる。
       weight: {value: 1200}
       # 断って棒に切るのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で
       # 宣言する**（docs/world/Skills.md 7節）。長い棒は槍にもそりにも要るので、届いた段で縮む。
@@ -270,14 +271,15 @@ object_defs:
   # 丸太。幹を運べる長さ（2mほど）に切ったもの。筏の浮力を担う。
   log:
     tags: [item]
-    # 焚き付けから育てた火に入れれば、一晩保つ大きさ（docs/engine/FireSystem.md 2.3節）。
+    # 火を焚く炉には入り切らない（tests/world-codex/firewoodYaml.test.ts が見る）ので、割って薪にする
+    # （firewood.yaml）か、覆い焼きの炉（pottery.yaml）へ入れる。
     traits: [burnable]
     props:
       weight: {value: 20000}
       volume: {value: 35000}
-      # 太い枝（fuel 20）10本ぶん。**目方あたりでは枯れ枝の半分**——伐ったばかりで水を含み、丸太の
-      # ままでは空気も回らない（docs/engine/FireSystem.md 2.5節）。割って乾かせば枯れ枝と同じ率へ
-      # 届く（firewood.yaml）。
+      # **目方あたりでは枯れ枝の半分**——伐ったばかりで水を含み、丸太のままでは空気も回らない
+      # （docs/engine/FireSystem.md 2.5節）。割って乾かせば枯れ枝と同じ率へ届く（firewood.yaml。
+      # どちらの率も tests/world-codex/firewoodYaml.test.ts が見る）。
       fuel: {value: 200}
       # 割るのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
       # （docs/world/Skills.md 7節）。薪は火を使う日ごとに割るので、効き始めるのは中ほどの段。
@@ -288,7 +290,7 @@ object_defs:
               - {subject: agent, prop: skill_woodwork, in_stage_or_above: skilled}
             modify: {self: {split_minutes: -15}}
     interactions:
-      # 斧を打ち込んで10本の薪に割る（docs/engine/FireSystem.md 2.5節）。**持っている熱はそのまま**
+      # 斧を打ち込んで薪に割る（docs/engine/FireSystem.md 2.5節）。**持っている熱はそのまま**
       # なので、ここで増えるのは熱ではなく、炉に入り切る形と、乾かせる形のほう。
       split:
         trigger: {drag: {tag: chopping_tool}}
@@ -328,7 +330,7 @@ object_defs:
       # かさで効く（docs/world/SurvivalItems.md 0節）。
       weight: {value: 600}
       volume: {value: 5000}
-      # 太い枝（fuel 20）の目方ぶん。炎を1時間ほど保てる。
+      # 目方あたりの率は太い枝と同じ（tests/world-codex/firewoodYaml.test.ts が見る）。
       fuel: {value: 12}
 
   # 樹皮。剥いだ帯を丸めたひと巻き（docs/world/SurvivalItems.md 0節）。渋（タンニン）を含むので、

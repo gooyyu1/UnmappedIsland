@@ -1,14 +1,15 @@
+import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { PropertyDef } from '../../src/domain/PropertyDef';
 import type { SlotDef } from '../../src/domain/SlotDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { MINUTES_PER_DAY, MINUTES_PER_TICK } from '../../src/domain/worldTime';
-import { WORLD_CODEX_DIR, loadYamlDirectory } from '../support/worldCodexFiles';
+import { HOURS_PER_DAY, MINUTES_PER_HOUR, MINUTES_PER_TICK } from '../../src/domain/worldTime';
+import { WORLD_CODEX_DIR, loadYamlDirectory, worldCodexPath } from '../support/worldCodexFiles';
 
 function load(yamlText: string): WorldCodex {
   return new WorldCodexYamlLoader().load('core.yaml', yamlText).buildAndReset();
@@ -46,7 +47,9 @@ describe('core.yamlのworld定義', () => {
     // 初期値は実行時インスタンスの現在値として観測する（DefaultNumberは非公開）。
     const instance = new WorldSession(codex).createObject(world.globalId);
     expect(instance.tryGetProperty(codex.propertyNames.getId('tick'))?.number ?? 0).toBe(0);
-    expect(instance.tryGetProperty(codex.propertyNames.getId('minutes_per_tick'))?.number ?? 0).toBe(15);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('minutes_per_tick'))?.number ?? 0).toBe(
+      MINUTES_PER_TICK,
+    );
     expect(instance.tryGetProperty(codex.propertyNames.getId('minute'))?.number ?? 0).toBe(0);
     expect(instance.tryGetProperty(codex.propertyNames.getId('hour'))?.number ?? 0).toBe(12);
     expect(instance.tryGetProperty(codex.propertyNames.getId('day'))?.number ?? 0).toBe(1);
@@ -57,10 +60,10 @@ describe('core.yamlのworld定義', () => {
     const world = codex.objects.get(codex.objectNames.getId('world'));
 
     const minute = propOf(world, 'minute');
-    expect(minute.range?.max, '60分で1時間へ繰り上がる').toBe(60);
+    expect(minute.range?.max, '1時間の分で1時間へ繰り上がる').toBe(MINUTES_PER_HOUR);
 
     const hour = propOf(world, 'hour');
-    expect(hour.range?.max, '24時で1日へ繰り上がる').toBe(24);
+    expect(hour.range?.max, '1日の時間で1日へ繰り上がる').toBe(HOURS_PER_DAY);
   });
 
   it('dayは折り返さず、年も持たない', () => {
@@ -76,8 +79,8 @@ describe('core.yamlのworld定義', () => {
     ).toBeUndefined();
   });
 
-  it('コードが持つ1日の長さ・1tickの長さは、この宣言から数え直したものと一致する', () => {
-    // 時計の表示も航海の日数の見積もりも収支の表も、実体化された世界を持たずにこの2つを使う
+  it('コードが持つ1日の時間・1時間の分・1tickの長さは、この宣言と一致する', () => {
+    // 時計の表示も航海の日数の見積もりも収支の表も、実体化された世界を持たずにここの暦を使う
     // （src/domain/worldTime.ts）。宣言だけを変えると、世界は新しい暦で回るのにコードは古い
     // 長さで計算し続けるので、ここで突き合わせる。
     const world = codex.objects.get(codex.objectNames.getId('world'));
@@ -87,7 +90,8 @@ describe('core.yamlのworld定義', () => {
     const declaredMinutesPerTick =
       instance.tryGetProperty(codex.propertyNames.getId('minutes_per_tick'))?.number ?? 0;
 
-    expect(MINUTES_PER_DAY).toBe(hoursPerDay * minutesPerHour);
+    expect(HOURS_PER_DAY).toBe(hoursPerDay);
+    expect(MINUTES_PER_HOUR).toBe(minutesPerHour);
     expect(MINUTES_PER_TICK).toBe(declaredMinutesPerTick);
   });
 
@@ -110,24 +114,22 @@ describe('core.yamlのworld定義', () => {
   });
 
   it('minuteの繰り上がりはhourへ、さらにdayへ連鎖する', () => {
-    const world = codex.objects.get(codex.objectNames.getId('world'));
     const minuteId = codex.propertyNames.getId('minute');
     const hourId = codex.propertyNames.getId('hour');
     const dayId = codex.propertyNames.getId('day');
 
     const session = new WorldSession(codex);
-    const worldInstance = session.createObject(world.globalId);
-    const worldView = new World(worldInstance);
-    session.adoptWorld(worldView);
+    const worldView = session.createWorld();
+    const worldInstance = worldView.instance;
     // 見たいのは繰り上がりの連鎖なので、hourの既定値（正午）ではなく0:00から始める。
     worldInstance.getProperty(hourId).setNumberWithoutEvents(0);
 
-    session.advanceWorldTime(60); // 60分 -> minuteが折り返し、hourへ+1
+    session.advanceWorldTime(MINUTES_PER_HOUR); // 1時間 -> minuteが折り返し、hourへ+1
 
     expect(worldInstance.tryGetProperty(minuteId)?.number ?? 0).toBe(0);
     expect(worldInstance.tryGetProperty(hourId)?.number ?? 0).toBe(1);
 
-    session.advanceWorldTime(60 * 23); // 残り23時間分進め、hourもdayへ折り返させる
+    session.advanceWorldTime(MINUTES_PER_HOUR * (HOURS_PER_DAY - 1)); // 1日の残りを進め、hourもdayへ折り返させる
 
     expect(worldInstance.tryGetProperty(minuteId)?.number ?? 0).toBe(0);
     expect(worldInstance.tryGetProperty(hourId)?.number ?? 0).toBe(0);
@@ -210,6 +212,24 @@ describe('core.yamlのworld定義', () => {
     assertBrightnessAt('clear', 18, -6, '日没後は夜');
     assertBrightnessAt('clear', 7, 11, '朝夕は正午をはさんで対称');
     assertBrightnessAt('clear', 16, 11, '朝夕は正午をはさんで対称');
+
+    // 上限は、雲の無い正午に最も明るい地面を足した、太陽光だけで届く最大（IlluminationSystem.md 4節）。
+    worldInstance.getProperty(weatherId).setNumberWithoutEvents(codex.symbolNames.intern('scorching'));
+    worldInstance.getProperty(hourId).setNumberWithoutEvents(12);
+    const noonOfCloudlessSky = worldInstance.tryGetProperty(ambientBrightnessId)?.getEffectiveValue() ?? 0;
+    const brightestGround = Math.max(
+      ...[...codex.objects]
+        .filter((def) => def.hasTag(codex.vocabulary.world.locationTagId))
+        .map((def) => def.tryGetPropertyDef(ambientBrightnessId)?.initialValueWithoutRoll ?? -Infinity),
+    );
+    expect(
+      codex.objects.get(codex.objectNames.getId('sandy_beach')).tryGetPropertyDef(ambientBrightnessId)
+        ?.initialValueWithoutRoll,
+      '最も明るい地面は砂浜',
+    ).toBe(brightestGround);
+    expect(propOf(world, 'ambient_brightness').range?.max, '雲の無い正午＋最も明るい地面').toBe(
+      noonOfCloudlessSky + brightestGround,
+    );
   });
 
   it('locationsスロットはlocationタグを持つオブジェクトだけを受け入れる', () => {
@@ -354,5 +374,29 @@ object_defs:
       hut.tryGetSlotDef(testCodex.vocabulary.world.undiscoveredFixturesSlotId),
       '未発見の設置物スロットも持たない',
     ).toBeUndefined();
+  });
+});
+
+describe('core.yamlの天気の持続', () => {
+  interface DurationBranch {
+    readonly pick: readonly {
+      readonly weight: number;
+      readonly set: { readonly self: { readonly weather_remaining: number } };
+    }[];
+  }
+
+  it('どの天気の枝も、同じ持続の候補を同じ重みで選ぶ（ClimateSystem.md 4.3節の抜粋「残りの候補も同じ形」）', () => {
+    const core = parse(readFileSync(worldCodexPath('core.yaml'), 'utf8')) as {
+      object_defs: {
+        world: { props: { weather_remaining: { on_min: { pick: readonly DurationBranch[] } } } };
+      };
+    };
+    const branches = core.object_defs.world.props.weather_remaining.on_min.pick;
+    const durations = branches.map((branch) =>
+      branch.pick.map((leaf) => ({ weight: leaf.weight, ticks: leaf.set.self.weather_remaining })),
+    );
+
+    expect(durations.length).toBeGreaterThan(1);
+    for (const each of durations) expect(each).toEqual(durations[0]);
   });
 });

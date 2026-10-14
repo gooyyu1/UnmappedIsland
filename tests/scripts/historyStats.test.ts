@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { TIMEOUT_FOR_CLONE_HISTORY } from '../support/timeoutForCloneHistory';
+
 /**
  * `npm run stats:history`（`scripts/historyStats.mjs`）が空を返していないかの検査。
  *
@@ -49,6 +51,7 @@ function git(args: readonly string[]): string {
  * 道具と同じ道具立てで作ると、ずれたときに両方が同じだけずれて検査が素通りする。
  */
 function jstDay(epochSeconds: string): string {
+  // eslint-disable-next-line no-restricted-syntax -- 実時間の秒（日本時間の時差）で、世界の暦ではない
   return new Date((Number(epochSeconds) + 9 * 60 * 60) * 1000).toISOString().slice(0, 10);
 }
 
@@ -113,7 +116,7 @@ describe.runIf(IS_SHALLOW)('浅いクローンでの育ち方の推移', () => {
   });
 });
 
-describe.skipIf(IS_SHALLOW)('育ち方の推移', () => {
+describe.skipIf(IS_SHALLOW)('育ち方の推移', TIMEOUT_FOR_CLONE_HISTORY, () => {
   const stdout = run([TODAY]).stdout;
   const latest = latestOf(stdout);
   const value = (header: string) => Number(latest?.get(header)?.replace(/,/g, ''));

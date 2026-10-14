@@ -45,8 +45,8 @@ traits:
         on_min:
           destroy: self
         # 傷み具合（docs/engine/DigestionSystem.md 6.3節）。**境目は残りの割合で置く**——腐る速さは
-        # 分類で違うが、durabilityは種類によらず960から始まるので、同じ数が全部の食べ物で
-        # 「残り半分」「残り4分の1」を指す。
+        # 分類で違うが、durabilityは種類によらず同じ値から始まるので、同じ数が全部の食べ物で
+        # 同じ残りの割合を指す。
         stages:
           - name: rotten
             alert: danger
@@ -72,11 +72,10 @@ traits:
             durability: -1
 
   # 保存された物の速さ。**腐敗の速さは既にある3段（docs/engine/DurabilitySystem.md 3節）のうち
-  # 最も遅い段（芋と同じ-0.5＝通常温度で20日）で、新しいレートは持ち込まない。** 生の速さのほうは
+  # 最も遅い段（芋と同じ速さ。tests/world-codex/saltYaml.test.ts が見る）で、新しいレートは持ち込まない。** 生の速さのほうは
   # 保存されている間だけ効かない（下のspoils_*）ので、ここが名乗る1つだけが残る。
   #
-  # 屋外の上乗せ（分類によらず-1）は上のperishableが持ったままなので、保存しても外へ置けば6.7日に
-  # 落ちる。**塩も日差しも温度と湿りの代わりにはならない。**
+  # 屋外の上乗せは上のperishableが持ったままなので、保存しても外へ置けばそのぶん速く傷む。**塩も日差しも温度と湿りの代わりにはならない。**
   #
   # **保存の仕方が増えても行き先はここ1つ。** cure軸の値がこのtraitを配るので、加工の側が名乗るのは
   # 名前だけになる。
@@ -88,21 +87,21 @@ traits:
   # 生のままの速さ。どれも**保存されていない間だけ**効く（上のcured）——保存した物がどれだけ保つかは
   # 1箇所で名乗るので、ここで打ち消す量を書くことにはならない。
   #
-  # 調理済み料理・生魚など。通常温度で2.5日（屋外なら2日）。
+  # 調理済み料理・生魚など。保つ日数は段ごとに DurabilitySystem.md 3節の表（下の2つも同じ）。
   spoils_fast:
     passives:
       - conditions:
           - not: {subject: self, matches: {tag: cured}}
         add: {self: {durability: -4}}
 
-  # 野菜など。通常温度で5日（屋外なら3.3日）。
+  # 野菜など。
   spoils_normal:
     passives:
       - conditions:
           - not: {subject: self, matches: {tag: cured}}
         add: {self: {durability: -2}}
 
-  # 芋など。通常温度で20日（屋外なら6.7日）。
+  # 芋など。
   spoils_slow:
     passives:
       - conditions:
@@ -150,7 +149,7 @@ object_defs:
       plant_bait: {value: 8}
       # 葉物の束も詰めて縮まないので、嵩そのままで見る。
       volume: {value: 3000}
-    # 塩漬けにできる（salt.yaml）。漬けた葉物は5日から20日へ延びる。
+    # 塩漬けにできる（salt.yaml）。漬けた葉物は長く保つようになる。
     variation_axes:
       cure: {of: {tag: cured}}
     interactions:
@@ -234,14 +233,14 @@ object_defs:
       weight: {value: 2000}
       meat_bait: {value: 12}
       volume: {value: 1900}
-      # 2kgを殻ごと焼くので、生肉（500gで24）より長くかかる。炎（3/tick）なら12 tick（3時間）。
+      # 2kgを殻ごと焼くので、生肉より長くかかる。
       cooking_progress:
         value: 0
         range: {min: 0, max: 36}
         on_max:
           destroy: self
           spawn: {object: roasted_coconut_crab}
-    # 塩漬けにできる（salt.yaml）。2.5日しか保たない生の甲殻が20日保つようになる——**焼くのは
+    # 塩漬けにできる（salt.yaml）。すぐ傷む生の甲殻が長く保つようになる——**焼くのは
     # 食べる直前**という順序が、これで初めて選べるようになる（焼いてから漬けることはできない）。
     variation_axes:
       cure: {of: {tag: cured}}
@@ -254,7 +253,7 @@ object_defs:
       # 水が飛んだぶん軽くなる。
       weight: {value: 1700}
       volume: {value: 1800}
-      # 焦げるまでの猶予は生から焼きより短い。炎なら6 tick（1時間30分）。
+      # 焦げるまでの猶予は生から焼きより短い。
       cooking_progress:
         value: 0
         range: {min: 0, max: 18}
@@ -299,8 +298,8 @@ object_defs:
       plant_bait: {value: 12}
       volume: {value: 800}
       # 刻むのにかかる時間。**どの腕がどの段からどれだけ縮めるかは、この操作が自分で宣言する**
-      # （docs/world/Skills.md 7節）。**素がtickの刻み1つ分では腕の効きようが無い**ので、2つ分から
-      # 始めて届いた段で半分になる——火にかけるたびに繰り返す手なので、撚る・解体すると同じ置き方。
+      # （docs/world/Skills.md 7節）。**素がtickの刻み1つ分では腕の効きようが無い**ので、そこより長く
+      # 始めて届いた段で縮める——火にかけるたびに繰り返す手なので、撚ると同じ置き方。
       chop_minutes:
         value: 30
         passives:
@@ -318,7 +317,7 @@ object_defs:
       roasts_into_plain: {value: 1}
       roasts_into_fine: {value: 0}
       # **肉より長くかける。** 針状結晶を壊すには芯まで熱を通す必要があり、生焼けでは食べられない。
-      # 炎（3/tick）なら10 tick（2時間30分）。刻んであれば上乗せが乗る（上のprepped）ので6 tick（1時間30分）。
+      # 刻んであれば上乗せが乗る（上のprepped）ので早く煮える。
       cooking_progress:
         value: 0
         range: {min: 0, max: 30}
@@ -390,14 +389,14 @@ object_defs:
   # 焼いたタロイモ。芯まで火が通って、初めて食べられる。
   roasted_taro:
     tags: [item, food, roastable]
-    # **焼くと保たなくなる。** 20日保つ芋も、火を通せば調理済み料理の2.5日へ落ちる。まとめて焼いて
+    # **焼くと保たなくなる。** 長く保つ芋（spoils_slow）も、火を通せば調理済み料理の段へ落ちる。まとめて焼いて
     # 置いておくことはできない。
     traits: [perishable, spoils_fast]
     props:
       # 水が飛んだぶん軽くなる。
       weight: {value: 600}
       volume: {value: 700}
-      # 焦げるまでの猶予は生から焼きより短い。炎なら5 tick（1時間15分）。
+      # 焦げるまでの猶予は生から焼きより短い。
       cooking_progress:
         value: 0
         range: {min: 0, max: 15}

@@ -33,8 +33,8 @@ const MAX_ITEM_LINES = 3;
 
 /**
  * 記録どうしの相互参照 `[[<拡張子を除いたファイル名>]]`（SKILL.md「覆った解釈には、覆した記録を
- * 指す」）。**履歴は `docs/DocumentStyle.md` 5節の射程の外**（`scripts/docScope.mjs` の
- * `isVerbatimRecord`）なので、参照の解決を見ているのはここだけ。
+ * 指す」）。**この形は `docs/DocumentStyle.md` 5節の書き方に無い**ので、履歴の解釈の節を読む
+ * 参照の検査も拾わない。解決を見ているのはここだけ。
  */
 const CROSS_REFERENCE = /\[\[([^\]\n]+)\]\]/g;
 

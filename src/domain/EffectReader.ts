@@ -6,7 +6,7 @@ import type { ObjectGlobalId, PropertyGlobalId, SlotGlobalId } from './GlobalId'
 
 /**
  * 自分が何を宣言しているかを読み上げられるもの（効果そのものと、それを抱える操作）。入れ子の候補も
- * この形で渡す（docs/CodeStructure.md 5節「読み下せる宣言だけを外へ出す」）。
+ * この形で渡す（docs/CodeStructure.md 5節「入れ子も、読み下せる宣言として渡す」）。
  */
 export interface EffectDeclaration {
   readBy(reader: EffectReader): void;

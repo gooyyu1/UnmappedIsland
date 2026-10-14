@@ -38,4 +38,37 @@ describe('語彙が持つ綴り', () => {
 
     expect(found, 'codex.vocabulary.world から引く（WorldVocabulary の冒頭）').toEqual([]);
   });
+
+  /**
+   * 診断（`src/analysis`）は、語彙が持つプロパティ・枠の綴りを字で書かない。診断は同じ語を読む側が
+   * 複数あり（屋根を見る天候の判定と活動時間の表など）、字で持つと語彙と診断の間で綴りが2つに割れる。
+   *
+   * `src/analysis` に限るのは、**そこではこれらの綴りが他の意味を持たない**ため——画面（`src/game`）は
+   * 同じ綴りを画面の置き場の名前（`ScreenPlace`）に、シナリオはユーザーの語に使う。**段の名前
+   * （`stageName: '...'`）は数えない**——段はプロパティとは別の名前空間で、同じ綴りの段を持つ
+   * プロパティがある（キャラクタの `sheltered` の段）。
+   */
+  it('診断は、語彙が持つプロパティ・枠の綴りを字で書かない', () => {
+    const codex = bundledCodex();
+    const words: Readonly<Record<string, unknown>> = {
+      ...codex.vocabulary.engine,
+      ...codex.vocabulary.world,
+    };
+    const spellings = Object.entries(words).flatMap(([key, id]) => {
+      if (typeof id !== 'number' || key.endsWith('TagId')) return [];
+      const names = key.endsWith('SlotId') ? codex.slotNames : codex.propertyNames;
+      return [names.getName(id as never)];
+    });
+    expect(spellings, '世界の語彙のプロパティ名').toContain('sheltered');
+    expect(spellings, 'エンジンの語彙のプロパティ名').toContain('weight');
+
+    const found = sourcesIn('src/analysis').flatMap((file) => {
+      const text = readFileSync(join(ROOT, file), 'utf8').replace(/stageName: '\w+'/g, '');
+      return spellings
+        .filter((word) => text.includes(`'${word}'`) || text.includes(`"${word}"`))
+        .map((word) => `${file}: '${word}'`);
+    });
+
+    expect(found, 'codex.vocabulary.world から引く（WorldVocabulary の冒頭）').toEqual([]);
+  });
 });

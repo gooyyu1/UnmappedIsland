@@ -37,15 +37,15 @@
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 14.1 節）から直接参照でき、`world` シングルトンを
 参照する迂回（同節、`subject: world` は未対応）が要りません。
 
-```yaml
-object_defs:
+```yaml codex: characters/player_character.yaml
+traits:
   player_character:
     props:
       skill_cordage:
+        tags: [skill]
         value: 0
-        stages:
-          - name: novice
-            min: 0
+        stages:   # 段ごとの寄与（腕が縮めるもの）は省いている
+          - {name: novice, min: 0}
           - name: basic
             min: 20
           - name: skilled
@@ -202,13 +202,13 @@ interactions:
 （同 10.1 節）、`add` を足すだけで済み、概要で置いた「新しい文法を導入しない」から外れません。候補は
 すでに出す型を名指ししているので、**型と腕前の対応はそこに書き切れます**。
 
-```yaml
+```yaml codex: locations.yaml object_defs
   wasteland:
     interactions:
       explore:
         pick:
           - weight: {prop: stone_find}
-            spawn: {object: stone, count: 2, into: self}
+            spawn: {object: stone, into: self}
             add: {agent: {skill_knapping: 1}}
 ```
 
@@ -335,9 +335,9 @@ object_defs:
 ```
 
 `conditions` は既存の条件木をそのまま使います。`recipes` のエントリがこのキーを持てるようにする追加が、
-本システムが必要とする唯一の文法変更です（13.2 節）。
+本システムが必要とする唯一の文法変更です（同 13.2 節）。
 
-**解放条件に書ける `subject` は限られます**（13.2 節）。そのため、季節や天候のような世界側の状態を解放条件に
+**解放条件に書ける `subject` は限られます**（同 13.2 節）。そのため、季節や天候のような世界側の状態を解放条件に
 することは現時点でできません——起点になる個体がまだ無いので、そこから遡って世界へ届く書き方も使えません。
 
 条件を満たさないレシピも一覧に表示します（作れないものが見えないと、必要なレシピに辿り着けないまま
