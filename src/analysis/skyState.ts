@@ -36,7 +36,6 @@ export function ancestorConditionsHold(
   sky: SkyState,
 ): boolean {
   const { world } = codex.vocabulary;
-  const shelteredId = codex.propertyNames.tryGetId('sheltered');
   return conditions.every((condition) => {
     if (condition.propertyGlobalId === world.weatherId)
       return sky.weatherSymbolId === undefined
@@ -44,7 +43,7 @@ export function ancestorConditionsHold(
         : comparisonHolds(condition.op, sky.weatherSymbolId, condition.values);
     if (condition.propertyGlobalId === world.ambientBrightnessId)
       return comparisonHolds(condition.op, sky.ambientBrightness, condition.values);
-    if (condition.propertyGlobalId === shelteredId)
+    if (condition.propertyGlobalId === world.shelteredId)
       return comparisonHolds(condition.op, sky.sheltered, condition.values);
     return true;
   });

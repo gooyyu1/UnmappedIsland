@@ -71,9 +71,9 @@ object_defs:
   # **籠と競合しない。** 運ぶのは重さとかさで、種類は籠が受け持つ——枠数は籠より少なく、
   # かさは籠よりずっと大きく取る。丸太も石も、担げないぶんだけ引いて運ぶ道具。
   #
-  # **軽い荷では籠のほうが楽。** 体感の率（load_rate）は自分の8kgにもかかるので、積載が
-  # 8kgを超えるまでは、8kgのそりを引くほうが800gの籠を提げるより重い（ContainerSystem.md 2節の
-  # 逆転点の式）。**そりが籠の上位互換にならないのは、この自重と、材料の量による。**
+  # **軽い荷では籠のほうが楽。** 体感の率（load_rate）は自分の自重にもかかるので、積載が逆転点を
+  # 超えるまでは、重いそりを引くほうが軽い籠を提げるより重い（ContainerSystem.md 2節の逆転点の式。
+  # 逆転点は docs/world/Containers.md 2節で、tests/world-codex/loadEffects.test.ts が見る）。**そりが籠の上位互換にならないのは、この自重と、材料の量による。**
   #
   # **斧を待たない。** 走り木の長い棒は若木を刃物で断って採れる（timber.yaml）ので、丸太を使う
   # 台車（下）と違って序盤から手が届く。
@@ -91,7 +91,7 @@ object_defs:
       # 嵩そのままで見る（ContainerSystem.md 7節）——これで、そりが他の入れ物へ入ることもなくなる。
       volume: {value: 315000}
       # 引きずるので、自重も荷も割り引いてしか感じない（ContainerSystem.md 2節）。**率を高くしすぎると
-      # 自重の枷が打ち消される**ので、籠との逆転点を8kgに置く値を逆算して置いている。
+      # 自重の枷が打ち消される**ので、籠との逆転点（docs/world/Containers.md 2節）から逆算して置いている。
       load_rate:
         value: 1
         passives:
@@ -99,10 +99,10 @@ object_defs:
             modify: {self: {load_rate: -0.45}}
     slots:
       contents:
-        # どのキャラクタの手持ちより多いが、籠（10）には及ばない（docs/world/Containers.md 2節）。
+        # どのキャラクタの手持ちより多いが、籠には及ばない（docs/world/Containers.md 2節の表）。
         cell_count: 8
-        # 丸太（35L）が何本も積めるかさ。**実際には重さが先に尽きる**——かさより先に、通れない段
-        # （too_heavy）へ入る（characters/*.yaml の load）。
+        # 丸太が何本も積めるかさ。**実際には重さが先に尽きる**——かさより先に、通れない段
+        # （too_heavy）へ入る（characters/*.yaml の load。tests/world-codex/loadEffects.test.ts が見る）。
         capacity: 150000
     recipes:
       lashed:
@@ -146,7 +146,8 @@ object_defs:
   # 丸太を採れるようになってから初めて手が届く。
   #
   # **そりの上位互換ではない。** 体感の率はそりより低いが、車輪のぶん自重が増えるので、
-  # 積載10kgを下回る荷ではそりのほうが軽く感じる（ContainerSystem.md 2節）。
+  # 逆転点を下回る荷ではそりのほうが軽く感じる（ContainerSystem.md 2節。逆転点は
+  # docs/world/Containers.md 2節で、tests/world-codex/loadEffects.test.ts が見る）。
   handcart:
     stackable: false
     traits: [item_container, long_lived_material]
@@ -156,8 +157,8 @@ object_defs:
       weight: {value: 12000}
       # 1.8m×0.8m×0.5m。車輪の径のぶん、そりより高くかさばる。
       volume: {value: 720000}
-      # 転がるので、そりよりさらに感じない。**そりとの逆転点を10kgに置く値**
-      # （ContainerSystem.md 2節）。
+      # 転がるので、そりよりさらに感じない。**そりとの逆転点（docs/world/Containers.md 2節）から
+      # 逆算した値**（式は ContainerSystem.md 2節）。
       load_rate:
         value: 1
         passives:
@@ -177,7 +178,7 @@ object_defs:
         # 材料のそり（上）と同じ木材加工**（同7.1節）。
         deftness: {skill: skill_woodwork, from_stage: expert, minutes: -15}
         steps:
-          # 丸太を輪切りにする。**斧が要るのは車輪を出すまでの4工程だけ**で、同じ1本が通る
+          # 丸太を輪切りにする。**斧が要るのは車輪を出すまでの工程だけ**で、同じ1本が通る
           # （consume: falseは工程を跨いで数えない、crafting.remainingRequirementsOf）。
           - requires:
               - {object: log, count: 1, consume: true}

@@ -380,8 +380,8 @@ export interface ObjectCost {
 
   /**
    * 総コストが出ないとき、足りていない入力。**どこで詰まっているか**がこれで分かる。
-   * obtainableWithoutCostの側では空——印が立つのは足りない入力が1つも無い工程が在るときだけで、
-   * 同じ判定（Acquisition.missingInputsOf）がこの一覧を組む。
+   * obtainableWithoutCostの側では空——手に入る型（Acquisition.reachable）には、入力が揃う工程が
+   * 必ず在る。
    */
   readonly missing: readonly string[];
 
@@ -1479,6 +1479,10 @@ class Acquisition {
    * 島のどこかで行える工程が生む型。**値段を積む前に、入力が揃うかだけから決める**
    * （collectReachable）ので、解決の途中の状態で答えが変わらない（onlyFilledBy）。
    *
+   * **「手に入るか」はこの集合1つが答える**（obtainable）。値段が付くかでは答えない——道具の欠けた
+   * 工程の産物にも値段は付く（道具の時間は按分しない、#550。`blockedByTool`）が、手には入らない。
+   * 値段の付かない側（obtainableWithoutCost）も、この集合から値段の付いた型を除いた残り。
+   *
    * **島全体で1つ**（obtainableWithoutCostと同じ）。土地の文脈は同じ集合を見る。
    */
   private readonly reachable: ReadonlySet<ObjectGlobalId>;
@@ -1525,11 +1529,11 @@ class Acquisition {
   }
 
   /**
-   * その型を島のどこかで手に入れられるか。**値段が付くかとは別の問い**——待ち生産に行き着く型は
-   * 按分できないので値段が付かないが、待てば手に入る（obtainableWithoutCost）。
+   * その型を島のどこかで手に入れられるか（reachable）。**値段が付くかとは別の問い**——待ち生産に
+   * 行き着く型は按分できないので値段が付かないが、待てば手に入る（obtainableWithoutCost）。
    */
   obtainable(objectGlobalId: ObjectGlobalId): boolean {
-    return this.costByObject.has(objectGlobalId) || this.obtainableWithoutCost.has(objectGlobalId);
+    return this.reachable.has(objectGlobalId);
   }
 
   /**
@@ -1754,7 +1758,9 @@ class Acquisition {
 
     for (const priced of [true, false])
       for (const context of contexts) {
-        const objectGlobalId = priced ? context.cheapestCandidate(input) : context.unpricedCandidate(input);
+        const objectGlobalId = priced
+          ? context.cheapestCandidate(input, true)
+          : context.unpricedCandidate(input);
         if (objectGlobalId === undefined) continue;
         const elsewhere = context !== this;
         return {
@@ -1775,13 +1781,19 @@ class Acquisition {
   /**
    * 入力1件を満たすのに最も安い型。この文脈で値段の付く型がどれも無ければundefined。
    * **持ち込みの要らない型が、要る型に勝つ**（`prefers`）。
+   *
+   * obtainableOnlyなら、手に入らない型（obtainable）を候補から外す——値段が付いていても、道具の
+   * 欠けた工程の産物は手に入らない。
    */
-  private cheapestCandidate(input: CraftingStep['inputs'][number]): ObjectGlobalId | undefined {
+  private cheapestCandidate(
+    input: CraftingStep['inputs'][number],
+    obtainableOnly = false,
+  ): ObjectGlobalId | undefined {
     let best: ObjectGlobalId | undefined;
     let bestChoice: StepCost | undefined;
     for (const objectGlobalId of this.candidatesOf(input)) {
       const cost = this.costByObject.get(objectGlobalId);
-      if (cost === undefined) continue;
+      if (cost === undefined || (obtainableOnly && !this.obtainable(objectGlobalId))) continue;
       const choice = { cost, imported: this.importedByObject.get(objectGlobalId) === true };
       if (bestChoice === undefined || prefers(choice, bestChoice)) {
         best = objectGlobalId;
@@ -1904,29 +1916,12 @@ class Acquisition {
   }
 
   /**
-   * 値段が付かないまま残った型のうち、それでも手に入るものを控える（obtainableWithoutCost）。
+   * 手に入る型（reachable）のうち、値段が付かないまま残ったものを控える（obtainableWithoutCost）。
    * 出どころは朽ちない設備の待ち生産で、按分の分母（寿命）だけが無い。
-   *
-   * 見るのは**その工程を実行できるか**（missingInputsOf）だけ——設備も道具もその工程の入力なので、
-   * どれかが欠けていれば、値段が付かない理由は按分ではなく入手経路のほうにある。**塩を材料に取る
-   * 工程の産物も同じ**なので、増えなくなるまで繰り返す（値段の側と同じ形、lowerCostsUntilStable）。
    */
   private collectObtainableWithoutCost(): void {
-    for (let pass = 0; pass <= this.codex.objects.count; pass++) {
-      let added = false;
-      for (const ref of this.steps) {
-        if (this.missingInputsOf(ref).length > 0) continue;
-
-        for (const [objectGlobalId, count] of expectedSpawns(ref.step)) {
-          if (count <= 0 || this.obtainable(objectGlobalId)) continue;
-          if (this.consumesOwnOutput(ref, objectGlobalId)) continue;
-
-          this.obtainableWithoutCost.add(objectGlobalId);
-          added = true;
-        }
-      }
-      if (!added) return;
-    }
+    for (const objectGlobalId of this.reachable)
+      if (!this.costByObject.has(objectGlobalId)) this.obtainableWithoutCost.add(objectGlobalId);
   }
 
   private lowerCostsUntilStable(): void {

@@ -560,7 +560,7 @@ traits:
           - {name: content, min: 80}
       # 全身の菌（docs/engine/DigestionSystem.md 6節）。**単位は log₁₀ CFU**——菌の数そのものではなく、
       # その常用対数で持つ。対数目盛では指数増殖が定数のaddになるので、「細菌が自分で自分を押し上げる」を
-      # 近似せずに書ける（明るさをEVで持っているのと同じ形、IlluminationSystem.md 2節）。
+      # 近似せずに書ける（明るさをEVで持っているのと同じ形、IlluminationSystem.md 1節）。
       #
       # **0は菌ゼロではなく菌1個**なので、増殖を無条件に置くと感染していない体でも菌が増える。
       # 菌が居ることになる段（latent以上）に居る間だけ増やす。
@@ -575,7 +575,7 @@ traits:
       # **死に方は増えない**（VitalsSystem.md 8節）。上の2段が水と血を削り、既存の脱水・失血へ流す。
       # **削るのはここだけ**で、押し上げる側——口から入る生肉（animals.yamlのraw_meat）も、膿んだ傷
       # （injuries.yamlのopen_wound）も——はこの値を押すところまでしかしない。潜伏期のうちは下2段が
-      # alertを持たないので、ステータスエリアには行が出ない（StatusArea.md 3節）。
+      # alertを持たないので、ステータスエリアには行が出ない（StatusArea.md 2節）。
       pathogen:
         tags: [status, health]
         value: 0

@@ -9,6 +9,7 @@ import {
 } from '../../src/analysis/activityHours';
 import { HOURS_PER_DAY } from '../../src/domain/worldTime';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
+import { rainyWeathersOf } from '../support/rainyWeathers';
 import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
@@ -54,7 +55,7 @@ describe('活動時間表の前提', () => {
     const worldAmbientAt = worldAmbientBrightnessOf(codex);
     const places = litPlacesOf(codex);
     const weathers = Object.keys(SEASON_CLIMATE[0].hoursByWeather);
-    const RAIN = ['light_rain', 'heavy_rain', 'storm'];
+    const RAIN = rainyWeathersOf(codex);
     /** 夜の時刻（どの天候でも空が底にある時刻）。 */
     const NIGHT_HOURS = [...Array(HOURS_PER_DAY).keys()].filter((hour) =>
       weathers.every((weather) => worldAmbientAt(hour, weather) === worldAmbientAt(0, weather)),

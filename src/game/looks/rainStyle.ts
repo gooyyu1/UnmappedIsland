@@ -23,7 +23,8 @@ export interface RainStyle {
 
 /**
  * 天気の識別子ごとの雨の見え方。**ここに無い天気では雨を降らせない**ので、天気が増えても
- * 画面は壊れない（増えた雨天をここへ足すまで降らないだけ）。
+ * 画面は壊れない（増えた雨天をここへ足すまで降らないだけ。足し忘れは
+ * `tests/integration/rainOverBundledWeathers.test.ts` が落とす）。
  *
  * 見え方はWorldCodexではなくUIが持つ。WorldCodexは表示に関わる値を一切持たない方針
  * （Localization.md）で、液体の色（LiquidContainerSystem.md 4.1節）のようにドメインが

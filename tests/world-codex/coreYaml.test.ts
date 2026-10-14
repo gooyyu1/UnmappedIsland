@@ -212,6 +212,24 @@ describe('core.yamlのworld定義', () => {
     assertBrightnessAt('clear', 18, -6, '日没後は夜');
     assertBrightnessAt('clear', 7, 11, '朝夕は正午をはさんで対称');
     assertBrightnessAt('clear', 16, 11, '朝夕は正午をはさんで対称');
+
+    // 上限は、雲の無い正午に最も明るい地面を足した、太陽光だけで届く最大（IlluminationSystem.md 4節）。
+    worldInstance.getProperty(weatherId).setNumberWithoutEvents(codex.symbolNames.intern('scorching'));
+    worldInstance.getProperty(hourId).setNumberWithoutEvents(12);
+    const noonOfCloudlessSky = worldInstance.tryGetProperty(ambientBrightnessId)?.getEffectiveValue() ?? 0;
+    const brightestGround = Math.max(
+      ...[...codex.objects]
+        .filter((def) => def.hasTag(codex.vocabulary.world.locationTagId))
+        .map((def) => def.tryGetPropertyDef(ambientBrightnessId)?.initialValueWithoutRoll ?? -Infinity),
+    );
+    expect(
+      codex.objects.get(codex.objectNames.getId('sandy_beach')).tryGetPropertyDef(ambientBrightnessId)
+        ?.initialValueWithoutRoll,
+      '最も明るい地面は砂浜',
+    ).toBe(brightestGround);
+    expect(propOf(world, 'ambient_brightness').range?.max, '雲の無い正午＋最も明るい地面').toBe(
+      noonOfCloudlessSky + brightestGround,
+    );
   });
 
   it('locationsスロットはlocationタグを持つオブジェクトだけを受け入れる', () => {

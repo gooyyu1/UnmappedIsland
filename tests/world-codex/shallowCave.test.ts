@@ -118,6 +118,17 @@ describe('浅い洞窟', () => {
     expect(propertyOf(night.player, 'hand_brightness'), '夜の洞窟は底（-6）').toBe(-6);
   });
 
+  it('手元の作業ができるかの境目は、外が曇りの正午の明るさに載る', () => {
+    function handStageInCave(weather: string): string | undefined {
+      const { cave, player } = outside(NOON_HOUR, weather);
+      expect(execute(cave, 'enter', player)).toBe(true);
+      return player.getProperty(codex.propertyNames.getId('hand_brightness')).stage?.name;
+    }
+
+    expect(handStageInCave('cloudy'), '曇りの正午なら届く').toBe('bright');
+    expect(handStageInCave('light_rain'), 'それより暗い小雨の正午では届かない').not.toBe('bright');
+  });
+
   it('中では雨が当たらない — 外の甕は雨で満ちていくが、中の甕は増えない', () => {
     const { session, land, cave } = outside(NOON_HOUR, 'heavy_rain');
     const outdoorJar = waterJar(session, land);

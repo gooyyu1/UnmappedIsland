@@ -115,6 +115,9 @@ export class WorldRuleVocabulary {
   readonly ambientBrightnessId: PropertyGlobalId;
   readonly ambientTemperatureId: PropertyGlobalId;
 
+  /** 屋根や岩陰に守られていること（ContainerSystem.md 6節）。 */
+  readonly shelteredId: PropertyGlobalId;
+
   // ---- 生命と意識（VitalsSystem.md、WorldObject.runTickActions・cardLooks・analysis/huntEncounter） ----
 
   /**
@@ -194,6 +197,7 @@ export class WorldRuleVocabulary {
     this.weatherId = propertyNames.intern('weather');
     this.ambientBrightnessId = propertyNames.intern('ambient_brightness');
     this.ambientTemperatureId = propertyNames.intern('ambient_temperature');
+    this.shelteredId = propertyNames.intern('sheltered');
 
     this.consciousnessId = propertyNames.intern('consciousness');
 
