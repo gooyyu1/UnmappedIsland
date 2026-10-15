@@ -36,6 +36,16 @@
 # 引数の口（`/SC`）は**引き金を1つしか渡せない**。XMLは UTF-16 で渡す——UTF-8 のまま渡すと
 # `schtasks` が読めないと言って撥ねる。
 #
+# ## 起こすたびに窓を出さない
+#
+# `bash.exe` を直に起動すると、毎時コンソール窓が開いて手元の作業を遮る。**`conhost.exe --headless`
+# に包むと、窓を作らずにコンソールだけを用意できる**（`-WindowStyle Hidden` の類は作ってから隠すので、
+# 一瞬見える）。
+#
+# **conhost はコンソールを掴む者が居なくなるまで残る**ので、`start` がデーモンを立てた回は、
+# `ExecutionTimeLimit` で打ち切られたと記録される。打ち切られるのは conhost だけで、`nohup` した
+# デーモンは生き残る。
+#
 # **`MSYS2_ARG_CONV_EXCL` を落とさない。** 手元の bash は `/query` のような引数をパスとみなして
 # `C:/Program Files/Git/query` へ化けさせる（`CLAUDE.md`「一次レビュー」の `git show` と同じ）。
 
@@ -101,8 +111,8 @@ cat >"$WORK/task.xml" <<XML
   </Triggers>
   <Actions Context="Author">
     <Exec>
-      <Command>$BASH_EXE</Command>
-      <Arguments>-lc "cd '$ROOT' &amp;&amp; bash scripts/daemon/daemon.sh start"</Arguments>
+      <Command>conhost.exe</Command>
+      <Arguments>--headless "$BASH_EXE" -lc "cd '$ROOT' &amp;&amp; bash scripts/daemon/daemon.sh start"</Arguments>
     </Exec>
   </Actions>
 </Task>
