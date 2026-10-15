@@ -205,7 +205,15 @@ describe('daemon-wake-task.sh', timeoutOnWindows(30_000), () => {
   it('起こす先は、`--git-common-dir` が答えた本体', () => {
     const run = register();
 
-    expect(handedXml(run)).toContain(`<Arguments>-lc "cd '${run.root}' `);
+    expect(handedXml(run)).toContain(`-lc "cd '${run.root}' `);
+  });
+
+  // `bash.exe` を直に起動すると、毎時コンソール窓が開いて手元の作業を遮る。
+  it('起こすたびに窓を出さない', () => {
+    const run = register();
+
+    expect(handedXml(run)).toContain('<Command>conhost.exe</Command>');
+    expect(handedXml(run)).toMatch(/<Arguments>--headless "[^"]*bash[^"]*" -lc /);
   });
 
   // **再起動の直後**（ログオン）と**落ちた跡**（毎時）で、拾う相手が違う（board-design.md 2.19節）。
