@@ -321,16 +321,19 @@ describe('bedding.yamlの寝床とハンモック', () => {
     );
   });
 
-  it('寝床の上では、仮眠2回と睡眠1回がちょうど同じだけ戻る', () => {
+  it('寝床の上では、仮眠と睡眠が長さに比例して戻る', () => {
     // 同4節。**段ごとに1つの定数なので、寝床のぶんは長さに正比例する**——キャラクタ側が持つ
     // 「まとめて休むほど得」が効くのは地面の上だけ（charactersYaml.test.tsの単調性）。
     const napped = bedOnBeach([]);
     const slept = bedOnBeach([]);
     const nap = restOn(napped.bed, napped.player, 'nap');
     const sleep = restOn(slept.bed, slept.player, 'sleep');
+    const napTicks = ticksOf(napped.bed, napped.player, 'nap');
+    const sleepTicks = ticksOf(slept.bed, slept.player, 'sleep');
 
-    expect(nap.wakefulness * 2).toBe(sleep.wakefulness);
-    expect(nap.stamina * 2).toBe(sleep.stamina);
+    expect(sleepTicks, '長さの違う2つを比べている').not.toBe(napTicks);
+    expect(nap.wakefulness * sleepTicks).toBe(sleep.wakefulness * napTicks);
+    expect(nap.stamina * sleepTicks).toBe(sleep.stamina * napTicks);
   });
 
   it('据えたハンモックは、骨組みを差した寝台と同じだけ戻す', () => {
