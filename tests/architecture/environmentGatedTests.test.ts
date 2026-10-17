@@ -33,6 +33,9 @@ const GATED: Record<string, string> = {
   'tests/scripts/payoffMetrics.test.ts':
     '浅いクローンかどうかで見るものが変わる（`historyStats.test.ts` と同じ形）。' +
     '飛ぶ側と飛ばない側が対になっているので、どちらの環境でも一方が必ず走る',
+  'tests/scripts/pendingDecisions.test.ts':
+    'Windows ではシンボリックリンクの件だけを飛ばす（権限が無いと作れない）。飛んだぶんは' +
+    'tests.yml の Linux のジョブ（`test`）が必ず走らせて拾う',
   'tests/scripts/usageTimeline.test.ts':
     'Pythonの有無。CIでは在ることを要求する（無ければ読み込みの時点で落ちる）ので、飛ぶのは手元だけ',
 };
