@@ -51,7 +51,7 @@ traits:
       undiscovered_fixtures:
         cell: {accept: {tag: fixture}}
     props:
-      exploration_progress: {}   # valueなし = 実装する側で必須（5節）
+      exploration_progress: {}   # valueなし = 実装する側で必須（GameElementDefinition.md 5節）
 ```
 
 草原などの探索可能な土地は両方（`traits: [location, explorable]`）、家のような場所は `location` のみを
@@ -149,7 +149,7 @@ object_defs:
 **探索と罠は、同じ獣を別の形で渡します。** 探索が渡すのは**出くわした獣**で、自由に動き、その獣の
 警戒しだいで逃げも襲いもします（現れたときの警戒は獣ごとに違う、[`HuntingSystem.md`](./HuntingSystem.md) 3.1 節）。
 罠が渡すのは**掛かった獣**で、留守のあいだに働き、獲物は枠の中で拘束されています
-（同 5 節）。ネズミ・ヤケイが両方に載っているのはこのためで、罠の値打ちは「その獣が手に入ること」ではなく
+（`TrapSystem.md` 5 節）。ネズミ・ヤケイが両方に載っているのはこのためで、罠の値打ちは「その獣が手に入ること」ではなく
 「見ていない間に、動けない状態で手に入ること」です。
 
 **獣の候補は、その獣を1匹だけ湧かせます**（`tests/world-codex/explorationYield.test.ts` が検証）。
