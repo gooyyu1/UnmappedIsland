@@ -1528,6 +1528,8 @@ property_tag_texts:
     display_name: 栄養
   skill:
     display_name: 腕前
+  action_brightness:
+    display_name: 明るさ
 
 # object_defのタグ（GameElementDefinition.md 4.1節）の文言。タグの大半は判定にしか使われず画面へ
 # 出ないので、ここに並ぶのはレシピ一覧の棚の見出し（core.yamlのrecipe_categories）だけ。
@@ -1798,6 +1800,10 @@ stage_texts:
   tired: 疲れ
   winded: 息切れ
   fresh: 元気
+  # 手元と視界の明るさ（プロパティのタブの明るさのカテゴリに出る）。
+  pitch_dark: 真っ暗
+  dim: 薄暗い
+  bright: 明るい
   # 幸福度。
   miserable: 惨め
   dejected: 落胆
