@@ -157,11 +157,14 @@ object_defs:
 traits:
   hearth:
     slots:
-      fire: {cell: {accept: {tag: fuel}}, cell_count: 2}
+      fire: {cell: {accept: {tag: fuel}}, cell_count: 2, capacity: 3}
     interactions:
       stoke:
         trigger: menu
         duration: 5
+        conditions:
+          - {prop: fuel, gt: 1}
+          - {prop: fuel, lt: 9}
 object_defs:
   props_holder:
     props:
