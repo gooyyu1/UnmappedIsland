@@ -1525,4 +1525,13 @@ describe('薪の尽きた種火の保ち', () => {
     expect(seen, '火力を条件にする箇所が1つも見つからない').toBeGreaterThan(0);
     expect(byValue).toEqual([]);
   });
+
+  it('炉は風を読まない（FireSystem.md 8節）', () => {
+    // 風を切る効果は種火の衰え、強風は雨の削りへ畳んであるので、火の宣言が風を条件にすることは無い。
+    const text = readFileSync(
+      worldCodexYamlPaths().find((path) => path.endsWith('/fire.yaml'))!,
+      'utf8',
+    );
+    expect(text.match(/\bwind\w*/g) ?? []).toEqual([]);
+  });
 });
