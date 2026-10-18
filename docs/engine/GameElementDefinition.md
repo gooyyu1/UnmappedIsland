@@ -345,6 +345,8 @@ object_defs:
 
 `props`（6 節）以外にも、`interactions`・`recipes`・`slots`・`passives`・`tags`（4.1 節）を trait 経由で
 まとめて配布できます。`value` を持たないプロパティは、5 節のルール通り空のマッピング（`{}`）として表現します。
+**`slots`・`interactions` のエントリも `props` と同じく、object_def 側で一部のキーだけを書くと、残りのキーは
+trait 側の値を引き継ぎます**（操作のきっかけと効果を trait に置いたまま、炉ごとの `conditions` だけを足す、など）。
 
 **オブジェクトレベルのキーも trait 側に書けます。** 混ぜ方はキーごとに決まっています。
 

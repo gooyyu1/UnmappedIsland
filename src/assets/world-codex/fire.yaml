@@ -68,8 +68,8 @@ traits:
       #
       # **カードに出るのはこのバー1本**（CardView.md 8節）。火口の素の値は型ごとに固定で、名前と絵が
       # 既に言っている——今この1枚で動くのは湿りのほうなので、読ませるのもそちらだけにする。
-      # **ignition_chanceにバーを出す道は無い**：ゲージはrangeを要求し（同8.1節）、rangeは実効値を
-      # クランプする（GameElementDefinition.md 8.3節）ので、腕の上乗せ（expertで+120）が
+      # **ignition_chanceにバーを出す道は無い**：ゲージはrangeを要求し（GameElementDefinition.md 6.8節）、
+      # rangeは実効値をクランプする（同 8.3節）ので、腕の上乗せ（expertで+120）が
       # 頭打ちになる。
       #
       # **火口は束ねられるままにしてある**（burning_tinderのようにstackable: falseへ倒さない）。

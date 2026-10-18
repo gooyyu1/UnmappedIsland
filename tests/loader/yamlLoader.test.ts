@@ -152,6 +152,44 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/shared/);
   });
 
+  it('trait由来のslots・interactionsへ一部のキーだけを書くと、残りはtrait側を引き継ぐ（5節）', () => {
+    const yaml = `
+traits:
+  hearth:
+    slots:
+      fire: {cell: {accept: {tag: fuel}}, cell_count: 2, capacity: 3}
+    interactions:
+      stoke:
+        trigger: menu
+        duration: 5
+        conditions:
+          - {prop: fuel, gt: 1}
+          - {prop: fuel, lt: 9}
+object_defs:
+  props_holder:
+    props:
+      fuel: {value: 0}
+  campfire:
+    traits: [hearth]
+    slots:
+      fire: {capacity: 7}
+    interactions:
+      stoke:
+        conditions:
+          - {prop: fuel, gt: 0}
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const def = codex.objects.get(codex.objectNames.getId('campfire'));
+
+    const fire = def.slotDefs.find((slot) => slot.name === 'fire')!;
+    expect(fire.capacity, '書いたキーは上書きされる').toBe(7);
+    expect(fire.cellCount, '書かなかったキーはtrait側が残る').toBe(2);
+
+    const stoke = def.triggers.find((trigger) => trigger.interaction.name === 'stoke')!.interaction;
+    expect(stoke.requirementDeclarations, '書いたキーは上書きされる').toHaveLength(1);
+    expect(stoke.durationReading, '書かなかったキーはtrait側が残る').toBeDefined();
+  });
+
   it('存在しないtraitへの参照はエラーになる', () => {
     const yaml = `
 object_defs:
