@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { basename } from 'node:path';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { TRAVEL_MINUTES_STEP } from '../../src/domain/generation/PathNetworkBuilder';
@@ -1529,7 +1530,7 @@ describe('薪の尽きた種火の保ち', () => {
   it('炉は風を読まない（FireSystem.md 8節）', () => {
     // 風を切る効果は種火の衰え、強風は雨の削りへ畳んであるので、火の宣言が風を条件にすることは無い。
     const text = readFileSync(
-      worldCodexYamlPaths().find((path) => path.endsWith('/fire.yaml'))!,
+      worldCodexYamlPaths().find((path) => basename(path) === 'fire.yaml')!,
       'utf8',
     );
     expect(text.match(/\bwind\w*/g) ?? []).toEqual([]);
