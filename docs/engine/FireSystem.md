@@ -587,15 +587,16 @@ moisture:
 雨の中を歩いただけで手持ちの火口が全部湿り、屋根の下へ逃げ込んでもそこには日が差さないので戻せません。**
 
 **乾かすには、地面に広げて強い日差しに当てます**（`-3/tick`<!-- codex: fire.yaml traits.ignitable.props.moisture.passives.1.add.self.moisture -->、境目は塩田・干し場と同じ
-[`IlluminationSystem.md`](./IlluminationSystem.md) 1 節の EV +14<!-- codex: fire.yaml traits.ignitable.props.moisture.passives.1.conditions.1.gte -->）。**そのうえで、どこに在っても
+EV +14<!-- codex: fire.yaml traits.ignitable.props.moisture.passives.1.conditions.1.gte -->——[`../world/SurvivalItems.md`](../world/SurvivalItems.md) 10 節、EV という尺度は
+[`IlluminationSystem.md`](./IlluminationSystem.md) 1 節）。**そのうえで、どこに在っても
 抜けていきます**（`-1/tick`<!-- codex: fire.yaml traits.ignitable.props.moisture.passives.0.add.self.moisture -->）——これがあるので**濡れた火口が詰みになることはありません**。雨宿りした
 洞窟に日は差しませんが、待てば戻ります。
 
 **画面に出るのは湿りのバー 1 本です**（[`CardView.md`](../ui/CardView.md) 8 節の `gauge`）。火口ごとの
 素の値は型ごとに固定で、カードの名前と絵が既に言っている——**1 枚ごとに動くのは湿りのほう**なので、
 読ませるのもそちらだけにします。`ignition_chance` そのものをバーにする道はありません：ゲージは
-`range` を要求し（同 8.1 節）、`range` は実効値をクランプする（[`GameElementDefinition.md`](./GameElementDefinition.md)
-8.3 節）ので、腕の上乗せ（`expert` で +120）が頭打ちになります。
+`range` を要求し（[`GameElementDefinition.md`](./GameElementDefinition.md) 6.8 節）、`range` は実効値をクランプする
+（同 8.3 節）ので、腕の上乗せ（`expert` で +120）が頭打ちになります。
 
 **火口は束ねられるままです。** 束ねた札が映すのは代表 1 つの湿りなので、乾いた束へ濡れた 1 つを
 混ぜると、その 1 つは札の上では見えなくなります（[`CardView.md`](../ui/CardView.md) 8 節）。**干して
@@ -847,7 +848,7 @@ passives:
 雨の効果自体が消えます（`ContainerSystem.md` 6 節）。**雨をしのげるかを見る道はこれだけで、洞窟が天気を
 宣言し直すような別の道は持ちません。**
 
-風は独立したプロパティを持ちません。風を切る効果は石囲いの炉の燃料消費（6 節）に、嵐の強風はこの節の
+風は独立したプロパティを持ちません。風を切る効果は石囲いの炉の種火の衰え（6 節。石が風防になること、5.1 節）に、嵐の強風はこの節の
 `heat` の減少に畳んであります。
 
 ### 8.1 炉そのものは、雨で崩れない【確定】
@@ -905,7 +906,7 @@ lit:
 **炉から出したかどうかを、石は問いません。** 減るのは「祖先に燃えている炉が居ないとき」で、炉に
 入れたまま火が消えた場合も同じ 1 行で冷めます。
 
-**器の中と外で減り方は変えません**（11 節にあった未決）。湯へ落とした石は溜めた熱を一度に使い切り、
+**器の中と外で減り方は変えません。**湯へ落とした石は溜めた熱を一度に使い切り、
 その場で普通の石へ戻ります。急に冷めることは、減る速さではなく**使い切ること**が表しています。
 
 **沸かした湯は `hot_water_liquid` で、水とは別の液体です**（`liquid_containers.yaml`）。湯へさらに
