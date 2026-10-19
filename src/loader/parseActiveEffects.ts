@@ -153,7 +153,7 @@ const AMONG_KEYS = ['subject', 'slot', 'matches', 'weight'] as const;
 
 /**
  * `among: {subject, slot, matches, weight}`（10.3節）を読む。集合の指し方は条件の
- * `{subject, slot, matches}`（14.4節）と同じで、足しているのは候補ごとの重みだけ。
+ * `{subject, slot, matches}`（14.3節）と同じで、足しているのは候補ごとの重みだけ。
  *
  * **重みの参照は候補自身を指す**ので `{subject: picked, prop: ...}` と書く——`subject`の既定が
  * `self`である規則はここでも変えない。

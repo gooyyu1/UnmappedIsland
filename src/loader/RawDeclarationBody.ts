@@ -59,7 +59,7 @@ export class RawDeclarationBody {
   /** visible_slots（7.11節）で並べられたスロット名。未指定なら空。 */
   visibleSlots: readonly string[] = [];
 
-  /** storage（7.12節）。物を溜める入れ物として使う型か。tagsと同じくORで合成する。 */
+  /** storage（7.12節）。物を溜める入れ物として使う型か。traitと自分自身の宣言はORで合成する。 */
   isStorage = false;
 
   /** art（4.3節）で指定された絵の名前。未指定ならundefined（＝型の識別子をそのまま使う）。 */
