@@ -242,9 +242,8 @@ export function cardLooksOf(
    * 1つも無い型ではundefined——あとどれだけ入るかが決まっていないものに、満たされ具合は無い。**満杯へ近づくほど物が入らなくなる**ので、空いている
    * 側がgood・満杯側がbad。
    *
-   * 液体の容器はこのバーを持たない（storageを名乗らない）。上限は同じcapacityでも、量を持つのは
-   * 中身の液体自身なので、中身のバー（fillGaugeOf）が中身の色で映す側になる
-   * （LiquidContainerSystem.md 2節）。
+   * 液体の容器はこのバーを持たない（storageを名乗らない）。抱える量はスロットではなく容器の`fill`が
+   * 持つので、中身のバー（fillGaugeOf）が中身の色で映す側になる（LiquidContainerSystem.md 2節・3節）。
    */
   const capacityGaugeOf = (object: WorldObject): CardGauge | undefined => {
     const ratio = object.fullestSlotFillRatio();

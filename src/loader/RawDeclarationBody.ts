@@ -133,7 +133,7 @@ export class RawDeclarationBody {
    * - stack_order/art/art_by_stage/resists/layer: 自分自身の指定を優先。無ければちょうど1つのtraitが指定して
    *   いること。`resists`の並びは暗黙のANDで結ばれた1つの条件木なので、連結すると書いた覚えのない
    *   合わせ技になる——どれが効くかを混ぜる順序に頼らせない。
-   * - 真偽値: 重複エラーにせずORで合成する（tagsと同じ扱い）。
+   * - 真偽値: 重複エラーにせずORで合成する。
    */
   merged(traits: readonly (readonly [string, RawDeclarationBody])[], ownerName: string): RawDeclarationBody {
     const result = new RawDeclarationBody();

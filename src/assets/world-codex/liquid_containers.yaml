@@ -358,7 +358,7 @@ traits:
   # （sheltered、ContainerSystem.md 6節）」。
   # 雨の強さは天気の段（core.yamlのweather）でしか分かれないので、蒸発のような基礎＋上乗せの形は取らず、
   # 1行が1つの降り方の量そのものを表す（降り方ごとの量は tests/world-codex/liquidContainersYaml.test.ts
-  # が見る）。満杯を超えた分はrangeが受け止める（fillの上限は容器のcapacity）。
+  # が見る）。満杯を超えた分はrangeが受け止める（fillの上限は容器のfillのrange）。
   rain_filled_liquid:
     passives:
       - conditions:

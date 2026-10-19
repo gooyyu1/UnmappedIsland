@@ -149,7 +149,27 @@ object_defs:
   thing:
     traits: [trait_a, trait_b]
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/shared/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /props 'shared' が複数のtrait/,
+    );
+  });
+
+  it('2つのtraitが同名のslotsを持つとエラーになる（5節）', () => {
+    const yaml = `
+traits:
+  trait_a:
+    slots:
+      shared: {cell: {accept: {tag: item}}}
+  trait_b:
+    slots:
+      shared: {cell: {accept: {tag: item}}}
+object_defs:
+  thing:
+    traits: [trait_a, trait_b]
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /slots 'shared' が複数のtrait/,
+    );
   });
 
   it('trait由来のslots・interactionsへ一部のキーだけを書くと、残りはtrait側を引き継ぐ（5節）', () => {
@@ -1285,7 +1305,9 @@ object_defs:
   thing:
     traits: [trait_a, trait_b]
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/use/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /interactions 'use' が複数のtrait/,
+    );
   });
 
   it('actionsでinstrument対象を指定するとエラーになる', () => {
