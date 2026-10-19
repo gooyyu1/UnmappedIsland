@@ -67,10 +67,10 @@ export abstract class ActiveEffect {
   }
 
   /**
-   * 運ばれてきた相手（instrument）を丸ごと消すか（`destroy`、9.6節）。
+   * 運ばれてきた相手（instrument）を丸ごと消すか（`destroy`、9.3節）。
    *
    * **入り切らない端数の行き先を決める側が読む**（9.5.1節）——相手が消えるなら、出どころへ残した分は
-   * 相手ごと失われる。**相手を指せるのは操作の効果だけ**なので、読むのもそこ（parseInteractions）。
+   * 相手ごと失われる。**destroyを書ける場所のうち相手が居るのは操作だけ**なので、読むのもそこ（parseInteractions）。
    */
   get destroysInstrument(): boolean {
     return false;

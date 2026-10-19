@@ -4,6 +4,7 @@ import { AGENT_YAML, createAgent } from '../support/agent';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
+import { conditionKey } from '../../src/domain/conditionKey';
 
 /**
  * YAMLローダー（複数ファイル・複数ディレクトリからのWorldCodex構築、GameElementDefinition.md 3・5節）
@@ -149,7 +150,27 @@ object_defs:
   thing:
     traits: [trait_a, trait_b]
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/shared/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /props 'shared' が複数のtrait/,
+    );
+  });
+
+  it('2つのtraitが同名のslotsを持つとエラーになる（5節）', () => {
+    const yaml = `
+traits:
+  trait_a:
+    slots:
+      shared: {cell: {accept: {tag: item}}}
+  trait_b:
+    slots:
+      shared: {cell: {accept: {tag: item}}}
+object_defs:
+  thing:
+    traits: [trait_a, trait_b]
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /slots 'shared' が複数のtrait/,
+    );
   });
 
   it('trait由来のslots・interactionsへ一部のキーだけを書くと、残りはtrait側を引き継ぐ（5節）', () => {
@@ -574,6 +595,30 @@ object_defs:
     traits: [trait_a, trait_b]
 `),
     ).toThrowError(/resists/);
+  });
+
+  it('resistsは、traitと自分自身の両方が宣言していれば自分自身だけが効く（5節）', () => {
+    const yaml = `
+traits:
+  wary:
+    resists: [{prop: alertness, gt: 50}]
+object_defs:
+  boar:
+    traits: [wary]
+    props:
+      alertness: {value: 0}
+      wetness: {value: 0}
+    resists: [{prop: wetness, gt: 50}]
+  calm_boar:
+    props:
+      alertness: {value: 0}
+      wetness: {value: 0}
+    resists: [{prop: wetness, gt: 50}]
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const resistsOf = (name: string) => codex.objects.get(codex.objectNames.getId(name)).resists!;
+
+    expect(conditionKey(codex, resistsOf('boar'))).toBe(conditionKey(codex, resistsOf('calm_boar')));
   });
 
   it('真偽値のキーは、traitと自分自身のどれか1つでも真なら真（5節）', () => {
@@ -1285,7 +1330,9 @@ object_defs:
   thing:
     traits: [trait_a, trait_b]
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/use/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /interactions 'use' が複数のtrait/,
+    );
   });
 
   it('actionsでinstrument対象を指定するとエラーになる', () => {

@@ -192,7 +192,7 @@ object_defs:
   });
 
   it('液体の容器は、詰まり具合ではなく中身のバーを出す', () => {
-    // 上限は同じcapacityでも、量を持つのは中身の液体自身なので、映すのは中身の色のバー1本だけ。
+    // 量はスロットではなく容器のfillが持つので、映すのは中身の色のバー1本だけ。
     // 2本出ると同じ位置に重なる。
     const mini = setUp();
     const bowl = mini.createObject('bowl', mini.slot('hand'));

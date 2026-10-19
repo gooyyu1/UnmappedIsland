@@ -100,8 +100,7 @@ object_defs:
   });
 
   it('入れ物と名乗らない型は、上限つきのスロットを持っていてもバーの出所にならない', () => {
-    // 液体の容器がこれ。上限は同じcapacityでも、量を持つのは中身の液体自身
-    // （LiquidContainerSystem.md 2節）。
+    // 「上限がある」と「物を溜める入れ物である」は別のこと（GameElementDefinition.md 7.12節）。
     const withoutStorage = new WorldCodexYamlLoader()
       .load(
         'noStorage.yaml',

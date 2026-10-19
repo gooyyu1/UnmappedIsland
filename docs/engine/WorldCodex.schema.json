@@ -1359,11 +1359,11 @@
           }
         },
         "storage": {
-          "description": "物を溜める入れ物として使う型か（GameElementDefinition.md 7.12節）。既定false。tagsと同じくORで合成する。",
+          "description": "物を溜める入れ物として使う型か（GameElementDefinition.md 7.12節）。既定false。traitと自分自身の宣言はORで合成する。",
           "type": "boolean"
         },
         "bound_to_owner": {
-          "description": "単独では存在できない型か（GameElementDefinition.md 7.9節）。既定false。tagsと同じくORで合成する。",
+          "description": "単独では存在できない型か（GameElementDefinition.md 7.9節）。既定false。traitと自分自身の宣言はORで合成する。",
           "type": "boolean"
         },
         "resists": {
@@ -1455,11 +1455,11 @@
           }
         },
         "storage": {
-          "description": "物を溜める入れ物として使う型か（GameElementDefinition.md 7.12節）。既定false。tagsと同じくORで合成する。",
+          "description": "物を溜める入れ物として使う型か（GameElementDefinition.md 7.12節）。既定false。traitと自分自身の宣言はORで合成する。",
           "type": "boolean"
         },
         "bound_to_owner": {
-          "description": "単独では存在できない型か（GameElementDefinition.md 7.9節）。既定false。tagsと同じくORで合成する。",
+          "description": "単独では存在できない型か（GameElementDefinition.md 7.9節）。既定false。traitと自分自身の宣言はORで合成する。",
           "type": "boolean"
         },
         "resists": {

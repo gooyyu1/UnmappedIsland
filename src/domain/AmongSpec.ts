@@ -23,7 +23,7 @@ export interface AmongReading {
  * `pick`の候補が、**周りの物から相手を1つ選ぶ**宣言（GameElementDefinition.md 10.3節）。
  * 選ばれた相手は`picked`で指す。
  *
- * 集合の指し方は条件の`{subject, slot, matches}`（14.4節）とまったく同じ2つ組＋絞り込みで、
+ * 集合の指し方は条件の`{subject, slot, matches}`（14.3節）とまったく同じ2つ組＋絞り込みで、
  * 足しているのは**その中から1つ選ぶ**ことと、その重みだけ。
  *
  * **候補が1つも無ければ、その候補は抽選から外れる**（PickEffect参照）。「相手が居なければ
