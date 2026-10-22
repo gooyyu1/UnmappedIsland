@@ -539,7 +539,7 @@ snare_laceration:
   深部の血管を開いたまま残す傷なので、罠のためだけの型は作りません（`InjurySystem.md` 4.2 節
   「武器の性格は、傷の枚数ではなく傷の中身で表す」と同じ形）。**サイズの差は罠の側ではなく、刺す怪我の
   中身が持ちます**——刺し傷の流れ（`-250/tick`<!-- codex: injuries.yaml object_defs.puncture_wound.passives.1.add.parent.blood -->）はくくり罠の傷（`-15/tick`<!-- codex: injuries.yaml object_defs.snare_laceration.passives.1.add.parent.blood -->）より桁で大きく、
-  穴に落ちる唯一の相手であるイノシシ（4,600 mL<!-- codex: animals.yaml object_defs.wild_boar.props.blood.value -->、1.1 節）も大きく削ります。
+  穴に落ちる唯一の相手であるイノシシ（4,600 mL<!-- codex: animals.yaml object_defs.wild_boar.props.blood.value -->、1.2 節）も大きく削ります。
   ただし**その場では 60 kg は死にません**。杭が変えるのは「深手を負って血を流している」ところまでで、
   回収に戻った時点で仕留めるのは拘束された相手への一撃（5 節）になります。**穴の中で死ぬのを待つことも
   できません**——待てる長さより先に罠が破られ、獲物ごと失います（すぐ下の箇条書き）。1 枚で殺し切る
