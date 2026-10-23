@@ -494,8 +494,8 @@ function tellByIssue(gh, body, sayWhyNot) {
           '判断待ち',
           '--label',
           'origin:agent',
-          // **人が `判断待ち` を外した後に効く**（`agent-ops/board-design.md` 2.18.1節）。名乗らなくても
-          // 整備として並ぶだけだが、そのぶん未整理として毎周拾われるので、ここで名乗る。
+          // **人が `判断待ち` を外した後に効く**（`agent-ops/board-design.md` 2.18.1節）。`kind:` は
+          // 棚卸しが付けるが、向かう先はいちばん確かに知っている立てた側が名乗る。
           '--label',
           'goal:upkeep',
         ],

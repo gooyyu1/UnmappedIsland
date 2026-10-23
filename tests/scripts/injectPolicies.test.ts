@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { DECISIONS_THRESHOLD as THRESHOLD } from '../../.github/extensions/session-bootstrap/pendingDecisions.mjs';
 import { runScript } from '../support/runScript';
 
 /**
@@ -11,9 +12,6 @@ import { runScript } from '../support/runScript';
  */
 
 const HOOK = resolve(__dirname, '../../.claude/hooks/inject-policies.sh');
-
-/** 棚卸しを促し始める未処理の件数（フックの `DECISIONS_THRESHOLD`）。 */
-const THRESHOLD = 10;
 
 interface World {
   /** `agent-ops/policies.md` の中身。`undefined` は「ファイルが無い」。 */
