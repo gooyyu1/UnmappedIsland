@@ -368,7 +368,8 @@ water_liquid:
 - **量（`rain_filled_liquid` トレイトの `passives`）**: 降っている間、毎 tick 自分の `fill` を増やします。
 
 溜め始めた瞬間の量は **1mL<!-- codex: liquid_containers.yaml traits.rain_catching_container.interactions.collect_rain.set.self.fill -->**（`collect_rain` が `become` の直後に `set` する値）です。**`become` で変種に
-なった直後は空**（[`GameElementDefinition.md`](./GameElementDefinition.md) 3.5.1 節）で、実際に溜まる量は降り方が決めるので、**「まだほとんど無い」を表す
+なった直後は空**（空の容器が持つ `fill` 0 を、`become` が同じ名前のプロパティとしてそのまま運ぶ。1 節・
+[`GameElementDefinition.md`](./GameElementDefinition.md) 9.9.1 節）で、実際に溜まる量は降り方が決めるので、**「まだほとんど無い」を表す
 最少値**をここへ置いています。
 
 結果の量（mL/tick）:
