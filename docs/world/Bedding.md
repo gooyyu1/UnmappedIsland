@@ -23,9 +23,8 @@
 `weaving.yaml`、紐は `fiber.yaml`、太い枝は `locations.yaml` にあります。
 
 **確定度と実装状況。** 検討結果であり、**確定しているのは 4.1.1 節（地面でも通しで眠れる）と 4.2.1 節
-（火なしでは越せない夜を、寝床が無くす）だけ**です。**4.1.1 節はまだ入っていません。本書の段はすべて
-入っています**——敷物（2節の段1）・骨組み（同 段2）・
-詰め物（同 段3）・ハンモック（6節）と、段ごとの回復の上積み（4節）、それに寝ている間の寒さの入口の
+（火なしでは越せない夜を、寝床が無くす）だけ**です。**本書はすべて入っています**——地面の睡眠（4.1節）と、
+敷物（2節の段1）・骨組み（同 段2）・詰め物（同 段3）・ハンモック（6節）と、段ごとの回復の上積み（4節）、それに寝ている間の寒さの入口の
 押し下げ（4.2節）です。未決事項は8節。
 
 ## 1. 寝床の型は1つで、段は部品の有無から生える
@@ -67,8 +66,8 @@ object_defs:
 
 | 段 | 形 | 何が変わるか |
 | -- | -- | ------------ |
-| 0 | 地面に直に寝る | 基準線。**まとまっては眠れず、取れるのは `nap` まで**（4.1節） |
-| 1 | 編んだ葉の敷物 | 圧迫と、地面への伝導。**`sleep` が押せるようになる** |
+| 0 | 地面に直に寝る | 基準線。**通しで眠れるが、体力の戻りが薄い**（4.1節） |
+| 1 | 編んだ葉の敷物 | 圧迫と、地面への伝導。**体力の戻りが基準線を上回る** |
 | 2 | ＋骨組み（高床） | **湿気・虫・浸水から一度に離れる。ここが最大の跳躍** |
 | 3 | ＋詰め物 | 圧迫。**体重で潰れない厚みが入る**（4.2節）。中身が羽毛でも植物繊維でも同じ（5節） |
 
@@ -165,7 +164,7 @@ object_defs:
 
 ## 4. 休息へどう効かせるか
 
-**寝床が自分で `nap`/`sleep` を持ち、キャラクタ側の `nap` が基準線になります**
+**寝床が自分で `nap`/`sleep` を持ち、キャラクタ側の `nap`/`sleep` が基準線になります**
 （[`Characters.md`](./Characters.md) 休息節）。**回復は寝床のアクションが宣言した `passives` が
 1 tick（15分<!-- codex: core.yaml object_defs.world.props.minutes_per_tick.value -->）ごとに積みます**（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 11.7節）
 ——キャラクタ側の休息とまったく同じ形で、違うのは量だけです。
@@ -174,7 +173,7 @@ object_defs:
 そうでないと、下の「`nap` 2回と `sleep` 1回がちょうど同じだけ戻る」が成り立ちません——キャラクタ側は
 長い休息ほど毎 tick の量が大きいので、足し合わせると差が残ります。
 
-**この節は上積みの側だけを述べます。** 寝床が無いときに何が取れないかは 4.1節です。
+**この節は上積みの側だけを述べます。** 寝床が無いときの形は 4.1節です。
 
 ```yaml codex: bedding.yaml
 object_defs:
@@ -208,7 +207,7 @@ object_defs:
 
 | 段 | その段が毎tickに足す量 |
 | -- | ---------------------- |
-| 0 地面 | （キャラクタ側の宣言。`sleep` は**押せない**、4.1節） |
+| 0 地面 | （キャラクタ側の宣言。4.1節） |
 | 1 敷物 | 2<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.add.agent.stamina --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.0.add.agent.stamina --> / 4<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.0.add.agent.wakefulness --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.0.add.agent.wakefulness --> |
 | 2 ＋骨組み | +1<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.1.add.agent.stamina --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.1.add.agent.stamina --> / ― |
 | 3 ＋詰め物 | +0.5<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.2.add.agent.stamina --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.2.add.agent.stamina --> / ― |
@@ -223,13 +222,10 @@ object_defs:
 数字の上でもここに出ます。**どの段の睡眠1回も、いちばん薄い体力の上限**（`characters/engineer.yaml` の
 90<!-- codex: characters/engineer.yaml object_defs.engineer.props.stamina.range.max -->）**を下回る**ので、空から通しで眠っても頭打ちに呑まれず、段の差がそのまま観測できます。
 
-**地面の仮眠より薄くはなりません。** 地面の上の1日は仮眠で回すぶん眠る時間が長い（4.1節）ので、同じ荷を
-支えるのに要る割は寝床の上より低く、地面の仮眠はその線の下（[`Characters.md`](./Characters.md)
-休息節）に置いてあります。**ただし、敷物と地面のどちらが1日に多く返すかは、この割の比べでは決まりません**
-——眠る時間が違うので、比べるのは1日に戻る量の合計で、**段1はそこで地面を上回ります。** **荷を `heavy` の
-まま担ぎ通した収支では、段1と地面が並びます**——起きている時間が伸びたぶんの削りが、戻る量の差を
-ちょうど相殺するからです。**段1を敷く値打ちは、削りを数えない日に出ます。**（3つとも
-`tests/world-codex/beddingYaml.test.ts` が見ます。）
+**地面の睡眠より薄くはなりません。** 地面の `sleep`（4.1節）が戻す体力は、どの段の `sleep` よりも
+少なく置いてあります。眠る時間はどれも睡眠1回ぶんで同じなので、**1時間あたりの差がそのまま1日の差に
+なり**、荷を `heavy` のまま担ぎ通した1日の収支でも、段を上げるほど返せる量が増えます。
+（`tests/world-codex/beddingYaml.test.ts` が見ます。）
 
 **寝床の段のうち跳躍が最も大きいのは段2**（2節。骨組みで +1<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.1.add.agent.stamina --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.1.add.agent.stamina -->、詰め物で +0.5<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.passives.2.add.agent.stamina --><!-- codex: bedding.yaml object_defs.bed.interactions.nap.passives.2.add.agent.stamina -->）。**覚醒度は骨組みと
 詰め物では動きません**——`sleep` で
@@ -238,8 +234,7 @@ object_defs:
 
 **段ごとに1つの定数なので、寝床のぶんは長さに正比例します。** キャラクタ側が持つ「まとめて休む
 ほど1時間あたり得」（同節。長い休息ほど毎 tick の量が大きい）が効くのは段0だけで、**寝床の上では `nap` 2回と `sleep` 1回がちょうど同じだけ
-戻ります**（合わせた長さが同じなので）。細切れに休むほど損、は地面の上にしかありません。**ただし地面の上で比べ
-られるのは、寝床を要らない休息どうしだけ**です（4.1節）。
+戻ります**（合わせた長さが同じなので）。細切れに休むほど損、は地面の上にしかありません。
 
 **段3のブロックは中身を見ません。** 見るのは `stuffing` を名乗っていることだけで、羽毛と植物繊維
 （5節）は同じだけ効きます——火なしで最も寒い夜を越せるのは詰め物まで仕上げた者、という約束（4.2.1節）が
@@ -255,54 +250,46 @@ object_defs:
 表せていません**。乾きと虫を寝床のプロパティとして持ち、それをブロックのゲートに使えば別の効き方に
 なりますが、**名前と本数は未決です**（8節）。
 
-### 4.1 寝床が無い側——`sleep` は寝床の在る場所でしか押せない
+### 4.1 寝床が無い側——地面でも通しで眠れるが、体力の戻りは薄い
 
-**寝床が無くても地面で通しで眠れるようにすることが決まっています**（4.1.1節）。この節の残りは、
-それが入るまでの今の形です。
+**寝床の無い場所でも `sleep`（360分<!-- codex: characters/player_character.yaml traits.player_character.interactions.sleep.duration -->）が押せます**（4.1.1節）。地面の上の `nap`/`sleep` はキャラクタ
+自身が持ち（`characters/player_character.yaml`、[`Characters.md`](./Characters.md) 休息節）、寝床の
+札から押した `nap`/`sleep` の量は、キャラクタ側の量に足さずに寝床の宣言だけで決まります（4節）。**「寝床が在るか」を問う条件は要りません**——寝床の
+手番は寝床の札にしか出ないので、配り手が居るかどうかがそのまま分かれ目になります。
 
-**上積みの前に、下回る側を線で持ちます。** 寝床の無い場所では `sleep`（360分<!-- codex: bedding.yaml object_defs.bed.interactions.sleep.duration -->）が押せず、取れるのは `nap`
-（180分<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.duration -->）までです。地面の湿りと硬さ、虫と蟻の中では**まとまっては眠れない**、という現実どおりの形で、
-[`DesignPrinciples.md`](../concept/DesignPrinciples.md)「悪条件は、効率を下げるのではなく、できる／
-できないの線で効かせる」に沿います。
-
-**要件は1つも要りません。`sleep` を配るのが寝床だけだからです**（4節）。寝床の無い場所には押す札が
-無く、キャラクタ側が持つのは `nap` までです（`characters/player_character.yaml`）——「寝床が在るか」を
-問う条件を書くと、**同じことを配り手と要件の2箇所で言う**ことになります。
-
-寝床は据える物なので、洞窟や筏のように場所でもある物の中に敷けば、その中に居る間だけ札が出ます
+寝床は据える物なので、洞窟や筏のように場所でもある物の中に敷けば、その中に居る間だけ寝床の札が出ます
 （[`Characters.md`](./Characters.md) ホームシック節が場所の入れ子について述べるものと同じ構造）。
 
-**縮むのは、1日に起きていられる時間です。** 寝床の上では睡眠1回で1日ぶんの覚醒度が戻ります
-（[`Characters.md`](./Characters.md) 休息節）。地面の `nap`（キャラクタ側の宣言）は長さあたりに戻る
-覚醒度が寝床の `sleep` より少ないので、仮眠だけで回すと眠る時間がそのぶん長くなり——**寝床が無いと、1日に
-起きていられる時間が短くなります。**
+**薄いのは体力だけです。** 地面の `sleep` が戻す体力は敷物の割に届かず（4節）、寒さの入口も押し下げ
+ません（4.2節の押し下げは寝床のブロックが持つ）。**眠気は寝床の `sleep` と同じ**なので、睡眠1回で
+1日ぶんの覚醒度が戻る釣り合い（[`Characters.md`](./Characters.md) 休息節）は寝床が無くても変わらず、
+夜の加工に回せる時間も減りません。
 
-**眠り込みに任せても、その時間は戻りません。** 覚醒度が尽きて起きる `fall_asleep`（同 限界節）は寝床を
-要りませんが、戻す割は地面の `nap` を上回らないので、**任せても、仮眠を重ねるより起きていられる時間は
-伸びません。** **限界に割増しを付けていないのは、ここを抜け道にしないため**で、
-そちらの節がその理由を持ちます。任せるとさらに、**眠る時刻を選べず**、落ちるまで `overtired`
+**線ではなく割の差で効かせているのは、4.1.1節の決定によります。**
+[`DesignPrinciples.md`](../concept/DesignPrinciples.md)「悪条件は、効率を下げるのではなく、できる／
+できないの線で効かせる」が既定ですが、`sleep` の可否を線にすると、寝床の支度（3節）が水と火と食い物を
+立ち上げる初日の昼と正面から競合します。**寝床の値打ちは、重い荷の日に出ます**——地面の睡眠1回では、
+`heavy` を担ぎ通した1日ぶんを返し切れません（4節）。
+
+**眠り込みに任せると、さらに薄くなります。** 覚醒度が尽きて起きる `fall_asleep`（同 限界節）は寝床を
+要りませんが、戻す割は眠気も体力も地面の `sleep` を下回ります。**限界に割増しを付けていないのは、
+ここを抜け道にしないため**で、そちらの節がその理由を持ちます。任せるとさらに、**眠る時刻を選べず**、
+落ちるまで `overtired`
 （免疫 −15<!-- codex: characters/captain.yaml object_defs.captain.props.wakefulness.stages.0.passives.0.modify.self.immunity --><!-- codex: characters/engineer.yaml object_defs.engineer.props.wakefulness.stages.0.passives.0.modify.self.immunity --><!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.stages.0.passives.0.modify.self.immunity --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.stages.0.passives.0.modify.self.immunity -->）に居ることになります。
 
-**削られるのは夜で、昼ではありません。** 仮眠だけで回しても、眠る時間は屋外の枠（昼。
-[`ContentSkeleton.md`](./ContentSkeleton.md) 8節）の外に収まるので、屋外の枠は減りません。減るのは焚き火のそばでの加工のほうで、
-**そこには今のところ余裕があります**（同節「夜が足りなくなることはなく、足りないのは昼です」）。
-
-**行き先を選ばない戻り道は編んだ葉です。** 3枚<!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.requires.0.count -->（1枚400g<!-- codex: weaving.yaml object_defs.woven_leaf.props.weight.value -->・1500mL<!-- codex: weaving.yaml object_defs.woven_leaf.props.volume.value -->）を持って出れば、遠出の先でも15分<!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.duration -->で
+**行き先を選ばない上積みは編んだ葉です。** 3枚<!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.requires.0.count -->（1枚400g<!-- codex: weaving.yaml object_defs.woven_leaf.props.weight.value -->・1500mL<!-- codex: weaving.yaml object_defs.woven_leaf.props.volume.value -->）を持って出れば、遠出の先でも15分<!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.duration -->で
 敷けます（3節）。籠の容量（`containers.yaml`）の少なくない部分を、食い物と水と道具と取り合う嵩なので、
-**積むか仮眠で回すかが出発前の判断になります**。**準備の有無がそのまま結果になる**——同原則
-「線を引いたら、そこから戻る道を1本だけ開けておく」の形で、夜の暗さに対する火起こし具・火口・炉と
-同じ立て付けです。
+**積むか地面で眠るかが出発前の判断になります**。
 
 **ハンモックを担いでいくほうが軽く、据え直して使い回せます**（6.2節）**が、支点のある土地でしか
-寝床になりません**（6.1節）。道が1本に保たれているのは、**どこへ向かっても通るのが編んだ葉だけ**
-だからです。
+寝床になりません**（6.1節）。**どこへ向かっても通るのは編んだ葉だけ**です。
 
 **一度敷いた寝床はそこに残ります。** 同じ土地へ2度目に来たときは支度が要りません。ただし**屋根の無い
 所に敷いたままなら朽ちます**（編んだ葉は短命な素材で10日<!-- stats: durations.yaml durations object=woven_leaf property=durability days -->、雨なら5日<!-- stats: durations.yaml durations object=woven_leaf property=durability shortest_days -->。
 [`DurabilitySystem.md`](../engine/DurabilitySystem.md) 2節）ので、葺き替えと同じ恒久の手間になります
 ——**浅い洞窟のように守られた場所へ敷けば止まります。**
 
-#### 4.1.1 寝床が無くても、地面で通しで眠れる【確定】【未実装: 地面の眠り】
+#### 4.1.1 寝床が無くても、地面で通しで眠れる【確定】
 
 **寝床の無い場所でも、地面の上で通しで眠れます。回復は寝床の上より悪くします。**
 
@@ -420,7 +407,7 @@ object_defs:
 探索していなくても変わりません——**倒せる木が在ることと、間を渡せる木の組が在ることは別の事実**です。
 
 **支点を要求するのは、据える操作ではなく `nap`/`sleep` のほうです。** 網は据えるだけなら支点の無い土地
-へも置けて、そこでは寝床になりません——線は「置けるか」ではなく「寝られるか」に引きます。見るのは
+へも置けて、そこでは寝床になりません——線は「置けるか」ではなく「寝床として寝られるか」に引きます。見るのは
 `ancestor`（同 8.6節）で、**もう1つの要件が「その土地の設置物として在ること」**（`in_slot: fixtures`）
 です。担いだままでは寝られないので、支点のある土地を探す理由が残ります。
 
@@ -449,11 +436,10 @@ object_defs:
 [`Dwellings.md`](./Dwellings.md) 4節が工法へ課した「どれも全域で他を上回らない」が寝床でも成り立つのは、
 ここが在るからです。寝台のほうは敷物が据え置きで、骨組みは抜けても籠に入らない嵩（`containers.yaml`）
 ——遠出の先で寝床を立てるなら、編んだ葉3枚<!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.requires.0.count -->を運んでいって敷き直すことになり、その3枚<!-- codex: bedding.yaml object_defs.bed.recipes.spread.steps.0.requires.0.count -->は敷いたきり
-戻りません（4.1節の戻り道）。
+戻りません（4.1節）。
 
-**`sleep` を配るのが寝床だけ**（4.1節）という線は、これで緩みません。**担いだままでは寝られず、支点の
-無い土地では据えても寝床にならない**ので（6.1節）、遠出の道中で `sleep` が押せるかは、その土地が支点を
-持つかにそのまま掛かります。
+**担いだままでは寝られず、支点の無い土地では据えても寝床にならない**ので（6.1節）、遠出の道中で
+寝床の上で眠れるかは、その土地が支点を持つかにそのまま掛かります。
 
 ## 7. 除外・保留にした要素
 

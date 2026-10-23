@@ -31,7 +31,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | タグ | `character` |
 | スロット | `hand`（`item` を受け入れる枠。数は人物ごとに定義する）、`equipment`、`injuries` |
 | プロパティ | `weight` / `travel_delay` / `pain` / `blood` / `warmth` / `chill_point` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `loneliness` / `homesickness` / `comfort` / `company` / `happiness` / `pathogen` / `immunity` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` と、腕前（[`Skills.md`](./Skills.md) 2 節）、その段が押し上げる上乗せ `ignition_ease` / `quarry_sense` / `hunting_aim`（同 5 節。重みの `base` の土台になる）（いずれも個体差を持たず `player_character` trait が配る） |
-| アクション | 休息（`wait` / `rest` / `nap`。下の[休息](#休息)節。睡眠は寝床が配る）と、限界（`collapse` / `fall_asleep` / `despair`。下の[限界](#限界)節）。どちらも `player_character` trait が配る |
+| アクション | 休息（地面に直に取るもの。下の[休息](#休息)節。寝床の上の休息は寝床が配る）と、限界（`collapse` / `fall_asleep` / `despair`。下の[限界](#限界)節）。どちらも `player_character` trait が配る |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterCard.ts`。絵が入るまでの繋ぎ） |
 
 `status` タグが付くのは `pain` / `blood` / `warmth` / `satiety` / `vitamin` / `homesickness` / `happiness` / `pathogen` /
@@ -455,9 +455,8 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 そのまま通ります。**違うのは長さと回復量だけ**——このうち `wakefulness` も戻すのは眠るものです。
 時間を進める専用の仕組みは持ちません——プレイヤーが押せない[限界](#限界)の操作も同じ形です。
 
-**睡眠（`sleep`）はここにありません。配るのは寝床のほうです**（[`Bedding.md`](./Bedding.md) 4 節）。
-まったく同じ形の操作を寝床が自分で持ち、その回復量は寝床の段で変わります。**地面の上で取れるのは
-仮眠まで**なので、下の表はそのまま「寝床の無いところで取れるもの」の一覧でもあります。
+**下の表は地面に直に寝たときの量です。** 寝床の上の `nap`/`sleep` は、まったく同じ形の操作を寝床が
+自分で持ち、その回復量は寝床の段で変わります（[`Bedding.md`](./Bedding.md) 4 節）。
 
 **戻すのは tick 毎です**（`passives`、[`GameElementDefinition.md`](../engine/GameElementDefinition.md)
 11.7 節）。経過中の減り（荷・痛み・里心）と同じ足し算に入るので、**受け取る量は「宣言 − その間の減り」**
@@ -471,20 +470,20 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | `wait`（待機） | 15分<!-- codex: characters/player_character.yaml traits.player_character.interactions.wait.duration --> | +0.75/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.wait.passives.0.add.self.stamina --> | — |
 | `rest`（休憩） | 60分<!-- codex: characters/player_character.yaml traits.player_character.interactions.rest.duration --> | +1/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.rest.passives.0.add.self.stamina --> | — |
 | `nap`（仮眠） | 180分<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.duration --> | +1.25/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.passives.0.add.self.stamina --> | +3/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.nap.passives.0.add.self.wakefulness --> |
+| `sleep`（睡眠） | 360分<!-- codex: characters/player_character.yaml traits.player_character.interactions.sleep.duration --> | +1.5/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.sleep.passives.0.add.self.stamina --> | +4/tick<!-- codex: characters/player_character.yaml traits.player_character.interactions.sleep.passives.0.add.self.wakefulness --> |
 
-- **通しで眠れるのは寝床の上だけです。** 地面の上で取れるのは仮眠までなので、**釣り合う点がずれます**
-  ——仮眠だけで回すと寝床の上より眠る時間が長くなり、**1日に起きていられる時間が短くなります**
-  （[`Bedding.md`](./Bedding.md) 4.1節）。**地面でも通しで眠れるようにする
-  ことが決まっていて**（同 4.1.1節）、入ればこの行と上の表は書き直しになります。
+- **地面でも通しで眠れます。寝床より薄いのは体力だけです**（[`Bedding.md`](./Bedding.md) 4.1節）。
+  眠気の戻りは寝床の `sleep` と同じなので、睡眠1回で回す1日の釣り合いは寝床が無くても変わりません
+  （`tests/world-codex/beddingYaml.test.ts` が見ます）。
 - **まとめて休むほど1時間あたりの回復が大きい。** 同じ長さを休むなら、空身で休憩を重ねるより
-  仮眠のほうが多く戻ります。細切れに休むより通しで休むほうが得、が数値だけで出ます。
+  仮眠、仮眠を重ねるより睡眠のほうが多く戻ります。細切れに休むより通しで休むほうが得、が数値だけで出ます。
   **この割増しが効くのは地面の上だけ**です（同 4節）。
 - **体力の割は、荷が削る量から逆算しています**（下の[荷重の効き方](#荷重の効き方)節）。地面の上の1日を
-  仮眠で回すと、`heavy` を起きている間担ぎ通した1日ぶんを**仮眠では返し切れません**。地面の上では重い荷の日を
+  睡眠で回しても、`heavy` を起きている間担ぎ通した1日ぶんを**地面の睡眠では返し切れません**。地面の上では重い荷の日を
   続けられない、というのが
   寝床を敷き骨組みを差す理由で、返せる位置に在るのは骨組みを差した寝台だけです
   （[`Bedding.md`](./Bedding.md) 4節）。`too_heavy` を担いだままなら、地面のどの休息でも体力は減ります。
-- **眠っている間も覚醒度は減り続けます**（`-1/tick`<!-- codex: characters/captain.yaml object_defs.captain.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/engineer.yaml object_defs.engineer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.passives.0.add.self.wakefulness -->）。**寝床の上で睡眠1回を取る1日は、覚醒度がちょうど元へ戻ります**——普通の1日を回すぶんには
+- **眠っている間も覚醒度は減り続けます**（`-1/tick`<!-- codex: characters/captain.yaml object_defs.captain.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/engineer.yaml object_defs.engineer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/farmer.yaml object_defs.farmer.props.wakefulness.passives.0.add.self.wakefulness --><!-- codex: characters/medic.yaml object_defs.medic.props.wakefulness.passives.0.add.self.wakefulness -->）。**睡眠1回を取る1日は、寝床の上でも地面でも覚醒度がちょうど元へ戻ります**——普通の1日を回すぶんには
   釣り合い、それより長く起きた日だけが翌日へ持ち越されます。**睡眠1回では満タンに届かない**ので、
   寝溜めはできません（2つとも `tests/world-codex/charactersYaml.test.ts` が見ます）。
 - **回復量は個体差を持ちません**（痛み・血と同じく trait が配ります）。`stamina` の `max` が大きい
@@ -517,22 +516,21 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   眠る休息で、どれも割増しを持っている**ので、そちらはいちばん薄い `nap` の割を使います。
 - **眠り込みが戻すのは眠気だけではないので、体力もこの割に従います。** 寝床の上の `sleep` と同じ割に
   すると、**寝床の無い場所で体力を戻す最良の手が眠り込みになります**——寝床を要らない休息のうち最も
-  割のよい `nap` を上回ってしまうためです。
+  割のよい地面の `sleep` を上回ってしまうためです。
 - **戻る量は個体差を持ちません**（休息と同じく trait が配ります）。`stamina` の `max` が大きい
   キャラクタほど1回で戻る割合は小さく、倒れる回数の重みは体格の側に出ます。**ただし空身で倒れても、
   どのキャラクタも危険域（`exhausted`）からは出られません**——戻る量が、`max` がいちばん薄い
   技師（90<!-- codex: characters/engineer.yaml object_defs.engineer.props.stamina.range.max -->）の境目 18<!-- codex: characters/engineer.yaml object_defs.engineer.props.stamina.stages.1.min --> にすら届かないためです（`tests/world-codex/charactersYaml.test.ts` が見ます）。**倒れ込みは逃げ場であって、戻す手ではありません**
   ——戻すのは自発の休息の仕事です。荷を担いだままならさらに薄くなります。
-- **眠気を `sleep` の割で戻すと、寝床を敷く理由が消えます。** 倒れるまで起きているほうが、寝床で眠るより
-  1日に長く起きていられることになるためです。`nap` の割なら、倒れるまで起きているほうが損になります。
+- **眠気を `sleep` の割で戻すと、自分から眠る理由が消えます。** 倒れるまで起きていても、`sleep` を
+  押した日と同じだけ起きていられることになるためです。`nap` の割なら、倒れるまで起きているほうが損になります。
 - **戻すのが tick 毎なのは、限界だけが下限から始まるからです。** 経過し終えてから足す形だと、下限に
   張り付いた値の減りを既定のクランプが吸い、**宣言した量がまるごと残ります**——自発の休息は経過ぶんを
   引かれるので、同じ長さなら限界のほうが多く戻ることになります。tick 毎なら減りと同じ足し算に
   入るので、荷を担いだままの倒れ込みは担いだぶんだけ薄くなります。限界は罰であって、選ばなかった
   ことへの褒美にはしません。
-- **どれも寝床を要りません**（見るのは尽きた値だけです）。自発の `sleep` を配るのは寝床ですが
-  （上の[休息](#休息)節）、眠り込みまでそちらへ移すと、**寝床の無い場所で眠気が尽きた時点で覚醒度を
-  戻す手が世界から消えます**——限界は逃げ場であって線ではありません。
+- **どれも寝床を要りません**（見るのは尽きた値だけです）。限界は逃げ場であって線ではないので、
+  どこで尽きても起きます。
 
 **起きるのは操作の切れ目で、進行中の操作は中断しません**——歩き終わってから倒れます
 （[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 11.5 節）。
