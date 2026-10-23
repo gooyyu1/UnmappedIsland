@@ -3,7 +3,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/CardArtStats.md。
 
 meta:
-  - {types: 167, drawn: 130, missing: 37}
+  - {types: 168, drawn: 131, missing: 37}
 
 missing:
   - {object: feather, art: feather}
