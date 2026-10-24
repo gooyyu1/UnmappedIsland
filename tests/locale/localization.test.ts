@@ -52,7 +52,7 @@ object_texts:
     expect(locale.object('captain').interaction('pour_in').displayName).toBe('注ぎ移す');
   });
 
-  it('名前の代わりに置ける絵を引ける（宣言が無ければundefined）', () => {
+  it('プロパティを指す絵を引ける（宣言が無ければundefined）', () => {
     expect(locale.object('captain').prop('hydration').icon).toBe('💧');
     expect(locale.object('coconut').prop('freshness').icon, '書いていないプロパティ').toBeUndefined();
     expect(locale.object('coconut').prop('weight').icon, 'どこにも定義が無いプロパティ').toBeUndefined();

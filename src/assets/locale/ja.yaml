@@ -82,7 +82,8 @@ object_texts:
       # すべてはみ出す。作りかけであることは青い覆いが示す（CardView.md 10節）ので、名前で言い直さない。
       recipe: '{base}'
     props:
-      # iconは、ステータスの行の左に名前の代わりに出す絵（docs/ui/StatusArea.md 3節）。
+      # iconは、そのプロパティを指す絵（docs/engine/Localization.md）。ステータスの行は名前の代わりに
+      # 左へ出す（docs/ui/StatusArea.md 3節）。
       # キャラクタのプロパティはどれも固定表示にできる＝ステータスエリアへ出せるので、全部が持つ。
       # 今は絵文字だが、絵が用意でき次第そちらへ差し替える。
       exploration_progress:
