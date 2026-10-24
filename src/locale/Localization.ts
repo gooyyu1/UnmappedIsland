@@ -74,8 +74,7 @@ export class Texts {
   readonly description: string | undefined;
 
   /**
-   * 名前の代わりに置ける絵（Localization.md）。無ければundefinedで、呼び出し側は名前を出す。
-   * 今これを読むのはステータスの行だけ（StatusArea.md 3節）。
+   * その対象を指す絵（Localization.md）。無ければundefinedで、そのときどうするかは読む画面が決める。
    */
   readonly icon: string | undefined;
 
