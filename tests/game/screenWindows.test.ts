@@ -109,7 +109,7 @@ object_defs:
     view.cardsIn(object.parentSlot!).find((card) => card?.objects[0] === object)!;
 
   it('中身を持つカードは、それを映す場所と、空けておく枠の数の元になる容量を持つ', () => {
-    // 中身を見せるかはタグではなくスロットで決める（Windows.md 1節 子ウィンドウ）。
+    // 中身を見せるかはタグではなくスロットで決める（Windows.md 3節 中身を見せるカード）。
     const mini = setUp();
     const sprain = mini.createObject('sprain', mini.slot('injuries'));
     const crate = mini.createObject('crate', mini.slot('hand'));
