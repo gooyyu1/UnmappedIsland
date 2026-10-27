@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { FAILED_RUN_DIR, KEPT_RECORDS } from './failedRunRecorder';
+import { installedPackageDir } from './installedPackage';
 import { ROOT } from './sourceFiles';
 
 const roots: string[] = [];
@@ -38,7 +39,7 @@ function runVitestOn(
   const run = spawnSync(
     process.execPath,
     [
-      join(ROOT, 'node_modules/vitest/vitest.mjs'),
+      join(installedPackageDir('vitest'), 'vitest.mjs'),
       'run',
       '--root',
       root,
