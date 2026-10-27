@@ -11,6 +11,7 @@ import {
   trackedDocs,
   trackedFiles,
 } from '../../scripts/docScope.mjs';
+import { installedPackageDir } from '../support/installedPackage';
 
 /**
  * 説明が挙げる名前が、今も在るものを指しているかの検査。**説明だけが古い名前で取り残される**
@@ -456,7 +457,7 @@ function declaredByDependency(name: string): boolean {
       ...Object.keys(manifest.devDependencies ?? {}),
     ];
     dependencyDeclarations = packages
-      .flatMap((pkg) => declarationsIn(join(ROOT, 'node_modules', pkg)))
+      .flatMap((pkg) => declarationsIn(installedPackageDir(pkg)))
       .map((path) => readFileSync(path, 'utf-8'))
       .join('\n');
   }
