@@ -180,11 +180,14 @@ export class LiveSessionsError extends Error {
  * 始まってから転んだことが同じ顔になる。**
  *
  * **引けなければ「付いた」側へ倒す。** 呼び手はこの値で畳む手を打つので、知らないことを
- * 「付かなかった」と読むと、**働いているセッションを畳む。**
+ * 「付かなかった」と読むと、**働いているセッションを畳む。** `list_sessions` は `external_metadata`
+ * そのものを返さないことがある（2026-10-27 に実測）ので、鍵が無いことと器が無いことを分ける。
  */
-const servedOnce = (session) =>
-  typeof session.external_metadata?.last_served_model === 'string' &&
-  session.external_metadata.last_served_model !== '';
+const servedOnce = (session) => {
+  const metadata = session.external_metadata;
+  if (metadata === undefined || metadata === null) return true;
+  return typeof metadata.last_served_model === 'string' && metadata.last_served_model !== '';
+};
 
 /**
  * 1件をTSVの1行へ。**列の並びを持つのはここ**（読む側は `occupancy.sh`・`usage-record.sh`）。

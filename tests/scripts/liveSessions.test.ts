@@ -148,12 +148,19 @@ describe('live-sessions.mjs', () => {
           session('session_a', {
             external_metadata: { container_cc_version: '2.1.274', cross_session_inbound: 'available' },
           }),
-          session('session_b', {}),
         ),
         envs,
       });
 
-      expect(live.map((item) => item.served)).toEqual([false, false]);
+      expect(live.map((item) => item.served)).toEqual([false]);
+    });
+
+    // 一覧は `external_metadata` を返さないことがある。知らないことを「付かなかった」と読むと、
+    // 盤面は働いているセッションを `unserved:` で畳み、投入し直す。
+    it('跡を確かめる器が無ければ、働いた側', async () => {
+      const live = await liveSessions({ page: page(session('session_a', {})), envs });
+
+      expect(live[0]?.served).toBe(true);
     });
 
     /**
