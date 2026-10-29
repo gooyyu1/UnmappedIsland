@@ -9,7 +9,7 @@ import { ReferenceContext } from './ReferenceRoot';
 import type { WorldObject } from './WorldObject';
 
 /**
- * props の実行時の値。数値（32bit整数、6節）のみを扱う。PassiveEffectの影響先は「プロパティ」であるため、
+ * props の実行時の値。数値（値域は32bit整数の幅、6節）のみを扱う。PassiveEffectの影響先は「プロパティ」であるため、
  * 登録済み効果の一覧・tick毎の反映・実効値の算出はWorldObjectではなくこの値自身が持つ。値の変更後のrangeイベント
  * 判定（どのon_*をいつ発火するか）は自分のPropertyDef（applyRangeEventsAt）へ委譲し、値が変わったことは持ち主の
  * WorldObjectへも伝える（抵抗の成立、7.13節）。いずれも呼び出し側は変更後に何を判定すべきかを知らなくてよい。

@@ -42,8 +42,7 @@ export class GeneratorLayer {
 
 /**
  * 軸（Axis）の定義（TerrainGeneration.md 1節・3.1節）。標高・湿り気など、地点（Site）が持つ
- * 連続値パラメータの1次元。値は整数（通常0〜100の百分率。GameElementDefinition.md 6節の
- * 「数値は32bit整数のみ」の規約により、YAML上にfloatは登場させない）。
+ * 連続値パラメータの1次元。値は整数（通常0〜100の百分率）。
  */
 export class AxisDef {
   readonly name: string;
