@@ -249,7 +249,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 | ファイル | 役割 |
 |---|---|
 | `src/domain/generation/AxisDef.ts` | 軸1本の定義（層を積んで軸値を作る手順、3.2節） |
-| `src/domain/generation/LocationTypeDef.ts` | LocationType 1件の定義（軸の好み・上限は3.3節、変種は3.6節） |
+| `src/domain/generation/LocationTypeDef.ts` | LocationType 1件の定義（軸の好み・上限は3.3節、亜種は3.6節・4節） |
 | `src/domain/generation/GenerationScopeDef.ts` | 生成スコープ1件の定義（サイト数・偏り・網羅の保証、3.1節・3.3節） |
 | `src/domain/generation/GenerationDefs.ts` | 上記の束（`WorldCodex.generation` の中身、2節） |
 | `src/loader/parseGeneration.ts` | YAML → 上記Defsのパース（2節） |
