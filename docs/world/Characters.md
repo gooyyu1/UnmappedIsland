@@ -273,8 +273,12 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 **持つのは `eat` だけで、飲む操作は1つも持ちません**——`food` を名乗る青い実（刃で穴を開けてその場で
 水を飲む）も同じです。**飲んで上がるかどうかは決めていません。**
 
+**出来も質のうちです。** 上出来に仕上がった料理（[`Skills.md`](./Skills.md) 5.4 節）は、同じ料理の
+普段の出来より多く戻します。
+
 | 値 | 何を食べたか |
 | --- | --- |
+| 9<!-- codex: foods.yaml object_defs.roasted_taro_fine.interactions.eat.add.agent.happiness --> | 上出来の料理（上手に焼けたタロイモ） |
 | 6<!-- codex: animals.yaml object_defs.roasted_meat.interactions.eat.add.agent.happiness --><!-- codex: foods.yaml object_defs.roasted_coconut_crab.interactions.eat.add.agent.happiness --><!-- codex: foods.yaml object_defs.roasted_taro.interactions.eat.add.agent.happiness --><!-- codex: animals.yaml object_defs.roasted_rat.interactions.eat.add.agent.happiness --> | 火を通した食事（焼いた肉・ヤシガニ・タロイモ・ネズミ） |
 | 4<!-- codex: fiber.yaml object_defs.banana.interactions.eat.add.agent.happiness --><!-- codex: foods.yaml object_defs.berry.interactions.eat.add.agent.happiness --><!-- codex: coconut.yaml object_defs.coconut_meat.interactions.eat.add.agent.happiness --><!-- codex: coconut.yaml object_defs.coconut_jelly.interactions.eat.add.agent.happiness --> | 生でうまい果実（バナナ・ベリー・ヤシの果肉・青い実のゼリー） |
 | 2<!-- codex: foods.yaml object_defs.water_spinach.interactions.eat.add.agent.happiness --><!-- codex: voyage.yaml object_defs.seaweed.interactions.eat.add.agent.happiness --><!-- codex: voyage.yaml object_defs.bird_egg.interactions.eat.add.agent.happiness --> | 生で食べられるだけの物（空心菜・海藻・海鳥の卵） |
@@ -363,7 +367,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 **何も打たなければ、60日目に留意域へ入って削られ始め、91日目に初めて打ちひしがれます**（火を通した3食
 を通した場合。`tests/world-codex/homesickness.test.ts`）。初回の雨季が明けるころに表へ出て、
 1周回（[`ContentSkeleton.md`](./ContentSkeleton.md) 8.3 節）の終盤で手が止まり始める位置です。
-**追いつくのは最初の段まで**——`yearning` からの削りは最良の食事でも埋まりません。
+**追いつくのは最初の段まで**——`yearning` からの削りは、普段の出来の食事では埋まりません。
 
 **0 は終点ではありません。** 幸福度が尽きると打ちひしがれ、120分<!-- codex: characters/player_character.yaml traits.player_character.interactions.despair.duration -->が強制的に過ぎて `happiness` が
 `+2.5/tick`<!-- codex: characters/player_character.yaml traits.player_character.interactions.despair.passives.0.add.self.happiness --> 戻り（下の[限界](#限界)節）、削りが続く限りそれを繰り返します。
