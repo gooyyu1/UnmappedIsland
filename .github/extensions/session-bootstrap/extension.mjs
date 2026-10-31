@@ -10,11 +10,12 @@
 // - onPreToolUse: シェルの呼び出しを bash に限り、シェルからのファイル書き換えを拒否する。
 // - onPostToolUse: create/edit で書き込んだファイルへ prettier --write を掛ける。
 
-import { readdir, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { joinSession } from '@github/copilot-sdk/extension';
+import { countPendingDecisions, DECISIONS_THRESHOLD } from './pendingDecisions.mjs';
 
 const execAsync = promisify(exec);
 
@@ -23,19 +24,6 @@ async function readIfExists(filePath) {
     return await readFile(filePath, 'utf8');
   } catch {
     return null;
-  }
-}
-
-/** 未処理の履歴がこの数に達したら棚卸しを促す（.claude/hooks/inject-policies.sh と同じ）。 */
-const DECISIONS_THRESHOLD = 10;
-
-async function countPendingDecisions(repoDir) {
-  try {
-    // 直下の .md だけを数える。archive/ に在るのは棚卸し済み。
-    const entries = await readdir(path.join(repoDir, 'agent-ops', 'decisions'), { withFileTypes: true });
-    return entries.filter((entry) => entry.isFile() && entry.name.endsWith('.md')).length;
-  } catch {
-    return 0;
   }
 }
 
