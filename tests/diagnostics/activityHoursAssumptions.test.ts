@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  ACTIVITY_HOURS_COLUMNS,
   activityHoursOf,
   characterStageMinimumOf,
   litPlacesOf,
@@ -24,14 +25,14 @@ import { bundledCodex } from '../support/worldCodexFiles';
  */
 
 /**
- * `IlluminationSystem.md` 5節の表の1行。行動のクラスごとに、見る明るさと、その行動ができる最も暗い段。
+ * `IlluminationSystem.md` 5節の表の1行と、それを数える活動時間表の列。見る明るさと段は列が持つ。
  *
  * **境目の数字はここに書かない**——持ってよいのは段の宣言だけ（同 8節）。
  */
 const ACTION_CLASSES = [
-  { documentedClass: '土地の間を移動する', propertyName: 'looking_brightness', stageName: 'dim' },
-  { documentedClass: '屋外で採る・探索する', propertyName: 'looking_brightness', stageName: 'bright' },
-  { documentedClass: '手元の細かい作業', propertyName: 'hand_brightness', stageName: 'bright' },
+  { documentedClass: '土地の間を移動する', column: ACTIVITY_HOURS_COLUMNS.travel },
+  { documentedClass: '屋外で採る・探索する', column: ACTIVITY_HOURS_COLUMNS.outdoorSearch },
+  { documentedClass: '手元の細かい作業', column: ACTIVITY_HOURS_COLUMNS.handwork },
 ] as const;
 
 describe('活動時間表の前提', () => {
@@ -45,9 +46,13 @@ describe('活動時間表の前提', () => {
       ACTION_CLASSES.map((action) => action.documentedClass).sort(),
       'IlluminationSystem.md 5節の表の行',
     ).toEqual([...documented.keys()].sort());
+    expect(
+      new Set(ACTION_CLASSES.map((action) => action.column)),
+      '文書の表の行に対応しない列がある',
+    ).toEqual(new Set(Object.values(ACTIVITY_HOURS_COLUMNS)));
     for (const action of ACTION_CLASSES)
       expect(documented.get(action.documentedClass), `${action.documentedClass}のしきい値`).toBe(
-        characterStageMinimumOf(codex, action),
+        characterStageMinimumOf(codex, action.column),
       );
   });
 
@@ -62,10 +67,11 @@ describe('活動時間表の前提', () => {
     );
     const NOON = 12;
 
-    function actionClass(documentedClass: string): (typeof ACTION_CLASSES)[number] {
+    /** 文書の表の行が数えられる列（見る明るさと段）。 */
+    function actionClass(documentedClass: string): (typeof ACTION_CLASSES)[number]['column'] {
       const found = ACTION_CLASSES.find((action) => action.documentedClass === documentedClass);
       expect(found, `行動のクラス '${documentedClass}'`).toBeDefined();
-      return found!;
+      return found!.column;
     }
 
     it('夜に土地の間を歩けるのは、砂浜だけ', () => {

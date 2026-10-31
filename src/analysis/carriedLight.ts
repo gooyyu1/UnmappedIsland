@@ -2,6 +2,7 @@ import type { PassivePropertyReading, PassiveReader } from '../domain/PassiveRea
 import type { TransferReading } from '../domain/EffectReader';
 import type { PropertyGlobalId } from '../domain/GlobalId';
 import type { WorldCodex } from '../domain/WorldCodex';
+import { actionBrightnessPropertiesOf } from './actionBrightness';
 import type { SkyState } from './skyState';
 import { ancestorConditionsHold } from './skyState';
 import type { PropertyComparison } from './tickDeltas';
@@ -15,9 +16,6 @@ import { tickDeltasOf } from './tickDeltas';
  * 決めているのは `lit` を下げる passive の条件（`FireSystem.md` 8.2節）。どちらを動かしても、
  * 測り直した数が一緒に動く。
  */
-
-/** 手に持つ光源が届く先（IlluminationSystem.md 2節・3節）。手元と視界の両方へ、同じ量が届く。 */
-const CARRIED_BRIGHTNESS_PROPERTIES = ['hand_brightness', 'looking_brightness'] as const;
 
 /** 明かりが灯っているか（`fire.yaml` の `lightable`）。 */
 const LIT_PROPERTY = 'lit';
@@ -35,8 +33,9 @@ export interface CarriedLight {
 }
 
 /**
- * その型を手に持ったときの明かり。**手元と視界が違う量なら例外にする**——1つの数として扱えるのは
- * 両方へ同じだけ届くからで（IlluminationSystem.md 3節）、食い違えば「松明1本で何が開くか」を1つの数
+ * その型を手に持ったときの明かり。段数は、行動の可否を決める明るさ（IlluminationSystem.md 2節）の
+ * それぞれへ光源の `modify` が足す量を突き合わせて読む。**明るさごとに違う量なら例外にする**——1つの数
+ * として扱えるのはどれへも同じだけ届くからで（同 3節）、食い違えば「松明1本で何が開くか」を1つの数
  * では答えられない。
  */
 export function carriedLightOf(codex: WorldCodex, objectName: string): CarriedLight {
@@ -50,7 +49,7 @@ export function carriedLightOf(codex: WorldCodex, objectName: string): CarriedLi
 
 function carriedLightEvOf(codex: WorldCodex, objectName: string): number {
   const def = codex.objects.get(codex.objectNames.getId(objectName));
-  const amounts = CARRIED_BRIGHTNESS_PROPERTIES.map((propertyName) => {
+  const amounts = actionBrightnessPropertiesOf(codex).map((propertyName) => {
     const collector = new ParentModifyCollector(codex.propertyNames.getId(propertyName));
     def.passives.readBy(collector);
     return { propertyName, amount: collector.amount };
@@ -59,7 +58,7 @@ function carriedLightEvOf(codex: WorldCodex, objectName: string): number {
   const distinct = new Set(amounts.map(({ amount }) => amount));
   if (distinct.size !== 1)
     throw new Error(
-      `${objectName} が持ち主へ届ける明るさが、手元と視界で食い違っています` +
+      `${objectName} が持ち主へ届ける明るさが、明るさごとに食い違っています` +
         `（${amounts.map(({ propertyName, amount }) => `${propertyName}: ${amount}`).join('、')}）。`,
     );
 
