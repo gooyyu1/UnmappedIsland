@@ -212,4 +212,16 @@ describe('なめし革の連鎖', () => {
       '着られる',
     ).toBeUndefined();
   });
+
+  it('なめしの手間は、落とし穴・囲いと並ぶ、世界で最も手間のかかる仕事', () => {
+    // clothing.yamlのtanned。実際は日をまたぐ漬け込みを、工程の数で最も長い仕事に並べてある。
+    const tanning = recipeOf('tanned_leather').totalMinutes;
+    const longest = Math.max(
+      ...[...codex.objects].flatMap((def) => def.recipesProducingThis.map((recipe) => recipe.totalMinutes)),
+    );
+
+    expect(tanning, '最も長い仕事に並ぶ').toBe(longest);
+    expect(recipeOf('pitfall').totalMinutes, '落とし穴と同じ').toBe(tanning);
+    expect(recipeOf('pen').totalMinutes, '囲いと同じ').toBe(tanning);
+  });
 });

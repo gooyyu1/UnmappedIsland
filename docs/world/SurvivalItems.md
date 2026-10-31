@@ -295,7 +295,7 @@
 
 **塩田は罠・畑とまったく同じ「仕掛けて待つ」設備です**（[`../engine/TrapSystem.md`](../engine/TrapSystem.md)・
 `farming.yaml`）。海水を1杯<!-- codex: salt.yaml object_defs.salt_pan.interactions.draw_seawater.add.self.brine -->汲んで張り（15分<!-- codex: salt.yaml object_defs.salt_pan.interactions.draw_seawater.duration -->、8杯<!-- codex: salt.yaml object_defs.salt_pan.props.brine.range.max --><!-- codex: salt.yaml object_defs.salt_pan.interactions.draw_seawater.conditions.2.lt -->まで）、強い日差しが24 tick<!-- codex: salt.yaml object_defs.salt_pan.props.drying_remaining.on_min.add.self.drying_remaining -->当たるたびに1杯ぶんが塩1つに
-なります。24 tick<!-- codex: salt.yaml object_defs.salt_pan.props.drying_remaining.on_min.add.self.drying_remaining -->は砂浜の晴れならちょうど1日ぶんで（時間帯は`salt.yaml`の`drying_remaining`）、
+なります。24 tick<!-- codex: salt.yaml object_defs.salt_pan.props.drying_remaining.on_min.add.self.drying_remaining -->は砂浜の晴れならちょうど1日ぶんで（`tests/diagnostics/saltDryingHours.test.ts` が定義から数えます）、
 **日陰の海岸や曇りの続く日は届く時間が短くなるぶんだけ遅くなります**。雨は張った海水を薄めるので、
 乾きかけは押し戻されます。
 
